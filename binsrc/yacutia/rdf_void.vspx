@@ -30,16 +30,16 @@
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
         fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
         xmlns:vm="http://www.openlinksw.com/vspx/macro">
- <vm:pagetitle>RDF Statistics</vm:pagetitle>
+ <vm:pagetitle>Statistics</vm:pagetitle>
  <vm:pagewrapper>
     <vm:variables>
       <v:variable name="step" default="0" type="int" persist="0"/>
       <v:variable name="message" default="''" type="varchar" persist="temp"/>
     </vm:variables>
   <vm:menu>
-   <vm:menuitem value="RDF Statistics"/>
+   <vm:menuitem value="Statistics"/>
   </vm:menu>
-  <vm:header caption="RDF Statistics"/>
+  <vm:header caption="Statistics"/>
   <vm:pagebody>
       <div><?V self.message ?></div>
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">

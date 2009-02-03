@@ -24,17 +24,16 @@
  -
 -->
 <v:page name="sparql_graph" decor="yacutia_decor.vspx" style="yacutia_style.xsl" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
-
-  <vm:pagetitle>List of Graphs</vm:pagetitle>
+  <vm:pagetitle>Graphs</vm:pagetitle>
   <vm:pagewrapper>
   <vm:variables>
       <v:variable persist="0" name="mode" type="varchar" default="''"/>
       <v:variable persist="0" name="graph_name" type="varchar" default="''"/>
   </vm:variables>
   <vm:menu>
-    <vm:menuitem value="List of Graphs"/>
+    <vm:menuitem value="Graphs"/>
   </vm:menu>
-  <vm:header caption="List of Graphs">
+  <vm:header caption="Graphs">
   </vm:header>
   <vm:pagebody>
       <v:before-data-bind>

@@ -30,7 +30,7 @@
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
         fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
         xmlns:vm="http://www.openlinksw.com/vspx/macro">
- <vm:pagetitle>RDF Meta Cartridges</vm:pagetitle>
+ <vm:pagetitle>Meta Cartridges</vm:pagetitle>
  <vm:pagewrapper>
     <vm:variables>
       <v:variable name="del_item" default="null" type="int" param-name="del"/>
@@ -38,9 +38,9 @@
       <v:variable name="step" default="0" type="int" persist="0"/>
     </vm:variables>
   <vm:menu>
-   <vm:menuitem value="RDF Meta Cartridges"/>
+   <vm:menuitem value="Meta Cartridges"/>
   </vm:menu>
-  <vm:header caption="RDF Meta Cartridges"/>
+  <vm:header caption="Meta Cartridges"/>
   <vm:pagebody>
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
         <tr valign='top'>
@@ -59,14 +59,14 @@
                     </colgroup>
                     <tr>
                         <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="url1" value="RDF Cartridges" format="%s" url="rdf_filters.vspx" xhtml_class="uddi"/>
+                          <v:url name="url1" value="Cartridges" format="%s" url="rdf_filters.vspx" xhtml_class="uddi"/>
                         </td>
                         <td class="page_tab_selected" align="center" nowrap="1">
-                          RDF Meta Cartridges
+                          Meta Cartridges
 		        </td>
 			<?vsp if (check_package('rdf_mappers')) { ?>
                         <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="url2" value="GRDDL Stylesheets" format="%s" url="sparql_filters.vspx" xhtml_class="uddi"/>
+                          <v:url name="url2" value="Stylesheets" format="%s" url="sparql_filters.vspx" xhtml_class="uddi"/>
 		        </td>
                         <?vsp } ?>
                         <td class="page_tab_empty" align="center" width="100%">

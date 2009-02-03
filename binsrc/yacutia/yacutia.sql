@@ -435,17 +435,17 @@ create procedure adm_menu_tree ()
      <node name="SPARQL" url="sparql_load.vspx" id="181" place="1" allowed="yacutia_sparql_page" />
    </node>',
 case when 0 and check_package('rdf_mappers') then
-  '<node name="GRDDL Stylesheets" url="sparql_filters.vspx"  id="190" tip="GRDDL " allowed="yacutia_message">
-     <node name="GRDDL Stylesheets" url="sparql_filters.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
+  '<node name="Stylesheets" url="sparql_filters.vspx"  id="190" tip="GRDDL " allowed="yacutia_message">
+     <node name="Stylesheets" url="sparql_filters.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
    </node>' else '' end,
-   '<node name="RDF Cartridges" url="rdf_filters.vspx"  id="191" tip="RDF Mappers " allowed="yacutia_message">
-     <node name="RDF Cartridges" url="rdf_filters.vspx" id="192" place="1" allowed="yacutia_sparql_page" />
-     <node name="RDF Meta-Cartridges" url="rdf_filters_pp.vspx" id="193" place="1" allowed="yacutia_sparql_page" />
-     <node name="GRDDL Stylesheets" url="sparql_filters.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
+   '<node name="Sponger" url="rdf_filters.vspx"  id="191" tip="RDF Mappers " allowed="yacutia_message">
+     <node name="Cartridges" url="rdf_filters.vspx" id="192" place="1" allowed="yacutia_sparql_page" />
+     <node name="Meta Cartridges" url="rdf_filters_pp.vspx" id="193" place="1" allowed="yacutia_sparql_page" />
+     <node name="Stylesheets" url="sparql_filters.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
    </node>',
-   '<node name="RDF Statistics" url="rdf_void.vspx" id="194" tip="RDF Statistics" allowed="yacutia_sparql_page" />',
-   '<node name="List of Graphs"  url="sparql_graph.vspx"  id="183" allowed="yacutia_message">
-     <node name="List of Graphs" url="sparql_graph.vspx" id="184" place="1" allowed="yacutia_sparql_page" />
+   '<node name="Statistics" url="rdf_void.vspx" id="194" tip="RDF Statistics" allowed="yacutia_sparql_page" />',
+   '<node name="Graphs"  url="sparql_graph.vspx"  id="183" allowed="yacutia_message">
+     <node name="Graphs" url="sparql_graph.vspx" id="184" place="1" allowed="yacutia_sparql_page" />
    </node>',
 '</node>
  <node name="NNTP" url="msg_news_conf.vspx"  id="157" tip="Mail and news messaging" allowed="yacutia_message">',
