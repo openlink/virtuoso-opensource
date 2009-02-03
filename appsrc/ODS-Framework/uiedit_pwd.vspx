@@ -33,6 +33,7 @@
     <v:variable persist="0" name="secretq" type="varchar" default="''"/>
     <v:variable persist="0" name="secreta" type="varchar" default="''"/>
     <v:variable persist="0" name="oid_urlv" type="varchar" default="''"/>
+  <v:variable persist="0" name="cert" type="varchar" default="null"/>
     <v:variable persist="0" name="sioc_limit" type="int" default="10"/>
     <v:variable persist="0" name="no_pwd" type="int" default="0"/>
     <v:before-data-bind>
@@ -42,11 +43,13 @@
       SELECT WAUI_SEC_QUESTION,
              WAUI_SEC_ANSWER,
              pwd_magic_calc (U_NAME, U_PASSWORD, 1),
-             WAUI_OPENID_URL
+	     WAUI_OPENID_URL,
+	     WAUI_CERT
         INTO self.secretq,
              self.secreta,
              pwd,
-             self.oid_urlv
+	     self.oid_urlv,
+	     self.cert
         FROM WA_USER_INFO,
              DB.DBA.SYS_USERS
        where WAUI_U_ID = U_ID
@@ -290,6 +293,69 @@
 	    </span>
                 </td>
               </tr>
+      <tr>
+        <td colspan="2" align="left">
+          <h3>X.509 Certificate</h3>
+        </td>
+      </tr>
+      <tr>
+	  <td colspan="2" align="left">
+	      <?vsp if (length (self.cert)) { ?>
+	      <div>
+		  <label>Subject:</label>
+		  <?vsp
+		  http_value (get_certificate_info (2, cast(self.cert as varchar), 0, ''),'b');
+		  ?>
+	      </div>
+	      <div>
+		  <label>Agent ID:</label>
+		  <?vsp
+		  http_value (get_certificate_info (7, cast(self.cert as varchar), 0, '', '2.5.29.17'),'b');
+		  ?>
+	      </div>
+	      <?vsp } ?>
+	    <v:textarea name="cert1" value="--self.cert" xhtml_cols="70" xhtml_rows="20" />
+	</td>
+      </tr>
+      <tr>
+        <td colspan="2" class="ctrl">
+          <span class="fm_ctl_btn">
+            <v:button name="bt_cncl_6" value="Cancel" action="simple">
+              <v:on-post>
+                self.vc_redirect (sprintf ('uhome.vspx?ufname=%U&amp;l=1', self.u_name));
+              </v:on-post>
+            </v:button>
+            <v:button name="bt_set2" value="Save Certificate" action="simple">
+              <v:on-post>
+                <![CDATA[
+		  declare agent varchar;
+                  if(self.vc_is_valid = 0)
+                    return;
+                  agent := get_certificate_info (7, self.cert1.ufl_value, 0, '', '2.5.29.17');
+                  if (agent is null and length (self.cert1.ufl_value))
+		    {
+                      self.vc_is_valid := 0;
+		      self.vc_error_message := 'The certificate must be in PEM format and must have Alternate Name attribute.';
+		      return;
+		    }
+                  WA_USER_EDIT (self.u_name, 'WAUI_CERT', self.cert1.ufl_value);
+                  self.vc_redirect ('uiedit.vspx?page=3');
+                ]]>
+              </v:on-post>
+            </v:button>
+            <v:button name="bt_set3" value="Remove Certificate" action="simple">
+              <v:on-post>
+                <![CDATA[
+                  if (self.vc_is_valid = 0)
+                    return;
+                  WA_USER_EDIT (self.u_name, 'WAUI_CERT', NULL);
+                  self.vc_redirect ('uiedit.vspx?page=3');
+                ]]>
+              </v:on-post>
+            </v:button>
+          </span>
+        </td>
+      </tr>
     </table>
     </v:form>
 </v:page>

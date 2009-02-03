@@ -3092,6 +3092,7 @@ wa_exec_no_error_log(
     WAUI_BAIM VARCHAR,                  -- 52
     WAUI_BYAHOO VARCHAR,                -- 53
     WAUI_BMSN VARCHAR,                  -- 54
+    WAUI_CERT long varbinary,
 
     primary key (WAUI_U_ID)
   )'
@@ -3131,6 +3132,7 @@ wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_BSKYPE', 'VARCHAR');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_BAIM', 'VARCHAR');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_BYAHOO', 'VARCHAR');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_BMSN', 'VARCHAR');
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_CERT', 'LONG VARBINARY');
 
 create procedure WA_USER_INFO_WAUI_FOAF_UPGRADE ()
 {
@@ -3551,6 +3553,8 @@ create procedure WA_USER_EDIT (in _name varchar,in _key varchar,in _data any)
     UPDATE WA_USER_INFO SET WAUI_FACEBOOK_ID = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_APP_ENABLE')
     UPDATE WA_USER_INFO SET WAUI_APP_ENABLE = _data WHERE WAUI_U_ID = _uid;
+  else if (_key = 'WAUI_CERT')
+    UPDATE WA_USER_INFO SET WAUI_CERT = _data WHERE WAUI_U_ID = _uid;
 
   return;
 

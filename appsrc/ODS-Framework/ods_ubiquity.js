@@ -3065,12 +3065,12 @@ CmdUtils.CreateCommand({
 CmdUtils.CreateCommand({
   name: "ods-create-poll",
   takes: {"instance_id": noun_type_id},
-  modifiers: {"name": noun_arb_text, "description": noun_arb_text, "tags": noun_arb_text, "multi_vote": noun_arb_text, "vote_result": noun_arb_text, "vote_result_before": noun_arb_text, "vote_result_opened": noun_arb_text, "date_start": noun_arb_text, "date_end": noun_arb_text, "mode": noun_arb_text},
+  modifiers: {"name": noun_arb_text, "description": noun_arb_text, "tags": noun_arb_text, "multi_vote": noun_arb_text, "vote_result": noun_arb_text, "vote_result_before": noun_arb_text, "vote_result_opened": noun_arb_text, "dateStart": noun_arb_text, "dateEnd": noun_arb_text, "mode": noun_arb_text},
   homepage: "http://myopenlink.net/ods/",
   icon: "http://www.openlinksw.com/favicon.ico",
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
-  help: "Type ods-create-poll &lt;instance_id&gt; name &lt;name&gt; [description &lt;description&gt;] [tags &lt;tags&gt;] [multi_vote &lt;0|1&gt;] [vote_result &lt;0|1&gt;] [vote_result_before &lt;0|1&gt;] [vote_result_opened &lt;0|1&gt;] [date_start &lt;date_start&gt;] [date_end &lt;date_end&gt;] [mode &lt;mode&gt;]",
+  help: "Type ods-create-poll &lt;instance_id&gt; name &lt;name&gt; [description &lt;description&gt;] [tags &lt;tags&gt;] [multi_vote &lt;0|1&gt;] [vote_result &lt;0|1&gt;] [vote_result_before &lt;0|1&gt;] [vote_result_opened &lt;0|1&gt;] [dateStart &lt;dateStart&gt;] [dateEnd &lt;dateEnd&gt;] [mode &lt;mode&gt;]",
   execute: function (instance_id, modifiers) {
     try {
       checkParameter(instance_id.text, "instance_id");
@@ -3082,8 +3082,8 @@ CmdUtils.CreateCommand({
     addParameter(modifiers, "vote_result", params, "vote_result");
     addParameter(modifiers, "vote_result_before", params, "vote_result_before");
     addParameter(modifiers, "vote_result_opened", params, "vote_result_opened");
-    addParameter(modifiers, "date_start", params, "date_start");
-    addParameter(modifiers, "date_end", params, "date_end");
+      addParameter(modifiers, "dateStart", params, "date_start");
+      addParameter(modifiers, "dateEnd", params, "date_end");
     addParameter(modifiers, "mode", params, "mode");
       odsExecute("poll.new", params, "poll");
     } catch (ex) {
@@ -3095,12 +3095,12 @@ CmdUtils.CreateCommand({
 CmdUtils.CreateCommand({
   name: "ods-update-poll",
   takes: {"poll_id": noun_type_id},
-  modifiers: {"name": noun_arb_text, "description": noun_arb_text, "tags": noun_arb_text, "multi_vote": noun_arb_text, "vote_result": noun_arb_text, "vote_result_before": noun_arb_text, "vote_result_opened": noun_arb_text, "date_start": noun_arb_text, "date_end": noun_arb_text, "mode": noun_arb_text},
+  modifiers: {"name": noun_arb_text, "description": noun_arb_text, "tags": noun_arb_text, "multi_vote": noun_arb_text, "vote_result": noun_arb_text, "vote_result_before": noun_arb_text, "vote_result_opened": noun_arb_text, "dateStart": noun_arb_text, "dateEnd": noun_arb_text, "mode": noun_arb_text},
   homepage: "http://myopenlink.net/ods/",
   icon: "http://www.openlinksw.com/favicon.ico",
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
-  help: "Type ods-update-poll &lt;poll_id&gt; name &lt;name&gt; [description &lt;description&gt;] [tags &lt;tags&gt;] [multi_vote &lt;0|1&gt;] [vote_result &lt;0|1&gt;] [vote_result_before &lt;0|1&gt;] [vote_result_opened &lt;0|1&gt;] [date_start &lt;date_start&gt;] [date_end &lt;date_end&gt;] [mode &lt;mode&gt;]",
+  help: "Type ods-update-poll &lt;poll_id&gt; name &lt;name&gt; [description &lt;description&gt;] [tags &lt;tags&gt;] [multi_vote &lt;0|1&gt;] [vote_result &lt;0|1&gt;] [vote_result_before &lt;0|1&gt;] [vote_result_opened &lt;0|1&gt;] [dateStart &lt;dateStart&gt;] [dateEnd &lt;dateEnd&gt;] [mode &lt;mode&gt;]",
   execute: function (poll_id, modifiers) {
     try {
       checkParameter(poll_id.text, "poll_id");
@@ -3112,8 +3112,8 @@ CmdUtils.CreateCommand({
     addParameter(modifiers, "vote_result", params, "vote_result");
     addParameter(modifiers, "vote_result_before", params, "vote_result_before");
     addParameter(modifiers, "vote_result_opened", params, "vote_result_opened");
-    addParameter(modifiers, "date_start", params, "date_start");
-    addParameter(modifiers, "date_end", params, "date_end");
+      addParameter(modifiers, "dateStart", params, "date_start");
+      addParameter(modifiers, "dateEnd", params, "date_end");
     addParameter(modifiers, "mode", params, "mode");
       odsExecute("poll.edit", params, "poll");
     } catch (ex) {

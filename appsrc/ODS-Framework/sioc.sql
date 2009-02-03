@@ -173,6 +173,17 @@ create procedure ore_iri (in s varchar)
   return concat ('http://www.openarchives.org/ore/terms/', s);
 };
 
+
+create procedure cert_iri (in s varchar)
+{
+  return concat ('http://www.w3.org/ns/auth/cert#', s);
+};
+
+create procedure rsa_iri (in s varchar)
+{
+  return concat ('http://www.w3.org/ns/auth/rsa#', s);
+};
+
 create procedure make_href (in u varchar)
 {
   return WS.WS.EXPAND_URL (sprintf ('http://%s/', get_cname ()), u);
@@ -463,7 +474,7 @@ create procedure foaf_maker (in graph_iri varchar, in iri varchar, in full_name 
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('name'), full_name);
   if (length (u_e_mail))
     {
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('mbox'), 'mailto:'||u_e_mail);
+      --!! ACL DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('mbox'), 'mailto:'||u_e_mail);
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('mbox_sha1sum'), sha1_digest (u_e_mail));
     }
 };
@@ -544,7 +555,7 @@ create procedure sioc_user (in graph_iri varchar, in iri varchar, in u_name varc
 
   if (length (u_e_mail))
     {
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('email'), 'mailto:'||u_e_mail);
+      --!! ACL DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('email'), 'mailto:'||u_e_mail);
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('email_sha1'), sha1_digest (u_e_mail));
     }
 
@@ -559,20 +570,20 @@ create procedure sioc_user (in graph_iri varchar, in iri varchar, in u_name varc
   DB.DBA.RDF_QUAD_URI_L (graph_iri, person_iri, foaf_iri ('nick'), u_name);
   if (length (u_e_mail))
     {
-      DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, foaf_iri ('mbox'), 'mailto:'||u_e_mail);
+      --!! ACL DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, foaf_iri ('mbox'), 'mailto:'||u_e_mail);
       DB.DBA.RDF_QUAD_URI_L (graph_iri, person_iri, foaf_iri ('mbox_sha1sum'), sha1_digest (u_e_mail));
     }
 
-  delete_quad_sp (graph_iri, person_iri, foaf_iri ('name'));
-  if (length (full_name))
-    {
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, person_iri, foaf_iri ('name'), full_name);
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), full_name);
-    }
-  else
-    {
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), U_NAME);
-    }
+  --!!! ACL delete_quad_sp (graph_iri, person_iri, foaf_iri ('name'));
+  --!!! ACL if (length (full_name))
+  --!!! ACL  {
+  --!!! ACL    DB.DBA.RDF_QUAD_URI_L (graph_iri, person_iri, foaf_iri ('name'), full_name);
+  --!!! ACL     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), full_name);
+  --!!! ACL    }
+  --!!! ACL else
+  --!!! ACL  {
+  --!!! ACL    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), U_NAME);
+  --!!! ACL   }
 
   DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('account_of'), person_iri);
   DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, foaf_iri ('holdsAccount'), iri);
@@ -609,13 +620,33 @@ create procedure wa_pub_info (in txt varchar, in flags varchar, in fld int)
   return 0;
 };
 
+create procedure wa_user_priv_info (in flags varchar, in fld int)
+{
+  declare r any;
+  if (length (flags) <= fld)
+    return 0;
+  r := atoi (chr (flags[fld]));
+  if (r = 2)
+    return 1;
+  return 0;
+};
+
+create procedure wa_priv_info (in txt varchar, in flags varchar, in fld int)
+{
+  if (length (txt) and wa_user_priv_info (flags, fld))
+    return 1;
+  return 0;
+};
+
 create procedure sioc_user_info (
-    in graph_iri varchar, in in_iri varchar,
+    in graph_iri varchar,
+    in in_iri varchar,
     in flags varchar,
     in waui_first_name varchar,
     in waui_last_name varchar,
     in title varchar := null,
     in full_name varchar := null,
+    in mail varchar := null,
     in gender varchar := null,
     in icq varchar := null,
     in msn varchar := null,
@@ -637,13 +668,14 @@ create procedure sioc_user_info (
     in hstate varchar := null,
     in hcountry varchar := null,
     in ext_urls any := null,
-    in hb_latlng int := 0
+    in hb_latlng int := 0,
+    in cert any := null
     )
 {
   declare org_iri, iri any;
   declare addr_iri any;
-  declare giri varchar;
-  declare ev_iri any;
+  declare giri, crt_iri, protected varchar;
+  declare ev_iri, hf any;
   declare is_person int;
 
   if (iri is null)
@@ -662,6 +694,7 @@ create procedure sioc_user_info (
   org_iri := iri || '#org';
   addr_iri := iri || '#addr';
   ev_iri := iri || '#event';
+  crt_iri := iri || '#cert';
   giri := iri || '#based_near';
   iri := person_iri (in_iri);
   if (iri like '%/organization/%')
@@ -671,6 +704,8 @@ create procedure sioc_user_info (
 
   delete_quad_sp (graph_iri, iri, foaf_iri ('firstName'));
   delete_quad_sp (graph_iri, iri, foaf_iri ('family_name'));
+  delete_quad_sp (graph_iri, iri, foaf_iri ('name'));
+  delete_quad_sp (graph_iri, iri, foaf_iri ('mbox'));
   delete_quad_sp (graph_iri, iri, foaf_iri ('gender'));
   delete_quad_sp (graph_iri, iri, foaf_iri ('icqChatID'));
   delete_quad_sp (graph_iri, iri, foaf_iri ('msnChatID'));
@@ -696,6 +731,11 @@ create procedure sioc_user_info (
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('firstName'), waui_first_name);
   if (is_person and length (waui_last_name) and wa_user_pub_info (flags, 2))
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('family_name'), waui_last_name);
+
+  if (length (full_name) and wa_user_pub_info (flags, 3))
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('name'), full_name);
+  if (length (mail) and wa_user_pub_info (flags, 4))
+    DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('mbox'), mail);
 
   if (is_person and length (gender) and wa_user_pub_info (flags, 5))
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('gender'), gender);
@@ -796,7 +836,212 @@ create procedure sioc_user_info (
 	    }
 	}
     }
+  if (server_https_port () is not null)
+    {
+      declare ssl_port, host, sp any;
+      hf := rfc1808_parse_uri (iri);
+      hf[5] := '';
+      hf[0] := 'https';
+      host := hf[1];
+      sp := split_and_decode (host, 0, '\0\0:');
+      host := sp[0];
+      ssl_port := server_https_port ();
+      if (ssl_port <> '443')
+	host := host || ':' || ssl_port;
+      hf[1] := host;
+      protected := DB.DBA.vspx_uri_compose (hf);
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdfs_iri ('seeAlso'), protected);
+      if (length (cert))
+	{
+	  declare info, modulus, exponent any;
 
+	  info := get_certificate_info (9, cast (cert as varchar), 0);
+    --      dbg_obj_print (info);
+	  if (info is not null and isarray (info) and cast (info[0] as varchar) = 'RSAPublicKey')
+	    {
+	      DB.DBA.RDF_QUAD_URI (graph_iri, crt_iri, cert_iri ('identity'), iri);
+	      modulus := info[2];
+	      exponent := info[1];
+	      DB.DBA.RDF_QUAD_URI (graph_iri, crt_iri, rdf_iri ('type'), rsa_iri ('RSAPublicKey'));
+	      DB.DBA.RDF_QUAD_URI_L (graph_iri, crt_iri, rsa_iri ('modulus'), bin2hex (modulus));
+	      DB.DBA.RDF_QUAD_URI_L (graph_iri, crt_iri, rsa_iri ('public_exponent'), exponent);
+	    }
+	}
+    }
+  sioc_user_private_info (graph_iri, in_iri, flags, waui_first_name, waui_last_name,
+      title, full_name, mail, gender, icq, msn, aim, yahoo, birthday, org, phone, lat, lng,
+      webpage, photo, org_page, resume, interests, interestTopics, hcity,
+      hstate, hcountry, ext_urls, hb_latlng);
+};
+
+create procedure sioc_user_private_info (
+    in graph_iri varchar,
+    in in_iri varchar,
+    in flags varchar,
+    in waui_first_name varchar,
+    in waui_last_name varchar,
+    in title varchar := null,
+    in full_name varchar := null,
+    in mail varchar := null,
+    in gender varchar := null,
+    in icq varchar := null,
+    in msn varchar := null,
+    in aim varchar := null,
+    in yahoo varchar := null,
+    in birthday datetime := null,
+    in org varchar := null,
+    in phone varchar := null,
+    in lat float := null,
+    in lng float := null,
+    in webpage varchar := null,
+    in photo varchar := null,
+    in org_page varchar := null,
+    in resume varchar := null,
+    in interests any := null,
+    in interestTopics any := null,
+    in hcity varchar := null,
+    in hstate varchar := null,
+    in hcountry varchar := null,
+    in ext_urls any := null,
+    in hb_latlng int := 0
+  )
+{
+  declare org_iri, iri any;
+  declare addr_iri any;
+  declare giri varchar;
+  declare ev_iri any;
+  declare is_person int;
+  declare arr any;
+
+  if (iri is null)
+    return;
+  is_person := 1;
+  iri := person_iri (in_iri, '');
+  arr := sprintf_inverse (in_iri, 'http://%s/dataspace/%s#this', 1);
+  graph_iri := graph_iri || '/protected/' || arr[1];
+
+  exec (sprintf ('sparql clear graph <%S>', graph_iri));
+
+  org_iri := iri || '#org';
+  addr_iri := iri || '#addr';
+  ev_iri := iri || '#event';
+  giri := iri || '#based_near';
+  iri := person_iri (in_iri);
+  if (iri like '%/organization/%')
+    is_person := 0;
+
+  ods_sioc_result (iri);
+
+  if (is_person and length (waui_first_name) and wa_user_priv_info (flags, 1))
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('firstName'), waui_first_name);
+  if (is_person and length (waui_last_name) and wa_user_priv_info (flags, 2))
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('family_name'), waui_last_name);
+
+  if (is_person and length (gender) and wa_user_priv_info (flags, 5))
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('gender'), gender);
+  if (length (icq) and wa_user_priv_info (flags, 10))
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('icqChatID'), icq);
+  if (length (msn) and wa_user_priv_info (flags, 14))
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('msnChatID'), msn);
+  if (length (aim) and wa_user_priv_info (flags, 12))
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('aimChatID'), aim);
+  if (length (yahoo) and wa_user_priv_info (flags, 13))
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('yahooChatID'), yahoo);
+
+  if (length (full_name) and wa_user_priv_info (flags, 3))
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('name'), full_name);
+  if (length (mail) and wa_user_priv_info (flags, 4))
+    DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('mbox'), mail);
+
+  if (birthday is not null and wa_user_priv_info (flags, 6))
+    {
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('birthday'), substring (datestring(coalesce (birthday, now())), 6, 5));
+      DB.DBA.RDF_QUAD_URI (graph_iri, ev_iri, rdf_iri ('type'), bio_iri ('Birth'));
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, bio_iri ('event'), ev_iri);
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, ev_iri, dc_iri ('date'), substring (datestring(birthday), 1, 10));
+    }
+  if (length (phone) and wa_user_priv_info (flags, 18) and wa_user_priv_info (flags, 25))
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('phone'), 'tel:' || phone);
+  if (lat is not null and lng is not null and wa_user_priv_info (flags, (case when hb_latlng = 0 then 39 else 47 end)))
+    {
+
+      DB.DBA.RDF_QUAD_URI (graph_iri, giri, rdf_iri ('type'), geo_iri ('Point'));
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('based_near'), giri);
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, giri, geo_iri ('lat'), sprintf ('%.06f', coalesce (lat, 0)));
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, giri, geo_iri ('long'), sprintf ('%.06f', coalesce (lng, 0)));
+    }
+  if (wa_priv_info (photo, flags, 37))
+    DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('depiction'), DB.DBA.WA_LINK (1, photo));
+
+  if (is_person and length (org) and length (org_page) and wa_user_priv_info (flags, 20))
+    {
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('workplaceHomepage'), org_page);
+      DB.DBA.RDF_QUAD_URI (graph_iri, org_iri, rdf_iri ('type') , foaf_iri ('Organization'));
+      DB.DBA.RDF_QUAD_URI (graph_iri, org_iri, foaf_iri ('homepage'), org_page);
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, org_iri, dc_iri ('title'), org);
+    }
+
+  if (is_person and length (interests))
+    {
+      for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = interests) do
+  	  {
+  	    if (length (interest))
+  	    {
+  	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('interest'), interest);
+  	      if (length (label))
+  		    {
+  		      DB.DBA.RDF_QUAD_URI_L (graph_iri, interest, rdfs_iri ('label'), label);
+  		    }
+  	    }
+  	  }
+    }
+
+  if (is_person and length (interestTopics))
+    {
+      for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = interestTopics) do
+  	  {
+  	    if (length (interest))
+  	    {
+  	      if (length (label))
+  		    {
+  		      DB.DBA.RDF_QUAD_URI_L (graph_iri, interest, rdfs_iri ('label'), label);
+  		    }
+  	    }
+  	  }
+    }
+
+  if (wa_priv_info (hcountry, flags, 15))
+    {
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, vcard_iri ('ADR'), addr_iri);
+      if (length (hcity))
+	      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Locality'), hcity);
+      if (length (hstate))
+	      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Region'), hstate);
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Country'), hcountry);
+    }
+
+  if (is_person and wa_priv_info (resume, flags, 34))
+    {
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, bio_iri ('olb'), resume);
+    }
+
+  if (wa_priv_info (webpage, flags, 7))
+    DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('homepage'), webpage);
+
+  if (length (ext_urls) and wa_priv_info (ext_urls, flags, 8))
+    {
+      declare arr any;
+      ext_urls := replace (ext_urls, '\r', '\n');
+      ext_urls := replace (ext_urls, '\n\n', '\n');
+      arr := split_and_decode (ext_urls, 0, '\0\0\n');
+      foreach (any u in arr) do
+    	{
+    	  if (length (trim (u)))
+  	    {
+   	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, owl_iri ('sameAs'), u);
+   	    }
+    	}
+    }
 };
 
 create procedure sioc_user_project (in graph_iri varchar, in iri varchar, in  nam varchar, in  url varchar, in descr varchar, in piri varchar := null)
@@ -1499,7 +1744,8 @@ create procedure fill_ods_sioc (in doall int := 0)
             		   WAUI_BLAT,
             		   WAUI_BLNG,
             		   WAUI_LATLNG_HBDEF,
-            		   WAUI_SKYPE
+            		   WAUI_SKYPE,
+			   WAUI_CERT
 		          from DB.DBA.WA_USER_INFO
 		         where WAUI_U_ID = u_id do
 		{
@@ -1527,6 +1773,7 @@ create procedure fill_ods_sioc (in doall int := 0)
 		                  WAUI_LAST_NAME,
 		                  WAUI_TITLE,
 		                  U_FULL_NAME,
+				  U_E_MAIL,
 		                  WAUI_GENDER,
 		                  WAUI_ICQ,
 		                  WAUI_MSN,
@@ -1547,7 +1794,8 @@ create procedure fill_ods_sioc (in doall int := 0)
 			WAUI_HSTATE,
 			WAUI_HCOUNTRY,
 			WAUI_FOAF,
-			WAUI_LATLNG_HBDEF
+                			WAUI_LATLNG_HBDEF,
+					WAUI_CERT
 			);
 		  kwd := DB.DBA.WA_USER_TAG_GET (U_NAME);
 		  if (length (kwd))
@@ -1963,30 +2211,30 @@ create trigger SYS_USERS_SIOC_U after update on DB.DBA.SYS_USERS referencing old
   oiri := user_obj_iri (O.U_NAME);
   if (N.U_IS_ROLE = 0)
     {
-      delete_quad_sp (graph_iri, oiri, sioc_iri ('email'));
-      delete_quad_sp (graph_iri, oiri, sioc_iri ('name'));
+      --!!! ACL delete_quad_sp (graph_iri, oiri, sioc_iri ('email'));
+      --!!! ACL delete_quad_sp (graph_iri, oiri, sioc_iri ('name'));
       delete_quad_sp (graph_iri, oiri, sioc_iri ('email_sha1'));
 
       oiri := person_iri (oiri);
-      delete_quad_sp (graph_iri, oiri, foaf_iri ('name'));
-      delete_quad_sp (graph_iri, oiri, foaf_iri ('mbox'));
+      --!!! ACL delete_quad_sp (graph_iri, oiri, foaf_iri ('name'));
+      --!!! ACL delete_quad_sp (graph_iri, oiri, foaf_iri ('mbox'));
       delete_quad_sp (graph_iri, oiri, foaf_iri ('mbox_sha1sum'));
 
-      if (length (N.U_FULL_NAME))
-	{
-	  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('name'), N.U_FULL_NAME);
-	}
+      --!!! ACL if (length (N.U_FULL_NAME))
+      --!!! ACL	  {
+      --!!! ACL     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('name'), N.U_FULL_NAME);
+      --!!! ACL   }
 
       if (length (N.U_E_MAIL))
 	{
-	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('email'), 'mailto:'||N.U_E_MAIL);
+	  --!!! ACL DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('email'), 'mailto:'||N.U_E_MAIL);
 	  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('email_sha1'), sha1_digest (N.U_E_MAIL));
 
 	  iri := person_iri (iri);
-	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('mbox'), 'mailto:'||N.U_E_MAIL);
+	  --!!! ACL DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('mbox'), 'mailto:'||N.U_E_MAIL);
 	  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('mbox_sha1sum'), sha1_digest (N.U_E_MAIL));
-	  if (length (N.U_FULL_NAME))
-	    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('name'), N.U_FULL_NAME);
+	  --!!! ACL if (length (N.U_FULL_NAME))
+	  --!!! ACL  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('name'), N.U_FULL_NAME);
 	}
     }
   return;
@@ -2028,24 +2276,30 @@ create trigger SYS_USERS_SIOC_D after delete on DB.DBA.SYS_USERS referencing old
 
 create trigger WA_USER_INFO_SIOC_I after insert on DB.DBA.WA_USER_INFO referencing new as N
 {
-  declare iri, graph_iri, u_site_iri, uname varchar;
+  declare iri, graph_iri, u_site_iri, uname, _u_full_name, _u_e_mail varchar;
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
   graph_iri := get_graph ();
   iri := user_iri (N.WAUI_U_ID);
-  uname := (select U_NAME from DB.DBA.SYS_USERS where U_ID = N.WAUI_U_ID);
+  uname := _u_full_name := _u_e_mail := null;
+  for select U_NAME, U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = N.WAUI_U_ID do
+  {
+    uname := U_NAME;
+    _u_full_name := U_FULL_NAME;
+    _u_e_mail := U_E_MAIL;
+  }
   u_site_iri := user_space_iri (uname);
   if (N.WAUI_SITE_NAME is not null)
     DB.DBA.RDF_QUAD_URI_L (graph_iri, u_site_iri, dc_iri ('title'), N.WAUI_SITE_NAME);
-  sioc_user_info (graph_iri, iri, N.WAUI_VISIBLE, N.WAUI_FIRST_NAME, N.WAUI_LAST_NAME);
+  sioc_user_info (graph_iri, iri, N.WAUI_VISIBLE, N.WAUI_FIRST_NAME, N.WAUI_LAST_NAME, N.WAUI_TITLE, _u_full_name, _u_e_mail);
   return;
 };
 
 create trigger WA_USER_INFO_SIOC_U after update on DB.DBA.WA_USER_INFO referencing old as O, new as N
 {
-  declare iri, graph_iri, u_site_iri, uname, niri, del_iri varchar;
+  declare iri, graph_iri, u_site_iri, uname, niri, del_iri, _u_full_name, _u_e_mail varchar;
   declare lat, lng real;
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
@@ -2053,8 +2307,13 @@ create trigger WA_USER_INFO_SIOC_U after update on DB.DBA.WA_USER_INFO referenci
   };
   graph_iri := get_graph ();
   iri := user_iri (N.WAUI_U_ID);
-  --sioc_user_info (graph_iri, iri, N.WAUI_VISIBLE, N.WAUI_FIRST_NAME, N.WAUI_LAST_NAME);
-  uname := (select U_NAME from DB.DBA.SYS_USERS where U_ID = N.WAUI_U_ID);
+  uname := _u_full_name := _u_e_mail := null;
+  for select U_NAME, U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = N.WAUI_U_ID do
+  {
+    uname := U_NAME;
+    _u_full_name := U_FULL_NAME;
+    _u_e_mail := U_E_MAIL;
+  }
   u_site_iri := user_space_iri (uname);
   delete_quad_sp (graph_iri, u_site_iri, dc_iri ('title'));
   if (N.WAUI_SITE_NAME is not null)
@@ -2094,7 +2353,8 @@ create trigger WA_USER_INFO_SIOC_U after update on DB.DBA.WA_USER_INFO referenci
                   N.WAUI_FIRST_NAME,
                   N.WAUI_LAST_NAME,
         		      N.WAUI_TITLE,
-        		      null,
+        		      _u_full_name,
+			      _u_e_mail,
         		      N.WAUI_GENDER,
         		      N.WAUI_ICQ,
         		      N.WAUI_MSN,
@@ -2115,7 +2375,8 @@ create trigger WA_USER_INFO_SIOC_U after update on DB.DBA.WA_USER_INFO referenci
 			N.WAUI_HSTATE,
 			N.WAUI_HCOUNTRY,
 			N.WAUI_FOAF,
-			N.WAUI_LATLNG_HBDEF
+            			N.WAUI_LATLNG_HBDEF,
+				N.WAUI_CERT
 			);
   for select US_IRI, US_KEY from DB.DBA.WA_USER_SVC where US_U_ID = N.WAUI_U_ID and length (US_IRI) do
     {
@@ -2941,8 +3202,49 @@ create procedure std_pref_declare ()
 	 ' prefix wiki: <http://sw.deri.org/2005/04/wikipedia/wikiont.owl#> \n' ||
 	 ' prefix bm: <http://www.w3.org/2002/01/bookmark#> \n' ||
 	 ' prefix vcal: <http://www.w3.org/2002/12/cal#> \n' ||
-         ' prefix bio: <http://vocab.org/bio/0.1/> \n' ;
+         ' prefix bio: <http://vocab.org/bio/0.1/> \n' ||
+	 ' prefix cert: <' || cert_iri ('') || '> \n' ||
+	 ' prefix rsa: <' || rsa_iri ('') || '> \n'
+	 ;
 };
+
+create procedure foaf_check_ssl ()
+{
+  declare stat, msg, meta, data, info, qr, hf, graph any;
+  declare agent varchar;
+
+  declare exit handler for sqlstate '*'
+    {
+      rollback work;
+      return 0;
+    }
+  ;
+
+  info := get_certificate_info (9);
+  agent := get_certificate_info (7, null, null, null, '2.5.29.17');
+
+--  dbg_obj_print (info, agent);
+  if (not isarray (info) or agent is null or agent not like 'URI:%')
+    return 0;
+
+  agent := subseq (agent, 4);
+  hf := rfc1808_parse_uri (agent);
+  hf[5] := '';
+  graph := DB.DBA.vspx_uri_compose (hf);
+  commit work;
+  qr := sprintf ('sparql define get:soft "soft" '||
+        std_pref_declare () ||'select ?exp ?mod from <%S> '||
+  	'where { ?id cert:identity <%S> ; rsa:public_exponent ?exp ; rsa:modulus ?mod . }', graph, agent);
+  stat := '00000';
+--  dbg_printf ('%s', qr);
+  exec (qr, stat, msg, vector (), 0, meta, data);
+--  dbg_obj_print (data);
+  if (stat = '00000' and length (data) and data[0][0] = info[1] and data[0][1] = bin2hex (info[2]))
+    return 1;
+--  dbg_obj_print (stat, data);
+  return 0;
+}
+;
 
 create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p int := 0)
 {
@@ -2954,7 +3256,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 
   -- dbg_obj_print (u_name,wai_name,inst_type,postid);
   set http_charset='utf-8';
-  graph := get_graph ();
+  graph := 'local:/dataspace'; --get_graph ();
   ses := string_output ();
 
   if (fmt = 'text/rdf+n3')
@@ -2983,12 +3285,18 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
   if (fmt = 'rdf')
     rdf_head (ses);
 
-  qrs := make_array (6, 'any');
   iri := user_obj_iri (u_name);
 
   decl := 'sparql '
          --' define input:inference <' || graph || '>' ||
 	  || std_pref_declare ();
+
+  qrs := make_array (7, 'any');
+  qrs[6] := null;
+  if (is_https_ctx () and foaf_check_ssl ())
+    {
+      qrs[6] := sprintf ('sparql construct { ?s ?p ?o } from <local:/dataspace/protected/%U> where { ?s ?p ?o }', u_name);
+    }
 
   part := sprintf (
 	  ' CONSTRUCT {
@@ -3020,7 +3328,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    <%s> a foaf:PersonalProfileDocument .
 	    <%s> foaf:primaryTopic ?person .
 	    <%s> foaf:maker ?person .
-	    <%s> dc:title `bif:concat (?full_name, "\'s FOAF file")` .
+	    <%s> dc:title `bif:concat (bif:coalesce (?full_name, ?nick), "\'s FOAF file")` .
 	    ?person foaf:workplaceHomepage ?wphome .
 	    ?org foaf:homepage ?wphome .
 	    ?org rdf:type foaf:Organization .
@@ -3152,7 +3460,9 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?interest rdfs:label ?interest_label .
 	    ?person foaf:topic_interest ?topic_interest .
 	    ?topic_interest rdfs:label ?topic_interest_label .
-
+	    ?idn cert:identity ?person .
+	    ?idn rsa:public_exponent ?exp .
+	    ?idn rsa:modulus ?mod .
 	  }
 	  WHERE
 	  {
@@ -3165,6 +3475,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	      optional { ?interest rdfs:label ?interest_label  } .
 	      optional { ?person foaf:topic_interest ?topic_interest } .
 	      optional { ?topic_interest rdfs:label ?topic_interest_label  } .
+	      optional { ?idn cert:identity ?person ; rsa:public_exponent ?exp ; rsa:modulus ?mod .  } .
 	      }
 	    }
 	  }', graph, graph, u_name);
@@ -3271,12 +3582,14 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
   -- disabled now
   qrs [4] := null;
 
+execute_qr:
 
   set_user_id ('dba');
   foreach (any q in qrs) do
     {
       maxrows := 0;
       state := '00000';
+      msg := 'OK';
       if (q is not null)
 	{
 --	  dbg_printf ('%s', q);
@@ -3294,7 +3607,11 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    }
 	  else
 	    {
+	      if ((1 = length (rset)) and (1 = length (rset[0])) and (214 = __tag (rset[0][0])) and dict_size (rset[0][0]))
+		{
 	      DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, 0);
+		  http ('\n', ses);
+		}
 	    }
 	}
     }
@@ -3314,7 +3631,10 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
       if (fmt = 'rdf')
 	DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 0, ses);
       else
+	{
 	DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
+	  http ('\r\n', ses);
+	}
     }
 
   if (fmt = 'rdf')
@@ -3420,7 +3740,9 @@ create procedure ods_sioc_print_rset (in iri any, inout rset any, inout ses any,
       if (fmt = 'rdf')
 	DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 0, ses);
       else
+	{
 	DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
+    }
     }
 };
 
@@ -3506,7 +3828,9 @@ create procedure ods_sioc_container_obj_describe (in iri varchar, in fmt varchar
       if (fmt = 'rdf')
 	DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 0, ses);
       else
+	{
 	DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
+    }
     }
   if (fmt = 'rdf')
     rdf_tail (ses);
