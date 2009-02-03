@@ -623,10 +623,10 @@ create function DB.DBA."RDFData_DAV_RES_CONTENT" (in id any, inout content any, 
       pg := atoi (pg);
 
       -- take data from ODS graph
-      if (regexp_match ('http://([^/]*)/dataspace/(person|organization)/(.*)', iri) is not null)
+      if (regexp_match ('https?://([^/]*)/dataspace/(person|organization)/(.*)', iri) is not null)
         {
-	  tmp := sprintf_inverse (iri, 'http://%s/dataspace/%s/%s', 0);
-	  tmp := tmp[2];
+	  tmp := sprintf_inverse (iri, 'http%s://%s/dataspace/%s/%s', 0);
+	  tmp := tmp[3];
 	  pos := coalesce (strchr (tmp, '#'), strchr (tmp, '/'));
 	  if (pos is not null)
 	    uname := subseq (tmp, 0, pos);
@@ -635,11 +635,11 @@ create function DB.DBA."RDFData_DAV_RES_CONTENT" (in id any, inout content any, 
           ses := sioc..compose_foaf (uname, type, pg);
 	  goto ret_place2;
 	}
-      else if (regexp_match ('http://([^/]*)/dataspace/([^/]*)(#this|/sioc.rdf|/sioc.n3)?\x24', iri) is not null
+      else if (regexp_match ('https?://([^/]*)/dataspace/([^/]*)(#this|/sioc.rdf|/sioc.n3)?\x24', iri) is not null
 	  and __proc_exists ('sioc.DBA.ods_sioc_obj_describe') is not null)
 	{
-	  tmp := sprintf_inverse (iri, 'http://%s/dataspace/%s', 0);
-	  tmp := tmp[1];
+	  tmp := sprintf_inverse (iri, 'http%s://%s/dataspace/%s', 0);
+	  tmp := tmp[2];
 	  pos := coalesce (strchr (tmp, '#'), strchr (tmp, '/'));
 	  if (pos is not null)
 	    uname := subseq (tmp, 0, pos);
