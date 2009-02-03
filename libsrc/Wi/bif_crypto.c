@@ -44,6 +44,7 @@
 #include <openssl/bn.h>
 #include <openssl/dsa.h>
 #include <openssl/x509.h>
+#include <openssl/x509v3.h>
 #include <openssl/x509_vfy.h>
 #include <openssl/pem.h>
 #include <openssl/err.h>
@@ -1092,6 +1093,24 @@ err_ret:
 #define VIRT_CERT_EXT "2.16.840.1.1113.1"
 
 static caddr_t
+BN_box (BIGNUM * x)
+{
+  size_t buf_len, n;
+  caddr_t buf;
+  buf_len = (size_t)BN_num_bytes (x);
+  if (buf_len <= BN_BYTES)
+      buf = box_num ((unsigned long)x->d[0]);
+  else 
+    {  
+      buf = dk_alloc_box (buf_len, DV_BIN);
+      n = BN_bn2bin (x, (unsigned char*) buf);
+      if (n != buf_len)
+	GPF_T;
+    }
+  return buf;
+}
+
+static caddr_t
 bif_get_certificate_info (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 {
   query_instance_t *qi = (query_instance_t *)qst;
@@ -1152,8 +1171,15 @@ bif_get_certificate_info (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
     {
       case 1: /* Serial number */
 	    {
-	      long l = ASN1_INTEGER_get (X509_get_serialNumber (cert));
-	      ret = box_num (l);
+	      ASN1_INTEGER *ai = X509_get_serialNumber (cert);
+	      BIGNUM *n = ASN1_INTEGER_to_BN (ai, NULL);
+	      char * dec = BN_bn2dec (n);
+	      size_t len = strlen (dec);
+	      ret = dk_alloc_box (len+1, DV_STRING);
+	      memcpy (ret, dec, len);
+	      ret[len] = 0;
+	      BN_free (n);
+	      OPENSSL_free (dec);
 	      break;
 	    }
       case 2: /* Subject */
@@ -1235,7 +1261,7 @@ bif_get_certificate_info (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 		}
 	      break;
 	    }
-      case 7: /*XXX: private extension: sqlUserName */
+      case 7: /* default private extension: sqlUserName */
 	    {
 	      int i;
 	      char tmp [1024];
@@ -1249,14 +1275,24 @@ bif_get_certificate_info (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 		  OBJ_obj2txt(tmp, sizeof (tmp), obj, 1);
 		  if (!strcmp (tmp, ext_oid))
 		    {
-		      ret = dk_alloc_box (ex->value->length + 1, DV_STRING);
-		      memcpy (ret, ex->value->data, ex->value->length);
-		      ret [ex->value->length] = 0;
+		      int len;
+		      char *data_ptr;
+		      BIO *mem = BIO_new (BIO_s_mem());
+		      if (!X509V3_EXT_print (mem, ex, 0, 0))
+		        M_ASN1_OCTET_STRING_print (mem, ex->value);
+		      len = BIO_get_mem_data (mem, &data_ptr);
+		      if (len > 0 && data_ptr)
+			{
+			  ret = dk_alloc_box (len + 1, DV_STRING);
+			  memcpy (ret, data_ptr, len);
+			  ret[len] = 0;
+			}
+		      BIO_free (mem);
 		    }
 		}
 	      break;
 	    }
-      case 8: /*XXX: cert name */
+      case 8: /* Certficate name  */
 	    {
 	      caddr_t KI = NULL;
 	      KI = xenc_x509_KI_base64 (cert);
@@ -1264,6 +1300,34 @@ bif_get_certificate_info (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 	      dk_free_box (KI);
 	      break;
 	    }
+      case 9: /* certificate public key */
+	    {
+	      EVP_PKEY * k = X509_get_pubkey (cert);
+	      if (k)
+		{
+#ifdef EVP_PKEY_RSA
+		  if (k->type == EVP_PKEY_RSA)
+		    {
+		      RSA * x = k->pkey.rsa;
+		      ret = list (3, box_dv_short_string ("RSAPublicKey"), BN_box (x->e), BN_box (x->n));
+		    }
+		  else 
+#endif		
+#ifdef EVP_PKEY_DSA		
+		  if (k->type == EVP_PKEY_DSA)
+		    {
+		      DSA * x = k->pkey.dsa;
+		      ret = list (2, box_dv_short_string ("DSAPublicKey"), BN_box (x->pub_key));
+		    }
+		  else
+#endif		
+		    *err_ret = srv_make_new_error ("42000", "XXXXX", "The certificate's public key not supported");
+		  EVP_PKEY_free (k);
+		}
+	      else
+		*err_ret = srv_make_new_error ("42000", "XXXXX", "Can not read the public key from the certificate");
+	      break;
+	    }	     
       default:
 	    {
 	      if (!internal)
@@ -1274,6 +1338,23 @@ bif_get_certificate_info (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
   if (!internal)
     X509_free (cert);
   return ret ? ret : dk_alloc_box (0, DV_DB_NULL);
+}
+
+static caddr_t
+bif_bin2hex (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
+{
+  caddr_t bin = bif_bin_arg (qst, args, 0, "bin2hex");
+  caddr_t out = dk_alloc_box (2 * box_length (bin) + 1, DV_SHORT_STRING);
+  uint32 inx;
+  char tmp[3];
+  out [0] = 0;
+  for (inx = 0; inx < box_length (bin); inx++)
+    {
+      snprintf (tmp, sizeof (tmp), "%02x", (unsigned char) bin[inx]);
+      strcat_box_ck (out, tmp);
+    }
+  out[2 * box_length (bin)] = 0;
+  return out;
 }
 
 static caddr_t
@@ -1304,6 +1385,7 @@ bif_crypto_init (void)
   bif_define_typed ("pem_certificates_to_array", bif_pem_certificates_to_array, &bt_any);
   bif_define_typed ("get_certificate_info", bif_get_certificate_info, &bt_any);
   bif_define_typed ("x509_certificate_verify", bif_x509_certificate_verify, &bt_any);
+  bif_define_typed ("bin2hex", bif_bin2hex, &bt_varchar);
 }
 
 #else /* _SSL dummy section for bifs that are defined here to not break existing apps */
