@@ -28,6 +28,8 @@
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY sioct "http://rdfs.org/sioc/types#">
+<!ENTITY mo "http://purl.org/ontology/mo/">
+<!ENTITY mmd "http://musicbrainz.org/ns/mmd-1.0#">
 ]>
 <xsl:stylesheet
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -36,11 +38,14 @@
     xmlns:h="http://www.w3.org/1999/xhtml"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:dcterms="http://purl.org/dc/terms/" 
     xmlns:xhv="&xhv;"
     xmlns:sioc="&sioc;"
     xmlns:bibo="&bibo;"
     xmlns:sioct="&sioct;"
 	xmlns:foaf="&foaf;"
+    xmlns:mo="&mo;"
+    xmlns:mmd="&mmd;"
     version="1.0">
 	
 	<xsl:param name="baseUri" />
@@ -133,6 +138,11 @@
 				</rdf:type>
 			</rdf:Description>
 		</xsl:if>
+		<xsl:if test="substring-before ($type, ':') = $prefix and $prefix='album'">
+			<rdf:Description rdf:about="{vi:proxyIRI($container)}">
+				<rdf:type rdf:resource="&mo;Record"/>
+			</rdf:Description>
+		</xsl:if>
 	</xsl:template>
 	
 	<xsl:template name="set-link">
@@ -167,6 +177,25 @@
 					</xsl:choose>
 				</xsl:element>
 			</rdf:Description>
+			<xsl:if test="substring-after ($type, ':') = 'title'">
+				<rdf:Description rdf:about="{vi:proxyIRI($container)}">
+					<dc:title>
+						<xsl:value-of select="$content" />
+					</dc:title>
+				</rdf:Description>
+			</xsl:if>
+			<xsl:if test="substring-after ($type, ':') = 'image'">
+				<rdf:Description rdf:about="{vi:proxyIRI($container)}">
+					<foaf:img rdf:resource="{$content}" />
+				</rdf:Description>
+			</xsl:if>
+			<xsl:if test="substring-after ($type, ':') = 'description'">
+				<rdf:Description rdf:about="{vi:proxyIRI($container)}">
+					<dc:description>
+						<xsl:value-of select="$content" />
+					</dc:description>
+				</rdf:Description>
+			</xsl:if>
 		</xsl:if>
 	</xsl:template>
 
