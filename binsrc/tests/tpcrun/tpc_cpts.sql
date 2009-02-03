@@ -32,179 +32,184 @@ SET ARGV[0] 0;
 SET ARGV[1] 0;
 
 connect;
+sleep 10;
+backup_online ('tpcc-', 100000);
+status ();
+select no_d_id, count (*) from new_order group by no_d_id;
 
-sleep 90;
-checkpoint;
+sleep 5;
+backup_online ('tpcc-', 100000);
+status ();
+select no_d_id, count (*) from new_order group by no_d_id;
+
+sleep 2;
+backup_online ('tpcc-', 100000);
+status ();
+select no_d_id, count (*) from new_order group by no_d_id;
+
+backup_online ('tpcc-', 100000);
+backup_online ('tpcc-', 100000);
+backup_online ('tpcc-', 100000);
+backup_online ('tpcc-', 100000);
+sleep 1;
+backup_online ('tpcc-', 100000);
+sleep 10;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 
 sleep 90;
-checkpoint;
-status ();
-select no_d_id, count (*) from new_order group by no_d_id;
-
-sleep 90;
-checkpoint;
-status ();
-select no_d_id, count (*) from new_order group by no_d_id;
-
-sleep 90;
-checkpoint;
-status ();
-select no_d_id, count (*) from new_order group by no_d_id;
-
-sleep 90;
-checkpoint;
+backup_online ('tpcc-', 100000);
 status ();
 select no_d_id, count (*) from new_order group by no_d_id;
 

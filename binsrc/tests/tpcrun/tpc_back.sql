@@ -46,14 +46,16 @@ SET ARGV[1] $+ $ARGV[1] 1;
 --	ECHO BOTH $IF $EQU $STATE "OK"  "PASSED" "***FAILED";
 --	SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 --	ECHO BOTH ": online backup " $STATE " " $MESSAGE "\n";
+backup_online ('tpcc-', 100000);
 
 status ();
 ECHO BOTH $IF $EQU $STATE "OK"  "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": status " $STATE " " $MESSAGE "\n";
 
-tc_stat ();
 
+tc_stat ();
+status ('');
 
 
 set u{n_ord} 62000;
