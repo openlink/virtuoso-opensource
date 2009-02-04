@@ -56,7 +56,7 @@ gen_wicfg(){
 	file_extend: 200
 	number_of_buffers: 7000
 	max_dirty_buffers: 4000
-	max_checkpoint_remap: 8000
+	max_checkpoint_remap: 3000
 	autocheckpoint: 0
 	case_mode: 1
 	sql_optimizer: 1
@@ -95,7 +95,7 @@ ServerThreads      	= 100
 CheckpointInterval 	= 0
 NumberOfBuffers    	= 7000
 MaxDirtyBuffers    	= 4000
-MaxCheckpointRemap 	= 8000
+MaxCheckpointRemap 	= 3000
 UnremapQuota       	= 0
 AtomicDive         	= 1
 PrefixResultNames	= 0
@@ -170,7 +170,7 @@ cleanup() {
 	rm -f `egrep "^stripe " $CFGFILE | sed -e 's/stripe //'`
     fi
 
-    rm -f *.db *.log *.txt *.out core wi.err *.output *.bad *.lck virtuoso.tdb
+    rm -f *.db *.log *.txt *.out core wi.err *.output *.bad *.lck virtuoso.tdb *.bp
     rm -f $CFGFILE $LOGFILE 
     ECHO "PASSED: cleaned up for server $SERVER"
 }
@@ -303,6 +303,17 @@ run_tpcc() {
        LOG "PASSED: backup and test database"
     fi
 
+    SHUTDOWN_SERVER
+    rm -f *.db *.trx
+    RUN $SERVER $FOREGROUND_OPTION $OBACKUP_REP_OPTION "tpcc-" 
+    START_SERVER $PORT 1000
+    RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF  < tpc_back.sql
+    if test $STATUS -ne 0
+    then
+       LOG "***ABORTED: Unable to check database after restore from inc backup"
+    else
+       LOG "PASSED: backup and test database after recov from inc backup"
+    fi
     SHUTDOWN_SERVER
 
     CHECK_LOG_RUN_S
