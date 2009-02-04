@@ -369,10 +369,31 @@ namespace OpenLink.Data.Virtuoso
 				row[columnName] = columns[i].columnName;
 				row[columnOrdinal] = i + 1;
 				row[columnSize] = columns[i].columnSize;
-				row[numericPrecision] = columns[i].precision;
-				row[numericScale] = columns[i].scale;
 				row[dataType] = columns[i].columnType.bufferType.type;
 				row[providerType] = columns[i].columnType.sqlType;
+				switch (Type.GetTypeCode(columns[i].columnType.bufferType.type))
+				{
+					case TypeCode.Int16:
+					case TypeCode.UInt16:
+					case TypeCode.Int32:
+					case TypeCode.UInt32:
+					case TypeCode.Int64:
+					case TypeCode.UInt64:
+					case TypeCode.Single:
+					case TypeCode.Double:
+					case TypeCode.Byte:
+					case TypeCode.SByte:
+					case TypeCode.DateTime:
+						row[numericPrecision] = columns[i].precision;
+						break;
+					case TypeCode.Decimal:
+						row[numericPrecision] = columns[i].precision;
+						row[numericScale] = columns[i].scale;
+						break;
+					default:
+						break;
+				}
+
 				row[isLong] = columns[i].IsLong;
 				row[allowDBNull] = columns[i].IsNullable;
 				row[isReadOnly] = columns[i].IsReadOnly;
@@ -404,8 +425,7 @@ namespace OpenLink.Data.Virtuoso
 				rows.Add (row);
 				row.AcceptChanges ();
 			}
-
-			return table;
+		return table;
 		}
 
 		/****

@@ -943,73 +943,72 @@ namespace OpenLink.Data.Virtuoso
             dt.Columns.Add(DbMetaDataColumnNames.IsLiteralSupported, typeof(bool));
             dt.Columns.Add(DbMetaDataColumnNames.LiteralPrefix, typeof(string));
             dt.Columns.Add(DbMetaDataColumnNames.LiteralSuffix, typeof(string));
-            dt.Columns.Add("SQLType", typeof(short));
 
             dt.Rows.Add(new object[]{"character", 1, 4070, null, "length", 
-                "varchar", 0, null, 1, 1, 0, 0, 1, 1, 1, 0, null, null, 
+                "System.String", 0, null, 1, 1, 0, 0, 1, 1, 1, 0, null, null, 
                 null, null, "''", "''"}); 
             dt.Rows.Add(new object[]{"numeric", 2, 40, null, "precision,scale", 
-                "numeric", 0, null, 1, 1, 0, 0, 1, 1, 0, 0, 15, 0, 
+                "System.Decimal", 0, null, 1, 1, 0, 0, 1, 1, 0, 0, 15, 0, 
                 null, null, "", ""}); 
             dt.Rows.Add(new object[]{"decimal", 3, 40, null, "precision,scale", 
-                "decimal", 0, null, 1, 1, 0, 0, 1, 1, 0, 0, 15, 0, 
+                "System.Decimal", 0, null, 1, 1, 0, 0, 1, 1, 0, 0, 15, 0, 
                 null, null, "", ""}); 
             dt.Rows.Add(new object[]{"integer", 4, 10, null, null, 
-                "integer", 0, null, 1, 1, 0, 0, 1, 1, 0, 0, 10, 0, 
+                "System.Int32", 0, null, 1, 1, 0, 0, 1, 1, 0, 0, 10, 0, 
                 null, null, "", ""}); 
             dt.Rows.Add(new object[]{"smallint", 5, 3, null, null, 
-                "smallint", 0, null, 1, 1, 0, 0, 1, 1, 0, 0, null, null, 
+                "System.Int16", 0, null, 1, 1, 0, 0, 1, 1, 0, 0, null, null, 
                 null, null, "", ""}); 
             dt.Rows.Add(new object[]{"smallint", -7, 3, null, null, 
-                "smallint", 0, null, 1, 1, 0, 0, 1, 1, 0, 0, null, null, 
+                "System.Int16", 0, null, 1, 1, 0, 0, 1, 1, 0, 0, null, null, 
                 null, null, "", ""}); 
             dt.Rows.Add(new object[]{"float", 6, 16, null, null, 
-                "double precision", 0, null, 1, 1, 0, 0, 1, 1, 0, 0, null,null, 
+                "System.Double", 0, null, 1, 1, 0, 0, 1, 1, 0, 0, null,null, 
                 null, null, "", "e0"}); 
             dt.Rows.Add(new object[]{"real", 7, 16, null, null, 
                 "real", 0, null, 1, 1, 0, 0, 1, 1, 0, 0, null, null, 
                 null, null, "", "e0"}); 
             dt.Rows.Add(new object[]{"double precision", 8, 16, null, null, 
-                "double precision", 0, null, 1, 1, 0, 0, 1, 1, 0, 0, null, null,
+                "System.Double", 0, null, 1, 1, 0, 0, 1, 1, 0, 0, null, null,
                 null, null, "", "e0"}); 
             dt.Rows.Add(new object[]{"varchar", 12, 4070, null, "length", 
-                "varchar", 0, null, 1, 0, 0, 0, 1, 1, 1, 0, null, null, 
+                "System.String", 0, null, 1, 0, 0, 0, 1, 1, 1, 0, null, null, 
                 null, null, "''", "''"}); 
             dt.Rows.Add(new object[]{"long varchar", -1, 2147483647, null,null, 
-                "long varchar", 0, null, 1, 0, 0, 1, 1, 0, 0, 0, null, null,
+                "System.String", 0, null, 1, 0, 0, 1, 1, 0, 0, 0, null, null,
                 null, null, "''", "''"}); 
             dt.Rows.Add(new object[]{"long varbinary", -4,2147483647,null,null, 
-                "long varbinary", 0, null, 1, 0, 0, 1, 1, 0, 0, 0, null, null,
+                "System.Byte[]", 0, null, 1, 0, 0, 1, 1, 0, 0, 0, null, null,
                 null, null, "''", "''"}); 
             dt.Rows.Add(new object[]{"datetime", 93, 19, null, null, 
-                "datetime", 0, null, 1, 1, 0, 0, 1, 1, 1, 0, null, null, 
+                "System.DateTime", 0, null, 1, 1, 0, 0, 1, 1, 1, 0, null, null, 
                 null, null, "{ts", "}"}); 
             dt.Rows.Add(new object[]{"timestamp", -2, 10, null, null, 
-                "timestamp", 0, null, 0, 1, 0, 0, 0, 1, 0, 0, null, null, 
+                "System.Byte[]", 0, null, 0, 1, 0, 0, 0, 1, 0, 0, null, null, 
                 null, null, "0x", null}); 
             dt.Rows.Add(new object[]{"time", 92, 8, null, null, 
-                "time", 0, null, 1, 1, 0, 0, 1, 1, 0, 0, null, null, 
+                "System.DateTime", 0, null, 1, 1, 0, 0, 1, 1, 0, 0, null, null, 
                 null, null, "{t", "}"}); 
             dt.Rows.Add(new object[]{"date", 91, 10, null, null, 
-                "date", 0, null, 1, 1, 0, 0, 1, 1, 0, 0, null, null, 
+                "System.DateTime", 0, null, 1, 1, 0, 0, 1, 1, 0, 0, null, null, 
                 null, null, "{d", "}"}); 
             dt.Rows.Add(new object[]{"binary", -2, 4070, null, "length", 
-                "varbinary", 0, null, 1, 1, 0, 0, 1, 1, 0, 0, null, null, 
+                "System.Byte[]", 0, null, 1, 1, 0, 0, 1, 1, 0, 0, null, null, 
                 null, null, "0x", ""}); 
             dt.Rows.Add(new object[]{"varbinary", -3, 4070, null, "length", 
-                "varbinary", 0, null, 1, 0, 0, 0, 1, 1, 0, 0, null, null, 
+                "System.Byte[]", 0, null, 1, 0, 0, 0, 1, 1, 0, 0, null, null, 
                 null, null, "0x", ""}); 
             dt.Rows.Add(new object[]{"nchar", -8, 4070, null, "length", 
-                "nvarchar", 0, null, 1, 1, 0, 0, 1, 1, 1, 0, null, null, 
+                "System.String", 0, null, 1, 1, 0, 0, 1, 1, 1, 0, null, null, 
                 null, null, "N''", "''"}); 
             dt.Rows.Add(new object[]{"nvarchar", -9, 4070, null, "length", 
-                "nvarchar", 0, null, 1, 0, 0, 0, 1, 1, 1, 0, null, null, 
+                "System.String", 0, null, 1, 0, 0, 0, 1, 1, 1, 0, null, null, 
                 null, null, "N''", "''"}); 
             dt.Rows.Add(new object[]{"long nvarchar", -10,1073741823,null,null, 
-                "long nvarchar", 0, null, 1, 0, 0, 1, 1, 0, 0, 0, null, null,
+                "System.String", 0, null, 1, 0, 0, 1, 1, 0, 0, 0, null, null,
                 null, null, "N''", "''"}); 
             dt.Rows.Add(new object[]{"any", 12, 4070, null, null, 
-                "any", 0, null, 1, 1, 0, 0, 1, 1, 1, 0, null, null, 
+                "System.Object", 0, null, 1, 1, 0, 0, 1, 1, 1, 0, null, null, 
                 null, null, "''", "''"}); 
 
             dt.AcceptChanges();
