@@ -88,7 +88,7 @@ create procedure rdfdesc_rel_print (in val any, in rel any, in flag int := 0)
 {
   declare delim, delim1, delim2, delim3 integer;
   declare inx int;
-  declare nss, loc varchar;
+  declare nss, loc, nspref varchar;
 
   delim1 := coalesce (strrchr (val, '/'), -1);
   delim2 := coalesce (strrchr (val, '#'), -1);
@@ -97,17 +97,25 @@ create procedure rdfdesc_rel_print (in val any, in rel any, in flag int := 0)
   nss := null;
   loc := val;
   if (delim < 0) return;
-  inx := connection_get ('ns_ctr');
-  connection_set ('ns_ctr', inx + 1);
   nss := subseq (val, 0, delim + 1);
   loc := subseq (val, delim + 1);
-  nss := sprintf ('xmlns:ns%d="%s"', inx, nss);
+
+  nspref := __xml_get_ns_prefix (nss, 2);
+  if (nspref is null)
+    {
+      inx := connection_get ('ns_ctr');
+      connection_set ('ns_ctr', inx + 1);
+      nspref := sprintf ('ns%d', inx);
+    }
+
+
+  nss := sprintf ('xmlns:%s="%s"', nspref, nss);
   if (flag)
-    loc := sprintf ('property="ns%d:%s"', inx, loc);
+    loc := sprintf ('property="%s:%s"', nspref, loc);
   else if (rel)
-    loc := sprintf ('rel="ns%d:%s"', inx, loc);
+    loc := sprintf ('rel="%s:%s"', nspref, loc);
   else
-    loc := sprintf ('rev="ns%d:%s"', inx, loc);
+    loc := sprintf ('rev="%s:%s"', nspref, loc);
   return concat (loc, ' ', nss);
 }
 ;
