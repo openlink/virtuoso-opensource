@@ -127,7 +127,7 @@
 		</rdf:Description>
 	    <xsl:for-each select="track">
 			<rdf:Description rdf:about="{vi:proxyIRI(concat($base, 'music/', //toptracks/@artist))}">
-				<mo:made rdf:resource="{vi:proxyIRI(url)}"/>
+				<foaf:made rdf:resource="{vi:proxyIRI(url)}"/>
 			</rdf:Description>
 			<xsl:call-template name="track"/>
 	    </xsl:for-each>
@@ -170,7 +170,7 @@
 		</rdf:Description>
 	    <xsl:for-each select="album">
 			<rdf:Description rdf:about="{vi:proxyIRI(concat($base, 'music/', //topalbums/@artist))}">
-				<mo:made rdf:resource="{vi:proxyIRI(url)}"/>
+				<foaf:made rdf:resource="{vi:proxyIRI(url)}"/>
 			</rdf:Description>
 			<xsl:call-template name="album"/>
 	    </xsl:for-each>
@@ -197,7 +197,7 @@
 		</rdf:Description>
 	    <xsl:for-each select="event">
 			<rdf:Description rdf:about="{vi:proxyIRI(concat($base, 'music/', //events/@artist))}">
-				<mo:made rdf:resource="{vi:proxyIRI(url)}"/>
+				<foaf:made rdf:resource="{vi:proxyIRI(url)}"/>
 			</rdf:Description>
 			<xsl:call-template name="event"/>
 	    </xsl:for-each>
@@ -294,10 +294,10 @@
 			</xsl:for-each>
 			<xsl:choose>
 				<xsl:when test="artist/url">
-					<mo:maker rdf:resource="{vi:proxyIRI(artist/url)}"/>
+					<foaf:maker rdf:resource="{vi:proxyIRI(artist/url)}"/>
 				</xsl:when>
 				<xsl:otherwise>
-					<mo:maker rdf:resource="{vi:proxyIRI(concat($base, 'music/', artist))}"/>
+					<foaf:maker rdf:resource="{vi:proxyIRI(concat($base, 'music/', artist))}"/>
 				</xsl:otherwise>
 			</xsl:choose>
 			<xsl:if test="releasedate">
@@ -354,7 +354,7 @@
 				</mo:track_number>
 			</xsl:if>	
 			<xsl:if test="artist/url">
-				<mo:maker rdf:resource="{vi:proxyIRI(artist/url)}"/>
+				<foaf:maker rdf:resource="{vi:proxyIRI(artist/url)}"/>
 			</xsl:if>
 			<xsl:if test="album/url">
 				<mo:published_as rdf:resource="{vi:proxyIRI (album/url)}"/>
