@@ -133,9 +133,6 @@
 	</xsl:template>
 
 	<xsl:template name="user">
-		<rdf:Description rdf:about="{vi:proxyIRI(concat('http://twitter.com/', screen_name))}">
-			<rdf:type rdf:resource="&foaf;PersonalProfileDocument"/>
-		</rdf:Description>
 		<foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', screen_name))}">
 			<foaf:name>
 				<xsl:value-of select="name" />
