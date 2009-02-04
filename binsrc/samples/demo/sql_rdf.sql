@@ -124,6 +124,7 @@ prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
 prefix owl: <http://www.w3.org/2002/07/owl#>
 prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+prefix ore: <http://www.openarchives.org/ore/terms/>
 
 alter quad storage virtrdf:DefaultQuadStorage
 from Demo.demo.Products as products
@@ -158,7 +159,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:CustomerContact-is_contact_at ;
                         northwind:country northwind:Country (customers.Country)
                                 as virtrdf:CustomerContact-country ;
-                        rdfs:isDefinedBy northwind: .
+                        ore:isDescribedBy northwind: .
 
                 northwind:CustomerContactDoc (customers.CustomerID)
                         a northwind:CustomerContactDoc
@@ -167,7 +168,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:CustomerContactDoc-foaf_DocCustomerID ;
                         foaf:primaryTopic northwind:CustomerContact (customers.CustomerID)
                                 as virtrdf:CustomerContactDoc-foaf_primarytopic ;
-                        rdfs:isDefinedBy northwind: .
+                        ore:isDescribedBy northwind: .
 
                 northwind:Country (customers.Country)
                         northwind:is_country_of
@@ -194,7 +195,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Product-reorder_level ;
                         northwind:discontinued products.Discontinued
                                 as virtrdf:Product-discontinued ;
-                        rdfs:isDefinedBy northwind: .
+                        ore:isDescribedBy northwind: .
 
                 northwind:ProductDoc (products.ProductID)
                         a northwind:ProductDoc
@@ -203,7 +204,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:ProductDoc-foaf_DocProductID ;
                         foaf:primaryTopic northwind:Product (products.ProductID)
                                 as virtrdf:ProductDoc-foaf_primarytopic ;
-                        rdfs:isDefinedBy northwind: .
+                        ore:isDescribedBy northwind: .
 
                 northwind:Category (products.CategoryID)
                         northwind:category_of northwind:Product (products.ProductID) as virtrdf:Product-category_of .
@@ -236,7 +237,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Supplier-fax ;
                         northwind:homePage suppliers.HomePage
                                 as virtrdf:Supplier-home_page ;
-                        rdfs:isDefinedBy northwind: .
+                        ore:isDescribedBy northwind: .
 
                 northwind:SupplierDoc (suppliers.SupplierID)
                         a northwind:SupplierDoc
@@ -245,7 +246,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:SupplierDoc-foaf_DocSupplierID ;
                         foaf:primaryTopic northwind:Supplier (suppliers.SupplierID)
                                 as virtrdf:SupplierDoc-foaf_primarytopic ;
-                        rdfs:isDefinedBy northwind: .
+                        ore:isDescribedBy northwind: .
 
                 northwind:Country (suppliers.Country)
                         northwind:is_country_of
@@ -260,7 +261,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Category-description ;
 			foaf:img northwind:CategoryPhoto(categories.CategoryID)
                                 as virtrdf:Category-categories.CategoryPhoto ;
-                        rdfs:isDefinedBy northwind: .
+                        ore:isDescribedBy northwind: .
 				
                 northwind:CategoryDoc (categories.CategoryID)
                         a northwind:CategoryDoc
@@ -269,12 +270,12 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:CategoryDoc-foaf_DocCategoryID ;
                         foaf:primaryTopic northwind:Category (categories.CategoryID)
                                 as virtrdf:CategoryDoc-foaf_primarytopic ;
-                        rdfs:isDefinedBy northwind: .
+                        ore:isDescribedBy northwind: .
 
 				northwind:CategoryPhoto(categories.CategoryID)
 						a northwind:CategoryPhoto
                                 as virtrdf:Category-categories.CategoryPhotoID ;
-                        rdfs:isDefinedBy northwind: .
+                        ore:isDescribedBy northwind: .
 
                 northwind:Shipper (shippers.ShipperID)
                         a northwind:Shipper
@@ -283,7 +284,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Shipper-company_name ;
                         northwind:phone northwind:Phone (shippers.Phone)
                                 as virtrdf:Shipper-phone ;
-                        rdfs:isDefinedBy northwind: .
+                        ore:isDescribedBy northwind: .
 
                 northwind:ShipperDoc (shippers.ShipperID)
                         a northwind:ShipperDoc
@@ -292,7 +293,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:ShipperDoc-foaf_DocShipperID ;
                         foaf:primaryTopic northwind:Shipper (shippers.ShipperID)
                                 as virtrdf:ShipperDoc-foaf_primarytopic ;
-                        rdfs:isDefinedBy northwind: .
+                        ore:isDescribedBy northwind: .
 
                 northwind:Customer (customers.CustomerID)
                         a  northwind:Customer
@@ -325,7 +326,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Customer-phone ;
                         northwind:fax northwind:Fax (customers.Fax)
                                 as virtrdf:Customer-fax ;
-                        rdfs:isDefinedBy northwind: .
+                        ore:isDescribedBy northwind: .
 
                 northwind:CustomerDoc (customers.CustomerID)
                         a  northwind:CustomerDoc
@@ -334,7 +335,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:CustomerDoc-CustomerID3 ;
                         foaf:primaryTopic northwind:Customer (customers.CustomerID)
                                 as virtrdf:CustomerDoc-foaf_primarytopic ;
-                        rdfs:isDefinedBy northwind: .
+                        ore:isDescribedBy northwind: .
 
                 northwind:Country (customers.Country)
                         northwind:is_country_of
@@ -383,7 +384,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Employee-reports_to ;
 			foaf:img northwind:EmployeePhoto(employees.EmployeeID)                                                                                                      
                                 as virtrdf:Employee-employees.EmployeePhoto ;
-                        rdfs:isDefinedBy northwind: .
+                        ore:isDescribedBy northwind: .
 
                 northwind:EmployeeDoc (employees.FirstName, employees.LastName, employees.EmployeeID)
                         a  northwind:EmployeeDoc
@@ -392,12 +393,12 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:EmployeeDoc-EmployeeID3 ;
                         foaf:primaryTopic northwind:Employee (employees.FirstName, employees.LastName, employees.EmployeeID)
                                 as virtrdf:EmployeeDoc-foaf_primarytopic ;
-                        rdfs:isDefinedBy northwind: .
+                        ore:isDescribedBy northwind: .
 
 				northwind:EmployeePhoto(employees.EmployeeID)
 						a northwind:EmployeePhoto
                                 as virtrdf:Employee-employees.EmployeePhotoId ;
-                        rdfs:isDefinedBy northwind: .
+                        ore:isDescribedBy northwind: .
 
                 northwind:Employee (employees.FirstName, employees.LastName, orders.EmployeeID)
                         northwind:is_salesrep_of
@@ -438,7 +439,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Order-ship_postal_code ;
                         northwind:shipCountry northwind:Country(orders.ShipCountry)
                                 as virtrdf:ship_country ;
-                        rdfs:isDefinedBy northwind: .
+                        ore:isDescribedBy northwind: .
 
                 northwind:OrderDoc (orders.OrderID)
                         a  northwind:OrderDoc
@@ -447,7 +448,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:OrderDoc-OrderID3 ;
                         foaf:primaryTopic northwind:Order (orders.OrderID)
                                 as virtrdf:OrderDoc-foaf_primarytopic ;
-                        rdfs:isDefinedBy northwind: .
+                        ore:isDescribedBy northwind: .
 
                 northwind:Country (orders.ShipCountry)
                         northwind:is_ship_country_of
@@ -472,7 +473,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:OrderLine-quantity ;
                         northwind:discount order_lines.Discount
                                 as virtrdf:OrderLine-discount ;
-                        rdfs:isDefinedBy northwind: .
+                        ore:isDescribedBy northwind: .
                                 
                 northwind:OrderLineDoc (order_lines.OrderID, order_lines.ProductID)
                         a  northwind:OrderLineDoc
@@ -481,7 +482,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:OrderLineDoc-OrderLineID3 ;
                         foaf:primaryTopic northwind:OrderLine (order_lines.OrderID, order_lines.ProductID)
                                 as virtrdf:OrderLineDoc-foaf_primarytopic ;
-                        rdfs:isDefinedBy northwind: .
+                        ore:isDescribedBy northwind: .
 
                 northwind:Order (orders.OrderID)
                         northwind:is_order_of
@@ -513,7 +514,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Country-Lat ;
                         wgs:long countries.Lng
                                 as virtrdf:Country-Lng ;
-                        rdfs:isDefinedBy northwind: .
+                        ore:isDescribedBy northwind: .
 
                 northwind:CountryDoc (countries.Name)
                         a  northwind:CountryDoc
@@ -522,7 +523,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:CountryDoc-CountryID3 ;
                         foaf:primaryTopic northwind:Country (countries.Name)
                                 as virtrdf:CountryDoc-foaf_primarytopic ;
-                        rdfs:isDefinedBy northwind: .
+                        ore:isDescribedBy northwind: .
 
                 northwind:Country (countries.Name)
                         northwind:has_province
@@ -536,7 +537,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:has_country_code ;
                         northwind:provinceName provinces.Province
                                 as virtrdf:Province-ProvinceName ;
-                        rdfs:isDefinedBy northwind: .
+                        ore:isDescribedBy northwind: .
 
                 northwind:ProvinceDoc (provinces.CountryCode, provinces.Province)
                         a  northwind:ProvinceDoc
@@ -545,7 +546,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:ProvinceDoc-ProvinceID3 ;
                         foaf:primaryTopic northwind:Province (provinces.CountryCode, provinces.Province)
                                 as virtrdf:ProvinceDoc-foaf_primarytopic ;
-                        rdfs:isDefinedBy northwind: .
+                        ore:isDescribedBy northwind: .
 
                 northwind:Province (provinces.CountryCode, provinces.Province)
                         northwind:is_province_of
