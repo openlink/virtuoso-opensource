@@ -51,13 +51,15 @@ extern "C" {
 int uriqa_dynamic_local = 0;
 
 caddr_t
-uriqa_get_host_for_dynamic_local (query_instance_t *qi)
+uriqa_get_host_for_dynamic_local (query_instance_t *qi, int * is_https)
 {
   caddr_t res = NULL;
   if (NULL != qi->qi_client->cli_http_ses)
     {
       ws_connection_t *ws = qi->qi_client->cli_ws;
       res = ws_mime_header_field (ws->ws_lines, "Host", NULL, 0);
+      if (NULL != is_https)
+	*is_https = (NULL != tcpses_get_ssl (ws->ws_session->dks_session));
     }
   if (NULL == res)
     {
@@ -69,6 +71,8 @@ uriqa_get_host_for_dynamic_local (query_instance_t *qi)
       LEAVE_TXN;
       if (place)
         res = box_copy (place[0]);
+      if (NULL != is_https) 
+	*is_https = 0; /* default host scheme is considered to be http: */
     }
   return res;
 }
@@ -88,10 +92,10 @@ uriqa_get_default_for_connvar (query_instance_t *qi, const char *varname)
       return NULL;
     }
   if (!strcmp ("WSHost", varname))
-    return uriqa_get_host_for_dynamic_local (qi);
+    return uriqa_get_host_for_dynamic_local (qi, NULL);
   if (!strcmp ("WSHostName", varname))
     {
-      caddr_t host = uriqa_get_host_for_dynamic_local (qi);
+      caddr_t host = uriqa_get_host_for_dynamic_local (qi, NULL);
       const char *colon;
       caddr_t res;
       if (NULL == host)
@@ -105,7 +109,7 @@ uriqa_get_default_for_connvar (query_instance_t *qi, const char *varname)
     }
   if (!strcmp ("WSHostPort", varname))
     {
-      caddr_t host = uriqa_get_host_for_dynamic_local (qi);
+      caddr_t host = uriqa_get_host_for_dynamic_local (qi, NULL);
       const char *colon;
       caddr_t res;
       if (NULL == host)
@@ -1760,7 +1764,7 @@ iri_to_id (caddr_t *qst, caddr_t name, int mode, caddr_t *err_ret)
   if (uriqa_dynamic_local && !strncmp (name, "http://", 7))
     {
       caddr_t host;
-      host = uriqa_get_host_for_dynamic_local ((query_instance_t *)qst);
+      host = uriqa_get_host_for_dynamic_local ((query_instance_t *)qst, NULL);
       if (NULL != host)
         {
           int host_strlen = strlen (host);
@@ -1941,16 +1945,20 @@ key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no)
   if (!strncmp (name, "local:", 6))
     {
       caddr_t host;
-      host = uriqa_get_host_for_dynamic_local (qi);
+      int is_https = 0;
+      host = uriqa_get_host_for_dynamic_local (qi, &is_https);
       if (NULL != host)
         {
           int name_box_len = box_length (name);
           int host_strlen = strlen (host);
-          caddr_t expanded_name = dk_alloc_box (name_box_len - 6 + (7+host_strlen), DV_STRING);
+          caddr_t expanded_name = dk_alloc_box (name_box_len - 6 + (7 + is_https + host_strlen), DV_STRING);
 /*                                01234567 */
+	  if (!is_https)
           memcpy (expanded_name, "http://", 7);
-          memcpy (expanded_name + 7, host, host_strlen);
-          memcpy (expanded_name + 7+host_strlen, name + 6, name_box_len - 6);
+	  else
+	    memcpy (expanded_name, "https://", 8);
+          memcpy (expanded_name + 7 + is_https, host, host_strlen);
+          memcpy (expanded_name + 7 + is_https + host_strlen, name + 6, name_box_len - 6);
           dk_free_box (name);
           name = expanded_name;
 	  dk_free_box (host);
@@ -1992,16 +2000,19 @@ key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, caddr_t *subj
   if (!strncmp (prefix, "local:", 6))
     {
       caddr_t host;
-      host = uriqa_get_host_for_dynamic_local (qi);
+      int is_https = 0;
+      host = uriqa_get_host_for_dynamic_local (qi, &is_https);
       if (NULL != host)
         {
+/*                                         012345678    01234567 */
+          const char *proto = (is_https ? "https://" : "http://");
+          int proto_strlen = (is_https ? 8 : 7);
           int prefix_box_len = box_length (prefix);
           int host_strlen = strlen (host);
-          caddr_t expanded_prefix = dk_alloc_box (prefix_box_len - 6 + (7+host_strlen), DV_STRING);
-/*                                01234567 */
-          memcpy (expanded_prefix, "http://", 7);
-          memcpy (expanded_prefix + 7, host, host_strlen);
-          memcpy (expanded_prefix + 7+host_strlen, prefix + 6, prefix_box_len - 6);
+          caddr_t expanded_prefix = dk_alloc_box (prefix_box_len - 6 + (proto_strlen + host_strlen), DV_STRING);
+	    memcpy (expanded_prefix, proto, proto_strlen);
+          memcpy (expanded_prefix + proto_strlen, host, host_strlen);
+          memcpy (expanded_prefix + proto_strlen + host_strlen, prefix + 6, prefix_box_len - 6);
           dk_free_box (prefix);
           prefix = expanded_prefix;
 	  dk_free_box (host);

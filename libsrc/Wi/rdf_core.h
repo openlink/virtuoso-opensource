@@ -187,7 +187,7 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
 extern id_hash_t *rdf_obj_ft_rules;
 
 extern int uriqa_dynamic_local;
-extern caddr_t uriqa_get_host_for_dynamic_local (query_instance_t *qi);
+extern caddr_t uriqa_get_host_for_dynamic_local (query_instance_t *qi, int * is_https);
 extern caddr_t uriqa_get_default_for_connvar (query_instance_t *qi, const char *varname);
 
 #endif
