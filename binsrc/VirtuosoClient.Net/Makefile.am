@@ -72,6 +72,8 @@ EXTRA_DIST = \
 	Platform.cs \
 	RPC.cs \
 	Service.cs \
+	SqlExtendedString.cs \
+	SqlRdfBox.cs \
 	SqlXml.cs \
 	StatementList.cs \
 	TcpConnection.cs \
