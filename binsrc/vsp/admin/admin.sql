@@ -4282,7 +4282,7 @@ adm_page_footer()
   http('<TR><TD CLASS="CopyrightBorder" COLSPAN="2"><IMG SRC="/admin/images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>');
   http('<TR><TD ALIGN="right" COLSPAN="2"><P CLASS="Copyright">Virtuoso Universal Server ');
   http(sys_stat('st_dbms_ver'));
-  http(' - Copyright&copy; 1999-2005 OpenLink Software.</P></TD></TR>');
+  http(' - Copyright&copy; 1999-2009 OpenLink Software.</P></TD></TR>');
   http('</TABLE>\n</BODY>');
 }
 ;

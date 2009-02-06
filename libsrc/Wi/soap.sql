@@ -2323,7 +2323,7 @@ err:;
 ?>
 </TD></TR></TABLE>
 </DIV>
-<DIV class="foot"><SPAN class="foot">Virtuoso Universal Server <?=sys_stat('st_dbms_ver')?> - Copyright&copy; 1999-2004 OpenLink Software.</SPAN></DIV>
+<DIV class="foot"><SPAN class="foot">Virtuoso Universal Server <?=sys_stat('st_dbms_ver')?> - Copyright&copy; 1999-2009 OpenLink Software.</SPAN></DIV>
  </BODY>
 </HTML>
 <?vsp
