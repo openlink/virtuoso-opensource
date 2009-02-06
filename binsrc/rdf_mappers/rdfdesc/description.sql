@@ -156,7 +156,15 @@ create procedure rdfdesc_uri_curie (in uri varchar, in label varchar := null)
 
 create procedure rdfdesc_http_url (in url varchar)
 {
-  declare host, pref varchar;
+  declare host, pref, proxy_iri_fn varchar;
+  proxy_iri_fn := connection_get ('proxy_iri_fn'); -- set inside description.vsp to indicate local browsing of an 3-d party dataset
+  if (proxy_iri_fn is not null)
+    {
+      declare ret varchar;
+      -- if it's local browsing, then we call specific function
+      ret := call (proxy_iri_fn || '_get_proxy_iri') (url);
+      return ret;
+    }
   host := http_request_header(http_request_header(), 'Host', null, null);
   pref := 'http://'||host||'/about/html/';
   if (url not like pref || '%')

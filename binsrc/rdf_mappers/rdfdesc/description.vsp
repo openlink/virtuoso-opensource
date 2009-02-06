@@ -3,30 +3,39 @@
 <?vsp
 
    declare _G, _S, odd_position any;
-   declare _resource_, project_name, project_home_page any;
+   declare project_home_page any;
    declare page_resource_uri, proxy_iri, rdf_link, label, true_label, _subject any;
-   declare white_page, arr, data, meta, h1, h2, inx, gr, host any;
+   declare arr, data, meta, h1, h2, inx, gr, host any;
+   declare _graph, _sub varchar;
+   declare do_sponge, proxy_iri_fn int;
 
-   -- INIT VALUES
-
-   white_page := 1;
-   connection_set ('ns_ctr', 1);
+   connection_set ('ns_ctr', 1); /* for unknown xmlns to print in RDFa */
+   proxy_iri_fn := get_keyword ('p', params, null);
+   connection_set ('proxy_iri_fn', proxy_iri_fn);
    host := http_request_header (http_request_header (), 'Host');  
    gr := get_keyword ('g', params, '');
    arr := rfc1808_parse_uri (gr);
    if (arr[0] = '' and arr[1] = '' and arr[2] <> '')
      gr := 'http://' || gr;
 
-   _resource_ := get_keyword ('res', params, gr);
-   project_name := gr;
    project_home_page := gr;
-   page_resource_uri := _resource_;
-
    project_home_page := replace (project_home_page, '%23', '#');
+   _G := project_home_page; 
+
+   page_resource_uri := get_keyword ('res', params);
+   do_sponge := 0;
+   if (page_resource_uri is null)
+     {
+       do_sponge := 1;
+       page_resource_uri := gr; 
+     }
    page_resource_uri := replace (page_resource_uri, '%23', '#');
-   _G := project_home_page; --DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (project_home_page);
-   _S := page_resource_uri; --DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (page_resource_uri);
+   _S := page_resource_uri; 
+
+   if (proxy_iri_fn is null)
    proxy_iri := DB.DBA.RDF_SPONGE_PROXY_IRI (page_resource_uri, '', '');
+   else
+     proxy_iri := call (proxy_iri_fn || '_get_proxy_iri') (page_resource_uri);
    arr := rfc1808_parse_uri (proxy_iri);
    if (arr [1] like 'localhost%')
      arr [1] := 'demo.openlinksw.com';
@@ -38,12 +47,12 @@
    arr [5] := '';
    _G := DB.DBA.vspx_uri_compose (arr);
 
-   if (_G not like 'nodeID://%')
+   if (_S not like 'nodeID://%' and do_sponge)
      {
        DB.DBA.EXEC_AS (sprintf ('sparql define get:soft "soft" SELECT * from <%S> where { ?x ?y ?z }', _G), 'SPARQL');
        commit work;
      }
-   else
+   else if (_S like 'nodeID://%')
      {
        -- blank node is subject 
        exec (sprintf ('sparql define input:storage "" select ?g where { graph ?g { <%S> ?p ?o . }} limit 1', _S), 
@@ -91,7 +100,7 @@
     <base href="http://<?V http_request_header (lines, 'Host') ?><?V http_map_get ('domain') ?>/" />
     <title>About: <?vsp http (sprintf ('%s', label)); ?></title>
     <link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>" title="RDF" />
-    <link rel="stylesheet" type="text/css" href="statics/<?=either (white_page, 'style_w.css', 'style.css')?>" />
+    <link rel="stylesheet" type="text/css" href="statics/style_w.css" />
     <link href="statics/highlighter.css" type="text/css" rel="stylesheet" charset="utf-8" />
     <script type="text/javascript" src="statics/script.js"></script>
 </head>
