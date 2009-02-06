@@ -2652,6 +2652,9 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 			url := concat('http://api.meetup.com/members.xml/?group_urlname=', id1, '&key=', api_key);
 			what_ := 'members';
 			DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);
+			url := concat('http://api.meetup.com/events.xml/?group_urlname=', id1, '&key=', api_key);
+			what_ := 'events';
+			DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);
 		}
 	}
 	else
@@ -2717,6 +2720,10 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 				url := concat('http://api.meetup.com/members.xml/?topic=', id0, '&key=', api_key);
 				what_ := 'members';
 				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);				
+				url := concat('http://api.meetup.com/events.xml/?topic=', id0, '&key=', api_key);
+				what_ := 'events';
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);
+				
 			}
 			else
 			{
@@ -2725,6 +2732,9 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);
 				url := concat('http://api.meetup.com/members.xml/?topic=', id0, '&groupnum=', id1, '&key=', api_key);
 				what_ := 'members';
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);
+				url := concat('http://api.meetup.com/events.xml/?topic=', id0, '&groupnum=', id1, '&key=', api_key);
+				what_ := 'events';
 				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);
 			}
 	}
