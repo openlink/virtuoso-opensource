@@ -56,7 +56,7 @@
 			<foaf:Document rdf:about="{$baseUri}">
 				<foaf:primaryTopic>
 					<xsl:if test="$what = 'events'">
-					<foaf:Organization rdf:about="{vi:proxyIRI(substring($baseUri, 1, string-length($baseUri)-8))}" />
+						<foaf:Group rdf:about="{vi:proxyIRI(substring($baseUri, 1, string-length($baseUri)-8))}" />
 					</xsl:if>
 					<xsl:if test="$what = 'event'">
 						<c:Vevent rdf:about="{vi:proxyIRI(item/event_url)}"/>
@@ -70,11 +70,26 @@
 		<xsl:if test="$what = 'members'">
 			<foaf:Document rdf:about="{$baseUri}">
 				<foaf:primaryTopic>
-					<foaf:Organization rdf:about="{vi:proxyIRI(substring($baseUri, 1, string-length($baseUri)-7))}" />
-				</foaf:primaryTopic>
+					<xsl:choose>
+						<xsl:when test="substring($baseUri, string-length($baseUri)-6) = 'members'">
+							<foaf:Group rdf:about="{vi:proxyIRI(substring($baseUri, 1, string-length($baseUri)-7))}">
 				<xsl:for-each select="item">
-					<foaf:topic rdf:resource="{link}"/>
+									<foaf:member rdf:resource="{vi:proxyIRI(link)}"/>
+								</xsl:for-each>
+							</foaf:Group>
+						</xsl:when>
+						<xsl:otherwise>
+							<foaf:Group rdf:about="{vi:proxyIRI($baseUri)}">
+								<xsl:for-each select="item">
+									<foaf:member rdf:resource="{vi:proxyIRI(link)}"/>
 				</xsl:for-each>
+							</foaf:Group>
+						</xsl:otherwise>
+					</xsl:choose>
+				</foaf:primaryTopic>
+				<!--xsl:for-each select="item">
+					<foaf:topic rdf:resource="{link}"/>
+				</xsl:for-each-->
 			</foaf:Document>
 		</xsl:if>
 		<xsl:for-each select="item">
@@ -120,7 +135,7 @@
 			<xsl:if test="$what = 'groups'">
 				<foaf:Document rdf:about="{link}">
 					<foaf:primaryTopic>
-						<foaf:Organization rdf:about="{vi:proxyIRI(link)}">
+						<foaf:Group rdf:about="{vi:proxyIRI(link)}">
 					<foaf:name>
 						<xsl:value-of select="name" />
 					</foaf:name>
@@ -164,7 +179,7 @@
 					<rdfs:seeAlso rdf:resource="{organizerProfileURL}" />
 							<rdfs:seeAlso rdf:resource="{concat(link, 'members')}" />
 							<rdfs:seeAlso rdf:resource="{concat(link, 'calendar')}" />
-				</foaf:Organization>
+						</foaf:Group>
 					</foaf:primaryTopic>
 				</foaf:Document>
 			</xsl:if>

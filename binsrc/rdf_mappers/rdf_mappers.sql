@@ -63,7 +63,7 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://.*amazon.[^/]+/gp/product/.*)|'||
         '(http://.*amazon.[^/]+/o/ASIN/.*)|'||
-        '(http://.*amazon.[^/]+/[^/]+/dp/[^/]+/.*)|'||
+        '(http://.*amazon.[^/]+/[^/]+/dp/[^/]+(/.*)?)|'||
         '(http://.*amazon.[^/]+/exec/obidos/ASIN/.*)|' ||
         '(http://.*amazon.[^/]+/exec/obidos/tg/detail/-/[^/]+/.*)',
             'URL', 'DB.DBA.RDF_LOAD_AMAZON_ARTICLE', null, 'Amazon articles');
@@ -2532,6 +2532,19 @@ create procedure DB.DBA.RDF_LOAD_ISBN (in graph_iri varchar, in new_origin_uri v
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_MEETUP2(in url varchar, in new_origin_uri varchar,  in dest varchar, in graph_iri varchar, in what_ varchar) returns integer
+{
+	declare xt, xd any;
+	declare tmp, test1, test2 varchar;
+	tmp := http_get (url);
+	xd := xtree_doc (tmp);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/meetup2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri), 'what', what_ ));
+	xd := serialize_to_UTF8_xml (xt);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	return 1;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare xd, xt, url, tmp, api_key, hdr, id0, id1, id2, id3, id4, id5, id6 any;
@@ -2571,6 +2584,7 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 		id0 := tmp[0];
     if (id0 is null or (id0 = 'www' and id1 is null))
         return 0;
+    delete from DB.DBA.RDF_QUAD where g =  iri_to_id (coalesce (dest, graph_iri));
 	if (id0 = 'www')
 	{
 		if (id1 = 'cities')
@@ -2595,16 +2609,19 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 			else
 				return 0;
 			url := concat(url, '&key=', api_key );
+			DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);
 		}
 		if (id1 = 'members' and id2 is not null)
 		{
 			url := concat('http://api.meetup.com/groups.xml/?member_id=', id2, '&key=', api_key);
 			what_ := 'groups';
+			DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);
 		}
 		else if (id1 is not null and id2 = 'members')
 		{
 			url := concat('http://api.meetup.com/members.xml/?group_urlname=', id1, '&key=', api_key);
 			what_ := 'members';
+			DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);
 		}
 		else if (id1 is not null and id2 = 'calendar')
 		{
@@ -2612,22 +2629,29 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 			{
 			url := concat('http://api.meetup.com/events.xml/?group_urlname=', id1, '&key=', api_key);
 			what_ := 'events';
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);
 		}
 			else
 			{
 				url := concat('http://api.meetup.com/events.xml/?id=', id3, '&key=', api_key);
 				what_ := 'event';
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);
 			}
 		}
 		else if (id1 is not null and id2 = 'photos')
 		{
 			url := concat('http://api.meetup.com/photos.xml/?group_urlname=', id1, '&key=', api_key);
 			what_ := 'photos';
+			DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);
 		}
 		else
 		{
 			url := sprintf('http://api.meetup.com/groups.xml/?group_urlname=%s&key=%s', id1, api_key);
 			what_ := 'groups';
+			DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);
+			url := concat('http://api.meetup.com/members.xml/?group_urlname=', id1, '&key=', api_key);
+			what_ := 'members';
+			DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);
 		}
 	}
 	else
@@ -2654,6 +2678,7 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 			else
 				return 0;
 			url := concat(url, '&key=', api_key );
+			DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);
 		}
 		else
 		{
@@ -2661,11 +2686,13 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 			{
 				url := concat('http://api.meetup.com/members.xml/?topic=', id0, '&groupnum=', id1, '&key=', api_key);
 				what_ := 'members';
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);
 			}
 			if (id1 is not null and id2 = 'photos')
 			{
 				url := concat('http://api.meetup.com/photos.xml/?topic=', id0, '&groupnum=', id1, '&key=', api_key);
 				what_ := 'photos';
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);
 			}
 			if (id1 is not null and id2 = 'calendar')
 			{
@@ -2673,32 +2700,36 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 				{
 				url := concat('http://api.meetup.com/events.xml/?topic=', id0, '&groupnum=', id1, '&key=', api_key);
 				what_ := 'events';
+					DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);
 			}
 				else
 				{
 					url := concat('http://api.meetup.com/events.xml/?id=', id3, '&key=', api_key);
 					what_ := 'event';
+					DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);
 				}
 			}
 			else if (id1 is null or id1 = '')
 			{
 				url := sprintf('http://api.meetup.com/groups.xml/?topic=%s&key=%s', id0, api_key);
 				what_ := 'groups';
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);
+				url := concat('http://api.meetup.com/members.xml/?topic=', id0, '&key=', api_key);
+				what_ := 'members';
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);				
 			}
 			else
 			{
 			url := sprintf('http://api.meetup.com/groups.xml/?topic=%s&groupnum=%s&key=%s', id0, id1, api_key);
 				what_ := 'groups';
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);
+				url := concat('http://api.meetup.com/members.xml/?topic=', id0, '&groupnum=', id1, '&key=', api_key);
+				what_ := 'members';
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);
 			}
 	}
   }
   }
-  tmp := http_get (url, hdr);
-  xd := xtree_doc (tmp);
-  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/meetup2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri), 'what', what_ ));
-  xd := serialize_to_UTF8_xml (xt);
-  delete from DB.DBA.RDF_QUAD where g =  iri_to_id (coalesce (dest, graph_iri));
-  DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
 }
 ;
@@ -3181,6 +3212,11 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
   else if (new_origin_uri like 'http://%amazon.%/%/dp/%/%')
     {
       tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/%s/dp/%s/%s', 0);
+      asin := tmp[3];
+    }
+  else if (new_origin_uri like 'http://%amazon.%/%/dp/%')
+    {
+      tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/%s/dp/%s', 0);
       asin := tmp[3];
     }
   else if (new_origin_uri like 'http://%amazon.%/exec/obidos/ASIN/%')
