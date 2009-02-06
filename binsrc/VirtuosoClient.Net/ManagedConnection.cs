@@ -23,6 +23,7 @@
 //
 
 using System;
+using System.Collections.Generic;
 using System.Collections;
 using System.Diagnostics;
 using System.EnterpriseServices;
@@ -61,6 +62,11 @@ namespace OpenLink.Data.Virtuoso
 		internal protected bool utf8Execs;
 		internal protected bool noCharCEscape;
 		internal protected bool binaryTimeStamp;
+
+        internal protected Dictionary<int, string> rdf_type_hash = new Dictionary<int, string>();
+        internal protected Dictionary<int, string> rdf_lang_hash = new Dictionary<int, string>();
+		internal protected Hashtable rdf_type_rev = new Hashtable();
+        internal protected Hashtable rdf_lang_rev = new Hashtable();
 
 		private ManagedErrors errors = null;
 

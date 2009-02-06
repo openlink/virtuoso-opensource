@@ -71,7 +71,7 @@ namespace OpenLink.Data.Virtuoso
 		DV_DB_NULL = 204,
 		DV_G_REF_CLASS = 205,
 		DV_G_REF = 206,
-		DV_BLOB_HEAD = 207,
+		DV_BOX_FLAGS = 207,
 		DV_BLOB = 125,
 		DV_BLOB_HANDLE = 126,
 		DV_BLOB_WIDE_HANDLE = 133,
@@ -86,7 +86,9 @@ namespace OpenLink.Data.Virtuoso
 		DV_DATETIME = 211,
 		DV_IRI_ID   = 243,
 		DV_IRI_ID_8 = 244,
-		DV_INT64    = 247
+		DV_INT64    = 247,
+		DV_RDF	= 246,
+                
 	}
 
 	internal enum RpcTag
@@ -207,7 +209,7 @@ namespace OpenLink.Data.Virtuoso
 		/// <summary>
 		/// The version string.
 		/// </summary>
-		internal const string VERSION = "05.50.3015";
+		internal const string VERSION = "05.51.3032";
 
 		internal const string DEFAULT_HOST = "localhost";
 		internal const int DEFAULT_PORT = 1111;

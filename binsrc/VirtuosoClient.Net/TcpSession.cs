@@ -439,7 +439,7 @@ namespace OpenLink.Data.Virtuoso
 				throw new InvalidOperationException ("The session is not flushed.");
 			try
 			{
-				return Marshaler.Unmarshal (stream, connection.charsetTable);
+				return Marshaler.Unmarshal (stream, connection);
 			}
 			catch
 			{

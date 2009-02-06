@@ -258,8 +258,9 @@ namespace OpenLink.Data.Virtuoso
 			}
 		}
 
-		internal static object Unmarshal (Stream stream, string table)
+		internal static object Unmarshal (Stream stream, ManagedConnection connection)
 		{
+		        string table = connection.charsetTable;
 			Debug.WriteLineIf (CLI.FnTrace.Enabled, "Marshaler.Unmarshal ()");
 
 			BoxTag tag = (BoxTag) ReadByte (stream);
@@ -284,7 +285,7 @@ namespace OpenLink.Data.Virtuoso
 				object[] array = new object[n];
 				Debug.WriteLineIf (marshalSwitch.Enabled, "array start [" + n + "] {");
 				for (int i = 0; i < n; i++)
-					array[i] = Unmarshal (stream, table);
+					array[i] = Unmarshal (stream, connection);
 				Debug.WriteLineIf (marshalSwitch.Enabled, "array end");
 				return array;
 			}
@@ -364,6 +365,49 @@ namespace OpenLink.Data.Virtuoso
 #else
 				return Decode (table, bytes);
 #endif
+			}
+
+			case BoxTag.DV_BOX_FLAGS:
+			{
+				int flags = UnmarshalLongInt (stream);
+				object str = Unmarshal (stream, connection);
+				return new SqlExtendedString(str.ToString(), flags);
+			}
+
+			case BoxTag.DV_RDF:
+			{
+      				int flags = ReadByte (stream);
+				object box;
+      				short type;
+      				short lang;
+      				bool is_complete = false;
+      				long ro_id = 0L;
+
+      				if (0 != (flags & (int)SqlRdfBoxFlags.RBS_CHKSUM))
+				    throw new SystemException ("Invalid rdf box received.");
+
+      				box = Unmarshal (stream, connection);
+      				if (0 != (flags & (int)SqlRdfBoxFlags.RBS_OUTLINED))
+      				  {
+				    if (0 != (flags & (int)SqlRdfBoxFlags.RBS_64))
+	  				ro_id = UnmarshalInt64 (stream);
+				    else
+	  				ro_id = UnmarshalLongInt (stream);
+      				  }
+
+      				if (0 != (flags & (int)SqlRdfBoxFlags.RBS_COMPLETE))
+				    is_complete = true; 
+
+      				if (0 != (flags & (int)SqlRdfBoxFlags.RBS_HAS_TYPE))
+				    type = UnmarshalShort (stream);
+      				else 
+				    type = SqlRdfBox.DEFAULT_TYPE;
+
+      				if (0 != (flags & (int)SqlRdfBoxFlags.RBS_HAS_LANG))
+				    lang = UnmarshalShort (stream);
+      				else 
+				    lang = SqlRdfBox.DEFAULT_LANG;
+      				return new SqlRdfBox (connection, box, is_complete, type, lang, ro_id);
 			}
 
 			case BoxTag.DV_C_SHORT:
@@ -486,6 +530,12 @@ namespace OpenLink.Data.Virtuoso
 			return ReadByte (stream);
 		}
 
+		internal static void MarshalShort (Stream stream, short value)
+		{
+			stream.WriteByte ((byte) (value >> 8));
+			stream.WriteByte ((byte) value);
+		}
+
 		internal static void MarshalLongInt (Stream stream, int value)
 		{
 			stream.WriteByte ((byte) (value >> 24));
@@ -504,6 +554,13 @@ namespace OpenLink.Data.Virtuoso
 			stream.WriteByte ((byte) (value >> 16));
 			stream.WriteByte ((byte) (value >> 8));
 			stream.WriteByte ((byte) value);
+		}
+
+		internal static short UnmarshalShort (Stream stream)
+		{
+			int b1 = ReadByte (stream);
+			int b2 = ReadByte (stream);
+			return (short)((b1 << 8) | b2);
 		}
 
 		internal static int UnmarshalLongInt (Stream stream)

@@ -472,6 +472,8 @@ namespace OpenLink.Data.Virtuoso
 			case BoxTag.DV_DATETIME:		return DateTime;
 			case BoxTag.DV_TIMESTAMP:		return Timestamp;
 			case BoxTag.DV_BIN:			return VarBinary;
+			case BoxTag.DV_RDF:
+			case BoxTag.DV_BOX_FLAGS:
 			case BoxTag.DV_WIDE:
 			case BoxTag.DV_LONG_WIDE:		return NVarChar;
 			}
