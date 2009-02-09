@@ -41,7 +41,7 @@ create procedure ODS.ODS_API."feeds_setting_set" (
 
   aValue := get_keyword (settingName, options, get_keyword (settingName, settings));
   if (not isnull (settingTest))
-    ENEWS.WA.test (aValue, settingTest);
+    ENEWS.WA.test (cast (aValue as varchar), settingTest);
   ENEWS.WA.set_keyword (settingName, settings, aValue);
 }
 ;
@@ -577,6 +577,7 @@ create procedure ODS.ODS_API."feeds.options.set" (
   };
 
   declare rc, account_id integer;
+  declare conv, f_conv, f_conv_init any;
   declare uname varchar;
   declare optionsParams, settings any;
 
@@ -588,6 +589,7 @@ create procedure ODS.ODS_API."feeds.options.set" (
 
   settings := ENEWS.WA.settings (inst_id, account_id);
   ENEWS.WA.settings_init (settings);
+  conv := cast (get_keyword ('conv', settings, '0') as integer);
 
   ODS.ODS_API.feeds_setting_set (settings, optionsParams, 'favourites');
   ODS.ODS_API.feeds_setting_set (settings, optionsParams, 'rows', vector ('name', 'Rows per page', 'class', 'integer', 'type', 'integer', 'minValue', 1, 'maxValue', 1000));
@@ -597,11 +599,23 @@ create procedure ODS.ODS_API."feeds.options.set" (
   ODS.ODS_API.feeds_setting_set (settings, optionsParams, 'updateBlogs');
   ODS.ODS_API.feeds_setting_set (settings, optionsParams, 'feedIcons');
 
+	if (ENEWS.WA.discussion_check ())
+	{
   ODS.ODS_API.feeds_setting_set (settings, optionsParams, 'conv');
   ODS.ODS_API.feeds_setting_set (settings, optionsParams, 'conv_init');
+  }
 
   insert replacing ENEWS.WA.SETTINGS (ES_DOMAIN_ID, ES_ACCOUNT_ID, ES_DATA)
-    values (inst_id, account_id, serialize (settings));
+    values (inst_id, -1, serialize (settings));
+
+  f_conv := cast (get_keyword ('conv', settings, '0') as integer);
+  f_conv_init := cast (get_keyword ('conv_init', settings, '0') as integer);
+	if (ENEWS.WA.discussion_check ())
+	{
+	  ENEWS.WA.nntp_update (inst_id, null, null, conv, f_conv);
+		if (f_conv and f_conv_init)
+	    ENEWS.WA.nntp_fill (inst_id);
+	}
 
   return ods_serialize_int_res (1);
 }

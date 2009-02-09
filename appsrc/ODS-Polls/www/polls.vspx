@@ -240,7 +240,7 @@
 
   <v:method name="windowOpen" arglist="in p_url varchar, in p_name varchar, in p_title varchar">
     <![CDATA[
-      return  sprintf ('<a href="#" onclick="javascript: window.open (\'%s\', \'polls_%s_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" title="%s %s" class="link_ed">%s</a>', POLLS.WA.url_fix (sprintf ('%s%s', POLLS.WA.polls_url (self.domain_id), p_url), self.sid, self.realm), p_name, p_name, p_title, p_name);
+      return  sprintf ('<spam onclick="javascript: window.open (\'%s\', \'polls_%s_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" title="%s %s" class="link">%s</span>', POLLS.WA.url_fix (sprintf ('%s%s', POLLS.WA.polls_url (self.domain_id), p_url), self.sid, self.realm), p_name, p_name, p_title, p_name);
     ]]>
   </v:method>
 
@@ -1733,7 +1733,7 @@
                   vt := '';
                   if ((P_MODE = 'S') and (Q = 1))
                     vt := sprintf ('(%d vote(s))', P_VOTES);
-                  http (sprintf ('<p class="vote-question">%d. %s? <i style="font-size: 0.8em; font-weight: normal;">%s</i></p>', Q, Q_TEXT, vt));
+                  http (sprintf ('<p class="vote-question">%d. %s <i style="font-size: 0.8em; font-weight: normal;">%s</i></p>', Q, Q_TEXT, vt));
                   answers := deserialize (Q_ANSWER);
 
                   http ('<p class="vote-answer">');

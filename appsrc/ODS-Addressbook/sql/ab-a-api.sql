@@ -28,9 +28,15 @@ use ODS;
 create procedure ODS.ODS_API.addressbook_setting_set (
   inout settings any,
   inout options any,
-  in settingName varchar)
+  in settingName varchar,
+  in settingTest any := null)
 {
-  AB.WA.set_keyword (settingName, settings, get_keyword (settingName, options, get_keyword (settingName, settings)));
+	declare aValue any;
+
+  aValue := get_keyword (settingName, options, get_keyword (settingName, settings));
+  if (not isnull (settingTest))
+    AB.WA.test (cast (aValue as varchar), settingTest);
+  AB.WA.set_keyword (settingName, settings, aValue);
 }
 ;
 
@@ -1155,6 +1161,7 @@ create procedure ODS.ODS_API."addressbook.options.set" (
   };
 
   declare rc, account_id integer;
+  declare conv, f_conv, f_conv_init any;
   declare uname varchar;
   declare optionsParams, settings any;
 
@@ -1166,15 +1173,28 @@ create procedure ODS.ODS_API."addressbook.options.set" (
 
   settings := AB.WA.settings (inst_id);
   AB.WA.settings_init (settings);
+  conv := cast (get_keyword ('conv', settings, '0') as integer);
 
   ODS.ODS_API.addressbook_setting_set (settings, optionsParams, 'chars');
-  ODS.ODS_API.addressbook_setting_set (settings, optionsParams, 'rows');
+  ODS.ODS_API.addressbook_setting_set (settings, optionsParams, 'rows', vector ('name', 'Rows per page', 'class', 'integer', 'type', 'integer', 'minValue', 1, 'maxValue', 1000));
   ODS.ODS_API.addressbook_setting_set (settings, optionsParams, 'tbLabels');
   ODS.ODS_API.addressbook_setting_set (settings, optionsParams, 'atomVersion');
+	if (AB.WA.discussion_check ())
+	{
   ODS.ODS_API.addressbook_setting_set (settings, optionsParams, 'conv');
   ODS.ODS_API.addressbook_setting_set (settings, optionsParams, 'conv_init');
+  }
+	insert replacing AB.WA.SETTINGS (S_DOMAIN_ID, S_ACCOUNT_ID, S_DATA)
+	  values (inst_id, account_id, serialize (settings));
 
-  insert replacing AB.WA.SETTINGS (S_DOMAIN_ID, S_ACCOUNT_ID, S_DATA) values (inst_id, account_id, serialize (settings));
+  f_conv := cast (get_keyword ('conv', settings, '0') as integer);
+  f_conv_init := cast (get_keyword ('conv_init', settings, '0') as integer);
+	if (AB.WA.discussion_check ())
+	{
+	  AB.WA.nntp_update (inst_id, null, null, conv, f_conv);
+		if (f_conv and f_conv_init)
+	    AB.WA.nntp_fill (inst_id);
+	}
 
   return ods_serialize_int_res (1);
 }

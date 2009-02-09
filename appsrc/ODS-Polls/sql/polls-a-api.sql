@@ -24,6 +24,33 @@ use ODS;
 
 -------------------------------------------------------------------------------
 --
+create procedure ODS.ODS_API."poll_setting_set" (
+  inout settings any,
+  inout options any,
+  in settingName varchar,
+  in settingTest any := null)
+{
+	declare aValue any;
+
+  aValue := get_keyword (settingName, options, get_keyword (settingName, settings));
+  if (not isnull (settingTest))
+    POLLS.WA.test (cast (aValue as varchar), settingTest);
+  POLLS.WA.set_keyword (settingName, settings, aValue);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."poll_setting_xml" (
+  in settings any,
+  in settingName varchar)
+{
+  return sprintf ('<%s>%s</%s>', settingName, cast (get_keyword (settingName, settings) as varchar), settingName);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODS.ODS_API."poll.get" (
   in poll_id integer) __soap_http 'text/xml'
 {
@@ -517,7 +544,7 @@ create procedure ODS.ODS_API."poll.comment.new" (
   in text varchar,
   in name varchar,
   in email varchar,
-  in url varchar) __soap_http 'text/xml'
+	in url varchar := null) __soap_http 'text/xml'
 {
   declare exit handler for sqlstate '*'
   {
@@ -600,6 +627,7 @@ create procedure ODS.ODS_API."poll.options.set" (
   };
 
   declare rc, account_id integer;
+  declare conv, f_conv, f_conv_init any;
   declare uname varchar;
   declare optionsParams, settings any;
 
@@ -611,13 +639,28 @@ create procedure ODS.ODS_API."poll.options.set" (
 
   settings := POLLS.WA.settings (inst_id);
   POLLS.WA.settings_init (settings);
-  settings := POLLS.WA.set_keyword ('chars', settings, get_keyword('chars', optionsParams, get_keyword('chars', settings)));
-  settings := POLLS.WA.set_keyword ('rows', settings, get_keyword('rows', optionsParams, get_keyword('rows', settings)));
-  settings := POLLS.WA.set_keyword ('tbLabels', settings, get_keyword('tbLabels', optionsParams, get_keyword('tbLabels', settings)));
-  settings := POLLS.WA.set_keyword ('atomVersion', settings, get_keyword('atomVersion', optionsParams, get_keyword('atomVersion', settings)));
-  settings := POLLS.WA.set_keyword ('conv', settings, get_keyword('conv', optionsParams, get_keyword('conv', settings)));
-  settings := POLLS.WA.set_keyword ('conv_init', settings, get_keyword('conv_init', optionsParams, get_keyword('conv_init', settings)));
-  insert replacing POLLS.WA.SETTINGS (S_DOMAIN_ID, S_ACCOUNT_ID, S_DATA) values (inst_id, account_id, serialize (settings));
+  conv := cast (get_keyword ('conv', settings, '0') as integer);
+
+  ODS.ODS_API.poll_setting_set (settings, optionsParams, 'chars');
+  ODS.ODS_API.poll_setting_set (settings, optionsParams, 'rows', vector ('name', 'Rows per page', 'class', 'integer', 'type', 'integer', 'minValue', 1, 'maxValue', 1000));
+  ODS.ODS_API.poll_setting_set (settings, optionsParams, 'tbLabels');
+  ODS.ODS_API.poll_setting_set (settings, optionsParams, 'atomVersion');
+	if (POLLS.WA.discussion_check ())
+	{
+  ODS.ODS_API.poll_setting_set (settings, optionsParams, 'conv');
+  ODS.ODS_API.poll_setting_set (settings, optionsParams, 'conv_init');
+  }
+  insert replacing POLLS.WA.SETTINGS (S_DOMAIN_ID, S_ACCOUNT_ID, S_DATA)
+    values (inst_id, account_id, serialize (settings));
+
+  f_conv := cast (get_keyword ('conv', settings, '0') as integer);
+  f_conv_init := cast (get_keyword ('conv_init', settings, '0') as integer);
+	if (POLLS.WA.discussion_check ())
+	{
+	  POLLS.WA.nntp_update (inst_id, null, null, conv, f_conv);
+		if (f_conv and f_conv_init)
+	    POLLS.WA.nntp_fill (inst_id);
+	}
 
   return ods_serialize_int_res (1);
 }
@@ -645,12 +688,12 @@ create procedure ODS.ODS_API."poll.options.get" (
   POLLS.WA.settings_init (settings);
 
   http ('<settings>');
-  http (sprintf ('<chars>%d</chars>', get_keyword ('chars', settings)));
-  http (sprintf ('<rows>%d</rows>', get_keyword ('rows', settings)));
-  http (sprintf ('<tbLabels>%d</tbLabels>', get_keyword ('tbLabels', settings)));
-  http (sprintf ('<atomVersion>%s</atomVersion>', get_keyword ('atomVersion', settings)));
-  http (sprintf ('<conv>%d</conv>', get_keyword ('conv', settings)));
-  http (sprintf ('<conv_init>%d</conv_init>', get_keyword ('conv_init', settings)));
+  http (ODS.ODS_API.poll_setting_xml (settings, 'chars'));
+  http (ODS.ODS_API.poll_setting_xml (settings, 'rows'));
+  http (ODS.ODS_API.poll_setting_xml (settings, 'tbLabels'));
+  http (ODS.ODS_API.poll_setting_xml (settings, 'atomVersion'));
+  http (ODS.ODS_API.poll_setting_xml (settings, 'conv'));
+  http (ODS.ODS_API.poll_setting_xml (settings, 'conv_init'));
   http ('</settings>');
 
   return '';
