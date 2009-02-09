@@ -1074,8 +1074,10 @@ bif_sys_dirlist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ptrlong rc = 0;
   WIN32_FIND_DATA fd, *de;
   HANDLE df;
+  caddr_t fname_pattern;
+  size_t fname_pattern_end;
 #endif
-  caddr_t lst;
+  caddr_t lst = NULL;
 
   sec_check_dba ((query_instance_t *) qst, "sys_dirlist");
   fname = bif_string_or_wide_or_uname_arg (qst, args, 0, "sys_dirlist");
@@ -1086,7 +1088,14 @@ bif_sys_dirlist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #ifndef WIN32
   df = opendir (fname_cvt);
 #else
-  df = FindFirstFile (fname_cvt, &fd);
+  fname_pattern_end = box_length (fname_cvt) - 1; 
+  fname_pattern = dk_alloc_box (fname_pattern_end + 3, DV_STRING);
+  memcpy (fname_pattern, fname_cvt, fname_pattern_end);
+  if ('\\' != fname_cvt [fname_pattern_end - 1])
+    fname_pattern[fname_pattern_end++] = '\\';
+  fname_pattern[fname_pattern_end++] = '*';
+  fname_pattern[fname_pattern_end] = '\0';
+  df = FindFirstFile (fname_pattern, &fd);
 #endif
   if (CHECKFH (df))
     {
@@ -1180,8 +1189,8 @@ bif_sys_dirlist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #else
 		  FindClose (df);
 #endif
-		  sqlr_new_error ("39000", "FA019",
-		      "Path string is too long.");
+		  *err_ret = srv_make_new_error ("39000", "FA019", "Path string is too long.");
+		  goto error_end;
 		}
 	    }
 next_file: ;
@@ -1213,8 +1222,7 @@ next_file: ;
         NULL,
         dw,
         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPTSTR) &msg_buf[0],
-        0, NULL );
+        (LPTSTR) &msg_buf[0], sizeof (msg_buf), NULL);
 #endif
       if (BOX_ELEMENTS (args) > 2)
 	{
@@ -1223,12 +1231,20 @@ next_file: ;
 		(caddr_t) box_dv_short_string (err_msg));
 	}
       else
-	sqlr_new_error ("39000", "FA020", "Unable to list files in '%.1000s': %s", fname_cvt, err_msg);
+	{
+	  *err_ret = srv_make_new_error ("39000", "FA020", "Unable to list files in '%.1000s': %s", fname_cvt, err_msg);
+	  goto error_end;
+	}
     }
   lst = list_to_array (dk_set_nreverse (dir_list));
   if (BOX_ELEMENTS (args) > 3 && bif_long_arg (qst, args, 3, "sys_dirlist") &&
       IS_BOX_POINTER (lst) && BOX_ELEMENTS (lst))
     qsort (lst, BOX_ELEMENTS (lst), sizeof (caddr_t), str_compare);
+error_end:  
+  dk_free_box (fname_cvt);
+#ifdef WIN32
+  dk_free_box (fname_pattern);
+#endif
   return lst;
 }
 
