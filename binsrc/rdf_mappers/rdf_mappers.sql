@@ -2889,6 +2889,8 @@ create procedure RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri varcha
 	{
 		if (id1 is not null and id1 <> '')
 		{
+			url := sprintf('http://ws.audioscrobbler.com/1.0/user/%s/profile.xml', id1);
+			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
 			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=user.getfriends&user=%s&api_key=%s', id1, api_key);
 			return DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
 		}

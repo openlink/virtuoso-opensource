@@ -76,6 +76,7 @@
 			<xsl:apply-templates select="lfm[@status='ok']/events"/>
 			<xsl:apply-templates select="lfm[@status='ok']/user"/>
 			<xsl:apply-templates select="lfm[@status='ok']/friends"/>
+			<xsl:apply-templates select="profile"/>
 		</rdf:RDF>
     </xsl:template>
 
@@ -218,9 +219,9 @@
 		<rdf:Description rdf:about="{$baseUri}">
 			<rdf:type rdf:resource="&foaf;Document"/>
 			<rdf:type rdf:resource="&sioc;Container"/>
-			<sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
-			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
-			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
+			<sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, 'user/', @for))}"/>
+			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'user/', @for))}"/>
+			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'user/', @for))}"/>
 		</rdf:Description>
 	    <xsl:for-each select="user">
 			<xsl:call-template name="user"/>
@@ -452,6 +453,36 @@
 			</geo:lng>
 		</vcard:ADR>
 		
+    </xsl:template>
+
+    <xsl:template match="profile">
+   		<rdf:Description rdf:about="{$baseUri}">
+			<rdf:type rdf:resource="&foaf;Document"/>
+			<rdf:type rdf:resource="&sioc;Container"/>
+			<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri)}"/>
+			<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
+			<dcterms:subject rdf:resource="{vi:proxyIRI($baseUri)}"/>
+		</rdf:Description>
+		<foaf:Person rdf:about="{vi:proxyIRI($baseUri)}">
+			<foaf:name>
+				<xsl:value-of select="realname"/>
+			</foaf:name>
+			<xsl:for-each select="avatar">
+				<foaf:depiction rdf:resource="{.}"/>
+			</xsl:for-each>
+			<lfm:country>
+				<xsl:value-of select="country"/>
+			</lfm:country>
+			<lfm:age>
+				<xsl:value-of select="age"/>
+			</lfm:age>
+			<lfm:gender>
+				<xsl:value-of select="gender"/>
+			</lfm:gender>
+			<lfm:playcount>
+				<xsl:value-of select="playcount"/>
+			</lfm:playcount>
+		</foaf:Person>
     </xsl:template>
 
 	<xsl:template name="user">
