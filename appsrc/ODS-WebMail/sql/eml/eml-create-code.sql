@@ -3485,107 +3485,6 @@ create procedure OMAIL.WA.omail_mark_msg(
 
 -------------------------------------------------------------------------------
 --
-create procedure OMAIL.WA.omail_mdate_to_tstamp(in _mdate varchar)
-{
-  ----------------------------------------------------------
-  -- Get mail format "DAY, DD MON YYYY HH:MI:SS {+,-}HHMM"
-  --      and return "DD.MM.YYYY HH:MI:SS" GMT
-  ------------------------------------------------------------
-  declare _arr, _months, _tzones, _rs, _tzone_z, _tzone_h, _tzone_m any;
-  declare _date,_month,_year,_hms,_tzone varchar;
-
-  _months := vector ('JAN', '01',
-                     'FEB', '02',
-                     'MAR', '03',
-                     'APR', '04',
-                     'MAY', '05',
-                     'JUN', '06',
-                     'JUL', '07',
-                     'AUG', '08',
-                     'SEP', '09',
-                     'OCT', '10',
-                     'NOV', '11',
-                     'DEC', '12'
-                    );
-  _tzones := vector ('Z',   '+0000',
-                     'A',   '-0100',
-                     'B',   '-0200',
-                     'C',   '-0300',
-                     'D',   '-0400',
-                     'E',   '-0500',
-                     'F',   '-0600',
-                     'G',   '-0700',
-                     'H',   '-0800',
-                     'I',   '-0900',
-                     'K',   '-1010',
-                     'L',   '-1100',
-                     'M',   '-1200',
-                     'N',   '+0100',
-                     'O',   '+0200',
-                     'P',   '+0300',
-                     'Q',   '+0400',
-                     'R',   '+0500',
-                     'S',   '+0600',
-                     'T',   '+0700',
-                     'U',   '+0800',
-                     'V',   '+0900',
-                     'W',   '+1010',
-                     'X',   '+1100',
-                     'Y',   '+1200',
-                     'UT',  '+0000',
-                     'GMT', '+0000',
-                     'EST', '-0500',
-                     'EDT', '-0400',
-                     'CST', '-0600',
-                     'CDT', '-0500',
-                     'MST', '-0700',
-                     'MDT', '-0600',
-                     'PST', '-0800',
-                     'PDT', '-0700'
-                    );
-  _arr := split_and_decode(ltrim(_mdate),0,'\0\0 ');
-
-  if (length(_arr) = 6) {
-    _date  := _arr[1];
-    _month := _arr[2];
-    _year  := _arr[3];
-    _hms   := _arr[4];
-    _tzone := _arr[5];
-
-    _month := get_keyword_ucase (_month, _months, '');
-
-    _tzone := get_keyword_ucase (_arr[5], _tzones, '');
-    if (_tzone = '')
-      _tzone := _arr[5];
-
-    _tzone_z := substring(_tzone,1,1);
-    declare continue handler for SQLSTATE '*' {
-      _tzone_h := 0;
-      _tzone_m := 0;
-      goto _skip;
-    };
-    _tzone_h := atoi(substring(_tzone,2,2));
-    _tzone_m := atoi(substring(_tzone,4,2));
-
-  _skip:
-    if (_tzone_z = '+'){
-      _tzone_h := -_tzone_h;
-      _tzone_m := -_tzone_m;
-    }
-    _rs := sprintf('%s.%s.%s %s',_month,_date,_year,_hms);
-    _rs := stringdate(_rs);
-    _rs := dateadd ('hour',   _tzone_h, _rs);
-    _rs := dateadd ('minute', _tzone_m, _rs);
-
-  } else {
-    _rs := '01.01.1900 00:00:00'; -- set system date
-  };
-  return _rs;
-}
-;
-
--------------------------------------------------------------------------------
---
 create procedure OMAIL.WA.omail_message(
   inout path any,
   inout lines any,
@@ -4783,9 +4682,8 @@ create procedure OMAIL.WA.omail_receive_message(
   _address  := sprintf('%s%s',_address,OMAIL.WA.omail_address2xml('bcc', _bcc,0));
   _address  := sprintf('%s</addres_list>',_address);
 
-
   _rcv_date := now();
-  _snd_date := OMAIL.WA.omail_mdate_to_tstamp(_snd_date);
+  _snd_date := http_string_date (_snd_date);
   _mheader  := substring(subseq (_source, 0, aref(_bodys,0) - 3),1,1000);
   _dsize    := length(_source);
 
