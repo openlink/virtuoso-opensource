@@ -6103,7 +6103,6 @@ create procedure CAL.WA.alarm_scheduler ()
                                                   eEvent,
                                                  eEventStart,
                                                  eEventEnd,
-                                                  eEventEnd,
                                                  eRepeat,
                                                  eRepeatParam1,
                                                  eRepeatParam2,

@@ -27,9 +27,15 @@ use ODS;
 create procedure ODS.ODS_API.calendar_setting_set (
   inout settings any,
   inout options any,
-  in settingName varchar)
+  in settingName varchar,
+  in settingTest any := null)
 {
-  CAL.WA.set_keyword (settingName, settings, get_keyword (settingName, options, get_keyword (settingName, settings)));
+	declare aValue any;
+
+  aValue := get_keyword (settingName, options, get_keyword (settingName, settings));
+  if (not isnull (settingTest))
+    CAL.WA.test (cast (aValue as varchar), settingTest);
+  CAL.WA.set_keyword (settingName, settings, aValue);
 }
 ;
 
@@ -1110,6 +1116,7 @@ create procedure ODS.ODS_API."calendar.options.set" (
   };
 
   declare rc, account_id integer;
+  declare conv, f_conv, f_conv_init any;
   declare uname varchar;
   declare optionsParams, settings any;
 
@@ -1121,9 +1128,10 @@ create procedure ODS.ODS_API."calendar.options.set" (
 
   settings := CAL.WA.settings (inst_id);
   CAL.WA.settings_init (settings);
+  conv := cast (get_keyword ('conv', settings, '0') as integer);
 
   ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'chars');
-  ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'rows');
+  ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'rows', vector ('name', 'Rows per page', 'class', 'integer', 'type', 'integer', 'minValue', 1, 'maxValue', 1000));
   ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'atomVersion');
 
   ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'defaultView');
@@ -1132,9 +1140,11 @@ create procedure ODS.ODS_API."calendar.options.set" (
   ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'dateFormat');
   ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'timeZone');
   ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'showTasks');
-
+	if (CAL.WA.discussion_check ())
+	{
   ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'conv');
   ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'conv_init');
+  }
 
   ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'event_E_UPDATED');
   ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'event_E_CREATED');
@@ -1148,7 +1158,17 @@ create procedure ODS.ODS_API."calendar.options.set" (
   ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'task_E_UPDATED');
   ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'task_E_CREATED');
 
-  insert replacing CAL.WA.SETTINGS (S_DOMAIN_ID, S_ACCOUNT_ID, S_DATA) values (inst_id, account_id, serialize (settings));
+  insert replacing CAL.WA.SETTINGS (S_DOMAIN_ID, S_ACCOUNT_ID, S_DATA)
+    values (inst_id, account_id, serialize (settings));
+
+  f_conv := cast (get_keyword ('conv', settings, '0') as integer);
+  f_conv_init := cast (get_keyword ('conv_init', settings, '0') as integer);
+	if (CAL.WA.discussion_check ())
+	{
+	  CAL.WA.nntp_update (inst_id, null, null, conv, f_conv);
+		if (f_conv and f_conv_init)
+	    CAL.WA.nntp_fill (inst_id);
+	}
 
   return ods_serialize_int_res (1);
 }
