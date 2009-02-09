@@ -140,7 +140,9 @@
 			<foaf:nick>
 				<xsl:value-of select="screen_name" />
 			</foaf:nick>
+			<xsl:if test="url != ''">
 			<foaf:homepage rdf:resource="{url}" />
+			</xsl:if>
 			<foaf:img rdf:resource="{profile_image_url}" />
 			<twitter:id>
 				<xsl:value-of select="id" />

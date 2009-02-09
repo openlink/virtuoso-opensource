@@ -62,6 +62,12 @@
                     <xsl:value-of select="//html/head/title"/>
                 </rdfs:label>
                 <rdf:type rdf:resource="&bibo;Slideshow"/>
+                <xsl:for-each select="//div[contains(@class, 'slide')]">
+					<xsl:variable name="pos" select="position()"/>
+					<dcterms:hasPart>
+						<xsl:attribute name="rdf:resource"><xsl:value-of select="$baseUri"/>#(<xsl:value-of select="$pos"/>)</xsl:attribute>
+					</dcterms:hasPart>
+                </xsl:for-each>
             </rdf:Description>
             <xsl:apply-templates select="body"/>
     </xsl:template>
