@@ -35,6 +35,54 @@ create procedure ODS.ODS_API.photo_setting_xml (
 
 -------------------------------------------------------------------------------
 --
+create procedure ODS.ODS_API.photo_image_new (
+  in inst_id integer,
+  in album varchar,
+  in name varchar,
+  in description varchar := null,
+  in visibility integer := 1,
+  in image long varchar)
+{
+  declare uname varchar;
+  declare rc integer;
+  declare path, permissions varchar;
+  declare g_id, gid, uid integer;
+
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  if (not length (image))
+    return ods_serialize_int_res (-1, 'Invalid image data');
+
+  declare exit handler for not found
+  {
+    return ods_serialize_int_res (-1, 'The home folder does not exists');
+  };
+
+  if (__tag (image) = 185)
+    image := string_output_string (image);
+  "IM GetImageBlobFormat" (image, length (image));
+  rc := -1;
+  select p.HOME_PATH, p.GALLERY_ID into path, g_id from PHOTO.WA.SYS_INFO p, DB.DBA.WA_INSTANCE i where i.WAI_NAME = p.WAI_NAME and i.WAI_ID = inst_id;
+  path := path || album || '/' || name;
+  whenever not found goto ret;
+  select U_ID, U_GROUP into uid, gid from DB.DBA.SYS_USERS where U_NAME = uname;
+  permissions :=  case when (visibility) then '110100100RM' else '110100000RM' end;
+  rc := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (path, image, '', permissions, uid, gid, uname, null, 0, null, null, null, null, null, 1);
+  if ((rc > 0) and (description is not null))
+    DB.DBA.DAV_PROP_SET_INT (path, 'description', description, uname, null, 0, 1, 0);
+ret:
+  return ods_serialize_int_res (rc);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODS.ODS_API."photo.album.new" (
   in inst_id integer,
     		in name varchar,
@@ -202,44 +250,27 @@ create procedure ODS.ODS_API."photo.image.new" (
   in description varchar := null,
   in visibility integer := 1) __soap_http 'text/xml'
 {
-  declare uname varchar;
-  declare rc integer;
-  declare path, permissions varchar;
-  declare g_id, gid, uid integer;
   declare image varbinary;
 
   image := http_body_read ();
+  return ODS.ODS_API.photo_image_new (inst_id, album, name, description, visibility, image);
+}
+;
 
-  declare exit handler for sqlstate '*'
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."photo.image.newUrl" (
+  in inst_id integer,
+  in album varchar,
+  in name varchar,
+  in description varchar := null,
+  in visibility integer := 1,
+  in sourceUrl varchar) __soap_http 'text/xml'
   {
-    rollback work;
-    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
-  };
-  if (not ods_check_auth (uname, inst_id, 'author'))
-    return ods_auth_failed ();
+  declare image varbinary;
 
-  if (not length (image))
-    return ods_serialize_int_res (-1, 'Invalid image data');
-
-  declare exit handler for not found
-  {
-    return ods_serialize_int_res (-1, 'The home folder does not exists');
-  };
-
-  if (__tag (image) = 185)
-    image := string_output_string (image);
-  "IM GetImageBlobFormat" (image, length (image));
-  rc := -1;
-  select p.HOME_PATH, p.GALLERY_ID into path, g_id from PHOTO.WA.SYS_INFO p, DB.DBA.WA_INSTANCE i where i.WAI_NAME = p.WAI_NAME and i.WAI_ID = inst_id;
-  path := path || album || '/' || name;
-  whenever not found goto ret;
-  select U_ID, U_GROUP into uid, gid from DB.DBA.SYS_USERS where U_NAME = uname;
-  permissions :=  case when (visibility) then '110100100RM' else '110100000RM' end;
-  rc := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (path, image, '', permissions, uid, gid, uname, null, 0, null, null, null, null, null, 1);
-  if ((rc > 0) and (description is not null))
-    DB.DBA.DAV_PROP_SET_INT (path, 'description', description, uname, null, 0, 1, 0);
-ret:
-  return ods_serialize_int_res (rc);
+  image := PHOTE.WA.url_content (sourceUrl);
+  return ODS.ODS_API.photo_image_new (inst_id, album, name, description, visibility, image);
 }
 ;
 
@@ -518,6 +549,7 @@ grant execute on ODS.ODS_API."photo.album.delete" to ODS_API;
 
 grant execute on ODS.ODS_API."photo.image.get" to ODS_API;
 grant execute on ODS.ODS_API."photo.image.new" to ODS_API;
+grant execute on ODS.ODS_API."photo.image.newUrl" to ODS_API;
 grant execute on ODS.ODS_API."photo.image.delete" to ODS_API;
 grant execute on ODS.ODS_API."photo.image.update" to ODS_API;
 

@@ -1208,4 +1208,43 @@ create procedure PHOTO.WA.settings_albums_per_page (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure PHOTE.WA.url_content (
+  in uri varchar)
+{
+  declare cont varchar;
+  declare hp any;
 
+  declare exit handler for sqlstate '*'
+  {
+    --dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
+    return null;
+  };
+
+  declare N integer;
+  declare oldUri, newUri, reqHdr, resHdr varchar;
+
+  newUri := replace (uri, ' ', '%20');
+  reqHdr := null;
+
+_again:
+  N := N + 1;
+  oldUri := newUri;
+  commit work;
+  cont := http_get (newUri, resHdr, 'GET', reqHdr);
+  if (resHdr[0] like 'HTTP/1._ 30_ %')
+  {
+    newUri := http_request_header (resHdr, 'Location');
+    newUri := WS.WS.EXPAND_URL (oldUri, newUri);
+    if (N > 15)
+      return null;
+    if (newUri <> oldUri)
+      goto _again;
+  }
+  if (resHdr[0] like 'HTTP/1._ 4__ %' or resHdr[0] like 'HTTP/1._ 5__ %')
+    return null;
+
+  return cont;
+}
+;
