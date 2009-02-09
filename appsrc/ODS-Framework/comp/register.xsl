@@ -733,7 +733,7 @@ else
 --openid post
 declare hdr, xt, uoid, is_agreed,ods_returnurl any;
 declare url, cnt, oi_ident, oi_srv, oi_delegate, host, this_page, trust_root, check_immediate varchar;
-declare oi2_srv varchar;
+           declare oi2_srv, oi2_delegate varchar;
 
 host := http_request_header (e.ve_lines, 'Host');
 
@@ -777,9 +777,12 @@ xt := xtree_doc (cnt, 2);
 oi_srv := cast (xpath_eval ('//link[contains (@rel, "openid.server")]/@href', xt) as varchar);
 oi2_srv := cast (xpath_eval ('//link[contains (@rel, "openid2.provider")]/@href', xt) as varchar);
 oi_delegate := cast (xpath_eval ('//link[contains (@rel, "openid.delegate")]/@href', xt) as varchar);
+           oi2_delegate := cast (xpath_eval ('//link[contains (@rel, "openid2.local_id")]/@href', xt) as varchar);
 
 if (oi2_srv is not null)
   oi_srv := oi2_srv;
+	   if (oi2_delegate is not null)
+             oi_delegate := oi2_delegate;
 
 if (oi_srv is null)
   signal ('22023', 'Cannot locate OpenID server');

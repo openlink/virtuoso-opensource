@@ -735,7 +735,7 @@ create procedure sioc_user_info (
   if (length (full_name) and wa_user_pub_info (flags, 3))
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('name'), full_name);
   if (length (mail) and wa_user_pub_info (flags, 4))
-    DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('mbox'), mail);
+    DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('mbox'), 'mailto:' || mail);
 
   if (is_person and length (gender) and wa_user_pub_info (flags, 5))
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('gender'), gender);
@@ -951,7 +951,7 @@ create procedure sioc_user_private_info (
   if (length (full_name) and wa_user_priv_info (flags, 3))
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('name'), full_name);
   if (length (mail) and wa_user_priv_info (flags, 4))
-    DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('mbox'), mail);
+    DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('mbox'), 'mailto:' || mail);
 
   if (birthday is not null and wa_user_priv_info (flags, 6))
     {
@@ -3208,7 +3208,35 @@ create procedure std_pref_declare ()
 	 ;
 };
 
-create procedure foaf_check_ssl ()
+create procedure foaf_check_friend (in iri varchar, in agent varchar)
+{
+  declare hf, stat, msg, meta, data any;
+
+  hf := rfc1808_parse_uri (iri);
+  hf[0] := 'local';
+  hf[1] := '';
+  iri := DB.DBA.vspx_uri_compose (hf);
+
+  hf := rfc1808_parse_uri (agent);
+  if (hf[1] = registry_get ('URIQADefaultHost'))
+    {
+      hf[0] := 'local';
+      hf[1] := '';
+      agent := DB.DBA.vspx_uri_compose (hf);
+    }
+  if (iri = agent) -- everybody has access to his own protected foaf
+    return 1;
+  stat := '00000';
+  msg := 'OK';
+  exec (sprintf ('sparql prefix foaf: <http://xmlns.com/foaf/0.1/> ask from <local:/dataspace> where { <%S> foaf:knows <%S> }',
+	iri, agent), stat, msg, vector (), 0, meta, data);
+  if (stat = '00000' and length (data) and length (data[0]) and data[0][0] = 1)
+    return 1;
+  return 0;
+}
+;
+
+create procedure foaf_check_ssl (in iri varchar)
 {
   declare stat, msg, meta, data, info, qr, hf, graph any;
   declare agent varchar;
@@ -3228,6 +3256,9 @@ create procedure foaf_check_ssl ()
     return 0;
 
   agent := subseq (agent, 4);
+  if (not foaf_check_friend (iri, agent))
+    return 0;
+
   hf := rfc1808_parse_uri (agent);
   hf[5] := '';
   graph := DB.DBA.vspx_uri_compose (hf);
@@ -3249,7 +3280,7 @@ create procedure foaf_check_ssl ()
 create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p int := 0)
 {
   declare state, decl, qry, qrs, msg, maxrows, metas, rset, graph, iri, accept, part any;
-  declare ses, dociri any;
+  declare ses, dociri, hf any;
   declare triples any;
   declare ss, sa_dict, lim, offs any;
   declare pers_iri, http_hdr varchar;
@@ -3265,6 +3296,11 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
     fmt := 'rdf';
 
   dociri := person_iri (user_obj_iri(u_name), '');
+
+  hf := rfc1808_parse_uri (dociri);
+  hf[0] := 'local'; hf[1] := '';
+  dociri := DB.DBA.vspx_uri_compose (hf);
+
   pers_iri := person_iri (user_obj_iri(u_name));
 
   if (fmt not in ('n3', 'ttl', 'rdf'))
@@ -3293,7 +3329,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 
   qrs := make_array (7, 'any');
   qrs[6] := null;
-  if (is_https_ctx () and foaf_check_ssl ())
+  if (is_https_ctx () and foaf_check_ssl (pers_iri))
     {
       qrs[6] := sprintf ('sparql construct { ?s ?p ?o } from <local:/dataspace/protected/%U> where { ?s ?p ?o }', u_name);
     }

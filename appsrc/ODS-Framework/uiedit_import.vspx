@@ -181,6 +181,7 @@
               self.iSameAs := self.foaf_url.ufl_value;
               for select * from
                  (sparql
+		  define input:storage ""
                   prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
                   prefix foaf: <http://xmlns.com/foaf/0.1/>
                   prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>

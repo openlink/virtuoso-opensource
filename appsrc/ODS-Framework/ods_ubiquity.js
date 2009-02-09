@@ -4510,6 +4510,31 @@ CmdUtils.CreateCommand({
 });
 
 CmdUtils.CreateCommand({
+  name: "ods-create-photo-image",
+  takes: {"instance_id": noun_type_id},
+  modifiers: {"album": noun_arb_text, "name": noun_arb_text, "description": noun_arb_text, "visibility": noun_arb_text, "sourceUrl": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-create-photo-image instance_id album &lt;album&gt; name &lt;name&gt; [description &lt;description&gt;] [visibility &lt;visibility&gt;] sourceUrl &lt;sourceUrl&gt;]",
+  execute: function (instance_id, modifiers) {
+    try {
+      checkParameter(instance_id.text, "instance_id");
+      var params = {inst_id: instance_id.text};
+      addParameter(modifiers, "album", params, "album", true);
+      addParameter(modifiers, "name", params, "name", true);
+      addParameter(modifiers, "description", params, "description");
+      addParameter(modifiers, "visibility", params, "visibility");
+      addParameter(modifiers, "sourceUrl", params, "sourceUrl", true);
+      odsExecute("photo.image.newUrl", params, "photo");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
   name: "ods-get-photo-image",
   takes: {"instance_id": noun_type_id},
   modifiers: {"album": noun_arb_text, "name": noun_arb_text},

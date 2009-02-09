@@ -33,7 +33,7 @@
     <v:variable persist="0" name="secretq" type="varchar" default="''"/>
     <v:variable persist="0" name="secreta" type="varchar" default="''"/>
     <v:variable persist="0" name="oid_urlv" type="varchar" default="''"/>
-  <v:variable persist="0" name="cert" type="varchar" default="null"/>
+  <v:variable persist="0" name="certificate_content" type="varchar" default="null"/>
     <v:variable persist="0" name="sioc_limit" type="int" default="10"/>
     <v:variable persist="0" name="no_pwd" type="int" default="0"/>
     <v:before-data-bind>
@@ -49,7 +49,7 @@
              self.secreta,
              pwd,
 	     self.oid_urlv,
-	     self.cert
+	     self.certificate_content
         FROM WA_USER_INFO,
              DB.DBA.SYS_USERS
        where WAUI_U_ID = U_ID
@@ -300,21 +300,21 @@
       </tr>
       <tr>
 	  <td colspan="2" align="left">
-	      <?vsp if (length (self.cert)) { ?>
+	      <?vsp if (length (self.certificate_content)) { ?>
 	      <div>
 		  <label>Subject:</label>
 		  <?vsp
-		  http_value (get_certificate_info (2, cast(self.cert as varchar), 0, ''),'b');
+		  http_value (get_certificate_info (2, cast(self.certificate_content as varchar), 0, ''),'b');
 		  ?>
 	      </div>
 	      <div>
 		  <label>Agent ID:</label>
 		  <?vsp
-		  http_value (get_certificate_info (7, cast(self.cert as varchar), 0, '', '2.5.29.17'),'b');
+		  http_value (get_certificate_info (7, cast(self.certificate_content as varchar), 0, '', '2.5.29.17'),'b');
 		  ?>
 	      </div>
 	      <?vsp } ?>
-	    <v:textarea name="cert1" value="--self.cert" xhtml_cols="70" xhtml_rows="20" />
+	    <v:textarea name="cert1" value="--self.certificate_content" xhtml_cols="70" xhtml_rows="20" />
 	</td>
       </tr>
       <tr>
