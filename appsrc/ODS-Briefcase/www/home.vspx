@@ -974,6 +974,7 @@
                       pos := 0;
                     self.dir_path := left(self.dir_path, pos);
                   }
+                  self.vc_is_valid := 1;
                   self.ds_items.vc_reset();
                 }
                 else if (_action = 'go')
