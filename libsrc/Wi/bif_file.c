@@ -1802,6 +1802,11 @@ bif_cfg_write (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     sqlr_new_error ("42000", "FA038",
 	"Lists of allowed executables cannot be modified");
 
+  if (pszSection && pszItemName 
+      && STR_EQUAL (pszSection, "Parameters")
+      && STR_EQUAL (pszItemName, "AllowOSCalls"))
+    sqlr_new_error ("42000", "FA038", "The flag for enable/disable system call cannot be modified");
+
   if (cfg_write (pcfgFile, pszSection, pszItemName, pszItemValue) == -1 ||
       cfg_commit (pcfgFile) == -1)
     sqlr_new_error ("39000", "FA037", "Can't update %s", pszPath);
