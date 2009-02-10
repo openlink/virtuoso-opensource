@@ -2033,6 +2033,14 @@ typedef struct rdf_twobytes_dict_s {
 rdf_twobytes_dict_t rdf_dt_twobytes_dict = { NULL, NULL, NULL };
 rdf_twobytes_dict_t rdf_lang_twobytes_dict = { NULL, NULL, NULL };
 
+static void
+rdf_twobytes_dict_init (rdf_twobytes_dict_t *dict, int size)
+{
+  dict->rdt_mutex = mutex_allocate ();
+  dict->rdt_array = dk_alloc_box_zero (size * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  dict->rtd_hash = hash_table_allocate (size);
+}
+
 caddr_t
 bif_rdf_twobyte_cache (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -2044,12 +2052,6 @@ bif_rdf_twobyte_cache (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     case 121: dict = &rdf_dt_twobytes_dict; break;
     case 122: dict = &rdf_lang_twobytes_dict; break;
     default: return box_dv_short_string ("Do not use it in vain!");
-    }
-  if (NULL == dict->rdt_mutex)
-    {
-      dict->rdt_mutex = mutex_allocate ();
-      dict->rdt_array = dk_alloc_box_zero (1024 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
-      dict->rtd_hash = hash_table_allocate (1024);
     }
   if (2 < BOX_ELEMENTS (args))
     {
@@ -2530,6 +2532,8 @@ rdf_core_init (void)
 #ifdef DEBUG
   bif_define ("turtle_lex_test", bif_turtle_lex_test);
 #endif
+  rdf_twobytes_dict_init (&rdf_dt_twobytes_dict, 2048);
+  rdf_twobytes_dict_init (&rdf_lang_twobytes_dict, 512);
   if (100 >= iri_cache_size)
     iri_cache_size = main_bufs / 2;
   iri_name_cache = nic_allocate (iri_cache_size, 1);
