@@ -110,6 +110,17 @@ typedef struct http_resp_evt_q_s
 #define HC_METHOD_HEAD 2
 #define HC_METHOD_POST 3
 #define HC_METHOD_PUT  4
+#define HC_METHOD_DELETE 5
+#define HC_METHOD_OPTIONS 6
+
+/* WebDAV methods */
+#define HC_METHOD_PROPFIND 	7
+#define HC_METHOD_PROPPATCH 	8
+#define HC_METHOD_COPY 		9
+#define HC_METHOD_MOVE 		10
+#define HC_METHOD_LOCK 		11
+#define HC_METHOD_UNLOCK 	12
+#define HC_METHOD_MKCOL 	13
 
 #define HA_ALGORITHM_MD5      1
 #define HA_ALGORITHM_MD5_SESS 2
