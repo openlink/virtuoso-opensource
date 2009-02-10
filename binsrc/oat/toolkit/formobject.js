@@ -808,15 +808,15 @@ OAT.FormObject = {
 			self.markerMapping = {};
 
 			var cb = function() {
-			self.map.centerAndZoom(0,0,self.zoom);
-			self.map.addTypeControl();
-			self.map.addTrafficControl();
-			self.map.addMapControl();
-			switch (self.properties[4].value) {
-				case "Map": self.map.setMapType(OAT.MapData.MAP_MAP); break;
-				case "Satellite": self.map.setMapType(OAT.MapData.MAP_ORTO); break;
-				case "Hybrid": self.map.setMapType(OAT.MapData.MAP_HYB); break;
-			}
+				self.map.centerAndZoom(0,0,self.zoom);
+				self.map.addTypeControl();
+				self.map.addTrafficControl();
+				self.map.addMapControl();
+				switch (self.properties[4].value) {
+					case "Map": self.map.setMapType(OAT.MapData.MAP_MAP); break;
+					case "Satellite": self.map.setMapType(OAT.MapData.MAP_ORTO); break;
+					case "Hybrid": self.map.setMapType(OAT.MapData.MAP_HYB); break;
+				}
 			}
 
 			self.map = new OAT.Map(self.elm,self.provider,self.fixObj);

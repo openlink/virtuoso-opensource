@@ -9,7 +9,17 @@
  */
 /* browser */
 
-.rdf_data {
+.rdft_browser {
+  font-size: 8pt;
+}
+
+.rdft_browser h3 {}
+.rdft_browser rdf_s {}
+.rdft_browser h3.rdf_subject {}
+.rdft_browser h3.data { display: none }
+
+
+.rdft_browser div.rdf_data {
 	width: 100%;
 	margin-top: 1em;
 	padding-bottom: 10px;
@@ -22,11 +32,23 @@
 	background-position: bottom
 }
 
-.rdf_item h3 {
-	margin-top: 10px
+.rdft_browser .rdf_item h3 {	
+  font-size: 9pt;
+  color: inherit;
 }
 
-.rdf_item {
+.rdft_browser .rdf_item h3 a {
+  text-decoration: none;
+  color: #333;	     
+}
+
+.rdft_browser .rdf_item h3 a:hover {
+  text-decoration: underline;
+  color: #337;
+}
+
+.rdft_browser .rdf_item {
+/*
 	padding: 10px;
 	padding-top: 0px;
 	width: 90%;
@@ -35,7 +57,25 @@
 	margin: 0.5em;
 	background-color: #eee;
 	overflow: hidden;
+*/
+	border-top: 1px solid #333;
+	width: 100%;
+	clear: both;
+	float: left;	
+	margin: 8px 0 0 0;
 }
+
+.rdft_browser div.rdf_preds {}
+.rdft_browser div.rdf_p { float: left; clear: left; width: 33%; font-weight: bold; overflow: hidden}
+.rdft_browser div.rdf_p a { text-decoration: none; color: #337 }
+.rdft_browser div.rdf_p a:hover { text-decoration: underline }
+
+.rdft_browser ul.rdf_o { float: left; margin-top: 0px; margin-bottom: 5px; padding: 0;width: 66%}
+.rdft_browser li.rdf_o { list-style-type: none; }
+.rdft_browser li.rdf_o a { text-decoration: none; color: #337;}
+.rdft_browser li.rdf_o a:hover { text-decoration: underline; }
+
+.rdft_browser ul.rdf_o img { max-width: 100%}
 
 .rdf_group {
 	background-color: #ddd

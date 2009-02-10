@@ -254,7 +254,10 @@ OAT.AJAX = {
 					var img = OAT.Dom.create("img");
 					img.src = OAT.AJAX.imagePath+"Ajax_throbber.gif";
 					OAT.Dom.append([div,img,OAT.Dom.create("br"),OAT.Dom.text("Ajax call in progress...")]);
-					OAT.AJAX.dialog = new OAT.Dialog("Please wait",div,{width:240,height:0,modal:0,zIndex:1001,resize:0,imagePath:OAT.AJAX.imagePath});
+					OAT.AJAX.dialog = 
+					  new OAT.Dialog("Please wait",
+							 div,{width:240,height:0,modal:0,zIndex:1001,
+							      resize:0,imagePath:OAT.AJAX.imagePath});
 					OAT.AJAX.dialog.ok = OAT.AJAX.dialog.hide;
 					OAT.AJAX.dialog.cancel = function() {
 						OAT.AJAX.dialog.hide();

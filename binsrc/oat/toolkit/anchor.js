@@ -217,23 +217,23 @@ OAT.Anchor = {
 				OAT.Anchor.appendContent(options);
 			}
             
-            if (!preload) {
-			if (options.activation=="focus") {
+			if (!preload) {
+			    if (options.activation=="focus") {
 				pos = OAT.Dom.position(elm);
-			}
-			options.anchorTo(pos[0],pos[1]);
-			win.show();
+			    }
+			    options.anchorTo(pos[0],pos[1]);
+			    win.show();
 			    window.setTimeout(function(){
 				options.anchorTo(pos[0],pos[1]);
 			    },60); /* after adding arrows, window can be shifted a bit */
-		}
+			}
 			
 		}
         
-        if (options.preload) {
-            win.preload();
-            options.displayRef(false, true);
-        }
+	        if (options.preload) {
+		    win.preload();
+		    options.displayRef(false, true);
+		}
         
 		options.anchorTo = function(x_,y_) {
 			var win = options.window;

@@ -53,11 +53,11 @@ OAT.Win = function(optObj) {
 	}
 	self.moveTo = function(x,y) {
                 if (x>0)
-		self.dom.container.style.left = x+"px";
+                    self.dom.container.style.left = x+"px";
 		else
                     self.dom.container.style.right = Math.abs(x)+"px";
                 if (y>0)
-		self.dom.container.style.top = y+"px";
+                    self.dom.container.style.top = y+"px";
                 else
                     self.dom.container.style.top = Math.abs(y)+"px";
 	}
@@ -68,9 +68,9 @@ OAT.Win = function(optObj) {
 	self.outerResizeTo = function(w,h) {
             self.dom.container.style.width = (w ? w+"px" : "auto");
             self.dom.container.style.height = (h ? h+"px" : "auto");
-	}
+        }
 	self.preload = function() {
-		document.body.appendChild(self.dom.container);
+	    document.body.appendChild(self.dom.container);
         }
 	self.show = function() {
 		self.preload();
@@ -116,7 +116,7 @@ OAT.Win = function(optObj) {
 	self.flip = function(side) { }
 	self.accomodate = function(node) { // sets width and height according to the specified element of auto if none specified
 		if (node) {
-		var dims = OAT.Dom.getWH(node);
+		    var dims = OAT.Dom.getWH(node);
                 } else {
 		    var dims = [false,false];
                 }

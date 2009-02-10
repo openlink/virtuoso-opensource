@@ -426,7 +426,7 @@ OAT.WebDav = {
 			if(user !== false) { path = pathHome + user + "/"; }
 			if(!silentStart || (user === false && pass === false)) { this.connectDialog.show(); }
 		}
-		
+
 		if (this.options.hiddenPrefixes)
 		{
 			this.hiddens = this.options.hiddenPrefixes.split(",");

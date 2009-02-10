@@ -61,71 +61,71 @@ OAT.Map = function(something, provider, optionsObject, specificOptions) {
 	this.elm.innerHTML = "Map service currently disabled or not available.";
 	this.markerArr = [];
 	this.layerObj = false;
-	
+
 	this.init = function(provider) {
 		OAT.Dom.clear(self.elm);
 		switch (provider) { /* create main object */
-		case OAT.MapData.TYPE_G: 
-				OAT.Dom.clear(self.elm);
-			self.obj = new GMap2(self.elm,specificOptions); 
-			self.geoCoder = new GClientGeocoder();
-		break;
-		case OAT.MapData.TYPE_Y: 
-			self.obj = new YMap(self.elm,specificOptions); 
-			self.geoCodeBuffer = [];
-			YEvent.Capture(self.obj,EventsList.onEndGeoCode,function(result){
-				var index = -1;
-				for (var i=0;i<self.geoCodeBuffer.length;i++) {
-					var item = self.geoCodeBuffer[i];
-					if (item[0] == result.Address) { index = i; }
-				}
-				if (index == -1) { return; }
-				var cb = self.geoCodeBuffer[index][1];
-				self.geoCodeBuffer.splice(index,1);
-				if (!result.success) { cb(false); }
-				cb([result.GeoPoint.Lat,result.GeoPoint.Lon]);
-			});
-		break;
-		case OAT.MapData.TYPE_MS: 
-				self.elm.id = 'our_mapping_element';
-				self.obj = new VEMap('our_mapping_element',specificOptions);
-				self.obj.LoadMap();
-			self.layerObj = new OAT.Layers(100);
-		break;
-		case OAT.MapData.TYPE_OL: 
-		    self.obj = new OpenLayers.Map(self.elm,specificOptions);
-		    var wms = new OpenLayers.Layer.WMS( "OpenLayers WMS", 
-					"http://labs.metacarta.com/wms/vmap0", {layers: 'basic'} );
-		    self.obj.addLayer(wms);
-				
-            var wms = new OpenLayers.Layer.KaMap("Satellite",
-				"http://openlayers.org/world/index.php",{g:"satellite",map:"world"});
-		    self.obj.addLayer(wms);
-			
-			self.markersLayer = new OpenLayers.Layer.Markers("Marker Pins");
-		    self.obj.addLayer(self.markersLayer);		
-			
-			self.layerObj = new OAT.Layers(100);
-			break;
-	}
-	
-	if (self.options.fix != OAT.MapData.FIX_NONE) { /* marker fix */
-			switch (provider) { 
 			case OAT.MapData.TYPE_G: 
-				GEvent.addListener(self.obj,'zoomend',function(){self.fixMarkers();});
+				OAT.Dom.clear(self.elm);
+				self.obj = new GMap2(self.elm,specificOptions); 
+				self.geoCoder = new GClientGeocoder();
 			break;
 			case OAT.MapData.TYPE_Y: 
-				YEvent.Capture(self.obj,EventsList.changeZoom,function(){self.fixMarkers();});
+				self.obj = new YMap(self.elm,specificOptions); 
+				self.geoCodeBuffer = [];
+				YEvent.Capture(self.obj,EventsList.onEndGeoCode,function(result){
+					var index = -1;
+					for (var i=0;i<self.geoCodeBuffer.length;i++) {
+						var item = self.geoCodeBuffer[i];
+						if (item[0] == result.Address) { index = i; }
+					}
+					if (index == -1) { return; }
+					var cb = self.geoCodeBuffer[index][1];
+					self.geoCodeBuffer.splice(index,1);
+					if (!result.success) { cb(false); }
+					cb([result.GeoPoint.Lat,result.GeoPoint.Lon]);
+				});
 			break;
-			case OAT.MapData.TYPE_MS:
-				self.obj.AttachEvent("onendzoom",function(){self.fixMarkers();});
+			case OAT.MapData.TYPE_MS: 
+				self.elm.id = 'our_mapping_element';
+				self.obj = new VEMap('our_mapping_element',specificOptions);
+					self.obj.LoadMap();
+				self.layerObj = new OAT.Layers(100);
 			break;
-			case OAT.MapData.TYPE_OL:
-				self.obj.events.register("move",self.obj,function(){self.fixMarkers();});
+			case OAT.MapData.TYPE_OL: 
+				self.obj = new OpenLayers.Map(self.elm,specificOptions);
+				var wms = new OpenLayers.Layer.WMS( "OpenLayers WMS", 
+					"http://labs.metacarta.com/wms/vmap0", {layers: 'basic'} );
+				self.obj.addLayer(wms);
+				
+				var wms = new OpenLayers.Layer.KaMap("Satellite",
+					"http://openlayers.org/world/index.php",{g:"satellite",map:"world"});
+				self.obj.addLayer(wms);
+				
+				self.markersLayer = new OpenLayers.Layer.Markers("Marker Pins");
+				self.obj.addLayer(self.markersLayer);		
+				
+				self.layerObj = new OAT.Layers(100);
 			break;
 		}
-	}
 	
+		if (self.options.fix != OAT.MapData.FIX_NONE) { /* marker fix */
+			switch (provider) { 
+				case OAT.MapData.TYPE_G: 
+					GEvent.addListener(self.obj,'zoomend',function(){self.fixMarkers();});
+				break;
+				case OAT.MapData.TYPE_Y: 
+					YEvent.Capture(self.obj,EventsList.changeZoom,function(){self.fixMarkers();});
+				break;
+				case OAT.MapData.TYPE_MS:
+					self.obj.AttachEvent("onendzoom",function(){self.fixMarkers();});
+				break;
+				case OAT.MapData.TYPE_OL:
+					self.obj.events.register("move",self.obj,function(){self.fixMarkers();});
+				break;
+			}
+		}
+
 		self.provider = provider;
 	}
 
@@ -551,7 +551,7 @@ OAT.Map = function(something, provider, optionsObject, specificOptions) {
 				$(marker.__id).appendChild(marker.__win.div);
 				var pos = OAT.Dom.eventPos(event);
 				win.anchorTo(0,0);
-				
+
 				/* MSVE doesnt support repositioning markers
 				   http://garzilla.net/vemaps/MovePushPin4.aspx
 				   moving map to pushpin example
@@ -627,8 +627,8 @@ OAT.Map = function(something, provider, optionsObject, specificOptions) {
 			case OAT.MapData.TYPE_OL: 
 				var icon = false;
 				if (w && h) { icon = new OpenLayers.Icon(file,new OpenLayers.Size(w,h)); }
-			    var marker = new OpenLayers.Marker( new OpenLayers.LonLat(lon,lat),icon);
-			    self.markersLayer.addMarker(marker);
+			    	var marker = new OpenLayers.Marker( new OpenLayers.LonLat(lon,lat),icon);
+			    	self.markersLayer.addMarker(marker);
 				marker.closeInfoWindow = function() { if (marker.__win) {
 						self.obj.removePopup(marker.__win);	
 						marker.__win = false;
@@ -647,9 +647,9 @@ OAT.Map = function(something, provider, optionsObject, specificOptions) {
 		}	
 
 		if (marker) {
-		marker.__coords = [lat,lon];
-		marker.__group = group;
-		self.markerArr.push(marker);
+			marker.__coords = [lat,lon];
+			marker.__group = group;
+			self.markerArr.push(marker);
 		}
 		
 		return marker;

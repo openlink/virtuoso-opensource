@@ -26,7 +26,7 @@ OAT.Panelbar = function(div, delay, height, noanim) {
 	self.noanim = (noanim ? true : false);
 	self.animA = false;
 	self.animB = false;
-	
+
 	this.go = function(index, noanim) {
 		if (self.animA) self.animA.stop();
 		if (self.animB) self.animB.stop();
