@@ -375,4 +375,20 @@ caddr_t http_client_cache_get (query_instance_t * qi, caddr_t url, caddr_t heade
 void http_client_cache_register (query_instance_t * qi, caddr_t url, caddr_t header, caddr_t req_body, caddr_t * head, caddr_t body);
 void zlib_box_gzip_uncompress (caddr_t src, dk_session_t * out, caddr_t * err_ret);
 
+#ifdef _SSL
+typedef enum {
+  	HTTPS_VERIFY_NONE = 0,
+	HTTPS_VERIFY_REQUIRED = 1,
+	HTTPS_VERIFY_OPTIONAL = 2,
+	HTTPS_VERIFY_OPTIONAL_NO_CA = 3
+} https_verify_t;
+
+typedef struct https_ctx_info_s
+{
+  int32 hci_depth;
+  int32 hci_verify;
+  char *hci_name;
+} https_ctx_info_t;
+#endif
+
 #endif /* _HTTP_H */
