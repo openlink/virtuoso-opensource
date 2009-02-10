@@ -1394,8 +1394,8 @@ get_rdf_literal_prop (cli_connection_t * con, SQLSMALLINT ftype, short key)
       char * qr = ((ftype == SQL_DESC_COL_LITERAL_LANG) ? qr_lang : qr_type);
       char buf[1000];
       SQLHSTMT hstmt;
-      SQLINTEGER m_ind = 0;
-      SDWORD flag;
+      SQLLEN  m_ind = 0;
+      SQLLEN flag;
       int rc;
 
       rc = virtodbc__SQLAllocHandle (SQL_HANDLE_STMT, con, &hstmt);
