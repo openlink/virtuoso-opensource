@@ -39,6 +39,8 @@ SOURCES1= \
 	RPC.cs \
 	Service.cs \
 	SqlXml.cs \
+	SqlExtendedString.cs \
+	SqlRdfBox.cs \
 	TcpConnection.cs \
 	TcpSession.cs \
 	Unix.cs \
@@ -108,7 +110,7 @@ endif
 
 
 
-all: OpenLink.Data.Virtuoso.dll OpenLink.Data.VirtuosoClient.dll OpenLink.Data.VirtuosoOdbcClient.dll
+all: OpenLink.Data.Virtuoso.dll #OpenLink.Data.VirtuosoClient.dll OpenLink.Data.VirtuosoOdbcClient.dll
 
 OpenLink.Data.Virtuoso.dll: $(SOURCES) 
 	$(CSC) /unsafe /target:library /out:$@ $(CSFLAGS) $(SOURCES) $(REFERENCES) $(RESOURCES)
