@@ -242,6 +242,7 @@ grant select on DB.DBA.Review to public
 create unique index review_product on DB.DBA.Review (product, producer, nr)
 ;
 
+create index review_person_1 on DB.DBA.Review (person, product, title)
 create index review_person on DB.DBA.Review (person)
 ;
 

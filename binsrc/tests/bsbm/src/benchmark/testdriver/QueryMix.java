@@ -171,8 +171,10 @@ public class QueryMix {
 	}
 	
 	public void reportTimeOut() {
+		if(run>=0) {
 		int queryNr = queryMix[currentQueryIndex];
 		timeoutsPerQuery[queryNr]++;
+	}
 	}
 	
 	public Query getNext() {

@@ -37,6 +37,9 @@ public class Turtle implements Serializer {
 		
 		this.forwardChaining = forwardChaining;
 		nrTriples = 0l;
+		
+		TurtleShutdown sd = new TurtleShutdown(this);
+		Runtime.getRuntime().addShutdownHook(sd);
 	}
 	
 	/*
@@ -756,6 +759,9 @@ public class Turtle implements Serializer {
 			
 			prefixFileWriter.flush();
 			prefixFileWriter.close();
+			data.close();
+			
+			dataFile.delete();
 		} catch(IOException e) {
 			System.err.println(e.getMessage());
 			System.exit(-1);
@@ -764,6 +770,21 @@ public class Turtle implements Serializer {
 
 	public Long triplesGenerated() {
 		return nrTriples;
+	}
+	
+	class TurtleShutdown extends Thread {
+		Turtle serializer;
+		TurtleShutdown(Turtle t) {
+			serializer = t;
+		}
+		
+		public void run() {
+			try {
+			serializer.dataFileWriter.flush();
+			serializer.dataFileWriter.close();
+			} catch(IOException e) {}
+			serializer.dataFile.delete();
+		}
 	}
 }
 

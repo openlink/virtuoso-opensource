@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2008 Andreas Schultz
+ *
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package benchmark.generator;
 
 import benchmark.model.*;
@@ -928,7 +945,6 @@ public class Generator {
 						"\t\tNote:\tBy chosing a named graph output format like TriG,\n\t\t\ta named graph model gets generated.\n" +
 						"\t-pc <product count>\n" +
 						"\t\tdefault: 100\n" +
-						"\t\tNote:\tstandard scale factors should be a power of 10.\n" +
 						"\t-fc\tSwitch on forward chaining which is by default off\n" +
 						"\t-dir <output directory>\n" +
 						"\t\tThe output directory for the Test Driver data\n" +
@@ -943,7 +959,6 @@ public class Generator {
 	 */
 	public static void main(String[] args) {
 		processProgramParameters(args);
-		
 		init();
 		
 		createProductTypeHierarchy();

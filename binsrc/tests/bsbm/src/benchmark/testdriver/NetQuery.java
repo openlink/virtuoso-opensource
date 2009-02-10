@@ -1,6 +1,7 @@
 package benchmark.testdriver;
 
 import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.net.*;
 import java.io.*;
 
@@ -12,7 +13,7 @@ public class NetQuery {
 	
 	protected NetQuery(String serviceURL, String query, String encodedParamString, byte queryType, String defaultGraph, int timeout) {
 		try {
-			String urlString = serviceURL + "?query=" + URLEncoder.encode(query, "UTF-8") + encodedParamString;
+			String urlString = serviceURL + "?query=" + java.net.URLEncoder.encode(query, "UTF-8") + encodedParamString;
 //			System.out.println(urlString);
 
 			if(defaultGraph!=null)

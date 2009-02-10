@@ -3,6 +3,8 @@ package benchmark.testdriver;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
+import benchmark.qualification.QueryResult;
+
 import java.sql.*;
 
 public class SQLConnection implements ServerConnection {
@@ -150,5 +152,10 @@ public class SQLConnection implements ServerConnection {
 			e.printStackTrace();
 			System.exit(-1);
 		}
+	}
+
+	public QueryResult executeValidation(Query query, byte queryType) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

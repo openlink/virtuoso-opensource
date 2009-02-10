@@ -13,8 +13,11 @@ public class ResultTransform {
 	static StringBuffer sb;
 	static FileWriter query_size_of_stores;
 	static FileWriter store_size_of_queries;
+	static FileWriter size_store_of_queries;
 	static FileWriter store_query_of_size;
+	static FileWriter overview;
 	static String[][][] storesQueriesSizes;
+	static String[][] storesSizes;
 	static String[][] dimensionArrays;
 	
 	private final static String[] queries = { "Query 1", "Query 2", "Query 3", "Query 4",
@@ -23,6 +26,9 @@ public class ResultTransform {
 	private static final String[] sizes = { "250K", "1M", "25M", "100M" };
 //	private static final String[] sizes = { "25M", "100M" };
 	private static HashMap<String, Integer> sizeMap = new HashMap<String, Integer>();
+	static String queryParameter = "aqet";
+	static String querymixParameter = "actualtotalruntime";
+	static boolean american = true;//switch . and ,
 	
 	public static void main(String argv[]) {
 		String[] storeNames = new String[argv.length];
@@ -44,9 +50,12 @@ public class ResultTransform {
 		
 		createHtmlFile(query_size_of_stores);
 		createHtmlFile(store_size_of_queries);
-		createHtmlFile(query_size_of_stores);
+		createHtmlFile(size_store_of_queries);
+		createHtmlFile(store_query_of_size);
+		createHtmlFile(overview);
 
 		storesQueriesSizes = new String[storeNames.length][sizes.length][queries.length];
+		storesSizes = new String[storeNames.length][sizes.length];
 		dimensionArrays = new String[3][];
 		dimensionArrays[0] = storeNames;
 		dimensionArrays[1] = sizes;
@@ -76,6 +85,7 @@ public class ResultTransform {
 	
 					handler.setArray(queries);
 					saxParser.parse(is, handler);
+					storesSizes[x][sizeIndex] = handler.getQmValue();
 				}
 			}
 		}
@@ -89,6 +99,8 @@ public class ResultTransform {
 	  	create_query_size_of_stores_table(storeNames);
 	  	create_store_query_of_sizes_table(sizes);
 	  	create_store_size_of_query_table(queries);
+	  	create_size_store_of_query_table(queries);
+	  	create_overview_table();
 	  } catch(IOException e) {
 		  e.printStackTrace();
 		  System.exit(-1);
@@ -96,7 +108,9 @@ public class ResultTransform {
 
 	  	closeHtmlFile(query_size_of_stores);
 	  	closeHtmlFile(store_size_of_queries);
+	  	closeHtmlFile(size_store_of_queries);
 		closeHtmlFile(store_query_of_size);
+		closeHtmlFile(overview);
 		
 		System.out.println("done");
 	}
@@ -135,7 +149,7 @@ public class ResultTransform {
 	 * Generate an HTML table. dimX and dimY are different numbers from the set {0,1,2},
 	 * representing 0:stores, 1:sizes, 2:queries to define the dimensions of the table.
 	 */
-	private static String createHtmlTable(String name, int dimX, int dimY, int fixedDim, int fixedValue) {
+	private static String createHtmlTable(String name, int dimX, int dimY, int fixedDim, int fixedValue, boolean overall) {
 		StringBuffer sb = new StringBuffer();
 		String[] xDimArray = dimensionArrays[dimX];
 		String[] yDimArray = dimensionArrays[dimY];
@@ -181,7 +195,7 @@ public class ResultTransform {
 		//Append table head
 		sb.append("<h4>" + name + "</h4>\n");
 		sb.append("<table style=\"text-align: center; width: 80%;\" border=\"1\" cellpadding=\"1\" cellspacing=\"1\">");
-		sb.append("<b><tr><th> </th>");
+		sb.append("<b><tr><th>&nbsp;</th>");
 		for(int i=0; i < xDimArray.length;i++)
 			sb.append("<th>"+xDimArray[i]+"</th>");
 		sb.append("</tr>\n");
@@ -189,12 +203,20 @@ public class ResultTransform {
 		for(y.setValue(0); y.getValue() < yDimArray.length;y.inc()) {
 			sb.append("<tr><td><b>"+yDimArray[y.getValue()]+"</b></td>");
 			for(x.setValue(0); x.getValue() < xDimArray.length;x.inc()) {
-				String val = storesQueriesSizes[storeInd.getValue()][sizeInd.getValue()][queryInd.getValue()];
+				String val;
+				if(overall)
+					val = storesSizes[storeInd.getValue()][sizeInd.getValue()];
+				else
+					val = storesQueriesSizes[storeInd.getValue()][sizeInd.getValue()][queryInd.getValue()];
 				if(val!=null) {
 					if(val.equals("0.0"))
 						sb.append("<td>not executed</td>");
-					else
+					else {
+						if(american)
 						sb.append("<td>"+val+"</td>");
+						else
+							sb.append("<td>"+val.replace('.', ',')+"</td>");
+					}
 				}
 				else
 					sb.append("<td>no value</td>");
@@ -208,19 +230,30 @@ public class ResultTransform {
 	
 	private static void create_query_size_of_stores_table(String[] stores) throws IOException{
 		for(int i=0;i<stores.length;i++) {
-			query_size_of_stores.append(createHtmlTable(stores[i], 1, 2, 0, i));
+			query_size_of_stores.append(createHtmlTable(stores[i], 1, 2, 0, i, false));
 		}
 	}
 	
 	private static void create_store_size_of_query_table(String[] queries) throws IOException{
 		for(int i=0;i<queries.length;i++) {
-			store_size_of_queries.append(createHtmlTable(queries[i], 1, 0, 2, i));
+			store_size_of_queries.append(createHtmlTable(queries[i], 1, 0, 2, i, false));
+		}
+	}
+	
+	private static void create_overview_table() throws IOException{
+			overview.append(createHtmlTable(querymixParameter, 1, 0, 2, 0, true));
+			overview.append(createHtmlTable(querymixParameter, 0, 1, 2, 0, true));
+	}
+	
+	private static void create_size_store_of_query_table(String[] queries) throws IOException{
+		for(int i=0;i<queries.length;i++) {
+			size_store_of_queries.append(createHtmlTable(queries[i], 0, 1, 2, i, false));
 		}
 	}
 	
 	private static void create_store_query_of_sizes_table(String[] sizes) throws IOException{
 		for(int i=0;i<sizes.length;i++) {
-			store_query_of_size.append(createHtmlTable(sizes[i], 0, 2, 1, i));
+			store_query_of_size.append(createHtmlTable(sizes[i], 0, 2, 1, i, false));
 		}
 	}
 	
@@ -229,7 +262,9 @@ public class ResultTransform {
 		try {
 			query_size_of_stores = new FileWriter("query_and_size_tables_of_stores.html");
 			store_size_of_queries = new FileWriter("store_and_size_tables_of_queries.html");
+			size_store_of_queries = new FileWriter("size_and_store_tables_of_queries.html");
 			store_query_of_size = new FileWriter("store_and_query_tables_of_sizes.html");
+			overview = new FileWriter("overview.html");
 		} catch(IOException e) {
 			System.err.println("Could not open Input directories!");
 			System.exit(-1);
@@ -267,10 +302,13 @@ class IntReference {
 }
 
 class ResultHandler extends DefaultHandler {
-	boolean inAttr;
+	boolean inQueryAttr;
+	boolean inQMAttr;
 	String[] resultArray;
 	int index;
-	String attr = "qps";
+	String qmValue;
+	String queryAttr = ResultTransform.queryParameter;
+	String qmAttr = ResultTransform.querymixParameter;
 	
 	ResultHandler() {
 	}
@@ -281,24 +319,35 @@ class ResultHandler extends DefaultHandler {
             Attributes attrs ) {
 		if(qName.equals("bsbm"))
 			init();
-		else if(qName.equals(attr))
-			inAttr = true;
+		else if(qName.equals(queryAttr))
+			inQueryAttr = true;
+		else if(qName.equals(qmAttr))
+			inQMAttr = true;
 	}
 	
 	public void endElement(String uri, String localName, String qName) {
-		if(qName.equals(attr))
-			inAttr = false;
+		if(qName.equals(queryAttr))
+			inQueryAttr = false;
+		else if(qName.equals(qmAttr))
+			inQMAttr = false;
 	}
 	
 	public void characters(char[] ch,
             int start,
             int length) {
-		if(inAttr) {
+		if(inQueryAttr) {
 			String t = "";
 		    for ( int i = start; i < (start + length); i++ )
 		      t += ch[i];
 
 		    resultArray[index++] = t;
+		}
+		else if(inQMAttr) {
+			String t = "";
+		    for ( int i = start; i < (start + length); i++ )
+		      t += ch[i];
+
+		    qmValue = t;
 		}
 	}
 	
@@ -308,8 +357,12 @@ class ResultHandler extends DefaultHandler {
 	}
 	
 	private void init() {
-		inAttr = false;
+		inQueryAttr = false;
 		index = 0;
+	}
+
+	public String getQmValue() {
+		return qmValue;
 	}
 }
 

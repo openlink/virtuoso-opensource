@@ -1,12 +1,10 @@
 package benchmark.testdriver;
 
-import java.io.UnsupportedEncodingException;
-import java.net.*;
 import java.io.*;
 import java.util.*;
 
 public class Query {
-	public byte queryType;
+	public Byte queryType;
 	private String[] parameterNames;
 	private Object[] parameters;
 	private Integer[] parameterFills;
@@ -20,6 +18,8 @@ public class Query {
 	public final byte queryLang;
 	public final byte querySyntax;
 	public final boolean isParametrized;
+	private String[] rowNames;//which rows to look at for validation
+	
 	//Parameter constants
 	public static final byte PRODUCT_PROPERTY_NUMERIC = 1;
 	public static final byte PRODUCT_FEATURE_URI = 2;
@@ -301,8 +301,7 @@ public class Query {
 		return res.toString();
 	}
 
-	public void setParameters(Object[] param)
-	{
+	public void setParameters(Object[] param) {
 		if(parameters.length==param.length)
 			parameters = param;
 		else {
@@ -339,7 +338,7 @@ public class Query {
 				s.append(parameterNames[i]);
 				s.append("=");
 				s1.append(parameters[i]);
-				s.append(URLEncoder.encode(s1.toString(), "UTF-8"));
+				s.append(java.net.URLEncoder.encode(s1.toString(), "UTF-8"));
 			}
 		} catch(UnsupportedEncodingException e) {
 			System.err.println(e.toString());
@@ -370,5 +369,13 @@ public class Query {
 
 	public void setQueryMix(QueryMix queryMix) {
 		this.queryMix = queryMix;
+	}
+
+	public String[] getRowNames() {
+		return rowNames;
+	}
+
+	public void setRowNames(String rowNames[]) {
+		this.rowNames = rowNames;
 	}
 }

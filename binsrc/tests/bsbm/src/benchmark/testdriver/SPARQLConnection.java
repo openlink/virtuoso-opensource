@@ -5,9 +5,16 @@ import java.net.SocketTimeoutException;
 import javax.xml.parsers.*;
 import org.xml.sax.*;
 import org.xml.sax.helpers.DefaultHandler;
+import org.jdom.*;
+import org.jdom.input.SAXBuilder;
+import org.jdom.output.XMLOutputter;
+
+import java.util.*;
 
 import org.apache.log4j.Logger;
 import org.apache.log4j.Level;
+
+import benchmark.qualification.QueryResult;
 
 public class SPARQLConnection implements ServerConnection{
 	private String serverURL;
@@ -105,13 +112,15 @@ public class SPARQLConnection implements ServerConnection{
 		}
 		
 		int resultCount = 0;
-		//Write XML result into result
+		
 		try {
+			//Write XML result into result
 			if(queryType==Query.SELECT_TYPE)
 				resultCount = countResults(is);
 			else
 				resultCount = countBytes(is);
 
+			timeInSeconds = qe.getExecutionTimeInSeconds();
 		} catch(SocketTimeoutException e) {
 			double t = this.timeout/1000.0;
 			System.out.println("Query " + queryNr + ": " + t + " seconds timeout!");
@@ -120,8 +129,6 @@ public class SPARQLConnection implements ServerConnection{
 			qe.close();
 			return;
 		}
-		
-		timeInSeconds = qe.getExecutionTimeInSeconds();
 		
 		if(logger.isEnabledFor( Level.ALL ) && queryMixRun > 0)
 			logResultInfo(queryNr, queryMixRun, timeInSeconds,
@@ -215,5 +222,110 @@ private int countBytes(InputStream is) {
 	
 	public void close() {
 		//nothing to close
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see benchmark.testdriver.ServerConnection#executeValidation(benchmark.testdriver.Query, byte, java.lang.String[])
+	 * Gather information about the result a query returns.
+	 */
+	public QueryResult executeValidation(Query query, byte queryType) {
+		String queryString = query.getQueryString();
+		String parametrizedQueryString = query.getParametrizedQueryString();
+		String encodedParamString = query.getEncodedParamString();
+		int queryNr = query.getNr();
+		String[] rowNames = query.getRowNames();
+		boolean sorted = queryString.toLowerCase().contains("order by");
+		QueryResult queryResult = null;
+		NetQuery qe;
+		if (query.isParametrized)
+			qe = new NetQuery(serverURL, parametrizedQueryString, encodedParamString, queryType, defaultGraph, 0);
+		else
+			qe = new NetQuery(serverURL, queryString, "", queryType, defaultGraph, 0);
+		InputStream is = qe.exec();
+		Document doc = getXMLDocument(is);
+		XMLOutputter outputter = new XMLOutputter();
+		logResultInfo(query, outputter.outputString(doc));
+		
+		if(queryType==Query.SELECT_TYPE)
+			queryResult = gatherResultInfoForSelectQuery(queryString, queryNr, sorted, doc, rowNames);
+		
+		if(queryResult!=null)
+			queryResult.setRun(query.getQueryMix().getRun());
+		return queryResult;
+	}
+	
+	private void logResultInfo(Query query, String queryResult) {
+		StringBuffer sb = new StringBuffer();
+		
+		sb.append("\n\n\tQuery " + query.getNr() + " of run " + (query.getQueryMix().getQueryMixRuns()+1) + ":\n");
+		sb.append("\n\tQuery string:\n\n");
+		sb.append(query.getQueryString());
+		sb.append("\n\n\tResult:\n\n");
+		sb.append(queryResult);
+		sb.append("\n\n__________________________________________________________________________________\n");
+		logger.log(Level.ALL, sb.toString());
+	}
+	
+	private Document getXMLDocument(InputStream is) {
+		SAXBuilder builder = new SAXBuilder();
+		builder.setValidation(false);
+		builder.setIgnoringElementContentWhitespace(true);
+		Document doc = null;
+		try {
+			doc = builder.build(is);
+		} catch(JDOMException e) {
+			e.printStackTrace();
+			System.exit(-1);
+		} catch(IOException e ) {
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		return doc;
+	}
+	
+	private QueryResult gatherResultInfoForSelectQuery(String queryString, int queryNr, boolean sorted, Document doc, String[] rows) {
+		Element root = doc.getRootElement();
+
+		//Get head information
+		Element child = root.getChild("head", Namespace.getNamespace("http://www.w3.org/2005/sparql-results#"));
+		
+		//Get result rows (<head>)
+		List headChildren = child.getChildren("variable", Namespace.getNamespace("http://www.w3.org/2005/sparql-results#"));
+		
+		Iterator it = headChildren.iterator();
+		ArrayList<String> headList = new ArrayList<String>();
+		while(it.hasNext()) {
+			headList.add(((Element)it.next()).getAttributeValue("name"));
+		}
+
+		List resultChildren = root.getChild("results", Namespace.getNamespace("http://www.w3.org/2005/sparql-results#"))
+								   .getChildren("result", Namespace.getNamespace("http://www.w3.org/2005/sparql-results#"));
+		int nrResults = resultChildren.size();
+		
+		QueryResult queryResult = new QueryResult(queryNr, queryString, nrResults, sorted, headList);
+		
+		it = resultChildren.iterator();
+		while(it.hasNext()) {
+			Element resultElement = (Element) it.next();
+			String result = "";
+			
+			//get the row values and paste it together to one String
+			for(int i=0;i<rows.length;i++) {
+				List bindings = resultElement.getChildren("binding", Namespace.getNamespace("http://www.w3.org/2005/sparql-results#"));
+				String rowName = rows[i];
+				for(int j=0;j<bindings.size();j++) {
+					Element binding = (Element)bindings.get(j);
+					if(binding.getAttributeValue("name").equals(rowName))
+						if(result.equals(""))
+							result += rowName + ": " + ((Element)binding.getChildren().get(0)).getTextNormalize();
+						else
+							result += "\n" + rowName + ": " + ((Element)binding.getChildren().get(0)).getTextNormalize();
+				}
+			}
+			
+			queryResult.addResult(result);
+		}
+		return queryResult;
 	}
 }

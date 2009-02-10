@@ -1,11 +1,31 @@
+/*
+ * Copyright (C) 2008 Andreas Schultz
+ *
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package benchmark.testdriver;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.InputStreamReader;
+import java.io.ObjectOutputStream;
 
 import java.util.Locale;
+import java.util.ArrayList;
 
 import org.apache.log4j.xml.DOMConfigurator;
 import org.apache.log4j.Logger;
@@ -14,12 +34,15 @@ import org.apache.log4j.Level;
 import java.io.*;
 import java.util.StringTokenizer;
 
+import benchmark.qualification.QueryResult;
+
 public class TestDriver {
 	protected QueryMix queryMix;//The Benchmark Querymix
 	protected int warmups = TestDriverDefaultValues.warmups;//how many Query mixes are run for warm up
 	protected AbstractParameterPool parameterPool;//Where to get the query parameters from
 	private ServerConnection server;//only important for single threaded runs
-	private String queryMixFN = null;//"qm.txt";
+	private String queryMixFN = "querymix.txt";//"qm.txt";
+	private String ignoreQueryFN = "ignoreQueries.txt";//contains Queries to ignore
 	private File queryDir = TestDriverDefaultValues.queryDir;//where to take the queries from
 	protected int nrRuns = TestDriverDefaultValues.nrRuns;
 	private long seed = TestDriverDefaultValues.seed;//For the random number generators
@@ -44,8 +67,10 @@ public class TestDriver {
 	public boolean runParametrized = false;
 	public boolean multithreading = false;
 	protected int nrThreads;
-        protected String driverClassName = "com.mysql.jdbc.Driver";
 	protected int timeout = TestDriverDefaultValues.timeoutInMs;
+	protected String driverClassName = TestDriverDefaultValues.driverClassName;
+	protected boolean qualification = TestDriverDefaultValues.qualification;
+	private String qualificationFile = TestDriverDefaultValues.qualificationFile;
 	
 	public TestDriver(String[] args) {
 		processProgramParameters(args);
@@ -96,16 +121,23 @@ public class TestDriver {
 		queries = new Query[maxQueryNr];
 		ignoreQueries = new boolean[maxQueryNr];
 		
+		if(ignoreQueryFN==null) {
+			ignoreQueries = new boolean[maxQueryNr];
+			
 		for(int i=0;i<ignoreQueries.length;i++) {
 			ignoreQueries[i] = false;
 		}
 		
 		//WHICH QUERIES TO IGNORE
 //		ignoreQueries[4] = true;
+		}
+		else
+			ignoreQueries = getIgnoreQueryInfo(ignoreQueryFN, maxQueryNr);
 		
 		for(int i=0;i<queries.length;i++) {
 			queries[i] = null;
 		}
+		
 		for(int i=0;i<queryRun.length;i++) {
 			if(queryRun[i]!=null) {
 				Integer qnr = queryRun[i];
@@ -113,6 +145,12 @@ public class TestDriver {
 					File queryFile = new File(queryDir, "query" + qnr + ".txt");
 					File queryDescFile = new File(queryDir, "query" + qnr + "desc.txt");
 					queries[qnr-1] = new Query(queryFile, queryDescFile, queryLang, querySyntax, defaultGraph, runParametrized);
+					//Read qualification information
+					if(qualification) {
+						File queryValidFile = new File(queryDir, "query" + qnr + "valid.txt");
+						String[] rowNames = getRowNames(queryValidFile);
+						queries[qnr-1].setRowNames(rowNames);
+					}
 				}
 			}
 		}
@@ -121,25 +159,94 @@ public class TestDriver {
 		queryMix = new QueryMix(queries, queryRun);
 	}
 	
-	private Integer[] getQueryMixInfo(String queryMixFilename) {
-		File file = new File(queryMixFilename);
+	private String[] getRowNames(File file) {
+		ArrayList<String> rowNames = new ArrayList<String>();
+
 		try {
-			BufferedReader qmReader = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
+			BufferedReader rowReader = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
+
 			StringBuffer data = new StringBuffer();
 			String line = null;
-			while((line=qmReader.readLine())!=null) {
-				data.append(line);
-				data.append(" ");
+			while((line=rowReader.readLine())!=null) {
+				if(!line.equals("")){
+					data.append(line);
+					data.append(" ");
+				}
 			}
 				
 			StringTokenizer st = new StringTokenizer(data.toString());
-			while(st.hasMoreTokens());
-				System.out.println(st.nextToken());
+			while(st.hasMoreTokens()) {
+				rowNames.add(st.nextToken());
+			}
+
+		} catch(IOException e) {
+			System.err.println("Error processing query qualification-info file: " + file.getAbsolutePath());
+			System.exit(-1);
+		}
+		return rowNames.toArray(new String[1]);
+	}
+	
+	private Integer[] getQueryMixInfo(String queryMixFilename) {
+		System.out.println("Reading query mix file: " + queryMixFilename);
+		File file = new File(queryMixFilename);
+		ArrayList<Integer> qm = new ArrayList<Integer>();
+
+		try {
+			BufferedReader qmReader = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
+
+			StringBuffer data = new StringBuffer();
+			String line = null;
+			while((line=qmReader.readLine())!=null) {
+				if(!line.equals("")){
+				data.append(line);
+				data.append(" ");
+			}
+			}
+				
+			StringTokenizer st = new StringTokenizer(data.toString());
+			while(st.hasMoreTokens()) {
+				qm.add(Integer.parseInt(st.nextToken()));
+			}
+
 		} catch(IOException e) {
 			System.err.println("Error processing query mix file: " + queryMixFilename);
 			System.exit(-1);
 		}
-		return new Integer[2];
+		return qm.toArray(new Integer[1]);
+	}
+	
+	private boolean[] getIgnoreQueryInfo(String ignoreListFilename, int maxQueryNumber) {
+		System.out.println("Reading query ignore file: " + ignoreListFilename);
+		File file = new File(ignoreListFilename);
+		boolean[] ignoreQueries = new boolean[maxQueryNumber];
+		
+		for(int i=0;i<maxQueryNumber;i++)
+			ignoreQueries[i] = false;
+		
+		try {
+			BufferedReader qmReader = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
+
+			StringBuffer data = new StringBuffer();
+			String line = null;
+			while((line=qmReader.readLine())!=null) {
+				if(!line.equals("")){
+					data.append(line);
+					data.append(" ");
+				}
+			}
+				
+			StringTokenizer st = new StringTokenizer(data.toString());
+			while(st.hasMoreTokens()) {
+				Integer queryNr = Integer.parseInt(st.nextToken());
+				if(queryNr>0 && queryNr<=maxQueryNumber)
+					ignoreQueries[queryNr-1] = true;
+			}
+
+		} catch(IOException e) {
+			System.err.println("Error processing query ignore file: " + ignoreListFilename);
+			System.exit(-1);
+		}
+		return ignoreQueries;
 	}
 	
 	public void run() {
@@ -172,6 +279,48 @@ public class TestDriver {
 		}
 	}
 	
+	public void runQualification() {
+		File file = new File(qualificationFile);
+		System.out.println("Creating qualification file: " + file.getAbsolutePath() + "\n");
+		try{
+			file.createNewFile();
+			ObjectOutputStream objectOutput = new ObjectOutputStream(new FileOutputStream(file, false));
+			objectOutput.writeInt(queryMix.getQueries().length);
+			objectOutput.writeLong(seed);
+			objectOutput.writeInt(parameterPool.getScalefactor());
+			objectOutput.writeInt(nrRuns);
+			objectOutput.writeObject(queryMix.getQueryMix());
+			objectOutput.writeObject(ignoreQueries);
+			
+			for(int nrRun=0;nrRun<nrRuns;nrRun++) {
+				queryMix.setRun(nrRun+1);
+				System.out.print("Run: " + (nrRun + 1));
+				while(queryMix.hasNext()) {
+					Query next = queryMix.getNext();
+					Object[] queryParameters = parameterPool.getParametersForQuery(next);
+					next.setParameters(queryParameters);
+					if(ignoreQueries[next.getNr()-1])
+						queryMix.setCurrent(0, -1.0);
+					else {
+						QueryResult queryResult = server.executeValidation(next, next.getQueryType());
+						if(queryResult!=null)
+							objectOutput.writeObject(queryResult);
+						queryMix.setCurrent(0, -1.0);
+					}
+					System.out.print(".");
+				}
+				queryMix.finishRun();
+				System.out.println("done");
+			}
+			objectOutput.flush();
+			objectOutput.close();
+			System.out.println("\nQualification file created!");
+		} catch(IOException e) {
+			e.printStackTrace();
+			System.exit(-1);
+		}
+	}
+	
 	/*
 	 * run the test driver in multi-threaded mode
 	 */
@@ -197,8 +346,8 @@ public class TestDriver {
 	 */
 	private void processProgramParameters(String[] args) {
 		int i=0;
-			try {
 			while(i<args.length) {
+			try {
 				if(args[i].equals("-runs")) {
 					nrRuns = Integer.parseInt(args[i++ + 1]);
 				}
@@ -252,6 +401,13 @@ public class TestDriver {
 				else if (args[i].startsWith("-connpwd")) {
 					connPwd = args[i++ + 1];
 				}
+				else if (args[i].startsWith("-qf")) {
+					qualificationFile = args[i++ + 1];
+				}
+				else if (args[i].startsWith("-q")) {
+					qualification = true;
+					nrRuns = 15;
+				}
 				else if(args[i].startsWith("-seed")) {
 					seed = Long.parseLong(args[i++ + 1]);
 				}
@@ -268,12 +424,13 @@ public class TestDriver {
 				}
 				
 				i++;
-			}							
+				
 			} catch(Exception e) {
 				System.err.println("Invalid arguments\n");
 				printUsageInfos();
 				System.exit(-1);
 			}
+		}
 		if (null == connEndpoint) {
 			System.err.println("Connection endpoint is not set\n");
 			printUsageInfos();
@@ -449,7 +606,8 @@ public class TestDriver {
 						"\t-dg <Default Graph>\n" +
 						"\t\tdefault: " + TestDriverDefaultValues.defaultGraph + "\n" +
 						"\t-sql\n" +
-						"\t\tuse JDBC connection to a RDB, default: not set\n" +
+						"\t\tuse JDBC connection to a RDBMS. Instead of a SPARQL-Endpoint, a JDBC URL has to be supplied.\n" +
+						"\t\tdefault: not set\n" +
 						"\t-mt <Number of clients>\n" +
 						"\t\tRun multiple clients concurrently.\n" +
 						"\t\tdefault: not set\n" +
@@ -458,7 +616,19 @@ public class TestDriver {
 						"\t\tdefault: " + TestDriverDefaultValues.seed + "\n" +
 						"\t-t <timeout in ms>\n" +
 						"\t\tTimeouts will be logged for the result report.\n" +
-						"\t\tdefault: " + TestDriverDefaultValues.timeoutInMs + "ms\n";
+						"\t\tdefault: " + TestDriverDefaultValues.timeoutInMs + "ms\n" + 
+						"\t-dbdriver <DB-Driver Class Name>\n" +
+						"\t\tdefault: " + TestDriverDefaultValues.driverClassName+ "\n" +
+						"\t-connuser <DB User Login>\n" +
+						"\t\tdefault: " + TestDriverDefaultValues.defaultUser+ "\n" +
+						"\t-connpwd <DB User Password>\n" +
+						"\t\tdefault: " + TestDriverDefaultValues.defaultUserPassword+ "\n" +
+						"\t-q\n"  +
+						"\t\tTurn on qualification mode instead of doing a test run.\n" +
+						"\t\tdefault: " + TestDriverDefaultValues.qualification + "\n" +
+						"\t-qf <qualification file name>\n" +
+						"\t\tTo change the  filename from its default.\n" +
+						"\t\tdefault: " + TestDriverDefaultValues.qualificationFile + "\n";
 		
 		System.out.print(output);
 	}
@@ -468,10 +638,15 @@ public class TestDriver {
 		TestDriver testDriver = new TestDriver(argv);
 		testDriver.init();
 		System.out.println("\nStarting test...\n");
-		if(testDriver.multithreading)
+		if(testDriver.multithreading) {
 			testDriver.runMT();
-		else
+			System.out.println("\n" + testDriver.printResults(true));
+		}
+		else if(testDriver.qualification)
+			testDriver.runQualification();
+		else {
 			testDriver.run();
 		System.out.println("\n" + testDriver.printResults(true));
 	}
+}
 }

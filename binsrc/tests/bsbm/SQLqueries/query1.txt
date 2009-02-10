@@ -1,4 +1,4 @@
-SELECT distinct TOP 10 nr, label
+SELECT distinct top 10 nr, label
 FROM product p, producttypeproduct ptp
 WHERE p.nr = ptp.product AND ptp.productType=@ProductType@
 	AND propertyNum1 > @x@

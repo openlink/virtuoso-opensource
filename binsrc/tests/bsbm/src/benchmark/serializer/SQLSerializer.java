@@ -723,12 +723,12 @@ public class SQLSerializer implements Serializer {
 						"  `propertyNum4` int(11) default NULL,\n" +
 						"  `propertyNum5` int(11) default NULL,\n" +
 						"  `propertyNum6` int(11) default NULL,\n" +
-						"  `propertyTex1` varchar(200) character set utf8 collate utf8_bin default NULL,\n" +
-						"  `propertyTex2` varchar(200) character set utf8 collate utf8_bin default NULL,\n" +
-						"  `propertyTex3` varchar(200) character set utf8 collate utf8_bin default NULL,\n" +
-						"  `propertyTex4` varchar(200) character set utf8 collate utf8_bin default NULL,\n" +
-						"  `propertyTex5` varchar(200) character set utf8 collate utf8_bin default NULL,\n" +
-						"  `propertyTex6` varchar(200) character set utf8 collate utf8_bin default NULL,\n" +
+						"  `propertyTex1` varchar(250) character set utf8 collate utf8_bin default NULL,\n" +
+						"  `propertyTex2` varchar(250) character set utf8 collate utf8_bin default NULL,\n" +
+						"  `propertyTex3` varchar(250) character set utf8 collate utf8_bin default NULL,\n" +
+						"  `propertyTex4` varchar(250) character set utf8 collate utf8_bin default NULL,\n" +
+						"  `propertyTex5` varchar(250) character set utf8 collate utf8_bin default NULL,\n" +
+						"  `propertyTex6` varchar(250) character set utf8 collate utf8_bin default NULL,\n" +
 						"  `publisher` int(11) default NULL,\n" +
 						"  `publishDate` date default NULL,\n" +
 						"  INDEX USING BTREE (producer)\n";

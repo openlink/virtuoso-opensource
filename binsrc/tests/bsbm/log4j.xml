@@ -13,7 +13,7 @@
   </appender>
 
   <root>
-    <priority value="NONE" />
+    <priority value="ALL" />
     <appender-ref ref="TheAppender" />
   </root>
 
