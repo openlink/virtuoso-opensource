@@ -1,3 +1,195 @@
+2009-02-10 13:00  source
+
+	* Fixed problem with last fm
+
+2009-02-10 12:58  source
+
+	* Added new files
+	* Disabled deprecated clients
+
+2009-02-10 12:58  source
+
+	* FIxed problems with new spasql result sets
+
+2009-02-10 12:56  source
+
+	* Added support for self-signed certificates as well as optional client
+	  verification to https
+	* Fixed session id context when verifying
+
+2009-02-10 12:54  source
+
+	* Added DAV methods to new http client
+
+2009-02-10 12:53  source
+
+	* Fixed use of ODBC 3.x SQLLEN for 64bit ports
+
+2009-02-10 10:18  source
+
+	* Merged from upstream project
+
+2009-02-09 19:24  source
+
+	* Fixed sys_dirlist on windows
+
+2009-02-09 11:55  source
+
+	* Fixed handling of WIDE data
+
+2009-02-09 10:42  source
+
+	* Fixed checking system call setting
+
+2009-02-09 09:28  source
+
+	* Added create image by URL
+	* Fixed cert, openid2 and import
+	* Fixed return protected to friends only
+
+2009-02-09 09:26  source
+
+	* Fixed date convert
+
+2009-02-09 09:25  source
+
+	* Added create image by URL
+
+2009-02-09 09:24  source
+
+	* Fixed API settings command
+	* Fixed wrong parameters for alarm
+
+2009-02-09 09:23  source
+
+	* Fixed problem browsing bad paths
+
+2009-02-09 09:22  source
+
+	* Fixed API settings command
+
+2009-02-09 09:13  source
+
+	* Fixed getting user info from last.fm
+
+2009-02-09 09:12  source
+
+	* Fixed minor issues
+
+2009-02-06 17:42  source
+
+	* Added new functionality to share page across various dataset setups
+	  e.g. mbz, bio2rdf, dbpedia etc
+
+2009-02-06 17:42  source
+
+	* Fixed meetup
+
+2009-02-06 15:37  source
+
+	* Added support for SPASQL ExtendedString and RdfBox types
+
+2009-02-06 09:40  source
+
+	* Updated copyright year to 2009
+
+2009-02-06 09:38  source
+
+	* Fixed amazon pattern
+	* Fixed meetup
+
+2009-02-06 09:38  source
+
+	* Fixed delicious
+
+2009-02-05 10:41  source
+
+	* Fixed https and 'local:'
+
+2009-02-04 21:59  source
+
+	* Added online restore test
+
+2009-02-04 21:59  source
+
+	* Fixed described by property
+
+2009-02-04 21:58  source
+
+	* Fixed use known prefixes
+
+2009-02-04 21:58  source
+
+	* Fixed foaf properties for maker and made
+
+2009-02-04 21:57  source
+
+	* Fixed Youtube
+
+2009-02-04 21:57  source
+
+	* Fixed twitter
+
+2009-02-04 15:23  source
+
+	* Fixed type names returned by the DATATYPES GetSchema method for SSIS
+
+2009-02-03 16:01  source
+
+	* Added initial support for foaf+ssl in ODS foaf profile
+	* Fixed ubiquity API
+
+2009-02-03 15:59  source
+
+	* Fixed API
+
+2009-02-03 15:47  source
+
+	* Added online backup/restore test
+
+2009-02-03 15:45  source
+
+	* Fixed tab labels
+
+2009-02-03 15:40  source
+
+	* Added initial support for foaf+ssl in ODS foaf profile
+
+2009-02-03 15:39  source
+
+	* Added initial support for foaf+ssl
+
+2009-02-03 15:38  source
+
+	* Fixed writing cpt revov file which needs cpt_dbs to be set when there
+	  are uncommitted transactions
+
+2009-02-03 15:37  source
+
+	* Fixed RDFa in description page
+
+2009-02-03 15:37  source
+
+	* Added content
+
+2009-02-03 15:36  source
+
+	* Fixed music onthology
+	* Fixed abmeta
+
+2009-02-03 00:07  source
+
+	* Fixed compiler warnings
+
+2009-02-03 00:06  source
+
+	* Fixed escaping of weird IRIs in TURTLE and javascript output of SPARQL
+	  results via SPARQL web service endpoint
+
+2009-02-03 00:04  source
+
+	* Fixed for dot in namespace prefix preamble
+
 2009-01-30 21:48  source
 
 	* Updated version to 5.0.10-rc4
