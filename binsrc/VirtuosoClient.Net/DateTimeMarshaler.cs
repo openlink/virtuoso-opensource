@@ -71,6 +71,8 @@ namespace OpenLink.Data.Virtuoso
 				return bytes;
 			else if (type == typeof (DateTime) || type == typeof (TimeSpan))
 				return BytesToObject ();
+			else if (type == typeof (String))
+				return BytesToObject ().ToString();
 			else
 				throw new InvalidCastException ();
 

@@ -260,7 +260,7 @@ namespace OpenLink.Data.Virtuoso
 
 		internal static object Unmarshal (Stream stream, ManagedConnection connection)
 		{
-		        string table = connection.charsetTable;
+		    string table = connection == null ? null : connection.charsetTable;
 			Debug.WriteLineIf (CLI.FnTrace.Enabled, "Marshaler.Unmarshal ()");
 
 			BoxTag tag = (BoxTag) ReadByte (stream);
