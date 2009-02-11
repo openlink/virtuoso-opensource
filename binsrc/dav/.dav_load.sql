@@ -21,6 +21,8 @@ load DET_ResFilter.sql;
 use DB;
 load DET_CatFilter.sql;
 use DB;
+load DET_S3.sql;
+use DB;
 load Versioning/DET_Versioning.sql;
 #use DB;
 #load DET_WebMail.sql;
