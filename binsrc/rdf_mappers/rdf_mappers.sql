@@ -2013,14 +2013,17 @@ create procedure DB.DBA.RDF_LOAD_TWFY (in graph_iri varchar, in new_origin_uri v
 		return 0;
 	};
 
+	api_key := _key;
+	--api_key := 'FwDnXgAp6rqVFbfRg9B7Lkpc';
+
 	if (new_origin_uri like 'http://www.theyworkforyou.com/search/?s=%')
 	{
 		tmp := sprintf_inverse (new_origin_uri, 'http://www.theyworkforyou.com/search/?s=%s', 0);
 		asin := rtrim (tmp[0], '/');
 		if (asin is null)
 			return 0;
-		url := sprintf ('http://www.theyworkforyou.com/api/getHansard?search=%s&output=xml',
-			asin);
+		url := sprintf ('http://www.theyworkforyou.com/api/getHansard?search=%s&output=xml&key=%s',
+			asin, api_key);
 	}
         else if (new_origin_uri like 'http://www.theyworkforyou.com/mp/?pc=%')
 	{
@@ -2028,8 +2031,8 @@ create procedure DB.DBA.RDF_LOAD_TWFY (in graph_iri varchar, in new_origin_uri v
 		asin := rtrim (tmp[0], '/');
 		if (asin is null)
 			return 0;
-		url := sprintf ('http://www.theyworkforyou.com/api/getMP?postcode=%s&output=xml',
-			asin);
+		url := sprintf ('http://www.theyworkforyou.com/api/getMP?postcode=%s&output=xml&key=%s',
+			asin, api_key);
 	}
 	else if (new_origin_uri like 'http://www.theyworkforyou.com/mp/%/%')
 	{
@@ -2038,8 +2041,8 @@ create procedure DB.DBA.RDF_LOAD_TWFY (in graph_iri varchar, in new_origin_uri v
 		if (asin is null)
 			return 0;
 
-		url := sprintf ('http://www.theyworkforyou.com/api/getMP?constituency=%s&output=xml',
-			asin);
+		url := sprintf ('http://www.theyworkforyou.com/api/getMP?constituency=%s&output=xml&key=%s',
+			asin, api_key);
 	}
         else
             return 0;
@@ -2909,8 +2912,12 @@ create procedure RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri varcha
 		{
 			url := sprintf('http://ws.audioscrobbler.com/1.0/user/%s/profile.xml', id1);
 			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+			
 			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=user.getfriends&user=%s&api_key=%s', id1, api_key);
-			return DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+
+			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=library.getalbums&user=%s&api_key=%s', id1, api_key);
+			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
 		}
 		else
 			return 0;
