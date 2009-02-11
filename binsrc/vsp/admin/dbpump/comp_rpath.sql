@@ -109,18 +109,6 @@ create procedure "PUMP"."DBA"."RPATH_FOR_RESTORE_TABLES_OUT" (	inout arr any,
 }
 ;
 
---drop procedure html_choice_rdir;
-create procedure "PUMP"."DBA"."HTML_CHOICE_RDIR" (	inout arr any )
-{
-  declare str varchar;
-  str := "PUMP"."DBA"."DBPUMP_RUN_COMPONENT" (arr,'choice_rdir','./backup', 0);
-  if (str is null)
-    return '';
-  return str;
-}
-;
-
-
 --drop procedure get_schema_comment_and_pars_retrieve;
 create procedure "PUMP"."DBA"."GET_SCHEMA_COMMENT_AND_PARS_RETRIEVE" ( inout arr any )
 {

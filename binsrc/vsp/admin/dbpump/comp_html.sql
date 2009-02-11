@@ -227,24 +227,6 @@ create procedure "PUMP"."DBA"."HTML_FOOTER_OUT" ( inout arr any )
   http ('</TABLE>\n</BODY>');
 }
 ;
-create procedure "PUMP"."DBA"."HTML_BUTTON_OUT" ( in arr any,
-				  in name varchar,
-				  in val varchar,
-				  in onclick varchar,
-				  in class varchar,
-				  in dop varchar  )
-{
-  http('<input type=button ');
-  "PUMP"."DBA"."HTML_SMTH_OUT" ('value',val); --"PUMP"."DBA"."__GET_KEYWORD" (name,arr,val));
-  "PUMP"."DBA"."HTML_SMTH_OUT" ('onclick',onclick);
-  "PUMP"."DBA"."HTML_SMTH_OUT" ('name',name);
-  "PUMP"."DBA"."HTML_SMTH_OUT" ('class',class);
-  "PUMP"."DBA"."HTML_STR_OUT" (dop);
-  "PUMP"."DBA"."__CHECK_TITLE" (name);
-  http('>\n');
---  __CHECK_HELP (name);
-}
-;
 
 --drop procedure html_reset_out;
 create procedure "PUMP"."DBA"."HTML_RESET_OUT" ( in arr any,
