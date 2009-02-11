@@ -1584,6 +1584,13 @@ http('</html>\n');
           else
 	    cond := '';
 	  ft := trim (DB.DBA.FTI_MAKE_SEARCH_STRING_INNER (pvalue, words), '()');
+          if (ft is null or length (words) = 0)
+            {
+              DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
+                '400', 'Bad Request',
+                query, '22023', 'The value of "find" parameter of web service endpoint is not a valid search string' );
+              return;
+            }
 	  vec := DB.DBA.SYS_SQL_VECTOR_PRINT (words);
 	  if (get_keyword ('format', params, '') like '%/rdf+%' or http_request_header (lines, 'Accept', null, '') like '%/rdf+%')
 	    query := sprintf ('construct { ?s ?p `bif:search_excerpt (bif:vector (%s), sql:rdf_find_str(?o))` } ' ||
