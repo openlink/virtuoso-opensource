@@ -5526,8 +5526,11 @@ ssg_print_filter (spar_sqlgen_t *ssg, SPART *tree)
   if (tree == (box_t)(1)) /* The filter has been disabled because it's printed already */
     return;
   if (spar_filter_is_freetext (tree))
-    spar_error (ssg->ssg_sparp, "Unable to generate SQL code for %.100s() special predicate for variable '%.100s', try to rephrase the query",
-      tree->_.funcall.qname, tree->_.funcall.argtrees[0]->_.var.vname );
+    {
+      return;
+      /* spar_error (ssg->ssg_sparp, "Unable to generate SQL code for %.100s() special predicate for variable '%.100s', try to rephrase the query",
+        tree->_.funcall.qname, tree->_.funcall.argtrees[0]->_.var.vname );*/
+    }
   ssg_print_where_or_and (ssg, "filter");
   ssg_print_filter_expn (ssg, tree);
 }
@@ -5644,10 +5647,16 @@ ssg_print_fake_self_join_subexp (spar_sqlgen_t *ssg, SPART *gp, SPART ***tree_se
           qm_atable_t *ft_atable = (qm_atable_t *)t_alloc_box (sizeof (qm_atable_t), DV_ARRAY_OF_POINTER);
           qm_atable_t **ft_atables;
           if (NULL == qm->qmObjectMap)
-            spar_sqlprint_error ("ssg_" "print_fake_self_join_subexp(): NULL == qm->qmObjectMap");
+            {
+              tree->_.triple.ft_type = -1;
+              goto ft_is_scrap; /*spar_sqlprint_error ("ssg_" "print_fake_self_join_subexp(): NULL == qm->qmObjectMap");*/
+            }
           qmft = qm->qmObjectMap->qmvFText;
           if (NULL == qmft)
-            spar_sqlprint_error ("ssg_" "print_fake_self_join_subexp(): NULL == qmft");
+            {
+              tree->_.triple.ft_type = -1;
+              goto ft_is_scrap; /*spar_sqlprint_error ("ssg_" "print_fake_self_join_subexp(): NULL == qmft");*/
+            }
           ft_atable->qmvaAlias = qmft->qmvftAlias;
 	  ft_atable->qmvaTableName = qmft->qmvftTableName;
           if (NULL != qmft->qmvftAuxTableName)
@@ -5664,6 +5673,7 @@ ssg_print_fake_self_join_subexp (spar_sqlgen_t *ssg, SPART *gp, SPART ***tree_se
             qmft->qmvftConds,
             &ata_aliases, &ata_tables, &queued_row_filters );
         }
+ft_is_scrap: ;
     }
   if (NULL == colcodes)
     { /* This is a special case of quad map with four constants and no one quad map value. */
@@ -5705,7 +5715,7 @@ ssg_print_fake_self_join_subexp (spar_sqlgen_t *ssg, SPART *gp, SPART ***tree_se
           SPART **opts = sparp_get_options_of_tree (ssg->ssg_sparp, tree_sets[0][0]);
           if (NULL != opts)
             {
-              SPART *val = sparp_get_option (ssg->ssg_sparp, opts, TABLE_OPTION_L);
+              caddr_t val = (caddr_t)sparp_get_option (ssg->ssg_sparp, opts, TABLE_OPTION_L);
               if (NULL != val)
                 {
                   ssg_puts (" TABLE OPTION (");
@@ -5738,7 +5748,7 @@ from_printed:
       quad_map_t *qm = tc_list[0]->tc_qm;
       ccaddr_t *conds = qm->qmConds;
       ccaddr_t rowfilter = qm->qmTableRowFilter;
-      if (tree->_.triple.ft_type)
+      if (0 < tree->_.triple.ft_type)
         {
           caddr_t var_name = tree->_.triple.tr_object->_.var.vname;
           SPART *ft_pred = NULL, **args, *ft_arg1;
@@ -5787,7 +5797,6 @@ from_printed:
                   int good_len /*, bad_len*/;
                   if (SPART_IS_DEFAULT_GRAPH_BLANK(g))
                     {
-                      dk_set_t named = ssg->ssg_sparp->sparp_env->spare_named_graphs;
                       if (ssg->ssg_sparp->sparp_env->spare_named_graphs_listed)
                         chk_graphs = ssg->ssg_sparp->sparp_env->spare_default_graphs;
                       else chk_graphs = NULL;
@@ -5834,6 +5843,11 @@ ft_arg1_is_patched:
                 }
             }
           ssg_puts (")");
+        }
+      else if (0 > tree->_.triple.ft_type)
+        {
+          ssg_print_where_or_and (ssg, "invalidated freetext predicate");
+          ssg_puts ("(1 = 2)");
         }
       if ((0 == tree_ctr) || !inside_breakup)
         ssg_print_all_table_fld_restrictions (ssg, qm, sub_tabid, tree, (inside_breakup ? fld_restrictions_bitmask : ~0), 0);
