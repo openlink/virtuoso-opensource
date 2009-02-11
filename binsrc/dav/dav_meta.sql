@@ -1485,25 +1485,6 @@ errexit:
 }
 ;
 
-create function "DAV_EXTRACT_RDF_application/wsdl+xml" (in orig_res_name varchar, inout content any, inout html_start any)
-{
-  declare doc, metas, extras any;
-  -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/wsdl+xml (', orig_res_name, content, html_start, ')');
-  whenever sqlstate '*' goto errexit;
-  doc := xtree_doc (content, 0);
-  metas := vector (
-        'http://www.openlinksw.com/schemas/WSDL#processName', 'declare namespace wsdl="http://schemas.xmlsoap.org/wsdl/"; /wsdl:definitions/@name', 'Unidentified',
-        'http://www.openlinksw.com/schemas/WSDL#targetNamespace', 'declare namespace wsdl="http://schemas.xmlsoap.org/wsdl/"; /wsdl:definitions/@targetNamespace', NULL
-        );
-  extras := vector (
-        'http://www.openlinksw.com/schemas/WSDL#type', 'WSDL' );
-  return "DAV_EXTRACT_RDF_BY_METAS" (doc, metas, extras);
-
-errexit:
-  return xml_tree_doc (xte_node (xte_head (UNAME' root')));
-}
-;
-
 create function "DAV_EXTRACT_RDF_application/x-openlinksw-vad" (in orig_res_name varchar, inout content any, inout html_start any)
 {
   declare doc, metas, extras, tree, cont any;
