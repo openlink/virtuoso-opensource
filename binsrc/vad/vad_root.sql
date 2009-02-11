@@ -171,6 +171,8 @@ create procedure "VAD"."DBA"."VAD_MKDAV" (inout id integer, inout gd integer, in
 
 create procedure "VAD"."DBA"."VAD_ATOMIC" ( in mode integer )
 {
+  if (sys_stat ('cl_run_local_only') <> 1)
+    return;
   if (mode)
     {
       if (registry_get ('VAD_atomic') = '1')

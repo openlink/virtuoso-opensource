@@ -1140,7 +1140,10 @@ create procedure "DB"."DBA"."VAD_INSTALL" (
   if (sys_stat ('cl_run_local_only') = 1)
     exec ('checkpoint');
   else
+    {
+      cl_exec ('rdf_check_init()');
     cl_exec ('checkpoint');
+    }
 
   qual := dbname ();
   parr := null;
@@ -1193,7 +1196,7 @@ create procedure "DB"."DBA"."VAD_INSTALL" (
     }
   }
 
-  failure:;
+failure:;
   result ('00000', 'Errors detected');
   result ('00000', sprintf ('Installation of "%s" was unsuccessful.', coalesce (connection_get ('vad_pkg_fullname'), fname)));
 
@@ -1241,8 +1244,12 @@ create procedure "DB"."DBA"."VAD_INSTALL" (
     delay(3);
     if (no_exit = 0)
     {
+      if (sys_stat ('cl_run_local_only') = 1)
       raw_exit(-1);
+      else
+	cl_exec ('raw_exit(-1)');
     }
+
     registry_set ('VAD_is_run', '0');
     set_qualifier (qual);
     return 'FATAL';
