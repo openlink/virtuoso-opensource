@@ -1358,7 +1358,7 @@ Section <link linkend="rdfandsparql">RDF Data Access and Data Management</link> 
 <listitem id="ini_MaxCacheExpiration">
     <formalpara>
 	<title>MaxCacheExpiration = 1</title>
-	<para>Cache Expiration time in seconds that overrides Sponger's default cache invaliadation.</para>
+	<para>Cache Expiration time in seconds that overrides Sponger's default cache invalidation.</para>
     </formalpara>
 </listitem>
 <listitem id="ini_SPARQL_ExternalXsltSource">

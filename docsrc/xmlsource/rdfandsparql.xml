@@ -1497,6 +1497,42 @@ curl -T myfoaf.rdf http://demo.openlinksw.com/DAV/home/demo/rdf_sink/myfoaf.rdf 
 </BODY>
 </HTML>
 ]]></programlisting>
+    <para>Then you can execute:</para>
+<programlisting><![CDATA[
+curl -F "query=SELECT DISTINCT ?p FROM <http://demo.openlinksw.com/DAV/home/demo/rdf_sink/> WHERE {?s ?p ?o}" http://demo.openlinksw.com/sparql
+]]></programlisting>
+    <para>The result should be:</para>
+<programlisting><![CDATA[
+<?xml version="1.0" ?>
+<sparql xmlns="http://www.w3.org/2005/sparql-results#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2001/sw/DataAccess/rf1/result2.xsd">
+ <head>
+  <variable name="p"/>
+ </head>
+ <results distinct="false" ordered="true">
+  <result>
+   <binding name="p"><uri>http://www.w3.org/1999/02/22-rdf-syntax-ns#type</uri></binding>
+  </result>
+  <result>
+   <binding name="p"><uri>http://xmlns.com/foaf/0.1/nick</uri></binding>
+  </result>
+  <result>
+   <binding name="p"><uri>http://xmlns.com/foaf/0.1/name</uri></binding>
+  </result>
+  <result>
+   <binding name="p"><uri>http://xmlns.com/foaf/0.1/homepage</uri></binding>
+  </result>
+  <result>
+   <binding name="p"><uri>http://xmlns.com/foaf/0.1/knows</uri></binding>
+  </result>
+  <result>
+   <binding name="p"><uri>http://xmlns.com/foaf/0.1/workplaceHomepage</uri></binding>
+  </result>
+  <result>
+   <binding name="p"><uri>http://xmlns.com/foaf/0.1/mbox</uri></binding>
+  </result>
+ </results>
+</sparql>
+]]></programlisting>
     </sect2>
      <sect2 id="rdfinsertmethodsload"><title>SPARQL Insert using LOAD</title>
         <para>SPARQL INSERT operation can be done using the LOAD feature.</para>
@@ -1782,7 +1818,7 @@ the Quad Store is updated automatically, or you can load from DAV manually to qu
             </listitem>
       </itemizedlist>
         </listitem>
-        <listitem>You can also perform the steps from above by uplaoding the file in the rdf_sink
+        <listitem>You can also perform the steps from above by uploading the file in the rdf_sink
 folder i.e. in Briefcase it will be with this path: DAV/home/test2/rdf_sink and respectively the "RDF graph name"
 will have this value: http://host:port/DAV/home/username/rdf_sink/</listitem>
       </itemizedlist>
@@ -2095,6 +2131,10 @@ into graph <http://www.openlinksw.com/> -- done</callret-0>
 
 1 Rows. -- 1982 msec.
 ]]></programlisting>
+    </sect2>
+    <sect2 id="rdfinsertmethodproxy">
+      <title>Using the RDF proxy service</title>
+    <para>Triples can be inserted also using the RDF proxy service. For more information and examples see <link linkend="rdfproxyservice">here</link>.</para>
     </sect2>
 </sect1>
 <sect1 id="virtuososponger"><title>Virtuoso Sponger</title>

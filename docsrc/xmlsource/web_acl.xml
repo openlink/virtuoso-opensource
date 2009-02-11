@@ -61,6 +61,7 @@ defined by default:</para>
    <member><emphasis>HA_FLAG</emphasis> - Allow/Deny flag, 0 - allow, 1 - deny</member>
    <member><emphasis>HA_RW</emphasis> - Read/Write flag, 0 - read,  1 - post</member>
    <member><emphasis>HA_DEST_IP</emphasis> - Destination IP/Host (applicable to the proxy also)</member>
+   <member><emphasis>HA_RATE</emphasis> - Rate Limit</member>
   </simplelist>
 
   <para>The primary key covers columns HA_LIST, HA_ORDER, HA_CLIENT_IP
@@ -113,6 +114,13 @@ predefined Internet News groups ACL. </para></formalpara>
 <para> A string containing pattern to match another IP number;
 this is used in Web Proxy server ACL. This  can also be used in custom
 application logic.</para></formalpara>
+
+<formalpara><title>HA_RATE (optional)</title>
+<para> An float for Rate Limit. The filter calculates hit rate average and
+compares with limit for http acl rule. If it is larger then will drop connection.
+Once per day the statistics will be reset. The Rate Limit UI can be configured from
+Conductor->System Admin->Access Control.
+ </para></formalpara>
 
   </sect2>
 
