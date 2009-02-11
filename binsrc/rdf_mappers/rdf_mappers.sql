@@ -253,7 +253,9 @@ EXEC_STMT(
 	MC_DESC long varchar,
 	MC_ENABLED int not null default 1,
 	primary key (MC_HOOK)
-)', 0)
+)
+alter index RDF_META_CARTRIDGES on DB.DBA.RDF_META_CARTRIDGES partition cluster replicated
+', 0)
 ;
 
 create procedure MIGRATE_CALAIS ()
@@ -351,7 +353,8 @@ EXEC_STMT(
     OS_URN_PATTERN varchar,
     OS_ENABLED    int default 0,
     primary key (OS_ID, OS_SERVER)
-)', 0)
+)
+alter index OAI_SERVERS on DB.DBA.OAI_SERVERS partition cluster replicated', 0)
 ;
 
 EXEC_STMT(
@@ -362,7 +365,8 @@ EXEC_STMT(
     GM_FLAG integer default 0,
     primary key (GM_NAME)
 )
-create index SYS_GRDDL_MAPPING_PROFILE on DB.DBA.SYS_GRDDL_MAPPING (GM_PROFILE)', 0)
+alter index SYS_GRDDL_MAPPING on DB.DBA.SYS_GRDDL_MAPPING partition cluster replicated
+create index SYS_GRDDL_MAPPING_PROFILE on DB.DBA.SYS_GRDDL_MAPPING (GM_PROFILE) partition cluster replicated', 0)
 ;
 
 create procedure RM_UPGRADE_TBL (in tbl varchar, in col varchar, in coltype varchar)
