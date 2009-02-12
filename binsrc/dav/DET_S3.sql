@@ -81,7 +81,7 @@ create function DB.DBA.S3__item2entry (
                    entryType,                                      -- 1  type
                    get_keyword ('size', item),                     -- 2  size
                    get_keyword ('updated', item),                  -- 3  modification time
-                   vector (UNAME'S3', detcolID, item[0]),          -- 4  id
+                   vector (UNAME'S3', detcolID, entryPath),        -- 4  id
                    detcolEntry[5],                                 -- 5  permissions
                    detcolEntry[6],                                 -- 6  group
                    detcolEntry[7],                                 -- 7  owner
@@ -94,7 +94,7 @@ create function DB.DBA.S3__item2entry (
                    entryType,                                      -- 1  type
                    get_keyword ('size', item),                     -- 2  size
                    get_keyword ('updated', item),                  -- 3  modification time
-                   vector (UNAME'S3', detcolID, item[0]),          -- 4  id
+                   vector (UNAME'S3', detcolID, entryPath),        -- 4  id
                    detcolEntry[5],                                 -- 5  permissions
                    detcolEntry[6],                                 -- 6  group
                    detcolEntry[7],                                 -- 7  owner
