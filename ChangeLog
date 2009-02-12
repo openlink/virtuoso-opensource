@@ -1,3 +1,60 @@
+2009-02-12 09:22  source
+
+	* Fixed copyright year
+
+2009-02-12 09:21  source
+
+	* Fixed publishing of comments when user is authenticated
+
+2009-02-12 09:21  source
+
+	* Added support for Amazon S3 folders
+
+2009-02-11 22:11  source
+
+	* Fixed TWFY
+
+2009-02-11 22:09  source
+
+	* Fixed /sparql?find=a error diagnostics
+
+2009-02-11 16:37  source
+
+	* Fixed sparql codegen for free-text preficates in triples that have no
+	  variants
+
+2009-02-11 16:36  source
+
+	* Removed duplicated code
+
+2009-02-11 16:35  source
+
+	* Fixed for cluster
+
+2009-02-11 16:33  source
+
+	* Added part defs
+
+2009-02-11 16:32  source
+
+	* Removed duplicated code function
+
+2009-02-11 16:32  source
+
+	* Added initial Amazon S3 DET
+
+2009-02-11 16:27  source
+
+	* Updated documentation
+
+2009-02-10 23:28  source
+
+	* Fixed initialization
+
+2009-02-10 23:27  source
+
+	* Added missing files
+
 2009-02-10 13:00  source
 
 	* Fixed problem with last fm
