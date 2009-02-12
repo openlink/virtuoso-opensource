@@ -68,9 +68,13 @@
 			<xsl:apply-templates select="lfm[@status='ok']/artist"/>
 			<xsl:apply-templates select="lfm[@status='ok']/similarartists"/>
 			<xsl:apply-templates select="lfm[@status='ok']/album"/>
-			<xsl:apply-templates select="lfm[@status='ok']/topalbums"/>
+			<xsl:apply-templates select="lfm[@status='ok']/albums"/>
+			<xsl:apply-templates select="lfm[@status='ok']/topalbums[@artist]"/>
+			<xsl:apply-templates select="lfm[@status='ok']/topalbums[@user]"/>
+			<xsl:apply-templates select="lfm[@status='ok']/topartists[@user]"/>
 			<xsl:apply-templates select="lfm[@status='ok']/track"/>
-			<xsl:apply-templates select="lfm[@status='ok']/toptracks"/>
+			<xsl:apply-templates select="lfm[@status='ok']/toptracks[@artist]"/>
+			<xsl:apply-templates select="lfm[@status='ok']/toptracks[@user]"/>
 			<xsl:apply-templates select="lfm[@status='ok']/similartracks"/>
 			<xsl:apply-templates select="lfm[@status='ok']/event"/>
 			<xsl:apply-templates select="lfm[@status='ok']/events"/>
@@ -118,7 +122,7 @@
 		<xsl:call-template name="track"/>
 	</xsl:template>
 	
-   	<xsl:template match="lfm[@status='ok']/toptracks">
+   	<xsl:template match="lfm[@status='ok']/toptracks[@artist]">
 		<rdf:Description rdf:about="{$baseUri}">
 			<rdf:type rdf:resource="&foaf;Document"/>
 			<rdf:type rdf:resource="&sioc;Container"/>
@@ -161,7 +165,62 @@
 		<xsl:call-template name="album"/>
 	</xsl:template>
 	
-   	<xsl:template match="lfm[@status='ok']/topalbums">
+	<xsl:template match="lfm[@status='ok']/albums">
+		<rdf:Description rdf:about="{$baseUri}">
+			<rdf:type rdf:resource="&foaf;Document"/>
+			<rdf:type rdf:resource="&sioc;Container"/>
+			<sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
+			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
+			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
+		</rdf:Description>
+		<foaf:Person rdf:about="{vi:proxyIRI(concat($base, 'user/', @user))}">
+			<xsl:for-each select="album">
+				<foaf:interest rdf:resource="{vi:proxyIRI(url)}"/>
+			</xsl:for-each>
+		</foaf:Person>
+	    <xsl:for-each select="album">
+			<xsl:call-template name="album"/>
+	    </xsl:for-each>
+	</xsl:template>
+	
+   	<xsl:template match="lfm[@status='ok']/toptracks[@user]">
+		<rdf:Description rdf:about="{$baseUri}">
+			<rdf:type rdf:resource="&foaf;Document"/>
+			<rdf:type rdf:resource="&sioc;Container"/>
+			<sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
+			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
+			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
+		</rdf:Description>
+		<foaf:Person rdf:about="{vi:proxyIRI(concat($base, 'user/', @user))}">
+			<xsl:for-each select="track">
+				<foaf:interest rdf:resource="{vi:proxyIRI(url)}"/>
+			</xsl:for-each>
+		</foaf:Person>
+	    <xsl:for-each select="track">
+			<xsl:call-template name="track"/>
+	    </xsl:for-each>
+	</xsl:template>
+
+	
+   	<xsl:template match="lfm[@status='ok']/topartists[@user]">
+		<rdf:Description rdf:about="{$baseUri}">
+			<rdf:type rdf:resource="&foaf;Document"/>
+			<rdf:type rdf:resource="&sioc;Container"/>
+			<sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
+			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
+			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
+		</rdf:Description>
+		<foaf:Person rdf:about="{vi:proxyIRI(concat($base, 'user/', @user))}">
+			<xsl:for-each select="artist">
+				<foaf:interest rdf:resource="{vi:proxyIRI(url)}"/>
+			</xsl:for-each>
+		</foaf:Person>
+	    <xsl:for-each select="artist">
+			<xsl:call-template name="artist"/>
+	    </xsl:for-each>
+	</xsl:template>
+
+   	<xsl:template match="lfm[@status='ok']/topalbums[@artist]">
 		<rdf:Description rdf:about="{$baseUri}">
 			<rdf:type rdf:resource="&foaf;Document"/>
 			<rdf:type rdf:resource="&sioc;Container"/>
@@ -173,6 +232,24 @@
 			<rdf:Description rdf:about="{vi:proxyIRI(concat($base, 'music/', //topalbums/@artist))}">
 				<foaf:made rdf:resource="{vi:proxyIRI(url)}"/>
 			</rdf:Description>
+			<xsl:call-template name="album"/>
+	    </xsl:for-each>
+	</xsl:template>
+
+   	<xsl:template match="lfm[@status='ok']/topalbums[@user]">
+		<rdf:Description rdf:about="{$baseUri}">
+			<rdf:type rdf:resource="&foaf;Document"/>
+			<rdf:type rdf:resource="&sioc;Container"/>
+			<sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
+			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
+			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
+		</rdf:Description>
+		<foaf:Person rdf:about="{vi:proxyIRI(concat($base, 'user/', @user))}">
+			<xsl:for-each select="album">
+				<foaf:interest rdf:resource="{vi:proxyIRI(url)}"/>
+			</xsl:for-each>
+		</foaf:Person>
+	    <xsl:for-each select="album">
 			<xsl:call-template name="album"/>
 	    </xsl:for-each>
 	</xsl:template>
@@ -229,7 +306,6 @@
 	</xsl:template>
     
     <xsl:template name="artist">
-    
 		<mo:MusicArtist rdf:about="{vi:proxyIRI(url)}">
 			<foaf:name>
 				<xsl:value-of select="name"/>
@@ -285,7 +361,6 @@
 	</xsl:template>
 	
 	<xsl:template name="album">
-		
 		<mo:Record rdf:about="{vi:proxyIRI(url)}">
 			<dc:title>
                 <xsl:value-of select="name"/>

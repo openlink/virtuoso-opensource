@@ -2779,6 +2779,7 @@ create procedure RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri varcha
 		return 0;
 	};
 	api_key := _key;
+	--api_key := 'b25b959554ed76058ac220b7b2e0a026';
 	tmp1 := sprintf_inverse (new_origin_uri, 'http://%s/%s', 0);
 	server := tmp1[0];
 	if (server is null or server = '')
@@ -2917,6 +2918,15 @@ create procedure RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri varcha
 			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
 
 			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=library.getalbums&user=%s&api_key=%s', id1, api_key);
+			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+
+			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=user.gettopalbums&user=%s&api_key=%s', id1, api_key);
+			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+
+			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=user.gettopartists&user=%s&api_key=%s', id1, api_key);
+			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+
+			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&user=%s&api_key=%s', id1, api_key);
 			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
 		}
 		else
