@@ -1,4 +1,13 @@
 #!/bin/sh
+
+# ----------------------------------------------------------------------
+#  Fix issues with LOCALE
+# ----------------------------------------------------------------------
+LANG=C
+LC_ALL=POSIX
+export LANG LC_ALL
+
+
 LOGDIR=`pwd`
 VERSION="1.00.02"
 LOGFILE="${LOGDIR}/make_http_debug_vad.log"

@@ -21,6 +21,15 @@
 #  
 # Installs the Admin pages
 
+# ----------------------------------------------------------------------
+#  Fix issues with LOCALE
+# ----------------------------------------------------------------------
+LANG=C
+LC_ALL=POSIX
+export LANG LC_ALL
+
+
+
 TARGETDIR=$1
 FILELIST=`egrep -e '^binsrc/vsp' $TOP/bin/installer/enterprise.list | cut -f 1 -d ' ' | cut -b12-`
 

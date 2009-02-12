@@ -20,6 +20,15 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #
+
+# ----------------------------------------------------------------------
+#  Fix issues with LOCALE
+# ----------------------------------------------------------------------
+LANG=C
+LC_ALL=POSIX
+export LANG LC_ALL
+
+
 MODE=$1
 LOGDIR=`pwd`
 VERSION="1.3.280"

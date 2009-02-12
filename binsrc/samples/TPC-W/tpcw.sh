@@ -1,5 +1,14 @@
 #!/bin/sh
 
+# ----------------------------------------------------------------------
+#  Fix issues with LOCALE
+# ----------------------------------------------------------------------
+LANG=C
+LC_ALL=POSIX
+export LANG LC_ALL
+
+
+
 LOGFILE=tpcw.output
 export LOGFILE
 

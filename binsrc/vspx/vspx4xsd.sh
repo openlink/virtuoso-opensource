@@ -1,4 +1,3 @@
-echo '<v:page schemaLocation="http://master.iv.dev.null:8351/vspx/vspx.xsd" name="upd_customer" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml">' > vspx4xsd.xml
 #  
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
@@ -19,6 +18,16 @@ echo '<v:page schemaLocation="http://master.iv.dev.null:8351/vspx/vspx.xsd" name
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #  
 #  
+
+
+# ----------------------------------------------------------------------
+#  Fix issues with LOCALE
+# ----------------------------------------------------------------------
+LANG=C
+LC_ALL=POSIX
+export LANG LC_ALL
+
+echo '<v:page schemaLocation="http://master.iv.dev.null:8351/vspx/vspx.xsd" name="upd_customer" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml">' > vspx4xsd.xml
 cat `cat vspx4xsd.lst` | \
 	sed 's/<v:/~v:/g' | \
 	sed 's/<!--/~!--/g' | \

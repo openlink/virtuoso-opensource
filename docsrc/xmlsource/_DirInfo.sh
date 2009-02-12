@@ -1,3 +1,11 @@
+# ----------------------------------------------------------------------
+#  Fix issues with LOCALE
+# ----------------------------------------------------------------------
+LANG=C
+LC_ALL=POSIX
+export LANG LC_ALL
+
+
 out='_DirInfo.xml'
 echo '<?xml version="1.0" ?>' > $out
 echo '<!--

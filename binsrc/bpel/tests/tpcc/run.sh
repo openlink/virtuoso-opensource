@@ -19,6 +19,15 @@
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #  
 #  
+
+# ----------------------------------------------------------------------
+#  Fix issues with LOCALE
+# ----------------------------------------------------------------------
+LANG=C
+LC_ALL=POSIX
+export LANG LC_ALL
+
+
 TEST_DIR=`pwd`
 LOGFILE=$TEST_DIR/bpeltpcc.output
 SUITE=$HOME/binsrc/tests/suite

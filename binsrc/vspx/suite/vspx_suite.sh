@@ -20,6 +20,15 @@
 #  
 #  
 
+# ----------------------------------------------------------------------
+#  Fix issues with LOCALE
+# ----------------------------------------------------------------------
+LANG=C
+LC_ALL=POSIX
+export LANG LC_ALL
+
+
+
 LOGFILE=`pwd`
 LOGFILE="${LOGFILE}/vspx_test_suite.output"
 SERVER=${SERVER-virtuoso}

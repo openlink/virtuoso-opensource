@@ -20,5 +20,14 @@
 #  
 #  
 
+# ----------------------------------------------------------------------
+#  Fix issues with LOCALE
+# ----------------------------------------------------------------------
+LANG=C
+LC_ALL=POSIX
+export LANG LC_ALL
+
+
+
 gawk -f operpars.awk <oper.pars >oper.errs
 #mv oper_pars.incl g:/binsrc/dbdump/oper_pars.incl

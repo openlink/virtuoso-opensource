@@ -21,6 +21,14 @@
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #
 
+# ----------------------------------------------------------------------
+#  Fix issues with LOCALE
+# ----------------------------------------------------------------------
+LANG=C
+LC_ALL=POSIX
+export LANG LC_ALL
+
+
 LOGDIR=`pwd`
 VERSION="0.3.58"
 LOGFILE="${LOGDIR}/make_vad.log"

@@ -20,6 +20,14 @@
 #  
 #  
 
+# ----------------------------------------------------------------------
+#  Fix issues with LOCALE
+# ----------------------------------------------------------------------
+LANG=C
+LC_ALL=POSIX
+export LANG LC_ALL
+
+
 tabtoheader()
 {
 echo -n "Translation from Unicode3 table to $2 ...	"

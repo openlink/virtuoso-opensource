@@ -20,6 +20,15 @@
 #  
 #  
 
+# ----------------------------------------------------------------------
+#  Fix issues with LOCALE
+# ----------------------------------------------------------------------
+LANG=C
+LC_ALL=POSIX
+export LANG LC_ALL
+
+
+
 PORT=3332
 SERVER=localhost
 VERSION=`cat VERSION | sed 's/.*<\(.*\)>/\1/g'`

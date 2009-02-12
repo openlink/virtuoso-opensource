@@ -1,5 +1,14 @@
 #!/bin/sh
 # $Id$
+
+# ----------------------------------------------------------------------
+#  Fix issues with LOCALE
+# ----------------------------------------------------------------------
+LANG=C
+LC_ALL=POSIX
+export LANG LC_ALL
+
+
 LOGDIR=`pwd`
 LOGFILE="${LOGDIR}/make_tutorial_vad.output"
 STICKER_DAV="make_tutorial_dav_vad.xml"

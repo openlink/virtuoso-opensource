@@ -24,6 +24,14 @@
 #  
 #  
 
+# ----------------------------------------------------------------------
+#  Fix issues with LOCALE
+# ----------------------------------------------------------------------
+LANG=C
+LC_ALL=POSIX
+export LANG LC_ALL
+
+
 LOGFILE=test_server.output
 export LOGFILE
 

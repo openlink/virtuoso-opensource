@@ -1,5 +1,13 @@
 #!/bin/sh
 # check version_init procedure below
+
+# ----------------------------------------------------------------------
+#  Fix issues with LOCALE
+# ----------------------------------------------------------------------
+LANG=C
+LC_ALL=POSIX
+export LANG LC_ALL
+
 VERSION="1.00.00"
 LOGDIR=`pwd`
 STICKER_DAV="vad_dav.xml"

@@ -1,4 +1,13 @@
 #!/bin/sh
+
+# ----------------------------------------------------------------------
+#  Fix issues with LOCALE
+# ----------------------------------------------------------------------
+LANG=C
+LC_ALL=POSIX
+export LANG LC_ALL
+
+
 # check version_init procedure below
 VERSION="1.00.00"
 LOGDIR=`pwd`

@@ -21,6 +21,14 @@
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #
 
+# ----------------------------------------------------------------------
+#  Fix issues with LOCALE
+# ----------------------------------------------------------------------
+LANG=C
+LC_ALL=POSIX
+export LANG LC_ALL
+
+
 LOGDIR=`pwd`
 VERSION="1.00.00"  # see automatic versioning below "1.02.69"
 LOGFILE="${LOGDIR}/make_ods_vad.log"

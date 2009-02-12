@@ -1,11 +1,7 @@
 #!/bin/sh
 #
-#  mkdemo.sh
-#
 #  $Id$
 #
-#  Creates a demo database
-#  
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
@@ -25,6 +21,15 @@
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #  
 #  
+
+# ----------------------------------------------------------------------
+#  Fix issues with LOCALE
+# ----------------------------------------------------------------------
+LANG=C
+LC_ALL=POSIX
+export LANG LC_ALL
+
+
 
 PORT=${PORT-1112}
 HOST=${HOST-localhost}
