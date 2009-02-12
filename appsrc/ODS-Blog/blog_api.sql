@@ -286,16 +286,26 @@ create procedure ODS.ODS_API."weblog.comment.new" (
 	in text varchar
 	) __soap_http 'text/xml'
 {
-  declare uname varchar;
-  declare rc int;
+  declare uname, blog_id varchar;
+  declare rc, inst_id, auth_rc, comment_id int;
   declare msg varchar;
 
+  rc := -1;
   declare exit handler for sqlstate '*' {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
+  whenever not found goto ret;
+  select WAI_ID, BI_BLOG_ID into inst_id, blog_id from DB.DBA.WA_INSTANCE, BLOG.DBA.SYS_BLOG_INFO, BLOG.DBA.SYS_BLOGS where
+      BI_BLOG_ID = B_BLOG_ID and B_POST_ID = post_id and BI_WAI_NAME = WAI_NAME;
+  auth_rc := ods_check_auth (uname, inst_id, 'author');
+
   msg := MT.MT.comments (post_id, title, sprintf ('%s <%s>', name, email), url, text);
-  rc := -1;
+  if (auth_rc)
+    {
+      comment_id := identity_value ();
+      update BLOG.DBA.BLOG_COMMENTS set BM_IS_PUB = 1 where BM_BLOG_ID = blog_id and BM_POST_ID = post_id and BM_ID = comment_id;
+    }
   if (strstr (msg, 'success') is not null)
     rc := 1;
 ret:
