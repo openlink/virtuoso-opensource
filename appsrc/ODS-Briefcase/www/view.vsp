@@ -48,7 +48,8 @@ _again:
   commit work;
   content := http_get (uri, res_header, 'GET', req_header);
   contentType := http_request_header (res_header, 'Content-Type');
-  if (res_header[0] like 'HTTP/1._ 30_%') {
+  if (res_header[0] like 'HTTP/1._ 30_%')
+  {
     uri := http_request_header (res_header, 'Location');
     uri := WS.WS.EXPAND_URL (saveUri, uri);
     if (N > 15)

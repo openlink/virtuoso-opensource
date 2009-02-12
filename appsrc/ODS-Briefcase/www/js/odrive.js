@@ -1800,3 +1800,59 @@ ODRIVE.aboutDialog = function ()
   }
   OAT.AJAX.POST("ajax.vsp", "a=about", x, {type:OAT.AJAX.TYPE_TEXT, onstart:function(){}, onerror:function(){}});
 }
+
+ODRIVE.validateError = function (fld, msg)
+{
+  alert(msg);
+  setTimeout(function(){fld.focus();}, 1);
+  return false;
+}
+
+ODRIVE.validateMail = function (fld)
+{
+  if ((fld.value.length == 0) || (fld.value.length > 40))
+    return ODRIVE.validateError(fld, 'E-mail address cannot be empty or longer then 40 chars');
+
+  var regex = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+  if (!regex.test(fld.value))
+    return ODRIVE.validateError(fld, 'Invalid E-mail address');
+
+  return true;
+}
+
+ODRIVE.validateURL = function (fld)
+{
+  var regex = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
+  if (!regex.test(fld.value))
+    return ODRIVE.validateError(fld, 'Invalid URL address');
+
+  return true;
+}
+
+ODRIVE.validateField = function (fld)
+{
+  if ((fld.value.length == 0) && OAT.Dom.isClass(fld, '_canEmpty_'))
+    return true;
+  if (OAT.Dom.isClass(fld, '_mail_'))
+    return ODRIVE.validateMail(fld);
+  if (OAT.Dom.isClass(fld, '_url_'))
+    return ODRIVE.validateURL(fld);
+  return true;
+}
+
+ODRIVE.validateInputs = function (fld)
+{
+  var retValue = true;
+  var form = fld.form;
+  for (i = 0; i < form.elements.length; i++)
+  {
+    var fld = form.elements[i];
+    if (OAT.Dom.isClass(fld, '_validate_'))
+    {
+      retValue = ODRIVE.validateField(fld);
+      if (!retValue)
+        return retValue;
+    }
+  }
+  return retValue;
+}

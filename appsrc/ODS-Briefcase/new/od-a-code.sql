@@ -2426,8 +2426,7 @@ create procedure ODRIVE.WA.det_class(
   declare id any;
 
   id := ODRIVE.WA.DAV_SEARCH_ID (path);
-  if (not ODRIVE.WA.DAV_ERROR(id))
-    if (isarray (id))
+  if (not ODRIVE.WA.DAV_ERROR (id) and isarray (id))
       return cast (id[0] as varchar);
   return '';
 }
@@ -2442,13 +2441,12 @@ create procedure ODRIVE.WA.det_category(
   declare id any;
 
   id := DB.DBA.DAV_SEARCH_ID (path, type);
-  if (not ODRIVE.WA.DAV_ERROR(id)) {
+  if (ODRIVE.WA.DAV_ERROR (id))
+    return '';
     if (isarray(id))
       return cast (id[0] as varchar);
     return DB.DBA.DAV_PROP_GET_INT (id, type, ':virtdet', 0);
   }
-  return '';
-}
 ;
 
 -------------------------------------------------------------------------------
@@ -2458,42 +2456,31 @@ create procedure ODRIVE.WA.det_action_enable(
   in action varchar)
 {
   declare retValue integer;
-  declare det_class, det_category any;
+  declare det_category varchar;
 
-  retValue := either(equ(ODRIVE.WA.odrive_permission (path), 'W'), 1, 0);
-  if (retValue)
-  {
-    det_class := ODRIVE.WA.det_class (path);
-    if (det_class = 'Versioning')
+  retValue := 1;
+  det_category := ODRIVE.WA.det_category (path, either (equ (right (path, 1), '/'), 'C', 'R'));
+  -- dbg_obj_print ('', det_category, action);
+  if ((det_category <> '') and (action in ('share', 'version')))
+      {
+        retValue := 0;
+      }
+  else if ((det_category = 'Versioning') and (action in ('new', 'upload', 'edit', 'rename', 'version', 'share')))
+      {
+        retValue := 0;
+      }
+  else if ((det_category = 'S3') and (action in ('version', 'rename', 'tag', 'share')))
+      {
+        retValue := 0;
+      }
+  else if ((det_category = 'HostFs') and (action in ('version', 'tag', 'share')))
     {
-      if (action = 'createContent')
-      {
-        retValue := 0;
-      }
-      else if (action = 'edit')
-      {
-        retValue := 0;
-      }
-      if (action = 'version')
-      {
-        retValue := 0;
-      }
-    }
-    else if (det_class = '')
-    {
-      det_category := ODRIVE.WA.det_category(path, 'C');
-      if (det_category = 'Versioning')
-      {
-        if (action = 'createContent')
           retValue := 0;
       }
-      else if (det_category = 'News3')
+  else if ((lcase(det_category) in ('blog', 'omail', 'news3', 'bookmark', 'calendar', 'nntp')) and (action in ('new', 'upload', 'delete', 'rename', 'move', 'version', 'share')))
       {
-        if (action = 'createContent')
           retValue := 0;
       }
-    }
-  }
   return retValue;
 }
 ;
@@ -2989,10 +2976,10 @@ create procedure ODRIVE.WA.DAV_GET (
   }
 
   if ((property = 'privatetags') and (not isnull(resource[0])))
-    return coalesce(ODRIVE.WA.DAV_PROP_GET (resource[0], ':virtprivatetags'), '');
+    return ODRIVE.WA.DAV_PROP_GET (resource[0], ':virtprivatetags', '');
 
   if ((property = 'publictags') and (not isnull(resource[0])))
-    return coalesce(ODRIVE.WA.DAV_PROP_GET (resource[0], ':virtpublictags'), '');
+    return ODRIVE.WA.DAV_PROP_GET (resource[0], ':virtpublictags', '');
 
   if (property = 'versionControl')
   {
@@ -3021,9 +3008,7 @@ create procedure ODRIVE.WA.DAV_GET (
 
   if (property = 'permissions-inheritance')
   {
-    if (isnull (resource[0]))
-      return null;
-    if (resource[1] = 'R')
+    if ((isnull (resource[0])) or (resource[1] = 'R') or isarray(resource[1]))
       return null;
     return (select COL_INHERIT from WS.WS.SYS_DAV_COL where COL_ID = resource[4]);
   }
@@ -3078,9 +3063,13 @@ create procedure ODRIVE.WA.DAV_SET (
     return ODRIVE.WA.DAV_SET_AUTOVERSION (path, value);
   if (property = 'permissions-inheritance')
   {
+    tmp := DB.DBA.DAV_SEARCH_ID (path, 'C');
+    if (not isarray (tmp))
+    {
     set triggers off;
-    update WS.WS.SYS_DAV_COL set COL_INHERIT = value where COL_ID = DB.DBA.DAV_SEARCH_ID (path, 'C');
+      update WS.WS.SYS_DAV_COL set COL_INHERIT = value where COL_ID = tmp;
     set triggers on;
+  }
   }
   return 0;
 }
@@ -3391,6 +3380,7 @@ create procedure ODRIVE.WA.DAV_PROP_GET (
   in auth_name varchar := null,
   in auth_pwd varchar := null)
 {
+  -- dbg_obj_princ ('ODRIVE.WA.DAV_PROP_GET (', path, propName, ')');
   declare exit handler for SQLSTATE '*' {return propValue;};
 
   declare uname, gname varchar;
@@ -3408,11 +3398,12 @@ create procedure ODRIVE.WA.DAV_PROP_GET (
 --
 create procedure ODRIVE.WA.DAV_PROP_SET (
   in path varchar,
-  in propname varchar,
-  in propvalue any,
+  in propName varchar,
+  in propValue any,
   in auth_name varchar := null,
   in auth_pwd varchar := null)
 {
+  -- dbg_obj_princ ('ODRIVE.WA.DAV_PROP_GET (', path, propName, ')');
   declare uname, gname varchar;
 
   ODRIVE.WA.DAV_API_PARAMS (null, null, uname, gname, auth_name, auth_pwd);

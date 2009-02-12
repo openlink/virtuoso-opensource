@@ -472,7 +472,7 @@
               <v:validator test="regexp" regexp="^[0-9]+$" message="Number is expected" runat="client" />
               <v:before-data-bind>
                 <![CDATA[
-                  control.ufl_value := get_keyword('dav_oMail_DomainId', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_PROP_GET(self.dav_path, 'virt:oMail-DomainId', '1'));
+                  control.ufl_value := self.get_fieldProperty ('dav_oMail_DomainId', self.dav_path, 'virt:oMail-DomainId', '1');
                 ]]>
               </v:before-data-bind>
             </v:text>
@@ -487,7 +487,7 @@
               <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client" />
               <v:before-data-bind>
                 <![CDATA[
-                  control.ufl_value := get_keyword('dav_oMail_FolderName', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_PROP_GET(self.dav_path, 'virt:oMail-FolderName', 'Inbox'));
+                  control.ufl_value := self.get_fieldProperty ('dav_oMail_FolderName', self.dav_path, 'virt:oMail-FolderName', 'Inbox');
                 ]]>
               </v:before-data-bind>
             </v:text>
@@ -502,7 +502,7 @@
               <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client" />
               <v:before-data-bind>
                 <![CDATA[
-                  control.ufl_value := get_keyword('dav_oMail_NameFormat', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_PROP_GET(self.dav_path, 'virt:oMail-NameFormat', '^from^ ^subject^'));
+                  control.ufl_value := self.get_fieldProperty ('dav_oMail_NameFormat', self.dav_path, 'virt:oMail-NameFormat', '^from^ ^subject^');
                 ]]>
               </v:before-data-bind>
             </v:text>
@@ -525,7 +525,7 @@
               <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client" />
               <v:before-data-bind>
                 <![CDATA[
-                  control.ufl_value := get_keyword ('dav_PropFilter_SearchPath', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_PROP_GET (self.dav_path, 'virt:PropFilter-SearchPath', ODRIVE.WA.path_show(self.dir_path)));
+                  control.ufl_value := self.get_fieldProperty ('dav_PropFilter_SearchPath', self.dav_path, 'virt:PropFilter-SearchPath', ODRIVE.WA.path_show (self.dir_path));
                 ]]>
               </v:before-data-bind>
             </v:text>
@@ -540,7 +540,7 @@
               <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client" />
               <v:before-data-bind>
                 <![CDATA[
-                  control.ufl_value := get_keyword('dav_PropFilter_PropName', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_PROP_GET(self.dav_path, 'virt:PropFilter-PropName', ''));
+                  control.ufl_value := self.get_fieldProperty ('dav_PropFilter_PropName', self.dav_path, 'virt:PropFilter-PropName', '');
                 ]]>
               </v:before-data-bind>
             </v:text>
@@ -554,7 +554,7 @@
             <v:text name="dav_PropFilter_PropValue" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:before-data-bind>
                 <![CDATA[
-                  control.ufl_value := get_keyword('dav_PropFilter_PropValue', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_PROP_GET(self.dav_path, 'virt:PropFilter-PropValue', ''));
+                  control.ufl_value := self.get_fieldProperty ('dav_PropFilter_PropValue', self.dav_path, 'virt:PropFilter-PropValue', '');
                 ]]>
               </v:before-data-bind>
             </v:text>
@@ -574,10 +574,10 @@
           </th>
           <td>
             <v:text name="dav_S3_BucketName" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client" />
+              <v:validator test="length" min="0" max="63" message="The input can not be empty." runat="client" />
               <v:before-data-bind>
                 <![CDATA[
-                  control.ufl_value := get_keyword ('dav_S3_BucketName', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_PROP_GET(self.dav_path, 'virt:S3-BucketName', ''));
+                  control.ufl_value := self.get_fieldProperty ('dav_S3_BucketName', self.dav_path, 'virt:S3-BucketName', '');
                 ]]>
               </v:before-data-bind>
             </v:text>
@@ -585,14 +585,14 @@
         </tr>
         <tr>
           <th>
-            <v:label for="dav_S3_AccessKey" value="Access Key ID" />
+            <v:label for="dav_S3_AccessKey" value="Access Key ID (*)" />
           </th>
           <td>
             <v:text name="dav_S3_AccessKeyID" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client" />
+              <v:validator test="length" min="20" max="20" message="The input must be 20 characters long." runat="client" />
               <v:before-data-bind>
                 <![CDATA[
-                  control.ufl_value := get_keyword ('dav_S3_AccessKeyID', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_PROP_GET(self.dav_path, 'virt:S3-AccessKeyID', ''));
+                  control.ufl_value := self.get_fieldProperty ('dav_S3_AccessKeyID', self.dav_path, 'virt:S3-AccessKeyID', '');
                 ]]>
               </v:before-data-bind>
             </v:text>
@@ -600,14 +600,14 @@
         </tr>
         <tr>
           <th>
-            <v:label for="dav_S3_SecretKey" value="Secret Key" />
+            <v:label for="dav_S3_SecretKey" value="Secret Key (*)" />
           </th>
           <td>
             <v:text name="dav_S3_SecretKey" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client" />
+              <v:validator test="length" min="40" max="40" message="The input must be 40 characters long." runat="client" />
               <v:before-data-bind>
                 <![CDATA[
-                  control.ufl_value := get_keyword ('dav_S3_SecretKey', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_PROP_GET(self.dav_path, 'virt:S3-SecretKey', ''));
+                  control.ufl_value := self.get_fieldProperty ('dav_S3_SecretKey', self.dav_path, 'virt:S3-SecretKey', '');
                 ]]>
               </v:before-data-bind>
             </v:text>
@@ -697,7 +697,7 @@
               <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client" />
               <v:before-data-bind>
                 <![CDATA[
-                  control.ufl_value := get_keyword('dav_rdfSink_rdfGraph', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_PROP_GET(self.dav_path, 'virt:rdf_graph', ''));
+                  control.ufl_value := self.get_fieldProperty ('dav_rdfSink_rdfGraph', self.dav_path, 'virt:rdf_graph', '');
                 ]]>
               </v:before-data-bind>
             </v:text>
@@ -711,7 +711,7 @@
             <v:text name="dav_rdfSink_rdfSponger" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
               <v:before-data-bind>
                 <![CDATA[
-                  control.ufl_value := get_keyword('dav_rdfSink_rdfSponger', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_PROP_GET(self.dav_path, 'virt:rdf_sponger', ''));
+                  control.ufl_value := self.get_fieldProperty ('dav_rdfSink_rdfSponger', self.dav_path, 'virt:rdf_sponger', '');
                 ]]>
               </v:before-data-bind>
             </v:text>
@@ -1081,6 +1081,7 @@
   <!--=========================================================================-->
   <!-- Auto Versioning -->
   <xsl:template match="vm:autoVersion">
+    <vm:if test="self.dav_category = ''">
     <tr id="davRow_version">
       <th>
         <v:label for="dav_autoversion" value="--'Auto Versioning Content'" />
@@ -1107,6 +1108,7 @@
         ?>
       </td>
     </tr>
+    </vm:if>
   </xsl:template>
 
 </xsl:stylesheet>
