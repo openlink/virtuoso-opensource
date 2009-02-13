@@ -5,18 +5,21 @@
    declare _G, _S, odd_position any;
    declare project_home_page any;
    declare page_resource_uri, proxy_iri, rdf_link, label, true_label, _subject any;
-   declare arr, data, meta, h1, h2, inx, gr, host any;
+   declare arr, data, meta, h1, h2, inx, gr, host, pars any;
    declare _graph, _sub varchar;
    declare do_sponge, proxy_iri_fn int;
 
    connection_set ('ns_ctr', 1); /* for unknown xmlns to print in RDFa */
    proxy_iri_fn := get_keyword ('p', params, null);
-   connection_set ('proxy_iri_fn', proxy_iri_fn);
    host := http_request_header (http_request_header (), 'Host');  
    gr := get_keyword ('g', params, '');
    arr := rfc1808_parse_uri (gr);
    if (arr[0] = '' and arr[1] = '' and arr[2] <> '')
      gr := 'http://' || gr;
+   pars := split_and_decode (arr[4]);
+   if (isarray (pars) and get_keyword ('p', pars, '') = proxy_iri_fn)
+     proxy_iri_fn := null;
+   connection_set ('proxy_iri_fn', proxy_iri_fn);
 
    project_home_page := gr;
    project_home_page := replace (project_home_page, '%23', '#');
