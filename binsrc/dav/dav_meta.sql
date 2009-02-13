@@ -65,9 +65,9 @@ create function DAV_GUESS_MIME_TYPE_BY_NAME (in orig_res_name varchar) returns v
     return 'application/x-openlink-license';
   if (position (orig_res_ext_upper, vector ('.XBRL')))
     return 'application/xbrl+xml';
-  if (position (orig_res_ext_upper, vector ('.TXT')) and 
-	connection_get ('oWiki Topic') is not null and 
-	connection_get ('oWiki Topic') = orig_res_name)
+  if (position (orig_res_ext_upper, vector ('.TXT')) and
+        connection_get ('oWiki Topic') is not null and
+        connection_get ('oWiki Topic') = orig_res_name)
       return 'text/wiki';
   if (position (orig_res_ext_upper,
     vector ('.BMP', '.DIB', '.RLE', '.CR2', '.CRW', '.EMF', '.EPS', '.IFF', '.LBM', '.JP2', '.JPX', '.JPK', '.J2K',
@@ -176,8 +176,8 @@ create function DAV_GUESS_MIME_TYPE (in orig_res_name varchar, inout content any
                   min_frag_len := max_frag_len;
               for (frag_len := max_frag_len; (frag_len >= min_frag_len) and (html_start is null); frag_len := frag_len - 1000)
                 {
-          	  html_start := xtree_doc (subseq (content, 0, frag_len), 18, 'http://localdav.virt/' || orig_res_name, 'LATIN-1', 'x-any',
-            			'Validation=DISABLE Include=DISABLE BuildStandalone=DISABLE SchemaDecl=DISABLE' );
+                  html_start := xtree_doc (subseq (content, 0, frag_len), 18, 'http://localdav.virt/' || orig_res_name, 'LATIN-1', 'x-any',
+                                'Validation=DISABLE Include=DISABLE BuildStandalone=DISABLE SchemaDecl=DISABLE' );
                 }
             }
         }
@@ -212,7 +212,6 @@ create function DAV_GUESS_MIME_TYPE (in orig_res_name varchar, inout content any
         return 'application/ocs+xml';
       if (xpath_eval ('[xmlns:rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc  = "http://purl.org/metadata/dublin_core#" xmlns = "http://purl.org/ocs/directory/0.5/#"] exists (/rdf:rdf/directory)', html_start))
         return 'application/ocs+xml';
-
       -- rdf:rdf is lowercase, instead of proper rdf:RDF because dirty HTML mode converts names.
       if (xpath_eval ('[xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rss="http://purl.org/rss/1.0/"]exists (/rdf:rdf/rss:channel)', html_start))
         return 'application/rss+xml';
@@ -253,7 +252,7 @@ create function DAV_GUESS_MIME_TYPE (in orig_res_name varchar, inout content any
           if (image_format is not null and image_format <> '' and image_format <> 'unknown' and image_format <> '.')
             return 'application/x-openlink-photo';
           else
-            return 'application/x-openlink-image';		
+            return 'application/x-openlink-image';
         }
     }
 no_op:
@@ -285,7 +284,7 @@ create function "DAV_EXTRACT_RDF_application/x-openlink-license" (in orig_res_na
 {
   declare doc, metas, res, content any;
   whenever sqlstate '*' goto errexit;
-	content := blob_to_string (content1);
+        content := blob_to_string (content1);
   -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/x-openlink-license (', orig_res_name, ',... )');
   xte_nodebld_init(res);
   declare mydata, reg_to, con_num, serial varchar;
@@ -392,15 +391,15 @@ create function "DAV_EXTRACT_RDF_application/x-openlink-image" (in orig_res_name
 {
   declare doc, metas, res, content any;
   whenever sqlstate '*' goto errexit;
-	content := blob_to_string (content1);
+        content := blob_to_string (content1);
   -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/x-openlink-image (', orig_res_name, ',... )');
   xte_nodebld_init(res);
-  declare image_size, xsize, ysize, depth integer; 
+  declare image_size, xsize, ysize, depth integer;
   declare image_format, comments, xres, yres varchar;
-	image_format := "IM GetImageBlobFormat"(content, length(content));
+        image_format := "IM GetImageBlobFormat"(content, length(content));
   image_size := length(content);
   xsize := "IM GetImageBlobWidth"(content, length(content));
-	ysize := "IM GetImageBlobHeight"(content, length(content));
+        ysize := "IM GetImageBlobHeight"(content, length(content));
   xres := "IM GetImageBlobAttribute"(content, length(content), 'EXIF:XResolution');
   yres := "IM GetImageBlobAttribute"(content, length(content), 'EXIF:YResolution');
   depth := "IM GetImageBlobDepth"(content, length(content));
@@ -429,15 +428,15 @@ create function "DAV_EXTRACT_RDF_application/x-openlink-photo" (in orig_res_name
 {
   declare doc, metas, res, content any;
   whenever sqlstate '*' goto errexit;
-	content := blob_to_string (content1);
+        content := blob_to_string (content1);
   -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/x-openlink-image (', orig_res_name, ',... )');
   xte_nodebld_init(res);
-  declare image_size, xsize, ysize, depth integer; 
+  declare image_size, xsize, ysize, depth integer;
   declare image_format, comments, xres, yres varchar;
-	image_format := "IM GetImageBlobFormat"(content, length(content));
+        image_format := "IM GetImageBlobFormat"(content, length(content));
   image_size := length(content);
   xsize := "IM GetImageBlobWidth"(content, length(content));
-	ysize := "IM GetImageBlobHeight"(content, length(content));
+        ysize := "IM GetImageBlobHeight"(content, length(content));
   xres := "IM GetImageBlobAttribute"(content, length(content), 'EXIF:XResolution');
   yres := "IM GetImageBlobAttribute"(content, length(content), 'EXIF:YResolution');
   depth := "IM GetImageBlobDepth"(content, length(content));
@@ -515,18 +514,18 @@ create function "DAV_EXTRACT_RDF_application/msoffice+xml" (in type_descr varcha
       docprops := xpath_eval ('/*/*:DocumentProperties', doc);
     }
   metas := vector (
-        'http://www.openlinksw.com/schemas/Office#Title'	, 'declare namespace o="urn:schemas-microsoft-com:office:office"; o:Title'					, NULL,
-        'http://www.openlinksw.com/schemas/Office#Author'	, 'declare namespace o="urn:schemas-microsoft-com:office:office"; o:Author|o:Creator'				, NULL,
-        'http://www.openlinksw.com/schemas/Office#LastAuthor'	, 'declare namespace o="urn:schemas-microsoft-com:office:office"; o:LastAuthor'					, NULL,
-        'http://www.openlinksw.com/schemas/Office#Company'	, 'declare namespace o="urn:schemas-microsoft-com:office:office"; o:Company'					, NULL,
-        'http://www.openlinksw.com/schemas/Office#Words'	, 'declare namespace o="urn:schemas-microsoft-com:office:office"; o:Words'					, NULL,
-        'http://www.openlinksw.com/schemas/Office#Pages'	, 'declare namespace o="urn:schemas-microsoft-com:office:office"; o:Pages'					, NULL,
-        'http://www.openlinksw.com/schemas/Office#Lines'	, 'declare namespace o="urn:schemas-microsoft-com:office:office"; o:Lines'					, NULL,
-        'http://www.openlinksw.com/schemas/Office#Last-Saved'	, 'declare namespace o="urn:schemas-microsoft-com:office:office"; o:LastSaved|o:TimeSaved'			, NULL,
-        'http://www.openlinksw.com/schemas/Office#Last-Printed'	, 'declare namespace o="urn:schemas-microsoft-com:office:office"; o:LastPrinted|o:TimePrinted'			, NULL,
-        'http://www.openlinksw.com/schemas/Office#Created'	, 'declare namespace o="urn:schemas-microsoft-com:office:office"; o:Created|o:TimeCreated|o:CreationDate'	, NULL );
+        'http://www.openlinksw.com/schemas/Office#Title'        , 'declare namespace o="urn:schemas-microsoft-com:office:office"; o:Title'                                      , NULL,
+        'http://www.openlinksw.com/schemas/Office#Author'       , 'declare namespace o="urn:schemas-microsoft-com:office:office"; o:Author|o:Creator'                           , NULL,
+        'http://www.openlinksw.com/schemas/Office#LastAuthor'   , 'declare namespace o="urn:schemas-microsoft-com:office:office"; o:LastAuthor'                                 , NULL,
+        'http://www.openlinksw.com/schemas/Office#Company'      , 'declare namespace o="urn:schemas-microsoft-com:office:office"; o:Company'                                    , NULL,
+        'http://www.openlinksw.com/schemas/Office#Words'        , 'declare namespace o="urn:schemas-microsoft-com:office:office"; o:Words'                                      , NULL,
+        'http://www.openlinksw.com/schemas/Office#Pages'        , 'declare namespace o="urn:schemas-microsoft-com:office:office"; o:Pages'                                      , NULL,
+        'http://www.openlinksw.com/schemas/Office#Lines'        , 'declare namespace o="urn:schemas-microsoft-com:office:office"; o:Lines'                                      , NULL,
+        'http://www.openlinksw.com/schemas/Office#Last-Saved'   , 'declare namespace o="urn:schemas-microsoft-com:office:office"; o:LastSaved|o:TimeSaved'                      , NULL,
+        'http://www.openlinksw.com/schemas/Office#Last-Printed' , 'declare namespace o="urn:schemas-microsoft-com:office:office"; o:LastPrinted|o:TimePrinted'                  , NULL,
+        'http://www.openlinksw.com/schemas/Office#Created'      , 'declare namespace o="urn:schemas-microsoft-com:office:office"; o:Created|o:TimeCreated|o:CreationDate'       , NULL );
   extras := vector (
-        'http://www.openlinksw.com/schemas/Office#TypeDescr'	,  type_descr );
+        'http://www.openlinksw.com/schemas/Office#TypeDescr'    ,  type_descr );
   return "DAV_EXTRACT_RDF_BY_METAS" (docprops, metas, extras);
 
 errexit:
@@ -541,7 +540,7 @@ create function "DAV_EXTRACT_RDF_application/msexcel" (in orig_res_name varchar,
   doc := null;
   metas := null;
   extras := vector (
-        'http://www.openlinksw.com/schemas/Office#TypeDescr'	,  'MS Excel spreadsheet' );
+        'http://www.openlinksw.com/schemas/Office#TypeDescr'    ,  'MS Excel spreadsheet' );
   return "DAV_EXTRACT_RDF_BY_METAS" (doc, metas, extras);
 }
 ;
@@ -563,7 +562,7 @@ create function "DAV_EXTRACT_RDF_application/msproject" (in orig_res_name varcha
   doc := null;
   metas := null;
   extras := vector (
-        'http://www.openlinksw.com/schemas/Office#TypeDescr'	,  'MS Project document' );
+        'http://www.openlinksw.com/schemas/Office#TypeDescr'    ,  'MS Project document' );
   return "DAV_EXTRACT_RDF_BY_METAS" (doc, metas, extras);
 }
 ;
@@ -575,7 +574,7 @@ create function "DAV_EXTRACT_RDF_application/mspowerpoint" (in orig_res_name var
   doc := null;
   metas := null;
   extras := vector (
-        'http://www.openlinksw.com/schemas/Office#TypeDescr'	,  'MS PowerPoint presentation' );
+        'http://www.openlinksw.com/schemas/Office#TypeDescr'    ,  'MS PowerPoint presentation' );
   return "DAV_EXTRACT_RDF_BY_METAS" (doc, metas, extras);
 }
 ;
@@ -587,7 +586,7 @@ create function "DAV_EXTRACT_RDF_application/msword" (in orig_res_name varchar, 
   doc := null;
   metas := null;
   extras := vector (
-        'http://www.openlinksw.com/schemas/Office#TypeDescr'	,  'MS Word document' );
+        'http://www.openlinksw.com/schemas/Office#TypeDescr'    ,  'MS Word document' );
   return "DAV_EXTRACT_RDF_BY_METAS" (doc, metas, extras);
 }
 ;
@@ -599,7 +598,7 @@ create function "DAV_EXTRACT_RDF_application/pdf" (in orig_res_name varchar, ino
   doc := null;
   metas := null;
   extras := vector (
-        'http://www.openlinksw.com/schemas/Office#TypeDescr'	,  'PDF (Acrobat)' );
+        'http://www.openlinksw.com/schemas/Office#TypeDescr'    ,  'PDF (Acrobat)' );
   return "DAV_EXTRACT_RDF_BY_METAS" (doc, metas, extras);
 }
 ;
@@ -617,7 +616,6 @@ create function "DAV_EXTRACT_RDF_application/xbrl+xml" (in orig_res_name varchar
         );
   extras := null;
   return "DAV_EXTRACT_RDF_BY_METAS" (doc, metas, extras);
-
 errexit:
   return xml_tree_doc (xte_node (xte_head (UNAME' root')));
 }
@@ -636,7 +634,6 @@ create function "DAV_EXTRACT_RDF_application/doap+rdf" (in orig_res_name varchar
         );
   extras := null;
   return "DAV_EXTRACT_RDF_BY_METAS" (doc, metas, extras);
-
 errexit:
   return xml_tree_doc (xte_node (xte_head (UNAME' root')));
 }
@@ -737,36 +734,36 @@ create function "DAV_EXTRACT_RDF_application/rar" (in orig_res_name varchar, ino
   return "DAV_EXTRACT_RDF_application/archive" ('RAR archive', orig_res_name, content, html_start);
 }
 ;
- 
+
 create function "DAV_EXTRACT_RDF_application/zip" (in orig_res_name varchar, inout content any, inout html_start any)
 {
   return "DAV_EXTRACT_RDF_application/archive" ('ZIP archive', orig_res_name, content, html_start);
 }
-;  
+;
 
 create function "DAV_EXTRACT_RDF_application/cab" (in orig_res_name varchar, inout content any, inout html_start any)
 {
   return "DAV_EXTRACT_RDF_application/archive" ('CAB archive', orig_res_name, content, html_start);
 }
-;  
+;
 
 create function "DAV_EXTRACT_RDF_application/lzh" (in orig_res_name varchar, inout content any, inout html_start any)
 {
   return "DAV_EXTRACT_RDF_application/archive" ('LZH archive', orig_res_name, content, html_start);
 }
-;  
+;
 
 create function "DAV_EXTRACT_RDF_application/ace" (in orig_res_name varchar, inout content any, inout html_start any)
 {
   return "DAV_EXTRACT_RDF_application/archive" ('ACE archive', orig_res_name, content, html_start);
 }
-;  
+;
 
 create function "DAV_EXTRACT_RDF_application/iso" (in orig_res_name varchar, inout content any, inout html_start any)
 {
   return "DAV_EXTRACT_RDF_application/archive" ('ISO image archive', orig_res_name, content, html_start);
 }
-;  
+;
 
 create function "DAV_EXTRACT_RDF_application/msword+xml" (in orig_res_name varchar, inout content any, inout html_start any)
 {
@@ -846,7 +843,6 @@ create function "DAV_EXTRACT_RDF_application/rss+xml" (in orig_res_name varchar,
       extras := null;
       return "DAV_EXTRACT_RDF_BY_METAS" (doc, metas, extras);
     }
-
 final:
   xte_nodebld_final (res, xte_head (UNAME' root'));
   return xml_tree_doc (res);
@@ -897,24 +893,24 @@ create function "DAV_EXTRACT_RDF_text/eml" (in orig_res_name varchar, inout cont
 {
   declare doc, metas, res, content any;
   whenever sqlstate '*' goto errexit;
-	content := blob_to_string (content1);
+        content := blob_to_string (content1);
   -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/x-openlink-image (', orig_res_name, ',... )');
   xte_nodebld_init(res);
-	declare vec any;	
+        declare vec any;
   declare from_, subject_, date_ varchar;
   vec := vector();
-	vec := split_and_decode(content, 1, '=_\n:');
-	declare i, l int;
+        vec := split_and_decode(content, 1, '=_\n:');
+        declare i, l int;
   i := 0;
-	l := length (vec);
+        l := length (vec);
   while (i < l)
   {
-  	if (vec[i] = 'FROM')
-    	from_ := trim(vec[i+1], '\r\n ');
-  	if (vec[i] = 'SUBJECT')
-    	subject_ := trim(vec[i+1], '\r\n ');
-  	if (vec[i] = 'DATE')
-    	date_ := trim(vec[i+1], '\r\n ');
+        if (vec[i] = 'FROM')
+        from_ := trim(vec[i+1], '\r\n ');
+        if (vec[i] = 'SUBJECT')
+        subject_ := trim(vec[i+1], '\r\n ');
+        if (vec[i] = 'DATE')
+        date_ := trim(vec[i+1], '\r\n ');
     i := i + 2;
   }
   xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
@@ -950,7 +946,6 @@ create function "DAV_EXTRACT_RDF_application/xbel+xml" (in orig_res_name varchar
         );
   extras := null;
   return "DAV_EXTRACT_RDF_BY_METAS" (doc, metas, extras);
-
 errexit:
   return xml_tree_doc (xte_node (xte_head (UNAME' root')));
 }
@@ -1035,8 +1030,8 @@ create function "DAV_EXTRACT_RDF_application/foaf+xml" (in orig_res_name varchar
           obj_names := xpath_eval ('/N3[@N3S = \044obj][@N3P="http://xmlns.com/foaf/0.1/name"]', tmp_n3, 0, vector (UNAME'obj', obj));
           foreach (any oname in obj_names) do
             {
-	      xte_nodebld_acc (res,
-	        xte_node (
+              xte_nodebld_acc (res,
+                xte_node (
                   xte_head (UNAME'N3', UNAME'N3S', 'http://local.virt/this', UNAME'N3P', xpath_eval ('@N3P', prop) || N'-name'),
                 xpath_eval ('string (.)', oname) ) );
             }
@@ -1526,7 +1521,7 @@ errexit:
 ;
 
 create function "DAV_EXTRACT_RDF_text/wiki" (in orig_res_name varchar, inout content any, inout html_start any)
-{  
+{
   if (1)
     {
       declare _author varchar;
@@ -1547,9 +1542,9 @@ create function "DAV_EXTRACT_RDF_text/wiki" (in orig_res_name varchar, inout con
       _title := NULL;
       foreach (varchar t in titles) do
         {
-	  if (length (t) > length (_title))
-	    _title := cast (t as varchar);
-	}
+          if (length (t) > length (_title))
+            _title := cast (t as varchar);
+        }
       if (_title is null)
       {
         declare pos integer;
@@ -1562,21 +1557,21 @@ create function "DAV_EXTRACT_RDF_text/wiki" (in orig_res_name varchar, inout con
       }
       else
         _title := cast (_title as varchar);
-      _date := now();	
+      _date := now();
       _cats := xpath_eval ('//a[@style="wikiword" and text() like "Category%"]/text()', _ent, 0);
       -- dbg_obj_print ('cats: ', _cats);
       vectorbld_init (_categories);
-      _res := XMLELEMENT ('Wiki', 
-        	XMLELEMENT('Cluster', _cluster),
-		XMLELEMENT('Title', _title),
-		XMLELEMENT('Author', _author),
-		XMLELEMENT('Date', cast (_date as varchar)));
+      _res := XMLELEMENT ('Wiki',
+                XMLELEMENT('Cluster', _cluster),
+                XMLELEMENT('Title', _title),
+                XMLELEMENT('Author', _author),
+                XMLELEMENT('Date', cast (_date as varchar)));
       -- declare _wiki_ent any;
       _ent := xpath_eval ('/Wiki', _res);
-      foreach (any _c in _cats) do 
+      foreach (any _c in _cats) do
         {
-	  XMLAppendChildren (_ent, XMLELEMENT ('Category', cast (_c as varchar)));
-	}
+          XMLAppendChildren (_ent, XMLELEMENT ('Category', cast (_c as varchar)));
+        }
       declare metas, extras any;
       metas := vector (
         'http://www.openlinksw.com/schemas/Wiki#Cluster', '/Wiki/Cluster', NULL,
@@ -1590,7 +1585,7 @@ create function "DAV_EXTRACT_RDF_text/wiki" (in orig_res_name varchar, inout con
     }
 }
 ;
-      
+
 
 -- This gets an IMC stream such as VCARD or VCALENDAR and parses it without validation into XML, returning xml-tree vector
 create function IMC_TO_XML (in _src varchar)
@@ -1627,12 +1622,12 @@ create function IMC_TO_XML (in _src varchar)
         goto next_line;
       if (regexp_match ('^([A-Za-z0-9-]+[.])?((BEGIN)|(begin)):([A-Z]+)\044', line) is not null)
         {
-	  stack := vector_concat (vector (IMC_type, curr_IMC), stack);
-	  IMC_type := upper (subseq (line, strchr (line, ':') + 1));
-	  xte_nodebld_init (curr_IMC);
-	  xte_nodebld_acc (curr_IMC, '\n');
-	  goto next_line;
-	}
+          stack := vector_concat (vector (IMC_type, curr_IMC), stack);
+          IMC_type := upper (subseq (line, strchr (line, ':') + 1));
+          xte_nodebld_init (curr_IMC);
+          xte_nodebld_acc (curr_IMC, '\n');
+          goto next_line;
+        }
       if (regexp_match ('^([A-Za-z0-9-]+[.])?((END)|(end)):([A-Z]+)\044', line) is not null)
         {
           declare sub_IMC any;
@@ -1642,13 +1637,13 @@ create function IMC_TO_XML (in _src varchar)
           close_type := upper (subseq (line, strchr (line, ':') + 1));
           if (close_type <> IMC_type)
             signal ('22007', sprintf ('IMC text contains "END:%s" instead of expected "END:%s" at line %d', close_type, IMC_type, line_idx + 1));
-	  xte_nodebld_final (curr_IMC, xte_head ('IMC-' || IMC_type));
-	  sub_IMC := curr_IMC;
-	  IMC_type := stack[0];
-	  curr_IMC := stack[1];
-	  stack := subseq (stack, 2);
-	  xte_nodebld_acc (curr_IMC, sub_IMC);
-	  xte_nodebld_acc (curr_IMC, '\n');
+          xte_nodebld_final (curr_IMC, xte_head ('IMC-' || IMC_type));
+          sub_IMC := curr_IMC;
+          IMC_type := stack[0];
+          curr_IMC := stack[1];
+          stack := subseq (stack, 2);
+          xte_nodebld_acc (curr_IMC, sub_IMC);
+          xte_nodebld_acc (curr_IMC, '\n');
           goto next_line;
         }
       xte_nodebld_init (line_acc);
@@ -1657,106 +1652,106 @@ create function IMC_TO_XML (in _src varchar)
 '^([A-Za-z0-9-]+[.])?([A-Za-z0-9-]+)(([;][A-Za-z0-9-]+(=(([^\001-\037\200-\377";:,]*)|("[^\001-\037\200-\377"]*"))(,(([^\001-\037\200-\377";:,]*)|("[^\001-\037\200-\377"]*")))*)?)*)([:])([\040-\377]*)\044',
 --(group        [.])?name           ((param-name      (=(plain-param-value           |quoted_param_value         )(,(plain-param-value           |quoted_param_value         ))*)?)*) [:]  value
             line, 0 );
-	  if (delims is null)
-	    {
-	      head := 'X-ERROR';
-	      data := line;
-	    }
-	  else
-	    {
-	      colon_pos := delims[7];
-	      head := subseq (line, 0, colon_pos);
-	      data := subseq (line, colon_pos + 1);
-	    }
-	  head_parts := split_and_decode (head, 0, '\0\0;');
-	  head_name := head_parts [0];
-	  param_idx := 1;
-	  param_count := length (head_parts);
-	  while (param_idx < param_count)
-	    {
-	      declare param_strg, param_name, param_data varchar;
-	      declare eq_pos integer;
-	      param_strg := head_parts [param_idx];
+          if (delims is null)
+            {
+              head := 'X-ERROR';
+              data := line;
+            }
+          else
+            {
+              colon_pos := delims[7];
+              head := subseq (line, 0, colon_pos);
+              data := subseq (line, colon_pos + 1);
+            }
+          head_parts := split_and_decode (head, 0, '\0\0;');
+          head_name := head_parts [0];
+          param_idx := 1;
+          param_count := length (head_parts);
+          while (param_idx < param_count)
+            {
+              declare param_strg, param_name, param_data varchar;
+              declare eq_pos integer;
+              param_strg := head_parts [param_idx];
               eq_pos := strchr (param_strg, '=');
-	      if (eq_pos is null)
-	        xte_nodebld_acc (line_acc,
-	          xte_node (xte_head (UNAME'TYPE'), param_strg) );
-	      else
-	        {
-		  param_name := subseq (param_strg, 0, eq_pos);
-		  param_data := split_and_decode (subseq (param_strg, eq_pos + 1), 0, '\0\0,');
-		  foreach (varchar pd in param_data) do
-		    {
-		      if (pd like '"%"')
-		        pd := subseq (pd, 1, length (pd) - 1);
+              if (eq_pos is null)
+                xte_nodebld_acc (line_acc,
+                  xte_node (xte_head (UNAME'TYPE'), param_strg) );
+              else
+                {
+                  param_name := subseq (param_strg, 0, eq_pos);
+                  param_data := split_and_decode (subseq (param_strg, eq_pos + 1), 0, '\0\0,');
+                  foreach (varchar pd in param_data) do
+                    {
+                      if (pd like '"%"')
+                        pd := subseq (pd, 1, length (pd) - 1);
                       xte_nodebld_acc (line_acc,
                         xte_node (xte_head (param_name), pd) );
-		    }
-		}
-	      param_idx := param_idx + 1;
-	    }
-	  if ((length (data) > 0) and
-	    ( position ('ENCODING=QUOTED-PRINTABLE', head_parts) or
-	      position ('ENCODING="QUOTED-PRINTABLE"', head_parts) ) )
-	    {
-	      while ((data [length (data) - 1] = 61) and
-	        ((line_idx + 1) < lines_count) )
-	        {
-		  line_idx := line_idx + 1;
-	          data := subseq (data, 0, length (data) - 1) || lines [line_idx];
-		}
-	    }
+                    }
+                }
+              param_idx := param_idx + 1;
+            }
+          if ((length (data) > 0) and
+            ( position ('ENCODING=QUOTED-PRINTABLE', head_parts) or
+              position ('ENCODING="QUOTED-PRINTABLE"', head_parts) ) )
+            {
+              while ((data [length (data) - 1] = 61) and
+                ((line_idx + 1) < lines_count) )
+                {
+                  line_idx := line_idx + 1;
+                  data := subseq (data, 0, length (data) - 1) || lines [line_idx];
+                }
+            }
           -- dbg_obj_princ ('1. data=', data);
-	  data := replace (data, '\\,', '\1');
-	  data := replace (data, '\\;', '\2');
-	  data := replace (data, '\\n', '\015\012');
-	  data := replace (data, '\\N', '\015\012');
+          data := replace (data, '\\,', '\1');
+          data := replace (data, '\\;', '\2');
+          data := replace (data, '\\n', '\015\012');
+          data := replace (data, '\\N', '\015\012');
           data := replace (data, '\\\\', '\\'); --' - this single quote in comment is to keep syntax highlight happy in MC and the like.
           -- dbg_obj_princ ('2. data=', data);
-	  if (strchr (data, ';') is not null)
-	    {
-	      data_parts := split_and_decode (data, 0, '\0\0;');
+          if (strchr (data, ';') is not null)
+            {
+              data_parts := split_and_decode (data, 0, '\0\0;');
               -- dbg_obj_princ ('3. data_parts=', data_parts);
-	      foreach (varchar datum in data_parts) do
-	        {
-		  declare recoded varchar;
-		  datum := replace (datum, '\1', ',');
-		  datum := replace (datum, '\2', ';');
-		  recoded := charset_recode (datum, 'UTF-8', '_WIDE_');
-		  if (not (isstring (recoded)))
-		    recoded := charset_recode (datum, NULL, '_WIDE_');
+              foreach (varchar datum in data_parts) do
+                {
+                  declare recoded varchar;
+                  datum := replace (datum, '\1', ',');
+                  datum := replace (datum, '\2', ';');
+                  recoded := charset_recode (datum, 'UTF-8', '_WIDE_');
+                  if (not (isstring (recoded)))
+                    recoded := charset_recode (datum, NULL, '_WIDE_');
                   xte_nodebld_acc (line_acc, xte_node (xte_head (UNAME'fld'), recoded));
-		}
-	    }
-	  else if (strchr (data, ',') is not null)
-	    {
-	      data_parts := split_and_decode (data, 0, '\0\0,');
-	      -- dbg_obj_princ ('3. data_parts=', data_parts);
-	      foreach (varchar datum in data_parts) do
-	        {
-		  declare recoded varchar;
-		  datum := replace (datum, '\1', ',');
-		  datum := replace (datum, '\2', ';');
-		  recoded := charset_recode (datum, 'UTF-8', '_WIDE_');
-		  if (not (isstring (recoded)))
-		    recoded := charset_recode (datum, NULL, '_WIDE_');
+                }
+            }
+          else if (strchr (data, ',') is not null)
+            {
+              data_parts := split_and_decode (data, 0, '\0\0,');
+              -- dbg_obj_princ ('3. data_parts=', data_parts);
+              foreach (varchar datum in data_parts) do
+                {
+                  declare recoded varchar;
+                  datum := replace (datum, '\1', ',');
+                  datum := replace (datum, '\2', ';');
+                  recoded := charset_recode (datum, 'UTF-8', '_WIDE_');
+                  if (not (isstring (recoded)))
+                    recoded := charset_recode (datum, NULL, '_WIDE_');
                   xte_nodebld_acc (line_acc, xte_node (xte_head (UNAME'val'), recoded));
-		}
-	    }
-	  else
-	    {
-	      declare recoded varchar;
+                }
+            }
+          else
+            {
+              declare recoded varchar;
               data := replace (data, '\1', ',');
               data := replace (data, '\2', ';');
-	      recoded := charset_recode (data, 'UTF-8', '_WIDE_');
-	      if (not (isstring (recoded)))
-		recoded := charset_recode (data, NULL, '_WIDE_');
+              recoded := charset_recode (data, 'UTF-8', '_WIDE_');
+              if (not (isstring (recoded)))
+                recoded := charset_recode (data, NULL, '_WIDE_');
               xte_nodebld_acc (line_acc, xte_node (xte_head (UNAME'val'), recoded));
-	    }
+            }
           xte_nodebld_final (line_acc, xte_head (head_name));
           xte_nodebld_acc (curr_IMC, line_acc, '\n');
 next_line:
-	  line_idx := line_idx + 1;
+          line_idx := line_idx + 1;
       ;
     }
 
@@ -1998,9 +1993,9 @@ create function DB.DBA.UNIX_DATETIME_PARSER (in strg varchar, in trap_error inte
       Mo := subseq (strg, parts[4], parts[5]);
       Da := subseq (strg, parts[6], parts[7]);
       hms := subseq (strg, parts[10], parts[11]);
-      hms := subseq (hms, 0, 2) || ':' || 
+      hms := subseq (hms, 0, 2) || ':' ||
         subseq (hms, 2, 4) || ':' ||
-	subseq (hms, 4, 6) ;
+        subseq (hms, 4, 6) ;
       tz := subseq (strg, parts[12], parts[13]);
       MN := null;
       goto parts_ready;
@@ -2212,7 +2207,7 @@ create function DAV_EXTRACT_SPOTLIGHT (in resname varchar, inout rescontent any)
   -- Where's the check for exit code?
   -- Where's check for sqlstate 42000?
   -- IMHO this is not major important to break uploading in DAV.
-  -- 
+  --
 --  system ('mdimport -f ' || temp_name);
   run_executable ('/usr/bin/mdimport', 1, ' -f ', server_root () || temp_name);
   sp_metadata := SPOTLIGHT_METADATA (temp_name);
@@ -2237,31 +2232,31 @@ create function DAV_CONVERT_SPOTLIGHT_TO_VIRTUOSO (in sp_data any) returns any
 
    while (len > loop_names)
      {
-	declare line, name, vals any;
-	line := sp_data [loop_names];
-	name := line [0];
-	vals := line [1];
-	if (name in ('kMDItemLastUsedDate', 'kMDItemUsedDates', 'kMDItemFSFinderFlags',
-		'kMDItemFSOwnerUserID', 'kMDItemFSOwnerGroupID', 'kMDItemFSTypeCode',
-		'kMDItemID', 'kMDItemFSSize', 'kMDItemFSCreationDate', 'kMDItemContentCreationDate',
-		'kMDItemFSContentChangeDate', 'kMDItemFSCreatorCode', 'kMDItemFSLabel',
-		'kMDItemFSInvisible', 'kMDItemFSNodeCount', 'kMDItemAttributeChangeDate',
-		'kMDItemDisplayName', 'kMDItemContentModificationDate', 'kMDItemFSName', 'kMDItemContentTypeTree'))
-	   goto end_loop;
+        declare line, name, vals any;
+        line := sp_data [loop_names];
+        name := line [0];
+        vals := line [1];
+        if (name in ('kMDItemLastUsedDate', 'kMDItemUsedDates', 'kMDItemFSFinderFlags',
+                'kMDItemFSOwnerUserID', 'kMDItemFSOwnerGroupID', 'kMDItemFSTypeCode',
+                'kMDItemID', 'kMDItemFSSize', 'kMDItemFSCreationDate', 'kMDItemContentCreationDate',
+                'kMDItemFSContentChangeDate', 'kMDItemFSCreatorCode', 'kMDItemFSLabel',
+                'kMDItemFSInvisible', 'kMDItemFSNodeCount', 'kMDItemAttributeChangeDate',
+                'kMDItemDisplayName', 'kMDItemContentModificationDate', 'kMDItemFSName', 'kMDItemContentTypeTree'))
+           goto end_loop;
 
-	if (__tag (vals) = 193)
-	    foreach (any val in line [1]) do
-	      DAV_SPOTLIGHT_ADD (res, name, val);
-	else
-	  DAV_SPOTLIGHT_ADD (res, name, line [1]);
+        if (__tag (vals) = 193)
+            foreach (any val in line [1]) do
+              DAV_SPOTLIGHT_ADD (res, name, val);
+        else
+          DAV_SPOTLIGHT_ADD (res, name, line [1]);
 
-	added := added + 1;
+        added := added + 1;
 
 end_loop:
-	loop_names := loop_names + 1;
+        loop_names := loop_names + 1;
      }
 
-	xte_nodebld_final (res, xte_head (UNAME' root'));
+        xte_nodebld_final (res, xte_head (UNAME' root'));
     if (added)
       return xml_tree_doc (res);
 
@@ -2275,8 +2270,8 @@ create procedure DAV_SPOTLIGHT_ADD (inout res any, in name varchar, inout val an
     xte_nodebld_acc (res,
       xte_node (
         xte_head (UNAME'N3', UNAME'N3S', 'http://local.virt/this', UNAME'N3P',
-	  'http://www.apple.com/metadata#' || name),
-	    cast (val as nvarchar) ) );
+          'http://www.apple.com/metadata#' || name),
+            cast (val as nvarchar) ) );
 }
 ;
 
@@ -2316,12 +2311,12 @@ create procedure DAV_EXTRACT_META_AS_RDF_XML (in resname varchar, in rescontent 
       declare exit handler for sqlstate '*'
         {
           goto addon_n3_set;
-	};
+        };
       addon_n3 := call ('DB.DBA.DAV_EXTRACT_RDF_' || restype)(resname, rescontent, html_start);
       res_type_uri := DAV_GET_RES_TYPE_URI_BY_MIME_TYPE(restype);
-	  type_tree := xtree_doc ('<N3 N3S="http://local.virt/this" N3P="http://www.w3.org/1999/02/22-rdf-syntax-ns#type" N3O="'
-	  || res_type_uri || '"/>' );
-	  addon_n3 := DAV_RDF_MERGE (addon_n3, type_tree, null, 0);
+          type_tree := xtree_doc ('<N3 N3S="http://local.virt/this" N3P="http://www.w3.org/1999/02/22-rdf-syntax-ns#type" N3O="'
+          || res_type_uri || '"/>' );
+          addon_n3 := DAV_RDF_MERGE (addon_n3, type_tree, null, 0);
 addon_n3_set: ;
     }
   if (__proc_exists ('SPOTLIGHT_METADATA', 2) is not null)

@@ -26,16 +26,16 @@ use WS
 
 -- WebDAV Collection
 create table WS.WS.SYS_DAV_COL (
-    COL_ID 		integer,
-    COL_NAME 		varchar (256),
-    COL_OWNER 		integer,
-    COL_GROUP 		integer,
-    COL_PARENT 		integer,
-    COL_CR_TIME 	datetime,
-    COL_MOD_TIME 	datetime,
-    COL_PERMS 		char (11),
-    COL_DET		varchar,
-    COL_ACL		long varbinary,
+    COL_ID              integer,
+    COL_NAME            varchar (256),
+    COL_OWNER           integer,
+    COL_GROUP           integer,
+    COL_PARENT          integer,
+    COL_CR_TIME         datetime,
+    COL_MOD_TIME        datetime,
+    COL_PERMS           char (11),
+    COL_DET             varchar,
+    COL_ACL             long varbinary,
     COL_IID 		IRI_ID,
     COL_AUTO_VERSIONING char(1),
     COL_FORK 		integer not null default 0,
@@ -66,19 +66,19 @@ alter table WS.WS.SYS_DAV_COL add COL_INHERIT char(1) default 'N'
 
 -- WebDAV Resource
 create table WS.WS.SYS_DAV_RES (
-    RES_ID 		integer,
-    RES_NAME 		varchar (256),
-    RES_OWNER 		integer,
-    RES_GROUP 		integer,
-    RES_COL 		integer,
-    RES_CONTENT 	long varbinary IDENTIFIED BY RES_FULL_PATH,
-    RES_TYPE 		varchar,
-    RES_CR_TIME 	datetime,
-    RES_MOD_TIME 	datetime,
-    RES_PERMS 		char (11),
-    RES_FULL_PATH 	varchar,
-    ROWGUID		varchar,
-    RES_ACL		long varbinary,
+    RES_ID              integer,
+    RES_NAME            varchar (256),
+    RES_OWNER           integer,
+    RES_GROUP           integer,
+    RES_COL             integer,
+    RES_CONTENT         long varbinary IDENTIFIED BY RES_FULL_PATH,
+    RES_TYPE            varchar,
+    RES_CR_TIME         datetime,
+    RES_MOD_TIME        datetime,
+    RES_PERMS           char (11),
+    RES_FULL_PATH       varchar,
+    ROWGUID             varchar,
+    RES_ACL             long varbinary,
     RES_IID 		IRI_ID,
     RES_STATUS 		varchar,
     RES_VCR_ID 		integer,
@@ -137,11 +137,11 @@ DB.DBA.vt_create_ftt ('WS.WS.SYS_DAV_RES', 'RES_ID', 'RES_CONTENT', 2)
 
 -- Properties
 create table WS.WS.SYS_DAV_PROP (
-    PROP_ID 		integer,
-    PROP_NAME 		char (256),
-    PROP_TYPE 		char (1),
-    PROP_PARENT_ID 	integer,
-    PROP_VALUE 		long varchar,
+    PROP_ID             integer,
+    PROP_NAME           char (256),
+    PROP_TYPE           char (1),
+    PROP_PARENT_ID      integer,
+    PROP_VALUE          long varchar,
     primary key (PROP_PARENT_ID, PROP_TYPE, PROP_NAME)
 )
 alter index SYS_DAV_PROP on WS.WS.SYS_DAV_PROP partition (PROP_PARENT_ID int)
@@ -159,15 +159,15 @@ __ddl_changed ('WS.WS.SYS_DAV_PROP')
 
 -- WebDAV Locks
 create table WS.WS.SYS_DAV_LOCK (
-    LOCK_TYPE 		char (1),
-    LOCK_SCOPE 		char (1),
-    LOCK_TOKEN 		char (256),
-    LOCK_PARENT_TYPE 	char (1),
-    LOCK_PARENT_ID 	integer,
-    LOCK_TIME 		datetime not null,
-    LOCK_TIMEOUT 	integer not null,
-    LOCK_OWNER 		integer,
-    LOCK_OWNER_INFO	varchar,
+    LOCK_TYPE           char (1),
+    LOCK_SCOPE          char (1),
+    LOCK_TOKEN          char (256),
+    LOCK_PARENT_TYPE    char (1),
+    LOCK_PARENT_ID      integer,
+    LOCK_TIME           datetime not null,
+    LOCK_TIMEOUT        integer not null,
+    LOCK_OWNER          integer,
+    LOCK_OWNER_INFO     varchar,
     primary key (LOCK_PARENT_ID, LOCK_PARENT_TYPE, LOCK_TOKEN)
 )
 alter index SYS_DAV_LOCK on WS.WS.SYS_DAV_LOCK partition (LOCK_PARENT_ID int)
@@ -180,13 +180,13 @@ create view WS.WS.SYS_DAV_USER (U_ID, U_NAME, U_FULL_NAME, U_E_MAIL, U_PWD,
     U_GROUP, U_LOGIN_TIME, U_ACCOUNT_DISABLED, U_METHODS, U_DEF_PERMS, U_HOME)
   as select U_ID, U_NAME, U_FULL_NAME, U_E_MAIL, U_PASSWORD as U_PWD,
     U_GROUP, U_LOGIN_TIME, U_ACCOUNT_DISABLED, U_METHODS, U_DEF_PERMS, U_HOME
-	from DB.DBA.SYS_USERS where U_IS_ROLE = 0 and U_DAV_ENABLE = 1
+        from DB.DBA.SYS_USERS where U_IS_ROLE = 0 and U_DAV_ENABLE = 1
 ;
 
 -- WebDAV Groups
 create view WS.WS.SYS_DAV_GROUP (G_ID, G_NAME)
     as select U_ID as G_ID, U_NAME as G_NAME
-    	from DB.DBA.SYS_USERS where U_IS_ROLE = 1 and U_DAV_ENABLE = 1
+        from DB.DBA.SYS_USERS where U_IS_ROLE = 1 and U_DAV_ENABLE = 1
 ;
 
 -- The granted groups to the WebDAV user
@@ -199,9 +199,9 @@ create view WS.WS.SYS_DAV_USER_GROUP (UG_UID, UG_GID) as select GI_SUPER, GI_SUB
 -- To guess extension by MIME, use coalesce (select MT_DEFAULT_EXT from WS.WS.SYS_MIME_TYPES ..., select T_EXT from WS.WS.SYS_DAV_RES_TYPES)
 -- because 1) default ext may way from box to box and 2) there may be variety of T_EXTs for one T_TYPE.
 create table WS.WS.SYS_DAV_RES_TYPES (
-    T_EXT		varchar not null,	-- File extension
-    T_TYPE 		varchar not null,	-- MIME type 'x/y' identifier, may be listed in WS.WS.SYS_MIME_TYPES maybe not
-    T_DESCRIPTION	varchar,		-- NULL or a single-line text description of an extension if differs from generic MT_DESCRIPTION.
+    T_EXT               varchar not null,       -- File extension
+    T_TYPE              varchar not null,       -- MIME type 'x/y' identifier, may be listed in WS.WS.SYS_MIME_TYPES maybe not
+    T_DESCRIPTION       varchar,                -- NULL or a single-line text description of an extension if differs from generic MT_DESCRIPTION.
     primary key (T_EXT)
 )
 alter index SYS_DAV_RES_TYPES on WS.WS.SYS_DAV_RES_TYPES partition cluster replicated
@@ -209,10 +209,10 @@ alter index SYS_DAV_RES_TYPES on WS.WS.SYS_DAV_RES_TYPES partition cluster repli
 
 -- Known MIME types.
 create table WS.WS.SYS_MIME_TYPES (
-  MT_IDENT		varchar not null,	-- MIME type 'x/y' identifier, may be listed in WS.WS.SYS_DAV_RES_TYPES maybe not.
-  MT_DESCRIPTION	varchar not null,	-- Single-line text description of an extension, if differs from generic MT_DESCRIPTION.
-  MT_DEFAULT_EXT	varchar not null,	-- Default file extension for resources.
-  MT_BADMAGIC_IDENT	varchar,		-- MIME type that should be used if the content does not match magic data of the proclaimed MIME or NULL to use magic as best guess.
+  MT_IDENT              varchar not null,       -- MIME type 'x/y' identifier, may be listed in WS.WS.SYS_DAV_RES_TYPES maybe not.
+  MT_DESCRIPTION        varchar not null,       -- Single-line text description of an extension, if differs from generic MT_DESCRIPTION.
+  MT_DEFAULT_EXT        varchar not null,       -- Default file extension for resources.
+  MT_BADMAGIC_IDENT     varchar,                -- MIME type that should be used if the content does not match magic data of the proclaimed MIME or NULL to use magic as best guess.
   primary key (MT_IDENT)
 )
 alter index SYS_MIME_TYPES on WS.WS.SYS_MIME_TYPES partition cluster replicated
@@ -222,14 +222,14 @@ alter index SYS_MIME_TYPES on WS.WS.SYS_MIME_TYPES partition cluster replicated
 -- If RDF schema URI is not in this table then HTTP_URI_GET is used on some guessed URIs and SYS_CACHED_RESOURCES is not used.
 -- If RDF schema URI is in this table then XML_URI_GET_AND_CACHE is used to read from RS_LOCATION.
 create table WS.WS.SYS_RDF_SCHEMAS (
-  RS_URI		varchar not null,	-- A URI of an RDF schema
-  RS_LOCATION		varchar,		-- Location URI used to retrieve standard schema document (cache also uses this URI as a cache key)
-  RS_LOCAL_ADDONS	varchar,		-- Location URI used to retrieve local metadata made by local applications (e.g., comments, helps, screen names etc.).
-  RS_PRECOMPILED	long xml,		-- This contains a precompiled mix of data from both schema and local addons.
-  RS_COMPILATION_DATE	datetime,		-- Date of the last compilation.
-  RS_CATNAME		varchar,		-- A readable and unique label of an RDF schema that can act as collection name in category filter.
-  RS_PROP_CATNAMES	long varchar,		-- The serialized vector of names and labels of all declared properties of top-level elements for category filter.
-  RS_DEPRECATED		integer,		-- Flag if schema is deprecated.
+  RS_URI                varchar not null,       -- A URI of an RDF schema
+  RS_LOCATION           varchar,                -- Location URI used to retrieve standard schema document (cache also uses this URI as a cache key)
+  RS_LOCAL_ADDONS       varchar,                -- Location URI used to retrieve local metadata made by local applications (e.g., comments, helps, screen names etc.).
+  RS_PRECOMPILED        long xml,               -- This contains a precompiled mix of data from both schema and local addons.
+  RS_COMPILATION_DATE   datetime,               -- Date of the last compilation.
+  RS_CATNAME            varchar,                -- A readable and unique label of an RDF schema that can act as collection name in category filter.
+  RS_PROP_CATNAMES      long varchar,           -- The serialized vector of names and labels of all declared properties of top-level elements for category filter.
+  RS_DEPRECATED         integer,                -- Flag if schema is deprecated.
   primary key (RS_URI)
 )
 alter index SYS_RDF_SCHEMAS on WS.WS.SYS_RDF_SCHEMAS partition cluster replicated
@@ -252,9 +252,9 @@ alter table WS.WS.SYS_RDF_SCHEMAS add RS_DEPRECATED integer
 
 -- Known uses of RDF schemas for particular MIME types
 create table WS.WS.SYS_MIME_RDFS (
-  MR_MIME_IDENT		varchar not null,	-- MIME type 'x/y' identifier, may be listed in WS.WS.SYS_MIME_TYPES maybe not
-  MR_RDF_URI		varchar not null,	-- A URI of an RDF schema that can be used for this MIME, The URI may be listed in WS.WS.SYS_MIME_RDFS may be not.
-  MR_DEPRECATED		integer,		-- Flags if UIs should display the RDF in the list of RDF schemas available for the type.
+  MR_MIME_IDENT         varchar not null,       -- MIME type 'x/y' identifier, may be listed in WS.WS.SYS_MIME_TYPES maybe not
+  MR_RDF_URI            varchar not null,       -- A URI of an RDF schema that can be used for this MIME, The URI may be listed in WS.WS.SYS_MIME_RDFS may be not.
+  MR_DEPRECATED         integer,                -- Flags if UIs should display the RDF in the list of RDF schemas available for the type.
   primary key (MR_MIME_IDENT, MR_RDF_URI)
 )
 alter index SYS_MIME_RDFS on WS.WS.SYS_MIME_RDFS partition cluster replicated
@@ -263,8 +263,8 @@ alter index SYS_MIME_RDFS on WS.WS.SYS_MIME_RDFS partition cluster replicated
 
 -- Known property names in schemas
 create table WS.WS.SYS_RDF_PROP_NAME (
-   RPN_URI	varchar not null primary key,
-   RPN_CATID	integer
+   RPN_URI      varchar not null primary key,
+   RPN_CATID    integer
 )
 alter index SYS_RDF_PROP_NAME on WS.WS.SYS_RDF_PROP_NAME partition cluster replicated
 create unique index SYS_RDF_PROP_NAME_CATID on WS.WS.SYS_RDF_PROP_NAME (RPN_CATID) partition cluster replicated
@@ -327,27 +327,27 @@ union
 
 create table WS.WS.SYS_DAV_SPACE_QUOTA
 (
-  DSQ_HOME_PATH		varchar not null primary key,
-  DSQ_U_ID		integer,
-  DSQ_DAV_USE		numeric not null,
-  DSQ_APP_USE		numeric not null,
-  DSQ_TOTAL_USE		numeric not null,
-  DSQ_MAX_DAV_USE	numeric not null,
-  DSQ_MAX_APP_USE	numeric not null,
-  DSQ_MAX_TOTAL_USE	numeric not null,
-  DSQ_QUOTA		numeric not null,
-  DSQ_ABOVE_HI_YELLOW	datetime,
-  DSQ_LAST_WARNING	datetime
+  DSQ_HOME_PATH         varchar not null primary key,
+  DSQ_U_ID              integer,
+  DSQ_DAV_USE           numeric not null,
+  DSQ_APP_USE           numeric not null,
+  DSQ_TOTAL_USE         numeric not null,
+  DSQ_MAX_DAV_USE       numeric not null,
+  DSQ_MAX_APP_USE       numeric not null,
+  DSQ_MAX_TOTAL_USE     numeric not null,
+  DSQ_QUOTA             numeric not null,
+  DSQ_ABOVE_HI_YELLOW   datetime,
+  DSQ_LAST_WARNING      datetime
 )
 alter index SYS_DAV_SPACE_QUOTA on WS.WS.SYS_DAV_SPACE_QUOTA partition (DSQ_HOME_PATH varchar (-10, 0hexffff))
 create index SYS_DAV_SPACE_QUOTA_U_ID on WS.WS.SYS_DAV_SPACE_QUOTA (DSQ_U_ID) partition (DSQ_U_ID int)
 ;
 
 create table WS.WS.SYS_DAV_TAG (
-  DT_RES_ID	integer not null,
-  DT_U_ID	integer not null,
-  DT_FT_ID	integer not null,
-  DT_TAGS	varchar not null,
+  DT_RES_ID     integer not null,
+  DT_U_ID       integer not null,
+  DT_FT_ID      integer not null,
+  DT_TAGS       varchar not null,
 --  constraint SYS_DAV_TAG_01 foreign key (DT_RES_ID) references WS.WS.SYS_DAV_RES (RES_ID) on delete cascade,
 --  constraint SYS_DAV_TAG_02 foreign key (DT_U_ID) references DB.DBA.SYS_USERS (U_ID) on delete cascade,
   primary key (DT_RES_ID, DT_U_ID)
@@ -1062,11 +1062,11 @@ collections_done:
       procnames := DB.DBA.DAV_CHANGED_FUNCTIONS ();
       foreach (varchar procname in procnames) do
         {
-	  if (strchr (procname, '.'))
-	    delete from DB.DBA.SYS_PROCEDURES where upper (P_NAME) = upper (procname);
-	  else
-	    delete from DB.DBA.SYS_PROCEDURES where upper (P_NAME) = upper ('DB.DBA.' || procname);
-	}
+          if (strchr (procname, '.'))
+            delete from DB.DBA.SYS_PROCEDURES where upper (P_NAME) = upper (procname);
+          else
+            delete from DB.DBA.SYS_PROCEDURES where upper (P_NAME) = upper ('DB.DBA.' || procname);
+        }
       commit work;
     }
   else if (nobody_name <> 'nobody')
@@ -1108,11 +1108,11 @@ props_done:
       for (select COL_ID, COL_DET, WS.WS.COL_PATH (COL_ID) as _c_path from WS.WS.SYS_DAV_COL where COL_DET is not null and not (COL_DET like '%Filter')) do
         {
           for select CF_ID from WS.WS.SYS_DAV_CATFILTER where "LEFT" (_c_path, length (CF_SEARCH_PATH)) = CF_SEARCH_PATH do
-	    {
+            {
               insert replacing WS.WS.SYS_DAV_CATFILTER_DETS (CFD_CF_ID, CFD_DET_SUBCOL_ID, CFD_DET)
-	      values (CF_ID, COL_ID, COL_DET);
-    	    }
-	}
+              values (CF_ID, COL_ID, COL_DET);
+            }
+        }
       dav_status := dav_status || ' (WS.WS.SYS_DAV_CATFILTER)';
       registry_set ('WS.WS.SYS_DAV_INIT-status', dav_status);
       -- dbg_obj_princ ('WS.WS.SYS_DAV_INIT-status is updated, now "', dav_status, '"');
@@ -1647,16 +1647,16 @@ DB.DBA.DAV_DIR_P (in path varchar := '/DAV/', in recursive integer := 0, in auth
   while (i < l)
     {
       result (arr[i][0],
-	  arr[i][1],
-	  arr[i][2],
-	  arr[i][3],
-	  arr[i][4],
-	  arr[i][5],
-	  arr[i][6],
-	  arr[i][7],
-	  arr[i][8],
-	  arr[i][9],
-	  arr[i][10]);
+          arr[i][1],
+          arr[i][2],
+          arr[i][3],
+          arr[i][4],
+          arr[i][5],
+          arr[i][6],
+          arr[i][7],
+          arr[i][8],
+          arr[i][9],
+          arr[i][10]);
       i := i + 1;
     }
 }

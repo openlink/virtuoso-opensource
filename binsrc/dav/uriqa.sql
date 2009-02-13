@@ -157,7 +157,7 @@ create function WS.WS.URIQA_FULL_URI (inout path varchar, inout params varchar, 
     }
   head_uri := split_and_decode (subseq (lines[0], pairs[6], pairs[7]), 0, '%+');
   if (trim_prefix and upper (head_uri) like '/URIQA/%')
-  head_uri := subseq (head_uri, 6); -- in order to trim leading '/URIQA'
+    head_uri := subseq (head_uri, 6); -- in order to trim leading '/URIQA'
   -- dbg_obj_princ ('WS.WS.URIQA_FULL_URI see User-Agent=', http_request_header (lines, 'User-Agent'));
   host := http_request_header (lines, 'Host');
   if (isstring (host))
@@ -210,7 +210,7 @@ create function WS.WS.URIQA_APPLY_TRIGGERS (in op varchar, inout uri varchar, in
             {
               if (split[1] like srv_mask)
                 goto match;
-            } 
+            }
           goto no_match;
         }
       if (UH_MATCH_COND = 'default')
@@ -223,7 +223,7 @@ match:
       if (is_final)
         return err_ret;
 no_match:
-      ;      
+      ;
     }
   return vector ('URIQA', 0, '404', sprintf ('URIQA server has no way to access resource "%s"', uri));
 }
@@ -352,7 +352,7 @@ create function DB.DBA."DAV_EXTRACT_DYN_RDF_application/xbel+xml" (in id any, in
   acc := xml_tree_doc (acc);
   -- dbg_obj_princ ('DB.DBA."DAV_EXTRACT_DNY_RDF_application/xbel+xml" returns ', acc);
   return acc;
-  
+
 }
 ;
 
@@ -411,7 +411,7 @@ create function WS.WS.URIQA_HANDLER_LOCALDAV (inout op varchar, inout uri varcha
     }
 id_found:
   a_uid := null;
-  a_gid := null;    
+  a_gid := null;
   uid := DAV_AUTHENTICATE_HTTP (id, st, case (op) when 'MGET' then '1__' else '11_' end, 1, lines, a_uname, a_pwd, a_uid, a_gid, a_perms);
   if (DAV_HIDE_ERROR (uid) is null)
     return vector ('URIQA', id, NULL, NULL);
@@ -433,13 +433,13 @@ id_found:
         {
           container_type := cast (container_type as varchar);
           declare exit handler for sqlstate '*'
-            { 
+            {
               -- dbg_obj_princ ('Failed to call DB.DBA.DAV_EXTRACT_DYN_RDF_' || container_type, '(', id, split, ', ...,', a_uid, ' ): ', __SQL_STATE, __SQL_MESSAGE);
               goto dyn_n3_set;
 	    };
           dyn_n3 := call ('DB.DBA.DAV_EXTRACT_DYN_RDF_' || container_type)(id, split, old_prop, a_uid);
           XMLAppendChildren (old_prop, dyn_n3);
-dyn_n3_set: ;      
+dyn_n3_set: ;
         }
       else
         {
@@ -484,7 +484,7 @@ do_op:
           if (isentity (old_prop))
 	    {
 	      descr_n3 := xml_tree_doc (descr_n3);
-            XMLAppendChildren (old_prop, descr_n3);
+              XMLAppendChildren (old_prop, descr_n3);
 	    }
           else
             old_prop := xml_tree_doc (descr_n3);
@@ -520,7 +520,7 @@ do_op:
       if (xquery_eval ('exists (/N3[@N3P="http://www.openlinksw.com/schemas/virtdav#contains"])', addon_n3))
         return vector ('URIQA', 0, '500', 'Invalid MPUT: The request body contain triplets with read-only system predicate http://www.openlinksw.com/schemas/virtdav#contains');
       old_n3 := DAV_RDF_MERGE (old_n3, addon_n3, null, 0);
-      rc := DAV_PROP_SET_INT (res_path, 'http://local.virt/DAV-RDF', 
+      rc := DAV_PROP_SET_INT (res_path, 'http://local.virt/DAV-RDF',
         serialize (DAV_RDF_PREPROCESS_RDFXML (old_n3, N'http://local.virt/this', 1)),
         null, null, 0, 1, 1 );
       if (DAV_HIDE_ERROR (rc) is null)
@@ -544,20 +544,20 @@ do_op:
             }
           else
             old_n3 := DAV_RDF_SUBTRACT (old_n3, sub_n3);
-          rc := DAV_PROP_SET_INT (res_path, 'http://local.virt/DAV-RDF', 
-          serialize (DAV_RDF_PREPROCESS_RDFXML (old_n3, N'http://local.virt/this', 1)),
+          rc := DAV_PROP_SET_INT (res_path, 'http://local.virt/DAV-RDF',
+            serialize (DAV_RDF_PREPROCESS_RDFXML (old_n3, N'http://local.virt/this', 1)),
             null, null, 0, 1, 1 );
           if (DAV_HIDE_ERROR (rc) is null)
             return vector ('URIQA', '400', DAV_PERROR (rc));
         }
       else
         {
-          rc := DAV_PROP_REMOVE_INT (res_path, 'http://local.virt/DAV-RDF', 
+          rc := DAV_PROP_REMOVE_INT (res_path, 'http://local.virt/DAV-RDF',
             null, null, 0, 1, 1);
           if (DAV_HIDE_ERROR (rc) is null)
             return vector ('URIQA', '400', DAV_PERROR (rc));
         }
-mdelete_ok:        
+mdelete_ok:
       is_final := 1;
       return vector ('00000', 0, '200', 'OK');
     }
@@ -654,7 +654,7 @@ create procedure WS.WS.URIQA_STATUS (in err_ret any, in signal_errors integer)
     }
   else if (err_ret[2] like 'HTTP/%')
     http_request_status (err_ret[2]);
-  else 
+  else
     http_request_status (sprintf ('HTTP/1.1 %s %s', err_ret[2], split_and_decode (err_ret[3], 0, '\0\0\n')[0]));
 }
 ;
@@ -766,5 +766,5 @@ create procedure WS.WS.URIQA_VHOST_RESET()
   DB.DBA.VHOST_DEFINE (lpath=>'/uriqa/', ppath=>'/!URIQA/', is_dav=>1, vsp_user=>'dba', opts=>vector('noinherit', 1));
 }
 ;
-  
+
 

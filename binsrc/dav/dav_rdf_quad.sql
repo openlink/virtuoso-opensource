@@ -70,7 +70,7 @@ create procedure DB.DBA.DAV_REPLICATE_ALL_TO_RDF_QUAD (in enable integer)
       exec ('checkpoint');
       return;
     }
-  declare state, msg any;  
+  declare state, msg any;
   declare status varchar;
   state := '00000';
   result_names (status);
@@ -152,20 +152,20 @@ create procedure DB.DBA.RDF_CBD_DELETE (inout triple_list any, in graph_id any, 
           if (qname >= local_dav_uri and qname < concat (local_dav_uri, '\377\377\377\377'))
             goto non_del; -- the object URI starts with local DAV URI
         }
-        
+
 -- if we're here then the candidate object is 'confirmed' as a good candidate
       candidates [cand_first_unconfirmed] := obj;
       cand_first_unconfirmed := cand_first_unconfirmed + 1;
       goto next_cand;
 
-non_del:      
+non_del:
       dict_put (not_deleteable, obj, 1);
 
-next_cand: ;          
+next_cand: ;
     }
 
   if (0 = cand_first_unconfirmed) -- no real candidate on future deletion, we've done.
-    return;    
+    return;
 
   vectorbld_init (triple_list);
   for (cand_ctr := 0; cand_ctr < cand_first_unconfirmed; cand_ctr := cand_ctr + 1)
@@ -174,7 +174,7 @@ next_cand: ;
       obj := candidates [cand_ctr];
       if (not exists (select top 1 1 from DB.DBA.RDF_QUAD
           where G = graph_id and O = obj option (quietcast) ) )
-    {
+        {
           for (select P,O from DB.DBA.RDF_QUAD where G = graph_id and S = obj) do
           vectorbld_acc (triple_list, vector (obj,P,O));
     }
@@ -236,7 +236,7 @@ create procedure DB.DBA.DAV_RDF_REPLICATE_INT (in res_id integer, in restype var
       if (o is not null)
         o := DB.DBA.DAV_RDF_URI_RESOLVE (dav_rdf_graph_uri, o, fullpath, restype);
       dt := xpath_eval ('@N3DT', n3);
-      lang := xpath_eval ('@xml:lang', n3);      
+      lang := xpath_eval ('@xml:lang', n3);
       v := coalesce (xquery_eval ('if (exists(*)) then * else string ()', n3), '');
       if (isarray(v))
         v := v[0];
@@ -287,7 +287,7 @@ create procedure DB.DBA.DAV_RDF_CBD_DELETE_PROP (in n3v any, in fullpath varchar
       vectorbld_acc (triple_list, vector (s, p, o));
     }
   vectorbld_final (triple_list);
-  DB.DBA.RDF_CBD_DELETE (triple_list, dav_rdf_graph_iid, dav_rdf_graph_uri);  
+  DB.DBA.RDF_CBD_DELETE (triple_list, dav_rdf_graph_iid, dav_rdf_graph_uri);
 }
 ;
 
@@ -351,7 +351,7 @@ create procedure DB.DBA.DAV_REPLICATE_COL_TO_RDF_QUAD (in col_id2 integer)
   fullpath := DAV_SEARCH_PATH (col_id2, 'C');
   if (DAV_HIDE_ERROR (fullpath) is null)
     return;
-  DB.DBA.DAV_RDF_REPLICATE_INT (col_id2, 'C', fullpath);  
+  DB.DBA.DAV_RDF_REPLICATE_INT (col_id2, 'C', fullpath);
   dav_rdf_graph_uri := registry_get ('DB.DBA.DAV_RDF_GRAPH_URI');
   if (not isstring (dav_rdf_graph_uri) or dav_rdf_graph_uri = '')
     return;
@@ -404,7 +404,7 @@ create trigger SYS_DAV_PROP_RDF_QUAD_BEFORE_DELETE before delete on WS.WS.SYS_DA
     select COL_ID, COL_PERMS into colid, perms from WS.WS.SYS_DAV_COL where COL_ID = O.PROP_PARENT_ID;
   else if (O.PROP_TYPE = 'R')
     select RES_PERMS, RES_FULL_PATH into perms, fullpath from WS.WS.SYS_DAV_RES where RES_ID = O.PROP_PARENT_ID;
-  if (O.PROP_NAME = 'http://local.virt/DAV-RDF')    
+  if (O.PROP_NAME = 'http://local.virt/DAV-RDF')
     {
       declare n3_tmp_list, res_vec, dav_rdf_graph_iid any;
       declare dav_rdf_graph_uri varchar;
@@ -414,7 +414,7 @@ create trigger SYS_DAV_PROP_RDF_QUAD_BEFORE_DELETE before delete on WS.WS.SYS_DA
       dav_rdf_graph_iid := DB.DBA.RDF_MAKE_IID_OF_QNAME (dav_rdf_graph_uri);
       n3_tmp_list := xml_tree_doc (deserialize (blob_to_string (O.PROP_VALUE)));
       DB.DBA.DAV_RDF_CBD_DELETE_PROP (n3_tmp_list, fullpath, O.PROP_TYPE, dav_rdf_graph_iid, dav_rdf_graph_uri);
-    } 
+    }
 }
 ;
 
@@ -493,7 +493,7 @@ create trigger SYS_DAV_TAG_RDF_QUAD_AFTER_UPDATE after update on WS.WS.SYS_DAV_T
   whenever not found goto nf;
   select RES_FULL_PATH into fullpath from WS.WS.SYS_DAV_RES where RES_ID = NT.DT_RES_ID and RES_PERMS[6] = 49;
   new_uri := DB.DBA.DAV_FULL_PATH_TO_IRI (dav_rdf_graph_uri, fullpath);
-  new_iid := DB.DBA.RDF_MAKE_IID_OF_QNAME (new_uri);  
+  new_iid := DB.DBA.RDF_MAKE_IID_OF_QNAME (new_uri);
   p_iid := DB.DBA.RDF_MAKE_IID_OF_QNAME ('http://www.openlinksw.com/schemas/DAV#tag');
   delete from DB.DBA.RDF_QUAD where P = p_iid and G = dav_rdf_graph_iid and S = new_iid;
   tag_list := split_and_decode (NT.DT_TAGS, 0, '\0\0,');
@@ -574,7 +574,7 @@ create trigger SYS_DAV_RES_RDF_QUAD_AFTER_UPDATE after update (RES_COL, RES_NAME
       update DB.DBA.RDF_QUAD set O=new_iid where G=dav_rdf_graph_iid and isiri_id (O) and O=OC.RES_IID;
       set triggers off;
       update WS.WS.SYS_DAV_RES set RES_IID=new_iid where RES_ID=NC.RES_ID;
-      set triggers on;      
+      set triggers on;
     }
   if (OC.RES_OWNER <> NC.RES_OWNER)
     {
@@ -608,7 +608,7 @@ create trigger SYS_DAV_RES_RDF_QUAD_AFTER_UPDATE after update (RES_COL, RES_NAME
 
 create trigger SYS_DAV_RES_RDF_QUAD_BEFORE_DELETE before delete on WS.WS.SYS_DAV_RES order 30 referencing old as OC
 {
-  declare spo, dav_rdf_graph_uri, dav_rdf_graph_iid any; 
+  declare spo, dav_rdf_graph_uri, dav_rdf_graph_iid any;
   if (OC.RES_IID is not null)
     {
       dav_rdf_graph_uri := registry_get ('DB.DBA.DAV_RDF_GRAPH_URI');
@@ -698,7 +698,7 @@ create trigger SYS_DAV_COL_RDF_QUAD_AFTER_UPDATE after update (COL_NAME, COL_PAR
   if ((OC.COL_NAME <> NC.COL_NAME) or (OC.COL_PARENT <> NC.COL_PARENT))
     path_change := 1;
   else
-    path_change := 0;  
+    path_change := 0;
   if (OC.COL_PERMS[6] = 49 or NC.COL_PERMS[6] = 49 or path_change)
     {
       dav_rdf_graph_uri := registry_get ('DB.DBA.DAV_RDF_GRAPH_URI');
@@ -767,7 +767,7 @@ create trigger SYS_DAV_COL_RDF_QUAD_AFTER_UPDATE after update (COL_NAME, COL_PAR
 
 create trigger SYS_DAV_COL_RDF_QUAD_BEFORE_DELETE before delete on WS.WS.SYS_DAV_COL order 30 referencing old as OC
 {
-  declare spo, dav_rdf_graph_uri, dav_rdf_graph_iid any; 
+  declare spo, dav_rdf_graph_uri, dav_rdf_graph_iid any;
   if (OC.COL_PERMS[6] = 49)
     {
       dav_rdf_graph_uri := registry_get ('DB.DBA.DAV_RDF_GRAPH_URI');

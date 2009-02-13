@@ -579,32 +579,32 @@ finalize_res:
 create procedure "Blog_POST_DAV_FC_PRED_METAS" (inout pred_metas any)
 {
   pred_metas := vector (
-    'B_BLOG_ID',		vector ('SYS_BLOGS'	, 0, 'varchar'	, 'B_BLOG_ID'	),
-    'B_POST_ID',		vector ('SYS_BLOGS'	, 0, 'varchar'	, 'B_POST_ID'	),
-    'RES_ID',			vector ('SYS_BLOGS'	, 0, 'any'	, 'vector (UNAME_BLOG(), B_BLOG_ID, U_ID, B_POST_ID, null)'	),
-    'RES_ID_SERIALIZED',	vector ('SYS_BLOGS'	, 0, 'varchar'	, 'serialize (vector (UNAME_BLOG(), B_BLOG_ID, U_ID, B_POST_ID, null))'	),
-    'RES_NAME',			vector ('SYS_BLOGS'		, 0, 'varchar'	, '"Blog_COMPOSE_HTML_NAME" (B_TITLE, B_POST_ID)'	),
-    'RES_FULL_PATH',		vector ('SYS_BLOGS'	, 0, 'varchar'	, 'concat (DAV_CONCAT_PATH (_param.detcolpath, "Blog_FIXNAME" (WAI_NAME)), ''/'', "Blog_COMPOSE_HTML_NAME" (B_TITLE, B_POST_ID))'	),
-    'RES_TYPE',			vector ('SYS_BLOGS'	, 0, 'varchar'	, '(''text/plain'')'	),
-    'RES_OWNER_ID',		vector ('SYS_BLOG_OWNERS'	, 0, 'integer'	, 'U_ID'	),
-    'RES_OWNER_NAME',		vector ('SYS_BLOG_OWNERS'	, 0, 'varchar'	, 'U_NAME'	),
-    'RES_GROUP_ID',		vector ('SYS_BLOGS'	, 0, 'integer'	, 'http_nogroup_gid()'	),
-    'RES_GROUP_NAME',		vector ('SYS_BLOGS'	, 0, 'varchar'	, '(''nogroup'')'	),
-    'RES_COL_FULL_PATH',	vector ('SYS_BLOGS'	, 0, 'varchar'	, 'concat (DAV_CONCAT_PATH (_param.detcolpath, "Blog_FIXNAME" (WAI_NAME)), ''/'')'	),
-    'RES_COL_NAME',		vector ('SYS_BLOGS'	, 0, 'varchar'	, '"Blog_FIXNAME" (WAI_NAME)'	),
---    'RES_COL_ID',		vector ('SYS_DAV_RES'	, 0, 'varchar'	, 'RES_COL'	),
-    'RES_CR_TIME',		vector ('SYS_BLOGS'	, 0, 'datetime'	, 'B_TS'	),
-    'RES_MOD_TIME',		vector ('SYS_BLOGS'	, 0, 'datetime'	, 'B_MODIFIED'  ),
-    'RES_PERMS',		vector ('SYS_BLOGS'	, 0, 'varchar'	, '(''110000000RR'')'	),
-    'RES_CONTENT',		vector ('SYS_BLOGS'	, 0, 'text'	, 'B_CONTENT'	),
-    'PROP_NAME',		vector ('SYS_BLOGS'	, 0, 'varchar'	, '(''Content'')'	),
-    'PROP_VALUE',		vector ('SYS_BLOGS'	, 1, 'text'	, 'B_CONTENT'	),
-    'RES_TAGS',			vector ('SYS_BLOGS'	, 0, 'varchar'  , '('''')'	), -- 'varchar', not 'text-tag' because there's no free-text on union
-    'RES_PUBLIC_TAGS',		vector ('SYS_BLOGS'	, 0, 'varchar'	, '('''')'	),
-    'RES_PRIVATE_TAGS',		vector ('SYS_BLOGS'	, 0, 'varchar'	, '('''')'	),
-    'RDF_PROP',			vector ('SYS_BLOGS'	, 1, 'varchar'	, NULL	),
-    'RDF_VALUE',		vector ('SYS_BLOGS'	, 2, 'XML'	, NULL	),
-    'RDF_OBJ_VALUE',		vector ('SYS_BLOGS'	, 3, 'XML'	, NULL	)
+    'B_BLOG_ID',                vector ('SYS_BLOGS'     , 0, 'varchar'  , 'B_BLOG_ID'   ),
+    'B_POST_ID',                vector ('SYS_BLOGS'     , 0, 'varchar'  , 'B_POST_ID'   ),
+    'RES_ID',                   vector ('SYS_BLOGS'     , 0, 'any'      , 'vector (UNAME_BLOG(), B_BLOG_ID, U_ID, B_POST_ID, null)'     ),
+    'RES_ID_SERIALIZED',        vector ('SYS_BLOGS'     , 0, 'varchar'  , 'serialize (vector (UNAME_BLOG(), B_BLOG_ID, U_ID, B_POST_ID, null))' ),
+    'RES_NAME',                 vector ('SYS_BLOGS'             , 0, 'varchar'  , '"Blog_COMPOSE_HTML_NAME" (B_TITLE, B_POST_ID)'       ),
+    'RES_FULL_PATH',            vector ('SYS_BLOGS'     , 0, 'varchar'  , 'concat (DAV_CONCAT_PATH (_param.detcolpath, "Blog_FIXNAME" (WAI_NAME)), ''/'', "Blog_COMPOSE_HTML_NAME" (B_TITLE, B_POST_ID))'       ),
+    'RES_TYPE',                 vector ('SYS_BLOGS'     , 0, 'varchar'  , '(''text/plain'')'    ),
+    'RES_OWNER_ID',             vector ('SYS_BLOG_OWNERS'       , 0, 'integer'  , 'U_ID'        ),
+    'RES_OWNER_NAME',           vector ('SYS_BLOG_OWNERS'       , 0, 'varchar'  , 'U_NAME'      ),
+    'RES_GROUP_ID',             vector ('SYS_BLOGS'     , 0, 'integer'  , 'http_nogroup_gid()'  ),
+    'RES_GROUP_NAME',           vector ('SYS_BLOGS'     , 0, 'varchar'  , '(''nogroup'')'       ),
+    'RES_COL_FULL_PATH',        vector ('SYS_BLOGS'     , 0, 'varchar'  , 'concat (DAV_CONCAT_PATH (_param.detcolpath, "Blog_FIXNAME" (WAI_NAME)), ''/'')'      ),
+    'RES_COL_NAME',             vector ('SYS_BLOGS'     , 0, 'varchar'  , '"Blog_FIXNAME" (WAI_NAME)'   ),
+--    'RES_COL_ID',             vector ('SYS_DAV_RES'   , 0, 'varchar'  , 'RES_COL'     ),
+    'RES_CR_TIME',              vector ('SYS_BLOGS'     , 0, 'datetime' , 'B_TS'        ),
+    'RES_MOD_TIME',             vector ('SYS_BLOGS'     , 0, 'datetime' , 'B_MODIFIED'  ),
+    'RES_PERMS',                vector ('SYS_BLOGS'     , 0, 'varchar'  , '(''110000000RR'')'   ),
+    'RES_CONTENT',              vector ('SYS_BLOGS'     , 0, 'text'     , 'B_CONTENT'   ),
+    'PROP_NAME',                vector ('SYS_BLOGS'     , 0, 'varchar'  , '(''Content'')'       ),
+    'PROP_VALUE',               vector ('SYS_BLOGS'     , 1, 'text'     , 'B_CONTENT'   ),
+    'RES_TAGS',                 vector ('SYS_BLOGS'     , 0, 'varchar'  , '('''')'      ), -- 'varchar', not 'text-tag' because there's no free-text on union
+    'RES_PUBLIC_TAGS',          vector ('SYS_BLOGS'     , 0, 'varchar'  , '('''')'      ),
+    'RES_PRIVATE_TAGS',         vector ('SYS_BLOGS'     , 0, 'varchar'  , '('''')'      ),
+    'RDF_PROP',                 vector ('SYS_BLOGS'     , 1, 'varchar'  , NULL  ),
+    'RDF_VALUE',                vector ('SYS_BLOGS'     , 2, 'XML'      , NULL  ),
+    'RDF_OBJ_VALUE',            vector ('SYS_BLOGS'     , 3, 'XML'      , NULL  )
     );
 }
 ;
@@ -612,33 +612,33 @@ create procedure "Blog_POST_DAV_FC_PRED_METAS" (inout pred_metas any)
 create procedure "Blog_POST_DAV_FC_TABLE_METAS" (inout table_metas any)
 {
   table_metas := vector (
-    'SYS_BLOGS'		, vector (	'\n  inner join BLOG.DBA.SYS_BLOGS as ^{alias}^ on ((^{alias}^.B_BLOG_ID = _top.B_BLOG_ID) and (^{alias}^.B_POST_ID = _top.B_POST_ID)^{andpredicates}^)'	,
-					'\n  exists (select 1 from BLOG.DBA.SYS_BLOGS as ^{alias}^ where (^{alias}^.B_BLOG_ID = _top.B_BLOG_ID) and (^{alias}^.B_POST_ID = _top.B_POST_ID)^{andpredicates}^)'	,
-    						'B_CONTENT'	, 'B_CONTENT'	, '[__quiet] /'	),
-    'SYS_BLOG_OWNERS'	, vector (	''	,
-					''	,
-    						NULL		, NULL		, NULL		)
---    'SYS_BLOG_OWNERS'	, vector (	'\n  left outer join BLOG.DBA.SYS_BLOG_OWNERS as ^{alias}^ on ((^{alias}^.BI_BLOG_ID = _top.B_BLOG_ID)^{andpredicates}^)'	,
---					'\n  exists (select 1 from BLOG.DBA.SYS_BLOG_OWNERS as ^{alias}^ where (^{alias}^.BI_BLOG_ID = _top.B_BLOG_ID)^{andpredicates}^)'	,
---						NULL		, NULL		, NULL	)
---    'SYS_DAV_COL'	, vector (	'\n  inner join WS.WS.SYS_DAV_COL as ^{alias}^ on ((^{alias}^.COL_ID = _param.detcol)^{andpredicates}^)'	,
---					'\n  exists (select 1 from WS.WS.SYS_DAV_COL as ^{alias}^ where (^{alias}^.COL_ID = _param.detcol)^{andpredicates}^)'	,
---						NULL		, NULL		, NULL	),
---    'SYS_DAV_GROUP'	, vector (	'\n  left outer join WS.WS.SYS_DAV_GROUP as ^{alias}^ on ((^{alias}^.G_ID = _top.RES_GROUP)^{andpredicates}^)'	,
---					'\n  exists (select 1 from WS.WS.SYS_DAV_GROUP as ^{alias}^ where (^{alias}^.G_ID = _top.RES_GROUP)^{andpredicates}^)'	,
---						NULL		, NULL		, NULL	)--,
---    'SYS_DAV_PROP'	, vector (	'\n  inner join WS.WS.SYS_DAV_PROP as ^{alias}^ on ((^{alias}^.PROP_PARENT_ID = _top.RES_ID) and (^{alias}^.PROP_TYPE = ''R'')^{andpredicates}^)'	,
---					'\n  exists (select 1 from WS.WS.SYS_DAV_PROP as ^{alias}^ where (^{alias}^.PROP_PARENT_ID = _top.RES_ID) and (^{alias}^.PROP_TYPE = ''R'')^{andpredicates}^)'	,
---						'PROP_VALUE'	, 'PROP_VALUE'	, '[__quiet __davprop xmlns:virt="virt"] .'	),
---    'public-tags'	, vector (	'\n  inner join WS.WS.SYS_DAV_TAG as ^{alias}^ on ((^{alias}^.DT_RES_ID = _top.RES_ID) and (^{alias}^.DT_U_ID = http_nobody_uid())^{andpredicates}^)'	,
---					'\n  exists (select 1 from WS.WS.SYS_DAV_TAG as ^{alias}^ where (^{alias}^.DT_RES_ID = _top.RES_ID) and (^{alias}^.DT_U_ID = http_nobody_uid())^{andpredicates}^)'	,
---						'DT_TAGS'	, 'DT_TAGS'	, NULL	),
---    'private-tags'	, vector (	'\n  inner join WS.WS.SYS_DAV_TAG as ^{alias}^ on ((^{alias}^.DT_RES_ID = _top.RES_ID) and (^{alias}^.DT_U_ID = ^{uid}^)^{andpredicates}^)'	,
---					'\n  exists (select 1 from WS.WS.SYS_DAV_TAG as ^{alias}^ where (^{alias}^.DT_RES_ID = _top.RES_ID) and (^{alias}^.DT_U_ID = ^{uid}^)^{andpredicates}^)'	,
---						'DT_TAGS'	, 'DT_TAGS'	, NULL	),
---    'all-tags'		, vector (	'\n  inner join (select * from WS.WS.SYS_DAV_TAG ^{alias}^_pub where ^{alias}^_pub.DT_U_ID = http_nobody_uid() union select * from WS.WS.SYS_DAV_TAG ^{alias}^_prv where ^{alias}^_prv.DT_U_ID = ^{uid}^) as ^{alias}^ on ((^{alias}^.DT_RES_ID = _top.RES_ID)^{andpredicates}^)'	,
---					'\n  exists (select 1 from (select * from WS.WS.SYS_DAV_TAG ^{alias}^_pub where ^{alias}^_pub.DT_U_ID = http_nobody_uid() union select * from WS.WS.SYS_DAV_TAG ^{alias}^_prv where ^{alias}^_prv.DT_U_ID = ^{uid}^) as ^{alias}^ where (^{alias}^.DT_RES_ID = _top.RES_ID)^{andpredicates}^)'	,
---						'DT_TAGS'	, 'DT_TAGS'	, NULL	)
+    'SYS_BLOGS'         , vector (      '\n  inner join BLOG.DBA.SYS_BLOGS as ^{alias}^ on ((^{alias}^.B_BLOG_ID = _top.B_BLOG_ID) and (^{alias}^.B_POST_ID = _top.B_POST_ID)^{andpredicates}^)'        ,
+                                        '\n  exists (select 1 from BLOG.DBA.SYS_BLOGS as ^{alias}^ where (^{alias}^.B_BLOG_ID = _top.B_BLOG_ID) and (^{alias}^.B_POST_ID = _top.B_POST_ID)^{andpredicates}^)'   ,
+                                                'B_CONTENT'     , 'B_CONTENT'   , '[__quiet] /' ),
+    'SYS_BLOG_OWNERS'   , vector (      ''      ,
+                                        ''      ,
+                                                NULL            , NULL          , NULL          )
+--    'SYS_BLOG_OWNERS' , vector (      '\n  left outer join BLOG.DBA.SYS_BLOG_OWNERS as ^{alias}^ on ((^{alias}^.BI_BLOG_ID = _top.B_BLOG_ID)^{andpredicates}^)'       ,
+--                                      '\n  exists (select 1 from BLOG.DBA.SYS_BLOG_OWNERS as ^{alias}^ where (^{alias}^.BI_BLOG_ID = _top.B_BLOG_ID)^{andpredicates}^)'       ,
+--                                              NULL            , NULL          , NULL  )
+--    'SYS_DAV_COL'     , vector (      '\n  inner join WS.WS.SYS_DAV_COL as ^{alias}^ on ((^{alias}^.COL_ID = _param.detcol)^{andpredicates}^)'        ,
+--                                      '\n  exists (select 1 from WS.WS.SYS_DAV_COL as ^{alias}^ where (^{alias}^.COL_ID = _param.detcol)^{andpredicates}^)'   ,
+--                                              NULL            , NULL          , NULL  ),
+--    'SYS_DAV_GROUP'   , vector (      '\n  left outer join WS.WS.SYS_DAV_GROUP as ^{alias}^ on ((^{alias}^.G_ID = _top.RES_GROUP)^{andpredicates}^)'  ,
+--                                      '\n  exists (select 1 from WS.WS.SYS_DAV_GROUP as ^{alias}^ where (^{alias}^.G_ID = _top.RES_GROUP)^{andpredicates}^)'  ,
+--                                              NULL            , NULL          , NULL  )--,
+--    'SYS_DAV_PROP'    , vector (      '\n  inner join WS.WS.SYS_DAV_PROP as ^{alias}^ on ((^{alias}^.PROP_PARENT_ID = _top.RES_ID) and (^{alias}^.PROP_TYPE = ''R'')^{andpredicates}^)'       ,
+--                                      '\n  exists (select 1 from WS.WS.SYS_DAV_PROP as ^{alias}^ where (^{alias}^.PROP_PARENT_ID = _top.RES_ID) and (^{alias}^.PROP_TYPE = ''R'')^{andpredicates}^)'  ,
+--                                              'PROP_VALUE'    , 'PROP_VALUE'  , '[__quiet __davprop xmlns:virt="virt"] .'     ),
+--    'public-tags'     , vector (      '\n  inner join WS.WS.SYS_DAV_TAG as ^{alias}^ on ((^{alias}^.DT_RES_ID = _top.RES_ID) and (^{alias}^.DT_U_ID = http_nobody_uid())^{andpredicates}^)'   ,
+--                                      '\n  exists (select 1 from WS.WS.SYS_DAV_TAG as ^{alias}^ where (^{alias}^.DT_RES_ID = _top.RES_ID) and (^{alias}^.DT_U_ID = http_nobody_uid())^{andpredicates}^)'      ,
+--                                              'DT_TAGS'       , 'DT_TAGS'     , NULL  ),
+--    'private-tags'    , vector (      '\n  inner join WS.WS.SYS_DAV_TAG as ^{alias}^ on ((^{alias}^.DT_RES_ID = _top.RES_ID) and (^{alias}^.DT_U_ID = ^{uid}^)^{andpredicates}^)'     ,
+--                                      '\n  exists (select 1 from WS.WS.SYS_DAV_TAG as ^{alias}^ where (^{alias}^.DT_RES_ID = _top.RES_ID) and (^{alias}^.DT_U_ID = ^{uid}^)^{andpredicates}^)'        ,
+--                                              'DT_TAGS'       , 'DT_TAGS'     , NULL  ),
+--    'all-tags'                , vector (      '\n  inner join (select * from WS.WS.SYS_DAV_TAG ^{alias}^_pub where ^{alias}^_pub.DT_U_ID = http_nobody_uid() union select * from WS.WS.SYS_DAV_TAG ^{alias}^_prv where ^{alias}^_prv.DT_U_ID = ^{uid}^) as ^{alias}^ on ((^{alias}^.DT_RES_ID = _top.RES_ID)^{andpredicates}^)'       ,
+--                                      '\n  exists (select 1 from (select * from WS.WS.SYS_DAV_TAG ^{alias}^_pub where ^{alias}^_pub.DT_U_ID = http_nobody_uid() union select * from WS.WS.SYS_DAV_TAG ^{alias}^_prv where ^{alias}^_prv.DT_U_ID = ^{uid}^) as ^{alias}^ where (^{alias}^.DT_RES_ID = _top.RES_ID)^{andpredicates}^)'  ,
+--                                              'DT_TAGS'       , 'DT_TAGS'     , NULL  )
     );
 }
 ;
@@ -665,32 +665,32 @@ create function "Blog_POST_DAV_FC_PRINT_WHERE" (inout filter any, in param_uid i
 create procedure "Blog_COMMENT_DAV_FC_PRED_METAS" (inout pred_metas any)
 {
   pred_metas := vector (
-    'BM_BLOG_ID',		vector ('BLOG_COMMENTS'	, 0, 'varchar'	, 'BM_BLOG_ID'	),
-    'BM_POST_ID',		vector ('BLOG_COMMENTS'	, 0, 'varchar'	, 'BM_POST_ID'	),
-    'RES_ID',			vector ('BLOG_COMMENTS'	, 0, 'any'	, 'vector (UNAME_BLOG(), B_BLOG_ID, U_ID, B_POST_ID, BM_ID)'	),
-    'RES_ID_SERIALIZED',	vector ('BLOG_COMMENTS'	, 0, 'varchar'	, 'serialize (vector (UNAME_BLOG(), B_BLOG_ID, U_ID, B_POST_ID, BM_ID))'	),
-    'RES_NAME',			vector ('BLOG_COMMENTS'	, 0, 'varchar'	, '"Blog_COMPOSE_HTML_NAME" (BM_NAME, cast (BM_ID as varchar))'	),
-    'RES_FULL_PATH',		vector ('BLOG_COMMENTS'	, 0, 'varchar'	, 'concat (DAV_CONCAT_PATH (_param.detcolpath, "Blog_FIXNAME" (WAI_NAME)), ''/'', "Blog_COMPOSE_COMMENTS_NAME" (B_TITLE, B_POST_ID), ''/'', "Blog_COMPOSE_HTML_NAME" (BM_NAME, cast (BM_ID as varchar)))'	),
-    'RES_TYPE',			vector ('BLOG_COMMENTS'	, 0, 'varchar'	, '(''text/plain'')'	),
-    'RES_OWNER_ID',		vector ('SYS_BLOG_OWNERS'	, 0, 'integer'	, 'U_ID'	),
-    'RES_OWNER_NAME',		vector ('SYS_BLOG_OWNERS'	, 0, 'varchar'	, 'U_NAME'	),
-    'RES_GROUP_ID',		vector ('BLOG_COMMENTS'	, 0, 'integer'	, 'http_nogroup_gid()'	),
-    'RES_GROUP_NAME',		vector ('BLOG_COMMENTS'	, 0, 'varchar'	, '(''nogroup'')'	),
-    'RES_COL_FULL_PATH',	vector ('SYS_BLOGS'	, 0, 'varchar'	, 'concat (DAV_CONCAT_PATH (_param.detcolpath, "Blog_FIXNAME" (WAI_NAME)), ''/'', "Blog_COMPOSE_COMMENTS_NAME" (B_TITLE, B_POST_ID))'	),
-    'RES_COL_NAME',		vector ('SYS_BLOGS'	, 0, 'varchar'	, '"Blog_COMPOSE_COMMENTS_NAME" (B_TITLE, B_POST_ID)'	),
---    'RES_COL_ID',		vector ('SYS_DAV_RES'	, 0, 'varchar'	, 'RES_COL'	),
-    'RES_CR_TIME',		vector ('BLOG_COMMENTS'	, 0, 'datetime'	, 'BM_TS'	),
-    'RES_MOD_TIME',		vector ('BLOG_COMMENTS'	, 0, 'datetime'	, 'BM_TS'  ),
-    'RES_PERMS',		vector ('BLOG_COMMENTS'	, 0, 'varchar'	, '(''110000000RR'')'	),
-    'RES_CONTENT',		vector ('BLOG_COMMENTS'	, 0, 'text'	, 'BM_COMMENT'	),
-    'PROP_NAME',		vector ('BLOG_COMMENTS'	, 0, 'varchar'	, '(''Content'')'	),
-    'PROP_VALUE',		vector ('BLOG_COMMENTS'	, 1, 'text'	, 'BM_COMMENT'	),
-    'RES_TAGS',			vector ('BLOG_COMMENTS'	, 0, 'varchar'  , '('''')'	), -- 'varchar', not 'text-tag' because there's no free-text on union
-    'RES_PUBLIC_TAGS',		vector ('BLOG_COMMENTS'	, 0, 'varchar'	, '('''')'	),
-    'RES_PRIVATE_TAGS',		vector ('BLOG_COMMENTS'	, 0, 'varchar'	, '('''')'	),
-    'RDF_PROP',			vector ('BLOG_COMMENTS'	, 1, 'varchar'	, NULL	),
-    'RDF_VALUE',		vector ('BLOG_COMMENTS'	, 2, 'XML'	, NULL	),
-    'RDF_OBJ_VALUE',		vector ('BLOG_COMMENTS'	, 3, 'XML'	, NULL	)
+    'BM_BLOG_ID',               vector ('BLOG_COMMENTS' , 0, 'varchar'  , 'BM_BLOG_ID'  ),
+    'BM_POST_ID',               vector ('BLOG_COMMENTS' , 0, 'varchar'  , 'BM_POST_ID'  ),
+    'RES_ID',                   vector ('BLOG_COMMENTS' , 0, 'any'      , 'vector (UNAME_BLOG(), B_BLOG_ID, U_ID, B_POST_ID, BM_ID)'    ),
+    'RES_ID_SERIALIZED',        vector ('BLOG_COMMENTS' , 0, 'varchar'  , 'serialize (vector (UNAME_BLOG(), B_BLOG_ID, U_ID, B_POST_ID, BM_ID))'        ),
+    'RES_NAME',                 vector ('BLOG_COMMENTS' , 0, 'varchar'  , '"Blog_COMPOSE_HTML_NAME" (BM_NAME, cast (BM_ID as varchar))' ),
+    'RES_FULL_PATH',            vector ('BLOG_COMMENTS' , 0, 'varchar'  , 'concat (DAV_CONCAT_PATH (_param.detcolpath, "Blog_FIXNAME" (WAI_NAME)), ''/'', "Blog_COMPOSE_COMMENTS_NAME" (B_TITLE, B_POST_ID), ''/'', "Blog_COMPOSE_HTML_NAME" (BM_NAME, cast (BM_ID as varchar)))'       ),
+    'RES_TYPE',                 vector ('BLOG_COMMENTS' , 0, 'varchar'  , '(''text/plain'')'    ),
+    'RES_OWNER_ID',             vector ('SYS_BLOG_OWNERS'       , 0, 'integer'  , 'U_ID'        ),
+    'RES_OWNER_NAME',           vector ('SYS_BLOG_OWNERS'       , 0, 'varchar'  , 'U_NAME'      ),
+    'RES_GROUP_ID',             vector ('BLOG_COMMENTS' , 0, 'integer'  , 'http_nogroup_gid()'  ),
+    'RES_GROUP_NAME',           vector ('BLOG_COMMENTS' , 0, 'varchar'  , '(''nogroup'')'       ),
+    'RES_COL_FULL_PATH',        vector ('SYS_BLOGS'     , 0, 'varchar'  , 'concat (DAV_CONCAT_PATH (_param.detcolpath, "Blog_FIXNAME" (WAI_NAME)), ''/'', "Blog_COMPOSE_COMMENTS_NAME" (B_TITLE, B_POST_ID))'   ),
+    'RES_COL_NAME',             vector ('SYS_BLOGS'     , 0, 'varchar'  , '"Blog_COMPOSE_COMMENTS_NAME" (B_TITLE, B_POST_ID)'   ),
+--    'RES_COL_ID',             vector ('SYS_DAV_RES'   , 0, 'varchar'  , 'RES_COL'     ),
+    'RES_CR_TIME',              vector ('BLOG_COMMENTS' , 0, 'datetime' , 'BM_TS'       ),
+    'RES_MOD_TIME',             vector ('BLOG_COMMENTS' , 0, 'datetime' , 'BM_TS'  ),
+    'RES_PERMS',                vector ('BLOG_COMMENTS' , 0, 'varchar'  , '(''110000000RR'')'   ),
+    'RES_CONTENT',              vector ('BLOG_COMMENTS' , 0, 'text'     , 'BM_COMMENT'  ),
+    'PROP_NAME',                vector ('BLOG_COMMENTS' , 0, 'varchar'  , '(''Content'')'       ),
+    'PROP_VALUE',               vector ('BLOG_COMMENTS' , 1, 'text'     , 'BM_COMMENT'  ),
+    'RES_TAGS',                 vector ('BLOG_COMMENTS' , 0, 'varchar'  , '('''')'      ), -- 'varchar', not 'text-tag' because there's no free-text on union
+    'RES_PUBLIC_TAGS',          vector ('BLOG_COMMENTS' , 0, 'varchar'  , '('''')'      ),
+    'RES_PRIVATE_TAGS',         vector ('BLOG_COMMENTS' , 0, 'varchar'  , '('''')'      ),
+    'RDF_PROP',                 vector ('BLOG_COMMENTS' , 1, 'varchar'  , NULL  ),
+    'RDF_VALUE',                vector ('BLOG_COMMENTS' , 2, 'XML'      , NULL  ),
+    'RDF_OBJ_VALUE',            vector ('BLOG_COMMENTS' , 3, 'XML'      , NULL  )
     );
 }
 ;
@@ -698,36 +698,36 @@ create procedure "Blog_COMMENT_DAV_FC_PRED_METAS" (inout pred_metas any)
 create procedure "Blog_COMMENT_DAV_FC_TABLE_METAS" (inout table_metas any)
 {
   table_metas := vector (
-    'BLOG_COMMENTS'		, vector (	''	,
-					''	,
-    						'BM_COMMENT'	, 'BM_COMMENT'	, '[__quiet] /'	),
-    'SYS_BLOGS'		, vector (	''	,
-					''	,
-    						'B_CONTENT'	, 'B_CONTENT'	, '[__quiet] /'	),
-    'SYS_BLOG_OWNERS'	, vector (	''	,
-					''	,
-    						NULL		, NULL		, NULL		)
---    'SYS_BLOG_OWNERS'	, vector (	'\n  left outer join BLOG.DBA.SYS_BLOG_OWNERS as ^{alias}^ on ((^{alias}^.BI_BLOG_ID = _top.B_BLOG_ID)^{andpredicates}^)'	,
---					'\n  exists (select 1 from BLOG.DBA.SYS_BLOG_OWNERS as ^{alias}^ where (^{alias}^.BI_BLOG_ID = _top.B_BLOG_ID)^{andpredicates}^)'	,
---						NULL		, NULL		, NULL	)
---    'SYS_DAV_COL'	, vector (	'\n  inner join WS.WS.SYS_DAV_COL as ^{alias}^ on ((^{alias}^.COL_ID = _param.detcol)^{andpredicates}^)'	,
---					'\n  exists (select 1 from WS.WS.SYS_DAV_COL as ^{alias}^ where (^{alias}^.COL_ID = _param.detcol)^{andpredicates}^)'	,
---						NULL		, NULL		, NULL	),
---    'SYS_DAV_GROUP'	, vector (	'\n  left outer join WS.WS.SYS_DAV_GROUP as ^{alias}^ on ((^{alias}^.G_ID = _top.RES_GROUP)^{andpredicates}^)'	,
---					'\n  exists (select 1 from WS.WS.SYS_DAV_GROUP as ^{alias}^ where (^{alias}^.G_ID = _top.RES_GROUP)^{andpredicates}^)'	,
---						NULL		, NULL		, NULL	)--,
---    'SYS_DAV_PROP'	, vector (	'\n  inner join WS.WS.SYS_DAV_PROP as ^{alias}^ on ((^{alias}^.PROP_PARENT_ID = _top.RES_ID) and (^{alias}^.PROP_TYPE = ''R'')^{andpredicates}^)'	,
---					'\n  exists (select 1 from WS.WS.SYS_DAV_PROP as ^{alias}^ where (^{alias}^.PROP_PARENT_ID = _top.RES_ID) and (^{alias}^.PROP_TYPE = ''R'')^{andpredicates}^)'	,
---						'PROP_VALUE'	, 'PROP_VALUE'	, '[__quiet __davprop xmlns:virt="virt"] .'	),
---    'public-tags'	, vector (	'\n  inner join WS.WS.SYS_DAV_TAG as ^{alias}^ on ((^{alias}^.DT_RES_ID = _top.RES_ID) and (^{alias}^.DT_U_ID = http_nobody_uid())^{andpredicates}^)'	,
---					'\n  exists (select 1 from WS.WS.SYS_DAV_TAG as ^{alias}^ where (^{alias}^.DT_RES_ID = _top.RES_ID) and (^{alias}^.DT_U_ID = http_nobody_uid())^{andpredicates}^)'	,
---						'DT_TAGS'	, 'DT_TAGS'	, NULL	),
---    'private-tags'	, vector (	'\n  inner join WS.WS.SYS_DAV_TAG as ^{alias}^ on ((^{alias}^.DT_RES_ID = _top.RES_ID) and (^{alias}^.DT_U_ID = ^{uid}^)^{andpredicates}^)'	,
---					'\n  exists (select 1 from WS.WS.SYS_DAV_TAG as ^{alias}^ where (^{alias}^.DT_RES_ID = _top.RES_ID) and (^{alias}^.DT_U_ID = ^{uid}^)^{andpredicates}^)'	,
---						'DT_TAGS'	, 'DT_TAGS'	, NULL	),
---    'all-tags'		, vector (	'\n  inner join (select * from WS.WS.SYS_DAV_TAG ^{alias}^_pub where ^{alias}^_pub.DT_U_ID = http_nobody_uid() union select * from WS.WS.SYS_DAV_TAG ^{alias}^_prv where ^{alias}^_prv.DT_U_ID = ^{uid}^) as ^{alias}^ on ((^{alias}^.DT_RES_ID = _top.RES_ID)^{andpredicates}^)'	,
---					'\n  exists (select 1 from (select * from WS.WS.SYS_DAV_TAG ^{alias}^_pub where ^{alias}^_pub.DT_U_ID = http_nobody_uid() union select * from WS.WS.SYS_DAV_TAG ^{alias}^_prv where ^{alias}^_prv.DT_U_ID = ^{uid}^) as ^{alias}^ where (^{alias}^.DT_RES_ID = _top.RES_ID)^{andpredicates}^)'	,
---						'DT_TAGS'	, 'DT_TAGS'	, NULL	)
+    'BLOG_COMMENTS'             , vector (      ''      ,
+                                        ''      ,
+                                                'BM_COMMENT'    , 'BM_COMMENT'  , '[__quiet] /' ),
+    'SYS_BLOGS'         , vector (      ''      ,
+                                        ''      ,
+                                                'B_CONTENT'     , 'B_CONTENT'   , '[__quiet] /' ),
+    'SYS_BLOG_OWNERS'   , vector (      ''      ,
+                                        ''      ,
+                                                NULL            , NULL          , NULL          )
+--    'SYS_BLOG_OWNERS' , vector (      '\n  left outer join BLOG.DBA.SYS_BLOG_OWNERS as ^{alias}^ on ((^{alias}^.BI_BLOG_ID = _top.B_BLOG_ID)^{andpredicates}^)'       ,
+--                                      '\n  exists (select 1 from BLOG.DBA.SYS_BLOG_OWNERS as ^{alias}^ where (^{alias}^.BI_BLOG_ID = _top.B_BLOG_ID)^{andpredicates}^)'       ,
+--                                              NULL            , NULL          , NULL  )
+--    'SYS_DAV_COL'     , vector (      '\n  inner join WS.WS.SYS_DAV_COL as ^{alias}^ on ((^{alias}^.COL_ID = _param.detcol)^{andpredicates}^)'        ,
+--                                      '\n  exists (select 1 from WS.WS.SYS_DAV_COL as ^{alias}^ where (^{alias}^.COL_ID = _param.detcol)^{andpredicates}^)'   ,
+--                                              NULL            , NULL          , NULL  ),
+--    'SYS_DAV_GROUP'   , vector (      '\n  left outer join WS.WS.SYS_DAV_GROUP as ^{alias}^ on ((^{alias}^.G_ID = _top.RES_GROUP)^{andpredicates}^)'  ,
+--                                      '\n  exists (select 1 from WS.WS.SYS_DAV_GROUP as ^{alias}^ where (^{alias}^.G_ID = _top.RES_GROUP)^{andpredicates}^)'  ,
+--                                              NULL            , NULL          , NULL  )--,
+--    'SYS_DAV_PROP'    , vector (      '\n  inner join WS.WS.SYS_DAV_PROP as ^{alias}^ on ((^{alias}^.PROP_PARENT_ID = _top.RES_ID) and (^{alias}^.PROP_TYPE = ''R'')^{andpredicates}^)'       ,
+--                                      '\n  exists (select 1 from WS.WS.SYS_DAV_PROP as ^{alias}^ where (^{alias}^.PROP_PARENT_ID = _top.RES_ID) and (^{alias}^.PROP_TYPE = ''R'')^{andpredicates}^)'  ,
+--                                              'PROP_VALUE'    , 'PROP_VALUE'  , '[__quiet __davprop xmlns:virt="virt"] .'     ),
+--    'public-tags'     , vector (      '\n  inner join WS.WS.SYS_DAV_TAG as ^{alias}^ on ((^{alias}^.DT_RES_ID = _top.RES_ID) and (^{alias}^.DT_U_ID = http_nobody_uid())^{andpredicates}^)'   ,
+--                                      '\n  exists (select 1 from WS.WS.SYS_DAV_TAG as ^{alias}^ where (^{alias}^.DT_RES_ID = _top.RES_ID) and (^{alias}^.DT_U_ID = http_nobody_uid())^{andpredicates}^)'      ,
+--                                              'DT_TAGS'       , 'DT_TAGS'     , NULL  ),
+--    'private-tags'    , vector (      '\n  inner join WS.WS.SYS_DAV_TAG as ^{alias}^ on ((^{alias}^.DT_RES_ID = _top.RES_ID) and (^{alias}^.DT_U_ID = ^{uid}^)^{andpredicates}^)'     ,
+--                                      '\n  exists (select 1 from WS.WS.SYS_DAV_TAG as ^{alias}^ where (^{alias}^.DT_RES_ID = _top.RES_ID) and (^{alias}^.DT_U_ID = ^{uid}^)^{andpredicates}^)'        ,
+--                                              'DT_TAGS'       , 'DT_TAGS'     , NULL  ),
+--    'all-tags'                , vector (      '\n  inner join (select * from WS.WS.SYS_DAV_TAG ^{alias}^_pub where ^{alias}^_pub.DT_U_ID = http_nobody_uid() union select * from WS.WS.SYS_DAV_TAG ^{alias}^_prv where ^{alias}^_prv.DT_U_ID = ^{uid}^) as ^{alias}^ on ((^{alias}^.DT_RES_ID = _top.RES_ID)^{andpredicates}^)'       ,
+--                                      '\n  exists (select 1 from (select * from WS.WS.SYS_DAV_TAG ^{alias}^_pub where ^{alias}^_pub.DT_U_ID = http_nobody_uid() union select * from WS.WS.SYS_DAV_TAG ^{alias}^_prv where ^{alias}^_prv.DT_U_ID = ^{uid}^) as ^{alias}^ where (^{alias}^.DT_RES_ID = _top.RES_ID)^{andpredicates}^)'  ,
+--                                              'DT_TAGS'       , 'DT_TAGS'     , NULL  )
     );
 }
 ;
@@ -767,18 +767,18 @@ create function "Blog_DAV_DIR_FILTER" (in detcol_id any, in path_parts any, in d
   post_id := null;
 
   if (((length (path_parts) <= 1) and (recursive <> 1)) or (length (path_parts) > 2))
-  {
+    {
       -- dbg_obj_princ ('\r\nGoto skip_post_level\r\n');
-    goto skip_post_level;
-	}
+      goto skip_post_level;
+    }
   if (length (path_parts) >= 2)
     {
       blog_id := coalesce ((select BI_BLOG_ID from BLOG.DBA.SYS_BLOG_OWNERS where U_ID = owner_uid and "Blog_FIXNAME" (WAI_NAME) = path_parts[0]));
       if (blog_id is null)
-			{
+        {
           -- dbg_obj_princ ('\r\nGoto finalize\r\n');
-        goto finalize;
-    }
+          goto finalize;
+        }
     }
   cond_key := sprintf ('Blog_POST&%V', coalesce (blog_id, ''));
   condtext := get_keyword (cond_key, compilation);

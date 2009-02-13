@@ -1275,7 +1275,7 @@ create procedure WS.WS.HEAD (in path varchar, inout params varchar, in lines var
 
 	  select RES_NAME, length (RES_CONTENT), RES_TYPE, RES_OWNER, RES_FULL_PATH, RES_CONTENT
 	      into name, msg_len, cont_type, resource_owner, full_path, content
-          from WS.WS.SYS_DAV_RES where RES_ID = id;
+	      from WS.WS.SYS_DAV_RES where RES_ID = id;
 
 	  if (resource_owner = http_dav_uid ())
 	    is_admin_owned_res := 1;
@@ -1420,7 +1420,6 @@ create procedure WS.WS.PUT (in path varchar, inout params varchar, in lines varc
     }
 
   rc := -28;
-
   rc := DAV_RES_UPLOAD_STRSES_INT (
     full_path, ses, content_type, _perms,
     uname, null, uname, upwd, 0,
@@ -2279,7 +2278,7 @@ create procedure WS.WS.POST (in path varchar, inout params varchar, in lines var
       _content_type = 'application/vnd.syncml+xml')
    {
      if (__proc_exists ('DB.DBA.SYNCML'))
-     DB.DBA.SYNCML (path, params, lines);
+       DB.DBA.SYNCML (path, params, lines);
      else
        signal ('37000', 'The SyncML server is not available');
    }
@@ -2311,7 +2310,7 @@ create procedure WS.WS.SPARQL_QUERY_POST (in path varchar, inout ses varchar)
     }
   def_gr := sprintf ('http://%s%U', cname, path);
   if (lower (qr) not like 'construct %' and lower (qr) not like 'describe %')
-  full_qr := sprintf ('SPARQL define input:default-graph-uri <%s> ', def_gr);
+    full_qr := sprintf ('SPARQL define input:default-graph-uri <%s> ', def_gr);
   else
     full_qr := 'SPARQL ';
   full_qr := full_qr || qr;

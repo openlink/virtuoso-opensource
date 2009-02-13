@@ -281,7 +281,7 @@ create function DB.DBA."RDFData_DAV_DIR_LIST" (in detcol_id any, in path_parts a
     {
       u_name := (select p.COL_NAME from WS.WS.SYS_DAV_COL p, WS.WS.SYS_DAV_COL c
       where c.COL_ID = detcol_id and p.COL_ID = c.COL_PARENT);
-  gr := sioc..user_doc_iri (u_name);
+      gr := sioc..user_doc_iri (u_name);
     }
   if (not isstring (filt_lg))
     filt_lg := '';
@@ -655,9 +655,9 @@ create function DB.DBA."RDFData_DAV_RES_CONTENT" (in id any, inout content any, 
 	}
       else
 	{
-      DB.DBA.OdsIriDescribe (iri, type);
-      goto ret_place;
-    }
+	  DB.DBA.OdsIriDescribe (iri, type);
+	  goto ret_place;
+	}
     }
   if (isstring (gr) and length (gr))
     _from := sprintf (' FROM <%s>', gr);
