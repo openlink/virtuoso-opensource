@@ -424,10 +424,10 @@
 				RelativePath="..\libsrc\Wi\sparql_tree.c">
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sparul2sql.c">
+				RelativePath="..\libsrc\Wi\sparqld.c">
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sparqld.c">
+				RelativePath="..\libsrc\Wi\sparul2sql.c">
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\sql3_vc.c">
@@ -538,6 +538,9 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\libsrc\Wi\sql_code_cache_impl.c">
+			</File>
+			<File
 				RelativePath="..\libsrc\Wi\sql_code_dav.c">
 				<FileConfiguration
 					Name="Release|Win32">
@@ -598,6 +601,12 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\libsrc\Wi\sql_code_pldbg.c">
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\sql_code_repl.c">
+			</File>
+			<File
 				RelativePath="..\libsrc\Wi\sql_code_sparql.c">
 				<FileConfiguration
 					Name="Release|Win32">
@@ -611,6 +620,9 @@
 						Name="VCCLCompilerTool"
 						Optimization="0"/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\sql_code_sys.c">
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\sql_code_uddi.c">
@@ -656,6 +668,9 @@
 						Name="VCCLCompilerTool"
 						Optimization="0"/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\sql_code_ws.c">
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\sqlbif.c">
@@ -800,6 +815,9 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\xmlenc_algos.c">
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\xmllazy.c">
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\xmlschema.c">

@@ -730,11 +730,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sparul2sql.c"
+				RelativePath="..\libsrc\Wi\sparqld.c"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sparqld.c"
+				RelativePath="..\libsrc\Wi\sparul2sql.c"
 				>
 			</File>
 			<File
@@ -994,6 +994,26 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\libsrc\Wi\sql_code_cache_impl.c"
+				>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\libsrc\Wi\sql_code_dav.c"
 				>
 				<FileConfiguration
@@ -1138,6 +1158,46 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\libsrc\Wi\sql_code_pldbg.c"
+				>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\sql_code_repl.c"
+				>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\libsrc\Wi\sql_code_sparql.c"
 				>
 				<FileConfiguration
@@ -1158,6 +1218,26 @@
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\sql_code_sys.c"
+				>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1266,6 +1346,26 @@
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\sql_code_ws.c"
+				>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1471,6 +1571,10 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\xmlenc_algos.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\xmllazy.c"
 				>
 			</File>
 			<File

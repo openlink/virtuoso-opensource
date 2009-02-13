@@ -228,6 +228,8 @@
     <Compile Include="Service.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="SqlExtendedString.cs" />
+    <Compile Include="SqlRdfBox.cs" />
     <Compile Include="SqlXml.cs">
       <SubType>Code</SubType>
     </Compile>
