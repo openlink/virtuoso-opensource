@@ -54,7 +54,7 @@ create table NEWS_MSG_NNTP (
 	NM_HEAD		long varchar,		-- Message header (original)
 	NM_BODY		long varchar,		-- Message content
 	NM_BODY_ID	integer identity,
-	    PRIMARY KEY (NM_ID))
+	PRIMARY KEY (NM_ID))
 create index NEWS_MSG_NNTP_NM_STAT on DB.DBA.NEWS_MSG_NNTP (NM_STAT)
 ;
 
@@ -342,7 +342,7 @@ create table NEWS_SERVERS (
 	NS_USER		varchar,		-- User name
 	NS_PASS		varchar,		-- User password
 	NS_GROUPS	long varchar,		-- List of groups
-	    PRIMARY KEY (NS_SERVER, NS_PORT, NS_USER))
+	PRIMARY KEY (NS_SERVER, NS_PORT, NS_USER))
 ;
 
 
@@ -387,7 +387,7 @@ WS.WS.NN_SRV (in path any, in params any, in lines any)
     {
       set isolation='committed';
       in_str := ses_read_line ();
---    dbg_obj_print ('IN - ', in_str);
+--      dbg_obj_print ('IN - ', in_str);
       in_str := trim (in_str);
       command := ucase (pop_get_command (in_str));
       arg := trim (subseq (in_str, length (command)));
@@ -1347,7 +1347,7 @@ ns_post_write_out (in _text varchar)
 {
   if (connection_get ('NNTP_SERVER_MODE') is null)
     signal ('24000', _text);
-   else
+  else
     pop_write (_text);
 }
 ;

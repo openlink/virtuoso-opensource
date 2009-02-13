@@ -1383,23 +1383,23 @@ rdf_new_iri_id (lock_trx_t * lt, char ** value_seq_ret)
   LEAVE_TXN;
   if (!in_srv_global_init) 
     {
-  log_array = list (5, box_string ("DB.DBA.ID_RANGE_REPLAY (?, ?, ?, ?)"),
-		    box_dv_short_string (iri_seq[nth]), box_dv_short_string (iri_seq_max[nth]),
-		    box_num (id), box_num (id + IRI_RANGE_SZ));
-  mutex_enter (log_write_mtx);
-  old_repl = lt->lt_replicate;
-  lt->lt_replicate = REPL_LOG;
-  rc = log_text_array_sync (lt, log_array);
-  lt->lt_replicate = old_repl;
-  mutex_leave (log_write_mtx);
-  dk_free_tree (log_array);
-  if (rc != LTE_OK)
-    {
+      log_array = list (5, box_string ("DB.DBA.ID_RANGE_REPLAY (?, ?, ?, ?)"),
+	  box_dv_short_string (iri_seq[nth]), box_dv_short_string (iri_seq_max[nth]),
+	  box_num (id), box_num (id + IRI_RANGE_SZ));
+      mutex_enter (log_write_mtx);
+      old_repl = lt->lt_replicate;
+      lt->lt_replicate = REPL_LOG;
+      rc = log_text_array_sync (lt, log_array);
+      lt->lt_replicate = old_repl;
+      mutex_leave (log_write_mtx);
+      dk_free_tree (log_array);
+      if (rc != LTE_OK)
+	{
 	  static caddr_t details = NULL;
-      if (NULL == details)
-        details = box_dv_short_string ("while writing new IRI_ID range allocation to log file");
-      sqlr_resignal (srv_make_trx_error (rc, details));
-    }
+	  if (NULL == details)
+	    details = box_dv_short_string ("while writing new IRI_ID range allocation to log file");
+	  sqlr_resignal (srv_make_trx_error (rc, details));
+	}
     }
 
   *value_seq_ret = iri_seq[nth];
@@ -1495,7 +1495,7 @@ tb_name_to_id (lock_trx_t * lt, char * tb_name, caddr_t name, char * value_seq_n
   ITC_FAIL (itc)
     {
 re_search:
-      buf = itc_reset (itc);
+  buf = itc_reset (itc);
       res = itc_search (itc, &buf);
       if (DVC_MATCH == res)
 	{
@@ -1730,7 +1730,7 @@ iri_to_id (caddr_t *qst, caddr_t name, int mode, caddr_t *err_ret)
         "Empty string is not a valid argument to iri_to_id (), type %d", (unsigned int)dtp );
       goto return_error; /* see below */
     }
-/*                    0123456789 */
+/*                     0123456789 */
   if (!strncmp (name, "nodeID://", 9))
     {
       unsigned char *tail = (unsigned char *)(name + 9);
@@ -1809,7 +1809,7 @@ bif_iri_to_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t err = NULL;
   caddr_t res = iri_to_id (qst, name, make_new ? IRI_TO_ID_WITH_CREATE : IRI_TO_ID_IF_KNOWN, &err);
   if (NULL != err)
-  sqlr_resignal (err);
+    sqlr_resignal (err);
   if (NULL == res)
     {
       if (BOX_ELEMENTS (args) > 2)
@@ -1930,7 +1930,7 @@ key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no)
       if (!prefix)
         {
           dk_free_box (local);
-        return NULL;
+	  return NULL;
         }
       nic_set (iri_prefix_cache, prefix, pref_id);
     }
@@ -1954,7 +1954,7 @@ key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no)
           caddr_t expanded_name = dk_alloc_box (name_box_len - 6 + (7 + is_https + host_strlen), DV_STRING);
 /*                                01234567 */
 	  if (!is_https)
-          memcpy (expanded_name, "http://", 7);
+	    memcpy (expanded_name, "http://", 7);
 	  else
 	    memcpy (expanded_name, "https://", 8);
           memcpy (expanded_name + 7 + is_https, host, host_strlen);
@@ -1996,7 +1996,7 @@ key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, caddr_t *subj
         }
       nic_set (iri_prefix_cache, prefix, pref_id);
     }
-/*                    0123456 */
+/*                       0123456 */
   if (!strncmp (prefix, "local:", 6))
     {
       caddr_t host;

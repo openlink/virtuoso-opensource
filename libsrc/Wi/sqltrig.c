@@ -321,7 +321,7 @@ trig_wrapper (caddr_t * qst, state_slot_t ** args, dbe_table_t * tb,
 
   if (!instead)
     {
-    qn_run (qn, qst, qst);
+      qn_run (qn, qst, qst);
       ROW_AUTOCOMMIT (qi);
     }
   for (inx = 0; inx < fill; inx++)

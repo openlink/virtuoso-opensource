@@ -120,7 +120,7 @@ value_list
 	: value { $$ = t_CONS ($1, NULL); }
 	| value_list COMMA value { $$ = t_NCONC ($1, t_CONS($3, NULL)); }
 	| value_list COMMA error { jsonyyerror ("array member is expected after ','"); }
-	;	   
+	;
 
 
 value	: STRING  { $$ = $1; }

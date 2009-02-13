@@ -9353,14 +9353,14 @@ caddr_t bif_xml_deserialize_packed (caddr_t * qst, caddr_t * err_ret, state_slot
   dtp_t strg_dtp = DV_TYPE_OF (strg);
   if (DV_STRING == strg_dtp)
     {
-  scheduler_io_data_t iod;
-  dk_session_t ses;
-  memset (&ses, 0, sizeof (ses));
-  memset (&iod, 0, sizeof (iod));
-  ses.dks_in_buffer = strg;
-  ses.dks_in_fill = box_length (strg) - 1;
-  SESSION_SCH_DATA ((&ses)) = &iod;
-  xte_deserialize_packed (&ses, &res, NULL);
+      scheduler_io_data_t iod;
+      dk_session_t ses;
+      memset (&ses, 0, sizeof (ses));
+      memset (&iod, 0, sizeof (iod));
+      ses.dks_in_buffer = strg;
+      ses.dks_in_fill = box_length (strg) - 1;
+      SESSION_SCH_DATA ((&ses)) = &iod;
+      xte_deserialize_packed (&ses, &res, NULL);
     }
   else
     {
@@ -9981,7 +9981,7 @@ xml_tree_init (void)
   UNAME_IT(uname__bang_name			, " !name"			);
   UNAME_IT(uname__bang_ns			, " !ns"			);
   UNAME_IT(uname__bang_uri			, " !uri"			);
-  UNAME_IT(uname__bang_use_attribute_sets	, " !use-attribute-sets"		);
+  UNAME_IT(uname__bang_use_attribute_sets	, " !use-attribute-sets"	);
   UNAME_IT(uname__bang_xmlns			, " !xmlns"			);
   UNAME_IT(uname__attr				, " attr"			);
   UNAME_IT(uname__comment			, " comment"			);

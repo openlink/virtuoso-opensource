@@ -1560,7 +1560,7 @@ XMLRPC2SOAP (INOUT BODY VARCHAR)
       };
     if (registry_get ('__debug_xmlrpc') = '1')
       dbg_obj_print (BODY);
-  tmp := xml_tree_doc (BODY);
+    tmp := xml_tree_doc (BODY);
   }
   ret := xslt ('http://local.virt/xmlrpc_soap', tmp, vector ('call', '1'));
   ses := string_output ();

@@ -447,20 +447,20 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
             return;
           case IN_L:
             if (SSG_SD_IN & ssg->ssg_sd_flags)
-          {
-            int argctr, argcount;
-            ssg_sdprint_tree (ssg, tree->_.builtin.args[0]);
-            ssg_puts (" IN (");
-            ssg->ssg_indent++;
-            argcount = BOX_ELEMENTS (tree->_.builtin.args);
-            for (argctr = 1; argctr < argcount; argctr++)
               {
-                if (argctr > 1)
-                  ssg_putchar (',');
-                ssg_sdprint_tree (ssg, tree->_.builtin.args[argctr]);
-              }
-            ssg_putchar (')');
-            ssg->ssg_indent--;
+                int argctr, argcount;
+                ssg_sdprint_tree (ssg, tree->_.builtin.args[0]);
+                ssg_puts (" IN (");
+                ssg->ssg_indent++;
+                argcount = BOX_ELEMENTS (tree->_.builtin.args);
+                for (argctr = 1; argctr < argcount; argctr++)
+                  {
+                    if (argctr > 1)
+                      ssg_putchar (',');
+                    ssg_sdprint_tree (ssg, tree->_.builtin.args[argctr]);
+                  }
+                ssg_putchar (')');
+                ssg->ssg_indent--;
               }
             else
               {
@@ -604,18 +604,18 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
             SPART *outer_gp = ssg->ssg_sd_outer_gps->data;
             if (NULL != outer_gp)
               {
-            count = BOX_ELEMENTS (outer_gp->_.gp.filters);
-            for (ctr = count - outer_gp->_.gp.glued_filters_count; ctr < count; ctr++)
-              {
-                SPART * filt = outer_gp->_.gp.filters [ctr];
-                ssg_newline (0);
-                ssg_puts ("FILTER (");
-                ssg->ssg_indent++;
-                ssg_sdprint_tree (ssg, filt);
-                ssg->ssg_indent--;
-                ssg_puts (" )");
+                count = BOX_ELEMENTS (outer_gp->_.gp.filters);
+                for (ctr = count - outer_gp->_.gp.glued_filters_count; ctr < count; ctr++)
+                  {
+                    SPART * filt = outer_gp->_.gp.filters [ctr];
+                    ssg_newline (0);
+                    ssg_puts ("FILTER (");
+                    ssg->ssg_indent++;
+                    ssg_sdprint_tree (ssg, filt);
+                    ssg->ssg_indent--;
+                    ssg_puts (" )");
+                  }
               }
-          }
           }
         t_set_pop (&(ssg->ssg_sd_outer_gps));
         t_set_pop (&(ssg->ssg_sd_outer_gps));
@@ -661,14 +661,14 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
           {
             ptrlong arg_type = SPART_TYPE (arg);
             if (0 != ctr)
-            ssg_newline (0);
+              ssg_newline (0);
             while ((SPAR_ALIAS == arg_type) && !((SSG_SD_BI & ssg->ssg_sd_flags)))
               {
                 arg = arg->_.alias.arg;
                 arg_type = SPART_TYPE (arg);
-          }
+              }
             switch (arg_type)
-          {
+              {
               case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL: case SPAR_ALIAS:
                 ssg_sdprint_tree (ssg, arg);
                 break;
@@ -681,7 +681,7 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
                 ssg_putchar (')');
                 ssg->ssg_indent--;
                 break;
-          }
+              }
           }
         END_DO_BOX_FAST;
         for (srcctr = 0; srcctr < srccount; srcctr++)
@@ -702,26 +702,26 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
         ssg_sdprint_tree (ssg, tree->_.req_top.pattern);
         if (ASK_L != tree->_.req_top.subtype)
           {
-        if (0 != BOX_ELEMENTS_0 (tree->_.req_top.groupings))
-          {
-            ssg_newline (0);
-            ssg_puts ("GROUP BY ");
+            if (0 != BOX_ELEMENTS_0 (tree->_.req_top.groupings))
+              {
+                ssg_newline (0);
+                ssg_puts ("GROUP BY ");
                 ssg_sdprint_tree_list (ssg, tree->_.req_top.groupings, ' ');
-          }
-        if (0 != BOX_ELEMENTS_0 (tree->_.req_top.order))
-          {
-            ssg_newline (0);
-            ssg_puts ("ORDER BY ");
+              }
+            if (0 != BOX_ELEMENTS_0 (tree->_.req_top.order))
+              {
+                ssg_newline (0);
+                ssg_puts ("ORDER BY ");
                 ssg_sdprint_tree_list (ssg, tree->_.req_top.order, ' ');
-          }
+              }
             if ((NULL != tree->_.req_top.limit) && (SPARP_MAXLIMIT != unbox (tree->_.req_top.limit)))
               {
                 ssg_newline (0);
                 ssg_puts ("LIMIT ");
                 ssg_sdprin_literal (ssg, (SPART *)(tree->_.req_top.limit));
-      }
+              }
             if (NULL != tree->_.req_top.offset)
-      {
+              {
                 ssg_newline (0);
                 ssg_puts ("OFFSET ");
                 ssg_sdprin_literal (ssg, (SPART *)(tree->_.req_top.offset));
@@ -926,7 +926,7 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
     case SPAR_GRAPH:
       {
         switch (tree->_.graph.subtype)
-      {
+          {
           case SPART_GRAPH_FROM: ssg_puts (" FROM "); break;
           case SPART_GRAPH_NAMED: ssg_puts (" FROM NAMED "); break;
           case SPART_GRAPH_NOT_FROM: ssg_puts (" NOT FROM "); break;

@@ -99,5 +99,5 @@ ddl_repl_init (void)
 void
 bif_repl_init (void)
 {
-      sched_cli = client_connection_create ();
+  sched_cli = client_connection_create ();
 }

@@ -86,10 +86,10 @@ bif_regexp_str_arg (caddr_t * qst, state_slot_t ** args, int nth,
   *err_ret = NULL;
   if (((uint32) nth) >= BOX_ELEMENTS (args))
     SET_INVALID_ARG("Missing argument %d to %s");
-      arg = bif_arg (qst, args, nth, func);
+  arg = bif_arg (qst, args, nth, func);
   arg_dtp = DV_TYPE_OF (arg);
   if (DV_RDF == arg_dtp)
-	{
+    {
       rdf_box_t *rb = (rdf_box_t *)arg;
       if (!rb->rb_is_complete)
         SET_INVALID_ARG("Argument %d of %s is an incomplete RDF box. Must be complete RDF box or narrow or wide string");
@@ -98,12 +98,12 @@ bif_regexp_str_arg (caddr_t * qst, state_slot_t ** args, int nth,
       if (*utf8 == 1)
         return rb->rb_box;
       if (*utf8 == 0)
-	    {
-	      *utf8 = 1;
+        {
+          *utf8 = 1;
           return rb->rb_box;
-	    }
+        }
       SET_INVALID_ARG("Invalid argument %d to %s. Must be narrow string");
-	    }
+    }
   if (DV_DB_NULL == DV_TYPE_OF (arg))
     return NULL;
   if (*utf8 == 1)
@@ -113,14 +113,14 @@ bif_regexp_str_arg (caddr_t * qst, state_slot_t ** args, int nth,
       if (DV_WIDE == arg_dtp || DV_LONG_WIDE == arg_dtp)
         return (*ret_to_free = box_wide_as_utf8_char (arg, box_length (arg) / sizeof (wchar_t) - 1, DV_SHORT_STRING));
       SET_INVALID_ARG("Invalid argument %d to %s. Must be narrow or wide string or an complete string RDF box");
-	}
+    }
   if (*utf8 == 0)
-	{
+    {
       if (DV_WIDE == arg_dtp || DV_LONG_WIDE == arg_dtp)
-	    {
+        {
           *utf8 = 1;
           return (*ret_to_free = box_wide_as_utf8_char (arg, box_length (arg) / sizeof (wchar_t) - 1, DV_SHORT_STRING));
-	    }
+        }
       if (DV_STRING == arg_dtp || DV_UNAME == arg_dtp)
         return arg;
       SET_INVALID_ARG("Invalid argument %d to %s. Must be narrow or wide string or an complete string RDF box");
@@ -128,7 +128,7 @@ bif_regexp_str_arg (caddr_t * qst, state_slot_t ** args, int nth,
   /* The rest is for *utf8 == 2 */
   if (DV_STRING == arg_dtp || DV_UNAME == arg_dtp)
     return arg;
-	    SET_INVALID_ARG("Invalid argument %d to %s. Must be narrow string");
+  SET_INVALID_ARG("Invalid argument %d to %s. Must be narrow string");
   return NULL;
 }
 
@@ -157,7 +157,7 @@ regexp_optchars_to_bits (const char *strg)
 #define PCRE_UTF8               0x0800
 #define PCRE_NO_AUTO_CAPTURE    0x1000
         */
-	}
+        }
     }
   return res;
 }

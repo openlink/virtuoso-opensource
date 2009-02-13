@@ -54,7 +54,7 @@ create procedure RDF_VOID_STORE (in graph varchar, in to_graph_name varchar := n
   declare host varchar;
 
   if (src is null)
-  ses := RDF_VOID_GEN (graph);
+    ses := RDF_VOID_GEN (graph);
   else
     ses := src;
   if (to_graph_name is null)
@@ -83,7 +83,7 @@ create procedure RDF_VOID_GEN (in graph varchar, in gr_name varchar := null)
   if (is_http_ctx ())
     host := http_request_header(http_request_header (), 'Host', null, null);
   if (host is null)
-  host := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+    host := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
 
   cnt := (sparql define input:storage "" select count(*) where { graph `iri (?:graph)` { ?s ?p ?o . } });
 

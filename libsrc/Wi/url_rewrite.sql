@@ -327,9 +327,9 @@ returns varchar
         cur := subseq (format, pos1, pos3);
       pos2 := pos3;
       j := 0;
---      dbg_obj_princ('cur: ', cur, params[i+1]);
+-- dbg_obj_princ('cur: ', cur, params[i+1]);
       long_path := concat (long_path, sprintf (cur, coalesce( params[i+1], 0)));
---      dbg_obj_princ('long_path: ', long_path);
+-- dbg_obj_princ('long_path: ', long_path);
       if (pos3 > 0)
         i := i + 2;
     }
@@ -396,7 +396,7 @@ returns varchar
       if (position (target_params[i], nice_params))
 	{
 	  if (j < length (nice_parts))
-        val := nice_parts[j];
+            val := nice_parts[j];
           else
 	    val := '';
 	}
@@ -424,7 +424,7 @@ end_scan:
   long_path := replace (long_path, '<PERCENT>', '%');
   if (isstring (host))
     {
-    long_path := replace (long_path, '^{URIQADefaultHost}^', host);
+      long_path := replace (long_path, '^{URIQADefaultHost}^', host);
       if (strstr (long_path, '^{DynamicLocalFormat}^') is not null)
         {
           if (strchr (host, ':') is not null)
@@ -504,10 +504,10 @@ create procedure DB.DBA.URLREWRITE_APPLY_RECURSIVE (
                 }
               else if (URR_RULE_TYPE = 1)
                 {
---                  dbg_obj_princ('parts11: ', nice_lpath, URR_NICE_FORMAT);
+-- dbg_obj_princ('parts11: ', nice_lpath, URR_NICE_FORMAT);
                   _result := regexp_parse (URR_NICE_FORMAT, nice_lpath, 0);
 --		  dbg_obj_print (regexp_match (URR_NICE_FORMAT, nice_lpath));
---                  dbg_obj_princ('parts22: ', _result);
+-- dbg_obj_princ('parts22: ', _result);
                   if (_result is null)
 		    {
 		      if (URR_NO_CONTINUATION = 2)
@@ -525,7 +525,7 @@ create procedure DB.DBA.URLREWRITE_APPLY_RECURSIVE (
                         start_index := 2;
                       for (k := start_index; k < parse_len; k := k + 2)
                         {
-                          --  dbg_obj_princ('cur: ', _result[k], _result[k+1], subseq (nice_lpath, _result[k], _result[k + 1]));
+                          -- dbg_obj_princ('cur: ', _result[k], _result[k+1], subseq (nice_lpath, _result[k], _result[k + 1]));
 			  if (_result[k] < 0 or _result[k + 1] < 0)
 			    parts := vector_concat (parts, vector (null));
 			  else
@@ -673,7 +673,7 @@ create procedure DB.DBA.URLREWRITE_TRY_INVERSE (
     {
       declare parts, full_list_params, long_get_params any;
       declare _result, var_name, var_value varchar;
---      dbg_obj_princ('\r\nBegin3: ', rule_iri, URR_RULE_TYPE, URR_NICE_FORMAT, NICE_PARAMS_VEC, URR_NICE_MIN_PARAMS, URR_TARGET_FORMAT, TARGET_PARAMS_VEC, URR_TARGET_EXPR);
+-- dbg_obj_princ('\r\nBegin3: ', rule_iri, URR_RULE_TYPE, URR_NICE_FORMAT, NICE_PARAMS_VEC, URR_NICE_MIN_PARAMS, URR_TARGET_FORMAT, TARGET_PARAMS_VEC, URR_TARGET_EXPR);
       if (URR_RULE_TYPE = 0)
         {
           parts := sprintf_inverse (_lpath, URR_TARGET_FORMAT, 2);
@@ -818,7 +818,7 @@ create procedure DB.DBA.URLREWRITE_TRY_INVERSE (
 				error_report := 'The rule ' || rule_iri || ' is not for this URL';
 				return;
 			}
---          dbg_obj_princ('VSPRINTF: ', URR_NICE_FORMAT, nice_params, number_of_values);
+-- dbg_obj_princ('VSPRINTF: ', URR_NICE_FORMAT, nice_params, number_of_values);
           nice_path := DB.DBA.URLREWRITE_VPRINTF (URR_NICE_FORMAT, nice_params, number_of_values);
           if (number_of_values > 0)
             {
@@ -1178,7 +1178,7 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
 	}
       else
 	{
-      qstr := http_request_get ('QUERY_STRING');
+	  qstr := http_request_get ('QUERY_STRING');
 	}
       accept := http_request_header (lines, 'Accept');
       if (not isstring (accept))
@@ -1253,17 +1253,17 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
 	  return 1;
 	}
       else if (http_redir = 300) -- TCN
-	{
+        {
 	  http_status_set (http_redir);
 	  http_body_read ();
 	  return 1;
         }
       else if (isinteger (http_redir) and http_redir > 399)
-	    {
-	      http_status_set (http_redir);
-	      http_body_read ();
-	      return 1;
-	    }
+	{
+	  http_status_set (http_redir);
+	  http_body_read ();
+	  return 1;
+	}
       else
         {
 	  hf := rfc1808_parse_uri (long_url);

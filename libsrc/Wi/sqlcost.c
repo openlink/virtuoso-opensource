@@ -58,12 +58,12 @@ dbe_key_count (dbe_key_t * key)
 	   || ABS (tb->tb_count_delta ) > tb->tb_count_estimate / 5)
     {
       if (find_remote_table (tb->tb_name, 0))
-      return 10000; /* if you know nothing, assume a remote table is 10K rows */
+	return 10000; /* if you know nothing, assume a remote table is 10K rows */
       tb->tb_count_estimate = key_count_estimate (tb->tb_primary_key, 3, 1);
       tb->tb_count_delta = 0;
       return MAX (1, tb->tb_count_estimate);
     }
-  else 
+  else
     return MAX (1, ((long)(tb->tb_count_estimate + tb->tb_count_delta)));
 }
 
@@ -129,7 +129,7 @@ float arity_scale (float ar);
 #endif
 
 
-int 
+int
 sqlo_enum_col_arity (df_elt_t * pred, dbe_column_t * left_col, float * a1)
 {
   int is_allocd = 0;
@@ -149,7 +149,7 @@ sqlo_enum_col_arity (df_elt_t * pred, dbe_column_t * left_col, float * a1)
     }
   else if (DFE_IS_CONST (right))
     data = (caddr_t) right->dfe_tree;
-  else 
+  else
     return 0;
   place = (ptrlong*) id_hash_get (left_col->col_stat->cs_distinct, (caddr_t)&data);
   if (is_allocd)
@@ -178,57 +178,57 @@ sqlo_enum_col_arity (df_elt_t * pred, dbe_column_t * left_col, float * a1)
 void
 sqlo_eq_cost (dbe_column_t * left_col, df_elt_t * right, df_elt_t * lower, float * a1)
 {
-      if (lower && sqlo_enum_col_arity (lower, left_col, a1))
-	return;
+  if (lower && sqlo_enum_col_arity (lower, left_col, a1))
+    return;
   if (DFE_IS_CONST (right) &&
-	      left_col->col_min && left_col->col_max &&
-	      DV_TYPE_OF (left_col->col_min) != DV_DB_NULL && DV_TYPE_OF (left_col->col_max) != DV_DB_NULL &&
+      left_col->col_min && left_col->col_max &&
+      DV_TYPE_OF (left_col->col_min) != DV_DB_NULL && DV_TYPE_OF (left_col->col_max) != DV_DB_NULL &&
       (DVC_LESS == cmp_boxes ((caddr_t) right->dfe_tree, left_col->col_min,
-		 left_col->col_collation, left_col->col_collation) ||
+			      left_col->col_collation, left_col->col_collation) ||
        DVC_GREATER == cmp_boxes ((caddr_t) right->dfe_tree, left_col->col_max,
-		 left_col->col_collation, left_col->col_collation)))
-	    { /* the boundary is constant and its outside min/max */
-	      *a1 = 0.1 / left_col->col_n_distinct; /* out of range.  Because unsure, do not make  it exact 0 */
-	    }
+				 left_col->col_collation, left_col->col_collation)))
+    { /* the boundary is constant and its outside min/max */
+      *a1 = 0.1 / left_col->col_n_distinct; /* out of range.  Because unsure, do not make  it exact 0 */
+    }
   else if (DFE_IS_CONST (right) && left_col->col_hist)
-	    { /* the boundary is constant and there is a column histogram */
-	      int inx, n_level_buckets = 0;
+    { /* the boundary is constant and there is a column histogram */
+      int inx, n_level_buckets = 0;
 
-	      DO_BOX (caddr_t *, bucket, inx, ((caddr_t **)left_col->col_hist))
-		{
+      DO_BOX (caddr_t *, bucket, inx, ((caddr_t **)left_col->col_hist))
+	{
 	  if (DVC_MATCH == cmp_boxes ((caddr_t) right->dfe_tree, bucket[1],
-			left_col->col_collation, left_col->col_collation))
-		    {
-		      n_level_buckets ++;
-		    }
-		}
-	      END_DO_BOX;
+				      left_col->col_collation, left_col->col_collation))
+	    {
+	      n_level_buckets ++;
+	    }
+	}
+      END_DO_BOX;
 
-	      if (n_level_buckets > 1)
-		{ /* there are buckets where top=bottom=const */
-		  *a1 = (n_level_buckets - (float) 1.00) / BOX_ELEMENTS (left_col->col_hist);
-		}
-	      else
-		{
-		  if (left_col->col_n_distinct < BOX_ELEMENTS_INT (left_col->col_hist))
-		    { /* it's a rare value */
-		      *a1 = (float) (1.00 / (BOX_ELEMENTS (left_col->col_hist) * 2));
-		    }
-		  else
-		    *a1 = (float) (1.00 / left_col->col_n_distinct);
-		}
+      if (n_level_buckets > 1)
+	{ /* there are buckets where top=bottom=const */
+	  *a1 = (n_level_buckets - (float) 1.00) / BOX_ELEMENTS (left_col->col_hist);
+	}
+      else
+	{
+	  if (left_col->col_n_distinct < BOX_ELEMENTS_INT (left_col->col_hist))
+	    { /* it's a rare value */
+	      *a1 = (float) (1.00 / (BOX_ELEMENTS (left_col->col_hist) * 2));
 	    }
 	  else
-	    {
-	      if (left_col->col_n_distinct > 0)
-		{
-		  *a1 = (float) (1.00 / left_col->col_n_distinct);
-		}
-	      else
-		{
-		  *a1 = 0.1;
-		}
-	    }
+	    *a1 = (float) (1.00 / left_col->col_n_distinct);
+	}
+    }
+  else
+    {
+      if (left_col->col_n_distinct > 0)
+	{
+	  *a1 = (float) (1.00 / left_col->col_n_distinct);
+	}
+      else
+	{
+	  *a1 = 0.1;
+	}
+    }
 }
 
 
@@ -351,7 +351,7 @@ sqlo_pred_unit (df_elt_t * lower, df_elt_t * upper, float * u1, float * a1)
 	      if (DV_ANY == left_col->col_sqt.sqt_dtp)
 		*a1 = 1; /* in rdf, sometimes a type check isiri_id becomes a like.  It is always true.  Almost needless test. */
 	      else
-	      *a1 = MIN (5.0 / left_col->col_n_distinct, 0.8);
+		*a1 = MIN (5.0 / left_col->col_n_distinct, 0.8);
 	    }
 	  else
 	    {
@@ -556,7 +556,7 @@ sqlo_rdf_obj_const_value (ST * tree, caddr_t * val_ret, caddr_t *lang_ret)
       && DV_STRINGP (tree->_.call.name) && nc_strstr (tree->_.call.name, "obj_of_sqlval")
       && DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree->_.call.params[0]))
     {
-      if (val_ret) 
+      if (val_ret)
 	*val_ret = (caddr_t) tree->_.call.params[0];
       return RDF_UNTYPED;
     }
@@ -565,7 +565,7 @@ sqlo_rdf_obj_const_value (ST * tree, caddr_t * val_ret, caddr_t *lang_ret)
       && DV_STRINGP (tree->_.call.params[0])
       && DV_STRINGP (tree->_.call.params[2]))
     {
-      if (val_ret) 
+      if (val_ret)
 	*val_ret = (caddr_t) tree->_.call.params[0];
       if (lang_ret)
 	*lang_ret = (caddr_t) tree->_.call.params[2];
@@ -690,7 +690,7 @@ sample_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
 	    return KS_CAST_UNDEF;
 
 	}
-      else 
+      else
 	return KS_CAST_UNDEF;
       if (IS_IRI_DTP (sp->sp_col->col_sqt.sqt_dtp))
 	{
@@ -817,7 +817,7 @@ dfe_const_to_spec (df_elt_t * lower, df_elt_t * upper, dbe_key_t * key,
   dbe_column_t * left_col;
   if (in_list)
     left_col = in_list[0]->_.col.col;
-  else 
+  else
     left_col = lower->_.bin.left->_.col.col;
   if (left_col == (dbe_column_t *) CI_ROW)
     SQL_GPF_T(NULL);
@@ -1018,7 +1018,7 @@ dfe_hash_fill_unit (df_elt_t * dfe, float arity)
 }
 
 
-float 
+float
 sqlo_inx_intersect_cost (df_elt_t * tb_dfe, dk_set_t col_preds, dk_set_t group, float * arity_ret)
 {
   /* Complicated.  Cost of inx int is the cost of the smallest term times no of terms.
@@ -1076,9 +1076,9 @@ sqlo_inx_intersect_cost (df_elt_t * tb_dfe, dk_set_t col_preds, dk_set_t group, 
  get_main_row:
   min = min * n_inx * 0.7;
   total_cost = min + (*arity_ret *
-	  (dbe_key_unit_cost (tb->tb_primary_key) 
+	  (dbe_key_unit_cost (tb->tb_primary_key)
 	   + dbe_key_row_cost (tb->tb_primary_key, NULL)));
-    
+
   DO_SET (df_elt_t *, pred, &tb_dfe->_.table.col_preds)
     {
       DO_SET (df_inx_op_t *, dio, &group)
@@ -1110,7 +1110,7 @@ pred_const_rhs (df_elt_t * pred)
 	nth_in = 0;
       r = in_list[nth_in + 1 >= BOX_ELEMENTS (in_list) ? 0 : nth_in + 1];
     }
-  else 
+  else
     r = pred->_.bin.right;
   if (!r)
     return 0;
@@ -1217,7 +1217,7 @@ dfe_table_cost_1 (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, 
 		  inx_uppers[inx_const_fill] = upper;
 		  inx_const_fill++;
 		}
-	      else 
+	      else
 		{
 		  is_inx_const = 0;
 		  if (inx_const_fill && nth_part == inx_const_fill)
@@ -1237,21 +1237,21 @@ dfe_table_cost_1 (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, 
       if (!(lower && BOP_EQ == lower->_.bin.op))
 	{
 	  /* if there is already an eq on the col, we do not give extra selectivity for more conds.  The multiple eqs are mutually eq as generated by sparql */
-      DO_SET (df_elt_t *, pred, &dfe->_.table.col_preds)
-	{
-	  df_elt_t ** in_list = sqlo_in_list (pred, NULL, NULL);
-	  dbe_column_t * left_col = in_list ? in_list[0]->_.col.col : 
-	    (pred->_.bin.left->dfe_type == DFE_COLUMN ? pred->_.bin.left->_.col.col : NULL);
-	  if (DFE_TEXT_PRED == pred->dfe_type)
-	    continue;
-	  if (DFE_BOP_PRED == pred->dfe_type && part == left_col && pred != lower && pred != upper)
+	  DO_SET (df_elt_t *, pred, &dfe->_.table.col_preds)
 	    {
-	      sqlo_pred_unit (pred, NULL, &p_cost, &p_arity);
-	      col_arity *= p_arity;
-	      col_cost += p_cost * col_arity;
+	      df_elt_t ** in_list = sqlo_in_list (pred, NULL, NULL);
+	      dbe_column_t * left_col = in_list ? in_list[0]->_.col.col :
+		(pred->_.bin.left->dfe_type == DFE_COLUMN ? pred->_.bin.left->_.col.col : NULL);
+	      if (DFE_TEXT_PRED == pred->dfe_type)
+		continue;
+	      if (DFE_BOP_PRED == pred->dfe_type && part == left_col && pred != lower && pred != upper)
+		{
+		  sqlo_pred_unit (pred, NULL, &p_cost, &p_arity);
+		  col_arity *= p_arity;
+		  col_cost += p_cost * col_arity;
+		}
 	    }
-	}
-      END_DO_SET();
+	  END_DO_SET();
 	}
       nth_part++;
       if (is_indexed && nth_part == unq_limit )
@@ -1275,7 +1275,7 @@ dfe_table_cost_1 (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, 
 	goto no_sample;
       else if (0 == inx_sample)
 	inx_arity = 0.01;
-      else 
+      else
 	inx_arity = inx_sample * inx_arity / (inx_arity_guess_for_const_parts != -1 ? inx_arity_guess_for_const_parts : inx_arity);
       /* Consider if 2 first key parts are const and third is var.  Get the real arity for the const but do not forget the guess  for  the 3rd*/
       dfe->_.table.is_arity_sure = inx_const_fill;
@@ -1285,7 +1285,7 @@ dfe_table_cost_1 (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, 
   dfe->_.table.is_unique = unique;
   if (key->key_is_bitmap)
     inx_cost *= 0.9; /* tree usually a bit less deep and anyway better working set. */
-  total_cost = inx_cost + (col_cost + ROW_SKIP_COST) * inx_arity 
+  total_cost = inx_cost + (col_cost + ROW_SKIP_COST) * inx_arity
     + dbe_key_row_cost (dfe->_.table.key, &rows_per_page) * inx_arity;
   total_cost += NEXT_PAGE_COST * inx_arity / rows_per_page;
   total_arity = inx_arity * col_arity;
@@ -1374,8 +1374,8 @@ dfe_table_cost_1 (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, 
   if (dfe->_.table.ot->ot_is_outer)
     total_arity = MAX (1, total_arity);
   /* the right of left outer has never cardinality < 1.  But the join tests etc are costed at cardinality that can be < 1. So adjust this as last.*/
-      dfe->dfe_arity = *a1 = total_arity;
-      dfe->dfe_unit = *u1 = total_cost;
+  dfe->dfe_arity = *a1 = total_arity;
+  dfe->dfe_unit = *u1 = total_cost;
 }
 
 
@@ -1458,7 +1458,7 @@ sqlo_proc_table_cost (df_elt_t * dt_dfe, float * u1, float * a1)
       *u1 = costs[0];
       *a1 = costs[1];
     }
-  else 
+  else
     {
       *u1 = 200;
       *a1 = 10;
@@ -1468,7 +1468,7 @@ sqlo_proc_table_cost (df_elt_t * dt_dfe, float * u1, float * a1)
       dtp_t name_dtp = DV_TYPE_OF (name);
       if (!IS_STRING_DTP (name_dtp) && name_dtp != DV_SYMBOL)
 	goto not_given;
-	    
+
       DO_SET (df_elt_t *, colp_dfe, &dt_dfe->_.sub.dt_preds)
 	{
 	  if (ST_P (colp_dfe->dfe_tree->_.bin_exp.left, COL_DOTTED) &&
@@ -1605,7 +1605,7 @@ dfe_unit_cost (df_elt_t * dfe, float input_arity, float * u1, float * a1, float 
 		*a1 = 1; /*for scalar subq */
 	    }
 	}
-      if (dfe->dfe_type == DFE_DT 
+      if (dfe->dfe_type == DFE_DT
 	  && dfe->_.sub.ot->ot_is_outer)
 	*a1 = MAX (1, *a1); /* right siode of left oj has min cardinality 1 */
 
@@ -1709,7 +1709,7 @@ dfe_list_cost (df_elt_t * dfe, float * unit_ret, float * arity_ret, float * over
 		      (DFE_TABLE != dfe->dfe_type || HR_REF != dfe->_.table.hash_role))
 		    {
 		      if (!dfe->dfe_unit_includes_vdb)
-		    u1 += sqlo_dfe_locus_rpc_cost (dfe->dfe_locus, dfe);
+			u1 += sqlo_dfe_locus_rpc_cost (dfe->dfe_locus, dfe);
 		      dfe->dfe_unit_includes_vdb = 1;
 		    }
 		}

@@ -31,12 +31,12 @@ create procedure DB.DBA.ddl_load_script (in _filename varchar)
       stat := '00000';
       exec (s, stat, msg);
       if (stat <> '00000')
-    {
+	{
 	  log_message (sprintf ('Error in autoexec.isql: [%s] %s', stat, msg));
 	  rollback work;
-    }
+	}
       else
-    {
+	{
 	  commit work;
 	}
     }

@@ -75,7 +75,7 @@ int remote_pk_not_unique = 0;
 int rst_alloc_count;
 int rst_free_count;
 long rds_active_cons_freed = 0;
-long rds_disconnect_timeout = 1000000; /* 1000 seconds */
+long rds_disconnect_timeout = 1000000;	/* 1000 seconds */
 long reconnect_on_vdb_error = 1;
 long vdb_no_stmt_cache = 0;
 long vdb_use_global_pool = 0;

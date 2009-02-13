@@ -133,7 +133,7 @@ bif_jso_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   jclass = box_cast_to_UTF8_uname (qst, jclass);
   cd = gethash (jclass, jso_classes);
   if (NULL == cd)
-      sqlr_new_error ("22023", "SR491", "Undefined JSO class IRI <%.500s>", jclass);
+    sqlr_new_error ("22023", "SR491", "Undefined JSO class IRI <%.500s>", jclass);
   jinstance = box_cast_to_UTF8_uname (qst, jinstance);
   inst_rtti = gethash (jinstance, jso_rttis_of_names);
   if ((NULL != inst_rtti) && (JSO_STATUS_DELETED != inst_rtti->jrtti_status))
@@ -147,18 +147,18 @@ bif_jso_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (NULL == cd)
         inst = dk_alloc_box_zero (2 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
       else
-      switch (cd->jsocd_cat)
-        {
-        case JSO_CAT_STRUCT: inst = dk_alloc_box_zero (cd->_.sd.jsosd_sizeof, DV_ARRAY_OF_POINTER); break;
-        case JSO_CAT_ARRAY:
+        switch (cd->jsocd_cat)
           {
-            int init_size = cd->_.ad.jsoad_max_length;
-            if (init_size > 16)
-              init_size = 16;
-            inst = dk_alloc_box_zero ((init_size + 1) * sizeof (caddr_t), DV_ARRAY_OF_POINTER); break;
+          case JSO_CAT_STRUCT: inst = dk_alloc_box_zero (cd->_.sd.jsosd_sizeof, DV_ARRAY_OF_POINTER); break;
+          case JSO_CAT_ARRAY:
+            {
+              int init_size = cd->_.ad.jsoad_max_length;
+              if (init_size > 16)
+                init_size = 16;
+              inst = dk_alloc_box_zero ((init_size + 1) * sizeof (caddr_t), DV_ARRAY_OF_POINTER); break;
+            }
+          default: GPF_T1("jso_new (): unknown value of jsocd_cat");
           }
-        default: GPF_T1("jso_new (): unknown value of jsocd_cat");
-        }
       inst_rtti->jrtti_self = inst;
       inst_rtti->jrtti_inst_iri = jinstance;
       inst_rtti->jrtti_class = cd;
@@ -167,7 +167,7 @@ bif_jso_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #endif
       sethash (jinstance, jso_rttis_of_names, inst_rtti);
       if (NULL != cd)
-      sethash (jinstance, cd->jsocd_rttis, inst_rtti);
+        sethash (jinstance, cd->jsocd_rttis, inst_rtti);
       sethash (inst, jso_rttis_of_structs, inst_rtti);
     }
   inst_rtti->jrtti_status = JSO_STATUS_NEW;
@@ -180,7 +180,7 @@ jso_get_cd_and_rtti (ccaddr_t jclass, ccaddr_t jinstance, jso_class_descr_t **cd
 {
   cd_ptr[0] = gethash (jclass, jso_classes);
   if (NULL == cd_ptr[0])
-      sqlr_new_error ("22023", "SR500", "Undefined JSO class IRI <%.500s>", jclass);
+    sqlr_new_error ("22023", "SR500", "Undefined JSO class IRI <%.500s>", jclass);
   inst_rtti_ptr[0] = gethash (jinstance, jso_rttis_of_names);
   if (NULL == inst_rtti_ptr[0])
     {
@@ -301,35 +301,35 @@ jso_validate (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known, in
           {
             while ((0 < used_length) && (NULL == inst[used_length - 1])) used_length--;
           }
-            if (used_length < cd->_.ad.jsoad_min_length)
-              {
-                SET_STATUS_FAILED;
-                sqlr_new_error ("22023", "SR526", "JSO array instance <%.500s> of type <%.500s> is only %ld items long, should have at least %ld",
-                  inst_rtti->jrtti_inst_iri, inst_rtti->jrtti_class->jsocd_class_iri, (long)used_length, (long)(cd->_.ad.jsoad_min_length) );
-              }
-            for (ctr = 0; ctr < used_length; ctr++)
+        if (used_length < cd->_.ad.jsoad_min_length)
+          {
+            SET_STATUS_FAILED;
+            sqlr_new_error ("22023", "SR526", "JSO array instance <%.500s> of type <%.500s> is only %ld items long, should have at least %ld",
+              inst_rtti->jrtti_inst_iri, inst_rtti->jrtti_class->jsocd_class_iri, (long)used_length, (long)(cd->_.ad.jsoad_min_length) );
+          }
+        for (ctr = 0; ctr < used_length; ctr++)
           {
             jso_rtti_t * sub = ((jso_rtti_t **)(inst))[ctr];
             if (NULL == sub)
-                {
-                  SET_STATUS_FAILED;
-                  sqlr_new_error ("22023", "SR527", "JSO array instance <%.500s> of type <%.500s> contains uninitialized element %ld",
-                    inst_rtti->jrtti_inst_iri, inst_rtti->jrtti_class->jsocd_class_iri, (long)ctr );
+              {
+                SET_STATUS_FAILED;
+                sqlr_new_error ("22023", "SR527", "JSO array instance <%.500s> of type <%.500s> contains uninitialized element %ld",
+                  inst_rtti->jrtti_inst_iri, inst_rtti->jrtti_class->jsocd_class_iri, (long)ctr );
                 continue;
-                }
+              }
             switch (DV_TYPE_OF (sub))
               {
               case DV_CUSTOM:
-            if (NULL != fld_type_cd)
-              {
-                if (sub->jrtti_class->jsocd_class_iri != cd->_.ad.jsoad_member_type)
+                if (NULL != fld_type_cd)
                   {
-                    SET_STATUS_FAILED;
-                    sqlr_new_error ("22023", "SR531", "Item # %d of JSO array <%.500s> of type <%.500s> is of wrong type <%.500s>, must be <%.500s>",
-                      ctr, inst_rtti->jrtti_inst_iri, inst_rtti->jrtti_class->jsocd_class_iri,
-                      sub->jrtti_class->jsocd_class_iri, cd->_.ad.jsoad_member_type );
+                    if (sub->jrtti_class->jsocd_class_iri != cd->_.ad.jsoad_member_type)
+                      {
+                        SET_STATUS_FAILED;
+                        sqlr_new_error ("22023", "SR531", "Item # %d of JSO array <%.500s> of type <%.500s> is of wrong type <%.500s>, must be <%.500s>",
+                          ctr, inst_rtti->jrtti_inst_iri, inst_rtti->jrtti_class->jsocd_class_iri,
+                          sub->jrtti_class->jsocd_class_iri, cd->_.ad.jsoad_member_type );
+                      }
                   }
-              }
                 break;
               case DV_LONG_INT:
                 if (&jso_cd_array_of_any != cd)
@@ -528,7 +528,7 @@ jso_pin (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known)
       switch (DV_TYPE_OF(sub))
         {
         case DV_CUSTOM:
-            inst[ctr] = ((jso_rtti_t *)sub)->jrtti_self;
+          inst[ctr] = ((jso_rtti_t *)sub)->jrtti_self;
           break;
         case DV_LONG_INT:
           ((ptrlong *)(inst+ctr))[0] = unbox (inst[ctr]);
@@ -722,7 +722,7 @@ bif_jso_set_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int do
         }
     }
   if (uname_xmlschema_ns_uri_hash_any != dt)
-  fld_type_cd = gethash (dt, jso_classes);
+    fld_type_cd = gethash (dt, jso_classes);
   else
     fld_type_cd = NULL;
   if (do_set)
@@ -774,7 +774,7 @@ bif_jso_set_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int do
           if (arg_is_iri && (DV_STRING == arg_dtp))
             fld_ptr[0] = box_dv_uname_string (arg);
           else
-          fld_ptr[0] = ((NULL == arg) ? box_num_nonull (0) : box_copy_tree (arg));
+            fld_ptr[0] = ((NULL == arg) ? box_num_nonull (0) : box_copy_tree (arg));
           goto make_retval; /* see below */
         }
       if (uname_xmlschema_ns_uri_hash_anyURI == dt)
@@ -922,14 +922,14 @@ jso_get_field_value_as_o (caddr_t val, ccaddr_t fld_type, int fld_req, ptrlong s
     }
   if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (val))
     {
-          jso_rtti_t *sub = gethash (val, jso_rttis_of_structs);
-          if (NULL == sub)
-            return box_dv_uname_string (VIRTRDF_NS_URI "PointerToCorrupted");
-          else if (sub->jrtti_self != val)
-            return box_dv_uname_string (VIRTRDF_NS_URI "PointerToStaleDeleted");
-          else
-            return box_copy (((jso_rtti_t *)(sub))->jrtti_inst_iri);
-        }
+      jso_rtti_t *sub = gethash (val, jso_rttis_of_structs);
+      if (NULL == sub)
+        return box_dv_uname_string (VIRTRDF_NS_URI "PointerToCorrupted");
+      else if (sub->jrtti_self != val)
+        return box_dv_uname_string (VIRTRDF_NS_URI "PointerToStaleDeleted");
+      else
+        return box_copy (((jso_rtti_t *)(sub))->jrtti_inst_iri);
+    }
   if (DV_CUSTOM == DV_TYPE_OF (val))
     {
       jso_rtti_t *val_as_rtti = (jso_rtti_t *)val;
@@ -973,7 +973,7 @@ jso_rtti_proplist (caddr_t iri, jso_rtti_t *rtti, void *acc_env)
     {
       dk_set_push (&(acc->acc_set), list (3, box_copy (iri),
           box_dv_uname_string (VIRTRDF_NS_URI "jso-type"), box_copy_tree (cd->jsocd_class_iri)) );
-    return;
+      return;
     }
   dk_set_push (&(acc->acc_set), list (3, box_copy (iri),
       uname_rdf_ns_uri_type, box_copy_tree (cd->jsocd_class_iri)) );

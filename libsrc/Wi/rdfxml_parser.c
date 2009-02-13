@@ -48,13 +48,13 @@ extern "C" {
 
 #define XRL_SET_INHERITABLE(xrl,name,value,errmsg) do { \
     if (xrl->name##_set) \
-    { \
-      dk_free_tree ((value)); \
+      { \
+        dk_free_tree ((value)); \
         xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 200, errmsg); \
         return ;\
-    } \
-  xrl->name = (value); \
-  xrl->name##_set = 1; \
+      } \
+    xrl->name = (value); \
+    xrl->name##_set = 1; \
   } while (0)
 
 #define XRL_SET_NONINHERITABLE(xrl,name,value,errmsg) do { \
@@ -93,7 +93,7 @@ xp_rdfxml_get_name_parts (xp_node_t * xn, char * name, int use_default, caddr_t 
   else
     {
       ns_len = 0;
-    local = name;
+      local = name;
     }
   ctx_xn = xn;
   while (ctx_xn)
@@ -337,7 +337,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
         }
       else
         {
-        xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 200, "Unknown element in RDF namespace");
+          xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 200, "Unknown element in RDF namespace");
           return;
         }
     }
@@ -389,7 +389,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
               caddr_t inner_subj;
               if (XRL_PARSETYPE_PROPLIST == outer->xrl_parsetype)
                 {
-                xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:about' can not appear in element that is supposed to be property name");
+                  xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:about' can not appear in element that is supposed to be property name");
                   return;
                 }
               inner_subj = xp_rdfxml_resolved_iid (xp, avalue, 0);
@@ -401,7 +401,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
               caddr_t inner_subj;
               if (XRL_PARSETYPE_PROPLIST != outer->xrl_parsetype)
                 {
-                xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:resource' can appear only in element that is supposed to be property name");
+                  xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:resource' can appear only in element that is supposed to be property name");
                   return;
                 }
               inner_subj = xp_rdfxml_resolved_iid (xp, avalue, 0);
@@ -439,7 +439,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
             {
               if (XRL_PARSETYPE_PROPLIST != outer->xrl_parsetype)
                 {
-                xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:datatype' can appear only in property elements");
+                  xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:datatype' can appear only in property elements");
                   return;
                 }
               XRL_SET_NONINHERITABLE (inner, xrl_datatype, xp_rdfxml_resolved_iid (xp, avalue, 0),  "Attribute 'rdf:datatype' us used twice");
@@ -449,7 +449,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
             {
               if (XRL_PARSETYPE_PROPLIST != outer->xrl_parsetype)
                 {
-                xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:parseType' can appear only in property elements");
+                  xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:parseType' can appear only in property elements");
                   return;
                 }
               if (!strcmp (avalue, "Resource"))
@@ -469,7 +469,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
                 }
               else
                 {
-                xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Unknown parseType");
+                  xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Unknown parseType");
                   return;
                 }
             }
@@ -501,18 +501,18 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
           continue;
         }
 push_inner_attr_prop:
-          dk_set_push (&inner_attr_props, avalue);
-          dk_set_push (&inner_attr_props, tmp_local);
-          dk_set_push (&inner_attr_props, tmp_nsuri);
-          inner->xrl_parsetype = XRL_PARSETYPE_PROPLIST;
-        }
+      dk_set_push (&inner_attr_props, avalue);
+      dk_set_push (&inner_attr_props, tmp_local);
+      dk_set_push (&inner_attr_props, tmp_nsuri);
+      inner->xrl_parsetype = XRL_PARSETYPE_PROPLIST;
+    }
   if ((NULL != inner->xrl_subject) || (NULL != inner_attr_props))
     {
       if (XRL_PARSETYPE_LITERAL == inner->xrl_parsetype)
         {
-        xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 200,
-          "Conflicting attributes: property value can not be a node and a literal simultaneously" );
-           return;
+          xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 200,
+            "Conflicting attributes: property value can not be a node and a literal simultaneously" );
+          return;
         }
     }
 /*  if ((XRL_PARSETYPE_PROPLIST == outer->xrl_parsetype) && (NULL != outer->xrl_subject))
@@ -715,7 +715,7 @@ xp_rdfxml_character (vxml_parser_t * parser,  char * s, int len)
         while ((--tail) >= s)
           if (NULL == strchr (" \t\r\n", tail[0]))
             {
-            xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Non-whitespace character found instead of XML element");
+              xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Non-whitespace character found instead of XML element");
               return;
             }
         break;

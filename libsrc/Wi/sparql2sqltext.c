@@ -1185,9 +1185,9 @@ ssg_prin_id (spar_sqlgen_t *ssg, const char *name)
     ssg_puts (name);
   else
     {   
-  ssg_putchar ('"');
-  ssg_puts (name);
-  ssg_putchar ('"');
+      ssg_putchar ('"');
+      ssg_puts (name);
+      ssg_putchar ('"');
     }
 }
 
@@ -1331,11 +1331,11 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
       else
         {
 #ifdef DEBUG
-      if (NULL == triple->_.triple.tc_list)
-        spar_internal_error (sparp, "sparp_" "equiv_native_valmode(): NULL == qm_list");
+          if (NULL == triple->_.triple.tc_list)
+            spar_internal_error (sparp, "sparp_" "equiv_native_valmode(): NULL == qm_list");
 #endif
-      tr_valmode = triple->_.triple.native_formats[tr_idx];
-      sparp_jso_validate_format (sparp, tr_valmode);
+          tr_valmode = triple->_.triple.native_formats[tr_idx];
+          sparp_jso_validate_format (sparp, tr_valmode);
         }
       largest_intersect = ssg_largest_intersect_valmode (largest_intersect, tr_valmode);
     }
@@ -1896,8 +1896,8 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
   if ((NULL != type) || (NULL != lang))
     {
       if (((NULL == lang) && (
-        ((uname_xmlschema_ns_uri_hash_string == type) && (DV_STRING == DV_TYPE_OF (value))) ||
-        ((uname_xmlschema_ns_uri_hash_integer == type) && (DV_LONG_INT == DV_TYPE_OF (value))) ||
+          ((uname_xmlschema_ns_uri_hash_string == type) && (DV_STRING == DV_TYPE_OF (value))) ||
+          ((uname_xmlschema_ns_uri_hash_integer == type) && (DV_LONG_INT == DV_TYPE_OF (value))) ||
           ((uname_xmlschema_ns_uri_hash_double == type) && (DV_DOUBLE_FLOAT == DV_TYPE_OF (value))) ) ) ||
         ((NULL != lang) && (NULL == type) && (DV_STRING == DV_TYPE_OF (value))) )
         {
@@ -2091,7 +2091,7 @@ ssg_print_tr_var_expn (spar_sqlgen_t *ssg, SPART *var, ssg_valmode_t needed, con
   if (SPART_TRIPLE_FIELDS_COUNT <= var->_.var.tr_idx)
     qmv = (qm_value_t *)1;
   else
-  qmv = JSO_FIELD_ACCESS(qm_value_t *, qm, qm_field_map_offsets[var->_.var.tr_idx])[0];
+    qmv = JSO_FIELD_ACCESS(qm_value_t *, qm, qm_field_map_offsets[var->_.var.tr_idx])[0];
   if (NULL != qmv)
     {
       int col_count = (IS_BOX_POINTER (needed) ? needed->qmfColumnCount : 1);
@@ -3958,7 +3958,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
         if (IS_BOX_POINTER (needed))
           ssg_print_tmpl (ssg, needed, needed->qmfShortOfTypedsqlvalTmpl, NULL, NULL, tree, asname);
         else
-        ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_SQLVAL, asname);
+          ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_SQLVAL, asname);
         return;
       }
     case SPAR_QNAME:
@@ -4825,8 +4825,8 @@ if (NULL != jright_alias)
           if (SPART_TRIPLE_FIELDS_COUNT > var->_.var.tr_idx)
             {
               qm_value_t *qmv = JSO_FIELD_ACCESS(qm_value_t *, qm, qm_field_map_offsets[var->_.var.tr_idx])[0];
-          if ((NULL == qmv) && (!SPART_VARNAME_IS_GLOB (var->_.var.vname))) /* It's fixed and it's constant in qm hence it matches compile-time, no run-time check needed */
-            continue;
+              if ((NULL == qmv) && (!SPART_VARNAME_IS_GLOB (var->_.var.vname))) /* It's fixed and it's constant in qm hence it matches compile-time, no run-time check needed */
+                continue;
             }
           SPART_AUTO (var_rv, var_rv_buf, SPAR_RETVAL);
           memcpy (&(var_rv->_.retval), &(var->_.var), sizeof (var->_.var));
@@ -6735,7 +6735,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
       if (NULL == retvalmode)
         retvalmode = ((NULL != formatter) ? SSG_VALMODE_LONG : SSG_VALMODE_SQLVAL);
       if ((DISTINCT_L == subtype) && sparp_some_retvals_should_wrap_distinct (ssg->ssg_sparp, tree))
-              top_retval_flags |= SSG_RETVAL_DIST_SER_LONG;
+        top_retval_flags |= SSG_RETVAL_DIST_SER_LONG;
       if (COUNT_DISTINCT_L == subtype)
         {
           ssg_puts ("SELECT COUNT (*) AS \"callret-0\" FROM (");
@@ -7014,13 +7014,13 @@ void ssg_make_whole_sql_text (spar_sqlgen_t *ssg)
         case SPAR_REQ_TOP:
           {
             int need_rb_complete;
-          ssg->ssg_sources = ssg->ssg_tree->_.req_top.sources; /*!!!TBD merge with environment */
+            ssg->ssg_sources = ssg->ssg_tree->_.req_top.sources; /*!!!TBD merge with environment */
             need_rb_complete = ssg_req_top_needs_rb_complete (ssg);
             if (need_rb_complete)
               ssg_make_rb_complete_wrapped (ssg);
             else
-          ssg_make_sql_query_text (ssg);
-          break;
+              ssg_make_sql_query_text (ssg);
+            break;
           }
         case SPAR_CODEGEN:
           {

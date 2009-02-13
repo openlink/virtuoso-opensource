@@ -194,21 +194,21 @@ again:
   action = DKS_ESC_CHARCLASS_ACTION(wc,dks_esc_mode_base);
   switch (action)
     {
-      case ASIS:	goto out_byte_asis;
-      case LATTICE:	goto out_lattice;
+    case ASIS:		goto out_byte_asis;
+    case LATTICE:	goto out_lattice;
     case PCT:		goto out_percent;
-      case AMPATTR:	if (dks_esc_mode & DKS_ESC_COMPAT_HTML) goto out_ampattr; /* no break */
-      case AMP:		goto out_amp;
-      case GTATTR:	if (dks_esc_mode & DKS_ESC_COMPAT_HTML) goto out_byte_asis; /* no break */
-      case GT:		OUT_TO_BUF("&gt;", 4); goto char_done;
-      case LTATTR:	if (dks_esc_mode & DKS_ESC_COMPAT_HTML) goto out_byte_asis; /* no break */
-      case LT:		OUT_TO_BUF("&lt;", 4); goto char_done;
-      case QUOT:	OUT_TO_BUF("&quot;", 6); goto char_done;
-      case PLUS:	out_buf[out_buf_idx++] = '+'; goto char_done;
-      case BAD:		out_buf[out_buf_idx++] = '?'; goto char_done;
-      case SOAPCR:	if (dks_esc_mode & DKS_ESC_COMPAT_SOAP) goto out_lattice; goto out_byte_asis;
-      case COMMENT:	goto out_comment;
-      case CDATA:	goto out_cdata;
+    case AMPATTR:	if (dks_esc_mode & DKS_ESC_COMPAT_HTML) goto out_ampattr; /* no break */
+    case AMP:		goto out_amp;
+    case GTATTR:	if (dks_esc_mode & DKS_ESC_COMPAT_HTML) goto out_byte_asis; /* no break */
+    case GT:		OUT_TO_BUF("&gt;", 4); goto char_done;
+    case LTATTR:	if (dks_esc_mode & DKS_ESC_COMPAT_HTML) goto out_byte_asis; /* no break */
+    case LT:		OUT_TO_BUF("&lt;", 4); goto char_done;
+    case QUOT:		OUT_TO_BUF("&quot;", 6); goto char_done;
+    case PLUS:		out_buf[out_buf_idx++] = '+'; goto char_done;
+    case BAD:		out_buf[out_buf_idx++] = '?'; goto char_done;
+    case SOAPCR:	if (dks_esc_mode & DKS_ESC_COMPAT_SOAP) goto out_lattice; goto out_byte_asis;
+    case COMMENT:	goto out_comment;
+    case CDATA:		goto out_cdata;
     case CDATA2:
       {
         char tmp[40];
@@ -242,7 +242,7 @@ again:
 /*                            012 34567890123456789012 */
     case DOCWRI: OUT_TO_BUF ("');\ndocument.writeln('", 22); goto char_done;
     case REPEAT: out_buf[out_buf_idx++] = wc; out_buf[out_buf_idx++] = wc; goto char_done;
-      default: GPF_T;
+    default: GPF_T;
     }
 
 out_byte_asis:
@@ -359,12 +359,12 @@ flush_bad_char:
             switch (action)
               {
               case LATTICE:
-	      {
-		char tmp[20];
-		snprintf (tmp, sizeof (tmp), "&#%lu;", (unsigned long)wc);
-		session_buffered_write (ses, tmp, strlen(tmp));
-		continue;
-	      }
+                {
+		  char tmp[20];
+		  snprintf (tmp, sizeof (tmp), "&#%lu;", (unsigned long)wc);
+		  session_buffered_write (ses, tmp, strlen(tmp));
+		  continue;
+                }
 	      case PCT:
                 {
                   char temp[VIRT_MB_CUR_MAX];
@@ -385,10 +385,10 @@ flush_bad_char:
                         }                      
                       session_buffered_write (ses, pct, (pct_tail-pct));
                     }
-	    else
-	      session_buffered_write_char ('?', ses);
-	    continue;
-	  }
+                  else
+                    session_buffered_write_char ('?', ses);
+                  continue;
+                }
               case BAD:
                 session_buffered_write_char ('?', ses);
                 continue;

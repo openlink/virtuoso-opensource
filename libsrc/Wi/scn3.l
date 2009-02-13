@@ -587,8 +587,8 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
     }
   box = (iri_id_t*) t_alloc_box (sizeof (iri_id_t), DV_IRI_ID);
   *box = n;
-    yylval.box = (caddr_t) box;
-    RETURN_CODE (IRI_LIT);
+  yylval.box = (caddr_t) box;
+  RETURN_CODE (IRI_LIT);
 }
 
 <SQL>\#i[0-9]+  {

@@ -74,7 +74,7 @@ struct rdf_inf_node_s
 #define RI_CONT_RESTORE ((dk_set_t) -1)
 
 /* ri_mode */
-#define RI_SUBCLASS 1
+#define  RI_SUBCLASS 1
 #define RI_SUPERCLASS 2
 #define RI_SUBPROPERTY 3
 #define RI_SUPERPROPERTY 4

@@ -679,7 +679,7 @@ yy_new_error (const char *s, const char *state, const char *native)
 	  buf_for_next[0] = '\0';
         }
       else
-    strcpy (buf_for_next, " immediately before end of statement");
+        strcpy (buf_for_next, " immediately before end of statement");
     }
   strncat_ck (sql_err_text, buf_for_next, (sizeof (sql_err_text) - 1));
   sql_err_text [sizeof (sql_err_text)-1] = '\0';
@@ -1497,8 +1497,8 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	is_ddl = sql_is_ddl (tree);
       if (!is_ddl)
 	{
-      semaphore_leave (parse_sem);
-      inside_sem = 0;
+	  semaphore_leave (parse_sem);
+	  inside_sem = 0;
 	}
       if (cr_type == SQLC_PARSE_ONLY)
 	{
@@ -1627,7 +1627,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
   /* TREE_CHECK (tree); */
   SCS_STATE_POP;
   if (inside_sem)
-  semaphore_leave (parse_sem);
+    semaphore_leave (parse_sem);
   if (qr)
     {
       qr->qr_text = SET_QR_TEXT(qr,sc.sc_text);

@@ -143,8 +143,8 @@ blob_ref_check (db_buf_t xx, int len, it_cursor_t * itc, dtp_t col_dtp)
       if (col_dtp != DV_BLOB_BIN)
 	{
 	  box = dk_alloc_box (len, DV_LONG_STRING);
-      memcpy (box, xx + 1, len - 1);
-      box[len - 1] = 0;
+	  memcpy (box, xx + 1, len - 1);
+	  box[len - 1] = 0;
 	}
       else
 	{
@@ -871,7 +871,7 @@ box_to_boxint (caddr_t data, dtp_t dtp, oid_t col_id, caddr_t * err_ret, dbe_key
 	    MAX_NAME_LEN, dv_type_title (dtp), MAX_NAME_LEN, cl_name);
       return 0;
       }
-   }
+    }
   if (DV_INT64 == col_dtp)
     return res;
   if (DV_LONG_INT == col_dtp
@@ -1106,7 +1106,6 @@ row_set_col_cast (caddr_t data, sql_type_t *tsqt, caddr_t *err_ret,
   return res;
 }
 
-
 void
 row_set_col (db_buf_t row, dbe_col_loc_t * cl, caddr_t data, int * v_fill, int max,
 	     dbe_key_t * key,
@@ -1268,7 +1267,7 @@ row_set_col_1 (db_buf_t row, dbe_col_loc_t * cl, caddr_t data, int * v_fill, int
 	    /* to do not overflow */
 	    if (iid <= 0xFFFFFFFF)
 	      {
-	  LONG_SET (row + pos, iid);
+		LONG_SET (row + pos, iid);
 	      }
 	    else
 	      {
@@ -1306,7 +1305,7 @@ row_set_col_1 (db_buf_t row, dbe_col_loc_t * cl, caddr_t data, int * v_fill, int
       if (allow_shorten_any)
 	str = box_to_shorten_any (data, err_ret);
       else
-      str = box_to_any (data, err_ret);
+	str = box_to_any (data, err_ret);
       if (err_ret && *err_ret)
 	return;
       ITC_OWNS_PARAM (ins_itc, str);
@@ -1691,10 +1690,10 @@ xmltype_in_blob_ok: ;
 IN009:
   {
     char* cl_name = __get_column_name (cl->cl_col_id, key);
-  *err_ret = srv_make_new_error ("22005", "IN009",
-				   "Max row length of column [%.*s] exceeded",
-				   MAX_NAME_LEN, cl_name);
-  return;
+    *err_ret = srv_make_new_error ("22005", "IN009",
+        "Max row length of column [%.*s] exceeded",
+        MAX_NAME_LEN, cl_name);
+    return;
   }
 null_as_blob_from_client:
   if (!IS_BLOB_HANDLE_DTP (DV_TYPE_OF (data)))

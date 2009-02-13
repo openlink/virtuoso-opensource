@@ -761,7 +761,7 @@ cli_set_default_qual (client_connection_t * cli)
 	  LOG_GET;
 	  len = strlen (loc + 2);
 	  if (len < MAX_NAME_LEN)
-	cli->cli_qualifier = box_dv_short_string (loc + 2);
+	    cli->cli_qualifier = box_dv_short_string (loc + 2);
 	  else
 	    log_error ("Client from %s is trying to set invalid qualifier of length=%d", from, len);
 	}
@@ -1059,7 +1059,7 @@ sf_sql_connect (char *username, char *password, char *cli_ver, caddr_t *info)
   cli = client_connection_create ();
   if (info)
     {
-    cli->cli_user_info = box_dv_short_string (info[LGID_APP_NAME]);
+      cli->cli_user_info = box_dv_short_string (info[LGID_APP_NAME]);
       cli->cli_info = box_copy_tree (info);
     }
   DKS_DB_DATA (client) = cli;
@@ -1100,8 +1100,8 @@ sf_sql_connect (char *username, char *password, char *cli_ver, caddr_t *info)
 	    err = srv_make_new_error ("28000", "SR311",
 		"Bad login");
 	  else
-	  err = srv_make_new_error ("08004", "SR311",
-	      "Shutting down the server permitted only to DBA group");
+	    err = srv_make_new_error ("08004", "SR311",
+		"Shutting down the server permitted only to DBA group");
 	  DKST_RPC_DONE (client);
 	  PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, FINAL, 1);
 	  dk_free_tree (err);
@@ -1126,25 +1126,25 @@ sf_sql_connect (char *username, char *password, char *cli_ver, caddr_t *info)
 	      (long) unbox (info[LGID_PID]), info[LGID_MACHINE], info[LGID_OS]))
 	{
 	  thrs_printf ((thrs_fo, "ses %p thr:%p in connect5\n", client, THREAD_CURRENT_THREAD));
-      DKST_RPC_DONE (client);
-      if (cli_ver && ODBC_DRV_VER_G_NO (cli_ver) >= 1619)
-	{
+	  DKST_RPC_DONE (client);
+	  if (cli_ver && ODBC_DRV_VER_G_NO (cli_ver) >= 1619)
+	    {
 	      caddr_t err = srv_make_new_error ("08004", "LI101",
 		  "Application access not licensed");
-	  PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, FINAL, 1);
-	  dk_free_tree (err);
-	}
-      else
-	PrpcAddAnswer ((caddr_t) 0, DV_ARRAY_OF_POINTER, FINAL, 1);
-      dk_free_box (cli_ver);
+	      PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, FINAL, 1);
+	      dk_free_tree (err);
+	    }
+	  else
+	    PrpcAddAnswer ((caddr_t) 0, DV_ARRAY_OF_POINTER, FINAL, 1);
+	  dk_free_box (cli_ver);
 	  PrpcDisconnect (client);
 
 	  log_error ("Application access not licensed for %s@%s.%s",
 		user->usr_name, info[LGID_MACHINE], info[LGID_APP_NAME]);
-      client_connection_free (cli);
-      DKS_DB_DATA (client) = NULL;
-      return 0;
-    }
+	  client_connection_free (cli);
+	  DKS_DB_DATA (client) = NULL;
+	  return 0;
+	}
     }
 
   if (!user)
@@ -2540,7 +2540,7 @@ sf_make_auto_cp(void)
   if (make_cp)
     {
       long now;
-    sf_makecp (sf_make_new_log_name(wi_inst.wi_master), NULL, 1, CPT_NORMAL);
+      sf_makecp (sf_make_new_log_name(wi_inst.wi_master), NULL, 1, CPT_NORMAL);
       now = approx_msec_real_time (); 
       checkpointed_last_time = (unsigned long int) now; /* the main thread still running so set last time auto cpt finished */
     }
@@ -2708,9 +2708,9 @@ sf_shutdown (char *log_name, lock_trx_t * trx)
     qr_free (static_qr_dllist);
 #endif
   DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_storage)
-    {
-      dbs_close (dbs);
-    }
+  {
+    dbs_close (dbs);
+  }
   END_DO_SET ();
 
 #if defined (MALLOC_DEBUG) || defined (VALGRIND)
@@ -3107,7 +3107,7 @@ numeric_serialize_client (caddr_t n, dk_session_t * ses)
     numeric_serialize ((numeric_t) n, ses);
 }
 
-void 
+void
 int64_serialize_client (caddr_t n1, dk_session_t * session)
 {
   client_connection_t *cli = DKS_DB_DATA (session);
@@ -3216,7 +3216,7 @@ srv_compatibility_init (void)
   PrpcSetWriter (DV_WIDE, (ses_write_func) wide_serialize_client);
   PrpcSetWriter (DV_LONG_WIDE, (ses_write_func) wide_serialize_client);
   int64_serialize_client_f = (ses_write_func) int64_serialize_client;
-  box_flags_serial_test_hook = box_flags_serial_test; 
+  box_flags_serial_test_hook = box_flags_serial_test;
   blobio_compatibility_init ();
 }
 
@@ -3360,7 +3360,7 @@ lt_kill_waiting_trx (lock_trx_t *lt, int lt_error)
 	  lt, lt->lt_status, lt_error, THREAD_CURRENT_THREAD));
       lt->lt_error = lt_error;
       if (LT_DELTA_ROLLED_BACK != lt->lt_status)
-      lt_kill_other_trx (lt, NULL, NULL, LT_KILL_ROLLBACK);
+	lt_kill_other_trx (lt, NULL, NULL, LT_KILL_ROLLBACK);
     }
 }
 
@@ -3589,7 +3589,7 @@ srv_global_init (char *mode)
     {
       if (restore_from_files (recover_file_prefix) == -1)
 	{
-	call_exit (1);
+	  call_exit (1);
  	}
       return;
     }
@@ -3610,7 +3610,7 @@ srv_global_init (char *mode)
 
 #ifdef VIRTTP
   if (!lite_mode)
-  tp_main_queue_init();
+    tp_main_queue_init();
 #endif
   /*if (sqlo_enable)*/
     {
@@ -3703,7 +3703,7 @@ srv_global_init (char *mode)
       return;
     }
   ddl_scheduler_init ();
-  
+
   ddl_repl_init ();
 
   ddl_fk_init ();
@@ -3733,8 +3733,8 @@ srv_global_init (char *mode)
 #if REPLICATION_SUPPORT
       if (!lite_mode) 
 	{
-      repl_init ();
-      repl_serv_init (0);
+	  repl_init ();
+	  repl_serv_init (0);
 	}
 #endif
     }
@@ -3765,8 +3765,8 @@ srv_global_init (char *mode)
 #ifdef PLDBG
   if (!lite_mode) 
     {
-  pldbg_init ();
-  cov_load ();
+      pldbg_init ();
+      cov_load ();
     }
 #endif
   dbev_startup ();

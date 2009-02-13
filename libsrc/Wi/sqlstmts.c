@@ -336,7 +336,7 @@ sqlc_insert_autoincrements (sql_comp_t * sc, insert_node_t * ins,
 		dk_free_box (seq_name);
 		snext = t_sqlp_box_id_upcase ("sequence_next");
 		cv_bif_call (code, bif_sequence_next_no_check, snext, NULL, args);
-	      goto next_col;  /* given value overrides automatic if identity column. */
+		goto next_col;  /* given value overrides automatic if identity column. */
 	      }
 	    /* replace the slot in values with the autoinc value */
 	    dk_set_member (ins->ins_values, old_sl)->data = (caddr_t) sl;
@@ -1220,12 +1220,12 @@ sqlc_update_searched (sql_comp_t * sc, ST * tree)
 	  (caddr_t*) tree->_.update_src.cols, tree->_.update_src.vals, 0);
       sc->sc_is_update = 1;
       sc->sc_update_keyset = upd;
-	sqlo_query_spec (sc, 0,
-	    (caddr_t *) tc.tc_selection,
-	    tree->_.update_src.table_exp,
-	    &sc->sc_cc->cc_query->qr_head_node,
-	    &slots);
-	sc->sc_is_update = 0;
+      sqlo_query_spec (sc, 0,
+	  (caddr_t *) tc.tc_selection,
+	  tree->_.update_src.table_exp,
+	  &sc->sc_cc->cc_query->qr_head_node,
+	  &slots);
+      sc->sc_is_update = 0;
       sc->sc_in_cursor_def = 0;
       sc->sc_update_keyset = NULL;
       if (!tc.tc_is_trigger)

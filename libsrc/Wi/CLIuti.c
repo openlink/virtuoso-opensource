@@ -801,8 +801,8 @@ stmt_process_result (cli_stmt_t * stmt, int needs_evl)
 		return SQL_NO_DATA_FOUND;
 
 	      /* Number of affected rows is known so start with 0 */
-              if (stmt->stmt_rows_affected < 0)
-                stmt->stmt_rows_affected = 0;
+	      if (stmt->stmt_rows_affected < 0)
+		stmt->stmt_rows_affected = 0;
 
 	      if (stmt->stmt_parm_rows_to_go)
 		continue;
@@ -2210,7 +2210,7 @@ dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
 	    snprintf (temp, sizeof (temp), "#ib" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
           else
 	    snprintf (temp, sizeof (temp), "#i" BOXINT_FMT, (boxint)(iid));
-	break;
+          break;
         }
 
       case DV_SINGLE_FLOAT:
@@ -2374,7 +2374,7 @@ dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
 	  rdf_box_t * rb = (rdf_box_t *) it;
           if (DV_STRING == DV_TYPE_OF (rb->rb_box))
             {
-	  str = rb->rb_box;
+	      str = rb->rb_box;
 	      len = box_length (rb->rb_box) - 1;
             }
           else if (!IS_BOX_POINTER (rb->rb_box))
@@ -2689,8 +2689,8 @@ dv_to_place (caddr_t it,	/* Data in DV format  from the Kubl. */
 		  {
 		    set_error (&stmt->stmt_error, "22003", "CL098", "Integer value out of range");
 		  }
-	      *((long *) place) = (long) unbox (it);
-	      break;
+		*((long *) place) = (long) unbox (it);
+		break;
 	      }
 	    case DV_SINGLE_FLOAT:
 	      *((long *) place) = (long) unbox_float (it);

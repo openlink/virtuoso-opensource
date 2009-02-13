@@ -1,24 +1,24 @@
 /*
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
+ *
+ *
 */
 #include "sparql2sql.h"
 #include "sqlparext.h"
@@ -94,14 +94,14 @@ sparp_ctor_fields_are_disjoin_with_where_fields (sparp_t *sparp, SPART **ctor_fi
             sparp_equiv_t *src_equiv = sparp_equiv_get_ro (top_eqs, top_eq_count,
               top_gp, ctor_fld, SPARP_EQUIV_GET_NAMESAKES );
             if (NULL != src_equiv) /* src_equiv may be NULL in subqueries */
-            sparp_rvr_tighten (sparp, &rvr, &(src_equiv->e_rvr), ~1); 
+              sparp_rvr_tighten (sparp, &rvr, &(src_equiv->e_rvr), ~1);
             break;
           }
         case SPAR_LIT: case SPAR_QNAME:
           {
             rdf_val_range_t tmp;
             sparp_rvr_set_by_constant (sparp, &tmp, NULL, ctor_fld);
-            sparp_rvr_tighten (sparp, &rvr, &tmp, ~1); 
+            sparp_rvr_tighten (sparp, &rvr, &tmp, ~1);
             break;
           }
         default: break;
@@ -117,7 +117,7 @@ sparp_ctor_fields_are_disjoin_with_where_fields (sparp_t *sparp, SPART **ctor_fi
           {
             rdf_val_range_t tmp;
             sparp_rvr_set_by_constant (sparp, &tmp, NULL, where_fld);
-            sparp_rvr_tighten (sparp, &rvr, &tmp, ~1); 
+            sparp_rvr_tighten (sparp, &rvr, &tmp, ~1);
             break;
           }
         default: break;
@@ -140,7 +140,7 @@ sparp_gp_trav_find_isect_with_ctor (sparp_t *sparp, SPART *curr, sparp_trav_stat
       return SPAR_GPT_NODOWN;
     case SPAR_GP:
       if (SELECT_L == curr->_.gp.subtype)
-      {
+        {
 #if 1 /*!!! TBD: implement rewriting of ctor fields so that a field that correspond to an alias of subquery's retval is replaced with the expression of the alias. Then use the branch that is currently not in use */
           return SPAR_GPT_COMPLETED;
 #else
@@ -152,9 +152,9 @@ sparp_gp_trav_find_isect_with_ctor (sparp_t *sparp, SPART *curr, sparp_trav_stat
             return SPAR_GPT_COMPLETED;
           return SPAR_GPT_NODOWN;
 #endif
-              }
+        }
       break;
-              }
+    }
   return 0;
 }
 
@@ -170,7 +170,7 @@ sparp_ctor_fields_are_disjoin_with_data_gathering (sparp_t *sparp, SPART **ctor_
     NULL, NULL, sparp_gp_trav_find_isect_with_ctor,
     NULL );
   if (res & SPAR_GPT_COMPLETED)
-            return CTOR_MAY_INTERSECTS_WHERE;
+    return CTOR_MAY_INTERSECTS_WHERE;
   if (the_query_is_topmost)
     {
       saved_orig_retvals = req->_.req_top.orig_retvals;
@@ -405,11 +405,11 @@ spar_compose_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top, SPART *gra
     }
   else
     {
-  if (INSERT_L == top->_.req_top.subtype)
-    top_fname = "sql:SPARQL_INSERT_DICT_CONTENT";
-  else
-      top_fname = "sql:SPARQL_DELETE_DICT_CONTENT";
-  rv[0] = spar_make_funcall (sparp, 0, top_fname,
+      if (INSERT_L == top->_.req_top.subtype)
+        top_fname = "sql:SPARQL_INSERT_DICT_CONTENT";
+      else
+        top_fname = "sql:SPARQL_DELETE_DICT_CONTENT";
+      rv[0] = spar_make_funcall (sparp, 0, top_fname,
         (SPART **)t_list (4, graph_to_patch,
           rv[0], log_mode, spar_compose_report_flag (sparp)) );
     }
@@ -467,8 +467,8 @@ spar_compose_retvals_of_modify (sparp_t *sparp, SPART *top, SPART *graph_to_patc
         t_NEW_DB_NULL,
         log_mode, spar_compose_report_flag (sparp)) );
   else
-  rv[0] = spar_make_funcall (sparp, 0, "sql:SPARQL_MODIFY_BY_DICT_CONTENTS",
-    (SPART **)t_list (5, graph_to_patch, rv[0], ins[0], log_mode, spar_compose_report_flag (sparp)) );
+    rv[0] = spar_make_funcall (sparp, 0, "sql:SPARQL_MODIFY_BY_DICT_CONTENTS",
+      (SPART **)t_list (5, graph_to_patch, rv[0], ins[0], log_mode, spar_compose_report_flag (sparp)) );
 }
 
 SPART *
@@ -626,9 +626,9 @@ spar_optimize_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top)
   if (NULL != sparp->sparp_env->spare_output_route_name)
     return; /* If an output may go outside the default storage then there's no way of avoiding the complete filling of the result dictionary */
   dbg_assert ((SPAR_FUNCALL == SPART_TYPE (retvals[0])) && (4 == BOX_ELEMENTS (retvals[0]->_.funcall.argtrees)));
-  graph_expn	= retvals[0]->_.funcall.argtrees[0];
-  ctor		= retvals[0]->_.funcall.argtrees[1];
-  log_mode_expn	= retvals[0]->_.funcall.argtrees[2];
+  graph_expn		= retvals[0]->_.funcall.argtrees[0];
+  ctor			= retvals[0]->_.funcall.argtrees[1];
+  log_mode_expn		= retvals[0]->_.funcall.argtrees[2];
   compose_report_expn	= retvals[0]->_.funcall.argtrees[3];
   dbg_assert ((SPAR_FUNCALL == SPART_TYPE (ctor)) && (3 == BOX_ELEMENTS (ctor->_.funcall.argtrees)));
   var_triples = ctor->_.funcall.argtrees[0]->_.funcall.argtrees;
@@ -706,10 +706,10 @@ spar_optimize_retvals_of_modify (sparp_t *sparp, SPART *top)
   if (NULL != sparp->sparp_env->spare_output_route_name)
     return; /* If an output may go outside the default storage then there's no way of avoiding the complete filling of the result dictionary */
   dbg_assert ((SPAR_FUNCALL == SPART_TYPE (retvals[0])) && (5 == BOX_ELEMENTS (retvals[0]->_.funcall.argtrees)));
-  graph_expn	= retvals[0]->_.funcall.argtrees[0];
-  del_ctor	= retvals[0]->_.funcall.argtrees[1];
-  ins_ctor	= retvals[0]->_.funcall.argtrees[2];
-  log_mode_expn	= retvals[0]->_.funcall.argtrees[3];
+  graph_expn		= retvals[0]->_.funcall.argtrees[0];
+  del_ctor		= retvals[0]->_.funcall.argtrees[1];
+  ins_ctor		= retvals[0]->_.funcall.argtrees[2];
+  log_mode_expn		= retvals[0]->_.funcall.argtrees[3];
   compose_report_expn	= retvals[0]->_.funcall.argtrees[4];
   dbg_assert ((SPAR_FUNCALL == SPART_TYPE (del_ctor)) && (3 == BOX_ELEMENTS (del_ctor->_.funcall.argtrees)));
   dbg_assert ((SPAR_FUNCALL == SPART_TYPE (ins_ctor)) && (3 == BOX_ELEMENTS (ins_ctor->_.funcall.argtrees)));

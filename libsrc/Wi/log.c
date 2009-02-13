@@ -220,7 +220,7 @@ log_change_if_needed (lock_trx_t * lt, int rewrite)
       dbs->dbs_log_name = box_string (ls->ls_file);
       if (rewrite)
 	{
-	FTRUNCATE (new_fd, 0);
+	  FTRUNCATE (new_fd, 0);
 	  log_set_byte_order_check (1);
 	  log_set_server_version_check (1);
 	}
@@ -1151,20 +1151,20 @@ log_replay_text (lock_trx_t * lt, dk_session_t * in, int is_pushback, int use_st
 cr_done:
   if (use_stmt_cache)
     {
-  sst = cli_get_stmt_access (lt->lt_client, stmt_id, GET_EXCLUSIVE);
-  err = stmt_set_query (sst, lt->lt_client, text, opts);
-  LEAVE_CLIENT (lt->lt_client);
-  if (err != NULL)
-    {
-      if (DV_ARRAY_OF_POINTER == dtp)
-        entry[0] = NULL;
-      dk_free_tree ((box_t) entry);
-      if (is_pushback)
-        return err;
-      err_log_error (err);
-      return ((caddr_t) SQL_SUCCESS);
-    }
-  qr = sst->sst_query;
+      sst = cli_get_stmt_access (lt->lt_client, stmt_id, GET_EXCLUSIVE);
+      err = stmt_set_query (sst, lt->lt_client, text, opts);
+      LEAVE_CLIENT (lt->lt_client);
+      if (err != NULL)
+	{
+	  if (DV_ARRAY_OF_POINTER == dtp)
+	    entry[0] = NULL;
+	  dk_free_tree ((box_t) entry);
+	  if (is_pushback)
+	    return err;
+	  err_log_error (err);
+	  return ((caddr_t) SQL_SUCCESS);
+	}
+      qr = sst->sst_query;
       qr_is_allocated = 0;
     }
   else
@@ -1200,7 +1200,7 @@ cr_done:
 	{
 	  if (qr_is_allocated)
 	    qr_free (qr);
-        return err;
+          return err;
 	}
       err_log_error (err);
     }
@@ -1218,7 +1218,7 @@ log_replay_text_as_user (lock_trx_t * lt, dk_session_t * in, int is_pushback)
   caddr_t saved_qual = box_string (cli->cli_qualifier);
   user_t * usr = sec_id_to_user (usr_id);
   caddr_t ret = NULL;
-  
+
   set_user_id (cli, usr->usr_name, NULL);
   ret = log_replay_text (lt, in, is_pushback, 0);
   cli->cli_user = save;
@@ -1286,7 +1286,7 @@ log_replay_entry (lock_trx_t * lt, dtp_t op, dk_session_t * in, int is_pushback)
       break;
     case LOG_TEXT:
       return (log_replay_text (lt, in, is_pushback, 1));
-    case LOG_USER_TEXT:  
+    case LOG_USER_TEXT:
       return (log_replay_text_as_user (lt, in, is_pushback));
     case LOG_SEQUENCE:
       return (log_replay_sequence (lt, in));
@@ -1654,8 +1654,8 @@ log_replay_file (int fd)
   log_info ("Roll forward started");
   if (!lite_mode)
     {
-  dk_alloc_set_reserve_mode (DK_ALLOC_RESERVE_PREPARED); /* This is to GPF if already out of memory */
-  dk_alloc_set_reserve_mode (DK_ALLOC_RESERVE_DISABLED); /* This is to GPF on out-of-memory instead of trying to recover */
+      dk_alloc_set_reserve_mode (DK_ALLOC_RESERVE_PREPARED); /* This is to GPF if already out of memory */
+      dk_alloc_set_reserve_mode (DK_ALLOC_RESERVE_DISABLED); /* This is to GPF on out-of-memory instead of trying to recover */
     }
   memset (&trx_ses, 0, sizeof (trx_ses));
   memset (&trx_sio, 0, sizeof (trx_sio));
@@ -1735,7 +1735,7 @@ read_again:
   client_connection_free (cli);
   log_info ("Roll forward complete");
   if (!lite_mode)
-  dk_alloc_set_reserve_mode (DK_ALLOC_RESERVE_PREPARED);
+    dk_alloc_set_reserve_mode (DK_ALLOC_RESERVE_PREPARED);
 }
 
 
@@ -1815,7 +1815,7 @@ log_init (dbe_storage_t * dbs)
       dbs->dbs_log_length = LSEEK (log_fd, 0, SEEK_END);
       if (!dbs->dbs_log_length)
         {
-	log_set_byte_order_check(0);
+	  log_set_byte_order_check(0);
 	  log_set_server_version_check (1);
         }
     }

@@ -500,50 +500,50 @@ bif_hosting_http_handler (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
     }
   else
     {
-  if (err[0] != 0)
-    {
-      caddr_t cerr;
-      if (_res)
-	ver->hv_client_free (_res);
-      if (_head_ret)
-	ver->hv_client_free (_head_ret);
-      if (_diag_ret)
-	ver->hv_client_free (_diag_ret);
+      if (err[0] != 0)
+	{
+	  caddr_t cerr;
+	  if (_res)
+	    ver->hv_client_free (_res);
+	  if (_head_ret)
+	    ver->hv_client_free (_head_ret);
+	  if (_diag_ret)
+	    ver->hv_client_free (_diag_ret);
 	  cerr = srv_make_new_error ("42000", "HO002", "%s", err);
-      sqlr_resignal (cerr);
-    }
-  if (_res)
-    {
-      res = box_dv_short_string (_res);
-      ver->hv_client_free (_res);
-    }
-  if (_head_ret)
-    {
-      if (BOX_ELEMENTS (args) > 4)
-	{
-	      head_ret = (caddr_t *) box_dv_short_string ((box_t) _head_ret);
-	  if (ssl_is_settable (args[4]))
-	    qst_set (qst, args[4], (caddr_t) head_ret);
-	  else
-	    dk_free_tree ((box_t) head_ret);
+	  sqlr_resignal (cerr);
 	}
-	  ver->hv_client_free (_head_ret);
-    }
-  if (_diag_ret)
-    {
-      if (BOX_ELEMENTS (args) > 6)
+      if (_res)
 	{
-	  if (ssl_is_settable (args[6]))
+	  res = box_dv_short_string (_res);
+	  ver->hv_client_free (_res);
+	}
+      if (_head_ret)
+	{
+	  if (BOX_ELEMENTS (args) > 4)
+	    {
+	      head_ret = (caddr_t *) box_dv_short_string ((box_t) _head_ret);
+	      if (ssl_is_settable (args[4]))
+		qst_set (qst, args[4], (caddr_t) head_ret);
+	      else
+		dk_free_tree ((box_t) head_ret);
+	    }
+	  ver->hv_client_free (_head_ret);
+	}
+      if (_diag_ret)
+	{
+	  if (BOX_ELEMENTS (args) > 6)
+	    {
+	      if (ssl_is_settable (args[6]))
 		{
 		  diag_ret = (caddr_t *) box_dv_short_string (_diag_ret);
-	    qst_set (qst, args[6], (caddr_t) diag_ret);
+		  qst_set (qst, args[6], (caddr_t) diag_ret);
 		}
-	  else
-	    {
-	      log_debug ("hosting: [%s]", diag_ret);
-	      dk_free_tree ((box_t) diag_ret);
+	      else
+		{
+		  log_debug ("hosting: [%s]", diag_ret);
+		  dk_free_tree ((box_t) diag_ret);
+		}
 	    }
-	}
 	  else
 	    log_debug ("hosting: [%s]", _diag_ret);
 	  ver->hv_client_free (_diag_ret);

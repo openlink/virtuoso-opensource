@@ -194,7 +194,7 @@ pg_make_map (buffer_desc_t * buf)
 	      (pg_key && pg_key->key_name ? pg_key->key_name : "TEMP KEY"),
 	      buf->bd_page, buf->bd_physical_page);
 	  dbg_page_map_to_file (buf);
-	STRUCTURE_FAULT;
+	  STRUCTURE_FAULT;
 	}
       free -= len;
       if (inx >= map->pm_size)
@@ -211,7 +211,7 @@ pg_make_map (buffer_desc_t * buf)
 	      (pg_key && pg_key->key_name ? pg_key->key_name : "TEMP KEY"),
 	      buf->bd_page, buf->bd_physical_page);
 	  dbg_page_map_to_file (buf);
-	STRUCTURE_FAULT;
+	  STRUCTURE_FAULT;
 	}
       pos = IE_NEXT (page + pos);
       if (inx >= PM_MAX_ENTRIES)
@@ -220,8 +220,8 @@ pg_make_map (buffer_desc_t * buf)
 	      (pg_key && pg_key->key_name ? pg_key->key_name : "TEMP KEY"),
 	      buf->bd_page, buf->bd_physical_page);
 	  dbg_page_map_to_file (buf);
-	STRUCTURE_FAULT;
-    }
+	  STRUCTURE_FAULT;
+	}
     }
   if (free < 0)
     {
@@ -229,7 +229,7 @@ pg_make_map (buffer_desc_t * buf)
 	  (pg_key && pg_key->key_name ? pg_key->key_name : "TEMP KEY"),
 	  buf->bd_page, buf->bd_physical_page);
       dbg_page_map_to_file (buf);
-    STRUCTURE_FAULT;
+      STRUCTURE_FAULT;
     }
   map->pm_bytes_free = free;
   map->pm_count = inx;
@@ -433,7 +433,7 @@ pg_delete_move_cursors (it_cursor_t * itc, buffer_desc_t * buf_from, int pos_fro
   map_to->pm_bytes_free -= (int) (ROW_ALIGN (len)); \
 
 
-int 
+int
 is_ptr_in_array (void**array, int fill, void* ptr)
 {
   int inx;
@@ -453,7 +453,7 @@ itc_keep_together (it_cursor_t * itc, buffer_desc_t * buf, buffer_desc_t * buf_f
 
   if (itc->itc_bm_split_left_side && !itc->itc_bm_split_right_side)
     {
-      /* this inserts the right side of a split bm inx entry. Move the crs registered on the left side to the right side 
+      /* this inserts the right side of a split bm inx entry. Move the crs registered on the left side to the right side
        * if they are past the dividing value.  If just landed waiting, mark then to reset the search 
        * The left and right are not always on the same page.  This is because the ins may have split or because of pre-existingf leaf pointers in the parent that just split the start of the left and of the right.  So different pages is not always split. */
       buffer_desc_t * left_buf;
@@ -462,7 +462,7 @@ itc_keep_together (it_cursor_t * itc, buffer_desc_t * buf, buffer_desc_t * buf_f
       if (left_buf != buf_from && left_buf != buf)
 	{
 	  TC (tc_bm_split_left_separate_but_no_split);
-	    }
+	}
       itc->itc_bm_split_right_side = plh_landed_copy ((placeholder_t *) itc, buf);
     }
 
@@ -700,7 +700,7 @@ pg_reloc_right_leaves (it_cursor_t * it, db_buf_t page, dp_addr_t dp)
 	  any = 1;
 	  ITC_AGE_TRX (it, 5);
 	  itc_set_parent_link (it, leaf, dp);
-	}
+	    }
       pos = IE_NEXT (page + pos);
     }
   return any;
@@ -845,7 +845,7 @@ itc_split (it_cursor_t * it, buffer_desc_t ** buf_ret, db_buf_t dv,
       extend->bd_page, new_rl);
   if ((*buf_ret)->bd_pl && PL_IS_PAGE ((*buf_ret)->bd_pl))
     {
-  itc_split_lock_waits (it, *buf_ret, extend);
+      itc_split_lock_waits (it, *buf_ret, extend);
     }
   ITC_LEAVE_MAPS (it);
   right_leaf = itc_make_leaf_entry (it, extend->bd_buffer + DP_DATA, extend->bd_page);
@@ -873,7 +873,7 @@ itc_split (it_cursor_t * it, buffer_desc_t ** buf_ret, db_buf_t dv,
       ITC_LEAVE_MAP_NC (it);
     }
   else
-    {
+	{
       parent = itc_write_parent (it, buf);
       dp_parent = parent->bd_page;
       ITC_IN_KNOWN_MAP (it, dp_parent);
@@ -1187,7 +1187,7 @@ itc_insert_unq_ck (it_cursor_t * it, db_buf_t thing, buffer_desc_t ** unq_buf)
       buf = *unq_buf;
       if (SM_INSERT_AFTER == it->itc_search_mode)
 	res = DVC_LESS;
-      else 
+      else
 	res = DVC_GREATER;
       goto searched;
     }
@@ -1450,7 +1450,7 @@ itc_delete (it_cursor_t * itc, buffer_desc_t ** buf_ret, int maybe_blobs)
   if (BUF_NEEDS_DELTA (buf))
     {
       ITC_IN_KNOWN_MAP (itc, itc->itc_page);
-  itc_delta_this_buffer (itc, buf, DELTA_MAY_LEAVE);
+      itc_delta_this_buffer (itc, buf, DELTA_MAY_LEAVE);
       ITC_LEAVE_MAP_NC (itc);
     }
   lt_rb_update (itc->itc_ltrx, page + pos);
@@ -1757,7 +1757,7 @@ delete_from_cursor:
 
 
 
-dp_addr_t 
+dp_addr_t
 ie_leaf (db_buf_t row)
 {
   key_id_t k = SHORT_REF (row + IE_KEY_ID);
@@ -1799,7 +1799,7 @@ typedef struct page_rel_s
 #ifdef MTX_DEBUG
 #define cmp_printf(a) printf a
 #else
-#define cmp_printf(a) 
+#define cmp_printf(a)
 #endif
 
 int
@@ -1825,7 +1825,7 @@ it_compact (index_tree_t *it, buffer_desc_t * parent2, page_rel_t * pr, int pr_f
       int pos = SHORT_REF (buf->bd_buffer + DP_FIRST);
       if (!pr[inx].pr_deleted)
 	n_ins++;
-      else 
+      else
 	n_del++;
       while (pos)
 	{
@@ -1911,7 +1911,7 @@ it_compact (index_tree_t *it, buffer_desc_t * parent2, page_rel_t * pr, int pr_f
   *pos_ret = prev_ent;
   pg_make_map (parent);
   /* delete the pages that are not needed */
-  for (inx = 0; inx < pr_fill; inx++)
+	  for (inx = 0; inx < pr_fill; inx++)
     {
       buffer_desc_t * buf = pr[inx].pr_buf;
       itc->itc_page = buf->bd_page;
@@ -1922,7 +1922,7 @@ it_compact (index_tree_t *it, buffer_desc_t * parent2, page_rel_t * pr, int pr_f
 	  rdbg_printf_2 (("D=%d ", pr[inx].pr_buf->bd_page));
 	  it_free_page (it, pr[inx].pr_buf);
 	}
-      else 
+      else
 	{
 	  rdbg_printf_2 (("W=%d ", pr[inx].pr_buf->bd_page));
 		  	  memcpy (pr[inx].pr_buf->bd_buffer + DP_DATA, pr[inx].pr_new_buf->bd_buffer + DP_DATA, pr[inx].pr_new_fill - DP_DATA);
@@ -2125,7 +2125,7 @@ it_cp_check_node (index_tree_t *it, buffer_desc_t *parent, int mode)
     {
       dp_addr_t leaf = ie_leaf (page + pos);
       if (leaf)
-	{
+	    {
 	  it_map_t * itm = IT_DP_MAP (it, leaf);
 	  buffer_desc_t * buf;
 	  mutex_enter (&itm->itm_mtx);
@@ -2151,7 +2151,7 @@ it_cp_check_node (index_tree_t *it, buffer_desc_t *parent, int mode)
 	      CHECK_COMPACT;
 	    }
 	}
-      else 
+      else
 	{
 	  CHECK_COMPACT;
 	}
@@ -2166,7 +2166,7 @@ it_cp_check_node (index_tree_t *it, buffer_desc_t *parent, int mode)
     {
       parent_itm = IT_DP_MAP (it, parent->bd_page);
       mutex_enter (&parent_itm->itm_mtx);
-  page_leave_inner (parent);
+    page_leave_inner (parent);
       mutex_leave (&parent_itm->itm_mtx);
     }
   return any_change;
@@ -2175,7 +2175,7 @@ it_cp_check_node (index_tree_t *it, buffer_desc_t *parent, int mode)
 #define DP_VACUUM_RESERVE ((PAGE_DATA_SZ / 12) + 1) /* max no of leaf pointers + parent */
 
 
-void 
+void
 itc_vacuum_compact (it_cursor_t * itc, buffer_desc_t * buf)
 {
   /*it_map_t * itm = IT_DP_MAP (itc->itc_tree, itc->itc_page);*/
@@ -2270,7 +2270,7 @@ wi_check_all_compact (int age_limit)
   dbe_storage_t * dbs = wi_inst.wi_master;
 #ifndef AUTO_COMPACT
   return;
-#endif 
+#endif
   if (!dbs)
     return; /* at the very start of init */
   DO_SET (index_tree_t *, it, &dbs->dbs_trees)

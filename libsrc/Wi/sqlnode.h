@@ -1143,8 +1143,8 @@ typedef struct client_connection_s
 
 
 #define PROC_SAVE_VARS \
-    dk_set_t		 *saved_proc_resultset = NULL; \
-    caddr_t		 *saved_proc_comp = NULL; \
+    dk_set_t		*saved_proc_resultset = NULL; \
+    caddr_t		*saved_proc_comp = NULL; \
     long		saved_proc_max = 0; \
     query_instance_t *	saved_proc_result_qi = NULL; \
     table_source_t *	saved_proc_result_ts = NULL; \

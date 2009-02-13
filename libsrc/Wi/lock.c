@@ -388,7 +388,7 @@ lt_restart (lock_trx_t * lt, int leave_flag)
   }
   if (TRX_CONT == leave_flag || TRX_CONT_LT_LEAVE == leave_flag)
     {
-    IN_TXN;
+      IN_TXN;
       lt->lt_status = LT_PENDING;
       lt->lt_error = LTE_OK;
       if (TRX_CONT_LT_LEAVE == leave_flag)
@@ -1273,11 +1273,11 @@ lt_clear_pl_wait_ref (lock_trx_t * waiting, gen_lock_t * pl)
     {
       IN_LT_LOCKS (waiting);
       if (remhash ((void*) pl, &waiting->lt_lock))
-      {
-	TC (tc_pl_non_owner_wait_ref_deld);
+	{
+	  TC (tc_pl_non_owner_wait_ref_deld);
 	}
       LEAVE_LT_LOCKS (waiting);
-      }
+    }
 }
 
 

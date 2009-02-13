@@ -6046,7 +6046,7 @@ ddl_std_proc_1 (const char *text, int is_public, int to_recompile)
     }
   else
     {
-    proc = sql_compile ((char *) _text, bootstrap_cli, &err,
+      proc = sql_compile ((char *) _text, bootstrap_cli, &err,
 	is_stored ? SQLC_DEFAULT : SQLC_QR_TEXT_IS_CONSTANT);
     }
   if (err)

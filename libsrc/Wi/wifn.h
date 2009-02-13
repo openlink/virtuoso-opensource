@@ -189,7 +189,7 @@ void page_leave_inner_dbg (int line, const char * file, buffer_desc_t * buf);
 #define page_leave_inner(buf) page_leave_inner_dbg (__LINE__, __FILE__,buf)
 #else
 int page_wait_access (it_cursor_t * itc, dp_addr_t dp_to, buffer_desc_t * buf_from, 
-		  buffer_desc_t ** buf_ret, int mode, int max_change);
+    buffer_desc_t ** buf_ret, int mode, int max_change);
 void page_leave_inner (buffer_desc_t * buf);
 #endif
 void page_release_read (buffer_desc_t * buf);

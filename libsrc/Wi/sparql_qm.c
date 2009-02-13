@@ -329,14 +329,14 @@ spar_qm_find_all_conditions (sparp_t *sparp, dk_set_t map_aliases, dk_set_t *con
               DO_SET (caddr_t, map_alias, &map_aliases)
                 {
                   if (0 <= dk_set_position_of_string (cond_descendants, map_alias))
-        {
+                    {
                       t_set_push (&subst, map_alias);
                       t_set_push (&subst, cond_alias);
                       goto cond_alias_descendant_found; /* see below */
                     }
                 }
               END_DO_SET ()
-            goto cond_is_redundand; /* see below */
+              goto cond_is_redundand; /* see below */
 
 cond_alias_descendant_found:
               ;
@@ -704,8 +704,8 @@ spar_qm_make_mapping_impl (sparp_t *sparp, int is_real, caddr_t qm_id, SPART **o
             spar_make_vector_qm_sql (sparp, (SPART **)t_list (2, alias, atbl)) );
         }
       DO_BOX_FAST (caddr_t, tmpl, ctr, local_cond_tmpls)
-    {
-      dk_set_t used_aliases = NULL;
+        {
+          dk_set_t used_aliases = NULL;
           sparp_check_tmpl (sparp, tmpl, 0, &used_aliases);
           DO_SET (caddr_t, used_alias, &used_aliases)
             {
@@ -715,8 +715,8 @@ spar_qm_make_mapping_impl (sparp_t *sparp, int is_real, caddr_t qm_id, SPART **o
           END_DO_SET()
           if (0 > dk_set_position_of_string (all_cond_tmpls, tmpl))
             t_set_push (&all_cond_tmpls, tmpl);
-    }
-  END_DO_BOX_FAST;
+        }
+      END_DO_BOX_FAST;
       spar_qm_find_all_conditions (sparp, map_aliases, &all_cond_tmpls);
       while (all_cond_tmpls != sub_cond_tmpls)
         t_set_push (&final_cond_tmpls, t_set_pop (&all_cond_tmpls));

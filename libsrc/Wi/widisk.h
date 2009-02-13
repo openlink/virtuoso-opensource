@@ -302,14 +302,14 @@ typedef unsigned char * db_buf_t;
 #define IE_FLAGS(ie)		(((dtp_t *) (ie))[1])
 #define IE_SET_FLAGS(ie, f)	IE_FLAGS(ie) = f | (IE_FLAGS(ie) & 0x1f)
 #define IE_ADD_FLAGS(ie, f)	IE_FLAGS(ie) = f | IE_FLAGS(ie)
-#define IE_ISSET(ie, f) ((ie)[1] & (f))
+#define IE_ISSET(ie, f)		((ie)[1] & (f))
 
 #else
 
 #define IE_FLAGS(ie)		(((dtp_t *) (ie))[0])
 #define IE_SET_FLAGS(ie, f)	IE_FLAGS(ie) = (f) | (IE_FLAGS(ie) & 0x1f)
 #define IE_ADD_FLAGS(ie, f)	IE_FLAGS(ie) = (f) | IE_FLAGS(ie)
-#define IE_ISSET(ie, f) ((ie)[0] & (f))
+#define IE_ISSET(ie, f)		((ie)[0] & (f))
 #endif
 
 
@@ -400,7 +400,7 @@ struct log_segment_s
 #if defined (WINDOWS) || defined (WINNT)
 # define OPEN_FLAGS	O_RDWR | O_CREAT | O_BINARY
 # define OPEN_FLAGS_RO	O_RDONLY | O_BINARY
-# define fd_open(N,M)	_open (N, M, 0600)
+# define fd_open(N,M)  _open (N, M, 0600)
 
 # define fd_close(fd,n) \
 { \
@@ -444,7 +444,7 @@ extern int c_use_o_direct;
 #endif /* FILE64 */
 #define LOG_OPEN_FLAGS OPEN_FLAGS
 
-# define fd_open(N,M)	open (N, M, 0666)
+# define fd_open(N,M)  open (N, M, 0666)
 # define fd_close(f,n)	close (f)
 # define file_set_rw(N)
 # define fd_fsync(N)   fsync (N)

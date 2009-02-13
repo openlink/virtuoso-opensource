@@ -273,7 +273,7 @@ create procedure FTP_RNTO (in in_str varchar, in _user varchar, in _pass varchar
        FTP_WRITE (_user, '550 The new name is empty.', in_str);
        return;
      }
-   
+
    if (old_name <> '')
      {
        if (old_name[0] = 47)
@@ -298,7 +298,7 @@ create procedure FTP_RNTO (in in_str varchar, in _user varchar, in _pass varchar
 	    return;
 	  }
      }
-     
+
    if ('C' = st)
      {
 	if ("RIGHT" (old_name, 1) <> '/')
@@ -420,7 +420,7 @@ create procedure FTP_CWD (in in_str varchar, in command varchar, in arg varchar,
 
    if ('CDUP' = command)
      _new := '..';
-     
+
    safe_path := _old;
    rn_name := '';
 
@@ -452,7 +452,7 @@ create procedure FTP_CWD (in in_str varchar, in command varchar, in arg varchar,
        FTP_WRITE (_user, '550 The path "' || arg || '" (absolute path "' || _old || '") is not valid: ' || DAV_PERROR (rid), in_str);
        _old := safe_path;
        return;
-     }   
+     }
    FTP_WRITE (_user, '250 ' || command || ' command successful.', in_str);
 }
 ;
@@ -639,7 +639,7 @@ create procedure FTP_RETR (in in_str varchar, in d_addr varchar, in f_name varch
 	FTP_WRITE (auth_uid, '550 ' || wanted_faile || ' not found.', in_str);
 	return;
      }
-   
+
    id := DAV_SEARCH_ID (f_name, 'R');
 
   if (DAV_HIDE_ERROR (id) is null)
@@ -838,12 +838,12 @@ create procedure FTP_SITE (in in_str varchar, in argument varchar, in full_path 
       goto ok;
     }
   goto oblom;
-  
+
 ok:
   FTP_WRITE (_user, '200 SITE command complete, effective path is "' || full_path || '"', in_str);
   return;
-  
-oblom:  
+
+oblom:
   FTP_WRITE (_user, '500 SITE command does not support this form of request: "' || argument || '"', in_str);
 }
 ;
@@ -864,7 +864,7 @@ create procedure FTP_STOR (in in_str varchar, in d_addr varchar, in cur_dir varc
 
   if ("LEFT" (f_name, 1) = '/')
     f_name := '/DAV' || f_name;
-  else  
+  else
     f_name := cur_dir || f_name;
 
   f_name := replace (f_name, '//', '/');
@@ -1536,7 +1536,7 @@ create procedure FTP_RES_UPLOAD_FROM_POSITION (in in_str varchar, in d_addr varc
       actual_old_len := length (old_ses);
       if (actual_old_len = rest_pos)
         {
-	  http (temp, _cont);        
+	  http (temp, _cont);
         }
       else if (actual_old_len > rest_pos)
         {

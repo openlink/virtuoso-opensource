@@ -683,7 +683,7 @@ typedef struct spar_sqlgen_var_s
 {
   quad_map_t	*ssgv_source_qm;	/*!< The source where the value comes from, to access table names and vtable with template printer. */
   qm_value_t	*ssgv_field_qmv;	/*!< The field, with data for template printer */
-  int			ssgv_is_short;	/*!< Flag whether the value is short (for local joins in graph) or long (for generic ops) */
+  int		ssgv_is_short;	/*!< Flag whether the value is short (for local joins in graph) or long (for generic ops) */
 } spar_sqlgen_var_t;
 
 /*! Context of SQL generator */
@@ -744,8 +744,8 @@ extern void spar_sqlprint_error_impl (spar_sqlgen_t *ssg, const char *msg);
       ind = 1 + ind * SSG_INDENT_FACTOR - (back); \
     else \
       ind = 1; \
-        if (SSG_MAX_ALLOWED_LINE_COUNT == ssg->ssg_line_count++) \
-          spar_sqlprint_error_impl (ssg, "The length of generated SQL text has exceeded 10000 lines of code"); \
+    if (SSG_MAX_ALLOWED_LINE_COUNT == ssg->ssg_line_count++) \
+      spar_sqlprint_error_impl (ssg, "The length of generated SQL text has exceeded 10000 lines of code"); \
     session_buffered_write (ssg->ssg_out, "\n                              ", (ind > 31) ? 31 : ind); \
     } while (0)
 

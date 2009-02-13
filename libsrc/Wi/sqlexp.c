@@ -128,10 +128,10 @@ sqlc_call_ret_name (ST * tree, char * func_name, state_slot_t * ssl)
   caddr_t name;
   if (!ssl)
     return;
-  name = sqlo_iri_constant_name (tree);
+  name = sqlo_iri_constant_name  (tree);
   if (DV_STRINGP (name))
     {
-      caddr_t pref, local;
+      caddr_t pref, local ;
       if (iri_split (name, &pref, &local))
 	{
 	  dk_free_box (pref);

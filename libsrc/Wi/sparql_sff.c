@@ -430,7 +430,7 @@ again:
 /* Now we know that f1 starts with variable part, f2 is either fixed or variable part */
   if(f1_tail <= f1)
     {
-  f1_tail = f1 + 1;
+      f1_tail = f1 + 1;
       if ('{' == f1_tail[0])
         {
           f1_tail++;
@@ -438,27 +438,27 @@ again:
           if ('}' != f1_tail[0])
             goto generic_tails; /* Syntax error -- no '}' after "%{connvar" */
           f1_tail++;
-  while (!isalpha (f1_tail[0]) && ('\0' != f1_tail[0])) f1_tail++;
-  f1_v = (f1_tail++)[0];
+          while (!isalpha (f1_tail[0]) && ('\0' != f1_tail[0])) f1_tail++;
+          f1_v = (f1_tail++)[0];
           if ('U' != f1_v)
             goto generic_tails; /* Syntax error -- no 'U' after "%{connvar}" */
         }
       else
-    {
+        {
           while (!isalpha (f1_tail[0]) && ('\0' != f1_tail[0])) f1_tail++;
           f1_v = (f1_tail++)[0];
         }
     }
   if (f2_tail <= f2)
     {
-  if ('%' == f2[0])
-    {
-      if ('%' == f2[1])
+      if ('%' == f2[0])
         {
-          f2_tail = f2 + 2;
-          f2_v = '\0';
-          f2_fix = '%';
-        }
+          if ('%' == f2[1])
+            {
+              f2_tail = f2 + 2;
+              f2_v = '\0';
+              f2_fix = '%';
+            }
           else if ('{' == f2[1])
             {
               f2_tail = f2 + 2;
@@ -477,25 +477,25 @@ again:
                   !memcmp (f1, f2, (f1_tail - f1)) )
                 goto res_tail_shifts_f1_v_gets_f2_v; /* see below */
             }
+          else
+            {
+              f2_tail = f2 + 1;
+              while (!isalpha (f2_tail[0]) && ('\0' != f2_tail[0])) f2_tail++;
+              f2_v = (f2_tail++)[0];
+              f2_fix = '\0';
+              switch (f2_v)
+                {
+                case 'D': case 'U': case 'd': case 's': case 'u': break;
+                default: goto generic_tails; /* see below */
+                }
+            }
+        }
       else
         {
           f2_tail = f2 + 1;
-          while (!isalpha (f2_tail[0]) && ('\0' != f2_tail[0])) f2_tail++;
-          f2_v = (f2_tail++)[0];
-              f2_fix = '\0';
-          switch (f2_v)
-            {
-            case 'D': case 'U': case 'd': case 's': case 'u': break;
-            default: goto generic_tails; /* see below */
-            }
+          f2_v = '\0';
+          f2_fix = f2[0];
         }
-    }
-  else
-    {
-      f2_tail = f2 + 1;
-      f2_v = '\0';
-      f2_fix = f2[0];
-    }
     }
   switch (f1_v)
     {
@@ -538,14 +538,14 @@ f1_v_is_D:
         (f1_last_replaced == f1) ) /*... but date output can not be empty so should make if result contains something for the field */
         {
           f2_tail = f2;
-            goto tails_are_in_sync; /* see below */
+          goto tails_are_in_sync; /* see below */
         }
-          if ('\0' == f1_tail[0])
-            return SFF_ISECT_DIFF_END; /* One string ends with %D, other with non-%D fixed char */
-          return SFF_ISECT_DISJOIN;
-        }
+      if ('\0' == f1_tail[0])
+        return SFF_ISECT_DIFF_END; /* One string ends with %D, other with non-%D fixed char */
+      return SFF_ISECT_DISJOIN;
+    }
   switch (f2_v)
-            {
+    {
     case 'D': goto res_tail_gets_f2_v; /* see below */
     case 'U':
       if (isplainURIchar (f1_tail[0]) || isplainURIchar (f2_tail[0]))
@@ -558,10 +558,10 @@ f1_v_is_D:
       goto res_tail_gets_f1_v; /* see below */
     case 'd': case 'u':
       goto res_tail_gets_f2_v; /* see below */
-        case 's': goto generic_tails; /* see below */
+    case 's': goto generic_tails; /* see below */
     goto res_tail_gets_f2_v; /* see below */
-        default: goto generic_tails; /* see below */
-        }
+    default: goto generic_tails; /* see below */
+    }
 
 f1_v_is_U:
   if (isplainURIchar (f1_tail[0]))
@@ -574,20 +574,20 @@ f1_v_is_U:
       if (f1_tail[0] == f2_fix) /* unambiguous synchronisation between f1 and f2... */
         {
           f2_tail = f2;
-            goto tails_are_in_sync; /* see below */
+          goto tails_are_in_sync; /* see below */
         }
-          if ('\0' == f1_tail[0])
+      if ('\0' == f1_tail[0])
         return SFF_ISECT_DIFF_END; /* One string ends with %D, other with non-%D fixed char */
-          return SFF_ISECT_DISJOIN;
-            }
+      return SFF_ISECT_DISJOIN;
+    }
   switch (f2_v)
-        {
+    {
     case 'U': goto res_tail_gets_f2_v; /* see below */
     case 'd': goto res_tail_gets_f2_v; /* see below */
-        case 's': goto generic_tails; /* see below */
+    case 's': goto generic_tails; /* see below */
     case 'u': goto res_tail_gets_f2_v; /* see below */
-        default: goto generic_tails; /* see below */
-        }
+    default: goto generic_tails; /* see below */
+    }
 
 f1_v_is_d:
 f1_v_is_u:
@@ -604,19 +604,19 @@ f1_v_is_u:
         (f1_last_replaced == f1) ) /*... but integer output can not be empty so should make if result contains something for the field */
         {
           f2_tail = f2;
-        goto tails_are_in_sync; /* see below */
+          goto tails_are_in_sync; /* see below */
         }
       if ('\0' == f1_tail[0])
         return SFF_ISECT_DIFF_END; /* One string ends with %D, other with non-%D fixed char */
-        return SFF_ISECT_DISJOIN;
+      return SFF_ISECT_DISJOIN;
     }
   switch (f2_v)
-        {
+    {
     case 'd': goto res_tail_gets_f2_v; /* see below */
     case 's': goto generic_tails; /* see below */
     case 'u': goto res_tail_gets_f2_v; /* see below */
-        default: goto generic_tails; /* see below */
-        }
+    default: goto generic_tails; /* see below */
+    }
 
 f1_v_is_s:
   if ('\0' == f2_v)
@@ -748,9 +748,9 @@ sprintff_intersect (ccaddr_t f1, ccaddr_t f2, int ignore_cache)
         }
       chk_pos++;
     }
-      fmt_strcmp = strcmp (f1 + chk_pos, f2 + chk_pos);
-      if (0 < fmt_strcmp)
-        { ccaddr_t swap = f2; f2 = f1; f1 = swap; }
+  fmt_strcmp = strcmp (f1 + chk_pos, f2 + chk_pos);
+  if (0 < fmt_strcmp)
+    { ccaddr_t swap = f2; f2 = f1; f1 = swap; }
   if (!ignore_cache)
     {
       mutex_enter (sprintff_intersect_mtx);
@@ -891,12 +891,12 @@ f2_v_is_U:
           s1_tail += 3;
           continue;
         }
-          if (f2_tail[0] == s1_tail[0]) /* unambiguous synchronisation between f2 and s1 */
-            goto tails_are_in_sync; /* see below */
-          if ('\0' == f2_tail[0])
-            return SFF_ISECT_DIFF_END; /* One string ends with %U, other with non-%U fixed char */
-          return SFF_ISECT_DISJOIN;
-        }
+      if (f2_tail[0] == s1_tail[0]) /* unambiguous synchronisation between f2 and s1 */
+        goto tails_are_in_sync; /* see below */
+      if ('\0' == f2_tail[0])
+        return SFF_ISECT_DIFF_END; /* One string ends with %U, other with non-%U fixed char */
+      return SFF_ISECT_DISJOIN;
+    }
   GPF_T; /* never reached */
 
 f2_v_is_d:
@@ -1040,7 +1040,7 @@ sparp_rvr_add_sprintffs (sparp_t *sparp, rdf_val_range_t *rvr, ccaddr_t *add_sff
             goto skip_addon; /* see below */
         }
       rvr->rvrSprintffs [len++] = addon;
-skip_addon: ;        
+skip_addon: ;
     }
   rvr->rvrSprintffCount = len;
 }

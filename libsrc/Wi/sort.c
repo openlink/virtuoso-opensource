@@ -62,7 +62,7 @@ setp_comp_array (setp_node_t * setp, caddr_t * qst, caddr_t * left, state_slot_t
 	    }
 	  else
 	    rc = DVC_GREATER;
-	}
+        }
       else if (DVC_NOORDER == rc)
         rc = DVC_UNKNOWN;
 /*
@@ -181,7 +181,7 @@ setp_mem_sort (setp_node_t * setp, caddr_t * qst)
             {
               if ((guess >= (top + skip - 1)) || (guess >= fill)) /* safety check if comparisons are not transitive: */
                 return;
-	    guess++;
+	      guess++;
             }
 	  setp_mem_insert (setp, qst, (int) guess, arr, (int) fill);
 	  return;
@@ -576,7 +576,7 @@ in_iter_input (in_iter_node_t * ii, caddr_t * inst, caddr_t * state)
 	{
 	  SRC_IN_STATE ((data_source_t *) ii, inst) = NULL;
 	  ri_outer_output ((rdf_inf_pre_node_t *) ii, ii->ii_outer_any_passed, inst);
-	  return;
+		  return;
 	}
       if (current == BOX_ELEMENTS (arr) - 1)
 	SRC_IN_STATE ((data_source_t *) ii, inst) = NULL;
@@ -585,8 +585,8 @@ in_iter_input (in_iter_node_t * ii, caddr_t * inst, caddr_t * state)
       if (current == BOX_ELEMENTS (arr) - 1)
 	{
 	  ri_outer_output ((rdf_inf_pre_node_t *) ii, ii->ii_outer_any_passed, inst);
-	return;
-    }
+	  return;
+	}
     }
 }
 

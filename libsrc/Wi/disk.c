@@ -63,7 +63,7 @@ dk_hash_t * row_hash = 0;
 int h_index = 0;
 
 #if DB_SYS_BYTE_ORDER == DB_ORDER_LITTLE_ENDIAN
-void 
+void
 DBS_REVERSE_LONG(db_buf_t pl)
 {
   if (h_index && gethash((void*) pl, row_hash))
@@ -77,7 +77,7 @@ DBS_REVERSE_LONG(db_buf_t pl)
 }
 
 
-void 
+void
 DBS_REVERSE_SHORT(db_buf_t ps)
 {
   if (h_index && gethash((void*) ps, row_hash))
@@ -91,7 +91,7 @@ DBS_REVERSE_SHORT(db_buf_t ps)
 }
 
 
-long 
+long
 DBS_REV_LONG_REF(db_buf_t p)
 {
   if (h_index && gethash((void*) p, row_hash))
@@ -100,7 +100,7 @@ DBS_REV_LONG_REF(db_buf_t p)
 }
 
 
-short 
+short
 DBS_REV_SHORT_REF(db_buf_t ps)
 {
   if (h_index && gethash((void*) ps, row_hash))
@@ -108,7 +108,7 @@ DBS_REV_SHORT_REF(db_buf_t ps)
   return SHORT_REF_NA ((ps));
 }
 #else
-void  
+void
 DBS_REVERSE_LONG(db_buf_t pl)
 {
   if (h_index && gethash((void*) pl, row_hash))
@@ -122,7 +122,7 @@ DBS_REVERSE_LONG(db_buf_t pl)
 }
 
 
-void  
+void
 DBS_REVERSE_SHORT(db_buf_t ps)
 {
   if (h_index && gethash((void*) ps, row_hash))
@@ -135,7 +135,7 @@ DBS_REVERSE_SHORT(db_buf_t ps)
     }
 }
 
-long 
+long
 DBS_REV_LONG_REF(db_buf_t p)
 {
   if (h_index && gethash((void*) p, row_hash))
@@ -143,7 +143,7 @@ DBS_REV_LONG_REF(db_buf_t p)
   return LONG_REF_BE (p);
 }
 
-short 
+short
 DBS_REV_SHORT_REF(db_buf_t ps)
 {
   if (h_index && gethash((void*) ps, row_hash))
@@ -232,8 +232,8 @@ page_set_checksum (db_buf_t page)
   /* first 2021 int32's with a step of 17, the last 3 with a step of 1 */
   for (inx = 0; inx < ((PAGE_DATA_SZ / sizeof (uint32)) / 17) * 17; inx+= 17)
     ck = ck ^ p[inx] ^ p[inx + 1] ^ p[inx + 2] ^ p[inx + 3]
-      ^ p[inx + 4] ^ p[inx + 5] ^ p[inx + 6] ^ p[inx + 7] ^ p[inx + 8] 
-      ^ p[inx + 9] ^ p[inx + 10] ^ p[inx +11] ^ p[inx + 12] ^ p[inx + 13] 
+      ^ p[inx + 4] ^ p[inx + 5] ^ p[inx + 6] ^ p[inx + 7] ^ p[inx + 8]
+      ^ p[inx + 9] ^ p[inx + 10] ^ p[inx +11] ^ p[inx + 12] ^ p[inx + 13]
       ^ p[inx + 14] ^ p[inx + 15] ^ p[inx + 16];
   for (inx = ((PAGE_DATA_SZ / sizeof (uint32)) / 17) * 17; inx < PAGE_DATA_SZ / sizeof (uint32); inx++)
     ck = ck ^ ((uint32*)page)[inx];
@@ -382,7 +382,7 @@ it_allocate (dbe_storage_t * dbs)
   return tree;
 }
 
-#ifdef BUF_DEBUG 
+#ifdef BUF_DEBUG
 dk_set_t temp_trees;
 dk_mutex_t * temp_trees_mtx;
 
@@ -430,7 +430,7 @@ it_temp_tree_check ()
 #define it_temp_tree_active(a)
 #define it_temp_tree_done(a)
 #define it_temp_tree_check(a)
-#endif 
+#endif
 
 
 void
@@ -536,14 +536,14 @@ void
 it_temp_free (index_tree_t * it)
 {
   /* free a temp tree */
- 
-  /*Note the following problem scenario:  A  buffer becomes available in it_temp_free, space and pages set to 0. 
+
+  /*Note the following problem scenario:  A  buffer becomes available in it_temp_free, space and pages set to 0.
    * This buffer then gets used in  another tree, no need to sync because the buffer in question is free. [B
-   * Another buffer in the same temp tree must be canceled from the write queue. This leaves the mutexes and restarts the scan of the hash.  The hash will however still reference buffers that have been set free.   
-   * It may be that a buffer is then encountered which legitimately  belongs to another tree by this time.  
-   * An inadvertent write cancellation and page_wait_access with the wrong page map mtx may be attempted, which is objectionable. Worst case is an errnoeous mark as free and losing non-serialization of the buffer's rw gate. 
+   * Another buffer in the same temp tree must be canceled from the write queue. This leaves the mutexes and restarts the scan of the hash.  The hash will however still reference buffers that have been set free.
+   * It may be that a buffer is then encountered which legitimately  belongs to another tree by this time.
+   * An inadvertent write cancellation and page_wait_access with the wrong page map mtx may be attempted, which is objectionable. Worst case is an errnoeous mark as free and losing non-serialization of the buffer's rw gate.
    * Therefore  all cancellations get done first and then all buffers that remain are detached from the it being deleted. */
-  
+
   it_cursor_t itc_auto;
   int inx;
   it_cursor_t * itc = &itc_auto;
@@ -585,7 +585,7 @@ it_temp_free (index_tree_t * it)
       ITC_IN_KNOWN_MAP (itc, inx);
       dk_hash_iterator (&hit, &itm->itm_dp_to_buf);
   while (dk_hit_next (&hit, (void**) &dp, (void **) &buf))
-	{
+    {
 	  ASSERT_IN_MAP (itc->itc_tree, inx);
 	  if (buf->bd_tree && buf->bd_tree != it)
 	GPF_T1 ("it_temp_free with buffer that belongs to other tree");
@@ -614,7 +614,7 @@ it_temp_free (index_tree_t * it)
       ITC_LEAVE_MAPS (itc);
     }
   itc_free (itc);
-      
+
   if (it->it_hi)
     hi_free (it->it_hi);
   it->it_hi = NULL;
@@ -719,13 +719,13 @@ buffer_allocate (int type)
         continue;
       memset (buf, 0, sizeof (buffer_desc_t));
       buf->bd_buffer = (void *)(bg_first->bg_buffer0 + b_ctr);
-  memset (buf->bd_buffer, 0, PAGE_SZ);
-  SHORT_SET (buf->bd_buffer + DP_FLAGS, type);
+      memset (buf->bd_buffer, 0, PAGE_SZ);
+      SHORT_SET (buf->bd_buffer + DP_FLAGS, type);
       sethash (buf, bg_of_bd, bg_first);
       bg_first->bg_used++;
       bg_free_buffers--;
       mutex_leave (bg_mutex);
-  return buf;
+      return buf;
     }
   GPF_T1 ("buffer_allocate(): can't find a free buffer in a group");
   return NULL; /* never happen */
@@ -888,7 +888,7 @@ bp_found (buffer_desc_t * buf, int from_free_list)
 	return 0;
       buf->bd_readers = 1;
       if (!from_free_list)
-      bp->bp_next_replace = (int) ((buf - bp->bp_bufs) + 1);
+	bp->bp_next_replace = (int) ((buf - bp->bp_bufs) + 1);
       bp_replace_count--; /* reuse of abandoned not counted as a replace */
       LEAVE_BP (bp);
       buf->bd_timestamp = bp->bp_ts;
@@ -908,19 +908,19 @@ bp_found (buffer_desc_t * buf, int from_free_list)
   if (BUF_AVAIL (buf))
     {
       buf->bd_readers = 1;
-	  /* the buffer may have been freed from its isp between reading the last_isp and entering its map.
-	   */
+      /* the buffer may have been freed from its isp between reading the last_isp and entering its map.
+       */
 #ifdef BUF_DEBUG
       buf->bd_prev_tree = last_tree;
       buf_dbg_printf (("Buf %x leaves tree %x\n", buf, last_isp));
 #endif
       if (!remhash (DP_ADDR2VOID (buf->bd_page), &itm->itm_dp_to_buf))
-	    GPF_T1 ("buffer not in the hash of the would be space of residence");
+	GPF_T1 ("buffer not in the hash of the would be space of residence");
       buf->bd_page = 0;
       buf->bd_tree = NULL;
       mutex_leave (&itm->itm_mtx);
       if (!from_free_list)
-      bp->bp_next_replace = (int) ((buf - bp->bp_bufs) + 1);
+	bp->bp_next_replace = (int) ((buf - bp->bp_bufs) + 1);
       bp_replace_age += bp->bp_ts - buf->bd_timestamp;
       LEAVE_BP (bp);
       buf->bd_timestamp = bp->bp_ts;
@@ -958,7 +958,7 @@ bp_stat_action (buffer_pool_t * bp)
       wi_check_all_compact (age_limit);
       mt_write_dirty (bp, age_limit, 0);
     }
-      else 
+      else
 	{
 	  /*  mtx just pro forma, only one thread in cpt anyway */
 	  mutex_leave (bp->bp_mtx);
@@ -1239,19 +1239,19 @@ buf_set_last (buffer_desc_t * buf)
   buf->bd_timestamp = bp->bp_ts - bp->bp_n_bufs;
 }
 
-void 
+void
 buf_recommend_reuse (buffer_desc_t * buf)
 {
-  /* 
-   *  Dirty write. 
+  /*
+   *  Dirty write.
    *
-   *  Should be inside the bp_mtx of the pool. 
-   *  Not dangerous since bp__first_free is always some buffer of the bp 
-   *  or NULL and likewise with bd_next. The list can get screwed up, it 
-   *  is always popped a single unit at a time and if a member of the list 
-   *  gets reallocated by normal means the list just breaks because the 
-   *  bd_next of the allocated one will be reset. Pops from the list are 
-   *  serialized anyway and normal checks apply to the buffers, so even 
+   *  Should be inside the bp_mtx of the pool.
+   *  Not dangerous since bp__first_free is always some buffer of the bp
+   *  or NULL and likewise with bd_next. The list can get screwed up, it
+   *  is always popped a single unit at a time and if a member of the list
+   *  gets reallocated by normal means the list just breaks because the
+   *  bd_next of the allocated one will be reset. Pops from the list are
+   *  serialized anyway and normal checks apply to the buffers, so even
    *  if they actually are not reusable no harm is done.
    */
 
@@ -1971,13 +1971,13 @@ long dbs_count_free_pages (dbe_storage_t * dbs)
 
 
 #ifdef PAGE_SET_CHECKSUM
-/* if free set checksum is on, checking the free bit checks the checksum and this should be serialized to avoid false positives 
+/* if free set checksum is on, checking the free bit checks the checksum and this should be serialized to avoid false positives
  * If no checksum, no serialization is needed for checking a free bit */
 #define IN_DBS_IF_CKSUM(dbs) IN_DBS(dbs)
 #define LEAVE_DBS_IF_CKSUM(dbs) LEAVE_DBS(dbs)
 #else
-#define IN_DBS_IF_CKSUM(dbs) 
-#define LEAVE_DBS_IF_CKSUM(dbs) 
+#define IN_DBS_IF_CKSUM(dbs)
+#define LEAVE_DBS_IF_CKSUM(dbs)
 #endif
 
 long
@@ -2524,7 +2524,7 @@ bp_write_dirty (buffer_pool_t * bp, int force, int is_in_bp, int n_oldest)
 	    {
 	      it_map_t * itm;
 	      if (bp_buf_enter (buf, &itm))
-	    {
+		{
 	      if (buf->bd_is_dirty
 		  && !buf->bd_iq)
 		{
@@ -2534,7 +2534,7 @@ bp_write_dirty (buffer_pool_t * bp, int force, int is_in_bp, int n_oldest)
 		      buf->bd_readers++;
 		      bufs[fill++] = buf;
 		    }
-		}
+		    }
 		  mutex_leave (&itm->itm_mtx);
 		}
 	    }
@@ -2594,7 +2594,7 @@ dbs_open_disks (dbe_storage_t * dbs)
       if (!dst->dst_fds)
 	{
 	  int inx;
-	      dbs_sys_db_check (dst->dst_file);
+	  dbs_sys_db_check (dst->dst_file);
 	  file_set_rw (dst->dst_file);
 	  dst->dst_sem = semaphore_allocate (0);
 	  dst->dst_fds = (int*) dk_alloc_box_zero (sizeof (int) * n_fds_per_file, DV_CUSTOM);
@@ -2864,7 +2864,7 @@ void row_na_length(db_buf_t row, dbe_key_t *key, db_buf_t * off)
 }
 
 
-int 
+int
 dbs_reset_row_na (db_buf_t row, dbe_key_t * page_key)
 {
   db_buf_t orig_row = row;
@@ -2984,7 +2984,7 @@ dbs_reset_row_na (db_buf_t row, dbe_key_t * page_key)
 }
 
 
-void 
+void
 dbs_rev_h_index  (dbe_storage_t * dbs, buffer_desc_t * buf)
 {
   if (buf->bd_physical_page && dbs_is_free_page (dbs, buf->bd_physical_page))
@@ -3165,7 +3165,7 @@ dbs_read_cfg_page (dbe_storage_t * dbs, wi_database_t * cfg_page)
   if (storage_ver > atoi (DBMS_SRV_GEN_MAJOR DBMS_SRV_GEN_MINOR))
     {
       log_error ("The database you are opening was last closed with a server of version %d." , storage_ver);
-      log_error ("The present server is of version " DBMS_SRV_GEN_MAJOR DBMS_SRV_GEN_MINOR "."  
+      log_error ("The present server is of version " DBMS_SRV_GEN_MAJOR DBMS_SRV_GEN_MINOR "."
 	  " The database will contain data types");
       log_error ("which are not recognized by this server.  Please use a newer server.");
       log_error ("Exiting.");
@@ -3605,47 +3605,48 @@ dbe_key_open (dbe_key_t * key)
       kf->kf_name = box_dv_short_string (str);
       kf->kf_storage = key->key_storage;
     }
+
   DO_BOX (dbe_key_frag_t *, kf, inx, key->key_fragments)
-    {
-      caddr_t start_str;
-      dp_addr_t start_dp = 0;
-      IN_TXN;
-      start_str = registry_get (kf->kf_name);
-      LEAVE_TXN;
-      kf->kf_it = it_allocate (kf->kf_storage);
+  {
+    caddr_t start_str;
+    dp_addr_t start_dp = 0;
+    IN_TXN;
+    start_str = registry_get (kf->kf_name);
+    LEAVE_TXN;
+    kf->kf_it = it_allocate (kf->kf_storage);
 #ifndef MUTEX_OPTION_NOP
-      {
+    {
       int inx2;
-	char mtx_name[200];
-	snprintf (mtx_name, sizeof (mtx_name), "lock_rel_%100s", kf->kf_name);
-	mutex_option (kf->kf_it->it_lock_release_mtx, mtx_name, NULL,  NULL);
+      char mtx_name[200];
+      snprintf (mtx_name, sizeof (mtx_name), "lock_rel_%100s", kf->kf_name);
+      mutex_option (kf->kf_it->it_lock_release_mtx, mtx_name, NULL, NULL);
       for (inx2 = 0; inx2 < IT_N_MAPS; inx2++)
-	  {
+	{
 	  sprintf (mtx_name, "%s:%d", kf->kf_name, inx2);
 	  mutex_option (&(kf->kf_it->it_maps[inx2].itm_mtx), mtx_name, NULL, (void *) &kf->kf_it->it_maps[inx2]);
-      }
-      }
-#endif
-      kf->kf_it->it_key = key;
-      if (start_str)
-	start_dp = atol (start_str);
-      dk_free_tree (start_str);
-      if (!start_dp)
-	{
-	it_map_t *itm;
-	buffer_desc_t *buf = it_new_page (kf->kf_it, 0, DPF_INDEX, 0, 0);
-	  pg_init_new_root (buf);
-	  kf->kf_it->it_root = buf->bd_page;
-	  itm = IT_DP_MAP (kf->kf_it, buf->bd_page);
-	  mutex_enter (&itm->itm_mtx);
-	  page_leave_inner (buf);
-	  mutex_leave (&itm->itm_mtx);
-	}
-      else
-	{
-	  kf->kf_it->it_root = start_dp;
 	}
     }
+#endif
+    kf->kf_it->it_key = key;
+    if (start_str)
+      start_dp = atol (start_str);
+    dk_free_tree (start_str);
+    if (!start_dp)
+      {
+	it_map_t *itm;
+	buffer_desc_t *buf = it_new_page (kf->kf_it, 0, DPF_INDEX, 0, 0);
+	pg_init_new_root (buf);
+	kf->kf_it->it_root = buf->bd_page;
+	itm = IT_DP_MAP (kf->kf_it, buf->bd_page);
+	mutex_enter (&itm->itm_mtx);
+	page_leave_inner (buf);
+	mutex_leave (&itm->itm_mtx);
+      }
+    else
+      {
+	kf->kf_it->it_root = start_dp;
+      }
+  }
   END_DO_BOX;
 }
 

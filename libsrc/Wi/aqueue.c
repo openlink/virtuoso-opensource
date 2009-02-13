@@ -355,7 +355,7 @@ bif_aq_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
   dtp_t dtp = DV_TYPE_OF (arg);
   if (dtp != DV_ASYNC_QUEUE)
     sqlr_new_error ("22023", "SR002",
-	"Function %s needs an async queue  as argument %d, not an arg of type %s (%d)", func, nth + 1, dv_type_title (dtp), dtp);
+	"Function %s needs an async queue as argument %d, not an arg of type %s (%d)", func, nth + 1, dv_type_title (dtp), dtp);
   return (async_queue_t *) arg;
 }
 

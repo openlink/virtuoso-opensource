@@ -112,16 +112,16 @@ sparp_gp_trav_list_nonaggregate_retvals (sparp_t *sparp, SPART *curr, sparp_trav
     {
     case SPAR_VARIABLE:
       {
-  caddr_t varname;
-  varname = curr->_.var.vname;
-  if (SPART_VARNAME_IS_GLOB(varname)) /* Query run-time env or external query param ? -- not in result-set */
-    return SPAR_GPT_NODOWN;
-  DO_SET (caddr_t, listed, (dk_set_t *)(common_env))
-    {
-      if (!strcmp (listed, varname))
-        return SPAR_GPT_NODOWN;
-    }
-  END_DO_SET()
+        caddr_t varname;
+        varname = curr->_.var.vname;
+        if (SPART_VARNAME_IS_GLOB(varname)) /* Query run-time env or external query param ? -- not in result-set */
+          return SPAR_GPT_NODOWN;
+        DO_SET (caddr_t, listed, (dk_set_t *)(common_env))
+          {
+            if (!strcmp (listed, varname))
+              return SPAR_GPT_NODOWN;
+          }
+        END_DO_SET()
         t_set_push (&(((list_nonaggregate_retvals_t *)(common_env))->names), varname);
         return SPAR_GPT_NODOWN;
       }
@@ -133,7 +133,7 @@ sparp_gp_trav_list_nonaggregate_retvals (sparp_t *sparp, SPART *curr, sparp_trav
         }
       break;
     case SPAR_GP:
-  return SPAR_GPT_NODOWN;
+      return SPAR_GPT_NODOWN;
     }
   return SPAR_GPT_ENV_PUSH; /* To preserve sts_this->sts_curr_array and sts_this->sts_ofs_of_curr_in_array for wrapper of vars into fake MAX() */
 }
@@ -363,11 +363,11 @@ sparp_expand_top_retvals () to process 'DESCRIBE * ...'. */
   if (DESCRIBE_L == root->_.req_top.subtype)
     {
       sparp->sparp_storage = sparp_find_storage_by_name (sparp->sparp_expr->_.req_top.storage_name);
-    root->_.req_top.retvals = 
-      spar_retvals_of_describe (sparp,
-        root->_.req_top.retvals,
-        root->_.req_top.limit,
-        root->_.req_top.offset );
+      root->_.req_top.retvals =
+        spar_retvals_of_describe (sparp,
+          root->_.req_top.retvals,
+          root->_.req_top.limit,
+          root->_.req_top.offset );
     }
   sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
     sparp_gp_trav_preopt_in_gp, NULL,
@@ -437,13 +437,13 @@ sparp_gp_trav_cu_in_options (sparp_t *sparp, SPART *gp, SPART *curr, SPART **opt
             sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
             if (!IS_BOX_POINTER (val))
               break;
-                memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
+            memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
             stss[1].sts_ancestor_gp = gp;
-                sparp_gp_trav_int (sparp, val, stss+1, common_env,
-                  sparp_gp_trav_cu_in_triples, sparp_gp_trav_cu_out_triples_1,
-                  sparp_gp_trav_cu_in_expns, NULL, sparp_gp_trav_cu_in_subq, NULL );
-                break;
-              }
+            sparp_gp_trav_int (sparp, val, stss+1, common_env,
+              sparp_gp_trav_cu_in_triples, sparp_gp_trav_cu_out_triples_1,
+              sparp_gp_trav_cu_in_expns, NULL, sparp_gp_trav_cu_in_subq, NULL );
+            break;
+          }
         }
     }
 }
@@ -2055,8 +2055,8 @@ sparp_equiv_audit_all (sparp_t *sparp, int flags)
                   if (var_tr_idx < SPART_TRIPLE_FIELDS_COUNT)
                     {
                       if (triple->_.triple.tr_fields[var_tr_idx] == var)
-                    break;
-                }
+                        break;
+                    }
                   else
                     {
                       if (sparp_get_option (sparp, triple->_.triple.options, var_tr_idx) == var)
@@ -4263,9 +4263,9 @@ sparp_gp_trav_reuse_tabids (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts
             key_qmv = SPARP_FIELD_QMV_OF_QM (base_qm,key_field_idx);
             if (!sparp_qmv_forms_reusable_key_of_qm (sparp, key_qmv, base_qm))
               continue;
-                t_set_push (((dk_set_t *)(common_env)), curr);
-                return 0;
-              }
+            t_set_push (((dk_set_t *)(common_env)), curr);
+            return 0;
+          }
         break;
       }
     }
@@ -4448,9 +4448,9 @@ because both variable outside and variable inside will produce identical SQL cod
       sparp_set_triple_selid_and_tabid (sparp, opt_triple, key_recv_gp->_.gp.selid, dep_triple->_.triple.tabid);
       if (0 != really_nullable_count)
         {
-      opt_triple->_.triple.subtype = OPTIONAL_L;
+          opt_triple->_.triple.subtype = OPTIONAL_L;
           if (optimizable_field_count)
-        {
+            {
               SPART *optimizable_field = opt_triple->_.triple.tr_fields [optimizable_field_idx];
               if (SPAR_IS_BLANK_OR_VAR (optimizable_field))
                 optimizable_field->_.var.rvr.rvrRestrictions &= ~SPART_VARR_NOT_NULL;
@@ -4771,26 +4771,26 @@ sparp_rewrite_qm_optloop (sparp_t *sparp, int opt_ctr)
 int
 sparp_retval_should_wrap_distinct (sparp_t *sparp, SPART *tree, SPART *rv)
 {
-      ssg_valmode_t rv_valmode = sparp_expn_native_valmode (sparp, rv);
-      if (SSG_VALMODE_SQLVAL == rv_valmode)
+  ssg_valmode_t rv_valmode = sparp_expn_native_valmode (sparp, rv);
+  if (SSG_VALMODE_SQLVAL == rv_valmode)
     return 0;
-      if (SSG_VALMODE_LONG == rv_valmode)
-        {
-          ptrlong rv_restr = sparp_restr_bits_of_expn (sparp, rv);
-          if (rv_restr & SPART_VARR_IS_REF)
+  if (SSG_VALMODE_LONG == rv_valmode)
+    {
+      ptrlong rv_restr = sparp_restr_bits_of_expn (sparp, rv);
+      if (rv_restr & SPART_VARR_IS_REF)
         return 0;
       return 1;
-        }
-      if (IS_BOX_POINTER(rv_valmode))
-        {
-          ptrlong rv_restr;
+    }
+  if (IS_BOX_POINTER(rv_valmode))
+    {
+      ptrlong rv_restr;
       if (!rv_valmode->qmfWrapDistinct)
         return 0;
-          rv_restr = sparp_restr_bits_of_expn (sparp, rv);
-          if (rv_restr & SPART_VARR_IS_REF)
+      rv_restr = sparp_restr_bits_of_expn (sparp, rv);
+      if (rv_restr & SPART_VARR_IS_REF)
         return 0;
       return 1;
-        }
+    }
   return 0;
 }
 

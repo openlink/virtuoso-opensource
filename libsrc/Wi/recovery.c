@@ -98,8 +98,8 @@ walk_dbtree ( it_cursor_t * it, buffer_desc_t ** buf_ret, int level,
 
   if (level < MAX_LEVELS)
     {
-  levels[level].lv_nodes++;
-  /*  levels[level].lv_bytes += PAGE_SZ - (*buf_ret)->bd_content_map->pm_bytes_free; */
+      levels[level].lv_nodes++;
+      /*  levels[level].lv_bytes += PAGE_SZ - (*buf_ret)->bd_content_map->pm_bytes_free; */
     }
   if (func)
     (*func) (it, *buf_ret, ctx);
@@ -143,7 +143,7 @@ walk_dbtree ( it_cursor_t * it, buffer_desc_t ** buf_ret, int level,
 	{
 	  it->itc_at_data_level = 1;
 	  if (level < MAX_LEVELS)
-	  levels[level].lv_leaves++;
+	    levels[level].lv_leaves++;
 
 
 	}
@@ -181,7 +181,7 @@ walk_db (lock_trx_t * lt, page_func_t func)
 		    log_error ("Blog ref'referenced as index tree top node dp=%d key=%s\n", buf->bd_page, itc->itc_insert_key->key_name);
 		  }
 		else 
-		walk_dbtree (itc, &buf, 0, func, 0);
+		  walk_dbtree (itc, &buf, 0, func, 0);
 		itc_page_leave (itc, buf);
 	      }
 	    ITC_FAILED

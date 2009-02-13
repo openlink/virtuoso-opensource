@@ -6,7 +6,7 @@
 --
 --  RDF Schema objects, generator of RDF Views
 --
---  Copyright (C) 1998-2008 OpenLink Software
+--  Copyright (C) 1998-2006 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -173,7 +173,7 @@ rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0)
 
    for (declare xx any, xx := 0; xx < length (_tbls) ; xx := xx + 1)
      {
-      ret := ret || ' from ' || rdf_view_sql_tb (_tbls[xx]) || ' as ' || rdf_view_tb (name_part (_tbls[xx], 3) || suffix) || '\n';
+       ret := ret || ' from ' || rdf_view_sql_tb (_tbls[xx]) || ' as ' || rdf_view_tb (name_part (_tbls[xx], 3) || suffix) || '\n';
        -- ## voID
        if (gen_stat)
 	 {
@@ -484,7 +484,7 @@ create procedure RDF_VIEW_GEN_VD (in qual varchar)
       exists (select 1 from URL_REWRITE_RULE where URR_RULE = pref || '_rule3') or
       exists (select 1 from URL_REWRITE_RULE_LIST where URRL_LIST = pref || '_rule_list1') or
       exists (select 1 from HTTP_PATH where HP_HOST = '*ini*' and HP_LISTEN_HOST = '*ini*' and HP_LPATH = '/'||qual)
-      )
+     )
     return '\n-- WARNING: there are already created virtual directory "/'||qual||'", skipping virtual directory generation\n'||
     '-- WARNING: To avoid this message chose different base URL or drop existing virtual directory and its rewrite rules.\n';
 

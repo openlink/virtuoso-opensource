@@ -160,7 +160,7 @@ extern void rb_complete (rdf_box_t * rb, struct lock_trx_s * lt, void * /*actual
     {\
       if (! ((rdf_box_t*)data)->rb_is_complete) \
 	rb_complete (data, lt, CALLER_LOCAL); \
-	data = ((rdf_box_t *)data)->rb_box; \
+      data = ((rdf_box_t *)data)->rb_box; \
     } \
 }
 

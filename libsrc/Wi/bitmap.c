@@ -296,7 +296,7 @@ bm_insert (bitno_t bm_start, db_buf_t bm, short * bm_len_ret, bitno_t value, int
       if (ins_at_end && ce_len > CE_MAX_LENGTH - 4)
 	{
 	  /* Full array or array one less than full first. 0 or 2 bytes left at end.  No room.  Gotta split the array on one side and the single on the other */
-	split_ce = ce;
+	  split_ce = ce;
 	}
       else if (ce == bm && CE_LENGTH (ce) == CE_MAX_LENGTH)
 	split_ce = bm;
@@ -686,7 +686,7 @@ itc_bm_insert_in_row (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t image)
   bm_len = len;
   if (!itc->itc_ltrx->lt_is_excl)
     {
-  lt_rb_update (itc->itc_ltrx, buf->bd_buffer + itc->itc_position);
+      lt_rb_update (itc->itc_ltrx, buf->bd_buffer + itc->itc_position);
     }
   if (!buf->bd_is_dirty)
     {
@@ -1106,7 +1106,7 @@ itc_init_bm_search (it_cursor_t * itc)
   if (!bm_spec)
     {
       itc->itc_bm_col_spec = NULL;
-    return;
+      return;
     }
   if (CMP_EQ == bm_spec->sp_min_op 
       || (CMP_GT == bm_spec->sp_min_op && !itc->itc_desc_order)
@@ -1834,9 +1834,9 @@ itc_bm_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 	    {
 	      pl_set_at_bit ((placeholder_t *) itc, itc->itc_row_data + off, bm_len, 
 		  bm_start, itc->itc_bp.bp_value, itc->itc_desc_order);
-	  if (itc->itc_bp.bp_at_end)
-	    return DVC_LESS; /* no more bits above / below the value, get the next row */
-	}
+	      if (itc->itc_bp.bp_at_end)
+		return DVC_LESS; /* no more bits above / below the value, get the next row */
+	    }
 	}
       if (itc->itc_bp.bp_at_end)
 	{
@@ -1891,15 +1891,15 @@ itc_bm_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 		      if (0 == (op & res) || (DVC_NOORDER & res))
 			{
 			  itc->itc_bp.bp_at_end = 1;
-			return DVC_LESS;
-		    }
+			  return DVC_LESS;
+			}
 		    }
 		  else if (op == CMP_LIKE)
 		    {
 		      if (DVC_MATCH != itc_like_compare (itc, itc->itc_search_params[sp->sp_min], sp))
 			{
 			  itc->itc_bp.bp_at_end = 1;
-			return DVC_LESS;
+			  return DVC_LESS;
 			}
 
 		      goto next_sp;
@@ -1910,8 +1910,8 @@ itc_bm_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 		      if ((0 == (sp->sp_max_op & res)) || (DVC_NOORDER & res))
 			{
 			  itc->itc_bp.bp_at_end = 1;
-		    return DVC_LESS;
-		}
+			  return DVC_LESS;
+			}
 		    }
 		}
 	    next_sp:

@@ -359,11 +359,11 @@ upd_insert_2nd_key (dbe_key_t * key, it_cursor_t * ins_itc,
   if (key->key_is_bitmap)
     {
       ITC_SAVE_FAIL (ins_itc);
-    key_bm_insert (ins_itc, key_image);
+      key_bm_insert (ins_itc, key_image);
       ITC_RESTORE_FAIL (ins_itc);
     }
   else
-  itc_insert_unq_ck (ins_itc, &key_image[0], NULL);
+    itc_insert_unq_ck (ins_itc, &key_image[0], NULL);
 }
 #undef key_image
 
@@ -384,7 +384,7 @@ upd_refit_row (it_cursor_t * itc, buffer_desc_t ** buf,
   if (BUF_NEEDS_DELTA (*buf))
     {
       ITC_IN_KNOWN_MAP (itc, itc->itc_page);
-  itc_delta_this_buffer (itc, *buf, DELTA_MAY_LEAVE);
+      itc_delta_this_buffer (itc, *buf, DELTA_MAY_LEAVE);
       ITC_LEAVE_MAP_NC (itc);
     }
   if (ITC_IS_LTRX (itc) && !is_leaf_ptr)
@@ -497,17 +497,17 @@ update_quick (update_node_t * upd, caddr_t * qst, it_cursor_t * cr_itc, buffer_d
   int inx;
   if (BUF_NEEDS_DELTA (cr_buf))
     {
-  ITC_FAIL (cr_itc)
-    {
+      ITC_FAIL (cr_itc)
+	{
 	  ITC_IN_KNOWN_MAP (cr_itc, cr_buf->bd_page);
-      itc_delta_this_buffer (cr_itc, cr_buf, DELTA_MAY_LEAVE);
+	  itc_delta_this_buffer (cr_itc, cr_buf, DELTA_MAY_LEAVE);
 	  ITC_LEAVE_MAP_NC (cr_itc);
-    }
-  ITC_FAILED
-    {
-      itc_free (cr_itc);
-    }
-  END_FAIL (cr_itc);
+	}
+      ITC_FAILED
+	{
+	  itc_free (cr_itc);
+	}
+      END_FAIL (cr_itc);
     }
   lt_rb_update (cr_itc->itc_ltrx, cr_buf->bd_buffer + cr_itc->itc_position);
 
@@ -1007,7 +1007,7 @@ update_node_input (update_node_t * upd, caddr_t * inst, caddr_t * state)
 
   if (!upd->upd_trigger_args || upd->upd_keyset)
     {
-    update_node_run (upd, inst, state);
+      update_node_run (upd, inst, state);
     }
   else
     {

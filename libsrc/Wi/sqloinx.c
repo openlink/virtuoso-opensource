@@ -562,15 +562,15 @@ sqlo_place_inx_int_join (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t group,
 	{/* one of them is already placed, preds and all. */
 	  if (inx_int_prune && so->so_inx_int_tried_ret)
 	    t_set_push (so->so_inx_int_tried_ret, (void*)dio->dio_table);
-      DO_SET (df_elt_t *, cp, &dio->dio_table->_.table.col_preds)
-	{
-	  cp->dfe_is_placed = DFE_PLACED;
+	  DO_SET (df_elt_t *, cp, &dio->dio_table->_.table.col_preds)
+	    {
+	      cp->dfe_is_placed = DFE_PLACED;
 	      t_set_pushnew (&dio->dio_table->_.table.all_preds, (void*)cp);
-	  sqlo_place_exp (so, tb_dfe, cp->_.bin.right);
+	      sqlo_place_exp (so, tb_dfe, cp->_.bin.right);
+	    }
+	  END_DO_SET();
 	}
-      END_DO_SET();
-	}
-      	  dio->dio_table->dfe_is_placed = DFE_PLACED;
+      dio->dio_table->dfe_is_placed = DFE_PLACED;
       DO_SET (df_elt_t *, cp, &dio->dio_table->_.table.all_preds)
 	{
 	  if (!dk_set_member (dio->dio_table->_.table.col_preds, (void*)cp))

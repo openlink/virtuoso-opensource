@@ -522,7 +522,7 @@ xpf_namespace_uri (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
       else if ((3 == (local-name)) && !memcmp ("xml", name, 3))
         res = box_dv_short_nchars (XML_NS_URI, XML_NS_URI_LEN);
       else
-        res = box_dv_short_nchars (name, (int) (local - name));    
+        res = box_dv_short_nchars (name, (int) (local - name));
       dk_free_box (name);
     }
   else
@@ -1398,7 +1398,7 @@ next_val:
 void
 xpf_idiv_operator (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  ptrlong i1 = (ptrlong) xpf_arg (xqi, tree, ctx_xe, DV_LONG_INT, 0); 
+  ptrlong i1 = (ptrlong) xpf_arg (xqi, tree, ctx_xe, DV_LONG_INT, 0);
   ptrlong i2 = (ptrlong) xpf_arg (xqi, tree, ctx_xe, DV_LONG_INT, 1);
   if (0 == i2)
     sqlr_new_error_xqi_xdl ("22012", "SR090", xqi, "Division by 0.");

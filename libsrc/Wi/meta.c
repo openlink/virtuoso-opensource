@@ -1323,7 +1323,7 @@ sch_full_proc_name_1 (dbe_schema_t * sc, const char *ref_name, char *q_def, char
     {
       no_q = 1;
       if (strlen (q_def) < MAX_NAME_LEN)
-      strcpy_ck (q, q_def);
+	strcpy_ck (q, q_def);
       else
 	{
 	  log_error ("Trying to resolve procedure with invalid qualifier");

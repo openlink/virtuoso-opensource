@@ -2432,7 +2432,7 @@ xslt_globals (xparse_ctx_t * xp, caddr_t * params)
 	      NEW_VARZ (xqi_binding_t, xb);
 	      xb->xb_name = box_dv_uname_string (params[inx]);
 	      if (NULL != params[inx + 1])
-	        xb->xb_value = box_copy_tree (params[inx + 1]);
+		xb->xb_value = box_copy_tree (params[inx + 1]);
 	      else
 		xb->xb_value = box_num_nonull (0);
 	      xb->xb_next = xp->xp_globals;
@@ -3274,16 +3274,16 @@ bif_dict_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     res = 0;
   else
     {
-  old_key_ptr = (caddr_t *)id_hash_get_key_by_place (ht, (caddr_t)old_val_ptr);
-  old_key = old_key_ptr[0];
-  old_val = old_val_ptr[0];
-  id_hash_remove (ht, (caddr_t)(&key));
+      old_key_ptr = (caddr_t *)id_hash_get_key_by_place (ht, (caddr_t)old_val_ptr);
+      old_key = old_key_ptr[0];
+      old_val = old_val_ptr[0];
+      id_hash_remove (ht, (caddr_t)(&key));
       ht->ht_dict_size -= (raw_length (old_key) + raw_length (old_val));
-  dk_free_tree (old_key);
-  dk_free_tree (old_val);
-  id_hash_iterator (hit, ht);
-  ht->ht_dict_version++;
-  hit->hit_dict_version = ht->ht_dict_version;
+      dk_free_tree (old_key);
+      dk_free_tree (old_val);
+      id_hash_iterator (hit, ht);
+      ht->ht_dict_version++;
+      hit->hit_dict_version = ht->ht_dict_version;
       res = 1;
     }
   if (ht->ht_mutex)
@@ -3566,7 +3566,7 @@ gvector_qsort (caddr_t * in, caddr_t * left, int n_in, int depth, vector_sort_t 
 #ifdef DEBUG
       if (!mid_filled)
         GPF_T1("gvector_qsort can not find split value in range");
-#endif      
+#endif
       memcpy (in + n_left * bels, mid, bsize);
       memcpy (in + (n_right + 1) * bels, left + (n_right + 1) * bels,
 	  ((n_in - n_right) - 1) * bsize);
@@ -3607,23 +3607,23 @@ bif_gvector_sort_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, co
     {
       caddr_t *temp;
 #ifdef GVECTOR_SORT_DEBUG
-  temp = (caddr_t*) dk_alloc_box_zero (box_length (vect), DV_ARRAY_OF_POINTER);
+      temp = (caddr_t*) dk_alloc_box_zero (box_length (vect), DV_ARRAY_OF_POINTER);
 #else
-  temp = (caddr_t*) dk_alloc_box (box_length (vect), DV_ARRAY_OF_POINTER);
+      temp = (caddr_t*) dk_alloc_box (box_length (vect), DV_ARRAY_OF_POINTER);
 #endif
-  specs.vs_block_elts = block_elts;
-  specs.vs_block_size = block_elts * sizeof (caddr_t);
-  specs.vs_key_ofs = key_ofs;
-  specs.vs_sort_asc = sort_asc;
+      specs.vs_block_elts = block_elts;
+      specs.vs_block_size = block_elts * sizeof (caddr_t);
+      specs.vs_key_ofs = key_ofs;
+      specs.vs_sort_asc = sort_asc;
 #ifdef GVECTOR_SORT_DEBUG
-  specs.vs_whole_vector = vect;
-  specs.vs_whole_tmp = temp;
+      specs.vs_whole_vector = vect;
+      specs.vs_whole_tmp = temp;
 #endif
       gvector_qsort (vect, temp, group_count, 0, &specs);
 #ifdef GVECTOR_SORT_DEBUG
-  dk_check_tree (vect);
+      dk_check_tree (vect);
 #endif
-  dk_free_box (temp);
+      dk_free_box (temp);
     }
   else /* if ('D' == algo) */
     {

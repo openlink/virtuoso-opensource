@@ -260,7 +260,7 @@ __integer_from_string (caddr_t *n, const char *str, int do_what)
     {
       l = (int) strlen (p);
       if ((l > l_int[XQ_INT32]) || ((l == l_int[XQ_INT32]) && strcmp (s_int[2 * XQ_INT32 + s], p) < 0))
-      __numeric_from_string (n, str, 0);
+        __numeric_from_string (n, str, 0);
       else
         *n = box_num (atoi (str));
       return;
@@ -567,7 +567,7 @@ __get_iso_date ( const char *str, char *dt, int dtflags, int dt_type, const char
           continue;
         }
       if ((DTFLAG_HH == fld_flag) && (4 == fldlen) && (tail > str) && (('T' == tail[-1]) || (('X' == tail[-1]) && ('T' == tail[-2]))))
-	{
+        {
           fld_values[3] = ((tail[0]-'0') * 10) + (tail[1]-'0');
           fld_values[4] = ((tail[2]-'0') * 10) + (tail[3]-'0');
           fld_values[5] = 0;
@@ -577,9 +577,9 @@ __get_iso_date ( const char *str, char *dt, int dtflags, int dt_type, const char
           if (('Z' == group_end[0]) && ('\0' == group_end[1]))
             {
               tzmin = 0;
-	  group_end++;
-	  break;
-	}
+              group_end++;
+              break;
+            }
           continue;
         }
       sqlr_new_error ("42001", "XPQ??", "Incorrect %s field length in %s constructor:\"%.300s\"", names[fld_idx], ctor_name, str);
@@ -612,17 +612,17 @@ field_length_checked:
             goto field_delim_checked; /* see below */
           sqlr_new_error ("42001", "XPQ??", "Incorrect %s delimiter in %s constructor:\"%.300s\"", names[fld_idx], ctor_name, str);
         }
-          if ('Z' == group_end[0])
-            {
-              if ('\0' != group_end[1])
-                sqlr_new_error ("42001", "XPQ??", "Invalid timezone in %s constructor:\"%.300s\"", ctor_name, str);
-              tzmin = 0;
-            }
-          if (DTFLAG_SS == fld_flag)
-            {
+      if ('Z' == group_end[0])
+        {
+          if ('\0' != group_end[1])
+            sqlr_new_error ("42001", "XPQ??", "Invalid timezone in %s constructor:\"%.300s\"", ctor_name, str);
+          tzmin = 0;
+        }
+      if (DTFLAG_SS == fld_flag)
+        {
           fld_idx++;
-              goto field_delim_checked; /* see below */
-            }
+          goto field_delim_checked; /* see below */
+        }
       if ((DTFLAG_DD == fld_flag) && (!(dtflags & (DTFLAG_HH | DTFLAG_MIN | DTFLAG_SS | DTFLAG_SF))))
         {
           fld_idx += 4;
@@ -657,7 +657,7 @@ field_delim_checked:
 	  if (2 == month) /* February */
 	    days_in_this_month = days_in_february (fld_values[0]);
 	  if (fld_value > days_in_this_month)
-	    sqlr_new_error ("42001", "XPQ??", "Too many days in %s constructor:\"%.300s\"", ctor_name, str);          
+	    sqlr_new_error ("42001", "XPQ??", "Too many days in %s constructor:\"%.300s\"", ctor_name, str);
         }
     }
   tzmin += (60 * fld_values[7]) + fld_values[8];
@@ -705,7 +705,7 @@ __datetime_from_string (caddr_t *n, const char *str, int do_what)
     {
       dk_free_box (n[0]);
       n[0] = NULL;
-    sqlr_new_error ("42001", "XPQ??", "Incorrect argument in datetime/duration constructor:\"%s\"", str);
+      sqlr_new_error ("42001", "XPQ??", "Incorrect argument in datetime/duration constructor:\"%s\"", str);
     }
 }
 
@@ -3444,7 +3444,7 @@ bif_xqf_str_parse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       END_QR_RESET
     }
   else
-  desc->p_proc (&res, arg, desc->p_opcode);
+    desc->p_proc (&res, arg, desc->p_opcode);
   return res;
 }
 

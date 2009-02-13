@@ -78,7 +78,7 @@ rb_complete (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance_t
     {
       if (CALLER_LOCAL != caller_qi)
         sqlr_resignal (err);
-    dk_free_tree (err);
+      dk_free_tree (err);
       return;
     }
   if ((!rb->rb_is_complete) && (CALLER_LOCAL != caller_qi))
@@ -129,8 +129,8 @@ bif_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   else
     {
       if (DV_XML_ENTITY == box_dtp)
-          chksum = xte_sum64 (((xml_tree_ent_t *)box)->xte_current);
-        }
+        chksum = xte_sum64 (((xml_tree_ent_t *)box)->xte_current);
+    }
   if (NULL != chksum)
     {
       rdf_bigbox_t * rbb = rbb_allocate ();
@@ -178,7 +178,7 @@ bif_is_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (DV_RDF == DV_TYPE_OF (x))
     {
       rdf_box_audit((rdf_box_t *)x);
-    return box_num (1);
+      return box_num (1);
     }
   return 0;
 }
@@ -218,9 +218,9 @@ bif_rdf_box_set_data (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       else
         {
           if (0 == rb->rb_ro_id)
-        sqlr_new_error ("22023", "SR551", "Zero is_complete argument and rdf box with ro_id in call of rdf_box_set_data ()");
+            sqlr_new_error ("22023", "SR551", "Zero is_complete argument and rdf box with ro_id in call of rdf_box_set_data ()");
           rb->rb_is_complete = 0;
-    }
+        }
     }
   rb->rb_box = box_copy_tree (data);
   rb->rb_ref_count++;
@@ -234,7 +234,7 @@ bif_rdf_box_data (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   rdf_box_t *rb = (rdf_box_t *)bif_arg (qst, args, 0, "rdf_box_data");
   if (DV_RDF != DV_TYPE_OF (rb))
-  return box_copy_tree (rb);
+    return box_copy_tree (rb);
   rdf_box_audit (rb);
   if (1 < BOX_ELEMENTS (args))
     {
@@ -348,7 +348,7 @@ bif_rdf_box_is_storeable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
       if (0 != rb->rb_ro_id)
         return box_num (1);
       if ((!rb->rb_is_complete) || rb->rb_chksum_tail)
-      return box_num (0);
+        return box_num (0);
       data_dtp = DV_TYPE_OF (rb->rb_box);
       if ((DV_STRING == data_dtp) || (DV_UNAME == data_dtp))
         return box_num (((RB_MAX_INLINED_CHARS + 1) >= box_length (rb->rb_box)) ? 1 : 0);
@@ -452,7 +452,7 @@ rbs_length (db_buf_t rbs)
       l = rbs[2];
     }
   else
-  db_buf_length (rbs + 2, &hl, &l);
+    db_buf_length (rbs + 2, &hl, &l);
   l += 2;
   if (flags & RBS_OUTLINED)
     l += 4;
@@ -509,11 +509,11 @@ dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
       int res = dv_rdf_compare (dv2, dv1);
       switch (res)
 	{
-	  case DVC_LESS: return DVC_GREATER;
-	  case DVC_GREATER: return DVC_LESS;
-	  case DVC_DTP_LESS: return DVC_DTP_GREATER;
-	  case DVC_DTP_GREATER: return DVC_DTP_LESS;
-	  default: return res;
+	case DVC_LESS: return DVC_GREATER;
+	case DVC_GREATER: return DVC_LESS;
+	case DVC_DTP_LESS: return DVC_DTP_GREATER;
+	case DVC_DTP_GREATER: return DVC_DTP_LESS;
+	default: return res;
 	}
     }
   flags1 = dv1[1];
@@ -527,14 +527,14 @@ dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
     {
       data1 = dv1 + 2;
       data_dtp1 = data1[0];
-  if (DV_SHORT_STRING_SERIAL != data_dtp1)
-    {
+      if (DV_SHORT_STRING_SERIAL != data_dtp1)
+        {
 #ifdef DEBUG
-      if (RBS_CHKSUM & flags1)
-        GPF_T;
+          if (RBS_CHKSUM & flags1)
+            GPF_T;
 #endif
-      return dv_compare (data1, dv2, NULL);
-    }
+          return dv_compare (data1, dv2, NULL);
+        }
       len1 = data1[1];
       data1 += 2;
     }
@@ -549,18 +549,18 @@ dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
         }
       else
         {
-      data2 = dv2 + 2;
-      data_dtp2 = data2[0];
-      if (DV_SHORT_STRING_SERIAL != data_dtp2)
-    {
+          data2 = dv2 + 2;
+          data_dtp2 = data2[0];
+          if (DV_SHORT_STRING_SERIAL != data_dtp2)
+            {
 #ifdef DEBUG
-          if (RBS_CHKSUM & flags2)
-            GPF_T;
+              if (RBS_CHKSUM & flags2)
+                GPF_T;
 #endif
-          return dv_compare (dv1, data2, NULL);
-    }
-      len2 = data2[1];
-      data2 += 2;
+              return dv_compare (dv1, data2, NULL);
+            }
+          len2 = data2[1];
+          data2 += 2;
         }
       rdftype2 = ((RBS_HAS_TYPE & flags2) ? SHORT_REF_NA (data2 + len2 + RBS_RO_ID_LEN (flags2)) : RDF_BOX_DEFAULT_TYPE);
       rdflang2 = ((RBS_HAS_LANG & flags2) ? SHORT_REF_NA (data2 + len2 + RBS_RO_ID_LEN (flags2)) : RDF_BOX_DEFAULT_LANG);
@@ -572,21 +572,21 @@ dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
         return DVC_DTP_LESS;
       /* rdf string or checksum and dv string */
       flags2 = RBS_COMPLETE;
-	  data2 = dv2;
-	  data_dtp2 = dtp2;
-	  if (DV_SHORT_STRING_SERIAL == data_dtp2)
-	    {
-	      len2 = data2[1];
-	      data2 += 2;
-	    }
-	  else
-	    {
-	      len2 = RB_MAX_INLINED_CHARS;
-	      data2 += 5;
-	    }
-	  rdftype2 = RDF_BOX_DEFAULT_TYPE;
-	  rdflang2 = RDF_BOX_DEFAULT_LANG;
-	}
+      data2 = dv2;
+      data_dtp2 = dtp2;
+      if (DV_SHORT_STRING_SERIAL == data_dtp2)
+        {
+          len2 = data2[1];
+          data2 += 2;
+        }
+      else
+        {
+          len2 = RB_MAX_INLINED_CHARS;
+          data2 += 5;
+        }
+      rdftype2 = RDF_BOX_DEFAULT_TYPE;
+      rdflang2 = RDF_BOX_DEFAULT_LANG;
+    }
   rdftype1 = ((RBS_HAS_TYPE & flags1) ? SHORT_REF_NA (data1 + len1 + RBS_RO_ID_LEN (flags1)) : RDF_BOX_DEFAULT_TYPE);
   if (rdftype1 < rdftype2) return DVC_DTP_LESS;
   if (rdftype1 > rdftype2) return DVC_DTP_GREATER;
@@ -597,7 +597,7 @@ dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
     {
       if (!(RBS_CHKSUM & flags2))
         return DVC_LESS;
-  cmp_len = MIN (len1, len2);
+      cmp_len = MIN (len1, len2);
       mcmp = memcmp (data1, data2, cmp_len);
       if (mcmp < 0)
         return DVC_LESS;
@@ -610,50 +610,50 @@ dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
       return DVC_MATCH;
     }
   else
-	{
+    {
       if (RBS_CHKSUM & flags2)
         return DVC_GREATER;
       cmp_len = MIN (len1, len2);
       mcmp = memcmp (data1, data2, cmp_len);
-    if (mcmp < 0)
-	  return DVC_LESS;
-    if (mcmp > 0)
-	return DVC_GREATER;
+      if (mcmp < 0)
+        return DVC_LESS;
+      if (mcmp > 0)
+        return DVC_GREATER;
       if ((RBS_COMPLETE & flags1) && (RBS_COMPLETE & flags2))
-      {
-        if (len1 < len2)
-	return DVC_LESS;
-        if (len1 > len2)
-	return DVC_GREATER;
+        {
+          if (len1 < len2)
+            return DVC_LESS;
+          if (len1 > len2)
+            return DVC_GREATER;
 /* In version 5, complete boxes that differ only in ro_id are intentionally kept distinct in table but equal in memory.
 In version 6 (Vajra), complete boxes are equal even if ro_id differ (say, one of ids is zero. ids are compared only if both boxes are ncomplete.
           return DVC_MATCH; */
-    }
-    else if (cmp_len < RB_MAX_INLINED_CHARS)
-	{
-        if ((len1 == cmp_len) && (len2 > cmp_len))
-		return DVC_LESS;
-        if ((len2 == cmp_len) && (len1 > cmp_len))
-		return DVC_GREATER;
-	    }
+        }
+      else if (cmp_len < RB_MAX_INLINED_CHARS)
+        {
+          if ((len1 == cmp_len) && (len2 > cmp_len))
+            return DVC_LESS;
+          if ((len2 == cmp_len) && (len1 > cmp_len))
+            return DVC_GREATER;
+        }
 /* In version 6 (Vajra) the comparison is better, by adding these two comparisons:
       else if (RBS_COMPLETE & flags2)
         return DVC_GREATER;
       else if (RBS_COMPLETE & flags1)
         return DVC_LESS; */
-	    }
+    }
   if (DV_RDF == dtp2)
-	{
-	  /* neither is complete. Let the ro_id decide */
+    {
+      /* neither is complete. Let the ro_id decide */
       int64 ro1 = RBS_RO_ID (data1 + len1, flags1);
       int64 ro2 = RBS_RO_ID (data2 + len2, flags2);
-	  if (ro1 == ro2)
-	    return DVC_MATCH;
-	  else if (ro1 < ro2)
-	    return DVC_LESS;
-	  else 
-	    return DVC_GREATER;
-	}
+      if (ro1 == ro2)
+        return DVC_MATCH;
+      else if (ro1 < ro2)
+        return DVC_LESS;
+      else
+        return DVC_GREATER;
+    }
   /* the first is a rdf string and the second a sql one.  First max inlined chars are eq.
    * If the rdf string is complete, it is eq if no language.  */
   if (RBS_COMPLETE & flags1)
@@ -689,23 +689,23 @@ rdf_box_compare (ccaddr_t a1, ccaddr_t a2)
       int res = rdf_box_compare (a2, a1);
       return ((res == DVC_GREATER) ? DVC_LESS : ((res == DVC_LESS) ? DVC_GREATER : res));
     }
-      if ((DV_RDF == dtp2) && (0 != rb1->rb_ro_id) && (rb2->rb_ro_id == rb1->rb_ro_id))
-        return DVC_MATCH;
-      data1 = rb1->rb_box;
-      data_dtp1 = DV_TYPE_OF (data1);
+  if ((DV_RDF == dtp2) && (0 != rb1->rb_ro_id) && (rb2->rb_ro_id == rb1->rb_ro_id))
+    return DVC_MATCH;
+  data1 = rb1->rb_box;
+  data_dtp1 = DV_TYPE_OF (data1);
   /* if stringg and non-string */
   if ((DV_STRING != data_dtp1) && !rb1->rb_chksum_tail)
     {
       return cmp_boxes (data1, (caddr_t) a2, NULL, NULL);
     }
   if (DV_RDF == dtp2)
-	{
+    {
       data2 = rb2->rb_box;
       data_dtp2 = DV_TYPE_OF (data2);
       if ((DV_STRING != data_dtp2) && !rb2->rb_chksum_tail)
         return cmp_boxes ((caddr_t) rb1, data2, NULL, NULL);
     }
-  else 
+  else
     {
       data2 = (caddr_t) a2;
       data_dtp2 = DV_TYPE_OF (a2);
@@ -721,18 +721,18 @@ rdf_box_compare (ccaddr_t a1, ccaddr_t a2)
       tmp_rb2.rb_ro_id = 0;
       rb2 = &tmp_rb2;
     }
-    {
+  {
     short type1 = rb1->rb_type;
     short type2 = rb2->rb_type;
     if (type1 < type2) return DVC_LESS;
     if (type1 > type2) return DVC_GREATER;
   }
-	{
+  {
     short lang1 = rb1->rb_lang;
     short lang2 = rb2->rb_lang;
     if (lang1 < lang2) return DVC_LESS;
     if (lang1 > lang2) return DVC_GREATER;
-	}
+  }
   if (rb1->rb_chksum_tail)
     {
       if (!rb2->rb_chksum_tail)
@@ -740,7 +740,7 @@ rdf_box_compare (ccaddr_t a1, ccaddr_t a2)
       data1 = ((rdf_bigbox_t *)rb1)->rbb_chksum;
       data2 = ((rdf_bigbox_t *)rb2)->rbb_chksum;
       len1 = box_length (data1) - 1;
-  len2 = box_length (data2) - 1;
+      len2 = box_length (data2) - 1;
       cmp_headlen = MIN (len1, len2);
       mcmp = memcmp (data1, data2, cmp_headlen);
       if (mcmp < 0)
@@ -754,7 +754,7 @@ rdf_box_compare (ccaddr_t a1, ccaddr_t a2)
       return DVC_MATCH;
     }
   else
-  {
+    {
       if (rb2->rb_chksum_tail)
         return DVC_GREATER;
 #ifdef DEBUG
@@ -764,39 +764,39 @@ rdf_box_compare (ccaddr_t a1, ccaddr_t a2)
       len1 = box_length (data1) - 1;
       len2 = box_length (data2) - 1;
       cmp_len = MIN (len1, len2);
-    if (((0 == rb1->rb_is_complete) || (0 == rb2->rb_is_complete)) && (RB_MAX_INLINED_CHARS < cmp_len))
-      cmp_headlen = RB_MAX_INLINED_CHARS;
-    else
-      cmp_headlen = cmp_len;
-    mcmp = memcmp (data1, data2, cmp_headlen);
-    if (mcmp < 0)
-	return DVC_LESS;
-    if (mcmp > 0)
-	return DVC_GREATER;
+      if (((0 == rb1->rb_is_complete) || (0 == rb2->rb_is_complete)) && (RB_MAX_INLINED_CHARS < cmp_len))
+        cmp_headlen = RB_MAX_INLINED_CHARS;
+      else
+        cmp_headlen = cmp_len;
+      mcmp = memcmp (data1, data2, cmp_headlen);
+      if (mcmp < 0)
+        return DVC_LESS;
+      if (mcmp > 0)
+        return DVC_GREATER;
       if (rb1->rb_is_complete && rb2->rb_is_complete)
-	{
-        if (len1 < len2)
-		return DVC_LESS;
-        if (len1 > len2)
-		return DVC_GREATER;
-        return DVC_MATCH;
-	    }
-    else if (cmp_headlen < RB_MAX_INLINED_CHARS)
-	    {
-        if ((len1 == cmp_headlen) && (len2 > cmp_headlen))
-	    return DVC_LESS;
-        if ((len2 == cmp_headlen) && (len1 > cmp_headlen))
-	    return DVC_GREATER;
-	}
+        {
+          if (len1 < len2)
+            return DVC_LESS;
+          if (len1 > len2)
+            return DVC_GREATER;
+          return DVC_MATCH;
+        }
+      else if (cmp_headlen < RB_MAX_INLINED_CHARS)
+        {
+          if ((len1 == cmp_headlen) && (len2 > cmp_headlen))
+            return DVC_LESS;
+          if ((len2 == cmp_headlen) && (len1 > cmp_headlen))
+            return DVC_GREATER;
+        }
     }
-    {
+  {
     long ro_id1 = rb1->rb_ro_id;
     long ro_id2 = rb2->rb_ro_id;
     if (ro_id1 < ro_id2)
       return DVC_LESS;
     if (ro_id1 > ro_id2)
-	return DVC_GREATER;
-    }
+      return DVC_GREATER;
+  }
   return DVC_MATCH;
 }
 
@@ -813,7 +813,7 @@ rdf_box_hash (caddr_t box)
   else
     {
       if (0 != rb->rb_ro_id)
-    return rb->rb_ro_id + (rb->rb_ro_id << 16);
+        return rb->rb_ro_id + (rb->rb_ro_id << 16);
     }
   return rb->rb_lang * 17 + rb->rb_type * 13 + rb->rb_is_complete * 9 +
     (rb->rb_chksum_tail ?
@@ -886,7 +886,7 @@ bif_rdf_sqlval_of_obj (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     rb_complete (rb, qi->qi_trx, qi);
   if (((RDF_BOX_DEFAULT_TYPE == rb->rb_type) && (RDF_BOX_DEFAULT_LANG == rb->rb_lang))
     || ((1 < BOX_ELEMENTS (args)) && bif_long_arg (qst, args, 1, "__rdf_sqlval_of_obj")) )
-  return box_copy_tree (rb->rb_box);
+    return box_copy_tree (rb->rb_box);
   return box_copy (rb);
 }
 
@@ -1012,7 +1012,7 @@ rdf_dist_or_redu_ser_long (caddr_t val, caddr_t * err_ret, int is_reduiced, cons
   if (DV_STRING == val_dtp)
     {
       if ((1 >= box_length (val)) || !(0x80 & val[0]))
-        return box_copy (val);
+	return box_copy (val);
     }
   else if (DV_RDF == val_dtp)
     {
@@ -1029,34 +1029,34 @@ rdf_dist_or_redu_ser_long (caddr_t val, caddr_t * err_ret, int is_reduiced, cons
 
       subbox = rbb->rbb_base.rb_box;
       if ((rbb->rbb_base.rb_is_complete) &&
-        (0 != rbb->rbb_base.rb_ro_id) &&
-        (DV_STRING == DV_TYPE_OF (rbb->rbb_base.rb_box)) &&
+	  (0 != rbb->rbb_base.rb_ro_id) &&
+	  (DV_STRING == DV_TYPE_OF (rbb->rbb_base.rb_box)) &&
 	  (1024 > box_length (rbb->rbb_base.rb_box)))
-        {
-          subbox = box_dv_short_nchars (rbb->rbb_base.rb_box, 1023);
-        }
+	{
+	  subbox = box_dv_short_nchars (rbb->rbb_base.rb_box, 1023);
+	}
 
       ser_vec[0] = subbox;
       ser_vec[1] = (caddr_t) (ptrlong) rbb->rbb_base.rb_type;
       ser_vec[2] = (caddr_t) (ptrlong) rbb->rbb_base.rb_lang;
 
       if (subbox == rbb->rbb_base.rb_box)
-        {
+	{
 	  ser_vec[3] = (caddr_t) (ptrlong) rbb->rbb_base.rb_is_complete;
 	  ser_vec[4] = (caddr_t) (ptrlong) 0;
-        }
+	}
       else
-        {
+	{
 	  ser_vec[3] = (caddr_t) (ptrlong) 0;
-          ser_vec[4] = box_num (rbb->rbb_base.rb_ro_id);
-        }
+	  ser_vec[4] = box_num (rbb->rbb_base.rb_ro_id);
+	}
       if (rbb->rbb_base.rb_chksum_tail)
 	ser_vec[5] = (caddr_t) rbb->rbb_chksum;
 
       res = print_object_to_new_string ((caddr_t) ser_vec, fun_name, err_ret);
 
       if (subbox != rbb->rbb_base.rb_box)
-        dk_free_box (subbox);
+	dk_free_box (subbox);
 
       BOX_DONE (ser_vec, buf);
 
@@ -1162,14 +1162,14 @@ rb_serialize (caddr_t x, dk_session_t * ses)
       if (rb->rb_chksum_tail)
 	flags |= RBS_CHKSUM;
       if (rb->rb_is_complete && (cli || !(rb->rb_ro_id)))
-	{
-	    flags |= RBS_COMPLETE;
+        {
+	  flags |= RBS_COMPLETE;
           flags &= ~RBS_CHKSUM;
           session_buffered_write_char (flags, ses);
           if (DV_XML_ENTITY == DV_TYPE_OF (rb->rb_box))
             xe_serialize ((xml_entity_t *)(rb->rb_box), ses);
           else
-	  print_object (rb->rb_box, ses, NULL, NULL);
+	    print_object (rb->rb_box, ses, NULL, NULL);
           if (rb->rb_ro_id)
             {
               if (rb->rb_ro_id > INT32_MAX)
@@ -1344,7 +1344,7 @@ ttl_http_write_prefix_if_needed (caddr_t *qst, dk_session_t *ses, ttl_env_t *env
     {
       if (NULL == ti->uri)
         ti->uri = box_dv_short_concat (ti->ns, ti->loc);
-    return 0;
+      return 0;
     }
   ti->prefix = xml_get_cli_or_global_ns_prefix (qst, ti->ns, ~0);
   if (NULL == ti->prefix)

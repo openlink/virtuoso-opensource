@@ -4310,7 +4310,7 @@ col_partition
 
 col_part_commalist
 	: NAME col_partition { } 
-	| col_part_list ',' NAME col_partition 
+	| col_part_list ',' NAME col_partition
 	;
 
 col_part_list 
@@ -4319,7 +4319,7 @@ col_part_list
 	;
 opt_cluster 
 	: /* empty */
-	| CLUSTER  NAME 
+	| CLUSTER NAME
 	;
 
 

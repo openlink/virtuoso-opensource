@@ -685,7 +685,7 @@ create function DB.DBA.RDF_TWOBYTE_OF_DATATYPE (in iid IRI_ID) returns integer
   qname := id_to_iri (iid);
   res := __rdf_twobyte_cache (121, qname);
   if (res is not null)
-  return res;
+    return res;
   set isolation='serializable';
   declare tb_cr cursor for select RDT_TWOBYTE from DB.DBA.RDF_DATATYPE where RDT_IID = iid;
   open tb_cr (exclusive);
@@ -714,7 +714,7 @@ create function DB.DBA.RDF_TWOBYTE_OF_LANGUAGE (in id varchar) returns integer
   id := lower (id);
   res := __rdf_twobyte_cache (122, id);
   if (res is not null)
-  return res;
+    return res;
   set isolation='serializable';
   declare tb_cr cursor for select RL_TWOBYTE from DB.DBA.RDF_LANGUAGE where RL_ID = id;
   open tb_cr (exclusive);
@@ -1105,7 +1105,7 @@ create function DB.DBA.RDF_OBJ_FIND_EXISTING (in dt_twobyte integeR, in v varcha
       if (1 = need_digest)
         {
           if (0 <> rdf_box_ro_id (v))
-        return v;
+            return v;
         }
       dt_twobyte := rdf_box_type (v);
       lang_twobyte := rdf_box_lang (v);
@@ -1133,11 +1133,11 @@ create function DB.DBA.RDF_OBJ_FIND_EXISTING (in dt_twobyte integeR, in v varcha
       sum64 := xtree_sum64 (v);
       return coalesce ((select rdf_box (v, dt_twobyte, lang_twobyte, RO_ID, 1)
           from DB.DBA.RDF_OBJ table option (index RO_VAL)
-        where RO_VAL = sum64
-        and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
-        and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end)
+          where RO_VAL = sum64
+          and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
+          and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end)
           and rdf_box_data_tag (RO_DIGEST) = __tag of XML ));
-        --!TBD ... and paranoid check
+      --!TBD ... and paranoid check
     }
   if ((dt_twobyte = 257) and (lang_twobyte = 257) and (length (v) <= 20))
     return v;
@@ -1147,18 +1147,18 @@ create function DB.DBA.RDF_OBJ_FIND_EXISTING (in dt_twobyte integeR, in v varcha
       declare tridgell varchar;
       tridgell := tridgell32 (v, 1);
       return ((select rdf_box (v, dt_twobyte, lang_twobyte, RO_ID, 1)
-        from DB.DBA.RDF_OBJ table option (index RO_VAL)
-        where RO_VAL = tridgell
-        and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
-        and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end)
+          from DB.DBA.RDF_OBJ table option (index RO_VAL)
+          where RO_VAL = tridgell
+          and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
+          and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end)
           and blob_to_string (RO_LONG) = v ));
     }
   else
     {
       return ((select rdf_box (v, dt_twobyte, lang_twobyte, RO_ID, 1)
-        from DB.DBA.RDF_OBJ table option (index RO_VAL)
-        where RO_VAL = v
-        and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
+          from DB.DBA.RDF_OBJ table option (index RO_VAL)
+          where RO_VAL = v
+          and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
           and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end) ));
     }
 }
@@ -2632,10 +2632,10 @@ create procedure DB.DBA.RDF_LONG_TO_TTL (inout obj any, inout ses any)
         }
       else
         {
-      http ('"', ses);
-      http_escape (obj, 11, ses, 1, 1);
-      http ('" ', ses);
-    }
+          http ('"', ses);
+          http_escape (obj, 11, ses, 1, 1);
+          http ('" ', ses);
+        }
     }
   else if (__tag of datetime = rdf_box_data_tag (obj))
     {
@@ -2688,11 +2688,11 @@ create procedure DB.DBA.RDF_TRIPLES_TO_VERBOSE_TTL (inout triples any, inout ses
           if (isstring (subj) and (1 = __box_flags (subj)))
             string_subjs_found := 1;
           else
-        {
-          if (subj is null)
-            signal ('RDFXX', 'DB.DBA.TRIPLES_TO_TTL(): subject is NULL');
-          signal ('RDFXX', 'DB.DBA.TRIPLES_TO_TTL(): subject is literal');
-        }
+            {
+              if (subj is null)
+                signal ('RDFXX', 'DB.DBA.TRIPLES_TO_TTL(): subject is NULL');
+              signal ('RDFXX', 'DB.DBA.TRIPLES_TO_TTL(): subject is literal');
+            }
         }
       if (not isiri_id (pred))
         {
@@ -2700,18 +2700,18 @@ create procedure DB.DBA.RDF_TRIPLES_TO_VERBOSE_TTL (inout triples any, inout ses
             string_preds_found := 1;
           else
             {
-          if (pred is null)
-            signal ('RDFXX', 'DB.DBA.TRIPLES_TO_TTL(): predicate is NULL');
-          signal ('RDFXX', 'DB.DBA.TRIPLES_TO_TTL(): predicate is literal');
-        }
+              if (pred is null)
+                signal ('RDFXX', 'DB.DBA.TRIPLES_TO_TTL(): predicate is NULL');
+              signal ('RDFXX', 'DB.DBA.TRIPLES_TO_TTL(): predicate is literal');
+            }
         }
       if (pred >= min_bnode_iri_id ())
         signal ('RDFXX', 'DB.DBA.TRIPLES_TO_TTL(): blank node as predicate');
     }
   if (not string_preds_found)
-  rowvector_digit_sort (triples, 1, 1);
+    rowvector_digit_sort (triples, 1, 1);
   if (not string_subjs_found)
-  rowvector_digit_sort (triples, 0, 1);
+    rowvector_digit_sort (triples, 0, 1);
   prev_s := null;
   prev_p := null;
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
@@ -2781,10 +2781,10 @@ print_p:
         }
       else
         {
-      res := id_to_iri (pred);
-      http ('<', ses);
-      http_escape (res, 12, ses, 1, 1);
-      http ('> ', ses);
+          res := id_to_iri (pred);
+          http ('<', ses);
+          http_escape (res, 12, ses, 1, 1);
+          http ('> ', ses);
         }
       prev_p := pred;
 print_o:
@@ -2924,7 +2924,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
           else if (subj is null)
             signal ('RDFXX', 'DB.DBA.TRIPLES_TO_RDF_XML_TEXT(): subject is NULL');
           else
-          signal ('RDFXX', 'DB.DBA.TRIPLES_TO_RDF_XML_TEXT(): subject is literal');
+            signal ('RDFXX', 'DB.DBA.TRIPLES_TO_RDF_XML_TEXT(): subject is literal');
         }
       else if (subj >= min_bnode_iri_id ())
         http (sprintf (' rdf:nodeID="b%d">', iri_id_num (subj)), ses);
@@ -2946,26 +2946,26 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
           else if (pred is null)
             signal ('RDFXX', 'DB.DBA.TRIPLES_TO_RDF_XML_TEXT(): predicate is NULL');
           else
-          signal ('RDFXX', 'DB.DBA.TRIPLES_TO_RDF_XML_TEXT(): predicate is literal');
+            signal ('RDFXX', 'DB.DBA.TRIPLES_TO_RDF_XML_TEXT(): predicate is literal');
         }
       if (pred >= min_bnode_iri_id ())
         signal ('RDFXX', 'DB.DBA.TRIPLES_TO_RDF_XML_TEXT(): blank node as predicate');
-          res := id_to_iri (pred);
+      res := id_to_iri (pred);
 res_for_pred:
-          declare delim, delim1, delim2, delim3 integer;
-	  delim1 := coalesce (strrchr (res, '/'), -1);
-	  delim2 := coalesce (strrchr (res, '#'), -1);
-	  delim3 := coalesce (strrchr (res, ':'), -1);
-          delim := __max (delim1, delim2, delim3);
-	  if (delim < 0)
-	    delim := null;
-          if (delim is null)
-            {
-              pred_tagname := res;
-              http ('<', ses); http (pred_tagname, ses);
-            }
-          else
-            {
+      declare delim, delim1, delim2, delim3 integer;
+      delim1 := coalesce (strrchr (res, '/'), -1);
+      delim2 := coalesce (strrchr (res, '#'), -1);
+      delim3 := coalesce (strrchr (res, ':'), -1);
+      delim := __max (delim1, delim2, delim3);
+      if (delim < 0)
+        delim := null;
+      if (delim is null)
+        {
+          pred_tagname := res;
+          http ('<', ses); http (pred_tagname, ses);
+        }
+      else
+        {
           declare p_ns_uri, p_ns_pref varchar;
           p_ns_uri := subseq (res, 0, delim+1);
           if (p_ns_uri = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#')
@@ -2985,7 +2985,7 @@ res_for_pred:
               http ('<', ses); http (pred_tagname, ses);
               http (' xmlns:' || p_ns_pref || '="', ses); http_value (p_ns_uri, 0, ses); http ('"', ses);
             }
-            }
+        }
       if (obj is null)
         signal ('RDFXX', 'DB.DBA.TRIPLES_TO_RDF_XML_TEXT(): object is NULL');
       if (isiri_id (obj))
@@ -3058,11 +3058,11 @@ res_for_pred:
             }
           else
             {
-          http ('>', ses);
-	  obj := charset_recode (obj, 'UTF-8', '_WIDE_');
-          http_value (obj, 0, ses);
-          http ('</', ses); http (pred_tagname, ses); http ('>', ses);
-        }
+              http ('>', ses);
+              obj := charset_recode (obj, 'UTF-8', '_WIDE_');
+              http_value (obj, 0, ses);
+              http ('</', ses); http (pred_tagname, ses); http ('>', ses);
+            }
         }
       else if (__tag of varbinary = __tag (obj))
         {
@@ -3616,7 +3616,7 @@ create function DB.DBA.SPARQL_INSERT_DICT_CONTENT (in graph_iri any, in triples_
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
   if (compose_report)
-  return sprintf ('Insert into <%s>, %d triples -- done', graph_iri, ins_count);
+    return sprintf ('Insert into <%s>, %d triples -- done', graph_iri, ins_count);
   else
     return ins_count;
 }
@@ -3638,7 +3638,7 @@ create function DB.DBA.SPARQL_DELETE_DICT_CONTENT (in graph_iri any, in triples_
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
   if (compose_report)
-  return sprintf ('Delete from <%s>, %d triples -- done', graph_iri, del_count);
+    return sprintf ('Delete from <%s>, %d triples -- done', graph_iri, del_count);
   else
     return del_count;
 }
@@ -3668,7 +3668,7 @@ create function DB.DBA.SPARQL_MODIFY_BY_DICT_CONTENTS (in graph_iri any, in del_
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
   if (compose_report)
-  return sprintf ('Modify <%s>, delete %d and insert %d triples -- done', graph_iri, del_count, ins_count);
+    return sprintf ('Modify <%s>, delete %d and insert %d triples -- done', graph_iri, del_count, ins_count);
   else
     return del_count + ins_count;
 }
@@ -3689,12 +3689,12 @@ create function DB.DBA.SPARUL_CLEAR (in graph_iri any, in inside_sponge integer 
   when 0 then 1 else 1 + exec (coalesce ('commit work', VT_D_ID, VT_D_ID_2)) end;
   commit work;
   if (not inside_sponge)
-  delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = graph_iri;
+    delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = graph_iri;
   commit work;
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
   if (compose_report)
-  return sprintf ('Clear <%s> -- done', graph_iri);
+    return sprintf ('Clear <%s> -- done', graph_iri);
   else
     return 1;
 }
@@ -3719,14 +3719,14 @@ create function DB.DBA.SPARUL_LOAD (in graph_iri any, in resource varchar, in co
   if (res)
     {
       if (compose_report)
-    return sprintf ('Load <%s> into graph <%s> -- done', resource, graph_iri);
-  else
+        return sprintf ('Load <%s> into graph <%s> -- done', resource, graph_iri);
+      else
         return 1;
     }
   else
     {
       if (compose_report)
-    return sprintf ('Load <%s> into graph <%s> -- failed', resource, graph_iri);
+        return sprintf ('Load <%s> into graph <%s> -- failed', resource, graph_iri);
       else
         return 0;
     }
@@ -3740,8 +3740,8 @@ create function DB.DBA.SPARUL_CREATE (in graph_iri any, in silent integer := 0, 
       if (silent)
         {
           if (compose_report)
-        return sprintf ('Create silent graph <%s> -- already exists', graph_iri);
-      else
+            return sprintf ('Create silent graph <%s> -- already exists', graph_iri);
+          else
             return 0;
         }
       else
@@ -3752,7 +3752,7 @@ create function DB.DBA.SPARUL_CREATE (in graph_iri any, in silent integer := 0, 
       insert soft DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH (REC_GRAPH_IID) values (iri_to_id (graph_iri));
       commit work;
       if (compose_report)
-      return sprintf ('Create silent graph <%s> -- done', graph_iri);
+        return sprintf ('Create silent graph <%s> -- done', graph_iri);
       else
         return 1;
     }
@@ -3765,7 +3765,7 @@ create function DB.DBA.SPARUL_CREATE (in graph_iri any, in silent integer := 0, 
   insert soft DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH (REC_GRAPH_IID) values (iri_to_id (graph_iri));
   commit work;
   if (compose_report)
-  return sprintf ('Create graph <%s> -- done', graph_iri);
+    return sprintf ('Create graph <%s> -- done', graph_iri);
   else
     return 1;
 }
@@ -3781,12 +3781,12 @@ create function DB.DBA.SPARUL_DROP (in graph_iri any, in silent integer := 0, in
             {
               DB.DBA.SPARUL_CLEAR (graph_iri);
               if (compose_report)
-              return sprintf ('Drop silent graph <%s> -- graph has not been explicitly created before, triples were removed', graph_iri);
+                return sprintf ('Drop silent graph <%s> -- graph has not been explicitly created before, triples were removed', graph_iri);
               else
                 return 2;
             }
           if (compose_report)
-          return sprintf ('Drop silent graph <%s> -- nothing to do', graph_iri);
+            return sprintf ('Drop silent graph <%s> -- nothing to do', graph_iri);
           else
             return 0;
         }
@@ -3799,7 +3799,7 @@ create function DB.DBA.SPARUL_DROP (in graph_iri any, in silent integer := 0, in
       delete from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = iri_to_id (graph_iri);
       commit work;
       if (compose_report)
-      return sprintf ('Drop silent graph <%s> -- done', graph_iri);
+        return sprintf ('Drop silent graph <%s> -- done', graph_iri);
       else
         return 1;
     }
@@ -3811,7 +3811,7 @@ create function DB.DBA.SPARUL_DROP (in graph_iri any, in silent integer := 0, in
   delete from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = iri_to_id (graph_iri);
   commit work;
   if (compose_report)
-  return sprintf ('Drop graph <%s> -- done', graph_iri);
+    return sprintf ('Drop graph <%s> -- done', graph_iri);
   else
     return 1;
 }
@@ -3823,13 +3823,13 @@ create function DB.DBA.SPARUL_RUN (in results any, in compose_report integer := 
   if (compose_report)
     {
       declare ses any;
-  ses := string_output ();
-  foreach (varchar r in results) do
-    {
-      http (r || '\n', ses);
-    }
-  http ('Commit -- done\n', ses);
-  return string_output_string (ses);
+      ses := string_output ();
+      foreach (varchar r in results) do
+        {
+          http (r || '\n', ses);
+        }
+      http ('Commit -- done\n', ses);
+      return string_output_string (ses);
     }
   else
     {
@@ -4225,7 +4225,7 @@ describe_physical_subjects:
           declare graph any;
           graph := sorted_good_graphs [g_ctr];
           for (s_ctr := phys_s_count - 1; s_ctr >= 0; s_ctr := s_ctr - 1)
-    {
+            {
               declare subj any;
               subj := phys_subjects [s_ctr];
               for (select P as p1, O as obj1 from DB.DBA.RDF_QUAD where G = graph and S = subj) do
@@ -4325,10 +4325,10 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO (in subj_dict any, in consts any, i
     {
       vectorbld_init (sorted_good_graphs);
       foreach (any g in good_graphs) do
-    {
+        {
           if (isiri_id (g) and g < min_bnode_iri_id ())
             vectorbld_acc (sorted_good_graphs, g);
-    }
+        }
       vectorbld_final (sorted_good_graphs);
       good_g_count := length (sorted_good_graphs);
       if (0 = good_g_count)
@@ -4450,8 +4450,8 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO (in subj_dict any, in consts any, i
         }
       else
         {
-      -- dbg_obj_princ ('call (''DB.DBA.', fname, ''')(', s, res, ')');
-      call ('DB.DBA.' || fname)(s, res);
+          -- dbg_obj_princ ('call (''DB.DBA.', fname, ''')(', s, res, ')');
+          call ('DB.DBA.' || fname)(s, res);
         }
 end_of_s: ;
     }
@@ -4468,15 +4468,15 @@ describe_physical_subjects:
       gvector_sort (sorted_good_graphs, 1, 0, 0);
       -- dbg_obj_princ ('sorted_good_graphs = ', sorted_good_graphs);
       for (g_ctr := good_g_count - 1; g_ctr >= 0; g_ctr := g_ctr - 1)
-    {
-      declare graph any;
-          graph := sorted_good_graphs [g_ctr];
-      for (s_ctr := phys_s_count - 1; s_ctr >= 0; s_ctr := s_ctr - 1)
         {
-          declare subj any;
-          subj := phys_subjects [s_ctr];
-          for (select P as p1, O as obj1 from DB.DBA.RDF_QUAD where G = graph and S = subj) do
+          declare graph any;
+          graph := sorted_good_graphs [g_ctr];
+          for (s_ctr := phys_s_count - 1; s_ctr >= 0; s_ctr := s_ctr - 1)
             {
+              declare subj any;
+              subj := phys_subjects [s_ctr];
+              for (select P as p1, O as obj1 from DB.DBA.RDF_QUAD where G = graph and S = subj) do
+                {
                   -- dbg_obj_princ ('found3 ', subj, p1, ' in ', graph);
                   dict_put (res, vector (subj, p1, __rdf_long_of_obj (obj1)), 0);
                 }
@@ -4528,7 +4528,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL (in subj_dict any, in cons
         {
           if (isiri_id (g) and g < min_bnode_iri_id ())
             vectorbld_acc (sorted_good_graphs, g);
-    }
+        }
       vectorbld_final (sorted_good_graphs);
       good_g_count := length (sorted_good_graphs);
       if (0 = good_g_count)
@@ -4577,7 +4577,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL (in subj_dict any, in cons
               declare subj any;
               subj := phys_subjects [s_ctr];
               for (select P as p1, O as obj1 from DB.DBA.RDF_QUAD where G = graph and S = subj) do
-    {
+                {
                   -- dbg_obj_princ ('found5 ', subj, p1, ' in ', graph);
                   dict_put (res, vector (subj, p1, __rdf_long_of_obj (obj1)), 0);
                 }
@@ -6113,7 +6113,7 @@ create function DB.DBA.RDF_QM_MACROEXPAND_TEMPLATE (in iritmpl varchar) returns 
   if (pos is not null)
     {
       declare pos2 integer;
-      pos2 := strstr (subseq (iritmpl, pos), '^}');  
+      pos2 := strstr (subseq (iritmpl, pos), '^}');
       if (pos2 is not null)
         signal ('22023', 'The macro ' || subseq (iritmpl, pos, pos + pos2 + 2) || ' is not known, supported names are ^{URIQADefaultHost}^ and ^{DynamicLocalFormat}^');
     }
@@ -6178,7 +6178,7 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
       if (arglist_len = 0)
         basetype := 'zeropart-uri';
       else
-      basetype := 'multipart-uri';
+        basetype := 'multipart-uri';
       for (argctr := 0; (argctr < arglist_len) and isnotnull; argctr := argctr + 1)
         {
           if (not (coalesce (arglist[argctr][3], 0)))
@@ -6358,7 +6358,7 @@ fheaders is, say,
       if (arglist_len = 0)
         basetype := 'zeropart-uri-fn-nullable';
       else
-      basetype := 'multipart-uri-fn-nullable';
+        basetype := 'multipart-uri-fn-nullable';
       isnotnull := 0;
     }
   else
@@ -6511,7 +6511,7 @@ fheaders is identical to DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FUNCTIONS
       if (arglist_len = 0)
         basetype := 'zeropart-literal-fn-nullable';
       else
-    basetype := 'multipart-literal-fn-nullable';
+        basetype := 'multipart-literal-fn-nullable';
     }
   else
     {
@@ -7698,22 +7698,22 @@ again_11:
       return;
     }
   if (log_mode = 0)
-        {
+    {
       whenever sqlstate '40001' goto deadlock_0;
 again_0:
       log_enable (0, 1);
       insert soft DB.DBA.RDF_QUAD (G,S,P,O)
       values (g_iid, iri_to_id (s_uri), iri_to_id (p_uri), iri_to_id (o_uri));
-          commit work;
+      commit work;
       -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_W (', g_iid, s_uri, p_uri, o_uri, env, ') done /0');
-          return;
-        }
+      return;
+    }
   whenever sqlstate '40001' goto deadlock_2;
 again_2:
   log_enable (1, 1);
   insert soft DB.DBA.RDF_QUAD (G,S,P,O)
   values (g_iid, iri_to_id (s_uri), iri_to_id (p_uri), iri_to_id (o_uri));
-          commit work;
+  commit work;
   -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_W (', g_iid, s_uri, p_uri, o_uri, env, ') done /2');
   return;
 deadlock_10:
@@ -7743,13 +7743,13 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L_W (
   ro_id_dict := env[1];
   declare s_iid, p_iid IRI_ID;
   if (isstring (o_type))
-        {
+    {
       declare parsed any;
       parsed := __xqf_str_parse_to_rdf_box (o_val, o_type, isstring (o_val));
       if (parsed is not null)
-            {
+        {
           if (__tag of rdf_box = __tag (parsed))
-                {
+            {
               rdf_box_set_type (parsed,
                 DB.DBA.RDF_TWOBYTE_OF_DATATYPE (iri_to_id (o_type)));
               -- dbg_obj_princ ('rdf_box_type is set to ', rdf_box_type (parsed));
@@ -7766,11 +7766,11 @@ again_iid:
   s_iid := iri_to_id (s_uri);
   p_iid := iri_to_id (p_uri);
   if (isstring (o_val) or (__tag of XML = __tag (o_val)))
-            {
+    {
       whenever sqlstate '40001' goto deadlock_o;
 again_o:
       if (isstring (o_type) or isstring (o_lang))
-                {
+        {
           if (not isstring (o_type))
             o_type := null;
           if (not isstring (o_lang))
@@ -7778,12 +7778,12 @@ again_o:
           o_val := DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT (o_val,
               iri_to_id (o_type),
               o_lang, g_iid, p_iid, ro_id_dict );
-        }
+	}
       else
         o_val := DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (o_val, g_iid, p_iid, ro_id_dict);
     }
   else if (__tag of rdf_box = __tag (o_val))
-        {
+    {
       whenever sqlstate '40001' goto deadlock_o_box;
 again_o_box:
       if (__tag of varchar = rdf_box_data_tag (o_val) and __rdf_obj_ft_rule_check (g_iid, p_iid))
@@ -7835,7 +7835,7 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_A (
     app_env[0], 'DB.DBA.TTLP_EV_TRIPLE_W',
     vector (g_iid, s_uri, p_uri, o_uri, app_env[2]) );
   if (mod (app_env[1], 100000) = 0)
-                {
+    {
       declare ro_id_dict any;
       ro_id_dict := app_env[2][1];
       if (ro_id_dict is not null)
@@ -7861,7 +7861,7 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L_A (
     app_env[0], 'DB.DBA.TTLP_EV_TRIPLE_L_W',
     vector (g_iid, s_uri, p_uri, o_val, o_type, o_lang, app_env[2]) );
   if (mod (app_env[1], 100000) = 0)
-        {
+    {
       declare ro_id_dict any;
       ro_id_dict := app_env[2][1];
       if (ro_id_dict is not null)
@@ -7947,14 +7947,14 @@ create function DB.DBA.RDF_LOAD_RDFXML_MT (in strg varchar, in base varchar, in 
   if (graph = '')
     signal ('22023', 'Empty string is not a valid graph IRI in DB.DBA.RDFL_LOAD_RDFXML_MT()');
   else if (graph is null)
-        {
+    {
       graph := base;
       if ((graph is null) or (graph = ''))
         signal ('22023', 'DB.DBA.RDF_LOAD_RDFXML_MT() requires a valid IRI as a base argument if graph is not specified');
-        }
+    }
   if (__rdf_obj_ft_rule_count_in_graph (iri_to_id (graph)))
     ro_id_dict := dict_new ();
-      else
+  else
     ro_id_dict := null;
   app_env := vector (async_queue (threads), 0, vector (log_mode, ro_id_dict), __max (length (strg) / 100, 100000));
   rdf_load_rdfxml (strg, 0,

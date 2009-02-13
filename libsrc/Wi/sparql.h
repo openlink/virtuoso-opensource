@@ -136,20 +136,20 @@ typedef struct spar_propvariable_s {
 /*! Configuration of RDF grabber, A.K.A. 'IRI resolver'. */
 typedef struct rdf_grab_config_s {
     int		rgc_pview_mode;		/*!< The query is executed unsing procedure view that will form a result-set by calling mroe than one statement via exec() */
-    int			rgc_all;		/*!< Automatically add all IRI constants/vars (except P) to spare_grab_consts */
+    int		rgc_all;		/*!< Automatically add all IRI constants/vars (except P) to spare_grab_consts */
     int		rgc_intermediate;	/*!< Automatically add all IRI constants/vars (except P) to spare_grab_consts */
     dk_set_t	rgc_consts;		/*!< Constants to be used as names of additional graphs */
-    dk_set_t		rgc_vars;		/*!< Names of variables whose values should be used as names of additional graphs */
+    dk_set_t	rgc_vars;		/*!< Names of variables whose values should be used as names of additional graphs */
     dk_set_t	rgc_sa_graphs;		/*!< SeeAlso graph names. Every time a value can be downloaded, its seeAlso values can also be downloaded */
     dk_set_t	rgc_sa_preds;		/*!< SeeAlso predicate names. Every time a value can be downloaded, its seeAlso values can also be downloaded */
     dk_set_t	rgc_sa_vars;		/*!< Names of variables whose values should be used as names of subjects (not objects!) for seeAlso predicates */
-    caddr_t		rgc_depth;		/*!< Number of iterations that can be made to find additional graphs */
-    caddr_t		rgc_limit;		/*!< Limit on number of grabbed remote documents */
-    caddr_t		rgc_base;		/*!< Base IRI to use as a first argument to the grab IRI resolver */
-    caddr_t		rgc_destination;	/*!< IRI of the graph to be extended */
+    caddr_t	rgc_depth;		/*!< Number of iterations that can be made to find additional graphs */
+    caddr_t	rgc_limit;		/*!< Limit on number of grabbed remote documents */
+    caddr_t	rgc_base;		/*!< Base IRI to use as a first argument to the grab IRI resolver */
+    caddr_t	rgc_destination;	/*!< IRI of the graph to be extended */
     caddr_t	rgc_group_destination;	/*!< IRI of the commonly used graph to be extended, in addition to usual flow */
-    caddr_t		rgc_resolver_name;	/*!< Name of function of the graph IRI resolver */
-    caddr_t		rgc_loader_name;	/*!< Name of function that actually load the resource */
+    caddr_t	rgc_resolver_name;	/*!< Name of function of the graph IRI resolver */
+    caddr_t	rgc_loader_name;	/*!< Name of function that actually load the resource */
 } rdf_grab_config_t;
 
 /* When a new field is added here, please check whether it should be added to sparp_clone_for_variant () */
@@ -371,13 +371,13 @@ typedef struct spar_tree_s
         ssg_valmode_t native;	/*!< temporary use in SQL printer */
       } alias; /*!< only for use in top-level result-set list */
     struct {
-      SPART *left;
-      SPART *right;
+        SPART *left;
+        SPART *right;
       } bin_exp;
     struct {
         /* #define SPAR_BUILT_IN_CALL	(ptrlong)1003 */
-      ptrlong btype;
-      SPART **args;
+        ptrlong btype;
+        SPART **args;
       } builtin;
     struct {
         SPART *arg;
@@ -386,17 +386,17 @@ typedef struct spar_tree_s
       } conv; /*!< temporary use in SQL printer */
     struct {
         /* #define SPAR_FUNCALL		(ptrlong)1005 */
-      caddr_t qname;
-      SPART **argtrees;
+        caddr_t qname;
+        SPART **argtrees;
         ptrlong agg_mode;
       } funcall;
     struct {
         /* #define SPAR_GP			(ptrlong)1006 */
-      ptrlong subtype;
-      SPART **members;
-      SPART **filters;
+        ptrlong subtype;
+        SPART **members;
+        SPART **filters;
         SPART *subquery;
-      caddr_t selid;
+        caddr_t selid;
         ptrlong *equiv_indexes;		/*!< Array of indexes of equivs used in triples and filters of this GP, some items at the tail of the array may be spare and temporarily not in use */
         ptrlong equiv_count;		/*!< Number of items in \c equiv_indexes array that contains valid data. */
         ptrlong glued_filters_count;	/*!< Last \c glued_filters_count members of \c filters are expressions for ON statement of LEFT OUTER JOIN. They can not be moved to some other GP because they were moved already and next move will break semantics. */
@@ -410,9 +410,9 @@ typedef struct spar_tree_s
       } graph;
     struct {
         /* #define SPAR_LIT		(ptrlong)1009 */
-      caddr_t val;
-      caddr_t datatype;
-      caddr_t language;
+        caddr_t val;
+        caddr_t datatype;
+        caddr_t language;
       } lit;
     struct { /* Note that all first members of \c qname case should match to \c lit case */
         /* #define SPAR_QNAME		(ptrlong)1011 */
@@ -420,29 +420,29 @@ typedef struct spar_tree_s
       } qname;
     struct {
         /* #define SPAR_REQ_TOP		(ptrlong)1007 */
-      ptrlong subtype;
-      caddr_t retvalmode_name;
-      caddr_t formatmode_name;
+        ptrlong subtype;
+        caddr_t retvalmode_name;
+        caddr_t formatmode_name;
         caddr_t storage_name;
-      SPART **retvals;
+        SPART **retvals;
         SPART **orig_retvals;		/*!< Retvals as they were after expanding '*' and wrapping in MAX() */
         SPART **expanded_orig_retvals;	/*!< Retvals as they were after expanding '*' and wrapping in MAX() and adding vars to grab */
-      caddr_t retselid;
-      SPART **sources;
-      SPART *pattern;
+        caddr_t retselid;
+        SPART **sources;
+        SPART *pattern;
         SPART **groupings;
-      SPART **order;
-      caddr_t limit;
-      caddr_t offset;
+        SPART **order;
+        caddr_t limit;
+        caddr_t offset;
         sparp_env_t *shared_spare;	/*!< An environment that is shared among all clones of the tree */
       } req_top;
     struct {
         /* #define SPAR_TRIPLE		(ptrlong)1014 */
         ptrlong subtype;
-      SPART *tr_fields[SPART_TRIPLE_FIELDS_COUNT];
+        SPART *tr_fields[SPART_TRIPLE_FIELDS_COUNT];
         caddr_t qm_iri;
-      caddr_t selid;
-      caddr_t tabid;
+        caddr_t selid;
+        caddr_t tabid;
         triple_case_t **tc_list;
         struct qm_format_s *native_formats[SPART_TRIPLE_FIELDS_COUNT];
         SPART **options;
@@ -452,11 +452,11 @@ typedef struct spar_tree_s
     struct { /* Note that all first members of \c retval case should match to \c var case */
         /* #define SPAR_BLANK_NODE_LABEL	(ptrlong)1002 */
         /* #define SPAR_VARIABLE		(ptrlong)1013 */
-      caddr_t vname;
-      caddr_t selid;
-      caddr_t tabid;
-      ptrlong tr_idx;		/*!< Index in quad (0 = graph ... 3 = obj) */
-      ptrlong equiv_idx;
+        caddr_t vname;
+        caddr_t selid;
+        caddr_t tabid;
+        ptrlong tr_idx;		/*!< Index in quad (0 = graph ... 3 = obj) */
+        ptrlong equiv_idx;
         rdf_val_range_t rvr;
       } var;
     struct { /* Note that all first members of \c retval case should match to \c var case */
@@ -472,8 +472,8 @@ typedef struct spar_tree_s
         ptrlong optional_makes_nullable;
       } retval;
     struct {
-      ptrlong direction;
-      SPART *expn;
+        ptrlong direction;
+        SPART *expn;
       } oby;
     struct {
         /* #define SPAR_QM_SQL_FUNCALL	(ptrlong)1015 */

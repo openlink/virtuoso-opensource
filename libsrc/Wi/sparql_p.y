@@ -522,7 +522,7 @@ spar_define_val		/* [Virt]	DefValue	 :=  QNAME | Q_IRI_REF | String	*/
 	| spar_global_var { $$ = (SPART *)t_list (2, SPAR_VARIABLE, (caddr_t)$1); }
 	;
 
-spar_base_decl_opt	/* [3]  	BaseDecl	  ::=  	'BASE' Q_IRI_REF	*/
+spar_base_decl_opt	/* [3]	BaseDecl	 ::=  'BASE' Q_IRI_REF	*/
 	: /* empty */		{ ; }
 	| BASE_L Q_IRI_REF	{
 		if (NULL != sparp_env()->spare_base_uri)
@@ -536,7 +536,7 @@ spar_prefix_decls_opt	/* ::=  PrefixDecl*	*/
 	| spar_prefix_decls_opt spar_prefix_decl { ; }
 	;
 
-spar_prefix_decl	/* [4]  	PrefixDecl	  ::=  	'PREFIX' QNAME_NS Q_IRI_REF	*/
+spar_prefix_decl	/* [4]	PrefixDecl	 ::=  'PREFIX' QNAME_NS Q_IRI_REF	*/
 	: PREFIX_L QNAME_NS Q_IRI_REF	{
                 if (!strcmp ("sql:", $2) || !strcmp ("bif:", $2))
 		  sparyyerror ("Prefixes 'sql:' and 'bif:' are reserved for SQL names");
@@ -558,7 +558,7 @@ spar_select_query	/* [5]*	SelectQuery	 ::=  'SELECT' 'DISTINCT'? ( ( Retcol ( ',
 		$$ = spar_make_top (sparp_arg, $1, $3, spar_selid_pop (sparp_arg),
 		  where_gp, 
 		  (SPART **)($6[0]), (SPART **)($6[1]), (caddr_t)($6[2]), (caddr_t)($6[3]) );
-		  sparp_expand_top_retvals (sparp_arg, $$, 0 /* never cloned, hence 0 == safely_copy_all_vars */); }
+		sparp_expand_top_retvals (sparp_arg, $$, 0 /* never cloned, hence 0 == safely_copy_all_vars */); }
 	;
 
 spar_select_query_mode	/* ::=  'SELECT' ( 'DISTINCT' | 'REDUCED' ) ?	*/
@@ -569,17 +569,17 @@ spar_select_query_mode	/* ::=  'SELECT' ( 'DISTINCT' | 'REDUCED' ) ?	*/
 	;
 
 spar_select_rset	/* ::=  ( ( Retcol ( ','? Retcol )* ) | '*' | 'COUNT' )	*/
-	: _STAR			{ $$ = (SPART **) _STAR; }
+	: _STAR		{ $$ = (SPART **) _STAR; }
 	/*| COUNT_LPAR _STAR _RPAR	{ $$ = (SPART **) COUNT_LPAR; }*/
 	| spar_retcols	{ $$ = (SPART **) t_revlist_to_array ($1); }
 	;
 
-spar_construct_query	/* [6]  	ConstructQuery	  ::=  	'CONSTRUCT' ConstructTemplate DatasetClause* WhereClause SolutionModifier	*/
+spar_construct_query	/* [6]	ConstructQuery	 ::=  'CONSTRUCT' ConstructTemplate DatasetClause* WhereClause SolutionModifier	*/
 	: CONSTRUCT_L {
 		sparp_arg->sparp_env->spare_top_retval_selid = spar_selid_push (sparp_arg);
                 t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
             spar_ctor_template spar_dataset_clauses_opt
-	    spar_where_clause spar_solution_modifier {
+            spar_where_clause spar_solution_modifier {
                 const char *formatter;
 		SPART *where_gp;
 		where_gp = spar_gp_finalize (sparp_arg, NULL);
@@ -611,7 +611,7 @@ spar_describe_rset	/* ::=  ( ( Var | IRIref | Backquoted | ( '(' Expn ')' ) )+ |
 	| spar_var_or_iriref_or_pexpn_or_backquoteds	{ $$ = (SPART **) t_list_to_array ($1); }
 	;
 
-spar_ask_query		/* [8]  	AskQuery	  ::=  	'ASK' DatasetClause* WhereClause	*/
+spar_ask_query		/* [8]	AskQuery	 ::=  'ASK' DatasetClause* WhereClause	*/
 	: ASK_L {
 		sparp_arg->sparp_env->spare_top_retval_selid = spar_selid_push (sparp_arg);
                 t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
@@ -676,7 +676,7 @@ spar_where_clause_opt	/* ::=  WhereClause?	*/
 	| spar_where_clause {;}
 	;
 
-spar_where_clause	/* [13]  	WhereClause	  ::=  	'WHERE'? GroupGraphPattern	*/
+spar_where_clause	/* [13]	WhereClause	 ::=  'WHERE'? GroupGraphPattern	*/
 	: WHERE_L _LBRA	{
 		sparp_arg->sparp_allow_aggregates_in_expn--;
 		spar_gp_init (sparp_arg, WHERE_L); }
@@ -718,7 +718,7 @@ spar_group_expn		/* [Virt]	GroupExpn	 ::=  */
 	| spar_var
 	;
 
-spar_order_clause_opt	/* [15]  	OrderClause	  ::=  	'ORDER' 'BY' OrderCondition+	*/
+spar_order_clause_opt	/* [15]	OrderClause	 ::=  'ORDER' 'BY' OrderCondition+	*/
 	: /* empty */				{ $$ = NULL; }
 	| ORDER_L BY_L {
 		spar_selid_push_reused (sparp_arg, sparp_arg->sparp_env->spare_top_retval_selid);
@@ -749,7 +749,7 @@ spar_asc_or_desc_opt	/* ::=  ( 'ASC' | 'DESC' )? */
 	| DESC_L	{ $$ = DESC_L; }
 	;
 
-spar_limit_clause_opt	/* [17]  	LimitClause	  ::=  	'LIMIT' INTEGER	*/
+spar_limit_clause_opt	/* [17]	LimitClause	 ::=  'LIMIT' INTEGER	*/
 	: /* empty */ { $$ = t_box_num (SPARP_MAXLIMIT); }
 	| spar_limit_clause
 	;
@@ -758,7 +758,7 @@ spar_limit_clause	/* [17]	LimitClause	 ::=  'LIMIT' INTEGER	*/
 	: LIMIT_L SPARQL_INTEGER { $$ = $2; }
 	;
 
-spar_offset_clause_opt	/* [18]  	OffsetClause	  ::=  	'OFFSET' INTEGER	*/
+spar_offset_clause_opt	/* [18]	OffsetClause	 ::=  'OFFSET' INTEGER	*/
 	: /* empty */ { $$ = t_box_num (0); }
 	| spar_offset_clause
 	;
@@ -790,7 +790,7 @@ spar_group_gp		/* [19]*	GroupGraphPattern	 ::=  '{' ( GraphPattern | SelectQuery
 		$$ = spar_gp_finalize_with_subquery (sparp_arg, $8, subselect_top); }
 	;
 
-spar_gp			/* [20]  	GraphPattern	  ::=  	Triples? ( GraphPatternNotTriples '.'? GraphPattern )?	*/
+spar_gp			/* [20]	GraphPattern	 ::=  Triples? ( GraphPatternNotTriples '.'? GraphPattern )?	*/
 	: spar_triples_opt { }
 	| spar_triples_opt spar_gp_not_triples spar_gp { }
 	| spar_triples_opt spar_gp_not_triples _DOT spar_gp { }
@@ -804,7 +804,7 @@ spar_gp_not_triples	/* [21]*	GraphPatternNotTriples	 ::=  */
 	| spar_constraint { spar_gp_add_filter (sparp_arg, $1); }	/*... | Constraint	*/
 	;
 
-spar_optional_gp	/* [22]  	OptionalGraphPattern	  ::=  	'OPTIONAL' GroupGraphPattern	*/
+spar_optional_gp	/* [22]	OptionalGraphPattern	 ::=  'OPTIONAL' GroupGraphPattern	*/
 	: OPTIONAL_L _LBRA { spar_gp_init (sparp_arg, OPTIONAL_L); } spar_group_gp { $$ = $4; }
 	| OPTIONAL_L error { sparyyerror ("Missing '{' after OPTIONAL keyword"); }
 	;
@@ -817,7 +817,7 @@ spar_quad_map_gp		/* [Virt]	QuadMapGraphPattern	 ::=  'QUAD' 'MAP' ( IRIref | '*
 	    spar_group_gp { t_set_pop (&(sparp_env()->spare_context_qms)); $$ = $7; }
 	;
 
-spar_graph_gp		/* [23]  	GraphGraphPattern	  ::=  	'GRAPH' VarOrBlankNodeOrIRIref GroupGraphPattern	*/
+spar_graph_gp		/* [23]	GraphGraphPattern	 ::=  'GRAPH' VarOrBlankNodeOrIRIref GroupGraphPattern	*/
 	: GRAPH_L
 	    spar_var_or_blank_node_or_iriref_or_backquoted { t_set_push (&(sparp_env()->spare_context_graphs), $2); }
 	    _LBRA {
@@ -826,7 +826,7 @@ spar_graph_gp		/* [23]  	GraphGraphPattern	  ::=  	'GRAPH' VarOrBlankNodeOrIRIre
 	    spar_group_gp { t_set_pop (&(sparp_env()->spare_context_graphs)); $$ = $6; }
 	;
 
-spar_group_or_union_gp	/* [24]  	GroupOrUnionGraphPattern	  ::=  	GroupGraphPattern ( 'UNION' GroupGraphPattern )*	*/
+spar_group_or_union_gp	/* [24]	GroupOrUnionGraphPattern	 ::=  GroupGraphPattern ( 'UNION' GroupGraphPattern )*	*/
 	: _LBRA { spar_gp_init (sparp_arg, 0); } spar_group_gp { $$ = $3; }
 	| spar_group_or_union_gp UNION_L _LBRA {
                 sparp_env()->spare_good_graph_varnames = sparp_env()->spare_good_graph_bmk;
@@ -849,7 +849,7 @@ spar_ctor_template	/* [26]*	ConstructTemplate	 ::=  '{' ConstructTriples '}'	*/
 	    spar_ctor_triples_opt _RBRA { $$ = spar_gp_finalize (sparp_arg, NULL); }
 	;
 
-spar_ctor_triples_opt	/* [27]  	ConstructTriples	  ::=  	( Triples1 ( '.' ConstructTriples )? )?	*/
+spar_ctor_triples_opt	/* [27]	ConstructTriples	 ::=  ( Triples1 ( '.' ConstructTriples )? )?	*/
 	: /* empty */ { }
 	| spar_ctor_triples { }
 	| spar_ctor_triples _DOT { }
@@ -865,25 +865,25 @@ spar_triples_opt	/* ::=  Triples?	*/
 	| spar_triples	{ }
 	;
 
-spar_triples		/* [28]  	Triples	  ::=  	Triples1 ( '.' Triples? )?	*/
+spar_triples		/* [28]	Triples		 ::=  Triples1 ( '.' Triples? )?	*/
 	: spar_triples1				{ }
 	| spar_triples1 _DOT spar_triples_opt	{ }
 	;
 
-spar_triples1		/* [29]  	Triples1	  ::=  	VarOrTerm PropertyListNotEmpty | TriplesNode PropertyList	*/
+spar_triples1		/* [29]	Triples1	 ::=  VarOrTerm PropertyListNotEmpty | TriplesNode PropertyList	*/
 	: spar_var_or_term { t_set_push (&(sparp_env()->spare_context_subjects), $1); }
 	    spar_props { t_set_pop (&(sparp_env()->spare_context_subjects)); $$ = $3; }
 	| spar_triples_node { t_set_push (&(sparp_env()->spare_context_subjects), $1); }
 	    spar_props_opt { t_set_pop (&(sparp_env()->spare_context_subjects)); }
 	;
 
-spar_props_opt		/* [30]  	PropertyList	  ::=  	PropertyListNotEmpty?	*/
+spar_props_opt		/* [30]	PropertyList	 ::=  PropertyListNotEmpty?	*/
 	: /* empty */	{ }
 	| spar_props	{ }
 	| spar_props _SEMI	{ }
 	;
 
-spar_props		/* [31]  	PropertyListNotEmpty	  ::=  	Verb ObjectList ( ';' PropertyList )?	*/
+spar_props		/* [31]	PropertyListNotEmpty	 ::=  Verb ObjectList ( ';' PropertyList )?	*/
 	: spar_verb { t_set_push (&(sparp_env()->spare_context_predicates), $1); }
 	    spar_objects { t_set_pop (&(sparp_env()->spare_context_predicates)); }
 	| spar_props _SEMI
@@ -924,8 +924,8 @@ spar_triple_option	/* [Virt]	TripleOption	 ::=  'INFERENCE' ( QNAME | Q_IRI_REF 
 		  $$ = (SPART **)t_list (2, (ptrlong)INFERENCE_L, NULL); }
 	| INFERENCE_L QNAME {
 		  $$ = (SPART **)t_list (2, (ptrlong)INFERENCE_L, sparp_expand_qname_prefix (sparp_arg, $2)); }
-        | INFERENCE_L Q_IRI_REF { $$ = (SPART **)t_list (2, (ptrlong)INFERENCE_L, sparp_expand_q_iri_ref (sparp_arg, $2)); }
-	| INFERENCE_L SPARQL_STRING { $$ = (SPART **)t_list (2, (ptrlong)INFERENCE_L, $2); }
+        | INFERENCE_L Q_IRI_REF		{ $$ = (SPART **)t_list (2, (ptrlong)INFERENCE_L, sparp_expand_q_iri_ref (sparp_arg, $2)); }
+	| INFERENCE_L SPARQL_STRING	{ $$ = (SPART **)t_list (2, (ptrlong)INFERENCE_L, $2); }
 	| OFFBAND_L spar_var		{ $$ = (SPART **)t_list (2, (ptrlong)OFFBAND_L, $2); }
 	| SCORE_L spar_var		{ $$ = (SPART **)t_list (2, (ptrlong)SCORE_L, $2); }
 	| TABLE_OPTION_L SPARQL_STRING	{ $$ = (SPART **)t_list (2, (ptrlong)TABLE_OPTION_L, $2); }
@@ -962,13 +962,13 @@ spar_same_as_option
 	| SAME_AS_S_O_L	{ $$ = SAME_AS_S_O_L; }
 	;
 
-spar_verb		/* [33]  	Verb	  ::=  	VarOrBlankNodeOrIRIref | 'a'	*/
+spar_verb		/* [33]	Verb		 ::=  VarOrBlankNodeOrIRIref | 'a'	*/
 	: spar_var_or_iriref_or_backquoted
 	| a_L { $$ = spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_type); }
 	;
 
-spar_triples_node	/* [34]  	TriplesNode	  ::=  	Collection | BlankNodePropertyList	*/
-	: _LSQBRA {	/* [35]  	BlankNodePropertyList	  ::=  	'[' PropertyListNotEmpty ']'	*/
+spar_triples_node	/* [34]	TriplesNode	 ::=  Collection | BlankNodePropertyList	*/
+	: _LSQBRA {	/* [35]	BlankNodePropertyList	 ::=  '[' PropertyListNotEmpty ']'	*/
 		SPART *bn = spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:lsqbra"), 1); 
 		t_set_push (&(sparp_env()->spare_context_subjects), bn); }
 	    spar_props spar_triples_opt_semi_rsqbra {
@@ -979,8 +979,8 @@ spar_triples_node	/* [34]  	TriplesNode	  ::=  	Collection | BlankNodePropertyLi
 		t_set_push (&(sparp_env()->spare_context_subjects), bn); }
 	    spar_cons_collection _RPAR {
 		spar_gp_add_triple_or_special_filter (sparp_arg,
-		    NULL, NULL,
-		    spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_rest),
+		  NULL, NULL,
+		  spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_rest),
 		  spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_nil),
 		  NULL, NULL );
 		t_set_pop (&(sparp_env()->spare_context_subjects));
@@ -996,28 +996,28 @@ spar_triples_opt_semi_rsqbra	/* ::=  ';'? ']'	*/
 spar_cons_collection
 	: spar_graph_node {
 		spar_gp_add_triple_or_special_filter (sparp_arg, NULL, NULL,
-		    spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_first),
+		  spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_first),
 		  $1, NULL, NULL ); }
 	| spar_cons_collection spar_graph_node {
 		SPART *bn = spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:cons"), 1); 
 		spar_gp_add_triple_or_special_filter (sparp_arg,
-		    NULL, NULL,
-		    spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_rest),
+		  NULL, NULL,
+		  spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_rest),
 		  bn, NULL, NULL );
 		sparp_env()->spare_context_subjects->data = bn;
 		spar_gp_add_triple_or_special_filter (sparp_arg, NULL, NULL,
-		    spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_first),
+		  spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_first),
 		  $2, NULL, NULL ); }
 	;
 
-spar_graph_node		/* [37]  	GraphNode	  ::=  	VarOrTerm | TriplesNode	*/
+spar_graph_node		/* [37]	GraphNode	 ::=  VarOrTerm | TriplesNode	*/
 	: spar_var_or_term
 	| spar_triples_node
 	;
 
-spar_var_or_term	/* [38]  	VarOrTerm	  ::=  	Var | GraphTerm	*/
-	:  spar_var
-	|  spar_graph_term
+spar_var_or_term	/* [38]	VarOrTerm	 ::=  Var | GraphTerm	*/
+	: spar_var
+	| spar_graph_term
 	;
 
 spar_var_or_iriref_or_pexpn_or_backquoteds	/* ::=  VarOrIRIrefOrBackquoted+	*/
@@ -1033,15 +1033,15 @@ spar_var_or_iriref_or_pexpn_or_backquoted
 	;
 
 spar_var_or_iriref_or_backquoted	/* [39]*	VarOrIRIrefOrBackquoted	 ::=  Var | IRIref | Backquoted	*/
-	:  spar_var
-	|  spar_iriref
+	: spar_var
+	| spar_iriref
 	| spar_backquoted
 	;
 
 spar_var_or_blank_node_or_iriref_or_backquoted	/* [40]*	VarOrBlankNodeOrIRIrefOrBackquoted	 ::=  Var | BlankNode | IRIref | Backquoted	*/
-	:  spar_var
-	|  spar_blank_node
-	|  spar_iriref
+	: spar_var
+	| spar_blank_node
+	| spar_iriref
 	| spar_backquoted
 	;
 
@@ -1135,14 +1135,14 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	*/
         | spar_expn LIKE_L spar_expn	{	/* Virtuoso-specific extension of [47] */
 		$$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)LIKE_L, t_list (2, $1, $3)); }
         | spar_expn IN_L _LPAR spar_expns _RPAR	{	/* Virtuoso-specific extension of [47] */
-                dk_set_t args = $4;
+                  dk_set_t args = $4;
                   if (1 == dk_set_length (args))
                     {
 		      SPAR_BIN_OP ($$, BOP_EQ, $1, args->data);
                     }
                   else
                     {
-                t_set_push (&args, $1);
+                      t_set_push (&args, $1);
 		      $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)IN_L,
                         t_list_to_array (args) /* NOT t_revlist_to_array (args), note special first element pushed */ );
                     }
@@ -1210,7 +1210,7 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	*/
 		if (!sparp_arg->sparp_allow_aggregates_in_expn)
 		  sparyyerror ("Aggregates are allowed only in result sets"); }
 	| spar_built_in_call
-	| spar_iriref spar_arg_list_opt {	/* [55]  	IRIrefOrFunction	  ::=  	IRIref ArgList? */
+	| spar_iriref spar_arg_list_opt {	/* [55]	IRIrefOrFunction	 ::=  IRIref ArgList? */
                   if (NULL == $2)
 		    $$ = $1;
 		  else
@@ -1258,7 +1258,7 @@ spar_built_in_regex	/* [53]	RegexExpn	 ::=  'REGEX' '(' Expn ',' Expn ( ',' Expn
 		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)REGEX_L, t_list (3, $3, $5, $7)); }
 	;
 
-spar_function_call	/* [54]  	FunctionCall	  ::=  	IRIref ArgList	*/
+spar_function_call	/* [54]	FunctionCall	 ::=  IRIref ArgList	*/
 	: spar_iriref spar_arg_list	{
                   SPART **args = (SPART **)(((dk_set_t)NIL_L == $2) ? NULL : t_revlist_to_array ($2));
 		  $$ = spar_make_funcall (sparp_arg, 0, $1->_.lit.val, args); }
@@ -1281,19 +1281,19 @@ spar_expns		/* [Virt]	Expns	 ::=  Expn ( ',' Expn )*	*/
 	| spar_expns error { sparyyerror ("Comma or ')' expected after function argument"); }
 	;
 
-spar_numeric_literal	/* [59]  	NumericLiteral	  ::=  	INTEGER | DECIMAL | DOUBLE	*/
+spar_numeric_literal	/* [59]	NumericLiteral	 ::=  INTEGER | DECIMAL | DOUBLE	*/
 	: SPARQL_INTEGER	{ $$ = spartlist (sparp_arg, 4, SPAR_LIT, $1, uname_xmlschema_ns_uri_hash_integer, NULL); }
 	| SPARQL_DECIMAL	{ $$ = spartlist (sparp_arg, 4, SPAR_LIT, $1, uname_xmlschema_ns_uri_hash_decimal, NULL); }
 	| SPARQL_DOUBLE		{ $$ = spartlist (sparp_arg, 4, SPAR_LIT, $1, uname_xmlschema_ns_uri_hash_double, NULL); }
 	;
 
-spar_rdf_literal	/* [60]  	RDFLiteral	  ::=  	String ( LANGTAG | ( '^^' IRIref ) )?	*/
+spar_rdf_literal	/* [60]	RDFLiteral	 ::=  String ( LANGTAG | ( '^^' IRIref ) )?	*/
 	: SPARQL_STRING				{ $$ = spartlist (sparp_arg, 4, SPAR_LIT, $1, NULL, NULL); }
 	| SPARQL_STRING LANGTAG			{ $$ = spartlist (sparp_arg, 4, SPAR_LIT, $1, NULL, $2); }
 	| SPARQL_STRING _CARET_CARET spar_iriref	{ $$ = spar_make_typed_literal (sparp_arg, $1, $3->_.lit.val, NULL); }
 	;
 
-spar_boolean_literal	/* [61]  	BooleanLiteral	  ::=  	'true' | 'false'	*/
+spar_boolean_literal	/* [61]	BooleanLiteral	 ::=  'true' | 'false'	*/
 	: true_L		{ $$ = spartlist (sparp_arg, 4, SPAR_LIT, (ptrlong)1, uname_xmlschema_ns_uri_hash_boolean, NULL); }
 	| false_L		{ $$ = spartlist (sparp_arg, 4, SPAR_LIT, (ptrlong)0, uname_xmlschema_ns_uri_hash_boolean, NULL); }
 	;
@@ -1325,12 +1325,12 @@ spar_arrow_iriref
 	| spar_arrow error { sparyyerror ("IRI reference expected after *> or +> operator"); }
 	;
 
-spar_iriref		/* [63]  	IRIref	  ::=  	Q_IRI_REF | QName	*/
+spar_iriref		/* [63]	IRIref		 ::=  Q_IRI_REF | QName	*/
 	: Q_IRI_REF		{ $$ = spartlist (sparp_arg, 2, SPAR_QNAME, sparp_expand_q_iri_ref (sparp_arg, $1)); }
 	| spar_qname		{ $$ = $1; }
 	;
 
-spar_qname		/* [64]  	QName	  ::=  	QNAME | QNAME_NS	*/
+spar_qname		/* [64]	QName		 ::=  QNAME | QNAME_NS	*/
 	: QNAME			{ $$ = spartlist (sparp_arg, 2, SPAR_QNAME, sparp_expand_qname_prefix (sparp_arg, $1)); }
 	| QNAME_NS		{ $$ = spartlist (sparp_arg, 2, SPAR_QNAME/*_NS*/, sparp_expand_qname_prefix (sparp_arg, $1)); }
 	;

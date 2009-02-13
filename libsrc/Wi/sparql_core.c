@@ -99,8 +99,8 @@ spartlist_impl (sparp_t *sparp, ptrlong length, ptrlong type, ...)
     }
   else
     {
-  if (spart_count_specific_elems_by_type (type) != sizeof (caddr_t) * (length-1))
-    spar_internal_error (sparp, "length mismatch in spartlist()");
+      if (spart_count_specific_elems_by_type (type) != sizeof (caddr_t) * (length-1))
+        spar_internal_error (sparp, "length mismatch in spartlist()");
     }
 #endif
   length += 1;
@@ -531,7 +531,7 @@ err:
   if (is_json)
     jsonyyerror_impl (err_msg);
   else
-  sparyyerror_impl (sparp, NULL, err_msg);
+    sparyyerror_impl (sparp, NULL, err_msg);
   return NULL;
 }
 
@@ -588,7 +588,7 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
       value = sparp_expand_q_iri_ref (sparp, value);
       break;
     case QNAME:
-    value = sparp_expand_qname_prefix (sparp, value);
+      value = sparp_expand_qname_prefix (sparp, value);
       break;
     case SPARQL_INTEGER:
       {
@@ -618,18 +618,18 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
     }
   if ((6 < strlen (param)) && !memcmp (param, "input:", 6))
     {
-  if (!strcmp (param, "input:default-graph-uri"))
-    {
+      if (!strcmp (param, "input:default-graph-uri"))
+        {
           SPART *new_precode = sparp_make_graph_precode ( sparp, SPART_GRAPH_FROM,
-        spartlist (sparp, 2, SPAR_QNAME, t_box_dv_uname_string (value)),
-        NULL );
+            spartlist (sparp, 2, SPAR_QNAME, t_box_dv_uname_string (value)),
+            NULL );
           sparp_push_new_graph_source (sparp,
             &(sparp->sparp_env->spare_default_graphs),
-                new_precode );
+            new_precode );
           sparp->sparp_env->spare_default_graphs_listed++;
           sparp->sparp_env->spare_default_graphs_locked = 1;
-      return;
-    }
+          return;
+        }
       if (!strcmp (param, "input:default-graph-exclude"))
         {
           SPART *new_precode = sparp_make_graph_precode ( sparp, SPART_GRAPH_NOT_FROM,
@@ -641,18 +641,18 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
           /* No sparp->sparp_env->spare_default_graphs_locked = 1; here because NOT FROM can not be owerridden */
           return;
         }
-  if (!strcmp (param, "input:named-graph-uri"))
-    {
+      if (!strcmp (param, "input:named-graph-uri"))
+        {
           SPART *new_precode = sparp_make_graph_precode ( sparp, SPART_GRAPH_NAMED,
-          spartlist (sparp, 2, SPAR_QNAME, t_box_dv_uname_string (value)),
+            spartlist (sparp, 2, SPAR_QNAME, t_box_dv_uname_string (value)),
             NULL );
           sparp_push_new_graph_source (sparp,
             &(sparp->sparp_env->spare_named_graphs),
             new_precode );
           sparp->sparp_env->spare_named_graphs_listed++;
-      sparp->sparp_env->spare_named_graphs_locked = 1;
-      return;
-    }
+          sparp->sparp_env->spare_named_graphs_locked = 1;
+          return;
+        }
       if (!strcmp (param, "input:named-graph-exclude"))
         {
           SPART *new_precode = sparp_make_graph_precode ( sparp, SPART_GRAPH_NOT_NAMED, 
@@ -668,19 +668,19 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
         {
           sparp->sparp_env->spare_use_ifp = t_box_copy_tree (value);
           return;
-    }
+        }
       if (!strcmp (param, "input:same-as"))
         {
           sparp->sparp_env->spare_use_same_as = t_box_copy_tree (value);
           return;
         }
-  if (!strcmp (param, "input:storage"))
-    {
-      if (NULL != sparp->sparp_env->spare_storage_name)
-        spar_error (sparp, "'define %.30s' is used more than once", param);
-      sparp->sparp_env->spare_storage_name = t_box_dv_uname_string (value);
-      return;
-    }
+      if (!strcmp (param, "input:storage"))
+        {
+          if (NULL != sparp->sparp_env->spare_storage_name)
+            spar_error (sparp, "'define %.30s' is used more than once", param);
+          sparp->sparp_env->spare_storage_name = t_box_dv_uname_string (value);
+          return;
+        }
       if (!strcmp (param, "input:inference"))
         {
           if (NULL != sparp->sparp_env->spare_inference_name)
@@ -689,21 +689,21 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
           return;
         }
       if ((11 < strlen (param)) && !memcmp (param, "input:grab-", 11))
-    {
-      rdf_grab_config_t *rgc = &(sparp->sparp_env->spare_grab);
-      const char *lock_pragma = NULL;
-          rgc->rgc_pview_mode = 1;
-      if (sparp->sparp_env->spare_default_graphs_locked)
-        lock_pragma = "input:default-graph-uri";
-      else if (sparp->sparp_env->spare_named_graphs_locked)
-        lock_pragma = "input:named-graph-uri";
-      if (NULL != lock_pragma)
-        spar_error (sparp, "define %s should not appear after define %s", param, lock_pragma);
-      if (!strcmp (param, "input:grab-all"))
         {
-          rgc->rgc_all = 1;
-          return;
-        }
+          rdf_grab_config_t *rgc = &(sparp->sparp_env->spare_grab);
+          const char *lock_pragma = NULL;
+          rgc->rgc_pview_mode = 1;
+          if (sparp->sparp_env->spare_default_graphs_locked)
+            lock_pragma = "input:default-graph-uri";
+          else if (sparp->sparp_env->spare_named_graphs_locked)
+            lock_pragma = "input:named-graph-uri";
+          if (NULL != lock_pragma)
+            spar_error (sparp, "define %s should not appear after define %s", param, lock_pragma);
+          if (!strcmp (param, "input:grab-all"))
+            {
+              rgc->rgc_all = 1;
+              return;
+            }
           if (!strcmp (param, "input:grab-intermediate"))
             {
               rgc->rgc_intermediate = 1;
@@ -725,48 +725,48 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
                 }
               return;
             }
-      if (!strcmp (param, "input:grab-iri"))
-        {
-          switch (value_lexem_type)
+          if (!strcmp (param, "input:grab-iri"))
             {
-            case QNAME:
-            case Q_IRI_REF:
-              t_set_push (&(rgc->rgc_consts), value);
-              break;
-            default:
-              if (('?' == value[0]) || ('$' == value[0]))
+              switch (value_lexem_type)
+                {
+                case QNAME:
+                case Q_IRI_REF:
+                  t_set_push (&(rgc->rgc_consts), value);
+                  break;
+                default:
+                  if (('?' == value[0]) || ('$' == value[0]))
                     t_set_push_new_string (&(rgc->rgc_vars), t_box_dv_uname_string (value+1));
-              else
+                  else
                     t_set_push_new_string (&(rgc->rgc_consts), value);
+                }
+              return;
             }
-          return;
-        }
-  if (!strcmp (param, "input:grab-var"))
-    {
-      caddr_t varname;
-      if (('?' == value[0]) || ('$' == value[0]))
-        varname = t_box_dv_uname_string (value+1);
-      else
-        varname = t_box_dv_uname_string (value);
+          if (!strcmp (param, "input:grab-var"))
+            {
+              caddr_t varname;
+              if (('?' == value[0]) || ('$' == value[0]))
+                varname = t_box_dv_uname_string (value+1);
+              else
+                varname = t_box_dv_uname_string (value);
               t_set_push_new_string (&(rgc->rgc_vars), varname);
-      return;
-    }
-  if (!strcmp (param, "input:grab-depth"))
-    {
+              return;
+            }
+          if (!strcmp (param, "input:grab-depth"))
+            {
               ptrlong val = ((DV_LONG_INT == DV_TYPE_OF (value)) ? unbox_ptrlong (value) : -1);
-      if (0 >= val)
-        spar_error (sparp, "define input:grab-depth should have positive integer value");
-          rgc->rgc_depth = t_box_num_nonull (val);
-      return;
-    }
-  if (!strcmp (param, "input:grab-limit"))
-    {
+              if (0 >= val)
+                spar_error (sparp, "define input:grab-depth should have positive integer value");
+              rgc->rgc_depth = t_box_num_nonull (val);
+              return;
+            }
+          if (!strcmp (param, "input:grab-limit"))
+            {
               ptrlong val = ((DV_LONG_INT == DV_TYPE_OF (value)) ? unbox_ptrlong (value) : -1);
-      if (0 >= val)
-        spar_error (sparp, "define input:grab-limit should have positive integer value");
-          rgc->rgc_limit = t_box_num_nonull (val);
-          return;
-        }
+              if (0 >= val)
+                spar_error (sparp, "define input:grab-limit should have positive integer value");
+              rgc->rgc_limit = t_box_num_nonull (val);
+              return;
+            }
           if (!strcmp (param, "input:grab-base")) {
               rgc->rgc_base = t_box_dv_uname_string (value); return; }
           if (!strcmp (param, "input:grab-destination")) {
@@ -1125,14 +1125,14 @@ spar_gp_add_filters_for_graph (sparp_t *sparp, SPART *graph_expn, dk_set_t sourc
         return;
     }
   graph_expn_copy = (
-            (SPAR_VARIABLE == SPART_TYPE (graph_expn)) ?
-            spar_make_variable (sparp, varname) :
-            spar_make_blank_node (sparp, varname, 0) );
+    (SPAR_VARIABLE == SPART_TYPE (graph_expn)) ?
+    spar_make_variable (sparp, varname) :
+    spar_make_blank_node (sparp, varname, 0) );
   src_count = dk_set_length (sources);
   if (1 == src_count)
     {
       SPART *src = (SPART *)(sources->data);
-    filter = spartlist (sparp, 3,
+      filter = spartlist (sparp, 3,
         (((SPART_GRAPH_NOT_FROM == src->_.graph.subtype) ||
             (SPART_GRAPH_NOT_NAMED == src->_.graph.subtype) ) ?
           BOP_NEQ : BOP_EQ),
@@ -1147,17 +1147,17 @@ spar_gp_add_filters_for_graph (sparp_t *sparp, SPART *graph_expn, dk_set_t sourc
         {
           if (!((SPART_GRAPH_NOT_FROM == src->_.graph.subtype) || (SPART_GRAPH_NOT_NAMED == src->_.graph.subtype)))
             t_set_push (&good_expns, src->_.graph.expn);
-  else
+          else
             t_set_push (&bad_expns, src->_.graph.expn);
         }
       END_DO_SET()
       if (NULL != good_expns)
-    {
+        {
           t_set_push (&good_expns, graph_expn_copy);
-      filter = spartlist (sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)IN_L, 
+          filter = spartlist (sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)IN_L,
             (SPART **)t_list_to_array (good_expns) );
           spar_gp_add_filter (sparp, filter);
-    }
+        }
       if (NULL != bad_expns)
         {
           graph_expn_copy = (
@@ -1404,7 +1404,7 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, caddr_t limit, caddr_
           (SPART **)t_list_to_array (consts) ),
         ((sparp->sparp_env->spare_default_graphs_listed || sparp->sparp_env->spare_named_graphs_listed) ?
           ((NULL != good_graphs) ?
-          spar_make_funcall (sparp, 0, "LONG::bif:vector",
+            spar_make_funcall (sparp, 0, "LONG::bif:vector",
               (SPART **)t_list_to_array (good_graphs) ) : (SPART *)t_NEW_DB_NULL ) :
           (SPART *)t_box_num_nonull (0) ),
         ((NULL != bad_graphs) ?
@@ -1416,7 +1416,7 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, caddr_t limit, caddr_
     return (SPART **)t_list (2, descr_call,
       spartlist (sparp, 4, SPAR_ALIAS, var_vector_expn, t_box_dv_short_string ("describe-1"), SSG_VALMODE_AUTO) );
   else
-  return (SPART **)t_list (1, descr_call);
+    return (SPART **)t_list (1, descr_call);
 }
 
 int
@@ -1659,7 +1659,7 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
         break;
       if (env->spare_context_graphs)
         {
-        graph = (SPART *)t_box_copy_tree (env->spare_context_graphs->data);
+          graph = (SPART *)t_box_copy_tree (env->spare_context_graphs->data);
           break;
         }
       dflts = env->spare_default_graphs;
@@ -1674,13 +1674,13 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
         { /* If there's only one default graph then we can cheat and optimize the query a little bit by adding a restriction to the variable */
           SPART *single_dflt = (SPART *)(dflts->data);
           if (!SPAR_IS_LIT_OR_QNAME (single_dflt->_.graph.expn))	 /* FROM iriref OPTION (...) case */
-        {
+            {
               caddr_t iri_arg = single_dflt->_.graph.iri;
               SPART *eq;
               graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_::default"), 1);
               eq = spartlist (sparp, 3, BOP_EQ, sparp_tree_full_copy (sparp, graph, NULL), sparp_tree_full_copy (sparp, single_dflt->_.graph.expn, NULL));
               spar_gp_add_filter (sparp, eq);
-	      graph->_.var.rvr.rvrRestrictions |= SPART_VARR_FIXED | SPART_VARR_IS_REF | SPART_VARR_NOT_NULL;
+              graph->_.var.rvr.rvrRestrictions |= SPART_VARR_FIXED | SPART_VARR_IS_REF | SPART_VARR_NOT_NULL;
               graph->_.var.rvr.rvrFixedValue = t_box_copy (iri_arg);
               break;
             }
@@ -1892,8 +1892,8 @@ cannot_cast:
 void
 sparp_push_new_graph_source (sparp_t *sparp, dk_set_t *set_ptr, SPART *src)
 {
-      DO_SET (SPART *, c, set_ptr)
-        {
+  DO_SET (SPART *, c, set_ptr)
+    {
       if (strcmp (c->_.graph.iri, src->_.graph.iri))
         continue;
       if (c->_.graph.subtype > src->_.graph.subtype)
@@ -1901,8 +1901,8 @@ sparp_push_new_graph_source (sparp_t *sparp, dk_set_t *set_ptr, SPART *src)
       if ((c->_.graph.subtype == src->_.graph.subtype) && (SPAR_QNAME != SPART_TYPE (c->_.graph.expn)))
         t_set_delete (set_ptr, c);
       break;
-        }
-      END_DO_SET()
+    }
+  END_DO_SET()
   if ((SPART_GRAPH_NOT_FROM == src->_.graph.subtype) ||
     (SPART_GRAPH_NOT_NAMED == src->_.graph.subtype) )
     {
@@ -1930,33 +1930,33 @@ sparp_make_graph_precode (sparp_t *sparp, ptrlong subtype, SPART *iriref, SPART 
     return spartlist (sparp, 4, SPAR_GRAPH, subtype, iriref->_.qname.val, iriref);
   common_count = dk_set_length (opts_ptr[0]);
   mixed_tail = mixed_options = (SPART **)t_alloc_box ((common_count + 2 + BOX_ELEMENTS_0 (options)) * sizeof (SPART *), DV_ARRAY_OF_POINTER);
-      DO_SET (SPART *, val, opts_ptr)
-        {
-          (mixed_tail++)[0] = (SPART *)t_full_box_copy_tree ((caddr_t)(val));
-        }
-      END_DO_SET()
-      for (ctr = BOX_ELEMENTS_0 (options) - 1; 0 <= ctr; ctr -= 2)
-        {
-          caddr_t param = (caddr_t)(options[ctr]);
-          const char **chk;
-          for (chk = sparp_known_get_params; (NULL != chk[0]) && strcmp (chk[0], param); chk++) ;
-          if (NULL == chk[0])
-            spar_error (sparp, "Unsupported parameter '%.30s' in FROM ... (OPTION ...)", param);
-          if (0 < dk_set_position_of_string (opts_ptr[0], param))
-            spar_error (sparp, "FROM ... (OPTION ... %s ...) conflicts with 'DEFINE %s ...", param, param);
-          (mixed_tail++)[0] = (SPART *)t_full_box_copy_tree (param);
-          (mixed_tail++)[0] = (SPART *)t_full_box_copy_tree ((caddr_t)(options[ctr + 1]));
-        }
+  DO_SET (SPART *, val, opts_ptr)
+    {
+      (mixed_tail++)[0] = (SPART *)t_full_box_copy_tree ((caddr_t)(val));
+    }
+  END_DO_SET()
+  for (ctr = BOX_ELEMENTS_0 (options) - 1; 0 <= ctr; ctr -= 2)
+    {
+      caddr_t param = (caddr_t)(options[ctr]);
+      const char **chk;
+      for (chk = sparp_known_get_params; (NULL != chk[0]) && strcmp (chk[0], param); chk++) ;
+      if (NULL == chk[0])
+        spar_error (sparp, "Unsupported parameter '%.30s' in FROM ... (OPTION ...)", param);
+      if (0 < dk_set_position_of_string (opts_ptr[0], param))
+        spar_error (sparp, "FROM ... (OPTION ... %s ...) conflicts with 'DEFINE %s ...", param, param);
+      (mixed_tail++)[0] = (SPART *)t_full_box_copy_tree (param);
+      (mixed_tail++)[0] = (SPART *)t_full_box_copy_tree ((caddr_t)(options[ctr + 1]));
+    }
   if (!IS_BOX_POINTER (sparp->sparp_env->spare_sql_refresh_free_text))
     sparp->sparp_env->spare_sql_refresh_free_text = t_box_num_and_zero (0);
   (mixed_tail++)[0] = (SPART *) t_box_dv_short_string ("refresh_free_text");
   (mixed_tail++)[0] = (SPART *) sparp->sparp_env->spare_sql_refresh_free_text;
   return spartlist (sparp, 4, SPAR_GRAPH, subtype, iriref->_.qname.val, 
     spar_make_funcall (sparp, 0, "SPECIAL::bif:iri_to_id",
-    (SPART **)t_list (1,
-      spar_make_funcall (sparp, 0, "sql:RDF_SPONGE_UP",
-    (SPART **)t_list (2,
-       iriref,
+      (SPART **)t_list (1,
+        spar_make_funcall (sparp, 0, "sql:RDF_SPONGE_UP",
+          (SPART **)t_list (2,
+             iriref,
              spar_make_funcall (sparp, 0, "bif:vector", mixed_options) ) ) ) ) );
 }
 
@@ -2304,7 +2304,7 @@ sparp_query_parse (char * str, spar_query_env_t *sparqre, int rewrite_all)
       /* Bug 4566: sparpyyrestart (NULL); */
       sparyyparse (sparp);
       if (rewrite_all)
-      sparp_rewrite_all (sparp, 0 /* top is never cloned, hence zero safely_copy_retvals */);
+        sparp_rewrite_all (sparp, 0 /* top is never cloned, hence zero safely_copy_retvals */);
     }
   QR_RESET_CODE
     {
@@ -2474,7 +2474,7 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
 #ifdef SPARQL_DEBUG
       printf ("\nsparp_compile_subselect() caught parse error: %s", ERR_MESSAGE(sparp->sparp_sparqre->sparqre_catched_error));
 #endif
-    return;
+      return;
     }
   memset (&ssg, 0, sizeof (spar_sqlgen_t));
   memset (&sc, 0, sizeof (sql_comp_t));
@@ -2491,7 +2491,7 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
   ssg.ssg_tree = sparp->sparp_expr;
   ssg_make_whole_sql_text (&ssg);
   if (NULL != sparqre->sparqre_catched_error)
-        {
+    {
       strses_free (ssg.ssg_out);
       ssg.ssg_out = NULL;
       return;
@@ -2581,7 +2581,7 @@ bif_sparql_detalize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ssg.ssg_sd_used_namespaces = id_str_hash_create (16);
   QR_RESET_CTX
     {
-  sparp_make_sparqld_text (&ssg);
+      sparp_make_sparqld_text (&ssg);
     }
   QR_RESET_CODE
     {
@@ -2602,7 +2602,7 @@ bif_sparql_detalize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           dk_free_box (dict_key[0]);
           dk_free_box (dict_val[0]);
         }
-      id_hash_free (ssg.ssg_sd_used_namespaces);          
+      id_hash_free (ssg.ssg_sd_used_namespaces);
       strses_free (ssg.ssg_out);
       ssg.ssg_out = NULL;
       MP_DONE ();

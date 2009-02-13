@@ -299,10 +299,60 @@ sqlg_key_source_create (sqlo_t * so, df_elt_t * tb_dfe, dbe_key_t * key)
     {
       df_elt_t *cp = sqlo_key_part_best (col, tb_dfe->_.table.col_preds, 0);
       df_elt_t *upper = NULL;
-	  if (!cp)
-	    break;
-	  cp->dfe_is_placed = DFE_GEN;
+      if (!cp)
+	break;
+      cp->dfe_is_placed = DFE_GEN;
 
+      if (cp->dfe_type == DFE_TEXT_PRED)
+	{
+	  dbe_col_loc_t * cl;
+	  spec = (search_spec_t *) dk_alloc (sizeof (search_spec_t));
+	  memset (spec, 0, sizeof (search_spec_t));
+	  spec->sp_is_boxed = 1;
+	  spec->sp_col = cp->_.text.col;
+	  spec->sp_collation = spec->sp_col->col_sqt.sqt_collation;
+	  spec->sp_max_op = CMP_NONE;
+	  spec->sp_min_op = CMP_EQ;
+	  spec->sp_min_ssl = cp->_.text.ssl;
+	  cl = key_find_cl (key, spec->sp_col->col_id);
+	  memcpy (&(spec->sp_cl), cl, sizeof (dbe_col_loc_t));
+	}
+      else if ((in_list = sqlo_in_list (cp, NULL, NULL)))
+	{
+	  sqlg_in_list (so, ks, col, in_list);
+	  goto next_part;
+	}
+      else
+	{
+	  if (dfe_is_lower (cp))
+	    {
+	      upper = sqlo_key_part_best (col, tb_dfe->_.table.col_preds, 1);
+	      if (upper)
+		upper->dfe_is_placed = DFE_GEN;
+	    }
+	  spec = dfe_to_spec (cp, upper, key);
+	}
+      ks_spec_add (&ks->ks_spec.ksp_spec_array, spec);
+      /* Only 0-n equalities plus 0-1 ordinal relations allowed here.  Rest go to row specs. */
+      if (spec->sp_min_op != CMP_EQ)
+	break;
+next_part:
+      part_no++;
+      if (part_no >= key->key_n_significant)
+	break;
+
+    }
+  END_DO_SET ();
+
+  DO_SET (df_elt_t *, cp, &tb_dfe->_.table.col_preds)
+    {
+      if (DFE_GEN != cp->dfe_is_placed
+	  && (
+	    (cp->dfe_type == DFE_TEXT_PRED &&
+	     dk_set_member (ks->ks_key->key_parts, (void *) cp->_.text.col))
+	    || (!sqlo_in_list (cp, NULL, NULL) && dk_set_member (ks->ks_key->key_parts, (void *) cp->_.bin.left->_.col.col))))
+	{
+	  cp->dfe_is_placed = DFE_GEN;
 	  if (cp->dfe_type == DFE_TEXT_PRED)
 	    {
 	      dbe_col_loc_t * cl;
@@ -317,66 +367,16 @@ sqlg_key_source_create (sqlo_t * so, df_elt_t * tb_dfe, dbe_key_t * key)
 	      cl = key_find_cl (key, spec->sp_col->col_id);
 	      memcpy (&(spec->sp_cl), cl, sizeof (dbe_col_loc_t));
 	    }
-	  else if ((in_list = sqlo_in_list (cp, NULL, NULL)))
-	    {
-	      sqlg_in_list (so, ks, col, in_list);
-	      goto next_part;
-	    }
 	  else
-	    {
-	      if (dfe_is_lower (cp))
-		{
-		  upper = sqlo_key_part_best (col, tb_dfe->_.table.col_preds, 1);
-		  if (upper)
-		    upper->dfe_is_placed = DFE_GEN;
-		}
-	      spec = dfe_to_spec (cp, upper, key);
-	    }
-	  ks_spec_add (&ks->ks_spec.ksp_spec_array, spec);
-	  /* Only 0-n equalities plus 0-1 ordinal relations allowed here.  Rest go to row specs. */
-	  if (spec->sp_min_op != CMP_EQ)
-	    break;
-next_part:
-	  part_no++;
-	  if (part_no >= key->key_n_significant)
-	    break;
-
+	    spec = dfe_to_spec (cp, NULL, key);
+	  ks_spec_add (&ks->ks_row_spec, spec);
+	}
+      if (DFE_GEN != cp->dfe_is_placed
+	  && (in_list  = sqlo_in_list (cp, NULL, NULL)))
+	{
+	  t_set_pushnew (&tb_dfe->_.table.out_cols, in_list[0]);
+	}
     }
-  END_DO_SET ();
-
-  DO_SET (df_elt_t *, cp, &tb_dfe->_.table.col_preds)
-  {
-    if (DFE_GEN != cp->dfe_is_placed
-	&& (
-	  (cp->dfe_type == DFE_TEXT_PRED &&
-	   dk_set_member (ks->ks_key->key_parts, (void *) cp->_.text.col)) 
-	  || (!sqlo_in_list (cp, NULL, NULL) && dk_set_member (ks->ks_key->key_parts, (void *) cp->_.bin.left->_.col.col))))
-      {
-	cp->dfe_is_placed = DFE_GEN;
-	if (cp->dfe_type == DFE_TEXT_PRED)
-	  {
-	    dbe_col_loc_t * cl;
-	    spec = (search_spec_t *) dk_alloc (sizeof (search_spec_t));
-	    memset (spec, 0, sizeof (search_spec_t));
-	    spec->sp_is_boxed = 1;
-	    spec->sp_col = cp->_.text.col;
-	    spec->sp_collation = spec->sp_col->col_sqt.sqt_collation;
-	    spec->sp_max_op = CMP_NONE;
-	    spec->sp_min_op = CMP_EQ;
-	    spec->sp_min_ssl = cp->_.text.ssl;
-	    cl = key_find_cl (key, spec->sp_col->col_id);
-	    memcpy (&(spec->sp_cl), cl, sizeof (dbe_col_loc_t));
-	  }
-	else
-	  spec = dfe_to_spec (cp, NULL, key);
-	ks_spec_add (&ks->ks_row_spec, spec);
-      }
-    if (DFE_GEN != cp->dfe_is_placed
-	&& (in_list  = sqlo_in_list (cp, NULL, NULL)))
-      {
-	t_set_pushnew (&tb_dfe->_.table.out_cols, in_list[0]);
-      }
-  }
   END_DO_SET ();
   sqlg_ks_out_cols (so, tb_dfe, ks);
   ksp_cmp_func (&ks->ks_spec);
@@ -388,10 +388,10 @@ int
 tb_undone_specs (df_elt_t * tb_dfe)
 {
   DO_SET (df_elt_t *, cp, &tb_dfe->_.table.col_preds)
-  {
+    {
       if (DFE_GEN != cp->dfe_is_placed)
-      return 1;
-  }
+	return 1;
+    }
   END_DO_SET ();
   return 0;
 }
@@ -403,8 +403,8 @@ tb_undone_cols (df_elt_t * tb_dfe)
   DO_SET (df_elt_t *, col_dfe, &tb_dfe->_.table.out_cols)
     {
       if (col_dfe->dfe_is_placed != DFE_GEN)
-      return 1;
-  }
+	return 1;
+    }
   END_DO_SET ();
   return 0;
 }
@@ -823,11 +823,11 @@ sqlg_inx_op (sqlo_t * so, df_elt_t * tb_dfe, df_inx_op_t * dio, inx_op_t * paren
 	    sqlg_inx_op_ssls (so, term);
 	    if (0 != inx
 		&& 2 == n_terms && iop_one_col_free (term))
-		term->iop_other = iop->iop_terms[0]; /* Most inx ands are with 2.  If more, the iop_other trick for looking in the other's state while advancing will cause advances to be missed */
+	      term->iop_other = iop->iop_terms[0]; /* Most inx ands are with 2.  If more, the iop_other trick for looking in the other's state while advancing will cause advances to be missed */
 	  }
 	END_DO_BOX;
 	if (2 == n_terms && iop_one_col_free (iop->iop_terms[0]))
-	iop->iop_terms[0]->iop_other = iop->iop_terms[1];
+	  iop->iop_terms[0]->iop_other = iop->iop_terms[1];
 	break;
       }
     case IOP_KS:
@@ -936,7 +936,7 @@ sqlg_make_ts (sqlo_t * so, df_elt_t * tb_dfe)
   sqlc_update_set_keyset (sc, ts);
   sqlc_ts_set_no_blobs (ts);
   if (!sc->sc_update_keyset)
-  ts_alias_current_of (ts);
+    ts_alias_current_of (ts);
   table_source_om (sc->sc_cc, ts);
 
   if (ot->ot_opts && sqlo_opt_value (ot->ot_opts, OPT_RANDOM_FETCH))

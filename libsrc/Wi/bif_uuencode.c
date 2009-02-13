@@ -76,7 +76,7 @@ bif_uuencode (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       IO_SECT (qst);
       CATCH_READ_FAIL ((dk_session_t *)input)
         {
-    uu_encode_string_session (&res, (dk_session_t *)input, uuenctype, maxlinespersection);
+          uu_encode_string_session (&res, (dk_session_t *)input, uuenctype, maxlinespersection);
         }
       FAILED
 	{

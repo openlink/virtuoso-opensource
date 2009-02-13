@@ -49,7 +49,7 @@ extern "C" {
 #define SWAP_REIFY_NS_URI	"http://www.w3.org/2000/10/swap/reify#"
 #define SWAP_REIFY_NS_URI_LEN	37
 
-/*				 0         1         2         3         4 */
+/*				 0         1         2         3         4   */
 /*				 0123456789012345678901234567890123456789012 */
 #define VIRTRDF_NS_URI		"http://www.openlinksw.com/schemas/virtrdf#"
 #define VIRTRDF_NS_URI_LEN	42
@@ -392,7 +392,7 @@ typedef struct xe_word_ranges_s xe_word_ranges_t;
 
 struct xml_tree_doc_s
 {
-    XD_MEMBERS
+  XD_MEMBERS
   XTD_MEMBERS
 };
 
@@ -639,7 +639,7 @@ typedef struct xp_node_s
   caddr_t *	xn_attrs;
   dk_set_t	 xn_children;
   caddr_t *	xn_namespaces;
-  struct xparse_ctx_s  *	xn_xp;
+  struct xparse_ctx_s * xn_xp;
 } xp_node_t;
 
 /*!< RDF/XML parser mode, i.e. what does the parser expect to read */
@@ -824,7 +824,7 @@ extern void xp_comment (vxml_parser_t * parser, const char *text);
       { \
         if (xp_strses_length & ~0xffffff) \
           sqlr_new_error ("42000", "SR596", "Unable to place abnormally long string into XML tree, %ld bytes is above 16Mb limit", (long)xp_strses_length); \
-      XP_STRSES_FLUSH_NOCHECK(xp); \
+        XP_STRSES_FLUSH_NOCHECK(xp); \
       } \
     } while (0)
 

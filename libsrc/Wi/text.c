@@ -956,7 +956,7 @@ wst_get_specs (dbe_key_t *key)
 
 #define WST_KSP(name) \
   res->wst_ks_##name .ksp_spec_array = &res->wst_##name##_spec[0]; \
-  ksp_cmp_func (&res->wst_ks_##name); 
+  ksp_cmp_func (&res->wst_ks_##name);
 
   WST_KSP (init);
   WST_KSP (seek);
@@ -2168,7 +2168,7 @@ sst_or_advance (search_stream_t * sst, d_id_t target, int is_fixed)
 	      lowest = term->sst_d_id;
 	      /* n_at_target++; */
 	    }
-	  else 
+	  else
 	    {
 	      if (D_INITIAL (&lowest) ||
 		  sst_is_below (&term->sst_d_id, &lowest, sst->sst_is_desc))
@@ -2756,7 +2756,7 @@ bif_vtb_match (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       QR_RESET_CTX 
 	{
-      sst_next (sst, &d_id_next, 0);
+	  sst_next (sst, &d_id_next, 0);
 	}
       QR_RESET_CODE 
 	{

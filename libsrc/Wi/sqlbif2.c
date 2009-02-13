@@ -1037,8 +1037,8 @@ bif_rfc1808_parse_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         sqlr_new_error ("22023", "SR571", "Function rfc1808_parse_uri() got abnormally long URI as argument (%ld chars)",
           (long)(uri_len - 1) );
       else
-    sqlr_new_error ("22023", "SR570", "Function rfc1808_parse_uri() got abnormally long URI as argument (%ld chars, '%.50s ... %50s')",
-      (long)(uri_len - 1), uri, uri + uri_len - 51 );
+        sqlr_new_error ("22023", "SR570", "Function rfc1808_parse_uri() got abnormally long URI as argument (%ld chars, '%.50s ... %50s')",
+          (long)(uri_len - 1), uri, uri + uri_len - 51 );
     }
   if (DV_WIDE == uri_dtp)
     rfc1808_parse_wide_uri ((const wchar_t *)uri, &split);
@@ -1068,7 +1068,7 @@ bif_rfc1808_parse_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       box_t (*box_x_nchars)(const char *buf, size_t len) =
         ((DV_UNAME == uri_dtp) ? 
           box_dv_uname_nchars : box_dv_short_nchars );
-  return list (6,
+      return list (6,
         box_x_nchars (uri + split.schema_begin	, split.schema_end - split.schema_begin),
         box_x_nchars (uri + split.netloc_begin	, split.netloc_end - split.netloc_begin),
         (((split.path_end == split.path_begin) && (0 < split.two_slashes)) ?
@@ -1222,7 +1222,7 @@ rfc1808_expand_uri (caddr_t * qst, caddr_t base_uri, caddr_t rel_uri,
       if (buf_tail + prefix_len + suffix_len + pref##_split.fld##_end - pref##_split.fld##_begin > buffer + buf_len) \
         GPF_T1("Dangerously big buf_tail forecast"); \
       TAIL_APPEND_CUT(pref,fld,prefix,prefix_len,suffix,suffix_len) \
-   }
+    }
 #else
 #define IF_NONEMPTY_THEN_TAIL_APPEND_CUT(pref,fld,prefix,prefix_len,suffix,suffix_len) \
   if (pref##_split.fld##_end != pref##_split.fld##_begin) \

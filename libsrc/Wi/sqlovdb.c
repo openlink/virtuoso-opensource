@@ -139,7 +139,7 @@ sqlo_table_locus (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t col_preds, dk_set_t *
 
 
 locus_t *
-sqlo_dt_locus  (sqlo_t * so, op_table_t * ot, locus_t * outer_loc)
+sqlo_dt_locus (sqlo_t * so, op_table_t * ot, locus_t * outer_loc)
 {
   return LOC_LOCAL;
 }

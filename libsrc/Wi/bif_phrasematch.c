@@ -1011,14 +1011,14 @@ void appi_add_word_arrow (const utf8char *buf, size_t bufsize, unsigned apa_star
           if (! (aps->aps_bitarrays.apb_arrayX[idxX >> 5] & (1 << (idxX & 0x1F))))
             {
               dbg_printf (("   failed in X that is 0x%08lx, ofs %ld\n", (unsigned long)(aps->aps_bitarrays.apb_arrayX[idxX >> 5]), (long)(idxX >> 5)));
-            continue;
+              continue;
             }
           dbg_printf (("      PASSED in X that is 0x%08lx, ofs %ld\n", (unsigned long)(aps->aps_bitarrays.apb_arrayX[idxX >> 5]), (long)(idxX >> 5)));
           idxY = AP_CHKSUM_TO_Y(aps->aps_bitarrays, chksum);
           if (! (aps->aps_bitarrays.apb_arrayY[idxY >> 5] & (1 << (idxY & 0x1F))))
             {
               dbg_printf (("      failed in Y that is 0x%08lx, ofs %ld\n", (unsigned long)(aps->aps_bitarrays.apb_arrayY[idxY >> 5]), (long)(idxY >> 5)));
-            continue;
+              continue;
             }
           dbg_printf (("         PASSED in Y that is 0x%08lx, ofs %ld\n", (unsigned long)(aps->aps_bitarrays.apb_arrayY[idxY >> 5]), (long)(idxY >> 5)));
           /*chk2 = (chksum * APB_ARRAYY_MULT1) & AP_PHRASE_CHKSUM_MASK;
@@ -1128,20 +1128,20 @@ void appi_prepare_to_class_callbacks (ap_proc_inst_t *appi)
       if ((caddr_t) SQL_SUCCESS == err)
 	{
 	  while (lc_next (lc))
-	{
-          ap_phrase_t *app = appi_alloc_type (ap_phrase_t);
-	  int prev_serial = -1;
-	  app->app_chksum = chksum;
-	  app->app_set = aps;
-	  app->app_text = mp_box_copy (appi->appi_mp, lc_nth_col (lc, 0));
-	  app->app_link_data = mp_full_box_copy_tree (appi->appi_mp, lc_nth_col (lc, 1));
-          mp_set_push (appi->appi_mp, &(appi->appi_phrases_revlist), app);
-          phrase_count ++;
+	    {
+	      ap_phrase_t *app = appi_alloc_type (ap_phrase_t);
+	      int prev_serial = -1;
+	      app->app_chksum = chksum;
+	      app->app_set = aps;
+	      app->app_text = mp_box_copy (appi->appi_mp, lc_nth_col (lc, 0));
+	      app->app_link_data = mp_full_box_copy_tree (appi->appi_mp, lc_nth_col (lc, 1));
+	      mp_set_push (appi->appi_mp, &(appi->appi_phrases_revlist), app);
+	      phrase_count ++;
 #ifdef AP_CHKSUM_DEBUG
-	  aps->aps_real_hits += 1;
+	      aps->aps_real_hits += 1;
 #endif
               for (aux_hit_ctr = candidate_hit_ctr; aux_hit_ctr < next_diff_hit_ctr; aux_hit_ctr++)
-	    {
+                {
 		  int first_idx;
 		  int last_idx;
                   int word_idx;
@@ -1160,9 +1160,9 @@ void appi_prepare_to_class_callbacks (ap_proc_inst_t *appi)
                   mp_set_push (appi->appi_mp, &(appi->appi_confirmed_hits_list), confirmed);
                   appi->appi_confirmed_hit_count += 1;
 		  for (word_idx = first_idx; word_idx <= last_idx; word_idx++)
-                {
+		    {
 		      ap_arrow_t *apa = appi->appi_places [word_idx];
-		  if (APA_PLAIN_WORD == apa->apa_is_markup)
+		      if (APA_PLAIN_WORD == apa->apa_is_markup)
 			mp_set_push (appi->appi_mp, &(apa->apa_all_hits), confirmed);
 		    }
 		}
@@ -1708,9 +1708,9 @@ sql_compile_many (int count, int compile_static, ...)
       if (compile_static)
         qry_ptr[0] = sql_compile_static (txt, bootstrap_cli, &err, 0);
       else
-      qry_ptr[0] = sql_compile (txt, bootstrap_cli, &err, 0);
+        qry_ptr[0] = sql_compile (txt, bootstrap_cli, &err, 0);
       if (NULL != err)
-        sqlr_resignal (err);      
+        sqlr_resignal (err);
     }
   if (NULL != va_arg (ap, const char *))
     GPF_T;

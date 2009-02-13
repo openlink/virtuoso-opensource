@@ -205,7 +205,7 @@ inner_triple_clause
 	: q_complete { dk_free_tree (ttlp_arg->ttlp_subj_uri);
 		ttlp_arg->ttlp_subj_uri = ttlp_arg->ttlp_last_complete_uri;
 		ttlp_arg->ttlp_last_complete_uri = NULL; }
-		inner_predicate_object_list semicolon_opt
+	    inner_predicate_object_list semicolon_opt
 	| triple_clause_with_nonq_subj
 	;
 
@@ -250,7 +250,7 @@ inner_predicate_object_list
         | _LBRA
 		{
 		  TTLYYERROR_ACTION_COND (TTLP_VERB_MAY_BE_BLANK, "Sequence blank node (written as '{...}' formula) can not be used as a predicate"); }
-		blank_block_formula
+	    blank_block_formula
 	;
 
 predicate_object_list_or_garbage
@@ -356,48 +356,48 @@ object_or_garbage
 
 object
 	: q_complete {
-		  dk_free_tree (ttlp_arg->ttlp_obj);
+		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = ttlp_arg->ttlp_last_complete_uri;
 		ttlp_arg->ttlp_last_complete_uri = NULL;
 		ttlp_triple_and_inf (ttlp_arg, ttlp_arg->ttlp_obj); }
 	| VARIABLE {
-		  dk_free_tree (ttlp_arg->ttlp_obj);
-		  ttlp_arg->ttlp_obj = $1;
+		dk_free_tree (ttlp_arg->ttlp_obj);
+		ttlp_arg->ttlp_obj = $1;
 		ttlp_triple_and_inf (ttlp_arg, $1); }
 	| blank	{
-		  dk_free_tree (ttlp_arg->ttlp_obj);
-		  ttlp_arg->ttlp_obj = $1;
+		dk_free_tree (ttlp_arg->ttlp_obj);
+		ttlp_arg->ttlp_obj = $1;
 		ttlp_triple_and_inf (ttlp_arg, $1); }
 	| true_L {
 		ttlp_triple_l_and_inf (ttlp_arg, (caddr_t)((ptrlong)1), uname_xmlschema_ns_uri_hash_boolean, NULL); }
 	| false_L {
 		ttlp_triple_l_and_inf (ttlp_arg, (caddr_t)((ptrlong)0), uname_xmlschema_ns_uri_hash_boolean, NULL); }
 	| TURTLE_INTEGER {
-		  dk_free_tree (ttlp_arg->ttlp_obj);
-		  ttlp_arg->ttlp_obj = $1;
+		dk_free_tree (ttlp_arg->ttlp_obj);
+		ttlp_arg->ttlp_obj = $1;
 		ttlp_triple_l_and_inf (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_integer, NULL); }
 	| TURTLE_DECIMAL {
-		  dk_free_tree (ttlp_arg->ttlp_obj);
-		  ttlp_arg->ttlp_obj = $1;
+		dk_free_tree (ttlp_arg->ttlp_obj);
+		ttlp_arg->ttlp_obj = $1;
 		ttlp_triple_l_and_inf (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_decimal, NULL); }
 	| TURTLE_DOUBLE {
-		  dk_free_tree (ttlp_arg->ttlp_obj);
-		  ttlp_arg->ttlp_obj = $1;
+		dk_free_tree (ttlp_arg->ttlp_obj);
+		ttlp_arg->ttlp_obj = $1;
 		ttlp_triple_l_and_inf (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_double, NULL);	}
 	| TURTLE_STRING	{
-		  dk_free_tree (ttlp_arg->ttlp_obj);
-		  ttlp_arg->ttlp_obj = $1;
+		dk_free_tree (ttlp_arg->ttlp_obj);
+		ttlp_arg->ttlp_obj = $1;
 		ttlp_triple_l_and_inf (ttlp_arg, $1, NULL, NULL); }
 	| TURTLE_STRING LANGTAG	{
-		  dk_free_tree (ttlp_arg->ttlp_obj);
-		  ttlp_arg->ttlp_obj = $1;
-		  dk_free_tree (ttlp_arg->ttlp_obj_lang);
-		  ttlp_arg->ttlp_obj_lang = $2;
+		dk_free_tree (ttlp_arg->ttlp_obj);
+		ttlp_arg->ttlp_obj = $1;
+		dk_free_tree (ttlp_arg->ttlp_obj_lang);
+		ttlp_arg->ttlp_obj_lang = $2;
 		ttlp_triple_l_and_inf (ttlp_arg, $1, NULL, $2);	}
 	| TURTLE_STRING _CARET_CARET q_complete {
-		  dk_free_tree (ttlp_arg->ttlp_obj);
-		  ttlp_arg->ttlp_obj = $1;
-		  dk_free_tree (ttlp_arg->ttlp_obj_type);
+		dk_free_tree (ttlp_arg->ttlp_obj);
+		ttlp_arg->ttlp_obj = $1;
+		dk_free_tree (ttlp_arg->ttlp_obj_type);
 		ttlp_arg->ttlp_obj_type = ttlp_arg->ttlp_last_complete_uri;
 		ttlp_arg->ttlp_last_complete_uri = NULL;
 		ttlp_triple_l_and_inf (ttlp_arg, ttlp_arg->ttlp_obj, ttlp_arg->ttlp_obj_type, NULL);	}
@@ -447,7 +447,7 @@ blank_block_subj_tail
 	;
 
 blank_block_seq
-        :	
+        :
 		{ caddr_t top_bnode = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL);
                   dk_set_push (&(ttlp_arg->ttlp_saved_uris), (void *)(ptrlong)(ttlp_arg->ttlp_pred_is_reverse));
                   dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_subj_uri);

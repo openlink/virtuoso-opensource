@@ -870,7 +870,7 @@ After processing 'text1<!--comment-->text2' two string children text1 and text2 
 	    }
 	  if (!is_xslns (child_name))
             {
-	    if (!(XSLT_ELGRP_RESELS & childgroups))
+	      if (!(XSLT_ELGRP_RESELS & childgroups))
                 {
                   if (
 		      !(strncmp (child_name, "http://www.w3.org/1999/xhtml:", 29) &&
@@ -883,7 +883,7 @@ After processing 'text1<!--comment-->text2' two string children text1 and text2 
 		      dk_free_tree ((box_t) child);
 		      continue;
                     }
-	      sqlr_new_error_xsltree_xdl ("XS370", "XS060", ((caddr_t *)(tree)), "Misplaced element '%s'", child_name);
+	          sqlr_new_error_xsltree_xdl ("XS370", "XS060", ((caddr_t *)(tree)), "Misplaced element '%s'", child_name);
                 }
             }
 	  { /* The order of assignments here is very important. Memory leaks in other cases */

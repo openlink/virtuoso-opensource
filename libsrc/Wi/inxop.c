@@ -426,8 +426,8 @@ inxop_bm_next (inx_op_t * iop , query_instance_t * qi, int op,
 	    {
 	      INXOP_OTHER;
 	    }
-	return rc;
-    }				   
+	  return rc;
+	}
     }				   
   ITC_FAIL (itc)
     {
@@ -467,9 +467,9 @@ inxop_bm_next (inx_op_t * iop , query_instance_t * qi, int op,
 	      rc = itc_next (itc, &buf);
 	      if (DVC_MATCH != rc)
 		{
-	      itc_page_leave (itc, buf);
-	      return IOP_AT_END;
-	    }
+		  itc_page_leave (itc, buf);
+		  return IOP_AT_END;
+		}
 	      inxop_set_iob (iop, itc, buf, qst);
 	      itc_register (itc, buf);
 	      itc_page_leave (itc, buf);
@@ -483,17 +483,17 @@ inxop_bm_next (inx_op_t * iop , query_instance_t * qi, int op,
 	      return IOP_AT_END;
 	    }
 	  inxop_set_iob (iop, itc, buf, qst);
-      if (DVC_MATCH == rc)
-	{
-	  itc_register (itc, buf);
-	  itc_page_leave (itc, buf);
-	  return IOP_ON_ROW;
-	}
+	  if (DVC_MATCH == rc)
+	    {
+	      itc_register (itc, buf);
+	      itc_page_leave (itc, buf);
+	      return IOP_ON_ROW;
+	    }
 
 	  if (itc->itc_bp.bp_below_start)
 	    itc->itc_bp.bp_at_end = 0; /* use the value it is at, since bp)value will be set to 1st of ce evenif value sought was lt that */
 	  if (DVC_INDEX_END == rc)
-	{
+	    {
 	      itc_page_leave (itc, buf);
 	      return IOP_AT_END;
 	    }
@@ -512,27 +512,27 @@ inxop_bm_next (inx_op_t * iop , query_instance_t * qi, int op,
 		}
 	      inxop_set_iob (iop, itc, buf, qst);
 	    }
-	      if (DVC_GREATER == rc)
-		{
-		  /* the bp_value is the next higher.  Set the ssl by it. */
-		  itc->itc_is_on_row = 1; /* set this so that next operation, should the other itc match, will advance and not repeat this same row */
+	  if (DVC_GREATER == rc)
+	    {
+	      /* the bp_value is the next higher.  Set the ssl by it. */
+	      itc->itc_is_on_row = 1; /* set this so that next operation, should the other itc match, will advance and not repeat this same row */
 	      inxop_bm_leading_output (itc, buf);
 	      /*inxop_set_bm_ssl (iop, itc, qst); */
-		  itc_register (itc, buf);
-		  itc_page_leave (itc, buf);
+	      itc_register (itc, buf);
+	      itc_page_leave (itc, buf);
 	      INXOP_OTHER;
-		  return IOP_NEW_VAL;
-		}
+	      return IOP_NEW_VAL;
+	    }
 	  GPF_T1 ("bm inx and target seek rc impossible");
 	case IOP_NEXT:
 	  buf = page_reenter_excl (itc);
-		  itc->itc_bm_col_spec = NULL;
-		  rc = itc_next (itc, &buf);
+	  itc->itc_bm_col_spec = NULL;
+	  rc = itc_next (itc, &buf);
 	  if (DVC_GREATER == rc || DVC_INDEX_END == rc)
 	    {
-	  itc_page_leave (itc, buf);
-	  return IOP_AT_END;
-	}
+	      itc_page_leave (itc, buf);
+	      return IOP_AT_END;
+	    }
 	  inxop_set_iob (iop, itc, buf, qst);
 	  itc_register  (itc, buf);
 	  itc_page_leave (itc, buf);
@@ -566,66 +566,66 @@ inxop_next (inx_op_t * iop , query_instance_t * qi, int op,
     }
   if (!itc->itc_search_par_fill)
     {
-  itc->itc_ks = ks;
-  itc->itc_out_state = qst;
+      itc->itc_ks = ks;
+      itc->itc_out_state = qst;
 
-  itc_from (itc, ks->ks_key);
-  itc->itc_insert_key = ks->ks_key;
-  itc->itc_desc_order = ks->ks_descending;
+      itc_from (itc, ks->ks_key);
+      itc->itc_insert_key = ks->ks_key;
+      itc->itc_desc_order = ks->ks_descending;
 
-  itc_free_owned_params (itc);
-  ITC_START_SEARCH_PARS (itc);
-  switch (op)
-    {
-    case IOP_START:
-    case IOP_NEXT:
-      is_nulls = ks_make_spec_list (itc, iop->iop_ks_start_spec.ksp_spec_array, qst);
-      itc->itc_search_params[itc->itc_insert_key->key_n_significant - 1] = NULL; /*otherwise uninited in itc_set_search_param later */
-      itc->itc_search_par_fill = itc->itc_insert_key->key_n_significant;
-      /* set the fill to be like full eq of all parts because the row spec is so laid out that it presupposes the full eq  search spec to precede it. */
-      is_nulls |= ks_make_spec_list (itc, iop->iop_ks_row_spec, qst);
-      itc->itc_key_spec = iop->iop_ks_start_spec;
-      itc->itc_row_specs = iop->iop_ks_row_spec;
-      break;
-    case IOP_TARGET:
-      is_nulls = ks_make_spec_list (itc, iop->iop_ks_full_spec.ksp_spec_array, qst);
+      itc_free_owned_params (itc);
+      ITC_START_SEARCH_PARS (itc);
+      switch (op)
+	{
+	case IOP_START:
+	case IOP_NEXT:
+	  is_nulls = ks_make_spec_list (itc, iop->iop_ks_start_spec.ksp_spec_array, qst);
+	  itc->itc_search_params[itc->itc_insert_key->key_n_significant - 1] = NULL; /*otherwise uninited in itc_set_search_param later */
+	  itc->itc_search_par_fill = itc->itc_insert_key->key_n_significant;
+	  /* set the fill to be like full eq of all parts because the row spec is so laid out that it presupposes the full eq  search spec to precede it. */
+	  is_nulls |= ks_make_spec_list (itc, iop->iop_ks_row_spec, qst);
+	  itc->itc_key_spec = iop->iop_ks_start_spec;
+	  itc->itc_row_specs = iop->iop_ks_row_spec;
+	  break;
+	case IOP_TARGET:
+	  is_nulls = ks_make_spec_list (itc, iop->iop_ks_full_spec.ksp_spec_array, qst);
+	  if (is_nulls)
+	    {
+	      int res;
+	      if (itc->itc_is_registered)
+		return IOP_AT_END; /*found something already, type no longer castable but was, so no more hits possible */
+	      itc_free_owned_params (itc);
+	      ITC_START_SEARCH_PARS (itc);
+	      res = inxop_next (iop, qi, IOP_START, ts);
+	      if (IOP_ON_ROW == res)
+		return IOP_NEW_VAL;
+	      return IOP_AT_END;
+	    }
+	  is_nulls |= ks_make_spec_list (itc, iop->iop_ks_row_spec, qst);
+	  itc->itc_key_spec = iop->iop_ks_full_spec;
+	  itc->itc_row_specs = iop->iop_ks_row_spec;
+	  break;
+	}
       if (is_nulls)
+	return IOP_AT_END;
+      if (IOP_START == op)
 	{
-	  int res;
-	  if (itc->itc_is_registered)
-	    return IOP_AT_END; /*found something already, type no longer castable but was, so no more hits possible */
-          itc_free_owned_params (itc);
-          ITC_START_SEARCH_PARS (itc);
-	  res = inxop_next (iop, qi, IOP_START, ts);
-	  if (IOP_ON_ROW == res)
-	    return IOP_NEW_VAL;
-	  return IOP_AT_END;
+	  if (ts->src_gen.src_query->qr_select_node
+	      && ts->src_gen.src_query->qr_lock_mode != PL_EXCLUSIVE)
+	    {
+	      itc->itc_lock_mode = qi->qi_lock_mode;
+	    }
+	  else
+	    itc->itc_lock_mode = PL_EXCLUSIVE;
+	  /* if the statement is not a SELECT, take excl. lock */
+	  itc->itc_isolation = qi->qi_isolation;
 	}
-      is_nulls |= ks_make_spec_list (itc, iop->iop_ks_row_spec, qst);
-      itc->itc_key_spec = iop->iop_ks_full_spec;
-      itc->itc_row_specs = iop->iop_ks_row_spec;
-      break;
-    }
-  if (is_nulls)
-    return IOP_AT_END;
-  if (IOP_START == op)
-    {
-      if (ts->src_gen.src_query->qr_select_node
-	  && ts->src_gen.src_query->qr_lock_mode != PL_EXCLUSIVE)
-	{
-	  itc->itc_lock_mode = qi->qi_lock_mode;
-	}
-      else
-	itc->itc_lock_mode = PL_EXCLUSIVE;
-      /* if the statement is not a SELECT, take excl. lock */
-      itc->itc_isolation = qi->qi_isolation;
-    }
       
-  DO_SET (state_slot_t*, ssl, &ks->ks_always_null)
-    {
-      qst_set_bin_string (itc->itc_out_state, ssl, (db_buf_t) "", 0, DV_DB_NULL);
-    }
-  END_DO_SET();
+      DO_SET (state_slot_t*, ssl, &ks->ks_always_null)
+	{
+	  qst_set_bin_string (itc->itc_out_state, ssl, (db_buf_t) "", 0, DV_DB_NULL);
+	}
+      END_DO_SET();
     }
   if (IOP_TARGET == op)
     {

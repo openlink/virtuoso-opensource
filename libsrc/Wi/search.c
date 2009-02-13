@@ -612,12 +612,12 @@ itc_set_by_placeholder (it_cursor_t * itc, placeholder_t * pl)
     }
   itc->itc_tree = pl->itc_tree;
   buf = pl_enter (pl, itc);
-      memcpy (itc, pl, ITC_PLACEHOLDER_BYTES);
-      itc->itc_landed = 1;
+  memcpy (itc, pl, ITC_PLACEHOLDER_BYTES);
+  itc->itc_landed = 1;
   itc->itc_is_registered = 0;
   itc->itc_buf_registered = NULL; /* should be set because of tests in itc_register */
   itc->itc_next_on_page = NULL;
-      itc->itc_type = ITC_CURSOR;
+  itc->itc_type = ITC_CURSOR;
   ITC_FIND_PL (itc, buf);
   itc->itc_pl = buf->bd_pl;
   itc->itc_position = pl->itc_position;
@@ -1451,7 +1451,7 @@ itc_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 	    {
 	      int res = itc_col_check_1 (itc, sp, sp->sp_max);
 	      if ((0 == (sp->sp_max_op & res)) || (DVC_NOORDER & res))
-	    return DVC_LESS;
+		return DVC_LESS;
 	    }
 	next_sp:
 	  sp = sp->sp_next;
@@ -1731,7 +1731,7 @@ search_switch:
 		    int wait_rc = itc_set_lock_on_row (it, buf_ret);
 		    if (wait_rc != NO_WAIT || !it->itc_is_on_row)
 	      goto start; /* if waited, must recheck the key, again pass via itc_page_searchh */
-	      }
+      }
 	ITC_AGE_TRX (it, 1);
 	if (it->itc_search_mode == SM_READ)
 	  {
@@ -1786,11 +1786,11 @@ itc_next (it_cursor_t * it, buffer_desc_t ** buf_ret)
 	  if (it->itc_bp.bp_at_end)
 	    {
 	      it->itc_bp.bp_new_on_row = 1;
-      if (it->itc_desc_order)
-	itc_prev_entry (it, *buf_ret);
-      else
-	itc_skip_entry (it, (*buf_ret)->bd_buffer);
-    }
+	      if (it->itc_desc_order)
+		itc_prev_entry (it, *buf_ret);
+	      else
+		itc_skip_entry (it, (*buf_ret)->bd_buffer);
+	    }
 	}
       else 
 	{
@@ -1897,7 +1897,7 @@ itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
 	    {
 	      if (it->itc_isolation == ISO_SERIALIZABLE
 		  || ((it->itc_isolation >= min_iso_that_waits || PL_EXCLUSIVE == it->itc_lock_mode)
-		      && ITC_MAYBE_LOCK (itc, it->itc_position)))
+		    && ITC_MAYBE_LOCK (itc, it->itc_position)))
 		{
 		  for (;;)
 		    {
@@ -1973,8 +1973,8 @@ itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
 	  res = DVC_MATCH;
 	}
       else if (it->itc_key_spec.ksp_key_cmp != pg_key_compare 
-	       && it->itc_key_spec.ksp_key_cmp != pg_insert_key_compare
-	       && it->itc_key_spec.ksp_key_cmp)
+	  && it->itc_key_spec.ksp_key_cmp != pg_insert_key_compare
+	  && it->itc_key_spec.ksp_key_cmp)
 	{
 	  res = it->itc_key_spec.ksp_key_cmp (*buf_ret, pos, it);
 	  if (DVC_GREATER == res)
@@ -1984,26 +1984,26 @@ itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
 	{
 	  res = DVC_MATCH;
 	  for (sp = it->itc_key_spec.ksp_spec_array; sp; sp = sp->sp_next)
-	{
-	  DV_COMPARE_SPEC_W_NULL (res, sp, it);
+	    {
+	      DV_COMPARE_SPEC_W_NULL (res, sp, it);
 
-	  if (res == DVC_MATCH)
-	    {
-	      continue;
-	    }
-	  if (res == DVC_LESS)
-	    {
-		  /*  column is too small.  If there is a leaf, go ther else search at end */
-	      if (ITC_NULL_CK(it, sp->sp_cl))
+	      if (res == DVC_MATCH)
 		{
-		  if (!leaf)
-		    goto next_row;  /* skip a null on the row */
+		  continue;
+		}
+	      if (res == DVC_LESS)
+		{
+		  /*  column is too small.  If there is a leaf, go ther else search at end */
+		  if (ITC_NULL_CK(it, sp->sp_cl))
+		    {
+		      if (!leaf)
+			goto next_row;  /* skip a null on the row */
+		      break;
+		    }
 		  break;
 		}
-	      break;
-	    }
-	  if (res == DVC_GREATER)
-	    {
+	      if (res == DVC_GREATER)
+		{
 		  *leaf_ret = 0;
 		  it->itc_position = pos;
 		  return DVC_GREATER;
@@ -2019,31 +2019,31 @@ itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
 	    goto next_row;
 	}
       else if (IE_ISSET (page + pos, IEF_DELETE))
-	  goto next_row;
-	  *leaf_ret = leaf;
+	goto next_row;
+      *leaf_ret = leaf;
       /* if go to the leaf even if the compare was less because the leaf can still hold stuff if in desc order.  In asc order the compare never gives dvc_less if the index is not out of order */
       if (leaf)
 	return DVC_MATCH;
       if (DVC_MATCH == res)
+	{
+	  row_check = itc_row_check (it, *buf_ret);
+	  if (DVC_GREATER == row_check)
+	    return DVC_GREATER;
+	  if (DVC_MATCH == row_check)
 	    {
-	      row_check = itc_row_check (it, *buf_ret);
-	      if (DVC_GREATER == row_check)
-		return DVC_GREATER;
-	      if (DVC_MATCH == row_check)
+	      if (it->itc_ks && it->itc_ks->ks_is_last
+		  && (PS_OWNED == txn_clear
+		    || (ISO_COMMITTED == it->itc_isolation  && PL_EXCLUSIVE != it->itc_lock_mode)
+		    || ISO_SERIALIZABLE == it->itc_isolation))
 		{
-		  if (it->itc_ks && it->itc_ks->ks_is_last
-		      && (PS_OWNED == txn_clear
-		      || (ISO_COMMITTED == it->itc_isolation  && PL_EXCLUSIVE != it->itc_lock_mode)
-			  || ISO_SERIALIZABLE == it->itc_isolation))
-		    {
 		  /* A RR or *exckl RC cursor that does not own the page must return to itc_search for the locks.  */
-		      goto next_row;
-		    }
-	      return DVC_MATCH;
+		  goto next_row;
 		}
-	      else
-		goto next_row;
+	      return DVC_MATCH;
 	    }
+	  else
+	    goto next_row;
+	}
       else if (res == DVC_LESS && !leaf && it->itc_desc_order)
 	{
 	  return DVC_GREATER;	/* end of search */
@@ -2337,7 +2337,7 @@ itc_page_insert_search (it_cursor_t * it, buffer_desc_t ** buf_ret)
 	  break;
 	    default: GPF_T1 ("can't have this res for key_cmp_t");
 	}
-	}
+    }
     }
 }
 
@@ -2750,9 +2750,9 @@ itc_col_stat_free (it_cursor_t * itc, int upd_col, float est)
 	}
       else
 	{
-      id_hash_iterator (&hit, cs->cs_distinct);
-      while (hit_next (&hit, (caddr_t*) &data, (caddr_t*) &count))
-	{
+	  id_hash_iterator (&hit, cs->cs_distinct);
+	  while (hit_next (&hit, (caddr_t*) &data, (caddr_t*) &count))
+	    {
 	      if (is_int)
 		{
 		  boxint d = unbox (*data);
@@ -2769,8 +2769,8 @@ itc_col_stat_free (it_cursor_t * itc, int upd_col, float est)
 			min = d;
 		    }
 		}
-	  dk_free_tree (*data);
-	}
+	      dk_free_tree (*data);
+	    }
 	  
 	}
       if (upd_col)
@@ -2801,9 +2801,9 @@ itc_col_stat_free (it_cursor_t * itc, int upd_col, float est)
 	}
       if (col->col_stat != cs)
 	{
-      id_hash_free (cs->cs_distinct);
-      dk_free ((caddr_t) cs, sizeof (col_stat_t));
-    }
+	  id_hash_free (cs->cs_distinct);
+	  dk_free ((caddr_t) cs, sizeof (col_stat_t));
+	}
     }
   hash_table_free (itc->itc_st.cols);
   itc->itc_st.cols = NULL;
@@ -2860,9 +2860,9 @@ itc_row_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
 	    {
 	      (*place)++;
 	      dk_free_tree (data);
-	}
-      else
-	{
+	    }
+	  else
+	    {
 	      ptrlong one = 1;
 	      id_hash_set (col_stat->cs_distinct, (caddr_t) &data, (caddr_t)&one);
 	    }
@@ -2878,7 +2878,7 @@ itc_page_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
   int pos = itc->itc_position;
   itc->itc_position = SHORT_REF (page+ DP_FIRST);
   while (itc->itc_position)
-	    {
+    {
       itc_row_col_stat (itc, buf);
       itc->itc_position = IE_NEXT (page + itc->itc_position);
     }
@@ -3004,7 +3004,7 @@ itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret,
   int save_pos = itc->itc_position;
   int ctr = 0, leaf_ctr = 0, row_ctr = 0;
   while (pos)
-		{
+    {
       int res = DVC_MATCH;
       search_spec_t * sp = itc->itc_key_spec.ksp_spec_array;
       key_id_t r_k_id = SHORT_REF (page + pos + IE_KEY_ID);
@@ -3016,8 +3016,8 @@ itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret,
 	      was_left_leaf = have_left_leaf = 1;
 	      leaves[leaf_fill++] = LONG_REF (page + pos + IE_LEAF);
 	      leaf_ctr++;
-		}
 	    }
+	}
       else 
 	{
 	  itc->itc_row_key_id = r_k_id;
@@ -3028,7 +3028,7 @@ itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret,
 	      if (DVC_MATCH != (res = itc_compare_spec (itc, sp)))
 		break;
 	      sp = sp->sp_next;
-	}
+	    }
 	  if (DVC_MATCH == res)
 	    {
 	      if (r_k_id)
@@ -3042,7 +3042,7 @@ itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret,
 		      itc->itc_position = save_pos;
 		    }
 		  else 
-		ctr++;
+		    ctr++;
 		}
 	      else 
 		{
@@ -3054,7 +3054,7 @@ itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret,
 		       * The leftmost branch can be empty because the leaf with the left dummy never can get deleted */
 		      *alt_leaf_ret = leaf1;
 		      have_left_leaf = 0;
-    }
+		    }
 		  leaf_ctr++;
 		}
 	    }
@@ -3113,7 +3113,7 @@ itc_sample_1 (it_cursor_t * it, buffer_desc_t ** buf_ret, int64 * n_leaves_ret, 
   if (rnd_leaf)
     leaf = rnd_leaf;
   switch (res)
-	{
+    {
     case DVC_LESS:
     case DVC_MATCH:
       {
@@ -3122,7 +3122,7 @@ itc_sample_1 (it_cursor_t * it, buffer_desc_t ** buf_ret, int64 * n_leaves_ret, 
 	    /* Go down on the right edge. */
 	    itc_down_transit (it, buf_ret, leaf);
 	    if (it->itc_write_waits >= 1000 || it->itc_read_waits >= 1000)
-	    {
+	      {
 		/* if the cursor had a wait, a reset or any such thing, the path from top to bottom is not the normal one and the sample must be discarded */
 		int old_rnd = it->itc_random_search;
 		itc_page_leave (it, *buf_ret);
@@ -3135,7 +3135,7 @@ itc_sample_1 (it_cursor_t * it, buffer_desc_t ** buf_ret, int64 * n_leaves_ret, 
 		ctr = leaf_ctr = leaf_estimate = 0;
 	      }
 	    goto start;
-	    }
+	  }
 	break;
       }
     case DVC_GREATER:

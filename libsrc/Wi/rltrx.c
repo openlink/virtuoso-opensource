@@ -730,7 +730,7 @@ itc_serializable_land (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 	{
 	  /* for desc serializable, must lock the row above the range.  So the reset test for getting the first lock is not here but later */
 	  itc->itc_desc_serial_landed = 1;
-    return NO_WAIT;
+	  return NO_WAIT;
 	}
       return NO_WAIT;
     }
@@ -1012,8 +1012,8 @@ pl_finalize_page (page_lock_t * pl, it_cursor_t * itc)
       if (DP_DELETED != pl->pl_page && !PL_IS_FINALIZE (pl) && !(buf = gethash (DP_ADDR2VOID (pl->pl_page), &itm->itm_dp_to_buf)))
 	{
 	  pl_finalize_absent (pl, itc);
-      return;
-    }
+	  return;
+	}
     }
   do
     {
@@ -1526,22 +1526,22 @@ lt_transact (lock_trx_t * lt, int op)
       pl_arr = lt_locks_to_array (lt, pl_arr_auto, sizeof (pl_arr_auto) / sizeof (caddr_t), &l_fill);
       n_locks = lt->lt_lock.ht_count;
       for (l_inx = 0; l_inx < l_fill; l_inx++)
-      {
+	{
 	  page_lock_t * pl = pl_arr[l_inx];
-	itc->itc_tree = pl->pl_it;
-	if (SQL_COMMIT == op)
-	  pl_finalize_page (pl, itc);
-	else
-	  pl_rollback_page (pl, itc);
-	ITC_LEAVE_MAPS (itc);
-      }
+	  itc->itc_tree = pl->pl_it;
+	  if (SQL_COMMIT == op)
+	    pl_finalize_page (pl, itc);
+	  else
+	    pl_rollback_page (pl, itc);
+	  ITC_LEAVE_MAPS (itc);
+	}
       if (pl_arr != (page_lock_t**) &pl_arr_auto)
 	dk_free ((caddr_t)pl_arr, -1);
       IN_LT_LOCKS (lt);
       if (0 == lt->lt_lock.ht_count)
 	break;
       if (n_locks != lt->lt_lock.ht_count)
-      TC (tc_split_while_committing);
+	TC (tc_split_while_committing);
       LEAVE_LT_LOCKS (lt);
     }
   LEAVE_LT_LOCKS (lt);

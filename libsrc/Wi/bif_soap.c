@@ -3697,7 +3697,7 @@ soap_server (int soap_version, caddr_t method_fld, dk_session_t *ses, caddr_t *x
 	  if (!*uddi_action)
 	    {
 	      if (szMethod)
-	        snprintf (szFullProcName, sizeof (szFullProcName), "%s.%s.%s", usr_qual, usr_own, szMethod);
+		snprintf (szFullProcName, sizeof (szFullProcName), "%s.%s.%s", usr_qual, usr_own, szMethod);
 	      else /* will make error below */
 		snprintf (szFullProcName, sizeof (szFullProcName), "%s.%s.(null)", usr_qual, usr_own);
 	      if (CM_UPPER == case_mode)
@@ -5282,7 +5282,7 @@ soap_xmlrpc2soap (soap_call_ctx_t * ctx, caddr_t * err_ret)
   else
     {
       dk_free_tree (body);
-    ctx->sc_http_client->hcctx_resp_body = NULL;
+      ctx->sc_http_client->hcctx_resp_body = NULL;
     }
 
   dk_free_box ((box_t) pars);

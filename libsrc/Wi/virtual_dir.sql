@@ -810,7 +810,7 @@ create procedure WS.WS.HTTP_CACHE_STORE (inout path any, inout store int)
 create procedure virt_proxy_init ()
 {
   if (not exists (select 1 from "DB"."DBA"."SYS_USERS" where U_NAME = 'PROXY'))
-  DB.DBA.USER_CREATE ('PROXY', uuid(), vector ('DISABLED', 1));
+    DB.DBA.USER_CREATE ('PROXY', uuid(), vector ('DISABLED', 1));
   if (registry_get ('DB.DBA.virt_proxy_init_state') = '1.1')
     return;
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_http_proxy_rule_1', 1,
@@ -1082,17 +1082,19 @@ end_loop:;
             }
 
           else
-          if (url not like 'nodeID://%')
-	    {
-	      exec (sprintf ('sparql %s %s %s CONSTRUCT { ?s ?p ?o } FROM <%S> WHERE { ?s ?p ?o }',
-	            defs, login, sponge, url), stat, msg, vector (), 0, metas, rset);
-            }
-	  else
-	    {
-	      exec (sprintf ('sparql %s DESCRIBE <%S>', defs, url), stat, msg, vector (), 0, metas, rset);
-	    }
+            if (url not like 'nodeID://%')
+	      {
+	        exec (sprintf ('sparql %s %s %s CONSTRUCT { ?s ?p ?o } FROM <%S> WHERE { ?s ?p ?o }',
+	              defs, login, sponge, url), stat, msg, vector (), 0, metas, rset);
+              }
+	    else
+	      {
+	        exec (sprintf ('sparql %s DESCRIBE <%S>', defs, url), stat, msg, vector (), 0, metas, rset);
+	      }
+
 	  if (stat <> '00000')
 	    signal (stat, msg);
+
 	  ses := string_output (1000000);
 	  commit work;
 	  DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, 1);

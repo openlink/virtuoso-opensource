@@ -448,7 +448,7 @@ typedef struct cmp_desc_s
 } cmp_desc_t;
 
 
-typedef struct cmp_func_desc_s 
+typedef struct cmp_func_desc_s
 {
   key_cmp_t 	cfd_func;
   cmp_desc_t *	cfd_compares;
@@ -1427,8 +1427,8 @@ extern long dbe_auto_sql_stats; /* from search.c */
 extern int in_crash_dump;
 
 #if defined (WITH_PTHREADS) && !defined (MTX_DEBUG) && !defined (MTX_METER)
-#undef mutex_enter 
-#undef mutex_leave 
+#undef mutex_enter
+#undef mutex_leave
 #define mutex_enter(m)  pthread_mutex_lock (&((m)->mtx_mtx))
 #define mutex_leave(m)  pthread_mutex_unlock (&((m)->mtx_mtx))
 #endif

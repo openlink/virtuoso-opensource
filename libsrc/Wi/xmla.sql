@@ -786,7 +786,7 @@ xmla_make_element (in mdta any, in dta any)
       if (mdta[i][1] = 131 and not isblob(dta[i]))
 	 aset (res, i2, cast (dta[i] as varbinary));
       else
-      aset (res, i2, dta[i]);
+         aset (res, i2, dta[i]);
       i := i + 1;
       i1 := i1 + 2;
       i2 := i1 + 1;
@@ -1587,8 +1587,8 @@ create procedure DB.DBA."XMLA_GET_PK" (in _pk_table varchar, in dsn varchar)
    result_names (COLUMN_NAME);
 
    pk_tables := DB.DBA.sql_primary_keys (dsn, name_part (_pk_table, 0, null),
-				       name_part (_pk_table, 1, null),
-				       name_part (_pk_table, 2, null));
+				       	      name_part (_pk_table, 1, null),
+				              name_part (_pk_table, 2, null));
 
    for (idx := 0; idx < length (pk_tables); idx := idx + 1)
      {
@@ -1746,16 +1746,16 @@ xmla_cursor_stmt_change (in _props any, inout _stmt varchar)
 
   if (_direction = 'forward')
     {
-  if (_skip)
-    {
-      _skip := cast (_skip as varchar);
-      if (_n_rows is null)
-	new_stmpt := new_stmpt || 'top ' || _skip || ' ';
-      else
-	new_stmpt := new_stmpt || 'top ' || _skip || ', ' || cast (_n_rows as varchar) || ' ';
-    }
-  else if (_n_rows > 0)
-      new_stmpt := new_stmpt || 'top ' || cast (_n_rows as varchar) || ' ';
+      if (_skip)
+	{
+	  _skip := cast (_skip as varchar);
+	  if (_n_rows is null)
+	    new_stmpt := new_stmpt || 'top ' || _skip || ' ';
+	  else
+	    new_stmpt := new_stmpt || 'top ' || _skip || ', ' || cast (_n_rows as varchar) || ' ';
+	}
+      else if (_n_rows > 0)
+	  new_stmpt := new_stmpt || 'top ' || cast (_n_rows as varchar) || ' ';
     }
 
   if (_return_bookmark)
@@ -1838,7 +1838,7 @@ xmla_make_cursors_state (in _props any, inout _dta any, in stmt any)
 
 
   if (_direction = 'backward')
-    {
+     {
         declare _new_dta, _end any;
 
         _skip := xmla_make_skip (_bookmark_from, _skip, 0);
@@ -1882,7 +1882,7 @@ xmla_make_skip (in _skip any, in _add int, in _dir int)
 	  ret := pos_vec[0] + pos_vec[1] + _add;
 	else
 	  ret := pos_vec[2] - pos_vec[1] + _add - 1;
-    }
+     }
    else
      signal ('00007', 'Unable to process the bookmark, because the "bookmark-from" property is not set or incorrect');
 

@@ -261,7 +261,7 @@ SQLColAttributes (
 col_desc_t bm_info =
 {
   NULL,				/* name */
-      DV_LONG_INT,		/* type */
+  DV_LONG_INT,			/* type */
   (caddr_t) (ptrlong) 0,	/* scale */
   (caddr_t) (ptrlong) 10,	/* precision */
   (caddr_t) (ptrlong) 1,	/* nullable */
@@ -1357,10 +1357,9 @@ virtodbc__SQLExecDirect (
   stmt->stmt_n_rows_to_get = stmt->stmt_opts->so_prefetch;
 
   /* Initialize to not available */
-    stmt->stmt_rows_affected = -1;
+  stmt->stmt_rows_affected = -1;
 
   dk_free_tree (stmt->stmt_prefetch_row);
-
   stmt->stmt_prefetch_row = NULL;
   stmt_free_current_rows (stmt);
   stmt->stmt_at_end = 0;

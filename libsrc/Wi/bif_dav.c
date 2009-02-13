@@ -213,10 +213,10 @@ ws_dav_put (ws_connection_t * ws, query_t * http_call)
     }
   else
     {
-  bh = bh_alloc (DV_BLOB_HANDLE_DTP_FOR_BLOB_DTP (DV_BLOB_BIN));
-  bh->bh_ask_from_client = 2;
-  bh->bh_bytes_coming = ws->ws_req_len;
-  dk_set_push (&parts, bh);
+      bh = bh_alloc (DV_BLOB_HANDLE_DTP_FOR_BLOB_DTP (DV_BLOB_BIN));
+      bh->bh_ask_from_client = 2;
+      bh->bh_bytes_coming = ws->ws_req_len;
+      dk_set_push (&parts, bh);
     }
 
   if (ws->ws_params != NULL)

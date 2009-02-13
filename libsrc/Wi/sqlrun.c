@@ -796,7 +796,7 @@ ks_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
 	  query_instance_t * qi = (query_instance_t *) itc->itc_out_state;
 	  if (qi->qi_no_cast_error)
 	    {
-	      /* cast failure and not signaled.  In rdf inx merge, cmp of any and iri 
+	      /* cast failure and not signaled.  In rdf inx merge, cmp of any and iri
 	       * with non-iri param.  Return flag to show whether the ANY in any sort order is below, in which case continue, or above, in which case stop */
 	      dk_free_tree (err);
 	      if (IS_NUM_DTP (dtp))
@@ -1068,8 +1068,8 @@ ks_main_row (key_source_t * ks, caddr_t * inst, caddr_t * state,
     itc->itc_lock_mode = PL_EXCLUSIVE;
   /* if the statement is not a SELECT, take excl. lock */
   itc->itc_isolation = qi->qi_isolation;
-  
-  
+
+
   DO_SET (state_slot_t*, ssl, &ks->ks_always_null)
     {
       qst_set_bin_string (itc->itc_out_state, ssl, (db_buf_t) "", 0, DV_DB_NULL);
@@ -1079,7 +1079,7 @@ ks_main_row (key_source_t * ks, caddr_t * inst, caddr_t * state,
   ITC_FAIL (itc)
     {
       int rc;
-      rc = itc_il_search (itc, buf_ret, state, &ts->ts_il, 
+      rc = itc_il_search (itc, buf_ret, state, &ts->ts_il,
 			  (placeholder_t*) (ts->ts_current_of ? qst_get (state, ts->ts_current_of) : NULL), 0);
 
       if (DVC_MATCH == rc)
@@ -1167,23 +1167,23 @@ ts_outer_output (table_source_t * ts, caddr_t * qst)
   if (ts->ts_inx_op)
     {
       int inx;
-      inx_op_t *iop = ts->ts_inx_op;
+      inx_op_t * iop = ts->ts_inx_op;
       DO_BOX (inx_op_t *, term, inx, iop->iop_terms)
-      {
-	DO_SET (state_slot_t *, sl, &term->iop_ks->ks_out_slots)
 	{
-	  qst_set_bin_string (qst, sl, (db_buf_t) "", 0, DV_DB_NULL);
+	  DO_SET (state_slot_t *, sl, &term->iop_ks->ks_out_slots)
+	    {
+	      qst_set_bin_string (qst, sl, (db_buf_t) "", 0, DV_DB_NULL);
+	    }
+	  END_DO_SET ();
 	}
-	END_DO_SET ();
-      }
       END_DO_BOX;
     }
   else
     {
       DO_SET (state_slot_t *, sl, &ts->ts_order_ks->ks_out_slots)
-      {
-	qst_set_bin_string (qst, sl, (db_buf_t) "", 0, DV_DB_NULL);
-      }
+	{
+	  qst_set_bin_string (qst, sl, (db_buf_t) "", 0, DV_DB_NULL);
+	}
       END_DO_SET ();
     }
   if (ts->ts_main_ks)
@@ -1257,7 +1257,7 @@ table_source_input (table_source_t * ts, caddr_t * inst,
 	      else 
 		{
 		  float pct = (float) (ptrlong) ts->ts_rnd_pcnt;
-	      order_itc->itc_random_search = RANDOM_SEARCH_ON;
+		  order_itc->itc_random_search = RANDOM_SEARCH_ON;
 		  if (pct)
 		    pct = 1;
 		  if (pct >= 30)
@@ -1473,7 +1473,7 @@ insert_node_input (insert_node_t * ins, caddr_t * inst, caddr_t * state)
 	(data_source_t *) ins, (qn_input_fn) insert_node_run);
   else
     {
-    insert_node_run (ins, inst, state);
+      insert_node_run (ins, inst, state);
       ROW_AUTOCOMMIT (inst);
     }
 
@@ -1774,7 +1774,7 @@ delete_node_input (delete_node_t * del, caddr_t * inst, caddr_t * state)
 
   if (!del->del_trigger_args)
     {
-    delete_node_run (del, inst, state);
+      delete_node_run (del, inst, state);
       ROW_AUTOCOMMIT (inst);
     }
   else

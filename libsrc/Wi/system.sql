@@ -649,22 +649,22 @@ create procedure XML_COLLECTION_DIR_LIST_LOCAL (in collection_uri varchar, in da
     return;
   r_dict := dict_new (length (dir_list) + 13);
   foreach (any dir_itm in dir_list) do
-	{
+    {
       if ('R' = dir_itm[1])
-	    {
+        {
           declare res_id any;
           declare res_path varchar;
           res_id := dir_itm[4];
           if (isarray (res_id))
-	    {
+            {
               res_path := DAV_SEARCH_PATH (res_id, 'R');
               if (not isstring (res_path))
                 res_path := dir_itm[0];
-	    }
+            }
           else
             res_path := dir_itm[0];
           dict_put (r_dict, res_path, 0);
-	}
+        }
     }
   r_list := dict_list_keys (r_dict, 2);
   gvector_sort (r_list, 1, 0, 1);
@@ -688,7 +688,7 @@ create procedure XML_COLLECTION_DIR_LIST_TABLE (in collection_uri varchar, inout
   else
     {
       if (0 = __any_grants_to_user (table_name, NULL, 1))
-	signal ('42000', concat ('Not authorized  to read from ', collection_uri));
+	signal ('42000', concat ('Not authorized to read from ', collection_uri));
     }
 skip_auth:;
 
@@ -1458,7 +1458,7 @@ create procedure ddl_alter_constr (in tb varchar, in op integer, in decl any)
       ddl_check_modify (tb, op, decl);
     }
   if (not sys_stat ('st_lite_mode'))
-  __REPL_DDL_FK_MODIFY_PROPAGATE (tb, op, decl, orig_pkt);
+    __REPL_DDL_FK_MODIFY_PROPAGATE (tb, op, decl, orig_pkt);
 }
 ;
 
@@ -2466,7 +2466,7 @@ create procedure DB.DBA.__INFORMIX_SYS_COL_STAT (in DSN varchar, in RT_NAME varc
 	   if (col_type = 5 or col_type = 8)
 	     {
 	       CS_AVG_LEN := crow[5]/256;
-    }
+	     }
 
 	   if (col_type = 0 or col_type = 13 or col_type = 15 or col_type = 16)
 	     {
@@ -2474,7 +2474,7 @@ create procedure DB.DBA.__INFORMIX_SYS_COL_STAT (in DSN varchar, in RT_NAME varc
 		 {
 		   CS_AVG_LEN := mod (crow[5], 256);
 		 }
-  else
+	       else
 		 {
 		   CS_AVG_LEN := mod ((crow[5] + 65536), 256);
 		 }
@@ -2498,7 +2498,7 @@ create procedure DB.DBA.__INFORMIX_SYS_COL_STAT (in DSN varchar, in RT_NAME varc
 	   for (declare j int, j := 0; j < i_len; j := j + 1)
 	      {
                 if (i_res[j][0] = crow[2])
-    {
+		  {
 		    CS_N_DISTINCT := i_res[j][1];
 		    j := i_len;
 		  }
@@ -2543,39 +2543,39 @@ create procedure SYS_STAT_ANALYZE_VDB (
 	in logerr int := 0
 	)
 {
-      declare vdb_stats_mapper varchar;
-      declare exit handler for sqlstate '*', NOT FOUND { goto map_done; };
-      declare _dbms_name, _dbms_ver varchar;
-      _dbms_name := get_keyword (17, _ds_conn_str, '');
-      _dbms_ver := get_keyword (18, _ds_conn_str, '');
+  declare vdb_stats_mapper varchar;
+  declare exit handler for sqlstate '*', NOT FOUND { goto map_done; };
+  declare _dbms_name, _dbms_ver varchar;
+  _dbms_name := get_keyword (17, _ds_conn_str, '');
+  _dbms_ver := get_keyword (18, _ds_conn_str, '');
 
-      vdb_stats_mapper := NULL;
-      select top 1 SVDM_PROC into vdb_stats_mapper from SYS_STAT_VDB_MAPPERS
-      where
-       SVDM_TYPE = 'SYS_COL_STAT' and
-       upper (_dbms_name) like SVDM_DBMS_NAME_MASK and
-       upper (_dbms_ver) like SVDM_DBMS_VER_MASK;
+  vdb_stats_mapper := NULL;
+  select top 1 SVDM_PROC into vdb_stats_mapper from SYS_STAT_VDB_MAPPERS
+  where
+   SVDM_TYPE = 'SYS_COL_STAT' and
+   upper (_dbms_name) like SVDM_DBMS_NAME_MASK and
+   upper (_dbms_ver) like SVDM_DBMS_VER_MASK;
 
-      if (vdb_stats_mapper is null)
-	goto map_done;
+  if (vdb_stats_mapper is null)
+    goto map_done;
 
-      declare res, _stat, _meta, _err any;
+  declare res, _stat, _meta, _err any;
   _stat := '00000';
-      if (0 <> exec (sprintf ('"%I" (?, ? ,?)', vdb_stats_mapper),
-	_stat, _err, vector (_ds_dsn, tb_name, _rt_remote_name), 10000, _meta, res))
-	goto map_done;
+  if (0 <> exec (sprintf ('"%I" (?, ? ,?)', vdb_stats_mapper),
+    _stat, _err, vector (_ds_dsn, tb_name, _rt_remote_name), 10000, _meta, res))
+    goto map_done;
 
-      if (not isarray (res))
-	goto map_done;
+  if (not isarray (res))
+    goto map_done;
 
-      if (length (res) = 0)
-	goto map_done;
+  if (length (res) = 0)
+    goto map_done;
 
-      if (not isarray (res[0]))
-	goto map_done;
+  if (not isarray (res[0]))
+    goto map_done;
 
-      if (length (res[0]) < 7)
-	goto map_done;
+  if (length (res[0]) < 7)
+    goto map_done;
 
   if (perc_trsh > 0)
     {
@@ -2621,28 +2621,28 @@ create procedure SYS_STAT_ANALYZE_VDB (
       return 0;
     }
 update_stats:;
-      declare res_len, res_inx integer;
-      res_len := length (res);
-      res_inx := 0;
-      delete from DB.DBA.SYS_COL_STAT where CS_TABLE = tb_name;
-      while (res_inx < res_len)
-	{
-	  declare rr, _min, _max any;
-	  rr := res[res_inx];
-          _min := rr[2];
-          _max := rr[3];
-          -- limit the min/max so they fit on the row.
+  declare res_len, res_inx integer;
+  res_len := length (res);
+  res_inx := 0;
+  delete from DB.DBA.SYS_COL_STAT where CS_TABLE = tb_name;
+  while (res_inx < res_len)
+    {
+      declare rr, _min, _max any;
+      rr := res[res_inx];
+      _min := rr[2];
+      _max := rr[3];
+      -- limit the min/max so they fit on the row.
       if (isstring (_min) or iswidestring (_min) or isbinary (_min))
-            _min := left (_min, 1000);
+	_min := left (_min, 1000);
       if (isstring (_max) or iswidestring (_max) or isbinary (_max))
-            _max := left (_max, 1000);
-	  insert into DB.DBA.SYS_COL_STAT
-	    (CS_TABLE, CS_COL, CS_N_DISTINCT, CS_MIN, CS_MAX, CS_AVG_LEN, CS_N_VALUES, CS_N_ROWS)
-	   values
-	    (tb_name, rr[0], rr[1], _min, _max, rr[4], rr[5], rr[6]);
-	   res_inx := res_inx + 1;
-	 }
-      __ddl_changed (tb_name);
+	_max := left (_max, 1000);
+      insert into DB.DBA.SYS_COL_STAT
+	(CS_TABLE, CS_COL, CS_N_DISTINCT, CS_MIN, CS_MAX, CS_AVG_LEN, CS_N_VALUES, CS_N_ROWS)
+       values
+	(tb_name, rr[0], rr[1], _min, _max, rr[4], rr[5], rr[6]);
+       res_inx := res_inx + 1;
+     }
+  __ddl_changed (tb_name);
   -- stats are done
   if (logerr)
     {
@@ -2688,7 +2688,7 @@ create procedure SYS_STAT_ANALYZE (in tb_name varchar, in pcnt integer:=5, in ig
 	     into _ds_dsn, _rt_remote_name, _ds_conn_str
 	     from DB.DBA.SYS_REMOTE_TABLE, DB.DBA.SYS_DATA_SOURCE
 	     where RT_NAME = tb_name and RT_DSN = DS_DSN;
-   }
+    }
 
   if (_ds_dsn is null)
     is_vdb := 0;

@@ -1607,7 +1607,7 @@ http_cli_send_request_1 (http_cli_ctx * ctx, int connect)
       http_cli_req_init (ctx);
       if (connect)
 	{
-      CATCH_ABORT (http_cli_connect, ctx, ret);
+          CATCH_ABORT (http_cli_connect, ctx, ret);
 	}
       ctx->hcctx_req_start_time = get_msec_real_time ();
       CATCH_ABORT (http_cli_send_req, ctx, ret);
@@ -1744,9 +1744,9 @@ bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       http_hdr = bif_string_or_null_arg (qst, args, 4, me);
       if (http_hdr)
 	{
-	  if (NULL != nc_strstr ((unsigned char *) http_hdr, (unsigned char *) "User-Agent:"))	/* we already have ua id in headers */
+	  if (NULL != nc_strstr ((unsigned char *) http_hdr, (unsigned char *) "User-Agent:")) /* we already have ua id in headers */
 	    ua_id = NULL;
-	  http_cli_add_req_hdr (ctx, http_hdr);
+          http_cli_add_req_hdr (ctx, http_hdr);
 	}
     }
   http_cli_set_ua_id (ctx, ua_id);
@@ -1813,13 +1813,13 @@ bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       sqlr_resignal (_err_ret);
     }
 
-      dk_set_push (&hdrs, box_dv_short_string (ctx->hcctx_response));
-      DO_SET (caddr_t, line, &(ctx->hcctx_resp_hdrs))
-	{
-	  dk_set_push (&hdrs, box_dv_short_string (line));
-	}
-      END_DO_SET();
-      head = (caddr_t *)list_to_array (dk_set_nreverse (hdrs));
+  dk_set_push (&hdrs, box_dv_short_string (ctx->hcctx_response));
+  DO_SET (caddr_t, line, &(ctx->hcctx_resp_hdrs))
+    {
+      dk_set_push (&hdrs, box_dv_short_string (line));
+    }
+  END_DO_SET();
+  head = (caddr_t *)list_to_array (dk_set_nreverse (hdrs));
 
   if (BOX_ELEMENTS (args) > 8 && ssl_is_settable (args[8]))
     {

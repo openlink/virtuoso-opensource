@@ -324,7 +324,7 @@ dv_ext_to_num (dtp_t * place, caddr_t to)
       if  (!IS_BOX_POINTER (n_box)) goto nonboxed##mem; \
       dtp = box_tag (n_box); \
     } \
-     if (dtp == DV_LONG_INT) { \
+    if (dtp == DV_LONG_INT) { \
 	* (boxint*) &mem = * (boxint*) n_box; \
     } else if (dtp == DV_DOUBLE_FLOAT) \
       * (double *) &mem = * (double *) n_box; \
@@ -959,7 +959,7 @@ null_result: \
   if (target) \
     { \
       qst_set_bin_string (qst, target, NULL, 0, DV_DB_NULL); \
-  return NULL; \
+      return NULL; \
     } \
   return (dk_alloc_box (0, DV_DB_NULL)); \
 }

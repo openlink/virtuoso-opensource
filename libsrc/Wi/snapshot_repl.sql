@@ -254,8 +254,8 @@ create procedure REPL_COLTYPE_PS (
       _len_spec := sprintf ('(%d)', _col_prec);
       if (_pos is null)
         _coltype := concat (_coltype, _len_spec);
-  else
-    {
+      else
+        {
           declare _prefix, _suffix varchar;
           _prefix := subseq (_coltype, 0, _pos);
           _suffix := subseq (_coltype, _pos + 2);
@@ -263,12 +263,12 @@ create procedure REPL_COLTYPE_PS (
         }
     }
   else if (_col_dtp = 219)
-	{
+    {
       -- (prec, scale) for numeric
       if (_col_prec < _col_scale)
         _col_scale := 0;
       _coltype := concat (_coltype, sprintf('(%d, %d)', _col_prec, _col_scale));
-	}
+    }
   return _coltype;
 }
 ;
@@ -281,7 +281,7 @@ create procedure REPL_COLTYPE (in _col any) returns varchar
   _col_prec := aref (_col, 3);
 
   if (_col_dtp = 219)
-	{
+    {
       if (_col_scale > 15)
 	_col_scale := 15;
       if (_col_prec > 40)
@@ -376,13 +376,13 @@ create procedure REPL_REMOTE_TYPES (
       REPL_ENSURE_MAPPING (_remote_types, 10, 'DATE');      -- SQL_TIME
     }
   else if (strstr (_dbms_name, 'DB2') is not null)
-	{
+    {
       REPL_ENSURE_MAPPING (_remote_types, -10, 'DBCLOB');   -- SQL_WLONGVARCHAR
       REPL_ENSURE_MAPPING (_remote_types, -9, 'VARCHAR () FOR MIXED DATA');
                                                             -- SQL_WVARCHAR
       REPL_OVERRIDE_MAPPING (_remote_types, -4, 'BLOB');    -- SQL_LONGBINARY
       REPL_OVERRIDE_MAPPING (_remote_types, -1, 'CLOB');    -- SQL_LONGVARCHAR
-	}
+    }
   else if (strstr (_dbms_name, 'Informix') is not null)
     {
       -- XXX DML fails for SQL_WLONGVARCHAR and SQL_LONGVARCHAR (text)
@@ -558,20 +558,20 @@ create procedure REPL_DAV_STORE_RES_INT (
   _locked_id := DAV_SEARCH_ID (concat (_res_colname, _res_name), 'r');
   _locked_type := 'R';
   if (DAV_IS_LOCKED_INT (_locked_id, _locked_type) > 0)
-	{
+    {
       --dbg_printf ('REPL_DAV_STORE_RES: resource is locked');
       declare _locked_col_id integer;
       declare _locked_res_id integer;
       if (_locked_type = 'R')
-    {
+        {
           _locked_col_id := null;
           _locked_res_id := _locked_id;
-    }
-  else
-    {
+        }
+      else
+        {
           _locked_col_id := _locked_id;
           _locked_res_id := null;
-    }
+        }
       -- save it
       delete from DB.DBA.SYS_REPL_POSTPONED_RES where RES_COLPATH = _res_content and RES_NAME = _res_name;
       insert into DB.DBA.SYS_REPL_POSTPONED_RES (
@@ -587,7 +587,7 @@ create procedure REPL_DAV_STORE_RES_INT (
     }
 
   if (_cr_colname is not null)
-	{
+    {
       -- do conflict resolution
       declare _loc_content any;
       declare _loc_perms, _loc_type, _loc_rowguid varchar;
@@ -614,14 +614,14 @@ create procedure REPL_DAV_STORE_RES_INT (
           where RES_COL = _res_col and RES_NAME = _res_name;
       --dbg_printf ('REPL_DAV_STORE_RES: %s: Resource exists', _res_name);
       if (_loc_rowguid = _old_rowguid)
-    {
+        {
           --dbg_printf ('REPL_DAV_STORE_RES: %s: No conflict', _res_name);
           goto store_resource;
-    }
+        }
       --dbg_printf ('REPL_DAV_STORE_RES: %s: Conflict detected', _res_name);
       for select CR_PROC as _cr_proc from DB.DBA.SYS_DAV_CR
           where CR_COL_NAME = _cr_colname order by CR_ORDER do
-	{
+        {
           --dbg_printf ('REPL_DAV_STORE_RES: conflict resolver [%s]', _cr_proc);
           _rc := call (_cr_proc) (
              _res_col, _res_name, _res_email,
@@ -629,7 +629,7 @@ create procedure REPL_DAV_STORE_RES_INT (
              _res_uname, _res_gname,
              _do_backup, _do_notify, _notify_email, _notify_text);
           if (_rc = 5 or _rc = 4)
-    {
+            {
               -- ignore
               --dbg_printf ('REPL_DAV_STORE_RES: ignore');
               if (_notify_email is null)
@@ -642,23 +642,23 @@ create procedure REPL_DAV_STORE_RES_INT (
                            _res_cr_time, _res_mod_time, _res_rowguid))
                 return -20;
               return 0;
-    }
+            }
           else if (_rc = 3)
-    {
+            {
               --dbg_printf ('REPL_DAV_STORE_RES: publisher wins');
               goto publisher_wins;
-    }
+            }
           else if (_rc = 2)
-    {
+            {
               --dbg_printf ('REPL_DAV_STORE_RES: subscriber wins, change origin');
               _res_rowguid := REPL_SET_ORIGIN (_res_rowguid);
               goto subscriber_wins;
-    }
+            }
           else if (_rc = 1)
-    {
+            {
               --dbg_printf ('REPL_DAV_STORE_RES: subscriber wins');
               goto subscriber_wins;
-    }
+            }
         }
 
       --dbg_printf ('REPL_DAV_STORE_RES: publisher wins (default)');
@@ -759,7 +759,7 @@ create trigger SYS_DAV_LOCK_PROCESS_POSTPONED
   open cr (exclusive);
   whenever not found goto nf;
   while (1)
-        {
+    {
       fetch cr into _res_colpath, _res_name,
           _res_content, _res_type, _res_perms,
           _res_uname, _res_gname, _res_cr_time, _res_mod_time, _res_rowguid,
@@ -773,13 +773,13 @@ create trigger SYS_DAV_LOCK_PROCESS_POSTPONED
               _res_cr_time, _res_mod_time, _res_rowguid,
               _res_cr_colname, _res_email, _res_origin, _res_old_rowguid,
               _colid, _backup_colid) >= 0)
-            {
+        {
           -- successfully stored
           delete from DB.DBA.SYS_REPL_POSTPONED_RES where current of cr;
-            }
+        }
 next:
-              ;
-            }
+      ;
+    }
 nf:
   close cr;
 }
@@ -843,18 +843,18 @@ create_backup_col:
           _res_uname, _res_gname, null, null, 0,
           _res_cr_time, _res_mod_time, _res_rowguid);
       if (_rc < 0)
-            {
+        {
           --dbg_printf ('REPL_DAV_STORE_BACKUP: DAV_RES_UPLOAD_STRSES_INT returned %d', _rc);
           return _rc;
-            }
         }
+    }
 
   if (_do_notify is null)
     _do_notify := 0;
   if (_do_notify <> 0)
-        {
+    {
       if (_notify_text is null)
-            {
+        {
           if (_do_backup <> 0)
             {
               _notify_text := sprintf (
@@ -870,8 +870,8 @@ create_backup_col:
 conflicted with another one and was replaced according to conflict
 resolution policy (server ''%s'')',
                   concat (_colname, _res_name), repl_this_server());
+            }
         }
-    }
       --dbg_printf ('notify_email: [%s], notify_text: [%s]', _notify_email, _notify_text);
 
       declare _stat, _msg varchar;
@@ -882,7 +882,7 @@ resolution policy (server ''%s'')',
        {
           --dbg_printf ('REPL_DAV_STORE_BACKUP: smtp_send: %s: %s', _stat, _msg);
           return 0;
-    }
+        }
     }
 
   return 0;

@@ -1487,8 +1487,8 @@ ins_key (comp_context_t * cc, insert_node_t * ins, dbe_key_t * key)
       for (inx = 0; key->key_row_var[inx].cl_col_id; inx++)
 	{
 	  if (CI_BITMAP != key->key_row_var[inx].cl_col_id)
-	dk_set_push (&slots, (void*) ins_col_slot (cc, ins, key->key_row_var[inx].cl_col_id));
-    }
+	    dk_set_push (&slots, (void*) ins_col_slot (cc, ins, key->key_row_var[inx].cl_col_id));
+	}
     }
   ik->ik_slots = (state_slot_t **) list_to_array (dk_set_nreverse (slots));
   return ik;

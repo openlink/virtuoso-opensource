@@ -313,7 +313,7 @@ static int http_acl_check_rate (ws_acl_t * elm, caddr_t name, int check_rate, in
 	  elapsed = (float) (now - hit->ah_initial) / 1000000;
 	  if (elapsed < 1) elapsed = 0.5;
 	  rate = (float)((hit->ah_count + 1) / elapsed);
-	    hit->ah_avg = rate;
+	  hit->ah_avg = rate;
 
 	  if ((elapsed > 1) && rate > elm->ha_rate) 
 	    res = 1; /* deny */
@@ -323,8 +323,8 @@ static int http_acl_check_rate (ws_acl_t * elm, caddr_t name, int check_rate, in
 	  fprintf (stderr, "http acl rate-limit elapsed: %f, count: %ld, rate: %f, avg: %f, rc=%d\n", elapsed, hit->ah_count, rate, hit->ah_avg, res);
 #endif
 	}
-  else
-    {
+      else
+	{
 	  caddr_t new_name = box_copy (name);
 	  hit = (acl_hit_t *) dk_alloc (sizeof (acl_hit_t));
 	  memset (hit, 0, sizeof (acl_hit_t));
@@ -377,10 +377,10 @@ static int http_acl_check_rate (ws_acl_t * elm, caddr_t name, int check_rate, in
 	}
       else
 	*last = now;
-   if (rw_flag)
-     elm->ha_cli_ip_r = loc_hash;
-   else
-     elm->ha_cli_ip_w = loc_hash;
+      if (rw_flag)
+	elm->ha_cli_ip_r = loc_hash;
+      else
+	elm->ha_cli_ip_w = loc_hash;
     }
    return res;
 }
@@ -3362,39 +3362,39 @@ do_file:
 
       if (!ws_check_rdf_accept (ws))
 	{
-      snprintf (page_opt_name, sizeof (page_opt_name), "%3d_page", ws->ws_status_code);
-      if (NULL != (text = ws_get_opt (ws->ws_map->hm_opts, page_opt_name, NULL)))
-	{
-	  char *lpath = ws->ws_map->hm_l_path;
-	  int lpath_len = (int) strlen (lpath);
-
-	  previous_http_status = ws->ws_status_code;
-
-	  ws_clear (ws, 1);
-
-	  dk_free_box (ws->ws_path_string);
-	  ws->ws_path_string = dk_alloc_box (strlen (text) + lpath_len + 2, DV_SHORT_STRING);
-	  if (lpath_len > 0 && lpath[lpath_len - 1] == '/')
-	    snprintf (ws->ws_path_string, box_length (ws->ws_path_string), "%s%s", lpath, text);
-	  else
-	    snprintf (ws->ws_path_string, box_length (ws->ws_path_string), "%s/%s", lpath, text);
-	  dk_free_box (ws->ws_p_path_string); ws->ws_p_path_string = NULL;
-	  dk_free_tree ((box_t) ws->ws_p_path); ws->ws_p_path = NULL; path1 = "";
-	  ws_set_phy_path (ws, 0, ws->ws_path_string);
-
-	  ws_connection_vars_clear (cli);
-	  if (err && err != (caddr_t)SQL_NO_DATA_FOUND)
+	  snprintf (page_opt_name, sizeof (page_opt_name), "%3d_page", ws->ws_status_code);
+	  if (NULL != (text = ws_get_opt (ws->ws_map->hm_opts, page_opt_name, NULL)))
 	    {
-	      ws->ws_params = (caddr_t *) list (4, 
-		  box_dv_short_string ("__SQL_STATE"), box_copy (ERR_STATE (err)), 
-		  box_dv_short_string ("__SQL_MESSAGE"), box_copy (ERR_MESSAGE (err)));
+	      char *lpath = ws->ws_map->hm_l_path;
+	      int lpath_len = (int) strlen (lpath);
+
+	      previous_http_status = ws->ws_status_code;
+
+	      ws_clear (ws, 1);
+
+	      dk_free_box (ws->ws_path_string);
+	      ws->ws_path_string = dk_alloc_box (strlen (text) + lpath_len + 2, DV_SHORT_STRING);
+	      if (lpath_len > 0 && lpath[lpath_len - 1] == '/')
+		snprintf (ws->ws_path_string, box_length (ws->ws_path_string), "%s%s", lpath, text);
+	      else
+		snprintf (ws->ws_path_string, box_length (ws->ws_path_string), "%s/%s", lpath, text);
+	      dk_free_box (ws->ws_p_path_string); ws->ws_p_path_string = NULL;
+	      dk_free_tree ((box_t) ws->ws_p_path); ws->ws_p_path = NULL; path1 = "";
+	      ws_set_phy_path (ws, 0, ws->ws_path_string);
+
+	      ws_connection_vars_clear (cli);
+	      if (err && err != (caddr_t)SQL_NO_DATA_FOUND)
+		{
+		  ws->ws_params = (caddr_t *) list (4,
+		      box_dv_short_string ("__SQL_STATE"), box_copy (ERR_STATE (err)),
+		      box_dv_short_string ("__SQL_MESSAGE"), box_copy (ERR_MESSAGE (err)));
+		}
+	      else
+		ws->ws_params = (caddr_t *) dk_alloc_box (0, DV_ARRAY_OF_POINTER);
+	      strses_flush (ws->ws_strses);
+	      goto request_do_again;
 	    }
-	  else
-	    ws->ws_params = (caddr_t *) dk_alloc_box (0, DV_ARRAY_OF_POINTER);
-	  strses_flush (ws->ws_strses);
-	  goto request_do_again;
 	}
-    }
     }
 #endif
 
@@ -3514,52 +3514,52 @@ ws_read_req (ws_connection_t * ws)
       if ((!pop3_port || ws->ws_port != pop3_port)
 	  && (!nntp_port || ws->ws_port != nntp_port)
 	  && (!ftp_port || ws->ws_port != ftp_port))
-      {
-#endif
-      for (;;)
 	{
-	   len = 0;
-	  len = ws_read_line (ws, line, sizeof (line));
-	  http_trace (("%s", line));
-	  if (!ws->ws_req_line)
+#endif
+	  for (;;)
 	    {
-	      if (len > 2)
+	      len = 0;
+	      len = ws_read_line (ws, line, sizeof (line));
+	      http_trace (("%s", line));
+	      if (!ws->ws_req_line)
 		{
-		  ws->ws_req_line = box_line (line, len);
-		  tws_requests++;
+		  if (len > 2)
+		    {
+		      ws->ws_req_line = box_line (line, len);
+		      tws_requests++;
+		    }
+		  else
+		    {
+		      ws->ws_try_pipeline = 1;
+		      goto end_req;
+		      /*  continue; */
+		    }
+		}
+
+	      if (len <= 2)
+		break;
+	      if (is_lwsp (*line) && lines != NULL)
+		{
+		  lbuf = (caddr_t) dk_set_pop (&lines);
+
+		  len2 = box_length (lbuf)-3;
+		  lbuf2 = dk_alloc_box (len+len2+1, DV_SHORT_STRING);
+
+		  memcpy (lbuf2, lbuf, len2);
+		  memcpy (lbuf2 + len2, line, len);
+		  /* IvAn/DkAllocBoxZero/010106 Bug fixed: last element should be set to zero, not one-after-end */
+		  lbuf2[len + len2] = '\0';
+
+		  dk_set_push (&lines, lbuf2);
+		  dk_free_box (lbuf);
 		}
 	      else
 		{
-		  ws->ws_try_pipeline = 1;
-		  goto end_req;
-		/*  continue; */
+		  dk_set_push (&lines, box_line (line, len));
 		}
 	    }
-
-	  if (len <= 2)
-	    break;
-	  if (is_lwsp (*line) && lines != NULL)
-	    {
-	      lbuf = (caddr_t) dk_set_pop (&lines);
-
-	      len2 = box_length (lbuf)-3;
-	      lbuf2 = dk_alloc_box (len+len2+1, DV_SHORT_STRING);
-
-	      memcpy (lbuf2, lbuf, len2);
-	      memcpy (lbuf2 + len2, line, len);
-	      /* IvAn/DkAllocBoxZero/010106 Bug fixed: last element should be set to zero, not one-after-end */
-	      lbuf2[len + len2] = '\0';
-
-	      dk_set_push (&lines, lbuf2);
-	      dk_free_box (lbuf);
-	    }
-	  else
-	    {
-	      dk_set_push (&lines, box_line (line, len));
-	    }
-	}
-      ws->ws_lines = (caddr_t*) list_to_array (dk_set_nreverse (lines));
-      ws_path_and_params (ws);
+	  ws->ws_lines = (caddr_t*) list_to_array (dk_set_nreverse (lines));
+	  ws_path_and_params (ws);
 	  if (ws_url_rewrite (ws))
 	    goto end_req;
 #ifdef _IMSG
@@ -3658,8 +3658,8 @@ ws_serve_connection (ws_connection_t * ws)
       else
 	{
 	  SSL_set_verify_result(new_ssl, X509_V_OK);
-        tcpses_to_sslses (ses->dks_session, (void *)(new_ssl));
-    }
+	  tcpses_to_sslses (ses->dks_session, (void *)(new_ssl));
+	}
     }
 #endif  
 
@@ -4636,11 +4636,11 @@ bif_http_internal_redirect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
 
   if (!keep_lpath)
     {
-  dk_free_tree (ws->ws_path_string);
-  dk_free_tree (ws->ws_path);
-  ws->ws_path_string = box_copy (new_path);
-  parr = (caddr_t *) http_path_to_array (new_path, 1);
-  ws->ws_path = ((NULL != parr) ? parr : (caddr_t *) list(0));
+      dk_free_tree (ws->ws_path_string);
+      dk_free_tree (ws->ws_path);
+      ws->ws_path_string = box_copy (new_path);
+      parr = (caddr_t *) http_path_to_array (new_path, 1);
+      ws->ws_path = ((NULL != parr) ? parr : (caddr_t *) list(0));
     }
 
   if (BOX_ELEMENTS (args) > 1)
@@ -4668,7 +4668,7 @@ bif_http_internal_redirect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
       dk_free_box (lines[0]);
       lines[0] = new_req;
     }
-  
+
   return (caddr_t) NULL;
 }
 
@@ -5144,7 +5144,7 @@ http_proxy (ws_connection_t * ws, char * host, caddr_t * req, caddr_t * body, dk
 	    {
 	      do
 		{
-		  if (len > 0)		/* Content-Length is given */
+		  if (len > 0) /* Content-Length is given */
 		    {
 		      if (to_read < to_read_len)
 			to_read_len = to_read;
@@ -5155,7 +5155,7 @@ http_proxy (ws_connection_t * ws, char * host, caddr_t * req, caddr_t * body, dk
 		      session_flush_1 (ws->ws_session);
 		      to_read -= readed;
 		    }
-		  else			/* HTTP/1.0 goes here */
+		  else /* HTTP/1.0 goes here */
 		    {
 		      c = session_buffered_read_char (ses);
 		      session_buffered_write_char (c, ws->ws_session);
@@ -5953,7 +5953,7 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       body = bif_arg (qst, args, 4, "http_get");
       if (DV_TYPE_OF (body) != DV_STRING_SESSION)
-        body = bif_string_or_null_arg (qst, args, 4, "http_get");
+	body = bif_string_or_null_arg (qst, args, 4, "http_get");
       else
 	strses_body = 1;
     }
@@ -5988,7 +5988,7 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   len = ws_content_length (head);
   trf_enc = ws_header_field (head, "Transfer-Encoding:", "");
   while (*trf_enc && *trf_enc <= '\x20')
-	trf_enc++;
+    trf_enc++;
   cont_enc = ws_header_field (head, "Content-Encoding:", "");
   while (*cont_enc && *cont_enc <= '\x20')
     cont_enc++;
@@ -6060,20 +6060,20 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       char tmp [4096];
       int rd = 0;
       strses_enable_paging (cnt, http_ses_size);
-	  for (;;)
-	    {
+      for (;;)
+	{
 	  rd = 0;
 	  CATCH_READ_FAIL (ses)
 	    {
 	      session_buffered_read_n (ses, tmp, sizeof (tmp), &rd);
 	    }
 	  END_READ_FAIL (ses);
-	      if (rd < 1)
-		break;
-	      session_buffered_write (cnt, tmp, rd);
-	      tcpses_check_disk_error (cnt, qst, 1);
-	    }
-	  session_flush_1 (cnt);
+	  if (rd < 1)
+	    break;
+	  session_buffered_write (cnt, tmp, rd);
+	  tcpses_check_disk_error (cnt, qst, 1);
+	}
+      session_flush_1 (cnt);
       if (!STRSES_CAN_BE_STRING (cnt))
 	res = (caddr_t) cnt;
       else
@@ -6139,7 +6139,7 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   *err_ret = err;
   if (BOX_ELEMENTS (args) > 1 && ssl_is_settable (args[1]))
     {
-	qst_set (qst, args[1], (caddr_t) head);
+      qst_set (qst, args[1], (caddr_t) head);
       to_free_head = 0;
     }
   END_IO_SECT (err_ret);
@@ -6160,7 +6160,7 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	{
 	  res = strses_string (out);
 	  dk_free_box (out);
-	} 
+	}
     } 
   http_client_cache_register ((query_instance_t *)qst, uri, header, body, head, res);
   if (to_free_head)
@@ -6352,18 +6352,18 @@ bif_ses_read (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
       if (to_read < to_read_len)
 	to_read_len = to_read;
-  CATCH_READ_FAIL (ses)
-    {
+      CATCH_READ_FAIL (ses)
+	{
 	  readed = session_buffered_read (ses, buff, to_read_len);
-    }
-  FAILED
-    {
+	}
+      FAILED
+	{
 	  strses_flush (out);
 	  dk_free_box ((box_t) out);
-      error = 1;
+	  error = 1;
 	  goto err_end;
-    }
-  END_READ_FAIL (ses);
+	}
+      END_READ_FAIL (ses);
 
       to_read -= readed;
       if (readed > 0)
@@ -6409,9 +6409,9 @@ bif_http_request_header (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t * qi = (query_instance_t *) qst;
   int n_args = BOX_ELEMENTS (args);
-  caddr_t *lines = (caddr_t *) ((n_args > 0) ? bif_array_arg (qst, args, 0, "http_request_header") : NULL);
-  caddr_t name = ((n_args > 1) ? bif_string_arg (qst, args, 1, "http_request_header") : NULL);
-  caddr_t attr_name = ((n_args > 2) ? bif_string_or_null_arg (qst, args, 2, "http_request_header") : NULL);
+  caddr_t *lines = (caddr_t *) ((n_args > 0) ?   bif_array_arg (qst, args, 0, "http_request_header") : NULL);
+  caddr_t name = ((n_args > 1) ?   bif_string_arg (qst, args, 1, "http_request_header") : NULL);
+  caddr_t attr_name = ((n_args > 2) ?   bif_string_or_null_arg (qst, args, 2, "http_request_header") : NULL);
   caddr_t deflt = ((n_args > 3) ? bif_arg (qst, args, 3, "http_request_header") : NULL);
   caddr_t ret = NULL;
   if (lines && DV_ARRAY_OF_POINTER != DV_TYPE_OF (lines))
@@ -6436,8 +6436,8 @@ bif_http_request_header_full (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
   char * szMe = "http_request_header_full";
   query_instance_t * qi = (query_instance_t *) qst;
   int n_args = BOX_ELEMENTS (args);
-  caddr_t *lines = (caddr_t *) ((n_args > 0) ? bif_array_arg (qst, args, 0, szMe) : NULL);
-  caddr_t name = ((n_args > 1) ? bif_string_arg (qst, args, 1, szMe) : NULL);
+  caddr_t *lines = (caddr_t *) ((n_args > 0) ?   bif_array_arg (qst, args, 0, szMe) : NULL);
+  caddr_t name = ((n_args > 1) ?   bif_string_arg (qst, args, 1, szMe) : NULL);
   caddr_t deflt = ((n_args > 2) ? bif_arg (qst, args, 2, szMe) : NULL);
   caddr_t ret = NULL;
   if (lines && DV_ARRAY_OF_POINTER != DV_TYPE_OF (lines))
@@ -6455,27 +6455,27 @@ bif_http_request_header_full (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
 	  size_t len;
 	  char *p, *q;
 	  DO_BOX (caddr_t, line, inx, lines)
-	  {
-	    p = strchr (line, ':');
-	    len = p - line;
-	    if (p && !strncasecmp (line, name, len) && !name[len])
-	      {
-		len = strlen (++p);
-		if (len)
-		  {
-		    q = p + len - 1;
-		    while (q > p && isspace (*q))
-		      *q-- = 0;
+	    {
+	      p = strchr (line, ':');
+	      len = p - line;
+	      if (p && !strncasecmp (line, name, len) && !name[len])
+		{
+		  len = strlen (++p);
+		  if (len)
+		    {
+		      q = p + len - 1;
+		      while (q > p && isspace (*q))
+			*q-- = 0;
+		      q = p;
+		      while (*q && isspace (*q))
+			q++;
+		    }
+		  else
 		    q = p;
-		    while (*q && isspace (*q))
-		      q++;
-		  }
-		else
-		  q = p;
-		ret = box_dv_short_string (q);
-		break;
-	      }
-	  }
+		  ret = box_dv_short_string (q);
+		  break;
+		}
+	    }
 	  END_DO_BOX;
 	}
       return (ret ? ret : box_copy (deflt));
@@ -7452,7 +7452,7 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
   if (len % 2) 
     {
       log_error ("HTTPS: Options must be an even length array.");
-    goto err_exit;
+      goto err_exit;
     }
 
   for (i = 0; i < len; i += 2)
@@ -7460,13 +7460,13 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
       if (https_opts [i] && DV_STRINGP (https_opts [i]))
 	{ 
 	  if (!stricmp (https_opts [i], "https_cv") && DV_STRINGP (https_opts [i + 1])) /* CA file */
-	   https_cvfile = https_opts [i + 1];
+	    https_cvfile = https_opts [i + 1];
 	  else if (!stricmp (https_opts [i], "https_cert") && DV_STRINGP (https_opts [i + 1])) /* x509 cert */
-	   cert = https_opts [i + 1];
+	    cert = https_opts [i + 1];
 	  else if (!stricmp (https_opts [i], "https_key") && DV_STRINGP (https_opts [i + 1]))  /* private key */
-	   skey = https_opts [i + 1];
+	    skey = https_opts [i + 1];
 	  else if (!stricmp (https_opts [i], "https_cv_depth")) /* verification depth */
-	   https_cvdepth = unbox(https_opts [i + 1]);
+	    https_cvdepth = unbox(https_opts [i + 1]);
 	  else if (!stricmp (https_opts [i], "https_verify"))   /* verify mode */
 	    https_client_verify = unbox(https_opts [i + 1]);
 	}
@@ -7485,11 +7485,11 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
   if (https_cvfile)
     {
       if (!SSL_CTX_load_verify_locations (ssl_ctx, https_cvfile, NULL))
-    {
-      cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-      log_error ("HTTPS: Invalid X509 client CA file %s : %s", https_cvfile, err_buf);
-      goto err_exit;
-    }
+	{
+	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+	  log_error ("HTTPS: Invalid X509 client CA file %s : %s", https_cvfile, err_buf);
+	  goto err_exit;
+	}
     }
 
   if (SSL_CTX_use_certificate_file(ssl_ctx, cert, SSL_FILETYPE_PEM) <= 0)
@@ -9298,7 +9298,7 @@ box_tpcip_get_interfaces ()
 	  dk_set_push (&set, box_string (message));
 	}
       /* The FreeBSD returns variable length */
-#if defined (__FreeBSD__) || defined (__APPLE__)      
+#if defined (__FreeBSD__) || defined (__APPLE__)
       ifrp = (struct ifreq *)((char *)&(ifrp->ifr_addr) + ifrp->ifr_addr.sa_len);
       len -= ifrp->ifr_addr.sa_len;
 #else      
@@ -9643,7 +9643,7 @@ http_init_part_two ()
 	  https_callback_info->hci_name = "HTTPS";
 	  SSL_CTX_set_app_data (ssl_ctx, https_callback_info);
 	  SSL_CTX_set_session_id_context(ssl_ctx, (unsigned char  *)&session_id_context, sizeof session_id_context);
-	    }
+	}
 
       if (NULL != https_client_verify_file)
 	{

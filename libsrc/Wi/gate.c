@@ -246,7 +246,7 @@ page_wait_access (it_cursor_t * itc, dp_addr_t dp,  buffer_desc_t * buf_from, bu
       itc->itc_to_reset = RWG_WAIT_NO_CHANGE;
       if (PA_READ == mode)
 	page_read_queue_add (buf, itc);
-  else
+      else
 	page_write_queue_add (buf, itc);
       if (buf_from && RWG_WAIT_NO_ENTRY_IF_WAIT != max_change)
 	page_leave_inner (buf_from);
@@ -273,15 +273,15 @@ page_wait_access (it_cursor_t * itc, dp_addr_t dp,  buffer_desc_t * buf_from, bu
 	  return  itc->itc_to_reset;
 	}
       else
-	    {
+	{
 	  page_read_queue_add (buf, itc);
 	  if (buf_from)
 	    page_leave_inner (buf_from);
 	  ITC_SEM_WAIT (itc);
-	    }
 	}
-      else
-	{
+    }
+  else
+    {
       if (!buf->bd_is_write
 	  && 0 == buf->bd_readers)
 	{
@@ -304,7 +304,7 @@ page_wait_access (it_cursor_t * itc, dp_addr_t dp,  buffer_desc_t * buf_from, bu
 	      if (itc->itc_desc_order)
 		itc_skip_entry (itc, buf_from->bd_buffer);
 	      itc_register (itc, buf_from);
-    }
+	    }
 	  if (buf_from && RWG_WAIT_NO_ENTRY_IF_WAIT != max_change)
 	    page_leave_inner (buf_from);
 	  ITC_SEM_WAIT (itc);
@@ -352,7 +352,7 @@ page_release_read (buffer_desc_t * buf)
 	      return;
 	    }
 #else
-	buf->bd_readers++;
+	  buf->bd_readers++;
 #endif
 	}
       else
@@ -711,15 +711,15 @@ page_reenter_excl (it_cursor_t * itc)
       if (itc->itc_map_pos >=  map->pm_count
 	  || map->pm_entries[itc->itc_map_pos] != itc->itc_position)
 	{
-      for (inx = 0; inx < map->pm_count; inx++)
-	if (map->pm_entries[inx] == itc->itc_position)
-	  {
-	    itc->itc_map_pos = inx;
-	    goto ok;
-	  }
-      GPF_T1 ("reentry to non-existent row");
+	  for (inx = 0; inx < map->pm_count; inx++)
+	    if (map->pm_entries[inx] == itc->itc_position)
+	      {
+		itc->itc_map_pos = inx;
+		goto ok;
+	      }
+	  GPF_T1 ("reentry to non-existent row");
     ok:;
-    }
+	}
     }
   else 
     itc->itc_map_pos = -1;
@@ -749,14 +749,14 @@ itc_fix_back_link (it_cursor_t * itc, buffer_desc_t ** buf, dp_addr_t dp_from,
 	  if (!itc->itc_landed)
 	    {
 	      *buf = itc_reset (itc);
-    return;
+	      return;
 	    }
 	}
       parent = itc_write_parent (itc, *buf);
       if (!parent && was_landed)
 	return;
       if (!parent)
-    {
+	{
 	  itc_page_leave (itc, *buf);
 	  *buf = itc_reset (itc);
 	  return;
@@ -773,13 +773,13 @@ itc_fix_back_link (it_cursor_t * itc, buffer_desc_t ** buf, dp_addr_t dp_from,
 			 "this situation.  Doe a crush dump and restore or try the autocorrect options in the virtuoso.ini file");
 	      GPF_T1 ("fatal consistency check failure");
 	    }
-      LONG_SET ((*buf)->bd_buffer + DP_PARENT, dp_from);
-      (*buf)->bd_is_dirty = 1;
-      log_info ("Bad parent link corrected");
-    }
+	  LONG_SET ((*buf)->bd_buffer + DP_PARENT, dp_from);
+	  (*buf)->bd_is_dirty = 1;
+	  log_info ("Bad parent link corrected");
+	}
       page_leave_outside_map (parent);
       if (!was_landed)
-    {
+	{
 	  itc_page_leave (itc, *buf);
 	  *buf = itc_reset (itc);
 	}
@@ -820,7 +820,7 @@ itc_dive_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t to)
     }
   ht = &itm2->itm_dp_to_buf;
   if (itm2 <= itm1)
-	{
+    {
       /* here we lock dest mtx first, translate the address and last of all get the source mtx and dec the read */
       mutex_enter (&itm2->itm_mtx);
       GETHASH (DP_ADDR2VOID (to), ht, dest_buf, not_found_2_1);
@@ -905,18 +905,18 @@ itc_dive_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t to)
       itc->itc_itm1 = itm1;
       itc->itc_itm2 = itm2;
       /* we own both mtxs and itc->itm* is set, sp [page_wait_access will not enter transit again */
-	}
+    }
 #endif
 
  general_case:
   page_wait_access (itc, to, *buf_ret, buf_ret, itc->itc_dive_mode, RWG_WAIT_KEY);
-      if (itc->itc_to_reset >= RWG_WAIT_SPLIT)
-	{
-	  TC (tc_dive_split);
-	  *buf_ret = itc_reset (itc);
-          itc->itc_read_waits += 1000;
-	  return;
-	}
+  if (itc->itc_to_reset >= RWG_WAIT_SPLIT)
+    {
+      TC (tc_dive_split);
+      *buf_ret = itc_reset (itc);
+      itc->itc_read_waits += 1000;
+      return;
+    }
   waited = 1;
   dest_buf = *buf_ret;
   goto check_link_2;
@@ -952,10 +952,10 @@ itc_landed_down_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t 
   itc->itc_is_on_row = 1;
   page_wait_access (itc, to, *buf_ret, buf_ret, PA_WRITE, RWG_NO_WAIT);
   if (itc->itc_to_reset > RWG_NO_WAIT)
-	{
+    {
       /* there was a wait and the itc was registered.  To unregister, reenter the page and go back to itc_search to see where to goo. The leaf could have been deld or split */
-	  TC (tc_dtrans_split);
-	  *buf_ret = page_reenter_excl (itc);
+      TC (tc_dtrans_split);
+      *buf_ret = page_reenter_excl (itc);
       if (itc->itc_desc_order
 	  && (itc->itc_is_on_row || 0 == itc->itc_position))
 	{
@@ -1243,14 +1243,14 @@ itc_reset (it_cursor_t * it)
     it->itc_dive_mode = PA_WRITE;
 
   for (;;)
-  {
+    {
       ITC_IN_VOLATILE_MAP (it, tree->it_root);
       dp = tree->it_root;
       buf = tree->it_root_buf;
       /* if we are in the confirmed map of dp in tree and buf has this dp and this tree, then it is safe since this can only change in another thread holding this same map */
       if (buf && buf->bd_page == dp && buf->bd_tree == tree 
 	  &&BUF_NONE_WAITING (buf))
-      {
+	{
 	  if (PA_READ == it->itc_dive_mode)
 	    {
 	      if (!buf->bd_is_write)
@@ -1259,17 +1259,17 @@ itc_reset (it_cursor_t * it)
 		  ITC_LEAVE_MAP_NC (it);
 		  it->itc_pl = buf->bd_pl;
 		  break;
-      }
-  }
+		}
+	    }
 	  else
-    {
+	    {
 	      if (!buf->bd_is_write && !buf->bd_readers)
 		{
 		  BD_SET_IS_WRITE (buf, 1);
 		  ITC_LEAVE_MAP_NC (it);
 		  it->itc_pl = buf->bd_pl;
 		  break;
-    }
+		}
 	    }
 	}
       TC (tc_root_cache_miss);
@@ -1463,7 +1463,7 @@ itc_unregister_inner (it_cursor_t * itc, buffer_desc_t * buf, int is_transit)
 	  if (!is_transit)
 	    itc->itc_is_registered = 0; /* when reg'd moves from page to page the flag stays set. Otherwise ureg at the same time can be confused */
 	  itc->itc_buf_registered = NULL;
-    return;
+	  return;
 	}
       prev = &reg->itc_next_on_page;
       reg = reg->itc_next_on_page;
@@ -1491,7 +1491,7 @@ itc_unregister (it_cursor_t * it_in)
   reg_buf = itc->itc_buf_registered;
   if (reg_buf && !reg_buf->bd_is_write && !reg_buf->bd_readers
       && dp == itc->itc_page && reg_buf->bd_page == dp)
-	    {
+    {
       itc_unregister_inner ((it_cursor_t *) itc, reg_buf, 0);
       mutex_leave (&itm->itm_mtx);
       return;
@@ -1500,7 +1500,7 @@ itc_unregister (it_cursor_t * it_in)
   mutex_leave (&itm->itm_mtx);
  enter:
   TC (tc_unregister_enter);
-	    {
+  {
     buffer_desc_t * buf;
     it_cursor_t itc_auto;
     it_cursor_t * reg_itc = &itc_auto;
@@ -1530,11 +1530,11 @@ itc_unregister_while_on_page (it_cursor_t * it_in, it_cursor_t * preserve_itc, b
   reg_buf = itc->itc_buf_registered;
   if (reg_buf && !reg_buf->bd_is_write && !reg_buf->bd_readers
       && itc->itc_page == dp && reg_buf->bd_page ==dp)
-		{
+    {
       itc_unregister_inner ((it_cursor_t *) itc, reg_buf, 0);
       mutex_leave (&itm->itm_mtx);
       return;
-	}
+    }
 
   mutex_leave (&itm->itm_mtx);
  enter:
@@ -1551,7 +1551,7 @@ itc_unregister_while_on_page (it_cursor_t * it_in, it_cursor_t * preserve_itc, b
     itc_unregister_inner ((it_cursor_t *)itc, buf, 0);
     itc_page_leave (reg_itc, buf);
     *preserve_buf = page_reenter_excl (preserve_itc);
-    }
+  }
 }
 
 void

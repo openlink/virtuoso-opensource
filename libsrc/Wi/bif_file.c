@@ -216,12 +216,12 @@ int acl_initilized = 0;
 void
 init_server_cwd (void)
 {
-    size_t cwd_len = 0;
-    _srv_cwd[0] = 0;
-    getcwd (_srv_cwd, sizeof (_srv_cwd));
-    cwd_len = strlen (_srv_cwd);
-    if (cwd_len > 0 && _srv_cwd[cwd_len - 1] == DIR_SEP)
-      _srv_cwd[cwd_len - 1] = 0;
+  size_t cwd_len = 0;
+  _srv_cwd[0] = 0;
+  getcwd (_srv_cwd, sizeof (_srv_cwd));
+  cwd_len = strlen (_srv_cwd);
+  if (cwd_len > 0 && _srv_cwd[cwd_len - 1] == DIR_SEP)
+    _srv_cwd[cwd_len - 1] = 0;
 }
 
 
@@ -639,7 +639,7 @@ bif_file_to_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 signal_error:
   if (-1 != fd)
-  close (fd);
+    close (fd);
   dk_free_box (fname_cvt);
   if (NULL != err)
     sqlr_resignal (err);
@@ -748,7 +748,7 @@ bif_file_to_string_session_impl (caddr_t * qst, caddr_t * err_ret,
 
   if (!ses_exists)
     {
-    res = strses_allocate ();
+      res = strses_allocate ();
       strses_enable_paging (res, 1024 * 1024 * 10);
     }
 
@@ -1315,7 +1315,7 @@ file_native_name (caddr_t se_name)
       break;
     default:
       {
-      GPF_T1 ("Bad box type for file name");
+        GPF_T1 ("Bad box type for file name");
         volume_fname = NULL; /* to keep the compiler happy */
       }
     }
@@ -2227,7 +2227,7 @@ bif_md5_update (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   string_to_md5ctx (&ctx, sctx);
   if (DV_STRING == dtp)
-  MD5Update (&ctx, (unsigned char *) str, box_length (str) - 1);
+    MD5Update (&ctx, (unsigned char *) str, box_length (str) - 1);
   else
     {
       dk_session_t * ses = (dk_session_t *) str;
@@ -5637,7 +5637,7 @@ bif_file_rl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     sqlr_new_error ("22023", "SSSSS", "The max length of line could not be less than 1 and over 1mb");
 
   str = dk_alloc_box (max_len, DV_STRING);
-      str[0]=0;
+  str[0]=0;
 
   file_in = dk_session_allocate (SESCLASS_TCPIP);
   tcpses_set_fd (file_in->dks_session, fd);
@@ -5646,13 +5646,13 @@ bif_file_rl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       char state = '\0';
       OFF_T pos;
       do 
-	{	
+	{
 	  ses_read_line_unbuffered (file_in, str, max_len, &state);
-      if (str[0])
-	dk_set_push (&line, box_dv_short_string (str));
+	  if (str[0])
+	    dk_set_push (&line, box_dv_short_string (str));
 	  str[0]=0;
-      inx--;
-    }
+	  inx--;
+	}
       while (inx); 
       if (state == 13) /* after so many reads we look for last LF, if no LF, we restore position */
 	{

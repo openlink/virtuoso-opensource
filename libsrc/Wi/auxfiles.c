@@ -775,7 +775,7 @@ _dbs_read_cfg (dbe_storage_t * dbs, char *file)
   log_file = cfg_get_parm (wholefile, "\nlog_file:", 1);
   if (log_file)
     {
-    dbs->dbs_log_name = log_file;
+      dbs->dbs_log_name = log_file;
       dbs->dbs_cpt_file_name = box_string (setext (log_file, "cpt", EXT_SET));
     }
 

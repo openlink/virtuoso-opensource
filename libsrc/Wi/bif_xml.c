@@ -1541,7 +1541,7 @@ xml_make_mod_tree (query_instance_t * qi, caddr_t text, caddr_t *err_ret, long h
   if (DV_BLOB_XPER_HANDLE == dtp_of_text)
     sqlr_new_error ("42000", "XM021", "Unable to create XML tree from persistent XML object");
   if (!xml_set_xml_read_iter (qi, text, &xrie, &enc))
-  sqlr_new_error ("42000", "XM024",
+    sqlr_new_error ("42000", "XM024",
       "Unable to create XML tree from data of type %s (%d)", dv_type_title (dtp_of_text), dtp_of_text);
   xn = (xp_node_t *) dk_alloc (sizeof (xp_node_t));
   memset (xn, 0, sizeof(xp_node_t));
@@ -2181,17 +2181,17 @@ bx_out_q_name (xte_serialize_state_t *xsst, dk_session_t * out, caddr_t name, in
               pref = box_copy (pref);
               goto new_explicit_pref_is_set; /* see below */
             }
-              if (is_attr)
-                pref = NULL;
-              else
-                {
+          if (is_attr)
+            pref = NULL;
+          else
+            {
               dk_set_push (&ct->ct_all_default_ns, (void *)(box_copy (pref)));
-                  dk_set_push (&ct->ct_all_default_ns, (void *)uri);
-                  is_new_pref = 1;
+              dk_set_push (&ct->ct_all_default_ns, (void *)uri);
+              is_new_pref = 1;
               goto pref_is_set; /* see below */
-                }
             }
        }
+    }
 #ifdef DEBUG
   if (NULL != pref)
     GPF_T1("bx_out_q_name: non-NULL pref before making a new one");
@@ -2199,16 +2199,16 @@ bx_out_q_name (xte_serialize_state_t *xsst, dk_session_t * out, caddr_t name, in
   pref = xml_get_cli_or_global_ns_prefix (qst, uri, ~0 /* get any appropriate, it can't be worse than nothing */);
   if (NULL != pref)
     goto new_explicit_pref_is_set; /* see below */
-      if (xsst->xsst_default_ns && !is_attr)
-        {
+  if (xsst->xsst_default_ns && !is_attr)
+    {
       dk_set_push (&ct->ct_all_default_ns, NULL);
-          dk_set_push (&ct->ct_all_default_ns, (void *)uri);
-          pref = "";
-          is_new_pref = 1;
+      dk_set_push (&ct->ct_all_default_ns, (void *)uri);
+      pref = "";
+      is_new_pref = 1;
       goto pref_is_set; /* see below */
-        }
-      snprintf (ns, sizeof (ns), "n%d", n_ns);
-      pref = box_dv_short_string (ns);
+    }
+  snprintf (ns, sizeof (ns), "n%d", n_ns);
+  pref = box_dv_short_string (ns);
 
 new_explicit_pref_is_set:
   dk_set_push (&ct->ct_all_explicit_ns, (void*) pref);
@@ -2248,7 +2248,7 @@ dump_new_pref:
           is_new_pref = 0;
           SES_PRINT (out, " ");
           goto pref_is_set; /* see above */
-        }      
+        }
     }
 }
 
@@ -4977,7 +4977,7 @@ bif_to_xml_array_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *
 #if 0 /* To fix bug 8802 */
         elem_is_writeable = args[nth]->ssl_is_callret;
         if (elem_is_writeable)
-	  {     
+	  {
 	    QST_GET_V(qst,args[nth]) = NULL;
             to_be_deleted = elem;
 	  }
