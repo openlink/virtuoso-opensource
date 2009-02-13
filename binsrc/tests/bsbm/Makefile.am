@@ -32,13 +32,14 @@ EXTRA_DIST= \
 	*.sql \
 	*.txt \
 	MySQLqueries/*.txt \
+	Oraclequeries/*.txt \
 	queries/*.txt \
 	run_javac.sh \
 	run_test.sh \
 	SQLqueries/*.txt \
-	Oraclequeries/*.txt \
 	src/benchmark/generator/*.java \
 	src/benchmark/model/*.java \
+	src/benchmark/qualification/*.java \
 	src/benchmark/serializer/*.java \
 	src/benchmark/testdriver/*.java \
 	src/benchmark/tools/*.java \
