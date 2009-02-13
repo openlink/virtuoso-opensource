@@ -40,7 +40,7 @@ installed on your system.
 
     Package   Version  From
     autoconf  2.57     http://www.gnu.org/software/autoconf/
-    automake  1.7      http://www.gnu.org/software/automake/
+    automake  1.9      http://www.gnu.org/software/automake/
     libtool   1.5      http://www.gnu.org/software/libtool/
     flex      2.5.33   http://flex.sourceforge.net/
     bison     2.3      http://www.gnu.org/software/bison/
@@ -72,9 +72,9 @@ use one of the following commands:
   * make --version
   * openssl version
 
-If you have an older version than automake version 1.9 you may need to
-edit the configure.in script around line 47 using the examples provided
-for each version.
+If you have an older version than automake version 1.9 you can edit
+the configure.in script around line 47 using the examples provided for
+each version.
 
 
 Diskspace Requirements

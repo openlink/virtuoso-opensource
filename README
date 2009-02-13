@@ -63,7 +63,7 @@ installed on your system.
     Package  Version                         From
     -------  -------                         ----
     autoconf 2.57               http://www.gnu.org/software/autoconf/
-    automake 1.7                http://www.gnu.org/software/automake/
+    automake 1.9                http://www.gnu.org/software/automake/
     libtool  1.5.16             http://www.gnu.org/software/libtool/
     flex     2.5.33 (was 2.5.4) http://www.gnu.org/software/non-gnu/flex/
     bison    2.3 (was 1.35)     http://www.gnu.org/software/bison/
@@ -94,6 +94,10 @@ use one of the following commands:
     $ m4 --version
     $ make --version
     $ openssl version
+
+If you have an older version than automake version 1.9 you can edit
+the configure.in script around line 47 using the examples provided for
+each version.
 
 Note that uptodate operating systems (particularly Debian GNU/Linux
 and Ubuntu) split some of these packages into runtime and development
