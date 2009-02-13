@@ -2133,7 +2133,7 @@ into graph <http://www.openlinksw.com/> -- done</callret-0>
 ]]></programlisting>
     </sect2>
     <sect2 id="rdfinsertmethodproxy">
-      <title>Using the RDF proxy service</title>
+      <title>Using the RDF Proxy (Sponger) Service</title>
     <para>Triples can be inserted also using the RDF proxy service. For more information and examples see <link linkend="rdfproxyservice">here</link>.</para>
     </sect2>
 </sect1>
