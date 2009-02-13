@@ -1,3 +1,47 @@
+2009-02-13 12:19  source
+
+	* Fixed information on automake version
+
+2009-02-13 11:41  source
+
+	* Fixed duplicate code
+
+2009-02-13 11:01  source
+
+	* Updated documentation
+
+2009-02-13 10:20  source
+
+	* Added extra parms
+
+2009-02-13 10:09  source
+
+	* Fixed indentation
+
+2009-02-13 10:08  source
+
+	* Fixed Amazon S3 property error
+
+2009-02-12 15:20  source
+
+	* Fixed amazon s3 property error
+
+2009-02-12 15:19  source
+
+	* Fixed last fm
+
+2009-02-12 15:18  source
+
+	* Fixed SCOS label
+
+2009-02-12 15:15  source
+
+	* Updated version to 5.0.10-rc5
+
+2009-02-12 15:15  source
+
+	* Fixed problem with LOCALE handling in scripts
+
 2009-02-12 09:22  source
 
 	* Fixed copyright year
