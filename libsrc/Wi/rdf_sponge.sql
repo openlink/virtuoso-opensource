@@ -912,10 +912,6 @@ alter table DB.DBA.SYS_RDF_MAPPERS add RM_PID integer identity
 ;
 
 --!AFTER
-alter table DB.DBA.SYS_RDF_MAPPERS add RM_PID integer identity
-;
-
---!AFTER
 create procedure DB.DBA.SYS_RDF_MAPPERS_UPGRADE ()
 {
   declare id int;
