@@ -170,7 +170,7 @@ create function "Stub_DAV_PROP_GET" (in id any, in what char(0), in propname var
   -- dbg_obj_princ ('Stub_DAV_PROP_GET (', id, what, propname, auth_uid, ')');
   return -11;
 }
-
+;
 
 --| When DAV_PROP_LIST_INT calls DET function, authentication is performed before the call.
 --| The returned list should contain only user properties.

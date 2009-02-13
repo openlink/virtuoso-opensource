@@ -343,18 +343,6 @@ create function DB.DBA.S3__getBucket (
 }
 ;
 
--- HTTP_CLIENT_EXT (\n"
--- in url varchar,\n"
--- in uid varchar := null,\n"
--- in pwd varchar := null,\n"
--- in http_method varchar := \'GET\',\n"
--- in http_headers varchar := null,\n"
--- in body varchar := null,\n"
--- in cert_file varchar := null,\n"
--- in cert_pwd varchar := null,\n"
--- inout headers any,\n"
--- in timeout int := null\n"
-
 -------------------------------------------------------------------------------
 --
 create function DB.DBA.S3__putObject (
@@ -678,6 +666,7 @@ create function DB.DBA."S3_DAV_PROP_GET" (in id any, in what char(0), in propnam
   -- dbg_obj_princ ('S3_DAV_PROP_GET (', id, what, propname, auth_uid, ')');
   return -11;
 }
+;
 
 --| When DAV_PROP_LIST_INT calls DET function, authentication is performed before the call.
 --| The returned list should contain only user properties.
