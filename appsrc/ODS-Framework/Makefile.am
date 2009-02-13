@@ -56,23 +56,31 @@ EXTRA_DIST = \
 	comp/*.xsl \
 	icons/*.gif \
 	icons/*.png \
+	images/app_ads/*.jpg \
+	images/dav_browser/*.png \
 	images/*.gif \
 	images/*.htm \
 	images/*.jfif \
 	images/*.jpg \
 	images/*.png \
 	images/*.psd \
-	images/app_ads/*.jpg \
-	images/dav_browser/*.png \
+	images/services/*.jpg \
 	images/skin/default/*.png \
 	images/skin/pager/*.png \
 	make_vad.sh \
+	oauth/*.css \
+	oauth/images/*.gif \
+	oauth/images/*.png \
+	oauth/make_vad.sh \
+	oauth/*.sql \
+	oauth/*.vsp \
+	oauth/*.vspx \
 	rte/*.css \
 	rte/*.htm \
-	rte/*.js \
 	rte/images/*.gif \
 	rte/images/*.jpg \
 	rte/images/smileys/*.gif \
+	rte/*.js \
 	tmpl/SN_INV_TEMPLATE \
 	tmpl/WS_APPROVE_BY_USER_TEMPLATE \
 	tmpl/WS_CHANGE_BY_OWNER_TEMPLATE \
@@ -85,15 +93,15 @@ EXTRA_DIST = \
 	tmpl/WS_REJECT_BY_USER_TEMPLATE \
 	tmpl/WS_TERM_BY_OWNER_TEMPLATE \
 	tmpl/WS_TERM_BY_USER_TEMPLATE \
+	users/css/*.css \
 	users/*.html \
+	users/js/*.js \
 	users/*.php \
 	users/*.sql \
 	users/*.txt \
-	users/*.vsp \
-	users/css/*.css \
-	users/js/*.js \
 	users/users.jsp \
 	users/users.rb \
+	users/*.vsp \
 	vad_version \
 	version.base \
 	version.curr
