@@ -1,3 +1,23 @@
+2009-02-13 15:41  source
+
+	* Updated version to 5.0.10 for final release
+
+2009-02-13 15:16  source
+
+	* Updated version to 05.10
+
+2009-02-13 14:52  source
+
+	* Added new settings to default virtuoso.ini
+
+2009-02-13 14:29  source
+
+	* Fixed building win32/win64
+
+2009-02-13 14:17  source
+
+	* Fixed make dist
+
 2009-02-13 12:19  source
 
 	* Fixed information on automake version
