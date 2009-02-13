@@ -40,7 +40,7 @@
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:vcard="http://www.w3.org/2001/vcard-rdf/3.0#"
-    xmlns:dcterms="http://purl.org/dc/terms/"     
+    xmlns:dcterms="http://purl.org/dc/terms/"
     xmlns:rdf="&rdf;"
     xmlns:rdfs="&rdfs;"
     xmlns:foaf="&foaf;"
@@ -49,18 +49,18 @@
     xmlns:atom="&atom;"
     xmlns:dc="&dc;"
 	xmlns:sioc="&sioc;"
-	xmlns:sioct="&sioct;"	
+	xmlns:sioct="&sioct;"
     xmlns:lfm="http://last.fm/"
     xmlns:event="&event;"
     xmlns:geo="&geo;"
     xmlns:time="&time;"
-    xmlns:c="http://www.w3.org/2002/12/cal/icaltzd#"    
+    xmlns:c="http://www.w3.org/2002/12/cal/icaltzd#"
     >
-    
+
     <xsl:param name="baseUri" />
-    
+
     <xsl:output method="xml" indent="yes" />
-    
+
     <xsl:variable name="base" select="'http://www.last.fm/'"/>
 
     <xsl:template match="/">
@@ -94,7 +94,7 @@
 		</rdf:Description>
 		<xsl:call-template name="artist"/>
 	</xsl:template>
-	
+
    	<xsl:template match="lfm[@status='ok']/similarartists">
 		<rdf:Description rdf:about="{$baseUri}">
 			<rdf:type rdf:resource="&foaf;Document"/>
@@ -106,7 +106,7 @@
 	    <xsl:for-each select="artist">
 			<rdf:Description rdf:about="{vi:proxyIRI(concat($base, 'music/', //similarartists/@artist))}">
 				<mo:similar_to rdf:resource="{vi:proxyIRI(url)}"/>
-			</rdf:Description>	
+			</rdf:Description>
 			<xsl:call-template name="artist"/>
 	    </xsl:for-each>
 	</xsl:template>
@@ -121,7 +121,7 @@
 		</rdf:Description>
 		<xsl:call-template name="track"/>
 	</xsl:template>
-	
+
    	<xsl:template match="lfm[@status='ok']/toptracks[@artist]">
 		<rdf:Description rdf:about="{$baseUri}">
 			<rdf:type rdf:resource="&foaf;Document"/>
@@ -153,7 +153,7 @@
 			<xsl:call-template name="track"/>
 	    </xsl:for-each>
 	</xsl:template>
-    
+
 	<xsl:template match="lfm[@status='ok']/album">
 		<rdf:Description rdf:about="{$baseUri}">
 			<rdf:type rdf:resource="&foaf;Document"/>
@@ -235,7 +235,7 @@
 			<xsl:call-template name="album"/>
 	    </xsl:for-each>
 	</xsl:template>
-
+	
    	<xsl:template match="lfm[@status='ok']/topalbums[@user]">
 		<rdf:Description rdf:about="{$baseUri}">
 			<rdf:type rdf:resource="&foaf;Document"/>
@@ -264,7 +264,7 @@
 		</rdf:Description>
 		<xsl:call-template name="event"/>
 	</xsl:template>
-    
+
    	<xsl:template match="lfm[@status='ok']/events">
 		<rdf:Description rdf:about="{$baseUri}">
 			<rdf:type rdf:resource="&foaf;Document"/>
@@ -280,7 +280,7 @@
 			<xsl:call-template name="event"/>
 	    </xsl:for-each>
 	</xsl:template>
-	
+
 	<xsl:template match="lfm[@status='ok']/user">
 		<rdf:Description rdf:about="{$baseUri}">
 			<rdf:type rdf:resource="&foaf;Document"/>
@@ -291,7 +291,7 @@
 		</rdf:Description>
 		<xsl:call-template name="user"/>
 	</xsl:template>
-	
+
    	<xsl:template match="lfm[@status='ok']/friends">
 		<rdf:Description rdf:about="{$baseUri}">
 			<rdf:type rdf:resource="&foaf;Document"/>
@@ -304,7 +304,7 @@
 			<xsl:call-template name="user"/>
 	    </xsl:for-each>
 	</xsl:template>
-    
+
     <xsl:template name="artist">
 		<mo:MusicArtist rdf:about="{vi:proxyIRI(url)}">
 			<foaf:name>
@@ -321,7 +321,7 @@
 			<xsl:if test="stats/listeners">
 				<lfm:listeners>
 					<xsl:value-of select="stats/listeners"/>
-				</lfm:listeners>			
+				</lfm:listeners>
 			</xsl:if>
 			<xsl:if test="stats/playcount">
 				<lfm:playcount>
@@ -346,7 +346,7 @@
 				<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/artist/', mbid,'.html')}"/>
 			</xsl:if>
 		</mo:MusicArtist>
-		
+
 		<xsl:for-each select="similar/artist">
 			<mo:MusicArtist rdf:about="{vi:proxyIRI(url)}">
 				<foaf:name>
@@ -357,9 +357,9 @@
 				</xsl:for-each>
 			</mo:MusicArtist>
 		</xsl:for-each>
-		
+
 	</xsl:template>
-	
+
 	<xsl:template name="album">
 		<mo:Record rdf:about="{vi:proxyIRI(url)}">
 			<dc:title>
@@ -384,7 +384,7 @@
 			<xsl:if test="listeners">
 				<lfm:listeners>
 					<xsl:value-of select="listeners"/>
-				</lfm:listeners>			
+				</lfm:listeners>
 			</xsl:if>
 			<xsl:if test="playcount">
 				<lfm:playcount>
@@ -395,9 +395,9 @@
 				<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/release/', mbid, '.html')}"/>
 			</xsl:if>
 		</mo:Record>
-		
+
     </xsl:template>
-    
+
     <xsl:template name="track">
 		
 		<mo:Track rdf:about="{vi:proxyIRI(url)}">
@@ -417,7 +417,7 @@
 			<xsl:if test="listeners">
 				<lfm:listeners>
 					<xsl:value-of select="listeners"/>
-				</lfm:listeners>			
+				</lfm:listeners>
 			</xsl:if>
 			<xsl:if test="playcount">
 				<lfm:playcount>
@@ -428,7 +428,7 @@
 				<mo:track_number>
 					<xsl:value-of select="album/@position"/>
 				</mo:track_number>
-			</xsl:if>	
+			</xsl:if>
 			<xsl:if test="artist/url">
 				<foaf:maker rdf:resource="{vi:proxyIRI(artist/url)}"/>
 			</xsl:if>
@@ -450,7 +450,7 @@
 				<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/track/', mbid,'.html')}"/>
 			</xsl:if>
 		</mo:Track>
-		
+
 		<xsl:for-each select="artist">
 			<mo:MusicArtist rdf:about="{vi:proxyIRI(url)}">
 				<foaf:name>
@@ -461,7 +461,7 @@
 				</xsl:if>
 			</mo:MusicArtist>
 		</xsl:for-each>
-		
+
 		<xsl:for-each select="album">
 			<mo:Record rdf:about="{vi:proxyIRI(url)}">
 				<foaf:name>
@@ -476,9 +476,9 @@
 			</mo:Record>
 		</xsl:for-each>
     </xsl:template>
-    
+
 	<xsl:template name="event">
-	
+
 		<c:Vevent rdf:about="{vi:proxyIRI(url)}">
 			<c:summary>
                 <xsl:value-of select="title"/>
@@ -500,7 +500,7 @@
 				<xsl:value-of select="reviews"/>
             </lfm:reviews>
 		</c:Vevent>
-		
+
 		<vcard:ADR rdf:about="{vi:proxyIRI(url, '', 'adr')}">
 			<foaf:name>
 				<xsl:value-of select="venue/name"/>
@@ -527,9 +527,9 @@
 				<xsl:value-of select="venue/location/geo:point/geo:long"/>
 			</geo:lng>
 		</vcard:ADR>
-		
-    </xsl:template>
 
+    </xsl:template>
+    
     <xsl:template match="profile">
    		<rdf:Description rdf:about="{$baseUri}">
 			<rdf:type rdf:resource="&foaf;Document"/>
@@ -561,7 +561,7 @@
     </xsl:template>
 
 	<xsl:template name="user">
-	
+
 		<foaf:Person rdf:about="{vi:proxyIRI(url)}">
 			<foaf:name>
 				<xsl:value-of select="name"/>
@@ -591,7 +591,7 @@
 				<xsl:value-of select="playlists"/>
 			</lfm:playlists>
 		</foaf:Person>
-		
+
     </xsl:template>
 
 </xsl:stylesheet>

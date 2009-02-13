@@ -59,16 +59,16 @@
 		    <!--xsl:message terminate="no"><xsl:value-of select="zem:confidence"/></xsl:message>
 		    <xsl:message terminate="no"><xsl:value-of select="position()"/></xsl:message-->
 		    <xsl:if test="position () <= $max-results">
-		    <xsl:variable name="frag">
-			<xsl:call-template name="substring-after-last">
-			    <xsl:with-param name="string" select="@rdf:about"/>
-			    <xsl:with-param name="character" select="'#'"/>
-			</xsl:call-template>
-		    </xsl:variable>
-		    <xsl:variable name="res">
-			<xsl:value-of select="concat($baseUri,'#', $frag)"/>
-		    </xsl:variable>
-		    <rdfs:seeAlso rdf:resource="{$res}"/>
+			<xsl:variable name="frag">
+			    <xsl:call-template name="substring-after-last">
+				<xsl:with-param name="string" select="@rdf:about"/>
+				<xsl:with-param name="character" select="'#'"/>
+			    </xsl:call-template>
+			</xsl:variable>
+			<xsl:variable name="res">
+			    <xsl:value-of select="concat($baseUri,'#', $frag)"/>
+			</xsl:variable>
+			<rdfs:seeAlso rdf:resource="{$res}"/>
 		    </xsl:if>
 		</xsl:for-each>
 	    </rdf:Description>
@@ -77,24 +77,24 @@
 		<!--xsl:message terminate="no"><xsl:value-of select="zem:confidence"/></xsl:message>
 		<xsl:message terminate="no"><xsl:value-of select="position()"/></xsl:message-->
 		<xsl:if test="position () <= $max-results">
-	<rdf:Description>
-	    <opl:providedBy>
-		<foaf:Organization rdf:about="http://www.crunchbase.com/company/zemanta">
-		    <foaf:name>Zemanta</foaf:name>
-		    <foaf:homepage rdf:resource="http://www.zemanta.com/"/>
-		</foaf:Organization>
-	    </opl:providedBy>
-	    <xsl:attribute name="rdf:about">
-		<xsl:variable name="frag">
-		    <xsl:call-template name="substring-after-last">
-			<xsl:with-param name="string" select="@rdf:about"/>
-			<xsl:with-param name="character" select="'#'"/>
-		    </xsl:call-template>
-		</xsl:variable>
-		<xsl:value-of select="concat($baseUri,'#', $frag)"/>
-	    </xsl:attribute>
-	    <xsl:apply-templates mode="cp"/>
-	</rdf:Description>
+		    <rdf:Description>
+			<opl:providedBy>
+			    <foaf:Organization rdf:about="http://www.crunchbase.com/company/zemanta">
+				<foaf:name>Zemanta</foaf:name>
+				<foaf:homepage rdf:resource="http://www.zemanta.com/"/>
+			    </foaf:Organization>
+			</opl:providedBy>
+			<xsl:attribute name="rdf:about">
+			    <xsl:variable name="frag">
+				<xsl:call-template name="substring-after-last">
+				    <xsl:with-param name="string" select="@rdf:about"/>
+				    <xsl:with-param name="character" select="'#'"/>
+				</xsl:call-template>
+			    </xsl:variable>
+			    <xsl:value-of select="concat($baseUri,'#', $frag)"/>
+			</xsl:attribute>
+			<xsl:apply-templates mode="cp"/>
+		    </rdf:Description>
 		</xsl:if>
 	    </xsl:for-each>
 	</xsl:copy>

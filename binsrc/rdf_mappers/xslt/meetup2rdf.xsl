@@ -32,7 +32,7 @@
 	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" 
 	xmlns:dc="http://purl.org/dc/elements/1.1/"
 	xmlns:dcterms="http://purl.org/dc/terms/" 
-	xmlns:foaf="&foaf;" 
+	xmlns:foaf="&foaf;"
     xmlns:sioc="&sioc;"	
 	xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
 	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/" 
@@ -62,7 +62,7 @@
 						<c:Vevent rdf:about="{vi:proxyIRI(item/event_url)}"/>
 					</xsl:if>
 				</foaf:primaryTopic>
-		<xsl:for-each select="item">
+				<xsl:for-each select="item">
 					<foaf:topic rdf:resource="{event_url}"/>
 				</xsl:for-each>
 			</foaf:Document>
@@ -73,7 +73,7 @@
 					<xsl:choose>
 						<xsl:when test="substring($baseUri, string-length($baseUri)-6) = 'members'">
 							<foaf:Group rdf:about="{vi:proxyIRI(substring($baseUri, 1, string-length($baseUri)-7))}">
-				<xsl:for-each select="item">
+								<xsl:for-each select="item">
 									<foaf:member rdf:resource="{vi:proxyIRI(link)}"/>
 								</xsl:for-each>
 							</foaf:Group>
@@ -82,7 +82,7 @@
 							<foaf:Group rdf:about="{vi:proxyIRI($baseUri)}">
 								<xsl:for-each select="item">
 									<foaf:member rdf:resource="{vi:proxyIRI(link)}"/>
-				</xsl:for-each>
+								</xsl:for-each>
 							</foaf:Group>
 						</xsl:otherwise>
 					</xsl:choose>
@@ -136,47 +136,47 @@
 				<foaf:Document rdf:about="{link}">
 					<foaf:primaryTopic>
 						<foaf:Group rdf:about="{vi:proxyIRI(link)}">
-					<foaf:name>
-						<xsl:value-of select="name" />
-					</foaf:name>
-					<geo:lng rdf:datatype="&xsd;float">
-					    <xsl:value-of select="lon"/>
-					</geo:lng>
-					<geo:lat rdf:datatype="&xsd;float">
-					    <xsl:value-of select="lat"/>
-					</geo:lat>
-					<dc:description>
-						<xsl:value-of select="description" />
-					</dc:description>
-					<vcard:Region>
-						<xsl:value-of select="state" />
-					</vcard:Region>
-					<vcard:Pcode>
-						<xsl:value-of select="zip" />
-					</vcard:Pcode>
-					<opl-meetup:id>
-						<xsl:value-of select="id" />
-					</opl-meetup:id>
-					<foaf:homepage rdf:resource="{link}" />
-					<vcard:Country>
-						<xsl:value-of select="country" />
-					</vcard:Country>
+							<foaf:name>
+								<xsl:value-of select="name" />
+							</foaf:name>
+							<geo:lng rdf:datatype="&xsd;float">
+								<xsl:value-of select="lon"/>
+							</geo:lng>
+							<geo:lat rdf:datatype="&xsd;float">
+								<xsl:value-of select="lat"/>
+							</geo:lat>
+							<dc:description>
+								<xsl:value-of select="description" />
+							</dc:description>
+							<vcard:Region>
+								<xsl:value-of select="state" />
+							</vcard:Region>
+							<vcard:Pcode>
+								<xsl:value-of select="zip" />
+							</vcard:Pcode>
+							<opl-meetup:id>
+								<xsl:value-of select="id" />
+							</opl-meetup:id>
+							<foaf:homepage rdf:resource="{link}" />
+							<vcard:Country>
+								<xsl:value-of select="country" />
+							</vcard:Country>
 							<xsl:if test="photo_url != ''">
-					<foaf:depiction rdf:resource="{photo_url}" />
+								<foaf:depiction rdf:resource="{photo_url}" />
 							</xsl:if>
-					<dcterms:created rdf:datatype="&xsd;dateTime">
-						<xsl:value-of select="created"/>
-					</dcterms:created>
-					<opl-meetup:members>
-						<xsl:value-of select="members" />
-					</opl-meetup:members>
-					<vcard:Locality>
-						<xsl:value-of select="city" />
-					</vcard:Locality>
-					<dcterms:modified rdf:datatype="&xsd;dateTime">
-						<xsl:value-of select="updated"/>
-					</dcterms:modified>
-					<rdfs:seeAlso rdf:resource="{organizerProfileURL}" />
+							<dcterms:created rdf:datatype="&xsd;dateTime">
+								<xsl:value-of select="created"/>
+							</dcterms:created>
+							<opl-meetup:members>
+								<xsl:value-of select="members" />
+							</opl-meetup:members>
+							<vcard:Locality>
+								<xsl:value-of select="city" />
+							</vcard:Locality>
+							<dcterms:modified rdf:datatype="&xsd;dateTime">
+								<xsl:value-of select="updated"/>
+							</dcterms:modified>
+							<rdfs:seeAlso rdf:resource="{organizerProfileURL}" />
 							<rdfs:seeAlso rdf:resource="{concat(link, 'members')}" />
 							<rdfs:seeAlso rdf:resource="{concat(link, 'calendar')}" />
 						</foaf:Group>

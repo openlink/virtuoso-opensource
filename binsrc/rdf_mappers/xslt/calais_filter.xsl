@@ -56,7 +56,7 @@
 		    <!--xsl:message terminate="no"><xsl:value-of select="calais:score"/></xsl:message>
 		    <xsl:message terminate="no"><xsl:value-of select="position()"/></xsl:message-->
 		    <xsl:if test="position () <= $max-results">
-		    <rdfs:seeAlso rdf:resource="{@about}"/>
+			<rdfs:seeAlso rdf:resource="{@about}"/>
 		    </xsl:if>
 		</xsl:for-each>
 	    </rdf:Description>

@@ -36,7 +36,7 @@
    _S := page_resource_uri; 
 
    if (proxy_iri_fn is null)
-   proxy_iri := DB.DBA.RDF_SPONGE_PROXY_IRI (page_resource_uri, '', '');
+     proxy_iri := DB.DBA.RDF_SPONGE_PROXY_IRI (page_resource_uri, '', '');
    else
      proxy_iri := call (proxy_iri_fn || '_get_proxy_iri') (page_resource_uri);
    arr := rfc1808_parse_uri (proxy_iri);

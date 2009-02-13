@@ -173,12 +173,12 @@
 
 <xsl:template match="channel/category|item/category">
     <sioc:topic>
-	<skos:Concept rdf:about="{concat (/rss/channel/link, '#', .)}">
+		<skos:Concept rdf:about="{concat (/rss/channel/link, '#', .)}">
 			<skos:prefLabel>
 				<xsl:value-of select="."/>
 			</skos:prefLabel>
-	</skos:Concept>
-    </sioc:topic>
+		</skos:Concept>
+	</sioc:topic>
 	<sioc:topic>
 		<xsl:if test="starts-with(/rss/channel/link, 'http://delicious.com/')">
 			<scot:Tag rdf:about="{concat (@domain, .)}">

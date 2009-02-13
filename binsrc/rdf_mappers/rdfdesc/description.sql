@@ -136,22 +136,22 @@ create procedure rdfdesc_uri_curie (in uri varchar, in label varchar := null)
     label := null;
   while (nsPrefix is null and delim <> 0)
     {
-    delim := coalesce (strrchr (uriSearch, '/'), 0);
-    delim := __max (delim, coalesce (strrchr (uriSearch, '#'), 0));
-    delim := __max (delim, coalesce (strrchr (uriSearch, ':'), 0));
+      delim := coalesce (strrchr (uriSearch, '/'), 0);
+      delim := __max (delim, coalesce (strrchr (uriSearch, '#'), 0));
+      delim := __max (delim, coalesce (strrchr (uriSearch, ':'), 0));
       nsPrefix := coalesce (__xml_get_ns_prefix (subseq (uriSearch, 0, delim + 1), 2),
       			    __xml_get_ns_prefix (subseq (uriSearch, 0, delim),     2));
       uriSearch := subseq (uriSearch, 0, delim);
-  }
+    }
   if (nsPrefix is not null)
     {
-	declare rhs varchar;
+      declare rhs varchar;
       rhs := subseq(uri, length (uriSearch) + 1, null);
       if (not length (rhs))
-		return uri;
+	return uri;
       else
 	return nsPrefix || ':' || coalesce (label, rhs);
-  }
+    }
   return uri;
 }
 ;
@@ -282,12 +282,12 @@ again:
        http (_object);
        http ('</span>');
        if (length (rdfs_type))
-       http (sprintf ('(%s)', rdfs_type));
+	 http (sprintf ('(%s)', rdfs_type));
      }
    else if (__tag (_object) = 225)
      {
        http (sprintf ('<span %s>', rdfa));
-     http (charset_recode (_object, '_WIDE_', 'UTF-8'));
+       http (charset_recode (_object, '_WIDE_', 'UTF-8'));
        http ('</span>');
      }
    else

@@ -1332,12 +1332,12 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 		return 0;
 	};
 	what_ := '';
-    username_ := get_keyword ('username', opts);
-	password_ := get_keyword ('password', opts);
+        username_ := get_keyword ('username', opts);
+        password_ := get_keyword ('password', opts);
 	res_count := atoi(get_keyword ('result_count', opts));
 	if (res_count is null or res_count < 0 or res_count = 0)
 		res_count := 5;
-	
+
 	if (new_origin_uri like 'http://twitter.com/%/status/%')
 	{
 		tmp := sprintf_inverse (new_origin_uri, 'http://twitter.com/%s/status/%s', 0);
@@ -1389,16 +1389,16 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 	}
 	else
 		return 0;
-		
+
 	friends_and_followers: ;
 	delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 	page := 1;
 	while (page > 0 and page < res_count)
-	  {
+	{
 		url := sprintf('http://twitter.com/statuses/user_timeline.xml?id=%s&page=%d', id, page);
 		if (DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_) = 0)
 			goto statuses_out;
-		page := page + 1;			
+		page := page + 1;
 	}
 	statuses_out: ;
 
@@ -1412,17 +1412,17 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 		page := page + 1;
 	}
 	friends_out: ;
-	
+
 	page := 1;
 	while (page > 0 and page < res_count)
 	{
 		url := sprintf('http://twitter.com/favorites.xml?id=%s&page=%d', id, page);
 		if (DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_) = 0)
 			goto favorites_out;
-		page := page + 1;			
-	  }
+		page := page + 1;
+	}
 	favorites_out: ;
-	
+
 	page := 1;
 	while (page > 0 and page < res_count)
 	{
@@ -1453,7 +1453,7 @@ create procedure DB.DBA.RDF_LOAD_GETSATISFATION(in graph_iri varchar, in new_ori
 	hdr := null;
 	declare exit handler for sqlstate '*'
 	{
-		
+
 		return 0;
 	};
 	if (new_origin_uri like 'http://getsatisfaction.com/%')
@@ -2012,7 +2012,7 @@ create procedure DB.DBA.RDF_LOAD_TWFY (in graph_iri varchar, in new_origin_uri v
 	{
 		return 0;
 	};
-
+	
 	api_key := _key;
 	--api_key := 'FwDnXgAp6rqVFbfRg9B7Lkpc';
 
@@ -2564,7 +2564,6 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 
   api_key := _key;
   --api_key := '18457b204b33412a764070755820814';
-
   if (new_origin_uri like 'http://%.meetup.com/%')
   {
     tmp := sprintf_inverse (new_origin_uri, 'http://%s.meetup.com/%s/%s/%s/%s/%s', 0);
@@ -2634,10 +2633,10 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 		{
 			if (id3 is null or id3 = '')
 			{
-			url := concat('http://api.meetup.com/events.xml/?group_urlname=', id1, '&key=', api_key);
-			what_ := 'events';
+				url := concat('http://api.meetup.com/events.xml/?group_urlname=', id1, '&key=', api_key);
+				what_ := 'events';
 				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);
-		}
+			}
 			else
 			{
 				url := concat('http://api.meetup.com/events.xml/?id=', id3, '&key=', api_key);
@@ -2708,10 +2707,10 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 			{
 				if (id3 is null or id3 = '')
 				{
-				url := concat('http://api.meetup.com/events.xml/?topic=', id0, '&groupnum=', id1, '&key=', api_key);
-				what_ := 'events';
+					url := concat('http://api.meetup.com/events.xml/?topic=', id0, '&groupnum=', id1, '&key=', api_key);
+					what_ := 'events';
 					DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);
-			}
+				}
 				else
 				{
 					url := concat('http://api.meetup.com/events.xml/?id=', id3, '&key=', api_key);
@@ -2726,15 +2725,15 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);
 				url := concat('http://api.meetup.com/members.xml/?topic=', id0, '&key=', api_key);
 				what_ := 'members';
-				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);				
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);
 				url := concat('http://api.meetup.com/events.xml/?topic=', id0, '&key=', api_key);
 				what_ := 'events';
 				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);
-				
+
 			}
 			else
 			{
-			url := sprintf('http://api.meetup.com/groups.xml/?topic=%s&groupnum=%s&key=%s', id0, id1, api_key);
+				url := sprintf('http://api.meetup.com/groups.xml/?topic=%s&groupnum=%s&key=%s', id0, id1, api_key);
 				what_ := 'groups';
 				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);
 				url := concat('http://api.meetup.com/members.xml/?topic=', id0, '&groupnum=', id1, '&key=', api_key);
@@ -2744,8 +2743,8 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 				what_ := 'events';
 				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_);
 			}
+		}
 	}
-  }
   }
   return 1;
 }
@@ -4004,17 +4003,17 @@ try_grddl:
       prof := WS.WS.EXPAND_URL (new_origin_uri, prof);
       xslt_style := (select GM_XSLT from DB.DBA.SYS_GRDDL_MAPPING where GM_PROFILE = prof);
       if (xslt_style is not null)
-    {
-      declare exit handler for sqlstate '*' { goto next_prof; };
-      xd := DB.DBA.RDF_MAPPER_XSLT (xslt_style, xt, vector ('baseUri', coalesce (dest, graph_iri)));
-      if (xpath_eval ('count(/RDF/*)', xd) > 0)
+	{
+	  declare exit handler for sqlstate '*' { goto next_prof; };
+	  xd := DB.DBA.RDF_MAPPER_XSLT (xslt_style, xt, vector ('baseUri', coalesce (dest, graph_iri)));
+	  if (xpath_eval ('count(/RDF/*)', xd) > 0)
             {
-          mdta := mdta + 1;
-        }
-      xd := serialize_to_UTF8_xml (xd);
-      DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
-      profs_done := vector_concat (profs_done, vector (prof));
-    }
+	      mdta := mdta + 1;
+	    }
+	  xd := serialize_to_UTF8_xml (xd);
+	  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	  profs_done := vector_concat (profs_done, vector (prof));
+	}
       next_prof:;
     }
 
@@ -4025,21 +4024,21 @@ try_grddl:
     {
       -- currently no profile in RDFa and some similar, so we try it to extract directly
       for select GM_XSLT, GM_PROFILE, GM_FLAG from DB.DBA.SYS_GRDDL_MAPPING do
-    {
-      if (position (GM_PROFILE, profs_done) > 0)
-        goto try_next1;
-      declare exit handler for sqlstate '*' { goto try_next1; };
-      xd := DB.DBA.RDF_MAPPER_XSLT (GM_XSLT, xt, vector ('baseUri', coalesce (dest, graph_iri), 'nss', nss));
-      if (xpath_eval ('count(/RDF/*)', xd) > 0)
         {
-          mdta := mdta + 1;
-          xd := serialize_to_UTF8_xml (xd);
-	  if (GM_FLAG = 2)
-	    delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
-          DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
-	  if (GM_FLAG > 0)
-	    return mdta;
-        }
+          if (position (GM_PROFILE, profs_done) > 0)
+	    goto try_next1;
+          declare exit handler for sqlstate '*' { goto try_next1; };
+          xd := DB.DBA.RDF_MAPPER_XSLT (GM_XSLT, xt, vector ('baseUri', coalesce (dest, graph_iri), 'nss', nss));
+	  if (xpath_eval ('count(/RDF/*)', xd) > 0)
+	    {
+	      mdta := mdta + 1;
+	      xd := serialize_to_UTF8_xml (xd);
+	      if (GM_FLAG = 2)
+		delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
+	      DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	      if (GM_FLAG > 0)
+		return mdta;
+	    }
       try_next1:;
     }
     }

@@ -55,9 +55,9 @@
 				<dc:subject>
 					<foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', $id))}" />
 				</dc:subject>
-			<foaf:primaryTopic>
-			    <foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', $id))}" />
-			</foaf:primaryTopic>
+				<foaf:primaryTopic>
+					<foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', $id))}" />
+				</foaf:primaryTopic>
 		    </foaf:Document>
 		    <xsl:apply-templates select="statuses" />
 		    <xsl:apply-templates select="status" />
@@ -77,13 +77,13 @@
 	<xsl:template match="users">
 	    <xsl:for-each select="user">
 			<xsl:if test="$what != 'followers'">
-		<rdf:Description rdf:about="{vi:proxyIRI(concat('http://twitter.com/', $id))}">
-		    <foaf:knows rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', screen_name))}"/>
-		</rdf:Description>
+				<rdf:Description rdf:about="{vi:proxyIRI(concat('http://twitter.com/', $id))}">
+					<foaf:knows rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', screen_name))}"/>
+				</rdf:Description>
 			</xsl:if>
 	    </xsl:for-each>
 	    <xsl:for-each select="user">
-		<xsl:call-template name="user"/>
+			<xsl:call-template name="user"/>
 	    </xsl:for-each>
 	</xsl:template>
 
@@ -141,7 +141,7 @@
 				<xsl:value-of select="screen_name" />
 			</foaf:nick>
 			<xsl:if test="url != ''">
-			<foaf:homepage rdf:resource="{url}" />
+				<foaf:homepage rdf:resource="{url}" />
 			</xsl:if>
 			<foaf:img rdf:resource="{profile_image_url}" />
 			<twitter:id>
@@ -180,7 +180,7 @@
 				<xsl:value-of select="description" />
 			</foaf:title>
 			<xsl:if test="$what = 'followers'">
-			<foaf:knows rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', $id))}"/>
+				<foaf:knows rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', $id))}"/>
 			</xsl:if>
 		</foaf:Person>
 	</xsl:template>
