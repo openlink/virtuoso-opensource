@@ -1,3 +1,89 @@
+February 13, 2009, V5.0.10:
+  * Database engine
+    - Added optimizations
+    - Added support for self-signed certificates as well as optional
+      client verification to https
+    - Added initial support for JDBC 4.x provider
+    - Added HTTP ACL to support hit rate limit
+    - Added support for filesystems with non-latin1 charsets for filenames
+    - Added support for lazy xml entities
+    - Added TOP (N, -1) to skip N rows and then return rest of result set
+    - Added support for box over 16M
+    - Added LiteMode setting so virtuoso can run in restricted mode
+    - Added option DisableTcpSocket
+    - Added options RdfFreeTextRulesSize and IndexTreeMaps to better
+      control memory consumption for small installations
+    - Fixed deadlock handler
+    - Fixed 64bit issues and compiler warnings
+    - Fixed memory leaks
+    - Updated documentation
+
+  * SPARQL and RDF
+    - Added initial support for foaf+ssl
+    - Added support for voID
+    - Added new functionality to share page across various dataset setups
+      e.g. mbz, bio2rdf, dbpedia etc
+    - Added support for SPASQL ExtendedString and RdfBox types in .NET
+    - Added SQL_DESC_COL_LITERAL_LANG and SQL_DESC_COL_LITERAL_TYPE to
+      translate RDF metadata
+    - Added CURIE and UMBEL services
+    - Added Amazon S3 DET
+    - Added AB-meta,  Hoovers Last.FM, LibraryThing, Meetup, NYT,
+      RadioPop, Rhapsody, SalesForce, Twitter, WB cardridges
+    - Added Zemanda filter
+    - Added support for time literals
+    - Added error/warning/info reporting callback to triple feeder
+    - Added printer of human-readable turtle files
+    - Added support for nvarchar / long nvarchar fields in RDF views
+    - Added support of timestamp and nvarchar in rdf schema generation
+    - Added SPAR_GRAPH (with SPART_GRAPH_FROM ... and
+      SPART_GRAPH_NOT_NAMED subtypes)
+    - Added partial support for quad maps with 4 constants and no quad
+      map values
+    - Added support for SPARUL to write to DAV
+    - Added support for cache of matches between datatype IRIs and twobyte codes
+    - Added 'find' param in /sparql
+    - Added post-processing hook for sponger
+    - Added extensions for SPARQL REGEX
+    - Added support for multiple phrases per checksum
+    - Added lang and encoding arguments to vtb_match
+    - Added generating OWL and VDs from DB schema
+    - Added option to load inference deferred
+    - Added default namespaces
+    - Fixed box_hash and box comparison of RDF boxes so they are now
+      correctly handled as parts of keys of dictionaries
+    - Fixed escaping of weird IRIs in TURTLE and javascript output of
+      SPARQL results via SPARQL web service endpoint
+    - Fixed code generation of OPTIONAL clause
+    - Fixed codegen for cast of SSG_VALMODE_LONG to short of multipart
+      sprintf IRI class
+    - Fixed support for SPARQL expressions with weird strings in 
+      WHERE (...) SQL fragments
+    - Fixed tree rewriting when filters are duplicated for branches of
+      UNION and there are subqueries inside filters
+    - Fixed extended error recovery to allow for wierd relative URIs
+      and can skip severe syntax errors upto dot with whitespace
+    - Fixed TURLE initialization after running out of limit for namespace
+    - Fixed CONTRUCT with expressions in triple patterns
+    - Fixed memory leaks
+    - Fixed small bugs in cartridges
+
+  * ODS Applications
+    - Added new OAuth server, embedded in ODS
+    - Added initial support for foaf+ssl in ODS foaf profile
+    - Added support for Amazon S3 folders
+    - Added create image by URL
+    - Added Service Tab in users profile
+    - Added new contact fields
+    - Added more Ubiquity commands in ODS pages
+    - Added interest topics to profile page
+    - Added support for export of ATTENDEE(s)
+    - Extended FOAF import API
+    - Fixed faster FOAF generation
+    - Fixed attendee mails
+    - Fixed small bugs
+
+
 November 3, 2008, V5.0.9:
   * Database engine
     - Added optimizations to SQL engine
