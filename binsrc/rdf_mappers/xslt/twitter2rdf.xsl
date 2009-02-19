@@ -123,18 +123,18 @@
 					</xsl:for-each>
 				</xsl:when>
 				<xsl:otherwise>
-		    <foaf:Document rdf:about="{$baseUri}">
-				<dc:subject>
-					<foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', $id))}" />
-				</dc:subject>
-				<foaf:primaryTopic>
-					<foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', $id))}" />
-				</foaf:primaryTopic>
-		    </foaf:Document>
-		    <xsl:apply-templates select="statuses" />
-		    <xsl:apply-templates select="status" />
-		    <xsl:apply-templates select="user" />
-		    <xsl:apply-templates select="users" />
+					<foaf:Document rdf:about="{$baseUri}">
+						<dc:subject>
+							<foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', $id))}" />
+						</dc:subject>
+						<foaf:primaryTopic>
+							<foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', $id))}" />
+						</foaf:primaryTopic>
+					</foaf:Document>
+					<xsl:apply-templates select="statuses" />
+					<xsl:apply-templates select="status" />
+					<xsl:apply-templates select="user" />
+					<xsl:apply-templates select="users" />
 				</xsl:otherwise>
 			</xsl:choose>
 		</rdf:RDF>

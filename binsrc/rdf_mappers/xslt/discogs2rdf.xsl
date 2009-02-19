@@ -51,12 +51,12 @@
     <xsl:variable name="base" select="'http://www.discogs.com/'"/>
     
     <xsl:template match="/">
-	<rdf:RDF>
-	    <xsl:apply-templates select="resp[@stat='ok']/artist"/>
-	    <xsl:apply-templates select="resp[@stat='ok']/release"/>
-	    <xsl:apply-templates select="resp[@stat='ok']/label"/>
-	    <xsl:apply-templates select="resp[@stat='ok']/searchresults"/>
-	</rdf:RDF>
+		<rdf:RDF>
+			<xsl:apply-templates select="resp[@stat='ok']/artist"/>
+			<xsl:apply-templates select="resp[@stat='ok']/release"/>
+			<xsl:apply-templates select="resp[@stat='ok']/label"/>
+			<xsl:apply-templates select="resp[@stat='ok']/searchresults"/>
+		</rdf:RDF>
     </xsl:template>
 
     <xsl:template match="resp[@stat='ok']/artist">
@@ -69,16 +69,16 @@
 			<dcterms:subject rdf:resource="{vi:proxyIRI (concat($base,'artist/',name))}"/>
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI (concat($base,'artist/',name))}"/>
 		</rdf:Description>
-	<mo:MusicArtist rdf:about="{vi:proxyIRI (concat($base,'artist/',name))}">
+		<mo:MusicArtist rdf:about="{vi:proxyIRI (concat($base,'artist/',name))}">
 			<sioc:has_container rdf:resource="{$baseUri}"/>
 			<foaf:name>
 				<xsl:value-of select="name"/>
 			</foaf:name>
-	    <xsl:for-each select="releases/release">
+			<xsl:for-each select="releases/release">
 				<foaf:made rdf:resource="{vi:proxyIRI (concat($base,'release/',@id))}"/>
-	    </xsl:for-each>
-	</mo:MusicArtist>
-	<xsl:apply-templates select="releases/release"/>
+			</xsl:for-each>
+		</mo:MusicArtist>
+		<xsl:apply-templates select="releases/release"/>
     </xsl:template>
 
     <xsl:template match="resp[@stat='ok']/release|release">
@@ -91,25 +91,25 @@
 			<dcterms:subject rdf:resource="{vi:proxyIRI (concat($base,'release/',@id))}"/>
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI (concat($base,'release/',@id))}"/>
 		</rdf:Description>    
-	<mo:Record rdf:about="{vi:proxyIRI (concat($base,'release/',@id))}">
+		<mo:Record rdf:about="{vi:proxyIRI (concat($base,'release/',@id))}">
 			<sioc:has_container rdf:resource="{concat($base,'release/',@id)}"/>
-		<xsl:if test="artists/artist/name">
-			<foaf:maker rdf:resource="{vi:proxyIRI (concat($base,'artist/', artists/artist/name))}"/>	    
-		</xsl:if>
-		<xsl:if test="title">
-			<dc:title><xsl:value-of select="title"/></dc:title>
-	    </xsl:if>
-	    <xsl:if test="format">
-			<dc:format><xsl:value-of select="format"/></dc:format>
-		</xsl:if>
-		<xsl:if test="year">
-			<dc:date><xsl:value-of select="year"/></dc:date>
-		</xsl:if>
-	    <xsl:for-each select="tracklist/track">
-			<mo:track rdf:resource="{vi:proxyIRI (concat($base,'track/', ../../@id, '/', position))}"/>
-	    </xsl:for-each>
-	</mo:Record>
-	<xsl:apply-templates select="tracklist/track"/>
+			<xsl:if test="artists/artist/name">
+				<foaf:maker rdf:resource="{vi:proxyIRI (concat($base,'artist/', artists/artist/name))}"/>	    
+			</xsl:if>
+			<xsl:if test="title">
+				<dc:title><xsl:value-of select="title"/></dc:title>
+			</xsl:if>
+			<xsl:if test="format">
+				<dc:format><xsl:value-of select="format"/></dc:format>
+			</xsl:if>
+			<xsl:if test="year">
+				<dc:date><xsl:value-of select="year"/></dc:date>
+			</xsl:if>
+			<xsl:for-each select="tracklist/track">
+				<mo:track rdf:resource="{vi:proxyIRI (concat($base,'track/', ../../@id, '/', position))}"/>
+			</xsl:for-each>
+		</mo:Record>
+		<xsl:apply-templates select="tracklist/track"/>
     </xsl:template>
     
     <xsl:template match="track">
@@ -141,7 +141,7 @@
 			<dcterms:subject rdf:resource="{vi:proxyIRI (concat($base,'label/', name))}"/>
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI (concat($base,'label/', name))}"/>
 		</rdf:Description>       
-	<mo:Label rdf:about="{vi:proxyIRI (concat($base,'label/', name))}">
+		<mo:Label rdf:about="{vi:proxyIRI (concat($base,'label/', name))}">
 			<sioc:has_container rdf:resource="{concat($base,'label/', name)}"/>
 			<v:adr>
 				<xsl:value-of select="contactinfo"/>
@@ -149,29 +149,29 @@
 			<dc:title>
 				<xsl:value-of select="name"/>
 			</dc:title>
-	    <xsl:for-each select="releases/release">
-			<foaf:made rdf:resource="{vi:proxyIRI (concat($base,'release/',@id))}"/>
-	    </xsl:for-each>
-	</mo:Label>
+			<xsl:for-each select="releases/release">
+				<foaf:made rdf:resource="{vi:proxyIRI (concat($base,'release/',@id))}"/>
+			</xsl:for-each>
+		</mo:Label>
     </xsl:template>
 
     <xsl:template match="resp[@stat='ok']/searchresults">
 	    <xsl:for-each select="result[@type='release']">
-		<mo:Record rdf:about="{vi:proxyIRI (uri)}"/>
-	    </xsl:for-each>
-	    <xsl:for-each select="result[@type='artist']">
-		<mo:MusicArtist rdf:about="{vi:proxyIRI (uri)}"/>
+			<mo:Record rdf:about="{vi:proxyIRI (uri)}"/>
+		</xsl:for-each>
+		<xsl:for-each select="result[@type='artist']">
+			<mo:MusicArtist rdf:about="{vi:proxyIRI (uri)}"/>
 	    </xsl:for-each>
     </xsl:template>
 
     <xsl:template match="mmd:relation[@type='OfficialHomepage']" mode="url-rel">
-	<mo:fanpage rdf:resource="{@target}"/>
+		<mo:fanpage rdf:resource="{@target}"/>
     </xsl:template>
     <xsl:template match="mmd:relation[@type='Wikipedia']" mode="url-rel">
-	<mo:wikipedia rdf:resource="{@target}"/>
+		<mo:wikipedia rdf:resource="{@target}"/>
     </xsl:template>
     <xsl:template match="mmd:relation[@type='Discogs']" mode="url-rel">
-	<mo:discogs rdf:resource="{@target}"/>
+		<mo:discogs rdf:resource="{@target}"/>
     </xsl:template>
 
     <xsl:template match="text()"/>
