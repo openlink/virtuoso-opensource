@@ -202,6 +202,11 @@
 			<rdfs:seeAlso rdf:resource="{concat('http://search.twitter.com/search/thread/', id)}"/>
 			<foaf:maker rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name))}"/>
 		</rdf:Description>
+		<xsl:if test="in_reply_to_status_id != ''">
+			<rdf:Description rdf:about="{vi:proxyIRI(concat('http://twitter.com/', in_reply_to_screen_name, '/status/', in_reply_to_status_id))}">
+				<sioc:has_reply rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name, '/status/', id))}"/>
+			</rdf:Description>
+		</xsl:if>
 	</xsl:template>
 
 	<xsl:template name="user">
