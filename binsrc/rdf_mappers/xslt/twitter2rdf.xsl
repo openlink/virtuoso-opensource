@@ -43,6 +43,7 @@
 	xmlns:twitter="http://www.openlinksw.com/schemas/twitter/"
     xmlns:sioc="&sioc;"
     xmlns:bibo="&bibo;"
+    xmlns:a="http://www.w3.org/2005/Atom"
     xmlns:sioct="&sioct;"
 	version="1.0">
 	<xsl:output method="xml" indent="yes" omit-xml-declaration="yes" />
@@ -51,6 +52,77 @@
 	<xsl:param name="what" />
 	<xsl:template match="/">
 		<rdf:RDF>
+			<xsl:choose>
+				<xsl:when test="$what = 'thread2'">
+					<rdf:Description rdf:about="{a:feed/a:link[@rel='alternate']/@href}">
+						<rdf:type rdf:resource="&foaf;Document"/>
+						<rdf:type rdf:resource="&bibo;Document"/>
+						<rdf:type rdf:resource="&sioc;Container"/>
+						<rdf:type rdf:resource="&sioct;Thread"/>
+						<dc:title>
+							<xsl:value-of select="a:feed/a:title"/>
+						</dc:title>
+						<dcterms:created rdf:datatype="&xsd;dateTime">
+							<xsl:value-of select="vi:string2date2(a:feed/a:updated)"/>
+						</dcterms:created>
+						<xsl:for-each select="a:feed/a:entry">
+							<sioc:container_of rdf:resource="{vi:proxyIRI(a:link[@rel='alternate']/@href)}" />
+							<sioc:has_reply rdf:resource="{vi:proxyIRI(a:link[@rel='alternate']/@href)}" />
+						</xsl:for-each>
+					</rdf:Description>
+					<xsl:for-each select="a:feed/a:entry">
+						<rdf:Description rdf:about="{vi:proxyIRI(a:link[@rel='alternate']/@href)}">
+							<rdf:type rdf:resource="&sioct;BoardPost"/>
+							<rdf:type rdf:resource="&sioc;Comment"/>
+							<sioc:has_container rdf:resource="{//a:feed/a:link[@rel='alternate']/@href}"/>
+							<sioc:reply_of rdf:resource="{//a:feed/a:link[@rel='alternate']/@href}"/>
+							<dcterms:created rdf:datatype="&xsd;dateTime">
+								<xsl:value-of select="vi:string2date2(a:published)"/>
+							</dcterms:created>
+							<dc:title>
+								<xsl:value-of select="a:title"/>
+							</dc:title>
+							<sioc:content>
+								<xsl:value-of select="a:content"/>
+							</sioc:content>
+							<foaf:maker rdf:resource="{vi:proxyIRI(a:author/a:uri)}"/>
+						</rdf:Description>
+					</xsl:for-each>
+				</xsl:when>
+				<xsl:when test="$what = 'thread1'">
+					<rdf:Description rdf:about="{$baseUri}">
+						<rdf:type rdf:resource="&foaf;Document"/>
+						<rdf:type rdf:resource="&bibo;Document"/>
+						<rdf:type rdf:resource="&sioc;Container"/>
+						<dc:title>
+							<xsl:value-of select="a:feed/a:title"/>
+						</dc:title>
+						<dcterms:created rdf:datatype="&xsd;dateTime">
+							<xsl:value-of select="vi:string2date2(a:updated)"/>
+						</dcterms:created>
+						<xsl:for-each select="a:feed/a:entry">
+							<sioc:container_of rdf:resource="{vi:proxyIRI(a:link[@rel='alternate']/@href)}" />
+						</xsl:for-each>
+					</rdf:Description>
+					<xsl:for-each select="a:feed/a:entry">
+						<rdf:Description rdf:about="{vi:proxyIRI(a:link[@rel='alternate']/@href)}">
+							<rdf:type rdf:resource="&sioct;BoardPost"/>
+							<sioc:has_container rdf:resource="{$baseUri}"/>
+							<dcterms:created rdf:datatype="&xsd;dateTime">
+								<xsl:value-of select="vi:string2date2(a:published)"/>
+							</dcterms:created>
+							<dc:title>
+								<xsl:value-of select="a:title"/>
+							</dc:title>
+							<sioc:content>
+								<xsl:value-of select="a:content"/>
+							</sioc:content>
+							<rdfs:seeAlso rdf:resource="{substring-before(a:link[@rel='thread']/@href, '.atom')}"/>
+							<foaf:maker rdf:resource="{vi:proxyIRI(a:author/a:uri)}"/>
+						</rdf:Description>
+					</xsl:for-each>
+				</xsl:when>
+				<xsl:otherwise>
 		    <foaf:Document rdf:about="{$baseUri}">
 				<dc:subject>
 					<foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', $id))}" />
@@ -63,6 +135,8 @@
 		    <xsl:apply-templates select="status" />
 		    <xsl:apply-templates select="user" />
 		    <xsl:apply-templates select="users" />
+				</xsl:otherwise>
+			</xsl:choose>
 		</rdf:RDF>
 	</xsl:template>
 
@@ -125,11 +199,9 @@
 			<xsl:if test="in_reply_to_status_id != ''">
 				<sioc:reply_of rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', in_reply_to_screen_name, '/status/', in_reply_to_status_id))}"/>
 			</xsl:if>
+			<rdfs:seeAlso rdf:resource="{concat('http://search.twitter.com/search/thread/', id)}"/>
 			<foaf:maker rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name))}"/>
 		</rdf:Description>
-		<!--xsl:for-each select="user">
-		    <xsl:call-template name="user"/>
-		</xsl:for-each-->
 	</xsl:template>
 
 	<xsl:template name="user">

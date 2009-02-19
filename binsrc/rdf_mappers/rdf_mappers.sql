@@ -36,6 +36,9 @@ delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '.+\.ics\$';
 update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '(http://digg.com/.*)|(http://services.digg.com/.*)'
 	where RM_PATTERN = '(http://digg.com/search.*)' and RM_TYPE = 'URL';
 
+update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '(http://twitter.com/.*)|(http://search.twitter.com/.*)'
+	where RM_PATTERN = '(http://twitter.com/.*)' and RM_TYPE = 'URL';
+
 update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '(http://.*amazon.[^/]+/gp/product/.*)|'||
     '(http://.*amazon.[^/]+/o/ASIN/.*)|'||
     '(http://.*amazon.[^/]+/[^/]+/dp/[^/]+/.*)|'||
@@ -141,7 +144,8 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_GETSATISFATION', null, 'GetSatisfaction');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-    values ('(http://twitter.com/.*)',
+    values ('(http://twitter.com/.*)|' ||
+			'(http://search.twitter.com/.*)',
             'URL', 'DB.DBA.RDF_LOAD_TWITTER', null, 'Twitter');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
@@ -527,6 +531,20 @@ create procedure DB.DBA.XSLT_UNIX2ISO_DATE (in val int)
 }
 ;
 
+create procedure DB.DBA.XSLT_STRING2ISO_DATE2 (in val varchar)
+{
+  declare ret, tmp any;
+  if (val is null)
+    return null;
+  ret := stringdate(val);
+  ret := date_iso8601 (ret);
+  if (ret is not null)
+	return ret;
+  return null;
+}
+;
+
+
 create procedure DB.DBA.XSLT_STRING2ISO_DATE (in val varchar)
 {
   declare ret, tmp any;
@@ -691,6 +709,7 @@ grant execute on DB.DBA.XSLT_UNIX2ISO_DATE to public;
 grant execute on DB.DBA.XSLT_SHA1_HEX to public;
 grant execute on DB.DBA.XSLT_STR2DATE to public;
 grant execute on DB.DBA.XSLT_STRING2ISO_DATE to public;
+grant execute on DB.DBA.XSLT_STRING2ISO_DATE2 to public;
 grant execute on DB.DBA.RDF_SPONGE_PROXY_IRI to public;
 grant execute on DB.DBA.RDF_SPONGE_DBP_IRI to public;
 
@@ -700,6 +719,7 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:unix2iso-date', 'DB.DBA
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:sha1_hex', 'DB.DBA.XSLT_SHA1_HEX');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:str2date', 'DB.DBA.XSLT_STR2DATE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:string2date', 'DB.DBA.XSLT_STRING2ISO_DATE');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:string2date2', 'DB.DBA.XSLT_STRING2ISO_DATE2');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:proxyIRI', 'DB.DBA.RDF_SPONGE_PROXY_IRI');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:dbpIRI', 'DB.DBA.RDF_SPONGE_DBP_IRI');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:umbelGet', 'DB.DBA.RM_UMBEL_GET');
@@ -1304,14 +1324,15 @@ create procedure DB.DBA.RDF_LOAD_SALESFORCE(in graph_iri varchar, in new_origin_
 create procedure DB.DBA.RDF_LOAD_TWITTER2(in url varchar, in id varchar, in new_origin_uri varchar,  in dest varchar, in graph_iri varchar, in username_ varchar, in password_ varchar, in what_ varchar) returns integer
 {
 	declare xt, xd any;
-	declare tmp, test1, test2 varchar;
+	declare tmp, test1, test2, test3 varchar;
 	tmp := http_client (url, username_, password_, 'GET');
 	if (length(tmp) < 300)
 		return 0;
 	xd := xtree_doc (tmp);
 	test1 := cast(xpath_eval('//user', xd) as varchar);
 	test2 := cast(xpath_eval('//status', xd) as varchar);
-	if (not (length(test1) or length(test1)))
+	test3 := cast(xpath_eval('//feed', xd) as varchar);
+	if (not (length(test1) or length(test2) or length(test3)))
 		return 0;
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/twitter2rdf.xsl', xd, vector ('baseUri', new_origin_uri, 'id', id, 'what', what_));
 	xd := serialize_to_UTF8_xml (xt);
@@ -1338,16 +1359,62 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 	if (res_count is null or res_count < 0 or res_count = 0)
 		res_count := 5;
 
-	if (new_origin_uri like 'http://twitter.com/%/status/%')
+	if (new_origin_uri like 'http://search.twitter.com/search/thread/%')
+	{
+		url := concat(new_origin_uri, '.atom');
+		delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
+		what_ := 'thread2';
+		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_);
+		return 1;
+	}
+	else if (new_origin_uri like 'http://search.twitter.com/search?q=%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://search.twitter.com/search?q=%s', 0);
+		post := trim(tmp[0], '/');
+		if (post is null)
+			return 0;
+		url := sprintf('http://search.twitter.com/search.atom?q=%s', post);
+		delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
+		what_ := 'thread1';
+		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_);
+		return 1;
+	}
+	else if (new_origin_uri like 'http://twitter.com/%/status/%')
 	{
 		tmp := sprintf_inverse (new_origin_uri, 'http://twitter.com/%s/status/%s', 0);
 		id := tmp[0];
 		post := trim(tmp[1], '/');
 		if (id is null or post is null)
 			return 0;
-		url := sprintf('http://twitter.com/statuses/show/%s.xml', post);
+
 		delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
+
+		url := sprintf('http://twitter.com/statuses/show/%s.xml', post);
 		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_);
+		
+		what_ := 'thread2';
+		url := sprintf('http://search.twitter.com/search/thread/%s.atom', post);
+		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_);
+		
+		return 1;
+	}
+	else if (new_origin_uri like 'http://twitter.com/%/statuses/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://twitter.com/%s/statuses/%s', 0);
+		id := tmp[0];
+		post := trim(tmp[1], '/');
+		if (id is null or post is null)
+			return 0;
+
+		delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
+
+		url := sprintf('http://twitter.com/statuses/show/%s.xml', post);
+		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_);
+		
+		what_ := 'thread2';
+		url := sprintf('http://search.twitter.com/search/thread/%s.atom', post);
+		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_);
+		
 		return 1;
 	}
 	else if (new_origin_uri like 'http://twitter.com/%/friends')
