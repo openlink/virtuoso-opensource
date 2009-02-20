@@ -140,10 +140,10 @@ unsigned char dks_esc_bslashc[0x80] = {
  (tail) += ((CHARSET_WIDE == src_charset) ? sizeof(wchar_t) : 1)
 
 void
-dks_esc_write (dk_session_t * ses, char * src_str, size_t src_len,
+dks_esc_write (dk_session_t * ses, const char * src_str, size_t src_len,
   wcharset_t * tgt_charset, wcharset_t * src_charset, int dks_esc_mode)
 {
-  unsigned char *src_tail = (unsigned char *)src_str;
+  unsigned const char *src_tail = (unsigned const char *)src_str;
   unsigned char *str_end = (unsigned char *)(src_str+src_len);
   wchar_t wc;
   unsigned char action;

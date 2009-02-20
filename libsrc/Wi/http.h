@@ -305,7 +305,8 @@ char * ws_usr_qual (ws_connection_t * ws, int is_soap);
 #define ws_usr_qual(ws, is_soap)  "WS"
 #endif
 
-void http_value_esc (caddr_t *qst, dk_session_t *out, caddr_t val, char *tag, int dks_esc_mode);
+extern void dks_sqlval_esc_write (caddr_t *qst, dk_session_t *out, caddr_t val, wcharset_t *tgt_carset, wcharset_t *src_charset, int dks_esc_mode);
+extern void http_value_esc (caddr_t *qst, dk_session_t *out, caddr_t val, char *tag, int dks_esc_mode);
 #if 0
 #define http_trace(a) printf a
 #else
@@ -344,7 +345,7 @@ extern dks_charclass_props_t dks_charclasses['Q'+1-'>'];
 #define DKS_ESC_CHARCLASS_ACTION(wc,mode) (dks_charclasses[((wc & ~0xff) ? 0 : (dks_esc_char_props[wc] - '>'))][mode])
 
 extern void
-dks_esc_write (dk_session_t * ses, char * str, size_t len,
+dks_esc_write (dk_session_t * ses, const char * str, size_t len,
   wcharset_t * tgt_charset, wcharset_t * src_charset, int dks_esc_mode);
 
 extern void
