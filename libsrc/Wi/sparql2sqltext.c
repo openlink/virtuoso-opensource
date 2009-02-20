@@ -135,7 +135,7 @@ void rdf_ds_load_all (void)
   qmf->qmfBoolOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_BOOL_OF_OBJ (^{tree}^)");
   qmf->qmfIidOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_MAKE_IID_OF_LONG (__rdf_long_of_obj (^{tree}^))");
   qmf->qmfUriOfShortTmpl = box_dv_short_string (" id_to_iri_nosignal (^{tree}^)");
-  qmf->qmfStrsqlvalOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_STRSQLVAL_OF_OBJ (^{tree}^)");
+  qmf->qmfStrsqlvalOfShortTmpl = box_dv_short_string (" __rdf_strsqlval (^{tree}^)");
   qmf->qmfShortOfTypedsqlvalTmpl = box_dv_short_string (" DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (^{sqlval-of-tree}^, DB.DBA.RDF_MAKE_IID_OF_QNAME(^{datatype-of-tree}^), ^{language-of-tree}^)");
   qmf->qmfShortOfSqlvalTmpl = box_dv_short_string (" DB.DBA.RDF_OBJ_OF_SQLVAL (^{tree}^)");
   qmf->qmfShortOfLongTmpl = box_dv_short_string (" DB.DBA.RDF_OBJ_OF_LONG (^{tree}^)");
@@ -226,34 +226,83 @@ ssg_find_valmode_by_name (ccaddr_t name)
   return NULL; /* to keep compiler happy */
 }
 
-const char *ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subtype)
+void
+ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subtype,
+  const char **ret_formatter, const char **ret_agg_formatter, const char **ret_agg_mdata )
 {
+  ret_formatter[0] = ret_agg_formatter[0] = ret_agg_mdata[0] = NULL;
   if (NULL == name)
-    return NULL;
+    return;
+  if (!strncmp (name, "HTTP+", 5))
+    {
+/*                     0123456789 */
+  if (!strncmp (name, "HTTP+XML ", 9))
+    switch (subtype)
+      {
+      case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_RSET_XML_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_RSET_XML_HTTP_PRE"; return;
+      case CONSTRUCT_L: case DESCRIBE_L: goto bad_descr; /* see below */
+      case ASK_L: goto bad_ask; /* see below */
+      default: return;
+      }
+/*                     0         1   */
+/*                     0123456789012 */
+  if (!strncmp (name, "HTTP+RDF/XML ", 12))
+    switch (subtype)
+      {
+      case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_RSET_RDFXML_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_RSET_RDFXML_HTTP_PRE"; return;
+      case CONSTRUCT_L: case DESCRIBE_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_DICT_RDFXML_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_DICT_RDFXML_HTTP_PRE"; return;
+      case ASK_L: goto bad_ask; /* see below */
+      default: return;
+      }
+/*                     0123456789 */
+  if (!strncmp (name, "HTTP+TTL ", 9))
+    switch (subtype)
+      {
+      case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_RSET_RDFXML_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_RSET_TTL_HTTP_PRE"; return;
+      case CONSTRUCT_L: case DESCRIBE_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_DICT_RDFXML_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_DICT_TTL_HTTP_PRE"; return;
+      case ASK_L: goto bad_ask; /* see below */
+      default: return;
+      }
+    }
   if (!strcmp (name, "RDF/XML"))
     switch (subtype)
       {
-      case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: return "DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML";
-      case CONSTRUCT_L: case DESCRIBE_L: return "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDF_XML";
-      case ASK_L: return "DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_RDF_XML";
-      default: return NULL;
+      case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML"; return;
+      case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDF_XML"; return;
+      case ASK_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_RDF_XML"; return;
+      default: return;
       }
   if (!strcmp (name, "TURTLE") || !strcmp (name, "TTL"))
     switch (subtype)
       {
-      case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: return "DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL";
-      case CONSTRUCT_L: case DESCRIBE_L: return "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL";
-      case ASK_L: return "DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL";
-      default: return NULL;
+      case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL"; return;
+      case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL"; return;
+      case ASK_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL"; return;
+      default: return;
+      }
+/*                     0         1   */
+/*                     0123456789012 */
+  if (!strncmp (name, "HTTP+TURTLE ", 12) ||
+/*                     0123456789 */
+      !strncmp (name, "HTTP+TTL ", 9) )
+    switch (subtype)
+      {
+      case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_RSET_TTL_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_RSET_START_HTTP"; return;
+      case CONSTRUCT_L: case DESCRIBE_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_DICT_TTL_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_RSET_START_HTTP"; return;
+      case ASK_L: goto bad_ask; /* see below */
+      default: return;
       }
   if (!strcmp (name, "_JAVA_"))
     switch (subtype)
       {
-      case ASK_L: return "COUNT";
-      default: return NULL;
+      case ASK_L: ret_formatter[0] = "COUNT"; return;
+      default: return;
       }
-  spar_error (NULL, "Unsupported format name '%.30s', only 'RDF/XML', 'TURTLE' and '_JAVA_' are supported", name);
-  return NULL; /* to keep compiler happy */
+  spar_error (NULL, "Unsupported format name '%.40s', only 'RDF/XML', 'TURTLE' and '_JAVA_' are supported", name);
+bad_ask:
+  spar_error (NULL, "Format name '%.30s' is not supported for booleand results made by SPARQL %s", name, spart_dump_opname (subtype, 0));
+bad_descr:
+  spar_error (NULL, "Format name '%.30s' is not supported for triple dictionaries made by SPARQL %s", name, spart_dump_opname (subtype, 0));
 }
 
 /* Dependency tracking */
@@ -2887,7 +2936,7 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
         if (top_filter_op)
           { ltext = " ("; rtext = " is not null)"; }
         else
-          { ltext = "(0 = isnull ("; rtext = "))"; }
+          { ltext = "(isnotnull ("; rtext = "))"; }
         ssg_puts (ltext);
         if (IS_BOX_POINTER (arg1_native) && (1 < arg1_native->qmfColumnCount))
           {
@@ -3211,7 +3260,7 @@ IN_op_fnt_found:
             if (IS_BOX_POINTER (arg1_native))
               tmpl = arg1_native->qmfStrsqlvalOfShortTmpl;
             else if (SSG_VALMODE_LONG == arg1_native)
-              tmpl = " DB.DBA.RDF_STRSQLVAL_OF_LONG (^{tree}^)";
+              tmpl = " __rdf_strsqlval (^{tree}^)";
             else if (SSG_VALMODE_SQLVAL == arg1_native)
               tmpl = " DB.DBA.RDF_STRSQLVAL_OF_SQLVAL (^{tree}^)";
             else
@@ -3247,7 +3296,7 @@ IN_op_fnt_found:
             if (IS_BOX_POINTER (arg1_native))
               tmpl = arg1_native->qmfStrsqlvalOfShortTmpl;
             else if (SSG_VALMODE_LONG == arg1_native)
-              tmpl = " DB.DBA.RDF_STRSQLVAL_OF_LONG (^{tree}^)";
+              tmpl = " __rdf_strsqlval (^{tree}^)";
             else if (SSG_VALMODE_SQLVAL == arg1_native)
               tmpl = " DB.DBA.RDF_STRSQLVAL_OF_SQLVAL (^{tree}^)";
             else if (SSG_VALMODE_BOOL == arg1_native)
@@ -6690,7 +6739,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
   SPART	*tree = ssg->ssg_tree;
   ptrlong subtype = tree->_.req_top.subtype;
   SPART **retvals;
-  const char *formatter;
+  const char *formatter, *agg_formatter, *agg_meta;
   ssg_valmode_t retvalmode;
   int top_retval_flags =
     SSG_RETVAL_TOPMOST |
@@ -6710,12 +6759,12 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
     ssg_qr_uses_jso (ssg, NULL, uname_virtrdf_ns_uri_DefaultQuadStorage);
   ssg->ssg_equiv_count = ssg->ssg_sparp->sparp_equiv_count;
   ssg->ssg_equivs = ssg->ssg_sparp->sparp_equivs;
-  formatter = ssg_find_formatter_by_name_and_subtype (tree->_.req_top.formatmode_name, tree->_.req_top.subtype);
+  ssg_find_formatter_by_name_and_subtype (tree->_.req_top.formatmode_name, tree->_.req_top.subtype, &formatter, &agg_formatter, &agg_meta);
   if (COUNT_DISTINCT_L == subtype)
     retvalmode = SSG_VALMODE_SQLVAL;
   else
     retvalmode = ssg_find_valmode_by_name (tree->_.req_top.retvalmode_name);
-  if ((NULL != formatter) && (NULL != retvalmode) && (SSG_VALMODE_LONG != retvalmode))
+  if (((NULL != formatter) || (NULL != agg_formatter)) && (NULL != retvalmode) && (SSG_VALMODE_LONG != retvalmode))
     spar_sqlprint_error ("'output:valmode' declaration conflicts with 'output:format'");
   lim = unbox (tree->_.req_top.limit);
   ofs = unbox (tree->_.req_top.offset);
@@ -6756,6 +6805,30 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
           ssg->ssg_indent += 1;
           ssg_newline (0);
         }
+      else if (NULL != agg_formatter)
+        {
+          const char *deser_name = NULL;
+          if (SSG_RETVAL_DIST_SER_LONG & top_retval_flags)
+            deser_name = (const char *)((ptrlong)DISTINCT_L);
+          ssg_puts ("SELECT "); ssg_puts (agg_formatter); ssg_puts (" (");
+          if (NULL != agg_meta)
+            {
+              ssg_puts (agg_meta); ssg_puts (" (");
+            }
+          ssg_puts ("vector (");
+          ssg_print_retval_cols (ssg, tree, retvals, NULL_ASNAME, NULL, 0);
+          if (NULL != agg_meta)
+            {
+              ssg_puts ("), '");
+              ssg_puts (strchr (tree->_.req_top.formatmode_name, ' ')+1);
+              ssg_putchar ('\'');
+            }
+          ssg_puts ("), vector (");
+          ssg_print_retval_cols (ssg, tree, retvals, top_selid, NULL, 0);
+          ssg_puts (")) AS \"aggret-0\" INTEGER FROM (");
+          ssg->ssg_indent += 1;
+          ssg_newline (0);
+        }
       else if (SSG_RETVAL_DIST_SER_LONG & top_retval_flags)
         {
           ssg_puts ("SELECT "); 
@@ -6782,9 +6855,9 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
       if ((NULL != tree->_.req_top.formatmode_name) &&
         !strcmp ("_JAVA_", tree->_.req_top.formatmode_name) )
         ssg_puts (" DB.DBA.RDF_DICT_OF_TRIPLES_TO_THREE_COLS ((");
-      else if ((NULL == formatter) && ssg->ssg_sparp->sparp_sparqre->sparqre_direct_client_call)
+      else if ((NULL == formatter) && (NULL == agg_formatter) && ssg->ssg_sparp->sparp_sparqre->sparqre_direct_client_call)
         {
-          formatter = ssg_find_formatter_by_name_and_subtype ("TTL", subtype);
+          ssg_find_formatter_by_name_and_subtype ("TTL", subtype, &formatter, &agg_formatter, &agg_meta);
           if ((NULL != retvalmode) && (SSG_VALMODE_LONG != retvalmode))
             spar_sqlprint_error ("'output:valmode' declaration conflicts with TTL output format needed by database client connection'");
         }
@@ -6908,7 +6981,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
     ssg_puts (", SAME_AS");
   ssg_prin_option_commalist (ssg, ssg->ssg_sparp->sparp_env->spare_sql_select_options, 1);
   ssg_puts (")");
-  if ((COUNT_DISTINCT_L == subtype) || (NULL != formatter) || (SSG_RETVAL_DIST_SER_LONG & top_retval_flags))
+  if ((COUNT_DISTINCT_L == subtype) || (NULL != formatter) || (NULL != agg_formatter) || (SSG_RETVAL_DIST_SER_LONG & top_retval_flags))
     {
       switch (tree->_.req_top.subtype)
         {

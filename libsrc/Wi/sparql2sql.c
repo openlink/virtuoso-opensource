@@ -4982,7 +4982,7 @@ sparp_rewrite_grab (sparp_t *sparp)
   else
     grab_retvals = sparp_treelist_full_copy (sparp, sparp->sparp_expr->_.req_top.expanded_orig_retvals, NULL);
 /* Making subqueries: seed */
-  sub_sparps[0] = sparp_of_seed = sparp_clone_for_variant (sparp);
+  sub_sparps[0] = sparp_of_seed = sparp_clone_for_variant (sparp, 0);
   sparp_of_seed->sparp_expr = sparp_tree_full_copy (sparp_of_seed, sparp->sparp_expr, NULL);
   sparp_of_seed->sparp_expr->_.req_top.shared_spare = sparp_of_seed->sparp_env;
   sparp_of_seed->sparp_expr->_.req_top.subtype = SELECT_L;
@@ -4997,7 +4997,7 @@ sparp_rewrite_grab (sparp_t *sparp)
   sparp_of_seed->sparp_env->spare_grab.rgc_sa_vars = env->spare_grab.rgc_sa_vars;
   sparp_of_seed->sparp_env->spare_grab.rgc_vars = env->spare_grab.rgc_vars;
 /* Making subqueries: iter */
-  sub_sparps[1] = sparp_of_iter = sparp_clone_for_variant (sparp_of_seed);
+  sub_sparps[1] = sparp_of_iter = sparp_clone_for_variant (sparp_of_seed, 0);
   sparp_of_iter->sparp_expr = sparp_tree_full_copy (sparp_of_seed, sparp_of_seed->sparp_expr, NULL);
   sparp_of_iter->sparp_expr->_.req_top.shared_spare = sparp_of_iter->sparp_env;
   sparp_of_iter->sparp_env->spare_globals_are_numbered = 1;
@@ -5008,7 +5008,7 @@ sparp_rewrite_grab (sparp_t *sparp)
   sparp_of_iter->sparp_env->spare_grab.rgc_vars = env->spare_grab.rgc_vars;
 /*!!! TBD: relax graph conditions in sparp_of_iter */
 /* Making subqueries: final */
-  sub_sparps[2] = sparp_of_final = sparp_clone_for_variant (sparp);
+  sub_sparps[2] = sparp_of_final = sparp_clone_for_variant (sparp, 1);
   sparp_of_final->sparp_expr = sparp_tree_full_copy (sparp_of_seed, sparp->sparp_expr, NULL);
   sparp_of_final->sparp_expr->_.req_top.shared_spare = sparp_of_final->sparp_env;
   sparp_of_final->sparp_env->spare_globals_are_numbered = 1;

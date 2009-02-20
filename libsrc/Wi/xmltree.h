@@ -884,6 +884,7 @@ extern int xe_destroy (caddr_t box);
 extern void xe_sqlnarrow_string_value (xml_entity_t * xe, caddr_t * ret, dtp_t dtp);
 
 extern int xe_down_transit (xml_entity_t * xe);
+extern int xe_destroy (caddr_t box);
 extern const char * xe_get_sysid (xml_entity_t *xe, const char *ref_name);
 extern const char * xe_get_sysid_base_uri(xml_entity_t *xe);
 

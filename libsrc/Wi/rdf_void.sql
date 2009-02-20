@@ -142,13 +142,13 @@ create procedure RDF_VOID_GEN (in graph varchar, in gr_name varchar := null)
         }
     }
 
-  for select class, cnt from (sparql define input:storage "" select distinct ?class (count(*)) as ?cnt
+  for select "class", "cnt" from (sparql define input:storage "" select distinct ?class (count(*)) as ?cnt
     where { graph `iri (?:graph)` { [] a ?class . } } order by desc 2) s do
     {
-      if (class like 'http://rdfs.org/ns/void#%' or class like 'http://purl.org/NET/scovo#%'
-	  or class = graph || '#TypeOfLink' or class like graph || '#%Links')
+      if ("class" like 'http://rdfs.org/ns/void#%' or "class" like 'http://purl.org/NET/scovo#%'
+	  or "class" = graph || '#TypeOfLink' or "class" like graph || '#%Links')
 	goto skip;
-      RDF_VOID_SPLIT_IRI (class, pref, name);
+      RDF_VOID_SPLIT_IRI ("class", pref, name);
       nam := name;
       inx := 1;
       while (dict_get (dict, nam, 0))
@@ -160,8 +160,8 @@ create procedure RDF_VOID_GEN (in graph varchar, in gr_name varchar := null)
       dict_put (dict, nam, 1);
       http (sprintf (':Dataset void:statItem :%sStat .\n', name), ses);
       http (sprintf (':%sStat a  scovo:Item ; \n', name), ses);
-      http (sprintf (' rdf:value %d ; \n', cnt), ses);
-      http (sprintf (' scovo:dimension <%s> ; \n', class), ses);
+      http (sprintf (' rdf:value %d ; \n', "cnt"), ses);
+      http (sprintf (' scovo:dimension <%s> ; \n', "class"), ses);
       http (sprintf (' scovo:dimension void:numberOfResources . \n'), ses);
       http (sprintf ('\n'), ses);
       skip:;

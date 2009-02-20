@@ -53,7 +53,7 @@ extern "C" {
 caddr_t
 spar_compose_report_flag (sparp_t *sparp)
 {
-  const char *fmtname = sparp->sparp_env->spare_output_format_name;
+  const char *fmtname = sparp->sparp_env->spare_output_format_name; /* Report is always a result-set, so no spare_output_XXX_format name */
   return t_box_num (((NULL != fmtname) && !strcmp (fmtname, "_JAVA_")) ? 0 : 1);
 }
 
@@ -247,7 +247,8 @@ sparp_gp_trav_ctor_var_to_limofs_aref (sparp_t *sparp, SPART *curr, sparp_trav_s
 #define CTOR_OPCODE_CONST_OR_EXPN 3
 
 void
-spar_compose_retvals_of_ctor (sparp_t *sparp, SPART *ctor_gp, const char *funname, SPART *arg0, SPART *arglast, SPART ***retvals, ctor_var_enumerator_t *cve, const char *formatter)
+spar_compose_retvals_of_ctor (sparp_t *sparp, SPART *ctor_gp, const char *funname, SPART *arg0, SPART *arglast, SPART ***retvals, ctor_var_enumerator_t *cve,
+  const char *formatter, const char *agg_formatter, const char *agg_mdata )
 {
   int triple_ctr, fld_ctr, var_ctr;
   dk_set_t bnode_iter;
@@ -351,7 +352,8 @@ bnode_found_or_added:
 }
 
 void
-spar_compose_retvals_of_construct (sparp_t *sparp, SPART *top, SPART *ctor_gp, const char *formatter)
+spar_compose_retvals_of_construct (sparp_t *sparp, SPART *top, SPART *ctor_gp,
+  const char *formatter, const char *agg_formatter, const char *agg_mdata )
 {
   int need_limofs_trick = CTOR_NEEDS_LIMOFS_TRICK(top);
   ctor_var_enumerator_t cve;
@@ -363,7 +365,7 @@ spar_compose_retvals_of_construct (sparp_t *sparp, SPART *top, SPART *ctor_gp, c
       cve.cve_limofs_var_alias = t_box_dv_short_string ("ctor-1");
     }
   spar_compose_retvals_of_ctor (sparp, ctor_gp, "sql:SPARQL_CONSTRUCT", NULL, NULL,
-    &(top->_.req_top.retvals), &cve, formatter );
+    &(top->_.req_top.retvals), &cve, formatter, agg_formatter, agg_mdata );
 }
 
 void
@@ -385,7 +387,7 @@ spar_compose_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top, SPART *gra
       cve.cve_limofs_var_alias = t_box_dv_short_string ("ctor-1");
     }
   spar_compose_retvals_of_ctor (sparp, ctor_gp, "sql:SPARQL_CONSTRUCT", NULL, NULL,
-    &(top->_.req_top.retvals), &cve, NULL );
+    &(top->_.req_top.retvals), &cve, NULL, NULL, NULL );
   rv = top->_.req_top.retvals;
   if (INSERT_L != top->_.req_top.subtype)
     cve.cve_bnodes_are_prohibited = 1;
@@ -448,11 +450,11 @@ spar_compose_retvals_of_modify (sparp_t *sparp, SPART *top, SPART *graph_to_patc
     }
   cve.cve_bnodes_are_prohibited = 1;
   spar_compose_retvals_of_ctor (sparp, del_ctor_gp, "sql:SPARQL_CONSTRUCT", NULL, NULL,
-    &(top->_.req_top.retvals), &cve, NULL );
+    &(top->_.req_top.retvals), &cve, NULL, NULL, NULL );
   cve.cve_limofs_var_alias = NULL;
   cve.cve_bnodes_are_prohibited = 0;
   spar_compose_retvals_of_ctor (sparp, ins_ctor_gp, "sql:SPARQL_CONSTRUCT", NULL, NULL,
-    &ins, &cve, NULL );
+    &ins, &cve, NULL, NULL, NULL );
   rv = top->_.req_top.retvals;
 
   if (NULL != sparp->sparp_env->spare_output_route_name)

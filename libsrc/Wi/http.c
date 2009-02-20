@@ -4307,34 +4307,23 @@ bif_http_login_failed (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 void
-http_value_esc (caddr_t *qst, dk_session_t *out, caddr_t val, char *tag, int dks_esc_mode)
+dks_sqlval_esc_write (caddr_t *qst, dk_session_t *out, caddr_t val, wcharset_t *tgt_charset, wcharset_t *src_charset, int dks_esc_mode)
 {
-  ws_connection_t * ws = ((query_instance_t *)qst)->qi_client->cli_ws;
   dtp_t dtp = DV_TYPE_OF (val);
-
-  if (!DV_STRINGP (tag))
-    tag = NULL;
-  if (tag)
-    {
-      session_buffered_write_char ('<', out);
-      session_buffered_write (out, tag, strlen (tag));
-      session_buffered_write_char ('>', out);
-    }
-
   if (DV_STRINGP (val))
     {
-      dks_esc_write (out, val, box_length (val) - 1, WS_CHARSET (ws, qst), default_charset, dks_esc_mode);
+      dks_esc_write (out, val, box_length (val) - 1, tgt_charset, src_charset, dks_esc_mode);
     }
   else if (IS_WIDE_STRING_DTP (dtp))
     {
-      dks_wide_esc_write (out, (wchar_t *)val, box_length (val) / sizeof (wchar_t) - 1, WS_CHARSET (ws, qst), dks_esc_mode);
+      dks_wide_esc_write (out, (wchar_t *)val, box_length (val) / sizeof (wchar_t) - 1, tgt_charset, dks_esc_mode);
     }
   else if (DV_BLOB_WIDE_HANDLE  == dtp)
     {
       query_instance_t * qi = (query_instance_t *) qst;
       caddr_t wstring = blob_to_string (qi->qi_trx, val);
 	dks_wide_esc_write (out, (wchar_t *) wstring, box_length (wstring) / sizeof (wchar_t) - 1,
-	  WS_CHARSET (ws, qst), dks_esc_mode);
+	  tgt_charset, dks_esc_mode);
       dk_free_box (wstring);
     }
 #ifdef BIF_XML
@@ -4342,7 +4331,7 @@ http_value_esc (caddr_t *qst, dk_session_t *out, caddr_t val, char *tag, int dks
     {
       /* if xout_encoding is not set we will set to default */
       caddr_t old_enc = ((xml_entity_t *)val)->xe_doc.xd->xout_encoding;
-      if (!old_enc) ((xml_entity_t *)val)->xe_doc.xd->xout_encoding = (caddr_t) (CHARSET_NAME (WS_CHARSET (ws, qst), NULL));
+      if (!old_enc) ((xml_entity_t *)val)->xe_doc.xd->xout_encoding = (caddr_t) (CHARSET_NAME (tgt_charset, NULL));
       ((xml_entity_t *)val)->_->xe_serialize ((xml_entity_t *)val, out);
       /*      xe_box_serialize (val, out); */
       ((xml_entity_t *)val)->xe_doc.xd->xout_encoding = old_enc;
@@ -4353,7 +4342,7 @@ http_value_esc (caddr_t *qst, dk_session_t *out, caddr_t val, char *tag, int dks
       int els = BOX_ELEMENTS(val);
       int ctr;
       for (ctr = 0; ctr < els; ctr++)
-	http_value_esc (qst, out, ((caddr_t *)(val))[ctr], NULL, dks_esc_mode);
+	dks_sqlval_esc_write (qst, out, ((caddr_t *)(val))[ctr], tgt_charset, src_charset, dks_esc_mode);
     }
   else if (DV_DB_NULL == dtp)
     {
@@ -4375,9 +4364,24 @@ http_value_esc (caddr_t *qst, dk_session_t *out, caddr_t val, char *tag, int dks
       if ('\0' != string[box_length (string) - 1])
         GPF_T1("cast to varchar failed: the resulting box has no trailing zero");
 #endif
-      dks_esc_write (out, string, box_length (string) - 1, WS_CHARSET (ws, qst), default_charset, dks_esc_mode);
+      dks_esc_write (out, string, box_length (string) - 1, tgt_charset, default_charset, dks_esc_mode);
       dk_free_box (string);
     }
+}
+
+void
+http_value_esc (caddr_t *qst, dk_session_t *out, caddr_t val, char *tag, int dks_esc_mode)
+{
+  ws_connection_t * ws = ((query_instance_t *)qst)->qi_client->cli_ws;
+  if (!DV_STRINGP (tag))
+    tag = NULL;
+  if (tag)
+    {
+      session_buffered_write_char ('<', out);
+      session_buffered_write (out, tag, strlen (tag));
+      session_buffered_write_char ('>', out);
+    }
+  dks_sqlval_esc_write (qst, out, val, WS_CHARSET (ws, qst), default_charset, dks_esc_mode);
   if (tag)
     {
       session_buffered_write (out, "</", 2);

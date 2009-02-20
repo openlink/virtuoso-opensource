@@ -58,6 +58,7 @@ extern "C" {
 #include "xpathp_impl.h"
 #include "xpathp.h"
 #include "date.h" /* for DT_DT_TYPE */
+#include "rdf_core.h" /* for rdf_type_twobyte_to_iri */
 
 #define REF_REL_URI(xte,head) \
  ((BOX_ELEMENTS (head) > 4) ? \
@@ -9552,10 +9553,12 @@ caddr_t bif_xtree_sum64 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return xte_sum64 (src->xte_current);
 }
 
-caddr_t bif_xsd_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+/*! \returns NULL for string, (ccaddr_t)((ptrlong)1) for unsupported, 2 for NULL, UNAME for others */
+ccaddr_t
+xsd_type_of_box (caddr_t arg)
 {
-  caddr_t arg = bif_arg (qst, args, 0, "__xsd_type");
   dtp_t dtp = DV_TYPE_OF (arg); 
+again:
   switch (dtp)
     {
     case DV_DATETIME:
@@ -9566,6 +9569,42 @@ caddr_t bif_xsd_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         default : return uname_xmlschema_ns_uri_hash_dateTime;
         }
     case DV_STRING: case DV_BLOB_HANDLE: case DV_WIDE: case DV_LONG_WIDE:
+      return NULL;
+    case DV_LONG_INT: return uname_xmlschema_ns_uri_hash_integer;
+    case DV_NUMERIC: case DV_DOUBLE_FLOAT: return uname_xmlschema_ns_uri_hash_double;
+    case DV_SINGLE_FLOAT: return uname_xmlschema_ns_uri_hash_float;
+    case DV_DB_NULL:
+      return (ccaddr_t)((ptrlong)2);
+    case DV_RDF:
+      {
+        rdf_box_t *rb = (rdf_box_t *)rb;
+        if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
+          {
+            ccaddr_t res = rdf_type_twobyte_to_iri (rb->rb_type);
+            if (NULL == res)
+              return (ccaddr_t)((ptrlong)2);
+            return box_copy (res);
+          }
+        dtp = ((rb->rb_is_outlined) ? ((rdf_bigbox_t *)rb)->rbb_box_dtp : DV_TYPE_OF (rb->rb_box));
+        goto again; /* see above */
+      }
+    default:
+      return (ccaddr_t)((ptrlong)1);
+    }
+}
+
+
+caddr_t
+bif_xsd_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t arg = bif_arg (qst, args, 0, "__xsd_type");
+  caddr_t strg_dflt;
+  caddr_t res = xsd_type_of_box (arg);
+  if (IS_BOX_POINTER (res))
+    return res;
+  switch ((ptrlong)(res))
+    {
+    case 0: /* string */
       if (1 < BOX_ELEMENTS (args))
         {
           caddr_t dflt = bif_arg (qst, args, 1, "__xsd_type");
@@ -9574,17 +9613,20 @@ caddr_t bif_xsd_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           return box_copy_tree (dflt);
         }
       return uname_xmlschema_ns_uri_hash_string;
-    case DV_LONG_INT: return uname_xmlschema_ns_uri_hash_integer;
-    case DV_NUMERIC: case DV_DOUBLE_FLOAT: return uname_xmlschema_ns_uri_hash_double;
-    case DV_SINGLE_FLOAT: return uname_xmlschema_ns_uri_hash_float;
-    case DV_DB_NULL: return NEW_DB_NULL;
-    default:
+    case 2: /* NULL */
+      return NEW_DB_NULL;
+    case 1:
       if (2 >= BOX_ELEMENTS (args))
+        {
+          dtp_t dtp = DV_TYPE_OF (arg);
         sqlr_new_error ("22023", "SR544", 
           "Function __xsd_type() can not find XML Schema datatype that matches SQL datatype %s (%d)",
           dv_type_title (dtp), dtp );
+        }
       return box_copy_tree (bif_arg (qst, args, 2, "__xsd_type"));
     }
+  GPF_T1 ("__xsd_type: bad ret");
+  return NULL;
 }
 
 xml_ns_2dict_t *xml_global_ns_2dict = NULL;

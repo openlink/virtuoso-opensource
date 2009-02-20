@@ -21,6 +21,158 @@
 --
 --
 
+--!AWK PUBLIC
+create procedure DB.DBA.SPARQL_RSET_XML_WRITE_NS (inout ses any)
+{
+  -- http ('<?xml version="1.0" ?>\n', ses);
+  http ('<sparql xmlns="http://www.w3.org/2005/sparql-results#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2001/sw/DataAccess/rf1/result2.xsd">', ses);
+}
+;
+
+
+--!AWK PUBLIC
+create procedure DB.DBA.SPARQL_RSET_XML_WRITE_HEAD (inout ses any, in colnames any)
+{
+  declare i, col_count integer;
+  http ('\n <head>', ses);
+  i := 0; col_count := length (colnames);
+  while (i < col_count)
+    {
+      http (sprintf ('\n  <variable name="%s"/>', colnames[i]), ses);
+      i := i + 1;
+    }
+  http ('\n </head>', ses);
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.SPARQL_RSET_XML_WRITE_ROW_OLD (inout ses any, inout colnames any, inout row any)
+{
+  declare i, col_count integer;
+  -- dbg_obj_princ ('DB.DBA.SPARQL_RSET_XML_WRITE_ROW (..., ',colnames, row, ')');
+  --http ('<result/>', ses);
+  --return;
+  http ('\n <result>', ses);
+  i := 0; col_count := length (colnames);
+  for (i := 0; i < col_count; i := i + 1)
+    {
+      declare _name varchar;
+      declare _val any;
+      _val := aref_set_0 (row, i);
+      if (_val is null)
+        goto end_of_binding;
+      if (isiri_id (_val))
+        {
+          if (_val >= min_bnode_iri_id ())
+            http (sprintf ('\n   <binding name="%s"><bnode>%s</bnode></binding>', colnames[i], id_to_iri (_val)), ses);
+	  else
+	    {
+              declare res varchar;
+              res := id_to_iri (_val);
+--              res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = _val));
+              if (res is null)
+                res := sprintf ('bad://%d', iri_id_num (_val));
+              http (sprintf ('\n   <binding name="%s"><uri>', colnames[i]), ses);
+              http_value (res, 0, ses);
+              http ('</uri></binding>', ses);
+	    }
+	}
+      else if (isstring (_val) and (1 = __box_flags (_val)))
+        {
+          if (_val like 'nodeID://%')
+            http (sprintf ('\n   <binding name="%s"><bnode>%s</bnode></binding>', colnames[i], _val), ses);
+          else
+            http (sprintf ('\n   <binding name="%s"><uri>%V</uri></binding>', colnames[i], _val), ses);
+        }
+      else
+        {
+	  declare lang, dt varchar;
+	  declare is_xml_lit int;
+	  declare sql_val any;
+	  if (__tag (_val) = 185) -- string output
+	    {
+              http (sprintf ('\n   <binding name="%s"><literal>', colnames[i]), ses);
+	      http_value (_val, 0, ses);
+              http ('</literal></binding>', ses);
+              goto end_of_binding;
+	    }
+	  lang := DB.DBA.RDF_LANGUAGE_OF_LONG (_val, null);
+	  dt := DB.DBA.RDF_DATATYPE_IRI_OF_LONG (_val, null);
+	  if (dt = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral')
+	    is_xml_lit := 1;
+	  else
+            is_xml_lit := 0;
+	  if (lang is not null)
+	    {
+	      if (dt is not null)
+                http (sprintf ('\n   <binding name="%s"><literal xml:lang="%V" datatype="%V">',
+		    colnames[i], cast (lang as varchar), cast (dt as varchar)), ses);
+	      else
+                http (sprintf ('\n   <binding name="%s"><literal xml:lang="%V">',
+		    colnames[i], cast (lang as varchar)), ses);
+	    }
+	  else
+	    {
+	      if (dt is not null)
+                http (sprintf ('\n   <binding name="%s"><literal datatype="%V">',
+		    colnames[i], cast (dt as varchar)), ses);
+	      else
+                http (sprintf ('\n   <binding name="%s"><literal>', colnames[i]), ses);
+	    }
+	  sql_val := __rdf_sqlval_of_obj (_val, 1);
+	  if (isentity (sql_val))
+	    is_xml_lit := 1;
+	  if (__tag (sql_val) = __tag of varchar) -- UTF-8 value kept in a DV_STRING box
+	    sql_val := charset_recode (sql_val, 'UTF-8', '_WIDE_');
+	  if (is_xml_lit) http ('<![CDATA[', ses);
+	  http_value (sql_val, 0, ses);
+	  if (is_xml_lit) http (']]>', ses);
+          http ('</literal></binding>', ses);
+        }
+end_of_binding: ;
+      aset_zap_arg (row, i, _val);
+    }
+
+  http ('\n  </result>', ses);
+}
+;
+
+--!AWK PUBLIC
+create function DB.DBA.SPARQL_RSET_XML_HTTP_PRE (in colnames any, in accept varchar)
+{
+  declare ses integer;
+  http_header ('Content-Type: ' || subseq (accept, strchr (accept, ' ')+1) || '; charset=UTF-8\r\n');
+  http_flush (1);
+  ses := 0;
+  DB.DBA.SPARQL_RSET_XML_WRITE_NS (ses);
+  DB.DBA.SPARQL_RSET_XML_WRITE_HEAD (ses, colnames);
+  http ('\n <results>');
+  return colnames;
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.SPARQL_RSET_XML_HTTP_INIT (inout env any)
+{
+  env := 0;
+}
+;
+
+--!AWK PUBLIC
+create function DB.DBA.SPARQL_RSET_XML_HTTP_FINAL (inout env any)
+{
+  http ('\n    </results>');
+  http ('\n  </sparql>');
+}
+;
+
+--!AWK PUBLIC
+create aggregate DB.DBA.SPARQL_RSET_XML_HTTP (inout colnames any, inout row any) from
+  DB.DBA.SPARQL_RSET_XML_HTTP_INIT,
+  sparql_rset_xml_write_row, -- DB.DBA.SPARQL_RSET_XML_WRITE_ROW_OLD,
+  DB.DBA.SPARQL_RSET_XML_HTTP_FINAL
+;
+
 -----
 -- SPARQL protocol client, i.e., procedures to execute remote SPARQL statements.
 
@@ -368,7 +520,7 @@ create procedure "querySoap"  (in  "Command" varchar
    -- dbg_obj_princ ('Statement to be executed by querySoap: ', stmt);
    res := exec (stmt, state, msg, vector (), 0, mdta, dta);
 
-   SPARQL_RESULTS_XML_WRITE_NS (ses);
+   SPARQL_RSET_XML_WRITE_NS (ses);
    SPARQL_RESULTS_XML_WRITE_HEAD (ses, mdta);
    SPARQL_RESULTS_XML_WRITE_RES (ses, mdta, dta);
 
@@ -379,12 +531,6 @@ create procedure "querySoap"  (in  "Command" varchar
    string_to_file ('out.xml', ses, -2);
    res := xml_tree_doc (ses);
    return res;
-}
-;
-
-create procedure SPARQL_RESULTS_XML_WRITE_NS (inout ses any)
-{
-  http ('<?xml version="1.0" ?>\n<sparql xmlns="http://www.w3.org/2005/sparql-results#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2001/sw/DataAccess/rf1/result2.xsd">', ses);
 }
 ;
 
@@ -759,11 +905,11 @@ create procedure SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, inout meta
 	    }
 	  else if (__tag of XML = rdf_box_data_tag (val)) -- string output
 	    {
-              http (DB.DBA.RDF_STRSQLVAL_OF_LONG (val), ses);
+              http (__rdf_strsqlval (val), ses);
 	    }
           else
             {
-              http_escape (DB.DBA.RDF_STRSQLVAL_OF_LONG (val), esc_mode, ses, 1, 1);
+              http_escape (__rdf_strsqlval (val), esc_mode, ses, 1, 1);
             }
           http ('</td>', ses);
 end_of_val_print: ;
@@ -838,7 +984,7 @@ create procedure SPARQL_RESULTS_JSON_WRITE (inout ses any, inout metas any, inou
                     res := cast (__xsd_type (dat) as varchar);
                   http_escape (res, 11, ses, 1, 1);
                   http ('", "value": "', ses);
-                  dat := DB.DBA.RDF_STRSQLVAL_OF_SQLVAL (dat);
+                  dat := __rdf_strsqlval (dat);
                 }
               else if (257 <> typ)
                 {
@@ -891,7 +1037,7 @@ create procedure SPARQL_RESULTS_JSON_WRITE (inout ses any, inout metas any, inou
               http ('"type": "typed-literal", "datatype": "', ses);
               http_escape (cast (__xsd_type (val) as varchar), 11, ses, 1, 1);
               http ('", "value": "', ses);
-              http_escape (DB.DBA.RDF_STRSQLVAL_OF_LONG (val), 11, ses, 1, 1);
+              http_escape (__rdf_strsqlval (val), 11, ses, 1, 1);
             }
           http ('" }', ses);
 
@@ -930,7 +1076,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       else
         {
           ret_mime := 'application/sparql-results+xml';
-          SPARQL_RESULTS_XML_WRITE_NS (ses);
+          SPARQL_RSET_XML_WRITE_NS (ses);
           http (
             concat (
               '\n <head></head>\n <boolean>',
@@ -1045,7 +1191,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       else
         ret_mime := 'text/xml';
       http ('<soapenv:Envelope xmlns:soapenv="'||soap_ns||'"><soapenv:Body><query-result xmlns="'||spt_ns||'">', ses);
-      SPARQL_RESULTS_XML_WRITE_NS (ses);
+      SPARQL_RSET_XML_WRITE_NS (ses);
       SPARQL_RESULTS_XML_WRITE_HEAD (ses, metas);
       SPARQL_RESULTS_XML_WRITE_RES (ses, metas, rset);
       http ('\n</sparql>', ses);
@@ -1103,7 +1249,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
         }
     }
   ret_mime := 'application/sparql-results+xml';
-  SPARQL_RESULTS_XML_WRITE_NS (ses);
+  SPARQL_RSET_XML_WRITE_NS (ses);
   SPARQL_RESULTS_XML_WRITE_HEAD (ses, metas);
   SPARQL_RESULTS_XML_WRITE_RES (ses, metas, rset);
   http ('\n</sparql>', ses);
@@ -1264,18 +1410,18 @@ create function DB.DBA.PARSE_SPARQL_WS_PARAMS (in lst any) returns any
     {
       pname := lst[ctr];
       pval := lst[ctr+1];
-      if (regexp_match ('^(("[^"\\\\]")|(\'[^\'\\\\]\'))\044', pval))
+      if (regexp_like (pval, '^(("[^"\\\\]")|(\'[^\'\\\\]\'))\044'))
         parse := subseq (pval, 1, length (pval)-1);
-      else if (regexp_match ('^(("""[^"\\\\]""")|(\'\'\'[^\'\\\\]\'\'\'))\044', pval))
+      else if (regexp_like (pval, '^(("""[^"\\\\]""")|(\'\'\'[^\'\\\\]\'\'\'))\044'))
         parse := subseq (pval, 3, length (pval)-3);
-      else if (regexp_match ('^<.+>\044', pval))
+      else if (regexp_like ('^<.+>\044', pval))
         {
           parse := (subseq (pval, 1, length (pval)-1));
           __box_flags_set (parse, 1);
         }
-      else if (regexp_match ('^([+-]?[0-9]+)\044', pval))
+      else if (regexp_like (pval, '^([+-]?[0-9]+)\044'))
         parse := cast (pval as integer);
-      else if (regexp_match ('^([+-]?[0-9]+\.[0-9]+([eE][+-]?[0-9]+)?)\044', pval))
+      else if (regexp_like (pval, '^([+-]?[0-9]+\.[0-9]+([eE][+-]?[0-9]+)?)\044'))
         parse := cast (pval as double precision);
       else
         {
@@ -1732,7 +1878,10 @@ http('</html>\n');
 	 }
        format := sprintf('application/soap+xml;%d', soap_ver);
     }
-
+  if (format <> '')
+    accept := format;
+  else
+    accept := http_request_header (lines, 'Accept', null, '');
   if (sp_ini)
     {
       SPARQL_INI_PARAMS (metas, rset);
@@ -1835,7 +1984,17 @@ host_found:
   state := '00000';
   metas := null;
   rset := null;
---  http ('<!-- Query:\n' || query || '\n-->\n', 0);
+
+-- No need to choose accurately if there are no variants.
+  if (strchr (accept, ' ') is null)
+    {
+      if (accept='application/sparql-results+xml')
+        full_query := 'define output:format "HTTP+XML application/sparql-results+xml" ' || full_query;
+--      else if (accept='application/rdf+xml')
+--        full_query := 'define output:format "HTTP+RDF/XML application/rdf+xml" ' || full_query;
+    }
+  -- http ('<!-- Query:\n' || query || '\n-->\n', 0);
+  -- dbg_obj_princ ('accept = ', accept);
   -- dbg_obj_princ ('full_query = ', full_query);
   -- dbg_obj_princ ('qry_params = ', qry_params);
   commit work;
@@ -1865,9 +2024,7 @@ host_found:
       return;
     }
 write_results:
-  accept := http_request_header (lines, 'Accept', null, '');
-  if (format <> '')
-    accept := format;
+  if ((1 <> length (metas[0])) or ('aggret-0' <> metas[0][0][0]))
   DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, add_http_headers);
 }
 ;
@@ -1912,7 +2069,7 @@ create procedure DB.DBA.SPARQL_ROUTE_DICT_CONTENT_DAV (
   if ('dba' = uid)
     uid := 'dav';
   pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from SYS_USERS where U_NAME=uid);
-  dbg_obj_princ ('SPARQL_ROUTE_DICT_CONTENT_DAV: uid=', uid, ', pwd=', pwd);
+  -- dbg_obj_princ ('SPARQL_ROUTE_DICT_CONTENT_DAV: uid=', uid, ', pwd=', pwd);
   if (split is not null)
     {
       dir := DAV_DIR_LIST (split, 0, uid, pwd);

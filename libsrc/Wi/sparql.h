@@ -164,6 +164,8 @@ typedef struct sparp_env_s
     caddr_t             spare_input_param_valmode_name;	/*!< Name of valmode for global variables, including protocol parameters listed in \c spare_protocol_params */
     caddr_t             spare_output_valmode_name;	/*!< Name of valmode for top-level result-set */
     caddr_t             spare_output_format_name;	/*!< Name of format for serialization of top-level result-set */
+    caddr_t             spare_output_scalar_format_name;	/*!< Overrides generic \c spare_output_format_name for scalar result sets, like ASK */
+    caddr_t             spare_output_dict_format_name;	/*!< Overrides generic \c spare_output_format_name for "dictionary of triples" result sets, like CONSTRUCT and DESCRIBE */
     caddr_t             spare_output_route_name;	/*!< Name of procedure that makes a decision re. method of writing SPARUL results (quad storage / DAV file / something else) */
     caddr_t		spare_output_storage_name;	/*!< Name of quad_storage_t JSO object to control the use of quad mapping at SPARUL output side */
     caddr_t		spare_storage_name;		/*!< Name of quad_storage_t JSO object to control the use of quad mapping at input side and maybe at SPARUL output side */
@@ -593,7 +595,7 @@ extern void spar_gp_add_filters_for_graph (sparp_t *sparp, SPART *graph_expn, dk
 extern void spar_gp_add_filters_for_named_graph (sparp_t *sparp);
 extern SPART *spar_add_propvariable (sparp_t *sparp, SPART *lvar, int opcode, SPART *verb_qname, int verb_lexem_type, caddr_t verb_lexem_text);
 extern caddr_t spar_compose_report_flag (sparp_t *sparp);
-extern void spar_compose_retvals_of_construct (sparp_t *sparp, SPART *top, SPART *ctor_gp, const char *formatter);
+extern void spar_compose_retvals_of_construct (sparp_t *sparp, SPART *top, SPART *ctor_gp, const char *formatter, const char *agg_formatter, const char *agg_mdata);
 extern void spar_compose_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top, SPART *graph_to_patch, SPART *ctor_gp);
 extern void spar_compose_retvals_of_modify (sparp_t *sparp, SPART *top, SPART *graph_to_patch, SPART *del_ctor_gp, SPART *ins_ctor_gp);
 extern int spar_optimize_delete_of_single_triple_pattern (sparp_t *sparp, SPART *top);
@@ -626,7 +628,7 @@ extern void spar_copy_lexem_bufs (sparp_t *tgt_sparp, spar_lexbmk_t *begin, spar
 extern id_hashed_key_t spar_var_hash (caddr_t p_data);
 extern int spar_var_cmp (caddr_t p_data1, caddr_t p_data2);
 
-extern sparp_t *sparp_clone_for_variant (sparp_t *sparp);
+extern sparp_t *sparp_clone_for_variant (sparp_t *sparp, int allow_output_formatting);
 extern void spar_env_push (sparp_t *sparp);
 extern void spar_env_pop (sparp_t *sparp);
 

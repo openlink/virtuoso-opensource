@@ -676,7 +676,8 @@ extern caddr_t sparp_patch_tmpl (sparp_t *sparp, ccaddr_t tmpl, dk_set_t alias_r
 /*! This searches for declaration of type by its name. NULL name result in NULL output, unknown name is an error */
 extern ssg_valmode_t ssg_find_valmode_by_name (ccaddr_t name);
 
-extern const char *ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subtype);
+extern void ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subtype,
+  const char **ret_formatter, const char **ret_agg_formatter, const char **ret_agg_mdata );
 
 /*! Field is the expression that represents the value of a SPARQL variable. */
 typedef struct spar_sqlgen_var_s

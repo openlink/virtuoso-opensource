@@ -613,6 +613,10 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
           sparp->sparp_env->spare_output_valmode_name = t_box_dv_uname_string (value); return; }
       if (!strcmp (param, "output:format")) {
           sparp->sparp_env->spare_output_format_name = t_box_dv_uname_string (value); return; }
+      if (!strcmp (param, "output:scalar-format")) {
+          sparp->sparp_env->spare_output_scalar_format_name = t_box_dv_uname_string (value); return; }
+      if (!strcmp (param, "output:dict-format")) {
+          sparp->sparp_env->spare_output_dict_format_name = t_box_dv_uname_string (value); return; }
       if (!strcmp (param, "output:route")) {
           sparp->sparp_env->spare_output_route_name = t_box_dv_uname_string (value); return; }
     }
@@ -1455,6 +1459,7 @@ SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   dk_set_t src = NULL;
   sparp_env_t *env = sparp->sparp_env;
   SPART **sources;
+  caddr_t final_output_format_name;
   DO_SET(SPART *, g, &(env->spare_default_graphs))
     {
       t_set_push (&src, sparp_tree_full_copy (sparp, g, NULL));
@@ -1469,9 +1474,21 @@ SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   if ((0 == BOX_ELEMENTS (sources)) &&
     (NULL != (env->spare_common_sponge_options)) )
     spar_error (sparp, "Retrieval options for source graphs (e.g., '%s') may be useless if the query does not contain 'FROM' or 'FROM NAMED'", env->spare_common_sponge_options->data);
+  switch (subtype)
+    {
+    case CONSTRUCT_L: case DESCRIBE_L:
+      final_output_format_name = ((NULL != env->spare_output_dict_format_name) ? env->spare_output_dict_format_name : env->spare_output_format_name);
+      break;
+    case ASK_L:
+      final_output_format_name = ((NULL != env->spare_output_scalar_format_name) ? env->spare_output_scalar_format_name : env->spare_output_format_name);
+      break;
+    default:
+      final_output_format_name = env->spare_output_format_name;
+      break;
+    }
   return spartlist (sparp, 16, SPAR_REQ_TOP, subtype,
     env->spare_output_valmode_name,
-    env->spare_output_format_name,
+    final_output_format_name,
     t_box_copy (env->spare_storage_name),
     retvals, NULL /* orig_retvals */, NULL /* expanded_orig_retvals */, retselid,
     sources, pattern, groupings, order,
@@ -2334,7 +2351,7 @@ sparp_query_parse (char * str, spar_query_env_t *sparqre, int rewrite_all)
   END_DO_SET()
 
 sparp_t *
-sparp_clone_for_variant (sparp_t *sparp)
+sparp_clone_for_variant (sparp_t *sparp, int allow_output_formatting)
 {
   s_node_t *iter;
   sparp_env_t *env = sparp->sparp_env;
@@ -2344,7 +2361,12 @@ sparp_clone_for_variant (sparp_t *sparp)
   sparp_copy->sparp_env = env_copy;
   ENV_BOX_COPY (spare_input_param_valmode_name);
   ENV_BOX_COPY (spare_output_valmode_name);
+  if (allow_output_formatting)
+    {
   ENV_BOX_COPY (spare_output_format_name);
+      ENV_BOX_COPY (spare_output_scalar_format_name);
+      ENV_BOX_COPY (spare_output_dict_format_name);
+    }
   ENV_BOX_COPY (spare_storage_name);
   ENV_COPY(spare_parent_env);
 #if 0 /* These will be used when libraries of inference rules are introduced. */

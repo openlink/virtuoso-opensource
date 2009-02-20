@@ -633,7 +633,7 @@ create function DB.DBA.RDF_MAKE_IID_OF_LONG (in qname any) returns IRI_ID
       if (__tag of rdf_box = __tag (qname) and rdf_box_is_complete (qname))
         qname := rdf_box_data (qname, 1);
       else
-        qname := DB.DBA.RDF_STRSQLVAL_OF_LONG (qname);
+        qname := __rdf_strsqlval (qname);
     }
   return iri_to_id_nosignal (qname);
 }
@@ -1402,40 +1402,9 @@ create function DB.DBA.RDF_QNAME_OF_OBJ (in shortobj any) returns varchar -- DEP
 }
 ;
 
-create function DB.DBA.RDF_STRSQLVAL_OF_OBJ (in shortobj any)
+create function DB.DBA.RDF_STRSQLVAL_OF_OBJ (in shortobj any) -- DEPRECATED
 {
-  declare t, len integer;
-  if (isiri_id (shortobj))
-    {
-      declare res varchar;
-      res := id_to_iri (shortobj);
---      res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = shortobj));
-      if (res is null)
-        signal ('RDFXX', 'Wrong iid in DB.DBA.RDF_STRSQLVAL_OF_OBJ()');
-      return res;
-    }
-  if (__tag of rdf_box <> __tag (shortobj))
-    {
-      if (__tag of datetime = __tag (shortobj))
-        {
-          declare vc varchar;
-          vc := cast (shortobj as varchar); --!!!TBD: replace with proper serialization
-          return replace (vc, ' ', 'T');
-        }
-      if (__tag of nvarchar =  __tag (shortobj))
-        return charset_recode (shortobj, '_WIDE_', 'UTF-8');
-      return cast (shortobj as varchar);
-    }
-  __rdf_box_make_complete (shortobj);
-  if (__tag of varchar = rdf_box_data_tag (shortobj))
-    return rdf_box_data (shortobj);
-  if (__tag of datetime = rdf_box_data_tag (shortobj))
-    {
-      declare vc varchar;
-      vc := cast (rdf_box_data (shortobj) as varchar); --!!!TBD: replace with proper serialization
-      return replace (vc, ' ', 'T');
-    }
-  return cast (rdf_box_data (shortobj) as varchar);
+  return __rdf_strsqlval (shortobj);
 }
 ;
 
@@ -1657,65 +1626,9 @@ badlang:
 }
 ;
 
-create function DB.DBA.RDF_STRSQLVAL_OF_LONG (in longobj any)
+create function DB.DBA.RDF_STRSQLVAL_OF_LONG (in longobj any) -- DEPRECATED
 {
-  declare t, len integer;
-  if (__tag of rdf_box = __tag (longobj))
-    {
-      if (rdf_box_is_complete (longobj))
-        {
-          if (__tag of varchar = rdf_box_data_tag (longobj))
-            return rdf_box_data (longobj);
-          if (__tag of datetime = rdf_box_data_tag (longobj))
-            {
-              declare vc varchar;
-              vc := cast (rdf_box_data (longobj) as varchar); --!!!TBD: replace with proper serialization
-              return replace (vc, ' ', 'T');
-            }
-          if (__tag of XML = rdf_box_data_tag (longobj))
-            {
-              return serialize_to_UTF8_xml (rdf_box_data (longobj));
-            }
-          return cast (rdf_box_data (longobj) as varchar);
-        }
-      declare id integer;
-      declare v2 any;
-      id := rdf_box_ro_id (longobj);
-      if (__tag of XML = rdf_box_data_tag (longobj))
-        {
-          v2 := (select xml_tree_doc (__xml_deserialize_packed (RO_LONG)) from DB.DBA.RDF_OBJ where RO_ID = id);
-          rdf_box_set_data (longobj, v2, 1);
-          return serialize_to_UTF8_xml (v2);
-        }
-      else
-        v2 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = id);
-      if (v2 is null)
-        signal ('RDFXX', sprintf ('Integrity violation in DB.DBA.RDF_STRSQLVAL_OF_LONG, bad id %d', id));
-      rdf_box_set_data (longobj, v2, 1);
-      return v2;
-    }
-  if (isiri_id (longobj))
-    {
-      declare res varchar;
-      res := id_to_iri (longobj);
---      res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = longobj));
-      if (res is null)
-        signal ('RDFXX', 'Wrong iid in DB.DBA.RDF_STRSQLVAL_OF_LONG()');
-      return res;
-    }
-  if (__tag of datetime = __tag (longobj))
-    {
-      declare vc varchar;
-      vc := cast (longobj as varchar); --!!!TBD: replace with proper serialization
-      return replace (vc, ' ', 'T');
-    }
-  if (__tag of nvarchar = __tag (longobj))
-    return charset_recode (longobj, '_WIDE_', 'UTF-8');
-  if (__tag of XML = __tag (longobj))
-    {
-      return serialize_to_UTF8_xml (longobj);
-    }
-  return cast (longobj as varchar);
+  return __rdf_strsqlval (longobj);
 }
 ;
 
@@ -1752,7 +1665,7 @@ create function DB.DBA.RDF_WIDESTRSQLVAL_OF_LONG (in longobj any)
       else
         v2 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = id);
       if (v2 is null)
-        signal ('RDFXX', sprintf ('Integrity violation in DB.DBA.RDF_STRSQLVAL_OF_LONG, bad id %d', id));
+        signal ('RDFXX', sprintf ('Integrity violation in __rdf_strsqlval, bad id %d', id));
       rdf_box_set_data (longobj, v2, 1);
       return charset_recode (v2, 'UTF-8', '_WIDE_');
     }
@@ -1762,7 +1675,7 @@ create function DB.DBA.RDF_WIDESTRSQLVAL_OF_LONG (in longobj any)
       res := id_to_iri (longobj);
 --      res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = longobj));
       if (res is null)
-        signal ('RDFXX', 'Wrong iid in DB.DBA.RDF_STRSQLVAL_OF_LONG()');
+        signal ('RDFXX', 'Wrong iid in __rdf_strsqlval()');
       return charset_recode (res, 'UTF-8', '_WIDE_');
     }
   if (__tag of datetime = __tag (longobj))
@@ -1838,6 +1751,7 @@ create function DB.DBA.RDF_STRSQLVAL_OF_SQLVAL (in sqlval any)
 --      res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = sqlval));
       if (res is null)
         signal ('RDFXX', 'Wrong iid in DB.DBA.RDF_STRSQLVAL_OF_SQLVAL()');
+      __box_flags_set (res, 2);
       return res;
     }
   if (__tag of datetime = __tag (sqlval))
@@ -2654,7 +2568,7 @@ create procedure DB.DBA.RDF_LONG_TO_TTL (inout obj any, inout ses any)
   else
     {
       http ('"', ses);
-      http_escape (DB.DBA.RDF_STRSQLVAL_OF_LONG (obj), 11, ses, 1, 1);
+      http_escape (__rdf_strsqlval (obj), 11, ses, 1, 1);
       http ('"^^<', ses);
       http_escape (cast (__xsd_type (obj) as varchar), 12, ses, 1, 1);
       http ('> ', ses);
@@ -3036,7 +2950,7 @@ res_for_pred:
             {
 	      declare tmp any;
               http ('>', ses);
-	      tmp := DB.DBA.RDF_STRSQLVAL_OF_LONG (obj);
+	      tmp := __rdf_strsqlval (obj);
 	      if (__tag of varchar = __tag (tmp))
 		tmp := charset_recode (tmp, 'UTF-8', '_WIDE_');
               http_value (tmp, 0, ses);
@@ -3083,7 +2997,7 @@ res_for_pred:
           http (' rdf:datatype="', ses);
           http_value (__xsd_type (obj), 0, ses);
           http ('">', ses);
-          http_value (DB.DBA.RDF_STRSQLVAL_OF_LONG (obj), 0, ses);
+          http_value (__rdf_strsqlval (obj), 0, ses);
           http ('</', ses); http (pred_tagname, ses); http ('>', ses);
         }
       http ('</rdf:Description>', ses);
@@ -3252,7 +3166,7 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_ACC (inout _env any, in
 	      else
                 http (sprintf ('>'), _env);
 	    }
-	  http_value (DB.DBA.RDF_STRSQLVAL_OF_LONG (_val), 0, _env);
+	  http_value (__rdf_strsqlval (_val), 0, _env);
           http ('</rs:value></rs:binding>', _env);
         }
 end_of_binding: ;
@@ -3507,7 +3421,7 @@ create procedure DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (inout _env any, in graph_ir
               if ((2 > fld_ctr) and not isiri_id (i))
                 signal ('RDF01',
                   sprintf ('Bad variable value in INSERT: "%.100s" is not a valid %s, only object of a triple can be a literal',
-                    DB.DBA.RDF_STRSQLVAL_OF_LONG (i),
+                    __rdf_strsqlval (i),
                     case (fld_ctr) when 1 then 'predicate' else 'subject' end ) );
               if ((1 = fld_ctr) and isiri_id (i) and (i >= min_bnode_iri_id ()))
                 signal ('RDF01', 'Bad variable value in INSERT: blank node can not be used as predicate');
@@ -3529,7 +3443,7 @@ create procedure DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (inout _env any, in graph_ir
                 goto end_of_adding_triple;
               if ((2 > fld_ctr) and not isiri_id (arg))
                 signal ('RDF01', sprintf ('Bad const value in INSERT: "%.100s" is not a valid %s, only object of a triple can be a literal',
-                  DB.DBA.RDF_STRSQLVAL_OF_LONG (arg),
+                  __rdf_strsqlval (arg),
                   case (fld_ctr) when 1 then 'predicate' else 'subject' end ) );
               if ((1 = fld_ctr) and isiri_id (arg) and (arg >= min_bnode_iri_id ()))
                 signal ('RDF01', 'Bad const value in CONSTRUCT: blank node can not be used as predicate');
@@ -3960,7 +3874,7 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
               if ((2 > fld_ctr) and not (isiri_id (i) or (isstring (i) and (1 = __box_flags (i)))))
                 signal ('RDF01',
                   sprintf ('Bad variable value in CONSTRUCT: "%.100s" is not a valid %s, only object of a triple can be a literal',
-                    DB.DBA.RDF_STRSQLVAL_OF_LONG (i),
+                    __rdf_strsqlval (i),
                     case (fld_ctr) when 1 then 'predicate' else 'subject' end ) );
               if ((1 = fld_ctr) and (
                   (isiri_id (i) and (i >= min_bnode_iri_id ())) or
@@ -3984,7 +3898,7 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
                 goto end_of_adding_triple;
               if ((2 > fld_ctr) and not (isiri_id (arg) or (isstring (arg) and (1 = __box_flags (arg)))))
                 signal ('RDF01', sprintf ('Bad const value in CONSTRUCT: "%.100s" is not a valid %s, only object of a triple can be a literal',
-                  DB.DBA.RDF_STRSQLVAL_OF_LONG (arg),
+                  __rdf_strsqlval (arg),
                   case (fld_ctr) when 1 then 'predicate' else 'subject' end ) );
               if ((1 = fld_ctr) and (
                   (isiri_id (arg) and (arg >= min_bnode_iri_id ())) or
@@ -5265,7 +5179,7 @@ create function JSO_DUMP_FLD (in v any, inout ses any)
   else
     {
       http ('"', ses);
-      http_escape (DB.DBA.RDF_STRSQLVAL_OF_LONG (v), 11, ses, 1, 1);
+      http_escape (__rdf_strsqlval (v), 11, ses, 1, 1);
       http ('"^^<', ses);
       http_escape (cast (__xsd_type (v) as varchar), 12, ses, 1, 1);
       http ('>', ses);
@@ -8509,7 +8423,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
   if (not exists (sparql define input:storage "" ask where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
               <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-                virtrdf:version '2009-01-26 0001'
+                virtrdf:version '2009-02-17 0001'
             } } ) )
     {
       declare txt1, txt2 varchar;

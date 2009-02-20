@@ -2144,7 +2144,7 @@ bif_rdf_twobyte_cache_zap (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
 }
 
 caddr_t
-rdf_type_twobyte_to_iri (query_instance_t * qi, short twobyte)
+rdf_type_twobyte_to_iri (short twobyte)
 {
   caddr_t val;
   long shifted = ((long)(twobyte)) - RDF_BOX_DEFAULT_TYPE;
@@ -2155,7 +2155,7 @@ rdf_type_twobyte_to_iri (query_instance_t * qi, short twobyte)
 }
 
 caddr_t
-rdf_lang_twobyte_to_string (query_instance_t * qi, short twobyte)
+rdf_lang_twobyte_to_string (short twobyte)
 {
   caddr_t val;
   long shifted = ((long)(twobyte)) - RDF_BOX_DEFAULT_TYPE; /* yes, RDF_BOX_DEFAULT_TYPE, not RDF_BOX_DEFAULT_LANG */
