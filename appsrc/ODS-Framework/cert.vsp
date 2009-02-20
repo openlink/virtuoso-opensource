@@ -1,0 +1,64 @@
+<?vsp
+--
+--   $Id$
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2009 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+
+   declare sid varchar;
+   dbg_obj_print (params);
+   sid := {?'sid'};
+   if (get_keyword ('pubkey', params) is not null)
+     {
+       declare kname, cvalue varchar; 
+       declare cn, c, o, ou, mail, webid, uname varchar;  
+       whenever not found goto nf;  
+       select U_NAME, U_FULL_NAME, U_E_MAIL, WAUI_BORG, WAUI_BCOUNTRY 
+	into uname, cn, mail, o, c from
+	SYS_USERS, WA_USER_INFO, VSPX_SESSION where
+	VS_SID = sid and VS_REALM = 'wa' and VS_UID = U_NAME and U_ID = WAUI_U_ID;
+       webid := sioc..person_iri (sioc..user_obj_iri (uname));
+       kname := xenc_SPKI_read (null, replace (get_keyword ('pubkey', params), '\r\n', ''));
+       xenc_x509_generate ('id_rsa', kname, sequence_next ('ca_id_rsa'), 365, 
+		vector (
+			'CN', cn,
+			'C',  c,
+			'O',  o,
+			'OU', ou,
+			'emailAddress', mail
+			), 
+		vector ('subjectAltName', 'URI:'||webid, 'nsComment', 'Virtuoso Generated Certificate'));
+       cvalue := xenc_pem_export (kname);
+       WA_USER_EDIT (uname, 'WAUI_CERT', cvalue);
+       http_header ('Content-Type: application/x-x509-user-cert\r\n');
+       http (decode_base64 (xenc_X509_certificate_serialize (kname)));
+       xenc_key_remove (kname);
+       return;
+       nf:;
+    }
+?>
+<html>
+  <body>
+     <form>
+	<input type="hidden" name="sid" value="<?V {?'sid'} ?>"/>
+	Key strength: <keygen name="pubkey"/><br>
+	<input type="submit" name="gen" value="Generate"/>
+     </form>
+  </body>
+</html>

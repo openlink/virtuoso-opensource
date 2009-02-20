@@ -154,36 +154,25 @@ function selectAllCheckboxes (form, btn)
                   tr.id = prefix+'_tr_' + No;
                   tbl.appendChild(tr);
 
+                  var fldOptions = options.fld1;
+                  if (fldOptions)
+                  {
                   var td = OAT.Dom.create('td');
                   tr.appendChild(td);
                   if (options.mode == 1)
                   {
-               		  updateRowCombo(td, prefix+'_fld_1_' + No, options.fld1);
+                 		  updateRowCombo(td, prefix+'_fld_1_' + No, fldOptions);
                   } else {
-               		  var fld = OAT.Dom.create("input");
-               		  fld.type = 'text';
-                    fld.id = prefix+'_fld_1_' + No;
-                    fld.name = fld.id;
-                    if (options.fld1)
-                    fld.value = options.fld1;
-                    fld.className = options.fld1Class;
-                    fld.onblur = options.fld1Onblur;
-                    fld.style.width = '95%';
-                    td.appendChild(fld);
+                 		  updateInput(td, prefix+'_fld_1_' + No, fldOptions);
                   }
-
+                  }
+                  var fldOptions = options.fld2;
+                  if (fldOptions)
+                  {
                   var td = OAT.Dom.create('td');
                   tr.appendChild(td);
-             		  var fld = OAT.Dom.create("input");
-             		  fld.type = 'text';
-                  fld.id = prefix+'_fld_2_' + No;
-                  fld.name = fld.id;
-                  if (options.fld2)
-                  fld.value = options.fld2;
-                  fld.className = options.fld2Class;
-                  fld.onblur = options.fld2Onblur;
-                  fld.style.width = '95%';
-                  td.appendChild(fld);
+               		  updateInput(td, prefix+'_fld_2_' + No, fldOptions);
+                  }
 
                   var td = OAT.Dom.create('td');
                   tr.appendChild(td);
@@ -196,6 +185,20 @@ function selectAllCheckboxes (form, btn)
                   $(prefix+'_no').value = No + 1;
                 }
               }
+            }
+  	        function updateInput (elm, fldName, fldOptions)
+            {
+         		  var fld = OAT.Dom.create("input");
+         		  fld.type = 'text';
+              fld.id = fldName;
+              fld.name = fld.id;
+              if (fldOptions.value)
+                fld.value = fldOptions.value;
+              fld.className = fldOptions.cclass;
+              fld.onblur = fldOptions.onBlur;
+              fld.style.width = '95%';
+              var elm = $(elm);
+              elm.appendChild(fld);
             }
         	  var setServiceUrl = function(cc)
           	  {
@@ -211,9 +214,9 @@ function selectAllCheckboxes (form, btn)
           	      var urlName = cc.input.name.replace(/fld_1_/, 'fld_2_');
         	    $(urlName).value = 'http://'+cc.value.toLowerCase()+'.com';
         		}
-  	        function updateRowCombo (elm, fldName, fldValue)
+  	        function updateRowCombo (elm, fldName, fldOptions)
             {
-              var cc = new OAT.Combolist([], fldValue, {name: fldName, onchange: setServiceUrl});
+              var cc = new OAT.Combolist([], fldOptions.value, {name: fldName, onchange: setServiceUrl});
 
               cc.input.name = fldName;
               cc.input.id = fldName;

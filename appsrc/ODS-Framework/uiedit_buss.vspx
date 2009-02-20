@@ -595,7 +595,7 @@
                 		  <![CDATA[
                 		    <script type="text/javascript">
                 		    <?vsp
-                          http (sprintf ('ODSInitArray.push ( function (){OAT.Loader.loadFeatures(["combolist"], function(){updateRowCombo(\'d_th_%d\', \'d_fld_1_%d\', \'%s\');});})', N, N, WUO_NAME));
+                          http (sprintf ('ODSInitArray.push ( function (){OAT.Loader.loadFeatures(["combolist"], function(){updateRowCombo(\'d_th_%d\', \'d_fld_1_%d\', {value: \'%s\'});});})', N, N, WUO_NAME));
                 		    ?>
                 		    </script>
                 		  ]]>
@@ -615,7 +615,7 @@
                 <input type="hidden" id="d_no" name="d_no" value="<?V N ?>" />
                 </td>
               <td valign="top" nowrap="1">
-                <input type="button" value="Add" onclick="javascript: updateRow('d', null, {mode: 1, fld1: 'Google', fld2: 'http://google.com', fld2Class: '_validate_ _url_ _canEmpty_', fld2Onblur: function(){validateField(this);}});" />
+                <input type="button" value="Add" onclick="javascript: updateRow('d', null, {mode: 1, fld1: {value: 'Google'}, fld2: {value: 'http://google.com', class: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
                 </td>
               </tr>
           </table>
@@ -782,7 +782,7 @@
               {
                 suffix := replace (e.ve_params [N], 'd_fld_1_', '');
                 id := cast (get_keyword ('d_fld_0_'||suffix, e.ve_params, '-1') as integer);
-                if ((id = -1) and (trim (get_keyword ('c_fld_2_'||suffix, e.ve_params, '')) <> ''))
+                if ((id = -1) and (trim (get_keyword ('d_fld_2_'||suffix, e.ve_params, '')) <> ''))
                 {
 			            insert into WA_USER_OL_ACCOUNTS ( WUO_NAME, WUO_URL, WUO_U_ID, WUO_TYPE)
 		                values (trim (e.ve_params [N+1]), trim (get_keyword ('d_fld_2_'||suffix, e.ve_params, '')), self.u_id, 'B');

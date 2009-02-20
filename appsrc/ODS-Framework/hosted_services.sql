@@ -3556,7 +3556,7 @@ create procedure WA_USER_EDIT (in _name varchar,in _key varchar,in _data any)
   else if (_key = 'WAUI_CERT')
     UPDATE WA_USER_INFO SET WAUI_CERT = _data WHERE WAUI_U_ID = _uid;
 
-  return;
+  return row_count ();
 
  nf:
    signal ('42000', sprintf ('The object "%s" does not exists.', _name), 'U0002');

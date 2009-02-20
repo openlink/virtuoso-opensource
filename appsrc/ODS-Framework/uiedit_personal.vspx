@@ -466,14 +466,52 @@
                 </td>
               </tr>
               <tr>
-                <th><label for="e_foaf">Other Identity URIs (synonyms)</label>
-                  <span class="explain">(one URL per line)</span>
+               <th>
+                 <label for="e_foaf">Other Personal URIs (Web IDs)</label>
                 </th>
                 <td class="listing_col" nowrap="1">
-                 <v:textarea name="e_foaf" value="--self.efoaf" xhtml_cols="80" xhtml_rows="5" xhtml_tabindex="13" fmt-function="wa_utf8_to_wide" />
+                 <table>
+                   <tr>
+                     <td width="600px">
+                       <table id="e_tbl" class="listing">
+                         <tr class="listing_header_row">
+                           <th>
+                             URI
+                           </th>
+                           <th width="80px">
+                             Action
+                           </th>
+                         </tr>
+                         <?vsp
+                           declare N integer;
+
+                           N := 0;
+                           for (select interest from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar) P where txt = self.efoaf) do
+                           {
+                         ?>
+                         <tr id="e_tr_<?V N ?>">
+                           <td>
+                             <input type="text" id="e_fld_1_<?V N ?>" name="e_fld_1_<?V N ?>" value="<?V interest ?>" style="width: 95%;" class="_validate_ _url_ _canEmpty_" onblur="javascript: validateField(this);" />
+                           </td>
+                           <td>
+                             <input type="button" value="Remove" onclick="javascript: updateRow('e', <?V N ?>);" />
+                           </td>
+                         </tr>
+                         <?vsp
+                             N := N + 1;
+                           }
+                         ?>
+                       </table>
+                       <input type="hidden" id="e_no" name="e_no" value="<?V N ?>" />
+                     </td>
+                     <td valign="top" nowrap="1">
+                       <input type="button" value="Add" onclick="javascript: updateRow('e', null, {fld1: {class: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
                   <vm:u-prop-select name="sel_8" value="self.sav8" />
                 </td>
               </tr>
+                 </table>
+               </td>
+             </tr>
              <tr id="pers_17" class="initial_hidden">
                 <th><label for="m_sign">Mail Signature</label></th>
                 <td class="listing_col" nowrap="1">
@@ -504,7 +542,6 @@
         <tr>
          <th>
            <label for="e_int">Web page URL indicating a topic of interest</label>
-           <span class="explain"> (one per line)</span>
       </th>
     <td class="listing_col" nowrap="1">
         <table>
@@ -548,7 +585,7 @@
                  <input type="hidden" id="a_no" name="a_no" value="<?V N ?>" />
                </td>
                <td valign="top" nowrap="1">
-                       <input type="button" value="Add" onclick="javascript: updateRow('a', null, {fld1Class: '_validate_ _url_ _canEmpty_', fld1Onblur: function(){validateField(this);}});" />
+                       <input type="button" value="Add" onclick="javascript: updateRow('a', null, {fld1: {class: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld2: {}});" />
                  <vm:u-prop-select name="sel_48" value="self.sav48" />
                </td>
              </tr>
@@ -558,7 +595,6 @@
        <tr>
          <th>
            <label for="e_int2">Resource URI indicating thing of interest</label>
-           <span class="explain"> (one per line)</span>
          </th>
          <td class="listing_col" nowrap="1">
            <table>
@@ -602,7 +638,7 @@
                  <input type="hidden" id="b_no" name="b_no" value="<?V N ?>" />
     </td>
                <td valign="top" nowrap="1">
-                       <input type="button" value="Add" onclick="javascript: updateRow('b', null, {fld1Class: '_validate_ _url_ _canEmpty_', fld1Onblur: function(){validateField(this);}});" />
+                       <input type="button" value="Add" onclick="javascript: updateRow('b', null, {fld1: {class: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld2: {value: ''}});" />
                  <vm:u-prop-select name="sel_49" value="self.sav49" />
     </td>
       </tr>
@@ -1007,7 +1043,7 @@
                 		  <![CDATA[
                 		    <script type="text/javascript">
                 		    <?vsp
-                          http (sprintf ('ODSInitArray.push ( function (){OAT.Loader.loadFeatures(["combolist"], function() {updateRowCombo(\'c_th_%d\', \'c_fld_1_%d\', \'%s\');});})', N, N, WUO_NAME));
+                          http (sprintf ('ODSInitArray.push ( function (){OAT.Loader.loadFeatures(["combolist"], function() {updateRowCombo(\'c_th_%d\', \'c_fld_1_%d\', {value: \'%s\'});});})', N, N, WUO_NAME));
                 		    ?>
                 		    </script>
                 		  ]]>
@@ -1027,7 +1063,7 @@
                 <input type="hidden" id="c_no" name="c_no" value="<?V N ?>" />
               </td>
               <td valign="top" nowrap="1">
-                <input type="button" value="Add" onclick="javascript: updateRow('c', null, {mode: 1, fld1: 'Google', fld2: 'http://google.com', fld2Class: '_validate_ _url_ _canEmpty_', fld2Onblur: function(){validateField(this);}});" />
+                <input type="button" value="Add" onclick="javascript: updateRow('c', null, {mode: 1, fld1: {value: 'Google'}, fld2: {value: 'http://google.com', class: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
               </td>
             </tr>
           </table>
@@ -1330,7 +1366,7 @@
                         WA_USER_EDIT (self.u_name, 'WAUI_FAVORITE_MUSIC', self.e_fmusic.ufl_value);
                         WA_USER_EDIT (self.u_name, 'WAUI_FAVORITE_MOVIES', self.e_fmovie.ufl_value);
 
-                        WA_USER_EDIT (self.u_name, 'WAUI_FOAF', self.e_foaf.ufl_value);
+            -- WA_USER_EDIT (self.u_name, 'WAUI_FOAF', self.e_foaf.ufl_value);
                         WA_USER_EDIT (self.u_name, 'WAUI_SUMMARY', self.s_summ.ufl_value);
                         WA_USER_EDIT (self.u_name, 'WAUI_WEBPAGE', self.w_page.ufl_value);
 
@@ -1338,11 +1374,12 @@
                         WA_USER_EDIT (self.u_name, 'WAUI_SHOWACTIVE', self.show_active.ufl_selected);
 
             declare N, id integer;
-            declare suffix, tmp_a, tmp_b varchar;
+            declare suffix, tmp_a, tmp_b, tmp_e varchar;
             declare IDx any;
 
             tmp_a := '';
             tmp_b := '';
+            tmp_e := '';
             IDx := vector ();
                  for (N := 0; N < length (e.ve_params); N := N + 4)
                  {
@@ -1369,11 +1406,18 @@
                   IDx := vector_concat (IDx, vector (id));
                  }
               }
+              else if ((e.ve_params [N] like 'e_fld_1_%') and (trim (e.ve_params [N+1]) <> ''))
+              {
+                suffix := replace (e.ve_params [N], 'e_fld_1_', '');
+                tmp_e := tmp_e || trim (e.ve_params [N+1]) || '\n';
+              }
             }
             self.interests := tmp_a;
             self.interestTopics := tmp_b;
+            self.efoaf := tmp_e;
             WA_USER_EDIT (self.u_name, 'WAUI_INTERESTS', tmp_a);
             WA_USER_EDIT (self.u_name, 'WAUI_INTEREST_TOPICS', tmp_b);
+            WA_USER_EDIT (self.u_name, 'WAUI_FOAF', tmp_e);
 
 	          for (select WUO_ID as _id from WA_USER_OL_ACCOUNTS where WUO_U_ID = self.u_id and WUO_TYPE = 'P') do
 	          {

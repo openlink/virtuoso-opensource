@@ -315,6 +315,11 @@
 	      </div>
 	      <?vsp } ?>
 	    <v:textarea name="cert1" value="--self.certificate_content" xhtml_cols="70" xhtml_rows="20" />
+	    <?vsp if (not length (self.certificate_content) and xenc_key_exists ('id_rsa')) { ?>
+	    <iframe id="cert" src="cert.vsp?sid=<?V self.sid ?>" width="200" height="200" frameborder="0" scrolling="no">
+	       <p>Your browser does not support iframes.</p>
+	   </iframe>
+	   <?vsp } ?>
 	</td>
       </tr>
       <tr>

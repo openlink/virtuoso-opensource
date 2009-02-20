@@ -2310,6 +2310,77 @@ CmdUtils.CreateCommand({
 });
 
 CmdUtils.CreateCommand({
+  name: "ods-create-calendar-upstream",
+  takes: {"instance_id": noun_type_id},
+  modifiers: {"name": noun_arb_text, "source": noun_arb_text, "userName": noun_arb_text, "userPassword": noun_arb_text, "tagsInclude": noun_arb_text, "tagsExclude": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-create-calendar-upstream &lt;instance_id&gt; name &lt;name&gt; source &lt;source&gt; userName &lt;userName&gt; userPassword &lt;userPassword&gt; [tagsInclude &lt;tagsInclude&gt;] [tagsExclude &lt;tagsExclude&gt;]",
+  execute: function (instance_id, modifiers) {
+    try {
+      checkParameter(instance_id.text, "instance_id");
+      var params = {inst_id: instance_id.text};
+      addParameter(modifiers, "name", params, "name", true);
+      addParameter(modifiers, "source", params, "source", true);
+      addParameter(modifiers, "userName", params, "userName", true);
+      addParameter(modifiers, "userPassword", params, "userPassword", true);
+      addParameter(modifiers, "tagsInclude", params, "tagsInclude");
+      addParameter(modifiers, "tagsExclude", params, "tagsExclude");
+      odsExecute("calendar.upstream.new", params, "calendar");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-update-calendar-upstream",
+  takes: {"upstream_id": noun_type_id},
+  modifiers: {"name": noun_arb_text, "source": noun_arb_text, "userName": noun_arb_text, "userPassword": noun_arb_text, "tagsInclude": noun_arb_text, "tagsExclude": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-update-calendar-upstream &lt;upstream_id&gt; name &lt;name&gt; source &lt;source&gt; userName &lt;userName&gt; userPassword &lt;userPassword&gt; [tagsInclude &lt;tagsInclude&gt;] [tagsExclude &lt;tagsExclude&gt;]",
+  execute: function (upstream_id, modifiers) {
+    try {
+      checkParameter(upstream_id.text, "upstream_id");
+      var params = {upstream_id: upstream_id.text};
+      addParameter(modifiers, "name", params, "name", true);
+      addParameter(modifiers, "source", params, "source", true);
+      addParameter(modifiers, "userName", params, "userName", true);
+      addParameter(modifiers, "userPassword", params, "userPassword", true);
+      addParameter(modifiers, "tagsInclude", params, "tagsInclude");
+      addParameter(modifiers, "tagsExclude", params, "tagsExclude");
+      odsExecute("calendar.upstream.edit", params, "calendar");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-calendar-upstream",
+  takes: {"upstream_id": noun_type_id},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-delete-calendar-upstream &lt;upstream_id&gt;",
+  execute: function (upstream_id) {
+    try {
+      checkParameter(upstream_id.text, "upstream_id");
+      var params = {upstream_id: upstream_id.text};
+      odsExecute("calendar.upstream.delete", params, "calendar");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
   name: "ods-set-calendar-options",
   takes: {"instance_id": noun_type_id},
   modifiers: {"options": noun_arb_text},

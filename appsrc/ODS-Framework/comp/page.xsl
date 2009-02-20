@@ -255,19 +255,15 @@
     <v:url name="help" value="Help" url="help.vspx" xhtml_target="_blank" />
 </xsl:template>
 
-<xsl:template match="vm:settings-link">
-    <?vsp if (length (self.sid))
-          {
-    ?>
-	     <v:url name="app_settings_link" value="Settings" url="--sprintf ('app_settings.vspx?l=%s', self.topmenu_level)" render-only="1"/>
-     <?vsp
-          }
-    ?>
-  </xsl:template>
-
 <xsl:template match="vm:site-settings-link">
     <?vsp if (length (self.sid) and wa_user_is_dba (self.u_name, self.u_group)) { ?>
     <v:url name="app_settings_link" value="Site Settings" url="site_settings.vspx" render-only="1"/> |
+    <?vsp } ?>
+</xsl:template>
+
+<xsl:template match="vm:settings-link">
+    <?vsp if (length (self.sid)) { ?>
+	  <v:url name="app_settings_link" value="Application Settings" url="--sprintf ('app_settings.vspx?l=%s', self.topmenu_level)" render-only="1"/>
     <?vsp } ?>
 </xsl:template>
 
@@ -604,7 +600,7 @@
 	if (length(self.sid))
 	  {
 	?>
-	<v:url name="inst123" value="Settings" url="app_settings.vspx" >
+	<v:url name="inst123" value="Application Settings" url="app_settings.vspx" >
 	    <xsl:if test="@on = 'settings'"><xsl:attribute name="xhtml_class">sel</xsl:attribute></xsl:if>
 	</v:url>
 	<?vsp

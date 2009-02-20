@@ -2210,7 +2210,7 @@ ODS.Nav = function (navOptions)
 			      self.loadVspx (self.expandURL (self.ods + 'app_settings.vspx'));
 			  });
 
-	aSettings.innerHTML = 'Settings';
+    aSettings.innerHTML = 'Application Settings';
 
 	var aSiteSettings = OAT.Dom.create ("a", {cursor: 'pointer'});
 

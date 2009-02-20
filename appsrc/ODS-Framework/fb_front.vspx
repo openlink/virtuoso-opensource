@@ -50,10 +50,12 @@
       <vm:body>
         <v:before-data-bind>
         <![CDATA[
-          declare _cookies any;
-          _cookies:=vsp_ua_get_cookie_vec(lines);
-
+          declare i integer;
+          declare _user_name varchar;
+          declare _user_id integer;
+          declare contatcst_import_res any;
           declare _http_query_str varchar;
+
           _http_query_str:=http_request_get ('QUERY_STRING');
           if (locate('auth_token',_http_query_str)>0)
           {
@@ -80,50 +82,47 @@
                params := vector_concat (subseq (params, 0, _qstr_pos-1),
                                         vector('_http_query_str',_http_query_str),
                                         subseq (params, _qstr_pos));
-
-            }else
+            } else {
                params:=vector_concat(params, vector('_http_query_str',_http_query_str));
           }
-
-
+          }
           self._ods_login_params:='';
           if(length(self.sid)>0)
             self._ods_login_params:='sid='||self.sid||'&realm='||coalesce(self.realm,'wa');
 
-          declare _user_name varchar;
-          declare _user_id integer;
-          declare contatcst_import_res any;
-
-
+          declare exit handler for not found {
           _user_name:=null;
           _user_id:=null;
-
-          if (length(self.sid)>0)
-          {
-              declare exit handler for not found {_user_name:=null;_user_id:=null;};
+          };
               select VS_UID,U_ID into _user_name,_user_id from DB.DBA.VSPX_SESSION, DB.DBA.SYS_USERS where VS_UID=U_NAME and VS_SID=self.sid;
-          }
-
           self._ods_u_name:=_user_name;
 
           declare _ods_fb_id,_fb_user_assocexist integer;
+
+          declare exit handler for not found {
           _ods_fb_id:=null;
-          if(_user_id is not null)
-          {
-            declare exit handler for not found {_ods_fb_id:=null;};
+          };
             select WAUI_FACEBOOK_ID into _ods_fb_id from DB.DBA.WA_USER_INFO where WAUI_U_ID=_user_id;
-          }
 
-
+          declare _cfb_id integer;
+          declare _cfb_session varchar;
+          declare _fb_user integer;
           declare fb_dba_options any;
+
           if(_get_ods_fb_settings(fb_dba_options)) --fb_dba_options is array of type (facebook_api_key,facebook_api_secret)
           {
              self._fb_isset:=1;
              self._fb:= new Facebook(fb_dba_options[0], fb_dba_options[1], params,lines);
+            _cfb_id :=  cast (self._fb._user as integer);
+            _cfb_session :=  self._fb.api_client.session_key;
+            if (_cfb_id > 0 and _cfb_session <> '')
+            {
+              self._fb.set_user(_cfb_id,_cfb_session,now());
+              _fb_user  := _cfb_id;
           }
-          else
+          } else {
              self._fb_isset:=0;
-
+          }
 
           self._dhtml:=vector();
           self.syncdata_arr:=vector();
@@ -133,34 +132,6 @@
 
           if(self._fb_isset)
           {
-
-            declare _fb_user integer;
-
-            if(length(_cookies)>0)
-            { declare _cfb_id integer;
-              declare _cfb_session varchar;
-
-              _cfb_id:=0;
-              _cfb_session:='';
-
-              _cfb_id:=get_keyword('fb_user',_cookies,0);
-              _cfb_session:=get_keyword('fb_session',_cookies,'');
-
-              if(_cfb_id>0 and _cfb_session<>'' and (_cfb_id=_ods_fb_id or _ods_fb_id=0))
-              {
-               self._fb.set_user(_cfb_id,_cfb_session,now());
-               _fb_user :=_cfb_id;
-               goto skip_login;
-
-              }
-
-            }
-
-
-            _fb_user := self._fb.require_login(0);
-
-skip_login:;
-
             _fb_user_assocexist:=0;
             if(_fb_user is not null and _fb_user>0
                and
@@ -169,14 +140,7 @@ skip_login:;
             {
                _fb_user_assocexist:=1;
             }
-
-
-            -- change login when ODS user is logged but the facebook user that is associated is not the same as the one that is currently logged in.
-
-
             self._fb_usernotcorrespond:=0;
---            if(_ods_fb_id is not null and _ods_fb_id>0 and _fb_user>0 and _ods_fb_id<>_fb_user)
-
             if((_ods_fb_id is not null
                  and _ods_fb_id>0
                  and _fb_user>0
@@ -191,23 +155,6 @@ skip_login:;
             {
 --              _fb_user := self._fb.require_login(1);
               self._fb_usernotcorrespond:=1;
-            }
-
-              declare _exp varchar;
-              _exp:=cast (dateadd('hour',1,now()) as varchar);
-
-            if(self._fb_usernotcorrespond)
-            {
-              http_header(concat (http_header_get (),
-                                  sprintf ('Set-Cookie: fb_user=;%s path=/\r\n'||'Set-Cookie: fb_session=;%s path=/\r\n', _exp,_exp)
-                                 )
-                         );
-            }else if( self._fb_usernotcorrespond=0 and _fb_user>0)
-            {
-              http_header(concat (http_header_get (),
-                                  sprintf ('Set-Cookie: fb_user=%d;%s path=/\r\n'||'Set-Cookie: fb_session=%s;%s path=/\r\n', self._fb._user,_exp,self._fb.api_client.session_key,_exp)
-                                 )
-                         );
             }
 
             declare _assoc_action varchar;
@@ -233,18 +180,18 @@ skip_login:;
             -- ODS autologin for ODS use that has signed in to FB but not to ODS and he has connected his ods user to facebook user
             if(_fb_user<>0 and _user_name is null)
             {
-              declare exit handler for not found {_user_name:=null;_user_id:=null;};
+              declare exit handler for not found {
+                _user_name := null;
+                _user_id := null;
+              };
               select WAUI_U_ID,U_NAME into _user_id,_user_name from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID=U_ID and WAUI_FACEBOOK_ID=_fb_user;
-
               if( _user_id is not null)
               {
                  declare _sid varchar;
-                 _sid := md5 (concat (datestring (now ()), http_client_ip (), http_path ()));
 
+                _sid :=  md5 (concat (datestring (now ()), http_client_ip (), http_path ()));
                  insert into DB.DBA.VSPX_SESSION (VS_REALM, VS_SID, VS_UID, VS_STATE, VS_EXPIRY)
-                                          values ('wa', _sid, _user_name,
-                                                  serialize (vector ('vspx_user', _user_name)),
-                                                  now());
+                  values ('wa', _sid, _user_name, serialize (vector ('vspx_user', _user_name)), now());
                  http_request_status ('HTTP/1.1 302 Found');
                  http_header (sprintf('Location: %sfb_front.vspx?sid=%s&realm=wa\r\n', self.odsbar_ods_gpath, _sid));
                  return;
@@ -252,8 +199,8 @@ skip_login:;
             }
 
             declare _are_assoc int;
-            _are_assoc:=0;
 
+            _are_assoc := 0;
             if(exists (select 1 from DB.DBA.WA_USER_INFO where  WAUI_U_ID=_user_id and WAUI_FACEBOOK_ID=_fb_user))
                _are_assoc:=1;
 
@@ -276,19 +223,14 @@ skip_login:;
 
                 if(isarray(networks))
                 {
-                  declare i integer;
-                  i:=0;
                   networks_str:='';
-                  while(i<length(networks))
+                  for (I := 0; i < length (networks); I := I + 1)
                   {
                    if(i<(length(networks)-1))
                       networks_str:=networks_str||cast(xpath_eval('string(name)',networks[i]) as varchar)||',';
                    else
                       networks_str:=networks_str||cast(xpath_eval('string(name)',networks[i]) as varchar);
-
-                   i:=i+1;
                   }
-
                 }
                 if(length(networks_str)=0)
                    networks_str:='&nbsp';
@@ -309,48 +251,29 @@ skip_login:;
                        '<tr><td style="width:80px;padding-right: 5px;color: #808080">Position:</td><td>'||cast(xpath_eval('string(/users_getInfo_response/user/work_history/work_info[1]/position)',_res) as varchar)||'</td></tr>'||
                        '</tr></table></td>'||
                        '</tr></table>';
-
                 _fb_user_fullname:=cast(xpath_eval('/users_getInfo_response/user/name',_res) as varchar);
-
                 self._fb_u_name:=_fb_user_fullname;
-
-
-              }else
+              } else {
                 _html:='Hello, user:'||cast(_fb_user as varchar)||'<br/>';
-
-
---              declare fbf_cid,fbf_profile_uri varchar;
---              fbf_cid:=cast(_fb_user as varchar);
---              fbf_profile_uri:='http://www.facebook.com/profile.php?id='||fbf_cid;
-
---              dbg_obj_print(DB.DBA.fbf_rdf_load_fql (fbf_profile_uri,fbf_profile_uri,null,self._fb,fbf_cid,1));
+              }
 
               self._dhtml:=vector_concat(self._dhtml,vector('user',_html));
 
               _res:=self._fb.api_client.friends_get();
-
-
               if(isarray(_res) and length(_res)>0)
               {
-
                 declare ff_ids varchar;
                 ff_ids:='';
-                declare i integer;
-                i:=0;
                 _html:='';
-                while(i<length(_res))
+                for (I := 0; i < length (_res); I := I + 1)
                 {
                  if(i<(length(_res)-1))
                     ff_ids:=ff_ids||_res[i]||',';
                  else
                     ff_ids:=ff_ids||_res[i];
-
-                 i:=i+1;
                 }
                 self._dhtml:=vector_concat(self._dhtml,vector('fbf_jsarrstr',ff_ids));
-
                 _res:=self._fb.api_client.users_getInfo(ff_ids,'name,pic_small');
-
                  if(_res is not null)
                  {
                  _html:='<div class="doc">';
@@ -358,8 +281,7 @@ skip_login:;
                   _res:=xpath_eval('/users_getInfo_response/user',_res,0);
                   if(_res is not null and length(_res)>0)
                   {
-                    i := 0;
-                    while (i < length(_res))
+                    for (I := 0; i < length (_res); I := I + 1)
                     {
                       _src:=xpath_eval('string(pic_small)',_res[i]);
                       if(length(_src)=0)
@@ -370,27 +292,14 @@ skip_login:;
                                       '<br/>'||
                                       '<a href="http://www.facebook.com/profile.php?id='||xpath_eval('string(uid)',_res[i])||'" target="_blank">'||xpath_eval('string(name)',_res[i])||'</a> '||
                                       '<img id="rdf_'||xpath_eval('string(uid)',_res[i])||'"src="./images/oat/RDF_rdf.png"/></div>';
-
---                      fbf_cid:=cast(xpath_eval('string(uid)',_res[i]) as varchar);
---                      fbf_profile_uri:='http://www.facebook.com/profile.php?id='||fbf_cid;
-
---                      dbg_obj_print(DB.DBA.fbf_rdf_load_fql (fbf_profile_uri,fbf_profile_uri,null,self._fb,fbf_cid,0));
-
-                      i := i + 1;
                     }
                   }
                   _html:=_html||'</div>';
                  }
-
-
-              }else
+              } else {
                 _html:='You have no Facebook friends.';
-
-
+              }
               self._dhtml:=vector_concat(self._dhtml,vector('friends',_html));
-
-
-
               if(get_keyword('import', params,'')='create_import')
               {
                  declare _inst_id integer;
@@ -413,8 +322,8 @@ skip_login:;
 
                  if(length(syncdata_jsarrstr))
                   self._dhtml:=vector_concat(self._dhtml,vector('syncdata_jsarrstr',syncdata_jsarrstr));
-
-              }else if(get_keyword('import', params,'')='updateadvanced')
+              }
+              else if (get_keyword('import', params,'')='updateadvanced')
               {
                  self._sync:=2;
                  declare syncdata_jsarrstr varchar;
@@ -451,15 +360,19 @@ skip_login:;
             if(_user_id is not null and _fb_user>0 and _are_assoc=0)
             {
                _html:=_html||'<br/>'||_user_name||' and '||_fb_user_fullname||' are not <a id="a_assoc_1" style="text-decoration: underline;cursor: pointer;">connected</a>.<br/> <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?assoc=assoc',self._ods_login_params)||'">Do you want to connect them?</a>';
-
-            }else if(_user_id is not null and _fb_user<>0 and _are_assoc=1)
+            }
+            else if (_user_id is not null and _fb_user<>0 and _are_assoc=1)
+            {
                _html:=_html||'<br/>'||_user_name||' and '||_fb_user_fullname||' are <a id="a_assoc_2" style="text-decoration: underline;cursor: pointer;">connected</a>. <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?assoc=unassoc',self._ods_login_params)||'">Disconnect?</a>';
+            }
             else if(_user_id is not null and _fb_user=0)
+            {
                _html:=_html||'';
+            }
             else if(_user_id is null and _fb_user<>0)
+            {
                _html:=_html||'<br/><a href="'||self.odsbar_ods_gpath ||'register.vspx?reguid='||lcase(replace(_fb_user_fullname,' ',''))||'&fb_id='||cast(_fb_user as varchar)||'&URL='||self.odsbar_ods_gpath ||'fb_front.vspx">Create ODS user and connect it to:'||_fb_user_fullname||'</a>';
-
-
+            }
             if(_are_assoc=1)
             {
               declare dataspace_url varchar;
@@ -509,16 +422,20 @@ skip_login:;
          }
         ]]>
         </v:before-data-bind>
-        <v:login/>
-
+        <?vsp
+          if (self._fb_isset)
+          {
+            http(         '<script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>');
+            http(sprintf ('<fb:login-button autologoutlink="true" onlogin1="window.location=\'/ods/fb_front.vspx?sid=%s&ream=%s\'"></fb:login-button>', self.sid, self.realm));
+            http(sprintf ('<script type="text/javascript">FB.init("%s", "fb_dummy.vsp", {"reloadIfSessionStateChanged":true});</script>', self._fb.api_key));
+          }
+        ?>
 <script type="text/javascript">
 <![CDATA[
-
 function dd(txt){
-  if(typeof console == 'object'){
+  if (typeof console == 'object')
     console.debug(txt);
   }
-}
 
  var cssDockNode = document.createElement('link');
  cssDockNode.type = 'text/css';
@@ -566,7 +483,8 @@ function dockAdd(win_title,custom_colsize)
   win.div.id='dockwin_'+counter;
 
   var col_px = Math.floor(OAT.Dom.getViewport()[0]*usableViewRatio/dock.columns.length);
-  if(col_px<docColumnMinSize) col_px=docColumnMinSize;
+  if (col_px<docColumnMinSize)
+    col_px=docColumnMinSize;
 
   if(typeof(custom_colsize)!='undefined' && custom_colsize>10)
      dock.columns[counter % dock.columns.length].style.width=custom_colsize+'px';
@@ -623,12 +541,8 @@ function ajaxUpdate(abID,odsCID,fbCID,dockObj,mappingStr)
   	       'fb_session=<?V(case when self._fb is not null then self._fb.api_client.session_key else '' end)?>&'+
   	       'fb_cid='+fbCID+'&'+
   	       'ods_cid='+odsCID;
-//dd(data);
  if(mappingStr.length>0)
-      data=data+'&usemapping=1&'+
-  	            'mapping='+mappingStr;
-
-
+    data=data+'&usemapping=1&'+'mapping='+mappingStr;
 
   var options = {
   	auth:OAT.AJAX.AUTH_BASIC,

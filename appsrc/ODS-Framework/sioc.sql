@@ -726,6 +726,7 @@ create procedure sioc_user_info (
   delete_quad_s_or_o (graph_iri, org_iri, org_iri);
   delete_quad_s_or_o (graph_iri, addr_iri, addr_iri);
   delete_quad_s_or_o (graph_iri, giri, giri);
+  delete_quad_s_or_o (graph_iri, crt_iri, crt_iri);
 
   if (is_person and length (waui_first_name) and wa_user_pub_info (flags, 1))
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('firstName'), waui_first_name);
@@ -3262,9 +3263,14 @@ create procedure foaf_check_ssl (in iri varchar)
   hf := rfc1808_parse_uri (agent);
   hf[5] := '';
   graph := DB.DBA.vspx_uri_compose (hf);
+  delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (graph);
   commit work;
-  qr := sprintf ('sparql define get:soft "soft" '||
-        std_pref_declare () ||'select ?exp ?mod from <%S> '||
+  qr := sprintf ('sparql load <%S> into graph <%S>', graph, graph);
+  stat := '00000';
+  exec (qr, stat, msg);
+  commit work;
+  qr := sprintf ('sparql prefix cert: <' || cert_iri ('') || '> ' || ' prefix rsa: <' || rsa_iri ('') || '> ' ||
+  	'select ?exp ?mod from <%S> '||
   	'where { ?id cert:identity <%S> ; rsa:public_exponent ?exp ; rsa:modulus ?mod . }', graph, agent);
   stat := '00000';
 --  dbg_printf ('%s', qr);

@@ -423,21 +423,21 @@ if (typeof (OAT) == 'undefined')
           <vm:odsbar_navigation_level1/>
           <div id="ods_bar_top_cmds">
 
-            <vm:if test = " length (self.sid) > 0 "> <!-- user is logged on -->
-              <v:url name="app_settings_lnk"
-                     url="--self.odsbar_ods_gpath||'app_settings.vspx'"
-                     value="Settings"
-                     is-local="1"/>
-            </vm:if>
-
             <!-- Site admin settings link -->
 
             <vm:if test=" length (self.sid) and wa_user_is_dba (self.odsbar_u_name, self.odsbar_u_group) ">
-              |
               <v:url name="site_settings_lnk"
                      value="Site Settings"
                      url="--self.odsbar_ods_gpath||'site_settings.vspx'"
                      render-only="1"
+                     is-local="1"/>
+              |
+            </vm:if>
+
+            <vm:if test = " length (self.sid) > 0 "> <!-- user is logged on -->
+              <v:url name="app_settings_lnk"
+                     url="--self.odsbar_ods_gpath||'app_settings.vspx'"
+                     value="Application Settings"
                      is-local="1"/>
             </vm:if>
 
@@ -529,8 +529,7 @@ if (typeof (OAT) == 'undefined')
             curr_location:=curr_location||'Settings > ';
 
         declare settings_url varchar;
-        settings_url:='<a href="'||self.odsbar_ods_gpath||'app_settings.vspx?'||self.odsbar_loginparams||'">Settings</a> > ';
-
+        settings_url:='<a href="'||self.odsbar_ods_gpath||'app_settings.vspx?'||self.odsbar_loginparams||'">Application Settings</a> > ';
 
         if(locate('/services.vspx',_http_path))
             curr_location:=curr_location||settings_url||'Applications Management > ';
