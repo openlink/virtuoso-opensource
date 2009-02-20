@@ -3017,6 +3017,144 @@ create procedure AB.WA.contact_update (
 
 -------------------------------------------------------------------------------
 --
+create procedure AB.WA.contact_update2 (
+  in id integer,
+  in domain_id integer,
+  in pName varchar,
+  in pValue any)
+{
+  if ((id = -1) and (pName = 'P_NAME'))
+  {
+    id := sequence_next ('AB.WA.contact_id');
+    insert into AB.WA.PERSONS
+      (
+        P_ID,
+        P_DOMAIN_ID,
+        P_NAME,
+        P_CREATED,
+        P_UPDATED
+      )
+      values
+      (
+        id,
+        domain_id,
+        pValue,
+        now (),
+        now ()
+      );
+    return id;
+  }
+  if (id = -1)
+    return id;
+
+  if (pName = 'P_KIND')
+    update AB.WA.PERSONS set P_KIND = pValue where P_ID = id;
+  if (pName = 'P_NAME')
+    update AB.WA.PERSONS set P_NAME = pValue where P_ID = id;
+  if (pName = 'P_TITLE')
+    update AB.WA.PERSONS set P_TITLE = pValue where P_ID = id;
+  if (pName = 'P_FIRST_NAME')
+    update AB.WA.PERSONS set P_FIRST_NAME = pValue where P_ID = id;
+  if (pName = 'P_MIDDLE_NAME')
+    update AB.WA.PERSONS set P_MIDDLE_NAME = pValue where P_ID = id;
+  if (pName = 'P_LAST_NAME')
+    update AB.WA.PERSONS set P_LAST_NAME = pValue where P_ID = id;
+  if (pName = 'P_FULL_NAME')
+    update AB.WA.PERSONS set P_FULL_NAME = pValue where P_ID = id;
+  if (pName = 'P_GENDER')
+    update AB.WA.PERSONS set P_GENDER = pValue where P_ID = id;
+  if (pName = 'P_BIRTHDAY')
+    update AB.WA.PERSONS set P_BIRTHDAY = pValue where P_ID = id;
+  if (pName = 'P_FOAF')
+    update AB.WA.PERSONS set P_FOAF = pValue where P_ID = id;
+
+  if (pName = 'P_MAIL')
+    update AB.WA.PERSONS set P_MAIL = pValue where P_ID = id;
+  if (pName = 'P_WEB')
+    update AB.WA.PERSONS set P_WEB = pValue where P_ID = id;
+  if (pName = 'P_ICQ')
+    update AB.WA.PERSONS set P_ICQ = pValue where P_ID = id;
+  if (pName = 'P_SKYPE')
+    update AB.WA.PERSONS set P_SKYPE = pValue where P_ID = id;
+  if (pName = 'P_AIM')
+    update AB.WA.PERSONS set P_AIM = pValue where P_ID = id;
+  if (pName = 'P_YAHOO')
+    update AB.WA.PERSONS set P_YAHOO = pValue where P_ID = id;
+  if (pName = 'P_MSN')
+    update AB.WA.PERSONS set P_MSN = pValue where P_ID = id;
+
+  if (pName = 'P_H_ADDRESS1')
+    update AB.WA.PERSONS set P_H_ADDRESS1 = pValue where P_ID = id;
+  if (pName = 'P_H_ADDRESS2')
+    update AB.WA.PERSONS set P_H_ADDRESS2 = pValue where P_ID = id;
+  if (pName = 'P_H_CODE')
+    update AB.WA.PERSONS set P_H_CODE = pValue where P_ID = id;
+  if (pName = 'P_H_CITY')
+    update AB.WA.PERSONS set P_H_CITY = pValue where P_ID = id;
+  if (pName = 'P_H_STATE')
+    update AB.WA.PERSONS set P_H_STATE = pValue where P_ID = id;
+  if (pName = 'P_H_COUNTRY')
+    update AB.WA.PERSONS set P_H_COUNTRY = pValue where P_ID = id;
+  if (pName = 'P_H_TZONE')
+    update AB.WA.PERSONS set P_H_TZONE = pValue where P_ID = id;
+  if (pName = 'P_H_LAT')
+    update AB.WA.PERSONS set P_H_LAT = pValue where P_ID = id;
+  if (pName = 'P_H_LNG')
+    update AB.WA.PERSONS set P_H_LNG = pValue where P_ID = id;
+  if (pName = 'P_H_PHONE')
+    update AB.WA.PERSONS set P_H_PHONE = pValue where P_ID = id;
+  if (pName = 'P_H_MOBILE')
+    update AB.WA.PERSONS set P_H_MOBILE = pValue where P_ID = id;
+  if (pName = 'P_H_FAX')
+    update AB.WA.PERSONS set P_H_FAX = pValue where P_ID = id;
+  if (pName = 'P_H_MAIL')
+    update AB.WA.PERSONS set P_H_MAIL = pValue where P_ID = id;
+  if (pName = 'P_H_WEB')
+    update AB.WA.PERSONS set P_H_WEB = pValue where P_ID = id;
+
+  if (pName = 'P_B_ADDRESS1')
+    update AB.WA.PERSONS set P_B_ADDRESS1 = pValue where P_ID = id;
+  if (pName = 'P_B_ADDRESS2')
+    update AB.WA.PERSONS set P_B_ADDRESS2 = pValue where P_ID = id;
+  if (pName = 'P_B_CODE')
+    update AB.WA.PERSONS set P_B_CODE = pValue where P_ID = id;
+  if (pName = 'P_B_CITY')
+    update AB.WA.PERSONS set P_B_CITY = pValue where P_ID = id;
+  if (pName = 'P_B_STATE')
+    update AB.WA.PERSONS set P_B_STATE = pValue where P_ID = id;
+  if (pName = 'P_B_COUNTRY')
+    update AB.WA.PERSONS set P_B_COUNTRY = pValue where P_ID = id;
+  if (pName = 'P_B_TZONE')
+    update AB.WA.PERSONS set P_B_TZONE = pValue where P_ID = id;
+  if (pName = 'P_B_LAT')
+    update AB.WA.PERSONS set P_B_LAT = pValue where P_ID = id;
+  if (pName = 'P_B_LNG')
+    update AB.WA.PERSONS set P_B_LNG = pValue where P_ID = id;
+  if (pName = 'P_B_PHONE')
+    update AB.WA.PERSONS set P_B_PHONE = pValue where P_ID = id;
+  if (pName = 'P_B_MOBILE')
+    update AB.WA.PERSONS set P_B_MOBILE = pValue where P_ID = id;
+  if (pName = 'P_B_FAX')
+    update AB.WA.PERSONS set P_B_FAX = pValue where P_ID = id;
+  if (pName = 'P_B_MAIL')
+    update AB.WA.PERSONS set P_B_MAIL = pValue where P_ID = id;
+  if (pName = 'P_B_WEB')
+    update AB.WA.PERSONS set P_B_WEB = pValue where P_ID = id;
+  if (pName = 'P_B_ORGANIZATION')
+    update AB.WA.PERSONS set P_B_ORGANIZATION = pValue where P_ID = id;
+  if (pName = 'P_B_DEPARTMENT')
+    update AB.WA.PERSONS set P_B_DEPARTMENT = pValue where P_ID = id;
+  if (pName = 'P_B_JOB')
+    update AB.WA.PERSONS set P_B_JOB = pValue where P_ID = id;
+
+  update AB.WA.PERSONS set P_UPDATED = now () where P_ID = id;
+
+  return id;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure AB.WA.contact_update3 (
   in id integer,
   in domain_id integer,
