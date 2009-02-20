@@ -5432,6 +5432,12 @@ bif_isnull (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_bool (DV_DB_NULL == DV_TYPE_OF (arg0));
 }
 
+caddr_t
+bif_isnotnull (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t arg0 = bif_arg (qst, args, 0, "isnotnull");
+  return box_bool (DV_DB_NULL != DV_TYPE_OF (arg0));
+}
 
 caddr_t
 bif_isstring (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -13515,6 +13521,7 @@ sql_bif_init (void)
   bif_define_typed ("isfloat", bif_isfloat, &bt_integer);
   bif_define_typed ("isdouble", bif_isdouble, &bt_integer);
   bif_define_typed ("isnull", bif_isnull, &bt_integer);
+  bif_define_typed ("isnotnull", bif_isnotnull, &bt_integer);
   bif_define_typed ("isblob", bif_isblob_handle, &bt_integer);
   bif_define_typed ("isentity", bif_isentity, &bt_integer);
   bif_define_typed ("isstring", bif_isstring, &bt_integer);
