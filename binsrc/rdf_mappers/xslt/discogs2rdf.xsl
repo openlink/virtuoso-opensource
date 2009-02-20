@@ -64,12 +64,12 @@
 			<rdf:type rdf:resource="&foaf;Document"/>
 			<rdf:type rdf:resource="&bibo;Document"/>
 			<rdf:type rdf:resource="&sioc;Container"/>
-			<sioc:container_of rdf:resource="{vi:proxyIRI (concat($base,'artist/',name))}"/>
-			<foaf:topic rdf:resource="{vi:proxyIRI (concat($base,'artist/',name))}"/>
-			<dcterms:subject rdf:resource="{vi:proxyIRI (concat($base,'artist/',name))}"/>
-			<foaf:primaryTopic rdf:resource="{vi:proxyIRI (concat($base,'artist/',name))}"/>
+			<sioc:container_of rdf:resource="{vi:proxyIRI (concat($base,'artist/',translate(name, ' ', '+') ))}"/>
+			<foaf:topic rdf:resource="{vi:proxyIRI (concat($base,'artist/',translate(name, ' ', '+')))}"/>
+			<dcterms:subject rdf:resource="{vi:proxyIRI (concat($base,'artist/',translate(name, ' ', '+')))}"/>
+			<foaf:primaryTopic rdf:resource="{vi:proxyIRI (concat($base,'artist/',translate(name, ' ', '+')))}"/>
 		</rdf:Description>
-		<mo:MusicArtist rdf:about="{vi:proxyIRI (concat($base,'artist/',name))}">
+		<mo:MusicArtist rdf:about="{vi:proxyIRI (concat($base,'artist/',translate(name, ' ', '+')))}">
 			<sioc:has_container rdf:resource="{$baseUri}"/>
 			<foaf:name>
 				<xsl:value-of select="name"/>
@@ -94,7 +94,7 @@
 		<mo:Record rdf:about="{vi:proxyIRI (concat($base,'release/',@id))}">
 			<sioc:has_container rdf:resource="{concat($base,'release/',@id)}"/>
 			<xsl:if test="artists/artist/name">
-				<foaf:maker rdf:resource="{vi:proxyIRI (concat($base,'artist/', artists/artist/name))}"/>	    
+				<foaf:maker rdf:resource="{vi:proxyIRI (concat($base,'artist/', translate(artists/artist/name, ' ', '+')))}"/>	    
 			</xsl:if>
 			<xsl:if test="title">
 				<dc:title><xsl:value-of select="title"/></dc:title>
