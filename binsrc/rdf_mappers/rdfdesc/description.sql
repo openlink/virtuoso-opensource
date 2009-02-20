@@ -11,6 +11,7 @@ fbase:type.object.name rdfs:subPropertyOf virtrdf:label .
 foaf:name rdfs:subPropertyOf virtrdf:label .
 <http://s.opencalais.com/1/pred/name> rdfs:subPropertyOf virtrdf:label .
 foaf:nick rdfs:subPropertyOf virtrdf:label .
+<http://www.w3.org/2004/02/skos/core#prefLabel> rdfs:subPropertyOf virtrdf:label .
 skos:prefLabel rdfs:subPropertyOf virtrdf:label .
 ', '', 'virtrdf-label');
 
