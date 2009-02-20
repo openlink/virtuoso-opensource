@@ -4580,6 +4580,7 @@ create procedure CAL.WA.attendees_mails ()
       goto _next;
     };
 
+    -- dbg_obj_print ('tuka sme ama sto ne znam');
     url := sprintf ('%sattendees.vspx?uid=%U', CAL.WA.calendar_url (domain_id), uid);
     content_html := sprintf (H, subject, period, url, url, url);
     content_text := sprintf (T, subject, period, url);

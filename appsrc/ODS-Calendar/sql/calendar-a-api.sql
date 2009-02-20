@@ -1106,6 +1106,135 @@ create procedure ODS.ODS_API."calendar.subscription.delete" (
 
 -------------------------------------------------------------------------------
 --
+create procedure ODS.ODS_API."calendar.upstream.new" (
+  in inst_id integer,
+  in name varchar,
+  in source varchar,
+  in userName varchar,
+  in userPassword varchar,
+  in tagsInclude varchar := null,
+  in tagsExclude varchar := null) __soap_http 'text/plain'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc integer;
+  declare uname varchar;
+  declare tmp any;
+
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  CAL.WA.test (name, vector('name', 'Upstream Name', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+  CAL.WA.test (source, vector('name', 'Upstream URI', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+  CAL.WA.test (userName, vector('name', 'Upstream User', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+  CAL.WA.test (userPassword, vector('name', 'Upstream Password', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+  CAL.WA.test (tagsInclude, vector ('name', 'Include Tags', 'class', 'tags'));
+  tmp := CAL.WA.tags2vector (tagsInclude);
+  tmp := CAL.WA.vector_unique (tmp);
+  tagsInclude := CAL.WA.vector2tags (tmp);
+  CAL.WA.test (tagsExclude, vector ('name', 'Exclude Tags', 'class', 'tags'));
+  tmp := CAL.WA.tags2vector (tagsExclude);
+  tmp := CAL.WA.vector_unique (tmp);
+  tagsExclude := CAL.WA.vector2tags (tmp);
+
+  insert into CAL.WA.UPSTREAM (U_DOMAIN_ID, U_NAME, U_URI, U_USER, U_PASSWORD, U_INCLUDE, U_EXCLUDE)
+    values (inst_id, name, source, userName, userPassword, tagsInclude, tagsExclude);
+  rc := (select max (U_ID) from CAL.WA.UPSTREAM);
+
+  return ods_serialize_int_res (rc);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."calendar.upstream.edit" (
+  in upstream_id integer,
+  in name varchar,
+  in source varchar,
+  in userName varchar,
+  in userPassword varchar,
+  in tagsInclude varchar := null,
+  in tagsExclude varchar := null) __soap_http 'text/plain'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc integer;
+  declare uname varchar;
+  declare inst_id integer;
+  declare tmp any;
+
+  inst_id := (select U_DOMAIN_ID from CAL.WA.UPSTREAM where U_ID = upstream_id);
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  if (not exists (select 1 from CAL.WA.UPSTREAM where U_ID = upstream_id))
+    return ods_serialize_sql_error ('37000', 'The item is not found');
+
+  CAL.WA.test (name, vector('name', 'Upstream Name', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+  CAL.WA.test (source, vector('name', 'Upstream URI', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+  CAL.WA.test (userName, vector('name', 'Upstream User', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+  CAL.WA.test (userPassword, vector('name', 'Upstream Password', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+  CAL.WA.test (tagsInclude, vector ('name', 'Include Tags', 'class', 'tags'));
+  tmp := CAL.WA.tags2vector (tagsInclude);
+  tmp := CAL.WA.vector_unique (tmp);
+  tagsInclude := CAL.WA.vector2tags (tmp);
+  CAL.WA.test (tagsExclude, vector ('name', 'Exclude Tags', 'class', 'tags'));
+  tmp := CAL.WA.tags2vector (tagsExclude);
+  tmp := CAL.WA.vector_unique (tmp);
+  tagsExclude := CAL.WA.vector2tags (tmp);
+
+  update CAL.WA.UPSTREAM
+     set U_NAME = name,
+         U_URI = source,
+         U_USER = userName,
+         U_PASSWORD = userPassword,
+         U_INCLUDE = tagsInclude,
+         U_EXCLUDE = tagsExclude
+   where U_ID = upstream_id;
+
+  return ods_serialize_int_res (upstream_id);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."calendar.upstream.delete" (
+  in upstream_id integer) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc integer;
+  declare uname varchar;
+  declare inst_id integer;
+
+  inst_id := (select U_DOMAIN_ID from CAL.WA.UPSTREAM where U_ID = upstream_id);
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  if (not exists (select 1 from CAL.WA.UPSTREAM where U_ID = upstream_id))
+    return ods_serialize_sql_error ('37000', 'The item is not found');
+
+  delete from CAL.WA.UPSTREAM where U_ID = upstream_id;
+  rc := row_count ();
+
+  return ods_serialize_int_res (rc);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODS.ODS_API."calendar.options.set" (
   in inst_id int, in options any) __soap_http 'text/xml'
 {
@@ -1257,6 +1386,9 @@ grant execute on ODS.ODS_API."calendar.subscription.get" to ODS_API;
 grant execute on ODS.ODS_API."calendar.subscription.edit" to ODS_API;
 grant execute on ODS.ODS_API."calendar.subscription.sync" to ODS_API;
 grant execute on ODS.ODS_API."calendar.subscription.delete" to ODS_API;
+grant execute on ODS.ODS_API."calendar.upstream.new" to ODS_API;
+grant execute on ODS.ODS_API."calendar.upstream.edit" to ODS_API;
+grant execute on ODS.ODS_API."calendar.upstream.delete" to ODS_API;
 
 grant execute on ODS.ODS_API."calendar.options.get" to ODS_API;
 grant execute on ODS.ODS_API."calendar.options.set" to ODS_API;
