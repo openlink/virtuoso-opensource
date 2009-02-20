@@ -165,7 +165,7 @@ wst_pos_array (word_stream_t * wst, db_buf_t page, int len)
     wst->sst_pos_array = (short*) dk_alloc_box (sizeof (short) * VT_DATA_MAX_DOC_STRINGS, DV_LONG_STRING);
   while (pos < len)
     {
-      WP_LENGTH (page + pos, hl, l);
+      WP_LENGTH (page + pos, hl, l, page, len);
       wst->sst_pos_array[afill++] = pos;
       pos += hl + l;
     }
@@ -181,17 +181,17 @@ wst_set_buffer (word_stream_t * wst, db_buf_t page, int len)
   if (wst->sst_is_desc)
     {
       int l, hl;
-      WP_LENGTH (page + wst->sst_pos, hl, l);
+      WP_LENGTH (page + wst->sst_pos, hl, l, page, len);
       copy_len = wst->sst_pos + hl + l;
       if (copy_len > wst->sst_buffer_size)
 	{
 	  dk_free_box (wst->sst_buffer);
 	  wst->sst_buffer = dk_alloc_box (copy_len + 1, DV_LONG_STRING);
-	  wst->sst_buffer_size = copy_len;
+	  wst->sst_buffer_size = copy_len + 1;
 	}
       memcpy (wst->sst_buffer, page, copy_len);
       wst->sst_buffer[copy_len] = '\0';	/* just to provide repeatable bugs on overflow */
-      wst->sst_fill = copy_len;
+      SST_FILL_SET (wst, copy_len);
     }
   else
     {
@@ -200,11 +200,11 @@ wst_set_buffer (word_stream_t * wst, db_buf_t page, int len)
 	{
 	  dk_free_box (wst->sst_buffer);
 	  wst->sst_buffer = dk_alloc_box (copy_len + 1, DV_LONG_STRING);
-	  wst->sst_buffer_size = copy_len;
+	  wst->sst_buffer_size = copy_len + 1;
 	}
       memcpy (wst->sst_buffer, page + wst->sst_pos, copy_len);
       wst->sst_buffer[copy_len] = '\0';	/* just to provide repeatable bugs on overflow */
-      wst->sst_fill = copy_len;
+      SST_FILL_SET (wst, copy_len);
       wst->sst_pos = 0; /* always 0 since copy starts at pos */
     }
 }
@@ -378,7 +378,7 @@ itc_text_row (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t * leaf_ret)
 	      dk_free_box (wst->sst_buffer);
 	      wst->sst_buffer = blob;
 	      wst->sst_buffer_size = box_length (blob);
-	      wst->sst_fill = wst->sst_buffer_size - 1;
+	      SST_FILL_SET (wst, wst->sst_buffer_size - 1);
 	    }
 	  else
 	    dk_free_box (blob);
@@ -543,7 +543,7 @@ itc_text_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
     pos = -1; \
   else \
     { \
-      WP_LENGTH (p, __hl, __d); \
+      WP_LENGTH_HEADONLY (p, __hl, __d, p, end-p); \
       p += __hl; \
       pos += __d; \
   } \
@@ -683,7 +683,7 @@ wst_seek_d_id (word_stream_t * wst, d_id_t * target, db_buf_t * pos_ret,
     {
       d_id_t * d_id;
       int l, hl;
-      WP_LENGTH (buf + pos, hl, l);
+      WP_LENGTH (buf + pos, hl, l, buf, wst->sst_fill);
       d_id =  (d_id_t *) (buf + hl + pos);
       rc = d_id_cmp (d_id, target);
       if (DVC_MATCH == rc)
@@ -727,7 +727,7 @@ wst_check_related (word_stream_t * wst, db_buf_t buf, d_id_t * d_id, int pos)
   int pos_len, l, hl;
   if (!wst->sst_related)
     return 1;
-  WP_LENGTH (buf + pos, hl, l);
+  WP_LENGTH (buf + pos, hl, l, buf, box_length (buf) - 1);
   positions = buf + pos + hl + WP_FIRST_POS(buf + pos + hl);
   pos_len = l - WP_FIRST_POS (buf + pos + hl);
   DO_SET(word_rel_t *, rel, &wst->sst_related)
@@ -800,7 +800,7 @@ wst_chunk_scan_rev (word_stream_t * wst, db_buf_t buf, int chunk_len)
   while (pos_inx >= 0)
     {
       int hl, l;
-      WP_LENGTH (buf + pos, hl, l);
+      WP_LENGTH (buf + pos, hl, l, buf, chunk_len);
       wst->sst_pos = pos;
       d_id = (d_id_t *) (buf + pos + hl);
       d_id_set (&wst->sst_d_id, d_id);
@@ -852,13 +852,13 @@ wst_chunk_scan (word_stream_t * wst, db_buf_t buf, int chunk_len)
   pos = wst->sst_pos;
   if (D_NEXT (&target) && pos < chunk_len)
     {
-      WP_LENGTH (buf + pos, hl, l);
+      WP_LENGTH (buf + pos, hl, l, buf, chunk_len);
       pos += l + hl;
       wst->sst_pos = pos;
     }
   while (pos < chunk_len)
     {
-      WP_LENGTH (buf + pos, hl, l);
+      WP_LENGTH (buf + pos, hl, l, buf, chunk_len);
       wst->sst_pos = pos;
       d_id = (d_id_t *) (buf + pos + hl);
       d_id_set (&wst->sst_d_id, d_id);
@@ -1340,7 +1340,7 @@ wst_word_strings_next (word_stream_t * wst)
     {
       long l, hl;
       caddr_t buf = wst->wst_word_strings[inx];
-      WP_LENGTH (buf, hl, l);
+      WP_LENGTH (buf, hl, l, buf, box_length (buf) - 1);
       d_id = (d_id_t *) (buf + hl);
       if ((D_INITIAL (&wst->wst_seek_target)
 	   || D_NEXT (&wst->wst_seek_target)
@@ -1349,7 +1349,8 @@ wst_word_strings_next (word_stream_t * wst)
 	{
 	  wst->wst_nth_word_string = inx;
 	  wst->sst_buffer = buf;
-	  wst->sst_fill = box_length (buf) - 1;
+	  wst->sst_buffer_size = box_length (buf);
+	  SST_FILL_SET (wst, wst->sst_buffer_size - 1);
 	  wst->sst_pos = 0;
 	  d_id_set (&wst->wst_first_d_id, d_id);
 	  d_id_set (&wst->wst_last_d_id, d_id);
@@ -1380,7 +1381,7 @@ wst_next (word_stream_t * wst, d_id_t * target)
       rc = wst_random_seek (wst);
       if (DVC_MATCH == rc)
 	return;
-      /* the fist seek, if going to a target, can fail if the first row start at higher than target. Seek thus with no target because it can still contain hits later */
+      /* the first seek, if going to a target, can fail if the first row start at higher than target. Seek thus with no target because it can still contain hits later */
       D_SET_INITIAL (&wst->wst_seek_target);
       wst_random_seek (wst);
       return;
@@ -1734,13 +1735,13 @@ create_new_ranges:
 	  return 1;
 	if (NULL == sst->sst_buffer)
 	  return 0;
-	WP_LENGTH (sst->sst_buffer + pos, hl, l);
+	WP_LENGTH (sst->sst_buffer + pos, hl, l, sst->sst_buffer, sst->sst_fill);
 	end = pos + l + hl;
 	pos += hl + WP_FIRST_POS (sst->sst_buffer + pos + hl);
 	while (pos < end)
 	  {
 	    int pl, p;
-	    WP_LENGTH (sst->sst_buffer + pos, pl, p);
+	    WP_LENGTH_HEADONLY (sst->sst_buffer + pos, pl, p, sst->sst_buffer, sst->sst_fill);
 	    pos += pl;
 	    current += p;
 	    if (!to || (((wpos_t) current) >= from && ((wpos_t) current) < to))
@@ -2046,10 +2047,10 @@ sst_check_and_hit (search_stream_t * sst, d_id_t * d_id, int is_fixed)
 		  db_buf_t pos = (db_buf_t) (first->sst_buffer + first->sst_pos);
 		  db_buf_t rel_pos = (db_buf_t) (rel_sst->sst_buffer + rel_sst->sst_pos);
 		  int pos_len, rel_len, hl;
-		  WP_LENGTH (pos, hl, pos_len);
+		  WP_LENGTH (pos, hl, pos_len, first->sst_buffer, first->sst_fill);
 		  pos_len -= WP_FIRST_POS (pos + hl);
 		  pos += hl + WP_FIRST_POS (pos + hl);
-		  WP_LENGTH (rel_pos, hl, rel_len);
+		  WP_LENGTH (rel_pos, hl, rel_len, rel_sst->sst_buffer, rel_sst->sst_fill);
 		  rel_len -= WP_FIRST_POS (rel_pos + hl);
 		  rel_pos += hl + WP_FIRST_POS (rel_pos + hl);
 		  wp_proximity  (pos, pos_len, rel_pos, rel_len, rel);
@@ -2873,7 +2874,7 @@ txs_set_offband (text_node_t * txs, caddr_t * qst)
 	      caddr_t * offband;
 	      db_buf_t buf = (db_buf_t) (wst->sst_buffer + wst->sst_pos);
 	      int pos_len, len;
-	      WP_LENGTH (buf, pos_len, len);
+	      WP_LENGTH (buf, pos_len, len, wst->sst_buffer, wst->sst_fill);
 	      len -= WP_FIRST_POS (buf + pos_len);
 	      buf += pos_len + WP_FIRST_POS (buf + pos_len);
 	      offband = (caddr_t *) box_deserialize_string ((caddr_t) buf , len);

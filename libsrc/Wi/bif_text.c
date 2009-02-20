@@ -427,7 +427,7 @@ vt_word_string_ends  (db_buf_t str, d_id_t * d_id_1, d_id_t * d_id_2)
   D_SET_AT_END (&first);
   while (pos < total)
     {
-      WP_LENGTH (str + pos, hl, l);
+      WP_LENGTH (str + pos, hl, l, str, total);
       id = (d_id_t *) (str + pos + hl);
       if (D_AT_END (&first))
 	d_id_set (&first, id);
@@ -452,7 +452,7 @@ bif_vt_word_string_ends  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   D_SET_AT_END (&first);
   while (pos < total)
     {
-      WP_LENGTH (str + pos, hl, l);
+      WP_LENGTH (str + pos, hl, l, str, total);
       id = (d_id_t *) (str + pos + hl);
       if (D_AT_END (&first))
 	d_id_set (&first, id);
@@ -508,7 +508,7 @@ bif_vt_word_string_details  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
       int l2, dist, wp;
       int l, hl;
       n_d_ids ++;
-      WP_LENGTH (str + pos, hl, l);
+      WP_LENGTH (str + pos, hl, l, str, len);
       id = (d_id_t *) (str + pos + hl);
       if (print)
 	printf ("   [id: %ld ( ", (long) LONG_REF_NA (&id->id[0]));
@@ -517,7 +517,7 @@ bif_vt_word_string_details  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
       while (w_pos < pos + hl + l)
 	{
 	  n_words++;
-	  WP_LENGTH (str + w_pos, l2, wp);
+	  WP_LENGTH (str + w_pos, l2, wp, str, len);
 	  dist += wp;
 	  if (print)
 	    printf (" %d", dist);
@@ -1598,8 +1598,8 @@ bif_wb_apply (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    {
 	      int ihl, il, id_len;
 	      ins = (caddr_t) batch[wb_inx];
-	      WP_LENGTH (ins, ihl, il);
 	      ins_len = box_length (ins) - 1;
+	      WP_LENGTH (ins, ihl, il, ins, ins_len);
 	      d_id_set (&ins_id, (d_id_t*) (ins + ihl));
 	      id_len = WP_FIRST_POS (ins + ihl);
 	      if (id_len + 1 == ins_len)
@@ -1618,7 +1618,7 @@ bif_wb_apply (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	}
       if (mid < org_len)
 	{
-	  WP_LENGTH (org + mid, hl, l);
+	  WP_LENGTH (org + mid, hl, l, org, org_len);
 	  d_id_set (&d_id,  (d_id_t *) (org + mid + hl));
 	}
       if (mid >= org_len && !ins)

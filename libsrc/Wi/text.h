@@ -220,8 +220,8 @@ typedef struct search_stream_s search_stream_t;
 
 
 
-#define WP_LENGTH(wp, hl, l) \
-{ \
+#define WP_LENGTH_IMPL(wp, hl, l) \
+do { \
   l = ((db_buf_t) (wp))[0]; \
   if (((unsigned)(l)) < WP_MAX_8_BIT_LEN) \
        hl = 1; \
@@ -235,7 +235,49 @@ typedef struct search_stream_s search_stream_t;
       hl = 5; \
       l = LONG_REF_NA (wp + 1); \
     } \
-}
+} while (0)
+
+#ifdef WP_DEBUG
+
+#define WP_LENGTH(wp, hl, l, buf, fill) \
+  do { \
+   if (((db_buf_t) (wp)) < ((db_buf_t) (buf))) \
+     GPF_T1 ("WP_LENGTH: access before the beginning of the buffer"); \
+   WP_LENGTH_IMPL(wp, hl, l); \
+   if (0 == l) \
+     GPF_T1 ("WP_LENGTH: zero length item"); \
+   if ((((db_buf_t) (wp)) + hl + l) > (((db_buf_t) (buf)) + (fill))) \
+     GPF_T1 ("WP_LENGTH: danger of access past the end of buffer"); \
+  } while (0)
+
+#define WP_LENGTH_HEADONLY(wp, hl, l, buf, fill) \
+  do { \
+   if (((db_buf_t) (wp)) < ((db_buf_t) (buf))) \
+     GPF_T1 ("WP_LENGTH_HEADONLY: access before the beginning of the buffer"); \
+   WP_LENGTH_IMPL(wp, hl, l); \
+   if ((((db_buf_t) (wp)) + hl) > (((db_buf_t) (buf)) + (fill))) \
+     GPF_T1 ("WP_LENGTH_HEADONLY: danger of access past the end of buffer"); \
+  } while (0)
+
+#define SST_FILL_SET(sst,val) \
+  do { \
+    int pos, hl, l; \
+    (sst)->sst_fill = (val); \
+    for (pos = 0; pos < (sst)->sst_fill; pos += hl + l) \
+      { \
+        WP_LENGTH_IMPL((sst)->sst_buffer + pos, hl, l); \
+        if (0 == l) \
+          GPF_T1 ("SST_FILL_SET: zero length item"); \
+      } \
+    if (pos > (sst)->sst_fill) \
+      GPF_T1 ("SST_FILL_SET: danger of access past the end of buffer"); \
+    } while (0)
+
+#else
+#define WP_LENGTH(wp, hl, l, buf, fill) WP_LENGTH_IMPL(wp, hl, l)
+#define WP_LENGTH_HEADONLY(wp, hl, l, buf, fill) WP_LENGTH_IMPL(wp, hl, l)
+#define SST_FILL_SET(sst,val) (sst)->sst_fill = (val)
+#endif
 
 
 #define WP_D_ID 0
