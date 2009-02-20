@@ -2036,9 +2036,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			Literal lit = (Literal) n;
 			String o = "\"" + lit.stringValue() + "\"";
 			if (lit.getLanguage() != null) 
-				return o + "@" + lit.getLanguage();
+				o = "@" + lit.getLanguage();
 			else if (lit.getDatatype() != null) 
-				return o + "^^<" + lit.getDatatype() + ">";
+				o = "^^<" + lit.getDatatype() + ">";
 			return o;
 		}
 		else return "\"" + n.stringValue() + "\"";
