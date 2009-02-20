@@ -36,25 +36,23 @@
   xmlns:skos="http://www.w3.org/2004/02/skos/core#"
   xmlns:sioc="&sioc;"
   xmlns:foaf="&foaf;"
-  xmlns:bibo="&bibo;"
   xmlns:owl="&owl;"
   xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
   xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
   xmlns:umbel="http://umbel.org/umbel#"
-  xmlns:po="http://purl.org/ontology/po/"
-  xmlns:dcterms="http://purl.org/dc/terms/"
-  xmlns:redwood-tags="http://www.holygoat.co.uk/owl/redwood/0.1/tags/"
   version="1.0">
   <xsl:output method="xml" indent="yes"/>
   <xsl:param name="base" />
   <xsl:variable name="uc">ABCDEFGHIJKLMNOPQRSTUVWXYZ</xsl:variable>
   <xsl:variable name="lc">abcdefghijklmnopqrstuvwxyz</xsl:variable>
+  
   <xsl:template match="/">
       <rdf:RDF>
 	  <xsl:apply-templates select="html/head"/>
 	  <xsl:apply-templates select="/" mode="rdf-in-comment"/>
       </rdf:RDF>
   </xsl:template>
+  
   <xsl:template match="html/head">
       <rdf:Description rdf:about="{$base}">
 	  <rdf:type rdf:resource="&foaf;Document"/>
@@ -66,14 +64,18 @@
 	  <xsl:apply-templates select="link[@rel='alternate']"/>
       </rdf:Description>
   </xsl:template>
+  
   <xsl:template match="link[@rel='alternate']">
       <rdfs:seeAlso rdf:resource="{@href}"/>
   </xsl:template>
+  
   <xsl:template match="*" mode="rdf-in-comment">
       <xsl:apply-templates mode="rdf-in-comment"/>
   </xsl:template>
+  
   <xsl:template match="text()|@*" mode="rdf-in-comment">
   </xsl:template>
+  
   <xsl:template match="comment()" mode="rdf-in-comment">
       <!-- first we parse in 'safe' mode -->
       <xsl:variable name="tmp" select="document-literal (., '', 2)"/>
@@ -82,142 +84,29 @@
 	  <xsl:copy-of select="$doc/rdf:RDF/*"/>
       </xsl:if>
   </xsl:template>
+  
   <xsl:template match="title">
       <dc:title>
 	  <xsl:value-of select="."/>
       </dc:title>
   </xsl:template>
+  
   <xsl:template match="meta[translate (@name, $uc, $lc)='description']">
       <dc:description>
 	  <xsl:value-of select="@content"/>
       </dc:description>
   </xsl:template>
+  
   <xsl:template match="meta[translate (@name, $uc, $lc)='copyrights']">
       <dc:rights>
 	  <xsl:value-of select="@content"/>
       </dc:rights>
   </xsl:template>
 
-  <xsl:template match="meta[translate (@name, $uc, $lc)='subtitle']">
-      <po:subtitle>
-	  <xsl:value-of select="@content"/>
-      </po:subtitle>
-  </xsl:template>
-
-  <xsl:template match="meta[translate (@name, $uc, $lc)='object.type']">
-      <dc:type>
-	  <xsl:value-of select="@content"/>
-      </dc:type>
-  </xsl:template>
-
-  <xsl:template match="meta[translate (@name, $uc, $lc)='book.title']">
-      <dc:title>
-	  <xsl:value-of select="@content"/>
-      </dc:title>
-  </xsl:template>
-
-  <xsl:template match="meta[translate (@name, $uc, $lc)='book.author']">
-      <dc:creator>
-	  <xsl:value-of select="@content"/>
-      </dc:creator>
-  </xsl:template>
-
-  <xsl:template match="meta[translate (@name, $uc, $lc)='book.isbn']">
-      <bibo:isbn13>
-	  <xsl:value-of select="@content"/>
-      </bibo:isbn13>
-  </xsl:template>
-
-  <xsl:template match="meta[translate (@name, $uc, $lc)='book.year']">
-      <dc:date>
-	  <xsl:value-of select="@content"/>
-      </dc:date>
-  </xsl:template>
-
-  <xsl:template match="meta[translate (@name, $uc, $lc)='book.link']">
-      <bibo:uri rdf:resource="{@content}" />
-  </xsl:template>
-
-  <xsl:template match="meta[translate (@name, $uc, $lc)='book.tags']">
-      <redwood-tags:tag>
-	  <xsl:value-of select="@content"/>
-      </redwood-tags:tag>
-  </xsl:template>
-
-  <xsl:template match="meta[translate (@name, $uc, $lc)='reference']">
-      <dcterms:references>
-	  <xsl:value-of select="@content"/>
-      </dcterms:references>
-  </xsl:template>
-
-  <xsl:template match="meta[translate (@name, $uc, $lc)='isbn']">
-      <bibo:isbn10>
-	  <xsl:value-of select="@content"/>
-      </bibo:isbn10>
-  </xsl:template>
-
-  <xsl:template match="meta[translate (@name, $uc, $lc)='ean']">
-      <bibo:eanucc13>
-	  <xsl:value-of select="@content"/>
-      </bibo:eanucc13>
-  </xsl:template>
-
-  <xsl:template match="meta[translate (@name, $uc, $lc)='graphic']">
-      <foaf:img rdf:resource="{@content}"/>
-  </xsl:template>
-
-  <xsl:template match="meta[translate (@name, $uc, $lc)='graphic_medium']">
-      <foaf:img rdf:resource="{@content}"/>
-  </xsl:template>
-
-  <xsl:template match="meta[translate (@name, $uc, $lc)='graphic_large']">
-      <foaf:img rdf:resource="{@content}"/>
-  </xsl:template>
-
-  <xsl:template match="meta[translate (@name, $uc, $lc)='book_title']">
-      <dc:title>
-	  <xsl:value-of select="@content"/>
-      </dc:title>
-  </xsl:template>
-
-  <xsl:template match="meta[translate (@name, $uc, $lc)='author']">
-      <dc:creator>
-	  <xsl:value-of select="@content"/>
-      </dc:creator>
-  </xsl:template>
-
   <xsl:template match="meta[translate (@name, $uc, $lc)='keywords']">
-      <dc:description>
+      <dc:subject>
 	  <xsl:value-of select="@content"/>
-      </dc:description>
-  </xsl:template>
-
-  <xsl:template match="meta[translate (@name, $uc, $lc)='date']">
-      <dc:date>
-	  <xsl:value-of select="@content"/>
-      </dc:date>
-  </xsl:template>
-
-  <xsl:template match="meta[translate (@name, $uc, $lc)='publisher']">
-      <dc:publisher>
-	  <xsl:value-of select="@content"/>
-      </dc:publisher>
-  </xsl:template>
-
-  <xsl:template match="meta[translate (@name, $uc, $lc)='series']">
-      <po:series>
-	  <xsl:value-of select="@content"/>
-      </po:series>
-  </xsl:template>
-
-  <xsl:template match="meta[translate (@name, $uc, $lc)='edition']">
-      <po:series>
-	  <xsl:value-of select="@content"/>
-      </po:series>
-  </xsl:template>
-
-  <xsl:template match="meta[translate (@name, $uc, $lc)='keywords']">
-      <dc:subject><xsl:value-of select="@content"/></dc:subject>
+	  </dc:subject>
       <!--xsl:variable name="res" select="vi:umbelGet (@content)"/>
       <xsl:for-each select="$res//object[@type='umbel:SubjectConcept']">
 	  <umbel:isAbout rdf:resource="{@uri}"/>
@@ -227,7 +116,7 @@
 	  <owl:sameAs rdf:resource="{@uri}"/>
       </xsl:for-each-->
   </xsl:template>
-  <!-- content specific rules -->
+
   <xsl:template match="img[@src like 'http://farm%.static.flickr.com/%/%\\_%.%']">
       <foaf:depiction>
 	  <foaf:Image rdf:about="{@src}"/>

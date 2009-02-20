@@ -3150,6 +3150,62 @@ create procedure DB.DBA.RDF_LOAD_DELICIOUS (in graph_iri varchar, in new_origin_
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_OREILLY (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare xd, host_part, xt, url, tmp, api_key, hdr, exif any;
+  declare pos int;
+  declare book_id varchar;
+  declare exit handler for sqlstate '*'
+    {
+      return 0;
+    };
+    if (new_origin_uri like 'http://www.oreilly.com/catalog/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.oreilly.com/catalog/%s', 0);
+		book_id := trim(tmp[0], '/');
+		if (book_id is null)
+			return 0;
+		pos := strchr(book_id, '/');
+		if (pos is not null and pos <> 0)
+			book_id := left(book_id, pos);
+	}
+	else if (new_origin_uri like 'http://oreilly.com/catalog/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://oreilly.com/catalog/%s', 0);
+		book_id := trim(tmp[0], '/');
+		if (book_id is null)
+			return 0;
+		pos := strchr(book_id, '/');
+		if (pos is not null)
+			book_id := left(book_id, pos);
+	}
+	else
+		return 0;
+    url := sprintf('http://oreilly.com/catalog/%s/', book_id);
+	tmp := http_get (url);
+	xd := xtree_doc (tmp, 2);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/oreilly2rdf.xsl', xd, vector ('base', coalesce (dest, graph_iri)));
+	xd := serialize_to_UTF8_xml (xt);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	return 1;
+}
+;
+
+create procedure INSTALL_RDF_LOAD_OREILLY ()
+{
+  -- possible old behaviour
+  delete from SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_OREILLY';
+  -- register in PP chain
+  insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
+      values ('(http://.*oreilly.com/catalog/.*)',
+            'URL', 'DB.DBA.RDF_LOAD_OREILLY', null, 'Oreilly', vector ());
+}
+;
+
+INSTALL_RDF_LOAD_OREILLY ()
+;
+
+
 create procedure DB.DBA.RDF_LOAD_BUGZILLA (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare xd, host_part, xt, url, tmp, api_key, img_id, hdr, exif any;
