@@ -124,6 +124,7 @@ public class VirtDataSource extends VirtGraph implements DataSource {
 	   getConnection().setAutoCommit(false);
 	   removeNamedModel(name);
 	   addNamedModel(name, model);
+	   getConnection().commit();
 	   getConnection().setAutoCommit(true);
 	} catch (Exception e) {
  	    try {

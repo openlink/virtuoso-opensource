@@ -915,6 +915,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			throw new RepositoryException("Problem parsing triples", e);
 		}
 		finally {
+                        commit();
 			setAutoCommit(autoCommit);
 		}
 	}
@@ -1122,6 +1123,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		   	throw new RepositoryException(e);
 		}
 		finally {
+                        commit();
 			setAutoCommit(autoCommit);
 		}
 	}
@@ -1194,6 +1196,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		   	throw new RepositoryException(e);
 		}
 		finally {
+                        commit();
 			setAutoCommit(autoCommit);
 		}
 	}
@@ -1235,6 +1238,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		   	throw e;
 		}
 		finally {
+                        commit();
 			setAutoCommit(autoCommit);
 		}
 	}
@@ -1309,6 +1313,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		   	throw e;
 		}
 		finally {
+                        commit();
 			setAutoCommit(autoCommit);
 		}
 	}
@@ -1361,6 +1366,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		   	throw e;
 		}
 		finally {
+                        commit();
 			setAutoCommit(autoCommit);
 		}
 	}
@@ -1395,6 +1401,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		   	throw e;
 		}
 		finally {
+                        commit();
 			setAutoCommit(autoCommit);
 		}
 	}
