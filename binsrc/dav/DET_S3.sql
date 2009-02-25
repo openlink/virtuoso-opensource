@@ -22,6 +22,18 @@
 
 -------------------------------------------------------------------------------
 --
+create function DB.DBA.S3__encode (
+ in S varchar)
+{
+  S := sprintf ('%U', S);
+  S := replace(S, '''', '%27');
+  S := replace(S, '%2F', '/');
+  return S;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create function DB.DBA.S3__params (
   in colID integer,
   out bucket varchar,
@@ -300,7 +312,7 @@ create function DB.DBA.S3__getBucket (
   S := sprintf ('GET\n\n\n%s\n%s', dateUTC, bucket);
   authHeader := DB.DBA.S3__makeAWSHeader (accessCode, secretKey, S);
   reqHdr := sprintf ('Authorization: %s\r\nDate: %s', authHeader, dateUTC);
-  params := sprintf ('?prefix=%s&marker=%s&delimiter=%s', bucketPath, '', delimiter);
+  params := sprintf ('?prefix=%U&marker=%s&delimiter=%s', bucketPath, '', delimiter);
   commit work;
   xt := http_client_ext (url=>DB.DBA.S3__makeHostUrl (bucket) || params,
                          http_method=>'GET',
@@ -309,7 +321,7 @@ create function DB.DBA.S3__getBucket (
   -- dbg_obj_princ ('xt', xt);
   if (resHdr[0] like 'HTTP/1._ 4__ %' or resHdr[0] like 'HTTP/1._ 5__ %')
   {
-    -- dbg_obj_princ ('xt', xt);
+    -- dbg_obj_princ ('DB.DBA.S3__getBucket - resHdr[0]', resHdr[0]);
     return null;
   }
   -- dbg_obj_princ ('xt', xt);
@@ -357,9 +369,9 @@ create function DB.DBA.S3__putObject (
   declare reqHdr, resHdr, xt varchar;
 
   what := case when (chr (s3Path [length (s3Path) - 1]) = '/') then 'C' else 'R' end;
-  workPath := s3Path;
+  workPath := DB.DBA.S3__encode (s3Path);
   if (trim (s3Path, '/') <> DB.DBA.S3__getBucketFromUrl (s3Path))
-    workPath := rtrim (s3Path, '/') || case when (what = 'C') then '_\$folder\$' end;
+    workPath := rtrim (workPath, '/') || case when (what = 'C') then '_\$folder\$' end;
   dateUTC := date_rfc1123 (now());
   S := sprintf ('PUT\n\n%s\n%s\n%s', coalesce (s3Type, ''), dateUTC, workPath);
   authHeader := DB.DBA.S3__makeAWSHeader (accessCode, secretKey, S);
@@ -410,7 +422,8 @@ create function DB.DBA.S3__headObject (
       item := item[0];
     } else {
       -- bucket object
-      workPath := rtrim (s3Path, '/') || case when (what = 'C') then '_\$folder\$' end;
+      workPath := DB.DBA.S3__encode (s3Path);
+      workPath := rtrim (workPath, '/') || case when (what = 'C') then '_\$folder\$' end;
       dateUTC := date_rfc1123 (now());
       S := sprintf ('HEAD\n\n\n%s\n%s', dateUTC, workPath);
       authHeader := DB.DBA.S3__makeAWSHeader (accessCode, secretKey, S);
@@ -422,7 +435,7 @@ create function DB.DBA.S3__headObject (
                              headers=>resHdr);
       if (resHdr[0] like 'HTTP/1._ 4__ %' or resHdr[0] like 'HTTP/1._ 5__ %')
       {
-        -- dbg_obj_princ ('xt', xt);
+        -- dbg_obj_princ ('resHdr[0]', DB.DBA.S3__makeHostUrl (workPath), s3Path, resHdr[0]);
         return null;
       }
       item := DB.DBA.S3__headers2item (resHdr, s3Path, what);
@@ -447,8 +460,9 @@ create function DB.DBA.S3__getObject (
   declare reqHdr, resHdr varchar;
   declare xt, item any;
 
+  workPath := DB.DBA.S3__encode (s3Path);
   what := case when (chr (s3Path [length (s3Path) - 1]) = '/') then 'C' else 'R' end;
-  workPath := rtrim (s3Path, '/') || case when (what = 'C') then '_\$folder\$' end;
+  workPath := rtrim (workPath, '/') || case when (what = 'C') then '_\$folder\$' end;
   dateUTC := date_rfc1123 (now());
   S := sprintf ('GET\n\n\n%s\n%s', dateUTC, workPath);
   authHeader := DB.DBA.S3__makeAWSHeader (accessCode, secretKey, S);
@@ -491,9 +505,9 @@ create function DB.DBA.S3__deleteObject (
   {
     s3Path := get_keyword ('path', item);
     what := case when (chr (s3Path [length (s3Path) - 1]) = '/') then 'C' else 'R' end;
-    workPath := s3Path;
+    workPath := DB.DBA.S3__encode (s3Path);
     if (trim (s3Path, '/') <> DB.DBA.S3__getBucketFromUrl (s3Path))
-      workPath := rtrim (s3Path, '/') || case when (what = 'C') then '_\$folder\$' end;
+      workPath := rtrim (workPath, '/') || case when (what = 'C') then '_\$folder\$' end;
     S := sprintf ('DELETE\n\n\n%s\n%s', dateUTC, workPath);
     authHeader := DB.DBA.S3__makeAWSHeader (accessCode, secretKey, S);
     reqHdr := sprintf ('Authorization: %s\r\nDate: %s', authHeader, dateUTC);
