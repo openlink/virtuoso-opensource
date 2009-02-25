@@ -45,6 +45,7 @@
 	<xsl:variable name="ns">http://getsatisfaction.com</xsl:variable>
 	<xsl:output method="xml" indent="yes" omit-xml-declaration="yes" />
 	<xsl:param name="baseUri" />
+	<xsl:param name="base" />
 	<xsl:param name="what" />
 	<xsl:template match="/">
 		<rdf:RDF>
@@ -56,7 +57,7 @@
 			<foaf:Document rdf:about="{$baseUri}">
 				<foaf:primaryTopic>
 					<xsl:if test="$what = 'events'">
-						<foaf:Group rdf:about="{vi:proxyIRI(substring($baseUri, 1, string-length($baseUri)-8))}" />
+						<foaf:Group rdf:about="{vi:proxyIRI($base)}" />
 					</xsl:if>
 					<xsl:if test="$what = 'event'">
 						<c:Vevent rdf:about="{vi:proxyIRI(item/event_url)}"/>
@@ -70,22 +71,11 @@
 		<xsl:if test="$what = 'members'">
 			<foaf:Document rdf:about="{$baseUri}">
 				<foaf:primaryTopic>
-					<xsl:choose>
-						<xsl:when test="substring($baseUri, string-length($baseUri)-6) = 'members'">
-							<foaf:Group rdf:about="{vi:proxyIRI(substring($baseUri, 1, string-length($baseUri)-7))}">
+					<foaf:Group rdf:about="{vi:proxyIRI($base)}">
 								<xsl:for-each select="item">
 									<foaf:member rdf:resource="{vi:proxyIRI(link)}"/>
 								</xsl:for-each>
 							</foaf:Group>
-						</xsl:when>
-						<xsl:otherwise>
-							<foaf:Group rdf:about="{vi:proxyIRI($baseUri)}">
-								<xsl:for-each select="item">
-									<foaf:member rdf:resource="{vi:proxyIRI(link)}"/>
-								</xsl:for-each>
-							</foaf:Group>
-						</xsl:otherwise>
-					</xsl:choose>
 				</foaf:primaryTopic>
 				<!--xsl:for-each select="item">
 					<foaf:topic rdf:resource="{link}"/>
@@ -127,7 +117,7 @@
 							<opl-meetup:group_name>
 								<xsl:value-of select="group_name" />
 							</opl-meetup:group_name>
-							<sioc:has_creator rdf:resource="{vi:proxyIRI(substring($baseUri, 1, string-length($baseUri)-8))}" />
+							<sioc:has_creator rdf:resource="{vi:proxyIRI($base)}" />
 						</c:Vevent>
 					</foaf:primaryTopic>
 				</foaf:Document>
@@ -224,7 +214,7 @@
 							<dcterms:modified rdf:datatype="&xsd;dateTime">
 								<xsl:value-of select="visited"/>
 							</dcterms:modified>
-							<foaf:topic_interest rdf:resource="{vi:proxyIRI(substring($baseUri, 1, string-length($baseUri)-7))}" />
+							<foaf:topic_interest rdf:resource="{vi:proxyIRI($base)}" />
 						</foaf:Person>
 					</foaf:primaryTopic>
 				</foaf:Document>
