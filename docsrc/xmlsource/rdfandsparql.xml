@@ -418,6 +418,53 @@ ORDER BY ?name
 OFFSET 9000
 LIMIT 1000
 ]]></programlisting>
+<para>LIMIT applies solution resulting from the graph patterns in the WHERE
+CLAUSE. This implies that SELECT and CONSTRUCT/DESCRIBE queries will
+behave a little differently. In the case of SELECT you have a straight
+translation i.e. LIMIT 4 implies 4 records in the result set. In the
+case of CONSTRUCTs where the solution is a graph, implying that the
+existence of duplicates and/or unbound variables is common,  LIMIT is
+basically a maximum triples threshold of: [Solution Triples] x [LIMIT].
+An example is the following query:
+</para>
+<programlisting><![CDATA[
+prefix dct:<http://purl.org/dc/terms/>
+prefix rdfs:<http://www.w3.org/2000/01/rdf-schema#>
+
+CONSTRUCT { ?resource dct:title ?title ;
+                      a ?type }
+
+FROM <http://msone.computas.no/graphs/inferred/classification>
+FROM <http://msone.computas.no/graphs>
+FROM <http://msone.computas.no/graphs/instance/nfi>
+FROM <http://msone.computas.no/graphs/instance/mo>
+FROM <http://msone.computas.no/graphs/ontology/mediasone>
+FROM <http://msone.computas.no/graphs/vocab/mediasone>
+FROM <http://msone.computas.no/graphs/inferred/nfi/realisation1>
+FROM <http://msone.computas.no/graphs/inferred/mo/realisation1>
+FROM <http://msone.computas.no/graphs/inferred/nfi/realisation2>
+FROM <http://msone.computas.no/graphs/inferred/mo/realisation2>
+FROM <http://msone.computas.no/graphs/inferred/agent-classification>
+FROM <http://msone.computas.no/graphs/ontology/mediasone/agent>
+
+WHERE {
+  {
+?resource a ?type .
+  FILTER (?type = <http://www.w3.org/2002/07/owl#Class> ) .
+  ?resource rdfs:label ?title .
+  } UNION {
+?resource a ?type .
+  FILTER (?type in (
+          <http://musicbrainz.org/mm/mm-2.1#Track> ,
+          <http://www.csd.abdn.ac.uk/~ggrimnes/dev/imdb/IMDB#Movie> ,
+          <http://xmlns.com/foaf/0.1/Image> ,
+          <http://www.computas.com/mediasone#Text> ) ) .
+  ?resource dct:title ?title .
+  }
+  FILTER regex(?title, "turi", "i")
+}
+ORDER BY ?title LIMIT 4 OFFSET 0
+]]></programlisting>
 <sect3 id="rdfsparqlandxquery"><title>SPARQL and XQuery Core Function Library</title>
 <para>In the current implementation, the XQuery Core Function Library is not available from SPARQL.</para>
 <para>As a temporary workaround, string parsing functions are made available, because they are widely used in W3C DAWG examples and the like. They are:</para>
