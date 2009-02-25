@@ -1634,6 +1634,7 @@ ddl_ensure_table (const char *name, const char *text)
   if (!sch_name_to_table (wi_inst.wi_schema, name))
     {
       caddr_t err = NULL;
+      local_cursor_t * lc = NULL;
       query_t *obj_create = eql_compile_2 (text, bootstrap_cli, &err, SQLC_DEFAULT);
       if (err)
 	{
@@ -1645,7 +1646,7 @@ ddl_ensure_table (const char *name, const char *text)
 	  return;
 	}
       first_id = DD_FIRST_PRIVATE_OID;
-      err = qr_quick_exec (obj_create, bootstrap_cli, "", NULL, 0);
+      err = qr_quick_exec (obj_create, bootstrap_cli, "", &lc, 0);
       if (err)
 	{
 	  if (err == (caddr_t) SQL_NO_DATA_FOUND)
@@ -1655,11 +1656,14 @@ ddl_ensure_table (const char *name, const char *text)
 	    log_error ("Error executing a server init statement : %s: %s -- %s",
 		((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING],
 		       err_first_line (text));
+	  if (lc) lc_free (lc);
 	  dk_free_tree (err);
 	  qr_free (obj_create);
 	  sqlc_set_client (old_cli);
 	  return;
 	}
+      while (lc_next (lc));
+      if (lc) lc_free (lc);
       qr_free (obj_create);
 
       first_id = DD_FIRST_FREE_OID;
