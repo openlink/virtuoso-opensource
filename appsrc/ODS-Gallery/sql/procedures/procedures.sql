@@ -20,7 +20,53 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
+-------------------------------------------------------------------------------
+--
+create procedure PHOTO.WA.host_protocol ()
+{
+  return case when is_https_ctx () then 'https://' else 'http://' end;
+}
+;
 
+-------------------------------------------------------------------------------
+--
+create procedure PHOTO.WA.host_url ()
+{
+  declare host varchar;
+
+  declare exit handler for sqlstate '*' { goto _default; };
+
+  if (is_http_ctx ())
+  {
+    host := http_request_header (http_request_header ( ) , 'Host' , null , sys_connected_server_address ());
+    if (isstring (host) and strchr (host , ':') is null)
+    {
+      declare hp varchar;
+      declare hpa any;
+
+      hp := sys_connected_server_address ();
+      hpa := split_and_decode ( hp , 0 , '\0\0:');
+      host := host || ':' || hpa [1];
+    }
+    goto _exit;
+  }
+
+_default:;
+  host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+  if (host is null)
+  {
+    host := sys_stat ('st_host_name');
+    if (server_http_port () <> '80')
+      host := host || ':' || server_http_port ();
+  }
+
+_exit:;
+  if (host not like PHOTO.WA.host_protocol () || '%')
+    host := PHOTO.WA.host_protocol () || host;
+
+  return host;
+}
+;
 
 --------------------------------------------------------------------------------
 --

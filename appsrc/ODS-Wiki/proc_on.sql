@@ -1398,7 +1398,7 @@ create procedure WV.WIKI.wiki_cluster_uri (in cluster_name varchar)
   cluster_name := cast (cluster_name as varchar);
   declare owner varchar;
   owner := WV.WIKI.CLUSTERPARAM (cluster_name, 'creator');
-  return sprintf ('http://%s%s/%U/wiki/%U/', WV.WIKI.http_name (), SIOC..get_base_path (), owner, cluster_name);
+  return sprintf ('%s%s%s/%U/wiki/%U/', case when is_https_ctx () then 'https://' else 'http://' end, WV.WIKI.http_name (), SIOC..get_base_path (), owner, cluster_name);
 }
 ;
 

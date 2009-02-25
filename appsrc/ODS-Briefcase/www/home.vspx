@@ -207,7 +207,7 @@
       declare hasLabels varchar;
       declare toolbarLabel varchar;
 
-      hasLabels := cast (get_keyword ('tbLabels', self.settings, '1') as integer);
+      hasLabels := ODRIVE.WA.settings_tbLabels (self.settings);
       toolbarLabel := case when (hasLabels = 0) then '' else sprintf ('<br /><span class="toolbarLabel">%s</span>', cmdLabel) end;
       if (self.toolbarEnable (cmd))
       {
@@ -634,7 +634,7 @@
             {
               if (not ODRIVE.WA.DAV_ERROR (ODRIVE.WA.DAV_SET (self.dav_path, 'acl', self.dav_acl)))
               {
-                ODRIVE.WA.acl_send_mail (self.account_id, self.dav_path, dav_acl, self.dav_acl);
+                ODRIVE.WA.acl_send_mail (self.domain_id, self.account_id, self.dav_path, dav_acl, self.dav_acl);
               }
             }
 
@@ -869,18 +869,17 @@
 
           _params := self.vc_page.vc_event.ve_params;
 
-          self.chars := cast (get_keyword ('chars', self.settings, '60') as integer);
-
+          self.chars := ODRIVE.WA.settings_chars (self.settings);
           self.dir_columns := vector ();
-          self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#1', 'c0', 'Name',          1, 0, vector (cast(get_keyword ('column_#1', self.settings, '1') as integer), 1), 'width="50%"')));
-          self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#2',   '', 'Tags',          0, 0, vector (cast(get_keyword ('column_#2', self.settings, '1') as integer), 0), '')));
-          self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#3', 'c2', 'Size',          1, 1, vector (cast(get_keyword ('column_#3', self.settings, '1') as integer), 0), '')));
-          self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#4', 'c3', 'Date Modified', 1, 1, vector (cast(get_keyword ('column_#4', self.settings, '1') as integer), 0), '')));
-          self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#5', 'c4', 'Mime Type',     1, 1, vector (cast(get_keyword ('column_#5', self.settings, '1') as integer), 0), '')));
-          self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#6', 'c9', 'Kind',          1, 1, vector (cast(get_keyword ('column_#6', self.settings, '1') as integer), 0), '')));
-          self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#7', 'c5', 'Owner',         1, 1, vector (cast(get_keyword ('column_#7', self.settings, '1') as integer), 0), '')));
-          self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#8', 'c6', 'Group',         1, 1, vector (cast(get_keyword ('column_#8', self.settings, '1') as integer), 0), '')));
-          self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#9', 'c7', 'Permissions',   0, 0, vector (cast(get_keyword ('column_#9', self.settings, '1') as integer), 0), '')));
+          self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#1', 'c0', 'Name',          1, 0, vector (ODRIVE.WA.settings_column (self.settings, 1), 1), 'width="50%"')));
+          self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#2',   '', 'Tags',          0, 0, vector (ODRIVE.WA.settings_column (self.settings, 2), 0), '')));
+          self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#3', 'c2', 'Size',          1, 1, vector (ODRIVE.WA.settings_column (self.settings, 3), 0), '')));
+          self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#4', 'c3', 'Date Modified', 1, 1, vector (ODRIVE.WA.settings_column (self.settings, 4), 0), '')));
+          self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#5', 'c4', 'Mime Type',     1, 1, vector (ODRIVE.WA.settings_column (self.settings, 5), 0), '')));
+          self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#6', 'c9', 'Kind',          1, 1, vector (ODRIVE.WA.settings_column (self.settings, 6), 0), '')));
+          self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#7', 'c5', 'Owner',         1, 1, vector (ODRIVE.WA.settings_column (self.settings, 7), 0), '')));
+          self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#8', 'c6', 'Group',         1, 1, vector (ODRIVE.WA.settings_column (self.settings, 8), 0), '')));
+          self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#9', 'c7', 'Permissions',   0, 0, vector (ODRIVE.WA.settings_column (self.settings, 9), 0), '')));
 
           if (get_keyword ('id', _params, '') <> '')
           {
@@ -2020,7 +2019,6 @@
                 {
                   control.ds_sql := control.ds_sql || ', c0';
                 }
-                --control.ds_nrows := ODRIVE.WA.settings_rows (self.settings);
                 self.dir_tags := vector ();
                 if (self.dir_cloud = 1)
                 {

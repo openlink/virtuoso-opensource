@@ -48,8 +48,7 @@ create procedure ODS.ODS_API."discussion.groups.get" ()  __soap_http 'text/xml'
   if (not ods_check_auth (uname, -1, 'reader'))
     return ods_auth_failed ();
 
-  http ((select serialize_to_UTF8_xml (XMLELEMENT ('groups', XMLAGG (XMLELEMENT ('group', XMLATTRIBUTES (NG_GROUP as "id"), NG_NAME)))) from DB.DBA.NEWS_GROUPS));
-
+  http ((select replace (serialize_to_UTF8_xml (XMLELEMENT ('groups', XMLAGG (XMLELEMENT ('group', XMLATTRIBUTES (NG_GROUP as "id"), NG_NAME)))), '><', '>\n  <') from DB.DBA.NEWS_GROUPS));
   return '';
 }
 ;

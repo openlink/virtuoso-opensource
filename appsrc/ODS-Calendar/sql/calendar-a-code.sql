@@ -1166,6 +1166,14 @@ create procedure CAL.WA.dav_logical_home (
 
 -------------------------------------------------------------------------------
 --
+create procedure CAL.WA.host_protocol ()
+{
+  return case when is_https_ctx () then 'https://' else 'http://' end;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure CAL.WA.host_url ()
 {
   declare host varchar;
@@ -1196,8 +1204,8 @@ _default:;
   }
 
 _exit:;
-  if (host not like 'http://%')
-    host := 'http://' || host;
+  if (host not like CAL.WA.host_protocol () || '%')
+    host := CAL.WA.host_protocol () || host;
 
   return host;
 }

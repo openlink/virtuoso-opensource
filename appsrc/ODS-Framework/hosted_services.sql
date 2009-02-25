@@ -1678,6 +1678,11 @@ create procedure WA_DEFAULT_DOMAIN ()
     return cname;
 };
 
+create procedure WA_GET_PROTOCOL()
+{
+  return case when is_https_ctx () then 'https://' else 'http://' end;
+};
+
 create procedure WA_GET_HOST()
 {
   declare ret varchar;

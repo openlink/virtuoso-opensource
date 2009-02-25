@@ -1149,27 +1149,49 @@ _error:
 
 -------------------------------------------------------------------------------
 --
+create procedure POLLS.WA.host_protocol ()
+{
+  return case when is_https_ctx () then 'https://' else 'http://' end;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure POLLS.WA.host_url ()
 {
-  declare ret varchar;
+  declare host varchar;
 
-  --return '';
-  if (is_http_ctx ()) {
-    ret := http_request_header (http_request_header ( ) , 'Host' , null , sys_connected_server_address ());
-    if (isstring (ret) and strchr (ret , ':') is null) {
+  declare exit handler for sqlstate '*' { goto _default; };
+
+  if (is_http_ctx ())
+  {
+    host := http_request_header (http_request_header ( ) , 'Host' , null , sys_connected_server_address ());
+    if (isstring (host) and strchr (host , ':') is null)
+    {
       declare hp varchar;
       declare hpa any;
 
       hp := sys_connected_server_address ();
       hpa := split_and_decode ( hp , 0 , '\0\0:');
-      ret := ret || ':' || hpa [1];
+      host := host || ':' || hpa [1];
     }
-  } else {
-    ret := sys_connected_server_address ();
-    if (ret is null)
-      ret := sys_stat ('st_host_name') || ':' || server_http_port ();
+    goto _exit;
   }
-  return 'http://' || ret ;
+
+_default:;
+  host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+  if (host is null)
+  {
+    host := sys_stat ('st_host_name');
+    if (server_http_port () <> '80')
+      host := host || ':' || server_http_port ();
+  }
+
+_exit:;
+  if (host not like POLLS.WA.host_protocol () || '%')
+    host := POLLS.WA.host_protocol () || host;
+
+  return host;
 }
 ;
 

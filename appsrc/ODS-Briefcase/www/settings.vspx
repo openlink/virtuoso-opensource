@@ -36,8 +36,9 @@
         </div>
         <div id="c1">
           <div class="tabs">
-            <vm:tabCaption tab="1" tabs="2" caption="Main"/>&nbsp;
-            <vm:tabCaption tab="2" tabs="2" caption="Grid"/>&nbsp;
+          <vm:tabCaption tab="1" tabs="3" caption="Main"/>&nbsp;
+          <vm:tabCaption tab="2" tabs="3" caption="Grid"/>&nbsp;
+          <vm:tabCaption tab="3" tabs="3" caption="Mail Settings"/>&nbsp;
           </div>
           <div class="contents">
             <div id="1" class="tabContent" style="display: none;">
@@ -50,9 +51,7 @@
                   <?vsp
                     declare S varchar;
     
-                    S := '';
-                    if (cast(get_keyword('chars', self.settings, '0') as integer) = 0)
-                      S := 'checked="checked"';
+                    S := case when (ODRIVE.WA.settings_chars (self.settings) = 0) then 'checked="checked"' else '' end;
                     http(sprintf('<input type="radio" name="r_chars" id="r_chars_0" value="0" %s />', S));
                   ?>
                   <xsl:call-template name="nbsp"/><vm:label for="r_chars_0" value="--'show everything'" />
@@ -64,20 +63,18 @@
                   <?vsp
                     declare S varchar;
     
-                    S := '';
-                    if (cast(get_keyword('chars', self.settings, '0') as integer) <> 0)
-                      S := 'checked="checked"';
+                    S := case when (ODRIVE.WA.settings_chars (self.settings) <> 0) then 'checked="checked"' else '' end;
                     http(sprintf('<input type="radio" name="r_chars" id="r_chars_1" value="1" %s />', S));
                   ?>
                   <xsl:call-template name="nbsp"/><vm:label for="r_chars_1" value="--'show no more than'" /><xsl:call-template name="nbsp"/>
-                  <v:text name="f_chars" null-value="--''" value="--get_keyword('chars', self.settings, '60')" xhtml_size="3"/>
+                  <v:text name="f_chars" null-value="--''" value="--ODRIVE.WA.settings_chars (self.settings)" xhtml_size="3"/>
                   <xsl:call-template name="nbsp"/><vm:label for="r_chars_1" value="--'characters'" /><xsl:call-template name="nbsp"/>
                   </td>
                 </tr>
                 <tr>
                 <th />
                   <td>
-                  <v:check-box name="f_tbLabels" xhtml_id="f_tbLabels" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('tbLabels', self.settings, '1') as integer)" />
+                  <v:check-box name="f_tbLabels" xhtml_id="f_tbLabels" is-boolean="1" true-value="1" false-value="0" value="--ODRIVE.WA.settings_tbLabels (self.settings)" />
                     <vm:label for="f_tbLabels" value="Show toolbar labels"/>
                   </td>
                 </tr>
@@ -86,7 +83,7 @@
                   <v:label for="f_rows" value="Rows per page"/>
                 </th>
                 <td>
-                  <v:text name="f_rows" null-value="--''" value="--get_keyword('rows', self.settings, '10')" xhtml_size="3" />
+                  <v:text name="f_rows" null-value="--''" value="--ODRIVE.WA.settings_rows (self.settings)" xhtml_size="3" />
                 </td>
               </tr>
               <tr>
@@ -94,7 +91,7 @@
                   <v:label for="f_hiddens" value="Hide files with prefixes (comma separated)"/>
                 </th>
                 <td>
-                  <v:text name="f_hiddens" null-value="--''" value="--get_keyword('hiddens', self.settings, '.')" xhtml_size="10" />
+                  <v:text name="f_hiddens" null-value="--''" value="--ODRIVE.WA.settings_hiddens (self.settings)" xhtml_size="10" />
                 </td>
               </tr>
               <tr>
@@ -107,7 +104,7 @@
                       <v:item value="1.0" name="1.0"/>
                       <v:before-data-bind>
                         <![CDATA[
-                        control.ufl_value := get_keyword('atomVersion', self.settings, '1.0');
+                        control.ufl_value := ODRIVE.WA.settings_atomVersion (self.settings);
                         ]]>
                       </v:before-data-bind>
                     </v:select-list>
@@ -122,61 +119,81 @@
                     Show columns in detail view
                   </th>
                   <td>
-                  <v:check-box name="f_column_2" xhtml_id="f_column_2" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('column_#2', self.settings, '1') as integer)" />
+                  <v:check-box name="f_column_2" xhtml_id="f_column_2" is-boolean="1" true-value="1" false-value="0" value="--ODRIVE.WA.settings_column (self.settings, 2)" />
                     <vm:label for="f_column_2" value="Tags"/>
                   </td>
                 </tr>
                 <tr>
                   <th />
                   <td>
-                  <v:check-box name="f_column_3" xhtml_id="f_column_3" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('column_#3', self.settings, '1') as integer)" />
+                  <v:check-box name="f_column_3" xhtml_id="f_column_3" is-boolean="1" true-value="1" false-value="0" value="--ODRIVE.WA.settings_column (self.settings, 3)" />
                     <vm:label for="f_column_3" value="Size"/>
                   </td>
                 </tr>
                 <tr>
                   <th />
                   <td>
-                  <v:check-box name="f_column_4" xhtml_id="f_column_4" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('column_#4', self.settings, '1') as integer)" />
+                  <v:check-box name="f_column_4" xhtml_id="f_column_4" is-boolean="1" true-value="1" false-value="0" value="--ODRIVE.WA.settings_column (self.settings, 4)" />
                     <vm:label for="f_column_4" value="Date Modified"/>
                   </td>
                 </tr>
                 <tr>
                   <th />
                   <td>
-                  <v:check-box name="f_column_5" xhtml_id="f_column_5" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('column_#5', self.settings, '1') as integer)" />
+                  <v:check-box name="f_column_5" xhtml_id="f_column_5" is-boolean="1" true-value="1" false-value="0" value="--ODRIVE.WA.settings_column (self.settings, 5)" />
                     <vm:label for="f_column_5" value="Mime Type"/>
                   </td>
                 </tr>
                 <tr>
                   <th />
                   <td>
-                  <v:check-box name="f_column_6" xhtml_id="f_column_6" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('column_#6', self.settings, '1') as integer)" />
+                  <v:check-box name="f_column_6" xhtml_id="f_column_6" is-boolean="1" true-value="1" false-value="0" value="--ODRIVE.WA.settings_column (self.settings, 6)" />
                     <vm:label for="f_column_6" value="Kind"/>
                   </td>
                 </tr>
                 <tr>
                   <th />
                   <td>
-                  <v:check-box name="f_column_7" xhtml_id="f_column_7" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('column_#7', self.settings, '1') as integer)" />
+                  <v:check-box name="f_column_7" xhtml_id="f_column_7" is-boolean="1" true-value="1" false-value="0" value="--ODRIVE.WA.settings_column (self.settings, 7)" />
                     <vm:label for="f_column_7" value="User"/>
                   </td>
                 </tr>
                 <tr>
                   <th />
                   <td>
-                  <v:check-box name="f_column_8" xhtml_id="f_column_8" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('column_#8', self.settings, '1') as integer)" />
+                  <v:check-box name="f_column_8" xhtml_id="f_column_8" is-boolean="1" true-value="1" false-value="0" value="--ODRIVE.WA.settings_column (self.settings, 8)" />
                     <vm:label for="f_column_8" value="Group"/>
                   </td>
                 </tr>
                 <tr>
                   <th />
                   <td>
-                  <v:check-box name="f_column_9" xhtml_id="f_column_9" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('column_#9', self.settings, '1') as integer)" />
+                  <v:check-box name="f_column_9" xhtml_id="f_column_9" is-boolean="1" true-value="1" false-value="0" value="--ODRIVE.WA.settings_column (self.settings, 9)" />
                     <vm:label for="f_column_9" value="Permissions"/>
                   </td>
                 </tr>
               </table>
             </div>
+          <div id="3" class="tabContent" style="display: none;">
+            <table class="form-body" cellspacing="0">
+              <tr>
+                <th width="15%" valign="top">
+                  Share notification
+                </th>
+                <td>
+                  <v:textarea name="f_mailShare" value="--ODRIVE.WA.settings_mailShare (self.settings)" xhtml_style="width: 100%; height: 150px;" />
+                </td>
+              </tr>
+              <tr>
+                <th valign="top">
+                  Unshare notification
+                </th>
+                <td>
+                  <v:textarea name="f_mailUnshare" value="--ODRIVE.WA.settings_mailUnshare (self.settings)" xhtml_style="width: 100%; height: 150px;" />
+                </td>
+              </tr>
+            </table>
+          </div>
           </div>
         </div>
         <div class="new-form-footer">
@@ -213,6 +230,8 @@
               self.settings := ODRIVE.WA.set_keyword('column_#7', self.settings, self.f_column_7.ufl_selected);
               self.settings := ODRIVE.WA.set_keyword('column_#8', self.settings, self.f_column_8.ufl_selected);
               self.settings := ODRIVE.WA.set_keyword('column_#9', self.settings, self.f_column_9.ufl_selected);
+              self.settings := ODRIVE.WA.set_keyword('mailShare', self.settings, self.f_mailShare.ufl_value);
+              self.settings := ODRIVE.WA.set_keyword('mailUnshare', self.settings, self.f_mailUnshare.ufl_value);
 
               insert replacing ODRIVE.WA.SETTINGS (USER_ID, USER_SETTINGS)
                 values(self.account_id, serialize(self.settings));

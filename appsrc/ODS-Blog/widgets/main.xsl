@@ -849,7 +849,7 @@ else if (length (self.catid))
         http(sprintf('<link rel=\"shortcut icon\" href=\"%s\"/>', icon));
       ?>
       <xsl:text>&#10;</xsl:text>
-      <base href="<?V 'http://' || self.host || http_path () ?>" /><![CDATA[<!--[if IE]></base><![endif]-->]]>
+      <base href="<?V case when is_https_ctx () then 'https://' else 'http://' end || self.host || http_path () ?>" /><![CDATA[<!--[if IE]></base><![endif]-->]]>
       <xsl:text>&#10;</xsl:text>
       <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
       <xsl:text>&#10;</xsl:text>

@@ -35,10 +35,10 @@
       _url_params := PHOTO.WA.url_params (get_keyword ('sid', params), get_keyword ('realm', params));
       if (isstring(_url_params) and _url_params <> '')
         _url_params := '?' || _url_params;
-      PHOTO.WA.redirect (sprintf ('http://%s%s%s', host_port, http_path (), _url_params));
+      PHOTO.WA.redirect (sprintf ('%s%s%s', PHOTO.WA.host_url (), http_path (), _url_params));
     }
   }
-  base_path := 'http://'||host_port|| http_path ();
+  base_path := PHOTO.WA.host_url () || http_path ();
 
   declare auth_uid,_mime_type varchar;
   declare current_user photo_user;
@@ -151,9 +151,10 @@
   {
     host_port := host_port || ':80';
   }
-  base_path := 'http://'||host_port|| http_path ();
+  base_path := PHOTO.WA.host_url () || http_path ();
 
   http(sprintf('<root sid="%s" realm="%s">',_sid,either(current_user.realm,'')),_xml);
+
   http(sprintf('<user lat="%.06f" lng="%.06f" owner="%d">',coalesce(geo_data[0],0),coalesce(geo_data[1],0),isOwner),_xml);
   http(sprintf('<full_name>%s</full_name>',current_user.full_name),_xml);
   http(sprintf('<first_name>%s</first_name>',current_user.first_name),_xml);

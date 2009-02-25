@@ -2629,12 +2629,11 @@ create function WV.WIKI.URL_PARAMS_INT (in params any, inout v any)
 }
 ;
 
-
-
 create function WV.WIKI.RESOURCEHREF (in href varchar, in _base_adjust varchar)
 {
-  declare _resources varchar;
+  declare _resources, _protocol varchar;
   _resources := registry_get('WIKI RESOURCES');
+  _protocol := case when is_https_ctx () then 'https://' else 'http://' end;
   if (isinteger(_resources) and is_http_ctx())
     {
       declare vh, lh, hf, lines any;
@@ -2644,9 +2643,9 @@ create function WV.WIKI.RESOURCEHREF (in href varchar, in _base_adjust varchar)
       hf := http_request_header (lines, 'Host');
    --dbg_obj_print ('vh: ', vh, '  lh: ', lh,'  hf: ', hf);
       if (hf is not null and exists (select 1 from HTTP_PATH where HP_HOST = vh and HP_LISTEN_HOST = lh and HP_LPATH = '/wiki/resources'))
-        return 'http://' || hf || '/wiki/resources/' || href;
+        return _protocol || hf || '/wiki/resources/' || href;
       else
-    return sprintf ('http://%s/wiki/resources/%s', sioc..get_cname(), href);
+        return sprintf ('%s%s/wiki/resources/%s', _protocol, sioc..get_cname(), href);
     }
   else if (isstring (_resources))
     return _resources || href;

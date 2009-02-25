@@ -1223,6 +1223,14 @@ create procedure AB.WA.dav_logical_home (
 
 -------------------------------------------------------------------------------
 --
+create procedure AB.WA.host_protocol ()
+{
+  return case when is_https_ctx () then 'https://' else 'http://' end;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure AB.WA.host_url ()
 {
   declare host varchar;
@@ -1254,8 +1262,8 @@ _default:;
   }
 
 _exit:;
-  if (host not like 'http://%')
-    host := 'http://' || host;
+  if (host not like AB.WA.host_protocol () || '%')
+    host := AB.WA.host_protocol () || host;
 
   return host;
 }
@@ -1855,7 +1863,8 @@ create procedure AB.WA.set_keyword (
   declare N integer;
 
   for (N := 0; N < length(params); N := N + 2)
-    if (params[N] = name) {
+    if (params[N] = name)
+    {
       aset(params, N + 1, value);
       goto _end;
     }

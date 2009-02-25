@@ -1589,30 +1589,49 @@ create procedure ODRIVE.WA.odrive_user_initialize(
 
 -------------------------------------------------------------------------------
 --
+create procedure ODRIVE.WA.host_protocol ()
+{
+  return case when is_https_ctx () then 'https://' else 'http://' end;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODRIVE.WA.host_url ()
 {
-  declare ret varchar;
+  declare host varchar;
+
+  declare exit handler for sqlstate '*' { goto _default; };
 
   if (is_http_ctx ())
   {
-    ret := http_request_header (http_request_header ( ) , 'Host' , null , sys_connected_server_address ());
-    if (isstring (ret) and strchr (ret , ':') is null)
+    host := http_request_header (http_request_header ( ) , 'Host' , null , sys_connected_server_address ());
+    if (isstring (host) and strchr (host , ':') is null)
     {
       declare hp varchar;
       declare hpa any;
 
       hp := sys_connected_server_address ();
       hpa := split_and_decode ( hp , 0 , '\0\0:');
-      ret := ret || ':' || hpa [1];
+      host := host || ':' || hpa [1];
     }
+    goto _exit;
   }
-  else
+
+_default:;
+  host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+  if (host is null)
   {
-    ret := sys_connected_server_address ();
-    if (ret is null)
-      ret := sys_stat ('st_host_name') || ':' || server_http_port ();
+    host := sys_stat ('st_host_name');
+    if (server_http_port () <> '80')
+      host := host || ':' || server_http_port ();
   }
-  return 'http://' || ret ;
+
+_exit:;
+  if (host not like ODRIVE.WA.host_protocol () || '%')
+    host := ODRIVE.WA.host_protocol () || host;
+
+  return host;
 }
 ;
 
@@ -2332,20 +2351,45 @@ create procedure ODRIVE.WA.odrive_name_restore(
 create procedure ODRIVE.WA.settings (
   in account_id integer)
 {
-  return coalesce((select deserialize (blob_to_string (USER_SETTINGS)) from ODRIVE.WA.SETTINGS where USER_ID = account_id), vector());
+  declare V any;
+
+  V := coalesce ((select deserialize (blob_to_string (USER_SETTINGS)) from ODRIVE.WA.SETTINGS where USER_ID = account_id), vector());
+  return ODRIVE.WA.settings_init (V);
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create procedure ODRIVE.WA.odrive_settings (
-  inout params any)
+create procedure ODRIVE.WA.settings_init (
+  inout settings any)
 {
-  return coalesce((select deserialize(blob_to_string(a.USER_SETTINGS))
-                     from ODRIVE.WA.SETTINGS a,
-                          DB.DBA.SYS_USERS b
-                    where b.U_ID = a.USER_ID
-                      and b.U_NAME = ODRIVE.WA.session_user(params)), vector());
+  ODRIVE.WA.set_keyword ('chars', settings, ODRIVE.WA.settings_chars (settings));
+  ODRIVE.WA.set_keyword ('rows', settings, ODRIVE.WA.settings_rows (settings));
+  ODRIVE.WA.set_keyword ('tbLabels', settings, ODRIVE.WA.settings_tbLabels (settings));
+  ODRIVE.WA.set_keyword ('hiddens', settings, ODRIVE.WA.settings_hiddens (settings));
+  ODRIVE.WA.set_keyword ('atomVersion', settings, ODRIVE.WA.settings_atomVersion (settings));
+  ODRIVE.WA.set_keyword ('column_#1', settings, ODRIVE.WA.settings_column (settings, 1));
+  ODRIVE.WA.set_keyword ('column_#2', settings, ODRIVE.WA.settings_column (settings, 2));
+  ODRIVE.WA.set_keyword ('column_#3', settings, ODRIVE.WA.settings_column (settings, 3));
+  ODRIVE.WA.set_keyword ('column_#4', settings, ODRIVE.WA.settings_column (settings, 4));
+  ODRIVE.WA.set_keyword ('column_#5', settings, ODRIVE.WA.settings_column (settings, 5));
+  ODRIVE.WA.set_keyword ('column_#6', settings, ODRIVE.WA.settings_column (settings, 6));
+  ODRIVE.WA.set_keyword ('column_#7', settings, ODRIVE.WA.settings_column (settings, 7));
+  ODRIVE.WA.set_keyword ('column_#8', settings, ODRIVE.WA.settings_column (settings, 8));
+  ODRIVE.WA.set_keyword ('column_#9', settings, ODRIVE.WA.settings_column (settings, 9));
+  ODRIVE.WA.set_keyword ('mailShare', settings, ODRIVE.WA.settings_mailShare (settings));
+  ODRIVE.WA.set_keyword ('mailUnshare', settings, ODRIVE.WA.settings_mailUnshare (settings));
+
+  return settings;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.settings_chars (
+  inout settings any)
+{
+  return cast (get_keyword ('chars', settings, '60') as integer);
 }
 ;
 
@@ -2360,6 +2404,24 @@ create procedure ODRIVE.WA.settings_rows (
 
 -------------------------------------------------------------------------------
 --
+create procedure ODRIVE.WA.settings_tbLabels (
+  inout settings any)
+{
+  return cast (get_keyword ('tbLabels', settings, '1') as integer);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.settings_hiddens (
+  inout settings any)
+{
+  return get_keyword ('hiddens', settings, '.');
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODRIVE.WA.settings_atomVersion (
   inout settings any)
 {
@@ -2369,19 +2431,29 @@ create procedure ODRIVE.WA.settings_atomVersion (
 
 -------------------------------------------------------------------------------
 --
-create procedure ODRIVE.WA.settings_chars (
-  inout settings any)
+create procedure ODRIVE.WA.settings_column (
+  inout settings any,
+  in N integer)
 {
-  return cast(get_keyword('chars', settings, '60') as integer);
+  return cast (get_keyword ('column_#' || cast (N as varchar), settings, '1') as integer);
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create procedure ODRIVE.WA.settings_hiddens (
+create procedure ODRIVE.WA.settings_mailShare (
   inout settings any)
 {
-  return get_keyword('hiddens', settings, '.');
+  return get_keyword ('mailShare', settings, 'Dear %user_name%,\n\nThe resource %resource_uri% has been shared with you by user %owner_uri% .\n\nRegards,\n%owner_name%');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.settings_mailUnshare (
+  inout settings any)
+{
+  return get_keyword ('mailUnshare', settings, 'Dear %user_name%,\n\nThe resource %resource_uri% has been unshared by user %owner_uri% .\n\nRegards,\n%owner_name%');
 }
 ;
 
@@ -3993,11 +4065,14 @@ create procedure ODRIVE.WA.ui_date (
 -------------------------------------------------------------------------------
 --
 create procedure ODRIVE.WA.send_mail (
+  in _instance integer,
   in _from integer,
   in _to integer,
-  in _text varchar)
+  in _body varchar,
+  in _path varchar)
 {
-  declare _smtp_server, _from_address, _to_address, _body, _message any;
+  declare _id, _what, _iri any;
+  declare _smtp_server, _from_address, _to_address, _message any;
 
   if ((select max (WS_USE_DEFAULT_SMTP) from WA_SETTINGS) = 1 or (select length (max (WS_SMTP)) from WA_SETTINGS) = 0)
   {
@@ -4007,7 +4082,16 @@ create procedure ODRIVE.WA.send_mail (
   }
   if (_smtp_server <> 0)
   {
-    _body := sprintf ('Dear %s,\n\n%s\n\nBest wishes,\n%s', ODRIVE.WA.account_name (_to), _text, ODRIVE.WA.account_name (_from));
+     _iri := SIOC..briefcase_iri (ODRIVE.WA.domain_name (_instance));
+     _what := case when (_path[length (_path)-1] <> ascii('/')) then 'R' else 'C' end;
+     _id := DB.DBA.DAV_SEARCH_ID (_path, _what);
+
+    _body := replace (_body, '%resource_path%', _path);
+    _body := replace (_body, '%resource_uri%', SIOC..post_iri_ex (_iri, _id));
+    _body := replace (_body, '%owner_uri%', SIOC..person_iri (SIOC..user_iri (_from)));
+    _body := replace (_body, '%owner_name%', ODRIVE.WA.account_name (_from));
+    _body := replace (_body, '%user_uri%', SIOC..person_iri (SIOC..user_iri (_to)));
+    _body := replace (_body, '%user_name%', ODRIVE.WA.account_name (_to));
     _message := 'Subject: Sharing notification\r\nContent-Type: text/plain\r\n' || _body;
     _from_address := (select U_E_MAIL from SYS_USERS where U_ID = _from);
     _to_address := (select U_E_MAIL from SYS_USERS where U_ID = _to);
@@ -4016,6 +4100,7 @@ create procedure ODRIVE.WA.send_mail (
       {
         return;
       };
+      -- dbg_obj_print ('', _smtp_server, _from_address, _to_address, _message);
       smtp_send (_smtp_server, _from_address, _to_address, _message);
     }
   }
@@ -4025,14 +4110,16 @@ create procedure ODRIVE.WA.send_mail (
 -------------------------------------------------------------------------------
 --
 create procedure ODRIVE.WA.acl_send_mail (
+  in _instance integer,
   in _from integer,
   in _path varchar,
   in _old_acl any,
   in _new_acl any)
 {
   declare N, M integer;
-  declare oACLs, oACL, nACLs, nACL any;
+  declare oACLs, oACL, nACLs, nACL, settings, text any;
 
+  settings := ODRIVE.WA.settings (_from);
   oACLs := ODRIVE.WA.acl_vector (_old_acl);
   nACLs := ODRIVE.WA.acl_vector (_new_acl);
   for (N := 0; N < length (nACLs); N := N + 1)
@@ -4042,7 +4129,8 @@ create procedure ODRIVE.WA.acl_send_mail (
       if (nACLs[N][0] = oACLs[M][0])
         goto _skip;
     }
-    ODRIVE.WA.send_mail (_from, nACLs[N][0], sprintf ('The resource ''%s'' has shared to you.', _path));
+    text := ODRIVE.WA.settings_mailShare (settings);
+    ODRIVE.WA.send_mail (_instance, _from, nACLs[N][0], text, _path);
   _skip:;
   }
   for (N := 0; N < length (oACLs); N := N + 1)
@@ -4052,7 +4140,8 @@ create procedure ODRIVE.WA.acl_send_mail (
       if (oACLs[N][0] = nACLs[M][0])
         goto _skip2;
     }
-    ODRIVE.WA.send_mail (_from, oACLs[N][0], sprintf ('The resource ''%s'' has not shared yet to you.', _path));
+    text := ODRIVE.WA.settings_mailUnshare (settings);
+    ODRIVE.WA.send_mail (_instance, _from, oACLs[N][0], text, _path);
   _skip2:;
   }
 }
