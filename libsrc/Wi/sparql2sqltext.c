@@ -244,23 +244,35 @@ ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subtype,
       case ASK_L: goto bad_ask; /* see below */
       default: return;
       }
+#if 0
 /*                     0         1   */
 /*                     0123456789012 */
   if (!strncmp (name, "HTTP+RDF/XML ", 12))
     switch (subtype)
       {
       case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_RSET_RDFXML_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_RSET_RDFXML_HTTP_PRE"; return;
+#if 0
       case CONSTRUCT_L: case DESCRIBE_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_DICT_RDFXML_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_DICT_RDFXML_HTTP_PRE"; return;
       case ASK_L: goto bad_ask; /* see below */
+#else
+      case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDF_XML"; return;
+      case ASK_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_RDF_XML"; return;
+#endif
       default: return;
       }
+#endif
 /*                     0123456789 */
   if (!strncmp (name, "HTTP+TTL ", 9))
     switch (subtype)
       {
-      case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_RSET_RDFXML_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_RSET_TTL_HTTP_PRE"; return;
-      case CONSTRUCT_L: case DESCRIBE_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_DICT_RDFXML_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_DICT_TTL_HTTP_PRE"; return;
+      case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_RSET_TTL_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_RSET_TTL_HTTP_PRE"; return;
+#if 0
+      case CONSTRUCT_L: case DESCRIBE_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_DICT_TTL_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_DICT_TTL_HTTP_PRE"; return;
       case ASK_L: goto bad_ask; /* see below */
+#else
+      case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL"; return;
+      case ASK_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL"; return;
+#endif
       default: return;
       }
     }
@@ -278,18 +290,6 @@ ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subtype,
       case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL"; return;
       case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL"; return;
       case ASK_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL"; return;
-      default: return;
-      }
-/*                     0         1   */
-/*                     0123456789012 */
-  if (!strncmp (name, "HTTP+TURTLE ", 12) ||
-/*                     0123456789 */
-      !strncmp (name, "HTTP+TTL ", 9) )
-    switch (subtype)
-      {
-      case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_RSET_TTL_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_RSET_START_HTTP"; return;
-      case CONSTRUCT_L: case DESCRIBE_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_DICT_TTL_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_RSET_START_HTTP"; return;
-      case ASK_L: goto bad_ask; /* see below */
       default: return;
       }
   if (!strcmp (name, "_JAVA_"))

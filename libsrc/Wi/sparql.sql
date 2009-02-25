@@ -2719,7 +2719,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TTL (inout triples any, inout ses any)
       http ('# Empty TURTLE\n', ses);
       return;
     }
-  env := vector (dict_new (__min (tcount, 16000)), 0, '', '', '', 0, 0);
+  env := vector (dict_new (__min (tcount, 16000)), 0, '', '', '', 0, 0, 0, 0);
   rowvector_digit_sort (triples, 1, 1);
   rowvector_digit_sort (triples, 0, 1);
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)

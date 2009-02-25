@@ -173,6 +173,71 @@ create aggregate DB.DBA.SPARQL_RSET_XML_HTTP (inout colnames any, inout row any)
   DB.DBA.SPARQL_RSET_XML_HTTP_FINAL
 ;
 
+
+
+--!AWK PUBLIC
+create procedure SPARQL_RSET_TTL_WRITE_NS (inout ses any)
+{
+  http ('@prefix res: <http://www.w3.org/2005/sparql-results#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+_:_ rdf:type res:ResultSet .', ses);
+}
+;
+
+create procedure SPARQL_RSET_TTL_WRITE_HEAD (inout ses any, in colnames any)
+{
+  declare i, col_count integer;
+  col_count := length (colnames);
+  for (i := 0; i < col_count; i := i + 1)
+    {
+      http ('\n_:_ res:resultVariable "', ses);
+      http_escape (colnames[i], 11, ses, 0, 1);
+      http ('" .\n', ses);
+    }
+}
+;
+--!AWK PUBLIC
+create function DB.DBA.SPARQL_RSET_TTL_HTTP_PRE (in colnames any, in accept varchar)
+{
+  declare ses, colctr, colcount integer;
+  declare res any;
+  -- dbg_obj_princ ('DB.DBA.SPARQL_RSET_TTL_HTTP_PRE (', colnames, accept, ')');
+  http_header ('Content-Type: ' || accept || '; charset=UTF-8\r\n');
+  http_flush (1);
+  ses := 0;
+  DB.DBA.SPARQL_RSET_TTL_WRITE_NS (ses);
+  DB.DBA.SPARQL_RSET_TTL_WRITE_HEAD (ses, colnames);
+  colcount := length (colnames);
+  res := make_array (colcount * 7, 'any');
+  for (colctr := 0; colctr < colcount; colctr := colctr + 1)
+    {
+      res [colctr * 7] := colnames [colctr];
+    }
+  return vector (dict_new (16000), 0, '', '', '', 0, 0, res, 0);
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.SPARQL_RSET_TTL_HTTP_INIT (inout env any)
+{
+  env := 0;
+}
+;
+
+--!AWK PUBLIC
+create function DB.DBA.SPARQL_RSET_TTL_HTTP_FINAL (inout env any)
+{
+  ;
+}
+;
+
+--!AWK PUBLIC
+create aggregate DB.DBA.SPARQL_RSET_TTL_HTTP (inout colnames any, inout row any) from
+  DB.DBA.SPARQL_RSET_TTL_HTTP_INIT,
+  sparql_rset_ttl_write_row,
+  DB.DBA.SPARQL_RSET_TTL_HTTP_FINAL
+;
+
 -----
 -- SPARQL protocol client, i.e., procedures to execute remote SPARQL statements.
 
@@ -1992,6 +2057,17 @@ host_found:
         full_query := 'define output:format "HTTP+XML application/sparql-results+xml" ' || full_query;
 --      else if (accept='application/rdf+xml')
 --        full_query := 'define output:format "HTTP+RDF/XML application/rdf+xml" ' || full_query;
+    }
+-- No need to choose accurately if there is the best variant.
+    {
+      if (strstr (accept, 'text/rdf+n3') is not null)
+        full_query := 'define output:format "HTTP+TTL text/rdf+n3" ' || full_query;
+      if (strstr (accept, 'text/rdf+ttl') is not null)
+        full_query := 'define output:format "HTTP+TTL text/rdf+ttl" ' || full_query;
+      if (strstr (accept, 'application/turtle') is not null)
+        full_query := 'define output:format "HTTP+TTL application/turtle" ' || full_query;
+      if (strstr (accept, 'application/x-turtle') is not null)
+        full_query := 'define output:format "HTTP+TTL application/x-turtle" ' || full_query;
     }
   -- http ('<!-- Query:\n' || query || '\n-->\n', 0);
   -- dbg_obj_princ ('accept = ', accept);
