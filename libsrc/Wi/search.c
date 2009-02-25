@@ -1865,6 +1865,11 @@ itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
   if (it->itc_wst)
     return (itc_text_search (it, buf_ret, leaf_ret));
 
+  if ((*buf_ret)->bd_content_map && !(*buf_ret)->bd_content_map->pm_count) /* cpt rollback can leave empty pages, recover from that */
+    {
+      it->itc_position = 0;
+    }
+
   if (ISO_UNCOMMITTED == it->itc_isolation)
     txn_clear = PS_OWNED;
   else if (ISO_COMMITTED == it->itc_isolation)
