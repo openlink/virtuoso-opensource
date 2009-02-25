@@ -191,7 +191,7 @@ skip_rev:
         <a href="http://dig.csail.mit.edu/2005/ajar/release/tabulator/0.8/tab.html?uri=<?vsp http_url (proxy_iri); ?>" >Tabulator</a>
         &nbsp; &nbsp; Raw Data in:
         <a href="<?=rdf_link || '&output=n3'?>">N3</a> |
-        <a href="<?=rdf_link || '&output=xml'?>">RDF/XML</a>
+        <a href="<?=rdf_link || '&output=rdf'?>">RDF/XML</a>
         &nbsp; &nbsp;<a href="http://ode.openlinksw.com/">About</a>&nbsp; &nbsp;
       </div> <!-- #ft_t -->
       <div id="ft_b">
