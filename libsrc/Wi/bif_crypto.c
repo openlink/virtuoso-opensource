@@ -1114,15 +1114,18 @@ static caddr_t
 bif_get_certificate_info (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 {
   query_instance_t *qi = (query_instance_t *)qst;
-  SSL *ssl = (SSL *) tcpses_get_ssl (qi->qi_client->cli_ws ?
-      qi->qi_client->cli_ws->ws_session->dks_session :
-      qi->qi_client->cli_session->dks_session);
+  SSL *ssl = NULL;
   X509 *cert = NULL;
   caddr_t ret = NULL;
   long input_type = 0;
   long type = bif_long_arg (qst, args, 0, "get_certificate_info");
   caddr_t scert = BOX_ELEMENTS (args) > 1 ? bif_string_or_null_arg (qst, args, 1, "get_certificate_info") : NULL;
   int internal = 0;
+
+  if (qi->qi_client->cli_ws)
+    ssl = tcpses_get_ssl (qi->qi_client->cli_ws->ws_session->dks_session);
+  else if (qi->qi_client->cli_session && qi->qi_client->cli_session->dks_session)
+    ssl =  (SSL *) tcpses_get_ssl (qi->qi_client->cli_session->dks_session);
 
   if (scert != NULL && BOX_ELEMENTS (args) > 1)
     {

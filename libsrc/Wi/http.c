@@ -55,6 +55,7 @@
 
 #include "recovery.h"
 #include "sqlver.h"
+#include "xmlenc.h"
 
 #ifdef WIN32
 #include <windows.h>
@@ -7438,6 +7439,73 @@ https_cert_verify_callback (int ok, void *_ctx)
 }
 
 int
+https_set_certificate (SSL_CTX* ssl_ctx, char * https_cert, char * https_key)
+{
+  char err_buf [1024];
+  if (strstr (https_cert, "db:") == https_cert || strstr (https_key, "db:") == https_key)
+    {
+      xenc_key_t * k;
+      client_connection_t * cli = GET_IMMEDIATE_CLIENT_OR_NULL;
+      user_t * saved_user;
+      if (!cli)
+	{
+	  log_error ("HTTPS: The certificate & key stored in database cannot be accessed.");
+	  return 0;
+	}
+      if (strcmp (https_cert, https_key))
+	{
+	  log_error ("HTTPS: The certificate & key stored in database must have same name");
+	  return 0;
+	}
+      saved_user = cli->cli_user;
+      if (!cli->cli_user)
+	cli->cli_user = sec_name_to_user ("dba");
+      k = xenc_get_key_by_name (https_key + 3, 1);
+      cli->cli_user = saved_user;
+      if (!k || !k->xek_x509 || !k->xek_evp_private_key)
+	{
+	  log_error ("HTTPS: Invalid stored key %s", https_key);
+	  return 0;
+	}
+      if (SSL_CTX_use_certificate (ssl_ctx, k->xek_x509) <= 0)
+	{
+	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+	  log_error ("HTTPS: Invalid X509 certificate file %s : %s", https_cert, err_buf);
+	  return 0;
+	}
+      if (SSL_CTX_use_PrivateKey (ssl_ctx, k->xek_evp_private_key) <= 0)
+	{
+	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+	  log_error ("HTTPS: Invalid X509 private key file %s : %s", https_key, err_buf);
+	  return 0;
+	}
+    }
+  else
+    {
+      if (SSL_CTX_use_certificate_file (ssl_ctx, https_cert, SSL_FILETYPE_PEM) <= 0)
+	{
+	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+	  log_error ("HTTPS: Invalid X509 certificate file %s : %s", https_cert, err_buf);
+	  return 0;
+	}
+      if (SSL_CTX_use_PrivateKey_file (ssl_ctx, https_key, SSL_FILETYPE_PEM) <= 0)
+	{
+	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+	  log_error ("HTTPS: Invalid X509 private key file %s : %s", https_key, err_buf);
+	  return 0;
+	}
+    }
+  if (!SSL_CTX_check_private_key (ssl_ctx))
+    {
+      cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+      log_error ("HTTPS: X509 Private key %s does not match the X509 certificate public key %s : %s",
+	  https_key, https_cert, err_buf);
+      return 0;
+    }
+  return 1;
+}
+
+int
 http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
 {
   char err_buf [1024];
@@ -7495,27 +7563,8 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
 	  goto err_exit;
 	}
     }
-
-  if (SSL_CTX_use_certificate_file(ssl_ctx, cert, SSL_FILETYPE_PEM) <= 0)
-    {
-      cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-      log_error ("HTTPS: Invalid X509 certificate file %s : %s", cert, err_buf);
+  if (https_set_certificate (ssl_ctx, cert, skey) <= 0)
       goto err_exit;
-    }
-  if (SSL_CTX_use_PrivateKey_file(ssl_ctx, skey, SSL_FILETYPE_PEM) <= 0)
-    {
-      cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-      log_error ("HTTPS: Invalid X509 private key file %s : %s", skey, err_buf);
-      goto err_exit;
-    }
-
-  if (!SSL_CTX_check_private_key(ssl_ctx))
-    {
-      cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-      log_error ("HTTPS: X509 Private key %s does not match the X509 certificate public key %s : %s",
-	  skey, cert, err_buf);
-      goto err_exit;
-    }
 
   if (https_client_verify > 0)
     {
@@ -9608,24 +9657,8 @@ http_init_part_two ()
 	    call_exit(-1);
 	  }
 
-      if (SSL_CTX_use_certificate_file (ssl_ctx, https_cert, SSL_FILETYPE_PEM) <= 0)
+      if (https_set_certificate (ssl_ctx, https_cert, https_key) <= 0)
 	{
-	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-	  log_error ("HTTPS: Invalid X509 certificate file %s : %s", https_cert, err_buf);
-	  call_exit(-1);
-	}
-      if (SSL_CTX_use_PrivateKey_file (ssl_ctx, https_key, SSL_FILETYPE_PEM) <= 0)
-	{
-	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-	  log_error ("HTTPS: Invalid X509 private key file %s : %s", https_key, err_buf);
-	  call_exit(-1);
-	}
-
-      if (!SSL_CTX_check_private_key (ssl_ctx))
-	{
-	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-	  log_error ("HTTPS: X509 Private key %s does not match the X509 certificate public key %s : %s",
-	      https_key, https_cert, err_buf);
 	  call_exit(-1);
 	}
 
