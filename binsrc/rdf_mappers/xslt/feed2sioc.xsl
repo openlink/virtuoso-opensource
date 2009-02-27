@@ -44,12 +44,14 @@
 	xmlns:bibo="&bibo;" xmlns:foaf="&foaf;" xmlns:atom="&atom;" xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
 	xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/" xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
 	xmlns:digg="http://digg.com/docs/diggrss/" xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+	xmlns:scot="http://scot-project.org/scot/ns#"
 	version="1.0">
 	<xsl:output indent="yes" />
 	<xsl:param name="base" />
 	<xsl:param name="isDiscussion" />
 	<xsl:template match="/">
 		<rdf:RDF>
+			<xsl:copy-of select="scot:*" />
 			<xsl:apply-templates />
 			<xsl:variable name="users" select="distinct (//dc:creator)" />
 			<xsl:if test="not empty($users)">
@@ -75,6 +77,7 @@
 			<sioc:link rdf:resource="{@rdf:about}" />
 			<xsl:apply-templates />
 			<xsl:copy-of select="geo:*" />
+			<xsl:copy-of select="scot:*" />
 			<xsl:copy-of select="openSearch:*" />
 		</rdf:Description>
 	</xsl:template>
@@ -114,6 +117,7 @@
 			<xsl:copy-of select="rss:*" />
 			<xsl:copy-of select="sioc:*" />
 			<xsl:copy-of select="geo:*" />
+			<xsl:copy-of select="scot:*" />
 			<xsl:if test="wfw:commentRss">
 				<rdfs:seeAlso rdf:resource="{wfw:commentRss}" />
 			</xsl:if>
