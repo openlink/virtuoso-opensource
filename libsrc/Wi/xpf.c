@@ -1945,6 +1945,50 @@ xpf_normalize_space  (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
   strses_free (string);
 }
 
+void
+xpf_abs (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
+{
+  caddr_t res;
+  dtp_t dtp;
+  xpf_number (xqi, tree, ctx_xe);
+  res = XQI_GET (xqi, tree->_.xp_func.res);
+  dtp = DV_TYPE_OF (res);
+  switch (dtp)
+    {
+    case DV_LONG_INT:
+      {
+        boxint v = unbox (res);
+        if (v < 0)
+          v = -v;
+        XQI_SET (xqi, tree->_.xp_func.res, box_num_nonull (v));
+        return;
+      }
+    case DV_DOUBLE_FLOAT:
+      {
+        double v = unbox_double (res);
+        if (v < 0)
+          v = -v;
+        XQI_SET (xqi, tree->_.xp_func.res, box_double (v));
+        return;
+      }
+    case DV_SINGLE_FLOAT:
+      {
+        float v = unbox_float (res);
+        if (v < 0)
+          v = -v;
+        XQI_SET (xqi, tree->_.xp_func.res, box_float (v));
+        return;
+      }
+    case DV_NUMERIC:
+      {
+        caddr_t v = box_copy (res);
+        ((numeric_t)v)->n_neg = 0;
+	XQI_SET (xqi, tree->_.xp_func.res, v);
+	return;
+      }
+    }
+}
+
 
 #define XPF_ROUND(n, f) \
 void  \
@@ -1983,6 +2027,18 @@ virt_rint (double x)
 }
 
 
+double
+virt_r05to2 (double x)
+{
+  double flr = floor (x + 0.5L);
+  if ((x == (flr + 0.5L)) && (0 != ((long)flr % 2)))
+    return flr + 1;
+  else if ((x == (flr - 0.5L)) && (0 != ((long)flr % 2)))
+    return flr - 1;
+  return flr;
+}
+
+XPF_ROUND (xpf_round_half_to_even, virt_r05to2)
 XPF_ROUND (xpf_round_number, virt_rint)
 XPF_ROUND (xpf_ceiling, ceil)
 XPF_ROUND (xpf_floor, floor)
@@ -5541,6 +5597,7 @@ void xpf_init(void)
   xpf_define_builtin ("SORTBY operator"		, xpf_sortby_operator		/* Virt 3.0 */	, XPDV_NODESET	, 2	, xpfmalist(2, xpfma("input",XPDV_NODESET,0), xpfma("criterions",DV_UNKNOWN,0)), NULL );
   xpf_define_builtin ("TO operator"		, xpf_to_operator		/* Virt 3.0 */	, DV_UNKNOWN	, 2	, xpfmalist(2, xpfma("from",DV_LONG_INT,0), xpfma("to",DV_LONG_INT,0))	, NULL );
   xpf_define_builtin ("TO predicate"		, xpf_to_predicate		/* Virt 3.0 */	, XPDV_NODESET	, 0	, xpfmalist(3, xpfma("input",XPDV_NODESET,0), xpfma("from",DV_LONG_INT,0), xpfma("to",DV_LONG_INT,0))	, NULL );
+  xpf_define_builtin ("abs"			, xpf_abs			/* XPath 2.0 */	, DV_NUMERIC	, 1	, xpfmalist(1, xpfma("arg",DV_NUMERIC,0))	, NULL );
   xpf_define_builtin ("and"			, xpf_and			/* XPath 1.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma("arg",XPDV_BOOL,0)));
   xpf_define_builtin ("append"			, xpf_append			/* XPath 1.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma("seq",DV_UNKNOWN,0)));
   xpf_define_builtin ("assign"			, xpf_assign			/* Virt 3.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
@@ -5577,7 +5634,7 @@ void xpf_init(void)
   xpf_define_builtin ("expand-qname"		, xpf_expand_qname		/* Virt 3.5 */	, DV_STRING	, 1	, xpfmalist(3, xpfma("use_default",XPDV_BOOL,0), xpfma("qname",DV_STRING,0), xpfma("context",DV_XML_ENTITY,0))	, NULL	);
   xpf_define_builtin ("false"			, xpf_false			/* XPath 1.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   xpf_define_builtin ("filter"			, xpf_filter			/* XQ 1.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("floor"			, xpf_floor			/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  xpf_define_builtin ("floor"			, xpf_floor			/* XPath 1.0 */	, DV_NUMERIC	, 1	, xpfmalist(1, xpfma("num",DV_UNKNOWN,0))	, NULL	);
   xpf_define_builtin ("for"			, xpf_for			/* Virt 3.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   xpf_define_builtin ("format-number"		, xpf_format_number		/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   xpf_define_builtin ("function-available"	, xpf_function_available	/* XPath 1.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
@@ -5612,7 +5669,8 @@ void xpf_init(void)
   xpf_define_builtin ("processXSLT"		, xpf_processXSLT		/* BPEL */	, XPDV_NODESET	, 1	, xpfmalist(2, xpfma("stylesheet_uri",DV_STRING,0), xpfma("source",DV_XML_ENTITY,0))	, xpfmalist(2, xpfma("param_name",DV_STRING,0), xpfma("param_value",DV_UNKNOWN,0)));
   xpf_define_builtin ("replace"			, xpf_replace			/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   xpf_define_builtin ("resolve-uri"		, xpf_resolve_uri		/* Virt 3.5 */	, DV_STRING	, 2	, xpfmalist(2, xpfma("base_uri",DV_STRING,0), xpfma("relative_uri",DV_STRING,0))	, NULL);
-  xpf_define_builtin ("round-number"		, xpf_round_number		/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  xpf_define_builtin ("round-half-to-even"	, xpf_round_half_to_even	/* XPath 2.0 */	, DV_NUMERIC	, 1	, xpfmalist(1, xpfma("num",DV_UNKNOWN,0))	, NULL	);
+  xpf_define_builtin ("round-number"		, xpf_round_number		/* XPath 1.0 */	, DV_NUMERIC	, 1	, xpfmalist(1, xpfma("num",DV_UNKNOWN,0))	, NULL	);
   xpf_define_alias   ("round" , NULL, "round-number", NULL);
   xpf_define_builtin ("serialize"		, xpf_serialize			/* Virt 3.0 */	, DV_STRING	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   xpf_define_builtin ("shallow"			, xpf_shallow			/* XQuery 1.0 */ , XPDV_NODESET , 1	, xpfmalist(1, xpfma(NULL,DV_XML_ENTITY,0))	, NULL);
