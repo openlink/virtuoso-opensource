@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn_iri_split">
+  <refmeta>
+    <refentrytitle>iri_split</refentrytitle>
+    <refmiscinfo>rdf</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>iri_split</refname>
+    <refpurpose>Splits into the namespace prefix and the local part according to the TTL rules.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_iri_split">
+      <funcprototype id="fproto_iri_split">
+        <funcdef><function>iri_split</function></funcdef>
+	<paramdef>in <parameter>qname</parameter> varchar</paramdef>
+        <paramdef><optional>out <parameter>local</parameter> varchar</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_iri_split">
+    <title>Description</title>
+    <para>Iri is a qualified name. It is split into the namespace prefix and the local part according to the TTL rules.
+The prefix is returned. If a second argument is given, it is set to the local part.</para>
+  </refsect1>
+  <refsect1 id="params_iri_split">
+    <title>Parameters</title>
+    <refsect2><title>qname</title>
+      <para>namespace prefix</para>
+    </refsect2>
+    <refsect2><title>local</title>
+      <para>local part</para>
+    </refsect2>
+  </refsect1>
+<!--
+  <refsect1 id="ret_iri_split"><title>Return Types</title>
+    <para>The return value is not specified and may be changed in future versions.</para>
+  </refsect1>
+  <refsect1 id="errors_iri_split">
+    <title>Errors</title>
+    <para>This function can generate the following errors:</para>
+    <errorcode></errorcode>
+  </refsect1>
+
+  <refsect1 id="examples_iri_split">
+    <title>Examples</title>
+    <example id="ex_iri_split"><title></title>
+<para>Sample Example 1</para>
+<screen><![CDATA[
+<para>Sample Example 2</para>
+    </example>
+  </refsect1>
+-->
+</refentry>

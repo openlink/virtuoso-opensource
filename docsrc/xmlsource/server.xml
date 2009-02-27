@@ -1179,6 +1179,10 @@ then the service will be disabled.</para>
 					<formalpara>
 						<title>SSLCertificate=./virtuoso_cert.pem</title>
 						<para>the option must point to the file with the server certificate in PEM format.</para>
+						<para>
+						    If the option begins with 'db:' e.g. 'db:id_server', then certificate and key 
+						    will be loaded from DBA key space.
+						</para>
 					</formalpara>
 				</listitem>
 				<listitem id="ini_HTTPServer_SSLPrivateKey">
@@ -1186,6 +1190,43 @@ then the service will be disabled.</para>
 						<title>SSLPrivateKey=./virtuoso_key.pem</title>
 						<para>points to the file containing the RSA private key in PEM format.  </para>
 						<para>the certificate/key pair must be valid (eq. certificate is generated on base of key)</para>
+						<para>
+						    If the option begins with 'db:' e.g. 'db:id_server', then certificate and key 
+						    will be loaded from DBA key space. Note: in the case of database stored key, 
+						    both SSLCertificate and SSLPrivateKey settings MUST be same.
+						</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_HTTPServer_X509ClientVerify">
+					<formalpara>
+						<title>X509ClientVerify=0</title>
+						<para>Whether the server will require X509 certificates from the browsers.</para>
+					</formalpara>
+ <simplelist>
+  <member><emphasis>X509ClientVerify = 0</emphasis> - do not ask</member>
+  <member><emphasis>X509ClientVerify = 1</emphasis> - ask for trusted certificates</member>
+  <member><emphasis>X509ClientVerify = 2</emphasis> - optionally ask, if certificate is given will be verified</member>
+  <member><emphasis>X509ClientVerify = 3</emphasis> - accept optionally any certificate even self-signed</member>
+ </simplelist>
+				</listitem>
+				<listitem id="ini_HTTPServer_X509ClientVerifyDepth">
+					<formalpara>
+						<title>X509ClientVerifyDepth=1</title>
+						<para>Specifies how deep the client certificate
+verification process will traverse the Issuer chain before giving up.  The default value of 0
+means that only verification of the client certificate itself being in the server's CA list is
+performed.  Setting this option to -1 will ignore the depth checks</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_HTTPServer_X509ClientVerifyCAFile">
+					<formalpara>
+					    <title>X509ClientVerifyCAFile=./calist.pem</title>
+<para>a PEM file of all the X509 certificates of the Certification Authorities (CA) which the server will use for verifying the
+client's client certificate.  A list of these will be sent to the client as a part of the
+SSL handshake so the client will know which certificate to send.</para>
+<para>
+    Note this option is in effect when X509ClientVerify is 1 or 2. If X509ClientVerify is 3 and X509ClientVerifyCAFile is given, server will send certificated during handshake, thus some clients may restrict user to send any certificate. 
+</para>
 					</formalpara>
 				</listitem>
 				<listitem id="ini_HTTPServer_POP3Port">

@@ -242,6 +242,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &xenc_key_3des_create; &xenc_key_3des_rand_create; &xenc_key_DSA_read; &xenc_key_RSA_read; &xenc_key_aes_create;
 &xenc_key_aes_rand_create; &xenc_key_create_cert; &xenc_key_dsa_create; &xenc_key_exists; &xenc_key_inst_create;
 &xenc_key_remove; &xenc_key_serialize; &xenc_set_primary_key;
+&xenc_x509_ss_generate; &xenc_x509_generate; &xenc_pkcs12_export; &xenc_pem_export; &xenc_SPKI_read; &xenc_bn2dec;
 
 &xte_head; &xte_node; &xte_node_from_nodebld;
 &xte_nodebld_acc; &xte_nodebld_final; &xte_nodebld_init;

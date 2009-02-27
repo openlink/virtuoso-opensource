@@ -802,6 +802,12 @@ ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\<!ENTITY \1 		SYSTEM "xmlref\/
 <!ENTITY xenc_key_serialize 			SYSTEM "funcref/xenc_key_serialize.xml">
 <!ENTITY xenc_set_primary_key 			SYSTEM "funcref/xenc_set_primary_key.xml">
 
+<!ENTITY xenc_x509_ss_generate			SYSTEM	"funcref/xenc_x509_ss_generate.xml">
+<!ENTITY xenc_x509_generate			SYSTEM	"funcref/xenc_x509_generate.xml">
+<!ENTITY xenc_pkcs12_export			SYSTEM	"funcref/xenc_pkcs12_export.xml">
+<!ENTITY xenc_pem_export			SYSTEM	"funcref/xenc_pem_export.xml">
+<!ENTITY xenc_SPKI_read			SYSTEM	"funcref/xenc_SPKI_read.xml">
+<!ENTITY xenc_bn2dec			SYSTEM	"funcref/xenc_bn2dec.xml">
 
 <!-- include the document chapters/sections -->
 <!ENTITY xmltableview 				SYSTEM "xmltableview.xml">

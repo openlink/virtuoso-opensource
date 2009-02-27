@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn___xml_get_ns_prefix">
+  <refmeta>
+    <refentrytitle>__xml_get_ns_prefix</refentrytitle>
+    <refmiscinfo>rdf</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>__xml_get_ns_prefix</refname>
+    <refpurpose>Returns prefix by given URI.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn___xml_get_ns_prefix">
+      <funcprototype id="fproto___xml_get_ns_prefix">
+        <funcdef><function>__xml_get_ns_prefix</function></funcdef>
+	<paramdef>in <parameter>str</parameter> varchar</paramdef>
+	<paramdef>out<parameter>flags</parameter> int</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc___xml_get_ns_prefix">
+    <title>Description</title>
+    <para>If str is a globally known namespace URI, its prefix is returned, else null.
+Flags is a bit mask where 1 means to look in the connection, 2 in the global set of known prefixes.</para>
+  </refsect1>
+  <refsect1 id="params___xml_get_ns_prefix">
+    <title>Parameters</title>
+    <refsect2><title>str</title>
+      <para>uri</para>
+    </refsect2>
+    <refsect2><title>flags</title>
+      <para>bitmask of flags that permit some sorts of syntax errors in resource, use 0.</para>
+    </refsect2>
+  </refsect1>
+<!--
+  <refsect1 id="ret___xml_get_ns_prefix"><title>Return Types</title>
+    <para>The return value is not specified and may be changed in future versions.</para>
+  </refsect1>
+  <refsect1 id="errors___xml_get_ns_prefix">
+    <title>Errors</title>
+    <para>This function can generate the following errors:</para>
+    <errorcode></errorcode>
+  </refsect1>
+
+  <refsect1 id="examples___xml_get_ns_prefix">
+    <title>Examples</title>
+    <example id="ex___xml_get_ns_prefix"><title></title>
+<para>Sample Example 1</para>
+<screen><![CDATA[
+<para>Sample Example 2</para>
+    </example>
+  </refsect1>
+-->
+</refentry>
