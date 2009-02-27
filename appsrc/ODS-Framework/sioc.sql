@@ -674,7 +674,7 @@ create procedure sioc_user_info (
 {
   declare org_iri, iri any;
   declare addr_iri any;
-  declare giri, crt_iri, protected varchar;
+  declare giri, crt_iri, crt_exp, crt_mod, protected varchar;
   declare ev_iri, hf any;
   declare is_person int;
 
@@ -695,6 +695,8 @@ create procedure sioc_user_info (
   addr_iri := iri || '#addr';
   ev_iri := iri || '#event';
   crt_iri := iri || '#cert';
+  crt_exp := iri || '#cert_exp';
+  crt_mod := iri || '#cert_mod';
   giri := iri || '#based_near';
   iri := person_iri (in_iri);
   if (iri like '%/organization/%')
@@ -727,6 +729,8 @@ create procedure sioc_user_info (
   delete_quad_s_or_o (graph_iri, addr_iri, addr_iri);
   delete_quad_s_or_o (graph_iri, giri, giri);
   delete_quad_s_or_o (graph_iri, crt_iri, crt_iri);
+  delete_quad_s_or_o (graph_iri, crt_exp, crt_exp);
+  delete_quad_s_or_o (graph_iri, crt_mod, crt_mod);
 
   if (is_person and length (waui_first_name) and wa_user_pub_info (flags, 1))
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('firstName'), waui_first_name);
@@ -864,8 +868,12 @@ create procedure sioc_user_info (
 	      modulus := info[2];
 	      exponent := info[1];
 	      DB.DBA.RDF_QUAD_URI (graph_iri, crt_iri, rdf_iri ('type'), rsa_iri ('RSAPublicKey'));
-	      DB.DBA.RDF_QUAD_URI_L_TYPED (graph_iri, crt_iri, rsa_iri ('modulus'), bin2hex (modulus), cert_iri ('hex'), null);
-	      DB.DBA.RDF_QUAD_URI_L_TYPED (graph_iri, crt_iri, rsa_iri ('public_exponent'), cast (exponent as varchar), cert_iri ('decimal'), null);
+
+	      DB.DBA.RDF_QUAD_URI (graph_iri, crt_iri, rsa_iri ('modulus'), crt_mod);
+	      DB.DBA.RDF_QUAD_URI (graph_iri, crt_iri, rsa_iri ('public_exponent'), crt_exp);
+
+	      DB.DBA.RDF_QUAD_URI_L (graph_iri, crt_mod, cert_iri ('hex'), bin2hex (modulus));
+	      DB.DBA.RDF_QUAD_URI_L (graph_iri, crt_exp, cert_iri ('decimal'), cast (exponent as varchar));
 	    }
 	}
     }
@@ -3270,13 +3278,14 @@ create procedure foaf_check_ssl (in iri varchar)
   exec (qr, stat, msg);
   commit work;
   qr := sprintf ('sparql prefix cert: <' || cert_iri ('') || '> ' || ' prefix rsa: <' || rsa_iri ('') || '> ' ||
-  	'select ?exp ?mod from <%S> '||
-  	'where { ?id cert:identity <%S> ; rsa:public_exponent ?exp ; rsa:modulus ?mod . }', graph, agent);
+  	'select ?exp_val ?mod_val from <%S> '||
+  	' where { ?id cert:identity <%S> ; rsa:public_exponent ?exp ; rsa:modulus ?mod . ?exp cert:decimal ?exp_val . ?mod cert:hex ?mod_val . }',
+	graph, agent);
   stat := '00000';
 --  dbg_printf ('%s', qr);
   exec (qr, stat, msg, vector (), 0, meta, data);
 --  dbg_obj_print (data);
-  if (stat = '00000' and length (data) and data[0][0] = info[1] and data[0][1] = bin2hex (info[2]))
+  if (stat = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and data[0][1] = bin2hex (info[2]))
     return 1;
 --  dbg_obj_print (stat, data);
   return 0;
@@ -3503,8 +3512,11 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?person foaf:topic_interest ?topic_interest .
 	    ?topic_interest rdfs:label ?topic_interest_label .
 	    ?idn cert:identity ?person .
+	    ?idn rdf:type rsa:RSAPublicKey .
 	    ?idn rsa:public_exponent ?exp .
 	    ?idn rsa:modulus ?mod .
+	    ?exp cert:decimal ?exp_val .
+	    ?mod cert:hex ?mod_val .
 	  }
 	  WHERE
 	  {
@@ -3517,7 +3529,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	      optional { ?interest rdfs:label ?interest_label  } .
 	      optional { ?person foaf:topic_interest ?topic_interest } .
 	      optional { ?topic_interest rdfs:label ?topic_interest_label  } .
-	      optional { ?idn cert:identity ?person ; rsa:public_exponent ?exp ; rsa:modulus ?mod .  } .
+	      optional { ?idn cert:identity ?person ; rsa:public_exponent ?exp ; rsa:modulus ?mod . ?exp cert:decimal ?exp_val . ?mod cert:hex ?mod_val  } .
 	      }
 	    }
 	  }', graph, graph, u_name);
