@@ -3097,6 +3097,8 @@ wa_exec_no_error_log(
     WAUI_BAIM VARCHAR,                  -- 52
     WAUI_BYAHOO VARCHAR,                -- 53
     WAUI_BMSN VARCHAR,                  -- 54
+    WAUI_CERT_LOGIN integer default 0,
+    WAUI_CERT_FINGERPRINT varchar,
     WAUI_CERT long varbinary,
 
     primary key (WAUI_U_ID)
@@ -3137,7 +3139,29 @@ wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_BSKYPE', 'VARCHAR');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_BAIM', 'VARCHAR');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_BYAHOO', 'VARCHAR');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_BMSN', 'VARCHAR');
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_CERT_LOGIN', 'integer');
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_CERT_FINGERPRINT', 'varchar');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_CERT', 'LONG VARBINARY');
+
+wa_exec_no_error ('create index WA_USER_INFO_CERT_FINGERPRINT on DB.DBA.WA_USER_INFO (WAUI_CERT_FINGERPRINT)');
+
+create procedure WA_USER_INFO_WAUI_CERT_UPGRADE ()
+{
+  if (registry_get ('__WA_USER_INFO_CERT_UPGRADE') = 'done-1')
+    return;
+  registry_set ('__WA_USER_INFO_CERT_UPGRADE', 'done-1');
+
+  for select U_ID, WAUI_CERT
+        from SYS_USERS, WA_USER_INFO
+      where WAUI_U_ID = U_ID and WAUI_CERT is not null do
+  {
+    update WA_USER_INFO
+       set WAUI_CERT_LOGIN = 0,
+           WAUI_CERT_FINGERPRINT = get_certificate_info (6, cast (WAUI_CERT as varchar))
+     where WAUI_U_ID = U_ID;
+  }
+};
+WA_USER_INFO_WAUI_CERT_UPGRADE ();
 
 create procedure WA_USER_INFO_WAUI_FOAF_UPGRADE ()
 {
@@ -3212,6 +3236,28 @@ create trigger WA_USER_INFO_I after insert on WA_USER_INFO referencing new as N
       update WA_USER_INFO set WAUI_NICK = nick where WAUI_U_ID = N.WAUI_U_ID;
       set triggers on;
     }
+  if (N.WAUI_CERT is not null)
+  {
+    set triggers off;
+    update WA_USER_INFO
+       set WAUI_CERT_FINGERPRINT = get_certificate_info (6, cast (N.WAUI_CERT as varchar))
+     where WAUI_U_ID = N.WAUI_U_ID;
+    set triggers on;
+  }
+  return;
+}
+;
+
+create trigger WA_USER_INFO_U after update on WA_USER_INFO referencing old as O, new as N
+{
+  if (N.WAUI_CERT <> O.WAUI_CERT)
+  {
+    set triggers off;
+    update WA_USER_INFO
+       set WAUI_CERT_FINGERPRINT = get_certificate_info (6, cast (N.WAUI_CERT as varchar))
+     where WAUI_U_ID = N.WAUI_U_ID;
+    set triggers on;
+  }
   return;
 }
 ;
@@ -3558,6 +3604,8 @@ create procedure WA_USER_EDIT (in _name varchar,in _key varchar,in _data any)
     UPDATE WA_USER_INFO SET WAUI_FACEBOOK_ID = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_APP_ENABLE')
     UPDATE WA_USER_INFO SET WAUI_APP_ENABLE = _data WHERE WAUI_U_ID = _uid;
+  else if (_key = 'WAUI_CERT_LOGIN')
+    UPDATE WA_USER_INFO SET WAUI_CERT_LOGIN = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_CERT')
     UPDATE WA_USER_INFO SET WAUI_CERT = _data WHERE WAUI_U_ID = _uid;
 

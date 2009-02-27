@@ -27,6 +27,35 @@
     xmlns:v="http://www.openlinksw.com/vspx/"
     xmlns:vm="http://www.openlinksw.com/vspx/ods/">
   <xsl:template match="vm:register-form">
+    <v:method name="decodeName" arglist="in S varchar">
+      <![CDATA[
+        declare N Integer;
+        declare V, retValue any;
+
+        retValue := vector ();
+        V := split_and_decode (S, 0, '\0\0/');
+        for (N := 0; N < length (V); N := N + 1)
+          retValue := vector_concat (retValue, split_and_decode (V[N], 0, '\0\0='));
+
+        return retValue;
+      ]]>
+    </v:method>
+
+    <v:method name="getValue" arglist="in cName varchar, in pName varchar, in V any, in V2 any">
+      <![CDATA[
+        declare retValue any;
+
+        retValue := get_keyword (cName, V);
+        if (isnull (retValue))
+        {
+          retValue := get_keyword (cName, V2);
+          if (isnull (retValue))
+            retValue := get_keyword (cName, self.vc_page.vc_event.ve_params);
+        }
+        return retValue;
+      ]]>
+    </v:method>
+
     <v:variable name="wa_nameR" type="varchar" default="null" persist="0" param-name="wa_name"/>
     <xsl:if test="@managed_by_admin = 1">
       <v:variable name="managed_by_admin" type="int" default="1" persist="page" />
@@ -35,10 +64,18 @@
       <v:variable name="managed_by_admin" type="int" default="0" persist="page" />
     </xsl:if>
       <v:variable name="ret_page" type="varchar" persist="page" />
+
+    <v:variable name="reg_mode" type="varchar" default="''" />
+    <v:variable name="reg_cert" type="any" default="null" />
+    <v:variable name="reg_foafData" type="any" default="null" />
+
       <v:variable name="reg_tip" type="int" default="0" persist="temp" />
       <v:variable name="reg_number" type="varchar" default="null" persist="0" />
       <v:variable name="reg_number_img" type="varchar" default="null" persist="temp" />
       <v:variable name="reg_number_txt" type="varchar" default="null" persist="0" />
+
+    <v:variable name="reg_uid" type="varchar" default="''" param-name="reguid" />
+    <v:variable name="reg_mail" type="varchar" default="''" param-name="regmail" />
 
       <v:variable name="oid_srv" type="varchar" default="null" param-name="oi_srv" />
       <v:variable name="oid_assoc_handle" type="varchar" default="null" param-name="openid.assoc_handle" />
@@ -173,9 +210,7 @@
     </div>
     <br/>
     <div class="login_tabdeck"><!--container div start-->
-
-    <div id="login_openid" style="height: 125px;<?V case when self.use_oid_url = 1 then '' else 'display:none;' end ?>">
-
+        <div id="login_openid" style="height: 135px;<?V case when self.use_oid_url = 1 then '' else 'display:none;' end ?>">
       <table width="100%">
   <tr>
       <th width="60px"><label for="reguid">OpenID</label></th>
@@ -236,13 +271,81 @@ if(is_disabled && typeof(document.getElementById('openid_url'))!='undefined')
    </v:template>
     </table>
     </div>
-
-    <div id="login_info" style="height: 125px;<?V case when self.use_oid_url = 1 then 'display:none;' else '' end ?>">
+        <div id="login_info" style="height: 135px;<?V case when self.use_oid_url = 1 then 'display:none;' else '' end ?>">
       <table width="100%">
+            <v:template name="ssl_template" type="simple" enabled="--case when is_https_ctx () then 1 else 0 end">
+            <tr>
+              <th></th>
+              <td nowrap="nowrap">
+                <?vsp
+                  if (0)
+                  {
+                ?>
+                    <v:button name="SSL_import" action="simple" style="url" value="Submit">
+                      <v:on-post>
+                        <![CDATA[
+                          self.vc_is_valid := 0;
+                          if (is_https_ctx ())
+                          {
+                            declare foafInfo, aVector2, aVector3 any;
+
+                            aVector2 := self.decodeName (get_certificate_info (2));
+                            aVector3 := self.decodeName (get_certificate_info (3));
+                            self.reg_uid := self.getValue ('cn', 'reguid', aVector2, aVector3);
+                            self.reg_mail := self.getValue ('emailAddress', 'regmail', aVector2, aVector3);
+                            self.reg_cert := client_attr ('client_certificate');
+
+                            self.reg_mode := '';
+                            self.reg_foafData := null;
+                            foafInfo := get_certificate_info (7, null, null, null, '2.5.29.17');
+                            if (not isnull (foafInfo))
+                            {
+                              self.reg_mode := 'foaf';
+                              foafInfo := replace (foafInfo, 'URI:', '');
+                              -- foafInfo := 'http://myopenlink.net/dataspace/person/ddimitov#this';
+                              self.reg_foafData := ODS.ODS_API.get_foaf_data_array (foafInfo);
+                              self.reg_uid := get_keyword ('nick', self.reg_foafData, self.reg_uid);
+                              self.reg_mail := get_keyword ('mbox', self.reg_foafData, self.reg_mail);
+                            }
+                          }
+                          self.vc_data_bind(e);
+                        ]]>
+                      </v:on-post>
+                      <v:after-data-bind>
+                        <![CDATA[
+                          if (e.ve_button is not null)
+                          {
+                            if (e.ve_button.vc_name = 'SSL_import')
+                            {
+                              self.vc_is_valid := 0;
+                              self.vc_error_message := null;
+                              self.reguid.ufl_validators := null;
+                              self.reguid.ufl_error := null;
+                              self.reguid.ufl_error_glyph := null;
+                              self.regmail.ufl_validators := null;
+                              self.regmail.ufl_error := null;
+                              self.regmail.ufl_error_glyph := null;
+                              self.regpwd.ufl_validators := null;
+                              self.regpwd.ufl_error := null;
+                              self.regpwd.ufl_error_glyph := null;
+                            }
+                          }
+                        ]]>
+                      </v:after-data-bind>
+                    </v:button>
+                <?vsp
+                  }
+                ?>
+                <input type="button" name="SSL_data" value="SSL Import" id="lf_login" onclick="javascript: OAT.Dom.show('reg_import_image'); doPost('page_form', 'SSL_import');" />
+                <img id="reg_import_image" alt="Import FOAF Data" src="/ods/images/oat/Ajax_throbber.gif" style="display: none" />
+              </td>
+              <td></td>
+            </tr>
+            </v:template>
         <tr>
           <th><label for="reguid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
           <td nowrap="nowrap">
-        <v:text error-glyph="?" xhtml_tabindex="1" xhtml_id="reguid" xhtml_style="width:270px" name="reguid" value="--get_keyword('reguid', params)"
+                <v:text error-glyph="?" xhtml_tabindex="1" xhtml_id="reguid" xhtml_style="width:270px" name="reguid" value="--self.reg_uid"
      default_value="--self.oid_nickname">
         <v:validator test="length" min="1" max="20" message="Login name cannot be empty or longer then 20 chars" name="vv_reguid1"/>
         <v:validator test="sql" expression="length(trim(self.reguid.ufl_value)) < 1 or length(trim(self.reguid.ufl_value)) > 20" name="vv_reguid2"
@@ -251,15 +354,13 @@ if(is_disabled && typeof(document.getElementById('openid_url'))!='undefined')
         </v:validator>
             </v:text>
             <v:text name="fb_id" type="hidden" value="--coalesce(self.fb_id.ufl_value,get_keyword('fb_id',self.vc_page.vc_event.ve_params,0))" control-udt="vspx_text" />
-
-          </td>
-          <td>
     </td>
+              <td></td>
         </tr>
         <tr>
           <th><label for="regmail">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
           <td nowrap="nowrap">
-                <v:text error-glyph="?" xhtml_tabindex="2" xhtml_id="regmail" xhtml_style="width:270px" name="regmail" value="--get_keyword ('regmail', params)" default_value="--self.oid_email">
+                <v:text error-glyph="?" xhtml_tabindex="2" xhtml_id="regmail" xhtml_style="width:270px" name="regmail" value="--self.reg_mail" default_value="--self.oid_email">
               <v:validator test="sql" expression="length(trim(self.regmail.ufl_value)) < 1 or length(trim(self.regmail.ufl_value)) > 40" name="vv_regmail1"
                     message="E-mail address cannot be empty or longer then 40 chars" />
               <v:validator name="vv_regmail2" test="regexp" regexp="[^@ ]+@([^\. ]+\.)+[^\. ]+" message="Invalid E-mail address" />
@@ -564,6 +665,33 @@ no_date:
      }
              } else {
      declare coords any;
+
+               lat := null;
+               lng := null;
+               if (self.reg_mode = 'foaf')
+               {
+                  WA_USER_EDIT (u_name1, 'WAUI_TITLE'        , get_keyword ('title', self.reg_foafData));
+                  WA_USER_EDIT (u_name1, 'WAUI_FULL_NAME'    , get_keyword ('name', self.reg_foafData));
+                  WA_USER_EDIT (u_name1, 'WAUI_FIRST_NAME'   , get_keyword ('firstName', self.reg_foafData));
+                  WA_USER_EDIT (u_name1, 'WAUI_LAST_NAME'    , get_keyword ('family_name', self.reg_foafData));
+                  WA_USER_EDIT (u_name1, 'WAUI_BIRTHDAY'     , get_keyword ('birthday', self.reg_foafData));
+                  WA_USER_EDIT (u_name1, 'WAUI_GENDER'       , get_keyword ('gender', self.reg_foafData));
+                  WA_USER_EDIT (u_name1, 'WAUI_ICQ'          , get_keyword ('icqChatID', self.reg_foafData));
+                  WA_USER_EDIT (u_name1, 'WAUI_MSN'          , get_keyword ('msnChatID', self.reg_foafData));
+                  WA_USER_EDIT (u_name1, 'WAUI_AIM'          , get_keyword ('aimChatID', self.reg_foafData));
+                  WA_USER_EDIT (u_name1, 'WAUI_YAHOO'        , get_keyword ('yahooChatID', self.reg_foafData));
+                  WA_USER_EDIT (u_name1, 'WAUI_BORG_HOMEPAGE', get_keyword ('workplaceHomepage', self.reg_foafData));
+                  WA_USER_EDIT (u_name1, 'WAUI_WEBPAGE'      , get_keyword ('homepage', self.reg_foafData));
+                  WA_USER_EDIT (u_name1, 'WAUI_HPHONE'       , get_keyword ('phone', self.reg_foafData));
+                  WA_USER_EDIT (u_name1, 'WAUI_BORG_HOMEPAGE', get_keyword ('organizationHomepage', self.reg_foafData));
+                  WA_USER_EDIT (u_name1, 'WAUI_BORG'         , get_keyword ('organizationTitle', self.reg_foafData));
+
+                  lat := get_keyword ('lat', self.reg_foafData);
+                  lng := get_keyword ('lng', self.reg_foafData);
+               }
+               if (self.reg_cert is not null)
+                 WA_USER_EDIT (u_name1, 'WAUI_CERT', self.reg_cert);
+
      declare exit handler for sqlstate '*';
 
            xt := http_client (sprintf ('http://api.hostip.info/?ip=%s', http_client_ip ()));
@@ -571,20 +699,21 @@ no_date:
      country := cast (xpath_eval ('string (//countryName)', xt) as varchar);
      city := cast (xpath_eval ('string (//Hostip/name)', xt) as varchar);
      coords := cast (xpath_eval ('string(//ipLocation//coordinates)', xt) as varchar);
-     lat := null;
-     lng := null;
      if (country is not null and length (country) > 2)
        {
          country := (select WC_NAME from WA_COUNTRY where upper (WC_NAME) = country);
          if (country is not null)
            {
       declare exit handler for not found;
+
                    select WC_LAT, WC_LNG into lat, lng from WA_COUNTRY where WC_NAME = country;
+                   if (country is not null)
              WA_USER_EDIT (u_name1, 'WAUI_HCOUNTRY', country);
     }
+               } else {
+                 country := null;
        }
-     WA_USER_EDIT (u_name1, 'WAUI_HCITY', city);
-     if (coords is not null)
+               if ((coords is not null) and (lat is null) and (lng is null))
        {
          coords := split_and_decode (coords, 0, '\0\0\,');
                if (length (coords) = 2)
@@ -593,6 +722,7 @@ no_date:
        lng := atof (coords [1]);
      }
        }
+               WA_USER_EDIT (u_name1, 'WAUI_HCITY', city);
      if (lat is not null and lng is not null)
        {
      WA_USER_EDIT (u_name1, 'WAUI_LAT', lat);

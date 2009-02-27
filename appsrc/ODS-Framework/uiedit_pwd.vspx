@@ -33,6 +33,7 @@
     <v:variable persist="0" name="secretq" type="varchar" default="''"/>
     <v:variable persist="0" name="secreta" type="varchar" default="''"/>
     <v:variable persist="0" name="oid_urlv" type="varchar" default="''"/>
+  <v:variable persist="0" name="certificate_login" type="integer" default="0"/>
   <v:variable persist="0" name="certificate_content" type="varchar" default="null"/>
     <v:variable persist="0" name="sioc_limit" type="int" default="10"/>
     <v:variable persist="0" name="no_pwd" type="int" default="0"/>
@@ -44,11 +45,13 @@
              WAUI_SEC_ANSWER,
              pwd_magic_calc (U_NAME, U_PASSWORD, 1),
 	     WAUI_OPENID_URL,
+	           WAUI_CERT_LOGIN,
 	     WAUI_CERT
         INTO self.secretq,
              self.secreta,
              pwd,
 	     self.oid_urlv,
+	           self.certificate_login,
 	     self.certificate_content
         FROM WA_USER_INFO,
              DB.DBA.SYS_USERS
@@ -310,7 +313,7 @@
 	      <div>
 		  <label>Agent ID:</label>
 		  <?vsp
-		  http_value (get_certificate_info (7, cast(self.certificate_content as varchar), 0, '', '2.5.29.17'),'b');
+		          http_value (replace (get_certificate_info (7, cast(self.certificate_content as varchar), 0, '', '2.5.29.17'), 'URI:', ''),'b');
 		  ?>
 	      </div>
 	      <?vsp } ?>
@@ -321,6 +324,19 @@
 	   </iframe>
 	   <?vsp } ?>
 	</td>
+      </tr>
+      <tr>
+	      <td colspan="2" align="left">
+          <label>
+            <v:check-box name="cert_login" value="1" xhtml_id="cert_login" >
+             <v:after-data-bind>
+               if (not e.ve_is_post)
+                 control.ufl_selected := self.certificate_login;
+             </v:after-data-bind>
+            </v:check-box>
+            <b>Enable Automatic X.509 Login</b>
+          </label>
+ 	      </td>
       </tr>
       <tr>
         <td colspan="2" class="ctrl">
@@ -343,7 +359,9 @@
 		      self.vc_error_message := 'The certificate must be in PEM format and must have Alternate Name attribute.';
 		      return;
 		    }
+                  WA_USER_EDIT (self.u_name, 'WAUI_CERT_LOGIN', self.cert_login.ufl_selected);
                   WA_USER_EDIT (self.u_name, 'WAUI_CERT', self.cert1.ufl_value);
+
                   self.vc_redirect ('uiedit.vspx?page=3');
                 ]]>
               </v:on-post>
@@ -353,7 +371,9 @@
                 <![CDATA[
                   if (self.vc_is_valid = 0)
                     return;
+                  WA_USER_EDIT (self.u_name, 'WAUI_CERT_LOGIN', 0);
                   WA_USER_EDIT (self.u_name, 'WAUI_CERT', NULL);
+
                   self.vc_redirect ('uiedit.vspx?page=3');
                 ]]>
               </v:on-post>
