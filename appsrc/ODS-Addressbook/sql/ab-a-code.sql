@@ -2795,6 +2795,7 @@ create procedure AB.WA.contact_update (
   in foaf varchar,
   in photo varchar,
   in interests varchar,
+  in relationships varchar,
   in mail varchar,
   in web varchar,
   in icq varchar,
@@ -2857,6 +2858,7 @@ create procedure AB.WA.contact_update (
         P_FOAF,
         P_PHOTO,
         P_INTERESTS,
+        P_RELATIONSHIPS,
         P_MAIL,
         P_WEB,
         P_ICQ,
@@ -2917,6 +2919,7 @@ create procedure AB.WA.contact_update (
         foaf,
         photo,
         interests,
+        relationships,
         mail,
         web,
         icq,
@@ -2976,6 +2979,7 @@ create procedure AB.WA.contact_update (
            P_FOAF = foaf,
            P_PHOTO = photo,
            P_INTERESTS = interests,
+           P_RELATIONSHIPS = relationships,
            P_MAIL = mail,
            P_WEB = web,
            P_ICQ = icq,
@@ -3076,6 +3080,10 @@ create procedure AB.WA.contact_update2 (
     update AB.WA.PERSONS set P_BIRTHDAY = pValue where P_ID = id;
   if (pName = 'P_FOAF')
     update AB.WA.PERSONS set P_FOAF = pValue where P_ID = id;
+  if (pName = 'P_INTERESTS')
+    update AB.WA.PERSONS set P_INTERESTS = pValue where P_ID = id;
+  if (pName = 'P_RELATIONSHIPS')
+    update AB.WA.PERSONS set P_RELATIONSHIPS = pValue where P_ID = id;
 
   if (pName = 'P_MAIL')
     update AB.WA.PERSONS set P_MAIL = pValue where P_ID = id;
@@ -3233,7 +3241,8 @@ create procedure AB.WA.contact_update4 (
         V := vector ();
         F := vector ();
         for (N := 0; N < length (pFields); N := N + 1) {
-          if (not AB.WA.vector_contains (validation, pFields [N])) {
+          if (not AB.WA.vector_contains (validation, pFields [N]))
+          {
             F := vector_concat (F, vector (pFields [N]));
             V := vector_concat (V, vector (pValues [N]));
           }
@@ -3311,105 +3320,14 @@ create procedure AB.WA.contact_update4 (
 --
 create procedure AB.WA.contact_field (
   in id integer,
-  in domain_id integer,
   in pName varchar)
 {
-  if (pName = 'P_NAME')
-    return (select P_NAME from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_TITLE')
-    return (select P_TITLE from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_FIRST_NAME')
-    return (select P_FIRST_NAME from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_MIDDLE_NAME')
-    return (select P_MIDDLE_NAME from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_LAST_NAME')
-    return (select P_LAST_NAME from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_FULL_NAME')
-    return (select P_FULL_NAME from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_GENDER')
-    return (select P_GENDER from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_BIRTHDAY')
-    return (select P_BIRTHDAY from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_FOAF')
-    return (select P_FOAF from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_PHOTO')
-    return (select P_PHOTO from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_INTERESTS')
-    return (select P_INTERESTS from AB.WA.PERSONS where P_ID = id);
+  declare st, msg, meta, rows any;
 
-  if (pName = 'P_MAIL')
-    return (select P_MAIL from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_WEB')
-    return (select P_WEB from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_ICQ')
-    return (select P_ICQ from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_SKYPE')
-    return (select P_SKYPE from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_AIM')
-    return (select P_AIM from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_YAHOO')
-    return (select P_YAHOO from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_MSN')
-    return (select P_MSN from AB.WA.PERSONS where P_ID = id);
-
-  if (pName = 'P_H_ADDRESS1')
-    return (select P_H_ADDRESS1 from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_H_ADDRESS2')
-    return (select P_H_ADDRESS2 from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_H_CODE')
-    return (select P_H_CODE from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_H_CITY')
-    return (select P_H_CITY from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_H_STATE')
-    return (select P_H_STATE from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_H_COUNTRY')
-    return (select P_H_COUNTRY from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_H_TZONE')
-    return (select P_H_TZONE from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_H_LAT')
-    return (select P_H_LAT from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_H_LNG')
-    return (select P_H_LNG from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_H_PHONE')
-    return (select P_H_PHONE from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_H_MOBILE')
-    return (select P_H_MOBILE from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_H_MAIL')
-    return (select P_H_MAIL from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_H_WEB')
-    return (select P_H_WEB from AB.WA.PERSONS where P_ID = id);
-
-  if (pName = 'P_B_ADDRESS1')
-    return (select P_B_ADDRESS1 from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_B_ADDRESS2')
-    return (select P_B_ADDRESS2 from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_B_CODE')
-    return (select P_B_CODE from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_B_CITY')
-    return (select P_B_CITY from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_B_STATE')
-    return (select P_B_STATE from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_B_COUNTRY')
-    return (select P_B_COUNTRY from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_B_TZONE')
-    return (select P_B_TZONE from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_B_LAT')
-    return (select P_B_LAT from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_B_LNG')
-    return (select P_B_LNG from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_B_PHONE')
-    return (select P_B_PHONE from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_B_MOBILE')
-    return (select P_B_MOBILE from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_B_MAIL')
-    return (select P_B_MAIL from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_B_WEB')
-    return (select P_B_WEB from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_B_ORGANIZATION')
-    return (select P_B_ORGANIZATION from AB.WA.PERSONS where P_ID = id);
-  if (pName = 'P_B_JOB')
-    return (select P_B_JOB from AB.WA.PERSONS where P_ID = id);
-
+  st := '00000';
+  exec (sprintf ('select %s from AB.WA.PERSONS where P_ID = ?', pName), st, msg, vector (id), 0, meta, rows);
+  if ('00000' = st)
+    return rows[0][0];
   return null;
 }
 ;
@@ -3740,30 +3658,31 @@ create procedure AB.WA.import_foaf (
   iLength := length (Items);
 
     S := ' SPARQL ' ||
-         ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
-         ' PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> ' ||
-         ' PREFIX foaf: <http://xmlns.com/foaf/0.1/> ' ||
-       ' PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> ' ||
-       ' PREFIX bio: <http://vocab.org/bio/0.1/> ' ||
-       ' SELECT ?P_ID, ?P_NAME, ?P_FULL_NAME, ?P_KIND, ?P_FIRST_NAME, ?P_LAST_NAME, ?P_BIRTHDAY, ?P_MAIL, ?P_WEB, ?P_ICQ, ?P_MSN, ?P_AIM, ?P_YAHOO, ?P_TITLE, ?P_H_PHONE, ?P_H_WEB, ?P_B_WEB, ?P_H_LAT, ?P_H_LNG, ?P_TAGS, ?P_PHOTO' ||
-         ' FROM <%s> ' ||
-         ' WHERE { ' ||
+       ' input default:storage ""' ||
+       ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
+       ' prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> ' ||
+       ' prefix foaf: <http://xmlns.com/foaf/0.1/> ' ||
+       ' prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> ' ||
+       ' prefix bio: <http://vocab.org/bio/0.1/> ' ||
+       ' select ?P_ID, ?P_NAME, ?P_FULL_NAME, ?P_KIND, ?P_FIRST_NAME, ?P_LAST_NAME, ?P_BIRTHDAY, ?P_MAIL, ?P_WEB, ?P_ICQ, ?P_MSN, ?P_AIM, ?P_YAHOO, ?P_TITLE, ?P_H_PHONE, ?P_H_WEB, ?P_B_WEB, ?P_H_LAT, ?P_H_LNG, ?P_TAGS, ?P_PHOTO' ||
+       '   from <%s> ' ||
+       '  where { ' ||
        '         {?P_ID a foaf:Person } UNION {?P_ID a foaf:Organization } . ' ||
        '         ?P_ID rdf:type ?P_KIND .' ||
-       '         OPTIONAL{ ?P_ID  foaf:nick ?P_NAME} . ' ||
-       '         OPTIONAL{ ?P_ID  foaf:title ?P_TITLE} . ' ||
-       '         OPTIONAL{ ?P_ID  foaf:name ?P_FULL_NAME} . ' ||
-       '         OPTIONAL{ ?P_ID  foaf:firstNname ?P_FIRST_NAME} . ' ||
-       '         OPTIONAL{ ?P_ID  foaf:family_name ?P_LAST_NAME} . ' ||
-       '         OPTIONAL{ ?P_ID  foaf:dateOfBirth ?P_BIRTHDAY} . ' ||
-       '         OPTIONAL{ ?P_ID  foaf:mbox ?P_MAIL} . ' ||
-       '         OPTIONAL{ ?P_ID foaf:workplaceHomepage ?P_WEB} . '            ||
-       '         OPTIONAL{ ?P_ID  foaf:icqChatID ?P_ICQ } .' ||
-       '         OPTIONAL{ ?P_ID  foaf:msnChatID ?P_MSN } .' ||
-       '         OPTIONAL{ ?P_ID  foaf:aimChatID ?P_AIM } .' ||
-       '         OPTIONAL{ ?P_ID  foaf:yahooChatID ?P_YAHOO } .' ||
-       '         OPTIONAL{ ?P_ID  foaf:phone ?P_H_PHONE } .' ||
-       '         OPTIONAL{ ?P_ID foaf:homepage ?P_H_WEB} . '                   ||
+       '         optional { ?P_ID foaf:nick ?P_NAME} . '                        ||
+       '         optional { ?P_ID foaf:title ?P_TITLE} . '                      ||
+       '         optional { ?P_ID foaf:name ?P_FULL_NAME} . '                   ||
+       '         optional { ?P_ID foaf:firstNname ?P_FIRST_NAME} . '            ||
+       '         optional { ?P_ID foaf:family_name ?P_LAST_NAME} . '            ||
+       '         optional { ?P_ID foaf:dateOfBirth ?P_BIRTHDAY} . '             ||
+       '         optional { ?P_ID foaf:mbox ?P_MAIL} . '                        ||
+       '         optional { ?P_ID foaf:workplaceHomepage ?P_WEB} . '            ||
+       '         optional { ?P_ID foaf:icqChatID ?P_ICQ } .'                    ||
+       '         optional { ?P_ID foaf:msnChatID ?P_MSN } .'                    ||
+       '         optional { ?P_ID foaf:aimChatID ?P_AIM } .'                    ||
+       '         optional { ?P_ID foaf:yahooChatID ?P_YAHOO } .'                ||
+       '         optional { ?P_ID foaf:phone ?P_H_PHONE } .'                    ||
+       '         optional { ?P_ID foaf:homepage ?P_H_WEB} . '                   ||
        '         optional{ ?P_ID foaf:workplaceHomepage ?P_B_WEB } .'          ||
        '         optional{ ?P_ID foaf:depiction ?P_PHOTO } .'                  ||
        '         optional{ ?P_ID foaf:based_near ?based_near .'                ||
@@ -3917,17 +3836,18 @@ create procedure AB.WA.import_foaf_content (
     DB.DBA.RDF_LOAD_RDFXML (content, contentIRI, contentIRI);
   }
 
-  Items := AB.WA.ab_sparql (sprintf (' SPARQL \n' ||
-                                     ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
-                                     ' PREFIX foaf: <http://xmlns.com/foaf/0.1/>                 \n' ||
-                                     ' SELECT ?person, ?nick, ?name, ?mbox                       \n' ||
-                                     '   FROM <%s>                                               \n' ||
-                                     '  WHERE {                                                  \n' ||
+  Items := AB.WA.ab_sparql (sprintf (' sparql \n' ||
+                                     ' input default:storage ""' ||
+                                     ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
+                                     ' prefix foaf: <http://xmlns.com/foaf/0.1/>                 \n' ||
+                                     ' select ?person, ?nick, ?name, ?mbox                       \n' ||
+                                     '   from <%s>                                               \n' ||
+                                     '  where {                                                  \n' ||
                                      '          [] a foaf:PersonalProfileDocument ;              \n' ||
                                      '             foaf:primaryTopic ?person .                   \n' ||
-                                     '          OPTIONAL { ?person foaf:nick ?nick } .           \n' ||
-                                     '          OPTIONAL { ?person foaf:name ?name } .           \n' ||
-                                     '          OPTIONAL { ?person foaf:mbox ?mbox } .           \n' ||
+                                     '          optional { ?person foaf:nick ?nick } .           \n' ||
+                                     '          optional { ?person foaf:name ?name } .           \n' ||
+                                     '          optional { ?person foaf:mbox ?mbox } .           \n' ||
                                      '        }', contentIRI));
   if (length (Items))
   {
@@ -3935,46 +3855,48 @@ create procedure AB.WA.import_foaf_content (
     tmp := replace (Items[N][3], 'mailto:', '');
     Persons := vector_concat (Persons, vector (vector (1, personIRI,  coalesce (Items[N][2], Items[N][1]), tmp)));
     Items := AB.WA.ab_sparql (sprintf (' SPARQL                                                    \n' ||
-                                       ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
-                                       ' PREFIX foaf: <http://xmlns.com/foaf/0.1/>                 \n' ||
-                                       ' SELECT ?person, ?nick, ?name, ?mbox                       \n' ||
-                                       '   FROM <%s>                                               \n' ||
-                                       '  WHERE {                                                  \n' ||
+                                       ' input default:storage ""' ||
+                                       ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
+                                       ' prefix foaf: <http://xmlns.com/foaf/0.1/>                 \n' ||
+                                       ' select ?person, ?nick, ?name, ?mbox                       \n' ||
+                                       '   from <%s>                                               \n' ||
+                                       '  where {                                                  \n' ||
                                        '          {                                                \n' ||
                                        '            <%s> foaf:knows ?person .                      \n' ||
                                        '            ?person a foaf:Person .                        \n' ||
-                                       '            OPTIONAL { ?person foaf:nick ?nick } .         \n' ||
-                                       '            OPTIONAL { ?person foaf:name ?name } .         \n' ||
-                                       '            OPTIONAL { ?person foaf:mbox ?mbox } .         \n' ||
+                                       '            optional { ?person foaf:nick ?nick } .         \n' ||
+                                       '            optional { ?person foaf:name ?name } .         \n' ||
+                                       '            optional { ?person foaf:mbox ?mbox } .         \n' ||
                                        '          }                                                \n' ||
                                        '          UNION                                            \n' ||
                                        '          {                                                \n' ||
                                        '            <%s> foaf:knows ?person .                      \n' ||
                                        '            ?person a foaf:Organization .                  \n' ||
-                                       '            OPTIONAL { ?person foaf:nick ?nick } .         \n' ||
-                                       '            OPTIONAL { ?person foaf:name ?name } .         \n' ||
-                                       '            OPTIONAL { ?person foaf:mbox ?mbox } .         \n' ||
+                                       '            optional { ?person foaf:nick ?nick } .         \n' ||
+                                       '            optional { ?person foaf:name ?name } .         \n' ||
+                                       '            optional { ?person foaf:mbox ?mbox } .         \n' ||
                                        '          }                                                \n' ||
                                        '        }', contentIRI, personIRI, personIRI));
   } else {
     Items := AB.WA.ab_sparql (sprintf (' SPARQL                                                    \n' ||
-                                       ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
-                                       ' PREFIX foaf: <http://xmlns.com/foaf/0.1/>                 \n' ||
-                                       ' SELECT ?person, ?nick, ?name, ?mbox                       \n' ||
-                                       '   FROM <%s>                                               \n' ||
-                                       '  WHERE {                                                  \n' ||
+                                       ' input default:storage ""' ||
+                                       ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
+                                       ' prefix foaf: <http://xmlns.com/foaf/0.1/>                 \n' ||
+                                       ' select ?person, ?nick, ?name, ?mbox                       \n' ||
+                                       '   from <%s>                                               \n' ||
+                                       '  where {                                                  \n' ||
                                        '          {                                                \n' ||
                                        '            ?person a foaf:Person .                        \n' ||
-                                       '            OPTIONAL { ?person foaf:nick ?nick } .         \n' ||
-                                       '            OPTIONAL { ?person foaf:name ?name } .         \n' ||
-                                       '            OPTIONAL { ?person foaf:mbox ?mbox } .         \n' ||
+                                       '            optional { ?person foaf:nick ?nick } .         \n' ||
+                                       '            optional { ?person foaf:name ?name } .         \n' ||
+                                       '            optional { ?person foaf:mbox ?mbox } .         \n' ||
                                        '          }                                                \n' ||
                                        '          UNION                                            \n' ||
                                        '          {                                                \n' ||
                                        '            ?person a foaf:Organization .                  \n' ||
-                                       '            OPTIONAL { ?person foaf:nick ?nick } .         \n' ||
-                                       '            OPTIONAL { ?person foaf:name ?name } .         \n' ||
-                                       '            OPTIONAL { ?person foaf:mbox ?mbox } .         \n' ||
+                                       '            optional { ?person foaf:nick ?nick } .         \n' ||
+                                       '            optional { ?person foaf:name ?name } .         \n' ||
+                                       '            optional { ?person foaf:mbox ?mbox } .         \n' ||
                                        '          }                                                \n' ||
                                        '        }', contentIRI));
   }
@@ -4405,29 +4327,29 @@ create procedure AB.WA.export_foaf (
 	        {
 	          <FILTER>
 	          ?person rdf:type ?rdfType .
-	          OPTIONAL { ?person foaf:nick ?nick } .
-	          OPTIONAL { ?person foaf:name ?name } .
-	          OPTIONAL { ?person foaf:firstName ?firstName } .
-	          OPTIONAL { ?person foaf:family_name ?family_name } .
-	          OPTIONAL { ?person foaf:gender ?gender } .
-	          OPTIONAL { ?person foaf:birthday ?birthday } .
-	          OPTIONAL { ?person foaf:mbox ?mbox } .
-	          OPTIONAL { ?person foaf:mbox_sha1sum ?mbox_sha1sum } .
-	          OPTIONAL { ?person foaf:icqChatID ?icqChatID } .
-	          OPTIONAL { ?person foaf:msnChatID ?msnChatID } .
-	          OPTIONAL { ?person foaf:aimChatID ?aimChatID } .
-	          OPTIONAL { ?person foaf:yahooChatID ?yahooChatID } .
-	          OPTIONAL { ?person foaf:phone ?phone } .
-	          OPTIONAL { ?person foaf:based_near ?based_near .
+            optional { ?person foaf:nick ?nick } .
+            optional { ?person foaf:name ?name } .
+            optional { ?person foaf:firstName ?firstName } .
+            optional { ?person foaf:family_name ?family_name } .
+            optional { ?person foaf:gender ?gender } .
+            optional { ?person foaf:birthday ?birthday } .
+            optional { ?person foaf:mbox ?mbox } .
+            optional { ?person foaf:mbox_sha1sum ?mbox_sha1sum } .
+            optional { ?person foaf:icqChatID ?icqChatID } .
+            optional { ?person foaf:msnChatID ?msnChatID } .
+            optional { ?person foaf:aimChatID ?aimChatID } .
+            optional { ?person foaf:yahooChatID ?yahooChatID } .
+            optional { ?person foaf:phone ?phone } .
+            optional { ?person foaf:based_near ?based_near .
 	                     ?based_near ?based_near_predicate ?based_near_subject .
 	                   } .
-	          OPTIONAL { ?person foaf:workplaceHomepage ?workplaceHomepage } .
-	          OPTIONAL { ?org foaf:homepage ?workplaceHomepage .
+            optional { ?person foaf:workplaceHomepage ?workplaceHomepage } .
+            optional { ?org foaf:homepage ?workplaceHomepage .
 	                     ?org a foaf:Organization ;
 	                          dc:title ?orgtit .
 	                   } .
-	          OPTIONAL { ?person foaf:homepage ?homepage } .
-	          OPTIONAL { ?person vcard:ADR ?adr .
+            optional { ?person foaf:homepage ?homepage } .
+            optional { ?person vcard:ADR ?adr .
 	                     optional { ?adr vcard:Country ?country }.
 		                   optional { ?adr vcard:Region ?state } .
 		                   optional { ?adr vcard:Locality ?city } .
@@ -4435,11 +4357,11 @@ create procedure AB.WA.export_foaf (
 		                   optional { ?adr vcard:Street ?street } .
 		                   optional { ?adr vcard:Extadd ?extadd } .
 		                 }
-	          OPTIONAL { ?person bio:olb ?bio } .
-            OPTIONAL { ?person bio:event ?event.
+            optional { ?person bio:olb ?bio } .
+            optional { ?person bio:event ?event.
                        ?event a bio:Birth ; dc:date ?bdate
                      }.
-	          OPTIONAL { ?person foaf:knows ?knows .
+            optional { ?person foaf:knows ?knows .
 	                     ?knows rdfs:seeAlso ?knows_seeAlso .
 	                     ?knows foaf:nick ?knows_nick .
                      } .

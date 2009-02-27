@@ -955,44 +955,106 @@ AB.updateRow = function (prefix, No, optionObject)
       tr.id = prefix+'_tr_' + No;
       tbl.appendChild(tr);
 
+      var fldOptions = options.fld1;
+      if (fldOptions)
+      {
       var td = OAT.Dom.create('td');
       tr.appendChild(td);
- 		  var fld = OAT.Dom.create("input");
- 		  fld.type = 'text';
-      fld.id = prefix+'_fld_1_' + No;
-      fld.name = fld.id;
-      if (options.fld1)
-        fld.value = options.fld1;
-      fld.className = options.fld1Class;
-      fld.onblur = options.fld1Onblur;
-      fld.style.width = '95%';
-      td.appendChild(fld);
-
+        if (fldOptions.mode == 1)
+        {
+     		  AB.updateRowCombo(td, prefix+'_fld_1_' + No, fldOptions);
+        } else {
+     		  AB.updateInput(td, prefix+'_fld_1_' + No, fldOptions);
+        }
+      }
+      var fldOptions = options.fld2;
+      if (fldOptions)
+      {
       var td = OAT.Dom.create('td');
       tr.appendChild(td);
- 		  var fld = OAT.Dom.create("input");
- 		  fld.type = 'text';
-      fld.id = prefix+'_fld_2_' + No;
-      fld.name = fld.id;
-      if (options.fld2)
-        fld.value = options.fld2;
-      fld.className = options.fld2Class;
-      fld.onblur = options.fld2Onblur;
-      fld.style.width = '95%';
-      td.appendChild(fld);
-
+        if (fldOptions.mode == 1)
+        {
+     		  AB.updateRowCombo(td, prefix+'_fld_2_' + No, fldOptions);
+        } else {
+   		    AB.updateInput(td, prefix+'_fld_2_' + No, fldOptions);
+        }
+      }
       var td = OAT.Dom.create('td');
       tr.appendChild(td);
  		  var fld = OAT.Dom.create("input");
  		  fld.type = 'button';
  		  fld.value = 'Remove';
-      fld.className = 'button';
       fld.onclick = function (){AB.updateRow(prefix, No);};
       td.appendChild(fld);
 
       $(prefix+'_no').value = No + 1;
     }
   }
+}
+
+AB.updateInput = function (elm, fldName, fldOptions)
+{
+  var fld = OAT.Dom.create("input");
+  fld.type = 'text';
+  fld.id = fldName;
+  fld.name = fld.id;
+  if (fldOptions.value)
+    fld.value = fldOptions.value;
+  fld.className = fldOptions.class;
+  fld.onblur = fldOptions.onBlur;
+  fld.style.width = '95%';
+  var elm = $(elm);
+  elm.appendChild(fld);
+}
+
+AB.updateRowCombo = function (elm, fldName, fldOptions)
+{
+  var cc = new OAT.Combolist([], fldOptions.value, {name: fldName});
+
+  cc.input.name = fldName;
+  cc.input.id = fldName;
+  cc.input.style.width = "90%";
+  AB.updateRowComboOption(cc, 'rel:acquaintanceOf');
+  AB.updateRowComboOption(cc, 'rel:ambivalentOf');
+  AB.updateRowComboOption(cc, 'rel:ancestorOf');
+  AB.updateRowComboOption(cc, 'rel:antagonistOf');
+  AB.updateRowComboOption(cc, 'rel:apprenticeTo');
+  AB.updateRowComboOption(cc, 'rel:childOf');
+  AB.updateRowComboOption(cc, 'rel:closeFriendOf');
+  AB.updateRowComboOption(cc, 'rel:collaboratesWith');
+  AB.updateRowComboOption(cc, 'rel:colleagueOf');
+  AB.updateRowComboOption(cc, 'rel:descendantOf');
+  AB.updateRowComboOption(cc, 'rel:employedBy');
+  AB.updateRowComboOption(cc, 'rel:employerOf');
+  AB.updateRowComboOption(cc, 'rel:enemyOf');
+  AB.updateRowComboOption(cc, 'rel:engagedTo');
+  AB.updateRowComboOption(cc, 'rel:friendOf');
+  AB.updateRowComboOption(cc, 'rel:grandchildOf');
+  AB.updateRowComboOption(cc, 'rel:grandparentOf');
+  AB.updateRowComboOption(cc, 'rel:hasMet');
+  AB.updateRowComboOption(cc, 'rel:knowsByReputation');
+  AB.updateRowComboOption(cc, 'rel:knowsInPassing');
+  AB.updateRowComboOption(cc, 'rel:knowsOf');
+  AB.updateRowComboOption(cc, 'rel:lifePartnerOf');
+  AB.updateRowComboOption(cc, 'rel:livesWith');
+  AB.updateRowComboOption(cc, 'rel:lostContactWith');
+  AB.updateRowComboOption(cc, 'rel:mentorOf');
+  AB.updateRowComboOption(cc, 'rel:neighborOf');
+  AB.updateRowComboOption(cc, 'rel:parentOf');
+  AB.updateRowComboOption(cc, 'rel:participant');
+  AB.updateRowComboOption(cc, 'rel:participantIn');
+  AB.updateRowComboOption(cc, 'rel:siblingOf');
+  AB.updateRowComboOption(cc, 'rel:spouseOf');
+  AB.updateRowComboOption(cc, 'rel:worksWith');
+  AB.updateRowComboOption(cc, 'rel:wouldLikeToKnow');
+
+  var elm = $(elm);
+  elm.appendChild(cc.div);
+}
+
+AB.updateRowComboOption = function (cc, optionName)
+{
+  cc.addOption(optionName, optionName);
 }
 
 AB.validateError = function (fld, msg)

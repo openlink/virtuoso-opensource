@@ -145,6 +145,7 @@ create procedure fill_ods_addressbook_sioc (
                 P_BIRTHDAY,
                 P_PHOTO,
                 P_INTERESTS,
+                P_RELATIONSHIPS,
                 P_MAIL,
                 P_ICQ,
                 P_SKYPE,
@@ -210,6 +211,7 @@ create procedure fill_ods_addressbook_sioc (
                     P_BIRTHDAY,
                       P_PHOTO,
                       P_INTERESTS,
+                      P_RELATIONSHIPS,
                       P_MAIL,
                     P_ICQ,
                     P_SKYPE,
@@ -356,6 +358,7 @@ create procedure contact_insert (
   inout birthday datetime,
   inout photo varchar,
   inout interests varchar,
+  inout relationships varchar,
   inout mail varchar,
   inout icq varchar,
   inout skype varchar,
@@ -409,6 +412,7 @@ create procedure contact_insert (
               DB.DBA.WA_MEMBER
         where WAI_ID = domain_id
           and WAM_INST = WAI_NAME
+            and WAM_MEMBER_TYPE = 1
           and WAI_IS_PUBLIC = 1) do
   {
     graph_iri := get_graph ();
@@ -444,6 +448,30 @@ create procedure contact_insert (
 		DB.DBA.RDF_QUAD_URI   (graph_iri, sc_iri, sioc_iri ('container_of'), iri);
 		DB.DBA.RDF_QUAD_URI   (graph_iri, iri, sioc_iri ('has_container'), sc_iri);
 
+    if (not DB.DBA.is_empty_or_null (interests))
+    {
+      for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = interests) do
+  	  {
+  	    if (length (interest))
+  	    {
+  	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('interest'), interest);
+  	      if (length (label))
+  		    {
+  		      DB.DBA.RDF_QUAD_URI_L (graph_iri, interest, rdfs_iri ('label'), label);
+  		    }
+  	    }
+  	  }
+    }
+    if (not DB.DBA.is_empty_or_null (relationships))
+    {
+      for (select relationship from DB.DBA.WA_USER_INTERESTS (txt) (relationship varchar) P where txt = relationships) do
+  	  {
+  	    if (length (relationship))
+  	    {
+  	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, relationship, person_iri);
+  	    }
+  	  }
+    }
 		if (kind = 1)
 		{
 		  -- Organization
@@ -518,20 +546,6 @@ create procedure contact_insert (
       }
       if (not DB.DBA.is_empty_or_null (photo))
         DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('depiction'), DB.DBA.WA_LINK (1, photo));
-      if (not DB.DBA.is_empty_or_null (interests))
-      {
-        for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = interests) do
-    	  {
-    	    if (length (interest))
-    	    {
-    	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('interest'), interest);
-    	      if (length (label))
-    		    {
-    		      DB.DBA.RDF_QUAD_URI_L (graph_iri, interest, rdfs_iri ('label'), label);
-    		    }
-    	    }
-    	  }
-      }
   	}
 
     -- AddressBook
@@ -663,6 +677,7 @@ create trigger PERSONS_SIOC_I after insert on AB.WA.PERSONS referencing new as N
                   N.P_BIRTHDAY,
                   N.P_PHOTO,
                   N.P_INTERESTS,
+                  N.P_RELATIONSHIPS,
                   N.P_MAIL,
                   N.P_ICQ,
                   N.P_SKYPE,
@@ -723,6 +738,7 @@ create trigger PERSONS_SIOC_U after update on AB.WA.PERSONS referencing old as O
                   N.P_BIRTHDAY,
                   N.P_PHOTO,
                   N.P_INTERESTS,
+                  N.P_RELATIONSHIPS,
                   N.P_MAIL,
                   N.P_ICQ,
                   N.P_SKYPE,

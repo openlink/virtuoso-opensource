@@ -92,7 +92,7 @@
               http_value (AB.WA.utf2wide (row[2]));
             http ('</title>\n');
             http ('<description>');
-              http_value (AB.WA.utf2wide (AB.WA.contact_field (row[0], row[1], 'P_FULL_NAME')));
+              http_value (AB.WA.utf2wide (AB.WA.contact_field (row[0], 'P_FULL_NAME')));
             http ('</description>\n');
             http ('<link>');
               http_value (AB.WA.contact_url (self.domain_id, row[0]));

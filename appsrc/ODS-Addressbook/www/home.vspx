@@ -409,6 +409,7 @@
 
       <v:variable name="v_photo" type="varchar" default="''" />
       <v:variable name="v_interests" type="varchar" default="''" />
+      <v:variable name="v_relationships" type="varchar" default="''" />
 
       <v:variable name="v_mail" type="varchar" default="''" />
       <v:variable name="v_web" type="varchar" default="''" />
@@ -567,6 +568,7 @@
                     self.v_foaf := '';
                   self.v_photo := '';
                   self.v_interests := '';
+                  self.v_relationships := '';
                   self.v_photo_preview_path := '';
 
                     self.v_mail := '';
@@ -1310,6 +1312,7 @@
                          P_FOAF,
                            P_PHOTO,
                            P_INTERESTS,
+                           P_RELATIONSHIPS,
                          P_MAIL,
                          P_WEB,
                          P_ICQ,
@@ -1365,6 +1368,7 @@
                          self.v_foaf,
                            self.v_photo,
                            self.v_interests,
+                           self.v_relationships,
                          self.v_mail,
                          self.v_web,
                          self.v_icq,
@@ -1445,10 +1449,11 @@
             <v:text name="dirty_force_global" xhtml_id="dirty_force_global" type="hidden" value="--get_keyword ('dirty_force_global', self.vc_event.ve_params, 'false')"/>
             <div id="a" class="c1">
               <div class="tabs">
-                &nbsp;<vm:tabCaption tab="a" tabsCount="4" tabNo="0" caption="Main" />
-                &nbsp;<vm:tabCaption tab="a" tabsCount="4" tabNo="1" caption="Contact" />
-                &nbsp;<vm:tabCaption tab="a" tabsCount="4" tabNo="2" caption="Home" />
-                &nbsp;<vm:tabCaption tab="a" tabsCount="4" tabNo="3" caption="Business" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="5" tabNo="0" caption="Main" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="5" tabNo="1" caption="Contact" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="5" tabNo="2" caption="Home" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="5" tabNo="3" caption="Business" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="5" tabNo="4" caption="Relationships" />
               </div>
               <div class="contents">
                 <div id="a_content_0" class="tabContent" style="display: none;">
@@ -1639,7 +1644,7 @@
                               </td>
                               <vm:if test="self.abAction <> 'view'">
                                 <td valign="top" nowrap="1">
-                                  <input type="button" value="Add" onclick="javascript: AB.updateRow('a', null, {fld1Class: '_validate_ _url_ _canEmpty_', fld1Onblur: function(){validateField(this);}});" class="button" />
+                                  <input type="button" value="Add" onclick="javascript: AB.updateRow('a', null, {fld1: {class: '_validate_ _url_ _canEmpty_', onbBlur: function(){AB.validateField(this);}}, fld2: {}});" class="button" />
                                 </td>
                               </vm:if>
                             </tr>
@@ -2424,6 +2429,62 @@
                     </tr>
                   </table>
                 </div>
+                  <div id="a_content_4" class="tabContent" style="display: none;">
+                    <table class="form-body" cellspacing="0">
+                      <tr>
+                        <td style="width: 40em; background-color: white;">
+                          <table id="b_tbl" width="100%" cellspacing="0">
+                            <thead class="sortHeader">
+                              <tr>
+                                <th>
+                                  Relationship
+                                </th>
+                                <vm:if test="self.abAction <> 'view'">
+                                  <th width="70px">
+                                    Action
+                                  </th>
+                                </vm:if>
+                              </tr>
+                            </thead>
+                            <?vsp
+                              declare N integer;
+
+                              N := 0;
+                              for (select relationship from DB.DBA.WA_USER_INTERESTS (txt) (relationship varchar) P where txt = self.v_relationships) do
+                              {
+                            ?>
+                            <tr id="b_tr_<?V N ?>">
+                              <td id="b_td_<?V N ?>">
+                                <vm:if test="self.abAction <> 'view'">
+                            		  <![CDATA[
+                            		    <script type="text/javascript">
+                                      OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function() {AB.updateRowCombo('b_td_<?V N ?>', 'b_fld_1_<?V N ?>', {mode: 1, value: '<?V relationship ?>', class: '_validate_ _canEmpty_', onblur: function(){AB.validateField(this);}});});
+                            		    </script>
+                            		  ]]>
+                                </vm:if>
+                                <?vsp self.viewField (relationship); ?>
+                              </td>
+                              <vm:if test="self.abAction <> 'view'">
+                                <td>
+                                  <input type="button" value="Remove" onclick="javascript: AB.updateRow('b', <?V N ?>);" class="button" />
+                                </td>
+                              </vm:if>
+                            </tr>
+                            <?vsp
+                                N := N + 1;
+                              }
+                            ?>
+                          </table>
+                          <input type="hidden" id="b_no" name="b_no" value="<?V N ?>" />
+                        </td>
+                        <vm:if test="self.abAction <> 'view'">
+                          <td valign="top" nowrap="1">
+                            <input type="button" value="Add" onclick="javascript: AB.updateRow('b', null, {fld1: {mode: 1, class: '_validate_ _canEmpty_', onblur: function(){AB.validateField(this);}}});" class="button" />
+                          </td>
+                        </vm:if>
+                      </tr>
+                    </table>
+                  </div>
               </div>
             </div>
             <div class="new-form-footer">
@@ -2443,6 +2504,21 @@
                       resignal;
                     };
 
+                      -- interests
+                      self.v_interests := '';
+                      self.v_relationships := '';
+                      for (N := 0; N < length (e.ve_params); N := N + 4)
+                      {
+                        if ((e.ve_params [N] like 'a_fld_1_%') and (trim (e.ve_params [N+1]) <> ''))
+                        {
+                          suffix := replace (e.ve_params [N], 'a_fld_1_', '');
+                          self.v_interests := self.v_interests || trim (e.ve_params [N+1]) || ';' || trim (get_keyword ('a_fld_2_'||suffix, e.ve_params, '')) || '\n';
+                        }
+                        else if ((e.ve_params [N] like 'b_fld_1_%') and (trim (e.ve_params [N+1]) <> ''))
+                        {
+                          self.v_relationships := self.v_relationships || trim (e.ve_params [N+1]) || '\n';
+                        }
+                      }
                     self.v_kind := cast (self.ab_kind.ufl_value as integer);
                     self.v_name := AB.WA.test (self.ab_name.ufl_value, vector('name', 'Name', 'class', 'varchar', 'type', 'varchar', 'minLength', 1, 'maxLength', 255));
                     self.v_tags := trim (self.ab_tags.ufl_value);
@@ -2566,16 +2642,6 @@
                           self.v_photo := '';
                       }
 
-                      -- interests
-                      self.v_interests := '';
-                      for (N := 0; N < length (e.ve_params); N := N + 4)
-                      {
-                        if ((e.ve_params [N] like 'a_fld_1_%') and (trim (e.ve_params [N+1]) <> ''))
-                        {
-                          suffix := replace (e.ve_params [N], 'a_fld_1_', '');
-                          self.v_interests := self.v_interests || trim (e.ve_params [N+1]) || ';' || trim (get_keyword ('a_fld_2_'||suffix, e.ve_params, '')) || '\n';
-                        }
-                      }
                     self.v_title         := trim (self.ab_title.ufl_value);
                     self.v_fName         := case when self.v_kind then '' else trim (self.ab_fName.ufl_value) end;
                     self.v_mName         := case when self.v_kind then '' else trim (self.ab_mName.ufl_value) end;
@@ -2641,6 +2707,7 @@
                       self.v_foaf,
                         self.v_photo,
                         self.v_interests,
+                        self.v_relationships,
                       self.v_mail,
                       self.v_web,
                       self.v_icq,

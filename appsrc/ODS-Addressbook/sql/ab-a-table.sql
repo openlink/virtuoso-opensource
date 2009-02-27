@@ -85,6 +85,7 @@ AB.WA.exec_no_error('
     P_FOAF varchar,
     P_PHOTO long varchar,
     P_INTERESTS long varchar,
+    P_RELATIONSHIPS long varchar,
     P_MAIL varchar,
     P_WEB varchar,
     P_ICQ varchar,
@@ -170,6 +171,10 @@ AB.WA.exec_no_error (
 
 AB.WA.exec_no_error (
   'alter table AB.WA.PERSONS add P_INTERESTS long varchar', 'C', 'AB.WA.PERSONS', 'P_INTERESTS'
+);
+
+AB.WA.exec_no_error (
+  'alter table AB.WA.PERSONS add P_RELATIONSHIPS long varchar', 'C', 'AB.WA.PERSONS', 'P_RELATIONSHIPS'
 );
 
 AB.WA.exec_no_error (
