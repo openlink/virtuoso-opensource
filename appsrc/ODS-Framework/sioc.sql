@@ -864,8 +864,8 @@ create procedure sioc_user_info (
 	      modulus := info[2];
 	      exponent := info[1];
 	      DB.DBA.RDF_QUAD_URI (graph_iri, crt_iri, rdf_iri ('type'), rsa_iri ('RSAPublicKey'));
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, crt_iri, rsa_iri ('modulus'), bin2hex (modulus));
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, crt_iri, rsa_iri ('public_exponent'), exponent);
+	      DB.DBA.RDF_QUAD_URI_L_TYPED (graph_iri, crt_iri, rsa_iri ('modulus'), bin2hex (modulus), cert_iri ('hex'), null);
+	      DB.DBA.RDF_QUAD_URI_L_TYPED (graph_iri, crt_iri, rsa_iri ('public_exponent'), cast (exponent as varchar), cert_iri ('decimal'), null);
 	    }
 	}
     }
