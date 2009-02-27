@@ -467,7 +467,8 @@ create procedure "VAD"."DBA"."VAD_MKNODE" (inout parr any, in curdir integer, in
   "VAD"."DBA"."VAD_TEST_VALUE" (type, val);
   if (_id is null)
   _id := sequence_next('vad_id');
-  insert replacing "VAD"."DBA"."VAD_REGISTRY" ("R_ID", "R_PRNT", "R_KEY", "R_SHKEY", "R_TYPE", "R_VALUE") values (_id, curdir, nname, name, type, val);
+  delete from "VAD"."DBA"."VAD_REGISTRY" where "R_ID" = _id;
+  insert into "VAD"."DBA"."VAD_REGISTRY" ("R_ID", "R_PRNT", "R_KEY", "R_SHKEY", "R_TYPE", "R_VALUE") values (_id, curdir, nname, name, type, val);
   --insert replacing "VAD"."DBA"."VAD_LOG" ("L_KEY", "L_TM", "L_ACT", "L_NVAL") values (nname, now(), 'MKNODE', val);
 --  commit work;
   return _id;
