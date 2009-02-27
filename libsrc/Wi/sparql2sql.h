@@ -724,6 +724,7 @@ typedef struct spar_sqlgen_s
 
 #define ssg_putchar(c) session_buffered_write_char (c, ssg->ssg_out)
 #define ssg_puts(strg) session_buffered_write (ssg->ssg_out, strg, strlen (strg))
+#define ssg_putbuf(buf,bytes) session_buffered_write (ssg->ssg_out, (buf), (bytes))
 
 #ifdef DEBUG
 extern void spar_sqlprint_error_impl (spar_sqlgen_t *ssg, const char *msg);

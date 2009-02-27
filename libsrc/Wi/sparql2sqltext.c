@@ -6824,7 +6824,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
               ssg_putchar ('\'');
             }
           ssg_puts ("), vector (");
-          ssg_print_retval_cols (ssg, tree, retvals, top_selid, NULL, 0);
+          ssg_print_retval_cols (ssg, tree, retvals, top_selid, deser_name, 0);
           ssg_puts (")) AS \"aggret-0\" INTEGER FROM (");
           ssg->ssg_indent += 1;
           ssg_newline (0);
@@ -6901,9 +6901,22 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
         top_retval_flags, tree->_.req_top.pattern, retvalmode );
       if (NULL != formatter)
         {
+          const char *fmname = tree->_.req_top.formatmode_name;
           ssg_puts (" ) AS \"callret");
-          if (NULL != tree->_.req_top.formatmode_name)
-            ssg_puts (tree->_.req_top.formatmode_name);
+          if (NULL != fmname)
+            {
+              if (strncmp (fmname, "HTTP+", 5))
+                ssg_puts (fmname);
+              else
+                {
+                  const char *fmname_head = fmname + 5;
+                  const char *fmname_tail = strchr (fmname_head, ' ');
+                  if (NULL == fmname_tail)
+                    ssg_puts (fmname_head);
+                  else
+                    ssg_putbuf (fmname_head, fmname_tail - fmname_head);
+                }
+            }
           ssg_puts ("-0\" LONG VARCHAR");
           ssg->ssg_indent -= 1;
           ssg_newline (0);

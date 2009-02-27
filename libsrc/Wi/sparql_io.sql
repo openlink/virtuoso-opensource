@@ -1222,6 +1222,35 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
         SPARQL_RESULTS_JSON_WRITE (ses, metas, rset);
       goto body_complete;
     }
+  if (('callretRDF/XML-0' = singlefield) and ('auto' = accept))
+    {
+      ret_mime := 'application/rdf+xml';
+      http (rset[0][0]);
+      goto body_complete;
+    }
+  if (('callretTURTLE-0' = singlefield) or ('callretTTL-0' = singlefield))
+    {
+      if (
+        strstr (accept, 'text/rdf+n3') is not null or
+        strstr (accept, 'text/rdf+ttl') is not null or
+        strstr (accept, 'application/turtle') is not null or
+        strstr (accept, 'application/x-turtle') is not null or
+        (accept = 'auto') )
+        {
+          if (strstr (accept, 'text/rdf+n3') is not null)
+            ret_mime := 'text/rdf+n3';
+          else if (strstr (accept, 'text/rdf+ttl') is not null)
+            ret_mime := 'text/rdf+ttl';
+          else if (strstr (accept, 'application/turtle') is not null)
+            ret_mime := 'application/turtle';
+          else if (strstr (accept, 'application/x-turtle') is not null)
+            ret_mime := 'application/x-turtle';
+          else
+            ret_mime := 'text/rdf+n3';
+        }
+      http (rset[0][0]);
+      goto body_complete;
+    }
   if (strstr (accept, 'text/html') is not null)
     {
       ret_mime := 'text/html';
@@ -1261,18 +1290,6 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       SPARQL_RESULTS_XML_WRITE_RES (ses, metas, rset);
       http ('\n</sparql>', ses);
       http ('</query-result></soapenv:Body></soapenv:Envelope>', ses);
-      goto body_complete;
-    }
-  if (('callretRDF/XML-0' = singlefield) and ('auto' = accept))
-    {
-      ret_mime := 'application/rdf+xml';
-      http (rset[0][0]);
-      goto body_complete;
-    }
-  if ((('callretTURTLE-0' = singlefield) or ('callretTTL-0' = singlefield)) and ('auto' = accept))
-    {
-      ret_mime := 'text/rdf+n3';
-      http (rset[0][0]);
       goto body_complete;
     }
   if (strstr (accept, 'application/sparql-results+xml') is null)

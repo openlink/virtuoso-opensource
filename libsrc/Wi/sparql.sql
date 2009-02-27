@@ -2720,8 +2720,14 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TTL (inout triples any, inout ses any)
       return;
     }
   env := vector (dict_new (__min (tcount, 16000)), 0, '', '', '', 0, 0, 0, 0);
+  { whenever sqlstate '*' goto end_pred_sort;
   rowvector_digit_sort (triples, 1, 1);
-  rowvector_digit_sort (triples, 0, 1);
+end_pred_sort: ;
+  }
+  { whenever sqlstate '*' goto end_subj_sort;
+    rowvector_subj_sort (triples, 0, 1);
+end_subj_sort: ;
+  }
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
     {
       http_ttl_triple (env, triples[tctr][0], triples[tctr][1], triples[tctr][2], ses);
