@@ -6264,7 +6264,7 @@ static caddr_t
 bif_xenc_pem_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t key_name = bif_string_arg (qst, args, 0, "xenc_pem_export");
-  long pkey = BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "xenc_x509_ss_generate") : 0;
+  long pkey = BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "xenc_pem_export") : 0;
   xenc_key_t * key = xenc_get_key_by_name (key_name, 1);
   BIO * b;
   char *data_ptr;
@@ -6294,8 +6294,8 @@ err:
 static caddr_t
 bif_xenc_SPKI_read (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t name = bif_key_name_arg (qst, args, 0, "xenc_key_RSA_read");
-  caddr_t key_data = bif_string_arg (qst, args, 1, "xenc_key_RSA_read");
+  caddr_t name = bif_key_name_arg (qst, args, 0, "xenc_SPKI_read");
+  caddr_t key_data = bif_string_arg (qst, args, 1, "xenc_SPKI_read");
   xenc_key_t * k;
   RSA *p;
   NETSCAPE_SPKI * spki = NETSCAPE_SPKI_b64_decode (key_data, box_length (key_data) - 1);
