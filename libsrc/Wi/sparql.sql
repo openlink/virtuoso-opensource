@@ -1665,7 +1665,7 @@ create function DB.DBA.RDF_WIDESTRSQLVAL_OF_LONG (in longobj any)
       else
         v2 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = id);
       if (v2 is null)
-        signal ('RDFXX', sprintf ('Integrity violation in __rdf_strsqlval, bad id %d', id));
+        signal ('RDFXX', sprintf ('Integrity violation in DB.DBA.RDF_WIDESTRSQLVAL_OF_LONG, bad id %d', id));
       rdf_box_set_data (longobj, v2, 1);
       return charset_recode (v2, 'UTF-8', '_WIDE_');
     }
@@ -1675,7 +1675,7 @@ create function DB.DBA.RDF_WIDESTRSQLVAL_OF_LONG (in longobj any)
       res := id_to_iri (longobj);
 --      res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = longobj));
       if (res is null)
-        signal ('RDFXX', 'Wrong iid in __rdf_strsqlval()');
+        signal ('RDFXX', 'Wrong iid in DB.DBA.RDF_WIDESTRSQLVAL_OF_LONG()');
       return charset_recode (res, 'UTF-8', '_WIDE_');
     }
   if (__tag of datetime = __tag (longobj))

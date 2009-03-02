@@ -1675,6 +1675,11 @@ bif_sparql_rset_ttl_write_row (caddr_t * qst, caddr_t * err_ret, state_slot_t **
   colcount = box_length ((caddr_t)(env->te_cols)) / sizeof (ttl_iriref_t);
   if ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (row)) || (BOX_ELEMENTS (row) != colcount))
     sqlr_new_error ("22023", "SR606", "Argument 3 of sparql_rset_ttl_write_row() should be an array of values and length should match to the argument 2");
+  if (NULL != env->te_prev_subj_ns)
+    {
+      dk_free_box (env->te_prev_subj_ns);
+      env->te_prev_subj_ns = NULL;
+    }
   for (colctr = 0; colctr < colcount; colctr++)
             {
       ttl_iriref_t *col_ti = env->te_cols + colctr;
@@ -1825,19 +1830,33 @@ bif_sparql_rset_xml_write_row (caddr_t * qst, caddr_t * err_ret, state_slot_t **
             if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
               {
                 caddr_t iri = rdf_type_twobyte_to_iri (rb->rb_type);
-                SES_PRINT (ses, "<literal datatype=\"");
-                dks_esc_write (ses, iri, box_length_inline (iri)-1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_SQATTR);
-                SES_PRINT (ses, "\">");
+                if (NULL != iri)
+                  {
+                    SES_PRINT (ses, "<literal datatype=\"");
+                    dks_esc_write (ses, iri, box_length_inline (iri)-1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_SQATTR);
+                    SES_PRINT (ses, "\">");
+                    goto literal_elt_printed; /* see below */
+                  }
+                else
+                  SES_PRINT (ses, "<!-- bad datatype ID -->");
               }
             else if (RDF_BOX_DEFAULT_LANG != rb->rb_lang)
               {
                 caddr_t l = rdf_lang_twobyte_to_string (rb->rb_lang);
-                SES_PRINT (ses, "<literal xml:lang=\"");
-                dks_esc_write (ses, l, box_length_inline (l)-1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_SQATTR);
-                SES_PRINT (ses, "\">");
+                if (NULL != l)
+                  {
+                    SES_PRINT (ses, "<literal xml:lang=\"");
+                    dks_esc_write (ses, l, box_length_inline (l)-1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_SQATTR);
+                    SES_PRINT (ses, "\">");
+                    goto literal_elt_printed; /* see below */
+                  }
+                else
+                  SES_PRINT (ses, "<!-- bad language ID -->");
               }
             else
               SES_PRINT (ses, "<literal>");
+
+literal_elt_printed:
             if (!rb->rb_is_complete)
               rb_complete (rb, qi->qi_trx, qi);
             if (DV_DATETIME == DV_TYPE_OF (rb->rb_box))

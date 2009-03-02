@@ -180,17 +180,17 @@ create procedure SPARQL_RSET_TTL_WRITE_NS (inout ses any)
 {
   http ('@prefix res: <http://www.w3.org/2005/sparql-results#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-_:_ rdf:type res:ResultSet .', ses);
+_:_ rdf:type res:ResultSet .\n', ses);
 }
 ;
 
-create procedure SPARQL_RSET_TTL_WRITE_HEAD (inout ses any, in colnames any)
+create procedure DB.DBA.SPARQL_RSET_TTL_WRITE_HEAD (inout ses any, in colnames any)
 {
   declare i, col_count integer;
   col_count := length (colnames);
   for (i := 0; i < col_count; i := i + 1)
     {
-      http ('\n_:_ res:resultVariable "', ses);
+      http ('_:_ res:resultVariable "', ses);
       http_escape (colnames[i], 11, ses, 0, 1);
       http ('" .\n', ses);
     }
@@ -2077,14 +2077,24 @@ host_found:
     }
 -- No need to choose accurately if there is the best variant.
     {
+      declare fmtxml, fmtttl varchar;
+      if (strstr (accept, 'application/sparql-results+xml') is not null)
+        fmtxml := '"HTTP+XML application/sparql-results+xml" ';
       if (strstr (accept, 'text/rdf+n3') is not null)
-        full_query := 'define output:format "HTTP+TTL text/rdf+n3" ' || full_query;
-      if (strstr (accept, 'text/rdf+ttl') is not null)
-        full_query := 'define output:format "HTTP+TTL text/rdf+ttl" ' || full_query;
-      if (strstr (accept, 'application/turtle') is not null)
-        full_query := 'define output:format "HTTP+TTL application/turtle" ' || full_query;
-      if (strstr (accept, 'application/x-turtle') is not null)
-        full_query := 'define output:format "HTTP+TTL application/x-turtle" ' || full_query;
+        fmtttl := '"HTTP+TTL text/rdf+n3" ';
+      else if (strstr (accept, 'text/rdf+ttl') is not null)
+        fmtttl := '"HTTP+TTL text/rdf+ttl" ';
+      else if (strstr (accept, 'application/turtle') is not null)
+        fmtttl := '"HTTP+TTL application/turtle" ';
+      else if (strstr (accept, 'application/x-turtle') is not null)
+        fmtttl := '"HTTP+TTL application/x-turtle" ';
+      if (isstring (fmtttl))
+        {
+          if (isstring (fmtxml))
+            full_query := 'define output:format ' || fmtxml || 'define output:dict-format ' || fmtttl || full_query;
+          else
+            full_query := 'define output:format ' || fmtttl || full_query;
+        }
     }
   -- http ('<!-- Query:\n' || query || '\n-->\n', 0);
   -- dbg_obj_princ ('accept = ', accept);
