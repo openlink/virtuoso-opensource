@@ -1588,6 +1588,33 @@ You could then call this in instead of defining the query and table layout as ab
 
 <para>The aspects of VSP are explained in more detail in the following sections.</para>
 </sect2>
+<sect2 id="vspequi"><title>Simple Tutorial</title>
+<para>The following example prints the result from executing explain:</para>
+<programlisting><![CDATA[
+<?vsp
+  declare meta, data any;
+  exec ('explain (?)', null, null, vector ('select * from sys_users'),  0, meta, data);
+  foreach (any row in data) do
+  {
+     http_value (row[0], 'p');
+  }
+?>
+]]></programlisting>
+<para>The vsp can be also written like this:</para>
+<programlisting><![CDATA[
+<?vsp
+  declare meta, data any;
+  exec ('explain (?)', null, null, vector ('select * from sys_users'), 0, meta, data);
+  for (declare i,l int, i := 0, l := length (data); i < l; i := i + 1)
+   {
+     http_value (data[i][0], 'p');
+   }
+
+
+?>
+]]></programlisting>
+</sect2>
+
 </sect1>
 
 <sect1 id="qshostingplugs"><title>Third-Party Runtime Typing, Hosting &amp; User Defined Types</title>

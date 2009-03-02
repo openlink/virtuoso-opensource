@@ -158,12 +158,11 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &quarter; &quote_dotted;
 
 &randomize; &rclose; &regexp_match; &regexp_parse; &regexp_substr;
-&rdf_audit_metadata; &rdf_backup_metadata;
+&rdf_audit_metadata; &rdf_backup_metadata; &rdf_void_store;
 <!-- TBD: &rdf_load_turtle; -->
 &rdf_restore_metadata;&rdf_load_rdfxml_mt;&rdf_load_rdfxml;&ttlp;&ttlp_mt;
 &rdf_triples_to_rdf_xml_text;&rdf_triples_to_ttl;&rdf_64bit_upgrade;
 &rdf_convert_rdfxml_to_ttl;
-
 
 &sparql_eval;&sparql_eval_to_array;&sparql_rexec;&sparql_rexec_to_array;
 &sparql_rexec_with_meta;&rdf_regex;&rdf_langmatches;

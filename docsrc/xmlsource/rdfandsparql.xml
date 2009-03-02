@@ -3351,6 +3351,40 @@ _______________________________________________________________________________
 
 ]]></programlisting>
 </sect2>
+
+<sect2 id="rdfsparqlsecurity"><title>Security</title>
+<para>In the current Virtuoso release the /sparql endpoint runs as the virtuoso "SPARQL" user which may
+have "SPARQL_SELECT" or "SPARQL_UPDATE" roles granted. By default this user has "SPARQL_SELECT" for
+security reasons to prevent inadvertent or otherwise updates/deletes on the Quad store. The "SPARQL_UPDATE"
+role needs to be set for allow updates to the QUAD store which is a requirement for the Virtuoso sponger
+services to be functional ie able to update the Quad store. In the Virtuoso 5.0.7 release tere is be a
+new "SPARQL_SPONGE" role which can be assigned to specifically allow the sponger services to update the
+Quad Store but not the SPARQL user via the endpoint.</para>
+<para>Restricting a users access to specific graphs can be done using Virtuoso row-level security
+functionality. This can be done using the Virtuoso Data access methods ODBC, JDBC, ADO.Net or PL code.</para>
+<para>For example one could do something as is done for the OpenLink Data Space (ODS) application users:</para>
+<programlisting><![CDATA[
+DB.DBA.TABLE_DROP_POLICY ('DB.DBA.RDF_QUAD', 'S');
+
+create procedure DB.DBA.RDF_POLICY (in tb varchar, in op varchar)
+{
+ declare chost, ret varchar;
+ chost := DB.DBA.WA_CNAME ();  ret := sprintf ('(ID_TO_IRI (G) NOT LIKE \'http://%s/dataspace/%%/private#\' ' ||
+ 'OR G = IRI_TO_ID (sprintf (\'http://%s/dataspace/%%U/private#\', USER)))', chost, chost);
+ return ret;
+}
+;
+
+grant execute on DB.DBA.RDF_POLICY to public;
+
+DB.DBA.TABLE_SET_POLICY ('DB.DBA.RDF_QUAD', 'DB.DBA.RDF_POLICY', 'S');
+
+where DB.DBA.WA_CNAME () is a function in ODS to return default host name.
+
+]]></programlisting>
+<para>This would restrict the defined 'user' to the graph http://cname/dataspace/user/private#</para>
+</sect2>
+
 </sect1>
 
 

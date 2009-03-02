@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn_rdf_void_store">
+  <refmeta>
+    <refentrytitle>DB.DBA.RDF_VOID_STORE</refentrytitle>
+    <refmiscinfo>rdf</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>DB.DBA.RDF_VOID_STORE</refname>
+    <refpurpose>Collects statistics for a given graph and saves it.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_rdf_void_store">
+      <funcprototype id="fproto_rdf_void_store">
+        <funcdef><function>DB.DBA.RDF_VOID_STORE</function></funcdef>
+	<paramdef>in <parameter>graph</parameter> varchar</paramdef>
+	<paramdef>in <parameter>to_graph_name</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_rdf_void_store">
+    <title>Description</title>
+    <para>Collects statistics for the first given graph and saves the result into the second graph. For
+correct results, the first graph should be loaded in the database before executing the function.</para>
+  </refsect1>
+  <refsect1 id="params_rdf_void_store">
+    <title>Parameters</title>
+    <refsect2><title>graph</title>
+      <para>the graph iri string  to take statistics from</para>
+    </refsect2>
+    <refsect2><title>to_graph_name</title>
+      <para>the graph iri string to write the void data.</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="examples_rdf_void_store">
+    <title>Examples</title>
+    <example id="ex_rdf_void_store"><title></title>
+      <para></para>
+      <screen><![CDATA[
+SQL>DB.DBA.RDF_VOID_STORE('http://www.openlinksw.com/blog/~kidehen','http://mystatistics.com');
+Done. -- 201 msec.
+
+SQL>sparql
+select *
+from <http://mystatistics.com>
+where {?s ?p ?o}
+limit 30;
+
+s                                                                                 p              o
+VARCHAR                                                                           VARCHAR        VARCHAR
+_______________________________________________________________________________
+
+http://www.openlinksw.com/blog/~kidehen#Dataset                                   http://www.w3.org/1999/02/22-rdf-syntax-ns#type      http://rdfs.org/ns/void#Dataset
+http://www.openlinksw.com/blog/~kidehen#Dataset                                   http://www.w3.org/2000/01/rdf-schema#seeAlso         http://www.openlinksw.com/blog/~kidehen
+http://www.openlinksw.com/blog/~kidehen#Dataset                                   http://rdfs.org/ns/void#statItem                     http://www.openlinksw.com/blog/~kidehen#Stat
+http://www.openlinksw.com/blog/~kidehen#Dataset                                   http://rdfs.org/ns/void#statItem                     http://www.openlinksw.com/blog/~kidehen#channelStat
+http://www.openlinksw.com/blog/~kidehen#Dataset                                   http://rdfs.org/ns/void#statItem                     http://www.openlinksw.com/blog/~kidehen#EntryStat
+http://www.openlinksw.com/blog/~kidehen#Dataset                                   http://rdfs.org/ns/void#statItem                     http://www.openlinksw.com/blog/~kidehen#BlogPostStat
+http://www.openlinksw.com/blog/~kidehen#Dataset                                   http://rdfs.org/ns/void#statItem                     http://www.openlinksw.com/blog/~kidehen#OrganizationStat
+http://www.openlinksw.com/blog/~kidehen#Dataset                                   http://rdfs.org/ns/void#statItem                     http://www.openlinksw.com/blog/~kidehen#ServiceStat
+http://www.openlinksw.com/blog/~kidehen#Dataset                                   http://rdfs.org/ns/void#statItem                     http://www.openlinksw.com/blog/~kidehen#CommentStat
+http://www.openlinksw.com/blog/~kidehen#Dataset                                   http://rdfs.org/ns/void#statItem                     http://www.openlinksw.com/blog/~kidehen#PersonStat
+http://www.openlinksw.com/blog/~kidehen#Dataset                                   http://rdfs.org/ns/void#statItem                     http://www.openlinksw.com/blog/~kidehen#PersonalProfileDocumentStat
+http://www.openlinksw.com/blog/~kidehen#Dataset                                   http://rdfs.org/ns/void#statItem                     http://www.openlinksw.com/blog/~kidehen#FeedStat
+http://www.openlinksw.com/blog/~kidehen#Dataset                                   http://rdfs.org/ns/void#statItem                     http://www.openlinksw.com/blog/~kidehen#BriefcaseStat
+http://www.openlinksw.com/blog/~kidehen#Dataset                                   http://rdfs.org/ns/void#statItem                     http://www.openlinksw.com/blog/~kidehen#SpaceStat
+http://www.openlinksw.com/blog/~kidehen#Dataset                                   http://rdfs.org/ns/void#statItem                     http://www.openlinksw.com/blog/~kidehen#WeblogStat
+http://www.openlinksw.com/blog/~kidehen#Dataset                                   http://rdfs.org/ns/void#statItem                     http://www.openlinksw.com/blog/~kidehen#OnlineAccountStat
+http://www.openlinksw.com/blog/~kidehen#Dataset                                   http://rdfs.org/ns/void#statItem                     http://www.openlinksw.com/blog/~kidehen#UserStat
+http://www.openlinksw.com/blog/~kidehen#Dataset                                   http://rdfs.org/ns/void#statItem                     http://www.openlinksw.com/blog/~kidehen#PointStat
+http://www.openlinksw.com/blog/~kidehen#Dataset                                   http://rdfs.org/ns/void#sparqlEndpoint               http://leon:8894/sparql
+http://www.openlinksw.com/blog/~kidehen#Dataset                                   http://rdfs.org/ns/void#containsLinks                http://www.openlinksw.com/blog/~kidehen#sameAsLinks
+http://www.openlinksw.com/blog/~kidehen#Dataset                                   http://rdfs.org/ns/void#containsLinks                http://www.openlinksw.com/blog/~kidehen#seeAlsoLinks
+http://www.openlinksw.com/blog/~kidehen#Stat                                      http://www.w3.org/1999/02/22-rdf-syntax-ns#type      http://purl.org/NET/scovo#Item
+http://www.openlinksw.com/blog/~kidehen#Stat                                      http://www.w3.org/1999/02/22-rdf-syntax-ns#value     377
+http://www.openlinksw.com/blog/~kidehen#Stat                                      http://purl.org/NET/scovo#dimension                  http://rdfs.org/ns/void#numOfTriples
+http://www.openlinksw.com/blog/~kidehen#sameAsLinks                               http://www.w3.org/1999/02/22-rdf-syntax-ns#type                  http://rdfs.org/ns/void#Linkset
+http://www.openlinksw.com/blog/~kidehen#sameAsLinks                               http://rdfs.org/ns/void#statItem                     http://www.openlinksw.com/blog/~kidehen#sameAsStat
+http://www.openlinksw.com/blog/~kidehen#sameAsStat                                http://www.w3.org/1999/02/22-rdf-syntax-ns#type      http://purl.org/NET/scovo#Item
+http://www.openlinksw.com/blog/~kidehen#sameAsStat                                http://www.w3.org/1999/02/22-rdf-syntax-ns#value     2
+http://www.openlinksw.com/blog/~kidehen#sameAsStat                                http://purl.org/NET/scovo#dimension                  http://www.openlinksw.com/blog/~kidehen#sameAsType
+http://www.openlinksw.com/blog/~kidehen#sameAsType                                http://www.w3.org/1999/02/22-rdf-syntax-ns#type      http://www.openlinksw.com/blog/~kidehen#TypeOfLink
+
+30 Rows. -- 340 msec.
+SQL>
+
+]]>
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_rdf_void_store">
+    <title>See Also</title>
+    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link></para>
+    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT</function></link></para>
+    <para><link linkend="fn_ttlp"><function>DB.DBA.TTLP</function></link></para>
+    <para><link linkend="fn_ttlp_mt"><function>DB.DBA.TTLP_MT</function></link></para>
+    <para><link linkend="fn_rdf_triples_to_rdf_xml_text"><function>DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT</function></link></para>
+  </refsect1>
+</refentry>
