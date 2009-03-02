@@ -80,10 +80,14 @@
 								<xsl:value-of select="vi:string2date2(a:published)"/>
 							</dcterms:created>
 							<dc:title>
-								<xsl:value-of select="a:title"/>
+								<xsl:call-template name="add-href">
+									<xsl:with-param name="string" select="a:title"/>
+								</xsl:call-template>
 							</dc:title>
 							<sioc:content>
-								<xsl:value-of select="a:content"/>
+								<xsl:call-template name="add-href">
+									<xsl:with-param name="string" select="a:content"/>
+								</xsl:call-template>
 							</sioc:content>
 							<foaf:maker rdf:resource="{vi:proxyIRI(a:author/a:uri)}"/>
 						</rdf:Description>
@@ -112,10 +116,14 @@
 								<xsl:value-of select="vi:string2date2(a:published)"/>
 							</dcterms:created>
 							<dc:title>
-								<xsl:value-of select="a:title"/>
+								<xsl:call-template name="add-href">
+									<xsl:with-param name="string" select="a:title"/>
+								</xsl:call-template>
 							</dc:title>
 							<sioc:content>
-								<xsl:value-of select="a:content"/>
+								<xsl:call-template name="add-href">
+									<xsl:with-param name="string" select="a:content"/>
+								</xsl:call-template>
 							</sioc:content>
 							<rdfs:seeAlso rdf:resource="{substring-before(a:link[@rel='thread']/@href, '.atom')}"/>
 							<foaf:maker rdf:resource="{vi:proxyIRI(a:author/a:uri)}"/>
@@ -138,6 +146,21 @@
 				</xsl:otherwise>
 			</xsl:choose>
 		</rdf:RDF>
+	</xsl:template>
+
+	<xsl:template name="add-href">
+		<xsl:param name="string"/>
+		<xsl:choose>
+			<xsl:when test="starts-with($string, '@')">
+				<xsl:variable name="tmp1" select="substring-before($string, ' ')"/>
+				<xsl:variable name="tmp2" select="substring-after($string, ' ')"/>
+				<xsl:variable name="tmp3" select="concat('<a href=\'', vi:proxyIRI(concat('http://twitter.com/', substring-after($tmp1, '@'))), '\'>', $tmp1, '</a> ', $tmp2)"/>
+				<xsl:value-of select="$tmp3"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="$string"/>
+			</xsl:otherwise>
+		</xsl:choose>
 	</xsl:template>
 
 	<xsl:template match="status">
@@ -188,10 +211,14 @@
 				<xsl:value-of select="vi:string2date(created_at)"/>
 			</dcterms:created>
 			<dc:title>
-				<xsl:value-of select="text"/>
+				<xsl:call-template name="add-href">
+					<xsl:with-param name="string" select="text"/>
+				</xsl:call-template>
 			</dc:title>
 			<sioc:content>
-				<xsl:value-of select="text"/>
+				<xsl:call-template name="add-href">
+					<xsl:with-param name="string" select="text"/>
+				</xsl:call-template>
 			</sioc:content>
 			<dc:source>
 				<xsl:value-of select="source" />
