@@ -1741,9 +1741,7 @@ create function DB.DBA.RDF_STRSQLVAL_OF_SQLVAL (in sqlval any)
 {
   declare t, len integer;
   if (__tag of rdf_box = __tag (sqlval))
-    {
-      signal ('RDFXX', 'Long object in DB.DBA.RDF_STRSQLVAL_OF_SQLVAL()');
-    }
+    sqlval := __ro2sq (sqlval, 1);
   if (isiri_id (sqlval))
     {
       declare res varchar;
