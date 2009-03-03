@@ -64,7 +64,7 @@ create procedure RDF_VOID_STORE (in graph varchar, in to_graph_name varchar := n
     }
   exec (sprintf ('sparql delete from <%s> { ?s1 ?p1 ?s2 } from <%s> where { <%s#Dataset> void:statItem ?s1 . ?s1 ?p1 ?s2 }',
 	to_graph_name, to_graph_name, graph));
-  TTLP (ses, graph, to_graph_name);
+  TTLP (ses, graph, to_graph_name, 185);
   return;
 }
 ;
@@ -142,8 +142,8 @@ create procedure RDF_VOID_GEN (in graph varchar, in gr_name varchar := null)
         }
     }
 
-  for select "class", "cnt" from (sparql define input:storage "" select distinct ?class (count(*)) as ?cnt
-    where { graph `iri (?:graph)` { [] a ?class . } } order by desc 2) s do
+  for select "class", "cnt" from (sparql define input:storage "" select ?class (count(*)) as ?cnt
+    where { graph `iri (?:graph)` { [] a ?class . filter (!isLiteral (?class)) } } group by ?class order by desc 2) s do
     {
       if ("class" like 'http://rdfs.org/ns/void#%' or "class" like 'http://purl.org/NET/scovo#%'
 	  or "class" = graph || '#TypeOfLink' or "class" like graph || '#%Links')
