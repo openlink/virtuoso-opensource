@@ -801,7 +801,7 @@ AB.getFOAFData = function (iri)
             {
               if (T.length == 1)
                 T.push('');
-              AB.updateRow('a', null, {fld1: T[0], fld1Class: '_validate_ _url_ _canEmpty_', fld1Onblur: function(){validateField(this);}, fld2: T[1]});
+              AB.updateRow('a', null, {fld1: {value: T[0], class: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld2: {value: T[1]}});
       }
     }
   }
