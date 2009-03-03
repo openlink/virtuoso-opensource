@@ -1583,7 +1583,10 @@ bif_http_ttl_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     default: obj_is_iri = 0; break;
     }
   if (obj_is_iri)
-    iri_cast_and_split_ttl_qname (qi, obj, &tii.o.ns, &tii.o.loc, &tii.o.is_bnode);
+    {
+      if (!iri_cast_and_split_ttl_qname (qi, obj, &tii.o.ns, &tii.o.loc, &tii.o.is_bnode))
+        goto fail; /* see below */
+    }
   else
     http_ttl_prepare_obj (qi, obj, obj_dtp, &tii.dt);
   if ((DV_STRING != DV_TYPE_OF (env->te_prev_subj_ns)) && (DV_UNAME != DV_TYPE_OF (env->te_prev_subj_ns)))
