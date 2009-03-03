@@ -117,11 +117,12 @@ create procedure RDF_VOID_GEN (in graph varchar, in gr_name varchar := null)
       	where { graph `iri (?:graph)` { ?s `iri (?:pred)` ?o . filter (?o != iri (?:graph)) } });
       if (cnt)
 	{
-	  nam := name;
+	  nam := sprintf ('%U', name);
 	  inx := 1;
 	  while (dict_get (dict, nam, 0))
 	    {
 	      nam := name||cast (inx as varchar);
+	      nam := sprintf ('%U', nam);
 	      inx := inx + 1;
 	    }
 	  name := nam;
