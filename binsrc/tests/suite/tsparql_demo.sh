@@ -40,6 +40,8 @@ then
 fi
 
 STOP_SERVER
+rm -f $DBLOGFILE
+rm -f $DBFILE
 MAKECFG_FILE_WITH_HTTP $TESTCFGFILE $PORT $HTTPPORT $CFGFILE
 START_SERVER $DSN 1000
 sleep 5
@@ -53,6 +55,8 @@ else
     LOG "DONE: tsparql_demo.sh: nwdemo.sql"
 fi
 
+$ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $HOME/binsrc/samples/demo/countries.sql > /dev/null 2>&1
+
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $HOME/binsrc/samples/demo/nwdynamic.sql
 if test $STATUS -ne 0
 then
@@ -63,11 +67,11 @@ else
 fi
 
 lcount=` ( curl --form-string 'format=text/rdf+n3' --form-string 'query=select distinct ?t ?g where { graph ?g { ?s a ?t } . filter (bif:strstr(str(?g), "Northwind"))}' localhost:${HTTPPORT}/sparql/ 2>/dev/null ) | grep "variable .t" | wc -l `
-if test 13 -eq $lcount
+if test 16 -eq $lcount
 then
   LOG "PASSED: $lcount types in Northwind graph"
 else
-  LOG "***FAILED: $lcount types in Northwind graph, should be 13"
+  LOG "***FAILED: $lcount types in Northwind graph, should be 16"
 fi
 
 wget --header "Accept: text/rdf+n3" --output-document tsparql_demo_wget1.log "http://localhost:$HTTPPORT/Northwind/Customer/ALFKI#this"
@@ -127,3 +131,5 @@ fi
 SHUTDOWN_SERVER
 CHECK_LOG
 BANNER "COMPLETED SPARQL TESTS"
+
+#wget --header "Accept: text/rdf+n3" "http://localhost:8234/Northwind/Customer/ALFKI#this"
