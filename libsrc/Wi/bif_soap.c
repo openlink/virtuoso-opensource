@@ -5753,7 +5753,7 @@ bif_soap_call_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ctx.sc_method_name = bif_string_arg (qst, args, 3, me);
   ctx.sc_params = (caddr_t *) bif_array_or_null_arg (qst, args, 4, me);
 
-  ctx.sc_http_client = http_cli_std_init (bif_string_arg (qst, args, 1, me));
+  ctx.sc_http_client = http_cli_std_init (bif_string_arg (qst, args, 1, me), qst);
 
 #ifndef _USE_CACHED_SES
   http_cli_set_http_10 (ctx.sc_http_client);
@@ -6134,7 +6134,7 @@ bif_soap_receive (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	ctx.sc_return_fault = 1;
     }
 
-  ctx.sc_http_client = http_cli_std_init ("");
+  ctx.sc_http_client = http_cli_std_init ("", qst);
   ctx.sc_wss_security = 1;
 
 #ifndef _USE_CACHED_SES

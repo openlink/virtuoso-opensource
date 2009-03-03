@@ -174,7 +174,8 @@ typedef struct http_cli_ctx_s
   dk_session_t *    hcctx_pub_req_hdrs;
   dk_session_t *    hcctx_prv_req_hdrs;
   dk_session_t *    hcctx_req_body;
-  int32             hcctx_resp_content_length;
+  char		    hcctx_resp_content_is_strses;
+  long              hcctx_resp_content_length;
   caddr_t           hcctx_response;
   dk_set_t          hcctx_resp_hdrs;
   caddr_t           hcctx_resp_body;
@@ -189,6 +190,7 @@ typedef struct http_cli_ctx_s
   int               hcctx_resp_evt_ret;
   dk_set_t          hcctx_hooks [HTTP_CLI_NO_HOOKS]; /* hook dispatch queues */
   int               hcctx_hook_ret;
+  caddr_t *	    hcctx_qst;
 } http_cli_ctx;
 
 
@@ -242,7 +244,7 @@ char* skip_lwsp (char*, char*);
 char* str_end (char*, char*);
 HC_RET http_cli_parse_authorize_headers (http_cli_ctx *);
 HC_RET http_cli_std_handle_auth (http_cli_ctx *, caddr_t, caddr_t, caddr_t);
-http_cli_ctx *http_cli_std_init (char *);
+http_cli_ctx *http_cli_std_init (char *, caddr_t *);
 HC_RET http_cli_std_hdrs (http_cli_ctx *);
 HC_RET http_cli_add_req_hdr (http_cli_ctx *, char *);
 HC_RET http_cli_main (http_cli_ctx *);

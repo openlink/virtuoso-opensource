@@ -703,17 +703,21 @@ http_cli_parse_resp_hdr (http_cli_ctx * ctx, char* hdr, int num_chars)
     }
   if (!strnicmp ("Content-Length:", hdr, 15))
     {
-      ctx->hcctx_resp_content_length = atoi (hdr + 15);
+      ctx->hcctx_resp_content_length = atol (hdr + 15);
 
       if (ctx->hcctx_resp_content_length < 0)
 	{
 	  ctx->hcctx_err = srv_make_new_error ("42000", "HC002", "Invalid content length in reply");
 	  return (HC_RET_ERR_ABORT);
 	}
-      if (ctx->hcctx_resp_content_length > 10000000)
+      if (ctx->hcctx_resp_content_length > 10000000L)
 	{
+#if 1	  
+	  ctx->hcctx_resp_content_is_strses = (char) 1;
+#else	  
 	  ctx->hcctx_err = srv_make_new_error ("42000", "HC003", "Reply content too large");
 	  return (HC_RET_ERR_ABORT);
+#endif	  
 	}
     }
   return (HC_RET_OK);
@@ -814,6 +818,7 @@ http_cli_read_resp_body (http_cli_ctx * ctx)
 {
   int ret;
   dk_session_t * volatile content = NULL;
+  int volatile signal_error = 1;
 
   ctx->hcctx_state = HC_STATE_READ_RESP_BODY;
 
@@ -831,7 +836,7 @@ http_cli_read_resp_body (http_cli_ctx * ctx)
 	  ctx->hcctx_resp_body =
 	    http_read_chunked_content (ctx->hcctx_http_out,
 				       &ctx->hcctx_err,
-				       ctx->hcctx_url, 0);
+				       ctx->hcctx_url, (int)ctx->hcctx_resp_content_is_strses);
 	  if (!ctx->hcctx_resp_body)
 	    {
 	      ret = http_cli_hook_dispatch (ctx, HC_HTTP_READ_ERR);
@@ -843,7 +848,9 @@ http_cli_read_resp_body (http_cli_ctx * ctx)
 	{
 	  /* read until connection is closed */
 	  unsigned char c;
+	  signal_error = 0;
 	  content = strses_allocate ();
+	  strses_enable_paging (content, http_ses_size);
 
 	  for (;;)
 	    {
@@ -854,27 +861,58 @@ http_cli_read_resp_body (http_cli_ctx * ctx)
       else
 	{
 	  dk_free_tree (ctx->hcctx_resp_body);
-	  ctx->hcctx_resp_body =
-	    dk_alloc_box (ctx->hcctx_resp_content_length + 1,
-			  DV_SHORT_STRING);
 
-	  ctx->hcctx_resp_body[ctx->hcctx_resp_content_length] = '\0';
-	  session_buffered_read (ctx->hcctx_http_out,
-				 ctx->hcctx_resp_body,
-				 ctx->hcctx_resp_content_length);
+	  if (ctx->hcctx_resp_content_is_strses)
+	    {
+	      char tmp [4096];
+	      long to_read = ctx->hcctx_resp_content_length, to_read_len = sizeof (tmp), readed = 0;
+	      content = strses_allocate ();
+
+	      strses_enable_paging (content, http_ses_size);
+	      do
+		{
+		  if (to_read < to_read_len)
+		    to_read_len = to_read;
+		  readed = session_buffered_read (ctx->hcctx_http_out, tmp, to_read_len);
+		  session_buffered_write (content, tmp, readed);
+		  tcpses_check_disk_error (content, ctx->hcctx_qst, 1);
+		  to_read -= readed;
+		}
+	      while (to_read > 0);
+	    }
+	  else
+	    {
+	      ctx->hcctx_resp_body =
+		  dk_alloc_box (ctx->hcctx_resp_content_length + 1,
+		      DV_SHORT_STRING);
+
+	      ctx->hcctx_resp_body[ctx->hcctx_resp_content_length] = '\0';
+	      session_buffered_read (ctx->hcctx_http_out,
+		  ctx->hcctx_resp_body,
+		  ctx->hcctx_resp_content_length);
+	    }
 	}
     }
   FAILED
     {
-      if (!content)
-	http_cli_hook_dispatch (ctx, HC_HTTP_READ_ERR);
+      if (signal_error)
+	{
+	  dk_free_tree (content);
+	  content = NULL;
+	  http_cli_hook_dispatch (ctx, HC_HTTP_READ_ERR);
+	}
     }
   END_READ_FAIL (ctx->hcctx_http_out);
   if (content)
     {
       dk_free_tree (ctx->hcctx_resp_body);
-      ctx->hcctx_resp_body = strses_string (content);
-      dk_free_box ((box_t) content);
+      if (ctx->hcctx_resp_content_is_strses)
+	ctx->hcctx_resp_body = (caddr_t) content;
+      else
+	{
+	  ctx->hcctx_resp_body = strses_string (content);
+	  dk_free_box ((box_t) content);
+	}
     }
   F_SET (ctx, HC_F_BODY_READ);
   return (ctx->hcctx_hook_ret);
@@ -1447,7 +1485,7 @@ http_cli_std_handle_auth (http_cli_ctx * ctx, caddr_t parm, caddr_t ret_val, cad
 }
 
 http_cli_ctx *
-http_cli_std_init (char * url)
+http_cli_std_init (char * url, caddr_t * qst)
 {
   http_cli_ctx * ctx;
   http_cli_handler_frame_t * h;
@@ -1458,6 +1496,7 @@ http_cli_std_init (char * url)
   ctx->hcctx_http_min = 1;
   ctx->hcctx_keep_alive = 1;
   ctx->hcctx_timeout = 100;
+  ctx->hcctx_qst = qst;
 
   ctx->hcctx_url = box_string (url);
   ctx->hcctx_method = HC_METHOD_GET;
@@ -1711,7 +1750,7 @@ bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int to_free_head = 1;
 
 
-  ctx = http_cli_std_init (url);
+  ctx = http_cli_std_init (url, qst);
   ctx->hcctx_method = HC_METHOD_GET;
 
   if (BOX_ELEMENTS (args) > 1)
@@ -1745,17 +1784,31 @@ bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (http_hdr)
 	{
 	  if (NULL != nc_strstr ((unsigned char *) http_hdr, (unsigned char *) "User-Agent:")) /* we already have ua id in headers */
-	    ua_id = NULL;
+	    ua_id = NULL; 
           http_cli_add_req_hdr (ctx, http_hdr);
 	}
     }
   http_cli_set_ua_id (ctx, ua_id);
   if (BOX_ELEMENTS (args) > 5)
     {
-      body = bif_string_or_null_arg (qst, args, 5, me);
-      if (body)
+      dtp_t dtp;
+      body = bif_arg (qst, args, 5, me);
+      dtp = DV_TYPE_OF (body);
+      if (body && dtp != DV_DB_NULL)
 	{
-	  session_buffered_write (ctx->hcctx_req_body, body, box_length (body) - 1);
+	  if (dtp == DV_SHORT_STRING || dtp == DV_LONG_STRING || dtp == DV_C_STRING)
+	    {
+	      session_buffered_write (ctx->hcctx_req_body, body, box_length (body) - 1);
+	    }
+	  else if (DV_STRING_SESSION == dtp)
+	    {
+	      strses_write_out ((dk_session_t *) body, ctx->hcctx_req_body);
+	    }
+	  else
+	    {
+	      sqlr_new_error ("22023", "SR005", "Function %s needs a string or NULL as argument %d, "
+		  "not an arg of type %s (%d)", me, 6, dv_type_title (dtp), dtp);
+	    }
 	  if (meth == HC_METHOD_POST && (!http_hdr ||
               !nc_strstr ((unsigned char *) http_hdr, (unsigned char *) "Content-Type:")))
 	    http_cli_set_req_content_type (ctx, (caddr_t)"application/x-www-form-urlencoded");
@@ -1896,7 +1949,7 @@ bif_http_pipeline (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  goto error_ret;
 	}
 
-      ctx = http_cli_std_init (url);
+      ctx = http_cli_std_init (url, qst);
       http_cli_set_ua_id (ctx, http_client_id_string);
       http_cli_set_method (ctx, meth);
       if (http_hdr)
