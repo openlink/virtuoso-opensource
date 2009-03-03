@@ -1227,8 +1227,8 @@ SSL handshake so the client will know which certificate to send.</para>
 <para>
     Note this option is in effect when X509ClientVerify is 1 or 2. If X509ClientVerify is 3 and X509ClientVerifyCAFile is given, server will send certificated during handshake, thus some clients may restrict user to send any certificate. 
 </para>
-					</formalpara>
-				</listitem>
+</formalpara>
+</listitem>
 				<listitem id="ini_HTTPServer_POP3Port">
 					<formalpara>
 						<title>POP3Port=1234</title>
@@ -1458,6 +1458,15 @@ Section <link linkend="rdfandsparql">RDF Data Access and Data Management</link> 
 	</para>
     </formalpara>
 </listitem>
+<listitem id="ini_SPARQL_DeferInferenceRulesInit ">
+    <formalpara>
+	<title>DeferInferenceRulesInit = 1 </title>
+	<para>
+        Defer Loading of inference rules at start up.
+	</para>
+    </formalpara>
+</listitem>
+
 			</itemizedlist>
 <para>The SPARQL INI can be get as RDF via http://cname/sparql?ini service.</para>
 

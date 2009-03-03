@@ -279,6 +279,17 @@ _______________________________________________________________________________
      http_value (row[0], 'p');
   }
 ?>]]></programlisting>
+<para>Equivalent is:</para>
+<programlisting><![CDATA[
+<?vsp
+  declare meta, data any;
+  exec ('explain (?)', null, null, vector ('select * from sys_users'), 0, meta, data);
+  for (declare i,l int, i := 0, l := length (data); i < l; i := i + 1)
+   {
+     http_value (data[i][0], 'p');
+   }
+?>
+?>]]></programlisting>
 <para>As result, after accessing this sample vsp, the following otuput will be printed:</para>
 <programlisting><![CDATA[
 {
