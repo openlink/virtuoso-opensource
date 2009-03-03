@@ -958,11 +958,11 @@ grant execute on DB.DBA.RDF_GRAB_SINGLE_ASYNC to SPARQL_SELECT;
 create procedure ODS.ODS_API.get_foaf_data_array (
   in foafIRI varchar)
 {
-  declare N, step integer;
+  declare N, M integer;
   declare foafGraph varchar;
   declare V, st, msg, data, meta any;
   declare "title", "name", "nick", "firstName", "givenname", "family_name", "mbox", "gender", "birthday", "lat", "lng" any;
-  declare "icqChatID", "msnChatID", "aimChatID", "yahooChatID", "workplaceHomepage", "homepage", "phone", "organizationHomepage", "organizationTitle", "keywords", "depiction", "interest" any;
+  declare "icqChatID", "msnChatID", "aimChatID", "yahooChatID", "workplaceHomepage", "homepage", "phone", "organizationTitle", "keywords", "depiction", "interest" any;
 
   foafIRI := trim (foafIRI);
   foafGraph := 'http://local.virt/FOAF/' || cast (rnd (1000) as varchar);
@@ -992,12 +992,12 @@ create procedure ODS.ODS_API.get_foaf_data_array (
                          ?workplaceHomepage
                          ?homepage
                          ?phone
-                         ?organizationHomepage
                          ?organizationTitle
                          ?keywords
                          ?depiction
                          ?interest
                          ?interest_label
+                         ?person
                    where {
 		           graph <%S>
                            {
@@ -1023,18 +1023,22 @@ create procedure ODS.ODS_API.get_foaf_data_array (
                              optional { ?person foaf:depiction ?depiction } .
                              optional { ?person bio:keywords ?keywords } .
                              optional { ?organization a foaf:Organization }.
-                             optional { ?organization foaf:homepage ?organizationHomepage }.
+                             optional { ?organization foaf:homepage ?workplaceHomepage }.
                              optional { ?organization dc:title ?organizationTitle }.
                              optional { ?person foaf:interest ?interest .
                                         ?interest rdfs:label ?interest_label. } .
                            }
                          }', foafGraph), st, msg, vector (), 0, meta, data);
     V := vector ();
+  M := 0;
   "interest" := '';
   for (N := 0; N < length (data); N := N + 1)
   {
-    if (N = 0)
+    if (foafIRI = data[N][23])
     {
+      if (M = 0)
+    {
+        M := 1;
       "title" := data[N][0];
       "name" := data[N][1];
       "nick" := data[N][2];
@@ -1053,10 +1057,9 @@ create procedure ODS.ODS_API.get_foaf_data_array (
       "workplaceHomepage" := data[N][15];
       "homepage" := data[N][16];
       "phone" := data[N][17];
-      "organizationHomepage" := data[N][18];
-      "organizationTitle" := data[N][19];
-      "keywords" := data[N][20];
-      "depiction" := data[N][21];
+        "organizationTitle" := data[N][18];
+        "keywords" := data[N][19];
+        "depiction" := data[N][20];
 
     appendProperty (V, 'nick', coalesce ("nick", "name")); -- WAUI_NICK
     appendProperty (V, 'title', "title");		   -- WAUI_TITLE
@@ -1075,14 +1078,13 @@ create procedure ODS.ODS_API.get_foaf_data_array (
     appendProperty (V, 'workplaceHomepage', "workplaceHomepage"); -- WAUI_BORG_HOMEPAGE
     appendProperty (V, 'homepage', "homepage");		   -- WAUI_WEBPAGE
     appendProperty (V, 'phone', "phone", 'tel:');	   -- WAUI_HPHONE
-      appendProperty (V, 'organizationHomepage', "organizationHomepage");   -- WAUI_BORG_HOMEPAGE
+        appendProperty (V, 'organizationHomepage', "workplaceHomepage");      -- WAUI_BORG_HOMEPAGE
       appendProperty (V, 'organizationTitle', "organizationTitle");         -- WAUI_
       appendProperty (V, 'tags', "keywords");                               -- WAUI_
       appendProperty (V, 'depiction', "depiction");                         -- WAUI_
     }
-    if (data[N][22] is not null)
-    {
-      "interest" := "interest" || data[N][22] || ';' || data[N][23] || '\n';
+      if (data[N][21] is not null and data[N][21] <> '')
+        "interest" := "interest" || data[N][21] || ';' || data[N][22] || '\n';
   }
   }
   if ("interest" <> '')

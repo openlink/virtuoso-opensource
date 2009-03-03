@@ -109,24 +109,19 @@
 
               if (self.login_attempts > 6)
                 {
-                  insert replacing WA_BLOCKED_IP (WAB_IP,
-                                                  WAB_DISABLE_UNTIL)
-                    values (http_client_ip(),
-                            dateadd('hour', 1, now()));
+                    insert replacing WA_BLOCKED_IP (WAB_IP, WAB_DISABLE_UNTIL)
+                      values (http_client_ip(), dateadd('hour', 1, now()));
                 }
 ]]>
                 </v:on-post>
                 <v:before-render>
 <![CDATA[
-
   if (self.login_blocked is not null)
-    {
       control.vc_enabled := 0;
-    }
 ]]>
                 </v:before-render>
-              </v:button> <!-- login button -->
-
+              </v:button>
+              <!-- login button -->
 <!--
               <xsl:if test="not(@inst)">
                 <vm:register/>
@@ -156,9 +151,9 @@
     {
       control.vu_url := concat(control.vu_url, '?usr=', self.username.ufl_value);
       control.vc_enabled := self.login_attempts;
-    }
-  else
+                    } else {
     control.vc_enabled := 0;
+                    }
 ]]>
                 </v:before-render>
               </v:url>
@@ -178,41 +173,34 @@
     else
       pars := '';
 
-   --self.url := 'inst.vspx';
-
     declare cook_str, expire varchar;
 
     if (self.wa_name is not null)
       {
         self.url := 'new_inst.vspx';
         pars := sprintf ('%s&wa_name=%s', pars, self.wa_name);
-
         if (self.topmenu_level = '1')
-
         pars := sprintf ('%s&wa_name=%s&l=1', pars, self.wa_name);
-      };
-
+              }
     if (length (self.promo))
       pars := pars || '&fr=' || self.promo;
 
     url := vspx_uri_add_parameters (self.url, pars);
 
---dbg_obj_print ('login_if_login ', url);
     declare oid_code int;
     oid_code := 0;
 ?>
 <xsl:if test="@mode = 'oid'">
-<xsl:processing-instruction name="vsp"><![CDATA[
+            <xsl:processing-instruction name="vsp">
+              <![CDATA[
     if (self._return_to is not null)
       {
-         --dbg_obj_print ('----------------------------------------------');
-	 --dbg_obj_print (self._identity, self._assoc_handle, self._return_to, self._trust_root, self.sid);
-
 	 OPENID..checkid_immediate (self._identity, self._assoc_handle, self._return_to, self._trust_root, self.sid, 0,
          self._sreg_required, self._sreg_optional, self._policy_url);
 	 oid_code := 1;
       }
-]]></xsl:processing-instruction>
+              ]]>
+            </xsl:processing-instruction>
 </xsl:if>
 <?vsp
     -- should be else, but cant stick with XSL-T if
@@ -247,10 +235,8 @@
         {
           cook_str := concat (http_header_get (), cook_str);
           http_header (cook_str);
-		   --dbg_obj_print ('cook_str=',cook_str,'\n');
         }
     }
-
   if (self.vc_authenticated and length (self.sid) and self._return_to is not null)
     {
       expire := date_rfc1123 (dateadd ('hour', 1, now()));
@@ -260,7 +246,6 @@
 	    {
           cook_str := concat (http_header_get (), cook_str);
           http_header (cook_str);
---dbg_obj_print ('cook_str=',cook_str);
         }
     }
 ]]>
@@ -299,6 +284,74 @@
 
 <xsl:template match="vm:login[@redirect]">
   <v:login name="login1" realm="wa" mode="url" user-password-check="web_user_password_check">
+    <v:after-data-bind>
+      <![CDATA[
+      if (is_https_ctx ())
+      {
+        declare fingerPrint, info, agent any;
+        declare st, msg, meta, data, S, hf, graph any;
+
+        fingerPrint := get_certificate_info (6);
+        for (select cast (WAUI_CERT as varchar) cert, U_NAME uname from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and WAUI_CERT_FINGERPRINT = fingerPrint and WAUI_CERT_LOGIN = 1) do
+        {
+          info := get_certificate_info (9, cert);
+          if (not isarray (info))
+            return 0;
+          agent := get_certificate_info (7, null, null, null, '2.5.29.17');
+          if (agent is null or agent not like 'URI:%')
+            return 0;
+          agent := subseq (agent, 4);
+          -- agent := 'http://demo.openlinksw.com/dataspace/person/demo#this';
+
+          declare exit handler for sqlstate '*'
+          {
+            rollback work;
+            return 0;
+          };
+
+          hf := rfc1808_parse_uri (agent);
+          hf[5] := '';
+          graph := DB.DBA.vspx_uri_compose (hf);
+          delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (graph);
+          commit work;
+          S := sprintf ('sparql load <%s> into graph <%S>', graph, graph);
+          -- dbg_obj_print ('S', S);
+          st := '00000';
+          exec (S, st, msg);
+          commit work;
+          S := sprintf ('sparql ' ||
+                        'prefix cert: <%s> ' ||
+                        'prefix rsa: <%s> ' ||
+                        'select ?exp_val ' ||
+                        '       ?mod_val ' ||
+                        '  from <%s> ' ||
+                        ' where { ' ||
+                        '         ?id cert:identity <%s> ; ' ||
+                        '             rsa:public_exponent ?exp ; ' ||
+                        '             rsa:modulus ?mod . ' ||
+                        '         ?exp cert:decimal ?exp_val . ' ||
+                        '         ?mod cert:hex ?mod_val . ' ||
+                        '       }',
+                        SIOC..cert_iri (''),
+                        SIOC..rsa_iri (''),
+                        graph,
+                        agent);
+          st := '00000';
+          exec (S, st, msg, vector (), 0, meta, data);
+          -- dbg_obj_print ('', st, data);
+          -- dbg_obj_print ('S', S);
+          if ((st <> '00000') or (length (data) = 0))
+            return 0;
+
+          self.login1.vl_authenticated := 1;
+          connection_set ('vspx_user', uname);
+          self.sid := vspx_sid_generate ();
+          self.realm := 'wa';
+          insert into VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY) values (self.sid, self.realm, uname, now ());
+        }
+      }
+      ]]>
+    </v:after-data-bind>
     <v:template type="if-no-login">
       <xsl:attribute name="redirect">
         <xsl:value-of select="@redirect"/>
@@ -315,8 +368,6 @@
 <![CDATA[
   if (length (self.sid) and length (self.login_ip) and self.login_ip <> http_client_ip ())
     {
---dbg_obj_print ('bad login');
-
       delete from VSPX_SESSION where VS_SID = self.sid and VS_REALM = self.realm;
 
       self.sid := null;
@@ -358,7 +409,8 @@ if (not control.vl_authenticated and length(self.oid_sig))
     }
   {
      declare resp any;
-     declare exit handler for sqlstate '*' {
+          declare exit handler for sqlstate '*'
+          {
      goto auth_failed1;
     };
     resp := HTTP_CLIENT (url);
@@ -376,11 +428,8 @@ if (not control.vl_authenticated and length(self.oid_sig))
   insert into VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY) values (self.sid, self.realm, uname, now ());
   no_auth2:;
   if (not control.vl_authenticated)
-    {
       self.login_attempts := coalesce(self.login_attempts, 0) + 1;
     }
-}
-
 if (not control.vl_authenticated and length (open_id_url) and e.ve_is_post)
 {
 declare hdr, xt, uoid, is_agreed any;
@@ -473,17 +522,15 @@ auth_failed1:;
              self.u_group,
 	     self.u_home,
 	     self.u_nick
-        from SYS_USERS left join WA_USER_INFO on (U_ID = WAUI_U_ID)
+          from SYS_USERS
+                 left join WA_USER_INFO on (U_ID = WAUI_U_ID)
         where U_NAME = connection_get ('vspx_user') with (prefetch 1);
 
         if (not length (self.u_full_name))
           self.u_full_name := self.u_name;
 
         self.u_full_name := wa_utf8_to_wide (self.u_full_name);
-        tmpl := (select coalesce (WAUI_TEMPLATE, 'default')
-                   from DB.DBA.WA_USER_INFO
-                   where WAUI_U_ID = self.u_id);
-
+        tmpl := (select coalesce (WAUI_TEMPLATE, 'default') from DB.DBA.WA_USER_INFO where WAUI_U_ID = self.u_id);
         if (tmpl = 'custom')
           self.current_template := self.u_home || 'wa/templates/custom';
         else
@@ -500,8 +547,6 @@ auth_failed1:;
             self.current_template_name := 'default';
           }
 
-   --dbg_obj_print ('tmpl=', self.current_template_name, ' ', self.current_template);
-
         self.u_first_name := self.u_name;
 
         whenever not found goto nfud;
@@ -515,42 +560,18 @@ auth_failed1:;
           self.u_first_name := self.u_name;
 
        nfud:;
-
         if (self.fname = self.u_name or length (self.fname) = 0)
-          {
             self.tab_pref := 'My ';
-          }
-
-	   --dbg_obj_print (connection_get ('vspx_user'), ' self.u_name' , self.u_name);
 
         if (not exists (select 1 from sn_person where sne_name = connection_get ('vspx_user')))
           {
             insert into sn_person (sne_name, sne_org_id)
               values (self.u_name, self.u_id);
           }
-
         self.login_pars := sprintf ('&sid=%s&realm=%s', self.sid, self.realm);
         connection_set ('wa_sid', self.sid);
-
-  --dbg_obj_print ('set sid=', self.sid);
-
     }
-
-        -- Redirect if the user needs to update his/her data
-        --declare _path varchar;
-        --declare _updated integer;
-        --if (not(isnull(self.u_name)))
-        --{
-        --  _updated := WA_USER_GET_OPTION(self.u_name,'WA_INTERNAL_REGISTRATION_UPDATED');
-        --  if (isnull(_updated) or _updated < 1)
-        --  {
-        --    _path := regexp_match('[^/]*$',http_path());
-        --    if (not(isnull(_path)) and _path <> 'settings.vspx' and _path <> 'index.vspx')
-        --      self.vc_redirect(sprintf('settings.vspx?update=1&URL=%s',http_path()));
-        --  };
-        --};
 ]]>
-
   </v:after-data-bind>
 </xsl:template>
 
@@ -573,10 +594,9 @@ auth_failed1:;
   select WD_MODEL
     into dom_reg
     from WA_DOMAINS
-    where WD_HOST = http_map_get ('vhost') and
-          WD_LISTEN_HOST = http_map_get ('lhost') and
-          WD_LPATH = http_map_get ('domain');
-
+         where WD_HOST = http_map_get ('vhost')
+           and WD_LISTEN_HOST = http_map_get ('lhost')
+           and WD_LPATH = http_map_get ('domain');
   control.vc_enabled := dom_reg;
 
 nfd:;
@@ -601,9 +621,7 @@ nfd:;
 
   http_request_status ('HTTP/1.1 302 Found');
   http_header (sprintf ('Location: register.vspx?reguid=%s%s\r\n',
-                        get_keyword('username',
-                                    self.vc_event.ve_params,
-                                    ''),
+                              get_keyword('username', self.vc_event.ve_params, ''),
                         redir));
 ]]>
     </v:on-post>

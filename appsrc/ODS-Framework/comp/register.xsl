@@ -298,11 +298,10 @@ if(is_disabled && typeof(document.getElementById('openid_url'))!='undefined')
                             self.reg_mode := '';
                             self.reg_foafData := null;
                             foafInfo := get_certificate_info (7, null, null, null, '2.5.29.17');
-                            if (not isnull (foafInfo))
+                            if (not isnull (foafInfo) and (foafInfo like 'URI:%'))
                             {
+                              foafInfo := subseq (foafInfo, 4);
                               self.reg_mode := 'foaf';
-                              foafInfo := replace (foafInfo, 'URI:', '');
-                              -- foafInfo := 'http://myopenlink.net/dataspace/person/ddimitov#this';
                               self.reg_foafData := ODS.ODS_API.get_foaf_data_array (foafInfo);
                               self.reg_uid := get_keyword ('nick', self.reg_foafData, self.reg_uid);
                               self.reg_mail := get_keyword ('mbox', self.reg_foafData, self.reg_mail);
