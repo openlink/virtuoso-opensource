@@ -27,6 +27,9 @@
 #  
 
 #
+
+rm -f *.output* core* *.log *.trx
+
 # TPC C Test Script
 #
 TPCC=${TPCC-tpcc}
