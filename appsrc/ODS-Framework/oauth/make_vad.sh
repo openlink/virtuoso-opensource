@@ -18,9 +18,9 @@ THOST=${THOST-localhost}
 TPORT=${TPORT-8445}
 PORT=${PORT-1940}
 ISQL=${ISQL-isql}
-VAD_NAME="oauth"
-VAD_PKG_NAME="oauth"
-VAD_DESC="OAuth server"
+VAD_NAME="auth_policy"
+VAD_PKG_NAME="auth_policy"
+VAD_DESC="Authentication server"
 LOGFILE="${LOGDIR}/make_"$VAD_PKG_NAME"_vad.log"
 VAD_NAME_DEVEL="$VAD_PKG_NAME"_filesystem.vad
 VAD_NAME_RELEASE="$VAD_PKG_NAME"_dav.vad
@@ -149,16 +149,16 @@ directory_clean() {
 directory_init() {
   mkdir vad
   mkdir vad/code
-  mkdir vad/code/oauth
+  mkdir vad/code/$VAD_NAME
   mkdir vad/vsp
-  mkdir vad/vsp/oauth
-  mkdir vad/vsp/oauth/images
+  mkdir vad/vsp/$VAD_NAME
+  mkdir vad/vsp/$VAD_NAME/images
 
-  cp *.sql vad/code/oauth/.
-  cp *.vsp vad/vsp/oauth/.
-  cp images/* vad/vsp/oauth/images/.
-  cp *.vspx vad/vsp/oauth/.
-  cp *.css vad/vsp/oauth/.
+  cp *.sql vad/code/$VAD_NAME/.
+  cp *.vsp vad/vsp/$VAD_NAME/.
+  cp images/* vad/vsp/$VAD_NAME/images/.
+  cp *.vspx vad/vsp/$VAD_NAME/.
+  cp *.css vad/vsp/$VAD_NAME/.
 
 }
 
@@ -267,7 +267,10 @@ fi
   echo "    _ppath := registry_get('_"$VAD_NAME"_path_');" >> $STICKER
   echo "    DB.DBA.VHOST_REMOVE (lpath=>'/oauth');" >> $STICKER
   echo "    DB.DBA.VHOST_DEFINE (lpath=>'/oauth', ppath=>_ppath, vsp_user=>'dba', is_dav=>$ISDAV, is_brws=>0, def_page=>'index.vsp');" >> $STICKER
+  echo "    DB.DBA.VHOST_REMOVE (lpath=>'/$VAD_NAME');" >> $STICKER
+  echo "    DB.DBA.VHOST_DEFINE (lpath=>'/$VAD_NAME', ppath=>_ppath, vsp_user=>'dba', is_dav=>$ISDAV, is_brws=>0, def_page=>'index.vsp');" >> $STICKER
   echo "    DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/oauth.sql', 0, 'report', $ISDAV);" >> $STICKER
+  echo "    DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/foaf_ssl.sql', 0, 'report', $ISDAV);" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose='pre-uninstall'>" >> $STICKER
@@ -281,9 +284,10 @@ fi
   echo "<resources>" >> $STICKER
 
   echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/oauth.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/foaf_ssl.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
 
 
-  cd vad/vsp/oauth 2>&1>/dev/null
+  cd vad/vsp/$VAD_NAME 2>&1>/dev/null
   for file in `find . -type f -print | grep -v CVS | grep -v ".sql" | sort | cut -b3-`
   do
       echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"$VAD_NAME/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> ../../../$STICKER

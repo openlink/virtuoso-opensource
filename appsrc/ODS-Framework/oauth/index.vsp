@@ -1,15 +1,18 @@
 <?vsp
 ?><html xmlns="http://www.w3.org/1999/xhtml">
 	<head>
-		<title>Virtuoso OAuth Server</title>
+		<title>Virtuoso Authentication Server</title>
 		<link rel="stylesheet" type="text/css" href="default.css" />
 	</head>
 	<body>
 		<div id="MD">
-			<h1>OpenLink Virtuoso OAuth server</h1>
+			<h1>OpenLink Virtuoso Authentication server</h1>
 			<ul>
 				<li>
 				   <a href="oauth_apps.vspx">OAuth keys</a>
+				</li>
+				<li>
+				   <a href="sparql_acl.vspx">FOAF+SSL ACLs</a>
 				</li>
 				<li>
 				   <a href="sparql.vsp">Protected SPARQL endpoint</a>

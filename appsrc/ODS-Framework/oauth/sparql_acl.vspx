@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="blog-home-page"
+    xmlns:vm="http://www.openlinksw.com/vspx/ods/"
+    xmlns:v="http://www.openlinksw.com/vspx/"
+    doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+    doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+    <html xmlns="http://www.w3.org/1999/xhtml" >
+      <head>
+	<title>FOAF+SSL ACLs</title>
+	<link rel="stylesheet" type="text/css" href="default.css" />
+      </head>
+      <v:variable persist="temp" name="msg_msg" type="varchar" default="''"/>
+      <v:variable name="edit_oauth" type="varchar" default="null" param-name="edit" />
+      <v:variable name="del_oauth" type="varchar" default="null" param-name="del" />
+      <v:variable name="u_id" type="int" default="null" />
+      <v:variable name="apps" type="any" default="null" persist="temp"/>
+      <v:login name="login1" realm="wa" mode="url" user-password-check="OAUTH..web_user_password_check">
+	<v:template type="if-no-login" name="if_no_login" redirect="login.vspx"/>
+	<v:template type="if-login" name="if_login">
+	</v:template>
+	<v:after-data-bind><![CDATA[
+	  self.apps := vector ();
+	  if (control.vl_authenticated)
+	    {
+	      declare ndata any;
+	      set isolation = 'committed';
+	      if (connection_get ('vspx_user') <> 'dba')
+	        {
+                  self.sid := null;
+                  control.vl_authenticated := 0;
+		  self.vc_redirect (sprintf ('login.vspx?URL=%U', 'sparql_acl.vspx'));
+		  return;
+		}
+	    }
+	    ]]></v:after-data-bind>
+      </v:login>
+      <body>
+	<div id="MD">
+	  <h1>FOAF+SSL ACLs</h1>
+	  <div class="message"><v:label name="pwd_msg" value="--self.msg_msg" /></div>
+	  <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+	    <tr valign='top'>
+	      <td>
+		<table cellpadding='10' cellspacing='0' border='0' width='100%'>
+		  <tr>
+		    <td class="tab_deck">
+		      <v:form type="simple" method="POST">
+			<table class="listing" rules="groups">
+			  <colgroup>
+			    <col/>
+			    <col/>
+			    <col/>
+			  </colgroup>
+			  <tr class="listing_header_row">
+			    <th>Web ID</th>
+			    <th>Account</th>
+			    <th>Action</th>
+			  </tr>
+			  <v:data-set name="oauth" sql="select FS_UID, FS_URI from FOAF_SSL_ACL" scrollable="1" editable="1" nrows="1000">
+			    <v:before-data-bind>
+                        if (not e.ve_is_post and self.del_oauth is not null)
+                        {
+                          delete from FOAF_SSL_ACL where FS_URI = self.del_oauth;
+			  self.vc_redirect ('sparql_acl.vspx');
+                        }
+                		  </v:before-data-bind>
+
+				  <v:template name="maps_rep" type="repeat">
+				    <v:template name="template7" type="if-not-exists">
+				      <tr><td colspan="4">No applications registered</td></tr>
+				    </v:template>
+                		    <v:template name="maps_brows" type="browse">
+					<tr class="<?V case when self.edit_oauth = control.te_rowset[0] then 'listing_row_selected'
+					    when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+                			    <td>
+                				    <v:label name="la2" value="--(control.vc_parent as vspx_row_template).te_rowset[1]"
+                				      format="%s" render-only="1"/>
+
+                			    </td>
+                			    <td>
+                				    <v:label name="ur1"
+                				      format="%s"
+                				      value="--(control.vc_parent as vspx_row_template).te_rowset[0]"
+                				    />
+                			    </td>
+                			    <td>
+                				    <v:url name="ur2" value='<img src="images/del_16.png" hspace="3" border="0"/>Delete'
+                				      format="%s"
+                				      url="--sprintf ('sparql_acl.vspx?del=%U', (control.vc_parent as vspx_row_template).te_rowset[1])"
+                				      xhtml_title="Delete"
+                				      xhtml_alt="Delete"
+                				      />
+                			    </td>
+                			  </tr>
+                		    </v:template>
+                		  </v:template>
+
+                		  <v:template name="maps_footer" type="simple">
+                		  <tr>
+                			  <td colspan="4" class="listing_col_action">
+                			    <vm:ds-navigation data-set="oauth" type="set" />
+                			  </td>
+                		  </tr>
+                		  </v:template>
+                	  </v:data-set>
+                	  </table>
+                  	  <div class="fm">
+			      <fieldset>
+			      Web ID: <v:text name="webid" value="" xhtml_size="100"/><br/>
+			      SQL Account: <v:text name="acc" value="" xhtml_size="100"/><br/>
+                 	      <span class="fm_ctl_btn">
+                  		  <v:button name="save1" value="Register" action="simple">
+				      <v:on-post><![CDATA[
+					  if (0 = length (self.webid.ufl_value))
+					    {
+  					      self.vc_is_valid := 0;
+					      self.vc_error_message := 'Web ID could not be empty';
+					      return;
+					    }
+					  if (not exists (select 1 from SYS_USERS where U_NAME = self.acc.ufl_value))
+					    {
+  					      self.vc_is_valid := 0;
+					      self.vc_error_message := 'Invalid SQL account';
+					      return;
+					    }
+					  insert into FOAF_SSL_ACL (FS_URI, FS_UID) values (self.webid.ufl_value, self.acc.ufl_value);
+					  self.vc_redirect ('sparql_acl.vspx');
+                          ]]></v:on-post>
+                  		  </v:button>
+                	      </span>
+                  	  </fieldset>
+		      </div>
+		    </v:form>
+		    <br/>
+		    <div><v:url name="uh" value="Back to main menu" url="/oauth/" /></div>
+	      </td>
+	  </tr>
+      </table>
+  </td>
+	</tr>
+    </table>
+</div>
+<div id="FT">
+    <div id="FT_L">
+	<a href="http://www.openlinksw.com/virtuoso">
+	    <img alt="Powered by OpenLink Virtuoso Universal Server"
+		src="images/virt_power_no_border.png"
+		border="0" />
+	</a>
+      </div>
+	<div id="FT_RC">
+	  <div id="copyright_ctr">Copyright &amp;copy; 1999-<?V "LEFT" (datestring (now()), 4) ?> OpenLink Software</div>
+        </div> <!-- FT_R -->
+</div>
+
+      </body>
+  </html>
+</v:page>
