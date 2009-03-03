@@ -623,7 +623,7 @@ create function DB.DBA."RDFData_DAV_RES_CONTENT" (in id any, inout content any, 
       pg := atoi (pg);
 
       -- take data from ODS graph
-      if (regexp_match ('https?://([^/]*)/dataspace/(person|organization)/(.*)', iri) is not null)
+      if (regexp_match ('https?://([^/]*)/dataspace/(person|organization)/(.*)', iri) is not null and iri not like '%/online_account/%')
         {
 	  tmp := sprintf_inverse (iri, 'http%s://%s/dataspace/%s/%s', 0);
 	  tmp := tmp[3];
