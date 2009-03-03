@@ -512,7 +512,7 @@ create procedure person_ola_iri (in iri varchar, in suff varchar)
   arr := sprintf_inverse (iri, 'http://%s/dataspace/%s#this', 1);
   if (length (arr) <> 2)
     signal ('22023', sprintf ('Non-user IRI [%s] can\'t be transformed to person IRI', iri));
-  return sprintf ('http://%s/dataspace/person/%s/online_account#%s',arr[0],arr[1], suff);
+  return sprintf ('http://%s/dataspace/person/%s/online_account/%U',arr[0],arr[1], suff);
 };
 
 create procedure person_prj_iri (in iri varchar, in suff varchar)
