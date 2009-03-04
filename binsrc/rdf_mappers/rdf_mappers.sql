@@ -305,6 +305,7 @@ create procedure RM_MAPPERS_SET_ORDER ()
        inx := inx + 1;
      }
    DB.DBA.SET_IDENTITY_COLUMN ('DB.DBA.SYS_RDF_MAPPERS', 'RM_PID', inx);
+   DB.DBA.SET_IDENTITY_COLUMN ('DB.DBA.SYS_RDF_MAPPERS', 'RM_ID', inx);
    update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 10000 + inx where RM_HOOK = 'DB.DBA.RDF_LOAD_DAV_META';
 }
 ;
@@ -2687,7 +2688,11 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 		}
 		if (id1 = 'members' and id2 is not null)
 		{
-			return 0;
+		  base := concat('http://www.meetup.com/members/', id2, '/');
+		  url := concat('http://api.meetup.com/members.xml/?member_id=', id2, '&key=', api_key);
+		  what_ := 'members';
+		  DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base);
+			--return 0;
 		}
 		else
 		{
@@ -5687,16 +5692,44 @@ done:
     full_name := sprintf('%s%s %s%s', upper(subseq(names[0], 0, 1)), subseq(names[0], 1), upper(subseq(names[length(names)-1], 0, 1)), subseq(names[length(names)-1], 1));
     if (full_name is null or full_name = '')
 		return 0;
-    tmp := http_get(sprintf('http://api.nytimes.com/svc/politics/v2/us/legislative/congress/111/house/members.xml?api-key=%s', api_key));
-    if (tmp is null)
-		return 0;
-    xd := xtree_doc (tmp);
-    candidate_id := cast(xpath_eval(sprintf('/result_set/results/members/member[name="%s"]/id', full_name), xd) as varchar);
-  }
+    
+    candidate_id := FIND_CANDIDATE(full_name, api_key, 'senate');
+    if (candidate_id is null or candidate_id = '')
+	{
+		candidate_id := FIND_CANDIDATE(full_name, api_key, 'house');
   if (candidate_id is null or candidate_id = '')
 	return 0;
+	}
+  }
+  
   DB.DBA.RDF_NYTC_LOOKUP(candidate_id, coalesce (dest, graph_iri), api_key);
   return 0;
+}
+;
+
+create procedure FIND_CANDIDATE(in full_name varchar, in api_key varchar, in chamber varchar) returns varchar
+{
+	declare tmp, xd any;
+	declare candidate_id varchar;
+	declare from_num, cur, today_num integer;
+	
+	today_num := 111;
+	if (chamber = 'house')
+		from_num := 102;
+	else
+		from_num := 101;
+	for (cur := from_num; cur <= today_num; cur := cur + 1)
+	{
+		tmp := http_get(sprintf('http://api.nytimes.com/svc/politics/v2/us/legislative/congress/%d/%s/members.xml?api-key=%s', cur, chamber, api_key));
+		if (tmp is not null)
+		{	
+			xd := xtree_doc (tmp);
+			candidate_id := cast(xpath_eval(sprintf('/result_set/results/members/member[name="%s"]/id', full_name), xd) as varchar);
+			if (candidate_id is not null and candidate_id <> '')
+				return candidate_id;
+		}
+	}
+	return candidate_id;	
 }
 ;
 
@@ -5988,8 +6021,48 @@ create procedure DB.DBA.RDF_LOAD_ZEMANTA (in graph_iri varchar, in new_origin_ur
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_NYT_ARTICLE_SEARCH (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare data, meta, state, message any;
+	declare tree, txt, cont, xt, xd, tmp any;
+	declare url, keywords, api_key, primary_topic varchar;
+	api_key := _key;
+	--api_key := '2366029c48a795f38c6265845d08048e:4:57149927';
+	declare exit handler for sqlstate '*'
+	{
+		return 0;
+	};
+	if (not isstring (api_key) or length (api_key) = 0)
+		return 0;
+	primary_topic := DB.DBA.RDF_SPONGE_PROXY_IRI (graph_iri);
+	exec (sprintf( 'sparql define input:inference \'virtrdf-label\' select ?l from <%s> where 
+		{ <%s> virtrdf:label ?l }', graph_iri, primary_topic), state, message, vector (), 0, meta, data);
+	foreach (any str in data) do
+	{
+		if (isstring (str[0]))
+		{
+			keywords := str[0];
+			url := sprintf('http://api.nytimes.com/svc/search/v1/article?query=%s&order=closest&api-key=%s&format=xml', keywords, api_key);
+			tmp := http_get(url);
+			tree := json_parse (tmp);
+			xt := DB.DBA.MQL_TREE_TO_XML (tree);
+			xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/nyt2rdf.xsl', xt,
+				vector ('baseUri', coalesce (dest, graph_iri)));
+			cont := serialize_to_UTF8_xml (xd);
+			DB.DBA.RDF_LOAD_RDFXML (cont, new_origin_uri, coalesce (dest, graph_iri));
+		}
+	}
+	return 0;
+}
+;
+
 insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
       values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_ZEMANTA', null, 'Zemanta',
+	  vector ('min-score', '0.5', 'max-results', '10'));
+
+insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
+      values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_NYT_ARTICLE_SEARCH', null, 'NYT: The Article Search',
 	  vector ('min-score', '0.5', 'max-results', '10'));
 
 create procedure DB.DBA.RDF_LOAD_VOID (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
