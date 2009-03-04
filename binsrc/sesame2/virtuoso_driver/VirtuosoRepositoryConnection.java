@@ -60,6 +60,7 @@ import org.openrdf.model.Resource;
 import org.openrdf.model.Statement;
 import org.openrdf.model.URI;
 import org.openrdf.model.Value;
+import org.openrdf.model.ValueFactory;
 import org.openrdf.model.impl.ContextStatementImpl;
 import org.openrdf.model.impl.GraphImpl;
 import org.openrdf.model.impl.NamespaceImpl;
@@ -178,6 +179,16 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	public Repository getRepository() {
 		return repository;
 	}
+
+
+	/**
+	 * Gets a ValueFactory for this RepositoryConnection.
+	 * 
+	 * @return A repository-specific ValueFactory.
+	 */
+	public ValueFactory getValueFactory() {
+		return repository.getValueFactory();
+        }
 
 	/**
 	 * Checks whether this connection is open. A connection is open from the moment it is created until it is closed.
