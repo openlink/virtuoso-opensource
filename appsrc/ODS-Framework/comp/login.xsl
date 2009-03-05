@@ -77,14 +77,14 @@
             </xsl:choose>
             <div id="login_form">
               <label for="login_frm_username">Member ID</label>
-              <v:text xhtml_id="login_frm_username" name="username" value=""/><br/>
+              <v:text xhtml_id="login_frm_username" name="username" value="" xhtml_style="width: 170px" /><br/>
               <label for="password">Password</label>
-	      <v:text xhtml_id="login_frm_password" name="password" value="" type="password"/><br/>
+              <v:text xhtml_id="login_frm_password" name="password" value="" type="password" xhtml_style="width: 170px" /><br/>
 	      <xsl:if test="not (@mode = 'oid')">
 		  <b>or</b><br/>
 		  <label for="open_id_url">OpenID URL</label>
 		  <img src="images/login-bg.gif" alt="openID"/>
-		  <v:text name="open_id_url" xhtml_id="open_id_url"/><br />
+                <v:text name="open_id_url" xhtml_id="open_id_url" xhtml_style="width: 200px"/><br />
 	      </xsl:if>
               <v:check-box name="cb_remember_me" xhtml_id="login_frm_cb_remember_me" value="1" xhtml_checked="1"/>
               <label for="login_frm_cb_remember_me">Remember me</label><br/>
@@ -121,12 +121,8 @@
 ]]>
                 </v:before-render>
               </v:button>
-              <!-- login button -->
-<!--
-              <xsl:if test="not(@inst)">
-                <vm:register/>
-              </xsl:if>
--->
+              <span>&amp;nbsp;</span>
+              <v:button action="simple" name="login_form_X509" value="X.509 Login" enabled="--is_https_ctx ()" xhtml_id="login_form_X509" />
                 <vm:register/>
               <xsl:choose>
                 <xsl:when test="@inst">
@@ -136,15 +132,10 @@
                 </xsl:otherwise>
               </xsl:choose>
               <br/>
-              <v:url xhtml_class="pwd_recovery_url"
-                url=""
-                name="url_to_forget"
-                value="Forgot your password?">
+              <v:url xhtml_class="pwd_recovery_url" url="" name="url_to_forget" value="Forgot your password?">
                 <v:before-render>
 <![CDATA[
-
   control.vu_url := 'pass_recovery.vspx';
-
   if (self.username.ufl_value is not null and
       self.username.ufl_value <> '' and
       get_keyword('username', self.vc_event.ve_params, '') <> '')
@@ -284,74 +275,6 @@
 
 <xsl:template match="vm:login[@redirect]">
   <v:login name="login1" realm="wa" mode="url" user-password-check="web_user_password_check">
-    <v:after-data-bind>
-      <![CDATA[
-      if (is_https_ctx ())
-      {
-        declare fingerPrint, info, agent any;
-        declare st, msg, meta, data, S, hf, graph any;
-
-        fingerPrint := get_certificate_info (6);
-        for (select cast (WAUI_CERT as varchar) cert, U_NAME uname from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and WAUI_CERT_FINGERPRINT = fingerPrint and WAUI_CERT_LOGIN = 1) do
-        {
-          info := get_certificate_info (9, cert);
-          if (not isarray (info))
-            return 0;
-          agent := get_certificate_info (7, null, null, null, '2.5.29.17');
-          if (agent is null or agent not like 'URI:%')
-            return 0;
-          agent := subseq (agent, 4);
-          -- agent := 'http://demo.openlinksw.com/dataspace/person/demo#this';
-
-          declare exit handler for sqlstate '*'
-          {
-            rollback work;
-            return 0;
-          };
-
-          hf := rfc1808_parse_uri (agent);
-          hf[5] := '';
-          graph := DB.DBA.vspx_uri_compose (hf);
-          delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (graph);
-          commit work;
-          S := sprintf ('sparql load <%s> into graph <%S>', graph, graph);
-          -- dbg_obj_print ('S', S);
-          st := '00000';
-          exec (S, st, msg);
-          commit work;
-          S := sprintf ('sparql ' ||
-                        'prefix cert: <%s> ' ||
-                        'prefix rsa: <%s> ' ||
-                        'select ?exp_val ' ||
-                        '       ?mod_val ' ||
-                        '  from <%s> ' ||
-                        ' where { ' ||
-                        '         ?id cert:identity <%s> ; ' ||
-                        '             rsa:public_exponent ?exp ; ' ||
-                        '             rsa:modulus ?mod . ' ||
-                        '         ?exp cert:decimal ?exp_val . ' ||
-                        '         ?mod cert:hex ?mod_val . ' ||
-                        '       }',
-                        SIOC..cert_iri (''),
-                        SIOC..rsa_iri (''),
-                        graph,
-                        agent);
-          st := '00000';
-          exec (S, st, msg, vector (), 0, meta, data);
-          -- dbg_obj_print ('', st, data);
-          -- dbg_obj_print ('S', S);
-          if ((st <> '00000') or (length (data) = 0))
-            return 0;
-
-          self.login1.vl_authenticated := 1;
-          connection_set ('vspx_user', uname);
-          self.sid := vspx_sid_generate ();
-          self.realm := 'wa';
-          insert into VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY) values (self.sid, self.realm, uname, now ());
-        }
-      }
-      ]]>
-    </v:after-data-bind>
     <v:template type="if-no-login">
       <xsl:attribute name="redirect">
         <xsl:value-of select="@redirect"/>
@@ -380,9 +303,13 @@
   else if (length (self.sid) and self.login_ip is null)
     self.login_ip := http_client_ip ();
 
-  declare tmpl, open_id_url any;
-
+      declare tmpl, redirect, open_id_url any;
   ]]>
+    <xsl:if test="@redirect">
+    <![CDATA[
+      redirect := 1;
+    ]]>
+    </xsl:if>
 <xsl:if test="not (@mode = 'oid') and not (@redirect)">
 <![CDATA[
 open_id_url := get_keyword ('open_id_url', e.ve_params, null);
@@ -499,6 +426,76 @@ auth_failed1:;
     ]]>
 </xsl:if>
 <![CDATA[
+      if (redirect or (e.ve_is_post and (e.ve_button.vc_name = 'login_form_X509')))
+      {
+        if (e.ve_is_post and (e.ve_button.vc_name = 'login_form_X509'))
+          redirect := 2;
+        if (is_https_ctx ())
+        {
+          declare fingerPrint, info, agent any;
+          declare st, msg, meta, data, S, hf, graph any;
+
+          fingerPrint := get_certificate_info (6);
+          for (select cast (WAUI_CERT as varchar) cert, U_NAME uname
+                 from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS
+                where WAUI_U_ID = U_ID
+                  and WAUI_CERT_FINGERPRINT = fingerPrint
+                  and (((WAUI_CERT_LOGIN = 1) and (redirect = 1)) or (redirect = 2))) do
+          {
+            info := get_certificate_info (9, cert);
+            if (not isarray (info))
+              return 0;
+            agent := get_certificate_info (7, null, null, null, '2.5.29.17');
+            if (agent is null or agent not like 'URI:%')
+              return 0;
+            agent := subseq (agent, 4);
+
+            declare exit handler for sqlstate '*'
+            {
+              rollback work;
+              return 0;
+            };
+
+            hf := rfc1808_parse_uri (agent);
+            hf[5] := '';
+            graph := DB.DBA.vspx_uri_compose (hf);
+            S := sprintf ('SPARQL clear graph <%s>', graph);
+            exec (S, st, msg);
+            commit work;
+            S := sprintf ('sparql load <%s> into graph <%S>', graph, graph);
+            exec (S, st, msg);
+            commit work;
+            S := sprintf ('sparql ' ||
+                          'prefix cert: <%s> ' ||
+                          'prefix rsa: <%s> ' ||
+                          'select ?exp_val ' ||
+                          '       ?mod_val ' ||
+                          '  from <%s> ' ||
+                          ' where { ' ||
+                          '         ?id cert:identity <%s> ; ' ||
+                          '             rsa:public_exponent ?exp ; ' ||
+                          '             rsa:modulus ?mod . ' ||
+                          '         ?exp cert:decimal ?exp_val . ' ||
+                          '         ?mod cert:hex ?mod_val . ' ||
+                          '       }',
+                          SIOC..cert_iri (''),
+                          SIOC..rsa_iri (''),
+                          graph,
+                          agent);
+            st := '00000';
+            exec (S, st, msg, vector (), 0, meta, data);
+            -- dbg_obj_print ('', data);
+            if ((st <> '00000') or (length (data) = 0))
+              return 0;
+
+            self.login1.vl_authenticated := 1;
+            connection_set ('vspx_user', uname);
+            self.sid := vspx_sid_generate ();
+            self.realm := 'wa';
+            insert into VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY) values (self.sid, self.realm, uname, now ());
+          }
+        }
+      }
   if (control.vl_authenticated)
     {
       set isolation = 'committed';

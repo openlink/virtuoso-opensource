@@ -210,10 +210,10 @@
     </div>
     <br/>
     <div class="login_tabdeck"><!--container div start-->
-        <div id="login_openid" style="height: 135px;<?V case when self.use_oid_url = 1 then '' else 'display:none;' end ?>">
+        <div id="login_openid" style="height: <?V case when is_https_ctx () then 132 else 115 end ?>px;<?V case when self.use_oid_url = 1 then '' else 'display:none;' end ?>">
       <table width="100%">
   <tr>
-      <th width="60px"><label for="reguid">OpenID</label></th>
+              <th width="30%"><label for="reguid">OpenID</label></th>
       <td>
     <img src="images/login-bg.gif" alt="openID"  class="login_openid" />
        <v:text  xhtml_id="openid_url" name="openid_url" value="" xhtml_style="width:90%" default_value="--self.oid_identity"/>
@@ -227,26 +227,7 @@ if(is_disabled && typeof(document.getElementById('openid_url'))!='undefined')
 }
 ]]>
 </script>
-
        <input type="hidden" id="uoid" name="uoid" value="<?Vself.use_oid_url?>"/>
-
-<!--
-
-    <v:form method="POST" name="openid_frm" type="simple">
-        <v:button action="simple" name="openid_bt" value="Authenticate">
-      <v:on-post><![CDATA[
-          ]]></v:on-post>
-        </v:button><br/>
-
-
-        <v:check-box name="uoid" xhtml_id="uoid" value="1" initial-checked="--self.use_oid_url" xhtml_style="display:none;">
-        <v:after-data-bind>
-          control.ufl_selected := atoi(get_keyword ('uoid', e.ve_params, '0'));
-        </v:after-data-bind>
-        </v:check-box>
-        <label for="uoid">Do not create password, I want to use my OpenID URL to login</label>
-    </v:form>
--->
       </td>
     </tr>
     <v:template name="oid_login_row"  type="simple" enabled="--(case when self.oid_sig is not null and (self.oid_nickname is null or length(self.oid_nickname)<1) then 1 else 0 end)">
@@ -271,11 +252,11 @@ if(is_disabled && typeof(document.getElementById('openid_url'))!='undefined')
    </v:template>
     </table>
     </div>
-        <div id="login_info" style="height: 135px;<?V case when self.use_oid_url = 1 then 'display:none;' else '' end ?>">
+        <div id="login_info" style="height: <?V case when is_https_ctx () then 132 else 115 end ?>px;<?V case when self.use_oid_url = 1 then 'display:none;' else '' end ?>">
       <table width="100%">
             <v:template name="ssl_template" type="simple" enabled="--case when is_https_ctx () then 1 else 0 end">
             <tr>
-              <th></th>
+              <th width="30%"></th>
               <td nowrap="nowrap">
                 <?vsp
                   if (0)
@@ -415,16 +396,17 @@ if(is_disabled && typeof(document.getElementById('openid_url'))!='undefined')
         <?vsp } ?>
       </table>
   </div>
-      <table>
+       <table width="100%">
         <tr>
-          <td></td>
+           <td width="30%"></td>
            <td>
              <v:check-box name="is_agreed" value="1" initial-checked="0" xhtml_id="is_agreed"/>
         <label for="is_agreed">I agree to the <a href="terms.html" target="_blank">Terms of Service</a>.</label>
     </td>
         </tr>
         <tr>
-   <td colspan="2"  class="ctrl">
+           <td></td>
+           <td class="ctrl">
     <span class="fm_ctl_btn"  id="signup_span">
             <v:button action="simple" name="regb1" value="Sign Up">
       </v:button>

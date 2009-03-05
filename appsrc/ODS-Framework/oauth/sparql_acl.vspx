@@ -60,6 +60,13 @@
       <body>
 	<div id="MD">
 	  <h1>FOAF+SSL ACLs</h1>
+<?vsp
+  if (not self.vc_is_valid)
+    {
+?>
+<div class="error_msg" id="page_error_msg"><?vsp self.vc_error_summary (0); ?></div>
+<?vsp
+} ?>
 	  <div class="message"><v:label name="pwd_msg" value="--self.msg_msg" /></div>
 	  <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
 	    <tr valign='top'>
@@ -76,14 +83,19 @@
 			  </colgroup>
 			  <tr class="listing_header_row">
 			    <th>Web ID</th>
-			    <th>Account</th>
+			    <th>Role</th>
 			    <th>Action</th>
 			  </tr>
-			  <v:data-set name="oauth" sql="select FS_UID, FS_URI from FOAF_SSL_ACL" scrollable="1" editable="1" nrows="1000">
+			  <v:data-set name="oauth" sql="select g.U_NAME, FS_URI from FOAF_SSL_ACL left outer join  SYS_USERS u on (u.U_NAME = FS_UID)
+			      	join SYS_USER_GROUP on (u.U_ID = UG_UID) join SYS_USERS g on (g.U_ID = UG_GID)" scrollable="1" editable="1" nrows="1000">
 			    <v:before-data-bind>
                         if (not e.ve_is_post and self.del_oauth is not null)
                         {
+			  declare uid varchar;
+                          uid := (select FS_UID from FOAF_SSL_ACL where FS_URI = self.del_oauth);
                           delete from FOAF_SSL_ACL where FS_URI = self.del_oauth;
+			  if (uid like 'SPUID%')
+			    USER_DROP (uid);
 			  self.vc_redirect ('sparql_acl.vspx');
                         }
                 		  </v:before-data-bind>
@@ -93,7 +105,14 @@
 				      <tr><td colspan="4">No applications registered</td></tr>
 				    </v:template>
                 		    <v:template name="maps_brows" type="browse">
-					<tr class="<?V case when self.edit_oauth = control.te_rowset[0] then 'listing_row_selected'
+            <v:after-data-bind>
+              if (not e.ve_is_post and control.te_rowset[1] = self.edit_oauth)
+              {
+                self.webid.ufl_value := control.te_rowset[1];
+                self.rol.ufl_value := control.te_rowset[0];
+              }
+            </v:after-data-bind>
+					<tr class="<?V case when self.edit_oauth = control.te_rowset[1] then 'listing_row_selected'
 					    when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
                 			    <td>
                 				    <v:label name="la2" value="--(control.vc_parent as vspx_row_template).te_rowset[1]"
@@ -107,6 +126,12 @@
                 				    />
                 			    </td>
                 			    <td>
+                				    <v:url name="ur3" value='<img src="images/edit_16.png" hspace="3" border="0"/>Edit'
+                				      format="%s"
+                				      url="--sprintf ('sparql_acl.vspx?edit=%U', (control.vc_parent as vspx_row_template).te_rowset[1])"
+                				      xhtml_title="Edit"
+                				      xhtml_alt="Edit"
+                				      />
                 				    <v:url name="ur2" value='<img src="images/del_16.png" hspace="3" border="0"/>Delete'
                 				      format="%s"
                 				      url="--sprintf ('sparql_acl.vspx?del=%U', (control.vc_parent as vspx_row_template).te_rowset[1])"
@@ -130,23 +155,58 @@
                   	  <div class="fm">
 			      <fieldset>
 			      Web ID: <v:text name="webid" value="" xhtml_size="100"/><br/>
-			      SQL Account: <v:text name="acc" value="" xhtml_size="100"/><br/>
+			      SPARQL Role: <v:select-list name="rol">
+				  <v:item name="SELECT" value="SPARQL_SELECT"/>
+				  <v:item name="SPONGE" value="SPARQL_SPONGE"/>
+				  <v:item name="UPDATE" value="SPARQL_UPDATE"/>
+			      </v:select-list>
+			      <!-- SQL Account: <v:text name="acc" value="" xhtml_size="100"/--><br/>
                  	      <span class="fm_ctl_btn">
-                  		  <v:button name="save1" value="Register" action="simple">
+				      <v:button name="cancel2" value="Cancel" action="simple" enabled="--equ(isnull(self.edit_oauth),0)">
+					  <v:on-post>
+
+					      self.webid.ufl_value := null;
+					      self.rol.ufl_value := null;
+
+					      self.edit_oauth := null;
+					      self.save1.vc_data_bind (e);
+					      control.vc_enabled := 0;
+					  </v:on-post>
+				      </v:button>
+				  </span>
+                 	      <span class="fm_ctl_btn">
+                  		  <v:button name="save1" value="--case when self.edit_oauth is not null then 'Update' else 'Register' end" action="simple">
 				      <v:on-post><![CDATA[
+					  declare uid, orole varchar;
 					  if (0 = length (self.webid.ufl_value))
 					    {
   					      self.vc_is_valid := 0;
 					      self.vc_error_message := 'Web ID could not be empty';
 					      return;
 					    }
-					  if (not exists (select 1 from SYS_USERS where U_NAME = self.acc.ufl_value))
+					  if (self.edit_oauth is null)
+                                            {
+					      if (exists (select 1 from FOAF_SSL_ACL where FS_URI = self.webid.ufl_value))
 					    {
   					      self.vc_is_valid := 0;
-					      self.vc_error_message := 'Invalid SQL account';
+						  self.vc_error_message := 'This Web ID is alredy registered';
 					      return;
 					    }
-					  insert into FOAF_SSL_ACL (FS_URI, FS_UID) values (self.webid.ufl_value, self.acc.ufl_value);
+					      uid := sprintf ('SPUID%d', sequence_next ('__SPUID'));
+					      USER_CREATE (uid, uuid());
+					      USER_GRANT_ROLE (uid, self.rol.ufl_value);
+					      USER_SET_OPTION (uid, 'DISABLED', 1);
+					      insert into FOAF_SSL_ACL (FS_URI, FS_UID) values (self.webid.ufl_value, uid);
+					    }
+                                          else
+					    {
+					      uid := (select FS_UID from FOAF_SSL_ACL where FS_URI = self.edit_oauth);
+					      orole := (select  g.U_NAME from SYS_USERS u join SYS_USER_GROUP on (u.U_ID = UG_UID)
+					      		join SYS_USERS g on (g.U_ID = UG_GID) where u.U_NAME = uid);
+					      USER_REVOKE_ROLE (uid, orole);
+					      USER_GRANT_ROLE (uid, self.rol.ufl_value);
+					    }
+
 					  self.vc_redirect ('sparql_acl.vspx');
                           ]]></v:on-post>
                   		  </v:button>
@@ -155,7 +215,7 @@
 		      </div>
 		    </v:form>
 		    <br/>
-		    <div><v:url name="uh" value="Back to main menu" url="/oauth/" /></div>
+		    <div><v:url name="uh" value="Back to main menu" url="/auth_policy/" /></div>
 	      </td>
 	  </tr>
       </table>
