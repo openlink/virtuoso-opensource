@@ -3888,13 +3888,13 @@ create procedure BMK.WA.test (
     if (__SQL_STATE = 'TYPE')
       signal ('TEST', sprintf('Field ''%s'' contains invalid characters for \'%s\'!<>', valueName, valueType));
     if (__SQL_STATE = 'MIN')
-      signal ('TEST', sprintf('''%s'' value should be greater then %s!<>', valueName, cast(tmp as varchar)));
+      signal ('TEST', sprintf('''%s'' value should be greater than %s!<>', valueName, cast (tmp as varchar)));
     if (__SQL_STATE = 'MAX')
-      signal ('TEST', sprintf('''%s'' value should be less then %s!<>', valueName, cast(tmp as varchar)));
+      signal ('TEST', sprintf('''%s'' value should be less than %s!<>', valueName, cast (tmp as varchar)));
     if (__SQL_STATE = 'MINLENGTH')
-      signal ('TEST', sprintf('The length of field ''%s'' should be greater then %s characters!<>', valueName, cast(tmp as varchar)));
+      signal ('TEST', sprintf('The length of field ''%s'' should be greater than %s characters!<>', valueName, cast (tmp as varchar)));
     if (__SQL_STATE = 'MAXLENGTH')
-      signal ('TEST', sprintf('The length of field ''%s'' should be less then %s characters!<>', valueName, cast(tmp as varchar)));
+      signal ('TEST', sprintf('The length of field ''%s'' should be less than %s characters!<>', valueName, cast (tmp as varchar)));
     if (__SQL_STATE = 'SPECIAL')
       signal ('TEST', __SQL_MESSAGE);
     signal ('TEST', 'Unknown validation error!<>');
