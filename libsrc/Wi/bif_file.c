@@ -1088,7 +1088,9 @@ bif_sys_dirlist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #ifndef WIN32
   df = opendir (fname_cvt);
 #else
-  fname_pattern_end = box_length (fname_cvt) - 1; 
+  fname_pattern_end = box_length (fname_cvt); 
+  while (0 == fname_cvt [fname_pattern_end - 1])
+    fname_pattern_end--;
   fname_pattern = dk_alloc_box (fname_pattern_end + 3, DV_STRING);
   memcpy (fname_pattern, fname_cvt, fname_pattern_end);
   if ('\\' != fname_cvt [fname_pattern_end - 1])
