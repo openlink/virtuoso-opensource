@@ -167,6 +167,7 @@
 <!ENTITY http_acl_remove			SYSTEM	"funcref/http_acl_remove.xml">
 <!ENTITY http_body_read 			SYSTEM "funcref/http_body_read.xml">
 <!ENTITY http_client 				SYSTEM "funcref/http_client.xml">
+<!ENTITY http_client_ext 			SYSTEM	"funcref/http_client_ext.xml">
 <!ENTITY http_client_ip 			SYSTEM "funcref/http_client_ip.xml">
 <!ENTITY http_debug_log 			SYSTEM "funcref/http_debug_log.xml">
 <!ENTITY http_enable_gz 			SYSTEM "funcref/http_enable_gz.xml">

@@ -42,6 +42,8 @@
         <paramdef><optional>in <parameter>body</parameter> varchar</optional></paramdef>
         <paramdef><optional>in <parameter>cert_file</parameter> varchar</optional></paramdef>
         <paramdef><optional>in <parameter>cert_pwd</parameter> varchar</optional></paramdef>
+        <paramdef><optional>in <parameter>timeout</parameter> varchar</optional></paramdef>
+        <paramdef><optional>in <parameter>proxy</parameter> varchar</optional></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
@@ -63,6 +65,23 @@
        x509 certificate, private key and CA certificates </para></refsect2>
     <refsect2><title>cert_pwd</title>
       <para>password for opening the certificate file.</para></refsect2>
+    <refsect2><title>timeout</title>
+      <para>use to set how many seconds to wait for reply from the client</para></refsect2>
+    <refsect2><title>proxy</title>
+      <para>supports:</para>
+<para>http://[user:pass@]host:port - user &amp; pass are optional</para>
+<para>socks4://[user:pass@]host:port - user &amp; pass are optional</para>
+<para>sock5://[user:pass@]host:port - user &amp; pass are optional</para>
+<para>socks5://[user:pass@]host:port - user &amp; pass are optional</para>
+<para>socks5-host://[user:pass@]host:port - user &amp; pass are optional</para>
+      <para>In the INI file, in section HTTPServer should be set:</para>
+<programlisting><![CDATA[
+HTTPProxyServer       = proxytest:3128
+HTTPProxyExceptions   = localhost:8890, 127.0.0.1:8890
+]]></programlisting>
+      <para>Exception could be also 127.0.0.* i.e. there could have also wildcard.</para>
+    </refsect2>
+
   </refsect1>
   <refsect1 id="desc_http_client"><title>Description</title>
     <para>This function is used to perform HTTP operations to retrieve
