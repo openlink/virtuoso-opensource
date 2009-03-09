@@ -157,9 +157,10 @@
         }
         if (self.use_oid_url)
         {
-
           self.reguid.ufl_value := self.oid_nickname;
           self.regmail.ufl_value := self.oid_email;
+            self.reg_uid := self.oid_nickname;
+            self.reg_mail := self.oid_email;
           self.regpwd.ufl_value := uuid ();
           self.regpwd1.ufl_value := self.regpwd.ufl_value;
           self.is_agreed.ufl_selected := 1;

@@ -526,7 +526,7 @@ ODS.session = function (customEndpoint)
 	OAT.AJAX.POST (self.endpoint + "sessionStart", data, callback, options);
     };
 
-    this.validate = function ()
+  this.validate = function (mode)
     {
 	function showLoginErr (errMsg)
 	{
@@ -542,23 +542,24 @@ ODS.session = function (customEndpoint)
 		    alert (errMsg);
 	    return;
 	}
-
-	if ($('loginDiv').loginTab.selectedIndex == 0)
+    if (($('loginDiv').loginTab.selectedIndex == 0) || (mode == 'X509'))
 	    {
-		if ($('loginUserName').value.length == 0 ||
-		    $('loginUserPass').value.length == 0)
+      if ((mode != 'X509') && (($('loginUserName').value.length == 0) || ($('loginUserPass').value.length == 0)))
 		    {
 			showLoginErr ();
 			return;
 		    }
 
-
-		var data = 'sid=' +
-		           self.sid +
-		           '&realm=wa&userName=' +
-		           $('loginUserName').value +
-		           '&authStr=' +
-		           OAT.Crypto.sha (self.sid + $('loginUserName').value + $('loginUserPass').value);
+    	var data;
+    	if (mode == 'X509')
+    	{
+    	  data = 'sid=' + self.sid + '&realm=wa&X509=1';
+    	} else {
+    	  data = 'sid=' + self.sid +
+    	         '&realm=wa' +
+    	         '&userName=' + $('loginUserName').value +
+    	         '&authStr=' + OAT.Crypto.sha (self.sid + $('loginUserName').value + $('loginUserPass').value);
+      }
 
 	var callback = function (xmlString) 
 	{
@@ -577,13 +578,7 @@ ODS.session = function (customEndpoint)
 			{
 			    OAT.MSG.send (self, OAT.MSG.SES_INVALID, {retryLogIn: true});
 			}
-
 		};
-
-//       OAT.Dimmer.hide();
-//       nav.wait();
-//       OAT.AJAX.POST(self.endpoint+"sessionValidate", data, callback, optionsSynch);
-
 		OAT.AJAX.POST (self.endpoint + "sessionValidate", data, callback, options);
 	    }
 	else
@@ -640,13 +635,7 @@ ODS.session = function (customEndpoint)
 		    else
 			{
 			    OAT.MSG.send (self, OAT.MSG.SES_INVALID,{retryLogIn:true});
-
-//                                                 nav.wait('hide');
-//                                                 showLoginErr('Invalid OpenID URL');
-//                                                 nav.logIn();
-//                                                 return;
 			}
-
 		};
 
 		OAT.AJAX.POST (self.endpoint+"openIdServer", data, callback, options);
@@ -955,6 +944,8 @@ ODS.Nav = function (navOptions)
     {
 	if ($('loginBtn'))
 	    $('loginBtn').disabled=true;
+    if ($('loginX509'))
+      $('loginX509').disabled = true;
 	if ($('signupBtn'))
 	    $('signupBtn').disabled=true;
 	if ($('loginCloseBtn'))
@@ -964,11 +955,28 @@ ODS.Nav = function (navOptions)
 	self.session.validate ();
     }
 
+  function preValidateX509()
+  {
+    if ($('loginBtn'))
+      $('loginBtn').disabled = true;
+    if ($('loginX509'))
+      $('loginX509').disabled = true;
+    if ($('signupBtn'))
+      $('signupBtn').disabled = true;
+    if ($('loginCloseBtn'))
+      OAT.Dom.hide ($('loginCloseBtn'));
+
+    self.showLoginThrobber ();
+    self.session.validate ('X509');
+  }
+
   OAT.MSG.attach (self.session, OAT.MSG.SES_TOKEN_RECEIVED,
 	  function ()
 	  {
 			OAT.Event.detach ('loginBtn', 'click', preValidate);
 			OAT.Event.attach ('loginBtn','click',preValidate);
+	    OAT.Event.detach ('loginX509', 'click', preValidateX509);
+	    OAT.Event.attach ('loginX509', 'click', preValidateX509);
 			$('loginUserPass').tokenReceived = true;
 			$('loginOpenIdUrl').tokenReceived = true;
 	  }
@@ -998,8 +1006,13 @@ ODS.Nav = function (navOptions)
 			self.showLoginThrobber ('hide');
 			if ($('loginBtn'))
 			    $('loginBtn').disabled = false;
+
+	    if ($('loginX509'))
+	      $('loginX509').disabled = false;
+
 			if ($('signupBtn'))
 			    $('signupBtn').disabled = false;
+
 			if ($('loginCloseBtn'))
 			    OAT.Dom.show ($('loginCloseBtn'));
 
@@ -3080,6 +3093,17 @@ ODS.Nav = function (navOptions)
 						  });
 		    }
 
+  if (document.location.protocol == 'https:')
+  {
+  	var x509 = OAT.Dom.create ('input');
+
+  	x509.id     = 'loginX509';
+  	x509.name   = 'loginX509';
+  	x509.type   = 'button';
+  	x509.value  = 'X.509 Login';
+
+  	$('login_ctrls').insertBefore(x509, $('signupBtn'));
+  }
 		OAT.Dom.append ([loginDiv, $('login_page')]);
 
 		self.logindiv = loginDiv;
@@ -3136,6 +3160,16 @@ ODS.Nav = function (navOptions)
 		loginBtn.type = 'button';
 		loginBtn.value = 'Sign In';
 
+	var x509;
+  if (document.location.protocol == 'https:')
+  {
+  	x509 = OAT.Dom.create ('input', {margin: '20px 5px 20px 105px'});
+  	x509.id     = 'loginX509';
+  	x509.name   = 'loginX509';
+  	x509.type   = 'button';
+  	x509.value  = 'X.509 Login';
+  }
+
 		var signupBtn = OAT.Dom.create ('input', {margin: '20px 5px 20px 5px'});
 		signupBtn.type = 'button';
 		signupBtn.value = 'Sign Up!';
@@ -3153,7 +3187,7 @@ ODS.Nav = function (navOptions)
 				[ctrlDiv,rowA,rowB,btnDiv],
 				[rowA,unameLabel,unameInput],
 				[rowB,upassLabel,upassInput],
-				[btnDiv,loginBtn,signupBtn]);
+            			[btnDiv,loginBtn,x509,signupBtn]);
 	    }
 
 	OAT.Dimmer.show (loginDiv);
@@ -3181,8 +3215,7 @@ ODS.Nav = function (navOptions)
     {
 	var throbber = $('loginThrobber');
 
-	if (throbber.style.display != 'none' ||
-	    throbberState == 'hide')
+    if (throbber.style.display != 'none' || throbberState == 'hide')
 	    {
 		OAT.Dom.hide (throbber);
 	    }

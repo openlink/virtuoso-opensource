@@ -432,62 +432,13 @@ auth_failed1:;
           redirect := 2;
         if (is_https_ctx ())
         {
-          declare fingerPrint, info, agent any;
-          declare st, msg, meta, data, S, hf, graph any;
+          declare uname, data any;
 
-          fingerPrint := get_certificate_info (6);
-          for (select cast (WAUI_CERT as varchar) cert, U_NAME uname
-                 from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS
-                where WAUI_U_ID = U_ID
-                  and WAUI_CERT_FINGERPRINT = fingerPrint
-                  and (((WAUI_CERT_LOGIN = 1) and (redirect = 1)) or (redirect = 2))) do
-          {
-            info := get_certificate_info (9, cert);
-            if (not isarray (info))
-              return 0;
-            agent := get_certificate_info (7, null, null, null, '2.5.29.17');
-            if (agent is null or agent not like 'URI:%')
-              return 0;
-            agent := subseq (agent, 4);
-
-            declare exit handler for sqlstate '*'
-            {
-              rollback work;
-              return 0;
-            };
-
-            hf := rfc1808_parse_uri (agent);
-            hf[5] := '';
-            graph := DB.DBA.vspx_uri_compose (hf);
-            S := sprintf ('SPARQL clear graph <%s>', graph);
-            exec (S, st, msg);
-            commit work;
-            S := sprintf ('sparql load <%s> into graph <%S>', graph, graph);
-            exec (S, st, msg);
-            commit work;
-            S := sprintf ('sparql ' ||
-                          'prefix cert: <%s> ' ||
-                          'prefix rsa: <%s> ' ||
-                          'select ?exp_val ' ||
-                          '       ?mod_val ' ||
-                          '  from <%s> ' ||
-                          ' where { ' ||
-                          '         ?id cert:identity <%s> ; ' ||
-                          '             rsa:public_exponent ?exp ; ' ||
-                          '             rsa:modulus ?mod . ' ||
-                          '         ?exp cert:decimal ?exp_val . ' ||
-                          '         ?mod cert:hex ?mod_val . ' ||
-                          '       }',
-                          SIOC..cert_iri (''),
-                          SIOC..rsa_iri (''),
-                          graph,
-                          agent);
-            st := '00000';
-            exec (S, st, msg, vector (), 0, meta, data);
-            -- dbg_obj_print ('', data);
-            if ((st <> '00000') or (length (data) = 0))
+          data := ODS.DBA.sessionValidateX509 (redirect);
+          if (isnull (data))
               return 0;
 
+          uname := data[0];
             self.login1.vl_authenticated := 1;
             connection_set ('vspx_user', uname);
             self.sid := vspx_sid_generate ();
@@ -495,7 +446,6 @@ auth_failed1:;
             insert into VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY) values (self.sid, self.realm, uname, now ());
           }
         }
-      }
   if (control.vl_authenticated)
     {
       set isolation = 'committed';

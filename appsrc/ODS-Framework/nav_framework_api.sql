@@ -175,10 +175,83 @@ create procedure sessionEnd (in sid varchar,in realm varchar :='wa') __SOAP_HTTP
 
 grant execute on sessionEnd to GDATA_ODS;
 
-create procedure sessionValidate (in sid varchar, 
+create procedure sessionValidateX509 (
+  in redirect integer := 2)
+{
+  declare retValue any;
+  declare fingerPrint, info, agent any;
+  declare st, msg, meta, data, S, hf, graph any;
+
+  retValue := null;
+  if (not is_https_ctx ())
+    goto _exit;
+
+  fingerPrint := get_certificate_info (6);
+  for (select cast (WAUI_CERT as varchar) cert,
+              U_NAME uname
+         from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS
+        where WAUI_U_ID = U_ID
+          and WAUI_CERT_FINGERPRINT = fingerPrint
+          and (((WAUI_CERT_LOGIN = 1) and (redirect = 1)) or (redirect = 2))) do
+  {
+    info := get_certificate_info (9, cert);
+    if (not isarray (info))
+      return 0;
+    agent := get_certificate_info (7, null, null, null, '2.5.29.17');
+    if (agent is null or agent not like 'URI:%')
+      return 0;
+    agent := subseq (agent, 4);
+
+    declare exit handler for sqlstate '*'
+    {
+      rollback work;
+      goto _exit;
+    };
+
+    hf := rfc1808_parse_uri (agent);
+    hf[5] := '';
+    graph := DB.DBA.vspx_uri_compose (hf);
+    S := sprintf ('SPARQL clear graph <%s>', graph);
+    exec (S, st, msg);
+    commit work;
+    S := sprintf ('sparql load <%s> into graph <%S>', graph, graph);
+    exec (S, st, msg);
+    commit work;
+    S := sprintf ('sparql ' ||
+                  'prefix cert: <%s> ' ||
+                  'prefix rsa: <%s> ' ||
+                  'select ?exp_val ' ||
+                  '       ?mod_val ' ||
+                  '  from <%s> ' ||
+                  ' where { ' ||
+                  '         ?id cert:identity <%s> ; ' ||
+                  '             rsa:public_exponent ?exp ; ' ||
+                  '             rsa:modulus ?mod . ' ||
+                  '         ?exp cert:decimal ?exp_val . ' ||
+                  '         ?mod cert:hex ?mod_val . ' ||
+                  '       }',
+                  SIOC..cert_iri (''),
+                  SIOC..rsa_iri (''),
+                  graph,
+                  agent);
+    st := '00000';
+    exec (S, st, msg, vector (), 0, meta, data);
+    if ((st <> '00000') or (length (data) = 0))
+      goto _exit;
+
+    retValue := vector (uName);
+  }
+_exit:;
+  return retValue;
+}
+;
+
+create procedure sessionValidate (
+  in sid varchar,
                                   in realm varchar :='wa', 
 				  in userName varchar := '', 
-				  in authStr varchar := '') __SOAP_HTTP 'text/xml'
+	in authStr varchar := '',
+	in X509 integer := 0) __SOAP_HTTP 'text/xml'
 {
   declare errCode integer;
   declare errMsg varchar;
@@ -188,9 +261,19 @@ create procedure sessionValidate (in sid varchar,
   errCode := 0;
   errMsg  := '';
 
---     if(isIpBlocked(http_client_ip ()))
---        goto _ipblocked;
+  if (X509 = 1)
+  {
+    declare data any;
 
+    data := ODS.DBA.sessionValidateX509 ();
+    if (isnull (data))
+      goto _authbad;
+
+    userName := data[0];
+    goto _createSession;
+  }
+  else
+  {
   if(authStr='' and userName='') -- validate sid
   {
     declare user_name varchar;
@@ -203,9 +286,7 @@ create procedure sessionValidate (in sid varchar,
 
      goto _output;
         }
-      else
      goto _authbad;
-
     } 
   else                            -- bind sid to user
   {
@@ -215,9 +296,10 @@ create procedure sessionValidate (in sid varchar,
        goto _authbad;
 
     pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = userName);
+      if (_hex_sha1_digest (sid || userName || pwd) <> authStr)
+        goto _authbad;
 
-    if(_hex_sha1_digest(sid||userName||pwd)=authStr)
-    {
+    _createSession:
           declare exit handler for sqlstate '*' 
             {
               goto _authbad;
@@ -238,9 +320,7 @@ create procedure sessionValidate (in sid varchar,
 
       goto _output;
         }
-      else
-      goto _authbad;
-  };
+  }
 
 _authbad:
   errCode := 1;
