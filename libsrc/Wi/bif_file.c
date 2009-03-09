@@ -859,7 +859,7 @@ file_stat_int (caddr_t fname, int what)
 
   memset (dt, 0, sizeof (dt));
   fname_cvt = file_native_name (fname);
-  stat_res = V_STAT (fname, &st);
+  stat_res = V_STAT (fname_cvt, &st);
 
   if (-1 == stat_res)
     {
@@ -1325,6 +1325,8 @@ file_native_name (caddr_t se_name)
       if ('/' == fname_tail[0])
 	fname_tail[0] = '\\';
     }
+   if ((fname_tail - 1) >= volume_fname && *(fname_tail - 1) == '\\')
+      *(fname_tail - 1) = 0;
 #endif
   return volume_fname;
 }
