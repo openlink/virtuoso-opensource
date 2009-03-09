@@ -2054,6 +2054,8 @@ create procedure DB.DBA.RDF_LOAD_FRIENDFEED (in graph_iri varchar, in new_origin
 	{
 		tmp := sprintf_inverse (new_origin_uri, 'http://friendfeed.com/%s', 0);
 		asin := rtrim (tmp[0], '/');
+		if (strchr(tmp[0], '/') is not null)
+			return 0;
 		if (asin is null)
 			return 0;
 		url := sprintf('http://friendfeed.com/api/feed/user/%s?format=atom', asin);
@@ -2690,7 +2692,7 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 		{
 		  base := concat('http://www.meetup.com/members/', id2, '/');
 		  url := concat('http://api.meetup.com/members.xml/?member_id=', id2, '&key=', api_key);
-		  what_ := 'members';
+		  what_ := 'member';
 		  DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base);
 			--return 0;
 		}

@@ -69,7 +69,7 @@
 			</foaf:Document>
 		</xsl:if>					
 		<xsl:if test="$what = 'members'">
-			<foaf:Document rdf:about="{$baseUri}">
+			<foaf:Document rdf:about="{$base}">
 				<foaf:primaryTopic>
 					<foaf:Group rdf:about="{vi:proxyIRI($base)}">
 								<xsl:for-each select="item">
@@ -77,9 +77,6 @@
 								</xsl:for-each>
 							</foaf:Group>
 				</foaf:primaryTopic>
-				<!--xsl:for-each select="item">
-					<foaf:topic rdf:resource="{link}"/>
-				</xsl:for-each-->
 			</foaf:Document>
 		</xsl:if>
 		<xsl:for-each select="item">
@@ -173,7 +170,15 @@
 					</foaf:primaryTopic>
 				</foaf:Document>
 			</xsl:if>
-			<xsl:if test="$what = 'members'">
+			<xsl:if test="$what = 'members' or $what = 'member'">
+				<xsl:if test="$what = 'members' and contains($baseUri, id) ">
+					<foaf:Document rdf:about="{$baseUri}">
+						<foaf:primaryTopic>				
+							<foaf:Person rdf:about="{vi:proxyIRI(link)}"/>
+						</foaf:primaryTopic>
+					</foaf:Document>
+				</xsl:if>
+								
 				<foaf:Document rdf:about="{link}">
 					<foaf:primaryTopic>				
 						<foaf:Person rdf:about="{vi:proxyIRI(link)}">
