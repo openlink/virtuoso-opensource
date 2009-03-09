@@ -488,7 +488,9 @@ create procedure DB.DBA.RM_UMBEL_GET (in strg varchar)
   cont := http_client (url=>'http://umbel.zitgist.com/ws/scones/index.php',
   		       http_method=>'POST',
     		       body=>sprintf ('text=%U', strg),
-    	               http_headers=>'Accept: text/xml');
+    	               http_headers=>'Accept: text/xml',
+		       proxy=>connection_get ('sparql-get:proxy'),
+		       timeout=>30);
   xt := xtree_doc (cont);
   return xt;
 }
@@ -695,7 +697,7 @@ create procedure DB.DBA.RDF_SPONGE_DBP_IRI (in base varchar, in word varchar)
   if (word[0] >= 'a'[0] and word[0] <= 'z'[0])
     word[0] := word[0] - 32;
   uri := sprintf ('ask from <http://dbpedia.org> where { <http://dbpedia.org/resource/%U> ?y ?z }', word);
-  res := http_client (url=>sprintf ('http://dbpedia.org/sparql?query=%U', uri), timeout=>30);
+  res := http_client (url=>sprintf ('http://dbpedia.org/sparql?query=%U', uri), timeout=>30, proxy=>connection_get ('sparql-get:proxy'));
   xt := xtree_doc (res);
   xp := cast (xpath_eval('/sparql/boolean/text()', xt) as varchar);
   if (xp = 'true')
@@ -1322,11 +1324,11 @@ create procedure DB.DBA.RDF_LOAD_SALESFORCE(in graph_iri varchar, in new_origin_
 }
 ;
 
-create procedure DB.DBA.RDF_LOAD_TWITTER2(in url varchar, in id varchar, in new_origin_uri varchar,  in dest varchar, in graph_iri varchar, in username_ varchar, in password_ varchar, in what_ varchar) returns integer
+create procedure DB.DBA.RDF_LOAD_TWITTER2(in url varchar, in id varchar, in new_origin_uri varchar,  in dest varchar, in graph_iri varchar, in username_ varchar, in password_ varchar, in what_ varchar, inout opts any) returns integer
 {
 	declare xt, xd any;
 	declare tmp, test1, test2, test3 varchar;
-	tmp := http_client (url, username_, password_, 'GET');
+	tmp := http_client (url, username_, password_, 'GET', proxy=>get_keyword_ucase ('get:proxy', opts));
 	if (length(tmp) < 300)
 		return 0;
 	xd := xtree_doc (tmp);
@@ -1365,7 +1367,7 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 		url := concat(new_origin_uri, '.atom');
 		delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 		what_ := 'thread2';
-		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_);
+		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_, opts);
 		return 1;
 	}
 	else if (new_origin_uri like 'http://search.twitter.com/search?q=%')
@@ -1377,7 +1379,7 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 		url := sprintf('http://search.twitter.com/search.atom?q=%s', post);
 		delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 		what_ := 'thread1';
-		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_);
+		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_, opts);
 		return 1;
 	}
 	else if (new_origin_uri like 'http://twitter.com/%/status/%')
@@ -1391,11 +1393,11 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 		delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 
 		url := sprintf('http://twitter.com/statuses/show/%s.xml', post);
-		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_);
+		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_, opts);
 		
 		what_ := 'thread2';
 		url := sprintf('http://search.twitter.com/search/thread/%s.atom', post);
-		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_);
+		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_, opts);
 		
 		return 1;
 	}
@@ -1410,11 +1412,11 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 		delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 
 		url := sprintf('http://twitter.com/statuses/show/%s.xml', post);
-		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_);
+		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_, opts);
 		
 		what_ := 'thread2';
 		url := sprintf('http://search.twitter.com/search/thread/%s.atom', post);
-		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_);
+		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_, opts);
 		
 		return 1;
 	}
@@ -1464,7 +1466,7 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 	while (page > 0 and page < res_count)
 	{
 		url := sprintf('http://twitter.com/statuses/user_timeline.xml?id=%s&page=%d', id, page);
-		if (DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_) = 0)
+		if (DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_, opts) = 0)
 			goto statuses_out;
 		page := page + 1;
 	}
@@ -1475,7 +1477,7 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 	{
 		what_ := 'friends';
 		url := sprintf('http://twitter.com/statuses/friends.xml?id=%s&page=%d', id, page);
-		if (DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_) = 0)
+		if (DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_, opts) = 0)
 			goto friends_out;
 		page := page + 1;
 	}
@@ -1485,7 +1487,7 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 	while (page > 0 and page < res_count)
 	{
 		url := sprintf('http://twitter.com/favorites.xml?id=%s&page=%d', id, page);
-		if (DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_) = 0)
+		if (DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_, opts) = 0)
 			goto favorites_out;
 		page := page + 1;
 	}
@@ -1496,14 +1498,14 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 	{
 		what_ := 'followers';
 		url := sprintf('http://twitter.com/statuses/followers.xml?id=%s&page=%d', id, page);
-		if (DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_) = 0)
+		if (DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_, opts) = 0)
 			goto followers_out;
 		page := page + 1;
 	}
 	followers_out: ;
 
 	url := sprintf('http://twitter.com/users/show/%s.xml', id);
-	DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_);
+	DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_, opts);
 	return 1;
 }
 ;
@@ -1622,7 +1624,7 @@ create procedure DB.DBA.RDF_LOAD_GETSATISFATION(in graph_iri varchar, in new_ori
 	}
 	else
 		return 0;
-	tmp := http_get(url);
+	tmp := http_client(url, proxy=>get_keyword_ucase ('get:proxy', opts));
 	--tmp := file_to_string(file);
 	delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 
@@ -1661,14 +1663,14 @@ create procedure DB.DBA.RDF_LOAD_CRUNCHBASE(in graph_iri varchar, in new_origin_
   is_search := 0;
   if (new_origin_uri like 'http://www.crunchbase.com/search?query=%')
     {
-      cnt := http_get ('http://api.crunchbase.com/v/1/search.js?query=' || subseq (new_origin_uri, 39));
+      cnt := http_client ('http://api.crunchbase.com/v/1/search.js?query=' || subseq (new_origin_uri, 39), proxy=>get_keyword_ucase ('get:proxy', opts));
       base := 'http://www.crunchbase.com/';
       suffix := '';
       is_search := 1;
     }
   else if (new_origin_uri like 'http://www.crunchbase.com/%')
     {
-      cnt := http_get ('http://api.crunchbase.com/v/1/' || subseq (new_origin_uri, 26) || '.js');
+      cnt := http_client ('http://api.crunchbase.com/v/1/' || subseq (new_origin_uri, 26) || '.js', proxy=>get_keyword_ucase ('get:proxy', opts));
       base := 'http://www.crunchbase.com/';
       suffix := '';
     }
@@ -1718,7 +1720,7 @@ create procedure DB.DBA.RDF_MQL_GET_WIKI_URI (in kwd any)
   if (redirects <= 0)
     return '';
 
-  http_client_ext (url=>url, headers=>hdr, http_method=>'HEAD');
+  http_client_ext (url=>url, headers=>hdr, http_method=>'HEAD', proxy=>connection_get ('sparql-get:proxy'));
   redirects := redirects - 1;
 
   if (hdr[0] not like 'HTTP/1._ 200 %')
@@ -1748,7 +1750,7 @@ create procedure DB.DBA.RDF_MQL_RESOLVE_IMAGE (in name varchar)
 
   qr := sprintf ('{"ROOT":{"query":{"name":"%s", "type":"/common/image", "id":{}}}}', name);
   url := sprintf ('http://www.freebase.com/api/service/mqlread?queries=%U', qr);
-  cnt := http_get (url, hdr);
+  cnt := http_client_ext (url, headers=>hdr, proxy=>connection_get ('sparql-get:proxy'));
   tree := json_parse (cnt);
   tree := get_keyword ('ROOT', tree);
   tree := get_keyword ('result', tree);
@@ -1820,7 +1822,7 @@ create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri va
   lang := path [length(path) - 2];
   have_rdf := 0;
   new_url := sprintf ('http://rdf.freebase.com/ns/%U/%U', lang, k);
-  cnt := RDF_HTTP_URL_GET (new_url, '', hdr, 'GET', RM_ACCEPT ());
+  cnt := RDF_HTTP_URL_GET (new_url, '', hdr, 'GET', RM_ACCEPT (), proxy=>get_keyword_ucase ('get:proxy', opts));
   -- /* check return mime type */
   mime := http_request_header (hdr, 'Content-Type', null, null);
   if (mime = 'application/rdf+xml')
@@ -1857,7 +1859,7 @@ create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri va
   }
   qr := sprintf ('{"ROOT":{"query":[{%s, "type":[]}]}}', k);
   url := sprintf ('http://www.freebase.com/api/service/mqlread?queries=%U', qr);
-  cnt := http_get (url, hdr);
+  cnt := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
   tree := json_parse (cnt);
   xt := get_keyword ('ROOT', tree);
   if (not isarray (xt))
@@ -1876,7 +1878,7 @@ create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri va
     {
       qr := sprintf ('{"ROOT":{"query":{%s, "type":"%s", "*":[]}}}', k, tp);
       url := sprintf ('http://www.freebase.com/api/service/mqlread?queries=%U', qr);
-      cnt := http_get (url, hdr);
+      cnt := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
       tree := json_parse (cnt);
       xt := get_keyword ('ROOT', tree);
       xt := DB.DBA.MQL_TREE_TO_XML (tree);
@@ -1897,7 +1899,7 @@ done:;
 }
 ;
 
-create procedure FQL_CALL (in q varchar, in api_key varchar, in ses_id varchar, in secret varchar)
+create procedure FQL_CALL (in q varchar, in api_key varchar, in ses_id varchar, in secret varchar, inout opts any)
 {
   declare url, pars, sig, ret varchar;
   url := 'http://api.facebook.com/restserver.php?';
@@ -1905,7 +1907,7 @@ create procedure FQL_CALL (in q varchar, in api_key varchar, in ses_id varchar, 
    '&query=' || sprintf ('%U', q) ;
   sig := DB.DBA.FB_SIG (pars, secret);
   url := url || pars || '&sig=' || sig;
-  ret := http_get (url);
+  ret := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
   return ret;
 }
 ;
@@ -1976,14 +1978,14 @@ create procedure DB.DBA.RDF_LOAD_FQL (in graph_iri varchar, in new_origin_uri va
 
   q := sprintf ('SELECT pid, aid, owner, src_small, src_big, src, link, caption, created FROM photo '||
   'WHERE aid in (select aid from album where owner = %s and strpos (link, "aid=%s&") > 0)', own, aid);
-  ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
+  ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret, opts);
   xt := xtree_doc (ret);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri), 'login', acc));
   xd := serialize_to_UTF8_xml (xt);
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   q := sprintf ('SELECT aid, cover_pid, owner, name, created, modified, description, location, size, link FROM album '||
   'WHERE owner = %s and strpos (link, "aid=%s&") > 0', own, aid);
-  ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
+  ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret, opts);
   xt := xtree_doc (ret);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri), 'login', acc));
   xd := serialize_to_UTF8_xml (xt);
@@ -2002,7 +2004,7 @@ try_profile:
   else
     own := tmp[2];
   q :=  sprintf ('SELECT uid, first_name, last_name, name, pic_small, pic_big, pic_square, pic, affiliations, profile_update_time, timezone, religion, birthday, sex, hometown_location, meeting_sex, meeting_for, relationship_status, significant_other_id, political, current_location, activities, interests, is_app_user, music, tv, movies, books, quotes, about_me, hs_info, education_history, work_history, notes_count, wall_count, status, has_added_app FROM user WHERE uid = %s', own);
-  ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
+  ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret, opts);
   xt := xtree_doc (ret);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri), 'login', acc));
   xd := serialize_to_UTF8_xml (xt);
@@ -2010,7 +2012,7 @@ try_profile:
 
   q := sprintf ('SELECT aid, cover_pid, owner, name, created, modified, description, location, size, link FROM album '||
   'WHERE owner = %s', own);
-  ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
+  ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret, opts);
   xt := xtree_doc (ret);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri), 'login', acc));
   xd := serialize_to_UTF8_xml (xt);
@@ -2018,13 +2020,13 @@ try_profile:
   q := sprintf ('select eid, name, tagline, nid, pic_small, pic_big, pic, host, description, event_type, event_subtype, '||
   ' start_time, end_time, creator, update_time, location, venue from event where eid in '||
   '(SELECT eid FROM event_member where uid = %s)', own);
-  ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
+  ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret, opts);
   xt := xtree_doc (ret);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri), 'login', acc));
   xd := serialize_to_UTF8_xml (xt);
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   q := sprintf ('SELECT uid, first_name, last_name, name, pic_small, pic_big, pic_square, pic, profile_update_time, timezone, religion, birthday, sex, current_location FROM user WHERE uid IN (select uid2 from friend where uid1 = %s)', own);
-  ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
+  ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret, opts);
   xt := xtree_doc (ret);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri), 'login', acc));
   xd := serialize_to_UTF8_xml (xt);
@@ -2063,7 +2065,7 @@ create procedure DB.DBA.RDF_LOAD_FRIENDFEED (in graph_iri varchar, in new_origin
 	}
     else
         return 0;
-	tmp := http_get (url);
+    tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
     xd := xtree_doc (tmp);
     xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/atom2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
     delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
@@ -2116,7 +2118,7 @@ create procedure DB.DBA.RDF_LOAD_TWFY (in graph_iri varchar, in new_origin_uri v
 	}
         else
             return 0;
-	tmp := http_get (url);
+   tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
 	--if (hdr[0] not like 'HTTP/1._ 200 %')
 	--	signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
   xd := xtree_doc (tmp);
@@ -2211,7 +2213,7 @@ create procedure DB.DBA.RDF_LOAD_SLIDESHARE (in graph_iri varchar, in new_origin
 	}
 	else
 		return 0;
-	tmp := http_get (url);
+	tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
 	xd := xtree_doc (tmp);
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/slideshare2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
 	xd := serialize_to_UTF8_xml (xt);
@@ -2254,7 +2256,7 @@ create procedure DB.DBA.RDF_LOAD_DISQUS (in graph_iri varchar, in new_origin_uri
 	}
 	else
 		return 0;
-	tmp := http_get (url);
+	tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
 	xd := xtree_doc (tmp);
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/rss2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
 	xd := serialize_to_UTF8_xml (xt);
@@ -2278,7 +2280,7 @@ create procedure get_url2(in url varchar) returns varchar
   if (redirects <= 0)
     return '';
 
-  http_client_ext (url=>url, headers=>hdr, http_method=>'HEAD');
+  http_client_ext (url=>url, headers=>hdr, http_method=>'HEAD', proxy=>connection_get ('sparql-get:proxy'));
   redirects := redirects - 1;
 
   if (hdr[0] not like 'HTTP/1._ 200 %')
@@ -2335,7 +2337,7 @@ create procedure DB.DBA.RDF_LOAD_RHAPSODY (in graph_iri varchar, in new_origin_u
 	else
 		return 0;
 	delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
-	tmp := http_get (url);
+	tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
 	xd := xtree_doc (tmp);
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/rhapsody2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
 	xd := serialize_to_UTF8_xml (xt);
@@ -2392,7 +2394,7 @@ create procedure DB.DBA.RDF_LOAD_RADIOPOP (in graph_iri varchar, in new_origin_u
 		else
 			return 0;
 		delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
-		tmp := http_get (url);
+		tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
 		xd := xtree_doc (tmp);
 		xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/radiopop2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri), 'user', id ));
 		xd := serialize_to_UTF8_xml (xt);
@@ -2443,7 +2445,8 @@ create procedure DB.DBA.RDF_LOAD_DISCOGS (in graph_iri varchar, in new_origin_ur
 	}
     else
 		return 0;
-	tmp := http_get (url, null, 'GET', 'Accept-Encoding: gzip');
+        -- we keep http_get here because it uses explicit gunzip
+	tmp := http_get (url, null, 'GET', 'Accept-Encoding: gzip', null, proxy=>get_keyword_ucase ('get:proxy', opts));
 	xd := xtree_doc (tmp);
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/discogs2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
 	xd := serialize_to_UTF8_xml (xt);
@@ -2488,7 +2491,7 @@ create procedure DB.DBA.RDF_LOAD_LIBRARYTHING (in graph_iri varchar, in new_orig
 	{
 		return 0;
 	}
-	tmp := http_get (url);
+	tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
 	xd := xtree_doc (tmp);
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/lt2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
 	xd := serialize_to_UTF8_xml (xt);
@@ -2589,7 +2592,7 @@ create procedure DB.DBA.RDF_LOAD_ISBN (in graph_iri varchar, in new_origin_uri v
 	{
 		return 0;
 	}
-	tmp := http_get (url, hdr);
+	tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
 	if (hdr[0] not like 'HTTP/1._ 200 %')
 		signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
 	xd := xtree_doc (tmp);
@@ -2597,7 +2600,7 @@ create procedure DB.DBA.RDF_LOAD_ISBN (in graph_iri varchar, in new_origin_uri v
 	if (is_book = 1 and books is null)
 	{
 		url := sprintf ('http://isbndb.com/api/books.xml?access_key=%s&index1=isbn&value1=%s', api_key, asin);
-		tmp := http_get (url, hdr);
+		tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
 		if (hdr[0] not like 'HTTP/1._ 200 %')
 			signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
 		xd := xtree_doc (tmp);
@@ -2609,11 +2612,11 @@ create procedure DB.DBA.RDF_LOAD_ISBN (in graph_iri varchar, in new_origin_uri v
 }
 ;
 
-create procedure DB.DBA.RDF_LOAD_MEETUP2(in url varchar, in new_origin_uri varchar,  in dest varchar, in graph_iri varchar, in what_ varchar, in base varchar) returns integer
+create procedure DB.DBA.RDF_LOAD_MEETUP2(in url varchar, in new_origin_uri varchar,  in dest varchar, in graph_iri varchar, in what_ varchar, in base varchar, inout opts any) returns integer
 {
 	declare xt, xd any;
 	declare tmp, test1, test2 varchar;
-	tmp := http_get (url);
+	tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
 	xd := xtree_doc (tmp);
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/meetup2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri), 'base', base, 'what', what_ ));
 	xd := serialize_to_UTF8_xml (xt);
@@ -2686,15 +2689,15 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 			else
 				return 0;
 			url := concat(url, '&key=', api_key );
-			DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base);
+			DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts);
 		}
 		if (id1 = 'members' and id2 is not null)
 		{
 		  base := concat('http://www.meetup.com/members/', id2, '/');
 		  url := concat('http://api.meetup.com/members.xml/?member_id=', id2, '&key=', api_key);
 		  what_ := 'member';
-		  DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base);
-			--return 0;
+		  DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts);
+		  --return 0;
 		}
 		else
 		{
@@ -2703,7 +2706,7 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 		{
 			url := concat('http://api.meetup.com/members.xml/?group_urlname=', id1, '&key=', api_key);
 			what_ := 'members';
-				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base);
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts);
 		}
 		else if (id1 is not null and id2 = 'calendar')
 		{
@@ -2711,34 +2714,34 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 			{
 				url := concat('http://api.meetup.com/events.xml/?group_urlname=', id1, '&key=', api_key);
 				what_ := 'events';
-					DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base);
+					DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts);
 			}
 			else
 			{
 				url := concat('http://api.meetup.com/events.xml/?id=', id3, '&key=', api_key);
 				what_ := 'event';
-					DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base);
+					DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts);
 			}
 		}
 		else if (id1 is not null and id2 = 'photos')
 		{
 			url := concat('http://api.meetup.com/photos.xml/?group_urlname=', id1, '&key=', api_key);
 			what_ := 'photos';
-				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base);
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts);
 		}
 		else
 		{
 			url := sprintf('http://api.meetup.com/groups.xml/?group_urlname=%s&key=%s', id1, api_key);
 			what_ := 'groups';
-				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base);
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts);
 				
 			url := concat('http://api.meetup.com/members.xml/?group_urlname=', id1, '&key=', api_key);
 			what_ := 'members';
-				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base);
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts);
 				
 			url := concat('http://api.meetup.com/events.xml/?group_urlname=', id1, '&key=', api_key);
 			what_ := 'events';
-				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base);
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts);
 			}
 		}
 	}
@@ -2766,7 +2769,7 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 			else
 				return 0;
 			url := concat(url, '&key=', api_key );
-			DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base);
+			DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts);
 		}
 		else
 		{
@@ -2775,13 +2778,13 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 			{
 				url := concat('http://api.meetup.com/members.xml/?topic=', id0, '&groupnum=', id1, '&key=', api_key);
 				what_ := 'members';
-				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base);
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts);
 			}
 			if (id1 is not null and id2 = 'photos')
 			{
 				url := concat('http://api.meetup.com/photos.xml/?topic=', id0, '&groupnum=', id1, '&key=', api_key);
 				what_ := 'photos';
-				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base);
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts);
 			}
 			if (id1 is not null and id2 = 'calendar')
 			{
@@ -2789,14 +2792,14 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 				{
 					url := concat('http://api.meetup.com/events.xml/?topic=', id0, '&groupnum=', id1, '&key=', api_key);
 					what_ := 'events';
-					DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base);
+					DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts);
 				}
 				else
 				{
 					base := concat(trim(new_origin_uri, '/'), '/');
 					url := concat('http://api.meetup.com/events.xml/?id=', id3, '&key=', api_key);
 					what_ := 'event';
-					DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base);
+					DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts);
 				}
 			}
 			else if (id1 is null or id1 = '')
@@ -2805,30 +2808,30 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 				
 				url := sprintf('http://api.meetup.com/groups.xml/?topic=%s&key=%s', id0, api_key);
 				what_ := 'groups';
-				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base);
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts);
 				
 				url := concat('http://api.meetup.com/members.xml/?topic=', id0, '&key=', api_key);
 				what_ := 'members';
-				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base);
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts);
 				
 				url := concat('http://api.meetup.com/events.xml/?topic=', id0, '&key=', api_key);
 				what_ := 'events';
-				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base);
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts);
 
 			}
 			else
 			{
 				url := sprintf('http://api.meetup.com/groups.xml/?topic=%s&groupnum=%s&key=%s', id0, id1, api_key);
 				what_ := 'groups';
-				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base);
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts);
 				
 				url := concat('http://api.meetup.com/members.xml/?topic=', id0, '&groupnum=', id1, '&key=', api_key);
 				what_ := 'members';
-				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base);
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts);
 				
 				url := concat('http://api.meetup.com/events.xml/?topic=', id0, '&groupnum=', id1, '&key=', api_key);
 				what_ := 'events';
-				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base);
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts);
 			}
 		}
 	}
@@ -2837,11 +2840,13 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 }
 ;
 
-create procedure DB.DBA.RDF_LOAD_LASTFM2(in url varchar, in new_origin_uri varchar,  in dest varchar, in graph_iri varchar, in what_ varchar) returns integer
+create procedure
+DB.DBA.RDF_LOAD_LASTFM2 (in url varchar, in new_origin_uri varchar,  in dest varchar, in graph_iri varchar, in what_ varchar, inout opts any)
+ returns integer
 {
 	declare xt, xd any;
 	declare tmp varchar;
-	tmp := http_get (url);
+	tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
 	xd := xtree_doc (tmp);
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/lastfm2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri), 'what', what_ ));
 	xd := serialize_to_UTF8_xml (xt);
@@ -2905,60 +2910,60 @@ create procedure RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri varcha
 				if (id3 is not null and id3 <> '')
 				{
 					url := sprintf('http://ws.audioscrobbler.com/2.0/?method=track.getinfo&api_key=%s&artist=%s&track=%s', api_key, id1, id3);
-					DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+					DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
 					url := sprintf('http://ws.audioscrobbler.com/2.0/?method=track.getsimilar&artist=%s&track=%s&api_key=%s', id1, id3, api_key);
-					return DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+					return DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
 				}
 				else
 				{
 					if (id2[0] = '+')  -- todo: perhaps it needs some processing?
 					{
 						url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist=%s&api_key=%s', id1, api_key);
-						DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+						DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
 
 						url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.gettopalbums&artist=%s&api_key=%s', id1, api_key);
-						DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+						DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
 
 						url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.getevents&artist=%s&api_key=%s', id1, api_key);
-						DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+						DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
 
 						url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.getsimilar&artist=%s&api_key=%s', id1, api_key);
-						return DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+						return DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
 					}
 					else if (id1 = '+noredirect')
 					{
 						url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist=%s&api_key=%s', id2, api_key);
-						DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+						DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
 
 						url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.gettopalbums&artist=%s&api_key=%s', id2, api_key);
-						DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+						DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
 
 						url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.getevents&artist=%s&api_key=%s', id2, api_key);
-						DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+						DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
 
 						url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.getsimilar&artist=%s&api_key=%s', id2, api_key);
-						return DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+						return DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
 					}
 					else
 					{
 						url := sprintf('http://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key=%s&artist=%s&album=%s', api_key, id1, id2);
-						return DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+						return DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
 					}
 				}
 			}
 			else
 			{
 				url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist=%s&api_key=%s', id1, api_key);
-				DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+				DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
 
 				url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.gettopalbums&artist=%s&api_key=%s', id1, api_key);
-				DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+				DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
 
 				url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.getevents&artist=%s&api_key=%s', id1, api_key);
-				DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+				DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
 
 				url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.getsimilar&artist=%s&api_key=%s', id1, api_key);
-				return DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+				return DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
 			}
 		}
 		else
@@ -2969,16 +2974,16 @@ create procedure RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri varcha
 		if (id1 is not null and id1 <> '')
 		{
 			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist=%s&api_key=%s', id1, api_key);
-			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
 
 			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.gettopalbums&artist=%s&api_key=%s', id1, api_key);
-			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
 
 			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.getevents&artist=%s&api_key=%s', id1, api_key);
-			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
 
 			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.getsimilar&artist=%s&api_key=%s', id1, api_key);
-			return DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+			return DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
 		}
 		else
 			return 0;
@@ -2988,7 +2993,7 @@ create procedure RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri varcha
 		if (id1 is not null and id1 <> '')
 		{
 			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=event.getinfo&event=%s&api_key=%s', id1, api_key);
-			return DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+			return DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
 		}
 		else
 			return 0;
@@ -2998,22 +3003,22 @@ create procedure RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri varcha
 		if (id1 is not null and id1 <> '')
 		{
 			url := sprintf('http://ws.audioscrobbler.com/1.0/user/%s/profile.xml', id1);
-			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
 			
 			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=user.getfriends&user=%s&api_key=%s', id1, api_key);
-			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
 
 			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=library.getalbums&user=%s&api_key=%s', id1, api_key);
-			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
 
 			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=user.gettopalbums&user=%s&api_key=%s', id1, api_key);
-			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
 
 			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=user.gettopartists&user=%s&api_key=%s', id1, api_key);
-			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
 
 			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&user=%s&api_key=%s', id1, api_key);
-			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
 		}
 		else
 			return 0;
@@ -3041,7 +3046,7 @@ create procedure DB.DBA.RDF_LOAD_YOUTUBE (in graph_iri varchar, in new_origin_ur
     if (host_part <> '' or img_id is null)
         return 0;
     url := concat('http://gdata.youtube.com/feeds/api/videos?vq=', img_id);
-    tmp := RDF_HTTP_URL_GET (url, url, hdr);
+    tmp := RDF_HTTP_URL_GET (url, url, hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
     xsl2 := 'xslt/atom2rdf.xsl';
   }
   else if (new_origin_uri like 'http://%.youtube.com/watch?v=%')
@@ -3051,7 +3056,7 @@ create procedure DB.DBA.RDF_LOAD_YOUTUBE (in graph_iri varchar, in new_origin_ur
     if (img_id is null)
         return 0;
     url := concat('http://gdata.youtube.com/feeds/api/videos/', img_id);
-    tmp := RDF_HTTP_URL_GET (url, url, hdr);
+    tmp := RDF_HTTP_URL_GET (url, url, hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
     xsl2 := 'xslt/atomentry2rdf.xsl';
   }
   if (hdr[0] not like 'HTTP/1._ 200 %')
@@ -3082,7 +3087,7 @@ create procedure DB.DBA.RDF_LOAD_DIGG (in graph_iri varchar, in new_origin_uri v
       if (search is null)
 	return 0;
       url := sprintf('http://digg.com/rss_search?search=%s&area=promoted&type=both&section=%s', search, section_name);
-      tmp := http_get (url);
+      tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
       xd := xtree_doc (tmp);
       xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/rss2rdf.xsl', xd,
       	vector ('baseUri', coalesce (dest, graph_iri), 'isDiscussion', '1'));
@@ -3100,7 +3105,7 @@ create procedure DB.DBA.RDF_LOAD_DIGG (in graph_iri varchar, in new_origin_uri v
       select "o" into ext_url from (sparql prefix dc: <http://purl.org/dc/elements/1.1/>
   	select ?o where { graph ?:gr { ?s dc:source ?o } } ) sp;
       url := sprintf ('http://services.digg.com/stories?link=%U&appkey=%U', ext_url, appkey);
-      tmp := http_client (url);
+      tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
       xd := xtree_doc (tmp);
       id := cast (xpath_eval ('string (/stories/story/@id)', xd) as varchar);
       comm := cast (xpath_eval ('string (/stories/story/@comments)', xd) as varchar);
@@ -3110,7 +3115,7 @@ create procedure DB.DBA.RDF_LOAD_DIGG (in graph_iri varchar, in new_origin_uri v
       delete from DB.DBA.RDF_QUAD where g =  iri_to_id (coalesce (dest, graph_iri));
       DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
       url := sprintf ('http://services.digg.com/story/%s/comments?count=%s&appkey=%U', id, comm, appkey);
-      tmp := http_client (url);
+      tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
       goto diggsvc;
     }
   else -- http://services.digg.com
@@ -3119,7 +3124,7 @@ create procedure DB.DBA.RDF_LOAD_DIGG (in graph_iri varchar, in new_origin_uri v
 	{
 	  tmp := sprintf_inverse (new_origin_uri, 'http://services.digg.com/story/%s/%s', 0);
 	  url := sprintf ('http://services.digg.com/story/%s?appkey=%U', tmp[0], appkey);
-	  tmp := http_client (url);
+	  tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
 	  xd := xtree_doc (tmp);
 	  story_url := cast (xpath_eval ('string (/stories/story/@href)', xd) as varchar);
 	}
@@ -3160,7 +3165,7 @@ create procedure DB.DBA.RDF_LOAD_DELICIOUS (in graph_iri varchar, in new_origin_
 	{
 		return 0;
 	}
-    tmp := http_get (url);
+    tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
     xd := xtree_doc (tmp);
     xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/rss2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
     xd := serialize_to_UTF8_xml (xt);
@@ -3202,7 +3207,7 @@ create procedure DB.DBA.RDF_LOAD_OREILLY (in graph_iri varchar, in new_origin_ur
 	else
 		return 0;
     url := sprintf('http://oreilly.com/catalog/%s/', book_id);
-	tmp := http_get (url);
+	tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
 	xd := xtree_doc (tmp, 2);
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/oreilly2rdf.xsl', xd, vector ('base', coalesce (dest, graph_iri)));
 	xd := serialize_to_UTF8_xml (xt);
@@ -3242,7 +3247,7 @@ create procedure DB.DBA.RDF_LOAD_BUGZILLA (in graph_iri varchar, in new_origin_u
 	url := concat(tmp[0], '://', host_part, '/xml.cgi?id=', img_id);
   else
 	url := concat(new_origin_uri, '&ctype=xml');
-  tmp := RDF_HTTP_URL_GET (url, url, hdr);
+  tmp := RDF_HTTP_URL_GET (url, url, hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
   if (hdr[0] not like 'HTTP/1._ 200 %')
     signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
   xd := xtree_doc (tmp);
@@ -3255,10 +3260,9 @@ create procedure DB.DBA.RDF_LOAD_BUGZILLA (in graph_iri varchar, in new_origin_u
 
 create procedure DB.DBA.RDF_LOAD_OPENLIBRARY (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
-  declare qr, path, hdr any;
+  declare qr, path any;
   declare tree, xt, xd, types any;
   declare k, cnt, url, tmp, img_id varchar;
-  hdr := null;
   declare exit handler for sqlstate '*'
     {
       return 0;
@@ -3270,7 +3274,7 @@ create procedure DB.DBA.RDF_LOAD_OPENLIBRARY (in graph_iri varchar, in new_origi
     return 0;
   url := concat('http://openlibrary.org/api/get?key=/b/', img_id);
   url := concat(url, '&prettyprint=true&text=true');
-  cnt := http_get (url, hdr);
+  cnt := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
   tree := json_parse (cnt);
   xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/openlibrary2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
@@ -3292,7 +3296,7 @@ create procedure DB.DBA.RDF_LOAD_SOCIALGRAPH (in graph_iri varchar, in new_origi
       return 0;
     };
   url := new_origin_uri;
-  cnt := http_get (url, hdr);
+  cnt := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
   tree := json_parse (cnt);
   xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/sg2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
@@ -3428,7 +3432,7 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
   url := sprintf ('http://ecs.amazonaws.com/onca/xml?Service=AWSECommerceService&AWSAccessKeyId=%s&Operation=ItemLookup&ItemId=%s&ResponseGroup=ItemAttributes',
           api_key, asin);
 
-  tmp := http_get (url, hdr);
+  tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
   if (hdr[0] not like 'HTTP/1._ 200 %')
     signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
   xd := xtree_doc (tmp);
@@ -3455,7 +3459,7 @@ create procedure DB.DBA.RDF_LOAD_FLICKR_IMG (in graph_iri varchar, in new_origin
     return 0;
   url := sprintf ('http://api.flickr.com/services/rest/?method=flickr.photos.getInfo&photo_id=%s&api_key=%s',
     img_id, api_key);
-  tmp := http_get (url, hdr);
+  tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
   if (hdr[0] not like 'HTTP/1._ 200 %')
     signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
   xd := xtree_doc (tmp);
@@ -3465,7 +3469,7 @@ create procedure DB.DBA.RDF_LOAD_FLICKR_IMG (in graph_iri varchar, in new_origin
       declare exit handler for sqlstate '*' { goto ende; };
       url := sprintf ('http://api.flickr.com/services/rest/?method=flickr.photos.getExif&photo_id=%s&api_key=%s',
     img_id, api_key);
-      tmp := http_get (url, hdr);
+      tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
       if (hdr[0] like 'HTTP/1._ 200 %')
     exif := xtree_doc (tmp);
       ende:;
@@ -3512,7 +3516,7 @@ create procedure DB.DBA.RDF_LOAD_EBAY_ARTICLE (in graph_iri varchar, in new_orig
   url := sprintf ('http://rest.api%s.ebay.com/restapi?CallName=GetItem&RequestToken=%s&RequestUserId=%s&ItemID=%s&Version=491',
           case when use_sandbox = 1 then '.sandbox' else '' end,
       api_key, user_id, item_id);
-  tmp := http_get (url, hdr);
+  tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
   if (hdr[0] not like 'HTTP/1._ 200 %')
     signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
 
@@ -3648,7 +3652,8 @@ create procedure DB.DBA.RDF_LOAD_OPENSOCIAL_PERSON (in graph_iri varchar, in new
   if (length (mail) + length (pwd))
     {
       cnt := http_client (url=>'https://www.google.com/accounts/ClientLogin',
-        http_method=>'POST', body=>sprintf ('Email=%U&Passwd=%U&source=OpenLink-Sponger-1&service=ot', mail, pwd));
+        http_method=>'POST', body=>sprintf ('Email=%U&Passwd=%U&source=OpenLink-Sponger-1&service=ot', mail, pwd),
+	proxy=>get_keyword_ucase ('get:proxy', opts));
       if (cnt like 'Error=%')
     return 0;
       cnt := replace (cnt, '\r', '\n');
@@ -3658,7 +3663,7 @@ create procedure DB.DBA.RDF_LOAD_OPENSOCIAL_PERSON (in graph_iri varchar, in new
       if (auth is not null)
     auth_header := 'Authorization: GoogleLogin auth='||auth;
     }
-  cnt := RDF_HTTP_URL_GET (new_origin_uri, new_origin_uri, hdr, 'GET', auth_header);
+  cnt := RDF_HTTP_URL_GET (new_origin_uri, new_origin_uri, hdr, 'GET', auth_header, proxy=>get_keyword_ucase ('get:proxy', opts));
   if (hdr[0] not like  'HTTP/1._ 200 %')
     return 0;
   xd := xtree_doc (cnt);
@@ -3717,7 +3722,7 @@ create procedure DB.DBA.RDF_LOAD_WIKIPEDIA_ARTICLE
 
 
 create procedure DB.DBA.RDF_DO_XSLT_AND_LOAD (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
-    in xt any, inout mdta any, in xslt_sheet varchar, in what varchar, in base varchar)
+    in xt any, inout mdta any, in xslt_sheet varchar, in what varchar, in base varchar, inout opts any)
 {
   declare xslt_uri varchar;
   declare xslt_body, xd, media, ret, xsl_doc any;
@@ -3739,7 +3744,7 @@ create procedure DB.DBA.RDF_DO_XSLT_AND_LOAD (in graph_iri varchar, in new_origi
       declare exit handler for sqlstate '*' {
     goto try_next;
       };
-      xslt_body := http_get (xslt_uri, null, 'GET', 'Accept: application/xml, */*');
+      xslt_body := http_get (xslt_uri, null, 'GET', 'Accept: application/xml, */*', null, get_keyword_ucase ('get:proxy', opts));
       if (length (xslt_body))
     {
       declare exit handler for sqlstate '*' {
@@ -3773,7 +3778,8 @@ create procedure DB.DBA.RDF_DO_XSLT_AND_LOAD (in graph_iri varchar, in new_origi
   try_w3c:
   if (0)
     log_message (sprintf ('Using w3c xslt=[%s]', xslt_uri));
-  xd := http_get (sprintf ('http://www.w3.org/2000/06/webdata/xslt?xslfile=%U;xmlfile=%U', xslt_uri, new_origin_uri));
+  xd := http_client (sprintf ('http://www.w3.org/2000/06/webdata/xslt?xslfile=%U;xmlfile=%U', xslt_uri, new_origin_uri),
+    	proxy=>get_keyword_ucase ('get:proxy', opts));
   xsl_doc := xtree_doc (xd);
   if (what <> '')
     goto try_next;
@@ -3823,7 +3829,7 @@ create procedure DB.DBA.RDF_MAPPER_EXPN_URLS (in all_xslt any, in base varchar)
 };
 
 create procedure DB.DBA.RDF_LOAD_GRDDL_REC (in doc_base varchar, in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
-    in xt any, inout mdta any, inout visited any, in what varchar, in lev int)
+    in xt any, inout mdta any, inout visited any, in what varchar, in lev int, inout opts any)
 {
   declare pf_docs, ns_doc, barr any;
   declare profile varchar;
@@ -3901,7 +3907,7 @@ create procedure DB.DBA.RDF_LOAD_GRDDL_REC (in doc_base varchar, in graph_iri va
       tmp_xt := null;
       if (0)
     log_message (sprintf ('NS get %s', ns_url));
-      cnt := RDF_HTTP_URL_GET (ns_url, base_url, hdr, 'GET', 'Accept: application/rdf+xml, application/xml, */*');
+      cnt := RDF_HTTP_URL_GET (ns_url, base_url, hdr, 'GET', 'Accept: application/rdf+xml, application/xml, */*', proxy=>get_keyword_ucase ('get:proxy', opts));
       tmp_xt := xtree_doc (cnt, 0);
 
       ns_doc := vector (vector (ns_url, tmp_xt));
@@ -3931,7 +3937,7 @@ create procedure DB.DBA.RDF_LOAD_GRDDL_REC (in doc_base varchar, in graph_iri va
         goto next_prof_1;
       if (0)
         log_message (sprintf ('PF get %s', prof));
-      cnt := RDF_HTTP_URL_GET (prof, base_url, hdr, 'GET', 'Accept: */*');
+      cnt := RDF_HTTP_URL_GET (prof, base_url, hdr, 'GET', 'Accept: */*', proxy=>get_keyword_ucase ('get:proxy', opts));
       tmp_xt := xtree_doc (cnt, 0);
 
       pf_docs := vector_concat (pf_docs, vector (vector (prof, tmp_xt)));
@@ -3966,12 +3972,12 @@ create procedure DB.DBA.RDF_LOAD_GRDDL_REC (in doc_base varchar, in graph_iri va
       declare ret any;
       foreach (any pf_item in pf_docs) do
         {
-      ret := DB.DBA.RDF_LOAD_GRDDL_REC (base_url, graph_iri, pf_item[0], dest, pf_item[1], mdta, visited, 'pf', lev);
+      ret := DB.DBA.RDF_LOAD_GRDDL_REC (base_url, graph_iri, pf_item[0], dest, pf_item[1], mdta, visited, 'pf', lev, opts);
       all_xslt := vector_concat (all_xslt, ret);
     }
       foreach (any ns_item in ns_doc) do
         {
-      ret := DB.DBA.RDF_LOAD_GRDDL_REC (base_url, graph_iri, ns_item[0], dest, ns_item[1], mdta, visited, 'ns', lev);
+      ret := DB.DBA.RDF_LOAD_GRDDL_REC (base_url, graph_iri, ns_item[0], dest, ns_item[1], mdta, visited, 'ns', lev, opts);
       all_xslt := vector_concat (all_xslt, ret);
     }
     }
@@ -3985,7 +3991,7 @@ create procedure DB.DBA.RDF_LOAD_GRDDL_REC (in doc_base varchar, in graph_iri va
         {
       if (0)
        log_message (sprintf ('TRANSFORM=[%s] XSLT=[%s]', new_origin_uri, xslt));
-      ret := DB.DBA.RDF_DO_XSLT_AND_LOAD (graph_iri, new_origin_uri, dest, xt, mdta, xslt, what, base_url);
+	  ret := DB.DBA.RDF_DO_XSLT_AND_LOAD (graph_iri, new_origin_uri, dest, xt, mdta, xslt, what, base_url, opts);
       ret_arr := vector_concat (ret_arr, ret);
         }
     }
@@ -4069,7 +4075,7 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
 
 	  load_msec := msec_time ();
 	  hdr := null;
-	  content := RDF_HTTP_URL_GET (rdf_url, new_origin_uri, hdr, 'GET', 'Accept: application/rdf+xml, text/rdf+n3, */*');
+	  content := RDF_HTTP_URL_GET (rdf_url, new_origin_uri, hdr, 'GET', 'Accept: application/rdf+xml, text/rdf+n3, */*', proxy=>get_keyword_ucase ('get:proxy', opts));
 	  load_msec := msec_time () - load_msec;
 	  download_size := length (content);
 	  ret_content_type := http_request_header (hdr, 'Content-Type', null, null);
@@ -4136,7 +4142,7 @@ try_grddl:
 
   reg := '';
   doc_base := get_keyword ('http-redirect-to', opts, new_origin_uri);
-  DB.DBA.RDF_LOAD_GRDDL_REC (doc_base, graph_iri, new_origin_uri, dest, xt, mdta, reg, '', 0);
+  DB.DBA.RDF_LOAD_GRDDL_REC (doc_base, graph_iri, new_origin_uri, dest, xt, mdta, reg, '', 0, opts);
   if (mdta) -- It is recognized as GRDDL and data is loaded, stop there WAS: is_grddl and xpath_eval ('/html', xt) is null)
     goto ret;
   try_rdfa:;
@@ -4205,7 +4211,7 @@ try_grddl:
       --if (RDF_MAPPER_CACHE_CHECK (atom, new_origin_uri, old_etag, old_last_modified))
       --  goto no_feed;
       load_msec := msec_time ();
-      content := DB.DBA.RDF_HTTP_URL_GET (atom, new_origin_uri, hdr, 'GET', 'Accept: */*');
+      content := DB.DBA.RDF_HTTP_URL_GET (atom, new_origin_uri, hdr, 'GET', 'Accept: */*', proxy=>get_keyword_ucase ('get:proxy', opts));
       load_msec := msec_time () - load_msec;
       download_size := length (content);
       xt := xtree_doc (content);
@@ -4219,7 +4225,7 @@ try_rss:;
       --if (RDF_MAPPER_CACHE_CHECK (rss, new_origin_uri, old_etag, old_last_modified))
       --  goto no_feed;
       load_msec := msec_time ();
-      content := DB.DBA.RDF_HTTP_URL_GET (rss, new_origin_uri, hdr, 'GET', 'Accept: */*');
+      content := DB.DBA.RDF_HTTP_URL_GET (rss, new_origin_uri, hdr, 'GET', 'Accept: */*', proxy=>get_keyword_ucase ('get:proxy', opts));
       load_msec := msec_time () - load_msec;
       download_size := length (content);
       xt := xtree_doc (content);
@@ -4443,24 +4449,24 @@ create procedure DB.DBA.RDF_LOAD_YAHOO_STOCK_DATA (in graph_iri varchar, in new_
   arr := sprintf_inverse (new_origin_uri, 'http://finance.yahoo.com/q?s=%s', 0);
   symbol := arr[0];
 
-  rdfm_yq_get_quote (symbol, new_origin_uri, dest, graph_iri);
-  rdfm_yq_get_history (symbol, new_origin_uri, dest, graph_iri);
-  rdfm_yq_get_feed (symbol, new_origin_uri, dest, graph_iri);
-  rdfm_yq_get_events (symbol, new_origin_uri, dest, graph_iri);
-  rdfm_yq_get_mb (symbol, new_origin_uri, dest, graph_iri);
-  rdfm_yq_get_competitors (symbol, new_origin_uri, dest, graph_iri);
+  rdfm_yq_get_quote (symbol, new_origin_uri, dest, graph_iri, opts);
+  rdfm_yq_get_history (symbol, new_origin_uri, dest, graph_iri, opts);
+  rdfm_yq_get_feed (symbol, new_origin_uri, dest, graph_iri, opts);
+  rdfm_yq_get_events (symbol, new_origin_uri, dest, graph_iri, opts);
+  rdfm_yq_get_mb (symbol, new_origin_uri, dest, graph_iri, opts);
+  rdfm_yq_get_competitors (symbol, new_origin_uri, dest, graph_iri, opts);
   return 1;
 }
 ;
 
 
-create procedure rdfm_yq_get_quote (in symbol varchar, in new_origin_uri varchar, in  dest varchar, in graph_iri varchar)
+create procedure rdfm_yq_get_quote (in symbol varchar, in new_origin_uri varchar, in  dest varchar, in graph_iri varchar, inout opts any)
 {
   declare arr, cnt, ses, content any;
   declare xt, xd any;
 
   ses := string_output ();
-  cnt := http_get (sprintf ('http://download.finance.yahoo.com/d/quotes.csv?s=%U&f=nsbavophg&e=.csv', symbol));
+  cnt := http_client (sprintf ('http://download.finance.yahoo.com/d/quotes.csv?s=%U&f=nsbavophg&e=.csv', symbol), proxy=>get_keyword_ucase ('get:proxy', opts));
   arr := rdfm_yq_parse_csv (cnt);
   http ('<quote stock="NASDAQ">', ses);
   foreach (any q in arr) do
@@ -4486,13 +4492,13 @@ create procedure rdfm_yq_get_quote (in symbol varchar, in new_origin_uri varchar
 }
 ;
 
-create procedure rdfm_yq_get_history (in symbol varchar, in new_origin_uri varchar, in  dest varchar, in graph_iri varchar)
+create procedure rdfm_yq_get_history (in symbol varchar, in new_origin_uri varchar, in  dest varchar, in graph_iri varchar, inout opts any)
 {
   declare arr, cnt, ses, content any;
   declare xt, xd any;
 
   ses := string_output ();
-  cnt := http_get (sprintf ('http://ichart.finance.yahoo.com/table.csv?s=%U&d=10&e=13&f=2007&g=d&a=8&b=7&c=2007&ignore=.csv', symbol));
+  cnt := http_client (sprintf ('http://ichart.finance.yahoo.com/table.csv?s=%U&d=10&e=13&f=2007&g=d&a=8&b=7&c=2007&ignore=.csv', symbol), proxy=>get_keyword_ucase ('get:proxy', opts));
   arr := rdfm_yq_parse_csv (cnt);
   http (sprintf ('<history stock="NASDAQ" symbol="%V">', symbol), ses);
   foreach (any q in arr) do
@@ -4537,11 +4543,11 @@ create procedure rdfm_yq_date_cvt (in d varchar)
 }
 ;
 
-create procedure rdfm_yq_get_competitors (in symbol varchar, in new_origin_uri varchar, in  dest varchar, in graph_iri varchar)
+create procedure rdfm_yq_get_competitors (in symbol varchar, in new_origin_uri varchar, in  dest varchar, in graph_iri varchar, inout opts any)
 {
   declare content, iri any;
   declare xt, xd, xp, ses any;
-  content := http_get (sprintf ('http://finance.yahoo.com/q/co?s=%U', symbol));
+  content := http_client (sprintf ('http://finance.yahoo.com/q/co?s=%U', symbol), proxy=>get_keyword_ucase ('get:proxy', opts));
   --content := file_to_string ('temp/xx');
   xt := xtree_doc (content, 2);
   xp := xpath_eval ('//table[tr/td/small/b[ contains (., "DIRECT COMPETITOR COMPARISON")]]/following-sibling::table[2]/tr[1]/td/table/tr[1]//a/text()', xt, 0);
@@ -4561,12 +4567,12 @@ create procedure rdfm_yq_get_competitors (in symbol varchar, in new_origin_uri v
 }
 ;
 
-create procedure rdfm_yq_get_events (in symbol varchar, in new_origin_uri varchar, in  dest varchar, in graph_iri varchar)
+create procedure rdfm_yq_get_events (in symbol varchar, in new_origin_uri varchar, in  dest varchar, in graph_iri varchar, inout opts any)
 {
   declare content, iri any;
   declare xt, xd, xp, ses any;
   iri := sprintf ('http://finance.yahoo.com/q/ce?s=%U', symbol);
-  content := http_get (sprintf ('http://finance.yahoo.com/q/ce?s=%U', symbol));
+  content := http_client (sprintf ('http://finance.yahoo.com/q/ce?s=%U', symbol), proxy=>get_keyword_ucase ('get:proxy', opts));
   xt := xtree_doc (content, 2);
   xp := xpath_eval ('//table[tr/td[@class="yfnc_tablehead1" and normalize-space (.) = "Event"]]/tr', xt, 0);
   ses := string_output ();
@@ -4604,16 +4610,16 @@ create procedure rdfm_yq_get_events (in symbol varchar, in new_origin_uri varcha
 }
 ;
 
-create procedure rdfm_yq_get_mb (in symbol varchar, in new_origin_uri varchar, in  dest varchar, in graph_iri varchar)
+create procedure rdfm_yq_get_mb (in symbol varchar, in new_origin_uri varchar, in  dest varchar, in graph_iri varchar, inout opts any)
 {
   declare content, hdr any;
   declare xt, xp any;
-  content := http_get ('http://messages.finance.yahoo.com/mb/'||symbol);
+  content := http_client ('http://messages.finance.yahoo.com/mb/'||symbol, proxy=>get_keyword_ucase ('get:proxy', opts));
   xt := xtree_doc (content, 2);
   xp := cast(xpath_eval ('//a[normalize-space(.) = "RSS"]/@href', xt) as varchar);
   if (length (xp))
     {
-      content := RDF_HTTP_URL_GET (xp, '', hdr);
+      content := RDF_HTTP_URL_GET (xp, '', hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
       rdfm_yq_load_feed (content, new_origin_uri, dest, graph_iri);
     }
 }
@@ -4647,10 +4653,10 @@ create procedure rdfm_yq_load_feed (inout content any, in new_origin_uri varchar
 }
 ;
 
-create procedure rdfm_yq_get_feed (in symbol varchar, in new_origin_uri varchar, in  dest varchar, in graph_iri varchar)
+create procedure rdfm_yq_get_feed (in symbol varchar, in new_origin_uri varchar, in  dest varchar, in graph_iri varchar, inout opts any)
 {
   declare content, hdr any;
-  content := RDF_HTTP_URL_GET (sprintf ('http://us.rd.yahoo.com/finance/news/rss/add/*http://finance.yahoo.com/rss/SeekingAlpha?s=%U', symbol), '', hdr);
+  content := RDF_HTTP_URL_GET (sprintf ('http://us.rd.yahoo.com/finance/news/rss/add/*http://finance.yahoo.com/rss/SeekingAlpha?s=%U', symbol), '', hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
   rdfm_yq_load_feed (content, new_origin_uri, dest, graph_iri);
   return;
 }
@@ -4737,7 +4743,7 @@ create procedure RDFM_IDENT_RESOLVE_INIT ()
     };
       url := _server || '?verb=Identify';
       commit work;
-      cnt := RDF_HTTP_URL_GET (url, _server, hdr);
+      cnt := RDF_HTTP_URL_GET (url, _server, hdr); -- this is for initing , no opts here
       xt := xtree_doc (cnt);
       xp := xpath_eval ('string (/OAI-PMH/Identify/description/oai-identifier/repositoryIdentifier)', xt);
       sch := xpath_eval ('string (/OAI-PMH/Identify/description/oai-identifier/scheme)', xt);
@@ -4765,7 +4771,7 @@ create procedure DB.DBA.SYS_OAI_SPONGE_UP (in local_iri varchar, in get_uri varc
       return local_iri;
     };
       url := sprintf ('%s?verb=GetRecord&identifier=%s&metadataPrefix=oai_dc', _server, get_uri);
-      cnt := RDF_HTTP_URL_GET (url, _server, hdr);
+      cnt := RDF_HTTP_URL_GET (url, _server, hdr, proxy=>get_keyword_ucase ('get:proxy', options));
       xt := xtree_doc (cnt);
       xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/oai2rdf.xsl', xt, vector ('baseUri', get_uri));
       xd := serialize_to_UTF8_xml (xd);
@@ -4888,7 +4894,7 @@ create procedure DB.DBA.GET_XBRL_NAME_BY_CIK (in cik varchar)
   	sprintf ('select ?url ?name '||
 	' where { <http://www.rdfabout.com/rdf/usgov/sec/id/cik%s> <http://www.w3.org/2002/07/owl#sameAs> ?url ; '||
 	' <http://xmlns.com/foaf/0.1/name> ?name . }', cik));
-  cnt := http_client (url);
+  cnt := http_client (url, proxy=>connection_get ('sparql-get:proxy'));
   xt := xtree_doc (cnt);
   url := cast (xpath_eval ('string (//binding[@name="url"]/uri)', xt) as varchar);
   nam := cast (xpath_eval ('string (//binding[@name="name"]/literal)', xt) as varchar);
@@ -4959,11 +4965,11 @@ CREATE PROCEDURE RDFMAP_DBPEDIA_EXTRACT_PHP (in base varchar, in title varchar)
 ;
 
 create procedure DB.DBA.RDF_LOAD_MBZ_1 (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
-    in kind varchar, in id varchar, in inc varchar)
+    in kind varchar, in id varchar, in inc varchar, inout opts any)
 {
   declare uri, cnt, xt, xd, hdr any;
   uri := sprintf ('http://musicbrainz.org/ws/1/%s/%s?type=xml&inc=%U', kind, id, inc);
-  cnt := RDF_HTTP_URL_GET (uri, '', hdr, 'GET', 'Accept: */*');
+  cnt := RDF_HTTP_URL_GET (uri, '', hdr, 'GET', 'Accept: */*', proxy=>get_keyword_ucase ('get:proxy', opts));
   xt := xtree_doc (cnt);
   xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/mbz2rdf.xsl', xt, vector ('baseUri', new_origin_uri));
   xd := serialize_to_UTF8_xml (xd);
@@ -5010,13 +5016,13 @@ create procedure DB.DBA.RDF_LOAD_MBZ (in graph_iri varchar, in new_origin_uri va
     return 0;
   if (dest is null)
     delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
-  DB.DBA.RDF_LOAD_MBZ_1 (graph_iri, new_origin_uri, dest, kind, id, inc);
+  DB.DBA.RDF_LOAD_MBZ_1 (graph_iri, new_origin_uri, dest, kind, id, inc, opts);
   DB.DBA.TTLP (sprintf ('<%S> <http://xmlns.com/foaf/0.1/primaryTopic> <%S> .\n<%S> a <http://xmlns.com/foaf/0.1/Document> .',
   	new_origin_uri, DB.DBA.RDF_SPONGE_PROXY_IRI (new_origin_uri), new_origin_uri),
   	'', graph_iri);
   foreach (any inc1 in incs) do
     {
-      DB.DBA.RDF_LOAD_MBZ_1 (graph_iri, new_origin_uri, dest, kind, id, inc1);
+      DB.DBA.RDF_LOAD_MBZ_1 (graph_iri, new_origin_uri, dest, kind, id, inc1, opts);
     }
   return 1;
 };
@@ -5120,7 +5126,7 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
 	val_match := null;
 
       if (registry_get ('__sparql_mappers_debug') = '1')
-	; --dbg_printf ('Trying PP %s', MC_HOOK);
+	dbg_obj_prin1 ('Trying PP ', MC_HOOK);
       if (isstring (val_match) and regexp_match (MC_PATTERN, val_match) is not null)
 	{
 	  if (__proc_exists (MC_HOOK) is null)
@@ -5131,14 +5137,14 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
 	      goto try_next_mapper;
 	    };
           if (registry_get ('__sparql_mappers_debug') = '1')
-	    ; --dbg_printf ('Match PP %s', MC_HOOK);
+	    dbg_obj_prin1 ('Match PP ', MC_HOOK);
 	  new_opts := vector_concat (options, MC_OPTIONS, vector ('content-type', ret_content_type));
 	  rc := call (MC_HOOK) (graph_iri, new_origin_uri, dest, ret_body, dummy, dummy, MC_KEY, new_opts);
           if (registry_get ('__sparql_mappers_debug') = '1')
 	    {
-	      --dbg_printf ('Return PP [%d] %s', rc, MC_HOOK);
+	      dbg_obj_prin1 ('Return PP rc=', rc, ' ', MC_HOOK);
 	      if (rc < 0 or rc > 0)
-	        ; --dbg_printf ('END of PP mappings');
+	        dbg_obj_prin1 ('END of PP mappings');
 	    }
 	  if (rc < 0 or rc > 0)
 	    {
@@ -5148,7 +5154,7 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
       try_next_mapper:;
     }
   if (registry_get ('__sparql_mappers_debug') = '1')
-    ; --dbg_printf ('END of PP mappings');
+    dbg_obj_prin1 ('END of PP mappings');
 }
 ;
 
@@ -5211,9 +5217,12 @@ create procedure DB.DBA.RDF_LOAD_CALAIS (in graph_iri varchar, in new_origin_uri
   if (mime is null)
     return 0;
   frag := _ret_body;
+
   cnt := http_get ('http://api.opencalais.com/enlighten/calais.asmx/Enlighten',
   	null, 'POST', null,
-	sprintf ('licenseID=%U&content=%U&paramsXML=%U', ser_key, frag, DB.DBA.RDF_CALAIS_OPTS (mime)));
+	sprintf ('licenseID=%U&content=%U&paramsXML=%U', ser_key, frag, DB.DBA.RDF_CALAIS_OPTS (mime)),
+	get_keyword_ucase ('get:proxy', opts));
+
   xt := xtree_doc (cnt, 0, '', 'UTF-8');
   xp := xpath_eval('string(//text())', xt);
   xd := charset_recode (xp, '_WIDE_', 'UTF-8');
@@ -5349,7 +5358,7 @@ create procedure DB.DBA.RDF_NYTCF_LOOKUP(
   nyt_url := sprintf('http://api.nytimes.com/svc/elections/us/%s/%s/%s/finances/candidates/%s.xml?api-key=%s',
   	version, campaign_type, year, candidate_id, api_key);
 
-  tmp := http_get (nyt_url, hdr);
+  tmp := http_client_ext (nyt_url, headers=>hdr, proxy=>connection_get ('sparql-get:proxy'));
   if (hdr[0] not like 'HTTP/1._ 200 %')
     signal ('22023', trim(hdr[0], '\r\n'), 'RDF_LOAD_NYTCF_LOOKUP');
   xd := xtree_doc (tmp);
@@ -5405,7 +5414,7 @@ create procedure DB.DBA.RDF_NYTC_LOOKUP(
   nyt_url := sprintf('http://api.nytimes.com/svc/politics/%s/us/legislative/congress/members/%s.xml?api-key=%s',
   	version, candidate_id, api_key);
 
-  tmp := http_get (nyt_url, hdr);
+  tmp := http_client_ext (nyt_url, headers=>hdr, proxy=>connection_get ('sparql-get:proxy'));
   if (hdr[0] not like 'HTTP/1._ 200 %')
     signal ('22023', trim(hdr[0], '\r\n'), 'RDF_LOAD_NYTC_LOOKUP');
   xd := xtree_doc (tmp);
@@ -5722,7 +5731,7 @@ create procedure FIND_CANDIDATE(in full_name varchar, in api_key varchar, in cha
 		from_num := 101;
 	for (cur := from_num; cur <= today_num; cur := cur + 1)
 	{
-		tmp := http_get(sprintf('http://api.nytimes.com/svc/politics/v2/us/legislative/congress/%d/%s/members.xml?api-key=%s', cur, chamber, api_key));
+		tmp := http_client (sprintf('http://api.nytimes.com/svc/politics/v2/us/legislative/congress/%d/%s/members.xml?api-key=%s', cur, chamber, api_key), proxy=>connection_get ('sparql-get:proxy'));
 		if (tmp is not null)
 		{	
 			xd := xtree_doc (tmp);
@@ -5817,7 +5826,7 @@ create procedure DB.DBA.RDF_WBMC_LOOKUP (
   wb_url := sprintf('http://open.worldbank.org/rest.php?method=%s&name=%s&api_key=%s',
   	'wb.countries.get', replace (country_name, ' ', '+'), api_key);
 
-  tmp := http_get (wb_url, hdr);
+  tmp := http_client_ext (wb_url, headers=>hdr, proxy=>connection_get ('sparql-get:proxy'));
   if (hdr[0] not like 'HTTP/1._ 200 %')
     signal ('22023', trim(hdr[0], '\r\n'), 'RDF_WBMC_LOOKUP - 1');
 
@@ -5852,7 +5861,7 @@ create procedure DB.DBA.RDF_WBMC_LOOKUP (
     wb_url := wb_url || sprintf('&date=%s', wb_date_range);
     wb_url := wb_url || sprintf('&indicator=%s', wb_indicator);
 
-    tmp := http_get (wb_url, hdr);
+    tmp := http_client_ext (wb_url, headers=>hdr, proxy=>connection_get ('sparql-get:proxy'));
     if (hdr[0] not like 'HTTP/1._ 200 %')
       signal ('22023', trim(hdr[0], '\r\n'), 'RDF_WBMC_LOOKUP - 2');
 
@@ -6012,7 +6021,7 @@ create procedure DB.DBA.RDF_LOAD_ZEMANTA (in graph_iri varchar, in new_origin_ur
   		_key, subseq (_ret_body, 0, 8000));
   cont := http_client (	url=>'http://api.zemanta.com/services/rest/0.0/',
   			http_method=>'POST',
-			body=>txt );
+			body=>txt, proxy=>get_keyword_ucase ('get:proxy', opts));
   --string_to_file ('rdf.rdf', serialize_to_UTF8_xml (cont), -2);
   xt := xtree_doc (cont, 0, '', 'UTF-8');
   xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/zemanta_filter.xsl', xt,
@@ -6046,7 +6055,7 @@ create procedure DB.DBA.RDF_LOAD_NYT_ARTICLE_SEARCH (in graph_iri varchar, in ne
 		{
 			keywords := str[0];
 			url := sprintf('http://api.nytimes.com/svc/search/v1/article?query=%s&order=closest&api-key=%s&format=xml', keywords, api_key);
-			tmp := http_get(url);
+			tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
 			tree := json_parse (tmp);
 			xt := DB.DBA.MQL_TREE_TO_XML (tree);
 			xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/nyt2rdf.xsl', xt,
