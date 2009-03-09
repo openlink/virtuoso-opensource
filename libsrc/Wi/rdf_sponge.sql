@@ -651,6 +651,7 @@ perform_actual_load:
     {
       req_hdr := NULL;
       get_proxy := get_keyword_ucase ('get:proxy', options);
+      connection_set ('sparql-get:proxy', get_proxy);
       --!!!TBD: proper support for POST
       --!!!TBD: proper authentication if get:login / get:password is provided.
       --!!! XXX: if authentication is needed then better to use http_client() instead of http_get
@@ -951,10 +952,7 @@ create procedure DB.DBA.RDF_HTTP_URL_GET (inout url any, in base any, inout hdr 
   if (lower (url) like 'https://%')
     is_https := 1;
 
-  if (proxy is null)
-    content := http_client_ext (url=>url, headers=>hdr, http_method=>meth, http_headers=>req_hdr, body=>cnt);
-  else
-    content := http_get (url, hdr, meth, req_hdr, cnt, proxy);
+  content := http_client_ext (url=>url, headers=>hdr, http_method=>meth, http_headers=>req_hdr, body=>cnt, proxy=>proxy);
   redirects := redirects - 1;
 
   if (hdr[0] not like 'HTTP/1._ 200 %')

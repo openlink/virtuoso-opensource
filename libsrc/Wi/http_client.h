@@ -129,6 +129,15 @@ typedef struct http_resp_evt_q_s
 #define HA_QOP_AUTH     1
 #define HA_QOP_AUTH_INT 2
 
+typedef struct http_cli_proxy_s
+{
+  caddr_t hcp_proxy;
+  int 	  hcp_socks_ver;
+  int 	  hcp_resolve;
+  caddr_t hcp_user;
+  caddr_t hcp_pass;
+} http_cli_proxy_t;
+
 /* HTTP Client context */
 
 typedef struct http_cli_ctx_s
@@ -141,6 +150,7 @@ typedef struct http_cli_ctx_s
   int               hcctx_http_min;
   int               hcctx_respcode;
   int               hcctx_is_chunked;
+  int               hcctx_is_gzip;
   int               hcctx_keep_alive;
   int               hcctx_close;
   int               hcctx_retry_count;
@@ -167,7 +177,7 @@ typedef struct http_cli_ctx_s
   caddr_t           hcctx_url;
   caddr_t           hcctx_uri;
   caddr_t           hcctx_err;
-  caddr_t           hcctx_proxy;
+  http_cli_proxy_t  hcctx_proxy;
   caddr_t           hcctx_req_ctype;
   int               hcctx_http_out_cached;
   dk_session_t *    hcctx_http_out;
@@ -262,5 +272,6 @@ HC_RET http_cli_set_method (http_cli_ctx *, int);
 caddr_t http_cli_get_err (http_cli_ctx *);
 HC_RET http_cli_ssl_cert (http_cli_ctx *, caddr_t);
 HC_RET http_cli_ssl_cert_pass (http_cli_ctx *, caddr_t);
+int http_cli_target_is_proxy_exception (char *);
 
 #endif /* __HTTP_CLIENT_H__ */

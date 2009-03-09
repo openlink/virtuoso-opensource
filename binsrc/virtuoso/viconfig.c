@@ -110,6 +110,9 @@ extern char *vdb_odbc_error_file; /* from sqlrrun.c */
 extern char *vdb_trim_trailing_spaces; /* from sqlrrun.c */
 extern long cfg_disable_vdb_stat_refresh;
 extern char *www_maintenance_page;
+extern char *http_cli_proxy_server;
+extern char *http_cli_proxy_except;
+
 #ifdef _SSL
 extern char *https_port;
 extern char *https_cert;
@@ -1180,6 +1183,12 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "RDFContentNegotiation", &c_http_check_rdf_accept) == -1)
     c_http_check_rdf_accept = 1;
+
+  if (cfg_getstring (pconfig, section, "HTTPProxyServer", &http_cli_proxy_server) == -1)
+    http_cli_proxy_server = NULL;
+
+  if (cfg_getstring (pconfig, section, "HTTPProxyExceptions", &http_cli_proxy_except) == -1)
+    http_cli_proxy_except = NULL;
 
   /*
    * FIXME: set meaningful default for c_http_proxy_connection_cache_timeout

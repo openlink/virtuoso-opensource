@@ -391,5 +391,7 @@ typedef struct https_ctx_info_s
   char *hci_name;
 } https_ctx_info_t;
 #endif
+extern char * http_cli_proxy_server;
+int http_cli_target_is_proxy_exception (char *);
 
 #endif /* _HTTP_H */

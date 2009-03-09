@@ -936,11 +936,8 @@ ws_set_path_string (ws_connection_t * ws, int dir)
   int len = 0, fill = 0;
   for (inx = 0; inx < n; inx++)
     {
+      /* no special case for http: needed, since no additional char added, just / is after http: */
       len += box_length (arr[inx]);
-#ifdef VIRTUAL_DIR
-      if (inx == 0 && 0 == stricmp (arr [inx], "http:"))
-	len ++;
-#endif
     }
   if (len > 0)
     res = dk_alloc_box (len + 1 + (dir ? 1 : 0), DV_SHORT_STRING);
@@ -1297,7 +1294,10 @@ ws_path_and_params (ws_connection_t * ws)
 
   ws_set_path_string (ws, is_dir);
 #ifdef VIRTUAL_DIR
+  if (0 != strnicmp (ws->ws_path_string, "http://", 7))
   ws_set_phy_path (ws, is_dir, NULL);
+  else /* raw proxy request */
+    ws->ws_p_path_string = box_copy (ws->ws_path_string);
 #endif
 
   ws->ws_proxy_request = (ws->ws_p_path_string ? (0 == strnicmp (ws->ws_p_path_string, "http://", 7)) : 0);
@@ -5962,8 +5962,6 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       else
 	strses_body = 1;
     }
-  if (n_args > 5)
-    proxy = bif_string_or_null_arg (qst, args, 5, "http_get");
 #ifdef DEBUG
   printf("\nhttp_get(\"%s\", ...)\n", uri);
 #endif
@@ -5980,6 +5978,23 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   else
     {
+      char * uri1 = http_pos + 7;
+      char * slash = NULL;
+      size_t host_len;
+
+      slash = strchr (uri1, '/');
+      if (!slash)
+	slash = uri1 + strlen (uri1);
+      host_len = MIN ((slash - uri1), sizeof (host));
+      memcpy (host, uri1, host_len);
+      host [host_len] = 0;
+
+      if (http_cli_proxy_server && !http_cli_target_is_proxy_exception (host))
+	proxy = http_cli_proxy_server;
+
+      if (n_args > 5)
+	proxy = bif_string_or_null_arg (qst, args, 5, "http_get");
+
       if (proxy == NULL)
 	ses = http_connect (http_pos + 7, &err, &head, method, header, body, proxy, strses_body);
       else
@@ -6127,16 +6142,6 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   else
     {
-      if (proxy == NULL)
-	{
-	  char * uri1 = http_pos + 7;
-	  char * slash = NULL;
-	  slash = strchr (uri1, '/');
-	  if (!slash)
-	    slash = uri1 + strlen (uri1);
-	  memcpy (host, uri1, slash - uri1);
-	  host [slash - uri1] = 0;
-	}
       http_session_used (ses, ((proxy != NULL) ? proxy : host),
 			 peer_max_timeout);
     }

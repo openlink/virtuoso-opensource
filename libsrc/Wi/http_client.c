@@ -107,6 +107,31 @@ if (HC_RET_ERR_ABORT == (r = fn (c))) \
 #define F_SET(c, f) (c->hcctx_flags |= f)
 #define F_RESET(c, f) (c->hcctx_flags &= ~f)
 
+int http_cli_error (http_cli_ctx * ctx, caddr_t errcode, caddr_t errmsg)
+{ 
+  ctx->hcctx_err = srv_make_new_error (errcode, "HC001", errmsg);
+  ctx->hcctx_state = HC_STATE_ERR_CLEANUP;
+  return HC_RET_ERR_ABORT;
+}
+
+char * http_cli_proxy_server = NULL;
+char * http_cli_proxy_except = NULL;
+dk_set_t http_cli_proxy_except_set = NULL;
+
+int 
+http_cli_target_is_proxy_exception (char * host)
+{
+  if (!http_cli_proxy_except_set)
+    return 0;
+  DO_SET (caddr_t, ex, &http_cli_proxy_except_set)
+    {
+      if (DVC_MATCH == cmp_like (host, ex, default_collation, '\\', LIKE_ARG_CHAR, LIKE_ARG_CHAR))
+	return 1;
+    }
+  END_DO_SET ();
+  return 0;
+}
+
 int
 http_cli_hook_dispatch (http_cli_ctx * ctx, int hook)
 {
@@ -115,8 +140,7 @@ http_cli_hook_dispatch (http_cli_ctx * ctx, int hook)
 
   DO_SET (http_cli_handler_frame_t*, fm, &ctx->hcctx_hooks[hook])
     {
-      if ((ctx->hcctx_hook_ret = (fm->fn)(ctx, fm->pm, fm->rt, fm->er))
-	  == HC_RET_ERR_ABORT)
+      if ((ctx->hcctx_hook_ret = (fm->fn)(ctx, fm->pm, fm->rt, fm->er)) == HC_RET_ERR_ABORT)
 	break;
     }
   END_DO_SET ();
@@ -166,6 +190,8 @@ http_cli_ctx_init (void)
       dk_free_box (item); \
       item = 0; \
     }
+
+#define http_cli_target(ctx) (NULL != (ctx)->hcctx_proxy.hcp_proxy ? (ctx)->hcctx_proxy.hcp_proxy : (ctx)->hcctx_host)
 
 int
 http_cli_ctx_free (http_cli_ctx * ctx)
@@ -221,6 +247,7 @@ http_cli_ctx_free (http_cli_ctx * ctx)
 #ifdef _SSL
 			      || ctx->hcctx_ssl_ctx
 #endif
+			      || ctx->hcctx_proxy.hcp_socks_ver > 0
 			      ))
     {
       PrpcDisconnect (ctx->hcctx_http_out);
@@ -232,15 +259,15 @@ http_cli_ctx_free (http_cli_ctx * ctx)
   else
     {
       if (ctx->hcctx_http_out)
-	http_session_used (ctx->hcctx_http_out,
-			   ((ctx->hcctx_proxy != NULL) ?
-			    ctx->hcctx_proxy : ctx->hcctx_host),
-			   ctx->hcctx_peer_max_timeout);
+	http_session_used (ctx->hcctx_http_out, http_cli_target (ctx), ctx->hcctx_peer_max_timeout);
     }
 #endif
 
   dk_free_tree (ctx->hcctx_url);
   dk_free_tree (ctx->hcctx_host);
+  dk_free_tree (ctx->hcctx_proxy.hcp_proxy);
+  dk_free_tree (ctx->hcctx_proxy.hcp_user);
+  dk_free_tree (ctx->hcctx_proxy.hcp_pass);
   dk_free_tree (ctx->hcctx_uri);
   dk_free_tree (ctx->hcctx_response);
 
@@ -344,6 +371,274 @@ http_cli_push_resp_evt (http_cli_ctx * ctx,
   dk_set_push (&ctx->hcctx_resp_evts, evt_q);
 }
 
+HC_RET
+http_cli_negotiate_socks4 (dk_session_t * ses, char * in_host, char * name, char ** err_ret)
+{
+  unsigned char socksreq[270];
+  int port, rc; 
+  unsigned short ip[4];
+  char *pos, host[1000], ip_addr[50];
+  int packetsize;
+
+  pos = strchr (in_host, ':');
+  if (pos)
+    {
+      memcpy (host, in_host, pos - in_host); 
+      port = atoi (pos + 1);
+    }
+  else
+    {
+      strcpy_ck (host, in_host);
+      port = 80;
+    }
+  socksreq[0] = 4;
+  socksreq[1] = 1; /* connect */
+  *((unsigned short*)&socksreq[2]) = htons((unsigned short) port);
+  srv_ip (ip_addr, sizeof (ip_addr), host);
+  if (4 == sscanf(ip_addr, "%hu.%hu.%hu.%hu", &ip[0], &ip[1], &ip[2], &ip[3])) 
+    {
+      socksreq[4] = (unsigned char)ip[0];
+      socksreq[5] = (unsigned char)ip[1];
+      socksreq[6] = (unsigned char)ip[2];
+      socksreq[7] = (unsigned char)ip[3];
+    }
+  else
+    {
+      *err_ret = "Can not resolve target";
+      return (HC_RET_ERR_ABORT);
+    }
+
+  packetsize = 9;
+  socksreq[8] = 0; /* no name */
+  if (name)
+    {
+      strncat ((char*)socksreq + 8, name, sizeof(socksreq) - 8);
+      socksreq[sizeof (socksreq) - 1] = 0;
+      packetsize = 9 + strlen ((char *) socksreq + 8);
+    }
+
+  CATCH_WRITE_FAIL (ses)
+    {
+      session_buffered_write (ses, (char *)socksreq, 9); /* no name */
+      session_flush_1 (ses);
+    }
+  END_WRITE_FAIL (ses);
+
+  CATCH_READ_FAIL (ses)
+    {
+      rc = service_read (ses, (char *)socksreq, 8, 1);
+    }
+  FAILED
+    {
+      *err_ret = "Can not read handshake response";
+      return (HC_RET_ERR_ABORT);
+    }
+  END_READ_FAIL (ses);
+  if (rc != 8 || socksreq[1] != 0x5a) /* either cannot read or access is not granted */
+    {
+      *err_ret = "Access is not granted";
+      return (HC_RET_ERR_ABORT);
+    }
+  return (HC_RET_OK);
+}
+
+HC_RET
+http_cli_negotiate_socks5 (dk_session_t * ses, char * in_host, char * user, char * pass, int resolve, char ** err_ret)
+{
+  unsigned char socksreq[600];
+  int port, rc; 
+  unsigned short ip[4];
+  char *pos, host[1000], ip_addr[50];
+  int packetsize;
+
+  pos = strchr (in_host, ':');
+  if (pos)
+    {
+      memcpy (host, in_host, pos - in_host); 
+      port = atoi (pos + 1);
+    }
+  else
+    {
+      strcpy_ck (host, in_host);
+      port = 80;
+    }
+  socksreq[0] = 5; /* version */
+  socksreq[1] = (user ? 2 : 1); /* methods supported */
+  socksreq[2] = 0; /* no auth */ 
+  socksreq[3] = 2; /* uid/pwd */ 
+
+  CATCH_WRITE_FAIL (ses)
+    {
+      session_buffered_write (ses, (char *)socksreq, (2 + (int)socksreq[1])); 
+      session_flush_1 (ses);
+    }
+  END_WRITE_FAIL(ses);
+
+  CATCH_READ_FAIL (ses)
+    {
+      rc = service_read (ses, (char *) socksreq, 2, 1);
+    }
+  FAILED
+    {
+      *err_ret = "Can not read handshake response";
+      return (HC_RET_ERR_ABORT);
+    }
+  END_READ_FAIL (ses);
+
+  if (socksreq[0] != 5) /* invalid version */
+    {
+      *err_ret = "Invalid socks version";
+      return (HC_RET_ERR_ABORT);
+    }
+
+  if (socksreq[1] == 2 && user && pass) /* uid/pwd handshake */
+    {
+      size_t uslen, pwlen;
+      int len = 0;
+
+      uslen = strlen (user);
+      pwlen = strlen (pass);
+      socksreq[len++] = 1; 
+      socksreq[len++] = (char) uslen;
+      memcpy(socksreq + len, user, (int) uslen);
+      len += uslen;
+      socksreq[len++] = (char) pwlen;
+      memcpy(socksreq + len, pass, (int) pwlen);
+      len += pwlen;
+
+      CATCH_WRITE_FAIL (ses)
+	{
+	  session_buffered_write (ses, (char *)socksreq, len); 
+	  session_flush_1 (ses);
+	}
+      END_WRITE_FAIL(ses);
+
+      CATCH_READ_FAIL (ses)
+	{
+	  rc = service_read (ses, (char *) socksreq, 2, 1);
+	}
+      FAILED
+	{
+	  *err_ret = "Can not read handshake response";
+	  return (HC_RET_ERR_ABORT);
+	}
+      END_READ_FAIL (ses);
+
+      if (socksreq[1] != 0) /* invalid version */
+	{
+	  *err_ret = "User was rejected";
+	  return (HC_RET_ERR_ABORT);
+	}
+    }
+  else if (socksreq[1] != 0) /* authentication needs , but not supported by client */
+    {
+      *err_ret = "Authentication mode is not supported";
+      return (HC_RET_ERR_ABORT);
+    }
+
+  /* ready to tell proxy where to connect */
+  socksreq[0] = 5; /* version */
+  socksreq[1] = 1; /* connect */
+  socksreq[2] = 0;
+  if (resolve)
+    {
+      int hostname_len = strlen (host);
+      socksreq[3] = 3; /* dns name */  
+      packetsize = (size_t)(5 + hostname_len + 2);
+      socksreq[4] = (char) hostname_len;
+      memcpy(&socksreq[5], host, hostname_len);
+      *((unsigned short*)&socksreq[hostname_len+5]) = htons((unsigned short)port);
+    }
+  else
+    {
+      packetsize = 10;
+      socksreq[3] = 1; /* IPv4 follows, we lookup it locally */  
+      srv_ip (ip_addr, sizeof (ip_addr), host);
+      if (4 == sscanf(ip_addr, "%hu.%hu.%hu.%hu", &ip[0], &ip[1], &ip[2], &ip[3])) 
+	{
+	  socksreq[4] = (unsigned char)ip[0];
+	  socksreq[5] = (unsigned char)ip[1];
+	  socksreq[6] = (unsigned char)ip[2];
+	  socksreq[7] = (unsigned char)ip[3];
+	}
+      else
+	{
+	  *err_ret = "Can not resolve target host name";
+	  return (HC_RET_ERR_ABORT);
+	}
+      *((unsigned short*)&socksreq[8]) = htons((unsigned short)port);
+    }
+
+  CATCH_WRITE_FAIL (ses)
+    {
+      session_buffered_write (ses, (char *)socksreq, packetsize); 
+      session_flush_1 (ses);
+    }
+  END_WRITE_FAIL(ses);
+
+  packetsize = 10;
+  CATCH_READ_FAIL (ses)
+    {
+      rc = service_read (ses, (char *)socksreq, packetsize, 1);
+      if (socksreq[0] != 5)
+	{
+	  *err_ret = "Invalid socks version";
+	  return (HC_RET_ERR_ABORT);
+	}
+      if (socksreq[1] != 0) /* an error */
+	{
+	  *err_ret = "Socks handshake error";
+	  return (HC_RET_ERR_ABORT);
+	}
+
+      if (socksreq[3] == 3) /* domain name */
+	packetsize = 5 + (int)socksreq[4] + 2;
+      else if (socksreq[3] == 4) /* IPv6 address */
+	packetsize = 4 + 16 + 2;
+
+      if (packetsize > 10) /* read the rest */
+	{
+	  packetsize -= 10;
+	  rc = service_read (ses, (char *)&socksreq[10], packetsize, 1);
+	}
+    }
+  FAILED
+    {
+      *err_ret = "Can not read handshake response";
+      return (HC_RET_ERR_ABORT);
+    }
+  END_READ_FAIL (ses);
+  return (HC_RET_OK);
+}
+
+HC_RET
+http_cli_handle_socks_conn_post (http_cli_ctx * ctx, caddr_t parm, caddr_t ret_val, caddr_t err)
+{
+  char * err_ret = NULL;
+  if (!ctx)
+    return (HC_RET_ERR_ABORT);
+
+  if (!ctx->hcctx_proxy.hcp_proxy || !ctx->hcctx_proxy.hcp_socks_ver || ctx->hcctx_http_out_cached)
+    return (HC_RET_OK);
+
+  if (ctx->hcctx_proxy.hcp_socks_ver == 4)
+    {
+      if (HC_RET_OK != http_cli_negotiate_socks4 (ctx->hcctx_http_out, ctx->hcctx_host, ctx->hcctx_proxy.hcp_user,  &err_ret))
+	return http_cli_error (ctx, "HTCLI", err_ret);
+    }
+  else if (ctx->hcctx_proxy.hcp_socks_ver == 5)
+    {
+      if (HC_RET_OK != http_cli_negotiate_socks5 (ctx->hcctx_http_out, ctx->hcctx_host, ctx->hcctx_proxy.hcp_user, ctx->hcctx_proxy.hcp_pass, 
+	  ctx->hcctx_proxy.hcp_resolve, &err_ret))
+	return http_cli_error (ctx, "HTCLI", err_ret);
+    }
+  else /* not supported proxy */
+    {
+      return http_cli_hook_dispatch (ctx, HC_HTTP_CONN_ERR);
+    }
+  return (HC_RET_OK);
+}
+
 #ifdef _SSL
 HC_RET
 http_cli_ssl_cert (http_cli_ctx * ctx, caddr_t val)
@@ -439,6 +734,65 @@ http_cli_set_target_host (http_cli_ctx * ctx, caddr_t target)
   return (HC_RET_OK);
 }
 
+void
+http_cli_set_proxy_auth (http_cli_proxy_t * proxy, char * target)
+{
+  char * pos = strrchr (target, '@');
+  char buf [400];
+  if (pos)
+    {
+      char * delim;
+      strncpy (buf, target, pos - target);
+      buf [pos - target] = 0;
+      proxy->hcp_proxy = box_string (pos+1);
+      delim = strchr (buf, ':');
+      if (delim)
+	{
+	  *delim = 0;
+	  delim ++;
+	  proxy->hcp_pass = box_string (delim);
+	}
+      else
+	proxy->hcp_pass = box_string ("");
+      proxy->hcp_user = box_string (buf);
+    }
+  else
+    proxy->hcp_proxy = box_string (target);
+}
+
+HC_RET
+http_cli_set_proxy (http_cli_ctx * ctx, caddr_t target)
+{
+  if (ctx)
+    {
+      RELEASE (ctx->hcctx_proxy.hcp_proxy);
+      ctx->hcctx_proxy.hcp_socks_ver = 0;
+      if (0 == strnicmp (target, "socks4://", 9))
+	{
+	  http_cli_set_proxy_auth (&ctx->hcctx_proxy, target + 9);
+	  ctx->hcctx_proxy.hcp_socks_ver = 4;
+	}
+      else if (0 == strnicmp (target, "socks5://", 9))
+	{
+	  http_cli_set_proxy_auth (&ctx->hcctx_proxy, target + 9);
+	  ctx->hcctx_proxy.hcp_socks_ver = 5;
+	}
+      else if (0 == strnicmp (target, "socks5-host://", 14))
+	{
+	  http_cli_set_proxy_auth (&ctx->hcctx_proxy, target + 14);
+	  ctx->hcctx_proxy.hcp_socks_ver = 5;
+	  ctx->hcctx_proxy.hcp_resolve = 1;
+	}
+      else if (0 == strnicmp (target, "http://", 7))
+	{
+	  http_cli_set_proxy_auth (&ctx->hcctx_proxy, target + 7);
+	}
+      else if (strlen (target) > 0) /* an empty string means no proxy */
+	ctx->hcctx_proxy.hcp_proxy = box_string (target);
+    }
+  return (HC_RET_OK);
+}
+
 HC_RET
 http_cli_set_ua_id (http_cli_ctx * ctx, caddr_t ua_id)
 {
@@ -476,13 +830,13 @@ http_cli_connect (http_cli_ctx * ctx)
   ctx->hcctx_http_out = NULL; /* at this point we have no connection, if there was previous retry it's shut'd */
 #ifdef _USE_CACHED_SES
   if (!ctx->hcctx_no_cached) /* first we try to get from cache */
-    ctx->hcctx_http_out = http_cached_session (ctx->hcctx_host);
+    ctx->hcctx_http_out = http_cached_session (http_cli_target (ctx));
 
   if (ctx->hcctx_http_out) /* if connection is from cache, flag it */
     ctx->hcctx_http_out_cached = 1;
   else
 #endif
-    ctx->hcctx_http_out = http_dks_connect (ctx->hcctx_host, &ctx->hcctx_err); /* in every other case we do new connect */
+    ctx->hcctx_http_out = http_dks_connect (http_cli_target (ctx), &ctx->hcctx_err); /* in every other case we do new connect */
   if (ctx->hcctx_http_out == NULL)
     http_cli_hook_dispatch (ctx, HC_HTTP_CONN_ERR);
   else
@@ -563,6 +917,9 @@ char*
 http_cli_get_doc_str (http_cli_ctx * ctx)
 {
   char* s = NULL;
+
+  if (NULL != ctx->hcctx_proxy.hcp_proxy && 0 == ctx->hcctx_proxy.hcp_socks_ver)
+    return ctx->hcctx_url;
 
   if (!strnicmp (ctx->hcctx_url, "http://", 7))
     s = ctx->hcctx_url + 7;
@@ -719,6 +1076,11 @@ http_cli_parse_resp_hdr (http_cli_ctx * ctx, char* hdr, int num_chars)
 	  return (HC_RET_ERR_ABORT);
 #endif	  
 	}
+    }
+  if (!strnicmp ("Content-Encoding:", hdr, 17) && nc_strstr ((unsigned char *) hdr, (unsigned char *) "gzip"))
+    {
+      ctx->hcctx_is_gzip = 1;
+      return (HC_RET_OK);
     }
   return (HC_RET_OK);
 }
@@ -1228,6 +1590,7 @@ http_cli_get_host_from_url (char* url)
   char* slash = 0;
   char host[1024];
   int is_https = 0;
+  size_t host_len;
 
   st = url;
 
@@ -1246,8 +1609,9 @@ http_cli_get_host_from_url (char* url)
   while (*slash != '/' && *slash != 0)
     slash++;
 
-  memcpy (host, st, slash - st);
-  host[slash - st] = 0;
+  host_len = MIN ((slash - st), sizeof (host));
+  memcpy (host, st, host_len);
+  host[host_len] = 0;
 
   if (!strchr (host, ':') && is_https)
     {
@@ -1503,6 +1867,9 @@ http_cli_std_init (char * url, caddr_t * qst)
   ctx->hcctx_host = http_cli_get_host_from_url (url);
   ctx->hcctx_uri = http_cli_get_uri_from_url (url);
 
+  if (http_cli_proxy_server && !http_cli_target_is_proxy_exception (ctx->hcctx_host))
+    http_cli_set_proxy (ctx, http_cli_proxy_server);
+
   h = http_cli_make_handler_frame (http_cli_handle_malfm_resp, NULL, NULL, NULL);
   http_cli_push_hook (ctx, HC_HTTP_RESP_MALF, h);
 
@@ -1514,6 +1881,9 @@ http_cli_std_init (char * url, caddr_t * qst)
 
   h = http_cli_make_handler_frame (http_cli_handle_conn_err, NULL, NULL, NULL);
   http_cli_push_hook (ctx, HC_HTTP_CONN_ERR, h);
+
+  h = http_cli_make_handler_frame (http_cli_handle_socks_conn_post, NULL, NULL, NULL);
+  http_cli_push_hook (ctx, HC_HTTP_CONN_POST, h);
 
   return (ctx);
 }
@@ -1549,6 +1919,11 @@ http_cli_std_hdrs (http_cli_ctx * ctx)
 	{
 	  snprintf (hdr_tmp, sizeof (hdr_tmp), "Connection: Keep-Alive\r\n");
 	  SES_PRINT (ctx->hcctx_prv_req_hdrs, hdr_tmp);
+	  if (ctx->hcctx_proxy.hcp_proxy)
+	    {
+	      snprintf (hdr_tmp, sizeof (hdr_tmp), "Proxy-Connection: Keep-Alive\r\n");
+	      SES_PRINT (ctx->hcctx_prv_req_hdrs, hdr_tmp);
+	    }
 	}
       else
 	{
@@ -1566,6 +1941,17 @@ http_cli_std_hdrs (http_cli_ctx * ctx)
     {
       snprintf (hdr_tmp, sizeof (hdr_tmp), "Content-Type: %s\r\n", ctx->hcctx_req_ctype);
       SES_PRINT (ctx->hcctx_prv_req_hdrs, hdr_tmp);
+    }
+  if (NULL != ctx->hcctx_proxy.hcp_user && 0 == ctx->hcctx_proxy.hcp_socks_ver)
+    {
+      char enc_buf [2048];
+      uint32 len;
+      snprintf (hdr_tmp, sizeof (hdr_tmp), "%s:%s", ctx->hcctx_proxy.hcp_user, ctx->hcctx_proxy.hcp_pass);
+      len = strlen (hdr_tmp) + 1;
+      SES_PRINT (ctx->hcctx_prv_req_hdrs, "Proxy-Authorization: Basic ");
+      encode_base64 (hdr_tmp, enc_buf, len);
+      SES_PRINT (ctx->hcctx_prv_req_hdrs, enc_buf);
+      SES_PRINT (ctx->hcctx_prv_req_hdrs, "\r\n");
     }
   return (HC_RET_OK);
 }
@@ -1827,12 +2213,18 @@ bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       http_cli_ssl_cert (ctx, (caddr_t)"1");
     }
 #endif
-  if (BOX_ELEMENTS (args) > 9)
+  if (BOX_ELEMENTS (args) > 9) /* timeout */
     {
       int isnull = 0;
       uint32 time_out = (uint32) bif_long_or_null_arg (qst, args, 9, me, &isnull);
       if (!isnull)
         ctx->hcctx_timeout = time_out;
+    }
+  if (BOX_ELEMENTS (args) > 10) /* proxy server */
+    {
+      caddr_t proxy = bif_string_or_null_arg (qst, args, 10, me);
+      if (proxy != NULL)
+	http_cli_set_proxy (ctx, proxy);
     }
 
   if (NULL != (ret = http_client_cache_get ((query_instance_t *)qst, url, http_hdr, body, args, 8)))
@@ -2046,9 +2438,42 @@ error_ret:
   return (ret);
 }
 
+static void
+init_acl_set (char *acl_string1, dk_set_t * acl_set_ptr)
+{
+  char *tmp, *tok_s = NULL, *tok;
+  caddr_t acl_string = acl_string1 ? box_dv_short_string (acl_string1) : NULL;	/* lets do a copy because strtok
+										   will destroy the string */
+  if (NULL != acl_string)
+    {
+      tok_s = NULL;
+      tok = strtok_r (acl_string, ",", &tok_s);
+      while (tok)
+	{
+	  while (*tok && isspace (*tok))
+	    tok++;
+	  if (tok_s)
+	    tmp = tok_s - 2;
+	  else if (tok && strlen (tok) > 1)
+	    tmp = tok + strlen (tok) - 1;
+	  else
+	    tmp = NULL;
+	  while (tmp && tmp >= tok && isspace (*tmp))
+	    *(tmp--) = 0;
+	  if (*tok)
+	    {
+	      dk_set_push (acl_set_ptr, box_dv_short_string (tok));
+	    }
+	  tok = strtok_r (NULL, ",", &tok_s);
+	}
+      dk_free_box (acl_string);
+    }
+}
+
 void
 bif_http_client_init (void)
 {
+  init_acl_set (http_cli_proxy_except, &http_cli_proxy_except_set);
   bif_define_typed ("http_client_internal", bif_http_client, &bt_varchar);
   bif_define_typed ("http_pipeline", bif_http_pipeline, &bt_any);
 }
