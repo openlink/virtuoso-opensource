@@ -2232,7 +2232,10 @@ sparp_check_mapping_of_sources (sparp_t *sparp, tc_context_t *tcc,
       int chk_res;
       if ((SPART_GRAPH_NOT_FROM == source->_.graph.subtype) || (SPART_GRAPH_NOT_NAMED == source->_.graph.subtype))
         {
-          if ((SPART_VARR_FIXED & qmv_or_fmt_rvr->rvrRestrictions) &&
+          if ((NULL != rvr) && (NULL != rvr->rvrFixedValue) &&
+            sparp_fixedvalues_equal (sparp, (SPART *)(source->_.graph.iri), (SPART *)(rvr->rvrFixedValue)) )
+            return SSG_QM_NO_MATCH;
+          if ((NULL != qmv_or_fmt_rvr) && (SPART_VARR_FIXED & qmv_or_fmt_rvr->rvrRestrictions) &&
             sparp_fixedvalues_equal (sparp, (SPART *)(source->_.graph.iri), (SPART *)(qmv_or_fmt_rvr->rvrFixedValue)))
             return SSG_QM_NO_MATCH;
           continue;
