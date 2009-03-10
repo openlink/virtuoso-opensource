@@ -1825,7 +1825,7 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int allow_uname)
           default: as_strg = "' AS DATETIME)"; break;
           }
         ssg_puts ("CAST ('");
-        dt_to_string (box, tmpbuf, buflen);
+        dt_to_iso8601_string (box, tmpbuf, buflen);
         ssg_puts (tmpbuf);
         ssg_puts (as_strg);
         break;

@@ -29,17 +29,6 @@
 #ifndef _DATE_H
 #define _DATE_H
 
-/* DV_DATE_OBJ layout:
- *
- *
- *  1. day - 0-3.950.000 - 22 bit
- *  2. hour - 0-23          5 bit
- *  3. minute 0-59          6 bit
- *  4. second 0-59          6 bit
- *  5. fraction 0-999.999  20 bit
- *  6. timezone 0-1440
- */
-
 #include "odbcinc.h"
 
 typedef unsigned char  datetime_t[DT_LENGTH];
@@ -59,6 +48,23 @@ extern void dt_audit_fields (char *dt);
 #else
 #define DT_AUDIT_FIELDS(dt)
 #endif
+
+/* While TIMESTAMP_STRUCT value is by default in dt_local_tz timezone, DV_DATE_OBJ is always in UTC.
+ * Its timezone field is SOLELY for printing with timezone and ignored by datediff and the like.
+ * DV_DATE_OBJ layout:
+ *
+ *  1. day - 0-3.950.000 - 22 bit
+ *  2. hour - 0-23          5 bit
+ *  3. minute 0-59          6 bit
+ *  4. second 0-59          6 bit
+ *  5. fraction 0-999.999  20 bit (i.e., whole thousands of nanoseconds are stored)
+ *  6. type of value 0-4 (could be more later)
+ *  7. timezone for printing minus 840 to plus 840	sign bit and 10 bits
+ *
+ * ...:...0...:...1...:...2...:...3...:...4...:...5...:...6...:...7...:...8...:...9
+ * <<dddddddddddddddddddddd<<<hhhhh<mmmmmssssssffffffffffffffffffff<<TTT-zzzzzzzzzz
+ *
+ */
 
 #define DT_DAY(dt) \
   ((CUC (dt, 0) << 16) | \

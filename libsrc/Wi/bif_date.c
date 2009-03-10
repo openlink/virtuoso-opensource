@@ -84,7 +84,6 @@ bif_date_string_GMT (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 int
 dt_print_to_buffer (char *buf, caddr_t arg, int mode)
 {
-  char dt[DT_LENGTH];
   int res = 0;
   int arg_dt_type = DT_DT_TYPE (arg);
   TIMESTAMP_STRUCT ts;
@@ -95,9 +94,7 @@ dt_print_to_buffer (char *buf, caddr_t arg, int mode)
     sqlr_new_error ("22023", "SR592", "Bit 4 in print mode requires DATE or DATETIME argument, not TIME");
   if ((DT_PRINT_MODE_HMS & mode) && (DT_TYPE_DATE == arg_dt_type))
     sqlr_new_error ("22023", "SR593", "Bit 2 in print mode requires TIME or DATETIME argument, not DATE");
-  memcpy (dt, arg, DT_LENGTH);
-  DT_SET_TZ (dt, 0);
-  dt_to_timestamp_struct (dt, &ts);
+  dt_to_GMTimestamp_struct (arg, &ts);
   if (DT_PRINT_MODE_YMD & mode)
     res += sprintf (buf, "%04d-%02d-%02d", ts.year, ts.month, ts.day);
   if ((DT_PRINT_MODE_YMD & mode) && (DT_PRINT_MODE_HMS & mode))
@@ -120,7 +117,7 @@ int /* Returns number of chars parsed. */
 dt_scan_from_buffer (const char *buf, int mode, caddr_t *dt_ret, const char **err_msg_ret)
 {
   const char *tail = buf;
-  int fld_len, acc, ymd_found = 0, hms_found = 0;
+  int fld_len, acc, ymd_found = 0, hms_found = 0, msec_factor;
   TIMESTAMP_STRUCT ts;
   memset (&ts, 0, sizeof (TIMESTAMP_STRUCT));
   dt_ret[0] = NULL;
@@ -201,6 +198,27 @@ dt_scan_from_buffer (const char *buf, int mode, caddr_t *dt_ret, const char **er
           return 0;
         }
       ts.second = acc;
+      if ('.' == tail[0])
+        {
+          tail++;
+          msec_factor = 1000000000;
+          acc = 0;
+          if (!isdigit (tail[0]))
+            {
+              err_msg_ret[0] = "Fraction of second is expected after decimal dot";
+              return 0;
+            }
+          do
+            {
+              if (msec_factor)
+                acc = acc * 10 + (tail[0] - '0');
+              tail++;
+              msec_factor /= 10;
+            } while (isdigit (tail[0]));
+          ts.fraction = acc * (msec_factor ? msec_factor : 1);
+        }
+      err_msg_ret[0] = "Colon is expected after minute";
+      return 0;
     }
   else
     {
@@ -232,7 +250,6 @@ scan_tz:
   dt_ret[0] = dk_alloc_box (DT_LENGTH, DV_DATETIME);
   {
     uint32 day;
-/*    ts_add (ts, -dt_local_tz, "minute");*/
     day = date2num (ts.year, ts.month, ts.day);
     DT_SET_DAY (dt_ret[0], day);
     DT_SET_HOUR (dt_ret[0], ts.hour);
@@ -241,9 +258,6 @@ scan_tz:
     DT_SET_FRACTION (dt_ret[0], ts.fraction);
     DT_SET_TZ (dt_ret[0], 0);
   }
-
-/*  timestamp_struct_to_dt (&ts, dt_ret[0]);
-  DT_SET_TZ (dt_ret[0], 0);*/
   SET_DT_TYPE_BY_DTP (dt_ret[0], (ymd_found ? (hms_found ? DV_DATETIME : DV_DATE) : DV_TIME));
   return (tail - buf);
 }
@@ -441,10 +455,11 @@ bif_date_add (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int n = (int) bif_long_arg (qst, args, 1, "dateadd");
   caddr_t dt = bif_date_arg (qst, args, 2, "dateadd");
   TIMESTAMP_STRUCT ts;
-  dt_to_timestamp_struct (dt, &ts);
-  ts_add (&ts, n, part);
+  dt_to_GMTimestamp_struct (dt, &ts);
+  ts_add (&ts, n, part); /* It's the open question, in which timezone the addition should take place */
   res = dk_alloc_box (DT_LENGTH, DV_DATETIME);
-  timestamp_struct_to_dt (&ts, res);
+  GMTimestamp_struct_to_dt (&ts, res);
+  DT_SET_TZ (res, DT_TZ (dt));
   return res;
 }
 
@@ -457,10 +472,8 @@ bif_date_diff (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t dt2 = bif_date_arg (qst, args, 2, "datediff");
   TIMESTAMP_STRUCT ts1;
   TIMESTAMP_STRUCT ts2;
-  /* BELOW OVERFLOWS on 32 bit long.  Numbers used for computing difference,
-   * hence this works when difference below 2**21 = 34 years */
-  long s1 = (long)DT_DAY (dt1) * 24 * 60 * 60 + DT_HOUR (dt1) * 60 * 60 + DT_MINUTE (dt1) * 60 + DT_SECOND (dt1);
-  long s2 = (long)DT_DAY (dt2) * 24 * 60 * 60 + DT_HOUR (dt2) * 60 * 60 + DT_MINUTE (dt2) * 60 + DT_SECOND (dt2);
+  boxint s1 = (boxint)DT_DAY (dt1) * 24 * 60 * 60 + DT_HOUR (dt1) * 60 * 60 + DT_MINUTE (dt1) * 60 + DT_SECOND (dt1);
+  boxint s2 = (boxint)DT_DAY (dt2) * 24 * 60 * 60 + DT_HOUR (dt2) * 60 * 60 + DT_MINUTE (dt2) * 60 + DT_SECOND (dt2);
 
   if (0 == stricmp (unit, "day"))
     return box_num ((boxint)DT_DAY (dt2) - (boxint)DT_DAY (dt1));
@@ -474,8 +487,8 @@ bif_date_diff (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (0 == stricmp (unit, "second"))
     return box_num (s2 - s1);
 
-  dt_to_timestamp_struct (dt2, &ts2);
-  dt_to_timestamp_struct (dt1, &ts1);
+  dt_to_GMTimestamp_struct (dt2, &ts2);
+  dt_to_GMTimestamp_struct (dt1, &ts1);
 
   if (0 == stricmp (unit, "month"))
     return box_num ((boxint)(ts2.year * 12 + ts2.month) - (boxint)(ts1.year * 12 + ts1.month));
@@ -484,7 +497,11 @@ bif_date_diff (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return box_num ((boxint)ts2.year - (boxint)ts1.year);
 
   if (0 == stricmp (unit, "millisecond"))
-    return box_num ((s2 - s1) * 1000 + (ts2.fraction / 1000 - ts1.fraction / 1000));
+    return box_num ((s2 - s1) * 1000 + (ts2.fraction / 1000000 - ts1.fraction / 1000000));
+  if (0 == stricmp (unit, "microsecond"))
+    return box_num ((s2 - s1) * (boxint)1000000 + (ts2.fraction / 1000 - ts1.fraction / 1000));
+  if (0 == stricmp (unit, "nanosecond"))
+    return box_num ((s2 - s1) * (boxint)1000000000 + (ts2.fraction - ts1.fraction));
 
   sqlr_new_error ("22023", "DT002", "Bad unit in datediff: %s.", unit);
   return NULL;
@@ -517,11 +534,11 @@ bif_timestampadd (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ptrlong part = bif_long_arg (qst, args, 0, "timestampadd");
   int n = (int) bif_long_arg (qst, args, 1, "timestampadd");
   caddr_t dt = bif_date_arg (qst, args, 2, "timestampadd");
-  TIMESTAMP_STRUCT ts;
-  dt_to_timestamp_struct (dt, &ts);
+  GMTIMESTAMP_STRUCT ts;
+  dt_to_GMTimestamp_struct (dt, &ts);
   ts_add (&ts, n, interval_odbc_to_text (part, "timestampadd"));
   res = dk_alloc_box (DT_LENGTH, DV_DATETIME);
-  timestamp_struct_to_dt (&ts, res);
+  GMTimestamp_struct_to_dt (&ts, res);
   return res;
 }
 
@@ -532,12 +549,11 @@ bif_timestampdiff (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ptrlong long_unit = bif_long_arg (qst, args, 0, "timestampdiff");
   caddr_t dt1 = bif_date_arg (qst, args, 1, "timestampdiff");
   caddr_t dt2 = bif_date_arg (qst, args, 2, "timestampdiff");
-  TIMESTAMP_STRUCT ts1;
-  TIMESTAMP_STRUCT ts2;
+  GMTIMESTAMP_STRUCT ts1, ts2;
   /* BELOW OVERFLOWS on 32 bit long.  Numbers used for computing difference,
    * hence this works when difference below 2**21 = 34 years */
-  long s1 = (long)DT_DAY (dt1) * 24 * 60 * 60 + DT_HOUR (dt1) * 60 * 60 + DT_MINUTE (dt1) * 60 + DT_SECOND (dt1);
-  long s2 = (long)DT_DAY (dt2) * 24 * 60 * 60 + DT_HOUR (dt2) * 60 * 60 + DT_MINUTE (dt2) * 60 + DT_SECOND (dt2);
+  boxint s1 = (boxint)DT_DAY (dt1) * 24 * 60 * 60 + DT_HOUR (dt1) * 60 * 60 + DT_MINUTE (dt1) * 60 + DT_SECOND (dt1);
+  boxint s2 = (boxint)DT_DAY (dt2) * 24 * 60 * 60 + DT_HOUR (dt2) * 60 * 60 + DT_MINUTE (dt2) * 60 + DT_SECOND (dt2);
   char *unit = interval_odbc_to_text (long_unit, "timestampdiff");
 
   if (0 == stricmp (unit, "day"))
@@ -552,8 +568,8 @@ bif_timestampdiff (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (0 == stricmp (unit, "second"))
     return box_num (s2 - s1);
 
-  dt_to_timestamp_struct (dt2, &ts2);
-  dt_to_timestamp_struct (dt1, &ts1);
+  dt_to_GMTimestamp_struct (dt2, &ts2);
+  dt_to_GMTimestamp_struct (dt1, &ts1);
 
   if (0 == stricmp (unit, "month"))
     return box_num ((boxint)(ts2.year * 12 + ts2.month) - (boxint)(ts1.year * 12 + ts1.month));

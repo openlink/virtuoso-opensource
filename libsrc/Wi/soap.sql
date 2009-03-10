@@ -439,8 +439,9 @@ WS_SECURITY_CHECK (inout body varchar, inout soap_xml any, inout lines any, inou
         expires := soap_box_xml_entity (_expires, timenow, 11);
 --	created := dt_set_tz (created, 0);
 --	expires := dt_set_tz (expires, 0);
-        if (not (created < timenow and timenow < expires))
-          signal ('SOAP', sprintf ('%d %s', 300, 'Message Expired'));
+        if ((dateadd('second', -1, created) > timenow or timenow > expires))
+          signal ('SOAP', sprintf ('300 Message Expired (created %s expires %s, time now is %s)',
+              __rdf_strsqlval (created), __rdf_strsqlval (expires), __rdf_strsqlval (timenow) ) );
       }
   }
   -- get info, and make connection_set

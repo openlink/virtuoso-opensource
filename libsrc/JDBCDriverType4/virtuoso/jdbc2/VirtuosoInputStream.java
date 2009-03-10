@@ -965,7 +965,7 @@ class VirtuosoInputStream extends BufferedInputStream
          default:
             {
                Timestamp _return = new java.sql.Timestamp(cal_dat.getTime().getTime());
-               _return.setNanos(fraction);
+               _return.setNanos(fraction * 1000);
                return _return;
             }
       }

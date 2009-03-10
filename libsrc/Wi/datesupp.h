@@ -29,6 +29,9 @@
 #ifndef _DATESUPP_H
 #define _DATESUPP_H
 
+/*! GMTIMESTAMP_STRUCT is identical to TIMESTAMP_STRUCT but is supposed to be in GMT, not in default server timezone or anything else */
+#define GMTIMESTAMP_STRUCT TIMESTAMP_STRUCT
+
 /* datesupp.c */
 uint32 date2num (const int year, const int month, const int day);
 void num2date (uint32 julian_days, int *year, int *month, int *day);
@@ -43,6 +46,8 @@ void sec2time (int sec, int *day, int *hour, int *min, int *tsec);
 int time2sec (int day, int hour, int min, int sec);
 void ts_add (TIMESTAMP_STRUCT *ts, int n, const char *unit);
 int dt_validate (caddr_t dt);
+void dt_to_GMTimestamp_struct (ccaddr_t dt, GMTIMESTAMP_STRUCT *ts);
+void GMTimestamp_struct_to_dt (GMTIMESTAMP_STRUCT *ts_in, char *dt);
 void dt_to_timestamp_struct (ccaddr_t dt, TIMESTAMP_STRUCT *ts);
 void timestamp_struct_to_dt (TIMESTAMP_STRUCT *ts_in, char *dt);
 void dt_to_date_struct (char *dt, DATE_STRUCT *ots);

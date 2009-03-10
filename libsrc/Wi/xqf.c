@@ -420,7 +420,8 @@ __duration_from_string (caddr_t *n, const char *str, int do_what)
     sqlr_new_error ("42001", "XPQ??", "Incorrect argument in duration constructor (missing 'P' char):\"%s\"", str);
   for (;;)
     {
-      for (pp =p; '0' <= *pp && *pp <= '9';) pp++;
+      pp=p;
+      while (isdigit (pp[0])) pp++;
       if (NULL == pp || '\0' == pp[0])
 	{
 	  if ('\0' != p[0])
@@ -459,7 +460,7 @@ __duration_from_string (caddr_t *n, const char *str, int do_what)
 	case 'S':
 	  if (!dot_hit)
 	    second = val;
-	  switch (pp-p)
+	  switch (pp-p) /* ???fraction??? */
 	    {
 	      case 0:
 		frac = 0;
@@ -494,7 +495,7 @@ __duration_from_string (caddr_t *n, const char *str, int do_what)
   if (year || month)
     res = xqf_YM_from_months (year * 12 + month);
   else
-    res = xqf_DT_from_secs ((day * 24 + hour) * 3600 + minute * 60 + second + (double) frac / 1000.0);
+    res = xqf_DT_from_secs ((day * 24 + hour) * 3600 + minute * 60 + second + (double) frac / 1000.0);/*!!! */
   *n = res;
 }
 
@@ -523,7 +524,7 @@ __get_iso_date ( const char *str, char *dt, int dtflags, int dt_type, const char
   const char *tail, *group_end;
   int fld_values[9];
   static int fld_min_values[9] =	{ 1	, 1	, 1	, 0	, 0	, 0	, 0	, 0	, 0	};
-  static int fld_max_values[9] =	{ 9999	, 12	, 31	, 23	, 59	, 61	, 999999, 14	, 59	};
+  static int fld_max_values[9] =	{ 9999	, 12	, 31	, 23	, 59	, 61	, 999999999	, 14	, 59	};
   static int fld_max_lengths[9] =	{ 4	, 2	, 2	, 2	, 2	, 2	, -1	, 2	, 2	};
   static int delms[9] =			{ '-'	, '-'	, 'T'	, ':'	, ':'	, '\0', '\0'	, ':'	, '\0'	};
   static const char *names[9] =	{"year"	,"month","day"	,"hour"	,"minute","second","fraction","TZ hour","TZ minute"};
@@ -587,13 +588,13 @@ __get_iso_date ( const char *str, char *dt, int dtflags, int dt_type, const char
 field_length_checked:
       if (DTFLAG_SF == fld_flag)
         {
-          int mult = 100000;
+          int mult = 1000000000;
           int cctr;
           fld_value = 0;
-          for (cctr = 0; ((cctr < 6) && (cctr < fldlen)); cctr++)
+          for (cctr = 0; ((cctr < 9) && (cctr < fldlen)); cctr++)
             {
-              fld_value += (tail[cctr] - '0') * mult;
               mult /= 10;
+              fld_value += (tail[cctr] - '0') * mult;
             }
         }
       else
@@ -918,7 +919,7 @@ __get_smth_from_date (caddr_t *n, caddr_t str, int do_what, const char *where )
     sqlr_new_error ("42001", "XPQ??", "Incorrect argument type:%s in %s", dv_type_title (type), where);
   if (do_what <= XQ_GET_SECONDS_FROM_DATE)
     {
-      dt_to_timestamp_struct ((caddr_t)str, &ts);
+      dt_to_timestamp_struct ((caddr_t)str, &ts); /*??? GMT or remembered timezone? */
       switch (do_what) {
 	case XQ_GET_CENTURY_FROM_DATE:
 	  *n = box_num (ts.year / 100);
@@ -949,7 +950,7 @@ __get_smth_from_date (caddr_t *n, caddr_t str, int do_what, const char *where )
 	case XQ_GET_SECONDS_FROM_DATE:
 	  *n = box_num (ts.second);
 	  break;
-      };
+        }
     }
   else
     {
@@ -1137,18 +1138,16 @@ static int
 __do_smth_with_date (caddr_t *n, const char *arg1, const char *arg2, int do_what, const char *where)
 {
   int tz, ival;
-  TIMESTAMP_STRUCT ts;
-  dtp_t type1 = (IS_BOX_POINTER (arg1))?box_tag (arg1):(dtp_t)DV_LONG_INT;
-  dtp_t type2 = (IS_BOX_POINTER (arg2))?box_tag (arg2):(dtp_t)DV_LONG_INT;
+  GMTIMESTAMP_STRUCT ts;
+  dtp_t type1 = DV_TYPE_OF (arg1);
+  dtp_t type2 = DV_TYPE_OF (arg2);
   caddr_t val;
-
   if (DV_DATETIME != type1)
     sqlr_new_error ("42001", "XPQ??", "Incorrect argument type:%s in %s", dv_type_title (type1), where);
   memset (&ts, 0, sizeof(ts));
   tz = DT_TZ (arg1);
-  dt_to_timestamp_struct ((caddr_t)arg1, &ts);
+  dt_to_GMTimestamp_struct ((caddr_t)arg1, &ts);
   *n = dk_alloc_box_zero (DT_LENGTH, DV_DATETIME);
-
   val = box_cast (NULL, (caddr_t)arg2, (sql_tree_tmp*) st_integer, type2);
   ival = (int) unbox (val);
   dk_free_box (val);
@@ -1166,8 +1165,7 @@ __do_smth_with_date (caddr_t *n, const char *arg1, const char *arg2, int do_what
       ts_add (&ts, ival, "day");
       break;
   };
-
-  timestamp_struct_to_dt (&ts, *n);
+  GMTimestamp_struct_to_dt (&ts, *n);
   DT_SET_TZ (*n, tz);
   return 0;
 }
@@ -1218,17 +1216,16 @@ xqf_add_gyear (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 static int
 __arithm_dates ( const char *x, const char *y, caddr_t ret, int sign )
 {
-  int tz1, tz2;
-  TIMESTAMP_STRUCT tsx, tsy;
+  int tz1;
+  GMTIMESTAMP_STRUCT tsx, tsy;
 
   memset (&tsx, 0, sizeof(tsx));
   memset (&tsy, 0, sizeof(tsy));
 
   tz1 = DT_TZ (x);
-  tz2 = DT_TZ (y);
 
-  dt_to_timestamp_struct ((caddr_t)x, &tsx);
-  dt_to_timestamp_struct ((caddr_t)y, &tsy);
+  dt_to_GMTimestamp_struct ((caddr_t)x, &tsx);
+  dt_to_GMTimestamp_struct ((caddr_t)y, &tsy);
 
   ts_add (&tsx, (sign)?-tsy.year:tsy.year, "year");
   ts_add (&tsx, (sign)?-tsy.month:tsy.month, "month");
@@ -1241,25 +1238,21 @@ __arithm_dates ( const char *x, const char *y, caddr_t ret, int sign )
       if (tsx.fraction < tsy.fraction)
 	{
 	  ts_add (&tsx, -1, "second");
-	  tsx.fraction = tsy.fraction - tsx.fraction;
+	  tsx.fraction += 1000000000;
 	}
-      else
 	tsx.fraction -= tsy.fraction;
     }
   else
     {
-      if ((tsy.fraction + tsx.fraction) > 999999)
+      tsx.fraction += tsy.fraction;
+      if (tsx.fraction >= 1000000000)
 	{
 	  ts_add (&tsx, 1, "second");
-	  tsx.fraction = (tsy.fraction + tsx.fraction)%1000000;
+	  tsx.fraction -= 1000000000;
 	}
-      else
-	tsx.fraction += tsy.fraction;
     }
-  ts_add (&tsx, tz1 - tz2, "minute");
-
-  timestamp_struct_to_dt (&tsx, ret);
-
+  GMTimestamp_struct_to_dt (&tsx, ret);
+  DT_SET_TZ (ret, tz1);
   return 0;
 }
 
@@ -2885,21 +2878,22 @@ int xqf_dT_op_cmp (TIMESTAMP_STRUCT* t1, TIMESTAMP_STRUCT* t2)
 {
   uint32 days1 = date2num (t1->year, t1->month, t1->day);
   uint32 days2 = date2num (t2->year, t2->month, t2->day);
-
+  long sec1, sec2;
   if (days1 < days2)
     return -1;
   if (days1 > days2)
     return 1;
-  else
-    {
-      double sec1 = t1->hour * 3600 + t1->minute * 6 + t1->second + ((double) t1->fraction) / 1000000.0;
-      double sec2 = t2->hour * 3600 + t2->minute * 6 + t2->second + ((double) t2->fraction) / 1000000.0;
+  sec1 = t1->hour * 3600 + t1->minute * 60 + t1->second;
+  sec2 = t2->hour * 3600 + t2->minute * 60 + t2->second;
       if (sec1 < sec2)
 	return -1;
       if (sec1 > sec2)
 	return 1;
+  if (t1->fraction < t2->fraction)
+    return -1;
+  if (t1->fraction > t2->fraction)
+    return 1;
       return 0;
-    }
 }
 
 
@@ -2934,11 +2928,16 @@ int xqf_time_op_eq (TIMESTAMP_STRUCT* t1, TIMESTAMP_STRUCT* t2)
 
 int xqf_time_op_cmp (TIMESTAMP_STRUCT* t1, TIMESTAMP_STRUCT* t2)
 {
-  double sec1 = t1->hour * 3600 + t1->minute * 6 + t1->second + ((double) t1->fraction) / 1000000.0;
-  double sec2 = t2->hour * 3600 + t2->minute * 6 + t2->second + ((double) t2->fraction) / 1000000.0;
+  long sec1, sec2;
+  sec1 = t1->hour * 3600 + t1->minute * 60 + t1->second;
+  sec2 = t2->hour * 3600 + t2->minute * 60 + t2->second;
   if (sec1 < sec2)
     return -1;
   if (sec1 > sec2)
+    return 1;
+  if (t1->fraction < t2->fraction)
+    return -1;
+  if (t1->fraction > t2->fraction)
     return 1;
   return 0;
 }
@@ -3117,13 +3116,13 @@ static void xqf_dT_sub_yMD (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_x
   caddr_t dt1 = xpf_arg (xqi, tree, ctx_xe, DV_DATETIME, 0);
   caddr_t dt2 = xpf_arg (xqi, tree, ctx_xe, DV_DATETIME, 1);
   TIMESTAMP_STRUCT ts1,ts2;
-  int c2 = 0;
+  int sec1, sec2, c2 = 0;
 
   dt_to_timestamp_struct (dt1, &ts1);
   dt_to_timestamp_struct (dt2, &ts2);
-
-  if ( (((ts2.day * 24) + ts2.hour)*3600 + ts2.minute*60 +ts2.second) >
-       (((ts1.day * 24) + ts1.hour)*3600 + ts1.minute*60 +ts1.second))
+  sec1 = ((ts1.day * 24) + ts1.hour)*3600 + ts1.minute*60 +ts1.second;
+  sec2 = ((ts2.day * 24) + ts2.hour)*3600 + ts2.minute*60 +ts2.second;
+  if ((sec2 > sec1) || ((sec2 == sec1) && (ts2.fraction > ts1.fraction)))
     c2 = 1;
   XQI_SET (xqi, tree->_.xp_func.res, xqf_YM_from_months ((ts1.year * 12 + ts1.month) - (ts2.year * 12 + ts2.month) - c2));
 }
@@ -3152,16 +3151,10 @@ static void xqf_dT_sub_dTD (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_x
 {
   caddr_t dt1 = xpf_arg (xqi, tree, ctx_xe, DV_DATETIME, 0);
   caddr_t dt2 = xpf_arg (xqi, tree, ctx_xe, DV_DATETIME, 1);
-  TIMESTAMP_STRUCT ts1,ts2;
+  GMTIMESTAMP_STRUCT ts1,ts2;
   numeric_t s1, s2, res;
-
-  dt_to_timestamp_struct (dt1, &ts1);
-  dt_to_timestamp_struct (dt2, &ts2);
-
-  /* comparing Greenwich time */
-  ts_add (&ts1, -DT_TZ (dt1), "minute");
-  ts_add (&ts2, -DT_TZ (dt2), "minute");
-
+  dt_to_GMTimestamp_struct (dt1, &ts1);
+  dt_to_GMTimestamp_struct (dt2, &ts2);
   /* possible sign/unsigned problem */
   s1 = xqf_num_from_ts(&ts1);
   s2 = xqf_num_from_ts(&ts2);
@@ -3178,13 +3171,12 @@ static void xqf_add_yMD_to_dT  (xp_instance_t * xqi, XT * tree, xml_entity_t * c
   long ymd = xqf_YM_arg (xqi, tree, ctx_xe, 1);
   caddr_t dt1 = xpf_arg (xqi, tree, ctx_xe, DV_DATETIME, 0);
   caddr_t res = box_copy (dt1);
-  TIMESTAMP_STRUCT ts;
-
-  dt_to_timestamp_struct (dt1, &ts);
+  GMTIMESTAMP_STRUCT ts;
+  dt_to_GMTimestamp_struct (dt1, &ts);
   ts_add (&ts, ymd / 12, "year");
   ts_add (&ts, ymd % 12 , "month");
-
-  dt_from_parts (res, ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second, ts.fraction, DT_TZ (dt1));
+  GMTimestamp_struct_to_dt (&ts, res);
+  DT_SET_TZ (res, DT_TZ (dt1));
   XQI_SET (xqi, tree->_.xp_func.res, res);
 }
 
@@ -3194,12 +3186,11 @@ static void xqf_add_dTD_to_dT  (xp_instance_t * xqi, XT * tree, xml_entity_t * c
   caddr_t dt1 = xpf_arg (xqi, tree, ctx_xe, DV_DATETIME, 0);
   caddr_t res = box_copy (dt1);
   long secs= (long) dtd;
-  TIMESTAMP_STRUCT ts;
-
-  dt_to_timestamp_struct (dt1, &ts);
+  GMTIMESTAMP_STRUCT ts;
+  dt_to_GMTimestamp_struct (dt1, &ts);
   ts_add (&ts, secs, "second");
-
-  dt_from_parts (res, ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second, ts.fraction, DT_TZ (dt1));
+  GMTimestamp_struct_to_dt (&ts, res);
+  DT_SET_TZ (res, DT_TZ (dt1));
   XQI_SET (xqi, tree->_.xp_func.res, res);
 }
 
@@ -3226,12 +3217,11 @@ static void xqf_sub_yMD_to_dT  (xp_instance_t * xqi, XT * tree, xml_entity_t * c
   long ymd = xqf_YM_arg (xqi, tree, ctx_xe, 1);
   caddr_t dt1 = xpf_arg (xqi, tree, ctx_xe, DV_DATETIME, 0);
   caddr_t res = box_copy (dt1);
-  TIMESTAMP_STRUCT ts;
-
-  dt_to_timestamp_struct (dt1, &ts);
+  GMTIMESTAMP_STRUCT ts;
+  dt_to_GMTimestamp_struct (dt1, &ts);
   xqf_ts_add_year_month (&ts,-ymd/12, -ymd % 12);
-
-  dt_from_parts (res, ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second, ts.fraction, DT_TZ (dt1));
+  GMTimestamp_struct_to_dt (&ts, res);
+  DT_SET_TZ (res, DT_TZ (dt1));
   XQI_SET (xqi, tree->_.xp_func.res, res);
 }
 
@@ -3241,12 +3231,11 @@ static void xqf_sub_dTD_to_dT  (xp_instance_t * xqi, XT * tree, xml_entity_t * c
   caddr_t dt1 = xpf_arg (xqi, tree, ctx_xe, DV_DATETIME, 0);
   caddr_t res = box_copy (dt1);
   long secs= (long) dtd;
-  TIMESTAMP_STRUCT ts;
-
-  dt_to_timestamp_struct (dt1, &ts);
+  GMTIMESTAMP_STRUCT ts;
+  dt_to_GMTimestamp_struct (dt1, &ts);
   ts_add (&ts, -secs, "second");
-
-  dt_from_parts (res, ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second, ts.fraction, DT_TZ (dt1));
+  GMTimestamp_struct_to_dt (&ts, res);
+  DT_SET_TZ (res, DT_TZ (dt1));
   XQI_SET (xqi, tree->_.xp_func.res, res);
 }
 

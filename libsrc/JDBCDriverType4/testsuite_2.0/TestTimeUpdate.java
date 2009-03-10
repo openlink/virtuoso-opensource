@@ -114,13 +114,13 @@ public class TestTimeUpdate
 	   System.out.println("    FAILED");
 	 rs.close();
 
-         System.out.print("Sending a 1972-07-29 15:30:45.0 timestamp");
+         System.out.print("Sending a 1972-07-29 15:30:45.100 timestamp");
 	 ps = c.prepareStatement ("select cast (? as varchar)");
-	 ps.setTimestamp (1, new java.sql.Timestamp(72, 6, 29, 15, 30, 45, 0));
+	 ps.setTimestamp (1, new java.sql.Timestamp(72, 6, 29, 15, 30, 45, 100000000));
 	 rs = ps.executeQuery();
 	 rs.next();
-	 System.out.print(" (recv as " + rs.getString(1) + " trim=[" + rs.getString(1).substring(0, 21) + "])");
-	 if (rs.getString(1).substring(0, 21).equals ("1972-07-29 15:30:45.0"))
+	 System.out.print(" (recv as " + rs.getString(1) + " trim=[" + rs.getString(1).substring(0, 23) + "])");
+	 if (rs.getString(1).substring(0, 23).equals ("1972-07-29 15:30:45.100"))
 	   System.out.println("    PASSED");
 	 else
 	   System.out.println("    FAILED");

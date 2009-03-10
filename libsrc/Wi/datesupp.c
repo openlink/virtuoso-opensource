@@ -397,7 +397,8 @@ ts_add (TIMESTAMP_STRUCT * ts, int n, const char *unit)
   int dummy;
   int32 day, sec;
   int oyear, omonth, oday, ohour, ominute, osecond;
-
+  if (0 == n)
+    return;
   day = date2num (ts->year, ts->month, ts->day);
   sec = time2sec (0, ts->hour, ts->minute, ts->second);
   if (0 == stricmp (unit, "year"))
@@ -458,7 +459,7 @@ ts_add (TIMESTAMP_STRUCT * ts, int n, const char *unit)
 
 
 void
-dt_to_timestamp_struct (ccaddr_t dt, TIMESTAMP_STRUCT * ts)
+dt_to_GMTimestamp_struct (ccaddr_t dt, GMTIMESTAMP_STRUCT * ts)
 {
   int year, month, day;
   num2date (DT_DAY (dt), &year, &month, &day);
@@ -469,9 +470,14 @@ dt_to_timestamp_struct (ccaddr_t dt, TIMESTAMP_STRUCT * ts)
   ts->minute = DT_MINUTE (dt);
   ts->second = DT_SECOND (dt);
   ts->fraction = DT_FRACTION (dt);
-  ts_add (ts, DT_TZ (dt), "minute");
 }
 
+void
+dt_to_timestamp_struct (ccaddr_t dt, TIMESTAMP_STRUCT * ts)
+{
+  dt_to_GMTimestamp_struct (dt, ts);
+  ts_add (ts, DT_TZ (dt), "minute");
+}
 
 int dt_validate (caddr_t dt)
 {
@@ -485,6 +491,20 @@ int dt_validate (caddr_t dt)
 }
 
 void
+GMTimestamp_struct_to_dt (GMTIMESTAMP_STRUCT * ts, char *dt)
+{
+  uint32 day;
+  day = date2num (ts->year, ts->month, ts->day);
+  DT_SET_DAY (dt, day);
+  DT_SET_HOUR (dt, ts->hour);
+  DT_SET_MINUTE (dt, ts->minute);
+  DT_SET_SECOND (dt, ts->second);
+  DT_SET_FRACTION (dt, ts->fraction);
+  DT_SET_TZ (dt, 0);
+  DT_SET_DT_TYPE (dt, DT_TYPE_DATETIME);
+}
+
+void
 timestamp_struct_to_dt (TIMESTAMP_STRUCT * ts_in, char *dt)
 {
   uint32 day;
@@ -492,16 +512,9 @@ timestamp_struct_to_dt (TIMESTAMP_STRUCT * ts_in, char *dt)
   TIMESTAMP_STRUCT *ts = &ts_tmp;
   ts_tmp = *ts_in;
   ts_add (ts, -dt_local_tz, "minute");
-  day = date2num (ts->year, ts->month, ts->day);
-  DT_SET_DAY (dt, day);
-  DT_SET_HOUR (dt, ts->hour);
-  DT_SET_MINUTE (dt, ts->minute);
-  DT_SET_SECOND (dt, ts->second);
-  DT_SET_FRACTION (dt, ts->fraction);
+  GMTimestamp_struct_to_dt (ts, dt);
   DT_SET_TZ (dt, dt_local_tz);
-  DT_SET_DT_TYPE (dt, DT_TYPE_DATETIME);
 }
-
 
 void
 dt_to_date_struct (char *dt, DATE_STRUCT * ots)
@@ -594,25 +607,24 @@ dt_init ()
 }
 
 long
-dt_long_part_ck (char *str, long min, long max, int *err)
+dt_fraction_part_ck (char *str, long factor, int *err)
 {
-  long n;
-  if (!str)
-    n = 0;
-  else
-    {
-      if (1 != sscanf (str, "%ld", &n))
-	{
-	  *err |= 1;
+  long acc = 0;
+  if (NULL == str)
 	  return 0;
-	}
-    }
-  if (n < min || n > max)
+  if (!isdigit (str[0]))
     {
       *err |= 1;
       return 0;
     }
-  return n;
+  do
+    {
+      if (factor)
+        acc = acc * 10 + (str[0] - '0');
+      str++;
+      factor /= 10;
+    } while (isdigit (str[0]));
+  return acc * (factor ? factor : 1);
 }
 
 int
@@ -640,83 +652,102 @@ dt_part_ck (char *str, int min, int max, int *err)
 void
 dt_to_string (const char *dt, char *str, int len)
 {
-  int dt_type;
   TIMESTAMP_STRUCT ts;
+  int dt_type, len_before_fra;
+  char *tail = str;
   dt_to_timestamp_struct (dt, &ts);
-
   dt_type = DT_DT_TYPE (dt);
+  len_before_fra = len - (ts.fraction ? 10 : 0);
   switch (dt_type)
     {
       case DT_TYPE_DATE:
 	  snprintf (str, len, "%04d-%02d-%02d",
 	      ts.year, ts.month, ts.day);
+        return;
+      case DT_TYPE_TIME:		/*  012345678 */
+        if (len_before_fra < 8)		/* "hh:mm:ss" */
+          goto short_buf; /* see below */
+        tail += snprintf (str, len_before_fra, "%02d:%02d:%02d",
+          ts.hour, ts.minute, ts.second );
 	  break;
-      case DT_TYPE_TIME:
-	  snprintf (str, len, "%02d:%02d:%02d",
-	      ts.hour, ts.minute, ts.second);
+      default:				/* 01234567890123456789 */
+        if (len_before_fra < 19)	/* yyyy-mm-ddThh:mm:ss */
+          goto short_buf; /* see below */
+	tail += snprintf (str, len_before_fra, "%04d-%02d-%02d %02d:%02d:%02d",
+	  ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second );
 	  break;
-      default:
-	  snprintf (str, len, "%04d-%02d-%02d %02d:%02d:%02d.%06ld",
-	      ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second, (long) ts.fraction);
     }
+  if (ts.fraction)
+    {
+      if (ts.fraction % 1000)
+	tail += snprintf (tail, (str + len) - tail, ".%09d", (int)ts.fraction);
+      else if (ts.fraction % 1000000)
+	tail += snprintf (tail, (str + len) - tail, ".%06d", (int)(ts.fraction / 1000));
+      else
+	tail += snprintf (tail, (str + len) - tail, ".%03d", (int)(ts.fraction / 1000000));
+    }
+  return;
+
+short_buf:
+  snprintf (str, len, "??? short output buffer for dt_to_string()");
 }
 
 void
 dt_to_iso8601_string (const char *dt, char *str, int len)
 {
-  TIMESTAMP_STRUCT ts;
+  GMTIMESTAMP_STRUCT ts;
   int tz = DT_TZ (dt);
-  int dt_type;
+  int dt_type, len_before_tz, len_before_fra;
+  char *tail = str;
   dt_to_timestamp_struct (dt, &ts);
-
   dt_type = DT_DT_TYPE (dt);
-
+  len_before_tz = len - (tz ? 6 : 1);
+  len_before_fra = len_before_tz - (ts.fraction ? 10 : 0);
   switch (dt_type)
     {
       case DT_TYPE_DATE:
 	  snprintf (str, len, "%04d-%02d-%02d",
 	      ts.year, ts.month, ts.day);
+        return;
+      case DT_TYPE_TIME:		/*  012345678 */
+        if (len_before_fra < 8)		/* "hh:mm:ss" */
+          goto short_buf; /* see below */
+        tail += snprintf (str, len_before_fra, "%02d:%02d:%02d",
+          ts.hour, ts.minute, ts.second );
 	  break;
-      case DT_TYPE_TIME:
-	    {
-	      if (tz)
-		snprintf (str, len, "%02d:%02d:%02d.%03d%+03d:%02d",
-		    ts.hour, ts.minute, ts.second, (int)ts.fraction, tz / 60, abs (tz) % 60);
-	      else
-		snprintf (str, len, "%02d:%02d:%02d.%03dZ",
-		    ts.hour, ts.minute, ts.second, (int)ts.fraction);
-	    }
+      default:				/* 01234567890123456789 */
+        if (len_before_fra < 19)	/* yyyy-mm-ddThh:mm:ss */
+          goto short_buf; /* see below */
+	tail += snprintf (str, len_before_fra, "%04d-%02d-%02dT%02d:%02d:%02d",
+	  ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second );
 	  break;
-      default:
-	    {
-	      if (tz)
-		snprintf (str, len, "%04d-%02d-%02dT%02d:%02d:%02d.%03d%+03d:%02d",
-		    ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second,
-		    (int)ts.fraction, tz / 60, abs (tz) % 60);
-	      else
-		{
-		  if (ts.fraction)
-		    snprintf (str, len, "%04d-%02d-%02dT%02d:%02d:%02d.%03dZ",
-			ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second, (int)ts.fraction);
-		  else
-		    snprintf (str, len, "%04d-%02d-%02dT%02d:%02d:%02dZ",
-			ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second);
-		}
-	    }
     }
+		  if (ts.fraction)
+    {
+      if (ts.fraction % 1000)
+	tail += snprintf (tail, (str + len) - tail, ".%09d", (int)ts.fraction);
+      else if (ts.fraction % 1000000)
+	tail += snprintf (tail, (str + len) - tail, ".%06d", (int)(ts.fraction / 1000));
+		  else
+	tail += snprintf (tail, (str + len) - tail, ".%03d", (int)(ts.fraction / 1000000));
+    }
+  if (tz)
+    snprintf (tail, (str + len) - tail, "%+03d:%02d", tz / 60, abs (tz) % 60);
+  else if (((str + len) - tail) > 2)
+    strcpy (tail, "Z");
+  return;
 
+short_buf:
+  snprintf (str, len, "??? short output buffer for dt_to_iso8601_string()");
 }
 
 void
 dt_to_rfc1123_string (const char *dt, char *str, int len)
 {
-  TIMESTAMP_STRUCT ts;
+  GMTIMESTAMP_STRUCT ts;
   char * wkday [] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
   char * monday [] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-  int tz = DT_TZ (dt);
-  dt_to_timestamp_struct (dt, &ts);
-  ts_add (&ts, -tz, "minute");
-
+  dt_to_GMTimestamp_struct (dt, &ts);
   /* Mon, 01 Feb 2000 00:00:00 GMT */
   snprintf (str, len, "%s, %02d %s %04d %02d:%02d:%02d GMT",
 	   wkday [date2weekday (ts.year, ts.month, ts.day) - 1], ts.day, monday [ts.month - 1], ts.year, ts.hour, ts.minute, ts.second);
@@ -887,7 +918,7 @@ string_to_dt (char *str, char *dt, const char **str_err)
       *str_err = "Seconds out of bounds";
       goto finito;
     }
-  ts.fraction = dt_long_part_ck (sfraction, 0, 999999999, &err);
+  ts.fraction = dt_fraction_part_ck (sfraction, 1000000000, &err);
   if (err)
     *str_err = "Fraction out of bounds";
 finito:
@@ -979,13 +1010,11 @@ string_to_time_dt (char *str, char *dt)
   ts.hour = dt_part_ck (shour, 0, 23, &err);
   ts.minute = dt_part_ck (sminute, 0, 60, &err);
   ts.second = dt_part_ck (ssecond, 0, 60, &err);
-  ts.fraction = dt_long_part_ck (sfraction, 0, 999999999, &err);
+  ts.fraction = dt_fraction_part_ck (sfraction, 1000000000, &err);
   if (err)
     return -1;
-
   timestamp_struct_to_dt (&ts, dt);
   dt_make_day_zero (dt);
-
   return 0;
 }
 
@@ -996,76 +1025,85 @@ iso8601_to_dt (char *str, char *dt, dtp_t dtp)
   int n_set;
   int year = 0, month = 0, date = 0, hour = 0, minute = 0, second = 0, frac = 0, tz_hour = 0, tz_minute = 0;
   char tmp[30];
-  TIMESTAMP_STRUCT ts;
+  GMTIMESTAMP_STRUCT ts;
 
   if(str==NULL || strlen(str)==0) return -1;
   strncpy (tmp, str, sizeof (tmp));
 
-  if (dtp == DV_DATETIME || dtp == DV_TIMESTAMP)
-    {
-      if (7 > (n_set = sscanf (tmp, "%4d-%2d-%2dT%2d:%2d:%2d.%3d%3d:%2d",
-	    &year, &month, &date, &hour, &minute, &second, &frac, &tz_hour, &tz_minute)))
-	{
-	  if (6 > (n_set = sscanf (tmp, "%4d-%2d-%2dT%2d:%2d:%2d%3d:%2d",
-		  &year, &month, &date, &hour, &minute, &second, &tz_hour, &tz_minute)))
-	    {
-	      if (6 > (n_set = sscanf (tmp, "%4d%2d%2dT%2d%2d%2d%3d%2d",
-		      &year, &month, &date, &hour, &minute, &second, &tz_hour, &tz_minute)))
+  switch (dtp)
 		{
-		  if (6 > (n_set = sscanf (tmp, "%4d%2d%2dT%2d:%2d:%2d%3d:%2d",
-			  &year, &month, &date, &hour, &minute, &second, &tz_hour, &tz_minute)))
+    case DV_DATETIME: case DV_TIMESTAMP:
+      do {
+          n_set = sscanf (tmp, "%4d-%2d-%2dT%2d:%2d:%2d.%9d%3d:%2d",
+            &year, &month, &date, &hour, &minute, &second, &frac, &tz_hour, &tz_minute);
+          if (7 <= n_set)
+            break;
+          n_set = sscanf (tmp, "%4d-%2d-%2dT%2d:%2d:%2d.%6d%3d:%2d",
+            &year, &month, &date, &hour, &minute, &second, &frac, &tz_hour, &tz_minute);
+          if (7 <= n_set)
+            break;
+          n_set = sscanf (tmp, "%4d-%2d-%2dT%2d:%2d:%2d.%3d%3d:%2d",
+            &year, &month, &date, &hour, &minute, &second, &frac, &tz_hour, &tz_minute);
+          if (7 <= n_set)
+            break;
+          frac = 0; /* Some LIBCs screws up the field that is parsed before error detection! */
+          n_set = sscanf (tmp, "%4d-%2d-%2dT%2d:%2d:%2d%3d:%2d",
+            &year, &month, &date, &hour, &minute, &second, &tz_hour, &tz_minute);
+          if (6 <= n_set)
+            break;
+          n_set = sscanf (tmp, "%4d%2d%2dT%2d%2d%2d%3d%2d",
+            &year, &month, &date, &hour, &minute, &second, &tz_hour, &tz_minute);
+          if (6 <= n_set)
+            break;
+          n_set = sscanf (tmp, "%4d%2d%2dT%2d:%2d:%2d%3d:%2d",
+            &year, &month, &date, &hour, &minute, &second, &tz_hour, &tz_minute);
+          if (6 <= n_set)
+            break;
 		    return 0;
-		}
-	    }
-	}
+        } while (0);
       if (n_set < 8)
 	{
+          tz_hour = 0;
 	  if (strchr (tmp, 'Z'))
-	    {
-	      tz_hour = 0; tz_minute = 0;
-	    }
+            tz_minute = 0;
 	  else
-	    {
-	      tz_hour = 0; tz_minute = dt_local_tz;
-	    }
+            tz_minute = dt_local_tz;
 	}
-    }
-  else if (dtp == DV_DATE)
-    {
-      hour = minute = second = tz_minute = tz_hour = 0;
-      if (3 > (n_set = sscanf (tmp, "%4d-%2d-%2d",
-	    &year, &month, &date)))
-	{
-	  if (6 > (n_set = sscanf (tmp, "%4d%2d%2d",
-		&year, &month, &date)))
+      break;
+    case DV_DATE:
+      n_set = sscanf (tmp, "%4d-%2d-%2d", &year, &month, &date);
+      if (3 == n_set)
+        break;
+      n_set = sscanf (tmp, "%4d%2d%2d", &year, &month, &date);
+      if (3 == n_set)
+        break;
 	      return 0;
-	}
-    }
-  else if (dtp == DV_TIME)
-    {
-      year = date = month = 0;
-      if (4 > (n_set = sscanf (tmp, "%4d:%2d:%2d.%3d%2d:%2d",
-	    &hour, &minute, &second, &frac, &tz_hour, &tz_minute)))
-	{
-	  if (3 > (n_set = sscanf (tmp, "%4d:%2d:%2d%2d:%2d",
-		  &hour, &minute, &second, &tz_hour, &tz_minute)))
-	    {
-	      if (3 > (n_set = sscanf (tmp, "%4d%2d%2d%2d%2d",
-		      &hour, &minute, &second, &tz_hour, &tz_minute)))
+    case DV_TIME:
+      do {
+          n_set = sscanf (tmp, "%4d:%2d:%2d.%3d%2d:%2d",
+            &hour, &minute, &second, &frac, &tz_hour, &tz_minute);
+          if (n_set >= 4)
+            break;
+          frac = 0; /* Some LIBCs screws up the field that is parsed before error detection! */
+          n_set = sscanf (tmp, "%4d:%2d:%2d%2d:%2d",
+            &hour, &minute, &second, &tz_hour, &tz_minute);
+          if (n_set >= 3)
+            break;
+          n_set = sscanf (tmp, "%4d%2d%2d%2d%2d",
+            &hour, &minute, &second, &tz_hour, &tz_minute);
+          if (n_set >= 3)
+            break;
 		return 0;
-	    }
-	}
-      if (n_set < 6)
+        } while (0);
+      if (n_set < 8)
 	{
+          tz_hour = 0;
 	  if (strchr (tmp, 'Z'))
-	    {
-	      tz_hour = 0; tz_minute = 0;
-	    }
+            tz_minute = 0;
 	  else
-	    {
-	      tz_hour = 0; tz_minute = dt_local_tz;
-	    }
+            tz_minute = dt_local_tz;
 	}
+      break;
     }
   ts.year = year;
   ts.month = month;
@@ -1073,9 +1111,9 @@ iso8601_to_dt (char *str, char *dt, dtp_t dtp)
   ts.hour = hour;
   ts.minute = minute;
   ts.second = second;
-  ts.fraction = frac;
-  ts_add (&ts, dt_local_tz - (tz_hour * 60 + tz_minute), "minute");
-  timestamp_struct_to_dt (&ts, dt);
+  ts.fraction = frac * 1000000; /* There were three digits, but we need nanoseconds */
+  ts_add (&ts, -(tz_hour * 60 + tz_minute), "minute");
+  GMTimestamp_struct_to_dt (&ts, dt);
   DT_SET_TZ (dt, (tz_hour * 60 + tz_minute));
   SET_DT_TYPE_BY_DTP (dt, dtp);
   return 1;
@@ -1088,7 +1126,7 @@ http_date_to_dt (const char *http_date, char *dt)
   char month[4] /*, weekday[10] */;
   unsigned day, year, hour, minute, second;
   int idx, fmt, month_number;
-  TIMESTAMP_STRUCT ts_tmp, *ts = &ts_tmp;
+  GMTIMESTAMP_STRUCT ts_tmp, *ts = &ts_tmp;
   const char *http_end_of_weekday = http_date;
 
   day = year = hour = minute = second = 0;
@@ -1165,8 +1203,7 @@ This is indicated in the first two formats by the inclusion of "GMT" as the thre
 and MUST be assumed when reading the asctime format. */
   if (1123 == fmt || 850 == fmt) /* these formats are explicitly for GMT */
 #endif
-    ts_add (ts, dt_local_tz, "minute");
-  timestamp_struct_to_dt (ts, dt);
+  GMTimestamp_struct_to_dt (ts, dt);
   return 1;
 }
 
@@ -1217,7 +1254,7 @@ dt_to_parts (char *dt, int *year, int *month, int *day, int *hour, int *minute, 
 void
 dt_from_parts (char *dt, int year, int month, int day, int hour, int minute, int second, int fraction, int tz)
 {
-  TIMESTAMP_STRUCT ts;
+  GMTIMESTAMP_STRUCT ts;
   ts.year = year;
   ts.month = month;
   ts.day = day;
@@ -1225,20 +1262,18 @@ dt_from_parts (char *dt, int year, int month, int day, int hour, int minute, int
   ts.minute = minute;
   ts.second = second;
   ts.fraction = fraction;
-  ts_add (&ts, dt_local_tz - tz, "minute");
-  timestamp_struct_to_dt (&ts, dt);
+  ts_add (&ts, -tz, "minute");
+  GMTimestamp_struct_to_dt (&ts, dt);
   DT_SET_TZ (dt, tz);
 }
 
 void
 dt_make_day_zero (char *dt)
 {
-  TIMESTAMP_STRUCT tss;
-  dt_to_timestamp_struct (dt, &tss);
-  ts_add (&tss, dt_local_tz, "minute");
-  timestamp_struct_to_dt (&tss, dt);
+  GMTIMESTAMP_STRUCT tss;
+  dt_to_timestamp_struct (dt, &tss); /*??? not sure this is correct */
+  GMTimestamp_struct_to_dt (&tss, dt);
   DT_SET_DAY (dt, DAY_ZERO);
-  DT_SET_TZ (dt, 0);
   DT_SET_DT_TYPE (dt, DT_TYPE_TIME);
 }
 
