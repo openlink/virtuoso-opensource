@@ -3561,6 +3561,19 @@ curl -F "query=SELECT DISTINCT ?p FROM <http://demo.openlinksw.com/DAV/home/demo
  </results>
 </sparql>
 ]]></programlisting>
+<para>Other examples with curl:</para>
+<programlisting><![CDATA[
+curl -F "query=SELECT distinct ?Concept FROM <http://dbpedia.org> WHERE {?s a ?Concept} limit 10" http://dbpedia.org/sparql
+]]></programlisting>
+<programlisting><![CDATA[
+curl -F "query=SELECT distinct ?Concept FROM <http://myopenlink.net/dataspace/person/kidehen> WHERE {?s a ?Concept} limit 10" http://demo.openlinksw.com/sparql
+]]></programlisting>
+<programlisting><![CDATA[
+curl -F "query=SELECT distinct ?Concept FROM <http://data.openlinksw.com/oplweb/product_family/virtuoso> WHERE {?s a ?Concept} limit 10" http://demo.openlinksw.com/sparql
+]]></programlisting>
+<programlisting><![CDATA[
+curl -F "query=SELECT distinct ?Concept FROM <http://openlinksw.com/dataspace/organization/openlink> WHERE {?s a ?Concept} limit 10" http://demo.openlinksw.com/sparql
+]]></programlisting>
     </sect2>
      <sect2 id="rdfinsertmethodsload"><title>SPARQL Insert using LOAD</title>
         <para>SPARQL INSERT operation can be done using the LOAD feature.</para>
