@@ -67,7 +67,7 @@
 				<dc:description>
 					<xsl:value-of select="body"/>
 				</dc:description>
-				<bibo:uri rdf:resource="{vi:proxyIRI(url)}" />
+				<bibo:uri rdf:resource="{url}" />
 			</rdf:Description>
 		</xsl:for-each>
     </xsl:template>

@@ -57,15 +57,16 @@
 			<foaf:Document rdf:about="{$baseUri}">
 				<foaf:primaryTopic>
 					<xsl:if test="$what = 'events'">
-						<foaf:Group rdf:about="{vi:proxyIRI($base)}" />
+						<foaf:Group rdf:about="{vi:proxyIRI($base)}" >
+							<xsl:for-each select="item">
+								<foaf:made rdf:resource="{event_url}"/>
+							</xsl:for-each>
+						</foaf:Group>
 					</xsl:if>
 					<xsl:if test="$what = 'event'">
 						<c:Vevent rdf:about="{vi:proxyIRI(item/event_url)}"/>
 					</xsl:if>
 				</foaf:primaryTopic>
-				<xsl:for-each select="item">
-					<foaf:topic rdf:resource="{event_url}"/>
-				</xsl:for-each>
 			</foaf:Document>
 		</xsl:if>					
 		<xsl:if test="$what = 'members'">
@@ -163,9 +164,9 @@
 							<dcterms:modified rdf:datatype="&xsd;dateTime">
 								<xsl:value-of select="updated"/>
 							</dcterms:modified>
-							<rdfs:seeAlso rdf:resource="{organizerProfileURL}" />
-							<rdfs:seeAlso rdf:resource="{concat(link, 'members')}" />
-							<rdfs:seeAlso rdf:resource="{concat(link, 'calendar')}" />
+							<!--rdfs:seeAlso rdf:resource="{organizerProfileURL}" /-->
+							<!--rdfs:seeAlso rdf:resource="{concat(link, 'members')}" /-->
+							<!--rdfs:seeAlso rdf:resource="{concat(link, 'calendar')}" /-->
 						</foaf:Group>
 					</foaf:primaryTopic>
 				</foaf:Document>
