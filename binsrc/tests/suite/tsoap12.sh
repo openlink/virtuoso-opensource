@@ -3709,7 +3709,7 @@ RUN SBR1-echoBase64.req
 XPATH_EXISTS [ xmlns:S="http://www.w3.org/2003/05/soap-envelope" xmlns:test="http://soapinterop.org/" ] /S:Envelope/S:Body/test:echoBase64Response/CallReturn[@type="http://www.w3.org/2001/XMLSchema:base64Binary"][normalize-space(.)="YUdWc2JHOGdkMjl5YkdRPQ=="]
 
 RUN SBR1-echoDate.req
-XPATH_EXISTS [ xmlns:S="http://www.w3.org/2003/05/soap-envelope" xmlns:test="http://soapinterop.org/" ] /S:Envelope/S:Body/test:echoDateResponse/CallReturn[@type="http://www.w3.org/2001/XMLSchema:dateTime"][.="1956-10-18T22:20:00.000-07:00"]
+XPATH_EXISTS [ xmlns:S="http://www.w3.org/2003/05/soap-envelope" xmlns:test="http://soapinterop.org/" ] /S:Envelope/S:Body/test:echoDateResponse/CallReturn[@type="http://www.w3.org/2001/XMLSchema:dateTime"][.="1956-10-18T22:20:00-07:00"]
 
 
 RUN SBR1-echoFloat.req
@@ -4022,7 +4022,7 @@ XPATH_EXISTS [ xmlns:S="http://www.w3.org/2003/05/soap-envelope" xmlns:test="htt
 
 RUN T53.req
 XPATH_EXISTS /Envelope
-XPATH_EXISTS [ xmlns:S="http://www.w3.org/2003/05/soap-envelope" xmlns:test="http://example.org/ts-tests" ] /S:Envelope/S:Body/test:echoDateResponse/CallReturn[@type="http://www.w3.org/2001/XMLSchema:dateTime"][.="1956-10-18T22:20:00.000-07:00"]
+XPATH_EXISTS [ xmlns:S="http://www.w3.org/2003/05/soap-envelope" xmlns:test="http://example.org/ts-tests" ] /S:Envelope/S:Body/test:echoDateResponse/CallReturn[@type="http://www.w3.org/2001/XMLSchema:dateTime"][.="1956-10-18T22:20:00-07:00"]
 
 RUN T54.req
 XPATH_EXISTS /Envelope

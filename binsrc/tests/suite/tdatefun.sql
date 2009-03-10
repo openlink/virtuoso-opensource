@@ -1127,7 +1127,7 @@ SET U{$LIF} $+ $U{$LIF} 1;
 ECHO BOTH ": BUG 3180: Cast as TIME\n";
 
 select datediff ('millisecond', {ts '1970-01-01 00:00:00.1000'}, {ts '1970-01-01 00:00:01.2000'});
-ECHO BOTH $IF $EQU $LAST[1] 1001 "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $LAST[1] 1100 "PASSED" "***FAILED";
 SET U{$LIF} $+ $U{$LIF} 1;
 ECHO BOTH ": BUG 7145: millisecond datediff returned : " $LAST[1] "\n";
 

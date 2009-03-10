@@ -79,7 +79,19 @@ create procedure TDAV_META_CHECK (in resname varchar, in propuri varchar, in pro
       DRI_CATVALUE = propval ) )
     result (sprintf ('PASSED: triplet S=%s P=%s V=%s', resname, propuri, propval));
   else
-    result (sprintf ('***' || 'FAI' || 'LED: triplet S=%s P=%s V=%s', resname, propuri, propval));
+    {
+      declare actual_value;
+      actual_value := coalesce ((
+    select top 1 DRI_CATVALUE
+    from WS.WS.SYS_DAV_RDF_INVERSE, WS.WS.SYS_DAV_RES, WS.WS.SYS_RDF_PROP_NAME
+    where
+      RES_FULL_PATH like '/DAV/tdav_meta_home/%' and
+      DRI_PROP_CATID = RPN_CATID and
+      RES_ID = DRI_RES_ID and
+      RES_NAME = resname and
+      RPN_URI = propuri ) );
+      result (sprintf ('***' || 'FAI' || 'LED: triplet S=%s P=%s V=%s (found %s)', resname, propuri, propval, actual_value));
+    }
 }
 ;
 
