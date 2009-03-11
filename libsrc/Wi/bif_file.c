@@ -872,27 +872,30 @@ file_stat_int (caddr_t fname, int what)
 #if defined (HAVE_DIRECT_H) && (defined (_AMD64_) || defined (_FORCE_WIN32_FILE_TIME))
       if (!file_mtime_to_dt (fname_cvt, dt))
 	{
-          dk_free_box (fname_cvt);
+	  dk_free_box (fname_cvt);
 	  return NULL;
 	}
-      dk_free_box (fname_cvt);
 #else
       if (st.st_mtime < 0)
-	return NULL;
+	{
+	  dk_free_box (fname_cvt);
+	  return NULL;
+	}
       time_t_to_dt (st.st_mtime, 0, dt);
 #endif
       dt_to_string (dt, szTemp, sizeof (szTemp));
     }
   else if (what == 1)
     {
-      snprintf (szTemp, sizeof(szTemp), OFF_T_PRINTF_FMT, (OFF_T_PRINTF_DTP) st.st_size);
+      snprintf (szTemp, sizeof (szTemp), OFF_T_PRINTF_FMT, (OFF_T_PRINTF_DTP) st.st_size);
     }
   else if (what == 2)
     {
-      snprintf (szTemp, sizeof (szTemp), "%ld", (long)st.st_mode);
+      snprintf (szTemp, sizeof (szTemp), "%ld", (long) st.st_mode);
     }
   else if (what == 4)
     {
+      dk_free_box (fname_cvt);
 #ifdef WIN32
       return os_get_uname_by_fname (fname);
 #else
@@ -901,6 +904,7 @@ file_stat_int (caddr_t fname, int what)
     }
   else if (what == 5)
     {
+      dk_free_box (fname_cvt);
 #ifdef WIN32
       return os_get_gname_by_fname (fname);
 #else
@@ -908,8 +912,12 @@ file_stat_int (caddr_t fname, int what)
 #endif
     }
   else
-    return NULL;
+    {
+      dk_free_box (fname_cvt);
+      return NULL;
+    }
 
+  dk_free_box (fname_cvt);
   return box_dv_short_string (szTemp);
 }
 
