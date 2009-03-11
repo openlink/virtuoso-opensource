@@ -74,8 +74,9 @@ int last_errno;
 
 /*#define _USE_CACHED_SES from http.h */
 
-char* http_cli_meth[] = { "NONE", "GET",  "HEAD", "POST", "PUT", "DELETE", "OPTIONS", 
-  			  "PROPFIND", "PROPPATCH", "COPY", "MOVE", "LOCK", "UNLOCK", "MKCOL" };
+char* http_cli_meth[] = { "NONE", "GET",  "HEAD", "POST", "PUT", "DELETE", "OPTIONS", /* HTTP/1.1 */
+  			  "PROPFIND", "PROPPATCH", "COPY", "MOVE", "LOCK", "UNLOCK", "MKCOL",  /* WebDAV */
+			  "MGET", "MPUT", "MDELETE" };	/* URIQA */
 #define HC_MAX_METHOD (sizeof (http_cli_meth)/sizeof (char*))
 
 #define FREE_BOX_IF(box) \
@@ -942,9 +943,16 @@ http_cli_get_doc_str (http_cli_ctx * ctx)
 }
 
 HC_RET
-http_cli_add_req_hdr (http_cli_ctx * ctx, char* hdr)
+http_cli_add_req_hdr (http_cli_ctx * ctx, char* hdrin)
 {
+  caddr_t hdr = box_dv_short_string (hdrin);
+  int len = box_length (hdr) - 1;
+  char * tail = hdr + len - 1; 
+  while (*tail == 0x0A || *tail == 0x0D)
+    *(tail--) = 0;
   SES_PRINT (ctx->hcctx_pub_req_hdrs, hdr);
+  SES_PRINT (ctx->hcctx_pub_req_hdrs, "\r\n");
+  dk_free_box (hdr);
   return (HC_RET_OK);
 }
 
@@ -2116,40 +2124,45 @@ http_cli_init_std_auth (http_cli_ctx* ctx, caddr_t user, caddr_t pass)
   return (HC_RET_OK);
 }
 
+/*
+   http_client
+   parameters: 
+
+   1. url
+   2. user
+   3. password
+   4. HTTP method
+   5. request HTTP headers
+   6. request body
+   7. certificate
+   8. pk password
+   9. response HTTP headers
+   10. timeout 
+   11. proxy
+*/
 
 caddr_t
-bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, char * me,
+    caddr_t url, caddr_t uid, caddr_t pwd, caddr_t method, caddr_t http_hdr, caddr_t body,
+    caddr_t cert, caddr_t pk_pass, uint32 time_out, int time_out_is_null, caddr_t proxy, int ret_arg_index)
 {
   http_cli_ctx * ctx;
-
-  char* me = "http_client";
-  caddr_t url = bif_string_arg (qst, args, 0, me);
-
-  char* ua_id = http_client_id_string/*"Frobbozz dingafier v.6.66"*/;
+  char* ua_id = http_client_id_string;
   caddr_t ret = NULL;
   caddr_t _err_ret;
   int meth = HC_METHOD_GET;
-  caddr_t http_hdr = NULL;
-  caddr_t body = NULL;
   dk_set_t hdrs = NULL;
   caddr_t *head = NULL;
   int to_free_head = 1;
+  dtp_t dtp;
 
 
   ctx = http_cli_std_init (url, qst);
   ctx->hcctx_method = HC_METHOD_GET;
 
-  if (BOX_ELEMENTS (args) > 1)
-    {
-      caddr_t uid = bif_string_or_null_arg (qst, args, 1, me);
-      caddr_t pwd = bif_string_or_null_arg (qst, args, 2, me);
       if (uid && pwd)
 	http_cli_init_std_auth (ctx, uid, pwd);
-    }
 
-  if (BOX_ELEMENTS (args) > 3)
-    {
-      caddr_t method = bif_string_or_null_arg (qst, args, 3, me);
       if (method)
 	{
 	  int inx;
@@ -2163,22 +2176,15 @@ bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		}
 	    }
 	}
-    }
-  if (BOX_ELEMENTS (args) > 4)
-    {
-      http_hdr = bif_string_or_null_arg (qst, args, 4, me);
+
       if (http_hdr)
 	{
 	  if (NULL != nc_strstr ((unsigned char *) http_hdr, (unsigned char *) "User-Agent:")) /* we already have ua id in headers */
 	    ua_id = NULL; 
           http_cli_add_req_hdr (ctx, http_hdr);
 	}
-    }
+
   http_cli_set_ua_id (ctx, ua_id);
-  if (BOX_ELEMENTS (args) > 5)
-    {
-      dtp_t dtp;
-      body = bif_arg (qst, args, 5, me);
       dtp = DV_TYPE_OF (body);
       if (body && dtp != DV_DB_NULL)
 	{
@@ -2199,35 +2205,25 @@ bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
               !nc_strstr ((unsigned char *) http_hdr, (unsigned char *) "Content-Type:")))
 	    http_cli_set_req_content_type (ctx, (caddr_t)"application/x-www-form-urlencoded");
 	}
-    }
 #ifdef _SSL
-  if (BOX_ELEMENTS (args) > 6)
+  if (NULL != cert)
     {
-      caddr_t cert = bif_string_or_null_arg (qst, args, 6, me);
       http_cli_ssl_cert (ctx, cert);
-      if (BOX_ELEMENTS (args) > 7)
-	http_cli_ssl_cert_pass (ctx, bif_string_or_null_arg (qst, args, 7, me));
+      http_cli_ssl_cert_pass (ctx, pk_pass);
     }
   else if (!strnicmp (url, "https://", 8))
     {
       http_cli_ssl_cert (ctx, (caddr_t)"1");
     }
 #endif
-  if (BOX_ELEMENTS (args) > 9) /* timeout */
+  if (!time_out_is_null) /* timeout */
     {
-      int isnull = 0;
-      uint32 time_out = (uint32) bif_long_or_null_arg (qst, args, 9, me, &isnull);
-      if (!isnull)
         ctx->hcctx_timeout = time_out;
     }
-  if (BOX_ELEMENTS (args) > 10) /* proxy server */
-    {
-      caddr_t proxy = bif_string_or_null_arg (qst, args, 10, me);
       if (proxy != NULL)
 	http_cli_set_proxy (ctx, proxy);
-    }
 
-  if (NULL != (ret = http_client_cache_get ((query_instance_t *)qst, url, http_hdr, body, args, 8)))
+  if (NULL != (ret = http_client_cache_get ((query_instance_t *)qst, url, http_hdr, body, args, ret_arg_index)))
     return ret;  
 
   IO_SECT(qst);
@@ -2266,10 +2262,25 @@ bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   END_DO_SET();
   head = (caddr_t *)list_to_array (dk_set_nreverse (hdrs));
 
-  if (BOX_ELEMENTS (args) > 8 && ssl_is_settable (args[8]))
+  if (BOX_ELEMENTS (args) > ret_arg_index && ssl_is_settable (args[ret_arg_index]))
     {
-      qst_set (qst, args[8], (caddr_t) head);
+      qst_set (qst, args[ret_arg_index], (caddr_t) head);
       to_free_head = 0;
+    }
+
+  if (ctx->hcctx_is_gzip && DV_STRINGP (ret))
+    {
+      dk_session_t *out = strses_allocate ();
+      strses_enable_paging (out, http_ses_size);
+      zlib_box_gzip_uncompress (ret, out, err_ret);
+      dk_free_tree (ret);
+      if (!STRSES_CAN_BE_STRING (out))
+	ret = (caddr_t) out;
+      else
+	{
+	  ret = strses_string (out);
+	  dk_free_box (out);
+	}
     }
 
   http_cli_ctx_free (ctx);
@@ -2283,6 +2294,58 @@ bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (to_free_head)
     dk_free_tree ((caddr_t) head);
   return (ret);
+}
+
+
+caddr_t
+bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char* me = "http_client";
+  caddr_t url = bif_string_arg (qst, args, 0, me);
+  caddr_t uid = NULL, pwd = NULL;
+  caddr_t http_hdr = NULL, body = NULL, method = NULL;
+  uint32 time_out = 0;
+  int time_out_is_null = 1;
+  caddr_t cert = NULL, pk_pass = NULL;
+  caddr_t proxy = NULL;
+
+  if (BOX_ELEMENTS (args) > 1)
+    {
+      uid = bif_string_or_null_arg (qst, args, 1, me);
+      pwd = bif_string_or_null_arg (qst, args, 2, me);
+    }
+  if (BOX_ELEMENTS (args) > 3)
+    method = bif_string_or_null_arg (qst, args, 3, me);
+  if (BOX_ELEMENTS (args) > 4)
+    http_hdr = bif_string_or_null_arg (qst, args, 4, me);
+  if (BOX_ELEMENTS (args) > 5)
+    {
+      dtp_t dtp;
+      body = bif_arg (qst, args, 5, me);
+      dtp = DV_TYPE_OF (body);
+      if (dtp != DV_DB_NULL && dtp != DV_SHORT_STRING && dtp != DV_LONG_STRING && dtp != DV_C_STRING && DV_STRING_SESSION != dtp)
+	{
+	  sqlr_new_error ("22023", "SR005", "Function %s needs a string or NULL as argument %d, "
+	      "not an arg of type %s (%d)", me, 6, dv_type_title (dtp), dtp);
+	}
+    }
+#ifdef _SSL
+  if (BOX_ELEMENTS (args) > 6)
+    {
+      cert = bif_string_or_null_arg (qst, args, 6, me);
+      if (BOX_ELEMENTS (args) > 7)
+	pk_pass = bif_string_or_null_arg (qst, args, 7, me);
+    }
+#endif
+  if (BOX_ELEMENTS (args) > 9) /* timeout */
+    {
+      time_out = (uint32) bif_long_or_null_arg (qst, args, 9, me, &time_out_is_null);
+    }
+  if (BOX_ELEMENTS (args) > 10) /* proxy server */
+    {
+      proxy = bif_string_or_null_arg (qst, args, 10, me);
+    }
+  return bif_http_client_impl (qst, err_ret, args, me, url, uid, pwd, method, http_hdr, body, cert, pk_pass, time_out, time_out_is_null, proxy, 8);
 }
 
 caddr_t
@@ -2470,10 +2533,42 @@ init_acl_set (char *acl_string1, dk_set_t * acl_set_ptr)
     }
 }
 
+caddr_t
+bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char * me = "http_get";
+  caddr_t uri = bif_string_or_uname_arg (qst, args, 0, me);
+  int n_args = BOX_ELEMENTS (args);
+  caddr_t method = NULL;
+  caddr_t header = NULL;
+  caddr_t body = NULL;
+  caddr_t volatile proxy = NULL;
+
+  if (n_args > 2)
+    method = bif_string_or_uname_arg (qst, args, 2, me);
+  if (n_args > 3)
+    header = bif_string_or_null_arg (qst, args, 3, me);
+  if (n_args > 4)
+    {
+      dtp_t dtp;
+      body = bif_arg (qst, args, 4, me);
+      dtp = DV_TYPE_OF (body);
+      if (dtp != DV_DB_NULL && dtp != DV_SHORT_STRING && dtp != DV_LONG_STRING && dtp != DV_C_STRING && DV_STRING_SESSION != dtp)
+	{
+	  sqlr_new_error ("22023", "SR005", "Function %s needs a string or NULL as argument %d, "
+	      "not an arg of type %s (%d)", me, 6, dv_type_title (dtp), dtp);
+	}
+    }
+  if (n_args > 5)
+    proxy = bif_string_or_null_arg (qst, args, 5, me);
+  return bif_http_client_impl (qst, err_ret, args, me, uri, NULL, NULL, method, header, body, NULL, NULL, 0, 1 /*no timeout*/, proxy, 1);
+}
+
 void
 bif_http_client_init (void)
 {
   init_acl_set (http_cli_proxy_except, &http_cli_proxy_except_set);
   bif_define_typed ("http_client_internal", bif_http_client, &bt_varchar);
   bif_define_typed ("http_pipeline", bif_http_pipeline, &bt_any);
+  bif_define_typed ("http_get", bif_http_get, &bt_varchar);
 }

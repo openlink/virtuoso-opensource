@@ -5924,6 +5924,7 @@ bif_http_client_cache_enable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
   return NULL;
 }
 
+#if 0
 caddr_t
 bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -6177,6 +6178,7 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     dk_free_tree ((caddr_t) head);
   return res;
 }
+#endif
 
 
 caddr_t
@@ -9427,7 +9429,9 @@ http_init_part_one ()
   bif_define_typed ("dav_root", bif_dav_root, &bt_varchar);
   bif_define_typed ("http_path", bif_http_path, &bt_varchar);
   bif_define ("http_internal_redirect", bif_http_internal_redirect);
+#if 0  
   bif_define_typed ("http_get", bif_http_get, &bt_varchar);
+#endif  
   bif_define_typed ("http_client_cache_enable", bif_http_client_cache_enable, &bt_varchar);
   bif_define_typed ("string_output", bif_string_output, &bt_varchar);
   bif_define_typed ("string_output_string", bif_string_output_string, &bt_varchar);
