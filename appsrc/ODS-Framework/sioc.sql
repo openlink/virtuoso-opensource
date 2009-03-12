@@ -41,6 +41,17 @@ create procedure get_graph ()
   return sprintf ('http://%s%s', get_cname (), get_base_path ());
 };
 
+create procedure get_graph_ext (in mode integer)
+{
+  declare graph varchar;
+
+  graph := get_graph ();
+  if (mode = 2)
+    graph := graph || '/protected';
+
+  return graph;
+};
+
 create procedure get_ods_link ()
 {
   return sprintf ('http://%s/ods', get_cname ());
@@ -2597,12 +2608,10 @@ create trigger WA_MEMBER_SIOC_I after insert on DB.DBA.WA_MEMBER referencing new
     return;
   };
 
-  graph_iri := get_graph ();
-
-
-  if ((N.WAM_MEMBER_TYPE = 1) and ((N.WAM_IS_PUBLIC = 1) or (N.WAM_APP_TYPE = 'oDrive')))
+  graph_iri := get_graph_ext (N.WAM_IS_PUBLIC);
+  if ((N.WAM_MEMBER_TYPE = 1) and ((N.WAM_IS_PUBLIC <> 0) or (N.WAM_APP_TYPE = 'oDrive')))
     {
-      site_iri  := get_graph ();
+    site_iri := get_graph_ext (N.WAM_IS_PUBLIC);
       iri := forum_iri (N.WAM_APP_TYPE, N.WAM_INST);
       sioc_forum (graph_iri, site_iri, iri, N.WAM_INST, N.WAM_APP_TYPE, null);
       -- add services here
@@ -2636,7 +2645,6 @@ create trigger WA_MEMBER_SIOC_I after insert on DB.DBA.WA_MEMBER referencing new
 	  person_iri := person_iri (iri);
 	  DB.DBA.RDF_QUAD_URI (graph_iri, group_iri (firi), foaf_iri ('member'), person_iri);
 	}
-      --DB.DBA.RDF_QUAD_URI (graph_iri, firi, sioc_iri ('has_member'), iri);
     }
   if (_wai_type = 'AddressBook')
     {
@@ -2654,8 +2662,8 @@ create trigger WA_MEMBER_SIOC_D before delete on DB.DBA.WA_MEMBER referencing ol
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
-  graph_iri := get_graph ();
 
+  graph_iri := get_graph_ext (O.WAM_IS_PUBLIC);
   if (O.WAM_MEMBER_TYPE = 1) -- instance drop
     {
       firi := forum_iri (O.WAM_APP_TYPE, O.WAM_INST);
@@ -2692,56 +2700,56 @@ create trigger WA_INSTANCE_SIOC_U before update on DB.DBA.WA_INSTANCE referencin
     return;
   };
 
-  graph_iri := get_graph ();
+  if (N.WAI_IS_PUBLIC = 0 and O.WAI_IS_PUBLIC = 0)
+    return;
 
+  graph_iri := get_graph_ext (O.WAI_IS_PUBLIC);
   iri := forum_iri_n (O.WAI_TYPE_NAME, O.WAI_NAME, N.WAI_NAME);
   oiri := forum_iri (O.WAI_TYPE_NAME, O.WAI_NAME);
-
   if (N.WAI_TYPE_NAME = 'Community')
     {
       declare giri any;
       giri := group_iri (iri);
       delete_quad_sp (graph_iri, giri, foaf_iri ('name'));
     }
-
-  if (N.WAI_IS_PUBLIC = 0 and O.WAI_IS_PUBLIC = 1)
+  if ((N.WAI_IS_PUBLIC <> O.WAI_IS_PUBLIC) and (O.WAI_IS_PUBLIC <> 0))
     {
-      for select O as post from DB.DBA.RDF_QUAD where
-	G = DB.DBA.RDF_IID_OF_QNAME (graph_iri) and
-	S = DB.DBA.RDF_IID_OF_QNAME (oiri) and
-	P = DB.DBA.RDF_IID_OF_QNAME (sioc_iri ('container_of'))
-	do
+    for select O as post
+          from DB.DBA.RDF_QUAD
+         where G = DB.DBA.RDF_IID_OF_QNAME (graph_iri)
+           and S = DB.DBA.RDF_IID_OF_QNAME (oiri)
+           and P = DB.DBA.RDF_IID_OF_QNAME (sioc_iri ('container_of')) do
 	  {
-	    -- dbg_obj_print ('delete posts rdf:', DB.DBA.RDF_QNAME_OF_IID (post));
 	    delete_quad_s_or_o (graph_iri, post, post);
 	  }
       delete_quad_s_or_o (graph_iri, oiri, oiri);
-      return;
     }
-  else if (N.WAI_IS_PUBLIC = 1 and O.WAI_IS_PUBLIC = 0)
+  if (N.WAI_IS_PUBLIC <> O.WAI_IS_PUBLIC)
     {
       declare p_name varchar;
-      site_iri  := get_graph ();
+
+    graph_iri := get_graph_ext (N.WAI_IS_PUBLIC);
+    site_iri := get_graph_ext (N.WAI_IS_PUBLIC);
       sioc_forum (graph_iri, site_iri, iri, N.WAI_NAME, N.WAI_TYPE_NAME, N.WAI_DESCRIPTION, N.WAI_ID);
       cc_work_lic (graph_iri, iri, N.WAI_LICENSE);
       p_name := sprintf ('sioc.DBA.fill_ods_%s_sioc', DB.DBA.wa_type_to_app (N.WAI_TYPE_NAME));
-      -- dbg_obj_print (p_name, __proc_exists (p_name));
       if (__proc_exists (p_name))
 	call (p_name) (graph_iri, site_iri, N.WAI_NAME);
     }
   else
     {
+    graph_iri := get_graph_ext (N.WAI_IS_PUBLIC);
       delete_quad_sp (graph_iri, oiri, sioc_iri ('id'));
       delete_quad_sp (graph_iri, oiri, sioc_iri ('link'));
       update_quad_s_o (graph_iri, oiri, iri);
       delete_quad_sp (graph_iri, oiri, cc_iri ('license'));
       cc_work_lic (graph_iri, iri, N.WAI_LICENSE);
 
-      for select distinct WAM_MEMBER_TYPE as tp from DB.DBA.WA_MEMBER where WAM_INST = O.WAI_NAME and ((WAM_IS_PUBLIC = 1) or (WAM_APP_TYPE = 'oDrive')) do
+    for select distinct WAM_MEMBER_TYPE as tp from DB.DBA.WA_MEMBER where WAM_INST = O.WAI_NAME and ((WAM_IS_PUBLIC <> 0) or (WAM_APP_TYPE = 'oDrive')) do
 	{
 	  declare _role varchar;
-	  _role := (select WMT_NAME from DB.DBA.WA_MEMBER_TYPE where WMT_APP = O.WAI_NAME and WMT_ID = tp);
 
+	    _role := (select WMT_NAME from DB.DBA.WA_MEMBER_TYPE where WMT_APP = O.WAI_NAME and WMT_ID = tp);
 	  if (_role is null and tp = 1)
 	    _role := 'owner';
 

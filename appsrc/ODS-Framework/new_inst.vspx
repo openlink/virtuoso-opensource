@@ -341,14 +341,29 @@
         return;
       };
       id := call (h) (self.inst, connection_get ('vspx_user'));
-      if (self.wa_type not in ('oMail', 'IM') and self.switch_adv = 1)
+      if (self.wa_type not in ('oMail', 'IM'))
       {
-        self.is_public := self.is_public1.ufl_selected;
+        self.is_public := get_keyword ('is_public1', self.vc_event.ve_params);
       }
       if (self.wa_type not in ('oDrive', 'oMail', 'IM') and self.switch_adv = 1)
       {
         self.is_visible := self.is_visible1.ufl_selected;
       }
+      declare N integer;
+      declare suffix, tmp_s varchar;
+
+      tmp_s := vector();
+      for (N := 0; N < length (e.ve_params); N := N + 4)
+      {
+        if ((e.ve_params [N] like 's_fld_2_%') and (trim (e.ve_params [N+1]) <> ''))
+        {
+          suffix := replace (e.ve_params [N], 's_fld_2_', '');
+          tmp_s := vector_concat (tmp_s, vector (vector (get_keyword ('s_fld_1_'||suffix, e.ve_params, ''), get_keyword ('s_fld_2_'||suffix, e.ve_params,''), get_keyword ('s_fld_3_'||suffix, e.ve_params,''))));
+        }
+      }
+      tmp_s := vector_concat (vector (vector ('v1.0', length (tmp_s))), tmp_s);
+      self.acl := serialize (tmp_s);
+
       self.ilic := self.ilic1.ufl_value;
       update WA_INSTANCE
          set WAI_MEMBER_MODEL = self.imodel1.ufl_value,
@@ -356,7 +371,8 @@
              WAI_MEMBERS_VISIBLE = self.is_visible,
              WAI_NAME = self.inst.wa_name,
 	           WAI_DESCRIPTION = self.idesc1.ufl_value,
-	           WAI_LICENSE = self.ilic1.ufl_value
+	           WAI_LICENSE = self.ilic1.ufl_value,
+	           WAI_ACL = self.acl
              where WAI_ID = id;
       -- VD creation
       {
@@ -485,6 +501,7 @@
       <vm:variable name="imodel" type="int" default="2" persist="0"/>
       <vm:variable name="is_public" type="int" default="1" persist="0"/>
       <vm:variable name="is_visible" type="int" default="1" persist="0"/>
+      <vm:variable name="acl" type="any" default="null" persist="0"/>
       <vm:variable name="iid" type="int" default="null" persist="0"/>
       <vm:variable name="iname" type="varchar" default="null" persist="0"/>
       <vm:variable name="ihome" type="varchar" default="null" persist="0"/>
@@ -512,7 +529,8 @@
           <div id="main">
 	          <div class="box">
       	      <v:local-variable name="dummy">
-           		  <v:before-data-bind><![CDATA[
+           		  <v:before-data-bind>
+           		    <![CDATA[
                   if ((exists (select 1  from WA_TYPES  where WAT_NAME =self.wa_name
                       and ( WAT_MAXINST=0 or WAT_MAXINST <= (select WMIC_INSTCOUNT from WA_MEMBER_INSTCOUNT where WMIC_TYPE_NAME=WAT_NAME  and WMIC_UID =self.u_id))))
                       or  self.wa_name='Discussion'
@@ -539,7 +557,8 @@
             		    if (self.wa_cnt = 0)
             		      self.promo := '';
             		  }
-      		      ]]></v:before-data-bind>
+        		      ]]>
+      		      </v:before-data-bind>
       	      </v:local-variable>
 	            <v:form type="simple" method="POST" name="aform1">
 	              <v:template name="maxinst_exceed" type="simple" condition="self.maxinstexceeded = 1 and self.wa_name<>'Discussion'">
@@ -605,7 +624,9 @@
                              else if (self.wa_type = 'IM')
                              {
                                _iname := sprintf ('%s%d', self.u_first_name, _cnt);
-                             } else {
+                             }
+                             else
+                             {
                                _iname := sprintf ('%s\'s %s (%d)', self.u_first_name, app_suff, _cnt);
                              }
                            }
@@ -666,6 +687,15 @@
   		                 }
                     ]]>
 		                </v:before-data-bind>
+		                <br />
+                    <input type="hidden" name="tabNo" xhtml_id="tabNo" value="0"/>
+                    <div id="p" class="c1">
+                      <div class="tabs">
+                        <div onclick="javascript: showTab('p', 2, 0);" class="tab activeTab" id="p_tab_0">Main</div>
+                        <div onclick="javascript: showTab('p', 2, 1);" class="tab" id="p_tab_1">Access</div>
+                      </div>
+                      <div class="contents">
+                        <div id="p_content_0" class="tabContent">
 		                <table  class="ctl_grp" >
                     <vm:instance-settings />
                     <v:after-data-bind>
@@ -683,8 +713,16 @@
                         }
                       ]]>
     		            </v:after-data-bind>
-		<tr><td colspan="3">
-		<span class="fm_ctl_btn">
+                          </table>
+                        </div>
+                        <div id="p_content_1" class="tabContent" style="display: none;">
+      		                <table class="ctl_grp" width="100%">
+                            <vm:instance-sharing />
+                          </table>
+                        </div>
+                      </div>
+                      <br />
+                      <div>
                 <v:button action="simple" name="cancel1" value="Cancel" >
                   <v:on-post>
                     <![CDATA[
@@ -708,10 +746,8 @@
 		      self.vc_redirect ('services.vspx');
                   </v:on-post>
                 </v:button>
-	      </span>
-	    </td>
-	    </tr>
-	       </table>
+                      </div>
+                    </div>
 	    </v:template>
 	    <v:template name="tmpl_inst_ck" type="simple" condition="self.promo = 'promo'">
 	      <h2>
@@ -727,9 +763,7 @@
 		<?vsp
 		declare inx int;
 		inx := 0;
-		for select WAM_INST, WAM_HOME_PAGE from WA_MEMBER where WAM_APP_TYPE = self.wa_name and WAM_USER = self.u_id
-		and WAM_MEMBER_TYPE = 1
-		do
+                    		for (select WAM_INST, WAM_HOME_PAGE from WA_MEMBER where WAM_APP_TYPE = self.wa_name and WAM_USER = self.u_id and WAM_MEMBER_TYPE = 1) do
 		   {
 		?>
 		<tr class="<?V case when mod(inx,2) then 'listing_row_even' else 'listing_row_odd' end ?>">

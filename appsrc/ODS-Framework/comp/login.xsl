@@ -426,9 +426,9 @@ auth_failed1:;
     ]]>
 </xsl:if>
 <![CDATA[
-      if (redirect or (e.ve_is_post and (e.ve_button.vc_name = 'login_form_X509')))
+      if (redirect or (e.ve_is_post and (not isnull (e.ve_button)) and (e.ve_button.vc_name = 'login_form_X509')))
       {
-        if (e.ve_is_post and (e.ve_button.vc_name = 'login_form_X509'))
+        if (e.ve_is_post and (not isnull (e.ve_button)) and (e.ve_button.vc_name = 'login_form_X509'))
           redirect := 2;
         if (is_https_ctx ())
         {

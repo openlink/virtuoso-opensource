@@ -1063,7 +1063,7 @@
                 <input type="hidden" id="c_no" name="c_no" value="<?V N ?>" />
               </td>
               <td valign="top" nowrap="1">
-                <input type="button" value="Add" onclick="javascript: updateRow('c', null, {mode: 1, fld1: {value: 'Google'}, fld2: {value: 'http://google.com', class: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
+                <input type="button" value="Add" onclick="javascript: updateRow('c', null, {fld1: {mode: 1, value: 'Google'}, fld2: {value: 'http://google.com', class: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
               </td>
             </tr>
           </table>

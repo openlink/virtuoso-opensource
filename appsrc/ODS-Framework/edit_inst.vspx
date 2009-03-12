@@ -34,8 +34,8 @@
     </vm:header>
     <v:on-init>
       <![CDATA[
-        select WAI_MEMBER_MODEL, WAI_IS_PUBLIC, WAI_MEMBERS_VISIBLE, WAI_INST, WAI_NAME, WAI_TYPE_NAME, WAI_DESCRIPTION, WAI_LICENSE
-          into self.imodel, self.is_public, self.is_visible, self.inst, self.iname, self.wa_type, self.idesc, self.ilic
+        select WAI_MEMBER_MODEL, WAI_IS_PUBLIC, WAI_MEMBERS_VISIBLE, WAI_INST, WAI_NAME, WAI_TYPE_NAME, WAI_DESCRIPTION, WAI_LICENSE, WAI_ACL
+          into self.imodel, self.is_public, self.is_visible, self.inst, self.iname, self.wa_type, self.idesc, self.ilic, self.acl
           from WA_INSTANCE
          where WAI_ID = self.iid;
         if (self.instance_descr is null)
@@ -108,6 +108,7 @@
       <vm:variable name="imodel" type="int" default="null" persist="0"/>
       <vm:variable name="is_public" type="int" default="null" persist="0"/>
       <vm:variable name="is_visible" type="int" default="null" persist="0"/>
+      <vm:variable name="acl" type="any" default="null" persist="0"/>
       <vm:variable name="iid" type="int" default="null" persist="0" param-name="wai_id"/>
       <vm:variable name="iname" type="varchar" default="null" persist="0"/>
       <vm:variable name="idesc" type="varchar" default="null" persist="0"/>
@@ -134,11 +135,26 @@
         <vm:login redirect="index.vspx"/>
         <div class="box">
           <v:form type="simple" method="POST" name="eform1">
+            <br />
+            <input type="hidden" name="tabNo" xhtml_id="tabNo" value="0"/>
+            <div id="z" class="c1">
+              <div class="tabs">
+                <div onclick="javascript: showTab('z', 2, 0);" class="tab activeTab" id="z_tab_0">Main</div>
+                <div onclick="javascript: showTab('z', 2, 1);" class="tab" id="z_tab_1">Access</div>
+              </div>
+              <div class="contents">
+                <div id="z_content_0" class="tabContent">
             <table  class="ctl_grp">
               <vm:instance-settings edit="yes" />
-              <tr>
-                 <td colspan="2">
-                  <span class="fm_ctl_btn">
+                  </table>
+                </div>
+                <div id="z_content_1" class="tabContent" style="display: none;">
+	                <table class="ctl_grp" width="100%">
+                    <vm:instance-sharing />
+                  </table>
+                </div>
+              </div>
+              <div>
                     <v:button action="simple" name="cancel1" value="Cancel">
                       <v:on-post>
                         <![CDATA[
@@ -215,12 +231,26 @@
                           inst.wa_member_model := atoi(self.imodel1.ufl_value);
                           if (self.wa_type not in ('oMail', 'IM'))
                           {
-                            self.is_public := self.is_public1.ufl_selected;
+                        self.is_public := get_keyword ('is_public1', self.vc_event.ve_params);
                           }
                           if (self.wa_type not in ('oDrive', 'oMail', 'IM'))
                           {
                             self.is_visible := self.is_visible1.ufl_selected;
                           }
+                      declare N integer;
+                      declare suffix, tmp_s varchar;
+
+                      tmp_s := vector();
+                      for (N := 0; N < length (e.ve_params); N := N + 4)
+                      {
+                        if ((e.ve_params [N] like 's_fld_2_%') and (trim (e.ve_params [N+1]) <> ''))
+                        {
+                          suffix := replace (e.ve_params [N], 's_fld_2_', '');
+                          tmp_s := vector_concat (tmp_s, vector (vector (get_keyword ('s_fld_1_'||suffix, e.ve_params, ''), get_keyword ('s_fld_2_'||suffix, e.ve_params, ''), get_keyword ('s_fld_3_'||suffix, e.ve_params, ''))));
+                        }
+                      }
+                      tmp_s := vector_concat (vector (vector ('v1.0', length (tmp_s))), tmp_s);
+                      self.acl := serialize (tmp_s);
 
                           declare exit handler for sqlstate '23000'
                           {
@@ -237,7 +267,8 @@
                                  WAI_INST = inst,
                                  WAI_NAME = inst.wa_name,
                                    WAI_DESCRIPTION = self.idesc1.ufl_value,
-                                  WAI_LICENSE = self.ilic1.ufl_value
+                             WAI_LICENSE = self.ilic1.ufl_value,
+                             WAI_ACL = self.acl
                            where WAI_ID = self.iid;
                           commit work;
 
@@ -247,10 +278,8 @@
                         ]]>
                       </v:on-post>
                     </v:button>
-                  </span>
-                 </td>
-              </tr>
-            </table>
+              </div>
+            </div>
           </v:form>
         </div>
       </vm:body>

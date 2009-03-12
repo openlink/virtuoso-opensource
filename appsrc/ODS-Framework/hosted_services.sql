@@ -305,6 +305,8 @@ wa_exec_no_error(
     WAT_TYPE varchar,
     WAT_REALM varchar,
     WAT_DESCRIPTION varchar,
+     WAT_OPTIONS long varchar,
+
       primary key (WAT_NAME)
     )'
 )
@@ -312,9 +314,11 @@ wa_exec_no_error(
 wa_add_col('DB.DBA.WA_TYPES', 'WAT_MAXINST', 'integer')
 ;
 
+wa_add_col('DB.DBA.WA_TYPES', 'WAT_OPTIONS', 'long varchar')
+;
+
 wa_exec_no_error(
-  'CREATE TABLE WA_MEMBER_MODEL
-    (
+  'CREATE TABLE WA_MEMBER_MODEL (
     WMM_ID int primary key,
     WMM_NAME varchar not null
     )'
@@ -327,19 +331,21 @@ wa_exec_no_error(
   WMT_NAME varchar,
   WMT_ID int,
   WMT_IS_DEFAULT int,
-  primary key (WMT_APP, WMT_ID))'
+
+     primary key (WMT_APP, WMT_ID)
+   )'
 )
 ;
 
 wa_exec_no_error(
-  'CREATE TABLE WA_INSTANCE
-    (
+  'CREATE TABLE WA_INSTANCE (
     WAI_ID   int identity,
     WAI_TYPE_NAME varchar references WA_TYPES on delete cascade,
     WAI_NAME varchar,
     WAI_INST web_app,
     WAI_MEMBER_MODEL int references WA_MEMBER_MODEL,
     WAI_IS_PUBLIC int default 1,
+    WAI_ACL long varchar,
     WAI_MEMBERS_VISIBLE int default 1,
     WAI_DESCRIPTION varchar,
     WAI_MODIFIED timestamp,
@@ -361,6 +367,9 @@ wa_add_col('DB.DBA.WA_INSTANCE', 'WAI_MODIFIED', 'timestamp')
 ;
 
 wa_add_col('DB.DBA.WA_INSTANCE', 'WAI_LICENSE', 'long varchar')
+;
+
+wa_add_col('DB.DBA.WA_INSTANCE', 'WAI_ACL', 'long varchar')
 ;
 
 --wa_exec_no_error(

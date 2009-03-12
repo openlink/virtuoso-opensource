@@ -26,10 +26,103 @@
     xmlns:v="http://www.openlinksw.com/vspx/"
     xmlns:vm="http://www.openlinksw.com/vspx/ods/">
 
-    <xsl:template match="vm:instance-settings">
-
+    <xsl:template match="vm:instance-sharing">
       <tr>
-        <th><label for="ianame1"><?V self.instance_descr ?>:</label>
+        <th width="1%" nowrap="nowrap">
+          <label for="is_public1">Visible mode</label>
+        </th>
+        <td align="left">
+          <?vsp
+            if (self.wa_type in ('oMail', 'IM'))
+            {
+              http (case when self.is_public = 0 then 'Private' else case when self.is_public = 1 then 'Public' else 'Shared' end end);
+              http (sprintf ('<input type="hidden" name="is_public1" id="is_public1" value="%d"/>', self.is_public));
+            }
+            else
+            {
+              http (         '<select name="is_public1" id="is_public1" onchange="javascript: sharedChange(this);">');
+              http (sprintf ('  <option value="0" %s>Private</option>', case when self.is_public = 0 then 'selected="selected"' else '' end));
+              http (sprintf ('  <option value="1" %s>Public</option>', case when self.is_public = 1 then 'selected="selected"' else '' end));
+              http (sprintf ('  <option value="2" %s>Shared (RDF Data Only)</option>', case when self.is_public = 2 then 'selected="selected"' else '' end));
+              http (         '</select>');
+            }
+          ?>
+        </td>
+      </tr>
+      <tr id="tr_shared" style="display: <?V case when self.is_public <> 2 then 'none' else '' end ?>">
+        <td colspan="2">
+          <table>
+            <tr>
+              <td width="600px">
+                <table id="s_tbl" class="listing">
+                  <tr class="listing_header_row">
+                    <th>
+                      Type
+                    </th>
+                    <th>
+                      Value
+                    </th>
+                    <th>
+                      Access
+                    </th>
+                    <th width="80px">
+                      Action
+                    </th>
+                  </tr>
+                  <?vsp
+                    declare N integer;
+                    declare acl any;
+
+                    acl := deserialize (self.acl);
+                    for (N := 1; N < length (acl); N := N + 1)
+                    {
+                  ?>
+                  <tr id="s_tr_<?V N ?>">
+                    <td id="s_td1_<?V N ?>">
+                		  <![CDATA[
+                   		  <script type="text/javascript">
+                   		  <?vsp
+                          http (sprintf ('ODSInitArray.push ( function (){updateRowCombo2(\'s_td1_%d\', \'s_fld_1_%d\', {value: \'%s\'});});', N, N, acl[N][0]));
+                   		  ?>
+                   		  </script>
+                 		  ]]>
+                    </td>
+                    <td id="s_td2_<?V N ?>">
+                      <input type="text" id="s_fld_2_<?V N ?>" name="s_fld_2_<?V N ?>" value="<?V acl[N][1] ?>" style="width: 95%;" class="_validate_" onblur="javascript: validateField(this);" />
+                    </td>
+                    <td id="s_td3_<?V N ?>">
+                	    <![CDATA[
+                 		    <script type="text/javascript">
+                 		    <?vsp
+                          http (sprintf ('ODSInitArray.push ( function (){updateRowCombo3(\'s_td3_%d\', \'s_fld_3_%d\', {value: \'%s\'});});', N, N, acl[N][2]));
+                 		    ?>
+                 		    </script>
+                 		  ]]>
+                    </td>
+                    <td>
+                      <input type="button" value="Remove" onclick="javascript: updateRow('s', <?V N ?>);" />
+                    </td>
+                  </tr>
+                  <?vsp
+                    }
+                  ?>
+                </table>
+                <input type="hidden" id="s_no" name="s_no" value="<?V N ?>" />
+              </td>
+              <td valign="top" nowrap="1">
+                <?vsp
+                  http ('<input type="button" value="Add" onclick="javascript: updateRow(\'s\', null, {fld1: {mode: 2}, fld2: {}, fld3: {mode: 3}});" />');
+                ?>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </xsl:template>
+
+    <xsl:template match="vm:instance-settings">
+      <tr>
+        <th><label for="ianame1"><?V self.instance_descr ?></label>
           <?V case when self.wa_type = 'WEBLOG2' then 'name' else '' end?>
         </th>
         <td colspan="2">
@@ -84,41 +177,27 @@
             <?vsp
               }
             ?>
-
-            <!--/xsl:if-->
-            <!--xsl:if test="@edit">
-              <?V wa_utf8_to_wide (self.iname) ?>
-              <?vsp
-                if (self.wa_type in ('IM'))
-                {
-              ?>
-              @
-              <?V self.wa_domain ?>
-              <?vsp
-                }
-              ?>
-            </xsl:if-->
           </xsl:if>
         </td>
       </tr>
 
       <xsl:if test="not (@edit = 'yes') and not (@readonly = 'yes')">
-
       <tr  style="vertical-align : baseline;">
         <th>
-          Your <?V self.instance_descr?> will be accessible by this URL: <br/>
+            Your <?V self.instance_descr?> will be accessible by this URL <br/>
         </th>
         <td>
           <?vsp
             declare domain any;
-            domain:=null;
+
             domain:=cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
-            if ((domain is null or length(domain)=0) and is_http_ctx ()) {
+              if ((domain is null or length(domain)=0) and is_http_ctx ())
+              {
               declare lines any;
               lines := http_request_header ();
               if (isarray (lines))
                 domain := http_request_header (lines, 'Host', null, null);
-            };
+              }
           ?>
           http://<?V domain||self.ihome?>
         </td>
@@ -136,35 +215,43 @@
       </tr>
     </xsl:if>
     <?vsp
-      if (self.wa_type in ('WEBLOG2', 'oWiki', 'Community','oGallery')) {
+      if (self.wa_type in ('WEBLOG2', 'oWiki', 'Community', 'oGallery'))
+      {
     ?>
     <xsl:if test="not (@edit = 'yes')">
       <tr>
         <td></td>
         <td colspan="2">
           <div id="change_defurl" style="display:none;">
-            <table><tr>
+            <table>
+              <tr>
               <td>
                 <xsl:if test="@readonly">
                   <?V self.ihome ?>
                 </xsl:if>
                 <xsl:if test="not @readonly">
                   <v:text name="sub_domain" error-glyph="*" value="" />.
-                  <v:data-list name="main_domain" key-column="WD_DOMAIN" value-column="WD_DOMAIN"
-                    sql="select WD_DOMAIN from WA_DOMAINS where length (WD_LISTEN_HOST)
-                      union select '\173Default Domain\175' from WA_SETTINGS"
+                    <v:data-list name="main_domain"
+                                 key-column="WD_DOMAIN"
+                                 value-column="WD_DOMAIN"
+                                 sql="select WD_DOMAIN from WA_DOMAINS where length (WD_LISTEN_HOST) union select '\173Default Domain\175' from WA_SETTINGS"
                       xhtml_onchange='toggleControl (this, "\173Default Domain\175", this.form["sub_domain"])' >
-                  <v:after-data-bind><![CDATA[
+                      <v:after-data-bind>
+                        <![CDATA[
                     control.vs_set_selected ();
-                  ]]></v:after-data-bind>
-                  <v:before-render><![CDATA[
-                    if (control.ufl_value is null) {
+                        ]]>
+                      </v:after-data-bind>
+                      <v:before-render>
+                        <![CDATA[
+                          if (control.ufl_value is null)
+                          {
                       control.ufl_value := '{Default Domain}';
                       control.vs_set_selected ();
                     }
                     if (control.ufl_value = '{Default Domain}')
                       self.sub_domain.vc_add_attribute ('disabled', '1');
-                  ]]></v:before-render>
+                        ]]>
+                      </v:before-render>
                 </v:data-list>
                 <v:text xhtml_id="ihome1" error-glyph="*" name="ihome1" value="--self.ihome" xhtml_style="width:250px">
                   <v:on-post>
@@ -174,9 +261,9 @@
                 <v:text name="ihome2" type="hidden" value="--case when e.ve_is_post then control.ufl_value else self.ihome end"/>
               </xsl:if>
             </td>
-          </tr></table>
+              </tr>
+            </table>
         </div>
-
       </td>
     </tr>
         </xsl:if>
@@ -233,11 +320,9 @@
               <td>
                 <v:select-list xhtml_id="itempl_c1" xhtml_style="width: 155px" name="itempl_c1">
                   <v:before-data-bind>
-
-                    if (__proc_exists ('ODS.COMMUNITY.COMM_NEWINST_GET_CUSTOMOPTIONS')){
-
+                    if (__proc_exists ('ODS.COMMUNITY.COMM_NEWINST_GET_CUSTOMOPTIONS'))
+                    {
                     declare res_names_arr, res_path_arr any;
-
 
                     res_names_arr:=vector();
                     res_path_arr:=vector();
@@ -284,14 +369,11 @@
 
                   <tr>
                     <td>
-
                        <v:select-list xhtml_id="ilogo_c1" name="ilogo_c1" xhtml_style="width: 155px">
                          <v:before-data-bind>
-
-                           if (__proc_exists ('ODS.COMMUNITY.COMM_NEWINST_GET_CUSTOMOPTIONS')){
-
+                           if (__proc_exists ('ODS.COMMUNITY.COMM_NEWINST_GET_CUSTOMOPTIONS'))
+                           {
                            declare res_names_arr, res_path_arr any;
-
 
                            res_names_arr:=vector();
                            res_path_arr:=vector();
@@ -495,27 +577,6 @@
             </tr>
             <tr>
               <?vsp
-                if (self.wa_type in ('oMail', 'IM'))
-                {
-              ?>
-              <th><label for="is_public1">Visible to public</label></th>
-              <td align="left">
-                <v:label format="%s" value="--case when self.is_public then 'YES' else 'NO' end" />
-                <?vsp http(sprintf('<input type="hidden" name="is_public1" id="is_public1" value="%d"/>', self.is_public)); ?>
-              </td>
-              <?vsp
-                } else {
-              ?>
-              <td align="right">
-                <v:check-box xhtml_id="is_public1" name="is_public1" value="1" initial-checked="--self.is_public"/>
-              </td>
-              <th style="text-align: left"><label for="is_public1">Visible to public</label></th>
-              <?vsp
-                }
-              ?>
-            </tr>
-            <tr>
-              <?vsp
                 if (self.wa_type in ('oDrive', 'oMail', 'IM'))
                 {
               ?>
@@ -527,10 +588,13 @@
               <?vsp
                 } else {
               ?>
-              <td align="right">
+              <td />
+              <td>
+                <label for="is_visible1">
                 <v:check-box xhtml_id="is_visible1" name="is_visible1" value="1" initial-checked="--self.is_visible"/>
+                  <b>Visible members list</b>
+                </label>
               </td>
-              <th style="text-align: left"><label for="is_visible1">Visible members list</label></th>
               <?vsp
                 }
               ?>
@@ -579,7 +643,7 @@
 
                  self.vc_data_bind(e);
 
-                 self.is_public1.ufl_selected := self.is_public;
+                 self.is_public := cast (get_keyword ('is_public1', e.ve_params) as integer);
                  self.is_visible1.ufl_selected := self.is_visible;
 
 
