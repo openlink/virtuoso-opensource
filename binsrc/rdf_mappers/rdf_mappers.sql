@@ -6065,6 +6065,65 @@ create procedure DB.DBA.RDF_LOAD_NYT_ARTICLE_SEARCH (in graph_iri varchar, in ne
 }
 ;
 
+create procedure DB.DBA.NYT_TIMESTAGS_TO_XML(in tree any)
+{
+	declare len, i int;
+	declare res varchar;
+	res := '';
+	len := length(tree);
+	if (len > 6)
+	{
+		len := length(tree[7]);
+		i := 0;
+		while (i < len)
+		{	
+			res := concat(res, sprintf('<tag>%s</tag>', tree[7][i]));
+			i := i + 1;
+		}
+		if (len > 0)
+			return xtree_doc (res);
+	}
+	return null;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_NYT_TIMESTAGS (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare data, meta, state, message any;
+	declare tree, txt, cont, xt, xd, tmp any;
+	declare url, keywords, api_key, primary_topic varchar;
+	api_key := _key;
+	declare exit handler for sqlstate '*'
+	{
+		return 0;
+	};
+	if (not isstring (api_key) or length (api_key) = 0)
+		return 0;
+	primary_topic := DB.DBA.RDF_SPONGE_PROXY_IRI (graph_iri);
+	exec (sprintf( 'sparql define input:inference \'virtrdf-label\' select ?l from <%s> where
+		{ <%s> virtrdf:label ?l }', graph_iri, primary_topic), state, message, vector (), 0, meta, data);
+	foreach (any str in data) do
+	{
+		if (isstring (str[0]))
+		{
+			keywords := replace(str[0], ' ', '_');
+			url := sprintf('http://api.nytimes.com/svc/timestags/suggest?query=%s&api-key=%s', keywords, api_key);
+			tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+			tree := json_parse (tmp);
+			xt := DB.DBA.NYT_TIMESTAGS_TO_XML (tree);
+			if (xt is null)
+				return 0;
+			xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/nyttags2rdf.xsl', xt,
+				vector ('baseUri', coalesce (dest, graph_iri)));
+			cont := serialize_to_UTF8_xml (xd);
+			DB.DBA.RDF_LOAD_RDFXML (cont, new_origin_uri, coalesce (dest, graph_iri));
+		}
+	}
+	return 0;
+}
+;
+
 insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
       values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_ZEMANTA', null, 'Zemanta',
 	  vector ('min-score', '0.5', 'max-results', '10'));
@@ -6072,6 +6131,11 @@ insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC
 insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
       values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_NYT_ARTICLE_SEARCH', null, 'NYT: The Article Search',
 	  vector ('min-score', '0.5', 'max-results', '10'));
+
+insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
+      values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_NYT_TIMESTAGS', null, 'NYT: The TimesTags',
+	  vector ('min-score', '0.5', 'max-results', '10'));
+
 
 create procedure DB.DBA.RDF_LOAD_VOID (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
