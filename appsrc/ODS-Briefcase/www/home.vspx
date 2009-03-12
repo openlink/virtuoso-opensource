@@ -787,6 +787,8 @@
           }
 
           -- properties
+          if (get_keyword ('dav_propEnable', params, '0') <> '0')
+          {
           properties := ODRIVE.WA.DAV_PROP_LIST (dav_fullPath, '%', vector ('virt:%', 'http://www.openlinksw.com/schemas/%', 'http://local.virt/DAV-RDF%'));
           for (N := 0; N < length (properties); N := N + 2)
           {
@@ -795,6 +797,7 @@
           for (N := 0; N < length (c_properties); N := N + 3)
           {
             ODRIVE.WA.DAV_PROP_SET (dav_fullPath, c_properties[N], c_properties[N+1]);
+          }
           }
 
           -- Auto versioning
@@ -1713,6 +1716,7 @@
                         }
                         else
                         {
+                          http (sprintf ('<input type="hidden" name="dav_propEnable" id="dav_propEnable" value="%d" />', self.dav_propEnable));
                           http (sprintf ('<input type="hidden" name="c_seqNo" id="c_seqNo" value="%d" />', length (properties)));
                       ?>
                       <table class="form-list" style="width: 80%;" id="davProperties" cellspacing="0">
