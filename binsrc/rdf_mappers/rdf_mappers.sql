@@ -2732,6 +2732,10 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 			url := concat('http://api.meetup.com/events.xml/?group_urlname=', id1, '&key=', api_key);
 			what_ := 'events';
 				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts);
+
+				url := sprintf('http://api.meetup.com/comments.xml/?group_urlname=%s&key=%s', id1, api_key);
+				what_ := 'comments';
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts);
 			}
 		}
 	}
@@ -2792,7 +2796,7 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 					DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts);
 				}
 			}
-			else if (id1 is null or id1 = '')
+			if (id1 is null or id1 = '')
 			{
 				base := concat(trim(new_origin_uri, '/'), '/');
 				
@@ -2808,6 +2812,9 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 				what_ := 'events';
 				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts);
 
+				url := concat('http://api.meetup.com/comments.xml/?topic=', id0, '&key=', api_key);
+				what_ := 'comments';
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts);
 			}
 			else
 			{
@@ -2821,6 +2828,10 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 				
 				url := concat('http://api.meetup.com/events.xml/?topic=', id0, '&groupnum=', id1, '&key=', api_key);
 				what_ := 'events';
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts);
+
+				url := concat('http://api.meetup.com/comments.xml/?topic=', id0, '&groupnum=', id1, '&key=', api_key);
+				what_ := 'comments';
 				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts);
 			}
 		}

@@ -53,13 +53,18 @@
 		</rdf:RDF>
 	</xsl:template>
 	<xsl:template match="results/items">
-		<xsl:if test="$what = 'events' or $what = 'event'">
+		<xsl:if test="$what = 'events' or $what = 'event' or $what = 'comments'">
 			<foaf:Document rdf:about="{$baseUri}">
 				<foaf:primaryTopic>
-					<xsl:if test="$what = 'events'">
+					<xsl:if test="$what = 'events' or $what = 'comments'">
 						<foaf:Group rdf:about="{vi:proxyIRI($base)}" >
 							<xsl:for-each select="item">
+								<xsl:if test="$what = 'events'">
 								<foaf:made rdf:resource="{event_url}"/>
+								</xsl:if>
+								<xsl:if test="$what = 'comments'">
+									<foaf:made rdf:resource="{vi:proxyIRI($base, '', link)}"/>
+								</xsl:if>
 							</xsl:for-each>
 						</foaf:Group>
 					</xsl:if>
@@ -81,6 +86,34 @@
 			</foaf:Document>
 		</xsl:if>
 		<xsl:for-each select="item">
+			<xsl:if test="$what = 'comments'">
+				<rdf:Description rdf:about="{vi:proxyIRI($base, '', link)}">
+					<rdf:type rdf:resource="&sioct;Comment"/>
+					<sioc:has_container rdf:resource="{vi:proxyIRI ($base)}"/>
+					<sioc:has_creator rdf:resource="{vi:proxyIRI (link)}"/>
+					<geo:lng rdf:datatype="&xsd;float">
+						<xsl:value-of select="lon"/>
+					</geo:lng>
+					<geo:lat rdf:datatype="&xsd;float">
+						<xsl:value-of select="lat"/>
+					</geo:lat>
+					<dcterms:created rdf:datatype="&xsd;dateTime">
+						<xsl:value-of select="created"/>
+					</dcterms:created>
+					<dc:description>
+						<xsl:value-of select="comment"/>
+					</dc:description>
+					<vcard:Region>
+						<xsl:value-of select="state" />
+					</vcard:Region>
+					<vcard:Pcode>
+						<xsl:value-of select="zip" />
+					</vcard:Pcode>
+					<vcard:Country>
+						<xsl:value-of select="country" />
+					</vcard:Country>
+				</rdf:Description>
+			</xsl:if>
 			<xsl:if test="$what = 'events' or $what = 'event'">
 				<foaf:Document rdf:about="{event_url}">
 					<foaf:primaryTopic>
@@ -121,9 +154,9 @@
 				</foaf:Document>
 			</xsl:if>
 			<xsl:if test="$what = 'groups'">
-				<foaf:Document rdf:about="{link}">
+				<foaf:Document rdf:about="{$base}">
 					<foaf:primaryTopic>
-						<foaf:Group rdf:about="{vi:proxyIRI(link)}">
+						<foaf:Group rdf:about="{vi:proxyIRI($base)}">
 							<foaf:name>
 								<xsl:value-of select="name" />
 							</foaf:name>
