@@ -2084,10 +2084,7 @@ create procedure DB.DBA.RDF_LOAD_TWFY (in graph_iri varchar, in new_origin_uri v
 	{
 		return 0;
 	};
-	
 	api_key := _key;
-	--api_key := 'FwDnXgAp6rqVFbfRg9B7Lkpc';
-
 	if (new_origin_uri like 'http://www.theyworkforyou.com/search/?s=%')
 	{
 		tmp := sprintf_inverse (new_origin_uri, 'http://www.theyworkforyou.com/search/?s=%s', 0);
@@ -2413,9 +2410,7 @@ create procedure DB.DBA.RDF_LOAD_DISCOGS (in graph_iri varchar, in new_origin_ur
 	{
 		return 0;
 	};
-
 	api_key := _key;
-	--api_key := '85f444b562';
 	if (new_origin_uri like 'http://www.discogs.com/artist/%')
 	{
 		tmp := sprintf_inverse (new_origin_uri, 'http://www.discogs.com/artist/%s', 0);
@@ -2465,7 +2460,6 @@ create procedure DB.DBA.RDF_LOAD_LIBRARYTHING (in graph_iri varchar, in new_orig
 		return 0;
 	};
 	api_key := _key;
-	--api_key := '37f0563777cc930074fdc0044b6baae2';
 	if (not isstring (api_key))
 		return 0;
 	if (new_origin_uri like 'http://www.librarything.com/author/%')
@@ -2511,7 +2505,6 @@ create procedure DB.DBA.RDF_LOAD_ISBN (in graph_iri varchar, in new_origin_uri v
 		return 0;
 	};
 	api_key := _key;
-	--api_key := '6GP9NBME';
 	if (not isstring (api_key))
 		return 0;
 	if (new_origin_uri like 'http%://%isbndb.com/d/subject/index.html?kw=%')
@@ -2634,9 +2627,7 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
     {
       return 0;
     };
-
   api_key := _key;
-  --api_key := '18457b204b33412a764070755820814';
   base := concat(trim(new_origin_uri, '/'), '/');
   if (new_origin_uri like 'http://%.meetup.com/%')
   {
@@ -2697,7 +2688,6 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 		  url := concat('http://api.meetup.com/members.xml/?member_id=', id2, '&key=', api_key);
 		  what_ := 'member';
 		  DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts);
-		  --return 0;
 		}
 		else
 		{
@@ -2870,7 +2860,6 @@ create procedure RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri varcha
 		return 0;
 	};
 	api_key := _key;
-	--api_key := 'b25b959554ed76058ac220b7b2e0a026';
 	tmp1 := sprintf_inverse (new_origin_uri, 'http://%s/%s', 0);
 	server := tmp1[0];
 	if (server is null or server = '')
@@ -5521,7 +5510,6 @@ create procedure DB.DBA.RDF_LOAD_NYTCF (in graph_iri varchar, in new_origin_uri 
   -- TO DO: hardcoded for now
   -- Need a mechanism to specify API key for meta-cartridges
   -- Could retrieve from virtuoso.ini?
-  -- api_key := '2c1d95a62e5f63b70bb69e187a827bb3:10:57181787';
   api_key := _key;
 
   -- NYT API supports a candidate_id in one of two forms:
@@ -5623,7 +5611,6 @@ create procedure DB.DBA.RDF_LOAD_NYTC (in graph_iri varchar, in new_origin_uri v
   -- Need a mechanism to specify API key for meta-cartridges
   -- Could retrieve from virtuoso.ini?
   api_key := _key;
-  --api_key := 'b90f5afaac9f47fe74138963cfe084cf:7:57149927';
 
   -- NYT API supports a candidate_id in one of two forms:
   -- candidate_id ::= {candidate_ID} | {last_name [,first_name]}
@@ -6039,7 +6026,6 @@ create procedure DB.DBA.RDF_LOAD_NYT_ARTICLE_SEARCH (in graph_iri varchar, in ne
 	declare tree, txt, cont, xt, xd, tmp any;
 	declare url, keywords, api_key, primary_topic varchar;
 	api_key := _key;
-	--api_key := '2366029c48a795f38c6265845d08048e:4:57149927';
 	declare exit handler for sqlstate '*'
 	{
 		return 0;
