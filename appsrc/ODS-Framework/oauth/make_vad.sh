@@ -18,9 +18,9 @@ THOST=${THOST-localhost}
 TPORT=${TPORT-8445}
 PORT=${PORT-1940}
 ISQL=${ISQL-isql}
-VAD_NAME="auth_policy"
-VAD_PKG_NAME="auth_policy"
-VAD_DESC="Authentication server"
+VAD_NAME="policy_manager"
+VAD_PKG_NAME="policy_manager"
+VAD_DESC="Policy Manager"
 LOGFILE="${LOGDIR}/make_"$VAD_PKG_NAME"_vad.log"
 VAD_NAME_DEVEL="$VAD_PKG_NAME"_filesystem.vad
 VAD_NAME_RELEASE="$VAD_PKG_NAME"_dav.vad
@@ -248,6 +248,10 @@ sticker_init() {
   echo "         result ('ERROR', 'The $VAD_DESC package requires server version $NEED_VERSION or greater'); " >> $STICKER
   echo "     signal ('FATAL', 'The $VAD_DESC package requires server version $NEED_VERSION or greater'); " >> $STICKER
   echo "      } " >> $STICKER
+  echo "     if (VAD_CHECK_VERSION ('auth_policy') is not null and VAD_CHECK_VERSION ('$VAD_NAME') is null) " >> $STICKER
+  echo "       {" >> $STICKER
+  echo "          DB.DBA.VAD_RENAME ('auth_policy', '$VAD_NAME');" >> $STICKER
+  echo "       }" >> $STICKER
   echo "  ]]></sql>" >> $STICKER
   echo "  <sql purpose=\"post-install\">" >> $STICKER
   echo "    ; " >> $STICKER
