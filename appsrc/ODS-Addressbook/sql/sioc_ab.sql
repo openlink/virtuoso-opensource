@@ -407,7 +407,10 @@ create procedure contact_insert (
 	inst_id := domain_id;
 
   if (isnull (graph_iri))
-    for (select WAI_ID, WAM_USER, WAI_NAME
+    for (select WAI_ID,
+                WAI_IS_PUBLIC,
+                WAM_USER,
+                WAI_NAME
          from DB.DBA.WA_INSTANCE,
               DB.DBA.WA_MEMBER
         where WAI_ID = domain_id
@@ -415,7 +418,7 @@ create procedure contact_insert (
             and WAM_MEMBER_TYPE = 1
           and WAI_IS_PUBLIC = 1) do
   {
-    graph_iri := get_graph ();
+      graph_iri := get_graph_ext (WAI_IS_PUBLIC);
       ab_iri := addressbook_iri (WAI_NAME);
       sc_iri := socialnetwork_iri (WAI_NAME);
     creator_iri := user_iri (WAM_USER);
@@ -645,7 +648,7 @@ create procedure contact_delete (
     return;
   };
 
-  graph_iri := get_graph ();
+  graph_iri := get_graph_ext (AB.WA.domain_is_public (domain_id));
 	iri := socialnetwork_contact_iri (domain_id, contact_id);
 	scot_tags_delete (domain_id, iri, tags);
 	delete_quad_s_or_o (graph_iri, iri, iri);
@@ -809,14 +812,17 @@ create procedure addressbook_comment_insert (
 
   master_id := cast (master_id as integer);
 	if (isnull (graph_iri))
-		for (select WAI_ID, WAM_USER, WAI_NAME
+    for (select WAI_ID,
+                WAI_IS_PUBLIC,
+                WAM_USER,
+                WAI_NAME
 					 from DB.DBA.WA_INSTANCE,
 								DB.DBA.WA_MEMBER
 					where WAI_ID = domain_id
 						and WAM_INST = WAI_NAME
 						and WAI_IS_PUBLIC = 1) do
 		{
-			graph_iri := get_graph ();
+      graph_iri := get_graph_ext (WAI_IS_PUBLIC);
       forum_iri := addressbook_iri (WAI_NAME);
 		}
 
@@ -931,14 +937,17 @@ create procedure addressbook_annotation_insert (
 	};
 
 	if (isnull (graph_iri))
-		for (select WAI_ID, WAM_USER, WAI_NAME
+    for (select WAI_ID,
+                WAI_IS_PUBLIC,
+                WAM_USER,
+                WAI_NAME
 					 from DB.DBA.WA_INSTANCE,
 								DB.DBA.WA_MEMBER
 					where WAI_ID = domain_id
 						and WAM_INST = WAI_NAME
 						and WAI_IS_PUBLIC = 1) do
 		{
-			graph_iri := get_graph ();
+      graph_iri := get_graph_ext (WAI_IS_PUBLIC);
 		}
 
 	if (not isnull (graph_iri))
@@ -973,7 +982,7 @@ create procedure addressbook_annotation_delete (
 		return;
 	};
 
-	graph_iri := get_graph ();
+  graph_iri := get_graph_ext (AB.WA.domain_is_public (domain_id));
 	annotattion_iri := contact_annotation_iri (domain_id, master_id, annotation_id);
 	delete_quad_s_or_o (graph_iri, annotattion_iri, annotattion_iri);
 

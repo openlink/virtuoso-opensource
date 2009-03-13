@@ -126,6 +126,7 @@ AB.WA.exec_no_error('
     P_B_MAIL varchar,
     P_B_WEB varchar,
     P_TAGS varchar,
+    P_ACL long varchar,
     P_CREATED datetime,
     P_UPDATED datetime,
 
@@ -175,6 +176,10 @@ AB.WA.exec_no_error (
 
 AB.WA.exec_no_error (
   'alter table AB.WA.PERSONS add P_RELATIONSHIPS long varchar', 'C', 'AB.WA.PERSONS', 'P_RELATIONSHIPS'
+);
+
+AB.WA.exec_no_error (
+  'alter table AB.WA.PERSONS add P_ACL long varchar', 'C', 'AB.WA.PERSONS', 'P_ACL'
 );
 
 AB.WA.exec_no_error (

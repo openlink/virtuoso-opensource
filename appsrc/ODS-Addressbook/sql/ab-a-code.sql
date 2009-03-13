@@ -3163,6 +3163,8 @@ create procedure AB.WA.contact_update2 (
     update AB.WA.PERSONS set P_B_DEPARTMENT = pValue where P_ID = id;
   if (pName = 'P_B_JOB')
     update AB.WA.PERSONS set P_B_JOB = pValue where P_ID = id;
+  if (pName = 'P_ACL')
+    update AB.WA.PERSONS set P_ACL = pValue where P_ID = id;
 
   update AB.WA.PERSONS set P_UPDATED = now () where P_ID = id;
 
