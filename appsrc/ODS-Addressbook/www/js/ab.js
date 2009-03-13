@@ -801,7 +801,7 @@ AB.getFOAFData = function (iri)
             {
               if (T.length == 1)
                 T.push('');
-              AB.updateRow('a', null, {fld1: {value: T[0], class: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld2: {value: T[1]}});
+              AB.updateRow('a', null, {fld1: {value: T[0], className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld2: {value: T[1]}});
       }
     }
   }
@@ -941,15 +941,24 @@ AB.updateRow = function (prefix, No, optionObject)
   if (No != null)
   {
     OAT.Dom.unlink(prefix+'_tr_'+No);
+    var No = parseInt($(prefix+'_no').value);
+    for (var N = 0; N < No; N++)
+    {
+      if ($(prefix+'_tr_' + N))
+        return;
+    }
+    OAT.Dom.show (prefix+'_tr_no');
   }
   else
   {
-    var No = $v(prefix+'_no');
+    var No = parseInt($v(prefix+'_no'));
     var tbl = $(prefix+'_tbl');
     if (tbl)
     {
       options = {};
       for (var p in optionObject) {options[p] = optionObject[p]; }
+
+      OAT.Dom.hide (prefix+'_tr_no');
 
       var tr = OAT.Dom.create('tr');
       tr.id = prefix+'_tr_' + No;
@@ -960,35 +969,54 @@ AB.updateRow = function (prefix, No, optionObject)
       {
       var td = OAT.Dom.create('td');
       tr.appendChild(td);
-        if (fldOptions.mode == 1)
-        {
-     		  AB.updateRowCombo(td, prefix+'_fld_1_' + No, fldOptions);
-        } else {
-     		  AB.updateInput(td, prefix+'_fld_1_' + No, fldOptions);
-        }
+        AB.updateCell (td, prefix, '_fld_1_', No, fldOptions)
       }
       var fldOptions = options.fld2;
       if (fldOptions)
       {
       var td = OAT.Dom.create('td');
       tr.appendChild(td);
-        if (fldOptions.mode == 1)
-        {
-     		  AB.updateRowCombo(td, prefix+'_fld_2_' + No, fldOptions);
-        } else {
-   		    AB.updateInput(td, prefix+'_fld_2_' + No, fldOptions);
+        AB.updateCell (td, prefix, '_fld_2_', No, fldOptions)
         }
+      var fldOptions = options.fld3;
+      if (fldOptions)
+      {
+        var td = OAT.Dom.create('td');
+        tr.appendChild(td);
+        AB.updateCell (td, prefix, '_fld_3_', No, fldOptions)
       }
       var td = OAT.Dom.create('td');
       tr.appendChild(td);
  		  var fld = OAT.Dom.create("input");
  		  fld.type = 'button';
  		  fld.value = 'Remove';
+ 		  fld.className = 'button';
       fld.onclick = function (){AB.updateRow(prefix, No);};
       td.appendChild(fld);
 
       $(prefix+'_no').value = No + 1;
     }
+  }
+}
+
+AB.updateCell = function (td, prefix, fldName, No, optionObject)
+{
+  fldName = prefix + fldName + No;
+  if (optionObject.mode == 1)
+  {
+	  AB.updateRowCombo(td, fldName, optionObject);
+	}
+  else if (optionObject.mode == 2)
+  {
+	  AB.updateRowCombo2(td, fldName, optionObject);
+  }
+  else if (optionObject.mode == 3)
+  {
+	  AB.updateRowCombo3(td, fldName, optionObject);
+  }
+  else
+  {
+	  AB.updateInput(td, fldName, optionObject);
   }
 }
 
@@ -1000,7 +1028,7 @@ AB.updateInput = function (elm, fldName, fldOptions)
   fld.name = fld.id;
   if (fldOptions.value)
     fld.value = fldOptions.value;
-  fld.className = fldOptions.class;
+  fld.className = fldOptions.className;
   fld.onblur = fldOptions.onBlur;
   fld.style.width = '95%';
   var elm = $(elm);
@@ -1055,6 +1083,38 @@ AB.updateRowCombo = function (elm, fldName, fldOptions)
 AB.updateRowComboOption = function (cc, optionName)
 {
   cc.addOption(optionName, optionName);
+}
+
+AB.updateRowComboOption2 = function (elm, elmValue, optionName, optionValue)
+{
+	var o = OAT.Dom.option(optionName, optionValue, elm);
+	if (elmValue == optionValue)
+	  o.selected = true;
+}
+
+AB.updateRowCombo2 = function (elm, fldName, fldOptions)
+{
+	var cc = OAT.Dom.create("select");
+  cc.name = fldName;
+  cc.id = fldName;
+	AB.updateRowComboOption2(cc, fldOptions.value, "RDF URI", "URI");
+  AB.updateRowComboOption2(cc, fldOptions.value, "RDF Property", "Property");
+	AB.updateRowComboOption2(cc, fldOptions.value, "SPARQL", "SPARQL", cc);
+
+  var elm = $(elm);
+  elm.appendChild(cc);
+}
+
+AB.updateRowCombo3 = function (elm, fldName, fldOptions)
+{
+	var cc = OAT.Dom.create("select");
+  cc.name = fldName;
+  cc.id = fldName;
+	AB.updateRowComboOption2 (cc, fldOptions.value, "Grant", "G");
+	AB.updateRowComboOption2 (cc, fldOptions.value, "Revoke", "R");
+
+  var elm = $(elm);
+  elm.appendChild(cc);
 }
 
 AB.validateError = function (fld, msg)

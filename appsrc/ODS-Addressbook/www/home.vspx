@@ -410,6 +410,7 @@
       <v:variable name="v_photo" type="varchar" default="''" />
       <v:variable name="v_interests" type="varchar" default="''" />
       <v:variable name="v_relationships" type="varchar" default="''" />
+      <v:variable name="v_acl" type="any" default="null" />
 
       <v:variable name="v_mail" type="varchar" default="''" />
       <v:variable name="v_web" type="varchar" default="''" />
@@ -569,6 +570,7 @@
                   self.v_photo := '';
                   self.v_interests := '';
                   self.v_relationships := '';
+                  self.v_acl := null;
                   self.v_photo_preview_path := '';
 
                     self.v_mail := '';
@@ -738,7 +740,7 @@
             </span>
 
         </div>
-        <div style="clear: both;" />
+      <br style="clear: both;" />
 
       <vm:if test="self.abAction <> 'settings'">
       <div class="ab_main">
@@ -823,7 +825,7 @@
             <div id="panelbar" class="panelbar">
               <vm:if test="self.domain_id > 0">
                 <div id="pb_1">Data Portability (Feeds)</div>
-                <div id="pc_1" style="display: none;">
+                <div id="pc_1">
                   <div class="left_container">
                     <?vsp
                       declare exit handler for not found;
@@ -855,7 +857,7 @@
                 </div>
                 <vm:if test="self.abScope = 'MyContacts'">
                   <div id="pb_2">Categories</div>
-                  <div id="pc_2" style="display: none;">
+                  <div id="pc_2">
                     <div class="left_container">
                       <?vsp
                         http ('<a id="c_0" href="javascript: myCategory(\'0\');" class="gems noapp">All Categories</a>');
@@ -878,7 +880,7 @@
                 }
               ?>
               </div>
-              <div id="pc_3" style="display: none;">
+              <div id="pc_3">
             <?vsp
                 if (self.abScope = 'MyContacts')
                 {
@@ -907,7 +909,7 @@
                     http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="%s" onclick="javascript: myTags(\'%s\'); return false;" class="app"><span class="%s" style="%s">%s</span></a> ', AB.WA.tag_id(T_TAG), T_TAG, SIOC..addressbook_tag_iri (self.account_id, T_TAG), T_TAG, tClass, tStyle, T_TAG));
                 }
               }
-              if (self.abScope = 'MySharedContacts')
+                else if (self.abScope = 'MySharedContacts')
                 {
                 self.showTree(1, self.domain_id, self.account_id, AB.WA.make_node('r', 2), '');
                 }
@@ -1353,6 +1355,7 @@
                          P_B_MAIL,
                          P_B_WEB,
                            P_TAGS,
+                           P_ACL,
                            C_ID,
                            C_NAME
                     into self.v_kind,
@@ -1409,6 +1412,7 @@
                          self.v_bMail,
                          self.v_bWeb,
                            self.v_tags,
+                           self.v_acl,
                            self.v_category_id,
                            self.v_category_name
                     from AB.WA.PERSONS
@@ -1449,11 +1453,14 @@
             <v:text name="dirty_force_global" xhtml_id="dirty_force_global" type="hidden" value="--get_keyword ('dirty_force_global', self.vc_event.ve_params, 'false')"/>
             <div id="a" class="c1">
               <div class="tabs">
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="5" tabNo="0" caption="Main" />
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="5" tabNo="1" caption="Contact" />
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="5" tabNo="2" caption="Home" />
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="5" tabNo="3" caption="Business" />
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="5" tabNo="4" caption="Relationships" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="6" tabNo="0" caption="Main" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="6" tabNo="1" caption="Contact" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="6" tabNo="2" caption="Home" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="6" tabNo="3" caption="Business" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="6" tabNo="4" caption="Relationships" />
+                  <vm:if test="(self.abAction <> 'view') and (AB.WA.domain_is_public (self.domain_id) = 2)">
+                    &nbsp;<vm:tabCaption tab="a" tabsCount="6" tabNo="5" caption="Access" />
+                  </vm:if>
               </div>
               <div class="contents">
                 <div id="a_content_0" class="tabContent" style="display: none;">
@@ -1610,7 +1617,7 @@
                                     </tr>
                                   </thead>
                                   <?vsp
-                                    declare N integer;
+                                    declare N, M integer;
 
                                     N := 0;
                                     for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = self.v_interests) do
@@ -1638,13 +1645,17 @@
                                   <?vsp
                                       N := N + 1;
                                     }
+                                    M := 3;
+                                    if (self.abAction <> 'view')
+                                      M := M - 1;
+                                    http (sprintf ('<tr id="a_tr_no" style="display: %s"><td colspan="%d"><b>No Interests</b></td></tr>', case when N = 0 then '' else 'none' end, M));
                                   ?>
                                 </table>
                                 <input type="hidden" id="a_no" name="a_no" value="<?V N ?>" />
                               </td>
                               <vm:if test="self.abAction <> 'view'">
                                 <td valign="top" nowrap="1">
-                                  <input type="button" value="Add" onclick="javascript: AB.updateRow('a', null, {fld1: {class: '_validate_ _url_ _canEmpty_', onbBlur: function(){AB.validateField(this);}}, fld2: {}});" class="button" />
+                                  <input type="button" value="Add" onclick="javascript: AB.updateRow('a', null, {fld1: {className: '_validate_ _url_ _canEmpty_', onbBlur: function(){AB.validateField(this);}}, fld2: {}});" class="button" />
                                 </td>
                               </vm:if>
                             </tr>
@@ -2259,7 +2270,8 @@
                               y := make_array (25, 'any');
                               i := -12;
                               j := 0;
-                              while (i <= 12) {
+                                  while (i <= 12)
+                                  {
                                 x[j] := cast (i as varchar);
                                   y[j] := self.viewTimeZone (i);
                                 i := i + 1;
@@ -2447,7 +2459,7 @@
                               </tr>
                             </thead>
                             <?vsp
-                              declare N integer;
+                              declare N, M integer;
 
                               N := 0;
                               for (select relationship from DB.DBA.WA_USER_INTERESTS (txt) (relationship varchar) P where txt = self.v_relationships) do
@@ -2458,7 +2470,7 @@
                                 <vm:if test="self.abAction <> 'view'">
                             		  <![CDATA[
                             		    <script type="text/javascript">
-                                      OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function() {AB.updateRowCombo('b_td_<?V N ?>', 'b_fld_1_<?V N ?>', {mode: 1, value: '<?V relationship ?>', class: '_validate_ _canEmpty_', onblur: function(){AB.validateField(this);}});});
+                                      OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function() {AB.updateRowCombo('b_td_<?V N ?>', 'b_fld_1_<?V N ?>', {mode: 1, value: '<?V relationship ?>', className: '_validate_ _canEmpty_', onblur: function(){AB.validateField(this);}});});
                             		    </script>
                             		  ]]>
                                 </vm:if>
@@ -2473,13 +2485,133 @@
                             <?vsp
                                 N := N + 1;
                               }
+                              M := 2;
+                              if (self.abAction <> 'view')
+                                M := M - 1;
+                              http (sprintf ('<tr id="b_tr_no" style="display: %s"><td colspan="%d"><b>No Relationships</b></td></tr>', case when N = 0 then '' else 'none' end, M));
                             ?>
                           </table>
                           <input type="hidden" id="b_no" name="b_no" value="<?V N ?>" />
                         </td>
                         <vm:if test="self.abAction <> 'view'">
                           <td valign="top" nowrap="1">
-                            <input type="button" value="Add" onclick="javascript: AB.updateRow('b', null, {fld1: {mode: 1, class: '_validate_ _canEmpty_', onblur: function(){AB.validateField(this);}}});" class="button" />
+                            <input type="button" value="Add" onclick="javascript: AB.updateRow('b', null, {fld1: {mode: 1, className: '_validate_ _canEmpty_', onblur: function(){AB.validateField(this);}}});" class="button" />
+                          </td>
+                        </vm:if>
+                      </tr>
+                    </table>
+                  </div>
+                  <div id="a_content_5" class="tabContent" style="display: none;">
+                    <table class="form-body" cellspacing="0">
+                      <tr>
+                        <td style="width: 90%; background-color: white;">
+                          <table id="s_tbl" width="100%" cellspacing="0">
+                            <thead class="sortHeader">
+                              <tr>
+                                <th width="15%">
+                                  Type
+                                </th>
+                                <th>
+                                  Value
+                                </th>
+                                <th width="10%">
+                                  Access
+                                </th>
+                                <vm:if test="self.abAction <> 'view'">
+                                  <th width="70px">
+                                    Action
+                                  </th>
+                                </vm:if>
+                              </tr>
+                            </thead>
+                            <?vsp
+                              declare N, M, L integer;
+                              declare acl any;
+
+                              L := 0;
+                              acl := deserialize (coalesce ((select WAI_ACL from DB.DBA.WA_INSTANCE where WAI_ID = self.domain_id), ''));
+                              for (N := 1; N < length (acl); N := N + 1)
+                              {
+                                L := L + 1;
+                            ?>
+                            <tr id="s_tr_<?V L ?>">
+                              <td id="s_td1_<?V L ?>" nowrap="nowrap">
+                                <b>
+                           		  <?vsp
+                         		      if (acl[N][0] = 'URI')
+                         		        http ('RDF URI');
+                         		      if (acl[N][0] = 'Property')
+                         		        http ('RDF Property');
+                         		      if (acl[N][0] = 'SPARQL')
+                         		        http ('SPARQL');
+                           		  ?>
+                                </b>
+                              </td>
+                              <td id="s_td2_<?V L ?>">
+                                <b>
+                                <?V acl[N][1] ?>
+                                </b>
+                              </td>
+                              <td id="s_td3_<?V L ?>">
+                                <b>
+                         		    <?vsp
+                         		      if (acl[N][2] = 'G')
+                         		        http ('Grant');
+                         		      if (acl[N][2] = 'R')
+                         		        http ('Revoke');
+                         		    ?>
+                                </b>
+                              </td>
+                              <td>
+                                <b>
+                                Inherited
+                                </b>
+                              </td>
+                            </tr>
+                            <?vsp
+                              }
+                              acl := deserialize (self.v_acl);
+                              for (N := 1; N < length (acl); N := N + 1)
+                              {
+                                L := L + 1;
+                            ?>
+                            <tr id="s_tr_<?V L ?>">
+                              <td id="s_td1_<?V L ?>">
+                          		  <![CDATA[
+                             		  <script type="text/javascript">
+                             		  <?vsp
+                                    http (sprintf ('ODSInitArray.push ( function (){AB.updateRowCombo2(\'s_td1_%d\', \'s_fld_1_%d\', {value: \'%s\'});});', L, L, acl[N][0]));
+                             		  ?>
+                             		  </script>
+                           		  ]]>
+                              </td>
+                              <td id="s_td2_<?V L ?>">
+                                <input type="text" id="s_fld_2_<?V L ?>" name="s_fld_2_<?V L ?>" value="<?V acl[N][1] ?>" style="width: 95%;" class="_validate_" onblur="javascript: validateField(this);" />
+                              </td>
+                              <td id="s_td3_<?V L ?>">
+                          	    <![CDATA[
+                           		    <script type="text/javascript">
+                           		    <?vsp
+                                    http (sprintf ('ODSInitArray.push ( function (){AB.updateRowCombo3(\'s_td3_%d\', \'s_fld_3_%d\', {value: \'%s\'});});', L, L, acl[N][2]));
+                           		    ?>
+                           		    </script>
+                           		  ]]>
+                              </td>
+                              <td>
+                                <input type="button" value="Remove" onclick="javascript: AB.updateRow('s', <?V L ?>);" class="button" />
+                              </td>
+                            </tr>
+                            <?vsp
+                              }
+                              M := 4;
+                              http (sprintf ('<tr id="s_tr_no" style="display: %s"><td colspan="%d"><b>No Sharings</b></td></tr>', case when L = 0 then '' else 'none' end, M));
+                            ?>
+                          </table>
+                          <input type="hidden" id="s_no" name="s_no" value="<?V N ?>" />
+                        </td>
+                        <vm:if test="self.abAction <> 'view'">
+                          <td valign="top" nowrap="1">
+                            <input type="button" value="Add" onclick="javascript: AB.updateRow('s', null, {fld1: {mode: 2}, fld2: {}, fld3: {mode: 3}});" class="button" />
                           </td>
                         </vm:if>
                       </tr>
@@ -2505,6 +2637,7 @@
                     };
 
                       -- interests
+                      tmp := vector ();
                       self.v_interests := '';
                       self.v_relationships := '';
                       for (N := 0; N < length (e.ve_params); N := N + 4)
@@ -2518,7 +2651,15 @@
                         {
                           self.v_relationships := self.v_relationships || trim (e.ve_params [N+1]) || '\n';
                         }
+                        else if ((e.ve_params [N] like 's_fld_2_%') and (trim (e.ve_params [N+1]) <> ''))
+                        {
+                          suffix := replace (e.ve_params [N], 's_fld_2_', '');
+                          tmp := vector_concat (tmp, vector (vector (get_keyword ('s_fld_1_'||suffix, e.ve_params, ''), get_keyword ('s_fld_2_'||suffix, e.ve_params, ''), get_keyword ('s_fld_3_'||suffix, e.ve_params, ''))));
+                        }
                       }
+                      tmp := vector_concat (vector (vector ('v1.0', length (tmp))), tmp);
+                      self.v_acl := serialize (tmp);
+
                     self.v_kind := cast (self.ab_kind.ufl_value as integer);
                     self.v_name := AB.WA.test (self.ab_name.ufl_value, vector('name', 'Name', 'class', 'varchar', 'type', 'varchar', 'minLength', 1, 'maxLength', 255));
                     self.v_tags := trim (self.ab_tags.ufl_value);
@@ -2749,6 +2890,7 @@
                       self.v_bWeb,
                       self.v_tags
                     );
+                      AB.WA.contact_update2 (self.v_id, self.domain_id, 'P_ACL', self.v_acl);
                     self.v_grants := trim (self.ab_grants.ufl_value);
                     self.shareNode (self.v_id, self.v_grants, 1);
 
