@@ -841,6 +841,7 @@ create procedure sioc_user_info (
   if (length (ext_urls) and wa_pub_info (ext_urls, flags, 8))
     {
       declare arr any;
+      ext_urls := blob_to_string (ext_urls);
       ext_urls := replace (ext_urls, '\r', '\n');
       ext_urls := replace (ext_urls, '\n\n', '\n');
       arr := split_and_decode (ext_urls, 0, '\0\0\n');
@@ -1051,6 +1052,7 @@ create procedure sioc_user_private_info (
   if (length (ext_urls) and wa_priv_info (ext_urls, flags, 8))
     {
       declare arr any;
+      ext_urls := blob_to_string (ext_urls);
       ext_urls := replace (ext_urls, '\r', '\n');
       ext_urls := replace (ext_urls, '\n\n', '\n');
       arr := split_and_decode (ext_urls, 0, '\0\0\n');

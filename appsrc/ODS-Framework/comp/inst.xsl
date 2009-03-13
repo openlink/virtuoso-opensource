@@ -105,6 +105,7 @@
                   </tr>
                   <?vsp
                     }
+                    http (sprintf ('<tr id="s_tr_no" style="display: %s"><td colspan="4"><b>No Sharings</b></td></tr>', case when N = 1 then '' else 'none' end));
                   ?>
                 </table>
                 <input type="hidden" id="s_no" name="s_no" value="<?V N ?>" />

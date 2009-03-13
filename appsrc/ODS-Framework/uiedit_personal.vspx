@@ -474,6 +474,7 @@
                    <tr>
                      <td width="600px">
                        <table id="e_tbl" class="listing">
+                         <thead>
                          <tr class="listing_header_row">
                            <th>
                              URI
@@ -482,6 +483,7 @@
                              Action
                            </th>
                          </tr>
+                         </thead>
                          <?vsp
                            declare N integer;
 
@@ -500,6 +502,7 @@
                          <?vsp
                              N := N + 1;
                            }
+                           http (sprintf ('<tr id="e_tr_no" style="display: %s"><td colspan="2"><b>No Personal URIs</b></td></tr>', case when N = 0 then '' else 'none' end));
                          ?>
                        </table>
                        <input type="hidden" id="e_no" name="e_no" value="<?V N ?>" />
@@ -548,6 +551,7 @@
       <tr>
                <td width="600px">
                  <table id="a_tbl" class="listing">
+                         <thead>
                    <tr class="listing_header_row">
                      <th>
                        URL
@@ -559,6 +563,7 @@
                        Action
                      </th>
                    </tr>
+                         </thead>
                    <?vsp
                      declare N integer;
 
@@ -580,6 +585,7 @@
                    <?vsp
                        N := N + 1;
                      }
+                           http (sprintf ('<tr id="a_tr_no" style="display: %s"><td colspan="3"><b>No Topic of Interests</b></td></tr>', case when N = 0 then '' else 'none' end));
                    ?>
                  </table>
                  <input type="hidden" id="a_no" name="a_no" value="<?V N ?>" />
@@ -601,6 +607,7 @@
              <tr>
                <td width="600px">
                  <table id="b_tbl" class="listing">
+                         <thead>
                    <tr class="listing_header_row">
                      <th>
                        URI
@@ -612,6 +619,7 @@
                        Action
                      </th>
                    </tr>
+                         </thead>
                    <?vsp
                      declare N integer;
 
@@ -633,6 +641,7 @@
                    <?vsp
                        N := N + 1;
       }
+                           http (sprintf ('<tr id="b_tr_no" style="display: %s"><td colspan="3"><b>No Thing of Interests</b></td></tr>', case when N = 0 then '' else 'none' end));
                    ?>
                  </table>
                  <input type="hidden" id="b_no" name="b_no" value="<?V N ?>" />
@@ -1021,7 +1030,7 @@
                 <table id="c_tbl" class="listing">
                   <tr class="listing_header_row">
                     <th>
-                      Service
+                      Select from Service List ot Type New One
                     </th>
                     <th>
                       Member Home Page URL
@@ -1058,6 +1067,7 @@
                   <?vsp
                       N := N + 1;
                     }
+                    http (sprintf ('<tr id="c_tr_no" style="display: %s"><td colspan="3"><b>No Services</b></td></tr>', case when N = 0 then '' else 'none' end));
                   ?>
                 </table>
                 <input type="hidden" id="c_no" name="c_no" value="<?V N ?>" />

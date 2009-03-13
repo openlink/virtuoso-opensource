@@ -3894,9 +3894,12 @@ create procedure WA_USER_INTERESTS (in txt any)
 {
   declare arr any;
   declare interest, label any;
+
   result_names (interest, label);
+
   if (not length (txt))
     return;
+  txt := blob_to_string (txt);
   txt := replace(txt, '\r', '\n');
   txt := replace(txt, '\n\n', '\n');
   arr := split_and_decode (txt, 0, '\0\0\n');
