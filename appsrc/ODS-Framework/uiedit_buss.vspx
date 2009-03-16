@@ -67,6 +67,7 @@
   <v:variable persist="0" name="baim" type="varchar" default="''"/>
   <v:variable persist="0" name="byahoo" type="varchar" default="''"/>
   <v:variable persist="0" name="bmsn" type="varchar" default="''"/>
+  <v:variable persist="0" name="bmessaging" type="any" default="null"/>
 
     <v:variable name="sav19" type="varchar" default="'1'" />
     <v:variable name="sav20" type="varchar" default="'1'" />
@@ -89,6 +90,7 @@
   <v:variable name="sav52" type="varchar" default="'1'" />
   <v:variable name="sav53" type="varchar" default="'1'" />
   <v:variable name="sav54" type="varchar" default="'1'" />
+  <v:variable name="sav56" type="varchar" default="'1'" />
 
     <v:before-data-bind>
       <![CDATA[
@@ -122,7 +124,8 @@
              WAUI_BSKYPE,
              WAUI_BAIM,
              WAUI_BYAHOO,
-             WAUI_BMSN
+             WAUI_BMSN,
+             WAUI_BMESSAGING
         into self.bindustr,
              self.borg,
              self.bjob,
@@ -151,7 +154,8 @@
              self.bskype,
              self.baim,
              self.byahoo,
-             self.bmsn
+             self.bmsn,
+             self.bmessaging
         from WA_USER_INFO,
              DB.DBA.SYS_USERS
        where WAUI_U_ID = U_ID
@@ -618,13 +622,13 @@
                 <input type="hidden" id="d_no" name="d_no" value="<?V N ?>" />
                 </td>
               <td valign="top" nowrap="1">
-                <input type="button" value="Add" onclick="javascript: updateRow('d', null, {fld1: {mode: 1, value: 'Google'}, fld2: {value: 'http://google.com', class: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
+                <input type="button" value="Add" onclick="javascript: updateRow('d', null, {fld1: {mode: 1, value: 'Google'}, fld2: {value: 'http://google.com', className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
                 </td>
               </tr>
           </table>
         </div>
         <div id="b_content_3" class="tabContent" style="display: none;">
-          <table class="ctl_grp">
+          <table id="m_tbl" class="ctl_grp">
               <tr>
               <th><label for="b_icq">ICQ Number</label></th>
                 <td class="listing_col" nowrap="1">
@@ -632,6 +636,8 @@
                         value="--self.bicq"
                         xhtml_style="width:216px"
                         xhtml_tabindex="1"/>
+              </td>
+              <td>
                 <vm:u-prop-select name="sel_50" value="self.sav50" />
                 </td>
               </tr>
@@ -642,6 +648,8 @@
                         value="--self.bskype"
                         xhtml_style="width:216px"
                         xhtml_tabindex="2"/>
+              </td>
+              <td>
                 <vm:u-prop-select name="sel_51" value="self.sav51" />
                 </td>
               </tr>
@@ -652,6 +660,8 @@
                         value="--self.baim"
                           xhtml_style="width:216px"
                         xhtml_tabindex="3"/>
+              </td>
+              <td>
                 <vm:u-prop-select name="sel_52" value="self.sav52" />
                 </td>
               </tr>
@@ -662,6 +672,8 @@
                         value="--self.byahoo"
                           xhtml_style="width:216px"
                         xhtml_tabindex="4"/>
+              </td>
+              <td>
                 <vm:u-prop-select name="sel_53" value="self.sav53" />
                 </td>
               </tr>
@@ -672,10 +684,35 @@
                         value="--self.bmsn"
                         xhtml_style="width:216px"
                         xhtml_tabindex="5"/>
+              </td>
+              <td>
                 <vm:u-prop-select name="sel_54" value="self.sav54" />
                 </td>
               </tr>
+            <?vsp
+              declare N integer;
+
+              N := 0;
+              for (select m_label, m_id from DB.DBA.WA_USER_INTERESTS (txt) (m_label varchar, m_id varchar) P where txt = self.bmessaging) do
+              {
+            ?>
+            <tr id="m_tr_<?V N ?>">
+              <td>
+                <input type="text" id="m_fld_1_<?V N ?>" name="m_fld_1_<?V N ?>" value="<?V m_label ?>" style="width: 95%;" />
+              </td>
+              <td>
+                <input type="text" id="m_fld_2_<?V N ?>" name="m_fld_2_<?V N ?>" value="<?V m_id ?>" style="width: 216px;" />
+              </td>
+              <td>
+                <input type="button" value="Remove" onclick="javascript: updateRow('m', <?V N ?>);" />
+              </td>
+            </tr>
+            <?vsp
+                N := N + 1;
+              }
+            ?>
           </table>
+          <input type="button" value="Add" onclick="javascript: updateRow('m', null, {fld1: {}, fld2: {cssText: 'width: 216px;'}});" />
         </div>
       </div>
       <table class="ctl_grp">
@@ -749,10 +786,11 @@
             WA_USER_EDIT (self.u_name, 'WAUI_BMSN', self.b_msn.ufl_value);
 
             declare N, id integer;
-            declare suffix varchar;
+            declare suffix, tmp_m varchar;
             declare IDx any;
 
             IDx := vector ();
+            tmp_m := '';
             for (N := 0; N < length (e.ve_params); N := N + 4)
             {
               if ((e.ve_params [N] like 'd_fld_1_%') and (trim (e.ve_params [N+1]) <> ''))
@@ -768,7 +806,14 @@
                   IDx := vector_concat (IDx, vector (id));
                 }
               }
+              else if ((e.ve_params [N] like 'm_fld_1_%') and (trim (e.ve_params [N+1]) <> ''))
+              {
+                suffix := replace (e.ve_params [N], 'm_fld_1_', '');
+                tmp_m := tmp_m || trim (e.ve_params [N+1]) || ';' || trim (get_keyword ('m_fld_2_'||suffix, e.ve_params, '')) || '\n';
+              }
             }
+            self.bmessaging := tmp_m;
+            WA_USER_EDIT (self.u_name, 'WAUI_BMESSAGING', tmp_m);
 	          for (select WUO_ID as _id from WA_USER_OL_ACCOUNTS where WUO_U_ID = self.u_id and WUO_TYPE = 'B') do
 	          {
 	            for (N := 0; N < length (IDx); N := N + 1)

@@ -60,6 +60,7 @@
   <v:variable persist="0" name="uaim" type="varchar" default="''"/>
   <v:variable persist="0" name="uyahoo" type="varchar" default="''"/>
   <v:variable persist="0" name="umsn" type="varchar" default="''"/>
+  <v:variable persist="0" name="messaging" type="any" default="null"/>
 
   <v:variable persist="0" name="haddress1" type="varchar" default="''"/>
   <v:variable persist="0" name="haddress2" type="varchar" default="''"/>
@@ -108,6 +109,7 @@
   <v:variable name="sav46" type="varchar" default="'1'" />
   <v:variable name="sav48" type="varchar" default="'1'" />
   <v:variable name="sav49" type="varchar" default="'1'" />
+  <v:variable name="sav55" type="varchar" default="'1'" />
 
   <v:variable name="previe_path" type="varchar" default="''" />
 
@@ -152,7 +154,8 @@
              WAUI_SKYPE,
              WAUI_AIM,
              WAUI_YAHOO,
-             WAUI_MSN
+             WAUI_MSN,
+             WAUI_MESSAGING
         INTO self.utitle,
              self.ftname,
              self.lname,
@@ -192,7 +195,8 @@
              self.uskype,
              self.uaim,
              self.uyahoo,
-             self.umsn
+             self.umsn,
+             self.messaging
         FROM WA_USER_INFO,
              DB.DBA.SYS_USERS
        where WAUI_U_ID = U_ID
@@ -508,7 +512,7 @@
                        <input type="hidden" id="e_no" name="e_no" value="<?V N ?>" />
                      </td>
                      <td valign="top" nowrap="1">
-                       <input type="button" value="Add" onclick="javascript: updateRow('e', null, {fld1: {class: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
+                       <input type="button" value="Add" onclick="javascript: updateRow('e', null, {fld1: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
                   <vm:u-prop-select name="sel_8" value="self.sav8" />
                 </td>
               </tr>
@@ -591,7 +595,7 @@
                  <input type="hidden" id="a_no" name="a_no" value="<?V N ?>" />
                </td>
                <td valign="top" nowrap="1">
-                       <input type="button" value="Add" onclick="javascript: updateRow('a', null, {fld1: {class: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld2: {}});" />
+                       <input type="button" value="Add" onclick="javascript: updateRow('a', null, {fld1: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld2: {}});" />
                  <vm:u-prop-select name="sel_48" value="self.sav48" />
                </td>
              </tr>
@@ -647,7 +651,7 @@
                  <input type="hidden" id="b_no" name="b_no" value="<?V N ?>" />
     </td>
                <td valign="top" nowrap="1">
-                       <input type="button" value="Add" onclick="javascript: updateRow('b', null, {fld1: {class: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld2: {value: ''}});" />
+                       <input type="button" value="Add" onclick="javascript: updateRow('b', null, {fld1: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld2: {value: ''}});" />
                  <vm:u-prop-select name="sel_49" value="self.sav49" />
     </td>
       </tr>
@@ -1073,13 +1077,13 @@
                 <input type="hidden" id="c_no" name="c_no" value="<?V N ?>" />
               </td>
               <td valign="top" nowrap="1">
-                <input type="button" value="Add" onclick="javascript: updateRow('c', null, {fld1: {mode: 1, value: 'Google'}, fld2: {value: 'http://google.com', class: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
+                <input type="button" value="Add" onclick="javascript: updateRow('c', null, {fld1: {mode: 1, value: 'Google'}, fld2: {value: 'http://google.com', className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
               </td>
             </tr>
           </table>
         </div>
         <div id="p_content_3" class="tabContent" style="display: none;">
-          <table class="ctl_grp">
+          <table id="m_tbl" class="ctl_grp">
             <tr>
               <th><label for="u_icq">ICQ Number</label></th>
               <td class="listing_col" nowrap="1">
@@ -1087,6 +1091,8 @@
                         value="--self.uicq"
                         xhtml_style="width:216px"
                         xhtml_tabindex="1"/>
+              </td>
+              <td>
                 <vm:u-prop-select name="sel_10" value="self.sav10" />
               </td>
             </tr>
@@ -1097,6 +1103,8 @@
                         value="--self.uskype"
                         xhtml_style="width:216px"
                         xhtml_tabindex="2"/>
+              </td>
+              <td>
                 <vm:u-prop-select name="sel_11" value="self.sav11" />
               </td>
             </tr>
@@ -1107,6 +1115,8 @@
                         value="--self.uaim"
                         xhtml_style="width:216px"
                         xhtml_tabindex="3"/>
+              </td>
+              <td>
                 <vm:u-prop-select name="sel_12" value="self.sav12" />
               </td>
             </tr>
@@ -1117,6 +1127,8 @@
                         value="--self.uyahoo"
                         xhtml_style="width:216px"
                         xhtml_tabindex="4"/>
+              </td>
+              <td>
                 <vm:u-prop-select name="sel_13" value="self.sav13" />
               </td>
             </tr>
@@ -1127,10 +1139,35 @@
                         value="--self.umsn"
                         xhtml_style="width:216px"
                         xhtml_tabindex="5"/>
+              </td>
+              <td>
                 <vm:u-prop-select name="sel_14" value="self.sav14" />
               </td>
             </tr>
+            <?vsp
+              declare N integer;
+
+              N := 0;
+              for (select m_label, m_id from DB.DBA.WA_USER_INTERESTS (txt) (m_label varchar, m_id varchar) P where txt = self.messaging) do
+              {
+            ?>
+            <tr id="m_tr_<?V N ?>">
+              <td>
+                <input type="text" id="m_fld_1_<?V N ?>" name="m_fld_1_<?V N ?>" value="<?V m_label ?>" style="width: 95%;" />
+              </td>
+              <td>
+                <input type="text" id="m_fld_2_<?V N ?>" name="m_fld_2_<?V N ?>" value="<?V m_id ?>" style="width: 216px;" />
+              </td>
+              <td>
+                <input type="button" value="Remove" onclick="javascript: updateRow('m', <?V N ?>);" />
+              </td>
+            </tr>
+            <?vsp
+                N := N + 1;
+              }
+            ?>
           </table>
+          <input type="button" value="Add" onclick="javascript: updateRow('m', null, {fld1: {}, fld2: {cssText: 'width: 216px;'}});" />
         </div>
       </div>
       <table class="ctl_grp">
@@ -1384,12 +1421,13 @@
                         WA_USER_EDIT (self.u_name, 'WAUI_SHOWACTIVE', self.show_active.ufl_selected);
 
             declare N, id integer;
-            declare suffix, tmp_a, tmp_b, tmp_e varchar;
+            declare suffix, tmp_a, tmp_b, tmp_e, tmp_m varchar;
             declare IDx any;
 
             tmp_a := '';
             tmp_b := '';
             tmp_e := '';
+            tmp_m := '';
             IDx := vector ();
                  for (N := 0; N < length (e.ve_params); N := N + 4)
                  {
@@ -1421,13 +1459,20 @@
                 suffix := replace (e.ve_params [N], 'e_fld_1_', '');
                 tmp_e := tmp_e || trim (e.ve_params [N+1]) || '\n';
               }
+              else if ((e.ve_params [N] like 'm_fld_1_%') and (trim (e.ve_params [N+1]) <> ''))
+              {
+                suffix := replace (e.ve_params [N], 'm_fld_1_', '');
+                tmp_m := tmp_m || trim (e.ve_params [N+1]) || ';' || trim (get_keyword ('m_fld_2_'||suffix, e.ve_params, '')) || '\n';
+              }
             }
             self.interests := tmp_a;
             self.interestTopics := tmp_b;
             self.efoaf := tmp_e;
+            self.messaging := tmp_m;
             WA_USER_EDIT (self.u_name, 'WAUI_INTERESTS', tmp_a);
             WA_USER_EDIT (self.u_name, 'WAUI_INTEREST_TOPICS', tmp_b);
             WA_USER_EDIT (self.u_name, 'WAUI_FOAF', tmp_e);
+            WA_USER_EDIT (self.u_name, 'WAUI_MESSAGING', tmp_m);
 
 	          for (select WUO_ID as _id from WA_USER_OL_ACCOUNTS where WUO_U_ID = self.u_id and WUO_TYPE = 'P') do
 	          {

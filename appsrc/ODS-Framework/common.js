@@ -472,9 +472,11 @@ function updateInput (elm, fldName, fldOptions)
   fld.name = fld.id;
   if (fldOptions.value)
     fld.value = fldOptions.value;
-  fld.className = fldOptions.cclass;
-  fld.onblur = fldOptions.onBlur;
+  fld.className = fldOptions.className;
+  fld.onblur = fldOptions.onblur;
   fld.style.width = '95%';
+  if (fldOptions.cssText)
+    fld.style.cssText = fldOptions.cssText;
   var elm = $(elm);
   elm.appendChild(fld);
 }

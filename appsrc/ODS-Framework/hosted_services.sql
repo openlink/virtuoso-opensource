@@ -3106,6 +3106,8 @@ wa_exec_no_error_log(
     WAUI_BAIM VARCHAR,                  -- 52
     WAUI_BYAHOO VARCHAR,                -- 53
     WAUI_BMSN VARCHAR,                  -- 54
+    WAUI_MESSAGING LONG VARCHAR,        -- 55
+    WAUI_BMESSAGING LONG VARCHAR,       -- 56
     WAUI_CERT_LOGIN integer default 0,
     WAUI_CERT_FINGERPRINT varchar,
     WAUI_CERT long varbinary,
@@ -3115,7 +3117,7 @@ wa_exec_no_error_log(
 )
 ;
 
-wa_exec_no_error ('alter table DB.DBA.WA_USER_INFO modify WAUI_VISIBLE VARCHAR(55)');
+wa_exec_no_error ('alter table DB.DBA.WA_USER_INFO modify WAUI_VISIBLE VARCHAR(60)');
 
 wa_add_col('DB.DBA.WA_USER_INFO', 'WAUI_TEMPLATE', 'VARCHAR(20)');
 wa_add_col('DB.DBA.WA_USER_INFO', 'WAUI_PHOTO_URL', 'LONG VARCHAR');
@@ -3148,6 +3150,9 @@ wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_BSKYPE', 'VARCHAR');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_BAIM', 'VARCHAR');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_BYAHOO', 'VARCHAR');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_BMSN', 'VARCHAR');
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_MESSAGING', 'LONG VARCHAR');
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_BMESSAGING', 'LONG VARCHAR');
+
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_CERT_LOGIN', 'integer');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_CERT_FINGERPRINT', 'varchar');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_CERT', 'LONG VARBINARY');
@@ -3481,6 +3486,8 @@ create procedure WA_USER_EDIT (in _name varchar,in _key varchar,in _data any)
     UPDATE WA_USER_INFO SET WAUI_YAHOO = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_MSN')
     UPDATE WA_USER_INFO SET WAUI_MSN = _data WHERE WAUI_U_ID = _uid;
+  else if (_key = 'WAUI_MESSAGING')
+    UPDATE WA_USER_INFO SET WAUI_MESSAGING = _data WHERE WAUI_U_ID = _uid;
 
   else if (_key = 'WAUI_BICQ')
     UPDATE WA_USER_INFO SET WAUI_BICQ = _data WHERE WAUI_U_ID = _uid;
@@ -3492,6 +3499,8 @@ create procedure WA_USER_EDIT (in _name varchar,in _key varchar,in _data any)
     UPDATE WA_USER_INFO SET WAUI_BYAHOO = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_BMSN')
     UPDATE WA_USER_INFO SET WAUI_BMSN = _data WHERE WAUI_U_ID = _uid;
+  else if (_key = 'WAUI_BMESSAGING')
+    UPDATE WA_USER_INFO SET WAUI_BMESSAGING = _data WHERE WAUI_U_ID = _uid;
 
   else if (_key = 'WAUI_BIRTHDAY' and (__tag (_data) = 211 or _data is null))
     UPDATE WA_USER_INFO SET WAUI_BIRTHDAY = _data WHERE WAUI_U_ID = _uid;
