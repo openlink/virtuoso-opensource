@@ -468,7 +468,7 @@ create procedure DB.DBA.RM_RDF_LOAD_RDFXML (in strg varchar, in base varchar, in
   for (declare i, l int, i := 0, l := length (nss); i < l; i := i + 2)
     {
       http (sprintf ('<%s> a opl:DataSource .\n', nss[i+1]), ses);
-      http (sprintf ('<%s> ore:isDescribedBy <%s> .\n', graph, nss[i+1]), ses);
+      http (sprintf ('<%s> opl:isDescribedUsing <%s> .\n', graph, nss[i+1]), ses);
       http (sprintf ('<%s> opl:hasNamespacePrefix "%s" .\n', nss[i+1], nss[i]), ses);
     }
   DB.DBA.RDF_LOAD_RDFXML (strg, base, graph);
@@ -4561,7 +4561,7 @@ create procedure rdfm_yq_get_competitors (in symbol varchar, in new_origin_uri v
       if (x <> symbol and x <> 'Industry')
     {
       http (sprintf ('<http://dbpedia.org/resource/%s> <http://xbrlontology.com/ontology/finance/stock_market#hasCompetitor> <http://dbpedia.org/resource/%s> .\n', symbol, x), ses);
-      http (sprintf ('<http://dbpedia.org/resource/%s> <http://www.openarchives.org/ore/terms/isDescribedBy> <http://finance.yahoo.com/q?s=%s> .\n', x, x), ses);
+	  http (sprintf ('<http://dbpedia.org/resource/%s> <http://www.openlinksw.com/schema/attribution#isDescribedUsing> <http://finance.yahoo.com/q?s=%s> .\n', x, x), ses);
     }
     }
   content := string_output_string (ses);
