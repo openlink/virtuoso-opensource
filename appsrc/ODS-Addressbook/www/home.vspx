@@ -2529,7 +2529,8 @@
                               declare acl any;
 
                               L := 0;
-                              acl := deserialize (coalesce ((select WAI_ACL from DB.DBA.WA_INSTANCE where WAI_ID = self.domain_id), ''));
+                              acl := (select WAI_ACL from DB.DBA.WA_INSTANCE where WAI_ID = self.domain_id);
+                              acl := case when isnull (acl) then vector () else deserialize (acl) end;
                               for (N := 1; N < length (acl); N := N + 1)
                               {
                                 L := L + 1;
@@ -2540,9 +2541,9 @@
                            		  <?vsp
                          		      if (acl[N][0] = 'URI')
                          		        http ('RDF URI');
-                         		      if (acl[N][0] = 'Property')
+                         		      else if (acl[N][0] = 'Property')
                          		        http ('RDF Property');
-                         		      if (acl[N][0] = 'SPARQL')
+                         		      else if (acl[N][0] = 'SPARQL')
                          		        http ('SPARQL');
                            		  ?>
                                 </b>
@@ -2557,7 +2558,7 @@
                          		    <?vsp
                          		      if (acl[N][2] = 'G')
                          		        http ('Grant');
-                         		      if (acl[N][2] = 'R')
+                         		      else if (acl[N][2] = 'R')
                          		        http ('Revoke');
                          		    ?>
                                 </b>
