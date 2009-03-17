@@ -154,7 +154,13 @@
                 	  </table>
                   	  <div class="fm">
 			      <fieldset>
-			      Web ID: <v:text name="webid" value="" xhtml_size="100"/><br/>
+		              Web ID: <v:text name="webid" value="" xhtml_size="100"/>
+			      <v:button action="browse" name="sel_id" value="Browse" selector="sel_user.vspx"
+				  child-window-options="scrollbars=yes, menubar=no, height=630, width=600"
+				  enabled="--coalesce ((select top 1 1 from SYS_KEYS where KEY_TABLE = 'DB.DBA.WA_USER_INFO'), 0)">
+				  <v:field name="webid"/>
+ 			      </v:button>
+				  <br/>
 			      SPARQL Role: <v:select-list name="rol">
 				  <v:item name="SELECT" value="SPARQL_SELECT"/>
 				  <v:item name="SPONGE" value="SPARQL_SPONGE"/>
@@ -178,10 +184,17 @@
                   		  <v:button name="save1" value="--case when self.edit_oauth is not null then 'Update' else 'Register' end" action="simple">
 				      <v:on-post><![CDATA[
 					  declare uid, orole varchar;
+					  self.webid.ufl_value := trim (self.webid.ufl_value);
 					  if (0 = length (self.webid.ufl_value))
 					    {
   					      self.vc_is_valid := 0;
 					      self.vc_error_message := 'Web ID could not be empty';
+					      return;
+					    }
+					  if (0 = FOAF_CHECK_WEBID (self.webid.ufl_value))
+                                            {
+					      self.vc_is_valid := 0;
+                                              self.vc_error_message := 'The WebID is inaccessible or do not contains certificate properties';
 					      return;
 					    }
 					  if (self.edit_oauth is null)

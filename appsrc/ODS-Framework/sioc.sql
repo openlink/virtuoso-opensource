@@ -184,6 +184,11 @@ create procedure ore_iri (in s varchar)
   return concat ('http://www.openarchives.org/ore/terms/', s);
 };
 
+create procedure opl_iri (in s varchar)
+{
+  return concat ('http://www.openlinksw.com/schema/attribution#', s);
+};
+
 
 create procedure cert_iri (in s varchar)
 {
@@ -471,7 +476,7 @@ create procedure ods_is_defined_by (in graph_iri varchar, in iri varchar)
     df_uri := tmp || '/about.rdf';
   else
     df_uri := tmp || '/sioc.rdf';
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, ore_iri ('isDescribedBy'), df_uri);
+  DB.DBA.RDF_QUAD_URI (graph_iri, iri, opl_iri ('isDescribedUsing'), df_uri);
 };
 
 create procedure foaf_maker (in graph_iri varchar, in iri varchar, in full_name varchar, in u_e_mail varchar)
