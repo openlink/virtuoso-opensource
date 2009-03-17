@@ -2684,7 +2684,8 @@ bif_sparql_lex_analyze (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 extern caddr_t key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no);
 
-SPART *spar_make_literal_from_sql_box (sparp_t * sparp, caddr_t box, int make_bnode_if_null)
+SPART *
+spar_make_literal_from_sql_box (sparp_t * sparp, caddr_t box, int make_bnode_if_null)
 {
   switch (DV_TYPE_OF (box))
     {
