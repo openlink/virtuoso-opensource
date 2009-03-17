@@ -130,7 +130,7 @@ Conductor->System Admin->Access Control.
   following steps.</para>
 
 <itemizedlist>
-  <listitem>From Admin UI main menu open "Web Services" node.</listitem>
+  <listitem>From Admin UI main menu open "System Admin" node.</listitem>
   <listitem>Choose "Access Control"</listitem>
   <listitem>By default three default ACLs are listed:
   <simplelist>
@@ -138,6 +138,10 @@ Conductor->System Admin->Access Control.
    <member>NEWS - rules for the Internet News</member>
    <member>PROXY - rules for the Web Proxy Server</member>
   </simplelist>
+  <figure id="admacl1" float="1">
+      <title>Access Control</title>
+      <graphic fileref="ui/admacl.png"/>
+  </figure>
   </listitem>
   <listitem>New ACLs can be added by entering a list name and clicking "Add" button.</listitem>
   <listitem>Existing ACLs can be edited by clicking on the link "Edit" beside
@@ -153,8 +157,8 @@ Conductor->System Admin->Access Control.
   To add new rule:</para>
 
 <programlisting><![CDATA[
-INSERT INTO HTTP_ACL (HA_LIST, HA_ORDER, HA_CLIENT_IP, HA_FLAG) values
-('list_name', <order number>, '*pattern*', [1/0]);
+INSERT INTO HTTP_ACL (HA_LIST, HA_ORDER, HA_CLIENT_IP, HA_RATE, HA_FLAG) values
+('list_name', <order number>, '*pattern*', <hits_per_second_number>, [1/0]);
 ]]></programlisting>
 
   <para>To remove existing rule:</para>
