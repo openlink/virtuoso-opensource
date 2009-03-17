@@ -28,6 +28,7 @@
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY sioct "http://rdfs.org/sioc/types#">
+<!ENTITY owl "http://www.w3.org/2002/07/owl#">
 ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -43,6 +44,7 @@
 	xmlns:twitter="http://www.openlinksw.com/schemas/twitter/"
     xmlns:sioc="&sioc;"
     xmlns:bibo="&bibo;"
+    xmlns:owl="&owl;"
     xmlns:a="http://www.w3.org/2005/Atom"
     xmlns:sioct="&sioct;"
 	version="1.0">
@@ -130,18 +132,25 @@
 						</rdf:Description>
 					</xsl:for-each>
 				</xsl:when>
-				<xsl:otherwise>
+				<xsl:when test="$what = 'status'">
+					<foaf:Document rdf:about="{$baseUri}">
+						<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
+					</foaf:Document>
+					<xsl:apply-templates select="status" />
+				</xsl:when>
+				<xsl:when test="$what = 'user'">
 					<foaf:Document rdf:about="{$baseUri}">
 						<dc:subject>
-							<foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', $id))}" />
+							<foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name))}" />
 						</dc:subject>
 						<foaf:primaryTopic>
-							<foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', $id))}" />
+							<foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name))}" />
 						</foaf:primaryTopic>
 					</foaf:Document>
-					<xsl:apply-templates select="statuses" />
-					<xsl:apply-templates select="status" />
 					<xsl:apply-templates select="user" />
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:apply-templates select="statuses" />
 					<xsl:apply-templates select="users" />
 				</xsl:otherwise>
 			</xsl:choose>
@@ -203,8 +212,7 @@
 		</xsl:for-each>
 	</xsl:template>
 
-	<xsl:template name="status">
-		<rdf:Description rdf:about="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name, '/status/', id))}">
+	<xsl:template name="status_int">
 			<rdf:type rdf:resource="&sioct;BoardPost"/>
 			<sioc:has_container rdf:resource="{$baseUri}"/>
 			<dcterms:created rdf:datatype="&xsd;dateTime">
@@ -228,6 +236,14 @@
 			</xsl:if>
 			<rdfs:seeAlso rdf:resource="{concat('http://search.twitter.com/search/thread/', id)}"/>
 			<foaf:maker rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name))}"/>
+	</xsl:template>
+
+	<xsl:template name="status">
+		<rdf:Description rdf:about="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name, '/statuses/', id))}">
+			<xsl:call-template name="status_int"/>
+		</rdf:Description>
+		<rdf:Description rdf:about="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name, '/status/', id))}">
+			<xsl:call-template name="status_int"/>
 		</rdf:Description>
 		<xsl:if test="in_reply_to_status_id != ''">
 			<rdf:Description rdf:about="{vi:proxyIRI(concat('http://twitter.com/', in_reply_to_screen_name, '/status/', in_reply_to_status_id))}">

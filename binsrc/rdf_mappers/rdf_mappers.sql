@@ -1392,6 +1392,7 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 
 		delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 
+		what_ := 'status';
 		url := sprintf('http://twitter.com/statuses/show/%s.xml', post);
 		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_, opts);
 		
@@ -1411,6 +1412,7 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 
 		delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 
+		what_ := 'status';
 		url := sprintf('http://twitter.com/statuses/show/%s.xml', post);
 		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_, opts);
 		
@@ -1504,6 +1506,7 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 	}
 	followers_out: ;
 
+	what_ := 'user';
 	url := sprintf('http://twitter.com/users/show/%s.xml', id);
 	DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_, opts);
 	return 1;
