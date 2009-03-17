@@ -103,12 +103,14 @@
 					<dc:description>
 						<xsl:value-of select="comment"/>
 					</dc:description>
+					<vcard:Region rdf:resource="{vi:dbpIRI ('', translate (state, ' ', '_'))}"/>
 					<vcard:Region>
 						<xsl:value-of select="state" />
 					</vcard:Region>
 					<vcard:Pcode>
 						<xsl:value-of select="zip" />
 					</vcard:Pcode>
+					<vcard:Country rdf:resource="{vi:dbpIRI ('', translate (country, ' ', '_'))}"/>
 					<vcard:Country>
 						<xsl:value-of select="country" />
 					</vcard:Country>
@@ -172,6 +174,7 @@
 							<vcard:Region>
 								<xsl:value-of select="state" />
 							</vcard:Region>
+							<vcard:Region rdf:resource="{vi:dbpIRI ('', translate (state, ' ', '_'))}"/>
 							<vcard:Pcode>
 								<xsl:value-of select="zip" />
 							</vcard:Pcode>
@@ -182,6 +185,7 @@
 							<vcard:Country>
 								<xsl:value-of select="country" />
 							</vcard:Country>
+							<vcard:Country rdf:resource="{vi:dbpIRI ('', translate (country, ' ', '_'))}"/>
 							<xsl:if test="photo_url != ''">
 								<foaf:depiction rdf:resource="{photo_url}" />
 							</xsl:if>
@@ -194,6 +198,7 @@
 							<vcard:Locality>
 								<xsl:value-of select="city" />
 							</vcard:Locality>
+							<vcard:Locality rdf:resource="{vi:dbpIRI ('', translate (city, ' ', '_'))}"/>
 							<dcterms:modified rdf:datatype="&xsd;dateTime">
 								<xsl:value-of select="updated"/>
 							</dcterms:modified>
@@ -231,6 +236,7 @@
 							<vcard:Region>
 								<xsl:value-of select="state" />
 							</vcard:Region>
+							<vcard:Region rdf:resource="{vi:dbpIRI ('', translate (state, ' ', '_'))}"/>
 							<vcard:Pcode>
 								<xsl:value-of select="zip" />
 							</vcard:Pcode>
@@ -241,19 +247,23 @@
 							<vcard:Country>
 								<xsl:value-of select="country" />
 							</vcard:Country>
+							<vcard:Country rdf:resource="{vi:dbpIRI ('', translate (country, ' ', '_'))}"/>
 							<xsl:if test="photo_url != ''">
 								<foaf:depiction rdf:resource="{photo_url}" />
 							</xsl:if>
 							<dcterms:created rdf:datatype="&xsd;dateTime">
 								<xsl:value-of select="joined"/>
 							</dcterms:created>
+							<vcard:Locality rdf:resource="{vi:dbpIRI ('', translate (city, ' ', '_'))}"/>
 							<vcard:Locality>
 								<xsl:value-of select="city" />
 							</vcard:Locality>
 							<dcterms:modified rdf:datatype="&xsd;dateTime">
 								<xsl:value-of select="visited"/>
 							</dcterms:modified>
+							<xsl:if test="$what = 'members'">
 							<foaf:topic_interest rdf:resource="{vi:proxyIRI($base)}" />
+							</xsl:if>
 						</foaf:Person>
 					</foaf:primaryTopic>
 				</foaf:Document>

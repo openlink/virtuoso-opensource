@@ -99,12 +99,12 @@
 		<rdf:Description rdf:about="{$baseUri}">
 			<rdf:type rdf:resource="&foaf;Document"/>
 			<rdf:type rdf:resource="&sioc;Container"/>
-			<sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, 'music/', @artist))}"/>
-			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'music/', @artist))}"/>
-			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'music/', @artist))}"/>
+			<sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/>
+			<!--foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/-->
+			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/>
 		</rdf:Description>
 	    <xsl:for-each select="artist">
-			<rdf:Description rdf:about="{vi:proxyIRI(concat($base, 'music/', //similarartists/@artist))}">
+			<rdf:Description rdf:about="{vi:proxyIRI(concat($base, 'music/', translate(//similarartists/@artist, ' ', '+')))}">
 				<mo:similar_to rdf:resource="{vi:proxyIRI(url)}"/>
 			</rdf:Description>
 			<xsl:call-template name="artist"/>
@@ -126,12 +126,12 @@
 		<rdf:Description rdf:about="{$baseUri}">
 			<rdf:type rdf:resource="&foaf;Document"/>
 			<rdf:type rdf:resource="&sioc;Container"/>
-			<sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, 'music/', @artist))}"/>
-			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'music/', @artist))}"/>
-			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'music/', @artist))}"/>
+			<sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/>
+			<!--foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/-->
+			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/>
 		</rdf:Description>
 	    <xsl:for-each select="track">
-			<rdf:Description rdf:about="{vi:proxyIRI(concat($base, 'music/', //toptracks/@artist))}">
+			<rdf:Description rdf:about="{vi:proxyIRI(concat($base, 'music/', translate(//toptracks/@artist, ' ', '+')))}">
 				<foaf:made rdf:resource="{vi:proxyIRI(url)}"/>
 			</rdf:Description>
 			<xsl:call-template name="track"/>
@@ -143,7 +143,7 @@
 			<rdf:type rdf:resource="&foaf;Document"/>
 			<rdf:type rdf:resource="&sioc;Container"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, 'music/', @artist, '/_/', @track))}"/>
-			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'music/', @artist, '/_/', @track))}"/>
+			<!--foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'music/', @artist, '/_/', @track))}"/-->
 			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'music/', @artist, '/_/', @track))}"/>
 		</rdf:Description>
 	    <xsl:for-each select="track">
@@ -224,12 +224,12 @@
 		<rdf:Description rdf:about="{$baseUri}">
 			<rdf:type rdf:resource="&foaf;Document"/>
 			<rdf:type rdf:resource="&sioc;Container"/>
-			<sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, 'music/', @artist))}"/>
-			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'music/', @artist))}"/>
-			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'music/', @artist))}"/>
+			<sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/>
+			<!--foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/-->
+			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/>
 		</rdf:Description>
 	    <xsl:for-each select="album">
-			<rdf:Description rdf:about="{vi:proxyIRI(concat($base, 'music/', //topalbums/@artist))}">
+			<rdf:Description rdf:about="{vi:proxyIRI(concat($base, 'music/', translate(//topalbums/@artist, ' ', '+')))}">
 				<foaf:made rdf:resource="{vi:proxyIRI(url)}"/>
 			</rdf:Description>
 			<xsl:call-template name="album"/>
@@ -269,12 +269,12 @@
 		<rdf:Description rdf:about="{$baseUri}">
 			<rdf:type rdf:resource="&foaf;Document"/>
 			<rdf:type rdf:resource="&sioc;Container"/>
-			<sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, 'music/', @artist))}"/>
-			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'music/', @artist))}"/>
-			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'music/', @artist))}"/>
+			<sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/>
+			<!--foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/-->
+			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/>
 		</rdf:Description>
 	    <xsl:for-each select="event">
-			<rdf:Description rdf:about="{vi:proxyIRI(concat($base, 'music/', //events/@artist))}">
+			<rdf:Description rdf:about="{vi:proxyIRI(concat($base, 'music/', translate(//events/@artist, ' ', '+')))}">
 				<foaf:made rdf:resource="{vi:proxyIRI(url)}"/>
 			</rdf:Description>
 			<xsl:call-template name="event"/>
@@ -343,7 +343,7 @@
 				<mo:similar_to rdf:resource="{vi:proxyIRI(url)}"/>
 			</xsl:for-each>
 			<xsl:if test="mbid">
-				<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/artist/', mbid,'.html')}"/>
+				<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/artist/', mbid)}"/>
 			</xsl:if>
 		</mo:MusicArtist>
 
@@ -392,7 +392,7 @@
 				</lfm:playcount>
 			</xsl:if>
 			<xsl:if test="mbid">
-				<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/release/', mbid, '.html')}"/>
+				<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/release/', mbid)}"/>
 			</xsl:if>
 		</mo:Record>
 
@@ -447,7 +447,7 @@
 				</dc:description>
 			</xsl:if>
 			<xsl:if test="mbid">
-				<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/track/', mbid,'.html')}"/>
+				<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/track/', mbid)}"/>
 			</xsl:if>
 		</mo:Track>
 
@@ -457,7 +457,7 @@
 					<xsl:value-of select="name"/>
 				</foaf:name>
 				<xsl:if test="mbid">
-					<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/artist/', mbid,'.html')}"/>
+					<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/artist/', mbid)}"/>
 				</xsl:if>
 			</mo:MusicArtist>
 		</xsl:for-each>
@@ -471,7 +471,7 @@
 					<foaf:depiction rdf:resource="{.}"/>
 				</xsl:for-each>
 				<xsl:if test="mbid">
-					<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/release/', mbid,'.html')}"/>
+					<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/release/', mbid)}"/>
 				</xsl:if>
 			</mo:Record>
 		</xsl:for-each>
