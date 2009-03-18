@@ -1,27 +1,26 @@
 %{
-/* 
- *  
+/*
+ *  $Id$
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
-/* $Id$ */
+ *
+ */
 
 #include <ctype.h>
 #include <stdlib.h>
@@ -63,7 +62,7 @@ typedef struct bufmem_s {
 typedef struct wlex_state_s {
   wlex_font_t wlex_font[FONT_STACK_SZ];
   int wlex_headerlevel;
-  int wlex_listlevel;  
+  int wlex_listlevel;
   int wlex_listmodes[MAXLISTDEPTH];
   int wlex_in_para;
   int wlex_para_depressed;
@@ -203,8 +202,8 @@ static void xml_encode (const char* str)
     {
       for(idx=0;idx<XMLREPL_SZ;++idx)
 	{
-	  if (xmlrepl[idx].c == p[0]) 
-	    { 
+	  if (xmlrepl[idx].c == p[0])
+	    {
 	      PRINT(xmlrepl[idx].repl);
 	      break;
 	    }
@@ -235,7 +234,7 @@ static void wlex_font(wlex_font_t newfont)
     case WLEX_FONT_BTT: tags = "</CODE></B>"; break;
     }
   /* PRINTTEXT(tags); */
-  if (WLEX_FONT_DEFAULT != newfont) 
+  if (WLEX_FONT_DEFAULT != newfont)
     {
        int idx;
        for (idx=FONT_STACK_SZ-1; idx>0; --idx)
@@ -266,17 +265,17 @@ static void wlex_font_pop()
     case WLEX_FONT_TT: tags = "</CODE>"; break;
     case WLEX_FONT_BTT: tags = "</CODE></B>"; break;
     }
-  PRINTTEXT(tags); 
+  PRINTTEXT(tags);
   if(STATE(wlex_font)[0] != WLEX_FONT_DEFAULT)
     {
        int idx;
        for (idx=0; idx<FONT_STACK_SZ-1; ++idx)
-         STATE(wlex_font)[idx] =  STATE(wlex_font)[idx+1]; 
+         STATE(wlex_font)[idx] =  STATE(wlex_font)[idx+1];
     }
   STATE(wlex_font)[FONT_STACK_SZ-1] = 0;
 }
 
-  
+
 
 static void wlex_headerlevel(int newlevel)
 {
@@ -439,7 +438,7 @@ static void wlex_ahref_2 (char *href, char *style, char *title, char* predicate)
     }
   PRINT("STYLE=\""); PRINT(style); PRINT("\">");
   PRINT(title); PRINT ("</A>");
-}	
+}
 
 static void wlex_ahref (char *href, char *style, char *title)
 {
@@ -449,9 +448,9 @@ static void wlex_ahref (char *href, char *style, char *title)
 static void wlex_img (char *href, char *style, char *title)
 {
   STARTPARA; PRINT("<img src=\""); PRINT(href); PRINT("\" ");
-  PRINT("style=\""); PRINT(style); PRINT("\" "); 
-  PRINT("alt=\""); PRINT(title); PRINT("\" />"); 
-}	
+  PRINT("style=\""); PRINT(style); PRINT("\" ");
+  PRINT("alt=\""); PRINT(title); PRINT("\" />");
+}
 
 static char *wlex_wikiwordnorm (wlex_state_t *st, char *text)
 {
@@ -476,10 +475,10 @@ static char *wlex_wikiwordnorm (wlex_state_t *st, char *text)
 	    break;
 	  if (isalpha (src[0]))
 	    (tgt++)[0] = toupper (src[0]);
-	  else 
+	  else
 	    (tgt++)[0] = src[0];
 	}
-      else 
+      else
         (tgt++)[0] = src[0];
       src++;
     }
@@ -497,7 +496,7 @@ static void wlex_split_forced_link (wlex_state_t *st, char *text, char *delim)
   bm_alloc (href, textlen);
   bm_alloc (title, textlen);
   offset = 2;
-  href_start = text + offset; /* to omit first "[[" */  
+  href_start = text + offset; /* to omit first "[[" */
   title_end = text + textlen - offset; /* '... - 2' is to omit last "]]" */
   if (NULL == delim) /* Same text is for both href and title */
     {
@@ -539,13 +538,13 @@ static void wlex_split_forced_sem_link (wlex_state_t *st, char *text, char *deli
       title_start = href_end + strlen (delim);
       title_end = text + textlen - 2;  /* to omit first "]]" */
     }
-  else  
+  else
     {
       href_end = text + textlen - 2;
       title_start = href_start;
       title_end = href_end;
     }
-      
+
   while ((pred_start < pred_end) && ((' ' == pred_start[0]) || ('\t' == pred_start[0]))) pred_start++;
   while ((pred_start < pred_end) && ((' ' == pred_end[-1]) || ('\t' == pred_end[-1]))) pred_end--;
   while ((href_start < href_end) && ((' ' == href_start[0]) || ('\t' == href_start[0]))) href_start++;
@@ -617,7 +616,7 @@ int strcount_int (char * line, char* symbols)
   char* sym;
   for (sym = symbols; sym[0]; ++sym)
     {
-      int cnt = char_count (line, sym[0]); 
+      int cnt = char_count (line, sym[0]);
       if (cnt)
         return cnt;
     }
@@ -644,7 +643,7 @@ int strcount (char *line, char *symbols)
 const char * search_end_of_para(const char* text)
 {
    char * p = (char*) text;
-again:     
+again:
    if (!p[0])
      return p;
    p = strchr (p, '\n');
@@ -679,7 +678,7 @@ creolewlex_wiki_list (char* line)
     wlex_list (cnt, WLEX_LIST_UL, NULL);
 }
 
-static void 
+static void
 print_col(char* line)
 {
   size_t sz = strlen(line);
@@ -854,13 +853,13 @@ TABLECOL    ({TABLETD})
 <INITIAL>"."/{BLANK}		{ if (0 < STATE(wlex_format_lock)) PRINT(yytext); else PRINTTEXT(".\n"); }
 <INITIAL>{WS}"."		{ if (0 < STATE(wlex_format_lock)) PRINT(yytext); else COPYTEXT; }
 <INITIAL>{WS_NL}{WS_NL}		{ if (0 < STATE(wlex_format_lock)) PRINT(yytext); else wlex_reset (~0); }
-<INITIAL>{WS_NL}		{ if (0 < STATE(wlex_format_lock)) 
- 				    PRINT(yytext); 
+<INITIAL>{WS_NL}		{ if (0 < STATE(wlex_format_lock))
+ 				    PRINT(yytext);
 				  else
 				    {
-				      if (STATE(wlex_headerlevel)) 
-				         wlex_headerlevel(0); 
-				      PRINTTEXT(" "); 
+				      if (STATE(wlex_headerlevel))
+				         wlex_headerlevel(0);
+				      PRINTTEXT(" ");
 				    }
 				  PRINT("<br/>");
 				}
@@ -869,8 +868,8 @@ TABLECOL    ({TABLETD})
 <INITIAL,TABLELINE>^{WS}*"====="	{ BEGIN(INITIAL); wlex_headerlevel (5); }
 <INITIAL,TABLELINE>^{WS}*"===="		{ BEGIN(INITIAL); wlex_headerlevel (4); }
 <INITIAL,TABLELINE>^{WS}*"==="		{ BEGIN(INITIAL); wlex_headerlevel (3); }
-<INITIAL,TABLELINE>^{WS}*"=="		{ BEGIN(INITIAL); wlex_headerlevel (2); } 
-<INITIAL,TABLELINE>^{WS}*"="		{ BEGIN(INITIAL); wlex_headerlevel (1); } 
+<INITIAL,TABLELINE>^{WS}*"=="		{ BEGIN(INITIAL); wlex_headerlevel (2); }
+<INITIAL,TABLELINE>^{WS}*"="		{ BEGIN(INITIAL); wlex_headerlevel (1); }
 
 <INITIAL,TABLELINE>"====="	{ wlex_reset (~0); }
 <INITIAL,TABLELINE>"===="	{ wlex_reset (~0); }
@@ -888,12 +887,12 @@ TABLECOL    ({TABLETD})
 <TABLEHEADER>{WS}"*"		{ STATE(wlex_in_any_text) = 1; }
 	/* Lists */
 <INITIAL,TABLELINE>^{LISTMARK}+			{ BEGIN(INITIAL); creolewlex_wiki_list (yytext); }
-<INITIAL,TABLELINE>^("*:"){WS}+			{ PRINT (yytext + 2); } 
+<INITIAL,TABLELINE>^("*:"){WS}+			{ PRINT (yytext + 2); }
 
 
 
 
- 
+
 	/* Other formatting */
 <INITIAL,TABLELINE>^({WS}?)"----"			{ PRINT("<HR />"); }
 <INITIAL,TABLELINE>^({WS}?)"#"{WIKIWORD}	{

@@ -1,25 +1,25 @@
 %{
-/* 
+/*
  *  $Id$
  *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include <ctype.h>
@@ -55,7 +55,7 @@ typedef struct bufmem_s {
 typedef struct wlex_state_s {
   int wlex_font;
   int wlex_headerlevel;
-  int wlex_listlevel;  
+  int wlex_listlevel;
   int wlex_listmodes[MAXLISTDEPTH];
   int wlex_in_para;
   int wlex_para_depressed;
@@ -193,8 +193,8 @@ static void xml_encode (const char* str)
     {
       for(idx=0;idx<XMLREPL_SZ;++idx)
 	{
-	  if (xmlrepl[idx].c == p[0]) 
-	    { 
+	  if (xmlrepl[idx].c == p[0])
+	    {
 	      PRINT(xmlrepl[idx].repl);
 	      break;
 	    }
@@ -399,7 +399,7 @@ static void wlex_ahref_2 (char *href, char *style, char *title, char* predicate)
     }
   PRINT("STYLE=\""); PRINT(style); PRINT("\">");
   PRINT(title); PRINT ("</A>");
-}	
+}
 
 static void wlex_ahref (char *href, char *style, char *title)
 {
@@ -430,10 +430,10 @@ static char *wlex_wikiwordnorm (wlex_state_t *st, char *text)
 	    break;
 	  if (isalpha (src[0]))
 	    (tgt++)[0] = toupper (src[0]);
-	  else 
+	  else
 	    (tgt++)[0] = src[0];
 	}
-      else 
+      else
         (tgt++)[0] = src[0];
       src++;
     }
@@ -452,7 +452,7 @@ static void wlex_split_forced_link (wlex_state_t *st, char *text, char *delim)
   bm_alloc (title, textlen);
   if ('[' == text[1])
     offset = 2;
-  href_start = text + offset; /* to omit first "[[" */  
+  href_start = text + offset; /* to omit first "[[" */
   title_end = text + textlen - offset; /* '... - 2' is to omit last "]]" */
   /* handle the case of triple "[" */
   if ((href_start[0] == '[') && (title_end > href_start)  && (title_end[-1] == ']'))
@@ -499,13 +499,13 @@ static void wlex_split_forced_sem_link (wlex_state_t *st, char *text, char *deli
       title_start = href_end + strlen (delim);
       title_end = text + textlen - 2;  /* to omit first "]]" */
     }
-  else  
+  else
     {
       href_end = text + textlen - 2;
       title_start = href_start;
       title_end = href_end;
     }
-      
+
   while ((pred_start < pred_end) && ((' ' == pred_start[0]) || ('\t' == pred_start[0]))) pred_start++;
   while ((pred_start < pred_end) && ((' ' == pred_end[-1]) || ('\t' == pred_end[-1]))) pred_end--;
   while ((href_start < href_end) && ((' ' == href_start[0]) || ('\t' == href_start[0]))) href_start++;
@@ -573,7 +573,7 @@ int strcount_int (char * line, char* symbols)
   char* sym;
   for (sym = symbols; sym[0]; ++sym)
     {
-      int cnt = char_count (line, sym[0]); 
+      int cnt = char_count (line, sym[0]);
       if (cnt)
         return cnt;
     }
@@ -607,7 +607,7 @@ mediawlex_wiki_list (char* line)
     wlex_list (cnt, WLEX_LIST_UL, NULL);
 }
 
-static void 
+static void
 print_col(char* line)
 {
   size_t sz = strlen(line);
@@ -788,13 +788,13 @@ ENDMACRO	("}}")
 <INITIAL>"."/{BLANK}		{ if (0 < STATE(wlex_format_lock)) PRINT(yytext); else PRINTTEXT(".\n"); }
 <INITIAL>{WS}"."		{ if (0 < STATE(wlex_format_lock)) PRINT(yytext); else COPYTEXT; }
 <INITIAL>{WS_NL}{WS_NL}		{ if (0 < STATE(wlex_format_lock)) PRINT(yytext); else wlex_reset (~0); }
- <INITIAL>{WS_NL}		{ if (0 < STATE(wlex_format_lock)) 
- 				    PRINT(yytext); 
+ <INITIAL>{WS_NL}		{ if (0 < STATE(wlex_format_lock))
+ 				    PRINT(yytext);
 				  else
 				    {
-				      if (STATE(wlex_headerlevel)) 
-				         wlex_headerlevel(0); 
-				      PRINTTEXT(" "); 
+				      if (STATE(wlex_headerlevel))
+				         wlex_headerlevel(0);
+				      PRINTTEXT(" ");
 				    }
 				}
 
@@ -802,7 +802,7 @@ ENDMACRO	("}}")
 <INITIAL,TABLELINE>^{WS}*"====="	{ BEGIN(INITIAL); wlex_headerlevel (5); }
 <INITIAL,TABLELINE>^{WS}*"===="		{ BEGIN(INITIAL); wlex_headerlevel (4); }
 <INITIAL,TABLELINE>^{WS}*"==="		{ BEGIN(INITIAL); wlex_headerlevel (3); }
-<INITIAL,TABLELINE>^{WS}*"=="		{ BEGIN(INITIAL); wlex_headerlevel (2); } 
+<INITIAL,TABLELINE>^{WS}*"=="		{ BEGIN(INITIAL); wlex_headerlevel (2); }
 
 <INITIAL,TABLELINE>"====="	{ wlex_reset (~0); }
 <INITIAL,TABLELINE>"===="	{ wlex_reset (~0); }
@@ -813,7 +813,7 @@ ENDMACRO	("}}")
 
 	/* Lists */
 <INITIAL,TABLELINE>^{LISTMARK}+			{ BEGIN(INITIAL); mediawlex_wiki_list (yytext); }
-<INITIAL,TABLELINE>^("*:"){WS}+			{ PRINT (yytext + 2); } 
+<INITIAL,TABLELINE>^("*:"){WS}+			{ PRINT (yytext + 2); }
 
 
 	/* Font processing */
@@ -832,7 +832,7 @@ ENDMACRO	("}}")
 
 
 
- 
+
 	/* Other formatting */
 <INITIAL,TABLELINE>^({WS}?)"---"			{ PRINT("<HR />"); }
 <INITIAL,TABLELINE>^({WS}?)"#"{WIKIWORD}	{
@@ -857,10 +857,10 @@ ENDMACRO	("}}")
     }
 
 	/* Tables */
-<INITIAL>^"{|"{LINE}					{ 
-										  wlex_reset(~WLEX_RESET_LIST); 
-										  BEGIN(TABLEHEADER);  
-										  STATE(wlex_in_any_text) = 1; 
+<INITIAL>^"{|"{LINE}					{
+										  wlex_reset(~WLEX_RESET_LIST);
+										  BEGIN(TABLEHEADER);
+										  STATE(wlex_in_any_text) = 1;
 										  PRINT("\n<TABLE ");
 										  PRINT(yytext+2);
 										  PRINT(" >\n<TR>");
@@ -876,9 +876,9 @@ ENDMACRO	("}}")
 <INITIAL>^"|"{WS}"||"					{ wlex_reset(~WLEX_RESET_LIST); BEGIN(TABLELINE); PRINT("\n<TABLE class=\"wikitable\"><TR>"); }
 <TABLELINE>^"|}"{WS}*{WS_NL}			{ PRINT("</TR></table>"); BEGIN(INITIAL); }
 <TABLELINE>"|"/"|"{LINE}				{ PRINT("</TD>"); }
-<TABLELINE>"|"/{TABLECOLATTR}{SINGLEBAR} {   PRINT("<TD "); 
-										     STATE(wlex_in_any_text) = 1; 
-											 STATE(wlex_in_td) = 1; 
+<TABLELINE>"|"/{TABLECOLATTR}{SINGLEBAR} {   PRINT("<TD ");
+										     STATE(wlex_in_any_text) = 1;
+											 STATE(wlex_in_td) = 1;
 										}
 <TABLELINE>"|"/{TABLECOL}{BAREND}		{ if (!STATE(wlex_in_td)) PRINT("<TD>"); else PRINT(">"); print_col(yytext+1); STATE(wlex_in_td) = 0; }
 <TABLELINE>{WS_NL}						{ PRINT("</TD>"); }
