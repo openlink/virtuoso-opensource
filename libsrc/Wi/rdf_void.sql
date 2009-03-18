@@ -78,7 +78,7 @@ create procedure RDF_VOID_GEN (in graph varchar, in gr_name varchar := null)
   declare nam, inx any;
 
   preds := vector ('owl:sameAs', 'rdfs:seeAlso');
-  ses := string_output ();
+  ses := string_output (http_strses_memory_size ());
   host := null;
   if (is_http_ctx ())
     host := http_request_header(http_request_header (), 'Host', null, null);
@@ -117,12 +117,11 @@ create procedure RDF_VOID_GEN (in graph varchar, in gr_name varchar := null)
       	where { graph `iri (?:graph)` { ?s `iri (?:pred)` ?o . filter (?o != iri (?:graph)) } });
       if (cnt)
 	{
-	  nam := sprintf ('%U', name);
+	  nam := name;
 	  inx := 1;
 	  while (dict_get (dict, nam, 0))
 	    {
 	      nam := name||cast (inx as varchar);
-	      nam := sprintf ('%U', nam);
 	      inx := inx + 1;
 	    }
 	  name := nam;
@@ -150,11 +149,12 @@ create procedure RDF_VOID_GEN (in graph varchar, in gr_name varchar := null)
 	  or "class" = graph || '#TypeOfLink' or "class" like graph || '#%Links')
 	goto skip;
       RDF_VOID_SPLIT_IRI ("class", pref, name);
-      nam := name;
+      nam := sprintf ('%U', name);
       inx := 1;
       while (dict_get (dict, nam, 0))
 	{
 	  nam := name||cast (inx as varchar);
+	  nam := sprintf ('%U', nam);
 	  inx := inx + 1;
 	}
       name := nam;
@@ -170,6 +170,6 @@ create procedure RDF_VOID_GEN (in graph varchar, in gr_name varchar := null)
 
   if (has_links)
     http (sprintf (':TypeOfLink rdfs:subClassOf scovo:Dimension . \n'), ses);
-  return string_output_string (ses);
+  return ses;
 }
 ;
