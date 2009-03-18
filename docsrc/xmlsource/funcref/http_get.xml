@@ -62,7 +62,28 @@ with CR/LF pair. (Warning: this string must not be terminated with CR/LF pair!).
 <para>This string will be sent to the target server as the request body.
 The  &quot;Content-Length&quot; header field is set to the length of this string.</para></refsect2>
     <refsect2><title>proxy</title>
-<para>If this parameter is supplied  the request will be passed through this HTTP proxy. The format is  &lt;proxy_host&gt;:&lt;proxy_port&gt; .</para></refsect2>
+<para>If this parameter is supplied  the request will be passed through this HTTP proxy. The format is  &lt;proxy_host&gt;:&lt;proxy_port&gt; .</para>
+      <para>Supports:</para>
+<programlisting><![CDATA[
+http://[user:pass@]host:port - user & pass are optional
+]]></programlisting>
+<programlisting><![CDATA[
+socks4://[user:pass@]host:port - user & pass are optional
+]]></programlisting>
+<programlisting><![CDATA[
+socks5://[user:pass@]host:port - user & pass are optional
+]]></programlisting>
+<programlisting><![CDATA[
+socks5-host://[user:pass@]host:port - user & pass are optional
+]]></programlisting>
+      <para>In the INI file, in section HTTPServer should be set:</para>
+<programlisting><![CDATA[
+HTTPProxyServer       = proxytest:3128
+HTTPProxyExceptions   = localhost:8890, 127.0.0.1:8890
+]]></programlisting>
+      <para>Exception could be also 127.0.0.* i.e. there could have also wildcard.</para>
+
+</refsect2>
   </refsect1>
   <refsect1 id="errors_http_get"><title>Errors</title>
     <table><title>Errors signalled by</title>
