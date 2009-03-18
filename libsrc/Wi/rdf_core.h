@@ -95,6 +95,7 @@ extern void tf_report (triple_feed_t *tf, char msg_type, const char *sqlstate, c
 #define TTLP_SKIP_LITERAL_SUBJECTS	0x0008
 #define TTLP_NAME_MAY_CONTAIN_PATH	0x0010
 #define TTLP_ACCEPT_DIRTY_NAMES		0x0020
+#define TTLP_ACCEPT_DIRTY_SYNTAX	0x0040
 #define TTLP_ERROR_RECOVERY		0x0080
 #define TTLP_ALLOW_TRIG			0x0100
 

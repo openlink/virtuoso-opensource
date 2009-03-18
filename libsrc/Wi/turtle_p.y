@@ -162,7 +162,7 @@ clause
 		ttlp_arg->ttlp_subj_uri = ttlp_arg->ttlp_last_complete_uri;
 		ttlp_arg->ttlp_last_complete_uri = NULL; }
 		trig_block_or_predicate_object_list
-	| triple_clause_with_nonq_subj _DOT_WS
+	| top_triple_clause_with_nonq_subj
         | error { ttlyyerror_action ("Only a triple or a special clause (like prefix declaration) is allowed here"); }
 	;
 
@@ -223,7 +223,24 @@ triple_clause_with_nonq_subj
         | TTL_RECOVERABLE_ERROR { dk_free_tree (ttlp_arg->ttlp_subj_uri);
 		ttlp_arg->ttlp_subj_uri = NULL; }
 	    predicate_object_list_or_garbage
-	| _GARBAGE_BEFORE_DOT_WS {}
+	| _GARBAGE_BEFORE_DOT_WS
+	;
+
+top_triple_clause_with_nonq_subj
+	: VARIABLE { dk_free_tree (ttlp_arg->ttlp_subj_uri);
+		ttlp_arg->ttlp_subj_uri = $1; }
+	    predicate_object_list_or_garbage _DOT_WS
+	| blank { dk_free_tree (ttlp_arg->ttlp_subj_uri);
+		ttlp_arg->ttlp_subj_uri = $1; }
+	    top_blank_predicate_object_list_or_garbage_with_dot
+	| literal_subject {
+		TTLYYERROR_ACTION_COND (TTLP_SKIP_LITERAL_SUBJECTS, "Virtuoso does not support literal subjects");
+		dk_free_tree (ttlp_arg->ttlp_subj_uri); ttlp_arg->ttlp_subj_uri = NULL; }
+	    predicate_object_list_or_garbage _DOT_WS
+        | TTL_RECOVERABLE_ERROR { dk_free_tree (ttlp_arg->ttlp_subj_uri);
+		ttlp_arg->ttlp_subj_uri = NULL; }
+	    predicate_object_list_or_garbage _DOT_WS
+	| _GARBAGE_BEFORE_DOT_WS _DOT_WS
 	;
 
 keyword_list
@@ -253,10 +270,25 @@ inner_predicate_object_list
 	    blank_block_formula
 	;
 
+top_blank_predicate_object_list_or_garbage_with_dot
+	: top_blank_predicate_object_list semicolon_opt _DOT_WS
+	| top_blank_predicate_object_list semicolon_opt _GARBAGE_BEFORE_DOT_WS _DOT_WS
+	| _DOT_WS { TTLYYERROR_ACTION_COND (TTLP_ACCEPT_DIRTY_SYNTAX, "Missing predicate and object between top-level blank node subject and a dot"); }
+	| _GARBAGE_BEFORE_DOT_WS _DOT_WS
+	;
+
 predicate_object_list_or_garbage
 	: predicate_object_list semicolon_opt
 	| predicate_object_list semicolon_opt _GARBAGE_BEFORE_DOT_WS
 	| _GARBAGE_BEFORE_DOT_WS
+	;
+
+top_blank_predicate_object_list
+	: verb_and_object_list
+	| top_blank_predicate_object_list _SEMI verb_and_object_list_or_garbage
+        | _COMMA { ttlyyerror_action ("Missing object between top-level blank node and a comma"); }
+        | _SEMI { ttlyyerror_action ("Missing predicate and object between top-level blank node and a semicolon"); }
+        | error { ttlyyerror_action ("Predicate expected after top-level blank node"); }
 	;
 
 predicate_object_list
