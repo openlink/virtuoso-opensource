@@ -857,7 +857,7 @@ create procedure addressbook_comment_delete (
   declare iri varchar;
 
   iri := addressbook_comment_iri (domain_id, item_id, id);
-  delete_quad_s_or_o (get_graph (), iri, iri);
+  delete_quad_s_or_o (get_graph_ext (AB.WA.domain_is_public (domain_id)), iri, iri);
 }
 ;
 
