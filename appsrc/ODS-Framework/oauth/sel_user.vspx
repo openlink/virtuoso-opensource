@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+    <title>Select from existing users</title>
+    <link rel="stylesheet" type="text/css" href="default.css" />
+</head>
+<body>
+    <v:page name="select_cat" xmlns:v="http://www.openlinksw.com/vspx/">
+	<font color="red"><b><v:error-summary/></b></font>
+	<h1><v:label name="label03" value="Select from existing users" format="%s"/></h1>
+	<table class="listing">
+	    <v:data-set name="ds" sql="select U_NAME, U_FULL_NAME from SYS_USERS, WA_USER_INFO where WAUI_U_ID = U_ID order by 1" nrows="20" scrollable="1" cursor-type="keyset" edit="0">
+		<v:template name="template1" type="simple">
+		    <tr class="listing_header_row">
+			<th align="center">
+			    <b><v:label name="label1" value="Account" format="%s" width="80"/></b>
+			</th>
+			<th align="center">
+			    <b><v:label name="label2" value="Name" format="%s" width="80"/></b>
+			</th>
+			<th align="center">
+			    <b>Action</b>
+			</th>
+		    </tr>
+		</v:template>
+		<v:template name="template2" type="repeat" name-to-remove="" set-to-remove="">
+		    <v:template name="template7" type="if-not-exists">
+			<tr>
+			    <td align="center" colspan="3">
+				<b>No rows selected</b>
+			    </td>
+			</tr>
+		    </v:template>
+		    <v:template name="template4" type="browse">
+			<tr class="<?V case when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+			    <td align="left" nowrap="1">
+				<v:label name="label5" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s" width="80"/>
+			    </td>
+			    <td align="left" nowrap="1">
+				<v:label name="label6" value="--coalesce ((control.vc_parent as vspx_row_template).te_rowset[1], '')" format="%s"/>
+			    </td>
+			    <td nowrap="1">
+				<v:button name="ds_select" action="return" value="Select" >
+				    <v:field name="webid" value="--sioc..person_iri (sioc..user_obj_iri(cast ((control.vc_parent.vc_parent as vspx_row_template).te_rowset[0] as varchar)))"/>
+				</v:button>
+			    </td>
+			</tr>
+		    </v:template>
+		</v:template>
+	    </v:data-set>
+	</table>
+    </v:page>
+</body>
+</html>
