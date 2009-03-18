@@ -101,6 +101,7 @@
           }
             
       		// init tabs
+          showTab('a', 2, 0);
           showTab('p', 3, 0);
           showTab('s', 2, 0);
 

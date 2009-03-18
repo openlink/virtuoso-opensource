@@ -819,7 +819,8 @@ create procedure BMK.WA.bookmark_update (
   in name any,
   in description any,
   in tags any,
-  in folder_id integer)
+  in folder_id integer,
+  in acl any := null)
 {
   declare bookmark_id integer;
 
@@ -836,8 +837,8 @@ create procedure BMK.WA.bookmark_update (
     id := coalesce((select BD_ID from BMK.WA.BOOKMARK_DOMAIN where BD_DOMAIN_ID = domain_id and coalesce(BD_FOLDER_ID, 0) = coalesce(folder_id, 0) and BD_BOOKMARK_ID = bookmark_id and BD_NAME = name), -1);
   if (id <= 0)
   {
-    insert into BMK.WA.BOOKMARK_DOMAIN (BD_DOMAIN_ID, BD_BOOKMARK_ID, BD_NAME, BD_DESCRIPTION, BD_TAGS, BD_UPDATED, BD_CREATED, BD_FOLDER_ID)
-      values (domain_id, bookmark_id, name, description, tags, now(), now(), folder_id);
+    insert into BMK.WA.BOOKMARK_DOMAIN (BD_DOMAIN_ID, BD_BOOKMARK_ID, BD_NAME, BD_DESCRIPTION, BD_TAGS, BD_UPDATED, BD_CREATED, BD_FOLDER_ID, BD_ACL)
+      values (domain_id, bookmark_id, name, description, tags, now(), now(), folder_id, acl);
     id := coalesce((select BD_ID from BMK.WA.BOOKMARK_DOMAIN where BD_DOMAIN_ID = domain_id and coalesce(BD_FOLDER_ID, 0) = coalesce(folder_id, 0) and BD_BOOKMARK_ID = bookmark_id and BD_NAME = name), -1);
   } else {
     update BMK.WA.BOOKMARK_DOMAIN
@@ -846,7 +847,8 @@ create procedure BMK.WA.bookmark_update (
            BD_DESCRIPTION = description,
            BD_TAGS = tags,
            BD_UPDATED = now(),
-           BD_FOLDER_ID = folder_id
+           BD_FOLDER_ID = folder_id,
+           BD_ACL = acl
      where BD_ID = id;
   }
   return id;

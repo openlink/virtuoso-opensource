@@ -250,6 +250,7 @@ BMK.WA.exec_no_error('
     BD_NAME varchar,
     BD_DESCRIPTION varchar,
     BD_TAGS varchar,
+    BD_ACL long varchar,
     BD_CREATED datetime,
     BD_UPDATED datetime,
     BD_VISITED datetime,
@@ -279,6 +280,10 @@ BMK.WA.exec_no_error (
 
 BMK.WA.exec_no_error (
   'alter table BMK.WA.BOOKMARK_DOMAIN add BD_CREATED datetime', 'C', 'BMK.WA.BOOKMARK_DOMAIN', 'BD_CREATED'
+);
+
+BMK.WA.exec_no_error (
+  'alter table BMK.WA.BOOKMARK_DOMAIN add BD_ACL long varchar', 'C', 'BMK.WA.BOOKMARK_DOMAIN', 'BD_ACL'
 );
 
 BMK.WA.exec_no_error('

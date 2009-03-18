@@ -177,6 +177,7 @@
       <v:variable name="v_folder_id" type="varchar" default="'0'"/>
       <v:variable name="v_shared" type="integer" default="0"/>
       <v:variable name="v_grants" type="any" default="null"/>
+      <v:variable name="v_acl" type="any" default="null"/>
 
       <v:variable name="v_override" type="integer" default="1"/>
       <v:variable name="v_source" type="any" default="-1"/>
@@ -1229,13 +1230,15 @@
                      BD_NAME,
                      BD_DESCRIPTION,
                      BD_TAGS,
-                     BD_FOLDER_ID
+                     BD_FOLDER_ID,
+                     BD_ACL
                 into tmp,
                      self.v_uri,
                      self.v_name,
                      self.v_description,
                      self.v_tags,
-                     self.v_folder_id
+                     self.v_folder_id,
+                     self.v_acl
                 from BMK.WA.BOOKMARK_DOMAIN,
                      BMK.WA.BOOKMARK
                where BD_DOMAIN_ID = self.domain_id
@@ -1264,11 +1267,20 @@
         <?vsp
           http (sprintf ('<input type="hidden" name="b_id" value="%d" />', self.v_id));
         ?>
+        <v:text name="tabNo" xhtml_id="tabNo" type="hidden" />
         <div class="new-form-header">
           <v:label format="%s" value="--self.v_form"/>
         </div>
-        <div class="new-form-body">
-          <table cellspacing="0">
+        <div id="a" class="c1">
+          <div class="tabs">
+            &nbsp;<vm:tabCaption tab="a" tabsCount="2" tabNo="0" caption="Main" />
+            <vm:if test="(self.v_form <> 'Bookmark/View') and (BMK.WA.domain_is_public (self.domain_id) = 2)">
+              &nbsp;<vm:tabCaption tab="a" tabsCount="2" tabNo="1" caption="Access" />
+            </vm:if>
+          </div>
+          <div class="contents">
+            <div id="a_content_0" class="tabContent">
+              <table class="form-body" cellspacing="0">
             <tr>
               <th width="25%">
                 <v:label for="b_name" value="Name (*)"/>
@@ -1350,6 +1362,125 @@
               <?vsp self.myTags ('b_tags'); ?>
             </vm:if>
           </table>
+        </div>
+            <div id="a_content_1" class="tabContent" style="display: none;">
+              <table class="form-body" cellspacing="0">
+                <tr>
+                  <td style="width: 90%; background-color: white;">
+                    <table id="s_tbl" width="100%" cellspacing="0">
+                      <thead class="sortHeader">
+                        <tr>
+                          <th width="15%">
+                            Type
+                          </th>
+                          <th>
+                            Value
+                          </th>
+                          <th width="10%">
+                            Access
+                          </th>
+                          <vm:if test="self.v_form <> 'Bookmark/View'">
+                            <th width="70px">
+                              Action
+                            </th>
+                          </vm:if>
+                        </tr>
+                      </thead>
+                      <?vsp
+                        declare N, M, L integer;
+                        declare acl any;
+
+                        L := 0;
+                        acl := (select WAI_ACL from DB.DBA.WA_INSTANCE where WAI_ID = self.domain_id);
+                        acl := case when isnull (acl) then vector () else deserialize (acl) end;
+                        for (N := 1; N < length (acl); N := N + 1)
+                        {
+                          L := L + 1;
+                      ?>
+                      <tr id="s_tr_<?V L ?>">
+                        <td id="s_td1_<?V L ?>" nowrap="nowrap">
+                          <b>
+                     		  <?vsp
+                   		      if (acl[N][0] = 'URI')
+                   		        http ('RDF URI');
+                   		      else if (acl[N][0] = 'Property')
+                   		        http ('RDF Property');
+                   		      else if (acl[N][0] = 'SPARQL')
+                   		        http ('SPARQL');
+                     		  ?>
+                          </b>
+                        </td>
+                        <td id="s_td2_<?V L ?>">
+                          <b>
+                          <?V acl[N][1] ?>
+                          </b>
+                        </td>
+                        <td id="s_td3_<?V L ?>">
+                          <b>
+                   		    <?vsp
+                   		      if (acl[N][2] = 'G')
+                   		        http ('Grant');
+                   		      else if (acl[N][2] = 'R')
+                   		        http ('Revoke');
+                   		    ?>
+                          </b>
+                        </td>
+                        <td>
+                          <b>
+                          Inherited
+                          </b>
+                        </td>
+                      </tr>
+                      <?vsp
+                        }
+                        acl := deserialize (self.v_acl);
+                        for (N := 1; N < length (acl); N := N + 1)
+                        {
+                          L := L + 1;
+                      ?>
+                      <tr id="s_tr_<?V L ?>">
+                        <td id="s_td1_<?V L ?>">
+                    		  <![CDATA[
+                       		  <script type="text/javascript">
+                       		  <?vsp
+                              http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){BMK.updateRowCombo2(\'s_td1_%d\', \'s_fld_1_%d\', {value: \'%s\'});});', L, L, acl[N][0]));
+                       		  ?>
+                       		  </script>
+                     		  ]]>
+                        </td>
+                        <td id="s_td2_<?V L ?>">
+                          <input type="text" id="s_fld_2_<?V L ?>" name="s_fld_2_<?V L ?>" value="<?V acl[N][1] ?>" style="width: 95%;" class="_validate_" onblur="javascript: validateField(this);" />
+                        </td>
+                        <td id="s_td3_<?V L ?>">
+                    	    <![CDATA[
+                     		    <script type="text/javascript">
+                     		    <?vsp
+                              http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){BMK.updateRowCombo3(\'s_td3_%d\', \'s_fld_3_%d\', {value: \'%s\'});});', L, L, acl[N][2]));
+                     		    ?>
+                     		    </script>
+                     		  ]]>
+                        </td>
+                        <td>
+                          <input type="button" value="Remove" onclick="javascript: BMK.updateRow('s', <?V L ?>);" class="button" />
+                        </td>
+                      </tr>
+                      <?vsp
+                        }
+                        M := 4;
+                        http (sprintf ('<tr id="s_tr_no" style="display: %s"><td colspan="%d"><b>No Sharings</b></td></tr>', case when L = 0 then '' else 'none' end, M));
+                      ?>
+                    </table>
+                    <input type="hidden" id="s_no" name="s_no" value="<?V N ?>" />
+                  </td>
+                  <vm:if test="self.v_form <> 'Bookmark/View'">
+                    <td valign="top" nowrap="1">
+                      <input type="button" value="Add" onclick="javascript: BMK.updateRow('s', null, {fld1: {mode: 2}, fld2: {}, fld3: {mode: 3}});" class="button" />
+                    </td>
+                  </vm:if>
+                </tr>
+              </table>
+            </div>
+          </div>
         </div>
         <div class="new-form-footer">
           <input type="button" title="Save" value="Save" onclick="javascript: BMK.formPost('<?V self.v_form ?>'); return false;"/>

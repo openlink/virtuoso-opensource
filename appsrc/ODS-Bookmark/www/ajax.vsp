@@ -214,10 +214,11 @@
     returnData := '';
     if (subAction in ('Bookmark/Create', 'Bookmark/Edit', 'Bookmark/View'))
 	  {
-	    declare tmp, id, name, uri, description, folder_id, folder_name, tags, grants any;
+	    declare tmp, id, name, uri, description, folder_id, folder_name, tags, grants, acl, suffix any;
 
       id := cast (get_keyword ('b_id', params, '-1') as integer);
       name := trim (get_keyword ('b_name', params, ''));
+      description := trim (get_keyword ('b_description', params, ''));
       uri := trim (get_keyword ('b_uri', params, ''));
       folder_id := cast (get_keyword ('b_folder_id', params) as integer);
       folder_name := trim (get_keyword ('b_folder_name', params, ''));
@@ -236,8 +237,20 @@
       tmp := BMK.WA.vector_unique (tmp);
       tags := BMK.WA.vector2tags (tmp);
 
+      -- acl
+      acl := vector ();
+      for (N := 0; N < length (params); N := N + 2)
+      {
+        if ((params [N] like 's_fld_2_%') and (trim (params [N+1]) <> ''))
+        {
+          suffix := replace (params [N], 's_fld_2_', '');
+          acl := vector_concat (acl, vector (vector (get_keyword ('s_fld_1_'||suffix, params, ''), get_keyword ('s_fld_2_'||suffix, params, ''), get_keyword ('s_fld_3_'||suffix, params, ''))));
+        }
+      }
+      acl := serialize (vector_concat (vector (vector ('v1.0', length (acl))), acl));
+
       folder_id := BMK.WA.folder_create (_domain_id, folder_name, folder_id);
-      BMK.WA.bookmark_update (id, _domain_id, uri, name, description, tags, folder_id);
+      BMK.WA.bookmark_update (id, _domain_id, uri, name, description, tags, folder_id, acl);
       BMK.WA.shareNode (_account_id, BMK.WA.make_node ('b', id), grants, 1);
 	  }
 	  else if (subAction in ('Folder/Create', 'Folder/Edit'))
