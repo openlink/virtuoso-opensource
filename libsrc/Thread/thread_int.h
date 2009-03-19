@@ -29,10 +29,10 @@
 #ifndef _THREAD_INT_H
 #define _THREAD_INT_H
 
-#include <Dk.h>
-#include <util/listmac.h>
-#include <Thread/timer_queue.h>
-#include <Thread/tvmac.h>
+#include "Dk.h"
+#include "util/listmac.h"
+#include "Thread/timer_queue.h"
+#include "Thread/tvmac.h"
 #include <assert.h>
 #define _THREAD_INT_HS
 /*#include <Wi/statuslog.h>*/

@@ -26,7 +26,7 @@
  *  
 */
 
-#include <Dk.h>
+#include "Dk.h"
 
 #define MY_NAME	(void *)1
 

@@ -27,7 +27,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <Dk.h>
+#include "Dk.h"
 #include "plugin.h"
 #include "dlf.h"
 
