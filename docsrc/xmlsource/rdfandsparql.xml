@@ -575,18 +575,50 @@ At present this uses additional query parameters.</para>
 </sect3>
 
 <sect3 id="rdfsupportedprotocolendpointuri"><title>Service Endpoint</title>
-<para>Virtuoso reserves the path '/sparql/' and a synonym path '/SPARQL/' for SPARQL service.</para>
-<para>In the current implementation, Virtuoso defines virtual directories for HTTP requests that come to the port
-specified as 'ServerPort' in the '[HTTPServer]' section of Virtuoso configuration file and refer to one of these
-two path strings. So if the Virtuoso installation on host example.com listens for HTTP requests on
-port 8080 then client applications should use the 'service endpoint' string equal to 'http://example.com:8080/sparql/'.</para>
-<para>Both GET and POST requests are supported by both server and client. The server recognizes the 'Accept: ...' line of request header
-to find MIME types preferred by the connected client and adjust the output mode of the response.</para>
-<para>The client chooses between GET and POST automatically, using the length of query text as a criterion.</para>
-<para>If the SPARQL endpoint is accessed without any URL and query entered, will be shown page with interactive query form.</para>
+<para>Virtuoso uses the pre-assigned endpoints "/sparql" and "/SPARQL" as the
+defaults for exposing its REST based SPARQL Web Services.</para>
+<para>The port number associated with the SPARQL services virtual comes from  'ServerPort' key values
+in the '[HTTPServer]' section of the Virtuoso INI file.Thus, if the Virtuoso instance is configured
+to listen at a none default port e.g. 8890, the SPARQL endpoints would be accessible
+at: http://example.com:8890/sparql/.</para>
+<para>The SPARQL endpoint supports both GET and POST requests. The client chooses between GET and POST
+automatically, using the length of query text as a criterion. If the SPARQL endpoint is accessed without
+any URL and requisite SPARQL Prrotocol parameters, an interactive HTML for capturing SPARQL input will
+be presented.</para>
 </sect3>
 
-<sect3 id="rdfsupportedprotocolendpointuri"><title>Service Endpoint with authenticated SPARUL option</title>
+<sect3 id="rdfsupportedprotocolendpointuri"><title>Service Endpoint Security</title>
+<para>Earlier releases of Virtuoso secured the SPARQL endpoint via privileges assigned to the service
+specific SQL user account: "SPARQL". This account was optionally granted "SPARQL_SELECT" or
+"SPARQL_UPDATE" roles. By default only the  "SPARQL_SELECT" role was assigned enabling all users
+to at least perform SELECT queries. The "SPARQL_UPDATE" role needs to be set for to allow updates
+to the QUAD store, which is a requirement for the Virtuoso sponger services to be functional i.e. to
+be able to update the Quad store. In the Virtuoso 5.0.7 release there is a new "SPARQL_SPONGE" role
+which can be assigned to specifically allow the sponger services to update the Quad Store but not the
+SPARQL user via the endpoint.</para>
+<para>Restricting a users access to specific graphs can be done using Virtuoso row-level security
+functionality. This can be done using the Virtuoso Data access methods ODBC, JDBC, ADO.Net or PL code.</para>
+<para>For example one could do something as is done for the OpenLink Data Space (ODS) application users:</para>
+<programlisting><![CDATA[
+DB.DBA.TABLE_DROP_POLICY ('DB.DBA.RDF_QUAD', 'S');
+
+create procedure DB.DBA.RDF_POLICY (in tb varchar, in op varchar)
+{
+ declare chost, ret varchar;
+ chost := DB.DBA.WA_CNAME ();  ret := sprintf ('(ID_TO_IRI (G) NOT LIKE \'http://%s/dataspace/%%/private#\' ' ||
+ 'OR G = IRI_TO_ID (sprintf (\'http://%s/dataspace/%%U/private#\', USER)))', chost, chost);
+ return ret;
+}
+;
+
+grant execute on DB.DBA.RDF_POLICY to public;
+
+DB.DBA.TABLE_SET_POLICY ('DB.DBA.RDF_QUAD', 'DB.DBA.RDF_POLICY', 'S');
+
+where DB.DBA.WA_CNAME () is a function in ODS to return default host name.
+
+]]></programlisting>
+<para>This would restrict the defined 'user' to the graph http://cname/dataspace/user/private#</para>
 <para>Virtuoso reserves the path '/sparql-auth/' for SPARQL service with authenticated SPARUL option.</para>
 <para>This endpoint allows specific SQL accounts to perform SPARUL over the SPARQL protocol.</para>
 <para>"SPARQL_UPDATE" is needed to be granted on a user to perform all operations on physical triples and
@@ -614,6 +646,230 @@ click the ">>" button so to add it to the right-positioned list.</listitem>
 ( SPARQL_UPDATE inherits it ), then select on all graph will return access violation error as the user
 account has no permissions to read it. Thus the account need to have privileges on all tables included
 in any rdf view in order to be able to select on *all* graphs.</para>
+<sect4 id="sparqloauthendpointauth"><title>Authentication</title>
+<para>Virtuoso 5.0.7 onwards,  introduced the addition of a new "SPARQL_SPONGE" role which can be assigned
+to specifically for controlling sponger middleware services which perform writes and graph creations within
+the the RDF Quad Store. These updates are only achievable via the activity of the sponger. All other updates
+require granting of the SPARQL_UPDATE role.</para>
+<para>Virtuoso 5.0.11 onwards,  introduced the addition of 3 new methods of securing SPARQL endpoints that
+include: SQL authentication, OAuth, and FOAF+SSL protocol based authentication. Each of these authentication
+methods is associated with a purpose specifc default SPARQL endpoint along the following lines:
+http://&lt;cname&gt;/sparql-auth (SQL authentication) , http://&lt;cname&gt;/sparql-oauth (OAuth),
+https://&lt;cname&gt;/sparql and https://&lt;cname&gt;/sparql-ssl (FOAF+SSL).</para>
+<para>Virtuoso Authentication Server offers UI with options for managing:</para>
+<itemizedlist mark="bullet">
+  <listitem>Application keys and Protected SPARQL Endpoint: OAuth provides a secure data transmission
+level mechanism for your SPARQL endpoint. It enables you to securely interact with your RDF database
+from a variety of locations. It also allows you to provide controlled access to private data to select
+user profiles.</listitem>
+  <listitem>FOAF+SSL ACLs: FOAF+SSL is implementation of a conceptual authentication and authorization
+protocol that links a Web ID to a public key to create a global, decentralized/distributed, and open
+yet secure authentication system that functions with existing browsers.</listitem>
+</itemizedlist>
+<para>Virtuoso Authentication server can be installed by downloading and installing the
+policy_manager_dav.vad package.</para>
+<para>The Authentication UI is accessible from the URL http://cname:port/policy_manager</para>
+<para>The Menu options are</para>
+<itemizedlist mark="bullet">
+  <listitem>Go to Application keys in order to create Consumer Key and Secret for the relevant ODS applications.</listitem>
+  <listitem>Go to FOAF+SSL ACLs in order to use URIs for setup DB level controls for SELECT, UPDATE, DELETE.
+<para>Note: Should be logged in as dba user.</para>
+</listitem>
+  <listitem>Go to Protected SPARQL Endpoint in order to enter your application Consumer Key and perform security SPARQL query.</listitem>
+</itemizedlist>
+   <figure id="sparqloauthendpoint4" float="1">
+      <title>OAuth UI</title>
+      <graphic fileref="ui/SparqlOAuth4.png"/>
+    </figure>
+<para>The user must have SQL privileges in order to run secured SPARQL statements.</para>
+</sect4>
+<sect4 id="sparqloauthendpoint"><title>SPARQL OAuth Endpoint</title>
+<para>OAuth provides a secure data transmmission level mechanism for your SPARQL endpoint.
+It enables you to securely interact with your RDF database from a variety of locations. It also
+allows you to provide controlled access to private data to select user profiles.</para>
+<para>Virtuoso OAuth server can be installed by installing the oauth_dav.vad package and
+the OAuth UI is accessible from the URL http://cname:port/oauth</para>
+<para>The user must have SQL privileges in order to run secured SPARQL statements.</para>
+<para>Here is a sample scenario:</para>
+<orderedlist>
+<listitem>Install the conductor_dav.vad and policy_manager_dav.vad packages.</listitem>
+<listitem>From the Conductor UI create user test1 by setting SQL and DAV login enable. Also set SPARQL_UPDATE role to it:
+<orderedlist>
+<listitem>Go to http://cname:port/conductor</listitem>
+<listitem>Log in as dba user</listitem>
+<listitem>Go to System Admin->User Account and click the "Create New Account" link
+<figure id="sparqloauthendpoint1" float="1">
+      <title>Conductor UI</title>
+      <graphic fileref="ui/SparqlOAuth1.png"/>
+    </figure>
+</listitem>
+<listitem>In the shown form:
+<orderedlist>
+<listitem>Enter user name for ex. test1, password and confirm password </listitem>
+<listitem>Check "Allow DAV Logins" </listitem>
+<listitem>Check "Allow SQL/ODBC Logins" </listitem>
+<listitem>Add Role "SPARQL_UPDATE" from the list of available Roles to the "Selected" box.
+<figure id="sparqloauthendpoint2" float="1">
+      <title>Conductor UI</title>
+      <graphic fileref="ui/SparqlOAuth2.png"/>
+    </figure>
+</listitem>
+</orderedlist>
+</listitem>
+<listitem>Click the "Save" button. </listitem>
+<listitem>As result the user test1 will be created.
+<figure id="sparqloauthendpoint3" float="1">
+      <title>Conductor UI</title>
+      <graphic fileref="ui/SparqlOAuth3.png"/>
+    </figure>
+</listitem>
+</orderedlist>
+</listitem>
+<listitem>Go to http://cname:port/policy_manager/
+<figure id="sparqloauthendpoint4" float="1">
+      <title>OAuth UI</title>
+      <graphic fileref="ui/SparqlOAuth4.png"/>
+    </figure>
+</listitem>
+<listitem>Click the "OAuth keys" link</listitem>
+<listitem>Log in as user test1
+<figure id="sparqloauthendpoint5" float="1">
+      <title>OAuth UI</title>
+      <graphic fileref="ui/SparqlOAuth5.png"/>
+    </figure>
+</listitem>
+<listitem>As result will be shown the OAuth application registration form.
+<figure id="sparqloauthendpoint6" float="1">
+      <title>OAuth UI</title>
+      <graphic fileref="ui/SparqlOAuth6.png"/>
+    </figure>
+</listitem>
+<listitem>Generate key for SPARQL by selecting it from the list of "Application name" and click the "Generate Keys" button.</listitem>
+<listitem>As result for SPARQL will be generated Consumer Key for ex.:
+<programlisting><![CDATA[
+cf92411e17f59960a4189451bfb5bf6b92c856e3
+]]></programlisting>
+<figure id="sparqloauthendpoint7" float="1">
+      <title>OAuth UI</title>
+      <graphic fileref="ui/SparqlOAuth7.png"/>
+    </figure>
+</listitem>
+<listitem>Click the "Back to main menu" link.</listitem>
+<listitem>Click the "Protected SPARQL Endpoint" link.</listitem>
+<listitem>As result will be shown the OpenLink Virtuoso SPARQL Query form.
+<figure id="sparqloauthendpoint8" float="1">
+      <title>OAuth UI</title>
+      <graphic fileref="ui/SparqlOAuth8.png"/>
+    </figure>
+</listitem>
+<listitem>Enter for Default Graph URI this:
+<programlisting><![CDATA[
+http://myopenlink.net/dataspace/person/kidehen#this
+]]></programlisting>
+</listitem>
+<listitem>Enter for "OAuth token" field the value:
+<programlisting><![CDATA[
+cf92411e17f59960a4189451bfb5bf6b92c856e3
+]]></programlisting>
+<figure id="sparqloauthendpoint9" float="1">
+      <title>OAuth UI</title>
+      <graphic fileref="ui/SparqlOAuth9.png"/>
+    </figure>
+</listitem>
+<listitem>Click the "Run Query" button.</listitem>
+<listitem>In the shown OAuth Authorization Service form enter the password for user test1 and click the "Login" button.
+<figure id="sparqloauthendpoint10" float="1">
+      <title>OAuth UI</title>
+      <graphic fileref="ui/SparqlOAuth10.png"/>
+    </figure>
+</listitem>
+<listitem>In the shown form click the "Authorize" button.
+<figure id="sparqloauthendpoint11" float="1">
+      <title>OAuth UI</title>
+      <graphic fileref="ui/SparqlOAuth11.png"/>
+    </figure>
+</listitem>
+<listitem>As results will be shown the found results:
+<figure id="sparqloauthendpoint12" float="1">
+      <title>OAuth UI</title>
+      <graphic fileref="ui/SparqlOAuth12.png"/>
+    </figure>
+</listitem>
+</orderedlist>
+</sect4>
+<sect4 id="sparqloauthendpointfoafssl"><title>FOAF+SSL ACLs</title>
+<para>FOAF+SSL is implementation of a conceptual authentication and authorization protocol that
+links a Web ID to a public key to create a global, decentralized/distributed, and open yet secure
+authentication system that functions with existing browsers.</para>
+<para>The FOAF+SSL ACLs UI is accessible from the URL http://cname:port/policy_manager
+and then click the link FOAF+SSL ACLs.</para>
+  <figure id="sparqloauthendpoint1" float="1">
+    <title>FOAFSSL</title>
+    <graphic fileref="ui/SparqlOAuth4.png"/>
+  </figure>
+<para>Note: You need to log in as dba user</para>
+<para>In order to access the FOAF+SSL UI should be downloaded and installed the
+policy_manager_dav.vad package.</para>
+<para>The purpose of setting FOAF+SSL ACLs is with a proper FOAF+SSL Certificate and with proper set
+Web ID to view the results at the Virtuoso SPARQL-SSL endpoint and perform Secure SPARQL Queries.</para>
+<para>The SPARQL-SSL Endpoint is https://cname:port/sparql-ssl</para>
+<para>Here is a sample scenario:</para>
+<orderedlist>
+<listitem>Install the ods_framework_dav.vad, conductor_dav.vad and policy_manager_dav.vad packages.</listitem>
+<listitem>Using the ODS UI register ODS user for ex. demo.</listitem>
+<listitem>Go to http://cname:port/policy_manager/
+<figure id="sparqloauthendpoint4" float="1">
+      <title>FOAFSSL UI</title>
+      <graphic fileref="ui/SparqlOAuth4.png"/>
+    </figure>
+</listitem>
+<listitem>Click the "FOAF+ACLs" link</listitem>
+<listitem>Log in as dba user
+<figure id="sparqloauthendpoint5" float="1">
+      <title>FOAFSSL UI</title>
+      <graphic fileref="ui/SparqlFOAFSSL1.png.png"/>
+    </figure>
+</listitem>
+<listitem>As result will be shown the FOAF+SSL ACLs manage form.
+<figure id="sparqloauthendpoint6" float="1">
+      <title>FOAFSSL UI</title>
+      <graphic fileref="ui/SparqlFOAFSSL2.png"/>
+    </figure>
+</listitem>
+<listitem>Enter for Web ID for ex.:
+<programlisting><![CDATA[
+http://demo.openlinksw.com/dataspace/person/demo#this
+]]></programlisting>
+<para>you can also click the "Browse" button and select user from the shown list.
+As result its Web ID will be automatically generated.</para></listitem>
+<listitem>Select "SPARQL Role" for ex. "Sponge".
+<figure id="sparqloauthendpoint7" float="1">
+      <title>FOAFSSL UI</title>
+      <graphic fileref="ui/SparqlFOAFSSL3.png"/>
+    </figure>
+</listitem>
+<listitem>Click the "Register" button.</listitem>
+<listitem>As result the FOAF+SSL ACLs will be created.
+<figure id="sparqloauthendpoint7" float="1">
+      <title>FOAFSSL UI</title>
+      <graphic fileref="ui/SparqlFOAFSSL4.png"/>
+    </figure>
+</listitem>
+<listitem>Go to the SPARQL+SSL endpoint https://cname:port/sparql-ssl</listitem>
+<listitem>Select the user's certificate
+<figure id="sparqloauthendpoint7" float="1">
+      <title>FOAFSSL UI</title>
+      <graphic fileref="ui/SparqlFOAFSSL5.png"/>
+    </figure>
+</listitem>
+<listitem>As result the SPARQL Query UI will be shown:
+<figure id="sparqloauthendpoint9" float="1">
+      <title>FOAFSSL UI</title>
+      <graphic fileref="ui/SparqlFOAFSSL6.png"/>
+    </figure>
+</listitem>
+</orderedlist>
+</sect4>
 </sect3>
 
 <sect3 id="rdfsupportedrequestmethodsofprotocol"><title>Request Methods</title>
@@ -1297,120 +1553,6 @@ etc ...
 <rdf:Description rdf:about="http://www.openlinksw.com/schemas/virtini#SPARQL"><ns0pred:PingService xmlns:ns0pred="http://www.openlinksw.com/schemas/virtini#">http://rpc.pingthesemanticweb.com/</ns0pred:PingService></rdf:Description>
 </rdf:RDF>
 ]]></programlisting>
-</sect3>
-<sect3 id="sparqloauthendpoint"><title>SPARQL OAuth Endpoint</title>
-<para>OAuth provides a secure data transmmission level mechanism for your SPARQL endpoint.
-It enables you to securely interact with your RDF database from a variety of locations. It also
-allows you to provide controlled access to private data to select user profiles.</para>
-<para>Virtuoso OAuth server can be installed by installing the oauth_dav.vad package and
-the OAuth UI is accessible from the URL http://cname:port/oauth</para>
-<para>The user must have SQL privileges in order to run secured SPARQL statements.</para>
-<para>Here is a sample scenario:</para>
-<orderedlist>
-<listitem>Install the conductor_dav.vad and oauth_dav.vad packages. </listitem>
-<listitem>From the Conductor UI create user test1 by setting SQL and DAV login enable. Also set SPARQL_UPDATE role to it:
-<orderedlist>
-<listitem>Go to http://cname:port/conductor </listitem>
-<listitem>Log in as dba user</listitem>
-<listitem>Go to System Admin->User Account and click the "Create New Account" link
-<figure id="sparqloauthendpoint1" float="1">
-      <title>Conductor UI</title>
-      <graphic fileref="ui/SparqlOAuth1.png"/>
-    </figure>
-</listitem>
-<listitem>In the shown form:
-<orderedlist>
-<listitem>Enter user name for ex. test1, password and confirm password </listitem>
-<listitem>Check "Allow DAV Logins" </listitem>
-<listitem>Check "Allow SQL/ODBC Logins" </listitem>
-<listitem>Add Role "SPARQL_UPDATE" from the list of available Roles to the "Selected" box.
-<figure id="sparqloauthendpoint2" float="1">
-      <title>Conductor UI</title>
-      <graphic fileref="ui/SparqlOAuth2.png"/>
-    </figure>
-</listitem>
-</orderedlist>
-</listitem>
-<listitem>Click the "Save" button. </listitem>
-<listitem>As result the user test1 will be created.
-<figure id="sparqloauthendpoint3" float="1">
-      <title>Conductor UI</title>
-      <graphic fileref="ui/SparqlOAuth3.png"/>
-    </figure>
-</listitem>
-</orderedlist>
-</listitem>
-<listitem>Go to http://cname:port/oauth/
-<figure id="sparqloauthendpoint4" float="1">
-      <title>OAuth UI</title>
-      <graphic fileref="ui/SparqlOAuth4.png"/>
-    </figure>
-</listitem>
-<listitem>Click the "OAuth keys" link</listitem>
-<listitem>Log in as user test1
-<figure id="sparqloauthendpoint5" float="1">
-      <title>OAuth UI</title>
-      <graphic fileref="ui/SparqlOAuth5.png"/>
-    </figure>
-</listitem>
-<listitem>As result will be shown the OAuth application registration form.
-<figure id="sparqloauthendpoint6" float="1">
-      <title>OAuth UI</title>
-      <graphic fileref="ui/SparqlOAuth6.png"/>
-    </figure>
-</listitem>
-<listitem>Generate key for SPARQL by selecting it from the list of "Application name" and click the "Generate Keys" button.</listitem>
-<listitem>As result for SPARQL will be generated Consumer Key for ex.:
-<programlisting><![CDATA[
-cf92411e17f59960a4189451bfb5bf6b92c856e3
-]]></programlisting>
-<figure id="sparqloauthendpoint7" float="1">
-      <title>OAuth UI</title>
-      <graphic fileref="ui/SparqlOAuth7.png"/>
-    </figure>
-</listitem>
-<listitem>Click the "Back to main menu" link.</listitem>
-<listitem>Click the "Protected SPARQL Endpoint" link.</listitem>
-<listitem>As result will be shown the OpenLink Virtuoso SPARQL Query form.
-<figure id="sparqloauthendpoint8" float="1">
-      <title>OAuth UI</title>
-      <graphic fileref="ui/SparqlOAuth8.png"/>
-    </figure>
-</listitem>
-<listitem>Enter for Default Graph URI this:
-<programlisting><![CDATA[
-http://myopenlink.net/dataspace/person/kidehen#this
-]]></programlisting>
-</listitem>
-<listitem>Enter for "OAuth token" field the value:
-<programlisting><![CDATA[
-cf92411e17f59960a4189451bfb5bf6b92c856e3
-]]></programlisting>
-<figure id="sparqloauthendpoint9" float="1">
-      <title>OAuth UI</title>
-      <graphic fileref="ui/SparqlOAuth9.png"/>
-    </figure>
-</listitem>
-<listitem>Click the "Run Query" button.</listitem>
-<listitem>In the shown OAuth Authorization Service form enter the password for user test1 and click the "Login" button.
-<figure id="sparqloauthendpoint10" float="1">
-      <title>OAuth UI</title>
-      <graphic fileref="ui/SparqlOAuth10.png"/>
-    </figure>
-</listitem>
-<listitem>In the shown form click the "Authorize" button.
-<figure id="sparqloauthendpoint11" float="1">
-      <title>OAuth UI</title>
-      <graphic fileref="ui/SparqlOAuth11.png"/>
-    </figure>
-</listitem>
-<listitem>As results will be shown the found results:
-<figure id="sparqloauthendpoint12" float="1">
-      <title>OAuth UI</title>
-      <graphic fileref="ui/SparqlOAuth12.png"/>
-    </figure>
-</listitem>
-</orderedlist>
 </sect3>
 <sect3 id="sparqlexcel"><title>SPARQL Endpoint with Excel mime-type output option</title>
 <para>The SPARQL Endpoint offers an Excel mime-type output option.</para>
@@ -3351,40 +3493,6 @@ _______________________________________________________________________________
 
 ]]></programlisting>
 </sect2>
-
-<sect2 id="rdfsparqlsecurity"><title>Security</title>
-<para>In the current Virtuoso release the /sparql endpoint runs as the virtuoso "SPARQL" user which may
-have "SPARQL_SELECT" or "SPARQL_UPDATE" roles granted. By default this user has "SPARQL_SELECT" for
-security reasons to prevent inadvertent or otherwise updates/deletes on the Quad store. The "SPARQL_UPDATE"
-role needs to be set for allow updates to the QUAD store which is a requirement for the Virtuoso sponger
-services to be functional ie able to update the Quad store. In the Virtuoso 5.0.7 release tere is be a
-new "SPARQL_SPONGE" role which can be assigned to specifically allow the sponger services to update the
-Quad Store but not the SPARQL user via the endpoint.</para>
-<para>Restricting a users access to specific graphs can be done using Virtuoso row-level security
-functionality. This can be done using the Virtuoso Data access methods ODBC, JDBC, ADO.Net or PL code.</para>
-<para>For example one could do something as is done for the OpenLink Data Space (ODS) application users:</para>
-<programlisting><![CDATA[
-DB.DBA.TABLE_DROP_POLICY ('DB.DBA.RDF_QUAD', 'S');
-
-create procedure DB.DBA.RDF_POLICY (in tb varchar, in op varchar)
-{
- declare chost, ret varchar;
- chost := DB.DBA.WA_CNAME ();  ret := sprintf ('(ID_TO_IRI (G) NOT LIKE \'http://%s/dataspace/%%/private#\' ' ||
- 'OR G = IRI_TO_ID (sprintf (\'http://%s/dataspace/%%U/private#\', USER)))', chost, chost);
- return ret;
-}
-;
-
-grant execute on DB.DBA.RDF_POLICY to public;
-
-DB.DBA.TABLE_SET_POLICY ('DB.DBA.RDF_QUAD', 'DB.DBA.RDF_POLICY', 'S');
-
-where DB.DBA.WA_CNAME () is a function in ODS to return default host name.
-
-]]></programlisting>
-<para>This would restrict the defined 'user' to the graph http://cname/dataspace/user/private#</para>
-</sect2>
-
 </sect1>
 
 

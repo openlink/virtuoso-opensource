@@ -35,7 +35,19 @@
       <para>target graph IRI, parsed triples will appear in that graph.</para>
     </refsect2>
     <refsect2><title>flags</title>
-      <para>bitmask of flags that permit some sorts of syntax errors in resource, use 0.</para>
+      <para>bitmask of parsing flags. Permits some sorts of syntax errors in resource.
+Default is 0, meaning no permitted deviations from the spec. Other supported bits are:</para>
+<programlisting><![CDATA[
+  1 - Single quoted and double quoted strings may with newlines.
+  2 - Allows bnode predicates (but SPARQL processor may ignore them!).
+  4 - Allows variables, but triples with variables are ignored.
+  8 - Allows literal subjects, but triples with them are ignored.
+ 16 - Allows '/', '#', '%' and '+' in local part of QName ("Qname with path")
+ 32 - Allows invalid symbols between '<' and '>', i.e. in relative IRIs.
+ 64 - Relax TURTLE syntax to include popular violations.
+128 - Try to recover from lexical errors as much as it is possible.
+256 - Allows TriG syntax, thus loading data in more than one graph.
+]]></programlisting>
     </refsect2>
   </refsect1>
   <refsect1 id="ret_ttlp"><title>Return Types</title>
@@ -72,5 +84,6 @@ SQL> ttlp (file_to_string_output ('.\tmp\data.ttl'), '', 'http://my_graph', 0);
     <para><link linkend="fn_rdf_load_rdfxml"><function>DB.DBA.RDF_LOAD_RDFXML</function></link></para>
     <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT</function></link></para>
     <para><link linkend="fn_ttlp_mt"><function>DB.DBA.TTLP_MT</function></link></para>
+    <para><link linkend="fn_ttlp_mt_local_file"><function>DB.DBA.TTLP_MT_LOCAL_FILE</function></link></para>
   </refsect1>
 </refentry>
