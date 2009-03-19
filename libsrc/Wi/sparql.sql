@@ -3847,15 +3847,18 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_INIT (inout _env any)
 ;
 
 --!AWK PUBLIC
-create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in vars any, in stats any, in dict_limit integer)
+create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in vars any, in stats any, in use_dict_limit integer)
 {
   declare triple_ctr integer;
   declare blank_ids any;
   if (214 <> __tag(_env))
     {
-      _env := dict_new (31, dict_limit);
+      if (use_dict_limit)
+        _env := dict_new (31, sys_stat ('sparql_result_set_max_rows'), sys_stat ('sparql_max_mem_in_use'));
+      else
+        _env := dict_new (31);
       if (0 < length (stats))
-        DB.DBA.SPARQL_CONSTRUCT_ACC (_env, stats, vector(), vector(), dict_limit);
+        DB.DBA.SPARQL_CONSTRUCT_ACC (_env, stats, vector(), vector(), use_dict_limit);
     }
   blank_ids := 0;
   for (triple_ctr := length (opcodes) - 1; triple_ctr >= 0; triple_ctr := triple_ctr-1)
@@ -3929,7 +3932,7 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_FIN (inout _env any)
 ;
 
 --!AWK PUBLIC
-create aggregate DB.DBA.SPARQL_CONSTRUCT (in opcodes any, in vars any, in stats any, in dict_limit integer) returns any
+create aggregate DB.DBA.SPARQL_CONSTRUCT (in opcodes any, in vars any, in stats any, in use_dict_limit integer) returns any
 from DB.DBA.SPARQL_CONSTRUCT_INIT, DB.DBA.SPARQL_CONSTRUCT_ACC, DB.DBA.SPARQL_CONSTRUCT_FIN
 ;
 
@@ -3945,7 +3948,7 @@ create procedure DB.DBA.SPARQL_DESC_AGG_ACC (inout _env any, in vars any)
   declare blank_ids any;
   if (214 <> __tag(_env))
     {
-      _env := dict_new (31, sys_stat ('sparql_result_set_max_rows'));
+      _env := dict_new (31, sys_stat ('sparql_result_set_max_rows'), sys_stat ('sparql_max_mem_in_use'));
     }
   for (var_ctr := length (vars) - 1; var_ctr >= 0; var_ctr := var_ctr - 1)
     {

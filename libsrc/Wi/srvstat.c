@@ -267,7 +267,8 @@ long fe_replication_support = 1;
 long fe_replication_support = 0;
 #endif
 
-long sparql_result_set_max_rows = 1000;
+long sparql_result_set_max_rows = 0;
+long sparql_max_mem_in_use = 0;
 
 static long thr_cli_running;
 static long thr_cli_waiting;
@@ -1341,6 +1342,7 @@ stat_desc_t stat_descs [] =
 
     /* sparql vars */
     {"sparql_result_set_max_rows", &sparql_result_set_max_rows, NULL},
+    {"sparql_max_mem_in_use", &sparql_max_mem_in_use, NULL},
 
     {NULL, NULL, NULL}
 };

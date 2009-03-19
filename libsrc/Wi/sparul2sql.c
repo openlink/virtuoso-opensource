@@ -248,7 +248,7 @@ sparp_gp_trav_ctor_var_to_limofs_aref (sparp_t *sparp, SPART *curr, sparp_trav_s
 
 void
 spar_compose_retvals_of_ctor (sparp_t *sparp, SPART *ctor_gp, const char *funname, SPART *arg0, SPART *arglast, SPART ***retvals, ctor_var_enumerator_t *cve,
-  const char *formatter, const char *agg_formatter, const char *agg_mdata, SPART *dict_limit_expn )
+  const char *formatter, const char *agg_formatter, const char *agg_mdata, int use_limits )
 {
   int triple_ctr, fld_ctr, var_ctr;
   dk_set_t bnode_iter;
@@ -339,7 +339,7 @@ bnode_found_or_added:
       (SPART **)t_list (4, arg0, arg1, var_vector_arg, arg3) );
   else
     ctor_call = spar_make_funcall (sparp, 0, funname,
-      (SPART **)t_list (4, arg1, var_vector_arg, arg3, dict_limit_expn) );
+      (SPART **)t_list (4, arg1, var_vector_arg, arg3, t_box_num (use_limits)) );
   if (cve->cve_limofs_var_alias)
     {
       SPART *alias = spartlist (sparp, 4, SPAR_ALIAS, var_vector_expn, cve->cve_limofs_var_alias, SSG_VALMODE_AUTO);
@@ -355,7 +355,7 @@ void
 spar_compose_retvals_of_construct (sparp_t *sparp, SPART *top, SPART *ctor_gp,
   const char *formatter, const char *agg_formatter, const char *agg_mdata )
 {
-  SPART *dict_limit_expn = NULL;
+  int use_limits = 0;
   int need_limofs_trick = CTOR_NEEDS_LIMOFS_TRICK(top);
   ctor_var_enumerator_t cve;
   memset (&cve, 0, sizeof (ctor_var_enumerator_t));
@@ -367,10 +367,9 @@ spar_compose_retvals_of_construct (sparp_t *sparp, SPART *top, SPART *ctor_gp,
     }
   if ((NULL == sparp->sparp_env->spare_storage_name) ||
     ('\0' != sparp->sparp_env->spare_storage_name) )
-    dict_limit_expn = spar_make_funcall (sparp, 0, "bif:sys_stat",
-      t_list (1, spartlist (sparp, 4, SPAR_LIT, t_box_dv_short_string ("sparql_result_set_max_rows"), NULL, NULL)) );
+    use_limits = 1;
   spar_compose_retvals_of_ctor (sparp, ctor_gp, "sql:SPARQL_CONSTRUCT", NULL, NULL,
-    &(top->_.req_top.retvals), &cve, formatter, agg_formatter, agg_mdata, dict_limit_expn );
+    &(top->_.req_top.retvals), &cve, formatter, agg_formatter, agg_mdata, use_limits );
   
 }
 
@@ -406,7 +405,7 @@ spar_compose_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top, SPART *gra
       cve.cve_limofs_var_alias = t_box_dv_short_string ("ctor-1");
     }
   spar_compose_retvals_of_ctor (sparp, ctor_gp, "sql:SPARQL_CONSTRUCT", NULL, NULL,
-    &(top->_.req_top.retvals), &cve, NULL, NULL, NULL, NULL );
+    &(top->_.req_top.retvals), &cve, NULL, NULL, NULL, 0 );
   rv = top->_.req_top.retvals;
   if (INSERT_L != top->_.req_top.subtype)
     cve.cve_bnodes_are_prohibited = 1;
@@ -470,11 +469,11 @@ spar_compose_retvals_of_modify (sparp_t *sparp, SPART *top, SPART *graph_to_patc
     }
   cve.cve_bnodes_are_prohibited = 1;
   spar_compose_retvals_of_ctor (sparp, del_ctor_gp, "sql:SPARQL_CONSTRUCT", NULL, NULL,
-    &(top->_.req_top.retvals), &cve, NULL, NULL, NULL, NULL );
+    &(top->_.req_top.retvals), &cve, NULL, NULL, NULL, 0 );
   cve.cve_limofs_var_alias = NULL;
   cve.cve_bnodes_are_prohibited = 0;
   spar_compose_retvals_of_ctor (sparp, ins_ctor_gp, "sql:SPARQL_CONSTRUCT", NULL, NULL,
-    &ins, &cve, NULL, NULL, NULL, NULL );
+    &ins, &cve, NULL, NULL, NULL, 0 );
   rv = top->_.req_top.retvals;
 
   if (NULL != sparp->sparp_env->spare_output_route_name)

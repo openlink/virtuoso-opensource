@@ -428,7 +428,9 @@ int32 c_temp_db_size = 0;
 int32 c_dbev_enable = 1;
 
 extern long sparql_result_set_max_rows;
+extern long sparql_max_mem_in_use;
 int32 c_sparql_result_set_max_rows = 0;
+int32 c_sparql_max_mem_in_use = 0;
 
 /* for use in bif_servers */
 int
@@ -1285,7 +1287,9 @@ cfg_setup (void)
 
   section = "SPARQL";
   if (cfg_getlong (pconfig, section, "ResultSetMaxRows", &c_sparql_result_set_max_rows) == -1)
-    c_sparql_result_set_max_rows = 1000;
+    c_sparql_result_set_max_rows = 0;
+  if (cfg_getlong (pconfig, section, "MaxMemInUse", &c_sparql_max_mem_in_use) == -1)
+    c_sparql_max_mem_in_use = 0;
 
   /* Now open the HTTP log */
   if (http_log_file)
@@ -1692,6 +1696,7 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
     }
   uriqa_dynamic_local = c_uriqa_dynamic_local;
   sparql_result_set_max_rows = c_sparql_result_set_max_rows;
+  sparql_max_mem_in_use = c_sparql_max_mem_in_use;
   cli_encryption_on_password = c_cli_encryption_on_password;
 
   i18n_wide_file_names = c_i18n_wide_file_names;
