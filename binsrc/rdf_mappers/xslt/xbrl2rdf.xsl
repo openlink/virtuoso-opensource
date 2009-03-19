@@ -140,7 +140,7 @@
 		<xsl:variable name="label" select="concat($ns, $canonicalname)" />
 		<xsl:variable name="dt" />
 		<xsl:if test="$canonicalname">
-			<sioc:Item rdf:about="{$label}">
+			<!--sioc:Item rdf:about="{$label}">
 				<sioc:has_container rdf:resource="{concat('#', $contextRef)}"/>
        				<xsl:if test="string-length($ontology_class) &gt; 0">
        				<rdf:type>
@@ -149,7 +149,7 @@
 					</xsl:attribute>
        				</rdf:type>					
        				</xsl:if>
-			</sioc:Item>
+			</sioc:Item-->
 			<rdf:Description rdf:ID="{$contextRef}">
 				<xsl:element namespace="{$ns}" name="{$canonicalname}">
 					<xsl:attribute name="rdf:type">

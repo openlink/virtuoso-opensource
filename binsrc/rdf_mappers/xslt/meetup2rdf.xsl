@@ -47,6 +47,10 @@
 	<xsl:param name="baseUri" />
 	<xsl:param name="base" />
 	<xsl:param name="what" />
+
+    <xsl:variable name="uc">ABCDEFGHIJKLMNOPQRSTUVWXYZ </xsl:variable>
+    <xsl:variable name="lc">abcdefghijklmnopqrstuvwxyz_</xsl:variable>
+	
 	<xsl:template match="/">
 		<rdf:RDF>
 			<xsl:apply-templates select="results/items" />
@@ -103,14 +107,14 @@
 					<dc:description>
 						<xsl:value-of select="comment"/>
 					</dc:description>
-					<vcard:Region rdf:resource="{vi:dbpIRI ('', translate (state, ' ', '_'))}"/>
+					<vcard:Region rdf:resource="{vi:dbpIRI ('', translate (state, $lc, $uc))}"/>
 					<vcard:Region>
 						<xsl:value-of select="state" />
 					</vcard:Region>
 					<vcard:Pcode>
 						<xsl:value-of select="zip" />
 					</vcard:Pcode>
-					<vcard:Country rdf:resource="{vi:dbpIRI ('', translate (country, ' ', '_'))}"/>
+					<vcard:Country rdf:resource="{vi:dbpIRI ('', translate (country, $lc, $uc))}"/>
 					<vcard:Country>
 						<xsl:value-of select="country" />
 					</vcard:Country>
@@ -174,7 +178,7 @@
 							<vcard:Region>
 								<xsl:value-of select="state" />
 							</vcard:Region>
-							<vcard:Region rdf:resource="{vi:dbpIRI ('', translate (state, ' ', '_'))}"/>
+							<vcard:Region rdf:resource="{vi:dbpIRI ('', translate (state, $lc, $uc))}"/>
 							<vcard:Pcode>
 								<xsl:value-of select="zip" />
 							</vcard:Pcode>
@@ -185,7 +189,7 @@
 							<vcard:Country>
 								<xsl:value-of select="country" />
 							</vcard:Country>
-							<vcard:Country rdf:resource="{vi:dbpIRI ('', translate (country, ' ', '_'))}"/>
+							<vcard:Country rdf:resource="{vi:dbpIRI ('', translate (country, $lc, $uc))}"/>
 							<xsl:if test="photo_url != ''">
 								<foaf:depiction rdf:resource="{photo_url}" />
 							</xsl:if>
@@ -236,7 +240,7 @@
 							<vcard:Region>
 								<xsl:value-of select="state" />
 							</vcard:Region>
-							<vcard:Region rdf:resource="{vi:dbpIRI ('', translate (state, ' ', '_'))}"/>
+							<vcard:Region rdf:resource="{vi:dbpIRI ('', translate (state, $lc, $uc))}"/>
 							<vcard:Pcode>
 								<xsl:value-of select="zip" />
 							</vcard:Pcode>
@@ -247,7 +251,7 @@
 							<vcard:Country>
 								<xsl:value-of select="country" />
 							</vcard:Country>
-							<vcard:Country rdf:resource="{vi:dbpIRI ('', translate (country, ' ', '_'))}"/>
+							<vcard:Country rdf:resource="{vi:dbpIRI ('', translate (country, $lc, $uc))}"/>
 							<xsl:if test="photo_url != ''">
 								<foaf:depiction rdf:resource="{photo_url}" />
 							</xsl:if>
