@@ -31,9 +31,17 @@ create procedure calendar_event_iri_internal (
   declare _member, _inst varchar;
   declare exit handler for not found { return null; };
 
-  select U_NAME, WAI_NAME into _member, _inst
-    from DB.DBA.SYS_USERS, DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER
-   where WAI_ID = domain_id and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = U_ID;
+  select U_NAME,
+         WAI_NAME
+    into _member,
+         _inst
+    from DB.DBA.SYS_USERS,
+         DB.DBA.WA_INSTANCE,
+         DB.DBA.WA_MEMBER
+   where WAI_ID = domain_id
+     and WAI_NAME = WAM_INST
+     and WAM_MEMBER_TYPE = 1
+     and WAM_USER = U_ID;
 
   kind := coalesce ((select E_KIND from CAL.WA.EVENTS where E_ID = event_id), 0);
   return sprintf ('http://%s%s/%U/calendar/%U/%s/%d', get_cname(), get_base_path (), _member, _inst, case when (kind = 0) then 'Event' else 'Task' end, event_id);
@@ -295,14 +303,17 @@ create procedure event_insert (
   };
 
   if (isnull (graph_iri))
-    for (select WAI_ID, WAM_USER, WAI_NAME
+    for (select WAI_ID,
+                WAI_IS_PUBLIC,
+                WAM_USER,
+                WAI_NAME
            from DB.DBA.WA_INSTANCE,
                 DB.DBA.WA_MEMBER
           where WAI_ID = domain_id
-            and WAM_INST = WAI_NAME
-            and WAI_IS_PUBLIC = 1) do
+            and WAI_IS_PUBLIC > 0
+            and WAM_INST = WAI_NAME) do
     {
-      graph_iri := get_graph ();
+      graph_iri := get_graph_ext (WAI_IS_PUBLIC);
       c_iri := calendar_iri (WAI_NAME);
       creator_iri := user_iri (WAM_USER);
     }
@@ -390,7 +401,7 @@ create procedure event_delete (
     return;
   };
 
-  graph_iri := get_graph ();
+  graph_iri := get_graph_ext (CAL.WA.domain_is_public (domain_id));
   iri := calendar_event_iri (domain_id, event_id);
   scot_tags_delete (domain_id, iri, tags);
   delete_quad_s_or_o (graph_iri, iri, iri);
@@ -497,14 +508,17 @@ create procedure calendar_comment_insert (
 
   master_id := cast (master_id as integer);
 	if (isnull (graph_iri))
-		for (select WAI_ID, WAM_USER, WAI_NAME
+		for (select WAI_ID,
+                WAI_IS_PUBLIC,
+		            WAM_USER,
+		            WAI_NAME
 					 from DB.DBA.WA_INSTANCE,
 								DB.DBA.WA_MEMBER
 					where WAI_ID = domain_id
-						and WAM_INST = WAI_NAME
-						and WAI_IS_PUBLIC = 1) do
+            and WAI_IS_PUBLIC > 0
+            and WAM_INST = WAI_NAME) do
 		{
-			graph_iri := get_graph ();
+      graph_iri := get_graph_ext (WAI_IS_PUBLIC);
       forum_iri := calendar_iri (WAI_NAME);
 		}
 
@@ -539,7 +553,7 @@ create procedure calendar_comment_delete (
   declare iri varchar;
 
   iri := calendar_comment_iri (domain_id, item_id, id);
-  delete_quad_s_or_o (get_graph (), iri, iri);
+  delete_quad_s_or_o (get_graph_ext (CAL.WA.domain_is_public (domain_id)), iri, iri);
 }
 ;
 
@@ -618,14 +632,17 @@ create procedure cal_annotation_insert (
   };
 
   if (isnull (graph_iri))
-    for (select WAI_ID, WAM_USER, WAI_NAME
+    for (select WAI_ID,
+                WAI_IS_PUBLIC,
+                WAM_USER,
+                WAI_NAME
            from DB.DBA.WA_INSTANCE,
                 DB.DBA.WA_MEMBER
           where WAI_ID = domain_id
-            and WAM_INST = WAI_NAME
-            and WAI_IS_PUBLIC = 1) do
+            and WAI_IS_PUBLIC > 0
+            and WAM_INST = WAI_NAME) do
     {
-      graph_iri := get_graph ();
+      graph_iri := get_graph_ext (WAI_IS_PUBLIC);
     }
 
   if (not isnull (graph_iri))
@@ -661,7 +678,7 @@ create procedure cal_annotation_delete (
     return;
   };
 
-  graph_iri := get_graph ();
+  graph_iri := get_graph_ext (CAL.WA.domain_is_public (domain_id));
   annotattion_iri := calendar_annotation_iri (domain_id, master_id, annotation_id);
   delete_quad_s_or_o (graph_iri, annotattion_iri, annotattion_iri);
 

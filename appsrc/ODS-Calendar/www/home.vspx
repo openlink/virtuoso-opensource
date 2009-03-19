@@ -159,9 +159,7 @@
         wCount := wCount + 1;
       if (mLastday - 28 - (7 - wStart) > 0)
         wCount := wCount + 1;
-      mStart := 1;
-      if (wCount = 6 )
-        mStart := 0;
+      mStart := case when (wCount = 6 ) then 0 else 1 end;
       dStart := mStart * 7 + wStart - 1;
 
       cDays := make_array (49, 'any');
@@ -531,6 +529,26 @@
     ]]>
   </v:method>
 
+  <v:method name="getAcl" arglist="">
+    <![CDATA[
+      declare N integer;
+      declare tmp, suffix, params any;
+
+      params := self.vc_page.vc_event.ve_params;
+      tmp := vector ();
+      for (N := 0; N < length (params); N := N + 4)
+      {
+        if ((params [N] like 's_fld_2_%') and (trim (params [N+1]) <> ''))
+        {
+          suffix := replace (params [N], 's_fld_2_', '');
+          tmp := vector_concat (tmp, vector (vector (get_keyword ('s_fld_1_'||suffix, params, ''), get_keyword ('s_fld_2_'||suffix, params, ''), get_keyword ('s_fld_3_'||suffix, params, ''))));
+        }
+      }
+      tmp := vector_concat (vector (vector ('v1.0', length (tmp))), tmp);
+      return serialize (tmp);
+    ]]>
+  </v:method>
+
   <v:method name="initNewEvent" arglist="">
     <![CDATA[
       declare pYear, pMonth, pDay, pHour, pMinute integer;
@@ -572,6 +590,7 @@
       self.v_repeatUntil := null;
       self.v_reminder := 600;
       self.v_notes := '';
+      self.v_acl := null;
     ]]>
   </v:method>
 
@@ -601,6 +620,7 @@
       self.v_privacy := cast (self.e_privacy.ufl_value as integer);
       self.v_tags := trim (self.e_tags.ufl_value);
       self.v_notes := trim (get_keyword ('e_notes', params, ''));
+      self.v_acl := self.getAcl ();
 
       CAL.WA.test (self.v_subject, vector('name', 'Name', 'class', 'varchar', 'minLength', 0, 'maxLength', 255));
       CAL.WA.test (self.v_location, vector('name', 'Location', 'class', 'varchar', 'minLength', 0, 'maxLength', 255));
@@ -692,7 +712,7 @@
       -- reminder
       self.v_reminder := cast (trim (self.e_reminder.ufl_value) as integer);
 
-      CAL.WA.event_update (
+      self.v_id := CAL.WA.event_update (
         self.v_id,
         null,
         self.domain_id,
@@ -713,6 +733,7 @@
         self.v_reminder,
         self.v_notes
       );
+      CAL.WA.event_update_acl (self.v_id, self.v_acl);
 
       if (self.cScope = 'tasks')
         self.cScope := 'events';
@@ -735,6 +756,7 @@
       self.v_complete := 0;
       self.v_completed := null;
       self.v_notes := '';
+      self.v_acl := null;
     ]]>
   </v:method>
 
@@ -765,6 +787,7 @@
       self.v_privacy := cast (self.t_privacy.ufl_value as integer);
       self.v_tags := trim (self.t_tags.ufl_value);
       self.v_notes := trim (get_keyword ('t_notes', params, ''));
+      self.v_acl := self.getAcl ();
 
       CAL.WA.test (self.v_subject, vector('name', 'Name', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
       CAL.WA.test (self.v_tags, vector ('name', 'Tags', 'class', 'tags'));
@@ -808,7 +831,8 @@
       if (self.v_completed < self.v_eventStart)
         signal ('TEST', '''Completed date'' value should be greater then ''Start date'' value!<>');
 
-      CAL.WA.task_update (
+
+      self.v_id := CAL.WA.task_update (
         self.v_id,
         null,
         self.domain_id,
@@ -825,6 +849,7 @@
         self.v_completed,
         self.v_notes
       );
+      CAL.WA.event_update_acl (self.v_id, self.v_acl);
     ]]>
   </v:method>
 
@@ -980,6 +1005,7 @@
       <v:variable name="v_complete" type="integer" default="0"/>
       <v:variable name="v_status" type="varchar" default="''"/>
       <v:variable name="v_notes" type="varchar" default="''" />
+      <v:variable name="v_acl" type="any" default="null" />
 
       <v:variable name="vg_id" type="any" default="null" />
       <v:variable name="vg_account_id" type="varchar" default="null" />
@@ -2181,7 +2207,8 @@
                        E_REPEAT_UNTIL,
                        E_REMINDER,
                        E_TAGS,
-                       blob_to_string (E_NOTES)
+                             blob_to_string (E_NOTES),
+                             E_ACL
                   into self.v_subject,
                        self.v_description,
                        self.v_location,
@@ -2198,7 +2225,8 @@
                        self.v_repeatUntil,
                        self.v_reminder,
                        self.v_tags,
-                       self.v_notes
+                             self.v_notes,
+                             self.v_acl
                   from CAL.WA.EVENTS
                  where E_ID = self.v_id;
 
@@ -2216,9 +2244,12 @@
         </div>
         <div id="e" class="c1">
           <div class="tabs">
-            &nbsp;<vm:tabCaption tab="e" tabsCount="3" tabNo="0" caption="Main" />
-            &nbsp;<vm:tabCaption tab="e" tabsCount="3" tabNo="1" caption="Repeats" />
-            &nbsp;<vm:tabCaption tab="e" tabsCount="3" tabNo="2" caption="Notes" />
+                  &nbsp;<vm:tabCaption tab="e" tabsCount="4" tabNo="0" caption="Main" />
+                  &nbsp;<vm:tabCaption tab="e" tabsCount="4" tabNo="1" caption="Repeats" />
+                  &nbsp;<vm:tabCaption tab="e" tabsCount="4" tabNo="2" caption="Notes" />
+                  <vm:if test="CAL.WA.domain_is_public (self.domain_id) = 2">
+                    &nbsp;<vm:tabCaption tab="e" tabsCount="4" tabNo="3" caption="Access" />
+                  </vm:if>
           </div>
           <div class="contents">
             <div id="e_content_0" class="tabContent" style="display: none;">
@@ -2890,6 +2921,119 @@
                 </tr>
               </table>
             </div>
+                  <div id="e_content_3" class="tabContent" style="display: none;">
+                    <table class="form-body" cellspacing="0">
+                      <tr>
+                        <td style="width: 90%; background-color: white;">
+                          <table id="s_tbl" width="100%" cellspacing="0">
+                            <thead class="sortHeader">
+                              <tr>
+                                <th width="15%">
+                                  Type
+                                </th>
+                                <th>
+                                  Value
+                                </th>
+                                <th width="10%">
+                                  Access
+                                </th>
+                                <th width="70px">
+                                  Action
+                                </th>
+                              </tr>
+                            </thead>
+                            <?vsp
+                              declare N, M, L integer;
+                              declare acl any;
+
+                              L := 0;
+                              acl := (select WAI_ACL from DB.DBA.WA_INSTANCE where WAI_ID = self.domain_id);
+                              acl := case when isnull (acl) then vector () else deserialize (acl) end;
+                              for (N := 1; N < length (acl); N := N + 1)
+                              {
+                                L := L + 1;
+                            ?>
+                            <tr id="s_tr_<?V L ?>">
+                              <td id="s_td1_<?V L ?>" nowrap="nowrap">
+                                <b>
+                           		  <?vsp
+                         		      if (acl[N][0] = 'URI')
+                         		        http ('RDF URI');
+                         		      else if (acl[N][0] = 'Property')
+                         		        http ('RDF Property');
+                         		      else if (acl[N][0] = 'SPARQL')
+                         		        http ('SPARQL');
+                           		  ?>
+                                </b>
+                              </td>
+                              <td id="s_td2_<?V L ?>">
+                                <b>
+                                <?V acl[N][1] ?>
+                                </b>
+                              </td>
+                              <td id="s_td3_<?V L ?>">
+                                <b>
+                         		    <?vsp
+                         		      if (acl[N][2] = 'G')
+                         		        http ('Grant');
+                         		      else if (acl[N][2] = 'R')
+                         		        http ('Revoke');
+                         		    ?>
+                                </b>
+                              </td>
+                              <td>
+                                <b>
+                                Inherited
+                                </b>
+                              </td>
+                            </tr>
+                            <?vsp
+                              }
+                              acl := deserialize (self.v_acl);
+                              for (N := 1; N < length (acl); N := N + 1)
+                              {
+                                L := L + 1;
+                            ?>
+                            <tr id="s_tr_<?V L ?>">
+                              <td id="s_td1_<?V L ?>">
+                          		  <![CDATA[
+                             		  <script type="text/javascript">
+                             		  <?vsp
+                                    http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){CAL.updateRowCombo2(\'s_td1_%d\', \'s_fld_1_%d\', {value: \'%s\'});});', L, L, acl[N][0]));
+                             		  ?>
+                             		  </script>
+                           		  ]]>
+                              </td>
+                              <td id="s_td2_<?V L ?>">
+                                <input type="text" id="s_fld_2_<?V L ?>" name="s_fld_2_<?V L ?>" value="<?V acl[N][1] ?>" style="width: 95%;" class="_validate_" onblur="javascript: validateField(this);" />
+                              </td>
+                              <td id="s_td3_<?V L ?>">
+                          	    <![CDATA[
+                           		    <script type="text/javascript">
+                           		    <?vsp
+                                    http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){CAL.updateRowCombo3(\'s_td3_%d\', \'s_fld_3_%d\', {value: \'%s\'});});', L, L, acl[N][2]));
+                           		    ?>
+                           		    </script>
+                           		  ]]>
+                              </td>
+                              <td>
+                                <input type="button" value="Remove" onclick="javascript: CAL.updateRow('s', <?V L ?>);" class="button" />
+                              </td>
+                            </tr>
+                            <?vsp
+                              }
+                              M := 4;
+                              http (sprintf ('<tr id="s_tr_no" style="display: %s"><td colspan="%d"><b>No Sharings</b></td></tr>', case when L = 0 then '' else 'none' end, M));
+                            ?>
+                          </table>
+                          <input type="hidden" id="s_no" name="s_no" value="<?V L+1 ?>" />
+                        </td>
+                        <td valign="top" nowrap="1">
+                          <input type="button" value="Add" onclick="javascript: CAL.updateRow('s', null, {fld1: {mode: 2}, fld2: {}, fld3: {mode: 3}});" class="button" />
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
           </div>
         </div>
         <div class="new-form-footer">
@@ -3117,7 +3261,8 @@
                        E_PRIORITY,
                        E_STATUS,
                        E_COMPLETE,
-                       blob_to_string (E_NOTES)
+                             blob_to_string (E_NOTES),
+                             E_ACL
                   into self.v_subject,
                        self.v_description,
                              self.v_attendees_count,
@@ -3129,7 +3274,8 @@
                        self.v_priority,
                        self.v_status,
                        self.v_complete,
-                       self.v_notes
+                             self.v_notes,
+                             self.v_acl
                   from CAL.WA.EVENTS
                  where E_ID = self.v_id;
 
@@ -3147,8 +3293,11 @@
         </div>
         <div id="t" class="c1">
           <div class="tabs">
-            &nbsp;<vm:tabCaption tab="t" tabsCount="2" tabNo="0" caption="Main" />
-            &nbsp;<vm:tabCaption tab="t" tabsCount="2" tabNo="1" caption="Notes" />
+                  &nbsp;<vm:tabCaption tab="t" tabsCount="3" tabNo="0" caption="Main" />
+                  &nbsp;<vm:tabCaption tab="t" tabsCount="3" tabNo="1" caption="Notes" />
+                  <vm:if test="CAL.WA.domain_is_public (self.domain_id) = 2">
+                  &nbsp;<vm:tabCaption tab="t" tabsCount="3" tabNo="2" caption="Access" />
+                  </vm:if>
           </div>
           <div class="contents">
             <div id="t_content_0" class="tabContent" style="display: none;">
@@ -3374,6 +3523,119 @@
                 </tr>
               </table>  
             </div>
+                  <div id="t_content_2" class="tabContent" style="display: none;">
+                    <table class="form-body" cellspacing="0">
+                      <tr>
+                        <td style="width: 90%; background-color: white;">
+                          <table id="s_tbl" width="100%" cellspacing="0">
+                            <thead class="sortHeader">
+                              <tr>
+                                <th width="15%">
+                                  Type
+                                </th>
+                                <th>
+                                  Value
+                                </th>
+                                <th width="10%">
+                                  Access
+                                </th>
+                                <th width="70px">
+                                  Action
+                                </th>
+                              </tr>
+                            </thead>
+                            <?vsp
+                              declare N, M, L integer;
+                              declare acl any;
+
+                              L := 0;
+                              acl := (select WAI_ACL from DB.DBA.WA_INSTANCE where WAI_ID = self.domain_id);
+                              acl := case when isnull (acl) then vector () else deserialize (acl) end;
+                              for (N := 1; N < length (acl); N := N + 1)
+                              {
+                                L := L + 1;
+                            ?>
+                            <tr id="s_tr_<?V L ?>">
+                              <td id="s_td1_<?V L ?>" nowrap="nowrap">
+                                <b>
+                           		  <?vsp
+                         		      if (acl[N][0] = 'URI')
+                         		        http ('RDF URI');
+                         		      else if (acl[N][0] = 'Property')
+                         		        http ('RDF Property');
+                         		      else if (acl[N][0] = 'SPARQL')
+                         		        http ('SPARQL');
+                           		  ?>
+                                </b>
+                              </td>
+                              <td id="s_td2_<?V L ?>">
+                                <b>
+                                <?V acl[N][1] ?>
+                                </b>
+                              </td>
+                              <td id="s_td3_<?V L ?>">
+                                <b>
+                         		    <?vsp
+                         		      if (acl[N][2] = 'G')
+                         		        http ('Grant');
+                         		      else if (acl[N][2] = 'R')
+                         		        http ('Revoke');
+                         		    ?>
+                                </b>
+                              </td>
+                              <td>
+                                <b>
+                                Inherited
+                                </b>
+                              </td>
+                            </tr>
+                            <?vsp
+                              }
+                              acl := deserialize (self.v_acl);
+                              for (N := 1; N < length (acl); N := N + 1)
+                              {
+                                L := L + 1;
+                            ?>
+                            <tr id="s_tr_<?V L ?>">
+                              <td id="s_td1_<?V L ?>">
+                          		  <![CDATA[
+                             		  <script type="text/javascript">
+                             		  <?vsp
+                                    http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){CAL.updateRowCombo2(\'s_td1_%d\', \'s_fld_1_%d\', {value: \'%s\'});});', L, L, acl[N][0]));
+                             		  ?>
+                             		  </script>
+                           		  ]]>
+                              </td>
+                              <td id="s_td2_<?V L ?>">
+                                <input type="text" id="s_fld_2_<?V L ?>" name="s_fld_2_<?V L ?>" value="<?V acl[N][1] ?>" style="width: 95%;" class="_validate_" onblur="javascript: validateField(this);" />
+                              </td>
+                              <td id="s_td3_<?V L ?>">
+                          	    <![CDATA[
+                           		    <script type="text/javascript">
+                           		    <?vsp
+                                    http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){CAL.updateRowCombo3(\'s_td3_%d\', \'s_fld_3_%d\', {value: \'%s\'});});', L, L, acl[N][2]));
+                           		    ?>
+                           		    </script>
+                           		  ]]>
+                              </td>
+                              <td>
+                                <input type="button" value="Remove" onclick="javascript: CAL.updateRow('s', <?V L ?>);" class="button" />
+                              </td>
+                            </tr>
+                            <?vsp
+                              }
+                              M := 4;
+                              http (sprintf ('<tr id="s_tr_no" style="display: %s"><td colspan="%d"><b>No Sharings</b></td></tr>', case when L = 0 then '' else 'none' end, M));
+                            ?>
+                          </table>
+                          <input type="hidden" id="s_no" name="s_no" value="<?V L+1 ?>" />
+                        </td>
+                        <td valign="top" nowrap="1">
+                          <input type="button" value="Add" onclick="javascript: CAL.updateRow('s', null, {fld1: {mode: 2}, fld2: {}, fld3: {mode: 3}});" class="button" />
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
           </div>
         </div>
         <div class="new-form-footer">

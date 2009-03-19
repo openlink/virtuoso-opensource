@@ -1024,3 +1024,208 @@ CAL.aboutDialog = function ()
   }
   OAT.AJAX.POST("ajax.vsp", "a=about", x, {type:OAT.AJAX.TYPE_TEXT, onstart:function(){}, onerror:function(){}});
 }
+
+CAL.updateRow = function (prefix, No, optionObject)
+{
+  if (No != null)
+  {
+    OAT.Dom.unlink(prefix+'_tr_'+No);
+    var No = parseInt($(prefix+'_no').value);
+    for (var N = 0; N < No; N++)
+    {
+      if ($(prefix+'_tr_' + N))
+        return;
+    }
+    OAT.Dom.show (prefix+'_tr_no');
+  }
+  else
+  {
+    var No = parseInt($v(prefix+'_no'));
+    var tbl = $(prefix+'_tbl');
+    if (tbl)
+    {
+      options = {};
+      for (var p in optionObject) {options[p] = optionObject[p]; }
+
+      OAT.Dom.hide (prefix+'_tr_no');
+
+      var tr = OAT.Dom.create('tr');
+      tr.id = prefix+'_tr_' + No;
+      tbl.appendChild(tr);
+
+      var fldOptions = options.fld1;
+      if (fldOptions)
+      {
+        var td = OAT.Dom.create('td');
+        tr.appendChild(td);
+        CAL.updateCell (td, prefix, '_fld_1_', No, fldOptions)
+      }
+      var fldOptions = options.fld2;
+      if (fldOptions)
+      {
+        var td = OAT.Dom.create('td');
+        tr.appendChild(td);
+        CAL.updateCell (td, prefix, '_fld_2_', No, fldOptions)
+      }
+      var fldOptions = options.fld3;
+      if (fldOptions)
+      {
+        var td = OAT.Dom.create('td');
+        tr.appendChild(td);
+        CAL.updateCell (td, prefix, '_fld_3_', No, fldOptions)
+      }
+      var td = OAT.Dom.create('td');
+      tr.appendChild(td);
+ 		  var fld = OAT.Dom.create("input");
+ 		  fld.type = 'button';
+ 		  fld.value = 'Remove';
+ 		  fld.className = 'button';
+      fld.onclick = function (){CAL.updateRow(prefix, No);};
+      td.appendChild(fld);
+
+      $(prefix+'_no').value = No + 1;
+    }
+  }
+}
+
+CAL.updateCell = function (td, prefix, fldName, No, optionObject)
+{
+  fldName = prefix + fldName + No;
+  if (optionObject.mode == 1)
+  {
+	  CAL.updateRowCombo(td, fldName, optionObject);
+	}
+  else if (optionObject.mode == 2)
+  {
+	  CAL.updateRowCombo2(td, fldName, optionObject);
+  }
+  else if (optionObject.mode == 3)
+  {
+	  CAL.updateRowCombo3(td, fldName, optionObject);
+  }
+  else
+  {
+	  CAL.updateInput(td, fldName, optionObject);
+  }
+}
+
+CAL.updateInput = function (elm, fldName, fldOptions)
+{
+  var fld = OAT.Dom.create("input");
+  fld.type = 'text';
+  fld.id = fldName;
+  fld.name = fld.id;
+  if (fldOptions.value)
+    fld.value = fldOptions.value;
+  fld.className = fldOptions.className;
+  fld.onblur = fldOptions.onBlur;
+  fld.style.width = '95%';
+  var elm = $(elm);
+  elm.appendChild(fld);
+}
+
+CAL.updateRowCombo = function (elm, fldName, fldOptions)
+{
+  var cc = new OAT.Combolist([], fldOptions.value, {name: fldName});
+
+  cc.input.name = fldName;
+  cc.input.id = fldName;
+  cc.input.style.width = "90%";
+
+  var elm = $(elm);
+  elm.appendChild(cc.div);
+}
+
+CAL.updateRowComboOption = function (cc, optionName)
+{
+  cc.addOption(optionName, optionName);
+}
+
+CAL.updateRowComboOption2 = function (elm, elmValue, optionName, optionValue)
+{
+	var o = OAT.Dom.option(optionName, optionValue, elm);
+	if (elmValue == optionValue)
+	  o.selected = true;
+}
+
+CAL.updateRowCombo2 = function (elm, fldName, fldOptions)
+{
+	var cc = OAT.Dom.create("select");
+  cc.name = fldName;
+  cc.id = fldName;
+	CAL.updateRowComboOption2(cc, fldOptions.value, "RDF URI", "URI");
+  CAL.updateRowComboOption2(cc, fldOptions.value, "RDF Property", "Property");
+	CAL.updateRowComboOption2(cc, fldOptions.value, "SPARQL", "SPARQL", cc);
+
+  var elm = $(elm);
+  elm.appendChild(cc);
+}
+
+CAL.updateRowCombo3 = function (elm, fldName, fldOptions)
+{
+	var cc = OAT.Dom.create("select");
+  cc.name = fldName;
+  cc.id = fldName;
+	CAL.updateRowComboOption2 (cc, fldOptions.value, "Grant", "G");
+	CAL.updateRowComboOption2 (cc, fldOptions.value, "Revoke", "R");
+
+  var elm = $(elm);
+  elm.appendChild(cc);
+}
+
+CAL.validateError = function (fld, msg)
+{
+  alert(msg);
+  setTimeout(function(){fld.focus();}, 1);
+  return false;
+}
+
+CAL.validateMail = function (fld)
+{
+  if ((fld.value.length == 0) || (fld.value.length > 40))
+    return CAL.validateError(fld, 'E-mail address cannot be empty or longer then 40 chars');
+
+  var regex = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+  if (!regex.test(fld.value))
+    return CAL.validateError(fld, 'Invalid E-mail address');
+
+  return true;
+}
+
+CAL.validateURL = function (fld)
+{
+  var regex = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
+  if (!regex.test(fld.value))
+    return CAL.validateError(fld, 'Invalid URL address');
+
+  return true;
+}
+
+CAL.validateField = function (fld)
+{
+  if ((fld.value.length == 0) && OAT.Dom.isClass(fld, '_canEmpty_'))
+    return true;
+  if (OAT.Dom.isClass(fld, '_mail_'))
+    return CAL.validateMail(fld);
+  if (OAT.Dom.isClass(fld, '_url_'))
+    return CAL.validateURL(fld);
+  return true;
+}
+
+CAL.validateInputs = function (fld)
+{
+  var retValue = true;
+  var form = fld.form;
+  for (i = 0; i < form.elements.length; i++)
+  {
+    var fld = form.elements[i];
+    if (OAT.Dom.isClass(fld, '_validate_'))
+    {
+      retValue = CAL.validateField(fld);
+      if (!retValue)
+        return retValue;
+    }
+  }
+  return retValue;
+}
+

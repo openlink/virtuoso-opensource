@@ -251,6 +251,7 @@ CAL.WA.exec_no_error ('
                                           -- Waiting,
                                           -- Deferred
     E_COMPLETED datetime,
+    E_ACL long varchar,
     E_CREATED datetime,
     E_UPDATED datetime,
 
@@ -288,6 +289,10 @@ CAL.WA.exec_no_error (
 
 CAL.WA.exec_no_error (
   'alter table CAL.WA.EVENTS add E_ATTENDEES integer default 0', 'C', 'CAL.WA.EVENTS', 'E_ATTENDEES'
+);
+
+CAL.WA.exec_no_error (
+  'alter table CAL.WA.EVENTS add E_ACL long varchar', 'C', 'CAL.WA.EVENTS', 'E_ACL'
 );
 
 CAL.WA.exec_no_error (

@@ -3582,6 +3582,18 @@ create procedure CAL.WA.event_delete (
 
 -------------------------------------------------------------------------------
 --
+create procedure CAL.WA.event_update_acl (
+  in id integer,
+  in acl any)
+{
+  update CAL.WA.EVENTS
+     set E_ACL = acl
+   where E_ID = id;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure CAL.WA.event_permissions (
   in id integer,
   in domain_id integer,
