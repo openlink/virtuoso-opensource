@@ -1470,7 +1470,7 @@
                         http (sprintf ('<tr id="s_tr_no" style="display: %s"><td colspan="%d"><b>No Sharings</b></td></tr>', case when L = 0 then '' else 'none' end, M));
                       ?>
                     </table>
-                    <input type="hidden" id="s_no" name="s_no" value="<?V N ?>" />
+                    <input type="hidden" id="s_no" name="s_no" value="<?V L+1 ?>" />
                   </td>
                   <vm:if test="self.v_form <> 'Bookmark/View'">
                     <td valign="top" nowrap="1">

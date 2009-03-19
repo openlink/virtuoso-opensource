@@ -292,8 +292,8 @@ create procedure bookmark_domain_insert (
                 DB.DBA.WA_MEMBER,
                 DB.DBA.SYS_USERS
         where WAI_ID = domain_id
+            and WAI_IS_PUBLIC > 0
           and WAM_INST = WAI_NAME
-            and WAI_IS_PUBLIC = 1
             and U_ID = WAM_USER) do
   {
       graph_iri := get_graph_ext (WAI_IS_PUBLIC);
@@ -415,8 +415,8 @@ create procedure bmk_comment_insert (
 					 from DB.DBA.WA_INSTANCE,
 								DB.DBA.WA_MEMBER
 					where WAI_ID = domain_id
-						and WAM_INST = WAI_NAME
-						and WAI_IS_PUBLIC = 1) do
+						and WAI_IS_PUBLIC > 0
+						and WAM_INST = WAI_NAME) do
 		{
 			graph_iri := get_graph_ext (WAI_IS_PUBLIC);
       forum_iri := bmk_iri (WAI_NAME);
@@ -539,8 +539,8 @@ create procedure bmk_annotation_insert (
 					 from DB.DBA.WA_INSTANCE,
 								DB.DBA.WA_MEMBER
 					where WAI_ID = domain_id
-						and WAM_INST = WAI_NAME
-						and WAI_IS_PUBLIC = 1) do
+						and WAI_IS_PUBLIC > 0
+						and WAM_INST = WAI_NAME) do
 		{
 			graph_iri := get_graph_ext (WAI_IS_PUBLIC);
 		}
