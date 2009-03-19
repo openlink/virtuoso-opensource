@@ -6152,9 +6152,38 @@ create procedure DB.DBA.RDF_LOAD_VOID (in graph_iri varchar, in new_origin_uri v
 }
 ;
 
+create procedure DB.DBA.RDF_CREATE_DOC_IRI (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare gr, ss any;
+  declare exit handler for sqlstate '*'
+  {
+    return 0;
+  };
+  gr := iri_to_id (coalesce (dest, graph_iri));
+  if (exists (select 1 from RDF_QUAD where G = gr and S = gr))
+    {
+      dbg_obj_print (gr, 'exists');
+      return 0;
+    }
+  ss := string_output ();
+  http (sprintf ('@prefix this: <%S> \n', id_to_iri (gr)), ss);
+  http (sprintf ('@prefix foaf: <http://xmlns.com/foaf/0.1/> \n'), ss);
+  http (sprintf ('this: a foaf:Document .\n'), ss);
+  for select a.S as subj from RDF_QUAD a where a.G = gr and not exists (select 1 from RDF_QUAD b where b.G = a.G and isiri_id (b.O) and b.O = a.S) do
+    {
+      http (sprintf ('this: foaf:topic <%S> .\n', id_to_iri (subj)), ss);
+    }
+  TTLP (ss, '', coalesce (dest, graph_iri));
+  return 0;
+}
+;
+
+insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS, MC_ENABLED)
+      values ('.*', 'MIME', 'DB.DBA.RDF_CREATE_DOC_IRI', null, 'Document Links', vector (), 0);
+
 insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS, MC_ENABLED)
       values ('.*', 'MIME', 'DB.DBA.RDF_LOAD_VOID', null, 'voID Statistics', vector (), 0);
-
 
 create procedure RM_META_MAPPERS_SET_ORDER ()
 {
