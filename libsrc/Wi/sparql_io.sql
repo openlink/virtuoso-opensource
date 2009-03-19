@@ -1225,7 +1225,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
   if (('callretRDF/XML-0' = singlefield) and ('auto' = accept))
     {
       ret_mime := 'application/rdf+xml';
-      http (rset[0][0]);
+      http (rset[0][0], ses);
       goto body_complete;
     }
   if (('callretTURTLE-0' = singlefield) or ('callretTTL-0' = singlefield))
@@ -1248,7 +1248,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
           else
             ret_mime := 'text/rdf+n3';
         }
-      http (rset[0][0]);
+      http (rset[0][0], ses);
       goto body_complete;
     }
   if (strstr (accept, 'text/html') is not null)
