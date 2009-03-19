@@ -30,10 +30,17 @@ create procedure addressbook_contact_iri (
   declare _member, _inst varchar;
   declare exit handler for not found { return null; };
 
-	select U_NAME, WAI_NAME
-	  into _member, _inst
-    from DB.DBA.SYS_USERS, DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER
-   where WAI_ID = domain_id and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = U_ID;
+  select U_NAME,
+         WAI_NAME
+    into _member,
+         _inst
+    from DB.DBA.SYS_USERS,
+         DB.DBA.WA_INSTANCE,
+         DB.DBA.WA_MEMBER
+   where WAI_ID = domain_id
+     and WAI_NAME = WAM_INST
+     and WAM_MEMBER_TYPE = 1
+     and WAM_USER = U_ID;
 
   return sprintf ('http://%s%s/%U/addressbook/%U/%d', get_cname(), get_base_path (), _member, _inst, contact_id);
 }
@@ -82,10 +89,17 @@ create procedure socialnetwork_contact_iri (
   declare _member, _inst varchar;
   declare exit handler for not found { return null; };
 
-	select U_NAME, WAI_NAME
-	  into _member, _inst
-    from DB.DBA.SYS_USERS, DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER
-   where WAI_ID = domain_id and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = U_ID;
+  select U_NAME,
+         WAI_NAME
+    into _member,
+         _inst
+    from DB.DBA.SYS_USERS,
+         DB.DBA.WA_INSTANCE,
+         DB.DBA.WA_MEMBER
+   where WAI_ID = domain_id
+     and WAI_NAME = WAM_INST
+     and WAM_MEMBER_TYPE = 1
+     and WAM_USER = U_ID;
 
 	return sprintf ('http://%s%s/%U/socialnetwork/%U/%d#this', get_cname(), get_base_path (), _member, _inst, contact_id);
 }
@@ -416,7 +430,7 @@ create procedure contact_insert (
         where WAI_ID = domain_id
           and WAM_INST = WAI_NAME
             and WAM_MEMBER_TYPE = 1
-          and WAI_IS_PUBLIC = 1) do
+            and WAI_IS_PUBLIC > 0) do
   {
       graph_iri := get_graph_ext (WAI_IS_PUBLIC);
       ab_iri := addressbook_iri (WAI_NAME);
@@ -820,7 +834,7 @@ create procedure addressbook_comment_insert (
 								DB.DBA.WA_MEMBER
 					where WAI_ID = domain_id
 						and WAM_INST = WAI_NAME
-						and WAI_IS_PUBLIC = 1) do
+            and WAI_IS_PUBLIC > 0) do
 		{
       graph_iri := get_graph_ext (WAI_IS_PUBLIC);
       forum_iri := addressbook_iri (WAI_NAME);
@@ -945,7 +959,7 @@ create procedure addressbook_annotation_insert (
 								DB.DBA.WA_MEMBER
 					where WAI_ID = domain_id
 						and WAM_INST = WAI_NAME
-						and WAI_IS_PUBLIC = 1) do
+            and WAI_IS_PUBLIC > 0) do
 		{
       graph_iri := get_graph_ext (WAI_IS_PUBLIC);
 		}
