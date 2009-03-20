@@ -370,11 +370,8 @@ caddr_t DBG_NAME(box_dv_dict_hashtable) (DBG_PARAMS id_hashed_key_t buckets)
   id_hash_t *res = (id_hash_t *) DBG_NAME(dk_alloc_box) (DBG_ARGS sizeof(id_hash_t), DV_DICT_HASHTABLE);
   ID_HASH_ALLOCATE_INTERNALS(res, buckets, sizeof (caddr_t), sizeof (caddr_t),
     treehash, treehashcmp );
-  res->ht_dict_refctr = 0;
   res->ht_dict_version = 1;
   res->ht_rehash_threshold = 50;
-  res->ht_dict_size = 0;
-  res->ht_dict_max_entries = 0;
   return (caddr_t) res;
 }
 
@@ -430,8 +427,9 @@ caddr_t box_dict_hashtable_copy_hook (caddr_t orig)
     treehash, treehashcmp );
   res->ht_dict_refctr = 0;
   res->ht_dict_version = 1;
-  res->ht_dict_size = orig_dict->ht_dict_size;
+  res->ht_dict_mem_in_use = orig_dict->ht_dict_mem_in_use;
   res->ht_dict_max_entries = orig_dict->ht_dict_max_entries;
+  res->ht_dict_max_mem_in_use = orig_dict->ht_dict_max_mem_in_use;
   id_hash_iterator (&hit, orig_dict);
   while (hit_next (&hit, &key, &val))
     {
