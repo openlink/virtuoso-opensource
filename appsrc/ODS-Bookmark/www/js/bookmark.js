@@ -1753,9 +1753,9 @@ BMK.updateRowCombo2 = function (elm, fldName, fldOptions)
 	var cc = OAT.Dom.create("select");
   cc.name = fldName;
   cc.id = fldName;
-	BMK.updateRowComboOption2(cc, fldOptions.value, "RDF URI", "URI");
-  BMK.updateRowComboOption2(cc, fldOptions.value, "RDF Property", "Property");
-	BMK.updateRowComboOption2(cc, fldOptions.value, "SPARQL", "SPARQL", cc);
+	BMK.updateRowComboOption2(cc, fldOptions.value, "Person URI", "URI");
+  BMK.updateRowComboOption2(cc, fldOptions.value, "Relationship Property", "Property");
+	// BMK.updateRowComboOption2(cc, fldOptions.value, "SPARQL", "SPARQL Expression");
 
   var elm = $(elm);
   elm.appendChild(cc);

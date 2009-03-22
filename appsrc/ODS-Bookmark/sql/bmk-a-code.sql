@@ -648,6 +648,15 @@ create procedure BMK.WA.domain_iri (
 
 -------------------------------------------------------------------------------
 --
+create procedure BMK.WA.forum_iri (
+  in domain_id integer)
+{
+  return SIOC..bmk_iri (BMK.WA.domain_name (domain_id));
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure BMK.WA.domain_sioc_url (
   in domain_id integer,
   in sid varchar := null,

@@ -351,7 +351,9 @@ create method get_param (in param varchar) for wa_AddressBook
     retValue := registry_get('ab_path');
     if (cast(retValue as varchar) = '0')
       retValue := '/apps/AddressBook/';
-  } if (param = 'isDAV') {
+  }
+  else if (param = 'isDAV')
+  {
     retValue := 1;
     if (isnull (strstr (self.get_param ('host'), '/DAV')))
       retValue := 0;

@@ -2514,7 +2514,7 @@
                                 <th>
                                   Value
                                 </th>
-                                <th width="10%">
+                                <th width="80px">
                                   Access
                                 </th>
                                 <vm:if test="self.abAction <> 'view'">
@@ -2537,36 +2537,16 @@
                             ?>
                             <tr id="s_tr_<?V L ?>">
                               <td id="s_td1_<?V L ?>" nowrap="nowrap">
-                                <b>
-                           		  <?vsp
-                         		      if (acl[N][0] = 'URI')
-                         		        http ('RDF URI');
-                         		      else if (acl[N][0] = 'Property')
-                         		        http ('RDF Property');
-                         		      else if (acl[N][0] = 'SPARQL')
-                         		        http ('SPARQL');
-                           		  ?>
-                                </b>
+                                <b><?V get_keyword (acl[N][0], vector ('URI', 'Person URI', 'Property', 'RDF Property', 'SPARQL', 'SPARQL Expression')) ?></b>
                               </td>
-                              <td id="s_td2_<?V L ?>">
-                                <b>
-                                <?V acl[N][1] ?>
-                                </b>
+                              <td id="s_td2_<?V L ?>" nowrap="nowrap">
+                                <b><?V acl[N][1] ?></b>
                               </td>
-                              <td id="s_td3_<?V L ?>">
-                                <b>
-                         		    <?vsp
-                         		      if (acl[N][2] = 'G')
-                         		        http ('Grant');
-                         		      else if (acl[N][2] = 'R')
-                         		        http ('Revoke');
-                         		    ?>
-                                </b>
+                              <td id="s_td3_<?V L ?>" nowrap="nowrap">
+                                <b><?V get_keyword (acl[N][2], vector ('G', 'Grant', 'R', 'Revoke')) ?></b>
                               </td>
                               <td>
-                                <b>
-                                Inherited
-                                </b>
+                                <b>Inherited</b>
                               </td>
                             </tr>
                             <?vsp
