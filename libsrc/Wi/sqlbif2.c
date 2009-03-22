@@ -1082,7 +1082,7 @@ bif_rfc1808_parse_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 /*! URI expander according RFC 1808 recommendations */
 caddr_t
-rfc1808_expand_uri (caddr_t * qst, caddr_t base_uri, caddr_t rel_uri,
+rfc1808_expand_uri (caddr_t * qst, ccaddr_t base_uri, ccaddr_t rel_uri,
   ccaddr_t output_cs_name, int do_resolve_like_http_get,
   ccaddr_t base_string_cs_name, /* Encoding used for base_uri IFF it is a narrow string, neither DV_UNAME nor WIDE */
   ccaddr_t rel_string_cs_name, /* Encoding used for rel_uri IFF it is a narrow string, neither DV_UNAME nor WIDE */

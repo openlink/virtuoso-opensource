@@ -400,7 +400,7 @@ typedef struct rdf1808_split_s {
 
 extern void rfc1808_parse_uri (const char *iri, rdf1808_split_t *split_ret);
 extern void rfc1808_parse_wide_uri (const wchar_t *iri, rdf1808_split_t *split_ret);
-extern caddr_t rfc1808_expand_uri (caddr_t * qst, caddr_t base_uri, caddr_t rel_uri,
+extern caddr_t rfc1808_expand_uri (caddr_t * qst, ccaddr_t base_uri, ccaddr_t rel_uri,
   ccaddr_t output_cs_name, int do_resolve_like_http_get,
   ccaddr_t base_string_cs_name, /* Encoding used for base_uri IFF it is a narrow string, neither DV_UNAME nor WIDE */
   ccaddr_t rel_string_cs_name, /* Encoding used for rel_uri IFF it is a narrow string, neither DV_UNAME nor WIDE */
