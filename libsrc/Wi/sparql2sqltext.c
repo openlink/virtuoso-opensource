@@ -1503,10 +1503,10 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
           int tr_idx = tree->_.retval.tr_idx;
           SPART *triple = tree->_.retval.triple;
           ssg_valmode_t tr_valmode;
-          if (SPAR_TRIPLE != SPART_TYPE (triple))
-            spar_internal_error (sparp, "sparp_" "expn_native_valmode(): bad triple of a retval");
           if (SPART_TRIPLE_FIELDS_COUNT <= tr_idx)
             return SSG_VALMODE_SQLVAL;
+          if (SPAR_TRIPLE != SPART_TYPE (triple))
+            spar_internal_error (sparp, "sparp_" "expn_native_valmode(): bad triple of a retval");
           if (1 != BOX_ELEMENTS_0 (triple->_.triple.tc_list))
             spar_internal_error (sparp, "sparp_" "expn_native_valmode(): lengths of triple->_.triple.qm_list differs from 1");
           tr_valmode = triple->_.triple.native_formats[tr_idx];
@@ -2136,11 +2136,16 @@ ssg_print_tr_var_expn (spar_sqlgen_t *ssg, SPART *var, ssg_valmode_t needed, con
     IS_BOX_POINTER (native) &&
     ssg_valmode_is_subformat_of (needed, native) )
     needed = native; /* !!!TBD: proper check for safety of this replacement (the value returned may be of an unexpected type) */
-  qm = triple->_.triple.tc_list[0]->tc_qm;
   if (SPART_TRIPLE_FIELDS_COUNT <= var->_.var.tr_idx)
-    qmv = (qm_value_t *)1;
+    {
+      qm = NULL;
+      qmv = (qm_value_t *)1;
+    }
   else
-    qmv = JSO_FIELD_ACCESS(qm_value_t *, qm, qm_field_map_offsets[var->_.var.tr_idx])[0];
+    {
+      qm = triple->_.triple.tc_list[0]->tc_qm;
+      qmv = JSO_FIELD_ACCESS(qm_value_t *, qm, qm_field_map_offsets[var->_.var.tr_idx])[0];
+    }
   if (NULL != qmv)
     {
       int col_count = (IS_BOX_POINTER (needed) ? needed->qmfColumnCount : 1);
