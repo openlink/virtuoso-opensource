@@ -119,6 +119,29 @@ demo.db: mkdemo.sh mkdemo.ini doc_dav.vad demo_dav.vad
 #  Installing components
 #
 # ----------------------------------------------------------------------
+
+if !WITH_IM
+REM_IM_C=;
+endif
+if !WITH_HSL
+REM_HSL_C=;
+endif
+if !WITH_WBXML2
+REM_WBXML2_C=;
+endif
+if !HAVE_PHP5
+REM_PHP5_C=;
+endif
+if !WITH_PYTHON
+REM_PYTHON_C=;
+endif
+if !WITH_PERL
+REM_PERL_C=;
+endif
+if !WITH_RUBY
+REM_RUBY_C=;
+endif
+
 do_subst = \
 	sed -e 's,[@]PREFIX[@],$(prefix),g' \
             -e 's,[@]DESTDIR[@],$(DESTDIR),g' \
@@ -126,10 +149,17 @@ do_subst = \
             -e 's,[@]HOSTINGDIR[@],$(hostingdir),g' \
             -e 's,[@]DBDIR[@],$(dbdir),g' \
             -e 's,[@]DEMODIR[@],$(demodir),g' \
-            -e 's,[@]HTTPROOTDIR[@],$(httprootdir),g'
+            -e 's,[@]HTTPROOTDIR[@],$(httprootdir),g' \
+	    -e 's,[@]REM_IM[@],$(REM_IM_C),g' \
+	    -e 's,[@]REM_HSL[@],$(REM_HSL_C),g' \
+	    -e 's,[@]REM_WBXML2[@],$(REM_WBXML2_C),g' \
+	    -e 's,[@]REM_PHP5[@],$(REM_PHP5_C),g' \
+	    -e 's,[@]REM_PYTHON[@],$(REM_PYTHON_C),g' \
+	    -e 's,[@]REM_PERL[@],$(REM_PERL_C),g' \
+	    -e 's,[@]REM_RUBY[@],$(REM_RUBY_C),g'
 
 install-data-local:
-	@$(do_subst) < "$(srcdir)/install_ini.sh.in" > "install_ini.sh"
+	$(do_subst) < "$(srcdir)/install_ini.sh.in" > "install_ini.sh"
 	chmod +x install_ini.sh
 	mkdir -p "$(DESTDIR)$(dbdir)"
 	$(SHELL) install_ini.sh database

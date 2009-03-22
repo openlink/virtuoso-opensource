@@ -72,6 +72,13 @@ sed	-e "s,[@]VADDIR[@],$VADDIR,g" \
 	-e "s,[@]HTTP_ROOTDIR[@],$HTTPROOTDIR,g" \
 	-e "s,[@]REPLNAME[@],$REPLNAME,g" \
 	-e "s,[@]ZNAME[@],$DBNAME ($HOST),g" \
+        -e 's,[@]REM_IM[@],@REM_IM@,g' \
+        -e 's,[@]REM_HSL[@],@REM_HSL@,g' \
+        -e 's,[@]REM_WBXML2[@],@REM_WBXML2@,g' \
+        -e 's,[@]REM_PHP5[@],@REM_PHP5@,g' \
+        -e 's,[@]REM_PYTHON[@],@REM_PYTHON@,g' \
+        -e 's,[@]REM_PERL[@],@REM_PERL@,g' \
+        -e 's,[@]REM_RUBY[@],@REM_RUBY@,g' \
 	< default-virtuoso.ini > "$INIFILE"
 
 exit 0
