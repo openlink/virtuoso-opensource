@@ -46,9 +46,11 @@ insert soft "DB"."DBA"."SYS_SCHEDULED_EVENT" (SE_INTERVAL, SE_LAST_COMPLETED, SE
 
 create procedure OPENID_INIT ()
 {
+  declare stat, msg varchar;
   if (exists (select 1 from "DB"."DBA"."SYS_USERS" where U_NAME = 'OpenID'))
     return;
   DB.DBA.USER_CREATE ('OpenID', uuid(), vector ('DISABLED', 1, 'LOGIN_QUALIFIER', 'OPENID'));
+  exec ('grant SPARQL_UPDATE to "OpenID"', stat, msg);
 }
 ;
 
@@ -328,6 +330,54 @@ create procedure associate
   return string_output_string (ses);
 };
 
+create procedure get_user_details (in gr varchar, in _identity varchar)
+{
+  declare svec any;
+  svec := null;
+  for select * from
+    (sparql
+    define input:storage ""
+    prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    prefix foaf: <http://xmlns.com/foaf/0.1/>
+    prefix owl: <http://www.w3.org/2002/07/owl#>
+    prefix vcard: <http://www.w3.org/2001/vcard-rdf/3.0#>
+    select *
+    where {
+      graph ?:gr
+      {
+	[] a foaf:PersonalProfileDocument ;
+	foaf:primaryTopic ?person .
+	optional { ?person foaf:name ?fullname } .
+	optional { ?person foaf:nick ?nickname } .
+	optional { ?person foaf:mbox ?email } .
+	optional { ?person foaf:gender ?gender } .
+	optional { ?person foaf:birthday ?dob } .
+	optional { ?person foaf:page ?page } .
+	optional { ?person vcard:ADR ?addr . ?addr vcard:Country ?country . } .
+	optional { ?person vcard:ADR ?addr . ?addr vcard:Pcode ?postcode . } .
+	optional { ?person foaf:homepage ?homepage } .
+	optional { ?person foaf:openid ?openid } .
+      }
+    }) sub do
+    {
+      if (not position (_identity, vector ("openid", "page", "homepage")))
+        return null;
+      svec := vector (
+      			'nickname', "nickname",
+			'email', "email",
+			'fullname', "fullname",
+			'dob', "dob",
+			'gender', "gender",
+			'postcode', "postcode",
+			'country', "country",
+			'language', 'en',
+			'timezone', null -- until fix the format
+		    );
+    }
+  return svec;
+}
+;
+
 
 create procedure checkid_immediate
 	(
@@ -368,6 +418,24 @@ create procedure checkid_immediate
   if (not exists (select 1 from DB.DBA.VSPX_SESSION where VS_SID = sid and VS_REALM = 'wa'))
     {
       auth:
+      if (is_https_ctx ())
+	{
+	  declare gr varchar;
+	  declare rc int;
+	  declare vec any;
+	  rc := sioc.DBA.foaf_check_ssl_int (null, gr);
+	  if (rc)
+	    {
+	      vec := get_user_details (gr, _identity);
+	      if (vec is not null)
+		{
+		  sid := DB.DBA.vspx_sid_generate ();
+		  insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_STATE)
+		      values (sid, 'wa', serialize (vec));
+	          goto authenticated;
+		}
+	    }
+	}
       rhf := WS.WS.PARSE_URI (return_to);
       if (rhf[4] <> '')
 	delim := '&';
@@ -385,16 +453,22 @@ create procedure checkid_immediate
     {
       declare ses, ss_key, ss_key_data, inv, sreg, sarr, svec, sregf, algo any;
       declare nickname, email, fullname, dob, gender, postcode, country, lang, timezone any;
-
+authenticated:
       algo := null;
+      svec := null;
       whenever not found goto auth;
+      select deserialize (VS_STATE) into svec from DB.DBA.VSPX_SESSION where VS_SID = sid and VS_REALM = 'wa';
+
+      if (not isarray (svec))
+	{
       select WAUI_NICK, U_E_MAIL, U_FULL_NAME, WAUI_BIRTHDAY, WAUI_GENDER, WAUI_HCODE, WAUI_HCOUNTRY, WAUI_HTZONE
 	 into nickname, email, fullname, dob, gender, postcode, country, timezone
 	 from DB.DBA.SYS_USERS, DB.DBA.WA_USER_INFO, DB.DBA.VSPX_SESSION where
 	 WAUI_U_ID = U_ID and U_NAME = VS_UID and VS_SID = sid and VS_REALM = 'wa';
-
       if (dob is not null)
+	    {
 	dob := substring (datestring (dob), 1, 10);
+	    }
 
       if (gender = 'male')
         gender := 'M';
@@ -417,6 +491,7 @@ create procedure checkid_immediate
 			'language', 'en',
 			'timezone', null -- until fix the format
 		    );
+	}
 
       -- XXX should check is assoc_handle is valid !!!
       inv := '';
@@ -551,6 +626,24 @@ create procedure checkid_setup
   declare rhf, delim, login, ss_key any;
   if (not exists (select 1 from DB.DBA.VSPX_SESSION where VS_SID = sid and VS_REALM = 'wa'))
     {
+      if (is_https_ctx ())
+	{
+	  declare gr varchar;
+	  declare rc int;
+	  declare vec any;
+	  rc := sioc.DBA.foaf_check_ssl_int (null, gr);
+	  if (rc)
+	    {
+	      vec := get_user_details (gr, _identity);
+	      if (vec is not null)
+		{
+		  sid := DB.DBA.vspx_sid_generate ();
+		  insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_STATE)
+		      values (sid, 'wa', serialize (vec));
+	          goto authenticated;
+		}
+	    }
+	}
       rhf := WS.WS.PARSE_URI (return_to);
       if (rhf[4] <> '')
 	delim := '&';
@@ -566,6 +659,7 @@ create procedure checkid_setup
       --http_header (http_header_get () || sprintf ('Location: %s%sopenid.mode=cancel\r\n', return_to, delim));
       return '';
     }
+authenticated:
   return checkid_immediate (ver, _identity, assoc_handle, return_to, trust_root, sid, 1, sreg_required, sreg_optional, policy_url);
 };
 

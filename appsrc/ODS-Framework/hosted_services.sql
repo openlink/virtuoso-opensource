@@ -1220,12 +1220,13 @@ create method wa_new_inst (in login varchar) for web_app
 
   uid := (select U_ID from SYS_USERS where U_NAME = login);
   select WAI_ID, WAI_TYPE_NAME, WAI_IS_PUBLIC, WAI_MEMBERS_VISIBLE
-      into id, tn, is_pub, is_memb_visb from WA_INSTANCE where WAI_NAME = self.wa_name;
+    into id, tn, is_pub, is_memb_visb
+    from WA_INSTANCE
+   where WAI_NAME = self.wa_name;
   -- WAM_STATUS = 1 means OWNER
   -- XXX: check this why is off
   --set triggers off;
-  insert into WA_MEMBER
-      (WAM_USER, WAM_INST, WAM_MEMBER_TYPE, WAM_STATUS, WAM_HOME_PAGE, WAM_APP_TYPE, WAM_IS_PUBLIC, WAM_MEMBERS_VISIBLE)
+  insert into WA_MEMBER (WAM_USER, WAM_INST, WAM_MEMBER_TYPE, WAM_STATUS, WAM_HOME_PAGE, WAM_APP_TYPE, WAM_IS_PUBLIC, WAM_MEMBERS_VISIBLE)
       values (uid, self.wa_name, 1, 1, wa_set_url_t (self), tn, is_pub, is_memb_visb);
   --set triggers on;
   return id;
@@ -1397,13 +1398,12 @@ create trigger WA_MEMBER_I after insert on WA_MEMBER referencing new as N {
 
 create trigger WA_INSTANCE_I after insert on WA_INSTANCE
 {
-  update DB.DBA.WA_MEMBER set WAM_IS_PUBLIC = WAI_IS_PUBLIC where WAM_INST = WAI_NAME;
-  update DB.DBA.WA_MEMBER set WAM_MEMBERS_VISIBLE = WAI_MEMBERS_VISIBLE where WAM_INST = WAI_NAME;
-  update WA_MEMBER set WAM_HOME_PAGE = wa_set_url_t (WAI_INST) where WAM_INST = WAI_NAME;
-  update WA_MEMBER set WAM_APP_TYPE = wa_get_type_from_name (WAM_INST) where WAM_INST = WAI_NAME;
-
-
-
+  update DB.DBA.WA_MEMBER
+     set WAM_IS_PUBLIC = WAI_IS_PUBLIC,
+         WAM_MEMBERS_VISIBLE = WAI_MEMBERS_VISIBLE,
+         WAM_HOME_PAGE = wa_set_url_t (WAI_INST),
+         WAM_APP_TYPE = wa_get_type_from_name (WAM_INST)
+   where WAM_INST = WAI_NAME;
 }
 ;
 
@@ -1411,8 +1411,7 @@ create trigger WA_MEMBER_U after update on WA_MEMBER referencing old as O, new a
 {
   declare wa web_app;
   select WAI_INST into wa from WA_INSTANCE where WAI_NAME = N.WAM_INST;
-  wa.wa_notify_member_changed (N.WAM_USER, O.WAM_MEMBER_TYPE, N.WAM_MEMBER_TYPE,
-			  O.WAM_DATA, N.WAM_DATA, O.WAM_STATUS, N.WAM_STATUS);
+  wa.wa_notify_member_changed (N.WAM_USER, O.WAM_MEMBER_TYPE, N.WAM_MEMBER_TYPE, O.WAM_DATA, N.WAM_DATA, O.WAM_STATUS, N.WAM_STATUS);
   return;
 }
 ;
@@ -1495,8 +1494,8 @@ create trigger WA_MEMBER_I_DOINSTCOUNT after insert on WA_MEMBER referencing new
 
 create trigger WA_MEMBER_D_DOINSTCOUNT after delete on WA_MEMBER
 {
-  if (WAM_MEMBER_TYPE = 1){
-
+  if (WAM_MEMBER_TYPE = 1)
+  {
     declare _inst_type varchar;
     declare _inst_count integer;
     declare exit handler for not found {
@@ -1654,6 +1653,41 @@ for xml explicit'
   return xml_tree_doc (string_output_string (ss));
 }
 ;
+
+create procedure WA_HTTPS ()
+{
+  declare default_host, ret varchar;
+  ret := connection_get ('WA_HTTPS');
+  if (ret is not null)
+    return ret;
+  default_host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+  if (default_host is not null)
+    {
+      declare vec, sslp any;
+      sslp := server_https_port ();
+      if (sslp <> '443')
+        sslp := ':'||sslp;
+      else
+        sslp := '';
+      vec := split_and_decode (default_host, 0, '\0\0:');
+      if (length (vec) = 2)
+        {
+	  ret := vec[0] || sslp;
+	}
+      else
+        {
+	  ret := default_host || sslp;
+	}
+    }
+  else
+    {
+      ret := sys_stat ('st_host_name');
+      if (server_https_port () <> '443')
+	ret := ret ||':'|| server_https_port ();
+    }
+  connection_set ('WA_HTTPS', ret);
+  return ret;
+};
 
 create procedure WA_CNAME ()
 {
@@ -4895,7 +4929,9 @@ create procedure wa_wa_member_upgrade ()
 	   log_message (sprintf ('WA upgrade found a broken instance: [%s], must be deleted.', WAI_NAME));
 	   goto nextu;
 	 };
-       update DB.DBA.WA_MEMBER set WAM_IS_PUBLIC = WAI_IS_PUBLIC,
+    dbg_obj_print ('WAI_IS_PUBLIC', WAI_IS_PUBLIC);
+    update DB.DBA.WA_MEMBER
+       set WAM_IS_PUBLIC = WAI_IS_PUBLIC,
 	      WAM_MEMBERS_VISIBLE = WAI_MEMBERS_VISIBLE,
 	      WAM_HOME_PAGE = wa_set_url_t (WAI_INST),
 	      WAM_APP_TYPE = WAI_TYPE_NAME

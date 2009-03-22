@@ -588,9 +588,9 @@ function updateRowCombo2 (elm, fldName, fldOptions)
 	var cc = OAT.Dom.create("select");
   cc.name = fldName;
   cc.id = fldName;
-	updateRowComboOption2(cc, fldOptions.value, "RDF URI", "URI");
-  updateRowComboOption2(cc, fldOptions.value, "RDF Property", "Property");
-	updateRowComboOption2(cc, fldOptions.value, "SPARQL", "SPARQL", cc);
+	updateRowComboOption2(cc, fldOptions.value, "Person URI", "URI");
+  updateRowComboOption2(cc, fldOptions.value, "Relationship Property", "Property");
+	// updateRowComboOption2(cc, fldOptions.value, "SPARQL", "SPARQL  Expression");
 
   var elm = $(elm);
   elm.appendChild(cc);

@@ -54,7 +54,7 @@
 
   if (length (uname))
   {
-    declare _visibility,_full_name, _country, _state, _city, _oid_url, _oid_server,_country_code,_nick varchar;
+    declare _visibility,_full_name, _country, _state, _city, _oid_url, _oid_server,_country_code,_nick, _cert, _openid_server varchar;
     declare  _lat, _lng real;
     declare uid integer;
 
@@ -73,8 +73,8 @@
         if (length (tmp))
           uname := tmp;
       }
-    select WAUI_VISIBLE, WAUI_LAT, WAUI_LNG, WAUI_HCOUNTRY, WAUI_HSTATE, WAUI_HCITY, WAUI_OPENID_URL, WAUI_OPENID_SERVER,U_ID,WAUI_NICK
-      into _visibility, _lat, _lng, _country, _state, _city, _oid_url, _oid_server,uid, _nick
+    select WAUI_VISIBLE, WAUI_LAT, WAUI_LNG, WAUI_HCOUNTRY, WAUI_HSTATE, WAUI_HCITY, WAUI_OPENID_URL, WAUI_OPENID_SERVER,U_ID,WAUI_NICK, WAUI_CERT
+      into _visibility, _lat, _lng, _country, _state, _city, _oid_url, _oid_server,uid, _nick, _cert
       from WA_USER_INFO, DB.DBA.SYS_USERS
      where WAUI_U_ID = U_ID and U_NAME =  uname;
 
@@ -90,6 +90,9 @@
     else
       _country_code:=null;
 
+    _openid_server := server_root;
+    if (_cert)
+      _openid_server := 'https://' || DB.DBA.WA_HTTPS();
 --META openID start
     if (length (_oid_url) and length (_oid_server))
     {
@@ -100,7 +103,7 @@
     {
       if (_nick <> uname)
         http('   <link rel="openid.delegate" title="OpenID URL" href="'|| server_dataspace||utype||_nick ||'" />\r\n',resMeta);
-      http('  <link rel="openid.server" title="OpenID Server" href="'||server_root||'/openid" />\r\n',resMeta);
+      http('  <link rel="openid.server" title="OpenID Server" href="'||_openid_server||'/openid" />\r\n',resMeta);
     }
 --META openID end
 

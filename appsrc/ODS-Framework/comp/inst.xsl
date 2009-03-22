@@ -29,7 +29,7 @@
     <xsl:template match="vm:instance-sharing">
       <tr>
         <th width="1%" nowrap="nowrap">
-          <label for="is_public1">Visible mode</label>
+          <label for="is_public1">Access mode</label>
         </th>
         <td align="left">
           <?vsp
@@ -53,19 +53,19 @@
         <td colspan="2">
           <table>
             <tr>
-              <td width="600px">
+              <td width="700px">
                 <table id="s_tbl" class="listing">
                   <tr class="listing_header_row">
                     <th>
                       Type
                     </th>
-                    <th>
+                    <th width="100%">
                       Value
                     </th>
-                    <th>
+                    <th width="80px">
                       Access
                     </th>
-                    <th width="80px">
+                    <th width="70px">
                       Action
                     </th>
                   </tr>
