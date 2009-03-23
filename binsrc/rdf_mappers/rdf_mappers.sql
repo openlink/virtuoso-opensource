@@ -4803,20 +4803,106 @@ create procedure DB.DBA.LOAD_RDF_MAPPER_XBRL_ONTOLOGIES()
 }
 ;
 
-create procedure DB.DBA.GET_XBRL_ONTOLOGY_CLASS(in elem varchar) returns varchar
+create procedure DB.DBA.GET_XBRL_ONTOLOGY_DOMAIN(in elem varchar) returns varchar
 {
-    declare cur varchar;
+    declare cur, domain varchar;
     cur := 'http://www.openlinksw.com/schemas/xbrl/' || elem;
-    if (exists (sparql ask from <http://www.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/> {`iri(?:cur)` a owl:Class } ) )
-        return cur;
-    return (sparql select ?domain from <http://www.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/> where {`iri(?:cur)` rdfs:domain ?domain . } );
+    domain := (sparql select ?domain from <http://www.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/> where {`iri(?:cur)` rdfs:domain ?domain . } );
+    if (domain is not null and domain <> '')
+		return domain;
+    return 'http://www.openlinksw.com/schemas/xbrl/xbrlType';
 }
 ;
 
-grant execute on DB.DBA.GET_XBRL_ONTOLOGY_CLASS to public
+grant execute on DB.DBA.GET_XBRL_ONTOLOGY_DOMAIN to public
 ;
 
-xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_ontology_class', fix_identifier_case ('DB.DBA.GET_XBRL_ONTOLOGY_CLASS'))
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_ontology_domain', fix_identifier_case ('DB.DBA.GET_XBRL_ONTOLOGY_DOMAIN'))
+;
+
+create procedure DB.DBA.GET_XBRL_ONTOLOGY_VALUE_NAME(in elem varchar) returns varchar
+{
+    declare cur, range, value varchar;
+    declare pos int;
+    cur := 'http://www.openlinksw.com/schemas/xbrl/' || elem;
+    range := (sparql select ?range from <http://www.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/> where {`iri(?:cur)` rdfs:range ?range . } );
+    if (range is not null and range <> '')
+    {
+		value := (sparql select ?s from <http://www.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/> where {?s rdfs:domain `iri(?:range)` . });
+		if (value is not null and value <> '')
+		{
+			pos := strrchr(value, '/');
+			if (pos is null or pos = 0)
+				return value;
+			value := subseq(value, pos+1);
+			return value;
+		}
+    }
+    return 'item';
+}
+;
+
+grant execute on DB.DBA.GET_XBRL_ONTOLOGY_VALUE_NAME to public
+;
+
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_value_name', fix_identifier_case ('DB.DBA.GET_XBRL_ONTOLOGY_VALUE_NAME'))
+;
+
+create procedure DB.DBA.GET_XBRL_ONTOLOGY_VALUE_DATATYPE(in elem varchar) returns varchar
+{
+    declare cur, range, value varchar;
+    declare pos int;
+    cur := 'http://www.openlinksw.com/schemas/xbrl/' || elem;
+    range := (sparql select ?range from <http://www.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/> where {`iri(?:cur)` rdfs:range ?range . } );
+    if (range is not null and range <> '')
+    {
+		value := (sparql select ?range from <http://www.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/> where {?s rdfs:domain `iri(?:range)` . ?s rdfs:range ?range .});
+		if (value is not null and value <> '')
+		{	
+			return value;
+		}
+		else
+		{
+			if (length(range) > 8)
+			{
+				if (right(range, 8) = 'ItemType')
+				{
+					value := subseq(range, 0, length(range) - 8);
+					pos := strchr(value, '#');
+					if (pos > 0)
+					{
+						value := subseq(value, pos + 1);
+						if (value = 'textBlock')
+							return 'http://www.w3.org/2001/XMLSchema#string';
+						if (value = 'monetary')
+							return 'http://www.w3.org/2001/XMLSchema#decimal';
+						if (value = 'shares')
+							return 'http://www.w3.org/2001/XMLSchema#decimal';
+						if (value = 'pure')
+							return 'http://www.w3.org/2001/XMLSchema#decimal';
+						if (value = 'fraction')
+							return 'http://www.w3.org/2001/XMLSchema#integer';
+						if (value = 'domain')
+							return 'http://www.w3.org/2001/XMLSchema#string';
+						if (value = 'percent')
+							return 'http://www.w3.org/2001/XMLSchema#decimal';
+						if (value = 'perShare')
+							return 'http://www.w3.org/2001/XMLSchema#decimal';
+						else
+							return concat('http://www.w3.org/2001/XMLSchema#', value);
+					}
+				}
+			}
+		}
+    }
+    return 'http://www.w3.org/2001/XMLSchema#string';
+}
+;
+
+grant execute on DB.DBA.GET_XBRL_ONTOLOGY_VALUE_DATATYPE to public
+;
+
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_value_datatype', fix_identifier_case ('DB.DBA.GET_XBRL_ONTOLOGY_VALUE_DATATYPE'))
 ;
 
 create procedure DB.DBA.GET_XBRL_CANONICAL_NAME(in elem varchar) returns varchar
@@ -4824,9 +4910,10 @@ create procedure DB.DBA.GET_XBRL_CANONICAL_NAME(in elem varchar) returns varchar
     declare cur varchar;
     cur := 'http://www.openlinksw.com/schemas/xbrl/' || elem;
     if (exists (sparql ask from <http://www.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/> {`iri(?:cur)` a rdf:Property } ) )
+    {
         return elem;
-    else
-        return NULL;
+    }
+    return null;
 }
 ;
 

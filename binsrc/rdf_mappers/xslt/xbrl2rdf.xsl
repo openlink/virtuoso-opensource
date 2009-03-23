@@ -132,14 +132,15 @@
 		</xsl:if>
 	</xsl:template>
 	<xsl:template match="*">
-		<xsl:variable name="canonicalname" select="virt:xbrl_canonical_name(local-name(.))" />
-		<xsl:variable name="canonical_datatype" select="virt:xbrl_canonical_datatype(local-name(.))" />
-		<xsl:variable name="canonicallabelname" select="virt:xbrl_canonical_label_name(local-name(.))" />
-		<xsl:variable name="ontology_class" select="virt:xbrl_ontology_class(local-name(.))" />
-		<xsl:variable name="contextRef" select="@contextRef" />
-		<xsl:variable name="label" select="concat($ns, $canonicalname)" />
+		<xsl:variable name="canonical_name" select="virt:xbrl_canonical_name(local-name(.))" />
+		<xsl:variable name="canonical_type" select="virt:xbrl_ontology_domain(local-name(.))" />
+		<xsl:variable name="canonical_value_name" select="virt:xbrl_canonical_value_name(local-name(.))" />
+		<xsl:variable name="canonical_value_datatype" select="virt:xbrl_canonical_value_datatype(local-name(.))" />
+		<xsl:variable name="canonical_label_name" select="virt:xbrl_canonical_label_name(local-name(.))" />
+		<xsl:variable name="contextRef" select="concat('#', @contextRef)" />
+		<xsl:variable name="label" select="concat($ns, $canonical_name)" />
 		<xsl:variable name="dt" />
-		<xsl:if test="$canonicalname">
+		<xsl:if test="$canonical_name">
 			<!--sioc:Item rdf:about="{$label}">
 				<sioc:has_container rdf:resource="{concat('#', $contextRef)}"/>
        				<xsl:if test="string-length($ontology_class) &gt; 0">
@@ -150,22 +151,35 @@
        				</rdf:type>					
        				</xsl:if>
 			</sioc:Item-->
-			<rdf:Description rdf:ID="{$contextRef}">
-				<xsl:element namespace="{$ns}" name="{$canonicalname}">
-					<xsl:attribute name="rdf:type">
-						<xsl:value-of select="concat('&sioc;', 'Item')" />
+			
+			<rdf:Description rdf:about="{concat($baseUri, '#', @contextRef, '/', $canonical_name)}">
+				<xsl:if test="$canonical_type">
+					<rdf:type>
+						<xsl:attribute name="rdf:resource">
+       						<xsl:value-of select="$canonical_type" />
 					</xsl:attribute>
+       				</rdf:type>
+				</xsl:if>
+				<xsl:if test="$canonical_value_name">
+					<xsl:element name="{$canonical_value_name}" namespace="{$ns}">
 					<xsl:attribute name="rdf:datatype">
-						<xsl:value-of select="concat('&xsd;', $canonical_datatype)" />
+       						<xsl:value-of select="$canonical_value_datatype" />
 					</xsl:attribute>
 					<xsl:value-of select="." />
 				</xsl:element>
+				</xsl:if>
+				<sioc:has_container rdf:resource="{$contextRef}" />
 			</rdf:Description>
-			<rdf:Description rdf:about="{$label}">
+			
+			<rdf:Description rdf:about="{$contextRef}">
+				<sioc:container_of rdf:resource="{concat($baseUri, '#', @contextRef, '/', $canonical_name)}" />
+			</rdf:Description>
+			
+			<!--rdf:Description rdf:about="{$label}">
 				<rdfs:label>
 					<xsl:value-of select="$canonicallabelname" />
 				</rdfs:label>
-			</rdf:Description>
+			</rdf:Description-->
 		</xsl:if>
 	</xsl:template>
 </xsl:stylesheet>
