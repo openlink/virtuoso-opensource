@@ -478,7 +478,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 			content.innerHTML = self.parent.getTitle(value);
 
 			/* dereferenced, or relative uri/blank node */
-			if(dereferenced || !value.uri.match(/^http/i)) {
+			if(dereferenced || !value.uri.match(/^http/i) || !value.uri.match(/^NodeID/i)) {
 				self.attach(content,value);
 			} else {
 				self.dattach(content,value.uri);
@@ -1408,7 +1408,7 @@ OAT.RDFTabs.tagcloud = function(parent,optObj) {
 		var freq = 1;
 
 		for (var p in preds) {
-			if (p == "http://scot-project.org/scot/ns#ownAFrequency") {
+			if (p == "http://scot-project.org/scot/ns#ownAFrequency" || p == "scot:ownAFrequency") {
 			    freq = preds[p][0];
 			    break;
 			}
@@ -1433,7 +1433,7 @@ OAT.RDFTabs.tagcloud = function(parent,optObj) {
 
 		var cloud = new OAT.TagCloud(cdiv);
 		for (var p in preds) {
-		    if (p == "http://scot-project.org/scot/ns#hasTag") {
+		    if (p == "http://scot-project.org/scot/ns#hasTag" || p == "scot:hasTag") {
 			var tags = preds[p];
 			for (var i=0;i<tags.length;i++) {
 			    var tag = tags[i];
@@ -1453,7 +1453,7 @@ OAT.RDFTabs.tagcloud = function(parent,optObj) {
 
 		for (var i=0;i<data.length;i++) {
 			var item = data[i];
-			if (self.parent.simplify(item.type) == "Tagcloud") {
+			if (self.parent.simplify(item.type) == "scot:Tagcloud") {
 				self.addCloud(item);
 			}
 		} /* for all items */
