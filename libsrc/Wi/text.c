@@ -2041,11 +2041,16 @@ sst_check_and_hit (search_stream_t * sst, d_id_t * d_id, int is_fixed)
 	  DO_SET (word_rel_t *, rel, &first->sst_related)
 	    {
 	      search_stream_t * rel_sst = rel->wrl_sst;
-
 	      if (DVC_MATCH != d_id_cmp (&rel->wrl_d_id, d_id))
 		{
-		  db_buf_t pos = (db_buf_t) (first->sst_buffer + first->sst_pos);
-		  db_buf_t rel_pos = (db_buf_t) (rel_sst->sst_buffer + rel_sst->sst_pos);
+                  db_buf_t pos, rel_pos;
+                  if (!rel->wrl_dist && !rel->wrl_is_dist_fixed)
+                    {
+                      rel->wrl_score = 1;
+                      continue;
+                    }
+		  pos = (db_buf_t) (first->sst_buffer + first->sst_pos);
+		  rel_pos = (db_buf_t) (rel_sst->sst_buffer + rel_sst->sst_pos);
 		  int pos_len, rel_len, hl;
 		  WP_LENGTH (pos, hl, pos_len, first->sst_buffer, first->sst_fill);
 		  pos_len -= WP_FIRST_POS (pos + hl);
