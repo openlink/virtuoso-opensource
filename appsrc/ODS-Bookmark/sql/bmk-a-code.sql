@@ -2902,6 +2902,20 @@ create procedure BMK.WA.export_opml_xml(
   return aXML;
 }
 ;
+
+-----------------------------------------------------------------------------
+--
+create procedure BMK.WA.xtree_doc (
+  in xt varchar,
+  in xtMode integer := 0)
+{
+  declare exit handler for SQLSTATE '*' {
+    return null;
+  };
+  return xtree_doc (xt, xtMode);
+}
+;
+
 -----------------------------------------------------------------------------
 --
 create procedure BMK.WA.xml_set(

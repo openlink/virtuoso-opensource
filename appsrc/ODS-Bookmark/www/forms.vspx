@@ -1116,7 +1116,9 @@
                  S := replace(S, 'FOLDED', '');
                  S := replace(S, '  ', ' ');
                  S := replace(S, '&', '&amp;');
-                 V := xtree_doc (S, 2);
+                 V := BMK.WA.xtree_doc (S, 2);
+                 if (isnull (V))
+                   goto _xbel;
                  V := xpath_eval ('//dl', V);
                  if (isnull (V))
                    goto _xbel;
@@ -1126,7 +1128,9 @@
                _xbel:;
                  -- check XBEL format
                  --
-                 V := xtree_doc (S);
+                 V := BMK.WA.xtree_doc (S);
+                 if (isnull (V))
+                   goto _delicious;
                  V := xpath_eval('/xbel', BMK.WA.string2xml(S));
                  if (isnull (V))
                    goto _delicious;
@@ -1136,7 +1140,9 @@
               _delicious:;
                  -- check delicious format
                  --
-                 V := xtree_doc (S);
+                 V := BMK.WA.xtree_doc (S);
+                 if (isnull (V))
+                   goto _end;
                  V := xpath_eval('/posts', V);
                  if (isnull (V))
                    goto _end;
