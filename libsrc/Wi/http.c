@@ -231,7 +231,7 @@ ws_gethostbyaddr (const char * ip)
 {
   struct hostent *host = NULL;
   unsigned long int addr;
-#if defined (_REENTRANT)
+#if defined (_REENTRANT) && (defined (linux) || defined (SOLARIS) || defined (HPUX_10))
   char buff [4096];
   int herrnop;
   struct hostent ht;
@@ -7061,7 +7061,7 @@ box_tcpip_localhost_names (void)
   struct hostent *local;
   int nEntries = 1, inx = 0;
   caddr_t *_localhost_names;
-#if defined (_REENTRANT)
+#if defined (_REENTRANT) && (defined (linux) || defined (SOLARIS))
   char buff [4096];
   int herrnop;
   struct hostent ht;

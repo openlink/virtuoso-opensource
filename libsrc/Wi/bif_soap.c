@@ -6211,7 +6211,7 @@ ws_soap_get_url (ws_connection_t *ws, int full_path)
       socklen_t len = sizeof (sa);
       if (!getsockname (tcpses_get_fd (ws->ws_session->dks_session), (struct sockaddr *)&sa, &len))
 	{
-#if defined (_REENTRANT)
+#if defined (_REENTRANT) && (defined (linux) || defined (SOLARIS))
 	  char buff [4096];
 	  int herrnop;
 	  struct hostent ht;
