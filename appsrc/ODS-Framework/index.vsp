@@ -91,8 +91,6 @@
       _country_code:=null;
 
     _openid_server := server_root;
-    if (_cert)
-      _openid_server := 'https://' || DB.DBA.WA_HTTPS();
 --META openID start
     if (length (_oid_url) and length (_oid_server))
     {
@@ -102,8 +100,12 @@
     else
     {
       if (_nick <> uname)
+        {
         http('   <link rel="openid.delegate" title="OpenID URL" href="'|| server_dataspace||utype||_nick ||'" />\r\n',resMeta);
+          http('   <link rel="openid2.local_id" title="OpenID v2 URL" href="'|| server_dataspace||utype||_nick ||'" />\r\n',resMeta);
+        }
       http('  <link rel="openid.server" title="OpenID Server" href="'||_openid_server||'/openid" />\r\n',resMeta);
+      http('  <link rel="openid2.provider" title="OpenID v2 Server" href="'||_openid_server||'/openid" />\r\n',resMeta);
     }
 --META openID end
 

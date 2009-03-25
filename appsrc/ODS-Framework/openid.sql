@@ -63,7 +63,7 @@ create procedure yadis (in uname varchar, in tp varchar := null)
     tp := '';
   url := db.dba.wa_link (1, '/dataspace/'||tp||uname);
   srv := db.dba.wa_link (1, '/openid');
-  for select WAUI_OPENID_URL, WAUI_OPENID_SERVER, WAUI_NICK
+  for select WAUI_OPENID_URL, WAUI_OPENID_SERVER, WAUI_NICK, WAUI_CERT
     from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname
     do
       {
@@ -333,6 +333,27 @@ create procedure associate
 create procedure get_user_details (in gr varchar, in _identity varchar)
 {
   declare svec any;
+  declare ha, host, port, arr any;
+  ha := WS.WS.PARSE_URI (_identity);
+  if (is_https_ctx () and cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal') = '1' and ha[1] = registry_get ('URIQADefaultHost'))
+    {
+      ha [0] := 'https';
+      host := ha[1];
+      port := server_https_port ();
+      if (port = '443') port := '';
+      else port := ':' || port;
+      arr := split_and_decode (host, 0, '\0\0:');
+      if (length (arr) = 2)
+	{
+	  host := arr[0] || port;
+	}
+      else
+        {
+	  host := host || port;
+	}
+      ha [1] := host;
+      _identity := db.dba.vspx_uri_compose (ha);
+    }
   svec := null;
   for select * from
     (sparql
@@ -341,6 +362,8 @@ create procedure get_user_details (in gr varchar, in _identity varchar)
     prefix foaf: <http://xmlns.com/foaf/0.1/>
     prefix owl: <http://www.w3.org/2002/07/owl#>
     prefix vcard: <http://www.w3.org/2001/vcard-rdf/3.0#>
+    prefix bio: <http://vocab.org/bio/0.1/>
+    prefix dc: <http://purl.org/dc/elements/1.1/>
     select *
     where {
       graph ?:gr
@@ -351,7 +374,7 @@ create procedure get_user_details (in gr varchar, in _identity varchar)
 	optional { ?person foaf:nick ?nickname } .
 	optional { ?person foaf:mbox ?email } .
 	optional { ?person foaf:gender ?gender } .
-	optional { ?person foaf:birthday ?dob } .
+	optional { ?person bio:event ?e . ?e a bio:Birth . ?e dc:date ?dob . } .
 	optional { ?person foaf:page ?page } .
 	optional { ?person vcard:ADR ?addr . ?addr vcard:Country ?country . } .
 	optional { ?person vcard:ADR ?addr . ?addr vcard:Pcode ?postcode . } .
@@ -360,8 +383,33 @@ create procedure get_user_details (in gr varchar, in _identity varchar)
       }
     }) sub do
     {
+      -- workaround , must be in the ods graph
+      if ("openid" is not null)
+	{
+	  declare arr1, arr2 varchar;
+	  arr1 := sprintf_inverse (_identity, '%s://%s/dataspace/%s', 1);
+	  arr2 := sprintf_inverse ("openid", '%s://%s/dataspace/%s', 1);
+	  if (length (arr1) = length (arr2) and length (arr1) = 3 and arr1[0] = arr2[0] and arr1[1] = arr2[1]
+	      and arr1[2] <> arr2[2] and
+	      exists (select 1 from DB.DBA.SYS_USERS, DB.DBA.WA_USER_INFO where WAUI_U_ID = U_ID and U_NAME = "nickname" and WAUI_NICK = arr1[2]))
+	    goto verified;
+	}
       if (not position (_identity, vector ("openid", "page", "homepage")))
         return null;
+      verified:;
+      if ("email" like 'mailto:%')
+	"email" := subseq ("email", 7);
+      if ("country" = 'Not Specified')
+	"country" := null;
+      if ("gender" = 'male')
+	"gender" := 'M';
+      else if ("gender" = 'female')
+        "gender" := 'F';
+      else
+        "gender" := null;
+
+      if (length ("country"))
+        "country" := (select WC_ISO_CODE from DB.DBA.WA_COUNTRY where WC_NAME = "country");
       svec := vector (
       			'nickname', "nickname",
 			'email', "email",
@@ -371,7 +419,7 @@ create procedure get_user_details (in gr varchar, in _identity varchar)
 			'postcode', "postcode",
 			'country', "country",
 			'language', 'en',
-			'timezone', null -- until fix the format
+			'timezone', null
 		    );
     }
   return svec;
@@ -418,24 +466,6 @@ create procedure checkid_immediate
   if (not exists (select 1 from DB.DBA.VSPX_SESSION where VS_SID = sid and VS_REALM = 'wa'))
     {
       auth:
-      if (is_https_ctx ())
-	{
-	  declare gr varchar;
-	  declare rc int;
-	  declare vec any;
-	  rc := sioc.DBA.foaf_check_ssl_int (null, gr);
-	  if (rc)
-	    {
-	      vec := get_user_details (gr, _identity);
-	      if (vec is not null)
-		{
-		  sid := DB.DBA.vspx_sid_generate ();
-		  insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_STATE)
-		      values (sid, 'wa', serialize (vec));
-	          goto authenticated;
-		}
-	    }
-	}
       rhf := WS.WS.PARSE_URI (return_to);
       if (rhf[4] <> '')
 	delim := '&';
@@ -443,7 +473,7 @@ create procedure checkid_immediate
         delim := '?';
       login :=
       sprintf ('%s?return_to=%U&identity=%U&assoc_handle=%U&trust_root=%U&sreg_required=%U&sreg_optional=%U&policy_url=%U&ver=%d',
-	    DB.DBA.wa_link(1, 'openid_login.vspx'), return_to, _identity, coalesce (assoc_handle, ''), trust_root,
+	    get_login_url (_identity), return_to, _identity, coalesce (assoc_handle, ''), trust_root,
 	    coalesce (sreg_required, ''), coalesce (sreg_optional, ''), coalesce (policy_url, ''), ver);
       --dbg_obj_print (sprintf ('Location: %s?openid.mode=id_res&openid.user_setup_url=%U\r\n', return_to, login));
       http_header (http_header_get () || sprintf ('Location: %s%sopenid.mode=id_res%s&openid.user_setup_url=%U\r\n',
@@ -453,11 +483,15 @@ create procedure checkid_immediate
     {
       declare ses, ss_key, ss_key_data, inv, sreg, sarr, svec, sregf, algo any;
       declare nickname, email, fullname, dob, gender, postcode, country, lang, timezone any;
-authenticated:
       algo := null;
       svec := null;
       whenever not found goto auth;
       select deserialize (VS_STATE) into svec from DB.DBA.VSPX_SESSION where VS_SID = sid and VS_REALM = 'wa';
+
+      if (isarray (svec) and not isstring (svec) and 0 = mod (length (svec), 2))
+	svec := get_keyword ('OpenID_sreg', svec, null);
+      else
+        svec := null;
 
       if (not isarray (svec))
 	{
@@ -556,6 +590,8 @@ authenticated:
 	{
 	  declare op, nonce varchar;
 	  op := db.dba.wa_link (1, '/openid');
+	  if (0 and is_https_ctx ())
+	    op := 'https://' || DB.DBA.WA_HTTPS() || '/openid';
 	  nonce := DB.DBA.date_iso8601 (dt_set_tz (curdatetime (0), 0)) || cast (msec_time () as varchar);
 	  ns := sprintf ('&openid.ns=%U&openid.ns.sreg=%U&openid.op_endpoint=%U&openid.response_nonce=%U&openid.claimed_id=%U',
 	  ns_v2 (), sreg_ns_v1 (), op, nonce, _identity);
@@ -626,24 +662,6 @@ create procedure checkid_setup
   declare rhf, delim, login, ss_key any;
   if (not exists (select 1 from DB.DBA.VSPX_SESSION where VS_SID = sid and VS_REALM = 'wa'))
     {
-      if (is_https_ctx ())
-	{
-	  declare gr varchar;
-	  declare rc int;
-	  declare vec any;
-	  rc := sioc.DBA.foaf_check_ssl_int (null, gr);
-	  if (rc)
-	    {
-	      vec := get_user_details (gr, _identity);
-	      if (vec is not null)
-		{
-		  sid := DB.DBA.vspx_sid_generate ();
-		  insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_STATE)
-		      values (sid, 'wa', serialize (vec));
-	          goto authenticated;
-		}
-	    }
-	}
       rhf := WS.WS.PARSE_URI (return_to);
       if (rhf[4] <> '')
 	delim := '&';
@@ -653,13 +671,12 @@ create procedure checkid_setup
 
       login :=
       sprintf ('%s?return_to=%U&identity=%U&assoc_handle=%U&trust_root=%U&sreg_required=%U&sreg_optional=%U&policy_url=%U&ver=%d',
-	    DB.DBA.wa_link(1, 'openid_login.vspx'), return_to, _identity, coalesce (assoc_handle, ''), trust_root,
+	    get_login_url (_identity), return_to, _identity, coalesce (assoc_handle, ''), trust_root,
 	    coalesce (sreg_required, ''), coalesce (sreg_optional, ''), coalesce (policy_url, ''), ver);
       http_header (http_header_get () || sprintf ('Location: %s\r\n', login));
       --http_header (http_header_get () || sprintf ('Location: %s%sopenid.mode=cancel\r\n', return_to, delim));
       return '';
     }
-authenticated:
   return checkid_immediate (ver, _identity, assoc_handle, return_to, trust_root, sid, 1, sreg_required, sreg_optional, policy_url);
 };
 
@@ -681,6 +698,85 @@ create procedure cancel (in ver int := 1, in return_to varchar)
   return '';
 };
 
+create procedure oid_set_sid (in sid varchar, in pars any)
+{
+  declare pos any;
+  pos := position ('sid', pars);
+  if (pos > 0)
+    {
+      pars [pos] := sid;
+      pos := position ('realm', pars);
+      if (pos > 0)
+	pars[pos] := 'wa';
+    }
+  else
+    {
+      pars := vector_concat (pars, vector ('sid', sid, 'realm', 'wa')) ;
+    }
+  return pars;
+}
+;
+
+create procedure oid_get_user_id (in _identity any)
+{
+  declare iarr, uname any;
+  iarr := sprintf_inverse (_identity, 'http://%s/dataspace/%s', 1);
+
+  uname := null;
+  if (length (iarr) = 2)
+    {
+      declare real_uid varchar;
+      uname := iarr[1];
+      uname := rtrim(uname, '/');
+      real_uid := (select U_NAME from DB.DBA.SYS_USERS join DB.DBA.WA_USER_INFO on (WAUI_U_ID = U_ID) where WAUI_NICK = uname);
+      if (length (real_uid))
+	uname := real_uid;
+    }
+  return uname;
+}
+;
+
+create procedure WA_SSL_LINK (in add_host int := 0, in url varchar := null)
+{
+  declare wa_url, ret varchar;
+  wa_url := registry_get ('wa_home_link');
+
+  if (add_host)
+    {
+      declare hf any;
+      hf := WS.WS.PARSE_URI (wa_url);
+      hf[0] := 'https';
+      hf[1] := DB.DBA.WA_HTTPS();
+      wa_url := db.dba.vspx_uri_compose (hf);
+    }
+
+  if (length (url) = 0)
+    {
+      ret := wa_url;
+    }
+  else
+    {
+      ret := WS.WS.EXPAND_URL (wa_url, url);
+    }
+    -- dbg_obj_print ('', ret);
+  return ret;
+};
+
+create procedure get_login_url (in _identity any)
+{
+  declare uname, login, cert varchar;
+  declare enabled int;
+  uname := oid_get_user_id (_identity);
+  whenever not found goto nf;
+  select WAUI_CERT, WAUI_CERT_LOGIN into cert, enabled from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname;
+  if (length (cert) and enabled)
+    {
+      return wa_ssl_link (1, 'openid_login.vspx');
+    }
+  nf:
+  return DB.DBA.wa_link(1, 'openid_login.vspx');
+}
+;
 
 create procedure check_authentication
 	(
@@ -699,7 +795,18 @@ create procedure check_authentication
 
   svec := vector ();
 
+  whenever not found goto nxt;
+  select deserialize (VS_STATE) into svec from DB.DBA.VSPX_SESSION where VS_SID = sid and VS_REALM = 'wa';
+
   algo := null;
+  if (isarray (svec) and not isstring (svec) and 0 = mod (length (svec), 2))
+    svec := get_keyword ('OpenID_sreg', svec, null);
+  else
+    svec := null;
+
+  if (not isarray (svec))
+    {
+      nxt:;
   idn := get_keyword ('openid.identity', params, '');
   iarr := sprintf_inverse (idn, 'http://%s/dataspace/%s', 1);
 
@@ -743,6 +850,7 @@ create procedure check_authentication
 		);
 
   nf:;
+    }
 
   if (exists (select 1 from SERVER_SESSIONS where SS_HANDLE = assoc_handle))
     {

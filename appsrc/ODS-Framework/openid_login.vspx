@@ -77,22 +77,25 @@
     if (get_keyword('sid', self.vc_event.ve_params) is null and get_keyword('sid', cookie_vec) is not null
     	and self._identity is not null)
       {
-        declare pars, pos any;
-        pars := self.vc_event.ve_params;
 	sid := get_keyword('sid', cookie_vec);
-	pos := position ('sid', pars);
-	if (pos > 0)
-	  {
-	     pars [pos] := sid;
-	     pos := position ('realm', pars);
-	     if (pos > 0)
-	       pars[pos] := 'wa';
+	self.vc_event.ve_params := OPENID.DBA.oid_set_sid (sid, self.vc_event.ve_params);
 	  }
-        else
+    if (get_keyword ('sid', self.vc_event.ve_params) is null and is_https_ctx ())
           {
-             pars := vector_concat (pars, vector ('sid', sid, 'realm', 'wa')) ;
+	declare gr varchar;
+	declare rc int;
+	declare vec any;
+	rc := sioc.DBA.foaf_check_ssl_int (null, gr);
+	if (rc)
+	  {
+	    vec := OPENID.DBA.get_user_details (gr, self._identity);
+	    if (vec is not null)
+	      {
+		sid := DB.DBA.vspx_sid_generate ();
+		insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_STATE) values (sid, 'wa', serialize (vector ('OpenID_sreg', vec)));
+		self.vc_event.ve_params := OPENID.DBA.oid_set_sid (sid, self.vc_event.ve_params);
+	      }
           }
-        self.vc_event.ve_params := pars;
       }
 ]]></v:on-init>
 <html>
