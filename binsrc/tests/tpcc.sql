@@ -180,6 +180,7 @@ create procedure payment (
     screen_data varchar;
   declare namecnt integer;
 
+  set isolation = 'repeatable';
   _d_street_1 := 'no_d_str';
   _w_street_1 := 'no_w_str';
   _c_first := 'no-c_first';
@@ -335,8 +336,8 @@ create procedure payment (
   return;
 
 no_customer:
-  dbg_printf ('No customer %s d %d id %d first %s id1 %d n_with_last %d. d_str %s w_str %s\n',
-	      _c_last, _d_id, _c_id, _c_first, _c_id1, namecnt, _d_street_1, _w_street_1);
+  dbg_printf ('No customer %s d %d id %d first %s id1 %d n_with_last %d, counted %d. d_str %s w_str %s\n',
+	      _c_last, _d_id, _c_id, _c_first, _c_id1, namecnt, n, _d_street_1, _w_street_1);
   signal ('NOCUS', 'No customer in payment.');
 }
 
@@ -388,7 +389,7 @@ create procedure ol_stock (
 	s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10
     from stock
     where s_i_id = _ol_i_id
-      and s_w_id = _ol_supply_w_id;
+      and s_w_id = _ol_supply_w_id for update;
 
   whenever not found goto no_stock;
 
@@ -521,7 +522,7 @@ create procedure new_order (
   _datetime := now ();
 
   result_names (i_name, qty_1, disti_1, ol_a_1, ol_a_2);
-
+  set isolation = 'repeatable';
   ol_stock (
       _w_id, _d_id, i_id_1, s_w_id_1, qty_1, ol_a_1,
       s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05,
@@ -578,7 +579,7 @@ create procedure new_order (
     select d_tax, d_next_o_id
       from district
       where d_w_id = _w_id
-        and d_id = _d_id;
+        and d_id = _d_id for update;
 
   whenever not found goto noware;
   open d_cur (exclusive);
@@ -660,12 +661,14 @@ create procedure delivery_1 (
     select no_o_id
       from new_order
       where no_w_id = w_id
-        and no_d_id = d_id;
+        and no_d_id = d_id for update;
 
   declare _datetime timestamp;
   declare _o_id, _c_id integer;
   declare ol_total float;
+  declare exit handler for not found { signal ('delnf', sprintf ('delivery not found d %d o %d', d_id, _o_id)); };
 
+  set isolation = 'repeatable';
   _datetime := now ();
   open no_cur (exclusive, prefetch 1);
   fetch no_cur into _o_id;
@@ -677,7 +680,7 @@ create procedure delivery_1 (
       from orders
       where o_w_id = w_id
         and o_d_id = d_id
-	and o_id = _o_id;
+	and o_id = _o_id for update;
 
   open o_cur (exclusive);
   fetch o_cur into _c_id;
@@ -691,7 +694,7 @@ create procedure delivery_1 (
       from order_line
       where ol_w_id = w_id
         and ol_d_id = d_id
-	and ol_o_id = _o_id;
+	and ol_o_id = _o_id for update;
 
   ol_total := 0.0;
   whenever not found goto lines_done;
@@ -844,6 +847,7 @@ create procedure w_order_check (in q integer)
   declare d, w integer;
   declare cr cursor for select d_w_id, d_id from district;
   whenever not found goto done;
+  set isolation = 'committed';
   open cr;
   while (1) {
     fetch cr into w, d;
@@ -858,7 +862,7 @@ create procedure seq_read ()
 {
   declare r, d, t, tb any;
   declare REPORT float;
-
+  set isolation = 'committed';
   result_names (tb, REPORT);
 
   d := msec_time ();
@@ -878,3 +882,38 @@ create procedure seq_read ()
   result ('order_line', REPORT);
 };
 
+
+create procedure o_trim (in keep_n int, in w1 int := 0, in w2 int := null)
+{
+  declare d, w integer;
+  if (w2 is null) w2 := (select max (w_id) from warehouse);
+  declare cr cursor for select d_w_id, d_id from district where d_w_id between w1 and w2;
+  whenever not found goto done;
+  set isolation = 'committed';
+  open cr;
+  while (1) {
+    fetch cr into w, d;
+    declare first_o, last_o int;
+    first_o := (select top 1 o_id from orders where o_w_id = w and o_d_id = d order by o_id);
+    last_o := (select top 1 o_id from orders where o_w_id = w and o_d_id = d order by o_id desc);
+    if (last_o - first_o > keep_n)
+      {
+	delete from orders where o_w_id = w and o_d_id = d and o_id < last_o - keep_n;
+	commit work;
+	delete from order_line where ol_w_id = w and ol_d_id = d and ol_o_id < last_o - keep_n;
+	commit work;
+      }
+  }  
+ done: return;
+}
+
+
+create procedure o_trim_loop (in keep_n int)
+{
+  while (1)
+    {
+      o_trim (keep_n);
+      commit work;
+      delay (120);
+    }
+}

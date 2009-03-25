@@ -262,6 +262,7 @@ print_times_str (char *szBuffer)
 }
 #endif
 
+extern int n_deadlocks;
 int
 do_run_test (int n_rounds, int _local_w_id, int _n_ware)
 {
@@ -332,8 +333,11 @@ do_run_test (int n_rounds, int _local_w_id, int _n_ware)
 	  ta_init (&check_point_ta, "CHECK_POINT");
 	  /*Do statistic */
 	}
+#if 0  
+      /* not the client's problem during test run */
       if (i && 0 == i % CHECK_POINT_INTERVAL)
 	scrap_log ();
+#endif      
       if (i && 0 == i % 10)
 	{
 #if !defined(GUI)
@@ -349,7 +353,7 @@ do_run_test (int n_rounds, int _local_w_id, int _n_ware)
   progress_done ();
 #endif
   total = get_msec_count () - start_total;
-  printf ("# Total transactions:%d %ld tpmC\n", i, 600000 / (total / i));
+  printf ("# Total transactions:%d %ld tpmC, %d retries\n", i, 600000 / (total / i), n_deadlocks);
 
   return 1;
 }

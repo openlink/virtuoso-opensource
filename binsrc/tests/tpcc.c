@@ -311,6 +311,8 @@ print_error (HSTMT e1, HSTMT e2, HSTMT e3)
   printf ("\n*** Error %s: %s\n", state, message);
   if (0 == strcmp (state, "08S01"))
     exit (2);
+  if (0 == strcmp (state, "40003"))
+    exit (2);
 #endif
 }
 

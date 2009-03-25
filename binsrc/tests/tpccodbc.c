@@ -45,6 +45,51 @@
 
 #include "tpcc.h"
 
+int n_deadlocks;
+
+#undef IF_DEADLOCK_OR_ERR_GO
+#define IF_DEADLOCK_OR_ERR_GO(stmt, tag, foo, deadlocktag) \
+  if (SQL_ERROR == (foo)) \
+    { \
+      while (SQL_NO_DATA_FOUND != SQLError (SQL_NULL_HENV, SQL_NULL_HDBC, stmt, (UCHAR *) state, NULL, \
+					    (UCHAR *) & message, sizeof (message), (SWORD *) & len)) { \
+	if (0 == strcmp(state, "40001") || 0 == strncmp(state, "S1T00", 5) || 0 == strncmp(state, "08C02", 5)) \
+	  { n_deadlocks++; if (0 == n_deadlocks % 10) rnd_wait (); printf ("retry=%s %s\n", op, state);  goto deadlocktag;} \
+	else if (0 == strncmp(state, "08", 2)) \
+	    { printf ("disconnected\n"); error_exit (); }			\
+	else  \
+	  { \
+	    if (0 == strncmp(state, "40003", 5) && (try_out_of_disk++) < TRYS) \
+	       goto deadlocktag; \
+	    if (!messages_off) \
+	      printf ("\n*** Error trx %s: %s\n", state, message); \
+	    if (!messages_off) \
+	      printf ("\n op %s   Line %d, file %s\n", op, __LINE__, __FILE__); \
+	    goto tag; \
+	  }}	      \
+    }
+
+
+
+
+void
+error_exit ()
+{
+  exit (-1);
+}
+
+
+void
+rnd_wait ()
+{
+  long w = (rnd () & 0x7fffffff) % 1000000;
+  struct timeval tv;
+  tv.tv_sec = 0;
+  tv.tv_usec = w;
+  select (0, NULL, NULL, NULL, &tv);
+}
+
+
 #define OL_MAX 20
 #define OL_PARS 3
 #define NO_PARS 5
@@ -119,7 +164,7 @@ login (HENV * henv_, HDBC * hdbc_, char *argv_, char *dbms_, int dbms_sz,
 }
 
 int
-stmt_result_sets (HSTMT stmt)
+stmt_result_sets (HSTMT stmt, char * op)
 {
   RETCODE rc;
   DECLARE_FOR_SQLERROR;
@@ -170,6 +215,7 @@ deadlock_rs:
 void
 new_order ()
 {
+  char * op = "new order";
   RETCODE rc;
   int n;
   static struct timeval tv;
@@ -224,7 +270,7 @@ deadlock_no:
   rc = SQLExecute (new_order_stmt);
   IF_DEADLOCK_OR_ERR_GO (new_order_stmt, err, rc, deadlock_no);
   if (rc != SQL_NO_DATA_FOUND)
-    if (stmt_result_sets (new_order_stmt))
+    if (stmt_result_sets (new_order_stmt, "new order"))
       goto deadlock_no;
 
 err:
@@ -236,6 +282,7 @@ err:
 void
 payment ()
 {
+  char * op = "payment";
   RETCODE rc;
   long w_id = local_w_id;
   long d_id = RandomNumber (1, DIST_PER_WARE);
@@ -267,7 +314,7 @@ deadlock_pay:
   rc = SQLExecute (payment_stmt);
   IF_DEADLOCK_OR_ERR_GO (payment_stmt, err, rc, deadlock_pay);
   if (rc != SQL_NO_DATA_FOUND)
-    if (stmt_result_sets (payment_stmt))
+    if (stmt_result_sets (payment_stmt, op))
       goto deadlock_pay;
 
 err:
@@ -277,6 +324,7 @@ err:
 void
 delivery_1 (long w_id, long d_id)
 {
+  char * op = "delivery";
   long carrier_id = 13;
   RETCODE rc;
   DECLARE_FOR_SQLERROR;
@@ -293,7 +341,7 @@ deadlock_del1:
   SQLTransact (henv, hdbc, SQL_COMMIT);
   IF_DEADLOCK_OR_ERR_GO (delivery_stmt, err, rc, deadlock_del1);
   if (rc != SQL_NO_DATA_FOUND)
-    if (stmt_result_sets (delivery_stmt))
+    if (stmt_result_sets (delivery_stmt, op))
       goto deadlock_del1;
 err:;
 }
@@ -301,6 +349,7 @@ err:;
 void
 slevel ()
 {
+  char * op = "slevel";
   RETCODE rc;
   long w_id = local_w_id;
   long d_id = RandomNumber (1, DIST_PER_WARE);
@@ -325,7 +374,7 @@ deadlock_sl:
   rc = SQLExecute (slevel_stmt);
   IF_DEADLOCK_OR_ERR_GO (slevel_stmt, err, rc, deadlock_sl);
   if (rc != SQL_NO_DATA_FOUND)
-    if (stmt_result_sets (slevel_stmt))
+    if (stmt_result_sets (slevel_stmt, "slevel"))
       goto deadlock_sl;
 
 err:
@@ -335,6 +384,7 @@ err:
 void
 ostat ()
 {
+  char * op = "ostat";
   RETCODE rc;
   long w_id = local_w_id;
   long d_id = RandomNumber (1, DIST_PER_WARE);
@@ -361,7 +411,7 @@ deadlock_os:
   rc = SQLExecute (ostat_stmt);
   IF_DEADLOCK_OR_ERR_GO (ostat_stmt, err, rc, deadlock_os);
   if (rc != SQL_NO_DATA_FOUND)
-    if (stmt_result_sets (ostat_stmt))
+    if (stmt_result_sets (ostat_stmt, op))
       goto deadlock_os;
 
 err:
