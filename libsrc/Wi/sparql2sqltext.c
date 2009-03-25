@@ -5850,11 +5850,7 @@ from_printed:
                   /* dk_set_t bad_expns = NULL; */
                   int good_len /*, bad_len*/;
                   if (SPART_IS_DEFAULT_GRAPH_BLANK(g))
-                    {
-                      if (ssg->ssg_sparp->sparp_env->spare_named_graphs_listed)
                         chk_graphs = ssg->ssg_sparp->sparp_env->spare_default_graphs;
-                      else chk_graphs = NULL;
-                    }
                   else
                     chk_graphs = ssg->ssg_sparp->sparp_env->spare_named_graphs;
                   DO_SET (SPART *,src, &(chk_graphs))
@@ -5877,6 +5873,24 @@ from_printed:
                     }
                 }
             }
+/* Default modification of of the \c ft_arg1 argument is to concatenate it with encoding mark */
+          if (SPAR_LIT == SPART_TYPE (ft_arg1))
+            {
+              caddr_t ft_arg1_box = SPAR_LIT_OR_QNAME_VAL(ft_arg1);
+              if (DV_STRING == DV_TYPE_OF (ft_arg1_box))
+                {
+                  int ft_arg1_box_len = box_length (ft_arg1_box);
+                  caddr_t patched = t_alloc_box (18 + ft_arg1_box_len, DV_STRING);
+/*                                  0          1          */
+/*                                  01234567.890123.45678 */
+                  memcpy (patched, "[ __enc \"UTF-8\" ] ", 18);
+                  memcpy (patched + 18, ft_arg1_box, ft_arg1_box_len);
+                  ft_arg1 = (SPART *)patched;
+                  goto ft_arg1_is_patched; /* see below */
+                }
+            }
+          ft_arg1 = spar_make_funcall (ssg->ssg_sparp, 0, "bif:concat",
+            (SPART **)t_list (2, t_box_dv_short_string ("[ __enc \"UTF-8\" ] "), ft_arg1) );
 ft_arg1_is_patched:
           ssg_print_where_or_and (ssg, "freetext predicate");
           ssg_putchar (' ');

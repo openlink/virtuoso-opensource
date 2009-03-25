@@ -8038,7 +8038,7 @@ create function DB.DBA.RDF_OBJ_PATCH_CONTAINS_BY_GRAPH (in phrase varchar, in gr
   if (isinteger (graph_keyword))
     goto err;
   graph_keyword := WS.WS.STR_SQL_APOS (cast (graph_keyword as varchar));
-  return sprintf ('^%s AND (%s)', graph_keyword, phrase);
+  return sprintf ('[__enc "UTF-8"] ^%s AND (%s)', graph_keyword, phrase);
 err:
   return '^"#nosuch"';
 }
@@ -8069,7 +8069,7 @@ create function DB.DBA.RDF_OBJ_PATCH_CONTAINS_BY_MANY_GRAPHS (in phrase varchar,
         }
     }
   if (not isfirst)
-    return sprintf ('(%s) AND (%s)', string_output_string (ses), phrase);
+    return sprintf ('[__enc "UTF-8"] (%s) AND (%s)', string_output_string (ses), phrase);
 err:
   return '^"#nosuch"';
 }
