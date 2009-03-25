@@ -214,11 +214,6 @@ create procedure ore_iri (in s varchar)
   return concat ('http://www.openarchives.org/ore/terms/', s);
 };
 
-create procedure opl_iri (in s varchar)
-{
-  return concat ('http://www.openlinksw.com/schema/attribution#', s);
-};
-
 
 create procedure cert_iri (in s varchar)
 {
@@ -568,6 +563,11 @@ create procedure person_prj_iri (in iri varchar, in suff varchar)
   if (length (arr) <> 2)
     signal ('22023', sprintf ('Non-user IRI [%s] can\'t be transformed to person IRI', iri));
   return sprintf ('http://%s/dataspace/person/%s/projects#%s',arr[0],arr[1], suff);
+};
+
+create procedure person_bio_iri (in person_iri varchar, in suff varchar)
+{
+  return person_iri || '#event' || suff;
 };
 
 -- User
@@ -1149,6 +1149,22 @@ create procedure sioc_app_related (in graph_iri varchar, in iri varchar, in  nam
   DB.DBA.RDF_QUAD_URI_L (graph_iri, rel_iri, rdfs_iri ('label'), nam);
 };
 
+
+create procedure sioc_user_bioevent (in graph_iri varchar, in user_iri varchar, in bioID integer, in bioEvent varchar, in bioDate varchar, in bioPlace varchar)
+{
+  declare bio_iri, person_iri any;
+
+  person_iri := person_iri (user_iri, '');
+  bio_iri := person_bio_iri (person_iri, cast (bioID as varchar));
+  delete_quad_s_or_o (graph_iri, bio_iri, bio_iri);
+
+  DB.DBA.RDF_QUAD_URI (graph_iri, bio_iri, rdf_iri ('type'), bioEvent);
+  DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, bio_iri ('event'), bio_iri);
+  if (not isnull (bioDate))
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, bio_iri, bio_iri ('date'), bioDate);
+  if (not isnull (bioPlace))
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, bio_iri, bio_iri ('place'), bioPlace);
+};
 
 create procedure sioc_user_account (in graph_iri varchar, in iri varchar, in  nam varchar, in  url varchar)
 {
@@ -1869,6 +1885,10 @@ create procedure fill_ods_sioc (in doall int := 0)
 		    {
 		      sioc_user_related (graph_iri, iri, WUR_LABEL, WUR_SEEALSO_IRI, WUR_P_IRI);
 		    }
+		  for select WUB_ID, WUB_EVENT, WUB_DATE, WUB_PLACE from DB.DBA.WA_USER_BIOEVENTS where WUB_U_ID = U_ID do
+		    {
+          sioc_user_bioevent (graph_iri, iri, WUB_ID, WUB_EVENT, WUB_DATE, WUB_PLACE);
+		    }
 		  if (length (WAUI_SKYPE))
 		    sioc_user_account (graph_iri, iri, WAUI_SKYPE, 'skype:'||WAUI_SKYPE||'?chat');
 		}
@@ -2548,6 +2568,47 @@ create trigger WA_USER_OL_ACCOUNTS_SIOC_D after delete on DB.DBA.WA_USER_OL_ACCO
   iri := user_iri (O.WUO_U_ID);
   del_iri := person_ola_iri (iri, O.WUO_NAME);
   delete_quad_s_or_o (graph_iri, del_iri, del_iri);
+};
+
+-- Bioevents
+create trigger WA_USER_BIOEVENTS_SIOC_I after insert on DB.DBA.WA_USER_BIOEVENTS referencing new as N
+{
+  declare graph_iri, user_iri any;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  graph_iri := get_graph ();
+  user_iri := user_iri (N.WUB_U_ID);
+  sioc_user_bioevent (graph_iri, user_iri, N.WUB_ID, N.WUB_EVENT, N.WUB_DATE, N.WUB_PLACE);
+};
+
+create trigger WA_USER_BIOEVENTS_SIOC_U after update on DB.DBA.WA_USER_BIOEVENTS referencing old as O, new as N
+{
+  declare graph_iri, user_iri any;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  graph_iri := get_graph ();
+  user_iri := user_iri (N.WUB_U_ID);
+  sioc_user_bioevent (graph_iri, user_iri, N.WUB_ID, N.WUB_EVENT, N.WUB_DATE, N.WUB_PLACE);
+};
+
+create trigger WA_USER_BIOEVENTS_SIOC_D after delete on DB.DBA.WA_USER_BIOEVENTS referencing old as O
+{
+  declare graph_iri, user_iri, person_iri, bio_iri any;
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  graph_iri := get_graph ();
+  user_iri := user_iri (O.WUB_U_ID);
+  person_iri := person_iri (user_iri, '');
+  bio_iri := person_bio_iri (person_iri, cast (O.WUB_ID as varchar));
+  delete_quad_s_or_o (graph_iri, bio_iri, bio_iri);
 };
 
 -- Related
@@ -3346,20 +3407,9 @@ create procedure foaf_check_friend (in iri varchar, in agent varchar)
 
 create procedure foaf_check_ssl (in iri varchar)
 {
-  declare rc any;
-  declare gr varchar;
-  rc := foaf_check_ssl_int (iri, gr);
-  delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (gr);
-  return rc;
-}
-;
-
-create procedure foaf_check_ssl_int (in iri varchar, out gr varchar)
-{
   declare stat, msg, meta, data, info, qr, hf, graph any;
   declare agent varchar;
 
-  gr := null;
   declare exit handler for sqlstate '*'
     {
       rollback work;
@@ -3375,23 +3425,22 @@ create procedure foaf_check_ssl_int (in iri varchar, out gr varchar)
     return 0;
 
   agent := subseq (agent, 4);
-  if (iri is not null and not foaf_check_friend (iri, agent))
+  if (not foaf_check_friend (iri, agent))
     return 0;
 
   hf := rfc1808_parse_uri (agent);
   hf[5] := '';
   graph := DB.DBA.vspx_uri_compose (hf);
-  gr := uuid ();
-  delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (gr);
+  delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (graph);
   commit work;
-  qr := sprintf ('sparql load <%S> into graph <%S>', graph, gr);
+  qr := sprintf ('sparql load <%S> into graph <%S>', graph, graph);
   stat := '00000';
   exec (qr, stat, msg);
   commit work;
   qr := sprintf ('sparql prefix cert: <' || cert_iri ('') || '> ' || ' prefix rsa: <' || rsa_iri ('') || '> ' ||
   	'select ?exp_val ?mod_val from <%S> '||
   	' where { ?id cert:identity <%S> ; rsa:public_exponent ?exp ; rsa:modulus ?mod . ?exp cert:decimal ?exp_val . ?mod cert:hex ?mod_val . }',
-	gr, agent);
+	graph, agent);
   stat := '00000';
 --  dbg_printf ('%s', qr);
   exec (qr, stat, msg, vector (), 0, meta, data);
@@ -3628,6 +3677,10 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?idn rsa:modulus ?mod .
 	    ?exp cert:decimal ?exp_val .
 	    ?mod cert:hex ?mod_val .
+	    ?person bio:event ?event_iri .
+	    ?event_iri rdf:type ?bioEvent .
+	    ?event_iri bio:date ?bioDate .
+	    ?event_iri bio:place ?bioPlace .
 	  }
 	  WHERE
 	  {
@@ -3641,13 +3694,15 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	      optional { ?person foaf:topic_interest ?topic_interest } .
 	      optional { ?topic_interest rdfs:label ?topic_interest_label  } .
 	      optional { ?idn cert:identity ?person ; rsa:public_exponent ?exp ; rsa:modulus ?mod . ?exp cert:decimal ?exp_val . ?mod cert:hex ?mod_val  } .
+	      optional { ?person bio:event ?event_iri . ?event_iri rdf:type ?bioEvent . ?event_iri bio:date ?bioDate . ?event_iri bio:place ?bioPlace } .
 	      }
 	    }
 	  }', graph, graph, u_name);
 
   qry := decl || part;
   qrs [5] := qry;
-  if (p <> 0) qrs [5] := null;
+  if (p <> 0)
+    qrs [5] := null;
 
   part := sprintf (
 	  ' CONSTRUCT {

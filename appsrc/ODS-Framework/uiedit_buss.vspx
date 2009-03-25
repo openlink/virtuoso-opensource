@@ -622,7 +622,7 @@
                 <input type="hidden" id="d_no" name="d_no" value="<?V N ?>" />
                 </td>
               <td valign="top" nowrap="1">
-                <input type="button" value="Add" onclick="javascript: updateRow('d', null, {fld1: {mode: 1, value: 'Google'}, fld2: {value: 'http://google.com', className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
+                <input type="button" value="Add" onclick="javascript: updateRow('d', null, {fld_1: {mode: 1, value: 'Google'}, fld_2: {value: 'http://google.com', className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
                 </td>
               </tr>
           </table>
@@ -712,7 +712,7 @@
               }
             ?>
           </table>
-          <input type="button" value="Add" onclick="javascript: updateRow('m', null, {fld1: {}, fld2: {cssText: 'width: 216px;'}});" />
+          <input type="button" value="Add" onclick="javascript: updateRow('m', null, {fld_1: {}, fld_2: {cssText: 'width: 216px;'}});" />
         </div>
       </div>
       <table class="ctl_grp">

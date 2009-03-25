@@ -776,6 +776,50 @@ CmdUtils.CreateCommand({
 });
 
 CmdUtils.CreateCommand({
+  name: "ods-create-user-bioevent",
+  takes: {"bioEvent": noun_arb_text},
+  modifiers: {"on": noun_arb_text, "in": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-create-user-bioevent &lt;bioEvent&gt; on &lt;onDate&gt; in &lt;inPlace&gt;",
+  execute: function (bioEvent, modifiers) {
+    try {
+      checkParameter(bioEvent.text, "bioEvent");
+      var params = {bioEvent: bioEvent.text};
+      addParameter(modifiers, "on", params, "bioDate");
+      addParameter(modifiers, "in", params, "bioPlace");
+      odsExecute("user.bioevent.new", params);
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-user-bioevent",
+  takes: {"bioEvent": noun_arb_text},
+  modifiers: {"on": noun_arb_text, "in": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-delete-user-bioevent &lt;bioEvent&gt; on &lt;onDate&gt; in &lt;inPlace&gt;",
+  execute: function (bioEvent, modifiers) {
+    try {
+      checkParameter(bioEvent.text, "bioEvent");
+      var params = {bioEvent: bioEvent.text};
+      addParameter(modifiers, "on", params, "bioDate");
+      addParameter(modifiers, "in", params, "bioPlace");
+      odsExecute("user.bioevent.delete", params);
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
   name: "ods-get-instance-id",
   takes: {"instanceName": noun_arb_text},
   homepage: "http://myopenlink.net/ods/",

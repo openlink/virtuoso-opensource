@@ -264,10 +264,11 @@
     <br />
     <div id="p" class="c1">
       <div class="tabs">
-        <div onclick="javascript: showTab('p', 4, 0);" class="tab activeTab" id="p_tab_0">Main</div>
-        <div onclick="javascript: showTab('p', 4, 1);" class="tab" id="p_tab_1">Address</div>
-        <div onclick="javascript: showTab('p', 4, 2);" class="tab" id="p_tab_2">Online Accounts</div>
-        <div onclick="javascript: showTab('p', 4, 3);" class="tab" id="p_tab_3">Messaging Services</div>
+        <div onclick="javascript: showTab('p', 5, 0);" class="tab activeTab" id="p_tab_0">Main</div>
+        <div onclick="javascript: showTab('p', 5, 1);" class="tab" id="p_tab_1">Address</div>
+        <div onclick="javascript: showTab('p', 5, 2);" class="tab" id="p_tab_2">Biographical Events</div>
+        <div onclick="javascript: showTab('p', 5, 3);" class="tab" id="p_tab_3">Online Accounts</div>
+        <div onclick="javascript: showTab('p', 5, 4);" class="tab" id="p_tab_4">Messaging Services</div>
       </div>
       <div class="contents">
         <div id="p_content_0" class="tabContent">
@@ -512,7 +513,7 @@
                        <input type="hidden" id="e_no" name="e_no" value="<?V N ?>" />
                      </td>
                      <td valign="top" nowrap="1">
-                       <input type="button" value="Add" onclick="javascript: updateRow('e', null, {fld1: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
+                       <input type="button" value="Add" onclick="javascript: updateRow('e', null, {fld_1: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
                   <vm:u-prop-select name="sel_8" value="self.sav8" />
                 </td>
               </tr>
@@ -595,7 +596,7 @@
                  <input type="hidden" id="a_no" name="a_no" value="<?V N ?>" />
                </td>
                <td valign="top" nowrap="1">
-                       <input type="button" value="Add" onclick="javascript: updateRow('a', null, {fld1: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld2: {}});" />
+                       <input type="button" value="Add" onclick="javascript: updateRow('a', null, {fld_1: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld_2: {}});" />
                  <vm:u-prop-select name="sel_48" value="self.sav48" />
                </td>
              </tr>
@@ -651,7 +652,7 @@
                  <input type="hidden" id="b_no" name="b_no" value="<?V N ?>" />
     </td>
                <td valign="top" nowrap="1">
-                       <input type="button" value="Add" onclick="javascript: updateRow('b', null, {fld1: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld2: {value: ''}});" />
+                       <input type="button" value="Add" onclick="javascript: updateRow('b', null, {fld_1: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld_2: {value: ''}});" />
                  <vm:u-prop-select name="sel_49" value="self.sav49" />
     </td>
       </tr>
@@ -1030,6 +1031,67 @@
         <div id="p_content_2" class="tabContent" style="display: none;">
           <table class="ctl_grp">
             <tr>
+              <td width="800px">
+                <table id="d_tbl" class="listing">
+                  <tr class="listing_header_row">
+                    <th width="15%">
+                      Event
+                    </th>
+                    <th width="15%">
+                      Date
+                    </th>
+                    <th>
+                      Place
+                    </th>
+                    <th width="80px">
+                      Action
+                    </th>
+                  </tr>
+                  <?vsp
+                    declare N integer;
+
+                    N := 0;
+                    for select WUB_ID, WUB_EVENT, WUB_DATE, WUB_PLACE from WA_USER_BIOEVENTS where WUB_U_ID = self.u_id do
+                    {
+                  ?>
+                  <tr id="d_tr_<?V N ?>">
+                    <td id="d_th_<?V N ?>">
+                      <input type="hidden" id="d_fld_0_<?V N ?>" name="d_fld_0_<?V N ?>" value="<?V WUB_ID ?>" />
+                		  <![CDATA[
+                		    <script type="text/javascript">
+                		    <?vsp
+                          http (sprintf ('ODSInitArray.push ( function (){OAT.Loader.loadFeatures(["combolist"], function() {updateRowCombo4(\'d_th_%d\', \'d_fld_1_%d\', {mode: 4, value: \'%s\'});});})', N, N, WUB_EVENT));
+                		    ?>
+                		    </script>
+                		  ]]>
+                    </td>
+                    <td>
+                      <input type="text" id="d_fld_2_<?V N ?>" name="d_fld_2_<?V N ?>" value="<?V WUB_DATE ?>" style="width: 95%;" />
+                    </td>
+                    <td>
+                      <input type="text" id="d_fld_3_<?V N ?>" name="d_fld_3_<?V N ?>" value="<?V WUB_PLACE ?>" style="width: 95%;" />
+                    </td>
+                    <td>
+                      <input type="button" value="Remove" onclick="javascript: updateRow('d', <?V N ?>);" />
+                    </td>
+                  </tr>
+                  <?vsp
+                      N := N + 1;
+                    }
+                    http (sprintf ('<tr id="d_tr_no" style="display: %s"><td colspan="3"><b>No Biographical Events</b></td></tr>', case when N = 0 then '' else 'none' end));
+                  ?>
+                </table>
+                <input type="hidden" id="d_no" name="d_no" value="<?V N ?>" />
+              </td>
+              <td valign="top" nowrap="1">
+                <input type="button" value="Add" onclick="javascript: updateRow('d', null, {fld_1: {mode: 4}, fld_2: {}, fld_3: {}});" />
+              </td>
+            </tr>
+          </table>
+        </div>
+        <div id="p_content_3" class="tabContent" style="display: none;">
+          <table class="ctl_grp">
+            <tr>
               <td width="600px">
                 <table id="c_tbl" class="listing">
                   <tr class="listing_header_row">
@@ -1077,12 +1139,12 @@
                 <input type="hidden" id="c_no" name="c_no" value="<?V N ?>" />
               </td>
               <td valign="top" nowrap="1">
-                <input type="button" value="Add" onclick="javascript: updateRow('c', null, {fld1: {mode: 1, value: 'Google'}, fld2: {value: 'http://google.com', className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
+                <input type="button" value="Add" onclick="javascript: updateRow('c', null, {fld_1: {mode: 1, value: 'Google'}, fld_2: {value: 'http://google.com', className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
               </td>
             </tr>
           </table>
         </div>
-        <div id="p_content_3" class="tabContent" style="display: none;">
+        <div id="p_content_4" class="tabContent" style="display: none;">
           <table id="m_tbl" class="ctl_grp">
             <tr>
               <th><label for="u_icq">ICQ Number</label></th>
@@ -1167,7 +1229,7 @@
               }
             ?>
           </table>
-          <input type="button" value="Add" onclick="javascript: updateRow('m', null, {fld1: {}, fld2: {cssText: 'width: 216px;'}});" />
+          <input type="button" value="Add" onclick="javascript: updateRow('m', null, {fld_1: {}, fld_2: {cssText: 'width: 216px;'}});" />
         </div>
       </div>
       <table class="ctl_grp">
@@ -1422,13 +1484,14 @@
 
             declare N, id integer;
             declare suffix, tmp_a, tmp_b, tmp_e, tmp_m varchar;
-            declare IDx any;
+            declare IDc, IDd any;
 
             tmp_a := '';
             tmp_b := '';
             tmp_e := '';
             tmp_m := '';
-            IDx := vector ();
+            IDc := vector ();
+            IDd := vector ();
                  for (N := 0; N < length (e.ve_params); N := N + 4)
                  {
                    if ((e.ve_params [N] like 'a_fld_1_%') and (trim (e.ve_params [N+1]) <> ''))
@@ -1451,7 +1514,21 @@
 			               set WUO_NAME = trim (e.ve_params [N+1]),
 			                   WUO_URL = trim (get_keyword ('c_fld_2_'||suffix, e.ve_params, ''))
 			             where WUO_ID = id;
-                  IDx := vector_concat (IDx, vector (id));
+                  IDc := vector_concat (IDc, vector (id));
+                }
+              }
+              else if ((e.ve_params [N] like 'd_fld_1_%') and (trim (e.ve_params [N+1]) <> ''))
+              {
+                suffix := replace (e.ve_params [N], 'd_fld_1_', '');
+                id := cast (get_keyword ('d_fld_0_'||suffix, e.ve_params, '-1') as integer);
+                if (id <> -1)
+                {
+			            update WA_USER_BIOEVENTS
+			               set WUB_EVENT = trim (e.ve_params [N+1]),
+			                   WUB_DATE = trim (get_keyword ('d_fld_2_'||suffix, e.ve_params, '')),
+			                   WUB_PLACE = trim (get_keyword ('d_fld_3_'||suffix, e.ve_params, ''))
+			             where WUB_ID = id;
+                  IDd := vector_concat (IDd, vector (id));
                  }
               }
               else if ((e.ve_params [N] like 'e_fld_1_%') and (trim (e.ve_params [N+1]) <> ''))
@@ -1476,9 +1553,9 @@
 
 	          for (select WUO_ID as _id from WA_USER_OL_ACCOUNTS where WUO_U_ID = self.u_id and WUO_TYPE = 'P') do
 	          {
-	            for (N := 0; N < length (IDx); N := N + 1)
+	            for (N := 0; N < length (IDc); N := N + 1)
 	            {
-	              if (IDx[N] = _id)
+	              if (IDc[N] = _id)
 	                goto _exit;
 	            }
               delete from WA_USER_OL_ACCOUNTS where WUO_ID = _id;
@@ -1497,6 +1574,29 @@
                 }
                    }
                  }
+	          for (select WUB_ID as _id from WA_USER_BIOEVENTS where WUB_U_ID = self.u_id) do
+	          {
+	            for (N := 0; N < length (IDd); N := N + 1)
+	            {
+	              if (IDd[N] = _id)
+	                goto _exit2;
+	            }
+              delete from WA_USER_BIOEVENTS where WUB_ID = _id;
+            _exit2:;
+		        }
+            for (N := 0; N < length (e.ve_params); N := N + 4)
+            {
+              if ((e.ve_params [N] like 'd_fld_1_%') and (trim (e.ve_params [N+1]) <> ''))
+              {
+                suffix := replace (e.ve_params [N], 'd_fld_1_', '');
+                id := cast (get_keyword ('d_fld_0_'||suffix, e.ve_params, '-1') as integer);
+                if (id = -1)
+                {
+			            insert into WA_USER_BIOEVENTS ( WUB_EVENT, WUB_DATE, WUB_PLACE, WUB_U_ID)
+		                values (trim (e.ve_params [N+1]), trim (get_keyword ('d_fld_2_'||suffix, e.ve_params, '')), trim (get_keyword ('d_fld_3_'||suffix, e.ve_params, '')), self.u_id);
+                }
+              }
+            }
 
 			WA_USER_EDIT (self.u_name, 'WAUI_APP_ENABLE', atoi (self.app_enable.ufl_value));
 			update WA_USER_INFO set WAUI_NICK = self.nickn.ufl_value where WAUI_U_ID = self.u_id;

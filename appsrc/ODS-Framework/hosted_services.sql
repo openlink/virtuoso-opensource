@@ -1654,41 +1654,6 @@ for xml explicit'
 }
 ;
 
-create procedure WA_HTTPS ()
-{
-  declare default_host, ret varchar;
-  ret := connection_get ('WA_HTTPS');
-  if (ret is not null)
-    return ret;
-  default_host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
-  if (default_host is not null)
-    {
-      declare vec, sslp any;
-      sslp := server_https_port ();
-      if (sslp <> '443')
-        sslp := ':'||sslp;
-      else
-        sslp := '';
-      vec := split_and_decode (default_host, 0, '\0\0:');
-      if (length (vec) = 2)
-        {
-	  ret := vec[0] || sslp;
-	}
-      else
-        {
-	  ret := default_host || sslp;
-	}
-    }
-  else
-    {
-      ret := sys_stat ('st_host_name');
-      if (server_https_port () <> '443')
-	ret := ret ||':'|| server_https_port ();
-    }
-  connection_set ('WA_HTTPS', ret);
-  return ret;
-};
-
 create procedure WA_CNAME ()
 {
   declare default_host, ret varchar;
@@ -3435,8 +3400,26 @@ wa_exec_no_error_log(
 )
 ;
 wa_add_col ('DB.DBA.WA_USER_RELATED_RES', 'WUR_P_IRI', 'varchar default \'http://www.w3.org/2000/01/rdf-schema#seeAlso\'');
-
 wa_exec_no_error_log('create unique index WA_USER_RELATED_RES_IX1 on DB.DBA.WA_USER_RELATED_RES (WUR_ID)');
+
+wa_exec_no_error_log(
+    'CREATE TABLE WA_USER_BIOEVENTS (
+      WUB_ID integer identity,
+      WUB_U_ID integer,
+      WUB_EVENT varchar,
+      WUB_DATE varchar,
+      WUB_PLACE varchar,
+
+      primary key (WUB_ID)
+     )'
+)
+;
+
+wa_exec_no_error(
+  'create index WA_USER_BIOEVENTS_USER on WA_USER_BIOEVENTS (WUB_U_ID)'
+)
+;
+
 
 create procedure WA_USER_TAG_WAUTG_TAGS_INDEX_HOOK (inout vtb any, inout d_id integer)
 {

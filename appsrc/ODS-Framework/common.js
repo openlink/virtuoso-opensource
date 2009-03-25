@@ -407,27 +407,15 @@ function updateRow (prefix, No, optionObject)
       tr.id = prefix+'_tr_' + No;
       tbl.appendChild(tr);
 
-      var fldOptions = options.fld1;
-      if (fldOptions)
+      for (fld in options)
       {
+        if (fld.indexOf('fld') == 0)
+      {
+          var fldOptions = options[fld];
         var td = OAT.Dom.create('td');
         tr.appendChild(td);
-        updateCell (td, prefix, '_fld_1_', No, fldOptions)
+          updateCell (td, prefix, fld, No, fldOptions)
       }
-      var fldOptions = options.fld2;
-      if (fldOptions)
-      {
-        var td = OAT.Dom.create('td');
-        tr.appendChild(td);
-        updateCell (td, prefix, '_fld_2_', No, fldOptions)
-      }
-
-      var fldOptions = options.fld3;
-      if (fldOptions)
-      {
-        var td = OAT.Dom.create('td');
-        tr.appendChild(td);
-        updateCell (td, prefix, '_fld_3_', No, fldOptions)
       }
 
       var td = OAT.Dom.create('td');
@@ -445,7 +433,7 @@ function updateRow (prefix, No, optionObject)
 
 function updateCell (td, prefix, fldName, No, optionObject)
 {
-  fldName = prefix + fldName + No;
+  fldName = prefix + '_' + fldName + '_' + No;
   if (optionObject.mode == 1)
   {
 	  updateRowCombo(td, fldName, optionObject);
@@ -457,6 +445,10 @@ function updateCell (td, prefix, fldName, No, optionObject)
   else if (optionObject.mode == 3)
   {
 	  updateRowCombo3(td, fldName, optionObject);
+  }
+  else if (optionObject.mode == 4)
+  {
+	  updateRowCombo4(td, fldName, optionObject);
   }
   else
   {
@@ -603,6 +595,19 @@ function updateRowCombo3 (elm, fldName, fldOptions)
   cc.id = fldName;
 	updateRowComboOption2 (cc, fldOptions.value, "Grant", "G");
 	updateRowComboOption2 (cc, fldOptions.value, "Revoke", "R");
+
+  var elm = $(elm);
+  elm.appendChild(cc);
+}
+
+function updateRowCombo4 (elm, fldName, fldOptions)
+{
+	var cc = OAT.Dom.create("select");
+  cc.name = fldName;
+  cc.id = fldName;
+  updateRowComboOption2(cc, fldOptions.value, 'bio:Birth', 'bio:Birth');
+  updateRowComboOption2(cc, fldOptions.value, 'bio:Death', 'bio:Death');
+  updateRowComboOption2(cc, fldOptions.value, 'bio:Marriage', 'bio:Marriage');
 
   var elm = $(elm);
   elm.appendChild(cc);

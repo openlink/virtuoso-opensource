@@ -933,6 +933,68 @@ create procedure ODS.ODS_API."user.annotation.delete" (
 }
 ;
 
+create procedure ODS.ODS_API."user.bioevent.new" (
+  in bioEvent varchar,
+  in bioDate varchar := null,
+  in bioPlace varchar := null) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc int;
+  declare _u_id int;
+
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+
+  insert into DB.DBA.WA_USER_BIOEVENTS (WUB_U_ID, WUB_EVENT, WUB_DATE, WUB_PLACE)
+    values (_u_id, bioEvent, bioDate, bioPlace);
+  rc := (select max (WUB_ID) from DB.DBA.WA_USER_BIOEVENTS);
+  return ods_serialize_int_res (rc);
+}
+;
+
+create procedure ODS.ODS_API."user.bioevent.delete" (
+  in bioID varchar := null,
+  in bioEvent varchar := null,
+  in bioDate varchar := null,
+  in bioPlace varchar := null) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc int;
+  declare _u_id int;
+
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  if (isnill (bioID))
+  {
+    delete
+      from DB.DBA.WA_USER_BIOEVENTS
+     where WUB_U_ID = _u_id
+       and (bioEvent is null or WUB_EVENT = bioEvent)
+       and (bioDate is null or WUB_DATE = bioDate)
+       and (bioPlace is null or WUB_PLACE = bioPlace);
+  } else {
+    delete
+      from DB.DBA.WA_USER_BIOEVENTS
+     where WUB_U_ID = _u_id
+       and WUB_ID = bioID;
+  }
+  rc := 1;
+  return ods_serialize_int_res (rc);
+}
+;
+
 create procedure ODS.ODS_API.appendProperty (
   inout V any,
   in propertyName varchar,
@@ -1545,6 +1607,8 @@ grant execute on ODS.ODS_API."user.hyperlinking_rules.update" to ODS_API;
 grant execute on ODS.ODS_API."user.hyperlinking_rules.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.annotation.new" to ODS_API;
 grant execute on ODS.ODS_API."user.annotation.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.bioevent.new" to ODS_API;
+grant execute on ODS.ODS_API."user.bioevent.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.getFOAFData" to ODS_API;
 
 grant execute on ODS.ODS_API."instance.create" to ODS_API;

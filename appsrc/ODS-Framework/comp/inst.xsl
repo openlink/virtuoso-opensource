@@ -112,7 +112,7 @@
               </td>
               <td valign="top" nowrap="1">
                 <?vsp
-                  http ('<input type="button" value="Add" onclick="javascript: updateRow(\'s\', null, {fld1: {mode: 2}, fld2: {}, fld3: {mode: 3}});" />');
+                  http ('<input type="button" value="Add" onclick="javascript: updateRow(\'s\', null, {fld_1: {mode: 2}, fld_2: {}, fld_3: {mode: 3}});" />');
                 ?>
               </td>
             </tr>
