@@ -141,17 +141,6 @@
 		<xsl:variable name="label" select="concat($ns, $canonical_name)" />
 		<xsl:variable name="dt" />
 		<xsl:if test="$canonical_name">
-			<!--sioc:Item rdf:about="{$label}">
-				<sioc:has_container rdf:resource="{concat('#', $contextRef)}"/>
-       				<xsl:if test="string-length($ontology_class) &gt; 0">
-       				<rdf:type>
-					<xsl:attribute name="rdf:resource">
-       					<xsl:value-of select="$ontology_class" />
-					</xsl:attribute>
-       				</rdf:type>					
-       				</xsl:if>
-			</sioc:Item-->
-			
 			<rdf:Description rdf:about="{concat($baseUri, '#', @contextRef, '/', $canonical_name)}">
 				<xsl:if test="$canonical_type">
 					<rdf:type>
@@ -174,12 +163,6 @@
 			<rdf:Description rdf:about="{$contextRef}">
 				<sioc:container_of rdf:resource="{concat($baseUri, '#', @contextRef, '/', $canonical_name)}" />
 			</rdf:Description>
-			
-			<!--rdf:Description rdf:about="{$label}">
-				<rdfs:label>
-					<xsl:value-of select="$canonicallabelname" />
-				</rdfs:label>
-			</rdf:Description-->
 		</xsl:if>
 	</xsl:template>
 </xsl:stylesheet>
