@@ -8195,7 +8195,7 @@ http_vhosts_init (void)
 	  caddr_t * ssl_opts = NULL;
 	  if (sec && 0 == stricmp (sec, "SSL") && opts && box_length (opts))
 	    ssl_opts = opts;
-	  listening = http_listen (hp, ssl_opts);
+	  listening = http_listen (host, ssl_opts);
 	  if (listening)
 	    {
 	      mutex_enter (http_listeners_mutex);
