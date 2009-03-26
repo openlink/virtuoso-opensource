@@ -287,7 +287,7 @@ rdf_view_get_fk_pk_rel (in pref varchar, in suffix varchar, in tbl varchar, in t
   tname := tbl_name_l || suffix;
 
   ret := string_output ();
-  for select distinct PK_TABLE as pkt from SYS_FOREIGN_KEYS where FK_TABLE = tbl and 0 < position (PK_TABLE, tbls) do
+  for select distinct PK_TABLE as pkt from SYS_FOREIGN_KEYS where FK_TABLE = tbl and PK_TABLE <> tbl and 0 < position (PK_TABLE, tbls) do
     {
       declare fk_rel  any;
       pk_text := rdf_view_get_pk_rel (pref, suffix, pkt, 1);
@@ -309,7 +309,7 @@ rdf_view_get_pk_fk_rel (in pref varchar, in suffix varchar, in tbl varchar, in t
   tname := tbl_name_l || suffix;
 
   ret := string_output ();
-  for select distinct FK_TABLE as pkt from SYS_FOREIGN_KEYS where PK_TABLE = tbl and 0 < position (FK_TABLE, tbls) do
+  for select distinct FK_TABLE as pkt from SYS_FOREIGN_KEYS where PK_TABLE = tbl and FK_TABLE <> tbl and 0 < position (FK_TABLE, tbls) do
     {
       declare fk_rel  any;
       pk_text := rdf_view_get_pk_rel (pref, suffix, pkt, 1);
@@ -325,9 +325,9 @@ rdf_view_dv_to_printf_str_type (in _dv varchar)
 {
    if (_dv = 189 or _dv = 188) return '%d';
    else if (_dv = 182 or _dv = 225) return '%U';
-   else if (__tag of float = _dv) return '%f';
+   else if (__tag of double precision = _dv) return '%g';
    else if (__tag of real = _dv) return '%f';
-   else if (__tag of numeric = _dv) return '%f';
+   else if (__tag of numeric = _dv) return '%g';
    else if (__tag of date = _dv) return '%1D';
    else if (__tag of time = _dv) return '%1D';
    else if (__tag of datetime = _dv or __tag of timestamp = _dv) return '%1D';
@@ -340,7 +340,7 @@ rdf_view_dv_to_sql_str_type (in _dv varchar)
 {
    if (_dv = 189 or _dv = 188) return 'integer';
    else if (_dv = 182 or _dv = 125 or _dv = 131) return 'varchar';
-   else if (__tag of float = _dv) return 'float';
+   else if (__tag of double precision = _dv) return 'numeric';
    else if (__tag of real = _dv) return 'float';
    else if (__tag of numeric = _dv) return 'numeric';
    else if (__tag of date = _dv) return 'date';
@@ -399,7 +399,7 @@ rdf_view_get_relations (in _tbls varchar, in _suff varchar)
 	   name_part (FK_TABLE, 1) as FK_TABLE_SCHEMA,
 	   name_part (FK_TABLE, 2) as FK_TABLE_NAME, FKCOLUMN_NAME AS FK_COLUMN_NAME,
 	   KEY_SEQ, UPDATE_RULE, DELETE_RULE, FK_NAME
-	   FROM DB.DBA.SYS_FOREIGN_KEYS WHERE FK_TABLE like tbl) do
+	   FROM DB.DBA.SYS_FOREIGN_KEYS WHERE FK_TABLE = tbl and PK_TABLE <> tbl) do
 
 	 {
 	   if (position (PK_TABLE, _tbls) <> 0)
