@@ -332,13 +332,13 @@ bnode_found_or_added:
   arg1 = spar_make_funcall (sparp, 0, "bif:vector", (SPART **)t_list_to_array (var_tvectors));
   arg3 = spar_make_funcall (sparp, 0, "bif:vector", (SPART **)t_list_to_array (const_tvectors));
   if (NULL != arglast)
-    ctor_call = spar_make_funcall (sparp, 0, funname,
+    ctor_call = spar_make_funcall (sparp, 1, funname,
       (SPART **)t_list (5, arg0, arg1, var_vector_arg, arg3, arglast) );
   else if (NULL != arg0)
-    ctor_call = spar_make_funcall (sparp, 0, funname,
+    ctor_call = spar_make_funcall (sparp, 1, funname,
       (SPART **)t_list (4, arg0, arg1, var_vector_arg, arg3) );
   else
-    ctor_call = spar_make_funcall (sparp, 0, funname,
+    ctor_call = spar_make_funcall (sparp, 1, funname,
       (SPART **)t_list (4, arg1, var_vector_arg, arg3, t_box_num (use_limits)) );
   if (cve->cve_limofs_var_alias)
     {
@@ -617,7 +617,7 @@ spar_optimize_delete_of_single_triple_pattern (sparp_t *sparp, SPART *top)
       spar_emulate_ctor_field (sparp, args[4], args[5], known_vars),
       triple->_.triple.tr_fields[SPART_TRIPLE_OBJECT_IDX] ) )
     return 0;
-  good_ctor_call = spar_make_funcall (sparp, 0, "sql:SPARQL_DELETE_CTOR",
+  good_ctor_call = spar_make_funcall (sparp, 1, "sql:SPARQL_DELETE_CTOR",
     (SPART **)t_list (4,
       graph_expn,
       spar_make_funcall (sparp, 0, "bif:vector", var_triples),
@@ -695,7 +695,7 @@ spar_optimize_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top)
         t_set_push (&bad_triples, var_triples[tctr]);
     }
   fname = ((INSERT_L == top->_.req_top.subtype) ? "sql:SPARQL_INSERT_CTOR" : "sql:SPARQL_DELETE_CTOR");
-  good_ctor_call = spar_make_funcall (sparp, 0, fname,
+  good_ctor_call = spar_make_funcall (sparp, 1, fname,
     (SPART **)t_list (4,
       graph_expn,
       spar_make_funcall (sparp, 0, "bif:vector",
@@ -830,7 +830,7 @@ ins_is_bad: ;
     }
   if ((NULL == good_del_triples) && (NULL == good_ins_triples))
     return;
-  good_ctor_call = spar_make_funcall (sparp, 0, "sql:SPARQL_MODIFY_CTOR",
+  good_ctor_call = spar_make_funcall (sparp, 1, "sql:SPARQL_MODIFY_CTOR",
     (SPART **)t_list (5,
       graph_expn,
       spar_make_funcall (sparp, 0, "bif:vector",
