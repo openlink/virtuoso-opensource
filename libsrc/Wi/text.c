@@ -2044,6 +2044,7 @@ sst_check_and_hit (search_stream_t * sst, d_id_t * d_id, int is_fixed)
 	      if (DVC_MATCH != d_id_cmp (&rel->wrl_d_id, d_id))
 		{
                   db_buf_t pos, rel_pos;
+		  int pos_len, rel_len, hl;
                   if (!rel->wrl_dist && !rel->wrl_is_dist_fixed)
                     {
                       rel->wrl_score = 1;
@@ -2051,7 +2052,6 @@ sst_check_and_hit (search_stream_t * sst, d_id_t * d_id, int is_fixed)
                     }
 		  pos = (db_buf_t) (first->sst_buffer + first->sst_pos);
 		  rel_pos = (db_buf_t) (rel_sst->sst_buffer + rel_sst->sst_pos);
-		  int pos_len, rel_len, hl;
 		  WP_LENGTH (pos, hl, pos_len, first->sst_buffer, first->sst_fill);
 		  pos_len -= WP_FIRST_POS (pos + hl);
 		  pos += hl + WP_FIRST_POS (pos + hl);
