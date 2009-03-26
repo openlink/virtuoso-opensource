@@ -1,0 +1,17 @@
+How to build the Virtuoso Sesame provider
+=========================================
+
+* Create a lib directory 
+
+* Put the following .jar file from the openrdf project at
+  http://www.openrdf.org in here:
+
+	openrdf-sesame-3.0-alpha1-onejar.jar
+
+* Put the following .jar files from the Simple Logging Facade for Java
+  project at http://www.slf4j.org  in there:
+
+	slf4j-api-1.5.0.jar
+	slf4j-jdk14-1.5.0.jar
+
+* Run the make command
