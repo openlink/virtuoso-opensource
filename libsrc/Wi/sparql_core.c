@@ -2036,8 +2036,32 @@ bad_regex:
 SPART *
 spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPART **args)
 {
+  const char *sql_colon;
+  caddr_t proc_full_name;
+  query_t *proc;
   if (NULL == args)
     args = (SPART **)t_list (0);
+  if (0 != aggregate_mode)
+    goto aggr_checked; /* see below */
+  sql_colon = strstr (funname, "sql:");
+  if (NULL == sql_colon)
+    goto aggr_checked; /* see below */
+  if ((funname != sql_colon) && ((funname >= (sql_colon-2)) || (':' != sql_colon[-1]) || (':' != sql_colon[-2])))
+    goto aggr_checked; /* see below */
+  proc_full_name = t_box_sprintf (MAX_NAME_LEN + 10, "DB.DBA.%s", sql_colon+4);
+  if (CM_UPPER == case_mode)
+    sqlp_upcase (proc_full_name);
+  proc = sch_proc_def (isp_schema (sparp->sparp_sparqre->sparqre_qi->qi_space), proc_full_name);
+  if ((NULL == proc) || (NULL == proc->qr_aggregate))
+    goto aggr_checked; /* see below */
+  aggregate_mode = 1;
+  if (sparp->sparp_in_precode_expn)
+    spar_error (sparp, "Aggregate function %.100s() is not allowed in 'precode' expressions that should be calculated before the result-set of the query", funname);
+  if (!sparp->sparp_allow_aggregates_in_expn)
+    spar_error (sparp, "Aggregate function %.100s() is not allowed outside result-set expressions", funname);
+aggr_checked:
+  if (aggregate_mode)
+    sparp->sparp_query_uses_aggregates++;
   return spartlist (sparp, 4, SPAR_FUNCALL, t_box_dv_short_string (funname), args, (ptrlong)aggregate_mode);
 }
 
