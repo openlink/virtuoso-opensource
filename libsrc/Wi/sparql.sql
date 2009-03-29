@@ -3607,7 +3607,10 @@ create function DB.DBA.SPARUL_CLEAR (in graph_iri any, in inside_sponge integer 
   when 0 then 1 else 1 + exec (coalesce ('commit work', VT_D_ID, VT_D_ID_2)) end;
   commit work;
   if (not inside_sponge)
+    {
     delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = graph_iri;
+      delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI like concat ('destMD5=', md5 (graph_iri), '&graphMD5=%');
+    }
   commit work;
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
