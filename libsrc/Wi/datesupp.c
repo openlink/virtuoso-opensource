@@ -772,8 +772,8 @@ iso8601_or_odbc_string_to_dt_impl (const char *str, char *dt, int dtflags, int d
 void
 iso8601_or_odbc_string_to_dt (const char *str, char *dt, int dtflags, int dt_type, caddr_t *err_msg_ret)
 {
-  iso8601_or_odbc_string_to_dt_impl (str, dt, dtflags, dt_type, err_msg_ret);
   FILE *f = fopen ("iso8601_or_odbc_string_to_dt.log", "at");
+  iso8601_or_odbc_string_to_dt_impl (str, dt, dtflags, dt_type, err_msg_ret);
   if (NULL != f)
 	{
       if (NULL != err_msg_ret[0])
