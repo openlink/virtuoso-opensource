@@ -934,7 +934,7 @@ xmlg_end_tag (xv_context_t * xvc, xv_join_elt_t * xj, int depth)
 
 
 void
-xmlg_start_tag_xmlview (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t map, int acc_nth, int depth)
+xmlg_start_tag_xmlview (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t map, long acc_nth, int depth)
 {
   int inx;
   int child_count = 0;
@@ -1009,48 +1009,48 @@ print_ending_comment:
 
 
 void
-xmlg_end_tag_xmlview (xv_context_t * xvc, xv_join_elt_t * xj, int nth, int acc_nth, int depth, int simple_subelement)
+xmlg_end_tag_xmlview (xv_context_t * xvc, xv_join_elt_t * xj, int nth, long acc_nth, int depth, int simple_subelement)
 {
-  xmlg_printf (xvc, "\n--(Begin xmlg_end_tag_xmlview %s nth=%d acc_nth=%d depth=%d, simple_subelement=%d)\n", xj->xj_element, nth, acc_nth, depth, simple_subelement);
+  xmlg_printf (xvc, "\n--(Begin xmlg_end_tag_xmlview %s nth=%d acc_nth=%lu depth=%d, simple_subelement=%d)\n", xj->xj_element, nth, acc_nth, depth, simple_subelement);
     if (simple_subelement)
       {
 	xmlg_printf (xvc, "\n  declare acc_%s any;\n  xte_nodebld_init(acc_%s);\n"
 		" xte_nodebld_acc (acc_%s, cast (string_output_string (_out) as varchar));",
 		xj->xj_element, xj->xj_element, xj->xj_element);
 	xmlg_printf (xvc, "\n  xte_nodebld_final (acc_%s, head_%d);", xj->xj_element, nth+1);
-	xmlg_printf (xvc, " xte_nodebld_acc (acc_%d, acc_%s);\n", acc_nth, xj->xj_element);
+	xmlg_printf (xvc, " xte_nodebld_acc (acc_%lu, acc_%s);\n", acc_nth, xj->xj_element);
 	goto print_ending_comment; /* see below */
       }
     if (xj->xj_mp_schema && xj->xj_mp_schema->xj_is_constant)
       {
-	xmlg_printf (xvc, " acc_%s := acc_%d;", xj->xj_element, acc_nth);
+	xmlg_printf (xvc, " acc_%s := acc_%lu;", xj->xj_element, acc_nth);
 	xmlg_printf (xvc, " xte_nodebld_final (acc_%s, head_%s);\n", xj->xj_element, xj->xj_element);
-	xmlg_printf (xvc, " xte_nodebld_init (acc_%d);", acc_nth);
-	xmlg_printf (xvc, " xte_nodebld_acc (acc_%d, acc_%s);\n", acc_nth, xj->xj_element);
+	xmlg_printf (xvc, " xte_nodebld_init (acc_%lu);", acc_nth);
+	xmlg_printf (xvc, " xte_nodebld_acc (acc_%lu, acc_%s);\n", acc_nth, xj->xj_element);
 	goto print_ending_comment; /* see below */
       }
 
       xmlg_printf (xvc, " xte_nodebld_final (acc_%d, head_%d);\n", nth+1, nth+1);
-      xmlg_printf (xvc, " xte_nodebld_acc (acc_%d, acc_%d); ", acc_nth, nth+1);
+      xmlg_printf (xvc, " xte_nodebld_acc (acc_%lu, acc_%d); ", acc_nth, nth+1);
 
 print_ending_comment:
-  xmlg_printf (xvc, "\n--(End xmlg_end_tag_xmlview %s nth=%d acc_nth=%d depth=%d, simple_subelement=%d)\n", xj->xj_element, nth, acc_nth, depth, simple_subelement);
+  xmlg_printf (xvc, "\n--(End xmlg_end_tag_xmlview %s nth=%d acc_nth=%lu depth=%d, simple_subelement=%d)\n", xj->xj_element, nth, acc_nth, depth, simple_subelement);
 }
 
 
 void xmlg_join_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t map,
     int pk_args, int http_out,
-    int depth, int head_nth, int make_xte);
+    int depth, long head_nth, int make_xte);
 
 /*mapping schema*/
 void
 xmlg_join_simple_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t map,
     int pk_args, int http_out,
-    int depth, int *count_addition, int head_nth, int make_xte, int simple_subelement)
+    int depth, int *count_addition, long head_nth, int make_xte, int simple_subelement)
 {
   int inx;
   caddr_t full_name = NULL;
-  xmlg_printf (xvc, "\n--(Begin xmlg_join_simple_loop %s nth=%d pk_args=%d http_out=%d depth=%d head_nth=%d)\n",
+  xmlg_printf (xvc, "\n--(Begin xmlg_join_simple_loop %s nth=%d pk_args=%d http_out=%d depth=%d head_nth=%lu)\n",
      xj->xj_element, nth, pk_args, http_out, depth, head_nth );
   if (make_xte) /*xquery. tag*/
     {
@@ -1058,7 +1058,7 @@ xmlg_join_simple_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t
       full_name = xv_get_name_with_nsprefix (xvc, xj->xj_element, 0, default_namespace);
       if (simple_subelement)
 	{
-	  xmlg_printf (xvc, " xte_nodebld_acc (acc_%d, cast (string_output_string (_out) as varchar));\n", head_nth);
+	  xmlg_printf (xvc, " xte_nodebld_acc (acc_%lu, cast (string_output_string (_out) as varchar));\n", head_nth);
         }
       DO_BOX (xj_col_t *, xc, inx, xj->xj_cols)
       {
@@ -1123,17 +1123,17 @@ xmlg_join_simple_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t
     {
       if (make_xte) /*xquery*/
 	{
-          xmlg_printf (xvc, "\n  declare acc_%d any;"
-                              "  xte_nodebld_init(acc_%d);", (int) (ptrlong) xj->xj_prefix, (int) (ptrlong) xj->xj_prefix);
+          xmlg_printf (xvc, "\n  declare acc_%lu any;"
+                              "  xte_nodebld_init(acc_%lu);", (long)((ptrlong)(xj->xj_prefix)), (long)((ptrlong)(xj->xj_prefix)));
 /*                              "\n  xte_nodebld_init(acc_%d);", nth+1, nth+1);*/
 /*simple subelement value*/
-          xmlg_printf (xvc, "\n xte_nodebld_acc (acc_%d, cast (v%d_%d as varchar)); ", (int) (ptrlong) xj->xj_prefix, nth, (*count_addition)++);
+          xmlg_printf (xvc, "\n xte_nodebld_acc (acc_%lu, cast (v%d_%d as varchar)); ", (long)((ptrlong)(xj->xj_prefix)), nth, (*count_addition)++);
         }
       DO_BOX (xv_join_elt_t *, xc, inx, xj->xj_children)
       {
 	if (xc->xj_mp_schema->xj_same_table)
 	  xmlg_join_simple_loop (xvc, xc, nth, map, 0, http_out, depth, count_addition,
-                                 (int) (ptrlong) xj->xj_prefix, make_xte, 0);
+                                 (long)((ptrlong)(xj->xj_prefix)), make_xte, 0);
 	else
 	  {
 	    inx = 0;
@@ -1154,15 +1154,15 @@ xmlg_join_simple_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t
 		}
 	    }
 	    END_DO_BOX;
-	    xmlg_join_loop (xvc, xc, nth + 1 + inx * 1000, map, 0, http_out, depth+1, (int) (ptrlong) xj->xj_prefix, make_xte);
+	    xmlg_join_loop (xvc, xc, nth + 1 + inx * 1000, map, 0, http_out, depth+1, (long)((ptrlong)(xj->xj_prefix)), make_xte);
 	  }
       }
       END_DO_BOX;
       if (make_xte) /*xquery*/
 	{
-	  xmlg_printf (xvc, "\n  xte_nodebld_final(acc_%d, head_%s);\n",
-          xj->xj_prefix, full_name);
-          xmlg_printf (xvc, "  xte_nodebld_acc (acc_%d, acc_%d); ", head_nth, (int) (ptrlong) xj->xj_prefix);
+	  xmlg_printf (xvc, "\n  xte_nodebld_final(acc_%lu, head_%s);\n",
+          (long)((ptrlong)(xj->xj_prefix)), full_name);
+          xmlg_printf (xvc, "  xte_nodebld_acc (acc_%lu, acc_%lu); ", head_nth, (long)((ptrlong)(xj->xj_prefix)));
 	}
     }
 
@@ -1174,9 +1174,9 @@ xmlg_join_simple_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t
 		" xte_nodebld_acc (acc_%s, cast (v%d_%d as varchar));\n",
                   full_name, full_name, full_name, nth, (*count_addition)++);
       xmlg_printf (xvc, " xte_nodebld_final (acc_%s, head_%s);\n", full_name, full_name);
-      xmlg_printf (xvc, " xte_nodebld_acc (acc_%d, acc_%s);\n", head_nth, full_name);
+      xmlg_printf (xvc, " xte_nodebld_acc (acc_%lu, acc_%s);\n", head_nth, full_name);
     }
-  xmlg_printf (xvc, "\n--(End xmlg_join_simple_loop %s nth=%d pk_args=%d http_out=%d depth=%d head_nth=%d)\n",
+  xmlg_printf (xvc, "\n--(End xmlg_join_simple_loop %s nth=%d pk_args=%d http_out=%d depth=%d head_nth=%lu)\n",
      xj->xj_element, nth, pk_args, http_out, depth, head_nth );
 }
 
@@ -1184,7 +1184,7 @@ xmlg_join_simple_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t
 
 void
 xmlg_join_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t map,
-    int pk_args, int http_out, int depth, int head_nth, int make_xte)
+    int pk_args, int http_out, int depth, long head_nth, int make_xte)
 {
   dbe_table_t *elt_tb;
   char *target_tb;
@@ -1198,7 +1198,7 @@ xmlg_join_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t map,
   int following_join = 0;
   /*DELME: int only_outer_children = 1;*/
 
-   xmlg_printf (xvc, "\n--(Begin xmlg_join_loop %s nth=%d pk_args=%d http_out=%d depth=%d head_nth=%d)\n",
+   xmlg_printf (xvc, "\n--(Begin xmlg_join_loop %s nth=%d pk_args=%d http_out=%d depth=%d head_nth=%lu)\n",
      xj->xj_element, nth, pk_args, http_out, depth, head_nth );
   /* For functions like sqlc_is_pass_through_function, called from sqlc_exp_print */
   if (NULL == sqlc_client())
@@ -1650,7 +1650,7 @@ if (xj->xj_children || following_join)
       if (make_xte) /*xquery*/
 	{
 	  xmlg_printf (xvc, "\n  xte_nodebld_final(acc_%d, head_%d);", nth+1, nth+1);
-          xmlg_printf (xvc, "\n  xte_nodebld_acc (acc_%d, acc_%d);", head_nth, nth+1);
+          xmlg_printf (xvc, "\n  xte_nodebld_acc (acc_%lu, acc_%d);", head_nth, nth+1);
 	}
     }
 
@@ -1662,7 +1662,7 @@ if (xj->xj_children || following_join)
 	xmlg_end_tag_xmlview (xvc, xj, nth, head_nth, ((NULL != xj->xj_children) ? (depth) : 0), simple_subelement);
     }
   xmlg_printf (xvc, "\n  }\n  done_%d: ;\n", nth);
-   xmlg_printf (xvc, "\n--(End xmlg_join_loop %s nth=%d pk_args=%d http_out=%d depth=%d head_nth=%d)\n",
+   xmlg_printf (xvc, "\n--(End xmlg_join_loop %s nth=%d pk_args=%d http_out=%d depth=%d head_nth=%lu)\n",
      xj->xj_element, nth, pk_args, http_out, depth, head_nth );
 }
 
