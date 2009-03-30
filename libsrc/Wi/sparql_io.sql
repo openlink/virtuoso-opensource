@@ -89,7 +89,7 @@ create procedure DB.DBA.SPARQL_RSET_XML_WRITE_ROW_OLD (inout ses any, inout coln
 	  declare lang, dt varchar;
 	  declare is_xml_lit int;
 	  declare sql_val any;
-	  if (__tag (_val) = 185) -- string output
+	  if (__tag (_val) in (185, 230)) -- string output or an XML entity
 	    {
               http (sprintf ('\n   <binding name="%s"><literal>', colnames[i]), ses);
 	      http_value (_val, 0, ses);
@@ -677,7 +677,7 @@ create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any
 	  declare lang, dt varchar;
 	  declare is_xml_lit int;
 	  declare sql_val any;
-	  if (__tag (_val) = 185) -- string output
+	  if (__tag (_val) in (185, 230)) -- string output or an XML entity
 	    {
               http (sprintf ('\n   <binding name="%s"><literal>', _name), ses);
 	      http_value (_val, 0, ses);
@@ -803,9 +803,18 @@ create procedure SPARQL_RESULTS_RDFXML_WRITE_ROW (inout ses any, in mdta any, in
       else
         {
 	  declare lang, dt varchar;
-	  if (__tag (_val) = 185) -- string output
+          declare val_tag integer;
+          val_tag := __tag (_val);
+	  if (val_tag = 185) -- string output
 	    {
               http ('>', ses);
+	      http_value (_val, 0, ses);
+              http ('</res:value></res:binding>', ses);
+              goto end_of_binding;
+	    }
+	  if (val_tag = 230) -- XML entity
+	    {
+              http ('rdf:parseType="Literal">', ses);
 	      http_value (_val, 0, ses);
               http ('</res:value></res:binding>', ses);
               goto end_of_binding;
@@ -1096,6 +1105,11 @@ create procedure SPARQL_RESULTS_JSON_WRITE (inout ses any, inout metas any, inou
             {
               http ('"type": "literal", "value": "', ses);
               http_escape (cast (val as varchar), 11, ses, 1, 1);
+            }
+          else if (230 = __tag (val))
+            {
+              http ('"type": "literal", "value": "', ses);
+              http_escape (serialize_to_UTF8_xml (val), 11, ses, 1, 1);
             }
           else
             {
