@@ -507,189 +507,20 @@ xqf_duration (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 }
 
 
-#define DTFLAG_YY	0x1
-#define DTFLAG_MM	0x2
-#define DTFLAG_DD	0x4
-#define DTFLAG_HH	0x8
-#define DTFLAG_MIN	0x10
-#define DTFLAG_SS	0x20
-#define DTFLAG_SF	0x40
-#define DTFLAG_ZH	0x80
-#define DTFLAG_ZM	0x100
-
-static int
-__get_iso_date ( const char *str, char *dt, int dtflags, int dt_type, const char *ctor_name )
-{
-  int tzsign = 0, res_flags = 0, tzmin = dt_local_tz;
-  const char *tail, *group_end;
-  int fld_values[9];
-  static int fld_min_values[9] =	{ 1	, 1	, 1	, 0	, 0	, 0	, 0	, 0	, 0	};
-  static int fld_max_values[9] =	{ 9999	, 12	, 31	, 23	, 59	, 61	, 999999999	, 14	, 59	};
-  static int fld_max_lengths[9] =	{ 4	, 2	, 2	, 2	, 2	, 2	, -1	, 2	, 2	};
-  static int delms[9] =			{ '-'	, '-'	, 'T'	, ':'	, ':'	, '\0', '\0'	, ':'	, '\0'	};
-  static const char *names[9] =	{"year"	,"month","day"	,"hour"	,"minute","second","fraction","TZ hour","TZ minute"};
-  static int days_in_months[12] = { 31, -1, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
-  int fld_idx;
-  tail = group_end = str;
-  memcpy (fld_values, fld_min_values, 9 * sizeof (int));
-  for (fld_idx = 0; fld_idx < 9; fld_idx++)
-    {
-      int fld_flag = (1 << fld_idx);
-      int fldlen, fld_maxlen, fld_value;
-      int expected_delimiter;
-      if ('\0' == tail[0])
-        continue;
-      if (0 == (dtflags & fld_flag))
-        continue;
-      if (DTFLAG_YY == fld_flag)
-        while ('0' == tail[0]) tail++;
-      if (DTFLAG_ZH == fld_flag)
-        {
-          if ('-' == tail[-1])
-            tzsign = 1;
-        }
-      for (group_end = tail; isdigit (group_end[0]); group_end++) /*no body*/;
-      fldlen = group_end - tail;
-      fld_maxlen = fld_max_lengths[fld_idx];
-/*Check for field length and parse special cases like missing delimiters in year-month-day or hour:minute */
-      if (fldlen == fld_maxlen)
-        goto field_length_checked; /* see below */
-      if ((DTFLAG_YY == fld_flag) && (fldlen < fld_maxlen))
-        goto field_length_checked; /* see below */
-      if ((DTFLAG_SF == fld_flag) && (fldlen > 0))
-        goto field_length_checked; /* see below */
-      if ((DTFLAG_YY == fld_flag) && (8 == fldlen))
-        {
-          fld_values[0] = ((((((tail[0]-'0') * 10) + (tail[1]-'0')) * 10) + (tail[2]-'0')) * 10) + (tail[3]-'0');
-          fld_values[1] = ((tail[4]-'0') * 10) + (tail[5]-'0');
-          tail += 6;
-          fld_idx++;
-          res_flags |= DTFLAG_YY | DTFLAG_MM;
-          continue;
-        }
-      if ((DTFLAG_HH == fld_flag) && (4 == fldlen) && (tail > str) && (('T' == tail[-1]) || (('X' == tail[-1]) && ('T' == tail[-2]))))
-        {
-          fld_values[3] = ((tail[0]-'0') * 10) + (tail[1]-'0');
-          fld_values[4] = ((tail[2]-'0') * 10) + (tail[3]-'0');
-          fld_values[5] = 0;
-          fld_idx += 2;
-          tail += 4;
-          res_flags |= DTFLAG_HH | DTFLAG_MIN | DTFLAG_SS;
-          if (('Z' == group_end[0]) && ('\0' == group_end[1]))
-            {
-              tzmin = 0;
-              group_end++;
-              break;
-            }
-          continue;
-        }
-      sqlr_new_error ("42001", "XPQ??", "Incorrect %s field length in %s constructor:\"%.300s\"", names[fld_idx], ctor_name, str);
-
-field_length_checked:
-      if (DTFLAG_SF == fld_flag)
-        {
-          int mult = 1000000000;
-          int cctr;
-          fld_value = 0;
-          for (cctr = 0; ((cctr < 9) && (cctr < fldlen)); cctr++)
-            {
-              mult /= 10;
-              fld_value += (tail[cctr] - '0') * mult;
-            }
-        }
-      else
-        fld_value = atoi (tail);
-      fld_values[fld_idx] = fld_value;
-      res_flags |= fld_flag;
-
-      expected_delimiter = delms[fld_idx];
-      if (expected_delimiter == group_end[0])
-        goto field_delim_checked; /* see below */
-      if ('\0' == group_end[0])
-        goto field_delim_checked; /* see below */
-      if (NULL == strchr ("+-Z",group_end[0]))
-        {
-          if ((DTFLAG_SS == fld_flag) && ('.' == group_end[0]))
-            goto field_delim_checked; /* see below */
-          sqlr_new_error ("42001", "XPQ??", "Incorrect %s delimiter in %s constructor:\"%.300s\"", names[fld_idx], ctor_name, str);
-        }
-      if ('Z' == group_end[0])
-        {
-          if ('\0' != group_end[1])
-            sqlr_new_error ("42001", "XPQ??", "Invalid timezone in %s constructor:\"%.300s\"", ctor_name, str);
-          tzmin = 0;
-        }
-      if (DTFLAG_SS == fld_flag)
-        {
-          fld_idx++;
-          goto field_delim_checked; /* see below */
-        }
-      if ((DTFLAG_DD == fld_flag) && (!(dtflags & (DTFLAG_HH | DTFLAG_MIN | DTFLAG_SS | DTFLAG_SF))))
-        {
-          fld_idx += 4;
-          goto field_delim_checked; /* see below */
-        }
-
-field_delim_checked:
-
-      if (DTFLAG_ZH == fld_flag)
-        tzmin = 0;
-      tail = group_end;
-      if ('\0' == tail[0])
-        continue;
-      if (('T' == tail[0]) && ('X' == tail[1]))
-        tail++;
-      tail++;
-    }
-  if ('\0' != tail[0])
-    sqlr_new_error ("42001", "XPQ??", "Extra symbols (%.200s) after the end of data in '%s' constructor :\"%.300s\"", group_end, ctor_name, str);
-  for (fld_idx = 0; fld_idx < 9; fld_idx++)
-    {
-      int fld_flag = (1 << fld_idx);
-      int fld_value = fld_values[fld_idx];
-      if (0 == (res_flags & fld_flag))
-        continue; /* not set -- no check */
-      if ((fld_value < fld_min_values[fld_idx]) || (fld_value > fld_max_values[fld_idx]))
-        sqlr_new_error ("42001", "XPQ??", "Incorrect %s value in %s constructor:\"%.300s\"", names[fld_idx], ctor_name, str);
-      if (DTFLAG_DD == fld_flag)
-        {
-          int month = fld_values[1];
-          int days_in_this_month = days_in_months[month-1];
-	  if (2 == month) /* February */
-	    days_in_this_month = days_in_february (fld_values[0]);
-	  if (fld_value > days_in_this_month)
-	    sqlr_new_error ("42001", "XPQ??", "Too many days in %s constructor:\"%.300s\"", ctor_name, str);
-        }
-    }
-  tzmin += (60 * fld_values[7]) + fld_values[8];
-  if (tzsign)
-    tzmin *= -1;
-  dt_from_parts (dt,
-    fld_values[0], fld_values[1], fld_values[2],
-    fld_values[3], fld_values[4], fld_values[5],
-    fld_values[6], tzmin );
-  if (DT_TYPE_TIME == dt_type)
-    DT_SET_DAY (dt, DAY_ZERO);
-  DT_SET_DT_TYPE (dt, dt_type);
-  return res_flags;
-}
-
-
-#define XQ_DATETIME	1
-#define XQ_DATE		2
-#define XQ_TIME		3
-#define XQ_YEARMONTH	4
-#define XQ_YEAR		5
-#define XQ_MONTHDAY	6
-#define XQ_MONTH	7
-#define XQ_DAY		8
-#define XQ_DTLAST	9
+#define XQ_DATETIME	0
+#define XQ_DATE		1
+#define XQ_TIME		2
+#define XQ_YEARMONTH	3
+#define XQ_YEAR		4
+#define XQ_MONTHDAY	5
+#define XQ_MONTH	6
+#define XQ_DAY		7
+#define COUNTOF__XQ_DT_MODE	8
 
 static void
 __datetime_from_string (caddr_t *n, const char *str, int do_what)
 {
-  int flags[] = {0x1ff, 0x187, 0x1f8, 0x183, 0x181, 0x186, 0x182, 0x184,
-		};
+  int flags[] = {0x1ff, 0x187, 0x1f8, 0x183, 0x181, 0x186, 0x182, 0x184};
   int types[] = { DT_TYPE_DATETIME, DT_TYPE_DATE, DT_TYPE_TIME, DT_TYPE_DATETIME, DT_TYPE_DATETIME, DT_TYPE_DATETIME, DT_TYPE_DATETIME, DT_TYPE_DATETIME };
   const char *names[] = {	"dateTime",
 				"date",
@@ -700,13 +531,18 @@ __datetime_from_string (caddr_t *n, const char *str, int do_what)
 				"gMonth",
 				"gDay",
   };
-  assert (do_what >0 && do_what <= XQ_DTLAST);
+  caddr_t err_msg = NULL;
+  assert (do_what >= 0 && do_what < COUNTOF__XQ_DT_MODE);
   n[0] = dk_alloc_box_zero (DT_LENGTH, DV_DATETIME);
-  if (__get_iso_date (str, *n, flags[do_what - 1], types[do_what - 1], names[do_what - 1]) < 0)
+  iso8601_or_odbc_string_to_dt (str, *n, flags[do_what], types[do_what], &err_msg);
+  if (NULL != err_msg)
     {
+      caddr_t err;
       dk_free_box (n[0]);
       n[0] = NULL;
-      sqlr_new_error ("42001", "XPQ??", "Incorrect argument in datetime/duration constructor:\"%s\"", str);
+      err = srv_make_new_error ("42001", "XPQ??", "%s in %s constructor: \"%.300s\"", err_msg, names[do_what], str);
+      dk_free_box (err_msg);
+      sqlr_resignal (err);
     }
 }
 

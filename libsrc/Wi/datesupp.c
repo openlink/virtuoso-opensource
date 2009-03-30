@@ -507,7 +507,6 @@ GMTimestamp_struct_to_dt (GMTIMESTAMP_STRUCT * ts, char *dt)
 void
 timestamp_struct_to_dt (TIMESTAMP_STRUCT * ts_in, char *dt)
 {
-  uint32 day;
   TIMESTAMP_STRUCT ts_tmp;
   TIMESTAMP_STRUCT *ts = &ts_tmp;
   ts_tmp = *ts_in;
@@ -671,7 +670,7 @@ dt_to_string (const char *dt, char *str, int len)
           ts.hour, ts.minute, ts.second );
 	  break;
       default:				/* 01234567890123456789 */
-        if (len_before_fra < 19)	/* yyyy-mm-ddThh:mm:ss */
+        if (len_before_fra < 19)	/* "yyyy-mm-dd hh:mm:ss" */
           goto short_buf; /* see below */
 	tail += snprintf (str, len_before_fra, "%04d-%02d-%02d %02d:%02d:%02d",
 	  ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second );
@@ -766,357 +765,305 @@ dt_to_ms_string (const char *dt, char *str, int len)
 	   ts.day, monday [ts.month - 1], ts.year, ts.hour, ts.minute, ts.second);
 }
 
-#define DT_SEP " -:./'TZ"
+#ifndef NDEBUG
+extern void
+iso8601_or_odbc_string_to_dt_impl (const char *str, char *dt, int dtflags, int dt_type, caddr_t *err_msg_ret);
 
-#define MATOI(str, err)  str == NULL ? (err |= 1, 0) : atoi (str)
-
-int
-string_to_dt (char *str, char *dt, const char **str_err)
+void
+iso8601_or_odbc_string_to_dt (const char *str, char *dt, int dtflags, int dt_type, caddr_t *err_msg_ret)
 {
-  int err = 0;
-  char *place = NULL;
-  char *syear = NULL, *smonth = "1", *sday = "1", *shour = NULL, *sminute = NULL,
-   *ssecond = NULL, *sfraction = NULL;
-  TIMESTAMP_STRUCT ts;
-  char tmp[31];
-  int type = DT_TYPE_DATETIME;
-
-  /* if(str==NULL || strlen(str)==0) return -1; */
-  strncpy (tmp, str, sizeof (tmp)-1);
-  tmp[30] = 0;
-
-  if ((syear = strtok_r (tmp, DT_SEP, &place)) == NULL)
-    {
-      *str_err = "Missing date format or separator";
-      return -1;
-    }
-  if (syear[0] == '{')
-    {
-      if (syear[1] == 'd')
+  iso8601_or_odbc_string_to_dt_impl (str, dt, dtflags, dt_type, err_msg_ret);
+  FILE *f = fopen ("iso8601_or_odbc_string_to_dt.log", "at");
+  if (NULL != f)
 	{
-	  syear = strtok_r (NULL, DT_SEP, &place);
-	  smonth = strtok_r (NULL, DT_SEP, &place);
-	  sday = strtok_r (NULL, DT_SEP, &place);
-	  type = DT_TYPE_DATE;
-	}
-      else if (syear[1] == 't')
-	{
-	  if (syear[2] == 's')
+      if (NULL != err_msg_ret[0])
 	    {
-	      syear = strtok_r (NULL, DT_SEP, &place);
-	      smonth = strtok_r (NULL, DT_SEP, &place);
-	      sday = strtok_r (NULL, DT_SEP, &place);
+          fprintf (f, "%s\n\t%s\n", str, err_msg_ret[0]);
 	    }
 	  else
 	    {
-	      syear = "1";
-	      type = DT_TYPE_TIME;
+          char tmp[100];
+          dt_to_iso8601_string (dt, tmp, sizeof (tmp));
+          fprintf (f, "%s\t--> %s\n", str, tmp);
 	    }
+      fclose (f);
+	    }
+}
 
-	  shour = strtok_r (NULL, DT_SEP, &place);
-	  sminute = strtok_r (NULL, DT_SEP, &place);
-	  ssecond = strtok_r (NULL, DT_SEP, &place);
-	  if ((sfraction = strtok_r (NULL, DT_SEP, &place)) == NULL)
-	    {
-	      *str_err = "Missing fraction or separator";
-	      return -1;
-	    }
-	  if (sfraction[0] == '}')
-	    sfraction = NULL;
+void
+iso8601_or_odbc_string_to_dt_impl (const char *str, char *dt, int dtflags, int dt_type, caddr_t *err_msg_ret)
+#else
+void
+iso8601_or_odbc_string_to_dt (const char *str, char *dt, int dtflags, int dt_type, caddr_t *err_msg_ret)
+#endif
+{
+  int tzsign = 0, res_flags = 0, tzmin = dt_local_tz;
+  int odbc_braces = 0, new_dtflags, new_dt_type = 0;
+  int us_mdy_format = 0;
+  const char *tail, *group_end;
+  int fld_values[9];
+  static int fld_min_values[9] =	{ 1	, 1	, 1	, 0	, 0	, 0	, 0		, 0	, 0	};
+  static int fld_max_values[9] =	{ 9999	, 12	, 31	, 23	, 59	, 61	, 999999999	, 14	, 59	};
+  static int fld_max_lengths[9] =	{ 4	, 2	, 2	, 2	, 2	, 2	, -1		, 2	, 2	};
+  static int delms[9] =			{ '-'	, '-'	, 'T'	, ':'	, ':'	, '\0', '\0'		, ':'	, '\0'	};
+  static const char *names[9] =		{"year"	,"month","day"	,"hour"	,"minute","second","fraction","TZ hour","TZ minute"};
+  static int days_in_months[12] = { 31, -1, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+  int fld_idx;
+  tail = group_end = str;
+  memcpy (fld_values, fld_min_values, 9 * sizeof (int));
+  if ((DTFLAG_ALLOW_ODBC_SYNTAX & dtflags) && ('{' == tail[0]))
+    {
+      odbc_braces = 1;
+      if (('t' == tail[1]) && ('s' == tail[2]))
+        {
+          tail += 3;
+          new_dt_type = DT_TYPE_DATETIME;
+          new_dtflags = DTFLAG_DATE | DTFLAG_TIME | DTFLAG_TIMEZONE;
+        }
+      else if ('d' == tail[1])
+        {
+          tail += 2;
+          new_dt_type = DT_TYPE_DATE;
+          new_dtflags = DTFLAG_DATE;
+        }
+      else if ('t' == tail[1])
+        {
+          tail += 2;
+          new_dt_type = DT_TYPE_TIME;
+          new_dtflags = DTFLAG_TIME | DTFLAG_TIMEZONE;
 	}
       else
 	{
-	  smonth = strtok_r (NULL, DT_SEP, &place);
-	  sday = strtok_r (NULL, DT_SEP, &place);
-	  shour = strtok_r (NULL, DT_SEP, &place);
-	  sminute = strtok_r (NULL, DT_SEP, &place);
-	  ssecond = strtok_r (NULL, DT_SEP, &place);
-	  if ((sfraction = strtok_r (NULL, DT_SEP, &place)) == NULL)
+          err_msg_ret[0] = box_dv_short_string ("Invalid ODBC literal type after '{', only 'd', 't', and 'ts' are supported");
+          return;
+    }
+      if (DTFLAG_FORMAT_SETS_FLAGS & dtflags)
+    {
+          dtflags = (dtflags & ~(DTFLAG_DATE | DTFLAG_TIME | DTFLAG_TIMEZONE)) | new_dtflags;
+          if (-1 != dt_type)
+            dt_type = new_dt_type;
+    }
+      else if ((dtflags & (DTFLAG_DATE | DTFLAG_TIME)) != (new_dtflags & (DTFLAG_DATE | DTFLAG_TIME)))
+    {
+          err_msg_ret[0] = box_dv_short_string ("ODBC literal type does not match the expected one");
+          return;
+    }
+      while (' ' == tail[0]) tail++;
+      if ('\'' != tail[0])
+	{
+          err_msg_ret[0] = box_dv_short_string ("Syntax error in ODBC literal (single-quoted constant expected after literal type");
+          return;
+	}
+	}
+  for (fld_idx = 0; fld_idx < 9; fld_idx++)
+    {
+      int fld_flag = (1 << fld_idx);
+      int fldlen, fld_maxlen, fld_value;
+      int expected_delimiter;
+      if ('\0' == tail[0])
+        break;
+      if ((DTFLAG_ALLOW_ODBC_SYNTAX & dtflags) && ('\'' == tail[0]))
+        {
+          tail++;
+          while (' ' == tail[0]) tail++;
+          if ('}' != tail[0])
+	{
+              err_msg_ret[0] = box_dv_short_string ("Syntax error in ODBC literal (missing '}' after closing quote)");
+              return;
+	}
+          tail++;
+          break;
+    }
+      if (0 == (dtflags & fld_flag))
+        continue;
+      if ((DTFLAG_YY == fld_flag) && !(DTFLAG_ALLOW_ODBC_SYNTAX & dtflags))
+        while ('0' == tail[0]) tail++;
+      if (DTFLAG_ZH == fld_flag)
+	{
+          if ('-' == tail[-1])
+            tzsign = 1;
+	}
+      for (group_end = tail; isdigit (group_end[0]); group_end++) /*no body*/;
+      fldlen = group_end - tail;
+      fld_maxlen = fld_max_lengths[fld_idx];
+      if (('/' == group_end[0]) || (('.' == group_end[0]) && (DTFLAG_MM >= fld_flag)))
+	{
+          if (!(DTFLAG_ALLOW_ODBC_SYNTAX & dtflags))
+    {
+              err_msg_ret[0] = box_dv_short_string ("mm/dd/yyyy format is not allowed, needs yyyy-mm-dd");
+              return;
+    }
+          if (DTFLAG_YY == fld_flag)
+            us_mdy_format = group_end[0];
+          else if ((us_mdy_format != group_end[0]) || (DTFLAG_MM != fld_flag))
+    {
+              err_msg_ret[0] = box_sprintf (50, "Syntax error in ODBC literal (misplaced '%c')", group_end[0]);
+              return;
+            }
+    }
+/*Check for field length and parse special cases like missing delimiters in year-month-day or hour:minute */
+      if (fldlen == fld_maxlen)
+        goto field_length_checked; /* see below */
+      if (DTFLAG_YY == fld_flag)
+        {
+          if (fldlen < fld_maxlen)
+            goto field_length_checked; /* see below */
+          if (8 == fldlen)
+    {
+              fld_values[0] = ((((((tail[0]-'0') * 10) + (tail[1]-'0')) * 10) + (tail[2]-'0')) * 10) + (tail[3]-'0');
+              fld_values[1] = ((tail[4]-'0') * 10) + (tail[5]-'0');
+              tail += 6;
+              fld_idx++;
+              res_flags |= DTFLAG_YY | DTFLAG_MM;
+              continue;
+    }
+        }
+      if (DTFLAG_ALLOW_ODBC_SYNTAX & dtflags)
+    {
+          if ((DTFLAG_MM <= fld_flag) && (DTFLAG_SS >= fld_flag) && (fldlen > 0) && (fldlen <= 2))
+            goto field_length_checked; /* see below */
+          if ((us_mdy_format) && (DTFLAG_DD == fld_flag) && (fldlen > 0) && (fldlen <= 4))
+            goto field_length_checked; /* see below */
+    }
+      if ((DTFLAG_SF == fld_flag) && (fldlen > 0))
+        goto field_length_checked; /* see below */
+      if ((DTFLAG_HH == fld_flag) && (4 == fldlen) && (tail > str) && (('T' == tail[-1]) || (('X' == tail[-1]) && ('T' == tail[-2]))))
+    {
+          fld_values[3] = ((tail[0]-'0') * 10) + (tail[1]-'0');
+          fld_values[4] = ((tail[2]-'0') * 10) + (tail[3]-'0');
+          fld_values[5] = 0;
+          fld_idx += 2;
+          tail += 4;
+          res_flags |= DTFLAG_HH | DTFLAG_MIN | DTFLAG_SS;
+          if (('Z' == group_end[0]) && ('\0' == group_end[1]))
+	{
+              tzmin = 0;
+              group_end++;
+              break;
+	}
+          continue;
+        }
+      err_msg_ret[0] = box_sprintf (500, "Incorrect %s field length", names[fld_idx]);
+      return;
+
+field_length_checked:
+      if (DTFLAG_SF == fld_flag)
+	{
+          int mult = 1000000000;
+          int cctr;
+          fld_value = 0;
+          for (cctr = 0; ((cctr < 9) && (cctr < fldlen)); cctr++)
 	    {
-	      *str_err = "Missing fraction or separator";
-	      return -1;
+              mult /= 10;
+              fld_value += (tail[cctr] - '0') * mult;
 	    }
-	  if (sfraction[0] == '}')
-	    sfraction = NULL;
-	}
-    }
-  else
-    {
-      smonth = strtok_r (NULL, DT_SEP, &place);
-      sday = strtok_r (NULL, DT_SEP, &place);
-      shour = strtok_r (NULL, DT_SEP, &place);
-      sminute = strtok_r (NULL, DT_SEP, &place);
-      ssecond = strtok_r (NULL, DT_SEP, &place);
-      sfraction = strtok_r (NULL, DT_SEP, &place);
-    }
-
-  ts.year = dt_part_ck (syear, 1, 10000, &err);
-  if (err)
-    {
-      *str_err = "Year out of bounds";
-      return -1;
-    }
-  if (ts.year < 13)
-    {				/* imply US locale (m/d/y) whether the first element is a valid month */
-      ts.month = ts.year;
-      if (ts.month < 1 || ts.month > 12)
-	{
-	  ts.month = 0;
-	  err = 1;
-	  *str_err = "Month out of bounds";
-	  goto finito;
-	}
-      ts.day = dt_part_ck (smonth, 1, 31, &err);
-      if (err)
-	{
-	  *str_err = "Day out of bounds";
-	  goto finito;
-	}
-      ts.year = dt_part_ck (sday, 1, 10000, &err);
-      if (err)
-	{
-	  *str_err = "Year out of bounds";
-	  goto finito;
-	}
-      ts.year += (ts.year < 1000) ? 1900 : 0;	/* as the US locale accepts 2 digit date */
-    }
-  else
-    {				/* ODBC "locale" */
-      ts.month = dt_part_ck (smonth, 1, 12, &err);
-      if (err)
-	{
-	  *str_err = "Month out of bounds";
-	  goto finito;
-	}
-      ts.day = dt_part_ck (sday, 1, 31, &err);
-      if (err)
-	{
-	  *str_err = "Day out of bounds";
-	  goto finito;
-	}
-    }
-  dt_day_ck (ts.day, ts.month, ts.year, &err, str_err);
-  if (err)
-    {
-      goto finito;
-    }
-  ts.hour = dt_part_ck (shour, 0, 23, &err);
-  if (err)
-    {
-      *str_err = "Hour out of bounds";
-      goto finito;
-    }
-  ts.minute = dt_part_ck (sminute, 0, 60, &err);
-  if (err)
-    {
-      *str_err = "Minute out of bounds";
-      goto finito;
-    }
-  ts.second = dt_part_ck (ssecond, 0, 60, &err);
-  if (err)
-    {
-      *str_err = "Seconds out of bounds";
-      goto finito;
-    }
-  ts.fraction = dt_fraction_part_ck (sfraction, 1000000000, &err);
-  if (err)
-    *str_err = "Fraction out of bounds";
-finito:
-  if (err)
-    return -1;
-
-  timestamp_struct_to_dt (&ts, dt);
-
-  return 0;
-}
-
-
-int
-string_to_time_dt (char *str, char *dt)
-{
-  int err = 0;
-  char *place = NULL;
-  char *syear = "1", *smonth = "1", *sday = "1", *shour = NULL, *sminute = NULL,
-   *ssecond = NULL, *sfraction = NULL;
-  TIMESTAMP_STRUCT ts;
-  char tmp[30];
-
-  /* if(str==NULL || strlen(str)==0) return -1; */
-  strncpy (tmp, str, sizeof (tmp));
-
-  if ((shour = strtok_r (tmp, DT_SEP, &place)) == NULL)
-    return -1;
-  if (shour[0] == '{')
-    {
-      if (shour[1] == 'd')
-	{
-	  syear = strtok_r (NULL, DT_SEP, &place);
-	  smonth = strtok_r (NULL, DT_SEP, &place);
-	  sday = strtok_r (NULL, DT_SEP, &place);
-	}
-      else if (shour[1] == 't')
-	{
-	  if (shour[2] == 's')
-	    {
-	      syear = strtok_r (NULL, DT_SEP, &place);
-	      smonth = strtok_r (NULL, DT_SEP, &place);
-	      sday = strtok_r (NULL, DT_SEP, &place);
-	    }
-	  else
-	    syear = "1";
-	  shour = strtok_r (NULL, DT_SEP, &place);
-	  sminute = strtok_r (NULL, DT_SEP, &place);
-	  ssecond = strtok_r (NULL, DT_SEP, &place);
-	  if ((sfraction = strtok_r (NULL, DT_SEP, &place)) == NULL)
-	    return -1;
-	  if (sfraction[0] == '}')
-	    sfraction = NULL;
 	}
       else
+        fld_value = atoi (tail);
+      fld_values[fld_idx] = fld_value;
+      res_flags |= fld_flag;
+
+      expected_delimiter = delms[fld_idx];
+      if (expected_delimiter == group_end[0])
+        goto field_delim_checked; /* see below */
+      if ('\0' == group_end[0])
+        goto field_delim_checked; /* see below */
+      if (NULL != strchr ("+-Z",group_end[0]))
+        {
+          tzmin = 0; /* Default timezone is dropped because an explicit one is in place */
+          if ('Z' == group_end[0])
 	{
-	  sminute = strtok_r (NULL, DT_SEP, &place);
-	  ssecond = strtok_r (NULL, DT_SEP, &place);
-	  if ((sfraction = strtok_r (NULL, DT_SEP, &place)) == NULL)
-	    return -1;
-	  if (sfraction[0] == '}')
-	    sfraction = NULL;
+              if ('\0' != group_end[1])
+                {
+                  err_msg_ret[0] = box_dv_short_string ("Invalid timezone (extra charaters after 'Z')");
+                  return;
 	}
     }
-  else
-    {
-      sminute = strtok_r (NULL, DT_SEP, &place);
-      ssecond = strtok_r (NULL, DT_SEP, &place);
-      sfraction = strtok_r (NULL, DT_SEP, &place);
+          if (DTFLAG_SS == fld_flag)
+            fld_idx++;
+          else if ((DTFLAG_DD == fld_flag) && (!(dtflags & (DTFLAG_HH | DTFLAG_MIN | DTFLAG_SS | DTFLAG_SF))))
+            fld_idx += 4;
+          goto field_delim_checked; /* see below */
+        }
+      if ((DTFLAG_SS == fld_flag) && ('.' == group_end[0]))
+        goto field_delim_checked; /* see below */
+      if ((DTFLAG_DD == fld_flag) && (' ' == group_end[0]) && (DTFLAG_ALLOW_ODBC_SYNTAX & dtflags))
+        goto field_delim_checked; /* see below */
+      if (us_mdy_format)
+        {
+          if ((DTFLAG_MM >= fld_flag) && (us_mdy_format == group_end[0]))
+            goto field_delim_checked; /* see below */
+          if ((DTFLAG_MIN == fld_flag) && ('.' == group_end[0]))
+            goto field_delim_checked; /* see below */
+          if ((DTFLAG_SS == fld_flag) && (' ' == group_end[0]))
+            goto field_delim_checked; /* see below */
     }
+      err_msg_ret[0] = box_sprintf (500, "Incorrect %s delimiter", names[fld_idx]);
+      return;
 
-  ts.year = dt_part_ck (syear, 1, 10000, &err);
-  if (ts.year < 13)
-    {				/* imply US locale (m/d/y) whether the first element is a valid month */
-      ts.month = ts.year;
-      if (ts.month < 1 || ts.month > 12)
-	{
-	  ts.month = 0;
-	  err = 1;
-	}
-      ts.day = dt_part_ck (smonth, 1, 31, &err);
-      ts.year = dt_part_ck (sday, 1, 10000, &err);
-      ts.year += (ts.year < 1000) ? 1900 : 0;	/* as the US locale accepts 2 digit date */
+field_delim_checked:
+
+      if (DTFLAG_ZH == fld_flag)
+        tzmin = 0;
+      tail = group_end;
+      if ('\0' == tail[0])
+        continue;
+      if (('T' == tail[0]) && ('X' == tail[1]))
+        tail++;
+      tail++;
     }
-  else
-    {				/* ODBC "locale" */
-      ts.month = dt_part_ck (smonth, 1, 12, &err);
-      ts.day = dt_part_ck (sday, 1, 31, &err);
-    }
-  ts.hour = dt_part_ck (shour, 0, 23, &err);
-  ts.minute = dt_part_ck (sminute, 0, 60, &err);
-  ts.second = dt_part_ck (ssecond, 0, 60, &err);
-  ts.fraction = dt_fraction_part_ck (sfraction, 1000000000, &err);
-  if (err)
-    return -1;
-  timestamp_struct_to_dt (&ts, dt);
-  dt_make_day_zero (dt);
-  return 0;
-}
-
-
-int
-iso8601_to_dt (char *str, char *dt, dtp_t dtp)
-{
-  int n_set;
-  int year = 0, month = 0, date = 0, hour = 0, minute = 0, second = 0, frac = 0, tz_hour = 0, tz_minute = 0;
-  char tmp[30];
-  GMTIMESTAMP_STRUCT ts;
-
-  if(str==NULL || strlen(str)==0) return -1;
-  strncpy (tmp, str, sizeof (tmp));
-
-  switch (dtp)
+  if ('\0' != tail[0])
 		{
-    case DV_DATETIME: case DV_TIMESTAMP:
-      do {
-          n_set = sscanf (tmp, "%4d-%2d-%2dT%2d:%2d:%2d.%9d%3d:%2d",
-            &year, &month, &date, &hour, &minute, &second, &frac, &tz_hour, &tz_minute);
-          if (7 <= n_set)
-            break;
-          n_set = sscanf (tmp, "%4d-%2d-%2dT%2d:%2d:%2d.%6d%3d:%2d",
-            &year, &month, &date, &hour, &minute, &second, &frac, &tz_hour, &tz_minute);
-          if (7 <= n_set)
-            break;
-          n_set = sscanf (tmp, "%4d-%2d-%2dT%2d:%2d:%2d.%3d%3d:%2d",
-            &year, &month, &date, &hour, &minute, &second, &frac, &tz_hour, &tz_minute);
-          if (7 <= n_set)
-            break;
-          frac = 0; /* Some LIBCs screws up the field that is parsed before error detection! */
-          n_set = sscanf (tmp, "%4d-%2d-%2dT%2d:%2d:%2d%3d:%2d",
-            &year, &month, &date, &hour, &minute, &second, &tz_hour, &tz_minute);
-          if (6 <= n_set)
-            break;
-          n_set = sscanf (tmp, "%4d%2d%2dT%2d%2d%2d%3d%2d",
-            &year, &month, &date, &hour, &minute, &second, &tz_hour, &tz_minute);
-          if (6 <= n_set)
-            break;
-          n_set = sscanf (tmp, "%4d%2d%2dT%2d:%2d:%2d%3d:%2d",
-            &year, &month, &date, &hour, &minute, &second, &tz_hour, &tz_minute);
-          if (6 <= n_set)
-            break;
-		    return 0;
-        } while (0);
-      if (n_set < 8)
-	{
-          tz_hour = 0;
-	  if (strchr (tmp, 'Z'))
-            tz_minute = 0;
-	  else
-            tz_minute = dt_local_tz;
-	}
-      break;
-    case DV_DATE:
-      n_set = sscanf (tmp, "%4d-%2d-%2d", &year, &month, &date);
-      if (3 == n_set)
-        break;
-      n_set = sscanf (tmp, "%4d%2d%2d", &year, &month, &date);
-      if (3 == n_set)
-        break;
-	      return 0;
-    case DV_TIME:
-      do {
-          n_set = sscanf (tmp, "%4d:%2d:%2d.%3d%2d:%2d",
-            &hour, &minute, &second, &frac, &tz_hour, &tz_minute);
-          if (n_set >= 4)
-            break;
-          frac = 0; /* Some LIBCs screws up the field that is parsed before error detection! */
-          n_set = sscanf (tmp, "%4d:%2d:%2d%2d:%2d",
-            &hour, &minute, &second, &tz_hour, &tz_minute);
-          if (n_set >= 3)
-            break;
-          n_set = sscanf (tmp, "%4d%2d%2d%2d%2d",
-            &hour, &minute, &second, &tz_hour, &tz_minute);
-          if (n_set >= 3)
-            break;
-		return 0;
-        } while (0);
-      if (n_set < 8)
-	{
-          tz_hour = 0;
-	  if (strchr (tmp, 'Z'))
-            tz_minute = 0;
-	  else
-            tz_minute = dt_local_tz;
-	}
-      break;
+      err_msg_ret[0] = box_sprintf (500, "Extra symbols (%.200s) after the end of data", group_end);
+      return;
     }
-  ts.year = year;
-  ts.month = month;
-  ts.day = date;
-  ts.hour = hour;
-  ts.minute = minute;
-  ts.second = second;
-  ts.fraction = frac * 1000000; /* There were three digits, but we need nanoseconds */
-  ts_add (&ts, -(tz_hour * 60 + tz_minute), "minute");
-  GMTimestamp_struct_to_dt (&ts, dt);
-  DT_SET_TZ (dt, (tz_hour * 60 + tz_minute));
-  SET_DT_TYPE_BY_DTP (dt, dtp);
-  return 1;
+  if (us_mdy_format)
+    { /* Dig fields in mm/dd/yy order... */
+      int m = fld_values[0];
+      int d = fld_values[1];
+      int y = fld_values[2];
+      if ((m <= 12) && (y >= 1000))
+	{
+          fld_values[0] = y; fld_values[1] = m; fld_values[2] = d; /* ... and dig in ISO one */
+	}
+    }
+  for (fld_idx = 0; fld_idx < 9; fld_idx++)
+	{
+      int fld_flag = (1 << fld_idx);
+      int fld_value = fld_values[fld_idx];
+      if (0 == (res_flags & fld_flag))
+        continue; /* not set -- no check */
+      if ((fld_value < fld_min_values[fld_idx]) || (fld_value > fld_max_values[fld_idx]))
+        {
+          err_msg_ret[0] = box_sprintf (500, "Incorrect %s value", names[fld_idx]);
+          return;
+	}
+      if (DTFLAG_DD == fld_flag)
+        {
+          int month = fld_values[1];
+          int days_in_this_month = days_in_months[month-1];
+	  if (2 == month) /* February */
+	    days_in_this_month = days_in_february (fld_values[0]);
+	  if (fld_value > days_in_this_month)
+            {
+              err_msg_ret[0] = box_sprintf (500, "Too many days (%d, the month has only %d)", fld_value, days_in_this_month);
+              return;
+    }
+        }
+    }
+  tzmin += (60 * fld_values[7]) + fld_values[8];
+  if (tzsign)
+    tzmin *= -1;
+  dt_from_parts (dt,
+    fld_values[0], fld_values[1], fld_values[2],
+    fld_values[3], fld_values[4], fld_values[5],
+    fld_values[6], tzmin );
+  if ((DT_TYPE_TIME == dt_type) || (DTFLAG_FORCE_DAY_ZERO & dtflags))
+    DT_SET_DAY (dt, DAY_ZERO);
+  if (0 <= dt_type)
+    DT_SET_DT_TYPE (dt, dt_type);
+  err_msg_ret[0] = NULL;
+  return;
 }
 
 

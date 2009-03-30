@@ -45,6 +45,7 @@
 #include "statuslog.h"
 #include "http_client.h"
 #include "sqltype.h"
+#include "datesupp.h"
 
 #include "soap.h"
 #ifdef _SSL
@@ -1078,15 +1079,14 @@ soap_box_xml_entity (caddr_t *entity, caddr_t *err_ret, dtp_t proposed_type, int
 	    }
 	  else if (proposed_type == DV_DATETIME)
 	    {
-	      char temp[DT_LENGTH];
-	      if (!iso8601_to_dt ((caddr_t) entity, temp, DV_DATETIME))
+              caddr_t err_msg = NULL;
+              ret = dk_alloc_box (DT_LENGTH, DV_DATETIME);
+	      iso8601_string_to_datetime_dt ((caddr_t) entity, ret, &err_msg);
+              if (NULL != err_msg)
 		{
+                  dk_free_box (ret);
+                  dk_free_box (err_msg);
 		  return wide;
-		}
-	      else
-		{
-		  ret = dk_alloc_box (DT_LENGTH, DV_DATETIME);
-		  memcpy (ret, temp, DT_LENGTH);
 		}
 	    }
 	  else if (proposed_type == DV_BIN)
@@ -8813,6 +8813,12 @@ soap_box_enum_validate (caddr_t *entity, caddr_t box, caddr_t *extension, soap_c
 	    		             ctx->error_message = srv_make_new_error msg; \
 				   goto error; \
 				 }
+#define SOAP_VALIDATE_ERROR_2(msg,box_to_free) { \
+  				   if (!ctx->error_message) \
+	    		             ctx->error_message = srv_make_new_error msg; \
+                                   dk_free_box (box_to_free); \
+				   goto error; \
+				 }
 
 static caddr_t *
 soap_box_next_ext_type (caddr_t * type_ref, caddr_t * err_ret, soap_ctx_t * ctx)
@@ -9353,11 +9359,14 @@ convert_value:
 	 }
        else if (proposed_type == DV_DATETIME)
 	 {
-	   char temp[DT_LENGTH];
-	   if (!iso8601_to_dt ((caddr_t) value, temp, DV_DATETIME))
-	     SOAP_VALIDATE_ERROR (("22023", "SV020", "Value for type '%s' can't be converted", type_ref));
+           caddr_t err_msg = NULL;
 	   ret = dk_alloc_box (DT_LENGTH, DV_DATETIME);
-	   memcpy (ret, temp, DT_LENGTH);
+           iso8601_string_to_datetime_dt ((caddr_t) value, ret, &err_msg);
+           if (NULL != err_msg)
+             {
+               dk_free_box (ret);
+	       SOAP_VALIDATE_ERROR_2 (("22023", "SV020", "Value for type '%s' can't be converted: %.500s", type_ref, err_msg), err_msg);
+             }
 	 }
        else if (proposed_type == DV_BIN)
 	 {

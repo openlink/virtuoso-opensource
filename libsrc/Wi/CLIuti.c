@@ -1207,20 +1207,21 @@ buffer_to_dv (caddr_t place, SQLLEN * len, int c_type, int sql_type, long bhid,
 	  case SQL_DATE:
 	  case SQL_TIME:
 	    {
-	      const char *str_err = "";
+              caddr_t err_msg = NULL;
 	      caddr_t res = dk_alloc_box (DT_LENGTH, DV_DATETIME);
 
 	      nlen = nlen > 100 ? 100 : nlen;
 	      cli_wide_to_narrow (err_stmt->stmt_connection->con_charset,
 		  0, (wchar_t *) place, nlen, (unsigned char *) temp, nlen, NULL, NULL);
 
-	      if (-1 == string_to_dt (temp, res, &str_err))
+	      odbc_string_to_any_dt (temp, res, &err_msg);
+              if (NULL != err_msg)
 		{
 		  char err_buf[1000];
-		  snprintf (err_buf, sizeof (err_buf), "Cannot convert the wide string to date/time : %s", str_err);
+		  snprintf (err_buf, sizeof (err_buf), "Cannot convert the wide string to date/time : %s", err_msg);
+                  dk_free_box (err_msg);
 		  set_error (&err_stmt->stmt_error, "S1010", "CL095", err_buf);
 		  dk_free_box (res);
-
 		  return NULL;
 		}
 
@@ -1310,12 +1311,13 @@ buffer_to_dv (caddr_t place, SQLLEN * len, int c_type, int sql_type, long bhid,
 	case SQL_TIME:
 	  {
 	    caddr_t res = dk_alloc_box (DT_LENGTH, DV_DATETIME);
-	    const char *str_err = "";
-
-	    if (0 != string_to_dt (place, res, &str_err))
+	    caddr_t err_msg = NULL;
+	    odbc_string_to_any_dt (place, res, &err_msg);
+            if (NULL != err_msg)
 	      {
 		char err_buf[1500];
-		snprintf (err_buf, sizeof (err_buf), "Cannot convert the string (%.500s) to date/time : %s", place, str_err);
+		snprintf (err_buf, sizeof (err_buf), "Cannot convert the string \"%.500s\" to date/time: %s", place, err_msg);
+                dk_free_box (err_msg);
 		set_error (&err_stmt->stmt_error, "S1010", "CL096", err_buf);
 		dk_free_box (res);
 
@@ -2242,16 +2244,22 @@ dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
 
 	    case SQL_TYPE_TIME:
 	    case SQL_TIME:
+              {
+                char *tail = temp+11;
+                do { tail[-11] = tail[0]; tail++; } while (tail[0]);
+/*
 	      strncpy (temp, temp + 11, 8);
 	      temp[8] = 0;
 	      temp[2] = temp[5] = ':';
+*/
 /*	      sprintf (temp, "%02d:%02d:%02d",
 		  DT_HOUR (it), DT_MINUTE (it), DT_SECOND (it));
 */
 	      break;
+               }
 
 	    default:		/* Including 0=unknown, and SQL_TIMESTAMP */
-	      temp[19] = 0;
+	      /*temp[19] = 0;*/
 	      break;
 	    }
 	}

@@ -100,7 +100,18 @@ dt_print_to_buffer (char *buf, caddr_t arg, int mode)
   if ((DT_PRINT_MODE_YMD & mode) && (DT_PRINT_MODE_HMS & mode))
     buf[res++] = ((DT_PRINT_MODE_XML & mode) ? 'T' : ' ');
   if (DT_PRINT_MODE_HMS & mode)
+    {
     res += sprintf (buf + res, "%02d:%02d:%02d", ts.hour, ts.minute, ts.second);
+      if (ts.fraction)
+        {
+          if (ts.fraction % 1000)
+            res += sprintf (buf + res, ".%09d", (int)ts.fraction);
+          else if (ts.fraction % 1000000)
+            res += sprintf (buf + res, ".%06d", (int)(ts.fraction / 1000));
+          else
+            res += sprintf (buf + res, ".%03d", (int)(ts.fraction / 1000000));
+        }
+    }
   if (DT_PRINT_MODE_XML & mode)
     {
       strcpy (buf + res, "Z");
@@ -639,40 +650,34 @@ bif_dt_set_tz (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 string_to_dt_box (char * str)
 {
-  int rc;
-  char temp[DT_LENGTH];
-  char *res;
-  const char *err_str = "";
-
-  memset (temp, 0, sizeof (temp));
-  rc = string_to_dt (str, temp, &err_str);
-  if (rc == 0)
+  caddr_t res = dk_alloc_box (DT_LENGTH, DV_DATETIME);
+  caddr_t err_msg = NULL;
+  odbc_string_to_any_dt (str, res, &err_msg);
+  if (NULL != err_msg)
     {
-      res = dk_alloc_box (DT_LENGTH, DV_DATETIME);
-      memcpy (res, temp, DT_LENGTH);
-      return (res);
+      caddr_t err = srv_make_new_error ("22007", "DT006", "Cannot convert %s to datetime : %s", str, err_msg);
+      dk_free_box (err_msg);
+      dk_free_box (res);
+      sqlr_resignal (err);
     }
-  sqlr_new_error ("22007", "DT006", "Cannot convert %s to datetime : %s", str, err_str);
-  return NULL;			/*dummy */
+  return res;
 }
 
 
 caddr_t
 string_to_time_dt_box (char * str)
 {
-  int rc;
-  char temp[DT_LENGTH];
-  char *res;
-
-  rc = string_to_time_dt (str, temp);
-  if (rc == 0)
+  caddr_t res = dk_alloc_box (DT_LENGTH, DV_DATETIME);
+  caddr_t err_msg = NULL;
+  odbc_string_to_time_dt (str, res, &err_msg);
+  if (NULL != err_msg)
     {
-      res = dk_alloc_box (DT_LENGTH, DV_DATETIME);
-      memcpy (res, temp, DT_LENGTH);
-      return (res);
+      caddr_t err = srv_make_new_error ("22007", "DT011", "Cannot convert %s to time : %s", str, err_msg);
+      dk_free_box (err_msg);
+      dk_free_box (res);
+      sqlr_resignal (err);
     }
-  sqlr_new_error ("22007", "DT011", "Cannot convert %s to time", str);
-  return NULL;			/*dummy */
+  return res;
 }
 
 
@@ -732,23 +737,27 @@ bif_string_time (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t str = bif_string_or_wide_or_null_arg (qst, args, 0, "stringtime");
   caddr_t res;
-  char cvt[DT_LENGTH];
   char temp[100];
-  const char *err_str = "";
+  char *txt;
+  caddr_t err_msg = NULL;
   if (!str)
     sqlr_new_error ("22002", "DT009", "Nulls not allowed as parameters to stringtime");
   if (DV_WIDESTRINGP (str))
     {
-      snprintf (temp, sizeof (temp), "1999-1-1 ");
-      box_wide_string_as_narrow (str, temp + 9, 91, QST_CHARSET (qst));
+      box_wide_string_as_narrow (str, temp, sizeof (temp), QST_CHARSET (qst));
+      txt = temp;
     }
   else
-    snprintf (temp, sizeof (temp), "1999-1-1 %s", str);
-  if (0 != string_to_dt (temp, cvt, &err_str))
-    sqlr_new_error ("22007", "DT010", "Can't convert %s to time : %s", str, err_str);
-  dt_make_day_zero (cvt);
+    txt = str;
   res = dk_alloc_box (DT_LENGTH, DV_DATETIME);
-  memcpy (res, cvt, DT_LENGTH);
+  odbc_string_to_time_dt (txt, res, &err_msg);
+  if (NULL != err_msg)
+    {
+      caddr_t err = srv_make_new_error ("22007", "DT010", "Can't convert '%s' to time : %s", str, err_msg);
+      dk_free_box (err_msg);
+      dk_free_box (res);
+      sqlr_resignal (err);
+    }
   return res;
 }
 

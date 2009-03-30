@@ -135,7 +135,6 @@ void dt_to_iso8601_string (const char *dt, char *str, int len);
 void dt_to_rfc1123_string (const char *dt, char *str, int len);
 void dt_to_ms_string (const char *dt, char *str, int len);
 void sec_login_digest (char *ses_name, char *user, char *pwd, unsigned char *digest);
-int iso8601_to_dt (char *str, char *dt, dtp_t dtp);
 int http_date_to_dt (const char *http_date, char *dt);
 
 void bh_serialize (blob_handle_t * bh, dk_session_t * ses);

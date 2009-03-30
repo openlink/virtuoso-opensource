@@ -1389,7 +1389,7 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, caddr_t limit, caddr_
     }
   else
     var_vector_arg = var_vector_expn;
-  agg_call = spar_make_funcall (sparp, 0, "sql:SPARQL_DESC_AGG",
+  agg_call = spar_make_funcall (sparp, 1, "sql:SPARQL_DESC_AGG",
       (SPART **)t_list (1, var_vector_arg ) );
   if (NULL != sparp->sparp_env->spare_describe_mode)
     {

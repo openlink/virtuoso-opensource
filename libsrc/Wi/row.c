@@ -2338,21 +2338,23 @@ row_print_date (caddr_t thing, dk_session_t * ses, dbe_column_t * col,
   char dt2[DT_LENGTH];
   caddr_t err;
   const char *str_err = "";
+  caddr_t err_msg = NULL;
 
   if (IS_STRING_DTP (dtp) || dtp == DV_DATETIME)
     memcpy (dt2, (thing)?thing:"", DT_LENGTH);
   else
     {
       str_err = "Bad data type";
-      goto bad_dtp;
+      goto bad_dtp; /* see below */
     }
 
   if (dtp == DV_SHORT_STRING
       || dtp == DV_LONG_STRING)
     {
       dtp = DV_DATETIME;
-      if (0 != string_to_dt (thing, dt2, &str_err))
-	goto bad_dtp;
+      odbc_string_to_any_dt (thing, dt2, &err_msg);
+      if (NULL != err_msg)
+	goto bad_dtp_1; /* see below */
     }
   if (dtp == DV_DATETIME)
     {
@@ -2383,12 +2385,22 @@ row_print_date (caddr_t thing, dk_session_t * ses, dbe_column_t * col,
       else
 	{
 	  str_err = "Bad data sub-type";
-	  goto bad_dtp;
+	  goto bad_dtp; /* see below */
 	}
       return;
     }
+
 bad_dtp:
-  err = srv_make_new_error ("22007", "SR132", "Bad value for date / time column : %s", str_err);
+  err = srv_make_new_error ("22007", "SR132", "Bad value for date / time column: %s", str_err);
+  if (err_ret)
+    *err_ret = err;
+  else
+    sqlr_resignal (err);
+  return;
+
+bad_dtp_1:
+  err = srv_make_new_error ("22007", "SR132", "Bad value for date / time column: %s", err_msg);
+  dk_free_box (err_msg);
   if (err_ret)
     *err_ret = err;
   else

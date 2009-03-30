@@ -28,6 +28,7 @@
 
 #ifndef _DATESUPP_H
 #define _DATESUPP_H
+#include "date.h"
 
 /*! GMTIMESTAMP_STRUCT is identical to TIMESTAMP_STRUCT but is supposed to be in GMT, not in default server timezone or anything else */
 #define GMTIMESTAMP_STRUCT TIMESTAMP_STRUCT
@@ -61,8 +62,37 @@ void dt_to_string (const char *dt, char *str, int len);
 void dt_to_iso8601_string (const char *dt, char *str, int len);
 void dt_to_rfc1123_string (const char *dt, char *str, int len);
 int print_dt_to_buffer (char *buf, caddr_t arg, int mode);
-int string_to_dt (char *str, char *dt, const char **str_err);
-int string_to_time_dt (char *str, char *dt);
+
+#define DTFLAG_YY	0x1
+#define DTFLAG_MM	0x2
+#define DTFLAG_DD	0x4
+#define DTFLAG_HH	0x8
+#define DTFLAG_MIN	0x10
+#define DTFLAG_SS	0x20
+#define DTFLAG_SF	0x40
+#define DTFLAG_ZH	0x80
+#define DTFLAG_ZM	0x100
+#define DTFLAG_DATE	(DTFLAG_YY | DTFLAG_MM | DTFLAG_DD)
+#define DTFLAG_TIME	(DTFLAG_HH | DTFLAG_MIN | DTFLAG_SS | DTFLAG_SF)
+#define DTFLAG_TIMEZONE	(DTFLAG_ZH | DTFLAG_ZM)
+#define DTFLAG_ALLOW_ODBC_SYNTAX	0x1000
+#define DTFLAG_FORMAT_SETS_FLAGS	0x2000
+#define DTFLAG_FORCE_DAY_ZERO		0x4000
+
+extern void iso8601_or_odbc_string_to_dt (const char *str, char *dt, int dtflags, int dt_type, caddr_t *err_msg_ret);
+#define odbc_string_to_any_dt(str,dt,err_msg_ret) \
+  iso8601_or_odbc_string_to_dt ((str), (dt), \
+    (DTFLAG_DATE | DTFLAG_TIME | DTFLAG_TIMEZONE | DTFLAG_ALLOW_ODBC_SYNTAX | DTFLAG_FORMAT_SETS_FLAGS), \
+    DT_TYPE_DATETIME, err_msg_ret )
+#define odbc_string_to_time_dt(str,dt,err_msg_ret) \
+  iso8601_or_odbc_string_to_dt ((str), (dt), \
+    (DTFLAG_TIME | DTFLAG_TIMEZONE | DTFLAG_ALLOW_ODBC_SYNTAX | DTFLAG_FORMAT_SETS_FLAGS | DTFLAG_FORCE_DAY_ZERO), \
+    -1, err_msg_ret )
+#define iso8601_string_to_datetime_dt(str,dt,err_msg_ret) \
+  iso8601_or_odbc_string_to_dt ((str), (dt), \
+    (DTFLAG_DATE | DTFLAG_TIME | DTFLAG_TIMEZONE), \
+    DT_TYPE_DATETIME, err_msg_ret )
+
 void dt_to_tv (char *dt, char *dv);
 void dt_make_day_zero (char *dt);
 void dt_from_parts (char *dt, int year, int month, int day, int hour, int minute, int second, int fraction, int tz);
