@@ -11,7 +11,7 @@ How to build the Virtuoso Sesame provider
 * Put the following .jar files from the Simple Logging Facade for Java
   project at http://www.slf4j.org  in there:
 
-	slf4j-api-1.5.0.jar
-	slf4j-jdk14-1.5.0.jar
+	slf4j-api-1.5.6.jar
+	slf4j-jdk14-1.5.6.jar
 
 * Run the make command

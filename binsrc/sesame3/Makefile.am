@@ -57,7 +57,7 @@ lib:
 	@echo "Please refer to README file for missing .jar files"
 
 
-virt_sesame3.jar: $(SESAME_SRC)
+virt_sesame3.jar: $(SESAME_SRC) Makefile.am
 	-rm -rf out.driver
 	-mkdir out.driver
 	$(JAVAC) $(JDK_FLAGS) -d out.driver \
