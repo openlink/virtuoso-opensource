@@ -337,7 +337,7 @@ DB.DBA.EXEC_STMT ('grant SPARQL_SPONGE to "SPARQL"', 0);
 -- /* extended http proxy service */
 create procedure virt_proxy_init_about ()
 {
-  if (registry_get ('DB.DBA.virt_proxy_init_about_state') = '1.0')
+  if (registry_get ('DB.DBA.virt_proxy_init_about_state') = '1.2')
     return;
 
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_about_http_proxy_rule_1', 1,
@@ -352,7 +352,12 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_about_http_proxy_rule_2', 1,
   DB.DBA.VHOST_REMOVE (lpath=>'/about');
   DB.DBA.VHOST_DEFINE (lpath=>'/about', ppath=>'/SOAP/Http/ext_http_proxy', soap_user=>'PROXY',
       opts=>vector('url_rewrite', 'ext_about_http_proxy_rule_list1'));
-  registry_set ('DB.DBA.virt_proxy_init_about_state', '1.1');
+
+  DB.DBA.VHOST_REMOVE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/about');
+  DB.DBA.VHOST_DEFINE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/about', ppath=>'/SOAP/Http/ext_http_proxy', soap_user=>'PROXY',
+      opts=>vector('url_rewrite', 'ext_about_http_proxy_rule_list1'));
+
+  registry_set ('DB.DBA.virt_proxy_init_about_state', '1.2');
 }
 ;
 
