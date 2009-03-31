@@ -87,7 +87,7 @@ extern void iso8601_or_odbc_string_to_dt (const char *str, char *dt, int dtflags
 #define odbc_string_to_time_dt(str,dt,err_msg_ret) \
   iso8601_or_odbc_string_to_dt ((str), (dt), \
     (DTFLAG_TIME | DTFLAG_TIMEZONE | DTFLAG_ALLOW_ODBC_SYNTAX | DTFLAG_FORMAT_SETS_FLAGS | DTFLAG_FORCE_DAY_ZERO), \
-    -1, err_msg_ret )
+    DT_TYPE_TIME, err_msg_ret )
 #define iso8601_string_to_datetime_dt(str,dt,err_msg_ret) \
   iso8601_or_odbc_string_to_dt ((str), (dt), \
     (DTFLAG_DATE | DTFLAG_TIME | DTFLAG_TIMEZONE), \
