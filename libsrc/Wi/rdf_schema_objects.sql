@@ -228,7 +228,7 @@ rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0)
 
        ret := ret || rdf_view_sp (6) ||	sprintf ('void:statItem %s-stat:Stat . \n', pref_l);
        ret := ret || rdf_view_sp (6) || sprintf ('%s-stat:Stat a scovo:Item ; \n', pref_l);
-       ret := ret || rdf_view_sp (6) || sprintf (' rdf:value %s.cnt as virtrdf:stat-decl ; \n', rdf_view_tb (qualifier||'__Total'||suffix));
+       ret := ret || rdf_view_sp (6) || sprintf (' rdf:value %s.cnt as virtrdf:stat-decl-%s ; \n', rdf_view_tb (qualifier||'__Total'||suffix), qual_l);
        ret := ret || rdf_view_sp (6) || sprintf (' scovo:dimension void:numOfTriples . \n\n');
 
        for (declare xx any, xx := 0; xx < length (_tbls) ; xx := xx + 1)
@@ -237,14 +237,16 @@ rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0)
 	       tbl_name := name_part (tbl, 2);
 	       tbl_name_l := rdf_view_tb (tbl_name);
 	       tname := tbl_name_l || suffix;
-	       ret := ret || rdf_view_sp (6) || sprintf ('%s-stat: void:statItem %s-stat:%sStat as virtrdf:statitem-%s . \n',
-	       				pref_l, pref_l, tbl_name, tbl_name_l);
-	       ret := ret || rdf_view_sp (6) || sprintf ('%s-stat:%sStat a scovo:Item as virtrdf:statitem-decl-%s ; \n', pref_l, tbl_name, tbl_name_l);
-	       ret := ret || rdf_view_sp (6) || sprintf ('rdf:value %s.cnt as virtrdf:statitem-cnt-%s ; \n',
-	       						rdf_view_tb (tbl_name||'Count') || suffix, tbl_name_l);
-	       ret := ret || rdf_view_sp (6) || sprintf ('scovo:dimention void:numberOfResources as virtrdf:statitem-type-1-%s ; \n', tbl_name_l);
-	       ret := ret || rdf_view_sp (6) || sprintf ('scovo:dimention %s:%s as virtrdf:statitem-type-2-%s .\n\n',
-	       						qualifier, rdf_view_cls_name (tbl_name), tbl_name_l);
+	       ret := ret || rdf_view_sp (6) || sprintf ('%s-stat: void:statItem %s-stat:%sStat as virtrdf:statitem-%s-%s . \n',
+	       				pref_l, pref_l, tbl_name, qual_l, tbl_name_l);
+	       ret := ret || rdf_view_sp (6) || sprintf ('%s-stat:%sStat a scovo:Item as virtrdf:statitem-decl-%s-%s ; \n',
+	       				pref_l, tbl_name, qual_l, tbl_name_l);
+	       ret := ret || rdf_view_sp (6) || sprintf ('rdf:value %s.cnt as virtrdf:statitem-cnt-%s-%s ; \n',
+	       						rdf_view_tb (tbl_name||'Count') || suffix, qual_l, tbl_name_l);
+	       ret := ret || rdf_view_sp (6) || sprintf ('scovo:dimention void:numberOfResources as virtrdf:statitem-type-1-%s-%s ; \n',
+	       						qual_l, tbl_name_l);
+	       ret := ret || rdf_view_sp (6) || sprintf ('scovo:dimention %s:%s as virtrdf:statitem-type-2-%s-%s .\n\n',
+	       						qualifier, rdf_view_cls_name (tbl_name), qual_l, tbl_name_l);
 	  }
      }
 
@@ -369,7 +371,7 @@ rdf_view_create_class (in _tbl varchar, in _host varchar, in qualifier varchar)
 
    for (declare i any, i := 0; i < length (pks) ; i := i + 1)
      {
-       pk_text := pk_text || 'in ' || rdf_view_cls_name (pks[i][0]) || ' ' || rdf_view_dv_to_sql_str_type(pks[i][1]) || ' not null,';
+       pk_text := pk_text || 'in ' || '_' || rdf_view_cls_name (pks[i][0]) || ' ' || rdf_view_dv_to_sql_str_type(pks[i][1]) || ' not null,';
        sk_str := sk_str || '/' || rdf_view_cls_name (pks[i][0]) || '/' || rdf_view_dv_to_printf_str_type (pks[i][1]);
      }
    pk_text := trim (pk_text, ',');
