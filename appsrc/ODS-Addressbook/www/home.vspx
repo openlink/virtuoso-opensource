@@ -2604,7 +2604,7 @@
                 <v:button name="ab_save" action="simple" value="Save" enabled="--case when (self.abAction <> 'view') then 1 else 0 end" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
-                      declare N, suffix, tmp any;
+                      declare N, suffix, tmp, tmp_r any;
 
                       declare exit handler for SQLSTATE '*'
                       {
@@ -2619,6 +2619,7 @@
 
                       -- interests
                       tmp := vector ();
+                      tmp_r := vector ();
                       self.v_interests := '';
                       self.v_relationships := '';
                       for (N := 0; N < length (e.ve_params); N := N + 4)
@@ -2630,7 +2631,11 @@
                         }
                         else if ((e.ve_params [N] like 'b_fld_1_%') and (trim (e.ve_params [N+1]) <> ''))
                         {
+                          if (not AB.WA.vector_contains (tmp_r, trim (e.ve_params [N+1])))
+                          {
+                            tmp_r := vector_concat (tmp_r, vector (trim (e.ve_params [N+1])));
                           self.v_relationships := self.v_relationships || trim (e.ve_params [N+1]) || '\n';
+                        }
                         }
                         else if ((e.ve_params [N] like 's_fld_2_%') and (trim (e.ve_params [N+1]) <> ''))
                         {
@@ -2871,6 +2876,7 @@
                       self.v_bWeb,
                       self.v_tags
                     );
+                      AB.WA.contact_update2 (self.v_id, self.domain_id, 'P_RELATIONSHIPS', self.v_relationships);
                       AB.WA.contact_update2 (self.v_id, self.domain_id, 'P_ACL', self.v_acl);
                     self.v_grants := trim (self.ab_grants.ufl_value);
                     self.shareNode (self.v_id, self.v_grants, 1);

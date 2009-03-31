@@ -119,7 +119,6 @@ create procedure ODS.ODS_API."addressbook.new" (
   in foaf varchar := null,
 	in photo varchar := null,
 	in interests varchar := null,
-	in relationships varchar := null,
   in mail varchar := null,
   in web varchar := null,
   in icq varchar := null,
@@ -190,7 +189,6 @@ create procedure ODS.ODS_API."addressbook.new" (
           foaf,
 					photo,
 					interests,
-					relationships,
           mail,
           web,
           icq,
@@ -398,6 +396,104 @@ create procedure ODS.ODS_API."addressbook.delete" (
   rc := row_count ();
 
   return ods_serialize_int_res (rc);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."addressbook.relationship.new" (
+	in contact any,
+	in relationship varchar) __soap_http 'text/xml'
+{
+	declare exit handler for sqlstate '*'
+	{
+		rollback work;
+		return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+	};
+
+	declare rc integer;
+	declare uname varchar;
+	declare inst_id, contact_id integer;
+	declare arr, tmp, relationships, new_relationships, _relationship any;
+
+  if (atoi (contact) <> 0)
+  {
+    contact_id := atoi (contact);
+  } else {
+    arr := sprintf_inverse (contact, 'http://%s/dataspace/%s/addressbook/%s/%s', 1);
+    if (length (arr) <> 4)
+		  return ods_serialize_sql_error ('37000', 'The item is not found');
+    contact_id := atoi (arr[3]);
+  }
+	inst_id := (select P_DOMAIN_ID from AB.WA.PERSONS where P_ID = contact_id);
+	if (not ods_check_auth (uname, inst_id, 'author'))
+		return ods_auth_failed ();
+
+	if (not exists (select 1 from AB.WA.PERSONS where P_ID = contact_id))
+		return ods_serialize_sql_error ('37000', 'The item is not found');
+
+  relationships := (select P_RELATIONSHIPS from AB.WA.PERSONS where P_ID = contact_id);
+  tmp := vector ();
+  new_relationships := '';
+  for (select _relationship from DB.DBA.WA_USER_INTERESTS (txt) (_relationship varchar) P where txt = relationships) do
+  {
+    new_relationships := new_relationships || _relationship || '\n';
+    tmp := vector_concat (tmp, vector (_relationship));
+  }
+  if (not AB.WA.vector_contains (tmp, relationship))
+    new_relationships := new_relationships || relationship || '\n';
+
+  if (relationships <> new_relationships)
+    AB.WA.contact_update2 (contact_id, inst_id, 'P_RELATIONSHIPS', new_relationships);
+
+	return ods_serialize_int_res (contact_id);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."addressbook.relationship.delete" (
+	in contact any,
+	in relationship varchar) __soap_http 'text/xml'
+{
+	declare exit handler for sqlstate '*'
+	{
+		rollback work;
+		return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+	};
+
+	declare rc integer;
+	declare uname varchar;
+	declare inst_id, contact_id integer;
+	declare arr, relationships, new_relationships, _relationship any;
+
+  if (atoi (contact) <> 0)
+  {
+    contact_id := atoi (contact);
+  } else {
+    arr := sprintf_inverse (contact, 'http://%s/dataspace/%s/addressbook/%s/%s', 1);
+    if (length (arr) <> 4)
+		  return ods_serialize_sql_error ('37000', 'The item is not found');
+    contact_id := atoi (arr[3]);
+  }
+	inst_id := (select P_DOMAIN_ID from AB.WA.PERSONS where P_ID = contact_id);
+	if (not ods_check_auth (uname, inst_id, 'author'))
+		return ods_auth_failed ();
+
+	if (not exists (select 1 from AB.WA.PERSONS where P_ID = contact_id))
+		return ods_serialize_sql_error ('37000', 'The item is not found');
+
+  relationships := (select P_RELATIONSHIPS from AB.WA.PERSONS where P_ID = contact_id);
+  new_relationships := '';
+  for (select _relationship from DB.DBA.WA_USER_INTERESTS (txt) (_relationship varchar) P where txt = relationships) do
+  {
+    if (relationship <> _relationship)
+      new_relationships := new_relationships || _relationship || '\n';
+  }
+  if (relationships <> new_relationships)
+    AB.WA.contact_update2 (contact_id, inst_id, 'P_RELATIONSHIPS', new_relationships);
+
+	return ods_serialize_int_res (contact_id);
 }
 ;
 
@@ -1240,6 +1336,9 @@ grant execute on ODS.ODS_API."addressbook.get" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.new" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.edit" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.delete" to ODS_API;
+grant execute on ODS.ODS_API."addressbook.relationship.new" to ODS_API;
+grant execute on ODS.ODS_API."addressbook.relationship.delete" to ODS_API;
+
 grant execute on ODS.ODS_API."addressbook.import" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.export" to ODS_API;
 
