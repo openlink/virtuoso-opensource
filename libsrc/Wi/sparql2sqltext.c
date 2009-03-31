@@ -96,9 +96,9 @@ void rdf_ds_load_all (void)
   qmf->qmfUriOfShortTmpl = box_dv_short_string (" id_to_iri (^{tree}^)");
   qmf->qmfStrsqlvalOfShortTmpl = box_dv_short_string (" id_to_iri (^{tree}^)");
   qmf->qmfShortOfTypedsqlvalTmpl = box_dv_short_string (" NULL");
-  qmf->qmfShortOfSqlvalTmpl = box_dv_short_string (" DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (^{tree}^)");
+  qmf->qmfShortOfSqlvalTmpl = box_dv_short_string (" __i2idn (^{tree}^)");
   qmf->qmfShortOfLongTmpl = box_dv_short_string (" /* SHORT of LONG: */ ^{tree}^");
-  qmf->qmfShortOfUriTmpl = box_dv_short_string (" DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (^{tree}^)");
+  qmf->qmfShortOfUriTmpl = box_dv_short_string (" __i2idn (^{tree}^)");
   qmf->qmfCmpFuncName = box_dv_short_string ("DB.DBA.RDF_IID_CMP");
   qmf->qmfTypeminTmpl = box_dv_short_string (" NULL"); /* No order on IRIs */
   qmf->qmfTypemaxTmpl = box_dv_short_string (" NULL"); /* No order on IRIs */
@@ -133,13 +133,13 @@ void rdf_ds_load_all (void)
   qmf->qmfLanguageOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_LANGUAGE_OF_OBJ (^{tree}^)");
   qmf->qmfSqlvalOfShortTmpl = box_dv_short_string (" __rdf_sqlval_of_obj (^{tree}^)");
   qmf->qmfBoolOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_BOOL_OF_OBJ (^{tree}^)");
-  qmf->qmfIidOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_MAKE_IID_OF_LONG (__rdf_long_of_obj (^{tree}^))");
+  qmf->qmfIidOfShortTmpl = box_dv_short_string (" __i2idn (^{tree}^)");
   qmf->qmfUriOfShortTmpl = box_dv_short_string (" id_to_iri_nosignal (^{tree}^)");
   qmf->qmfStrsqlvalOfShortTmpl = box_dv_short_string (" __rdf_strsqlval (^{tree}^)");
   qmf->qmfShortOfTypedsqlvalTmpl = box_dv_short_string (" DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (^{sqlval-of-tree}^, DB.DBA.RDF_MAKE_IID_OF_QNAME(^{datatype-of-tree}^), ^{language-of-tree}^)");
   qmf->qmfShortOfSqlvalTmpl = box_dv_short_string (" DB.DBA.RDF_OBJ_OF_SQLVAL (^{tree}^)");
   qmf->qmfShortOfLongTmpl = box_dv_short_string (" DB.DBA.RDF_OBJ_OF_LONG (^{tree}^)");
-  qmf->qmfShortOfUriTmpl = box_dv_short_string (" DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (^{tree}^)");
+  qmf->qmfShortOfUriTmpl = box_dv_short_string (" __i2idn (^{tree}^)");
   qmf->qmfCmpFuncName = box_dv_short_string ("DB.DBA.RDF_OBJ_CMP");
   qmf->qmfTypeminTmpl = box_dv_short_string (" DB.DBA.RDF_TYPEMIN_OF_OBJ (^{tree}^)");
   qmf->qmfTypemaxTmpl = box_dv_short_string (" DB.DBA.RDF_TYPEMAX_OF_OBJ (^{tree}^)");
@@ -2532,7 +2532,7 @@ ssg_print_bop_bool_expn (spar_sqlgen_t *ssg, SPART *tree, const char *bool_op, c
   left_vmode = sparp_expn_native_valmode (ssg->ssg_sparp, left);
   right_vmode = sparp_expn_native_valmode (ssg->ssg_sparp, right);
 /* There exists a special popular case for a filter for GRAPH `iri(my_expression)` { ... } where graph is made by mapping with a fixed graph.
-Without the special optization it becomes iri_to_id ('graph iri string from view declaration') = DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (my_expression) */
+Without the special optization it becomes iri_to_id ('graph iri string from view declaration') = iri_to_id_nosignal (my_expression) */
   if ((BOP_EQ == ttype) &&
     ((SSG_VALMODE_SQLVAL == left_vmode) || (SSG_VALMODE_SQLVAL == right_vmode)) &&
     ((SSG_VALMODE_LONG == left_vmode) || (SSG_VALMODE_LONG == right_vmode)) )
@@ -3277,10 +3277,8 @@ IN_op_fnt_found:
             const char *tmpl = NULL;
             if (IS_BOX_POINTER (arg1_native))
               tmpl = arg1_native->qmfIidOfShortTmpl;
-            else if (SSG_VALMODE_LONG == arg1_native)
-              tmpl = " DB.DBA.RDF_MAKE_IID_OF_LONG (^{tree}^)";
-            else if (SSG_VALMODE_SQLVAL == arg1_native)
-              tmpl = " DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (^{tree}^)";
+            else if ((SSG_VALMODE_LONG == arg1_native) || (SSG_VALMODE_SQLVAL == arg1_native))
+              tmpl = " __i2idn (^{tree}^)";
             else
               spar_sqlprint_error ("ssg_" "print_builtin_expn(): bad native type for IRI()");
             ssg_print_tmpl (ssg, arg1_native, tmpl, NULL, NULL, arg1, NULL_ASNAME);

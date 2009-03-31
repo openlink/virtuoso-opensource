@@ -1693,7 +1693,9 @@ iri_to_id (caddr_t *qst, caddr_t name, int mode, caddr_t *err_ret)
   caddr_t box_to_delete = NULL;
   caddr_t res = NULL;
   dtp_t dtp = DV_TYPE_OF (name);
+  dtp_t orig_dtp = dtp;
   err_ret[0] = NULL;
+again:
   switch (dtp)
     {
     case DV_DB_NULL:
@@ -1710,7 +1712,7 @@ iri_to_id (caddr_t *qst, caddr_t name, int mode, caddr_t *err_ret)
         if (NULL == box_to_delete)
           {
             err_ret[0] = srv_make_new_error ("RDFXX", ".....",
-              "XML entity with no string value is passed as an argument to iri_to_id (), type %d", (unsigned int)dtp );
+              "XML entity with no string value is passed as an argument to iri_to_id (), type %d", (unsigned int)orig_dtp );
             goto return_error; /* see below */
           }
         name = box_to_delete;
@@ -1719,15 +1721,28 @@ iri_to_id (caddr_t *qst, caddr_t name, int mode, caddr_t *err_ret)
     case DV_STRING:
     case DV_UNAME:
       break;
+    case DV_RDF:
+      {
+        rdf_box_t *rb = (rdf_box_t *)name;
+        if (!rb->rb_is_complete)
+          {
+            if (IRI_TO_ID_IF_CACHED == mode)
+              return NULL;
+            rb_complete (rb, ((query_instance_t *)qst)->qi_trx, ((query_instance_t *)qst));
+          }
+        name = rb->rb_box;
+        dtp = DV_TYPE_OF (name);
+        goto again; /* see above */
+      }
     default:
       err_ret[0] = srv_make_new_error ("RDFXX", ".....",
-        "Bad argument to iri_to_id (), type %d", (unsigned int)dtp );
+        "Bad argument to iri_to_id (), type %d", (unsigned int)orig_dtp );
       goto return_error; /* see below */
     }
   if (1 == box_length (name))
     {
       err_ret[0] = srv_make_new_error ("RDFXX", ".....",
-        "Empty string is not a valid argument to iri_to_id (), type %d", (unsigned int)dtp );
+        "Empty string is not a valid argument to iri_to_id (), type %d", (unsigned int)orig_dtp );
       goto return_error; /* see below */
     }
 /*                     0123456789 */

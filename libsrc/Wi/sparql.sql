@@ -618,13 +618,13 @@ rdf_url_is_empty:
 DB.DBA.RDF_MIGRATE_URL_TO_IRI ()
 ;
 
-create function DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (in qname any) returns IRI_ID
+create function DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (in qname any) returns IRI_ID -- DEPRECATED
 {
   return iri_to_id_nosignal (qname);
 }
 ;
 
-create function DB.DBA.RDF_MAKE_IID_OF_LONG (in qname any) returns IRI_ID
+create function DB.DBA.RDF_MAKE_IID_OF_LONG (in qname any) returns IRI_ID -- DEPRECATED
 {
   if (isiri_id (qname))
     return qname;
