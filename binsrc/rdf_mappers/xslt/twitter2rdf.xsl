@@ -184,7 +184,7 @@
 	    <xsl:for-each select="user">
 			<xsl:if test="$what != 'followers'">
 				<rdf:Description rdf:about="{vi:proxyIRI(concat('http://twitter.com/', $id))}">
-					<foaf:knows rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', screen_name))}"/>
+					<sioc:follows rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', screen_name))}"/>
 				</rdf:Description>
 			</xsl:if>
 	    </xsl:for-each>
@@ -300,7 +300,7 @@
 				<xsl:value-of select="description" />
 			</foaf:title>
 			<xsl:if test="$what = 'followers'">
-				<foaf:knows rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', $id))}"/>
+				<sioc:follows rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', $id))}"/>
 			</xsl:if>
 		</foaf:Person>
 	</xsl:template>

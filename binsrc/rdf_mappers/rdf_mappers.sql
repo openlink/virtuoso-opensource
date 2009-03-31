@@ -123,10 +123,6 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_DIGG', null, 'Digg');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-    values ('(http://delicious.com/.*)|(http://feeds.delicious.com/.*)',
-            'URL', 'DB.DBA.RDF_LOAD_DELICIOUS', null, 'Delicious');
-
-insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://isbndb.com/.*)|'||
             '(https://isbndb.com/.*)',
             'URL', 'DB.DBA.RDF_LOAD_ISBN', null, 'ISBN');
@@ -3148,34 +3144,82 @@ ret:
 create procedure DB.DBA.RDF_LOAD_DELICIOUS (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare xd, section_name, search, xt, url, tmp any;
+	declare what varchar;
   declare exit handler for sqlstate '*'
   {
     return 0;
   };
+	if (new_origin_uri like 'http://delicious.com/tags/%' or new_origin_uri like 'http://feeds.delicious.com/v2/rss/tags/%')
+		what := 'tags';
+	else if (new_origin_uri like 'http://delicious.com/url/%' or new_origin_uri like 'http://feeds.delicious.com/v2/rss/url/%')
+	{
+		what := 'url';
+		return 1;
+	}
+	else if (new_origin_uri like 'http://delicious.com/%/%' or new_origin_uri like 'http://feeds.delicious.com/v2/rss/%/%')
+		what := 'tag';
+	else
+		what := 'user';
   if (new_origin_uri like 'http://delicious.com/%')
 	{
 		tmp := sprintf_inverse (new_origin_uri, 'http://delicious.com/%s', 0);
 		section_name := trim(tmp[0]);
+		section_name := trim(section_name, '/');
 		if (section_name is null)
 			return 0;
+		if (what = 'user')
+		{
+			if (strchr(section_name, '/') is not null)
+				return 0;
+		}
 		url := sprintf('http://feeds.delicious.com/v2/rss/%s', section_name);
 	}
 	else if (new_origin_uri like 'http://feeds.delicious.com/%')
-	{
 		url := new_origin_uri;
-	}
     else
-	{
 		return 0;
-	}
+
     tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
     xd := xtree_doc (tmp);
-    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/rss2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/delicious2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri), 'what', what));
     xd := serialize_to_UTF8_xml (xt);
-    delete from DB.DBA.RDF_QUAD where g =  iri_to_id (coalesce (dest, graph_iri));
-    DB.DBA.RDF_LOAD_FEED_SIOC (xd, new_origin_uri, coalesce (dest, graph_iri), 2);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	
+	declare data, meta, state, message any;
+	exec (sprintf('sparql select ?l from <%s> where { <%s> <http://scot-project.org/scot/ns#name> ?l }', graph_iri, graph_iri), state, message, vector (), 0, meta, data);
+	foreach (any str in data) do
+	{
+		if (isstring (str[0]))
+		{
+			declare meaning_iri varchar;
+			declare keyword varchar;
+			keyword := str[0];
+			for select mu_id, mu_url from moat..moat_user_meanings where mu_tag = keyword do
+			{
+      		    meaning_iri := graph_iri || sprintf ('#meaning/%d', mu_id);
+				DB.DBA.RDF_QUAD_URI (graph_iri, graph_iri, 'http://moat-project.org/ns#hasMeaning', meaning_iri);
+				DB.DBA.RDF_QUAD_URI (graph_iri, meaning_iri, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://moat-project.org/ns#Meaning');
+				DB.DBA.RDF_QUAD_URI (graph_iri, meaning_iri, 'http://moat-project.org/ns#meaningURI', mu_url);
+			}
+		}
+	}
+	
     return 1;
 }
+;
+
+create procedure INSTALL_RDF_LOAD_DELICIOUS ()
+{
+  -- possible old behaviour
+  delete from SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_DELICIOUS';
+  -- register in PP chain
+  insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
+      values ('(http://delicious.com/.*)|(http://feeds.delicious.com/.*)',
+            'URL', 'DB.DBA.RDF_LOAD_DELICIOUS', null, 'Delicios', vector ());
+}
+;
+
+INSTALL_RDF_LOAD_DELICIOUS ()
 ;
 
 create procedure DB.DBA.RDF_LOAD_OREILLY (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)

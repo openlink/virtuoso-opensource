@@ -63,6 +63,16 @@
 		<xsl:apply-templates select="Slideshow" />
 	</xsl:template>
 	<xsl:template match="Slideshows/Slideshow|Slideshow">
+          <rdf:Description rdf:about="{URL}">
+ 		<rdf:type rdf:resource="&foaf;Document"/>
+ 		<rdf:type rdf:resource="&bibo;Document"/>
+ 		<rdf:type rdf:resource="&sioc;Container"/>		
+ 		<sioc:container_of rdf:resource="{vi:proxyIRI(URL)}"/>
+ 		<foaf:topic rdf:resource="{vi:proxyIRI(URL)}"/>
+ 		<dcterms:subject rdf:resource="{vi:proxyIRI(URL)}"/>
+ 		<foaf:primaryTopic rdf:resource="{vi:proxyIRI(URL)}"/>
+ 	  </rdf:Description>
+
 		<bibo:Slideshow rdf:about="{vi:proxyIRI(URL)}">
 			<xsl:variable name="res" select="vi:proxyIRI(URL)" />
 			<xsl:choose>

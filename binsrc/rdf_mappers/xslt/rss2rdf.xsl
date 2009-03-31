@@ -31,14 +31,12 @@
   xmlns:r="http://backend.userland.com/rss2"
   xmlns="http://purl.org/rss/1.0/"
   xmlns:rss="http://purl.org/rss/1.0/"
-  xmlns:scot="http://scot-project.org/scot/ns#"
   xmlns:vi="http://www.openlinksw.com/weblog/"
   xmlns:itunes="http://www.itunes.com/DTDs/Podcast-1.0.dtd"
   xmlns:a="http://www.w3.org/2005/Atom"
   xmlns:enc="http://purl.oclc.org/net/rss_2.0/enc#"
   xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
   xmlns:georss="http://www.georss.org/georss"
-  xmlns:skos="http://www.w3.org/2004/02/skos/core#"
   xmlns:sioc="http://rdfs.org/sioc/ns#"
   version="1.0">
 
@@ -93,21 +91,6 @@
 </xsl:template>
 
 <xsl:template match="channel|r:channel">
-  <xsl:if test="starts-with(link, 'http://delicious.com/')">
-	<xsl:variable name="author" select="substring-after(link, 'http://delicious.com/')" />
-	<scot:Tagcloud rdf:about="{concat('http://delicious.com/tags/', $author)}">
-		<xsl:for-each select="//category">
-			<scot:hasTag rdf:resource="{concat (@domain, .)}"/>
-		</xsl:for-each>
-	</scot:Tagcloud>
-	<xsl:for-each select="//category">
-		<scot:Tag rdf:about="{concat (@domain, .)}">
-			<scot:name>
-				<xsl:value-of select="."/>
-			</scot:name>
-		</scot:Tag>
-	</xsl:for-each>
-  </xsl:if>
   
   <channel rdf:about="{link|r:link|a:link/@href}">
     <xsl:apply-templates/>
@@ -179,15 +162,6 @@
 			</skos:prefLabel>
 		</skos:Concept>
 	</sioc:topic>
-	<sioc:topic>
-		<xsl:if test="starts-with(/rss/channel/link, 'http://delicious.com/')">
-			<scot:Tag rdf:about="{concat (@domain, .)}">
-				<scot:name>
-					<xsl:value-of select="."/>
-				</scot:name>
-			</scot:Tag>
-		</xsl:if>
-    </sioc:topic>
 </xsl:template>
 
 <!-- elements from 0.94 not converted:
