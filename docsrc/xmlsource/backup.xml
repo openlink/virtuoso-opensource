@@ -178,6 +178,12 @@ SQL> backup_online ('virt-inc_dump_#', 150);
 &lt;virtuoso exe&gt; +restore-backup &lt;FILE_PREFIX&gt;
 </programlisting>
 
+
+<programlisting><![CDATA[
+-- for example:
+virtuoso-iodbc-t +restore-backup dump-20011010_#
+]]></programlisting>
+
   <para>must be issued in the directory where the "*.bp" were stored.  The
   database will then be restored.  The expression &lt;virtuoso exe&gt; above must
   be replaced with the path and filename to the Virtuoso server executable used
