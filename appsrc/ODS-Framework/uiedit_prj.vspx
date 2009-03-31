@@ -32,11 +32,6 @@
 	<v:variable name="del_prj" type="int" default="null" param-name="del" />
 	<v:form type="simple" method="POST" xhtml_enctype="multipart/form-data" action="uiedit.vspx?page=5">
 	  <table class="listing" rules="groups">
-	      <colgroup>
-		  <col/>
-		  <col/>
-		  <col/>
-	      </colgroup>
 	      <tr class="listing_header_row">
 		  <th>Made</th>
 		  <th>Description</th>

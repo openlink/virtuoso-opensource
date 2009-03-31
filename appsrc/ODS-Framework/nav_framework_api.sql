@@ -180,16 +180,19 @@ create procedure sessionValidateX509 (
 {
   declare retValue any;
   declare fingerPrint, info, agent any;
-  declare st, msg, meta, data, S, hf, graph any;
+  declare st, msg, meta, data, S, hf, graph, gr any;
 
   retValue := null;
+  graph := null;
   if (not is_https_ctx ())
     goto _exit;
 
+  set_user_id ('dba');
   fingerPrint := get_certificate_info (6);
   for (select cast (WAUI_CERT as varchar) cert,
               U_NAME uname
-         from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS
+         from DB.DBA.WA_USER_INFO,
+              DB.DBA.SYS_USERS
         where WAUI_U_ID = U_ID
           and WAUI_CERT_FINGERPRINT = fingerPrint
           and (((WAUI_CERT_LOGIN = 1) and (redirect = 1)) or (redirect = 2))) do
@@ -210,11 +213,9 @@ create procedure sessionValidateX509 (
 
     hf := rfc1808_parse_uri (agent);
     hf[5] := '';
-    graph := DB.DBA.vspx_uri_compose (hf);
-    S := sprintf ('SPARQL clear graph <%s>', graph);
-    exec (S, st, msg);
-    commit work;
-    S := sprintf ('sparql load <%s> into graph <%S>', graph, graph);
+    gr := DB.DBA.vspx_uri_compose (hf);
+    graph := uuid ();
+    S := sprintf ('sparql load <%s> into graph <%s>', gr, graph);
     exec (S, st, msg);
     commit work;
     S := sprintf ('sparql ' ||
@@ -239,9 +240,15 @@ create procedure sessionValidateX509 (
     if ((st <> '00000') or (length (data) = 0))
       goto _exit;
 
+    if (graph is not null)
+      exec (sprintf ('SPARQL clear graph <%s>', graph), st, msg);
+    commit work;
     retValue := vector (uName);
   }
 _exit:;
+  if (graph is not null)
+    exec (sprintf ('SPARQL clear graph <%s>', graph), st, msg);
+  commit work;
   return retValue;
 }
 ;

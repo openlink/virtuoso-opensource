@@ -436,6 +436,7 @@ ODS_CREATE_NEW_APP_INST (in app_type varchar, in inst_name varchar, in owner var
   declare ty, h, id any;
   declare _err varchar;
   declare _u_id,_wai_id integer;
+  declare lpath varchar;
 
   _err:='';
 
@@ -490,15 +491,16 @@ ODS_CREATE_NEW_APP_INST (in app_type varchar, in inst_name varchar, in owner var
     {
      declare exit handler for sqlstate '*'
      {
-       _err:='Cannot create "'|| inst_name ||'" of type '||app_type ||' for '||owner||'. SQL_ERR: '|| concat (__SQL_STATE, ' ', __SQL_MESSAGE) ||';';
+	      _err := 'Cannot create "'|| inst_name ||'" of type '||app_type ||' for '||owner||'. SQL_ERR: '||
+	      concat (__SQL_STATE, ' ', __SQL_MESSAGE) ||';';
        goto report_err;
      };
 
      id := call (h) (inst, owner);
     }
 
-
-    if(id<>0){
+      if (id <> 0)
+	{
       update WA_INSTANCE
              set WAI_MEMBER_MODEL = model,
                  WAI_IS_PUBLIC = pub,
@@ -506,22 +508,35 @@ ODS_CREATE_NEW_APP_INST (in app_type varchar, in inst_name varchar, in owner var
                  WAI_NAME = inst_name,
                  WAI_DESCRIPTION = coalesce(inst_descr,inst_name || ' Description')
            where WAI_ID = id;
-    }else
+	}
+      else
     {
        _err:='Cannot update properties for '|| inst_name ||' of type '|| app_type ||' for '||owner||';';
        goto report_err;
     }
-  }else
+    }
+  else
   {
     _err:='Application type '|| app_type ||' do not support wa_new_inst() method;';
     goto report_err;
   }
 
+ -- ensure default domain
+ {
+   commit work;
+   declare exit handler for sqlstate '*'
+     {
+       rollback work;
+       goto relaxing;
+     };
+   lpath := DB.DBA.wa_set_url_t (inst);
+   DB.DBA.WA_SET_APP_URL (id, lpath, null, DB.DBA.wa_default_domain (), null, null, null, 1);
+   DB.DBA.WA_SET_APP_URL (id, lpath, null, '{Default HTTPS}', null, null, null, 1);
+ }
+relaxing:
  return id;
 
-
 report_err:;
-
  return _err;
 };
 

@@ -428,7 +428,10 @@
     	  if (lpath is not null)
     	    WA_SET_APP_URL (id, lpath, self.sub_domain.ufl_value, self.main_domain.ufl_value, null, null, null, silent);
           if (default_lpath is not null)
+            {
     	    WA_SET_APP_URL (id, default_lpath, null, wa_default_domain (), null, null, null, 1);
+	      WA_SET_APP_URL (id, default_lpath, null, '{Default HTTPS}', null, null, null, 1);
+	    }
       }
       commit work;
 

@@ -32,13 +32,8 @@
 	<v:variable name="del_related" type="int" default="null" param-name="del" />
 	<v:variable name="rel_iri" type="varchar" default="'rdfs:seeAlso'" persist="temp" />
   <h3>These are other statements made via RDF Triples</h3>
-  <v:form type="simple" method="POST" xhtml_enctype="multipart/form-data" action="uiedit.vspx?page=6">
+  <v:form type="simple" method="POST" xhtml_enctype="multipart/form-data" action="uiedit.vspx?page=8">
 	  <table class="listing" rules="groups">
-	      <colgroup>
-		  <col/>
-		  <col/>
-		  <col/>
-	      </colgroup>
 	      <tr class="listing_header_row">
 		  <th>IRI</th>
 		  <th>Relation</th>
@@ -71,7 +66,7 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_related)
 				  <v:url name="related_ur1"
 				      value='--concat (&apos;<img src="images/icons/edit_16.png" hspace="3" border="0"/>&apos;, (control.vc_parent as vspx_row_template).te_rowset[1])'
 				      format="%s"
-                    url="--sprintf ('uiedit.vspx?page=6&amp;edit=%d', (control.vc_parent as vspx_row_template).te_rowset[0])"
+                    url="--sprintf ('uiedit.vspx?page=8&amp;edit=%d', (control.vc_parent as vspx_row_template).te_rowset[0])"
 				      xhtml_title="Edit"
 				      xhtml_alt="Edit"
 				      />
@@ -82,7 +77,7 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_related)
 			      <td>
 				  <v:url name="related_ur2" value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
 				      format="%s"
-                url="--sprintf ('uiedit.vspx?page=6&amp;del=%d', (control.vc_parent as vspx_row_template).te_rowset[0])"
+                url="--sprintf ('uiedit.vspx?page=8&amp;del=%d', (control.vc_parent as vspx_row_template).te_rowset[0])"
 				      xhtml_title="Delete"
 				      xhtml_alt="Delete"
 				      />

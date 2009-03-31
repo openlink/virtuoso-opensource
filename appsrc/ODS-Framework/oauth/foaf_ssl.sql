@@ -32,8 +32,6 @@ create procedure FOAF_SSL_AUTH (in realm varchar)
   hf[5] := '';
   gr := uuid ();
   graph := DB.DBA.vspx_uri_compose (hf);
-  delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (gr);
-  commit work;
   qr := sprintf ('sparql load <%S> into graph <%S>', graph, gr);
   stat := '00000';
   exec (qr, stat, msg);
@@ -52,12 +50,12 @@ create procedure FOAF_SSL_AUTH (in realm varchar)
       select FS_UID into uid from FOAF_SSL_ACL where FS_URI = agent;
       connection_set ('SPARQLUserId', uid);
       insert into VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY) values (fing, 'foaf+ssl', uid, now ());
-      delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (gr);
+      exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
       commit work;
       return 1;
     }
   err_ret:
-  delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (gr);
+  exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
   commit work;
 --  dbg_obj_print (stat, data);
   return 0;

@@ -14,7 +14,6 @@ function _getChildElemsByClassName (elm, class_name, max_depth, stop_at_first_ma
       if (stop_at_first_match)
 	return elm_arr;
     }
-  
   for (i = 0; i < elm.childNodes.length; i++)
     {
       var n = elm.childNodes[i];
@@ -505,8 +504,7 @@ ODS.session = function (customEndpoint)
 		   assoc_handle:false,
 		   signed:false};
 
-    if (typeof (customEndpoint) != 'undefined' &&
-	length (customEndpoint))
+  if (typeof (customEndpoint) != 'undefined' && length (customEndpoint))
 	this.endpoint = customEndpoint;
 
     this.start = function ()
@@ -542,29 +540,42 @@ ODS.session = function (customEndpoint)
 		    alert (errMsg);
 	    return;
 	}
-    if (($('loginDiv').loginTab.selectedIndex == 0) || (mode == 'X509'))
+    if ($('loginDiv').loginTab.selectedIndex == 0)
 	    {
-      if ((mode != 'X509') && (($('loginUserName').value.length == 0) || ($('loginUserPass').value.length == 0)))
+      if (($('loginUserName').value.length == 0) || ($('loginUserPass').value.length == 0))
 		    {
 			showLoginErr ();
 			return;
 		    }
-
-    	var data;
-    	if (mode == 'X509')
-    	{
-    	  data = 'sid=' + self.sid + '&realm=wa&X509=1';
-    	} else {
-    	  data = 'sid=' + self.sid +
+      var data = 'sid=' + self.sid +
     	         '&realm=wa' +
     	         '&userName=' + $('loginUserName').value +
     	         '&authStr=' + OAT.Crypto.sha (self.sid + $('loginUserName').value + $('loginUserPass').value);
-      }
-
 	var callback = function (xmlString) 
 	{
 		    var xmlDoc = OAT.Xml.createXmlDoc (xmlString);
+        if (!self.isErr (xmlDoc))
+        {
+          self.userName = OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc, '/sessionValidate_response/userName', {})[0]);
+          self.userId = OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc, '/sessionValidate_response/userId', {})[0]);
+          self.userIsDba = OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc, '/sessionValidate_response/dba', {})[0]);
+          $('loginErrDiv').innerHTML = '';
 
+          OAT.MSG.send (self, OAT.MSG.SES_VALIDBIND, {});
+        }
+        else
+        {
+          OAT.MSG.send (self, OAT.MSG.SES_INVALID, {retryLogIn: true});
+        }
+      };
+      OAT.AJAX.POST (self.endpoint + "sessionValidate", data, callback, options);
+    }
+    else if ($('loginDiv').loginTab.selectedIndex == 2)
+    {
+      var data = 'sid=' + self.sid + '&realm=wa&X509=1';
+      var callback = function (xmlString)
+      {
+        var xmlDoc = OAT.Xml.createXmlDoc (xmlString);
 		    if (!self.isErr (xmlDoc))
 			{
 			    self.userName = OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc, '/sessionValidate_response/userName', {})[0]);
@@ -748,9 +759,6 @@ ODS.session = function (customEndpoint)
 		}
 	    else
 		{
-
-//                                             var errCode=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/error_response/error_code',{})[0]);
-
 		    var errMsg = OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc, '/error_response/error_msg', {})[0]);
 
 		    OAT.MSG.send (self, OAT.MSG.SES_INVALID, {retryLogIn:true, msg:errMsg});
@@ -794,10 +802,7 @@ ODS.session = function (customEndpoint)
 		dd ('ERROR - msg: ' + errMsg + ' code: ' + errCode);
 		return 1;
 	    }
-	else
 	    return 0;
-
-	return 1;
     };
 
     this.connectionAdd = function (connectionId, connectionFullName)
@@ -866,8 +871,7 @@ ODS.session = function (customEndpoint)
 	    arr = new Array ();
 	else
 	    if (typeof (arr) != 'object' ||
-		(typeof (arr) =='object' &&
-		 typeof (arr.push) != 'function'))
+         (typeof (arr) == 'object' && typeof (arr.push) != 'function'))
 		return;
 
 	arr.push (elmId);
@@ -944,8 +948,6 @@ ODS.Nav = function (navOptions)
     {
 	if ($('loginBtn'))
 	    $('loginBtn').disabled=true;
-    if ($('loginX509'))
-      $('loginX509').disabled = true;
 	if ($('signupBtn'))
 	    $('signupBtn').disabled=true;
 	if ($('loginCloseBtn'))
@@ -955,28 +957,11 @@ ODS.Nav = function (navOptions)
 	self.session.validate ();
     }
 
-  function preValidateX509()
-  {
-    if ($('loginBtn'))
-      $('loginBtn').disabled = true;
-    if ($('loginX509'))
-      $('loginX509').disabled = true;
-    if ($('signupBtn'))
-      $('signupBtn').disabled = true;
-    if ($('loginCloseBtn'))
-      OAT.Dom.hide ($('loginCloseBtn'));
-
-    self.showLoginThrobber ();
-    self.session.validate ('X509');
-  }
-
   OAT.MSG.attach (self.session, OAT.MSG.SES_TOKEN_RECEIVED,
 	  function ()
 	  {
 			OAT.Event.detach ('loginBtn', 'click', preValidate);
 			OAT.Event.attach ('loginBtn','click',preValidate);
-	    OAT.Event.detach ('loginX509', 'click', preValidateX509);
-	    OAT.Event.attach ('loginX509', 'click', preValidateX509);
 			$('loginUserPass').tokenReceived = true;
 			$('loginOpenIdUrl').tokenReceived = true;
 	  }
@@ -1006,9 +991,6 @@ ODS.Nav = function (navOptions)
 			self.showLoginThrobber ('hide');
 			if ($('loginBtn'))
 			    $('loginBtn').disabled = false;
-
-	    if ($('loginX509'))
-	      $('loginX509').disabled = false;
 
 			if ($('signupBtn'))
 			    $('signupBtn').disabled = false;
@@ -2245,8 +2227,8 @@ ODS.Nav = function (navOptions)
 							     'person/' +
 							     self.session.userName +
 							     '#this'));
-			  });
-
+      }
+    );
 	aUserProfile.innerHTML = self.session.userName;
 
 	var aLogin = OAT.Dom.create ("a");
@@ -2278,19 +2260,56 @@ ODS.Nav = function (navOptions)
 	aHelp.href = self.expandURL (self.ods + 'help.vspx');
 	aHelp.innerHTML = 'Help';
 
+    var aHelp = OAT.Dom.create ("a");
+
+    aHelp.target = "_blank";
+    aHelp.href = self.expandURL (self.ods + 'help.vspx');
+    aHelp.innerHTML = 'Help';
+
 	if (self.userLogged && self.session.userIsDba == 1)
 	    {
 	    OAT.Dom.append ([rootDiv,loginfoDiv], [loginfoDiv,aSettings,aSiteSettings,aUserProfile,aLogout,aHelp]);
-	    }
-	else
+    } else {
 	    if (self.userLogged && self.session.userIsDba == 0)
 		{
-		    OAT.Dom.append([rootDiv,loginfoDiv],
-				   [loginfoDiv,aSettings,aUserProfile,aLogout,aHelp]);
+        OAT.Dom.append([rootDiv, loginfoDiv], [loginfoDiv, aSettings, aUserProfile, aLogout, aHelp]);
+      } else {
+        OAT.Dom.append([rootDiv, loginfoDiv], [loginfoDiv, aLogin, aSignUp, aHelp]);
+      }
+    }
+    if (document.location.protocol != 'https:')
+    {
+      var x = function (data) {
+        var o = null;
+        try {
+          o = OAT.JSON.parse(data);
+        } catch (e) { o = null; }
+        if (o && o.sslPort)
+        {
+          aSSL = OAT.Dom.create ("a");
+          aSSL.href = 'https://' + document.location.hostname + ':' + o.sslPort + '/ods/index.html';
+          var aImg = OAT.Dom.create ('img');
+          aImg.src = 'images/icons/lock_16.png';
+          aImg.alt = 'ODS SSL Link';
+          OAT.Dom.append([aSSL, aImg], [loginfoDiv, aSSL]);
+        }
+      }
+      OAT.AJAX.GET ('/ods/api/server.getInfo?info=sslPort', false, x);
+    } else {
+      var x = function (data) {
+        var o = null;
+        try {
+          o = OAT.JSON.parse(data);
+        } catch (e) { o = null; }
+        if (o && o.iri)
+        {
+          self.sslData = o;
+          if (!self.userLogged)
+            self.logIn();
+        }
+      }
+      OAT.AJAX.GET ('/ods/api/user.getFOAFSSLData', false, x);
 		}
-	    else
-		OAT.Dom.append([rootDiv,loginfoDiv],
-			       [loginfoDiv,aLogin,aSignUp,aHelp]);
     }
 
     this.getSearchOptions = function (searchBoxObj)
@@ -2316,8 +2335,7 @@ ODS.Nav = function (navOptions)
 				var advancedFocusCB = $('search_focus_advanced').getElementsByTagName ('input');
 				for (var i = 0; i < advancedFocusCB.length; i++)
 				    {
-					if (advancedFocusCB[i].type == 'checkbox' &&
-					    advancedFocusCB[i].checked)
+            if (advancedFocusCB[i].type == 'checkbox' && advancedFocusCB[i].checked)
 					    searchQ += '&' + advancedFocusCB[i].value + '=1';
 				    }
 			    }
@@ -2792,10 +2810,6 @@ ODS.Nav = function (navOptions)
 			    if (resultInnerDiv.firstChild.className == 'map_user_data')
 				resultInnerDiv.firstChild.style.width = '98%';
 
-
-//        if(result.html.indexOf('sn_make_inv.vspx?fmail=')>-1)
-//        {
-
 			    var aElms = resultInnerDiv.getElementsByTagName ('a');
 
 			    for (var k = 0; k < aElms.length; k++)
@@ -2829,8 +2843,7 @@ ODS.Nav = function (navOptions)
 				    else
 					{
 					    if (aElms[k].href.length > 0)
-						aElms[k].onclick =
-						    function (e)
+              aElms[k].onclick = function (e)
 						    {
 							var t = eTarget (e);
 							if (t.tagName == 'IMG')
@@ -2840,10 +2853,6 @@ ODS.Nav = function (navOptions)
 						    };
 					}
 				}
-//        }
-
-
-
 			    OAT.Dom.append ([$('search_listing'), resultLi],
 					    [resultLi,resultDiv],
 					    [resultDiv,resultCB,resultInnerDiv]);
@@ -2994,21 +3003,72 @@ ODS.Nav = function (navOptions)
 		loginTab.add ('loginT1', 'loginP1');
 		loginTab.add ('loginT2', 'loginP2');
 		loginTab.go (0);
+      if ((document.location.protocol == 'https:') && self.sslData)
+      {
+        OAT.Dom.show('loginT3');
+        loginTab.add('loginT3', 'loginP3');
+        loginTab.go(2);
+        $('loginBtn').value = 'FOAF+SSL Login';
 
-		OAT.Event.attach ('loginT1', "click",
+        if (self.sslData.iri)
+        {
+          var label = OAT.Dom.create('label');
+          label.innerHTML = 'IRI';
+          var span = OAT.Dom.create('span');
+          span.innerHTML = '<b>' + self.sslData.iri + '</b>';
+          OAT.Dom.append ([$('loginP3'), label, span, OAT.Dom.create('br')]);
+        }
+        if (self.sslData.firstName)
+        {
+          var label = OAT.Dom.create('label');
+          label.innerHTML = 'First Name';
+          var span = OAT.Dom.create('span');
+          span.innerHTML = '<b>' + self.sslData.firstName + '</b>';
+          OAT.Dom.append ([$('loginP3'), label, span, OAT.Dom.create('br')]);
+        }
+        if (self.sslData.family_name)
+        {
+          var label = OAT.Dom.create('label');
+          label.innerHTML = 'Family Name';
+          var span = OAT.Dom.create('span');
+          span.innerHTML = '<b>' + self.sslData.family_name + '</b>';
+          OAT.Dom.append ([$('loginP3'), label, span, OAT.Dom.create('br')]);
+        }
+        if (self.sslData.mbox)
+        {
+          var label = OAT.Dom.create('label');
+          label.innerHTML = 'E-Mail';
+          var span = OAT.Dom.create('span');
+          span.innerHTML = '<b>' + self.sslData.mbox + '</b>';
+          OAT.Dom.append ([$('loginP3'), label, span, OAT.Dom.create('br')]);
+        }
+      }
+
+    OAT.Event.attach ('loginT1',
+                      'click',
 				  function () {
+                        $('loginBtn').value = 'Login';
 				      $('loginErrDiv').innerHTML = '';
 				      if (!OAT.Dom.isIE ())
 					  $('loginUserName').focus();
-				  });
-
-		OAT.Event.attach ('loginT2', "click",
+                       }
+                      );
+    OAT.Event.attach ('loginT2',
+                      'click',
 				  function () {
 				      OAT.Dom.hide ($('loginForgot'));
 				      $('loginErrDiv').innerHTML = '';
 				      if (!OAT.Dom.isIE ())
 					  $('loginOpenIdUrl').focus();
-				  });
+                      }
+                     );
+    OAT.Event.attach ('loginT3',
+                      'click',
+                      function () {
+                        $('loginBtn').value = 'FOAF+SSL Login';
+                        $('loginErrDiv').innerHTML = '';
+                      }
+                     );
 
 		OAT.Event.attach ($('loginCloseBtn'), "click",
 				  OAT.Dimmer.hide);
@@ -3093,17 +3153,6 @@ ODS.Nav = function (navOptions)
 						  });
 		    }
 
-  if (document.location.protocol == 'https:')
-  {
-  	var x509 = OAT.Dom.create ('input');
-
-  	x509.id     = 'loginX509';
-  	x509.name   = 'loginX509';
-  	x509.type   = 'button';
-  	x509.value  = 'X.509 Login';
-
-  	$('login_ctrls').insertBefore(x509, $('signupBtn'));
-  }
 		OAT.Dom.append ([loginDiv, $('login_page')]);
 
 		self.logindiv = loginDiv;
@@ -3160,15 +3209,15 @@ ODS.Nav = function (navOptions)
 		loginBtn.type = 'button';
 		loginBtn.value = 'Sign In';
 
-	var x509;
-  if (document.location.protocol == 'https:')
-  {
-  	x509 = OAT.Dom.create ('input', {margin: '20px 5px 20px 105px'});
-  	x509.id     = 'loginX509';
-  	x509.name   = 'loginX509';
-  	x509.type   = 'button';
-  	x509.value  = 'X.509 Login';
-  }
+  // var x509;
+  // if (document.location.protocol == 'https:')
+  // {
+  //   x509 = OAT.Dom.create ('input', {margin: '20px 5px 20px 105px'});
+  //   x509.id     = 'loginX509';
+  //   x509.name   = 'loginX509';
+  //   x509.type   = 'button';
+  //   x509.value  = 'X.509 Login';
+  // }
 
 		var signupBtn = OAT.Dom.create ('input', {margin: '20px 5px 20px 5px'});
 		signupBtn.type = 'button';
@@ -3187,7 +3236,7 @@ ODS.Nav = function (navOptions)
 				[ctrlDiv,rowA,rowB,btnDiv],
 				[rowA,unameLabel,unameInput],
 				[rowB,upassLabel,upassInput],
-            			[btnDiv,loginBtn,x509,signupBtn]);
+                  [btnDiv,loginBtn,signupBtn]);
 	    }
 
 	OAT.Dimmer.show (loginDiv);

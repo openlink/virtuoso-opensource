@@ -284,7 +284,7 @@ if(is_disabled && typeof(document.getElementById('openid_url'))!='undefined')
                             {
                               foafInfo := subseq (foafInfo, 4);
                               self.reg_mode := 'foaf';
-                              self.reg_foafData := ODS.ODS_API.get_foaf_data_array (foafInfo);
+                              self.reg_foafData := ODS.ODS_API.get_foaf_data_array (foafInfo, 0);
                               self.reg_uid := get_keyword ('nick', self.reg_foafData, self.reg_uid);
                               self.reg_mail := get_keyword ('mbox', self.reg_foafData, self.reg_mail);
                             }
@@ -859,11 +859,11 @@ if (uoid and not is_agreed)
     return;
   }
 
-this_page := 'http://' || host || http_path () || sprintf ('?uoid=%d', uoid);
+	   this_page := case when is_http_ctx () then 'https://' else 'http://' end || host || http_path () || sprintf ('?uoid=%d', uoid);
 if(self.ods_returnurl is not null)
    this_page := this_page || sprintf ('&RETURL=%s', self.ods_returnurl);
 
-trust_root := 'http://' || host;
+	   trust_root := case when is_http_ctx () then 'https://' else 'http://' end || host;
 
 declare exit handler for sqlstate '*'
 {

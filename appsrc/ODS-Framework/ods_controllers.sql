@@ -244,6 +244,23 @@ create procedure params2json (in o any)
 }
 ;
 
+-- Server Info
+create procedure ODS.ODS_API."server.getInfo" (
+  in info varchar) __soap_http 'application/json'
+{
+  declare retValue, params any;
+
+  params := http_param ();
+  retValue := null;
+  if (info = 'sslPort')
+  {
+    if (server_https_port () is not null)
+      retValue := vector ('sslPort', server_https_port ());
+  }
+  return params2json (retValue);
+}
+;
+
 -- User account activity
 
 --! User registration
@@ -1018,18 +1035,62 @@ grant execute on DB.DBA.RDF_GRAB to SPARQL_SELECT;
 grant execute on DB.DBA.RDF_GRAB_SINGLE_ASYNC to SPARQL_SELECT;
 
 create procedure ODS.ODS_API.get_foaf_data_array (
-  in foafIRI varchar)
+  in foafIRI varchar,
+  in spongerMode integer := 1,
+  in sslCheckMode integer := 0)
 {
   declare N, M integer;
-  declare foafGraph varchar;
+  declare S, IRI, foafGraph varchar;
   declare V, st, msg, data, meta any;
   declare "title", "name", "nick", "firstName", "givenname", "family_name", "mbox", "gender", "birthday", "lat", "lng" any;
   declare "icqChatID", "msnChatID", "aimChatID", "yahooChatID", "workplaceHomepage", "homepage", "phone", "organizationTitle", "keywords", "depiction", "interest" any;
 
-  foafIRI := trim (foafIRI);
+  set_user_id ('dba');
+  V := rfc1808_parse_uri (trim (foafIRI));
+  V[5] := '';
+  IRI := DB.DBA.vspx_uri_compose (V);
+  V := vector ();
   foafGraph := 'http://local.virt/FOAF/' || cast (rnd (1000) as varchar);
-  exec (sprintf ('sparql define get:soft "soft" define input:grab-destination <%s> select * from <%S> where { ?s ?p ?o }', foafGraph, foafIRI), st, msg, vector (), 0);
-  exec (sprintf ('sparql
+  if (spongerMode)
+  {
+    S := sprintf ('sparql define get:soft "soft" define input:grab-destination <%s> select * from <%S> where { ?s ?p ?o }', foafGraph, IRI);
+  } else {
+    S := sprintf ('sparql load <%s> into graph <%s>', IRI, foafGraph);
+  }
+  st := '00000';
+  commit work;
+  exec (S, st, msg, vector (), 0);
+  if (st <> '00000')
+    goto _exit;
+  if (sslCheckMode)
+  {
+    declare info any;
+
+    info := get_certificate_info (9);
+    st := '00000';
+    S := sprintf (' sparql ' ||
+                  ' prefix cert: <%s> ' ||
+                  ' prefix rsa: <%s> ' ||
+                  ' select ?exp_val ' ||
+                  '        ?mod_val ' ||
+                  '   from <%s> ' ||
+                  '  where { ' ||
+                  '          ?id cert:identity <%s> ; ' ||
+                  '              rsa:public_exponent ?exp ; ' ||
+                  '              rsa:modulus ?mod . ' ||
+                  '          ?exp cert:decimal ?exp_val . ' ||
+                  '          ?mod cert:hex ?mod_val . ' ||
+                  '        }',
+                  SIOC..cert_iri (''),
+                  SIOC..rsa_iri (''),
+                  foafGraph,
+                  foafIRI);
+    commit work;
+    exec (S, st, msg, vector (), 0, meta, data);
+    if (not (st = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and data[0][1] = bin2hex (info[2])))
+      goto _exit;
+  }
+  S := sprintf ('sparql
                   prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
                   prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
                   prefix dc: <http://purl.org/dc/elements/1.1/>
@@ -1060,8 +1121,8 @@ create procedure ODS.ODS_API.get_foaf_data_array (
                          ?interest
                          ?interest_label
                          ?person
+		               from <%s>
                    where {
-		           graph <%S>
                            {
                              [] a foaf:PersonalProfileDocument ;
                              foaf:primaryTopic ?person .
@@ -1090,8 +1151,9 @@ create procedure ODS.ODS_API.get_foaf_data_array (
                              optional { ?person foaf:interest ?interest .
                                         ?interest rdfs:label ?interest_label. } .
                            }
-                         }', foafGraph), st, msg, vector (), 0, meta, data);
-    V := vector ();
+                        }', foafGraph);
+  commit work;
+  exec (S, st, msg, vector (), 0, meta, data);
   M := 0;
   "interest" := '';
   for (N := 0; N < length (data); N := N + 1)
@@ -1123,6 +1185,7 @@ create procedure ODS.ODS_API.get_foaf_data_array (
         "keywords" := data[N][19];
         "depiction" := data[N][20];
 
+        appendProperty (V, 'iri', foafIRI);                                   -- FOAF IRI
     appendProperty (V, 'nick', coalesce ("nick", "name")); -- WAUI_NICK
     appendProperty (V, 'title', "title");		   -- WAUI_TITLE
     appendProperty (V, 'name', "name");			   -- WAUI_FULL_NAME
@@ -1151,24 +1214,42 @@ create procedure ODS.ODS_API.get_foaf_data_array (
   }
   if ("interest" <> '')
     appendProperty (V, 'interest', "interest");
+
+_exit:;
   exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
  return V;
   }
 ;
 
-create procedure ODS.ODS_API."user.getFOAFData" (in foafIRI varchar) __soap_http 'application/json'
+create procedure ODS.ODS_API."user.getFOAFData" (
+  in foafIRI varchar,
+  in spongerMode integer := 1,
+  in sslCheckMode integer := 0) __soap_http 'application/json'
 {
   declare exit handler for sqlstate '*'
   {
   return obj2json (null);
   };
-  return params2json (ODS.ODS_API.get_foaf_data_array (foafIRI));
+  return params2json (ODS.ODS_API.get_foaf_data_array (foafIRI, spongerMode, sslCheckMode));
 }
 ;
 
+create procedure ODS.ODS_API."user.getFOAFSSLData" (
+  in sslCheckMode integer := 0) __soap_http 'application/json'
+{
+  declare foafIRI any;
+
+  foafIRI := get_certificate_info (7, null, null, null, '2.5.29.17');
+  if (not isnull (foafIRI) and (foafIRI like 'URI:%'))
+  {
+    foafIRI := subseq (foafIRI, 4);
+    return ODS.ODS_API."user.getFOAFData" (foafIRI, 0, sslCheckMode);
+  }
+  return obj2json (null);
+}
+;
 
 -- Application instance activity
-
 create procedure ODS.ODS_API."instance.create" (
 	in "type" varchar,
     	in name varchar,
@@ -1585,6 +1666,8 @@ DB.DBA.VHOST_DEFINE (lpath=>'/ods/api', ppath=>'/SOAP/Http', soap_user=>'ODS_API
 
 grant execute on ODS.ODS_API.error_handler to ODS_API;
 
+grant execute on ODS.ODS_API."server.getInfo" to ODS_API;
+
 grant execute on ODS.ODS_API."user.register" to ODS_API;
 grant execute on ODS.ODS_API."user.authenticate" to ODS_API;
 grant execute on ODS.ODS_API."user.update" to ODS_API;
@@ -1610,6 +1693,7 @@ grant execute on ODS.ODS_API."user.annotation.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.bioevent.new" to ODS_API;
 grant execute on ODS.ODS_API."user.bioevent.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.getFOAFData" to ODS_API;
+grant execute on ODS.ODS_API."user.getFOAFSSLData" to ODS_API;
 
 grant execute on ODS.ODS_API."instance.create" to ODS_API;
 grant execute on ODS.ODS_API."instance.update" to ODS_API;

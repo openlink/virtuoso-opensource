@@ -992,13 +992,7 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
 -->
     <div id="connect_box_tpl" class="widget" style="display: none">
       <div class="w_title">
-        <!--div class="lt">
-	  <img class="w_toggle" alt="minimize" src="skin/default/i/w_toggle_open.png" />
-	</div-->
 	<h3 class="w_title"><span class="u_full_name">Full Name</span> is not in your network</h3>
-	<!--div class="rt">
-	  <img class="w_close" alt="close" src="skin/default/i/w_close.png"/>
-	</div-->
       </div>
       <div class="w_content">
 	<img class="connect_img" src="images/skin/default/nicubunu_Abstract_people.png" alt="Connection graphic"/>
@@ -1008,16 +1002,9 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
       </div>
       <div class="w_btns"><button id="connect_box_connect">Connect</button></div>
     </div>
-
     <div id="connect_info_tpl" class="widget" style="display: none">
       <div class="w_title">
-        <!--div class="lt">
-	  <img class="w_toggle" alt="minimize" src="skin/default/i/w_toggle_open.png" />
-	</div-->
 	<h3 class="w_title"><span class="u_full_name">XXXXXXX</span> and you are directly connected</h3>
-	<!--div class="rt">
-	  <img class="w_close" alt="close" src="skin/default/i/w_close.png"/>
-	</div-->
       </div>
       <div class="w_content">	
 	<img class="connect_img" src="images/skin/default/nicubunu_Abstract_people.png" alt="Connection graphic"/>
@@ -1025,16 +1012,9 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
 	<div class="w_btns"><button id="connect_box_disconnect">Disconnect</button></div>
       </div>
     </div>
-
     <div id="connect_pending_tpl" class="widget" style="display: none">
       <div class="w_title">
-        <!--div class="lt">
-          <img class="w_toggle" alt="minimize" src="skin/default/i/w_toggle_open.png" />
-        </div-->
         <h3 class="w_title">A connection request with <span class="u_full_name">XXXXXXX XXXXXXXXX</span> is pending</h3>
-        <!--div class="rt">
-          <img class="w_close" alt="close" src="skin/default/i/w_close.png"/>
-        </div-->
       </div>
       <div class="w_content">	
 	<img class="connect_img" src="images/skin/default/nicubunu_Abstract_people.png" alt="Connection graphic"/>
@@ -1061,7 +1041,6 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
 	<button id="connect_confirm_cancel">No, go back!</button>
       </div>
     </div>
-    
     <div id="app_create_dialog" class="ods_dialog" style="display: none;">
       <div class="dlg_title"><h3>Blog Setup</h3></div>
       <div class="wizard">
@@ -1125,11 +1104,6 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
     <div id="a_tmpl_1" class="oat_anchor_bubble">
       <div class="oat_anchor_title_ctr">
 	<h2 class="oat_anchor_title_text_ctr"></h2>
-	<!--
-            <img class="oat_a_max_btn" src="skin/i/maximize_b.png" alt="maximize"/>
-            <img class="oat_a_min_btn" src="skin/i/minimize_b.png" alt="minimize"/>
-            <img class="oat_a_close_btn" src="skin/i/close_b.png" alt="close"/>
-	    -->
       </div> <!-- .oat_anchor_title_ctr -->
       <div class="oat_anchor_content">
 	<!-- Add content here -->
@@ -1157,6 +1131,9 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
               <li id="loginT2" >
 		<a href="javascript:void(0)">OpenID</a>
 	      </li>
+              <li id="loginT3" style="display:none">
+		            <a href="javascript: void(0)">FOAF+SSL</a>
+	            </li>
             </ul>
             <div class="tab_deck">
               <div id="loginPCtr"></div>
@@ -1175,8 +1152,11 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
   		          <input type="text" name="loginOpenIdUrl" value="" id="loginOpenIdUrl" />
   		          <br />
               </div>
+              <div id="loginP3" class="tab_page" style="display:none">
+              </div>
             </div> <!-- tab_deck -->
             <div id="login_ctrls">
+              <input type="hidden" name="cb_remember_me" value="1" id="login_frm_cb_remember_me" checked="checked" />
               <input type="checkbox" name="cb_remember_me" value="1" id="login_frm_cb_remember_me" checked="checked" />
           	  <label for="login_frm_cb_remember_me">Remember me</label>
           	  <br />

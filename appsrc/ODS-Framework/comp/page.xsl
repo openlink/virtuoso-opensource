@@ -2060,7 +2060,7 @@ if (i > 0)
   <v:form type="simple" name="ssetfffdoma" method="POST">
     <table class="ctl_grp">
       <tr>
-        <th>Show system error messages in user dialogs</th>
+	  <th><h3>Show system error messages in user dialogs</h3></th>
         <td>
           <v:check-box name="s_sys_errors" value="1" initial-checked="--(select top 1 WS_SHOW_SYSTEM_ERRORS from WA_SETTINGS)" />
         </td>
@@ -2085,6 +2085,40 @@ if (i > 0)
                     insert into WA_SETTINGS
                       (WS_SHOW_SYSTEM_ERRORS)
                       values (self.s_sys_errors.ufl_selected);
+                  }
+                ]]>
+              </v:script>
+            </v:on-post>
+          </v:button>
+        </td>
+      </tr>
+    </table>
+  </v:form>
+  <v:form type="simple" name="fssl" method="POST">
+    <table class="ctl_grp">
+      <tr>
+	  <th><h3>Allways redirect to secure site (HTTPS)</h3></th>
+        <td>
+          <v:check-box name="s_ssl" value="1" initial-checked="--(select top 1 WS_HTTPS from WA_SETTINGS)" />
+        </td>
+        <td>
+          <v:button name="bt_ssl" action="simple" value="Set">
+            <v:on-post>
+              <v:script>
+                <![CDATA[
+                  if (wa_user_is_dba (self.u_name, self.u_group))
+                    goto admin_user;
+                  else
+                  {
+                    self.vc_is_valid := 0;
+                    control.vc_parent.vc_error_message := 'Only admin user can change global settings';
+                    return;
+                  }
+                  admin_user:;
+                  update WA_SETTINGS set WS_HTTPS = self.s_ssl.ufl_selected;
+                  if (row_count() = 0)
+                  {
+                    insert into WA_SETTINGS (WS_HTTPS) values (self.s_ssl.ufl_selected);
                   }
                 ]]>
               </v:script>

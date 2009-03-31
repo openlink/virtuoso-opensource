@@ -2668,6 +2668,48 @@ CmdUtils.CreateCommand({
 });
 
 CmdUtils.CreateCommand({
+  name: "ods-create-addressbook-contact-relationship",
+  takes: {"relationship": noun_arb_text},
+  modifiers: {"with": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-create-addressbook-contact-relationship &lt;relationship&gt; with &lt;contact&gt;",
+  execute: function (relationship, modifiers) {
+    try {
+      checkParameter(relationship.text, "relationship");
+      var params = {relationship: relationship.text};
+      addParameter(modifiers, "with", params, "contact", true);
+      odsExecute("addressbook.relationship.new", params, "addressbook");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-addressbook-contact-relationship",
+  takes: {"relationship": noun_arb_text},
+  modifiers: {"with": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-delete-addressbook-contact-relationship &lt;relationship&gt; with &lt;contact&gt;",
+  execute: function (relationship, modifiers) {
+    try {
+      checkParameter(relationship.text, "relationship");
+      var params = {relationship: relationship.text};
+      addParameter(modifiers, "with", params, "contact", true);
+      odsExecute("addressbook.relationship.delete", params, "addressbook");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
   name: "ods-export-addressbook",
   takes: {"instance_id": noun_type_id},
   modifiers: {"contentType": noun_arb_text},

@@ -177,63 +177,80 @@ function selectAllCheckboxes (form, btn)
         			      def_btn = '<?V btn ?>';
         		      </script>
                         <td class="<?V case when pg = 1 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
-                          <v:url name="b_url21"
+                          <v:url name="b_url01"
                                  value="Personal"
                                  format="%s"
                                  url="--sprintf('uiedit.vspx?page=1')"
                                  xhtml_class="tab"/>
                   </td>
                         <td class="<?V case when pg = 2 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
-                          <v:url name="b_url14"
+                          <v:url name="b_url02"
                                  value="Business"
                                  format="%s"
                                  url="--sprintf('uiedit.vspx?page=2')"
                                  xhtml_class="tab"/>
                         </td>
                         <td class="<?V case when pg = 3 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
-                          <v:url name="b_url15"
+                          <v:url name="b_url03"
                                  value="Security"
                                  format="%s"
                                  url="--sprintf('uiedit.vspx?page=3')"
                                  xhtml_class="tab"/>
                         </td>
                         <td class="<?V case when pg = 4 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
-                          <v:url name="b_url16"
+                          <v:url name="b_url04"
                                  value="Associations &amp; Web Services"
                                  format="%s"
                                  url="--sprintf('uiedit.vspx?page=4')"
                                  xhtml_class="tab"/>
                         </td>
                         <td class="<?V case when pg = 5 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
-                          <v:url name="b_url17"
+                          <v:url name="b_url05"
                                  value="Made"
                                  format="%s"
                                  url="--sprintf('uiedit.vspx?page=5')"
                                  xhtml_class="tab"/>
                         </td>
                         <td class="<?V case when pg = 6 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
-                          <v:url name="b_url18"
-                                 value="Annotations"
+                          <v:url name="b_url06"
+                                 value="Offer List"
                                  format="%s"
                                  url="--sprintf('uiedit.vspx?page=6')"
                                  xhtml_class="tab"/>
                         </td>
                         <td class="<?V case when pg = 7 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
-                          <v:url value="Validation"
+                          <v:url name="b_url07"
+                                 value="Wish List"
                                  format="%s"
                                  url="--sprintf('uiedit.vspx?page=7')"
                                  xhtml_class="tab"/>
                         </td>
 			            <td class="<?V case when pg = 8 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
-                          <v:url value="Import"
+                          <v:url name="b_url08"
+                                 value="Annotations"
                                  format="%s"
                                  url="--sprintf('uiedit.vspx?page=8')"
                                  xhtml_class="tab"/>
                         </td>
                         <td class="<?V case when pg = 9 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
-                          <v:url value="LDAP Servers"
+                          <v:url name="b_url09"
+                                 value="Validation"
                                  format="%s"
                                  url="--sprintf('uiedit.vspx?page=9')"
+                                 xhtml_class="tab"/>
+                        </td>
+                        <td class="<?V case when pg = 10 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+                          <v:url name="b_url10"
+                                 value="Import"
+                                 format="%s"
+                                 url="--sprintf('uiedit.vspx?page=10')"
+                                 xhtml_class="tab"/>
+                        </td>
+                        <td class="<?V case when pg = 11 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+                          <v:url name="b_url11"
+                                 value="LDAP Servers"
+                                 format="%s"
+                                 url="--sprintf('uiedit.vspx?page=11')"
                                  xhtml_class="tab"/>
                         </td>
                   <td class="page_tab_empty" align="center" width="100%">
@@ -280,21 +297,31 @@ function selectAllCheckboxes (form, btn)
                         <v:template name="template6"
                                      type="simple"
                                      enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '6')">
-                          <v:include url="uiedit_related.vspx"/>
+                            <v:include url="uiedit_offerlist.vspx"/>
                         </v:template>
                           <v:template name="template7"
                                      type="simple"
                                       enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '7')">
-                          <v:include url="uiedit_validation.vspx"/>
+                            <v:include url="uiedit_wishlist.vspx"/>
                         </v:template>
                         <v:template name="template8"
                                      type="simple"
                                      enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '8')">
-                          <v:include url="uiedit_import.vspx"/>
+                            <v:include url="uiedit_related.vspx"/>
                         </v:template>
                           <v:template name="template9"
                                      type="simple"
                                       enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '9')">
+                            <v:include url="uiedit_validation.vspx"/>
+                          </v:template>
+                          <v:template name="template10"
+                                      type="simple"
+                                      enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '10')">
+                            <v:include url="uiedit_import.vspx"/>
+                          </v:template>
+                          <v:template name="template11"
+                                      type="simple"
+                                      enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '11')">
                           <v:include url="uiedit_ldap.vspx"/>
                         </v:template>
                       </td>

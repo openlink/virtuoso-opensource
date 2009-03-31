@@ -601,20 +601,27 @@ div.error_dialog div.dialog_buttons {
 
 /* Login */
 
-#login_page { float: left; clear: both;
+#login_page {
+  float: left; clear: both;
   width: 100%;
   color: #5f6366;
   background-color: #d9e9f2;}
-#id_col { float: left; clear: left}
-#form_col { float: left; margin-bottom: 50px;}
+#id_col {
+  float: left;
+  clear: left}
+#form_col {
+  float: left;
+  margin-bottom: 20px;}
 #login_form_ctr {
   margin: 20px;
   border: 2px solid #b6d4e3;
   background-color: #e0f0f9;
-  background-image: url(images/ods_signin_container1.png)}
-#login_form { margin: 10px;width: 350px;}
+  /* background-image: url(images/ods_signin_container1.png) */
+}
+#login_form {
+  margin: 10px; width: 600px;}
 #login_page img.id_logo {
-  margin: 50px 50px 50px 40px}
+  margin: 50px 20px 50px 50px}
 #login_page h1 {
   margin-left: 50px}
 #login_page h2 {
@@ -626,6 +633,11 @@ div.error_dialog div.dialog_buttons {
   float: left;
   margin-bottom: 10px;
   margin-top: 4px}
+#login_form span {
+  display: block;
+  width: 170px;
+  float: left;
+  margin-bottom: 10px}
 #login_form_username {
   display: block;
   width: 170px;
@@ -670,9 +682,7 @@ p.login_error img {
   margin-left: 100px;
   margin-top: 5px;
   color: #255}
-
-div.login_tab
-{
+div.login_tab {
 width:100px;
 float: left;
 cursor:pointer;
@@ -680,11 +690,8 @@ text-align: center;
 background: #85B9D2;
 border: 1px solid;
 padding: 2px;
-margin: 2px 2px 0px 2px;
-}
-
-div.login_tabactive
-{
+  margin: 2px 2px 0px 2px;}
+div.login_tabactive {
 width:100px;
 float: left;
 cursor:pointer;
@@ -692,28 +699,20 @@ text-align: center;
 border: 1px solid;
 border-bottom-color:#E3EFF5;
 padding: 2px;
-margin: 2px 2px 0px 2px;
-
-}
-div.login_tabdeck
-{
+  margin: 2px 2px 0px 2px;}
+div.login_tabdeck {
 clear:both;
 float:left;
 border: 1px solid ;
 padding:10px 4px 4px 4px;
 margin: -1px 0px 0px 2px;
-width: 400px;
-height: 180px;
-}
-img.login_openid
-{
+  width: 500px;
+  height: 200px;}
+img.login_openid {
 margin-right:5px;
-vertical-align:text-bottom;
-}
-
+  vertical-align:text-bottom;}
 
 /* ugly table-based tabs deck */
-
 table.tab_deck {
   margin: 0;
   padding: 0;
@@ -744,9 +743,10 @@ td.navtab_sel {
 td.navtab_sel a {}
 td.navtab:hover {
   background-color: #adf}
-
 table.tab_page {width: 100%}
-td.tab_page {margin: 0;padding: 0;}
+td.tab_page {
+  margin: 0;
+  padding: 0;}
 
 a.tab {}
 

@@ -787,7 +787,7 @@ div.sect {
 #login_page {
   float: left;
   clear: both;
-  width: 700px;
+  width: 800px;
   height: 300px;
   color: #5f6366;
   background-color: #d9e9f2;
@@ -800,7 +800,7 @@ div.sect {
   background-color: #e0f0f9;
   background-image: url(images/ods_signin_container1.png)}
 
-#login_form { margin: 10px;width: 300px;}
+#login_form { margin: 10px; width: 500px;}
 
 #login_page img.id_logo {
   margin: 50px 50px 50px 40px}
@@ -817,7 +817,11 @@ div.sect {
   width: 100px;
   float: left;
   margin: 4px 0 10px 4px}
-#login_page .tab_bar li a img { margin: 0 3px 0 0; padding: 0; vertical-align: middle}
+
+#login_page .tab_bar li a img {
+  margin: 0 3px 0 0;
+  padding: 0;
+  vertical-align: middle}
 
 #loginUserName {
   display: block;

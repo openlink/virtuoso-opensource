@@ -175,7 +175,8 @@ wa_exec_no_error_log (
     'create table WA_PROVINCE (
       WP_COUNTRY varchar,
       WP_PROVINCE varchar,
-      primary key (WP_COUNTRY, WP_PROVINCE))'
+      primary key (WP_COUNTRY, WP_PROVINCE)
+     )'
 );
 
 
@@ -300,7 +301,8 @@ wa_add_col('DB.DBA.WA_USERS', 'WAU_PWD_RECOVER_DISABLE_UNTIL', 'datetime')
 ;
 
 wa_exec_no_error(
-  'CREATE TABLE WA_TYPES (
+  'CREATE TABLE WA_TYPES
+   (
     WAT_NAME varchar,
     WAT_TYPE varchar,
     WAT_REALM varchar,
@@ -318,7 +320,8 @@ wa_add_col('DB.DBA.WA_TYPES', 'WAT_OPTIONS', 'long varchar')
 ;
 
 wa_exec_no_error(
-  'CREATE TABLE WA_MEMBER_MODEL (
+  'CREATE TABLE WA_MEMBER_MODEL
+   (
     WMM_ID int primary key,
     WMM_NAME varchar not null
     )'
@@ -326,7 +329,8 @@ wa_exec_no_error(
 ;
 
 wa_exec_no_error(
-  'CREATE TABLE WA_MEMBER_TYPE (
+  'CREATE TABLE WA_MEMBER_TYPE
+   (
   WMT_APP varchar,
   WMT_NAME varchar,
   WMT_ID int,
@@ -338,7 +342,8 @@ wa_exec_no_error(
 ;
 
 wa_exec_no_error(
-  'CREATE TABLE WA_INSTANCE (
+  'CREATE TABLE WA_INSTANCE
+   (
     WAI_ID   int identity,
     WAI_TYPE_NAME varchar references WA_TYPES on delete cascade,
     WAI_NAME varchar,
@@ -552,7 +557,8 @@ wa_exec_no_error(
    WS_WELCOME_MESSAGE2 varchar,
    WS_COPYRIGHT varchar,
    WS_DISCLAIMER varchar,
-   WS_DEFAULT_MAIL_DOMAIN varchar
+   WS_DEFAULT_MAIL_DOMAIN varchar,
+   WS_HTTPS integer default 0
  )
 ')
 ;
@@ -609,6 +615,9 @@ wa_add_col('DB.DBA.WA_SETTINGS', 'WS_FEEDS_UPDATE_PERIOD', 'varchar default \'ho
 ;
 
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_FEEDS_UPDATE_FREQ', 'integer default 1')
+;
+
+wa_add_col('DB.DBA.WA_SETTINGS', 'WS_HTTPS', 'integer default 0')
 ;
 
 wa_exec_no_error(
@@ -3403,6 +3412,34 @@ wa_add_col ('DB.DBA.WA_USER_RELATED_RES', 'WUR_P_IRI', 'varchar default \'http:/
 wa_exec_no_error_log('create unique index WA_USER_RELATED_RES_IX1 on DB.DBA.WA_USER_RELATED_RES (WUR_ID)');
 
 wa_exec_no_error_log(
+    'CREATE TABLE WA_USER_OFFERLIST
+     (
+      WUOL_ID integer identity,
+      WUOL_U_ID int,
+      WUOL_OFFER varchar,
+      WUOL_COMMENT long varchar,
+      WUOL_PROPERTIES varchar,
+
+      primary key (WUOL_ID)
+     )'
+);
+wa_exec_no_error('create unique index WA_USER_OFFERLIST_USER on WA_USER_OFFERLIST (WUOL_U_ID, WUOL_OFFER)');
+
+wa_exec_no_error_log (
+    'CREATE TABLE WA_USER_WISHLIST
+     (
+      WUWL_ID integer identity,
+      WUWL_U_ID int,
+      WUWL_BARTER varchar,
+      WUWL_PROPERTY varchar,
+      WUWL_COMMENT long varchar,
+
+      primary key (WUWL_ID)
+     )'
+);
+wa_exec_no_error('create unique index WA_USER_WISHLIST_USER on WA_USER_WISHLIST (WUWL_U_ID, WUWL_BARTER)');
+
+wa_exec_no_error_log(
     'CREATE TABLE WA_USER_BIOEVENTS (
       WUB_ID integer identity,
       WUB_U_ID integer,
@@ -3412,13 +3449,8 @@ wa_exec_no_error_log(
 
       primary key (WUB_ID)
      )'
-)
-;
-
-wa_exec_no_error(
-  'create index WA_USER_BIOEVENTS_USER on WA_USER_BIOEVENTS (WUB_U_ID)'
-)
-;
+);
+wa_exec_no_error('create index WA_USER_BIOEVENTS_USER on WA_USER_BIOEVENTS (WUB_U_ID)');
 
 
 create procedure WA_USER_TAG_WAUTG_TAGS_INDEX_HOOK (inout vtb any, inout d_id integer)
@@ -4912,7 +4944,6 @@ create procedure wa_wa_member_upgrade ()
 	   log_message (sprintf ('WA upgrade found a broken instance: [%s], must be deleted.', WAI_NAME));
 	   goto nextu;
 	 };
-    dbg_obj_print ('WAI_IS_PUBLIC', WAI_IS_PUBLIC);
     update DB.DBA.WA_MEMBER
        set WAM_IS_PUBLIC = WAI_IS_PUBLIC,
 	      WAM_MEMBERS_VISIBLE = WAI_MEMBERS_VISIBLE,
@@ -5409,6 +5440,17 @@ create procedure WA_SET_APP_URL
      {
        _lhost := '*ini*';
        _vhost := '*ini*';
+       if (length (prefix))
+	 signal ('22023', 'Can not make a subdomain of the default domain');
+       if (not length (lpath))
+	 signal ('22023', 'The root of default domain is prohibited');
+     }
+   else if (domain = '{Default HTTPS}')
+     {
+       if (server_https_port() is null)
+	 return;
+       _lhost := '*sslini*';
+       _vhost := '*sslini*';
        if (length (prefix))
 	 signal ('22023', 'Can not make a subdomain of the default domain');
        if (not length (lpath))
@@ -6677,9 +6719,68 @@ create procedure wa_redefine_vhosts(in host_port varchar := '*sslini*', in isdav
 
   ods_define_common_vd (host_port, host_port, isdav);
 
-  insert soft DB.DBA.HTTP_PATH(HP_HOST,HP_LISTEN_HOST,HP_LPATH,HP_PPATH,HP_STORE_AS_DAV,HP_DIR_BROWSEABLE,HP_DEFAULT,HP_SECURITY,HP_REALM,HP_AUTH_FUNC,HP_POSTPROCESS_FUNC,HP_RUN_VSP_AS,HP_RUN_SOAP_AS,HP_PERSIST_SES_VARS,HP_SOAP_OPTIONS,HP_AUTH_OPTIONS,HP_OPTIONS,HP_IS_DEFAULT_HOST)
-  select host_port,host_port,HP_LPATH,HP_PPATH,HP_STORE_AS_DAV,HP_DIR_BROWSEABLE,HP_DEFAULT,HP_SECURITY,HP_REALM,HP_AUTH_FUNC,HP_POSTPROCESS_FUNC,HP_RUN_VSP_AS,HP_RUN_SOAP_AS,HP_PERSIST_SES_VARS,HP_SOAP_OPTIONS,HP_AUTH_OPTIONS,HP_OPTIONS,HP_IS_DEFAULT_HOST from DB.DBA.HTTP_PATH where HP_HOST='*ini*' and HP_LISTEn_HOST='*ini*'
+  for select
+      HP_LPATH as LPATH,
+      HP_PPATH as PPATH,
+      HP_STORE_AS_DAV as STORE_AS_DAV,
+      HP_DIR_BROWSEABLE as DIR_BROWSEABLE,
+      HP_DEFAULT as _DEFAULT,
+      HP_SECURITY as SECURITY,
+      HP_REALM as REALM,
+      HP_AUTH_FUNC as AUTH_FUNC,
+      HP_POSTPROCESS_FUNC as POSTPROCESS_FUNC,
+      HP_RUN_VSP_AS as RUN_VSP_AS,
+      HP_RUN_SOAP_AS as RUN_SOAP_AS,
+      HP_PERSIST_SES_VARS as PERSIST_SES_VARS,
+      HP_SOAP_OPTIONS as SOAP_OPTIONS,
+      HP_AUTH_OPTIONS as AUTH_OPTIONS,
+      HP_OPTIONS as _OPTIONS,
+      HP_IS_DEFAULT_HOST as IS_DEFAULT_HOST
+  from DB.DBA.HTTP_PATH where HP_HOST = '*ini*' and HP_LISTEN_HOST = '*ini*' do
+   {
+     insert soft DB.DBA.HTTP_PATH (
+	 HP_HOST,
+	 HP_LISTEN_HOST,
+	 HP_LPATH,
+	 HP_PPATH,
+	 HP_STORE_AS_DAV,
+	 HP_DIR_BROWSEABLE,
+	 HP_DEFAULT,
+	 HP_SECURITY,
+	 HP_REALM,
+	 HP_AUTH_FUNC,
+	 HP_POSTPROCESS_FUNC,
+	 HP_RUN_VSP_AS,
+	 HP_RUN_SOAP_AS,
+	 HP_PERSIST_SES_VARS,
+	 HP_SOAP_OPTIONS,
+	 HP_AUTH_OPTIONS,
+	 HP_OPTIONS,
+	 HP_IS_DEFAULT_HOST)
+	 values
+	 (
+	  host_port,
+	  host_port,
+	  LPATH,
+	  PPATH,
+	  STORE_AS_DAV,
+	  DIR_BROWSEABLE,
+	  _DEFAULT,
+	  SECURITY,
+	  REALM,
+	  AUTH_FUNC,
+	  POSTPROCESS_FUNC,
+	  RUN_VSP_AS,
+	  RUN_SOAP_AS,
+	  PERSIST_SES_VARS,
+	  SOAP_OPTIONS,
+	  AUTH_OPTIONS,
+	  _OPTIONS,
+	  IS_DEFAULT_HOST)
   ;
+     if (row_count())
+       DB.DBA.VHOST_MAP_RELOAD (host_port, host_port, LPATH);
+   }
 }
 ;
 

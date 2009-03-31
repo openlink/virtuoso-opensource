@@ -82,7 +82,7 @@
 	  }
     if (get_keyword ('sid', self.vc_event.ve_params) is null and is_https_ctx ())
           {
-	declare gr varchar;
+	declare gr, stat, msg varchar;
 	declare rc int;
 	declare vec any;
 	rc := sioc.DBA.foaf_check_ssl_int (null, gr);
@@ -96,6 +96,7 @@
 		self.vc_event.ve_params := OPENID.DBA.oid_set_sid (sid, self.vc_event.ve_params);
 	      }
           }
+        exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
       }
 ]]></v:on-init>
 <html>

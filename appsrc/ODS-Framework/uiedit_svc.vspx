@@ -34,11 +34,6 @@
 	<h3>External Web Services Settings</h3>
   <v:form type="simple" method="POST" xhtml_enctype="multipart/form-data" action="uiedit.vspx?page=4">
 	  <table class="listing" rules="groups">
-	      <colgroup>
-		  <col/>
-		  <col/>
-		  <col/>
-	      </colgroup>
 	      <tr class="listing_header_row">
 		  <th>Service</th>
 		  <th>URI</th>

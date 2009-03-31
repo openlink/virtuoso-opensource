@@ -649,6 +649,8 @@ function validateField(fld)
     return validateMail(fld);
   if (OAT.Dom.isClass(fld, '_url_'))
     return validateURL(fld);
+  if (fld.value.length == 0)
+    return validateError(fld, 'Field cannot be empty');
   return true;
 }
 

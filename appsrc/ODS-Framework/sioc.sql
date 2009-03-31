@@ -214,6 +214,11 @@ create procedure ore_iri (in s varchar)
   return concat ('http://www.openarchives.org/ore/terms/', s);
 };
 
+create procedure opl_iri (in s varchar)
+{
+  return concat ('http://www.openlinksw.com/schema/attribution#', s);
+};
+
 
 create procedure cert_iri (in s varchar)
 {
@@ -223,6 +228,16 @@ create procedure cert_iri (in s varchar)
 create procedure rsa_iri (in s varchar)
 {
   return concat ('http://www.w3.org/ns/auth/rsa#', s);
+};
+
+create procedure offer_iri (in s varchar)
+{
+  return concat ('http://purl.org/goodrelations/v1#', s);
+};
+
+create procedure barter_iri (in s varchar)
+{
+  return concat ('http://purl.org/vocab/barter/0.1/', s);
 };
 
 create procedure make_href (in u varchar)
@@ -501,7 +516,7 @@ create procedure ods_is_defined_by (in graph_iri varchar, in iri varchar)
     df_uri := tmp || '/about.rdf';
   else
     df_uri := tmp || '/sioc.rdf';
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, ore_iri ('isDescribedBy'), df_uri);
+  DB.DBA.RDF_QUAD_URI (graph_iri, iri, opl_iri ('isDescribedUsing'), df_uri);
 };
 
 create procedure foaf_maker (in graph_iri varchar, in iri varchar, in full_name varchar, in u_e_mail varchar)
@@ -568,6 +583,16 @@ create procedure person_prj_iri (in iri varchar, in suff varchar)
 create procedure person_bio_iri (in person_iri varchar, in suff varchar)
 {
   return person_iri || '#event' || suff;
+};
+
+create procedure person_offer_iri (in person_iri varchar, in suffix varchar)
+{
+  return person_iri || '#offer' || suffix;
+};
+
+create procedure person_barter_iri (in person_iri varchar, in suffix varchar)
+{
+  return person_iri || '#barter' || suffix;
 };
 
 -- User
@@ -847,6 +872,7 @@ create procedure sioc_user_info (
   	  {
   	    if (length (interest))
   	    {
+  	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('topic_interest'), interest);
   	      if (length (label))
   		    {
   		      DB.DBA.RDF_QUAD_URI_L (graph_iri, interest, rdfs_iri ('label'), label);
@@ -1154,16 +1180,48 @@ create procedure sioc_user_bioevent (in graph_iri varchar, in user_iri varchar, 
 {
   declare bio_iri, person_iri any;
 
-  person_iri := person_iri (user_iri, '');
-  bio_iri := person_bio_iri (person_iri, cast (bioID as varchar));
+  person_iri := person_iri (user_iri);
+  bio_iri := person_bio_iri (person_iri (user_iri, ''), cast (bioID as varchar));
   delete_quad_s_or_o (graph_iri, bio_iri, bio_iri);
 
   DB.DBA.RDF_QUAD_URI (graph_iri, bio_iri, rdf_iri ('type'), bioEvent);
   DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, bio_iri ('event'), bio_iri);
-  if (not isnull (bioDate))
+  if (length (bioDate))
     DB.DBA.RDF_QUAD_URI_L (graph_iri, bio_iri, bio_iri ('date'), bioDate);
-  if (not isnull (bioPlace))
+  if (length (bioPlace))
     DB.DBA.RDF_QUAD_URI_L (graph_iri, bio_iri, bio_iri ('place'), bioPlace);
+};
+
+create procedure sioc_user_offerlist (in graph_iri varchar, in user_iri varchar, in ol_id integer, in ol_offer varchar, in ol_comment varchar, in ol_properties varchar)
+{
+  declare offer_iri, person_iri any;
+
+  person_iri := person_iri (user_iri);
+  offer_iri := person_offer_iri (person_iri (user_iri, ''), cast (ol_id as varchar));
+  delete_quad_s_or_o (graph_iri, offer_iri, offer_iri);
+
+  DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, offer_iri ('offers'), offer_iri);
+  if (length (ol_offer))
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, offer_iri, rdfs_iri ('label'), ol_offer);
+  if (length (ol_comment))
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, offer_iri, dc_iri ('description'), ol_comment);
+  for (select property, label from DB.DBA.WA_USER_INTERESTS (txt) (property varchar, label varchar) P where txt = ol_properties) do
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, offer_iri, property, label);
+};
+
+create procedure sioc_user_wishlist (in graph_iri varchar, in user_iri varchar, in wl_id integer, in wl_barter varchar, in wl_comment varchar, in wl_property varchar)
+{
+  declare barter_iri, person_iri any;
+
+  person_iri := person_iri (user_iri);
+  barter_iri := person_barter_iri (person_iri (user_iri, ''), cast (wl_id as varchar));
+  delete_quad_s_or_o (graph_iri, barter_iri, barter_iri);
+
+  DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, barter_iri (wl_property), barter_iri);
+  if (length (wl_barter))
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, barter_iri, rdfs_iri ('label'), wl_barter);
+  if (length (wl_comment))
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, barter_iri, dc_iri ('description'), wl_comment);
 };
 
 create procedure sioc_user_account (in graph_iri varchar, in iri varchar, in  nam varchar, in  url varchar)
@@ -1889,6 +1947,14 @@ create procedure fill_ods_sioc (in doall int := 0)
 		    {
           sioc_user_bioevent (graph_iri, iri, WUB_ID, WUB_EVENT, WUB_DATE, WUB_PLACE);
 		    }
+		  for select WUOL_ID, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES from DB.DBA.WA_USER_OFFERLIST where WUOL_U_ID = U_ID do
+		    {
+          sioc_user_offerlist (graph_iri, iri, WUOL_ID, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES);
+		    }
+		  for select WUWL_ID, WUWL_BARTER, WUWL_PROPERTY, WUWL_COMMENT from DB.DBA.WA_USER_WISHLIST where WUWL_U_ID = U_ID do
+		    {
+          sioc_user_wishlist (graph_iri, iri, WUWL_ID, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTY);
+		    }
 		  if (length (WAUI_SKYPE))
 		    sioc_user_account (graph_iri, iri, WAUI_SKYPE, 'skype:'||WAUI_SKYPE||'?chat');
 		}
@@ -2609,6 +2675,88 @@ create trigger WA_USER_BIOEVENTS_SIOC_D after delete on DB.DBA.WA_USER_BIOEVENTS
   person_iri := person_iri (user_iri, '');
   bio_iri := person_bio_iri (person_iri, cast (O.WUB_ID as varchar));
   delete_quad_s_or_o (graph_iri, bio_iri, bio_iri);
+};
+
+-- Offer List
+create trigger WA_USER_OFFERLIST_SIOC_I after insert on DB.DBA.WA_USER_OFFERLIST referencing new as N
+{
+  declare graph_iri, user_iri any;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  graph_iri := get_graph ();
+  user_iri := user_iri (N.WUOL_U_ID);
+  sioc_user_offerlist (graph_iri, user_iri, N.WUOL_ID, N.WUOL_OFFER, N.WUOL_COMMENT, N.WUOL_PROPERTIES);
+};
+
+create trigger WA_USER_OFFERLIST_SIOC_U after update on DB.DBA.WA_USER_OFFERLIST referencing old as O, new as N
+{
+  declare graph_iri, user_iri any;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  graph_iri := get_graph ();
+  user_iri := user_iri (N.WUOL_U_ID);
+  sioc_user_offerlist (graph_iri, user_iri, N.WUOL_ID, N.WUOL_OFFER, N.WUOL_COMMENT, N.WUOL_PROPERTIES);
+};
+
+create trigger WA_USER_OFFERLIST_SIOC_D after delete on DB.DBA.WA_USER_OFFERLIST referencing old as O
+{
+  declare graph_iri, user_iri, person_iri, offer_iri any;
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  graph_iri := get_graph ();
+  user_iri := user_iri (O.WUOL_U_ID);
+  person_iri := person_iri (user_iri, '');
+  offer_iri := person_offer_iri (person_iri, cast (O.WUOL_ID as varchar));
+  delete_quad_s_or_o (graph_iri, offer_iri, offer_iri);
+};
+
+-- Wish List
+create trigger WA_USER_WISHLIST_SIOC_I after insert on DB.DBA.WA_USER_WISHLIST referencing new as N
+{
+  declare graph_iri, user_iri any;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  graph_iri := get_graph ();
+  user_iri := user_iri (N.WUWL_U_ID);
+  sioc_user_wishlist (graph_iri, user_iri, N.WUWL_ID, N.WUWL_BARTER, N.WUWL_COMMENT, N.WUWL_PROPERTY);
+};
+
+create trigger WA_USER_WISHLIST_SIOC_U after update on DB.DBA.WA_USER_WISHLIST referencing old as O, new as N
+{
+  declare graph_iri, user_iri any;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  graph_iri := get_graph ();
+  user_iri := user_iri (N.WUWL_U_ID);
+  sioc_user_wishlist (graph_iri, user_iri, N.WUWL_ID, N.WUWL_BARTER, N.WUWL_COMMENT, N.WUWL_PROPERTY);
+};
+
+create trigger WA_USER_WISHLIST_SIOC_D after delete on DB.DBA.WA_USER_WISHLIST referencing old as O
+{
+  declare graph_iri, user_iri, person_iri, barter_iri any;
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  graph_iri := get_graph ();
+  user_iri := user_iri (O.WUWL_U_ID);
+  person_iri := person_iri (user_iri, '');
+  barter_iri := person_barter_iri (person_iri, cast (O.WUWL_ID as varchar));
+  delete_quad_s_or_o (graph_iri, barter_iri, barter_iri);
 };
 
 -- Related
@@ -3373,7 +3521,9 @@ create procedure std_pref_declare ()
 	 ' prefix vcal: <http://www.w3.org/2002/12/cal#> \n' ||
          ' prefix bio: <http://vocab.org/bio/0.1/> \n' ||
 	 ' prefix cert: <' || cert_iri ('') || '> \n' ||
-	 ' prefix rsa: <' || rsa_iri ('') || '> \n'
+	 ' prefix rsa: <' || rsa_iri ('') || '> \n' ||
+	 ' prefix gr: <' || offer_iri ('') || '> \n' ||
+	 ' prefix wl: <' || barter_iri ('') || '> \n'
 	 ;
 };
 
@@ -3405,11 +3555,14 @@ create procedure foaf_check_friend (in iri varchar, in agent varchar)
 }
 ;
 
-create procedure foaf_check_ssl (in iri varchar)
+create procedure foaf_check_ssl_int (in iri varchar, out graph varchar)
 {
-  declare stat, msg, meta, data, info, qr, hf, graph any;
+  declare stat, msg, meta, data, info, qr, hf, gr any;
   declare agent varchar;
+  declare rc int;
 
+  graph := null;
+  rc := 0;
   declare exit handler for sqlstate '*'
     {
       rollback work;
@@ -3425,15 +3578,14 @@ create procedure foaf_check_ssl (in iri varchar)
     return 0;
 
   agent := subseq (agent, 4);
-  if (not foaf_check_friend (iri, agent))
+  if (iri is not null and not foaf_check_friend (iri, agent))
     return 0;
 
   hf := rfc1808_parse_uri (agent);
   hf[5] := '';
-  graph := DB.DBA.vspx_uri_compose (hf);
-  delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (graph);
-  commit work;
-  qr := sprintf ('sparql load <%S> into graph <%S>', graph, graph);
+  gr := DB.DBA.vspx_uri_compose (hf);
+  graph := uuid ();
+  qr := sprintf ('sparql load <%S> into graph <%S>', gr, graph);
   stat := '00000';
   exec (qr, stat, msg);
   commit work;
@@ -3446,9 +3598,21 @@ create procedure foaf_check_ssl (in iri varchar)
   exec (qr, stat, msg, vector (), 0, meta, data);
 --  dbg_obj_print (data);
   if (stat = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and data[0][1] = bin2hex (info[2]))
-    return 1;
+    rc := 1;
 --  dbg_obj_print (stat, data);
-  return 0;
+  --dbg_obj_print (rc);
+  return rc;
+}
+;
+
+create procedure foaf_check_ssl (in iri varchar)
+{
+  declare rc int;
+  declare graph, stat, msg varchar;
+  rc := foaf_check_ssl_int (iri, graph);
+  exec (sprintf ('sparql clear graph <%S>', graph), stat, msg);
+  commit work;
+  return rc;
 }
 ;
 
@@ -3677,10 +3841,15 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?idn rsa:modulus ?mod .
 	    ?exp cert:decimal ?exp_val .
 	    ?mod cert:hex ?mod_val .
-	    ?person bio:event ?event_iri .
 	    ?event_iri rdf:type ?bioEvent .
 	    ?event_iri bio:date ?bioDate .
 	    ?event_iri bio:place ?bioPlace .
+	    ?person gr:offers ?ol_iri .
+	    ?ol_iri ?ol_property ?ol_label .
+	    ?person wl:wants ?wl_iri .
+	    ?wl_iri ?wl_property ?wl_label .
+	    ?person wl:has ?wl2_iri .
+	    ?wl2_iri ?wl2_property ?wl2_label .
 	  }
 	  WHERE
 	  {
@@ -3695,6 +3864,9 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	      optional { ?topic_interest rdfs:label ?topic_interest_label  } .
 	      optional { ?idn cert:identity ?person ; rsa:public_exponent ?exp ; rsa:modulus ?mod . ?exp cert:decimal ?exp_val . ?mod cert:hex ?mod_val  } .
 	      optional { ?person bio:event ?event_iri . ?event_iri rdf:type ?bioEvent . ?event_iri bio:date ?bioDate . ?event_iri bio:place ?bioPlace } .
+	        optional { ?person gr:offers ?ol_iri . ?ol_iri ?ol_property ?ol_label .} .
+	        optional { ?person wl:wants ?wl_iri . ?wl_iri ?wl_property ?wl_label .} .
+	        optional { ?person wl:has ?wl2_iri . ?wl2_iri ?wl2_property ?wl2_label .} .
 	      }
 	    }
 	  }', graph, graph, u_name);
@@ -3731,7 +3903,6 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
   qrs [2] := qry;
   if (p <> 0)
     qrs [2] := null;
-  --qrs [2] := null;
 
   part := sprintf (
 	  ' CONSTRUCT {
