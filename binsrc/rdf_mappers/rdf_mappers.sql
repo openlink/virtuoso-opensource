@@ -6112,7 +6112,6 @@ create procedure DB.DBA.RDF_LOAD_ZEMANTA (in graph_iri varchar, in new_origin_ur
   cont := http_client (	url=>'http://api.zemanta.com/services/rest/0.0/',
   			http_method=>'POST',
 			body=>txt, proxy=>get_keyword_ucase ('get:proxy', opts));
-  --string_to_file ('rdf.rdf', serialize_to_UTF8_xml (cont), -2);
   xt := xtree_doc (cont, 0, '', 'UTF-8');
   xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/zemanta_filter.xsl', xt,
   	vector ('baseUri', coalesce (dest, graph_iri), 'min-score', sc_min, 'max-results', max_res));
@@ -6244,22 +6243,28 @@ create procedure DB.DBA.RDF_LOAD_VOID (in graph_iri varchar, in new_origin_uri v
 create procedure DB.DBA.RDF_CREATE_DOC_IRI (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
-  declare gr, ss any;
+  declare gr, ss, des any;
   declare exit handler for sqlstate '*'
   {
     return 0;
   };
   gr := iri_to_id (coalesce (dest, graph_iri));
-  if (exists (select 1 from RDF_QUAD where G = gr and S = gr))
+  des := iri_to_id ('http://www.openlinksw.com/schema/attribution#isDescribedUsing');
+  if (exists (select 1 from RDF_QUAD where G = gr and S = gr and P <> des))
     {
-      dbg_obj_print (gr, 'exists');
       return 0;
     }
   ss := string_output ();
   http (sprintf ('@prefix this: <%S> \n', id_to_iri (gr)), ss);
   http (sprintf ('@prefix foaf: <http://xmlns.com/foaf/0.1/> \n'), ss);
   http (sprintf ('this: a foaf:Document .\n'), ss);
-  for select a.S as subj from RDF_QUAD a where a.G = gr and not exists (select 1 from RDF_QUAD b where b.G = a.G and isiri_id (b.O) and b.O = a.S) do
+  for select a.S as subj from RDF_QUAD a where a.G = gr and a.P <> des and
+    not exists (select 1 from RDF_QUAD b where b.G = a.G and isiri_id (b.O) and b.O = a.S) do
+    {
+      http (sprintf ('this: foaf:topic <%S> .\n', id_to_iri (subj)), ss);
+    }
+  for select a.S as subj from RDF_QUAD a where a.G = gr and not isiri_id (a.O) and
+    not exists (select 1 from RDF_QUAD b where b.G = a.G and isiri_id (b.O) and b.O = a.S and b.S <> a.S) do
     {
       http (sprintf ('this: foaf:topic <%S> .\n', id_to_iri (subj)), ss);
     }

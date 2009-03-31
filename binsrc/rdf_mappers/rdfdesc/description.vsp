@@ -1,5 +1,5 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <?vsp
 
    declare _G, _S, odd_position any;
@@ -105,9 +105,10 @@
     <link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>" title="RDF" />
     <link rel="stylesheet" type="text/css" href="statics/style_w.css" />
     <link href="statics/highlighter.css" type="text/css" rel="stylesheet" charset="utf-8" />
+    <meta http-equiv="Content-type" content="text/html;charset=utf-8" />
     <script type="text/javascript" src="statics/script.js"></script>
 </head>
-<body onLoad="init();" about="<?V page_resource_uri ?>">
+<body onload="init();" about="<?V page_resource_uri ?>">
     <div id="header">
       <div id="hd_l">
 	  <h1 id="title">About: <a href="<?= case when page_resource_uri like 'nodeID://%' then rdfdesc_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp http (sprintf ('%s', label)); ?></a></h1>
@@ -196,9 +197,9 @@ skip_rev:
       </div> <!-- #ft_t -->
       <div id="ft_b">
         <a href="http://virtuoso.openlinksw.com" title="OpenLink Virtuoso"><img class="powered_by" src="statics/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso" /></a>
-        <a href="http://linkeddata.org/"><img alt="This material is Open Knowledge" src="statics/LoDLogo.gif" border="0" /></a> &nbsp;
-        <a href="http://dbpedia.org/sparql"><img alt="W3C Semantic Web Technology" src="statics/sw-sparql-blue.png" border="0" /></a> &nbsp;  &nbsp;
-        <a href="http://www.opendefinition.org/"><img alt="This material is Open Knowledge" src="statics/od_80x15_red_green.png" border="0" /></a>
+        <a href="http://linkeddata.org/"><img alt="This material is Open Knowledge" src="statics/LoDLogo.gif" style="border-width:0"  /></a> &nbsp;
+        <a href="http://dbpedia.org/sparql"><img alt="W3C Semantic Web Technology" src="statics/sw-sparql-blue.png" style="border-width:0" /></a> &nbsp;  &nbsp;
+        <a href="http://www.opendefinition.org/"><img alt="This material is Open Knowledge" src="statics/od_80x15_red_green.png" style="border-width:0" /></a>
 	<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/"><img alt="Creative Commons License" style="border-width:0" src="http://i.creativecommons.org/l/by-sa/3.0/80x15.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-Share Alike 3.0 Unported License</a>.
       </div> <!-- #ft_b -->
     </div> <!-- #footer -->
