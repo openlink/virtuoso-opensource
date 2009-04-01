@@ -204,6 +204,33 @@
 					</xsl:for-each>
 					<scot:cooccurAFrequency rdf:datatype="&xsd;integer">1</scot:cooccurAFrequency>
 				</rdf:Description>
+				
+				<rdf:Description rdf:about="{vi:proxyIRI($domain, '', $guid)}">
+					<rdf:type rdf:resource="&bookmark;Bookmark"/>
+					<!--sioc:has_container rdf:resource="{$guid}" /-->
+					<sioc:has_container rdf:resource="{vi:proxyIRI($domain)}" />
+					<dc:title>
+						<xsl:value-of select="title"/>
+					</dc:title>
+					<!--dcterms:created rdf:datatype="&xsd;dateTime">
+						<xsl:value-of select="vi:string2date2(pubDate)"/>
+					</dcterms:created-->
+					<xsl:copy-of select="dc:creator" />
+					<bibo:uri rdf:resource="{link}" />
+					<xsl:for-each select="category">
+						<sioc:topic rdf:resource="{concat (@domain, .)}"/>
+					</xsl:for-each>
+					<rdfs:seeAlso rdf:resource="{comments}" />
+					<rdfs:seeAlso rdf:resource="{wfw:commentRss}" />
+				</rdf:Description>
+				
+				<rdf:Description rdf:about="{vi:proxyIRI($domain)}">
+					<sioc:has_container rdf:resource="{$domain}" />
+					<rdf:type rdf:resource="&sioc;BookmarkFolder"/>
+					<xsl:variable name="guid1" select="substring-after(substring-before(guid, '#'), 'http://delicious.com/url/') " />
+					<sioc:container_of rdf:resource="{vi:proxyIRI($domain, '', $guid1)}" />
+				</rdf:Description>
+				
 			</xsl:for-each>
 			
 			<xsl:variable name="author" select="substring-before(substring-after(link, 'http://delicious.com/'), '/')" />
