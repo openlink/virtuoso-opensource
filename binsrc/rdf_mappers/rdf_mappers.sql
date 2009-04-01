@@ -3185,21 +3185,30 @@ create procedure DB.DBA.RDF_LOAD_DELICIOUS (in graph_iri varchar, in new_origin_
     xd := serialize_to_UTF8_xml (xt);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	
-	declare data, meta, state, message any;
-	exec (sprintf('sparql select ?l from <%s> where { <%s> <http://scot-project.org/scot/ns#name> ?l }', graph_iri, graph_iri), state, message, vector (), 0, meta, data);
-	foreach (any str in data) do
+	declare result, meta, state, message any;
+	state := '00000';
+	exec (sprintf('sparql select ?l from <%s> where { <%s> <http://scot-project.org/scot/ns#name> ?l }', graph_iri, graph_iri), state, message, vector (), 0, meta, result);
+	foreach (any str in result) do
 	{
 		if (isstring (str[0]))
 		{
 			declare meaning_iri varchar;
 			declare keyword varchar;
 			keyword := str[0];
-			for select mu_id, mu_url from moat..moat_user_meanings where mu_tag = keyword do
+			state := '00000';
+			result := vector();
+			exec(sprintf ('select mu_id, mu_url from moat..moat_user_meanings where mu_tag = %s', keyword), state, message, vector(), 0, meta, result);
+			if (state = '00000')
 			{
-      		    meaning_iri := graph_iri || sprintf ('#meaning/%d', mu_id);
+				declare i, l int;			
+				for (i := 0, l := length (result); i < l; i := i + 1)
+			{
+					declare rs any;
+      				meaning_iri := graph_iri || sprintf ('#meaning/%d', result[i][0]);
 				DB.DBA.RDF_QUAD_URI (graph_iri, graph_iri, 'http://moat-project.org/ns#hasMeaning', meaning_iri);
 				DB.DBA.RDF_QUAD_URI (graph_iri, meaning_iri, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://moat-project.org/ns#Meaning');
-				DB.DBA.RDF_QUAD_URI (graph_iri, meaning_iri, 'http://moat-project.org/ns#meaningURI', mu_url);
+					DB.DBA.RDF_QUAD_URI (graph_iri, meaning_iri, 'http://moat-project.org/ns#meaningURI', result[i][1]);
+				}
 			}
 		}
 	}
