@@ -765,7 +765,7 @@ dt_to_ms_string (const char *dt, char *str, int len)
 	   ts.day, monday [ts.month - 1], ts.year, ts.hour, ts.minute, ts.second);
 }
 
-#ifndef NDEBUG
+#ifdef DEBUG
 extern void
 iso8601_or_odbc_string_to_dt_impl (const char *str, char *dt, int dtflags, int dt_type, caddr_t *err_msg_ret);
 
