@@ -313,7 +313,7 @@ create method ti_get_entity (in _env any, in _ext int) returns any for WV.WIKI.T
 
   --dbg_obj_print ('get_entity');
   declare _html varchar;
-  declare _ent any;
+  declare _ent, _wide any;
   if (_env is null)
     {
   --dbg_obj_print ('get_entity 1');
@@ -325,6 +325,13 @@ create method ti_get_entity (in _env any, in _ext int) returns any for WV.WIKI.T
   _html := self.ti_run_lexer (_env);
   --dbg_obj_print ('get_entity 4');
 
+  _wide := charset_recode (_html, 'UTF-8', '_WIDE_');
+  if (not iswidestring (_wide)) -- source is not utf-8, thus we will try to recover
+    {
+      _wide := charset_recode (_html, current_charset (), 'UTF-8');
+      if (isstring (_wide))
+	_html := _wide;
+    }
   _ent := xtree_doc (_html, 2, '', 'UTF-8');
 
 
