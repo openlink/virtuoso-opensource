@@ -1037,15 +1037,39 @@ grant execute on DB.DBA.RDF_GRAB_SINGLE_ASYNC to SPARQL_SELECT;
 create procedure ODS.ODS_API.get_foaf_data_array (
   in foafIRI varchar,
   in spongerMode integer := 1,
-  in sslCheckMode integer := 0)
+  in sslFOAFCheck integer := 0,
+  in sslLoginCheck integer := 0)
 {
   declare N, M integer;
-  declare S, IRI, foafGraph varchar;
+  declare S, IRI, foafGraph, _identity varchar;
   declare V, st, msg, data, meta any;
+  declare certLogin any;
   declare "title", "name", "nick", "firstName", "givenname", "family_name", "mbox", "gender", "birthday", "lat", "lng" any;
   declare "icqChatID", "msnChatID", "aimChatID", "yahooChatID", "workplaceHomepage", "homepage", "phone", "organizationTitle", "keywords", "depiction", "interest" any;
+  declare host, port, arr any;
 
   set_user_id ('dba');
+  _identity := trim (foafIRI);
+  V := rfc1808_parse_uri (_identity);
+  if (is_https_ctx () and cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal') = '1' and V[1] = registry_get ('URIQADefaultHost'))
+    {
+      V [0] := 'https';
+      host := V[1];
+      port := server_https_port ();
+      if (port = '443') port := '';
+      else port := ':' || port;
+      arr := split_and_decode (host, 0, '\0\0:');
+      if (length (arr) = 2)
+	{
+	  host := arr[0] || port;
+	}
+      else
+        {
+	  host := host || port;
+	}
+      V [1] := host;
+      _identity := db.dba.vspx_uri_compose (V);
+    }
   V := rfc1808_parse_uri (trim (foafIRI));
   V[5] := '';
   IRI := DB.DBA.vspx_uri_compose (V);
@@ -1062,13 +1086,13 @@ create procedure ODS.ODS_API.get_foaf_data_array (
   exec (S, st, msg, vector (), 0);
   if (st <> '00000')
     goto _exit;
-  if (sslCheckMode)
+  if (sslFOAFCheck)
   {
     declare info any;
 
     info := get_certificate_info (9);
     st := '00000';
-    S := sprintf (' sparql ' ||
+    S := sprintf (' sparql define input:storage "" ' ||
                   ' prefix cert: <%s> ' ||
                   ' prefix rsa: <%s> ' ||
                   ' select ?exp_val ' ||
@@ -1090,7 +1114,17 @@ create procedure ODS.ODS_API.get_foaf_data_array (
     if (not (st = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and data[0][1] = bin2hex (info[2])))
       goto _exit;
   }
-  S := sprintf ('sparql
+  if (sslLoginCheck)
+  {
+    certLogin := null;
+    for (select WAUI_CERT_LOGIN from DB.DBA.WA_USER_INFO where WAUI_CERT_FINGERPRINT = get_certificate_info (6)) do
+    {
+      certLogin := coalesce (WAUI_CERT_LOGIN, 0);
+    }
+    if (isnull (certLogin))
+      goto _exit;
+  }
+  S := sprintf ('sparql define input:storage ""
                   prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
                   prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
                   prefix dc: <http://purl.org/dc/elements/1.1/>
@@ -1158,7 +1192,7 @@ create procedure ODS.ODS_API.get_foaf_data_array (
   "interest" := '';
   for (N := 0; N < length (data); N := N + 1)
   {
-    if (foafIRI = data[N][23])
+    if (_identity = data[N][23])
     {
       if (M = 0)
     {
@@ -1185,6 +1219,8 @@ create procedure ODS.ODS_API.get_foaf_data_array (
         "keywords" := data[N][19];
         "depiction" := data[N][20];
 
+        if (sslLoginCheck)
+          appendProperty (V, 'certLogin', certLogin);
         appendProperty (V, 'iri', foafIRI);                                   -- FOAF IRI
     appendProperty (V, 'nick', coalesce ("nick", "name")); -- WAUI_NICK
     appendProperty (V, 'title', "title");		   -- WAUI_TITLE
@@ -1224,18 +1260,24 @@ _exit:;
 create procedure ODS.ODS_API."user.getFOAFData" (
   in foafIRI varchar,
   in spongerMode integer := 1,
-  in sslCheckMode integer := 0) __soap_http 'application/json'
+  in sslFOAFCheck integer := 0,
+  in outputMode integer := 1,
+  in sslLoginCheck integer := 0) __soap_http 'application/json'
 {
+  declare V any;
   declare exit handler for sqlstate '*'
   {
-  return obj2json (null);
+    return case when outputMode then obj2json (null) else null end;
   };
-  return params2json (ODS.ODS_API.get_foaf_data_array (foafIRI, spongerMode, sslCheckMode));
+  V := ODS.ODS_API.get_foaf_data_array (foafIRI, spongerMode, sslFOAFCheck, sslLoginCheck);
+  return case when outputMode then params2json (V) else V end;
 }
 ;
 
 create procedure ODS.ODS_API."user.getFOAFSSLData" (
-  in sslCheckMode integer := 0) __soap_http 'application/json'
+  in sslFOAFCheck integer := 0,
+  in outputMode integer := 1,
+  in sslLoginCheck integer := 0) __soap_http 'application/json'
 {
   declare foafIRI any;
 
@@ -1243,9 +1285,9 @@ create procedure ODS.ODS_API."user.getFOAFSSLData" (
   if (not isnull (foafIRI) and (foafIRI like 'URI:%'))
   {
     foafIRI := subseq (foafIRI, 4);
-    return ODS.ODS_API."user.getFOAFData" (foafIRI, 0, sslCheckMode);
+    return ODS.ODS_API."user.getFOAFData" (foafIRI, 0, sslFOAFCheck, outputMode, sslLoginCheck);
   }
-  return obj2json (null);
+  return case when outputMode then obj2json (null) else null end;
 }
 ;
 

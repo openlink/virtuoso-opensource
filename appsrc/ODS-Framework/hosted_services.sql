@@ -3163,18 +3163,20 @@ wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_BMESSAGING', 'LONG VARCHAR');
 
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_CERT_LOGIN', 'integer');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_CERT_FINGERPRINT', 'varchar');
-wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_CERT', 'LONG VARBINARY');
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_CERT', 'long varbinary');
 
 wa_exec_no_error ('create index WA_USER_INFO_CERT_FINGERPRINT on DB.DBA.WA_USER_INFO (WAUI_CERT_FINGERPRINT)');
 
 create procedure WA_USER_INFO_WAUI_CERT_UPGRADE ()
 {
-  if (registry_get ('__WA_USER_INFO_CERT_UPGRADE') = 'done-1')
+  if (registry_get ('__WA_USER_INFO_CERT_UPGRADE') = 'done-2')
     return;
-  registry_set ('__WA_USER_INFO_CERT_UPGRADE', 'done-1');
+  registry_set ('__WA_USER_INFO_CERT_UPGRADE', 'done-2');
 
-  for select U_ID, WAUI_CERT
-        from SYS_USERS, WA_USER_INFO
+  for select U_ID,
+             WAUI_CERT
+        from SYS_USERS,
+             WA_USER_INFO
       where WAUI_U_ID = U_ID and WAUI_CERT is not null do
   {
     update WA_USER_INFO
@@ -3272,12 +3274,22 @@ create trigger WA_USER_INFO_I after insert on WA_USER_INFO referencing new as N
 
 create trigger WA_USER_INFO_U after update on WA_USER_INFO referencing old as O, new as N
 {
-  if (N.WAUI_CERT <> O.WAUI_CERT)
+  declare newf, oldf varchar;
+
+  newf := oldf := '';
+  if (length (N.WAUI_CERT))
   {
+      newf := coalesce (get_certificate_info (6, cast (N.WAUI_CERT as varchar)), '');
+    }
+  if (length (O.WAUI_CERT_FINGERPRINT))
+    oldf := O.WAUI_CERT_FINGERPRINT;
+
+  if (newf <> oldf)
+    {
+      if (newf = '')
+	newf := null;
     set triggers off;
-    update WA_USER_INFO
-       set WAUI_CERT_FINGERPRINT = get_certificate_info (6, cast (N.WAUI_CERT as varchar))
-     where WAUI_U_ID = N.WAUI_U_ID;
+      update WA_USER_INFO set WAUI_CERT_FINGERPRINT = newf where WAUI_U_ID = N.WAUI_U_ID;
     set triggers on;
   }
   return;
@@ -6788,7 +6800,7 @@ create procedure wa_redefine_vhosts(in host_port varchar := '*sslini*', in isdav
 create procedure ODS_USER_IDENTIY_URLS (in uname varchar)
 {
   declare rset, mdta, h any;
-  exec (sprintf ('select Y from (sparql
+  exec (sprintf ('select Y from (sparql define input:storage ""
   	prefix foaf: <http://xmlns.com/foaf/0.1/>
   	prefix owl: <http://www.w3.org/2002/07/owl#>
   	select ?Y from <%s> where { [] foaf:nick "%s" ; <http://www.w3.org/2002/07/owl#sameAs> ?Y }) sub',

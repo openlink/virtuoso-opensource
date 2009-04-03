@@ -334,7 +334,7 @@
                  control.ufl_selected := self.certificate_login;
              </v:after-data-bind>
             </v:check-box>
-            <b>Enable Automatic X.509 Login</b>
+            <b>Enable Automatic FOAF+SSL Login</b>
           </label>
  	      </td>
       </tr>

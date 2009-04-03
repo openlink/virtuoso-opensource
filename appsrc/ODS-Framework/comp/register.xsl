@@ -65,10 +65,7 @@
     </xsl:if>
       <v:variable name="ret_page" type="varchar" persist="page" />
 
-    <v:variable name="reg_mode" type="varchar" default="''" />
-    <v:variable name="reg_cert" type="any" default="null" />
     <v:variable name="reg_foafData" type="any" default="null" />
-
       <v:variable name="reg_tip" type="int" default="0" persist="temp" />
       <v:variable name="reg_number" type="varchar" default="null" persist="0" />
       <v:variable name="reg_number_img" type="varchar" default="null" persist="temp" />
@@ -190,174 +187,48 @@
 
             if(self.ods_returnurl is not null and self.ods_returnurl='index.html')
                 self.vc_redirect (sprintf('index.html#fhref=%U',replace(_location,'RETURL=','OLDRETURL=')));
-
           }
-
          }
      }
-
+        self.reg_foafData := case when is_https_ctx () then ODS.ODS_API."user.getFOAFSSLData"(1, 0) else null end;
+        if (not self.use_oid_url and length (self.reg_foafData))
+          self.use_oid_url := 2;
    ]]></v:on-init>
     <v:template name="registration_na"  type="simple" enabled="--(1-coalesce ((select top 1 WS_REGISTER from WA_SETTINGS), 0))">
      <div style="padding: 20px 20px 20px 35px;">
       This service is currently not accepting new registrations without invitation.
      </div>
-
     </v:template>
     <v:template name="registration"  type="simple" enabled="--coalesce ((select top 1 WS_REGISTER from WA_SETTINGS), 0)">
-
     <div>
-    <div class="login_tabactive" id="tabODS" onclick="loginTabToggle(this);">ODS</div>
-    <div class="login_tab" id="tabOpenID" onclick="loginTabToggle(this);">OpenID</div>
+          <div class="<?V case when self.use_oid_url = 0 then 'login_tabactive' else 'login_tab' end ?>" id="tabODS" onclick="loginTabToggle(this);">ODS</div>
+          <div class="<?V case when self.use_oid_url = 1 then 'login_tabactive' else 'login_tab' end ?>" id="tabOpenID" onclick="loginTabToggle(this);">OpenID</div>
+          <?vsp
+            if (length (self.reg_foafData))
+              http (sprintf ('<div class="%s" id="tabSSL" onclick="loginTabToggle(this);">FOAF+SSL</div>', case when self.use_oid_url = 2 then 'login_tabactive' else 'login_tab' end));
+          ?>
     </div>
     <br/>
     <div class="login_tabdeck"><!--container div start-->
-        <div id="login_openid" style="height: <?V case when is_https_ctx () then 132 else 115 end ?>px;<?V case when self.use_oid_url = 1 then '' else 'display:none;' end ?>">
+          <div id="login_info" style="height: 115px;<?V case when self.use_oid_url = 0 then '' else 'display:none;' end ?>">
       <table width="100%">
-  <tr>
-              <th width="30%"><label for="reguid">OpenID</label></th>
-      <td>
-    <img src="images/login-bg.gif" alt="openID"  class="login_openid" />
-       <v:text  xhtml_id="openid_url" name="openid_url" value="" xhtml_style="width:90%" default_value="--self.oid_identity"/>
-<script type="text/javascript">
-<![CDATA[
-var is_disabled=<?V(case when self.oid_mode = 'id_res' and self.oid_sig is not null then 1 else 0 end)?>+0;
-if(is_disabled && typeof(document.getElementById('openid_url'))!='undefined')
-{
-  document.getElementById('openid_url').disabled=true;
-  document.getElementById('tabODS').style.display='none';
-}
-]]>
-</script>
-       <input type="hidden" id="uoid" name="uoid" value="<?Vself.use_oid_url?>"/>
-      </td>
-    </tr>
-    <v:template name="oid_login_row"  type="simple" enabled="--(case when self.oid_sig is not null and (self.oid_nickname is null or length(self.oid_nickname)<1) then 1 else 0 end)">
-    <tr>
-      <th nowrap="1"><label for="oid_reguid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
-      <td nowrap="nowrap">
-        <v:text xhtml_tabindex="11" xhtml_id="oid_reguid" xhtml_style="width:270px" name="oid_reguid" value="--get_keyword('oid_reguid', params)"
-           default_value="--self.oid_nickname" xhtml_onblur="document.getElementById(''reguid'').value=this.value;">
-       </v:text>
-     </td>
-   </tr>
-   </v:template>
-   <v:template name="oid_mail_row"  type="simple" enabled="--(case when self.oid_sig is not null and (self.oid_email is null or length(self.oid_email)<1) then 1 else 0 end)">
-   <tr>
-     <th><label for="oid_regmail">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
-     <td nowrap="nowrap">
-       <v:text xhtml_tabindex="12" xhtml_id="oid_regmail" xhtml_style="width:270px" name="oid_regmail" value="--get_keyword ('oid_regmail', params)"
-          default_value="--self.oid_email" xhtml_onblur="document.getElementById(''regmail'').value=this.value;">
-       </v:text>
-     </td>
-   </tr>
-   </v:template>
-    </table>
-    </div>
-        <div id="login_info" style="height: <?V case when is_https_ctx () then 132 else 115 end ?>px;<?V case when self.use_oid_url = 1 then 'display:none;' else '' end ?>">
-      <table width="100%">
-            <v:template name="ssl_template" type="simple" enabled="--case when is_https_ctx () then 1 else 0 end">
             <tr>
-              <th width="30%"></th>
+                <th width="30%"><label for="reguid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
               <td nowrap="nowrap">
-                <?vsp
-                  if (0)
-                  {
-                ?>
-                    <v:button name="SSL_import" action="simple" style="url" value="Submit">
-                      <v:on-post>
-                        <![CDATA[
-                          self.vc_is_valid := 0;
-                          if (is_https_ctx ())
-                          {
-                            declare foafInfo, aVector2, aVector3 any;
-
-                            aVector2 := self.decodeName (get_certificate_info (2));
-                            aVector3 := self.decodeName (get_certificate_info (3));
-                            self.reg_uid := self.getValue ('cn', 'reguid', aVector2, aVector3);
-                            self.reg_mail := self.getValue ('emailAddress', 'regmail', aVector2, aVector3);
-                            self.reg_cert := client_attr ('client_certificate');
-
-                            self.reg_mode := '';
-                            self.reg_foafData := null;
-                            foafInfo := get_certificate_info (7, null, null, null, '2.5.29.17');
-                            if (not isnull (foafInfo) and (foafInfo like 'URI:%'))
-                            {
-                              foafInfo := subseq (foafInfo, 4);
-                              self.reg_mode := 'foaf';
-                              self.reg_foafData := ODS.ODS_API.get_foaf_data_array (foafInfo, 0);
-                              self.reg_uid := get_keyword ('nick', self.reg_foafData, self.reg_uid);
-                              self.reg_mail := get_keyword ('mbox', self.reg_foafData, self.reg_mail);
-                            }
-                          }
-                          self.vc_data_bind(e);
-                        ]]>
-                      </v:on-post>
-                      <v:after-data-bind>
-                        <![CDATA[
-                          if (e.ve_button is not null)
-                          {
-                            if (e.ve_button.vc_name = 'SSL_import')
-                            {
-                              self.vc_is_valid := 0;
-                              self.vc_error_message := null;
-                              self.reguid.ufl_validators := null;
-                              self.reguid.ufl_error := null;
-                              self.reguid.ufl_error_glyph := null;
-                              self.regmail.ufl_validators := null;
-                              self.regmail.ufl_error := null;
-                              self.regmail.ufl_error_glyph := null;
-                              self.regpwd.ufl_validators := null;
-                              self.regpwd.ufl_error := null;
-                              self.regpwd.ufl_error_glyph := null;
-                            }
-                          }
-                        ]]>
-                      </v:after-data-bind>
-                    </v:button>
-                <?vsp
-                  }
-                ?>
-                <input type="button" name="SSL_data" value="SSL Import" id="lf_login" onclick="javascript: OAT.Dom.show('reg_import_image'); doPost('page_form', 'SSL_import');" />
-                <img id="reg_import_image" alt="Import FOAF Data" src="/ods/images/oat/Ajax_throbber.gif" style="display: none" />
-              </td>
-              <td></td>
-            </tr>
-            </v:template>
-        <tr>
-          <th><label for="reguid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
-          <td nowrap="nowrap">
-                <v:text error-glyph="?" xhtml_tabindex="1" xhtml_id="reguid" xhtml_style="width:270px" name="reguid" value="--self.reg_uid"
-     default_value="--self.oid_nickname">
-        <v:validator test="length" min="1" max="20" message="Login name cannot be empty or longer then 20 chars" name="vv_reguid1"/>
-        <v:validator test="sql" expression="length(trim(self.reguid.ufl_value)) < 1 or length(trim(self.reguid.ufl_value)) > 20" name="vv_reguid2"
-      message="Login name cannot be empty or longer then 20 chars" />
-                  <v:validator test="regexp" regexp="^[A-Za-z0-9_.@-]+$" message="The login name contains invalid characters" name="vv_reguid3">
-        </v:validator>
-            </v:text>
+                  <v:text error-glyph="?" xhtml_tabindex="1" xhtml_id="reguid" xhtml_style="width:270px" name="reguid" value="--self.reg_uid" default_value="--self.oid_nickname" />
             <v:text name="fb_id" type="hidden" value="--coalesce(self.fb_id.ufl_value,get_keyword('fb_id',self.vc_page.vc_event.ve_params,0))" control-udt="vspx_text" />
     </td>
-              <td></td>
         </tr>
         <tr>
           <th><label for="regmail">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
           <td nowrap="nowrap">
-                <v:text error-glyph="?" xhtml_tabindex="2" xhtml_id="regmail" xhtml_style="width:270px" name="regmail" value="--self.reg_mail" default_value="--self.oid_email">
-              <v:validator test="sql" expression="length(trim(self.regmail.ufl_value)) < 1 or length(trim(self.regmail.ufl_value)) > 40" name="vv_regmail1"
-                    message="E-mail address cannot be empty or longer then 40 chars" />
-              <v:validator name="vv_regmail2" test="regexp" regexp="[^@ ]+@([^\. ]+\.)+[^\. ]+" message="Invalid E-mail address" />
-            </v:text>
-          </td>
-          <td>
+                  <v:text error-glyph="?" xhtml_tabindex="2" xhtml_id="regmail" xhtml_style="width:270px" name="regmail" value="--self.reg_mail" default_value="--self.oid_email" />
           </td>
         </tr>
         <tr>
           <th><label for="regpwd">Password<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
           <td nowrap="nowrap">
-            <v:text error-glyph="?" xhtml_tabindex="3" xhtml_id="regpwd" xhtml_style="width:270px" type="password" name="regpwd" value="">
-              <v:validator test="length" min="1" max="40" message="Password cannot be empty or longer then 40 chars"/>
-            </v:text>
-          </td>
-          <td>
+                  <v:text error-glyph="?" xhtml_tabindex="3" xhtml_id="regpwd" xhtml_style="width:270px" type="password" name="regpwd" value="" />
           </td>
         </tr>
         <tr>
@@ -367,8 +238,6 @@ if(is_disabled && typeof(document.getElementById('openid_url'))!='undefined')
               <v:validator test="sql" expression="self.regpwd.ufl_value <> self.regpwd1.ufl_value"
                 message="Password verification does not match" />
             </v:text>
-          </td>
-          <td>
           </td>
         </tr>
   <?vsp if (self.reg_tip) { ?>
@@ -380,8 +249,6 @@ if(is_disabled && typeof(document.getElementById('openid_url'))!='undefined')
                 message="The number verification does not match" />
             </v:text>
           </td>
-          <td>
-          </td>
         </tr>
         <tr>
           <td></td>
@@ -392,11 +259,70 @@ if(is_disabled && typeof(document.getElementById('openid_url'))!='undefined')
           http (self.reg_number_txt);
         } ?>
     </td>
-    <td></td>
         </tr>
         <?vsp } ?>
       </table>
   </div>
+          <div id="login_openid" style="height: 115px;<?V case when self.use_oid_url = 1 then '' else 'display:none;' end ?>">
+            <table width="100%">
+              <tr>
+                <th width="30%"><label for="reguid">OpenID</label></th>
+                <td>
+                  <img src="images/login-bg.gif" alt="openID"  class="login_openid" />
+                  <v:text  xhtml_id="openid_url" name="openid_url" value="" xhtml_style="width:90%" default_value="--self.oid_identity"/>
+                  <script type="text/javascript">
+                    <![CDATA[
+                      var is_disabled=<?V(case when self.oid_mode = 'id_res' and self.oid_sig is not null then 1 else 0 end)?>+0;
+                      if (is_disabled && typeof(document.getElementById('openid_url'))!='undefined')
+                      {
+                        document.getElementById('openid_url').disabled=true;
+                        document.getElementById('tabODS').style.display='none';
+                        document.getElementById('tabSSL').style.display='none';
+                      }
+                    ]]>
+                  </script>
+                  <input type="hidden" id="uoid" name="uoid" value="<?Vself.use_oid_url?>"/>
+                </td>
+              </tr>
+              <v:template name="oid_login_row"  type="simple" enabled="--(case when self.oid_sig is not null and (self.oid_nickname is null or length(self.oid_nickname)<1) then 1 else 0 end)">
+              <tr>
+                <th nowrap="1"><label for="oid_reguid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
+                <td nowrap="nowrap">
+                  <v:text xhtml_tabindex="11" xhtml_id="oid_reguid" xhtml_style="width:270px" name="oid_reguid" value="--get_keyword('oid_reguid', params)"
+                    default_value="--self.oid_nickname" xhtml_onblur="document.getElementById(''reguid'').value=this.value;">
+                  </v:text>
+                </td>
+              </tr>
+              </v:template>
+              <v:template name="oid_mail_row"  type="simple" enabled="--(case when self.oid_sig is not null and (self.oid_email is null or length(self.oid_email)<1) then 1 else 0 end)">
+              <tr>
+                <th><label for="oid_regmail">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
+                <td nowrap="nowrap">
+                  <v:text xhtml_tabindex="12" xhtml_id="oid_regmail" xhtml_style="width:270px" name="oid_regmail" value="--get_keyword ('oid_regmail', params)"
+                    default_value="--self.oid_email" xhtml_onblur="document.getElementById(''regmail'').value=this.value;">
+                  </v:text>
+                </td>
+              </tr>
+              </v:template>
+            </table>
+          </div>
+          <div id="login_ssl" style="height: 115px;<?V case when self.use_oid_url = 2 then '' else 'display:none;' end ?>">
+            <table width="100%">
+              <?vsp
+                if (length (self.reg_foafData))
+                {
+                  if (get_keyword ('iri', self.reg_foafData, '') <> '')
+                    http (sprintf ('<tr><th width="30%%"><label>%s</label></th><td>%s</td></tr>', 'IRI', get_keyword ('iri', self.reg_foafData)));
+                  if (get_keyword ('firstName', self.reg_foafData, '') <> '')
+                    http (sprintf ('<tr><th width="30%%"><label>%s</label></th><td>%s</td></tr>', 'First Name', get_keyword ('firstName', self.reg_foafData)));
+                  if (get_keyword ('family_name', self.reg_foafData, '') <> '')
+                    http (sprintf ('<tr><th width="30%%"><label>%s</label></th><td>%s</td></tr>', 'Family name', get_keyword ('family_name', self.reg_foafData)));
+                  if (get_keyword ('mbox', self.reg_foafData, '') <> '')
+                    http (sprintf ('<tr><th width="30%%"><label>%s</label></th><td>%s</td></tr>', 'E-Mail', get_keyword ('mbox', self.reg_foafData)));
+                }
+              ?>
+            </table>
+          </div>
        <table width="100%">
         <tr>
            <td width="30%"></td>
@@ -453,33 +379,49 @@ if(is_disabled && typeof(document.getElementById('openid_url'))!='undefined')
           OAT.Dom.show ('signup_span');
        }
       }
-
       function loginTabToggle(tabObj)
       {
-
+              if (!tabObj)
+                return;
         if(tabObj.id=='tabOpenID')
         {
            $('tabOpenID').className='login_tabactive';
            $('tabODS').className='login_tab';
+                $('tabSSL').className='login_tab';
            OAT.Dom.hide($('login_info'));
            OAT.Dom.show($('login_openid'));
+                OAT.Dom.hide($('login_ssl'));
            $('uoid').value=1;
-              } else {
-           $('uoid').value=0;
-
+                return;
+              }
+              if(tabObj.id == 'tabSSL')
+              {
+                $('tabOpenID').className='login_tab';
+                $('tabODS').className='login_tab';
+                $('tabSSL').className='login_tabactive';
+                OAT.Dom.hide($('login_info'));
+                OAT.Dom.hide($('login_openid'));
+                OAT.Dom.show($('login_ssl'));
+                $('uoid').value = 2;
+                return;
+              }
+              if(tabObj.id == 'tabODS')
+              {
            $('tabOpenID').className='login_tab';
            $('tabODS').className='login_tabactive';
-
+                $('tabSSL').className='login_tab';
            OAT.Dom.hide($('login_openid'));
            OAT.Dom.show($('login_info'));
-
+                OAT.Dom.hide($('login_ssl'));
+                $('uoid').value = 0;
         }
-
       }
 
       var activeTab=<?Vself.use_oid_url?>+0;
       if(activeTab==1)
          loginTabToggle($('tabOpenID'));
+            else if (activeTab == 2)
+              loginTabToggle($('tabSSL'));
       else
          loginTabToggle($('tabODS'));
             // -->
@@ -487,65 +429,57 @@ if(is_disabled && typeof(document.getElementById('openid_url'))!='undefined')
         </script>
       <v:on-post>
    <![CDATA[
-           if (self.use_oid_url = 0 or (self.oid_mode = 'id_res' and self.oid_sig is not null and self.use_oid_url))
+           if ((self.use_oid_url = 0) or (self.use_oid_url = 2) or (self.oid_mode = 'id_res' and self.oid_sig is not null and self.use_oid_url))
 {
-   declare u_name1, dom_reg,u_mail1 varchar;
-   declare country, city, lat, lng, xt, xp, uoid, is_agr any;
-
-   u_name1 := trim(self.reguid.ufl_value);
-
-   dom_reg := null;
-   whenever not found goto nfd;
-   select WD_MODEL into dom_reg from WA_DOMAINS where WD_HOST = http_map_get ('vhost') and
-   WD_LISTEN_HOST = http_map_get ('lhost') and WD_LPATH = http_map_get ('domain');
-   nfd:;
-
-   if (dom_reg is not null)
+             declare u_name1, u_mail1, u_password1, u_password2, dom_reg varchar;
+             declare country, city, lat, lng, xt, xp, uoid any;
+             declare exit handler for sqlstate '*'
    {
-     if (dom_reg = 0)
+               self.vc_error_message := concat (__SQL_STATE,' ',__SQL_MESSAGE);
+               self.vc_is_valid := 0;
+               rollback work;
+               return;
+             };
+             if (self.use_oid_url = 2)
        {
-         goto notall;
-       }
+               u_name1 := DB.DBA.WA_MAKE_NICK (coalesce (get_keyword ('nick', self.reg_foafData), replace (get_keyword ('name', self.reg_foafData), ' ', '')));
+               u_mail1 := get_keyword ('mbox', self.reg_foafData);
+               u_password1 := uuid ();
+               u_password2 := u_password1;
+             } else {
+               u_name1 := trim (self.reguid.ufl_value);
+               u_mail1 := trim (self.regmail.ufl_value);
+               u_password1 := trim (self.regpwd.ufl_value);
+               u_password2 := trim (self.regpwd1.ufl_value);
    }
-         else if (not exists (select 1 from WA_SETTINGS where WS_REGISTER = 1))
+
+             uoid := atoi(get_keyword ('uoid', e.ve_params, '0'));
+             dom_reg := (select WD_MODEL from WA_DOMAINS where WD_HOST = http_map_get ('vhost') and WD_LISTEN_HOST = http_map_get ('lhost') and WD_LPATH = http_map_get ('domain'));
+             if (((dom_reg is not null) and (dom_reg = 0)) or (not exists (select 1 from WA_SETTINGS where WS_REGISTER = 1)))
    {
-     notall:
            self.vc_error_message := 'Registration is not allowed';
            self.vc_is_valid := 0;
            return;
          }
-
-   uoid := atoi(get_keyword ('uoid', e.ve_params, '0'));
-
-   if (uoid and not self.vc_is_valid and not self.reguid.ufl_failed)
+             if (u_name1 is null or length (u_name1) < 1 or length (u_name1) > 20)
      {
-       self.vc_is_valid := 1;
-       self.regpwd.ufl_failed := 0;
-       self.regpwd1.ufl_failed := 0;
-     }
-
-             if (self.vc_is_valid = 0)
+               self.vc_error_message := 'Login name cannot be empty or longer then 20 chars';
+               self.vc_is_valid := 0;
                return;
-
-         declare uid int;
-         declare sid any;
-         declare exit handler for sqlstate '*'
+             }
+             if (regexp_match ('^[A-Za-z0-9_.@-]+$', u_name1) is null)
          {
-           self.vc_error_message := concat (__SQL_STATE,' ',__SQL_MESSAGE);
+               self.vc_error_message := 'The login name contains invalid characters';
            self.vc_is_valid := 0;
-           rollback work;
            return;
-         };
-         -- check if this login already exists
+             }
          if (exists(select 1 from DB.DBA.SYS_USERS where U_NAME = u_name1))
          {
            self.vc_error_message := 'Login name already in use';
            self.vc_is_valid := 0;
            return;
          }
-
-         u_mail1:=self.regmail.ufl_value;
-         if (u_mail1 is null or length(trim(u_mail1))<1 or length(trim(u_mail1))>40)
+             if (u_mail1 is null or length (u_mail1) < 1 or length (u_mail1) > 40)
          {
            self.vc_error_message := 'E-mail address cannot be empty or longer then 40 chars';
            self.vc_is_valid := 0;
@@ -557,57 +491,66 @@ if(is_disabled && typeof(document.getElementById('openid_url'))!='undefined')
            self.vc_is_valid := 0;
            return;
              }
-         is_agr := self.is_agreed.ufl_selected;
-         if (not(is_agr))
+             if (exists (select 1 from SYS_USERS where U_E_MAIL = u_mail1) and exists (select 1 from WA_SETTINGS where WS_UNIQUE_MAIL = 1))
          {
-           self.vc_error_message := 'You have not agreed to the Terms of Service.';
+               if (length (self.ods_returnurl) and self.ods_returnurl = 'index.html')
+                 self.vc_redirect (sprintf ('index.html#msg=%U', 'This e-mail address is already registered.'));
+               self.vc_error_message := 'This e-mail address is already registered.';
            self.vc_is_valid := 0;
            return;
              }
-         if (self.use_oid_url and self.oid_sig is not null and exists (select 1 from WA_USER_INFO where WAUI_OPENID_URL = self.oid_identity))
+             if (u_password1 is null or length (u_password1) < 1 or length (u_password1) > 40)
            {
-                   if(length(self.ods_returnurl) and self.ods_returnurl='index.html')
-                      self.vc_redirect (sprintf('index.html#msg=%U','This OpenID identity is already registered.'));
-                   self.vc_error_message := 'This OpenID identity is already registered.';
+               self.vc_error_message := 'Password cannot be empty or longer then 40 chars';
                    self.vc_is_valid := 0;
                    return;
            }
-         if (exists(select 1 from SYS_USERS where U_E_MAIL=self.regmail.ufl_value) and exists (select 1 from WA_SETTINGS where WS_UNIQUE_MAIL = 1))
+             if (u_password1 <> u_password2)
            {
-                   if(length(self.ods_returnurl) and self.ods_returnurl='index.html')
-                      self.vc_redirect (sprintf('index.html#msg=%U','This e-mail address is already registered.'));
-                   self.vc_error_message := 'This e-mail address is already registered.';
+               self.vc_error_message := 'Password verification does not match';
                    self.vc_is_valid := 0;
                    return;
            }
+             if (not (self.is_agreed.ufl_selected))
+             {
+               self.vc_error_message := 'You have not agreed to the Terms of Service.';
+               self.vc_is_valid := 0;
+               return;
+             }
+             if (uoid = 1 and not self.vc_is_valid and not self.reguid.ufl_failed)
+             {
+               self.vc_is_valid := 1;
+               self.regpwd.ufl_failed := 0;
+               self.regpwd1.ufl_failed := 0;
+             }
 
+             declare uid integer;
+             declare sid any;
+             -- check if this login already exists
+             if (self.use_oid_url and self.oid_sig is not null and exists (select 1 from WA_USER_INFO where WAUI_OPENID_URL = self.oid_identity))
+             {
+               if (length (self.ods_returnurl) and self.ods_returnurl = 'index.html')
+                 self.vc_redirect (sprintf('index.html#msg=%U', 'This OpenID identity is already registered.'));
+               self.vc_error_message := 'This OpenID identity is already registered.';
+               self.vc_is_valid := 0;
+               return;
+             }
 
          -- determine if mail verification is necessary
          declare _mail_verify_on any;
-         _mail_verify_on := coalesce((select 1 from WA_SETTINGS where WS_MAIL_VERIFY = 1), 0);
-         declare _disabled any;
-         -- create user initially disabled
-         uid := USER_CREATE (u_name1, self.regpwd.ufl_value,
-              vector ('E-MAIL', self.regmail.ufl_value,
+
+             uid := USER_CREATE (u_name1,
+                                 u_password1,
+                                 vector ('E-MAIL', u_mail1,
                       'HOME', '/DAV/home/' || u_name1 || '/',
                       'DAV_ENABLE' , 1,
                       'SQL_ENABLE', 0));
-              --vector ('E-MAIL', self.regmail.ufl_value,
-              --        'FULL_NAME', trim(self.regname.ufl_value),
-              --        'HOME', '/DAV/home/' || u_name1 || '/',
-              --        'DAV_ENABLE' , 1,
-              --        'SQL_ENABLE', 0));
+             -- create user initially disabled
+             _mail_verify_on := coalesce((select 1 from WA_SETTINGS where WS_MAIL_VERIFY = 1), 0);
          update SYS_USERS set U_ACCOUNT_DISABLED = _mail_verify_on where U_ID = uid;
-         DAV_MAKE_DIR ('/DAV/home/', http_dav_uid (), http_admin_gid (), '110100100R');
-         DAV_MAKE_DIR ('/DAV/home/' || u_name1 || '/', uid, http_nogroup_gid (), '110100100R');
-         --USER_SET_OPTION (u_name1, 'SEC_QUESTION', trim(self.sec_question.ufl_value));
-         --USER_SET_OPTION (u_name1, 'SEC_ANSWER', trim(self.sec_answer.ufl_value));
-         --USER_SET_OPTION (u_name1, 'FIRST_NAME', trim(self.regfirstname.ufl_value));
-         --USER_SET_OPTION (u_name1, 'LAST_NAME', trim(self.reglastname.ufl_value));
-         --WA_USER_SET_INFO(u_name1,trim(self.regfirstname.ufl_value),trim(self.reglastname.ufl_value) );
          DAV_HOME_DIR_CREATE (u_name1);
    WA_USER_SET_INFO(u_name1, '', '');
-   WA_USER_TEXT_SET(uid, u_name1||' '||self.regmail.ufl_value);
+             WA_USER_TEXT_SET (uid, u_name1||' '||u_mail1);
   wa_reg_register (uid, u_name1);
 
    declare _det_col_id int;
@@ -650,7 +593,7 @@ no_date:
 
                lat := null;
                lng := null;
-               if (self.reg_mode = 'foaf')
+               if (uoid = 2)
                {
                   WA_USER_EDIT (u_name1, 'WAUI_TITLE'        , get_keyword ('title', self.reg_foafData));
                   WA_USER_EDIT (u_name1, 'WAUI_FULL_NAME'    , get_keyword ('name', self.reg_foafData));
@@ -667,13 +610,12 @@ no_date:
                   WA_USER_EDIT (u_name1, 'WAUI_HPHONE'       , get_keyword ('phone', self.reg_foafData));
                   WA_USER_EDIT (u_name1, 'WAUI_BORG_HOMEPAGE', get_keyword ('organizationHomepage', self.reg_foafData));
                   WA_USER_EDIT (u_name1, 'WAUI_BORG'         , get_keyword ('organizationTitle', self.reg_foafData));
+                  WA_USER_EDIT (u_name1, 'WAUI_CERT'         , client_attr ('client_certificate'));
+                  WA_USER_EDIT (u_name1, 'WAUI_CERT_LOGIN'   , 1);
 
                   lat := get_keyword ('lat', self.reg_foafData);
                   lng := get_keyword ('lng', self.reg_foafData);
                }
-               if (self.reg_cert is not null)
-                 WA_USER_EDIT (u_name1, 'WAUI_CERT', self.reg_cert);
-
      declare exit handler for sqlstate '*';
 
            xt := http_client (sprintf ('http://api.hostip.info/?ip=%s', http_client_ip ()));
@@ -893,11 +835,11 @@ oi_delegate := cast (xpath_eval ('//link[contains (@rel, "openid.delegate")]/@hr
 
 if (oi2_srv is not null)
   oi_srv := oi2_srv;
-	   if (oi2_delegate is not null)
-             oi_delegate := oi2_delegate;
-
 if (oi_srv is null)
   signal ('22023', 'Cannot locate OpenID server');
+
+             if (oi2_delegate is not null)
+               oi_delegate := oi2_delegate;
 
 if (oi_delegate is not null)
   oi_ident := oi_delegate;

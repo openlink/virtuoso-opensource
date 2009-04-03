@@ -2287,7 +2287,10 @@ ODS.Nav = function (navOptions)
         if (o && o.sslPort)
         {
           aSSL = OAT.Dom.create ("a");
+	  if (o.sslPort != '443')
           aSSL.href = 'https://' + document.location.hostname + ':' + o.sslPort + '/ods/index.html';
+	  else
+            aSSL.href = 'https://' + document.location.hostname + '/ods/index.html';
           var aImg = OAT.Dom.create ('img');
           aImg.src = 'images/icons/lock_16.png';
           aImg.alt = 'ODS SSL Link';
@@ -2304,11 +2307,11 @@ ODS.Nav = function (navOptions)
         if (o && o.iri)
         {
           self.sslData = o;
-          if (!self.userLogged)
+          if (o.certLogin && !self.userLogged)
             self.logIn();
         }
       }
-      OAT.AJAX.GET ('/ods/api/user.getFOAFSSLData', false, x);
+      OAT.AJAX.GET ('/ods/api/user.getFOAFSSLData?sslFOAFCheck=1&sslLoginCheck=1', false, x);
 		}
     }
 
@@ -3056,6 +3059,7 @@ ODS.Nav = function (navOptions)
     OAT.Event.attach ('loginT2',
                       'click',
 				  function () {
+                        $('loginBtn').value = 'Login';
 				      OAT.Dom.hide ($('loginForgot'));
 				      $('loginErrDiv').innerHTML = '';
 				      if (!OAT.Dom.isIE ())
@@ -3066,6 +3070,7 @@ ODS.Nav = function (navOptions)
                       'click',
                       function () {
                         $('loginBtn').value = 'FOAF+SSL Login';
+                        OAT.Dom.hide ($('loginForgot'));
                         $('loginErrDiv').innerHTML = '';
                       }
                      );
@@ -5706,8 +5711,8 @@ ODS.Nav = function (navOptions)
     this.odsLink = function (extPath)
     {
 	var odsLink = '';
-	var odsHost = self.serverOptions.uriqaDefaultHost ?
-	              self.serverOptions.uriqaDefaultHost : document.location.host;
+    var odsHost = document.location.host;
+    //	self.serverOptions.uriqaDefaultHost ?  self.serverOptions.uriqaDefaultHost : document.location.host;
 
 	if (typeof (extPath) != 'undefined')
 	    odsLink = document.location.protocol + '//' + odsHost+extPath;

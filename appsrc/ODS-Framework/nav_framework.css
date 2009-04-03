@@ -787,7 +787,7 @@ div.sect {
 #login_page {
   float: left;
   clear: both;
-  width: 800px;
+  width: 850px;
   height: 300px;
   color: #5f6366;
   background-color: #d9e9f2;
@@ -797,10 +797,11 @@ div.sect {
 #login_form_ctr {
   margin: 20px;
   border: 2px solid #b6d4e3;
-  background-color: #e0f0f9;
-  background-image: url(images/ods_signin_container1.png)}
+  background-color: #e0f0f9;}
 
-#login_form { margin: 10px; width: 500px;}
+#login_form {
+  margin: 10px;
+  width: 450px;}
 
 #login_page img.id_logo {
   margin: 50px 50px 50px 40px}
