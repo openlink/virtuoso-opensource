@@ -120,7 +120,7 @@
 					</xsl:otherwise>
 				</xsl:choose>
 			</bibo:content>
-			<dc:content>
+			<!--dc:content>
 				<xsl:choose>
 					<xsl:when test="Embed">
 						<xsl:value-of select="Embed" />
@@ -129,8 +129,8 @@
 						<xsl:value-of select="EmbedCode" />
 					</xsl:otherwise>
 				</xsl:choose>
-			</dc:content>
-			<sioc:content>
+			</dc:content-->
+			<!--sioc:content>
 				<xsl:choose>
 					<xsl:when test="Embed">
 						<xsl:value-of select="Embed" />
@@ -139,7 +139,7 @@
 						<xsl:value-of select="EmbedCode" />
 					</xsl:otherwise>
 				</xsl:choose>
-			</sioc:content>
+			</sioc:content-->
 
 			<dcterms:created rdf:datatype="&xsd;dateTime">
 				<xsl:value-of select="Created" />
