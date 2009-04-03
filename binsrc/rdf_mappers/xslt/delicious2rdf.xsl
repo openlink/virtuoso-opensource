@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?> 
-<!--
+<?xml version="1.0" encoding="UTF-8" ?> <!--
  -
  -  $Id$
  -
@@ -67,7 +66,26 @@
 	<xsl:template match="/">
 		<rdf:RDF>
 			<xsl:apply-templates select="rss/channel" />
+			<xsl:apply-templates select="suggest" />
 		</rdf:RDF>
+	</xsl:template>
+	
+	<xsl:template match="suggest">
+	
+		<rdf:Description rdf:about="{$baseUri}">
+			<rdf:type rdf:resource="&foaf;Document"/>
+			<scot:hasScot rdf:resource="{concat($baseUri, '#tagcloud')}"/>
+			<xsl:for-each select="popular">
+				<sioc:topic rdf:resource="{concat ('http://delicious.com/', .)}"/>
+			</xsl:for-each>
+		</rdf:Description>
+		
+		<scot:Tagcloud rdf:about="{concat($baseUri, '#tagcloud')}">
+			<xsl:for-each select="popular">
+				<scot:hasTag rdf:resource="{concat ('http://delicious.com/', .)}"/>
+			</xsl:for-each>
+		</scot:Tagcloud>
+	
 	</xsl:template>
 	
 	<xsl:template match="channel">
@@ -148,11 +166,11 @@
 						</skos:prefLabel>
 						<skos:isSubjectOf rdf:resource="{vi:proxyIRI($baseUri, '', $guid)}"/>
 						<foaf:page rdf:resource="{vi:proxyIRI($baseUri, '', $guid)}"/>
-						<scot:cooccurWith rdf:resource="{vi:proxyIRI($baseUri, '', concat($guid, '/coocurrence'))}"/>
+						<scot:cooccurWith rdf:resource="{vi:proxyIRI($baseUri, '', concat('coocurrence_', $guid))}"/>
 					</rdf:Description>
 				</xsl:for-each>
 				
-				<rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', concat($guid, '/coocurrence'))}">
+				<rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', concat('coocurrence_', $guid))}">
 					<rdf:type rdf:resource="&scot;Cooccurrence"/>
 					<xsl:for-each select="category">
 						<scot:cooccurTag rdf:resource="{concat(@domain, .)}"/>
@@ -187,9 +205,9 @@
 				<xsl:for-each select="item">
 					<xsl:variable name="guid" select="substring-after(substring-before(guid, '#'), 'http://delicious.com/url/') " />
 					<xsl:variable name="domain" select="substring(category/@domain, 1, string-length(category/@domain) - 1)" />
-					<skos:isSubjectOf rdf:resource="{vi:proxyIRI($domain, '', $guid)}"/>
-					<foaf:page rdf:resource="{vi:proxyIRI($domain, '', $guid)}"/>
-					<scot:cooccurWith rdf:resource="{vi:proxyIRI($domain, '', concat($guid, '/coocurrence'))}"/>
+					<skos:isSubjectOf rdf:resource="{vi:proxyIRI($baseUri, '', $guid)}"/>
+					<foaf:page rdf:resource="{vi:proxyIRI($baseUri, '', $guid)}"/>
+					<scot:cooccurWith rdf:resource="{vi:proxyIRI($baseUri, '', concat('coocurrence_', $guid))}"/>
 				</xsl:for-each>
 			</rdf:Description>
 			
@@ -197,7 +215,7 @@
 				<xsl:variable name="guid" select="substring-after(substring-before(guid, '#'), 'http://delicious.com/url/') " />
 				<xsl:variable name="domain" select="substring(category/@domain, 1, string-length(category/@domain) - 1)" />
 					
-				<rdf:Description rdf:about="{vi:proxyIRI($domain, '', concat($guid, '/coocurrence'))}">
+				<rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', concat('coocurrence_', $guid))}">
 					<rdf:type rdf:resource="&scot;Cooccurrence"/>
 					<xsl:for-each select="category">
 						<scot:cooccurTag rdf:resource="{concat(@domain, .)}"/>
@@ -205,10 +223,11 @@
 					<scot:cooccurAFrequency rdf:datatype="&xsd;integer">1</scot:cooccurAFrequency>
 				</rdf:Description>
 				
-				<rdf:Description rdf:about="{vi:proxyIRI($domain, '', $guid)}">
+				<rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', $guid)}">
 					<rdf:type rdf:resource="&bookmark;Bookmark"/>
 					<!--sioc:has_container rdf:resource="{$guid}" /-->
 					<sioc:has_container rdf:resource="{vi:proxyIRI($domain)}" />
+					<sioc:has_container rdf:resource="{$baseUri}" />
 					<dc:title>
 						<xsl:value-of select="title"/>
 					</dc:title>
@@ -227,8 +246,7 @@
 				<rdf:Description rdf:about="{vi:proxyIRI($domain)}">
 					<sioc:has_container rdf:resource="{$domain}" />
 					<rdf:type rdf:resource="&sioc;BookmarkFolder"/>
-					<xsl:variable name="guid1" select="substring-after(substring-before(guid, '#'), 'http://delicious.com/url/') " />
-					<sioc:container_of rdf:resource="{vi:proxyIRI($domain, '', $guid1)}" />
+					<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', $guid)}" />
 				</rdf:Description>
 				
 			</xsl:for-each>

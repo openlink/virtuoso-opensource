@@ -1035,8 +1035,6 @@ create procedure DB.DBA.RDF_LOAD_SALESFORCE(in graph_iri varchar, in new_origin_
 	};
     username_ := get_keyword ('username', opts);
 	password_ := get_keyword ('password', opts); -- password = password+secret
-	--username_ := 'abktiev@openlinksw.com';
-	--password_ := 'Qwerty123456tsFbeZeXVoNFkYID26twZjUWq';
 	if (new_origin_uri like 'https://%.salesforce.com/%' or new_origin_uri like 'http://%.salesforce.com/%')
 	{
 		id := '';
@@ -3141,6 +3139,28 @@ ret:
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_DELICIOUS_META (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare cont any;
+	declare tree, xt, xd, tmp any;
+	declare url, what, username_, password_ varchar;
+	declare exit handler for sqlstate '*'
+	{
+		return 0;
+	};
+    username_ := get_keyword ('username', opts);
+	password_ := get_keyword ('password', opts); -- password = password+secret
+	url := sprintf('https://api.del.icio.us/v1/posts/suggest?url=%s', new_origin_uri);
+	tmp := http_client (url=>url, uid=>username_, pwd=>password_, http_method=>'POST', proxy=>get_keyword_ucase ('get:proxy', opts));
+	xd := xtree_doc (tmp);
+	xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/delicious2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
+	cont := serialize_to_UTF8_xml (xd);
+	DB.DBA.RM_RDF_LOAD_RDFXML (cont, new_origin_uri, coalesce (dest, graph_iri));
+	return 0;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_DELICIOUS (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare xd, section_name, search, xt, url, tmp any;
@@ -3229,6 +3249,21 @@ create procedure INSTALL_RDF_LOAD_DELICIOUS ()
 ;
 
 INSTALL_RDF_LOAD_DELICIOUS ()
+;
+
+create procedure INSTALL_RDF_LOAD_DELICIOUS_META ()
+{
+  -- possible old behaviour
+  delete from SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_DELICIOUS_META';
+  -- register in PP chain
+  
+  insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
+      values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_DELICIOUS_META', null, 'Delicious Meta',
+	  vector ('min-score', '0.5', 'max-results', '10'));
+}
+;
+
+INSTALL_RDF_LOAD_DELICIOUS_META ()
 ;
 
 create procedure DB.DBA.RDF_LOAD_OREILLY (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
@@ -4863,7 +4898,7 @@ create procedure DB.DBA.GET_XBRL_ONTOLOGY_DOMAIN(in elem varchar) returns varcha
     domain := (sparql select ?domain from <http://www.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/> where {`iri(?:cur)` rdfs:domain ?domain . } );
     if (domain is not null and domain <> '')
 		return domain;
-    return 'http://www.openlinksw.com/schemas/xbrl/xbrlType';
+    return 'http://www.openlinksw.com/schemas/xbrl/item';
 }
 ;
 
@@ -4891,7 +4926,7 @@ create procedure DB.DBA.GET_XBRL_ONTOLOGY_VALUE_NAME(in elem varchar) returns va
 			return value;
 		}
     }
-    return 'item';
+    return 'value';
 }
 ;
 
@@ -5203,6 +5238,7 @@ create procedure DB.DBA.RM_LOAD_PREFIXES ()
   XML_REMOVE_NS_BY_PREFIX ('ore', 2);
   XML_REMOVE_NS_BY_PREFIX ('dbpedia-owl', 2);
   XML_REMOVE_NS_BY_PREFIX ('opencyc', 2);
+  XML_REMOVE_NS_BY_PREFIX ('geonames', 2);
   for select RES_CONTENT, RES_NAME from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/VAD/rdf_mappers/xslt/%.xsl' do
     {
       nss := xmlnss_get (xtree_doc (RES_CONTENT));
@@ -5233,6 +5269,7 @@ create procedure DB.DBA.RM_LOAD_PREFIXES ()
   XML_SET_NS_DECL ('ore', 'http://www.openarchives.org/ore/terms/', 2);
   XML_SET_NS_DECL ('dbpedia-owl', 'http://dbpedia.org/ontology/', 2);
   XML_SET_NS_DECL ('opencyc', 'http://sw.opencyc.org/2008/06/10/concept/', 2);
+  XML_SET_NS_DECL ('geonames', 'http://www.geonames.org/ontology#', 2);
 };
 
 DB.DBA.RM_LOAD_PREFIXES ();
