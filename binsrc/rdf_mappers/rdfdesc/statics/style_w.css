@@ -79,3 +79,10 @@ a.rdf_source img { vertical-align: middle;margin-right: 5px;}
 #ft_r { float: right; clear: right;}
 #ft_t { text-align: center; margin-top: 2ex}
 #ft_b { text-align: center; margin-top: 0.7ex }
+
+.datatype {
+  margin-left: 0.5em;
+  background-color: inherit;
+  color: rgb(20,100,10);
+  font-size: 0.9em;
+}

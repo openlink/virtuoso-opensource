@@ -13,6 +13,7 @@ foaf:name rdfs:subPropertyOf virtrdf:label .
 foaf:nick rdfs:subPropertyOf virtrdf:label .
 <http://www.w3.org/2004/02/skos/core#prefLabel> rdfs:subPropertyOf virtrdf:label .
 skos:prefLabel rdfs:subPropertyOf virtrdf:label .
+<http://www.geonames.org/ontology#name> rdfs:subPropertyOf virtrdf:label .
 ', '', 'virtrdf-label');
 
 rdfs_rule_set ('virtrdf-label', 'virtrdf-label');
@@ -252,12 +253,13 @@ again:
        http (sprintf ('<span %s>%f</span>', rdfa, _object));
        lang := 'xsd:float';
      }
-   else if (__tag (_object) = 191)
-     {
-       http (sprintf ('<span %s>%d</span>', rdfa, _object));
-       lang := 'xsd:double';
-     }
-   else if (__tag (_object) = 219)
+--   else if (__tag (_object) = 191)
+--     {
+--       http (sprintf ('<span %s>%e</span>', rdfa, _object));
+--       lang := 'xsd:double';
+--     }
+--	display doubles by casting to varchar for better appearance. 
+   else if (__tag (_object) in (219, 191))
      {
        http (sprintf ('<span %s>%s</span>', rdfa, cast (_object as varchar)));
        lang := 'xsd:double';
@@ -296,7 +298,7 @@ again:
 
    if (length (lang))
      {
-       http (sprintf ('(%s)', lang));
+       http (sprintf ('<span class="datatype">(%s)</span>', lang));
      }
 
    http ('</span></li>\n');
