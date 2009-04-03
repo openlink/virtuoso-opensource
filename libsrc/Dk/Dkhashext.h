@@ -54,6 +54,7 @@ typedef struct id_hash_s id_hash_t;
 
 typedef void (*id_hash_free_t) (id_hash_t *);
 
+#define ID_HASH_LOCK_REFCOUNT 0x3FFFFFFF
 
 struct id_hash_s
   {
@@ -71,7 +72,7 @@ struct id_hash_s
     long	ht_overflows;		/*!< Number of bucket overflows */
     uint32      ht_count;
     int         ht_rehash_threshold;
-    long	ht_dict_refctr;		/*!< Number of references to dictionary, if the hastable is used as a box */
+    int		ht_dict_refctr;		/*!< Number of references to dictionary, if the hastable is used as a box */
     long	ht_dict_version;	/*!< Version of dictionary, to track parallel access */
     size_t 	ht_dict_mem_in_use;	/*!< Approximate size of dictonary in memory. Each stored item adds length of key + lenght of the data + size of hash table entry. That is filled only if \c ht_dict_max_mem_in_use is not zero */
     size_t 	ht_dict_max_entries;	/*!< Maximum number of entries kept in dictonary */

@@ -492,7 +492,7 @@ caddr_t box_dict_iterator_copy_hook (caddr_t orig_iter)
       if (0 >= org->hit_hash->ht_dict_refctr)
         GPF_T;
 #endif
-      if (org->hit_hash->ht_mutex)
+      if ((org->hit_hash->ht_mutex) && (ID_HASH_LOCK_REFCOUNT != org->hit_hash->ht_dict_refctr))
         {
           mutex_enter (org->hit_hash->ht_mutex);
           org->hit_hash->ht_dict_refctr += 1;
@@ -509,7 +509,7 @@ int
 box_dict_iterator_destr_hook (caddr_t iter)
 {
   id_hash_iterator_t *hit = (id_hash_iterator_t *)iter;
-  if (hit->hit_hash)
+  if ((hit->hit_hash) && (ID_HASH_LOCK_REFCOUNT != hit->hit_hash->ht_dict_refctr))
     {
       dk_mutex_t *mtx = hit->hit_hash->ht_mutex;
 #ifndef NDEBUG
