@@ -943,7 +943,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	this.elm.style.height = "600px";
 	
 	this.keyProperties    = ["based_near","http://www.w3.org/2003/01/geo/wgs84_pos", "foaf:based_near", "geo:wgs84_pos"]; /* containing coordinates */
-	this.locProperties    = ["location", "foaf:location"]; /* containing location */
+	this.locProperties    = ["location", "foaf:location", "vcard:Locality"]; /* containing location */
 	this.latProperties    = ["geo:lat","geo:latitude", "lat", "latitude"];
 	this.lonProperties    = ["geo:lng","geo:lon","geo:long","geo:longitude", "lon", "long", "longitude"];
 	this.lookupProperties = ["name","foaf:name","location","foaf:location"]; /* interesting to be put into lookup pin */
