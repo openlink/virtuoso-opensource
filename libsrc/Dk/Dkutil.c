@@ -101,7 +101,7 @@ get_real_time (timeout_t * to)
 
 
 static timeout_t boot_time;
-
+uint32 last_approx_msec_real_time;
 
 long
 approx_msec_real_time (void)
@@ -124,7 +124,7 @@ approx_msec_real_time (void)
       ret.to_sec = time_now.to_sec - boot_time.to_sec - 1;
       ret.to_usec = time_now.to_usec + 1000000 - boot_time.to_usec;
     }
-  return ret.to_sec * 1000 + (ret.to_usec + 500) / 1000;
+  return last_approx_msec_real_time = ret.to_sec * 1000 + (ret.to_usec + 500) / 1000;
 }
 
 
