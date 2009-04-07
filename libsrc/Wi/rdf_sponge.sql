@@ -196,7 +196,12 @@ out_of_limit:
 ;
 
 create procedure
-DB.DBA.RDF_GRAB (in app_params any, in seed varchar, in iter varchar, in final varchar, in ret_limit integer, in const_iris any, in sa_graphs any, in sa_preds any, in depth integer, in doc_limit integer, in base_iri varchar, in destination varchar, in group_destination varchar, in resolver varchar, in loader varchar, in refresh_free_text integer, in plain_ret integer, in flags integer)
+DB.DBA.RDF_GRAB (
+  in app_params any, in seed varchar, in iter varchar, in final varchar, in ret_limit integer,
+  in const_iris any, in sa_graphs any, in sa_preds any, in depth integer, in doc_limit integer,
+  in base_iri varchar, in destination varchar, in group_destination varchar, in resolver varchar, in loader varchar,
+  in refresh_free_text integer, in plain_ret integer, in flags integer,
+  in uid integer )
 {
   declare rctr, rcount, colcount, iter_ctr integer;
   declare stat, msg varchar;
@@ -216,7 +221,7 @@ DB.DBA.RDF_GRAB (in app_params any, in seed varchar, in iter varchar, in final v
   foreach (any val in const_iris) do
     {
       -- dbg_obj_princ ('DB.DBA.RDF_GRAB: const IRI', val);
-      if (val is not null)
+      if (val is not null and DB.DBA.RDF_GRAPH_USER_PERMS_ACK (val, uid, 4))
         {
           -- dbg_obj_princ ('DB.DBA.RDF_GRAB () aq_request ', vector (val, '...', grab_params, doc_limit));
           --DB.DBA.RDF_GRAB_SINGLE_ASYNC (val, grabbed, grab_params, doc_limit);
@@ -247,7 +252,7 @@ DB.DBA.RDF_GRAB (in app_params any, in seed varchar, in iter varchar, in final v
               declare val any;
               declare dest varchar;
               val := rset[rctr][colctr];
-              if (isiri_id (val))
+              if (isiri_id (val) and DB.DBA.RDF_GRAPH_USER_PERMS_ACK (val, uid, 4))
                 {
                   -- dbg_obj_princ ('DB.DBA.RDF_GRAB (): dynamic IRI aq_request ', vector (val, '...', grab_params, doc_limit));
                   --DB.DBA.RDF_GRAB_SINGLE_ASYNC (val, grabbed, grab_params, doc_limit);
@@ -1198,9 +1203,10 @@ create procedure DB.DBA.RDF_FORGET_HTTP_RESPONSE (in graph_iri varchar, in new_o
 }
 ;
 
-create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any)
+create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any, in uid integer := -1)
 {
   declare dest, get_soft, local_iri, immg, res_graph_iri varchar;
+  declare perms integer;
   -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_UP (', graph_iri, options, ')');
   graph_iri := cast (graph_iri as varchar);
   set_user_id ('dba', 1);
@@ -1210,6 +1216,7 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any)
   else
     dest := local_iri := graph_iri;
   -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_UP (', graph_iri, options, ') set local_iri=', local_iri);
+  perms := DB.DBA.RDF_GRAPH_USER_PERMS_GET (dest, case (uid) when -1 then http_nobody_uid() else uid end);
   get_soft := get_keyword_ucase ('get:soft', options);
   if ('soft' = get_soft)
     {
@@ -1221,6 +1228,11 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any)
 	  HS_EXPIRATION is not null))
         {
           -- dbg_obj_princ ('Exists and get:soft=soft, leaving');
+          if (not bit_and (perms, 1))
+            {
+               -- dbg_obj_princ (dest, ' graph is OK as it is but not returned from RDF_SPONGE_UP due to lack of read permission for user ', uid);
+               return null;
+            }
           res_graph_iri := local_iri;
           goto graph_is_ready;
         }
@@ -1236,6 +1248,11 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any)
     signal ('RDFZZ', sprintf (
       'This version of Virtuoso supports only "soft" and "replacing" values of "define get:soft ...", not "%.500s"',
       get_soft ) );
+  if (not bit_and (perms, 8))
+    {
+       -- dbg_obj_princ (res_graph_iri, ' graph is not sponged by RDF_SPONGE_UP due to lack of read permission for user ', uid);
+       return null;
+    }
   -- if requested iri is immutable, do not try to get it at all
   -- this is to preserve rdf storage in certain cases
   immg := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'ImmutableGraphs');

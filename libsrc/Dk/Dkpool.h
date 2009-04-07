@@ -231,9 +231,11 @@ caddr_t dbg_t_box_num (const char *file, int line, boxint box);
 caddr_t dbg_t_box_num_and_zero (const char *file, int line, boxint box);
 box_t dbg_t_box_double (const char *file, int line, double d);
 box_t dbg_t_box_float (const char *file, int line, float d);
+caddr_t dbg_t_box_iri_id (const char *file, int line, int64 n);
 #define t_box_num(box) dbg_t_box_num (__FILE__, __LINE__, (box))
 #define t_box_double(d) dbg_t_box_double (__FILE__, __LINE__, (d))
 #define t_box_float(d) dbg_t_box_float (__FILE__, __LINE__, (d))
+#define t_box_iri_id(d) 			dbg_t_box_iri_id (__FILE__, __LINE__, (d))
 #define t_box_num_and_zero(box) dbg_t_box_num_and_zero (__FILE__, __LINE__, (box))
 extern caddr_t * t_list_impl (long n, ...);
 typedef caddr_t * (*t_list_impl_ptr_t)(long n, ...);
@@ -244,6 +246,7 @@ caddr_t t_box_num (boxint box);
 caddr_t t_box_num_and_zero (boxint box);
 box_t t_box_double (double d);
 box_t t_box_float (float d);
+caddr_t t_box_iri_id (int64 n);
 extern caddr_t * t_list (long n, ...);
 #endif
 

@@ -35,6 +35,7 @@
 #include "xqf.h"
 #include "date.h" /* for DT_DT_TYPE */
 #include "numeric.h"
+#include "rdf_core.h" /* for IRI_TO_ID_WITH_CREATE */
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -5625,6 +5626,105 @@ ssg_collect_aliases_tables_and_conds (
   END_DO_BOX_FAST;
 }
 
+static SPART *
+ssg_patch_ft_arg1 (spar_sqlgen_t *ssg, SPART *ft_arg1, SPART *g)
+{
+  caddr_t ft_arg1_str = NULL;
+  int ft_arg1_spart_type = spar_plain_const_value_of_tree (ft_arg1, &ft_arg1_str);
+  caddr_t g_iri = NULL;
+  int g_spart_type = spar_plain_const_value_of_tree (g, &g_iri);
+  
+  SPART *patched_ft_arg1;
+  if ((SPAR_QNAME == g_spart_type) && (SPAR_LIT == ft_arg1_spart_type) &&
+    (DV_STRING == DV_TYPE_OF (ft_arg1_str)) )
+    {
+      ccaddr_t boxed_id = sparp_iri_to_id_nosignal (ssg->ssg_sparp, g_iri);
+      if (NULL != boxed_id)
+        {
+          char tmp[30], *tail;
+	  iri_id_t iid = unbox_iri_id (boxed_id);
+          int ft_arg1_strlen, idlen, len;
+          if (iid >= MIN_64BIT_BNODE_IRI_ID)
+            snprintf (tmp, sizeof (tmp), "#ib" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
+          else
+            snprintf (tmp, sizeof (tmp), "#i" BOXINT_FMT, (boxint)(iid) );
+          idlen = strlen (tmp);
+          ft_arg1_strlen = box_length (ft_arg1_str) - 1;
+          len = ft_arg1_strlen + (1 + 24 + 2) + idlen;
+          patched_ft_arg1 = (SPART *)(tail = dk_alloc_box (len, DV_STRING));
+          (tail++)[0] = '^'; memcpy (tail, tmp, idlen); tail += idlen;
+                      /* 0         1           2     */
+                      /* 01234567890123.456789.01234 */
+          memcpy (tail, " AND ([ __enc \"UTF-8\" ] ", 24); tail += 24;
+          memcpy (tail, ft_arg1_str, ft_arg1_strlen); tail += ft_arg1_strlen;
+          strcpy (tail, ")");
+          return patched_ft_arg1;
+        }
+    }
+  if ((SPAR_QNAME == g_spart_type) ||
+    (SPAR_IS_BLANK_OR_VAR (g) &&
+      ((SPART_VARR_FIXED | SPART_VARR_GLOBAL /* Should I add SPART_VARR_EXTERNAL here ? */) &
+        g->_.var.rvr.rvrRestrictions) ) )
+    {
+      patched_ft_arg1 = spar_make_funcall (ssg->ssg_sparp, 0, "sql:RDF_OBJ_PATCH_CONTAINS_BY_GRAPH",
+        (SPART **)t_list (2, ft_arg1, g) );
+      return patched_ft_arg1;
+    }
+  if (SPAR_IS_BLANK_OR_VAR (g))
+    {
+      dk_set_t chk_graphs = NULL;
+      dk_set_t good_expns = NULL;
+      /* dk_set_t bad_expns = NULL; */
+      int good_len /*, bad_len*/;
+      if (SPART_IS_DEFAULT_GRAPH_BLANK(g))
+        {
+          if (ssg->ssg_sparp->sparp_env->spare_named_graphs_listed)
+            chk_graphs = ssg->ssg_sparp->sparp_env->spare_default_graphs;
+          else chk_graphs = NULL;
+        }
+      else
+        chk_graphs = ssg->ssg_sparp->sparp_env->spare_named_graphs;
+      DO_SET (SPART *,src, &(chk_graphs))
+        {
+          if (!((SPART_GRAPH_NOT_FROM == src->_.graph.subtype) || (SPART_GRAPH_NOT_NAMED == src->_.graph.subtype)))
+            t_set_push (&good_expns, src->_.graph.expn);
+          /* else
+            t_set_push (&bad_expns, src->_.graph.expn); */
+        }
+      END_DO_SET()
+      good_len = dk_set_length (good_expns);
+      /*bad_len = dk_set_length (bad_expns);*/
+      if ((0 < good_len) && (16 > good_len) /*&& (4 < bad_len)*/)
+        {
+          patched_ft_arg1 = spar_make_funcall (ssg->ssg_sparp, 0, "sql:RDF_OBJ_PATCH_CONTAINS_BY_MANY_GRAPHS",
+            (SPART **)t_list (2, ft_arg1,
+            spar_make_funcall (ssg->ssg_sparp, 0, "bif:vector",
+              (SPART **)t_list_to_array (good_expns) ) ) );
+          return patched_ft_arg1;
+        }
+    }
+/* Default modification of of the \c ft_arg1 argument is to concatenate it with encoding mark */
+  if (SPAR_LIT == SPART_TYPE (ft_arg1))
+    {
+      caddr_t ft_arg1_box = SPAR_LIT_OR_QNAME_VAL(ft_arg1);
+      if (DV_STRING == DV_TYPE_OF (ft_arg1_box))
+        {
+          int ft_arg1_box_len = box_length (ft_arg1_box);
+          char *tail;
+          patched_ft_arg1 = t_alloc_box (18 + ft_arg1_box_len, DV_STRING);
+          tail = patched_ft_arg1;
+/*                                  0          1          */
+/*                                  01234567.890123.45678 */
+          memcpy (tail, "[ __enc \"UTF-8\" ] ", 18); tail += 18;
+          memcpy (tail, ft_arg1_box, ft_arg1_box_len);
+          return patched_ft_arg1;
+        }
+    }
+  patched_ft_arg1 = spar_make_funcall (ssg->ssg_sparp, 0, "bif:concat",
+    (SPART **)t_list (2, t_box_dv_short_string ("[ __enc \"UTF-8\" ] "), ft_arg1) );
+  return patched_ft_arg1;
+}
+
 static void
 ssg_print_fake_self_join_subexp (spar_sqlgen_t *ssg, SPART *gp, SPART ***tree_sets, int tree_set_count, int tree_count, int inside_breakup, int fld_restrictions_bitmask)
 {
@@ -5832,64 +5932,8 @@ from_printed:
             !strcmp ("DB.DBA.RDF_QUAD", tree->_.triple.tc_list[0]->tc_qm->qmTableName))
             {
               SPART *g = tree->_.triple.tr_graph;
-              if (SPAR_IS_LIT_OR_QNAME (g) ||
-                (SPAR_IS_BLANK_OR_VAR (g) &&
-                  ((SPART_VARR_FIXED | SPART_VARR_GLOBAL /* Should I add SPART_VARR_EXTERNAL here ? */) &
-                    g->_.var.rvr.rvrRestrictions) ) )
-                {
-                  ft_arg1 = spar_make_funcall (ssg->ssg_sparp, 0, "sql:RDF_OBJ_PATCH_CONTAINS_BY_GRAPH",
-                    (SPART **)t_list (2, ft_arg1, g) );
-                  goto ft_arg1_is_patched; /* see below */
+              ft_arg1 = ssg_patch_ft_arg1 (ssg, ft_arg1, g);
                 }
-              else if (SPAR_IS_BLANK_OR_VAR (g))
-                {
-                  dk_set_t chk_graphs = NULL;
-                  dk_set_t good_expns = NULL;
-                  /* dk_set_t bad_expns = NULL; */
-                  int good_len /*, bad_len*/;
-                  if (SPART_IS_DEFAULT_GRAPH_BLANK(g))
-                        chk_graphs = ssg->ssg_sparp->sparp_env->spare_default_graphs;
-                  else
-                    chk_graphs = ssg->ssg_sparp->sparp_env->spare_named_graphs;
-                  DO_SET (SPART *,src, &(chk_graphs))
-                    {
-                      if (!((SPART_GRAPH_NOT_FROM == src->_.graph.subtype) || (SPART_GRAPH_NOT_NAMED == src->_.graph.subtype)))
-                        t_set_push (&good_expns, src->_.graph.expn);
-                      /* else
-                        t_set_push (&bad_expns, src->_.graph.expn); */
-                    }
-                  END_DO_SET()
-                  good_len = dk_set_length (good_expns);
-                  /*bad_len = dk_set_length (bad_expns);*/
-                  if ((0 < good_len) && (16 > good_len) /*&& (4 < bad_len)*/)
-                    {
-                      ft_arg1 = spar_make_funcall (ssg->ssg_sparp, 0, "sql:RDF_OBJ_PATCH_CONTAINS_BY_MANY_GRAPHS",
-                        (SPART **)t_list (2, ft_arg1,
-                        spar_make_funcall (ssg->ssg_sparp, 0, "bif:vector",
-                          (SPART **)t_list_to_array (good_expns) ) ) );
-                      goto ft_arg1_is_patched; /* see below */
-                    }
-                }
-            }
-/* Default modification of of the \c ft_arg1 argument is to concatenate it with encoding mark */
-          if (SPAR_LIT == SPART_TYPE (ft_arg1))
-            {
-              caddr_t ft_arg1_box = SPAR_LIT_OR_QNAME_VAL(ft_arg1);
-              if (DV_STRING == DV_TYPE_OF (ft_arg1_box))
-                {
-                  int ft_arg1_box_len = box_length (ft_arg1_box);
-                  caddr_t patched = t_alloc_box (18 + ft_arg1_box_len, DV_STRING);
-/*                                  0          1          */
-/*                                  01234567.890123.45678 */
-                  memcpy (patched, "[ __enc \"UTF-8\" ] ", 18);
-                  memcpy (patched + 18, ft_arg1_box, ft_arg1_box_len);
-                  ft_arg1 = (SPART *)patched;
-                  goto ft_arg1_is_patched; /* see below */
-                }
-            }
-          ft_arg1 = spar_make_funcall (ssg->ssg_sparp, 0, "bif:concat",
-            (SPART **)t_list (2, t_box_dv_short_string ("[ __enc \"UTF-8\" ] "), ft_arg1) );
-ft_arg1_is_patched:
           ssg_print_where_or_and (ssg, "freetext predicate");
           ssg_putchar (' ');
           ssg_puts (ft_pred->_.funcall.qname + 4);

@@ -29,6 +29,7 @@
 #include "xmlparser.h"
 #include "xmltree.h"
 #include "numeric.h"
+#include "rdf_core.h"
 #include "security.h"
 #include "sqlcmps.h"
 #include "sparql.h"
@@ -314,8 +315,8 @@ spar_audit_error (sparp_t *sparp, const char *format, ...)
 void
 spar_internal_error (sparp_t *sparp, const char *msg)
 {
-  const char *txt = ((NULL != sparp) ? sparp->sparp_text : "(no text, sparp is NULL)");
 #if 0
+  const char *txt = ((NULL != sparp) ? sparp->sparp_text : "(no text, sparp is NULL)");
   FILE *core_reason1;
   fprintf (stderr, "Internal error %s while processing\n-----8<-----\n%s\n-----8<-----\n", msg, txt);
   core_reason1 = fopen ("core_reason1","wt");
@@ -324,6 +325,7 @@ spar_internal_error (sparp_t *sparp, const char *msg)
   GPF_T1(msg);
 #else
 #ifdef DEBUG
+  const char *txt = ((NULL != sparp) ? sparp->sparp_text : "(no text, sparp is NULL)");
   printf ("Internal error %s while processing\n-----8<-----\n%s\n-----8<-----\n", msg, txt);
   if ((NULL != sparp) && !sparp->sparp_internal_error_runs_audit)
     {
@@ -441,8 +443,6 @@ sparp_expand_q_iri_ref (sparp_t *sparp, caddr_t ref)
     {
       query_instance_t *qi = sparp->sparp_sparqre->sparqre_qi;
       caddr_t err = NULL, path_utf8_tmp, res;
-      if (NULL == qi)
-        qi = CALLER_LOCAL;
       path_utf8_tmp = xml_uri_resolve (qi,
         &err, sparp->sparp_env->spare_base_uri, ref, "UTF-8" );
       res = t_box_dv_uname_string (path_utf8_tmp);
@@ -451,6 +451,121 @@ sparp_expand_q_iri_ref (sparp_t *sparp, caddr_t ref)
     }
   else
     return ref;
+}
+
+caddr_t
+sparp_exec_Narg (sparp_t *sparp, const char *pl_call_text, query_t **cached_qr_ptr, caddr_t *err_ret, int argctr, ccaddr_t arg1)
+{
+  query_instance_t *qi = sparp->sparp_sparqre->sparqre_qi;
+  client_connection_t *cli = sparp->sparp_sparqre->sparqre_cli;
+  local_cursor_t *lc = NULL;
+  caddr_t err = NULL;
+  if (NULL == cached_qr_ptr[0])
+    {
+      if (CALLER_CLIENT == cli) /* This means that the call is made inside the SQL compiler, can't re-enter. */
+        spar_internal_error (sparp, "sparp_exec_Narg () tries to compile static inside the SQL compiler");
+      cached_qr_ptr[0] = sql_compile_static (pl_call_text, cli, &err, SQLC_DEFAULT);
+      if (SQL_SUCCESS != err)
+	{
+	  cached_qr_ptr[0] = NULL;
+	  if (err_ret)
+	    *err_ret = err;
+	  return NULL;
+	}
+    }
+  err = qr_rec_exec (cached_qr_ptr[0], cli, &lc, qi, NULL, 1,
+      ":0", box_copy_tree (arg1), QRP_RAW );
+  if (SQL_SUCCESS != err)
+    {
+      LC_FREE(lc);
+      if (err_ret)
+	*err_ret = err;
+      return NULL;
+    }
+  if (lc)
+    {
+      caddr_t ret = NULL;
+#if 1
+      while (lc_next (lc));
+      if (SQL_SUCCESS != lc->lc_error)
+	{
+	  if (err_ret)
+	    *err_ret = lc->lc_error;
+	  lc_free (lc);
+	  return NULL;
+	}
+      ret = t_full_box_copy_tree (((caddr_t *) lc->lc_proc_ret) [1]);
+#else
+      ret = t_full_box_copy_tree(lc_nth_col (lc, 0));
+#endif
+      lc_free (lc);
+      return ret;
+    }
+  return NULL;
+}
+
+
+static query_t *iri_to_id_nosignal_cached_qr = NULL;
+static const char *iri_to_id_nosignal_text = "DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (?)";
+
+caddr_t
+sparp_iri_to_id_nosignal (sparp_t *sparp, caddr_t qname)
+{
+  caddr_t t_err, err = NULL;
+  if (CALLER_LOCAL != sparp->sparp_sparqre->sparqre_qi)
+    {
+      caddr_t res = iri_to_id ((caddr_t *)(sparp->sparp_sparqre->sparqre_qi), qname, IRI_TO_ID_WITH_CREATE, &err);
+      if (NULL == err)
+        {
+          caddr_t t_res = t_box_copy (res);
+          dk_free_box (res);
+          return t_res;
+        }
+    }
+  else
+    {
+      caddr_t t_res = sparp_exec_Narg (sparp, iri_to_id_nosignal_text, &iri_to_id_nosignal_cached_qr, &err, 1, qname);
+      if (DV_DB_NULL == DV_TYPE_OF (t_res))
+        t_res = NULL;
+      if (NULL == err)
+        return t_res;
+    }
+  t_err = t_full_box_copy_tree (err);
+  dk_free_tree (err);
+  spar_error (sparp, "Unable to get IRI_ID for IRI <%.200s>: %.10s %.600s",
+    qname, ERR_STATE(t_err), ERR_MESSAGE (t_err) );
+  return NULL; /* to keep compiler happy */
+}
+
+extern caddr_t key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no);
+
+static query_t *id_to_iri_cached_qr = NULL;
+static const char *id_to_iri_text = "select DB.DBA.RDF_QNAME_OF_IID (?)";
+
+ccaddr_t
+sparp_id_to_iri (sparp_t *sparp, iri_id_t iid)
+{
+  caddr_t t_err, err = NULL;
+  if (CALLER_LOCAL != sparp->sparp_sparqre->sparqre_qi)
+    {
+      caddr_t res = key_id_to_iri (sparp->sparp_sparqre->sparqre_qi, iid);
+      caddr_t t_res = t_box_copy (res);
+      dk_free_box (res);
+      return t_res;
+    }
+  else
+    {
+      caddr_t t_res = sparp_exec_Narg (sparp, id_to_iri_text, &id_to_iri_cached_qr, &err, 1, box_iri_id (iid));
+      if (DV_DB_NULL == DV_TYPE_OF (t_res))
+        t_res = NULL;
+      if (NULL == err)
+        return t_res;
+    }
+  t_err = t_full_box_copy_tree (err);
+  dk_free_tree (err);
+  spar_error (sparp, "unknown IRI_ID %Lu: %.10s %.600s",
+    iid, ERR_STATE(t_err), ERR_MESSAGE (t_err) );
+  return NULL; /* to keep compiler happy */
 }
 
 caddr_t spar_strliteral (sparp_t *sparp, const char *strg, int strg_is_long, int is_json)
@@ -804,6 +919,13 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
     }
   if ((4 < strlen (param)) && !memcmp (param, "sql:", 4))
     {
+      if (!strcmp (param, "sql:assert-user")) {
+          user_t *u = sparp->sparp_sparqre->sparqre_exec_user;
+          if (NULL == u)
+            spar_error (sparp, "Assertion \"define sql:assert-user '%.200s'\" failed: user is not set", value);
+          if (strcmp (value, u->usr_name))
+            spar_error (sparp, "Assertion \"define sql:assert-user '%.200s'\" failed: the user is set to '%.200s'", value, u->usr_name);
+          return; }
       if (!strcmp (param, "sql:param") || !strcmp (param, "sql:params")) {
           t_set_push (&(sparp->sparp_env->spare_protocol_params), t_box_dv_uname_string (value));
           return; }
@@ -1938,6 +2060,7 @@ sparp_make_graph_precode (sparp_t *sparp, ptrlong subtype, SPART *iriref, SPART 
   dk_set_t *opts_ptr = &(sparp->sparp_env->spare_common_sponge_options);
   SPART **mixed_options, **mixed_tail;
   int common_count, ctr;
+  user_t *exec_user;
   if (NULL != rgc_ptr->rgc_sa_preds)
     {
       t_set_push_new_string (&(rgc_ptr->rgc_sa_graphs),
@@ -1968,13 +2091,15 @@ sparp_make_graph_precode (sparp_t *sparp, ptrlong subtype, SPART *iriref, SPART 
     sparp->sparp_env->spare_sql_refresh_free_text = t_box_num_and_zero (0);
   (mixed_tail++)[0] = (SPART *) t_box_dv_short_string ("refresh_free_text");
   (mixed_tail++)[0] = (SPART *) sparp->sparp_env->spare_sql_refresh_free_text;
+  exec_user = sparp->sparp_sparqre->sparqre_exec_user;
   return spartlist (sparp, 4, SPAR_GRAPH, subtype, iriref->_.qname.val, 
     spar_make_funcall (sparp, 0, "SPECIAL::bif:iri_to_id",
       (SPART **)t_list (1,
         spar_make_funcall (sparp, 0, "sql:RDF_SPONGE_UP",
-          (SPART **)t_list (2,
+          (SPART **)t_list (3,
              iriref,
-             spar_make_funcall (sparp, 0, "bif:vector", mixed_options) ) ) ) ) );
+             spar_make_funcall (sparp, 0, "bif:vector", mixed_options),
+             ((NULL != exec_user) ? exec_user->usr_id : U_ID_NOBODY) ) ) ) ) );
 }
 
 SPART *
@@ -2216,6 +2341,68 @@ spar_var_cmp (caddr_t p_data1, caddr_t p_data2)
   return strcmp (v1->_.var.tabid, v2->_.var.tabid);
 }
 
+caddr_t
+spar_boxed_exec_uid (sparp_t *sparp)
+{
+  if (NULL == sparp->sparp_boxed_exec_uid)
+    {
+      user_t *exec_user = sparp->sparp_sparqre->sparqre_exec_user;
+      if (NULL != exec_user)
+        sparp->sparp_boxed_exec_uid = t_box_num_nonull (exec_user->usr_id);
+      else
+        sparp->sparp_boxed_exec_uid = t_box_num_nonull (U_ID_NOBODY);
+    }
+  return sparp->sparp_boxed_exec_uid;
+}  
+
+int
+spar_graph_static_perms (sparp_t *sparp, caddr_t boxed_graph_iid)
+{
+  caddr_t boxed_uid = spar_boxed_exec_uid (sparp);
+  caddr_t *hit;
+static caddr_t boxed_zero_iid = NULL;
+  if (NULL == boxed_graph_iid)
+    {
+/*!!! TBD: add retrieval of permissions of specific user on specific graph */
+      hit = (caddr_t *)id_hash_get (rdf_graph_public_perms_dict_htable, (caddr_t)(&(boxed_graph_iid)));
+      if (NULL != hit)
+        return unbox (hit[0]);
+    }
+  hit = (caddr_t *)id_hash_get (rdf_graph_default_perms_of_user_dict_htable, (caddr_t)(&(boxed_uid)));
+  if (NULL != hit)
+    return unbox (hit[0]);
+  if (NULL == boxed_zero_iid)
+    boxed_zero_iid = box_iri_id (0);
+  hit = (caddr_t *)id_hash_get (rdf_graph_public_perms_dict_htable, (caddr_t)(&(boxed_zero_iid)));
+  if (NULL != hit)
+    return unbox (hit[0]);
+  return (RDF_GRAPH_PERM_READ | RDF_GRAPH_PERM_WRITE | RDF_GRAPH_PERM_SPONGE | RDF_GRAPH_PERM_LIST);
+}
+
+int
+spar_graph_needs_security_testing (sparp_t *sparp, SPART *g_expn, int req_perms)
+{
+  caddr_t fixed_g;
+  int default_perms;
+  switch (SPART_TYPE (g_expn))
+    {
+    case SPAR_QNAME: fixed_g = g_expn->_.qname.val; break;
+    case SPAR_BLANK_NODE_LABEL: case SPAR_VARIABLE:
+      if (SPART_VARR_CONFLICT & g_expn->_.var.rvr.rvrRestrictions)
+        return 0;
+      fixed_g = rvr_string_fixedvalue (&(g_expn->_.var.rvr));
+      break;
+    default: fixed_g = NULL; break;
+    }
+  if (NULL != fixed_g)
+    {
+      caddr_t boxed_iid = sparp_iri_to_id_nosignal (sparp, fixed_g);
+      default_perms = spar_graph_static_perms (sparp, boxed_iid);
+      return (req_perms & ~default_perms);
+    }
+  default_perms = spar_graph_static_perms (sparp, NULL);
+  return (req_perms & ~default_perms);        
+}
 
 caddr_t
 spar_query_lex_analyze (caddr_t str, wcharset_t *query_charset)
@@ -2239,6 +2426,7 @@ spar_query_lex_analyze (caddr_t str, wcharset_t *query_charset)
       se = (sparp_env_t *)t_alloc (sizeof (sparp_env_t));
       memset (se, 0, sizeof (sparp_env_t));
       sparqre.sparqre_param_ctr = &param_ctr;
+      sparqre.sparqre_qi = CALLER_LOCAL;
       sparp->sparp_sparqre = &sparqre;
       sparp->sparp_text = t_box_copy (str);
       sparp->sparp_env = se;
@@ -2314,6 +2502,8 @@ sparp_query_parse (char * str, spar_query_env_t *sparqre, int rewrite_all)
   sparp->sparp_sparqre = sparqre;
   if ((NULL == sparqre->sparqre_cli) && (NULL != sparqre->sparqre_qi))
     sparqre->sparqre_cli = sparqre->sparqre_qi->qi_client;
+  if ((sparqre->sparqre_exec_user) && (NULL != sparqre->sparqre_cli))
+    sparqre->sparqre_exec_user = sparqre->sparqre_cli->cli_user;
   sparp->sparp_env = spare;
   sparp->sparp_err_hdr = t_box_dv_short_string ("SPARQL compiler");
   if ((NULL == query_charset) /*&& (!sparqre->xqre_query_charset_is_set)*/)
@@ -2513,6 +2703,7 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
   strses_free (sparqre->sparqre_src->sif_skipped_part);
   sparqre->sparqre_src->sif_skipped_part = NULL;
   sparqre->sparqre_cli = sqlc_client();
+  sparqre->sparqre_exec_user = sparqre->sparqre_cli->cli_user;
   sparp = sparp_query_parse (str, sparqre, 1);
   dk_free_box (str);
   if (NULL != sparp->sparp_sparqre->sparqre_catched_error)
@@ -2673,6 +2864,11 @@ bif_sparql_to_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   memset (&sparqre, 0, sizeof (spar_query_env_t));
   sparqre.sparqre_param_ctr = &param_ctr;
   sparqre.sparqre_qi = (query_instance_t *) qst;
+  if (1 < BOX_ELEMENTS (args))
+    {
+      caddr_t uname = bif_string_arg (qst, args, 1, "sparql_to_sql_text");
+      sparqre.sparqre_exec_user = sec_name_to_user (uname);
+    }
   sparp = sparp_query_parse (str, &sparqre, 1);
   if (NULL != sparqre.sparqre_catched_error)
     {
@@ -2706,8 +2902,6 @@ bif_sparql_lex_analyze (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return spar_query_lex_analyze (str, QST_CHARSET(qst));
 }
 
-extern caddr_t key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no);
-
 SPART *
 spar_make_literal_from_sql_box (sparp_t * sparp, caddr_t box, int make_bnode_if_null)
 {
@@ -2733,11 +2927,10 @@ spar_make_literal_from_sql_box (sparp_t * sparp, caddr_t box, int make_bnode_if_
               t_iri = t_box_sprintf (30, "nodeID://" BOXINT_FMT, (boxint)(iid));
             return spartlist (sparp, 2, SPAR_QNAME, t_box_dv_uname_string (t_iri));
           }
-        iri = key_id_to_iri (sparp->sparp_sparqre->sparqre_qi, iid);
+        iri = (caddr_t)sparp_id_to_iri (sparp, iid);
         if (!iri)
           return NULL;
         res = spartlist (sparp, 2, SPAR_QNAME, t_box_dv_uname_string (iri));
-        dk_free_box (iri);
         return res;
       }
     case DV_RDF:
@@ -3208,7 +3401,10 @@ end_of_test:
 void
 sparql_init (void)
 {
+  caddr_t err;
   rdf_ds_load_all();
+  iri_to_id_nosignal_cached_qr = sql_compile_static (iri_to_id_nosignal_text, bootstrap_cli, &err, SQLC_DEFAULT);
+  id_to_iri_cached_qr = sql_compile_static (id_to_iri_text, bootstrap_cli, &err, SQLC_DEFAULT);
   bif_define ("sparql_to_sql_text", bif_sparql_to_sql_text);
   bif_define ("sparql_detalize", bif_sparql_detalize);
   bif_define ("sparql_explain", bif_sparql_explain);

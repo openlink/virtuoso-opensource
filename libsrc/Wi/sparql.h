@@ -277,6 +277,7 @@ typedef struct sparp_s {
   int sparp_rewrite_dirty;		/*!< An integer that is incremented when any optimization subroutine rewrites the tree. */
   int sparp_trav_running;		/*!< Flags that some traverse is in progress, in order to GPF if traverse procedure re-enters */
   ccaddr_t *sparp_sprintff_isect_buf;	/*!< Temporary buffer to calculate intersections of value ranges; solely for sparp_rvr_intersect_sprintffs() */
+  caddr_t sparp_boxed_exec_uid;		/*!< Cached value returned by spar_boxed_exec_uid(). Do not use directly, call spar_boxed_exec_uid() instead! */
 #ifdef DEBUG
   int sparp_internal_error_runs_audit;	/*!< Flags whether the sparp_internal_error has called audit so inner sparp_internal_error should not try to re-run audit or signal but should simply report */
 #endif
@@ -553,6 +554,13 @@ extern void spart_dump (void *tree_arg, dk_session_t *ses, int indent, const cha
 
 extern caddr_t spar_var_name_of_ret_column (SPART *tree);
 extern caddr_t spar_alias_name_of_ret_column (SPART *tree);
+/*! If the tree has a fixed value that is either plain SQL value or a QName (but not a typed literal or a literal with language)
+then the functions returns SPAR_LIT or SPAR_QNAME and sets \c cval_ret[0] to that value. */
+extern int spar_plain_const_value_of_tree (SPART *tree, ccaddr_t *cval_ret);
+extern caddr_t spar_boxed_exec_uid (sparp_t *sparp);
+extern int spar_graph_static_perms (sparp_t *sparp, caddr_t boxed_graph_iid);
+extern int spar_graph_needs_security_testing (sparp_t *sparp, SPART *g_expn, int req_perms);
+
 
 #ifdef MALLOC_DEBUG
 typedef SPART* spartlist_impl_t (sparp_t *sparp, ptrlong length, ptrlong type, ...);
@@ -575,6 +583,9 @@ extern SPART* spartlist_with_tail (sparp_t *sparp, ptrlong length, caddr_t tail,
 
 extern caddr_t sparp_expand_qname_prefix (sparp_t *sparp, caddr_t qname);
 extern caddr_t sparp_expand_q_iri_ref (sparp_t *sparp, caddr_t ref);
+
+extern caddr_t sparp_iri_to_id_nosignal (sparp_t *sparp, caddr_t qname); /*!< returns t_boxed IRI_ID or plain NULL pointer */
+extern ccaddr_t sparp_id_to_iri (sparp_t *sparp, iri_id_t iid);	/*!< returns t_boxed string or plain NULL pointer */
 
 extern caddr_t spar_strliteral (sparp_t *sparp, const char *sparyytext, int strg_is_long, int is_json);
 extern caddr_t spar_mkid (sparp_t * sparp, const char *prefix);

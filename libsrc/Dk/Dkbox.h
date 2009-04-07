@@ -484,6 +484,13 @@ typedef int64 boxint;
 #define unbox_double(f) (*((double *)f))
 #define unbox_string(s) ((char *)s)
 
+typedef unsigned int64 iri_id_t;
+#define MIN_32BIT_BNODE_IRI_ID ((iri_id_t)1000000000)
+#define MIN_64BIT_BNODE_IRI_ID (((iri_id_t)1) << 62)
+#define MIN_32BIT_NAMED_BNODE_IRI_ID ((iri_id_t)1800000000)
+#define MIN_64BIT_NAMED_BNODE_IRI_ID (((iri_id_t)3) << 62)
+#define unbox_iri_id(i) ((i)?(*(iri_id_t*)(i)):0)
+
 #define IS_NONLEAF_DTP(dtp) \
 	(((dtp) == DV_ARRAY_OF_POINTER) || \
 	 ((dtp) == DV_LIST_OF_POINTER) || \

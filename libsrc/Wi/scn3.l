@@ -228,6 +228,7 @@ scn3_sparp_inline_subselect (spar_query_env_t *sparqre, const char * tail_sql_te
        if (0 == sqlc_client()->cli_resultset_max_rows)
          sparqre->sparqre_direct_client_call = 1;
      }
+   sparqre->sparqre_qi = CALLER_LOCAL;
    sparqre->sparqre_src = &(outer->_);
    sparqre->sparqre_tail_sql_text = tail_sql_text;
    sparqre->sparqre_start_lineno = scn3_lineno;

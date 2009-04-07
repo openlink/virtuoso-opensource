@@ -1907,6 +1907,9 @@ id_hash_t *rdf_graph_group_dict_htable;
 id_hash_iterator_t *rdf_graph_public_perms_dict_hit;
 id_hash_t *rdf_graph_public_perms_dict_htable;
 
+id_hash_iterator_t *rdf_graph_default_perms_of_user_dict_hit;
+id_hash_t *rdf_graph_default_perms_of_user_dict_htable;
+
 caddr_t
 bif_rdf_graph_group_dict (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -1919,7 +1922,11 @@ bif_rdf_graph_public_perms_dict (caddr_t * qst, caddr_t * err_ret, state_slot_t 
   return box_copy (rdf_graph_public_perms_dict_hit);
 }
 
-
+caddr_t
+bif_rdf_graph_default_perms_of_user_dict (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return box_copy (rdf_graph_default_perms_of_user_dict_hit);
+}
 
 void
 rdf_box_init ()
@@ -1935,6 +1942,10 @@ rdf_box_init ()
   rdf_graph_public_perms_dict_htable->ht_rehash_threshold = 120;
   rdf_graph_public_perms_dict_htable->ht_dict_refctr = ID_HASH_LOCK_REFCOUNT;
   rdf_graph_public_perms_dict_hit = (id_hash_iterator_t *)box_dv_dict_iterator ((caddr_t)rdf_graph_public_perms_dict_htable);
+  rdf_graph_default_perms_of_user_dict_htable = (id_hash_t *)box_dv_dict_hashtable (31);
+  rdf_graph_default_perms_of_user_dict_htable->ht_rehash_threshold = 120;
+  rdf_graph_default_perms_of_user_dict_htable->ht_dict_refctr = ID_HASH_LOCK_REFCOUNT;
+  rdf_graph_default_perms_of_user_dict_hit = (id_hash_iterator_t *)box_dv_dict_iterator ((caddr_t)rdf_graph_default_perms_of_user_dict_htable);
   bif_define ("rdf_box", bif_rdf_box);
   bif_define_typed ("is_rdf_box", bif_is_rdf_box, &bt_integer);
   bif_define_typed ("rdf_box_set_data", bif_rdf_box_set_data, &bt_any);
@@ -1979,4 +1990,5 @@ rdf_box_init ()
   bif_define_typed ("__ro2sq", bif_rdf_sqlval_of_obj, &bt_any);
   bif_define ("__rdf_graph_group_dict", bif_rdf_graph_group_dict);
   bif_define ("__rdf_graph_public_perms_dict", bif_rdf_graph_public_perms_dict);
+  bif_define ("__rdf_graph_default_perms_of_user_dict", bif_rdf_graph_default_perms_of_user_dict);
 }

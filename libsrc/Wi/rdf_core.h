@@ -196,9 +196,17 @@ extern int uriqa_dynamic_local;
 extern caddr_t uriqa_get_host_for_dynamic_local (query_instance_t *qi, int * is_https);
 extern caddr_t uriqa_get_default_for_connvar (query_instance_t *qi, const char *varname);
 
+#define RDF_GRAPH_PERM_READ 0x01
+#define RDF_GRAPH_PERM_WRITE 0x02
+#define RDF_GRAPH_PERM_SPONGE 0x04
+#define RDF_GRAPH_PERM_LIST 0x08
+
 extern id_hash_t *rdf_graph_group_dict_htable;			/*!< Dictionary of graph group members: group IID is key, vector of member IIDs is value */
 extern id_hash_iterator_t *rdf_graph_group_dict_hit;		/*!< Hash interator for \c rdf_graph_group_dict_htable */
-extern id_hash_iterator_t *rdf_graph_public_perms_dict_hit;	/*!< Dictionary of public permissions for graphs: graph/group IID is key, copy of DB.DBA.RDF_GRAPH_USER.RGU_PERMISSIONS is a value */
-extern id_hash_t *rdf_graph_public_perms_dict_htable;		/*!< Hash interator for \c rdf_graph_group_dict_htable */
+extern id_hash_t *rdf_graph_public_perms_dict_htable;		/*!< Dictionary of public permissions for graphs: graph/group IID is key, copy of DB.DBA.RDF_GRAPH_USER.RGU_PERMISSIONS is a value */
+extern id_hash_iterator_t *rdf_graph_public_perms_dict_hit;	/*!< Hash interator for \c rdf_graph_group_dict_htable */
+extern id_hash_t *rdf_graph_default_perms_of_user_dict_htable;		/*!< Dictionary of default permissions for users: user ID is key, copy of DB.DBA.RDF_GRAPH_USER.RGU_PERMISSIONS is a value */
+extern id_hash_iterator_t *rdf_graph_default_perms_of_user_dict_hit;	/*!< Hash interator for \c rdf_graph_default_perms_of_user_dict_htable */
+
 
 #endif

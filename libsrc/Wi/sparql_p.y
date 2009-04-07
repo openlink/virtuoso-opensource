@@ -672,7 +672,9 @@ spar_precode_expn	/* [Virt]	PrecodeExpn	 ::=  Expn	(* Only global variables can 
 	;
 
 spar_where_clause_opt	/* ::=  WhereClause?	*/
-	: /* nothing */ {;}
+	: /* nothing */ {
+		sparp_arg->sparp_allow_aggregates_in_expn--;
+		spar_gp_init (sparp_arg, WHERE_L); }
 	| spar_where_clause {;}
 	;
 

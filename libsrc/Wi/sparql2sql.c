@@ -41,6 +41,7 @@ extern "C" {
 }
 #endif
 #include "xml_ecm.h"
+#include "rdf_core.h"
 
 /* PART 1. EXPRESSION TERM REWRITING */
 
@@ -4539,7 +4540,10 @@ sparp_gp_trav_restore_filters_for_weird_subq (sparp_t *sparp, SPART *curr, sparp
   if (SPAR_GP != SPART_TYPE (curr))
     return SPAR_GPT_NODOWN;
   if (SELECT_L != curr->_.gp.subtype)
-    return SPAR_GPT_ENV_PUSH;
+    return SPAR_GPT_ENV_PUSH; /* SPAR_GPT_ENV_PUSH is not realy required for this callback by itself,
+because parent gp can be obtained as an ancestor_gp, but it is required for \c sparp_gp_trav_add_graph_perm_read_filters() that can be
+used in one iteration with sparp_gp_trav_restore_filters_for_weird_subq(). Permission processing is a postorder callback whereas
+restoring filters is a preorder one, the postorder needs a complete stack of things */
   SPARP_FOREACH_GP_EQUIV (sparp, curr, eq_ctr, eq)
     {
       sparp_equiv_t *subq_eq, *recv_eq;
@@ -4590,6 +4594,130 @@ sparp_gp_trav_restore_filters_for_weird_subq (sparp_t *sparp, SPART *curr, sparp
     }
   END_SPARP_FOREACH_GP_EQUIV;
   return SPAR_GPT_NODOWN;
+}
+
+int
+sparp_gp_trav_add_graph_perm_read_filters (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
+{
+  int depth, membctr, membcount;
+  if (SPAR_GP != SPART_TYPE (curr))
+    return 0;
+  if (SELECT_L == curr->_.gp.subtype)
+    return 0;
+  membcount = BOX_ELEMENTS_0 (curr->_.gp.members);
+  for (membctr = 0; membctr < membcount; membctr++)
+    {
+      SPART *memb = curr->_.gp.members[membctr];
+      SPART *g_expn, *g_copy, *filter;
+      const SPART *g_norm_expn;
+      ccaddr_t fixed_g;
+      dtp_t g_norm_expn_dtp;
+      int g_norm_is_var;
+      SPART *gp_of_cache;
+      if (SPAR_TRIPLE != memb->type)
+        continue;
+      g_expn = memb->_.triple.tr_graph;
+      if (!spar_graph_needs_security_testing (sparp, g_expn, RDF_GRAPH_PERM_READ))
+        continue;
+      if (spar_plain_const_value_of_tree (g_expn, &fixed_g))
+        {
+          g_norm_expn = (const SPART *)fixed_g;
+          g_norm_expn_dtp = DV_TYPE_OF (g_norm_expn);
+          g_norm_is_var = 0;
+        }
+      else
+        {
+          g_norm_expn = g_expn;
+          if (!SPAR_IS_BLANK_OR_VAR (g_norm_expn))
+            continue;
+          g_norm_expn_dtp = DV_ARRAY_OF_POINTER;
+          g_norm_is_var = 1;
+        }
+      gp_of_cache = curr;
+      for (depth = 0; ; depth--)
+        {
+          dk_set_t cached_graph_expns;
+          cached_graph_expns = sts_this[depth].sts_env;
+          DO_SET (SPART *, prev, &cached_graph_expns)
+            {
+              if (DV_TYPE_OF (prev) != g_norm_expn_dtp)
+                continue;
+              if (g_norm_is_var)
+                {
+                  if (prev->_.var.equiv_idx == g_norm_expn->_.var.equiv_idx)
+                    goto g_norm_expn_is_dupe; /* see below */
+                  if (!strcmp (prev->_.var.vname, g_norm_expn->_.var.vname))
+                    goto g_norm_expn_is_dupe; /* see below */
+                }
+              else if (box_equal (prev, g_norm_expn))
+                goto g_norm_expn_is_dupe; /* see below */
+            }
+          END_DO_SET()
+          if ((OPTIONAL_L == gp_of_cache->_.gp.subtype) || (WHERE_L == gp_of_cache->_.gp.subtype))
+            break;
+          gp_of_cache = sts_this[depth].sts_parent;
+          if (UNION_L == gp_of_cache->_.gp.subtype)
+            break;
+        }
+      g_copy = sparp_tree_full_copy (sparp, g_norm_expn, curr);
+      if (g_norm_is_var)
+        {
+          g_copy->_.var.tr_idx = 0;
+          g_copy->_.var.tabid = NULL;
+          g_copy->_.var.equiv_idx = SPART_BAD_EQUIV_IDX;
+        }
+      filter = spar_make_funcall (sparp, 0, "sql:RDF_GRAPH_USER_PERMS_ACK",
+        (SPART **)t_list (3, g_copy, spar_boxed_exec_uid (sparp), RDF_GRAPH_PERM_READ) );
+      sparp_gp_attach_filter (sparp, curr, filter, 0, NULL);
+      if (!g_norm_is_var ||
+        ((SPART_VARR_NOT_NULL & g_norm_expn->_.var.rvr.rvrRestrictions) &&
+          !(SPART_VARR_CONFLICT & g_norm_expn->_.var.rvr.rvrRestrictions) ) )
+        t_set_push ((dk_set_t *)(&(sts_this[0].sts_env)), (SPART *)g_norm_expn);
+g_norm_expn_is_dupe: ;
+    }
+  if ((OPTIONAL_L != curr->_.gp.subtype) &&
+    (WHERE_L != curr->_.gp.subtype) &&
+    (UNION_L != sts_this[0].sts_parent->_.gp.subtype) )
+    {
+      dk_set_t curr_graph_expns = sts_this[0].sts_env;
+      dk_set_t parent_graph_expns = sts_this[-1].sts_env;
+      DO_SET (SPART *, expn, &curr_graph_expns)
+        {
+          dtp_t expn_dtp = DV_TYPE_OF (expn);
+          int expn_is_var = SPAR_IS_BLANK_OR_VAR (expn);
+          DO_SET (SPART *, prev, &parent_graph_expns)
+            {
+              if (DV_TYPE_OF (prev) != expn_dtp)
+                continue;
+              if (expn_is_var)
+                {
+                  if (prev->_.var.equiv_idx == expn->_.var.equiv_idx)
+                    goto expn_is_dupe; /* see below */
+                  if (!strcmp (prev->_.var.vname, expn->_.var.vname))
+                    goto expn_is_dupe; /* see below */
+                }
+              else if (box_equal (prev, expn))
+                goto expn_is_dupe; /* see below */
+            }
+          END_DO_SET ()
+          t_set_push (&parent_graph_expns, expn);
+          if (expn_is_var)
+            {
+              sparp_equiv_t *expn_eq = SPARP_EQUIV (sparp, expn->_.var.equiv_idx);
+              int recvctr;
+              DO_BOX_FAST (ptrlong, recv_idx, recvctr, expn_eq->e_receiver_idxs)
+                {
+                  sparp_equiv_t *recv_eq = SPARP_EQUIV (sparp, recv_idx);
+                  if (recv_eq->e_var_count)
+                    t_set_push (&parent_graph_expns, recv_eq->e_vars[0]);
+                }
+              END_DO_BOX_FAST;
+            }
+expn_is_dupe: ;
+        }
+      END_DO_SET ()
+    }
+  return 0;
 }
 
 void
@@ -4835,6 +4963,7 @@ sparp_rewrite_qm_postopt (sparp_t *sparp)
   int retval_ctr;
   dk_set_t optionals_to_reduce;
   SPART *root = sparp->sparp_expr;
+  sparp_gp_trav_cbk_t *security_cbk;
   if (SPAR_CODEGEN == SPART_TYPE (sparp->sparp_expr))
     GPF_T1 ("sparp_" "rewrite_qm_postopt () for CODEGEN");
   if (SPAR_QM_SQL_FUNCALL == SPART_TYPE (sparp->sparp_expr))
@@ -4862,8 +4991,10 @@ retry_after_reducing_optionals:
     NULL, NULL,
     NULL, NULL, sparp_gp_trav_rewrite_qm_postopt,
     NULL );
+  security_cbk = ((spar_graph_static_perms (sparp, NULL) & RDF_GRAPH_PERM_READ) ? NULL :
+    sparp_gp_trav_add_graph_perm_read_filters );
   sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
-    NULL, sparp_gp_trav_restore_filters_for_weird_subq,
+    sparp_gp_trav_restore_filters_for_weird_subq, security_cbk,
     NULL, NULL, NULL,
     NULL );
 /* Final processing: */
@@ -5054,6 +5185,7 @@ sparp_rewrite_grab (sparp_t *sparp)
     /* no copy here, pass by ref */ sparp->sparp_env->spare_sql_refresh_free_text, /* #18 */
     (ptrlong)use_plain_return,	/* #19 */
     t_box_num (rgc_flags) );	/* #20 */
+    /* Note that the uid is not in the list of codegen arguments! */
 }
 
 void
@@ -5135,7 +5267,7 @@ ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
       ssg_newline (0);
       ssg_puts ("FROM ");
       ssg_prin_function_name (ssg, procedure_name);
-      ssg_puts (" (_grabber_params, _grabber_seed, _grabber_iter, _grabber_final, _grabber_ret_limit, _grabber_consts, _grabber_sa_graphs, _grabber_sa_preds, _grabber_depth, _grabber_doc_limit, _grabber_base, _grabber_destination, _grabber_group_destination, _grabber_resolver, _grabber_loader, _refresh_free_text, _plain_ret, _grabber_flags) (rset any) ");
+      ssg_puts (" (_grabber_params, _grabber_seed, _grabber_iter, _grabber_final, _grabber_ret_limit, _grabber_consts, _grabber_sa_graphs, _grabber_sa_preds, _grabber_depth, _grabber_doc_limit, _grabber_base, _grabber_destination, _grabber_group_destination, _grabber_resolver, _grabber_loader, _refresh_free_text, _plain_ret, _grabber_flags, _uid) (rset any) ");
       ssg_prin_id (ssg, call_alias);
       ssg_newline (0);
       ssg_puts ("WHERE _grabber_params = ");
@@ -5184,6 +5316,7 @@ ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
   PROC_PARAM_EQ_SPART ("_refresh_free_text", refresh_free_text);
   PROC_PARAM_EQ_SPART ("_plain_ret", ((ptrlong) use_plain_return));
   PROC_PARAM_EQ_SPART ("_grabber_flags", rgc_flags);
+  PROC_PARAM_EQ_SPART ("_uid", spar_boxed_exec_uid (ssg->ssg_sparp)); /* uid is not in the list of passed arguments! */
 #undef PROC_PARAM_EQ_SPART
   if (use_plain_return)
     {

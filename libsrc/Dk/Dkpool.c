@@ -538,6 +538,16 @@ caddr_t DBG_NAME(t_box_num_and_zero) (DBG_PARAMS boxint n)
   return (caddr_t) box;
 }
 
+
+caddr_t 
+DBG_NAME (t_box_iri_id) (DBG_PARAMS int64 n)
+{
+  iri_id_t *box = (iri_id_t *) DBG_T_ALLOC_BOX (sizeof (iri_id_t), DV_IRI_ID);
+  *box = n;
+  return (caddr_t) box;
+}
+
+
 box_t DBG_NAME(t_box_double) (DBG_PARAMS double d)
 {
   double *box = (double *) DBG_T_ALLOC_BOX (sizeof (double), DV_DOUBLE_FLOAT);

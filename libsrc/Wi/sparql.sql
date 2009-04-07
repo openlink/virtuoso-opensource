@@ -62,6 +62,26 @@ create procedure RDF_CREATE_LITE_IDX ()
 RDF_CREATE_LITE_IDX()
 ;
 
+create function DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (in qname any) returns IRI_ID
+{
+  return iri_to_id_nosignal (qname);
+}
+;
+
+--!AFTER
+DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (null)
+;
+
+create function DB.DBA.RDF_QNAME_OF_IID (in iid IRI_ID) returns varchar -- DEPRECATED
+{
+  return id_to_iri_nosignal (iid);
+}
+;
+
+--!AFTER
+DB.DBA.RDF_QNAME_OF_IID (null)
+;
+
 --create trigger RDF_QUAD_O_AUDIT before insert on DB.DBA.RDF_QUAD
 --{
 --  if (not rdf_box_is_storeable (O))
@@ -618,12 +638,6 @@ rdf_url_is_empty:
 DB.DBA.RDF_MIGRATE_URL_TO_IRI ()
 ;
 
-create function DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (in qname any) returns IRI_ID -- DEPRECATED
-{
-  return iri_to_id_nosignal (qname);
-}
-;
-
 create function DB.DBA.RDF_MAKE_IID_OF_LONG (in qname any) returns IRI_ID -- DEPRECATED
 {
   if (isiri_id (qname))
@@ -636,12 +650,6 @@ create function DB.DBA.RDF_MAKE_IID_OF_LONG (in qname any) returns IRI_ID -- DEP
         qname := __rdf_strsqlval (qname);
     }
   return iri_to_id_nosignal (qname);
-}
-;
-
-create function DB.DBA.RDF_QNAME_OF_IID (in iid IRI_ID) returns varchar -- DEPRECATED
-{
-  return id_to_iri_nosignal (iid);
 }
 ;
 
@@ -8577,6 +8585,7 @@ create procedure DB.DBA.RDF_DEFAULT_USER_PERMS_SET (in uname varchar, in perms i
     }
   insert replacing DB.DBA.RDF_GRAPH_USER (RGU_GRAPH_IID, RGU_USER_ID, RGU_PERMISSIONS)
   values (#i0, uid, perms);
+  dict_put (__rdf_graph_default_perms_of_user_dict(), uid, perms);
   if (uid = http_nobody_uid())
     dict_put (__rdf_graph_public_perms_dict(), #i0, perms);
   commit work;
@@ -8588,7 +8597,7 @@ create procedure DB.DBA.RDF_GRAPH_USER_PERMS_SET (in graph_iri varchar, in uname
   declare graph_iid IRI_ID;
   declare uid, common_perms integer;
   graph_iid := iri_to_id (graph_iri);
-  uid := ((select U_ID from DB.DBA.SYS_USERS where U_NAME = uname and U_SQL_ENABLE and not U_ACCOUNT_DISABLED));
+  uid := ((select U_ID from DB.DBA.SYS_USERS where U_NAME = uname and (U_NAME='nobody' or (U_SQL_ENABLE and not U_ACCOUNT_DISABLED))));
   set isolation = 'serializable';
   commit work;
   if (uid is null)
@@ -8627,15 +8636,15 @@ create function DB.DBA.RDF_GRAPH_GROUP_LIST_GET (in group_iri varchar, in uid an
   if (uid is null)
     return vector ();
   common_perms := coalesce (
-    (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i0 and RGU_USER_ID = uid),
-    (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i0 and RGU_USER_ID = http_nobody_uid()),
+    dict_get (__rdf_graph_default_perms_of_user_dict(), uid, NULL),
+    dict_get (__rdf_graph_default_perms_of_user_dict(), 0, NULL),
     15 );
   -- dbg_obj_princ ('DB.DBA.RDF_GRAPH_GROUP_LIST_GET: common_perms = ', common_perms);
   if (not bit_and (common_perms, 8))
     {
       perms := coalesce (
         (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = group_iid and RGU_USER_ID = uid),
-        (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = group_iid and RGU_USER_ID = http_nobody_uid()),
+        dict_get (__rdf_graph_public_perms_dict(), group_iid, NULL),
         common_perms );
       -- dbg_obj_princ ('DB.DBA.RDF_GRAPH_GROUP_LIST_GET: perms for list = ', perms);
       if (not bit_and (perms, 8))
@@ -8649,7 +8658,7 @@ create function DB.DBA.RDF_GRAPH_GROUP_LIST_GET (in group_iri varchar, in uid an
     {
       perms := coalesce (
         (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = member_iid and RGU_USER_ID = uid),
-        (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = member_iid and RGU_USER_ID = http_nobody_uid()),
+        dict_get (__rdf_graph_public_perms_dict(), member_iid, NULL),
         common_perms );
       -- dbg_obj_princ ('DB.DBA.RDF_GRAPH_GROUP_LIST_GET: perms for ', member_iid, ' = ', perms);
       if (bit_and (perms, req_perms) = req_perms)

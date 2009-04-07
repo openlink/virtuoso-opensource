@@ -59,7 +59,8 @@ sparp_gp_trav_int (sparp_t *sparp, SPART *tree,
   int sub_gp_count = 0, sub_expn_count = 0, ctr;
   int tree_cat = 0;
   int in_rescan = 0;
-  void *save_sts_this = BADBEEF_BOX; /* To keep gcc 4.0 happy */
+  sparp_trav_state_t *save_sts_this = BADBEEF_BOX; /* To keep gcc 4.0 happy */
+  SPART *save_ancestor_gp = BADBEEF_BOX; /* To keep gcc 4.0 happy */
   int retcode = 0;
   if (sts_this == (sparp->sparp_stss + SPARP_MAX_SYNTDEPTH))
     spar_error (sparp, "The nesting depth of subexpressions exceed limits of SPARQL compiler");
@@ -197,6 +198,7 @@ cat_recognized:
   if (retcode & SPAR_GPT_COMPLETED)
     return SPAR_GPT_COMPLETED;
   save_sts_this = sts_this;
+  save_ancestor_gp = save_sts_this->sts_ancestor_gp;
   if (retcode & SPAR_GPT_NODOWN)
     goto end_process_children;
   if (retcode & SPAR_GPT_ENV_PUSH)
@@ -256,8 +258,8 @@ process_children:
     }
 
 end_process_children:
-  /*if (SPAR_GP == tree_type)
-    sts_this->sts_ancestor_gp = tree; */
+  save_sts_this->sts_ancestor_gp = save_ancestor_gp;
+  save_sts_this->sts_ancestor_gp = save_ancestor_gp;
   if (retcode & SPAR_GPT_NOOUT)
     return (retcode & SPAR_GPT_COMPLETED);
   switch (tree_cat)
@@ -267,12 +269,20 @@ end_process_children:
 	retcode = gp_out_cbk (sparp, tree, save_sts_this, common_env);
       else
         retcode = 0;
+#ifndef NDEBUG
+      if (retcode & SPAR_GPT_ENV_PUSH)
+        spar_internal_error (sparp, "SPAR_GPT_ENV_PUSH returned by gp_out_cbk");
+#endif
       break;
     case 1:
       if (expn_out_cbk)
 	retcode = expn_out_cbk (sparp, tree, save_sts_this, common_env);
       else
         retcode = 0;
+#ifndef NDEBUG
+      if (retcode & SPAR_GPT_ENV_PUSH)
+        spar_internal_error (sparp, "SPAR_GPT_ENV_PUSH returned by expn_out_cbk");
+#endif
       break;
     }
   if (retcode & SPAR_GPT_COMPLETED)
@@ -2223,7 +2233,7 @@ sparp_gp_full_clone (sparp_t *sparp, SPART *gp)
 }
 
 SPART *
-sparp_tree_full_copy (sparp_t *sparp, SPART *orig, SPART *parent_gp)
+sparp_tree_full_copy (sparp_t *sparp, const SPART *orig, SPART *parent_gp)
 {
   int fld_ctr, eq_idx;
   SPART *tgt;
@@ -3239,6 +3249,42 @@ spar_alias_name_of_ret_column (SPART *tree)
     (SPAR_ALIAS == tree->type) )
     return tree->_.alias.aname;
   return spar_var_name_of_ret_column (tree);
+}
+
+int
+spar_plain_const_value_of_tree (SPART *tree, ccaddr_t *cval_ret)
+{
+  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
+    {
+      cval_ret[0] = (caddr_t)tree;
+      return SPAR_LIT;
+    }
+  switch (tree->type)
+    {
+    case SPAR_LIT:
+      if ((NULL != tree->_.lit.datatype) || (NULL != tree->_.lit.language))
+        break;
+      cval_ret[0] = tree->_.lit.val;
+      return SPAR_LIT;
+    case SPAR_QNAME:
+      cval_ret[0] = tree->_.qname.val;
+      return SPAR_QNAME;
+    case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
+      if (!(SPART_VARR_FIXED & tree->_.var.rvr.rvrRestrictions))
+        break;
+      if (SPART_VARR_IS_IRI & tree->_.var.rvr.rvrRestrictions)
+        {
+          cval_ret[0] = tree->_.var.rvr.rvrFixedValue;
+          return SPAR_QNAME;
+        }
+      if (SPART_VARR_IS_LIT & tree->_.var.rvr.rvrRestrictions)
+        {
+          cval_ret[0] = tree->_.var.rvr.rvrFixedValue;
+          return SPAR_LIT;
+        }
+    }
+  cval_ret[0] = NULL;
+  return 0;
 }
 
 /* DEBUGGING */
