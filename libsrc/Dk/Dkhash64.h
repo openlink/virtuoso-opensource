@@ -43,11 +43,22 @@ id_hash_set (ht, (caddr_t)&kr, (caddr_t)&vr);	\
   if (!vp) res = 0; else res = *vp; \
 }
 
+#ifdef RH_TRACE
+#define remhash_64(k, ht) \
+  { \
+    int64 kv = k; \
+    ht->ht_rem_k = kv; \
+    ht->ht_rem_line = __LINE__; \
+    ht->ht_rem_file = __FILE__; \
+    id_hash_remove (ht, (caddr_t) &kv); \
+  }
+#else
 #define remhash_64(k, ht) \
 { \
   int64 kv = k; \
   id_hash_remove (ht, (caddr_t) &kv); \
 }
+#endif
 
 #define hash_table_free_64(ht) \
   id_hash_free (ht)

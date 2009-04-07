@@ -62,6 +62,10 @@ basket_get (basket_t *bsk)
 {
   void *data;
 
+#ifdef MTX_DEBUG
+  if (bsk->bsk_req_mtx)
+    ASSERT_IN_MTX (bsk->bsk_req_mtx);
+#endif
   if (bsk->bsk_count == 0)
     return NULL;
 
@@ -91,6 +95,11 @@ basket_remove_if (basket_t * bsk, basket_check_t f, void * cd)
   void* remd = NULL;
   dk_set_t tmp = NULL;
   void * elt;
+#ifdef MTX_DEBUG
+  if (bsk->bsk_req_mtx)
+    ASSERT_IN_MTX (bsk->bsk_req_mtx);
+#endif
+
   while ((elt = basket_get (bsk)))
     {
       if (!found && f (elt, cd))

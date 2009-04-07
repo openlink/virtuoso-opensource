@@ -47,6 +47,9 @@ struct basket_s
         long		longval;
 	void *		ptrval;
       }			bsk_data;
+#ifdef MTX_DEBUG
+  dk_mutex_t *	bsk_req_mtx;
+#endif
   };
 
 #if 0
