@@ -383,12 +383,18 @@ box_read_long_cont_string (dk_session_t * session, dtp_t dtp)
 }
 
 
-long
+int64
 read_int (dk_session_t *session)
 {
-  if (session_buffered_read_char (session) == DV_SHORT_INT)
+  dtp_t dtp = session_buffered_read_char (session);
+  if (dtp == DV_SHORT_INT)
     return read_short_int (session);
+  else if (DV_LONG_INT == dtp)
   return read_long (session);
+  else if (DV_INT64 == dtp)
+    return read_int64 (session);
+  else
+    box_read_error (session, dtp);
 }
 
 
