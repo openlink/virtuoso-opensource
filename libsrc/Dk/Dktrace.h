@@ -4,27 +4,26 @@
  *  $Id$
  *
  *  Tracing & Debugging
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ *
+ */
 
 #define GPF_T \
 	gpf_notice (__FILE__, __LINE__, NULL)
@@ -104,35 +103,38 @@
    do not know what it is under the pointer. Just cast this pointer to
    memview_t * and find the member with readable data.
    Note that in MSVC you should cast to (union memview_u) */
-union memview_u {
-  union {
+union memview_u
+{
+  union
+  {
     char one;
     char ten[10];
     char hun[100];
-    } chars;
+  } chars;
   union
-    {
+  {
     long one;
     long ten[10];
     long hun[100];
-    } longs;
-  union {
-    char* one;
-    char* ten[10];
-    char* hun[100];
-    } strings;
-  union {
+  } longs;
+  union
+  {
+    char *one;
+    char *ten[10];
+    char *hun[100];
+  } strings;
+  union
+  {
     union memview_u *one;
     union memview_u *ten[10];
     union memview_u *hun[100];
-    } children;
-  };
+  } children;
+};
 
 typedef union memview_u memview_t;
 
 BEGIN_CPLUSPLUS
 
-int gpf_notice (const char * file, int line, const char * text);
+int gpf_notice (const char *file, int line, const char *text);
 
 END_CPLUSPLUS
-

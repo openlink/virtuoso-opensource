@@ -4,33 +4,32 @@
  *  $Id$
  *
  *  String sessions
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ *
+ */
 
 #include "Dk.h"
 #include "libutil.h"
 #include "Dksesstr.h"
 
-char * ses_tmp_dir;
+char *ses_tmp_dir;
 
 /* The string session
 
@@ -62,19 +61,13 @@ char * ses_tmp_dir;
 
 */
 
-long read_wides_from_utf8_file (
-    dk_session_t *ses,
-    long nchars,
-    unsigned char *dest,
-    int copy_as_utf8,
-    unsigned char **dest_ptr_out
-    );
+long read_wides_from_utf8_file (dk_session_t * ses, long nchars, unsigned char *dest, int copy_as_utf8, unsigned char **dest_ptr_out);
 
 /*
  *  Returns a pointer to a non-full buffer
  */
 static buffer_elt_t *
-DBG_NAME (strdev_get_buf) (DBG_PARAMS dk_session_t *ses)
+DBG_NAME (strdev_get_buf) (DBG_PARAMS dk_session_t * ses)
 {
   buffer_elt_t *buf = ses->dks_buffer_chain_tail;
   buffer_elt_t **last_ref = &ses->dks_buffer_chain_tail;
@@ -104,12 +97,13 @@ DBG_NAME (strdev_get_buf) (DBG_PARAMS dk_session_t *ses)
   return (new_buf);
 }
 
+
 #ifdef MALLOC_DEBUG
 #define strdev_get_buf(ses) dbg_strdev_get_buf (__FILE__, __LINE__, ses)
 #endif
 
 static void
-strdev_free_buf (buffer_elt_t *b, caddr_t arg)
+strdev_free_buf (buffer_elt_t * b, caddr_t arg)
 {
   dk_free (b->data, DKSES_OUT_BUFFER_LENGTH);
   dk_free (b, sizeof (buffer_elt_t));
@@ -130,7 +124,7 @@ strdev_round_utf8_partial_string (
     size_t max_utf8_chars,
     unsigned char *out_buf,
     size_t max_out_buf,
-    size_t *pnwc,
+    size_t * pnwc,
     int *space_exausted)
 {
   size_t written = 0;
@@ -140,15 +134,15 @@ strdev_round_utf8_partial_string (
   while (written < max_out_buf && max_utf8_chars)
     {
       size_t utf_char_len = virt_mbrtowc (NULL, utf8_in, max_utf8_chars, &ps);
-      if (utf_char_len == (size_t)-1)
-	return (size_t)-1;
+      if (utf_char_len == (size_t) - 1)
+	return (size_t) - 1;
 
       if (utf_char_len <= max_out_buf - written)
 	{
 	  memcpy (out_buf, utf8_in, utf_char_len);
 	  out_buf += utf_char_len;
 	  written += utf_char_len;
-	  nwc ++;
+	  nwc++;
 	}
       else
 	{
@@ -168,14 +162,13 @@ strdev_round_utf8_partial_string (
 
 
 int
-utf8_align_memcpy (void *dst, const void *src, size_t len, size_t *pnwc, int *space_exausted)
+utf8_align_memcpy (void *dst, const void *src, size_t len, size_t * pnwc, int *space_exausted)
 {
-  size_t ret = strdev_round_utf8_partial_string (
-      (const unsigned char *) src, len,
+  size_t ret = strdev_round_utf8_partial_string ((const unsigned char *) src, len,
       (unsigned char *) dst, len,
       pnwc,
       space_exausted);
-  if (ret == (size_t) -1)
+  if (ret == (size_t) - 1)
     return -1;
   else
     return (int) ret;
@@ -202,7 +195,7 @@ utf8_align_memcpy (void *dst, const void *src, size_t len, size_t *pnwc, int *sp
  * Globals used :
  */
 static int
-strdev_write (session_t *ses2, char *buffer, int bytes)
+strdev_write (session_t * ses2, char *buffer, int bytes)
 {
   dk_session_t *ses = SESSION_DK_SESSION (ses2);
   int filled;
@@ -227,7 +220,7 @@ strdev_write (session_t *ses2, char *buffer, int bytes)
 	  written = write (ses2->ses_file->ses_file_descriptor, buffer, bytes);
 	  if (bytes != written)
 	    {
-report_error:
+	    report_error:
 	      SESSTAT_SET (ses2, SST_DISK_ERROR);
 	      log_error ("Can't write to file %s", ses2->ses_file->ses_temp_file_name);
 	      return 0;
@@ -253,23 +246,22 @@ report_error:
   buf = strdev_get_buf (ses);
   space = DKSES_OUT_BUFFER_LENGTH - buf->fill;
 
-  if (ses2->ses_file->ses_max_blocks_in_mem &&
-      buf->fill == 0 && buf->read == 0)
+  if (ses2->ses_file->ses_max_blocks_in_mem && buf->fill == 0 && buf->read == 0)
     {
-      ses2->ses_file->ses_max_blocks_in_mem --;
+      ses2->ses_file->ses_max_blocks_in_mem--;
       if (!ses2->ses_file->ses_max_blocks_in_mem)
 	{
-	  char fname[PATH_MAX+1];
+	  char fname[PATH_MAX + 1];
 	  snprintf (fname, sizeof (fname), "%s/sesXXXXXX", ses_tmp_dir);
 	  mktemp (fname);
 
 #if defined (WIN32)
-# define OPEN_FLAGS  	  O_CREAT | O_RDWR | O_BINARY | O_EXCL | O_TEMPORARY	  
+# define OPEN_FLAGS  	  O_CREAT | O_RDWR | O_BINARY | O_EXCL | O_TEMPORARY
 #elif defined (FILE64)
 # define OPEN_FLAGS       O_RDWR | O_CREAT | O_BINARY | O_EXCL | O_LARGEFILE
 #else
 # define OPEN_FLAGS       O_RDWR | O_CREAT | O_BINARY | O_EXCL
-#endif	  
+#endif
 
 #ifdef WIN32
 	  ses2->ses_file->ses_file_descriptor = _open (fname, OPEN_FLAGS, 0600);
@@ -301,11 +293,13 @@ report_error:
       int space_exausted = 0;
 
       filled = strdev_round_utf8_partial_string (
-	  (unsigned char *) buffer, bytes,
-	  (unsigned char *) &buf->data[buf->fill], space,
-	  &nwc,
-	  &space_exausted);
-      if (filled == (size_t) -1)
+	    (unsigned char *) buffer,
+	    bytes,
+	    (unsigned char *) &buf->data[buf->fill],
+	    space,
+	    &nwc,
+	    &space_exausted);
+      if (filled == (size_t) - 1)
 	{
 	  SESSTAT_SET (ses2, SST_DISK_ERROR);
 	  SESSTAT_CLR (ses2, SST_OK);
@@ -348,7 +342,7 @@ report_error:
  * Globals used :
  */
 static int
-strdev_read (session_t *ses2, char *buffer, int bytes)
+strdev_read (session_t * ses2, char *buffer, int bytes)
 {
   dk_session_t *ses = SESSION_DK_SESSION (ses2);
   strdevice_t *strdev = (strdevice_t *) ses->dks_session->ses_device;
@@ -369,10 +363,9 @@ strdev_read (session_t *ses2, char *buffer, int bytes)
       return (count);
     }
   else if (ses2->ses_file->ses_file_descriptor &&
-      ses2->ses_file->ses_fd_read < ses2->ses_file->ses_fd_fill)
+  	   ses2->ses_file->ses_fd_read < ses2->ses_file->ses_fd_fill)
     {
-      if (-1 == LSEEK (ses2->ses_file->ses_file_descriptor,
-	    ses2->ses_file->ses_fd_read, SEEK_SET))
+      if (-1 == LSEEK (ses2->ses_file->ses_file_descriptor, ses2->ses_file->ses_fd_read, SEEK_SET))
 	{
 	  SESSTAT_SET (ses2, SST_DISK_ERROR);
 	  log_error ("Can't seek in file %s", ses2->ses_file->ses_temp_file_name);
@@ -397,8 +390,8 @@ strdev_read (session_t *ses2, char *buffer, int bytes)
   else
     {
       /* The data to be read is in the out buffer. Set the in buffer to
-	 be the out buffer, the read count to zero and the fill to the
-	 out buffer fill. Return the fill. */
+         be the out buffer, the read count to zero and the fill to the
+         out buffer fill. Return the fill. */
       int count = MIN (ses->dks_out_fill - strdev->strdev_in_read, bytes);
       memcpy (buffer, ses->dks_out_buffer + strdev->strdev_in_read, count);
       strdev->strdev_in_read += count;
@@ -479,7 +472,7 @@ DBG_NAME (strdev_allocate) (DBG_PARAMS_0)
 
 #if 0
 void
-strses_rewind (dk_session_t *ses)
+strses_rewind (dk_session_t * ses)
 {
   /* No place you wanna be */
   GPF_T;
@@ -497,7 +490,7 @@ strses_rewind (dk_session_t *ses)
 
 
 void
-strses_map (dk_session_t *ses, void (*func) (buffer_elt_t *e, caddr_t arg), caddr_t arg)
+strses_map (dk_session_t * ses, void (*func) (buffer_elt_t * e, caddr_t arg), caddr_t arg)
 {
   buffer_elt_t *buf = ses->dks_buffer_chain;
   buffer_elt_t *next;
@@ -511,12 +504,12 @@ strses_map (dk_session_t *ses, void (*func) (buffer_elt_t *e, caddr_t arg), cadd
 
 
 void
-strses_file_map (dk_session_t *ses, void (*func) (buffer_elt_t *e, caddr_t arg), caddr_t arg)
+strses_file_map (dk_session_t * ses, void (*func) (buffer_elt_t * e, caddr_t arg), caddr_t arg)
 {
   buffer_elt_t elt;
   unsigned char buffer[DKSES_IN_BUFFER_LENGTH];
   OFF_T offset;
-  strsestmpfile_t *sesfile = (strsestmpfile_t*) ses->dks_session->ses_file;
+  strsestmpfile_t *sesfile = (strsestmpfile_t *) ses->dks_session->ses_file;
 
   if (sesfile->ses_file_descriptor)
     {
@@ -534,7 +527,7 @@ strses_file_map (dk_session_t *ses, void (*func) (buffer_elt_t *e, caddr_t arg),
 	  memset (&elt, 0, sizeof (elt));
 	  elt.data = (char *) buffer;
 	  readbytes = read (sesfile->ses_file_descriptor, buffer,
-	      MIN (DKSES_IN_BUFFER_LENGTH, sesfile->ses_fd_fill - offset));
+		MIN (DKSES_IN_BUFFER_LENGTH, sesfile->ses_fd_fill - offset));
 	  if (readbytes == -1)
 	    {
 	      log_error ("Can't read from file %s", sesfile->ses_temp_file_name);
@@ -551,10 +544,10 @@ strses_file_map (dk_session_t *ses, void (*func) (buffer_elt_t *e, caddr_t arg),
 
 
 void
-strses_flush (dk_session_t *ses)
+strses_flush (dk_session_t * ses)
 {
   strdevice_t *strdev = (strdevice_t *) ses->dks_session->ses_device;
-  strsestmpfile_t *sesfile = (strsestmpfile_t*) ses->dks_session->ses_file;
+  strsestmpfile_t *sesfile = (strsestmpfile_t *) ses->dks_session->ses_file;
   strses_map (ses, strdev_free_buf, NULL);
   ses->dks_buffer_chain = ses->dks_buffer_chain_tail = strdev->strdev_buffer_ptr = NULL;
   ses->dks_out_fill = strdev->strdev_in_read = 0;
@@ -599,7 +592,7 @@ strses_flush (dk_session_t *ses)
  * Globals used :
  */
 int64
-strses_length (dk_session_t *ses)
+strses_length (dk_session_t * ses)
 {
   int64 len = 0;
   buffer_elt_t *elt = ses->dks_buffer_chain;
@@ -620,7 +613,7 @@ strses_length (dk_session_t *ses)
 
 
 int64
-strses_chars_length (dk_session_t *ses)
+strses_chars_length (dk_session_t * ses)
 {
   int64 len = 0;
   buffer_elt_t *elt = ses->dks_buffer_chain;
@@ -647,13 +640,14 @@ strses_chars_length (dk_session_t *ses)
       virt_mbstate_t mb;
       unsigned char *ptr = (unsigned char *) ses->dks_out_buffer;
       memset (&mb, 0, sizeof (mb));
-      last_len = virt_mbsnrtowcs (NULL, &ptr,
-	  ses->dks_out_fill, 0, &mb);
-      if (last_len != (size_t)-1)
+      last_len = virt_mbsnrtowcs (NULL, &ptr, ses->dks_out_fill, 0, &mb);
+      if (last_len != (size_t) - 1)
 	len += (long) last_len;
     }
   return (len);
 }
+
+
 /*##**********************************************************************
  *
  *		strses_write_out
@@ -674,19 +668,19 @@ strses_chars_length (dk_session_t *ses)
  * Globals used :
  */
 void
-strses_write_out (dk_session_t *ses, dk_session_t *out)
+strses_write_out (dk_session_t * ses, dk_session_t * out)
 {
   buffer_elt_t *elt = ses->dks_buffer_chain;
   int fd = ses->dks_session->ses_file->ses_file_descriptor;
   while (elt)
     {
       session_flush_1 (out);
-      session_buffered_write (out, elt->data, elt->fill); /* was: service_write, there was error when we have smth in buffer */
+      session_buffered_write (out, elt->data, elt->fill);	/* was: service_write, there was error when we have smth in buffer */
       elt = elt->next;
     }
   if (fd)
     {
-      char buffer [DKSES_IN_BUFFER_LENGTH];
+      char buffer[DKSES_IN_BUFFER_LENGTH];
       size_t readed, to_read;
       OFF_T end = LSEEK (fd, 0, SEEK_END);
       if (end == -1)
@@ -706,7 +700,7 @@ strses_write_out (dk_session_t *ses, dk_session_t *out)
 	  to_read = end < DKSES_IN_BUFFER_LENGTH ? (size_t) end : DKSES_IN_BUFFER_LENGTH;
 	  readed = read (fd, buffer, to_read);
 	  if (readed != to_read)
-	      log_error ("Can't read from file %s", ses->dks_session->ses_file->ses_temp_file_name);
+	    log_error ("Can't read from file %s", ses->dks_session->ses_file->ses_temp_file_name);
 	  if (-1 == readed)
 	    {
 	      SESSTAT_SET (ses->dks_session, SST_DISK_ERROR);
@@ -732,10 +726,10 @@ strses_skip_wchars (unsigned char *data, long nbytes, long ofs)
     {
       size_t sz = virt_mbrtowc (NULL, data_ptr,
 	  VIRT_MB_CUR_MAX, &mb);
-      if (sz == (size_t) -1)
+      if (sz == (size_t) - 1)
 	return NULL;
       data_ptr += sz;
-      ofs --;
+      ofs--;
     }
   return data_ptr;
 }
@@ -744,7 +738,7 @@ strses_skip_wchars (unsigned char *data, long nbytes, long ofs)
 long
 strses_cp_utf8_to_utf8 (unsigned char *dest_ptr, unsigned char *src_ptr, long src_ofs, long copy_chars, void *state_data)
 {
-  unsigned char  *src_ptr_in;
+  unsigned char *src_ptr_in;
   long copied_bytes;
   virt_mbstate_t mb;
 
@@ -760,19 +754,20 @@ strses_cp_utf8_to_utf8 (unsigned char *dest_ptr, unsigned char *src_ptr, long sr
     {
       size_t sz = virt_mbrtowc (NULL, src_ptr,
 	  VIRT_MB_CUR_MAX, &mb);
-      if (sz == (size_t) -1)
+      if (sz == (size_t) - 1)
 	GPF_T;
       memcpy (dest_ptr, src_ptr, sz);
       dest_ptr += sz;
       src_ptr += sz;
-      copy_chars --;
+      copy_chars--;
     }
 
   copied_bytes = (src_ptr - src_ptr_in);
   if (state_data)
-    *((long *)state_data) += copied_bytes;
+    *((long *) state_data) += copied_bytes;
   return copied_bytes;
 }
+
 
 void
 strses_serialize (caddr_t strses_box, dk_session_t * ses)
@@ -784,17 +779,13 @@ strses_serialize (caddr_t strses_box, dk_session_t * ses)
 
   if (len < 255)
     {
-      session_buffered_write_char (
-	  is_utf8 ? DV_WIDE : DV_SHORT_STRING_SERIAL,
-	  ses);
+      session_buffered_write_char (is_utf8 ? DV_WIDE : DV_SHORT_STRING_SERIAL, ses);
       session_buffered_write_char (len & 0xff, ses);
       strses_write_out (strses, ses);
     }
   else if (len < (long) (MAX_READ_STRING / (is_utf8 ? (2 + sizeof (wchar_t)) : 1)))
     {
-      session_buffered_write_char (
-	  is_utf8 ? DV_LONG_WIDE : DV_LONG_STRING,
-	  ses);
+      session_buffered_write_char (is_utf8 ? DV_LONG_WIDE : DV_LONG_STRING, ses);
       print_long (len, ses);
       strses_write_out (strses, ses);
     }
@@ -808,16 +799,15 @@ strses_serialize (caddr_t strses_box, dk_session_t * ses)
 	{
 	  if (ses->dks_session)
 	    {
-report_read_error:
+	    report_read_error:
 	      SESSTAT_CLR (ses->dks_session, SST_OK);
 	      SESSTAT_SET (ses->dks_session, SST_BROKEN_CONNECTION);
 	      ses->dks_to_close = 1;
 	      call_disconnect_callback_func (ses);
 	      if (ses->dks_session->ses_class != SESCLASS_STRING &&
-		  SESSION_SCH_DATA (ses) &&
+	      	  SESSION_SCH_DATA (ses) &&
 		  SESSION_SCH_DATA (ses)->sio_write_fail_on)
-		longjmp_splice (
-		    &SESSION_SCH_DATA (ses)->sio_write_broken_context, 1);
+		longjmp_splice (&SESSION_SCH_DATA (ses)->sio_write_broken_context, 1);
 	    }
 	  return;
 	}
@@ -826,13 +816,13 @@ report_read_error:
       /* WIRE PROTO: flags : b1 = is utf8 */
       session_buffered_write_char (is_utf8 ? 1 : 0, ses);
       while (elt)
-        {
+	{
 	  session_buffered_write_char (DV_LONG_STRING, ses);
 	  print_long (elt->fill, ses);
 	  session_buffered_write (ses, elt->data, elt->fill);
-          ofs += elt->fill_chars;
-          elt = elt->next;
-        }
+	  ofs += elt->fill_chars;
+	  elt = elt->next;
+	}
       while (ofs < char_len)
 	{
 	  int to_read_chars = MIN (((int) sizeof (buffer)) / (is_utf8 ? VIRT_MB_CUR_MAX : 1), char_len - ofs);
@@ -869,7 +859,7 @@ caddr_t
 strses_deserialize (dk_session_t * session, dtp_t macro)
 {
   unsigned char flags;
-  dk_session_t * strses;
+  dk_session_t *strses;
 
   MARSH_CHECK_BOX (strses = strses_allocate ());
 
@@ -890,7 +880,7 @@ strses_deserialize (dk_session_t * session, dtp_t macro)
       str = (caddr_t) scan_session_boxing (session);
 
       if (str && DV_TYPE_OF (str) != DV_STRING)
-	{ /* being paranoid is a good thing */
+	{					 /* being paranoid is a good thing */
 	  dk_free_tree (str);
 	  sr_report_future_error (session, "", "Invalid data type of the incoming session segment");
 	  str = NULL;
@@ -917,7 +907,7 @@ strses_deserialize (dk_session_t * session, dtp_t macro)
 
 
 void
-strses_to_array (dk_session_t *ses, char *buffer)
+strses_to_array (dk_session_t * ses, char *buffer)
 {
   int fd = ses->dks_session->ses_file->ses_file_descriptor;
   buffer_elt_t *elt = ses->dks_buffer_chain;
@@ -954,9 +944,9 @@ strses_to_array (dk_session_t *ses, char *buffer)
 }
 
 
-#if 0 /* No longer in use */
+#if 0						 /* No longer in use */
 void
-strses_read_by_callbacks (dk_session_t *ses, char *tmp_buf, size_t tmp_buf_len, strses_dump_callback_t *cbk, void *app_env)
+strses_read_by_callbacks (dk_session_t * ses, char *tmp_buf, size_t tmp_buf_len, strses_dump_callback_t * cbk, void *app_env)
 {
   int fd = ses->dks_session->ses_file->ses_file_descriptor;
   buffer_elt_t *elt = ses->dks_buffer_chain;
@@ -980,17 +970,17 @@ strses_read_by_callbacks (dk_session_t *ses, char *tmp_buf, size_t tmp_buf_len, 
 	  SESSTAT_SET (ses->dks_session, SST_DISK_ERROR);
 	  return;
 	}
-      for (curr = 0; curr < end; /* no step */)
-        {
-          int to_read = end - curr;
-          if (to_read > tmp_buf_len)
-            to_read = tmp_buf_len;
-          rc = read (fd, tmp_buf, to_read);
-          if (rc != to_read)
-            break;
-          curr += rc;
-          cbk (tmp_buf, to_read, 1, app_env);
-        }
+      for (curr = 0; curr < end; /* no step */ )
+	{
+	  int to_read = end - curr;
+	  if (to_read > tmp_buf_len)
+	    to_read = tmp_buf_len;
+	  rc = read (fd, tmp_buf, to_read);
+	  if (rc != to_read)
+	    break;
+	  curr += rc;
+	  cbk (tmp_buf, to_read, 1, app_env);
+	}
       if (curr != end)
 	log_error ("Can't read from file %s", ses->dks_session->ses_file->ses_temp_file_name);
       if (rc == -1)
@@ -1001,7 +991,7 @@ strses_read_by_callbacks (dk_session_t *ses, char *tmp_buf, size_t tmp_buf_len, 
 #endif
 
 size_t
-strses_fragment_to_array (dk_session_t *ses, char *buffer, size_t fragment_offset, size_t fragment_size)
+strses_fragment_to_array (dk_session_t * ses, char *buffer, size_t fragment_offset, size_t fragment_size)
 {
   int fd = ses->dks_session->ses_file->ses_file_descriptor;
   buffer_elt_t *elt;
@@ -1011,18 +1001,18 @@ strses_fragment_to_array (dk_session_t *ses, char *buffer, size_t fragment_offse
       size_t cut_sz = elt->fill;
       char *data = elt->data;
       if (fragment_offset)
-        {
-          if (cut_sz <= fragment_offset)
+	{
+	  if (cut_sz <= fragment_offset)
 	    {
-              fragment_offset -= cut_sz;
-              continue;
-            }
-          data += fragment_offset;
+	      fragment_offset -= cut_sz;
+	      continue;
+	    }
+	  data += fragment_offset;
 	  cut_sz -= fragment_offset;
 	  fragment_offset = 0;
-        }
+	}
       if (cut_sz > tail_size)
-        cut_sz = tail_size;
+	cut_sz = tail_size;
       memcpy (buffer, data, cut_sz);
       tail_size -= cut_sz;
       buffer += cut_sz;
@@ -1036,11 +1026,11 @@ strses_fragment_to_array (dk_session_t *ses, char *buffer, size_t fragment_offse
 	  SESSTAT_SET (ses->dks_session, SST_DISK_ERROR);
 	  return 0;
 	}
-      if ((unsigned)cut_sz <= fragment_offset)
-        {
-          fragment_offset -= cut_sz;
-          goto end_of_file_read;
-        }
+      if ((unsigned) cut_sz <= fragment_offset)
+	{
+	  fragment_offset -= cut_sz;
+	  goto end_of_file_read;
+	}
       if (-1 == LSEEK (fd, fragment_offset, SEEK_SET))
 	{
 	  log_error ("Can't seek in file %s", ses->dks_session->ses_file->ses_temp_file_name);
@@ -1049,8 +1039,8 @@ strses_fragment_to_array (dk_session_t *ses, char *buffer, size_t fragment_offse
 	}
       cut_sz -= fragment_offset;
       fragment_offset = 0;
-      if ((unsigned)cut_sz > tail_size)
-        cut_sz = tail_size;
+      if ((unsigned) cut_sz > tail_size)
+	cut_sz = tail_size;
       rc = read (fd, buffer, cut_sz);
       if (rc != cut_sz)
 	log_error ("Can't read from file %s", ses->dks_session->ses_file->ses_temp_file_name);
@@ -1070,7 +1060,7 @@ end_of_file_read:
       data += fragment_offset;
       cut_sz -= fragment_offset;
       if (cut_sz > tail_size)
-        cut_sz = tail_size;
+	cut_sz = tail_size;
       memcpy (buffer, data, cut_sz);
       tail_size -= cut_sz;
     }
@@ -1079,7 +1069,7 @@ end_of_file_read:
 
 
 void
-strses_enable_paging (dk_session_t *ses, int max_bytes_in_mem)
+strses_enable_paging (dk_session_t * ses, int max_bytes_in_mem)
 {
   int parts = max_bytes_in_mem / DKSES_IN_BUFFER_LENGTH;
   ses->dks_session->ses_file->ses_max_blocks_in_mem = parts ? parts : 1;
@@ -1093,11 +1083,11 @@ strses_enable_paging (dk_session_t *ses, int max_bytes_in_mem)
 
 
 caddr_t
-DBG_NAME(strses_string) (DBG_PARAMS dk_session_t * ses)
+DBG_NAME (strses_string) (DBG_PARAMS dk_session_t * ses)
 {
   int64 len = strses_length (ses);
   caddr_t box;
-  if (NULL == (box = DBG_NAME(dk_alloc_box) (DBG_ARGS len + 1, DV_LONG_STRING)))
+  if (NULL == (box = DBG_NAME (dk_alloc_box) (DBG_ARGS len + 1, DV_LONG_STRING)))
     return NULL;
   strses_to_array (ses, box);
   box[len] = 0;
@@ -1116,15 +1106,16 @@ t_strses_string (dk_session_t * ses)
   return box;
 }
 
+
 void
-strses_free (dk_session_t *ses)
+strses_free (dk_session_t * ses)
 {
   dk_free_box ((box_t) ses);
 }
 
 
 int
-strses_destroy (dk_session_t *ses)
+strses_destroy (dk_session_t * ses)
 {
 #ifndef NDEBUG
   if (0 >= ses->dks_refcount)
@@ -1144,9 +1135,9 @@ strses_destroy (dk_session_t *ses)
 
 
 long
-strses_get_part_1 (dk_session_t *ses, void *buf2, int64 starting_ofs, long nbytes, copy_func_ptr_t cpf, void *state_data)
+strses_get_part_1 (dk_session_t * ses, void *buf2, int64 starting_ofs, long nbytes, copy_func_ptr_t cpf, void *state_data)
 {
-  unsigned char * buffer = (unsigned char *) buf2;
+  unsigned char *buffer = (unsigned char *) buf2;
   long copybytes;
   buffer_elt_t *elt = ses->dks_buffer_chain;
   int fd = ses->dks_session->ses_file->ses_file_descriptor;
@@ -1155,7 +1146,7 @@ strses_get_part_1 (dk_session_t *ses, void *buf2, int64 starting_ofs, long nbyte
       if (elt->fill_chars > starting_ofs)
 	{
 	  long dest_copybytes;
-	  dest_copybytes = copybytes = MIN (elt->fill_chars - starting_ofs , nbytes);
+	  dest_copybytes = copybytes = MIN (elt->fill_chars - starting_ofs, nbytes);
 
 	  if (cpf)
 	    dest_copybytes = cpf (buffer, elt->data, starting_ofs, copybytes, state_data);
@@ -1181,8 +1172,8 @@ strses_get_part_1 (dk_session_t *ses, void *buf2, int64 starting_ofs, long nbyte
 	      unsigned char *buf2_out = buffer;
 
 	      if (ses->dks_session->ses_file->ses_fd_curr_char_pos > starting_ofs ||
-		  ses->dks_session->ses_file->ses_fd_curr_char_pos == 0)
-		{ /* if the file ptr is behind the requested one start from the beginning */
+	          ses->dks_session->ses_file->ses_fd_curr_char_pos == 0)
+		{				 /* if the file ptr is behind the requested one start from the beginning */
 		  if (-1 == LSEEK (fd, 0, SEEK_SET))
 		    {
 		      log_error ("Can't seek in file %s", ses->dks_session->ses_file->ses_temp_file_name);
@@ -1213,7 +1204,7 @@ strses_get_part_1 (dk_session_t *ses, void *buf2, int64 starting_ofs, long nbyte
 	      ses->dks_session->ses_file->ses_fd_curr_char_pos += nbytes;
 
 	      if (state_data)
-		*((long *)state_data) += buf2_out - buffer;
+		*((long *) state_data) += buf2_out - buffer;
 	      buffer = buf2_out;
 	      nbytes = readed;
 	      starting_ofs = 0;
@@ -1274,7 +1265,7 @@ strses_get_part_1 (dk_session_t *ses, void *buf2, int64 starting_ofs, long nbyte
 	  unsigned char *ptr = (unsigned char *) ses->dks_out_buffer;
 	  memset (&mb, 0, sizeof (mb));
 	  last_len_chars = virt_mbsnrtowcs (NULL, &ptr, ses->dks_out_fill, 0, &mb);
-	  if (last_len_chars == (size_t)-1)
+	  if (last_len_chars == (size_t) - 1)
 	    GPF_T;
 	}
       else
@@ -1296,8 +1287,9 @@ strses_get_part_1 (dk_session_t *ses, void *buf2, int64 starting_ofs, long nbyte
   return nbytes;
 }
 
+
 long
-strses_get_part (dk_session_t *ses, void *buf2, int64 starting_ofs, long nbytes)
+strses_get_part (dk_session_t * ses, void *buf2, int64 starting_ofs, long nbytes)
 {
   return strses_get_part_1 (ses, buf2, starting_ofs, nbytes, NULL, NULL);
 }
@@ -1305,12 +1297,11 @@ strses_get_part (dk_session_t *ses, void *buf2, int64 starting_ofs, long nbytes)
 
 long
 read_wides_from_utf8_file (
-    dk_session_t *ses,
+    dk_session_t * ses,
     long nchars,
     unsigned char *dest,
     int copy_as_utf8,
-    unsigned char **dest_ptr_out
-    )
+    unsigned char **dest_ptr_out)
 {
   int fd = ses->dks_session->ses_file->ses_file_descriptor;
   unsigned char src_buffer[64000];
@@ -1346,7 +1337,7 @@ read_wides_from_utf8_file (
 	    {
 	      size_t sz = virt_mbrtowc (NULL, data_ptr,
 		  VIRT_MB_CUR_MAX, &mb);
-	      if (sz == (size_t) -1)
+	      if (sz == (size_t) - 1)
 		{
 		  log_error ("Invalid utf-8 data in file %s", ses->dks_session->ses_file->ses_temp_file_name);
 		  SESSTAT_SET (ses->dks_session, SST_DISK_ERROR);
@@ -1355,7 +1346,7 @@ read_wides_from_utf8_file (
 	      memcpy (dest_ptr, data_ptr, sz);
 	      dest_ptr += sz;
 	      data_ptr += sz;
-	      nchars --;
+	      nchars--;
 	    }
 	  if (dest_ptr_out)
 	    *dest_ptr_out = dest_ptr;
@@ -1363,7 +1354,7 @@ read_wides_from_utf8_file (
       else
 	{
 	  converted = virt_mbsnrtowcs ((wchar_t *) dest, &data_ptr, readed, nchars, &mb);
-	  if (converted == (size_t) -1)
+	  if (converted == (size_t) - 1)
 	    {
 	      log_error ("Invalid utf-8 data in file %s", ses->dks_session->ses_file->ses_temp_file_name);
 	      SESSTAT_SET (ses->dks_session, SST_DISK_ERROR);
@@ -1373,7 +1364,7 @@ read_wides_from_utf8_file (
 	}
 
       if (data_ptr - &src_buffer[0] < readed)
-	{ /* there are some bytes left unconverted, unwind them for the next go */
+	{					 /* there are some bytes left unconverted, unwind them for the next go */
 	  if (-1 == LSEEK (fd, -(readed - (data_ptr - &src_buffer[0])), SEEK_CUR))
 	    {
 	      log_error ("Can't seek in file %s", ses->dks_session->ses_file->ses_temp_file_name);
@@ -1387,7 +1378,7 @@ read_wides_from_utf8_file (
 
 
 long
-strses_get_wide_part (dk_session_t *ses, wchar_t *buf, long starting_ofs, long nchars)
+strses_get_wide_part (dk_session_t * ses, wchar_t * buf, long starting_ofs, long nchars)
 {
   buffer_elt_t *elt = ses->dks_buffer_chain;
   int fd = ses->dks_session->ses_file->ses_file_descriptor;
@@ -1397,7 +1388,7 @@ strses_get_wide_part (dk_session_t *ses, wchar_t *buf, long starting_ofs, long n
     {
       if (elt->fill_chars > starting_ofs)
 	{
-	  long copychars = MIN (elt->fill_chars - starting_ofs , nchars);
+	  long copychars = MIN (elt->fill_chars - starting_ofs, nchars);
 	  unsigned char *data_ptr;
 
 	  /* skip starting_ofs wide chars */
@@ -1407,7 +1398,7 @@ strses_get_wide_part (dk_session_t *ses, wchar_t *buf, long starting_ofs, long n
 
 	  /* get the copychars worth of wides into the buffer */
 	  if (virt_mbsnrtowcs (buf, &data_ptr,
-		elt->fill - (data_ptr - (unsigned char *) elt->data), copychars, &mb) == (size_t)-1)
+		elt->fill - (data_ptr - (unsigned char *) elt->data), copychars, &mb) == (size_t) -1)
 	    return 0;
 
 	  buf += copychars;
@@ -1427,7 +1418,7 @@ strses_get_wide_part (dk_session_t *ses, wchar_t *buf, long starting_ofs, long n
 	  OFF_T skipchars;
 	  if (ses->dks_session->ses_file->ses_fd_curr_char_pos > starting_ofs ||
 	      ses->dks_session->ses_file->ses_fd_curr_char_pos == 0)
-	    { /* if the file ptr is behind the requested one start from the begining */
+	    {					 /* if the file ptr is behind the requested one start from the begining */
 	      if (-1 == LSEEK (fd, 0, SEEK_SET))
 		{
 		  log_error ("Can't seek in file %s", ses->dks_session->ses_file->ses_temp_file_name);
@@ -1474,14 +1465,13 @@ strses_get_wide_part (dk_session_t *ses, wchar_t *buf, long starting_ofs, long n
       /* skip starting_ofs wide chars */
       data_ptr_start = strses_skip_wchars (data_ptr, ses->dks_out_fill, starting_ofs);
       if (!data_ptr_start)
-	    return 0;
+	return 0;
 
       if ((data_ptr - data_ptr_start) < ses->dks_out_fill)
 	{
 	  /* get the copychars worth of wides into the buffer */
 	  if ((converted = virt_mbsnrtowcs (buf, &data_ptr_start,
-		  ses->dks_out_fill - (data_ptr - data_ptr_start),
-		nchars, &mb) == (size_t)-1))
+	  	ses->dks_out_fill - (data_ptr - data_ptr_start), nchars, &mb) == (size_t) - 1))
 	    return 0;
 	}
 
@@ -1489,32 +1479,34 @@ strses_get_wide_part (dk_session_t *ses, wchar_t *buf, long starting_ofs, long n
       nchars -= converted;
     }
 
-
   return nchars;
 }
 
+
 void
-strses_set_utf8 (dk_session_t *ses, int is_utf8)
+strses_set_utf8 (dk_session_t * ses, int is_utf8)
 {
   if (ses->dks_session->ses_class == SESCLASS_STRING)
     ((strdevice_t *) (ses->dks_session->ses_device))->strdev_is_utf8 = is_utf8 ? 1 : 0;
 }
 
+
 int
-strses_is_utf8 (dk_session_t *ses)
+strses_is_utf8 (dk_session_t * ses)
 {
   return ses->dks_session->ses_class == SESCLASS_STRING &&
-      ((strdevice_t *) (ses->dks_session->ses_device))->strdev_is_utf8 ? 1 : 0;
+  	 ((strdevice_t *) (ses->dks_session->ses_device))->strdev_is_utf8 ? 1 : 0;
 }
 
+
 dk_session_t *
-DBG_NAME(strses_allocate) (DBG_PARAMS_0)
+DBG_NAME (strses_allocate) (DBG_PARAMS_0)
 {
-  dk_session_t *dk_ses = (dk_session_t *) DBG_NAME(dk_alloc_box_zero) (DBG_ARGS sizeof (dk_session_t),
+  dk_session_t *dk_ses = (dk_session_t *) DBG_NAME (dk_alloc_box_zero) (DBG_ARGS sizeof (dk_session_t),
       DV_STRING_SESSION);
   session_t *ses = session_allocate (SESCLASS_STRING);
 
-  /*memset (dk_ses, 0, sizeof (dk_session_t));*/
+  /*memset (dk_ses, 0, sizeof (dk_session_t)); */
 
   SESSION_SCH_DATA (dk_ses) = (scheduler_io_data_t *) DBG_NAME (dk_alloc) (DBG_ARGS sizeof (scheduler_io_data_t));
   memset (SESSION_SCH_DATA (dk_ses), 0, sizeof (scheduler_io_data_t));
@@ -1524,7 +1516,7 @@ DBG_NAME(strses_allocate) (DBG_PARAMS_0)
     ses->ses_device = DBG_NAME (strdev_allocate) (DBG_ARGS_0);
 
   dk_ses->dks_session = ses;
-  SESSION_DK_SESSION (ses) = dk_ses;	/* two way link. */
+  SESSION_DK_SESSION (ses) = dk_ses;		 /* two way link. */
 
   dk_ses->dks_out_buffer = (char *) DBG_NAME (dk_alloc) (DBG_ARGS DKSES_OUT_BUFFER_LENGTH);
   dk_ses->dks_out_length = DKSES_OUT_BUFFER_LENGTH;
@@ -1540,6 +1532,7 @@ DBG_NAME(strses_allocate) (DBG_PARAMS_0)
   dk_ses->dks_refcount = 1;
   return (dk_ses);
 }
+
 
 /*##**********************************************************************
  *
@@ -1559,7 +1552,7 @@ DBG_NAME(strses_allocate) (DBG_PARAMS_0)
  * Globals used :
  */
 static int
-strdev_ws_chunked_write (session_t *ses2, char *buffer, int bytes)
+strdev_ws_chunked_write (session_t * ses2, char *buffer, int bytes)
 {
   dk_session_t *ses = SESSION_DK_SESSION (ses2);
   strdevice_t *strdev = (strdevice_t *) ses->dks_session->ses_device;
@@ -1590,20 +1583,20 @@ strdev_ws_chunked_write (session_t *ses2, char *buffer, int bytes)
 	GPF_T;
 #endif
       CATCH_WRITE_FAIL (http_ses)
-	{
-	  char tmp[20];
-	  snprintf (tmp, sizeof (tmp), "%x\r\n", DKSES_OUT_BUFFER_LENGTH);
-	  SES_PRINT (http_ses, tmp);
-	  session_buffered_write (http_ses, buf->data, DKSES_OUT_BUFFER_LENGTH);
-	  SES_PRINT (http_ses, "\r\n");
-	  buf->fill = 0;
-	  session_flush_1 (http_ses);
+      {
+	char tmp[20];
+	snprintf (tmp, sizeof (tmp), "%x\r\n", DKSES_OUT_BUFFER_LENGTH);
+	SES_PRINT (http_ses, tmp);
+	session_buffered_write (http_ses, buf->data, DKSES_OUT_BUFFER_LENGTH);
+	SES_PRINT (http_ses, "\r\n");
+	buf->fill = 0;
+	session_flush_1 (http_ses);
 
-	}
+      }
       FAILED
-	{
-	  filled = bytes;
-	}
+      {
+	filled = bytes;
+      }
       END_WRITE_FAIL (http_ses);
     }
 
@@ -1612,14 +1605,14 @@ strdev_ws_chunked_write (session_t *ses2, char *buffer, int bytes)
 
 
 int
-strses_is_ws_chunked_output (dk_session_t *ses)
+strses_is_ws_chunked_output (dk_session_t * ses)
 {
   return (ses->dks_session->ses_device->dev_funs->dfp_write == strdev_ws_chunked_write);
 }
 
 
 void
-strses_ws_chunked_state_set (dk_session_t *ses, dk_session_t *http_ses)
+strses_ws_chunked_state_set (dk_session_t * ses, dk_session_t * http_ses)
 {
   ses->dks_session->ses_device->dev_funs->dfp_write = strdev_ws_chunked_write;
   ses->dks_fixed_thread = (du_thread_t *) http_ses;
@@ -1627,23 +1620,34 @@ strses_ws_chunked_state_set (dk_session_t *ses, dk_session_t *http_ses)
 
 
 void
-strses_ws_chunked_state_reset (dk_session_t *ses)
+strses_ws_chunked_state_reset (dk_session_t * ses)
 {
   ses->dks_session->ses_device->dev_funs->dfp_write = strdev_write;
   ses->dks_fixed_thread = NULL;
 }
 
+
 #ifdef MALLOC_DEBUG
 #undef strses_allocate
-dk_session_t *strses_allocate (void) { return dbg_strses_allocate (__FILE__, __LINE__); }
+dk_session_t *
+strses_allocate (void)
+{
+  return dbg_strses_allocate (__FILE__, __LINE__);
+}
+
+
 #undef strses_string
-caddr_t strses_string (dk_session_t * ses) { return dbg_strses_string (__FILE__, __LINE__, ses); }
+caddr_t
+strses_string (dk_session_t * ses)
+{
+  return dbg_strses_string (__FILE__, __LINE__, ses);
+}
 #endif
 
 caddr_t
 strses_fake_copy (caddr_t orig)
 {
-  dk_session_t *orig_ses = (dk_session_t *)orig;
+  dk_session_t *orig_ses = (dk_session_t *) orig;
 #ifndef NDEBUG
   if (0 >= orig_ses->dks_refcount)
     GPF_T1 ("Invalid dks_refcount in strses_fake_copy()");
@@ -1652,11 +1656,12 @@ strses_fake_copy (caddr_t orig)
   return orig;
 }
 
+
 caddr_t
 strses_mp_copy (mem_pool_t * mp, caddr_t box)
 {
   strses_fake_copy (box);
-  dk_set_push (&mp->mp_trash, (void*)box);
+  dk_set_push (&mp->mp_trash, (void *) box);
   return box;
 }
 

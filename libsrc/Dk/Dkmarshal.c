@@ -4,32 +4,31 @@
  *  $Id$
  *
  *  Marshalling on top of sessions
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ *
+ */
 
 #include "Dk.h"
 
 #if defined (UNIX) && !defined (WORDS_BIGENDIAN)
-# include <netinet/in.h>	/* for ntohl, htonl */
+# include <netinet/in.h>			 /* for ntohl, htonl */
 #endif
 
 #if defined (i386) || \
@@ -76,23 +75,23 @@ session_buffered_write_char (int c, dk_session_t * ses)
 
 
 ptrlong
-read_short_int (dk_session_t *session)
+read_short_int (dk_session_t * session)
 {
   return (int) (signed char) session_buffered_read_char (session);
 }
 
 
 ptrlong
-read_long (dk_session_t *session)
+read_long (dk_session_t * session)
 {
   uint32 res;
-  if (session->dks_in_fill - session->dks_in_read >=4)
+  if (session->dks_in_fill - session->dks_in_read >= 4)
     {
       res = LONG_REF_NA (session->dks_in_buffer + session->dks_in_read);
       session->dks_in_read += 4;
-      return (int32)res;
+      return (int32) res;
     }
-  session_buffered_read (session, (caddr_t) &res, sizeof (res));
+  session_buffered_read (session, (caddr_t) & res, sizeof (res));
 #ifdef WORDS_BIGENDIAN
   return (long) (int32) res;
 #else
@@ -102,11 +101,13 @@ read_long (dk_session_t *session)
 
 
 boxint
-read_int64 (dk_session_t *session)
+read_int64 (dk_session_t * session)
 {
-  union {
+  union
+  {
     int64 n64;
-    struct {
+    struct
+    {
       int32 n1;
       int32 n2;
     } n32;
@@ -130,23 +131,23 @@ box_read_int64 (dk_session_t * ses, dtp_t dtp)
 
 
 float
-read_float (dk_session_t *session)
+read_float (dk_session_t * session)
 {
 #ifdef _IEEE_FLOATS
 # ifdef WORDS_BIGENDIAN
   /* ieee numbers, big endian */
   float res;
 
-  session_buffered_read (session, (caddr_t) &res, sizeof (res));
+  session_buffered_read (session, (caddr_t) & res, sizeof (res));
   return res;
 
 # else /* WORDS_BIGENDIAN */
   /* ieee numbers, little endian */
   union
-    {
-      uint32 l;
-      float f;
-    } ds;
+  {
+    uint32 l;
+    float f;
+  } ds;
   ds.l = read_long (session);
   return ds.f;
 # endif
@@ -166,23 +167,23 @@ read_float (dk_session_t *session)
 
 
 double
-read_double (dk_session_t *session)
+read_double (dk_session_t * session)
 {
 #ifdef _IEEE_FLOATS
 # ifdef WORDS_BIGENDIAN
   /* ieee numbers, big endian */
   double res;
 
-  session_buffered_read (session, (caddr_t) &res, sizeof (res));
+  session_buffered_read (session, (caddr_t) & res, sizeof (res));
   return res;
 
 # else /* WORDS_BIGENDIAN */
   /* ieee numbers, little endian */
   union
-    {
-      uint32 l[2];
-      double d;
-    } ds;
+  {
+    uint32 l[2];
+    double d;
+  } ds;
   ds.l[1] = read_long (session);
   ds.l[0] = read_long (session);
   return ds.d;
@@ -203,7 +204,7 @@ read_double (dk_session_t *session)
 
 
 float
-buf_to_float (char * buf)
+buf_to_float (char *buf)
 {
 #ifdef _IEEE_FLOATS
 # ifdef WORDS_BIGENDIAN
@@ -216,10 +217,10 @@ buf_to_float (char * buf)
 # else /* WORDS_BIGENDIAN */
   /* ieee numbers, little endian */
   union
-    {
-      uint32 l;
-      float f;
-    } ds;
+  {
+    uint32 l;
+    float f;
+  } ds;
   ds.l = LONG_REF_NA (buf);
   return ds.f;
 # endif
@@ -229,7 +230,7 @@ buf_to_float (char * buf)
   unsigned char buf2[4];
   float res;
   XDR x;
-  memcpy  (buf2, buf, 4);
+  memcpy (buf2, buf, 4);
   xdrmem_create (&x, (caddr_t) buf2, sizeof (buf2), XDR_DECODE);
   xdr_float (&x, &res);
   return res;
@@ -238,7 +239,7 @@ buf_to_float (char * buf)
 
 
 double
-buf_to_double (char * buf)
+buf_to_double (char *buf)
 {
 #ifdef _IEEE_FLOATS
 # ifdef WORDS_BIGENDIAN
@@ -250,10 +251,10 @@ buf_to_double (char * buf)
 # else /* WORDS_BIGENDIAN */
   /* ieee numbers, little endian */
   union
-    {
-      uint32 l[2];
-      double d;
-    } ds;
+  {
+    uint32 l[2];
+    double d;
+  } ds;
   ds.l[1] = LONG_REF_NA (buf + 1);
   ds.l[0] = LONG_REF_NA (buf + 4);
   return ds.d;
@@ -273,7 +274,6 @@ buf_to_double (char * buf)
 }
 
 
-
 /*
  *  read_object (dk_session_t *session)
  *
@@ -281,9 +281,9 @@ buf_to_double (char * buf)
  *  This sets the exception context to resume when the session is broken.
  */
 void *
-read_object (dk_session_t *session)
+read_object (dk_session_t * session)
 {
-  void volatile * res = NULL;
+  void volatile *res = NULL;
 
   /* if the session does not have scheduler data just read it, do not
      bother to make a jump context. This is the case for string
@@ -301,12 +301,12 @@ read_object (dk_session_t *session)
   }
   END_READ_FAIL (session);
 
-  return (void *)res;
+  return (void *) res;
 }
 
 
 static void *
-box_read_db_null (dk_session_t *session, dtp_t dtp)
+box_read_db_null (dk_session_t * session, dtp_t dtp)
 {
   caddr_t ret;
   MARSH_CHECK_BOX (ret = dk_try_alloc_box (0, DV_DB_NULL));
@@ -315,7 +315,7 @@ box_read_db_null (dk_session_t *session, dtp_t dtp)
 
 
 static void *
-box_read_short_string (dk_session_t *session, dtp_t dtp)
+box_read_short_string (dk_session_t * session, dtp_t dtp)
 {
   int length = (int) session_buffered_read_char (session);
   char *string;
@@ -328,7 +328,7 @@ box_read_short_string (dk_session_t *session, dtp_t dtp)
 
 
 static void *
-box_read_long_string (dk_session_t *session, dtp_t dtp)
+box_read_long_string (dk_session_t * session, dtp_t dtp)
 {
   size_t length = (size_t) read_long (session);
   char *string;
@@ -340,19 +340,18 @@ box_read_long_string (dk_session_t *session, dtp_t dtp)
 }
 
 
-
 static void *
-box_read_flags (dk_session_t *session, dtp_t dtp)
+box_read_flags (dk_session_t * session, dtp_t dtp)
 {
   uint32 flags = (uint32) read_long (session);
   char *string = scan_session_boxing (session);
   box_flags (string) = flags;
-  return (void*)string;
+  return (void *) string;
 }
 
 
 static void *
-box_read_short_cont_string (dk_session_t *session, dtp_t dtp)
+box_read_short_cont_string (dk_session_t * session, dtp_t dtp)
 {
   dtp_t length = session_buffered_read_char (session);
   unsigned char *string;
@@ -365,7 +364,7 @@ box_read_short_cont_string (dk_session_t *session, dtp_t dtp)
 
 
 static void *
-box_read_long_cont_string (dk_session_t *session, dtp_t dtp)
+box_read_long_cont_string (dk_session_t * session, dtp_t dtp)
 {
   size_t length = (size_t) read_long (session);
   unsigned char *string;
@@ -401,7 +400,7 @@ read_int (dk_session_t *session)
  * so that possible numbers get boxed when appropriate.
  */
 static void *
-box_read_array (dk_session_t *session, dtp_t dtp)
+box_read_array (dk_session_t * session, dtp_t dtp)
 {
   size_t count = (size_t) read_int (session);
   void **array;
@@ -417,7 +416,7 @@ box_read_array (dk_session_t *session, dtp_t dtp)
 
 
 static void *
-box_read_array_of_double (dk_session_t *session, dtp_t dtp)
+box_read_array_of_double (dk_session_t * session, dtp_t dtp)
 {
   size_t count = (size_t) read_int (session);
   double *array;
@@ -433,7 +432,7 @@ box_read_array_of_double (dk_session_t *session, dtp_t dtp)
 
 
 static void *
-box_read_array_of_float (dk_session_t *session, dtp_t dtp)
+box_read_array_of_float (dk_session_t * session, dtp_t dtp)
 {
   size_t count = (size_t) read_int (session);
   float *array;
@@ -449,7 +448,7 @@ box_read_array_of_float (dk_session_t *session, dtp_t dtp)
 
 
 static void *
-box_read_packed_array_of_long (dk_session_t *session, dtp_t dtp)
+box_read_packed_array_of_long (dk_session_t * session, dtp_t dtp)
 {
   size_t count = (size_t) read_int (session);
   ptrlong *array;
@@ -466,7 +465,7 @@ box_read_packed_array_of_long (dk_session_t *session, dtp_t dtp)
 
 
 static void *
-box_read_array_of_long (dk_session_t *session, dtp_t dtp)
+box_read_array_of_long (dk_session_t * session, dtp_t dtp)
 {
   size_t count = (size_t) read_int (session);
   ptrlong *array;
@@ -482,28 +481,28 @@ box_read_array_of_long (dk_session_t *session, dtp_t dtp)
 
 
 static void *
-imm_read_null (dk_session_t *session, dtp_t dtp)
+imm_read_null (dk_session_t * session, dtp_t dtp)
 {
   return NULL;
 }
 
 
 static void *
-imm_read_short_int (dk_session_t *session, dtp_t dtp)
+imm_read_short_int (dk_session_t * session, dtp_t dtp)
 {
   return (void *) (ptrlong) read_short_int (session);
 }
 
 
 static void *
-imm_read_long (dk_session_t *session, dtp_t dtp)
+imm_read_long (dk_session_t * session, dtp_t dtp)
 {
-  return (void *)(ptrlong) read_long (session);
+  return (void *) (ptrlong) read_long (session);
 }
 
 
 static void *
-imm_read_char (dk_session_t *session, dtp_t dtp)
+imm_read_char (dk_session_t * session, dtp_t dtp)
 {
   /* triple cast is probably too suspicious */
   return (void *) (ptrlong) (signed char) session_buffered_read_char (session);
@@ -511,20 +510,20 @@ imm_read_char (dk_session_t *session, dtp_t dtp)
 
 
 static void *
-imm_read_float (dk_session_t *session, dtp_t dtp)
+imm_read_float (dk_session_t * session, dtp_t dtp)
 {
   float f = read_float (session);
-  return *(void **)&f;
+  return *(void **) &f;
 }
 
-static short 
+
+static short
 read_short (dk_session_t * ses)
 {
-  short s = ((short) (dtp_t)session_buffered_read_char (ses)) << 8;
+  short s = ((short) (dtp_t) session_buffered_read_char (ses)) << 8;
   s |= (dtp_t) session_buffered_read_char (ses);
   return s;
 }
-
 
 
 static void *
@@ -538,14 +537,14 @@ rb_deserialize (dk_session_t * ses, dtp_t dtp)
       rb->rb_chksum_tail = 1;
       if (RBS_SKIP_DTP & flags)
 	{
-	  rdf_bigbox_t * rbb = (rdf_bigbox_t*)rb;
+	  rdf_bigbox_t *rbb = (rdf_bigbox_t *) rb;
 	  dtp_t len = session_buffered_read_char (ses);
 	  rbb->rbb_chksum = dk_alloc_box (len + 1, DV_STRING);
 	  session_buffered_read (ses, rbb->rbb_chksum, len);
 	  rbb->rbb_chksum[len] = 0;
 	}
-      else 
-      ((rdf_bigbox_t *) rb)->rbb_chksum = scan_session_boxing (ses);
+      else
+	((rdf_bigbox_t *) rb)->rbb_chksum = scan_session_boxing (ses);
     }
   else
     {
@@ -558,7 +557,7 @@ rb_deserialize (dk_session_t * ses, dtp_t dtp)
 	  rb->rb_box[len] = 0;
 	}
       else
-      rb->rb_box = scan_session_boxing (ses);
+	rb->rb_box = scan_session_boxing (ses);
     }
   if (flags & RBS_OUTLINED)
     {
@@ -588,9 +587,8 @@ rb_deserialize (dk_session_t * ses, dtp_t dtp)
 }
 
 
-
 void *
-box_read_error (dk_session_t *session, dtp_t dtp)
+box_read_error (dk_session_t * session, dtp_t dtp)
 {
   /*assert (session->dks_read_fail_on); */
   CHECK_READ_FAIL (session);
@@ -600,7 +598,7 @@ box_read_error (dk_session_t *session, dtp_t dtp)
 #endif
 
   if (session->dks_session)
-    {				/* could be a string input */
+    {						 /* could be a string input */
       char temp[30];
       snprintf (temp, sizeof (temp), "Bad incoming tag %u", (unsigned) dtp);
       sr_report_future_error (session, "", temp);
@@ -655,13 +653,13 @@ init_readtable (void)
 
   readtable[DV_DB_NULL] = box_read_db_null;
   readtable[DV_BOX_FLAGS] = box_read_flags;
-  readtable [DV_RDF] = rb_deserialize;
+  readtable[DV_RDF] = rb_deserialize;
   strses_readtable_initialize ();
 }
 
 
 void *
-PrpcReadObject (dk_session_t *session)
+PrpcReadObject (dk_session_t * session)
 {
   return read_object (session);
 }
@@ -698,7 +696,7 @@ get_readtable (void)
  * Globals used : - readtable
  */
 void *
-scan_session (dk_session_t *session)
+scan_session (dk_session_t * session)
 {
   dtp_t next_char;
 
@@ -711,7 +709,7 @@ scan_session (dk_session_t *session)
  *  Like scan_session, but allocates a box if needed
  */
 void *
-scan_session_boxing (dk_session_t *session)
+scan_session_boxing (dk_session_t * session)
 {
   dtp_t next_char;
   void *result;
@@ -746,7 +744,7 @@ scan_session_boxing (dk_session_t *session)
       if (!IS_POINTER (result))
 	return (void *) (ptrlong) result;
       MARSH_CHECK_BOX (box = (boxint *) dk_try_alloc_box (sizeof (boxint), DV_LONG_INT));
-      *box = (boxint)(ptrlong) result;
+      *box = (boxint) (ptrlong) result;
       result = box;
     }
 
@@ -755,20 +753,20 @@ scan_session_boxing (dk_session_t *session)
 
 
 static void
-print_raw_float (float f, dk_session_t *session)
+print_raw_float (float f, dk_session_t * session)
 {
 #ifdef _IEEE_FLOATS
 # ifdef WORDS_BIGENDIAN
   /* ieee numbers, big endian */
-  session_buffered_write (session, (caddr_t) &f, sizeof (float));
+  session_buffered_write (session, (caddr_t) & f, sizeof (float));
 
 # else /* WORDS_BIGENDIAN */
   /* ieee numbers, little endian */
   union
-    {
-      uint32 l;
-      float f;
-    } ds;
+  {
+    uint32 l;
+    float f;
+  } ds;
   ds.f = f;
   print_long ((long) ds.l, session);
 # endif
@@ -786,20 +784,20 @@ print_raw_float (float f, dk_session_t *session)
 
 
 static void
-print_raw_double (double d, dk_session_t *session)
+print_raw_double (double d, dk_session_t * session)
 {
 #ifdef _IEEE_FLOATS
 # ifdef WORDS_BIGENDIAN
   /* ieee numbers, big endian */
-  session_buffered_write (session, (caddr_t) &d, sizeof (double));
+  session_buffered_write (session, (caddr_t) & d, sizeof (double));
 
 # else /* WORDS_BIGENDIAN */
   /* ieee numbers, little endian */
   union
-    {
-      uint32 l[2];
-      double d;
-    } ds;
+  {
+    uint32 l[2];
+    double d;
+  } ds;
   ds.d = d;
   print_long ((long) ds.l[1], session);
   print_long ((long) ds.l[0], session);
@@ -818,7 +816,7 @@ print_raw_double (double d, dk_session_t *session)
 
 
 void
-double_to_buf (double d, char * buf)
+double_to_buf (double d, char *buf)
 {
 #ifdef _IEEE_FLOATS
 # ifdef WORDS_BIGENDIAN
@@ -827,10 +825,10 @@ double_to_buf (double d, char * buf)
 # else /* WORDS_BIGENDIAN */
   /* ieee numbers, little endian */
   union
-    {
-      uint32 l[2];
-      double d;
-    } ds;
+  {
+    uint32 l[2];
+    double d;
+  } ds;
   ds.d = d;
   LONG_SET_NA (buf, ds.l[1]);
   LONG_SET_NA (buf + 4, ds.l[0]);
@@ -849,23 +847,25 @@ double_to_buf (double d, char * buf)
 
 
 void
-print_long (long l, dk_session_t *session)
+print_long (long l, dk_session_t * session)
 {
 #ifdef WORDS_BIGENDIAN
   uint32 value = (uint32) l;
 #else
   uint32 value = (uint32) htonl ((uint32) l);
 #endif
-  session_buffered_write (session, (caddr_t) &value, sizeof (value));
+  session_buffered_write (session, (caddr_t) & value, sizeof (value));
 }
 
 
 void
-print_int64 (boxint n, dk_session_t *session)
+print_int64 (boxint n, dk_session_t * session)
 {
-  union {
+  union
+  {
     int64 n64;
-    struct {
+    struct
+    {
       int32 n1;
       int32 n2;
     } n32;
@@ -881,12 +881,15 @@ print_int64 (boxint n, dk_session_t *session)
 #endif
 }
 
+
 void
-print_int64_no_tag (boxint n, dk_session_t *session)
+print_int64_no_tag (boxint n, dk_session_t * session)
 {
-  union {
+  union
+  {
     int64 n64;
-    struct {
+    struct
+    {
       int32 n1;
       int32 n2;
     } n32;
@@ -902,11 +905,10 @@ print_int64_no_tag (boxint n, dk_session_t *session)
 }
 
 
-
 ses_write_func int64_serialize_client_f;
 
 void
-print_int (boxint n, dk_session_t *ses)
+print_int (boxint n, dk_session_t * ses)
 {
   int fill = ses->dks_out_fill;
   if ((n > -128) && (n < 128))
@@ -917,7 +919,7 @@ print_int (boxint n, dk_session_t *ses)
 	  ses->dks_out_buffer[fill + 1] = n;
 	  ses->dks_out_fill += 2;
 	}
-      else 
+      else
 	{
 	  session_buffered_write_char (DV_SHORT_INT, ses);
 	  session_buffered_write_char ((char) n, ses);
@@ -932,7 +934,7 @@ print_int (boxint n, dk_session_t *ses)
 	  LONG_SET_NA (ses->dks_out_buffer + fill + 1, ni);
 	  ses->dks_out_fill += 5;
 	}
-      else 
+      else
 	{
 	  session_buffered_write_char (DV_LONG_INT, ses);
 	  print_long (n, ses);
@@ -942,7 +944,7 @@ print_int (boxint n, dk_session_t *ses)
     {
       if (int64_serialize_client_f)
 	{
-	  (*int64_serialize_client_f) ((caddr_t)&n, ses);
+	  (*int64_serialize_client_f) ((caddr_t) & n, ses);
 	}
       else
 	{
@@ -951,8 +953,8 @@ print_int (boxint n, dk_session_t *ses)
 	      ses->dks_out_buffer[fill] = DV_INT64;
 	      INT64_SET_NA (ses->dks_out_buffer + fill + 1, n);
 	      ses->dks_out_fill += 9;
-	}
-      else
+	    }
+	  else
 	    print_int64 (n, ses);
 	}
     }
@@ -960,7 +962,7 @@ print_int (boxint n, dk_session_t *ses)
 
 
 void
-print_float (float f, dk_session_t *session)
+print_float (float f, dk_session_t * session)
 {
   session_buffered_write_char (DV_SINGLE_FLOAT, session);
   print_raw_float (f, session);
@@ -968,7 +970,7 @@ print_float (float f, dk_session_t *session)
 
 
 void
-print_double (double v, dk_session_t *session)
+print_double (double v, dk_session_t * session)
 {
   session_buffered_write_char (DV_DOUBLE_FLOAT, session);
   print_raw_double (v, session);
@@ -976,7 +978,7 @@ print_double (double v, dk_session_t *session)
 
 
 void
-dks_array_head (dk_session_t *session, long n_elements, dtp_t type)
+dks_array_head (dk_session_t * session, long n_elements, dtp_t type)
 {
   session_buffered_write_char (type, session);
   print_int (n_elements, session);
@@ -986,7 +988,7 @@ dks_array_head (dk_session_t *session, long n_elements, dtp_t type)
 int (*box_flags_serial_test_hook) (dk_session_t * ses);
 
 void
-print_string (char *string, dk_session_t *session)
+print_string (char *string, dk_session_t * session)
 {
   /* There will be a zero at the end. Do not send the zero. */
   uint32 flags = box_flags (string);
@@ -1011,7 +1013,7 @@ print_string (char *string, dk_session_t *session)
 
 
 void
-print_ref_box (char *string, dk_session_t *session)
+print_ref_box (char *string, dk_session_t * session)
 {
   /* There will be a zero at the end. Do not send the zero. */
   size_t length = box_length (string);
@@ -1022,7 +1024,7 @@ print_ref_box (char *string, dk_session_t *session)
       session_buffered_write (session, string, length);
     }
   else
-    GPF_T;			/* Ref box over 255 bytes */
+    GPF_T;					 /* Ref box over 255 bytes */
 }
 
 
@@ -1037,7 +1039,7 @@ print_ref_box (char *string, dk_session_t *session)
  */
 
 void
-print_object2 (void *object, dk_session_t *session)
+print_object2 (void *object, dk_session_t * session)
 {
   if (object == NULL)
     session_buffered_write_char (DV_NULL, session);
@@ -1052,7 +1054,11 @@ print_object2 (void *object, dk_session_t *session)
 
       switch (tag)
 	{
-	case DV_ARRAY_OF_POINTER: case DV_LIST_OF_POINTER: case DV_ARRAY_OF_XQVAL: case DV_XTREE_HEAD: case DV_XTREE_NODE:
+	case DV_ARRAY_OF_POINTER:
+	case DV_LIST_OF_POINTER:
+	case DV_ARRAY_OF_XQVAL:
+	case DV_XTREE_HEAD:
+	case DV_XTREE_NODE:
 	  {
 	    void **valptr = (void **) object;
 	    length = box_length (object) / sizeof (void *);
@@ -1114,7 +1120,7 @@ print_object2 (void *object, dk_session_t *session)
 	  break;
 
 	case DV_LONG_INT:
-	  print_int (*(boxint *)object, session);
+	  print_int (*(boxint *) object, session);
 	  break;
 
 	case DV_STRING:
@@ -1150,7 +1156,7 @@ print_object2 (void *object, dk_session_t *session)
 #ifdef NDEBUG
 	    CHECK_WRITE_FAIL (session);
 	    if (session->dks_session)
-	      {				/* could be a string input */
+	      {					 /* could be a string input */
 		char temp[30];
 		snprintf (temp, sizeof (temp), "Bad outgoing tag %u", (unsigned) tag);
 		sr_report_future_error (session, "", temp);
@@ -1192,7 +1198,7 @@ print_object2 (void *object, dk_session_t *session)
  * Globals used : none
  */
 int
-srv_write_in_session (void *object, dk_session_t *session, int flush)
+srv_write_in_session (void *object, dk_session_t * session, int flush)
 {
   int ret;
   if (!session)
@@ -1217,7 +1223,7 @@ srv_write_in_session (void *object, dk_session_t *session, int flush)
 
 
 int
-PrpcWriteObject (dk_session_t *session, void *object)
+PrpcWriteObject (dk_session_t * session, void *object)
 {
   return srv_write_in_session (object, session, 1);
 }

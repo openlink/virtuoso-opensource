@@ -4,113 +4,114 @@
  *  $Id$
  *
  *  RPC Kernel
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ *
+ */
 
 #ifndef _DKERNEL_H
 #define _DKERNEL_H
 
 typedef struct buffer_elt_s buffer_elt_t;
 struct buffer_elt_s
-  {
-    char *		data;
-    int			fill;
-    int			read;
-    int 		fill_chars;
-    unsigned 		space_exausted:1;
-    buffer_elt_t *	next;
-  };
+{
+  char *		data;
+  int 			fill;
+  int 			read;
+  int 			fill_chars;
+  unsigned 		space_exausted:1;
+  buffer_elt_t *	next;
+};
 
 typedef struct dk_session_s dk_session_t;
 
 typedef enum { DKST_IDLE = 0, DKST_RUN, DKST_FINISH, DKST_BURST } dks_thread_state_t;
 
 #if 0
-#define thrs_printf(x) fprintf x
-#define thrs_fo stderr
+#define thrs_printf(x) 		fprintf x
+#define thrs_fo 		stderr
 #else
 #define thrs_printf(x)
 #endif
 
 struct dk_session_s
-  {
-    session_t *		dks_session;
+{
+  session_t *			dks_session;
 
-    dk_mutex_t *	dks_mtx;
+  dk_mutex_t *			dks_mtx;
 
-    int			dks_refcount;
-    int			dks_in_length;
-    int			dks_in_fill;
-    int			dks_in_read;
+  int 				dks_refcount;
+  int 				dks_in_length;
+  int 				dks_in_fill;
+  int 				dks_in_read;
 
-    char *		dks_in_buffer;
+  char *			dks_in_buffer;
 
-    buffer_elt_t *	dks_buffer_chain;
-    buffer_elt_t *	dks_buffer_chain_tail;
+  buffer_elt_t *		dks_buffer_chain;
+  buffer_elt_t *		dks_buffer_chain_tail;
 
-    char *		dks_out_buffer;
-    int			dks_out_length;
-    int			dks_out_fill;
+  char *			dks_out_buffer;
+  int 				dks_out_length;
+  int 				dks_out_fill;
 
-    struct scheduler_io_data_s *dks_client_data;	/*!< Used by scheduler */
-    void *		dks_object_data;  /*!< Used by Distributed Objects */
-    void *		dks_object_temp;  /*!< Used by Distributed Objects */
-    OFF_T		dks_bytes_sent;   /*!< Used by Administration server */
-    OFF_T		dks_bytes_received;/*!< Used by Administration server */
+  struct scheduler_io_data_s *	dks_client_data;	/*!< Used by scheduler */
+  void *			dks_object_data;	/*!< Used by Distributed Objects */
+  void *			dks_object_temp;	/*!< Used by Distributed Objects */
+  OFF_T 			dks_bytes_sent;		/*!< Used by Administration server */
+  OFF_T 			dks_bytes_received;	/*!< Used by Administration server */
 
 
-    char *		dks_peer_name;
-    char *		dks_own_name;
-    caddr_t *		dks_caller_id_opts;
+  char *			dks_peer_name;
+  char *			dks_own_name;
+  caddr_t *			dks_caller_id_opts;
 
-    void *		dks_dbs_data;
-    void *		dks_write_temp;	/*!< Used by Distributed Objects */
+  void *			dks_dbs_data;
+  void *			dks_cluster_data;	/* cluster interconnect state.  Not the same as dks_dbs_data because dks_dbs_data when present determines protocol vrsions and cluster is all the same version */
+  void *			dks_write_temp;		/* Used by Distributed Objects */
 
-    /*! max msecs to block on a read */
-    timeout_t		dks_read_block_timeout;
-    /*! Is this a client or server initiated session */
-    char		dks_is_server;
-    char		dks_to_close;
-    char		dks_is_read_select_ready; /*! Is the next read known NOT to block */
-    char		dks_ws_status;
-    char 		dks_error;		/* error here, because dks_session is empty for strses */
-    short		dks_n_threads;
+  /*! max msecs to block on a read */
+  timeout_t 			dks_read_block_timeout;
+  /*! Is this a client or server initiated session */
+  char 				dks_is_server;
+  char 				dks_cluster_flags;
+  char 				dks_to_close;
+  char 				dks_is_read_select_ready;	/*! Is the next read known NOT to block */
+  char 				dks_ws_status;
+  char 				dks_error;		/* error here, because dks_session is empty for strses */
+  short				dks_n_threads;
 
-    /*! time of last usage (get_msec_real_time) - use for dropping idle HTTP keep alives */
-    uint32		dks_last_used;
+  /*! time of last usage (get_msec_real_time) - use for dropping idle HTTP keep alives */
+  uint32 			dks_last_used;
 
-    /*! burst mode */
-    dks_thread_state_t  dks_thread_state;
+  /*! burst mode */
+  dks_thread_state_t 		dks_thread_state;
 
-    /*! web server thread associated to this if ws computation pending. Used to cancel upon client disconnect */
-    void *		dks_ws_pending;
+  /*! web server thread associated to this if ws computation pending. Used to cancel upon client disconnect */
+  void *			dks_ws_pending;
 
-    /*! fixed server thread per client */
-    du_thread_t *	dks_fixed_thread; /*!< note: also used to pass the http ses for chunked write */
-    basket_t		dks_fixed_thread_reqs;
+  /*! fixed server thread per client */
+  du_thread_t *			dks_fixed_thread;	/*!< note: also used to pass the http ses for chunked write */
+  basket_t 			dks_fixed_thread_reqs;
 
-    du_thread_t *	dks_waiting_http_recall_session;
-    dk_hash_t *		dks_pending_futures;
-  };
+  du_thread_t *			dks_waiting_http_recall_session;
+  dk_hash_t *			dks_pending_futures;
+};
 
 /* dks_error */
 #define DKSE_BAD_TAG 		1
@@ -122,7 +123,7 @@ struct dk_session_s
 #define DKSESSTAT_ISSET(x,y) \
 	SESSTAT_ISSET(x->dks_session, y)
 
-extern dk_mutex_t * thread_mtx;
+extern dk_mutex_t *thread_mtx;
 
 #define DKST_RPC_DONE_NO_MTX(dks) \
             if (!dks->dks_fixed_thread) \
@@ -150,30 +151,30 @@ typedef struct dk_thread_s dk_thread_t;
 
 struct future_request_s
 {
-   service_t *		rq_service;
+  service_t *		rq_service;
 #ifndef PMN_MODS
-   jmp_buf_splice	rq_start_context;
+  jmp_buf_splice 	rq_start_context;
 #endif
-   long **		rq_arguments;
-   dk_session_t *	rq_client;
-   long			rq_condition;
+  long **		rq_arguments;
+  dk_session_t *	rq_client;
+  long 			rq_condition;
 #ifndef PMN_MODS
-   int			rq_ancestor_count;
-   future_request_t **	rq_ancestors;
+  int 			rq_ancestor_count;
+  future_request_t **	rq_ancestors;
 #endif
-   dk_thread_t *	rq_thread;
-   future_request_t *	rq_next_waiting;
-   int			rq_is_direct_io;
+  dk_thread_t *		rq_thread;
+  future_request_t *	rq_next_waiting;
+  int 			rq_is_direct_io;
 
 #ifndef NDEBUG
-   caddr_t		rq_peer_name;
-#endif /* NDEBUG */
-   int			rq_to_close;
-   int			rq_is_second;
+  caddr_t 		rq_peer_name;
+#endif
+  int 			rq_to_close;
+  int 			rq_is_second;
 };
 
-typedef char * (*server_func) (caddr_t x, ...);
-typedef void  (*post_func) (caddr_t b, future_request_t *f) ;
+typedef char *(*server_func) (caddr_t x, ...);
+typedef void (*post_func) (caddr_t b, future_request_t * f);
 
 /*
  * struct dk_thread_t
@@ -196,12 +197,12 @@ typedef void  (*post_func) (caddr_t b, future_request_t *f) ;
  */
 
 struct dk_thread_s
-  {
-    du_thread_t *	dkt_process;
-    int			dkt_request_count;
-    future_request_t *	dkt_requests[MAX_NESTED_FUTURES];
-    int			dkt_fixed_thread;
-  };
+{
+  du_thread_t *		dkt_process;
+  int 			dkt_request_count;
+  future_request_t *	dkt_requests[MAX_NESTED_FUTURES];
+  int 			dkt_fixed_thread;
+};
 
 #define DK_THREAD_PROCESS(x) \
 	((x)->dkt_process)
@@ -233,12 +234,13 @@ struct dk_thread_s
  * This structure exists on the client. The arg_types is an array
  * that holds values from the DV<xxx> group. See messages.h.
  */
-typedef struct {
+typedef struct
+{
   char *		sd_name;
-  int			sd_arg_count;
+  int 			sd_arg_count;
   long *		sd_arg_types;
-  int			sd_type;
-  dtp_t			sd_return_type;
+  int 			sd_type;
+  dtp_t 		sd_return_type;
   char *		sd_arg_nullable;
 } service_desc_t;
 
@@ -298,12 +300,13 @@ typedef struct {
  *
  *  The return type is a value in the DV<xxx> group.
  */
-struct service_s {
+struct service_s
+{
   char *		sr_name;
   void *		sr_client_data;
-  server_func		sr_func;
-  post_func		sr_postprocess;
-  int			sr_return_type;
+  server_func 		sr_func;
+  post_func 		sr_postprocess;
+  int 			sr_return_type;
   service_t *		sr_next;
 };
 
@@ -316,19 +319,19 @@ struct service_s {
  */
 
 typedef struct future_s
-  {
-    dk_session_t *	ft_server;
-    ptrlong		ft_request_no;
-    service_desc_t *	ft_service;
-    caddr_t *		ft_arguments;
-    caddr_t		ft_result;
-    caddr_t		ft_error;
-    int			ft_is_ready;
-    timeout_t		ft_timeout;
-    timeout_t		ft_time_issued;
-    timeout_t		ft_time_received;
-    future_request_t *	ft_waiting_requests;
-  } future_t;
+{
+  dk_session_t *	ft_server;
+  ptrlong 		ft_request_no;
+  service_desc_t *	ft_service;
+  caddr_t *		ft_arguments;
+  caddr_t 		ft_result;
+  caddr_t 		ft_error;
+  int 			ft_is_ready;
+  timeout_t 		ft_timeout;
+  timeout_t 		ft_time_issued;
+  timeout_t 		ft_time_received;
+  future_request_t *	ft_waiting_requests;
+} future_t;
 
 /* Value stored in ft_error member of future_t struct upon time out */
 #define FE_TIMED_OUT		1
@@ -377,24 +380,25 @@ typedef struct future_s
  * Hence the reading and writing threads that are passed to the above functions.
  *
  */
-typedef int (*io_action_func) (dk_session_t *ses);
+typedef int (*io_action_func) (dk_session_t * ses);
 
-typedef struct scheduler_io_data_s {
-  io_action_func	sio_default_read_ready_action;
-  io_action_func	sio_random_read_ready_action;
-  io_action_func	sio_random_write_ready_action;
-  du_thread_t *	 sio_writing_thread;
-  du_thread_t *	 sio_reading_thread;
-  int		   sio_is_served;
+typedef struct scheduler_io_data_s
+{
+  io_action_func 	sio_default_read_ready_action;
+  io_action_func 	sio_random_read_ready_action;
+  io_action_func 	sio_random_write_ready_action;
+  du_thread_t *		sio_writing_thread;
+  du_thread_t *		sio_reading_thread;
+  int 			sio_is_served;
   /* Index in served sessions table, if it is there */
-  int		   sio_is_regular_input;
+  int 			sio_is_regular_input;
   /* true if regularly checked for client input */
-  io_action_func	sio_partner_dead_action;
-  int		   sio_read_fail_on;
-  int		   sio_write_fail_on;
-  jmp_buf_splice	sio_read_broken_context;
-  jmp_buf_splice	sio_write_broken_context;
-  void *		sio_client_data;     /* For application use */
+  io_action_func 	sio_partner_dead_action;
+  int 			sio_read_fail_on;
+  int 			sio_write_fail_on;
+  jmp_buf_splice 	sio_read_broken_context;
+  jmp_buf_splice 	sio_write_broken_context;
+  void *		sio_client_data;	/* For application use */
 } scheduler_io_data_t;
 
 #if defined (NO_THREAD)
@@ -480,44 +484,42 @@ typedef struct scheduler_io_data_s {
  * inside an ARRAY_OF_POINTER format.
  */
 
-#define DA_MESSAGE_TYPE		0  /* futur, answer or something else */
+#define DA_MESSAGE_TYPE			0			   /* futur, answer or something else */
 
 /*
  * FRQ = future request
  */
-#define FRQ_COND_NUMBER		1
-#define FRQ_ANCESTRY		2
-#define FRQ_SERVICE_NAME	3
-#define FRQ_ARGUMENTS		4
+#define FRQ_COND_NUMBER			1
+#define FRQ_ANCESTRY			2
+#define FRQ_SERVICE_NAME		3
+#define FRQ_ARGUMENTS			4
 
-#define DA_FRQ_LENGTH		5
+#define DA_FRQ_LENGTH			5
 
 /*
  * RRC = remote realize condition = future answer.
  */
-#define RRC_COND_NUMBER		1
-#define RRC_VALUE		2
-#define RRC_ERROR		3
+#define RRC_COND_NUMBER			1
+#define RRC_VALUE			2
+#define RRC_ERROR			3
 
-#define DA_ANSWER_LENGTH	4
+#define DA_ANSWER_LENGTH		4
 
 
-typedef caddr_t (*srv_req_hook_func) (dk_session_t* session, caddr_t request);
+typedef caddr_t (*srv_req_hook_func) (dk_session_t * session, caddr_t request);
 
 typedef void (*sch_hook_func) (void);
 
 typedef void (*background_action_func) (void);
 
-typedef int (*printer_ext_func) (caddr_t obj, dk_session_t *ses, void * ext,
-              caddr_t ea);
+typedef int (*printer_ext_func) (caddr_t obj, dk_session_t * ses, void *ext, caddr_t ea);
 
-typedef void (*disconnect_callback_func) (dk_session_t *ses);
+typedef void (*disconnect_callback_func) (dk_session_t * ses);
 
-#if 0 /* moved to Dkmarshal.h */
+#if 0							   /* moved to Dkmarshal.h */
 typedef caddr_t (*macro_char_func) (dk_session_t * ses, char macro);
 
-typedef int (*ses_write_func) (caddr_t thing, dk_session_t * session,
-	    printer_ext_func extension, void * ea, int flush);
+typedef int (*ses_write_func) (caddr_t thing, dk_session_t * session, printer_ext_func extension, void *ea, int flush);
 #else
 #include "Dkmarshal.h"
 #endif
@@ -527,88 +529,88 @@ typedef int (*ses_write_func) (caddr_t thing, dk_session_t * session,
  */
 #ifdef GSTATE
 typedef struct dkstat
-  {
-    du_thread_t ds_threads[MAX_THREADS];
-    /*du_thread_t *ds_current_process; */
-    du_thread_t *ds_initial_process;
-    long ds_stack_limit;
-    long ds_stack_allocation;
+{
+  du_thread_t 			ds_threads[MAX_THREADS];
+  /*du_thread_t *ds_current_process; */
+  du_thread_t *			ds_initial_process;
+  long 				ds_stack_limit;
+  long 				ds_stack_allocation;
 
-    dk_session_t *ds_served_sessions[MAX_SESSIONS];
-    unsigned long ds_last_future;
-    service_t *ds_services;
+  dk_session_t *		ds_served_sessions[MAX_SESSIONS];
+  unsigned long 		ds_last_future;
+  service_t *			ds_services;
 
-    int ds_is_initialized;
-    basket_t ds_in_basket;
-    basket_t ds_continue_basket;
-    dk_hash_t *ds_protocols;
-    dk_hash_t *ds_pending_futures;
-    background_action_func ds_background_action;
+  int 				ds_is_initialized;
+  basket_t 			ds_in_basket;
+  basket_t 			ds_continue_basket;
+  dk_hash_t *			ds_protocols;
+  dk_hash_t *			ds_pending_futures;
+  background_action_func 	ds_background_action;
 
-    long ds_main_thread_sz;
-    long ds_future_thread_sz;
-    long ds_server_thread_sz;
-    int ds_last_session;
-    int ds_atomic_ctr;
-    timeout_t ds_atomic_timeout;
-    dk_mutex_t *ds_value_mtx;
+  long 				ds_main_thread_sz;
+  long 				ds_future_thread_sz;
+  long 				ds_server_thread_sz;
+  int 				ds_last_session;
+  int 				ds_atomic_ctr;
+  timeout_t 			ds_atomic_timeout;
+  dk_mutex_t *			ds_value_mtx;
 
-    resource_t *ds_free_threads;
-    int ds_future_thread_count;
-    int ds_max_future_threads;
-    ses_write_func ds_write_in_session;
-    sch_hook_func ds_scheduler_hook;
-    srv_req_hook_func ds_service_request_hook;
-    macro_char_func ds_readtable[256];
-    long ds_connection_count;
-    char *ds_i_am;
-    int *ds_client_ds;
-    int ds_select_set_changed;
-  } dkstat_t;
+  resource_t *			ds_free_threads;
+  int 				ds_future_thread_count;
+  int 				ds_max_future_threads;
+  ses_write_func 		ds_write_in_session;
+  sch_hook_func 		ds_scheduler_hook;
+  srv_req_hook_func 		ds_service_request_hook;
+  macro_char_func 		ds_readtable[256];
+  long 				ds_connection_count;
+  char *			ds_i_am;
+  int *				ds_client_ds;
+  int 				ds_select_set_changed;
+} dkstat_t;
 
 #define threads dkstat->ds_threads
 /*#define current_process dkstat->ds_current_process */
-#define initial_process dkstat->ds_initial_process
-#define StackLimit dkstat->ds_stack_limit
-#define stack_allocation dkstat->ds_stack_allocation
+#define initial_process 	dkstat->ds_initial_process
+#define StackLimit 		dkstat->ds_stack_limit
+#define stack_allocation 	dkstat->ds_stack_allocation
 
-#define served_sessions dkstat->ds_served_sessions
-#define last_future dkstat->ds_last_future
-#define services dkstat->ds_services
+#define served_sessions 	dkstat->ds_served_sessions
+#define last_future 		dkstat->ds_last_future
+#define services 		dkstat->ds_services
 
-#define prpcinitialized dkstat->ds_is_initialized
-#define in_basket dkstat->ds_in_basket
-#define continue_basket dkstat->ds_continue_basket
-#define protocols dkstat->ds_protocols
-#define pending_futures dkstat->ds_pending_futures
-#define background_action dkstat->ds_background_action
+#define prpcinitialized 	dkstat->ds_is_initialized
+#define in_basket 		dkstat->ds_in_basket
+#define continue_basket 	dkstat->ds_continue_basket
+#define protocols 		dkstat->ds_protocols
+#define pending_futures 	dkstat->ds_pending_futures
+#define background_action 	dkstat->ds_background_action
 
-#define main_thread_sz dkstat->ds_main_thread_sz
-#define future_thread_sz dkstat->ds_future_thread_sz
-#define server_thread_sz dkstat->ds_server_thread_sz
-#define last_session dkstat->ds_last_session
-#define atomic_ctr dkstat->ds_atomic_ctr
-#define atomic_timeout dkstat->ds_atomic_timeout
-#define value_mtx dkstat->ds_value_mtx
+#define main_thread_sz 		dkstat->ds_main_thread_sz
+#define future_thread_sz 	dkstat->ds_future_thread_sz
+#define server_thread_sz 	dkstat->ds_server_thread_sz
+#define last_session 		dkstat->ds_last_session
+#define atomic_ctr 		dkstat->ds_atomic_ctr
+#define atomic_timeout 		dkstat->ds_atomic_timeout
+#define value_mtx 		dkstat->ds_value_mtx
 
-#define free_threads dkstat->ds_free_threads
-#define future_thread_count dkstat->ds_future_thread_count
-#define max_future_threads dkstat->ds_max_future_threads
-#define write_in_session dkstat->ds_write_in_session
-#define scheduler_hook dkstat->ds_scheduler_hook
-#define service_request_hook dkstat->ds_service_request_hook
-#define readtable  dkstat->ds_readtable
-#define connection_count  dkstat->ds_connection_count
-#define i_am dkstat->ds_i_am
-#define select_set_changed  dkstat->ds_select_set_changed
+#define free_threads 		dkstat->ds_free_threads
+#define future_thread_count 	dkstat->ds_future_thread_count
+#define max_future_threads 	dkstat->ds_max_future_threads
+#define write_in_session 	dkstat->ds_write_in_session
+#define scheduler_hook 		dkstat->ds_scheduler_hook
+#define service_request_hook 	dkstat->ds_service_request_hook
+#define readtable  		dkstat->ds_readtable
+#define connection_count  	dkstat->ds_connection_count
+#define i_am 			dkstat->ds_i_am
+#define select_set_changed  	dkstat->ds_select_set_changed
 
 #define USE_GLOBAL \
 	dkstat_t *dkstat = get_global_state ();
 
-#define TAKE_G		dkstat_t *dkstat,
-#define TAKE_G1		dkstat_t *dkstat
-#define PASS_G		dkstat,
-#define PASS_G1		dkstat
+#define TAKE_G			dkstat_t *dkstat,
+#define TAKE_G1			dkstat_t *dkstat
+#define PASS_G			dkstat,
+#define PASS_G1			dkstat
 #define GSTATE
 
 dkstat_t *get_global_state (void);
@@ -616,12 +618,12 @@ dkstat_t *get_global_state (void);
 #else
 #define USE_GLOBAL
 #define TAKE_G
-#define TAKE_G1		void
+#define TAKE_G1			void
 #define PASS_G
 #define PASS_G1
 
 
-extern dk_mutex_t * value_mtx;
+extern dk_mutex_t *value_mtx;
 
 extern background_action_func background_action;
 extern long sesclass_default;
@@ -631,36 +633,36 @@ extern timeout_t atomic_timeout;
 extern timeout_t dks_fibers_blocking_read_default_to;
 
 extern ses_write_func write_in_session;
-extern dk_hash_t * pending_futures;
+extern dk_hash_t *pending_futures;
 
 extern basket_t continue_basket;
 extern basket_t in_basket;
 
-extern resource_t * free_threads;
-extern dk_session_t * served_sessions [MAX_SESSIONS];
+extern resource_t *free_threads;
+extern dk_session_t *served_sessions[MAX_SESSIONS];
 
-extern du_thread_t * initial_process;
+extern du_thread_t *initial_process;
 
 extern int atomic_ctr;
 
 /* extern macro_char_func readtable [256]; */
 
-extern long connection_count ;
+extern long connection_count;
 
-extern char * i_am;
+extern char *i_am;
 
 extern char *c_ssl_server_port;
 extern char *c_ssl_server_cert;
 extern char *c_ssl_server_key;
-extern long future_thread_sz; /* from dkernel.c */
+extern long future_thread_sz;	/* from dkernel.c */
 #endif
 
 #define CB_PREPARE
 #define CB_DONE
 
 /* PrpcAddAnswer */
-#define FINAL 0
-#define PARTIAL 1
+#define FINAL 			0
+#define PARTIAL			1
 
 #define PRPC_ANSWER_START(thr, is_partial) \
 { \
@@ -677,102 +679,101 @@ extern long future_thread_sz; /* from dkernel.c */
   mutex_leave (__ses -> dks_mtx); \
 }
 
-typedef void (* self_signal_func) (caddr_t);
+typedef void (*self_signal_func) (caddr_t);
 
 
 typedef struct self_signal_s
-  {
-    self_signal_func	ss_func;
-    caddr_t		ss_cd;
-  } self_signal_t;
+{
+  self_signal_func 		ss_func;
+  caddr_t 			ss_cd;
+} self_signal_t;
 
 
 /* Dksesinp.c */
 dk_session_t *inpses_allocate (void);
-int inpses_unread_data (dk_session_t *ses);
+int inpses_unread_data (dk_session_t * ses);
 #if defined(_MSC_VER) && defined(_DEBUG)
-void inpses_verify (dk_session_t *ses);
+void inpses_verify (dk_session_t * ses);
 #endif
-#define SESSION_IS_INPROCESS(ses) (SESSION_IS_STRING (ses) && ses->dks_mtx != NULL)
+#define SESSION_IS_INPROCESS(ses) 	(SESSION_IS_STRING (ses) && ses->dks_mtx != NULL)
 
 /* Dksesstr.c */
 
 typedef size_t strses_dump_callback_t (const void *ptr, size_t size, size_t nmemb, void *app_env);
 
 device_t *strdev_allocate (void);
-void strses_rewind (dk_session_t *ses);
-void strses_map (dk_session_t *ses, void (*func )(buffer_elt_t *e, caddr_t arg ), caddr_t arg);
-void strses_file_map (dk_session_t *ses, void (*func )(buffer_elt_t *e, caddr_t arg ), caddr_t arg);
-EXE_EXPORT (void, strses_flush, (dk_session_t *ses));
-EXE_EXPORT (int64, strses_length, (dk_session_t *ses));
-int64 strses_chars_length (dk_session_t *ses);
-EXE_EXPORT (void, strses_write_out, (dk_session_t *ses, dk_session_t *out));
-void strses_to_array (dk_session_t *ses, char *buffer);
-size_t strses_fragment_to_array (dk_session_t *ses, char *buffer, size_t fragment_offset, size_t fragment_size);
-#if 0 /* No longer in use */
-extern void strses_read_by_callbacks (dk_session_t *ses, char *tmp_buf, size_t tmp_buf_len, strses_dump_callback_t *cbk, void *app_env);
+void strses_rewind (dk_session_t * ses);
+void strses_map (dk_session_t * ses, void (*func) (buffer_elt_t * e, caddr_t arg), caddr_t arg);
+void strses_file_map (dk_session_t * ses, void (*func) (buffer_elt_t * e, caddr_t arg), caddr_t arg);
+EXE_EXPORT (void, strses_flush, (dk_session_t * ses));
+EXE_EXPORT (int64, strses_length, (dk_session_t * ses));
+int64 strses_chars_length (dk_session_t * ses);
+EXE_EXPORT (void, strses_write_out, (dk_session_t * ses, dk_session_t * out));
+void strses_to_array (dk_session_t * ses, char *buffer);
+size_t strses_fragment_to_array (dk_session_t * ses, char *buffer, size_t fragment_offset, size_t fragment_size);
+#if 0							   /* No longer in use */
+extern void strses_read_by_callbacks (dk_session_t * ses, char *tmp_buf, size_t tmp_buf_len, strses_dump_callback_t * cbk, void *app_env);
 #endif
 
-int strses_is_ws_chunked_output (dk_session_t *ses);
-void strses_ws_chunked_state_set (dk_session_t *ses, dk_session_t *http_ses);
-void strses_ws_chunked_state_reset (dk_session_t *ses);
-extern char * ses_tmp_dir;
+int strses_is_ws_chunked_output (dk_session_t * ses);
+void strses_ws_chunked_state_set (dk_session_t * ses, dk_session_t * http_ses);
+void strses_ws_chunked_state_reset (dk_session_t * ses);
+extern char *ses_tmp_dir;
 extern timeout_t time_now;
 
 EXE_EXPORT (dk_session_t *, strses_allocate, (void));
 EXE_EXPORT (caddr_t, strses_string, (dk_session_t * ses));
 extern caddr_t t_strses_string (dk_session_t * ses);
-void strses_set_utf8 (dk_session_t *ses, int is_utf8);
-int strses_is_utf8 (dk_session_t *ses);
+void strses_set_utf8 (dk_session_t * ses, int is_utf8);
+int strses_is_utf8 (dk_session_t * ses);
 
 #ifdef MALLOC_DEBUG
-dk_session_t * dbg_strses_allocate (DBG_PARAMS_0);
+dk_session_t *dbg_strses_allocate (DBG_PARAMS_0);
 caddr_t dbg_strses_string (DBG_PARAMS dk_session_t * ses);
 #ifndef _USRDLL
 #ifndef EXPORT_GATE
-#define strses_allocate() dbg_strses_allocate (__FILE__, __LINE__)
-#define strses_string(S) dbg_strses_string (__FILE__, __LINE__, (S))
+#define strses_allocate() 		dbg_strses_allocate (__FILE__, __LINE__)
+#define strses_string(S) 		dbg_strses_string (__FILE__, __LINE__, (S))
 #endif
 #endif
 #endif
-EXE_EXPORT (void, strses_free, (dk_session_t *ses));
+EXE_EXPORT (void, strses_free, (dk_session_t * ses));
 typedef long (*copy_func_ptr_t) (void *dest_ptr, void *src_ptr, long src_ofs, long copy_bytes, void *state_data);
-long strses_get_part_1 (dk_session_t *ses, void *buf2, int64 starting_ofs, long nbytes, copy_func_ptr_t cpf, void *state_data);
-long strses_get_part (dk_session_t *ses, void *buffer, int64 starting_ofs, long nbytes);
-long strses_get_wide_part (dk_session_t *ses, wchar_t *buf, long starting_ofs, long nchars);
+long strses_get_part_1 (dk_session_t * ses, void *buf2, int64 starting_ofs, long nbytes, copy_func_ptr_t cpf, void *state_data);
+long strses_get_part (dk_session_t * ses, void *buffer, int64 starting_ofs, long nbytes);
+long strses_get_wide_part (dk_session_t * ses, wchar_t * buf, long starting_ofs, long nchars);
 
 void strses_serialize (caddr_t strses, dk_session_t * ses);
-long strses_cp_utf8_to_utf8 (unsigned char *dest_ptr, unsigned char *src_ptr,
-    long src_ofs, long copy_chars, void *state_data);
-#define SESSION_IS_STRING(ses) (ses->dks_session && SESCLASS_STRING == ses->dks_session->ses_class)
+long strses_cp_utf8_to_utf8 (unsigned char *dest_ptr, unsigned char *src_ptr, long src_ofs, long copy_chars, void *state_data);
+#define SESSION_IS_STRING(ses) 		(ses->dks_session && SESCLASS_STRING == ses->dks_session->ses_class)
 
 /* Dksestcp.c */
 device_t *tcpdev_allocate (void);
-void strses_enable_paging (dk_session_t *ses, int max_bytes_in_mem);
+void strses_enable_paging (dk_session_t * ses, int max_bytes_in_mem);
 char *dk_parse_address (char *str);
 int alldigits (char *string);
-EXE_EXPORT (void, tcpses_set_fd, (session_t *ses, int fd));
-EXE_EXPORT (int, tcpses_get_fd, (session_t *ses));
+EXE_EXPORT (void, tcpses_set_fd, (session_t * ses, int fd));
+EXE_EXPORT (int, tcpses_get_fd, (session_t * ses));
 EXE_EXPORT (int, tcpses_get_last_w_errno, (void));
 EXE_EXPORT (int, tcpses_get_last_r_errno, (void));
-unsigned int tcpses_get_port (session_t *ses);
-int tcpses_client_port (session_t *ses);
+unsigned int tcpses_get_port (session_t * ses);
+int tcpses_client_port (session_t * ses);
 int tcpses_getsockname (session_t * ses, char *buf_out, int buf_out_len);
 void tcpses_set_reuse_address (int f);
 int tcpses_is_read_ready (session_t * ses, timeout_t * to);
 int tcpses_is_write_ready (session_t * ses, timeout_t * to);
-int tcpses_select (int ses_count, session_t **reads, session_t **writes, timeout_t *timeout);
-int tcpses_addr_info (session_t * ses, char * buf, size_t max_buf, int deflt, int from);
+int tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeout_t * timeout);
+int tcpses_addr_info (session_t * ses, char *buf, size_t max_buf, int deflt, int from);
 void tcpses_print_client_ip (session_t * ses, char *buf, int buf_len);
 void tcpses_error_message (int saved_errno, char *msgbuf, int size);
-dk_session_t * tcpses_make_unix_session (char *address);
+dk_session_t *tcpses_make_unix_session (char *address);
 #ifdef COM_UNIXSOCK
-#define UNIXSOCK_ADD_ADDR "/tmp/virt_"
+#define UNIXSOCK_ADD_ADDR 		"/tmp/virt_"
 #endif
 
 #ifdef _SSL
 void sslses_to_tcpses (session_t * ses);
-void tcpses_to_sslses (session_t * ses, void * s_ssl);
+void tcpses_to_sslses (session_t * ses, void *s_ssl);
 caddr_t tcpses_get_ssl (session_t * ses);
 caddr_t ssl_new_connection (void);
 int cli_ssl_get_error_string (char *out_data, int out_data_len);
@@ -781,76 +782,76 @@ caddr_t ssl_get_x509_error (caddr_t ssl);
 
 /* Dkses2.c */
 void random_read_ready_while_direct_io (void);
-EXE_EXPORT (int, service_write, (dk_session_t *ses, char *buffer, int bytes));
-EXE_EXPORT (int, session_flush_1, (dk_session_t *ses));
-EXE_EXPORT (int, session_flush, (dk_session_t *session));
-EXE_EXPORT (int, session_buffered_write, (dk_session_t *ses, const char *buffer, size_t length));
+EXE_EXPORT (int, service_write, (dk_session_t * ses, char *buffer, int bytes));
+EXE_EXPORT (int, session_flush_1, (dk_session_t * ses));
+EXE_EXPORT (int, session_flush, (dk_session_t * session));
+EXE_EXPORT (int, session_buffered_write, (dk_session_t * ses, const char *buffer, size_t length));
 EXE_EXPORT (void, session_buffered_write_char, (int c, dk_session_t * ses));
 /*void session_buffered_write_char (unsigned char ch, dk_session_t *ses); */
-EXE_EXPORT (int, service_read, (dk_session_t *ses, char *buffer, int req_bytes, int need_all));
-EXE_EXPORT (int, session_buffered_read, (dk_session_t *ses, char *buffer, int req_bytes));
+EXE_EXPORT (int, service_read, (dk_session_t * ses, char *buffer, int req_bytes, int need_all));
+EXE_EXPORT (int, session_buffered_read, (dk_session_t * ses, char *buffer, int req_bytes));
 EXE_EXPORT (dtp_t, session_buffered_read_char, (dk_session_t * ses));
 /*char session_buffered_read_char (dk_session_t *ses);*/
 
-#define SES_PRINT(ses, s) session_buffered_write (ses, s, strlen (s))
+#define SES_PRINT(ses, s) 		session_buffered_write (ses, s, strlen (s))
 
 /* Dkmarshal.c */
-#if 0 /* moved to Dkmarshal.h */
-caddr_t scan_session (dk_session_t *ses);
-caddr_t scan_session_boxing (dk_session_t *ses);
-long read_long (dk_session_t *ses);
-caddr_t read_float (dk_session_t *session);
-double read_double (dk_session_t *session);
-caddr_t read_short_string (dk_session_t *session, dtp_t dtp);
-caddr_t read_ref_box (dk_session_t *session, dtp_t dtp);
-caddr_t read_db_null (dk_session_t *ses);
-caddr_t read_long_string (dk_session_t *session);
-caddr_t read_short_cont_string (dk_session_t *session);
-caddr_t read_long_cont_string (dk_session_t *session);
-caddr_t read_short_int (dk_session_t *ses, unsigned char macro);
-caddr_t read_array (dk_session_t *ses, unsigned char macro);
-caddr_t read_array_of_double (dk_session_t *ses, unsigned char macro);
-caddr_t read_array_of_float (dk_session_t *ses, unsigned char macro);
-caddr_t read_array_of_long (dk_session_t *ses, unsigned char macro);
-caddr_t read_null (dk_session_t *ses, char c);
-void macro_character_error (dk_session_t *ses, char c);
+#if 0							   /* moved to Dkmarshal.h */
+caddr_t scan_session (dk_session_t * ses);
+caddr_t scan_session_boxing (dk_session_t * ses);
+long read_long (dk_session_t * ses);
+caddr_t read_float (dk_session_t * session);
+double read_double (dk_session_t * session);
+caddr_t read_short_string (dk_session_t * session, dtp_t dtp);
+caddr_t read_ref_box (dk_session_t * session, dtp_t dtp);
+caddr_t read_db_null (dk_session_t * ses);
+caddr_t read_long_string (dk_session_t * session);
+caddr_t read_short_cont_string (dk_session_t * session);
+caddr_t read_long_cont_string (dk_session_t * session);
+caddr_t read_short_int (dk_session_t * ses, unsigned char macro);
+caddr_t read_array (dk_session_t * ses, unsigned char macro);
+caddr_t read_array_of_double (dk_session_t * ses, unsigned char macro);
+caddr_t read_array_of_float (dk_session_t * ses, unsigned char macro);
+caddr_t read_array_of_long (dk_session_t * ses, unsigned char macro);
+caddr_t read_null (dk_session_t * ses, char c);
+void macro_character_error (dk_session_t * ses, char c);
 void init_readtable (void);
-caddr_t read_object (dk_session_t *ses);
-void print_long (long n1, dk_session_t *session);
-void print_float (float f, dk_session_t *session);
-void print_double (double n, dk_session_t *session);
-void print_raw_float (float f, dk_session_t *session);
-void print_raw_double (double n, dk_session_t *session);
-void print_int (long n, dk_session_t *session);
-void dks_array_head (dk_session_t *ses, int n_elements, dtp_t type);
-void print_string (char *string, dk_session_t *session);
-void print_ref_box (char *string, dk_session_t *session);
+caddr_t read_object (dk_session_t * ses);
+void print_long (long n1, dk_session_t * session);
+void print_float (float f, dk_session_t * session);
+void print_double (double n, dk_session_t * session);
+void print_raw_float (float f, dk_session_t * session);
+void print_raw_double (double n, dk_session_t * session);
+void print_int (long n, dk_session_t * session);
+void dks_array_head (dk_session_t * ses, int n_elements, dtp_t type);
+void print_string (char *string, dk_session_t * session);
+void print_ref_box (char *string, dk_session_t * session);
 void PrpcSetWriter (dtp_t dtp, ses_write_func f);
-void print_object (caddr_t object, dk_session_t *session, printer_ext_func extension, caddr_t ea);
-int srv_write_in_session (caddr_t thing, dk_session_t *session, printer_ext_func extension, void *xx, int flush);
-int PrpcWriteObject (dk_session_t *ses, caddr_t thing);
-caddr_t PrpcReadObject (dk_session_t *ses);
+void print_object (caddr_t object, dk_session_t * session, printer_ext_func extension, caddr_t ea);
+int srv_write_in_session (caddr_t thing, dk_session_t * session, printer_ext_func extension, void *xx, int flush);
+int PrpcWriteObject (dk_session_t * ses, caddr_t thing);
+caddr_t PrpcReadObject (dk_session_t * ses);
 void set_write_in_session (ses_write_func f);
 macro_char_func *get_readtable (void);
 #endif
 
 /* Dkernel.c */
-int add_to_served_sessions (dk_session_t *ses);
-void remove_from_served_sessions (dk_session_t *ses);
+int add_to_served_sessions (dk_session_t * ses);
+void remove_from_served_sessions (dk_session_t * ses);
 service_t *find_service (char *name);
-int is_protocol (session_t *ses, int proto);
-int check_inputs (TAKE_G timeout_t *timeout, int is_recursive);
-int read_service_request (dk_session_t *ses);
+int is_protocol (session_t * ses, int proto);
+int check_inputs (TAKE_G timeout_t * timeout, int is_recursive);
+int read_service_request (dk_session_t * ses);
 EXE_EXPORT (dk_session_t *, dk_session_allocate, (int sesclass));
 void timeout_round (TAKE_G dk_session_t * ses);
 void PrpcSuckAvidly (int mode);
 void PrpcAddAnswer (caddr_t result, int ret_type, int is_partial, int flush);
-void PrpcAnswerHead (du_thread_t *thr, int is_partial);
-void PrpcAnswerTail (dk_session_t *ses, int flush);
+void PrpcAnswerHead (du_thread_t * thr, int is_partial);
+void PrpcAnswerTail (dk_session_t * ses, int flush);
 srv_req_hook_func PrpcSetServiceRequestHook (srv_req_hook_func new_function);
-io_action_func PrpcSetPartnerDeadHook (dk_session_t *ses, io_action_func new_function);
+io_action_func PrpcSetPartnerDeadHook (dk_session_t * ses, io_action_func new_function);
 sch_hook_func PrpcSetSchedulerHook (sch_hook_func new_function);
-EXE_EXPORT (void, PrpcSessionFree, (dk_session_t *ses));
+EXE_EXPORT (void, PrpcSessionFree, (dk_session_t * ses));
 dk_thread_t *PrpcThreadAllocate (thread_init_func init, unsigned long stack_size, void *init_arg);
 dk_thread_t *PrpcThreadAttach (void);
 void PrpcThreadDetach (void);
@@ -858,7 +859,7 @@ void PrpcSetThreadParams (long srv_sz, long main_sz, long future_sz, int nmaxfut
 dk_session_t *PrpcFindPeer (char *name);
 dk_set_t PrpcListPeers (void);
 void PrpcRegisterService (char *name, server_func func, void *client_data, int ret_type, post_func postprocess);
-void PrpcRegisterServiceDesc (service_desc_t *desc, server_func f);
+void PrpcRegisterServiceDesc (service_desc_t * desc, server_func f);
 void PrpcProtocolInitialize (int sesclass);
 dk_session_t *PrpcListen (char *addr, int sesclass);
 int PrpcIsListen (dk_session_t * ses);
@@ -867,19 +868,19 @@ void timeout_round_loop (void);
 void PrpcInitialize (void);
 void PrpcInitialize1 (int mem_mode);
 void PrpcStatus (char *out, int max);
-future_t *PrpcFuture (dk_session_t *server, service_desc_t *service, ...);
-void PrpcFutureFree (future_t *future);
-future_t *PrpcFutureSetTimeout (future_t *future, long msecs);
-void PrpcSessionResetTimeout (dk_session_t *ses);
-caddr_t PrpcValueOrWait1T (future_t *future);
-caddr_t PrpcValueOrWait (future_t *future);
-caddr_t PrpcFutureNextResult (future_t *future);
+future_t *PrpcFuture (dk_session_t * server, service_desc_t * service, ...);
+void PrpcFutureFree (future_t * future);
+future_t *PrpcFutureSetTimeout (future_t * future, long msecs);
+void PrpcSessionResetTimeout (dk_session_t * ses);
+caddr_t PrpcValueOrWait1T (future_t * future);
+caddr_t PrpcValueOrWait (future_t * future);
+caddr_t PrpcFutureNextResult (future_t * future);
 int PrpcFutureIsResult (future_t * future);
-caddr_t PrpcSync (future_t *f);
+caddr_t PrpcSync (future_t * f);
 dk_session_t *PrpcConnect (char *address, int sesclass);
-dk_session_t *PrpcConnect1 (char *address, int sesclass, char * use_ssl, char *passwd, char * ca_list);
+dk_session_t *PrpcConnect1 (char *address, int sesclass, char *use_ssl, char *passwd, char *ca_list);
 dk_session_t *PrpcInprocessConnect (char *address);
-void PrpcDisconnect (dk_session_t *session);
+void PrpcDisconnect (dk_session_t * session);
 void PrpcDisconnectAll (void);
 long PrpcSetTimeoutResolution (long milliseconds);
 void PrpcSetBackgroundAction (background_action_func f);
@@ -888,7 +889,7 @@ void sun_rpc_loop (void);
 void sun_rpc_ready (void);
 void PrpcSunRPCInitialize (long sz);
 void dk_set_resource_usage (void);
-void PrpcSelfSignalInit (char * addr);
+void PrpcSelfSignalInit (char *addr);
 void PrpcSelfSignal (self_signal_func f, caddr_t cf);
 void PrpcCheckIn (dk_session_t * ses);
 void PrpcCheckInAsync (dk_session_t * ses);
@@ -899,7 +900,7 @@ void dks_housekeeping_session_count_change (int delta);
 void PrpcFixedServerThread (void);
 void PrpcSetSessionDisconnectCallback (disconnect_callback_func f);
 
-typedef int (* frq_queue_hook_t) (future_request_t *);
+typedef int (*frq_queue_hook_t) (future_request_t *);
 void PrpcSetQueueHook (frq_queue_hook_t h);
 
 void PrpcSetFuturePreprocessHook (void (*prepro) (void));
@@ -914,18 +915,18 @@ extern void (*process_exit_hook) (int);
 		       (*process_exit_hook) (s);
 void call_exit_outline (int status);
 
-void call_disconnect_callback_func (dk_session_t *ses);
+void call_disconnect_callback_func (dk_session_t * ses);
 
-void PrpcSetCallerIDServerHook (caddr_t (*f)(void));
+void PrpcSetCallerIDServerHook (caddr_t (*f) (void));
 
-void PrpcSetInprocessHooks (void * (*enter) (dk_session_t *ses), void (*leave) (void *));
+void PrpcSetInprocessHooks (void *(*enter) (dk_session_t * ses), void (*leave) (void *));
 
 #ifdef _SSL
 #  ifndef NO_THREAD
 typedef struct ssl_ctx_info_s
 {
-  int32 *ssci_depth_ptr;
-  char *ssci_name_ptr;
+  int32 *		ssci_depth_ptr;
+  char *		ssci_name_ptr;
 } ssl_ctx_info_t;
 int ssl_cert_verify_callback (int ok, void *ctx);
 #  endif
@@ -935,11 +936,10 @@ int ssl_cert_verify_callback (int ok, void *ctx);
 void ssl_server_listen (void);
 #endif
 
-long cdef_param (caddr_t * cdefs, char * name, long deflt);
-void cdef_add_param (caddr_t ** cdefs_ptr, const char * name, long val);
+long cdef_param (caddr_t * cdefs, char *name, long deflt);
+void cdef_add_param (caddr_t ** cdefs_ptr, const char *name, long val);
 void dk_thread_free (void *data);
-void sr_report_future_error (dk_session_t *ses,
-    const char *service_name, const char *reason);
+void sr_report_future_error (dk_session_t * ses, const char *service_name, const char *reason);
 int dk_report_error (const char *format, ...);
 
 
@@ -953,21 +953,22 @@ int dk_report_error (const char *format, ...);
 
 #ifndef NO_DK_ALLOC_RESERVE
 extern dk_mutex_t *dk_alloc_reserve_mutex;
-extern volatile void *dk_alloc_reserve; /* Don't access it directly. */
+extern volatile void *dk_alloc_reserve;	/* Don't access it directly. */
 extern int dk_alloc_reserve_maxthreads;
 extern volatile int dk_alloc_reserve_mode;
-#define DK_ALLOC_ON_RESERVE (dk_alloc_reserve_mode != DK_ALLOC_RESERVE_DISABLED && NULL == dk_alloc_reserve)
+#define DK_ALLOC_ON_RESERVE 		(dk_alloc_reserve_mode != DK_ALLOC_RESERVE_DISABLED && NULL == dk_alloc_reserve)
 void dk_alloc_set_reserve_mode (int mode);
 #else
-#define DK_ALLOC_ON_RESERVE 0
-#define dk_alloc_set_reserve_mode(M) do { ; } while (0)
+#define DK_ALLOC_ON_RESERVE 		0
+#define dk_alloc_set_reserve_mode(M) 	do { ; } while (0)
 #endif
+
 void *dk_alloc_reserve_malloc (size_t size, int gpf_if_not);
 
 #ifndef NO_THREAD
-#define BURST_STOP_TIMEOUT 1000 /* 1 sec to switch off burst mode */
+#define BURST_STOP_TIMEOUT 		1000		   /* 1 sec to switch off burst mode */
 extern long time_now_msec;
-void dks_stop_burst_mode (dk_session_t *ses);
+void dks_stop_burst_mode (dk_session_t * ses);
 #endif
 
 #endif
@@ -983,4 +984,4 @@ extern long init_brk;
 
 void strses_mem_initalize (void);
 void strses_readtable_initialize (void);
-void dk_box_initialize(void);
+void dk_box_initialize (void);

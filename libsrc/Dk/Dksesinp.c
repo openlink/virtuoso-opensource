@@ -4,27 +4,26 @@
  *  $Id$
  *
  *  In-process sessions
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ *
+ */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -39,7 +38,7 @@
 
 
 static int
-inpses_dummy (session_t *ses)
+inpses_dummy (session_t * ses)
 {
   return SER_SUCC;
 }
@@ -64,7 +63,7 @@ inpses_allocate (void)
  * Checks to see if the session contains any unread data.
  */
 int
-inpses_unread_data (dk_session_t *ses)
+inpses_unread_data (dk_session_t * ses)
 {
   strdevice_t *strdev = (strdevice_t *) ses->dks_session->ses_device;
   if (strdev->strdev_buffer_ptr)
@@ -82,19 +81,19 @@ inpses_unread_data (dk_session_t *ses)
 #if defined(_MSC_VER) && defined(_DEBUG)
 
 static void
-inpdev_verify_buf (buffer_elt_t *b, caddr_t arg)
+inpdev_verify_buf (buffer_elt_t * b, caddr_t arg)
 {
   _ASSERTE (_CrtIsValidHeapPointer (b));
   _ASSERTE (_CrtIsValidHeapPointer (b->data));
 }
 
+
 void
-inpses_verify (dk_session_t *ses)
+inpses_verify (dk_session_t * ses)
 {
   _ASSERTE (_CrtCheckMemory ());
   strses_map ((strdevice_t *) ses->dks_session->ses_device, inpdev_verify_buf, NULL);
 }
-
 #endif /* defined(_MSC_VER) && defined(_DEBUG) */
 
 

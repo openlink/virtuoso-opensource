@@ -4,27 +4,26 @@
  *  $Id$
  *
  *  Hash tables
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ *
+ */
 
 #include "Dk.h"
 
@@ -187,7 +186,6 @@ static PRIME primetable[] =
     32003, 65521, 131071, 262139, 524287, ht_max_sz
 };
 
-
 /*
  *   Binary search for the next prime that is >= to n
  */
@@ -197,7 +195,7 @@ hash_nextprime (uint32 n)
   PRIME *last = &primetable[sizeof (primetable) / sizeof (PRIME) - 1];
   PRIME *base = primetable;
 
-  if (n > ht_max_sz) /* last_prime in table */
+  if (n > ht_max_sz)				 /* last_prime in table */
     return ht_max_sz;
 
   while (last >= base)
@@ -218,7 +216,7 @@ hash_nextprime (uint32 n)
 
 
 dk_hash_t *
-DBG_NAME(hash_table_allocate) (DBG_PARAMS uint32 size)
+DBG_NAME (hash_table_allocate) (DBG_PARAMS uint32 size)
 {
   dk_hash_t *table = (dk_hash_t *) DK_ALLOC (sizeof (dk_hash_t));
 #ifdef MEMDBG
@@ -246,7 +244,7 @@ DBG_NAME(hash_table_allocate) (DBG_PARAMS uint32 size)
 
 
 void
-DBG_NAME(hash_table_init) (DBG_PARAMS dk_hash_t * table, int size)
+DBG_NAME (hash_table_init) (DBG_PARAMS dk_hash_t * table, int size)
 {
   memset (table, 0, sizeof (dk_hash_t));
   size = hash_nextprime (size);
@@ -267,9 +265,8 @@ DBG_NAME(hash_table_init) (DBG_PARAMS dk_hash_t * table, int size)
 }
 
 
-
 void
-DBG_NAME(hash_table_free) (DBG_PARAMS dk_hash_t *ht)
+DBG_NAME (hash_table_free) (DBG_PARAMS dk_hash_t * ht)
 {
   clrhash (ht);
   DK_FREE (ht->ht_elements, sizeof (hash_elt_t) * ht->ht_actual_size);
@@ -288,21 +285,20 @@ hash_table_destroy (dk_hash_t * ht)
 
 #ifdef HT_STATS
 void
-ht_stats (dk_hash_t *ht)
+ht_stats (dk_hash_t * ht)
 {
   int i;
   fprintf (stderr, "Tab %p: g=%lu s=%lu [", ht, ht->ht_ngets, ht->ht_nsets);
   for (i = 0; i <= ht->ht_max_colls; i++)
     fprintf (stderr, "%lu ", ht->ht_stats[i]);
   fprintf (stderr, "] count=%lu actual=%lu load=%f\n",
-    ht->ht_count, ht->ht_actual_size,
-    (double) ht->ht_count / (double) ht->ht_actual_size);
+	ht->ht_count, ht->ht_actual_size, (double) ht->ht_count / (double) ht->ht_actual_size);
 }
 #endif
 
 
 void *
-gethash (const void *key, dk_hash_t *ht)
+gethash (const void *key, dk_hash_t * ht)
 {
   uint32 inx = HASH_INX (ht, key);
   hash_elt_t *elt = &ht->ht_elements[inx];
@@ -331,7 +327,7 @@ gethash (const void *key, dk_hash_t *ht)
 
 
 void *
-DBG_NAME(sethash) (DBG_PARAMS const void *key, dk_hash_t *ht, void *data)
+DBG_NAME (sethash) (DBG_PARAMS const void *key, dk_hash_t * ht, void *data)
 {
   uint32 inx = HASH_INX (ht, key);
   hash_elt_t *elt = &ht->ht_elements[inx];
@@ -395,15 +391,14 @@ DBG_NAME(sethash) (DBG_PARAMS const void *key, dk_hash_t *ht, void *data)
   if (cols > ht->ht_max_colls)
     {
       ht->ht_max_colls = cols;
-      fprintf (stderr,
-	"max colls on table %p now %lu, count=%lu actual=%lu rehash=%lu load=%f\n",
-	ht, cols, ht->ht_count, ht->ht_actual_size, ht->ht_rehash_threshold,
-	(double) ht->ht_count / (double) ht->ht_actual_size);
+      fprintf (stderr, "max colls on table %p now %lu, count=%lu actual=%lu rehash=%lu load=%f\n",
+	    ht, cols, ht->ht_count, ht->ht_actual_size, ht->ht_rehash_threshold,
+	    (double) ht->ht_count / (double) ht->ht_actual_size);
       ht_stats (ht);
-  }
+    }
 #endif
   {
-    hash_elt_t *new_elt = (hash_elt_t *) DK_ALLOC(sizeof(hash_elt_t));
+    hash_elt_t *new_elt = (hash_elt_t *) DK_ALLOC (sizeof (hash_elt_t));
     new_elt->key = key;
     new_elt->data = data;
     new_elt->next = ht->ht_elements[inx].next;
@@ -416,7 +411,7 @@ DBG_NAME(sethash) (DBG_PARAMS const void *key, dk_hash_t *ht, void *data)
 
 
 int
-DBG_NAME(remhash) (DBG_PARAMS const void *key, dk_hash_t *ht)
+DBG_NAME (remhash) (DBG_PARAMS const void *key, dk_hash_t * ht)
 {
   uint32 inx = HASH_INX (ht, key);
   hash_elt_t *elt = &ht->ht_elements[inx];
@@ -469,7 +464,7 @@ DBG_NAME(remhash) (DBG_PARAMS const void *key, dk_hash_t *ht)
 
 
 void
-DBG_NAME(clrhash) (DBG_PARAMS dk_hash_t *table)
+DBG_NAME (clrhash) (DBG_PARAMS dk_hash_t * table)
 {
   uint32 len;
   uint32 inx;
@@ -511,7 +506,7 @@ DBG_NAME(clrhash) (DBG_PARAMS dk_hash_t *table)
   data_store = __d;
 
 void
-maphash (maphash_func func, dk_hash_t *table)
+maphash (maphash_func func, dk_hash_t * table)
 {
   void *key_store = NULL, *data_store = NULL, *__k, *__d;
   int data_in_store = 0;
@@ -557,7 +552,7 @@ maphash (maphash_func func, dk_hash_t *table)
   data_store = __d;
 
 void
-maphash3 (maphash3_func func, dk_hash_t *table, void *env)
+maphash3 (maphash3_func func, dk_hash_t * table, void *env)
 {
   void *key_store = NULL, *data_store = NULL, *__k, *__d;
   int data_in_store = 0;
@@ -626,7 +621,7 @@ maphash_no_remhash (maphash_func func, dk_hash_t * table)
 
 
 void
-dk_hash_iterator (dk_hash_iterator_t *hit, dk_hash_t *ht)
+dk_hash_iterator (dk_hash_iterator_t * hit, dk_hash_t * ht)
 {
   hit->hit_inx = 0;
   hit->hit_elt = NULL;
@@ -635,7 +630,7 @@ dk_hash_iterator (dk_hash_iterator_t *hit, dk_hash_t *ht)
 
 
 int
-dk_hit_next (dk_hash_iterator_t *hit, void **key, void **data)
+dk_hit_next (dk_hash_iterator_t * hit, void **key, void **data)
 {
   hash_elt_t *elt = hit->hit_elt;
 
@@ -667,7 +662,7 @@ start:
 
 
 void
-DBG_NAME(dk_rehash) (DBG_PARAMS dk_hash_t *ht, uint32 new_sz)
+DBG_NAME (dk_rehash) (DBG_PARAMS dk_hash_t * ht, uint32 new_sz)
 {
   dk_hash_t new_ht;
   uint32 oinx;
@@ -708,7 +703,7 @@ DBG_NAME(dk_rehash) (DBG_PARAMS dk_hash_t *ht, uint32 new_sz)
       hash_elt_t *elt = &ht->ht_elements[oinx];
       if (elt->next == HASH_EMPTY)
 	continue;
-      DBG_NAME(sethash) (DBG_ARGS elt->key, &new_ht, elt->data);
+      DBG_NAME (sethash) (DBG_ARGS elt->key, &new_ht, elt->data);
       elt = elt->next;
       while (elt)
 	{

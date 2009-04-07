@@ -4,27 +4,26 @@
  *  $Id$
  *
  *  Memory Allocation
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ *
+ */
 
 #ifndef _DKALLOC_H
 #define _DKALLOC_H
@@ -70,38 +69,37 @@ void malloc_cache_clear (void);
 # include <util/dbgmal.h>
 #ifndef _USRDLL
 #ifndef EXPORT_GATE
-# define dk_alloc(sz)			dbg_malloc (__FILE__, __LINE__, (sz))
-# define dk_try_alloc(sz)		dbg_malloc (__FILE__, __LINE__, (sz))
-# define dk_free(ptr, sz)		dbg_free_sized (__FILE__, __LINE__, (ptr), (sz))
+# define dk_alloc(sz)		dbg_malloc (__FILE__, __LINE__, (sz))
+# define dk_try_alloc(sz)	dbg_malloc (__FILE__, __LINE__, (sz))
+# define dk_free(ptr, sz)	dbg_free_sized (__FILE__, __LINE__, (ptr), (sz))
 #endif
 #endif
-void dk_alloc_assert(void *ptr);
+void dk_alloc_assert (void *ptr);
 #else
 # define dk_alloc_assert(ptr) ;
 #endif
 
 #ifdef MALLOC_DEBUG
-#define DBG_NAME(nm) dbg_##nm
-#define DBG_PARAMS const char *file, int line,
-#define DBG_PARAMS_0 const char *file, int line
-#define DBG_ARGS file, line,
-#define DBG_ARGS_0 file, line
-#define DK_ALLOC(SIZE) dbg_malloc(DBG_ARGS (SIZE))
-#define DK_FREE(BOX,SIZE) dbg_free_sized(DBG_ARGS (BOX), (SIZE))
+#define DBG_NAME(nm) 		dbg_##nm
+#define DBG_PARAMS 		const char *file, int line,
+#define DBG_PARAMS_0 		const char *file, int line
+#define DBG_ARGS 		file, line,
+#define DBG_ARGS_0 		file, line
+#define DK_ALLOC(SIZE) 		dbg_malloc(DBG_ARGS (SIZE))
+#define DK_FREE(BOX,SIZE) 	dbg_free_sized(DBG_ARGS (BOX), (SIZE))
 #else
-#define DBG_NAME(nm) nm
+#define DBG_NAME(nm) 		nm
 #define DBG_PARAMS
-#define DBG_PARAMS_0 void
+#define DBG_PARAMS_0 		void
 #define DBG_ARGS
 #define DBG_ARGS_0
-#define DK_ALLOC dk_alloc
-#define DK_FREE dk_free
+#define DK_ALLOC 		dk_alloc
+#define DK_FREE 		dk_free
 #endif
 
 #ifdef MALLOC_DEBUG
-void * dbg_dk_alloc (DBG_PARAMS size_t c);
-void * dbg_dk_try_alloc (DBG_PARAMS size_t c);
+void *dbg_dk_alloc (DBG_PARAMS size_t c);
+void *dbg_dk_try_alloc (DBG_PARAMS size_t c);
 #endif
 
 #endif
-

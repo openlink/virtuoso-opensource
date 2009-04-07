@@ -4,32 +4,31 @@
  *  $Id$
  *
  *  Sets
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ *
+ */
 
 #include "Dk.h"
 
 void
-DBG_NAME(dk_set_push) (DBG_PARAMS s_node_t ** set, void *item)
+DBG_NAME (dk_set_push) (DBG_PARAMS s_node_t ** set, void *item)
 {
   s_node_t *newn = (s_node_t *) DK_ALLOC (sizeof (s_node_t));
   newn->next = *set;
@@ -37,8 +36,9 @@ DBG_NAME(dk_set_push) (DBG_PARAMS s_node_t ** set, void *item)
   *set = newn;
 }
 
+
 void
-DBG_NAME(dk_set_pushnew) (DBG_PARAMS s_node_t ** set, void *item)
+DBG_NAME (dk_set_pushnew) (DBG_PARAMS s_node_t ** set, void *item)
 {
   if (!dk_set_member (*set, item))
     {
@@ -49,8 +49,9 @@ DBG_NAME(dk_set_pushnew) (DBG_PARAMS s_node_t ** set, void *item)
     }
 }
 
+
 void *
-DBG_NAME(dk_set_pop) (DBG_PARAMS s_node_t ** set)
+DBG_NAME (dk_set_pop) (DBG_PARAMS s_node_t ** set)
 {
   if (*set)
     {
@@ -68,7 +69,7 @@ DBG_NAME(dk_set_pop) (DBG_PARAMS s_node_t ** set)
 
 
 int
-DBG_NAME(dk_set_delete) (DBG_PARAMS dk_set_t * set, void *item)
+DBG_NAME (dk_set_delete) (DBG_PARAMS dk_set_t * set, void *item)
 {
   s_node_t *node = *set;
   dk_set_t *previous = set;
@@ -87,8 +88,9 @@ DBG_NAME(dk_set_delete) (DBG_PARAMS dk_set_t * set, void *item)
   return 0;
 }
 
+
 void *
-DBG_NAME(dk_set_delete_nth) (DBG_PARAMS dk_set_t * set, int idx)
+DBG_NAME (dk_set_delete_nth) (DBG_PARAMS dk_set_t * set, int idx)
 {
   s_node_t *node = *set;
   dk_set_t *previous = set;
@@ -98,7 +100,7 @@ DBG_NAME(dk_set_delete_nth) (DBG_PARAMS dk_set_t * set, int idx)
     {
       if (0 == idx)
 	{
-          void *res = node->data;
+	  void *res = node->data;
 	  *previous = node->next;
 	  DK_FREE (node, sizeof (s_node_t));
 	  return res;
@@ -109,6 +111,7 @@ DBG_NAME(dk_set_delete_nth) (DBG_PARAMS dk_set_t * set, int idx)
     }
   return NULL;
 }
+
 
 uint32
 dk_set_length (s_node_t * set)
@@ -154,7 +157,7 @@ dk_set_conc (dk_set_t s1, dk_set_t s2)
 
 
 dk_set_t
-DBG_NAME(dk_set_cons) (DBG_PARAMS void *s1, dk_set_t s2)
+DBG_NAME (dk_set_cons) (DBG_PARAMS void *s1, dk_set_t s2)
 {
   dk_set_t tmp = (dk_set_t) DK_ALLOC (sizeof (s_node_t));
   tmp->data = s1;
@@ -162,8 +165,9 @@ DBG_NAME(dk_set_cons) (DBG_PARAMS void *s1, dk_set_t s2)
   return tmp;
 }
 
+
 void
-DBG_NAME(dk_set_free) (DBG_PARAMS s_node_t * set)
+DBG_NAME (dk_set_free) (DBG_PARAMS s_node_t * set)
 {
   dk_set_t next;
   while (set)
@@ -189,79 +193,79 @@ dk_set_member (s_node_t * set, void *elt)
 
 
 void **
-DBG_NAME(dk_set_to_array) (DBG_PARAMS s_node_t * set)
+DBG_NAME (dk_set_to_array) (DBG_PARAMS s_node_t * set)
 {
   void **array;
   uint32 len;
   uint32 inx;
 
   len = dk_set_length (set);
-  array = (void **) DBG_NAME(dk_alloc_box) (DBG_ARGS len * sizeof (void *), DV_ARRAY_OF_POINTER);
+  array = (void **) DBG_NAME (dk_alloc_box) (DBG_ARGS len * sizeof (void *), DV_ARRAY_OF_POINTER);
   inx = 0;
   DO_SET (void *, elt, &set)
-    {
-      array[inx++] = elt;
-    }
+  {
+    array[inx++] = elt;
+  }
   END_DO_SET ();
   return array;
 }
 
 
 caddr_t
-DBG_NAME(list_to_array) (DBG_PARAMS s_node_t * set)
+DBG_NAME (list_to_array) (DBG_PARAMS s_node_t * set)
 {
   void **array;
   uint32 len;
   uint32 inx;
 
   len = dk_set_length (set);
-  array = (void **) DBG_NAME(dk_alloc_box) (DBG_ARGS len * sizeof (void *), DV_ARRAY_OF_POINTER);
+  array = (void **) DBG_NAME (dk_alloc_box) (DBG_ARGS len * sizeof (void *), DV_ARRAY_OF_POINTER);
   inx = 0;
   DO_SET (void *, elt, &set)
-    {
-      array[inx++] = elt;
-    }
+  {
+    array[inx++] = elt;
+  }
   END_DO_SET ();
   DBG_NAME (dk_set_free) (DBG_ARGS set);
-  return (caddr_t)array;
+  return (caddr_t) array;
 }
 
 
 caddr_t
-DBG_NAME(copy_list_to_array) (DBG_PARAMS s_node_t * set)
+DBG_NAME (copy_list_to_array) (DBG_PARAMS s_node_t * set)
 {
   void **array;
   uint32 len;
   uint32 inx;
 
   len = dk_set_length (set);
-  array = (void **) DBG_NAME(dk_alloc_box) (DBG_ARGS len * sizeof (void *), DV_ARRAY_OF_POINTER);
+  array = (void **) DBG_NAME (dk_alloc_box) (DBG_ARGS len * sizeof (void *), DV_ARRAY_OF_POINTER);
   inx = 0;
   DO_SET (void *, elt, &set)
-    {
-      array[inx++] = elt;
-    }
+  {
+    array[inx++] = elt;
+  }
   END_DO_SET ();
-  return (caddr_t)array;
+  return (caddr_t) array;
 }
 
 
 caddr_t
-DBG_NAME(revlist_to_array) (DBG_PARAMS s_node_t * set)
+DBG_NAME (revlist_to_array) (DBG_PARAMS s_node_t * set)
 {
   void **array;
   uint32 len;
   uint32 inx;
 
   inx = len = dk_set_length (set);
-  array = (void **) DBG_NAME(dk_alloc_box) (DBG_ARGS len * sizeof (void *), DV_ARRAY_OF_POINTER);
+  array = (void **) DBG_NAME (dk_alloc_box) (DBG_ARGS len * sizeof (void *), DV_ARRAY_OF_POINTER);
   DO_SET (void *, elt, &set)
-    {
-      array[--inx] = elt;
-    }
+  {
+    array[--inx] = elt;
+  }
   END_DO_SET ();
   DBG_NAME (dk_set_free) (DBG_ARGS set);
-  return (caddr_t)array;
+  return (caddr_t) array;
 }
 
 
@@ -309,7 +313,7 @@ dk_set_check_straight (dk_set_t set)
 	{
 	  GPF_T1 ("Circular list");
 	}
-      dk_alloc_assert(slow);
+      dk_alloc_assert (slow);
       STEP_2 (fast);
       slow = slow->next;
     }
@@ -358,6 +362,7 @@ dk_set_get_keyword (dk_set_t set, const char *key_strg, void *dflt_val)
   return dflt_val;
 }
 
+
 void **
 dk_set_getptr_keyword (dk_set_t set, const char *key_strg)
 {
@@ -369,6 +374,7 @@ dk_set_getptr_keyword (dk_set_t set, const char *key_strg)
     }
   return NULL;
 }
+
 
 void *
 dk_set_nth (dk_set_t set, int nth)
@@ -389,7 +395,7 @@ dk_set_nth (dk_set_t set, int nth)
 
 
 dk_set_t
-DBG_NAME(dk_set_copy) (DBG_PARAMS dk_set_t s)
+DBG_NAME (dk_set_copy) (DBG_PARAMS dk_set_t s)
 {
   dk_set_t r = NULL;
   dk_set_t *last = &r;
@@ -405,24 +411,42 @@ DBG_NAME(dk_set_copy) (DBG_PARAMS dk_set_t s)
   return r;
 }
 
-int 
+
+int
 dk_set_is_subset (dk_set_t super, dk_set_t sub)
 {
   DO_SET (void *, elt, &sub)
-    {
-      if (!dk_set_member (super, elt))
-	return 0;
-    }
-  END_DO_SET();
+  {
+    if (!dk_set_member (super, elt))
+      return 0;
+  }
+  END_DO_SET ();
   return 1;
 }
+
 
 /* Original signatures should exist for EXE-EXPORTed functions */
 #ifdef MALLOC_DEBUG
 #undef dk_set_delete
-int dk_set_delete (dk_set_t *set, void *item) { return dbg_dk_set_delete (__FILE__, __LINE__, set, item); }
+int
+dk_set_delete (dk_set_t * set, void *item)
+{
+  return dbg_dk_set_delete (__FILE__, __LINE__, set, item);
+}
+
+
 #undef dk_set_delete_nth
-void *dk_set_delete_nth (dk_set_t *set, int n) { return dbg_dk_set_delete_nth (__FILE__, __LINE__, set, n); }
+void *
+dk_set_delete_nth (dk_set_t * set, int n)
+{
+  return dbg_dk_set_delete_nth (__FILE__, __LINE__, set, n);
+}
+
+
 #undef dk_set_push
-void dk_set_push (s_node_t **set, void *item) {dbg_dk_set_push (__FILE__, __LINE__, set, item); }
+void
+dk_set_push (s_node_t ** set, void *item)
+{
+  dbg_dk_set_push (__FILE__, __LINE__, set, item);
+}
 #endif

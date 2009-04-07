@@ -4,32 +4,31 @@
  *  $Id$
  *
  *  Helper functions
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ *
+ */
 
 #include "Dk.h"
 
 int
-gpf_notice (const char * file, int line, const char * text)
+gpf_notice (const char *file, int line, const char *text)
 {
 #ifdef DEBUG
   FILE *core_reason;
@@ -52,7 +51,7 @@ gpf_notice (const char * file, int line, const char * text)
     fprintf (stderr, "GPF: %s:%d internal error\n", file, line);
   fflush (stderr);
 #ifdef DEBUG
-  core_reason = fopen ("core_reason","wt");
+  core_reason = fopen ("core_reason", "wt");
   if (text)
     fprintf (core_reason, "GPF: %s:%d %s\n", file, line, text);
   else
@@ -60,7 +59,7 @@ gpf_notice (const char * file, int line, const char * text)
   fclose (core_reason);
 #endif
 #endif
-  *(long*)-1 = -1;
+  *(long *) -1 = -1;
   call_exit (1);
   return 0;
 }
@@ -85,11 +84,11 @@ get_real_time (timeout_t * to)
     to->to_usec = GetTickCount () % 1000;
 #else
   ULARGE_INTEGER tim;
-  GetSystemTimeAsFileTime ((FILETIME *) & tim); /* 100ns ticks since Jan 1, 1601 */
-  tim.QuadPart -= 0x19DB1DED53E8000L; /* ticks between 1601 and 1970 year */
-  tim.QuadPart /= 10; /* convert to microseconds */
-  to->to_usec = (int32) (tim.QuadPart % 1000000); /* microseconds */
-  to->to_sec = (int32) (tim.QuadPart / 1000000);  /* seconds */
+  GetSystemTimeAsFileTime ((FILETIME *) & tim);	 /* 100ns ticks since Jan 1, 1601 */
+  tim.QuadPart -= 0x19DB1DED53E8000L;		 /* ticks between 1601 and 1970 year */
+  tim.QuadPart /= 10;				 /* convert to microseconds */
+  to->to_usec = (int32) (tim.QuadPart % 1000000);	/* microseconds */
+  to->to_sec = (int32) (tim.QuadPart / 1000000); /* seconds */
 #endif
 #else
   struct timeval tv;
@@ -154,7 +153,7 @@ time_add (timeout_t * time1, timeout_t * time2)
     {
       time1->to_sec++;
 /*    time1->to_usec =- 1000000; */
-      time1->to_usec -= 1000;	/* mty MAALIS */
+      time1->to_usec -= 1000;			 /* mty MAALIS */
     }
 }
 
@@ -169,4 +168,3 @@ time_gt (timeout_t * time1, timeout_t * time2)
   else
     return 0;
 }
-

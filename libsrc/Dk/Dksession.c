@@ -4,40 +4,37 @@
  *  $Id$
  *
  *  Sessions
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ *
+ */
 
 #include "Dk.h"
 
-extern int tcpses_select(int ses_count, session_t** reads,
-			  session_t** writes, timeout_t*  timeout);
-extern int nmpses_select(int ses_count, session_t** reads,
-			  session_t** writes, timeout_t*  timeout);
+extern int tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeout_t * timeout);
+extern int nmpses_select (int ses_count, session_t ** reads, session_t ** writes, timeout_t * timeout);
 
 
 static timeout_t deftimeout = SDC_TIMEOUT;
 static control_t defctrl = { SDC_BLOCKING, &deftimeout, SDC_MSGLEN };
 
-static int get_control(control_t* ctrl, int fld, char* val, int sz);
+static int get_control (control_t * ctrl, int fld, char *val, int sz);
 
 
 
@@ -80,7 +77,7 @@ session_allocate (int sesclass)
   memset (ses, 0, sizeof (session_t));
   ctrl->ctrl_timeout = to;
   ses->ses_control = ctrl;
-  ses->ses_file=tmp_file;
+  ses->ses_file = tmp_file;
 
   ses->ses_bytes_read = 0;
   ses->ses_bytes_written = 0;
@@ -92,17 +89,11 @@ session_allocate (int sesclass)
 
   /* Take the default values for control fields */
 
-  session_get_default_control (SC_BLOCKING,
-      (char *) &(ctrl->ctrl_blocking),
-      sizeof (ctrl->ctrl_blocking));
+  session_get_default_control (SC_BLOCKING, (char *) &(ctrl->ctrl_blocking), sizeof (ctrl->ctrl_blocking));
 
-  session_get_default_control (SC_TIMEOUT,
-      (char *) (ctrl->ctrl_timeout),
-      sizeof (timeout_t));
+  session_get_default_control (SC_TIMEOUT, (char *) (ctrl->ctrl_timeout), sizeof (timeout_t));
 
-  session_get_default_control (SC_MSGLEN,
-      (char *) &(ctrl->ctrl_msg_length),
-      sizeof (ctrl->ctrl_msg_length));
+  session_get_default_control (SC_MSGLEN, (char *) &(ctrl->ctrl_msg_length), sizeof (ctrl->ctrl_msg_length));
 
   /* Use device specific function for device initialization */
   ses->ses_device = device_allocate (sesclass);
@@ -138,7 +129,7 @@ session_allocate (int sesclass)
  * Globals used :   - none
  */
 int
-session_free (session_t *ses)
+session_free (session_t * ses)
 {
   if (ses == NULL)
     return (SER_ILLSESP);
@@ -176,7 +167,7 @@ session_free (session_t *ses)
  * Globals used : - none
  */
 int
-session_set_address (session_t *ses, char *addrinfo)
+session_set_address (session_t * ses, char *addrinfo)
 {
   return ((*ses->ses_device->dev_funs->dfp_set_address) (ses, addrinfo));
 }
@@ -208,7 +199,7 @@ session_set_address (session_t *ses, char *addrinfo)
  * Globals used :   - none
  */
 int
-session_listen (session_t *ses)
+session_listen (session_t * ses)
 {
   return ((*ses->ses_device->dev_funs->dfp_listen) (ses));
 }
@@ -242,7 +233,7 @@ session_listen (session_t *ses)
  * Globals used :  - none
  */
 int
-session_accept (session_t *ses, session_t *new_ses)
+session_accept (session_t * ses, session_t * new_ses)
 {
   return ((*ses->ses_device->dev_funs->dfp_accept) (ses, new_ses));
 }
@@ -271,7 +262,7 @@ session_accept (session_t *ses, session_t *new_ses)
  * Globals used :   - none
  */
 int
-session_connect (session_t *ses)
+session_connect (session_t * ses)
 {
   return ((*ses->ses_device->dev_funs->dfp_connect) (ses));
 }
@@ -299,7 +290,7 @@ session_connect (session_t *ses)
  * Globals used :   - none
  */
 int
-session_disconnect (session_t *ses)
+session_disconnect (session_t * ses)
 {
   return ((*ses->ses_device->dev_funs->dfp_disconnect) (ses));
 }
@@ -331,7 +322,7 @@ session_disconnect (session_t *ses)
  * Globals used :   - none
  */
 int
-session_write (session_t *ses, char *buffer, int n_bytes)
+session_write (session_t * ses, char *buffer, int n_bytes)
 {
   return ((*ses->ses_device->dev_funs->dfp_write) (ses, buffer, n_bytes));
 }
@@ -364,7 +355,7 @@ session_write (session_t *ses, char *buffer, int n_bytes)
  * Globals used :   - none
  */
 int
-session_read (session_t *ses, char *buffer, int n_bytes)
+session_read (session_t * ses, char *buffer, int n_bytes)
 {
   return ((*ses->ses_device->dev_funs->dfp_read) (ses, buffer, n_bytes));
 }
@@ -421,11 +412,7 @@ session_read (session_t *ses, char *buffer, int n_bytes)
  * Globals used :   - none
  */
 int
-session_select (
-    int ses_count,
-    session_t **reads,
-    session_t **writes,
-    timeout_t *timeout)
+session_select (int ses_count, session_t ** reads, session_t ** writes, timeout_t * timeout)
 {
 #if defined (COM_TCPIP)
   return (tcpses_select (ses_count, reads, writes, timeout));
@@ -486,10 +473,9 @@ session_select (
  * Globals used :   - none
  */
 int
-session_set_control (session_t *ses, int field, char *p_value, int size)
+session_set_control (session_t * ses, int field, char *p_value, int size)
 {
-  return ((*ses->ses_device->dev_funs->dfp_set_control)
-      (ses, field, p_value, size));
+  return ((*ses->ses_device->dev_funs->dfp_set_control) (ses, field, p_value, size));
 }
 
 
@@ -522,7 +508,7 @@ session_set_control (session_t *ses, int field, char *p_value, int size)
  * Globals used :   - none
  */
 int
-session_get_control (session_t *ses, int field, char *p_value, int size)
+session_get_control (session_t * ses, int field, char *p_value, int size)
 {
   return (get_control (ses->ses_control, field, p_value, size));
 }
@@ -626,7 +612,7 @@ session_get_default_control (int field, char *p_value, int size)
  * Globals used :
  */
 static int
-get_control (control_t *ct, int field, char *p_value, int size)
+get_control (control_t * ct, int field, char *p_value, int size)
 {
   switch (field)
     {

@@ -4,27 +4,26 @@
  *  $Id$
  *
  *  Resource management
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ *
+ */
 
 #include "Dk.h"
 
@@ -64,12 +63,7 @@
  * Globals used :
  */
 resource_t *
-resource_allocate (
-    uint32 sz,
-    rc_constr_t constructor,
-    rc_destr_t destructor,
-    rc_destr_t clear_func,
-    void *client_data)
+resource_allocate (uint32 sz, rc_constr_t constructor, rc_destr_t destructor, rc_destr_t clear_func, void *client_data)
 {
   resource_t *rc;
 
@@ -136,12 +130,11 @@ _resource_adjust (resource_t * rc)
       rc->rc_n_full = 0;
       return;
     }
-  if (rc->rc_n_empty > rc->rc_gets / 20
-      && rc->rc_n_full > rc->rc_n_empty / 2)
+  if (rc->rc_n_empty > rc->rc_gets / 20 && rc->rc_n_full > rc->rc_n_empty / 2)
     {
-      void ** arr = (void**) malloc (rc->rc_size * 2 * sizeof (void*));
+      void **arr = (void **) malloc (rc->rc_size * 2 * sizeof (void *));
       rc->rc_size = rc->rc_size * 2;
-      free ((void*)rc->rc_items);
+      free ((void *) rc->rc_items);
       rc->rc_items = arr;
       rc->rc_gets = 0;
       rc->rc_stores = 0;
@@ -229,11 +222,13 @@ resource_get_1 (resource_t * rc, int construct_new)
     }
 }
 
+
 void *
 resource_get (resource_t * rc)
 {
   return resource_get_1 (rc, 1);
 }
+
 
 /*##**********************************************************************
  *

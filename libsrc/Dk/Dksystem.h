@@ -4,26 +4,26 @@
  *  $Id$
  *
  *  system common include files
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
+ *
+ *
 */
 
 #ifndef _DKSYSTEM_H
@@ -155,14 +155,14 @@ extern int errno;
 # define strtok_r(X,Y,Z)	strtok((X),(Y))
 #elif !defined (strtok_r)
 #ifdef __GNUC__
-extern char * strtok_r (char *s, const char *delim, char **ptrptr);
+extern char *strtok_r (char *s, const char *delim, char **ptrptr);
 #else
-char * strtok_r ();
+char *strtok_r ();
 #endif
 #endif
 
 #ifdef linux
-# define _P __P		/* Fixes bug in sched.h */
+# define _P __P						   /* Fixes bug in sched.h */
 #endif
 
 #ifndef MAX

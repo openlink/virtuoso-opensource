@@ -56,7 +56,7 @@ int tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeo
 
 
 
-#define TCP_CHECKVALUE     313	/* Donald Duck registration number */
+#define TCP_CHECKVALUE     313			 /* Donald Duck registration number */
 
 #define TCP_CHK(sesp)       \
 	if ((sesp == NULL) || \
@@ -243,6 +243,7 @@ alldigits (char *string)
   return 1;
 }
 
+
 #if defined (HPUX_10) && !defined (_XOPEN_SOURCE_EXTENDED)
 extern int h_errno;
 #endif
@@ -283,6 +284,7 @@ tcpses_set_address (session_t * ses, char *addrinfo1)
   p_addr = &(ses->ses_device->dev_address->a_serveraddr.t);
   p_name = ses->ses_device->dev_address->a_hostname;
   p_port = (unsigned short *) &(ses->ses_device->dev_address->a_port);
+
   SESSTAT_CLR (ses, SST_OK);
 
   {
@@ -359,7 +361,9 @@ tcpses_set_address (session_t * ses, char *addrinfo1)
     }
   else
     p_addr->sin_addr.s_addr = INADDR_ANY;
+
   SESSTAT_SET (ses, SST_OK);
+
   return (SER_SUCC);
 }
 
@@ -397,7 +401,8 @@ tcpses_getsockname (session_t * ses, char *buf_out, int buf_out_len)
       if (!getsockname (s, (struct sockaddr *) &sa, &len))
 	{
 	  unsigned char *addr = (unsigned char *) &sa.sin_addr;
-	  snprintf (buf, sizeof (buf), "%d.%d.%d.%d:%u", addr[0], addr[1], addr[2], addr[3], ntohs (sa.sin_port));
+	  snprintf (buf, sizeof (buf), "%d.%d.%d.%d:%u",
+		addr[0], addr[1], addr[2], addr[3], ntohs (sa.sin_port));
 	}
       else
 	return -1;
@@ -471,6 +476,7 @@ tcpses_set_reuse_address (int f)
   reuse_address = f;
 }
 
+
 static int
 tcpses_listen (session_t * ses)
 {
@@ -502,7 +508,8 @@ tcpses_listen (session_t * ses)
 
   ses->ses_device->dev_connection->con_s = s;
 
-  dbg_printf_2 (("Calling bind: s=%d, addr=%p, len=%d", s, &(ses->ses_device->dev_address->a_serveraddr.t), sizeof (saddrin_t)));
+  dbg_printf_2 (("Calling bind: s=%d, addr=%p, len=%d",
+	s, &(ses->ses_device->dev_address->a_serveraddr.t), sizeof (saddrin_t)));
 
   rc = ses_control_all (ses);
   if (rc != SER_SUCC)
@@ -511,9 +518,10 @@ tcpses_listen (session_t * ses)
       return (SER_CNTRL);
     }
 
-  if ((rc = bind (s, (struct sockaddr *) &(ses->ses_device->dev_address->a_serveraddr.t), sizeof (saddrin_t))) < 0)
+  if ((rc = bind (s,
+	(struct sockaddr *) &(ses->ses_device->dev_address->a_serveraddr.t),
+	sizeof (saddrin_t))) < 0)
     {
-
       test_eintr (ses, rc, errno);
       dbg_perror ("bind()");
       return (SER_ILLADDR);
@@ -601,7 +609,8 @@ tcpses_accept (session_t * ses, session_t * new_ses)
   SESSTAT_CLR (new_ses, SST_OK);
 
   new_socket = (int) accept (ses->ses_device->dev_connection->con_s,
-      (struct sockaddr *) &(new_ses->ses_device->dev_connection->con_clientaddr.t), &addrlen);
+	(struct sockaddr *) &(new_ses->ses_device->dev_connection->con_clientaddr.t),
+	&addrlen);
 
   if (new_socket < 0)
     {
@@ -866,6 +875,7 @@ tcpses_get_last_w_errno ()
   return last_w_errno;
 }
 
+
 static int
 tcpses_write (session_t * ses, char *buffer, int n_bytes)
 {
@@ -941,6 +951,7 @@ tcpses_get_last_r_errno ()
 {
   return last_r_errno;
 }
+
 
 static int
 tcpses_read (session_t * ses, char *buffer, int n_bytes)
@@ -1021,7 +1032,7 @@ tcpses_is_read_ready (session_t * ses, timeout_t * to)
   if (ses->ses_device->dev_connection->con_is_file)
     return 1;
 
-  if (fd < 0)			/* the sequential read will throw exception */
+  if (fd < 0)					 /* the sequential read will throw exception */
     return SER_SUCC;
 
   FD_ZERO (&fds);
@@ -1031,7 +1042,9 @@ tcpses_is_read_ready (session_t * ses, timeout_t * to)
 
 #ifndef FOR_GTK_TESTS
 
-  if (to && to->to_sec == dks_fibers_blocking_read_default_to.to_sec && to->to_usec == dks_fibers_blocking_read_default_to.to_usec)
+  if (to &&
+      to->to_sec == dks_fibers_blocking_read_default_to.to_sec &&
+      to->to_usec == dks_fibers_blocking_read_default_to.to_usec)
     return SER_SUCC;
 
   if (ses->ses_reads)
@@ -1070,7 +1083,7 @@ tcpses_is_write_ready (session_t * ses, timeout_t * to)
   if (ses->ses_device->dev_connection->con_is_file)
     return 1;
 
-  if (fd < 0)			/* the sequential read will throw exception */
+  if (fd < 0)					 /* the sequential read will throw exception */
     return SER_SUCC;
 
   FD_ZERO (&fds);
@@ -1087,7 +1100,6 @@ tcpses_is_write_ready (session_t * ses, timeout_t * to)
   if (to)
     write_block_usec += (to->to_sec - to_2.tv_sec) * 1000000 + (to->to_usec - to_2.tv_usec);
 #endif
-
   return SER_SUCC;
 }
 
@@ -1256,6 +1268,8 @@ tcpses_process_sun_rpc_sockets (fd_set * all_fds)
 	}
     };
 }
+
+
 #else
 
 #define tcpses_process_sun_rpc_sockets (q)
@@ -1356,7 +1370,6 @@ tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeout_t
   dbg_printf_2 (("select() : rc=%d.", rc));
   switch (rc)
     {
-
     case -1:
       /* error? */
       if (errno == SYS_EINTR)
@@ -1936,13 +1949,17 @@ ses_control_all (session_t * ses)
 
   dbg_printf_3 (("ses_control_all."));
 
-  rc = session_set_control (ses,
-      SC_BLOCKING, (char *) &(ses->ses_control->ctrl_blocking), sizeof (ses->ses_control->ctrl_blocking));
+  rc = session_set_control (ses, SC_BLOCKING,
+	(char *) &(ses->ses_control->ctrl_blocking),
+	sizeof (ses->ses_control->ctrl_blocking));
 
-  rc |= session_set_control (ses, SC_TIMEOUT, (char *) (ses->ses_control->ctrl_timeout), sizeof (timeout_t));
+  rc |= session_set_control (ses, SC_TIMEOUT,
+	(char *) (ses->ses_control->ctrl_timeout),
+	sizeof (timeout_t));
 
-  rc |= session_set_control (ses,
-      SC_MSGLEN, (char *) &(ses->ses_control->ctrl_msg_length), sizeof (ses->ses_control->ctrl_msg_length));
+  rc |= session_set_control (ses, SC_MSGLEN,
+	(char *) &(ses->ses_control->ctrl_msg_length),
+	sizeof (ses->ses_control->ctrl_msg_length));
 
   dbg_printf_4 (("%d", rc));
 
@@ -1979,7 +1996,8 @@ init_pctcp ()
     }
 
   /* The Windows Sockets DLL is acceptable.  Proceed.  */
-  if (LOBYTE (wVersionRequested) < 1 || (LOBYTE (wVersionRequested) == 1 && HIBYTE (wVersionRequested) < 1))
+  if (LOBYTE (wVersionRequested) < 1 ||
+      (LOBYTE (wVersionRequested) == 1 && HIBYTE (wVersionRequested) < 1))
     {
       return WSAVERNOTSUPPORTED;
     }
@@ -2003,6 +2021,7 @@ tcpses_get_port (session_t * ses)
     }
 }
 
+
 unsigned int
 tcpses_get_accepted_port (session_t * ses)
 {
@@ -2016,6 +2035,7 @@ tcpses_get_accepted_port (session_t * ses)
       return (unsigned int) (*p);
     }
 }
+
 
 /*##**********************************************************************
  *
@@ -2065,6 +2085,7 @@ tcpses_addr_info (session_t * ses, char *buf, size_t max_buf, int deflt, int fro
     snprintf (buf, max_buf, ":%d", p);
   return (int) (p);
 }
+
 
 void
 tcpses_error_message (int saved_errno, char *msgbuf, int size)
@@ -2290,6 +2311,7 @@ tcpses_error_message (int saved_errno, char *msgbuf, int size)
 #endif
 }
 
+
 #ifdef _SSL
 
 /* SSL support */
@@ -2338,6 +2360,7 @@ sslses_write (session_t * ses, char *buffer, int n_bytes)
   return (n_out);
 }
 
+
 static int
 ssldev_free (device_t * dev)
 {
@@ -2363,11 +2386,13 @@ ssldev_free (device_t * dev)
   return (SER_SUCC);
 }
 
+
 caddr_t
 tcpses_get_ssl (session_t * ses)
 {
   return ((caddr_t) (ses->ses_device->dev_connection->ssl));
 }
+
 
 void *
 tcpses_get_sslctx (session_t * ses)
@@ -2376,6 +2401,7 @@ tcpses_get_sslctx (session_t * ses)
     return ((ses->ses_device->dev_connection->ssl_ctx));
   return NULL;
 }
+
 
 void
 tcpses_set_sslctx (session_t * ses, void *ssl_ctx)
@@ -2386,7 +2412,6 @@ tcpses_set_sslctx (session_t * ses, void *ssl_ctx)
     ses->ses_device->dev_connection->ssl_ctx = ssl_ctx;
   return;
 }
-
 
 
 void
@@ -2402,6 +2427,7 @@ sslses_to_tcpses (session_t * ses)
   ses->ses_device->dev_connection->ssl = NULL;
 }
 
+
 void
 tcpses_to_sslses (session_t * ses, void *s_ssl)
 {
@@ -2412,6 +2438,7 @@ tcpses_to_sslses (session_t * ses, void *s_ssl)
   ses->ses_device->dev_funs->dfp_free = ssldev_free;
   ses->ses_device->dev_connection->ssl = (SSL *) s_ssl;
 }
+
 
 /* END SSL support*/
 #endif
@@ -2562,7 +2589,8 @@ unixses_accept (session_t * ses, session_t * new_ses)
   SESSTAT_CLR (new_ses, SST_OK);
 
   new_socket = accept (ses->ses_device->dev_connection->con_s,
-      (struct sockaddr *) &(new_ses->ses_device->dev_connection->con_clientaddr.u), &addrlen);
+	(struct sockaddr *) &(new_ses->ses_device->dev_connection->con_clientaddr.u),
+	&addrlen);
 
   if (new_socket < 0)
     {
@@ -2691,6 +2719,7 @@ unixses_connect (session_t * ses)
   dbg_printf_2 (("SER_SUCC."));
   return (SER_SUCC);
 }
+
 
 /*##**********************************************************************
  *
@@ -2890,6 +2919,8 @@ tcpses_make_unix_session (char *address)
     }
   return session;
 }
+
+
 #else
 dk_session_t *
 tcpses_make_unix_session (char *address)

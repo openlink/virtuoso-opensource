@@ -4,27 +4,26 @@
  *  $Id$
  *
  *  Upper layer sessions
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ *
+ */
 
 #include "Dk.h"
 
@@ -55,8 +54,7 @@ unfreeze_thread_write (dk_session_t * ses)
       remove_from_served_sessions (ses);
     }
 
-  ss_dprintf_4 (("Write in thread %p resumed.",
-		 (void *)(SESSION_SCH_DATA (ses)->sio_writing_thread)));
+  ss_dprintf_4 (("Write in thread %p resumed.", (void *) (SESSION_SCH_DATA (ses)->sio_writing_thread)));
 
   semaphore_leave (SESSION_SCH_DATA (ses)->sio_writing_thread->thr_sem);
   return 0;
@@ -67,12 +65,11 @@ static void
 freeze_thread_write (dk_session_t * ses)
 {
   USE_GLOBAL
-  SESSION_SCH_DATA (ses)->sio_random_write_ready_action =
-      unfreeze_thread_write;
+  SESSION_SCH_DATA (ses)->sio_random_write_ready_action = unfreeze_thread_write;
   SESSION_SCH_DATA (ses)->sio_writing_thread = current_process;
   add_to_served_sessions (ses);
 
-  ss_dprintf_4 (("Write on Thread %p blocked.", (void *)current_process));
+  ss_dprintf_4 (("Write on Thread %p blocked.", (void *) current_process));
 
   semaphore_enter (current_process->thr_sem);
 }
@@ -237,8 +234,7 @@ session_buffered_write (dk_session_t * ses, const char *buffer, size_t _length)
   /* will the string fit ? */
   if (length <= ses->dks_out_length - ses->dks_out_fill)
     {
-      memcpy (&ses->dks_out_buffer[ses->dks_out_fill], buffer,
-	  length);
+      memcpy (&ses->dks_out_buffer[ses->dks_out_fill], buffer, length);
       ses->dks_out_fill = ses->dks_out_fill + length;
     }
   else
@@ -254,20 +250,19 @@ session_buffered_write (dk_session_t * ses, const char *buffer, size_t _length)
       if (strses_is_utf8 (ses))
 	{
 	  written = utf8_align_memcpy (&ses->dks_out_buffer[ses->dks_out_fill], buffer,
-	      ses->dks_out_length - ses->dks_out_fill, NULL, NULL);
+		ses->dks_out_length - ses->dks_out_fill, NULL, NULL);
 	  if (written == -1)
 	    {
 	      SESSTAT_CLR (ses->dks_session, SST_OK);
 	      SESSTAT_SET (ses->dks_session, SST_BROKEN_CONNECTION);
-	      longjmp_splice (
-		  &SESSION_SCH_DATA (ses)->sio_write_broken_context, 1);
+	      longjmp_splice (&SESSION_SCH_DATA (ses)->sio_write_broken_context, 1);
 	    }
 	  service_write (ses, ses->dks_out_buffer, ses->dks_out_fill + written);
 	}
       else
 	{
 	  memcpy (&ses->dks_out_buffer[ses->dks_out_fill], buffer,
-	      written = ses->dks_out_length - ses->dks_out_fill);
+		written = ses->dks_out_length - ses->dks_out_fill);
 	  service_write (ses, ses->dks_out_buffer, ses->dks_out_length);
 	}
       if (length - written > ses->dks_out_length)
@@ -305,6 +300,7 @@ session_buffered_write_char (unsigned char ch, dk_session_t * ses)
       ses->dks_out_fill++;
     }
 }
+
 
 #else
 
@@ -375,7 +371,7 @@ service_read (dk_session_t * ses, char *buffer, int req_bytes, int need_all)
       else
 	{
 	  if (!ses->dks_session)
-	      longjmp_splice (&(SESSION_SCH_DATA (ses)->sio_read_broken_context), 1);
+	    longjmp_splice (&(SESSION_SCH_DATA (ses)->sio_read_broken_context), 1);
 
 	  rc = session_read (ses->dks_session, &(buffer[last_read]), bytes);
 	}
@@ -404,7 +400,7 @@ service_read (dk_session_t * ses, char *buffer, int req_bytes, int need_all)
 	    {
 	      /* would block. suspend thread */
 
-	      cur_proc = current_process;	/* mty NEW */
+	      cur_proc = current_process;	 /* mty NEW */
 	      if (!PROCESS_TO_DK_THREAD (cur_proc))
 		{
 		  /* We have a block on a server thread. We recognize it
@@ -417,22 +413,20 @@ service_read (dk_session_t * ses, char *buffer, int req_bytes, int need_all)
 		   */
 		  int rc2;
 		  PROCESS_ALLOW_SCHEDULE ();
-		  rc2 = check_inputs (PASS_G &atomic_timeout, 1);
+		  rc2 = check_inputs (PASS_G & atomic_timeout, 1);
 		  if (rc2 == 0)
 		    timeout_round (PASS_G ses);
 		}
 	      else
 		{
-		  SESSION_SCH_DATA (ses)->sio_random_read_ready_action =
-		      unfreeze_thread_read;
+		  SESSION_SCH_DATA (ses)->sio_random_read_ready_action = unfreeze_thread_read;
 		  SESSION_SCH_DATA (ses)->sio_reading_thread = cur_proc;
 		  add_to_served_sessions (ses);
 		  semaphore_enter (cur_proc->thr_sem);
 		}
 	    }
-	  else if (1 || /* ?? */
-	      SESSTAT_ISSET (ses->dks_session, SST_TIMED_OUT) ||
-	      SESSTAT_ISSET (ses->dks_session, SST_BROKEN_CONNECTION))
+	  else if (1 ||				 /* ?? */
+	      SESSTAT_ISSET (ses->dks_session, SST_TIMED_OUT) || SESSTAT_ISSET (ses->dks_session, SST_BROKEN_CONNECTION))
 	    {
 	      SESSTAT_CLR (ses->dks_session, SST_OK);
 	      SESSTAT_SET (ses->dks_session, SST_BROKEN_CONNECTION);
@@ -443,11 +437,8 @@ service_read (dk_session_t * ses, char *buffer, int req_bytes, int need_all)
 	    {
 	      ses->dks_bytes_received += last_read;
 
-	      ss_dprintf_2 (
-		  ("Unrecognized I/O error rc=%d errno=%d in service_read.",
-		  rc, errno));
-	      longjmp_splice (
-		  &(SESSION_SCH_DATA (ses)->sio_read_broken_context), 1);
+	      ss_dprintf_2 (("Unrecognized I/O error rc=%d errno=%d in service_read.", rc, errno));
+	      longjmp_splice (&(SESSION_SCH_DATA (ses)->sio_read_broken_context), 1);
 	    }
 	}
     }
@@ -495,8 +486,7 @@ session_buffered_read (dk_session_t * ses, char *buffer, int req_bytes)
          If there's more than a buffer full needed, read into the target
          if less, fill the buffer. */
       memcpy (buffer, &ses->dks_in_buffer[ses->dks_in_read],
-	  bytes_from_previous
-	  = bytes_read = ses->dks_in_fill - ses->dks_in_read);
+	    bytes_from_previous = bytes_read = ses->dks_in_fill - ses->dks_in_read);
       ses->dks_in_read = ses->dks_in_fill;
       if (req_bytes > ses->dks_in_length)
 	{
@@ -515,8 +505,7 @@ session_buffered_read (dk_session_t * ses, char *buffer, int req_bytes)
 
 	  while (1)
 	    {
-	      rc = service_read (ses, &ses->dks_in_buffer[bytes_filled],
-		  bytes_to_fill, 0);
+	      rc = service_read (ses, &ses->dks_in_buffer[bytes_filled], bytes_to_fill, 0);
 	      if (rc > 0)
 		{
 		  bytes_read = bytes_read + rc;
@@ -526,8 +515,7 @@ session_buffered_read (dk_session_t * ses, char *buffer, int req_bytes)
 		    {
 		      ses->dks_in_fill = bytes_filled;
 		      ses->dks_in_read = req_bytes - bytes_from_previous;
-		      memcpy (&buffer[bytes_from_previous], ses->dks_in_buffer,
-			  ses->dks_in_read);
+		      memcpy (&buffer[bytes_from_previous], ses->dks_in_buffer, ses->dks_in_read);
 		      return (req_bytes);
 		    }
 		}

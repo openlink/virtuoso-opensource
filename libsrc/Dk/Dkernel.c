@@ -4,27 +4,26 @@
  *  $Id$
  *
  *  RPC Kernel
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ *
+ */
 
 /* Sorry, this still is a mess - merge not complete yet - PmN */
 
@@ -70,7 +69,7 @@ int LEVEL_VAR = 4;
 static void ssl_server_init ();
 
 #ifndef NO_THREAD
-static int ssl_server_accept (dk_session_t *listen, dk_session_t *ses);
+static int ssl_server_accept (dk_session_t * listen, dk_session_t * ses);
 static unsigned int ssl_server_port = 0;
 #endif
 static SSL_CTX *ssl_server_ctx = NULL;
@@ -94,6 +93,7 @@ call_exit_outline (int status)
   call_exit (status);
 }
 
+
 #ifdef PMN_THREADS
 int time_slice = 100;
 #define process_is_quiescent(X) \
@@ -106,38 +106,38 @@ extern int time_slice;
 #ifndef GSTATE
 
 int last_session;
-dk_session_t *served_sessions [MAX_SESSIONS];
-service_t * services;
+dk_session_t *served_sessions[MAX_SESSIONS];
+service_t *services;
 
-resource_t * free_threads;
-int future_thread_count=0;
-int max_future_threads=10;
+resource_t *free_threads;
+int future_thread_count = 0;
+int max_future_threads = 10;
 
 int select_set_changed;
 
 long future_thread_sz = FUTURE_THREAD_SIZE;
 long server_thread_sz = FUTURE_THREAD_SIZE;
-long main_thread_sz = 0; /* use values from thread_int.h */
+long main_thread_sz = 0;	/* use values from thread_int.h */
 
-dk_hash_t * protocols = (dk_hash_t *) NULL;
-sch_hook_func  scheduler_hook = NULL;
+dk_hash_t *protocols = (dk_hash_t *) NULL;
+sch_hook_func scheduler_hook = NULL;
 
-timeout_t atomic_timeout = {ATOMIC_TIMEOUT,0};
-timeout_t dks_fibers_blocking_read_default_to = {0,1};
+timeout_t atomic_timeout = { ATOMIC_TIMEOUT, 0 };
+timeout_t dks_fibers_blocking_read_default_to = { 0, 1 };
 
 basket_t in_basket;
 long client_trace_flag;
 
-srv_req_hook_func  service_request_hook = NULL;
+srv_req_hook_func service_request_hook = NULL;
 
-int prpcinitialized =  0;
+int prpcinitialized = 0;
 
-dk_mutex_t * value_mtx;
+dk_mutex_t *value_mtx;
 #ifndef NO_THREAD
 #define IN_VALUE	mutex_enter (value_mtx)
 #define LEAVE_VALUE	mutex_leave (value_mtx)
 #else
-#define IN_VALUE	/* no value_mtx for single thread */
+#define IN_VALUE			 /* no value_mtx for single thread */
 #define LEAVE_VALUE
 #endif
 
@@ -158,19 +158,15 @@ char *c_ssl_server_port;
 char *c_ssl_server_cert;
 char *c_ssl_server_key;
 #endif
-#endif   /* GSTATE */
+#endif /* GSTATE */
 
-typedef int (*select_func_t) (
-    int ses_count,
-    session_t ** reads,
-    session_t ** writes,
-    timeout_t * timeout);
+typedef int (*select_func_t) (int ses_count, session_t ** reads, session_t ** writes, timeout_t * timeout);
 
 static caddr_t PrpcFutureNextResult1T (future_t * future);
 
 
 #ifdef PMN_THREADS
-static dk_thread_t * dk_thread_alloc (void);
+static dk_thread_t *dk_thread_alloc (void);
 #ifndef NO_THREAD
 static int future_wrapper (void *dkt);
 #endif
@@ -198,11 +194,10 @@ static int fd_set_or (fd_set * s1, fd_set * s2);
 static int fd_sets_intersect (fd_set * s1, fd_set * s2);
 #endif
 
-SERVICE_0 (s_sql_cancel, "CANCEL", DA_FUTURE_REQUEST, DV_SEND_NO_ANSWER)
-
+SERVICE_0 (s_sql_cancel, "CANCEL", DA_FUTURE_REQUEST, DV_SEND_NO_ANSWER);
 
 long
-cdef_param (caddr_t * cdefs, char * name, long deflt)
+cdef_param (caddr_t * cdefs, char *name, long deflt)
 {
   int len = cdefs ? BOX_ELEMENTS (cdefs) : 0;
   int inx;
@@ -214,18 +209,17 @@ cdef_param (caddr_t * cdefs, char * name, long deflt)
 
 
 void
-cdef_add_param (caddr_t ** cdefs_ptr, const char * name, long val)
+cdef_add_param (caddr_t ** cdefs_ptr, const char *name, long val)
 {
-  caddr_t * cdefs = *cdefs_ptr;
+  caddr_t *cdefs = *cdefs_ptr;
   if (cdefs)
     {
       int n_opts = BOX_ELEMENTS (cdefs);
-      caddr_t * new_opts = (caddr_t *) dk_alloc_box ((n_opts + 2) * sizeof (caddr_t),
-	  DV_ARRAY_OF_POINTER);
+      caddr_t *new_opts = (caddr_t *) dk_alloc_box ((n_opts + 2) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
       memcpy (new_opts, cdefs, n_opts * sizeof (caddr_t));
       /* meaning the version of the server as stored in the client */
-      new_opts [n_opts] = box_dv_short_string (name);
-      new_opts [n_opts + 1] = box_num (val);
+      new_opts[n_opts] = box_dv_short_string (name);
+      new_opts[n_opts + 1] = box_num (val);
       dk_free_box ((box_t) cdefs);
       *cdefs_ptr = new_opts;
     }
@@ -233,15 +227,15 @@ cdef_add_param (caddr_t ** cdefs_ptr, const char * name, long val)
     {
       cdefs = (caddr_t *) dk_alloc_box (2 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
       /* meaning the version of the server as stored in the client */
-      cdefs [0] = box_dv_short_string (name);
-      cdefs [1] = box_num (val);
+      cdefs[0] = box_dv_short_string (name);
+      cdefs[1] = box_num (val);
       *cdefs_ptr = cdefs;
     }
 }
 
 
 static void
-call_service_cancel (dk_session_t *ses)
+call_service_cancel (dk_session_t * ses)
 {
   /* meaning the version of the server as stored in the client */
   long ver = cdef_param (ses->dks_caller_id_opts, "__SQL_CLIENT_VERSION", 0);
@@ -385,7 +379,7 @@ get_free_thread (TAKE_G dk_session_t * for_ses)
 	{
 	  thr->thr_client_data = dkt;
 	  dkt->dkt_process = thr;
-	  dbg_printf_2(("+ Created thread %p", thr));
+	  dbg_printf_2 (("+ Created thread %p", thr));
 	}
       else
 	{
@@ -440,14 +434,15 @@ is_protocol (session_t * ses, int proto)
 {
   return (ses->ses_class == proto
 #if defined (COM_UDPIP) || defined (COM_UNIXSOCK)
-      || ((proto == SESCLASS_TCPIP || proto == SESCLASS_UDPIP || proto == SESCLASS_UNIX) &&
+      || ((proto == SESCLASS_TCPIP ||
+	   proto == SESCLASS_UDPIP ||
+	   proto == SESCLASS_UNIX) &&
 	  (ses->ses_class == SESCLASS_TCPIP ||
-	      ses->ses_class == SESCLASS_UDPIP ||
-	      ses->ses_class == SESCLASS_UNIX))
+	   ses->ses_class == SESCLASS_UDPIP ||
+	   ses->ses_class == SESCLASS_UNIX))
 #endif
       );
 }
-
 
 
 int
@@ -457,13 +452,12 @@ bytes_in_read_buffer (dk_session_t * ses)
 }
 
 
-
 #ifndef NO_COMBINED_SELECT
 
 struct connectionstruct
-  {
-    int con_s;			/* socket descriptor */
-  };
+{
+  int con_s;			/* socket descriptor */
+};
 
 #define DKS_SOCK(ses) \
 	ses->dks_session->ses_device->dev_connection->con_s
@@ -483,16 +477,13 @@ call_default_read (dk_session_t * ses, int is_recursive, int *did_call)
     }
 }
 
+
 int prpc_disable_burst_mode = 0;
 int prpc_force_burst_mode = 0;
 int prpc_self_signal_initialized = 0;
 
 static int
-check_inputs_low (TAKE_G
-    timeout_t * timeout_org,
-    int is_recursive,
-    select_func_t select_fun,
-    int protocol)
+check_inputs_low (TAKE_G timeout_t * timeout_org, int is_recursive, select_func_t select_fun, int protocol)
 {
   struct timeval to_2;
   int buffered_left;
@@ -600,15 +591,15 @@ check_inputs_low (TAKE_G
 	      if (!prpc_disable_burst_mode)
 		{
 		  mutex_enter (thread_mtx);
-                  if (!ses->dks_fixed_thread
-                          && ses->dks_thread_state == DKST_FINISH
-                          && ses->dks_n_threads == 1)
+		  if (!ses->dks_fixed_thread &&
+		      ses->dks_thread_state == DKST_FINISH &&
+		      ses->dks_n_threads == 1)
 		    {
 		      if (SESSION_SCH_DATA (ses)->sio_default_read_ready_action == read_service_request)
 			{
 			  thrs_printf ((thrs_fo, "ses %p thr:%p from finish to burst\n", ses, THREAD_CURRENT_THREAD));
 			  ses->dks_thread_state = DKST_BURST;
-			  burst_reqs ++;
+			  burst_reqs++;
 			  remove_from_served_sessions (ses);
 			  mutex_leave (thread_mtx);
 			  continue;
@@ -654,14 +645,12 @@ check_inputs_low (TAKE_G
 		      buffered_left = 1;
 		    }
 		  else
-                    {
-                      if (client_trace_flag)
-			logit (L_DEBUG,
-			     "calling default read based on data left in buffer, ses: %lx",
-			     ses);
+		    {
+		      if (client_trace_flag)
+			logit (L_DEBUG, "calling default read based on data left in buffer, ses: %lx", ses);
 
 		      call_default_read (ses, is_recursive, &buffered_left);
-                    }
+		    }
 		}
 	    }
 	  if (!suck_avidly)
@@ -680,11 +669,7 @@ check_inputs_low (TAKE_G
 
 
 static int
-check_inputs_low (TAKE_G
-    timeout_t * timeout,
-    int is_recursive,
-    select_func_t select_fun,
-    int protocol)
+check_inputs_low (TAKE_G timeout_t * timeout, int is_recursive, select_func_t select_fun, int protocol)
 {
   session_t *reads[MAX_SESSIONS];
   session_t *writes[MAX_SESSIONS];
@@ -728,8 +713,7 @@ again:
      This case corresponds to the operation interrupted condition. */
 
   without_scheduling_tic ();
-  rc = select_fun ((last_read > last_write ? last_read : last_write),
-      reads, writes, timeout);
+  rc = select_fun ((last_read > last_write ? last_read : last_write), reads, writes, timeout);
   restore_scheduling_tic ();
 
   if (rc < 0)
@@ -767,11 +751,10 @@ again:
     {
       session_t *ses = writes[n];
       if (!SESSTAT_ISSET (ses, SST_BLOCK_ON_READ) ||
-	   SESSTAT_ISSET (ses, SST_CONNECT_PENDING) ||
+	  SESSTAT_ISSET (ses, SST_CONNECT_PENDING) ||
 	  bytes_in_read_buffer (SESSION_DK_SESSION (ses)))
 	{
-	  io_action_func act = SESSION_SCH_DATA (
-	      SESSION_DK_SESSION (ses))->sio_random_read_ready_action
+	  io_action_func act = SESSION_SCH_DATA (SESSION_DK_SESSION (ses))->sio_random_read_ready_action ;
 	  if (act)
 	    (*act) (SESSION_DK_SESSION (ses));
 	  else
@@ -800,19 +783,16 @@ again:
 int
 check_inputs (TAKE_G timeout_t * timeout, int is_recursive)
 {
-  return (
-      check_inputs_low (PASS_G timeout, is_recursive,
-	  (select_func_t) tcpses_select, SESCLASS_TCPIP)
+  return (check_inputs_low (PASS_G timeout, is_recursive, (select_func_t) tcpses_select, SESCLASS_TCPIP)
 #ifdef COM_UDPIP
-      || check_inputs_low (PASS_G timeout, is_recursive,
-	  udpses_select, SESCLASS_UDP)
+      || check_inputs_low (PASS_G timeout, is_recursive, udpses_select, SESCLASS_UDP)
 #endif
 #ifdef COM_NMPIPE
-      || check_inputs_low (PASS_G timeout, is_recursive,
-	  nmpses_select, SESCLASS_NMP)
+      || check_inputs_low (PASS_G timeout, is_recursive, nmpses_select, SESCLASS_NMP)
 #endif
       );
 }
+
 
 long msec_session_dead_time;
 dk_session_t *session_dead;
@@ -821,7 +801,7 @@ dk_session_t *session_dead;
  *  Called when the client is disconnected
  */
 static void
-session_is_dead (dk_session_t *ses)
+session_is_dead (dk_session_t * ses)
 {
   int is_server = ses->dks_is_server;
   io_action_func dead = SESSION_SCH_DATA (ses)->sio_partner_dead_action;
@@ -838,11 +818,9 @@ session_is_dead (dk_session_t *ses)
       if (client_trace_flag)
 
 #ifndef NDEBUG
-        logit (L_DEBUG, "Freeing session %lx, peer: %s, n_threads: %d\n",
-            ses, ses->dks_peer_name ? ses->dks_peer_name : "(NIL)", ses->dks_n_threads);
+	logit (L_DEBUG, "Freeing session %lx, peer: %s, n_threads: %d\n", ses, ses->dks_peer_name ? ses->dks_peer_name : "(NIL)", ses->dks_n_threads);
 #else
-        logit (L_DEBUG, "Freeing session %lx, n_threads: %d\n",
-            ses, ses->dks_n_threads);
+	logit (L_DEBUG, "Freeing session %lx, n_threads: %d\n", ses, ses->dks_n_threads);
 #endif /* NDEBUG */
 
       msec_session_dead_time = get_msec_real_time ();
@@ -851,6 +829,7 @@ session_is_dead (dk_session_t *ses)
     }
 }
 
+
 #ifdef NO_THREAD
 int
 dk_report_error (const char *format, ...)
@@ -858,8 +837,9 @@ dk_report_error (const char *format, ...)
   return 0;
 }
 
+
 void
-sr_report_future_error (dk_session_t *ses, const char *service_name, const char *reason)
+sr_report_future_error (dk_session_t * ses, const char *service_name, const char *reason)
 {
   /* does nothing client-side */
 }
@@ -889,14 +869,15 @@ PrpcStatus (char *out, int max)
 {
   char tmp[300];
   snprintf (tmp, sizeof (tmp),
-      "RPC: %ld calls, %ld pending, %ld max until now, %ld queued, %ld burst reads (%d%%), %ld second",
-      future_n_calls, future_n_calls - future_n_returns, future_max_conc,
-      queued_reqs, burst_reqs, (int) (burst_reqs * 100 / future_n_calls),
-      second_rpcs );
+	"RPC: %ld calls, %ld pending, %ld max until now, %ld queued, %ld burst reads (%d%%), %ld second",
+	future_n_calls, future_n_calls - future_n_returns, future_max_conc,
+	queued_reqs, burst_reqs, (int) (burst_reqs * 100 / future_n_calls),
+	second_rpcs);
   strncpy (out, tmp, max);
   if (max > 0)
-    out[max-1] = 0;
+    out[max - 1] = 0;
 }
+
 
 static void (*f_future_preprocess) (void) = NULL;
 
@@ -909,6 +890,7 @@ PrpcSetFuturePreprocessHook (void (*prepro) (void))
   if (thread_mtx)
     mutex_leave (thread_mtx);
 }
+
 
 int
 dk_report_error (const char *format, ...)
@@ -925,7 +907,7 @@ dk_report_error (const char *format, ...)
 
 
 void
-sr_report_future_error (dk_session_t *ses, const char *service_name, const char *reason)
+sr_report_future_error (dk_session_t * ses, const char *service_name, const char *reason)
 {
   if (ses && ses->dks_session &&
       (ses->dks_session->ses_class == SESCLASS_TCPIP ||
@@ -934,11 +916,9 @@ sr_report_future_error (dk_session_t *ses, const char *service_name, const char 
       char ip_buffer[16];
       tcpses_print_client_ip (ses->dks_session, ip_buffer, sizeof (ip_buffer));
       if (service_name && strlen (service_name) > 0)
-	log_error ("Malformed RPC %.10s received from IP [%.256s] : %.255s. Disconnecting the client",
-	    service_name, ip_buffer, reason);
+	log_error ("Malformed RPC %.10s received from IP [%.256s] : %.255s. Disconnecting the client", service_name, ip_buffer, reason);
       else
-	log_error ("Malformed data received from IP [%.256s] : %.255s. Disconnecting the client",
-	    ip_buffer, reason);
+	log_error ("Malformed data received from IP [%.256s] : %.255s. Disconnecting the client", ip_buffer, reason);
     }
 /* do not report - it's usually an internal session - like txn log, deserialize etc
   else
@@ -959,7 +939,7 @@ sr_report_future_error (dk_session_t *ses, const char *service_name, const char 
 #define is_array_of_long(type)\
   ((DV_ARRAY_OF_LONG == (type)) || (DV_ARRAY_OF_LONG_PACKED == (type)))
 static int
-sr_check_and_set_args (future_request_t *future, caddr_t *arguments, int argcount, caddr_t *arg_array)
+sr_check_and_set_args (future_request_t * future, caddr_t * arguments, int argcount, caddr_t * arg_array)
 {
   service_desc_t *desc = (service_desc_t *) future->rq_service->sr_client_data;
   int inx;
@@ -978,15 +958,14 @@ sr_check_and_set_args (future_request_t *future, caddr_t *arguments, int argcoun
       if (!desc || !desc->sd_arg_types[inx])
 	arg_array[inx] = (caddr_t) unbox_ptrlong (arguments[inx]);
       else if (arg_dtp == desc->sd_arg_types[inx] ||
-	  (is_string_type (arg_dtp) && is_string_type (desc->sd_arg_types[inx])) ||
-	  (is_array_of_long (arg_dtp) && is_array_of_long (desc->sd_arg_types[inx])) ||
-	  (!arguments[inx] && (!desc->sd_arg_nullable || desc->sd_arg_nullable[inx]))
-	  )
+	       (is_string_type (arg_dtp) && is_string_type (desc->sd_arg_types[inx])) ||
+	       (is_array_of_long (arg_dtp) && is_array_of_long (desc->sd_arg_types[inx])) ||
+	       (!arguments[inx] && (!desc->sd_arg_nullable || desc->sd_arg_nullable[inx])))
 	arg_array[inx] = (caddr_t) unbox_ptrlong (arguments[inx]);
       else
 	{
 	  snprintf (buffer, sizeof (buffer), "invalid argument type (%d instead of %d) for arg %d",
-	      (int) DV_TYPE_OF (arguments[inx]), (int) desc->sd_arg_types[inx], inx + 1);
+	  	(int) DV_TYPE_OF (arguments[inx]), (int) desc->sd_arg_types[inx], inx + 1);
 	  reason = buffer;
 	  goto error;
 	}
@@ -996,11 +975,11 @@ sr_check_and_set_args (future_request_t *future, caddr_t *arguments, int argcoun
 
   return 0;
 error:
-  sr_report_future_error (future->rq_client, future->rq_service->sr_name,
-      reason);
+  sr_report_future_error (future->rq_client, future->rq_service->sr_name, reason);
   PrpcDisconnect (future->rq_client);
   return 1;
 }
+
 
 /* callback called when the session is detected to be disconnected */
 
@@ -1015,7 +994,7 @@ PrpcSetSessionDisconnectCallback (disconnect_callback_func f)
 
 
 void
-call_disconnect_callback_func (dk_session_t *ses)
+call_disconnect_callback_func (dk_session_t * ses)
 {
   if (session_disconnect_callback)
     session_disconnect_callback (ses);
@@ -1052,7 +1031,7 @@ static int
 future_wrapper (void *ignore)
 {
   USE_GLOBAL
-    dk_thread_t * volatile c_thread;
+  dk_thread_t * volatile c_thread;
   future_request_t *future, *fixed_thread_future;
   volatile caddr_t result = NULL;
   dk_session_t *client;
@@ -1066,7 +1045,7 @@ future_wrapper (void *ignore)
   {
 
     dbg_printf_2 (("future wrapper point 1 thread %p", this_thread));
-    semaphore_enter (this_thread->thr_schedule_sem); /* XXX: schedule_sem */
+    semaphore_enter (this_thread->thr_schedule_sem);	/* XXX: schedule_sem */
     dbg_printf_1 (("future wrapper activated thread %p", this_thread));
     c_thread = PROCESS_TO_DK_THREAD (this_thread);
   }
@@ -1077,14 +1056,11 @@ future_wrapper (void *ignore)
       client = future->rq_client;
       if (future->rq_to_close)
 	{
-	  dbg_printf_3 (("\nserving a close event for ses %p in thread %p\n",
-	      client, this_thread));
+	  dbg_printf_3 (("\nserving a close event for ses %p in thread %p\n", client, this_thread));
 	  goto free_the_future;
 	}
       arguments = (caddr_t *) future->rq_arguments;
-      argcount = arguments
-	? (int) (box_length ((caddr_t) arguments) / sizeof (caddr_t))
-	: (int) 0;
+      argcount = arguments ? (int) (box_length ((caddr_t) arguments) / sizeof (caddr_t)) : (int) 0;
 
       error = 0;
 
@@ -1102,29 +1078,26 @@ future_wrapper (void *ignore)
       dk_free_box_and_int_boxes ((caddr_t) arguments);
 
       /* Free this now. If freed after RPC func the references items may have been
-	 freed and reallocated and could be erroneously re-freed. */
+         freed and reallocated and could be erroneously re-freed. */
 
 
       if (f_future_preprocess)
 	f_future_preprocess ();
       if (0 == error)
 	{
-	  ss_dprintf_3 (("Starting future %ld, %s", future->rq_condition,
-			 future->rq_service->sr_name));
+	  ss_dprintf_3 (("Starting future %ld, %s", future->rq_condition, future->rq_service->sr_name));
 
-	  F_CALLED; /* not serialized, does not have to be exact. */
-	  CB_PREPARE
-	    result = (caddr_t) future->rq_service->sr_func (
-							    arg_array[0], arg_array[1],
-							    arg_array[2], arg_array[3],
-							    arg_array[4], arg_array[5],
-							    arg_array[6], arg_array[7],
-							    arg_array[8]);
+	  F_CALLED;				 /* not serialized, does not have to be exact. */
+	  CB_PREPARE;
+	  result = (caddr_t) future->rq_service->sr_func (
+	  	arg_array[0], arg_array[1], arg_array[2], arg_array[3],
+		arg_array[4], arg_array[5], arg_array[6], arg_array[7],
+		arg_array[8]);
 	  CB_DONE;
 	}
 
       /* If this was a direct io future, request reading was disabled
-	 upon receipt of now processed request. Re-enable services reading */
+         upon receipt of now processed request. Re-enable services reading */
 
       if (future->rq_is_direct_io)
 	{
@@ -1138,14 +1111,12 @@ future_wrapper (void *ignore)
 	  {
 	    /* Box the result */
 	    caddr_t *ret_box;
-	    caddr_t *ret_block = (caddr_t *) dk_alloc_box (
-							   sizeof (caddr_t) * DA_ANSWER_LENGTH, DV_ARRAY_OF_POINTER);
+	    caddr_t *ret_block = (caddr_t *) dk_alloc_box (sizeof (caddr_t) * DA_ANSWER_LENGTH, DV_ARRAY_OF_POINTER);
 	    if (ret_type == DV_MULTIPLE_VALUES)
 	      ret_box = (caddr_t *) result;
 	    else
 	      {
-		ret_box = (caddr_t *) dk_alloc_box (sizeof (caddr_t),
-						    DV_ARRAY_OF_POINTER);
+		ret_box = (caddr_t *) dk_alloc_box (sizeof (caddr_t), DV_ARRAY_OF_POINTER);
 		if (ret_type == DV_LONG_INT || ret_type == DV_SHORT_INT)
 		  ret_box[0] = box_num ((ptrlong) result);
 		else if (ret_type == DV_C_STRING)
@@ -1157,16 +1128,15 @@ future_wrapper (void *ignore)
 	    ret_block[RRC_COND_NUMBER] = box_num (future->rq_condition);
 	    ret_block[RRC_VALUE] = (caddr_t) ret_box;
 	    ret_block[RRC_ERROR] = box_num (error);
-	    CB_PREPARE
+	    CB_PREPARE;
 #ifdef PMN_NMARSH
-	      srv_write_in_session (ret_block, future->rq_client, 1);
+	    srv_write_in_session (ret_block, future->rq_client, 1);
 #else
-	    write_in_session ((caddr_t) ret_block, future->rq_client, NULL,
-			      NULL, 1);
+	    write_in_session ((caddr_t) ret_block, future->rq_client, NULL, NULL, 1);
 #endif
-	    CB_DONE
-	      if (ret_type == DV_C_STRING)
-		dk_free_box ((caddr_t) ret_box[0]);	/* mty HUHTI */
+	    CB_DONE;
+	    if (ret_type == DV_C_STRING)
+	      dk_free_box ((caddr_t) ret_box[0]);	/* mty HUHTI */
 	    dk_free_box_and_numbers ((caddr_t) ret_block);	/* mty HUHTI */
 	    dk_free_box_and_numbers ((caddr_t) ret_box);	/* mty HUHTI */
 	  }
@@ -1175,11 +1145,11 @@ future_wrapper (void *ignore)
       /* epilogue */
       if (future->rq_service->sr_postprocess)
 	{
-	  CB_PREPARE
-	    future->rq_service->sr_postprocess (result, future);
+	  CB_PREPARE;
+	  future->rq_service->sr_postprocess (result, future);
 	  CB_DONE;
 	}
-free_the_future:
+    free_the_future:
       if (this_thread->thr_reset_code)
 	thr_set_error_code (this_thread, NULL);
       dbg_printf_2 (("Done Future %ld on thread %p", future->rq_condition, this_thread));
@@ -1189,23 +1159,19 @@ free_the_future:
       if (client->dks_n_threads < 0 || client->dks_n_threads > MAX_THREADS)
 	{
 	  dk_report_error ("dks_n_threads=%d mode=%d dks_to_close=%d in_basket_bsk_next=%p dks_fixed_thread=%p",
-	      client->dks_n_threads,
-	      client->dks_thread_state,
-	      client->dks_to_close,
-	      in_basket.bsk_next,
-	      client->dks_fixed_thread);
+	  	client->dks_n_threads, client->dks_thread_state,
+		client->dks_to_close, in_basket.bsk_next,
+		client->dks_fixed_thread);
 	  GPF_T1 ("dks_n_threads out of range");
 	}
 
 
       fixed_thread_future = NULL;
-      if (client->dks_fixed_thread
-	  && c_thread->dkt_fixed_thread
-	  && !client->dks_to_close)
+      if (client->dks_fixed_thread && c_thread->dkt_fixed_thread && !client->dks_to_close)
 	{
 	  mutex_leave (thread_mtx);
 	  dbg_printf_2 (("Check next ft future on thread %p", this_thread));
-	  semaphore_enter (this_thread->thr_schedule_sem); /* XXX: schedule_sem */
+	  semaphore_enter (this_thread->thr_schedule_sem);	/* XXX: schedule_sem */
 	  mutex_enter (thread_mtx);
 	  fixed_thread_future = (future_request_t *) basket_get (&client->dks_fixed_thread_reqs);
 	  if (!fixed_thread_future)
@@ -1244,30 +1210,24 @@ free_the_future:
       future = (future_request_t *) basket_get (&in_basket);
 
       if (future)
-	{ /* got a future from the in_basket */
-	  thrs_printf ((thrs_fo,
-		"future from in_basket on ses %p thr:%p  ft=%p. Going to idle\n",
-		client, THREAD_CURRENT_THREAD, future));
+	{					 /* got a future from the in_basket */
+	  thrs_printf ((thrs_fo, "future from in_basket on ses %p thr:%p  ft=%p. Going to idle\n", client, THREAD_CURRENT_THREAD, future));
 	  if (future->rq_client->dks_n_threads)
-	    { /* there's another thread running on the same session */
+	    {					 /* there's another thread running on the same session */
 	      basket_add (&in_basket, future);
 	      future = NULL;
-	      n_in_basket_putbacks ++;
+	      n_in_basket_putbacks++;
 	    }
 	  else
 	    {
-	      if (future->rq_client != client &&
-		  future->rq_client->dks_thread_state != DKST_IDLE)
+	      if (future->rq_client != client && future->rq_client->dks_thread_state != DKST_IDLE)
 		{
-		  thrs_printf ((thrs_fo, "ses %p thr:%p is in %d\n",
-			client, THREAD_CURRENT_THREAD, (int) client->dks_thread_state));
+		  thrs_printf ((thrs_fo, "ses %p thr:%p is in %d\n", client, THREAD_CURRENT_THREAD, (int) client->dks_thread_state));
 		  GPF_T;
 		}
 	      else
 		{
-		  thrs_printf ((thrs_fo,
-			"future from in_basket on ses %p thr:%p  ft=%p. Going to run\n",
-			future->rq_client, THREAD_CURRENT_THREAD, future));
+		  thrs_printf ((thrs_fo, "future from in_basket on ses %p thr:%p  ft=%p. Going to run\n", future->rq_client, THREAD_CURRENT_THREAD, future));
 		  future->rq_client->dks_thread_state = DKST_RUN;
 		}
 	    }
@@ -1283,8 +1243,7 @@ free_the_future:
 		client->dks_thread_state = DKST_IDLE;
 	      else
 		{
-		  thrs_printf ((thrs_fo, "ses %p thr:%p is in %d\n",
-			client, THREAD_CURRENT_THREAD, (int) client->dks_thread_state));
+		  thrs_printf ((thrs_fo, "ses %p thr:%p is in %d\n", client, THREAD_CURRENT_THREAD, (int) client->dks_thread_state));
 		  GPF_T;
 		}
 	    }
@@ -1296,7 +1255,7 @@ free_the_future:
 	  if (client->dks_thread_state == DKST_BURST)
 	    {
 	      timeout_t zero_timeout = { 0, 10000 };
-              zero_timeout.to_usec = prpc_burst_timeout_msecs * 1000;
+	      zero_timeout.to_usec = prpc_burst_timeout_msecs * 1000;
 	      if (SESSION_SCH_DATA (client)->sio_default_read_ready_action != read_service_request)
 		{
 		  thrs_printf ((thrs_fo, "burst read on ses %p thr:%p changed rr action.releasing ft=%p\n", client, THREAD_CURRENT_THREAD, future));
@@ -1308,7 +1267,7 @@ free_the_future:
 	      mutex_leave (thread_mtx);
 	      if (!bytes_in_read_buffer (client))
 		{
-	          tcpses_is_read_ready (client->dks_session, prpc_force_burst_mode ? NULL : &zero_timeout);
+		  tcpses_is_read_ready (client->dks_session, prpc_force_burst_mode ? NULL : &zero_timeout);
 		  client->dks_is_read_select_ready = 1;
 		}
 	      if (!SESSTAT_ISSET (client->dks_session, SST_TIMED_OUT))
@@ -1318,7 +1277,7 @@ free_the_future:
 		  req = (caddr_t *) read_object (client);
 		  if (service_request_hook)
 		    {
-		      CB_PREPARE
+		      CB_PREPARE;
 		      req = (caddr_t *) service_request_hook (client, (caddr_t) req);
 		      CB_DONE;
 		    }
@@ -1353,12 +1312,11 @@ free_the_future:
 		      future = frq_create (client, req);
 		      if (future)
 			{
-			  thrs_printf ((thrs_fo,
-				"burst read on ses %p thr:%p returned future (%s to_close=%d)\n",
-				client, THREAD_CURRENT_THREAD,
+			  thrs_printf ((thrs_fo, "burst read on ses %p thr:%p returned future (%s to_close=%d)\n",
+			  	client, THREAD_CURRENT_THREAD,
 				future->rq_service ? future->rq_service->sr_name : "<no-service>",
 				(int) future->rq_to_close));
-			  burst_reqs ++;
+			  burst_reqs++;
 			  future->rq_thread = c_thread;
 
 			  dk_free_box (req[FRQ_SERVICE_NAME]);
@@ -1367,9 +1325,7 @@ free_the_future:
 			}
 		      else
 			{
-			  thrs_printf ((thrs_fo,
-				"burst read on ses %p thr:%p returned future NULL\n",
-				client, THREAD_CURRENT_THREAD));
+			  thrs_printf ((thrs_fo, "burst read on ses %p thr:%p returned future NULL\n", client, THREAD_CURRENT_THREAD));
 			}
 		      mutex_enter (thread_mtx);
 		    }
@@ -1398,7 +1354,7 @@ free_the_future:
 		}
 	    }
 	}
-state_check_done:
+    state_check_done:
 
       if (!future)
 	{
@@ -1411,8 +1367,7 @@ state_check_done:
 	  break;
 	}
       if (client_trace_flag)
-        logit (L_DEBUG, "Got a future from basket, rq_client: %lx, service_name: %s",
-	   future->rq_client, future->rq_service->sr_name);
+	logit (L_DEBUG, "Got a future from basket, rq_client: %lx, service_name: %s", future->rq_client, future->rq_service->sr_name);
       c_thread->dkt_request_count = 1;
       c_thread->dkt_requests[0] = future;
       future->rq_client->dks_n_threads++;
@@ -1427,8 +1382,8 @@ state_check_done:
 void
 PrpcFixedServerThread ()
 {
-  dk_session_t * ses = IMMEDIATE_CLIENT;
-  du_thread_t * self = THREAD_CURRENT_THREAD;
+  dk_session_t *ses = IMMEDIATE_CLIENT;
+  du_thread_t *self = THREAD_CURRENT_THREAD;
   dk_thread_t *c_thread = PROCESS_TO_DK_THREAD (self);
   if (ses)
     {
@@ -1447,6 +1402,7 @@ PrpcFixedServerThread ()
     }
 }
 
+
 frq_queue_hook_t frq_queue_hook;
 
 
@@ -1461,7 +1417,7 @@ void
 frq_free (future_request_t * frq)
 {
   dk_free_tree ((caddr_t) frq->rq_arguments);
-  dk_free ((void*) frq, sizeof (future_request_t));
+  dk_free ((void *) frq, sizeof (future_request_t));
 }
 
 
@@ -1474,18 +1430,17 @@ frq_free (future_request_t * frq)
 future_request_t *
 frq_create (dk_session_t * ses, caddr_t * request)
 {
-  future_request_t *future_request =
-    (future_request_t *) dk_alloc (sizeof (future_request_t));
+  future_request_t *future_request = (future_request_t *) dk_alloc (sizeof (future_request_t));
   memset (future_request, 0, sizeof (*future_request));
 
   future_request->rq_client = ses;
 
 #ifndef NDEBUG
-  future_request->rq_peer_name = NULL; /* box_copy(ses->dks_peer_name); */
+  future_request->rq_peer_name = NULL;		 /* box_copy(ses->dks_peer_name); */
 #endif /* NDEBUG */
 
   future_request->rq_to_close = 0;
-  if (request == ((caddr_t *) -1))
+  if (request == ((caddr_t *) - 1))
     {
       dbg_printf_2 (("\nScheduling a close event for ses %p\n", ses));
       future_request->rq_to_close = 1;
@@ -1499,17 +1454,13 @@ frq_create (dk_session_t * ses, caddr_t * request)
       return NULL;
     }
 
-  future_request->rq_is_direct_io =
-    (request[DA_MESSAGE_TYPE] == (caddr_t)(long) DA_DIRECT_IO_FUTURE_REQUEST);
+  future_request->rq_is_direct_io = (request[DA_MESSAGE_TYPE] == (caddr_t) (long) DA_DIRECT_IO_FUTURE_REQUEST);
 
-  future_request->rq_service =
-    find_service ((char *) request[FRQ_SERVICE_NAME]);
+  future_request->rq_service = find_service ((char *) request[FRQ_SERVICE_NAME]);
 
   if (!future_request->rq_service)
     {
-      printf ("\nUnknown service %s requested. req no = %d",
-	      request[FRQ_SERVICE_NAME],
-	      (int) unbox (request[FRQ_COND_NUMBER]));
+      printf ("\nUnknown service %s requested. req no = %d", request[FRQ_SERVICE_NAME], (int) unbox (request[FRQ_COND_NUMBER]));
       dk_free (future_request, sizeof (future_request_t));
       return NULL;
     }
@@ -1563,7 +1514,7 @@ frq_create (dk_session_t * ses, caddr_t * request)
 static void
 schedule_request (TAKE_G dk_session_t * ses, caddr_t * request)
 {
-  dk_thread_t *thread/* = NULL*/;
+  dk_thread_t *thread /* = NULL */ ;
 
   future_request_t *future_request = frq_create (ses, request);
   if (future_request == NULL)
@@ -1573,26 +1524,23 @@ schedule_request (TAKE_G dk_session_t * ses, caddr_t * request)
 
   dk_free_box (request[FRQ_SERVICE_NAME]);
   request[FRQ_SERVICE_NAME] = NULL;
-  dk_free_box_and_numbers ((box_t) request);	/* mty HUHTI */
-#if 1 /*!!! */
-      ss_dprintf_2(("Starting future %ld with thread %p",
-		    future_request->rq_condition,
-		    /*future_request->rq_service->sr_name,*/ thread));
+  dk_free_box_and_numbers ((box_t) request);	 /* mty HUHTI */
+#if 1						 /*!!! */
+  ss_dprintf_2 (("Starting future %ld with thread %p", future_request->rq_condition,
+	  /*future_request->rq_service->sr_name, */ thread));
 #else
-  ss_dprintf_2 (("Received request %ld, %s", future_request->rq_condition,
-	  future_request->rq_service->sr_name));
+  ss_dprintf_2 (("Received request %ld, %s", future_request->rq_condition, future_request->rq_service->sr_name));
 #endif
 schedule_future:
   mutex_enter (thread_mtx);
   if (ses->dks_fixed_thread)
     {
-      ss_dprintf_2(("Starting future %ld with ft thread %p",
-		    future_request->rq_condition,
-		    /*future_request->rq_service->sr_name,*/ ses->dks_fixed_thread));
+      ss_dprintf_2 (("Starting future %ld with ft thread %p", future_request->rq_condition,
+	      /*future_request->rq_service->sr_name, */ ses->dks_fixed_thread));
       future_request->rq_thread = PROCESS_TO_DK_THREAD (ses->dks_fixed_thread);
-      basket_add (&ses->dks_fixed_thread_reqs, (void*) future_request);
+      basket_add (&ses->dks_fixed_thread_reqs, (void *) future_request);
       mutex_leave (thread_mtx);
-      semaphore_leave (ses->dks_fixed_thread->thr_schedule_sem); /* XXX: schedule_sem */
+      semaphore_leave (ses->dks_fixed_thread->thr_schedule_sem);	/* XXX: schedule_sem */
       return;
     }
   thread = get_free_thread (PASS_G ses);
@@ -1605,22 +1553,17 @@ schedule_future:
       thread->dkt_requests[0] = future_request;
       thread->dkt_request_count = 1;
       future_request->rq_thread = thread;
-#if 1 /*!!! */
-      ss_dprintf_2(("Starting future %ld with thread %p",
-		    future_request->rq_condition,
-		    /*future_request->rq_service->sr_name,*/ thread->dkt_process));
+#if 1						 /*!!! */
+      ss_dprintf_2 (("Starting future %ld with thread %p", future_request->rq_condition,
+	      /*future_request->rq_service->sr_name, */ thread->dkt_process));
 #else
-      ss_dprintf_2(("Starting future %ld %s with thread %p",
-		    future_request->rq_condition,
-		    future_request->rq_service->sr_name, thread->dkt_process));
+      ss_dprintf_2 (("Starting future %ld %s with thread %p", future_request->rq_condition, future_request->rq_service->sr_name, thread->dkt_process));
 #endif
       if (ses->dks_thread_state != DKST_BURST)
 	{
 	  if (ses->dks_thread_state != DKST_IDLE)
 	    {
-	      thrs_printf ((thrs_fo, "second rq (%s, to_close:%d) on ses %p thr:%p\n",
-		    future_request->rq_service ? future_request->rq_service->sr_name : "<no-service>",
-		    future_request->rq_to_close, ses, THREAD_CURRENT_THREAD));
+	      thrs_printf ((thrs_fo, "second rq (%s, to_close:%d) on ses %p thr:%p\n", future_request->rq_service ? future_request->rq_service->sr_name : "<no-service>", future_request->rq_to_close, ses, THREAD_CURRENT_THREAD));
 	      future_request->rq_is_second = 1;
 	      second_rpcs += 1;
 	    }
@@ -1630,7 +1573,7 @@ schedule_future:
 		{
 		  thrs_printf ((thrs_fo, "ses %p thr:%p forced boost to burst\n", ses, THREAD_CURRENT_THREAD));
 		  ses->dks_thread_state = DKST_BURST;
-		  burst_reqs ++;
+		  burst_reqs++;
 		  remove_from_served_sessions (ses);
 		}
 	      else
@@ -1642,12 +1585,11 @@ schedule_future:
 	}
       else
 	{
-	  thrs_printf ((thrs_fo, "ses %p thr:%p still burst (%s, to_close:%d)\n", ses, THREAD_CURRENT_THREAD,
-		future_request->rq_service ? future_request->rq_service->sr_name : "<no-service>", future_request->rq_to_close));
+	  thrs_printf ((thrs_fo, "ses %p thr:%p still burst (%s, to_close:%d)\n", ses, THREAD_CURRENT_THREAD, future_request->rq_service ? future_request->rq_service->sr_name : "<no-service>", future_request->rq_to_close));
 	}
       mutex_leave (thread_mtx);
 
-      semaphore_leave (thread->dkt_process->thr_schedule_sem); /* XXX: schedule_sem */
+      semaphore_leave (thread->dkt_process->thr_schedule_sem);	/* XXX: schedule_sem */
       check_inputs_action_count++;
     }
   else
@@ -1665,17 +1607,17 @@ schedule_future:
       ss_dprintf_4 (("found no free thread - queueing"));
       queued_reqs++;
       if (client_trace_flag)
-	logit (L_DEBUG, "adding to in_basket client: %lx service: %s",
-	     future_request->rq_client, future_request->rq_service->sr_name);
+	logit (L_DEBUG, "adding to in_basket client: %lx service: %s", future_request->rq_client, future_request->rq_service->sr_name);
       thrs_printf ((thrs_fo, "**ses %p thr:%p req to basket\n", ses, THREAD_CURRENT_THREAD));
       basket_add (&in_basket, future_request);
       mutex_leave (thread_mtx);
     }
 }
 
+
 #else
 void
-call_disconnect_callback_func (dk_session_t *ses)
+call_disconnect_callback_func (dk_session_t * ses)
 {
 }
 #endif /* NO_THREAD */
@@ -1684,7 +1626,7 @@ call_disconnect_callback_func (dk_session_t *ses)
 
 #define INPROCESS_NO_THREAD
 
-static dk_session_t * (*make_inprocess_session_p) ();
+static dk_session_t *(*make_inprocess_session_p) ();
 static void (*free_inprocess_session_p) (dk_session_t * ses);
 static void (*do_inprocess_request_p) (TAKE_G dk_session_t * ses, caddr_t * request);
 
@@ -1697,15 +1639,16 @@ typedef struct request_context_s
   void *rc_hook_data;
 } request_context_t;
 
-static void * (*inprocess_enter_hook) (dk_session_t *ses);
+static void *(*inprocess_enter_hook) (dk_session_t * ses);
 static void (*inprocess_leave_hook) (void *);
 
 void
-PrpcSetInprocessHooks (void * (*enter) (dk_session_t *ses), void (*leave) (void *))
+PrpcSetInprocessHooks (void *(*enter) (dk_session_t * ses), void (*leave) (void *))
 {
   inprocess_enter_hook = enter;
   inprocess_leave_hook = leave;
 }
+
 
 void
 inprocess_request_enter (request_context_t * context, dk_thread_t * thread, dk_session_t * ses, future_request_t * future)
@@ -1721,8 +1664,9 @@ inprocess_request_enter (request_context_t * context, dk_thread_t * thread, dk_s
   future->rq_thread = thread;
 }
 
+
 void
-inprocess_request_leave (request_context_t * context, dk_thread_t *thread)
+inprocess_request_leave (request_context_t * context, dk_thread_t * thread)
 {
   thread->dkt_request_count = context->rc_request_count;
   thread->dkt_requests[0] = context->rc_future_request;
@@ -1730,6 +1674,7 @@ inprocess_request_leave (request_context_t * context, dk_thread_t *thread)
   if (inprocess_leave_hook)
     (*inprocess_leave_hook) (context->rc_hook_data);
 }
+
 
 void
 inprocess_request (TAKE_G dk_session_t * ses, caddr_t * request)
@@ -1751,7 +1696,7 @@ inprocess_request (TAKE_G dk_session_t * ses, caddr_t * request)
 
   dk_free_box (request[FRQ_SERVICE_NAME]);
   request[FRQ_SERVICE_NAME] = NULL;
-  dk_free_box_and_numbers ((box_t) request);	/* mty HUHTI */
+  dk_free_box_and_numbers ((box_t) request);	 /* mty HUHTI */
 
   this_thread = THREAD_CURRENT_THREAD;
   thread = PROCESS_TO_DK_THREAD (this_thread);
@@ -1759,9 +1704,7 @@ inprocess_request (TAKE_G dk_session_t * ses, caddr_t * request)
   inprocess_request_enter (&context, thread, ses, future);
 
   arguments = (caddr_t *) future->rq_arguments;
-  argcount = (arguments
-	      ? (int) (box_length ((caddr_t) arguments) / sizeof (caddr_t))
-	      : (int) 0);
+  argcount = (arguments ? (int) (box_length ((caddr_t) arguments) / sizeof (caddr_t)) : (int) 0);
 
   error = 0;
   strses_flush (ses);
@@ -1771,7 +1714,7 @@ inprocess_request (TAKE_G dk_session_t * ses, caddr_t * request)
       if (ses->dks_thread_state != DKST_IDLE)
 	{
 	  thrs_printf ((thrs_fo, "second rq (%s, to_close:%d) on ses %p thr:%p\n",
-		future->rq_service ? future->rq_service->sr_name : "<no-service>",
+	  	future->rq_service ? future->rq_service->sr_name : "<no-service>",
 		future->rq_to_close, ses, THREAD_CURRENT_THREAD));
 	  future->rq_is_second = 1;
 	  second_rpcs += 1;
@@ -1779,23 +1722,25 @@ inprocess_request (TAKE_G dk_session_t * ses, caddr_t * request)
       else
 	{
 	  /*if (prpc_force_burst_mode && prpc_self_signal_initialized)
-	    {
-	      thrs_printf ((thrs_fo, "ses %p thr:%p forced boost to burst\n", ses, THREAD_CURRENT_THREAD));
-	      ses->dks_thread_state = DKST_BURST;
-	      burst_reqs ++;
-	      remove_from_served_sessions (ses);
-	    }
-	  else*/
-	    {
-	      thrs_printf ((thrs_fo, "ses %p thr:%p to run\n", ses, THREAD_CURRENT_THREAD));
-	      ses->dks_thread_state = DKST_RUN;
-	    }
+	     {
+	     thrs_printf ((thrs_fo, "ses %p thr:%p forced boost to burst\n", ses, THREAD_CURRENT_THREAD));
+	     ses->dks_thread_state = DKST_BURST;
+	     burst_reqs ++;
+	     remove_from_served_sessions (ses);
+	     }
+	     else */
+	  {
+	    thrs_printf ((thrs_fo, "ses %p thr:%p to run\n", ses, THREAD_CURRENT_THREAD));
+	    ses->dks_thread_state = DKST_RUN;
+	  }
 	}
     }
   else
     {
-      thrs_printf ((thrs_fo, "ses %p thr:%p still burst (%s, to_close:%d)\n", ses, THREAD_CURRENT_THREAD,
-	    future->rq_service ? future->rq_service->sr_name : "<no-service>", future->rq_to_close));
+      thrs_printf ((thrs_fo, "ses %p thr:%p still burst (%s, to_close:%d)\n",
+	ses, THREAD_CURRENT_THREAD,
+	future->rq_service ? future->rq_service->sr_name : "<no-service>",
+	future->rq_to_close));
     }
   mutex_leave (thread_mtx);
 
@@ -1818,17 +1763,14 @@ inprocess_request (TAKE_G dk_session_t * ses, caddr_t * request)
     f_future_preprocess ();
   if (0 == error)
     {
-      ss_dprintf_3 (("Starting future %ld, %s", future->rq_condition,
-		     future->rq_service->sr_name));
+      ss_dprintf_3 (("Starting future %ld, %s", future->rq_condition, future->rq_service->sr_name));
 
-      F_CALLED; /* not serialized, does not have to be exact. */
-      CB_PREPARE
-	result = (caddr_t) future->rq_service->sr_func (
-			arg_array[0], arg_array[1],
-			arg_array[2], arg_array[3],
-			arg_array[4], arg_array[5],
-			arg_array[6], arg_array[7],
-			arg_array[8]);
+      F_CALLED;					 /* not serialized, does not have to be exact. */
+      CB_PREPARE;
+      result = (caddr_t) future->rq_service->sr_func (
+		arg_array[0], arg_array[1], arg_array[2], arg_array[3],
+		arg_array[4], arg_array[5], arg_array[6], arg_array[7],
+		arg_array[8]);
       CB_DONE;
     }
 
@@ -1855,17 +1797,17 @@ inprocess_request (TAKE_G dk_session_t * ses, caddr_t * request)
       ret_block[RRC_COND_NUMBER] = box_num (future->rq_condition);
       ret_block[RRC_VALUE] = (caddr_t) ret_box;
       ret_block[RRC_ERROR] = box_num (error);
-      CB_PREPARE
-	{
+      CB_PREPARE;
+      {
 #ifdef PMN_NMARSH
-	  srv_write_in_session (ret_block, future->rq_client, 1);
+	srv_write_in_session (ret_block, future->rq_client, 1);
 #else
-	  write_in_session ((caddr_t) ret_block, future->rq_client, NULL, NULL, 1);
+	write_in_session ((caddr_t) ret_block, future->rq_client, NULL, NULL, 1);
 #endif
-	}
-      CB_DONE
-	if (ret_type == DV_C_STRING)
-	  dk_free_box ((caddr_t) ret_box[0]);	/* mty HUHTI */
+      }
+      CB_DONE;
+      if (ret_type == DV_C_STRING)
+	dk_free_box ((caddr_t) ret_box[0]);	 /* mty HUHTI */
       dk_free_box_and_numbers ((caddr_t) ret_block);	/* mty HUHTI */
       dk_free_box_and_numbers ((caddr_t) ret_box);	/* mty HUHTI */
     }
@@ -1873,8 +1815,8 @@ inprocess_request (TAKE_G dk_session_t * ses, caddr_t * request)
   /* epilogue */
   if (future->rq_service->sr_postprocess)
     {
-      CB_PREPARE
-	future->rq_service->sr_postprocess (result, future);
+      CB_PREPARE;
+      future->rq_service->sr_postprocess (result, future);
       CB_DONE;
     }
 
@@ -1890,6 +1832,7 @@ inprocess_request (TAKE_G dk_session_t * ses, caddr_t * request)
   return;
 }
 
+
 dk_session_t *
 make_inprocess_session ()
 {
@@ -1903,6 +1846,7 @@ make_inprocess_session ()
   return session;
 }
 
+
 void
 free_inprocess_session (dk_session_t * ses)
 {
@@ -1910,10 +1854,11 @@ free_inprocess_session (dk_session_t * ses)
   dk_free_box (ses->dks_peer_name);
   dk_free_box (ses->dks_own_name);
   /* dks_caller_id_opts is set by the client and should be freed by it as well.
-  dk_free_tree (ses->dks_caller_id_opts);
-  */
+     dk_free_tree (ses->dks_caller_id_opts);
+   */
   dk_free_box ((box_t) ses);
 }
+
 
 dk_session_t *
 make_tmp_inprocess_session (dk_session_t * ses)
@@ -1927,6 +1872,7 @@ make_tmp_inprocess_session (dk_session_t * ses)
   return session;
 }
 
+
 void
 free_tmp_inprocess_session (dk_session_t * ses)
 {
@@ -1938,6 +1884,7 @@ free_tmp_inprocess_session (dk_session_t * ses)
 
   dk_free_box ((box_t) ses);
 }
+
 
 void
 do_inprocess_request (TAKE_G dk_session_t * ses, caddr_t * request)
@@ -1967,39 +1914,41 @@ do_inprocess_request (TAKE_G dk_session_t * ses, caddr_t * request)
 #endif
 }
 
+
 void
 read_inprocess_request (dk_session_t * ses)
 {
   USE_GLOBAL
-  ptrlong *request = (ptrlong *) read_object (ses);
+  ptrlong * request = (ptrlong *) read_object (ses);
   inprocess_request (PASS_G ses, (caddr_t *) request);
 }
+
 
 caddr_t *
 sf_inprocess_ep ()
 {
   int pid;
   dk_session_t *client = IMMEDIATE_CLIENT;
-  caddr_t *ret = (caddr_t *) dk_alloc_box (5 * sizeof (caddr_t) + 1,  DV_SHORT_STRING);
+  caddr_t *ret = (caddr_t *) dk_alloc_box (5 * sizeof (caddr_t) + 1, DV_SHORT_STRING);
 
   pid = getpid ();
   ret[0] = (caddr_t) (ptrlong) pid;
-  ret[1] = (caddr_t) &make_inprocess_session;
-  ret[2] = (caddr_t) &free_inprocess_session;
-  ret[3] = (caddr_t) &do_inprocess_request;
-  ret[4] = (caddr_t) &read_inprocess_request;
+  ret[1] = (caddr_t) & make_inprocess_session;
+  ret[2] = (caddr_t) & free_inprocess_session;
+  ret[3] = (caddr_t) & do_inprocess_request;
+  ret[4] = (caddr_t) & read_inprocess_request;
 
   thrs_printf ((thrs_fo, "ses %p thr:%p in sf_inprocess_ep1\n", client, THREAD_CURRENT_THREAD));
   DKST_RPC_DONE (client);
   return ret;
 }
-# endif /* NO_THREAD */
+
+
+# endif	/* NO_THREAD */
 
 /* Inprocess client entry points */
-SERVICE_0 (s_inprocess_ep, "ICEP", DA_FUTURE_REQUEST, DV_ARRAY_OF_POINTER)
-
+SERVICE_0 (s_inprocess_ep, "ICEP", DA_FUTURE_REQUEST, DV_ARRAY_OF_POINTER);
 #endif /* INPROCESS_CLIENT */
-
 
 /*
  *  realize_condition()
@@ -2022,13 +1971,13 @@ static int
 realize_condition (dk_session_t * ses, long cond, caddr_t value, caddr_t error, int is_in_value_mtx)
 {
   USE_GLOBAL
-  future_t *future;
+  future_t * future;
   future_request_t *waiting;
 
   if (!is_in_value_mtx)
     IN_VALUE;
 
-  future = (future_t *) gethash ((void *)(ptrlong) cond, PENDING_FUTURES(ses));
+  future = (future_t *) gethash ((void *) (ptrlong) cond, PENDING_FUTURES (ses));
 
 /*
    puts("Realize condition");
@@ -2044,11 +1993,9 @@ realize_condition (dk_session_t * ses, long cond, caddr_t value, caddr_t error, 
 	LEAVE_VALUE;
       return (-1);
     }
-  if (future->ft_result)	/* (future->ft_is_ready == FS_RESULT_LIST) */
+  if (future->ft_result)			 /* (future->ft_is_ready == FS_RESULT_LIST) */
     {
-      future->ft_result = (caddr_t)
-	  dk_set_conc ((dk_set_t) (future->ft_result),
-	  dk_set_cons (value, NULL));
+      future->ft_result = (caddr_t) dk_set_conc ((dk_set_t) (future->ft_result), dk_set_cons (value, NULL));
 /*
       dk_set_push ( (dk_set_t *)&  future->ft_result, (void *) value);
 */
@@ -2068,8 +2015,7 @@ realize_condition (dk_session_t * ses, long cond, caddr_t value, caddr_t error, 
   while (waiting)
     {
       dk_thread_t *thread = waiting->rq_thread;
-      future_request_t *top_of_thread
-	  = thread->dkt_requests[thread->dkt_request_count - 1];
+      future_request_t *top_of_thread = thread->dkt_requests[thread->dkt_request_count - 1];
       future_request_t *next = waiting->rq_next_waiting;
       future->ft_waiting_requests = next;
       if (waiting == top_of_thread)
@@ -2078,7 +2024,7 @@ realize_condition (dk_session_t * ses, long cond, caddr_t value, caddr_t error, 
 	GPF_T;
       waiting = next;
     }
-  remhash ((void *) (ptrlong) cond, PENDING_FUTURES(ses));
+  remhash ((void *) (ptrlong) cond, PENDING_FUTURES (ses));
   if (!is_in_value_mtx)
     LEAVE_VALUE;
   return (0);
@@ -2092,8 +2038,7 @@ unfreeze_waiting (TAKE_G future_t * future)
   while (waiting)
     {
       dk_thread_t *thread = waiting->rq_thread;
-      future_request_t *top_of_thread
-	  = thread->dkt_requests[thread->dkt_request_count - 1];
+      future_request_t *top_of_thread = thread->dkt_requests[thread->dkt_request_count - 1];
       future_request_t *next = waiting->rq_next_waiting;
       future->ft_waiting_requests = next;
       if (waiting == top_of_thread)
@@ -2115,7 +2060,7 @@ partial_realize_condition (dk_session_t * ses, long cond, caddr_t value)
 
   IN_VALUE;
   {
-    future_t *future = (future_t *) gethash ((void *) (ptrlong) cond, PENDING_FUTURES(ses));
+    future_t *future = (future_t *) gethash ((void *) (ptrlong) cond, PENDING_FUTURES (ses));
 
     if (!future)
       {
@@ -2129,8 +2074,7 @@ partial_realize_condition (dk_session_t * ses, long cond, caddr_t value)
 	return (-1);
       }
 
-    future->ft_result = (caddr_t) dk_set_conc ((dk_set_t) (future->ft_result),
-	dk_set_cons (value, NULL));
+    future->ft_result = (caddr_t) dk_set_conc ((dk_set_t) (future->ft_result), dk_set_cons (value, NULL));
 
 /*
    dk_set_push ((dk_set_t *) & future->ft_result, (void *) value);
@@ -2167,7 +2111,7 @@ partial_realize_condition (dk_session_t * ses, long cond, caddr_t value)
  */
 
 #ifndef NO_THREAD
-static dk_session_t * disconnected = NULL;
+static dk_session_t *disconnected = NULL;
 #endif
 
 static void
@@ -2175,9 +2119,8 @@ is_this_disconnected (long cond, future_t * future)
 {
 #ifndef NO_THREAD
   if (future->ft_server == disconnected)
-#endif    
-    realize_condition (future->ft_server, future->ft_request_no, (caddr_t) NULL,
-	(caddr_t) (ptrlong) FE_TIMED_OUT, 1);
+#endif
+    realize_condition (future->ft_server, future->ft_request_no, (caddr_t) NULL, (caddr_t) (ptrlong) FE_TIMED_OUT, 1);
 }
 
 
@@ -2189,8 +2132,8 @@ realize_all_waiting (dk_session_t * ses)
   IN_VALUE;
 #ifndef NO_THREAD
   disconnected = ses;
-#endif  
-  maphash ((maphash_func) is_this_disconnected, PENDING_FUTURES(ses));
+#endif
+  maphash ((maphash_func) is_this_disconnected, PENDING_FUTURES (ses));
   LEAVE_VALUE;
 }
 
@@ -2263,7 +2206,7 @@ dks_remove_pending (dk_session_t * ses)
 	      bsk = b_nxt;
 	    }
 	  else
- 	    bsk = bsk->bsk_next;
+	    bsk = bsk->bsk_next;
 	}
     }
 #endif
@@ -2300,11 +2243,9 @@ int
 read_service_request (dk_session_t * ses)
 {
   USE_GLOBAL
-  ptrlong *request = (ptrlong *) read_object (ses);
+  ptrlong * request = (ptrlong *) read_object (ses);
 
-  if (!SESSTAT_ISSET (ses->dks_session, SST_TIMED_OUT) &&
-      !SESSTAT_ISSET (ses->dks_session, SST_BROKEN_CONNECTION) &&
-      (DV_TYPE_OF (request) != DV_ARRAY_OF_POINTER || BOX_ELEMENTS (request) < 1))
+  if (!SESSTAT_ISSET (ses->dks_session, SST_TIMED_OUT) && !SESSTAT_ISSET (ses->dks_session, SST_BROKEN_CONNECTION) && (DV_TYPE_OF (request) != DV_ARRAY_OF_POINTER || BOX_ELEMENTS (request) < 1))
     {
       sr_report_future_error (ses, "", "invalid future box");
       SESSTAT_CLR (ses->dks_session, SST_OK);
@@ -2312,8 +2253,7 @@ read_service_request (dk_session_t * ses)
     }
 
   dbg_printf_2 (("new request"));
-  if (SESSTAT_ISSET (ses->dks_session, SST_TIMED_OUT) ||
-      SESSTAT_ISSET (ses->dks_session, SST_BROKEN_CONNECTION))
+  if (SESSTAT_ISSET (ses->dks_session, SST_TIMED_OUT) || SESSTAT_ISSET (ses->dks_session, SST_BROKEN_CONNECTION))
     {
       without_scheduling_tic ();
       if (!ses->dks_is_server)
@@ -2332,22 +2272,21 @@ read_service_request (dk_session_t * ses)
 
       if (ses->dks_fixed_thread && 0 == ses->dks_n_threads)
 	{
-	  basket_add (&ses->dks_fixed_thread_reqs, (void*) 0);
+	  basket_add (&ses->dks_fixed_thread_reqs, (void *) 0);
 	  mutex_leave (thread_mtx);
-	  semaphore_leave (ses->dks_fixed_thread->thr_schedule_sem); /* XXX: schedule_sem */
+	  semaphore_leave (ses->dks_fixed_thread->thr_schedule_sem);	/* XXX: schedule_sem */
 	  return 0;
 	}
       if (ses->dks_n_threads)
-        {
+	{
 	  dk_thread_t *c_thread = ses->dks_fixed_thread ? PROCESS_TO_DK_THREAD (ses->dks_fixed_thread) : NULL;
-	  ses->dks_to_close = 1;  /* The last quitting thread will close */
+	  ses->dks_to_close = 1;		 /* The last quitting thread will close */
 	  call_disconnect_callback_func (ses);
 	  if (c_thread)
 	    c_thread->dkt_fixed_thread = 0;
 	  if (client_trace_flag)
 	    {
-	      logit (L_DEBUG, "read_service_request: session %lx scheduled for closing.",
-		     ses);
+	      logit (L_DEBUG, "read_service_request: session %lx scheduled for closing.", ses);
 	    }
 	}
       else
@@ -2360,10 +2299,10 @@ read_service_request (dk_session_t * ses)
 	  else
 	    {
 	      dbg_printf_2 (("\nsession %p is about to close.Schedule it\n", ses));
-	      ses->dks_to_close = 1;  /* The last quitting thread will close */
+	      ses->dks_to_close = 1;		 /* The last quitting thread will close */
 	      call_disconnect_callback_func (ses);
 	      mutex_leave (thread_mtx);
-	      schedule_request (PASS_G ses, (caddr_t *) -1);
+	      schedule_request (PASS_G ses, (caddr_t *) - 1);
 	      return (0);
 	    }
 #endif
@@ -2376,12 +2315,12 @@ read_service_request (dk_session_t * ses)
       return (0);
     }
 
-  if (!request)             /* mty MAALIS 23.3.93 */
+  if (!request)					 /* mty MAALIS 23.3.93 */
     return (0);
 
   if (service_request_hook)
     {
-      CB_PREPARE
+      CB_PREPARE;
       request = (ptrlong *) service_request_hook (ses, (caddr_t) request);
       CB_DONE;
     }
@@ -2414,17 +2353,14 @@ read_service_request (dk_session_t * ses)
 	  return 0;
 	}
 
-      ss_dprintf_2 (("received answer %ld",
-	  (long) unbox ((caddr_t) request[RRC_COND_NUMBER])));
+      ss_dprintf_2 (("received answer %ld", (long) unbox ((caddr_t) request[RRC_COND_NUMBER])));
 
-      if (-1 == realize_condition (ses,
-	  (long) unbox ((caddr_t) request[RRC_COND_NUMBER]),
-	      (caddr_t) request[RRC_VALUE],	/* mty HUHTI */
+      if (-1 == realize_condition (ses, (long) unbox ((caddr_t) request[RRC_COND_NUMBER]), (caddr_t) request[RRC_VALUE],	/* mty HUHTI */
 	      (caddr_t) request[RRC_ERROR], 0))
 	dk_free_tree ((caddr_t) request);
       else
 	{
-	  request[RRC_VALUE] = 0;	/* receiving future_t will free this */
+	  request[RRC_VALUE] = 0;		 /* receiving future_t will free this */
 	  dk_free_box_and_numbers ((caddr_t) request);
 	}
       break;
@@ -2438,15 +2374,12 @@ read_service_request (dk_session_t * ses)
 	  return 0;
 	}
 
-      ss_dprintf_2 (("received partial answer %ld",
-	  (long) unbox ((caddr_t) request[RRC_COND_NUMBER])));
-      if (-1 == partial_realize_condition (ses,
-	  (long) unbox ((caddr_t) request[RRC_COND_NUMBER]),
-	      (caddr_t) request[RRC_VALUE]))
+      ss_dprintf_2 (("received partial answer %ld", (long) unbox ((caddr_t) request[RRC_COND_NUMBER])));
+      if (-1 == partial_realize_condition (ses, (long) unbox ((caddr_t) request[RRC_COND_NUMBER]), (caddr_t) request[RRC_VALUE]))
 	dk_free_tree ((caddr_t) request);
       else
 	{
-	  request[RRC_VALUE] = 0;	/* receiving future_t will free this */
+	  request[RRC_VALUE] = 0;		 /* receiving future_t will free this */
 	  dk_free_box_and_numbers ((caddr_t) request);
 	}
       break;
@@ -2462,8 +2395,7 @@ read_service_request (dk_session_t * ses)
 }
 
 
-
-resource_t * tcpses_rc;
+resource_t *tcpses_rc;
 
 /*##**********************************************************************
  *
@@ -2508,8 +2440,8 @@ dk_session_allocate (int sesclass)
   SESSION_SCH_DATA (dk_ses)->sio_is_served = -1;
 
   dk_ses->dks_session = ses;
-  SESSION_DK_SESSION (ses) = dk_ses;	/* two way link. */
-  dk_ses->dks_mtx = mutex_allocate();
+  SESSION_DK_SESSION (ses) = dk_ses;		 /* two way link. */
+  dk_ses->dks_mtx = mutex_allocate ();
 
   dk_ses->dks_in_buffer = (char *) dk_alloc (DKSES_IN_BUFFER_LENGTH);
   dk_ses->dks_in_length = DKSES_IN_BUFFER_LENGTH;
@@ -2525,11 +2457,11 @@ dk_session_allocate (int sesclass)
 void
 dk_session_clear (dk_session_t * ses)
 {
-  session_t * dks_ses = ses->dks_session;
-  dk_mutex_t * mtx = ses->dks_mtx;
-  char * in = ses->dks_in_buffer;
-  char * out = ses->dks_out_buffer;
-  scheduler_io_data_t * sc = SESSION_SCH_DATA (ses);
+  session_t *dks_ses = ses->dks_session;
+  dk_mutex_t *mtx = ses->dks_mtx;
+  char *in = ses->dks_in_buffer;
+  char *out = ses->dks_out_buffer;
+  scheduler_io_data_t *sc = SESSION_SCH_DATA (ses);
 
   dk_free_box (ses->dks_peer_name);
   dk_free_box (ses->dks_own_name);
@@ -2567,8 +2499,7 @@ accept_client (dk_session_t * ses)
   session_accept (ses->dks_session, newses->dks_session);
   restore_scheduling_tic ();
 
-  SESSION_SCH_DATA (newses)->sio_default_read_ready_action
-      = read_service_request;
+  SESSION_SCH_DATA (newses)->sio_default_read_ready_action = read_service_request;
   SESSION_SCH_DATA (newses)->sio_random_read_ready_action = NULL;
   SESSION_SCH_DATA (newses)->sio_random_write_ready_action = NULL;
 
@@ -2618,7 +2549,6 @@ is_this_timed_out (void *key, future_t * future)	/* MAALIS mty */
 {
   timeout_t due;
   USE_GLOBAL
-
 #ifndef PMN_MODS
   /* mty MAALIS 7 lines below */
   timeout_t tmptime;
@@ -2634,24 +2564,20 @@ is_this_timed_out (void *key, future_t * future)	/* MAALIS mty */
 
   due = future->ft_time_issued;
   time_add (&due, &future->ft_timeout);
-  if ((future->ft_timeout.to_sec || future->ft_timeout.to_usec)
-      && time_gt (&time_now, &due))
+  if ((future->ft_timeout.to_sec || future->ft_timeout.to_usec) && time_gt (&time_now, &due))
     {
       ss_dprintf_3 (("Future %ld Timed out.", future->ft_request_no));
 
 #ifdef NOT
       printf ("Future %ld timed out\n", future->ft_request_no);
       printf ("Current time %ld %ld \n", time_now.to_sec, time_now.to_usec);
-      printf ("Future start %ld %ld \n", future->ft_time_issued.to_sec,
-	  future->ft_time_issued.to_usec);
-      printf ("Future timeout %ld %ld \n", future->ft_timeout.to_sec,
-	  future->ft_timeout.to_usec);
+      printf ("Future start %ld %ld \n", future->ft_time_issued.to_sec, future->ft_time_issued.to_usec);
+      printf ("Future timeout %ld %ld \n", future->ft_timeout.to_sec, future->ft_timeout.to_usec);
       printf ("Tmptime %ld %ld \n", tmptime.to_sec, tmptime.to_usec);
 #endif
-      realize_condition (future->ft_server, future->ft_request_no, (caddr_t) NULL,
-	  (caddr_t) (long) FE_TIMED_OUT, 1);	/* mty MAALIS */
+      realize_condition (future->ft_server, future->ft_request_no, (caddr_t) NULL, (caddr_t) (long) FE_TIMED_OUT, 1);	/* mty MAALIS */
     }
-  return (0);			/* mty MAALIS */
+  return (0);					 /* mty MAALIS */
 }
 
 
@@ -2661,9 +2587,9 @@ timeout_round (TAKE_G dk_session_t * ses)
   static timeout_t last_time;
   ss_dprintf_2 (("Timeout round."));
 #ifdef NO_THREAD
-  if (NULL == ses) /* if single thread session must be passed */
+  if (NULL == ses)				 /* if single thread session must be passed */
     GPF_T;
-#endif  
+#endif
   get_real_time (&time_now);
   time_now_msec = time_now.to_sec * 1000 + time_now.to_usec / 1000;
   if (time_now.to_sec - last_time.to_sec < atomic_timeout.to_sec)
@@ -2678,7 +2604,7 @@ timeout_round (TAKE_G dk_session_t * ses)
     }
 
   IN_VALUE;
-  maphash ((maphash_func) is_this_timed_out, PENDING_FUTURES(ses));
+  maphash ((maphash_func) is_this_timed_out, PENDING_FUTURES (ses));
   LEAVE_VALUE;
 }
 
@@ -2717,11 +2643,9 @@ server_loop (void *arg)
   int sesclass = (int) (ptrlong) arg;
   timeout_t zero_timeout = { 0, 0 };
 
-  USE_GLOBAL
-
+  USE_GLOBAL 
   long time_spent = 0;
-  long time_between_rounds =
-    (atomic_timeout.to_sec * 1000 + atomic_timeout.to_usec / 1000) / time_slice;
+  long time_between_rounds = (atomic_timeout.to_sec * 1000 + atomic_timeout.to_usec / 1000) / time_slice;
 
   DKT_THREAD_INIT ();
   DK_CURRENT_THREAD->dkt_request_count = 0;
@@ -2729,11 +2653,9 @@ server_loop (void *arg)
   while (1)
     {
       if (!process_is_quiescent (PASS_G1))
-	check_inputs_low (PASS_G & zero_timeout, 0,
-	    sesclass_select_func (sesclass), sesclass);
+	check_inputs_low (PASS_G & zero_timeout, 0, sesclass_select_func (sesclass), sesclass);
       else
-	check_inputs_low (PASS_G & atomic_timeout, 0,
-	    sesclass_select_func (sesclass), sesclass);
+	check_inputs_low (PASS_G & atomic_timeout, 0, sesclass_select_func (sesclass), sesclass);
 
       time_spent += time_between_rounds;
 
@@ -2746,7 +2668,8 @@ server_loop (void *arg)
 	}
     }
 
-  return 0;  /*NOTREACHED*/
+  /*NOTREACHED*/
+  return 0;
 }
 #endif /* NO_THREAD */
 
@@ -2775,10 +2698,11 @@ dk_thread_alloc (void)
   return dkt;
 }
 
+
 void
 dk_thread_free (void *data)
 {
-  dk_thread_t *dkt = (dk_thread_t *)data;
+  dk_thread_t *dkt = (dk_thread_t *) data;
   ASSERT_IN_MTX (thread_mtx);
   if (dkt && dkt->dkt_requests[0] && dkt->dkt_request_count)
     dk_free (dkt->dkt_requests[0], sizeof (future_request_t));
@@ -2831,23 +2755,20 @@ PrpcAddAnswer (caddr_t result, int ret_type, int is_partial, int flush)
   caddr_t rbtmp;
   USE_GLOBAL
   dk_thread_t * c_thread = DK_CURRENT_THREAD;
-  future_request_t *future =
-  c_thread->dkt_requests[c_thread->dkt_request_count - 1];
+  future_request_t *future = c_thread->dkt_requests[c_thread->dkt_request_count - 1];
   {
     /* Box the result */
     caddr_t *ret_box;
     caddr_t ret_block_auto[10];
     caddr_t *ret_block;
 
-    BOX_AUTO (rbtmp, ret_block_auto, sizeof (caddr_t) * DA_ANSWER_LENGTH,
-	DV_ARRAY_OF_POINTER);
+    BOX_AUTO (rbtmp, ret_block_auto, sizeof (caddr_t) * DA_ANSWER_LENGTH, DV_ARRAY_OF_POINTER);
     ret_block = (caddr_t *) rbtmp;
     if (ret_type == DV_MULTIPLE_VALUES)
       ret_box = (caddr_t *) result;
     else
       {
-	ret_box = (caddr_t *) dk_alloc_box (
-	    sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+	ret_box = (caddr_t *) dk_alloc_box (sizeof (caddr_t), DV_ARRAY_OF_POINTER);
 	if (ret_type == DV_LONG_INT || ret_type == DV_SHORT_INT)
 	  ret_box[0] = box_num ((ptrlong) result);
 	else if (ret_type == DV_C_STRING)
@@ -2856,8 +2777,7 @@ PrpcAddAnswer (caddr_t result, int ret_type, int is_partial, int flush)
 	  ret_box[0] = result;
       }
 
-    ret_block[DA_MESSAGE_TYPE] = (caddr_t) (ptrlong)
-	(is_partial ? DA_FUTURE_PARTIAL_ANSWER : DA_FUTURE_ANSWER);
+    ret_block[DA_MESSAGE_TYPE] = (caddr_t) (ptrlong) (is_partial ? DA_FUTURE_PARTIAL_ANSWER : DA_FUTURE_ANSWER);
 
     ret_block[RRC_COND_NUMBER] = box_num (future->rq_condition);
     ret_block[RRC_VALUE] = (caddr_t) ret_box;
@@ -2866,15 +2786,14 @@ PrpcAddAnswer (caddr_t result, int ret_type, int is_partial, int flush)
 #ifdef PMN_NMARSH
 	srv_write_in_session (ret_block, future->rq_client, flush);
 #else
-	write_in_session ((caddr_t) ret_block, future->rq_client, NULL,
-	NULL, flush);
+	write_in_session ((caddr_t) ret_block, future->rq_client, NULL, NULL, flush);
 #endif
     CB_DONE;
     if (ret_type == DV_C_STRING)
-      dk_free_box ((caddr_t) ret_box[0]);	/* mty HUHTI */
+      dk_free_box ((caddr_t) ret_box[0]);	 /* mty HUHTI */
     dk_free_box (ret_block[RRC_COND_NUMBER]);
     BOX_DONE (ret_block, ret_block_auto);
-    dk_free_box_and_numbers ((caddr_t) ret_box);	/* mty HUHTI */
+    dk_free_box_and_numbers ((caddr_t) ret_box); /* mty HUHTI */
   }
 }
 
@@ -2884,8 +2803,7 @@ PrpcAnswerHead (du_thread_t * thr, int is_partial)
 {
   USE_GLOBAL
   dk_thread_t * c_thread = (dk_thread_t *) thr->thr_client_data;
-  future_request_t *future =
-      c_thread->dkt_requests[c_thread->dkt_request_count - 1];
+  future_request_t *future = c_thread->dkt_requests[c_thread->dkt_request_count - 1];
   dk_session_t *ses = future->rq_client;
 
   dks_array_head (ses, DA_ANSWER_LENGTH, DV_ARRAY_OF_POINTER);
@@ -2999,7 +2917,7 @@ PrpcSessionFree (dk_session_t * ses)
 {
   if (client_trace_flag)
     logit (L_DEBUG, "PrpcSessionFree called for %lx", ses);
-  if (SESSION_SCH_DATA (ses) && SESSION_SCH_DATA (ses)->sio_is_served  != -1)
+  if (SESSION_SCH_DATA (ses) && SESSION_SCH_DATA (ses)->sio_is_served != -1)
     GPF_T1 ("can't free if in served sessions");
   if (ses->dks_is_server && ses->dks_n_threads > 0)
     GPF_T1 ("can't free if threads on the session");
@@ -3014,11 +2932,10 @@ PrpcSessionFree (dk_session_t * ses)
     }
 #endif
 #if 0
-  if (ses->dks_session
-      && SESCLASS_TCPIP == ses->dks_session->ses_class)
+  if (ses->dks_session && SESCLASS_TCPIP == ses->dks_session->ses_class)
     {
       dk_session_clear (ses);
-      if (resource_store (tcpses_rc, (void*) ses))
+      if (resource_store (tcpses_rc, (void *) ses))
 	return;
     }
 #endif
@@ -3032,20 +2949,17 @@ PrpcSessionFree (dk_session_t * ses)
     dk_free (ses->dks_out_buffer, ses->dks_out_length);
   dk_free (SESSION_SCH_DATA (ses), sizeof (scheduler_io_data_t));
   session_free (ses->dks_session);
-#ifdef NO_THREAD  
+#ifdef NO_THREAD
   if (NULL != ses->dks_pending_futures)
-    hash_table_free (ses->dks_pending_futures);  
-#endif  
+    hash_table_free (ses->dks_pending_futures);
+#endif
   dk_free (ses, sizeof (dk_session_t));
 }
 
 
 #ifndef NO_THREAD
 dk_thread_t *
-PrpcThreadAllocate (
-    thread_init_func init,
-    unsigned long stack_size,
-    void *init_arg)
+PrpcThreadAllocate (thread_init_func init, unsigned long stack_size, void *init_arg)
 {
   du_thread_t *thr;
   dk_thread_t *dkt;
@@ -3059,7 +2973,6 @@ PrpcThreadAllocate (
 
   return dkt;
 }
-
 
 
 dk_thread_t *
@@ -3145,12 +3058,7 @@ PrpcListPeers (void)
 
 
 void
-PrpcRegisterService (
-    char *name,
-    server_func func,
-    void *client_data,
-    int ret_type,
-    post_func postprocess)
+PrpcRegisterService (char *name, server_func func, void *client_data, int ret_type, post_func postprocess)
 {
   USE_GLOBAL
   service_t * new_sr = find_service (name);
@@ -3173,6 +3081,8 @@ PrpcRegisterServiceDesc (service_desc_t * desc, server_func f)
 {
   PrpcRegisterService (desc->sd_name, f, desc, desc->sd_return_type, NULL);
 }
+
+
 void
 PrpcRegisterServiceDescPostProcess (service_desc_t * desc, server_func f, post_func postprocess)
 {
@@ -3185,7 +3095,6 @@ void
 PrpcProtocolInitialize (int sesclass)
 {
   USE_GLOBAL
-
 #ifndef NO_THREAD
   if (sesclass == SESCLASS_UDPIP)
     sesclass = SESCLASS_TCPIP;
@@ -3194,19 +3103,17 @@ PrpcProtocolInitialize (int sesclass)
   if (!gethash ((void *) (ptrlong) sesclass, protocols))
     {
 #ifdef PMN_THREADS
-      du_thread_t * server_process;
-      server_process = thread_create (server_loop, server_thread_sz,
-	  (void *) (ptrlong) sesclass);
+      du_thread_t *server_process;
+      server_process = thread_create (server_loop, server_thread_sz, (void *) (ptrlong) sesclass);
 
       sethash ((void *) (ptrlong) sesclass, protocols, (void *) server_process);
 #else
-      du_thread_t * server_process;
+      du_thread_t *server_process;
       server_process = process_allocate (server_thread_sz);
 
       server_process->thr_attributes = hash_table_allocate (11);
 
-      process_set_init_function (server_process, (init_func) server_loop,
-	  (void *) sesclass);
+      process_set_init_function (server_process, (init_func) server_loop, (void *) sesclass);
 
       sethash ((void *) (ptrlong) sesclass, protocols, (void *) server_process);
 
@@ -3215,8 +3122,6 @@ PrpcProtocolInitialize (int sesclass)
     }
 #endif /* NO_THREAD */
 }
-
-
 
 
 #ifndef NO_THREAD
@@ -3236,60 +3141,55 @@ PrpcListen (char *addr, int sesclass)
   PrpcProtocolInitialize (sesclass);
   if (!disable_listen_on_tcp_sock)
     {
-  listening_session = dk_session_allocate (sesclass);
+      listening_session = dk_session_allocate (sesclass);
 #ifdef COM_UDPIP
-  if (sesclass == SESCLASS_UDPIP)
-    SESSION_SCH_DATA (listening_session)->sio_default_read_ready_action
-	= read_service_request;
-  else
+      if (sesclass == SESCLASS_UDPIP)
+	SESSION_SCH_DATA (listening_session)->sio_default_read_ready_action = read_service_request;
+      else
 #endif
-    SESSION_SCH_DATA (listening_session)->sio_default_read_ready_action
-	= accept_client;
+	SESSION_SCH_DATA (listening_session)->sio_default_read_ready_action = accept_client;
 
-  if (SER_SUCC != session_set_address (listening_session->dks_session, addr))
-    {
-      return listening_session;
-    }
-  SESSION_SCH_DATA (listening_session)->sio_reading_thread
-      = (du_thread_t *) gethash ((void *) (ptrlong) sesclass, protocols);
+      if (SER_SUCC != session_set_address (listening_session->dks_session, addr))
+	{
+	  return listening_session;
+	}
+      SESSION_SCH_DATA (listening_session)->sio_reading_thread = (du_thread_t *) gethash ((void *) (ptrlong) sesclass, protocols);
 
-  without_scheduling_tic ();
-  session_listen (listening_session->dks_session);
-  restore_scheduling_tic ();
+      without_scheduling_tic ();
+      session_listen (listening_session->dks_session);
+      restore_scheduling_tic ();
 
-  if (!SESSTAT_ISSET (listening_session->dks_session, SST_LISTENING))
-    {
+      if (!SESSTAT_ISSET (listening_session->dks_session, SST_LISTENING))
+	{
 #ifdef PCTCP
-      int eno = WSAGetLastError ();
-      char message[255];
-      tcpses_error_message (eno, message, sizeof (message));
-      ss_dprintf_2 ((" error = %s(%d)", message, eno));
+	  int eno = WSAGetLastError ();
+	  char message[255];
+	  tcpses_error_message (eno, message, sizeof (message));
+	  ss_dprintf_2 ((" error = %s(%d)", message, eno));
 #else
-      perror ("Failed to start listening");
+	  perror ("Failed to start listening");
 #endif
-      return (listening_session);
-    }
+	  return (listening_session);
+	}
 
-  add_to_served_sessions (listening_session);
+      add_to_served_sessions (listening_session);
     }
   else
     {
-      disable_listen_on_unix_sock = 0; /* if tcp listen is off, we make sure we have unix socket  */
+      disable_listen_on_unix_sock = 0;		 /* if tcp listen is off, we make sure we have unix socket  */
     }
 /*  if (! listening_address)
    listening_address = box_string (addr);
  */
   if (!disable_listen_on_unix_sock && sesclass == SESCLASS_TCPIP)
     {
-      dk_session_t * unix_listening_session = tcpses_make_unix_session (addr);
+      dk_session_t *unix_listening_session = tcpses_make_unix_session (addr);
       if (unix_listening_session)
 	{
 	  dks_n_housekeeping_sessions++;
-	  SESSION_SCH_DATA (unix_listening_session)->sio_default_read_ready_action
-	      = accept_client;
+	  SESSION_SCH_DATA (unix_listening_session)->sio_default_read_ready_action = accept_client;
 
-	  SESSION_SCH_DATA (unix_listening_session)->sio_reading_thread
-	      = (du_thread_t *) gethash ((void *) (ptrlong) sesclass, protocols);
+	  SESSION_SCH_DATA (unix_listening_session)->sio_reading_thread = (du_thread_t *) gethash ((void *) (ptrlong) sesclass, protocols);
 
 	  without_scheduling_tic ();
 	  session_listen (unix_listening_session->dks_session);
@@ -3320,18 +3220,19 @@ PrpcIsListen (dk_session_t * ses)
   return (SESSION_SCH_DATA (ses)->sio_default_read_ready_action == accept_client);
 }
 
-dk_mutex_t * sig_mtx;
+
+dk_mutex_t *sig_mtx;
 basket_t sig_queue;
 
 
 void
 dk_self_signalled (dk_session_t * ses)
 {
-  self_signal_t * ss;
+  self_signal_t *ss;
   CATCH_READ_FAIL (ses)
-    {
-      session_buffered_read_char (ses);
-    }
+  {
+    session_buffered_read_char (ses);
+  }
   END_READ_FAIL (ses);
   for (;;)
     {
@@ -3351,7 +3252,7 @@ dk_self_signalled (dk_session_t * ses)
 }
 
 
-dk_session_t * sig_session = NULL;
+dk_session_t *sig_session = NULL;
 void
 PrpcSelfSignal (self_signal_func f, caddr_t cd)
 {
@@ -3373,6 +3274,7 @@ dks_housekeeping_session_count (void)
   return dks_n_housekeeping_sessions;
 }
 
+
 void
 dks_housekeeping_session_count_change (int delta)
 {
@@ -3380,20 +3282,19 @@ dks_housekeeping_session_count_change (int delta)
 }
 
 
-long sf_signal_init ()
+long
+sf_signal_init ()
 {
-  dk_session_t * sig_listen = IMMEDIATE_CLIENT;
-  SESSION_SCH_DATA (sig_listen)->sio_default_read_ready_action
-    = (io_action_func) dk_self_signalled;
+  dk_session_t *sig_listen = IMMEDIATE_CLIENT;
+  SESSION_SCH_DATA (sig_listen)->sio_default_read_ready_action = (io_action_func) dk_self_signalled;
   thrs_printf ((thrs_fo, "ses %p thr:%p in sf_signal_init\n", sig_listen, THREAD_CURRENT_THREAD));
   return 0;
 }
 
 
-SERVICE_0 (s_self_signal_init, "_SSI", DA_FUTURE_REQUEST, DV_LONG_INT)
+SERVICE_0 (s_self_signal_init, "_SSI", DA_FUTURE_REQUEST, DV_LONG_INT);
 
-static dk_session_t *
-PrpcConnect2 (char *address, int sesclass, char *ssl_usage, char *pass, char *ca_list, int do_caller_id);
+static dk_session_t *PrpcConnect2 (char *address, int sesclass, char *ssl_usage, char *pass, char *ca_list, int do_caller_id);
 
 void
 PrpcSelfSignalInit (char *addr)
@@ -3424,11 +3325,11 @@ PrpcSelfSignalInit (char *addr)
 
 
 typedef struct co_req_s
-  {
-    dk_session_t *	r_dks;
-    semaphore_t *	r_sem;
-    int			r_is_dynamic;
-  } co_req_t;
+{
+  dk_session_t *r_dks;
+  semaphore_t *r_sem;
+  int r_is_dynamic;
+} co_req_t;
 
 
 void
@@ -3438,6 +3339,7 @@ check_out_server (co_req_t * req)
   thrs_printf ((thrs_fo, "ses %p in check_out_server1\n", req->r_dks));
   semaphore_leave (req->r_sem);
 }
+
 
 dk_set_t served_sessions_overflow = NULL;
 
@@ -3497,7 +3399,6 @@ PrpcCheckInAsync (dk_session_t * ses)
   r->r_is_dynamic = 1;
   PrpcSelfSignal ((self_signal_func) check_in_server, (caddr_t) r);
 }
-
 #endif /* NO_THREAD */
 
 
@@ -3515,7 +3416,7 @@ PrpcIAm (char *name)
 }
 
 
-#ifdef NOT			/*PREEMPT, formerly */
+#ifdef NOT					 /*PREEMPT, formerly */
 void
 timeout_round_loop ()
 {
@@ -3529,10 +3430,10 @@ timeout_round_loop ()
 
 
 #ifndef NO_THREAD
-static caddr_t (*caller_id_server_hook)(void) = NULL;
+static caddr_t (*caller_id_server_hook) (void) = NULL;
 
 void
-PrpcSetCallerIDServerHook (caddr_t (*f)(void))
+PrpcSetCallerIDServerHook (caddr_t (*f) (void))
 {
   caller_id_server_hook = f;
 }
@@ -3560,8 +3461,7 @@ sf_caller_identification (char *name)
   time_t tim;
   USE_GLOBAL
   char buffer[100];
-  caddr_t *ret = (caddr_t *) dk_alloc_box (
-      (caller_id_server_hook ? 3 : 2) * sizeof (caddr_t),
+  caddr_t *ret = (caddr_t *) dk_alloc_box ((caller_id_server_hook ? 3 : 2) * sizeof (caddr_t),
       DV_ARRAY_OF_POINTER);
   dk_session_t *client = IMMEDIATE_CLIENT;
 
@@ -3578,9 +3478,9 @@ sf_caller_identification (char *name)
     }
   time (&tim);
   tmp_len = (int) strlen (buffer);
-  snprintf (&buffer [tmp_len], sizeof (buffer) - tmp_len, " %ld", (long) tim);
+  snprintf (&buffer[tmp_len], sizeof (buffer) - tmp_len, " %ld", (long) tim);
   name = box_dv_short_string (buffer);
-  name [tmp_len] = 0;
+  name[tmp_len] = 0;
   client->dks_peer_name = name;
   ret[0] = box_string (i_am);
   ret[1] = box_copy (name);
@@ -3591,14 +3491,14 @@ sf_caller_identification (char *name)
 }
 #endif /* NO_THREAD */
 
-#if !defined (NO_THREAD) /*&& defined (WIN32)*/
+#if !defined (NO_THREAD)			 /*&& defined (WIN32) */
 LOG *virtuoso_log = NULL;
 LOG *stderr_log = NULL;
 unsigned long log_file_line = 0;
 
 /* the logging queue & threads */
 basket_t log_bsk;
-dk_mutex_t * log_queue_mtx;
+dk_mutex_t *log_queue_mtx;
 du_thread_t *log_worker_thr;
 typedef struct log_queue_elt_s
 {
@@ -3636,14 +3536,15 @@ log_worker_func (void *param)
     }
 }
 
+
 void
-log_queue_add_msg (LOG *log, int level, char *buf)
+log_queue_add_msg (LOG * log, int level, char *buf)
 {
-  log_queue_elt_t *elt = (log_queue_elt_t *)malloc (sizeof (log_queue_elt_t));
+  log_queue_elt_t *elt = (log_queue_elt_t *) malloc (sizeof (log_queue_elt_t));
   memset (elt, 0, sizeof (log_queue_elt_t));
   elt->fp = (FILE *) log->user_data;
   strncpy (elt->buf, buf, sizeof (elt->buf));
-  elt->buf[sizeof(elt->buf) - 1] = 0;
+  elt->buf[sizeof (elt->buf) - 1] = 0;
 
 
   mutex_enter (log_queue_mtx);
@@ -3653,12 +3554,13 @@ log_queue_add_msg (LOG *log, int level, char *buf)
   semaphore_leave (log_worker_thr->thr_sem);
 }
 
+
 void
-log_thread_initialize()
+log_thread_initialize ()
 {
-  if (!virtuoso_log || !stderr_log || (log_file_line & 0x1) == 0) /*if no logs then do not use a thread */
+  if (!virtuoso_log || !stderr_log || (log_file_line & 0x1) == 0)	/*if no logs then do not use a thread */
     return;
-  log_queue_mtx = mutex_allocate();
+  log_queue_mtx = mutex_allocate ();
   log_worker_thr = PrpcThreadAllocate ((init_func) log_worker_func, 100000, NULL)->dkt_process;
   virtuoso_log->emitter = log_queue_add_msg;
   stderr_log->emitter = log_queue_add_msg;
@@ -3666,14 +3568,11 @@ log_thread_initialize()
 #endif
 
 #ifndef NO_THREAD
-void
-PrpcRegisterServiceDescPostProcess (service_desc_t * desc, server_func f, post_func postprocess);
+void PrpcRegisterServiceDescPostProcess (service_desc_t * desc, server_func f, post_func postprocess);
 #endif
 
-SERVICE_1 (s_caller_identification, _sci, "caller_identification",
-	   DA_FUTURE_REQUEST,
-	   DV_ARRAY_OF_POINTER,
-	   DV_C_STRING, 1)
+SERVICE_1 (s_caller_identification, _sci, "caller_identification", DA_FUTURE_REQUEST, DV_ARRAY_OF_POINTER, DV_C_STRING, 1);
+
 #ifndef NO_THREAD
 extern char *build_thread_model;
 #endif
@@ -3687,6 +3586,7 @@ PrpcInitialize (void)
   PrpcInitialize1 (DK_ALLOC_RESERVE_DISABLED);
 #endif
 }
+
 
 void
 PrpcInitialize1 (int mem_mode)
@@ -3717,21 +3617,19 @@ PrpcInitialize1 (int mem_mode)
 
   dk_memory_initialize (
 #ifndef NO_THREAD
-	1
+      1
 #else
-	0
+      0
 #endif
       );
 
-  free_threads = resource_allocate (MAX_THREADS, (rc_constr_t) NULL,
-      (rc_destr_t) NULL, (rc_destr_t) NULL, 0);
+  free_threads = resource_allocate (MAX_THREADS, (rc_constr_t) NULL, (rc_destr_t) NULL, (rc_destr_t) NULL, 0);
   resource_no_sem (free_threads);
-  tcpses_rc = resource_allocate (50, (rc_constr_t) NULL,
-      (rc_destr_t) NULL, (rc_destr_t) NULL, 0);
+  tcpses_rc = resource_allocate (50, (rc_constr_t) NULL, (rc_destr_t) NULL, (rc_destr_t) NULL, 0);
 
-#ifndef NO_THREAD  
+#ifndef NO_THREAD
   pending_futures = hash_table_allocate (201);
-#endif  
+#endif
 
   value_mtx = mutex_allocate ();
   thread_mtx = mutex_allocate ();
@@ -3753,8 +3651,7 @@ PrpcInitialize1 (int mem_mode)
 # endif
 #endif
 
-  session_set_default_control (SC_MSGLEN, (char *) (&socket_buf_sz),
-    sizeof (int));
+  session_set_default_control (SC_MSGLEN, (char *) (&socket_buf_sz), sizeof (int));
 
 #ifdef PMN_THREADS
   {
@@ -3777,11 +3674,9 @@ PrpcInitialize1 (int mem_mode)
 #endif
 
 #ifndef NO_THREAD
-  PrpcRegisterServiceDescPostProcess (&s_caller_identification,
-      (server_func) sf_caller_identification, (post_func) dk_free_tree);
+  PrpcRegisterServiceDescPostProcess (&s_caller_identification, (server_func) sf_caller_identification, (post_func) dk_free_tree);
 # ifdef INPROCESS_CLIENT
-  PrpcRegisterServiceDescPostProcess (&s_inprocess_ep,
-    (server_func) sf_inprocess_ep, (post_func) dk_free_tree);
+  PrpcRegisterServiceDescPostProcess (&s_inprocess_ep, (server_func) sf_inprocess_ep, (post_func) dk_free_tree);
 # endif
 
   if (0 == strcmp (build_thread_model, "-fibers"))
@@ -3791,11 +3686,10 @@ PrpcInitialize1 (int mem_mode)
     }
 #endif
 
-#ifdef NOT			/*PREEMPT, formerly */
+#ifdef NOT					 /*PREEMPT, formerly */
 /* Start the timeout checker */
   timeout_checker = PrpcThreadAllocate (6000);
-  process_set_init_function (timeout_checker->dkt_process,
-      (init_func) timeout_round_loop, 0);
+  process_set_init_function (timeout_checker->dkt_process, (init_func) timeout_round_loop, 0);
   process_futures_initialize (timeout_checker->dkt_process);
   semaphore_leave (timeout_checker->dkt_process->thr_sem);
 #endif
@@ -3805,6 +3699,7 @@ PrpcInitialize1 (int mem_mode)
 #endif
 }
 
+
 /*
    Writes a future request. Allocates and returns the matching future object.
    Registers the request number into the pending_futures table.
@@ -3813,7 +3708,7 @@ future_t *
 PrpcFuture (dk_session_t * server, service_desc_t * service, ...)
 {
   USE_GLOBAL
-  future_t *future;
+  future_t * future;
   ptrlong **request_v;
   caddr_t *argv;
   va_list ap;
@@ -3826,12 +3721,11 @@ PrpcFuture (dk_session_t * server, service_desc_t * service, ...)
 
   IN_VALUE;
   future->ft_request_no = last_future++;
-  sethash ((void *) (ptrlong) future->ft_request_no, PENDING_FUTURES(server), (void *) future);
+  sethash ((void *) (ptrlong) future->ft_request_no, PENDING_FUTURES (server), (void *) future);
   LEAVE_VALUE;
 
   va_start (ap, service);
-  argv = (caddr_t *) dk_alloc_box (sizeof (caddr_t) * service->sd_arg_count,
-    DV_ARRAY_OF_POINTER);
+  argv = (caddr_t *) dk_alloc_box (sizeof (caddr_t) * service->sd_arg_count, DV_ARRAY_OF_POINTER);
 
   for (n = 0; n < service->sd_arg_count; n++)
     {
@@ -3855,6 +3749,7 @@ PrpcFuture (dk_session_t * server, service_desc_t * service, ...)
 	case DV_SHORT_INT:
 	  argv[n] = (caddr_t) box_num (va_arg (ap, short));
 	  break;
+
 	case DV_CHARACTER:
 	  argv[n] = (caddr_t) box_num (va_arg (ap, char));
 	  break;
@@ -3862,22 +3757,25 @@ PrpcFuture (dk_session_t * server, service_desc_t * service, ...)
 	case DV_LONG_INT:
 	  argv[n] = (caddr_t) box_num (va_arg (ap, long));
 	  break;
+
 	case DV_C_STRING:
 	  argv[n] = (caddr_t) box_string (va_arg (ap, char *));
 	  break;
+
 	case DV_SINGLE_FLOAT:
 	  argv[n] = (caddr_t) box_float (*va_arg (ap, float *));
 	  break;
+
 	case DV_DOUBLE_FLOAT:
 	  argv[n] = (caddr_t) box_double (*va_arg (ap, double *));
 	  break;
+
 	default:
 	  argv[n] = (caddr_t) va_arg (ap, void *);
 	}
     }
 
-  request_v = (ptrlong **) dk_alloc_box (sizeof (caddr_t *) * DA_FRQ_LENGTH,
-      DV_ARRAY_OF_POINTER);
+  request_v = (ptrlong **) dk_alloc_box (sizeof (caddr_t *) * DA_FRQ_LENGTH, DV_ARRAY_OF_POINTER);
 
   if (service->sd_type == DA_DIRECT_IO_FUTURE_REQUEST)
     {
@@ -3893,28 +3791,28 @@ PrpcFuture (dk_session_t * server, service_desc_t * service, ...)
 
   request_v[FRQ_ARGUMENTS] = (ptrlong *) argv;
   CB_PREPARE
-#if defined(INPROCESS_CLIENT) /*&& !defined(NO_THREAD)*/
-    if (SESSION_IS_INPROCESS (server))
-      {
+#if defined(INPROCESS_CLIENT)			 /*&& !defined(NO_THREAD) */
+      if (SESSION_IS_INPROCESS (server))
+    {
 # ifdef INPROCESS_NO_THREAD
-	while (inpses_unread_data (server))
-	  read_service_request (server);
+      while (inpses_unread_data (server))
+	read_service_request (server);
 # endif
 # ifdef USE_DYNAMIC_LOADER
-	do_inprocess_request (PASS_G server, request_v);
+      do_inprocess_request (PASS_G server, request_v);
 # else
-        (*do_inprocess_request_p) (PASS_G server, (caddr_t *) request_v);
+      (*do_inprocess_request_p) (PASS_G server, (caddr_t *) request_v);
 #endif
-      }
-    else
+    }
+  else
 #endif
-      {
+    {
 #ifdef PMN_NMARSH
-	srv_write_in_session (request_v, server, 1);
+      srv_write_in_session (request_v, server, 1);
 #else
-	write_in_session ((caddr_t) request_v, server, NULL, NULL, 1);
+      write_in_session ((caddr_t) request_v, server, NULL, NULL, 1);
 #endif
-      }
+    }
   CB_DONE;
 
   dk_free_box_and_numbers ((box_t) argv);
@@ -3937,22 +3835,24 @@ PrpcFutureFree (future_t * future)
 
   /* MAALIS mty needed for futures, which are not waited for */
   IN_VALUE;
-  remhash ((void *) (ptrlong) future->ft_request_no, PENDING_FUTURES(future->ft_server));
+  remhash ((void *) (ptrlong) future->ft_request_no, PENDING_FUTURES (future->ft_server));
 
   switch (future->ft_is_ready)
     {
     case FS_SINGLE_COMPLETE:
       dk_free_box_and_numbers (future->ft_result);
       break;
+
     case FS_RESULT_LIST:
     case FS_RESULT_LIST_COMPLETE:
       DO_SET (caddr_t, elt, ((dk_set_t *) & future->ft_result))
-	{
-	  dk_free_tree (elt);
-	}
+      {
+	dk_free_tree (elt);
+      }
       END_DO_SET ();
       dk_set_free ((dk_set_t) future->ft_result);
     }
+
   dk_free (future, sizeof (future_t));
   LEAVE_VALUE;
 }
@@ -3970,13 +3870,13 @@ PrpcFutureSetTimeout (future_t * future, long msecs)
   future->ft_timeout.to_usec = (msecs % 1000) * 1000;
   future->ft_time_issued.to_sec = time.to_sec;
   future->ft_time_issued.to_usec = time.to_usec;
-  future->ft_server->dks_read_block_timeout = future->ft_timeout; /* if hangs in mid-message for longer than timeout, then assume broken connection */
+  future->ft_server->dks_read_block_timeout = future->ft_timeout;	/* if hangs in mid-message for longer than timeout, then assume broken connection */
   return (future);
 }
 
 
 void
-PrpcSessionResetTimeout (dk_session_t *ses)
+PrpcSessionResetTimeout (dk_session_t * ses)
 {
   if (ses)
     ses->dks_read_block_timeout.to_sec = 10000;
@@ -4018,7 +3918,7 @@ PrpcValueOrWait1T (future_t * future)
   caddr_t result;
 #ifdef NO_THREAD
 again:
-#endif  
+#endif
   IN_VALUE;
   switch (future->ft_is_ready)
     {
@@ -4042,9 +3942,9 @@ again:
       else
 #ifdef NO_THREAD
 	goto again;
-#else	
+#else
 	return PrpcValueOrWait (future);
-#endif      
+#endif
 
     case FS_RESULT_LIST:
     case FS_RESULT_LIST_COMPLETE:
@@ -4074,64 +3974,63 @@ PrpcValueOrWait (future_t * future)
     return PrpcValueOrWait1T (future);
 # endif
   {
-  USE_GLOBAL
-  caddr_t result;
+    USE_GLOBAL
+    caddr_t result;
 
-  IN_VALUE;
-  switch (future->ft_is_ready)
-    {
-    case FS_SINGLE_COMPLETE:
-      result = FUTURE_RESULT_FIRST (future->ft_result);
-      LEAVE_VALUE;
-      return result;
-
-    case FS_FALSE:
+    IN_VALUE;
+    switch (future->ft_is_ready)
       {
-	dk_thread_t *c_thread;
-	future_request_t *request;
-
-	if (DKSESSTAT_ISSET (future->ft_server, SST_NOT_OK))
-	  {
-	    future->ft_error = (caddr_t) (long) FE_TIMED_OUT;
-	    LEAVE_VALUE;
-	    call_service_cancel (future->ft_server);
-	    return NULL;
-	  }
-	c_thread = DK_CURRENT_THREAD;
-	if (!c_thread
-	    || 0 == c_thread->dkt_request_count)
-	  {
-	    LEAVE_VALUE;
-	    return (PrpcValueOrWait1T (future));
-	  }
-
-	request = c_thread->dkt_requests[c_thread->dkt_request_count - 1];
-
-	request->rq_next_waiting = future->ft_waiting_requests;
-	future->ft_waiting_requests = request;
-
+      case FS_SINGLE_COMPLETE:
+	result = FUTURE_RESULT_FIRST (future->ft_result);
 	LEAVE_VALUE;
-	semaphore_enter (current_process->thr_sem);
-	if (future->ft_error)
-	  return NULL;
+	return result;
+
+      case FS_FALSE:
+	{
+	  dk_thread_t *c_thread;
+	  future_request_t *request;
+
+	  if (DKSESSTAT_ISSET (future->ft_server, SST_NOT_OK))
+	    {
+	      future->ft_error = (caddr_t) (long) FE_TIMED_OUT;
+	      LEAVE_VALUE;
+	      call_service_cancel (future->ft_server);
+	      return NULL;
+	    }
+	  c_thread = DK_CURRENT_THREAD;
+	  if (!c_thread || 0 == c_thread->dkt_request_count)
+	    {
+	      LEAVE_VALUE;
+	      return (PrpcValueOrWait1T (future));
+	    }
+
+	  request = c_thread->dkt_requests[c_thread->dkt_request_count - 1];
+
+	  request->rq_next_waiting = future->ft_waiting_requests;
+	  future->ft_waiting_requests = request;
+
+	  LEAVE_VALUE;
+	  semaphore_enter (current_process->thr_sem);
+	  if (future->ft_error)
+	    return NULL;
+	  else
+	    return PrpcValueOrWait (future);
+	}
+
+      case FS_RESULT_LIST:
+      case FS_RESULT_LIST_COMPLETE:
+	/* In this case there is an error in the application.
+	   future_next_result should have been used as more than
+	   one value may be coming. */
+	if (FUTURE_IS_EXHAUSTED (future))
+	  result = NULL;
 	else
-	  return PrpcValueOrWait (future);
+	  result = FUTURE_RESULT_FIRST (DK_SET_FIRST (&(future->ft_result)));
+	LEAVE_VALUE;
+	return result;
       }
 
-    case FS_RESULT_LIST:
-    case FS_RESULT_LIST_COMPLETE:
-      /* In this case there is an error in the application.
-         future_next_result should have been used as more than
-         one value may be coming. */
-      if (FUTURE_IS_EXHAUSTED (future))
-	result = NULL;
-      else
-	result = FUTURE_RESULT_FIRST (DK_SET_FIRST (&(future->ft_result)));
-      LEAVE_VALUE;
-      return result;
-    }
-
-  return NULL;
+    return NULL;
   }
 #endif
 }
@@ -4155,82 +4054,81 @@ PrpcFutureNextResult (future_t * future)
     return PrpcFutureNextResult1T (future);
 # endif
   {
-  USE_GLOBAL
-  caddr_t result;
+    USE_GLOBAL
+    caddr_t result;
 
-  IN_VALUE;
-  switch (future->ft_is_ready)
-    {
-    case FS_SINGLE_COMPLETE:
-      result = FUTURE_RESULT_FIRST (future->ft_result);
-      future->ft_result = NULL;
-      future->ft_is_ready = FS_RESULT_LIST_COMPLETE;
-      LEAVE_VALUE;
-      return result;
-
-    case FS_RESULT_LIST_COMPLETE:
-      if (FUTURE_IS_NEXT_RESULT (future))
-	{
-	  caddr_t r_box = (caddr_t) dk_set_pop ((dk_set_t *) & (future->ft_result));
-	  result = FUTURE_RESULT_FIRST (r_box);
-	  dk_free_box_and_numbers (r_box);
-	  LEAVE_VALUE;
-	  return result;
-	}
-      LEAVE_VALUE;
-      return NULL;
-
-    case FS_RESULT_LIST:
-      if (FUTURE_IS_NEXT_RESULT (future))
-	{
-	  caddr_t r_box = (caddr_t) dk_set_pop (((dk_set_t *) & future->ft_result));
-	  result = FUTURE_RESULT_FIRST (r_box);
-	  dk_free_box_and_numbers (r_box);
-	  LEAVE_VALUE;
-	  return result;
-	}
-      /* If no result is ready fall through to the next case to wait. */
-
-    case FS_FALSE:
+    IN_VALUE;
+    switch (future->ft_is_ready)
       {
-	dk_thread_t *c_thread = DK_CURRENT_THREAD;
-	future_request_t *request;
-	if (!c_thread || 0 == c_thread->dkt_request_count)
-	  {
-	    LEAVE_VALUE;
-	    return PrpcFutureNextResult1T (future);
-	  }
-	if (DKSESSTAT_ISSET (future->ft_server, SST_NOT_OK))
-	  {
-	    LEAVE_VALUE;
-	    call_service_cancel (future->ft_server);
-	    future->ft_error = (caddr_t) (long) FE_TIMED_OUT;
-	    return NULL;
-	  }
-	request = c_thread->dkt_requests[c_thread->dkt_request_count - 1];
-	request->rq_next_waiting = future->ft_waiting_requests;
-	future->ft_waiting_requests = request;
+      case FS_SINGLE_COMPLETE:
+	result = FUTURE_RESULT_FIRST (future->ft_result);
+	future->ft_result = NULL;
+	future->ft_is_ready = FS_RESULT_LIST_COMPLETE;
 	LEAVE_VALUE;
-	semaphore_enter (current_process->thr_sem);
-	if (future->ft_error)
-	  return NULL;
-	else
-	  return PrpcFutureNextResult (future);
+	return result;
+
+      case FS_RESULT_LIST_COMPLETE:
+	if (FUTURE_IS_NEXT_RESULT (future))
+	  {
+	    caddr_t r_box = (caddr_t) dk_set_pop ((dk_set_t *) & (future->ft_result));
+	    result = FUTURE_RESULT_FIRST (r_box);
+	    dk_free_box_and_numbers (r_box);
+	    LEAVE_VALUE;
+	    return result;
+	  }
+	LEAVE_VALUE;
+	return NULL;
+
+      case FS_RESULT_LIST:
+	if (FUTURE_IS_NEXT_RESULT (future))
+	  {
+	    caddr_t r_box = (caddr_t) dk_set_pop (((dk_set_t *) & future->ft_result));
+	    result = FUTURE_RESULT_FIRST (r_box);
+	    dk_free_box_and_numbers (r_box);
+	    LEAVE_VALUE;
+	    return result;
+	  }
+	/* If no result is ready fall through to the next case to wait. */
+
+      case FS_FALSE:
+	{
+	  dk_thread_t *c_thread = DK_CURRENT_THREAD;
+	  future_request_t *request;
+	  if (!c_thread || 0 == c_thread->dkt_request_count)
+	    {
+	      LEAVE_VALUE;
+	      return PrpcFutureNextResult1T (future);
+	    }
+	  if (DKSESSTAT_ISSET (future->ft_server, SST_NOT_OK))
+	    {
+	      LEAVE_VALUE;
+	      call_service_cancel (future->ft_server);
+	      future->ft_error = (caddr_t) (long) FE_TIMED_OUT;
+	      return NULL;
+	    }
+	  request = c_thread->dkt_requests[c_thread->dkt_request_count - 1];
+	  request->rq_next_waiting = future->ft_waiting_requests;
+	  future->ft_waiting_requests = request;
+	  LEAVE_VALUE;
+	  semaphore_enter (current_process->thr_sem);
+	  if (future->ft_error)
+	    return NULL;
+	  else
+	    return PrpcFutureNextResult (future);
+	}
+	break;
       }
-      break;
-    }
-  return NULL;
+    return NULL;
   }
 #endif
 }
-
 
 
 int
 PrpcFutureIsResult (future_t * future)
 {
 #ifdef NO_THREAD
-  timeout_t zero_timeout = {0, 0};
+  timeout_t zero_timeout = { 0, 0 };
 #endif
   IN_VALUE;
   if (future->ft_result)
@@ -4252,12 +4150,13 @@ PrpcFutureIsResult (future_t * future)
 
   read_service_request (future->ft_server);
 #else
-  PROCESS_ALLOW_SCHEDULE();
+  PROCESS_ALLOW_SCHEDULE ();
 #endif
   if (future->ft_result)
     return 1;
   return 0;
 }
+
 
 caddr_t
 PrpcSync (future_t * f)
@@ -4326,7 +4225,7 @@ again:
 
 
 #ifdef _SSL
-int ssl_client_use_pkcs12 (SSL *ssl, char *pkcs12file, char *passwd, char *ca);
+int ssl_client_use_pkcs12 (SSL * ssl, char *pkcs12file, char *passwd, char *ca);
 #endif
 
 static dk_session_t *
@@ -4337,11 +4236,10 @@ PrpcConnect2 (char *address, int sesclass, char *ssl_usage, char *pass, char *ca
   caddr_t *ret;
   dk_session_t *session = NULL;
   int use_ssl = ssl_usage && strlen (ssl_usage) > 0;
-  char *pkcs12_file = ssl_usage && strlen (ssl_usage) > 0 && atoi (ssl_usage) == 0 ?
-      ssl_usage : NULL;
+  char *pkcs12_file = ssl_usage && strlen (ssl_usage) > 0 && atoi (ssl_usage) == 0 ? ssl_usage : NULL;
 
   if (sesclass == SESCLASS_TCPIP && !use_ssl)
-    { /* try UNIX sockets */
+    {						 /* try UNIX sockets */
       session = tcpses_make_unix_session (address);
 
       if (session)
@@ -4376,7 +4274,7 @@ PrpcConnect2 (char *address, int sesclass, char *ssl_usage, char *pass, char *ca
 #ifdef _SSL
       if (use_ssl)
 	{
-	  SSL * ssl = NULL;
+	  SSL *ssl = NULL;
 	  int ssl_err = 0;
 	  int dst = tcpses_get_fd (session->dks_session);
 	  SSL_METHOD *ssl_method = SSLv23_client_method ();
@@ -4395,11 +4293,9 @@ PrpcConnect2 (char *address, int sesclass, char *ssl_usage, char *pass, char *ca
 		  return session;
 		}
 
-	      SSL_set_verify (ssl,
-		  SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT | SSL_VERIFY_CLIENT_ONCE, NULL);
+	      SSL_set_verify (ssl, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT | SSL_VERIFY_CLIENT_ONCE, NULL);
 	      SSL_set_verify_depth (ssl, -1);
-	      SSL_CTX_set_session_id_context(ssl_ctx,
-		  (unsigned char *)&session_id_context, sizeof session_id_context);
+	      SSL_CTX_set_session_id_context (ssl_ctx, (unsigned char *) &session_id_context, sizeof session_id_context);
 	    }
 	  ssl_err = SSL_connect (ssl);
 	  if (ssl_err != 1)
@@ -4417,11 +4313,10 @@ PrpcConnect2 (char *address, int sesclass, char *ssl_usage, char *pass, char *ca
     }
 
 #ifdef NO_THREAD
-  session->dks_pending_futures =  hash_table_allocate (21);
-#endif  
+  session->dks_pending_futures = hash_table_allocate (21);
+#endif
 
-  SESSION_SCH_DATA (session)->sio_default_read_ready_action =
-      read_service_request;
+  SESSION_SCH_DATA (session)->sio_default_read_ready_action = read_service_request;
   SESSION_SCH_DATA (session)->sio_random_read_ready_action = NULL;
   SESSION_SCH_DATA (session)->sio_random_write_ready_action = NULL;
 
@@ -4429,8 +4324,7 @@ PrpcConnect2 (char *address, int sesclass, char *ssl_usage, char *pass, char *ca
 
   if (sesclass != SESCLASS_UDPIP && do_caller_id)
     {
-      ret = (caddr_t *) PrpcSync (
-	  PrpcFuture (session, &s_caller_identification, i_am));
+      ret = (caddr_t *) PrpcSync (PrpcFuture (session, &s_caller_identification, i_am));
       if (ret)
 	{
 	  session->dks_peer_name = box_copy (ret[0]);
@@ -4468,10 +4362,11 @@ PrpcConnect (char *address, int sesclass)
   return PrpcConnect1 (address, sesclass, NULL, NULL, NULL);
 }
 
+
 #ifdef INPROCESS_CLIENT
 
 #ifndef USE_DYNAMIC_LOADER
-static char* inprocess_address = NULL;
+static char *inprocess_address = NULL;
 
 static int
 init_inprocess_entry_points (char *address)
@@ -4510,8 +4405,7 @@ init_inprocess_entry_points (char *address)
       return -1;
     }
 
-  SESSION_SCH_DATA (session)->sio_default_read_ready_action =
-      read_service_request;
+  SESSION_SCH_DATA (session)->sio_default_read_ready_action = read_service_request;
   SESSION_SCH_DATA (session)->sio_random_read_ready_action = NULL;
   SESSION_SCH_DATA (session)->sio_random_write_ready_action = NULL;
 
@@ -4525,16 +4419,16 @@ init_inprocess_entry_points (char *address)
   rc = -1;
   if (ret && (box_length (ret) / sizeof (caddr_t)) >= 5)
     {
-       /* disable pid check for now because it fails on linux where
-          different threads in the same process have different pids. */
+      /* disable pid check for now because it fails on linux where
+         different threads in the same process have different pids. */
 #if 0
       int pid = (int) ret[0];
       if (pid == getpid ())
 #endif
 	{
-	  make_inprocess_session_p = (dk_session_t * (*) ()) ret[1];
-	  free_inprocess_session_p = (void (*) (dk_session_t *)) ret[2];
-	  do_inprocess_request_p = (void (*) (TAKE_G dk_session_t *, caddr_t *)) ret[3];
+	  make_inprocess_session_p = (dk_session_t * (*)())ret[1];
+	  free_inprocess_session_p = (void (*)(dk_session_t *)) ret[2];
+	  do_inprocess_request_p = (void (*)(TAKE_G dk_session_t *, caddr_t *)) ret[3];
 	  rc = 0;
 	}
     }
@@ -4542,7 +4436,6 @@ init_inprocess_entry_points (char *address)
 
   return rc;
 }
-
 #endif /* USE_DYNAMIC_LOADER */
 
 dk_session_t *
@@ -4556,7 +4449,6 @@ PrpcInprocessConnect (char *address)
   return make_inprocess_session ();
 #endif
 }
-
 #endif /* INPROCESS_CLIENT */
 
 void
@@ -4582,6 +4474,7 @@ PrpcDisconnectAll ()
 	PrpcDisconnect (served_sessions[i]);
     }
 }
+
 
 #define TIMEOUT_TO_MILLISECONDS(timeout) \
 	(timeout.to_sec * 1000 + timeout.to_usec / 1000);
@@ -4619,9 +4512,9 @@ PrpcLeave (void)
 #ifdef SUNRPC
 extern int sun_rpc_pending;
 extern fd_set svc_fdset;
-extern void svc_run_3(timeout_t * to);
+extern void svc_run_3 (timeout_t * to);
 
-static dk_thread_t * sun_rpc_thread;
+static dk_thread_t *sun_rpc_thread;
 
 
 static int
@@ -4684,11 +4577,9 @@ PrpcSunRPCInitialize (long sz)
     return;
 
   sun_rpc_thread = PrpcThreadAllocate (sz);
-  process_set_init_function (sun_rpc_thread->dkt_process,
-      (init_func) sun_rpc_loop, 0);
+  process_set_init_function (sun_rpc_thread->dkt_process, (init_func) sun_rpc_loop, 0);
   semaphore_leave (sun_rpc_thread->dkt_process->thr_sem);
 }
-
 #endif /* SUNRPC */
 
 #ifdef _SSL
@@ -4698,10 +4589,10 @@ void
 ssl_report_errors (char *client_ip)
 {
   unsigned long l;
-  const char *file,*data;
-  int line,flags;
+  const char *file, *data;
+  int line, flags;
 
-  while ((l=ERR_get_error_line_data(&file,&line,&data,&flags)) != 0)
+  while ((l = ERR_get_error_line_data (&file, &line, &data, &flags)) != 0)
     {
       char buf[256];
 #if 0
@@ -4720,10 +4611,10 @@ int
 cli_ssl_get_error_string (char *out_data, int out_data_len)
 {
   unsigned long l;
-  const char *file,*data;
-  int line,flags;
+  const char *file, *data;
+  int line, flags;
 
-  if ((l=ERR_get_error_line_data(&file,&line,&data,&flags)) != 0)
+  if ((l = ERR_get_error_line_data (&file, &line, &data, &flags)) != 0)
     {
 #if 0
       ERR_error_string_n (l, out_data, out_data_len);
@@ -4735,6 +4626,7 @@ cli_ssl_get_error_string (char *out_data, int out_data_len)
   return 0;
 }
 
+
 caddr_t
 ssl_new_connection (void)
 {
@@ -4745,7 +4637,7 @@ ssl_new_connection (void)
 caddr_t
 ssl_get_x509_error (caddr_t _ssl)
 {
-  SSL *ssl = (SSL *)_ssl;
+  SSL *ssl = (SSL *) _ssl;
   X509 *err_cert;
   int err, len;
   char buf[256];
@@ -4755,7 +4647,7 @@ ssl_get_x509_error (caddr_t _ssl)
 
   if (!ssl || SSL_get_verify_result (ssl) == X509_V_OK)
     return NULL;
-  bio_err = BIO_new (BIO_s_mem());
+  bio_err = BIO_new (BIO_s_mem ());
   err_cert = SSL_get_peer_certificate (ssl);
   err = SSL_get_verify_result (ssl);
 
@@ -4765,20 +4657,22 @@ ssl_get_x509_error (caddr_t _ssl)
       BIO_printf (bio_err, "%s : %s", X509_verify_cert_error_string (err), buf);
       switch (err)
 	{
-	  case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT:
-	      X509_NAME_oneline(X509_get_issuer_name(err_cert),buf,256);
-	      BIO_printf(bio_err," Invalid issuer= %s",buf);
-	      break;
-	  case X509_V_ERR_CERT_NOT_YET_VALID:
-	  case X509_V_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD:
-	      BIO_printf(bio_err," not Before=");
-	      ASN1_UTCTIME_print(bio_err,X509_get_notBefore(err_cert));
-	      break;
-	  case X509_V_ERR_CERT_HAS_EXPIRED:
-	  case X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD:
-	      BIO_printf(bio_err," notAfter=");
-	      ASN1_UTCTIME_print(bio_err,X509_get_notAfter(err_cert));
-	      break;
+	case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT:
+	  X509_NAME_oneline (X509_get_issuer_name (err_cert), buf, 256);
+	  BIO_printf (bio_err, " Invalid issuer= %s", buf);
+	  break;
+
+	case X509_V_ERR_CERT_NOT_YET_VALID:
+	case X509_V_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD:
+	  BIO_printf (bio_err, " not Before=");
+	  ASN1_UTCTIME_print (bio_err, X509_get_notBefore (err_cert));
+	  break;
+
+	case X509_V_ERR_CERT_HAS_EXPIRED:
+	case X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD:
+	  BIO_printf (bio_err, " notAfter=");
+	  ASN1_UTCTIME_print (bio_err, X509_get_notAfter (err_cert));
+	  break;
 	}
     }
   else
@@ -4811,49 +4705,46 @@ ssl_cert_verify_callback (int ok, void *_ctx)
   SSL_CTX *ssl_ctx;
   ssl_ctx_info_t *app_ctx;
 
-  ctx = (X509_STORE_CTX *)_ctx;
-  ssl  = (SSL *)X509_STORE_CTX_get_app_data(ctx);
+  ctx = (X509_STORE_CTX *) _ctx;
+  ssl = (SSL *) X509_STORE_CTX_get_app_data (ctx);
   ssl_ctx = SSL_get_SSL_CTX (ssl);
   app_ctx = (ssl_ctx_info_t *) SSL_CTX_get_app_data (ssl_ctx);
 
-  xs       = X509_STORE_CTX_get_current_cert(ctx);
-  errnum   = X509_STORE_CTX_get_error(ctx);
-  errdepth = X509_STORE_CTX_get_error_depth(ctx);
+  xs = X509_STORE_CTX_get_current_cert (ctx);
+  errnum = X509_STORE_CTX_get_error (ctx);
+  errdepth = X509_STORE_CTX_get_error_depth (ctx);
 
-  cp  = X509_NAME_oneline(X509_get_subject_name(xs), cp_buf, sizeof (cp_buf));
-  cp2 = X509_NAME_oneline(X509_get_issuer_name(xs),  cp2_buf, sizeof (cp2_buf));
+  cp = X509_NAME_oneline (X509_get_subject_name (xs), cp_buf, sizeof (cp_buf));
+  cp2 = X509_NAME_oneline (X509_get_issuer_name (xs), cp2_buf, sizeof (cp2_buf));
   log_debug ("%s Certificate Verification: depth: %d, subject: %s, issuer: %s",
-      app_ctx->ssci_name_ptr,
-      errdepth, cp != NULL ? cp : "-unknown-",
-      cp2 != NULL ? cp2 : "-unknown");
+  	app_ctx->ssci_name_ptr, errdepth, cp != NULL ? cp : "-unknown-",
+	cp2 != NULL ? cp2 : "-unknown");
   /*
    * Additionally perform CRL-based revocation checks
    *
-  if (ok) {
-    ok = ssl_callback_SSLVerify_CRL(ok, ctx, s);
-    if (!ok)
-      errnum = X509_STORE_CTX_get_error(ctx);
-  }
-  */
+   if (ok) {
+   ok = ssl_callback_SSLVerify_CRL(ok, ctx, s);
+   if (!ok)
+   errnum = X509_STORE_CTX_get_error(ctx);
+   }
+   */
 
   if (!ok)
     {
       log_error ("%s Certificate Verification: Error (%d): %s",
-	  app_ctx->ssci_name_ptr,
-	  errnum, X509_verify_cert_error_string(errnum));
+      	app_ctx->ssci_name_ptr, errnum, X509_verify_cert_error_string (errnum));
     }
 
   if (errdepth > *app_ctx->ssci_depth_ptr)
     {
-      log_error ("%s Certificate Verification: Certificate Chain too long "
-	  "(chain has %d certificates, but maximum allowed are only %ld)",
-	  app_ctx->ssci_name_ptr,
-	  errdepth, *app_ctx->ssci_depth_ptr);
+      log_error ("%s Certificate Verification: Certificate Chain too long (chain has %d certificates, but maximum allowed are only %ld)",
+	app_ctx->ssci_name_ptr, errdepth, *app_ctx->ssci_depth_ptr);
       ok = 0;
     }
 
   return (ok);
 }
+
 
 ssl_ctx_info_t ssl_server_ctx_info = { &ssl_server_verify_depth, "ODBC SSL" };
 #endif
@@ -4872,6 +4763,7 @@ dk_ssl_alloc (size_t n)
   return ret;
 }
 
+
 static void *
 dk_ssl_realloc (void *old, size_t n)
 {
@@ -4889,6 +4781,7 @@ dk_ssl_realloc (void *old, size_t n)
     dk_free_box (old);
   return new;
 }
+
 
 static void
 dk_ssl_free (void *old)
@@ -4910,48 +4803,48 @@ ssl_server_init ()
 #ifndef NO_THREAD
   char err_buf[1024];
 #ifdef SSL_DK_ALLOC
-  CRYPTO_set_mem_functions  (dk_ssl_alloc, dk_ssl_realloc, dk_ssl_free);
+  CRYPTO_set_mem_functions (dk_ssl_alloc, dk_ssl_realloc, dk_ssl_free);
   CRYPTO_set_locked_mem_functions (dk_ssl_alloc, dk_ssl_free);
 #endif
-  SSL_load_error_strings();
-  ERR_load_X509_strings();
+  SSL_load_error_strings ();
+  ERR_load_X509_strings ();
 #ifndef WIN32
-  RAND_bytes (tmp, sizeof(tmp));
-  RAND_add (tmp, sizeof(tmp), (double)(sizeof(tmp)));
+  RAND_bytes (tmp, sizeof (tmp));
+  RAND_add (tmp, sizeof (tmp), (double) (sizeof (tmp)));
 #endif
 # if (OPENSSL_VERSION_NUMBER >= 0x00908000L)
   SSL_library_init ();
 # endif
-  SSLeay_add_all_algorithms();
+  SSLeay_add_all_algorithms ();
 #else
 #ifdef SSL_DK_ALLOC
-  CRYPTO_set_mem_functions  (dk_ssl_alloc, dk_ssl_realloc, dk_ssl_free);
+  CRYPTO_set_mem_functions (dk_ssl_alloc, dk_ssl_realloc, dk_ssl_free);
   CRYPTO_set_locked_mem_functions (dk_ssl_alloc, dk_ssl_free);
 #endif
-  SSL_load_error_strings();
-  ERR_load_X509_strings();
-  ERR_load_PKCS12_strings();
+  SSL_load_error_strings ();
+  ERR_load_X509_strings ();
+  ERR_load_PKCS12_strings ();
 #ifndef WIN32
-  RAND_bytes (tmp, sizeof(tmp));
-  RAND_add (tmp, sizeof(tmp), (double)(sizeof(tmp)));
+  RAND_bytes (tmp, sizeof (tmp));
+  RAND_add (tmp, sizeof (tmp), (double) (sizeof (tmp)));
 #endif
 # if (OPENSSL_VERSION_NUMBER >= 0x00908000L)
   SSL_library_init ();
 # else
-  SSLeay_add_ssl_algorithms();
+  SSLeay_add_ssl_algorithms ();
 # endif
   PKCS12_PBE_add ();
 #endif
 #ifdef NO_THREAD
-  ssl_server_method = SSLv23_client_method();
+  ssl_server_method = SSLv23_client_method ();
 #else
-  ssl_server_method = SSLv23_server_method();
+  ssl_server_method = SSLv23_server_method ();
 #endif
   ssl_server_ctx = SSL_CTX_new (ssl_server_method);
   if (!ssl_server_ctx)
     {
-      ERR_print_errors_fp(stderr);
-      call_exit(-1);
+      ERR_print_errors_fp (stderr);
+      call_exit (-1);
     }
 
 #ifndef NO_THREAD
@@ -4965,43 +4858,39 @@ ssl_server_init ()
 	log_error ("ODBC Server X509 certificate is required");
       else
 	log_error ("Error loading the ODBC server X509 certificate %s : %s", c_ssl_server_key, err_buf);
-      call_exit(-1);
+      call_exit (-1);
     }
-  if (SSL_CTX_use_PrivateKey_file(ssl_server_ctx, c_ssl_server_key, SSL_FILETYPE_PEM) <= 0)
+  if (SSL_CTX_use_PrivateKey_file (ssl_server_ctx, c_ssl_server_key, SSL_FILETYPE_PEM) <= 0)
     {
       if (!c_ssl_server_key)
 	log_error ("ODBC Server X509 private key is required");
       else
 	log_error ("Error loading the ODBC server X509 private key %s : %s", c_ssl_server_key, err_buf);
-      call_exit(-1);
+      call_exit (-1);
     }
 
-  if (!SSL_CTX_check_private_key(ssl_server_ctx))
+  if (!SSL_CTX_check_private_key (ssl_server_ctx))
     {
-      log_error ("X509 Private key in %s does not match the X509 certificate public key in %s",
-	  c_ssl_server_key ? c_ssl_server_key : "<empty>",
-	  c_ssl_server_cert ? c_ssl_server_cert : "<empty>");
-      call_exit(-1);
+      log_error ("X509 Private key in %s does not match the X509 certificate public key in %s", c_ssl_server_key ? c_ssl_server_key : "<empty>", c_ssl_server_cert ? c_ssl_server_cert : "<empty>");
+      call_exit (-1);
     }
 
   if (ssl_server_verify)
     {
       int i, session_id_context = 2;
-      STACK_OF(X509_NAME) *skCAList = NULL;
+      STACK_OF (X509_NAME) * skCAList = NULL;
 
       SSL_CTX_load_verify_locations (ssl_server_ctx, ssl_server_verify_file, NULL);
-      SSL_CTX_set_client_CA_list (ssl_server_ctx,SSL_load_client_CA_file(ssl_server_verify_file));
+      SSL_CTX_set_client_CA_list (ssl_server_ctx, SSL_load_client_CA_file (ssl_server_verify_file));
       SSL_CTX_set_app_data (ssl_server_ctx, &ssl_server_ctx_info);
-      SSL_CTX_set_verify (ssl_server_ctx,
-	  SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT | SSL_VERIFY_CLIENT_ONCE,
-	  (int (*)(int, X509_STORE_CTX *)) ssl_cert_verify_callback);
+      SSL_CTX_set_verify (ssl_server_ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT | SSL_VERIFY_CLIENT_ONCE, (int (*)(int, X509_STORE_CTX *)) ssl_cert_verify_callback);
       SSL_CTX_set_verify_depth (ssl_server_ctx, (int) ssl_server_verify_depth);
-      SSL_CTX_set_session_id_context(ssl_server_ctx, (unsigned char *)&session_id_context, sizeof session_id_context);
+      SSL_CTX_set_session_id_context (ssl_server_ctx, (unsigned char *) &session_id_context, sizeof session_id_context);
 
-      skCAList = SSL_CTX_get_client_CA_list(ssl_server_ctx);
-      if (sk_num((STACK *) skCAList) == 0)
+      skCAList = SSL_CTX_get_client_CA_list (ssl_server_ctx);
+      if (sk_num ((STACK *) skCAList) == 0)
 	log_warning ("ODBC X509 Client authentication requested but no CA known for verification");
-      for (i = 0; i < sk_num((STACK *) skCAList); i++)
+      for (i = 0; i < sk_num ((STACK *) skCAList); i++)
 	{
 	  char ca_buf[1024];
 	  X509_NAME *ca_name = (X509_NAME *) sk_value ((STACK *) skCAList, i);
@@ -5011,6 +4900,7 @@ ssl_server_init ()
     }
 #endif
 }
+
 
 /*##***************************
  * PEM analogue of PKCS12_parse
@@ -5034,38 +4924,40 @@ PEM_load_key (const char *file, const char *pass)
   pkey = PEM_read_bio_PrivateKey (key, NULL, (pem_password_cb *) NULL, (void *) pass);
 end:
   if (key != NULL)
-    BIO_free(key);
+    BIO_free (key);
   return pkey;
 }
 
-static STACK_OF(X509) *
+
+static
+STACK_OF (X509) *
 PEM_load_certs (const char *file, const char *pass)
 {
   BIO *certs;
   int i;
-  STACK_OF(X509) *othercerts = NULL;
-  STACK_OF(X509_INFO) *allcerts = NULL;
+  STACK_OF (X509) * othercerts = NULL;
+  STACK_OF (X509_INFO) * allcerts = NULL;
   X509_INFO *xi;
 
-  if((certs = BIO_new(BIO_s_file())) == NULL)
+  if ((certs = BIO_new (BIO_s_file ())) == NULL)
     {
       goto end;
     }
 
-  if (BIO_read_filename(certs,file) <= 0)
+  if (BIO_read_filename (certs, file) <= 0)
     {
       goto end;
     }
 
-  othercerts = sk_X509_new_null();
-  if(!othercerts)
+  othercerts = sk_X509_new_null ();
+  if (!othercerts)
     {
       sk_X509_free (othercerts);
       othercerts = NULL;
       goto end;
     }
-  allcerts = PEM_X509_INFO_read_bio (certs, NULL, (pem_password_cb *) NULL /*password_callback*/, NULL);
-  for(i = 0; i < sk_X509_INFO_num (allcerts); i++)
+  allcerts = PEM_X509_INFO_read_bio (certs, NULL, (pem_password_cb *) NULL /*password_callback */ , NULL);
+  for (i = 0; i < sk_X509_INFO_num (allcerts); i++)
     {
       xi = sk_X509_INFO_value (allcerts, i);
       if (xi->x509)
@@ -5075,30 +4967,36 @@ PEM_load_certs (const char *file, const char *pass)
 	}
     }
 end:
-  if (allcerts) sk_X509_INFO_pop_free (allcerts, X509_INFO_free);
-  if (certs != NULL) BIO_free (certs);
-  return(othercerts);
+  if (allcerts)
+    sk_X509_INFO_pop_free (allcerts, X509_INFO_free);
+  if (certs != NULL)
+    BIO_free (certs);
+  return (othercerts);
 }
 
+
 static int
-PEM_parse (const char * file, const char * passwd, EVP_PKEY **pkey, X509 **cert, STACK_OF(X509) **ca)
+PEM_parse (const char *file, const char *passwd, EVP_PKEY ** pkey, X509 ** cert, STACK_OF (X509) ** ca)
 {
   EVP_PKEY *key = NULL;
-  STACK_OF(X509) *certs = NULL;
+  STACK_OF (X509) * certs = NULL;
   X509 *ucert = NULL;
   int i, found = 0;
 
-  if (pkey) *pkey = NULL;
-  if (cert) *cert = NULL;
-  if (ca) *ca = NULL;
+  if (pkey)
+    *pkey = NULL;
+  if (cert)
+    *cert = NULL;
+  if (ca)
+    *ca = NULL;
 
   if (NULL == (key = PEM_load_key (file, passwd)))
     goto end;
   certs = PEM_load_certs (file, passwd);
-  for(i = 0; i < sk_X509_num (certs); i++)
+  for (i = 0; i < sk_X509_num (certs); i++)
     {
       ucert = sk_X509_value (certs, i);
-      if(X509_check_private_key (ucert, key))
+      if (X509_check_private_key (ucert, key))
 	{
 	  sk_X509_delete_ptr (certs, ucert);
 	  found = 1;
@@ -5106,32 +5004,37 @@ PEM_parse (const char * file, const char * passwd, EVP_PKEY **pkey, X509 **cert,
 	}
     }
 
-  if(!found)
+  if (!found)
     {
       ucert = NULL;
       goto end;
     }
 end:
-  if (pkey) *pkey = key;
-  if (cert) *cert = ucert;
-  if (ca) *ca = certs;
+  if (pkey)
+    *pkey = key;
+  if (cert)
+    *cert = ucert;
+  if (ca)
+    *ca = certs;
 
   if (!key || !ucert)
     return 0;
   return 1;
 }
+
+
 /* end of PEM_parse */
 
 int
-ssl_client_use_pkcs12 (SSL *ssl, char *pkcs12file, char *passwd, char *ca)
+ssl_client_use_pkcs12 (SSL * ssl, char *pkcs12file, char *passwd, char *ca)
 {
-  int /*session_id_context = 2, */i;
+  int /*session_id_context = 2, */ i;
   FILE *fi = fopen (pkcs12file, "rb");
   PKCS12 *p12;
   EVP_PKEY *pkey;
   X509 *cert;
-  STACK_OF(X509) *ca_list = NULL;
-  SSL_CTX *ssl_ctx = SSL_get_SSL_CTX(ssl);
+  STACK_OF (X509) * ca_list = NULL;
+  SSL_CTX *ssl_ctx = SSL_get_SSL_CTX (ssl);
 
   if (0 != PEM_parse (pkcs12file, passwd, &pkey, &cert, &ca_list))
     goto ssl_setup;
@@ -5155,7 +5058,7 @@ ssl_setup:
 
   if (ca && ca[0] != 0)
     {
-      sk_pop_free((STACK *)ca_list, (void (*) (void *)) X509_free);
+      sk_pop_free ((STACK *) ca_list, (void (*)(void *)) X509_free);
       ca_list = NULL;
       ca_list = PEM_load_certs (ca, passwd);
     }
@@ -5164,43 +5067,45 @@ ssl_setup:
     {
       X509_free (cert);
       EVP_PKEY_free (pkey);
-      sk_pop_free((STACK *)ca_list, (void (*) (void *)) X509_free);
+      sk_pop_free ((STACK *) ca_list, (void (*)(void *)) X509_free);
       return 0;
     }
   EVP_PKEY_free (pkey);
   if (!SSL_use_certificate (ssl, cert))
     {
       X509_free (cert);
-      sk_pop_free((STACK *)ca_list, (void (*) (void *)) X509_free);
+      sk_pop_free ((STACK *) ca_list, (void (*)(void *)) X509_free);
       return 0;
     }
   X509_free (cert);
 
-  if (!SSL_check_private_key(ssl))
+  if (!SSL_check_private_key (ssl))
     {
-      sk_pop_free((STACK *)ca_list, (void (*) (void *)) X509_free);
+      sk_pop_free ((STACK *) ca_list, (void (*)(void *)) X509_free);
       return 0;
     }
   for (i = 0; i < sk_num ((STACK *) ca_list); i++)
     {
-      X509 *ca = (X509 *)sk_value ((STACK *) ca_list, i);
+      X509 *ca = (X509 *) sk_value ((STACK *) ca_list, i);
       SSL_add_client_CA (ssl, ca);
       X509_STORE_add_cert (SSL_CTX_get_cert_store (ssl_ctx), ca);
     }
-  sk_pop_free((STACK *)ca_list, (void (*) (void *)) X509_free);
+  sk_pop_free ((STACK *) ca_list, (void (*)(void *)) X509_free);
   return 1;
 }
+
+
 #ifndef NO_THREAD
 
 static int
-ssl_server_accept (dk_session_t *listen, dk_session_t *ses)
+ssl_server_accept (dk_session_t * listen, dk_session_t * ses)
 {
   unsigned int port = tcpses_get_port (listen->dks_session);
   if (ses->dks_session->ses_class != SESCLASS_UNIX && ssl_server_port == port && ssl_server_ctx)
     {
       int dst = 0;
       int ssl_err = 0;
-      SSL * new_ssl = NULL;
+      SSL *new_ssl = NULL;
       if (NULL != tcpses_get_ssl (ses->dks_session))
 	SSL_free ((SSL *) tcpses_get_ssl (ses->dks_session));
       dst = tcpses_get_fd (ses->dks_session);
@@ -5225,7 +5130,7 @@ ssl_server_accept (dk_session_t *listen, dk_session_t *ses)
 	  PrpcSessionFree (ses);
 	  return 0;
 	}
-      tcpses_to_sslses (ses->dks_session, (void *)(new_ssl));
+      tcpses_to_sslses (ses->dks_session, (void *) (new_ssl));
     }
   return 1;
 }
@@ -5244,9 +5149,9 @@ volatile int dk_alloc_reserve_mode = DK_ALLOC_RESERVE_DISABLED;
 #define DK_ALLOC_RESERVE_SIZE ((0x8000 + 0x1000 * dk_alloc_reserve_maxthreads) * sizeof (void *))
 
 
-#if 0 /* IvAn/OutOfMem/040513 bytes_allocated can't be correct! */
-extern size_t		bytes_allocated;
-extern size_t		bytes_allocated_max;
+#if 0						 /* IvAn/OutOfMem/040513 bytes_allocated can't be correct! */
+extern size_t bytes_allocated;
+extern size_t bytes_allocated_max;
 #endif
 
 void
@@ -5274,21 +5179,25 @@ dk_alloc_set_reserve_mode (int new_mode)
 	    log_error ("Switching back from memory reserve to normal mode");
 	}
       break;
+
     case DK_ALLOC_RESERVE_IN_USE:
       if (dk_alloc_reserve_mode == DK_ALLOC_RESERVE_DISABLED)
 	GPF_T1 ("Server is out of memory and should be killed to prevent data corruption.");
       if (NULL == dk_alloc_reserve)
 	GPF_T1 ("Fatal out of memory. Unable to consume memory reserve because the memory reserve is totally missing.");
-      free ((/* non-volatile here */ void *)dk_alloc_reserve);
+      free (( /* non-volatile here */ void *) dk_alloc_reserve);
       dk_alloc_reserve = NULL;
       log_error ("Memory low! Using memory reserve to terminate current activities properly");
 #if defined (UNIX) && !defined (MALLOC_DEBUG)
-      log_error ("Current location of the program break %ld", (long)sbrk (0) - init_brk);
-#endif      
+      log_error ("Current location of the program break %ld", (long) sbrk (0) - init_brk);
+#endif
       break;
+
     case DK_ALLOC_RESERVE_DISABLED:
       break;
-    default: GPF_T;
+
+    default:
+      GPF_T;
     }
   dk_alloc_reserve_mode = new_mode;
   mutex_leave (dk_alloc_reserve_mutex);
@@ -5298,7 +5207,7 @@ dk_alloc_set_reserve_mode (int new_mode)
 void *
 dk_alloc_reserve_malloc (size_t size, int gpf_if_not)
 {
-#if 0 /* IvAn/OutOfMem/040513 bytes_allocated can't be correct! */
+#if 0						 /* IvAn/OutOfMem/040513 bytes_allocated can't be correct! */
   void *thing = NULL;
   if (!bytes_allocated_max || bytes_allocated < bytes_allocated_max)
     thing = malloc (size);
@@ -5307,7 +5216,7 @@ dk_alloc_reserve_malloc (size_t size, int gpf_if_not)
 #endif
   if (thing)
     {
-#if 0 /* IvAn/OutOfMem/040503 there must be no automatic return from reserve mode */
+#if 0						 /* IvAn/OutOfMem/040503 there must be no automatic return from reserve mode */
       if (dk_alloc_reserve_mutex && dk_alloc_on_reserve)
 	{
 	  mutex_enter (dk_alloc_reserve_mutex);
@@ -5316,7 +5225,7 @@ dk_alloc_reserve_malloc (size_t size, int gpf_if_not)
 	      dk_alloc_reserve = malloc (DK_ALLOC_RESERVE_SIZE);
 	      if (dk_alloc_reserve)
 		{
-#if 0 /* IvAn/OutOfMem/040513 bytes_allocated can't be correct! */
+#if 0						 /* IvAn/OutOfMem/040513 bytes_allocated can't be correct! */
 		  bytes_allocated += DK_ALLOC_RESERVE_SIZE;
 #endif
 		  dk_alloc_on_reserve = 0;
@@ -5332,14 +5241,14 @@ dk_alloc_reserve_malloc (size_t size, int gpf_if_not)
 #endif
       return thing;
     }
-#if 0 /* IvAn/OutOfMem/040503 there must be no automatic return from reserve mode */
+#if 0						 /* IvAn/OutOfMem/040503 there must be no automatic return from reserve mode */
   if (dk_alloc_reserve_mutex && gpf_if_not)
     {
       if (!dk_alloc_on_reserve && size < DK_ALLOC_RESERVE_SIZE)
 	{
 	  mutex_enter (dk_alloc_reserve_mutex);
 	  free (dk_alloc_reserve);
-#if 0 /* IvAn/OutOfMem/040513 bytes_allocated can't be correct! */
+#if 0						 /* IvAn/OutOfMem/040513 bytes_allocated can't be correct! */
 	  bytes_allocated -= DK_ALLOC_RESERVE_SIZE;
 #endif
 	  dk_alloc_reserve = NULL;
@@ -5348,7 +5257,7 @@ dk_alloc_reserve_malloc (size_t size, int gpf_if_not)
 
 	  dk_alloc_on_reserve = 1;
 	  log_error ("Running on memory reserve");
-#if 0 /* IvAn/OutOfMem/040513 bytes_allocated can't be correct! */
+#if 0						 /* IvAn/OutOfMem/040513 bytes_allocated can't be correct! */
 	  if (!bytes_allocated_max || bytes_allocated < bytes_allocated_max)
 #endif
 	    thing = malloc (size);
@@ -5359,7 +5268,7 @@ dk_alloc_reserve_malloc (size_t size, int gpf_if_not)
     }
   if (gpf_if_not)
     GPF_T1 ("Out of memory");
-  return NULL; /* dummy */
+  return NULL;					 /* dummy */
 #else
   if (!gpf_if_not)
     return NULL;
@@ -5368,13 +5277,14 @@ dk_alloc_reserve_malloc (size_t size, int gpf_if_not)
   if (NULL == thing)
     {
 #if defined (UNIX) && !defined (MALLOC_DEBUG)
-      log_error ("Current location of the program break %ld", (long)sbrk (0) - init_brk);
-#endif      
-    GPF_T1 ("Out of memory");
+      log_error ("Current location of the program break %ld", (long) sbrk (0) - init_brk);
+#endif
+      GPF_T1 ("Out of memory");
     }
   return thing;
 #endif
 }
+
 
 #else
 
@@ -5385,9 +5295,9 @@ dk_alloc_reserve_malloc (size_t size, int gpf_if_not)
   if (!thing && gpf_if_not)
     {
 #if defined (UNIX) && !defined (MALLOC_DEBUG)
-      log_error ("Current location of the program break %ld", (long)sbrk (0) - init_brk);
-#endif      
-    GPF_T1 ("Out of memory");
+      log_error ("Current location of the program break %ld", (long) sbrk (0) - init_brk);
+#endif
+      GPF_T1 ("Out of memory");
     }
   return thing;
 }
@@ -5421,11 +5331,11 @@ ssl_server_listen ()
 
 
 void
-dks_stop_burst_mode (dk_session_t *ses)
+dks_stop_burst_mode (dk_session_t * ses)
 {
-  if ( DKST_RUN == ses->dks_thread_state)
+  if (DKST_RUN == ses->dks_thread_state)
     return;
-  if (!prpc_disable_burst_mode /*&& !prpc_force_burst_mode*/)
+  if (!prpc_disable_burst_mode /*&& !prpc_force_burst_mode */ )
     {
       mutex_enter (thread_mtx);
       if (!ses->dks_fixed_thread && ses->dks_thread_state == DKST_BURST)
@@ -5438,4 +5348,3 @@ dks_stop_burst_mode (dk_session_t *ses)
     }
 }
 #endif
-
