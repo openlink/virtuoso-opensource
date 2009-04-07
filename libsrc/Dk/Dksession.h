@@ -58,15 +58,20 @@ struct strsestmpfile_s
 struct session_s
   {
     /* internal info, TCPIP, NMP, ... */
-    int		ses_class;
+    short 	ses_class;
+    char 	ses_fduplex;		/* if set, use different status word for write ops */
 
-    /* Properties set by session_set_control() */
-    control_t *	ses_control;
 
     /* Return fields set by session_ functions */
     int		ses_bytes_read;		/* updated by read */
     int		ses_bytes_written;	/* updated by write */
     int		ses_status;		/* single bit SST_ flags */
+    int		ses_w_status;		/* single bit SST_ flags for write is ses_fduplex is set */
+    int		ses_errno;
+    int		ses_w_errno;
+
+    /* Properties set by session_set_control() */
+    control_t *		ses_control;
 
     /* Device dependent part */
     device_t *	ses_device;
@@ -115,6 +120,17 @@ struct session_s
 #define SESSTAT_SET(ses, stat)     ((ses)->ses_status |= stat)
 #define SESSTAT_CLR(ses, stat)     ((ses)->ses_status &= ~stat)
 #define SESSTAT_ISSET(ses, stat)   ((ses)->ses_status & stat)
+
+
+#define SESSTAT_W_SET(ses, stat) \
+  ((ses)->ses_fduplex ? ((ses)->ses_w_status |= stat) : SESSTAT_SET (ses, stat))
+
+#define SESSTAT_W_CLR(ses, stat) \
+  ((ses)->ses_fduplex ?  ((ses)->ses_w_status &= ~stat) : SESSTAT_CLR (ses, stat))
+
+#define SESSTAT_W_ISSET(ses, stat) \
+  ((ses)->ses_fduplex ? ((ses)->ses_w_status & stat) : SESSTAT_ISSET(ses, stat))
+
 
 /*
  *  Return codes of session functions

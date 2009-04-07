@@ -92,12 +92,15 @@ struct dk_session_s
     char		dks_to_close;
     char		dks_is_read_select_ready; /*! Is the next read known NOT to block */
     char		dks_ws_status;
-    
+    char 		dks_error;		/* error here, because dks_session is empty for strses */
     short		dks_n_threads;
+
     /*! time of last usage (get_msec_real_time) - use for dropping idle HTTP keep alives */
     uint32		dks_last_used;
+
     /*! burst mode */
     dks_thread_state_t  dks_thread_state;
+
     /*! web server thread associated to this if ws computation pending. Used to cancel upon client disconnect */
     void *		dks_ws_pending;
 
@@ -108,6 +111,10 @@ struct dk_session_s
     du_thread_t *	dks_waiting_http_recall_session;
     dk_hash_t *		dks_pending_futures;
   };
+
+/* dks_error */
+#define DKSE_BAD_TAG 		1
+
 
 #define SESSION_DK_SESSION(session) \
 	(*((dk_session_t **) (&((session)->ses_client_data))))

@@ -77,7 +77,7 @@ session_allocate (int sesclass)
   ss_assert (to != NULL);
   ss_assert (ctrl != NULL);
 #endif
-
+  memset (ses, 0, sizeof (session_t));
   ctrl->ctrl_timeout = to;
   ses->ses_control = ctrl;
   ses->ses_file=tmp_file;

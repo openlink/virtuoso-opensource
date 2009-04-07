@@ -594,13 +594,11 @@ box_read_error (dk_session_t *session, dtp_t dtp)
 {
   /*assert (session->dks_read_fail_on); */
   CHECK_READ_FAIL (session);
-
+  session->dks_error = DKSE_BAD_TAG;
 #ifdef DEBUG
   fprintf (stderr, "\n Undefined macro character 0x%x, closing connection. ", dtp);
 #endif
 
-  /* SESSTAT_SET (session, SST_BROKEN_CONNECTION); */
-  /* SESSTAT_CLR (session, SST_OK); */
   if (session->dks_session)
     {				/* could be a string input */
       char temp[30];
@@ -608,8 +606,6 @@ box_read_error (dk_session_t *session, dtp_t dtp)
       sr_report_future_error (session, "", temp);
       SESSTAT_SET (session->dks_session, SST_BROKEN_CONNECTION);
     }
-
-  /* longjmp_splice (&session->dks_read_broken_context, 1); */
   longjmp_splice (&(SESSION_SCH_DATA (session)->sio_read_broken_context), 1);
 
   return NULL;

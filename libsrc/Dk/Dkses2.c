@@ -115,11 +115,11 @@ service_write (dk_session_t * ses, char *buffer, int bytes)
 	}
       if (rc < 0)
 	{
-	  if (SESSTAT_ISSET (ses->dks_session, SST_INTERRUPTED))
+	  if (SESSTAT_W_ISSET (ses->dks_session, SST_INTERRUPTED))
 	    {
 	      PROCESS_ALLOW_SCHEDULE ();
 	    }
-	  else if (SESSTAT_ISSET (ses->dks_session, SST_BLOCK_ON_WRITE))
+	  else if (SESSTAT_W_ISSET (ses->dks_session, SST_BLOCK_ON_WRITE))
 	    {
 	      if (!_thread_sched_preempt)
 		freeze_thread_write (ses);
@@ -127,9 +127,9 @@ service_write (dk_session_t * ses, char *buffer, int bytes)
 		{
 		  timeout_t tv = { 100, 0 };
 		  tcpses_is_write_ready (ses->dks_session, &tv);
-		  if (SESSTAT_ISSET (ses->dks_session, SST_TIMED_OUT))
+		  if (SESSTAT_W_ISSET (ses->dks_session, SST_TIMED_OUT))
 		    {
-		      SESSTAT_SET (ses->dks_session, SST_BROKEN_CONNECTION);
+		      SESSTAT_W_SET (ses->dks_session, SST_BROKEN_CONNECTION);
 		      longjmp_splice (&SESSION_SCH_DATA (ses)->sio_write_broken_context, 1);
 		    }
 		}
@@ -137,12 +137,10 @@ service_write (dk_session_t * ses, char *buffer, int bytes)
 	  else
 	    {
 	      ses->dks_bytes_sent += last_written;
-
 	      ss_dprintf_2 (("Unrecognized I/O error rc=%d errno=%d  in service_write", rc, errno));
-	      SESSTAT_CLR (ses->dks_session, SST_OK);
-	      SESSTAT_SET (ses->dks_session, SST_BROKEN_CONNECTION);
+	      SESSTAT_W_CLR (ses->dks_session, SST_OK);
+	      SESSTAT_W_SET (ses->dks_session, SST_BROKEN_CONNECTION);
 	      longjmp_splice (&SESSION_SCH_DATA (ses)->sio_write_broken_context, 1);
-	      /* return (rc); */
 	    }
 	}
     }

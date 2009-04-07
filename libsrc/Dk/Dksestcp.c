@@ -878,38 +878,34 @@ tcpses_write (session_t * ses, char *buffer, int n_bytes)
 
   /* Set the OK flag here,
      test_ functions clear it if something goes wrong */
-  SESSTAT_SET (ses, SST_OK);
-  SESSTAT_CLR (ses, SST_BLOCK_ON_WRITE);
+  SESSTAT_W_SET (ses, SST_OK);
+  SESSTAT_W_CLR (ses, SST_BLOCK_ON_WRITE);
 
   n_out = send (ses->ses_device->dev_connection->con_s, buffer, n_bytes, flags);
 #if defined (PCTCP) & !defined (WIN32)
   Yield ();
 #endif
   dbg_printf_2 (("send() : n_out=%d.", n_out));
-
+  ses->ses_w_errno = 0;
   if (n_out <= 0)
     {
       int eno = errno;
 /*    printf ("write eno = %d\n", eno); */
       last_w_errno = eno;
-      if (test_eintr (ses, n_out, eno) == SER_SUCC)
+      ses->ses_w_errno = eno;
+      if (EINTR == eno)
 	{
-	  /* Tested for possible EINTR caused by task switch signal etc. */
+	  SESSTAT_W_CLR (ses, SST_OK);
+	  SESSTAT_W_SET (ses, SST_INTERRUPTED);
 	}
       else if (test_writeblock (ses, n_out, eno) == SER_SUCC)
-	{
-	  /* ... or if non_blocking operation would have blocked */
-	}
-      else if (test_timeout (ses, n_out, eno) == SER_SUCC)
-	{
-	  /* ... or if blocking oper ended because of time-out */
-	}
+	;
       else
 	{
-	  test_broken (ses, n_out, eno);
+	  SESSTAT_W_SET (ses, SST_BROKEN_CONNECTION);
+	  SESSTAT_W_CLR (ses, SST_OK);
 	}
     }
-
   ses->ses_bytes_written = n_out;
   return (n_out);
 }
@@ -1080,13 +1076,13 @@ tcpses_is_write_ready (session_t * ses, timeout_t * to)
   FD_ZERO (&fds);
   FD_SET (fd, &fds);
 #endif
-  SESSTAT_CLR (ses, SST_TIMED_OUT);
+  SESSTAT_W_CLR (ses, SST_TIMED_OUT);
 
 #ifndef FOR_GTK_TESTS
   rc = select (fd + 1, NULL, &fds, NULL, to ? &to_2 : NULL);
   if (!rc)
     {
-      SESSTAT_SET (ses, SST_TIMED_OUT);
+      SESSTAT_W_SET (ses, SST_TIMED_OUT);
     }
   if (to)
     write_block_usec += (to->to_sec - to_2.tv_sec) * 1000000 + (to->to_usec - to_2.tv_usec);
@@ -1699,6 +1695,7 @@ fill_fdset (int sescount, session_t ** sestable, fd_set * p_fdset)
 static int
 test_eintr (session_t * ses, int retcode, int eno)
 {
+  ses->ses_errno = eno;
   dbg_printf_3 (("test_eintr. rc=%d, eno=%d", retcode, eno));
 
   if (retcode == -1 && eno == SYS_EINTR)
@@ -1805,8 +1802,8 @@ test_writeblock (session_t * ses, int retcode, int eno)
   if (retcode == -1 && (eno == EAGAIN))
 #endif
     {
-      SESSTAT_CLR (ses, SST_OK);
-      SESSTAT_SET (ses, SST_BLOCK_ON_WRITE);
+      SESSTAT_W_CLR (ses, SST_OK);
+      SESSTAT_W_SET (ses, SST_BLOCK_ON_WRITE);
       dbg_printf_4 (("SER_SUCC."));
       return (SER_SUCC);
     }
