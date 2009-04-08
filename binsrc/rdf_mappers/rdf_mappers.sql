@@ -6225,13 +6225,50 @@ create procedure DB.DBA.RDF_LOAD_NYT_ARTICLE_SEARCH (in graph_iri varchar, in ne
 	if (not isstring (api_key) or length (api_key) = 0)
 		return 0;
 	primary_topic := DB.DBA.RDF_SPONGE_PROXY_IRI (graph_iri);
-	exec (sprintf( 'sparql define input:inference \'virtrdf-label\' select ?l from <%s> where 
-		{ <%s> virtrdf:label ?l }', graph_iri, primary_topic), state, message, vector (), 0, meta, data);
+	state := '00000';
+	tmp := sprintf( 'sparql define input:inference \'virtrdf-label\' select ?l from <%s> where
+		{ <%s> virtrdf:label ?l }', graph_iri, primary_topic);
+	exec (tmp, state, message, vector (), 0, meta, data);
+	if (state = '00000' and length (data) > 0)
+		RDF_LOAD_NYT_ARTICLE_SEARCH2(data, api_key, opts, dest, graph_iri, new_origin_uri);
+
+	state := '00000';
+	tmp := sprintf( 'sparql define input:inference \'virtrdf-label\' select ?l from <%s> where
+		{ <%s> virtrdf:label ?l }', graph_iri, graph_iri);
+	exec (tmp, state, message, vector (), 0, meta, data);
+	if (state = '00000' and length (data) > 0)
+		RDF_LOAD_NYT_ARTICLE_SEARCH2(data, api_key, opts, dest, graph_iri, new_origin_uri);
+
+	data := null;
+	state := '00000';
+	tmp := sprintf( 'sparql define input:inference \'virtrdf-label\' select ?l from <%s> where
+		{ <%s> dc:title ?l }', graph_iri, primary_topic);
+	exec (tmp, state, message, vector (), 0, meta, data);
+	if (state = '00000' and length (data) > 0)
+		RDF_LOAD_NYT_ARTICLE_SEARCH2(data, api_key, opts, dest, graph_iri, new_origin_uri);
+
+	data := null;
+	state := '00000';
+	tmp := sprintf( 'sparql define input:inference \'virtrdf-label\' select ?l from <%s> where
+		{ <%s> dc:title ?l }', graph_iri, graph_iri);
+	exec (tmp, state, message, vector (), 0, meta, data);
+	if (state = '00000' and length (data) > 0)
+		RDF_LOAD_NYT_ARTICLE_SEARCH2(data, api_key, opts, dest, graph_iri, new_origin_uri);
+
+	return 0;
+}
+;
+
+create procedure RDF_LOAD_NYT_ARTICLE_SEARCH2(in data any, in api_key varchar, in opts any, in dest varchar, in graph_iri varchar, in new_origin_uri varchar)
+{
+	declare keywords, url, tmp, tree, cont varchar;
+	declare xt, xd any;
+	
 	foreach (any str in data) do
 	{
 		if (isstring (str[0]))
 		{
-			keywords := str[0];
+			keywords := trim(str[0], '\n\t\t\n ');
 			url := sprintf('http://api.nytimes.com/svc/search/v1/article?query=%s&order=closest&api-key=%s&format=xml', keywords, api_key);
 			tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
 			tree := json_parse (tmp);
@@ -6242,7 +6279,6 @@ create procedure DB.DBA.RDF_LOAD_NYT_ARTICLE_SEARCH (in graph_iri varchar, in ne
 			DB.DBA.RDF_LOAD_RDFXML (cont, new_origin_uri, coalesce (dest, graph_iri));
 		}
 	}
-	return 0;
 }
 ;
 
