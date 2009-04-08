@@ -124,6 +124,7 @@ int xpyylex_from_xpp_bufs (caddr_t *yylval, xpp_t *xpp)
 %token _GT_OF_TAG	/*:: PUNCT(">"), NULL ::*/
 %token _GT_GT		/*:: PUNCT(">>"), XQ, LAST1("and >> or"), NULL ::*/
 %token _LE		/*:: PUNCT("<="), NULL ::*/
+%token _LPAR_LSQBRA	/*:: PUNCT("(["), NULL ::*/
 %token _LT		/*:: PUNCT("<"), XQ, LAST1("and < or"), MISS("a<<b"), MISS("<a/>"), XP, LAST1("a<b"), NULL ::*/
 %token _LT_OF_TAG	/*:: PUNCT("<"), XQ, LAST("<"), LAST1("<a"), MISS("a + b < c"), XP, MISS("<a>"), NULL ::*/
 %token _LT_LT		/*:: PUNCT("<<"), XQ, LAST1("and << or"), NULL ::*/
@@ -1795,5 +1796,6 @@ text_exp
 	| text_exp K_AND K_NOT text_exp		{ TBIN_OP ($$, XP_AND_NOT, $1, $4); }
 	| text_exp K_OR text_exp		{ TBIN_OP ($$, BOP_OR, $1, $3); }
 	| text_exp K_NEAR text_exp		{ TBIN_OP ($$, XP_NEAR, $1, $3); }
-	| '(' xp_options_seq_opt text_exp ')' { $$ = $3; }
+	| _LPAR_LSQBRA xp_options ']' text_exp ')' { $$ = $4; }
+	| _LPAR_LSQBRA xp_options error { yyerror ("']' or option expected"); }
 	;

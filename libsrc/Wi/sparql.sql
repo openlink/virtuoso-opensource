@@ -3396,7 +3396,7 @@ create procedure DB.DBA.RDF_MODIFY_TRIPLES (in graph_iri any, in del_triples any
 --!AWK PUBLIC
 create procedure DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_INIT (inout _env any)
 {
-  _env := 0; -- No actual initialization
+  _env := 0;
 }
 ;
 
@@ -3409,8 +3409,6 @@ create procedure DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (inout _env any, in graph_ir
   declare old_log_enable integer;
   old_log_enable := log_enable (log_mode, 1);
   declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
-  if (not (isarray (_env)))
-    _env := vector (iri_to_id (graph_iri), 0, 0);
   blank_ids := 0;
   action_ctr := 0;
   for (triple_ctr := length (opcodes) - 1; triple_ctr >= 0; triple_ctr := triple_ctr-1)
@@ -3483,22 +3481,37 @@ end_of_adding_triple: ;
 ;
 
 --!AWK PUBLIC
-create function DB.DBA.SPARQL_DELETE_CTOR_ACC (inout _env any, in graph_iri any, in opcodes any, in vars any, in log_mode integer)
+create function DB.DBA.SPARQL_DELETE_CTOR_ACC (inout _env any, in graph_iri any, in opcodes any, in vars any, in uid integer, in log_mode integer)
 {
+  if (not (isarray (_env)))
+    _env := vector (iri_to_id (graph_iri), 0, 0);
+  if (not _env[1] and not (DB.DBA.RDF_GRAPH_USER_PERMS_ACK (graph_iri, uid, 2)))
+      signal ('RDF02', sprintf ('SPARUL DELETE access denied: user %s (%s) has no write permission on graph %s',
+        cast (uid as varchar), coalesce ((select top 1 U_NAME from DB.DBA.SYS_USERS where U_ID=uid)), graph_iri ) );
   DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (_env, graph_iri, opcodes, vars, log_mode, 1);
 }
 ;
 
 --!AWK PUBLIC
-create procedure DB.DBA.SPARQL_INSERT_CTOR_ACC (inout _env any, in graph_iri any, in opcodes any, in vars any, in log_mode integer)
+create procedure DB.DBA.SPARQL_INSERT_CTOR_ACC (inout _env any, in graph_iri any, in opcodes any, in vars any, in uid integer, in log_mode integer)
 {
+  if (not (isarray (_env)))
+    _env := vector (iri_to_id (graph_iri), 0, 0);
+  if (not _env[2] and not (DB.DBA.RDF_GRAPH_USER_PERMS_ACK (graph_iri, uid, 2)))
+      signal ('RDF02', sprintf ('SPARUL INSERT access denied: user %s (%s) has no write permission on graph %s',
+      cast (uid as varchar), coalesce ((select top 1 U_NAME from DB.DBA.SYS_USERS where U_ID=uid)), graph_iri ) );
   DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (_env, graph_iri, opcodes, vars, log_mode, 2);
 }
 ;
 
 --!AWK PUBLIC
-create procedure DB.DBA.SPARQL_MODIFY_CTOR_ACC (inout _env any, in graph_iri any, in del_opcodes any, in ins_opcodes any, in vars any, in log_mode integer)
+create procedure DB.DBA.SPARQL_MODIFY_CTOR_ACC (inout _env any, in graph_iri any, in del_opcodes any, in ins_opcodes any, in vars any, in uid integer, in log_mode integer)
 {
+  if (not (isarray (_env)))
+    _env := vector (iri_to_id (graph_iri), 0, 0);
+  if (not _env[1] and not _env[2] and not (DB.DBA.RDF_GRAPH_USER_PERMS_ACK (graph_iri, uid, 2)))
+    signal ('RDF02', sprintf ('SPARUL MODIFY access denied: user %s (%s) has no write permission on graph %s',
+      cast (uid as varchar), coalesce ((select top 1 U_NAME from DB.DBA.SYS_USERS where U_ID=uid)), graph_iri ) );
   DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (_env, graph_iri, del_opcodes, vars, log_mode, 1);
   DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (_env, graph_iri, ins_opcodes, vars, log_mode, 2);
 }
@@ -3512,21 +3525,21 @@ create procedure DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_FIN (inout _env any)
 ;
 
 --!AWK PUBLIC
-create aggregate DB.DBA.SPARQL_DELETE_CTOR (in graph_iri any, in opcodes any, in vars any, in log_mode integer) returns any
+create aggregate DB.DBA.SPARQL_DELETE_CTOR (in graph_iri any, in opcodes any, in vars any, in uid integer, in log_mode integer) returns any
 from DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_INIT, DB.DBA.SPARQL_DELETE_CTOR_ACC, DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_FIN
 ;
 
 --!AWK PUBLIC
-create aggregate DB.DBA.SPARQL_INSERT_CTOR (in graph_iri any, in opcodes any, in vars any, in log_mode integer) returns any
+create aggregate DB.DBA.SPARQL_INSERT_CTOR (in graph_iri any, in opcodes any, in vars any, in uid integer, in log_mode integer) returns any
 from DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_INIT, DB.DBA.SPARQL_INSERT_CTOR_ACC, DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_FIN
 ;
 
 --!AWK PUBLIC
-create aggregate DB.DBA.SPARQL_MODIFY_CTOR (in graph_iri any, in del_opcodes any, in ins_opcodes any, in vars any, in log_mode integer) returns any
+create aggregate DB.DBA.SPARQL_MODIFY_CTOR (in graph_iri any, in del_opcodes any, in ins_opcodes any, in vars any, in uid integer, in log_mode integer) returns any
 from DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_INIT, DB.DBA.SPARQL_MODIFY_CTOR_ACC, DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_FIN
 ;
 
-create function DB.DBA.SPARQL_INSERT_DICT_CONTENT (in graph_iri any, in triples_dict any, in log_mode integer := null, in compose_report integer := 0) returns any
+create function DB.DBA.SPARQL_INSERT_DICT_CONTENT (in graph_iri any, in triples_dict any, in uid integer, in log_mode integer := null, in compose_report integer := 0) returns any
 {
   declare triples any;
   declare ins_count integer;
@@ -3537,10 +3550,15 @@ create function DB.DBA.SPARQL_INSERT_DICT_CONTENT (in graph_iri any, in triples_
       ins_count := graph_iri[2]; -- 2, not 1
       graph_iri := graph_iri[0]; -- the last op.
     }
+  if (not (DB.DBA.RDF_GRAPH_USER_PERMS_ACK (graph_iri, uid, 2)))
+    signal ('RDF02', sprintf ('SPARUL INSERT access denied: user %s (%s) has no write permission on graph %s',
+      cast (uid as varchar), coalesce ((select top 1 U_NAME from DB.DBA.SYS_USERS where U_ID=uid)), graph_iri ) );
   ins_count := ins_count + length (triples);
+  commit work;
   DB.DBA.RDF_INSERT_TRIPLES (graph_iri, triples, log_mode);
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
+  commit work;
   if (compose_report)
     return sprintf ('Insert into <%s>, %d triples -- done', graph_iri, ins_count);
   else
@@ -3548,7 +3566,7 @@ create function DB.DBA.SPARQL_INSERT_DICT_CONTENT (in graph_iri any, in triples_
 }
 ;
 
-create function DB.DBA.SPARQL_DELETE_DICT_CONTENT (in graph_iri any, in triples_dict any, in log_mode integer := null, in compose_report integer := 0) returns any
+create function DB.DBA.SPARQL_DELETE_DICT_CONTENT (in graph_iri any, in triples_dict any, in uid integer, in log_mode integer := null, in compose_report integer := 0) returns any
 {
   declare triples any;
   declare del_count integer;
@@ -3559,10 +3577,15 @@ create function DB.DBA.SPARQL_DELETE_DICT_CONTENT (in graph_iri any, in triples_
       del_count := graph_iri[1];
       graph_iri := graph_iri[0]; -- the last op.
     }
+  if (not (DB.DBA.RDF_GRAPH_USER_PERMS_ACK (graph_iri, uid, 2)))
+    signal ('RDF02', sprintf ('SPARUL DELETE access denied: user %s (%s) has no write permission on graph %s',
+      cast (uid as varchar), coalesce ((select top 1 U_NAME from DB.DBA.SYS_USERS where U_ID=uid)), graph_iri ) );
   del_count := del_count + length (triples);
+  commit work;
   DB.DBA.RDF_DELETE_TRIPLES (graph_iri, triples, log_mode);
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
+  commit work;
   if (compose_report)
     return sprintf ('Delete from <%s>, %d triples -- done', graph_iri, del_count);
   else
@@ -3570,7 +3593,7 @@ create function DB.DBA.SPARQL_DELETE_DICT_CONTENT (in graph_iri any, in triples_
 }
 ;
 
-create function DB.DBA.SPARQL_MODIFY_BY_DICT_CONTENTS (in graph_iri any, in del_triples_dict any, in ins_triples_dict any, in log_mode integer := null, in compose_report integer := 0) returns any
+create function DB.DBA.SPARQL_MODIFY_BY_DICT_CONTENTS (in graph_iri any, in del_triples_dict any, in ins_triples_dict any, in uid integer, in log_mode integer := null, in compose_report integer := 0) returns any
 {
   declare del_count, ins_count integer;
   del_count := 0;
@@ -3581,15 +3604,18 @@ create function DB.DBA.SPARQL_MODIFY_BY_DICT_CONTENTS (in graph_iri any, in del_
       ins_count := graph_iri[2];
       graph_iri := graph_iri[0]; -- the last op.
     }
+  if (not (DB.DBA.RDF_GRAPH_USER_PERMS_ACK (graph_iri, uid, 2)))
+    signal ('RDF02', sprintf ('SPARUL MODIFY access denied: user %s (%s) has no write permission on graph %s',
+      cast (uid as varchar), coalesce ((select top 1 U_NAME from DB.DBA.SYS_USERS where U_ID=uid)), graph_iri ) );
   if (del_triples_dict is not null)
     {
       del_count := del_count + dict_size (del_triples_dict);
-      DB.DBA.SPARQL_DELETE_DICT_CONTENT (graph_iri, del_triples_dict, log_mode);
+      DB.DBA.SPARQL_DELETE_DICT_CONTENT (graph_iri, del_triples_dict, uid, log_mode);
     }
   if (ins_triples_dict is not null)
     {
       ins_count := ins_count + dict_size (ins_triples_dict);
-      DB.DBA.SPARQL_INSERT_DICT_CONTENT (graph_iri, ins_triples_dict, log_mode);
+      DB.DBA.SPARQL_INSERT_DICT_CONTENT (graph_iri, ins_triples_dict, uid, log_mode);
     }
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
@@ -3601,9 +3627,12 @@ create function DB.DBA.SPARQL_MODIFY_BY_DICT_CONTENTS (in graph_iri any, in del_
 ;
 
 --!AFTER
-create function DB.DBA.SPARUL_CLEAR (in graph_iri any, in inside_sponge integer := 0, in compose_report integer := 0) returns any
+create function DB.DBA.SPARUL_CLEAR (in graph_iri any, in uid integer, in inside_sponge integer := 0, in compose_report integer := 0) returns any
 {
   commit work;
+  if (not (DB.DBA.RDF_GRAPH_USER_PERMS_ACK (graph_iri, uid, 2)))
+    signal ('RDF02', sprintf ('SPARUL CLEAR GRAPH access denied: user %s (%s) has no write permission on graph %s',
+      cast (uid as varchar), coalesce ((select top 1 U_NAME from DB.DBA.SYS_USERS where U_ID=uid)), graph_iri ) );
   delete from DB.DBA.RDF_QUAD
   where G = iri_to_id (graph_iri) and
   case (gt (__trx_disk_log_length (0, S, O), 1000000))
@@ -3629,11 +3658,14 @@ create function DB.DBA.SPARUL_CLEAR (in graph_iri any, in inside_sponge integer 
 }
 ;
 
-create function DB.DBA.SPARUL_LOAD (in graph_iri any, in resource varchar, in compose_report integer := 0) returns any
+create function DB.DBA.SPARUL_LOAD (in graph_iri any, in uid integer, in resource varchar, in compose_report integer := 0) returns any
 {
   declare grab_params any;
   declare grabbed any;
   declare res integer;
+  if (not (DB.DBA.RDF_GRAPH_USER_PERMS_ACK (graph_iri, uid, 2)))
+    signal ('RDF02', sprintf ('SPARUL LOAD access denied: user %s (%s) has no write permission on graph %s',
+      cast (uid as varchar), coalesce ((select top 1 U_NAME from DB.DBA.SYS_USERS where U_ID=uid)), graph_iri ) );
   grabbed := dict_new();
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
@@ -3644,7 +3676,9 @@ create function DB.DBA.SPARUL_LOAD (in graph_iri any, in resource varchar, in co
     'get:error-recovery', 'signal',
     -- 'flags', flags,
     'grabbed', grabbed );
+  commit work;
   res := DB.DBA.RDF_GRAB_SINGLE (resource, grabbed, grab_params);
+  commit work;
   if (res)
     {
       if (compose_report)
@@ -3662,8 +3696,11 @@ create function DB.DBA.SPARUL_LOAD (in graph_iri any, in resource varchar, in co
 }
 ;
 
-create function DB.DBA.SPARUL_CREATE (in graph_iri any, in silent integer := 0, in compose_report integer := 0) returns any
+create function DB.DBA.SPARUL_CREATE (in graph_iri any, in uid integer, in silent integer := 0, in compose_report integer := 0) returns any
 {
+  if (not (DB.DBA.RDF_GRAPH_USER_PERMS_ACK (graph_iri, uid, 2)))
+    signal ('RDF02', sprintf ('SPARUL CREATE GRAPH access denied: user %s (%s) has no write permission on graph %s',
+      cast (uid as varchar), coalesce ((select top 1 U_NAME from DB.DBA.SYS_USERS where U_ID=uid)), graph_iri ) );
   if (exists (select top 1 1 from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = iri_to_id (graph_iri)))
     {
       if (silent)
@@ -3700,15 +3737,18 @@ create function DB.DBA.SPARUL_CREATE (in graph_iri any, in silent integer := 0, 
 }
 ;
 
-create function DB.DBA.SPARUL_DROP (in graph_iri any, in silent integer := 0, in compose_report integer := 0) returns any
+create function DB.DBA.SPARUL_DROP (in graph_iri any, in uid integer, in silent integer := 0, in compose_report integer := 0) returns any
 {
+  if (not (DB.DBA.RDF_GRAPH_USER_PERMS_ACK (graph_iri, uid, 2)))
+    signal ('RDF02', sprintf ('SPARUL DROP GRAPH access denied: user %s (%s) has no write permission on graph %s',
+      cast (uid as varchar), coalesce ((select top 1 U_NAME from DB.DBA.SYS_USERS where U_ID=uid)), graph_iri ) );
   if (not exists (select top 1 1 from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = iri_to_id (graph_iri)))
     {
       if (silent)
         {
           if (exists (select top 1 1 from DB.DBA.RDF_QUAD where G = iri_to_id (graph_iri)))
             {
-              DB.DBA.SPARUL_CLEAR (graph_iri);
+              DB.DBA.SPARUL_CLEAR (graph_iri, uid);
               if (compose_report)
                 return sprintf ('Drop silent graph <%s> -- graph has not been explicitly created before, triples were removed', graph_iri);
               else
@@ -3724,7 +3764,7 @@ create function DB.DBA.SPARUL_DROP (in graph_iri any, in silent integer := 0, in
     }
   if (silent)
     {
-      DB.DBA.SPARUL_CLEAR (graph_iri);
+      DB.DBA.SPARUL_CLEAR (graph_iri, uid);
       delete from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = iri_to_id (graph_iri);
       commit work;
       if (compose_report)
@@ -3736,7 +3776,7 @@ create function DB.DBA.SPARUL_DROP (in graph_iri any, in silent integer := 0, in
     ask from <http://www.openlinksw.com/schemas/virtrdf#>
     where { ?qmv virtrdf:qmGraphRange-rvrFixedValue `iri(?:graph_iri)` } ) )
     signal ('22023', 'SPARUL_CREATE() failed: graph <' || graph_iri || '> is used for mapping relational data to RDF');
-  DB.DBA.SPARUL_CLEAR (graph_iri);
+  DB.DBA.SPARUL_CLEAR (graph_iri, uid);
   delete from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = iri_to_id (graph_iri);
   commit work;
   if (compose_report)
@@ -8528,6 +8568,8 @@ create function DB.DBA.RDF_GRAPH_USER_PERMS_GET (in graph_iri varchar, in uid an
     uid := ((select U_ID from DB.DBA.SYS_USERS where U_NAME = uid and (U_NAME='nobody' or (U_SQL_ENABLE and not U_ACCOUNT_DISABLED))));
   if (uid is null)
     return 0;
+  if (uid = 0)
+    return 1023;
   res := coalesce (
     (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = graph_iid and RGU_USER_ID = uid),
     (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = graph_iid and RGU_USER_ID = http_nobody_uid()),
@@ -8547,6 +8589,8 @@ create function DB.DBA.RDF_GRAPH_USER_PERMS_ACK (in graph_iri varchar, in uid an
     uid := ((select U_ID from DB.DBA.SYS_USERS where U_NAME = uid and (U_NAME='nobody' or (U_SQL_ENABLE and not U_ACCOUNT_DISABLED))));
   if (uid is null)
     perms := 0;
+  else if (uid = 0)
+    return 1;
   else
     perms := coalesce (
       (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = graph_iid and RGU_USER_ID = uid),
@@ -8556,6 +8600,32 @@ create function DB.DBA.RDF_GRAPH_USER_PERMS_ACK (in graph_iri varchar, in uid an
       15 );
   if (bit_and (perms, req_perms) = req_perms)
     return 1;
+  return 0;
+}
+;
+
+create function DB.DBA.RDF_GRAPH_USER_PERMS_ASSERT (in graph_iri varchar, in uid any, in req_perms integer, in opname varchar) returns varchar
+{
+  declare graph_iid IRI_ID;
+  declare perms integer;
+  graph_iid := iri_to_id (graph_iri);
+  if (isstring (uid))
+    uid := ((select U_ID from DB.DBA.SYS_USERS where U_NAME = uid and (U_NAME='nobody' or (U_SQL_ENABLE and not U_ACCOUNT_DISABLED))));
+  if (uid is null)
+    perms := 0;
+  else if (uid = 0)
+    return graph_iri;
+  else
+    perms := coalesce (
+      (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = graph_iid and RGU_USER_ID = uid),
+      (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = graph_iid and RGU_USER_ID = http_nobody_uid()),
+      (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i0 and RGU_USER_ID = uid),
+      (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i0 and RGU_USER_ID = http_nobody_uid()),
+      15 );
+  if (bit_and (perms, req_perms) = req_perms)
+    return graph_iri;
+  signal ('RDF02', sprintf ('%s access denied: user %s (%s) has no write permission on graph %s',
+    opname, cast (uid as varchar), coalesce ((select top 1 U_NAME from DB.DBA.SYS_USERS where U_ID=uid)), graph_iri ) );
   return 0;
 }
 ;
@@ -8583,6 +8653,8 @@ create procedure DB.DBA.RDF_DEFAULT_USER_PERMS_SET (in uname varchar, in perms i
 --        signal ('RDF99', sprintf ('Default permissions of unauthenticated user ("nobody") on RDF quad store can not become broader than permissions of user %s (UID %d) on specific graph <%s>',
 --          (select top 1 U_NAME from Db.DBA.SYS_USER where U_ID = RGU_USER_ID), RGU_USER_ID, id_to_iri (RGU_GRAPH_IID) ) );
     }
+  if ((uname <> 'dba') and not (exists (select top 1 1 from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i0 and RGU_USER_ID = 0)))
+    DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('dba', 1023);
   insert replacing DB.DBA.RDF_GRAPH_USER (RGU_GRAPH_IID, RGU_USER_ID, RGU_PERMISSIONS)
   values (#i0, uid, perms);
   dict_put (__rdf_graph_default_perms_of_user_dict(), uid, perms);
@@ -8617,6 +8689,8 @@ create procedure DB.DBA.RDF_GRAPH_USER_PERMS_SET (in graph_iri varchar, in uname
       if (bit_and (bit_not (perms), common_perms))
         signal ('RDF99', sprintf ('Permissions of unauthenticated user are broader than new permissions of user "%s" on specific graph <%s>', uname, graph_iri));
     }
+  if (not (exists (select top 1 1 from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i0 and RGU_USER_ID = 0)))
+    DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('dba', 1023);
   insert replacing DB.DBA.RDF_GRAPH_USER (RGU_GRAPH_IID, RGU_USER_ID, RGU_PERMISSIONS)
   values (graph_iid, uid, perms);
   if (uid = http_nobody_uid())
@@ -8635,6 +8709,8 @@ create function DB.DBA.RDF_GRAPH_GROUP_LIST_GET (in group_iri varchar, in uid an
     uid := ((select U_ID from DB.DBA.SYS_USERS where U_NAME = uid and (U_NAME='nobody' or (U_SQL_ENABLE and not U_ACCOUNT_DISABLED))));
   if (uid is null)
     return vector ();
+  if (uid = 0)
+    return dict_get (__rdf_graph_group_dict(), group_iid);
   common_perms := coalesce (
     dict_get (__rdf_graph_default_perms_of_user_dict(), uid, NULL),
     dict_get (__rdf_graph_default_perms_of_user_dict(), 0, NULL),
@@ -8867,6 +8943,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.TTLP_EV_COMMIT to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_PROC_COLS to "SPARQL"',
     'grant execute on DB.DBA.RDF_GRAPH_USER_PERMS_ACK to "SPARQL_SELECT"',
+    'grant execute on DB.DBA.RDF_GRAPH_USER_PERMS_ASSERT to "SPARQL_SELECT"',
     'grant execute on DB.DBA.RDF_GRAPH_GROUP_LIST_GET to "SPARQL_SELECT"' );
   foreach (varchar cmd in cmds) do
     {

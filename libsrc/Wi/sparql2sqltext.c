@@ -5645,9 +5645,9 @@ ssg_patch_ft_arg1 (spar_sqlgen_t *ssg, SPART *ft_arg1, SPART *g)
 	  iri_id_t iid = unbox_iri_id (boxed_id);
           int ft_arg1_strlen, idlen, len;
           if (iid >= MIN_64BIT_BNODE_IRI_ID)
-            snprintf (tmp, sizeof (tmp), "#ib" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
+            snprintf (tmp, sizeof (tmp), "\'#ib" BOXINT_FMT "\'", (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
           else
-            snprintf (tmp, sizeof (tmp), "#i" BOXINT_FMT, (boxint)(iid) );
+            snprintf (tmp, sizeof (tmp), "\'#i" BOXINT_FMT "\'", (boxint)(iid) );
           idlen = strlen (tmp);
           ft_arg1_strlen = box_length (ft_arg1_str) - 1;
           len = ft_arg1_strlen + (1 + 24 + 2) + idlen;

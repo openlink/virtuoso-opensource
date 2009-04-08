@@ -2201,7 +2201,7 @@ spar_make_sparul_mdw (sparp_t *sparp, ptrlong subtype, const char *opname, SPART
   if (NULL != sparp->sparp_env->spare_output_route_name)
     call = spar_make_funcall (sparp, 0,
       t_box_sprintf (200, "sql:SPARQL_ROUTE_MDW_%.100s", sparp->sparp_env->spare_output_route_name),
-      (SPART **)t_list (10, graph_precode,
+      (SPART **)t_list (11, graph_precode,
           t_box_dv_short_string (opname),
           ((NULL == sparp->sparp_env->spare_storage_name) ? t_NEW_DB_NULL : sparp->sparp_env->spare_storage_name),
           ((NULL == sparp->sparp_env->spare_output_storage_name) ? t_NEW_DB_NULL : sparp->sparp_env->spare_output_storage_name),
@@ -2209,10 +2209,10 @@ spar_make_sparul_mdw (sparp_t *sparp, ptrlong subtype, const char *opname, SPART
           aux_op,
           t_NEW_DB_NULL,
           t_NEW_DB_NULL,
-          log_mode, spar_compose_report_flag (sparp)) );
+          spar_boxed_exec_uid (sparp), log_mode, spar_compose_report_flag (sparp)) );
   else
     call = spar_make_funcall (sparp, 0, t_box_sprintf (30, "sql:SPARUL_%.15s", opname),
-      (SPART **)t_list (3, graph_precode, aux_op, spar_compose_report_flag (sparp)) );
+      (SPART **)t_list (4, graph_precode, spar_boxed_exec_uid (sparp), aux_op, spar_compose_report_flag (sparp)) );
   top = spar_make_top (sparp, subtype,
     (SPART **)t_list (1, call),
     spar_selid_pop (sparp),
@@ -2274,7 +2274,7 @@ spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions)
 #endif
       memset (&ssg, 0, sizeof (spar_sqlgen_t));
       memset (&sc, 0, sizeof (sql_comp_t));
-      if (NULL != sparp->sparp_sparqre->sparqre_qi)
+      if (CALLER_LOCAL != sparp->sparp_sparqre->sparqre_qi)
         sc.sc_client = sparp->sparp_sparqre->sparqre_qi->qi_client;
       ssg.ssg_out = strses_allocate ();
       ssg.ssg_sc = &sc;
@@ -2500,7 +2500,7 @@ sparp_query_parse (char * str, spar_query_env_t *sparqre, int rewrite_all)
 #endif
   memset (sparp, 0, sizeof (sparp_t));
   sparp->sparp_sparqre = sparqre;
-  if ((NULL == sparqre->sparqre_cli) && (NULL != sparqre->sparqre_qi))
+  if ((NULL == sparqre->sparqre_cli) && (CALLER_LOCAL != sparqre->sparqre_qi))
     sparqre->sparqre_cli = sparqre->sparqre_qi->qi_client;
   if ((sparqre->sparqre_exec_user) && (NULL != sparqre->sparqre_cli))
     sparqre->sparqre_exec_user = sparqre->sparqre_cli->cli_user;
@@ -2508,7 +2508,7 @@ sparp_query_parse (char * str, spar_query_env_t *sparqre, int rewrite_all)
   sparp->sparp_err_hdr = t_box_dv_short_string ("SPARQL compiler");
   if ((NULL == query_charset) /*&& (!sparqre->xqre_query_charset_is_set)*/)
     {
-      if (NULL != sparqre->sparqre_qi)
+      if (CALLER_LOCAL != sparqre->sparqre_qi)
         query_charset = QST_CHARSET (sparqre->sparqre_qi);
       if (NULL == query_charset)
         query_charset = default_charset;

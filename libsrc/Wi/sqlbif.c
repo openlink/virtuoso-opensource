@@ -8342,9 +8342,15 @@ box_cast (caddr_t * qst, caddr_t data, ST * dtp, dtp_t arg_dtp)
           return data;
         }
       if (0 == rb->rb_is_complete)
+#ifdef DEBUG
+        sqlr_new_error ("22023", ((NULL != qst) && (((query_instance_t *)qst)->qi_no_cast_error)) ? "sR066" : "SR066", "Unsupported case in CONVERT (incomplete RDF box -> %s)", dv_type_title((int) (dtp->type)));
+#else
         sqlr_new_error ("22023", "SR066", "Unsupported case in CONVERT (incomplete RDF box -> %s)", dv_type_title((int) (dtp->type)));
-      data = rb->rb_box; /*!!! TBD: I18N: This turns UTF-8 RDF boxed string into plain DV_STRING w/o charset recode */
+#endif
+      data = rb->rb_box;
       arg_dtp = DV_TYPE_OF (data);
+      if (DV_STRING == arg_dtp)
+        box_flags (data) |= BF_UTF8;
     }
   switch (dtp->type)
     {
@@ -8693,6 +8699,9 @@ do_datetime:
 	  case DV_DATE:
 	  case DV_TIME:
 	      res = box_copy_tree (data);
+#ifdef DEBUG
+              DT_SET_DAY (res, DAY_ZERO+1);
+#endif
 	      SET_DT_TYPE_BY_DTP (res, dtp->type);
 	      return res;
 	  case DV_BIN:
@@ -8904,7 +8913,11 @@ do_wide:
 
 
 cvt_error:
+#ifdef DEBUG
+  sqlr_new_error ("22023", ((NULL != qst) && (((query_instance_t *)qst)->qi_no_cast_error)) ? "sR066" : "SR066", "Unsupported case in CONVERT (%s -> %s)", dv_type_title(arg_dtp), dv_type_title((int) (dtp->type)));
+#else
   sqlr_new_error ("22023", "SR066", "Unsupported case in CONVERT (%s -> %s)", dv_type_title(arg_dtp), dv_type_title((int) (dtp->type)));
+#endif
   NO_CADDR_T;
 }
 

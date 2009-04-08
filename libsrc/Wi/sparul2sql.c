@@ -413,7 +413,7 @@ spar_compose_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top, SPART *gra
     {
       top_fname = t_box_sprintf (200, "sql:SPARQL_ROUTE_DICT_CONTENT_%.100s", sparp->sparp_env->spare_output_route_name);
       rv[0] = spar_make_funcall (sparp, 0, top_fname,
-        (SPART **)t_list (10, graph_to_patch,
+        (SPART **)t_list (11, graph_to_patch,
           t_box_dv_short_string ((INSERT_L == top->_.req_top.subtype) ? "INSERT" : "DELETE"),
           ((NULL == sparp->sparp_env->spare_storage_name) ? t_NEW_DB_NULL : sparp->sparp_env->spare_storage_name),
           ((NULL == sparp->sparp_env->spare_output_storage_name) ? t_NEW_DB_NULL : sparp->sparp_env->spare_output_storage_name),
@@ -421,7 +421,7 @@ spar_compose_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top, SPART *gra
           ((INSERT_L == top->_.req_top.subtype) ? t_NEW_DB_NULL : (caddr_t)(rv[0])),
           ((INSERT_L == top->_.req_top.subtype) ? (caddr_t)(rv[0]) : t_NEW_DB_NULL),
           t_NEW_DB_NULL,
-          log_mode, spar_compose_report_flag (sparp)) );
+          spar_boxed_exec_uid (sparp), log_mode, spar_compose_report_flag (sparp) ) );
     }
   else
     {
@@ -430,8 +430,8 @@ spar_compose_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top, SPART *gra
       else
         top_fname = "sql:SPARQL_DELETE_DICT_CONTENT";
       rv[0] = spar_make_funcall (sparp, 0, top_fname,
-        (SPART **)t_list (4, graph_to_patch,
-          rv[0], log_mode, spar_compose_report_flag (sparp)) );
+        (SPART **)t_list (5, graph_to_patch, rv[0],
+          spar_boxed_exec_uid (sparp), log_mode, spar_compose_report_flag (sparp) ) );
     }
 }
 
@@ -479,17 +479,18 @@ spar_compose_retvals_of_modify (sparp_t *sparp, SPART *top, SPART *graph_to_patc
   if (NULL != sparp->sparp_env->spare_output_route_name)
     rv[0] = spar_make_funcall (sparp, 0,
       t_box_sprintf (200, "sql:SPARQL_ROUTE_DICT_CONTENT_%.100s", sparp->sparp_env->spare_output_route_name),
-      (SPART **)t_list (10, graph_to_patch,
+      (SPART **)t_list (11, graph_to_patch,
         t_box_dv_short_string ("MODIFY"),
         ((NULL == sparp->sparp_env->spare_storage_name) ? t_NEW_DB_NULL : sparp->sparp_env->spare_storage_name),
         ((NULL == sparp->sparp_env->spare_output_storage_name) ? t_NEW_DB_NULL : sparp->sparp_env->spare_output_storage_name),
         ((NULL == sparp->sparp_env->spare_output_format_name) ? t_NEW_DB_NULL : sparp->sparp_env->spare_output_format_name),
         rv[0], ins[0],
         t_NEW_DB_NULL,
-        log_mode, spar_compose_report_flag (sparp)) );
+        spar_boxed_exec_uid (sparp), log_mode, spar_compose_report_flag (sparp) ) );
   else
     rv[0] = spar_make_funcall (sparp, 0, "sql:SPARQL_MODIFY_BY_DICT_CONTENTS",
-      (SPART **)t_list (5, graph_to_patch, rv[0], ins[0], log_mode, spar_compose_report_flag (sparp)) );
+      (SPART **)t_list (6, graph_to_patch, rv[0], ins[0],
+        spar_boxed_exec_uid (sparp), log_mode, spar_compose_report_flag (sparp) ) );
 }
 
 SPART *
@@ -580,18 +581,19 @@ spar_optimize_delete_of_single_triple_pattern (sparp_t *sparp, SPART *top)
   SPART **retvals = top->_.req_top.retvals;
   int retvals_count = BOX_ELEMENTS (retvals);
   SPART **var_triples, **args;
-  SPART *graph_expn, *log_mode_expn, *good_ctor_call, *compose_report_expn;
+  SPART *graph_expn, *uid_expn, *log_mode_expn, *good_ctor_call, *compose_report_expn;
   if (NULL != sparp->sparp_env->spare_output_route_name)
     return 0; /* If an output may go outside the default storage then there's no way of avoiding the complete filling of the result dictionary */
-  dbg_assert ((SPAR_FUNCALL == SPART_TYPE (retvals[0])) && (4 == BOX_ELEMENTS (retvals[0]->_.funcall.argtrees)));
+  dbg_assert ((SPAR_FUNCALL == SPART_TYPE (retvals[0])) && (5 == BOX_ELEMENTS (retvals[0]->_.funcall.argtrees)));
   triple = spar_find_single_physical_triple_pattern (sparp, top->_.req_top.pattern);
   if (NULL == triple)
     return 0; /* nontrivial pattern, can not be optimized this way */
   graph_expn		= retvals[0]->_.funcall.argtrees[0];
   ctor			= retvals[0]->_.funcall.argtrees[1];
-  log_mode_expn		= retvals[0]->_.funcall.argtrees[2];
-  compose_report_expn	= retvals[0]->_.funcall.argtrees[3];
-  dbg_assert ((SPAR_FUNCALL == SPART_TYPE (ctor)) && (3 == BOX_ELEMENTS (ctor->_.funcall.argtrees)));
+  uid_expn		= retvals[0]->_.funcall.argtrees[2];
+  log_mode_expn		= retvals[0]->_.funcall.argtrees[3];
+  compose_report_expn	= retvals[0]->_.funcall.argtrees[4];
+  dbg_assert ((SPAR_FUNCALL == SPART_TYPE (ctor)) && (4 == BOX_ELEMENTS (ctor->_.funcall.argtrees)));
   dbg_assert (DELETE_L == top->_.req_top.subtype);
   var_triples = ctor->_.funcall.argtrees[0]->_.funcall.argtrees;
   if (1 < retvals_count)
@@ -618,11 +620,11 @@ spar_optimize_delete_of_single_triple_pattern (sparp_t *sparp, SPART *top)
       triple->_.triple.tr_fields[SPART_TRIPLE_OBJECT_IDX] ) )
     return 0;
   good_ctor_call = spar_make_funcall (sparp, 1, "sql:SPARQL_DELETE_CTOR",
-    (SPART **)t_list (4,
+    (SPART **)t_list (5,
       graph_expn,
       spar_make_funcall (sparp, 0, "bif:vector", var_triples),
       ctor->_.funcall.argtrees[1],
-      log_mode_expn ) );
+      uid_expn, log_mode_expn ) );
   ctor->_.funcall.argtrees[0] = spar_make_funcall (sparp, 0, "bif:vector",
         (SPART **)t_list (0) );
   retvals[0]->_.funcall.argtrees[0] = good_ctor_call;
@@ -643,15 +645,16 @@ spar_optimize_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top)
   dk_set_t bad_triples = NULL;
   int all_triple_count, bad_triple_count, tctr;
   const char *fname;
-  SPART *graph_expn, *log_mode_expn, *good_ctor_call, *compose_report_expn;
+  SPART *graph_expn, *uid_expn, *log_mode_expn, *good_ctor_call, *compose_report_expn;
   if (NULL != sparp->sparp_env->spare_output_route_name)
     return; /* If an output may go outside the default storage then there's no way of avoiding the complete filling of the result dictionary */
-  dbg_assert ((SPAR_FUNCALL == SPART_TYPE (retvals[0])) && (4 == BOX_ELEMENTS (retvals[0]->_.funcall.argtrees)));
+  dbg_assert ((SPAR_FUNCALL == SPART_TYPE (retvals[0])) && (5 == BOX_ELEMENTS (retvals[0]->_.funcall.argtrees)));
   graph_expn		= retvals[0]->_.funcall.argtrees[0];
   ctor			= retvals[0]->_.funcall.argtrees[1];
-  log_mode_expn		= retvals[0]->_.funcall.argtrees[2];
-  compose_report_expn	= retvals[0]->_.funcall.argtrees[3];
-  dbg_assert ((SPAR_FUNCALL == SPART_TYPE (ctor)) && (3 == BOX_ELEMENTS (ctor->_.funcall.argtrees)));
+  uid_expn		= retvals[0]->_.funcall.argtrees[2];
+  log_mode_expn		= retvals[0]->_.funcall.argtrees[3];
+  compose_report_expn	= retvals[0]->_.funcall.argtrees[4];
+  dbg_assert ((SPAR_FUNCALL == SPART_TYPE (ctor)) && (4 == BOX_ELEMENTS (ctor->_.funcall.argtrees)));
   var_triples = ctor->_.funcall.argtrees[0]->_.funcall.argtrees;
   if (1 < retvals_count)
     known_vars = retvals [retvals_count-1]->_.funcall.argtrees;
@@ -696,12 +699,14 @@ spar_optimize_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top)
     }
   fname = ((INSERT_L == top->_.req_top.subtype) ? "sql:SPARQL_INSERT_CTOR" : "sql:SPARQL_DELETE_CTOR");
   good_ctor_call = spar_make_funcall (sparp, 1, fname,
-    (SPART **)t_list (4,
-      graph_expn,
+    (SPART **)t_list (5,
+      spar_make_funcall (sparp, 0, "sql:RDF_GRAPH_USER_PERMS_ASSERT",
+        (SPART **)t_list (4, graph_expn, uid_expn, (ptrlong)3,
+          t_box_dv_short_string ((INSERT_L == top->_.req_top.subtype) ? "SPARUL INSERT" : "SPARUL DELETE") ) ),
       spar_make_funcall (sparp, 0, "bif:vector",
         (SPART **)t_list_to_array (good_triples) ),
       ctor->_.funcall.argtrees[1],
-      log_mode_expn ) );
+      uid_expn, log_mode_expn ) );
   ctor->_.funcall.argtrees[0] = spar_make_funcall (sparp, 0, "bif:vector",
         (SPART **)t_list_to_array (bad_triples) );
   retvals[0]->_.funcall.argtrees[0] = good_ctor_call;
@@ -723,17 +728,18 @@ spar_optimize_retvals_of_modify (sparp_t *sparp, SPART *top)
   dk_set_t bad_ins_triples = NULL;
   int all_del_triple_count, bad_del_triple_count, del_const_count, del_tctr;
   int all_ins_triple_count, bad_ins_triple_count, ins_tctr;
-  SPART *graph_expn, *log_mode_expn, *good_ctor_call, *compose_report_expn;
+  SPART *graph_expn, *uid_expn, *log_mode_expn, *good_ctor_call, *compose_report_expn;
   if (NULL != sparp->sparp_env->spare_output_route_name)
     return; /* If an output may go outside the default storage then there's no way of avoiding the complete filling of the result dictionary */
-  dbg_assert ((SPAR_FUNCALL == SPART_TYPE (retvals[0])) && (5 == BOX_ELEMENTS (retvals[0]->_.funcall.argtrees)));
+  dbg_assert ((SPAR_FUNCALL == SPART_TYPE (retvals[0])) && (6 == BOX_ELEMENTS (retvals[0]->_.funcall.argtrees)));
   graph_expn		= retvals[0]->_.funcall.argtrees[0];
   del_ctor		= retvals[0]->_.funcall.argtrees[1];
   ins_ctor		= retvals[0]->_.funcall.argtrees[2];
-  log_mode_expn		= retvals[0]->_.funcall.argtrees[3];
-  compose_report_expn	= retvals[0]->_.funcall.argtrees[4];
-  dbg_assert ((SPAR_FUNCALL == SPART_TYPE (del_ctor)) && (3 == BOX_ELEMENTS (del_ctor->_.funcall.argtrees)));
-  dbg_assert ((SPAR_FUNCALL == SPART_TYPE (ins_ctor)) && (3 == BOX_ELEMENTS (ins_ctor->_.funcall.argtrees)));
+  uid_expn		= retvals[0]->_.funcall.argtrees[3];
+  log_mode_expn		= retvals[0]->_.funcall.argtrees[4];
+  compose_report_expn	= retvals[0]->_.funcall.argtrees[5];
+  dbg_assert ((SPAR_FUNCALL == SPART_TYPE (del_ctor)) && (4 == BOX_ELEMENTS (del_ctor->_.funcall.argtrees)));
+  dbg_assert ((SPAR_FUNCALL == SPART_TYPE (ins_ctor)) && (4 == BOX_ELEMENTS (ins_ctor->_.funcall.argtrees)));
   del_var_triples = del_ctor->_.funcall.argtrees[0]->_.funcall.argtrees;
   ins_var_triples = ins_ctor->_.funcall.argtrees[0]->_.funcall.argtrees;
   del_const_triples = del_ctor->_.funcall.argtrees[2]->_.funcall.argtrees;
@@ -831,14 +837,16 @@ ins_is_bad: ;
   if ((NULL == good_del_triples) && (NULL == good_ins_triples))
     return;
   good_ctor_call = spar_make_funcall (sparp, 1, "sql:SPARQL_MODIFY_CTOR",
-    (SPART **)t_list (5,
-      graph_expn,
+    (SPART **)t_list (6,
+      spar_make_funcall (sparp, 0, "sql:RDF_GRAPH_USER_PERMS_ASSERT",
+        (SPART **)t_list (4, graph_expn, uid_expn, (ptrlong)3,
+          t_box_dv_short_string ("SPARUL MODIFY") ) ),
       spar_make_funcall (sparp, 0, "bif:vector",
         (SPART **)t_list_to_array (good_del_triples) ),
       spar_make_funcall (sparp, 0, "bif:vector",
         (SPART **)t_list_to_array (good_ins_triples) ),
       ins_ctor->_.funcall.argtrees[1],
-      log_mode_expn ) );
+      uid_expn, log_mode_expn ) );
   if (NULL == bad_del_triples)
     retvals[0]->_.funcall.argtrees[1] = (SPART *) t_NEW_DB_NULL;
   else

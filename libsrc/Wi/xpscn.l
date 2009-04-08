@@ -963,6 +963,7 @@ XP_EXEC_SQL_XPATH {E}{X}{E}{C}{WS}{S}{Q}{L}{WS}{X}{P}{A}{T}{H}
 
 
 <FT>[,@;|^]			TOK (xpyytext[0])
+<FT>"(["			{ TOKPAR_FAKE_OPEN(')', GET_CURRENT_BEGIN); TOKPAR_OPEN (_LPAR_LSQBRA, ']', PARAMLIST) }
 <FT>"("				TOKPAR_OPEN ('(',')', GET_CURRENT_BEGIN)
 <FT>")"				TOKPAR_CLOSE (')',')')
 <FT>"["		{

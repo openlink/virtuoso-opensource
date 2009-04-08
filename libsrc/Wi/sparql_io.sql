@@ -2173,6 +2173,7 @@ create procedure DB.DBA.SPARQL_ROUTE_DICT_CONTENT_DAV (
   in del_dict any,
   in ins_dict any,
   in env any,
+  in uid integer,
   in log_mode integer,
   in compose_report integer )
 {
@@ -2182,7 +2183,7 @@ create procedure DB.DBA.SPARQL_ROUTE_DICT_CONTENT_DAV (
   declare old_gid, old_uid any;
   declare dir any;
   split := DB.DBA.SPARQL_ROUTE_IF_DAV (graph_iri, output_format_name);
-  uid := user;
+  -- uid := user;
   if ('dba' = uid)
     uid := 'dav';
   pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from SYS_USERS where U_NAME=uid);
@@ -2219,11 +2220,11 @@ create procedure DB.DBA.SPARQL_ROUTE_DICT_CONTENT_DAV (
         signal ('RDFXX', sprintf ('SPARUL can not update resource "%.200s" of MIME type "%s" because only "application/rdf+xml" and "text/rdf+n3" are supported', graph_iri, coalesce (in_mime, mime)));
     }
   if ('INSERT' = opname)
-    final_res := DB.DBA.SPARQL_INSERT_DICT_CONTENT (graph_iri, ins_dict, log_mode, compose_report);
+    final_res := DB.DBA.SPARQL_INSERT_DICT_CONTENT (graph_iri, ins_dict, uid, log_mode, compose_report);
   else if ('DELETE' = opname)
-    final_res := DB.DBA.SPARQL_DELETE_DICT_CONTENT (graph_iri, del_dict, log_mode, compose_report);
+    final_res := DB.DBA.SPARQL_DELETE_DICT_CONTENT (graph_iri, del_dict, uid, log_mode, compose_report);
   else if ('MODIFY' = opname)
-    final_res := DB.DBA.SPARQL_MODIFY_BY_DICT_CONTENTS (graph_iri, del_dict, ins_dict, log_mode, compose_report);
+    final_res := DB.DBA.SPARQL_MODIFY_BY_DICT_CONTENTS (graph_iri, del_dict, ins_dict, uid, log_mode, compose_report);
   if (split is not null)
     {
       out_ses := string_output();
