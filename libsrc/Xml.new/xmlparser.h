@@ -2,27 +2,26 @@
  *  xmlparser.h
  *
  *  $Id$
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ *
+ */
 
 #ifndef _XML_PARSER_H
 #define _XML_PARSER_H
@@ -45,7 +44,7 @@ typedef struct vxml_parser_s vxml_parser_t;
 /*				 0         1         2         3       */
 /*				 0123456789012345678901234567890123456 */
 #define XML_NS_URI		"http://www.w3.org/XML/1998/namespace"
-#define XML_NS_URI_LEN	36
+#define XML_NS_URI_LEN		36
 /*				 0         1         2         3         4 */
 /*				 01234567890123456789012345678901234567890 */
 #define MSSQL_NS_URI		"urn:schemas-microsoft-com:mapping-schema"
@@ -355,6 +354,7 @@ extern void html_hash_init (void);
 struct query_instance_s;
 extern caddr_t xml_uri_resolve (struct query_instance_s * qi, caddr_t *err_ret, ccaddr_t base_uri, ccaddr_t rel_uri, const char *output_charset);
 extern caddr_t xml_uri_resolve_like_get (struct query_instance_s * qi, caddr_t *err_ret, ccaddr_t base_uri, ccaddr_t rel_uri, const char *output_charset);
+
 #define XML_URI_ANY 0
 #define XML_URI_STRING 1
 #define XML_URI_STRING_OR_ENT 2
