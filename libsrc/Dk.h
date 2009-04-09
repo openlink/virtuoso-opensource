@@ -84,6 +84,7 @@ extern void ldbg_longjmp (jmp_buf env, int value);
 #include "Dk/Dkbasket.h"
 #include "Dk/Dkbox.h"
 #include "Dk/Dkhash.h"
+#include "Dk/Dkhash64.h"
 #include "Dk/Dkhashext.h"
 #include "Dk/Dkresource.h"
 #include "Dk/Dksets.h"
