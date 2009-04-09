@@ -20,8 +20,8 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-	create table _2PC.DBA.TRANSACTIONS ( TRX_ID INTEGER,
-	TRX_STATE VARCHAR)
+
+create table _2PC.DBA.TRANSACTIONS (TRX_ID INTEGER, TRX_STATE VARCHAR)
 ;
 
 create procedure _2PC.DBA._FFFF_GET_SEQ_NEXT (IN seqobj VARCHAR, IN _min INTEGER, IN _max INTEGER)

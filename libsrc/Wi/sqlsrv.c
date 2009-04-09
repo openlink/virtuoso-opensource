@@ -23,8 +23,7 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *  
- *  
-*/
+ */
 
 /*
    may 22, 97 - oui added this_trx_omly arg to cli_scrap_cursors.

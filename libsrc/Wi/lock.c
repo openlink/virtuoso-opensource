@@ -23,8 +23,8 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *  
- *  
-*/
+ */
+
 #if defined (__APPLE__)
 #define  _lock_set_user_ 1
 #endif

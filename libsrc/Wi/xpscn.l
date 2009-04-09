@@ -1,7 +1,3 @@
-%option 8bit
-%option case-sensitive
-%option never-interactive
-%{
 /*
  *  xpscn.l
  *
@@ -27,9 +23,13 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *  
- *  
-*/
+ */
 
+%option 8bit
+%option case-sensitive
+%option never-interactive
+
+%{
 #include "Dk.h"
 #include "sqlnode.h"
 #include "xpath.h"

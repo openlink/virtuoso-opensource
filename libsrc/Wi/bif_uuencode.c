@@ -3,7 +3,8 @@
  *
  *  $Id$
  *
- *  Build in Functions for UU, XX, Base64, MIME-PlainText and MIME-QuotedPrintable encodings
+ *  Build in Functions for UU, XX, Base64, MIME-PlainText and 
+ *  MIME-QuotedPrintable encodings
  *  
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
@@ -23,8 +24,8 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *  
- *  
-*/
+ */
+
 #include "uuencode_impl.h"
 #include "libutil.h"
 #include "sqlnode.h"

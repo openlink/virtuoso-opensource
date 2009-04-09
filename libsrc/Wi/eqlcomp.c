@@ -23,8 +23,7 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *  
- *  
-*/
+ */
 
 /*
    04-FEB-1997 AK  Added a macro definition colname_or_null as

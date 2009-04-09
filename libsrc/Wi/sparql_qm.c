@@ -1,5 +1,9 @@
 /*
+ *  sparql_qm.c
+ *
  *  $Id$
+ *
+ *  Quad map description language extension for SPARQL
  *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.

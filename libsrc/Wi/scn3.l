@@ -1,7 +1,3 @@
-%option 8bit
-%option case-insensitive
-%option never-interactive
-%{
 /*
  *  scn3.l
  *
@@ -27,9 +23,12 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *  
- *  
-*/
+ */
 
+%option 8bit
+%option case-insensitive
+%option never-interactive
+%{
 #include <ctype.h>
 #include "Dk.h"
 #include "sqlnode.h"

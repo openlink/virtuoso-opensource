@@ -1,4 +1,6 @@
 /*
+ *  bitmap.c
+ *
  *  $Id$
  *
  *  Bitmap Index

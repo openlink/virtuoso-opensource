@@ -1,15 +1,10 @@
-%option 8bit
-%option case-sensitive
-%option never-interactive
-%option nounput
-%{
 /*
  *  $Id$
  *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2009 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -24,9 +19,14 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
- *  
-*/
+ */
 
+%option 8bit
+%option case-sensitive
+%option never-interactive
+%option nounput
+
+%{
 #include "Dk.h"
 #include "xmltree.h"
 #include "sparql.h"
