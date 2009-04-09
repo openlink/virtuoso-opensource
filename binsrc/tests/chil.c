@@ -541,20 +541,6 @@ out:;
     {
       kubl_main_exit (1);
     }
-
-  if (!strchr (mode, 'b'))
-    http_init_part_two ();
-  if (2 == cl_run_local_only)
-    cl_run_local_only = 0; /*boot local and run with cluster on.  For debug.  Do here because this is last init.  */
-#ifdef REPLICATION
-  if (read_from_rebuilt_database)	/* if booting from crash log, */
-    {				/* go read the account levels from db */
-      repl_read_db_levels ();
-    }
-
-  repl_sync_server (NULL, NULL);
-#endif
-
   if (service_name)		/* Started as a Windows NT service? */
     {
       log_info ("Server started at %s as service %s, pid=%d",
@@ -565,6 +551,18 @@ out:;
       log_info ("Server started at %s, pid=%d", addr, getpid ());
     }
   virtuoso_server_initialized = 1;
+
+
+  if (!strchr (mode, 'b'))
+    http_init_part_two ();
+#ifdef REPLICATION
+  if (read_from_rebuilt_database)	/* if booting from crash log, */
+    {				/* go read the account levels from db */
+      repl_read_db_levels ();
+    }
+
+  repl_sync_server (NULL, NULL);
+#endif
 
   /* If called as Windows NT service, return now back to
      wisvc_KublServiceStart which in turn will call main_the_rest
