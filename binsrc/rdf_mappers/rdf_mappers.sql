@@ -64,6 +64,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     'URL', 'DB.DBA.RDF_LOAD_FLICKR_IMG', null, 'Flickr Images');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('http://.*openstreetmap.org/.*',
+    'URL', 'DB.DBA.RDF_LOAD_OPENSTREETMAP', null, 'OpenStreetMap');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://.*amazon.[^/]+/gp/product/.*)|'||
         '(http://.*amazon.[^/]+/o/ASIN/.*)|'||
         '(http://.*amazon.[^/]+/[^/]+/dp/[^/]+(/.*)?)|'||
@@ -2838,8 +2842,7 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 }
 ;
 
-create procedure
-DB.DBA.RDF_LOAD_LASTFM2 (in url varchar, in new_origin_uri varchar,  in dest varchar, in graph_iri varchar, in what_ varchar, inout opts any)
+create procedure DB.DBA.RDF_LOAD_LASTFM2 (in url varchar, in new_origin_uri varchar,  in dest varchar, in graph_iri varchar, in what_ varchar, inout opts any)
  returns integer
 {
 	declare xt, xd any;
@@ -3534,6 +3537,61 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_OPENSTREETMAP (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare xd, xt, url, tmp, lon1, lat1, hdr, exif any;
+	declare zoom, layers varchar;
+	declare lat, lon, left_point, bottom_point, right_point, top_point float;
+	declare pos integer;
+	
+	declare exit handler for sqlstate '*'
+	{
+		return 0;
+	};
+	if (new_origin_uri like 'http://openstreetmap.org/?lat=%&lon=%')
+	{
+		
+		tmp := sprintf_inverse (new_origin_uri, 'http://openstreetmap.org/?lat=%s&lon=%s', 0);
+		lat1 := tmp[0];
+		lon1 := tmp[1];
+		pos := strchr (lon1, '&');
+		if (pos > 0)
+			lon1 := subseq(lon1, 0, pos);
+	}
+	else if (new_origin_uri like 'http://openstreetmap.org/?mlat=%&mlon=%')
+	{
+		
+		tmp := sprintf_inverse (new_origin_uri, 'http://openstreetmap.org/?mlat=%s&mlon=%s', 0);
+		lat1 := tmp[0];
+		lon1 := tmp[1];
+		pos := strchr (lon1, '&');
+		if (pos > 0)
+			lon1 := subseq(lon1, 0, pos);
+	}
+	else
+		return 0;
+
+	{
+		lat := atof(lat1);
+		lon := atof(lon1);
+		--zoom := atoi(tmp[2]);
+		--layers := tmp[3];
+		left_point := lon - 0.12;
+		right_point := lon + 0.12;
+		bottom_point := lat - 0.12;
+		top_point := lat + 0.12;
+		url := sprintf('http://api.openstreetmap.org/api/0.5/map?bbox=%f,%f,%f,%f', left_point, bottom_point, right_point, top_point);
+	}
+	
+	tmp := http_client(url, proxy=>get_keyword_ucase ('get:proxy', opts));
+	xd := xtree_doc (tmp);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/openstreet2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri), 'lon', lon1, 'lat', lat1));
+	xd := serialize_to_UTF8_xml (xt);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	return 1;
+}
+;
 
 create procedure DB.DBA.RDF_LOAD_FLICKR_IMG (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
