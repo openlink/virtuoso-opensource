@@ -2,27 +2,26 @@
  *  plugin.h
  *
  *  $Id$
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ *
+ */
 
 #ifndef _PLUGIN_H
 #define _PLUGIN_H
@@ -35,11 +34,11 @@ version info structures are vary from OS to OS. To write plugin/dock logic
 easily, small system-independent interface is specified.
 
 To attach a plugin, dock locates DLL file and loads it into memory. Then it
-calls plugin check function, and passes dock's version info and some 
-application-specific data about dock's internal state. If check function 
+calls plugin check function, and passes dock's version info and some
+application-specific data about dock's internal state. If check function
 "agrees" that its plugin may be connected to given dock, it returns
 plugin's version info with no error diagnostics inside, otherwise it returns
-info with an error. Dock may call plugin check function more than 
+info with an error. Dock may call plugin check function more than
 once, e.g. with different instances of dock's version info.
 
 If plugin returns no errors, it may be connected to dock. At this time, plugin may
@@ -90,11 +89,11 @@ extern unit_version_t *uv_load_and_check_plugin(
     uv->member(appdata); \
 }
 
-/*! \brief Type of function registered via plugin_add_type and used by 
+/*! \brief Type of function registered via plugin_add_type and used by
     plugin_load to invoke uv_load_and_check_plugin */
 typedef unit_version_t *plugin_load_callback (const char *plugin_dll_name, const char *plugin_load_path);
 
-/*! \brief Type of function registered via plugin_add_type and used by 
+/*! \brief Type of function registered via plugin_add_type and used by
     plugin_load to invoke uv_connect of a plugin with proper appdata */
 typedef void plugin_connect_callback (const unit_version_t *plugin);
 
