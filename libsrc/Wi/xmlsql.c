@@ -748,7 +748,7 @@ xmlg_pk_args_where (xv_context_t * xvc, xv_join_elt_t * xj)
     if (nth > 0)
       xmlg_printf (xvc, " and ");
 /* IvAn/CreateXmlView/000904 */
-    xmlg_printf (xvc, "((\"%s\" = pk_%d) or (\"%s\" is null and pk_%d is null))", col_name, nth, col_name, nth);
+    xmlg_printf (xvc, "((\"%s\" = pk_%u) or (\"%s\" is null and pk_%u is null))", col_name, nth, col_name, nth);
   }
   END_DO_BOX;
 }
@@ -762,7 +762,7 @@ xmlg_join_attribute (xv_context_t * xvc, xj_col_t * xc, int nth, dk_set_t map,
   char name[20];
 
   xv_join_elt_t * xj = xc->xc_relationship;
-  xmlg_printf (xvc, "\ndeclare cr_attr%d_%d cursor for\n  select ", nth, inx);
+  xmlg_printf (xvc, "\ndeclare cr_attr%u_%u cursor for\n  select ", nth, inx);
   xmlg_exp_print (xvc, xc->xc_exp);
   xmlg_printf (xvc, " from ");
   xmlg_quote_dotted (xvc, xj->xj_table);
@@ -775,7 +775,7 @@ xmlg_join_attribute (xv_context_t * xvc, xj_col_t * xc, int nth, dk_set_t map,
 	    {
 	      ST *exp = (ST *) t_box_copy_tree ((caddr_t) xc);
 	      char name[20];
-	      sprintf (name, "pk_%d", inx++);
+	      sprintf (name, "pk_%u", inx++);
 	      t_set_push (&map, (void *) t_box_string (name));
 	      t_set_push (&map, exp);
 	    }
@@ -800,7 +800,7 @@ xmlg_join_attribute (xv_context_t * xvc, xj_col_t * xc, int nth, dk_set_t map,
     }
 /*declare*/
   xmlg_printf (xvc, ";\n  declare ");
-  snprintf (name, sizeof (name), "v_attr%d_%d", nth, inx);
+  snprintf (name, sizeof (name), "v_attr%u_%u", nth, inx);
   xmlg_printf (xvc, "%s varchar;", name);
   if (ST_P (exp, COL_DOTTED) && !exp->_.col_ref.prefix)
     exp->_.col_ref.prefix = t_box_copy (xj->xj_prefix);
@@ -816,27 +816,27 @@ xmlg_join_attribute (xv_context_t * xvc, xj_col_t * xc, int nth, dk_set_t map,
         xmlg_printf (xvc, "\n  declare v_%s varchar;", full_name);
     }
 
-  xmlg_printf (xvc, "\n  declare i integer; i:=1; whenever not found goto done_attr%d;"
-      "\n  open cr_attr%d_%d;"
+  xmlg_printf (xvc, "\n  declare i integer; i:=1; whenever not found goto done_attr%u;"
+      "\n  open cr_attr%u_%u;"
       "\n  while (i) {"
-      "\n    fetch cr_attr%d_%d into ", nth, nth, inx, nth, inx);
-  xmlg_printf (xvc, "v_attr%d_%d;\n ", nth, inx);
+      "\n    fetch cr_attr%u_%u into ", nth, nth, inx, nth, inx);
+  xmlg_printf (xvc, "v_attr%u_%u;\n ", nth, inx);
 /*values*/
   xmlg_printf (xvc, " if (i>1) { http (' ', _out);} ");
   if (xc->xc_prefix)
     xmlg_printf (xvc, " http ('%s', _out);", xc->xc_prefix);
   if (make_xte)
     {
-      xmlg_printf (xvc, "\n http_value (cast (v_attr%d_%d as varchar), 0,  _out);", nth, inx);
+      xmlg_printf (xvc, "\n http_value (cast (v_attr%u_%u as varchar), 0,  _out);", nth, inx);
     }
   else
     {
-      xmlg_printf (xvc, " http_value (v_attr%d_%d, 0, _out);", nth, inx);
+      xmlg_printf (xvc, " http_value (v_attr%u_%u, 0, _out);", nth, inx);
     }
 
   xmlg_printf (xvc, " i:=i+1;");
   xmlg_printf (xvc, "\n  }"
-	"\n  done_attr%d: ;\n", nth);
+	"\n  done_attr%u: ;\n", nth);
   if (make_xte && !pk_args)
 /*    xmlg_printf (xvc, " xte_node (xte_head (UNAME'%s'), string_output_string (_out));", full_name, nth, inx);*/
     xmlg_printf (xvc, " v_%s := string_output_string (_out);\n", full_name);
@@ -856,12 +856,12 @@ xmlg_start_tag (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t map, i
   xml_view_t * tree = xvc->xvc_tree;
   namespaces = tree->xv_namespaces;
 
-  xmlg_printf (xvc, "\n--(Begin xmlg_start_tag %s nth=%d depth=%d)\n", xj->xj_element, nth, depth);
+  xmlg_printf (xvc, "\n--(Begin xmlg_start_tag %s nth=%u depth=%u)\n", xj->xj_element, nth, depth);
   if(depth>=NUMBEROF_tag_indents)
     depth=NUMBEROF_tag_indents-1;
 
   xmlg_printf (xvc, "  if (_out = 2) {");
-  xmlg_printf (xvc, " result (vector(null, %d, '%s', 0, null, null, vector(", nth, xj->xj_element);
+  xmlg_printf (xvc, " result (vector(null, %u, '%s', 0, null, null, vector(", nth, xj->xj_element);
   DO_BOX (xj_col_t *, xc, inx, xj->xj_cols)
   {
     if (!(XV_XC_ATTRIBUTE & xc->xc_usage))
@@ -869,7 +869,7 @@ xmlg_start_tag (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t map, i
     if (NULL != xc->xc_relationship) /*!!! Explicit bug here: should be a separate code for such attrs */
       continue;
     XVC_COMMA (xvc, first);
-    xmlg_printf (xvc, "UNAME'%s', v%d_%d", xc->xc_xml_name, nth, inx);
+    xmlg_printf (xvc, "UNAME'%s', v%u_%u", xc->xc_xml_name, nth, inx);
   }
       END_DO_BOX;
   xmlg_printf (xvc, ")));");
@@ -900,7 +900,7 @@ xmlg_start_tag (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t map, i
       {
 	if (xc->xc_prefix)
 	  xmlg_printf (xvc, " http ('%s', _out);", xc->xc_prefix);
-        xmlg_printf (xvc, " http_value (v%d_%d, 0, _out); http ('\"', _out);", nth, inx);
+        xmlg_printf (xvc, " http_value (v%u_%u, 0, _out); http ('\"', _out);", nth, inx);
       }
     else /*attribute from another table*/
       xmlg_join_attribute (xvc, xc, nth, map, 0, depth, inx, 0, NULL);
@@ -911,35 +911,35 @@ xmlg_start_tag (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t map, i
   {
     if (!(XV_XC_SUBELEMENT & xc->xc_usage))
       continue;
-    xmlg_printf (xvc, " if (v%d_%d is NULL) { http ('<%s xsi:nil=\"true\"/>', _out); } \n"
-      " else { http ('<%s>', _out); http_value (v%d_%d, 0, _out); http ('</%s>', _out);}\n",
+    xmlg_printf (xvc, " if (v%u_%u is NULL) { http ('<%s xsi:nil=\"true\"/>', _out); } \n"
+      " else { http ('<%s>', _out); http_value (v%u_%u, 0, _out); http ('</%s>', _out);}\n",
       nth, inx, xc->xc_xml_name, xc->xc_xml_name, nth, inx, xc->xc_xml_name);
   }
   END_DO_BOX;
   xmlg_printf (xvc, "\n  }");
-  xmlg_printf (xvc, "\n--(End xmlg_start_tag %s nth=%d depth=%d)\n", xj->xj_element, nth, depth);
+  xmlg_printf (xvc, "\n--(End xmlg_start_tag %s nth=%u depth=%u)\n", xj->xj_element, nth, depth);
 }
 
 
 void
 xmlg_end_tag (xv_context_t * xvc, xv_join_elt_t * xj, int depth)
 {
-  xmlg_printf (xvc, "\n--(Begin xmlg_end_tag %s depth=%d)\n", xj->xj_element, depth);
+  xmlg_printf (xvc, "\n--(Begin xmlg_end_tag %s depth=%u)\n", xj->xj_element, depth);
   if(depth>=NUMBEROF_tag_indents)
     depth=NUMBEROF_tag_indents-1;
   xmlg_printf (xvc, " if (_out <> 2) { http ('</%s>', _out); }", xj->xj_element);
-  xmlg_printf (xvc, "\n--(End xmlg_end_tag %s depth=%d)\n", xj->xj_element, depth);
+  xmlg_printf (xvc, "\n--(End xmlg_end_tag %s depth=%u)\n", xj->xj_element, depth);
 }
 
 
 void
-xmlg_start_tag_xmlview (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t map, long acc_nth, int depth)
+xmlg_start_tag_xmlview (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t map, int acc_nth, int depth)
 {
   int inx;
   int child_count = 0;
   caddr_t default_namespace = xv_get_default_namespace (xvc);
   caddr_t full_name = xv_get_name_with_nsprefix (xvc, xj->xj_element, 0, default_namespace);
-  xmlg_printf (xvc, "\n--(Begin xmlg_start_tag_xmlview %s nth=%d depth=%d)\n", xj->xj_element, nth, depth);
+  xmlg_printf (xvc, "\n--(Begin xmlg_start_tag_xmlview %s nth=%u depth=%u)\n", xj->xj_element, nth, depth);
 
       if (xj->xj_mp_schema && xj->xj_mp_schema->xj_is_constant)
 	{
@@ -958,7 +958,7 @@ xmlg_start_tag_xmlview (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_
 	  }
       }
       END_DO_BOX;
-      xmlg_printf (xvc, "\n  head_%d := xte_head (UNAME'%s' ", nth+1, full_name);
+      xmlg_printf (xvc, "\n  head_%u := xte_head (UNAME'%s' ", nth+1, full_name);
       DO_BOX (xj_col_t *, xc, inx, xj->xj_cols)
       {
 	caddr_t col_full_name;
@@ -969,10 +969,10 @@ xmlg_start_tag_xmlview (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_
           {
             if (xc->xc_prefix)
 	      {
-		xmlg_printf (xvc, ", UNAME'%s', concat('%s', cast (v%d_%d as varchar))", col_full_name, xc->xc_prefix, nth, inx);
+		xmlg_printf (xvc, ", UNAME'%s', concat('%s', cast (v%u_%u as varchar))", col_full_name, xc->xc_prefix, nth, inx);
 	      }
             else
-   	      xmlg_printf (xvc, ", UNAME'%s', cast (v%d_%d as varchar)", col_full_name, nth, inx);
+   	      xmlg_printf (xvc, ", UNAME'%s', cast (v%u_%u as varchar)", col_full_name, nth, inx);
 	  }
 	else /*attribute from another table*/
 	  {
@@ -988,9 +988,9 @@ xmlg_start_tag_xmlview (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_
 	  continue;
         col_full_name = xv_get_name_with_nsprefix (xvc, xc->xc_xml_name, 0, default_namespace);
         child_count++;
-       	xmlg_printf (xvc, "\n  declare node_%d_%d_%d any;\n"
-                "\n  if (v%d_%d is NULL)\n    {\n      node_%d_%d_%d := xte_node (xte_head (UNAME'%s', UNAME'http://www.w3.org/2001/XMLSchema-instance:nil', 'true'));\n    }"
-		"\n  else\n    {\n      node_%d_%d_%d := xte_node (xte_head (UNAME'%s'), cast (v%d_%d as varchar));\n    }\n",
+       	xmlg_printf (xvc, "\n  declare node_%u_%u_%u any;\n"
+                "\n  if (v%u_%u is NULL)\n    {\n      node_%u_%u_%u := xte_node (xte_head (UNAME'%s', UNAME'http://www.w3.org/2001/XMLSchema-instance:nil', 'true'));\n    }"
+		"\n  else\n    {\n      node_%u_%u_%u := xte_node (xte_head (UNAME'%s'), cast (v%u_%u as varchar));\n    }\n",
 		nth+1, nth, inx,
 		nth, inx, nth+1, nth, inx, col_full_name,
 		nth+1, nth, inx, col_full_name, nth, inx);
@@ -999,57 +999,57 @@ xmlg_start_tag_xmlview (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_
 
       for (inx = 0; inx < child_count; inx ++)
 	{
-          xmlg_printf (xvc, "\n  xte_nodebld_acc (acc_%d, node_%d_%d_%d);", nth+1, nth+1, nth, inx);
+          xmlg_printf (xvc, "\n  xte_nodebld_acc (acc_%u, node_%u_%u_%u);", nth+1, nth+1, nth, inx);
 	}
 
 print_ending_comment:
-  xmlg_printf (xvc, "\n--(End xmlg_start_tag_xmlview %s nth=%d depth=%d)\n", xj->xj_element, nth, depth);
+  xmlg_printf (xvc, "\n--(End xmlg_start_tag_xmlview %s nth=%u depth=%u)\n", xj->xj_element, nth, depth);
 }
 
 
 void
-xmlg_end_tag_xmlview (xv_context_t * xvc, xv_join_elt_t * xj, int nth, long acc_nth, int depth, int simple_subelement)
+xmlg_end_tag_xmlview (xv_context_t * xvc, xv_join_elt_t * xj, int nth, int acc_nth, int depth, int simple_subelement)
 {
-  xmlg_printf (xvc, "\n--(Begin xmlg_end_tag_xmlview %s nth=%d acc_nth=%lu depth=%d, simple_subelement=%d)\n", xj->xj_element, nth, acc_nth, depth, simple_subelement);
+  xmlg_printf (xvc, "\n--(Begin xmlg_end_tag_xmlview %s nth=%u acc_nth=%u depth=%u, simple_subelement=%u)\n", xj->xj_element, nth, acc_nth, depth, simple_subelement);
     if (simple_subelement)
       {
 	xmlg_printf (xvc, "\n  declare acc_%s any;\n  xte_nodebld_init(acc_%s);\n"
 		" xte_nodebld_acc (acc_%s, cast (string_output_string (_out) as varchar));",
 		xj->xj_element, xj->xj_element, xj->xj_element);
-	xmlg_printf (xvc, "\n  xte_nodebld_final (acc_%s, head_%d);", xj->xj_element, nth+1);
-	xmlg_printf (xvc, " xte_nodebld_acc (acc_%lu, acc_%s);\n", acc_nth, xj->xj_element);
+	xmlg_printf (xvc, "\n  xte_nodebld_final (acc_%s, head_%u);", xj->xj_element, nth+1);
+	xmlg_printf (xvc, " xte_nodebld_acc (acc_%u, acc_%s);\n", acc_nth, xj->xj_element);
 	goto print_ending_comment; /* see below */
       }
     if (xj->xj_mp_schema && xj->xj_mp_schema->xj_is_constant)
       {
-	xmlg_printf (xvc, " acc_%s := acc_%lu;", xj->xj_element, acc_nth);
+	xmlg_printf (xvc, " acc_%s := acc_%u;", xj->xj_element, acc_nth);
 	xmlg_printf (xvc, " xte_nodebld_final (acc_%s, head_%s);\n", xj->xj_element, xj->xj_element);
-	xmlg_printf (xvc, " xte_nodebld_init (acc_%lu);", acc_nth);
-	xmlg_printf (xvc, " xte_nodebld_acc (acc_%lu, acc_%s);\n", acc_nth, xj->xj_element);
+	xmlg_printf (xvc, " xte_nodebld_init (acc_%u);", acc_nth);
+	xmlg_printf (xvc, " xte_nodebld_acc (acc_%u, acc_%s);\n", acc_nth, xj->xj_element);
 	goto print_ending_comment; /* see below */
       }
 
-      xmlg_printf (xvc, " xte_nodebld_final (acc_%d, head_%d);\n", nth+1, nth+1);
-      xmlg_printf (xvc, " xte_nodebld_acc (acc_%lu, acc_%d); ", acc_nth, nth+1);
+      xmlg_printf (xvc, " xte_nodebld_final (acc_%u, head_%u);\n", nth+1, nth+1);
+      xmlg_printf (xvc, " xte_nodebld_acc (acc_%u, acc_%u); ", acc_nth, nth+1);
 
 print_ending_comment:
-  xmlg_printf (xvc, "\n--(End xmlg_end_tag_xmlview %s nth=%d acc_nth=%lu depth=%d, simple_subelement=%d)\n", xj->xj_element, nth, acc_nth, depth, simple_subelement);
+  xmlg_printf (xvc, "\n--(End xmlg_end_tag_xmlview %s nth=%u acc_nth=%u depth=%u, simple_subelement=%u)\n", xj->xj_element, nth, acc_nth, depth, simple_subelement);
 }
 
 
 void xmlg_join_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t map,
     int pk_args, int http_out,
-    int depth, long head_nth, int make_xte);
+    int depth, int head_nth, int make_xte);
 
 /*mapping schema*/
 void
 xmlg_join_simple_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t map,
     int pk_args, int http_out,
-    int depth, int *count_addition, long head_nth, int make_xte, int simple_subelement)
+    int depth, int *count_addition, int head_nth, int make_xte, int simple_subelement)
 {
   int inx;
   caddr_t full_name = NULL;
-  xmlg_printf (xvc, "\n--(Begin xmlg_join_simple_loop %s nth=%d pk_args=%d http_out=%d depth=%d head_nth=%lu)\n",
+  xmlg_printf (xvc, "\n--(Begin xmlg_join_simple_loop %s nth=%u pk_args=%u http_out=%u depth=%u head_nth=%u)\n",
      xj->xj_element, nth, pk_args, http_out, depth, head_nth );
   if (make_xte) /*xquery. tag*/
     {
@@ -1057,7 +1057,7 @@ xmlg_join_simple_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t
       full_name = xv_get_name_with_nsprefix (xvc, xj->xj_element, 0, default_namespace);
       if (simple_subelement)
 	{
-	  xmlg_printf (xvc, " xte_nodebld_acc (acc_%lu, cast (string_output_string (_out) as varchar));\n", head_nth);
+	  xmlg_printf (xvc, " xte_nodebld_acc (acc_%u, cast (string_output_string (_out) as varchar));\n", head_nth);
         }
       DO_BOX (xj_col_t *, xc, inx, xj->xj_cols)
       {
@@ -1082,7 +1082,7 @@ xmlg_join_simple_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t
 	full_name = xv_get_name_with_nsprefix (xvc, xc->xc_xml_name, 1, default_namespace);
 	if (!xc->xc_relationship)
           {
-   	    xmlg_printf (xvc, ", UNAME'%s', cast (v%d_%d as varchar)", full_name, nth, (*count_addition)++);
+   	    xmlg_printf (xvc, ", UNAME'%s', cast (v%u_%u as varchar)", full_name, nth, (*count_addition)++);
 	  }
 	else /*attribute from another table*/
 	  {
@@ -1105,7 +1105,7 @@ xmlg_join_simple_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t
 	  {
 	    if (xc->xc_prefix)
 	      xmlg_printf (xvc, " http ('%s', _out);", xc->xc_prefix);
-	    xmlg_printf (xvc, " http_value (v%d_%d, 0, _out); http ('\"', _out);\n", nth, (*count_addition)++);
+	    xmlg_printf (xvc, " http_value (v%u_%u, 0, _out); http ('\"', _out);\n", nth, (*count_addition)++);
 	  }
 	else /*attribute from another table*/
 	  {
@@ -1114,7 +1114,7 @@ xmlg_join_simple_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t
       }
       END_DO_BOX;
       xmlg_printf (xvc, " http ('>', _out);");
-      xmlg_printf (xvc, " http_value (v%d_%d, 0, _out);", nth, (*count_addition)++);/*simple subelement value*/
+      xmlg_printf (xvc, " http_value (v%u_%u, 0, _out);", nth, (*count_addition)++);/*simple subelement value*/
     }
 
 
@@ -1122,17 +1122,17 @@ xmlg_join_simple_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t
     {
       if (make_xte) /*xquery*/
 	{
-          xmlg_printf (xvc, "\n  declare acc_%lu any;"
-                              "  xte_nodebld_init(acc_%lu);", (long)((ptrlong)(xj->xj_prefix)), (long)((ptrlong)(xj->xj_prefix)));
-/*                              "\n  xte_nodebld_init(acc_%d);", nth+1, nth+1);*/
+          xmlg_printf (xvc, "\n  declare acc_%u any;"
+                              "  xte_nodebld_init(acc_%u);", (int) (ptrlong) xj->xj_prefix, (int) (ptrlong) xj->xj_prefix);
+/*                              "\n  xte_nodebld_init(acc_%u);", nth+1, nth+1);*/
 /*simple subelement value*/
-          xmlg_printf (xvc, "\n xte_nodebld_acc (acc_%lu, cast (v%d_%d as varchar)); ", (long)((ptrlong)(xj->xj_prefix)), nth, (*count_addition)++);
+          xmlg_printf (xvc, "\n xte_nodebld_acc (acc_%u, cast (v%u_%u as varchar)); ", (int) (ptrlong) xj->xj_prefix, nth, (*count_addition)++);
         }
       DO_BOX (xv_join_elt_t *, xc, inx, xj->xj_children)
       {
 	if (xc->xj_mp_schema->xj_same_table)
 	  xmlg_join_simple_loop (xvc, xc, nth, map, 0, http_out, depth, count_addition,
-                                 (long)((ptrlong)(xj->xj_prefix)), make_xte, 0);
+                                 (int) (ptrlong) xj->xj_prefix, make_xte, 0);
 	else
 	  {
 	    inx = 0;
@@ -1153,15 +1153,15 @@ xmlg_join_simple_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t
 		}
 	    }
 	    END_DO_BOX;
-	    xmlg_join_loop (xvc, xc, nth + 1 + inx * 1000, map, 0, http_out, depth+1, (long)((ptrlong)(xj->xj_prefix)), make_xte);
+	    xmlg_join_loop (xvc, xc, nth + 1 + inx * 1000, map, 0, http_out, depth+1, (int) (ptrlong) xj->xj_prefix, make_xte);
 	  }
       }
       END_DO_BOX;
       if (make_xte) /*xquery*/
 	{
-	  xmlg_printf (xvc, "\n  xte_nodebld_final(acc_%lu, head_%s);\n",
-          (long)((ptrlong)(xj->xj_prefix)), full_name);
-          xmlg_printf (xvc, "  xte_nodebld_acc (acc_%lu, acc_%lu); ", head_nth, (long)((ptrlong)(xj->xj_prefix)));
+	  xmlg_printf (xvc, "\n  xte_nodebld_final(acc_%u, head_%s);\n",
+          xj->xj_prefix, full_name);
+          xmlg_printf (xvc, "  xte_nodebld_acc (acc_%u, acc_%u); ", head_nth, (int) (ptrlong) xj->xj_prefix);
 	}
     }
 
@@ -1170,12 +1170,12 @@ xmlg_join_simple_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t
   else if (NULL == xj->xj_children)/*xquery*/
     {
       xmlg_printf (xvc, " declare acc_%s any;\n xte_nodebld_init(acc_%s);\n"
-		" xte_nodebld_acc (acc_%s, cast (v%d_%d as varchar));\n",
+		" xte_nodebld_acc (acc_%s, cast (v%u_%u as varchar));\n",
                   full_name, full_name, full_name, nth, (*count_addition)++);
       xmlg_printf (xvc, " xte_nodebld_final (acc_%s, head_%s);\n", full_name, full_name);
-      xmlg_printf (xvc, " xte_nodebld_acc (acc_%lu, acc_%s);\n", head_nth, full_name);
+      xmlg_printf (xvc, " xte_nodebld_acc (acc_%u, acc_%s);\n", head_nth, full_name);
     }
-  xmlg_printf (xvc, "\n--(End xmlg_join_simple_loop %s nth=%d pk_args=%d http_out=%d depth=%d head_nth=%lu)\n",
+  xmlg_printf (xvc, "\n--(End xmlg_join_simple_loop %s nth=%u pk_args=%u http_out=%u depth=%u head_nth=%u)\n",
      xj->xj_element, nth, pk_args, http_out, depth, head_nth );
 }
 
@@ -1183,7 +1183,7 @@ xmlg_join_simple_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t
 
 void
 xmlg_join_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t map,
-    int pk_args, int http_out, int depth, long head_nth, int make_xte)
+    int pk_args, int http_out, int depth, int head_nth, int make_xte)
 {
   dbe_table_t *elt_tb;
   char *target_tb;
@@ -1197,7 +1197,7 @@ xmlg_join_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t map,
   int following_join = 0;
   /*DELME: int only_outer_children = 1;*/
 
-   xmlg_printf (xvc, "\n--(Begin xmlg_join_loop %s nth=%d pk_args=%d http_out=%d depth=%d head_nth=%lu)\n",
+   xmlg_printf (xvc, "\n--(Begin xmlg_join_loop %s nth=%u pk_args=%u http_out=%u depth=%u head_nth=%u)\n",
      xj->xj_element, nth, pk_args, http_out, depth, head_nth );
   /* For functions like sqlc_is_pass_through_function, called from sqlc_exp_print */
   if (NULL == sqlc_client())
@@ -1226,7 +1226,7 @@ xmlg_join_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t map,
 	    {
 	      ST *exp = (ST *) t_box_copy_tree ((caddr_t) xc);
 	      char name[20];
-	      snprintf (name, sizeof (name), "pk_%d", inx++);
+	      snprintf (name, sizeof (name), "pk_%u", inx++);
 	      t_set_push (&map, (void *) t_box_string (name));
 	      t_set_push (&map, exp);
 	    }
@@ -1262,7 +1262,7 @@ xmlg_join_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t map,
   xvc->xvc_sc->sc_exp_print_hook = xmlg_join_col;
   xvc->xvc_sc->sc_exp_print_cd = NULL;
 
-  xmlg_printf (xvc, "declare cr_%d cursor for\n  select ", nth); /*Print column names  in the 'select statement (attributes) */
+  xmlg_printf (xvc, "declare cr_%u cursor for\n  select ", nth); /*Print column names  in the 'select statement (attributes) */
   DO_BOX (xj_col_t *, xc, inx, xj->xj_cols)
   {
 /*mapping schema*/
@@ -1402,7 +1402,7 @@ xmlg_join_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t map,
 	ST *exp = (ST *) t_box_copy_tree ((caddr_t) xc->xc_exp);
 	char name[20];
 	XVC_COMMA (xvc, first);
-	snprintf (name, sizeof (name), "v%d_%d", nth, inx);
+	snprintf (name, sizeof (name), "v%u_%u", nth, inx);
 	xmlg_printf (xvc, "%s", name);
 	if (ST_P (exp, COL_DOTTED) && !exp->_.col_ref.prefix)
 	  exp->_.col_ref.prefix = t_box_copy (xj->xj_prefix);
@@ -1423,7 +1423,7 @@ xmlg_join_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t map,
           ST *exp = (ST *) t_box_copy_tree ((caddr_t) xj->xj_mp_schema->xj_column);
           char name[20];
           XVC_COMMA (xvc, first);
-          snprintf (name, sizeof (name), "v%d_%d", nth,   count_addition++);
+          snprintf (name, sizeof (name), "v%u_%u", nth,   count_addition++);
           xmlg_printf (xvc, " %s ", name);
           if (ST_P (exp, COL_DOTTED) && !exp->_.col_ref.prefix)
             exp->_.col_ref.prefix = t_box_copy (xj->xj_prefix);
@@ -1439,7 +1439,7 @@ xmlg_join_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t map,
 	  ST *limit_field = (ST *) t_box_copy_tree ((caddr_t) xj->xj_mp_schema->xj_limit_field);
 	  char name[20];
 	  XVC_COMMA (xvc, first);
-	  snprintf (name, sizeof (name), "v%d_%d", nth, count_addition);
+	  snprintf (name, sizeof (name), "v%u_%u", nth, count_addition);
 	  xmlg_printf (xvc, " %s ", name);
 	  if (ST_P (col, COL_DOTTED) && !col->_.col_ref.prefix)
 	    col->_.col_ref.prefix = t_box_copy (xj->xj_prefix);
@@ -1448,7 +1448,7 @@ xmlg_join_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t map,
 	  count_addition++;
 	  /*limit-field name*/
 	  xmlg_printf (xvc, ", ");
-	  snprintf (name, sizeof (name), "v%d_%d", nth,   count_addition);
+	  snprintf (name, sizeof (name), "v%u_%u", nth,   count_addition);
 	  xmlg_printf (xvc, " %s ", name);
 	  if (ST_P (limit_field, COL_DOTTED) && !limit_field->_.col_ref.prefix)
 	    limit_field->_.col_ref.prefix = t_box_copy (xj->xj_prefix);
@@ -1462,7 +1462,7 @@ xmlg_join_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t map,
 	ST *exp = (ST *) t_box_copy_tree ((caddr_t) xc);
 	char name[20];
 	XVC_COMMA (xvc, first);
-	snprintf (name, sizeof (name), "v%d_%d", nth, count_addition++);
+	snprintf (name, sizeof (name), "v%u_%u", nth, count_addition++);
 	xmlg_printf (xvc, " %s ", name);
 	if (ST_P (exp, COL_DOTTED) && !exp->_.col_ref.prefix)
 	  exp->_.col_ref.prefix = t_box_copy (xj->xj_prefix);
@@ -1480,7 +1480,7 @@ if (xj->xj_children || following_join)
     ST *exp = (ST *) box_copy_tree ((box_t) xc);
     char name[20];
     XVC_COMMA (xvc, first);
-    snprintf (name, sizeof (name), "v%d_%d", nth, count_addition++);
+    snprintf (name, sizeof (name), "v%u_%u", nth, count_addition++);
     xmlg_printf (xvc, "%s", name);
     t_set_push (&map, (void *) t_box_string (name));
     t_set_push (&map, exp);
@@ -1489,16 +1489,16 @@ if (xj->xj_children || following_join)
   }
 /*end mapping schema*/
 
-  xmlg_printf (xvc, " varchar;\n  whenever not found goto done_%d;"
-      "\n  open cr_%d;"
+  xmlg_printf (xvc, " varchar;\n  whenever not found goto done_%u;"
+      "\n  open cr_%u;"
       "\n  while (1) {", nth, nth);
   if (make_xte)/*xquery*/
     {
-      xmlg_printf (xvc, "\n  declare node_%d, head_%d any;", nth+1, nth+1);
-      xmlg_printf (xvc, "\n declare acc_%d any; xte_nodebld_init(acc_%d);", nth+1, nth+1);
-/*      xmlg_printf (xvc, "\n declare acc_t_%d any; xte_nodebld_init(acc_t_%d);", nth+1, nth+1);*/
+      xmlg_printf (xvc, "\n  declare node_%u, head_%u any;", nth+1, nth+1);
+      xmlg_printf (xvc, "\n declare acc_%u any; xte_nodebld_init(acc_%u);", nth+1, nth+1);
+/*      xmlg_printf (xvc, "\n declare acc_t_%u any; xte_nodebld_init(acc_t_%u);", nth+1, nth+1);*/
     }
-  xmlg_printf (xvc,"\n    fetch cr_%d into ", nth);
+  xmlg_printf (xvc,"\n    fetch cr_%u into ", nth);
 
   first = 1;
   _DO_BOX (inx, xj->xj_cols) /*Print variables in 'fetch' (attributes)*/
@@ -1508,7 +1508,7 @@ if (xj->xj_children || following_join)
       {
 /*end mp*/
 	XVC_COMMA (xvc, first);
-	xmlg_printf (xvc, "v%d_%d", nth, inx);
+	xmlg_printf (xvc, "v%u_%u", nth, inx);
       }
   }
   END_DO_BOX;
@@ -1521,23 +1521,23 @@ if (xj->xj_children || following_join)
       if (xj->xj_mp_schema->xj_same_table)
 	{
 	  XVC_COMMA (xvc, first);
-	  xmlg_printf (xvc, "v%d_%d", nth, count_addition++);
+	  xmlg_printf (xvc, "v%u_%u", nth, count_addition++);
         }
 
 /* element annotated by sql:limit-field. Print variables in 'fetch' (annotated by sql:limit-field)*/
       if (xj->xj_mp_schema && xj->xj_mp_schema->xj_limit_field)
 	{
 	  XVC_COMMA (xvc, first);
-	  xmlg_printf (xvc, "v%d_%d", nth, count_addition++);
+	  xmlg_printf (xvc, "v%u_%u", nth, count_addition++);
 
 	  xmlg_printf (xvc, ", ");
-	  xmlg_printf (xvc, "v%d_%d", nth, count_addition++);
+	  xmlg_printf (xvc, "v%u_%u", nth, count_addition++);
 	}
      /*Print variables (attributes) of the subelement from the same table (subelements of the simple subelements)*/
       DO_SET (ST *, xc, &xj->xj_mp_schema->xj_child_cols)
       {
 	XVC_COMMA (xvc, first);
-	xmlg_printf (xvc, "v%d_%d", nth, count_addition++);
+	xmlg_printf (xvc, "v%u_%u", nth, count_addition++);
       }
       END_DO_SET ();
     }
@@ -1546,7 +1546,7 @@ if (xj->xj_children || following_join)
   DO_SET (ST *, xc, &key_fields_map)
   {
     XVC_COMMA (xvc, first);
-    xmlg_printf (xvc, "v%d_%d", nth, count_addition++);
+    xmlg_printf (xvc, "v%u_%u", nth, count_addition++);
   }
   END_DO_SET ();
 
@@ -1585,12 +1585,12 @@ if (xj->xj_children || following_join)
 	xmlg_printf (xvc, " \"%s\" ", xc->xc_xml_name);
       }
       END_DO_BOX;
-      xmlg_printf (xvc, ")\n      values (_id := xml_eid (_id, _bound, 0), _lev + %d, '%s'",
+      xmlg_printf (xvc, ")\n      values (_id := xml_eid (_id, _bound, 0), _lev + %u, '%s'",
 	  nth, xj->xj_element);
       _DO_BOX (inx, xj->xj_cols)
       {
 	XVC_COMMA (xvc, first);
-	xmlg_printf (xvc, "v%d_%d ", nth, inx);
+	xmlg_printf (xvc, "v%u_%u ", nth, inx);
       }
       END_DO_BOX;
       xmlg_printf (xvc, ");\n    ");
@@ -1607,18 +1607,18 @@ if (xj->xj_children || following_join)
 	      xmlg_printf (xvc, "\n declare _out varchar;\n  _out := string_output();\n");
               simple_subelement = 1;
             }
-          xmlg_printf (xvc, " http_value (v%d_%d, 0, _out);", nth, count_addition++);
+          xmlg_printf (xvc, " http_value (v%u_%u, 0, _out);", nth, count_addition++);
 	}
 /* element annotated by sql:limit-field. Print element value*/
       if (xj->xj_mp_schema->xj_limit_field)
 	{
-/*      xmlg_printf (xvc, " http_value (v%d_%d, 0, _out);", nth, 0);*/
+/*      xmlg_printf (xvc, " http_value (v%u_%u, 0, _out);", nth, 0);*/
           if (make_xte) /*xquery*/
 	    {
 	      xmlg_printf (xvc, "\n declare _out varchar;\n  _out := string_output();\n");
               simple_subelement = 1;
 	    }
-	  xmlg_printf (xvc, " http_value (v%d_%d, 0, _out);", nth, count_addition++);
+	  xmlg_printf (xvc, " http_value (v%u_%u, 0, _out);", nth, count_addition++);
 	  if (xj->xj_children)
 	    sqlr_error ("S0002", "It's not supported subelements of the element %s annotated by sql:limit-field in mapping schema", xj->xj_element);
 	}
@@ -1631,8 +1631,8 @@ if (xj->xj_children || following_join)
 /*
       if (make_xte) / *xquery* /
 	{
-          xmlg_printf (xvc, "\n  declare acc_t_%d any;"
-                              "\n  xte_nodebld_init(acc_t_%d);\n", nth+1, nth+1);
+          xmlg_printf (xvc, "\n  declare acc_t_%u any;"
+                              "\n  xte_nodebld_init(acc_t_%u);\n", nth+1, nth+1);
         }
 */
       DO_BOX (xv_join_elt_t *, c, xjinx, xj->xj_children)
@@ -1648,8 +1648,8 @@ if (xj->xj_children || following_join)
       END_DO_BOX;
       if (make_xte) /*xquery*/
 	{
-	  xmlg_printf (xvc, "\n  xte_nodebld_final(acc_%d, head_%d);", nth+1, nth+1);
-          xmlg_printf (xvc, "\n  xte_nodebld_acc (acc_%lu, acc_%d);", head_nth, nth+1);
+	  xmlg_printf (xvc, "\n  xte_nodebld_final(acc_%u, head_%u);", nth+1, nth+1);
+          xmlg_printf (xvc, "\n  xte_nodebld_acc (acc_%u, acc_%u);", head_nth, nth+1);
 	}
     }
 
@@ -1660,8 +1660,8 @@ if (xj->xj_children || following_join)
       else if (NULL == xj->xj_children)/*xquery*/
 	xmlg_end_tag_xmlview (xvc, xj, nth, head_nth, ((NULL != xj->xj_children) ? (depth) : 0), simple_subelement);
     }
-  xmlg_printf (xvc, "\n  }\n  done_%d: ;\n", nth);
-   xmlg_printf (xvc, "\n--(End xmlg_join_loop %s nth=%d pk_args=%d http_out=%d depth=%d head_nth=%lu)\n",
+  xmlg_printf (xvc, "\n  }\n  done_%u: ;\n", nth);
+   xmlg_printf (xvc, "\n--(End xmlg_join_loop %s nth=%u pk_args=%u http_out=%u depth=%u head_nth=%u)\n",
      xj->xj_element, nth, pk_args, http_out, depth, head_nth );
 }
 
@@ -1757,7 +1757,7 @@ xmlg_xj_http_func_attr (xv_context_t * xvc, xj_col_t * xc, int make_xte)
   for (n = 0; n < (int) BOX_ELEMENTS (xj->xj_pk); n++)
     {
       XVC_COMMA (xvc, first);
-      xmlg_printf (xvc, "in pk_%d varchar ", n);
+      xmlg_printf (xvc, "in pk_%u varchar ", n);
     }
   if (make_xte)/*xquery*/
     xmlg_printf (xvc, ")\n{" );
@@ -1810,7 +1810,7 @@ xmlg_xj_http_func (xv_context_t * xvc, xv_join_elt_t * xj, int make_xte)
           for (n = 0; n < (int) BOX_ELEMENTS (xj->xj_pk); n++)
             {
               XVC_COMMA (xvc, first);
-              xmlg_printf (xvc, "in pk_%d varchar ", n);
+              xmlg_printf (xvc, "in pk_%u varchar ", n);
             }
           xmlg_printf (xvc, ")\n{"
               "\n  declare head_0 any;"
@@ -1820,7 +1820,7 @@ xmlg_xj_http_func (xv_context_t * xvc, xv_join_elt_t * xj, int make_xte)
           xmlg_printf (xvc, "dbg_obj_print(\'%s.%s.%s_%s_%s\');\n", xvc->xvc_schema, xvc->xvc_user, xvc->xvc_local_name, xj->xj_element, xj->xj_prefix);
           for (n = 0; n < (int) BOX_ELEMENTS (xj->xj_pk); n++)
             {
-              xmlg_printf (xvc, " dbg_obj_print(pk_%d);\n", n);
+              xmlg_printf (xvc, " dbg_obj_print(pk_%u);\n", n);
             }
 #endif
           xmlg_printf (xvc, "\n  declare acc_0 any;\n  xte_nodebld_init(acc_0);");
@@ -1840,7 +1840,7 @@ xmlg_xj_http_func (xv_context_t * xvc, xv_join_elt_t * xj, int make_xte)
               for (n = 0; n < (int) BOX_ELEMENTS (xj->xj_pk); n++)
                 {
                   XVC_COMMA (xvc, first);
-                  xmlg_printf (xvc, "in pk_%d varchar ", n);
+                  xmlg_printf (xvc, "in pk_%u varchar ", n);
                 }
               xmlg_printf (xvc, ", in _out varchar)\n{\n--no_c_escapes-\n"
                   "  if (_out = 1 ) _out := string_output ();\n");
@@ -2195,7 +2195,7 @@ xv_dtd_debug (xv_join_elt_t * tree, char *res, size_t tlen, int *fill)
   int col_idx;			/* index of current column in the box of all columns */
   int chld_idx;			/* index of current column in the box of all children */
   tailprintf (res, tlen, fill,
-      "xv_join_elt_dtd(%x): xj_table=%s, xj_prefix=%s, xj_element=%s xj_all_cols_as_subelements=%d\n",
+      "xv_join_elt_dtd(%x): xj_table=%s, xj_prefix=%s, xj_element=%s xj_all_cols_as_subelements=%u\n",
       (long) (void *) (tree),
       tree->xj_table, tree->xj_prefix, tree->xj_element, tree->xj_all_cols_as_subelements);
   DO_BOX (xj_col_t *, column, col_idx, tree->xj_cols)
@@ -2203,7 +2203,7 @@ xv_dtd_debug (xv_join_elt_t * tree, char *res, size_t tlen, int *fill)
     if (!((XV_XC_ATTRIBUTE | XV_XC_SUBELEMENT) & xc->xc_usage))
       continue;
     tailprintf (res, tlen, fill,
-	"xv_join_elt_dtd(%x)[%d]: xc_xml_name=%s, xc_usage=%x\n",
+	"xv_join_elt_dtd(%x)[%u]: xc_xml_name=%s, xc_usage=%x\n",
 	(long) (void *) (tree), col_idx,
 	column->xc_xml_name, column->xc_usage);
   }
@@ -2521,7 +2521,7 @@ xv_schema_type_name (xv_schema_builder_t * bld, const xv_join_elt_t * curr_join_
       return res;
     }
   name_usages = (++(name_usages_ptr[0]));
-  snprintf (lookup + strlen (lookup), res_len - strlen (lookup), "_Type%d", name_usages);
+  snprintf (lookup + strlen (lookup), res_len - strlen (lookup), "_Type%u", name_usages);
   return lookup;
 }
 
@@ -2680,16 +2680,16 @@ xv_schema_sprintf_xsdtype (char *col_xml_name, xv_schema_xsdtype_t *xsd, char *r
     } else {	/* When in trouble, use xsd:string and add an comment with hard type */
       tailprintf (res, tlen, fill, "\n  <xsd:%s name=\"%s\" type=\"xsd:string\"", title, col_xml_name);
       if (xsd->xsd_maxLength > 0)
-	tailprintf (res, tlen, fill, " maxLength=\"%d\"", xsd->xsd_maxLength);
+	tailprintf (res, tlen, fill, " maxLength=\"%u\"", xsd->xsd_maxLength);
       tailprintf (res, tlen, fill, "/> \t<!-- <xsd:%s name=\"%s\" type=\"%s\"", title, col_xml_name, type);
     }
 #if 0
   if (xsd->xsd_maxLength > 0)
-    tailprintf (res, tlen, fill, " maxLength=\"%d\"", xsd->xsd_maxLength);
+    tailprintf (res, tlen, fill, " maxLength=\"%u\"", xsd->xsd_maxLength);
   if (xsd->xsd_precision > 0)
-    tailprintf (res, tlen, fill, " precision=\"%d\"", xsd->xsd_precision);
+    tailprintf (res, tlen, fill, " precision=\"%u\"", xsd->xsd_precision);
   if (xsd->xsd_scale > 0)
-    tailprintf (res, tlen, fill, " scale=\"%d\"", xsd->xsd_scale);
+    tailprintf (res, tlen, fill, " scale=\"%u\"", xsd->xsd_scale);
 #endif
   tailprintf (res, tlen, fill, (xsd_ok ? "/>" : "/> -->"));
   if (NULL != xsd->xsd_comment)
@@ -3140,7 +3140,7 @@ xre_col_from_ssl (state_slot_t * ssl, int no, long directives)
     col->xrc_name = cd_strip_col_name (ssl->ssl_name);
   else
     {
-      snprintf (buf, sizeof (buf),"Computed%d", no);
+      snprintf (buf, sizeof (buf),"Computed%u", no);
       col->xrc_name = box_dv_short_string (buf);
     }
   xv_schema_xsdtype_sqt(&(ssl->ssl_sqt), directives, col->xrc_xsdtype);
@@ -4088,7 +4088,7 @@ xs_fill (caddr_t * current, xmlsql_ugram_t ** xs, int where, caddr_t * err_ret, 
 	  else if (IN_HDR_TAG (where) && IS_PARAM_TAG (scol) && tlen > 1)
 	    {
 	      caddr_t deflt = NULL;
-	      dbg_xmlsql (("> TAG: %s (%s) in: (%d)\n", tname, scol, where));
+	      dbg_xmlsql (("> TAG: %s (%s) in: (%u)\n", tname, scol, where));
 	      for (ix = 1; ix < tlen; ix +=2 )
 		{
 		  if (tag [ix] && 0 == stricmp (tag [ix], "name"))
@@ -4115,7 +4115,7 @@ xs_fill (caddr_t * current, xmlsql_ugram_t ** xs, int where, caddr_t * err_ret, 
 	    }
 	  else
 	    {
-	      dbg_xmlsql (("> TAG: %s (%s) in: (%d)\n", tname, scol, where));
+	      dbg_xmlsql (("> TAG: %s (%s) in: (%u)\n", tname, scol, where));
 	      if (IN_SYNC_TAG (where) && (IN_BEFORE_TAG(where) || IN_AFTER_TAG (where)))
 		{
 		  int before = IN_BEFORE_TAG(where);
