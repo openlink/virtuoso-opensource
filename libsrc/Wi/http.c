@@ -9348,7 +9348,7 @@ box_tpcip_get_interfaces ()
     }
 
   ifrp = ifc.ifc_req;
-  for (len = ifc.ifc_len; len > 0; /* len -= sizeof (struct ifreq) calculated bellow */)
+  for (len = ifc.ifc_len; len > 0; /* len -= sizeof (struct ifreq) calculated below */)
     {
       if (ifrp->ifr_addr.sa_family == AF_INET)
 	{

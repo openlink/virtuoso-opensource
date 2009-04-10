@@ -1175,7 +1175,7 @@ xslt_format_number (numeric_t value, caddr_t format,
   int grouping_used = 0;
   int grouping_size = 0;
   int multiplier = 0;
-  int decimal_sep_allways_shown = 0;
+  int decimal_sep_always_shown = 0;
 
   int got_negative = 0, j;
 
@@ -1502,7 +1502,7 @@ xslt_format_number (numeric_t value, caddr_t format,
 	      0 ? (digit_left_count + zero_digit_count - decimal_pos) : 0;
 	  grouping_used = grouping_count > 0;
 	  grouping_size = (grouping_count > 0) ? grouping_count : 0;
-	  decimal_sep_allways_shown = decimal_pos == 0
+	  decimal_sep_always_shown = decimal_pos == 0
 	      || decimal_pos == digit_total_count;
 	}
       else

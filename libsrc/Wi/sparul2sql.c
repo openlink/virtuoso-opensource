@@ -196,7 +196,7 @@ typedef struct ctor_var_enumerator_s
 {
   dk_set_t cve_dist_vars_acc;	/*!< Accumulator of variables with distinct names used in triple patterns of constructors */
   int cve_dist_vars_count;		/*!< Length of \c cve_dist_vars_acc */
-  int cve_total_vars_count;		/*!< Count of all occurencies of variables */
+  int cve_total_vars_count;		/*!< Count of all occurrences of variables */
   int cve_bnodes_are_prohibited;	/*!< Bnodes are not allowed in DELETE ctor gp */
   SPART *cve_limofs_var;	/*!< Variable that is passed from limit-offset subselect */
   caddr_t cve_limofs_var_alias;	/*!< Alias used for cve_limofs_var */
@@ -567,7 +567,7 @@ spar_tr_fields_are_similar (sparp_t *sparp, SPART *fld1, SPART *fld2)
         return 1;
       }
     default:
-      spar_internal_error (sparp, "spar_" "tr_fields_are_similar(): unsuooprted type");
+      spar_internal_error (sparp, "spar_" "tr_fields_are_similar(): unsupported type");
     }
   return 0; /* to keep compiler happy */
 }

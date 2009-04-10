@@ -301,7 +301,7 @@ ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subtype,
       }
   spar_error (NULL, "Unsupported format name '%.40s', only 'RDF/XML', 'TURTLE' and '_JAVA_' are supported", name);
 bad_ask:
-  spar_error (NULL, "Format name '%.30s' is not supported for booleand results made by SPARQL %s", name, spart_dump_opname (subtype, 0));
+  spar_error (NULL, "Format name '%.30s' is not supported for boolean results made by SPARQL %s", name, spart_dump_opname (subtype, 0));
 bad_descr:
   spar_error (NULL, "Format name '%.30s' is not supported for triple dictionaries made by SPARQL %s", name, spart_dump_opname (subtype, 0));
 }
@@ -382,7 +382,7 @@ ccaddr_t ssg_find_jl_by_jr (spar_sqlgen_t *ssg, SPART *gp, ccaddr_t jr_alias)
 int
 ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const char *tmpl, const char *tmpl_end, caddr_t alias, qm_value_t *qm_val, SPART *tree, int col_idx, const char *asname)
 {
-/* IMPORTANT: keep this function in sync with sparp_check_tmpl(), otherwise syntax changes may be blicked by the compiler. */
+/* IMPORTANT: keep this function in sync with sparp_check_tmpl(), otherwise syntax changes may be blocked by the compiler. */
   const char *tail;
   const char *cmd;
   const char *mopen_hit;
@@ -524,7 +524,7 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
           if (col_idx < 0)
             spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{alias-N-dot}^ outside a loop, should be ^{alias-dot}^", asname_printed);
           if (col_idx >= BOX_ELEMENTS (qm_val->qmvColumns))
-            spar_sqlprint_error2 ("ssg_" "print_tmpl(): col index for ^{alias-N-dot}^ exceedes number of columns", asname_printed);
+            spar_sqlprint_error2 ("ssg_" "print_tmpl(): col index for ^{alias-N-dot}^ exceeds number of columns", asname_printed);
           colalias = qm_val->qmvColumns[col_idx]->qmvcAlias;
           if (NULL != alias)
             {
@@ -679,7 +679,7 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
           if (col_idx < 0)
             spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{column-N}^ outside a loop", asname_printed);
           if (col_idx >= BOX_ELEMENTS (qm_val->qmvColumns))
-            spar_sqlprint_error2 ("ssg_" "print_tmpl(): col index for ^{column-N}^ exceedes number of columns", asname_printed);
+            spar_sqlprint_error2 ("ssg_" "print_tmpl(): col index for ^{column-N}^ exceeds number of columns", asname_printed);
           ssg_prin_id (ssg, qm_val->qmvColumns[col_idx]->qmvcColumnName);
         }
 /*                        0         1         2 */
@@ -2533,7 +2533,7 @@ ssg_print_bop_bool_expn (spar_sqlgen_t *ssg, SPART *tree, const char *bool_op, c
   left_vmode = sparp_expn_native_valmode (ssg->ssg_sparp, left);
   right_vmode = sparp_expn_native_valmode (ssg->ssg_sparp, right);
 /* There exists a special popular case for a filter for GRAPH `iri(my_expression)` { ... } where graph is made by mapping with a fixed graph.
-Without the special optization it becomes iri_to_id ('graph iri string from view declaration') = iri_to_id_nosignal (my_expression) */
+Without the special optimization it becomes iri_to_id ('graph iri string from view declaration') = iri_to_id_nosignal (my_expression) */
   if ((BOP_EQ == ttype) &&
     ((SSG_VALMODE_SQLVAL == left_vmode) || (SSG_VALMODE_SQLVAL == right_vmode)) &&
     ((SSG_VALMODE_LONG == left_vmode) || (SSG_VALMODE_LONG == right_vmode)) )
@@ -6504,7 +6504,7 @@ retval_list_complete:
       itm_count = BOX_ELEMENTS (member->_.gp.members);
       if (0 == itm_count)
         {
-          char buf[105]; /* potentialy 100 chars long see sparp_clone_id etc. */
+          char buf[105]; /* potentially 100 chars long see sparp_clone_id etc. */
           ssg_newline (0);
           snprintf (buf, sizeof (buf), "stub-%s", member->_.gp.selid);
           if (SSG_PRINT_UNION_NONEMPTY_STUB & head_flags)
@@ -6516,7 +6516,7 @@ retval_list_complete:
         }
       if (OPTIONAL_L == member->_.gp.members[0]->_.gp.subtype)
         {
-          char buf[105]; /* potentialy 100 chars long see sparp_clone_id etc. */
+          char buf[105]; /* potentially 100 chars long see sparp_clone_id etc. */
           ssg_newline (0);
           snprintf (buf, sizeof (buf), "lojstub-%s", member->_.gp.selid);
           ssg_puts ("(SELECT TOP 1 1 AS __stub FROM DB.DBA.RDF_QUAD) AS ");

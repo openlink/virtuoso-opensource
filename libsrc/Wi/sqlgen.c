@@ -715,7 +715,7 @@ sqlg_inx_op_and_ks (sqlo_t * so, inx_op_t * and_iop, inx_op_t * iop,
 	    {
 	      df_elt_t * first_table = ((df_inx_op_t *)and_dio->dio_terms->data)->dio_table;
 	      sp2->sp_min_ssl = and_iop->iop_max[nth_free];
-	      /* this also sets what it compares with. This can be col of oter table.  So gen also the ssl asg of the col ssl from this table */
+	      /* this also sets what it compares with. This can be col of other table.  So gen also the ssl asg of the col ssl from this table */
 	      dk_set_push (&ks->ks_out_cols, (void*) col);
 	      dk_set_push (&ks->ks_out_slots, (void*) sp2->sp_min_ssl);
 	      sqlg_ks_out_col (so, dio->dio_table, ks, col);
@@ -2494,7 +2494,7 @@ bitmap_index_box);
       if (SEL_IS_DISTINCT (dt))
 	{
 	  setp_node_t * dist = sqlc_add_distinct_node (sc, head, (state_slot_t **) t_list_to_array (out_slots), (long) tb_dfe->dfe_arity);
-	  /* if distinct with order by, the expressions must be done before the distint, not before the oby */
+	  /* if distinct with order by, the expressions must be done before the distinct, not before the oby */
 	  dist->src_gen.src_pre_code = code_to_cv (sc, code);
 	  code = NULL;
 	}

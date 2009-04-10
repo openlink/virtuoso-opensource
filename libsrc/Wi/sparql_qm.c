@@ -340,7 +340,7 @@ spar_qm_find_all_conditions (sparp_t *sparp, dk_set_t map_aliases, dk_set_t *con
                     }
                 }
               END_DO_SET ()
-              goto cond_is_redundand; /* see below */
+              goto cond_is_redundant; /* see below */
 
 cond_alias_descendant_found:
               ;
@@ -353,7 +353,7 @@ cond_alias_descendant_found:
       if (0 > dk_set_position_of_string (cond_tmpls_ptr[0], tmpl))
         t_set_push (cond_tmpls_ptr, tmpl);
 
-cond_is_redundand: ;
+cond_is_redundant: ;
     }
   END_DO_SET()
 }

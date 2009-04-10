@@ -137,7 +137,7 @@ create trigger SYS_PRIMARY_GROUP_NULLIFY after delete on SYS_USERS referencing o
 --		   checked without knowing the password.
 
 
--- for all bellow we need to call some sort of a BIFs in order to set-up the user hash
+-- for all below we need to call some sort of a BIFs in order to set-up the user hash
 -- these are DBA only functions
 
 create procedure

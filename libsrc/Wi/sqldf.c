@@ -4279,13 +4279,13 @@ sqlo_try_in_loop (sqlo_t *so, op_table_t * ot, df_elt_t * tb_dfe, df_elt_t ** su
 	      caddr_t subq_prefix;
 	      float in_loop_score;
 	      dk_set_t old_ot_preds;
-	      /* we try maing the existence into an outer loop */
+	      /* we try making the existence into an outer loop */
 	      copy->_.select_stmt.selection = 
 		t_list (1, t_list (5, BOP_AS, t_box_copy_tree ((caddr_t) subq_out_col),
 				   NULL, subq_out_col->_.col_ref.name, NULL));
 	      if (!copy->_.select_stmt.table_exp->_.table_exp.group_by)
 		{
-		  /* if the looped subq has a group by, the distinct is implicit, otehrwise turn it on */
+		  /* if the looped subq has a group by, the distinct is implicit, otherwise turn it on */
 		  if (IS_BOX_POINTER (copy->_.select_stmt.top))
 		    copy->_.select_stmt.top->_.top.all_distinct = 1;
 		  else
@@ -4668,8 +4668,8 @@ int32 sqlo_max_mp_size = 10485760;
 float
 dfe_join_score (sqlo_t * so, op_table_t * ot,  df_elt_t *tb_dfe)
 {
-  /* every non-join pred of tb_dfe counts for 2, ever joing pred of tb_dfe with a placed table counts for 5,
-  * equality addes 2 points. A joinn pred to a non-placed table is 0. */
+  /* every non-join pred of tb_dfe counts for 2, ever join pred of tb_dfe with a placed table counts for 5,
+  * equality added 2 points. A join pred to a non-placed table is 0. */
   float score = 0;
   tb_dfe->dfe_is_placed = 1; /* to fool dfe_reqd_placed*/
   DO_SET (df_elt_t *, pred, &ot->ot_preds)

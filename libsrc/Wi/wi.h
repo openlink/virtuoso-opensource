@@ -464,7 +464,7 @@ struct search_spec_s
     search_spec_t *	sp_next;
     dbe_col_loc_t	sp_cl;  /* column on key, if key on page matches key in compilation */
     dbe_column_t *	sp_col; /* col descriptor, use for finding the col if key on page is obsolete */
-    struct state_slot_s *sp_min_ssl;  /* state slot for initing   the cursor's  itc_search_params[sp_min] */
+    struct state_slot_s *sp_min_ssl;  /* state slot for initializing the cursor's  itc_search_params[sp_min] */
     struct state_slot_s *sp_max_ssl;
     collation_t	 *sp_collation;
     char		sp_like_escape;
@@ -721,7 +721,7 @@ len = -len; \
 /* when calling pae_wait_access, the itc_max_transit_change is one of these.
  * If the change during wait is greater than indicated here, the itc does not enter the buffer.
  * For example if the page of the buffer  splits, the itc will not know whether it still wants to enter the buffer and must restart the search.
- * When the wait is over, itc_to_reset is set to reflect what happened duiring the wait, again one of the below */
+ * When the wait is over, itc_to_reset is set to reflect what happened during the wait, again one of the below */
 
 #define RWG_WAIT_NO_ENTRY_IF_WAIT 0 /* Just check if buffer available, wait until is but do not go in */
 #define RWG_NO_WAIT	1 /* Only go in if immediately available */
@@ -965,7 +965,7 @@ len = -len; \
 
 struct page_map_s
   {
-    /* For a buffer with index tree cntent, this struct  holds the starting positions of all entries in index order plus avail. space */
+    /* For a buffer with index tree content, this struct  holds the starting positions of all entries in index order plus avail. space */
     short	pm_size; /* number of entries actually in pm_entries.  Different sizes of map are allocated for different buffers since having a page full of minimum length entries is very rare */
     short		pm_count;  /* count of rows. This many first entries in pm_entries are valid */
     short		pm_filled_to; /* First free byte of the page's trailing contiguous free space */

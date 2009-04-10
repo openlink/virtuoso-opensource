@@ -476,7 +476,7 @@ bif_vt_word_string_ends  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 caddr_t
 bif_wb_all_done  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  /* word batch, out firest d_id, out flag true if more than 1 left */
+  /* word batch, out first d_id, out flag true if more than 1 left */
   d_id_t d_id_1;
   d_id_t d_id_2;
   db_buf_t * wb = (db_buf_t *) bif_array_arg (qst, args, 0, "wb_all_done");

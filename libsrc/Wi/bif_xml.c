@@ -3934,7 +3934,7 @@ bif_xte_nodebld_acc_impl (caddr_t * qst, state_slot_t ** args, int preserve_args
   if (0 < filled_count)
     filled_count--;
   tail_inx = 1 + filled_count;
-  /* Now we know what's the precize value of new_filled_count */
+  /* Now we know what's the precise value of new_filled_count */
   new_filled_count = (dst - acc) - 1;
   while (tail_inx <= new_filled_count)
     {
@@ -4192,7 +4192,7 @@ bif_vectorbld_acc_impl (caddr_t * qst, state_slot_t ** args, int preserve_args, 
       END_DO_BOX_FAST;
     }
 #endif
-  /* Now we know what's the precize value of new_filled_count */
+  /* Now we know what's the precise value of new_filled_count */
 #ifdef DEBUG
   if (new_filled_count > (int)(BOX_ELEMENTS((caddr_t)acc)))
     GPF_T;

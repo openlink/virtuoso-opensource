@@ -947,7 +947,7 @@ ins_fetch (instruction_t * ins, caddr_t * qst)
     }
 
   /* 
-     On open cursor, chech the params and if they changed , re-bind them
+     On open cursor, check the params and if they changed , re-bind them
    */
   if (cr_state == CR_OPEN)
     {

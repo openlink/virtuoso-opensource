@@ -49,7 +49,7 @@
 #define L2_ASSERT_PROPER_ENDS(first, last, ep) { \
   if (NULL != first) \
     { \
-      if (NULL == last) GPF_T1("L2_DEBUG: last is NULL but furst is not"); \
+      if (NULL == last) GPF_T1("L2_DEBUG: last is NULL but first is not"); \
       if (NULL != first->ep##prev) GPF_T1("L2_DEBUG: _prev of first is not NULL"); \
       if (NULL != last->ep##next) GPF_T1("L2_DEBUG: _next of last is not NULL"); \
     } \

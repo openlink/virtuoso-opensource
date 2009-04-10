@@ -1378,7 +1378,7 @@ itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned l
     {
       itc = itc_create (NULL, qi->qi_trx);
       /* GK: the itc has to be initialized regardless of the feed_temp_blobs,
-	 because of the XML entities that are *allways* fed as temp space blobs */
+	 because of the XML entities that are *always* fed as temp space blobs */
       /*if (feed_temp_blobs)*/
 	itc_from_it_ha (itc, tree, ha);
       qst_set (qst, ha->ha_insert_itc, (caddr_t) itc);

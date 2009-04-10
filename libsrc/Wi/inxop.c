@@ -61,7 +61,7 @@ itc_near_random (it_cursor_t * itc, placeholder_t * pl, buffer_desc_t ** buf_ret
   target_dp = pl->itc_page;
   ITC_IN_KNOWN_MAP (itc, target_dp);
   page_wait_access (itc, target_dp, NULL, buf_ret, itc->itc_dive_mode, RWG_WAIT_DATA);
-  /* itc_page can change anytime.  Accept entry only if pl->itc_pagge agtrees with entry after entry */
+  /* itc_page can change anytime.  Accept entry only if pl->itc_pagge agrees with entry after entry */
   if (PF_OF_DELETED == *buf_ret)
     goto entry_failed;
   if (itc->itc_to_reset <= RWG_WAIT_DATA
@@ -332,7 +332,7 @@ inxop_bm_check_other (inx_op_t * iop, caddr_t * qst)
     return 0; /* the normal course will produce a match */
   if (itc->itc_bp.bp_value > target)
     {
-      /* pickthe value as the new target and loop */
+      /* pick the value as the new target and loop */
       it_cursor_t * this_itc = (it_cursor_t *)QST_GET (qst, iop->iop_itc);
       inxop_set_bm_ssl (iop->iop_other, itc, qst);
       itc_set_search_param (this_itc, this_itc->itc_insert_key->key_n_significant - 1, qst_get (qst, iop->iop_target_ssl), iop->iop_target_dtp);
@@ -490,7 +490,7 @@ inxop_bm_next (inx_op_t * iop , query_instance_t * qi, int op,
 	    }
 
 	  if (itc->itc_bp.bp_below_start)
-	    itc->itc_bp.bp_at_end = 0; /* use the value it is at, since bp)value will be set to 1st of ce evenif value sought was lt that */
+	    itc->itc_bp.bp_at_end = 0; /* use the value it is at, since bp)value will be set to 1st of ce even if value sought was lt that */
 	  if (DVC_INDEX_END == rc)
 	    {
 	      itc_page_leave (itc, buf);

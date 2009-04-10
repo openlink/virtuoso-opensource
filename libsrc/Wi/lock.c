@@ -172,7 +172,7 @@ lt_clear (lock_trx_t * lt)
   blob_log_set_free (lt->lt_blob_log);
   LT_ERROR_DETAIL_SET (lt, NULL);
   if (lt->lt_wait_end)
-    GPF_T1 ("lt going clear but sonmebody still waiting for its end");
+    GPF_T1 ("lt going clear but somebody still waiting for its end");
   memset (&lt->LT_DATA_AREA_FIRST, 0, sizeof (lock_trx_t) - (size_t) &((lock_trx_t*) 0)->LT_DATA_AREA_FIRST);
   LT_ENTER_SAVE (lt);
 #ifdef PAGE_TRACE
@@ -638,7 +638,7 @@ lt_ack_freeze (lock_trx_t * lt, it_cursor_t * itc, buffer_desc_t ** buf_ret)
       if (!itc->itc_landed)
 	{
 	  if (itc->itc_is_registered)
-	    GPF_T1 ("itc can't be registede in ack freeze");
+	    GPF_T1 ("itc can't be registered in ack freeze");
 	  page_leave_inner (*buf_ret);
 	}
       else
@@ -733,7 +733,7 @@ itc_bust_this_trx (it_cursor_t * it, buffer_desc_t ** buf, int may_ret)
       itc_free_hold (it);
       if (buf && *buf)
 	{
-	  /* the itc is not supposed to be registered.  If it styill is, unregistere it by the book.  Could even be registered on a different buffer.  */
+	  /* the itc is not supposed to be registered.  If it still is, unregistered it by the book.  Could even be registered on a different buffer.  */
 	  if (!it->itc_is_registered)
 	    {
 	      page_leave_outside_map (*buf);

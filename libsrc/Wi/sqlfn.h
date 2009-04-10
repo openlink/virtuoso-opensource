@@ -59,7 +59,7 @@ typedef struct spar_query_env_s
   query_instance_t *	sparqre_qi;		/*!< NULL if parsing is inside SQL compiler, current qi for runtime */
   client_connection_t *	sparqre_cli;		/*!< Client connection, can be NULL or what sqlc_client() return */
   struct sql_comp_s *	sparqre_super_sc;	/*!< The context of the compilation, if nested into SQL code */
-  struct user_s *	sparqre_exec_user;	/*!< User that will excute the query */
+  struct user_s *	sparqre_exec_user;	/*!< User that will execute the query */
   wcharset_t *		sparqre_query_charset;
   int			sparqre_query_charset_is_set;
   dk_set_t		sparqre_external_namespaces;

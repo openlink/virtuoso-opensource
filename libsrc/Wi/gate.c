@@ -216,7 +216,7 @@ page_wait_access (it_cursor_t * itc, dp_addr_t dp,  buffer_desc_t * buf_from, bu
 	page_release_read (buf);
       
       ITC_LEAVE_MAPS (itc);
-      /* complete transit.  This counts as no change since itc was aall the time in source and dest was acquired without possibility of interference */
+      /* complete transit.  This counts as no change since itc was all the time in source and dest was acquired without possibility of interference */
       *buf_ret = buf;
       BUF_DBG_ENTER (buf);
       return itc->itc_to_reset;
@@ -402,7 +402,7 @@ page_release_writes (buffer_desc_t * buf)
 	  TC (tc_page_wait_reset);
 	  if (RWG_WAIT_NO_ENTRY_IF_WAIT == waiting->itc_max_transit_change)
 	    waiting->itc_to_reset = RWG_WAIT_NO_ENTRY_IF_WAIT;
-	  /*the point aboev if to set the itc_to_reset to indicate wait+no entry.  The case where there is entry with no wait has itc_to_reset set to RWG_NO_WAIT */
+	  /*the point above is to set the itc_to_reset to indicate wait+no entry.  The case where there is entry with no wait has itc_to_reset set to RWG_NO_WAIT */
 	  waiting->itc_buf_entered = NULL;
 	  buf->bd_write_waiting = next;
 	  semaphore_leave (waiting->itc_thread->thr_sem);
@@ -475,7 +475,7 @@ page_mark_change (buffer_desc_t * buf, int change)
 {
   it_cursor_t *itc;
   if (!buf->bd_is_write && !buf->bd_readers)
-    GPF_T1 ("Must have read or write acces on buf to mark change");
+    GPF_T1 ("Must have read or write access on buf to mark change");
   ASSERT_IN_MAP (buf->bd_tree, buf->bd_page);
   for (itc = buf->bd_write_waiting; itc; itc = itc->itc_next_waiting)
     itc->itc_to_reset = MAX (itc->itc_to_reset, change);

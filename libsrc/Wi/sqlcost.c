@@ -97,7 +97,7 @@ dbe_key_row_cost (dbe_key_t * key, float * rpp)
 	  k_col->col_sqt.sqt_dtp == DV_WIDE ||
 	  k_col->col_sqt.sqt_dtp == DV_BIN ||
 	  k_col->col_sqt.sqt_dtp == DV_ANY)
-	{ /* precision contious ones */
+	{ /* precision continues ones */
 	  if (k_col->col_avg_len)
 	    col_len = k_col->col_avg_len;
 	  else if (k_col->col_sqt.sqt_precision > 0)
@@ -161,7 +161,7 @@ sqlo_enum_col_arity (df_elt_t * pred, dbe_column_t * left_col, float * a1)
       return 1;
     }
  unknown:
-  /* it is a constant but it is not mentioned in the sample.  Must be a rare value.  We guess that the vals mentioned in the sampole cover 90% of rows.  */
+  /* it is a constant but it is not mentioned in the sample.  Must be a rare value.  We guess that the vals mentioned in the sample cover 90% of rows.  */
   if (!left_col->col_defined_in || !left_col->col_defined_in->tb_primary_key)
     return 0;
   {
@@ -1021,7 +1021,7 @@ float
 sqlo_inx_intersect_cost (df_elt_t * tb_dfe, dk_set_t col_preds, dk_set_t group, float * arity_ret)
 {
   /* Complicated.  Cost of inx int is the cost of the smallest term times no of terms.
-   * card is the card of the term with the least card times product of theselectivities of the rest.  The selectivity is the arity/count of the table */
+   * card is the card of the term with the least card times product of the selectivities of the rest.  The selectivity is the arity/count of the table */
   int smallest_term = -1, inx;
   float cf = 0;
   int nth_term = 0;

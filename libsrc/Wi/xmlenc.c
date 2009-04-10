@@ -800,7 +800,7 @@ caddr_t xml_doc_subst (xml_doc_subst_t * xs)
   {
     caddr_t * nss = xenc_get_namespaces (xte->xte_current, xs->xs_namespaces);
     /* when at top of parent link we have same namespaces,
-       then it's already there; no need to put it twise
+       then it's already there; no need to put it twice
        furthermore that will screw-up detection of repeating NS declaration
        from ancestors.
      */

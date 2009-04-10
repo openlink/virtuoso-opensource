@@ -1739,7 +1739,7 @@ http('  <option' ||
   ' value="grab-all-seealso">Retrieve all missing remote RDF data that might be useful, including seeAlso references</option>\n');
 http('  <option' ||
   case (s_param) when 'grab-everything' then ' selected="selected"' else '' end ||
-  ' value="grab-everything">Try to download all referenced resources (this may be very slow and ineffecient)</option>\n');
+  ' value="grab-everything">Try to download all referenced resources (this may be very slow and inefficient)</option>\n');
 http('</select>\n');
 http('			  <br />\n');
   }

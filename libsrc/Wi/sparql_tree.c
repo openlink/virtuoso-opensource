@@ -496,7 +496,7 @@ sparp_equiv_alloc (sparp_t *sparp)
       if (NULL == sparp->sparp_env->spare_storage_name)
         spar_internal_error (sparp, "The SPARQL optimizer has failed to process the query with reasonable quality. The resulting SQL query is abnormally long. Please paraphrase the SPARQL query.");
       else
-        spar_error (sparp, "The query is prohibitively ineffecient if it should be exectuted on storage <%s>. Please optimize your mappings of relational data to RDF or paraphrase the SPARQL query.", sparp->sparp_env->spare_storage_name);
+        spar_error (sparp, "The query is prohibitively inefficient if it should be executed on storage <%s>. Please optimize your mappings of relational data to RDF or paraphrase the SPARQL query.", sparp->sparp_env->spare_storage_name);
     }
   res = (sparp_equiv_t *)t_alloc_box (sizeof (sparp_equiv_t), DV_ARRAY_OF_POINTER);
   memset (res, 0, sizeof (sparp_equiv_t));

@@ -1574,7 +1574,7 @@ start:
       /* A read cursor landed on a leaf */
       if (!it->itc_no_bitmap && it->itc_insert_key && it->itc_insert_key->key_is_bitmap)
 	it->itc_bp.bp_just_landed = 1;
-      if ((ISO_SERIALIZABLE == it->itc_isolation)  /* IvAn: this addded according to Orri's instruction: */ && (DVC_GREATER != res))
+      if ((ISO_SERIALIZABLE == it->itc_isolation)  /* IvAn: this added according to Orri's instruction: */ && (DVC_GREATER != res))
 	{
 	  if (NO_WAIT != itc_serializable_land (it, buf_ret))
 	    goto start;
@@ -1645,7 +1645,7 @@ search_switch:
 	  itc_vacuum_compact (it, *buf_ret);
 	up = LONG_REF (((*buf_ret)->bd_buffer) + DP_PARENT);
 	/* in principle, the parent link must be read inside the dp's map.  Here we only want to know if it is 0.
-	 * The map is not needed for that since aroot can stop being a root only by somebidy changing it, which can't be since this itc is ecl in.
+	 * The map is not needed for that since aroot can stop being a root only by somebody changing it, which can't be since this itc is ecl in.
 	 * However, non-0 parent links can change due to splits and they must be read and transited atomically in the right map. */
 	leaf_from = (*buf_ret)->bd_page;
 	if (!up)
@@ -1729,7 +1729,7 @@ search_switch:
 		  {
 		    int wait_rc = itc_set_lock_on_row (it, buf_ret);
 		    if (wait_rc != NO_WAIT || !it->itc_is_on_row)
-	      goto start; /* if waited, must recheck the key, again pass via itc_page_searchh */
+	      goto start; /* if waited, must recheck the key, again pass via itc_page_search */
       }
 	ITC_AGE_TRX (it, 1);
 	if (it->itc_search_mode == SM_READ)

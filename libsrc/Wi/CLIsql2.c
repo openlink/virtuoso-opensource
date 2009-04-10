@@ -5947,7 +5947,7 @@ SQLProcedureColumns (
    This usage is more upto standard.
 
    The last column (PROCEDURE_TYPE) is either 0 (SQL_PT_UNKNOWN)
-   1 (SQL_PT_PROCEDURE) or 2 (SQL_PT_FUNTION). Currently Kubl stores
+   1 (SQL_PT_PROCEDURE) or 2 (SQL_PT_FUNCTION). Currently Kubl stores
    always NULL to P_TYPE column, so let's return 0 for it.
 
    25.Dec.1997: Changed \\P_NAME to name_part(\\P_NAME,2) where possible.

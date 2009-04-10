@@ -1004,7 +1004,7 @@ pl_finalize_page (page_lock_t * pl, it_cursor_t * itc)
 
   if (!PL_IS_FINALIZE (pl))
     {
-      /* if it is absent and needs no finalize, do not read it if not needed. * butmake a decoy for it, as if it was being read.  And if somebody comes in on the decoy, then must actually read the page, so that this looks like a 2nd in read for the thread that waits on the decoy.  If none waits, do not read */
+      /* if it is absent and needs no finalize, do not read it if not needed. * but make a decoy for it, as if it was being read.  And if somebody comes in on the decoy, then must actually read the page, so that this looks like a 2nd in read for the thread that waits on the decoy.  If none waits, do not read */
       it_map_t * itm;
       ITC_IN_KNOWN_MAP (itc, pl->pl_page);
       itm = IT_DP_MAP (pl->pl_it, pl->pl_page);
@@ -1492,7 +1492,7 @@ lt_transact (lock_trx_t * lt, int op)
       GPF_T1 ("mismatched lt thread counts in lt_transact");
     }
 
-  lt->lt_timeout = 0; /* make sure no 2 kills because of timeout detectedby reaper. */
+  lt->lt_timeout = 0; /* make sure no 2 kills because of timeout detected by reaper. */
   if (LT_DELTA_ROLLED_BACK == lt->lt_status)
     return;
   if (LT_CLOSING == lt->lt_status)

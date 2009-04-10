@@ -250,7 +250,7 @@ ssg_sdprin_varname (spar_sqlgen_t *ssg, ccaddr_t vname)
       return;
     }
   if ((':' == vname[0]) && !(SSG_SD_BI & ssg->ssg_sd_flags))
-    spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like external paremeters) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
+    spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like external parameters) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
   if ((strchr (vname, '_') || strchr (vname, '"') || strchr (vname, ':')) && !(SSG_SD_BI & ssg->ssg_sd_flags))
     spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (say, SQL-like names of variables) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
   ssg_putchar ('?');

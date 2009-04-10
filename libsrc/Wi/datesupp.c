@@ -974,7 +974,7 @@ field_length_checked:
 	{
               if ('\0' != group_end[1])
                 {
-                  err_msg_ret[0] = box_dv_short_string ("Invalid timezone (extra charaters after 'Z')");
+                  err_msg_ret[0] = box_dv_short_string ("Invalid timezone (extra characters after 'Z')");
                   return;
 	}
     }

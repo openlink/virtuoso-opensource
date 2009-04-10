@@ -757,7 +757,7 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
           sparp_push_new_graph_source (sparp,
             &(sparp->sparp_env->spare_default_graphs),
             new_precode );
-          /* No sparp->sparp_env->spare_default_graphs_locked = 1; here because NOT FROM can not be owerridden */
+          /* No sparp->sparp_env->spare_default_graphs_locked = 1; here because NOT FROM can not be overridden */
           return;
         }
       if (!strcmp (param, "input:named-graph-uri"))
@@ -780,7 +780,7 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
           sparp_push_new_graph_source (sparp,
             &(sparp->sparp_env->spare_named_graphs),
             new_precode );
-          /* No sparp->sparp_env->spare_default_graphs_locked = 1; here because NOT FROM can not be owerridden */
+          /* No sparp->sparp_env->spare_default_graphs_locked = 1; here because NOT FROM can not be overridden */
           return;
         }
       if (!strcmp (param, "input:ifp"))
@@ -1391,7 +1391,7 @@ spar_add_propvariable (sparp_t *sparp, SPART *lvar, int opcode, SPART *verb_qnam
           curr_pv->sparpv_obj_altered |= 0x2;
         }
       t_set_push (&(sparp->sparp_propvars), curr_pv);
-      goto not_found_in_local_set; /* see below */ /* No need to search because this is the first occurence at all */
+      goto not_found_in_local_set; /* see below */ /* No need to search because this is the first occurrence at all */
     }
   DO_SET (spar_propvariable_t *, prev, &(sparp->sparp_env->spare_propvar_sets->data))
     {
@@ -2950,9 +2950,9 @@ spar_make_literal_from_sql_box (sparp_t * sparp, caddr_t box, int make_bnode_if_
       else
         return spar_make_variable (sparp, t_box_dv_uname_string ("_:sqlbox"));
       break;
-    default: spar_internal_error (sparp, "spar_" "make_literal_from_sql_box(): unsupportded box type");
+    default: spar_internal_error (sparp, "spar_" "make_literal_from_sql_box(): unsupported box type");
   }
-  return NULL; /* to keep compier happy */
+  return NULL; /* to keep compiler happy */
 }
 
 #define QUAD_MAPS_FOR_QUAD 1
@@ -3202,7 +3202,7 @@ bif_sprintff_like (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t f1 = bif_string_or_uname_arg (qst, args, 0, "__sprintff_like");
   caddr_t f2 = bif_string_or_uname_arg (qst, args, 1, "__sprintff_like");
-  sec_check_dba ((query_instance_t *)qst, "__sprintff_like"); /* To prevent attack by likeing garbage in order to run out of memory. */
+  sec_check_dba ((query_instance_t *)qst, "__sprintff_like"); /* To prevent attack by likening garbage in order to run out of memory. */
   return box_num (sprintff_like (f1, f2));
 }
 

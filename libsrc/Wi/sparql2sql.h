@@ -115,7 +115,7 @@ extern int sparp_trav_out_clauses_int (sparp_t *sparp, SPART *root,
   (stp).stp_expn_in_cbk, (stp).stp_expn_out_cbk, (stp).stp_expn_subq_cbk, \
   (stp).stp_literal_cbk
 
-/*!< Suspedns the traversal in order to start other traversal */
+/*!< Suspends the traversal in order to start other traversal */
 extern void sparp_gp_trav_suspend (sparp_t *sparp);
 /*!< Resumes the suspended traversal */
 extern void sparp_gp_trav_resume (sparp_t *sparp);
@@ -135,7 +135,7 @@ typedef struct sparp_equiv_s
     ptrlong e_own_idx;		/*!< Index of this instance (in \c req_top.equivs) */
     SPART *e_gp;		/*!< Graph pattern where these variable resides */
     caddr_t *e_varnames;	/*!< Array of distinct names of equivalent variables. Usually one element, if there's no ?x=?y in FILTER */
-    SPART **e_vars;		/*!< Array of all equivalent variables, including different occurences of same name in different triples */
+    SPART **e_vars;		/*!< Array of all equivalent variables, including different occurrences of same name in different triples */
     ptrlong e_var_count;	/*!< Number of used items in e_vars. This can be zero if equiv passes top-level var from alias to alias without local uses */
     ptrlong e_gspo_uses;	/*!< Number of all local uses in members (+1 for each in G, P, S or O in triples) */
     ptrlong e_nested_bindings;	/*!< Number of all nested uses in members (+1 for each in G, P, S or O in triples, +1 for each subquery use) */
@@ -151,8 +151,8 @@ typedef struct sparp_equiv_s
     ptrlong e_external_src_idx;	/*!< Index in \c req_top.equivs of the binding of external variable at ancestor of scalar subquery */
     ptrlong e_merge_dest_idx;	/*!< After the merge of equiv into some destination equiv, e_merge_dest_idx keeps destination */
     ptrlong e_deprecated;	/*!< The equivalence class belongs to a gp that is no longer usable */
-    ptrlong e_pos1_t_in;	/*!< 1-based bosition of variable in T_IN list */
-    ptrlong e_pos1_t_out;	/*!< 1-based bosition of variable in T_OUT list */
+    ptrlong e_pos1_t_in;	/*!< 1-based position of variable in T_IN list */
+    ptrlong e_pos1_t_out;	/*!< 1-based position of variable in T_OUT list */
 #ifdef DEBUG
     SPART **e_dbg_saved_gp;	/*!< \c e_gp that is boxed as ptrlong, to same the pointer after \c e_gp is set to NULL */
 #endif
@@ -370,7 +370,7 @@ extern SPART *sparp_find_gp_by_alias (sparp_t *sparp, caddr_t alias);
 If \c gp is not NULL the search is restricted by triples that
 are direct members of \c gp, otherwise the gp to search will be found by selid of the variable.
 If \c need_strong_match is nonzero then the triple should contain pointer to var,
-othervise a triple should contain a field whose selid, tabid, name and tr_idx matches \c var.
+otherwise a triple should contain a field whose selid, tabid, name and tr_idx matches \c var.
 The \c var may b blank node or retval as well, but retval has no meaning if \c need_strong_match is set */
 extern SPART *sparp_find_triple_of_var_or_retval (sparp_t *sparp, SPART *gp, SPART *var, int need_strong_match);
 
@@ -580,7 +580,7 @@ extern void sparp_label_external_vars (sparp_t *sparp, dk_set_t parent_gps);
 extern void sparp_remove_totally_useless_equivs (sparp_t *sparp);
 
 #define SPARP_UNLINK_IF_ASSIGNED_EXTERNALLY 0x1
-/*! Removes equivalence classes that were supposed to be pure conenctions but are not connections at all. */
+/*! Removes equivalence classes that were supposed to be pure connections but are not connections at all. */
 extern void sparp_remove_redundant_connections (sparp_t *sparp, ptrlong flags);
 
 /*! Convert a query with grab vars into a select with procedure view with seed/iter/final sub-SQLs as arguments. */
@@ -606,7 +606,7 @@ This also edits ORDER BY ?top-resultset-alias and replaces it with appropriate O
 extern void sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars);
 
 #define SPARP_SET_OPTION_NEW		0	/*!< Set an option only if it do not exists yet */
-#define SPARP_SET_OPTION_REPLACING	1	/*!< Set an option, owerwriting any existing value */
+#define SPARP_SET_OPTION_REPLACING	1	/*!< Set an option, overwriting any existing value */
 #define SPARP_SET_OPTION_APPEND1	2	/*!< Adds an item to an exising value that is SPAR_LIST already (or creates a new single-item SPAR_LIST) */
 /*! Creates a new option (or changes existing one), alters \c options_ptr if needed and returns the whole value changed or created */
 extern SPART *sparp_set_option (sparp_t *sparp, SPART ***options_ptr, ptrlong key, SPART *value, ptrlong mode);
@@ -822,7 +822,7 @@ extern int sparp_some_retvals_should_wrap_distinct (sparp_t *sparp, SPART *tree)
 
 /*! Fills in ssg->ssg_out with an SQL text of a query */
 extern void ssg_make_sql_query_text (spar_sqlgen_t *ssg);
-/*! Fills in ssg->ssg_out with a wrapping query with rdf box completeions for a result of \c ssg_make_sql_query_text() */
+/*! Fills in ssg->ssg_out with a wrapping query with rdf box completion for a result of \c ssg_make_sql_query_text() */
 extern void ssg_make_rb_complete_wrapped (spar_sqlgen_t *ssg);
 /*! Makes a decision whether \c ssg_make_rb_complete_wrapped() is needed or plain \c ssg_make_sql_query_text() is adequate */
 extern int ssg_req_top_needs_rb_complete (spar_sqlgen_t *ssg);
@@ -835,7 +835,7 @@ extern void ssg_make_whole_sql_text (spar_sqlgen_t *ssg);
 
 /* Flags that are responsible for various serialization features.
 Some features are labeled as "blocking", because if such a feature is required but flag is not set, an error is signaled.
-An occurence of a non-blocking feature provides some hint to the optimizer of the SPARQL service endpoint; a blocking one alters semantics. */
+An occurrence of a non-blocking feature provides some hint to the optimizer of the SPARQL service endpoint; a blocking one alters semantics. */
 #define SSG_SD_QUAD_MAP		0x0001	/*!< Allows the use of QUAD MAP groups in the output */
 #define SSG_SD_OPTION		0x0002	/*!< Allows the use of OPTION keyword in the output */
 #define SSG_SD_BREAKUP		0x0004	/*!< Flags if BREAKUP hint options should be printed, this has no effect w/o SSG_SD_OPTION */

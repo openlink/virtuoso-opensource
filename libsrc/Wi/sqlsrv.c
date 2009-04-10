@@ -2841,7 +2841,7 @@ lt_enter (lock_trx_t * lt)
 int
 lt_enter_anyway (lock_trx_t * lt)
 {
-  /* enter the trx.  If it is benig rolled back, wait.  if it is not pending, roll back */
+  /* enter the trx.  If it is being rolled back, wait.  if it is not pending, roll back */
   int rc;
   IN_TXN;
   if (LT_CLOSING == lt->lt_status)

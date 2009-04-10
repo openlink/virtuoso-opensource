@@ -1479,7 +1479,7 @@ void appi_character (void *userdata, const char * s, size_t len)
     s, len,
     appi->appi_lh->lh_is_vtb_word, appi_word_cbk_html, ah);
 /* At this point we have items in appi_hits_revlist that have apa_start and apa_end relative to
-the translated bufer \c s. Now these offsets should be translated into offsets in the original text */
+the translated buffer \c s. Now these offsets should be translated into offsets in the original text */
 #ifdef DEBUG
   if (NULL != ah->ah_recent_places)
     GPF_T;

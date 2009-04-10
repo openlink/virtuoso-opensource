@@ -4267,7 +4267,7 @@ describe_physical_subjects:
             }
         }
     }
-  -- dbg_obj_princ ('final resuit is ', res);
+  -- dbg_obj_princ ('final result is ', res);
   return res;
 }
 ;
@@ -4615,7 +4615,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL (in subj_dict any, in cons
 --            }
         }
     }
-  -- dbg_obj_princ ('final resuit is ', res);
+  -- dbg_obj_princ ('final result is ', res);
   return res;
 }
 ;
@@ -6075,7 +6075,7 @@ create function DB.DBA.RDF_QM_MACROEXPAND_TEMPLATE (in iritmpl varchar) returns 
 --      if (atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal'), '0')))
 --        signal ('22023', 'Can not use ^{DynamicLocalFormat}^ in IRI template if DynamicLocal is not set to 1 in [URIQA] section of Virtuoso configuration file');
       if ((pos > 0) and (pos < 10) and strchr (subseq (iritmpl, 0, pos), ':') is not null)
-        signal ('22023', 'Misplaced ^{DynamicLocalFormat}^: its expansion will contain protocol prefix but the templace contains one already');
+        signal ('22023', 'Misplaced ^{DynamicLocalFormat}^: its expansion will contain protocol prefix but the template contains one already');
       if (strchr (host, ':') is not null)
         iritmpl := replace (iritmpl, '^{DynamicLocalFormat}^', 'http://%{WSHostName}U:%{WSHostPort}U');
       else

@@ -872,7 +872,7 @@ SQLGetDiagRecW (SQLSMALLINT HandleType,
 
       SET_AND_FREE_OUTPUT_CHAR_NARROW (MessageText, conn);
 
-      /*if (pcbMessageText) - explicit bug, _cbMessageText is a temp bufer length
+      /*if (pcbMessageText) - explicit bug, _cbMessageText is a temp buffer length
        *pcbMessageText = ((SQLSMALLINT) _cbMessageText);*/
     }
   else

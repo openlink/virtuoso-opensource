@@ -1621,7 +1621,7 @@ delete_node_run (delete_node_t * del, caddr_t * inst, caddr_t * state)
 	  itc_free (cr_itc);
 	  return;
 	}
-      /* allways true and for update */
+      /* always true and for update */
 #if 0
       if (pl->itc_owns_page != cr_itc->itc_page ||
 	  pl->itc_lock_mode != PL_EXCLUSIVE)

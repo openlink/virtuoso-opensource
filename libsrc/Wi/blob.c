@@ -528,7 +528,7 @@ page_wait_blob_access (it_cursor_t * itc, dp_addr_t dp_to, buffer_desc_t ** buf_
   if ((*buf_ret)->bd_page != (*buf_ret)->bd_physical_page)
     {
       page_leave_outside_map (*buf_ret);
-      log_error ("a blob page cannot have  differet bd_page and bd_physical_page L=%d P=%d", (*buf_ret)->bd_page, (*buf_ret)->bd_physical_page);
+      log_error ("a blob page cannot have different bd_page and bd_physical_page L=%d P=%d", (*buf_ret)->bd_page, (*buf_ret)->bd_physical_page);
       goto errexit;
     }
 #if 0

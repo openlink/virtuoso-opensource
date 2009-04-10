@@ -142,7 +142,7 @@ sprintff_is_proven_unparseable (const char *f)
       tail++;
       tail_after_prev_format = tail;
       if ('\0' == left_fmt_type)
-        continue; /* If formats are not ajacent then there's a possibility that ht is bijection for some data */
+        continue; /* If formats are not adjacent then there's a possibility that ht is bijection for some data */
       if ('c' == left_fmt_type)
         continue; /* Single char is always OK because the size is fixed, can't "eat" more than needed */
       if ('s' == left_fmt_type)
@@ -350,7 +350,7 @@ static int
 sff_isect (const char *f1, const char *f2, char *res_buf)
 {
 #ifdef SFF_DEBUG
-  const char *f1_initial = f1; /* f1 is shifed to the right so that each time label "again" is passed f1 points to the text that is not yet intersected into res_buf */
+  const char *f1_initial = f1; /* f1 is shifted to the right so that each time label "again" is passed f1 points to the text that is not yet intersected into res_buf */
   const char *f2_initial = f2; /* and that is true for f2 as well */
   int dbg_ctr;
 #endif
@@ -471,7 +471,7 @@ again:
               f2_fix = '\0';
               if ('U' != f2_v)
                 goto generic_tails; /* Syntax error -- no 'U' after "%{connvar}" */
-              /* There exists one special case that does not depend on format type and contex: identical connecton variables with identical formatting will always match */
+              /* There exists one special case that does not depend on format type and context: identical connection variables with identical formatting will always match */
               if (((f1_tail - f1) == (f2_tail - f2)) &&
                   (f1_last_replaced != f1) && (f2_last_replaced != f2) &&
                   !memcmp (f1, f2, (f1_tail - f1)) )

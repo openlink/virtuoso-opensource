@@ -122,7 +122,7 @@ typedef struct ttlp_s
   const char *ttlp_raw_text;	/*!< Raw text of the lexem */
   ptrlong ttlp_special_qnames;	/*!< Bitmask where every bit means that the identifier in qname, not a keyword */
   /* parser */
-  const char *ttlp_err_hdr;	/*!< Human-readable phrase that gives a name to the parsing routine, e.g. "Turtle parser of web crawer" */
+  const char *ttlp_err_hdr;	/*!< Human-readable phrase that gives a name to the parsing routine, e.g. "Turtle parser of web crawler" */
   caddr_t ttlp_catched_error;	/*!< The error that stopped the processing, as a three-element vector made by srv_make_new_error () */
   caddr_t ttlp_default_ns_uri;	/*!< IRI associated with ':' prefix */
   dk_set_t ttlp_namespaces;	/*!< get_keyword style list of namespace prefixes (keys) and IRIs (values) */
@@ -202,11 +202,11 @@ extern caddr_t uriqa_get_default_for_connvar (query_instance_t *qi, const char *
 #define RDF_GRAPH_PERM_LIST 0x08
 
 extern id_hash_t *rdf_graph_group_dict_htable;			/*!< Dictionary of graph group members: group IID is key, vector of member IIDs is value */
-extern id_hash_iterator_t *rdf_graph_group_dict_hit;		/*!< Hash interator for \c rdf_graph_group_dict_htable */
+extern id_hash_iterator_t *rdf_graph_group_dict_hit;	/*!< Hash iterator for \c rdf_graph_group_dict_htable */
 extern id_hash_t *rdf_graph_public_perms_dict_htable;		/*!< Dictionary of public permissions for graphs: graph/group IID is key, copy of DB.DBA.RDF_GRAPH_USER.RGU_PERMISSIONS is a value */
-extern id_hash_iterator_t *rdf_graph_public_perms_dict_hit;	/*!< Hash interator for \c rdf_graph_group_dict_htable */
+extern id_hash_iterator_t *rdf_graph_public_perms_dict_hit;	/*!< Hash iterator for \c rdf_graph_group_dict_htable */
 extern id_hash_t *rdf_graph_default_perms_of_user_dict_htable;		/*!< Dictionary of default permissions for users: user ID is key, copy of DB.DBA.RDF_GRAPH_USER.RGU_PERMISSIONS is a value */
-extern id_hash_iterator_t *rdf_graph_default_perms_of_user_dict_hit;	/*!< Hash interator for \c rdf_graph_default_perms_of_user_dict_htable */
+extern id_hash_iterator_t *rdf_graph_default_perms_of_user_dict_hit;	/*!< Hash iterator for \c rdf_graph_default_perms_of_user_dict_htable */
 
 
 #endif

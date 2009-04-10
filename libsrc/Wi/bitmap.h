@@ -40,7 +40,7 @@ typedef struct bm_pos_s
   bitf_t        bp_below_start:1; /* itc found a ce with the right range but the search ended up below the first set bit */
   bitf_t        bp_new_on_row:1; /* mecy time in toc_row_check, set the out cols for leading key parts.  Need not set on every iteration */
   bitf_t        bp_just_landed:1;
-  bitf_t	bp_transiting:1; /* if set, placeholder is neither here nor there. Busy wait witrh sleep to wait for final position */
+  bitf_t	bp_transiting:1; /* if set, placeholder is neither here nor there. Busy wait with sleep to wait for final position */
 } bitmap_pos_t;
 
 #define CE_N_VALUES 8192

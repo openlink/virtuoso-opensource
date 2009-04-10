@@ -1320,7 +1320,7 @@ tb_string_and_int_for_insert (dbe_key_t * key, db_buf_t image, it_cursor_t * ins
 int
 tb_string_and_id_check (dbe_table_t * tb, dbe_column_t ** str_col, dbe_column_t ** id_col)
 {
-  /* true if tb has string pk andint dependent and another key withthe reverse */
+  /* true if tb has string pk and int dependent and another key with the reverse */
   dbe_key_t * pk = tb->tb_primary_key;
   dbe_column_t * col1 = (dbe_column_t *) pk->key_parts->data;
   dbe_column_t * col2 = pk->key_parts->next ? (dbe_column_t *) pk->key_parts->next->data : NULL;

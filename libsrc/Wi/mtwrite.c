@@ -81,8 +81,8 @@ void
 buf_cancel_write (buffer_desc_t * buf)
 {
   /* remove from write queue, mostly as a result of a dirty buffer going empty.
-   * Note that the buf may simultaneously be canceled on one thread and rem'd from write queue by the writer thread.
-   * this is if the bufffer is occupied when the write turn comes, the write will be skipped and the buffer rem'd from the queue.
+   * Note that the buf may simultaneously be cancelled on one thread and rem'd from write queue by the writer thread.
+   * this is if the buffer is occupied when the write turn comes, the write will be skipped and the buffer rem'd from the queue.
    * Thus the bd_iq of an occupied buffer can be async reset by another thread. */
   io_queue_t * iq = buf->bd_iq;
   if (buf->bd_tree)
@@ -447,7 +447,7 @@ iq_aio (io_queue_t * iq)
 	  LEAVE_IOQ (iq);
 	  if (bp_buf_enter (buf, &buf_itm))
 	    {
-	      /* now we are in the mtx of buf_itm and the buf was not reused whille waiting for the mtx */
+	      /* now we are in the mtx of buf_itm and the buf was not reused while waiting for the mtx */
 	      it_map_t * buf_itm = IT_DP_MAP (buf->bd_tree, buf->bd_page);
 	      if (buf->bd_is_dirty
 		  && buf->bd_tree 
@@ -682,7 +682,7 @@ iq_loop (io_queue_t * iq)
 	}
       if (iq->iq_waiting_shut && iq_on && iq->iq_action_ctr > main_bufs / (n_iqs * n_iqs))
 	{
-	  /* if the  iq's are not being turned off and the iq has not gone empty within main_bufs operations, then it can be the iq will not go empty and cpt will be indefinitely delayed.  So let the cpt thread continyue.  It will eventually stop all processing and turn off the iq's after activity is suspended.
+	  /* if the  iq's are not being turned off and the iq has not gone empty within main_bufs operations, then it can be the iq will not go empty and cpt will be indefinitely delayed.  So let the cpt thread continue.  It will eventually stop all processing and turn off the iq's after activity is suspended.
 	  * n_iqs is squared because cpt  waits on each in turn.  In this way the max cpt wait is about the time it takes for the combined iq's to turn over the buffer pool worth of data. */
 	  iq_dry (iq);
 	}
@@ -719,7 +719,7 @@ iq_loop (io_queue_t * iq)
 
 	  if (bp_buf_enter (buf, &buf_itm))
 	    {
-	      /* now we are in the mtx of buf_itm and the buf was not reused whille waiting for the mtx */
+	      /* now we are in the mtx of buf_itm and the buf was not reused while waiting for the mtx */
 	      if (buf->bd_is_dirty
 		  && buf->bd_tree 
 		  && buf->bd_page

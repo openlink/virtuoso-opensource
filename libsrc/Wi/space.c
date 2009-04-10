@@ -164,8 +164,8 @@ itc_delta_this_buffer (it_cursor_t * itc, buffer_desc_t * buf, int stay_in_map)
     {
       if (LT_CLOSING == itc->itc_ltrx->lt_status)
 	{
-	  log_error ("Out if disk during commit.  The transaction is in effect and will be replayed from the log at restart.  Exiting due to no disk space, thus cannot maintain separtation of checkpoint and commit space and transactional semantic."
-		     "This happens due to running out of safety margin, which is not expected to happen.  If this takes place without in fact being out of disk on the database or consistently in a given situationj, the condition may be reported to support.   This is a planned exit and not a database corruption.  A core will be made for possible support.");
+	  log_error ("Out if disk during commit.  The transaction is in effect and will be replayed from the log at restart.  Exiting due to no disk space, thus cannot maintain separation of checkpoint and commit space and transactional semantic."
+		     "This happens due to running out of safety margin, which is not expected to happen.  If this takes place without in fact being out of disk on the database or consistently in a given situation, the condition may be reported to support.   This is a planned exit and not a database corruption.  A core will be made for possible support.");
 	  GPF_T1 ("Deliberately made core for possible support");
 	}
       if (itc->itc_n_pages_on_hold)

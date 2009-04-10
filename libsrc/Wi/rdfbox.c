@@ -40,7 +40,7 @@ rb_complete (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance_t
   dtp_t value_dtp = ((rb->rb_chksum_tail) ? (((rdf_bigbox_t *)rb)->rbb_box_dtp) : DV_TYPE_OF (rb->rb_box));
 #ifdef DEBUG
   if (rb->rb_is_complete)
-    GPF_T1("rb_" "complete(): redundand call");
+    GPF_T1("rb_" "complete(): redundant call");
 #endif
   if (NULL == rdf_box_qry_complete_xml)
     {
@@ -626,7 +626,7 @@ dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
           if (len1 > len2)
             return DVC_GREATER;
 /* In version 5, complete boxes that differ only in ro_id are intentionally kept distinct in table but equal in memory.
-In version 6 (Vajra), complete boxes are equal even if ro_id differ (say, one of ids is zero. ids are compared only if both boxes are ncomplete.
+In version 6 (Vajra), complete boxes are equal even if ro_id differ (say, one of ids is zero. ids are compared only if both boxes are incomplete.
           return DVC_MATCH; */
         }
       else if (cmp_len < RB_MAX_INLINED_CHARS)
@@ -1362,7 +1362,7 @@ iri_cast_and_split_ttl_qname (query_instance_t *qi, caddr_t iri, caddr_t *ns_pre
 
 typedef struct ttl_env_s {
   id_hash_iterator_t *te_used_prefixes;	/*!< Item 1 is the dictionary of used namespace prefixes */
-  caddr_t te_prev_subj_ns;		/*!< Item 2 is the namespace part of previous subject. It is DV_STRING except the very beginning of the serializetion when it can be of any type except DV_STRING (non-string will be freed and replaced with NULL pointer inside the printing procedure) */
+  caddr_t te_prev_subj_ns;		/*!< Item 2 is the namespace part of previous subject. It is DV_STRING except the very beginning of the serialization when it can be of any type except DV_STRING (non-string will be freed and replaced with NULL pointer inside the printing procedure) */
   caddr_t te_prev_subj_loc;		/*!< Item 3 is the local part of previous subject */
   caddr_t te_prev_pred_ns;		/*!< Item 4 is the namespace part of previous predicate. */
   caddr_t te_prev_pred_loc;		/*!< Item 5 is the local part of previous predicate */

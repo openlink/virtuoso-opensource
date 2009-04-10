@@ -163,7 +163,7 @@ typedef struct lock_trx_s
     thread_t *		lt_thr;
     dk_hash_t 		lt_lock;
 #define lt_has_locks(lt) ((lt)->lt_lock.ht_count)
-    /* all below members are considerd data area and cleared with memset in lt_cleare, saving individual ones as needed */
+    /* all below members are concidered data area and cleared with memset in lt_cleare, saving individual ones as needed */
 #define LT_DATA_AREA_FIRST lt_waits_for
     dk_set_t		lt_waits_for;
     dk_set_t		lt_waiting_for_this;

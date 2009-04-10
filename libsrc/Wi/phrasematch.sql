@@ -61,7 +61,7 @@ alter table DB.DBA.SYS_ANN_PHRASE_SET add APS_LOAD_AT_BOOT integer not null
 create table DB.DBA.SYS_ANN_PHRASE
 (
   AP_APS_ID integer not null,		-- references SYS_ANN_PHRASE_SET (APS_ID),
-  AP_CHKSUM integer,			-- prased phrase checksum
+  AP_CHKSUM integer,			-- phrase checksum
   AP_TEXT varchar,			-- original text
   AP_LINK_DATA any,			-- Associated data about links etc.
   AP_LINK_DATA_LONG long varchar,	-- Same as AP_LINK_DATA but for long content, one of two is always NULL

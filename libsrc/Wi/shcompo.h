@@ -41,7 +41,7 @@ cache optimization. When reference count is zero, shcompo is being destroyed.
 The shcompo may be declared staled and removed from global hashtable or caches
 to prevent its use in future processing,
 but it can remain in memory for a while if it's in use.
-It can become stale without being explicitely declares as such (say, qr_needs_recompile can be set),
+It can become stale without being explicitly declares as such (say, qr_needs_recompile can be set),
 so a method should be used to check whether the shcompo is stale, not just an access to the field.
 */
 
@@ -97,8 +97,8 @@ typedef struct shcompo_s
     int		shcompo_ref_count;	/*!< Reference count */
     int		shcompo_is_stale;	/*!< Flags that the shcompo should not be used in new processes */
     void *	shcompo_data;		/*!< Useful data. The shcompo itself can be part of that data but only if _->shcompo_recompile is NULL */
-    caddr_t	shcompo_error;		/*!< NULL in case of successfull (or not performed) compilation, compilation error otherwise */
-    dk_mutex_t *shcompo_comp_mutex;	/*!< Compilation mutex, it is non-NULL while the compilation is in porgress */
+    caddr_t	shcompo_error;		/*!< NULL in case of successful (or not performed) compilation, compilation error otherwise */
+    dk_mutex_t *shcompo_comp_mutex;	/*!< Compilation mutex, it is non-NULL while the compilation is in progress */
 #ifdef DEBUG
     int		shcompo_watchdog;	/*!< Last moment when the shcompo is in shcompo_global_hashtable. */
 #endif

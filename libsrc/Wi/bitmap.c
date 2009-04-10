@@ -285,7 +285,7 @@ bm_insert (bitno_t bm_start, db_buf_t bm, short * bm_len_ret, bitno_t value, int
     }
   if (!old_ce_len && !new_ce_len)
     {
-      /* insert singel valued ce at the end */
+      /* insert single valued ce at the end */
       LONG_SET_NA (ext, (value - bm_start) | 0x80000000);
       new_ce_len = 4;
       ins_at_end = 1;
@@ -477,7 +477,7 @@ upd_truncate_row (it_cursor_t * itc, buffer_desc_t ** buf, int nl)
  * Now this cannot be very well done inside the insert of the  right side because of page map lock order.
  * So it is done after the fact.  But many concurrent inserts can have the itc transiting. 
  * So every insert must remember which itc it made to transit.  But because many transits can be going at the same time for one itc,
- * we must count how many transits are in fact going and reset the transiting flag only after the last transit is done.  Hence there is a local and global list of transiting itcs.   Remove the local list from the globakl list and reset the transit flag for those that are no longer in the list. */
+ * we must count how many transits are in fact going and reset the transiting flag only after the last transit is done.  Hence there is a local and global list of transiting itcs.   Remove the local list from the global list and reset the transit flag for those that are no longer in the list. */
 
 
 dk_set_t transit_itc_list;
@@ -810,7 +810,7 @@ void
 key_bm_insert (it_cursor_t * itc,
 	       db_buf_t key_image)
 {
-  /* the itc searchj params are filled and the key image is the normal insert image, minus the final bit string field */
+  /* the itc search params are filled and the key image is the normal insert image, minus the final bit string field */
   int rc, rc2;
   buffer_desc_t * buf;
   dbe_key_t * key = itc->itc_insert_key;
@@ -1411,7 +1411,7 @@ void
 pl_set_at_bit (placeholder_t * pl, db_buf_t bm, short bm_len, bitno_t bm_start, bitno_t value, int is_desc)
 {
   /* set the pl tpo the bit.  If the bit is not on,  set at bit right before or after, as per is_desc
-   * if no more on bits in the irection, set bp_at_end. If a bit is found, bp_value is set to it.  */
+   * if no more on bits in the direction, set bp_at_end. If a bit is found, bp_value is set to it.  */
   db_buf_t prev_ce = NULL;
   db_buf_t ce = bm;
   short ce_len;
@@ -1830,7 +1830,7 @@ itc_bm_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 	{
 	  if (itc->itc_bp.bp_new_on_row)
 	    {
-	      itc->itc_bp.bp_at_end = 1; /* this will call next case bellow */
+	      itc->itc_bp.bp_at_end = 1; /* this will call next case below */
 	    }
 	  else
 	    {

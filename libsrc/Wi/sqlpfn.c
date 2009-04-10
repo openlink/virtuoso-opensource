@@ -2358,11 +2358,11 @@ sqlp_breakup (ST * sel)
     return;
   if (sel->_.select_stmt.top || !sel->_.select_stmt.table_exp
       || sel->_.select_stmt.table_exp->_.table_exp.order_by || sel->_.select_stmt.table_exp->_.table_exp.group_by)
-    yyerror ("breakup is not compatibnle with distinct, group by, order by or select with no from");
+    yyerror ("breakup is not compatible with distinct, group by, order by or select with no from");
   DO_BOX (dk_set_t, term_list, inx, terms)
     {
 if (!inx)
-  continue; /* the 0th elt is a marker.  Not partt of the breakup set */
+  continue; /* the 0th elt is a marker.  Not part of the breakup set */
       if (is_first)
 	brk_len = dk_set_length (term_list);
       else if (brk_len != dk_set_length (term_list))

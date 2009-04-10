@@ -3991,10 +3991,10 @@ ddl_upd_trigger_table (void)
   bootstrap_cli->cli_qualifier = box_string (org_qual);
   ddl_standard_procs ();
   ddl_std_proc (upd_sys_trigger_table_text_0, 0);
-  ddl_ensure_table ("do this allways", "DB.DBA.__SYS_UPGRADE_SYS_TRIGGERS_T_TYPE_T_TIME ()");
+  ddl_ensure_table ("do this always", "DB.DBA.__SYS_UPGRADE_SYS_TRIGGERS_T_TYPE_T_TIME ()");
   ddl_std_proc (upd_sys_trigger_table_text_1, 1);
   ddl_std_proc (upd_sys_trigger_table_text_2, 2);
-  ddl_ensure_table ("do this allways", "DB.DBA.__SYS_TRIGGERS_MAKE_DECOYS ()");
+  ddl_ensure_table ("do this always", "DB.DBA.__SYS_TRIGGERS_MAKE_DECOYS ()");
   dk_free_box (bootstrap_cli->cli_qualifier);
   bootstrap_cli->cli_qualifier = org_qual;
 }
@@ -6175,6 +6175,10 @@ ddl_ensure_univ_tables (void)
 {
   ddl_ensure_table ("DB.DBA.SYS_DATA_SOURCE", univ_dd_text);
   ddl_ensure_table ("DB.DBA.SYS_PASS_THROUGH_FUNCTION", univ_dd_pt_text);
+#if UNIVERSE 
+  ddl_ensure_table ("do this always", upd_sys_ds_table_text);
+  ddl_ensure_table ("do this always", upd_sys_ds_table_text_2);
+#endif
 }
 
 
@@ -6238,12 +6242,12 @@ ddl_ensure_stat_tables (void)
 {
   ddl_std_proc (stat_proc1, 1);
   ddl_std_proc (stat_proc3, 1);
-  ddl_ensure_table ("do this allways",
+  ddl_ensure_table ("do this always",
       "select exec (sprintf ('drop view %s', V_NAME)) from DB.DBA.SYS_VIEWS \n"
       "  where \n"
       "   V_NAME in ('DB.DBA.SYS_D_STAT', 'DB.DBA.SYS_L_STAT', 'DB.DBA.SYS_K_STAT', 'DB.DBA.SYS_COL_AUTO_STAT') and \n"
       "   strstr (blob_to_string (coalesce (V_TEXT, V_EXT)), 'SYS_FILL_NAME') is null");
-  ddl_ensure_table ("do this allways",
+  ddl_ensure_table ("do this always",
       "select exec (sprintf ('drop view %s', V_NAME)) from DB.DBA.SYS_VIEWS \n"
       "  where \n"
       "   V_NAME = 'DB.DBA.SYS_L_STAT' and \n"

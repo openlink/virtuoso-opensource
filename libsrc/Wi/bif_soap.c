@@ -10207,7 +10207,7 @@ soap_print_box_validating (caddr_t box, const char * tag, dk_session_t *ses,
 	 {
 	   dtp_t dtp = DV_TYPE_OF(box);
 	   soap_print_tag (tag, ses, type_ref, ctx, 0, elem, qualified, NULL);
-	   /* TBD: make more consistent the bellow, not lay on the logic under cover
+	   /* TBD: make more consistent the below, not lay on the logic under cover
 	      in this cases the soap_print_box do not print the closing >
 	    */
 	   if (dtp == DV_XML_ENTITY || dtp == DV_OBJECT || dtp == DV_REFERENCE)

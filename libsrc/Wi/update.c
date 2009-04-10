@@ -572,7 +572,7 @@ update_node_run_1 (update_node_t * upd, caddr_t * inst, caddr_t * state)
 	  itc_free (cr_itc);
 	  sqlr_new_error ("24000", "SR251", "Cursor not on row in positioned UPDATE");
 	}
-      /* allways true */
+      /* always true */
 #if 0
       if (pl->itc_owns_page != cr_itc->itc_page || pl->itc_lock_mode != PL_EXCLUSIVE)
 #endif

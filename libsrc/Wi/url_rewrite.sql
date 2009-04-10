@@ -845,7 +845,7 @@ create procedure DB.DBA.URLREWRITE_TRY_INVERSE (
 
 create procedure DB.DBA.HTTP_VARIANT_ADD (in rulelist_uri varchar,
 	in uri varchar, in variant_uri varchar, in mime varchar,
-	in qs float := 1.0, in descrition varchar := null,
+	in qs float := 1.0, in desc varchar := null,
     	in lang varchar := null, in enc varchar := null, in algo int := 1, in location_hook varchar := null)
 {
   declare tmp any;
@@ -880,7 +880,7 @@ create procedure DB.DBA.HTTP_VARIANT_ADD (in rulelist_uri varchar,
     enc := null;
   insert replacing DB.DBA.HTTP_VARIANT_MAP (VM_RULELIST,VM_URI,VM_VARIANT_URI,VM_QS, VM_TYPE,
       VM_LANG,VM_ENC,VM_DESCRIPTION,VM_ALGO, VM_CONTENT_LOCATION_HOOK)
-      values (rulelist_uri, uri, variant_uri, qs, mime, lang, enc, descrition, algo, location_hook);
+      values (rulelist_uri, uri, variant_uri, qs, mime, lang, enc, desc, algo, location_hook);
 }
 ;
 

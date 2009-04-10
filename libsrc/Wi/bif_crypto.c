@@ -1294,7 +1294,7 @@ bif_get_certificate_info (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 		}
 	      break;
 	    }
-      case 8: /* Certficate name  */
+      case 8: /* Certificate name  */
 	    {
 	      caddr_t KI = NULL;
 	      KI = xenc_x509_KI_base64 (cert);

@@ -1172,7 +1172,7 @@ dv_num_compare (numeric_t dn1, numeric_t dn2, dtp_t dtp1, dtp_t dtp2)
 	  return dvc_int_num (*(int64*)dn1, dn2);
 	case DV_DOUBLE_FLOAT:
 	  return dvc_int_double (*(int64*)dn1, *(double*)dn2);
-	default: GPF_T1 ("bad num compare combnination");
+	default: GPF_T1 ("bad num compare combination");
 	}
     case DV_DOUBLE_FLOAT:
       switch (dtp2)
@@ -1181,7 +1181,7 @@ dv_num_compare (numeric_t dn1, numeric_t dn2, dtp_t dtp1, dtp_t dtp2)
 	  REV (dvc_int_double (*(int64*)dn2,  *(double*) dn1));
 	case DV_NUMERIC:
 	  REV (dvc_num_double (dn2, *(double*)dn1));
-	default: GPF_T1 ("bad num compare combnination");
+	default: GPF_T1 ("bad num compare combination");
 	}
     case DV_NUMERIC:
       switch (dtp2)
@@ -1190,9 +1190,9 @@ dv_num_compare (numeric_t dn1, numeric_t dn2, dtp_t dtp1, dtp_t dtp2)
 	  REV (dvc_int_num (*(int64*)dn2, (numeric_t)dn1));
 	case DV_DOUBLE_FLOAT: 
 	  return dvc_num_double ((numeric_t)dn1, *(double*)dn2);
-	default: GPF_T1 ("bad num compare combnination");
+	default: GPF_T1 ("bad num compare combination");
 	}
-    default: GPF_T1 ("bad num compare combnination");
+    default: GPF_T1 ("bad num compare combination");
     }
   return 0;
 }

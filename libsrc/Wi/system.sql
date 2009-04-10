@@ -3580,7 +3580,7 @@ xslt_sheet ('__xml_template_default', xml_tree_doc (xml_tree(
     <title>Search results</title>
     <BODY>
      <H4>Search results</H4>
-     <TABLE BOREDER="0">
+     <TABLE BORDER="0">
       <xsl:apply-templates select="*" />
      </TABLE>
     </BODY>

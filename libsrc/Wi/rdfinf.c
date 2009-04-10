@@ -732,7 +732,7 @@ sqlg_col_ssl (df_elt_t * tb_dfe, char * name)
 void
 sqlg_ri_post_filter (table_source_t * ts, df_elt_t * tb_dfe, rdf_inf_pre_node_t * ri, int p_check)
 {
-  /* this makes a folllow up node to 1. gs fp go to check that fp is rdfs_type. 
+  /* this makes a follow up node to 1. gs fp go to check that fp is rdfs_type. 
    * the end node will also record the fact of a result existing for an oj.  The post join test for an oj will also go here. */
   code_vec_t ajt;
   sql_comp_t * sc = tb_dfe->dfe_sqlo->so_sc;
@@ -794,7 +794,7 @@ qn_last_post_iter (data_source_t * qn)
 void
 sqlg_outer_post_filter (table_source_t * ts, df_elt_t * tb_dfe, state_slot_t * any_flag)
 {
-  /* if a node has iters in front and is outer, this makes a node to record that there was at leastt one joined.  Also do the post join test here. */
+  /* if a node has iters in front and is outer, this makes a node to record that there was at least one joined.  Also do the post join test here. */
   code_vec_t ajt;
   sql_comp_t * sc = tb_dfe->dfe_sqlo->so_sc;
   dk_set_t code = NULL;
@@ -1065,7 +1065,7 @@ dfe_iri_const (df_elt_t * dfe)
 void
 sqlg_rdf_inf_1 (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** q_head, int inxop_inx)
 {
-  /* if the dfe is from rdf_quad and inference si on, recoggnize which  combinmation of spo is fixed and add the inf nodes before or after.  Works for table source and hash source  */
+  /* if the dfe is from rdf_quad and inference si on, recognize which combination of spo is fixed and add the inf nodes before or after.  Works for table source and hash source  */
   dk_set_t col_preds;
   caddr_t ctx_name = sqlo_opt_value (tb_dfe->_.table.ot->ot_opts, OPT_RDF_INFERENCE);
   rdf_inf_ctx_t * ctx, **place, *sas_ctx;

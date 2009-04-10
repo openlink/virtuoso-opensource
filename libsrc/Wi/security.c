@@ -2099,7 +2099,7 @@ sec_stmt_exec (query_instance_t * qi, ST * tree)
 	      sec_del_user_group (qi, tree->_.op.arg_1, tree->_.op.arg_2);
 	      snprintf (szBuffer, sizeof (szBuffer), "DELETE USER GROUP %s %s", tree->_.op.arg_1, tree->_.op.arg_2);
 	      break;
-	  case REVOKE_ROLE_STMT:  /* for these and bellow make log entry */
+	  case REVOKE_ROLE_STMT:  /* for these and below make log entry */
 	  case GRANT_ROLE_STMT:
 	      sec_run_grant_revoke_role (qi, tree);
 	      break;

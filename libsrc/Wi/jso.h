@@ -39,7 +39,7 @@
 #define JSO_DEPRECATED	15	/*!< The property is deprecated and should not be specified at all */
 
 #define JSO_ANY		"http://www.w3.org/2001/XMLSchema#any"			/*!< Arbitrary boxed SQL value */
-#define JSO_ANY_array	"http://www.openlinksw.com/schemas/virtrdf#array-of-any"	/*!< A vector of abitrary boxed SQL values */
+#define JSO_ANY_array	"http://www.openlinksw.com/schemas/virtrdf#array-of-any"	/*!< A vector of arbitrary boxed SQL values */
 #define JSO_ANY_URI	"http://www.w3.org/2001/XMLSchema#anyURI"		/*!< boxed DV_UNAME in UTF-8 encoding */
 #define JSO_BOOLEAN	"http://www.w3.org/2001/XMLSchema#boolean"		/*!< Bool as ptrlong 1 or 0 */
 #define JSO_BITMASK	"http://www.openlinksw.com/schemas/virtrdf#bitmask"	/*!< Bitmask as ptrlong, can be loaded as OR of a list of values */

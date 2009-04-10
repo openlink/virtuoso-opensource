@@ -197,8 +197,8 @@ typedef struct xslt_metadata_s
   ptrlong			xsltm_idx;		/*!< Index in \c xslt_meta_list. */
   ptrlong			xsltm_arg_no;		/*!< Number of attributes. */
   xsltm_arg_descr_t *		xsltm_args;		/*!< Allowed attributes and special subelements. */
-  ptrlong			xsltm_el_memberofgroups;	/*!< Bitwize OR of IDs of all elements groups that contain this element. */
-  ptrlong			xsltm_el_containsgroups;	/*!< Bitwize OR of IDs of all elements groups that may occur inside this element. */
+  ptrlong			xsltm_el_memberofgroups;	/*!< Bitwise OR of IDs of all elements groups that contain this element. */
+  ptrlong			xsltm_el_containsgroups;	/*!< Bitwise OR of IDs of all elements groups that may occur inside this element. */
 } xslt_metadata_t;
 
 

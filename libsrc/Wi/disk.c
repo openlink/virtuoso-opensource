@@ -539,9 +539,9 @@ it_temp_free (index_tree_t * it)
 
   /*Note the following problem scenario:  A  buffer becomes available in it_temp_free, space and pages set to 0.
    * This buffer then gets used in  another tree, no need to sync because the buffer in question is free. [B
-   * Another buffer in the same temp tree must be canceled from the write queue. This leaves the mutexes and restarts the scan of the hash.  The hash will however still reference buffers that have been set free.
+   * Another buffer in the same temp tree must be cancelled from the write queue. This leaves the mutexes and restarts the scan of the hash.  The hash will however still reference buffers that have been set free.
    * It may be that a buffer is then encountered which legitimately  belongs to another tree by this time.
-   * An inadvertent write cancellation and page_wait_access with the wrong page map mtx may be attempted, which is objectionable. Worst case is an errnoeous mark as free and losing non-serialization of the buffer's rw gate.
+   * An inadvertent write cancellation and page_wait_access with the wrong page map mtx may be attempted, which is objectionable. Worst case is an erroneous mark as free and losing non-serialization of the buffer's rw gate.
    * Therefore  all cancellations get done first and then all buffers that remain are detached from the it being deleted. */
 
   it_cursor_t itc_auto;

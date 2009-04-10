@@ -673,7 +673,7 @@ perform_actual_load:
       {
         declare mtd, new_origin_uri_save varchar;
         declare exit handler for sqlstate '*' {
-          -- dbg_obj_princ ('Error receiving responce: ', __SQL_STATE, ': ', __SQL_MESSAGE);
+          -- dbg_obj_princ ('Error receiving response: ', __SQL_STATE, ': ', __SQL_MESSAGE);
 	  delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
 	  commit work;
 	  resignal;
@@ -1019,7 +1019,7 @@ create procedure DB.DBA.RDF_PROC_COLS (in pname varchar)
 }
 ;
 
--- /* Load the document in tripple store. returns 1 if the document is an RDF , otherwise if it has links etc. it returns 0 */
+-- /* Load the document in triple store. returns 1 if the document is an RDF , otherwise if it has links etc. it returns 0 */
 create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_origin_uri varchar, inout ret_content_type varchar, inout ret_hdr any, inout ret_body any, inout options any, inout req_hdr_arr any)
 {
   declare dest, groupdest varchar;
@@ -1034,7 +1034,7 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
       aq := async_queue (1);
     }
   -- dbg_obj_princ ('DB.DBA.RDF_LOAD_HTTP_RESPONSE (', graph_iri, new_origin_uri, ret_content_type, ret_hdr, ret_body, options, req_hdr_arr, ')');
-  --!!!TBD: proper calculation of new_expiration, usingdata from HTTP header of the response
+  --!!!TBD: proper calculation of new_expiration, using data from HTTP header of the response
   ret_content_type := DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (new_origin_uri, ret_content_type, ret_body);
   -- dbg_obj_princ ('ret_content_type is ', ret_content_type);
   dest := get_keyword_ucase ('get:destination', options);

@@ -135,7 +135,7 @@ typedef struct spar_propvariable_s {
 
 /*! Configuration of RDF grabber, A.K.A. 'IRI resolver'. */
 typedef struct rdf_grab_config_s {
-    int		rgc_pview_mode;		/*!< The query is executed unsing procedure view that will form a result-set by calling mroe than one statement via exec() */
+    int		rgc_pview_mode;		/*!< The query is executed using procedure view that will form a result-set by calling more than one statement via exec() */
     int		rgc_all;		/*!< Automatically add all IRI constants/vars (except P) to spare_grab_consts */
     int		rgc_intermediate;	/*!< Automatically add all IRI constants/vars (except P) to spare_grab_consts */
     dk_set_t	rgc_consts;		/*!< Constants to be used as names of additional graphs */
@@ -183,12 +183,12 @@ typedef struct sparp_env_s
     dk_set_t		spare_common_sponge_options;	/*!< Options that are added to every FROM ... OPTION ( ... ) list */
     dk_set_t		spare_default_graphs;		/*!< Default graphs and NOT FROM graphs as set by protocol or FROM graph-uri-precode. All NOT FROM are after all FROM! */
     dk_set_t		spare_named_graphs;		/*!< Named graphs and NOT FROM NAMED graphs as set by protocol or clauses. All NOT FROM NAMED are after all FROM NAMED! */
-    int			spare_default_graphs_listed;	/*!< At least one default graph was set, so the list of default graphs is exaustive even if empty or consists of solely NOT FROM (NOT FROM may remove all FROM, making the list empty */
-    int			spare_named_graphs_listed;	/*!< At least one named graph was set, so the list of named graphs is exaustive even if empty or consists of solely NOT FROM NAMED */
+    int			spare_default_graphs_listed;	/*!< At least one default graph was set, so the list of default graphs is exhaustive even if empty or consists of solely NOT FROM (NOT FROM may remove all FROM, making the list empty */
+    int			spare_named_graphs_listed;	/*!< At least one named graph was set, so the list of named graphs is exhaustive even if empty or consists of solely NOT FROM NAMED */
     int			spare_default_graphs_locked;	/*!< Default graphs are set by protocol and can not be overwritten. There's no locking for NOT FROM */
     int			spare_named_graphs_locked;	/*!< Named graphs are set by protocol and can not be overwritten. There's no locking for NOT FROM NAMED */
     dk_set_t		spare_common_sql_table_options;	/*!< SQL 'TABLE OPTION' strings that are added to every table */
-    dk_set_t		spare_groupings;		/*!< Variabes that should be placed in GROUP BY list */
+    dk_set_t		spare_groupings;		/*!< Variables that should be placed in GROUP BY list */
     dk_set_t		spare_sql_select_options;	/*!< SQL 'OPTION' strings that are added at the end of query (right after permanent QUIETCAST) */
     caddr_t		spare_describe_mode;		/*!< Version of DESCRIBE SQL 'OPTION' strings that are added at the end of query (right after permanent QUIETCAST) */
     dk_set_t		spare_context_qms;		/*!< IRIs of allowed quad maps (IRI if quad map is restricted, DEFAULT_L if default qm only, _STAR if not restricted) */
@@ -205,7 +205,7 @@ typedef struct sparp_env_s
     dk_set_t		spare_good_graph_bmk;		/*!< Varnames found in non-optional triples before or outside, (including non-optional inside previous non-optional siblings), but not after or inside */
     dk_set_t		spare_selids;			/*!< Select IDs of GPs */
     caddr_t		spare_top_retval_selid;		/*!< Select ID for variables in result set and ORDER BY clauses */
-    dk_set_t		spare_global_var_names;		/*!< List of all distinct global names used in the query, to know what should be pased to 'rdf grab' procedure view */
+    dk_set_t		spare_global_var_names;		/*!< List of all distinct global names used in the query, to know what should be passed to 'rdf grab' procedure view */
     int			spare_globals_are_numbered;	/*!< Flags if all global parameters are translated into ':N' because they're passed via 'params' argument of exec() inside a procedure view, */
     int			spare_global_num_offset;	/*!< If spare_globals_are_numbered then numbers of 'app-specific' global parameters starts from spare_global_num_offset up, some number of first params are system-specific. */
     dk_set_t		spare_propvar_sets;		/*!< Stack of sets of propvars that should form triples */ 

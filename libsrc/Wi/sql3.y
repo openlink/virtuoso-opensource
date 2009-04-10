@@ -3976,7 +3976,7 @@ opt_default_clause
 	;
 
 opt_type_option_list
-	: /* emtpy */ { $$ = NULL; }
+	: /* empty */ { $$ = NULL; }
 	| type_option_list { $$ = (ST *) t_list_to_array ($1); }
 	;
 

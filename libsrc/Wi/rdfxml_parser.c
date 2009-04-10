@@ -564,7 +564,7 @@ push_inner_attr_prop:
       xp->xp_boxed_name = NULL;
     }
   if ((XRL_PARSETYPE_PROPLIST == inner->xrl_parsetype) && (XRL_PARSETYPE_PROPLIST == outer->xrl_parsetype))
-    { /* This means parseType="Resource". It should be handled immediately to prevent error in case of pasrseType="Resource" nested inside inner. */
+    { /* This means parseType="Resource". It should be handled immediately to prevent error in case of parseType="Resource" nested inside inner. */
       xp_rdfxml_triple (xp, outer->xrl_subject, inner->xrl_predicate, inner->xrl_subject);
       if (NULL != inner->xrl_reification_id)
         {

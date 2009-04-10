@@ -2540,7 +2540,7 @@ bif_udt_method_call (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  if (udt_to_free)
 	    udt_free_class_def (udt_to_free);
 	  sqlr_new_error ("22023", "UD037",
-	      "The object suppled is not an instance of %s",
+	      "The object supplied is not an instance of %s",
 	      udt->scl_name);
 	}
       if (!udt_instance_of (udi_udt, udt))

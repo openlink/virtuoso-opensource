@@ -215,7 +215,7 @@ int xpyylex_from_xpp_bufs (caddr_t *yylval, xpp_t *xpp)
 %token ELEMENT_LBRA_L			/*:: PUNCT("element {"), XQ, NULL ::*/
 %token ELEMENT_LPAR_L			/*:: PUNCT("element ("), XQ, NULL ::*/
 %token ELSE_L				/*:: PUNCT("else"), XQ, NULL ::*/
-%token EMPTY_GREATEST_L			/*:: PUNCT("empty gretest"), XQ, NULL ::*/
+%token EMPTY_GREATEST_L			/*:: PUNCT("empty greatest"), XQ, NULL ::*/
 %token EMPTY_LEAST_L			/*:: PUNCT("empty least"), XQ, NULL ::*/
 %token EMPTY_LPAR_RPAR_L		/*:: PUNCT("empty ()"), XQ, NULL ::*/
 %token EVERY_DOLLAR_L			/*:: PUNCT("every $"), XQ, NULL ::*/

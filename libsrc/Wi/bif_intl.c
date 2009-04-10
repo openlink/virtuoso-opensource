@@ -517,7 +517,7 @@ bif_uname (caddr_t *qst, caddr_t *err_ret, state_slot_t ** args)
       return res;
     }
   else if (!DV_STRINGP (narrow))
-    sqlr_new_error ("2C000", "IN017", "First argument of uname() function shuld be a narrow or wide string, or NULL or a UNAME");
+    sqlr_new_error ("2C000", "IN017", "First argument of uname() function should be a narrow or wide string, or NULL or a UNAME");
   else if (cs1 != CHARSET_UTF8)
     {
       caddr_t res = NULL;

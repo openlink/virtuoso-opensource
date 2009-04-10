@@ -287,7 +287,7 @@ bif_tree_ent_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func
 	func, nth + 1, dv_type_title (dtp), dtp);
     }
   if (!XE_IS_TREE (arg))
-    sqlr_new_error ("22023", "SR345", "Persistent XML not allowed as an argument %d to funtion %s; this function accepts only XML tree entities", nth+1, func);
+    sqlr_new_error ("22023", "SR345", "Persistent XML not allowed as an argument %d to function %s; this function accepts only XML tree entities", nth+1, func);
   return (xml_tree_ent_t *)arg;
 }
 #endif
@@ -3049,7 +3049,7 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		dk_free_box (connvar_value);
 
 	      sqlr_new_error ("22023", "SR595",
-		  "Current implmentation of sprintf() supports only %%U sprintf() format for connection variables, %%{%.200s}%c is not supported",
+		  "Current implementation of sprintf() supports only %%U sprintf() format for connection variables, %%{%.200s}%c is not supported",
 		  format, ptr[0]);
 	    }
 	  goto get_next_no_arg_inx_increment;	/* see below */

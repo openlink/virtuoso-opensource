@@ -191,7 +191,7 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
   if (IS_BOX_POINTER (retvals))
     {
       if (safely_copy_all_vars)
-        query->_.req_top.orig_retvals = sparp_treelist_full_copy (sparp, retvals, query->_.req_top.pattern); /* No clonig equivs here but no equivs at this moment at all */
+        query->_.req_top.orig_retvals = sparp_treelist_full_copy (sparp, retvals, query->_.req_top.pattern); /* No cloning equivs here but no equivs at this moment at all */
       else
         query->_.req_top.orig_retvals = (SPART **) t_box_copy ((box_t) retvals);
       if (0 == sparp->sparp_query_uses_aggregates)
@@ -263,7 +263,7 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
         }
       query->_.req_top.retvals = retvals = (SPART **)t_list_to_array (new_vars);
       if (safely_copy_all_vars)
-        query->_.req_top.orig_retvals = sparp_treelist_full_copy (sparp, retvals, query->_.req_top.pattern); /* No clonig equivs here but no equivs at this moment at all */
+        query->_.req_top.orig_retvals = sparp_treelist_full_copy (sparp, retvals, query->_.req_top.pattern); /* No cloning equivs here but no equivs at this moment at all */
       else
         query->_.req_top.orig_retvals = (SPART **) t_box_copy ((box_t) retvals);
     }
@@ -3392,7 +3392,7 @@ int sparp_gp_trav_localize_filters (sparp_t *sparp, SPART *curr, sparp_trav_stat
       if (!(SPART_VARR_NOT_NULL & sv_eq->e_rvr.rvrRestrictions))
         continue; /* It's unsafe to localize a filter on nullable variable. Consider { ... optional {<s> <p> ?o} filter (!bound(?o))}} */
       if (0 != sv_eq->e_gspo_uses)
-        continue; /* The filter can not be detached here so it may be localized on every loop, resulting in redundand localized filters */
+        continue; /* The filter can not be detached here so it may be localized on every loop, resulting in redundant localized filters */
       subval_count = BOX_ELEMENTS_0 (sv_eq->e_subvalue_idxs);
       if (0 == subval_count)
         continue; /* No subvalues -- can't localize because this either have no effect or drop the filter */
@@ -3871,7 +3871,7 @@ int
 sparp_try_reuse_tabid_in_union (sparp_t *sparp, SPART *curr, int base_idx)
 {
   SPART *base = curr->_.gp.members[base_idx];
-  /*SPART **base_filters = base->_.gp.filters; !!!TBD: check for fitlers that may restrict the search by idex */
+  /*SPART **base_filters = base->_.gp.filters; !!!TBD: check for filters that may restrict the search by idex */
   SPART **base_triples = base->_.gp.members;
   int bt_ctr, base_triples_count = BOX_ELEMENTS (base_triples);
   int dep_idx, memb_count, breakup_shift = 0, breakup_unictr = -1;
@@ -4336,7 +4336,7 @@ sparp_try_reduce_trivial_optional_via_eq (sparp_t *sparp, SPART *opt, SPART *key
       SPART *opt_parent;
       SPART *dep_field = key_recv_eq->e_vars[dep_ctr];
       int dep_triple_idx, dep_field_tr_idx, o_p_idx, field_ctr, optimizable_field_idx;
-      int optimization_blocked_by_filters;	/*!< Flags if the OPTIONAL can not be elimintaed because it contains conditions that can not be moved to the receiver */
+      int optimization_blocked_by_filters;	/*!< Flags if the OPTIONAL can not be eliminated because it contains conditions that can not be moved to the receiver */
       int optimizable_field_count;	/*!< Number of variable fields in OPTIONAL that are not known as NOT NULL in the receiving GP */
       int really_nullable_count;	/*!< Number of variable fields in OPTIONAL that can in principle be NULL if key is not null */
       SPART *dep_triple = NULL;
@@ -4375,7 +4375,7 @@ sparp_try_reduce_trivial_optional_via_eq (sparp_t *sparp, SPART *opt, SPART *key
       optimizable_field_count = 0;
       really_nullable_count = 0;
       optimization_blocked_by_filters = 0;
-      /* Now we're looking for a field that may be NOT NULL outside the OPTIONAL but should be NOT NULL inside the ontional binding but may be NULL in the data set */
+      /* Now we're looking for a field that may be NOT NULL outside the OPTIONAL but should be NOT NULL inside the optional binding but may be NULL in the data set */
       for (field_ctr = SPART_TRIPLE_FIELDS_COUNT; field_ctr--; /*no step*/)
         {
           SPART *fld_expn = opt_triple->_.triple.tr_fields[field_ctr];
@@ -5031,7 +5031,7 @@ retry_after_reducing_optionals:
           if (!sparp->sparp_env->spare_signal_void_variables)
             eq->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
           else if (eq->e_rvr.rvrRestrictions & SPART_VARR_EXPORTED)
-            spar_error (sparp, "Variable '%.100s' can not be bound due to mutially exclusive restrictions on its value", eq->e_varnames[0]);
+            spar_error (sparp, "Variable '%.100s' can not be bound due to mutually exclusive restrictions on its value", eq->e_varnames[0]);
           else if ((0 != eq->e_const_reads) || /* note: no check for (0 != eq->e_optional_reads) */
             (0 != BOX_ELEMENTS_0 (eq->e_receiver_idxs)) )
             spar_error (sparp, "Variable '%.100s' is used in subexpressions of the query but can not be assigned", eq->e_varnames[0]);

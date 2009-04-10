@@ -4205,7 +4205,7 @@ xp_make_sqlcolumn_ref (xpp_t *xpp, caddr_t name)
   if (NULL == xpp->xpp_sql_columns)
     xp_error (xpp, "sql:column() can be used only if the text of the query is the constant string that is the first argument of a direct call of xquery_eval()");
   if (strlen (name) > (MAX_QUAL_NAME_LEN - 2))
-    xp_error (xpp, "The colmn name in sql:column() is too long");
+    xp_error (xpp, "The column name in sql:column() is too long");
   if (CM_UPPER == case_mode)
     sqlp_upcase (name);
   DO_SET (caddr_t, col, xpp->xpp_sql_columns)

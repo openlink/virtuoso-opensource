@@ -1111,7 +1111,7 @@ spar_backquoted		/* [Virt]	Backquoted	 ::=  '`' Expn '`'	*/
 	: _BACKQUOTE spar_expn _BACKQUOTE {
 		  dk_set_t gp_st = sparp_env()->spare_context_gp_subtypes;
                   if ((NULL == gp_st) || (CONSTRUCT_L == (ptrlong)(gp_st->data)))
-                    $$ = $2; /* redundand backquotes in retlist or backquotes to bypass syntax limitation in CONSTRUCT gp */
+                    $$ = $2; /* redundant backquotes in retlist or backquotes to bypass syntax limitation in CONSTRUCT gp */
                   else
 		    {
 		      SPART *bn = spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:calc"), 1);

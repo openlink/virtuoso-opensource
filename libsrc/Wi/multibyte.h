@@ -36,7 +36,7 @@ typedef struct wcharset_s {
 } wcharset_t;
 
 #define CHARSET_UTF8	(((wcharset_t *)NULL)+1)
-#define CHARSET_WIDE	(((wcharset_t *)NULL)+2) /* not supported in many places, use only after duoble-check! */
+#define CHARSET_WIDE	(((wcharset_t *)NULL)+2) /* not supported in many places, use only after double-check! */
 
 #define CHARSET_NAME(c,d) ((char *) (c != NULL ? \
     (((wcharset_t *)c) != CHARSET_UTF8 ? ((wcharset_t *)c)->chrs_name : "UTF-8") : d))

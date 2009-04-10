@@ -1804,7 +1804,7 @@ int restore_from_files (const char* prefix)
 	  else
 	    {
 	      log_error ("Unable to read backup file header, %s corrupted", ctx->octx_curr_file);
-	      log_error ("Remove database file created by incompleted recovery");
+	      log_error ("Remove database file created by incomplete recovery");
 	      backup_context_free (ctx);
 	      return -1;
 	    }

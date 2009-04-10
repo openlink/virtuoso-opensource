@@ -1061,7 +1061,7 @@ krb_init_ctx (char * service_name, gss_ctx_id_t * context, caddr_t * tkt)
   This function starts talk on server side,
   service_name is a name of this service
   tkt, in token from client, needs to be decoded first !!
-  out, contex hdl, to be used in unseal & brothers
+  out, context hdl, to be used in unseal & brothers
  */
 void
 krb_init_srv_ctx (caddr_t service_name, caddr_t tkt, gss_ctx_id_t * context)

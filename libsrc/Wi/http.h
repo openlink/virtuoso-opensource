@@ -156,8 +156,8 @@ typedef struct ws_acl_s
 
 typedef struct acl_hit_s
   {
-    int64 ah_initial; /* inital time */
-    long ah_count;    /* hits since inital */ 
+    int64 ah_initial; /* initial time */
+    long ah_count;    /* hits since initial */ 
     float ah_avg;     /* for statistics */	
   } acl_hit_t;
 
