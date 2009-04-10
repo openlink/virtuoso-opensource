@@ -68,20 +68,30 @@
     
     <xsl:template match="osm">
 		<geo:Feature rdf:about="{$baseUri}">
-			<wgs84_pos:lat><xsl:value-of select="$lat"/></wgs84_pos:lat>
-			<wgs84_pos:long><xsl:value-of select="$lon"/></wgs84_pos:long>
+			<wgs84_pos:lat>
+				<xsl:value-of select="$lat"/>
+			</wgs84_pos:lat>
+			<wgs84_pos:long>
+				<xsl:value-of select="$lon"/>
+			</wgs84_pos:long>
 			<xsl:for-each select="node">
-				<geo:nearby rdf:resource="{concat('http://openstreetmap.org/?lat=', @lat, '&lon=', @lon, '&zoom=10')}"/>
+				<geo:nearby rdf:resource="{concat('http://openstreetmap.org/?lat=', @lat, '&lon=', @lon)}"/>
 			</xsl:for-each>
 		</geo:Feature>
 			
 		<xsl:for-each select="node">
-			<geo:Feature rdf:about="{concat('http://openstreetmap.org/?lat=', @lat, '&lon=', @lon, '&zoom=10')}">
-				<wgs84_pos:lat><xsl:value-of select="@lat"/></wgs84_pos:lat>
-				<wgs84_pos:long><xsl:value-of select="@lon"/></wgs84_pos:long>
+			<geo:Feature rdf:about="{concat('http://openstreetmap.org/?lat=', @lat, '&lon=', @lon)}">
+				<wgs84_pos:lat>
+					<xsl:value-of select="@lat"/>
+				</wgs84_pos:lat>
+				<wgs84_pos:long>
+					<xsl:value-of select="@lon"/>
+				</wgs84_pos:long>
 				<geo:nearby rdf:resource="{$baseUri}"/>
-				<openstreetmap:id><xsl:value-of select="@id"/></openstreetmap:id>
-				<foaf:maker rdf:resource="{concat('http://openstreetmap.org/user/', @user)}"/>
+				<openstreetmap:id>
+					<xsl:value-of select="@id"/>
+				</openstreetmap:id>
+				<foaf:maker rdf:resource="{vi:proxyIRI(concat('http://openstreetmap.org/user/', @user))}"/>
 				<dcterms:modified rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">
 					<xsl:value-of select="@timestamp"/>
 				</dcterms:modified>
@@ -97,7 +107,7 @@
 							</geo:name>
 						</xsl:when>
 						<xsl:when test="@k = 'created_by'">
-							<foaf:maker rdf:resource="{concat('http://openstreetmap.org/user/', @k)}"/>
+							<foaf:maker rdf:resource="{vi:proxyIRI(concat('http://openstreetmap.org/user/', @v))}"/>
 						</xsl:when>
 						<xsl:otherwise>
 							<xsl:element namespace="http://openstreetmap.org/elements/" name="{@k}">
@@ -107,6 +117,16 @@
 					</xsl:choose>
 				</xsl:for-each>
 			</geo:Feature>
+			
+			<xsl:if test="@user">
+				<foaf:Document rdf:about="{concat('http://openstreetmap.org/user/', @user)}">
+					<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat('http://openstreetmap.org/user/', @user))}"/>
+				</foaf:Document>
+				<foaf:Person rdf:about="{vi:proxyIRI(concat('http://openstreetmap.org/user/', @user))}">
+					<foaf:made rdf:resource="{concat('http://openstreetmap.org/?lat=', @lat, '&lon=', @lon)}"/>
+				</foaf:Person>
+			</xsl:if>
+			
 		</xsl:for-each>
     </xsl:template>
 

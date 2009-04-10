@@ -3549,20 +3549,20 @@ create procedure DB.DBA.RDF_LOAD_OPENSTREETMAP (in graph_iri varchar, in new_ori
 	{
 		return 0;
 	};
-	if (new_origin_uri like 'http://openstreetmap.org/?lat=%&lon=%')
+	if (new_origin_uri like 'http://%openstreetmap.org/%?lat=%&lon=%')
 	{
 		
-		tmp := sprintf_inverse (new_origin_uri, 'http://openstreetmap.org/?lat=%s&lon=%s', 0);
-		lat1 := tmp[0];
-		lon1 := tmp[1];
+		tmp := sprintf_inverse (new_origin_uri, 'http://%sopenstreetmap.org/%s?lat=%s&lon=%s', 0);
+		lat1 := tmp[2];
+		lon1 := tmp[3];
 		pos := strchr (lon1, '&');
 		if (pos > 0)
 			lon1 := subseq(lon1, 0, pos);
 	}
-	else if (new_origin_uri like 'http://openstreetmap.org/?mlat=%&mlon=%')
+	else if (new_origin_uri like 'http://%openstreetmap.org/%?mlat=%&mlon=%')
 	{
 		
-		tmp := sprintf_inverse (new_origin_uri, 'http://openstreetmap.org/?mlat=%s&mlon=%s', 0);
+		tmp := sprintf_inverse (new_origin_uri, 'http://%sopenstreetmap.org/%s?mlat=%s&mlon=%s', 0);
 		lat1 := tmp[0];
 		lon1 := tmp[1];
 		pos := strchr (lon1, '&');
@@ -3577,13 +3577,12 @@ create procedure DB.DBA.RDF_LOAD_OPENSTREETMAP (in graph_iri varchar, in new_ori
 		lon := atof(lon1);
 		--zoom := atoi(tmp[2]);
 		--layers := tmp[3];
-		left_point := lon - 0.12;
-		right_point := lon + 0.12;
-		bottom_point := lat - 0.12;
-		top_point := lat + 0.12;
+		left_point := lon - 0.05;
+		right_point := lon + 0.05;
+		bottom_point := lat - 0.05;
+		top_point := lat + 0.05;
 		url := sprintf('http://api.openstreetmap.org/api/0.5/map?bbox=%f,%f,%f,%f', left_point, bottom_point, right_point, top_point);
 	}
-	
 	tmp := http_client(url, proxy=>get_keyword_ucase ('get:proxy', opts));
 	xd := xtree_doc (tmp);
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/openstreet2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri), 'lon', lon1, 'lat', lat1));

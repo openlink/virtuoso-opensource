@@ -40,7 +40,6 @@
   xmlns:owl="&owl;"
   xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
   xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
-  xmlns:umbel="http://umbel.org/umbel#"
   xmlns:po="http://purl.org/ontology/po/"
   xmlns:dcterms="http://purl.org/dc/terms/"
   xmlns:redwood-tags="http://www.holygoat.co.uk/owl/redwood/0.1/tags/"
