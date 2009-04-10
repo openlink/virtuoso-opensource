@@ -41,6 +41,11 @@ struct control_s
 
 typedef struct strsestmpfile_s strsestmpfile_t;
 
+typedef OFF_T (*ses_lseek_fn) (strsestmpfile_t *, OFF_T, int);
+typedef size_t (*ses_read_fn) (strsestmpfile_t *, void *, size_t);
+typedef size_t (*ses_wrt_fn) (strsestmpfile_t *, const void *, size_t);
+typedef int (*ses_close_fn) (strsestmpfile_t *);
+
 struct strsestmpfile_s
 {
   int 			ses_max_blocks_in_mem;	/* max blocks in memory to use */
@@ -51,6 +56,12 @@ struct strsestmpfile_s
   OFF_T 		ses_fd_fill;
   OFF_T 		ses_fd_fill_chars;
   OFF_T 		ses_fd_curr_char_pos;
+  void *		ses_file_ctx;
+  ses_lseek_fn		ses_lseek_func;
+  ses_read_fn		ses_read_func;
+  ses_wrt_fn		ses_wrt_func;
+  ses_close_fn		ses_close_func;
+  unsigned		ses_fd_is_stream:1;
 };
 
 /* General session object */
@@ -180,5 +191,7 @@ int session_set_default_control (int field, char *p_value, int size);
 int session_get_default_control (int field, char *p_value, int size);
 
 int utf8_align_memcpy (void *dst, const void *src, size_t len, size_t * pnwc, int *space_exausted);
+OFF_T strf_lseek (strsestmpfile_t * sesfile, OFF_T offset, int whence);
+size_t strf_read (strsestmpfile_t * sesfile, void *buf, size_t nbyte);
 
 #endif

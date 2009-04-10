@@ -5733,6 +5733,89 @@ signal_error:
   return NULL;
 }
 
+/* hooks for operating on gz stram via string session */
+
+OFF_T 
+zlib_lseek (strsestmpfile_t * sesfile, OFF_T offset, int whence)
+{
+  return gzseek (sesfile->ses_file_ctx, offset, whence);
+}
+
+size_t 
+zlib_read (strsestmpfile_t * sesfile, void *buf, size_t nbyte)
+{
+  return gzread (sesfile->ses_file_ctx, buf, nbyte);
+}
+
+static size_t 
+zlib_write (strsestmpfile_t * sesfile, const void *buf, size_t nbyte)
+{
+  return -1; /* write is not supported in gz stream for now */
+}
+
+int 
+zlib_close (strsestmpfile_t * sesfile)
+{
+  return gzclose (sesfile->ses_file_ctx); /* this must close the fd passed earlier to gzdopen  */
+}
+
+caddr_t
+bif_gz_file_open (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t fname = bif_string_arg (qst, args, 0, "gz_file_open");
+  dk_session_t * ses = strses_allocate ();
+  caddr_t fname_cvt, err = NULL;
+  int fd = 0;
+  OFF_T off;
+  strsestmpfile_t * sesfile;
+
+  fname_cvt = file_native_name (fname);
+  file_path_assert (fname_cvt, &err, 0);
+  if (NULL != err)
+    goto signal_error;
+  fd = fd_open (fname_cvt, OPEN_FLAGS_RO);
+
+  if (fd == -1)
+    {
+      int errn = errno;
+      err = srv_make_new_error ("39000", "FA006", "Can't open file '%.1000s', error : %s",
+	  fname_cvt, virt_strerror (errn));
+      goto signal_error;
+    }
+
+  off = LSEEK (fd, 0, SEEK_END);
+  if (off == -1)
+    {
+      int saved_errno = errno;
+      fd_close (fd, fname);
+      err = srv_make_new_error ("39000", "FA025",
+	  "Seek error in file '%.1000s', error : %s", fname_cvt, virt_strerror (saved_errno));
+      goto signal_error;
+    }
+  LSEEK (fd, 0, SEEK_SET);
+  strses_enable_paging (ses, DKSES_IN_BUFFER_LENGTH); 
+  sesfile = ses->dks_session->ses_file;
+  sesfile->ses_file_descriptor = -1;
+
+  sesfile->ses_lseek_func = zlib_lseek;
+  sesfile->ses_read_func = zlib_read;
+  sesfile->ses_wrt_func = zlib_write;
+  sesfile->ses_close_func = zlib_close;
+
+  sesfile->ses_fd_fill = sesfile->ses_fd_fill_chars = INT64_MAX;
+  sesfile->ses_file_ctx = gzdopen (fd, "r");
+  sesfile->ses_fd_is_stream = 1;
+
+  dk_free_box (fname_cvt);
+  return (caddr_t) ses;
+signal_error:
+  /* cleanup */
+  dk_free_box (fname_cvt);
+  dk_free_box ((caddr_t) ses);
+  sqlr_resignal (err);
+  return NULL;
+}
+
 void
 bif_file_init (void)
 {
@@ -5799,6 +5882,7 @@ bif_file_init (void)
   bif_define_typed ("file_rlo", bif_file_rlo, &bt_any);
   bif_define_typed ("file_rlc", bif_file_rlc, &bt_any);
   bif_define_typed ("file_open", bif_file_open, &bt_any);
+  bif_define_typed ("gz_file_open", bif_gz_file_open, &bt_any);
 #ifdef HAVE_BIF_GPF
   bif_define ("__gpf", bif_gpf);
 #endif

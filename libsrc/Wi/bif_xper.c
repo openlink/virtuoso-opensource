@@ -2027,9 +2027,8 @@ dsfi_read (void *read_cd, char *buf, size_t bsize)
     }
   if (iter->dsfi_file_offset < iter->dsfi_file_len)
     {
-      int fd = ses->dks_session->ses_file->ses_file_descriptor;
       int readed;
-      if (-1 == lseek (fd, iter->dsfi_file_offset, SEEK_SET))
+      if (-1 == strf_lseek (ses->dks_session->ses_file, iter->dsfi_file_offset, SEEK_SET))
 	{
 	  log_error ("Can't seek in file %s", ses->dks_session->ses_file->ses_temp_file_name);
 	  SESSTAT_SET (ses->dks_session, SST_DISK_ERROR);
@@ -2040,12 +2039,12 @@ dsfi_read (void *read_cd, char *buf, size_t bsize)
           readed = read_wides_from_utf8_file (ses, bsize/sizeof (wchar_t), (utf8char *)buf, 0, NULL);
           if (readed < 0) /* log_error is called inside read_wides_from_utf8_file() */
             goto done;
-          iter->dsfi_file_offset = lseek (fd, 0L, SEEK_CUR);
+          iter->dsfi_file_offset = strf_lseek (ses->dks_session->ses_file, 0L, SEEK_CUR);
           readed *= sizeof (wchar_t);
         }
       else
         {
-	  readed = read (fd, buf, MIN (bsize, iter->dsfi_file_len - iter->dsfi_file_offset));
+	  readed = strf_read (ses->dks_session->ses_file, buf, MIN (bsize, iter->dsfi_file_len - iter->dsfi_file_offset));
 	  if (readed == -1)
 	    {
 	      SESSTAT_SET (ses->dks_session, SST_DISK_ERROR);
