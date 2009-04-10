@@ -42,6 +42,7 @@
 #include "sqlver.h"
 #include "srvmultibyte.h"
 #include "xmlparser.h"
+#include "xmltree.h"
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -1404,6 +1405,25 @@ bif_stop_cpt (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_num (flag);
 }
 
+static caddr_t
+bif_format_number (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char * me = "format_number";
+  NUMERIC_VAR (num_buf);
+  numeric_t number = (numeric_t) num_buf;
+  caddr_t number_box = bif_arg (qst, args, 0, me);
+  caddr_t format = bif_string_arg (qst, args, 1, me);
+  xslt_number_format_t *nf = xsnf_default;
+  caddr_t res = NULL, err;
+
+  NUMERIC_INIT (num_buf);
+
+  if (NULL != (err = numeric_from_x (number, number_box, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, "format_number",-1, NULL)))
+    sqlr_resignal (err);
+  res = xslt_format_number (number, format, nf);
+  return res;
+}
+
 void
 sqlbif2_init (void)
 {
@@ -1429,6 +1449,7 @@ sqlbif2_init (void)
   bif_define ("zorder_index", bif_zorder_index);
   bif_define ("rfc1808_parse_uri", bif_rfc1808_parse_uri);
   bif_define ("rfc1808_expand_uri", bif_rfc1808_expand_uri);
+  bif_define_typed ("format_number", bif_format_number, &bt_varchar);
   bif_define ("__stop_cpt", bif_stop_cpt);
   sqls_bif_init ();
   sqlo_inv_bif_int ();
