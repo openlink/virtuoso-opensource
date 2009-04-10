@@ -246,4 +246,16 @@ id_hashed_key_t boxint_hash (char *x);
 int boxint_hashcmp (char *x, char *y);
 
 
+#define DO_IDHASH(tk, key, td, data, ht) \
+{ tk * key##p; \
+  td * data##p; \
+  id_hash_iterator_t key##hit; \
+  id_hash_iterator (&key##hit, ht); \
+  while (hit_next (&key##hit, (caddr_t*)&key##p, (caddr_t*)&data##p)) \
+    { tk key = *key##p; \
+      td data = *data##p;
+
+#define END_DO_IDHASH }}
+
+
 #endif
