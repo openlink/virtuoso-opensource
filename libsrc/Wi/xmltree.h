@@ -1241,5 +1241,6 @@ extern xml_lazy_ent_t *DBG_NAME(xlazye_from_cache_key) (DBG_PARAMS xml_doc_cache
 #define xlazye_from_cache_key(key,qi) dbg_xlazye_from_cache_key(__FILE__, __LINE__, (key), (qi))
 #endif
 
+extern caddr_t xe_make_copy (caddr_t box);
 #endif /* _XMLTREE_H */
 
