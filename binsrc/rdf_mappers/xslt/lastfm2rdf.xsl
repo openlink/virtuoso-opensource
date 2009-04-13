@@ -105,7 +105,14 @@
 		</rdf:Description>
 	    <xsl:for-each select="artist">
 			<rdf:Description rdf:about="{vi:proxyIRI(concat($base, 'music/', translate(//similarartists/@artist, ' ', '+')))}">
+				<xsl:choose>
+					<xsl:when test="starts-with(url, 'http://')">
 				<mo:similar_to rdf:resource="{vi:proxyIRI(url)}"/>
+					</xsl:when>
+					<xsl:otherwise>
+						<mo:similar_to rdf:resource="{vi:proxyIRI(concat('http://', url))}"/>
+					</xsl:otherwise>
+				</xsl:choose>
 			</rdf:Description>
 			<xsl:call-template name="artist"/>
 	    </xsl:for-each>
@@ -148,7 +155,14 @@
 		</rdf:Description>
 	    <xsl:for-each select="track">
 			<rdf:Description rdf:about="{vi:proxyIRI(concat($base, 'music/', //similartracks/@artist, '/_/', //similartracks/@track))}">
+				<xsl:choose>
+					<xsl:when test="starts-with(url, 'http://')">
 				<mo:similar_to rdf:resource="{vi:proxyIRI(url)}"/>
+					</xsl:when>
+					<xsl:otherwise>
+						<mo:similar_to rdf:resource="{vi:proxyIRI(concat('http://', url))}"/>
+					</xsl:otherwise>
+				</xsl:choose>
 			</rdf:Description>
 			<xsl:call-template name="track"/>
 	    </xsl:for-each>
@@ -340,9 +354,16 @@
 				</dcterms:modified>
 			</xsl:if>
 			<xsl:for-each select="similar/artist">
+				<xsl:choose>
+					<xsl:when test="starts-with(url, 'http://')">
 				<mo:similar_to rdf:resource="{vi:proxyIRI(url)}"/>
+					</xsl:when>
+					<xsl:otherwise>
+						<mo:similar_to rdf:resource="{vi:proxyIRI(concat('http://', url))}"/>
+					</xsl:otherwise>
+				</xsl:choose>
 			</xsl:for-each>
-			<xsl:if test="mbid">
+			<xsl:if test="string(mbid)">
 				<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/artist/', mbid)}"/>
 			</xsl:if>
 		</mo:MusicArtist>
@@ -369,11 +390,13 @@
 				<foaf:depiction rdf:resource="{.}"/>
 			</xsl:for-each>
 			<xsl:choose>
-				<xsl:when test="artist/url">
+				<xsl:when test="string(artist/url)">
 					<foaf:maker rdf:resource="{vi:proxyIRI(artist/url)}"/>
 				</xsl:when>
 				<xsl:otherwise>
+					<xsl:if test="string(artist)">
 					<foaf:maker rdf:resource="{vi:proxyIRI(concat($base, 'music/', artist))}"/>
+					</xsl:if>
 				</xsl:otherwise>
 			</xsl:choose>
 			<xsl:if test="releasedate">
@@ -391,7 +414,7 @@
 					<xsl:value-of select="playcount"/>
 				</lfm:playcount>
 			</xsl:if>
-			<xsl:if test="mbid">
+			<xsl:if test="string(mbid)">
 				<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/release/', mbid)}"/>
 			</xsl:if>
 		</mo:Record>
@@ -429,7 +452,7 @@
 					<xsl:value-of select="album/@position"/>
 				</mo:track_number>
 			</xsl:if>
-			<xsl:if test="artist/url">
+			<xsl:if test="string(artist/url)">
 				<foaf:maker rdf:resource="{vi:proxyIRI(artist/url)}"/>
 			</xsl:if>
 			<xsl:if test="album/url">
@@ -446,7 +469,7 @@
 					<xsl:value-of select="wiki/summary"/>
 				</dc:description>
 			</xsl:if>
-			<xsl:if test="mbid">
+			<xsl:if test="string(mbid)">
 				<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/track/', mbid)}"/>
 			</xsl:if>
 		</mo:Track>
@@ -456,7 +479,7 @@
 				<foaf:name>
 					<xsl:value-of select="name"/>
 				</foaf:name>
-				<xsl:if test="mbid">
+				<xsl:if test="string(mbid)">
 					<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/artist/', mbid)}"/>
 				</xsl:if>
 			</mo:MusicArtist>
@@ -470,7 +493,7 @@
 				<xsl:for-each select="image">
 					<foaf:depiction rdf:resource="{.}"/>
 				</xsl:for-each>
-				<xsl:if test="mbid">
+				<xsl:if test="string(mbid)">
 					<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/release/', mbid)}"/>
 				</xsl:if>
 			</mo:Record>
