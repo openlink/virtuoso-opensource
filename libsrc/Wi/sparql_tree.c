@@ -2248,7 +2248,7 @@ sparp_tree_full_copy (sparp_t *sparp, const SPART *orig, SPART *parent_gp)
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
       eq_idx = orig->_.var.equiv_idx;
       tgt->_.var.vname = t_box_copy (orig->_.var.vname);
-      sparp_rvr_copy (sparp, &(tgt->_.var.rvr), &(orig->_.var.rvr));
+      sparp_rvr_copy (sparp, &(tgt->_.var.rvr), (rdf_val_range_t *) &(orig->_.var.rvr));
       return tgt;
     case SPAR_GRAPH:
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
@@ -2256,8 +2256,8 @@ sparp_tree_full_copy (sparp_t *sparp, const SPART *orig, SPART *parent_gp)
       return tgt;
     case SPAR_GP:
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
-      tgt->_.gp.members = sparp_treelist_full_copy (sparp, orig->_.gp.members, orig);
-      tgt->_.gp.filters = sparp_treelist_full_copy (sparp, orig->_.gp.filters, orig);
+      tgt->_.gp.members = sparp_treelist_full_copy (sparp, orig->_.gp.members, (SPART *) orig);
+      tgt->_.gp.filters = sparp_treelist_full_copy (sparp, orig->_.gp.filters, (SPART *) orig);
       tgt->_.gp.equiv_indexes = (ptrlong *)t_box_copy ((caddr_t)(orig->_.gp.equiv_indexes));
       return tgt;
     case SPAR_LIT: case SPAR_QNAME: /* case SPAR_QNAME_NS: */

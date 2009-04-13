@@ -2167,6 +2167,7 @@ xqf_index_of (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
     sqlr_new_error ("42001", "XQR??", "The first argument of fn:index-of must be sequence");
 }
 
+#ifdef NOT_CURRENTLY_USED
 static void
 xqf_empty (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
@@ -2181,7 +2182,9 @@ xqf_empty (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
   else
     XQI_SET (xqi, tree->_.xp_func.res, (caddr_t) 0L);
 }
+#endif
 
+#ifdef NOT_CURRENTLY_USED
 static void
 xqf_exists (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
@@ -2195,6 +2198,7 @@ xqf_exists (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
   else
     XQI_SET (xqi, tree->_.xp_func.res, (caddr_t) 0L);
 }
+#endif
 
 #define ROL(h) ((h << 1) | ((h >> 31) & 1))
 static id_hashed_key_t
@@ -2434,6 +2438,7 @@ xqf_subsequence (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
     }
 }
 
+#ifdef NOT_CURRENTLY_USED
 static void
 xqf_is_same_node (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
@@ -2453,7 +2458,9 @@ xqf_is_same_node (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
   else
     XQI_SET (xqi, tree->_.xp_func.res, (caddr_t) 0L);
 }
+#endif
 
+#ifdef NOT_CURRENTLY_USED
 static void
 xqf_count (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
@@ -2467,7 +2474,9 @@ xqf_count (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
   else
     XQI_SET (xqi, tree->_.xp_func.res, (caddr_t)1L);
 }
+#endif
 
+#ifdef NOT_CURRENTLY_USED
 static void
 xqf_avg (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
@@ -2498,7 +2507,9 @@ xqf_avg (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
   else
     XQI_SET (xqi, tree->_.xp_func.res, box_copy_tree (seq));
 }
+#endif
 
+#ifdef NOT_CURRENTLY_USED
 static void
 xqf_min (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
@@ -2522,7 +2533,9 @@ xqf_min (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
   else
     XQI_SET (xqi, tree->_.xp_func.res, box_copy_tree (seq));
 }
+#endif
 
+#ifdef NOT_CURRENTLY_USED
 static void
 xqf_max (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
@@ -2546,7 +2559,9 @@ xqf_max (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
   else
     XQI_SET (xqi, tree->_.xp_func.res, box_copy_tree (seq));
 }
+#endif
 
+#ifdef NOT_CURRENTLY_USED
 static void
 xqf_sum (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
@@ -2575,6 +2590,7 @@ xqf_sum (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
   else
     XQI_SET (xqi, tree->_.xp_func.res, box_copy_tree (seq));
 }
+#endif
 
 static void
 xqf_boolean_equal (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)

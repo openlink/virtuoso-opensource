@@ -4623,6 +4623,7 @@ sqlo_next_joined (df_elt_t * dt_dfe)
 }
 
 
+#ifdef NOT_CURRENTLY_USED
 static void
 sqlo_dt_imp_pred_list_cols (sqlo_t *so, df_elt_t *tb_dfe, df_elt_t *dfe)
 {
@@ -4642,6 +4643,7 @@ sqlo_dt_imp_pred_list_cols (sqlo_t *so, df_elt_t *tb_dfe, df_elt_t *dfe)
       sqlo_dt_imp_pred_cols (so, tb_dfe, dfe->dfe_tree);
     }
 }
+#endif
 
 
 void

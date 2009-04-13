@@ -9597,8 +9597,7 @@ caddr_t
 bif_xsd_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t arg = bif_arg (qst, args, 0, "__xsd_type");
-  caddr_t strg_dflt;
-  caddr_t res = xsd_type_of_box (arg);
+  caddr_t res = (caddr_t) xsd_type_of_box (arg);
   if (IS_BOX_POINTER (res))
     return res;
   switch ((ptrlong)(res))

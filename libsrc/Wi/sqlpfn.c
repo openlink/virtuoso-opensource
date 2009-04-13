@@ -1112,7 +1112,7 @@ sqlp_dt_header (ST * exp)
   else
     {
       ST **selection = (ST **) exp->_.select_stmt.selection;
-      exp->_.select_stmt.selection = sqlp_stars (sqlp_wrapper_sqlxml ((ST **) selection), exp->_.select_stmt.table_exp->_.table_exp.from);
+      exp->_.select_stmt.selection = (caddr_t *) sqlp_stars (sqlp_wrapper_sqlxml ((ST **) selection), exp->_.select_stmt.table_exp->_.table_exp.from);
       sqlp_breakup (exp);
     }
 }
@@ -2084,7 +2084,7 @@ sqlp_patch_call_if_special (ST * funcall_tree)
     {
       caddr_t arg = sqlo_iri_constant_name_1 (funcall_tree->_.call.params[0]);
       if (arg)
-	funcall_tree->_.call.params[0] = arg;
+	funcall_tree->_.call.params[0] = (ST *) arg;
     }
 
 generic_check:

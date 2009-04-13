@@ -76,7 +76,7 @@ void ssg_sdprin_literal (spar_sqlgen_t *ssg, SPART *tree)
       {
         char temp[40];
         caddr_t type_uri;
-        dt_to_iso8601_string (tree, temp, sizeof (temp));
+        dt_to_iso8601_string ((const char *) tree, temp, sizeof (temp));
         switch (DT_DT_TYPE(tree))
           {
           case DT_TYPE_DATE: type_uri = uname_xmlschema_ns_uri_hash_date; break;
@@ -357,7 +357,7 @@ ssg_sdprint_equiv_restrs (spar_sqlgen_t *ssg, sparp_equiv_t *eq)
       ssg_puts (" FILTER (");
       ssg_sdprin_varname (ssg, eq->e_varnames[0]);
       ssg_puts (" = ");
-      ssg_sdprint_tree (ssg, eq->e_rvr.rvrFixedValue);
+      ssg_sdprint_tree (ssg, (SPART *) eq->e_rvr.rvrFixedValue);
       ssg_puts (")");
       goto end_builtin_checks;
     }
@@ -394,7 +394,7 @@ end_builtin_checks:
 
 void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
 {
-  int ctr, count;
+  int ctr = 0, count;
   int tree_type;
   if (NULL == tree)
     spar_sqlprint_error ("ssg_" "sdprint_tree(): NULL tree");
@@ -639,7 +639,7 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
       {
         int retctr;
         int srcctr, srccount = BOX_ELEMENTS (tree->_.req_top.sources);
-        SPART *saved_ssg_sd_single_from = ssg->ssg_sd_single_from;
+        caddr_t saved_ssg_sd_single_from = ssg->ssg_sd_single_from;
         int saved_ssg_sd_graph_gp_nesting = ssg->ssg_sd_graph_gp_nesting;
         int from_count = 0;
         ssg->ssg_sd_single_from = NULL;

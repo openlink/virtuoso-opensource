@@ -1427,7 +1427,7 @@ itc_register (it_cursor_t * itc, buffer_desc_t * buf)
 }
 
 
-#if 1
+#ifdef DEBUG
 static void
 itc_check_loop_in_placeholder (placeholder_t * list)
 {
@@ -1440,8 +1440,6 @@ itc_check_loop_in_placeholder (placeholder_t * list)
 	GPF_T1 ("Infinite loop detected in placeholder_t");
     }
 }
-#else
-#define itc_check_loop_in_placeholder(list)
 #endif
 
 

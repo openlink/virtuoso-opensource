@@ -280,7 +280,7 @@ out_amp:
 
 out_ampattr:
   {
-    unsigned char *src_tail_lookahead = src_tail;
+    unsigned const char *src_tail_lookahead = src_tail;
     wchar_t lookahead;
     if (src_tail_lookahead >= str_end)
       lookahead = '\0';

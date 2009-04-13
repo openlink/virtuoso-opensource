@@ -1122,7 +1122,7 @@ bif_get_certificate_info (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
   int internal = 0;
 
   if (qi->qi_client->cli_ws)
-    ssl = tcpses_get_ssl (qi->qi_client->cli_ws->ws_session->dks_session);
+    ssl = (SSL *) tcpses_get_ssl (qi->qi_client->cli_ws->ws_session->dks_session);
   else if (qi->qi_client->cli_session && qi->qi_client->cli_session->dks_session)
     ssl =  (SSL *) tcpses_get_ssl (qi->qi_client->cli_session->dks_session);
 

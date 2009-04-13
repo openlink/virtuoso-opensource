@@ -462,7 +462,7 @@ sparp_exec_Narg (sparp_t *sparp, const char *pl_call_text, query_t **cached_qr_p
   caddr_t err = NULL;
   if (NULL == cached_qr_ptr[0])
     {
-      if (CALLER_CLIENT == cli) /* This means that the call is made inside the SQL compiler, can't re-enter. */
+      if (CALLER_CLIENT == (query_instance_t *) cli) /* This means that the call is made inside the SQL compiler, can't re-enter. */
         spar_internal_error (sparp, "sparp_exec_Narg () tries to compile static inside the SQL compiler");
       cached_qr_ptr[0] = sql_compile_static (pl_call_text, cli, &err, SQLC_DEFAULT);
       if (SQL_SUCCESS != err)

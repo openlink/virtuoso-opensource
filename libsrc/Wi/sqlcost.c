@@ -1027,7 +1027,7 @@ sqlo_inx_intersect_cost (df_elt_t * tb_dfe, dk_set_t col_preds, dk_set_t group, 
   int nth_term = 0;
   dbe_table_t * tb = tb_dfe->_.table.ot->ot_table;
   int n_inx = dk_set_length (group);
-  float arity[10], ov, cost[10], min = -1, total_cost, p_cost, p_arity, min_rows = -1, a, min_arity = -1;
+  float arity[10], ov, cost[10], min = -1, total_cost, p_cost, p_arity, a, min_arity = -1;
   float n_rows[10];
   DO_SET (df_inx_op_t *, dio, &group)
     {

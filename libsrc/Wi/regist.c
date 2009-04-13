@@ -413,7 +413,7 @@ log_registry_set (lock_trx_t * lt, char * k, const char * d)
   if (0 == strncmp (k, "__key__", 7))
     return;
   tailprintf (temp, sizeof (temp), &llen, "registry_set ('%s', '", k);
-  llen += sql_escaped_string_literal (&temp[llen], d, sizeof (temp) - llen);
+  llen += sql_escaped_string_literal (&temp[llen], (char *) d, sizeof (temp) - llen);
   if (llen + 3 > sizeof (temp))
     return;
   tailprintf (temp, sizeof (temp), &llen, "')");

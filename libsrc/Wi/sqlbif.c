@@ -2942,7 +2942,7 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t str = bif_string_arg (qst, args, 0, szMe);
   int volatile len = box_length (str) - 1;
   int volatile arg_inx = 1;
-  int arg_len, arg_prec;
+  int arg_len = 0, arg_prec = 0;
 
   ptr = str;
   *err_ret = NULL;
@@ -3440,7 +3440,7 @@ bif_sprintf_inverse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t str = bif_arg (qst, args, 0, "sprintf_inverse");
   caddr_t fmt = bif_string_arg (qst, args, 1, "sprintf_inverse");
   long hide_errors = bif_long_arg (qst, args, 2, "sprintf_inverse");
-  caddr_t *err = NULL;
+  caddr_t err = NULL;
   caddr_t res = sprintf_inverse (qst, &err, str, fmt, hide_errors);
   if (NULL != err)
     sqlr_resignal (err);
@@ -3452,8 +3452,8 @@ sprintf_inverse (caddr_t *qst, caddr_t *err_ret, ccaddr_t str, ccaddr_t fmt, lon
 {
   dtp_t str_dtp = DV_TYPE_OF (str);
   dk_set_t res = NULL;
-  char *str_tail = str;
-  char *fmt_tail = fmt;
+  char *str_tail = (char *)str;
+  char *fmt_tail = (char *)fmt;
   char *field_start, *field_end, *next_field_start;
   char *val_start, *val_end, *str_scan_tail;
   int field_len, field_prec;
@@ -4004,7 +4004,7 @@ retry_unrdf:
   }
   QR_RESET_CODE
   {
-    caddr_t *err = thr_get_error_code (((query_instance_t *) qst)->qi_thread);
+    caddr_t err = thr_get_error_code (((query_instance_t *) qst)->qi_thread);
     POP_QR_RESET;
 
     if (!hide_errors)
@@ -11411,7 +11411,7 @@ bif_exec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
                 err = box_copy_tree (shc->shcompo_error);
             }
           if (NULL == err)
-            qr = (query_instance_t *)(shc->shcompo_data);
+            qr = (query_t *)(shc->shcompo_data);
           goto qr_set;
         }
     }

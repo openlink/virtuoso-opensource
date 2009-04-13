@@ -557,7 +557,6 @@ node_print (data_source_t * node)
     }
   else if (in == (qn_input_fn) skip_node_input)
     {
-      skip_node_t *sel = (skip_node_t *) node;
       stmt_printf (("skip node  \n"));
     }
   else if (in == (qn_input_fn) sort_read_input)

@@ -5630,9 +5630,9 @@ static SPART *
 ssg_patch_ft_arg1 (spar_sqlgen_t *ssg, SPART *ft_arg1, SPART *g)
 {
   caddr_t ft_arg1_str = NULL;
-  int ft_arg1_spart_type = spar_plain_const_value_of_tree (ft_arg1, &ft_arg1_str);
+  int ft_arg1_spart_type = spar_plain_const_value_of_tree (ft_arg1, (ccaddr_t *) &ft_arg1_str);
   caddr_t g_iri = NULL;
-  int g_spart_type = spar_plain_const_value_of_tree (g, &g_iri);
+  int g_spart_type = spar_plain_const_value_of_tree (g, (ccaddr_t *) &g_iri);
   
   SPART *patched_ft_arg1;
   if ((SPAR_QNAME == g_spart_type) && (SPAR_LIT == ft_arg1_spart_type) &&
@@ -5711,8 +5711,8 @@ ssg_patch_ft_arg1 (spar_sqlgen_t *ssg, SPART *ft_arg1, SPART *g)
         {
           int ft_arg1_box_len = box_length (ft_arg1_box);
           char *tail;
-          patched_ft_arg1 = t_alloc_box (18 + ft_arg1_box_len, DV_STRING);
-          tail = patched_ft_arg1;
+          patched_ft_arg1 = (SPART *) t_alloc_box (18 + ft_arg1_box_len, DV_STRING);
+          tail = (char *) patched_ft_arg1;
 /*                                  0          1          */
 /*                                  01234567.890123.45678 */
           memcpy (tail, "[ __enc \"UTF-8\" ] ", 18); tail += 18;

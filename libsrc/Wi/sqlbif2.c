@@ -1119,24 +1119,24 @@ rfc1808_expand_uri (caddr_t * qst, ccaddr_t base_uri, ccaddr_t rel_uri,
     }
   if ((base_cs != buffer_cs_upcase) && !((NULL != base_cs) && (NULL != buffer_cs_upcase) && !strcmp (base_cs, buffer_cs_upcase)))
     {
-      base_uri = charset_recode_from_named_to_named (base_uri, base_cs, buffer_cs_upcase, &base_uri_is_temp, err_ret);
+      base_uri = charset_recode_from_named_to_named ((caddr_t)base_uri, base_cs, buffer_cs_upcase, &base_uri_is_temp, err_ret);
       if (err_ret[0]) goto res_complete; /* see below */
     }
   if ((rel_cs != buffer_cs_upcase) && !((NULL != rel_cs) && (NULL != buffer_cs_upcase) && !strcmp (rel_cs, buffer_cs_upcase)))
     {
-      rel_uri = charset_recode_from_named_to_named (rel_uri, rel_cs, buffer_cs_upcase, &rel_uri_is_temp, err_ret);
+      rel_uri = charset_recode_from_named_to_named ((caddr_t)rel_uri, rel_cs, buffer_cs_upcase, &rel_uri_is_temp, err_ret);
       if (err_ret[0]) goto res_complete; /* see below */
     }
   if ((NULL == base_uri) || ('\0' == base_uri[0]))
     {
-      buffer = rel_uri;
+      buffer = (caddr_t) rel_uri;
       buffer_is_temp = rel_uri_is_temp;
       rel_uri_is_temp = 0;
       goto buffer_ready; /* see below */
     }
   if ((NULL == rel_uri) || ('\0' == rel_uri[0]))
     {
-      buffer = base_uri;
+      buffer = (caddr_t) base_uri;
       buffer_is_temp = base_uri_is_temp;
       base_uri_is_temp = 0;
       goto buffer_ready; /* see below */
@@ -1144,7 +1144,7 @@ rfc1808_expand_uri (caddr_t * qst, ccaddr_t base_uri, ccaddr_t rel_uri,
   rfc1808_parse_uri (rel_uri, &rel_split);
   if (0 != rel_split.schema_end)
     {
-      buffer = rel_uri;
+      buffer = (caddr_t) rel_uri;
       buffer_is_temp = rel_uri_is_temp;
       rel_uri_is_temp = 0;
       goto buffer_ready; /* see below */
@@ -1250,7 +1250,7 @@ rfc1808_expand_uri (caddr_t * qst, ccaddr_t base_uri, ccaddr_t rel_uri,
     }
   else
     {
-      char *base_lastslash = base_uri + base_split.path_end;
+      char *base_lastslash = (char *) (base_uri + base_split.path_end);
       int base_beg_len, rel_len;
       char *hit;
       while (base_lastslash > base_uri + base_split.path_begin)
@@ -1355,9 +1355,9 @@ buffer_ready:
 res_complete:
   dk_free_box (output_cs_upcase);
   if (base_uri_is_temp)
-    dk_free_box (base_uri);
+    dk_free_box ((caddr_t) base_uri);
   if (rel_uri_is_temp)
-    dk_free_box (rel_uri);
+    dk_free_box ((caddr_t) rel_uri);
   if (buffer_is_temp)
     dk_free_box (buffer);
   return res;

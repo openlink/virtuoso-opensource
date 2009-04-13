@@ -4335,7 +4335,7 @@ sparp_try_reduce_trivial_optional_via_eq (sparp_t *sparp, SPART *opt, SPART *key
       SPART *opt_triple;
       SPART *opt_parent;
       SPART *dep_field = key_recv_eq->e_vars[dep_ctr];
-      int dep_triple_idx, dep_field_tr_idx, o_p_idx, field_ctr, optimizable_field_idx;
+      int dep_triple_idx, dep_field_tr_idx, o_p_idx, field_ctr, optimizable_field_idx = 0;
       int optimization_blocked_by_filters;	/*!< Flags if the OPTIONAL can not be eliminated because it contains conditions that can not be moved to the receiver */
       int optimizable_field_count;	/*!< Number of variable fields in OPTIONAL that are not known as NOT NULL in the receiving GP */
       int really_nullable_count;	/*!< Number of variable fields in OPTIONAL that can in principle be NULL if key is not null */

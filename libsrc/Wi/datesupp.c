@@ -98,6 +98,7 @@ days_in_february (const int year)
 }
 
 
+#ifdef NOT_CURRENTLY_USED
 static void
 dt_day_ck (int day, int month, int year, int *err, const char **err_str)
 {
@@ -120,6 +121,7 @@ dt_day_ck (int day, int month, int year, int *err, const char **err_str)
       *err = 1;
     }
 }
+#endif
 
 
 /*
