@@ -101,7 +101,7 @@
 <!-- header -->
 <head profile="http://www.w3.org/1999/xhtml/vocab">
     <base href="http://<?V http_request_header (lines, 'Host') ?><?V http_map_get ('domain') ?>/" />
-    <title><?vsp http (sprintf ('%s', label)); ?></title>
+    <title>About: <?vsp http (sprintf ('%s', label)); ?></title>
     <link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>" title="RDF" />
     <link rel="stylesheet" type="text/css" href="statics/style_w.css" />
     <link href="statics/highlighter.css" type="text/css" rel="stylesheet" charset="utf-8" />
@@ -111,7 +111,7 @@
 <body onload="init();" about="<?V page_resource_uri ?>">
     <div id="header">
       <div id="hd_l">
-	  <h1 id="title"><a href="<?= case when page_resource_uri like 'nodeID://%' then rdfdesc_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp http (sprintf ('%s', label)); ?></a></h1>
+	  <h1 id="title">About: <a href="<?= case when page_resource_uri like 'nodeID://%' then rdfdesc_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp http (sprintf ('%s', label)); ?></a></h1>
         <div id="homelink">
         </div>
         <div class="page-resource-uri">
