@@ -278,6 +278,7 @@ typedef struct sparp_s {
   int sparp_trav_running;		/*!< Flags that some traverse is in progress, in order to GPF if traverse procedure re-enters */
   ccaddr_t *sparp_sprintff_isect_buf;	/*!< Temporary buffer to calculate intersections of value ranges; solely for sparp_rvr_intersect_sprintffs() */
   caddr_t sparp_boxed_exec_uid;		/*!< Cached value returned by spar_boxed_exec_uid(). Do not use directly, call spar_boxed_exec_uid() instead! */
+  caddr_t sparp_immortal_exec_uname;	/*!< Cached value returned by spar_immortal_exec_uname(). Do not use directly, call spar_immortal_exec_uname() instead! */
 #ifdef DEBUG
   int sparp_internal_error_runs_audit;	/*!< Flags whether the sparp_internal_error has called audit so inner sparp_internal_error should not try to re-run audit or signal but should simply report */
 #endif
@@ -558,7 +559,8 @@ extern caddr_t spar_alias_name_of_ret_column (SPART *tree);
 then the functions returns SPAR_LIT or SPAR_QNAME and sets \c cval_ret[0] to that value. */
 extern int spar_plain_const_value_of_tree (SPART *tree, ccaddr_t *cval_ret);
 extern caddr_t spar_boxed_exec_uid (sparp_t *sparp);
-extern int spar_graph_static_perms (sparp_t *sparp, caddr_t boxed_graph_iid);
+extern caddr_t spar_immortal_exec_uname (sparp_t *sparp);
+extern int spar_graph_static_perms (sparp_t *sparp, caddr_t graph_iri);
 extern int spar_graph_needs_security_testing (sparp_t *sparp, SPART *g_expn, int req_perms);
 
 

@@ -2355,22 +2355,52 @@ spar_boxed_exec_uid (sparp_t *sparp)
   return sparp->sparp_boxed_exec_uid;
 }  
 
+caddr_t
+spar_immortal_exec_uname (sparp_t *sparp)
+{
+  if (NULL == sparp->sparp_immortal_exec_uname)
+    {
+      user_t *exec_user = sparp->sparp_sparqre->sparqre_exec_user;
+      if (NULL != exec_user)
+        sparp->sparp_immortal_exec_uname = box_dv_uname_string (exec_user->usr_name);
+      else
+        sparp->sparp_immortal_exec_uname = box_dv_uname_string ("nobody");
+      box_dv_uname_make_immortal (sparp->sparp_immortal_exec_uname);
+    }
+  return sparp->sparp_immortal_exec_uname;
+}  
+
 int
-spar_graph_static_perms (sparp_t *sparp, caddr_t boxed_graph_iid)
+spar_graph_static_perms (sparp_t *sparp, caddr_t graph_iri)
 {
   caddr_t boxed_uid = spar_boxed_exec_uid (sparp);
   caddr_t *hit;
 static caddr_t boxed_zero_iid = NULL;
-  if (NULL == boxed_graph_iid)
+  if (NULL != graph_iri)
     {
+      caddr_t boxed_graph_iid = sparp_iri_to_id_nosignal (sparp, graph_iri);
 /*!!! TBD: add retrieval of permissions of specific user on specific graph */
       hit = (caddr_t *)id_hash_get (rdf_graph_public_perms_dict_htable, (caddr_t)(&(boxed_graph_iid)));
       if (NULL != hit)
+        {
+          if (NULL != sparp->sparp_sparqre->sparqre_super_sc)
+            {
+              caddr_t graph_uname = box_dv_uname_nchars (graph_iri, box_length (graph_iri) - 1);
+              qr_uses_jso (sparp->sparp_sparqre->sparqre_super_sc->sc_cc->cc_super_cc->cc_query, graph_uname);
+            }
         return unbox (hit[0]);
+    }
     }
   hit = (caddr_t *)id_hash_get (rdf_graph_default_perms_of_user_dict_htable, (caddr_t)(&(boxed_uid)));
   if (NULL != hit)
+    {
+      if (NULL != sparp->sparp_sparqre->sparqre_super_sc)
+        {
+          caddr_t uname = spar_immortal_exec_uname (sparp);
+          qr_uses_jso (sparp->sparp_sparqre->sparqre_super_sc->sc_cc->cc_super_cc->cc_query, uname);
+        }
     return unbox (hit[0]);
+    }
   if (NULL == boxed_zero_iid)
     boxed_zero_iid = box_iri_id (0);
   hit = (caddr_t *)id_hash_get (rdf_graph_public_perms_dict_htable, (caddr_t)(&(boxed_zero_iid)));
@@ -2396,8 +2426,7 @@ spar_graph_needs_security_testing (sparp_t *sparp, SPART *g_expn, int req_perms)
     }
   if (NULL != fixed_g)
     {
-      caddr_t boxed_iid = sparp_iri_to_id_nosignal (sparp, fixed_g);
-      default_perms = spar_graph_static_perms (sparp, boxed_iid);
+      default_perms = spar_graph_static_perms (sparp, fixed_g);
       return (req_perms & ~default_perms);
     }
   default_perms = spar_graph_static_perms (sparp, NULL);

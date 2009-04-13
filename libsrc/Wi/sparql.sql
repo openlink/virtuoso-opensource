@@ -8518,6 +8518,7 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_CREATE (in group_iri varchar, in quiet i
   values (iri_to_id (group_iri), group_iri, member_pattern, comment);
   dict_put (__rdf_graph_group_dict(), group_iid, vector ());
   commit work;
+  jso_mark_affected (group_iri);
 }
 ;
 
@@ -8537,6 +8538,7 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_INS (in group_iri varchar, in memb_iri v
      where RGGM_GROUP_IID = group_iid
      order by RGGM_MEMBER_IID ) );
   commit work;
+  jso_mark_affected (group_iri);
 }
 ;
 
@@ -8556,6 +8558,7 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_DEL (in group_iri varchar, in memb_iri v
      where RGGM_GROUP_IID = group_iid
      order by RGGM_MEMBER_IID ) );
   commit work;
+  jso_mark_affected (group_iri);
 }
 ;
 
@@ -8661,6 +8664,17 @@ create procedure DB.DBA.RDF_DEFAULT_USER_PERMS_SET (in uname varchar, in perms i
   if (uid = http_nobody_uid())
     dict_put (__rdf_graph_public_perms_dict(), #i0, perms);
   commit work;
+  if (uname = 'nobody')
+    {
+      for (sparql
+          define input:storage ""
+          prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+          select (str(?s)) as ?jso_key where {
+            graph <http://www.openlinksw.com/schemas/virtrdf#> { { ?s a virtrdf:QuadMap } union { ?s a virtrdf:QuadMap } } } ) do
+        jso_mark_affected ("jso_key");
+    }
+  else
+    jso_mark_affected (uname);
 }
 ;
 
@@ -8680,7 +8694,9 @@ create procedure DB.DBA.RDF_GRAPH_USER_PERMS_SET (in graph_iri varchar, in uname
     15 );
   if (bit_and (bit_not (perms), common_perms))
     signal ('RDF99', sprintf ('Default permissions of user "%s" on RDF quad store are broader than new permissions on specific graph <%s>', uname, graph_iri));
-  if (uname <> 'nobody')
+  if (uname = 'nobody')
+    jso_mark_affected (graph_iri);
+  else
     {
       common_perms := coalesce (
         (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = graph_iid and RGU_USER_ID = http_nobody_uid()),
