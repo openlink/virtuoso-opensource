@@ -8930,7 +8930,7 @@ box_cast_to (caddr_t *qst, caddr_t data, dtp_t data_dtp,
   caddr_t prec_box = box_num (prec);
   sql_tree_tmp *proposed;
 
-  BOX_AUTO (ptmp, tmp, 3 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  BOX_AUTO_TYPED (caddr_t *, ptmp, tmp, 3 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
   proposed = (sql_tree_tmp *) ptmp;
   ptmp[0] = (caddr_t) (uptrlong) to_dtp;
   ptmp[1] = prec_box;
@@ -10231,7 +10231,7 @@ bif_deserialize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *)qst;
   caddr_t xx = bif_arg (qst, args, 0, "deserialize");
-  caddr_t tmp_xx, res;
+  caddr_t tmp_xx, res = NULL;
   dtp_t dtp = DV_TYPE_OF (xx);
   if (dtp == DV_SHORT_STRING || dtp == DV_LONG_STRING || dtp == DV_BIN)
     return (box_deserialize_string (xx, 0));
