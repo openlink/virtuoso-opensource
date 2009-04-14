@@ -24,10 +24,6 @@
  -  
  -  
 -->
-<!--
-  Virtuoso VSPX XSL-T style-sheet for page class compilation
-  (C)Copyright 2004 OpenLink Software
--->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
      version="1.0"
      xmlns:v="http://www.openlinksw.com/vspx/"

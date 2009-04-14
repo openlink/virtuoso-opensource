@@ -4,6 +4,8 @@
  -  
  -  $Id$
  -
+ -   Virtuoso VSPX XSL-T style-sheet for page class compilation
+ -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
@@ -23,10 +25,6 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -  
  -  
--->
-<!----
-  Virtuoso VSPX XSL-T style-sheet for page class compilation
-  (C)Copyright 2004 OpenLink Software
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
      version="1.0"
