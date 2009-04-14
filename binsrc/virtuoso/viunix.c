@@ -687,7 +687,7 @@ main (int argc, char **argv)
       if (listening->dks_session->ses_class == SESCLASS_UNIX)
 	log_error ("Failed to start listening at the unix domain socket for tcp port '%s'", c_serverport);
       else
-	log_error ("Failed to start listening at port '%s'", c_serverport);
+	log_error ("Failed to start listening at SQL port '%s'", c_serverport);
       viunix_terminate (1);
     }
 

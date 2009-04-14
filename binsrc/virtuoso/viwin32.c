@@ -1538,7 +1538,7 @@ ApplicationMain (int argc, char **argv)
   server_port = tcpses_get_port (listening->dks_session);
   if (!DKSESSTAT_ISSET (listening, SST_LISTENING))
     {
-      log_error ("Failed to start listening at port '%s'", c_serverport);
+      log_error ("Failed to start listening at SQL port '%s'", c_serverport);
       terminate (1);
     }
 
