@@ -1,3 +1,755 @@
+2009-04-07 22:03  source
+
+	* Fixed read_int should return int64 as an unsigned blob ts is sometimes
+	  marshalled as int64
+
+2009-04-07 22:00  source
+
+	* Fixed indentation
+
+2009-04-07 21:29  source
+
+	* Added full duplex flag for ses to allow different threads to do R and W
+	* Added separate write status
+	* Added flag for data format error
+
+2009-04-07 21:20  source
+
+	* Added more debugging code
+
+2009-04-07 21:05  source
+
+	* Added extra debugging code
+
+2009-04-07 21:00  source
+
+	* Added compiler extensions for SPARQL security
+
+2009-04-06 09:52  source
+
+	* Merged from upstream project
+
+2009-04-03 10:55  source
+
+	* Fixed FOAF+SSL login
+	* Fixed FOAF+SSL registration
+	* Fixed failures during installaation
+	* Fixed get_cert info should get non-null 2nd argument
+	* Fixed default port 443 does not need to be specified
+
+2009-04-03 10:49  source
+
+	* Added locked refcount to the DV_DICT allocation/deallocation logic
+
+2009-04-03 10:47  source
+
+	* Added draft of RDF graph-level security metadata functions
+
+2009-04-03 10:39  source
+
+	* Added delicious meta
+	* Added more namespaces
+
+2009-04-03 10:38  source
+
+	* Fixed minor problem
+
+2009-04-03 10:38  source
+
+	* Added some style to datatype display
+	* Added more props in ontology for labeling
+	* Fixed removed redundant About:
+	* Fixed xsd:double handling to always use cast to varchar to maintain
+	  reasonable apperance
+
+2009-04-01 19:36  source
+
+	* Fixed if page is not written in utf-8, try to recover using current charset
+
+2009-04-01 10:27  source
+
+	* Fixed problem with DEBUG code
+
+2009-04-01 10:26  source
+
+	* Fixed delicious
+
+2009-04-01 10:23  source
+
+	* Fixed problem with moat
+
+2009-03-31 15:49  source
+
+	* Fixed ssl /about endpoint
+
+2009-03-31 13:25  source
+
+	* Fixed i18N serialization of RDF/XML box
+
+2009-03-31 11:45  source
+
+	* Added GoodRelations and Barters Ontology
+	* Added ubiquity relationship commands
+	* Updated FOAF+SSL login
+
+2009-03-31 11:43  source
+
+	* Added ubiquity relationship commands
+
+2009-03-31 11:35  source
+
+	* Fixed in RDF View there is no need to describe the document that
+	  contains descriptions of resource.
+
+2009-03-31 11:33  source
+
+	* Updated documentation
+
+2009-03-31 11:26  source
+
+	* Added support for Delicious cardridge
+
+2009-03-31 11:25  source
+
+	* Fixed rdfa validation
+	* Fixed use meta cardridges for doc links
+
+2009-03-31 11:06  source
+
+	* Added rdf box argument to iri_to_id
+	* Deprecated RDF_MAKE_IID_OF_QNAME_SAFE and RDF_MAKE_IID_OF_LONG
+
+2009-03-31 11:03  source
+
+	* Fixed rdf view generation
+
+2009-03-31 11:03  source
+
+	* Fixed proper subtype when casting string to time
+
+2009-03-30 15:21  source
+
+	* Rebuild driver
+
+2009-03-30 15:21  source
+
+	* Fixed description external dependencies
+
+2009-03-30 14:22  source
+
+	* Fixed compiler warning
+
+2009-03-30 08:22  source
+
+	* Replaced string_to_time_dt and iso8601_string_to_dt with common parser
+	  for both ODBC adn iso8601 strings
+
+2009-03-30 08:20  source
+
+	* Added support for XML literals in RDF/XML, SPARQL XML resultset and
+	  JSON outputs
+
+2009-03-30 08:19  source
+
+	* Fixed 64bit portability
+
+2009-03-29 10:02  source
+
+	* Fixed cleanup entries loaded with sparql load into
+
+2009-03-26 13:57  source
+
+	* Added initial support for Sesame 3
+
+2009-03-26 10:02  source
+
+	* Fixed conflict between user-defined aggregates and SPARUL aggregates
+
+2009-03-26 10:00  source
+
+	* Added support for user-defined aggregates in SPARQL
+
+2009-03-26 09:59  source
+
+	* Fixed Oracle HR issue
+
+2009-03-26 09:59  source
+
+	* Fixed variable declaration
+
+2009-03-25 13:28  source
+
+	* Fixed xbrl
+
+2009-03-25 13:26  source
+
+	* Fixed for future cluster engine
+
+2009-03-25 13:05  source
+
+	* Merged from upstream project
+
+2009-03-25 12:39  source
+
+	* Fixed openid+foaf+ssl
+	* Fixed handling of nickname
+
+2009-03-25 12:39  source
+
+	* Added bibliographical ontology
+
+2009-03-25 12:37  source
+
+	* Fixed problem with Import
+
+2009-03-25 10:05  source
+
+	* Fixed i18n issues with freetext search in RDF
+
+2009-03-25 09:41  source
+
+	* Fixed needless call to wp_proximity
+
+2009-03-25 09:16  source
+
+	* Fixed compiler warnings
+
+2009-03-25 09:13  source
+
+	* Fixed listen if non-normalized interface e.g. w/o port is recorded
+	  in http_path table
+
+2009-03-23 13:45  source
+
+	* Merged from upstream project
+
+2009-03-23 12:36  source
+
+	* Fixed minor issues
+
+2009-03-22 15:13  source
+
+	* Fixed disabling unbuild hosting modules
+
+2009-03-22 13:36  source
+
+	* Fixed OpenID auth with FOAF+SSL
+	* Fixed SSL access rights
+
+2009-03-22 13:34  source
+
+	* Fixed SSL access rights
+
+2009-03-22 10:38  source
+
+	* Added DF_UTF8 and BF_DEFAULT_SERVER_ENC for future use
+
+2009-03-22 10:37  source
+
+	* Fixed compiler warnings
+
+2009-03-22 10:36  source
+
+	* Fixed passing retvals of variables from OPTION(), like ?SCORE ?x,
+	  from deeply nested subselects
+
+2009-03-20 16:23  source
+
+	* Added ht_dict_max_mem_in_use
+
+2009-03-19 23:42  source
+
+	* Added support for MaxMemInUse parameter in [SPARQL] section
+	* Fixed related bugs in resultset size restrictions
+
+2009-03-19 23:41  source
+
+	* FIxed include "..." instead of include <...> for dependencies
+
+2009-03-19 23:39  source
+
+	* Fixed wrong output to http instead of output to session in single-value
+	  result sets
+
+2009-03-19 11:11  source
+
+	* Added SSL access rights
+
+2009-03-19 11:11  source
+
+	* Fixed SSL access rights
+
+2009-03-19 11:10  source
+
+	* Fixed SSL access
+
+2009-03-19 10:52  source
+
+	* Added meta cardridge for doc links
+
+2009-03-19 10:19  source
+
+	* Updated documentation
+
+2009-03-19 10:14  source
+
+	* Fixed minor issues
+
+2009-03-19 10:12  source
+
+	* Fixed include to use "..." instead of <...> for deps
+
+2009-03-18 23:49  source
+
+	* Fixed whitespace
+
+2009-03-18 16:04  source
+
+	* Fixed names and string limits
+
+2009-03-18 09:34  source
+
+	* Added SSL access rights
+
+2009-03-18 09:34  source
+
+	* Fixes SSL access rights
+
+2009-03-18 09:33  source
+
+	* Added missing file
+	* Fixed initialization
+
+2009-03-18 09:14  source
+
+	* Added support for nonstandard '[' predicate-object-list ']' '.' syntax
+	  at top level of N3 files
+
+2009-03-18 09:12  source
+
+	* Fixed problem with dateadd and datediff on first day of month with pos
+	  timezone and on last day of month with neg timezone
+
+2009-03-17 14:42  source
+
+	* Changed describe propery
+	* Fixed foaf+ssl
+	* Fixed SSL login
+
+2009-03-17 14:41  source
+
+	* Fixed 'New Contact' page
+
+2009-03-17 14:20  source
+
+	* Updated documentation
+
+2009-03-17 14:16  source
+
+	* Fixed attribution
+
+2009-03-17 14:16  source
+
+	* Fixed status
+
+2009-03-17 14:15  source
+
+	* Fixed minor issues
+
+2009-03-17 10:36  source
+
+	* Fixed problem with wrong dictionary limit
+
+2009-03-16 11:38  source
+
+	* Added Messaging Services
+
+2009-03-16 11:38  source
+
+	* Updated version
+
+2009-03-15 15:14  source
+
+	* Fixed bad http header
+
+2009-03-13 16:43  source
+
+	* Added support for FOAF+SSL
+
+2009-03-13 16:42  source
+
+	* Fixed UI in Safari and Chrome
+
+2009-03-13 16:41  source
+
+	* Updated UI Profile Page
+
+2009-03-13 16:40  source
+
+	* Renamed vad
+
+2009-03-12 09:50  source
+
+	* Updated NYT
+
+2009-03-12 09:49  source
+
+	* Updated meetup
+
+2009-03-12 09:48  source
+
+	* Removed old api_keys
+
+2009-03-12 09:34  source
+
+	* Added FOAF+SSP
+
+2009-03-12 09:33  source
+
+	* Fixed Update after versioning
+
+2009-03-12 09:28  source
+
+	* Updated documentation
+
+2009-03-11 14:57  source
+
+	* Added support for URIQA methods in http_client
+	* Added support for gunzip in http_client
+	* Rewrote http_get to use http_client call
+
+2009-03-11 14:44  source
+
+	* Fixed memory leak in file stat
+
+2009-03-10 14:36  source
+
+	* Updated documentation
+
+2009-03-10 14:33  source
+
+	* Fixed GPF in rare case when using NOT FROM / NOT FROM NAMED
+
+2009-03-10 14:28  source
+
+	* Fixed minor problems
+
+2009-03-10 14:23  source
+
+	* Fixed handling of fractions in datetime
+
+2009-03-09 15:58  source
+
+	* Fixed dirlist on windows
+
+2009-03-09 09:53  source
+
+	* Added login X.509 button
+	* Fixed OpenId registration
+
+2009-03-09 09:50  source
+
+	* Fixed typo
+
+2009-03-09 09:40  source
+
+	* Updated version to 5.0.11-pre2
+
+2009-03-09 09:39  source
+
+	* Updated documentation
+
+2009-03-09 09:35  source
+
+	* Fixed meetup
+
+2009-03-09 09:27  source
+
+	* Added support for squid, socks4 and socks5 proxy with optional auth
+	* Added support for define sparql-get:proxy for RDF mappers
+
+2009-03-09 09:23  source
+
+	* Fixed failing file_stat on windows because of trailing slash on directory
+
+2009-03-05 08:36  source
+
+	* Added Login x.509 button
+	* Fixed oauth
+
+2009-03-04 15:22  source
+
+	* Added NYT article cardridge
+
+2009-03-04 15:04  source
+
+	* Added missing function
+
+2009-03-03 20:45  source
+
+	* Fixed IRI
+
+2009-03-03 20:44  source
+
+	* Fixed cleanup
+
+2009-03-03 20:43  source
+
+	* Added loading of countries
+
+2009-03-03 20:42  source
+
+	* Updated version
+
+2009-03-03 20:42  source
+
+	* Fixed FOAF_SSL auth for sparql
+
+2009-03-03 20:42  source
+
+	* Fixed OL account
+
+2009-03-03 20:41  source
+
+	* Fixed FOAF API and SSL login
+
+2009-03-03 20:33  source
+
+	* Fixed FOAF import
+
+2009-03-03 20:05  source
+
+	* Fixed OL account handler
+
+2009-03-03 19:59  source
+
+	* Fixed long files support in http client
+
+2009-03-03 19:58  source
+
+	* Fixed missing group by for voID
+	* Fixed iri
+
+2009-03-03 13:36  source
+
+	* Fixed problem with TURTLE serialization of a triple with an O field
+	  that is an unknown IRI_ID
+
+2009-03-02 21:15  source
+
+	* Updated documentation
+
+2009-03-02 21:09  source
+
+	* Fixed Twitter
+
+2009-03-02 20:47  source
+
+	* Fixed output format selection for SPARQL protocol clients that accept
+	  both XML result-sets and TTL triple dictionaries
+
+2009-03-02 09:01  source
+
+	* Fixed problem with FILTER and DB.DBA.RDF_STRSQLVAL_OF_SQLVAL
+
+2009-02-27 21:49  source
+
+	* Added SSL user registration
+
+2009-02-27 21:49  source
+
+	* Fixed support for foaf+ssl
+
+2009-02-27 21:48  source
+
+	* Added relationships ontology
+
+2009-02-27 21:42  source
+
+	* Updated documentation
+
+2009-02-27 21:12  source
+
+	* Added support for xpf_abs and apf_round_half_to_even
+
+2009-02-27 14:14  source
+
+	* Updated version to 5.0.11-pre1
+
+2009-02-27 13:03  source
+
+	* Fixed wrong function name in bif_args
+
+2009-02-27 11:15  source
+
+	* Fixed missing json initialization for OAT
+
+2009-02-27 11:15  source
+
+	* Fixed typed cert properties
+
+2009-02-27 11:04  source
+
+	* Fixed problem with insert replacing
+
+2009-02-27 11:02  source
+
+	* Added Congress Web service
+
+2009-02-27 11:02  source
+
+	* Added support for SCOT
+
+2009-02-27 11:00  source
+
+	* Fixed incorrect result when Accept is set to "text/rdf-n3"
+	* Fixed compilation of SPARQL_SELECT_DISTINCT query returning bad result
+
+2009-02-27 10:39  source
+
+	* Fixed urlify to avoid using '+' and match final URL recommendations
+
+2009-02-26 23:23  source
+
+	* Fixed gpf on db:cert_key in certificate info
+
+2009-02-26 23:22  source
+
+	* Fixed label
+
+2009-02-25 23:58  source
+
+	* Fixed https access
+
+2009-02-25 23:50  source
+
+	* Fixed problem checking returned data with some versions of wc
+
+2009-02-25 15:24  source
+
+	* Fixed problem with checkpoint rollback which left empty pages
+
+2009-02-25 14:17  source
+
+	* Fixed memory leak when an executed select statement leaves a qi and
+	  not all rows are fetched
+
+2009-02-25 08:40  source
+
+	* Fixed meetup
+
+2009-02-25 08:39  source
+
+	* Fixed accept format
+
+2009-02-25 08:38  source
+
+	* Enhanced speed of TTL output
+	* Fixed other output modes
+
+2009-02-25 08:36  source
+
+	* Fixed problem with folder and resource names
+
+2009-02-25 08:35  source
+
+	* Updated documentation
+
+2009-02-20 22:30  source
+
+	* Fixed gpf
+
+2009-02-20 14:19  source
+
+	* Updated documentation
+
+2009-02-20 14:18  source
+
+	* Added function bif_rdf_strsqlval
+
+2009-02-20 14:16  source
+
+	* Added initial infrastructure for new SPARQL result serialization
+	* Added function bif_rdf_strsqlval
+	* Fixed RDF_STRSQLVAL_OF_xxx for IRI attributes
+
+2009-02-20 14:13  source
+
+	* Added function bif_isnotnull
+
+2009-02-20 14:13  source
+
+	* Fixed compiler warnings
+
+2009-02-20 14:11  source
+
+	* Added CA functions
+
+2009-02-20 14:10  source
+
+	* Added bif to open strses without dumping into temp file
+
+2009-02-20 14:08  source
+
+	* Fixed bug accessing memory past the end of st_buffer
+
+2009-02-20 14:06  source
+
+	* Fixed minor bug
+
+2009-02-20 14:05  source
+
+	* Fixed missing line
+
+2009-02-20 14:05  source
+
+	* Added OReilly cardridge
+
+2009-02-20 12:44  source
+
+	* Reverted bad patch
+
+2009-02-20 12:26  source
+
+	* Added new facebook connection dialog
+	* Added calendar upstream commands
+	* Added certificate and key generation
+	* Fixed ODS bar - links order and names
+	* Fixed Other Identity URIs
+	* Fixed handling of X509 certificates
+
+2009-02-20 12:21  source
+
+	* Added Calendar API commands
+
+2009-02-20 12:21  source
+
+	* FIxed import routine used by ODS facebook
+
+2009-02-20 11:43  source
+
+	* Fixed problem with autocommit
+
+2009-02-20 11:40  source
+
+	* Regenerated driver
+
+2009-02-20 11:36  source
+
+	* Fixed stringForValue for Literal
+
+2009-02-19 13:29  source
+
+	* Fixed indentation
+
+2009-02-19 13:26  source
+
+	* Added support for bibo meta data
+
+2009-02-19 13:21  source
+
+	* Fixed twitter
+
 2009-02-13 15:41  source
 
 	* Updated version to 5.0.10 for final release
