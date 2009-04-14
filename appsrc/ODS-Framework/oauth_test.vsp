@@ -49,7 +49,7 @@ _exit:;
   apiOptions := get_keyword ('apiOptions', params, 'uriOnly');
 
   oauthServerUrl := sprintf ('%s/OAuth/', serverUrl);
-  apiServerUrl := sprintf ('%s/ods/api/', serverUrl);
+  apiServerUrl := get_keyword ('apiServerUrl', params, sprintf ('%s/ods/api/', serverUrl));
 
   requestUri := '';
   responseBody := '';
@@ -118,6 +118,7 @@ _exit:;
       tmp := OAUTH..get_session_data (sid);
       api_params := get_keyword ('api_params', tmp, api_params);
 	    api_method := get_keyword ('api_method', tmp, api_method);
+      apiServerUrl := get_keyword ('apiServerUrl', tmp, apiServerUrl);
 	  }
     -- call get_consumer_key
 	  consumer_key := OAUTH..get_consumer_key (sid);
@@ -268,16 +269,16 @@ _end:;
           	<input type="hidden" name="sid" value="<?V sid ?>"/>
             <label>Server:</label>
             <br/>
-            <input type="text" name="serverUrl" style="width: 300px;" value="<?V serverUrl ?>/ods/api" readonly="readonly" />
+            <input type="text" name="apiServerUrl" style="width: 350px;" value="<?V apiServerUrl ?>" />
             <label>Consumer Key:</label>
             <br/>
-            <input type="text" name="consumer_key" style="width: 300px;" value="<?V consumer_key ?>" />
+            <input type="text" name="consumer_key" style="width: 350px;" value="<?V consumer_key ?>" />
             <label>API method</label>
             <br/>
-            <input type="text" name="api_method" style="width: 300px;" value="<?V api_method ?>" />
+            <input type="text" name="api_method" style="width: 350px;" value="<?V api_method ?>" />
             <label>API parameters</label>
             <br/>
-            <input type="text" name="api_params" style="width: 300px;" value="<?V api_params ?>" />
+            <input type="text" name="api_params" style="width: 350px;" value="<?V api_params ?>" />
             <label>Query options:</label>
             <br/>
             <select name="apiOptions">

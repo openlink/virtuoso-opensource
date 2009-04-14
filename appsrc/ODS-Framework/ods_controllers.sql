@@ -211,6 +211,17 @@ create procedure obj2json (
 		}
 		retValue := '"' || retValue || '"';
 	}
+  else if (isarray (o) and (length (o) > 1) and (__tag (o[0]) = 255))
+  {
+  	retValue := '{';
+  	for (N := 2; N < length(o); N := N + 2)
+  	{
+  	  retValue := retValue || o[N] || ':' || obj2json (o[N+1], d-1);
+  	  if (N <> length(o)-2)
+  		  retValue := retValue || ', ';
+  	}
+  	retValue := retValue || '}';
+  }
 	else if (isarray (o))
 	{
 		retValue := '[';

@@ -2489,6 +2489,30 @@ CmdUtils.CreateCommand({
 });
 
 CmdUtils.CreateCommand({
+  name: "ods-search-addressbook-contacts",
+  takes: {"instance_id": noun_type_id},
+  modifiers: {"keywords": noun_arb_text, "tags": noun_arb_text, "category": noun_arb_text, "maxResults": noun_type_integer},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-search-addressbook-contacts &lt;instance_id&gt; keywords &lt;keywords&gt; tags &lt;tags&gt; category &lt;category&gt; maxResults &lt;maxResults&gt;",
+
+  preview: function (previewBlock, instance_id, modifiers) {
+    try {
+      checkParameter(instance_id.text);
+      var params = {inst_id: instance_id.text};
+      addParameter(modifiers, "keywords", params, "keywords");
+      addParameter(modifiers, "tags", params, "tags");
+      addParameter(modifiers, "category", params, "category");
+      addParameter(modifiers, "maxResults", params, "maxResults");
+      odsPreview(previewBlock, "addressbook.search", params, "addressbook");
+    } catch (ex) {
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
   name: "ods-get-addressbook-contact-by-id",
   takes: {"contact_id": noun_type_id},
   homepage: "http://myopenlink.net/ods/",

@@ -1,6 +1,17 @@
 // TODO: move template functions to OAT
 //
 
+function get_param ( name )
+{
+  var regexS = "[\\?&]"+name+"=([^&#]*)";
+  var regex = new RegExp( regexS );
+  var results = regex.exec( document.location.href );
+  if( results == null )
+    return "";
+  else
+    return results[1];
+}
+
 function _getChildElemsByClassName (elm, class_name, max_depth, stop_at_first_match, elm_arr)
 {
   var i = 0;
@@ -921,6 +932,7 @@ ODS.Nav = function (navOptions)
   this.throbberImg = false;
   this.appIconSave = false;
   this.appIconSaveBag = false;
+  this.alog = true;
     this.profile       = {userName     : false,
 			  userId       : false,
 			  userFullName : false,
@@ -2288,9 +2300,9 @@ ODS.Nav = function (navOptions)
         {
           aSSL = OAT.Dom.create ("a");
 	  if (o.sslPort != '443')
-          aSSL.href = 'https://' + document.location.hostname + ':' + o.sslPort + '/ods/index.html';
+            aSSL.href = 'https://' + document.location.hostname + ':' + o.sslPort + '/ods/index.html?alog=1';
 	  else
-            aSSL.href = 'https://' + document.location.hostname + '/ods/index.html';
+            aSSL.href = 'https://' + document.location.hostname + '/ods/index.html?alog=1';
           var aImg = OAT.Dom.create ('img');
           aImg.src = 'images/icons/lock_16.png';
           aImg.alt = 'ODS SSL Link';
@@ -2308,7 +2320,20 @@ ODS.Nav = function (navOptions)
         {
           self.sslData = o;
           if (o.certLogin && !self.userLogged)
+	    {
             self.logIn();
+	      if (self.alog && get_param ('alog') == '1')
+		{
+		  self.alog = false;
+		  OAT.Dom.hide ($('login_page'));
+		  self.showLoginThrobber ();
+		  OAT.MSG.attach (self.session, OAT.MSG.SES_TOKEN_RECEIVED,
+		      function ()
+		      {
+		      self.session.validate ();
+		      } );
+		}
+	    }
         }
       }
       OAT.AJAX.GET ('/ods/api/user.getFOAFSSLData?sslFOAFCheck=1&sslLoginCheck=1', false, x);
