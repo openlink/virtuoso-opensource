@@ -757,10 +757,11 @@ AB.getFOAFData = function (iri)
     try {
       o = OAT.JSON.parse(data);
     } catch (e) { o = null; }
-    if (o && (data != '{}'))
+    if (o && o.iri)
     {
-      if (confirm('New data for \''+iri+'\' is founded. Do you like to fill in the corresponding fields?'))
+      if (confirm('New data for \''+o.iri+'\' is founded. Do you like to fill in the corresponding fields?'))
       {
+        AB.setFOAFValue(o.iri, 'ab_iri');
         AB.setFOAFValue(o.nick, 'ab_name');
         AB.setFOAFValue(o.tirle, 'ab_title');
         AB.setFOAFValue(o.name, 'ab_fullName');

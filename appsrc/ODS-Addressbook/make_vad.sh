@@ -1,5 +1,7 @@
 #!/bin/sh
 #
+#  $Id$
+#
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
@@ -26,10 +28,9 @@ LANG=C
 LC_ALL=POSIX
 export LANG LC_ALL
 
-
 MODE=$1
 LOGDIR=`pwd`
-VERSION="1.4.41"
+VERSION="1.4.42"
 LOGFILE="${LOGDIR}/vad_make.log"
 STICKER_DAV="vad_dav.xml"
 STICKER_FS="vad_filesystem.xml"

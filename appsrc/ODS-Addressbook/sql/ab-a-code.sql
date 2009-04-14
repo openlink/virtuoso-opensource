@@ -38,7 +38,8 @@ create procedure AB.WA.session_domain (
   options := http_map_get('options');
   if (not is_empty_or_null (options))
     domain_id := get_keyword ('domain', options);
-  if (is_empty_or_null (domain_id)) {
+  if (is_empty_or_null (domain_id))
+  {
     aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
     domain_id := cast(aPath[1] as integer);
   }
@@ -1702,7 +1703,8 @@ create procedure AB.WA.vector_set (
 
   retValue := vector();
   for (N := 0; N < length(aVector); N := N + 1)
-    if (aIndex = N) {
+    if (aIndex = N)
+    {
       retValue := vector_concat (retValue, vector(aValue));
     } else {
       retValue := vector_concat (retValue, vector(aVector[N]));
@@ -1872,14 +1874,14 @@ create procedure AB.WA.set_keyword (
   declare N integer;
 
   for (N := 0; N < length(params); N := N + 2)
+  {
     if (params[N] = name)
     {
-      aset(params, N + 1, value);
+      params[N+1] := value;
       goto _end;
     }
-
+  }
   params := vector_concat(params, vector(name, value));
-
 _end:
   return params;
 }
@@ -2405,6 +2407,7 @@ create procedure AB.WA.test (
     --resignal;
   };
 
+  if (isstring (value))
   value := trim(value);
   if (is_empty_or_null(params))
     return value;
@@ -2414,21 +2417,22 @@ create procedure AB.WA.test (
   valueName := get_keyword('name', params, 'Field');
   valueMessage := get_keyword('message', params, '');
   tmp := get_keyword('canEmpty', params);
-  if (isnull (tmp)) {
-    if (not isnull (get_keyword('minValue', params))) {
+  if (isnull (tmp))
+  {
+    if (not isnull (get_keyword ('minValue', params)))
+    {
       tmp := 0;
     } else if (get_keyword('minLength', params, 0) <> 0) {
       tmp := 0;
     }
   }
-  if (not isnull (tmp) and (tmp = 0) and is_empty_or_null (value)) {
+  if (not isnull (tmp) and (tmp = 0) and is_empty_or_null (value))
+  {
     signal('EMPTY', '');
   } else if (is_empty_or_null(value)) {
     return value;
   }
-
-  value := AB.WA.validate2 (valueClass, value);
-
+  value := AB.WA.validate2 (valueClass, cast (value as varchar));
   if (valueType = 'integer') {
     tmp := get_keyword('minValue', params);
     if ((not isnull (tmp)) and (value < tmp))
@@ -3651,6 +3655,7 @@ create procedure AB.WA.import_foaf (
   if (isnull (contentItems))
   {
     Items := AB.WA.ab_sparql (sprintf (' SPARQL                                                    \n' ||
+                                       ' define input:storage ""                                   \n' ||
                                        ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
                                        ' PREFIX foaf: <http://xmlns.com/foaf/0.1/>                 \n' ||
                                        ' SELECT ?x                                                 \n' ||
@@ -3666,7 +3671,7 @@ create procedure AB.WA.import_foaf (
   iLength := length (Items);
 
     S := ' SPARQL ' ||
-       ' input default:storage ""' ||
+       ' define input:storage "" ' ||
        ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
        ' prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> ' ||
        ' prefix foaf: <http://xmlns.com/foaf/0.1/> ' ||
@@ -3835,7 +3840,7 @@ create procedure AB.WA.import_foaf_content (
     T := '';
     if (contentDepth)
       T := sprintf ('  define input:grab-depth %d\n  define input:grab-limit %d\n  define input:grab-seealso <%s>\n  define input:grab-destination <%s>\n', contentDepth, contentLimit, contentFollow, contentIRI);
-    S := sprintf ('SPARQL\n%s  define get:soft "soft"\n  define get:uri "%s"\nSELECT *\n  FROM <%s>\n WHERE { ?s ?p ?o }', T, content, contentIRI);
+    S := sprintf ('sparql \n%s  define get:soft "soft"\n  define get:uri "%s"\nSELECT *\n  FROM <%s>\n WHERE { ?s ?p ?o }', T, content, contentIRI);
     st := '00000';
     exec (S, st, msg, vector (), 0, meta, Items);
     if ('00000' <> st)
@@ -3843,9 +3848,8 @@ create procedure AB.WA.import_foaf_content (
   } else {
     DB.DBA.RDF_LOAD_RDFXML (content, contentIRI, contentIRI);
   }
-
   Items := AB.WA.ab_sparql (sprintf (' sparql \n' ||
-                                     ' input default:storage ""' ||
+                                     ' define input:storage ""                                   \n' ||
                                      ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
                                      ' prefix foaf: <http://xmlns.com/foaf/0.1/>                 \n' ||
                                      ' select ?person, ?nick, ?name, ?mbox                       \n' ||
@@ -3863,7 +3867,7 @@ create procedure AB.WA.import_foaf_content (
     tmp := replace (Items[N][3], 'mailto:', '');
     Persons := vector_concat (Persons, vector (vector (1, personIRI,  coalesce (Items[N][2], Items[N][1]), tmp)));
     Items := AB.WA.ab_sparql (sprintf (' SPARQL                                                    \n' ||
-                                       ' input default:storage ""' ||
+                                       ' define input:storage ""                                   \n' ||
                                        ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
                                        ' prefix foaf: <http://xmlns.com/foaf/0.1/>                 \n' ||
                                        ' select ?person, ?nick, ?name, ?mbox                       \n' ||
@@ -3887,7 +3891,7 @@ create procedure AB.WA.import_foaf_content (
                                        '        }', contentIRI, personIRI, personIRI));
   } else {
     Items := AB.WA.ab_sparql (sprintf (' SPARQL                                                    \n' ||
-                                       ' input default:storage ""' ||
+                                       ' define input:storage ""                                   \n' ||
                                        ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
                                        ' prefix foaf: <http://xmlns.com/foaf/0.1/>                 \n' ||
                                        ' select ?person, ?nick, ?name, ?mbox                       \n' ||
@@ -5027,12 +5031,12 @@ create procedure AB.WA.search_sql (
   if (not is_empty_or_null(AB.WA.xml_get('MyContacts', data)))
   {
     S := 'select                         \n' ||
-         ' p.P_ID,                       \n' ||
-         ' p.P_DOMAIN_ID,                \n' ||
-         ' p.P_NAME,                     \n' ||
-         ' p.P_TAGS,                     \n' ||
-         ' p.P_CREATED,                  \n' ||
-         ' p.P_UPDATED                   \n' ||
+         '  p.P_ID          P_ID,        \n' ||
+         '  p.P_DOMAIN_ID   P_DOMAIN_ID, \n' ||
+         '  p.P_NAME        P_NAME,      \n' ||
+         '  p.P_TAGS        P_TAGS,      \n' ||
+         '  p.P_CREATED     P_CREATED,   \n' ||
+         '  p.P_UPDATED     P_UPDATED    \n' ||
          'from                           \n' ||
          '  AB.WA.PERSONS p              \n' ||
          'where p.P_DOMAIN_ID = <DOMAIN_ID> <TEXT> <WHERE>';
@@ -5043,12 +5047,12 @@ create procedure AB.WA.search_sql (
       S := S || '\n union \n';
     S := S ||
          'select                         \n' ||
-         ' p.P_ID,                       \n' ||
-         ' p.P_DOMAIN_ID,                \n' ||
-         ' p.P_NAME,                     \n' ||
-         ' p.P_TAGS,                     \n' ||
-         ' p.P_CREATED,                  \n' ||
-         ' p.P_UPDATED                   \n' ||
+         '  p.P_ID          P_ID,        \n' ||
+         '  p.P_DOMAIN_ID   P_DOMAIN_ID, \n' ||
+         '  p.P_NAME        P_NAME,      \n' ||
+         '  p.P_TAGS        P_TAGS,      \n' ||
+         '  p.P_CREATED     P_CREATED,   \n' ||
+         '  p.P_UPDATED     P_UPDATED    \n' ||
          'from                           \n' ||
          '  AB.WA.PERSONS p,             \n' ||
          '  AB.WA.GRANTS g               \n' ||
@@ -5801,4 +5805,629 @@ create procedure AB.WA.news_comment_get_cn_type (in f_name varchar)
 
   return ext;
 }
+;
+
+
+-----------------------------------------------------------------------------------------
+--
+-- Portable Contacts
+--
+-----------------------------------------------------------------------------------------
+create procedure AB.WA.pcObject ()
+{
+  return subseq (soap_box_structure ('x', 1), 0, 2);
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.pcIsObject (inout o any)
+{
+  if (isarray (o) and (length (o) > 1) and (__tag (o[0]) = 255))
+    return 1;
+  return 0;
+}
+;
+
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.obj2xml (
+  in o any,
+  in d integer := 3,
+  in tag varchar := null)
+{
+  declare N, M integer;
+  declare R, T any;
+  declare retValue any;
+
+  if (d = 0)
+    return '[maximum depth achieved]';
+
+  retValue := '';
+  if (isnumeric (o))
+  {
+    retValue := cast (o as varchar);
+  }
+  else if (isstring (o))
+  {
+    retValue := sprintf ('%V', o);
+  }
+  else if (AB.WA.pcIsObject (o))
+  {
+    for (N := 2; N < length(o); N := N + 2)
+    {
+      if (not AB.WA.pcIsObject (o[N+1]) and isarray (o[N+1]) and not isstring (o[N+1]))
+      {
+        retValue := retValue || AB.WA.obj2xml (o[N+1], d-1, o[N]);
+      } else {
+        retValue := retValue || sprintf ('<%s>%s</%s>\n', o[N],  AB.WA.obj2xml (o[N+1], d-1), o[N]);
+      }
+    }
+  }
+  else if (isarray (o))
+  {
+    for (N := 0; N < length(o); N := N + 1)
+    {
+      if (isnull (tag))
+      {
+        retValue := retValue || AB.WA.obj2xml (o[N], d-1);
+      } else {
+        retValue := retValue || sprintf ('<%s>%s</%s>\n', tag,  AB.WA.obj2xml (o[N], d-1), tag);
+      }
+    }
+  }
+  return retValue;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.pcMap ()
+{
+  return vector ('id',              vector ('field',    'P_ID'),
+                 'nickname',        vector ('field',    'P_NAME'),
+                 'gender',          vector ('field',    'P_GENDER'),
+                 'name.givenName',  vector ('field',    'P_FIRST_NAME'),
+                 'name.middleName', vector ('field',    'P_MIDDLE_NAME'),
+                 'name.familyName', vector ('field',    'P_LAST_NAME'),
+                 'published',       vector ('type',     'function',
+                                            'field',    vector ('P_CREATED',   vector ('function', 'select AB.WA.dt_iso8601 (?)'))
+                                           ),
+                 'updated',         vector ('type',     'function',
+                                            'field',    vector ('P_UPDATED',   vector ('function', 'select AB.WA.dt_iso8601 (?)'))
+                                           ),
+                 'birthday',        vector ('type',     'function',
+                                            'field',    vector ('P_BIRTHDAY',  vector ('function', 'select subseq (AB.WA.dt_iso8601 (?), 0, 10)'))
+                                           ),
+                 'emails',          vector ('sort',     'P_MAIL',
+                                            'filter',   vector ('P_MAIL', 'P_H_MAIL', 'P_B_MAIL'),
+                                            'type',     'vector/object',
+                                            'field',    vector ('P_MAIL',   vector ('template', vector_concat (AB.WA.pcObject (), vector ('primary', 'true'))),
+                                                                'P_H_MAIL', vector ('template', vector_concat (AB.WA.pcObject (), vector ('type', 'home'))),
+                                                                'P_B_MAIL', vector ('template', vector_concat (AB.WA.pcObject (), vector ('type', 'work')))
+                                                               )
+                                           ),
+                 'phoneNumbers',    vector ('sort',     'P_PHONE',
+                                            'filter',   vector ('P_PHONE', 'P_H_PHONE', 'P_B_PHONE'),
+                                            'type',     'vector/object',
+                                            'field',    vector ('P_PHONE',   vector ('template', vector_concat (AB.WA.pcObject (), vector ('primary', 'true'))),
+                                                                'P_H_PHONE', vector ('template', vector_concat (AB.WA.pcObject (), vector ('type', 'home'))),
+                                                                'P_B_PHONE', vector ('template', vector_concat (AB.WA.pcObject (), vector ('type', 'work')))
+                                                               )
+                                           ),
+                 'urls',            vector ('sort',     'P_H_WEB',
+                                            'filter',   vector ('P_WEB', 'P_H_WEB', 'P_B_WEB'),
+                                            'type',     'vector/object',
+                                            'field',    vector ('P_WEB',     vector ('template', vector_concat (AB.WA.pcObject (), vector ('primary', 'true'))),
+                                                                'P_H_WEB',   vector ('template', vector_concat (AB.WA.pcObject (), vector ('type', 'home'))),
+                                                                'P_B_WEB',   vector ('template', vector_concat (AB.WA.pcObject (), vector ('type', 'work')))
+                                                               )
+                                           ),
+                 'ims',             vector ('sort',     'null',
+                                            'filter',   'null',
+                                            'type',     'vector/object',
+                                            'field',    vector ('P_ICQ',   vector ('template', vector_concat (AB.WA.pcObject (), vector ('type', 'icq'))),
+                                                                'P_SKYPE', vector ('template', vector_concat (AB.WA.pcObject (), vector ('type', 'skype'))),
+                                                                'P_AIM',   vector ('template', vector_concat (AB.WA.pcObject (), vector ('type', 'aim'))),
+                                                                'P_YAHOO', vector ('template', vector_concat (AB.WA.pcObject (), vector ('type', 'yahoo'))),
+                                                                'P_MSN',   vector ('template', vector_concat (AB.WA.pcObject (), vector ('type', 'msn')))
+                                                               )
+                                           ),
+                 'addresses',       vector ('sort',     'null',
+                                            'filter',   'null',
+                                            'type',     'vector/object2',
+                                            'unique',   'type',
+                                            'field',    vector ('P_H_COUNTRY', vector ('property', 'country',       'template', vector_concat (AB.WA.pcObject (), vector ('type', 'home'))),
+                                                                'P_H_STATE',   vector ('property', 'region',        'template', vector_concat (AB.WA.pcObject (), vector ('type', 'home'))),
+                                                                'P_H_CODE',    vector ('property', 'postalCode',    'template', vector_concat (AB.WA.pcObject (), vector ('type', 'home'))),
+                                                                'P_H_CITY',    vector ('property', 'locality',      'template', vector_concat (AB.WA.pcObject (), vector ('type', 'home'))),
+                                                                'P_H_ADDRESS1',vector ('property', 'streetAddress', 'template', vector_concat (AB.WA.pcObject (), vector ('type', 'home'))),
+                                                                'P_B_COUNTRY', vector ('property', 'country',       'template', vector_concat (AB.WA.pcObject (), vector ('type', 'work'))),
+                                                                'P_B_STATE',   vector ('property', 'region',        'template', vector_concat (AB.WA.pcObject (), vector ('type', 'work'))),
+                                                                'P_B_CODE',    vector ('property', 'postalCode',    'template', vector_concat (AB.WA.pcObject (), vector ('type', 'work'))),
+                                                                'P_B_CITY',    vector ('property', 'locality',      'template', vector_concat (AB.WA.pcObject (), vector ('type', 'work'))),
+                                                                'P_B_ADDRESS1',vector ('property', 'streetAddress', 'template', vector_concat (AB.WA.pcObject (), vector ('type', 'work')))
+                                                               )
+                                           ),
+                 'tags',            vector ('sort',     'null',
+                                            'filter',   'null',
+                                            'type',     'function',
+                                            'field',    vector ('P_TAGS',   vector ('function', 'select AB.WA.tags2vector (?)'))
+                                           )
+                );
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.pcSortField (
+  in pcField varchar,
+  in pcMap varchar)
+{
+  declare V, F any;
+
+  V := get_keyword (pcField, pcMap);
+  if (isnull (V))
+    return V;
+
+  F := get_keyword ('sort', V);
+  if (isstring (F) and (F = 'null'))
+    return null;
+  if (isstring (F))
+    return F;
+  F := get_keyword ('field', V);
+  if (isstring (F))
+    return F;
+  return null;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.pcFilterField (
+  in pcField varchar,
+  in pcMap varchar)
+{
+  declare V, F any;
+
+  V := get_keyword (pcField, pcMap);
+  if (isnull (V))
+    return V;
+
+  F := get_keyword ('filter', V);
+  if (isstring (F) and (F = 'null'))
+    return null;
+  if (not isarray (F))
+    F := get_keyword ('field', V);
+  if (isstring (F))
+    F := vector (F);
+  if (isarray (F))
+    return F;
+  return null;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.pcContactField (
+  in pcField varchar,
+  in pcMap varchar,
+  in pcFields any := null)
+{
+  if (not isnull (pcFields) and not AB.WA.vector_contains (pcFields, pcField))
+    return null;
+
+  return get_keyword (pcField, pcMap);
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.simplifyMeta (
+  in abMeta any)
+{
+  declare N integer;
+  declare newMeta any;
+
+  newMeta := vector ();
+  for (N := 0; N < length (abMeta[0]); N := N + 1)
+    newMeta := vector_concat (newMeta, vector (abMeta[0][N][0]));
+
+  return newMeta;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.pcContactFieldIndex (
+  in abField varchar,
+  in abMeta any)
+{
+  declare N integer;
+
+  for (N := 0; N < length (abMeta); N := N + 1)
+    if (abField = abMeta[N])
+      return N;
+
+  return null;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.pcContactObject (
+  in fields any,
+  in data any,
+  in meta any,
+  in pcMap any)
+{
+  declare K, L, M, N integer;
+  declare oEntry any;
+  declare R, V, T, P, P1, aIndex any;
+  declare tmp, pcField, pcFieldDef, pcUnique, pcUniqueValue, abValue, abFieldDef, abField, abFieldType, abFieldIndex any;
+
+  oEntry := AB.WA.pcObject ();
+  for (N := 0; N < length (fields); N := N + 1)
+  {
+    pcField := fields[N];
+    pcFieldDef := AB.WA.pcContactField (pcField, pcMap);
+    if (isnull (pcFieldDef))
+      goto _skip;
+    abField := get_keyword ('field', pcFieldDef);
+    if (isnull (abField))
+      goto _skip;
+    abFieldType := get_keyword ('type', pcFieldDef);
+    if (isstring (abField))
+      abField := vector (abField, null);
+    for (M := 0; M < length (abField); M := M + 2)
+    {
+      abFieldDef := abField[M+1];
+      abFieldIndex := AB.WA.pcContactFieldIndex (abField[M], meta);
+      if (isnull (abFieldIndex))
+        goto _skip_field;
+      abValue := data[abFieldIndex];
+      if (is_empty_or_null (abValue))
+        goto _skip_field;
+      if (isnull (abFieldType))
+      {
+        if (isnull (strchr (pcField, '.')))
+        {
+          oEntry := vector_concat (oEntry, vector (pcField, abValue));
+        }
+        else
+        {
+          V := split_and_decode (pcField, 0, '\0\0.');
+          if (length (V) <> 2)
+            goto _skip_field;
+          if (isnull (AB.WA.vector_index (oEntry, V[0])))
+            oEntry := vector_concat (oEntry, vector (V[0], AB.WA.pcObject ()));
+          T := get_keyword (V[0], oEntry);
+          T := AB.WA.set_keyword (V[1], T, abValue);
+          oEntry := AB.WA.set_keyword (V[0], oEntry, T);
+        }
+      }
+      else if (abFieldType = 'function')
+      {
+        tmp := get_keyword ('function', abFieldDef);
+        if (not isnull (tmp))
+        {
+          tmp := AB.WA.exec (tmp, vector (abValue));
+          if (length (tmp))
+            abValue := tmp[0][0];
+        }
+        oEntry := vector_concat (oEntry, vector (pcField, abValue));
+      }
+      else if (abFieldType = 'vector/object')
+      {
+        if (isnull (AB.WA.vector_index (oEntry, pcField)))
+          oEntry := vector_concat (oEntry, vector (pcField, vector ()));
+        P := get_keyword (pcField, oEntry);
+        T := get_keyword ('template', abFieldDef, AB.WA.pcObject ());
+        T := AB.WA.set_keyword (get_keyword ('property', abFieldDef, 'value'), T, abValue);
+        P := vector_concat (P, vector (T));
+        oEntry := AB.WA.set_keyword (pcField, oEntry, P);
+      }
+      else if (abFieldType = 'vector/object2')
+      {
+        if (isnull (AB.WA.vector_index (oEntry, pcField)))
+          oEntry := vector_concat (oEntry, vector (pcField, vector ()));
+        P := get_keyword (pcField, oEntry);
+        T := get_keyword ('template', abFieldDef, AB.WA.pcObject ());
+        pcUnique := get_keyword ('unique', pcFieldDef, 'type');
+        pcUniqueValue := get_keyword (pcUnique, T);
+        K := -1;
+        for (L := 0; L < length (P); L := L + 1)
+        {
+          if (get_keyword (pcUnique, P[L]) = pcUniqueValue)
+          {
+            K := L;
+            goto _exit_unique;
+          }
+        }
+        P := vector_concat (P, vector (T));
+        K := length (P) - 1;
+      _exit_unique:;
+        T := P[K];
+        T := AB.WA.set_keyword (get_keyword ('property', abFieldDef, 'value'), T, abValue);
+        P[K] := T;
+        oEntry := AB.WA.set_keyword (pcField, oEntry, P);
+      }
+    _skip_field:;
+    }
+  _skip:;
+  }
+  if (length (oEntry) > 2)
+    return oEntry;
+  return null;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.pcPrepareOwner (
+  inout data any,
+  in dataValue any,
+  inout meta any,
+  in metaValue varchar)
+{
+  data := vector_concat (data, vector (dataValue));
+  meta := vector_concat (meta, vector (metaValue));
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.portablecontacts () __SOAP_HTTP 'text/html'
+{
+	declare uname varchar;
+  declare N, M, L, domain_id, contact_id integer;
+  declare filter, updatedSince, filterBy, filterOp, filterValue varchar;
+  declare sort, sortBy, sortOrder varchar;
+  declare startIndex, countItems varchar;
+  declare fields, format varchar;
+  declare pcMap any;
+  declare V, oResult, oEntries, oEntry, lines, path, params any;
+  declare S, st, msg, meta, data any;
+
+  lines := http_request_header ();
+  path := http_path ();
+  params := http_param ();
+
+  domain_id := atoi (get_keyword_ucase ('inst_id', params));
+	if (not ODS..ods_check_auth (uname, domain_id, 'reader'))
+    goto _401;
+
+  if (path like '/ods/portablecontacts%')
+    path := substring (path, length ('/ods/portablecontacts')+1, length (path));
+  V := split_and_decode (trim (path, '/'), 0, '\0\0/');
+  if ((length (V) < 2) or (V[0] <> '@me'))
+    goto _404;
+
+  if (V[1] not in ('@all', '@owner'))
+    goto _404;
+
+  -- output format
+  format := ucase (get_keyword_ucase ('FORMAT', params, 'JSON'));
+  if (format not in ('JSON', 'XML'))
+    format:= 'JSON';
+
+  -- filed mapping
+  pcMap := AB.WA.pcMap ();
+  -- Presentation
+  fields := get_keyword_ucase ('fields', params);
+  if (not isnull (fields))
+  {
+    fields := split_and_decode (fields, 0, '\0\0,');
+  } else {
+    fields := vector ();
+    for (N := 0; N < length (pcMap); N := N + 2)
+      fields := vector_concat (fields, vector (pcMap[N]));
+  }
+  set_user_id ('dba');
+  oEntries := vector ();
+  if (V[1] = '@owner')
+  {
+    contact_id := AB.WA.domain_owner_id (domain_id);
+    data := vector ();
+    meta := vector ();
+    for (select * from DB.DBA.SYS_USERS, DB.DBA.WA_USER_INFO where WAUI_U_ID = U_ID and U_ID = contact_id) do
+    {
+      AB.WA.pcPrepareOwner (data, U_ID, meta, 'P_ID');
+      AB.WA.pcPrepareOwner (data, U_NAME, meta, 'P_NAME');
+      AB.WA.pcPrepareOwner (data, U_E_MAIL, meta, 'P_MAIL');
+      AB.WA.pcPrepareOwner (data, WAUI_BIRTHDAY, meta, 'P_BIRTHDAY');
+      AB.WA.pcPrepareOwner (data, WAUI_GENDER, meta, 'P_GENDER');
+      AB.WA.pcPrepareOwner (data, WAUI_FIRST_NAME, meta, 'P_FIRST_NAME');
+      AB.WA.pcPrepareOwner (data, WAUI_LAST_NAME, meta, 'P_LAST_NAME');
+      AB.WA.pcPrepareOwner (data, WAUI_GENDER, meta, 'P_GENDER');
+
+      AB.WA.pcPrepareOwner (data, WAUI_ICQ, meta, 'P_ICQ');
+      AB.WA.pcPrepareOwner (data, WAUI_SKYPE, meta, 'P_SKYPE');
+      AB.WA.pcPrepareOwner (data, WAUI_YAHOO, meta, 'P_YAHOO');
+      AB.WA.pcPrepareOwner (data, WAUI_AIM, meta, 'P_AIM');
+      AB.WA.pcPrepareOwner (data, WAUI_MSN, meta, 'P_MSN');
+
+      AB.WA.pcPrepareOwner (data, WAUI_HCOUNTRY, meta, 'P_H_COUNTRY');
+      AB.WA.pcPrepareOwner (data, WAUI_HSTATE, meta, 'P_H_STATE');
+      AB.WA.pcPrepareOwner (data, WAUI_HCITY, meta, 'P_H_CITY');
+      AB.WA.pcPrepareOwner (data, WAUI_HCODE, meta, 'P_H_CODE');
+      AB.WA.pcPrepareOwner (data, WAUI_HADDRESS1, meta, 'P_H_ADDRESS1');
+      AB.WA.pcPrepareOwner (data, WAUI_BCOUNTRY, meta, 'P_B_COUNTRY');
+      AB.WA.pcPrepareOwner (data, WAUI_BSTATE, meta, 'P_B_STATE');
+      AB.WA.pcPrepareOwner (data, WAUI_BCITY, meta, 'P_B_CITY');
+      AB.WA.pcPrepareOwner (data, WAUI_BCODE, meta, 'P_B_CODE');
+      AB.WA.pcPrepareOwner (data, WAUI_BADDRESS1, meta, 'P_B_ADDRESS1');
+
+      AB.WA.pcPrepareOwner (data, WAUI_HPHONE, meta, 'P_H_PHONE');
+      AB.WA.pcPrepareOwner (data, WAUI_BPHONE, meta, 'P_B_PHONE');
+
+      AB.WA.pcPrepareOwner (data, WAUI_WEBPAGE, meta, 'P_WEB');
+
+      AB.WA.pcPrepareOwner (data, WA_USER_TAG_GET(U_NAME), meta, 'P_TAGS');
+    }
+    oEntry := AB.WA.pcContactObject (fields, data, meta, pcMap);
+    if (not isnull (oEntry))
+      oEntries := vector_concat (oEntries, vector (oEntry));
+  } else {
+    contact_id := null;
+    if (length (V) = 3)
+    {
+      contact_id := atoi (V[2]);
+      if (contact_id = 0)
+        goto _404;
+    }
+
+    -- filter
+    filter := '';
+    updatedSince := get_keyword_ucase ('UPDATEDSINCE', params);
+    if (not is_empty_or_null (updatedSince))
+    {
+      filter := sprintf ('(cast (U_UPDATED as varchar) like ''%s%%'')', updatedSince);
+    }
+    filterBy := get_keyword_ucase ('FILTERBY', params);
+    if (not is_empty_or_null (filterBy))
+    {
+      filterOp := get_keyword_ucase ('FILTEROP', params);
+      if (is_empty_or_null (filterOp))
+        goto _404;
+      if (filterOp <> 'present')
+      {
+        filterValue := get_keyword_ucase ('FILTERVALUE', params);
+        if (is_empty_or_null (filterValue))
+          goto _404;
+      }
+      V := AB.WA.pcFilterField (filterBy, pcMap);
+      if (not is_empty_or_null (V))
+      {
+        for (N := 0; N < length (V); N := N + 1)
+        {
+          S := '';
+          if      (filterOp = 'equals')
+          {
+            S := sprintf ('(cast (%s as varchar) = ''%s'')', V[N], filterValue);
+          }
+          else if (filterOp = 'contains')
+          {
+            S := sprintf ('(cast (%s as varchar) like ''%%%s%%'')', V[N], filterValue);
+          }
+          else if (filterOp = 'startswith')
+          {
+            S := sprintf ('(cast (%s as varchar) like ''%s%%'')', V[N], filterValue);
+          }
+          else if (filterOp = 'present')
+          {
+            S := sprintf ('(cast (%s as varchar) <> '''')', V[N]);
+          }
+          if ((filter <> '') and (S <> ''))
+            filter := filter || ' or ';
+          filter := filter || S;
+        }
+      }
+    }
+    -- sort
+    sort := '';
+    sortBy := get_keyword_ucase ('SORTBY', params);
+    if (not is_empty_or_null (sortBy))
+    {
+      sort := AB.WA.pcSortField (sortBy, pcMap);
+      if (not is_empty_or_null (sort))
+        sort := sort || ' ' || get_keyword_ucase ('SORTORDER', params, 'asc');
+    }
+
+    -- pagination
+    startIndex := atoi (get_keyword_ucase ('STARTINDEX', params, '0'));
+    countItems := atoi (get_keyword_ucase ('COUNT', params, '10'));
+
+    st := '00000';
+    S := sprintf ('select TOP %d, %d * from AB.WA.PERSONS where P_DOMAIN_ID = ?', startIndex, countItems);
+    if (not is_empty_or_null (contact_id))
+      S := S || ' and P_ID = ' || cast (contact_id as varchar);
+    if (not is_empty_or_null (filter))
+      S := S || ' and (' || filter || ')';
+    if (not is_empty_or_null (sort))
+      S := S || ' order by ' || sort;
+    exec (S, st, msg, vector (domain_id), 0, meta, data);
+    --dbg_obj_print ('S', S);
+    --dbg_obj_print ('st', st, msg);
+    if ('00000' = st)
+    {
+      meta := AB.WA.simplifyMeta (meta);
+      for (N := 0; N < length (data); N := N + 1)
+      {
+        oEntry := AB.WA.pcContactObject (fields, data[N], meta, pcMap);
+        if (not isnull (oEntry))
+          oEntries := vector_concat (oEntries, vector (oEntry));
+      }
+    }
+  }
+  oResult := AB.WA.pcObject ();
+  oResult := vector_concat (oResult, vector ('startIndex', startIndex, 'countItems', countItems));
+  if (length (oEntries))
+    oResult := vector_concat (oResult, vector ('entry', oEntries));
+  -- dbg_obj_print ('oResult', oResult);
+
+  http_request_status ('HTTP/1.1 200 OK');
+  if (format = 'JSON')
+  {
+    http (ODS..obj2json (oResult, 10));
+  } else {
+    http (AB.WA.obj2xml (oResult, 10));
+  }
+_exit:;
+  return '';
+
+_400:;
+  AB.WA.pcHTTPError ('HTTP/1.1 400 Bad Request');
+  goto _exit;
+
+_401:;
+  AB.WA.pcHTTPError ('HTTP/1.1 401 Unauthorized');
+  goto _exit;
+
+_404:;
+  AB.WA.pcHTTPError ('HTTP/1.1 404 Not Found');
+  http ('400 Bad Request');
+  goto _exit;
+
+_500:;
+  AB.WA.pcHTTPError ('HTTP/1.1 500 Not Found');
+  http ('400 Bad Request');
+  goto _exit;
+
+_503:;
+  AB.WA.pcHTTPError ('HTTP/1.1 503 Service Unavailable');
+  goto _exit;
+}
+;
+
+grant execute on AB.WA.portablecontacts to SOAP_ADDRESSBOOK
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.pcHTTPError (
+  in error varchar)
+{
+  declare S varchar;
+
+  S := replace (error, 'HTTP/1.1 ', '');
+  http_request_status (error);
+  http (sprintf ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN"><html><head><title>%s</title></head><body><h1>%s</h1></body></html>', S, S));
+
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+-- Live Contacts (Microsoft)
+--
+-- ---------------------------------------------------------------------------------------
+create procedure AB.WA.livecontacts () __SOAP_HTTP 'text/html'
+{
+  dbg_obj_print ('portablecontacts');
+}
+;
+
+grant execute on AB.WA.livecontacts to SOAP_ADDRESSBOOK
 ;

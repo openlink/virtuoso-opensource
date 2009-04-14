@@ -110,7 +110,23 @@ create procedure AB.WA.vhost()
   VHOST_DEFINE (lpath => '/dataspace/services/addressbook',
                 ppath => '/SOAP/',
                 soap_user => 'SOAP_ADDRESSBOOK',
-                soap_opts => vector('Use', 'literal', 'XML-RPC', 'no' )); }
+                soap_opts => vector('Use', 'literal', 'XML-RPC', 'no' )
+               );
+
+  VHOST_REMOVE (lpath     => '/ods/portablecontacts');
+  VHOST_DEFINE (lpath     => '/ods/portablecontacts',
+                ppath     => '/SOAP/Http/portablecontacts',
+                soap_user => 'SOAP_ADDRESSBOOK',
+                opts      => vector ('atom-pub', 1)
+               );
+
+  VHOST_REMOVE (lpath     => '/ods/livecontacts');
+  VHOST_DEFINE (lpath     => '/ods/livecontacts',
+                ppath     => '/SOAP/Http/livecontacts',
+                soap_user => 'SOAP_ADDRESSBOOK',
+                opts      => vector ('atom-pub', 1)
+               );
+}
 ;
 
 AB.WA.vhost();

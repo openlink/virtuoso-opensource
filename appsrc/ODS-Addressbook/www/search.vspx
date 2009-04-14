@@ -103,7 +103,8 @@
 
       state := '00000';
       sqlParams := vector();
-      sql := AB.WA.search_sql (self.domain_id, self.account_id, data);
+      sql := AB.WA.search_sql (self.domain_id, self.account_id, data, maxRows);
+      sql := concat (sql, ' order by ', self.v_order, ' ', self.v_direction);
       exec(sql, state, msg, sqlParams, 0, meta, result);
       if (state = '00000')
       {
@@ -163,7 +164,7 @@
           tmp := concat(tmp, sprintf('&%sshared=%s', prefix, cast(self.v_shared as varchar)));
         if (not is_empty_or_null(self.v_max) and self.v_max <> '100')
           tmp := concat(tmp, sprintf('&%smax=%U', prefix, self.v_max));
-        if (not is_empty_or_null(self.v_order) and self.v_order <> '_NAME')
+        if (not is_empty_or_null(self.v_order) and self.v_order <> 'P_NAME')
           tmp := concat(tmp, sprintf('&%sorder=%U', prefix, self.v_order));
         if (not is_empty_or_null(self.v_direction) and self.v_direction <> 'asc')
           tmp := concat(tmp, sprintf('&%sdirection=%U', prefix, self.v_direction));
@@ -213,7 +214,7 @@
 
       <v:variable name="v_output" type="varchar" default="'html'"/>
       <v:variable name="v_max" type="varchar" default="'100'"/>
-      <v:variable name="v_order" type="varchar" default="'_NAME'" />
+      <v:variable name="v_order" type="varchar" default="'P_NAME'" />
       <v:variable name="v_direction" type="varchar" default="'asc'" />
       <v:variable name="v_cloud" type="integer" default="0" />
 
@@ -497,9 +498,7 @@
                   </th>
                   <td>
                     <v:select-list name="f_order" value="--self.v_order">
-                      <v:item name="Name" value="_NAME"/>
-                      <v:item name="Link" value="_URI"/>
-                      <v:item name="Folder" value="_FOLDER_NAME"/>
+                      <v:item name="Name" value="P_NAME"/>
                     </v:select-list>
                   </td>
                 </tr>

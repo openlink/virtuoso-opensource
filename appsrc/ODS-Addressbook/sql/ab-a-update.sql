@@ -24,15 +24,13 @@
 --
 create procedure AB.WA.tmp_update ()
 {
-  if (registry_get ('ab_table_update') = '1')
+  if (registry_get ('ab_table_update') = '2')
     return;
+  registry_set ('ab_table_update', '2');
 
   set triggers off;
-  update AB.WA.PERSONS set P_IRI = P_FOAF;
-  update AB.WA.PERSONS set P_FOAF = null;
+  update AB.WA.PERSONS set P_FOAF = P_IRI where P_FOAF is null;
   set triggers on;
-
-  registry_set ('ab_table_update', '1');
 }
 ;
 AB.WA.tmp_update ();
@@ -43,12 +41,11 @@ create procedure AB.WA.tmp_update ()
 {
   if (registry_get ('ab_uid_update') = '1')
     return;
+  registry_set ('ab_uid_update', '1');
 
   set triggers off;
   update AB.WA.PERSONS set P_UID = AB.WA.uid () where P_UID is null;
   set triggers on;
-
-  registry_set ('ab_uid_update', '1');
 }
 ;
 AB.WA.tmp_update ();
@@ -59,10 +56,9 @@ create procedure AB.WA.tmp_update ()
 {
   if (registry_get ('ab_grants_update') = '2')
     return;
+  registry_set ('ab_grants_update', '2');
 
   delete from AB.WA.GRANTS where not exists (select 1 from AB.WA.PERSONS where P_ID = G_PERSON_ID);
-
-  registry_set ('ab_grants_update', '2');
 }
 ;
 

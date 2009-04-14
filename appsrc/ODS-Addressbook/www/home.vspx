@@ -1465,15 +1465,36 @@
               <div class="contents">
                 <div id="a_content_0" class="tabContent" style="display: none;">
                   <table class="form-body" cellspacing="0">
+                      <vm:if test="(self.abAction = 'view') or (self.abAction = 'edit')">
                     <tr>
                         <th>
-                          <v:label for="ab_iri" value="Contact URI" />
+                          <v:label for="ab_foaf" value="Contact URI" />
+                        </th>
+                        <td>
+                          <?V SIOC..addressbook_contact_iri (self.domain_id, self.v_id) ?>
+                        </td>
+                      </tr>
+                      </vm:if>
+                      <tr>
+                        <th>
+                          <v:label for="ab_foaf" value="Person''s FOAF URI" />
+                        </th>
+                        <td>
+                          <vm:if test="self.abAction <> 'view'">
+                            <v:text name="ab_foaf" xhtml_id="ab_foaf" value="--self.v_foaf" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
+                            <input type="button" value="Import" onclick="javascript: AB.getFOAFData($v('ab_foaf')); return false;" class="button" />
+                            <img id="ab_import_image" alt="Import FOAF Data" src="/ods/images/oat/Ajax_throbber.gif" style="display: none" />
+                          </vm:if>
+                          <?vsp self.viewField (self.v_foaf); ?>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <v:label for="ab_iri" value="Person URI" />
                         </th>
                         <td>
                           <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_iri" xhtml_id="ab_iri" value="--self.v_iri" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
-                            <input type="button" value="Import" onclick="javascript: AB.getFOAFData($v('ab_iri')); return false;" class="button" />
-                            <img id="ab_import_image" alt="Import FOAF Data" src="/ods/images/oat/Ajax_throbber.gif" style="display: none" />
                           </vm:if>
                           <?vsp self.viewField (self.v_iri); ?>
                         </td>
@@ -1782,17 +1803,6 @@
                           </td>
                         </tr>
                       </vm:if>
-                      <tr>
-                      <th>
-                          <v:label for="ab_foaf" value="Person Entity URI" />
-                      </th>
-                      <td>
-                        <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_foaf" value="--self.v_foaf" fmt-function="AB.WA.utf2wide" xhtml_size="60" xhtml_title="Identifier for Entity of type Person" />
-                        </vm:if>
-                        <?vsp self.viewField (self.v_foaf); ?>
-                      </td>
-                    </tr>
                     <vm:if test="self.abAction <> 'view'">
                       <tr>
                         <th>
@@ -3748,7 +3758,8 @@
                       }
 
                       if (self.i_type = 3)
-                        if (isnull (self.i_lMaps)) {
+                          if (isnull (self.i_lMaps))
+                          {
                           self.i_maps := vector (
                           'uid',  'P_NAME',
                           'cn',   'P_FULL_NAME',

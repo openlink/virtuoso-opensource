@@ -79,6 +79,66 @@ create procedure ODS.ODS_API.addressbook_type_check (
 
 -------------------------------------------------------------------------------
 --
+create procedure ODS.ODS_API."addressbook.search" (
+  in inst_id integer,
+	in keywords any := null,
+	in category any := null,
+	in tags any := null,
+	in maxResults integer := 100) __soap_http 'text/xml'
+{
+	declare exit handler for sqlstate '*'
+	{
+		rollback work;
+		return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+	};
+
+	declare uname varchar;
+	declare N, account_id, contact_id, category_id integer;
+	declare q, iri varchar;
+  declare S, st, msg, meta, data any;
+
+	if (not ods_check_auth (uname, inst_id, 'author'))
+		return ods_auth_failed ();
+	account_id := AB.WA.domain_owner_id (inst_id);
+
+  data := vector ();
+  if (not isnull (keywords))
+  {
+    AB.WA.test (keywords, vector ('name', 'Keywords', 'class', 'free-text'));
+    AB.WA.xml_set ('keywords', data, keywords);
+  }
+  if (not isnull (tags))
+  {
+    AB.WA.test (tags, vector ('name', 'Tags', 'class', 'tags'));
+    AB.WA.xml_set ('tags', data, tags);
+  }
+  AB.WA.test (maxResults, vector ('name', 'Max Records', 'class', 'integer', 'minValue', 1, 'maxValue', 1000));
+  if (not isnull (category))
+  {
+    category_id := (select C_ID from AB.WA.CATEGORIES where C_DOMAIN_ID = inst_id and C_NAME = category_id);
+    AB.WA.xml_set ('category', data, category_id);
+  }
+  AB.WA.xml_set ('MyContacts', data, 1);
+
+  set_user_id ('dba');
+  S := AB.WA.search_sql (inst_id, account_id, data, cast (maxResults as varchar));
+  S := concat (S, ' order by P_NAME');
+  st := '00000';
+  exec(S, st, msg, vector(), 0, meta, data);
+  if (st = '00000')
+  {
+    for (N := 0; N < length (data); N := N + 1)
+    {
+    	iri := SIOC..addressbook_contact_iri (inst_id, data[N][0]);
+    	q := sprintf ('describe <%s> from <%s>', iri, SIOC..get_graph ());
+    	exec_sparql (q);
+    }
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODS.ODS_API."addressbook.get" (
   in contact_id integer) __soap_http 'text/xml'
 {
@@ -1301,7 +1361,7 @@ create procedure ODS.ODS_API."addressbook.options.set" (
 -------------------------------------------------------------------------------
 --
 create procedure ODS.ODS_API."addressbook.options.get" (
-  in inst_id int) __soap_http 'text/xml'
+	in inst_id integer := null) __soap_http 'text/xml'
 {
   declare exit handler for sqlstate '*'
   {
@@ -1332,6 +1392,7 @@ create procedure ODS.ODS_API."addressbook.options.get" (
 }
 ;
 
+grant execute on ODS.ODS_API."addressbook.search" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.get" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.new" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.edit" to ODS_API;
