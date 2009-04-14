@@ -203,8 +203,11 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_YAHOO_STOCK_DATA', null, 'Yahoo Finance');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-    values ('http://musicbrainz.org/([^/]*)/([^\.]*)',
+    values ('http://musicbrainz.org/([^/]*)/([^/]*)',
             'URL', 'DB.DBA.RDF_LOAD_MBZ', null, 'Musicbrainz');
+
+update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = 'http://musicbrainz.org/([^/]*)/([^/]*)'
+    where RM_HOOK = 'DB.DBA.RDF_LOAD_MBZ';
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
     values ('(http://api.crunchbase.com/v/1/.*)|(http://www.crunchbase.com/.*)',

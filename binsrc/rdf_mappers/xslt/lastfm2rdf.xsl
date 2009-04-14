@@ -391,11 +391,11 @@
 			</xsl:for-each>
 			<xsl:choose>
 				<xsl:when test="string(artist/url)">
-					<foaf:maker rdf:resource="{vi:proxyIRI(artist/url)}"/>
+					<foaf:maker rdf:resource="{vi:proxyIRI(translate(artist/url, ' ', '+'))}"/>
 				</xsl:when>
 				<xsl:otherwise>
 					<xsl:if test="string(artist)">
-					<foaf:maker rdf:resource="{vi:proxyIRI(concat($base, 'music/', artist))}"/>
+						<foaf:maker rdf:resource="{vi:proxyIRI(translate(concat($base, 'music/', artist), ' ', '+'))}"/>
 					</xsl:if>
 				</xsl:otherwise>
 			</xsl:choose>
@@ -453,7 +453,7 @@
 				</mo:track_number>
 			</xsl:if>
 			<xsl:if test="string(artist/url)">
-				<foaf:maker rdf:resource="{vi:proxyIRI(artist/url)}"/>
+				<foaf:maker rdf:resource="{vi:proxyIRI(translate(artist/url, ' ', '+'))}"/>
 			</xsl:if>
 			<xsl:if test="album/url">
 				<mo:published_as rdf:resource="{vi:proxyIRI (album/url)}"/>
