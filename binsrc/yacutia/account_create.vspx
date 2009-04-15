@@ -276,7 +276,7 @@
                   <table class="tab_page">
                     <tr>
                       <td valign="top">
-    <v:form name="account_form" type="simple" method="POST" action="">
+			  <v:form name="account_form" type="simple" method="POST" action="" xhtml_enctype="multipart/form-data">
       <table class="main_page_area" style="valign: top">
         <tr valign="top">
           <td>
@@ -701,6 +701,61 @@
                   </table> <!-- complex_selector -->
                 </td>
               </tr> <!-- account roles row -->
+        <tr>
+	    <td>
+                  <table class="complex_selector">
+                    <caption style="text-align:left;">Keys</caption>
+		<?vsp 
+		for select xenc_key from yac_list_keys (username) (xenc_key varchar) x where username = self.user_name do
+		   {
+		?>
+		<tr>
+		    <td>
+			<input type="checkbox" name="cb_key" value="<?V xenc_key ?>" />
+			<?V xenc_key ?>
+		    </td>
+		</tr>
+		<?vsp
+		   }
+		?>
+	    </table>
+	    <br/>
+            <v:button action="simple" name="del_key" value="Remove Selected Keys" xhtml_tabindex="21">
+		<v:on-post><![CDATA[
+		    if (self.vc_is_valid = 0)
+  		      return;
+		    set_user_id (self.user_name);
+		    set_qualifier ('DB');
+		    for (declare i, l int, i := 0, l := length (params); i < l; i := i + 4)
+		       {
+		         if (params[i] = 'cb_key')
+                           xenc_key_remove (params[i+1]); 
+		       }
+		    ]]></v:on-post>
+	    </v:button>
+	    </td>
+	    <td>
+	    <label>Key Name</label> 
+	    <v:text name="k_name" value="" /><br/>
+	    <label>Key Password</label> 
+	    <v:text name="k_pwd" type="password" value="" /><br/>
+	    <label>PKCS12 file:</label><input type="file" name="k_value" value="Select Key"/> 
+            <v:button action="simple" name="imp_key" value="Import Key">
+		<v:on-post><![CDATA[
+		    if (self.vc_is_valid = 0)
+  		      return;
+		    declare exit handler for sqlstate '*', not found
+		    {
+		       self.vc_error_message := __SQL_MESSAGE;
+		       self.vc_is_valid := 0;
+		       return;
+		    };
+		    set_user_id (self.user_name);
+		    USER_KEY_LOAD (self.k_name.ufl_value, get_keyword ('k_value', params), 'X.509', 'PKCS12', self.k_pwd.ufl_value, null, 1); 
+		    ]]></v:on-post>
+	    </v:button>
+	    </td>
+	</tr>
         <tr>
           <td colspan="4">
             <v:button action="simple" name="cancel" value="Cancel" xhtml_tabindex="21">
