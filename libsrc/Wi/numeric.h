@@ -88,6 +88,10 @@ int numeric_init (void);
 void numeric_rc_clear (void);
 
 /* allocation, free */
+
+
+numeric_t mp_numeric_allocate (mem_pool_t * mp);
+
 #ifdef MALLOC_DEBUG
 #define numeric_allocate() dbg_numeric_allocate (__FILE__, __LINE__)
 #define t_numeric_allocate() dbg_t_numeric_allocate (__FILE__, __LINE__)

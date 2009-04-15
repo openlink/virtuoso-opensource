@@ -53,14 +53,10 @@ unsigned char vt_hit_dist_weight[0x100];
 #define DBE_KEY_IS_INT_D_ID(key) (0 != (key)->key_key_fixed[0].cl_col_id)
 #define ITC_IS_INT_D_ID(itc) DBE_KEY_IS_INT_D_ID((itc)->itc_row_key)
 
-int wst_chunk_scan (word_stream_t * wst, db_buf_t chunk, int chunk_len);
 d_id_t * sst_next (search_stream_t * sst, d_id_t * target, int is_fixed);
 
-static search_stream_t * wst_from_word (sst_tctx_t *tctx, ptrlong range_flags, const char * word);
 static search_stream_t * wst_from_range (sst_tctx_t *tctx, ptrlong range_flags, const char * word, caddr_t lower, caddr_t higher);
 
-#define NEW_SST(dt, v) \
-  dt * v = (dt *) dk_alloc_box_zero (sizeof (dt), DV_TEXT_SEARCH);
 
 int
 d_id_cmp (d_id_t * d1, d_id_t * d2)
@@ -72,8 +68,8 @@ d_id_cmp (d_id_t * d1, d_id_t * d2)
     }
   else if (d1->id[0] != DV_COMPOSITE && d2->id[0] != DV_COMPOSITE)
     {
-      int64 n1 = D_ID_NUM_REF (&d1->id[0]);
-      int64 n2 = D_ID_NUM_REF (&d2->id[0]);
+      unsigned int64 n1 = D_ID_NUM_REF (&d1->id[0]);
+      unsigned int64 n2 = D_ID_NUM_REF (&d2->id[0]);
       return (NUM_COMPARE (n1, n2));
     }
   if (d1->id[0] == DV_COMPOSITE)
@@ -150,7 +146,10 @@ d_id_set (d_id_t * to, d_id_t * from)
 #ifdef WIN32      
       D_ID_NUM_SET (&to->id[0], D_ID_NUM_REF (&from->id[0]));
 #else
+      if (D_ID_64 == ((dtp_t*)from)[0])
       memcpy (to, from, sizeof (int64) + 1);
+      else 
+	memcpy (to, from, 4);
 #endif
     }
 }
@@ -186,11 +185,11 @@ wst_set_buffer (word_stream_t * wst, db_buf_t page, int len)
 	{
 	  dk_free_box (wst->sst_buffer);
 	  wst->sst_buffer = dk_alloc_box (copy_len + 1, DV_LONG_STRING);
-	  wst->sst_buffer_size = copy_len + 1;
+	  wst->sst_buffer_size = copy_len;
 	}
       memcpy (wst->sst_buffer, page, copy_len);
       wst->sst_buffer[copy_len] = '\0';	/* just to provide repeatable bugs on overflow */
-      SST_FILL_SET (wst, copy_len);
+      wst->sst_fill = copy_len;
     }
   else
     {
@@ -199,25 +198,30 @@ wst_set_buffer (word_stream_t * wst, db_buf_t page, int len)
 	{
 	  dk_free_box (wst->sst_buffer);
 	  wst->sst_buffer = dk_alloc_box (copy_len + 1, DV_LONG_STRING);
-	  wst->sst_buffer_size = copy_len + 1;
+	  wst->sst_buffer_size = copy_len;
 	}
       memcpy (wst->sst_buffer, page + wst->sst_pos, copy_len);
       wst->sst_buffer[copy_len] = '\0';	/* just to provide repeatable bugs on overflow */
-      SST_FILL_SET (wst, copy_len);
+      wst->sst_fill = copy_len;
       wst->sst_pos = 0; /* always 0 since copy starts at pos */
     }
 }
 
 
 void
-d_id_num_col_ref (d_id_t * d_id, db_buf_t p, int len)
+d_id_num_col_ref (d_id_t * d_id, buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * cl)
 {
   /* set d_id to the col'svalue, either 4 or 8 byte */
-  if (4 == len)
-    LONG_SET_NA (d_id->id, LONG_REF (p));
-  else
+  if (DV_LONG_INT == cl->cl_sqt.sqt_dtp)
     {
-      int64 n = INT64_REF (p);
+      int32 n;
+      ROW_INT_COL (buf, row, IE_ROW_VERSION (row), (*cl), LONG_REF, n);
+      LONG_SET_NA (d_id->id, n);
+    }
+  else if (DV_INT64 == cl->cl_sqt.sqt_dtp)
+    {
+      int64 n;
+      ROW_INT_COL (buf, row, IE_ROW_VERSION (row), (*cl), INT64_REF, n);
       if (n > D_ID32_MAX)
 	{
 	  d_id->id[0] = D_ID_64;
@@ -228,6 +232,8 @@ d_id_num_col_ref (d_id_t * d_id, db_buf_t p, int len)
 	  LONG_SET_NA (&d_id->id[0], n);
 	}
     }
+  else
+    GPF_T1 ("not a num d_id with text inx");
 }
 
 
@@ -264,13 +270,12 @@ int
 itc_text_row (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t * leaf_ret)
 {
   /* the row order is key_id, word, low_d_id, high_d_id, string, blob_string */
-  int pos;
-  long key_id;
+  key_ver_t kv;
+  row_ver_t rv;
   word_stream_t * wst = itc->itc_wst;
   dbe_key_t *key;
   dtp_t dtp;
   int  rc;
-  db_buf_t page = buf->bd_buffer;
   db_buf_t row = itc->itc_row_data;
   dp_addr_t leaf;
   caddr_t row_key_word;
@@ -288,18 +293,18 @@ itc_text_row (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t * leaf_ret)
   dbe_col_loc_t *data2_cl = (d_id_is_int ?
     &itc->itc_row_key->key_row_var[1] :
     &itc->itc_row_key->key_row_var[2] );
-  short word_off, word_len, d_id_off, d_id_len, d_id2_off, d_id2_len, data_off, data_len;
+  short d_id_off, d_id2_off, data_off, data_len;
 #ifdef TEXT_DEBUG
 /*  dbg_page_map (buf); */
 #endif
-  pos = itc->itc_position;
-  key_id = SHORT_REF (row + IE_KEY_ID);
-  if (KI_LEFT_DUMMY == key_id)
+  row = buf->bd_buffer + buf->bd_content_map->pm_entries[itc->itc_map_pos];
+  kv = IE_KEY_VERSION (row);
+  if (KV_LEFT_DUMMY == kv)
     {
       if (itc->itc_desc_order)
 	{
 	  /* when going in reverse always descend into the leftmost leaf */
-	  leaf = LONG_REF (page + pos + IE_LEAF);
+	  leaf = LONG_REF (row + LD_LEAF);
 	  if (leaf)
 	    {
 	      *leaf_ret = leaf;
@@ -313,24 +318,21 @@ itc_text_row (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t * leaf_ret)
     return DVC_GREATER; /* NULL word */
   if (DV_STRING != word_cl->cl_sqt.sqt_dtp)
     GPF_T1("invalid type of VT_WORD");
+  rv = IE_ROW_VERSION (row);
   key = itc->itc_row_key;
-  KEY_COL(key, row, word_cl[0], word_off, word_len);
-
-  row_key_word = itc_box_column (itc, buf->bd_buffer, 0, word_cl);
+  row_key_word = itc_box_column (itc, buf, 0, word_cl);
   rc = strcmp (row_key_word, wst->wst_word);
   dk_free_box (row_key_word);
   if (0 != rc)
     {
       goto cond_boundary;
     }
-  KEY_COL(key, row, d_id_cl[0], d_id_off, d_id_len);
   if (d_id_is_int)
-    d_id_num_col_ref (&wst->wst_first_d_id, row + d_id_off, d_id_len);
+    d_id_num_col_ref (&wst->wst_first_d_id, buf, row, d_id_cl);
   else
     d_id_ref (&wst->wst_first_d_id, row + d_id_off);
-  KEY_COL(key, row, d_id2_cl[0], d_id2_off, d_id2_len);
   if (d_id_is_int)
-    d_id_num_col_ref (&wst->wst_last_d_id, row + d_id2_off, d_id2_len);
+    d_id_num_col_ref (&wst->wst_last_d_id, buf, row, d_id2_cl);
   else
     d_id_ref (&wst->wst_last_d_id, row + d_id2_off);
   if (!D_INITIAL (&wst->wst_seek_target))
@@ -342,7 +344,7 @@ itc_text_row (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t * leaf_ret)
   wst->sst_pos = 0;
   if (!ITC_NULL_CK(itc, data1_cl[0]))
     {
-      KEY_COL(key, row, data1_cl[0], data_off, data_len);
+      KEY_PRESENT_VAR_COL(key, row, data1_cl[0], data_off, data_len);
       rc = wst_chunk_scan (wst, row + data_off, data_len);
       if (DVC_MATCH == rc)
 	{
@@ -352,7 +354,7 @@ itc_text_row (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t * leaf_ret)
     }
   else if (!ITC_NULL_CK(itc, data2_cl[0]))
     {
-      KEY_COL(key, row, data2_cl[0], data_off, data_len);
+      KEY_PRESENT_VAR_COL(key, row, data2_cl[0], data_off, data_len);
       dtp = row[data_off];
       if (DV_LONG_STRING == dtp || DV_SHORT_STRING == dtp)
 	{
@@ -368,7 +370,7 @@ itc_text_row (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t * leaf_ret)
 	  caddr_t blob, bh;
 	  if (DV_BLOB != dtp)
 	    return DVC_GREATER;
-	  bh = itc_box_column (itc, buf->bd_buffer, 0, data2_cl);
+	  bh = itc_box_column (itc, buf, 0, data2_cl);
 	  blob = blob_to_string (itc->itc_ltrx, bh);
 	  dk_free_box (bh);
 	  rc = wst_chunk_scan (wst, (db_buf_t) blob, box_length (blob) - 1);
@@ -377,7 +379,7 @@ itc_text_row (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t * leaf_ret)
 	      dk_free_box (wst->sst_buffer);
 	      wst->sst_buffer = blob;
 	      wst->sst_buffer_size = box_length (blob);
-	      SST_FILL_SET (wst, wst->sst_buffer_size - 1);
+	      wst->sst_fill = wst->sst_buffer_size - 1;
 	    }
 	  else
 	    dk_free_box (blob);
@@ -388,7 +390,7 @@ itc_text_row (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t * leaf_ret)
 cond_boundary:
   if (itc->itc_desc_order)
     {
-      *leaf_ret = leaf_pointer (page, itc->itc_position);
+      *leaf_ret = leaf_pointer (row, itc->itc_insert_key);
       if (*leaf_ret)
 	return DVC_MATCH;
     }
@@ -399,10 +401,10 @@ cond_boundary:
 int
 itc_text_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_ret)
 {
-  db_buf_t page = (*buf_ret)->bd_buffer;
+  db_buf_t row, page = (*buf_ret)->bd_buffer;
   dp_addr_t leaf = 0;
-  key_id_t key_id;
-  int pos, res = DVC_LESS;
+  key_ver_t kv;
+  int res = DVC_LESS;
   char txn_clear = PS_LOCKS;
 
   if (ISO_UNCOMMITTED == it->itc_isolation)
@@ -422,12 +424,12 @@ itc_text_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
 
   while (1)
     {
-      if (!it->itc_position)
+      if (ITC_AT_END == it->itc_map_pos)
 	{
 	  *leaf_ret = 0;
 	  return DVC_INDEX_END;
 	}
-      if (it->itc_position >= PAGE_SZ)
+      if ((*buf_ret)->bd_content_map->pm_entries[it->itc_map_pos] >= PAGE_SZ)
 	GPF_T;			/* Link over page end */
 
       if (PS_LOCKS == txn_clear)
@@ -435,7 +437,7 @@ itc_text_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
 	  if (it->itc_owns_page != it->itc_page)
 	    {
 	      if (it->itc_isolation == ISO_SERIALIZABLE
-		  || ITC_MAYBE_LOCK (itc, it->itc_position))
+		  || ITC_MAYBE_LOCK (itc, it->itc_map_pos))
 		{
 		  for (;;)
 		    {
@@ -448,7 +450,7 @@ itc_text_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
 		      wrc = wrc;  /* breakpoint here */
 		    }
 		  page = (*buf_ret)->bd_buffer;
-		  if (0 == it->itc_position)
+		  if (ITC_AT_END == it->itc_map_pos)
 		    {
 		      /* The row may have been deleted during lock wait.
 		       * if this was the last row, the itc_position will have been set to 0 */
@@ -461,14 +463,14 @@ itc_text_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
 	    txn_clear = PS_OWNED;
 	}
 
-      pos = it->itc_position;
-      key_id = SHORT_REF (page + pos + IE_KEY_ID);
-      if (KI_LEFT_DUMMY == key_id)
+      row = page + (*buf_ret)->bd_content_map->pm_entries[it->itc_map_pos];
+      kv = IE_KEY_VERSION (row);
+      if (KV_LEFT_DUMMY == kv)
 	{
 	  if (it->itc_desc_order)
 	    {
 	      /* when going in reverse always descend into the leftmost leaf */
-	      leaf = LONG_REF (page + pos + IE_LEAF);
+	      leaf = LONG_REF (row + LD_LEAF);
 	      if (leaf)
 		{
 		  *leaf_ret = leaf;
@@ -477,20 +479,19 @@ itc_text_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
 	    }
 	  goto next_row;
 	}
-      it->itc_row_key_id = key_id;
-      if (!key_id)
+      if (!kv)
 	{
-	  *leaf_ret = LONG_REF (page + pos + IE_LEAF);
-	  it->itc_row_data = page + pos + IE_LP_FIRST_KEY;
+	  *leaf_ret = LONG_REF (row + it->itc_insert_key->key_key_leaf[IE_ROW_VERSION (row)]);
+	  it->itc_row_data = row;
 	  return DVC_MATCH;
 	}
       else
 	{
-	  it->itc_row_data = page + pos + IE_FIRST_KEY;
+	  it->itc_row_data = row;
 	  it->itc_at_data_level = 1;
 	  leaf = 0;
 #ifdef DEBUG
-	  if (!it->itc_row_key || it->itc_row_key->key_id != key_id)
+	  if (!it->itc_row_key /*|| it->itc_row_key->key_id != key_id*/)
 	    {
 /*
 	    it->itc_row_key = sch_id_to_key (wi_inst.wi_schema, key_id);
@@ -500,9 +501,8 @@ itc_text_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
 #endif
 	}
 
-      if (IE_ISSET (page + pos, IEF_DELETE))
+      if (IE_ISSET (row, IEF_DELETE))
 	goto next_row;
-      it->itc_position = pos;
       *leaf_ret = 0;
       res = itc_text_row (it, *buf_ret, leaf_ret);
       if (DVC_GREATER == res)
@@ -513,7 +513,6 @@ itc_text_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
 	return DVC_MATCH;
       if (! *leaf_ret && res == DVC_MATCH)
 	{
-	  it->itc_position = pos;
 	  KEY_TOUCH (it->itc_insert_key);
 	  return DVC_MATCH;
 	  /* if there's a lesser leaf ptr, go down if desc order.
@@ -522,14 +521,14 @@ itc_text_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
       /* Next entry on page */
 
     next_row:
-
+      ITC_MARK_ROW (it);
       if (it->itc_desc_order)
 	{
 	  itc_prev_entry (it, *buf_ret);
 	}
       else
 	{
-	  it->itc_position = IE_NEXT (page + it->itc_position);
+	  itc_skip_entry (it, *buf_ret);
 	}
     }
 }
@@ -542,7 +541,7 @@ itc_text_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
     pos = -1; \
   else \
     { \
-      WP_LENGTH_HEADONLY (p, __hl, __d, p, end-p); \
+      WP_LENGTH (p, __hl, __d, p, end-p); \
       p += __hl; \
       pos += __d; \
   } \
@@ -682,7 +681,7 @@ wst_seek_d_id (word_stream_t * wst, d_id_t * target, db_buf_t * pos_ret,
     {
       d_id_t * d_id;
       int l, hl;
-      WP_LENGTH (buf + pos, hl, l, buf, wst->sst_fill);
+      WP_LENGTH (buf + pos, hl, l, buf, wst->sst_buffer_size);
       d_id =  (d_id_t *) (buf + hl + pos);
       rc = d_id_cmp (d_id, target);
       if (DVC_MATCH == rc)
@@ -884,25 +883,6 @@ wst_chunk_scan (word_stream_t * wst, db_buf_t buf, int chunk_len)
   return DVC_LESS;
 }
 
-struct wst_search_specs_s
-{
-  int wst_specs_are_initialized;
-  search_spec_t wst_init_spec[1];
-  search_spec_t wst_seek_spec[2];
-  search_spec_t wst_seek_asc_seq_spec[2];	/* like wst_seek_spec but allow read ahead */
-  search_spec_t wst_range_spec[1];
-  search_spec_t wst_next_spec[2];
-  search_spec_t wst_next_d_id_spec[2];
-
-  key_spec_t	wst_ks_init;
-  key_spec_t	wst_ks_seek;
-  key_spec_t	wst_ks_seek_asc_seq;
-  key_spec_t	wst_ks_range;
-  key_spec_t	wst_ks_next;
-  key_spec_t	wst_ks_next_d_id;
-};
-
-typedef struct wst_search_specs_s wst_search_specs_t;
 
 static wst_search_specs_t wst_int_key_search_specs;
 static wst_search_specs_t wst_int64_key_search_specs;
@@ -955,7 +935,7 @@ wst_get_specs (dbe_key_t *key)
 
 #define WST_KSP(name) \
   res->wst_ks_##name .ksp_spec_array = &res->wst_##name##_spec[0]; \
-  ksp_cmp_func (&res->wst_ks_##name);
+  ksp_cmp_func (&res->wst_ks_##name, NULL);
 
   WST_KSP (init);
   WST_KSP (seek);
@@ -963,9 +943,19 @@ wst_get_specs (dbe_key_t *key)
   WST_KSP (range);
   WST_KSP (next);
   WST_KSP (next_d_id);
+  res->wst_out_map = (out_map_t *)dk_alloc_box (sizeof (out_map_t) * 4, DV_STRING);
+  memset (res->wst_out_map, 0, box_length ((caddr_t) res->wst_out_map));
 
+  if (key_is_int_d_id)
+    {
+      res->wst_out_map[0].om_cl = key->key_key_fixed[0];
+      res->wst_out_map[1].om_cl = key->key_row_fixed[0];
+      res->wst_out_map[2].om_cl = key->key_row_var[0];
+      res->wst_out_map[3].om_cl = key->key_row_var[1];
+    }
+  else
+    GPF_T1 ("not supporting composite d_id's");
   mutex_leave (wst_get_specs_mtx);
-
   return res;
 }
 
@@ -1061,7 +1051,7 @@ wst_random_seek (word_stream_t * wst)
 caddr_t wst_itc_col_word (it_cursor_t * itc, buffer_desc_t * buf)
 {
   dbe_col_loc_t *cl = &itc->itc_row_key->key_key_var[0];
-  return itc_box_column (itc, buf->bd_buffer, 0, cl);
+  return itc_box_column (itc, buf, 0, cl);
 }
 
 caddr_t wst_itc_col_d_id (it_cursor_t * itc, buffer_desc_t * buf)
@@ -1071,7 +1061,7 @@ caddr_t wst_itc_col_d_id (it_cursor_t * itc, buffer_desc_t * buf)
     cl = &itc->itc_row_key->key_key_fixed[0];
   else
     cl = &itc->itc_row_key->key_key_var[1];
-  return itc_box_column (itc, buf->bd_buffer, 0, cl);
+  return itc_box_column (itc, buf, 0, cl);
 }
 
 caddr_t wst_itc_col_d_id2 (it_cursor_t * itc, buffer_desc_t * buf)
@@ -1081,7 +1071,7 @@ caddr_t wst_itc_col_d_id2 (it_cursor_t * itc, buffer_desc_t * buf)
     cl = &itc->itc_row_key->key_row_fixed[0];
   else
     cl = &itc->itc_row_key->key_row_var[0];
-  return itc_box_column (itc, buf->bd_buffer, 0, cl);
+  return itc_box_column (itc, buf, 0, cl);
 }
 
 caddr_t wst_itc_col_data (it_cursor_t * itc, buffer_desc_t * buf)
@@ -1091,7 +1081,7 @@ caddr_t wst_itc_col_data (it_cursor_t * itc, buffer_desc_t * buf)
     cl = &itc->itc_row_key->key_row_var[0];
   else
     cl = &itc->itc_row_key->key_row_var[1];
-  return itc_box_column (itc, buf->bd_buffer, 0, cl);
+  return itc_box_column (itc, buf, 0, cl);
 }
 
 caddr_t wst_itc_col_long_data (it_cursor_t * itc, buffer_desc_t * buf)
@@ -1101,7 +1091,7 @@ caddr_t wst_itc_col_long_data (it_cursor_t * itc, buffer_desc_t * buf)
     cl = &itc->itc_row_key->key_row_var[1];
   else
     cl = &itc->itc_row_key->key_row_var[2];
-  return itc_box_column (itc, buf->bd_buffer, 0, cl);
+  return itc_box_column (itc, buf, 0, cl);
 }
 
 
@@ -1207,6 +1197,7 @@ bif_vt_words_next_d_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ITC_FAIL (itc)
     {
       buf = itc_set_by_placeholder (itc, pl);
+      itc->itc_desc_order = 0; /* the pl is from a desc itc, this one goes fwd */
       rc = itc_next (itc, &buf);
     }
   ITC_FAILED
@@ -1348,8 +1339,7 @@ wst_word_strings_next (word_stream_t * wst)
 	{
 	  wst->wst_nth_word_string = inx;
 	  wst->sst_buffer = buf;
-	  wst->sst_buffer_size = box_length (buf);
-	  SST_FILL_SET (wst, wst->sst_buffer_size - 1);
+	  wst->sst_fill = box_length (buf) - 1;
 	  wst->sst_pos = 0;
 	  d_id_set (&wst->wst_first_d_id, d_id);
 	  d_id_set (&wst->wst_last_d_id, d_id);
@@ -1367,9 +1357,11 @@ void
 wst_next (word_stream_t * wst, d_id_t * target)
 {
   int rc, match_any;
+  /* caddr_t x;*/
   if (D_AT_END (&wst->sst_d_id))
     return;
   wst->wst_seek_target = *target;
+  /*x = box_d_id (&wst->wst_seek_target);   printf ("wst next of %s target %d\n", wst->wst_word, (int) unbox (x));  dk_free_box (x);*/
   if (wst->wst_word_strings)
     {
       wst_word_strings_next (wst);
@@ -1734,13 +1726,13 @@ create_new_ranges:
 	  return 1;
 	if (NULL == sst->sst_buffer)
 	  return 0;
-	WP_LENGTH (sst->sst_buffer + pos, hl, l, sst->sst_buffer, sst->sst_fill);
+	WP_LENGTH (sst->sst_buffer + pos, hl, l, sst->sst_buffer, sst->sst_buffer_size);
 	end = pos + l + hl;
 	pos += hl + WP_FIRST_POS (sst->sst_buffer + pos + hl);
 	while (pos < end)
 	  {
 	    int pl, p;
-	    WP_LENGTH_HEADONLY (sst->sst_buffer + pos, pl, p, sst->sst_buffer, sst->sst_fill);
+	    WP_LENGTH (sst->sst_buffer + pos, pl, p, sst->sst_buffer, sst->sst_buffer_size);
 	    pos += pl;
 	    current += p;
 	    if (!to || (((wpos_t) current) >= from && ((wpos_t) current) < to))
@@ -2257,6 +2249,7 @@ sst_next (search_stream_t * sst, d_id_t * target, int is_fixed)
 #define RANGE_ERROR 0
 #define RANGE 1
 #define EXACT_WORD 2
+#define RANGE_NOT_SUPPORTED 3
 
 
 int
@@ -2266,15 +2259,18 @@ wp_wildcard_range (const char * word, caddr_t * lower, caddr_t * higher)
   int leading = star ? (int) (star - word) : 0;
   if (star)
     {
-      if (leading < 3)
+      if (leading < 4)
 	return RANGE_ERROR;
+      if (cl_run_local_only)
+	{
       *lower = box_dv_short_nchars (word, leading + 1);
-/*      *lower = box_dv_short_substr (word, 0, leading + 1);*/
       (*lower)[leading - 1]--;
       (*lower)[leading] = '\377';
       (*lower)[leading + 1] = 0;
+	}
+      else
+	*lower = box_dv_short_nchars (word, leading); /* for cluster, the test is different, do not decrement lower bound extra */
       *higher = box_dv_short_nchars (word, leading);
-/*      *higher = box_dv_short_substr (word, 0, leading);*/
       (*higher) [box_length (*higher) - 2]++;
       return RANGE;
     }
@@ -2306,6 +2302,36 @@ wst_range_from_vtb (sst_tctx_t *tctx, ptrlong range_flags, const char * word)
 }
 
 
+search_stream_t *
+wst_from_wsts (sst_tctx_t *tctx, ptrlong range_flags, dk_set_t wsts)
+{
+  if (!wsts)
+    {
+      search_stream_t *sst = wst_from_word (tctx, range_flags, "---");
+      D_SET_AT_END (&sst->sst_d_id);
+      return sst;
+    }
+  if (wsts->next)
+    {
+      NEW_SST (search_stream_t, sst);
+      sst->sst_is_desc = tctx->tctx_descending;
+      sst->sst_range_flags = range_flags;
+      sst->sst_view_from = ((range_flags & SRC_RANGE_MAIN) ? FIRST_MAIN_WORD_POS : FIRST_ATTR_WORD_POS);
+      sst->sst_view_to = ((range_flags & SRC_RANGE_ATTR) ? LAST_ATTR_WORD_POS : LAST_MAIN_WORD_POS);
+      sst->sst_terms = (search_stream_t **) list_to_array (wsts);
+      D_SET_INITIAL (&sst->sst_d_id);
+      sst->sst_op = BOP_OR;
+      return sst;
+    }
+  else
+    {
+      search_stream_t * sst = (search_stream_t *) wsts->data;
+      dk_set_free (wsts);
+      return sst;
+    }
+}
+
+
 static search_stream_t *
 wst_from_range (sst_tctx_t *tctx, ptrlong range_flags, const char * word, caddr_t lower, caddr_t higher)
 {
@@ -2313,7 +2339,8 @@ wst_from_range (sst_tctx_t *tctx, ptrlong range_flags, const char * word, caddr_
   dk_set_t wsts = NULL;
   int n_words = 0;
   it_cursor_t * itc;
-  caddr_t limit = box_copy (lower);
+  caddr_t limit;
+  limit = box_copy (lower);
 
 /*  vtb = (vt_batch_t *) THR_ATTR (qi->qi_thread, TA_SST_USE_VTB);*/
 
@@ -2361,46 +2388,24 @@ wst_from_range (sst_tctx_t *tctx, ptrlong range_flags, const char * word, caddr_
 	    }
 	}
     }
-  if (!wsts)
-    {
-      search_stream_t *sst = wst_from_word (tctx, range_flags, "---");
-      D_SET_AT_END (&sst->sst_d_id);
-      return sst;
+  return wst_from_wsts (tctx, range_flags, wsts);
     }
-  if (wsts->next)
-    {
-      NEW_SST (search_stream_t, sst);
-      sst->sst_is_desc = tctx->tctx_descending;
-      sst->sst_range_flags = range_flags;
-      sst->sst_view_from = ((range_flags & SRC_RANGE_MAIN) ? FIRST_MAIN_WORD_POS : FIRST_ATTR_WORD_POS);
-      sst->sst_view_to = ((range_flags & SRC_RANGE_ATTR) ? LAST_ATTR_WORD_POS : LAST_MAIN_WORD_POS);
-      sst->sst_terms = (search_stream_t **) list_to_array (wsts);
-      D_SET_INITIAL (&sst->sst_d_id);
-      sst->sst_op = BOP_OR;
-      return sst;
-    }
-  else
-    {
-      search_stream_t * sst = (search_stream_t *) wsts->data;
-      dk_set_free (wsts);
-      return sst;
-    }
-}
-
 search_stream_t *
 wst_from_word (sst_tctx_t *tctx, ptrlong range_flags, const char *word)
 {
   vt_batch_t * vtb;
   caddr_t upper = NULL, lower = NULL;
   int rc = wp_wildcard_range (word, &lower, &upper);
-  if (rc == RANGE_ERROR)
+  if (rc == RANGE_ERROR || rc == RANGE_NOT_SUPPORTED)
     {
       NEW_SST (search_stream_t, sst);
       sst->sst_is_desc = tctx->tctx_descending;
       sst->sst_range_flags = range_flags;
       sst->sst_view_from = ((range_flags & SRC_RANGE_MAIN) ? FIRST_MAIN_WORD_POS : FIRST_ATTR_WORD_POS);
       sst->sst_view_to = ((range_flags & SRC_RANGE_ATTR) ? LAST_ATTR_WORD_POS : LAST_MAIN_WORD_POS);
-      sst->sst_error = srv_make_new_error ("22023", "FT370", "Wildcard word needs at least 3 leading characters");
+      sst->sst_error = srv_make_new_error ("22023", "FT370", 
+	  rc == RANGE_NOT_SUPPORTED ?  "Wildcards in text expressions are temporarily disabled in cluster configurations." : 
+	  			"Wildcard word needs at least 4 leading characters");
       sst->sst_op = SRC_ERROR;
       return sst;
     }
@@ -2440,6 +2445,9 @@ wst_from_word (sst_tctx_t *tctx, ptrlong range_flags, const char *word)
 	    D_SET_AT_END (&wst->sst_d_id);
 	  else
 	    wst->wst_word_strings = (caddr_t *) wb->wb_word_recs;
+	}
+      else 
+	{
 	}
       return ((search_stream_t *) wst);
     }
@@ -2839,6 +2847,7 @@ sst_destroy (search_stream_t * sst)
   dk_set_free (sst->sst_related);
   if (SRC_WORD == sst->sst_op)
     {
+      caddr_t item;
       word_stream_t * wst = (word_stream_t *) sst;
       if (wst->wst_itc)
 	itc_free (wst->wst_itc);
@@ -2847,6 +2856,9 @@ sst_destroy (search_stream_t * sst)
       dk_free_box ((caddr_t) sst->sst_pos_array);
       if (!wst->wst_word_strings) /* if against db, not a set of word batch strings */
 	dk_free_box (sst->sst_buffer);
+      while ((item = (caddr_t)basket_get (&wst->wst_cl_word_strings)))
+	dk_free_tree (item);
+      dk_free_box ((caddr_t)wst->wst_clrg);
       return 0;
     }
   dk_free_box (sst->sst_buffer);
@@ -2878,10 +2890,10 @@ txs_set_offband (text_node_t * txs, caddr_t * qst)
 	      caddr_t * offband;
 	      db_buf_t buf = (db_buf_t) (wst->sst_buffer + wst->sst_pos);
 	      int pos_len, len;
-	      WP_LENGTH (buf, pos_len, len, wst->sst_buffer, wst->sst_fill);
+	      WP_LENGTH (buf, pos_len, len, wst->sst_buffer, wst->sst_buffer_size);
 	      len -= WP_FIRST_POS (buf + pos_len);
 	      buf += pos_len + WP_FIRST_POS (buf + pos_len);
-	      offband = (caddr_t *) box_deserialize_string ((caddr_t) buf , len);
+	      offband = (caddr_t *) box_deserialize_string ((caddr_t) buf , len, 0);
 	      for (inx2 = 0; inx2 < BOX_ELEMENTS (txs->txs_offband); inx2 += 2)
 		{
 		  size_t nth_offb = (size_t)((ptrlong) txs->txs_offband[inx2]);

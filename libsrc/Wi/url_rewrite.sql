@@ -1349,3 +1349,16 @@ create procedure DB.DBA.URLREWRITE_DUMP_RULELIST_SQL (in rulelist_iri varchar)
   return string_output_string (ses);
 }
 ;
+
+--#IF VER=5
+--!AFTER
+--#ENDIF
+virt_proxy_init ()
+;
+
+--#IF VER=5
+--!AFTER
+--#ENDIF
+grant execute on ext_http_proxy to PROXY
+;
+

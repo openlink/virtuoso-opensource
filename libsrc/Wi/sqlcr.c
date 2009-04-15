@@ -304,10 +304,10 @@ qc_make_refresh (sql_comp_t * sc, query_cursor_t * qc)
   DO_BOX (comp_table_t *, ct, inx, sc->sc_tables)
   {
     int nth = 0;
-    from[inx] = (ST *) t_list (3, TABLE_REF, t_list (5, TABLE_DOTTED, t_box_string (ct->ct_table->tb_name),
+    from[inx] = (ST *) t_list (3, TABLE_REF, t_list (6, TABLE_DOTTED, t_box_string (ct->ct_table->tb_name),
 						 t_box_copy (ct->ct_prefix),
 						 t_box_num (ct->ct_u_id),
-						 t_box_num (ct->ct_g_id)), NULL);
+						     t_box_num (ct->ct_g_id), NULL), NULL);
     DO_SET (dbe_column_t *, col, &ct->ct_table->tb_primary_key->key_parts)
     {
       char tmp[10];
@@ -415,9 +415,9 @@ qc_position_texp (sql_comp_t * sc, query_cursor_t * qc)
   ST *texp = (ST *) t_list (9, TABLE_EXP, NULL, NULL, NULL, NULL, NULL, NULL, NULL,NULL);
   comp_table_t *ct = sc->sc_tables[0];
   int nth = 0;
-  from[0] = (ST *) t_list (5, TABLE_DOTTED, t_box_string (ct->ct_table->tb_name), NULL,
+  from[0] = (ST *) t_list (6, TABLE_DOTTED, t_box_string (ct->ct_table->tb_name), NULL,
 			 t_box_num (ct->ct_u_id),
-			 t_box_num (ct->ct_g_id));
+			   t_box_num (ct->ct_g_id), NULL);
 
   DO_SET (dbe_column_t *, col, &ct->ct_table->tb_primary_key->key_parts)
   {
@@ -463,9 +463,9 @@ qc_make_update (sql_comp_t * sc, query_cursor_t * qc)
   }
   END_DO_BOX;
 
-  upd = (ST *) t_list (5, UPDATE_SRC, t_list (5, TABLE_DOTTED, t_full_box_copy_tree (tb_name), NULL,
+  upd = (ST *) t_list (5, UPDATE_SRC, t_list (6, TABLE_DOTTED, t_full_box_copy_tree (tb_name), NULL,
 					  t_full_box_copy_tree (tb_ref->_.table_ref.table->_.table.u_id),
-					  t_full_box_copy_tree (tb_ref->_.table_ref.table->_.table.g_id)), cols, vals,
+					      t_full_box_copy_tree (tb_ref->_.table_ref.table->_.table.g_id), NULL), cols, vals,
 		     qc_position_texp (sc, qc));
   qc->qc_update = sqlc_cr_method (sc, &upd, 1, 1);
   qc->qc_update_text = upd;
@@ -501,10 +501,10 @@ qc_make_insert (sql_comp_t * sc, query_cursor_t * qc)
   }
   END_DO_BOX;
 
-  ins = (ST *) t_list (5, INSERT_STMT, t_list (5, TABLE_DOTTED, t_box_copy (tb_name), NULL,
+  ins = (ST *) t_list (7, INSERT_STMT, t_list (6, TABLE_DOTTED, t_box_copy (tb_name), NULL,
 					   t_box_copy (tb_ref->_.table_ref.table->_.table.u_id),
-					   t_box_copy (tb_ref->_.table_ref.table->_.table.g_id)), cols,
-		     t_list (2, INSERT_VALUES, vals), (ptrlong)INS_NORMAL);
+					       t_box_copy (tb_ref->_.table_ref.table->_.table.g_id), NULL), cols,
+		       t_list (2, INSERT_VALUES, vals), (ptrlong)INS_NORMAL, NULL, NULL);
 
   qc->qc_insert = sqlc_cr_method (sc, &ins, 1, 1);
   qc->qc_insert_text = ins;

@@ -170,6 +170,7 @@ create trigger NEWS_MSG_D instead of delete on NEWS_MSG referencing old as O
 ;
 
 
+--#IF VER=5
 create procedure DB.DBA.UPGRADE_NEWS_MSG ()
 {
   declare id integer;
@@ -184,6 +185,7 @@ create procedure DB.DBA.UPGRADE_NEWS_MSG ()
 --!AFTER
 DB.DBA.UPGRADE_NEWS_MSG ()
 ;
+--#ENDIF
 
 create procedure
 NN_FEED_PART (inout vb any, inout mb any, inout body varchar, inout id integer)
@@ -292,11 +294,15 @@ err_exit:
 }
 ;
 
+--#IF VER=5
 --!AFTER __PROCEDURE__ DB.DBA.VT_CREATE_TEXT_INDEX !
+--#ENDIF
 DB.DBA.vt_create_text_index ('DB.DBA.NEWS_MSG_NNTP', 'NM_BODY', 'NM_BODY_ID', 2, 0, null, 1, '*ini*', '*ini*')
 ;
 
+--#IF VER=5
 --!AFTER
+--#ENDIF
 DB.DBA.vt_create_ftt ('DB.DBA.NEWS_MSG_NNTP', null, null, 2)
 ;
 
@@ -561,7 +567,9 @@ create procedure ns_add_msg (in _in_art any, in _group integer, inout my_last in
 ;
 
 
+--#IF VER=5
 --!AFTER
+--#ENDIF
 create procedure ns_mirror_news
   (in _server varchar, in _out_name varchar, in _group integer, inout my_last integer,
 	in _end integer, in _begin integer, in _user varchar, in _pass varchar)
@@ -697,7 +705,9 @@ create procedure ns_mirror_news
 ;
 
 
+--#IF VER=5
 --!AFTER
+--#ENDIF
 create procedure
 new_news (in _group_in any, in _scheduler_grop integer := 0)
 {
@@ -799,7 +809,9 @@ new_news (in _group_in any, in _scheduler_grop integer := 0)
 ;
 
 
+--#IF VER=5
 --!AFTER
+--#ENDIF
 create procedure
 ns_up_num (in gr_n integer)
 {
@@ -1353,7 +1365,9 @@ ns_post_write_out (in _text varchar)
 ;
 
 
+--#IF VER=5
 --!AFTER
+--#ENDIF
 create procedure
 ns_post (in _message any)
 {
@@ -1934,7 +1948,9 @@ create trigger scheduled_event_delete_new_newsgroup after delete on DB.DBA.NEWS_
 }
 ;
 
+--#IF VER=5
 --!AFTER
+--#ENDIF
 create procedure
 news_acl_insert (in ng_group integer, in mask varchar, in allow integer, in _mode integer, in _rate double precision := 0)
 {
@@ -1976,6 +1992,7 @@ nntp_update_org_path_header ()
 ;
 
 
+--#IF VER=5
 --!AFTER
 create procedure
 ns_update_ng_next_num ()
@@ -1996,6 +2013,7 @@ ns_update_ng_next_num ()
 --!AFTER
 ns_update_ng_next_num ()
 ;
+--#ENDIF
 
 
 create procedure

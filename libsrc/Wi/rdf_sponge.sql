@@ -394,8 +394,9 @@ create table DB.DBA.SYS_HTTP_SPONGE (
   HS_QUALITY double precision,
   primary key (HS_LOCAL_IRI, HS_PARSER)
 )
-create index SYS_HTTP_SPONGE_EXPIRATION on DB.DBA.SYS_HTTP_SPONGE (HS_EXPIRATION desc)
-create index SYS_HTTP_SPONGE_FROM_IRI on DB.DBA.SYS_HTTP_SPONGE (HS_FROM_IRI, HS_PARSER)
+alter index SYS_HTTP_SPONGE on DB.DBA.SYS_HTTP_SPONGE partition (HS_LOCAL_IRI varchar)
+create index SYS_HTTP_SPONGE_EXPIRATION on DB.DBA.SYS_HTTP_SPONGE (HS_EXPIRATION desc) partition (HS_LOCAL_IRI varchar)
+create index SYS_HTTP_SPONGE_FROM_IRI on DB.DBA.SYS_HTTP_SPONGE (HS_FROM_IRI, HS_PARSER) partition (HS_FROM_IRI varchar)
 ;
 
 --#IF VER=5
@@ -474,8 +475,9 @@ create procedure DB.DBA.SYS_HTTP_SPONGE_GET_CACHE_PARAMS
 }
 ;
 
-
+--#IF VER=5
 --!AFTER_AND_BEFORE DB.DBA.SYS_HTTP_SPONGE HS_FROM_IRI !
+--#ENDIF
 create procedure DB.DBA.SYS_HTTP_SPONGE_DEP_URL_NOT_CHANGED (in local_iri varchar, in parser varchar, in explicit_refresh int)
 {
 
@@ -900,8 +902,9 @@ create table DB.DBA.SYS_RDF_MAPPERS (
     RM_OPTIONS any,
     RM_PID integer identity,		-- permanent id for fk in application tables
     primary key (RM_HOOK))
-create index SYS_RDF_MAPPERS_I1 on DB.DBA.SYS_RDF_MAPPERS (RM_ID)
-create index SYS_RDF_MAPPERS_I2 on DB.DBA.SYS_RDF_MAPPERS (RM_PID)
+alter index SYS_RDF_MAPPERS on DB.DBA.SYS_RDF_MAPPERS partition cluster replicated
+create index SYS_RDF_MAPPERS_I1 on DB.DBA.SYS_RDF_MAPPERS (RM_ID) partition cluster replicated
+create index SYS_RDF_MAPPERS_I2 on DB.DBA.SYS_RDF_MAPPERS (RM_PID) partition cluster replicated
 ;
 
 --#IF VER=5
@@ -911,6 +914,10 @@ alter table DB.DBA.SYS_RDF_MAPPERS add RM_ENABLED integer default 1
 
 --!AFTER
 alter table DB.DBA.SYS_RDF_MAPPERS add RM_OPTIONS any
+;
+
+--!AFTER
+alter table DB.DBA.SYS_RDF_MAPPERS add RM_PID integer identity
 ;
 
 --!AFTER
@@ -957,7 +964,10 @@ create procedure DB.DBA.RDF_HTTP_URL_GET (inout url any, in base any, inout hdr 
   if (lower (url) like 'https://%')
     is_https := 1;
 
-  content := http_client_ext (url=>url, headers=>hdr, http_method=>meth, http_headers=>req_hdr, body=>cnt, proxy=>proxy);
+  if (proxy is null)
+    content := http_client_ext (url=>url, headers=>hdr, http_method=>meth, http_headers=>req_hdr, body=>cnt);
+  else
+    content := http_get (url, hdr, meth, req_hdr, cnt, proxy);
   redirects := redirects - 1;
 
   if (hdr[0] not like 'HTTP/1._ 200 %')

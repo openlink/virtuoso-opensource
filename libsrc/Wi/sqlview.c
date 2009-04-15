@@ -666,8 +666,16 @@ qr_replace_node (query_t * qr, data_source_t * to_replace,
     data_source_t * replace_with)
 {
   /* replace query's select node  with given */
+  if (to_replace == qr->qr_head_node)
+    qr->qr_head_node = replace_with;
   DO_SET (data_source_t *, ds, &qr->qr_nodes)
   {
+    if ((qn_input_fn)fun_ref_node_input == ds->src_input)
+      {
+	fun_ref_node_t * fref = (fun_ref_node_t  *)ds;
+	if (fref->fnr_select == to_replace)
+	  fref->fnr_select = replace_with;
+      }
     if (ds->src_continuations
 	&& ds->src_continuations->data == (caddr_t) to_replace)
       ds->src_continuations->data = (caddr_t) replace_with;
@@ -929,10 +937,12 @@ sqlc_union_dt_wrap (ST * tree)
       ST * texp, * sel;
       ST ** order =right->_.select_stmt.table_exp->_.table_exp.order_by;
       ptrlong flags = right->_.select_stmt.table_exp->_.table_exp.flags;
+      caddr_t * opts = right->_.select_stmt.table_exp->_.table_exp.opts;
       right->_.select_stmt.table_exp->_.table_exp.order_by = NULL;
+      right->_.select_stmt.table_exp->_.table_exp.opts = NULL;
       texp = sqlp_infoschema_redirect (t_listst (9,
 	    TABLE_EXP, t_list (1, t_list (3, DERIVED_TABLE, tree, t_box_string ("__"))),
-		   NULL, NULL, NULL, order, flags,NULL, NULL));
+		   NULL, NULL, NULL, order, flags,opts, NULL));
       sel = (ST*) t_list (5, SELECT_STMT, NULL, sqlc_selection_names (left), NULL,
 			texp);
       return sel;

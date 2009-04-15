@@ -83,6 +83,7 @@ extern char *server_default_language_name;
 
 typedef struct vt_batch_s
   {
+    int		vtb_ref_count;
     id_hash_t *	vtb_words;
     d_id_t	vtb_d_id;
     wpos_t	vtb_word_pos;

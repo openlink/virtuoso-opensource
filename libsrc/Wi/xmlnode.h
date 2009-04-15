@@ -54,7 +54,9 @@ typedef struct text_node_s
     state_slot_t *	txs_main_range_out;
     state_slot_t *	txs_attr_range_out;
     ptrlong		txs_why_ranges;			/*!< Bits from TXS_RANGES4XXX */
-    ptrlong		txs_is_driving;
+    char		txs_is_driving;
+    char		txs_order; /* if should give deterministic order in cluster */
+    table_source_t *	txs_loc_ts; /* half filled ts to serve for partitioning in cluster if txs partitioned by d_id */
     state_slot_t *	txs_cached_string;		/*!< previous string, compiled by xp_text_parse() for this node, as caddr_t */
     state_slot_t *	txs_cached_compiled_tree;	/*!< result of compilation txs_cached_str by xp_text_parse(), as caddr_t * */
     state_slot_t *	txs_cached_dtd_config;

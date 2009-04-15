@@ -145,10 +145,12 @@ libwi_la_SOURCES = \
 	bitmap.c \
 	blob.c \
 	blobio.c \
+	cl_stubs.c \
 	datesupp.c \
 	ddlrun.c \
 	disk.c \
 	dks_esc.c \
+	extent.c \
 	eqlcomp.c \
 	gate.c \
 	hash.c \
@@ -168,6 +170,7 @@ libwi_la_SOURCES = \
 	neodisk.c \
 	numeric.c \
 	obackup.c \
+	page.c \
 	plugin_loader.c \
 	recovery.c \
 	regist.c \
@@ -235,6 +238,7 @@ libwi_la_SOURCES = \
 	srvmultibyte.c \
 	srvstat.c \
 	string.c \
+	trans.c \
 	update.c \
 	uuencode.c \
 	wirpc.c \
@@ -257,10 +261,12 @@ libwi_odbc_la_SOURCES = \
 	bitmap.c \
 	blob.c \
 	blobio.c \
+	cl_stubs.c \
 	datesupp.c \
 	ddlrun.c \
 	disk.c \
 	dks_esc.c \
+	extent.c \
 	eqlcomp.c \
 	gate.c \
 	hash.c \
@@ -280,6 +286,7 @@ libwi_odbc_la_SOURCES = \
 	neodisk.c \
 	numeric.c \
 	obackup.c \
+	page.c \
 	plugin_loader.c \
 	recovery.c \
 	regist.c \
@@ -347,6 +354,7 @@ libwi_odbc_la_SOURCES = \
 	srvmultibyte.c \
 	srvstat.c \
 	string.c \
+	trans.c \
 	update.c \
 	uuencode.c \
 	wirpc.c \

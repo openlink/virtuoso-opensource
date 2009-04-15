@@ -94,7 +94,6 @@
 /* symbolic tokens */
 %union {
   long intval;
-  double floatval;
   char *strval;
   sql_tree_t *tree;
   caddr_t box;
@@ -103,7 +102,7 @@
   sqlp_join_t join;
 }
 
-%expect 17
+%expect 18
 %token <box> NAME
 %token <box> STRING
 %token <box> WSTRING
@@ -205,7 +204,7 @@
 /*%type <intval> opt_percent*/
 %type <intval> opt_ties
 %type <tree> opt_top
-
+%type <tree> trans_decl
 %type <tree> from_clause
 %type <tree> opt_where_clause
 %type <tree> where_clause
@@ -262,6 +261,7 @@
 %type <list> column_def_opt_list
 %type <list> identity_opt_list
 %type <tree> identity_opt
+%type <tree> compression_spec 
 %type <tree> data_type
 %type <tree> data_type_ref
 %type <tree> base_data_type
@@ -539,8 +539,22 @@
 %type <tree> cost_decl 
 %type <list> cost_number_list 
 %type <box> cost_number 
+%type <tree> cluster_def
+%type <box> opt_cluster
 %type <tree> partition_def 
-
+%type <list> col_part_list
+%type <list> col_part_commalist
+%type <list> host_group_list
+%type <list> host_list
+%type <box> host 
+%type <box> range 
+%type <list> range_list 
+%type <box> opt_modulo 
+%type <tree> col_partition
+%type <tree> host_group
+%type <box> opt_index 
+%type <list> colnum_commalist_2
+%type <box> colnum_commalist  
 
 %token <box> TYPE FINAL_L METHOD CHECKED SYSTEM GENERATED SOURCE RESULT LOCATOR INSTANCE_L CONSTRUCTOR SELF_L OVERRIDING STYLE SQL_L GENERAL DETERMINISTIC NO_L CONTAINS READS DATA
 %token <box> MODIFIES INPUT CALLED ADA C COBOL FORTRAN MUMPS PASCAL_L PLI NAME_L TEXT_L JAVA INOUT_L REMOTE KEYSET VALUE PARAMETER VARIABLE ADMIN_L ROLE_L TEMPORARY CLR ATTRIBUTE
@@ -579,7 +593,7 @@
 %token ARRAY
 
 /* Extensions */
-%token CONTIGUOUS OBJECT_ID BITMAPPED UNDER CLUSTERED CLUSTER PARTITION VARCHAR VARBINARY BINARY LONG_L REPLACING SOFT HASH LOOP IRI_ID IRI_ID_8 SAME_AS QUIETCAST_L SPARQL_L
+%token CONTIGUOUS OBJECT_ID BITMAPPED UNDER CLUSTER CLUSTERED VARCHAR VARBINARY BINARY LONG_L REPLACING SOFT HASH LOOP IRI_ID IRI_ID_8 SAME_AS TRANSITIVE QUIETCAST_L SPARQL_L
 
 /* Admin statements */
 %token SHUTDOWN CHECKPOINT BACKUP REPLICATION
@@ -608,8 +622,8 @@
 %token BEGIN_FN_X BEGIN_CALL_X BEGIN_OJ_X BEGIN_U_X CONVERT CASE WHEN IDENTITY LEFT RIGHT FULL OUTER
 /*%token BEGIN_FN_X BEGIN_CALL_X BEGIN_OJ_X BEGIN_U_X CONVERT CASE WHEN THEN IDENTITY FULL OUTER*/
 %token INNER CROSS NATURAL USING JOIN USE COALESCE CAST NULLIF NEW
-%token CORRESPONDING BEST TOP PERCENT TIES XML XPATH
-%token PERSISTENT INTERVAL INCREMENT_L
+%token CORRESPONDING EXCEPT INTERSECT BEST TOP PERCENT TIES XML XPATH
+%token PERSISTENT INTERVAL INCREMENT_L COMPRESS PARTITION
 /* IvAn/XmlView/000810 Options added for "create xml view" statement */
 %token DTD INTERNAL EXTERNAL
 /* %token SCHEMA is already reserved */
@@ -634,6 +648,12 @@
 
 /* set transaction isolation level */
 %token <box> TRANSACTION_L ISOLATION_L LEVEL_L READ_L COMMITTED_L UNCOMMITTED_L REPEATABLE_L SERIALIZABLE_L
+
+ /* transitive subquery options */
+%token T_FINAL_AS T_MIN T_MAX T_IN T_OUT T_SHORTEST_ONLY T_DISTINCT T_EXISTS T_NO_ORDER T_NO_CYCLES T_CYCLES_ONLY T_END_FLAG T_DIRECTION
+
+
+
 
 /* Skip and ws lexems for scn3split.c */
 %token WS_WHITESPACE /* This should be the first whitespace token */
@@ -714,6 +734,7 @@ schema_element
 	| user_defined_type
 	| user_defined_type_drop
 	| user_defined_type_alter
+	| cluster_def 
 	;
 
 identifier
@@ -889,6 +910,13 @@ identity_opt
 */
 	;
 
+compression_spec 
+: NO_L COMPRESS { $$ = t_listst (2, CO_COMPRESS, (ptrlong)CC_NONE); }
+	| COMPRESS ANY { $$ = t_listst (2, CO_COMPRESS, (ptrlong)CC_OFFSET); }
+	| COMPRESS TEXT_L { $$ = t_listst (2, CO_COMPRESS, (ptrlong)CC_PREFIX); }
+	;
+
+
 identity_opt_list
  	: identity_opt			 { $$ = t_CONS ($1, NULL); }
 	| identity_opt_list ',' identity_opt { $$ = t_NCONC ($1, t_CONS ($3, NULL)); }
@@ -900,6 +928,7 @@ column_def_opt
 	| IDENTITY		{ $$ = (ST *) CO_IDENTITY; }
 	| IDENTITY '(' identity_opt_list ')'		{ $$ = t_listst (2, CO_IDENTITY, t_list_to_array ($3)); }
 	| PRIMARY KEY		 { $$ = t_listst (5, INDEX_DEF, NULL, NULL, NULL, (ST *) 0); }
+	| compression_spec { $$ = $1; }
 	| DEFAULT signed_literal	{ $$ = t_listst (2, COL_DEFAULT, $2); }
 	| COLLATE q_table_name	{ $$ = t_listst (2, COL_COLLATE, $2); }
 	| references		   { $$ = $1; }
@@ -976,8 +1005,12 @@ opt_index_option_list
 
 create_index_def
 	: CREATE opt_index_option_list INDEX index
-		ON q_table_name '(' index_column_commalist ')' opt_part_def
+		ON q_table_name '(' index_column_commalist ')' 
 		{ $$ = t_listst (5, INDEX_DEF, $4, $6, t_list_to_array ($8), $2); }
+	| CREATE opt_index_option_list INDEX index
+	ON q_table_name '(' index_column_commalist ')' PARTITION opt_cluster col_part_list 
+{ ST * opts = (ST *) t_box_append_1  ((caddr_t) $2, (caddr_t) t_listst (5, PARTITION_DEF,  NULL, NULL, $11, t_list_to_array ($12)));
+		 $$ = t_listst (5, INDEX_DEF, $4, $6, t_list_to_array ($8), opts); }
 	;
 
 drop_index
@@ -1580,15 +1613,15 @@ commit_statement
 
 
 delete_statement_positioned
-	: DELETE_L FROM table WHERE CURRENT OF cursor
-		{ $$ = t_listst (3, DELETE_POS, $7, $3); }
+	: DELETE_L FROM table WHERE CURRENT OF cursor opt_sql_opt
+{ $$ = t_listst (4, DELETE_POS, $7, $3, $8); }
 	;
 
 delete_statement_searched
-	: DELETE_L FROM table opt_where_clause
+	: DELETE_L FROM table opt_where_clause opt_sql_opt
 		{ $$ = t_listst (2, DELETE_SRC,
 		      sqlp_infoschema_redirect (t_listst (9, TABLE_EXP, t_list (1, $3),
-		      $4, NULL, NULL, NULL, NULL, NULL, NULL))); }
+		      $4, NULL, NULL, NULL, NULL, $5, NULL))); }
 	;
 
 fetch_statement
@@ -1612,9 +1645,16 @@ insert_mode
 	| SOFT		{ $$ = INS_SOFT; }
 	;
 
+
+opt_index 
+	: { $$ = NULL;}
+	| INDEX NAME {$$ = $2; }
+	;
+
+
 insert_statement
-	: INSERT insert_mode table priv_opt_column_commalist values_or_query_spec
-		{ $$ = t_listst (5, INSERT_STMT, $3, $4, $5, (ptrlong) $2); }
+	: INSERT insert_mode table opt_index opt_sql_opt priv_opt_column_commalist values_or_query_spec
+{ $$ = t_listst (7, INSERT_STMT, $3, $6, $7, (ptrlong) $2, $4, $5); }
 	;
 
 values_or_query_spec
@@ -1637,8 +1677,10 @@ insert_atom
 
 sql_option
 	: ORDER { $$ = t_CONS (OPT_ORDER, t_CONS (1, NULL)); }
+	| ANY ORDER { $$ = t_CONS (OPT_ANY_ORDER, t_CONS (1, NULL)); }
 	| QUIETCAST_L { $$ = t_CONS (OPT_SPARQL, t_CONS (1, NULL)); }
 	| SAME_AS { $$ = t_CONS (OPT_SAME_AS, t_CONS (1, NULL)); }
+	| ARRAY { $$ = t_CONS (OPT_ARRAY, t_CONS (1, NULL)); }
 	| HASH { $$ = t_CONS (OPT_JOIN, t_CONS (OPT_HASH, NULL)); }
 	| INTERSECT { $$ = t_CONS (OPT_JOIN, t_CONS (OPT_INTERSECT, NULL)); }
 	| LOOP { $$ = t_CONS (OPT_JOIN, t_CONS (OPT_LOOP, NULL)); }
@@ -1648,6 +1690,8 @@ sql_option
 	| INDEX PRIMARY KEY { $$ = t_CONS (OPT_INDEX, t_CONS (t_box_string ("PRIMARY KEY"), NULL)); }
 	| INDEX TEXT_L KEY { $$ = t_CONS (OPT_INDEX, t_CONS (t_box_string ("TEXT KEY"), NULL)); }
 	| WITH STRING { $$ = t_CONS (OPT_RDF_INFERENCE, t_CONS ($2, NULL)); }
+	| NO_L CLUSTER { $$ = t_CONS (OPT_NO_CLUSTER, t_CONS (1, NULL)); }
+	| INTO scalar_exp { $$ = t_CONS (OPT_INTO, t_CONS ($2, NULL)); }
 	| NAME INTNUM {
 	  if (!stricmp ($1, "vacuum"))
 	    $$ = t_CONS (OPT_VACUUM, t_CONS ($2, NULL));
@@ -1731,6 +1775,48 @@ selectinto_statement
 		}
 	;
 
+
+
+
+colnum_commalist_2 
+: INTNUM { $$ = t_CONS (sqlp_col_num ($1), NULL); }
+| colnum_commalist_2 ',' INTNUM { $$ = t_NCONC ($1, t_CONS (sqlp_col_num ($3), NULL)); }
+	;
+
+colnum_commalist 
+: INTNUM { $$ = t_listbox (1, sqlp_col_num ($1)); }
+	| '(' colnum_commalist_2 ')' { $$ = t_list_to_array_box ($2); }
+	;
+
+
+trans_opt 
+	: T_MIN '(' scalar_exp ')'  { global_trans->_.trans.min = $3; }
+	| T_MAX '(' scalar_exp ')' { global_trans->_.trans.max = $3; }
+	| T_DISTINCT { global_trans->_.trans.distinct = 1; }
+	| T_EXISTS { global_trans->_.trans.exists = 1; }
+	| T_NO_CYCLES { global_trans->_.trans.no_cycles = 1; }
+	| T_CYCLES_ONLY { global_trans->_.trans.cycles_only = 1; }
+	| T_NO_ORDER { global_trans->_.trans.no_order = 1; }
+	| T_SHORTEST_ONLY { global_trans->_.trans.shortest_only = 1; }
+	| T_IN colnum_commalist { global_trans->_.trans.in = (ptrlong*) $2; }
+ 	| T_OUT colnum_commalist { global_trans->_.trans.out = (ptrlong*) $2; }
+| T_END_FLAG  INTNUM { global_trans->_.trans.end_flag = (ptrlong)sqlp_col_num ($2); }
+	| T_FINAL_AS NAME { global_trans->_.trans.final_as = $2; }
+	| T_DIRECTION INTNUM { global_trans->_.trans.direction = unbox ($2); }
+	;
+
+
+trans_list 
+	: trans_opt 
+	| trans_list trans_opt 
+	;
+
+trans_decl
+	: TRANSITIVE { global_trans = (ST *) t_alloc_box (sizeof (sql_tree_t), DV_ARRAY_OF_POINTER); memset (global_trans, 0, box_length ((caddr_t)global_trans));}
+	trans_list { $$ = global_trans; global_trans = NULL; }
+	;
+
+
 opt_all_distinct
 	: /* empty */	{ $$ = 0; }
 	| ALL		{ $$ = 0; }
@@ -1753,24 +1839,25 @@ opt_ties
 opt_top
 	: opt_all_distinct { $$ = (ST*) (ptrlong) $1; }
 	| opt_all_distinct TOP INTNUM /*opt_percent*/ opt_ties
-		{ $$ = (ST*) t_list (6, SELECT_TOP, (ptrlong) $1, $3, t_box_num (0), /*$4, $5*/ 0, (ptrlong) $4); }
+{ $$ = (ST*) t_list (7, SELECT_TOP, (ptrlong) $1, $3, t_box_num (0), /*$4, $5*/ 0, (ptrlong) $4, NULL); }
 	| opt_all_distinct TOP '(' scalar_exp ')' /*opt_percent*/ opt_ties
-	   	{ $$ = (ST*) t_list (6, SELECT_TOP, (ptrlong) $1, $4, t_box_num (0), /*$6, $7*/ 0, (ptrlong) $6); }
+{ $$ = (ST*) t_list (7, SELECT_TOP, (ptrlong) $1, $4, t_box_num (0), /*$6, $7*/ 0, (ptrlong) $6, NULL); }
 	| opt_all_distinct TOP INTNUM ',' INTNUM /*opt_percent*/ opt_ties
-		{ $$ = (ST*) t_list (6, SELECT_TOP, (ptrlong) $1, $5, $3, /*$6, $7*/ 0, (ptrlong) $6); }
+{ $$ = (ST*) t_list (7, SELECT_TOP, (ptrlong) $1, $5, $3, /*$6, $7*/ 0, (ptrlong) $6, NULL); }
 	| opt_all_distinct TOP '(' scalar_exp ',' scalar_exp ')' /*opt_percent*/ opt_ties
-	   	{ $$ = (ST*) t_list (6, SELECT_TOP, (ptrlong) $1, $6, $4, /*$8, $9*/ 0, (ptrlong) $8); }
+{ $$ = (ST*) t_list (7, SELECT_TOP, (ptrlong) $1, $6, $4, /*$8, $9*/ 0, (ptrlong) $8, NULL); }
+	| trans_decl { $$ = t_listst (7, SELECT_TOP, NULL, NULL, NULL, NULL, NULL, $1);}
 	| opt_all_distinct TOP INTNUM ',' '-' INTNUM opt_ties
-		{ $$ = (ST*) t_list (6, SELECT_TOP, (ptrlong) $1, t_box_num_and_zero (-1 * unbox($6)), $3, /*$6, $7*/ 0, (ptrlong) $7); }
+		{ $$ = (ST*) t_list (7, SELECT_TOP, (ptrlong) $1, t_box_num_and_zero (-1 * unbox($6)), $3, /*$6, $7*/ 0, (ptrlong) $7, NULL); }
 	;
 
 
 update_statement_positioned
-	: UPDATE table SET assignment_commalist WHERE CURRENT OF cursor
+	: UPDATE table SET assignment_commalist WHERE CURRENT OF cursor opt_sql_opt
 		{ ST ** asg = (ST **) t_list_to_array ($4);
 		  ST ** cols = asg_col_list (asg);
 		  ST ** vals = asg_val_list (asg);
-		  $$ = t_listst (5, UPDATE_POS, $2, cols, vals, $8); }
+		  $$ = t_listst (6, UPDATE_POS, $2, cols, vals, $8, $9); }
 	;
 
 assignment_commalist
@@ -1785,13 +1872,13 @@ assignment
 	;
 
 update_statement_searched
-	: UPDATE table SET assignment_commalist opt_where_clause
+	: UPDATE table SET assignment_commalist opt_where_clause opt_sql_opt
 		{
 		  ST **asg = (ST **) t_list_to_array ($4);
 		  ST **cols = asg_col_list (asg);
 		  ST **vals = asg_val_list (asg);
 		  ST *table_exp = sqlp_infoschema_redirect (t_listst (9, TABLE_EXP,
-		      t_list (1, t_box_copy_tree ($2)), $5, NULL, NULL, NULL, NULL, NULL, NULL));
+		      t_list (1, t_box_copy_tree ($2)), $5, NULL, NULL, NULL, NULL, $6, NULL));
 
 		  $$ = t_listst (5, UPDATE_SRC, $2, cols, vals, table_exp);
 		}
@@ -4292,42 +4379,77 @@ drop_assembly
         ;
 
 
-/* dummy partitioning defs for 6 compatibility */
+/*Partitioning and cluster */
+
 
 col_partition
-	: INTEGER 
-	| INTEGER '(' INTNUM ')' 
-	| INTEGER '(' BINARYNUM ')' 
-	| VARCHAR  
-	| VARCHAR '(' INTNUM ',' INTNUM ')'  
-	| VARCHAR '(' '-' INTNUM ',' INTNUM ')'  
-	| VARCHAR '(' INTNUM ',' BINARYNUM ')'  
-	| VARCHAR '(' '-' INTNUM ',' BINARYNUM ')'  
+	: INTEGER { $$ = t_listst (5, NULL, NULL, (ptrlong)CP_INT, t_box_num (0xffff), NULL); }
+	| INTEGER '(' INTNUM ')' { $$ = t_listst (5, NULL, NULL, (ptrlong)CP_INT, $3, NULL); }
+	| BIGINT { $$ = t_listst (5, NULL, NULL, (ptrlong)CP_INT, t_box_num (0xffff), NULL); }
+	| BIGINT '(' INTNUM ')' { $$ = t_listst (5, NULL, NULL, (ptrlong)CP_INT, $3, NULL); }
+	| VARCHAR  { $$ = t_listst (5, NULL, NULL, (ptrlong)CP_WORD, NULL, t_box_num (0xffff)); }
+	| VARCHAR '(' INTNUM ',' INTNUM ')'  { $$ = t_listst (5, NULL, NULL, (ptrlong)CP_WORD, $3, $5); }
+	| VARCHAR '(' '-' INTNUM ',' INTNUM ')'  { $$ = t_listst (5, NULL, NULL, (ptrlong)CP_WORD, t_box_num (- unbox ($4)), $6); }
 	;
 
 
+host
+	: NAME { $$ = $1; if (!cl_name_to_host ($1)) yyerror ("undefined host name in cluster def"); }
+	;
+
+host_list 
+	: host { $$ = t_CONS ($1, NULL); }
+| host_list ',' host { $$ = t_NCONC ($1, t_CONS ($3, NULL)); }
+	;
+
+range
+	: '(' INTNUM ',' INTNUM ')' { $$ = t_listbox (2, $2, $4); }
+	;
+
+range_list 
+	: range { $$ = t_CONS ($1, NULL); }
+| range_list ',' range { $$ = t_NCONC ($1, t_CONS ($3, NULL)); }
+	;
+
+
+host_group 
+	: GROUP '(' host_list ')' { $$ = t_listst (3, NULL, t_list_to_array ($3), NULL); }
+	| GROUP '(' host_list ')' HAVING range_list { $$ = t_listst (3, NULL, t_list_to_array ($3), t_list_to_array ($6)); }
+	;
+
+
+host_group_list
+	: host_group { $$ = t_CONS ($1, NULL); }
+| host_group_list ',' host_group { $$ = t_NCONC ($1, t_CONS ($3, NULL)); }
+	;
+
+opt_modulo 
+	: { $$ = NULL; }
+	| DEFAULT { $$ = (caddr_t) 1;}
+	;
+
+cluster_def
+	: CREATE	 CLUSTER NAME opt_modulo host_group_list
+{ $$ = t_listst (4, CLUSTER_DEF, t_box_string ($3), $4, t_list_to_array ($5)); }
+	;
 
 col_part_commalist
-	: NAME col_partition { } 
-	| col_part_list ',' NAME col_partition
+: NAME col_partition { $$ = t_CONS ($2, NULL); $2->_.col_part.col = $1; }
+	| col_part_list ',' NAME col_partition { $4->_.col_part.col = $3; $$ = t_NCONC ($1, $4);}
 	;
 
 col_part_list 
-	: /* empty */  
-	| '(' col_part_commalist ')' 
+	: /* empty */ { $$ = NULL;} 
+	| '(' col_part_commalist ')' { $$ = $2; }
 	;
 opt_cluster 
-	: /* empty */
-	| CLUSTER NAME
+	: { $$ = t_sym_string  ("__ALL"); } 
+	| CLUSTER  NAME { $$ = $2; }
 	;
 
-
-opt_part_def 
-	: /* empty */
-	| PARTITION opt_cluster col_part_list
-	;
 
 partition_def
-	: ALTER INDEX NAME ON q_table_name PARTITION opt_cluster col_part_list { $$ = (ST *) t_list (1, DDL_NONE); }
+	: ALTER INDEX NAME ON q_table_name PARTITION opt_cluster col_part_list
+{ $$ = t_listst (5, PARTITION_DEF,  $5, $3, $7, t_list_to_array ($8)); }
 	;
 

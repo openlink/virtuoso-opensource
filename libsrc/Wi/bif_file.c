@@ -89,7 +89,7 @@ encoding_handler_t *i18n_volume_emergency_encoding = NULL;
 
 extern dk_session_t *http_session_arg (caddr_t * qst, state_slot_t ** args, int nth, const char * func);
 extern dk_session_t *http_session_no_catch_arg (caddr_t * qst, state_slot_t ** args, int nth, const char * func);
-int dks_read_line (dk_session_t * ses, char *buf, int max);
+extern int dks_read_line (dk_session_t * ses, char *buf, int max);
 
 char *temp_ses_dir;		/* For viconfig.c */
 char _srv_cwd[PATH_MAX + 1], *srv_cwd = _srv_cwd;
@@ -5867,6 +5867,7 @@ bif_file_init (void)
   bif_define ("http_mime_type_add", bif_http_mime_type_add);
   bif_define_typed ("http_mime_type", bif_http_mime_type, &bt_varchar);
   bif_define_typed ("delay", bif_sleep, &bt_integer);
+  bif_uses_index (bif_sleep); /* is io sect, means can't hold a page wired */
   bif_define_typed ("trace_on", bif_trace_on, &bt_any);
   bif_define_typed ("trace_status", bif_trace_status, &bt_any);
   bif_define_typed ("trace_off", bif_trace_off, &bt_any);

@@ -33,8 +33,8 @@
 extern caddr_t iri_to_id (caddr_t *qst, caddr_t name, int mode, caddr_t *err_ret);
 extern caddr_t key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no);
 extern int key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, caddr_t *subj_ns_ret, caddr_t *subj_loc_ret);
-extern caddr_t rdf_type_twobyte_to_iri (short twobyte);
-extern caddr_t rdf_lang_twobyte_to_string (short twobyte);
+#define rdf_type_twobyte_to_iri(twobyte) nic_id_name (rdf_type_cache, (twobyte))
+#define rdf_lang_twobyte_to_string(twobyte) nic_id_name (rdf_lang_cache, (twobyte))
 /*! \returns NULL for string, (ccaddr_t)((ptrlong)1) for unsupported, 2 for NULL, UNAME for others */
 extern ccaddr_t xsd_type_of_box (caddr_t arg);
 #define BNODE_IID_TO_LABEL_BUFFER(buf,iid) (((iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
@@ -189,8 +189,9 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
    /*, caddr_t dtd_config, dtd_t **ret_dtd,
    id_hash_t **ret_id_cache, xml_ns_2dict_t *ret_ns_2dict*/ );
 
-/* Metadata about free-text index on DB.DBA.RDF_OBJ */
-extern id_hash_t *rdf_obj_ft_rules;
+/* Metadata about free-text index on DB.DBA.RDF_OBJ. We're keeping two similar hashtables but one has IRI_IDs as keys and other has strings. */
+extern id_hash_t *rdf_obj_ft_rules_by_iids;
+extern id_hash_t *rdf_obj_ft_rules_by_iris;
 
 extern int uriqa_dynamic_local;
 extern caddr_t uriqa_get_host_for_dynamic_local (query_instance_t *qi, int * is_https);
@@ -207,6 +208,8 @@ extern id_hash_t *rdf_graph_public_perms_dict_htable;		/*!< Dictionary of public
 extern id_hash_iterator_t *rdf_graph_public_perms_dict_hit;	/*!< Hash iterator for \c rdf_graph_group_dict_htable */
 extern id_hash_t *rdf_graph_default_perms_of_user_dict_htable;		/*!< Dictionary of default permissions for users: user ID is key, copy of DB.DBA.RDF_GRAPH_USER.RGU_PERMISSIONS is a value */
 extern id_hash_iterator_t *rdf_graph_default_perms_of_user_dict_hit;	/*!< Hash iterator for \c rdf_graph_default_perms_of_user_dict_htable */
+
+caddr_t iri_ensure (caddr_t * qst, caddr_t name, int flag, caddr_t * err_ret);
 
 
 #endif

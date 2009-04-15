@@ -2176,6 +2176,8 @@ pl_cursor_destroy (caddr_t box)
   srv_stmt_t *stmt = (srv_stmt_t *)box;
   if (stmt->sst_cursor_state)
     stmt_scroll_close (stmt);
+  if (stmt->sst_qst)
+    qi_free ((caddr_t *)stmt->sst_qst);
   return 0;
 }
 
@@ -2282,6 +2284,9 @@ bif_is_relocatable (bif_t bif)
 placeholder_t *
 cs_place (query_instance_t * qi, cursor_state_t * cs, dbe_table_t * tb)
 {
+    sqlr_new_error ("HY109", "SR241", "current of not supported");
+
+#ifndef KEYCOMP
   int inx;
   placeholder_t * place = NULL;
   dbe_key_t * key = tb->tb_primary_key;
@@ -2323,6 +2328,9 @@ cs_place (query_instance_t * qi, cursor_state_t * cs, dbe_table_t * tb)
   if (!place)
     sqlr_new_error ("HY109", "SR241", "Row referenced in where current of not present");
   return place;
+#else
+  return NULL; /* keep compiler happy */  
+#endif
 }
 
 

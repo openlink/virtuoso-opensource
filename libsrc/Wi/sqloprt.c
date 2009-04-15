@@ -306,6 +306,8 @@ sqlo_dfe_print (df_elt_t * dfe, int offset)
 	    sqlo_print (("   dt generated as:\n"));
 	    sqlo_dfe_print (dfe->_.sub.generated_dfe, offset + OFS_INCR);
 	  }
+	if (DFE_DT == dfe->dfe_type && dfe->_.sub.trans)
+	  sqlo_print (("  dt transitive\n"));
 	for (elt = dfe->_.sub.first->dfe_next; elt; elt = elt->dfe_next)
 	  {
 	    sqlo_dfe_print (elt, offset + OFS_INCR);
@@ -319,6 +321,11 @@ sqlo_dfe_print (df_elt_t * dfe, int offset)
 	    sqlo_print (("%*.*s", offset, offset, " "));
 	    sqlo_print (("  dt after join test:\n"));
 	    sqlo_dfe_print ((df_elt_t *) dfe->_.sub.after_join_test, offset + OFS_INCR);
+	  }
+	if (DFE_DT == dfe->dfe_type && dfe->_.sub.trans && dfe->_.sub.trans->tl_complement)
+	  {
+	    sqlo_print ((" \nTransitive e from both ends, complement dt:\n"));
+	    sqlo_dfe_print (dfe->_.sub.trans->tl_complement, offset);
 	  }
 	break;
       }
@@ -357,6 +364,20 @@ sqlo_dfe_print (df_elt_t * dfe, int offset)
       if (dfe->_.setp.is_linear)
 	sqlo_print ((" linear "));
       dbg_print_box ((caddr_t) dfe->_.setp.specs, stdout);
+      if (dfe->_.setp.oby_dep_cols)
+	{
+	  int inx;
+	  printf ("oby dep:\n");
+	  DO_BOX (dk_set_t, deps, inx, dfe->_.setp.oby_dep_cols)
+	    {
+	      DO_SET (df_elt_t *, dfe, &deps)
+		{
+		  sqlo_dfe_print (dfe, 0);
+		}
+	      END_DO_SET();
+	    }
+	  END_DO_BOX;
+	}
       if (dfe->_.setp.after_test)
 	{
 	  sqlo_print (("after test: "));
@@ -423,6 +444,8 @@ sqlo_scenario_summary (df_elt_t * dfe, float cost)
 	  break;
 	case DFE_DT:
 	  sqlo_print (("%s ", elt->_.sub.ot->ot_new_prefix));
+	  if (elt->_.sub.trans)
+	    sqlo_print ((" transdir=%d ", (int)elt->_.sub.trans->tl_direction));
 	  break;
 	case DFE_ORDER:
 	  sqlo_print ((" order_by "));

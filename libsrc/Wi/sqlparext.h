@@ -151,6 +151,10 @@
 #define CO_ID_START		(ptrlong)520
 #define CO_ID_INCREMENT_BY	(ptrlong)521
 #define CHECK_XMLSCHEMA_CONSTR	(ptrlong)522
+#define CO_COMPRESS ((ptrlong) 523)
+#define CLUSTER_DEF ((ptrlong) 524)
+#define PARTITION_DEF ((ptrlong) 525)
+
 
 /* Procedures */
 
@@ -302,6 +306,8 @@ Note: bitwise OR of all these masks should be less than SMALLEST_POSSIBLE_POINTE
 #define OPT_JOIN  ((ptrlong) 901)
 #define OPT_INDEX ((ptrlong) 902)
 #define OPT_SPARQL ((ptrlong) 907)
+#define OPT_NO_CLUSTER ((ptrlong) 930)
+#define OPT_INTO ((ptrlong) 931)
 
 #define OPT_HASH ((ptrlong) 903)
 #define OPT_INTERSECT ((ptrlong) 1015)
@@ -313,6 +319,9 @@ Note: bitwise OR of all these masks should be less than SMALLEST_POSSIBLE_POINTE
 #define OPT_VACUUM (ptrlong)913
 #define OPT_RDF_INFERENCE ((ptrlong)1014)
 #define OPT_SAME_AS ((ptrlong) 1016)
+#define OPT_ARRAY ((ptrlong) 1017)
+#define OPT_ANY_ORDER (ptrlong)1018
+
 /* GROUPING SETS */
 #define GROUPING_FUNC	"__grouping"
 #define GROUPING_SET_FUNC   "__grouping_set_bitmap"
@@ -347,6 +356,7 @@ typedef struct sql_tree_s
 	  ST *	skip_exp;
 	  ptrlong	percent;
 	  ptrlong	ties;
+	  ST *		trans;
 	} top;
 	struct
 	  {
@@ -427,6 +437,8 @@ typedef struct sql_tree_s
 	    ST **	cols;
 	    ST *	vals;
 	    ptrlong	mode;
+	    caddr_t	key;
+	    caddr_t *	opts;
 	  } insert;
 	struct
 	  {
@@ -442,11 +454,13 @@ typedef struct sql_tree_s
 	    ST **	cols;
 	    ST **	vals;
 	    caddr_t	cursor;
+	    caddr_t *	opts;
 	  } update_pos;
 	struct
 	  {
 	    caddr_t	cursor;
 	    ST *	table;
+	    caddr_t *	opts;
 	  } delete_pos;
 	struct
 	  {
@@ -669,9 +683,50 @@ typedef struct sql_tree_s
 	    caddr_t	skip;
 	  }
 	compound;
+	struct {
+	  caddr_t 	name;
+	  ptrlong	is_modulo;
+	  ST **		hosts;
+	} cluster;
+	struct {
+	  caddr_t **	hosts;
+	  ST **	ranges;
+	} host_group;
+	struct {
+	  caddr_t	table;
+	  caddr_t	key;
+	  caddr_t	cluster;
+	  ST **	cols;
+	} part_def;
+	struct {
+	  caddr_t	col;
+	  ptrlong	type;
+	  caddr_t	arg;
+	  caddr_t	arg2;
+	} col_part;
+	struct {
+	  ST *	min;
+	  ST *	max;
+	  ptrlong *	in;
+	  ptrlong *	out;
+	  ptrlong	end_flag;
+	  caddr_t	final_as;
+	  ptrlong	distinct;
+	  ptrlong	no_cycles;
+	  ptrlong	cycles_only;
+	  ptrlong	exists;
+	  ptrlong	no_order;
+	  ptrlong	shortest_only;
+	  ptrlong	direction;
+	} trans;
       } _;
   } sql_tree_t;
 
+
+#define TRANS_ANY 0
+#define TRANS_LR 1
+#define TRANS_RL 2
+#define TRANS_LRRL 3
 
 
 #define SEL_TOP(st) \
@@ -681,6 +736,9 @@ typedef struct sql_tree_s
 #define SEL_IS_DISTINCT(st) \
   (!IS_BOX_POINTER (st->_.select_stmt.top) ? (ptrlong) st->_.select_stmt.top == 1 : st->_.select_stmt.top->_.top.all_distinct)
 
+
+#define SEL_IS_TRANS(st) \
+  (IS_BOX_POINTER (st->_.select_stmt.top) && box_length ((caddr_t)st->_.select_stmt.top) > (long)&((ST*)0)->_.top.trans && st->_.select_stmt.top->_.top.trans)
 
 
 #define SEL_SET_DISTINCT(st, f) \
@@ -830,4 +888,4 @@ extern long sqlp_bin_op_serial;
 #define XR_EXPLICIT 64
 #define XR_ELEMENT 128
 
-#endif /* _SQLPAREXT_H */
+#endif

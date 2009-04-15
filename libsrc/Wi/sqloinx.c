@@ -102,6 +102,8 @@ int
 sqlo_leading_eqs (dbe_key_t * key, dk_set_t col_preds)
 {
   int n = 0;
+  if (key->key_partition)
+    return 0; /* inx int temp disabled for cluster */
   DO_SET(dbe_column_t *, col, &key->key_parts)
     {
       df_elt_t * pred = sqlo_key_part_best (col, col_preds, 0);

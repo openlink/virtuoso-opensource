@@ -136,6 +136,7 @@ long setp_top_row_limit = 10000;
 void
 setp_mem_sort (setp_node_t * setp, caddr_t * qst)
 {
+  QNCAST (query_instance_t, qi, qst);
   caddr_t ** arr = (caddr_t **) qst_get (qst, setp->setp_sorted);
   ptrlong top = unbox (qst_get (qst, setp->setp_top));
   ptrlong skip = setp->setp_top_skip ? unbox (qst_get (qst, setp->setp_top_skip)) : 0;
@@ -143,6 +144,7 @@ setp_mem_sort (setp_node_t * setp, caddr_t * qst)
   ptrlong rc, guess, at_or_above = 0, below = fill;
   int skip_only = (top == -1 && skip >= 0 ? 1 : 0);
 
+  qi->qi_n_affected++;
   if (skip < 0)
     sqlr_new_error ("22023", "SR351", "SKIP parameter < 0");
   if (skip_only)
@@ -250,7 +252,21 @@ setp_node_run (setp_node_t * setp, caddr_t * inst, caddr_t * state, int print_bl
   if (setp->setp_ha->ha_op != HA_GROUP)
     setp_order_row (setp, inst);
   else
+    {
+      dk_set_t vals = setp->setp_const_gb_values;
+      if (vals)
+	{
+	  /* inputs to group by counts etc must be variable ssls.  Set them here if the arg val is a const */
+	  DO_SET (state_slot_t *, arg, &setp->setp_const_gb_args)
+	    {
+	      caddr_t val = ((state_slot_t*)vals->data)->ssl_constant;
+	      qst_set (inst, arg, box_copy_tree (val));
+	      vals = vals->next;
+	    }
+	  END_DO_SET();
+	}
     setp_group_row (setp, inst);
+    }
   return 1;
 }
 
@@ -417,9 +433,13 @@ union_node_input (union_node_t * un, caddr_t * inst, caddr_t * state)
 	}
       qst_set (inst, un->uni_nth_output, box_num (nth + 1));
       qn_record_in_state ((data_source_t *) un, inst, inst);
+      if (un->src_gen.src_local_save)
+	qn_set_local_save ((data_source_t*)un, inst);
       qn_input (((query_t *) out_list->data)->qr_head_node, inst, inst);
-      qr_resume_pending_nodes ((query_t*) out_list->data, inst);
+      if (!un->src_gen.src_query->qr_cl_run_started || CL_RUN_LOCAL == cl_run_local_only)
+	qr_resume_pending_nodes ((query_t*) out_list->data, inst); /* only if not multistate */
       state = NULL;
+      /* now for multistate union, if at full batch - 1 and all nodes have their inputs and have not yet started, flush them all and have the containing subnq then continue */
     }
 }
 
@@ -435,13 +455,14 @@ subq_node_input (subq_source_t * sqs, caddr_t * inst, caddr_t * state)
     {
       if (!state)
 	{
-	  state = qn_get_in_state ((data_source_t *) sqs, inst);
+	  state = SRC_IN_STATE (sqs, inst);
 	  flag = CR_OPEN;
 	  any_passed = 1;
 	}
       else
 	{
 	  subq_init (sqs->sqs_query, state);
+	  SRC_IN_STATE (sqs, inst) = inst;
 	  flag = CR_INITIAL;
 	}
       err = subq_next (sqs->sqs_query, inst, flag);
@@ -450,7 +471,7 @@ subq_node_input (subq_source_t * sqs, caddr_t * inst, caddr_t * state)
 	  && !any_passed && sqs->sqs_is_outer)
 	{
 	  /* no data on first call and outer node. Set to null and continue */
-	  qn_record_in_state ((data_source_t *) sqs, inst, NULL);
+	  SRC_IN_STATE (sqs, inst) = NULL;
 	  DO_BOX (state_slot_t *, out, inx, sqs->sqs_out_slots)
 	  {
 	    qst_set_bin_string (inst, out, (db_buf_t) "", 0, DV_DB_NULL);
@@ -466,7 +487,6 @@ subq_node_input (subq_source_t * sqs, caddr_t * inst, caddr_t * state)
 	  if (!sqs->src_gen.src_after_test
 	      || code_vec_run (sqs->src_gen.src_after_test, inst))
 	    {
-	      qn_record_in_state ((data_source_t *) sqs, inst, inst);
 	      any_passed = 1;
 	      qn_ts_send_output ((data_source_t *) sqs, inst,
 	          sqs->sqs_after_join_test);
@@ -474,9 +494,10 @@ subq_node_input (subq_source_t * sqs, caddr_t * inst, caddr_t * state)
 	}
       else
 	{
-	  qn_record_in_state ((data_source_t *) sqs, inst, NULL);
 	  if (err != (caddr_t) SQL_NO_DATA_FOUND)
 	    sqlr_resignal (err);
+	  /* for anytime timeout, resignal the err while leaving the in state so anytime knows where to reset */
+	  SRC_IN_STATE (sqs, inst) = NULL;
 	  return;
 	}
       state = NULL;
@@ -497,7 +518,7 @@ breakup_node_input (breakup_node_t * brk, caddr_t * inst, caddr_t * state)
 	  inst[brk->brk_current_slot] = (caddr_t) 0;
 	  if (n_total > n_per_set)
 	    SRC_IN_STATE ((data_source_t *) brk, inst) = inst;
-	  if (unbox (qst_get (inst, brk->brk_all_output[n_per_set - 1])))
+	  if (qst_get (inst, brk->brk_all_output[n_per_set - 1]))
 	    qn_send_output ((data_source_t *) brk, inst);
 	  state = NULL;
 	  continue;
@@ -509,7 +530,7 @@ breakup_node_input (breakup_node_t * brk, caddr_t * inst, caddr_t * state)
 	SRC_IN_STATE ((data_source_t*) brk, inst) = NULL;
       if (current == n_total)
 	return;
-      if (unbox (qst_get (inst, brk->brk_all_output[current + n_per_set - 1])))
+      if (qst_get (inst, brk->brk_all_output[current + n_per_set - 1]))
 	{
 	  for (inx = 0; inx < n_per_set; inx++)
 	    {
@@ -546,7 +567,12 @@ in_iter_input (in_iter_node_t * ii, caddr_t * inst, caddr_t * state)
 	    qst_set (inst, ii->ii_outer_any_passed, NULL);
 	  DO_BOX (state_slot_t *, ssl, inx, ii->ii_values)
 	    {
-	      caddr_t val = qst_get (inst, ssl);
+	      caddr_t vals = qst_get (inst, ssl), val;
+	      int is_array = DV_ARRAY_OF_POINTER == DV_TYPE_OF (vals);
+	      int nth, n_vals = is_array ? BOX_ELEMENTS (vals) : 1;
+	      for (nth = 0; nth < n_vals; nth++)
+		{
+		  val = is_array ? ((caddr_t*)vals)[nth] : vals;
 	      DO_SET (caddr_t, member, &members)
 		{
 		  if (DVC_MATCH == cmp_boxes (val, member, ii->ii_output->ssl_sqt.sqt_collation, ii->ii_output->ssl_sqt.sqt_collation))
@@ -556,7 +582,14 @@ in_iter_input (in_iter_node_t * ii, caddr_t * inst, caddr_t * state)
 	      dk_set_push (&members, (void*) box_copy_tree (val));
 	    next: ;
 	    }
+	    }
 	  END_DO_BOX;
+	  if (!members)
+	    {
+	      SRC_IN_STATE (ii, inst) = NULL;
+	      qst_set (inst, ii->ii_values_array, NULL);
+	      return;
+	    }
 	  arr = (caddr_t*)list_to_array (dk_set_nreverse (members));
 	  qst_set (inst, ii->ii_values_array, (caddr_t)arr);
 	  n_total = BOX_ELEMENTS (arr);
@@ -639,5 +672,9 @@ sort_read_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
 }
 
 
+void
+ose_send_rows (outer_seq_end_node_t * ose, caddr_t * inst)
+{
+}
 
 

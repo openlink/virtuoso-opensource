@@ -149,8 +149,10 @@ void ts_set_placeholder (table_source_t * ts, caddr_t * state,
     it_cursor_t *itc, buffer_desc_t ** buf_ret);
 
 void insert_node_input (insert_node_t * ins, caddr_t * inst, caddr_t * state);
+void insert_node_run (insert_node_t * ins, caddr_t * inst, caddr_t * state);
 
 void delete_node_input (delete_node_t * ins, caddr_t * inst, caddr_t * state);
+void del_free (delete_node_t * del);
 
 int box_is_string (char ** box, char * str, int from, int len);
 
@@ -161,14 +163,24 @@ void end_node_input (end_node_t * ins, caddr_t * inst, caddr_t * state);
 void op_node_input (op_node_t * ins, caddr_t * inst, caddr_t * state);
 
 void select_node_input (select_node_t * ins, caddr_t * inst, caddr_t * state);
-
-void select_node_input_subq (select_node_t * sel, caddr_t * inst,
-    caddr_t * state);
+void select_node_input_subq (select_node_t * sel, caddr_t * inst, caddr_t * state);
 void select_node_input_scroll (select_node_t * sel, caddr_t * inst, caddr_t * state);
+void  qf_select_node_input (qf_select_node_t * qfs, caddr_t * inst, caddr_t * state);
 void skip_node_input (skip_node_t * ins, caddr_t * inst, caddr_t * state);
-
+void qfs_free (qf_select_node_t * qfs);
 
 void qn_input (data_source_t * xx, caddr_t * inst, caddr_t * state);
+void qn_restore_local_save (data_source_t * qn, caddr_t * inst);
+void qn_set_local_save (data_source_t * qn, caddr_t * inst);
+void qi_extend_anytime (caddr_t * inst);
+void cli_anytime_timeout (client_connection_t * cli);
+void cli_terminate_in_itc_fail (client_connection_t * cli, it_cursor_t * itc, buffer_desc_t ** buf);
+int err_is_anytime (caddr_t err);
+
+#define QI_CHECK_ANYTIME_RST(qi, reset_code) \
+  if (RST_DEADLOCK == reset_code && (LT_PENDING == qi->qi_trx->lt_status || LT_FREEZE == qi->qi_trx->lt_status)) \
+    { reset_code = RST_ERROR; qi->qi_thread->thr_reset_code = srv_make_new_error (SQL_ANYTIME, "RC...", "Anytime in itc ctx"); }
+
 
 void qn_send_output (data_source_t * src, caddr_t * state);
 
@@ -178,6 +190,7 @@ void qn_ts_send_output (data_source_t * src, caddr_t * state,
 void qr_resume_pending_nodes (query_t * subq, caddr_t * inst);
 caddr_t qi_handle_reset (query_instance_t * qi, int reset);
 void subq_init (query_t * subq, caddr_t * inst);
+void qn_init (table_source_t * ts, caddr_t * inst);
 
 #define QI_BUNION_RESET(qi, qr, is_subq) \
   if (RST_AT_END == reset_code) \
@@ -201,6 +214,11 @@ caddr_t qr_exec (client_connection_t * cli, query_t * qr,
     query_instance_t * caller, caddr_t cr_name, srv_stmt_t * stmt,
     local_cursor_t ** ret, caddr_t * parms, stmt_options_t * opts,
     int named_params);
+
+caddr_t qr_dml_array_exec (client_connection_t * cli, query_t * qr,
+			   query_instance_t * caller, caddr_t cr_name, srv_stmt_t * stmt,
+			   caddr_t ** param_array, stmt_options_t * opts);
+
 
 caddr_t qr_subq_exec (client_connection_t * cli, query_t * qr,
     query_instance_t * caller, caddr_t * auto_qi, int auto_qi_len,
@@ -254,7 +272,7 @@ void ddl_create_primary_key (query_instance_t * cli, char * table, char * key,
     caddr_t * parts, int cluster_on_id, int is_object_id);
 
 void ddl_create_key (query_instance_t * cli, char * table, char * key,
-    caddr_t * parts, int cluster_on_id, int is_object_id, int is_unique, int is_bitmap);
+		     caddr_t * parts, int cluster_on_id, int is_object_id, int is_unique, int is_bitmap, caddr_t * opts);
 
 void ddl_add_col (query_instance_t * cli, const char * table, caddr_t * col);
 
@@ -265,7 +283,13 @@ void ddl_drop_trigger (query_instance_t * qi, const char * name);
 void ddl_store_proc (caddr_t * state, op_node_t * op);
 void ddl_store_method (caddr_t * state, op_node_t * op);
 
-void ddl_build_index (query_instance_t * qi, char * table, char * name);
+void ddl_build_index (query_instance_t * qi, char * table, char * name, caddr_t * repl);
+
+int inx_opt_flag (caddr_t * opts, char *name);
+
+int inx_opt_flag (caddr_t * opts, char *name);
+
+int inx_opt_flag (caddr_t * opts, char *name);
 
 int inx_opt_flag (caddr_t * opts, char *name);
 
@@ -356,9 +380,12 @@ typedef struct server_lock_s
   int		sl_count;
   du_thread_t *	sl_owner;
   dk_set_t	sl_waiting;
+  int		sl_ac_save; /* for atomic mode, save the cli ac flag */
 } server_lock_t;
 
 extern server_lock_t server_lock;
+
+void plh_free (placeholder_t * plh);
 
 caddr_t srv_make_new_error (const char *code, const char *virt_code, const char *msg,...)
 #ifdef __GNUC__
@@ -412,6 +439,7 @@ int lt_close (lock_trx_t * lt, int fcommit);
 
 
 #ifdef CHECK_LT_THREADS
+void log_debug_dummy (char * str, ...);
 int lt_enter_real (lock_trx_t * lt);
 int lt_leave_real (lock_trx_t * lt);
 #define lt_enter(lt) \
@@ -517,6 +545,8 @@ EXE_EXPORT (void, sqlr_resignal, (caddr_t err));
 #define TA_REPORT_BUFFER	1212
 #define TA_REPORT_PTR		1213
 #define TA_REPORT_QST		1214
+#define TA_SQLC_ASG_SET 1215
+#define TA_DBG_STR 1216 
 
 void update_node_input (update_node_t * del, caddr_t * inst, caddr_t * state);
 
@@ -537,12 +567,12 @@ lock_trx_t * cli_set_new_trx (client_connection_t *cli);
 void qr_free (query_t * qr);
 
 void upd_insert_2nd_key (dbe_key_t * key, it_cursor_t * ins_itc,
-			 dbe_key_t * img_key, dtp_t * new_image);
+			 row_delta_t * rd);
 
 int itc_from_sort_temp (it_cursor_t * itc, query_instance_t * qi, state_slot_t * tree);
 int itc_replace_row (it_cursor_t * main_itc, buffer_desc_t * main_buf,
-    db_buf_t image, dbe_key_t * key, caddr_t * state);
-void itc_make_deref_spec (it_cursor_t * itc, db_buf_t row);
+		     row_delta_t * rd, caddr_t * state, int this_key_only);
+void itc_make_deref_spec (it_cursor_t * itc, caddr_t * loc);
 
 #define REPLACE_OK 1
 #define REPLACE_RETRY 0
@@ -554,9 +584,10 @@ caddr_t ddl_col_scale (char *name);
 caddr_t ddl_col_nullable (char *name);
 /* log.c */
 
-void log_insert (lock_trx_t * lt, dbe_key_t * key, db_buf_t row, int flag);
-
-void log_update (lock_trx_t * lt, it_cursor_t * it, db_buf_t page,
+void log_insert (lock_trx_t * lt, row_delta_t * rd, int flag);
+#define LOG_KEY_ONLY 128 /* or to insert flags to mark that the rd's key only is to be remade at replay */
+#define LOG_SYNC 256  /* with non txn insert, log_insert with this flag writes immediately */ 
+void log_update (lock_trx_t * lt, row_delta_t * rd,
     update_node_t * upd, caddr_t * qst);
 
 void log_dd_change (lock_trx_t * lt, char * tb);
@@ -571,6 +602,7 @@ void log_text_array_as_user (user_t * usr, lock_trx_t * lt, caddr_t box);
 int log_text_array_sync (lock_trx_t * lt, caddr_t box);
 
 void log_sequence (lock_trx_t * lt, char * text, boxint count);
+int log_sequence_sync (lock_trx_t * lt, char *text, boxint count);
 void log_sequence_remove (lock_trx_t * lt, char *text);
 void log_registry_set (lock_trx_t * lt, char * k, const char * d);
 
@@ -579,7 +611,6 @@ int log_final_transact(lock_trx_t* lt, int is_commit);
 
 int log_enable_segmented (int rewrite);
 
-void log_rollback (lock_trx_t * lt);
 
 caddr_t log_new_name(char * log_name);
 
@@ -595,6 +626,7 @@ void key_insert_node_input (key_insert_node_t * ins, caddr_t * inst,
 
 void fun_ref_node_input (fun_ref_node_t * fref, caddr_t * inst,
     caddr_t * state);
+void cl_fref_input (fun_ref_node_t * fref, caddr_t * inst, caddr_t * state);
 
 void gs_union_node_input (gs_union_node_t * gsu, caddr_t * inst, caddr_t * state);
 
@@ -607,6 +639,7 @@ caddr_t * qst_copy (caddr_t * qst);
 void qst_free (caddr_t * qst);
 
 void qst_set (caddr_t * state, state_slot_t * sl, caddr_t v);
+void qst_set_over (caddr_t * qst, state_slot_t * ssl, caddr_t v);
 void qst_swap (caddr_t * state, state_slot_t * sl, caddr_t *v);
 extern int qst_swap_or_get_copy (caddr_t * state, state_slot_t * sl, caddr_t *v);
 
@@ -617,7 +650,7 @@ void qst_set_long (caddr_t * state, state_slot_t * sl, boxint lv);
 
 void qst_set_double (caddr_t * state, state_slot_t * sl, double dv);
 
-void qst_set_string (caddr_t * state, state_slot_t * sl, db_buf_t data, size_t len/*, dtp_t dtp*/);
+void qst_set_string (caddr_t * state, state_slot_t * sl, db_buf_t data, size_t len, uint32 flags);
 
 void qst_set_wide_string (caddr_t * state, state_slot_t * sl, db_buf_t data,
     int len, dtp_t dtp, int isUTF8);
@@ -629,7 +662,7 @@ void qst_set_bin_string (caddr_t * state, state_slot_t * sl, db_buf_t data,
 
 void ssl_free_data (state_slot_t * sl, caddr_t data);
 
-void itc_qst_set_column (it_cursor_t * it, dbe_col_loc_t * cl,
+void itc_qst_set_column (it_cursor_t * it, buffer_desc_t * buf, dbe_col_loc_t * cl,
 		    caddr_t * qst, state_slot_t * target);
 
 
@@ -682,6 +715,26 @@ void union_node_input (union_node_t * setp, caddr_t * inst, caddr_t * state);
 
 void subq_node_input (subq_source_t * setp, caddr_t * inst, caddr_t * state);
 void subq_node_free (subq_source_t * sqs);
+void cl_subq_node_input (subq_source_t * sqs, caddr_t * inst, caddr_t * state);
+
+void breakup_node_input (breakup_node_t * brk, caddr_t * inst, caddr_t * state);
+void breakup_node_free (breakup_node_t * brk);
+
+void in_iter_input (in_iter_node_t * brk, caddr_t * inst, caddr_t * state);
+void in_iter_free (in_iter_node_t * brk);
+void sort_read_input (table_source_t * ts, caddr_t * inst, caddr_t * state);
+void  set_ctr_input (set_ctr_node_t * sctr, caddr_t * inst, caddr_t * state);
+void set_ctr_free (set_ctr_node_t * sctr);
+void  outer_seq_end_input (outer_seq_end_node_t * ose, caddr_t * inst, caddr_t * state);
+void ose_free (outer_seq_end_node_t * ose);
+
+void breakup_node_input (breakup_node_t * brk, caddr_t * inst, caddr_t * state);
+void breakup_node_free (breakup_node_t * brk);
+
+void in_iter_input (in_iter_node_t * brk, caddr_t * inst, caddr_t * state);
+void in_iter_free (in_iter_node_t * brk);
+void sort_read_input (table_source_t * ts, caddr_t * inst, caddr_t * state);
+
 
 void breakup_node_input (breakup_node_t * brk, caddr_t * inst, caddr_t * state);
 void breakup_node_free (breakup_node_t * brk);
@@ -702,7 +755,8 @@ void local_start_trx (client_connection_t * cli);
 void local_commit_end_trx (client_connection_t * cli);
 void local_rollback_end_trx (client_connection_t * cli);
 
-caddr_t code_vec_run (code_vec_t code_vec, caddr_t * qst);
+caddr_t code_vec_run_1 (code_vec_t code_vec, caddr_t * qst, int offset);
+#define code_vec_run(c, i) code_vec_run_1 (c, i, 0)
 
 caddr_t code_vec_run_no_catch (code_vec_t code_vec, it_cursor_t *itc);
 
@@ -715,6 +769,8 @@ void client_connection_free (client_connection_t * cli);
 void vdb_enter (query_instance_t * qi);
 void vdb_leave (query_instance_t * qi);
 void vdb_leave_1 (query_instance_t * qi, caddr_t *err_ret);
+void vdb_enter_lt (lock_trx_t * lt);
+void vdb_leave_lt (lock_trx_t * lt, caddr_t *err_ret);
 
 void remote_table_source_input (remote_table_source_t * ts, caddr_t * inst,
     caddr_t * state);
@@ -753,18 +809,23 @@ long bh_get_data_from_http_user (blob_handle_t * bh, client_connection_t * cli,
 long bh_get_data_from_http_user_no_err (blob_handle_t * bh, client_connection_t * cli,
     db_buf_t to, int max_bytes);
 
-int itc_get_alt_key  (it_cursor_t * cr_itc, it_cursor_t * del_itc,
-    buffer_desc_t * cr_buf, buffer_desc_t ** alt_buf_ret, dbe_key_t * alt_key,
-    db_buf_t image);
+int itc_get_alt_key (it_cursor_t * del_itc, buffer_desc_t ** alt_buf_ret,
+		 dbe_key_t * alt_key, row_delta_t * rd);
+
 
 void itc_copy_row (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t copy);
 
 void itc_make_pl (it_cursor_t * itc, buffer_desc_t * buf);
 
 /* update.c */
-void itc_insert_row_params (it_cursor_t * ins_itc, db_buf_t key_image);
 
-void upd_refit_row (it_cursor_t * it, buffer_desc_t ** buf, dtp_t * new_image);
+void rd_inline (query_instance_t * qi, row_delta_t * rd, caddr_t * err_ret, int log_mode);
+void upd_blob_opt (query_instance_t * qi, row_delta_t * rd, caddr_t * err_ret);
+int  box_col_len (caddr_t box);
+void upd_refit_row (it_cursor_t * it, buffer_desc_t ** buf, row_delta_t * rd, int op);
+/* in upd refit row, mark if compressibles changed */
+#define UPD_NO_COMP 1
+#define UPD_COMP_CHANGE 2
 
 int upd_write_cont_header (dk_session_t *ses);
 
@@ -777,11 +838,13 @@ void repl_init (void);
 void repl_serv_init (int make_thr);
 
 /* srvstat.c */
+
+void da_string (db_activity_t * da, char * out, int len);
 void srv_ip (char *ip_addr, size_t max_ip_addr, char *host);
+
+/* recovery.c */
 int db_check (query_instance_t * qi);
-
 int db_backup (query_instance_t * qi, char * file);
-
 void db_recover_key (int k_id, int n_id);
 
 int repl_sync_server (char *server, char *account);
@@ -915,17 +978,6 @@ extern void qi_check_stack (query_instance_t *qi, void *addr, ptrlong margin);
 /* row.c */
 
 
-void row_set_col (db_buf_t row, dbe_col_loc_t * cl, caddr_t data, int * v_fill, int max,
-	     dbe_key_t * key,
-	     caddr_t * err_ret, it_cursor_t * ins_itc, db_buf_t old_blob, caddr_t *qst);
-
-void row_set_col_1 (db_buf_t row, dbe_col_loc_t * cl, caddr_t data, int * v_fill, int max,
-	     dbe_key_t * key,
-	     caddr_t * err_ret, it_cursor_t * ins_itc, db_buf_t old_blob, caddr_t *qst, int allow_shorten_any);
-
-void row_set_col_temp (db_buf_t row, dbe_col_loc_t * cl, caddr_t data, int * v_fill, int max,
-		       dbe_key_t * key, caddr_t * err_ret, it_cursor_t * ins_itc,
-		       db_buf_t old_blob, caddr_t *qst, int allow_shorten_any);
 caddr_t row_set_col_cast (caddr_t data, sql_type_t *tsqt, caddr_t *err_ret,
     oid_t col_id, dbe_key_t *key, caddr_t *qst);
 
@@ -938,6 +990,8 @@ caddr_t box_varchar_string (db_buf_t place, size_t len, dtp_t dtp);
 char * cd_strip_col_name (char *name);
 
 /* sqlsrv.c */
+
+caddr_t n_srv_make_new_error (const char *code, const char *virt_code, size_t buf_len, const char *msg, ...);
 #define GET_EXCLUSIVE 1
 #define GET_ANY 0
 
@@ -960,6 +1014,7 @@ void tailprintf(char *text, size_t len, int *fill, const char *string,...);
 caddr_t * proc_result_col_from_ssl (int inx, state_slot_t *ssl, long type, caddr_t pq, caddr_t po, caddr_t pn);
 
 /*sqlintrp.h */
+void lt_check_error (lock_trx_t * lt);
 caddr_t subq_handle_reset (query_instance_t * qi, int reset);
 
 
@@ -1036,10 +1091,13 @@ caddr_t bif_commit (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 }
 
 void db_replay_registry_setting (caddr_t ent, caddr_t *err_ret);
+dk_session_t * dbs_read_registry (dbe_storage_t * dbs, client_connection_t * cli);
 
 boxint safe_atoi (const char *data, caddr_t *err_ret);
 double safe_atof (const char *data, caddr_t *err_ret);
 caddr_t box_to_any (caddr_t data, caddr_t * err_ret);
+caddr_t box_to_any_1 (caddr_t data, caddr_t * err_ret, auto_pool_t *ap);
+
 caddr_t box_to_shorten_any (caddr_t data, caddr_t * err_ret);
 char* __get_column_name (oid_t col_id, dbe_key_t *key);
 void pl_bif_name_define (const char *name);
@@ -1117,7 +1175,7 @@ extern void bpel_init (void);
 
 extern caddr_t file_stat (const char *fname, int what);
 
-void itc_delete_blobs (it_cursor_t * itc, db_buf_t page);
+void itc_delete_blobs (it_cursor_t * itc, buffer_desc_t * buf);
 
 int qr_proc_repl_check_valid (query_t *qr, caddr_t *err);
 
@@ -1133,8 +1191,8 @@ void ddl_commit_trx (query_instance_t *qi);
 
 /* bitmap.c */
 
-void key_bm_insert (it_cursor_t * itc,
-	       db_buf_t key_image);
+void bm_ends (bitno_t bm_start, db_buf_t bm, int bm_len, bitno_t * start, bitno_t * end);
+void key_bm_insert (it_cursor_t * itc, row_delta_t * rd);
 
 void key_make_bm_specs (dbe_key_t * key);
 int itc_bm_row_check (it_cursor_t * itc, buffer_desc_t * buf);
@@ -1157,6 +1215,42 @@ int itc_bm_count (it_cursor_t * itc, buffer_desc_t * buf);
 void itc_bm_ends (it_cursor_t * itc, buffer_desc_t * buf, bitno_t * start, bitno_t * end, int * is_single);
 int pl_next_bit (placeholder_t * itc, db_buf_t bm, short bm_len, bitno_t bm_start, int is_desc);
 void pl_set_at_bit (placeholder_t * pl, db_buf_t bm, short bm_len, bitno_t bm_start, bitno_t value, int is_desc);
+int bits_count (db_buf_t bits, int n_int32, int count_max);
+
+
+/* sqlcost.h */
+int sample_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data);
+
+void ri_outer_output (rdf_inf_pre_node_t * ri, state_slot_t * any_flag, caddr_t * inst);
+void trans_node_input (trans_node_t * tn, caddr_t * inst, caddr_t * state);
+
+void query_frag_input (query_frag_t * qf, caddr_t * inst, caddr_t * state);
+void query_frag_free (query_frag_t * qf);
+void  code_node_input (code_node_t * cn, caddr_t * inst, caddr_t * state);
+void cn_free (code_node_t * cn);
+
+void trset_printf (const char *str, ...);
+void rdf_core_init (void);
+void sparql_init (void);
+
+query_instance_t * qi_top_qi (query_instance_t * qi);
+void fun_ref_set_defaults_and_counts (fun_ref_node_t *fref, caddr_t * inst, caddr_t * state);
+caddr_t * qi_alloc (query_t * qr, stmt_options_t * opts, caddr_t * auto_qi,
+	  int auto_qi_len);
+
+data_source_t * qn_next (data_source_t * qn);
+void sqlo_tc_init ();
+void sqlo_timeout_text_count ();
+
+void xte_set_qi (caddr_t xte, query_instance_t * qi);
+caddr_t
+xml_deserialize_packed (caddr_t * qst, caddr_t strg);
+
+#if 0
+#define at_printf(a) printf a
+#else
+#define at_printf(a)
+#endif
 
 /* sqlcost.h */
 int sample_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data);
@@ -1165,6 +1259,9 @@ void ri_outer_output (rdf_inf_pre_node_t * ri, state_slot_t * any_flag, caddr_t 
 
 void rdf_core_init (void);
 void sparql_init (void);
+
+int box_position (caddr_t * box, caddr_t elt);
+int box_position_no_tag (caddr_t * box, caddr_t elt);
 
 
 #endif /* _SQLFN_H */

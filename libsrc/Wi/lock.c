@@ -55,14 +55,21 @@ long lock_leaves = 0;
 
 dk_set_t all_trxs = NULL;
 
-#ifdef PAGE_TRACE
-long lt_counter;
-#endif
+uint32 lt_counter; /* 32 bits exact, lower half of trx no 64 bit id, must wrap around */
+uint32 lt_w_counter; /* 32 bits exact, lower half lt_w_id no 64 bit id, must wrap around */
+void
+lt_new_w_id (lock_trx_t * lt)
+{
+}
 
 
 #ifdef VIRTTP
 #include "2pc.h"
 #endif
+
+void 
+log_debug_dummy (char * str, ...)
+{}
 
 void lt_waits_for (lock_trx_t * before, lock_trx_t * after);
 void dt_init ();
@@ -96,6 +103,14 @@ rl_free (row_lock_t * rl)
   dk_free ((caddr_t) rl, sizeof (row_lock_t));
 }
 
+void
+lt_new_trx_no (lock_trx_t * lt)
+{
+  if (lt_counter <= LT_LAST_RESERVED_NO)
+    lt_counter = LT_LAST_RESERVED_NO + 1;
+  lt->lt_trx_no = ((int64)local_cll.cll_this_host) << 32 | lt_counter++;
+}
+
 
 lock_trx_t *
 lt_allocate (void)
@@ -109,19 +124,27 @@ lt_allocate (void)
   dk_mutex_init (&lt->lt_rb_mtx, MUTEX_TYPE_SHORT);
   mutex_option (&lt->lt_rb_mtx, "lt_rb", NULL, NULL);
   hash_table_init (&lt->lt_lock, 59);
+#ifdef MTX_DEBUG
+  lt->lt_lock.ht_required_mtx = &lt->lt_locks_mtx;
+#endif
   lt->lt_rb_hash = hash_table_allocate (101);
   ASSERT_IN_TXN;
   dk_set_push (&all_trxs, (void *) lt);
+  lt_new_trx_no (lt);
+  lt_new_w_id (lt);
   LT_ENTER_SAVE (lt);
 
   return lt;
 }
 
 
+long tc_lt_free;
+
 void
 lt_free (lock_trx_t * lt)
 {
   ASSERT_IN_TXN;
+  TC (tc_lt_free);
 #ifdef MSDTC_DEBUG
   if (lt->lt_in_mts)
     GPF_T1 ("Freeing txn that's in MTS");
@@ -137,6 +160,9 @@ lt_free (lock_trx_t * lt)
   mutex_free (lt->lt_log_mtx);
   dk_mutex_destroy (&lt->lt_locks_mtx);
   dk_mutex_destroy (&lt->lt_rb_mtx);
+#ifdef MTX_DEBUG
+  lt->lt_lock.ht_required_mtx = NULL;
+#endif
   hash_table_destroy (&lt->lt_lock);
   hash_table_free (lt->lt_rb_hash);
   dk_free ((caddr_t) lt, sizeof (lock_trx_t));
@@ -154,10 +180,16 @@ lt_clear (lock_trx_t * lt)
   if (lt->lt_in_mts)
     GPF_T1 ("Clearing txn that's in MTS");
 #endif
-  lt->lt_is_excl = 0;
+  if (lt->lt_client && lt->lt_client->cli_row_autocommit)
+    lt->lt_client->cli_n_to_autocommit = 0;
+  if (lt->lt_lock.ht_count)
+    GPF_T1 ("lt not supposed to have locks in lt_clear");
   strses_flush (lt->lt_log);
   lt->lt_log->dks_bytes_sent = 0;
   clrhash (lt->lt_rb_hash);
+#ifdef MTX_DEBUG
+  lt->lt_lock.ht_required_mtx = NULL;
+#endif
   if (lt->lt_lock.ht_actual_size > 80)
     {
       hash_table_destroy (&lt->lt_lock);
@@ -165,19 +197,20 @@ lt_clear (lock_trx_t * lt)
     }
   else if (lt->lt_lock.ht_count)
     clrhash (&lt->lt_lock);
+#ifdef MTX_DEBUG
+  lt->lt_lock.ht_required_mtx = &lt->lt_locks_mtx;
+#endif
   if (lt->lt_waits_for || lt->lt_waiting_for_this)
     GPF_T1 ("Waits not cleared before trx clear");
 
   dk_free_tree ((caddr_t) lt->lt_replicate);
   blob_log_set_free (lt->lt_blob_log);
+  lt->lt_error = 0;
   LT_ERROR_DETAIL_SET (lt, NULL);
   if (lt->lt_wait_end)
     GPF_T1 ("lt going clear but somebody still waiting for its end");
   memset (&lt->LT_DATA_AREA_FIRST, 0, sizeof (lock_trx_t) - (size_t) &((lock_trx_t*) 0)->LT_DATA_AREA_FIRST);
   LT_ENTER_SAVE (lt);
-#ifdef PAGE_TRACE
-  lt->lt_trx_no = no;
-#endif
   LT_THREADS_REPORT (lt, "LT_CLEAR");
 }
 
@@ -309,10 +342,11 @@ lt_start ()
   lt->lt_status = LT_PENDING;
   CHECK_DK_MEM_RESERVE (lt);
   lt->lt_started = 0;
-#ifdef PAGE_TRACE
-  lt->lt_trx_no = lt_counter++;
+  lt->lt_is_cl_server = 0;
+  lt_new_trx_no (lt);
   DBG_PT_PRINTF (("Allocated T=%ld \n", lt->lt_trx_no));
-#endif
+  if (LT_ID_FREE == lt->lt_w_id || !lt->lt_w_id)
+    lt_new_w_id (lt);
 #ifdef VIRTTP
   lt->lt_2pc._2pc_logged = 0;
   lt->lt_2pc._2pc_info = 0;
@@ -332,6 +366,7 @@ lt_restart (lock_trx_t * lt, int leave_flag)
       lt_wait_checkpoint ();
       lt_threads_set_inner (lt, 1);
     }
+  lt->lt_w_id = 0;
   LEAVE_TXN;
   {
   int excl = lt->lt_is_excl;
@@ -342,7 +377,8 @@ lt_restart (lock_trx_t * lt, int leave_flag)
   const char *	lt_last_increase_file[2];
   int		lt_last_increase_line[2];
 #endif
-  caddr_t repl = (excl || cli->cli_row_autocommit) ? box_copy_tree ((box_t) lt->lt_replicate) : NULL; /* we we'll save the state of replication flag
+    caddr_t repl = (excl || cli->cli_row_autocommit) ? box_copy_tree ((box_t) lt->lt_replicate) : NULL; 
+    /* we we'll save the state of replication flag
 								    when  we're in atomic mode */
 #ifdef VIRTTP
   caddr_t validness = lt->lt_2pc._2pc_prepared;
@@ -354,10 +390,7 @@ lt_restart (lock_trx_t * lt, int leave_flag)
 #endif
   lt_clear (lt);
 
-  lt->lt_client = cli;
-  lt->lt_is_excl = excl;
   lt->lt_started = approx_msec_real_time ();
-
   if (excl || cli->cli_row_autocommit) /* therefore we'll set the saved one */
     lt->lt_replicate = (caddr_t*) repl;
   else
@@ -381,19 +414,17 @@ lt_restart (lock_trx_t * lt, int leave_flag)
        LOG_GET;
        log_info ("LTRS_2 %s %s %s Restart transact %p", user, from, peer, lt);
      }
-#ifdef PAGE_TRACE
-  lt->lt_trx_no = lt_counter++;
-  DBG_PT_PRINTF (("Reallocated T=%ld \n", lt->lt_trx_no));
-#endif
   }
+  IN_TXN;
   if (TRX_CONT == leave_flag || TRX_CONT_LT_LEAVE == leave_flag)
     {
-      IN_TXN;
       lt->lt_status = LT_PENDING;
       lt->lt_error = LTE_OK;
-      if (TRX_CONT_LT_LEAVE == leave_flag)
-	LEAVE_TXN;
     }
+  lt_new_w_id (lt);
+  if (TRX_CONT != leave_flag)
+    LEAVE_TXN;
+  DBG_PT_PRINTF (("Reallocated T=%ld \n", lt->lt_trx_no));
 }
 
 
@@ -424,10 +455,25 @@ void
 lt_done (lock_trx_t * lt)
 {
   ASSERT_IN_TXN;
-#if 0
+  if (lt->lt_waits_for || lt->lt_waiting_for_this || lt->lt_lock.ht_count)
+    GPF_T1 ("lt done called with waiting, waits for or locks in lt");
+#if defined (VALGRIND) || defined (MALLOC_DEBUG)
   lt_free (lt);
 #else
   lt->lt_threads = 0;
+#ifdef MTX_DEBUG
+  {
+    int64 plt = 0;
+    int inx;
+    if (local_cll.cll_id_to_trx)
+      gethash_64 (plt, lt->lt_trx_no, local_cll.cll_id_to_trx);
+    if (plt)
+      GPF_T1 ("lt in id to trx  at lt_done");
+    for (inx = 0; inx < trx_rc->rc_fill; inx++)
+      if (trx_rc->rc_items[inx] == (void*)lt) GPF_T1 ("double lt_done");
+  }
+#endif
+  lt->lt_trx_no = lt->lt_w_id = LT_ID_FREE;
   resource_store (trx_rc, (void *) lt);
 #endif
 }
@@ -511,6 +557,21 @@ lt_commit (lock_trx_t * lt, int free_trx)
   return LTE_OK;
 }
 
+
+int
+lt_commit_cl_local_only (lock_trx_t * lt)
+{
+  /* even if remote branches exist, commit only locally, the branches will do the same */
+  int rc;
+  cl_host_t * branch_of = lt->lt_branch_of;
+  dk_set_t branches = lt->lt_cl_branches;
+  rc = lt_commit (lt, TRX_CONT);
+  lt->lt_cl_branches = branches;
+  lt->lt_branch_of = branch_of;
+  return rc;
+}
+
+
 void
 lt_rollback (lock_trx_t * lt, int free_trx)
 {
@@ -558,15 +619,12 @@ lt_rollback_1 (lock_trx_t * lt, int free_trx)
     log_final_transact(lt,0);
 #endif
 
-  lt->lt_status = LT_CLOSING;
+  lt->lt_status = LT_BLOWN_OFF;
+  LEAVE_TXN;
+  log_cl_final (lt, SQL_ROLLBACK);
+  IN_TXN;
   lt_repl_rollback (lt);
   DBG_PT_ROLLBACK (lt);
-  if (lt->lt_mode == TM_SNAPSHOT)
-    {
-      lt_close_snapshot (lt);
-    }
-  else
-    {
       if (lt->lt_status != LT_DELTA_ROLLED_BACK)
 	{
 	  ASSERT_IN_TXN;
@@ -575,7 +633,6 @@ lt_rollback_1 (lock_trx_t * lt, int free_trx)
 	  lt->lt_close_ack_threads++;
 	  lt_transact (lt, SQL_ROLLBACK);
 	}
-    }
   if (lt_has_locks (lt))
     {
       GPF_T1 ("posthumous lock");
@@ -622,9 +679,10 @@ lt_ack_freeze_inner (lock_trx_t * lt)
   lt->lt_close_ack_threads = 1;
   lt_resume_waiting_end (lt);
   lt_wait_checkpoint();
-  lt->lt_status = LT_PENDING;
   LT_CLOSE_ACK_THREADS(lt);
   lt->lt_close_ack_threads = 0;
+  if (LT_FREEZE == lt->lt_status)
+    lt->lt_status = LT_PENDING;
 }
 
 
@@ -653,6 +711,8 @@ lt_ack_freeze (lock_trx_t * lt, it_cursor_t * itc, buffer_desc_t ** buf_ret)
   IN_TXN;
   lt_ack_freeze_inner (lt);
   LEAVE_TXN;
+  if (LT_PENDING != lt->lt_status)
+    itc_bust_this_trx (itc, NULL, ITC_BUST_THROW);
   if (buf_ret && *buf_ret)
     {
       if (!landed)
@@ -761,7 +821,7 @@ itc_bust_this_trx (it_cursor_t * it, buffer_desc_t ** buf, int may_ret)
 	lt->lt_status = LT_BLOWN_OFF;
 
       thr_set_error_code (THREAD_CURRENT_THREAD, NULL);
-      if (it->itc_key_id != KI_TEMP)
+      if (!it->itc_insert_key || it->itc_insert_key->key_id != KI_TEMP)
         lt_ack_close (lt);
       else
 	{
@@ -774,21 +834,38 @@ itc_bust_this_trx (it_cursor_t * it, buffer_desc_t ** buf, int may_ret)
     }
   else
     {
+      if (lt != wi_inst.wi_cpt_lt)
       lt_ack_freeze (lt, it, buf);
     }
 }
+
+
+void
+lt_rollback_other (lock_trx_t * lt)
+{
+  /* in killing somebody else's txn, must inc threads if no thread inside cause a duplicate kill of same will try waiting for the transact to finish, which presupposes that the finishing lt has a thread inside */
+  int thr = lt->lt_threads;
+  if (!thr)
+    lt->lt_close_ack_threads = lt->lt_threads = 1;
+  lt_transact (lt, SQL_ROLLBACK);
+  if (!thr)
+    lt->lt_threads = 0;
+}
+
+
+#define LT_IS_RUNNING(lt) \
+	(lt->lt_threads > 0 \
+	  && !lt->lt_vdb_threads \
+	  && !lt->lt_lw_threads \
+	  && !lt->lt_close_ack_threads)
+
+#define LT_NO_THREADS(lt) (!(lt)->lt_threads)
+
 
 void
 lt_kill_other_trx (lock_trx_t * lt, it_cursor_t * itc, buffer_desc_t * buf, int may_freeze)
 {
   ASSERT_IN_TXN;
-
-  rdbg_printf (("  Other %s T=%d killed at %ld thr = %d\n",
-	        lt->lt_client ? LT_NAME (lt) : "INTERNAL",
-		TRX_NO (lt),  lt->lt_age, lt->lt_threads));
-  if (lt->lt_mode == TM_SNAPSHOT)
-    GPF_T;
-
   if (itc)
     {
       if (! itc->itc_is_registered)
@@ -797,6 +874,7 @@ lt_kill_other_trx (lock_trx_t * lt, it_cursor_t * itc, buffer_desc_t * buf, int 
     }
   switch (lt->lt_status)
     {
+#if 0 /* former xa 2pc */
     case LT_COMMITTED:
 	if (lt->lt_threads > 0
 	    && !lt->lt_vdb_threads
@@ -811,10 +889,12 @@ lt_kill_other_trx (lock_trx_t * lt, it_cursor_t * itc, buffer_desc_t * buf, int 
 	    lt_2pc_commit (lt);
 	  }
 	break;
+#endif
     case LT_CLOSING:
     case LT_FINAL_COMMIT_PENDING:
       {
 	TC (tc_kill_closing);
+	rdbg_printf ((" host %d:  Kill closing lt %d:%d\n", local_cll.cll_this_host, LT_W_NO (lt)));
 	lt_wait_until_dead (lt);
 	break;
       }
@@ -822,13 +902,15 @@ lt_kill_other_trx (lock_trx_t * lt, it_cursor_t * itc, buffer_desc_t * buf, int 
       {
 	GPF_T1 ("Not supposed to kill rolled back transactions in lt_kill_other_trx");
       }
+    case LT_1PC_PENDING:
+    case LT_2PC_PENDING:
+      GPF_T;
+      lt_wait_until_dead (lt);
+      break;
+    case LT_COMMITTED:
     case LT_PENDING:
     case LT_BLOWN_OFF:
-      ASSERT_IN_TXN;
-      if (lt->lt_threads > 0
-	  && !lt->lt_vdb_threads
-	  && !lt->lt_lw_threads
-	  && !lt->lt_close_ack_threads)
+      if (LT_IS_RUNNING (lt))
 	{
 	  /* the transaction is running, not waiting for locks or vdb io */
 #ifdef VIRTTP
@@ -838,7 +920,7 @@ lt_kill_other_trx (lock_trx_t * lt, it_cursor_t * itc, buffer_desc_t * buf, int 
 	      lt->lt_2pc._2pc_prepared = (caddr_t) TP_PREPARE_CHKPNT;
 	    }
 #endif
-	  rdbg_printf (("lt_kill_other_trx of running lt T=%ld\n", TRX_NO (lt)));
+	  rdbg_printf (("Host %d: Kill of running lt state %d w=%d:%d\n", local_cll.cll_this_host, lt->lt_status, LT_W_NO (lt)));
 	  if (LT_KILL_FREEZE == may_freeze
 	      && LT_PENDING == lt->lt_status)
 	    lt->lt_status = LT_FREEZE;
@@ -850,8 +932,12 @@ lt_kill_other_trx (lock_trx_t * lt, it_cursor_t * itc, buffer_desc_t * buf, int 
         {
 	  if (LT_KILL_ROLLBACK == may_freeze)
 	    {
-	      /* roll back the local delta, leave the vdb and other parts of rollback for later, done on th thread itself */
-	      lt_transact (lt, SQL_ROLLBACK);
+	      /* send cluster rb's and roll back local delta, rest is done when the client next touches the transaction */
+	      rdbg_printf (("Host %d: Kill non-running st=%d lw=%d vd=%d w=%d:%d\n", local_cll.cll_this_host, lt->lt_status, lt->lt_lw_threads, lt->lt_vdb_threads, LT_W_NO (lt)));
+	      /* the rb can cause pending rpcs to return, the trx's thread must not think that it is ok to continue */
+	      lt->lt_status = LT_BLOWN_OFF;
+	      lt_send_rollbacks (lt);
+	      lt_rollback_other (lt);
 	    }
 	  else
 	    {
@@ -860,6 +946,30 @@ lt_kill_other_trx (lock_trx_t * lt, it_cursor_t * itc, buffer_desc_t * buf, int 
 	    }
         }
       break;
+    case LT_CL_PREPARED:
+      ASSERT_IN_TXN;
+      if (LT_IS_RUNNING (lt))
+	{
+	  /* the transaction is running, not waiting for locks or vdb io */
+	  rdbg_printf (("Host %d: Kill running cl prepared w=%d:%\n", local_cll.cll_this_host, LT_W_NO (lt)));
+	  if (LT_KILL_ROLLBACK == may_freeze)
+	    lt->lt_status = LT_BLOWN_OFF;
+	  lt_wait_until_dead (lt);
+	}
+      else
+        {
+	  if (LT_KILL_ROLLBACK == may_freeze)
+	    {
+	      /* send cluster rb's and roll back local delta, rest is done when the client next touches the transaction */
+	      /* the rb can cause pending rpcs to return, the trx's thread must not think that it is ok to continue */
+	      rdbg_printf (("Host %d: Kill non-running cl prepared w=%d:%d\n", local_cll.cll_this_host, LT_W_NO (lt)));
+	      lt->lt_status = LT_BLOWN_OFF;
+	      lt_send_rollbacks (lt);
+	      lt_rollback_other (lt);
+	    }
+        }
+      break;
+
 #ifdef VIRTTP
     case LT_PREPARE_PENDING:
       {
@@ -878,25 +988,47 @@ lt_kill_other_trx (lock_trx_t * lt, it_cursor_t * itc, buffer_desc_t * buf, int 
         }
       break;
 #endif
+    case LT_FREEZE:
+      if (LT_KILL_FREEZE == may_freeze) GPF_T1 ("not supposed to freeze a lt with freeze pending");
+      /* a kill may come when freeze is pending.  If the freeze is not yet ack'ed, change it to bust and wait for the kill. */
+      if (LT_NO_THREADS (lt))
+	GPF_T1 ("lt freeze is not supposed to be in effect if there are no threads in the lt");
+      if (LT_IS_RUNNING (lt))
+	{
+	  lt->lt_status = LT_BLOWN_OFF;
+	  lt_wait_until_dead (lt);
+	}
+      else 
+	{
+	  /* waiting for io or acked the freeze */
+	}
+      break;
+    default: GPF_T1 ("transaction in unknown lt_status in lt_kill_other_trx");
     }
   ASSERT_IN_TXN;
 }
 
 
 void
-lt_killall (lock_trx_t * exc)
+lt_killall (lock_trx_t * exc, int lte)
 {
+  dk_set_t killed = NULL;
+ again:
   DO_SET (lock_trx_t *, lt, &all_trxs)
     {
       ASSERT_IN_TXN;
       if (lt != exc && lt->lt_status == LT_PENDING
-	  && (lt->lt_threads > 0 || lt_has_locks (lt)))
+	  && (lt->lt_threads > 0 || lt_has_locks (lt) || lt->lt_cl_branches)
+	  && !dk_set_member (killed, (void*)lt))
 	{
-	  lt->lt_error = LTE_TIMEOUT;
+	  lt->lt_error = lte;
+	  dk_set_push (&killed, (void*) lt);
 	  lt_kill_other_trx (lt, NULL, NULL, LT_KILL_ROLLBACK);
+	  goto again;
 	}
     }
   END_DO_SET ();
+  dk_set_free (killed);
 }
 
 
@@ -930,13 +1062,6 @@ lock_new_owner_win (gen_lock_t * pl, it_cursor_t * itc, buffer_desc_t * buf,
     }
 #endif
 }
-
-
-/*>>>>>>> 1.60.2.10*/
-typedef struct lock_wait_s {
-  lock_trx_t *	lw_trx;
-  int		lw_mode;
-} lock_wait_t;
 
 
 void
@@ -1158,7 +1283,7 @@ lock_wait (gen_lock_t * pl, it_cursor_t * it, buffer_desc_t * buf,
   if (it->itc_page != it->itc_pl->pl_page)
     GPF_T1 ("different itc_oage and pl_page in lock_wait");
   lt_add_pl (it->itc_ltrx, it->itc_pl, 0);
-
+  lt->lt_wait_since = approx_msec_real_time (); /* first set approx inside the mtxm, then get real time outsid of the mtx */
   if (!pl->pl_waiting)
     {
       pl->pl_waiting = it;
@@ -1181,10 +1306,12 @@ lock_wait (gen_lock_t * pl, it_cursor_t * it, buffer_desc_t * buf,
 		TRX_NO (it->itc_ltrx), it->itc_pl, PL_OWNER_NO (pl), (int) pl->pl_type, it->itc_insert_key->key_name));
   page_leave_outside_map (buf);
   time = get_msec_real_time ();
+  it->itc_ltrx->lt_wait_since = time;
   it->itc_write_waits += 1000;
   FAILCK (it);
   ITC_SEM_WAIT (it);
-
+  if (it->itc_ltrx->lt_lw_threads) 
+    GPF_T1 ("lock wait over or but lw_threads. Wrong party signalled the thr sem.");
   FAILCK (it);
   ITC_MARK_LOCK_WAIT (it, time);
 
@@ -1284,7 +1411,9 @@ lt_clear_pl_wait_ref (lock_trx_t * waiting, gen_lock_t * pl)
 void
 lt_drop_wait (lock_trx_t * before, lock_trx_t * after)
 {
+  int both_pending;
   IN_TXN;
+  both_pending = after->lt_status == LT_PENDING && before->lt_status == LT_PENDING;
   if (1 == after->lt_threads)
     {
       if (1 != after->lt_lw_threads)
@@ -1292,18 +1421,16 @@ lt_drop_wait (lock_trx_t * before, lock_trx_t * after)
       rdbg_printf (("   Non acq wait drop - before T=%ld after T=%ld \n",  TRX_NO (before), TRX_NO (after)));
       if (!dk_set_delete (&before->lt_waiting_for_this, (void*) after))
 	{
-	  /* if (LT_PENDING == before->lt_status && LT_PENDING == after->lt_status)
-	     GPF_T1 ("missing wait edge"); */
-	  log_error ("Missing wait edge between non-pending #1");
-	  if (!wi_inst.wi_is_checkpoint_pending)
+	  log_error ("Missing wait edge between non-pending #1 after status = %d before status = %d",
+		     after->lt_status, before->lt_status);
+	  if (!wi_inst.wi_is_checkpoint_pending && both_pending)
 	    GPF_T1 ("Missing wait edge outside of checkpoint ");
 	}
       if (!dk_set_delete (&after->lt_waits_for, (void*) before))
 	{
-	  /* if (LT_PENDING == before->lt_status && LT_PENDING == after->lt_status)
-	     GPF_T1 ("missing (inconsistent)  wait edge"); */
-	  log_error ("Missing wait edge between non-pending #2");
-	  if (!wi_inst.wi_is_checkpoint_pending)
+	  log_error ("Missing wait edge between non-pending #2 after status = %d before status = %d",
+		     after->lt_status, before->lt_status);
+	  if (!wi_inst.wi_is_checkpoint_pending && both_pending)
 	    GPF_T1 ("Missing wait edge outside of checkpoint ");
 	}
     }
@@ -1443,7 +1570,9 @@ lock_release (gen_lock_t * pl, lock_trx_t * lt)
 	    next = waiting->itc_next_on_lock;
 	    FAILCK (waiting);
 	    rdbg_printf (("released dead trx itc %x T=%ld\n", waiting, TRX_NO (lt)));
+	    IN_TXN;
 	    waiting->itc_ltrx->lt_lw_threads--;
+	    LEAVE_TXN;
 	    semaphore_leave (waiting->itc_thread->thr_sem);
 	    waiting = next;
 	  }
@@ -1455,7 +1584,9 @@ lock_release (gen_lock_t * pl, lock_trx_t * lt)
 	    *prev = waiting->itc_next_on_lock;
 	    next = waiting->itc_next_on_lock;
 	    FAILCK (waiting);
+	    IN_TXN;
 	    waiting->itc_ltrx->lt_lw_threads--;
+	    LEAVE_TXN;
 	    semaphore_leave (waiting->itc_thread->thr_sem);
 	    waiting = next;
 	  }
@@ -1481,13 +1612,15 @@ lock_release (gen_lock_t * pl, lock_trx_t * lt)
 	  if (PL_EXCLUSIVE != PL_TYPE (pl))
 	    {
 	      rdbg_printf (("release non-acq shared itc %lx T=%ld on %ld pos %d is_on_row %d\n",
-			    waiting, TRX_NO (waiting->itc_ltrx), waiting->itc_page, waiting->itc_position, waiting->itc_is_on_row));
+			    waiting, TRX_NO (waiting->itc_ltrx), waiting->itc_page, waiting->itc_map_pos, waiting->itc_is_on_row));
 	      pl->pl_waiting = waiting->itc_next_on_lock;
 	      lt_clear_pl_wait_ref (waiting->itc_ltrx, pl);
 	      lt_clear_non_acq_release_wait (waiting);
 	      prev_released = waiting->itc_ltrx;
 	      waiting->itc_pl = NULL;
+	      IN_TXN;
 	      waiting->itc_ltrx->lt_lw_threads--;
+	      LEAVE_TXN;
 	      semaphore_leave (waiting->itc_thread->thr_sem);
 	    }
 	  else
@@ -1498,13 +1631,15 @@ lock_release (gen_lock_t * pl, lock_trx_t * lt)
 	  if (PL_FREE == PL_TYPE (pl))
 	    {
 	      rdbg_printf (("release non-acq exc itc %lx T=%ld on %ld pos %d is_on_row %d\n",
-			    waiting, TRX_NO (waiting->itc_ltrx), waiting->itc_page, waiting->itc_position, waiting->itc_is_on_row));
+			    waiting, TRX_NO (waiting->itc_ltrx), waiting->itc_page, waiting->itc_map_pos, waiting->itc_is_on_row));
 	      pl->pl_waiting = waiting->itc_next_on_lock;
 	      lt_clear_pl_wait_ref (waiting->itc_ltrx, pl);
 	      lt_clear_non_acq_release_wait (waiting);
 	      prev_released = waiting->itc_ltrx;
 	      waiting->itc_pl = NULL;
+	      IN_TXN;
 	      waiting->itc_ltrx->lt_lw_threads--;
+	      LEAVE_TXN;
 	      semaphore_leave (waiting->itc_thread->thr_sem);
 	    }
 	  else
@@ -1514,10 +1649,12 @@ lock_release (gen_lock_t * pl, lock_trx_t * lt)
 	{
 	  pl->pl_waiting = waiting->itc_next_on_lock;
 	  rdbg_printf (("release owner %x %s T=%ld on %ld pos %d ending T=%ld owner T=%ld \n",
-			waiting, PL_SHARED == waiting->itc_lock_mode ? "S" : "E", TRX_NO (waiting->itc_ltrx), waiting->itc_page, waiting->itc_position,
+			waiting, PL_SHARED == waiting->itc_lock_mode ? "S" : "E", TRX_NO (waiting->itc_ltrx), waiting->itc_page, waiting->itc_map_pos,
 			TRX_NO (lt), TRX_NO (waiting->itc_ltrx)));
 	  prev_released = waiting->itc_ltrx;
+	  IN_TXN;
 	  waiting->itc_ltrx->lt_lw_threads--;
+	  LEAVE_TXN;
 	  semaphore_leave (waiting->itc_thread->thr_sem);
 	  if (PL_EXCLUSIVE == waiting->itc_lock_mode)
 	    break; /* the lock was excl. acquired.  The queued non-acquiring itc's may wait until this owner is done */
@@ -1613,8 +1750,10 @@ pl_release (page_lock_t * pl, lock_trx_t * lt, buffer_desc_t * buf)
 	GPF_T1 ("Can't wait on a free pl");
       if (pl->pl_n_row_locks)
 	GPF_T1 ("can't free pl with row locks");
+      if (pl->pl_owner)
+	GPF_T1 (";lock should not have an owner when it is gettingf freed");
       mutex_enter (&itm->itm_mtx);
-      if (DP_DELETED != pl->pl_page)
+      if (DP_DELETED != pl->pl_page && PL_FINISHING != pl->pl_page)
 	{
 	  if (!remhash (DP_ADDR2VOID (pl->pl_page),
 			&itm->itm_locks))
@@ -1626,10 +1765,22 @@ pl_release (page_lock_t * pl, lock_trx_t * lt, buffer_desc_t * buf)
 
 	  if (buf)
 	    buf->bd_pl = NULL;
-	  pl->pl_page = -2;
+	  pl->pl_page = PL_FINISHING;
 	}
       mutex_leave (&itm->itm_mtx);
+      mutex_enter (pl_ref_count_mtx);
+      pl->pl_finish_ref_count--;
+      if (0 == pl->pl_finish_ref_count)
       pl_free (pl);
+      else 
+	printf (" hold before free of pl L=%d with finish ref count\n", pl->pl_page);
+      mutex_leave (pl_ref_count_mtx);
+    }
+  else
+    {
+      mutex_enter (pl_ref_count_mtx);
+      pl->pl_finish_ref_count--;
+      mutex_leave (pl_ref_count_mtx);
     }
   mutex_leave (it->it_lock_release_mtx);
 }
@@ -1704,7 +1855,39 @@ dk_mutex_t *time_mtx;
 
 unsigned long checkpointed_last_time = 0;
 
+
+
+#ifdef unix
+#define HAVE_GETRUSAGE
+#endif
+
+#ifdef HAVE_GETRUSAGE
+#include <sys/resource.h>
+#endif
+
+
+int last_majflt;
+
+void
+the_grim_swap_guard ()
+{
+#ifdef HAVE_GETRUSAGE
+  struct rusage ru;
+  if (wi_inst.wi_is_checkpoint_pending)
+    return;
+  return;
+  getrusage (RUSAGE_SELF, &ru);
+  if (ru.ru_majflt - last_majflt > 300)
+    GPF_T1 ("started swapping");
+  last_majflt = ru.ru_majflt;
+#endif
+}
+
+
 unsigned long cfg_resources_clear_interval = 0;
+extern uint32 cl_last_wait_query;
+
+uint32 prev_reaper_time;
 
 void
 the_grim_lock_reaper (void)
@@ -1716,10 +1899,19 @@ the_grim_lock_reaper (void)
   long now = approx_msec_real_time ();
   int server_is_idle = 1;
   dt_init ();
+  if (CPT_CHECKPOINT == wi_inst.wi_is_checkpoint_pending)
+    return;
+  if (prev_reaper_time && now - prev_reaper_time > 2900)
+    {
+      /*printf ("lti = %d \n", now - prev_reaper_time);*/
+    }
+  prev_reaper_time = now;
+  the_grim_swap_guard ();
  kill_next_txn:
   IN_TXN;
       DO_SET (lock_trx_t *, lt, &all_trxs)
       {
+      client_connection_t * cli = lt->lt_client;
 	CHECK_DK_MEM_RESERVE (lt);
 	if (lt->lt_started &&
 	    lt->lt_timeout &&
@@ -1733,18 +1925,17 @@ the_grim_lock_reaper (void)
 	  LEAVE_TXN;
 	    goto kill_next_txn;
 	  }
+      if (lt->lt_threads && cli && cli->cli_anytime_timeout && cli->cli_anytime_started 
+	  && now - cli->cli_anytime_started > cli->cli_anytime_timeout
+	  && !cli->cli_terminate_requested)
+	{
+	  cli->cli_terminate_requested = CLI_RESULT;
+	  cli->cli_activity.da_anytime_result = 1;
+	  at_printf (("host %d set anytime flag\n", local_cll.cll_this_host));
+	}
       }
       END_DO_SET ();
   LEAVE_TXN;
-      if (now - last_exec_time > AUTO_FLUSH_DELAY &&
-	  now - last_flush_time > AUTO_FLUSH_DELAY)
-	{
-	  /* if DELAY elapsed sine last stmt executed and
-	     DELAY elapsed since last flushed */
-	  auto_f_count++;
-	  last_flush_time = now;
-	  mt_write_start (auto_f_count % 10 ? OLD_DIRTY : ALL_DIRTY);
-	}
 
   IN_TXN;
       DO_SET (lock_trx_t *, lt, &all_trxs)
@@ -1760,6 +1951,18 @@ the_grim_lock_reaper (void)
 	}
       wi_free_schemas ();
   LEAVE_TXN;
+  if (now - last_exec_time > AUTO_FLUSH_DELAY &&
+      now - last_flush_time > AUTO_FLUSH_DELAY
+      && server_is_idle)
+    {
+      /* if DELAY elapsed since last stmt executed and
+	 DELAY elapsed since last flushed */
+      auto_f_count++;
+      wi_check_all_compact (0);
+      last_flush_time = now;
+      mt_write_start (auto_f_count % 10 ? OLD_DIRTY : ALL_DIRTY);
+    }
+
 
   failed_login_purge ();
 
@@ -1856,8 +2059,14 @@ the_grim_lock_reaper (void)
 	  resources_clear_last_time = (unsigned long int) now;
 	}
     }
+  DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_storage)
+    {
+      dbs_timeout_read_history (dbs);
+    }
+  END_DO_SET();
 /*mapping schema*/
   remove_old_xmlview ();
+  sqlo_timeout_text_count ();
 #ifdef DEBUG
   shuric_validate_refcounters (0);
 #endif

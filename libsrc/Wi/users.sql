@@ -919,7 +919,7 @@ __USER_LOAD_KEY_BY_TYPE (inout key_name varchar, inout key_value any, inout key_
   else if (key_type = 'X.509')
     {
       -- XXX: private key is in certificate
-      xenc_key_create_cert (key_name, cast (key_value as varchar), key_type, fmt, NULL, key_passwd);
+      xenc_key_create_cert (key_name, key_value, key_type, fmt, NULL, key_passwd);
       xenc_set_primary_key (key_name);
     }
   else

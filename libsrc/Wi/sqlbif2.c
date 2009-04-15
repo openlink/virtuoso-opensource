@@ -51,7 +51,7 @@
 #include <grp.h>
 #endif
 
-#ifndef NDEBUG
+#ifndef KEYCOMP
 extern ptrlong itc_dive_transit_call_ctr;
 extern ptrlong itc_try_land_call_ctr;
 
@@ -1388,6 +1388,34 @@ bif_rfc1808_expand_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_copy (res);
 }
 
+static const char *cl_sequence_set_text = 
+" create procedure cl_sequence_set (in _name varchar, in _count int, in _mode int)\n"
+"{\n"
+"if (sys_stat (\'cl_master_host\') = sys_stat (\'cl_this_host\'))\n"
+"{\n"
+"__sequence_set (\'__MAX__\' || _name, 0, 0);\n"
+"__sequence_set (\'__NEXT__\' || _name, _count, _mode);\n"
+"__sequence_set (_name, _count, _mode);\n"
+"}\n"
+"else\n"
+"{\n"
+"__sequence_set (\'__MAX__\' || _name, 0, 0);\n"
+"__sequence_set (_name, 0, _mode);\n"
+"}\n"
+"}\n"
+;
+
+static const char *sequence_set_text = 
+" create procedure sequence_set (in _name varchar, in _count int, in _mode int)\n"
+"{\n"
+"if (sys_stat (\'cl_run_local_only\') or _mode = 2)\n"
+"return __sequence_set (_name, _count, _mode);\n"
+"else\n"
+"cl_exec (\'cl_sequence_set (?, ?, ?)\', vector (_name, _count, _mode), txn => 1);\n"
+"}\n"
+;
+
+
 /*
    __stop_cpt (0,1,2,3)
    for testing cpt recovery only,
@@ -1429,7 +1457,7 @@ sqlbif2_init (void)
 {
   pwnam_mutex = mutex_allocate ();
   mutex_option (pwnam_mutex, "pwnam_mutex", NULL, NULL);
-#ifndef NDEBUG
+#ifndef KEYCOMP
   bif_define_typed ("itc_dive_transit_call_ctr", bif_itc_dive_transit_call_ctr, &bt_integer);
   bif_define_typed ("itc_try_land_call_ctr", bif_itc_try_land_call_ctr, &bt_integer);
 #endif
@@ -1451,10 +1479,20 @@ sqlbif2_init (void)
   bif_define ("rfc1808_expand_uri", bif_rfc1808_expand_uri);
   bif_define_typed ("format_number", bif_format_number, &bt_varchar);
   bif_define ("__stop_cpt", bif_stop_cpt);
+  /*sqls_bif_init ();*/
   sqls_bif_init ();
   sqlo_inv_bif_int ();
 }
 
+void
+sqlbif_sequence_init (void)
+{
+  /* sequence_set bifs */
+  ddl_std_proc_1 (sequence_set_text, 0x1, 1);
+  ddl_std_proc_1 (cl_sequence_set_text, 0x1, 1);
+  pl_bif_name_define ("cl_sequence_set");
+  pl_bif_name_define ("sequence_set");
+}
 
 /* This should stay the last part of the file */
 #define YY_INPUT(buf, res, max) \

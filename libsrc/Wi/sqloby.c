@@ -634,6 +634,39 @@ sqlo_is_group_linear (sqlo_t * so, op_table_t * from_ot)
 }
 
 
+int
+sqlo_early_distinct (sqlo_t * so, op_table_t * ot)
+{
+  /* take the selection.  Strip identity preserving funcs from the exps. Add a distinct node */
+  df_elt_t * dist_dfe;
+  ST ** keys;
+  int inx;
+  ST ** sel;
+  if (!SEL_IS_DISTINCT (ot->ot_dt) || LOC_LOCAL != ot->ot_work_dfe->dfe_locus)
+    return 0;
+
+  sel = (ST**)ot->ot_dt->_.select_stmt.selection;
+  keys = (ST**)t_box_copy ((caddr_t)sel);
+  DO_BOX (ST *, exp, inx, sel)
+    {
+      df_elt_t * exp_dfe;
+      exp = sqlc_strip_as (exp);
+      while (ST_P (exp, CALL_STMT) && sqlo_is_unq_preserving (exp->_.call.name)
+	     && 1 <= BOX_ELEMENTS (exp->_.call.params))
+	exp = exp->_.call.params[0];
+      exp_dfe = sqlo_df (so, exp);
+      keys[inx] = exp;
+      sqlo_place_exp (so, ot->ot_work_dfe, exp_dfe);
+    }
+  END_DO_BOX;
+  dist_dfe = sqlo_new_dfe (so, DFE_GROUP, NULL);
+  dist_dfe->_.setp.specs = keys;
+  dist_dfe->_.setp.is_distinct = DFE_S_DISTINCT;
+  sqlo_place_dfe_after (so, ot->ot_work_dfe->dfe_locus, so->so_gen_pt, dist_dfe);
+  return 1;
+}
+
+
 void
 sqlo_fun_ref_epilogue (sqlo_t * so, op_table_t * from_ot)
 {
@@ -651,11 +684,15 @@ sqlo_fun_ref_epilogue (sqlo_t * so, op_table_t * from_ot)
 
   if (!from_ot->ot_fun_refs && !group_dfe)
     {
+      int is_dist = sqlo_early_distinct (so, from_ot);
       if (sqlo_is_seq_in_oby_order  (so, from_ot->ot_work_dfe->_.sub.first, NULL))
 	return;
       if (!from_ot->ot_oby_dfe || from_ot->ot_oby_dfe->dfe_is_placed)
 	return;
+      if (is_dist)
+	so->so_place_code_forr_cond = 1;
       sqlo_place_oby_specs (so, from_ot, from_ot->ot_oby_dfe->_.setp.specs);
+      so->so_place_code_forr_cond = 0;
       sqlo_place_dfe_after (so, from_ot->ot_work_dfe->dfe_locus, so->so_gen_pt, from_ot->ot_oby_dfe);
       return;
     }
@@ -770,4 +807,51 @@ sqlo_is_postprocess (sqlo_t *so, df_elt_t * dt_dfe, df_elt_t * last_tb_dfe)
     return 0;
 
   return (!sqlo_is_seq_in_oby_order (so, dt_dfe->_.sub.first, NULL)) ? 1 :0;
+}
+
+void
+sqlo_exp_cols_from_dt (sqlo_t * so, ST * tree, df_elt_t * dt_dfe, dk_set_t * ret)
+{
+  /* traverse exp and return all cols that exp depends on which are defined in dt_dfe */
+  int inx;
+  if (ST_P (tree, COL_DOTTED))
+    {
+      df_elt_t * pt, *col_dfe = sqlo_df (so, tree);
+      for (pt = dt_dfe->_.sub.last; pt; pt = pt->dfe_prev)
+	if (dfe_defines (pt, col_dfe))
+	  break;
+      if (pt)
+	t_set_pushnew (ret, col_dfe);
+    }
+  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
+    return;
+  DO_BOX (ST*, x, inx, (ST**)tree)
+    {
+      sqlo_exp_cols_from_dt (so, x, dt_dfe, ret);
+    }
+  END_DO_BOX;
+}
+
+
+void
+sqlo_post_oby_ref (sqlo_t * so, df_elt_t * dt_dfe, df_elt_t * sel_dfe, int inx)
+{
+  /* if exps laid out after oby, add the cols refd therein to oby deps */
+  dk_set_t deps = NULL;
+  df_elt_t * oby_dfe = dt_dfe->_.sub.last;
+  while (oby_dfe)
+    {
+      if (DFE_ORDER == oby_dfe->dfe_type)
+	break;
+      oby_dfe = oby_dfe->dfe_prev;
+    }
+  if (!oby_dfe)
+    return;
+  sqlo_exp_cols_from_dt (so, sel_dfe->dfe_tree, dt_dfe, &deps);
+  if (!oby_dfe->_.setp.oby_dep_cols)
+    {
+      oby_dfe->_.setp.oby_dep_cols = (dk_set_t*)t_box_copy ((caddr_t)dt_dfe->_.sub.dt_out);
+      memset (oby_dfe->_.setp.oby_dep_cols, 0, box_length ((caddr_t)oby_dfe->_.setp.oby_dep_cols));
+    }
+  oby_dfe->_.setp.oby_dep_cols[inx] = deps;
 }

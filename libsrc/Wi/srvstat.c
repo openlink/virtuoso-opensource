@@ -74,12 +74,29 @@ long  tc_split_2nd_read;
 long  tc_read_wait;
 long  tc_write_wait;
 long tc_dive_would_deadlock;
+long tc_cl_deadlocks;
+long tc_cl_wait_queries;
+long tc_cl_kill_1pc;
+long tc_cl_kill_2pc;
+long tc_atomic_wait_2pc;
+long tc_cl_alt_interface;
+long tc_anytime_early_flush;
+long tc_cl_keep_alives;
+long tc_cl_branch_wanted_queries;
+long tc_cl_branch_missed_rb;
+long tc_cl_keep_alive_timeouts;
+long tc_cl_commit_resend;
+long tc_dfg_coord_pause;
+long tc_dfg_more;
+
+
+
+long tc_page_fill_hash_overflow;
 long tc_key_sample_reset;
 long tc_pl_moved_in_reentry;
 long tc_enter_transiting_bm_inx;
 extern long tc_aio_seq_read;
 extern long tc_aio_seq_write;
-extern long cfg_disable_vdb_stat_refresh;
 
 long tc_read_absent_while_finalize;
 long tc_fix_outdated_leaf_ptr;
@@ -132,6 +149,8 @@ long  tc_read_wait_while_ra_finding_buf;
 long  tc_pg_write_compact;
 
 
+extern long read_block_usec;
+extern long write_block_usec;
 extern long tc_initial_while_closing;
 extern long tc_initial_while_closing_died ;
 extern long tc_client_dropped_connection ;
@@ -154,7 +173,14 @@ extern long tc_dp_set_parent_being_read;
 extern long tc_reentry_split;
 extern long tc_kill_closing;
 extern long tc_get_buf_failed;
-
+extern long tc_unused_read_aside;
+extern long tc_read_aside;
+extern int em_ra_window;
+extern int em_ra_threshold;
+extern int enable_dfg;
+extern int enable_min_card;
+extern int enable_dfg_print;
+extern int enable_distinct_sas;
 
 long  tft_random_seek;
 long  tft_seq_seek;
@@ -204,7 +230,23 @@ long vt_batch_size_limit = 1000000L;
 
 /* flags for simulated exceptions */
 long dbf_no_disk = 0;
-
+long dbf_log_no_disk;
+long dbf_2pc_prepare_wait; /* wait this many msec between prepare and commit */
+long dbf_branch_transact_wait; /* wait this many msec onn cluster branch before doing rollback, prepare or commit */
+long dbf_clop_enter_wait;
+long dbf_cl_skip_wait_notify;
+long dbf_cpt_rb;
+long dbf_cl_blob_autosend_limit = 2000000;
+long dbf_no_sample_timeout = 0;
+extern int enable_hash_join;
+extern int32 c_cluster_threads;
+extern int32 cl_msg_drop_rate;
+extern int32 cl_con_drop_rate;
+extern int32 cl_keep_alive_interval;
+extern int32 cl_max_keep_alives_missed;
+extern int32 cl_non_logged_write_mode;
+extern int32 cl_dead_w_interval;
+extern int32 cl_stage;
 
 void trset_start (caddr_t * qst);
 void trset_printf (const char *str, ...);
@@ -526,6 +568,21 @@ long isp_r_new;
 long isp_r_delta;
 
 
+void
+isp_rep_map_fn (void *key, void *value)
+{
+#ifndef O12
+  dp_addr_t from = (dp_addr_t) key;
+  dp_addr_t to = (dp_addr_t) value;
+
+  if (from == to)
+    isp_r_new++;
+  else
+    isp_r_delta++;
+#endif
+}
+
+
 #define PRINT_MAX_LOCKS 1000
 
 
@@ -543,6 +600,7 @@ trx_status_report (lock_trx_t * lt)
       if (lt->lt_status == LT_PENDING)
 	{
 	  rep_printf ("Locks: ");
+	  IN_LT_LOCKS (lt);
 	  DO_HT (page_lock_t *, pl, void *, ign, &lt->lt_lock)
 	  {
 	    it_cursor_t *waiting = pl->pl_waiting;
@@ -570,6 +628,7 @@ trx_status_report (lock_trx_t * lt)
 	      }
 	  }
 	  END_DO_HT;
+	  LEAVE_LT_LOCKS (lt);
 	  rep_printf ("\n");
 	}
     }
@@ -744,7 +803,11 @@ lt_wait_status (void)
     {
       if (lt->lt_waits_for || lt->lt_waiting_for_this)
 	{
-	  rep_printf ("Trx %s s=%d %x: w. for: ", lt_short_name (lt), lt->lt_status, lt);
+	  char since[40];
+	  since[0] = 0;
+	  if (lt->lt_waits_for)
+	    snprintf (since, sizeof (since), "for %ld ms ", (long)(get_msec_real_time () - lt->lt_wait_since));
+	  rep_printf ("Trx %s s=%d %x: %s w. for: ", lt_short_name (lt), lt->lt_status, lt, since);
 	  DO_SET (lock_trx_t *, w, &lt->lt_waits_for)
 	    {
 	      rep_printf (" %s ", lt_short_name (w));
@@ -761,6 +824,13 @@ lt_wait_status (void)
     }
  END_DO_SET();
 }
+
+
+void
+cl_lt_wait_status (void)
+{
+}
+
 
 void
 srv_lock_report (const char * mode)
@@ -807,6 +877,7 @@ srv_lock_report (const char * mode)
 	}
       END_DO_SET();
       lt_wait_status ();
+      cl_lt_wait_status ();
 
     }
     LEAVE_TXN;
@@ -931,7 +1002,8 @@ st_collect_ps_info (dk_set_t * arr)
 	      id_hash_iterator_t it;
 	      srv_stmt_t **stmt;
 	      caddr_t *text;
-	      IN_CLIENT (cli);
+	      if (mutex_try_enter (cli->cli_mtx))
+		{
 	      id_hash_iterator (&it, cli->cli_statements);
 	      while (hit_next (&it, (char **) & text, (char **) & stmt))
 		{
@@ -943,6 +1015,13 @@ st_collect_ps_info (dk_set_t * arr)
 		    }
 		}
 	      LEAVE_CLIENT (cli);
+	    }
+	      else 
+		{
+		  dk_set_push (arr, box_string (" client not available, pending compile, time shown is since last exec"));
+		  dk_set_push (arr, box_num (time_now - (*stmt)->sst_start_msec));
+		}
+
 	    }
 	}
     }
@@ -971,16 +1050,26 @@ char *product_version_string ()
 }
 
 void
-status_report (const char * mode)
+status_report (const char * mode, query_instance_t * qi)
 {
   dk_set_t clients;
+  int gen_info = 1, cl_mode = CLST_SUMMARY;
+  if (!stricmp (mode, "cluster_d"))
+    {
+      gen_info = 0;
+      cl_mode = CLST_DETAILS;
+    }
+  else   if (!stricmp (mode, "cluster"))
+    gen_info = 0;
 
   ASSERT_OUTSIDE_TXN;
 
+  if (gen_info)
+    {
   rep_printf ("%s%.500s Server\n", PRODUCT_DBMS, build_special_server_model);
   rep_printf ("Version " DBMS_SRV_VER "%s for %s as of %s \n",
       build_thread_model, build_opsys_id, build_date);
-
+    }
   if (!st_started_since_year)
     {
       char dt[DT_LENGTH];
@@ -995,12 +1084,16 @@ status_report (const char * mode)
       st_started_since_minute = ts.minute;
     }
 
+  if (gen_info)
+    {
   rep_printf ("Started on: %04d/%02d/%02d %02d:%02d GMT%+03d\n", 
       st_started_since_year, st_started_since_month, st_started_since_day, 
       st_started_since_hour, st_started_since_minute, dt_local_tz);
+    }
+  if (!gen_info)
+    return;
   if (lite_mode)
     rep_printf ("Lite Mode\n");
-
   process_status_report ();
   dbms_status_report ();
   st_chkp_mapback_pages = 0 /* cpt_count_mapped_back () */;
@@ -1060,7 +1153,7 @@ bif_status (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (!cli_ws)
     {*/
       trset_start (qst);
-      status_report (mode);
+      status_report (mode, (query_instance_t *) qst);
       trset_end ();
 /*    }*/
 
@@ -1090,6 +1183,10 @@ static long st_has_vdb =
 char st_os_user_name[512];
 static char *_st_os_user_name = &st_os_user_name[0];
 static long oneL = 1;
+
+
+#define SD_INT32 ((char *)-1)
+#define SD_INT64 ((char *)-2)
 
 
 stat_desc_t stat_descs [] =
@@ -1124,17 +1221,36 @@ stat_desc_t stat_descs [] =
     {"tc_read_wait_decoy", &tc_read_wait_decoy, NULL},
     {"tc_read_wait",  &tc_read_wait, NULL},
     {"tc_write_wait",  &tc_write_wait, NULL},
+    {"tc_cl_deadlocks", &tc_cl_deadlocks},
+    {"tc_cl_wait_queries", &tc_cl_wait_queries},
+    {"tc_cl_keep_alives", &tc_cl_keep_alives},
+    {"tc_cl_branch_wanted_queries", &tc_cl_branch_wanted_queries},
+    {"tc_cl_branch_missed_rb", &tc_cl_branch_missed_rb},
+    {"tc_cl_keep_alive_timeouts", &tc_cl_keep_alive_timeouts},
+    {"tc_cl_commit_resend", &tc_cl_commit_resend},
+    {"tc_dfg_coord_pause", &tc_dfg_coord_pause},
+    {"tc_dfg_more", &tc_dfg_more},
+
+    {"tc_cl_kill_1pc", &tc_cl_kill_1pc},
+    {"tc_cl_kill_2pc", &tc_cl_kill_2pc},
+    {"tc_atomic_wait_2pc", &tc_atomic_wait_2pc},
+    {"tc_cl_alt_interface", &tc_cl_alt_interface},
+    {"tc_anytime_early_flush", &tc_anytime_early_flush},
+    {"read_block_usec", &read_block_usec},
+    {"write_block_usec", &write_block_usec},
     {"tc_dive_would_deadlock", &tc_dive_would_deadlock},
+    {"tc_get_buffer_while_stat", &tc_get_buffer_while_stat},
+    {"tc_bp_wait_flush", &tc_bp_wait_flush},
+    {"tc_page_fill_hash_overflow", &tc_page_fill_hash_overflow},
+    {"tc_autocompact_split", &tc_autocompact_split},
     {"tc_key_sample_reset", &tc_key_sample_reset},
     {"tc_pl_moved_in_reentry", &tc_pl_moved_in_reentry},
     {"tc_enter_transiting_bm_inx", &tc_enter_transiting_bm_inx},
-    {"cl_run_local_only", &oneL},
     {"tc_aio_seq_write", &tc_aio_seq_write},
     {"tc_aio_seq_read", &tc_aio_seq_read},
     {"tc_read_absent_while_finalize", &tc_read_absent_while_finalize},
     {"tc_fix_outdated_leaf_ptr", &tc_fix_outdated_leaf_ptr},
     {"tc_bm_split_left_separate_but_no_split", &tc_bm_split_left_separate_but_no_split},
-    {"tc_aq_from_queue", &tc_aq_from_queue},
     {"tc_aq_sleep", &tc_aq_sleep},
     {"tc_root_image_miss", &tc_root_image_miss},
     {"tc_root_image_ref_deleted", &tc_root_image_ref_deleted},
@@ -1151,6 +1267,9 @@ stat_desc_t stat_descs [] =
     {"tc_bp_get_buffer", &tc_bp_get_buffer },
 
     {"tc_bp_get_buffer_loop", &tc_bp_get_buffer_loop },
+
+    {"tc_unused_read_aside", &tc_unused_read_aside},
+    {"tc_read_aside", &tc_read_aside},
     {"tc_first_free_replace", &tc_first_free_replace },
     {"tc_hi_lock_new_lock", &tc_hi_lock_new_lock },
     {"tc_hi_lock_old_dp_no_lock", &tc_hi_lock_old_dp_no_lock },
@@ -1330,6 +1449,16 @@ stat_desc_t stat_descs [] =
     {"__internal_first_id", &first_id, NULL},
     {"st_os_fd_setsize", &my_fd_setsize, NULL},
     {"st_case_mode", &my_case_mode, NULL},
+    {"cl_run_local_only", &cl_run_local_only, SD_INT32},
+    {"cluster_enable", &cluster_enable, SD_INT32},
+    {"cl_master_host", &local_cll.cll_master_host, SD_INT32},
+    {"cl_max_host", &local_cll.cll_max_host, SD_INT32},
+    {"cl_stage", &cl_stage, SD_INT32},
+    {"cl_this_host", &local_cll.cll_this_host, SD_INT32},
+    {"cl_n_hosts", &cl_n_hosts, SD_INT32},
+    {"cl_cum_messages", &cl_cum_messages, SD_INT64},
+    {"cl_cum_bytes", &cl_cum_bytes, SD_INT64},
+    {"db_exists", &db_exists, SD_INT32},
     {"st_lite_mode", &my_lite_mode, NULL},
 
     /* backup vars */
@@ -1350,6 +1479,33 @@ stat_desc_t stat_descs [] =
 stat_desc_t dbf_descs [] = 
   {
     {"dbf_no_disk", &dbf_no_disk},
+    {"dbf_2pc_prepare_wait", &dbf_2pc_prepare_wait},
+    {"dbf_branch_transact_wait", &dbf_branch_transact_wait},
+    {"dbf_log_no_disk", &dbf_log_no_disk},
+    {"dbf_clop_enter_wait", &dbf_clop_enter_wait},
+    {"dbf_cl_skip_wait_notify", &dbf_cl_skip_wait_notify},
+    {"dbf_cpt_rb", &dbf_cpt_rb},
+    {"dbf_cl_blob_autosend_limit", &dbf_cl_blob_autosend_limit},
+    {"dbf_no_sample_timeout", &dbf_no_sample_timeout},
+    {"cl_req_batch_size", &cl_req_batch_size, SD_INT32},
+    {"cl_dfg_batch_bytes", &cl_dfg_batch_bytes, SD_INT32},
+    {"cl_res_buffer_bytes", &cl_res_buffer_bytes, SD_INT32},
+    {"cl_batches_per_rpc", &cl_batches_per_rpc, SD_INT32},
+    {"enable_dfg", &enable_dfg, SD_INT32},
+    {"enable_dfg_print", &enable_dfg_print, SD_INT32},
+    {"enable_min_card", &enable_min_card},
+    {"enable_distinct_sas", &enable_distinct_sas, SD_INT32},
+    {"hash_join_enable", &hash_join_enable, SD_INT32},
+    {"em_ra_window", &em_ra_window, SD_INT32},
+    {"em_ra_threshold", &em_ra_threshold, SD_INT32},
+    {"cl_wait_query_delay", &cl_wait_query_delay, SD_INT32},
+    {"c_cluster_threads", &c_cluster_threads, SD_INT32},
+    {"cl_msg_drop_rate", &cl_msg_drop_rate, SD_INT32},
+    {"cl_con_drop_rate", &cl_con_drop_rate, SD_INT32},
+    {"cl_keep_alive_interval", &cl_keep_alive_interval, SD_INT32},
+    {"cl_max_keep_alives_missed", &cl_max_keep_alives_missed, SD_INT32},
+    {"cl_non_logged_write_mode", &cl_non_logged_write_mode},
+    {"cl_dead_w_interval", &cl_dead_w_interval, SD_INT32},
     {NULL, NULL, NULL}
   };
 
@@ -1381,7 +1537,11 @@ bif_sys_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       if (0 == strcmp (sd->sd_name, name))
 	{
-	  if (sd->sd_value)
+	  if (SD_INT32 == (char *) sd->sd_str_value)
+	    return box_num (*(int32*)sd->sd_value);
+	  if (SD_INT64 == (char *) sd->sd_str_value)
+	    return box_num (*(int64*)sd->sd_value);
+	  else if (sd->sd_value)
 	    return (box_num (*(sd->sd_value)));
 	  else if (sd->sd_str_value)
 	    return (box_dv_short_string (*(sd->sd_str_value)));
@@ -1405,6 +1565,12 @@ bif_dbf_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       if (0 == strcmp (sd->sd_name, name))
 	{
+	  if (SD_INT32 == (char *) sd->sd_str_value)
+	    {
+	      int32 ov = *((int32*)sd->sd_value);
+	      *((int32*)sd->sd_value) = v;
+	      return (box_num (ov));
+	    }
 	  if (sd->sd_value)
 	    {
 	      long ov = *(sd->sd_value);
@@ -1481,6 +1647,32 @@ bif_identify_self (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
+int32 
+key_n_buffers (dbe_key_t * key, int dirty)
+{
+  int ct = 0, inx, inx2;
+  for (inx = 0; inx < wi_inst.wi_n_bps; inx++)
+    {
+      buffer_pool_t * bp = wi_inst.wi_bps[inx];
+      for (inx2 = 0; inx2 < bp->bp_n_bufs; inx2++)
+	{
+	  buffer_desc_t * buf = &bp->bp_bufs[inx2];
+	  if (buf->bd_tree && buf->bd_tree->it_key == key
+	      && (!dirty || !buf->bd_is_dirty))
+	    ct++;
+	}
+    }
+  return ct;
+}
+
+
+caddr_t 
+key_page_list (dbe_key_t * key)
+{
+  return em_page_list (key->key_fragments[0]->kf_it->it_extent_map, EXT_INDEX);
+}
+
+
 caddr_t
 bif_key_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -1503,6 +1695,11 @@ bif_key_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    return (box_num (key->key_read));
 	  if (0 == strcmp (stat_name, "lock_set"))
 	    return (box_num (key->key_lock_set));
+	  if (0 == strcmp (stat_name, "n_buffers"))
+	    return box_num (key_n_buffers (key, 0));
+	  if (0 == strcmp (stat_name, "page_list"))
+	    return key_page_list (key);
+
 	  if (0 == strcmp (stat_name, "write_wait"))
 	    return (box_num (key->key_write_wait - key->key_landing_wait - key->key_pl_wait));
 	  /* landing waits and pl waits are also counted in write waits, so subtract here */
@@ -1528,9 +1725,11 @@ bif_key_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  if (0 == strcmp (stat_name, "page_end_inserts"))
 	    return (box_num (key->key_page_end_inserts));
 	  if (0 == strcmp (stat_name, "n_dirty"))
-	    return (box_num (key->key_n_dirty));
+	    return box_num (key_n_buffers (key, 1));
+
 	  if (0 == strcmp (stat_name, "n_new"))
-	    return (box_num (key->key_n_new));
+	    return (box_num (0));
+
 	  if (0 == strcmp (stat_name, "n_pages"))
 	    return (box_num (it_remap_count (key->key_fragments[0]->kf_it)));
 	  if (0 == strcmp (stat_name, "n_rows"))
@@ -1539,8 +1738,28 @@ bif_key_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    {
 	      return box_num (tb->tb_count_estimate + tb->tb_count_delta);
 	    }
-
-
+	  if (0 == strcmp (stat_name, "reset"))
+	    {
+	      key->key_touch = 0;
+	      key->key_read = 0;
+	      key->key_lock_wait = 0;
+	      key->key_lock_wait_time = 0;
+	      key->key_deadlocks = 0;
+	      key->key_lock_set = 0;
+	      key->key_lock_escalations = 0;
+	      key->key_page_end_inserts = 0;
+	      key->key_write_wait = 0;
+	      key->key_read_wait = 0;
+	      key->key_landing_wait = 0;
+	      key->key_pl_wait = 0;
+	      key->key_last_page = 0;
+	      key->key_is_last_right_edge = 0;
+	      key->key_n_last_page_hits = 0;
+	      key->key_total_last_page_hits = 0;
+	      key->key_n_landings = 0;
+	      key->key_table->tb_count_estimate = DBE_NO_STAT_DATA;
+	      return NULL;
+	    }
 	  sqlr_new_error ("22023", "SR244",
 	      "Allowed stat names are touches, reads, lock_set, lock_waits, deadlocks, lock_wait_time, lock_escalations, n_dirty, n_new, n_pages, n_est_rows, n_rows.");
 	}
@@ -2298,116 +2517,179 @@ printf_dv (db_buf_t dv, FILE * out)
 
 
 void
-row_map_fprint (FILE * out, db_buf_t row, dbe_key_t * key)
+col_comp_print (FILE * out, dbe_key_t * key, db_buf_t row, dbe_col_loc_t * cl)
 {
-  int c;
-  db_buf_t row_key = row;
-  key_id_t key_id = SHORT_REF (row_key + IE_KEY_ID);
-  dbe_col_loc_t * cl;
-  int inx = 0, off, len;
-  len = row_length (row, key);
-  if (key_id)
-    row += 4;
-  else
-    row += 8;
-  /*fprintf (out, "  %db: k %d: ", len, (int)key_id);*/
-  if (KI_LEFT_DUMMY == key_id)
+  row_ver_t rv = IE_ROW_VERSION (row);
+  key_ver_t kv = IE_KEY_VERSION (row);
+  int off, len;
+  if (rv & cl->cl_row_version_mask)
     {
-      fprintf (out, "<left dummy> --> %d \n", (int)LONG_REF (row_key + IE_LEAF));
+      unsigned short ref = SHORT_REF (row + cl->cl_pos[rv]);
+      fprintf (out, "[R%d:%d]", (uint32)ref & ROW_NO_MASK, (uint32) ref >> COL_OFFSET_SHIFT);
+    }
+  else if (!dtp_is_fixed (cl->cl_sqt.sqt_dtp))
+    {
+      short pos = cl->cl_pos[rv];
+      if (CL_FIRST_VAR == pos)
+	{
+	  off = kv ? key->key_row_var_start[rv] : key->key_key_var_start[rv];
+	  len = SHORT_REF (row + key->key_length_area[rv]);
+	  len -= off;
+	}
+      else 
+	{
+	  off = COL_VAR_LEN_MASK & SHORT_REF (row - pos);
+	  len = SHORT_REF (row + 2 - pos) - off;
+	}
+      if (len & COL_VAR_SUFFIX)
+	{
+	  unsigned short ref = SHORT_REF_NA (row + off);
+	  dtp_t extra = 15 == (ref >> COL_OFFSET_SHIFT) ? row[off + 2] : 0;
+	  fprintf (out, "[P%d:%d]", (uint32)ROW_NO_MASK & ref, extra ? extra : (uint32)ref >> COL_OFFSET_SHIFT);
+	}
+    }
+}
+
+
+int max_dump_str = 30;
+#define RMAX max_dump_str
+
+void
+row_map_fprint (FILE * out, buffer_desc_t * buf, db_buf_t row, dbe_key_t * key)
+{
+  unsigned short offset;
+  db_buf_t xx, xx2;
+  unsigned short vl1, vl2;
+  int c;
+  key_ver_t kv = IE_KEY_VERSION (row);
+  row_ver_t rv = IE_ROW_VERSION (row);
+  int32 n32;
+  int64 n64;
+  dbe_col_loc_t * cl;
+  int inx = 0, len;
+  len = row_length (row, key);
+  if (KV_LEFT_DUMMY == kv)
+    {
+      fprintf (out, "<left dummy> --> %d \n", (int)LONG_REF (row + LD_LEAF));
       return;
     }
   DO_SET (dbe_column_t *, col, &key->key_parts)
     {
-      if (!key_id && ++inx > key->key_n_significant)
+      if (!kv && ++inx > key->key_n_significant)
 	break;
       cl = key_find_cl (key, col->col_id);
-      if (cl->cl_null_mask && row[cl->cl_null_flag] & cl->cl_null_mask)
+      if (cl->cl_null_mask[rv] && row[cl->cl_null_flag[rv]] & cl->cl_null_mask[rv])
 	{
 	  fprintf (out, "NULL");
 	  goto next;
 	}
-      if (!key_id)
-	{
-	  len = cl->cl_fixed_len;
-	  if (len > 0) \
-	    { \
-		off = cl->cl_pos;
-	    }
-	  else if (CL_FIRST_VAR == len)
+      if (dtp_is_fixed (cl->cl_sqt.sqt_dtp))
 	    {
-	      off = key->key_key_var_start;
-	      len = SHORT_REF (row + key->key_length_area) - off;
-	    }
-	  else
-	    {
-	      len = -len;
-	      off = SHORT_REF (row + len);
-	      len = SHORT_REF (row + len + 2) - off;
-	    }
+	  ROW_FIXED_COL (buf, row, rv, (*cl), xx);
 	}
       else
 	{
-	  KEY_COL (key, row, (*cl), off, len);
+	  ROW_STR_COL (key, buf, row, cl, xx, vl1, xx2, vl2, offset);
 	}
       switch (cl->cl_sqt.sqt_dtp)
 	{
 	case DV_SHORT_INT:
-	  fprintf (out, " %d", SHORT_REF (row + off));
+	  fprintf (out, " %d", SHORT_REF (xx));
 	  break;
 	case DV_IRI_ID:
           {
-            iri_id_t iid = ((unsigned int32) LONG_REF (row + off));
+            iri_id_t iid;
+	    ROW_INT_COL (buf, row, rv, (*cl), LONG_REF, iid);
+
             if (iid >= MIN_64BIT_BNODE_IRI_ID)
 	      fprintf (out, " #ib" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
             else
 	      fprintf (out, " #i" BOXINT_FMT, (boxint)(iid));
+	    col_comp_print (out, key, row, cl);
 	  break;
           }
 	case DV_LONG_INT:
-	  fprintf (out, " %d", (int) LONG_REF (row + off));
+	  ROW_INT_COL (buf, row, rv, (*cl), LONG_REF, n32);
+	  fprintf (out, " %d", n32);
+	  col_comp_print (out, key, row, cl);
 	  break;
 	case DV_INT64:
-	  fprintf (out, " " BOXINT_FMT, INT64_REF (row + off));
+	  ROW_INT_COL (buf, row, rv, (*cl), INT64_REF, n64);
+	  fprintf (out, " " BOXINT_FMT, n64);
+	  col_comp_print (out, key, row, cl);
 	  break;
 	case DV_IRI_ID_8:
           {
-            iri_id_t iid = INT64_REF (row + off);
+            iri_id_t iid;
+	    ROW_INT_COL (buf, row, rv, (*cl), INT64_REF, iid);
             if (iid >= MIN_64BIT_BNODE_IRI_ID)
 	      fprintf (out, " #ib" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
             else
 	      fprintf (out, " #i" BOXINT_FMT, (boxint)(iid));
+	    col_comp_print (out, key, row, cl);
             break;
           }
 	case DV_STRING:
 	  fprintf (out, " \"");
-	  for (c = 0; c < len; c++)
-	    fprintf (out, "%c", row[off + c]);
+	  for (c = 0; c < MIN (RMAX, vl1); c++)
+	    fprintf (out, "%c", xx[c] + (c == vl1 - 1 ? offset : 0));
+	  if (vl1 > RMAX) fprintf (out, "...");
+	  for (c = 0; c < MIN (RMAX, vl2); c++)
+	    fprintf (out, "%c", xx2[c]);
 	  fprintf (out, "\"");
+	  if (vl2 > RMAX) fprintf (out, "...");
+	  col_comp_print (out, key, row, cl);
 	  break;
 	case DV_ANY:
 	  fprintf (out, " x");
-	  for (c = 0; c < len; c++)
-	    fprintf (out, "%02x", (unsigned)((unsigned char)(row[off + c])));
+	  for (c = 0; c < MIN (RMAX, vl1); c++)
+	    fprintf (out, "%02x", (unsigned)((unsigned char)(xx[c] + (c == vl1 - 1 ? offset : 0))));
+	  if (c > RMAX) fprintf (out, "...");
+	  for (c = 0; c < MIN (RMAX, vl2); c++)
+	    fprintf (out, "%02x", (unsigned)((unsigned char)(xx2[c])));
+	  if (c > RMAX) fprintf (out, "...");
+	  col_comp_print (out, key, row, cl);
+	  break;
+	case DV_TIMESTAMP:
+	case DV_DATETIME:
+	case DV_DATE:
+	case DV_TIME:
+	  fprintf (out, " dt 0x");
+	  for (c = 0; c < 10; c++)
+	    fprintf (out, "%02x", (unsigned)((unsigned char)(xx[c])));
+		  fprintf (out, " ");
+
 	  break;
 	default:
 	  fprintf (out, "<xx>");
+	  col_comp_print (out, key, row, cl);
 	  break;
+	case DV_BLOB: 
+	case DV_BLOB_WIDE:
+	case DV_BLOB_BIN:
+	  {
+	    dtp_t b_dtp = xx[0];
+	    if (IS_STRING_DTP (b_dtp))
+	      fprintf (out, " <inline blob %d> ", (int)b_dtp);
+	    else 
+	      fprintf (out, "<blob dp=%d> ", LONG_REF_NA (xx + BL_DP));
+	  }
 	}
       if (inx < key->key_n_significant - 1)
 	fprintf (out, ",");
     next: ;
     }
   END_DO_SET();
-  if (!key_id)
-    fprintf (out, "--> %d ", (int)LONG_REF (row_key + IE_LEAF));
+  if (!kv)
+    fprintf (out, "--> %d ", (int)LONG_REF (row + key->key_key_leaf[rv]));
   fprintf (out, "\n");
 }
 
 
 void
-row_map_print (db_buf_t row, dbe_key_t * key)
+row_map_print (buffer_desc_t * buf, db_buf_t row, dbe_key_t * key)
 {
-  row_map_fprint (stdout, row, key);
+  row_map_fprint (stdout, buf, row, key);
 }
 
 
@@ -2418,9 +2700,9 @@ dbg_page_map_f (buffer_desc_t * buf, FILE * out)
   char flag_str[10];
   db_buf_t page = buf->bd_buffer;
 
-  int pos = SHORT_REF (page + DP_FIRST);
+
   long l;
-  key_id_t page_key_id = SHORT_REF (page + DP_KEY_ID);
+  key_id_t page_key_id = LONG_REF (page + DP_KEY_ID);
   dbe_key_t * page_key = NULL;
   if (!wi_inst.wi_schema/* || !buf->bd_space*/)
     return;
@@ -2448,37 +2730,37 @@ dbg_page_map_f (buffer_desc_t * buf, FILE * out)
   fflush (out);
   if (!page_key && buf->bd_tree)
     page_key = buf->bd_tree->it_key;
-  if (!page_key)
+  if (!page_key || !buf->bd_content_map)
     return;
-  while (pos)
+  DO_ROWS (buf, map_pos, row, NULL)
     {
-      key_id_t row_key_id = SHORT_REF (page + pos + IE_KEY_ID);
+      key_ver_t kv = IE_KEY_VERSION (row);
       dbe_key_t * row_key = NULL;
-      if (!row_key_id || KI_LEFT_DUMMY == row_key_id )
+      if (!kv || KV_LEFT_DUMMY == kv )
        row_key = page_key;
       else
-       row_key = sch_id_to_key (wi_inst.wi_schema, row_key_id);
+	row_key = page_key->key_versions[kv];
       if (!row_key)
        {
-         fprintf (out, "**** Row with non-existent key %d\n", row_key_id);
+         fprintf (out, "**** Row with non-existent key %d\n", kv);
          return;
        }
-      if (pos > PAGE_SZ)
+      if (buf->bd_content_map->pm_entries[map_pos] > PAGE_SZ)
 	{
 	  fprintf (out, "**** Link over end. Inconsistent.\n");
 	  break;
 	}
 
-      l = row_length (page + pos, row_key);
+      l = row_length (row, row_key);
       flag_str[0] = 0;
-      fl = IE_FLAGS (page + pos) & (IEF_DELETE | IEF_UPDATE);
+      fl = 0x80 & IE_FLAGS (row);
       if (fl)
 	snprintf (flag_str, sizeof (flag_str), "f: %x ", fl);
-      fprintf (out, "    %d: %ldB  Key %ld: %s", pos, l,
-	  (long) SHORT_REF (page + pos + IE_KEY_ID), flag_str);
-      row_map_fprint (out, page + pos, row_key);
-      pos = IE_NEXT (page + pos);
+      fprintf (out, "    %d: %ldB  Key %ld: %s", map_pos, l,
+	  (long) kv, flag_str);
+      row_map_fprint (out, buf, row, row_key);
     }
+  END_DO_ROWS;
 }
 
 
@@ -2489,6 +2771,17 @@ void
 dbg_page_map (buffer_desc_t * buf)
 {
   dbg_page_map_f (buf, stderr);
+}
+
+
+void
+dbg_page_map_log (buffer_desc_t * buf, char * fn, char * msg)
+{
+  FILE * f = fopen (fn, "a");
+  fprintf (f, "%s\n", msg);
+  dbg_page_map_f (buf, f);
+  fflush (f);
+  fclose (f);
 }
 
 
@@ -2609,11 +2902,11 @@ char * srv_st_dbms_ver ()
 typedef struct key_info_s
 {
   dbe_key_t * ki_key;
-  ptrlong     ki_rows;
-  ptrlong     ki_row_bytes;
-  ptrlong     ki_blob_pages;
-  ptrlong     ki_pages;
-  ptrlong     ki_last_dp;
+  int64     ki_rows;
+  int64     ki_row_bytes;
+  int64     ki_blob_pages;
+  int64     ki_pages;
+  int64     ki_last_dp;
 } key_info_t;
 
 
@@ -2622,11 +2915,10 @@ static void
 srv_collect_inx_page_stats (it_cursor_t * it, buffer_desc_t * buf, dk_hash_t *ht)
 {
   db_buf_t page;
-  int pos;
+  dbe_key_t * page_key, *key;
   dp_addr_t parent_dp;
 
   page = buf->bd_buffer;
-  pos = SHORT_REF (page + DP_FIRST);
 
   /* page consistence check */
   parent_dp = (dp_addr_t) LONG_REF (buf->bd_buffer + DP_PARENT);
@@ -2634,27 +2926,28 @@ srv_collect_inx_page_stats (it_cursor_t * it, buffer_desc_t * buf, dk_hash_t *ht
     STRUCTURE_FAULT_ERR;
 
   dbg_printf_1 (("doing page %ld\n", (long) buf->bd_page));
-  while (pos)
+  page_key = sch_id_to_key (wi_inst.wi_schema, LONG_REF (buf->bd_buffer + DP_KEY_ID));
+  DO_ROWS (buf, map_pos, row, NULL)
     {
-      if (pos > PAGE_SZ)
+      if (buf->bd_content_map->pm_entries[map_pos] > PAGE_SZ)
 	{
 	  STRUCTURE_FAULT_ERR;
 	}
       else
 	{
-	  key_id_t key_id = SHORT_REF (page + pos + IE_KEY_ID);
-	  dbe_key_t * row_key = sch_id_to_key (wi_inst.wi_schema, key_id), *key;
+	  key_ver_t kv = IE_KEY_VERSION (row);
+	  dbe_key_t * row_key = page_key->key_versions[kv];
 
-	  if (key_id == KI_LEFT_DUMMY || !key_id)
+	  if (kv == KV_LEFT_DUMMY || !kv)
 	    goto get_next;
 	  if (!row_key)
 	    STRUCTURE_FAULT_ERR;
 	  if (1)
 	    {
-	      long l = row_length (page + pos, row_key);
+	      long l = row_length (row, row_key);
 	      key_info_t *ki;
 
-	      if (pos+l > PAGE_SZ)
+	      if (buf->bd_content_map->pm_entries[map_pos]+l > PAGE_SZ)
 		STRUCTURE_FAULT_ERR;
 
 	      key = row_key;
@@ -2686,9 +2979,8 @@ srv_collect_inx_page_stats (it_cursor_t * it, buffer_desc_t * buf, dk_hash_t *ht
 
 	      /* blobs stats */
 	      it->itc_row_key = row_key;
-	      it->itc_row_key_id = key_id;
 	      it->itc_insert_key = row_key;
-	      it->itc_row_data = page + pos + IE_FIRST_KEY;
+	      it->itc_row_data = row;
 	      if (row_key && row_key->key_row_var)
 		{
 		  int inx;
@@ -2701,11 +2993,11 @@ srv_collect_inx_page_stats (it_cursor_t * it, buffer_desc_t * buf, dk_hash_t *ht
 			  int off, len;
 			  if (ITC_NULL_CK (it, (*cl)))
 			    continue;
-			  ITC_COL (it, (*cl), off, len);
+			  KEY_PRESENT_VAR_COL (it->itc_row_key, it->itc_row_data, (*cl), off, len);
 			  dtp = it->itc_row_data[off];
 			  if (IS_BLOB_DTP (dtp))
 			    {
-			      long bl_byte_len = LONG_REF_NA (it->itc_row_data + off + BL_BYTE_LEN);
+			      int64 bl_byte_len = INT64_REF_NA (it->itc_row_data + off + BL_BYTE_LEN);
 			      ki->ki_blob_pages += (bl_byte_len / PAGE_DATA_SZ);
 			      if (bl_byte_len % PAGE_DATA_SZ)
 				ki->ki_blob_pages += 1;
@@ -2716,9 +3008,9 @@ srv_collect_inx_page_stats (it_cursor_t * it, buffer_desc_t * buf, dk_hash_t *ht
 
 	    }
 	}
-get_next:
-      pos = IE_NEXT (page + pos);
+    get_next: ;
     }
+  END_DO_ROWS;
 }
 
 
@@ -2749,10 +3041,12 @@ srv_collect_inx_space_stats (caddr_t *err_ret, query_instance_t *qi)
 	    {
 	      dp_addr_t page;
 	      int inx, bit;
-	      uint32 *array;
-
+	      uint32 *array, alloc;
+	      IN_DBS (storage);
 	      dbs_locate_free_bit (storage, page_no, &array, &page, &inx, &bit);
-	      if (0 != (array[inx] & (1 << bit)) &&
+	      alloc = (array[inx] & (1 << bit));
+	      LEAVE_DBS (storage);
+	      if (0 != alloc &&
 		  !gethash (DP_ADDR2VOID (page_no), storage->dbs_cpt_remap))
 		{
 		  buf->bd_page = buf->bd_physical_page = page_no;
@@ -3076,14 +3370,13 @@ bif_key_estimate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int n_parts = BOX_ELEMENTS (args) - 2;
   int64 res;
-  buffer_desc_t * buf;
   it_cursor_t itc_auto;
   it_cursor_t * itc = &itc_auto;
   search_spec_t specs[10];
   int v_fill = 0, inx;
   search_spec_t ** prev_sp;
   query_instance_t *qi = (query_instance_t *) qst;
-  dbe_key_t * key = NULL;
+  dbe_key_t * key;
   caddr_t tb_name = bif_string_arg (qst, args, 0, "sys_stat");
   caddr_t key_name = bif_string_arg (qst, args, 1, "sys_stat");
   dbe_table_t *tb = qi_name_to_table (qi, tb_name);
@@ -3091,6 +3384,8 @@ bif_key_estimate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       sqlr_new_error ("42S02", "SR243", "No table %s in key_estimate", tb_name);
     }
+  if (2 == BOX_ELEMENTS (args))
+    return box_num (dbe_key_count (tb->tb_primary_key));
   DO_SET (dbe_key_t *, key1, &tb->tb_keys)
     {
       if (0 == strcmp (key1->key_name, key_name))
@@ -3122,13 +3417,70 @@ bif_key_estimate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       *prev_sp = &specs[inx];
       prev_sp = &specs[inx].sp_next;
     }
-
-  itc->itc_random_search = RANDOM_SEARCH_ON; /* disable use of root cache by itc_reset */
-  buf = itc_reset (itc);
-  itc->itc_random_search = RANDOM_SEARCH_OFF;
-  res = itc_sample (itc, &buf);
-  itc_page_leave (itc, buf);
+  res = itc_sample (itc);
   return box_num (res);
+}
+
+
+double 
+rep_num_scale (double n, char ** scale_ret, int is_base_2)
+{
+  double dec_scale[] = {1000, 1000000, 1000000000, 1000000000000, 0};
+  double bin_scale[] = {1024, 1024*1024,  1024*1024*1024,   1024.0*1024*1024*1024, 0};
+  double * scale = is_base_2 ? bin_scale : dec_scale;
+  static char * empty = "";
+  static char * letter[] = {"K", "M", "G", "T", ""};
+  int inx;
+  for (inx = 0; inx < 4; inx++)
+    {
+      if (n < scale[inx])
+	break;
+    }
+  if (!inx)
+    {
+      *scale_ret = empty;
+      return n;
+    }
+  *scale_ret = letter[inx - 1];
+  return n / scale[inx - 1];
+}
+
+
+void
+da_string (db_activity_t * da, char * out, int len)
+{
+  char *rans, *seqs, *rs, * bs, *ms;
+  double ran = rep_num_scale (da->da_random_rows, &rans, 0);
+  double seq = rep_num_scale (da->da_seq_rows, &seqs, 0);
+  double reads = rep_num_scale (da->da_disk_reads, &rs, 0);
+  double bytes = rep_num_scale (da->da_cl_bytes, &bs, 1);
+  double msgs = rep_num_scale (da->da_cl_messages, &ms, 0);
+  snprintf (out, len, "%6.4g%sR rnd %6.4g%sR seq %6.4g%sP disk %6.4g%sB / %6.4g%s messages",
+	    ran, rans, seq, seqs, reads, rs, bytes, bs, msgs, ms);
+}
+
+
+caddr_t
+bif_db_activity (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  /* no flag or 0 means text summary.  1 means array.  Or a 2 bit to flag  in order not to reset the counts */
+  int flag = BOX_ELEMENTS (args) > 0 ? bif_long_arg (qst, args, 0, "db_activity") : 0;
+  QNCAST (query_instance_t, qi, qst);
+  db_activity_t * da = &qi->qi_client->cli_activity;
+  caddr_t res;
+  if ((flag & 1))
+    res = list (8, box_num (da->da_random_rows), box_num (da->da_seq_rows), box_num (da->da_lock_waits),
+		box_num (da->da_lock_wait_msec), box_num (da->da_disk_reads), box_num (da->da_spec_disk_reads),
+		box_num (da->da_cl_messages), box_num (da->da_cl_bytes));
+  else 
+    {
+      char txt[200];
+      da_string (da, txt, sizeof (txt));
+      res = box_dv_short_string (txt);
+    }
+  if (!(flag & 2))
+    memset (da, 0, sizeof (db_activity_t));
+  return res;
 }
 
 
@@ -3156,6 +3508,7 @@ bif_status_init (void)
   ps_sem = semaphore_allocate (0);
   bif_define ("itcs", dbg_print_itcs);
   bif_define_typed ("sys_index_space_usage", bif_sys_index_space_usage, &bt_any);
+  bif_define ("db_activity", bif_db_activity);
 #ifndef NDEBUG
   bif_define ("_sys_real_cv_size", bif_real_cv_size);
 #endif

@@ -38,13 +38,13 @@ typedef struct d_id_u {
 
 #define D_ID_NUM_REF(place) \
   (  (((dtp_t*)(place))[0] == D_ID_64) \
-? INT64_REF_NA (((db_buf_t)(place)) + 1) \
-  : LONG_REF_NA (place))
+     ? (unsigned int64)INT64_REF_NA (((db_buf_t)(place)) + 1)	\
+     : (unsigned int64)(uint32)(LONG_REF_NA (place)))
 /* #define FREETEXT_PORTABILITY_TEST */
 
 #define D_ID_NUM_SET(place, id) \
 { \
-  if ((int64) (id) > (int64)D_ID32_MAX) \
+  if ((unsigned int64) (id) > (unsigned int64)D_ID32_MAX) \
     { ((dtp_t*)(place))[0] = D_ID_64; \
       INT64_SET_NA ((((db_buf_t)(place)) + 1), ((int64) id)); \
     } else { \
@@ -163,6 +163,11 @@ struct word_stream_s
     caddr_t *		wst_word_strings;
     int			wst_nth_word_string;
     d_id_t		 wst_end_id; /* do not seek beyond this */
+    cl_req_group_t *	wst_clrg;
+    cl_host_t *		wst_host;
+    basket_t		wst_cl_word_strings; /* prefetched consecutive word strings from cluster */
+    char		wst_all_fetched; /* all stuff is in word strings */
+    char		wst_fixed_d_id; /* only the id sought  for and no other will do */
   };
 
 typedef struct word_stream_s word_stream_t;
@@ -197,8 +202,8 @@ typedef struct search_stream_s search_stream_t;
 
 #define D_AT_END(d) (D_ID_NUM_REF(&(d)->id[0]) == 0)
 #define D_INITIAL(d)  (D_ID_NUM_REF(&(d)->id[0]) == (int64)(0xFFFFFFFFFFFFfe30LL))
-#define D_PRESET(d)  (D_ID_NUM_REF(&(d)->id[0]) == (int64)(0xFFFFFFFFFFFFfe20LL))
-#define D_NEXT(d)  (D_ID_NUM_REF(&(d)->id[0]) == (int64)(0xFFFFFFFFFFFFfe10LL))
+#define D_PRESET(d)  (D_ID_NUM_REF(&(d)->id[0]) == (unsigned int64)(0xFFFFFFFFFFFFfe20LL))
+#define D_NEXT(d)  (D_ID_NUM_REF(&(d)->id[0]) == (unsigned int64)(0xFFFFFFFFFFFFfe10LL))
 
 #define D_SET_AT_END(d) do { D_ID_NUM_SET(&(d)->id[0], 0); } while (0)
 #define D_SET_INITIAL(d)  do { D_ID_NUM_SET(&(d)->id[0], (int64)(0xFFFFFFFFFFFFfe30LL)); } while (0)
@@ -238,45 +243,16 @@ do { \
 } while (0)
 
 #ifdef WP_DEBUG
-
-#define WP_LENGTH(wp, hl, l, buf, fill) \
+#define WP_LENGTH(wp, hl, l, buf, buf_size) \
   do { \
    if (((db_buf_t) (wp)) < ((db_buf_t) (buf))) \
      GPF_T1 ("WP_LENGTH: access before the beginning of the buffer"); \
    WP_LENGTH_IMPL(wp, hl, l); \
-   if (0 == l) \
-     GPF_T1 ("WP_LENGTH: zero length item"); \
-   if ((((db_buf_t) (wp)) + hl + l) > (((db_buf_t) (buf)) + (fill))) \
+   if ((((db_buf_t) (wp)) + hl + l) > (((db_buf_t) (buf)) + (buf_size))) \
      GPF_T1 ("WP_LENGTH: danger of access past the end of buffer"); \
   } while (0)
-
-#define WP_LENGTH_HEADONLY(wp, hl, l, buf, fill) \
-  do { \
-   if (((db_buf_t) (wp)) < ((db_buf_t) (buf))) \
-     GPF_T1 ("WP_LENGTH_HEADONLY: access before the beginning of the buffer"); \
-   WP_LENGTH_IMPL(wp, hl, l); \
-   if ((((db_buf_t) (wp)) + hl) > (((db_buf_t) (buf)) + (fill))) \
-     GPF_T1 ("WP_LENGTH_HEADONLY: danger of access past the end of buffer"); \
-  } while (0)
-
-#define SST_FILL_SET(sst,val) \
-  do { \
-    int pos, hl, l; \
-    (sst)->sst_fill = (val); \
-    for (pos = 0; pos < (sst)->sst_fill; pos += hl + l) \
-      { \
-        WP_LENGTH_IMPL((sst)->sst_buffer + pos, hl, l); \
-        if (0 == l) \
-          GPF_T1 ("SST_FILL_SET: zero length item"); \
-      } \
-    if (pos > (sst)->sst_fill) \
-      GPF_T1 ("SST_FILL_SET: danger of access past the end of buffer"); \
-    } while (0)
-
 #else
-#define WP_LENGTH(wp, hl, l, buf, fill) WP_LENGTH_IMPL(wp, hl, l)
-#define WP_LENGTH_HEADONLY(wp, hl, l, buf, fill) WP_LENGTH_IMPL(wp, hl, l)
-#define SST_FILL_SET(sst,val) (sst)->sst_fill = (val)
+#define WP_LENGTH(wp, hl, l, buf, buf_size) WP_LENGTH_IMPL(wp, hl, l)
 #endif
 
 
@@ -289,6 +265,28 @@ do { \
 #define VT_MAX_WORD_STRING_BYTES 2000
 
 #define LAST_FTI_COL "VI_ENCODING"
+
+
+struct wst_search_specs_s
+{
+  int wst_specs_are_initialized;
+  search_spec_t wst_init_spec[1];
+  search_spec_t wst_seek_spec[2];
+  search_spec_t wst_seek_asc_seq_spec[2];	/* like wst_seek_spec but allow read ahead */
+  search_spec_t wst_range_spec[1];
+  search_spec_t wst_next_spec[2];
+  search_spec_t wst_next_d_id_spec[2];
+
+  key_spec_t	wst_ks_init;
+  key_spec_t	wst_ks_seek;
+  key_spec_t	wst_ks_seek_asc_seq;
+  key_spec_t	wst_ks_range;
+  key_spec_t	wst_ks_next;
+  key_spec_t	wst_ks_next_d_id;
+  out_map_t *	wst_out_map; /* cols returned from cluster read of a words table */
+};
+
+typedef struct wst_search_specs_s wst_search_specs_t;
 
 void text_init (void);
 /* no longer needed
@@ -332,5 +330,19 @@ extern void dbg_print_d_id_aux (FILE *out, d_id_t *d_id_buf_ptr);
 
 extern long  tft_random_seek;
 extern long  tft_seq_seek;
+
+wst_search_specs_t * wst_get_specs (dbe_key_t *key);
+int wst_chunk_scan (word_stream_t * wst, db_buf_t chunk, int chunk_len);
+
+void wst_cl_start (word_stream_t * wst);
+void wst_cl_locate (word_stream_t * wst);
+void wst_cl_next (word_stream_t * wst);
+search_stream_t * wst_from_word (sst_tctx_t *tctx, ptrlong range_flags, const char *word);
+search_stream_t * wst_cl_from_range (sst_tctx_t *tctx, ptrlong range_flags, const char * word, caddr_t lower, caddr_t higher);
+search_stream_t * wst_from_wsts (sst_tctx_t *tctx, ptrlong range_flags, dk_set_t wsts);
+
+#define NEW_SST(dt, v) \
+  dt * v = (dt *) dk_alloc_box_zero (sizeof (dt), DV_TEXT_SEARCH);
+
 
 #endif /* _TEXT_H */

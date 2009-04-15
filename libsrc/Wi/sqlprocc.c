@@ -930,6 +930,16 @@ sqlc_proc_stmt (sql_comp_t * sc, ST ** pstmt)
 }
 
 
+bif_t
+bif_ua_find (caddr_t name)
+{
+  bif_t bif = bif_find (name);
+  if (bif)
+    bif_set_is_aggregate (bif);
+  return bif;
+}
+
+
 void
 sqlc_user_aggregate_decl (sql_comp_t * sc, ST * tree)
 {
@@ -965,7 +975,7 @@ sqlc_user_aggregate_decl (sql_comp_t * sc, ST * tree)
   aggr->ua_acc.uaf_name = box_copy (tree->_.user_aggregate.acc_name);
   aggr->ua_final.uaf_name = box_copy (tree->_.user_aggregate.final_name);
   aggr->ua_merge.uaf_name = box_copy (tree->_.user_aggregate.merge_name);
-  aggr->ua_init.uaf_bif = box_num ((ptrlong) bif_find (aggr->ua_init.uaf_name));
+  aggr->ua_init.uaf_bif = box_num ((ptrlong) bif_ua_find (aggr->ua_init.uaf_name));
   aggr->ua_acc.uaf_bif = box_num ((ptrlong) bif_find (aggr->ua_acc.uaf_name));
   aggr->ua_final.uaf_bif = box_num ((ptrlong) bif_find (aggr->ua_final.uaf_name));
   if (aggr->ua_merge.uaf_name)

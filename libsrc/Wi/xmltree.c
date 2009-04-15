@@ -6323,6 +6323,8 @@ and the document will stay locked in that time */
 query_instance_t *
 qi_top_qi (query_instance_t * qi)
 {
+  if (-1 == (ptrlong)qi)
+    return NULL;
   while (IS_POINTER (qi->qi_caller))
     qi = qi->qi_caller;
   return qi;
@@ -6356,6 +6358,24 @@ DBG_NAME(xte_from_tree) (DBG_PARAMS caddr_t tree, query_instance_t * qi)
   xte->xte_child_no = 0;
   return xte;
 }
+
+void
+xte_set_qi (caddr_t xte, query_instance_t * qi)
+{
+  dtp_t dtp = DV_TYPE_OF (xte);
+  if (DV_ARRAY_OF_POINTER == dtp)
+    {
+      int inx;
+      DO_BOX (caddr_t, elt, inx, (caddr_t*)xte)
+	{
+	  xte_set_qi (elt, qi);
+	}
+      END_DO_BOX;
+    }
+  else if (DV_XML_ENTITY == dtp && XE_IS_TREE ((xml_tree_ent_t*)xte))
+    ((xml_tree_ent_t*)xte)->xe_doc.xtd->xd_qi = qi;
+}
+
 
 #define B_SET(x, y) dk_free_tree (x); x = box_copy_tree (y)
 void
@@ -7495,6 +7515,15 @@ xe_make_copy (caddr_t box)
 }
 
 
+caddr_t
+xe_mp_copy (mem_pool_t * mp, caddr_t box)
+{
+  caddr_t cp = xe_make_copy (box);
+  dk_set_push (&mp->mp_trash, (void*)cp);
+  return cp;
+}
+
+
 int
 xe_strses_serialize_utf8 (xml_entity_t * xe, dk_session_t * strses, int set_encoding)
 {
@@ -7542,8 +7571,13 @@ xe_serialize (xml_entity_t * xe, dk_session_t * ses)
   dtp_t out_dtp = DV_LONG_STRING;
 
   strses = strses_allocate ();
-
-  if (cli)
+  if ((DKS_TO_CLUSTER & ses->dks_cluster_flags) && XE_IS_TREE (xe))
+    {
+      xml_tree_ent_t * xte = (xml_tree_ent_t *)xe;
+      out_dtp = DV_XML_ENTITY;
+      xte_serialize_packed (xte->xte_current, xte->xe_doc.xd->xd_dtd, strses);
+    }
+  else if (cli)
     { /* GK: if this is a top level serialization to the client session force UTF-8 */
       out_dtp = DV_LONG_WIDE;
       if (!xe_strses_serialize_utf8 (xe, strses, 1))
@@ -7561,7 +7595,7 @@ xe_serialize (xml_entity_t * xe, dk_session_t * ses)
       xe->_->xe_serialize (xe, strses);
     }
 
-  if (cli && cli->cli_version >= 2724)
+  if (cli && !(DKS_TO_CLUSTER & ses->dks_cluster_flags) && cli->cli_version >= 2724)
     print_object (strses, ses, NULL, NULL);
   else
     {
@@ -7572,6 +7606,29 @@ xe_serialize (xml_entity_t * xe, dk_session_t * ses)
   strses_free (strses);
 }
 
+caddr_t
+xe_deserialize (dk_session_t * ses)
+{
+  xml_entity_t * xe = NULL;
+  caddr_t *tree = NULL;
+  dtd_t *dtd = NULL; 
+  long len = read_long (ses);
+  query_instance_t * qi = DKS_QI_DATA (ses);
+
+  if (!qi && !ses->dks_cluster_data)
+    return NEW_DB_NULL;
+
+  SAVE_READ_FAIL(ses)
+    {
+      xte_deserialize_packed (ses, &tree, &dtd);
+    }
+  RESTORE_READ_FAIL (ses);
+  xe = (xml_entity_t *) xte_from_tree ((caddr_t) tree, qi ? qi : (query_instance_t*)(ptrlong)-1);
+  if (NULL != dtd)
+    dtd_addref (dtd, 0);
+  xe->xe_doc.xd->xd_dtd = dtd;
+  return (caddr_t) xe;
+}
 
 xml_entity_t *
 xn_xe_from_text (xpath_node_t * xn, query_instance_t * qi)
@@ -9346,10 +9403,10 @@ caddr_t bif_xml_serialize_packed (caddr_t * qst, caddr_t * err_ret, state_slot_t
 }
 
 
-caddr_t bif_xml_deserialize_packed (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+caddr_t
+xml_deserialize_packed (caddr_t * qst, caddr_t strg)
 {
-  caddr_t *res;
-  caddr_t strg = bif_arg (qst, args, 0, "__xml_deserialize_packed");
+  caddr_t * res = NULL;
   dtp_t strg_dtp = DV_TYPE_OF (strg);
   if (DV_STRING == strg_dtp)
     {
@@ -9360,6 +9417,7 @@ caddr_t bif_xml_deserialize_packed (caddr_t * qst, caddr_t * err_ret, state_slot
       ses.dks_in_buffer = strg;
       ses.dks_in_fill = box_length (strg) - 1;
       SESSION_SCH_DATA ((&ses)) = &iod;
+      DKS_QI_DATA (&ses) = (query_instance_t *)qst;
       xte_deserialize_packed (&ses, &res, NULL);
     }
   else
@@ -9374,6 +9432,7 @@ caddr_t bif_xml_deserialize_packed (caddr_t * qst, caddr_t * err_ret, state_slot
         sqlr_new_error ("22023", "SR561",
 	  "Blob argument to __xml_deserialize_packed() must be a non-interactive blob");
       tmp_ses = blob_to_string_output (((query_instance_t *)qst)->qi_trx, (caddr_t)bh);
+      DKS_QI_DATA (tmp_ses) = (query_instance_t *)qst;
       xte_deserialize_packed (tmp_ses, &res, NULL);
       dk_free_box (tmp_ses);
     }
@@ -9381,6 +9440,15 @@ caddr_t bif_xml_deserialize_packed (caddr_t * qst, caddr_t * err_ret, state_slot
     return NEW_DB_NULL;
   return (caddr_t)res;
 }
+
+
+caddr_t 
+bif_xml_deserialize_packed (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t strg = bif_arg (qst, args, 0, "__xml_deserialize_packed");
+  return xml_deserialize_packed (qst, strg);
+}
+
 
 caddr_t bif_xml_get_logical_path (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -10014,6 +10082,7 @@ void
 xml_tree_init (void)
 {
   int ctr;
+  macro_char_func *rt;
 #define UNAME_IT(var,txt) var = box_dv_uname_string (txt); box_dv_uname_make_immortal (var)
   UNAME_IT(uname__bang_cdata_section_elements	, " !cdata-section-elements"	);
   UNAME_IT(uname__bang_file			, " !file"			);
@@ -10209,10 +10278,13 @@ xml_tree_init (void)
   bif_define ("__xml_remove_ns_by_prefix", bif_xml_remove_ns_by_prefix);
   bif_define ("__xml_clear_all_ns_decls", bif_xml_clear_all_ns_decls);
   dk_mem_hooks (DV_XML_ENTITY, xe_make_copy, xe_destroy, 0);
+  box_tmp_copier[DV_XML_ENTITY] = xe_mp_copy;
   dk_mem_hooks (DV_XQI, box_non_copiable, xqi_destroy, 0);
   dk_mem_hooks (DV_XPATH_QUERY, xqr_addref, xqr_release, 0);
   PrpcSetWriter (DV_XML_ENTITY, (ses_write_func) xe_serialize);
   PrpcSetWriter (DV_XPATH_QUERY, (ses_write_func) xqr_serialize);
+  rt = get_readtable ();
+  rt[DV_XML_ENTITY] = (macro_char_func) xe_deserialize;
   xpf_init();
   xslt_init ();
   bif_tidy_init();

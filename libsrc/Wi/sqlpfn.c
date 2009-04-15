@@ -1469,7 +1469,7 @@ sqlp_complete_fun_ref (ST * tree)
 {
   if (tree->_.fn_ref.fn_code == AMMSC_COUNT
       && !tree->_.fn_ref.all_distinct
-      && tree->_.fn_ref.fn_arg)
+      && tree->_.fn_ref.fn_arg && DV_LONG_INT != DV_TYPE_OF (tree->_.fn_ref.fn_arg))
     {
       /* count of non-* */
       ST * arg = tree->_.fn_ref.fn_arg; /* not AMMSC_USER so it's argument, not a vector of them */
@@ -2079,12 +2079,16 @@ sqlp_patch_call_if_special (ST * funcall_tree)
       goto generic_check;
     }
 #endif
-  if (0 == strnicmp (call_name, "__I2ID", 6)
+  if ((0 == strnicmp (call_name, "__I2ID", 6) || strstr (call_name, "IID_OF_QNAME"))
       && BOX_ELEMENTS (funcall_tree->_.call.params) >= 1)
     {
       caddr_t arg = sqlo_iri_constant_name_1 (funcall_tree->_.call.params[0]);
       if (arg)
+	{
+	  if (strstr (call_name, "OF_QNAME_"))
+	    funcall_tree->_.call.name = t_box_string ("__I2IDN");
 	funcall_tree->_.call.params[0] = (ST *) arg;
+    }
     }
 
 generic_check:
@@ -2324,12 +2328,13 @@ sqlp_add_top_1 (ST *select_stmt)
 {
   if (0 && !SEL_TOP (select_stmt))
     {
-      select_stmt->_.select_stmt.top = t_listst (6, SELECT_TOP,
+      select_stmt->_.select_stmt.top = t_listst (7, SELECT_TOP,
 	  t_box_num (SEL_IS_DISTINCT (select_stmt) ? 1 : 0), /* preserve distinct */
 	  box_num (1), /* TOP 1 */
 	  t_box_num (0),
 	  0,
-      box_num (0));
+	  box_num (0),
+	  NULL);
     }
   return select_stmt;
 }
@@ -2397,5 +2402,15 @@ sel_n_breakup (ST* sel)
     return 0;
   v = (ptrlong) sel->_.select_stmt.top;
   return v > 1 ? v : 0;
+}
+
+caddr_t 
+sqlp_col_num (caddr_t n)
+{
+  /* check that the arg is between 1 and 1000 and return the unboxed 0 based index of the col */
+  boxint n1 = unbox (n);
+  if (n1 < 1 || n1 > 1000)
+    yyerror ("Column index out of range in transitive dt");
+  return (caddr_t)((ptrlong)(n1 - 1));
 }
 

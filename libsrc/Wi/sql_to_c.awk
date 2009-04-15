@@ -44,12 +44,30 @@ function strip_comments(text, pl_stats, arr)
      special_comment2 = index (curline, "--!AFTER")
      if_comment = index (curline, "--#IF VER=")
      endif_comment = index (curline, "--#ENDIF")
-     if (if_comment > 0 || endif_comment > 0)
+     if (in_if && endif_comment > 0)
+       {
+	 in_if = 0  
+       }	   
+
+     if (if_comment > 0)
+       {
+	 match (curline, /[0-9]+/, arr)  
+	 ver = arr[0] + 0
+	 if (ver == srv_ver)
        {
 	 inx = inx + 1
 	 continue
        }	   
-     if (special_comment > 0)
+	 else
+	   in_if = 1  
+       }	   
+
+     if (in_if)
+       {
+	 inx = inx + 1
+	 continue
+       }
+     else if (special_comment > 0)
        {
 	 res_line = substr (curline, special_comment + 3) "@"
        }
@@ -168,6 +186,16 @@ function get_awk_macro_defines (awk_command)
 }
 
 BEGIN   {
+          while (getline < "sqlver.h" > 0)
+	  {
+	     if(match ($0, /^#define DBMS_SRV_VER_ONLY/))
+	       {	 
+	         res = match ($0, /[0-9]+/, arr) 
+		 srv_ver = arr[0] + 0
+                 break	     
+	       }
+	  }
+	  close ("sqlver.h")
 	  defines = ""
 	  defines_arfw = ""
 	  nproc = 0
@@ -199,6 +227,7 @@ BEGIN   {
 	  first_xsd_rec = 1
 	  n_xslts = 0
 	  n_xsds = 0
+	  in_if = 0
 	}
 
 	{

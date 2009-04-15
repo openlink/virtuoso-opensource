@@ -46,18 +46,21 @@ int dtp_is_var (dtp_t dtp);
 
 
 void
-key_col_from_ssl (dbe_key_t * key, state_slot_t * ssl)
+key_col_from_ssl (dbe_key_t * key, state_slot_t * ssl, int quietcast)
 {
   NEW_VARZ (dbe_column_t, col);
   col->col_name = box_dv_short_string (SSL_HAS_NAME (ssl) ? ssl->ssl_name : "const");
+  col->col_compression = CC_NONE;
   col->col_sqt = ssl->ssl_sqt;
   col->col_sqt.sqt_non_null = 0;
   if (DV_LONG_INT == ssl->ssl_dtp && !ssl->ssl_column)
     col->col_sqt.sqt_dtp = DV_INT64; /* temp results of int exprs can be wider */
+  if (DV_IRI_ID == col->col_sqt.sqt_dtp)
+    col->col_sqt.sqt_dtp = DV_IRI_ID_8;
   if (DV_UNKNOWN == col->col_sqt.sqt_dtp
       ||  (!dtp_is_fixed (col->col_sqt.sqt_dtp) && !dtp_is_var (col->col_sqt.sqt_dtp)))
     {
-      col->col_sqt.sqt_dtp = DV_LONG_STRING;
+      col->col_sqt.sqt_dtp = quietcast ? DV_ANY : DV_LONG_STRING;
       col->col_sqt.sqt_precision = 0;
     }
   /* turn off length checking for temp cols for now */
@@ -94,7 +97,7 @@ sqt_row_data_length (sql_type_t *sqt)
 
 
 dbe_key_t *
-setp_temp_key (setp_node_t * setp, long *row_len_ptr)
+setp_temp_key (setp_node_t * setp, long *row_len_ptr, int quietcast)
 {
   NEW_VARZ (dbe_key_t, key);
 
@@ -107,18 +110,18 @@ setp_temp_key (setp_node_t * setp, long *row_len_ptr)
     {
       if (row_len_ptr)
 	*row_len_ptr += sqt_row_data_length (& ssl->ssl_sqt);
-      key_col_from_ssl (key, ssl);
+      key_col_from_ssl (key, ssl, quietcast);
     }
   END_DO_SET();
   DO_SET (state_slot_t *, ssl, &setp->setp_dependent)
     {
       if (row_len_ptr)
 	*row_len_ptr += sqt_row_data_length (& ssl->ssl_sqt);
-      key_col_from_ssl (key, ssl);
+      key_col_from_ssl (key, ssl, quietcast);
     }
   END_DO_SET();
 
-  dbe_key_layout (key);
+  dbe_key_layout (key, NULL);
   dk_set_push (&setp->src_gen.src_query->qr_temp_keys, (void*) key);
   return key;
 }
@@ -155,7 +158,7 @@ setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, long n_rows)
     }
   END_DO_SET();
   ha->ha_row_size = 0;
-  ha->ha_key = setp_temp_key (setp, &ha->ha_row_size);
+  ha->ha_key = setp_temp_key (setp, &ha->ha_row_size, quietcast);
   setp->setp_ha = setp->setp_reserve_ha = ha;
   ha->ha_tree = ssl_new_tree (sc->sc_cc, "DISTINCT HASH");
   ha->ha_ref_itc = ssl_new_itc (sc->sc_cc);
@@ -188,4 +191,40 @@ setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, long n_rows)
   if (setp->setp_any_user_aggregate_gos)
     ha->ha_memcache_only = 1;
 }
+
+
+void
+setp_after_deserialize (setp_node_t * setp)
+{
+  int inx;
+  long n_rows = setp->setp_ha->ha_row_count;
+  hash_area_t * ha = setp->setp_ha;
+  int n_keys = BOX_ELEMENTS (setp->setp_keys_box);
+  int n_deps = BOX_ELEMENTS (setp->setp_dependent_box);
+  ha->ha_key = setp_temp_key (setp, &ha->ha_row_size, setp->src_gen.src_query->qr_no_cast_error);
+  ha->ha_n_keys = n_keys;
+  ha->ha_n_deps = n_deps;
+  if (n_rows < 0)
+    n_rows = 100000; /* count probably overflowed.- Large amount */
+  else if (n_rows < 1000)
+    n_rows = 1000; /* no less than 1000 if overflows memcache, must be at least this much */
+  else if (n_rows > 1000000)
+    n_rows = 1000000; /* have a cap on hash size */
+  ha->ha_row_count = n_rows;
+  ha->ha_key_cols = (dbe_col_loc_t *) dk_alloc_box_zero ((n_deps + n_keys + 1) * sizeof (dbe_col_loc_t), DV_CUSTOM);
+  for (inx = 0; inx < n_keys + n_deps; inx++)
+    {
+      dbe_col_loc_t * cl = key_find_cl (ha->ha_key, inx +1);
+      ha->ha_key_cols[inx] = cl[0];
+      if ((inx >= n_keys) && (cl->cl_fixed_len < 0))
+	ha->ha_memcache_only = 1;
+    }
+  ha->ha_slots = (state_slot_t **)
+    list_to_array (dk_set_conc (dk_set_copy (setp->setp_keys),
+				dk_set_copy (setp->setp_dependent)));
+  ha->ha_allow_nulls = 1;
+  if (setp->setp_any_user_aggregate_gos)
+    ha->ha_memcache_only = 1;
+}
+
 

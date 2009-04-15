@@ -83,31 +83,35 @@ sqlc_opt_last_joins (sql_comp_t * sc)
 
 
 void
-ts_set_local_code (table_source_t * ts)
+ts_set_local_code (table_source_t * ts, int is_cluster)
 {
   key_source_t *ks = ts->ts_main_ks ? ts->ts_main_ks : ts->ts_order_ks;
   if (!ks)
     return; /* inx op that does not join main row */
   if (ts->src_gen.src_after_test
-      && cv_is_local (ts->src_gen.src_after_test))
+      && cv_is_local_1 (ts->src_gen.src_after_test, 0))
     {
       ks->ks_local_test = ts->src_gen.src_after_test;
       ts->src_gen.src_after_test = NULL;
     }
   if (ts->src_gen.src_after_code
       && !ts->src_gen.src_after_test
-      && cv_is_local (ts->src_gen.src_after_code)
+      && cv_is_local_1 (ts->src_gen.src_after_code, 0)
       && !ts->ts_is_outer)
     {
       ks->ks_local_code = ts->src_gen.src_after_code;
       ts->src_gen.src_after_code = NULL;
+      if (ts->src_gen.src_count)
+	{
       ks->ks_count = ts->src_gen.src_count;
       ts->src_gen.src_count = 0;
+    }
     }
   if (!ts->ts_is_outer
       && ts->src_gen.src_count
       && !ts->src_gen.src_after_test
-      && !ts->src_gen.src_after_code)
+      && !ts->src_gen.src_after_code
+      && ts->src_gen.src_count)
     {
       ks->ks_count = ts->src_gen.src_count;
       ts->src_gen.src_count = 0;
@@ -122,7 +126,7 @@ qr_set_local_code_and_funref_flag (query_t * qr)
   {
     if (IS_TS_NODE (ts))
       {
-	ts_set_local_code (ts);
+	ts_set_local_code (ts, 0);
 
 	if (!ts->src_gen.src_continuations
 	    && !ts->src_gen.src_after_test
@@ -154,6 +158,9 @@ fun_ref_free (fun_ref_node_t * fref)
   dk_free_tree ((caddr_t) fref->fnr_hi_signature);
   dk_set_free (fref->fnr_distinct_ha);
   dk_set_free (fref->fnr_setps);
+  clb_free (&fref->clb);
+  dk_free_box ((box_t)fref->fnr_ssa.ssa_save);
+  dk_set_free (fref->fnr_select_nodes);
 }
 
 
@@ -617,7 +624,7 @@ sqlc_select_top (sql_comp_t * sc, select_node_t * sel, ST * tree,
 		 dk_set_t * code)
 {
   ST * top = SEL_TOP (tree);
-  if (!top)
+  if (!top || SEL_IS_TRANS (tree))
     return;
   sc->sc_top = top;
 
@@ -1034,66 +1041,21 @@ sqlc_temp_tree (sql_comp_t * sc, caddr_t tree)
 void
 sc_free (sql_comp_t * sc)
 {
-/*  int inx;
-  sc_pred_list_free (sc->sc_preds);
-  DO_SET (col_ref_rec_t *, r, &sc->sc_col_ref_recs)
-  {
-    dk_free ((caddr_t) r, sizeof (col_ref_rec_t));
-  }
-  END_DO_SET ();
-  dk_set_free (sc->sc_col_ref_recs);
-  DO_SET (dk_set_t, r, &sc->sc_union_lists)
-  {
-    dk_set_free (r);
-  }
-  END_DO_SET ();
-  dk_set_free (sc->sc_union_lists);
-
-  DO_BOX (comp_table_t *, ct, inx, sc->sc_tables)
-  {
-    sc_pred_list_free (ct->ct_join_preds);
-    dk_set_free (ct->ct_derived_preds);
-    dk_set_free (ct->ct_out_crrs);
-    dk_set_free (ct->ct_out_cols);
-    dk_set_free (ct->ct_order_cols);
-    dk_free_tree (ct->ct_derived);
-    DO_SET (col_pred_t *, cp, &ct->ct_col_preds)
-    {
-      dk_free_box (cp->colp_name);
-      dk_free ((caddr_t) cp, sizeof (col_pred_t));
-    }
-    END_DO_SET ();
-    dk_set_free (ct->ct_col_preds);
-    dk_free_box (ct->ct_vdb_prefix);
-    dk_free ((caddr_t) ct, sizeof (comp_table_t));
-  }
-  END_DO_BOX;
-  dk_free_box ((caddr_t) sc->sc_tables);*/
   if (sc->sc_name_to_label)
     id_hash_free (sc->sc_name_to_label);
   if (sc->sc_decl_name_to_label)
     id_hash_free (sc->sc_decl_name_to_label);
-/*  dk_free_tree ((caddr_t) sc->sc_org_selection);*/
-/*  DO_SET (caddr_t, tree, &sc->sc_temp_trees)
+  if (sc->sc_qn_to_dpipe)
+    hash_table_free (sc->sc_qn_to_dpipe);
+  if (sc->sc_ssl_eqs)
   {
-     dk_free_tree (tree);
-  }
-  END_DO_SET();
-  dk_set_free (sc->sc_temp_trees); */
-/*  DO_SET (subq_compilation_t *, sqc, &sc->sc_subq_compilations)
+      DO_HT (state_slot_t *, ssl, dk_set_t, list, sc->sc_ssl_eqs)
   {
-    dk_free_box (sqc->sqc_scroll_params);
-    dk_free((caddr_t) sqc, sizeof (subq_compilation_t));
+	  dk_set_free (list);
   }
-  END_DO_SET();
-  dk_set_free (sc->sc_subq_compilations);*/
-/*  dk_free_tree ((caddr_t) sc->sc_select_as_list);
-  DO_SET (dk_set_t, jt_preds, &sc->sc_jt_preds)
-    {
-      dk_set_free (jt_preds);
+      END_DO_HT;
+      hash_table_free (sc->sc_ssl_eqs);
     }
-  END_DO_SET();
-  dk_set_free (sc->sc_jt_preds); */
   if (sc->sc_sample_cache)
     {
       id_hash_iterator_t hit;
@@ -1422,14 +1384,21 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
   sqlc_compile_hook (cli, string2, err);
   if (!parse_sem)
     parse_sem = semaphore_allocate (1);
+  if (parse_sem->sem_entry_count > 1) 
+    GPF_T1 ("compiler parse sem entry count > 1");
   if (!nested_sql_comp)
     {
       sql_warnings_clear ();
       MP_START();
     }
   string = wrap_sql_string (string2);
+  if (SQLC_PARSE_ONLY_REC == cr_type)
+    cr_type = SQLC_PARSE_ONLY;
+  else 
+    {
   semaphore_enter (parse_sem);
   inside_sem = 1;
+    }
   SCS_STATE_PUSH;
   sqlc_set_client (cli);
   sqlp_in_view (view_name);
@@ -1474,7 +1443,6 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	  if (!parse_tree)
 	    {
 	      qr_free (qr);
-	      /*dk_free (string, -1);*/
 	      if (err && !*err)
 		*err = srv_make_new_error (sql_err_state[0] ? sql_err_state : "37000",
 		    sql_err_native[0] ? sql_err_native : "SQ074", "%s", sql_err_text);
@@ -1487,6 +1455,17 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	      SCS_STATE_POP;
 	      semaphore_leave (parse_sem);
 	      POP_CATCH;
+	      if (*err && strstr ((*(caddr_t**)err)[2], "RDFNI") )
+		{
+		  if (SQLC_DO_NOT_STORE_PROC == cr_type)
+		    return NULL;
+		  dk_free_tree (*err);
+		  *err = NULL;
+		  cl_rdf_inf_init (cli, err);
+		  if (*err)
+		    return NULL;
+		  return DBG_NAME (sql_compile_1) (DBG_ARGS string2, cli, err, cr_type, the_parse_tree, view_name);
+		}
 	      return NULL;
 	    }
 	}
@@ -1499,6 +1478,8 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	  semaphore_leave (parse_sem);
 	  inside_sem = 0;
 	}
+      else 
+	sqlc_inside_sem = 1;
       if (cr_type == SQLC_PARSE_ONLY)
 	{
 	  caddr_t tree1 = box_copy_tree ((box_t) tree);
@@ -1509,8 +1490,9 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	    }
 	  SCS_STATE_POP;
 	  qr_free (qr);
-	  /*dk_free (string, -1);*/
 	  POP_CATCH;
+	  if (inside_sem)
+	    semaphore_leave (parse_sem);
 	  return ((query_t*) tree1);
 	}
       if (cr_type == SQLC_TRY_SQLO)

@@ -46,10 +46,13 @@ typedef struct sql_compile_state_s /* serialized in parse_sem */
   caddr_t scs_sqlp_udt_current_type;
   int scs_sqlp_udt_current_type_lang;
   sql_tree_t *scs_parse_tree;
+  sql_tree_t *scs_global_trans;
   char *scs_sql_text;
   int scs_param_inx;
   int scs_sqlp_have_infoschema_views;
   char * scs_inside_view;
+  char	scs_count_qr_global_refs; /*   qr global ssl's will be counted as refs in cv_refd_slots etc. */
+  char	scs_inside_sem;
 } sql_compile_state_t;
 
 
@@ -71,10 +74,13 @@ typedef struct sql_compile_state_s /* serialized in parse_sem */
 #define sqlp_udt_current_type	global_scs->scs_sqlp_udt_current_type
 #define sqlp_udt_current_type_lang global_scs->scs_sqlp_udt_current_type_lang
 #define parse_tree		global_scs->scs_parse_tree
+#define global_trans		global_scs->scs_global_trans
 #define sqlc_sql_text		global_scs->scs_sql_text
 #define param_inx		global_scs->scs_param_inx
 #define sqlp_have_infoschema_views	global_scs->scs_sqlp_have_infoschema_views
 #define inside_view global_scs->scs_inside_view
+#define sqlg_count_qr_global_refs global_scs->scs_count_qr_global_refs
+#define sqlc_inside_sem global_scs->scs_inside_sem
 
 #define SET_SCS(scs) \
   THREAD_CURRENT_THREAD->thr_sql_scs = (void*)scs

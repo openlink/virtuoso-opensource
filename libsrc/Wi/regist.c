@@ -30,19 +30,31 @@
 #include "log.h"
 
 
+void
+cli_bootstrap_cli ()
+{
+  if (!bootstrap_cli)
+    {
+      bootstrap_cli = client_connection_create ();
+      local_start_trx (bootstrap_cli);
+    }
+}
+
+
 buffer_desc_t *reg_buf;
+
 
 int
 cpt_write_registry (dbe_storage_t * dbs, dk_session_t *ses)
 {
-  int err;
+  int err = 0;
   long copy_bytes;
   long prev_size = 0, bytes_left = strses_length (ses);
   int n_pages = _RNDUP (bytes_left, PAGE_DATA_SZ) / PAGE_DATA_SZ, n_prev_pages;
-  dk_set_t new_dps = NULL;
   long byte_from = 0;
   dp_addr_t first = dbs->dbs_registry;
   dp_addr_t any_page = first;
+  dk_set_t new_dps = NULL;
   if (first)
     {
       dk_session_t * strses = bloblike_pages_to_string_output (dbs, bootstrap_cli->cli_trx, dbs->dbs_registry, &err);
@@ -62,12 +74,12 @@ cpt_write_registry (dbe_storage_t * dbs, dk_session_t *ses)
       int ctr;
       for (ctr = n_prev_pages; ctr < n_pages; ctr++)
 	{
-	  dp_addr_t dp = dbs_get_free_disk_page (dbs, 0);
+	  dp_addr_t dp = em_new_dp (dbs->dbs_extent_map, EXT_INDEX, 0, NULL);
 	  if (!dp)
 	    {
 	      log_error ("out of disk for writing registry.  Checkpoint not started.");
 	      while ((dp = (dp_addr_t)(uptrlong)dk_set_pop (&new_dps)))
-		dbs_free_disk_page (dbs, dp);
+		em_free_dp (dbs->dbs_extent_map, dp, EXT_INDEX);
 	      return LTE_NO_DISK;
 	    }
 	  dk_set_push (&new_dps, (void*)(uptrlong)dp);
@@ -123,7 +135,7 @@ cpt_write_registry (dbe_storage_t * dbs, dk_session_t *ses)
 		  reg_buf->bd_physical_page = first;
 		  buf_disk_read (reg_buf);
 		  freeing_unfreeable = 1;
-		  dbs_free_disk_page (dbs, first);
+		  em_free_dp (dbs->dbs_extent_map, first, EXT_INDEX);
 		  freeing_unfreeable = 0;
 		  first = LONG_REF (reg_buf->bd_buffer + DP_OVERFLOW);
 		}
@@ -146,21 +158,23 @@ extern int f_backup_dump;
 
 
 dk_session_t *
-dbs_read_registry (dbe_storage_t * dbs)
+dbs_read_registry (dbe_storage_t * dbs, client_connection_t * cli)
 {
 #ifdef DBG_BLOB_PAGES_ACCOUNT
   if (f_backup_dump)
     db_dbg_account_init_hash ();
 #endif
-  if (!bootstrap_cli)
+  if (!cli)
     {
-      bootstrap_cli = client_connection_create ();
-      local_start_trx (bootstrap_cli);
+      cli_bootstrap_cli ();
+      cli = bootstrap_cli;
     }
+
   if (dbs->dbs_registry)
     {
       int err;
-      dk_session_t *str = bloblike_pages_to_string_output (dbs, bootstrap_cli->cli_trx, dbs->dbs_registry, &err);
+      dk_session_t *str = bloblike_pages_to_string_output (dbs, cli->cli_trx, dbs->dbs_registry, &err);
+      if (cli == bootstrap_cli)
       local_commit (bootstrap_cli);
       return str;
     }
@@ -173,26 +187,58 @@ id_hash_t *registry;
 id_hash_t *sequences;
 
 #define ENSURE_REGISTRY \
-  if (!registry) registry = id_str_hash_create (7001);
+  if (!registry) registry = id_str_hash_create (101);
 
 #define ENSURE_SEQUENCES \
   if (!sequences)  \
-sequences = id_hash_allocate  (2001, sizeof (void *), sizeof (boxint), \
+sequences = id_hash_allocate  (101, sizeof (void *), sizeof (boxint), \
 				 strhash, strhashcmp);
 
 
 caddr_t
-box_deserialize_string (caddr_t text, int opt_len)
+box_deserialize_string (caddr_t text, int opt_len, short offset)
 {
+  dtp_t dvrdf_temp[50];
   scheduler_io_data_t iod;
   caddr_t reg;
 
   dk_session_t ses;
   /* read_object will not box top level numbers */
-  if (DV_LONG_INT == ((dtp_t*)text)[0])
-    return (box_num (LONG_REF_NA (text + 1)));
-  if (DV_SHORT_INT == ((dtp_t*) text)[0])
-    return (box_num (((signed char *)text)[1]));
+  switch ((dtp_t)text[0])
+    {
+    case DV_LONG_INT:
+      return (box_num (LONG_REF_NA (text + 1) + offset));
+    case DV_INT64:
+      return (box_num (INT64_REF_NA (text + 1) + offset));
+
+    case DV_SHORT_INT:
+      return box_num (((signed char *)text)[1] + offset);
+    case DV_IRI_ID:
+      return box_iri_id ((unsigned int32)LONG_REF_NA (text + 1) + offset);
+    case DV_IRI_ID_8:
+      return box_iri_id (INT64_REF_NA (text + 1) + offset);
+    case DV_SHORT_STRING_SERIAL:
+      {
+	unsigned char len = (unsigned char) text[1];
+	caddr_t box = dk_alloc_box (len + 1, DV_STRING);
+	memcpy (box, text + 2, len);
+	box[len - 1] += offset;
+	box[len ] = 0;
+	return box;
+      }
+    case DV_RDF: 
+      if (!opt_len)
+	opt_len = box_length (text);
+      if (opt_len > sizeof (dvrdf_temp)) 
+	GPF_T1 ("rdf box serialization too long");
+      if (offset)
+	{
+	  memcpy (dvrdf_temp, text, opt_len);
+	  dvrdf_temp[opt_len - 1] += offset;
+	  text = (char*)dvrdf_temp;
+	}
+      break;
+    }
   memset (&ses, 0, sizeof (ses));
   memset (&iod, 0, sizeof (iod));
   ses.dks_in_buffer = text;
@@ -203,6 +249,65 @@ box_deserialize_string (caddr_t text, int opt_len)
   SESSION_SCH_DATA ((&ses)) = &iod;
 
   reg = (caddr_t) read_object (&ses);
+  return reg;
+}
+
+
+caddr_t
+mp_box_deserialize_string (mem_pool_t * mp, caddr_t text, int opt_len, short offset)
+{
+  dtp_t dvrdf_temp[50];
+  scheduler_io_data_t iod;
+  caddr_t reg;
+
+  dk_session_t ses;
+  /* read_object will not box top level numbers */
+  switch ((dtp_t)text[0])
+    {
+    case DV_LONG_INT:
+      return (mp_box_num (mp, LONG_REF_NA (text + 1) + offset));
+    case DV_INT64:
+      return (mp_box_num (mp, INT64_REF_NA (text + 1) + offset));
+
+    case DV_SHORT_INT:
+      return mp_box_num (mp, ((signed char *)text)[1] + offset);
+    case DV_IRI_ID:
+      return mp_box_iri_id (mp, (unsigned int32)LONG_REF_NA (text + 1) + offset);
+    case DV_IRI_ID_8:
+      return mp_box_iri_id (mp, INT64_REF_NA (text + 1) + offset);
+    case DV_SHORT_STRING_SERIAL:
+      {
+	unsigned char len = (unsigned char) text[1];
+	caddr_t box = mp_alloc_box (mp, len + 1, DV_STRING);
+	memcpy (box, text + 2, len);
+	box[len - 1] += offset;
+	box[len ] = 0;
+	return box;
+      }
+    case DV_RDF: 
+      if (!opt_len)
+	opt_len = box_length (text);
+      if (opt_len > sizeof (dvrdf_temp)) 
+	GPF_T1 ("rdf box serialization too long");
+      if (offset)
+	{
+	  memcpy (dvrdf_temp, text, opt_len);
+	  dvrdf_temp[opt_len - 1] += offset;
+	  text = (char*)dvrdf_temp;
+	}
+      break;
+    }
+  memset (&ses, 0, sizeof (ses));
+  memset (&iod, 0, sizeof (iod));
+  ses.dks_in_buffer = text;
+  if (opt_len)
+    ses.dks_in_fill = opt_len;
+  else
+    ses.dks_in_fill = box_length (text);
+  SESSION_SCH_DATA ((&ses)) = &iod;
+
+  reg = (caddr_t) read_object (&ses);
+  mp_trash (mp, reg);
   return reg;
 }
 
@@ -255,24 +360,33 @@ db_replay_registry_sequences (void)
 
 
 void
+dbs_registry_from_array (dbe_storage_t * dbs, caddr_t * reg)
+{
+  /* the array is either kept or freed here */
+  int inx;
+  DO_BOX (caddr_t *, ent, inx, reg)
+    {
+      id_hash_set (dbs->dbs_registry_hash, (caddr_t) & ent[0], (caddr_t) & ent[1]);
+      dk_free_box ((caddr_t) ent);
+    }
+  END_DO_BOX;
+  dk_free_box ((caddr_t)reg);
+}
+
+void
 dbs_init_registry (dbe_storage_t * dbs)
 {
-  int inx;
   caddr_t *reg;
-  dk_session_t *ses = dbs_read_registry (dbs);
+  dk_session_t *ses = dbs_read_registry (dbs, NULL);
   ENSURE_SEQUENCES;
   ENSURE_REGISTRY;
+  if (DBS_PRIMARY == dbs->dbs_type && !dbs->dbs_registry_hash)
+    dbs->dbs_registry_hash = registry;
   if (!ses)
     return;
 
   reg = (caddr_t *) read_object (ses);
-  DO_BOX (caddr_t *, ent, inx, reg)
-  {
-    id_hash_set (registry, (caddr_t) & ent[0], (caddr_t) & ent[1]);
-    dk_free_box ((caddr_t) ent);
-  }
-  END_DO_BOX;
-  dk_free_box ((caddr_t) reg);
+  dbs_registry_from_array (dbs, reg);
   if (ses)
     dk_free_box ((box_t) ses);
 }
@@ -314,7 +428,7 @@ registry_set_sequence (caddr_t name, boxint value, caddr_t * err_ret)
 {
   char temp[2000];
   caddr_t the_id = box_sprintf_escaped (name, 0);
-  snprintf (temp, sizeof (temp), "X sequence_set ('%s', " BOXINT_FMT ", 1)", the_id, value);
+  snprintf (temp, sizeof (temp), "X __sequence_set ('%s', " BOXINT_FMT ", 1)", the_id, value);
   dk_free_box (the_id);
   registry_set_1 (name, temp, 0, err_ret);
 }
@@ -325,6 +439,8 @@ registry_update_sequences (void)
   id_hash_iterator_t it;
   caddr_t *name;
   boxint *value;
+  if (!sequences)
+    return;
   id_hash_iterator (&it, sequences);
   ASSERT_IN_TXN;
   while (hit_next (&it, (caddr_t *) & name, (caddr_t *) & value))
@@ -337,26 +453,34 @@ registry_update_sequences (void)
 caddr_t list (long n,...);
 
 
+caddr_t *
+dbs_registry_to_array (dbe_storage_t * dbs)
+{
+  dk_set_t ents = NULL;
+  id_hash_iterator_t it;
+  caddr_t *k, *d;
+  id_hash_iterator (&it, dbs->dbs_registry_hash);
+  while (hit_next (&it, (caddr_t *) & k, (caddr_t *) & d))
+    {
+      caddr_t *ent = (caddr_t *) list (2, *k, *d);
+      dk_set_push (&ents, (void*)ent);
+    }
+
+  return (caddr_t *) list_to_array (dk_set_nreverse (ents));
+}
+
+
 int
 dbs_write_registry (dbe_storage_t * dbs)
 {
   int rc;
   scheduler_io_data_t iod;
-  dk_set_t ents = NULL;
   int inx;
   caddr_t *arr;
   dk_session_t *ses = strses_allocate ();
-  id_hash_iterator_t it;
-  caddr_t *k, *d;
 
   registry_update_sequences ();
-  id_hash_iterator (&it, registry);
-  while (hit_next (&it, (caddr_t *) & k, (caddr_t *) & d))
-    {
-      caddr_t *ent = (caddr_t *) list (2, *k, *d);
-      dk_set_push (&ents, ent);
-    }
-  arr = (caddr_t *) list_to_array (dk_set_nreverse (ents));
+  arr = dbs_registry_to_array (dbs);
   if (!SESSION_SCH_DATA (ses))
     SESSION_SCH_DATA (ses) = &iod;
   memset (&iod, 0, sizeof (iod));
@@ -410,7 +534,8 @@ log_registry_set (lock_trx_t * lt, char * k, const char * d)
     return;
 
   ASSERT_IN_TXN;
-  if (0 == strncmp (k, "__key__", 7))
+  if (0 == strncmp (k, "__key__", 7)
+    || 0 == strncmp (k, "__EM:__key__", 12) )
     return;
   tailprintf (temp, sizeof (temp), &llen, "registry_set ('%s', '", k);
   llen += sql_escaped_string_literal (&temp[llen], (char *) d, sizeof (temp) - llen);
@@ -443,7 +568,8 @@ db_log_registry (dk_session_t * log)
 	  dk_free_box (the_id);
 	  continue;
 	}
-      if (0 == strncmp (*k, "__key__", 7))
+      if (0 == strncmp (*k, "__key__", 7)
+	  || 0 == strncmp (*k, "__EM:__key__", 12))
 	{
 	  dk_free_box (the_id);
 	  continue;
@@ -499,6 +625,37 @@ registry_set_1 (const char *name, const char *value, int is_boxed, caddr_t * err
       copy_name = box_string (name);
       copy_value = is_boxed ? box_copy (value) : box_dv_short_string (value);
       id_hash_set (registry, (caddr_t) & copy_name, (caddr_t) & copy_value);
+    }
+}
+
+
+void
+dbs_registry_set (dbe_storage_t * dbs, const char *name, const char *value, int is_boxed)
+{
+  caddr_t *place;
+  ASSERT_IN_TXN;
+  if (is_boxed && value && !DV_STRINGP (value))
+    GPF_T1 ("setting non-string in registry");
+  place = (caddr_t *) id_hash_get (dbs->dbs_registry_hash, (caddr_t) & name);
+  if (place)
+    {
+      dk_free_box (*place);
+      if (!value)
+	{
+	  id_hash_remove (dbs->dbs_registry_hash, (caddr_t)&name);
+	  return;
+	}
+      *place = is_boxed ? box_copy (value) : box_dv_short_string (value);
+    }
+  else
+    {
+      caddr_t copy_name;
+      caddr_t copy_value;
+      if (!value)
+	return;
+      copy_name = box_string (name);
+      copy_value = is_boxed ? box_copy (value) : box_dv_short_string (value);
+      id_hash_set (dbs->dbs_registry_hash, (caddr_t) & copy_name, (caddr_t) & copy_value);
     }
 }
 

@@ -207,9 +207,31 @@ typedef struct sql_comp_s
     state_slot_t *	sc_grouping;
     ST **		sc_groupby_set;
     int		sc_is_update;
-    update_node_t * 	sc_update_keyset;
+    char	sc_is_union;
+    char	sc_order; /* If order of result rows is not important, like in filling a hash */
+    char	sc_any_clb; /* any multi-state cluster node with a clb */
+    dk_hash_t *	sc_qn_to_dpipe; /* if a dpipe is to be added before the node, it is marked here */
+    dk_hash_t *	sc_ssl_eqs;
     id_hash_t *	sc_sample_cache;
+    state_slot_t **	sc_sel_out;
+    dk_set_t		sc_agg_state_slot; /* when making an aggregate, this is the list of slots that hold the aggregation state */
+    state_slot_t *	sc_set_no_ssl; /* for multistate qr with aggregate, top, distinct etc, set no of input */
+    trans_node_t *	sc_trans; /* the tn while forming the step dt */
+    dk_set_t		sc_dfg_stages;
+    query_frag_t *	sc_qf;
+    char		sc_in_dfg_subq;
   } sql_comp_t;
+
+
+
+#define SC_UPD_PLACE 1
+#define SC_UPD_INS 2
+
+#define TS_ORDER_KEY 0 /* generate results in key order and add key cols */
+#define TS_ORDER_PLACE 1 /* generate the results in any order but add key cols for subsequent searched upd or del */
+#define TS_ORDER_NONE 2  /* generate the resulsts in any order */
+
+
 
 #define SC_G_ID(sc) \
   (sc->sc_client->cli_user ? sc->sc_client->cli_user->usr_g_id : G_ID_DBA)
@@ -389,7 +411,8 @@ void sqlc_table_ref_list (sql_comp_t *sc, ST** refs);
 
 caddr_t * sel_expand_stars (sql_comp_t * sc, ST ** selection, ST** from);
 
-int cv_is_local (code_vec_t cv);
+int cv_is_local_1 (code_vec_t cv, int is_cluster);
+#define cv_is_local(cv) cv_is_local_1 (cv, 0)
 dk_set_t cv_assigned_slots (code_vec_t cv);
 void sqlc_ct_generate (sql_comp_t * sc, comp_table_t * ct);
 
@@ -435,7 +458,6 @@ void sqlc_derived_order_by (sql_comp_t * sc, comp_table_t * ct);
 void sqlc_table_used (sql_comp_t * sc, dbe_table_t * tb);
 void sqlc_trig_const_params (sql_comp_t * sc, state_slot_t ** params,
     dk_set_t * code);
-void sqlc_update_set_keyset (sql_comp_t * sc, table_source_t * ts);
 
 void tc_init (trig_cols_t * tc, int event, dbe_table_t * tb, caddr_t * cols,
     ST ** vals, int add_pk);
@@ -501,6 +523,7 @@ void qr_replace_node (query_t * qr, data_source_t * to_replace,
 		      data_source_t * replace_with);
 
 void setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, long n_rows);
+void setp_after_deserialize (setp_node_t * setp);
 void ha_free (hash_area_t * ha);
 
 #ifdef BIF_XML
@@ -533,4 +556,53 @@ query_t *sqlc_udt_store_method_def (sql_comp_t *sc, client_connection_t *cli,
     int cr_type, query_t *qr, const char * string2, caddr_t *err);
 query_t *sqlc_make_proc_store_qr (client_connection_t * cli, query_t * proc_or_trig,
     const char * text);
+
+
+#define CL_QF_BREAK 1 /* this qn can't pass to cluster remote inside a qf */
+
+void qn_refd_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * all_res, int * non_cl_local);
+void sqlg_cl_dml (sql_comp_t * sc, data_source_t * dml);
+void sqlg_qn_env (sql_comp_t * sc, data_source_t * qn, dk_set_t qn_stack, dk_hash_t * refs);
+void sqlg_qr_env (sql_comp_t * sc, query_t * qr);
+void cv_refd_slots (sql_comp_t * sc, code_vec_t cv, dk_hash_t * res, dk_hash_t * all_res, int * non_cl_local);
+extern int sqlg_count_qr_global_refs;
+void ins_assigned (instruction_t * ins, dk_set_t * res);
+
+extern int sqlg_count_qr_global_refs;
+
+#define REF_SSL(res, ssl) \
+  {if (res && ssl && SSL_CONSTANT != ssl->ssl_type \
+       && (sqlg_count_qr_global_refs||  !ssl->ssl_qr_global)  && SSL_PLACEHOLDER != ssl->ssl_type && SSL_ITC != ssl->ssl_type) \
+sethash ((void*)ssl, res, (void*)1); }
+
+#define ASG_SSL(res, all_res, ssl) \
+  { sqlc_asg_mark (ssl); \
+    sqlg_asg_ssl (res, all_res, ssl); }
+
+
+void sqlg_asg_ssl (dk_hash_t * res, dk_hash_t * all_res, state_slot_t * ssl); 
+void sqlc_asg_mark (state_slot_t * ssl);
+void asg_ssl_array (dk_hash_t * res, dk_hash_t * all_res, state_slot_t ** ssls);
+void ts_set_local_code (table_source_t * ts, int is_cluster);
+void sqlg_cl_insert (sql_comp_t * sc, comp_context_t * cc, insert_node_t * ins, ST * tree, dk_set_t * code);
+ST * sqlc_pos_to_searched_where (sql_comp_t * sc, subq_compilation_t * sqc, char * cr_name,
+			    dbe_table_t * tb);
+caddr_t * ht_keys_to_array (dk_hash_t * ht);
+void sqlg_multistate_code (sql_comp_t * sc, data_source_t ** head, int in_order);
+int qr_is_multistate (query_t * qr);
+int qn_seq_is_multistate (data_source_t * qn);
+data_source_t * qn_prev (data_source_t ** head , data_source_t * qn);
+void sqlg_cl_multistate_simple_agg (sql_comp_t * sc,  dk_set_t * com_code);
+void sqlg_multistate_query (sql_comp_t * sc, query_t * qr, set_ctr_node_t * sctr);
+state_slot_t * sqlg_set_no_if_needed (sql_comp_t * sc, data_source_t ** head);
+void setp_set_ssa (sql_comp_t * sc, setp_node_t * setp, dk_set_t * list_ret);
+dk_set_t  ha_save (hash_area_t *);
+void sqlg_cl_multistate_group (sql_comp_t * sc);
+void ssa_init (sql_comp_t * sc, setp_save_t * ssa, state_slot_t * set_no_ssl);
+dk_set_t  sqlg_continue_list (data_source_t * qn);
+
+
+extern int cl_rdf_inf_inited;
+extern du_thread_t * cl_rdf_inf_init_thread;
+
 #endif /* _SQLCMPS_H */

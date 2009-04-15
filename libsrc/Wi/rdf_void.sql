@@ -62,6 +62,7 @@ create procedure RDF_VOID_STORE (in graph varchar, in to_graph_name varchar := n
       host := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
       to_graph_name := 'http://' || host || '/stats/void#';
     }
+  --string_to_file ('void.nt', ses, -2);
   exec (sprintf ('sparql delete from <%s> { ?s1 ?p1 ?s2 } from <%s> where { <%s#Dataset> void:statItem ?s1 . ?s1 ?p1 ?s2 }',
 	to_graph_name, to_graph_name, graph));
   TTLP (ses, graph, to_graph_name, 185);
@@ -96,13 +97,13 @@ create procedure RDF_VOID_GEN (in graph varchar, in gr_name varchar := null)
 
   http (sprintf ('\n'), ses);
 
-  http (sprintf (':Dataset a void:Dataset ; \n'), ses);
+  http (sprintf ('<Dataset> a void:Dataset ; \n'), ses);
   http (sprintf (' rdfs:seeAlso <%s> ; \n', graph), ses);
   if (gr_name is not null)
     http (sprintf (' rdfs:label "%s" ; \n', gr_name), ses);
   http (sprintf (' void:sparqlEndpoint <http://%s/sparql> ; \n', host), ses);
-  http (sprintf (' void:statItem :Stat . \n'), ses);
-  http (sprintf (':Stat a scovo:Item ; \n rdf:value %d ; \n', cnt), ses);
+  http (sprintf (' void:statItem <Stat> . \n'), ses);
+  http (sprintf ('<Stat> a scovo:Item ; \n rdf:value %d ; \n', cnt), ses);
   http (sprintf (' scovo:dimension void:numOfTriples . \n'), ses);
   http (sprintf ('\n'), ses);
 
@@ -126,16 +127,16 @@ create procedure RDF_VOID_GEN (in graph varchar, in gr_name varchar := null)
 	    }
 	  name := nam;
 	  dict_put (dict, nam, 1);
-	  http (sprintf (':Dataset void:containsLinks :%sLinks .\n', name), ses);
+	  http (sprintf ('<Dataset> void:containsLinks <%sLinks> .\n', name), ses);
 
-	  http (sprintf (':%sLinks a void:Linkset ; \n', name), ses);
-	  http (sprintf (' void:statItem :%sStat . \n', name), ses);
+	  http (sprintf ('<%sLinks> a void:Linkset ; \n', name), ses);
+	  http (sprintf (' void:statItem <%sStat> . \n', name), ses);
 
-	  http (sprintf (':%sStat a  scovo:Item ; \n', name), ses);
+	  http (sprintf ('<%sStat> a  scovo:Item ; \n', name), ses);
 	  http (sprintf (' rdf:value %d ; \n', cnt), ses);
-	  http (sprintf (' scovo:dimension :%sType .\n', name), ses);
+	  http (sprintf (' scovo:dimension <%sType> .\n', name), ses);
 
-	  http (sprintf (':%sType rdf:type :TypeOfLink ;\n', name), ses);
+	  http (sprintf ('<%sType> rdf:type <TypeOfLink> ;\n', name), ses);
 	  http (sprintf (' void:linkPredicate %s .\n', rel), ses);
 	  http (sprintf ('\n'), ses);
 	  has_links := has_links + 1;
@@ -146,7 +147,7 @@ create procedure RDF_VOID_GEN (in graph varchar, in gr_name varchar := null)
     where { graph `iri (?:graph)` { [] a ?class . filter (!isLiteral (?class)) } } group by ?class order by desc 2) s do
     {
       if ("class" like 'http://rdfs.org/ns/void#%' or "class" like 'http://purl.org/NET/scovo#%'
-	  or "class" = graph || '#TypeOfLink' or "class" like graph || '#%Links')
+	  or "class" = graph || 'TypeOfLink' or "class" like graph || '%Links')
 	goto skip;
       RDF_VOID_SPLIT_IRI ("class", pref, name);
       nam := sprintf ('%U', name);
@@ -159,8 +160,8 @@ create procedure RDF_VOID_GEN (in graph varchar, in gr_name varchar := null)
 	}
       name := nam;
       dict_put (dict, nam, 1);
-      http (sprintf (':Dataset void:statItem :%sStat .\n', name), ses);
-      http (sprintf (':%sStat a  scovo:Item ; \n', name), ses);
+      http (sprintf ('<Dataset> void:statItem <%sStat> .\n', name), ses);
+      http (sprintf ('<%sStat> a  scovo:Item ; \n', name), ses);
       http (sprintf (' rdf:value %d ; \n', "cnt"), ses);
       http (sprintf (' scovo:dimension <%s> ; \n', "class"), ses);
       http (sprintf (' scovo:dimension void:numberOfResources . \n'), ses);
@@ -169,7 +170,7 @@ create procedure RDF_VOID_GEN (in graph varchar, in gr_name varchar := null)
     }
 
   if (has_links)
-    http (sprintf (':TypeOfLink rdfs:subClassOf scovo:Dimension . \n'), ses);
+    http (sprintf ('<TypeOfLink> rdfs:subClassOf scovo:Dimension . \n'), ses);
   return ses;
 }
 ;

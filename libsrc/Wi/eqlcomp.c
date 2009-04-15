@@ -65,6 +65,8 @@ cc_new_instance_slot (comp_context_t * cc)
 void
 ssl_free (state_slot_t * ssl)
 {
+  if (ssl->ssl_not_freeable)
+    return;
   dk_free_box (ssl->ssl_name);
   if (SSL_CONSTANT == ssl->ssl_type)
     {
@@ -261,7 +263,7 @@ dsr_free (data_source_t * x)
   cv_free (x->src_pre_code);
   cv_free (x->src_after_test);
   cv_free (x->src_after_code);
-
+  dk_free_box (x->src_local_save);
   dk_set_free (x->src_continuations);
   dk_free ((caddr_t) x, -1);
 }
@@ -366,6 +368,9 @@ qr_free (query_t * qr)
       proc_name_free (qr->qr_pn);
     }
   dk_free_box ((caddr_t) qr->qr_proc_cost);
+  dk_free_box ((caddr_t)qr->qr_qf_params);
+  dk_free_box ((caddr_t)qr->qr_qf_agg_res);
+  dk_free_box ((caddr_t)qr->qr_qf_agg_defaults);
 #ifdef PLDBG
   dk_free_box (qr->qr_source);
   if (qr->qr_line_counts)
@@ -538,7 +543,7 @@ ssl_new_tree (comp_context_t * cc, const char *name)
 
   sl->ssl_index = cc_new_instance_slot (cc);
   sl->ssl_name = box_dv_uname_string (name);
-  sl->ssl_type = SSL_VARIABLE;
+  sl->ssl_type = SSL_TREE;
   sl->ssl_dtp = DV_CUSTOM;
 
   dk_set_push (&cc->cc_super_cc->cc_query->qr_temp_spaces, (void *) sl);
@@ -930,6 +935,8 @@ inx_op_set_search_params (comp_context_t * cc, comp_table_t * ct, inx_op_t * iop
     }
   if (cc && inx >= MAX_SEARCH_PARAMS)
     sqlc_error (cc, "42000", "The number of predicates is too high");
+  ksp_cmp_func (&iop->iop_ks_start_spec, &iop->iop_ks_start_spec_nth);
+  ksp_cmp_func (&iop->iop_ks_full_spec, &iop->iop_ks_full_spec_nth);
   il_init (cc, &iop->iop_il);
 }
 
@@ -1090,6 +1097,12 @@ key_free_trail_specs (search_spec_t * sp)
 
 
 void
+clb_free (cl_buffer_t * clb)
+{
+  dk_free_box (clb->clb_save);
+}
+
+void
 ks_free (key_source_t * ks)
 {
   if (!ks)
@@ -1101,8 +1114,19 @@ ks_free (key_source_t * ks)
   cv_free (ks->ks_local_test);
   cv_free (ks->ks_local_code);
   if (ks->ks_out_map)
-    dk_free ((caddr_t) ks->ks_out_map, -1);
+    dk_free_box ((caddr_t) ks->ks_out_map);
   dk_set_free (ks->ks_always_null);
+  dk_free_box ((caddr_t)ks->ks_qf_output);
+  if (ks->ks_cl_order)
+    {
+      int inx;
+      DO_BOX (caddr_t, ord, inx, ks->ks_cl_order)
+	{
+	  dk_free (ord, sizeof (clo_comp_t));
+	}
+      END_DO_BOX;
+      dk_free_box ((caddr_t)ks->ks_cl_order);
+    }
   dk_free ((caddr_t) ks, sizeof (key_source_t));
 }
 
@@ -1243,6 +1267,7 @@ ts_free (table_source_t * ts)
   else 
     ks_free (ts->ts_order_ks);
   ts->ts_order_ks = NULL;
+  clb_free (&ts->clb);
   cv_free (ts->ts_after_join_test);
   ts->ts_after_join_test = NULL;
   if (ts->ts_main_ks)
@@ -1433,6 +1458,7 @@ ins_free (insert_node_t * ins)
   dk_free_box ((caddr_t) ins->ins_col_ids);
   dk_set_free (ins->ins_values);
   dk_free_box ((caddr_t) ins->ins_trigger_args);
+  clb_free (&ins->clb);
   DO_BOX (ins_key_t *, ik, inx, ins->ins_keys)
     {
       dk_free_box ((caddr_t) ik->ik_slots);
@@ -1440,6 +1466,7 @@ ins_free (insert_node_t * ins)
     }
   END_DO_BOX;
   dk_free_box ((caddr_t) ins->ins_keys);
+  dk_free_box (ins->ins_key_only);
 }
 
 
@@ -1468,14 +1495,17 @@ ins_key (comp_context_t * cc, insert_node_t * ins, dbe_key_t * key)
   dk_set_t slots = NULL;
   NEW_VARZ (ins_key_t, ik);
   ik->ik_key = key;
-  DO_SET (dbe_column_t *, col, &key->key_parts)
+  DO_CL (cl, key->key_key_fixed)
     {
-      state_slot_t * ssl = ins_col_slot (cc, ins, col->col_id);
-      dk_set_push (&slots, (void*) ssl);
-      if (++inx >= key->key_n_significant)
-	break;
+      dk_set_push (&slots, (void*) ins_col_slot (cc, ins, cl->cl_col_id));
     }
-  END_DO_SET ();
+  END_DO_CL;
+  DO_CL (cl, key->key_key_var)
+    {
+      dk_set_push (&slots, (void*) ins_col_slot (cc, ins, cl->cl_col_id));
+    }
+  END_DO_CL;
+
   if (key->key_row_fixed)
     {
       for (inx = 0; key->key_row_fixed[inx].cl_col_id; inx++)
@@ -1498,6 +1528,19 @@ void
 sqlc_ins_keys (comp_context_t * cc, insert_node_t * ins)
 {
   dk_set_t keys = NULL;
+  if (ins->ins_key_only)
+    {
+      DO_SET (dbe_key_t *, key, &ins->ins_table->tb_keys)
+	{
+	  if (0 == stricmp (key->key_name, ins->ins_key_only))
+	    {
+	      ins->ins_keys = (ins_key_t **) list (1, ins_key (cc, ins, key));
+	      return;
+	    }
+	}
+      END_DO_SET();
+      sqlc_new_error (cc, "22000", "INS..", "explicit index in insert does not exist");
+    }
   dk_set_push (&keys, (void*) ins_key (cc, ins, ins->ins_table->tb_primary_key));
   DO_SET (dbe_key_t *, key, &ins->ins_table->tb_keys)
     {
@@ -1540,6 +1583,7 @@ insert_node_create (comp_context_t * cc, char *tb_name,
 	  dk_set_cons ((caddr_t) slot, NULL));
     }
   sqlc_ins_keys (cc, ins);
+  sqlg_cl_insert (NULL, cc, ins, NULL, NULL);
   return ins;
 }
 
@@ -1584,7 +1628,7 @@ key_source_om (comp_context_t * cc, key_source_t * ks)
   out_map_t * om;
   if (!n_out)
     return;
-  om = (out_map_t *) dk_alloc (sizeof (out_map_t) * n_out);
+  om = (out_map_t *) dk_alloc_box (sizeof (out_map_t) * n_out, DV_BIN);
   memset (om, 0, n_out * sizeof (out_map_t));
   DO_SET (dbe_column_t *, col, &ks->ks_out_cols)
     {
@@ -1791,6 +1835,8 @@ upd_free (update_node_t * upd)
 {
   dk_free_box ((caddr_t) upd->upd_col_ids);
   dk_free_box ((caddr_t) upd->upd_values);
+  dk_free_box ((caddr_t) upd->upd_quick_values);
+  dk_free_box ((caddr_t) upd->upd_var_cl);
   dk_free_box ((caddr_t) upd->upd_trigger_args);
   dk_free_box ((caddr_t) upd->upd_fixed_cl);
 }

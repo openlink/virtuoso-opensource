@@ -272,7 +272,10 @@ box_append_1 (caddr_t box, caddr_t elt)
 caddr_t
 t_box_append_1 (caddr_t box, caddr_t elt)
 {
-  caddr_t b2 = t_alloc_box (box_length (box) + sizeof (caddr_t),
+  caddr_t b2;
+  if (!box)
+    return (caddr_t)t_list (1, elt);
+  b2 = t_alloc_box (box_length (box) + sizeof (caddr_t),
       box_tag (box));
   memcpy (b2, box, box_length (box));
   *((caddr_t *) (b2 + box_length (box))) = elt;
@@ -712,6 +715,7 @@ sqlc_insert (sql_comp_t * sc, ST * tree)
       ins->ins_mode = (int) tree->_.insert.mode;
       ins->ins_table = tb;
       ins->ins_policy_qr = sqlc_make_policy_trig (sc->sc_cc, tb, TB_RLS_I);
+      ins->ins_key_only = box_copy (tree->_.insert.key);
       DO_BOX (caddr_t, col_name, inx, tree->_.insert.cols)
       {
 	dbe_column_t *col = tb_name_to_column_misc (tb, col_name);
@@ -727,6 +731,7 @@ sqlc_insert (sql_comp_t * sc, ST * tree)
 	{
 	  ST *sel = tree->_.insert.vals;
 	  sqlc_top_select_dt (sc, sel);
+	  sc->sc_is_update = SC_UPD_INS;
 	  sc->sc_no_current_of = 1;
 	    sqlo_query_spec (sc, SEL_IS_DISTINCT (sel),
 		sel->_.select_stmt.selection,
@@ -759,7 +764,6 @@ sqlc_insert (sql_comp_t * sc, ST * tree)
       ins->ins_values = slots;
       sqlc_insert_autoincrements (sc, ins, &code);
       sqlc_ins_triggers (sc, ins, &code);
-      ins->src_gen.src_pre_code = code_to_cv (sc, code);
       if (dk_set_length (ins->ins_values) != BOX_ELEMENTS (ins->ins_col_ids))
 	sqlc_new_error (sc->sc_cc, "21S01", "SQ099",
 	    "different number of cols and values in insert.");
@@ -768,6 +772,8 @@ sqlc_insert (sql_comp_t * sc, ST * tree)
 	    "A local table of over maximum columns may not be inserted");
       sqlc_ins_param_types (sc, ins);
       sqlc_ins_keys (sc->sc_cc, ins);
+      sqlg_cl_insert (sc, sc->sc_cc, ins, tree, &code);
+      ins->src_gen.src_pre_code = code_to_cv (sc, code);
     }
 }
 
@@ -861,26 +867,43 @@ int dtp_is_var (dtp_t dtp);
 void
 upd_optimize (sql_comp_t *sc, update_node_t * upd)
 {
-  dk_set_t fixed_cls = NULL;
+  dk_set_t fixed_cls = NULL, fixed_vals = NULL;
+  dk_set_t var_cls = NULL, var_vals = NULL;
   dbe_schema_t * sch = sc->sc_cc->cc_schema;
   dbe_key_t *key = upd->upd_table->tb_primary_key;
   /*dbe_column_t * col;*/
   int inx = 0;
-
+  if (UPD_MAX_QUICK_COLS < dk_set_length (upd->upd_table->tb_primary_key->key_parts))
+    return;
   DO_BOX (ptrlong, cid, inx, upd->upd_col_ids)
     {
       dbe_column_t * col = sch_id_to_column (sch, (oid_t) cid);
-      if (!dtp_is_fixed (col->col_sqt.sqt_dtp)
-	  || col->col_is_key_part)
+      if (CC_NONE != key_find_cl (upd->upd_table->tb_primary_key, col->col_id)->cl_compression
+	  || col->col_is_key_part
+	  || (upd->upd_table->tb_any_blobs && dtp_is_var (col->col_sqt.sqt_dtp)))
 	{
 	  dk_set_free (fixed_cls);
+	  dk_set_free (var_cls);
+	  dk_set_free (fixed_vals);
+	  dk_set_free (var_vals);
 	  return;
 	}
+      if (dtp_is_fixed (col->col_sqt.sqt_dtp))
+	{
       dk_set_push (&fixed_cls, (void*) key_find_cl (key, (oid_t) cid));
+	  dk_set_push (&fixed_vals, upd->upd_values[inx]);
+	}
+      else 
+	{
+	  dk_set_push (&var_cls, (void*) key_find_cl (key, (oid_t) cid));
+	  dk_set_push (&var_vals, upd->upd_values[inx]);
+	}
     }
   END_DO_BOX;
   upd->upd_exact_key = key->key_id;
   upd->upd_fixed_cl = (dbe_col_loc_t **) list_to_array (dk_set_nreverse (fixed_cls));
+  upd->upd_var_cl = (dbe_col_loc_t **) list_to_array (dk_set_nreverse (var_cls));
+  upd->upd_quick_values = (state_slot_t**) list_to_array (dk_set_conc (dk_set_nreverse (fixed_vals), dk_set_nreverse (var_vals)));
 }
 
 
@@ -1107,39 +1130,6 @@ int sqlc_no_remote_pk = 0;
 
 
 void
-sqlc_update_set_keyset (sql_comp_t * sc, table_source_t * ts)
-{
-  /* in searched update / delete, there's one table source. */
-  update_node_t * upd = sc->sc_update_keyset;
-  int part_no = 0, inx;
-  dbe_key_t * key = ts->ts_order_ks ? ts->ts_order_ks->ks_key : NULL;
-
-  if (!key || !upd)
-    {
-      sc->sc_update_keyset = NULL;
-      return;
-    }
-  DO_SET (dbe_column_t *, col, &key->key_parts)
-    {
-      DO_BOX (ptrlong, cid, inx, upd->upd_col_ids)
-	{
-	  if (cid == col->col_id)
-	    {
-	      upd->upd_keyset = 1;
-	      return;
-	    }	  
-	}
-      END_DO_BOX;
-      part_no++;
-      if (part_no >= key->key_n_significant)
-	break;
-    }
-  END_DO_SET ();
-  sc->sc_update_keyset = NULL;
-}
-
-
-void
 sqlc_update_searched (sql_comp_t * sc, ST * tree)
 {
   state_slot_t **slots;
@@ -1217,8 +1207,7 @@ sqlc_update_searched (sql_comp_t * sc, ST * tree)
        */
       tc_init (&tc, TRIG_UPDATE, tb,
 	  (caddr_t*) tree->_.update_src.cols, tree->_.update_src.vals, 0);
-      sc->sc_is_update = 1;
-      sc->sc_update_keyset = upd;
+      sc->sc_is_update = SC_UPD_PLACE;
       sqlo_query_spec (sc, 0,
 	  (caddr_t *) tc.tc_selection,
 	  tree->_.update_src.table_exp,
@@ -1226,7 +1215,6 @@ sqlc_update_searched (sql_comp_t * sc, ST * tree)
 	  &slots);
       sc->sc_is_update = 0;
       sc->sc_in_cursor_def = 0;
-      sc->sc_update_keyset = NULL;
       if (!tc.tc_is_trigger)
 	upd->upd_values = slots;
       else
@@ -1239,11 +1227,9 @@ sqlc_update_searched (sql_comp_t * sc, ST * tree)
        }
       tc_free (&tc);
 
+      upd->upd_place = sqlo_co_place (sc);
       sql_node_append (&sc->sc_cc->cc_query->qr_head_node,
 	  (data_source_t *) upd);
-      if (upd->upd_keyset)
-	upd->upd_keyset_state = ssl_new_variable (sc->sc_cc, "keyset_state", DV_ARRAY_OF_POINTER);
-      upd->upd_place = sqlo_co_place (sc);
       sqlc_upd_param_types (sc, upd);
       upd_optimize (sc, upd);
     }
@@ -1299,6 +1285,21 @@ sqlc_delete_pos (sql_comp_t * sc, ST * tree, subq_compilation_t * cursor_sqc)
 }
 
 
+dbe_key_t *
+sqlc_del_key_only (sql_comp_t * sc, dbe_table_t * tb, ST * texp)
+{
+  caddr_t kn = sqlo_opt_value (texp->_.table_exp.opts, OPT_INDEX);
+  if (kn)
+    {
+      dbe_key_t * key = tb_name_to_key (tb, kn, 0);
+      if (!key)
+	sqlc_new_error (sc->sc_cc, "42000", "SR...", "No index %s for single key delete", kn);
+      return key;
+    }
+  return NULL;
+}
+
+
 void
 sqlc_delete_searched (sql_comp_t * sc, ST * tree)
 {
@@ -1331,17 +1332,16 @@ sqlc_delete_searched (sql_comp_t * sc, ST * tree)
 
       del->del_table = tb;
       del->del_policy_qr = sqlc_make_policy_trig (sc->sc_cc, tb, TB_RLS_D);
+      del->del_key_only = sqlc_del_key_only (sc, del->del_table, tree->_.delete_src.table_exp);
       tc_init (&tc, TRIG_DELETE, tb, NULL, NULL, 0);
       sc->sc_in_cursor_def = 1;
-      sc->sc_is_update = 1;
+      sc->sc_is_update = SC_UPD_PLACE;
       sqlo_query_spec (sc, 0, (caddr_t *) tc.tc_selection, tree->_.delete_src.table_exp,
 	      &sc->sc_cc->cc_query->qr_head_node,
 	      &slot_array);
       sc->sc_is_update = 0;
       sc->sc_in_cursor_def = 0;
       del->del_place = sqlo_co_place (sc);
-      sql_node_append (&sc->sc_cc->cc_query->qr_head_node,
-		       (data_source_t *) del);
       if (tc.tc_is_trigger)
 	{
 	  dk_set_t code = NULL;
@@ -1353,6 +1353,8 @@ sqlc_delete_searched (sql_comp_t * sc, ST * tree)
 	{
 	  dk_free_box ((caddr_t) slot_array);
 	}
+	sql_node_append (&sc->sc_cc->cc_query->qr_head_node,
+			 (data_source_t *) del);
       tc_free (&tc);
     }
 }

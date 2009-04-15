@@ -93,6 +93,9 @@ struct ol_backup_context_s
   /* copy of wi_inst.wi_master->dbs_incbackup_set to rollback all changes over this set if error occurs (e.g. timeout). */
   buffer_desc_t *	octx_incset;
   buffer_desc_t *	octx_free_set;
+  buffer_desc_t *	octx_ext_set;
+  caddr_t *		octx_registry;
+  buffer_desc_t *	octx_cpt_set;
 
   /* list of all created files */
   dk_set_t	octx_backup_files;

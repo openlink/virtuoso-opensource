@@ -92,7 +92,7 @@ itc_near_random (it_cursor_t * itc, placeholder_t * pl, buffer_desc_t ** buf_ret
       if (is_asc)
 	{
 	  ITC_LEAVE_MAPS (itc);
-	  res = pg_key_compare (*buf_ret, pm->pm_entries[pm->pm_count - 1], itc);
+	  res = pg_key_compare (*buf_ret, pm->pm_count - 1, itc);
 	  if (DVC_GREATER == res || DVC_MATCH == res)
 	    {
 	      /* we know that it is asc order and max of page > value sought.  The result is valid without a full lookup */
@@ -132,7 +132,8 @@ itc_il_search (it_cursor_t * itc, buffer_desc_t ** buf_ret, caddr_t * qst,
   int res;
   if (!il->il_n_read)
     GPF_T1 ("il not inited.");
-  if (pl && pl->itc_is_registered 
+  /* the locality trick simply does not work with inx int with lubm if non bm inx.  A bm inx does no il trick.  So the il trick is commented out */
+  if (0 &&pl && pl->itc_is_registered 
       && n > 3 && n / (hits | 1) < 3)
     {
       res = itc_near_random (itc, pl, buf_ret,
@@ -209,11 +210,11 @@ inxop_bm_leading_output (it_cursor_t * itc, buffer_desc_t * buf)
 	      else if (OM_NULL == om[inx].om_is_null)
 		qst_set_bin_string (itc->itc_out_state, ssl, (db_buf_t) "", 0, DV_DB_NULL);
 	      else
-		qst_set (itc->itc_out_state, ssl, itc_box_row (itc, buf->bd_buffer));
+		qst_set (itc->itc_out_state, ssl, itc_box_row (itc, (buffer_desc_t *) buf->bd_buffer));
 	    }
 	  else
 	    {
-	      itc_qst_set_column (itc, &om[inx].om_cl, itc->itc_out_state, ssl);
+	      itc_qst_set_column (itc, buf, &om[inx].om_cl, itc->itc_out_state, ssl);
 	    }
 	  inx++;
 	}
@@ -239,7 +240,7 @@ inxop_set_iob (inx_op_t * iop, it_cursor_t *itc, buffer_desc_t * buf, caddr_t * 
   int off, len, is_single;
   dbe_key_t * key = itc->itc_insert_key;
   inxop_bm_t * iob = (inxop_bm_t *) QST_GET (qst, iop->iop_bitmap);
-  ITC_COL (itc, (*key->key_bm_cl), off, len);
+  KEY_PRESENT_VAR_COL (itc->itc_insert_key, itc->itc_row_data, (*key->key_bm_cl), off, len);
   if (!iob)
     {
       iob = (inxop_bm_t *) dk_alloc_box (sizeof (inxop_bm_t), DV_STRING);
@@ -391,15 +392,15 @@ inxop_iob_next (inx_op_t * iop, it_cursor_t * itc, inxop_bm_t * iob, int op, cad
 }
 
 
-void bing () {printf ("bing"); }
-
 int next_ctr = 0;
 int64 prev_target;
 void 
 check_target (it_cursor_t * itc)
 {
   int64 target = unbox_iri_int64 (itc->itc_search_params[3]);
+#ifdef DEBUG  
   if (target < prev_target) bing ();
+#endif  
   prev_target = target;
 }
 
@@ -460,7 +461,7 @@ inxop_bm_next (inx_op_t * iop , query_instance_t * qi, int op,
 	      itc->itc_desc_order = 0;
 	      itc->itc_bp.bp_value = BITNO_MIN;
 	      itc->itc_is_on_row = 0;
-	      itc_skip_entry (itc, buf->bd_buffer);
+	      itc_skip_entry (itc, buf);
 	      itc->itc_key_spec = itc->itc_insert_key->key_bm_ins_leading;
 	      itc->itc_bm_col_spec = NULL;
 	      rc = itc_next (itc, &buf);
@@ -656,7 +657,8 @@ inxop_next (inx_op_t * iop , query_instance_t * qi, int op,
 	  is_random = 1;
 	  itc->itc_search_mode = SM_READ_EXACT;
 	  rc = itc_il_search (itc, &buf, qst, &iop->iop_il, (placeholder_t*) itc, 
-			      0 /*!itc->itc_desc_order */);
+			      0 /*!itc->itc_desc_order */
+);
 	  if (DVC_GREATER == rc || DVC_INDEX_END == rc)
 	    {
 	      itc_page_leave (itc, buf);
@@ -765,6 +767,8 @@ inx_op_and_next (inx_op_t * iop, query_instance_t * qi,
 	    {
 	      itc_free_owned_params (itc);
 	      itc->itc_search_par_fill = 0;
+	      if (itc->itc_is_registered)
+		itc_unregister (itc);
 	    }
 	  if (term->iop_bitmap)
 	    {

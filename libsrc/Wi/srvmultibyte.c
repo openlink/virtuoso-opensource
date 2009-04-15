@@ -343,7 +343,7 @@ bh_string_output_w (/* this was before 3.0: index_space_t * isp, */ lock_trx_t *
       page_leave_outside_map (buf);
       if (start == bh->bh_page)
       {
-	      dp_addr_t t = LONG_REF (buf->bd_buffer + DP_PARENT);
+	      dp_addr_t t = LONG_REF (buf->bd_buffer + DP_BLOB_DIR);
 	      if (bh->bh_dir_page && t!=bh->bh_dir_page)
 		log_info ("Mismatch in directory page ID %d(%x) vs %d(%x).",
 		    t,t,bh->bh_dir_page,bh->bh_dir_page);

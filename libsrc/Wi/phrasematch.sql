@@ -31,18 +31,20 @@ create procedure AP_EXEC_NO_ERROR (in expr varchar)
 create table DB.DBA.SYS_ANN_PHRASE_CLASS
 (
   APC_ID integer not null primary key,
-  APC_NAME varchar(255) unique,		-- unique name for use in API/UI
+  APC_NAME varchar(255),		-- unique name for use in API/UI
   APC_OWNER_UID integer,		-- references SYS_USERS (U_ID), NULL if the record writeable for any reader
   APC_READER_GID integer,		-- references SYS_USERS (U_ID), NULL if the record is readable for public
   APC_CALLBACK varchar,
   APC_APP_ENV any
   )
+alter index SYS_ANN_PHRASE_CLASS on DB.DBA.SYS_ANN_PHRASE_CLASS partition cluster replicated
+create unique index SYS_ANN_PHRASE_CLASS_APC_NAME on DB.DBA.SYS_ANN_PHRASE_CLASS (APC_NAME) partition cluster replicated
 ;
 
 create table DB.DBA.SYS_ANN_PHRASE_SET
 (
   APS_ID integer not null primary key,
-  APS_NAME varchar(255) unique,		-- unique name for use in API/UI
+  APS_NAME varchar(255),		-- unique name for use in API/UI
   APS_OWNER_UID integer,		-- references SYS_USERS (U_ID), NULL if the record writeable for any reader
   APS_READER_GID integer,		-- references SYS_USERS (U_ID), NULL if the record is readable for public
   APS_APC_ID integer not null,		-- references SYS_ANN_PHRASE_CLASS (APC_ID)
@@ -51,6 +53,8 @@ create table DB.DBA.SYS_ANN_PHRASE_SET
   APS_SIZE any,				-- approximate number of phrases in set (actual or estimate for future)
   APS_LOAD_AT_BOOT integer not null	-- flags whether phrases should be loaded at boot time.
   )
+alter index SYS_ANN_PHRASE_SET on DB.DBA.SYS_ANN_PHRASE_SET partition cluster replicated
+create unique index SYS_ANN_PHRASE_SET_APS_NAME on DB.DBA.SYS_ANN_PHRASE_SET (APS_NAME) partition cluster replicated
 ;
 
 --#IF VER=5
@@ -67,6 +71,7 @@ create table DB.DBA.SYS_ANN_PHRASE
   AP_LINK_DATA_LONG long varchar,	-- Same as AP_LINK_DATA but for long content, one of two is always NULL
   primary key (AP_APS_ID, AP_CHKSUM, AP_TEXT)
   )
+alter index SYS_ANN_PHRASE on DB.DBA.SYS_ANN_PHRASE partition cluster replicated
 ;
 
 --#IF VER=5
@@ -76,12 +81,14 @@ alter table DB.DBA.SYS_ANN_PHRASE add AP_LINK_DATA_LONG long varchar
 
 create table DB.DBA.SYS_ANN_AD_ACCOUNT (
   AAA_ID integer not null primary key,
-  AAA_NAME varchar(255) unique,		-- unique name for use in API/UI
+  AAA_NAME varchar(255),		-- unique name for use in API/UI
   AAA_OWNER_UID integer,		-- references SYS_USERS (U_ID), NULL if the record writeable for any reader
   AAA_READER_GID integer,		-- references SYS_USERS (U_ID), NULL if the record is readable for public
   AAA_DETAILS long xml,			-- any details, e.g., in RDF
   AAA_APP_ENV any
   )
+alter index SYS_ANN_AD_ACCOUNT on DB.DBA.SYS_ANN_AD_ACCOUNT partition cluster replicated
+create unique index SYS_ANN_AD_ACCOUNT_AAA_NAME on DB.DBA.SYS_ANN_AD_ACCOUNT (AAA_NAME) partition cluster replicated
 ;
 
 create table DB.DBA.SYS_ANN_LINK (
@@ -94,6 +101,7 @@ create table DB.DBA.SYS_ANN_LINK (
   AL_CALLBACK varchar,
   AL_APP_ENV any
   )
+alter index SYS_ANN_LINK on DB.DBA.SYS_ANN_LINK partition cluster replicated
 ;
 
 create table DB.DBA.SYS_ANN_AD_RULE (
@@ -105,8 +113,10 @@ create table DB.DBA.SYS_ANN_AD_RULE (
   AAR_APP_ENV any,
   primary key (AAR_AAA_ID, AAR_APS_ID, AAR_AP_CHKSUM, AAR_TEXT, AAR_AL_ID)
   )
+alter index SYS_ANN_AD_RULE on DB.DBA.SYS_ANN_AD_RULE partition cluster replicated
 ;
 
+--#IF VER=5
 delete from SYS_TRIGGERS where T_NAME in (
   fix_identifier_case ('DBA.SYS_ANN_PHRASE_CLASS_I'),
   fix_identifier_case ('DBA.SYS_ANN_PHRASE_CLASS_U'),
@@ -134,6 +144,7 @@ delete from SYS_PROCEDURES where P_NAME in (
   fix_identifier_case ('DB.DBA.ANN_AD_RULE_ADD'),
   fix_identifier_case ('DB.DBA.ANN_AD_RULE_DEL') )
 ;
+--#ENDIF
 
 create trigger SYS_ANN_PHRASE_CLASS_I after insert on DB.DBA.SYS_ANN_PHRASE_CLASS referencing new as N
 {

@@ -40,6 +40,26 @@ int aq_free (async_queue_t * aq);
 long tc_aq_from_queue;
 
 void
+aq_lt_leave (lock_trx_t * lt, aq_request_t * aqr)
+{
+  int lte = lt->lt_error;
+  if (aqr->aqr_error || LT_PENDING != lt->lt_status)
+    {
+      lt_rollback (lt, TRX_CONT);
+      if (!aqr->aqr_error)
+	MAKE_TRX_ERROR (lte, aqr->aqr_error, NULL);
+    }
+  else 
+    {
+      lte = lt_commit (lt, TRX_CONT);
+      if (LTE_OK != lte)
+	MAKE_TRX_ERROR (lte, aqr->aqr_error, NULL);
+    }
+  lt_leave (lt);
+}
+
+
+void
 aq_thread_func (aq_thread_t * aqt)
 {
   du_thread_t *self = THREAD_CURRENT_THREAD;
@@ -70,7 +90,7 @@ aq_thread_func (aq_thread_t * aqt)
       assert (aqt->aqt_thread->thr_sem->sem_entry_count == 0);
       aqr->aqr_args = NULL;
       IN_TXN;
-      lt_leave (aqt->aqt_cli->cli_trx);
+      aq_lt_leave (aqt->aqt_cli->cli_trx, aqr);
       LEAVE_TXN;
 
       mutex_enter (aq->aq_mtx);
@@ -277,10 +297,9 @@ aq_wait_all (async_queue_t * aq, caddr_t * err_ret)
 
 
 async_queue_t *
-aq_allocate (int n_threads)
+aq_allocate (client_connection_t * cli, int n_threads)
 {
   async_queue_t *aq = (async_queue_t *) dk_alloc_box_zero (sizeof (async_queue_t), DV_ASYNC_QUEUE);
-  client_connection_t *cli = GET_IMMEDIATE_CLIENT_OR_NULL;
   aq->aq_ref_count = 1;
   aq->aq_requests = hash_table_allocate (101);
   aq->aq_mtx = mutex_allocate ();
@@ -363,8 +382,9 @@ bif_aq_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 caddr_t
 bif_async_queue (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  QNCAST (query_instance_t, qi, qst);
   long n = bif_long_arg (qst, args, 0, "async_queue");
-  async_queue_t *aq = aq_allocate (n);
+  async_queue_t *aq = aq_allocate (qi->qi_client, n);
   return (caddr_t) aq;
 }
 
@@ -399,7 +419,7 @@ aq_sql_func (caddr_t * av, caddr_t * err_ret)
 	  return NULL;
 	}
     }
-  if (!sec_proc_check (proc, cli->cli_user->usr_id, cli->cli_user->usr_g_id))
+  if (!cli->cli_user || !sec_proc_check (proc, cli->cli_user->usr_id, cli->cli_user->usr_g_id))
     {
       *err_ret = srv_make_new_error ("42000", "SR186", "No permission to execute %s in aq_request", full_name);
       dk_free_tree ((caddr_t) params);
@@ -520,10 +540,11 @@ bif_aq_wait_all (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t val = NULL;
   caddr_t err = NULL;
   async_queue_t *aq = bif_aq_arg (qst, args, 0, "aq_wait");
+  long allow_locks = BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "aq_wait") : 0;
   query_instance_t *qi = (query_instance_t *) qst;
   if (0 != server_lock.sl_count)
     sqlr_new_error ("22023", "SR569", "Function aq_wait_all() can not be used inside atomic section");
-  if (lt_has_locks (qi->qi_trx))
+  if (!allow_locks && lt_has_locks (qi->qi_trx))
     sqlr_new_error ("40010", "AQ003", "Not allowed to wait for AQ while holding locks");
   IO_SECT (qst);
   val = aq_wait_all (aq, &err);

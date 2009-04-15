@@ -93,8 +93,9 @@ alter table MAIL_MESSAGE add MM_MSG_ID varchar default NULL
 ;
 --#ENDIF
 
-
+--#IF VER=5
 --!AFTER_AND_BEFORE DB.DBA.MAIL_MESSAGE MM_MSG_ID !
+--#ENDIF
 create trigger MAIL_MESSAGE_I after insert on DB.DBA.MAIL_MESSAGE
   {
     if (__proc_exists ('BLOG.DBA.BLOG_MOBLOG_PROCESS_MSG'))
@@ -102,7 +103,9 @@ create trigger MAIL_MESSAGE_I after insert on DB.DBA.MAIL_MESSAGE
   }
 ;
 
+--#IF VER=5
 --!AFTER_AND_BEFORE DB.DBA.MAIL_MESSAGE MM_MSG_ID !
+--#ENDIF
 create trigger MAIL_MESSAGE_U after update on DB.DBA.MAIL_MESSAGE referencing old as O, new as N
   {
     if (__proc_exists ('BLOG.DBA.BLOG_MOBLOG_PROCESS_MSG'))
@@ -222,11 +225,15 @@ MM_FEED_PART (inout vb any, inout mb any, inout body varchar, inout id integer, 
 ;
 
 
+--#IF VER=5
 --!AFTER __PROCEDURE__ DB.DBA.VT_CREATE_TEXT_INDEX !
+--#ENDIF
 DB.DBA.vt_create_text_index ('DB.DBA.MAIL_MESSAGE', 'MM_BODY', 'MM_BODY_ID', 2, 0, null, 1, '*ini*', '*ini*')
 ;
 
+--#IF VER=5
 --!AFTER
+--#ENDIF
 DB.DBA.vt_create_ftt ('DB.DBA.MAIL_MESSAGE', null, null, 2)
 ;
 
@@ -326,7 +333,9 @@ create procedure MIME_BODY (in _parts any)
 }
 ;
 
+--#IF VER=5
 --!AFTER_AND_BEFORE DB.DBA.MAIL_MESSAGE MM_MSG_ID !
+--#ENDIF
 create procedure NEW_MAIL (in _uid varchar, in __msg any)
 {
   declare _id, dummy integer;

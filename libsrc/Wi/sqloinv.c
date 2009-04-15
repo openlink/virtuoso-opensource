@@ -56,9 +56,6 @@ static id_hash_t *sinv_func_hash = NULL;
 	  call_exit (-1); \
 	}
 
-#define SINV_DV_STRINGP(x) \
-	(DV_STRINGP (x) || DV_TYPE_OF (x) == DV_SYMBOL)
-
 
 static void
 sinvm_free (sinv_map_t * map)

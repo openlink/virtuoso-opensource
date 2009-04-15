@@ -729,7 +729,7 @@ rm_log_head (lock_trx_t * lt, repl_message_t * rm)
 
   memset (repl, 0, box_length ((caddr_t) repl));
   memset (cbox, 0, sizeof (caddr_t) * LOG_HEADER_LENGTH);
-  cbox[LOGH_TIME] = 0;
+  cbox[LOGH_CL_2PC] = 0;
   cbox[LOGH_USER] = box_string ("");
   cbox[LOGH_BYTES] = box_num (bytes);
 

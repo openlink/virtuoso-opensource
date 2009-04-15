@@ -35,8 +35,9 @@ typedef struct instruction_s	instruction_t;
 typedef struct instruction_s	 * code_vec_t;
 typedef struct data_source_s	data_source_t;
 typedef struct proc_name_s proc_name_t;
-
+typedef struct cl_thread_s cl_thread_t;
 typedef struct query_s		query_t;
+typedef struct query_frag_s		query_frag_t;
 typedef struct user_aggregate_s user_aggregate_t;
 
 typedef void (*qn_input_fn) (data_source_t *, caddr_t *, caddr_t *);
@@ -56,6 +57,7 @@ struct data_source_s
     code_vec_t		src_after_code;
     code_vec_t		src_after_test;
     query_t *		src_query;
+    struct state_slot_s **	src_local_save; /* When no clb, array with ssls to save + save places, values need to be preserved for correct op of continue of this qn */
   };
 
 
@@ -63,7 +65,8 @@ struct data_source_s
   * ((state_entry_t **) & inst [src->src_out_state])
 
 #define SRC_IN_STATE(src, inst) \
-  * ((caddr_t **) & inst [(src)->src_in_state])
+  * ((caddr_t **) & inst [((data_source_t*)(src))->src_in_state])
+
 
 #define SSL_PARAMETER		0
 #define SSL_COLUMN		2
@@ -71,6 +74,7 @@ struct data_source_s
 #define SSL_PLACEHOLDER		4
 #define SSL_ITC			5
 #define SSL_CURSOR		6 /* a local_query_t * inside a SQL procedure */
+#define SSL_TREE 7
 #define SSL_REMOTE_STMT		9
 
 #define SSL_CONSTANT		100
@@ -91,6 +95,8 @@ typedef struct state_slot_s
     bitf_t		ssl_is_alias:1;
     bitf_t		ssl_is_observer:1;
     bitf_t		ssl_is_callret:1;
+    bitf_t		ssl_not_freeable:1;
+    bitf_t		ssl_qr_global:1; /* value either aggregating or invariant across qr */
     ssl_index_t		ssl_index;
     sql_type_t		ssl_sqt;
     caddr_t	ssl_constant;
@@ -112,6 +118,8 @@ typedef struct state_const_slot_s
     bitf_t		ssl_is_alias:1;
     bitf_t		ssl_is_observer:1;
     bitf_t		ssl_is_callret:1;
+    bitf_t		ssl_not_freeable:1;
+    bitf_t		ssl_qr_global:1; /* value either aggregating or invariant across qr */
     ssl_index_t		ssl_index;
     sql_type_t		ssl_sqt;
     caddr_t		ssl_const_val;
@@ -137,12 +145,51 @@ typedef struct state_const_slot_s
 
 
 #define QST_INT(qst, inx) ((ptrlong*)qst)[inx]
+#define QST_BOX(dt, qst, inx) ((dt*)qst)[inx]
+
 #define SSL_IS_UNTYPED_PARAM(ssl) 	\
 	(DV_UNKNOWN == (ssl)->ssl_dtp)
 
 
 #define QST_PLONG(qst, inx) \
   (* ((ptrlong *) &qst[inx]))
+
+
+typedef struct cl_buffer_s
+{
+  ssl_index_t		clb_fill; /*inx into qst */
+  ssl_index_t		clb_nth_set; /* inx of long in qst, the set being received */
+  ssl_index_t		clb_nth_context;
+  bitf_t		clb_keep_itcl_after_end:1;
+  int			clb_batch_size; /* set by compiler.  Do so many param rows */
+  state_slot_t *	clb_params;
+  state_slot_t **	clb_save; /* for a select, the stuff calculated earlier, to go together with each output */
+  state_slot_t *	clb_clrg;
+  state_slot_t *	clb_itcl;
+} cl_buffer_t;
+
+
+#define CLB_AT_END(clb, inst)\
+  { if (!clb.clb_keep_itcl_after_end) qst_set (inst, clb.clb_itcl, NULL); }
+
+
+#define CL_RUN_STARTED(qn, inst)		\
+  { \
+    data_source_t * __qn = (data_source_t *)qn;	\
+    query_t * __qr = __qn->src_query; \
+    if (__qr->qr_cl_run_started) \
+      ((caddr_t*)inst)[__qr->qr_cl_run_started] = (caddr_t)(ptrlong)1; \
+}
+
+typedef struct setp_save_s 
+{
+  /* save state for cluster batch  execution of setp/fref pairs */
+  state_slot_t *	ssa_array;
+  state_slot_t **	ssa_save;
+  state_slot_t *	ssa_set_no; /* no of top level set that is on the qst */
+  state_slot_t *	ssa_current_set;
+  int			ssa_batch_size;
+} setp_save_t;
 
 
 struct proc_name_s 
@@ -158,7 +205,30 @@ struct proc_name_s
 struct query_s
   {
     int			qr_ref_count;
-
+    int			qr_trig_order;
+    int			qr_instance_length;
+    short		qr_cl_run_started; /*inx into qi, flag set when cl multistate qr running, no more input states allowed until outputs consumed */
+    bitf_t		qr_is_ddl:1;
+    bitf_t		qr_is_complete:1; /* false while trig being compiled */
+    bitf_t 		qr_lock_mode:3;
+    bitf_t		qr_no_cast_error:1;
+    bitf_t		qr_to_recompile:1;
+    bitf_t		qr_parse_tree_to_reparse:1;
+    bitf_t		qr_no_co_if_no_cr_name:1;	/* if select stmt exec'd from client */
+    bitf_t  		qr_text_is_constant:1;
+    bitf_t		qr_is_bunion_term:1;
+    bitf_t		qr_is_remote_proc:1;
+    bitf_t		qr_unique_rows:1;
+    bitf_t		qr_is_qf_agg:1;  /* true if this is clustered aggregate fragg's qr */
+    bitf_t		qr_brk:1;
+    bitf_t		qr_is_call:2; /* true if this is top level proc call */
+    bitf_t		qr_remote_mode:2;
+    bitf_t		qr_cursor_type:2;
+    bitf_t		qr_trig_time:2;	/*!< If trigger, time of launch: before/after/instead */
+    bitf_t		qr_trig_event:2;	/*!< If trigger, type of event: insert/delete/update */
+    bitf_t		qr_cl_locatable:2; /* can run in aquery frag, yes/no/unknown */
+    char			qr_hidden_columns;
+    char			qr_n_stages; /* if represents distr frag */
     /* The query state array's description */
     dk_set_t		qr_state_map;
     state_slot_t **	qr_freeable_slots;
@@ -167,37 +237,26 @@ struct query_s
     struct select_node_s *qr_select_node;
 
     /* The query's instantiation */
-    int			qr_instance_length;
-
     dk_set_t		qr_parms;
     caddr_t *		qr_parm_default;
     caddr_t * 		qr_parm_alt_types; /* an alternative type */
     caddr_t *		qr_parm_soap_opts; /* SOAP options to params */
     caddr_t *		qr_parm_place;     /* where is it exposed (SOAP)*/
     dk_set_t		qr_nodes;
-    dk_set_t		qr_bunion_reset_nodes; /* for a bunion term, nodes of enclosing qr that make up this term and are to be reset when resetting the bunion ter, on error */
+    dk_set_t		qr_bunion_reset_nodes; /* for a bunion term, nodes of enclosing qr that make up this term and are to be reset when resetting the bunion term, on error */
     dk_set_t		qr_used_cursors;
     data_source_t *	qr_head_node;
+    query_t *		qr_super;
 
-    state_slot_t *	qr_current_of;	/* if this is a cursor, use this in
-					   SQL 'where current of' */
 
     caddr_t		qr_proc_name;	/*!< If SQL procedure, this is the name */
     proc_name_t *	qr_pn;
     caddr_t		qr_trig_table;	/*!< If trigger, name of table */
-    bitf_t		qr_is_ddl:1;
-    bitf_t		qr_is_complete:1; /* false while trig being compiled */
-    char		qr_trig_time;	/*!< If trigger, time of launch: before/after/instead */
-    char		qr_trig_event;	/*!< If trigger, type of event: insert/delete/update */
     user_aggregate_t *  qr_aggregate;	/*!< If user-defined aggregate, this points to the implementation */
     oid_t *		qr_trig_upd_cols;
-    int			qr_trig_order;
     dbe_table_t *	qr_trig_dbe_table;
     caddr_t *		qr_trig_old_cols;
     state_slot_t **	qr_trig_old_ssl;
-   bitf_t 		qr_lock_mode:3;
-    char		qr_is_call; /* true if this is top level proc call */
-    bitf_t		qr_no_cast_error:1;
     oid_t		qr_proc_owner;
     dk_hash_t *		qr_proc_grants;
     caddr_t		qr_proc_ret_type;
@@ -212,20 +271,11 @@ struct query_s
     dk_set_t		qr_used_tables;  /* ref'd tables' qualified names */
     dk_set_t		qr_used_udts;  /* ref'd udts' qualified names */
     dk_set_t		qr_used_jsos;  /* ref'd JSO IRIs (for SPARQL queries with quad maps) */
-    bitf_t		qr_to_recompile:1;
-    bitf_t		qr_parse_tree_to_reparse:1;
-    bitf_t		qr_no_co_if_no_cr_name:1;	/* if select stmt exec'd from client */
-    bitf_t  		qr_text_is_constant:1;
-    bitf_t		qr_is_bunion_term:1;
-    bitf_t		qr_is_remote_proc:1;
-    bitf_t		qr_unique_rows:1;
-    char		qr_remote_mode;
     caddr_t		qr_qualifier; /* qualifier current when this was compiled */
     caddr_t		qr_owner;
     struct union_node_s *	qr_bunion_node;
 
     struct query_cursor_s *	qr_cursor;
-    int			qr_cursor_type;
     state_slot_t **	qr_xp_temp;
     dk_set_t		qr_unrefd_data;	/* garbage, free when freeing qr */
 #ifdef REPLICATION_SUPPORT2
@@ -236,9 +286,6 @@ struct query_s
 
     query_t		*qr_module;
     dk_set_t		qr_temp_keys;
-    long 		qr_brk;
-    int			qr_hidden_columns;
-
 
 #ifdef PLDBG
     caddr_t 		qr_source; 	 /* source file */
@@ -253,6 +300,12 @@ struct query_s
     long 		qr_obsolete_msec;
     caddr_t		qr_parse_tree;
     float *		qr_proc_cost; /* box of floats: 0. unit cost 1. result set rows 2...n+2 multiplier if param 0...n is not given */
+    int64		qr_qf_id; /* if this is a frag qr, the id as in cll_id_to_qf */
+    state_slot_t **	qr_qf_params;
+    int			qr_qf_agg_is_any;
+    caddr_t		qr_qf_agg_defaults;
+    state_slot_t **	qr_qf_agg_res;
+    state_slot_t **	qr_qf_multistate_agg_params;
 #if defined (MALLOC_DEBUG) || defined (VALGRIND)
     const char *	qr_static_source_file;
     int			qr_static_source_line;
@@ -309,10 +362,11 @@ typedef struct query_instance_s
     caddr_t		qi_cursor_name;
     lock_trx_t *	qi_trx;
     struct query_instance_s *qi_caller;
-    struct call_node_s *qi_caller_node;
 
     du_thread_t *	qi_thread;
-    short		qi_threads;
+    struct client_connection_s *qi_client;
+    char		qi_threads;
+    char		qi_isolation;
     bitf_t              qi_lock_mode:3;
     bitf_t		qi_is_allocated:1;
     bitf_t		qi_autocommit:1;
@@ -320,36 +374,36 @@ typedef struct query_instance_s
     bitf_t		qi_assert_found:1; /* gpf if next select gets 'not found */
     bitf_t 		qi_pop_user:1;
     bitf_t 		qi_no_cast_error:1;
-    char		qi_isolation;
-    struct client_connection_s *qi_client;
-
-    long		qi_n_affected;
-    long		qi_max_rows;
-
-    caddr_t		qi_proc_ret; /* if proc call and qi_caller == client, proc ret block */
+    bitf_t		qi_non_txn_insert:1; /* make insert not subject to rb and log it immediately */
+    bitf_t		qi_is_partial:1; /* was interrupted by anytime timeout */
+    int32		qi_rpc_timeout;
+    int32		qi_prefetch_bytes;
+    int32		qi_bytes_selected;
     oid_t		qi_u_id;
     oid_t		qi_g_id;
 
+    int64		qi_n_affected;
+    caddr_t		qi_proc_ret; /* if proc call and qi_caller == client, proc ret block */
     du_thread_t *	qi_thread_waiting_termination;
     struct local_cursor_s *qi_lc;
-    long		qi_rpc_timeout;
-
-    long		qi_prefetch_bytes;
-    long		qi_bytes_selected;
-
     struct icc_lock_s	*qi_icc_lock;	/* Pointer to an InterConnectionCommunication lock to be released at exit */
     struct object_space_s *qi_object_space;
 #ifdef PLDBG
     void * 		qi_last_break;
     int 		qi_step;
-    long 		qi_child_time;
+    int 		qi_child_time;
 #endif
   } query_instance_t;
 
 
 #define QST_INSTANCE(qi)	(qi)
 
-#define QI_ROW_AFFECTED(qi)	((query_instance_t *) qi)->qi_n_affected++
+#define QI_ROW_AFFECTED(qi)	\
+{ \
+  ((query_instance_t *) qi)->qi_n_affected++; \
+  if (((query_instance_t*)qi)->qi_client->cli_row_autocommit) \
+    ((query_instance_t *)qi)->qi_client->cli_n_to_autocommit++; \
+}
 
 #define QI_FIRST_FREE		(sizeof (query_instance_t) / sizeof (caddr_t) + 1)
 
@@ -392,22 +446,36 @@ typedef struct hash_area_s
 #define HA_FILL 4
 #define HA_PROC_FILL 5
 
+
+typedef struct clo_comp_t 
+{
+  short			nth;
+  char			is_desc; /* in merging asc/desc mixed sorts , must know the order col by col */
+  dbe_column_t *	col;
+} clo_comp_t;
+
+
 typedef struct key_source_s
   {
     dbe_key_t *		ks_key;
+    clo_comp_t **	ks_cl_order; /* if results from many cluster nodes, given them in key order? If so, this is the compare order in result rows. */
     state_slot_t *	ks_init_place;
     key_spec_t 		ks_spec;
+    unsigned char	ks_spec_nth;
+    char		ks_copy_search_pars; /* in dfg, the itc's pars must be copies owned by the itc */
     int			ks_init_used;
     search_spec_t *	ks_row_spec;
     dk_set_t		ks_out_cols;
     dk_set_t		ks_out_slots;
+    caddr_t *		ks_out_col_ids; /* ready for cluster rpc */
     out_map_t *	ks_out_map; /* inline array of dbe_col_locs for each member of ks:_out_slots for the matching key */
     state_slot_t *	ks_from_temp_tree;	/* tree of group or order temp or such */
     struct setp_node_s *	ks_from_setp;
     int			ks_pos_in_temp; /* if mem sort, pos in the sort while reading.  Inx in inst */
-    int			ks_descending;	/* if reading from end to start */
+    query_frag_t *	ks_from_temp_qf; /* if reading cluster aggregates, this is the qf holding the stuff */
     code_vec_t		ks_local_test;
     code_vec_t		ks_local_code;
+    char		ks_descending;	/* if reading from end to start */
     char		ks_is_vacuum;
     char		ks_is_last;	/* if last ks in join and no select or
 					   postprocess follows.
@@ -422,16 +490,16 @@ typedef struct key_source_s
 #endif
     dk_set_t	ks_always_null; /* cols which are always forced to be null */
     state_slot_t *  ks_grouping; /* ssl with grouping bitmap */
+    /* cluster */
+    data_source_t *	ks_next_clb; /* if cluster and no order and the next node has a cl buffer, feed the data direct in there if no intervening steps */
+    state_slot_t **		ks_qf_output; /* if last ks of value producing qf, then send these as result row. */
+    struct table_source_s *	ks_ts;
   } key_source_t;
 
+#define ks_itcl ks_ts->clb.clb_itcl
 
-#if 0
-/* ks_local_op */
-#define KS_LOCAL_NONE 0
-#define KS_LOCAL_FILL 1
-#define KS_LOCAL_UPDATE 2
-#define KS_LOCAL_CONTINUE 3  /* can call continuation without leaving the page */
-#endif
+#define KS_SPC_DFG 2 /* copy search pars local and remote */
+#define KS_SPC_QF 1 /* copy search pars on local only */
 
 
 #define KS_COUNT(ks, qst) \
@@ -468,7 +536,6 @@ typedef struct inx_op_s
   struct inx_op_s ** 	iop_terms;
   state_slot_t **	iop_max;
   state_slot_t *	iop_state; /* pre-init, on row, at end */ 
-  dk_set_t	iop_extra_copies; /* if operands from different tables, fill copies of equal cols for all ssl's. ((org1 cp1-1 cp1-2...)(org2 cp2-1 cp2-2...)...)  */
 
   /* Members for the leaves, the actual indices */
   key_source_t * 	iop_ks;
@@ -478,20 +545,26 @@ typedef struct inx_op_s
   state_slot_t **	iop_out;
   state_slot_t * 	iop_itc;
   struct inx_op_s *	iop_other; /* most selective term of the inx int */
-  state_slot_t *	iop_nexts;
   state_slot_t *	iop_target_ssl;
-  int			iop_nth_next;
   dtp_t 		iop_target_dtp; /* dtp of the intersectable col */
+  unsigned char	iop_ks_start_spec_nth;
+  unsigned char	iop_ks_full_spec_nth;
   /* bitmap index */
   state_slot_t * 	iop_bitmap;
   inx_locality_t	iop_il;
+  /* cluster */
+  int		iop_nth_set;
+  int		iop_nth_term; /* for the and node, the inx of the term currently being read */
+  int		iop_cl_pending; /* unprocessed stuff in this cl iop? */
+  int		iop_first_at_end; /* true if the leftmost term is read to end */
 } inx_op_t;
 
 
 typedef struct table_source_s
   {
     data_source_t	src_gen;
-
+    cl_buffer_t		clb;
+    float		ts_cardinality; /* cardinality estimate from compiler */
     key_source_t *	ts_order_ks;
     key_source_t *	ts_main_ks;
     state_slot_t *	ts_order_cursor;
@@ -500,15 +573,17 @@ typedef struct table_source_s
     bitf_t		ts_is_outer:1;
     bitf_t		ts_is_random:1; /* random search */
     bitf_t 		ts_no_blobs:1;
-    float		ts_cardinality;
     caddr_t		ts_rnd_pcnt;
     code_vec_t		ts_after_join_test;
     struct inx_op_s *	ts_inx_op;
     inx_locality_t	ts_il;
     hash_area_t *	ts_proc_ha; /* ha for temp of prov view res.  Keep here to free later */
+    short		ts_max_rows; /* if last of top n and a single state makes this many, then can end whole set */
+    short		ts_prefetch_rows; /* recommend cluster end batch   after this many because top later */
   } table_source_t;
 
 typedef struct rdf_inf_node_s rdf_inf_pre_node_t;
+typedef struct trans_node_s trans_node_t;
 
 typedef struct  in_iter_node_s
 {
@@ -520,6 +595,125 @@ typedef struct  in_iter_node_s
   int		ii_nth_value;
 } in_iter_node_t;
 
+
+typedef struct outer_seq_end_s
+{
+  data_source_t	src_gen;
+  struct set_ctr_node_s *	ose_sctr;
+  state_slot_t *	ose_set_no; 
+  state_slot_t *	ose_prev_set_no;
+  state_slot_t **	ose_out_slots; /* the ssls that are null for the outer row */
+  state_slot_t *	ose_buffered_row;
+  int			ose_last_outer_set; /* set no of the last outer row.  inx of int in qi */
+} outer_seq_end_node_t;
+
+
+typedef struct set_ctr_node_s
+{
+  data_source_t	src_gen;
+  cl_buffer_t	clb;
+  state_slot_t *	sctr_set_no;
+  outer_seq_end_node_t *	sctr_ose;
+  dk_set_t 			sctr_continuable; /* continuable nodes between the sctr and the ose */
+} set_ctr_node_t;
+#define sctr_itcl clb.clb_itcl
+
+
+typedef struct stage_sum_s 
+{
+  int		ssm_n_empty_mores;
+  char		ssm_state_recd;
+  unsigned int64	ssm_in_sets; /* total input sets received by this stage of this node */
+  unsigned int64	ssm_out_sets; /* total input sets processed to completion by this stage of this node */
+  unsigned int64	ssm_produced_sets; /*total sent forward by this stage of this node */
+} stage_sum_t;
+
+
+typedef struct stage_node_s
+{
+  data_source_t	src_gen;
+  cl_buffer_t	clb;
+  query_frag_t *	stn_qf;
+  int		stn_nth; /* the stage number in the dfg */
+  int	stn_coordinator; /* the host number owning the query */
+  int		stn_state;
+  table_source_t *	stn_loc_ts; /* the ts that decides partition of next */
+  state_slot_t *	stn_coordinator_req_no; /* the cm_req_no on coordinator which receives all coordinator targeted traffic. All cm's go out with this req no but this is used only by coordinator */
+  state_slot_t * 	stn_dfg_state; /* dfg_stat clo with counts of locally done and forward sent */
+  state_slot_t **	stn_params; /* the params to send to the next stage */
+  state_slot_t *	stn_input; /* array of cm clos that represent input from remote nodes for this stn */
+  int		stn_input_fill; /* qst int for last added in stn input array */
+  int		stn_input_used;
+  state_slot_t *	stn_current_input;
+  int			stn_read_to; /* qst int, position in current input for the next clo of input */
+  int			stn_out_bytes; /* qst int, bytes send to others by all non-first stn's of the dfg.  Cap on intm res size  */
+  dk_set_t		stn_in_slots; /* same as stn params but now used to read rows in input into */
+  char			stn_need_enlist; /* excl parts later in the chain, enlist from start */
+} stage_node_t;
+
+/* stn_state */
+#define STN_INIT 1
+#define STN_RUN 2
+
+
+
+struct query_frag_s
+{
+  data_source_t		src_gen;
+  cl_buffer_t		clb;
+  state_slot_t * 	qf_set_no; /* if this is a dfg this is for keeping track of the set at the output */
+  dk_set_t		qf_nodes;
+  data_source_t *	qf_head_node;
+  table_source_t *	qf_loc_ts;
+  state_slot_t **	qf_params;
+  clo_comp_t **		qf_order;
+  state_slot_t **	qf_result;
+  dk_set_t 		qf_out_slots; /* set to itcl_out_slots */
+  int 			qf_dfg_state;
+  state_slot_t *	qf_dfg_req_no; /* for the batch, the req no for getting results from all nodes */
+  data_source_t *	qf_dml_node; /* if this is a wrapper on cluster upd/del, then this is the node that holds the clrg for the 2nd keys */
+  state_slot_t *	qf_dfg_agg_map; /* in distr frag aggregation, string that gets a 1 at the place of every host with data */
+  uint32		qf_id;
+  short			qf_max_rows;
+  char			qf_n_stages;
+  char			qf_lock_mode;
+  bitf_t		qf_is_update:1;
+  bitf_t		qf_is_agg:1;
+  char			qf_need_enlist; /* excl parts later in the chain, enlist from start */
+  char			qf_nth; /* ordinal no of qf in qr, for debug */
+  state_slot_t **	qf_agg_res;
+  int			qf_agg_is_any;
+  caddr_t		qf_agg_defaults;
+  state_slot_t **	qf_trigger_args;
+  int			qf_trigger_event; /* if this is i/d/u */
+  dbe_table_t *	qf_trigger_table;
+  oid_t *		qf_trigger_cols;
+
+  state_slot_t **	qf_const_ssl; /* when ends in a group by, some slots must be inited.  If set, odd is value, next even is ssl to init to value */
+  state_slot_t **		qf_local_save; /* for a result set making qf, (non agg, non upd), the save state that must be saved and restored between interrupting and continuing generating  a single result set from the qf */
+};
+
+#define qf_itcl clb.clb_itcl
+
+typedef struct qf_select_node_s
+{
+  data_source_t  	src_gen;
+  state_slot_t *	qfs_itcl;
+  state_slot_t **	qfs_out_slots;
+} qf_select_node_t;
+
+
+typedef struct dpipe_node_s
+{
+  data_source_t	src_gen;
+  cl_buffer_t		clb;
+  char			dp_is_order;
+  struct cu_func_s **	dp_funcs;
+  state_slot_t **	dp_inputs;
+  state_slot_t **	dp_outputs;
+} dpipe_node_t;
+
+#define dp_itcl clb.clb_itcl
 
 typedef struct hash_source_s
 {
@@ -566,11 +760,15 @@ typedef struct remote_table_source_s
   } remote_table_source_t;
 
 #define IS_RTS(n) \
-  ((qn_input_fn) remote_table_source_input == n->src_gen.src_input)
+  ((qn_input_fn) remote_table_source_input == ((remote_table_source_t *)(n))->src_gen.src_input)
 
 #define IS_TS(n) \
-  ((qn_input_fn) table_source_input_unique == (n)->src_gen.src_input ||	\
-   (qn_input_fn) table_source_input == (n)->src_gen.src_input)
+  ((qn_input_fn) table_source_input_unique == ((data_source_t*)(n))->src_input || \
+   (qn_input_fn) table_source_input == ((data_source_t*)(n))->src_input)
+
+#define IS_HS(qn) (((data_source_t *)qn)->src_input == (qn_input_fn)hash_source_input)
+
+#define QNCAST(dt, v, q)  dt * v = (dt *) q
 
 
 typedef struct subq_source_s
@@ -579,8 +777,9 @@ typedef struct subq_source_s
     state_slot_t **	sqs_out_slots;
     query_t *		sqs_query;
     char		sqs_is_outer;
+    state_slot_t *	sqs_set_no;
     code_vec_t		sqs_after_join_test;
-    code_vec_t		rts_after_join_test;
+    int			sqs_batch_size;
   } subq_source_t;
 
 
@@ -589,6 +788,7 @@ typedef struct union_node_s
     data_source_t	src_gen;
     state_slot_t *	uni_nth_output;
     dk_set_t		uni_successors;
+    char		uni_sequential; /* finish each branch before starting nexct.  Needed in except and intersect */
   } union_node_t;
 
 
@@ -614,6 +814,7 @@ typedef struct ins_key_s
 typedef struct insert_node_s
   {
     data_source_t	src_gen;
+    cl_buffer_t		clb;
     dbe_table_t *	ins_table;
     oid_t *		ins_col_ids;
     dk_set_t		ins_values;
@@ -621,6 +822,8 @@ typedef struct insert_node_s
     state_slot_t **	ins_trigger_args;
     ins_key_t **	ins_keys;
     query_t *		ins_policy_qr;
+    caddr_t		ins_key_only; /* key name, if inserting only this key, as in create index */
+    state_slot_t *	ins_daq; /* in cluster, queue the insert here */ 
   } insert_node_t;
 
 
@@ -630,10 +833,23 @@ typedef struct insert_node_s
 
 
 #define UPD_MAX_COLS 200
+#define UPD_MAX_QUICK_COLS 30
+
+
+typedef struct cl_mod_state_s
+{
+  state_slot_t *	cms_clrg;
+  query_frag_t *	cms_qf; /* a cluster del/upd, if on criving node, referes to enclosing qf */ 
+  int			cms_n_sets;
+  int			cms_n_received;
+  char			cms_is_cl_frag; /* true if containing upd/del is a part of a remote query frag execd as part of clustered upd/del */
+} cl_mod_state_t;
+
 
 typedef struct update_node_s
   {
     data_source_t	src_gen;
+    cl_mod_state_t	cms;
     dbe_table_t *	upd_table;
     state_slot_t *	upd_place;
     oid_t *		upd_col_ids;
@@ -643,8 +859,9 @@ typedef struct update_node_s
     char 		upd_no_keys;	/* if no key parts changed */
     /* opt for single col in row of known key */
     key_id_t		upd_exact_key; /* if no key parts */
+    state_slot_t **	upd_quick_values;
     dbe_col_loc_t **	upd_fixed_cl;
-
+    dbe_col_loc_t **	upd_var_cl;
 
     state_slot_t **	upd_trigger_args;
     int			upd_hi_id;  /* key for lookup of affected hi's in the lt */
@@ -658,7 +875,10 @@ typedef struct update_node_s
 typedef struct delete_node_s
   {
     data_source_t	src_gen;
+    cl_mod_state_t	cms;
     dbe_table_t *	del_table;
+    dbe_key_t *		del_key_only;
+    state_slot_t *	del_daq;
     state_slot_t *	del_place;
     state_slot_t **	del_trigger_args;
     query_t *		del_policy_qr;
@@ -671,6 +891,22 @@ typedef struct end_node_s
     int			en_send_rc;
   } end_node_t;
 
+
+typedef struct code_node_s
+{
+  data_source_t	src_gen;
+  cl_buffer_t	clb;
+  code_vec_t	cn_code;
+  dk_set_t	cn_continuable; /* value subq or existence tests, nmultistate */
+  char		cn_is_order;
+  char		cn_is_test;
+  state_slot_t *	cn_set_no;
+  state_slot_t **	cn_assigned;
+  int 			cn_results; /* for each set, the assigned slots saved, in itcl pool */
+  int			cn_state; /* whether gathering input, running the subqs or sending outputs */
+} code_node_t;
+
+#define cn_itcl clb.clb_itcl
 
 typedef struct row_insert_node_s
   {
@@ -736,6 +972,9 @@ typedef struct select_node_s
     state_slot_t *	sel_top_skip;
     state_slot_t *	sel_row_ctr;
     state_slot_t **	sel_tie_oby;
+    state_slot_t *	sel_set_no; /* in array exec'd dt no if set this row belongs to */
+    state_slot_t *	sel_prev_set_no; /* set no of prev row.  when changes, reset the top ctr */
+    state_slot_t *	sel_cn_set_no; /* if in multistate exists or value subq, this is set no of containing code node.  As soon as one result is produced, advance the multistate qr to the next set as per this set no */
   } select_node_t;
 
 #define SEL_NODE_INIT(cc, sel) \
@@ -814,6 +1053,10 @@ typedef struct setp_node_s
     hash_area_t *	setp_reserve_ha;
     int	                setp_any_distinct_gos;
     int			setp_any_user_aggregate_gos;
+    dk_set_t		setp_const_gb_args;
+    dk_set_t		setp_const_gb_values;
+
+    setp_save_t	setp_ssa;
   } setp_node_t;
 
 /* setp_set_op */
@@ -834,8 +1077,11 @@ typedef struct gs_union_node_s
 typedef struct fun_ref_node_s
   {
     data_source_t	src_gen;
+    cl_buffer_t		clb;
     data_source_t *	fnr_select;
+    dk_set_t		fnr_select_nodes; /* continuable nodes in the fnr_select branch */
     int			fnr_is_any;
+    char		fnr_is_top_level; /* true if at start of top level qr, false if inside loops.  Affects what anytime timeout does */
     dk_set_t		fnr_default_values;
     dk_set_t		fnr_default_ssls;
     dk_set_t		fnr_temp_slots;
@@ -844,7 +1090,19 @@ typedef struct fun_ref_node_s
     dk_set_t	    fnr_group_set_read;
     dk_set_t 		fnr_distinct_ha;
     hi_signature_t *	fnr_hi_signature;
+    query_frag_t *	fnr_cl_qf; /* if the aggregation is done in remotes, this is the qf that holds the state */
+    setp_save_t		fnr_ssa; /* save for multiple set aggregation */
+    int			fnr_cl_state;
+    char		fnr_is_set_ctr; /* if outermost multistate fref, double as a set ctr if no other set ctr */
   } fun_ref_node_t;
+
+
+#define FNR_NONE 0
+
+/* in qst at the place of fnr_cl_state for multistate aggregate */
+#define FNR_INIT 1
+#define FNR_RUNNING 2
+#define FNR_RESULTS 3
 
 
 typedef struct breakup_node_s 
@@ -938,6 +1196,9 @@ typedef struct srv_stmt_s
 /* PL scrollable */
     int			sst_is_pl_cursor;
     caddr_t		sst_pl_error;
+    /* multistate */
+    caddr_t *		sst_qst; /* same as sst_inst */
+    int		sst_batch_size;
   } srv_stmt_t;
 
 
@@ -1033,9 +1294,37 @@ caddr_t _br_cstm (caddr_t stmt);
 
 struct tp_data_s;
 
+
+typedef struct db_activity_s
+{
+  int64	da_random_rows;
+  int64	da_seq_rows;
+  int64	da_cl_bytes;
+  int	da_cl_messages;
+  int	da_disk_reads;
+  int	da_spec_disk_reads;
+  int	da_lock_waits;
+  int	da_lock_wait_msec;
+  char		da_anytime_result; /* if set, this means the recipient has run out of time and should return an answer */
+} db_activity_t;
+
+#define SQL_ANYTIME "S1TAT"
+
 typedef struct client_connection_s
   {
     dk_session_t *	cli_session;
+    struct ws_connection_s *	cli_ws;
+    char		cli_terminate_requested;
+    bitf_t			cli_autocommit:1;
+    bitf_t			cli_is_log:1;
+    bitf_t		cli_in_daq:2; /* running invoked by daq on local? autcommitting? For cluster, data in cli_clt */
+    char		cli_row_autocommit;
+    int			cli_n_to_autocommit;
+    lock_trx_t *	cli_trx;
+    db_activity_t	cli_activity;
+    int			cli_anytime_started;
+    int			cli_anytime_timeout;
+    int			cli_anytime_checked;
     user_t *		cli_user;
     caddr_t 		cli_user_info;
     char *		cli_password;
@@ -1045,13 +1334,7 @@ typedef struct client_connection_s
     id_hash_t *		cli_text_to_query;
     query_t *		cli_first_query;
     query_t *		cli_last_query;
-
-    lock_trx_t *	cli_trx;
-    int			cli_autocommit;
     caddr_t *		cli_replicate;
-    int			cli_is_log;
-    char		cli_row_autocommit;
-
     int			cli_repl_pending;
     dbe_schema_t *	cli_temp_schema;
     dbe_schema_t *	cli_repl_schema;
@@ -1062,14 +1345,13 @@ typedef struct client_connection_s
 					   e.g. create index stmt */
     caddr_t		cli_qualifier;
 
-    int			cli_support_row_count;
-    int			cli_version;
+    char			cli_support_row_count;
     char		cli_no_triggers;
+    int			cli_version;
     caddr_t		cli_identity_value; /* last assigned identity col */
 
     dk_mutex_t *		cli_test_mtx;
     dk_session_t *		cli_http_ses;
-    struct ws_connection_s *	cli_ws;
     int		 cli_not_char_c_escape;
     dk_set_t		 *cli_resultset_data_ptr;
     caddr_t		 *cli_resultset_comp_ptr; /* stmt_compilation_t ** */
@@ -1098,20 +1380,33 @@ typedef struct client_connection_s
     long		cli_started_msec;
     struct icc_lock_s	*cli_icc_lock;	/* Pointer to an InterConnectionCommunication lock to be released at exit */
     dk_session_t	*cli_outp_worker; /* used by mono out-of-process hosting */
-
-    char		cli_terminate_requested;
     dk_hash_t		*cli_module_attachments; /* used to enlist the hosted modules */
 
 #ifdef INPROCESS_CLIENT
     int			cli_inprocess;
 #endif
-    long		cli_start_time;
+    uint32		cli_start_time;
     caddr_t *		cli_info;
+    cl_thread_t *	cli_clt; /* if cli of a cluster server thread, this is the clt */
+    dk_session_t *	cli_blob_ses_save; /* save the cli_session here for the time of reading b.blobs from cluster as if they were from client */
     struct xml_ns_2dict_s      *cli_ns_2dict;
   } client_connection_t;
+#define CLI_IN_DAQ 1 /* inside transactional daq.  Must resignal txn errors */
+#define CLI_IN_DAQ_AC 2 /* inside autocommitting daq.  May handle txn erros */
+
+
+
+/* cli_terminate_requested. Latter means force result from anytime query */
+#define CLI_TERMINATE 1
+#define CLI_RESULT 2
 
 #define CLI_NEXT_USER(cli) \
-  cli->cli_row_autocommit = 0
+  {cli->cli_row_autocommit = 0; \
+    cli->cli_n_to_autocommit = 0; }
+
+#define ROW_AUTOCOMMIT_DUE(qi, tb, quota) \
+  (qi->qi_client->cli_row_autocommit && !qi->qi_trx->lt_branch_of && ((cl_run_local_only || (tb && tb->tb_primary_key->key_partition)) \
+    ? (qi->qi_client->cli_n_to_autocommit > quota) : 0))
 
 #define ROW_AUTOCOMMIT(qi) \
   if (((query_instance_t *)qi)->qi_client->cli_row_autocommit)	\
@@ -1282,8 +1577,7 @@ extern client_connection_t *autocheckpoint_cli;
 #include "eqlcomp.h"
 #include "sqlfn.h"
 #include "lisprdr.h"
-/* If you need this, load it separately.
-#include "xmlnode.h" */
+#include "cluster.h"
 
 #define EXPLAIN_LINE_MAX 200
 #define EXPLAIN_LINE_MAX_STR_FORMAT "%.200s"

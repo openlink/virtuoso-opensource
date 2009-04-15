@@ -32,25 +32,30 @@
 #include "widisk.h"
 #include "widd.h"
 #include "schspace.h"
+#include "../Dk/Dkhash64.h"
 
 /* search.c */
 
 void const_length_init (void);
+extern numeric_t num_int64_max;
+extern numeric_t num_int64_min;
 void db_buf_length  (unsigned char * buf, long * head_ret, long * len_ret);
 int box_serial_length (caddr_t box, dtp_t dtp);
 extern short db_buf_const_length [256];
 
 int  dv_composite_cmp (db_buf_t dv1, db_buf_t dv2, collation_t * coll);
-int dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation);
+int dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation, unsigned short offset);
 int dv_compare_box (db_buf_t dv1, caddr_t box, collation_t *collation);
 int pg_key_compare (buffer_desc_t * buf, int pos, it_cursor_t * it);
 int pg_insert_key_compare (buffer_desc_t * buf, int pos, it_cursor_t * it);
-void ksp_cmp_func (key_spec_t * ksp);
+void ksp_cmp_func (key_spec_t * ksp, unsigned char * nth);
+void  ksp_nth_cmp_func (key_spec_t * ksp, char nth);
+
+int  itc_hash_next (it_cursor_t * itc, buffer_desc_t * buf);
 void search_inline_init (void);
-int itc_col_check_1 (it_cursor_t * itc, search_spec_t * spec, int param_inx);
-#define itc_col_check(itc, spec, param_inx) \
-(~DVC_NOORDER & itc_col_check_1 (itc, spec, param_inx))
-int itc_like_compare (it_cursor_t * itc, caddr_t pattern, search_spec_t * spec);
+
+
+int itc_like_compare (it_cursor_t * itc, buffer_desc_t * buf, caddr_t pattern, search_spec_t * spec);
 
 
 #ifdef MALLOC_DEBUG
@@ -63,15 +68,15 @@ void itc_free (it_cursor_t *);
 void itc_clear (it_cursor_t * it);
 void itc_free_owned_params (it_cursor_t * itc);
 buffer_desc_t * itc_reset (it_cursor_t * itc);
-int dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation);
+int dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation, unsigned short offset);
 int dv_compare_spec (db_buf_t db, search_spec_t * spec, it_cursor_t * it);
-dp_addr_t leaf_pointer (db_buf_t page, int pos);
-int pg_gap_length (db_buf_t page, int pos);
+dp_addr_t leaf_pointer (db_buf_t row, dbe_key_t * key);
+row_size_t page_gap_length (db_buf_t page, row_size_t pos);
 buffer_desc_t * pl_enter (placeholder_t * pl, it_cursor_t * ctl_itc);
 buffer_desc_t * page_reenter_excl (it_cursor_t * it);
-int find_leaf_pointer (buffer_desc_t * buf, dp_addr_t lf, it_cursor_t * it, int * map_pos);
+int page_find_leaf (buffer_desc_t * buf, dp_addr_t lf);
 int pg_skip_gap (db_buf_t page, int pos);
-void itc_skip_entry (it_cursor_t * it, db_buf_t page);
+void itc_skip_entry (it_cursor_t * it, buffer_desc_t * buf);
 void itc_prev_entry (it_cursor_t * it, buffer_desc_t * buf);
 
 void itc_down_transit (it_cursor_t * it, buffer_desc_t ** buf, dp_addr_t to);
@@ -95,14 +100,15 @@ void itc_clear_stats (it_cursor_t *it);
 void itc_from_keep_params (it_cursor_t * it, dbe_key_t * key);
 void itc_from_it (it_cursor_t * itc, index_tree_t * it);
 int itc_next (it_cursor_t * it, buffer_desc_t ** buf_ret);
-int64 itc_sample (it_cursor_t * it, buffer_desc_t ** buf_ret);
+int64 itc_sample (it_cursor_t * it);
+int64 itc_local_sample (it_cursor_t * it);
 unsigned int64 key_count_estimate (dbe_key_t * key, int n_samples, int upd_col_stats);
+int key_n_partitions (dbe_key_t * key);
 caddr_t key_name_to_iri_id (lock_trx_t * lt, caddr_t name, int make_new);
 int  key_rdf_lang_id (caddr_t name);
 
-#define plh_free(pl) dk_free_box ((box_t) (pl))
-int plh_box_free (caddr_t plh);
 
+void plh_free (placeholder_t * pl);
 placeholder_t * plh_landed_copy (placeholder_t * pl, buffer_desc_t * buf);
 placeholder_t * plh_copy (placeholder_t * pl);
 buffer_desc_t * itc_set_by_placeholder (it_cursor_t * itc, placeholder_t * pl);
@@ -135,35 +141,35 @@ void itc_from_dyn_sp (it_cursor_t * it, dbe_key_t * key);
 
 int itc_ra_quota (it_cursor_t * itc);
 struct ra_req_s *itc_read_ahead1 (it_cursor_t * itc, buffer_desc_t ** buf_ret);
-void itc_read_ahead_blob (it_cursor_t * itc, struct ra_req_s *ra);
+void itc_read_ahead_blob (it_cursor_t * itc, struct ra_req_s *ra, int flags);
+#define RAB_SPECULATIVE 1 /* to indicate speculative read ahead with random lookup, buffers should be inited fairly old and no touch for ones already in */
+
 void itc_read_ahead (it_cursor_t * itc, buffer_desc_t ** buf_ret);
 struct ra_req_s * itc_read_aside (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t dp);
+void dbs_timeout_read_history (dbe_storage_t * dbs);
 
-#define DV_COMPARE_SPEC(r, sp, it) \
+
+#define DV_IS_NULL(x) \
+  (IS_BOX_POINTER ((x)) && DV_DB_NULL == box_tag ((x)))
+
+#define DV_COMPARE_SPEC_W_NULL(r, cl, sp, it, buf)	\
   if (sp->sp_min_op == CMP_EQ) \
     { \
-      r = itc_col_check (it, sp, sp->sp_min); \
-    } \
-  else \
-    r = itc_compare_spec (it, sp);
-
-#define DV_COMPARE_SPEC_W_NULL(r, sp, it) \
-  if (sp->sp_min_op == CMP_EQ) \
-    { \
-      r = itc_col_check (it, sp, sp->sp_min); \
+      r = page_col_cmp (buf, it->itc_row_data, cl, it->itc_search_params[sp->sp_min]); \
     } \
   else \
     { \
-      if (sp->sp_cl.cl_null_mask & (sp->sp_cl.cl_null_mask & it->itc_row_data[sp->sp_cl.cl_null_flag])) \
+      row_ver_t rv = IE_ROW_VERSION (it->itc_row_data); \
+      if (cl->cl_null_mask[rv] & (cl->cl_null_mask[rv] & it->itc_row_data[cl->cl_null_flag[rv]])) \
 	{ \
-	  if ((sp->sp_max_op != CMP_NONE && it->itc_search_param_null[sp->sp_max]) \
-	   || (sp->sp_min_op != CMP_NONE && it->itc_search_param_null[sp->sp_min])) \
+	  if ((sp->sp_max_op != CMP_NONE && DV_IS_NULL (it->itc_search_params[sp->sp_max])) \
+	      || (sp->sp_min_op != CMP_NONE && DV_IS_NULL (it->itc_search_params[sp->sp_min]))) \
 	    r = DVC_MATCH; \
 	  else \
 	    r = DVC_LESS; \
 	} \
       else \
-	r = itc_compare_spec (it, sp); \
+	r = itc_compare_spec (it, buf, cl, sp);	\
     }
 
 int64 dbe_key_count (dbe_key_t * key);
@@ -179,18 +185,9 @@ buffer_desc_t * page_fault (it_cursor_t * it, dp_addr_t dp);
 buffer_desc_t * page_fault_map_sem (it_cursor_t * it, dp_addr_t dp, int stay_inside);
 #define PF_STAY_ATOMIC 1
 
-#ifdef MTX_DEBUG
-int page_wait_access_dbg (int line, const char * file, it_cursor_t * itc, dp_addr_t dp_to, buffer_desc_t * buf_from, 
+int page_wait_access (it_cursor_t * itc, dp_addr_t dp_to,
+		  buffer_desc_t * buf_from,
     buffer_desc_t ** buf_ret, int mode, int max_change);
-void page_leave_inner_dbg (int line, const char * file, buffer_desc_t * buf);
-#define page_wait_access(itc,dp,buf_from,buf_ret,mode,max_change) \
-	page_wait_access_dbg (__LINE__, __FILE__,itc,dp,buf_from,buf_ret,mode,max_change)
-#define page_leave_inner(buf) page_leave_inner_dbg (__LINE__, __FILE__,buf)
-#else
-int page_wait_access (it_cursor_t * itc, dp_addr_t dp_to, buffer_desc_t * buf_from, 
-    buffer_desc_t ** buf_ret, int mode, int max_change);
-void page_leave_inner (buffer_desc_t * buf);
-#endif
 void page_release_read (buffer_desc_t * buf);
 void page_read_queue_add (buffer_desc_t * buf, it_cursor_t * itc);
 void page_write_queue_add (buffer_desc_t * buf, it_cursor_t * itc);
@@ -200,6 +197,7 @@ buffer_desc_t * page_try_transit (it_cursor_t * it, buffer_desc_t * from,
 				  dp_addr_t dp, int mode);
 void it_wait_no_io_pending (void);
 
+void page_leave_inner (buffer_desc_t * buf);
 void page_leave_as_deleted (buffer_desc_t * buf);
 
 /* void itc_page_leave (it_cursor_t *, buffer_desc_t * buf); */
@@ -220,6 +218,17 @@ void page_leave_as_deleted (buffer_desc_t * buf);
   mutex_leave (&itm->itm_mtx); \
 }
 
+
+#define page_leave_outside_map_chg(buf, change)	\
+{ \
+  it_map_t *itm = IT_DP_MAP ((buf)->bd_tree, (buf)->bd_page);	\
+  mutex_enter (&itm->itm_mtx); \
+  page_mark_change (buf, change); \
+  page_leave_inner (buf); \
+  mutex_leave (&itm->itm_mtx); \
+}
+
+
 #define INSIDE_MAP 1
 #define OUTSIDE_MAP 0
 
@@ -235,6 +244,7 @@ void itc_unregister_while_on_page (it_cursor_t * it_in, it_cursor_t * preserve_i
 
 /* disk.c */
 
+int word_free_bit (dp_addr_t w);
 dbe_storage_t * dbs_allocate (char * name, char type);
 void dbs_close (dbe_storage_t * dbs);
 void wi_storage_offsets (void);
@@ -249,9 +259,12 @@ dp_addr_t bd_phys_page_key (buffer_desc_t * b);
 
 
 int bp_buf_enter (buffer_desc_t * buf, it_map_t ** itm_ret);
-buffer_desc_t * bp_get_buffer  (buffer_pool_t * bp, int mode);
+buffer_desc_t * bp_get_buffer_1  (buffer_pool_t * bp, buffer_pool_t ** pool_for_action, int mode);
+#define bp_get_buffer(bp, m) bp_get_buffer_1 (bp, NULL, m)
 #define BP_BUF_REQUIRED 0
 #define BP_BUF_IF_AVAIL 1
+void  bp_delayed_stat_action (buffer_pool_t * bp);
+
 void buf_touch (buffer_desc_t * buf, int in_bp);
 void buf_untouch (buffer_desc_t * buf);
 #define BUF_BACKDATE(buf) (buf->bd_timestamp = buf->bd_pool->bp_ts - 2 * buf->bd_pool->bp_n_bufs)
@@ -269,9 +282,8 @@ long dbs_is_free_page (dbe_storage_t * dbs, dp_addr_t n);
 
 void it_page_allocated (index_tree_t * it, dp_addr_t n);
 
-dp_addr_t dbs_get_free_disk_page (dbe_storage_t * dbs, dp_addr_t nearxx);
 void dbs_free_disk_page (dbe_storage_t * dbs, dp_addr_t dp);
-
+buffer_desc_t * dbs_read_page_set (dbe_storage_t * dbs, dp_addr_t first_dp, int flag);
 void bp_write_dirty (buffer_pool_t * bp, int force, int is_in_page_map, int n_oldest);
 
 void dbs_sync_disks (dbe_storage_t * dbs);
@@ -290,7 +302,6 @@ extern int n_fds_per_file;
 void wi_open (char *mode);
 
 void db_close (dbe_storage_t * dbs);
-void fc_init (free_set_cache_t * fc);
 void wi_init_globals (void);
 
 
@@ -332,16 +343,22 @@ dbe_storage_t * wd_storage (wi_db_t * wd, caddr_t name);
 void it_not_in_any (du_thread_t * self, index_tree_t * except);
 
 /* insert.c */
-
+void map_resize (page_map_t ** pm_ret, int new_sz);
+void map_insert_pos (page_map_t ** map_ret, int pos, int what);
 void row_write_reserved (dtp_t * end, int n_bytes);
 
-int  row_length (db_buf_t row, dbe_key_t * key);
+int str_cmp_2 (db_buf_t dv1, db_buf_t dv2, db_buf_t dv3, int l1, int l2, int l3, unsigned short offset);
+row_size_t  row_length (db_buf_t row, dbe_key_t * key);
 int  row_reserved_length (db_buf_t row, dbe_key_t * key);
 void dbg_page_map (buffer_desc_t * buf);
+void dbg_page_map_log (buffer_desc_t * buf, char * file, char * msg);
 void dbg_page_map_f (buffer_desc_t * buf, FILE * out);
 void pg_map_clear (buffer_desc_t * buf);
 int pg_make_map (buffer_desc_t *);
-#if defined (MTX_DEBUG) | defined (PAGE_TRACE)
+void pg_check_map_1 (buffer_desc_t * buf);
+int  pg_row_check (buffer_desc_t * buf, int irow, int gpf_on_err);
+
+#if defined (PAGE_CHECK) | defined (PAGE_TRACE)
 
 void pg_check_map (buffer_desc_t * buf);
 #else
@@ -349,30 +366,31 @@ void pg_check_map (buffer_desc_t * buf);
 #endif
 int pg_room (db_buf_t page);
 
-void pg_write_gap (db_buf_t place, int len);
+void page_write_gap (db_buf_t place, row_size_t len);
 int map_entry_after (page_map_t * pm, int at);
-int itc_insert_dv (it_cursor_t * it, buffer_desc_t ** buf, db_buf_t dv,
+void itc_insert_dv (it_cursor_t * it, buffer_desc_t ** buf, row_delta_t * rd,
 		   int is_recursive, row_lock_t * new_rl);
 #define INS_NEW_RL ((row_lock_t *) 1L)
 #define INS_DOUBLE_LP ((row_lock_t*)2L)
 void itc_make_exact_spec (it_cursor_t * it, db_buf_t thing);
 int page_unlink_row (buffer_desc_t * buf, int pos, int * pos_after);
-int itc_insert_unq_ck (it_cursor_t * it, db_buf_t thing, buffer_desc_t ** unq_ret);
+int itc_insert_unq_ck (it_cursor_t * it, row_delta_t * rd, buffer_desc_t ** unq_ret);
 #define itc_insert(i,v) itc_insert_unq_ck (i, v, NULL)
 #define UNQ_ALLOW_DUPLICATES ((buffer_desc_t **) -1L)  /* give as unq_buf to cause insert anyway */
 #define UNQ_SORT ((buffer_desc_t **) -2L)  /* give as unq_buf to cause insert anyway */
 
 db_buf_t strses_to_db_buf (dk_session_t * ses);
 void itc_delete (it_cursor_t * it, buffer_desc_t ** buf_ret, int maybe_blobs);
-int itc_commit_delete (it_cursor_t * it, buffer_desc_t ** buf_ret);
-void itc_immediate_delete_blobs (it_cursor_t * it, buffer_desc_t *buf);
-
 int map_delete (page_map_t ** map_ret, int pos);
 void dp_may_compact (dbe_storage_t *dbs, dp_addr_t);
 void wi_check_all_compact (int age_limit);
-void  itc_vacuum_compact (it_cursor_t * itc, buffer_desc_t * buf);
+extern dk_mutex_t * pl_ref_count_mtx;
+extern dk_mutex_t * dbs_autocompact_mtx;
+extern int dbs_autocompact_in_progress;
+int  itc_vacuum_compact (it_cursor_t * itc, buffer_desc_t ** buf_ret);
 void itc_fix_leaf_ptr (it_cursor_t * itc, buffer_desc_t * buf);
-
+void pg_move_cursors (it_cursor_t ** temp_itc, int fill, buffer_desc_t * buf_from,
+		 int from, dp_addr_t page_to, int to, buffer_desc_t * buf_to);
 
 /* tree.c */
 
@@ -417,37 +435,116 @@ buffer_desc_t * itc_delta_this_buffer (it_cursor_t * itc, buffer_desc_t * buf, i
 
 dbe_schema_t * isp_schema_1 (void * thr);
 #define isp_schema(x) (wi_inst.wi_schema)
-buffer_desc_t * it_new_page (index_tree_t * isp, dp_addr_t nearxx, int type, int in_pmap, int has_hold);
+buffer_desc_t * it_new_page (index_tree_t * isp, dp_addr_t nearxx, int type, int in_pmap, it_cursor_t * has_hold);
 void it_free_page (index_tree_t * it, buffer_desc_t * buf);
 void it_free_blob_dp_no_read (index_tree_t * it, dp_addr_t dp);
-void it_cache_check (index_tree_t * it);
+void it_cache_check (index_tree_t * it, int mode);
+#define IT_CHECK_ALL 0
+#define IT_CHECK_FAST 1
+#define IT_CHECK_POST 2
 
 
 /* lock.c */
 
-
+void lt_new_w_id (lock_trx_t * lt);
 extern resource_t * idp_rc;
+
+
+/* page.c */
+
+int box_length_on_row (caddr_t val);
+void pfh_init (pf_hash_t * pfh, buffer_desc_t * buf);
+extern resource_t * pfh_rc;
+pf_hash_t * pfh_allocate ();
+void pfh_free (pf_hash_t * pfh);
+
+row_size_t  row_space_after (buffer_desc_t * buf, short irow);
+void  pfh_set_int (pf_hash_t * pfh, int32 v, short nth_cl, short irow, short place);
+void  pfh_set_int64 (pf_hash_t * pfh, int32 v, short nth_cl, short irow, short place);
+void pfh_set_var (pf_hash_t * pfh, dbe_col_loc_t * cl, short irow, db_buf_t str, int len);
+void pf_rd_append (page_fill_t * pf, row_delta_t * rd, row_size_t * split_after);
+
+#define PAGE_WRITE_ORG 1
+#define PAGE_WRITE_COPY 2
+int page_prepare_write (buffer_desc_t * buf, db_buf_t * copy, int * copy_fill, int page_compress);
+
+int page_col_cmp_1 (buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * cl, caddr_t value);
+#define page_col_cmp(buf, row, cl, val) \
+  (~DVC_NOORDER & page_col_cmp_1 (buf, row, cl, val)) 
+void  page_row_bm (buffer_desc_t * buf, int irow, row_delta_t * rd, int op, it_cursor_t * bm_pl);
+#define page_row(buf, irow, rd, op) page_row_bm (buf, irow, rd, op, NULL) 
+#define RO_LEAF 1
+#define RO_ROW 2
+#define RO_RB_ROW 3
+
+#define LOCAL_RD(rd) \
+    caddr_t rd##__vs[TB_MAX_COLS]; \
+  row_delta_t rd;\
+  memset (&rd, 0, sizeof (row_delta_t)); \
+  rd.rd_values = rd##__vs; \
+  rd.rd_allocated = RD_ALLOCATED_VALUES; 
+
+
+#define LOCAL_COPY_RD(rd) \
+  caddr_t rd##__vs[TB_MAX_COLS]; \
+  dtp_t rd##temp [2 * MAX_ROW_BYTES]; \
+  row_delta_t rd;\
+  memset (&rd, 0, sizeof (row_delta_t)); \
+  rd.rd_temp = &rd##temp[0]; \
+rd.rd_temp_max = sizeof (rd##temp); \
+  rd.rd_values = rd##__vs; \
+  rd.rd_allocated = RD_AUTO; 
+
+
+
+caddr_t rd_col (row_delta_t * rd, oid_t cid, int * found);
+int key_col_in_layout_seq (dbe_key_t * key, dbe_column_t * col);
+void kc_var_col (dbe_key_t * key, buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * cl, db_buf_t * p1, row_size_t * len1, db_buf_t * buf2, row_size_t* len2, unsigned short * offset);
+void page_apply (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t ** delta, int op);
+/* op for page_apply */
+#define PA_MODIFY 0
+#define PA_RELEASE_PL 1
+#define PA_AUTOCOMPACT 2
+#define PA_REWRITE_ONLY 4
+
+void rd_free (row_delta_t * rd);
+void rd_list_free (row_delta_t ** rds);
 
 
 /* row.c */
 
+caddr_t mp_box_iri_id (mem_pool_t * mp, iri_id_t iid);
+void rd_free_box (row_delta_t * rd, caddr_t box);
+void itc_delete_blob_search_pars (it_cursor_t * itc, row_delta_t * rd);
+void row_insert_cast (row_delta_t * rd, dbe_col_loc_t * cl, caddr_t data,
+		 caddr_t * err_ret, db_buf_t old_blob);
+void row_insert_cast_temp (row_delta_t * rd, dbe_col_loc_t * cl, caddr_t data,
+		 caddr_t * err_ret, db_buf_t old_blob);
+void  itc_print_params (it_cursor_t * itc);
+caddr_t itc_mp_box_column (it_cursor_t * itc, mem_pool_t * mp, buffer_desc_t *buf, oid_t col, dbe_col_loc_t * cl);
+caddr_t box_n_chars (char * str, int len);
+caddr_t page_mp_box_col (it_cursor_t * itc, mem_pool_t * mp, buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * cl);
+caddr_t page_box_col (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * cl);
+caddr_t page_copy_col (buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * cl, row_delta_t * rd);
+void page_write_col (buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * cl, dk_session_t * ses, it_cursor_t * itc);
+
+void row_set_col (row_fill_t * rf, dbe_col_loc_t * cl, caddr_t data);
+void row_set_prefix (row_fill_t * rf, dbe_col_loc_t * cl, caddr_t value, row_size_t prefix_bytes, unsigned short prefix_ref, dtp_t extra);
 dbe_col_loc_t * key_find_cl (dbe_key_t * key, oid_t col);
-dbe_col_loc_t * itc_col_loc (it_cursor_t * itc, db_buf_t page, oid_t col_id);
 dbe_col_loc_t *cl_list_find (dbe_col_loc_t * cl, oid_t col_id);
 search_spec_t * key_add_spec (search_spec_t * last, it_cursor_t * it,
 			      dk_session_t * ses);
 
 db_buf_t  itc_column (it_cursor_t * it, db_buf_t page, oid_t col_id);
-caddr_t itc_box_row (it_cursor_t * it, db_buf_t page);
+caddr_t itc_box_row (it_cursor_t * it, buffer_desc_t * buf);
 
-caddr_t itc_box_column (it_cursor_t * it, db_buf_t page, oid_t col, dbe_col_loc_t * cl);
+caddr_t itc_box_column (it_cursor_t * it, buffer_desc_t * buf, oid_t col, dbe_col_loc_t * cl);
 long itc_long_column (it_cursor_t * it, buffer_desc_t * buf, oid_t col);
 void key_free_trail_specs (search_spec_t * sp);
 void itc_free_specs (it_cursor_t * it);
 dbe_key_t * itc_get_row_key (it_cursor_t * it, buffer_desc_t * buf);
 
-int itc_row_insert (it_cursor_t * it, db_buf_t row, buffer_desc_t ** unq_buf);
-int itc_row_insert_1 (it_cursor_t * it, db_buf_t row, buffer_desc_t ** unq_buf,
+int itc_row_insert (it_cursor_t * it, row_delta_t * rd, buffer_desc_t ** unq_buf,
 		    int blobs_in_place, int pk_only);
 
 void itc_drop_index (it_cursor_t * it, dbe_key_t * key);
@@ -457,8 +554,12 @@ void itc_row_key_insert (it_cursor_t * it, db_buf_t row, dbe_key_t * ins_key);
 
 
 /* meta.c */
+const char * sch_skip_prefixes (const char *str);
+int dtp_is_fixed (dtp_t dtp);
+int dtp_is_var (dtp_t dtp);
+void dk_set_append_1 (dk_set_t * res, void *item);
 void dbe_key_free (dbe_key_t * key);
-void dbe_key_layout (dbe_key_t * key);
+void dbe_key_layout (dbe_key_t * key, dbe_schema_t * sc);
 
 /* redundant and incorrect: long strhash (char * strp); */
 
@@ -500,10 +601,6 @@ void row_print_object (caddr_t thing, dk_session_t * ses, dbe_column_t * col, ca
 dk_set_t key_ensure_visible_parts (dbe_key_t * key);
 void row_print_blob (it_cursor_t * itc, caddr_t thing, dk_session_t * ses, dbe_column_t * col,
     caddr_t * err_ret);
-
-int upd_blob_opt (it_cursor_t * itc, db_buf_t row,
-	      caddr_t * err_ret,
-	      int log_as_insert);
 
 extern int case_mode;
 #define CM_UPPER 1
@@ -548,7 +645,6 @@ extern long vt_batch_size_limit;
 extern long sqlc_add_views_qualifiers;
 extern int sqlo_max_layouts;
 extern int32 sqlo_max_mp_size;
-extern int32 sql_const_cond_opt;
 extern long txn_after_image_limit;
 extern long stripe_growth_ratio;
 extern int disable_listen_on_unix_sock;
@@ -621,7 +717,8 @@ void sqlc_quote_dotted_quote (char *text, size_t tlen, int *fill, char *name, co
 
 void log_replay_file (int fd);
 void log_checkpoint (dbe_storage_t * dbs, char * new_file, int shutdown);
-void log_delete (lock_trx_t * lt, it_cursor_t * it, db_buf_t page, int pos);
+void log_delete (lock_trx_t * lt, row_delta_t * rd, int this_key_only);
+int  log_check_trx (int64 trx_no);
 
 void sf_fastdown (lock_trx_t * trx);
 void sf_shutdown (char * log_name, lock_trx_t * lt);
@@ -663,13 +760,18 @@ extern int mti_reads_queued;
 int itc_set_blob_col (it_cursor_t * row_itc, db_buf_t col,
     caddr_t data, blob_layout_t *replaced_version,
     int log_as_insert, sql_type_t *col_sqt);
-blob_layout_t * bl_from_dv (dtp_t * col, it_cursor_t * itc);
+blob_layout_t * bl_from_dv_it (dtp_t * col, index_tree_t * it);
+#define bl_from_dv(d, i) bl_from_dv_it (d, i->itc_tree)
+
 blob_handle_t * bh_from_dv (dtp_t * col, it_cursor_t * itc);
 void bh_to_dv (blob_handle_t * bh, dtp_t * col, dtp_t dtp);
 int  blob_check (blob_handle_t * bh);
 int  bl_check (blob_layout_t * bl);
 #define BLOB_OK 0
 #define BLOB_FREE 1
+
+#define IS_INLINEABLE_DTP(dtp)  (DV_BLOB == (dtp) || DV_BLOB_BIN == (dtp))
+
 
 #ifdef BL_DEBUG
 extern void dbg_blob_layout_free (const char *file, int line, blob_layout_t * bl);
@@ -678,7 +780,7 @@ extern void dbg_blob_layout_free (const char *file, int line, blob_layout_t * bl
 extern void blob_layout_free (blob_layout_t * bl);
 #endif
 
-box_t blob_layout_ctor (dtp_t blob_handle_dtp, dp_addr_t start, dp_addr_t dir_start, size_t length, size_t diskbytes, index_tree_t * it);
+box_t blob_layout_ctor (dtp_t blob_handle_dtp, dp_addr_t start, dp_addr_t dir_start, int64 length, int64 diskbytes, index_tree_t * it);
 int blob_read_dir (it_cursor_t * itc, dp_addr_t ** pages, int * is_complete, dp_addr_t dir_start);
 box_t blob_layout_from_handle_ctor (blob_handle_t *bh);
 int itc_print_blob_col_non_txn (it_cursor_t * row_itc, dk_session_t * row, caddr_t data, int is_extension);
@@ -698,9 +800,11 @@ typedef struct blob_log_s
   char * bl_table_name;
   index_tree_t *	bl_it;
 } blob_log_t;
+
+int blob_write_log (lock_trx_t * lt, dk_session_t * log, blob_log_t * bl);
 void blob_log_replace (it_cursor_t * it, blob_layout_t * bl);
 
-void row_fixup_blob_refs (it_cursor_t * itc, db_buf_t row);
+void rd_fixup_blob_refs (it_cursor_t * itc, row_delta_t * rd);
 caddr_t blob_to_string_it (lock_trx_t * lt, index_tree_t *it, caddr_t bhp);
 caddr_t blob_to_string (lock_trx_t * lt, caddr_t bhp);
 caddr_t safe_blob_to_string (lock_trx_t * lt, caddr_t bhp, caddr_t *err);
@@ -709,7 +813,7 @@ dk_session_t *blob_to_string_output (lock_trx_t * lt, caddr_t bhp);
 dk_session_t *bloblike_pages_to_string_output (dbe_storage_t * dbs, lock_trx_t * lt, dp_addr_t start, int * error);
 caddr_t blob_subseq (lock_trx_t * lt, caddr_t bhp, size_t from, size_t to );
 long bh_write_out (lock_trx_t * lt, blob_handle_t * bh, dk_session_t *ses);
-void blob_log_write (it_cursor_t * it, dp_addr_t start, dtp_t blob_handle_dtp, dp_addr_t dir_start, long diskbytes,
+void blob_log_write (it_cursor_t * it, dp_addr_t start, dtp_t blob_handle_dtp, dp_addr_t dir_start, int64 diskbytes,
 		     oid_t col_id, char * tb_name);
 void blob_log_set_free (s_node_t *set);
 int blob_log_set_delete (dk_set_t * set, dp_addr_t dp);
@@ -727,8 +831,14 @@ extern int page_wait_blob_access (it_cursor_t * itc, dp_addr_t dp_to, buffer_des
 
 /* neodisk.c */
 
-void dbs_checkpoint (dbe_storage_t * dbs, char * log_name, int shutdown);
-void dbs_cpt_recov (void);
+void  dbs_cpt_recov (dbe_storage_t * dbs);
+void dbs_recov_write_page_set (dbe_storage_t * dbs, buffer_desc_t * buf);
+void cpt_ins_image (buffer_desc_t * buf, int map_pos);
+void cpt_upd_image (buffer_desc_t * buf, int map_pos);
+void page_lock_to_row_locks (buffer_desc_t * buf);
+void cpt_rollback (int may_freeze);
+void cpt_over (void);
+void dbs_checkpoint (char * log_name, int shutdown);
 #define CPT_NORMAL 0
 #define CPT_SHUTDOWN 1
 #define CPT_INC_RESET 2
@@ -736,7 +846,7 @@ void dbs_cpt_recov (void);
 void dbs_read_checkpoint_remap (dbe_storage_t * dbs, dp_addr_t from);
 int it_can_reuse_logical (index_tree_t * it, dp_addr_t dp);
 
-void it_free_remap (index_tree_t * it, dp_addr_t logical, dp_addr_t remap);
+void it_free_remap (index_tree_t * it, dp_addr_t logical, dp_addr_t remap, int dp_flags);
 
 #define DP_CHECKPOINT_REMAP(dbs, dp)\
   ((dp_addr_t)(ptrlong)gethash (DP_ADDR2VOID (dp), dbs->dbs_cpt_remap))
@@ -748,6 +858,7 @@ int cpt_is_global_lock (void);
 
 /* other */
 
+void sqlo_box_print (caddr_t tree);
 /* acc.c */
 
 
@@ -760,6 +871,11 @@ int cpt_is_global_lock (void);
 #define SET_ALWAYS 0
 
 
+#define SEQ_MAX_CHARS 300
+
+void dbs_registry_set (dbe_storage_t * dbs, const char *name, const char *value, int is_boxed);
+void dbs_registry_from_array (dbe_storage_t * dbs, caddr_t * reg);
+caddr_t * dbs_registry_to_array (dbe_storage_t * dbs);
 void registry_exec (void);
 boxint sequence_set_1 (char * name, boxint value, int mode, int in_map, caddr_t * err_ret);
 boxint sequence_next (char * name, int in_map);
@@ -778,9 +894,11 @@ caddr_t registry_remove (char *name);
 int dbs_write_registry (dbe_storage_t * dbs);
 void dbs_init_registry (dbe_storage_t * dbs);
 void db_replay_registry_sequences (void);
-
+void cli_bootstrap_cli ();
 void db_log_registry (dk_session_t * log);
-caddr_t box_deserialize_string (caddr_t text, int opt_len);
+void registry_update_sequences (void);
+caddr_t box_deserialize_string (caddr_t text, int opt_len, short offset);
+caddr_t mp_box_deserialize_string (mem_pool_t * mp, caddr_t text, int opt_len, short offset);
 
 
 /* sqlsrv.c */
@@ -812,7 +930,7 @@ void it_root_image_invalidate (index_tree_t * tree);
 
 
 /* disk.c */
-OFF_T dbs_extend_file (dbe_storage_t * dbs);
+int dbs_seg_extend (dbe_storage_t * dbs, int n);
 OFF_T dbs_extend_stripes (dbe_storage_t * dbs);
 
 
@@ -824,6 +942,7 @@ dk_set_t _cfg_read_storages (caddr_t **temp_storage);
 extern dk_set_t (*dbs_read_storages) (caddr_t **temp_file);
 extern int freeing_unfreeable;
 void dbs_unfreeable (dbe_storage_t * dbs, dp_addr_t dp, int flag);
+void page_set_check (db_buf_t page);
 
 #ifndef NDEBUG
 #define PAGE_SET_CHECKSUM
@@ -856,6 +975,7 @@ extern unsigned long main_continuation_reason;
 #define MAIN_CONTINUE_ON_SCHEDULER	1
 void sched_do_round (void);
 void sched_run_at_start (void);
+void sched_do_round_1 (const char * text);
 void sched_set_thread_count (void);
 
 caddr_t box_cast_to (caddr_t *qst, caddr_t data, dtp_t data_dtp,
@@ -869,10 +989,35 @@ int dp_backup_flag (dbe_storage_t * dbs, dp_addr_t page);
 void hosting_plugin_init (void);
 void plugin_loader_init(void);
 
+/* rdfinf.c */
+void sas_ensure (void);
 /*  rdfbox.c */
 extern rdf_box_t * rb_allocate (void);
 extern int dv_rdf_compare (db_buf_t dv1, db_buf_t dv2);
 extern int rdf_box_compare (ccaddr_t rb1, ccaddr_t rb2);
+/*rdf_core.c */
+int  iri_split (char * iri, caddr_t * pref, caddr_t * name);
+
+typedef struct name_id_cache_s 
+{
+  dk_mutex_t *	nic_mtx;
+  dk_hash_64_t *	nic_id_to_name;
+  id_hash_t *	nic_name_to_id;
+  unsigned long	nic_size;
+} name_id_cache_t;
+
+extern name_id_cache_t * iri_name_cache;
+extern name_id_cache_t * iri_prefix_cache;
+extern name_id_cache_t * rdf_lang_cache;
+extern name_id_cache_t * rdf_type_cache;
+boxint nic_name_id (name_id_cache_t * nic, char * name);
+caddr_t  nic_id_name (name_id_cache_t * nic, boxint id);
+void nic_set (name_id_cache_t * nic, caddr_t name, boxint id);
+boxint  lt_nic_name_id (lock_trx_t * lt, name_id_cache_t * nic, caddr_t name);
+caddr_t  lt_nic_id_name (lock_trx_t * lt, name_id_cache_t * nic, boxint id);
+void lt_nic_set (lock_trx_t * lt, name_id_cache_t * nic, caddr_t name, boxint id);
+
+
 
 /* bif_file.c */
 void init_file_acl_set (char *acl_string1, dk_set_t * acl_set_ptr);
@@ -909,7 +1054,13 @@ extern long last_exec_time;	/* used to know when the system is idle */
 
 extern unsigned long int cfg_autocheckpoint;	/* Defined in disk.c */
 extern int32 c_checkpoint_interval;
+extern dk_mutex_t * checkpoint_mtx;
 extern int32 cl_run_local_only;
+#define CL_RUN_CLUSTER		0	/*!< Normal work of the cluster */
+#define CL_RUN_LOCAL		1	/*!< Normal work of single box */
+#define CL_RUN_SINGLE_CLUSTER	2	/*!< Cluster is configured but connections are not yet established */
+
+extern int cluster_enable;
 extern unsigned long int cfg_thread_live_period;
 extern unsigned long int cfg_thread_threshold;
 extern du_thread_t *the_main_thread;	/* Set in srv_global_init in sqlsrv.c */
@@ -933,7 +1084,7 @@ extern int dive_cache_enable;
 
 extern int default_txn_isolation;
 extern int c_use_aio;
-
+extern int c_stripe_unit;
 extern long dbev_enable; /* from sqlsrv.c */
 extern int in_srv_global_init;
 extern long vd_param_batch;
@@ -980,5 +1131,32 @@ extern unsigned blob_page_dir_threshold;
 extern int virtuoso_server_initialized;
 extern int dive_pa_mode;
 extern unsigned int bp_hit_ctr;
+extern int c_compress_mode;
+/* extent.c */
 
+void em_free_mem (extent_map_t * em);
+extent_map_t * dbs_read_extent_map (dbe_storage_t * dbs, char * name, dp_addr_t dp);
+extent_map_t *  dbs_dp_to_em (dbe_storage_t * dbs, dp_addr_t dp);
+void dbs_cpt_extents (dbe_storage_t * dbs, dk_set_t free_trees);
+void dbs_cpt_recov_write_extents (dbe_storage_t * dbs);
+int buf_ext_check (buffer_desc_t * buf);
+void  kf_set_extent_map (dbe_key_frag_t * kf);
+void dbs_extent_open (dbe_storage_t * dbs);
+void dbs_extent_init (dbe_storage_t * dbs);
+void em_dp_allocated (extent_map_t * em, dp_addr_t dp, int is_temp);
+void em_free_dp (extent_map_t * em, dp_addr_t dp, int is_temp_free);
+dp_addr_t em_new_dp (extent_map_t * em, int type, dp_addr_t near, int * hold);
+void em_free_remap_hold (extent_map_t * em, int * hold);
+int em_hold_remap (extent_map_t * em, int * hold);
+int it_own_extent_map (index_tree_t * tree);
+void dbs_cpt_write_extents (dbe_storage_t * dbs);
+void em_check_dp (extent_map_t * em, dp_addr_t dp);
+void em_free (extent_map_t * em);
+void dbs_cpt_set_allocated (dbe_storage_t * dbs, dp_addr_t dp, int is_allocd);
+
+
+extern dk_mutex_t * extent_map_create_mtx;
+
+#define WAIT_IF(msec) if (msec) virtuoso_sleep ((msec) /1000, 1000 * ((msec) % 1000));
+extern int32 sql_const_cond_opt;
 #endif /* _WIFN_H */

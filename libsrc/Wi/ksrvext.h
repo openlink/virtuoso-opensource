@@ -545,12 +545,14 @@ struct dk_session_s
     caddr_t *		dks_caller_id_opts;
 
     void *		dks_dbs_data;
+    void *		dks_cluster_data; /* cluster interconnect state.  Not the same as dks_dbs_data because dks_dbs_data when present determines protocol vrsions and cluster is all the same version */
     void *		dks_write_temp;	/* Used by Distributed Objects */
 
         /*! max msecs to block on a read */
     timeout_t		dks_read_block_timeout;
     /*! Is this a client or server initiated session */
     char		dks_is_server;
+    char		dks_cluster_flags;
     char		dks_to_close;
     char		dks_is_read_select_ready; /*! Is the next read known NOT to block */
     char		dks_ws_status;

@@ -989,13 +989,24 @@ sqlo_dfe_set_dt_exps_is_placed (sqlo_t *so, op_table_t *ot, int flag)
   END_DO_SET ();
 }
 
+void
+sqlo_mark_oby_crossed (sqlo_t * so, df_elt_t * dfe)
+{
+  /* an exp is refd from the other side of an oby and thus must be added to the deps of the oby if not key of oby */
+  df_elt_t * oby = so->so_crossed_oby;
+  if (!oby)
+    return;
+  if (so->so_nth_select_col >= BOX_ELEMENTS (oby->_.setp.oby_dep_cols)) GPF_T1 ("oby dep col outside the range of the select");
+  t_set_pushnew (&oby->_.setp.oby_dep_cols[so->so_nth_select_col], (void*)dfe);
+}
+
 
 df_elt_t *
 sqlo_dt_nth_col (sqlo_t * so, df_elt_t * super, df_elt_t * dt_dfe, int inx, df_elt_t * col_dfe, int is_qexp_term)
 {
   char * col_alias;
   df_elt_t * exp_alias;
-
+  so->so_nth_select_col = inx;
   if (DFE_DT == dt_dfe->dfe_type)
     {
       if (dt_dfe->_.sub.generated_dfe)
@@ -1038,6 +1049,9 @@ sqlo_dt_nth_col (sqlo_t * so, df_elt_t * super, df_elt_t * dt_dfe, int inx, df_e
 	  sqlo_dfe_set_dt_exps_is_placed (so, dt_dfe->_.sub.ot, 0);
 	  if (exp)
 	    sqt_max_desc (&col_dfe->dfe_sqt, &exp->dfe_sqt);
+	  if (so->so_place_code_forr_cond)
+	    sqlo_post_oby_ref (so, dt_dfe, exp, inx);
+
 	  col_alias = ((ST**)(dt_dfe->_.sub.ot->ot_left_sel->_.select_stmt.selection))[inx]->_.as_exp.name;
 	  exp_alias = sqlo_df (so, (ST*) t_list (3, COL_DOTTED, dt_dfe->_.sub.ot->ot_new_prefix, col_alias));
 
@@ -1270,7 +1284,7 @@ dfe_defines (df_elt_t * defining, df_elt_t * defd)
   if (defd == defining)
     return 1;
   if (defining->dfe_tree
-      && defining->dfe_hash == defd->dfe_hash 
+      /*&& defining->dfe_hash == defd->dfe_hash */
       && box_equal ((box_t) defining->dfe_tree, (box_t) defd->dfe_tree))
     return 1;
   if (DFE_COLUMN == defd->dfe_type)
@@ -1361,6 +1375,8 @@ dfe_latest (sqlo_t * so, int n_dfes, df_elt_t ** dfes, int default_to_top)
     {
       if (dfe_defines_any (pt, n_dfes, dfes))
 	return pt;
+      if (DFE_ORDER == pt->dfe_type)
+	so->so_crossed_oby = pt;
       if (pt->dfe_prev)
 	pt = pt->dfe_prev;
       else
@@ -1397,6 +1413,8 @@ dfe_col_def_dfe (sqlo_t * so, df_elt_t * col_dfe)
 	    }
 	  return pt;
 	}
+      if (DFE_ORDER == pt->dfe_type)
+	so->so_crossed_oby = pt;
       if (pt->dfe_prev)
 	pt = pt->dfe_prev;
       else
@@ -1518,6 +1536,13 @@ sqlo_place_control_cols (sqlo_t * so, df_elt_t * super, ST * tree)
 }
 
 
+int
+sqlo_is_dt_state_func (char * name)
+{
+  return (!stricmp (name, "T_STEP") || !stricmp (name, "__TN_IN"));
+}
+
+
 df_elt_t *
 sqlo_place_exp (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 {
@@ -1529,6 +1554,7 @@ sqlo_place_exp (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
   locus_t * loc = super->dfe_locus;
   if (!IS_BOX_POINTER (dfe))
     return dfe; /*true and falsecond markers */
+  so->so_crossed_oby = NULL;
   if (1 /*!loc || LOC_LOCAL == loc */)
     {
       switch (dfe->dfe_type)
@@ -1719,7 +1745,13 @@ sqlo_place_exp (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 	    pref_loc = LOC_LOCAL;
 	  }
 
-	if (!stricmp (dfe->dfe_tree->_.call.name, GROUPING_FUNC))
+	if (sqlo_is_dt_state_func (dfe->dfe_tree->_.call.name))
+	  {
+	    placed = so->so_gen_pt;
+	    while (placed->dfe_prev)
+	      placed = placed->dfe_prev;
+	  }
+	else if (!stricmp (dfe->dfe_tree->_.call.name, GROUPING_FUNC))
 	  {
 	    int cond = so->so_place_code_forr_cond;
             so->so_place_code_forr_cond = 1;
@@ -1983,6 +2015,7 @@ sqlo_place_dt_leaf (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * dt_dfe, dk_set_t 
 
       ot->ot_imported_preds = NULL;
       ot->ot_work_dfe = dfe_container (so, DFE_DT, tb_dfe);
+      /*MI: here is a duplicate */
       ot->ot_work_dfe->_.sub.in_arity = dfe_arity_with_supers (tb_dfe->dfe_prev);
       ot->ot_work_dfe->_.sub.in_arity = dfe_arity_with_supers (tb_dfe->dfe_prev);
       copy = sqlo_layout (so, ot, SQLO_LAY_EXISTS, tb_dfe->dfe_super);
@@ -2129,12 +2162,364 @@ sqlo_dt_imp_pred_cols (sqlo_t * so, df_elt_t * tb_dfe, ST * tree)
 }
 
 
+
+
+/* transitive dt */
+
+
+
+dk_set_t
+sqlo_cols_by_pos (sqlo_t *so, df_elt_t * dfe, ptrlong * list)
+{
+  ST * tree = dfe->dfe_tree;
+  int inx, n_sel;
+  dk_set_t res = NULL;
+  ST ** sel;
+  if (!tree)
+    tree = dfe->_.sub.ot->ot_dt;
+  sel = (ST**)sqlp_union_tree_select (tree)->_.select_stmt.selection;
+  n_sel = BOX_ELEMENTS (sel);
+  DO_BOX (caddr_t, pos_box, inx, list)
+    {
+      int pos = unbox (pos_box);
+      if (pos >= n_sel)
+	sqlc_new_error (so->so_sc->sc_cc, "37000", "TR...", "transitive input or output column index out of range");
+      t_set_push (&res, t_list (3, COL_DOTTED, dfe->_.sub.ot->ot_new_prefix, sel[pos]->_.as_exp.name));
+    }
+  END_DO_BOX;
+  return res;
+}
+
+
+void
+sqlo_rm_if_eq (dk_set_t * cols, df_elt_t * pred)
+{
+  /* the cols for which pred is an equality are removed from the list */
+  if (DFE_BOP_PRED != pred->dfe_type && DFE_BOP != pred->dfe_type)
+    return;
+  if (BOP_EQ != pred->_.bin.op)
+    return;
+ again:
+  DO_SET (ST *, col, cols)
+    {
+      if (box_equal (col, pred->_.bin.left->dfe_tree))
+	{
+	  t_set_delete (cols, col);
+	  goto again;
+	}
+      if (box_equal (col, pred->_.bin.right->dfe_tree))
+	{
+	  t_set_delete (cols, col);
+	  goto again;
+	}
+    }
+  END_DO_SET();
+}
+
+
+void
+sqlo_trans_preds (dk_set_t * cols, dk_set_t preds, dk_set_t * pred_rhs_ret, dk_set_t * unused_preds_ret)
+{
+  /* take a list of trans dt input cols.  Produce a list of initial values plus importable preds for these.
+   * the preds which are not giving the starting values are returned in unused_preds_ret */
+  int nth_col = 0;
+  dk_set_t used_preds = NULL;
+  *pred_rhs_ret = NULL;
+ again:
+  DO_SET (ST *, col, cols)
+    {
+      dk_set_t rhs_list = NULL;
+      ST * importable_pred = NULL;
+      DO_SET (df_elt_t *, pred, &preds)
+	{
+	  if (DFE_BOP_PRED != pred->dfe_type && DFE_BOP != pred->dfe_type)
+	    continue;
+	  if (BOP_EQ != pred->_.bin.op)
+	    continue;
+	  if (dk_set_member (used_preds, pred))
+	    continue;
+	  if (box_equal (col, pred->_.bin.left->dfe_tree))
+	    {
+	      t_set_push (&rhs_list, pred->_.bin.right->dfe_tree);
+	      if (!importable_pred)
+		{
+		  importable_pred = t_listst (3, BOP_EQ, pred->_.bin.left->dfe_tree, t_list (3, CALL_STMT, t_box_dv_short_string ("__TN_IN"), t_list (1, t_box_num (nth_col))));
+		  nth_col++;
+		}
+	      t_set_push (&used_preds, (void*)pred);
+	      t_set_delete (unused_preds_ret, (void*)pred);
+	    }
+	  else if (box_equal (col, pred->_.bin.right->dfe_tree))
+	    {
+	      t_set_push (&rhs_list, pred->_.bin.left->dfe_tree);
+	      if (!importable_pred)
+		{
+		  importable_pred = t_listst (3, BOP_EQ, pred->_.bin.right->dfe_tree, list (3, CALL_STMT, t_box_dv_short_string ("__TN_IN"), t_list (1, t_box_num (nth_col))));
+		  nth_col++;
+		}
+	      t_set_push (&used_preds, (void*)pred);
+	      t_set_delete (unused_preds_ret, (void*)pred);
+	    }
+	}
+      END_DO_SET();
+      if (importable_pred)
+	{
+      	  t_set_delete (cols, col);
+	  t_set_push (pred_rhs_ret, t_CONS (importable_pred, rhs_list));
+	  goto again;
+	}
+    }
+  END_DO_SET();
+  *unused_preds_ret = t_set_union (*unused_preds_ret, t_set_diff (preds, used_preds));
+}
+
+
+void sqlo_place_dt (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t preds);
+
+
+void
+sqlo_dt_place_all_cols (sqlo_t * so, df_elt_t * dfe)
+{
+  /* for a transitive dt, all the selected columns must actually be placed even if not refd outside of the dt */
+  int inx;
+  ST ** selection = (ST**)dfe->_.sub.ot->ot_left_sel->_.select_stmt.selection;
+  DO_BOX (ST *, as, inx, selection)
+    {
+      df_elt_t * col_dfe = sqlo_df (so, t_listst (3, COL_DOTTED, dfe->_.sub.ot->ot_new_prefix, as->_.as_exp.name));
+      sqlo_place_exp (so, dfe->dfe_super, col_dfe);
+    }
+  END_DO_BOX;
+}
+
+
+df_elt_t *
+sqlo_dt_renamed_copy (sqlo_t * so, df_elt_t * dt_dfe)
+{
+  df_elt_t * copy;
+  ST * tree = (ST*)t_box_copy_tree ((caddr_t)dt_dfe->_.sub.ot->ot_dt);
+  so->so_is_rescope = 1;
+  sqlo_scope (so, &tree);
+  so->so_is_rescope = 0;
+  copy = sqlo_df (so, tree);
+  copy->dfe_super = dt_dfe->dfe_super;
+  copy->_.sub.ot->ot_new_prefix = dt_dfe->_.sub.ot->ot_new_prefix;
+  return copy;
+}
+
+
+void
+sqlo_trans_dt_1_way (sqlo_t * so, df_elt_t * dfe, dk_set_t preds, ptrlong * in_pos, ptrlong * out_pos)
+{
+  /* in and out are given.  From in to out */
+  ST * save;
+  dk_set_t after_join = NULL, importable = NULL;
+  dk_set_t in_cols, out_cols, in, out;
+  df_elt_t * copy_dfe;
+  t_NEW_VARZ (trans_layout_t, tl);
+  in_cols = sqlo_cols_by_pos (so, dfe, in_pos);
+  sqlo_trans_preds (&in_cols, preds, &in, &after_join);
+  out_cols = sqlo_cols_by_pos (so, dfe, out_pos);
+  sqlo_trans_preds (&out_cols, preds, &out, &after_join);
+  DO_SET (dk_set_t, in_pair, &in)
+    {
+      dk_set_t rhs = in_pair->next;
+      ST * pred;
+      df_elt_t * rhs_dfe, *pred_dfe;
+      ST * all_eq = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase  ("__all_eq"), t_list_to_array (rhs));
+      rhs_dfe = sqlo_df (so, all_eq);
+      sqlo_place_exp (so, dfe->dfe_super, rhs_dfe);
+      t_set_push (&tl->tl_params, rhs_dfe);
+      pred = (ST*)in_pair->data;
+      pred_dfe = sqlo_df (so, pred);
+      t_set_push (&importable, (void*)pred_dfe);
+    }
+  END_DO_SET();
+
+  DO_SET (dk_set_t, out_pair, &out)
+    {
+      dk_set_t rhs = out_pair->next;
+      df_elt_t * rhs_dfe;
+      ST * all_eq = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase  ("__all_eq"), t_list_to_array (rhs));
+      rhs_dfe = sqlo_df (so, all_eq);
+      sqlo_place_exp (so, dfe->dfe_super, rhs_dfe);
+      t_set_push (&tl->tl_target, rhs_dfe);
+    }
+  END_DO_SET();
+  save = dfe->_.sub.ot->ot_trans;
+  dfe->_.sub.ot->ot_trans = NULL;
+  copy_dfe = sqlo_dt_renamed_copy (so, dfe);
+  copy_dfe->dfe_super = dfe;
+  copy_dfe->_.sub.ot->ot_trans = NULL;
+  sqlo_place_dt (so, copy_dfe, importable);
+  dfe->_.sub.generated_dfe = copy_dfe->_.sub.generated_dfe;
+  dfe->_.sub.ot->ot_trans = save;
+  copy_dfe->_.sub.ot->ot_trans = save;
+  dfe->_.sub.generated_dfe->_.sub.trans = tl;
+  sqlo_dt_place_all_cols (so, dfe);
+  dfe->_.sub.generated_dfe->_.sub.after_join_test =
+    sqlo_and_list_body (so, dfe->dfe_super->dfe_locus, dfe, after_join);
+}
+
+
+int 
+sqlo_trans_direction (df_elt_t * gen1, df_elt_t * gen2)
+{
+  float c1 = gen1->dfe_unit + gen1->dfe_unit * gen1->dfe_arity;
+  float c2 = gen2->dfe_unit + gen2->dfe_unit * gen2->dfe_arity;
+  float r = gen1->dfe_unit / gen2->dfe_unit;
+  if (r > 0.25 && r < 4
+      && gen1->dfe_arity > 1  && gen2->dfe_arity > 1)
+    return TRANS_LRRL;
+  if (c1 < c2)
+    return TRANS_LR;
+  return TRANS_RL;
+}
+
+
+void
+sqlo_trans_dt_2_way (sqlo_t * so, df_elt_t * dfe, dk_set_t preds, ptrlong * in_pos, ptrlong * out_pos)
+{
+  /* both ends given, compile from left to right and right to left. */
+  ST * trans = dfe->_.sub.ot->ot_trans;
+  int dir = trans->_.trans.direction;
+  trans_layout_t *tl1 = NULL, *tl2 = NULL;
+  df_elt_t * gen1 = NULL, *gen2 = NULL;
+  if (TRANS_LR == dir || TRANS_LRRL == dir || TRANS_ANY == dir)
+    {
+      sqlo_trans_dt_1_way (so, dfe, preds, in_pos, out_pos);
+      gen1 = dfe->_.sub.generated_dfe;
+      tl1 = gen1->_.sub.trans;
+      tl1->tl_direction = TRANS_LR;
+      if (TRANS_LRRL == dir || TRANS_ANY == dir)
+	{
+	  gen1 = sqlo_layout_copy (so, gen1, NULL);
+	  so->so_gen_pt = dfe->dfe_prev;
+	  sqlo_dt_unplace (so, dfe);
+	  sqlo_place_dfe_after (so, dfe->dfe_locus, so->so_gen_pt, dfe);
+	}
+    }
+  if (TRANS_RL == dir || TRANS_LRRL == dir || TRANS_ANY == dir)
+    {
+      dfe->dfe_is_placed = DFE_PLACED;
+      sqlo_trans_dt_1_way (so, dfe, preds, out_pos, in_pos);
+      gen2 = dfe->_.sub.generated_dfe;
+      tl2 = gen2->_.sub.trans;
+      tl2->tl_direction = TRANS_RL;
+    }
+  if (TRANS_ANY == dir)
+    dir = sqlo_trans_direction (gen1, gen2);
+  if (TRANS_LRRL == dir)
+      tl2->tl_complement = gen1;
+  else if (TRANS_LR == dir)
+    {
+      dfe->_.sub.generated_dfe = gen1;
+      tl1->tl_direction = dir;
+    }
+}
+
+
+void
+sqlo_place_trans_dt (sqlo_t * so, df_elt_t * dfe, dk_set_t preds)
+{
+  /* see whether in given, out given or both.  Make importable pred lists for both.  Fill in trans_layout */
+  dk_set_t in_cols, out_cols;
+  dk_set_t in = NULL;
+  ST * trans, * save;
+  trans = dfe->_.sub.ot->ot_trans;
+  in_cols = sqlo_cols_by_pos (so, dfe, trans->_.trans.in);
+  out_cols = sqlo_cols_by_pos (so, dfe, trans->_.trans.out);
+  DO_SET (df_elt_t *, join, &preds)
+    {
+      sqlo_rm_if_eq (&in_cols, join);
+      sqlo_rm_if_eq (&out_cols, join);
+    }
+  END_DO_SET();
+  if (!in_cols && !out_cols)
+    {
+      sqlo_trans_dt_2_way (so, dfe, preds, trans->_.trans.in, trans->_.trans.out);
+    }
+  else if (!in_cols)
+    {
+      /* the input side is given.  place from in to out */
+      dk_set_t after_join = NULL, importable = NULL;
+      t_NEW_VARZ (trans_layout_t, tl);
+      in_cols = sqlo_cols_by_pos (so, dfe, trans->_.trans.in);
+      tl->tl_direction = TRANS_LR;
+      sqlo_trans_preds (&in_cols, preds, &in, &after_join);
+      DO_SET (dk_set_t, in_pair, &in)
+	{
+	  dk_set_t rhs = in_pair->next;
+	  ST * pred;
+	  df_elt_t * rhs_dfe, *pred_dfe;
+	  ST * all_eq = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase  ("__all_eq"), t_list_to_array (rhs));
+	  rhs_dfe = sqlo_df (so, all_eq);
+	  sqlo_place_exp (so, dfe->dfe_super, rhs_dfe);
+	  t_set_push (&tl->tl_params, rhs_dfe);
+
+	  pred = (ST*)in_pair->data;
+	  pred_dfe = sqlo_df (so, pred);
+	  t_set_push (&importable, (void*)pred_dfe);
+	}
+      END_DO_SET();
+      save = dfe->_.sub.ot->ot_trans;
+      dfe->_.sub.ot->ot_trans = NULL;
+      sqlo_place_dt (so, dfe, importable);
+      dfe->_.sub.ot->ot_trans = save;
+      dfe->_.sub.generated_dfe->_.sub.trans = tl;
+      sqlo_dt_place_all_cols (so, dfe);
+      dfe->_.sub.generated_dfe->_.sub.after_join_test =
+	sqlo_and_list_body (so, dfe->dfe_super->dfe_locus, dfe, after_join);
+    }
+  else if (!out_cols)
+    {
+      /* the output side is given.  place from in to out */
+      dk_set_t after_join = NULL, importable = NULL;
+      t_NEW_VARZ (trans_layout_t, tl);
+      in_cols = sqlo_cols_by_pos (so, dfe, trans->_.trans.out);
+      tl->tl_direction = TRANS_RL;
+      sqlo_trans_preds (&in_cols, preds, &in, &after_join);
+      DO_SET (dk_set_t, in_pair, &in)
+	{
+	  dk_set_t rhs = in_pair->next;
+	  ST * pred;
+	  df_elt_t * rhs_dfe, *pred_dfe;
+	  ST * all_eq = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase  ("__all_eq"), t_list_to_array (rhs));
+	  rhs_dfe = sqlo_df (so, all_eq);
+	  sqlo_place_exp (so, dfe->dfe_super, rhs_dfe);
+	  t_set_push (&tl->tl_params, rhs_dfe);
+
+	  pred = (ST*)in_pair->data;
+	  pred_dfe = sqlo_df (so, pred);
+	  t_set_push (&importable, (void*)pred_dfe);
+	}
+      END_DO_SET();
+      save = dfe->_.sub.ot->ot_trans;
+      dfe->_.sub.ot->ot_trans = NULL;
+      sqlo_place_dt (so, dfe, importable);
+      dfe->_.sub.ot->ot_trans = save;
+      dfe->_.sub.generated_dfe->_.sub.trans = tl;
+      sqlo_dt_place_all_cols (so, dfe);
+      dfe->_.sub.generated_dfe->_.sub.after_join_test =
+	sqlo_and_list_body (so, dfe->dfe_super->dfe_locus, dfe, after_join);
+    }
+  else
+    sqlc_new_error (so->so_sc->sc_cc, "37000", "TR...", "transitive start not given");
+  /* record the preds used in the process for unplacing */
+  dfe->_.sub.dt_preds = dk_set_conc (t_set_copy (preds), dfe->_.sub.dt_preds);
+}
+
+
 void
 sqlo_place_dt (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t preds)
 {
   df_elt_t * gen_dt;
   op_table_t * ot = tb_dfe->_.sub.ot;
   tb_dfe->_.sub.dt_preds = preds;
+  if (ot->ot_trans)
+    {
+      sqlo_place_trans_dt (so, tb_dfe, preds);
+      return;
+    }
   if (ST_P (ot->ot_dt, SELECT_STMT) || ST_P (ot->ot_dt, PROC_TABLE))
     {
       tb_dfe->_.sub.generated_dfe = sqlo_place_dt_leaf (so, tb_dfe, tb_dfe, preds);
@@ -2420,7 +2805,7 @@ sqlo_is_text_order (sqlo_t * so, df_elt_t * dfe)
       DO_SET (df_elt_t *, cp, &dfe->_.table.col_preds)
 	{
 	  if ((DFE_BOP == cp->dfe_type  || DFE_BOP_PRED == cp->dfe_type )
-	      && BOP_EQ == cp->_.bin.op && 0 == stricmp (cp->_.bin.left->_.col.col->col_name, "RO_DIGEST"))
+	      && BOP_EQ == cp->_.bin.op && 0 == stricmp (cp->_.bin.left->_.col.col->col_name, "RO_FLAGS"))
 	    return 0;
 	}
       END_DO_SET();
@@ -2431,14 +2816,33 @@ sqlo_is_text_order (sqlo_t * so, df_elt_t * dfe)
 
 
 void
-sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
-		   dk_set_t col_preds, dk_set_t * after_preds)
+dfe_table_set_by_best (df_elt_t * tb_dfe, index_choice_t * ic, float true_arity, dk_set_t * col_preds, dk_set_t * after_preds)
 {
-  float cost, arity, ov;
+  tb_dfe->_.table.key = ic->ic_key;
+  tb_dfe->_.table.is_unique = ic->ic_is_unique;
+  tb_dfe->dfe_unit = ic->ic_unit;
+  tb_dfe->dfe_arity = true_arity != -1 ? true_arity : ic->ic_arity;
+  if (ic->ic_altered_col_pred)
+    {
+      tb_dfe->_.table.col_preds = ic->ic_altered_col_pred;
+      tb_dfe->_.table.is_inf_col_given = 1;
+      *col_preds = ic->ic_altered_col_pred;
+      *after_preds = dk_set_conc (ic->ic_after_test, *after_preds);
+      if (ic->ic_after_test)
+	((df_elt_t*)ic->ic_after_test->data)->dfe_arity = ic->ic_after_test_arity;
+    }
+}
+
+
+void
+sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
+		   dk_set_t * col_preds, dk_set_t * after_preds)
+{
+  float ov;
   float true_arity = -1;
   int true_arity_n_parts = 0;
-  dbe_key_t *best = NULL;
-  float  best_cost;
+  index_choice_t best_ic;
+  index_choice_t ic;
   int best_unq = 0;
   caddr_t opt_inx_name;
   op_table_t *ot = dfe_ot (tb_dfe);
@@ -2447,6 +2851,7 @@ sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
   float best_group;
   if (tb_dfe->_.table.key)
     return;
+  memset (&best_ic, 0, sizeof (best_ic));
   sqlo_prepare_inx_int_preds (so);
   tb_dfe->_.table.is_unique = 0;
   opt_inx_name = sqlo_opt_value (ot->ot_opts, OPT_INDEX);
@@ -2460,10 +2865,8 @@ sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
     {
       tb_dfe->_.table.key = ot->ot_table->tb_primary_key;
       tb_dfe->dfe_unit = 0;
-      dfe_table_cost (tb_dfe, &cost, &arity, &ov, 0);
+      dfe_table_cost_ic (tb_dfe, &best_ic, 0);
       best_unq = tb_dfe->_.table.is_unique;
-      best = ot->ot_table->tb_primary_key;
-      best_cost = cost;
     }
   else if (is_txt_inx)
     {
@@ -2473,25 +2876,22 @@ sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
 	    tb_dfe->_.table.ot->ot_table->tb_name);
 
       tb_dfe->_.table.is_text_order = 1;
-      best = tb_text_key (tb_dfe->_.table.ot->ot_table);
-      tb_dfe->_.table.key = best;
+      tb_dfe->_.table.key = tb_text_key (tb_dfe->_.table.ot->ot_table);
       tb_dfe->dfe_unit = 0;
-      dfe_table_cost (tb_dfe, &best_cost, &tb_dfe->dfe_arity, &ov, 0);
+      dfe_table_cost_ic (tb_dfe, &best_ic, 0);
       best_unq = 0;
     }
   else
     {
       DO_SET (dbe_key_t *, key, &ot->ot_table->tb_keys)
 	{
+	  memset (&ic, 0, sizeof (ic));
 	  if (opt_inx_name)
 	    {
 	      if (!CASEMODESTRCMP (opt_inx_name, key->key_name))
 		{
 		  tb_dfe->_.table.key = key;
-		  dfe_table_cost (tb_dfe, &cost, &arity, &ov, 0);
-		  best_unq = tb_dfe->_.table.is_unique;
-		  best = key;
-		  best_cost = cost;
+		  dfe_table_cost_ic (tb_dfe, &best_ic, 0);
 		  break;
 		}
 	    }
@@ -2499,36 +2899,34 @@ sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
 	    {
 	      tb_dfe->_.table.key = key;
 	      tb_dfe->dfe_unit = 0;
-	      dfe_table_cost (tb_dfe, &cost, &arity, &ov, 0);
+	      dfe_table_cost_ic (tb_dfe, &ic, 0);
 	      if (tb_dfe->_.table.is_unique)
-		true_arity = arity; /* reliable if unique but if many key parts with many distinct vals arity can be reported as less than 1. */
+		true_arity = ic.ic_arity; /* reliable if unique but if many key parts with many distinct vals arity can be reported as less than 1. */
 	      else if (tb_dfe->_.table.is_arity_sure)
 		{
 		  if (true_arity_n_parts < tb_dfe->_.table.is_arity_sure)
 		    {
-		      true_arity = arity;
+		      true_arity = ic.ic_arity;
 		      true_arity_n_parts = tb_dfe->_.table.is_arity_sure;
 		    }
 		  if (true_arity_n_parts == tb_dfe->_.table.is_arity_sure)
-		    true_arity = MIN (true_arity, arity);
+		    true_arity = MIN (true_arity, ic.ic_arity);
 		}
-	      if (!best || cost < best_cost)
+	      if (!best_ic.ic_key || ic.ic_unit < best_ic.ic_unit)
 		{
-		  best_cost = cost;
-		  best_unq = tb_dfe->_.table.is_unique;
-		  best = key;
+		  best_ic = ic;
 		}
 	    }
 	}
       END_DO_SET ();
 
-      if (opt_inx_name && !best)
+      if (opt_inx_name && !best_ic.ic_key)
 	sqlc_new_error (so->so_sc->sc_cc, "22023", "SQ188", "TABLE OPTION index %s not defined for table %s",
 	    opt_inx_name, ot->ot_table->tb_name);
 
       if (tb_dfe->_.table.text_pred)
 	{
-	  if (!opt_inx_name && !best_unq
+	  if (!opt_inx_name && !best_ic.ic_is_unique
 	      && sqlo_is_text_order (so, tb_dfe))
 	    {
 	      tb_dfe->_.table.is_text_order = 1;
@@ -2545,12 +2943,9 @@ sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
 	    }
 	}
     }
-  if (!best)
+  if (!best_ic.ic_key)
     SQL_GPF_T1 (so->so_sc->sc_cc, "sqlo table has no index");
-  tb_dfe->_.table.key = best;
-  tb_dfe->_.table.is_unique = best_unq;
-  tb_dfe->dfe_unit = best_cost;
-  tb_dfe->dfe_arity = true_arity != -1 ? true_arity : arity;
+  dfe_table_set_by_best (tb_dfe, &best_ic, true_arity, col_preds, after_preds);
   if (tb_dfe->_.table.hash_role != HR_FILL && !tb_dfe->_.table.is_text_order)
     sqlo_try_inx_int_joins (so, tb_dfe, &group, &best_group);
   if (group)
@@ -2560,9 +2955,10 @@ sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
   else if (!opt_inx_name && !best_unq && !tb_dfe->_.table.is_text_order 
 	   && HR_FILL != tb_dfe->_.table.hash_role)
     {
+      float best_cost = best_ic.ic_unit;
       if (OPT_INTERSECT == (ptrlong) sqlo_opt_value (ot->ot_opts, OPT_JOIN))
 	best_cost = 1e30;
-      sqlo_find_inx_intersect (so, tb_dfe, col_preds, best_cost);
+      sqlo_find_inx_intersect (so, tb_dfe, *col_preds, best_cost);
     }
 }
 
@@ -2970,7 +3366,7 @@ sqlo_tb_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t preds,
       sqlo_place_exp (so, tb_dfe, merge_dfe);
     }
   END_DO_SET ();
-  sqlo_choose_index (so, tb_dfe, merged_col_preds, &after_preds);
+  sqlo_choose_index (so, tb_dfe, &merged_col_preds, &after_preds);
   sqlo_in_place_in_pred (so, tb_dfe, &merged_col_preds, &after_preds);
   sqlo_tb_order (so, tb_dfe, merged_col_preds);
   if (after_preds)
@@ -4053,13 +4449,14 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
     return 0;
   if (dfe->_.table.inx_op && dfe->_.table.inx_op->dio_is_join)
     return 0; /* an inx op that joins tables is preferred over hash of one table.  Also if hash won, would have to unplace the joined table(s) of the inx op.  */
-  ref_arity = dfe_arity_with_supers (dfe->dfe_prev);
   mode = (int) (ptrlong) sqlo_opt_value (ot->ot_opts, OPT_JOIN);
   dt_mode = (int) (ptrlong) sqlo_opt_value (super_ot->ot_opts, OPT_JOIN);
   if (!mode)
     mode = dt_mode;
-  if (!hash_join_enable
-      || (mode && OPT_HASH != mode))
+  if (!mode && 100 > dbe_key_count (dfe->_.table.ot->ot_table->tb_primary_key))
+    return 0; /* temp patch to avoid hash joins of lookups breaking colocation in tpch */
+  ref_arity = dfe_arity_with_supers (dfe->dfe_prev);
+  if (!hash_join_enable || (mode && OPT_HASH != mode))
     return 0;
   if (DFE_TABLE != dfe->dfe_type || dfe_ot (dfe)->ot_is_proc_view)
     return 0;
@@ -4434,6 +4831,7 @@ sqlo_dfe_unplace (sqlo_t * so, df_elt_t * dfe)
     case DFE_PRED_BODY:
       if (dfe->_.sub.ot)
 	dfe->_.sub.ot->ot_locus = NULL;
+      dfe->_.sub.trans = NULL;
       if (dfe->_.sub.first && dfe->_.sub.first->dfe_next)
 	sqlo_dt_unplace (so, dfe->_.sub.first->dfe_next);
       dfe->_.sub.dt_out = NULL;
@@ -4659,6 +5057,12 @@ sqlo_set_select_mode (sqlo_t * so, op_table_t * ot, df_elt_t * sel_dfe, ST * top
       so->so_place_code_forr_cond = 1;
       return;
     }
+  if (1 == cl_run_local_only)
+    return;
+  if (ST_P (sel_dfe->dfe_tree, CALL_STMT)
+      && DV_STRINGP (sel_dfe->dfe_tree->_.call.name)
+      && cu_func (sel_dfe->dfe_tree->_.call.name, 0))
+    so->so_place_code_forr_cond = 1;
 }
 
 
@@ -4678,7 +5082,11 @@ dfe_join_score (sqlo_t * so, op_table_t * ot,  df_elt_t *tb_dfe)
     {
       if (dk_set_length (pred->dfe_tables) == 1
 	  && tb_dfe->_.table.ot == (op_table_t *) pred->dfe_tables->data)
+	{
 	score += 2;
+	  if (DFE_TEXT_PRED == pred->dfe_type)
+	    score += 5;
+	}
       else if (dfe_reqd_placed (pred) && dk_set_member (pred->dfe_tables, (void*) tb_dfe->_.table.ot))
 	score += 5;
       else
@@ -4876,11 +5284,51 @@ sqlo_outer_placeable (sqlo_t * so, op_table_t * ot, df_elt_t * dfe)
   return is_placed;
 }
 
+
+int
+sqlo_trans_placeable (sqlo_t * so, op_table_t * ot, df_elt_t * dfe, int * any_trans)
+{
+  /* for a transitive dt, full eq on in or out is needed before placing */
+  int flag = 0;
+  dk_set_t join_preds, in_cols, out_cols;
+  ST * trans;
+  int old = dfe->dfe_is_placed;
+  if (DFE_DT != dfe->dfe_type)
+    return 1;
+  trans = dfe->_.sub.ot->ot_trans;
+  if (!trans)
+    return 1;
+  *any_trans = 1;
+  join_preds = dfe->_.sub.ot->ot_join_preds;
+  join_preds = dk_set_conc (t_set_copy (join_preds), so->so_this_dt->ot_preds);
+  in_cols = sqlo_cols_by_pos (so, dfe, trans->_.trans.in);
+  out_cols = sqlo_cols_by_pos (so, dfe, trans->_.trans.out);
+  dfe->dfe_is_placed = DFE_PLACED;
+  DO_SET (df_elt_t *, join, &join_preds)
+    {
+      if (join->dfe_is_placed || !dfe_reqd_placed (join))
+	continue;
+      sqlo_rm_if_eq (&in_cols, join);
+      sqlo_rm_if_eq (&out_cols, join);
+    }
+  END_DO_SET();
+  dfe->dfe_is_placed = old;
+  if (!in_cols)
+    flag |= TN_FWD;
+  if (!out_cols)
+    flag |= TN_FWD;
+  return flag;
+}
+
+
 int enable_leaves = 1;
+
+#define SQLO_BACKTRACK ((dk_set_t)-1)
 
 dk_set_t
 sqlo_layout_sort_tables (sqlo_t *so, op_table_t * ot, dk_set_t from_dfes, dk_set_t * new_leaves)
 {
+  int any_trans = 0;
   dk_set_t all_leaves = NULL;
   int inx;
   dk_set_t res = NULL;
@@ -4909,7 +5357,8 @@ sqlo_layout_sort_tables (sqlo_t *so, op_table_t * ot, dk_set_t from_dfes, dk_set
     {
       if (!tb_dfe->dfe_is_placed
 	  && !dk_set_member (all_leaves, (void*)tb_dfe)
-	  && sqlo_outer_placeable (so, ot, tb_dfe))
+	  && sqlo_outer_placeable (so, ot, tb_dfe)
+	  && sqlo_trans_placeable (so, ot, tb_dfe, &any_trans))
 	{
 	  tb_dfe->dfe_arity = 0;
 	  tb_dfe->dfe_unit = dfe_join_score (so, ot, tb_dfe);
@@ -4919,6 +5368,13 @@ sqlo_layout_sort_tables (sqlo_t *so, op_table_t * ot, dk_set_t from_dfes, dk_set
   END_DO_SET();
   if (all_leaves)
     t_set_push (&res, (void*) all_leaves);
+  if (!res && any_trans)
+    {
+    if (!so->so_best)
+      sqlc_new_error (so->so_sc->sc_cc, "37000", "TR...", "Query contains a transitive derived table but neither end of it is bound by equality to other columns or parameters");
+    else 
+      return SQLO_BACKTRACK;
+    }
   if (!res || !res->next)
     return res;
   arr = (df_elt_t **) dk_set_to_array (dk_set_nreverse (res)); /* reverse to preserve order among items of equal score, stable sort */
@@ -5034,7 +5490,7 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 {
   /* take an ungenerated table and put it and its stuff into the pipeline */
   df_elt_t * must_be_next;
-  dk_set_t sort_set, new_leaves = NULL, inx_int_tried = NULL;
+  dk_set_t sort_set, new_leaves = NULL;
   float this_score;
   int any_tried = 0;
   must_be_next = sqlo_next_joined (ot->ot_work_dfe);
@@ -5057,22 +5513,22 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 	    (THR_TMP_POOL)->mp_bytes, sqlo_max_mp_size);
     } 
   sort_set = sqlo_layout_sort_tables (so, ot, ot->ot_from_dfes, &new_leaves);
-  sqlo_n_layout_steps++;
+  if (SQLO_BACKTRACK == sort_set)
+    return;
   DO_SET (dk_set_t, dfes, &sort_set)
     {
       df_elt_t * dfe = (df_elt_t*)dfes->data;
       df_elt_t * in_loop_dfe = NULL;
       any_tried = 1;
-      if (dk_set_member (inx_int_tried, (void*)dfe))
-	continue;
-      so->so_inx_int_tried_ret = &inx_int_tried;
       sqlo_try (so, ot, dfes, &in_loop_dfe, &this_score);
       if (-1 == so->so_best_score || this_score < so->so_best_score)
 	{
 	  sqlo_layout_1 (so, ot, is_top);
 	  if (ot->ot_layouts_tried == -1)
 	    {
-	      LAYOUT_ABORT;
+	      so->so_gen_pt = dfe->dfe_prev;
+	      sqlo_dt_unplace (so, dfe);
+	      return;
 	    }
 	}
       else
@@ -5080,13 +5536,14 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 	  if (ot->ot_layouts_tried >= 0)
 	    {
 	      ot->ot_layouts_tried += 1;
-	      if ((sqlo_max_layouts && so->so_best && ot->ot_layouts_tried >= sqlo_max_layouts)
-		  || sqlo_no_more_time (so, ot))
+	      if (sqlo_max_layouts && so->so_best && ot->ot_layouts_tried >= sqlo_max_layouts)
 		{
 		  if (sqlo_print_debug_output)
 		    sqlo_print (("Max layouts (%d) exceeded. Taking the best so far\n", sqlo_max_layouts));
+		  so->so_gen_pt = dfe->dfe_prev;
+		  sqlo_dt_unplace (so, dfe);
 		  ot->ot_layouts_tried = -1;
-		  LAYOUT_ABORT;
+		  return;
 		}
 	    }
 	  if (sqlo_print_debug_output)
@@ -5159,13 +5616,14 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 	  if (is_top || SEL_IS_DISTINCT (ot->ot_dt) || sel_n_breakup (ot->ot_dt))
 	    {
 	      int inx;
-	      ST *top_exp = SEL_TOP (ot->ot_dt);
+	      ST *top_exp = !SEL_IS_TRANS (ot->ot_dt) ? SEL_TOP (ot->ot_dt) : NULL;
 	      df_elt_t * select_super = SQLO_LAY_TOP == is_top ? so->so_vdb_top : ot->ot_work_dfe;
 	      so->so_gen_pt = ot->ot_work_dfe->_.sub.last;
 	      ot->ot_work_dfe->_.sub.dt_out = (df_elt_t **) t_box_copy ((caddr_t) ot->ot_dt->_.select_stmt.selection);
 	      DO_BOX (ST *, exp, inx, ot->ot_dt->_.select_stmt.selection)
 		{
 		  df_elt_t * sel_dfe = sqlo_df (so, exp);
+		  so->so_nth_select_col = inx;
 		  ot->ot_work_dfe->_.sub.dt_out[inx] = sel_dfe;
 		  if (IS_BOX_POINTER (ot->ot_work_dfe->dfe_locus) &&
 		      sqlo_fits_in_locus (so, ot->ot_work_dfe->dfe_locus, sel_dfe))
@@ -5178,6 +5636,8 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 		      int old_mode = so->so_place_code_forr_cond;
 		      sqlo_set_select_mode (so, ot, sel_dfe, top_exp);
 		      sqlo_place_exp (so, select_super, sel_dfe);
+		      if (so->so_place_code_forr_cond)
+			sqlo_post_oby_ref (so, ot->ot_work_dfe, sel_dfe, inx);
 		      so->so_place_code_forr_cond = old_mode;
 		    }
 		}
@@ -5330,6 +5790,8 @@ sqlo_layout (sqlo_t * so, op_table_t * ot, int is_top, df_elt_t * super)
 
   ret = so->so_best;
   ret->_.sub.is_contradiction = ot->ot_is_contradiction;
+  ret->_.sub.is_complete = 1;
+  dfe_top_discount (ret, &ret->dfe_unit, &ret->dfe_arity); /* if top or value/exists subq, not all rows are produced. Consider this only after layout is done */
   if (!ret->dfe_tree)
     ret->dfe_tree = ot->ot_dt;
   ret->dfe_hash = sql_tree_hash ((char*)&ret->dfe_tree);
@@ -5431,7 +5893,11 @@ dfe_body_copy (sqlo_t * so, df_elt_t * super, df_elt_t * parent)
   copy_super->_.sub.dt_preds = super->_.sub.dt_preds;
   copy_super->_.sub.is_contradiction = super->_.sub.is_contradiction;
   copy_super->_.sub.invariant_test = dfe_pred_body_copy (so, super->_.sub.invariant_test, copy_super);
-
+  copy_super->_.sub.trans = super->_.sub.trans;
+  if (copy_super->_.sub.trans && copy_super->_.sub.trans->tl_complement)
+    {
+      copy_super->_.sub.trans->tl_complement = dfe_body_copy (so, copy_super->_.sub.trans->tl_complement, parent);
+    }
   dfe_locus_copy (so, copy_super);
   copy_super->_.sub.ot = super->_.sub.ot;
   copy_super->dfe_tree = super->dfe_tree;
@@ -6160,6 +6626,7 @@ sqlo_query_spec (sql_comp_t *sc, ptrlong is_distinct, caddr_t * selection,
       lisp_throw (CATCH_LISP_ERROR, reset_code);
     }
   END_CATCH;
+  sc->sc_so = NULL;
   qr = sc->sc_cc->cc_query;
   head = qr->qr_head_node;
   *sel_out_ret = sel_out;

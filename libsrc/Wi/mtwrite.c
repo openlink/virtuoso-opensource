@@ -33,8 +33,9 @@ int num_cont_pages=8;
 
 #define IQ_NAME(iq) (iq->iq_id ? iq->iq_id : "io")
 
-#if PAGE_TRACE
+#if 0 /*PAGE_TRACE*/
 #define idbg_printf(q) printf q
+#undef rdbg_printf
 #define rdbg_printf(q) printf q
 #else
 #define idbg_printf(q) 
@@ -43,7 +44,6 @@ int num_cont_pages=8;
 
 int mti_writes_queued;
 int mti_reads_queued;
-int mt_write_pending = 0;
 
 
 dk_set_t mti_io_queues;
@@ -680,10 +680,12 @@ iq_loop (io_queue_t * iq)
 	  IN_IOQ (iq);
 	  continue;
 	}
-      if (iq->iq_waiting_shut && iq_on && iq->iq_action_ctr > main_bufs / (n_iqs * n_iqs))
+      if (iq->iq_waiting_shut && iq_on && iq->iq_action_ctr > main_bufs / (n_iqs * n_iqs)
+	  && !wi_inst.wi_checkpoint_atomic)
 	{
 	  /* if the  iq's are not being turned off and the iq has not gone empty within main_bufs operations, then it can be the iq will not go empty and cpt will be indefinitely delayed.  So let the cpt thread continue.  It will eventually stop all processing and turn off the iq's after activity is suspended.
-	  * n_iqs is squared because cpt  waits on each in turn.  In this way the max cpt wait is about the time it takes for the combined iq's to turn over the buffer pool worth of data. */
+	  * n_iqs is squared because cpt  waits on each in turn.  In this way the max cpt wait is about the time it takes for the combined iq's to turn over the buffer pool worth of data. 
+	  * LOOK OUT.  Inside atomic checkpoint waiting for sync must be strict. During unremap Sync means all iq's empty  Else meltdown fuckup. If sync not strict, buffers get scrapped before written */
 	  iq_dry (iq);
 	}
 #ifdef HAVE_AIO
@@ -723,12 +725,12 @@ iq_loop (io_queue_t * iq)
 	      if (buf->bd_is_dirty
 		  && buf->bd_tree 
 		  && buf->bd_page
-		  && !buf->bd_is_write
+		  && !buf->bd_readers && !buf->bd_is_write
 		  && !buf->bd_write_waiting)
 		{
 		  /* If the buffer hasn't moved out of sort order and
 		     hasn't been flushed by a sync write */
-		  buf->bd_readers++;
+		  BD_SET_IS_WRITE (buf, 1);
 		  buf->bd_is_dirty = 0;
 		  dp_to = buf->bd_physical_page;	/* dp may change once outside of map. */
 		  /* clear dirty flag BEFORE write because the buffer
@@ -736,7 +738,7 @@ iq_loop (io_queue_t * iq)
 		  leave_needed = IQ_WRITE;
 		  mutex_leave (&buf_itm->itm_mtx);
 		  buf_disk_write (buf, dp_to);
-
+		  dp_may_compact (buf->bd_storage, buf->bd_page);
 		  if (_thread_sched_preempt == 0 &&
 		      write_cum_time - start_write_cum_time > 200)
 		    {
@@ -746,6 +748,12 @@ iq_loop (io_queue_t * iq)
 		}
 	      else
 		{
+#ifdef O12DEBUG
+		  dbg_printf (("[Cancelled W %ld now %ld %ld]",
+			       mtwrite_pages[n], buf->bd_page, buf->bd_physical_page));
+		  rdbg_printf (("[Cancelled W ??? now %ld %ld]",
+				buf->bd_page, buf->bd_physical_page));
+#endif
 		  mutex_leave (&buf_itm->itm_mtx);
 		}
 	    }
@@ -828,6 +836,18 @@ dst_assign_iq (disk_stripe_t * dst)
 
 
 void
+mtw_cpt_ck (buffer_desc_t * buf, int line)
+{
+  if (wi_inst.wi_checkpoint_atomic) 
+    {
+      if (!buf->bd_tree || !buf->bd_tree->it_key || KI_TEMP == buf->bd_tree->it_key->key_id)
+	return; /* no message for a temp because such can be wired down at cpt time and not writable */
+      log_error ("suspect to miss a flush of L=%d in cpt, line %d", buf->bd_page, line);
+    }
+}
+
+
+void
 mt_write_dirty (buffer_pool_t * bp, int age_limit, int phys_eq_log)
 {
   /* Locate, sort and write dirty buffers. */
@@ -837,7 +857,6 @@ mt_write_dirty (buffer_pool_t * bp, int age_limit, int phys_eq_log)
   size_t n = 0;
 
 
-  mt_write_pending = 1;
   bufs = bp->bp_sort_tmp;
   /* When using the preallocated bp_sort_tmp, set it to null and
    * put it back after the iq_schedule call. These are inside the bp_mtx.
@@ -855,8 +874,13 @@ mt_write_dirty (buffer_pool_t * bp, int age_limit, int phys_eq_log)
     {
       it_map_t * buf_itm;
       buf = &bp->bp_bufs[inx];
-      if (((int) (bp->bp_ts - buf->bd_timestamp)) < age_limit)
+      if (wi_inst.wi_checkpoint_atomic && !buf->bd_is_dirty)
 	continue;
+      if (age_limit && ( (bp->bp_ts - buf->bd_timestamp)) < age_limit)
+	{ 
+	  mtw_cpt_ck (buf, __LINE__); 
+	continue;
+	}
       if (bp_buf_enter (buf, &buf_itm))
 	{
 	  if (!buf->bd_is_write
@@ -871,8 +895,12 @@ mt_write_dirty (buffer_pool_t * bp, int age_limit, int phys_eq_log)
 	      buf->bd_readers++;
 	      bufs[fill++] = buf;
 	    }
+	  else 
+	    mtw_cpt_ck (buf, __LINE__);
 	  mutex_leave (&buf_itm->itm_mtx);
 	}
+      else
+	mtw_cpt_ck (buf, __LINE__);
     }
   LEAVE_BP (bp);
   iq_schedule (bufs, fill);
@@ -888,8 +916,7 @@ void
 mt_write_start (int n_oldest)
 {
   int inx;
-  if (mt_write_pending
-      || mti_writes_queued > 10
+  if (mti_writes_queued > 10
       || !iq_is_on ())
     return;
   DO_BOX (buffer_pool_t *, bp, inx, wi_inst.wi_bps)

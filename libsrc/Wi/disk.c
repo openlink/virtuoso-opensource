@@ -49,13 +49,7 @@
 #include "sqlbif.h"
 #include "srvstat.h"
 #include "recovery.h"
-
-#ifdef WIN32
-#define PATH_MAX	 MAX_PATH
-#endif
-
-static void dbs_extend_pagesets (dbe_storage_t * dbs);
-int it_n_maps = 256;
+#include "zlib.h"
 
 #ifdef BYTE_ORDER_REV_SUPPORT
 
@@ -198,7 +192,6 @@ hash_index_cache_t hash_index_cache;
 
 struct wi_inst_s * wi_instance_get(void) { return &wi_inst; }
 
-dp_addr_t dbs_get_free_disk_page_near (dbe_storage_t * dbs, dp_addr_t near_dp);
 
 dbe_storage_t *
 dbs_allocate (char * name, char type)
@@ -211,11 +204,12 @@ dbs_allocate (char * name, char type)
   mutex_option (dbs->dbs_page_mtx, "dbs", NULL, NULL);
   dbs->dbs_file_mtx = mutex_allocate ();
   mutex_option (dbs->dbs_file_mtx, "file", NULL, NULL);
-  fc_init (&dbs->dbs_free_cache);
   dbs->dbs_cpt_remap = hash_table_allocate (101);
   dk_hash_set_rehash (dbs->dbs_cpt_remap, 4);
   dbs->dbs_cpt_tree = it_allocate (dbs);
   dbs->dbs_unfreeable_dps = hash_table_allocate (203);
+  dbs->dbs_dp_to_extent_map = hash_table_allocate (301);
+  dbs->dbs_stripe_unit = 1;
   return dbs;
 }
 
@@ -256,7 +250,10 @@ page_set_check (db_buf_t page)
   ck = (unsigned ptrlong) cks;
   pck = page_set_checksum (page);
   if (ck != pck)
+    {
+      log_error ("page set checksum ck=%x pck=%x xor = %x", (void*)(uptrlong)ck, (void*)(uptrlong)pck, (void*)(uptrlong) (ck ^ pck));
     GPF_T1 ("page set checksum error");
+    }
  no_cksum: ;
 }
 
@@ -355,10 +352,9 @@ index_tree_t *
 it_allocate (dbe_storage_t * dbs)
 {
   int inx;
-  NEW_VARZ (index_tree_t, tree);
+  index_tree_t * tree = (index_tree_t *)dk_alloc_box_zero (sizeof (index_tree_t), DV_ITC);
   tree->it_maps = dk_alloc (sizeof (it_map_t) * IT_N_MAPS);
   memset (tree->it_maps, 0, sizeof (it_map_t) * IT_N_MAPS);
-
   tree->it_lock_release_mtx = mutex_allocate ();
   for (inx = 0; inx < IT_N_MAPS; inx++)
     {
@@ -378,6 +374,7 @@ it_allocate (dbe_storage_t * dbs)
 #endif
     }
   tree->it_storage = dbs;
+  tree->it_extent_map = dbs->dbs_extent_map;
   dk_set_push (&dbs->dbs_trees, (void*)tree);
   return tree;
 }
@@ -433,6 +430,10 @@ it_temp_tree_check ()
 #endif
 
 
+#ifdef WIN32
+#define PATH_MAX	 MAX_PATH
+#endif
+
 void
 dbs_sys_db_check (caddr_t file)
 {
@@ -469,7 +470,7 @@ it_temp_allocate (dbe_storage_t * dbs)
   if (!tree)
     {
       int inx;
-      NEW_VARZ (index_tree_t, tree);
+      index_tree_t * tree = (index_tree_t*) dk_alloc_box_zero (sizeof (index_tree_t), DV_INDEX_TREE);
       tree->it_maps = dk_alloc (sizeof (it_map_t) * IT_N_MAPS);
       memset (tree->it_maps, 0, sizeof (it_map_t) * IT_N_MAPS);
       for (inx = 0; inx < IT_N_MAPS; inx++)
@@ -485,6 +486,7 @@ it_temp_allocate (dbe_storage_t * dbs)
 	}
 
       tree->it_storage = dbs;
+      tree->it_extent_map = dbs->dbs_extent_map;
       it_temp_tree_active (tree);
       return tree;
     }
@@ -492,6 +494,7 @@ it_temp_allocate (dbe_storage_t * dbs)
     {
       tree->it_hi = NULL;
       tree->it_storage = dbs;
+      tree->it_extent_map = dbs->dbs_extent_map;
       tree->it_hash_first = 0;
       it_temp_tree_active (tree);
       return tree;
@@ -513,8 +516,8 @@ it_free (index_tree_t * it)
     }
   if (it->it_lock_release_mtx)
     mutex_free (it->it_lock_release_mtx);
-  dk_free ((void*) it->it_maps, sizeof (it_map_t) * IT_N_MAPS);
-  dk_free ((void*) it, sizeof (index_tree_t));
+  box_tag_modify (it, DV_CUSTOM);
+  dk_free_box ((void*) it);
 }
 
 
@@ -602,19 +605,18 @@ it_temp_free (index_tree_t * it)
     }
       clrhash (&itm->itm_dp_to_buf);
       ITC_LEAVE_MAPS (itc);
-      dk_hash_iterator (&hit, &itm->itm_remap);
       if (DBS_TEMP != it->it_storage->dbs_type) GPF_T1 ("temp tree free with a non temp dbs");
-  IN_DBS (it->it_storage);
+      dk_hash_iterator (&hit, &itm->itm_remap);
   while (dk_hit_next (&hit, (void**)&dp, (void**)&remap))
     {
-      dbs_free_disk_page (it->it_storage, (dp_addr_t) dp);
+      em_free_dp (it->it_extent_map, (dp_addr_t) dp, EMF_ANY);
     }
-  LEAVE_DBS (it->it_storage);
       clrhash (&itm->itm_remap);
       ITC_LEAVE_MAPS (itc);
     }
   itc_free (itc);
-
+  if (it->it_extent_map != it->it_storage->dbs_extent_map)
+    em_free (it->it_extent_map);
   if (it->it_hi)
     hi_free (it->it_hi);
   it->it_hi = NULL;
@@ -652,14 +654,14 @@ map_free (page_map_t * map)
 
 #define BUFFER_GROUP_SIZE 14
 
-typedef dtp_t db_page_buf_t[PAGE_SZ];
+typedef dtp_t db_page_buf_t[BUF_ALLOC_SZ];
 
 typedef struct buffer_group_s {
   buffer_desc_t bg_items[BUFFER_GROUP_SIZE];
   int bg_used;
   struct buffer_group_s *bg_prev, *bg_next;
   db_page_buf_t *bg_buffer0;
-  dtp_t bg_space [PAGE_SZ * (BUFFER_GROUP_SIZE+1)];
+  dtp_t bg_space [BUF_ALLOC_SZ * (BUFFER_GROUP_SIZE+1)];
 } buffer_group_t;
 
 static dk_hash_t *bg_of_bd = NULL;
@@ -720,6 +722,7 @@ buffer_allocate (int type)
       memset (buf, 0, sizeof (buffer_desc_t));
       buf->bd_buffer = (void *)(bg_first->bg_buffer0 + b_ctr);
       memset (buf->bd_buffer, 0, PAGE_SZ);
+      BUF_SET_END_MARK (buf);
       SHORT_SET (buf->bd_buffer + DP_FLAGS, type);
       sethash (buf, bg_of_bd, bg_first);
       bg_first->bg_used++;
@@ -779,12 +782,14 @@ int32 bp_replace_count;
 long tc_bp_get_buffer;
 long tc_bp_get_buffer_loop;
 long tc_first_free_replace;
+long tc_get_buffer_while_stat;
 #define B_N_SAMPLE (BP_N_BUCKETS * 4)
 
 dp_addr_t
 bd_age_key (void * b)
 {
-  return (-((buffer_desc_t *)b)->bd_age);
+  buffer_desc_t * buf = (buffer_desc_t *) b;
+  return - BUF_AGE (buf);
 }
 
 
@@ -797,20 +802,18 @@ bp_stats (buffer_pool_t * bp)
 {
   buffer_desc_t * sample[B_N_SAMPLE + 1];
   buffer_desc_t * sample_2[B_N_SAMPLE + 1];
-  volatile int inx, fill = 0;
+  int inx, fill = 0;
   for (inx = bp->bp_ts & 0xf; inx < bp->bp_n_bufs; inx += bp->bp_n_bufs / B_N_SAMPLE)
     {
       buffer_desc_t * buf = &bp->bp_bufs[inx];
-      buf->bd_age = BUF_AGE (buf);
       sample[fill++] = buf;
     }
   buf_qsort (sample, sample_2, fill, 0, bd_age_key);
   for (inx = 0; inx < BP_N_BUCKETS - 1; inx++)
     {
-      int step = (fill < B_N_SAMPLE + 1 ? fill / BP_N_BUCKETS : 4);
-      bp->bp_bucket_limit[inx] = sample[(inx + 1) * step]->bd_age;
+      bp->bp_bucket_limit[inx] = BUF_AGE (sample[(inx + 1) * 4]);
     }
-  bp->bp_bucket_limit[BP_N_BUCKETS - 1] = sample[fill - 1]->bd_age;
+  bp->bp_bucket_limit[BP_N_BUCKETS - 1] = BUF_AGE (sample[fill - 1]);
   memset (&bp->bp_n_dirty, 0, sizeof (bp->bp_n_dirty));
   memset (&bp->bp_n_clean, 0, sizeof (bp->bp_n_clean));
   for (inx = 0; inx < bp->bp_n_bufs; inx++)
@@ -859,6 +862,8 @@ bp_buf_enter (buffer_desc_t * buf, it_map_t ** itm_ret)
   mutex_leave (&itm->itm_mtx);
  return 0;
 }
+
+long tc_unused_read_aside;
 
 int
 bp_found (buffer_desc_t * buf, int from_free_list)
@@ -923,7 +928,13 @@ bp_found (buffer_desc_t * buf, int from_free_list)
 	bp->bp_next_replace = (int) ((buf - bp->bp_bufs) + 1);
       bp_replace_age += bp->bp_ts - buf->bd_timestamp;
       LEAVE_BP (bp);
+      bp->bp_last_buf_ts = buf->bd_timestamp;
       buf->bd_timestamp = bp->bp_ts;
+      if (buf->bdf.r.is_read_aside)
+	{
+	  TC (tc_unused_read_aside);
+	  buf->bdf.r.is_read_aside = 0;
+	}
       return 1;
     }
   mutex_leave (&itm->itm_mtx);
@@ -950,12 +961,16 @@ bp_stat_action (buffer_pool_t * bp)
     bucket--;
   age_limit = bp->bp_bucket_limit[bucket];
   if ((n_dirty * 100) / (n_clean + n_dirty) > bp_flush_trig_pct
-    || action_ctr++ % 10 == 0)
+    || action_ctr++ % 100 == 0)
     {
-      if (iq_is_on ())
+      if (!wi_inst.wi_checkpoint_atomic)
 	{
 	  /* not inside checkpoint. bp_get_buffer can happen inside, for reading uncommitted pages for cpt rb */
+	  bp->bp_stat_pending = 1;
+	  LEAVE_BP (bp);
       wi_check_all_compact (age_limit);
+      IN_BP (bp);
+      bp->bp_stat_pending = 0;
       mt_write_dirty (bp, age_limit, 0);
     }
       else
@@ -966,6 +981,7 @@ bp_stat_action (buffer_pool_t * bp)
 	  mutex_enter (bp->bp_mtx);
 	}
     }
+  bp->bp_stat_pending = 0;
   if (n_clean)
     return age_limit;
   else
@@ -986,6 +1002,7 @@ bp_n_being_written (buffer_pool_t * bp)
   return c;
 }
 
+long tc_bp_wait_flush;
 
 void
 bp_wait_flush (buffer_pool_t * bp)
@@ -1001,6 +1018,7 @@ bp_wait_flush (buffer_pool_t * bp)
   while (n > limit)
     {
       virtuoso_sleep (0, 50000 * n_tries);
+      TC (tc_bp_wait_flush);
       waited += n_tries * 50;
       if (waited > 1000)
 	break;
@@ -1022,8 +1040,8 @@ bp_wait_flush (buffer_pool_t * bp)
       best_age = 0; \
       goto found; \
     } \
-  if (0 == buf[n].bdf.flags  \
-      && (age = ts - buf[n].bd_timestamp) > best_age) \
+  if (0 == (buf[n].bdf.flags & bdf_is_avail_mask)			\
+      && (age = ts - buf[n].bd_timestamp) >= best_age && !buf[n].bd_registered) \
     { \
       best_age = age; \
       best = &buf[n]; \
@@ -1031,13 +1049,25 @@ bp_wait_flush (buffer_pool_t * bp)
 }
 
 
+void 
+bp_delayed_stat_action (buffer_pool_t * bp)
+{
+  IN_BP (bp);
+  bp_stats (bp);
+  bp_stat_action (bp);
+  LEAVE_BP (bp);
+}
+
 
 buffer_desc_t *
-bp_get_buffer (buffer_pool_t * bp, int mode)
+bp_get_buffer_1 (buffer_pool_t * bp, buffer_pool_t ** action_bp_ret, int mode)
 {
   /* buffer returned with bd_readers = 1 so that it won't be allocated twice. Disconnected from any tree/page on return */
+  int n_again = 1;
   buffer_desc_t * buf, * first_free;
   int age_limit;
+  if (action_bp_ret)
+    *action_bp_ret = NULL;
   if (!bp)
     bp = wi_inst.wi_bps[wi_inst.wi_bp_ctr ++ % wi_inst.wi_n_bps];
   tc_bp_get_buffer++;
@@ -1057,8 +1087,26 @@ bp_get_buffer (buffer_pool_t * bp, int mode)
  again:
   if (((int) (bp->bp_ts - bp->bp_stat_ts)) > (bp->bp_n_bufs / BP_N_BUCKETS) / 2)
     {
+      if (!bp->bp_stat_pending)
+	{
+	  if (BP_BUF_IF_AVAIL == mode && !wi_inst.wi_checkpoint_atomic)
+	    {
+	      /* if read aside, must not risk autocompact before the reads are scheduled because an autocompact might need to update a parent which may be in the pages being scheduled for read aside, would deadlock */
+	      if (!action_bp_ret) GPF_T1 ("must provide action bp for bp get buffer in read ahead outside cpt");
+	      bp->bp_stat_pending = 1;
+	      *action_bp_ret = bp;
+	      LEAVE_BP (bp);
+	      return NULL;
+	    }
       bp_stats (bp);
       age_limit = bp_stat_action (bp);
+    }
+  else
+	{
+	  age_limit = bp->bp_bucket_limit[0] / n_again; 
+	  /* can hang if age limit is too high and the stat batch can never finish because this thread never allows reentry into the bp because it stays busy looking for bufs of which all are too young */
+	  TC (tc_get_buffer_while_stat);
+	}
     }
   else
     age_limit = bp->bp_bucket_limit[0];
@@ -1067,9 +1115,11 @@ bp_get_buffer (buffer_pool_t * bp, int mode)
       if (buf < &bp->bp_bufs[bp->bp_n_bufs - BD_REPLACE_CHECK_BATCH])
 	{
 	  bp_ts_t ts = bp->bp_ts;
-	  bp_ts_t age, best_age = age_limit;
+	  bp_ts_t age, best_age;
 	  buffer_desc_t * best = NULL;
-
+	  if (age_limit < 0)
+	    age_limit = 0;
+	  best_age = age_limit;
 	  BD_REPLACE_CHECK (0);
 	  BD_REPLACE_CHECK (1);
 	  BD_REPLACE_CHECK (2);
@@ -1131,6 +1181,9 @@ bp_get_buffer (buffer_pool_t * bp, int mode)
       return NULL;
     }
   bp_wait_flush (bp); /* do not busy wait.  Flush in progress. Wait until there are old buffers for reuse. */
+  n_again++;
+  if (n_again > 3)
+    mt_write_dirty (bp, 0, 0);
   goto again;
 }
 
@@ -1242,28 +1295,16 @@ buf_set_last (buffer_desc_t * buf)
 void
 buf_recommend_reuse (buffer_desc_t * buf)
 {
-  /*
-   *  Dirty write.
-   *
-   *  Should be inside the bp_mtx of the pool.
-   *  Not dangerous since bp__first_free is always some buffer of the bp
-   *  or NULL and likewise with bd_next. The list can get screwed up, it
-   *  is always popped a single unit at a time and if a member of the list
-   *  gets reallocated by normal means the list just breaks because the
-   *  bd_next of the allocated one will be reset. Pops from the list are
-   *  serialized anyway and normal checks apply to the buffers, so even
-   *  if they actually are not reusable no harm is done.
-   */
+  /* Dirty write.  Should be inside the bp_mtx of the pool.
+   * Not dangerous since bp__first_free is always some buffer of the bp or NULL and likewise with bd_next.  The list can get screwed up, it is always popped a single unit at a time and if a member of the list gets reallocated by normal eans the list just breaks because the  bd_next of the allocated one will be reset.
+   * Pops from the list are serialized anyway and normal checks apply to the buffers, so even if they actually are not reusable no harm is done. */
 
-#if 0
   /* this does not work.  Turned off until fixed. */
+  return;
   if (!BUF_AVAIL (buf))
     return;
   buf->bd_next = buf->bd_pool->bp_first_free;
   buf->bd_pool->bp_first_free = buf;
-#endif
-
-  return;
 }
 
 
@@ -1274,12 +1315,19 @@ bp_mtx_entry_check (dk_mutex_t * mtx, du_thread_t * self, void * cd)
   return 1;
 }
 
+#if 1 || defined (VALGRIND) || defined (PURIFY) || defined (BUF_BOUNDS)
+#define MALLOC_BUFS 1
+#endif
+
 
 buffer_pool_t *
 bp_make_buffer_list (int n)
 {
   buffer_desc_t *buf;
   int c;
+#ifndef MALLOC_BUFS
+  unsigned char *buffers_space;
+#endif
   unsigned char *buf_ptr;
   NEW_VARZ (buffer_pool_t, bp);
   bp->bp_mtx = mutex_allocate ();
@@ -1289,18 +1337,26 @@ bp_make_buffer_list (int n)
   memset (bp->bp_bufs, 0, sizeof (buffer_desc_t) * n);
   bp->bp_sort_tmp = (buffer_desc_t **) dk_alloc (sizeof (caddr_t) * n);
 
-  bp->bp_storage = (unsigned char *) calloc (n+1, PAGE_SZ);
-  if (!bp->bp_storage)
+#ifndef MALLOC_BUFS
+  buffers_space = (unsigned char *) malloc (PAGE_SZ * (n + 1));
+  if (!buffers_space)
     GPF_T1 ("Cannot allocate memory for Database buffers, try to decrease NumberOfBuffers INI setting");
-  buf_ptr = (db_buf_t) ALIGN_8K (bp->bp_storage);
-
+  buffers_space = (db_buf_t) ALIGN_8K (buffers_space);
+  memset (buffers_space, 0, ALIGN_VOIDP (PAGE_SZ) * n);
+  buf_ptr = buffers_space;
+#endif
   for (c = 0; c < n; c++)
     {
       buf = &bp->bp_bufs[c];
+#ifdef MALLOC_BUFS
+      buf->bd_buffer = malloc (BUF_ALLOC_SZ);
+      BUF_SET_END_MARK (buf);
+#else
       buf->bd_buffer = buf_ptr;
+#endif
       buf_ptr += ALIGN_VOIDP (PAGE_SZ);
       buf->bd_pool = bp;
-      buf->bd_timestamp = bp->bp_ts - bp->bp_n_bufs;
+      buf->bd_timestamp = 0;
     }
 
 #if HAVE_SYS_MMAN_H && !defined(__FreeBSD__)
@@ -1323,7 +1379,6 @@ bp_free_buffer_list (buffer_pool_t *bp)
   dk_free (bp->bp_bufs, sizeof (buffer_desc_t) * bp->bp_n_bufs);
   dk_free (bp->bp_sort_tmp, sizeof (caddr_t) * bp->bp_n_bufs);
 
-  free (bp->bp_storage);
 }
 
 
@@ -1348,9 +1403,11 @@ dp_disk_locate (dbe_storage_t * dbs, dp_addr_t target, OFF_T * place)
     if (target >= start && target < end)
       {
 	int stripe_inx;
+	dp_addr_t ext_no;
 	target -= start;
-	stripe_inx = target % seg->ds_n_stripes;
-	*place = PAGE_SZ * (OFF_T) (target / seg->ds_n_stripes);
+	ext_no = target / dbs->dbs_stripe_unit;
+	stripe_inx = ext_no % seg->ds_n_stripes;
+	*place = PAGE_SZ * (OFF_T) (((ext_no / seg->ds_n_stripes) * dbs->dbs_stripe_unit) + (target - (ext_no * dbs->dbs_stripe_unit)));
 	return (seg->ds_stripes[stripe_inx]);
       }
     start = end;
@@ -1367,7 +1424,7 @@ dp_set_backup_flag (dbe_storage_t * dbs, dp_addr_t page, int on)
   uint32* array;
   int inx, bit;
   dp_addr_t array_page;
-
+  IN_DBS (dbs);
   dbs_locate_incbackup_bit (dbs, page, &array, &array_page, &inx, &bit);
   if (on)
     {
@@ -1385,6 +1442,7 @@ dp_set_backup_flag (dbe_storage_t * dbs, dp_addr_t page, int on)
     array[inx] &= ~(1 << bit);
 	}
     }
+  LEAVE_DBS (dbs);
 }
 
 
@@ -1398,6 +1456,173 @@ dp_backup_flag (dbe_storage_t * dbs, dp_addr_t page)
   dbs_locate_incbackup_bit (dbs, page, &array, &array_page, &inx, &bit);
   return (array[inx] & (1 << bit));
 }
+
+
+int
+page_is_disk_order (buffer_desc_t * buf, row_size_t * lead_start, row_size_t * lead_end)
+{
+  int inx, prev = 0;
+  page_map_t * pm = buf->bd_content_map;
+  prev = pm->pm_entries[0];
+  for (inx = 1; inx < pm->pm_count; inx++)
+    {
+      if (pm->pm_entries[inx] < prev)
+	{
+	  return 0;
+	}
+      prev = pm->pm_entries[inx];
+    }
+  return 1;
+}
+
+
+typedef struct row_writer_s 
+{
+  size_t	rw_fill;
+  db_buf_t	rw_copy;
+  z_stream	rw_z_stream;
+} row_writer_t;
+
+
+
+void 
+row_copy_no_comp (row_writer_t * rw, db_buf_t row, int row_len)
+{
+  row_len = ROW_ALIGN (row_len);
+  if (rw->rw_fill + row_len > PAGE_SZ)
+    GPF_T1 ("rows add up to more than the page size");
+  memcpy (rw->rw_copy + rw->rw_fill, row, row_len);
+  rw->rw_fill += row_len;
+}
+
+
+int 
+row_compress (row_writer_t * rw, db_buf_t row, int row_len)
+{
+  row_len = ROW_ALIGN (row_len);
+  rw->rw_z_stream.next_in = row;
+  rw->rw_z_stream.avail_in = row_len;
+  rw->rw_fill += ROW_ALIGN (row_len);
+  return deflate (&rw->rw_z_stream, Z_NO_FLUSH);
+}
+
+#define PAGE_WRITE_ORG 1
+#define PAGE_WRITE_COPY 2
+
+int
+page_prepare_write (buffer_desc_t * buf, db_buf_t * copy, int * copy_fill, int page_compress)
+{
+  int rc, is_order;
+  row_size_t first_c, last_c;
+  dbe_key_t * key; 
+  row_writer_t rw;
+  
+  if (DPF_INDEX != SHORT_REF (buf->bd_buffer + DP_FLAGS))
+    {
+      *copy = buf->bd_buffer;
+      return PAGE_WRITE_ORG;
+    }
+  if (!wi_inst.wi_checkpoint_atomic)
+    pg_check_map_1 (buf);
+  is_order = page_is_disk_order (buf, &first_c, &last_c);
+  if (!page_compress && is_order)
+    {
+      *copy = buf->bd_buffer;
+      return PAGE_WRITE_ORG;
+    }
+  key = buf->bd_tree->it_key;
+  rw.rw_copy = *copy;
+  rw.rw_fill = 0;
+  if (page_compress)
+    {
+      SHORT_SET (rw.rw_copy + DP_FLAGS, DPF_GZIP | SHORT_REF (buf->bd_buffer + DP_FLAGS));
+      rw.rw_fill = DP_COMP_HEAD_LEN;
+      rw.rw_z_stream.zalloc = (alloc_func)0;
+      rw.rw_z_stream.zfree = (free_func)0;
+      rc = deflateInit(&rw.rw_z_stream, Z_DEFAULT_COMPRESSION);
+      if (rc != Z_OK)
+	GPF_T1 ("compress init failed");
+      rw.rw_z_stream.avail_out = PAGE_SZ / 2 - DP_COMP_HEAD_LEN;
+      rw.rw_z_stream.next_out = rw.rw_copy + DP_COMP_HEAD_LEN; 
+      row_compress (&rw, buf->bd_buffer + DP_COMP_HEAD_LEN, DP_DATA - DP_COMP_HEAD_LEN);
+    }
+  else
+    {
+      memcpy (rw.rw_copy, buf->bd_buffer, DP_DATA);
+      rw.rw_fill = DP_DATA;
+    }
+  DO_ROWS (buf, irow, row,  NULL)
+    {
+      int row_len = row_length (row, key);
+      if (page_compress)
+	{
+	  int rc = row_compress (&rw, row, row_len);
+	  if (Z_OK != rc)
+	    goto not_compressible;
+	}
+      else 
+	row_copy_no_comp (&rw, row, row_len);
+    }
+  END_DO_ROWS;
+  if (page_compress)
+    {
+      dtp_t gap_mark[4];
+      if (rw.rw_fill < PAGE_SZ - 1)
+	{
+	  page_write_gap (gap_mark, PAGE_SZ - ROW_ALIGN (rw.rw_fill));
+	  rw.rw_z_stream.next_in = gap_mark;
+	  rw.rw_z_stream.avail_in = 3;
+	}
+      else 
+	rw.rw_z_stream.avail_in = 0;
+      rc = deflate (&rw.rw_z_stream, Z_FINISH);
+      SHORT_SET (rw.rw_copy + DP_COMP_LEN, ((PAGE_SZ / 2) - DP_COMP_HEAD_LEN) - rw.rw_z_stream.avail_out);
+      deflateEnd (&rw.rw_z_stream);
+      if (rc != Z_STREAM_END)
+	goto not_compressible;
+    }
+  else 
+    {
+      if (rw.rw_fill < PAGE_SZ - 1)
+	page_write_gap (rw.rw_copy + rw.rw_fill, PAGE_SZ - rw.rw_fill);
+#if 0 /* only if corrupt write suspected */
+      memcpy (buf->bd_buffer + DP_DATA, rw.rw_copy + DP_DATA, PAGE_DATA_SZ);
+      pg_make_map (buf);
+	      pg_check_map_1 (buf);
+#endif
+    }
+  return PAGE_WRITE_COPY;
+ not_compressible:
+  return page_prepare_write (buf, copy, copy_fill, 0);
+}
+
+
+void
+page_after_read (buffer_desc_t * buf)
+{
+  /* if compression, uncompress and get any overflow page if all compressed data is not here */
+  int rc;
+  dtp_t page_buf[PAGE_SZ - DP_COMP_HEAD_LEN];
+  z_stream d_stream;
+  short flags = SHORT_REF (buf->bd_buffer + DP_FLAGS);
+  if (0 == (flags & DPF_GZIP))
+    return;
+  d_stream.zalloc = (alloc_func)0;
+  d_stream.zfree = (free_func)0;
+  d_stream.opaque = (voidpf)0;
+  d_stream.next_in  = (Bytef *) buf->bd_buffer + DP_COMP_HEAD_LEN;
+  d_stream.avail_in = SHORT_REF (buf->bd_buffer + DP_COMP_LEN);
+  d_stream.next_out = &page_buf[0];
+  d_stream.avail_out = PAGE_SZ - DP_COMP_HEAD_LEN;
+  inflateInit (&d_stream); 
+  rc = inflate (&d_stream, Z_FINISH);
+  if (Z_STREAM_END != rc)
+    GPF_T1 ("bad uncompress");
+  inflateEnd (&d_stream);
+  SHORT_SET (buf->bd_buffer + DP_FLAGS, flags & ~DPF_GZIP);
+  memcpy (buf->bd_buffer + DP_COMP_HEAD_LEN, page_buf, (PAGE_SZ - DP_COMP_HEAD_LEN) - d_stream.avail_out);
+}
+
 
 
 /*#define DISK_CHECKSUM*/
@@ -1497,10 +1722,12 @@ buf_disk_read (buffer_desc_t * buf)
   OFF_T rc;
   dbe_storage_t * dbs = buf->bd_storage;
   short flags;
-  OFF_T off = 0;
+  OFF_T off;
   disk_reads++;
-  if (!IS_IO_ALIGN (buf->bd_buffer))
+#ifdef O_DIRECT
+  if (c_use_o_direct && !IS_IO_ALIGN (buf->bd_buffer))
     GPF_T1 ("buf_disk_read (): The buffer is not io-aligned");
+#endif
   if (dbs->dbs_disks)
     {
       disk_stripe_t *dst = dp_disk_locate (dbs, buf->bd_physical_page, &off);
@@ -1555,7 +1782,9 @@ buf_disk_read (buffer_desc_t * buf)
       read_cum_time += get_msec_real_time () - start;
       mutex_leave (dbs->dbs_file_mtx);
     }
+  page_after_read (buf);
   flags = SHORT_REF (buf->bd_buffer + DP_FLAGS);
+
 #ifdef BYTE_ORDER_REV_SUPPORT
   if (dbs_reverse_db)
     {
@@ -1588,26 +1817,39 @@ buf_disk_read (buffer_desc_t * buf)
 void
 buf_disk_write (buffer_desc_t * buf, dp_addr_t phys_dp_to)
 {
+  dtp_t c_buf[PAGE_SZ];
+  db_buf_t out = c_buf;
   long start;
-  int bytes;
+  int bytes, n_out;
   short flags;
   dbe_storage_t * dbs = buf->bd_storage;
   OFF_T rc;
-  OFF_T off = 0;
+  OFF_T off;
   dp_addr_t dest = (phys_dp_to ? phys_dp_to : buf->bd_physical_page);
-  if (!IS_IO_ALIGN (buf->bd_buffer))
+#ifdef O_DIRECT
+  if (c_use_o_direct && !IS_IO_ALIGN (buf->bd_buffer))
     GPF_T1 ("buf_disk_write (): The buffer is not io-aligned");
+#endif
+  if (dbs_cpt_recov_in_progress)
+    out = buf->bd_buffer;
+  else 
+    page_prepare_write (buf, &out, &n_out, c_compress_mode);
   /* dbg_sleep (2); */
   flags = SHORT_REF (buf->bd_buffer + DP_FLAGS);
   DBG_PT_WRITE (buf, phys_dp_to);
+#ifdef O12DEBUG
+  if (flags == DPF_INDEX)
+    buf_check_deleted_refs (buf, checkpoint_in_progress ? 0 : 1);
+#endif
 
   if (0 == dest)
     GPF_T1 ("cannot write buffer to 0 page.");
-  if (flags == DPF_INDEX && 0 == dbs_cpt_recov_in_progress)
-    if (KI_TEMP != (key_id_t)SHORT_REF (buf->bd_buffer + DP_KEY_ID)
-	&& !sch_id_to_key (wi_inst.wi_schema, SHORT_REF (buf->bd_buffer + DP_KEY_ID)))
+  if (flags == DPF_INDEX && !dbs_cpt_recov_in_progress)
+    {
+      if (KI_TEMP != (key_id_t)LONG_REF (buf->bd_buffer + DP_KEY_ID)
+	  && !sch_id_to_key (wi_inst.wi_schema, LONG_REF (buf->bd_buffer + DP_KEY_ID)))
       GPF_T1 ("Writing index page with no key");
-
+    }
 
   if (DPF_INDEX == flags)
     bytes = PAGE_SZ;		/* buf -> bd_content_map -> pm_filled_to; */
@@ -1627,7 +1869,7 @@ buf_disk_write (buffer_desc_t * buf, dp_addr_t phys_dp_to)
 	  log_error ("Seek failure on stripe %s", dst->dst_file);
 	  GPF_T;
 	}
-      rc = write (fd, buf->bd_buffer, bytes);
+      rc = write (fd, out, bytes);
       if (rc != bytes)
 	{
 	  log_error ("Write failure on stripe %s", dst->dst_file);
@@ -1647,7 +1889,7 @@ buf_disk_write (buffer_desc_t * buf, dp_addr_t phys_dp_to)
 	  LSEEK (dbs->dbs_fd, 0, SEEK_END);
 	  while (dbs->dbs_file_length <= off_dest)
 	    {
-	      if (PAGE_SZ != write (dbs->dbs_fd, (char *)(buf->bd_buffer),
+	      if (PAGE_SZ != write (dbs->dbs_fd, (char *)out,
 		      PAGE_SZ))
 		{
 		  log_error ("Write failure on database %s", dbs->dbs_file);
@@ -1666,7 +1908,7 @@ buf_disk_write (buffer_desc_t * buf, dp_addr_t phys_dp_to)
 	    }
 	  if (off_dest == dbs->dbs_file_length)
 	    bytes = PAGE_SZ;
-	  rc = write (dbs->dbs_fd, (char *)(buf->bd_buffer), bytes);
+	  rc = write (dbs->dbs_fd, (char *)out, bytes);
 	  if (rc != bytes)
 	    {
 	      log_error ("Write failure on database %s", dbs->dbs_file);
@@ -1727,6 +1969,7 @@ dbs_read_page_set (dbe_storage_t * dbs, dp_addr_t first_dp, int flag)
 
   dbs_unfreeable (dbs, first_dp, flag);
   buf_disk_read (first);
+  if (flag != DPF_EXTENT_MAP)
   page_set_checksum_init (first->bd_buffer + DP_DATA);
   while ((dp_first = LONG_REF (prev->bd_buffer + DP_OVERFLOW)))
     {
@@ -1747,55 +1990,18 @@ dbs_write_page_set (dbe_storage_t * dbs, buffer_desc_t * buf)
 {
   while (buf)
     {
+      if (SHORT_REF (buf->bd_buffer + DP_FLAGS) != DPF_EXTENT_MAP)
+	{
       page_set_check (buf->bd_buffer + DP_DATA);
-      buf_disk_write (buf, 0);
-      buf = buf->bd_next;
     }
-}
-
-static void
-dbs_page_set_extend (dbe_storage_t* dbs, buffer_desc_t** page_set, int offset)
-{
-  buffer_desc_t **prev = page_set;
-  db_buf_t prev_page = NULL;
-  buffer_desc_t *new_page;
-
-  buffer_desc_t *next;
-  int n = 0;
-
-  if (offset == V_EXT_OFFSET_UNK_SET)
+      if (buf->bd_next)
     {
-      if (page_set == &dbs->dbs_free_set)
-	offset = V_EXT_OFFSET_FREE_SET;
-      else if (page_set == &dbs->dbs_incbackup_set)
-	offset = V_EXT_OFFSET_INCB_SET;
-      else
-	GPF_T;
+	  LONG_SET (buf->bd_buffer + DP_OVERFLOW, buf->bd_next->bd_page);
     }
   else
-    if (offset != V_EXT_OFFSET_FREE_SET && offset != V_EXT_OFFSET_INCB_SET)
-      GPF_T;
-
-  new_page = buffer_allocate (offset == V_EXT_OFFSET_FREE_SET ? DPF_FREE_SET : DPF_INCBACKUP_SET);
-  new_page->bd_storage = dbs;
-  memset (new_page->bd_buffer + DP_DATA, 0, PAGE_SZ - DP_DATA);
-  while ((next = *prev))
-    {
-      n++;
-      prev = &next->bd_next;
-      prev_page = next->bd_buffer;
-    }
-  *prev = new_page;
-  new_page->bd_physical_page = new_page->bd_page = n * BITS_ON_PAGE + offset;
-  dbs_unfreeable (dbs, new_page->bd_page, SHORT_REF (new_page->bd_buffer + DP_FLAGS));
-
-  /* Free set is backed to the first page in its area */
-  ((dp_addr_t *) (new_page->bd_buffer + DP_DATA))[0] |= 0x03;
-  page_set_checksum_init (new_page->bd_buffer + DP_DATA);
-  /* The free list is backed on the first page of the area it covers */
-  if (prev_page)
-    {
-      LONG_SET (prev_page + DP_OVERFLOW, new_page->bd_page);
+	LONG_SET (buf->bd_buffer + DP_OVERFLOW, 0);
+      buf_disk_write (buf, 0);
+      buf = buf->bd_next;
     }
 }
 
@@ -1808,7 +2014,7 @@ dbs_locate_page_bit (dbe_storage_t* dbs, buffer_desc_t** ppage_set, dp_addr_t ne
   dp_addr_t n;
   buffer_desc_t* free_set = ppage_set[0];
 
-
+  ASSERT_IN_DBS (dbs);
   near_page = near_dp / BITS_ON_PAGE;
 
   *page_no = near_page;
@@ -1816,7 +2022,7 @@ dbs_locate_page_bit (dbe_storage_t* dbs, buffer_desc_t** ppage_set, dp_addr_t ne
     {
       if (!free_set->bd_next)
 	{
-	  dbs_extend_pagesets (dbs);
+	  GPF_T1 ("looking for a dp allocation bit that is out of range");
 	}
       free_set = free_set->bd_next;
     }
@@ -1827,39 +2033,7 @@ dbs_locate_page_bit (dbe_storage_t* dbs, buffer_desc_t** ppage_set, dp_addr_t ne
 }
 
 
-#define FC_ENT_MASK 0xffffffe0	/* 5 low bits zero. Anding makes modulo 32 */
-#define FC_FREE -1
 
-void
-fc_init (free_set_cache_t * fc)
-{
-  int inx;
-  fc->fc_first_free = 0;
-  fc->fc_replace_next = 0;
-  for (inx = 0; inx < FC_SLOTS; inx++)
-    fc->fc_free_around[inx] = FC_FREE;
-}
-
-
-void
-fc_mark_free (dbe_storage_t * dbs, dp_addr_t dp)
-{
-  free_set_cache_t * fc = &dbs->dbs_free_cache;
-  int inx;
-  int free_at = -1;
-  if (dp > dbs->dbs_n_pages - 32)
-    return;
-  dp = dp & FC_ENT_MASK;
-  for (inx = 0; inx < FC_SLOTS; inx++)
-    {
-      if (dp == fc->fc_free_around[inx])
-	return;
-      if (FC_FREE == fc->fc_free_around[inx])
-	free_at = inx;
-    }
-  if (free_at != -1)
-    fc->fc_free_around[free_at] = dp;
-}
 
 
 int
@@ -1871,37 +2045,6 @@ word_free_bit (dp_addr_t w)
     w >>= 1;
 
   return n;
-}
-
-
-dp_addr_t
-fc_lookup (dbe_storage_t * dbs)
-{
-  free_set_cache_t *fc = &dbs->dbs_free_cache;
-  int ctr;
-  uint32 *array;
-  int bit, inx;
-  dp_addr_t page_no;
-  ASSERT_IN_MTX (dbs->dbs_page_mtx);
-
-  for (ctr = 0; ctr < FC_SLOTS; ctr++)
-    {
-      if (fc->fc_free_around[ctr] == FC_FREE)
-	continue;
-      dbs_locate_free_bit (dbs, fc->fc_free_around[ctr], &array, &page_no,
-	  &inx, &bit);
-      if (array[inx] != 0xffffffff)
-	{
-	  bit = word_free_bit (array[inx]);
-	  page_set_update_checksum (array, inx, bit);
-	  array[inx] |= ((uint32) 1) << bit;
-	  dbs->dbs_n_free_pages--;
-	  if (0xffffffff == array[inx])
-	    fc->fc_free_around[ctr] = FC_FREE;
-	  return (bit + (inx * BITS_IN_LONG) + (page_no * BITS_ON_PAGE));
-	}
-    }
-  return 0;
 }
 
 
@@ -1988,14 +2131,14 @@ dbs_is_free_page (dbe_storage_t * dbs, dp_addr_t n)
   int inx, bit;
   if (n >= dbs->dbs_n_pages)
     return 1;
-  IN_DBS_IF_CKSUM (dbs);
+  IN_DBS (dbs);
   dbs_locate_free_bit (dbs, n, &array, &page, &inx, &bit);
   if (0 == (array[inx] & (1 << bit)))
     {
-      LEAVE_DBS_IF_CKSUM (dbs);
+      LEAVE_DBS (dbs);
     return 1;
     }
-  LEAVE_DBS_IF_CKSUM (dbs);
+  LEAVE_DBS (dbs);
   return 0;
 }
 
@@ -2046,290 +2189,46 @@ ftruncate64 (int fd, OFF_T length)
 
 #endif /* WIN32 */
 
-static void
-dbs_extend_pageset (dbe_storage_t * dbs, buffer_desc_t ** set, int offset)
-{
-  size_t n_pages = 0;
-  buffer_desc_t *set_ptr;
 
-  ASSERT_IN_DBS (dbs);
-
-  for (set_ptr = *set; set_ptr; set_ptr = set_ptr->bd_next)
-    n_pages += 1;
-  while (dbs->dbs_n_pages / BITS_ON_PAGE >= n_pages)
-    {
-/*      int dp = *set ? (*set)->bd_physical_page : 0;*/
-      dbs_page_set_extend (dbs, set, offset);
-/*
-      (*set)->bd_physical_page = dbs_get_free_disk_page_near (dbs, dp);
-      if ((*set)->bd_physical_page > dbs->dbs_n_pages)
-	GPF_T1 ("no free page for the freeset");
-*/
-      n_pages += 1;
-    }
-}
-
-static void
-dbs_extend_pagesets (dbe_storage_t * dbs)
-{
-  ASSERT_IN_DBS (dbs);
-  dbs_extend_pageset (dbs, & dbs->dbs_free_set, 0);
-  dbs_extend_pageset (dbs, & dbs->dbs_incbackup_set, 1);
-}
-
-int 
-fd_extend (dbe_storage_t * dbs, int fd, int n_pages)
-{
-  OFF_T n;
-  OFF_T org_len;
-  static ALIGNED_PAGE_ZERO (zero);
-  ASSERT_IN_DBS (dbs);
-  org_len = LSEEK (fd, 0, SEEK_END);
-  for (n = 0; n < n_pages; n++)
-    {
-      int rc = write (fd, (char *) zero, PAGE_SZ);
-      if (PAGE_SZ != rc)
-	{
-	  FTRUNCATE (fd, org_len);
-	  return 0;
-	}
-    }
-  return n_pages;
-}
-
-OFF_T
-dbs_seg_extend (dbe_storage_t * dbs, OFF_T n)
-{
-  /* extend each stripe of the last segment of dbs by n */
-  disk_segment_t * ds;
-  dk_set_t last = dbs->dbs_disks;
-  int fd, inx, rc;
-  OFF_T org_sz;
-  while (last->next)
-    last = last->next;
-  ds = (disk_segment_t*)last->data;
-  fd = dst_fd (ds->ds_stripes[0]);
-  org_sz = lseek (fd, 0, SEEK_END);
-  dst_fd_done (ds->ds_stripes[0], fd);
-  if (((n * ds->ds_n_stripes)  % BITS_ON_PAGE) == 1)
-    n++;
-  DO_BOX (disk_stripe_t *, dst, inx, ds->ds_stripes)
-    {
-      fd = dst_fd (dst);
-      rc = fd_extend (dbs, fd, n);
-      dst_fd_done (dst, fd); 
-      if (rc != n)
-	{
-	  int inx2;
-	  for (inx2 = 0; inx2 < inx; inx2++) 
-	    {
-	      fd = dst_fd (ds->ds_stripes[inx2]);
-	      FTRUNCATE (fd, org_sz);
-	      dst_fd_done (ds->ds_stripes[inx2], fd);
-	    }
-	  return 0;
-	}
-    }
-  END_DO_BOX;
-  ds->ds_size += n * ds->ds_n_stripes;
-  dbs->dbs_n_pages += n * ds->ds_n_stripes;
-  dbs->dbs_n_free_pages += n * ds->ds_n_stripes;
-  dbs_extend_pagesets (dbs);
-  return n;
-}
-
-extern long dbf_no_disk;
+long stripe_growth_ratio;
 
 
-OFF_T
-dbs_extend_file (dbe_storage_t * dbs)
-{
-  OFF_T n;
-  OFF_T new_file_length;
-  static ALIGNED_PAGE_ZERO (zero);
-  if (dbf_no_disk)
-    return 0;
-  if (dbs->dbs_disks)
-    return dbs_seg_extend (dbs, dbs->dbs_extend);
-
-  ASSERT_IN_DBS (dbs);
-  mutex_enter (dbs->dbs_file_mtx);
-  LSEEK (dbs->dbs_fd, 0, SEEK_END);
-  for (n = 0; n < dbs->dbs_extend; n++)
-    {
-      new_file_length = dbs->dbs_file_length + PAGE_SZ;
-/* IvAn/0/010111 Additional check added for some critical lengths of files.
-E.g. Windows will fail to handle more than or equal to 2 Gb in one file.
-Some ramdrive-like drivers and ncache-like disk-caches may die on shorter
-length, NFS may die with 1.8Gb files on some obsolete VPNs.
-For safety, integer overflow check added. */
-      if (
-        (PAGE_SZ != write (dbs->dbs_fd, (char *) zero, PAGE_SZ)) ||
-#if 0
-#ifdef WIN32
-        ( !(new_file_length & 0x0FFFFFFFL) &&
-	  (tell (dbs->dbs_fd) != new_file_length) ) ||
-#endif
-#endif
-	(0L >= new_file_length)
-         )
-	{
-	  FTRUNCATE (dbs->dbs_fd, dbs->dbs_file_length);
-	  break;
-	}
-      dbs->dbs_n_free_pages++;
-      dbs->dbs_file_length = new_file_length;
-      dbs->dbs_n_pages++;
-      dbs_extend_pagesets (dbs);
-    }
-  mutex_leave (dbs->dbs_file_mtx);
-  return n;
-}
 
 void
 itc_hold_pages (it_cursor_t * itc, buffer_desc_t * buf, int n)
 {
-  dbe_storage_t * dbs = itc->itc_tree->it_storage;
-  IN_DBS (dbs);
+  int held = 1;
+  index_tree_t * it = itc->itc_tree;
   FAILCK (itc);
-  if (dbs->dbs_n_free_pages - dbs->dbs_n_pages_on_hold > (uint32) n)
+    
+  if (it->it_extent_map == it->it_storage->dbs_extent_map 
+      && it->it_n_index_est + it->it_n_blob_est > KEY_OWN_EXTENT_THRESHOLD
+      && it->it_key && it->it_key->key_id > DD_FIRST_PRIVATE_OID)
     {
-      itc->itc_n_pages_on_hold += n;
-      dbs->dbs_n_pages_on_hold += n;
+      if (!it_own_extent_map (it))
+	held = 0;
     }
-  else
+  if (held)
     {
-      dbs_extend_file (dbs);
-      wi_storage_offsets ();
-      if (dbs->dbs_n_free_pages - dbs->dbs_n_pages_on_hold > (uint32) n)
-	{
-	  dbs->dbs_n_pages_on_hold += n;
-	  itc->itc_n_pages_on_hold += n;
+      itc->itc_n_pages_on_hold = n;
+      held = em_hold_remap (itc->itc_tree->it_extent_map, &itc->itc_n_pages_on_hold);
 	}
-      else
+  if (!held)
 	{
-	  LEAVE_DBS (dbs);
 	  log_error ("Out of disk space for database");
 	  if (itc->itc_ltrx)
 	    itc->itc_ltrx->lt_error = LTE_NO_DISK; /* could be temp isp, no ltrx */
 	  itc_bust_this_trx (itc, &buf, ITC_BUST_THROW);
 	}
     }
-  LEAVE_DBS (dbs);
-}
 
 
 void
 itc_free_hold (it_cursor_t * itc)
 {
-  dbe_storage_t * dbs = itc->itc_tree->it_storage;
-  IN_DBS (dbs);
-  dbs->dbs_n_pages_on_hold -= itc->itc_n_pages_on_hold;
-  itc->itc_n_pages_on_hold = 0;
-  if (dbs->dbs_n_pages_on_hold > dbs->dbs_n_pages) /* unsigned underflowed  into negative */
-    GPF_T1 ("pages on hold < 0");
-  LEAVE_DBS (dbs);
+  em_free_remap_hold (itc->itc_tree->it_extent_map, &itc->itc_n_pages_on_hold);
 }
 
-
-void
-itc_check_disk_space (it_cursor_t * itc, buffer_desc_t * buf, int n)
-{
-  dbe_storage_t * dbs = itc->itc_tree->it_storage;
-  FAILCK (itc);
-  if (dbs->dbs_n_free_pages - dbs->dbs_n_pages_on_hold < (uint32) n)
-    {
-      itc->itc_ltrx->lt_error = LTE_NO_DISK;
-      itc_bust_this_trx (itc, &buf, ITC_BUST_THROW);
-    }
-}
-
-
-dp_addr_t
-dbs_get_free_disk_page_near (dbe_storage_t * dbs, dp_addr_t near_dp)
-{
-  dp_addr_t dp;
-  /* Look both sides of near. If there's nothing, start at the beginning. */
-  buffer_desc_t *free_buf;
-  uint32 *page;
-  dp_addr_t page_no;
-  int word;
-  int bit;
-  ASSERT_IN_DBS (dbs);
-  bit = -1;
-  if (near_dp > 45 && near_dp > dbs->dbs_n_pages - 40)
-    near_dp -= 40;
-  dbs_locate_free_bit (dbs, near_dp, &page, &page_no, &word, &bit);
-  if (page[word] != 0xffffffff)
-    {
-      bit = word_free_bit (page[word]);
-    }
-  else
-    {
-      dp_addr_t cached = fc_lookup (dbs);
-      if (cached)
-	return cached;
-      page_no = 0;
-      free_buf = dbs->dbs_free_set;
-      while (free_buf)
-	{
-	  page = (uint32 *) (free_buf->bd_buffer + DP_DATA);
-	  page_set_check ((db_buf_t) page);
-	  for (word = 0; word < LONGS_ON_PAGE; word++)
-	    {
-	      if (page[word] != 0xffffffff)
-		{
-		  bit = word_free_bit (page[word]);
-		  goto bit_found;
-		}
-	    }
-	  if (!free_buf->bd_next)
-	    dbs_extend_pagesets (dbs);
-	  free_buf = free_buf->bd_next;
-	  page_no++;
-	}
-
-    }
-bit_found:
-  page_set_update_checksum (page, word, bit);
-  page[word] |= ((uint32) 1) << bit;
-  dbs->dbs_n_free_pages--;
-  dp = (bit + (word * BITS_IN_LONG) + (page_no * BITS_ON_PAGE));
-  if (page[word] != 0xffffffff)
-    fc_mark_free (dbs, dp);
-  return dp;
-}
-
-dp_addr_t
-dbs_get_free_disk_page (dbe_storage_t * dbs, dp_addr_t near_dp)
-{
-  dp_addr_t first;
-
-  IN_DBS (dbs);
-  first = dbs_get_free_disk_page_near (dbs, near_dp);
-  if (first >= dbs->dbs_n_pages)
-    {
-      dbs_extend_file (dbs);
-      wi_storage_offsets ();
-      if (first >= dbs->dbs_n_pages)
-	{
-	  dbs_free_disk_page (dbs, first);
-	  first = dbs_get_free_disk_page_near (dbs, 0);
-	  if (first >= dbs->dbs_n_pages)
-	    {
-	      dbs_free_disk_page (dbs, first);
-	      first = 0;
-	    }
-	}
-    }
-  LEAVE_DBS (dbs);
-#ifdef DEBUG
-  /* not really allowed but not fatal enough to gpf */
-  if (first && dp_backup_flag (dbs, first))
-    GPF_T1 ("Should not have backup change flag on for a freshly allocated page");
-#endif
-  return first;
-}
 
 
 void
@@ -2357,6 +2256,7 @@ dbs_free_disk_page (dbe_storage_t * dbs, dp_addr_t dp)
   if (dp > dbs->dbs_n_pages)
     {
       log_info ("Freeing dp out of range %d ", dp);
+      LEAVE_DBS (dbs);
       return;
     }
   if (gethash (DP_ADDR2VOID (dp), dbs->dbs_unfreeable_dps))
@@ -2377,7 +2277,7 @@ dbs_free_disk_page (dbe_storage_t * dbs, dp_addr_t dp)
   page[word] &= ~(1 << bit);
   dbs->dbs_n_free_pages++;
   disk_releases++;
-  fc_mark_free (dbs, dp);
+  LEAVE_DBS (dbs);
 }
 
 
@@ -2469,6 +2369,7 @@ buf_qsort (buffer_desc_t ** in, buffer_desc_t ** left,
 
 dk_mutex_t *buf_sort_mtx;
 buffer_desc_t **left_bufs;
+size_t left_bufs_len;
 
 
 void
@@ -2477,17 +2378,19 @@ buf_sort (buffer_desc_t ** bs, int n_bufs, sort_key_func_t key)
   mutex_enter (buf_sort_mtx);
   if (!left_bufs)
     {
-      left_bufs = (buffer_desc_t **) dk_alloc_box (sizeof (caddr_t) * main_bufs, DV_BIN);
+      left_bufs_len = sizeof (caddr_t) * main_bufs;
+      left_bufs = (buffer_desc_t **) dk_alloc (left_bufs_len);
     }
-  if (BOX_ELEMENTS (left_bufs) < n_bufs)
+  if ((left_bufs_len / sizeof (caddr_t)) < n_bufs)
     {
-      dk_free_box ((caddr_t) left_bufs);
-      left_bufs = (buffer_desc_t **) dk_alloc_box (sizeof (caddr_t) * n_bufs, DV_BIN);
+      dk_free ((void *) left_bufs, (size_t)-1);
+      left_bufs_len = sizeof (caddr_t) * n_bufs;
+      left_bufs = (buffer_desc_t **) dk_alloc (left_bufs_len);
     }
   buf_qsort (bs, left_bufs, n_bufs, 0, key);
-  if (main_bufs != BOX_ELEMENTS (left_bufs))
+  if (main_bufs != (left_bufs_len / sizeof (caddr_t)))
     {
-      dk_free_box ((caddr_t)left_bufs);
+      dk_free ((void *) left_bufs, (size_t)-1);
       left_bufs = NULL;
     }
   mutex_leave (buf_sort_mtx);
@@ -2653,6 +2556,33 @@ dbs_open_disks (dbe_storage_t * dbs)
 
 
 void
+wi_close()
+{
+  int inx;
+
+  DO_BOX (buffer_pool_t *, bp, inx, wi_inst.wi_bps)
+  {
+    bp_free_buffer_list (bp);
+    dk_free (bp, sizeof (buffer_pool_t));
+  }
+  END_DO_BOX;
+  dk_free_box (wi_inst.wi_bps);
+
+  resource_clear (pm_rc_1, NULL);
+  resource_clear (pm_rc_2, NULL);
+  resource_clear (pm_rc_3, NULL);
+  resource_clear (pm_rc_4, NULL);
+
+  buffer_free (cp_buf);
+
+#if HAVE_SYS_MMAN_H && !defined(__FreeBSD__)
+  if (cf_lock_in_mem)
+    munlockall ();
+#endif
+}
+
+
+void
 dbs_close_disks (dbe_storage_t * dbs)
 {
   int inx;
@@ -2741,8 +2671,10 @@ dbs_write_cfg_page (dbe_storage_t * dbs, int is_first)
   strcpy_ck (db.db_ver, DBMS_SRV_VER_ONLY);
   strcpy_ck (db.db_generic, DBMS_STORAGE_VER);
   db.db_registry = dbs->dbs_registry;
+  db.db_extent_set = dbs->dbs_extent_set->bd_page;
   db.db_free_set = dbs->dbs_free_set->bd_page;
   db.db_incbackup_set = dbs->dbs_incbackup_set->bd_page;
+  db.db_stripe_unit = dbs->dbs_stripe_unit;
   if (bp_ctx.db_bp_ts)
     {
       strncpy (db.db_bp_prfx, bp_ctx.db_bp_prfx, BACKUP_PREFIX_SZ);
@@ -2766,15 +2698,15 @@ dbs_write_cfg_page (dbe_storage_t * dbs, int is_first)
 }
 
 
-short less_than_any[] = {0, KI_LEFT_DUMMY, 0, 0};
-/* the dummy + 2 zero shorts for the null leaf pointer */
+dtp_t less_than_any[] = {KV_LEFT_DUMMY, 0, 0, 0, 0, 0};
+/* dummy key 0 row version, 4x0 for a 0 leaf ptr */
 
 void
 pg_init_new_root (buffer_desc_t * buf)
 {
   db_buf_t page = buf->bd_buffer;
   memcpy (page + DP_DATA, less_than_any, sizeof (less_than_any));
-  SHORT_SET (page + DP_FIRST, DP_DATA);
+  page_write_gap (page + DP_DATA + sizeof (less_than_any), PAGE_SZ - (DP_DATA + sizeof (less_than_any)));
   pg_make_map (buf);
 }
 
@@ -2785,7 +2717,7 @@ pg_init_new_root (buffer_desc_t * buf)
 static void
 dbs_reverse_cfg_page (wi_database_t * cfg_page)
 {
-  DBS_REVERSE_LONG ((db_buf_t)(&cfg_page->db_root));
+  DBS_REVERSE_LONG ((db_buf_t)(&cfg_page->db_extent_set));
   DBS_REVERSE_LONG ((db_buf_t)&cfg_page->db_checkpoint_root);
   DBS_REVERSE_LONG ((db_buf_t)&cfg_page->db_free_set);
   DBS_REVERSE_LONG ((db_buf_t)&cfg_page->db_incbackup_set);
@@ -2833,37 +2765,38 @@ dbs_reverse_whole_database (dbe_storage_t * dbs, wi_database_t * cfg_page)
     } \
 }
 
-static
-void row_na_length(db_buf_t row, dbe_key_t *key, db_buf_t * off)
+row_size_t
+row_na_length (db_buf_t  row, dbe_key_t * key)
 {
   int len;
-  key_id_t key_id = DBS_REV_SHORT_REF (row + IE_KEY_ID);
-  if (!key_id)
+  row_ver_t rv = IE_ROW_VERSION (row);
+  key_ver_t kv = IE_KEY_VERSION (row);
+  if (!kv) 
     {
-      len = key->key_key_len;
+      len = key->key_key_len[rv]; 
       if (len <= 0)
-	len = IE_LEAF + 4 + DBS_REV_SHORT_REF ((row - len) + IE_LP_FIRST_KEY);
+	len = COL_VAR_LEN_MASK & DBS_REV_SHORT_REF (row - len); 
     }
-  else if (key_id == KI_LEFT_DUMMY)
+  else if (kv == KV_LEFT_DUMMY) 
     {
-      len = 8;
+      len = 6; 
     }
   else
     {
       dbe_key_t * row_key;
-      if (key_id != key->key_id)
-	row_key = sch_id_to_key (wi_inst.wi_schema, key_id);
-      else
-	row_key = key;
-      len = row_key->key_row_len;
+      if (kv >= KV_LONG_GAP 
+	  || !(row_key = key->key_versions[kv]) )
+	STRUCTURE_FAULT1 ("bad kv in row_na_length"); 
+      len = row_key->key_row_len[rv]; 
       if (len <= 0)
-	{
-		;
-	}
+	len = COL_VAR_LEN_MASK & DBS_REV_SHORT_REF (row - len);
     }
+  return len;
 }
 
 
+
+#ifndef KEYCOMP
 int
 dbs_reset_row_na (db_buf_t row, dbe_key_t * page_key)
 {
@@ -2982,11 +2915,13 @@ dbs_reset_row_na (db_buf_t row, dbe_key_t * page_key)
 
   return IE_NEXT (orig_row);
 }
+#endif
 
 
 void
 dbs_rev_h_index  (dbe_storage_t * dbs, buffer_desc_t * buf)
 {
+#ifndef KEYCOMP
   if (buf->bd_physical_page && dbs_is_free_page (dbs, buf->bd_physical_page))
 		return;
   if (gethash (DP_ADDR2VOID (buf->bd_physical_page), dbs->dbs_cpt_remap))
@@ -2999,7 +2934,7 @@ dbs_rev_h_index  (dbe_storage_t * dbs, buffer_desc_t * buf)
   DBS_REVERSE_SHORT (buf->bd_buffer + DP_FLAGS);
   DBS_REVERSE_SHORT (buf->bd_buffer + DP_FIRST);
 
-  DBS_REVERSE_SHORT (buf->bd_buffer + DP_KEY_ID);
+  DBS_REVERSE_long (buf->bd_buffer + DP_KEY_ID);
 
   DBS_REVERSE_LONG (buf->bd_buffer + DP_OVERFLOW);
 
@@ -3014,7 +2949,7 @@ dbs_rev_h_index  (dbe_storage_t * dbs, buffer_desc_t * buf)
 #endif
   {
     db_buf_t page = buf->bd_buffer;
-    key_id_t pg_key_id = SHORT_REF (page + DP_KEY_ID);
+    key_id_t pg_key_id = LONG_REF (page + DP_KEY_ID);
     dbe_key_t * pg_key = KI_TEMP == pg_key_id ?  buf->bd_tree->it_key
       : sch_id_to_key (wi_inst.wi_schema, pg_key_id);
     int pos = SHORT_REF (page + DP_FIRST);
@@ -3037,9 +2972,11 @@ dbs_rev_h_index  (dbe_storage_t * dbs, buffer_desc_t * buf)
       }
   }
   h_index = 0;
+#endif
 }
 
-void dbs_rev_h_free_set  (dbe_storage_t * dbs, buffer_desc_t * buf)
+void 
+dbs_rev_h_free_set  (dbe_storage_t * dbs, buffer_desc_t * buf)
 {
   int inx;
   DBS_REVERSE_SHORT (buf->bd_buffer + DP_FLAGS);
@@ -3049,7 +2986,10 @@ void dbs_rev_h_free_set  (dbe_storage_t * dbs, buffer_desc_t * buf)
       DBS_REVERSE_LONG (buf->bd_buffer + inx);
     }
 }
-void dbs_rev_h_ext (dbe_storage_t * dbs, buffer_desc_t * buf)
+
+
+void 
+dbs_rev_h_ext (dbe_storage_t * dbs, buffer_desc_t * buf)
 {
   GPF_T1 ("not implemented");
 }
@@ -3058,7 +2998,6 @@ void dbs_rev_h_blob (dbe_storage_t * dbs, buffer_desc_t * buf)
   DBS_REVERSE_LONG (buf->bd_buffer + DP_PARENT);
   DBS_REVERSE_LONG (buf->bd_buffer + DP_BLOB_TS);
   DBS_REVERSE_SHORT (buf->bd_buffer + DP_FLAGS);
-  DBS_REVERSE_SHORT (buf->bd_buffer + DP_FIRST);
   DBS_REVERSE_LONG (buf->bd_buffer + DP_BLOB_LEN);
   DBS_REVERSE_LONG (buf->bd_buffer + DP_OVERFLOW);
 }
@@ -3088,7 +3027,6 @@ void  dbs_rev_h_blob_dir (dbe_storage_t * dbs, buffer_desc_t * buf)
   DBS_REVERSE_LONG (buf->bd_buffer + DP_PARENT);
   DBS_REVERSE_LONG (buf->bd_buffer + DP_BLOB_TS);
   DBS_REVERSE_SHORT (buf->bd_buffer + DP_FLAGS);
-  DBS_REVERSE_SHORT (buf->bd_buffer + DP_FIRST);
   DBS_REVERSE_LONG (buf->bd_buffer + DP_BLOB_LEN);
   DBS_REVERSE_LONG (buf->bd_buffer + DP_OVERFLOW);
 
@@ -3224,6 +3162,16 @@ long temp_db_size = 0;
 	  call_exit (1); \
 	}
 
+int
+page_set_length (buffer_desc_t * buf)
+{
+  int n = 0;
+  for (buf = buf; buf; buf = buf->bd_next)
+    n++;
+  return n;
+}
+
+
 dbe_storage_t *
 dbs_from_file (char * name, char * file, char type, volatile int * exists)
 {
@@ -3309,7 +3257,7 @@ dbs_from_file (char * name, char * file, char type, volatile int * exists)
     {
       /* There's a file. */
       dbs_read_cfg_page (dbs, &cfg_page);
-
+      dbs->dbs_stripe_unit = cfg_page.db_stripe_unit ? cfg_page.db_stripe_unit : 1;
 #ifdef BYTE_ORDER_REV_SUPPORT
       if (dbs_reverse_db)
 	dbs_reverse_cfg_page (&cfg_page);
@@ -3321,8 +3269,14 @@ dbs_from_file (char * name, char * file, char type, volatile int * exists)
       db_version_string = box_dv_short_string (cfg_page.db_ver);
 
       dbs->dbs_registry = cfg_page.db_registry;
+      dbs->dbs_extent_set = dbs_read_page_set (dbs, cfg_page.db_extent_set, DPF_EXTENT_SET);
+
+      dbs->dbs_n_pages_in_extent_set = EXTENT_SZ * BITS_ON_PAGE * page_set_length (dbs->dbs_extent_set);
       dbs->dbs_free_set = dbs_read_page_set (dbs, cfg_page.db_free_set, DPF_FREE_SET);
+      dbs->dbs_n_pages_in_sets = BITS_ON_PAGE * page_set_length (dbs->dbs_free_set);
       dbs->dbs_incbackup_set = dbs_read_page_set (dbs, cfg_page.db_incbackup_set, DPF_INCBACKUP_SET);
+      dbs_read_checkpoint_remap (dbs, cfg_page.db_checkpoint_map);
+      dbs_cpt_recov (dbs);
       if (cfg_page.db_bp_ts)
 	{
 	  strncpy (bp_ctx.db_bp_prfx, cfg_page.db_bp_prfx, BACKUP_PREFIX_SZ);
@@ -3333,32 +3287,22 @@ dbs_from_file (char * name, char * file, char type, volatile int * exists)
 	  bp_ctx.db_bp_index = cfg_page.db_bp_index;
 	  bp_ctx.db_bp_wr_bytes = cfg_page.db_bp_wr_bytes;
 	}
+      if (DBS_PRIMARY == type)
+	dbs_init_registry (dbs);
+      dbs_extent_open (dbs);
       dbs->dbs_n_free_pages = dbs_count_free_pages (dbs);
-      dbs_read_checkpoint_remap (dbs, cfg_page.db_checkpoint_map);
     }
   else
     {
       /* No database. Make one. */
-      IN_DBS (dbs)
-      dbs_extend_pagesets (dbs);
-      /* Bit 1 is taken. This is the cfg page. 2 will be the first page of
-       * free set, 3will be registry etc */
-
-      /* GK: here it leaks two pages : 1 for the free set and one for the incb set
-       * but it has to - this actually expands the file. TODO: fix it later */
-
-      dbs->dbs_free_set->bd_physical_page =
-	dbs->dbs_free_set->bd_page = dbs_get_free_disk_page (dbs, 0);
-
-      dbs->dbs_incbackup_set->bd_physical_page =
-	dbs->dbs_incbackup_set->bd_page =  dbs_get_free_disk_page (dbs, dbs->dbs_free_set->bd_page);
-      dbs->dbs_n_free_pages = dbs_count_free_pages (dbs);
-      dbs_write_page_set (dbs, dbs->dbs_free_set);
-      dbs_write_page_set (dbs, dbs->dbs_incbackup_set);
+      IN_DBS (dbs);
+      dbs->dbs_stripe_unit = c_stripe_unit;
+      dbs_extent_init (dbs);
       dbs_write_cfg_page (dbs, 0);
-    }
   if (DBS_PRIMARY == type)
     dbs_init_registry (dbs);
+      dbs->dbs_n_free_pages = dbs_count_free_pages (dbs);
+    }
   return dbs;
 }
 
@@ -3409,10 +3353,11 @@ wi_open_dbs ()
   NEW_VARZ (wi_db_t, wd);
   wi_inst.wi_master_wd = wd;
   dk_set_push (&wi_inst.wi_dbs, (void*) wd);
-  wi_inst.wi_files = id_str_hash_create (11);;
+  wi_inst.wi_files = id_str_hash_create (11);
   wd->wd_qualifier = box_dv_short_string ("DB");
   this_wd = wd;
   master_dbs = dbs_from_file ("master", NULL, DBS_PRIMARY, &db_exists);
+  master_dbs->dbs_registry_hash = registry;
   this_wd->wd_primary_dbs = master_dbs;
   dk_set_push (&this_wd->wd_storage, (void*) master_dbs);
   master_dbs->dbs_db = this_wd;
@@ -3434,6 +3379,7 @@ wi_open_dbs ()
 extern dk_mutex_t * log_write_mtx;
 extern   dk_mutex_t * transit_list_mtx;
 
+int32 bdf_is_avail_mask;
 
 void
 wi_open (char *mode)
@@ -3441,9 +3387,13 @@ wi_open (char *mode)
   int inx;
   const_length_init ();
   bm_init ();
+  extent_map_create_mtx = mutex_allocate ();
+  mutex_option (extent_map_create_mtx, "em_create", NULL, NULL);
   search_inline_init ();
   wi_inst.wi_txn_mtx = mutex_allocate_typed (MUTEX_TYPE_SHORT);
   mutex_option (wi_inst.wi_txn_mtx, "TXN", NULL /*txn_mtx_entry_check */, NULL);
+  pl_ref_count_mtx = mutex_allocate ();
+  mutex_option (pl_ref_count_mtx, "pl_ref_count", NULL, NULL);
   log_write_mtx = mutex_allocate ();
   mutex_option (log_write_mtx, "Log_write", NULL, NULL);
   transit_list_mtx = mutex_allocate ();
@@ -3453,51 +3403,29 @@ wi_open (char *mode)
   for (inx = 0; inx < bp_n_bps; inx++)
     {
       wi_inst.wi_bps[inx] = bp_make_buffer_list (main_bufs / bp_n_bps);
-      wi_inst.wi_bps[inx]->bp_ts = inx * ((main_bufs / BP_N_BUCKETS) / 9); /* out of step, do not do stats all at the same time */
+      wi_inst.wi_bps[inx]->bp_ts = inx * ((main_bufs / BP_N_BUCKETS) / 9); /* out of step, don't do stats all at the same time */
     }
   wi_inst.wi_n_bps = (short) BOX_ELEMENTS (wi_inst.wi_bps);
-
-
-  pm_rc_1 = resource_allocate (main_bufs, (rc_constr_t) map_allocate,
+  {
+    buffer_desc_t bd;
+    bd.bdf.flags = 0xffffffff;
+    bd.bdf.r.is_read_aside = 0;
+    bdf_is_avail_mask = bd.bdf.flags;
+  }
+  pm_rc_1 = resource_allocate (main_bufs / 20, (rc_constr_t) map_allocate,
 			    (rc_destr_t) map_free, (rc_destr_t) NULL, (void*) PM_SZ_1);
-  pm_rc_2 = resource_allocate (main_bufs, (rc_constr_t) map_allocate,
+  pm_rc_2 = resource_allocate (main_bufs / 20, (rc_constr_t) map_allocate,
 			    (rc_destr_t) map_free, (rc_destr_t) NULL, (void*) PM_SZ_2);
-  pm_rc_3 = resource_allocate (main_bufs, (rc_constr_t) map_allocate,
+  pm_rc_3 = resource_allocate (main_bufs / 20, (rc_constr_t) map_allocate,
 			    (rc_destr_t) map_free, (rc_destr_t) NULL, (void*) PM_SZ_3);
-  pm_rc_4 = resource_allocate (main_bufs / 10, (rc_constr_t) map_allocate,
+  pm_rc_4 = resource_allocate (10, (rc_constr_t) map_allocate,
 			    (rc_destr_t) map_free, (rc_destr_t) NULL, (void*) PM_SZ_4);
 
   cp_buf = buffer_allocate (DPF_CP_REMAP);
 
   wi_open_dbs ();
   mt_write_init ();
-}
-
-
-void
-wi_close()
-{
-  int inx;
-
-  DO_BOX (buffer_pool_t *, bp, inx, wi_inst.wi_bps)
-  {
-    bp_free_buffer_list (bp);
-    dk_free (bp, sizeof (buffer_pool_t));
-  }
-  END_DO_BOX;
-  dk_free_box (wi_inst.wi_bps);
-
-  resource_clear (pm_rc_1, NULL);
-  resource_clear (pm_rc_2, NULL);
-  resource_clear (pm_rc_3, NULL);
-  resource_clear (pm_rc_4, NULL);
-
-  buffer_free (cp_buf);
-
-#if HAVE_SYS_MMAN_H && !defined(__FreeBSD__)
-  if (cf_lock_in_mem)
-    munlockall ();
-#endif
+  sqlo_tc_init ();
 }
 
 
@@ -3520,7 +3448,8 @@ mem_cache_init (void)
   dk_cache_allocs (sizeof (placeholder_t), 2000);
   dk_cache_allocs (PAGE_SZ, 20); /* size of page or session buffer's item */
   dk_cache_allocs (PAGE_DATA_SZ, 20); /* size of data on page */
-  for (sz = 16; sz < 240; sz += 4)
+  dk_cache_allocs (DKSES_OUT_BUFFER_LENGTH, 20);
+  for (sz = 16; sz < 480; sz += 8)
     {
       if (!dk_is_alloc_cache (sz))
 	dk_cache_allocs (sz, 10);
@@ -3540,6 +3469,20 @@ extern dk_mutex_t * dp_compact_mtx;
 #define TRX_RC_SZ 200
 #endif
 
+int 
+itc_free_cb (caddr_t itc)
+{
+  itc_free ((it_cursor_t *)itc);
+  return 1;
+}
+
+
+int 
+it_free_cb (caddr_t it)
+{
+  it_temp_free ((index_tree_t *)it);
+  return 1;
+}
 
 
 void
@@ -3563,6 +3506,9 @@ wi_init_globals (void)
 			       (rc_destr_t) pl_free, NULL, 0);
   row_lock_rc = resource_allocate (5000, (rc_constr_t) rl_allocate,
 				   (rc_destr_t) rl_free, NULL, 0);
+  pfh_rc = resource_allocate (10, (rc_constr_t) pfh_allocate,
+				  (rc_destr_t) pfh_free, NULL, 0);
+
   rb_page_rc = resource_allocate (100, (rc_constr_t) rbp_allocate,
 				  (rc_destr_t) rbp_free, NULL, 0);
   mutex_option (rb_page_rc->rc_mtx, "rb_pages", NULL, NULL);
@@ -3588,6 +3534,9 @@ wi_init_globals (void)
   dp_compact_mtx = mutex_allocate_typed (MUTEX_TYPE_SPIN);
   dp_compact_checked = hash_table_allocate (1000);
   dk_hash_set_rehash (dp_compact_checked, 3);
+  dbs_autocompact_mtx = mutex_allocate ();
+  dk_mem_hooks (DV_INDEX_TREE, box_non_copiable, it_free_cb, 0);
+  dk_mem_hooks (DV_ITC, box_non_copiable, itc_free_cb, 0);
 }
 
 
@@ -3614,19 +3563,17 @@ dbe_key_open (dbe_key_t * key)
     start_str = registry_get (kf->kf_name);
     LEAVE_TXN;
     kf->kf_it = it_allocate (kf->kf_storage);
-#ifndef MUTEX_OPTION_NOP
     {
-      int inx2;
+	int inx;
       char mtx_name[200];
       snprintf (mtx_name, sizeof (mtx_name), "lock_rel_%100s", kf->kf_name);
       mutex_option (kf->kf_it->it_lock_release_mtx, mtx_name, NULL, NULL);
-      for (inx2 = 0; inx2 < IT_N_MAPS; inx2++)
+	for (inx = 0; inx < IT_N_MAPS; inx++)
 	{
-	  sprintf (mtx_name, "%s:%d", kf->kf_name, inx2);
-	  mutex_option (&(kf->kf_it->it_maps[inx2].itm_mtx), mtx_name, NULL, (void *) &kf->kf_it->it_maps[inx2]);
+	    sprintf (mtx_name, "%s:%d", kf->kf_name, inx);
+	    mutex_option (&(kf->kf_it->it_maps[inx].itm_mtx), mtx_name, NULL /*it_page_map_entry_check*/, (void*) &kf->kf_it->it_maps[inx]);
 	}
     }
-#endif
     kf->kf_it->it_key = key;
     if (start_str)
       start_dp = atol (start_str);
@@ -3646,6 +3593,7 @@ dbe_key_open (dbe_key_t * key)
       {
 	kf->kf_it->it_root = start_dp;
       }
+      kf_set_extent_map (kf);
   }
   END_DO_BOX;
 }
@@ -3660,17 +3608,18 @@ int
 buf_is_empty_root (buffer_desc_t * buf, dbe_key_t * key)
 {
   int ct = buf->bd_content_map->pm_count, pos;
-  key_id_t key_id = SHORT_REF (buf->bd_buffer + DP_KEY_ID);
+  key_id_t key_id = LONG_REF (buf->bd_buffer + DP_KEY_ID);
+  key_ver_t kv;
   dbe_key_t * page_key = sch_id_to_key (wi_inst.wi_schema, key_id);
   if (!page_key || page_key->key_super_id != key->key_super_id)
     return ROOT_WRONG_KEY;
   if (ct != 1)
     return ROOT_NOT_EMPTY;
   pos = buf->bd_content_map->pm_entries[0];
-  key_id = SHORT_REF (buf->bd_buffer + pos + IE_KEY_ID);
-  if (key_id != KI_LEFT_DUMMY)
+  kv = IE_KEY_VERSION (buf->bd_buffer + pos);
+  if (kv != KV_LEFT_DUMMY)
     return ROOT_NOT_EMPTY;
-  if (0 != LONG_REF (buf->bd_buffer + pos + IE_LEAF))
+  if (0 != LONG_REF (buf->bd_buffer + pos + LD_LEAF))
     return ROOT_NOT_EMPTY;
   return ROOT_EMPTY;
 }
@@ -3713,6 +3662,14 @@ key_dropped (dbe_key_t * key)
 	  log_error ("Tree with a root of another key in dropping tree of %s.", key->key_name);
 	}
       ITC_LEAVE_MAPS (itc);
+      if (kf->kf_it->it_extent_map != kf->kf_it->it_storage->dbs_extent_map)
+	{
+	  char name[1000];
+	  snprintf (name, sizeof (name), "__EM:%s", kf->kf_name);
+	  IN_TXN;
+	  registry_set (name, NULL);
+	  LEAVE_TXN;
+	}
       IN_TXN;
       registry_set (kf->kf_name, NULL);
       dk_set_delete (&wi_inst.wi_master->dbs_trees, kf->kf_it);
@@ -3733,7 +3690,7 @@ dbe_key_save_roots (dbe_key_t * key)
       char str[20];
       snprintf (str, sizeof (str), "%d", (int) kf->kf_it->it_root);
       ASSERT_IN_TXN; /* called from checkpoint inside txn mtx */
-      registry_set (kf->kf_name, str);
+      dbs_registry_set (kf->kf_it->it_storage, kf->kf_name, str, 0);
     }
   END_DO_BOX;
 }

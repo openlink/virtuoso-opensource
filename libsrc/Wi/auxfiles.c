@@ -85,6 +85,7 @@ int n_oldest_flushable;
 int null_bad_dtp;
 int atomic_dive = 0;
 int dive_pa_mode = PA_READ;
+int c_compress_mode = 0;
 int default_txn_isolation = ISO_REPEATABLE;
 int prefix_in_result_col_names;
 int disk_no_mt_write;
@@ -105,7 +106,7 @@ unsigned long int cfg_thread_threshold = 10;
 /* Specified in minutes. Note that 1440 minutes = 24 hours. */
 unsigned long int cfg_autocheckpoint = 0;
 int32 c_checkpoint_interval = 0;
-int32 cl_run_local_only;
+int32 cl_run_local_only = CL_RUN_LOCAL;
 int wi_blob_page_dir_threshold;
 extern const char* recover_file_prefix;
 
@@ -121,6 +122,7 @@ char *run_as_os_uname = NULL;
 int32 c_checkpoint_sync = 2;
 int c_use_o_direct = 0;
 int c_use_aio = 0;
+int c_stripe_unit = 256;
 
 extern int32 sqlo_compiler_exceeds_run_factor;
 
@@ -353,8 +355,10 @@ cfg_parse_disks (dbe_storage_t * dbs, char *err, int err_max, char * cfg_file)
 	  &n_pages, &n_stripes))
 	{
 	  seg = (disk_segment_t *) dk_alloc (sizeof (disk_segment_t));
-	  if (n_pages % n_stripes != 0)
+	  if (n_pages % (EXTENT_SZ * n_stripes) != 0)
 	    {
+	      log_error ("Size of a segment in a segmented db must be a multiple of 256 times the number of stripes\n");
+	      call_exit (1);
 	      return -1;
 	    }
 	  seg->ds_size = n_pages;
@@ -365,6 +369,8 @@ cfg_parse_disks (dbe_storage_t * dbs, char *err, int err_max, char * cfg_file)
 	  segs = dk_set_conc (segs, dk_set_cons ((caddr_t) seg, NULL));
 	}
       s_ioq[0] = 0;
+      if (0 == strncmp (line_buf, "stripe_", 7))
+	continue;
       if (2 == sscanf (line_buf, "stripe %s %s", s_name, s_ioq)
 	  || 1 == sscanf (line_buf, "stripe %s", s_name))
 	{
@@ -535,10 +541,6 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
   if (t_future_sz < 140000) /* was 100000 */
     t_future_sz = 140000; /* was 100000 */
 
-  wi_blob_page_dir_threshold = (long) (ptrlong) cfg_get_parm (wholefile, "\nblob_page_dir_threshold:", 1);
-  if (wi_blob_page_dir_threshold)
-    blob_page_dir_threshold=wi_blob_page_dir_threshold;
-
 #if REPLICATION_SUPPORT
   /* reserved threads: repldb, replsub, replpush, mtwrite, server, main */
   n_threads = MIN (n_threads, MAX_THREADS - 6);
@@ -577,6 +579,7 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
   c_checkpoint_sync = (int) (ptrlong) cfg_get_parm (wholefile, "\ncheckpoint_sync_mode:", 0);
   c_use_o_direct = (int) (ptrlong) cfg_get_parm (wholefile, "\nuse_o_direct:", 0);
   c_use_aio = (int) (ptrlong) cfg_get_parm (wholefile, "\nuse_aio:", 0);
+  COND_PARAM_WITH_DEFAULT("\nstripe_unit:", c_stripe_unit, 256);
   null_unspecified_params = (long) (ptrlong) cfg_get_parm(wholefile, "\nnull_unspecified_params:", 0);
   COND_PARAM("\ncase_mode:", case_mode);
   COND_PARAM("\ndo_os_calls:", do_os_calls);
@@ -776,6 +779,8 @@ _dbs_read_cfg (dbe_storage_t * dbs, char *file)
     {
       dbs->dbs_log_name = log_file;
       dbs->dbs_cpt_file_name = box_string (setext (log_file, "cpt", EXT_SET));
+      if (CL_RUN_LOCAL != cl_run_local_only)
+	dbs->dbs_2pc_file_name = box_string (setext (log_file, "2pc", EXT_SET));
     }
 
   file_extend = (long) (ptrlong) cfg_get_parm (wholefile, "\nfile_extend:", 0);

@@ -551,7 +551,7 @@ create procedure SYS_CREATE_TABLE_AS (
     --dbg_obj_print (_stmt);
     if (exec_it <> 0)
       {
---        if (log_is_on)
+        --if (log_is_on and 1 = sys_stat ('cl_run_local_only'))
 --	  log_enable (0);
         {
 	    declare exit handler for sqlstate '*'
@@ -585,7 +585,7 @@ create procedure SYS_CREATE_TABLE_AS (
                    _tb_dotted,
 		   0,
 		   _parse_tree,
-		   0 -- INS_NORMAL
+		   0, 0, 0 -- INS_NORMAL, 0 key, 0 opts
 		);
                 aref_set_0 (_insert_stmt, 2);
                 aref_set_0 (_insert_stmt, 4);
@@ -593,9 +593,12 @@ create procedure SYS_CREATE_TABLE_AS (
 		--dbg_obj_print ('after insert');
 	      }
         }
---        if (log_is_on)
+        --if (log_is_on and 1 = sys_stat ('cl_run_local_only'))
 --          log_enable (1);
+	--if (1 = sys_stat ('cl_run_local_only'))
+	--  {
 --        log_text ('DB.DBA.SYS_CREATE_TABLE_AS (?, ?, ?)', tb_name, _parse_tree, with_data);
+	--  }
       }
     else
       return _stmt;

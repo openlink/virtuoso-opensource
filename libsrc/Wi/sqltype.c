@@ -1178,6 +1178,11 @@ qi_read_type_schema (query_instance_t * qi, char *read_udt, sql_class_t *udt, ca
 	  &err, 1, qi->qi_client, 0, 0);
     }
   err = qi_read_type_schema_1 (qi, read_udt, lt->lt_pending_schema, udt);
+  if (!qi->qi_trx->lt_branch_of && !qi->qi_client->cli_in_daq)
+    {
+      if (!qi->qi_client->cli_is_log)
+	cl_ddl (qi, qi->qi_trx, read_udt, CLO_DDL_TYPE, NULL);
+    }
 
   if (!udt && !err)
     {
@@ -3616,6 +3621,15 @@ box_read_long_ref (dk_session_t *session, dtp_t dtp)
   return (void *) ref;
 }
 
+caddr_t
+udt_mp_copy (mem_pool_t * mp, caddr_t box)
+{
+  caddr_t cp = xe_make_copy (box);
+  dk_set_push (&mp->mp_trash, (void*)cp);
+  return cp;
+}
+
+
 
 void
 udt_ses_init (void)
@@ -3624,6 +3638,7 @@ udt_ses_init (void)
   dk_mem_hooks (DV_OBJECT, (box_copy_f) udt_instance_copy,
       (box_destr_f) udt_instance_destroy, 0);
   PrpcSetWriter (DV_OBJECT, (ses_write_func) udt_serialize);
+  box_tmp_copier[DV_OBJECT] = udt_mp_copy;
   rt[DV_OBJECT] = udt_deserialize;
   PrpcSetWriter (DV_REFERENCE, (ses_write_func) ref_serialize);
   rt[DV_SHORT_REF] = box_read_short_ref;
@@ -5057,7 +5072,7 @@ udt_deserialize_from_blob (caddr_t bh, lock_trx_t *lt)
     }
   else if (DV_STRINGP (bh))
     {
-      return box_deserialize_string (bh, box_length (bh));
+      return box_deserialize_string (bh, box_length (bh), 0);
     }
   else
     {

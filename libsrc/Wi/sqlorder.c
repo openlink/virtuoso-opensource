@@ -57,6 +57,51 @@ ha_free (hash_area_t * ha)
   dk_free ((caddr_t)ha, sizeof (hash_area_t));
 }
 
+#define SSA_PUSH(s) if (s) dk_set_push (&save, (void*)s)
+
+
+dk_set_t 
+ha_save (hash_area_t * ha)
+{
+  dk_set_t save = NULL;
+  SSA_PUSH (ha->ha_tree);
+  SSA_PUSH (ha->ha_insert_itc);
+  SSA_PUSH (ha->ha_ref_itc);
+  SSA_PUSH (ha->ha_bp_ref_itc);
+
+  return save;
+}
+
+
+void
+setp_set_ssa (sql_comp_t * sc, setp_node_t * setp, dk_set_t * list_ret)
+{
+  /* put all the ssls that keep state for the setp into the ssa_save */
+  dk_set_t save = NULL;
+  hash_area_t * ha = setp->setp_ha;
+  SSA_PUSH (ha->ha_tree);
+  SSA_PUSH (ha->ha_insert_itc);
+  SSA_PUSH (ha->ha_ref_itc);
+  SSA_PUSH (ha->ha_bp_ref_itc);
+  SSA_PUSH (setp->setp_sorted);
+  SSA_PUSH (setp->setp_row_ctr);
+  DO_SET (gb_op_t *, go, &setp->setp_gb_ops)
+    {
+      if (go->go_distinct_ha)
+	{
+	  hash_area_t * ha = go->go_distinct_ha;
+	  SSA_PUSH (ha->ha_tree);
+	  SSA_PUSH (ha->ha_insert_itc);
+	  SSA_PUSH (ha->ha_ref_itc);
+	  SSA_PUSH (ha->ha_bp_ref_itc);
+	}
+    }
+  END_DO_SET();
+  if (list_ret)
+    *list_ret = dk_set_copy (save);
+  setp->setp_ssa.ssa_save = (state_slot_t **) list_to_array (save);
+}
+
 
 void
 setp_node_free (setp_node_t * setp)
@@ -65,6 +110,8 @@ setp_node_free (setp_node_t * setp)
   dk_set_free (setp->setp_dependent);
   DO_SET (gb_op_t *, go, &setp->setp_gb_ops)
     {
+      if (go->go_distinct_ha)
+	ha_free (go->go_distinct_ha);
       dk_free ((caddr_t)go, sizeof (gb_op_t));
     }
   END_DO_SET();
@@ -79,7 +126,10 @@ setp_node_free (setp_node_t * setp)
       ha_free (setp->setp_reserve_ha);
     }
   key_free_trail_specs (setp->setp_insert_spec.ksp_spec_array);
+  dk_set_free (setp->setp_const_gb_values);
+  dk_set_free (setp->setp_const_gb_args);
   dk_free_box ((box_t) setp->setp_last_vals);
+  dk_free_box ((box_t)setp->setp_ssa.ssa_save);
 }
 
 
@@ -87,6 +137,7 @@ setp_node_t *
 sqlc_add_distinct_node (sql_comp_t * sc, data_source_t ** head,
     state_slot_t ** ssl_out, long nrows)
 {
+  state_slot_t * set_no;
   int inx;
   SQL_NODE_INIT (setp_node_t, setp, setp_node_input, setp_node_free);
   DO_BOX (state_slot_t *, ssl, inx, ssl_out)

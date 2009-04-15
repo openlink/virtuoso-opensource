@@ -45,7 +45,7 @@ int space_rehash_threshold = 2;
 
 
 void
-it_cache_check (index_tree_t * it)
+it_cache_check (index_tree_t * it, int mode)
 {
   long remap;
   int error = 0, gpf_on_error = 0;
@@ -69,9 +69,13 @@ it_cache_check (index_tree_t * it)
 	      /* This can be legitimate if a thread is in freeze mode and one itc is on a table scan and another is in order by or hash fill, so that the freeze is in the temp space operation . */
 	      /* error = 1; */
 	    }
+	  if (DPF_INDEX == SHORT_REF (buf->bd_buffer + DP_FLAGS)
+	      && IT_CHECK_FAST != mode)
+	    pg_check_map_1 (buf);
 	    if (buf->bd_is_dirty && !gethash (DP_ADDR2VOID (buf->bd_page), &itm->itm_remap))
 	      {
-		log_error ("Buffer %p dirty but no remap", buf);
+		log_error ("Buffer %p dirty but no remap, tree %s", buf, it->it_key ? it->it_key->key_name : "no key");
+		dbg_page_map_log (buf, "missed_flush.txt", "Dirty page with no remap");
 	      }
 	  if (((dp_addr_t) dp) != buf->bd_page)
 	    {
@@ -79,11 +83,21 @@ it_cache_check (index_tree_t * it)
 		      (void *)buf, dp, (unsigned long) buf->bd_page);
 	      error = 1;
 	    }
-	  if (dbs_is_free_page (it->it_storage, (dp_addr_t) dp))
+	  if (IT_CHECK_POST == mode && dbs_is_free_page (it->it_storage, (dp_addr_t) dp))
 	    {
 	      log_error ("***  buffer with free dp L=%ld buf=%p \n",
 		      dp, (void *)buf);
 	      error = 1;
+	    }
+	  if (IT_CHECK_POST != mode && dbs_is_free_page (it->it_storage, (dp_addr_t) dp))
+	    {
+	      short fl = SHORT_REF (buf->bd_buffer + DP_FLAGS);
+	      if (fl != DPF_BLOB && fl != DPF_BLOB_DIR)
+		{
+		  log_error ("***  In cpt, suspect to have buffer with free dp L=%ld buf=%p  while it is neither blob or blob dir, which may be free at this point if uncommitted.\n",
+			     dp, (void *)buf);
+		  error = 1;
+		}
 	    }
 	  if (((dp_addr_t) dp) != buf->bd_physical_page
 	      && dbs_is_free_page (it->it_storage, buf->bd_physical_page))
@@ -103,32 +117,25 @@ it_cache_check (index_tree_t * it)
 	      error = 1;
 	    }
 	  l=SHORT_REF (buf->bd_buffer + DP_FLAGS);
-	  if (dp != buf->bd_physical_page && DPF_BLOB == l && DPF_BLOB_DIR == l )
+	  if (dp != buf->bd_physical_page && (DPF_BLOB == l || DPF_BLOB_DIR == l ))
 	    {
-	      log_error ("*** Blob bot to be remapped L=%ld P=%ld \n",
+	      log_error ("*** Blob not to be remapped L=%ld P=%ld \n",
 		      dp, (unsigned long) buf->bd_physical_page);
 	    }
-	  if (error && gpf_on_error)
+	  if (error && IT_CHECK_FAST == mode)
+	    log_error ("it_cache_check got errors but will not stop in mid cpt");
+	  else if (error && gpf_on_error)
 	    GPF_T1 ("Buffer cache consistency check failed.");
 	}
       if (error)
 	{
 	  gpf_on_error = 1;
 	  error = 0;
+	  mutex_leave (&itm->itm_mtx);
 	  continue; /* loop again, this time gpf on first error. */
 	}
 	mutex_leave (&itm->itm_mtx);
     }
-}
-
-void
-it_cache_check_all (index_tree_t * it)
-{
-  DO_SET (index_tree_t *, it, &wi_inst.wi_master->dbs_trees)
-    {
-      it_cache_check (it);
-    }
-  END_DO_SET();
 }
 
 
@@ -144,8 +151,8 @@ itc_delta_this_buffer (it_cursor_t * itc, buffer_desc_t * buf, int stay_in_map)
 #ifdef _NOT
   FAILCK (itc);
 #endif
-  ASSERT_IN_MAP (itc->itc_tree, itc->itc_page);
-  itm = IT_DP_MAP (itc->itc_tree, itc->itc_page);
+  ASSERT_IN_MAP (itc->itc_tree, buf->bd_page);
+  itm = IT_DP_MAP (itc->itc_tree, buf->bd_page);
 #ifdef MTX_DEBUG
   if (buf->bd_is_dirty && !gethash (DP_ADDR2VOID (buf->bd_page), &itm->itm_remap))
     GPF_T1 ("dirty but not remapped in checking delta");
@@ -158,8 +165,8 @@ itc_delta_this_buffer (it_cursor_t * itc, buffer_desc_t * buf, int stay_in_map)
   if (it_can_reuse_logical (itc->itc_tree, buf->bd_page))
     remap_to = buf->bd_page;
   else
-    remap_to = dbs_get_free_disk_page (itc->itc_tree->it_storage,
-				       buf->bd_physical_page);
+    remap_to = em_new_dp (itc->itc_tree->it_extent_map, EXT_REMAP, 0, &itc->itc_n_pages_on_hold);
+
   if (!remap_to)
     {
       if (LT_CLOSING == itc->itc_ltrx->lt_status)
@@ -188,37 +195,39 @@ itc_delta_this_buffer (it_cursor_t * itc, buffer_desc_t * buf, int stay_in_map)
 
 buffer_desc_t *
 it_new_page (index_tree_t * it, dp_addr_t addr, int type, int in_pmap,
-	      int has_hold)
+	     it_cursor_t * has_hold)
 {
   it_map_t * itm;
-  dbe_storage_t * dbs = it->it_storage;
+  extent_map_t * em = it->it_extent_map;
+  int ext_type = (!it->it_blobs_with_index && (DPF_BLOB  == type || DPF_BLOB_DIR == type)) ? EXT_BLOB : EXT_INDEX;
   buffer_desc_t *buf;
   dp_addr_t physical_dp;
 
-  IN_DBS (dbs);
   if (in_pmap)
     GPF_T1 ("do not call isp_new_page in page map");
-  if (dbs->dbs_n_free_pages - dbs->dbs_n_pages_on_hold < 10
-      && !has_hold)
-    {
-      dbs_extend_file (dbs);
-      wi_storage_offsets ();
-      if (dbs->dbs_n_free_pages - dbs->dbs_n_pages_on_hold < 10
-	  && !has_hold)
-	{
-	  LEAVE_DBS (dbs);
-	  return NULL;
-	}
-    }
 
-  physical_dp = dbs_get_free_disk_page (dbs, addr);
+  physical_dp = em_new_dp (em, ext_type, addr, NULL);
   if (!physical_dp)
     {
-
       log_error ("Out of disk space for database");
+      if (DPF_INDEX == type)
+	{
+	  /* a split must never fail to get a page.  Use the remap hold as a backup */
+	  physical_dp = em_new_dp (it->it_extent_map, EXT_REMAP, 0, &has_hold->itc_n_pages_on_hold);
+	  if (!physical_dp)
+	    {
+	      log_error ("After running out of disk, cannot get a page from remap reserve to complete operation.  Exiting.");
+	      call_exit (-1);
+	    }
+	}
+      else
       return NULL;
     }
 
+  if (DPF_INDEX == type)
+    it->it_n_index_est++;
+  else
+    it->it_n_blob_est++;
   buf = bp_get_buffer (NULL, BP_BUF_REQUIRED);
   if (buf->bd_readers != 1)
     GPF_T1 ("expecting buf to be wired down when allocated");
@@ -237,6 +246,12 @@ it_new_page (index_tree_t * it, dp_addr_t addr, int type, int in_pmap,
   buf->bd_readers = 0;
   BD_SET_IS_WRITE (buf, 1);
   mutex_leave (&itm->itm_mtx);
+  if (em != em->em_dbs->dbs_extent_map && EXT_INDEX == ext_type)
+    {
+      mutex_enter (em->em_mtx);
+      remhash (DP_ADDR2VOID(physical_dp), em->em_uninitialized);
+      mutex_leave (em->em_mtx);
+    }
 #ifdef PAGE_TRACE
 
   memset (buf->bd_buffer, 0, PAGE_SZ); /* all for debug view */
@@ -258,7 +273,7 @@ it_new_page (index_tree_t * it, dp_addr_t addr, int type, int in_pmap,
 	    }
 	}
       pg_map_clear (buf);
-      SHORT_SET (buf->bd_buffer + DP_KEY_ID, it->it_key ? it->it_key->key_id : KI_TEMP);
+      LONG_SET (buf->bd_buffer + DP_KEY_ID, it->it_key ? it->it_key->key_id : KI_TEMP);
     }
   else if (buf->bd_content_map)
     {
@@ -287,10 +302,15 @@ it_free_page (index_tree_t * it, buffer_desc_t * buf)
   remap = (dp_addr_t) (ptrlong) gethash (DP_ADDR2VOID (buf->bd_page), &itm->itm_remap);
   if (!buf->bd_is_write)
     GPF_T1 ("isp_free_page without write access to buffer.");
+  dp_may_compact (buf->bd_storage, buf->bd_page); /* no need to keep deld buffers in checked for compact list */
   l=SHORT_REF (buf->bd_buffer + DP_FLAGS);
   if (!(l == DPF_BLOB || l == DPF_BLOB_DIR)
       && !remap)
     GPF_T1 ("Freeing a page that is not remapped");
+  if (DPF_INDEX == l)
+    it->it_n_index_est--;
+  else
+    it->it_n_blob_est--;
   if (buf->bd_page != buf->bd_physical_page && (DPF_BLOB_DIR == l || DPF_BLOB == l))
     GPF_T1 ("blob is not supposed to be remapped");
   DBG_PT_PRINTF (("    Delete %ld remap %ld FL=%d buf=%p\n", buf->bd_page, buf->bd_physical_page, l, buf));
@@ -319,12 +339,16 @@ it_free_page (index_tree_t * it, buffer_desc_t * buf)
     remhash (DP_ADDR2VOID (buf->bd_page), &itm->itm_remap);
   else
     sethash (DP_ADDR2VOID (buf->bd_page), &itm->itm_remap, (void *) (ptrlong) DP_DELETED);
-  remhash (DP_ADDR2VOID (buf->bd_page), &itm->itm_dp_to_buf);
+  if (!remhash (DP_ADDR2VOID (buf->bd_page), &itm->itm_dp_to_buf))
+    GPF_T1 ("it_free_page does not hit the buffer in tree cache");
 
-  it_free_remap (it, buf->bd_page, buf->bd_physical_page);
+  it_free_remap (it, buf->bd_page, buf->bd_physical_page, l);
   page_leave_as_deleted (buf);
 }
 
+#ifdef DEBUG
+void bing () {}
+#endif
 
 void
 it_free_blob_dp_no_read (index_tree_t * it, dp_addr_t dp)
@@ -371,13 +395,13 @@ it_free_blob_dp_no_read (index_tree_t * it, dp_addr_t dp)
     dp_addr_t cpt_remap = (dp_addr_t) (ptrlong) DP_CHECKPOINT_REMAP (it->it_storage, dp);
     if (cpt_remap)
       GPF_T1 ("Blob not expected to have cpt remap in delete no read");
+    it->it_n_blob_est--;
     if (remap)
       {
 	/* if this was CREATED AND DELETED without intervening checkpoint the delete
 	 * does not carry outside commit space. */
 	remhash (DP_ADDR2VOID (dp), &itm->itm_remap);
-	dbs_free_disk_page (it->it_storage, dp);
-	LEAVE_DBS (it->it_storage);
+	em_free_dp (it->it_extent_map, dp, EXT_BLOB);
       }
     else
       {

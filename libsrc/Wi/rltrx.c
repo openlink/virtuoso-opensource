@@ -103,6 +103,7 @@ pl_rlock_table (page_lock_t * pl, row_lock_t ** locks, int *fill_ret)
     }
   DO_RLOCK (rl, pl)
   {
+    if (ITC_AT_END == rl->rl_pos) log_info ("suspect to have deld rls on pl outside of transact");
     locks[fill++] = rl;
   }
   END_DO_RLOCK;
@@ -151,11 +152,14 @@ pg_move_lock (it_cursor_t * itc, row_lock_t ** locks, int n_locks, int from, int
 	  locks[inx] = NULL;
 	  /* rdbg_printf (("	rl %d to %d %s\n", rl->rl_pos, to, is_to_extend ? "ext" : "")); */
 	  rl->rl_pos = to;
-	  rl->rl_next = PL_RLS (pl_to, to);
-	  PL_RLS (pl_to, to) = rl;
+	  PL_RL_ADD (pl_to, rl, to);
 	  pl_to->pl_n_row_locks++;
 	  if (is_to_extend)
+	    {
+	      if (ITC_AT_END == to)
+		log_info ("Mildly suspect to shift a deleted rl to the rihgt side of a split");
 	    rl_add_pl_to_owners (itc, rl, pl_to);
+	    }
 	  return;
 	}
     }
@@ -165,7 +169,7 @@ pg_move_lock (it_cursor_t * itc, row_lock_t ** locks, int n_locks, int from, int
 void
 itc_split_lock (it_cursor_t * itc, buffer_desc_t * left, buffer_desc_t * extend)
 {
-  page_lock_t *left_pl = itc->itc_pl;
+  page_lock_t *left_pl = left->bd_pl;
   page_lock_t *extend_pl;
   if (!left_pl)
     return;
@@ -177,10 +181,10 @@ itc_split_lock (it_cursor_t * itc, buffer_desc_t * left, buffer_desc_t * extend)
   ITC_IN_TRANSIT (itc, left->bd_page, extend->bd_page);
   sethash (DP_ADDR2VOID (extend->bd_page), &IT_DP_MAP (itc->itc_tree, extend->bd_page)->itm_locks, (void *) extend_pl);
   extend->bd_pl = extend_pl;
-  mtx_assert (itc->itc_pl == IT_DP_PL (itc->itc_tree, left->bd_page));
+  mtx_assert (left_pl == IT_DP_PL (itc->itc_tree, left->bd_page));
   if (PL_IS_FINALIZE (left_pl))
     PL_SET_FLAG (extend_pl, PL_FINALIZE);
-#if 1
+
   if (PL_IS_PAGE (left_pl))
     {
       extend_pl->pl_type = left_pl->pl_type;
@@ -206,17 +210,6 @@ itc_split_lock (it_cursor_t * itc, buffer_desc_t * left, buffer_desc_t * extend)
     }
   else
     lt_add_pl (itc->itc_ltrx, extend_pl, 1);
-#else
-  if (PL_IS_PAGE (left_pl))
-    {
-      if (PL_TYPE (left_pl) != PL_EXCLUSIVE)
-	GPF_T1 ("non-exclusive page lock on split");
-      extend_pl->pl_owner = left_pl->pl_owner;
-      PL_SET_FLAG (extend_pl, PL_PAGE_LOCK);
-      TC (tc_pl_split);
-    }
-  lt_add_pl (itc->itc_ltrx, extend_pl, 1);
-#endif
 
   /* must add after PL_IS_PAGE is set. If row level, extend_pl
    * may end up empty but that's OK. The last referencing txn will free it */
@@ -231,7 +224,10 @@ itc_split_lock_waits (it_cursor_t * itc, buffer_desc_t * left, buffer_desc_t * e
   ITC_IN_TRANSIT  (itc, left->bd_page, extend->bd_page);
   left_pl = IT_DP_PL (itc->itc_tree, left->bd_page);
   if (!left_pl)
+    {
+      ITC_LEAVE_MAPS (itc);
     return;
+    }
   extend_pl = IT_DP_PL (itc->itc_tree, extend->bd_page);
   {
     it_cursor_t **last = &extend_pl->pl_waiting;
@@ -258,6 +254,7 @@ itc_split_lock_waits (it_cursor_t * itc, buffer_desc_t * left, buffer_desc_t * e
 	waiting = next;
       }
   }
+  ITC_LEAVE_MAPS (itc);
 }
 
 
@@ -303,21 +300,19 @@ upd_refit_rlock (it_cursor_t * itc, int pos)
 
 
 int
-itc_check_ins_deleted (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t dv)
+itc_check_ins_deleted (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd)
 {
   db_buf_t page = buf->bd_buffer;
-  int pos = itc->itc_position;
-  long l;
-  l = row_length (page + pos, itc->itc_insert_key);
+  int pos = buf->bd_content_map->pm_entries[itc->itc_map_pos];
   if (IE_ISSET (page + pos, IEF_DELETE))
     {
-      itc->itc_row_key = sch_id_to_key (wi_inst.wi_schema, itc->itc_row_key_id);
+      ITC_REAL_ROW_KEY (itc);
       if (!itc->itc_pl)
 	{
 	  log_error ("insert on a deleted row not of this transaction.  Can be the deleted flag is left on from before, from a finished transaction or cpt kill recovery");
 	  itc_set_lock_on_row (itc, &buf);
 	}
-      upd_refit_row (itc, &buf, dv);
+      upd_refit_row (itc, &buf, rd, RD_UPDATE);
       return 1;
     }
   return 0;
@@ -381,8 +376,7 @@ itc_insert_rl (it_cursor_t * itc, buffer_desc_t * buf, int pos, row_lock_t * rl,
 	}
       rl = rl_allocate ();
     }
-  rl->rl_next = PL_RLS (pl, pos);
-  PL_RLS (pl, pos) = rl;
+  PL_RL_ADD (pl, rl, pos);
   /* if icts wait for the rl of a row that has grown and made a split, make sure the waiting lyt's get to be owners of the lock also if the itc ended up on the extend side of the split */
   waiting = rl->pl_waiting;
   while (waiting)
@@ -421,24 +415,24 @@ itc_insert_lock (it_cursor_t * itc, buffer_desc_t * buf, int *res_ret)
     }
   if (DVC_LESS == res)
     {
-      row_lock_t *rl = pl_row_lock_at (itc->itc_pl, itc->itc_position);
+      row_lock_t *rl = pl_row_lock_at (itc->itc_pl, itc->itc_map_pos);
       if (!rl)
 	return NO_WAIT;
       if (RL_IS_FOLLOW (rl) && rl->pl_owner != itc->itc_ltrx)
 	{
 	  TC (tc_insert_follow_wait);
-	  lock_wait ((gen_lock_t *) rl, itc, buf, ITC_NO_LOCK);
+	  lock_wait ((gen_lock_t *) rl, itc, buf, cl_run_local_only ? ITC_NO_LOCK : ITC_GET_LOCK);
 	  return WAIT_OVER;
 	}
       return NO_WAIT;
     }
   if (DVC_MATCH == res)
     {
-      row_lock_t *rl = pl_row_lock_at (pl, itc->itc_position);
+      row_lock_t *rl = pl_row_lock_at (pl, itc->itc_map_pos);
       if (rl)
 	if (!lock_add_owner ((gen_lock_t *) rl, itc, 0))
 	  {
-	    lock_wait ((gen_lock_t *) rl, itc, buf, ITC_NO_LOCK);
+	    lock_wait ((gen_lock_t *) rl, itc, buf, cl_run_local_only ? ITC_NO_LOCK : ITC_GET_LOCK);
 	    return WAIT_OVER;
 	  }
       return NO_WAIT;
@@ -483,7 +477,8 @@ itc_landed_lock_check (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 
   if (ISO_SERIALIZABLE == itc->itc_isolation)
     {
-      if (leaf_pointer ((*buf_ret)->bd_buffer, itc->itc_position))
+      db_buf_t row = (*buf_ret)->bd_buffer + (*buf_ret)->bd_content_map->pm_entries[itc->itc_map_pos];
+      if (leaf_pointer (row, itc->itc_insert_key))
 	return NO_WAIT;  /* only a leaf can be locked */
       /* the point of setting the itc_is_on_row flag is to acquire the lock in case of wait.  A RR cursor will not acquire the lock before it has checked all the row criteria but a serializable will */
       itc->itc_is_on_row = 1;
@@ -505,7 +500,7 @@ itc_landed_lock_check (it_cursor_t * itc, buffer_desc_t ** buf_ret)
     }
   else
     {
-      row_lock_t *rl = pl_row_lock_at (pl, itc->itc_position);
+      row_lock_t *rl = pl_row_lock_at (pl, itc->itc_map_pos);
       if (!rl)
 	return NO_WAIT;
       if (!lock_is_acquirable ((gen_lock_t *) rl, itc))
@@ -521,7 +516,7 @@ itc_landed_lock_check (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 
 #ifdef PAGE_TRACE
 #define LT_CHECK_NEW_PL(lt, pl) \
-  if (dk_set_member (lt->lt_locks, (void*) pl)) GPF_T1 ("duplicate pl in lt")
+  if (gethash (DP_ADDR2VOID(pl->pl_page), &lt->lt_lock)) GPF_T1 ("duplicate pl in lt")
 #else
 #define LT_CHECK_NEW_PL(lt, pl)
 #endif
@@ -617,10 +612,9 @@ itc_make_rl (it_cursor_t * itc)
 
   if (itc->itc_ltrx->lt_status != LT_PENDING)
     rdbg_printf (("*** making posthumous lock T=%ld L=%d \n", TRX_NO (itc->itc_ltrx), itc->itc_page));
-  assert (itc->itc_position);
-  rl->rl_pos = itc->itc_position;
-  rl->rl_next = PL_RLS (pl, itc->itc_position);
-  PL_RLS (pl, itc->itc_position) = rl;
+  assert (ITC_AT_END != itc->itc_map_pos);
+  rl->rl_pos = itc->itc_map_pos;
+  PL_RL_ADD (pl, rl, itc->itc_map_pos);
   pl->pl_n_row_locks++;
   /* rdbg_printf (("	rl set at %d on %ld %d total\n", rl->rl_pos, pl->pl_page, pl->pl_n_row_locks)); */
   rl->pl_type = itc->itc_lock_mode;
@@ -632,11 +626,18 @@ itc_make_rl (it_cursor_t * itc)
 }
 
 
+#define IE_IS_LEAF(row, kv) \
+  (KV_LEAF_PTR == kv || (KV_LEFT_DUMMY == kv && LONG_REF (row + LD_LEAF)))
+
+
+
 int
 itc_set_lock_on_row (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 {
   row_lock_t *rl;
   int rc;
+  db_buf_t row;
+  key_ver_t kv;
   page_lock_t *pl = itc->itc_pl;
 #ifdef MTX_DEBUG
   if ((*buf_ret)->bd_writer != THREAD_CURRENT_THREAD)
@@ -644,14 +645,13 @@ itc_set_lock_on_row (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 #endif
   if (!(*buf_ret)->bd_is_write)
     GPF_T1 ("itc_set_lock_on_row needs excl. page access");
-  if (!ITC_IS_LTRX (itc)
+  if (!itc->itc_ltrx 
       || (itc->itc_lock_mode == PL_SHARED && itc->itc_isolation < ISO_REPEATABLE))
     return NO_WAIT;
-  if (!SHORT_REF ((*buf_ret)->bd_buffer + itc->itc_position + IE_KEY_ID))
-    {
+  row = BUF_ROW ((*buf_ret), itc->itc_map_pos);
+  kv = IE_KEY_VERSION (row);
+  if (IE_IS_LEAF (row, kv))
       return NO_WAIT;
-      /*GPF_T1 ("cannot set lock on leaf ptr");*/
-    }
   if (pl)
     {
       if (pl->pl_page != itc->itc_page)
@@ -664,7 +664,7 @@ itc_set_lock_on_row (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 	  *buf_ret = page_reenter_excl (itc);
 	  return rc;
 	}
-      rl = pl_row_lock_at (pl, itc->itc_position);
+      rl = pl_row_lock_at (pl, itc->itc_map_pos);
       if (rl)
 	{
 	  rc = lock_enter ((gen_lock_t *) rl, itc, *buf_ret);
@@ -723,7 +723,12 @@ long tc_serializable_land_reset;
 int
 itc_serializable_land (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 {
-  if (NO_WAIT == itc_set_lock_on_row (itc, buf_ret))
+  int rc;
+  if (!cl_run_local_only)
+    itc->itc_is_on_row = 1; /* cluster case will acquire the lock if there is a lock.  Else reshuffle of queue and fake deadlocks */
+  rc = itc_set_lock_on_row (itc, buf_ret);
+  itc->itc_is_on_row = 0;
+  if (NO_WAIT == rc)
     {
       if (itc->itc_desc_order)
 	{
@@ -735,7 +740,7 @@ itc_serializable_land (it_cursor_t * itc, buffer_desc_t ** buf_ret)
     }
   TC (tc_serializable_land_reset);
   ITC_IN_KNOWN_MAP (itc, (*buf_ret)->bd_page);
-  rdbg_printf (("  serializable landing reset T=%d L=%d pos=%d \n", TRX_NO (itc->itc_ltrx), itc->itc_page, itc->itc_position));
+  rdbg_printf (("  serializable landing reset T=%d L=%d pos=%d \n", TRX_NO (itc->itc_ltrx), itc->itc_page, itc->itc_map_pos));
   page_leave_inner (*buf_ret);
   ITC_LEAVE_MAP_NC (itc);
   *buf_ret = itc_reset (itc);
@@ -744,17 +749,17 @@ itc_serializable_land (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 
 
 int
-itc_read_committed_check (it_cursor_t * itc, int pos, buffer_desc_t * buf)
+itc_read_committed_check (it_cursor_t * itc, buffer_desc_t * buf)
 {
   rb_entry_t *rbe;
-  db_buf_t page;
+  db_buf_t page, row;
   page_lock_t * pl = buf->bd_pl;
   gen_lock_t * gl;
   if (PL_IS_PAGE (pl))
     gl = (gen_lock_t *) pl;
   else 
     {
-      gl = (gen_lock_t *) pl_row_lock_at (pl, pos);
+      gl = (gen_lock_t *) pl_row_lock_at (pl, itc->itc_map_pos);
       if (!gl)
 	return DVC_MATCH;
     }
@@ -763,19 +768,20 @@ itc_read_committed_check (it_cursor_t * itc, int pos, buffer_desc_t * buf)
     return DVC_MATCH;
   /* the lock concerns this row, either ecl row lock hwre or excl page lock on page */
   page = buf->bd_buffer;
+  row = page + buf->bd_content_map->pm_entries[itc->itc_map_pos];
   if (itc->itc_ltrx == gl->pl_owner)
-    return (IE_ISSET (page + pos, IEF_DELETE)) ? DVC_LESS : DVC_MATCH;
+    return (IE_ISSET (row, IEF_DELETE)) ? DVC_LESS : DVC_MATCH;
   /* this is somebody else's lock.  Get the rb record. 
    * Note that if the owner is committing at this time, this cr may have seen a after image  row before but here it will see a pre image . 
-   * To prevent this, use repeatable.  Read committed only means that no uncommitted states are shown, not that you do not get half transactions.  
-   * If showing half transactions in read committtedf is good enough for Oracle it is good enough for us. */
+   * To prevent this, use repeatable.  Read committed only means that no uncommitted states are shown, not that you don't get half transactions.  
+   * If showing half transactions in read committed is good enough for Oracle it is good enough for us. */
   
-  rbe = lt_rb_entry (gl->pl_owner, page + pos, NULL, NULL, 1);
+  rbe = lt_rb_entry (gl->pl_owner, buf, row, NULL, NULL, 1);
   if (!rbe)
     return DVC_MATCH; /* row not modified, just locked */
   if (RB_INSERT == rbe->rbe_op)
     return DVC_LESS; /* uncommitted insert */
-  itc->itc_row_data = rbe->rbe_string + rbe->rbe_row + IE_FIRST_KEY; 
+  itc->itc_row_data = rbe->rbe_string + rbe->rbe_row; 
   /* rbe and related will stay allocated as long as the page is taken.  Will only disappear after the owner has finalized this page. */
   return DVC_MATCH;
 }
@@ -785,7 +791,7 @@ void
 itc_lock_failure (it_cursor_t * itc, char * msg)
 {
   rdbg_printf (("*** No lock itc %p L=%ld pos=%d K=%s ISO=%d LM=%d %s\n",
-	  itc, (unsigned long) itc->itc_page, itc->itc_position, itc->itc_insert_key ? itc->itc_insert_key->key_name : "no key",
+	  itc, (unsigned long) itc->itc_page, itc->itc_map_pos, itc->itc_insert_key ? itc->itc_insert_key->key_name : "no key",
 	  (int) itc->itc_isolation, (int) itc->itc_lock_mode, msg));
 
 #if 0
@@ -850,7 +856,7 @@ itc_assert_lock_1 (it_cursor_t * itc)
     }
   else
     {
-      row_lock_t * rl = pl_row_lock_at (itc->itc_pl, itc->itc_position);
+      row_lock_t * rl = pl_row_lock_at (itc->itc_pl, itc->itc_map_pos);
       if (!lock_is_owner ((gen_lock_t *) rl, itc->itc_ltrx, itc))
 	{
 	  itc_lock_failure (itc, "itc is supposed to have row lock");
@@ -893,45 +899,24 @@ pl_set_finalize (page_lock_t * pl, buffer_desc_t * buf)
 /* LEAF_CHG_MASK is on in the rc if the first row was deleted.  Thhis means that the leaf ptr should begin with the key of the first row. 
  * This is nice to have in order to avoid inserts to non leaf and in order not to miss follow locks on previous pages.  The point is that the seek must land beside the next smaller and if leaf ptrs are out of whack this is not always so */
 
-int
-itc_finalize_row (it_cursor_t * itc, buffer_desc_t ** buf_ret, int pos)
+void
+itc_finalize_row (it_cursor_t * itc, buffer_desc_t ** buf_ret, int pos, dk_set_t * rd_list)
 {
   buffer_desc_t *buf = *buf_ret;
-  buffer_desc_t *buf_from = buf;
   db_buf_t page = buf->bd_buffer;
-  long l;
-  if (0 == pos)
+  db_buf_t row = page + buf->bd_content_map->pm_entries[pos];
+  if (ITC_AT_END == pos)
     {
       TC (tc_deld_row_rl_rb);
-      return PAGE_NOT_CHANGED;
+      return;
     }
-  itc->itc_position = pos;
-
-  if (IE_ISSET (page + pos, IEF_DELETE))
+  if (IE_ISSET (row, IEF_DELETE))
     {
-      int is_first = itc->itc_position == SHORT_REF (page + DP_FIRST);
-      itc->itc_row_key = itc->itc_insert_key = (*buf_ret)->bd_tree->it_key;
-      itc_commit_delete (itc, buf_ret);
-      if (*buf_ret != buf_from)
-	return PAGE_DELETED;
-      return PAGE_UPDATED | (is_first ? LEAF_CHG_MASK : 0);
+      NEW_VARZ (row_delta_t, rd);
+      rd->rd_map_pos = pos;
+      rd->rd_op = RD_DELETE;
+      dk_set_push (rd_list, (void*) rd);
     }
-  else if (IE_ISSET (page + pos, IEF_UPDATE))
-    {
-      int row_end;
-      int new_len;
-      dbe_key_t * key = sch_id_to_key (wi_inst.wi_schema, SHORT_REF (page + pos + IE_KEY_ID));
-      if (key->key_is_bitmap)
-	itc_invalidate_bm_crs (itc, *buf_ret, 0, NULL); /* can be registered on rc pre-images. */
-      l = row_reserved_length (page + pos, key);
-      new_len = row_length (page + pos, key);
-      row_end = pos + l;
-
-      IE_SET_FLAGS (page + pos, 0);
-      buf->bd_content_map->pm_bytes_free += (short) (ROW_ALIGN (l) - ROW_ALIGN (new_len));
-      return PAGE_UPDATED;
-    }
-  return PAGE_NOT_CHANGED;
 }
 
 
@@ -988,11 +973,18 @@ pl_finalize_absent (page_lock_t * pl, it_cursor_t * itc)
     }
 }
 
+int32
+rd_pos_key (row_delta_t * rd)
+{
+  return rd->rd_map_pos;
+}
+
 
 void
 pl_finalize_page (page_lock_t * pl, it_cursor_t * itc)
 {
-  int change = PAGE_NOT_CHANGED, rc, change_leaf_ptr = 0;
+  dk_set_t rd_list = NULL;
+  row_delta_t ** rds;
   lock_trx_t *lt = itc->itc_ltrx;
   buffer_desc_t *buf = NULL;
   if (DP_DELETED == pl->pl_page)
@@ -1004,7 +996,7 @@ pl_finalize_page (page_lock_t * pl, it_cursor_t * itc)
 
   if (!PL_IS_FINALIZE (pl))
     {
-      /* if it is absent and needs no finalize, do not read it if not needed. * but make a decoy for it, as if it was being read.  And if somebody comes in on the decoy, then must actually read the page, so that this looks like a 2nd in read for the thread that waits on the decoy.  If none waits, do not read */
+      /* if it is absent and needs no finalize, do not read it if not needed. * but make a decoy for it, as if it was being read.  And if somebody comes in on the decoy, then must actually read the page, so that this looks like a 2nd in read for the thread that waits on the decoy.  If none waits, don't read */
       it_map_t * itm;
       ITC_IN_KNOWN_MAP (itc, pl->pl_page);
       itm = IT_DP_MAP (pl->pl_it, pl->pl_page);
@@ -1040,18 +1032,11 @@ pl_finalize_page (page_lock_t * pl, it_cursor_t * itc)
   itc->itc_page = pl->pl_page;
   if (PL_IS_PAGE (pl))
     {
-      int pos = SHORT_REF (buf->bd_buffer + DP_FIRST);
-      while (pos)
+      DO_ROWS (buf, map_pos, row, NULL)
 	{
-	  int next_pos = IE_NEXT (buf->bd_buffer + pos);
-	  rc = itc_finalize_row (itc, &buf, pos);
-	  change_leaf_ptr |= rc & LEAF_CHG_MASK;
-	  rc = rc & ~LEAF_CHG_MASK; 
-	  change = MAX (change, rc);
-	  if (PAGE_DELETED == change)
-	    break;
-	  pos = next_pos;
+	  itc_finalize_row (itc, &buf, map_pos, &rd_list);
 	}
+      END_DO_ROWS;
     }
   else
     {
@@ -1061,101 +1046,70 @@ pl_finalize_page (page_lock_t * pl, it_cursor_t * itc)
       {
 	if (rl->pl_owner == lt)
 	  {
-	    rc = itc_finalize_row (itc, &buf, rl->rl_pos);
-	    change_leaf_ptr |= rc & LEAF_CHG_MASK;
-	    rc = rc & ~LEAF_CHG_MASK; 
-	    change = MAX (change, rc);
-	    if (PAGE_DELETED == change)
-	      goto rls_done;	/* no break, DO_RLOCKS is 2 nested loops */
+	    itc_finalize_row (itc, &buf, rl->rl_pos, &rd_list);
 	  }
       }
       END_DO_RLOCK;
-    rls_done:;
     }
 
-  if (change != PAGE_NOT_CHANGED
-      && !PL_IS_FINALIZE (pl))
-    {
-      log_error ("Dirty row without transaction on %d.\n", buf->bd_page);
-      dbg_page_map (buf);
-      /* GPF_T1 ("Finalize flag not set on page lock"); */
-      /* autorepair if page was in checkpoint, make it a delta */
-    }
-  if (change != PAGE_DELETED && change_leaf_ptr)
+  if (!rd_list)
     {
       pl_release (pl, lt, buf);
-      itc->itc_row_key = itc->itc_insert_key = buf->bd_tree->it_key;
-      itc_fix_leaf_ptr (itc, buf);
+      page_leave_outside_map (buf);
       return;
     }
-  pl_release (pl, lt, buf);
-  ITC_IN_KNOWN_MAP (itc, itc->itc_page);
-  if (change == PAGE_UPDATED)
-    buf_set_dirty_inside (buf);
-  if (change != PAGE_NOT_CHANGED)
-    page_mark_change (buf, change == PAGE_UPDATED ? RWG_WAIT_KEY : RWG_WAIT_SPLIT);
-  page_leave_inner (buf);
-  ITC_LEAVE_MAP_NC (itc);
+  rds = (row_delta_t **) list_to_array (dk_set_nreverse (rd_list));
+  if (!PL_IS_PAGE (pl))
+    buf_sort ((buffer_desc_t **)rds, BOX_ELEMENTS (rds), (sort_key_func_t) rd_pos_key);
+  page_apply (itc, buf, BOX_ELEMENTS (rds), rds, PA_RELEASE_PL);
+  rd_list_free (rds);
 }
 
 
 int
 itc_rollback_row (it_cursor_t * itc, buffer_desc_t ** buf_ret, int pos, row_lock_t * was_rl,
-		  page_lock_t * pl)
+		  page_lock_t * pl, dk_set_t * rd_list)
 {
-  int bytes_left;
+  key_ver_t kv;
   buffer_desc_t *buf = *buf_ret;
   lock_trx_t *lt = itc->itc_ltrx;
-  buffer_desc_t *buf_from = buf;
-  db_buf_t page = buf->bd_buffer;
-  long l;
-  key_id_t key_id;
-  if (0 == pos)
+  db_buf_t row;
+  if (ITC_AT_END == pos)
     {
       TC (tc_deld_row_rl_rb);
       return PAGE_NOT_CHANGED;  /* rl on del'd row but shared by this txn */
     }
-  itc->itc_position = pos;
-
-  key_id = SHORT_REF (page + pos + IE_KEY_ID);
-  if (key_id)
+  row = BUF_ROW (buf, pos);
+  kv = IE_KEY_VERSION (row);
+  if (KV_LEAF_PTR != kv)
     {
-      rb_entry_t *rbe = lt_rb_entry (lt, page + pos, NULL, NULL, 1);
+      rb_entry_t *rbe = lt_rb_entry (lt, buf, row, NULL, NULL, 1);
       if (!rbe)
-	{
 	  return PAGE_NOT_CHANGED;
-	}
+      if (PL_IS_PAGE (buf->bd_pl) && wi_inst.wi_checkpoint_atomic)
+	page_lock_to_row_locks (buf);
       if (RB_INSERT == rbe->rbe_op)
 	{
-	  int is_first = itc->itc_position == SHORT_REF (page + DP_FIRST);
-	  itc->itc_row_key = itc->itc_insert_key = (*buf_ret)->bd_tree->it_key;
-	  itc_commit_delete (itc, buf_ret);
-	  if (was_rl)
-	    was_rl->rl_pos = 0;
-	  if (*buf_ret != buf_from)
-	    return PAGE_DELETED;
-	  return PAGE_UPDATED | (is_first ? LEAF_CHG_MASK : 0);
+	  NEW_VARZ (row_delta_t, rd);
+	  rd->rd_map_pos = pos;
+	  rd->rd_op = RD_DELETE;
+	  dk_set_push (rd_list, (void*) rd);
+	  if (wi_inst.wi_checkpoint_atomic)
+	    cpt_ins_image (buf, pos);
 	}
       else
 	{
-	  short prev_next = IE_NEXT (page + pos);
-	  if (buf->bd_tree->it_key->key_is_bitmap)
-	    itc_invalidate_bm_crs (itc, *buf_ret, 0, NULL); /** can be registered based on after image that is no longer valid */
-	  l = row_reserved_length (page + pos, buf->bd_tree->it_key);
-	  if (rbe->rbe_row_len > ROW_ALIGN (l))
-	    GPF_T1 ("Space for row is shorter than pre-image");
-	  memcpy (page + pos,
-		  rbe->rbe_string + rbe->rbe_row,
-		  rbe->rbe_row_len);
-	  IE_SET_FLAGS (page + pos, 0);
-	  IE_SET_NEXT (page + pos, prev_next);
-	  bytes_left =  ROW_ALIGN (l) - ROW_ALIGN (rbe->rbe_row_len);
-	  if (bytes_left)
-	    {
-	      buf->bd_content_map->pm_bytes_free += bytes_left;
-	    }
+	  NEW_VARZ (row_delta_t, rd);
+	  rd->rd_allocated = RD_ALLOCATED;
+	  rbe_page_row (rbe, rd);
+	  rd->rd_map_pos = pos;
+	  rd->rd_op = RD_UPDATE;
+	  rd->rd_keep_together_dp = buf->bd_page;
+	  rd->rd_keep_together_pos = pos;
+	  dk_set_push (rd_list, (void*) rd);
+	  if (wi_inst.wi_checkpoint_atomic)
+	    cpt_upd_image (buf, pos);
 	}
-      return PAGE_UPDATED;
     }
   return PAGE_NOT_CHANGED;
 }
@@ -1164,12 +1118,13 @@ itc_rollback_row (it_cursor_t * itc, buffer_desc_t ** buf_ret, int pos, row_lock
 void
 pl_rollback_page (page_lock_t * pl, it_cursor_t * itc)
 {
-  int change = PAGE_NOT_CHANGED, rc, change_leaf_ptr = 0;
+  dk_set_t rd_list = NULL;
+  row_delta_t ** rds;
   lock_trx_t *lt = itc->itc_ltrx;
   buffer_desc_t *buf = NULL;
   ITC_IN_KNOWN_MAP (itc, pl->pl_page);
 
-  if (DP_DELETED == pl->pl_page)
+  if (DP_DELETED == pl->pl_page || PL_FINISHING == pl->pl_page)
     {
       ITC_LEAVE_MAP_NC (itc);
       TC (tc_release_pl_on_deleted_dp);
@@ -1185,7 +1140,7 @@ pl_rollback_page (page_lock_t * pl, it_cursor_t * itc)
   do
     {
       ITC_IN_KNOWN_MAP (itc, pl->pl_page);
-      if (DP_DELETED == pl->pl_page)
+      if (DP_DELETED == pl->pl_page || PL_FINISHING == pl->pl_page)
 	{
 	  TC (tc_release_pl_on_deleted_dp);
 	  ITC_LEAVE_MAPS (itc);
@@ -1208,18 +1163,11 @@ pl_rollback_page (page_lock_t * pl, it_cursor_t * itc)
   itc->itc_page = pl->pl_page;
   if (PL_IS_PAGE (pl))
     {
-      int pos = SHORT_REF (buf->bd_buffer + DP_FIRST);
-      while (pos)
+	DO_ROWS (buf, map_pos, row, NULL)
 	{
-	  int next_pos = IE_NEXT (buf->bd_buffer + pos);
-	  rc = itc_rollback_row (itc, &buf, pos, NULL, pl);
-	  change_leaf_ptr |= rc & LEAF_CHG_MASK;
-	  rc = rc & ~LEAF_CHG_MASK; 
-	  change = MAX (change, rc);
-	  if (PAGE_DELETED == change)
-	    break;
-	  pos = next_pos;
+	  itc_rollback_row (itc, &buf, map_pos, NULL, pl, &rd_list);
 	}
+	END_DO_ROWS;
     }
   else
     {
@@ -1227,32 +1175,22 @@ pl_rollback_page (page_lock_t * pl, it_cursor_t * itc)
       {
 	if (rl->pl_owner == lt)
 	  {
-	    rc = itc_rollback_row (itc, &buf, rl->rl_pos, rl, pl);
-	    change_leaf_ptr |= rc & LEAF_CHG_MASK;
-	    rc = rc & ~LEAF_CHG_MASK; 
-	    change = MAX (change, rc);
-	    if (PAGE_DELETED == change)
-	      goto rls_done;	/* not break, DO_RLOCKS is 2 nested loops */
+	    itc_rollback_row (itc, &buf, rl->rl_pos, rl, pl, &rd_list);
 	  }
       }
       END_DO_RLOCK;
-    rls_done:;
     }
-  if (change != PAGE_DELETED && change_leaf_ptr)
+  if (!rd_list)
     {
       pl_release (pl, lt, buf);
-      itc->itc_row_key = itc->itc_insert_key = buf->bd_tree->it_key;
-      itc_fix_leaf_ptr (itc, buf);
+      page_leave_outside_map (buf);
       return;
     }
-  pl_release (pl, lt, buf);
-  ITC_IN_KNOWN_MAP (itc, itc->itc_page);
-  if (change == PAGE_UPDATED)
-    buf_set_dirty_inside (buf);
-  if (change != PAGE_NOT_CHANGED)
-    page_mark_change (buf, change == PAGE_UPDATED ? RWG_WAIT_KEY : RWG_WAIT_SPLIT);
-  page_leave_inner (buf);
-  ITC_LEAVE_MAP_NC (itc);
+  rds = (row_delta_t **) list_to_array (dk_set_nreverse (rd_list));
+  if (!PL_IS_PAGE (pl))
+    buf_sort ((buffer_desc_t **) rds, BOX_ELEMENTS (rds), (sort_key_func_t) rd_pos_key);
+  page_apply (itc, buf, BOX_ELEMENTS (rds), rds, PA_RELEASE_PL);
+  rd_list_free (rds);
 }
 
 
@@ -1287,7 +1225,8 @@ lt_wait_until_dead (lock_trx_t * lt)
   ASSERT_IN_TXN;
   TC (tc_wait_trx_self_kill);
   dk_set_push (&lt->lt_wait_end, (void *) thr);
-  if (!lt->lt_threads) GPF_T1 ("can't wait for self kill of a txn with no thread inside");
+  if (!lt->lt_threads && LT_CL_PREPARED != lt->lt_status) 
+    GPF_T1 ("can't wait for self kill of a txn with no thread inside");
   rdbg_printf (("Wait for transact of %s T=%p\n", LT_NAME (lt), lt));
   LEAVE_TXN;
 /*  rdbg_printf (("Wait for transact of %s T=%ld\n", LT_NAME (lt), TRX_NO (lt))); */
@@ -1319,7 +1258,7 @@ lock_check_owners (gen_lock_t * lock, lock_trx_t * lt,
 	{
 	  if (is_precheck)
 	    {
-	      if (!dk_set_member (lt->lt_locks, (void*) pl))
+	      if (!gethash (DP_ADDR2VOID (pl->pl_page), &lt->lt_lock))
 		BAD_PRE_LOCK;
 	    }
 	  else
@@ -1327,7 +1266,7 @@ lock_check_owners (gen_lock_t * lock, lock_trx_t * lt,
 	}
       else
 	{
-	  if (!dk_set_member (owner->lt_locks, (void*) pl))
+	  if (!gethash (DP_ADDR2VOID (pl->pl_page), &owner->lt_lock))
 	    {
 	      if (owner->lt_status == LT_CLOSING)
 		printf ("--- lock of blown off T=%ld L=%d ROW=%d \n",
@@ -1347,7 +1286,7 @@ lock_check_owners (gen_lock_t * lock, lock_trx_t * lt,
 	    {
 	      if (is_precheck)
 		{
-		  if (!dk_set_member (lt->lt_locks, (void*) pl))
+		  if (!gethash (DP_ADDR2VOID (pl->pl_page), &lt->lt_lock))
 		    BAD_PRE_LOCK;
 		}
 	      else
@@ -1355,7 +1294,7 @@ lock_check_owners (gen_lock_t * lock, lock_trx_t * lt,
 	    }
 	  else
 	    {
-	      if (!dk_set_member (owner->lt_locks, (void*) pl))
+	      if (!gethash (DP_ADDR2VOID (pl->pl_page), &owner->lt_lock))
 		{
 		  if (owner->lt_status == LT_CLOSING)
 		    printf ("--- lock of blown off T=%ld L=%d ROW=%d \n",
@@ -1435,6 +1374,8 @@ pl_page_key (page_lock_t * pl)
   return pl->pl_page;
 }
 
+dk_mutex_t * pl_ref_count_mtx;
+
 
 page_lock_t ** 
 lt_locks_to_array (lock_trx_t * lt, page_lock_t ** arr, int max, int * fill_ret)
@@ -1452,12 +1393,15 @@ lt_locks_to_array (lock_trx_t * lt, page_lock_t ** arr, int max, int * fill_ret)
     }
   mutex_enter (&lt->lt_locks_mtx);
   dk_hash_iterator (&hit, locks);
+  mutex_enter (pl_ref_count_mtx);
     while (dk_hit_next (&hit, (void**)&pl, &d))
     {
       arr[fill++] = pl;
+      pl->pl_finish_ref_count++;
       if (fill == max)
 	break;
     }
+    mutex_leave (pl_ref_count_mtx);
   if (max != n_locks)
     {
       for (inx = 0; inx < fill; inx++)
@@ -1482,6 +1426,8 @@ lt_transact (lock_trx_t * lt, int op)
   it_cursor_t *itc = &itc_auto;
   page_lock_t * pl_arr_auto[100];
   page_lock_t ** pl_arr;
+  if (SQL_ROLLBACK == op && QFID_HOST (lt->lt_w_id) == local_cll.cll_this_host)
+    rdbg_printf (("Host %d:  Own rollback with lte=%d of %d:%d\n", local_cll.cll_this_host, lt->lt_error, LT_W_NO (lt)));
   ASSERT_IN_TXN;
   if (lt->lt_threads != lt->lt_lw_threads + lt->lt_close_ack_threads + lt->lt_vdb_threads)
     {
@@ -1494,7 +1440,10 @@ lt_transact (lock_trx_t * lt, int op)
 
   lt->lt_timeout = 0; /* make sure no 2 kills because of timeout detected by reaper. */
   if (LT_DELTA_ROLLED_BACK == lt->lt_status)
+    {
+      lt->lt_close_ack_threads = 0;
     return;
+    }
   if (LT_CLOSING == lt->lt_status)
     {
       lt_wait_until_dead (lt);
@@ -1528,6 +1477,7 @@ lt_transact (lock_trx_t * lt, int op)
 	{
 	  page_lock_t * pl = pl_arr[l_inx];
 	  itc->itc_tree = pl->pl_it;
+	  itc->itc_insert_key = itc->itc_tree->it_key;
 	  if (SQL_COMMIT == op)
 	    pl_finalize_page (pl, itc);
 	  else
@@ -1599,87 +1549,94 @@ rbp_free (caddr_t p)
 resource_t *rb_page_rc;
 
 
+#define TMP_V_RD(rd) \
+  row_delta_t rd; \
+  dtp_t temp##rd[1100]; \
+  rd.rd_temp_max = sizeof (temp##rd); \
+  rd.rd_temp = temp##rd; \
+  rd.rd_allocated = RD_AUTO; \
+
+
+#define RD_V_PRE(rd) \
+  {rd.rd_temp_fill = 0; rd.rd_allocated = RD_AUTO;}
+
+#define RD_V_DONE(rd, v) \
+  { if ((db_buf_t) v < rd.rd_temp || (db_buf_t)v > rd.rd_temp + rd.rd_temp_fill) dk_free_tree ((caddr_t)v); }
+
+
 uint32
-key_hash_cols (db_buf_t row, dbe_key_t * key, dbe_col_loc_t * cl, uint32 code)
+key_hash_cols (buffer_desc_t * buf, db_buf_t row, dbe_key_t * key, dbe_col_loc_t * cl, uint32 code)
 {
-  db_buf_t row_data = row + IE_FIRST_KEY;
   int inx;
+  caddr_t v;
+  TMP_V_RD (rd);
   for (inx = 0; cl[inx].cl_col_id; inx++)
     {
-      int off, len;
-      KEY_COL (key, row_data, cl[inx], off, len);
-      if (cl[inx].cl_sqt.sqt_dtp == DV_LONG_INT)
-	{
-	  int32 v = LONG_REF (row_data + off);
-	  if (v)
-	    code = (code * v) ^ (code >> 23);
-	  else
-	    code = code << 2 | code >> 30;
+      RD_V_PRE (rd);
+      v = page_copy_col (buf, row, &cl[inx], &rd);
+      code = (code << 1 | code >> 31)^ box_hash (v);
+      RD_V_DONE (rd, v);
 	}
-      else
-	{
-	  int inx2;
-	  for (inx2 = 0; inx2 < len; inx2++)
-	    {
-	      uint32 b = row_data[off + inx2];
-	      code = ((code * (b + 3)) + 123) ^ (code >> 24);
-	    }
-	}
-    }
-  return code;
+  return code & 0x7fffffff; /* non-neg int 32.  Else get bad sign ext */
 }
 
 
 int
-key_hash_eq (db_buf_t row1, db_buf_t row2, dbe_key_t * key1, dbe_key_t * key2,
+key_hash_eq (buffer_desc_t * buf1, db_buf_t row1, db_buf_t row2, dbe_key_t * key1, dbe_key_t * key2,
 	      dbe_col_loc_t * cl1, dbe_col_loc_t * cl2)
 {
-  int inx;
-  row1 += IE_FIRST_KEY;
-  row2 += IE_FIRST_KEY;
+  /* the 2nd is guaranteed to be a full row */
+  int inx, rc;
+  caddr_t v1, v2;
+  TMP_V_RD (rd1);
+  {
+    TMP_V_RD (rd2);
   for (inx = 0; cl1[inx].cl_col_id; inx++)
     {
-      int off1, off2, len1, len2;
-      KEY_COL (key1, row1, cl1[inx], off1, len1);
-      KEY_COL (key2, row2, cl2[inx], off2, len2);
-      if (len1 != len2)
-	return 0;
-      if (0 != memcmp (row1 + off1, row2 + off2, len1))
+	RD_V_PRE (rd1);
+	RD_V_PRE (rd2);
+	v1 = page_copy_col (buf1, row1, &cl1[inx], &rd1);
+	v2 = page_copy_col (buf1, row2, &cl2[inx], &rd2);
+	/* pass buf1 to get the rb entry./ used only for getting the key since rb entry is self contained */
+	rc = box_equal (v1, v2);
+	RD_V_DONE (rd1, v1);
+	RD_V_DONE (rd2, v2);
+	if (!rc)
 	return 0;
     }
   return 1;
 }
+}
 
 
 int
-rb_entry_eq (db_buf_t row1, db_buf_t row2)
+rb_entry_eq (buffer_desc_t * buf, db_buf_t row1, key_id_t key_id_2, db_buf_t row2)
 {
-  dbe_key_t * key1 = sch_id_to_key (wi_inst.wi_schema, SHORT_REF (row1 + IE_KEY_ID));
-  dbe_key_t * key2 = sch_id_to_key (wi_inst.wi_schema, SHORT_REF (row2 + IE_KEY_ID));
+  dbe_key_t * key1 = buf->bd_tree->it_key;
+  dbe_key_t * key2 = sch_id_to_key (wi_inst.wi_schema, key_id_2);
   if (key1->key_super_id != key2->key_super_id)
     return 0;
   if (key1->key_key_fixed
-      && !key_hash_eq (row1, row2, key1, key2, key1->key_key_fixed, key2->key_key_fixed))
+      && !key_hash_eq (buf, row1, row2, key1, key2, key1->key_key_fixed, key2->key_key_fixed))
     return 0;
   if (key1->key_key_var
-      && !key_hash_eq (row1, row2, key1, key2, key1->key_key_var, key2->key_key_var))
+      && !key_hash_eq (buf, row1, row2, key1, key2, key1->key_key_var, key2->key_key_var))
     return 0;
   return 1;
 }
 
 
 rb_entry_t *
-lt_rb_entry (lock_trx_t * lt, db_buf_t row, long *code_ret, rb_entry_t ** prev_ret, int leave_mtx)
+lt_rb_entry (lock_trx_t * lt, buffer_desc_t * buf, db_buf_t row, uint32 *code_ret, rb_entry_t ** prev_ret, int leave_mtx)
 {
-  key_id_t key_id = SHORT_REF (row + IE_KEY_ID);
-  dbe_key_t * key;
-  int32 rb_code;
+  key_ver_t kv = IE_KEY_VERSION (row);
+  dbe_key_t * key = buf->bd_tree->it_key->key_versions[kv];
+  uint32 rb_code;
   rb_entry_t *rbe;
-  if (KI_LEFT_DUMMY == key_id)
+  if (KV_LEFT_DUMMY == kv)
     return NULL;
-  key = sch_id_to_key (wi_inst.wi_schema, key_id);
-  rb_code = key_hash_cols (row, key, key->key_key_fixed, HC_INIT);
-  rb_code = key_hash_cols (row, key, key->key_key_var, rb_code);
+  rb_code = key_hash_cols (buf, row, key, key->key_key_fixed, HC_INIT);
+  rb_code = key_hash_cols (buf, row, key, key->key_key_var, rb_code);
   mutex_enter (&lt->lt_rb_mtx);
   rbe = (rb_entry_t *) gethash ((void *) (ptrlong) rb_code, lt->lt_rb_hash);
   if (code_ret)
@@ -1690,8 +1647,8 @@ lt_rb_entry (lock_trx_t * lt, db_buf_t row, long *code_ret, rb_entry_t ** prev_r
     {
       if (!rbe->rbe_string)
 	GPF_T1 ("rbe paged out");
-
-      if (rb_entry_eq (row, rbe->rbe_string + rbe->rbe_row))
+      if (0 != IE_ROW_VERSION (rbe->rbe_string + rbe->rbe_row)) GPF_T1 ("rbe row must have rv 0");
+      if (rb_entry_eq (buf, row, rbe->rbe_key_id, rbe->rbe_string + rbe->rbe_row))
 	{
 	  if (leave_mtx)
 	    mutex_leave (&lt->lt_rb_mtx);
@@ -1706,11 +1663,160 @@ lt_rb_entry (lock_trx_t * lt, db_buf_t row, long *code_ret, rb_entry_t ** prev_r
 
 
 void
-lt_rb_new_entry (lock_trx_t * lt, long rb_code, rb_entry_t * prev,
-		 db_buf_t ent, short ent_len, char op)
+lt_rb_copy (buffer_desc_t * buf, db_buf_t row, int op, row_fill_t * rf)
 {
+  dbe_key_t * key = buf->bd_tree->it_key;
+  key_ver_t kv = IE_KEY_VERSION (row);
+  int is_deld = IE_ISSET (row, IEF_DELETE);
+  caddr_t val;
+  TMP_V_RD (rd);
+  if (!kv || KV_LEFT_DUMMY == kv) GPF_T1 ("only rb copies of real rows are allowed");
+  key = key->key_versions[kv];
+  IE_SET_KEY_VERSION(rf->rf_row, RB_INSERT == op ? 0 : IE_KEY_VERSION (row));
+  if (is_deld)
+    {
+      IE_SET_FLAGS (rf->rf_row, IEF_DELETE);
+    }
+  IE_ROW_VERSION (rf->rf_row) = 0;
+  DO_CL (cl, key->key_key_fixed)
+    {
+      RD_V_PRE (rd);
+      val = page_copy_col (buf, row, cl, &rd);
+      row_set_col (rf, cl, val);
+      RD_V_DONE (rd, val);
+    }
+  END_DO_CL;
+  DO_CL (cl, key->key_key_var)
+    {
+      RD_V_PRE (rd);
+      val = page_copy_col (buf, row, cl, &rd);
+      row_set_col (rf, cl, val);
+      RD_V_DONE (rd, val);
+    }
+  END_DO_CL;
+  if (RB_INSERT == op)
+    return;
+  DO_CL (cl, key->key_row_fixed)
+    {
+      RD_V_PRE (rd);
+      val = page_copy_col (buf, row, cl, &rd);
+      row_set_col (rf, cl, val);
+      RD_V_DONE (rd, val);
+    }
+  END_DO_CL;
+  DO_CL (cl, key->key_row_var)
+    {
+      RD_V_PRE (rd);
+      val = page_copy_col (buf, row, cl, NULL);
+      row_set_col (rf, cl, val);
+      RD_V_DONE (rd, val);
+    }
+  END_DO_CL;
+}
+
+caddr_t
+rbe_copy_var (dbe_key_t * key, db_buf_t row, dbe_col_loc_t * cl)
+{
+  short off, len;
+  row_ver_t rv = IE_ROW_VERSION (row);
+  caddr_t val;
+  KEY_PRESENT_VAR_COL (key, row, (*cl), off, len);
+  if (row[cl->cl_null_flag[rv]] & cl->cl_null_mask[rv])
+    return dk_alloc_box (0, DV_DB_NULL);
+  val = dk_alloc_box (len + 1, DV_STRING);
+  memcpy (val, row + off, len);
+  val[len] = 0;
+  return val;
+}
+
+
+void 
+rbe_page_row (rb_entry_t * rbe, row_delta_t * rd)
+{
+  int nth = 0;
+  dbe_key_t * key;
+  db_buf_t row = rbe->rbe_string + rbe->rbe_row;
+  key_ver_t kv = IE_KEY_VERSION (row);
+  int rd_space;
+  if (IE_ISSET (row, IEF_DELETE))
+    rd->rd_copy_of_deleted = 1;
+  rd->rd_op = RD_UPDATE;
+  rd->rd_temp_fill = 0;
+  rd->rd_key_version = kv;
+  if (!kv || KV_LEFT_DUMMY == kv)
+    {
+      GPF_T1 ("not supposed to have 0 kv in rbe record");
+    }
+  key = sch_id_to_key (wi_inst.wi_schema, rbe->rbe_key_id);
+  key = rd->rd_key = key->key_versions[kv];
+  rd_space = key->key_is_bitmap + dk_set_length (key->key_parts);
+  rd->rd_values = dk_alloc_box (sizeof (caddr_t) * rd_space, DV_ARRAY_OF_POINTER);
+  rd->rd_non_comp_len = key->key_row_var_start[0];
+DO_CL (cl, key->key_key_fixed)
+    {
+      rd->rd_values[nth++] = page_copy_col (NULL, row, cl, rd);
+    }
+  END_DO_CL;
+  DO_CL (cl, key->key_key_var)
+    {
+      rd->rd_values[nth++] = rbe_copy_var (key, row, cl);
+      rd->rd_non_comp_len += box_length_on_row (rd->rd_values[nth - 1]);
+    }
+  END_DO_CL;
+  DO_CL (cl, key->key_row_fixed)
+    {
+      rd->rd_values[nth++] = page_copy_col (NULL, row, cl, rd);
+    }
+  END_DO_CL;
+  DO_CL (cl, key->key_row_var)
+    {
+      rd->rd_values[nth++] = rbe_copy_var (key, row, cl);
+      rd->rd_non_comp_len += box_length_on_row (rd->rd_values[nth - 1]);
+    }
+  END_DO_CL;
+  rd->rd_n_values = nth;
+}
+
+
+void
+lt_rb_new_entry (lock_trx_t * lt, uint32 rb_code, rb_entry_t * prev,
+		 buffer_desc_t * buf, db_buf_t row, char op)
+{
+  dtp_t image [MAX_ROW_BYTES];
+  key_ver_t kv = IE_KEY_VERSION (row);
+  row_fill_t rf;
+  dbe_key_t * key = buf->bd_tree->it_key->key_versions[kv];
+  int min_len = RB_INSERT == op ? key->key_key_var_start[0] : key->key_row_var_start[0];
   NEW_VARZ (rb_entry_t, rbe);
-  ent_len = ROW_ALIGN (ent_len);
+  if (!lt->lt_rb_page || lt->lt_rbp_fill + min_len + 10 > PAGE_DATA_SZ)
+    {
+      lt->lt_rb_page = (db_buf_t) resource_get (rb_page_rc);
+      lt->lt_rbp_fill = 0;
+      dk_set_push (&lt->lt_rb_pages, (void *) lt->lt_rb_page);
+    }
+
+  rf.rf_row = lt->lt_rb_page + lt->lt_rbp_fill;
+  rf.rf_large_row = &image[0];
+  rf.rf_fill = min_len;
+  rf.rf_pf_hash = NULL;
+  rf.rf_space = PAGE_DATA_SZ - lt->lt_rbp_fill;
+  rf.rf_key = key;
+  rf.rf_no_compress = 0;
+  lt_rb_copy (buf, row, op, &rf);
+  if (rf.rf_row == rf.rf_large_row)
+    {
+      lt->lt_rb_page = (db_buf_t) resource_get (rb_page_rc);
+      dk_set_push (&lt->lt_rb_pages, (void *) lt->lt_rb_page);
+      memcpy (lt->lt_rb_page, rf.rf_row, rf.rf_fill);
+      lt->lt_rbp_fill = 0;
+    }
+  rbe->rbe_string = lt->lt_rb_page;
+  rbe->rbe_key_id = key->key_id;
+  rbe->rbe_row = lt->lt_rbp_fill;
+  rbe->rbe_row_len = rf.rf_fill;
+  rbe->rbe_op = op;
+  lt->lt_rbp_fill += ROW_ALIGN (rf.rf_fill);
+
   ASSERT_IN_MTX (&lt->lt_rb_mtx);
   if (!prev)
     sethash ((void *) (ptrlong) rb_code, lt->lt_rb_hash, (void *) (ptrlong) rbe);
@@ -1720,45 +1826,35 @@ lt_rb_new_entry (lock_trx_t * lt, long rb_code, rb_entry_t * prev,
       rbe->rbe_next = prev->rbe_next;
       prev->rbe_next = rbe;
     }
-  if (!lt->lt_rb_page || lt->lt_rbp_fill + ent_len > PAGE_DATA_SZ)
-    {
-      lt->lt_rb_page = (db_buf_t) resource_get (rb_page_rc);
-      lt->lt_rbp_fill = 0;
-      dk_set_push (&lt->lt_rb_pages, (void *) lt->lt_rb_page);
-    }
-  rbe->rbe_string = lt->lt_rb_page;
-  rbe->rbe_row = lt->lt_rbp_fill;
-  rbe->rbe_row_len = ent_len;
-  rbe->rbe_op = op;
-  memcpy (lt->lt_rb_page + lt->lt_rbp_fill, ent, ent_len);
-  lt->lt_rbp_fill += ent_len;
+  if (0 != IE_ROW_VERSION (rbe->rbe_string + rbe->rbe_row)) GPF_T1 ("a rb entry must have row version 0");
 }
 
 
 void
-lt_rb_insert (lock_trx_t * lt, db_buf_t row)
+lt_rb_insert (lock_trx_t * lt, buffer_desc_t * buf, db_buf_t row)
 {
-  long rb_code, key_len;
+  uint32 rb_code;
   rb_entry_t *prev;
   rb_entry_t *rbe;
   if (lt->lt_is_excl)
     return;
-  rbe = lt_rb_entry (lt, row, &rb_code, &prev, 0);
+  rbe = lt_rb_entry (lt, buf, row, &rb_code, &prev, 0);
   if (!rbe)
     {
-      key_len = row_length (row, sch_id_to_key (wi_inst.wi_schema, SHORT_REF (row + IE_KEY_ID)));
-      lt_rb_new_entry (lt, rb_code, prev, row, (short) key_len, RB_INSERT);
+      lt_rb_new_entry (lt, rb_code, prev, buf, row, RB_INSERT);
     }
   mutex_leave (&lt->lt_rb_mtx);
 }
 
 
+#ifndef KEYCOMP
 void
-lt_no_rb_insert (lock_trx_t * lt, db_buf_t row)
+lt_no_rb_insert (lock_trx_t * lt, buffer_desc_t * buf, db_buf_t row)
 {
   /* remove the rb entry to make aninsert irreversible in mid transaction */
   rb_entry_t * prev;
-  long rb_code;
+  uint32 rb_code;
+  int key_len;
   rb_entry_t *rbe;
   if (lt->lt_is_excl)
     return;
@@ -1788,20 +1884,19 @@ lt_no_rb_insert (lock_trx_t * lt, db_buf_t row)
   mutex_leave (&lt->lt_rb_mtx);
   dk_free ((caddr_t) rbe, sizeof (rb_entry_t));
 }
+#endif
 
 
 
 void
-lt_rb_update (lock_trx_t * lt, db_buf_t row)
+lt_rb_update (lock_trx_t * lt, buffer_desc_t * buf, db_buf_t row)
 {
-  int row_len;
-  long rb_code;
+  uint32 rb_code;
   rb_entry_t *prev;
-  rb_entry_t *rbe = lt_rb_entry (lt, row, &rb_code, &prev, 0);
+  rb_entry_t *rbe = lt_rb_entry (lt, buf, row, &rb_code, &prev, 0);
   if (!rbe)
     {
-      row_len = row_length (row, sch_id_to_key (wi_inst.wi_schema, SHORT_REF (row + IE_KEY_ID)));
-      lt_rb_new_entry (lt, rb_code, prev, row, row_len, RB_UPDATE);
+      lt_rb_new_entry (lt, rb_code, prev, buf, row, RB_UPDATE);
     }
   mutex_leave (&lt->lt_rb_mtx);
 }
@@ -1814,7 +1909,7 @@ lt_free_rb (lock_trx_t * lt)
   rb_entry_t *rbe;
   caddr_t k;
   dk_hash_iterator_t hit;
-  if (0 == lt->lt_rb_hash->ht_count)
+  if (!lt->lt_rb_pages) /* in cpt rb, can have empty hash but stuff to free */
     return;
   DO_SET (db_buf_t, page, &lt->lt_rb_pages)
   {
@@ -1833,12 +1928,14 @@ lt_free_rb (lock_trx_t * lt)
 	  rbe = next;
 	}
     }
-  if (lt->lt_rb_hash->ht_actual_size > 140)
+  if (lt->lt_rb_hash->ht_actual_size > 140) /* it rounds the size upwards. if too low here, get to realloc even if empty */
     {
       hash_table_free (lt->lt_rb_hash);
       lt->lt_rb_hash = hash_table_allocate (101);
     }
   else
     clrhash (lt->lt_rb_hash);
+  lt->lt_rb_page = NULL;
+  lt->lt_rbp_fill = 0;
 }
 

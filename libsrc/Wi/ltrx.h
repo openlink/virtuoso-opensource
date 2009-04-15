@@ -41,6 +41,9 @@
 #define LT_FINAL_COMMIT_PENDING	7 /* when the commit came in, but there's a thread inside */
 #endif
 
+#define LT_CL_PREPARED 8 /* in cluster, first phase of commit started or finished.  Cancellable any time, during and after  */
+#define LT_1PC_PENDING 9 /* waiting for cluster 1pc reply */
+#define LT_2PC_PENDING 10 /* waiting for cluster 2pc replies */
 #define LTE_OK		0
 #define LTE_TIMEOUT	1
 #define LTE_DEADLOCK	2
@@ -56,6 +59,11 @@
 #define LTE_LOG_IMAGE 10
 #define LTE_OUT_OF_MEM 11 /* out of memory */
 #define LTE_REJECT    12  /* reject modifications */
+#define LTE_CLUSTER 13 /* disconnect of peer */
+#define LTE_CANCEL 14 /* async rollback from other thread */
+#define LTE_CLUSTER_SYNC 15 /* unsynced async updates at time of transact */
+#define LTE_PREPARED_NOT_COMMITTED 16 /* if a commit msg was dropped, then another action on same trx no, give this error */
+#define LTE_UNSPECIFIED 17 /* use when not OK but no lte */
 
 #define SET_DK_MEM_RESERVE_STATE(trx) \
      { \
@@ -90,9 +98,9 @@
 
 typedef struct rb_entry_s
   {
-
     db_buf_t	rbe_string;
     struct rb_entry_s * rbe_next;
+    key_id_t	rbe_key_id;
     short	rbe_row;
     short	rbe_row_len;
     char	rbe_op;
@@ -105,6 +113,8 @@ struct lock_trx_s;
 struct tp_dtrx_s;
 #endif
 typedef void (*trx_hook_t) (struct lock_trx_s *);
+
+/* #define CHECK_LT_THREADS */
 
 #ifdef CHECK_LT_THREADS
 #define LT_ENTER_SAVE(lt) \
@@ -133,11 +143,11 @@ do { \
 	} \
     } while (0)
 #define LT_THREADS_REPORT(lt, action) \
-    log_debug ("%s:%d : lt_threads %s to %d for lt %p on thread %p", \
+  log_debug_dummy ("%s:%d : lt_threads %s to %d for lt %p on thread %p",	\
 	__FILE__, __LINE__, action, \
 	lt->lt_threads, \
 	lt, THREAD_CURRENT_THREAD)
-#define lt_log_debug(x) log_debug x
+#define lt_log_debug(x) 
 #else
 #define LT_ENTER_SAVE(lt)
 #define LT_CLOSE_ACK_THREADS(lt)
@@ -145,13 +155,27 @@ do { \
 #define lt_log_debug(x)
 #endif
 
+typedef struct lt_cl_branch_s {
+  char 		clbr_change;
+  cl_host_t *	clbr_host;
+} lt_cl_branch_t;
+
+#define CLBR_READ 0
+#define CLBR_WRITE 1
+#define CLBR_DONE 2 /* a read branch that already got a commit needs no rb if commit fails */
+
 typedef struct lock_trx_s
   {
     char			lt_status;
     char			lt_mode;  /* lock / snapshot  */
     char			lt_is_excl;
     char			lt_error;
+    char		lt_cl_enlisted;
+    char		lt_is_cl_server; /* serving a cluster req, whether enlisted or not */
     int			lt_threads;
+    int			lt_cl_ref_count; /* no of cluster continuable itc's or qf's wit ref to this.  Don't free until all gone.  Under wi_txn_mtx. No resetting on lt_clear, also no writing outside of txn_mtx, also not in lt_clear */
+    int64		lt_trx_no;
+    struct client_connection_s *	lt_client;
     dk_mutex_t		lt_locks_mtx;
     dk_mutex_t		lt_rb_mtx;
     dk_mutex_t *	lt_log_mtx;
@@ -167,20 +191,20 @@ typedef struct lock_trx_s
 #define LT_DATA_AREA_FIRST lt_waits_for
     dk_set_t		lt_waits_for;
     dk_set_t		lt_waiting_for_this;
-    long		lt_age;
 #ifdef CHECK_LT_THREADS
     const char *	lt_enter_file;
     int	        	lt_enter_line;
     const char *	lt_last_increase_file[2];
     int			lt_last_increase_line[2];
 #endif
+    int		lt_age;
     int			lt_lw_threads;
     int			lt_close_ack_threads;
     int			lt_vdb_threads;
-    struct client_connection_s *	lt_client;
-    long		lt_timeout;
-    long		lt_started;
-
+    uint32		lt_timeout;
+    uint32		lt_started;
+    uint32		lt_last_enter_time;
+    uint32		lt_wait_since;
     caddr_t *		lt_replicate;
     int                 lt_repl_is_raw;
     int			lt_log_fd;
@@ -189,14 +213,7 @@ typedef struct lock_trx_s
     char		lt_timestamp[DT_LENGTH];
     dk_session_t *	lt_backup;  /* if running an online backup,
 				     * the session to the backup device */
-    unsigned long	lt_backup_length;
-
-#if 0 /*GK: unused*/
-    OFF_T		lt_blob_log_start; /* off_t for first logged blob in
-					    * log file or 0 if no blobs */
-#endif
-
-
+    int64		lt_backup_length;
 
     db_buf_t		lt_rb_page;
     short		lt_rbp_fill;
@@ -229,14 +246,36 @@ typedef struct lock_trx_s
 
     dk_hash_t *	lt_upd_hi;  /* for each update node active in txn, the set of affected hi's */
     dk_set_t		lt_hi_delta;
-#ifdef PAGE_TRACE
-    int		lt_trx_no;
-#endif
+    int64		lt_w_id;
+    dk_set_t 		lt_cl_branches; /* cl_host_t for cluster hosts in same commit */
+    struct cl_host_s *	lt_branch_of;
+    OFF_T		lt_commit_flag_offset; /* use for updating log record state in 2pc */
+    char		lt_known_in_cl; /* if ever participated in wait or had remote branch, must notify monitor of transact, else not */
+    char		lt_log_2pc;
+    char		lt_transact_notify_sent; /* if non-monitor commits a branch on the monitor, no separate notify wanted */
+    struct cl_req_group_s *	lt_clrg;
     caddr_t		lt_error_detail; /* if non-zero fill it with details about the error at hand */
 #ifdef MSDTC_DEBUG
     bitf_t 		lt_in_mts:1;
 #endif
+    char 		lt_name[20];
+    struct name_id_cache_s *	lt_rdf_prefix;
+    struct name_id_cache_s *	lt_rdf_iri;
   } lock_trx_t;
+
+#define LT_LAST_RESERVED_NO 99 /* the first 100 trx_no are reserved for temp use, no real transaction uses them */
+#define LT_ID_FREE ((int64)-1) /* lt_w_id and lt_trx_no when lt is free in trx_rc */
+
+#define LTN_HOST(ltn) ((uint32)((ltn) >> 32))
+#define LTN_NO(ltn) ((uint32)((ltn) & 0xffffffff))
+
+#define LOCK_MAX_WAITS 1024 /* no more than this many queued on a single lock */
+
+typedef struct lock_wait_s {
+  lock_trx_t *	lw_trx;
+  int		lw_mode;
+} lock_wait_t;
+
 
 /* use the below macro to portably set the lt_error_detail member of the LT */
 #define LT_ERROR_DETAIL_SET(lt, det) \
@@ -255,15 +294,11 @@ typedef struct lock_trx_s
 #define LT_HAS_DELTA(lt) ((lt)->lt_rb_hash->ht_count)
 
 
-#ifdef PAGE_TRACE
 #define TRX_NO(lt) lt->lt_trx_no
-#else
-#define TRX_NO(lt) 0
-#endif
-
+#define LT_W_NO(lt) QFID_HOST (lt->lt_w_id), (uint32)lt->lt_w_id
 
 #define ITC_IS_LTRX(itc) \
-  (itc->itc_ltrx &&  !itc->itc_ltrx->lt_is_excl)
+  (itc->itc_ltrx)
 
 
 #if defined (PAGE_TRACE) | defined (MTX_DEBUG)
@@ -285,10 +320,7 @@ typedef struct lock_trx_s
   ((page_lock_t *) gethash (DP_ADDR2VOID (dp), &IT_DP_MAP (it, dp)->itm_locks))
 
 #define LT_NAME(lt) \
-  (lt->lt_client->cli_session && !lt->lt_client->cli_ws ? \
-      (lt->lt_client->cli_session->dks_peer_name ? \
-       lt->lt_client->cli_session->dks_peer_name : "<NOT_CONN>") \
-      : "INTERNAL")
+  (snprintf (lt->lt_name, sizeof (lt->lt_name), "%5d:%10d", QFID_HOST (lt->lt_w_id), (int32)lt->lt_w_id), lt->lt_name)
 
 #define LT_IS_TIMED_OUT(lt) \
   (lt->lt_started && approx_msec_real_time () - lt->lt_started > lt->lt_timeout)
@@ -321,6 +353,7 @@ typedef struct page_lock_s
   {
     LOCK;
     short		pl_n_row_locks;
+    short		pl_finish_ref_count;
     dp_addr_t		pl_page;
     index_tree_t *	pl_it;
     row_lock_t *	pl_rows[N_RLOCK_SETS];
@@ -347,6 +380,10 @@ typedef struct page_lock_s
 #define PL_SET_FLAG(pl, f) pl->pl_type |= f
 #define PL_SET_TYPE(pl, f) pl->pl_type = (pl->pl_type & 0xfc) | f
 
+/* put into pl_page after it is removed from the itm_locks.  Intermediate state, for a page lock, wait refs can be left hanging after the lock has no more owners and is thus free.  
+ * Relates to pl_finish_ref_count.  This is used to delay free of a pl until all the wait refs from already closing lt's are handled. */
+#define PL_FINISHING ((dp_addr_t)-2)
+
 #define ITC_PREFER_PAGE_LOCK(itc) \
   ((itc)->itc_n_lock_escalations > 2 || lock_escalation_pct < 0)
 
@@ -359,6 +396,12 @@ typedef struct page_lock_s
 #define ITC_MAYBE_LOCK(itc, pos) \
   (it->itc_pl \
    && (PL_RLS (it->itc_pl, pos) || PL_IS_PAGE (it->itc_pl)))
+
+
+#define PL_RL_ADD(pl, rl, to) \
+{ \
+  if (PL_RLS (pl, to) == rl) GPF_T1 ("circular rl_next"); \
+  rl->rl_next = PL_RLS (pl, to); PL_RLS(pl, to) = rl; }
 
 
 #define DO_RLOCK(rl, pl) \
@@ -426,20 +469,28 @@ void lt_kill_other_trx (lock_trx_t * lt, it_cursor_t * itc, buffer_desc_t * buf,
 #define LT_KILL_FREEZE 0  /* will freeze the txn until cpt done if txn has no delta */
 #define LT_KILL_ROLLBACK 1  /* Rollback always */
 
-void lt_killall (lock_trx_t * lt);
+void lt_killall (lock_trx_t * lt, int lte);
 int lock_enter (gen_lock_t * pl, it_cursor_t * it, buffer_desc_t * buf);
 EXE_EXPORT (lock_trx_t *, lt_start, (void));
 lock_trx_t * lt_start_outside_map (void);
 int lt_commit (lock_trx_t * lt, int free_trx);
+int lt_commit_cl_local_only (lock_trx_t * lt);
 void lt_rollback (lock_trx_t * lt, int free_trx);
+void lt_rollback_1 (lock_trx_t * lt, int free_trx);
 void lt_transact (lock_trx_t * lt, int op);
 void lt_hi_transact (lock_trx_t * lt, int op);
 void lt_resume_waiting_end (lock_trx_t * lt);
+void log_cl_final(lock_trx_t* lt, int is_commit);
+void lt_commit_schema_merge (lock_trx_t * lt);
+
+extern dk_mutex_t * log_write_mtx;
 void lt_wait_until_dead (lock_trx_t * lt);
 void lt_ack_close (lock_trx_t * lt);
 void lt_ack_freeze_inner (lock_trx_t * lt);
 void lt_restart (lock_trx_t * lt, int leave_flag);
-
+int itc_rollback_row (it_cursor_t * itc, buffer_desc_t ** buf_ret, int pos, row_lock_t * was_rl,
+		  page_lock_t * pl, dk_set_t * rd_list);
+void  rbe_page_row (rb_entry_t * rbe, row_delta_t * rd);
 
 
 /* free_trx for lt_commit / lt_rollbak */
@@ -460,7 +511,7 @@ void itc_split_lock (it_cursor_t * itc, buffer_desc_t * left, buffer_desc_t * ex
 void itc_split_lock_waits (it_cursor_t * itc, buffer_desc_t * left, buffer_desc_t * extend);
 row_lock_t * upd_refit_rlock (it_cursor_t * itc, int pos);
 void lt_clear_pl_wait_ref (lock_trx_t * waiting, gen_lock_t * pl);
-int itc_check_ins_deleted (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t dv);
+int itc_check_ins_deleted (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd);
 void itc_insert_rl (it_cursor_t * itc, buffer_desc_t * buf, int pos, row_lock_t * rl, int do_not_escalate);
 #define RL_NO_ESCALATE 1
 #define RL_ESCALATE_OK 0
@@ -472,15 +523,15 @@ void lt_add_pl (lock_trx_t * lt, page_lock_t * pl, int is_new_pl);
 int pl_lt_is_owner (page_lock_t * pl, lock_trx_t * lt);
 int itc_set_lock_on_row (it_cursor_t * itc, buffer_desc_t ** buf_ret);
 int itc_serializable_land (it_cursor_t * itc, buffer_desc_t ** buf_ret);
-int itc_read_committed_check (it_cursor_t * itc, int pos, buffer_desc_t * buf);
+int itc_read_committed_check (it_cursor_t * itc, buffer_desc_t * buf);
 void pl_set_finalize (page_lock_t * pl, buffer_desc_t * buf);
 void lt_blob_transact (it_cursor_t * itc, int op);
 
-rb_entry_t * lt_rb_entry (lock_trx_t * lt, db_buf_t row, long *code_ret, rb_entry_t ** prev_ret, int leave_mtx);
+rb_entry_t * lt_rb_entry (lock_trx_t * lt, buffer_desc_t * buf, db_buf_t row, uint32 *code_ret, rb_entry_t ** prev_ret, int leave_mtx);
 
-void lt_rb_insert (lock_trx_t * lt, db_buf_t key);
+void lt_rb_insert (lock_trx_t * lt, buffer_desc_t * buf, db_buf_t key);
 void lt_no_rb_insert (lock_trx_t * lt, db_buf_t row);
-void lt_rb_update (lock_trx_t * lt, db_buf_t  row);
+void lt_rb_update (lock_trx_t * lt, buffer_desc_t * buf, db_buf_t  row);
 int pg_key_len (db_buf_t key1);
 void lt_free_rb (lock_trx_t * lt);
 
@@ -516,14 +567,23 @@ void lt_timestamp (lock_trx_t * lt, char * tv_ret);
 caddr_t lt_timestamp_box (lock_trx_t * lt);
 void itc_assert_lock (it_cursor_t * itc);
 
-void lt_free_rb (lock_trx_t * lt);
 
+
+
+void lt_free_rb (lock_trx_t * lt);
+void lt_rb_new_entry (lock_trx_t * lt, uint32 rb_code, rb_entry_t * prev, 
+		 buffer_desc_t * buf, db_buf_t row, char op);
+int32 rd_pos_key (row_delta_t * rd);
 
 #define TRX_POISON(lt) \
 { \
   lt->lt_status = LT_BLOWN_OFF; \
   lt->lt_error = LTE_SQL_ERROR; \
 }
+
+
+#define it_title(it) \
+  (!it ? " NULL IT " : ((it->it_key  && it->it_key->key_name) ? it->it_key->key_name : " unnamed key "))
 
 
 #ifdef PAGE_TRACE
@@ -560,7 +620,7 @@ extern int page_trace_on;
   DBG_PT_PRINTF (("COMMIT TX=%d\n", lt->lt_trx_no))
 
 #define DBG_PT_COMMIT_END(lt) \
-  DBG_PT_PRINTF (("COMMIT DONE TX=%d\n", lt->lt_trx_no))
+  /*DBG_PT_PRINTF (("COMMIT DONE TX=%d\n", lt->lt_trx_no)) */
 
 #define DBG_PT_ROLLBACK(lt) \
   DBG_PT_PRINTF (("ROLLBACK START T=%d\n", lt->lt_trx_no))
@@ -674,6 +734,14 @@ extern long  tc_read_wait;
 extern long  tc_reentry_split;
 extern long  tc_write_wait;
 extern long tc_dive_would_deadlock;
+extern long tc_cl_deadlocks;
+extern long tc_cl_wait_queries;
+extern long tc_cl_kill_1pc;
+extern long tc_cl_kill_2pc;
+extern long tc_get_buffer_while_stat;
+extern long tc_autocompact_split;
+extern long tc_bp_wait_flush;
+extern long tc_page_fill_hash_overflow;
 extern long tc_key_sample_reset;
 extern long tc_pl_moved_in_reentry;
 extern long tc_enter_transiting_bm_inx;
@@ -688,7 +756,6 @@ extern long tc_root_image_miss;
 extern long tc_root_image_ref_deleted;
 extern long tc_uncommit_cpt_page;
 extern long tc_root_cache_miss;
-extern long tc_aq_from_queue;
 extern long tc_aq_sleep;
 extern long  tc_release_pl_on_deleted_dp;
 extern long  tc_release_pl_on_absent_dp;
@@ -733,13 +800,17 @@ extern int lock_escalation_pct;
 
 extern resource_t * rb_page_rc;
 
+#define STR_OR(s, n) ((s) ? (s) : (n))
 
-#define rdbg_printf_2(a)
 #define dbg_pt_printf_2(a)
 #if defined (PAGE_TRACE) || 0 /* off unless page trace */
 #define rdbg_printf(a) printf a
+#define rdbg_printf_2(a) printf a
+
 #else
 #define rdbg_printf(a)
+#define rdbg_printf_2(a)
+
 #endif
 
 

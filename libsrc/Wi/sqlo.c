@@ -815,6 +815,17 @@ done:
 
 
 void
+sqlo_trans_cols (sqlo_t * so, op_table_t * ot)
+{
+  ST * trans = ot->ot_trans;
+  if (trans->_.trans.min)
+    sqlo_scope (so, &trans->_.trans.min);
+  if (trans->_.trans.max)
+    sqlo_scope (so, &trans->_.trans.max);
+}
+
+
+void
 sqlo_add_table_ref (sqlo_t * so, ST ** tree_ret, dk_set_t *res)
 {
   char tmp[10];
@@ -990,6 +1001,8 @@ sqlo_add_table_ref (sqlo_t * so, ST ** tree_ret, dk_set_t *res)
 	    tree->_.table_ref.range = ot->ot_new_prefix;
 /*	    t_set_push (res, (void *) ot);*/
 	    sco_add_table (so->so_scope, ot);
+	    if (ot->ot_trans)
+	      sqlo_trans_cols (so, ot);
 	  }
 	else
 	  {
@@ -1147,10 +1160,16 @@ sqlo_replace_fun_refs_prefixes (ST *tree, caddr_t old_prefix, caddr_t new_prefix
 static int
 sqlo_dt_has_vcol_tables (sqlo_t *so, op_table_t *dot)
 {
+  /* if dot, the dt to be inlined select virtual cols from tables used inside, do not inline.
+   * reason is that they look undefd if refd before the contains or such that defs them. */
   DO_SET (op_table_t *, ot, &dot->ot_from_ots)
     {
-      if (ot->ot_virtual_cols)
+      DO_SET (op_virt_col_t *, vc, &ot->ot_virtual_cols)
+	{
+	  if (box_is_subtree ((caddr_t) dot->ot_dt->_.select_stmt.selection, (caddr_t) vc->vc_tree))
 	return 1;
+    }
+  END_DO_SET ();
     }
   END_DO_SET ();
   return 0;
@@ -2243,7 +2262,7 @@ sqlo_is_identity_join (op_table_t * ot1, op_table_t * ot2, dk_set_t top_and)
 void
 sqlo_col_pref_replace (ST * tree, caddr_t old_pref, caddr_t new_pref)
 {
-  if (ST_P (tree, COL_DOTTED) && tree->_.col_ref.prefix && !strcmp (tree->_.col_ref.prefix, old_pref))
+  if (ST_P (tree, COL_DOTTED) && !strcmp (tree->_.col_ref.prefix, old_pref))
     {
       tree->_.col_ref.prefix = new_pref;
       return;
@@ -2362,7 +2381,11 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
   snprintf (tmp, sizeof (tmp), "dt%d", so->so_name_ctr++);
   ot->ot_new_prefix = t_box_string (tmp);
 
-
+  if (top_exp && box_length ((caddr_t*)top_exp) > (ptrlong)&((ST*)0)->_.top.trans && NULL != top_exp->_.top.trans)
+    {
+      ot->ot_trans = top_exp->_.top.trans;
+      top_exp = NULL;
+    }
   if (top_exp)
     {
       ot->ot_is_top = 1;
@@ -2686,6 +2709,24 @@ sqlo_subq_convert_to_exists (sqlo_t * so, ST ** tree_ret)
     }
 }
 
+
+int
+sqlo_is_unq_preserving (caddr_t name)
+{
+  return (SINV_DV_STRINGP (name)
+	  && (!stricmp (name, "__ID2I") || !stricmp (name, "__RO2SQ") ));
+}
+
+
+void
+sqlo_count_unq_preserving (ST *tree)
+{
+  while ST_P (tree->_.fn_ref.fn_arg, CALL_STMT && sqlo_is_unq_preserving (tree->_.fn_ref.fn_arg->_.call.name)
+	      && 1 <= BOX_ELEMENTS (tree->_.fn_ref.fn_arg->_.call.params))
+    tree->_.fn_ref.fn_arg = tree->_.fn_ref.fn_arg->_.call.params[0];
+}
+
+
 void
 sqlo_scope (sqlo_t * so, ST ** ptree)
 {
@@ -2737,8 +2778,9 @@ sqlo_scope (sqlo_t * so, ST ** ptree)
 	    return;
 	  }
 
+	if (AMMSC_COUNT == tree->_.fn_ref.fn_code)
+	  sqlo_count_unq_preserving (tree);
 	if (AMMSC_COUNT == tree->_.fn_ref.fn_code
-
 	    && !tree->_.fn_ref.all_distinct
 	    && !sqlo_has_col_ref (tree->_.fn_ref.fn_arg))
 	  {

@@ -87,8 +87,8 @@ dk_mutex_t * ftp_log_mtx = NULL;
 int http_n_keep_alives;
 caddr_t ws_default_charset_name = NULL;
 wcharset_t * ws_default_charset = NULL;
-static caddr_t *localhost_names;
-static caddr_t *local_interfaces;
+caddr_t *localhost_names;
+caddr_t *local_interfaces;
 caddr_t dns_host_name;
 caddr_t temp_aspx_dir;
 char *www_maintenance_page = NULL;
@@ -1445,7 +1445,11 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
   dk_free_tree (ws->ws_status_line);
   ws->ws_status_line = NULL;
   ws->ws_status_code = 0;
-
+  if (ws->ws_cli)
+    {
+      memset (&ws->ws_cli->cli_activity, 0, sizeof (db_activity_t));
+      ws->ws_cli->cli_anytime_timeout = 0;
+    }
   if (!http_keep_hosting)
     hosting_clear_cli_attachments (ws->ws_cli, 0);
 
@@ -2469,7 +2473,7 @@ ws_vsp_incl_changed (caddr_t dep)
   int i, l = 0;
   if (!DV_STRINGP(dep))
     return 1;
-  arr = (caddr_t *) box_deserialize_string (dep, 0);
+  arr = (caddr_t *) box_deserialize_string (dep, 0, 0);
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (arr))
     goto err_end;
   l = BOX_ELEMENTS (arr);
@@ -3448,7 +3452,11 @@ do_file:
 #endif
   pop_user_id (ws->ws_cli); /* set back original user id */
 
-
+  if (THR_TMP_POOL)
+    {
+      MP_DONE ();
+      log_error ("non-empty MP after %s", ws->ws_path_string ? ws->ws_path_string : "<no-url>");
+    }
   /* instead of connection_set (cli, con_dav_v_name, NULL);
    * we'll clear all connection settings if connection is dirty */
   ws_connection_vars_clear (cli);
@@ -9602,6 +9610,8 @@ http_init_part_two ()
   if (!http_port)
     return 1;
 
+  lt_enter(bootstrap_cli->cli_trx);
+
   http_init_acl_and_cache ();
 
 #ifdef VIRTUAL_DIR
@@ -9877,6 +9887,7 @@ http_init_part_two ()
   http_vhosts_init ();
 #endif
 
+  if (CL_RUN_LOCAL == cl_run_local_only)
   bpel_init();
 
   /* last thing after server is up is to leave the bootstrap_cli trx */

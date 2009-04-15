@@ -2799,6 +2799,25 @@ xml_uri_resolve_like_get (query_instance_t * qi, caddr_t *err_ret, ccaddr_t base
 	  return NULL;
 	}
     }
+  if (DV_STRINGP (base_uri) && DV_STRINGP (rel_uri))
+    {
+      caddr_t err = NULL;
+      caddr_t res =  rfc1808_expand_uri ((caddr_t*)qi, base_uri, rel_uri,
+					 output_charset, 0,
+					 NULL, /* Encoding used for base_uri IFF it is a narrow string, neither DV_UNAME nor WIDE */
+					 NULL, /* Encoding used for rel_uri IFF it is a narrow string, neither DV_UNAME nor WIDE */
+					 &err);
+      if (err)
+	{
+	  if (err_ret)
+	    *err_ret = err;
+	  else 
+	    dk_free_tree (err);
+	  return NULL;
+	}
+      return res;
+    }
+
   CHECK_URI_TYPES(base_uri,rel_uri);
   err = qr_rec_exec (qr, qi->qi_client, &lc, qi, NULL, 3,
       ":0", box_copy (base_uri), QRP_RAW,

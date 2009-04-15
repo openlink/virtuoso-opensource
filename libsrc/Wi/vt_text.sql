@@ -93,16 +93,16 @@ create procedure DB.DBA.vt_create_ftt (in tb varchar, in id varchar, in dbcol va
     {
       stmt := concat (
 	  sprintf (
-	    'create procedure "%I"."%I"."VT_BATCH_PROCESS_%s" (inout vtb any) {\n',tbn0, tbn1, data_table_suffix),
+	    'create procedure "%I"."%I"."VT_BATCH_PROCESS_%s" (inout vtb any, in doc_id int) {\n',tbn0, tbn1, data_table_suffix),
 	      'declare invd any;\n
 	       invd := vt_batch_strings_array (vtb);\n
 	       if (length (invd) < 1) return;\n',
 	      sprintf ('"%I"."%I"."VT_HITS_%I" (vtb, invd);\n', tbn0, tbn1, tbn2),
 	  sprintf (
-	    'log_text (''"%I"."%I"."VT_BATCH_REAL_PROCESS_%s" (?)'', invd);\n', tbn0, tbn1, data_table_suffix),
+	    'log_text (''"%I"."%I"."VT_BATCH_REAL_PROCESS_%s" (?, ?)'', invd, doc_id);\n', tbn0, tbn1, data_table_suffix),
 	    'log_enable (0);\n',
 	  sprintf (
-	    '"%I"."%I"."VT_BATCH_REAL_PROCESS_%s" (invd);\n',tbn0, tbn1, data_table_suffix),
+	    '"%I"."%I"."VT_BATCH_REAL_PROCESS_%s" (invd, doc_id);\n',tbn0, tbn1, data_table_suffix),
 	    'log_enable (1);}\n');
       DB.DBA.execstr (stmt);
     }
@@ -474,6 +474,8 @@ create procedure DB.DBA.vt_drop_ftt (in tb varchar, in dbcol varchar)
 }
 ;
 
+--#IF VER=5
 --!AFTER
+--#ENDIF
 grant execute on DB.DBA.vt_create_text_index to public
 ;

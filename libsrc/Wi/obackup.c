@@ -108,7 +108,6 @@ static void backup_path_init ();
 static int ob_check_file (caddr_t elt, caddr_t ctx, caddr_t dir);
 static int ob_foreach_dir (caddr_t * dirs, caddr_t ctx, ob_err_ctx_t* e_ctx, file_check_f func);
 static int ob_get_num_from_file (caddr_t file, caddr_t prefix);
-static buffer_desc_t* read_free_set_from_disk ();
 static int try_to_change_dir (ol_backup_context_t * ctx);
 static void backup_context_flush (ol_backup_context_t * ctx);
 void cpt_over (void);
@@ -284,39 +283,6 @@ hash_reverse (dk_hash_t* hash)
   return new_hash;
 }
 
-dp_addr_t
-db_backupable_page (dbe_storage_t* dbs, dk_hash_t* cpt_remap_r, dp_addr_t page_dp, ol_backup_context_t* ctx)
-{
-  dp_addr_t page_no;
-  uint32* array;
-  int inx, bit;
-  dp_addr_t page_num;
-
-  if (!ctx)
-    dbs_locate_free_bit (dbs, page_dp, &array, &page_no, &inx, &bit);
-  else
-    dbs_locate_page_bit (dbs, &ctx->octx_free_set, page_dp, &array, &page_no, &inx, &bit, V_EXT_OFFSET_FREE_SET);
-
-  if (!(array[inx] & (1 << bit)))
-    return DP_DELETED;
-
-  if (gethash (DP_ADDR2VOID (page_dp), cpt_remap_r))
-    return DP_DELETED;
-
-  if ((page_num = (dp_addr_t) (ptrlong) gethash (DP_ADDR2VOID (page_dp), dbs->dbs_cpt_remap)))
-    {
-      if (!ctx)
-	dbs_locate_free_bit (dbs, page_num, &array, &page_no, &inx, &bit);
-      else
-	dbs_locate_page_bit (dbs, &ctx->octx_free_set, page_num, &array, &page_no, &inx, &bit, V_EXT_OFFSET_FREE_SET);
-      if (!(array[inx] & (1 << bit)))
-	return DP_DELETED;
-      return page_num;
-    }
-
-  return page_dp;
-}
-
 void
 ol_write_header (ol_backup_context_t * ctx)
 {
@@ -400,7 +366,6 @@ ol_write_cfg_page (ol_backup_context_t * ctx)
     {
       /* fix checkpoint page no */
       memcpy (&db, buf->bd_buffer, sizeof (wi_database_t));
-      db.db_checkpoint_map = 0;
 
       /* fix timestamp */
       if (!bp_ctx.db_bp_ts)
@@ -422,6 +387,31 @@ ol_write_cfg_page (ol_backup_context_t * ctx)
   return res;
 }
 
+
+FILE * obackup_trace;
+void
+ol_remap_trace (ol_backup_context_t * ctx)
+{
+  buffer_desc_t * buf = ctx->octx_cpt_set;
+  if (!obackup_trace)
+    return;
+  fprintf (obackup_trace, "Remaps follow:\n");
+  while (buf)
+    {
+      int inx;
+      for (inx = DP_DATA; inx < PAGE_SZ; inx += 8)
+	{
+	  dp_addr_t l = LONG_REF (buf->bd_buffer + inx);
+	  dp_addr_t p = LONG_REF (buf->bd_buffer + inx + 4);
+	  if (l)
+	    fprintf (obackup_trace, "L=%d P=%d\n", l, p);
+	}
+      buf = buf->bd_next;
+    }
+  fflush (obackup_trace);
+}
+
+
 int
 ol_write_page_set (ol_backup_context_t * ctx, buffer_desc_t * buf,  int clr)
 {
@@ -439,87 +429,45 @@ ol_write_page_set (ol_backup_context_t * ctx, buffer_desc_t * buf,  int clr)
   return 0;
 }
 
-int
-ol_write_incbackup_set (ol_backup_context_t * backup_ctx, dbe_storage_t * storage)
-{
-  return ol_write_page_set (backup_ctx, storage->dbs_incbackup_set, 1);
-}
 
 int
-ol_write_free_set (ol_backup_context_t * backup_ctx, dbe_storage_t * storage)
-{
-  int res;
-  dk_set_t cp_remap_pages = storage->dbs_cp_remap_pages;
-  buffer_desc_t * free_set_copy = NULL;
-  buffer_desc_t * fs_cp = NULL, * fs_cp_prev = NULL;
-  buffer_desc_t * free_set_buf = backup_ctx->octx_free_set;
-  int inx, bit;
-  dp_addr_t near_dp;
-  dp_addr_t dp;
-  uint32 * array;
-
-  while (free_set_buf)
-    {
-      if (!free_set_copy)
-	fs_cp = free_set_copy = buffer_allocate (DPF_FREE_SET);
-      else
+ol_write_sets (ol_backup_context_t * ctx, dbe_storage_t * storage)
 	{
-	  fs_cp = buffer_allocate (DPF_FREE_SET);
-	  fs_cp_prev->bd_next = fs_cp;
-	}
-
-      fs_cp->bd_physical_page =  free_set_buf->bd_physical_page;
-      fs_cp->bd_page = free_set_buf->bd_page;
-
-      memcpy (fs_cp->bd_buffer, free_set_buf->bd_buffer, PAGE_SZ);
-
-      /*      if (fs_cp_prev)
-	      LONG_SET (fs_cp_prev->bd_buffer + DP_OVERFLOW, fs_cp->bd_page); */
-
-      fs_cp_prev = fs_cp;
-      free_set_buf = free_set_buf->bd_next;
-    }
-  fs_cp->bd_next = 0;
-
-
-  /*  LONG_SET (fs_cp->bd_buffer + DP_OVERFLOW, 0); */
-#if 1
-  if (storage->dbs_cpt_remap)
+  int res, inx;
+  res = ol_write_page_set (ctx, ctx->octx_dbs->dbs_incbackup_set, 1);
+  res = ol_write_page_set (ctx, ctx->octx_cpt_set, 0);
+  ol_remap_trace (ctx);
+  res = ol_write_page_set (ctx, ctx->octx_ext_set, 0);
+  res = ol_write_page_set (ctx, ctx->octx_free_set, 0);
+  DO_BOX (caddr_t *, elt, inx, ctx->octx_registry)
     {
-      dk_hash_iterator_t hit;
-      uptrlong p, r;
-      for (dk_hash_iterator (&hit, storage->dbs_cpt_remap);
-	   dk_hit_next (&hit, (void **) &p, (void **) &r);
-	   /* */)
+      caddr_t name = elt[0];
+      caddr_t val = elt[1];
+      buffer_desc_t * em;
+      if (!DV_STRINGP (name) || !DV_STRINGP (val))
+	continue;
+      if (0 == strncmp (name, "__EM:", 5)
+	  || 0 == strcmp (name, "__sys_ext_map"))
 	{
-	  near_dp = (dp_addr_t) r;
-	  dbs_locate_page_bit(storage, &free_set_copy, near_dp, &array, &dp, &inx, &bit, V_EXT_OFFSET_FREE_SET);
-	  array[inx] &= ~(1 << bit);
+	  dp_addr_t dp = atoi (val);
+	  em = dbs_read_page_set (ctx->octx_dbs, dp, DPF_EXTENT_MAP);
+	  res = ol_write_page_set (ctx, em, 0);
+	  buffer_set_free (em);
 	}
     }
-#endif
-  while (cp_remap_pages)
-    {
-      near_dp = (dp_addr_t) (ptrlong) cp_remap_pages->data;
-      dbs_locate_page_bit(storage, &free_set_copy, near_dp, &array, &dp, &inx, &bit, V_EXT_OFFSET_FREE_SET);
-      array[inx] &= ~(1 << bit);
-
-      cp_remap_pages = cp_remap_pages->next;
-    }
-
-  res = ol_write_page_set (backup_ctx, free_set_copy, 0);
-  buffer_set_free (free_set_copy);
+  END_DO_BOX;
   return res;
 }
 
 
-int ol_regist_unmark (it_cursor_t * itc, buffer_desc_t * buf, ol_backup_context_t * ctx)
+int 
+ol_regist_unmark (it_cursor_t * itc, buffer_desc_t * buf, ol_backup_context_t * ctx)
 {
   uint32* array;
   int inx, bit;
   dp_addr_t array_page;
-
-  dbs_locate_incbackup_bit (wi_inst.wi_master, buf->bd_page,
+  IN_DBS (buf->bd_storage);
+  dbs_locate_incbackup_bit (buf->bd_storage, buf->bd_page,
 			    &array, &array_page, &inx, &bit);
 
   if (array[inx] & 1<<bit)
@@ -527,6 +475,7 @@ int ol_regist_unmark (it_cursor_t * itc, buffer_desc_t * buf, ol_backup_context_
       page_set_update_checksum (array, inx, bit);
   array[inx] &= ~(1 << bit);
     }
+  LEAVE_DBS (buf->bd_storage);
   return 0;
 }
 
@@ -563,7 +512,7 @@ int
 ol_backup_page (it_cursor_t * itc, buffer_desc_t * buf, ol_backup_context_t * ctx)
 {
   ol_backup_context_t * octx = (ol_backup_context_t*)ctx;
-  dp_addr_t page = buf->bd_page;
+  dp_addr_t page = buf->bd_physical_page; /* unlike v5, all restores to same phys place, incl. remapped pages */
   int backuped = 0;
   int write_header_first = 0;
 
@@ -647,33 +596,22 @@ ol_save_context (ol_backup_context_t * ctx)
 }
 
 
-
-static int
-is_cp_remap_page (dp_addr_t dp, dbe_storage_t * dbs)
-{
-  DO_SET (caddr_t, _page, &dbs->dbs_cp_remap_pages)
-    {
-      dp_addr_t page = (dp_addr_t) (ptrlong) _page;
-      if (page == dp)
-	return 1;
-    }
-  END_DO_SET();
-  return 0;
-}
-
 static int
 is_in_backup_set  (ol_backup_context_t * octx, dp_addr_t page)
 {
   uint32* array;
   int inx, bit;
   dp_addr_t array_page;
-
+  int32 x;
   if (octx->octx_is_invalid)
     return 0;
 
+  IN_DBS (octx->octx_dbs);
   dbs_locate_page_bit (octx->octx_dbs, &octx->octx_dbs->dbs_incbackup_set,
 		       page, &array, &array_page, &inx, &bit, V_EXT_OFFSET_INCB_SET);
-  if (array[inx] & (1 << bit))
+  x = (array[inx] & (1 << bit));
+  LEAVE_DBS (octx->octx_dbs);
+  if (x)
     return 1;
   return 0;
 }
@@ -702,26 +640,23 @@ db_backup_pages (ol_backup_context_t * backup_ctx, dp_addr_t start_dp, dp_addr_t
 
   for (page_no = start_dp; page_no < end_page; page_no++)
     {
-      dp_addr_t page;
-
-      if (is_cp_remap_page (page_no, storage))
-	continue;
-
-#ifdef DEBUG
+      dp_addr_t log_page;
       if (0 == page_no%10000)
 	log_info("Backing up page %ld", page_no);
-#endif
-
-      page = db_backupable_page (storage, backup_ctx->octx_cpt_remap_r, page_no, backup_ctx);
-
-      if (page != -1)
-	{
-	  buf->bd_page = page_no;
-	  buf->bd_physical_page = page;
+      if (page_no == end_page - 1)
+	goto backup; /* must always write this to make sure restored is at least as long as original */
+      if (gethash (DP_ADDR2VOID(page_no), backup_ctx->octx_dbs->dbs_cpt_remap))
+	continue; /* there is a cpt remap page for this, so do not write this */
+      log_page = (uptrlong) gethash (DP_ADDR2VOID(page_no), backup_ctx->octx_cpt_remap_r);
+      if (!is_in_backup_set (backup_ctx, log_page ? log_page : page_no))
+	continue;
+    backup:
+      if (obackup_trace)
+	fprintf (obackup_trace, "W L=%d P=%d\n", log_page, page_no);
+      buf->bd_page = log_page ? log_page : page_no;
+	  buf->bd_physical_page = page_no;
 	  buf->bd_storage = storage;
 
-	  if (is_in_backup_set (backup_ctx, page_no))
-	      {
 		if (WI_ERROR == ol_buf_disk_read (buf))
 		  make_log_error (backup_ctx, READ_ERR_CODE, READ_ERR_STR, page_no);
 		else
@@ -731,13 +666,9 @@ db_backup_pages (ol_backup_context_t * backup_ctx, dp_addr_t start_dp, dp_addr_t
 		      return -1;
 		  }
 	      }
-	}
-    }
 
   /* these ones will be always written to the end backup file */
-  if (-1 == ol_write_free_set (backup_ctx, storage))
-    return -1;
-  if (-1 == ol_write_incbackup_set (backup_ctx, storage))
+  if (-1 == ol_write_sets (backup_ctx, storage))
     return -1;
   if (-1 == ol_write_registry (backup_ctx->octx_dbs, backup_ctx, ol_backup_page))
     return -1;
@@ -768,6 +699,9 @@ backup_context_free (ol_backup_context_t * ctx)
   buffer_set_free (incset);
   dk_free_tree (list_to_array (ctx->octx_backup_files));
   buffer_set_free (ctx->octx_free_set);
+  buffer_set_free (ctx->octx_ext_set);
+  buffer_set_free (ctx->octx_cpt_set);
+  dk_free_tree ((caddr_t) ctx->octx_registry);
   if (ctx->octx_cpt_remap_r)
     hash_table_free (ctx->octx_cpt_remap_r);
   dk_free (ctx, sizeof (ol_backup_context_t));
@@ -1069,33 +1003,53 @@ static int try_to_change_dir (ol_backup_context_t * ctx)
 
 long ol_backup (const char* prefix, long pages, long timeout, caddr_t* backup_path_arr, query_instance_t *qi)
 {
+  dbe_storage_t * dbs = wi_inst.wi_master;
+  dk_session_t * ses;
+  int need_mtx = !srv_have_global_lock(THREAD_CURRENT_THREAD);
   ol_backup_context_t * ctx;
   long _pages;
-  int need_mtx = !srv_have_global_lock(THREAD_CURRENT_THREAD);
+  buffer_desc_t *cfg_buf = buffer_allocate (DPF_CP_REMAP);
+  wi_database_t db;
   char * log_name;
   caddr_t err = NULL;
 
   OB_IN_CPT (need_mtx,qi);
-
   log_name = sf_make_new_log_name (wi_inst.wi_master);
   IN_TXN;
-  dbs_checkpoint (wi_inst.wi_master, log_name, CPT_INC_RESET);
+  dbs_checkpoint (log_name, CPT_INC_RESET);
   LEAVE_TXN;
 
+  cfg_buf->bd_page = cfg_buf->bd_physical_page = 0;
+  cfg_buf->bd_storage = wi_inst.wi_master;
+  if (WI_ERROR == ol_buf_disk_read (cfg_buf))
+    GPF_T1 ("obackup can't read cfg page");
+  memcpy (&db, cfg_buf->bd_buffer, sizeof (wi_database_t));
+  buffer_free (cfg_buf);
   ctx = backup_context_allocate (prefix, pages, timeout, backup_path_arr, &err);
   if (err)
     {
       OB_LEAVE_CPT (need_mtx,qi);
       sqlr_resignal (err);
     }
-
+  ctx->octx_dbs = wi_inst.wi_master;
   _pages = ctx->octx_page_count;
-  time (&db_bp_date);
-  ctx->octx_free_set = read_free_set_from_disk();
+
+  ctx->octx_free_set = dbs_read_page_set (dbs, db.db_free_set, DPF_FREE_SET);
+  ctx->octx_ext_set = dbs_read_page_set (dbs, db.db_extent_set, DPF_EXTENT_SET);
+  if (db.db_checkpoint_map)
+    ctx->octx_cpt_set = dbs_read_page_set (dbs, db.db_checkpoint_map, DPF_CP_REMAP);
+  #if 0
+  obackup_trace = fopen ("obackup.out", "a");
+  fprintf (obackup_trace, "\n\n\Bakup file %s\n", "xx");
+#endif
+  ses = dbs_read_registry (ctx->octx_dbs, qi->qi_client);
+  ctx->octx_registry = (caddr_t *) read_object (ses);
+  dk_free_box ((caddr_t)ses);
   memset (&backup_status, 0, sizeof (backup_status_t));
   backup_status.is_running = 1;
   backup_status.pages = dbs_count_incbackup_pages (wi_inst.wi_master);
 
+  time (&db_bp_date);
   dir_first_page = 0;
   CATCH_WRITE_FAIL (ctx->octx_file)
     {
@@ -1120,7 +1074,16 @@ long ol_backup (const char* prefix, long pages, long timeout, caddr_t* backup_pa
 
   store_backup_context (ctx);
   CHECK_ERROR (ctx, error);
+  IN_DBS (dbs);
+  dbs_write_page_set (dbs, dbs->dbs_incbackup_set);
+  LEAVE_DBS (dbs);
 
+  if (obackup_trace)
+    {
+      fflush (obackup_trace);
+      fclose (obackup_trace);
+      obackup_trace = NULL;
+    }
 #ifdef DEBUG
   log_info ("Backed up pages: [%ld]", ctx->octx_page_count);
   log_info ("Log = %s", wi_inst.wi_master->dbs_log_name);
@@ -1148,67 +1111,6 @@ long ol_backup (const char* prefix, long pages, long timeout, caddr_t* backup_pa
   sqlr_new_error ("42000", backup_status.errcode, backup_status.errstring);
   return 0; /* keeps compiler happy */
 }
-
-buffer_desc_t * read_free_set_from_disk ()
-{
-  buffer_desc_t *cfg_buf = buffer_allocate (DPF_CP_REMAP);
-
-  cfg_buf->bd_page = cfg_buf->bd_physical_page = 0;
-  cfg_buf->bd_storage = wi_inst.wi_master;
-
-  if (WI_ERROR != ol_buf_disk_read (cfg_buf))
-    {
-      wi_database_t db;
-      dp_addr_t free_set_start;
-      buffer_desc_t * free_set_ps = NULL, *free_set_curr = NULL;
-      memcpy (&db, cfg_buf->bd_buffer, sizeof (wi_database_t));
-      free_set_start = db.db_free_set;
-      while (free_set_start)
-	{
-	  buffer_desc_t * new_free_set_buf = buffer_allocate (DPF_FREE_SET);
-	  new_free_set_buf->bd_page = new_free_set_buf->bd_physical_page = free_set_start;
-	  new_free_set_buf->bd_storage =  wi_inst.wi_master;
-	  if (!free_set_ps)
-	    {
-	      free_set_curr = free_set_ps = new_free_set_buf;
-	      if (WI_ERROR != ol_buf_disk_read (new_free_set_buf))
-		free_set_ps->bd_next = 0;
-	      else
-		{
-		  buffer_set_free (free_set_ps);
-		  buffer_set_free (cfg_buf);
-		  log_error ("could not read free set");
-		  return 0;
-		}
-	      free_set_start = LONG_REF (new_free_set_buf->bd_buffer + DP_OVERFLOW);
-	    }
-	  else
-	    {
-	      free_set_curr->bd_next = new_free_set_buf;
-	      if (WI_ERROR == ol_buf_disk_read (new_free_set_buf))
-		{
-		  buffer_set_free (free_set_ps);
-		  buffer_set_free (cfg_buf);
-
-		  log_error ("could not read free set");
-		  return 0;
-		}
-	      free_set_curr = new_free_set_buf;
-	      free_set_start = LONG_REF (new_free_set_buf->bd_buffer + DP_OVERFLOW);
-	    }
-	}
-      buffer_set_free (cfg_buf);
-      return free_set_ps;
-    }
-  else
-    log_error ("could not read config page");
-  buffer_set_free (cfg_buf);
-  return 0;
-}
-
-
-
-
 
 
 void bp_sec_user_check (query_instance_t * qi)
@@ -1395,12 +1297,12 @@ bif_backup_context_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
     {
       char * log_name = sf_make_new_log_name (wi_inst.wi_master);
       IN_TXN;
-      dbs_checkpoint (wi_inst.wi_master, log_name, CPT_INC_RESET);
+      dbs_checkpoint (log_name, CPT_INC_RESET);
       LEAVE_TXN;
     }
   {
-    buffer_desc_t * fs = dbs->dbs_free_set;
     buffer_desc_t * is = dbs->dbs_incbackup_set;
+    buffer_desc_t * fs = dbs_read_page_set (wi_inst.wi_master, wi_inst.wi_master->dbs_free_set->bd_page, DPF_FREE_SET);
     while (fs && is)
       {
 	memcpy (is->bd_buffer + DP_DATA, fs->bd_buffer + DP_DATA, PAGE_DATA_SZ);
@@ -1427,6 +1329,7 @@ bif_backup_context_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 	dp_set_backup_flag (dbs, (dp_addr_t)(ptrlong) _page, 0);
       }
     END_DO_SET();
+    buffer_set_free (fs);
   }
     dbs_write_page_set (dbs, dbs->dbs_incbackup_set);
     dbs_write_cfg_page (dbs, 0);
@@ -1571,12 +1474,13 @@ buf_disk_raw_write (buffer_desc_t* buf)
     {
       disk_stripe_t *dst;
       int fd;
+      OFF_T rc;
 
       IN_DBS (dbs);
       while (dest >= dbs->dbs_n_pages)
 	{
-	  rc = dbs_extend_file (dbs);
-	  if (!rc)
+	  rc = dbs_seg_extend (dbs, EXTENT_SZ);
+	  if (rc != EXTENT_SZ)
 	    {
 	      log_error ("Cannot extend database, please free disk space and try again.");
 	      call_exit (-1);
@@ -1604,7 +1508,7 @@ buf_disk_raw_write (buffer_desc_t* buf)
   else
     {
       OFF_T off_dest = ((OFF_T) dest) * PAGE_SZ;
-      if (off_dest > dbs->dbs_file_length)
+      if (off_dest >= dbs->dbs_file_length)
 	{
 	  /* Fill the gap. */
 	  LSEEK (dbs->dbs_fd, 0, SEEK_END);
@@ -1727,8 +1631,9 @@ static int ol_breakpoint()
 #endif
 
 static int
-check_configuration (caddr_t page_buf)
+check_configuration (buffer_desc_t * buf)
 {
+  caddr_t page_buf = (caddr_t)buf->bd_buffer;
   wi_database_t db;
   memcpy (&db, page_buf, sizeof (wi_database_t));
   if (dbs_byte_order_cmp (db.db_byte_order))
@@ -1736,6 +1641,7 @@ check_configuration (caddr_t page_buf)
       log_error ("The backup was produced on a system with different byte order. Exiting.");
       return -1;
     }
+  ((wi_database_t *)page_buf)->db_stripe_unit = buf->bd_storage->dbs_stripe_unit;
   return 0;
 }
 
@@ -1753,15 +1659,16 @@ insert_page (ol_backup_context_t* ctx, dp_addr_t page_dp)
   if (!compr_buf || (Z_OK != uncompress_buffer (compr_buf, page_buf)))
     log_error ("Could not recover page %ld from backup file %s", page_dp, ctx->octx_curr_file);
 
-  if (!page_dp && 0) /* config page, check byte ordering */
-    {
-      if (-1 == check_configuration ((caddr_t) page_buf))
-	return -1;
-    }
-
   buf.bd_page = buf.bd_physical_page = page_dp;
   buf.bd_buffer = page_buf;
   buf.bd_storage = ctx->octx_dbs;
+
+  if (!page_dp) /* config page, check byte ordering */
+    {
+      if (-1 == check_configuration (&buf))
+	return -1;
+    }
+
 
   if (!ob_just_report)
     buf_disk_raw_write (&buf);

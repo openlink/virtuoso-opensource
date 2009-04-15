@@ -86,7 +86,9 @@ alter table HTTP_ACL add HA_RATE double precision	   -- Rate (hits/second).
 --#ENDIF
 
 -- triggers to keep in sync in-memory representation
+--#IF VER=5
 --!AFTER_AND_BEFORE DB.DBA.HTTP_ACL HA_RATE !
+--#ENDIF
 create trigger HTTP_ACL_I after insert on DB.DBA.HTTP_ACL
 {
   declare def_rate int;
@@ -99,7 +101,9 @@ create trigger HTTP_ACL_I after insert on DB.DBA.HTTP_ACL
 ;
 
 -- triggers to keep in sync in-memory representation
+--#IF VER=5
 --!AFTER_AND_BEFORE DB.DBA.HTTP_ACL HA_RATE !
+--#ENDIF
 create trigger HTTP_ACL_U after update on DB.DBA.HTTP_ACL referencing old as O, new as N
 {
   http_acl_remove (O.HA_LIST, O.HA_ORDER, O.HA_CLIENT_IP, O.HA_FLAG);
@@ -351,7 +355,9 @@ create procedure DEL_VIRTUAL_DIR (in lpath varchar)
 ;
 
 -- Add new virtual host / directory
+--#IF VER=5
 --!AFTER_AND_BEFORE DB.DBA.HTTP_PATH HP_IS_DEFAULT_HOST !
+--#ENDIF
 create procedure VHOST_DEFINE (in vhost varchar := '*ini*',
                                in lhost varchar := '*ini*',
                                in lpath varchar,
@@ -824,10 +830,6 @@ create procedure virt_proxy_init ()
 }
 ;
 
---!AFTER
-virt_proxy_init ()
-;
-
 create procedure
 proxy_sp_html_error_page (in title varchar, in hd varchar, in message varchar)
 {
@@ -1164,10 +1166,6 @@ end_loop:;
   http (content);
   return '';
 }
-;
-
---!AFTER
-grant execute on ext_http_proxy to PROXY
 ;
 
 create procedure

@@ -160,16 +160,20 @@ User-level object is of type DV_XML_ENTITY. */
 
 /* fields of DV_BLOB variants */
 #define BL_CHAR_LEN 1
-#define BL_BYTE_LEN 5
-#define BL_KEY_ID 9
-#define BL_FRAG_NO 11
-#define BL_DP 13
+#define BL_BYTE_LEN 9
+#define BL_KEY_ID 17
+#define BL_FRAG_NO 21
+#define BL_DP 25
 #define BL_DPS_ON_ROW 16  /* consecutive dp's, last if !) 0 is the dp of the first full dir page */
 #define BL_PAGE_DIR (BL_DP + 4 * BL_DPS_ON_ROW)
 #define BL_TS (BL_PAGE_DIR + 4)
-#define DV_BLOB_LEN (BL_TS + sizeof (dp_addr_t))
+#define DV_BLOB_LEN ((int)(BL_TS + sizeof (dp_addr_t)))
 
 #define BL_N_PAGES(bytes)  ((_RNDUP (((bytes) ? bytes : 1), PAGE_DATA_SZ)) / PAGE_DATA_SZ)
+
+
+/* occurs in key layout when assigning places for offsets for ref to uncompressed value on other row. 2 bytes per field, laid out before rest */
+#define DV_COMP_OFFSET 136
 
 #define DV_TIME		210
 #define DV_DATETIME	211
@@ -195,11 +199,13 @@ User-level object is of type DV_XML_ENTITY. */
 #define DV_XML_DTD 236		/* Storable XML DTD */
 #define DV_XML_SCHEMA 237	/* Storable XML Schema */
 
+#define DV_INDEX_TREE 137
+#define DV_ITC 138
 #define DV_FIXED_STRING 240
 #define DV_TINY_INT 241
 #define DV_ANY 242
 
-extern int bnode_iri_ids_are_huge;
+#define bnode_iri_ids_are_huge  (wi_inst.wi_master->dbs_stripe_unit != 1) /* stay compatible with some older 6 databases w/ 64 bits ids but bnodes starting at wrong place.  Temporary  */
 #define min_bnode_iri_id() (bnode_iri_ids_are_huge ? MIN_64BIT_BNODE_IRI_ID : MIN_32BIT_BNODE_IRI_ID)
 #define min_named_bnode_iri_id() (bnode_iri_ids_are_huge ? MIN_64BIT_NAMED_BNODE_IRI_ID : MIN_32BIT_NAMED_BNODE_IRI_ID)
 
@@ -210,6 +216,10 @@ extern int bnode_iri_ids_are_huge;
 #define IS_IRI_DTP(dtp) (DV_IRI_ID == (dtp) || DV_IRI_ID_8 == (dtp))
 
 #define DV_COMPOSITE 255 /* value important for free text, where long w/ high byte of 255 signifies composite key */
+
+/* cluster data */
+#define DV_CLRG 248
+#define DV_CLOP 249
 
 #define DV_OBJECT 254
 /*#define DV_REFERENCE 206 Moved to Dk.h */
@@ -223,8 +233,10 @@ extern int bnode_iri_ids_are_huge;
 #define DV_REXEC_CURSOR 240 /* the rexec cursor */
 
 #define DV_CONNECTION 241 /* the connected TCP session  */
-#define DV_FD      249 /* the open file handle */
+#define DV_FD      250 /* the open file handle, this to be deleted in future */
 #define DV_ASYNC_QUEUE 245 /* async_queue_t */
+#define DV_RI_ITERATOR 229
+
 #define DT_LENGTH 10
 #define DT_COMPARE_LENGTH 8
 

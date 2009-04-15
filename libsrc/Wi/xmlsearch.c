@@ -39,97 +39,6 @@ int itc_xml_row (it_cursor_t * itc, buffer_desc_t * buf, int pos,
 
 
 
-int
-itc_xml_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_ret)
-{
-  db_buf_t page = (*buf_ret)->bd_buffer;
-  long key_id;
-  int res = DVC_LESS;
-  int pos, key_pos, key_pos_1;
-  long head_len;
-  pos = it->itc_position;
-
-  while (1)
-    {
-      if (!pos)
-	{
-	  *leaf_ret = 0;
-	  it->itc_position = 0;
-	  return DVC_INDEX_END;
-	}
-      if (pos >= PAGE_SZ)
-	GPF_T;			/* Link over page end */
-
-      if (it->itc_owns_page != it->itc_page
-	  && ITC_IS_LTRX (it)
-	  && it->itc_isolation != ISO_UNCOMMITTED)
-	{
-	  if (it->itc_isolation == ISO_SERIALIZABLE
-	      || ITC_MAYBE_LOCK (itc, pos))
-	    {
-	      it->itc_position = pos;
-	      for (;;)
-		{
-		  int wrc = itc_landed_lock_check (it, buf_ret);
-		  if (ISO_SERIALIZABLE == it->itc_isolation
-		      || NO_WAIT == wrc)
-		    break;
-		  /* passing this means for a RR cursor that a subsequent itc_set_lock_on_row is
-		   * GUARANTEED to be with no wait. Needed not to run sa_row_check side effect twice */
-		  wrc = wrc;	/* breakpoint here */
-		}
-	      pos = it->itc_position;
-	      page = (*buf_ret)->bd_buffer;
-	      if (0 == pos)
-		{
-		  /* The row may have been deleted during lock wait.
-		   * if this was the last row, the itc_position will have been set to 0 */
-		  *leaf_ret = 0;
-		  return DVC_INDEX_END;
-		}
-	    }
-	}
-
-      head_len = page[pos] == DV_SHORT_CONT_STRING ? 2 : 5;
-      key_pos = pos + (int) head_len + IE_FIRST_KEY;
-      key_pos_1 = key_pos;
-      key_id = SHORT_REF (page + key_pos - 4 + IE_KEY_ID);
-      it->itc_row_key_id = (key_id_t) key_id;
-
-
-      if (IE_ISSET (page + pos + head_len, IEF_DELETE))
-	goto next_row;
-      it->itc_position = pos;
-      *leaf_ret = 0;
-      res = itc_xml_row (it, *buf_ret, key_pos, leaf_ret);
-      if (DVC_GREATER == res)
-	return DVC_GREATER;
-      if (!*leaf_ret)
-	it->itc_at_data_level = 1;
-      else
-	return DVC_MATCH;
-
-      if (! *leaf_ret && res == DVC_MATCH)
-	{
-	  it->itc_position = pos;
-	    return DVC_MATCH;
-	}
-
-
-    next_row:
-
-      if (it->itc_desc_order)
-	{
-	  itc_prev_entry (it, *buf_ret);
-	  pos = it->itc_position;
-	}
-      else
-	{
-	  pos = IE_NEXT (page + pos + (int) head_len);
-	}
-    }
-}
-
 
 
 
@@ -154,6 +63,64 @@ itc_xml_row (it_cursor_t * itc, buffer_desc_t * buf, int pos,
   O12;
   return 0;
 }
+
+
+
+#ifndef O12
+#define TEST_V(sps) \
+{ \
+  search_spec_t * sp = sps[0]; \
+  spi2 = 1; \
+  while (sp) \
+    { \
+      DV_COMPARE_SPEC (res, sp, itc); \
+      if (res != DVC_MATCH) \
+	return DVC_LESS; \
+      sp = sps[spi2++]; \
+    } \
+}
+
+
+db_buf_t
+itc_misc_column (it_cursor_t * itc, db_buf_t page, dbe_table_t * tb, oid_t misc_id)
+{
+  oid_t cid;
+  if (!tb || !tb->tb_misc_id_to_col_id)
+    return NULL;
+  cid = (oid_t) gethash ((void *) misc_id, tb->tb_misc_id_to_col_id);
+  if (!cid)
+    return NULL;
+  return (itc_column (itc, page, cid));
+}
+#endif
+
+
+#ifndef O12
+#define TEST_DEF \
+{ \
+  col_pos = is_rmap ? itc_misc_column (itc, buf->bd_buffer, tb, sps[0]->sp_col_id) : NULL; \
+  if (!col_pos) \
+    return DVC_LESS; \
+  TEST_V (sps); \
+}
+
+
+#define SET_DEF(sp_inx) \
+{ \
+  if (ma->ma_out_slots[out_inx]) \
+  { \
+    col_pos = is_rmap ? itc_misc_column (itc, buf->bd_buffer, tb, ma->ma_ids[out_inx]) : NULL; \
+    if (!col_pos) \
+      qst_set_bin_string (qst, ma->ma_out_slots[out_inx], (db_buf_t) "", 0, DV_DB_NULL); \
+    else \
+      itc_qst_set_column (itc, page, ma->ma_ids[out_inx], col_pos, qst, ma->ma_out_slots[out_inx]); \
+  } \
+}
+
+#endif
+
+
+
 
 
 typedef struct misc_upd_s

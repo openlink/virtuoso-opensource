@@ -37,6 +37,8 @@
 #include "sqltype.h"
 #include "sqltype_c.h"
 #include "sqlcstate.h"
+#include "rdfinf.h"
+#include "xmlnode.h"
 
 
 bop_comparison_t *bop_comparison (int op, state_slot_t * l, state_slot_t * r);
@@ -135,9 +137,67 @@ sqlc_call_ret_name (ST * tree, char * func_name, state_slot_t * ssl)
 	{
 	  dk_free_box (pref);
 	  dk_free_box (ssl->ssl_name);
-	  ssl->ssl_name = local;
+	  ssl->ssl_name = box_dv_short_string (local + 4);
+	  dk_free_box (local);
 	}
     }
+}
+
+
+state_slot_t *
+sqlc_trans_funcs (sql_comp_t * sc, ST * tree, state_slot_t * ret)
+{
+  /* process the special functions that deal with transitive nodes */
+  if (ARRAYP (tree->_.call.name))
+    return NULL;
+  if (!stricmp (tree->_.call.name, "__TN_IN"))
+    {
+      if (!sc->sc_trans
+	  || BOX_ELEMENTS (tree->_.call.params) < 1 || BOX_ELEMENTS (sc->sc_trans->tn_input) < unbox ((caddr_t) tree->_.call.params[0]))
+	sqlc_new_error (sc->sc_cc, "37000", "TR...", "__TN_IN is only allowed in transitive step dt");
+      ssl_alias (ret, sc->sc_trans->tn_input [unbox ((caddr_t)tree->_.call.params[0])]);
+      return ret;
+    }
+  if (!stricmp (tree->_.call.name, "T_STEP"))
+    {
+      caddr_t arg;
+      dtp_t dtp;
+      if (!sc->sc_trans
+	  || BOX_ELEMENTS (tree->_.call.params) < 1)
+	sqlc_new_error (sc->sc_cc, "37000", "TR...", "T_STEP is only allowed in transitive step dt");
+      
+      arg = (caddr_t)tree->_.call.params[0];
+      dtp = DV_TYPE_OF (arg);
+      if (DV_LONG_INT == dtp)
+	{
+	  if (BOX_ELEMENTS (sc->sc_trans->tn_input) < unbox ((caddr_t)arg) - 1 || unbox (arg) < 1)
+	    sqlc_new_error (sc->sc_cc, "37000", "TR...", "t_step  argument not an index  to a column in the selection");
+	  if (!sc->sc_trans->tn_step_out)
+	    {
+	      sc->sc_trans->tn_step_out = (state_slot_t **)box_copy ((caddr_t)sc->sc_trans->tn_input);
+	      memset (sc->sc_trans, 0, box_length ((caddr_t)sc->sc_trans->tn_step_out));
+	    }
+	  sc->sc_trans->tn_step_out[unbox ((caddr_t)tree->_.call.params[0]) - 1] = ret;
+	}
+      else if (DV_STRINGP (arg) && !stricmp (arg, "step_no"))
+	sc->sc_trans->tn_step_no_ret = ret;
+      else if (DV_STRINGP (arg) && !stricmp (arg, "path_id"))
+	sc->sc_trans->tn_path_no_ret = ret;
+      else 
+	sqlc_new_error (sc->sc_cc, "37000", "TR...", "the argument of t_step must be a 1 based column index in the selection of 'step_no' or 'path_id'");
+      return ret;
+    }
+  if (!stricmp (tree->_.call.name, "T_STATE"))
+    {
+      if (!sc->sc_trans
+	  || BOX_ELEMENTS (tree->_.call.params) < 1)
+	sqlc_new_error (sc->sc_cc, "37000", "TR...", "T_STEP is only allowed in transitive step dt");
+      if (!sc->sc_trans->tn_state_ssl)
+	sc->sc_trans->tn_state_ssl = ssl_new_variable (sc->sc_cc, "tn_state", DV_ANY);
+      tree->_.call.params = (ST**)t_box_append_1 ((caddr_t)tree->_.call.params, t_box_num ((ptrlong)sc->sc_trans->tn_state_ssl));
+      return NULL;
+    }
+  return NULL;
 }
 
 
@@ -157,6 +217,8 @@ sqlc_call_exp (sql_comp_t * sc, dk_set_t * code, state_slot_t * ret, ST * tree)
   int n_params = act_params ? BOX_ELEMENTS (act_params) : 0;
   caddr_t fun_udt_name = NULL, type_name = BOX_ELEMENTS (tree) > 4 ? tree->_.call.type_name : NULL;
   size_t func_len = ((DV_SYMBOL == DV_TYPE_OF (func)) ? (box_length (func) - 1) : 0);
+  if ((sqlc_trans_funcs (sc, tree, ret)))
+    return;
   if ((func_len > 10) && !stricmp (func + (func_len - 10), " (w/cache)") && (n_params > 0))
     {
       state_slot_t *cache = ssl_new_inst_variable (sc->sc_cc, "cache", DV_ARRAY_OF_POINTER);
@@ -667,6 +729,9 @@ ssl_type_to_name (char ssl_type)
   return "<unnamed>";
 }
 
+#define IS_DATE_DTP(dtp) \
+  (DV_TIMESTAMP == (dtp) || DV_DATE == (dtp) || DV_DATETIME == (dtp))
+
 void
 cv_bop_params (state_slot_t * l, state_slot_t * r, const char *op)
 {
@@ -678,6 +743,8 @@ cv_bop_params (state_slot_t * l, state_slot_t * r, const char *op)
     {
       if ((DV_UNAME == l->ssl_dtp) && (DV_STRING == r->ssl_dtp))
         goto skip_warning;
+      if (IS_DATE_DTP (l->ssl_sqt.sqt_dtp) && IS_DATE_DTP (r->ssl_sqt.sqt_dtp))
+	goto skip_warning;
       if ((DV_UNAME == r->ssl_dtp) && (DV_STRING == l->ssl_dtp))
         goto skip_warning;
       if (l->ssl_dtp != DV_TIMESTAMP && r->ssl_dtp != DV_TIMESTAMP)
@@ -1289,6 +1356,113 @@ pred_list_generate (sql_comp_t * sc, dk_set_t pred_list, dk_set_t * code)
 }
 
 
+
+#define CL_UNKNOWN 0
+#define CL_LOCAL 1
+#define CL_COLOCATABLE 2
+#define CL_LOCATABLE_PENDING 3
+
+int sqlo_proc_cl_locatable (caddr_t name, int level, query_t ** qr_ret);
+int sqlo_cl_locatable (ST * tree, int level);
+
+
+int
+sqlo_array_cl_locatable (ST * tree, int level)
+{
+  int inx;
+  DO_BOX (ST *, elt, inx, (ST**)tree)
+    {
+      if (!sqlo_cl_locatable (elt, level))
+	return 0;
+    }
+  END_DO_BOX;
+  return 1;
+}
+
+
+int
+sqlo_cl_locatable (ST * tree, int level)
+{
+  dtp_t dtp = DV_TYPE_OF (tree);
+  if (level > 10)
+    return 0;
+  if (DV_ARRAY_OF_POINTER != dtp)
+    return 1;
+  if (ST_P (tree, TABLE_DOTTED))
+    {
+      dbe_table_t *tb = sch_name_to_table (wi_inst.wi_schema, tree->_.table.name);
+      ST * view;
+      if (!tb)
+	return 0;
+      if (tb->tb_primary_key->key_partition && clm_replicated != tb->tb_primary_key->key_partition->kpd_map)
+	return 0;
+      view = (ST*) sch_view_def (wi_inst.wi_schema, tb->tb_name);
+      if (view)
+	return sqlo_cl_locatable (view, level + 1);
+    }
+  else if (ST_P (tree, CALL_STMT))
+    {
+      caddr_t name = tree->_.call.name;
+      bif_t bif;
+      if (ARRAYP (tree->_.call.name))
+	return 0;
+      if (cu_func (name, 0))
+	return 0;
+      bif = bif_find (tree->_.call.name);
+      if (bif)
+	return !bif_is_no_cluster (bif) && sqlo_array_cl_locatable ((ST*)tree->_.call.params, level);
+      return sqlo_array_cl_locatable ((ST*)tree->_.call.params, level)
+	&& sqlo_proc_cl_locatable (name, level, NULL);
+    }
+  return sqlo_array_cl_locatable (tree, level);
+}
+
+
+int
+sqlo_proc_cl_locatable (caddr_t name, int level, query_t ** qr_ret)
+{
+  ST * tree;
+  int rc;
+  caddr_t err;
+  client_connection_t * cli = sqlc_client ();
+  caddr_t full_name = sch_full_proc_name (wi_inst.wi_schema, name,
+      cli_qual (cli), CLI_OWNER (cli));
+  query_t * qr = full_name ? sch_proc_def (wi_inst.wi_schema, full_name) : NULL;
+  if (!qr)
+    return 0;
+  if (qr_ret)
+    *qr_ret = qr;
+  if (CL_LOCATABLE_PENDING == qr->qr_cl_locatable )
+    return !level;
+  if (CL_COLOCATABLE == qr->qr_cl_locatable)
+    return 1;
+  if (CL_LOCAL == qr->qr_cl_locatable)
+    return 0;
+  WITHOUT_TMP_POOL 
+    {
+      int is_sem = sqlc_inside_sem;
+      if (is_sem)
+	semaphore_leave (parse_sem);
+      tree = (ST*) sql_compile (qr->qr_text, sqlc_client (), &err,  SQLC_PARSE_ONLY);
+      if (is_sem)
+	semaphore_enter (parse_sem);
+    }
+  END_WITHOUT_TMP_POOL;
+  if (err)
+    {
+      dk_free_tree (err);
+      qr->qr_cl_locatable = CL_LOCAL;
+      return 0;
+    }
+  qr->qr_cl_locatable = CL_LOCATABLE_PENDING;
+  rc = sqlo_cl_locatable (tree, level + 1);
+  dk_free_tree ((caddr_t)tree);
+  qr->qr_cl_locatable = rc ? CL_COLOCATABLE : CL_LOCAL;
+  return rc;
+}
+
+
+
 int
 src_is_local (data_source_t * src)
 {
@@ -1297,6 +1471,7 @@ src_is_local (data_source_t * src)
   if ((qn_input_fn) union_node_input == src->src_input
       || (qn_input_fn) subq_node_input == src->src_input
       || (qn_input_fn) remote_table_source_input == src->src_input
+      || (qn_input_fn) query_frag_input == src->src_input
       )
     return 0;
   return 1;
@@ -1321,7 +1496,7 @@ qr_is_local (query_t * qr)
 
 
 int
-cv_is_local (code_vec_t cv)
+cv_is_local_1 (code_vec_t cv, int is_cluster)
 {
   DO_INSTR (ins, 0, cv)
     {
@@ -1331,17 +1506,32 @@ cv_is_local (code_vec_t cv)
 	  if (subq_comp_func == ins->_.pred.func)
 	    {
 	      subq_pred_t * subq = (subq_pred_t *) ins->_.pred.cmp;
-	      if (!qr_is_local (subq->subp_query))
+	      if (is_cluster || !qr_is_local (subq->subp_query))
 		return 0;
 	    }
+	  if (distinct_comp_func == ins->_.pred.func && is_cluster)
+	    return 0;
 	  break;
 	case INS_SUBQ:
 	  return 0;
 	case INS_CALL:
+	  {
+	    query_t * qr = NULL;
+	    if (is_cluster && sqlo_proc_cl_locatable (ins->_.call.proc, 0, &qr))
+	      {
+		ins->_.call.pn = proc_name_ref (qr->qr_pn); /* name resolved for known proc here, so no need to send current qualifier etc to cluster */
+		break;
+	      }
+	    return 0;
+	  }
 	case INS_CALL_IND:
 	    return 0;
 	case INS_CALL_BIF:
 	  if (bif_uses_index (ins->_.bif.bif))
+	    return 0;
+	  if (is_cluster && bif_is_aggregate (ins->_.bif.bif))
+	    return 0;
+	  if (is_cluster && bif_is_no_cluster (ins->_.bif.bif))
 	    return 0;
 	  break;
 	}
@@ -1351,29 +1541,24 @@ cv_is_local (code_vec_t cv)
 }
 
 
-dk_set_t
-cv_assigned_slots (code_vec_t cv)
+void
+ins_assigned (instruction_t * ins, dk_set_t * res)
 {
   state_slot_t ** out;
-  dk_set_t res = NULL;
-  if (!cv)
-    return NULL;
-  DO_INSTR (ins, 0, cv)
-    {
       switch (ins->ins_type)
 	{
 	case INS_CALL:
 	case INS_CALL_IND:
 	case INS_CALL_BIF:
-	  if (ins->_.call.ret)
-	    dk_set_push (&res, (void*) ins->_.call.ret);
+      if (ins->_.call.ret && IS_REAL_SSL (ins->_.call.ret))
+	dk_set_push (res, (void*) ins->_.call.ret);
 	  break;
 	case IN_ARTM_FPTR:
 	case IN_ARTM_IDENTITY:
 	case IN_ARTM_PLUS: case IN_ARTM_MINUS:
 	case IN_ARTM_TIMES: case IN_ARTM_DIV:
 	  if (ins->_.artm.result)
-	    dk_set_push (&res, (void*) ins->_.artm.result);
+	dk_set_push (res, (void*) ins->_.artm.result);
 	  break;
 	case INS_SUBQ:
 	  if (ins->_.subq.query && ins->_.subq.query->qr_select_node 
@@ -1383,15 +1568,341 @@ cv_assigned_slots (code_vec_t cv)
 	      DO_BOX (state_slot_t *, ssl, inx, out)
 		{
 		  if (ssl->ssl_type == SSL_VARIABLE || ssl->ssl_type == SSL_COLUMN)
-		    dk_set_push (&res,  (void*) ssl);
+		dk_set_push (res,  (void*) ssl);
 		}	      
 	      END_DO_BOX;
 	    }
 	}
     }
+
+dk_set_t
+cv_assigned_slots (code_vec_t cv)
+{
+  dk_set_t res = NULL;
+  if (!cv)
+    return NULL;
+  DO_INSTR (ins, 0, cv)
+    {
+      ins_assigned (ins, &res);
+    }
   END_DO_INSTR
   return res;
 }
+
+
+void 
+ref_ssls (dk_hash_t * ht, state_slot_t ** ssls)
+{
+  int inx;
+  DO_BOX (state_slot_t *, ssl, inx, ssls)
+    {
+      REF_SSL (ht, ssl);
+    }
+  END_DO_BOX;
+}
+
+void 
+ref_ssl_list (dk_hash_t * ht, dk_set_t ssls)
+{
+  DO_SET (state_slot_t *, ssl, &ssls)
+    {
+      REF_SSL (ht, ssl);
+    }
+  END_DO_SET();
+}
+
+
+void
+cv_refd_slots (sql_comp_t * sc, code_vec_t cv, dk_hash_t * res, dk_hash_t * all_res, int * non_cl_local)
+{
+  dk_set_t rev = NULL;
+  if (!cv)
+    return;
+  DO_INSTR (ins, 0, cv)
+    {
+      dk_set_push (&rev, (void*)ins);
+    }
+  END_DO_INSTR;
+  DO_SET (instruction_t *, ins, &rev)
+    {
+      switch (ins->ins_type)
+	{
+	case INS_CALL:
+	case INS_CALL_IND:
+	  if (ins->_.call.proc_ssl)
+	    REF_SSL (res, ins->_.call.proc_ssl);;
+	  ref_ssls (res, ins->_.bif.params);
+	  ASG_SSL (res, all_res, ins->_.bif.ret);
+	  if (non_cl_local) *non_cl_local = 1;
+	  break;
+
+	case INS_CALL_BIF:
+	    {
+	      ref_ssls (res, ins->_.bif.params);
+	      ASG_SSL (res, all_res, ins->_.bif.ret);
+	    }
+	  break;
+	case IN_ARTM_FPTR:
+	case IN_ARTM_IDENTITY:
+	case IN_ARTM_PLUS: case IN_ARTM_MINUS:
+	case IN_ARTM_TIMES: case IN_ARTM_DIV:
+	    REF_SSL (res, ins->_.artm.left);
+	  REF_SSL (res, ins->_.artm.right);
+	  ASG_SSL (res, all_res, ins->_.artm.result);
+	  break;
+	case IN_PRED:
+	  if (bop_comp_func == ins->_.pred.func)
+	    {
+	      bop_comparison_t * bop = (bop_comparison_t *) ins->_.pred.cmp;
+	      REF_SSL (res, bop->cmp_left);
+	      REF_SSL (res, bop->cmp_right);
+	      continue;
+	    }
+	  else
+	    *non_cl_local = 1;
+	  if (distinct_comp_func == ins->_.pred.func)
+	    {
+	      ref_ssls (res, ((hash_area_t *) ins->_.pred.cmp)->ha_slots);
+	    }
+	  break;
+	case INS_SUBQ:
+	  if (non_cl_local)
+	    *non_cl_local = 1;
+	  ASG_SSL (res, all_res, ins->_.subq.query->qr_select_node->sel_out_slots[0]);
+	  break;
+	case IN_COMPARE:
+	  REF_SSL (res, ins->_.cmp.left);
+	  REF_SSL (res, ins->_.cmp.right);
+	}
+    }
+  END_DO_SET();
+  dk_set_free (rev);
+}
+
+
+void
+setp_refd_slots (setp_node_t * setp, dk_hash_t * res)
+{
+  ref_ssl_list (res, setp->setp_keys);
+  ref_ssl_list (res, setp->setp_dependent);
+  DO_SET (state_slot_t *, ssl, &setp->setp_const_gb_args)
+    {
+      ASG_SSL (res, NULL, ssl);
+    }
+  END_DO_SET();
+  REF_SSL (res, setp->setp_ssa.ssa_set_no);
+  DO_SET (gb_op_t *, go, &setp->setp_gb_ops)
+    {
+      if (go->go_ua_arglist)
+	ref_ssls (res, go->go_ua_arglist);
+      REF_SSL (res, go->go_distinct);
+    }
+  END_DO_SET();
+} 
+
+
+
+void
+ks_refd_slots (sql_comp_t * sc, key_source_t * ks, dk_hash_t * res, dk_hash_t * all_res, int * non_cl_local)
+{
+  search_spec_t * sp;
+  if (!ks)
+    return;
+  if (ks->ks_setp)
+    setp_refd_slots (ks->ks_setp, res);
+  for (sp = ks->ks_spec.ksp_spec_array; sp; sp = sp->sp_next)
+    {
+      REF_SSL (res, sp->sp_min_ssl);
+      REF_SSL (res, sp->sp_max_ssl);
+    }
+  for (sp = ks->ks_row_spec; sp; sp = sp->sp_next)
+    {
+      REF_SSL (res, sp->sp_min_ssl);
+      REF_SSL (res, sp->sp_max_ssl);
+    }
+  cv_refd_slots (sc, ks->ks_local_code, res, all_res, non_cl_local);
+  cv_refd_slots (sc, ks->ks_local_test, res, all_res, non_cl_local);
+  DO_SET (state_slot_t *, out, &ks->ks_out_slots)
+    {
+      ASG_SSL (res, all_res, out);
+    }
+  END_DO_SET();
+}
+
+
+void 
+qf_refd_slots (sql_comp_t * sc, query_frag_t * qf, dk_hash_t * res, dk_hash_t * all_res, int * non_cl_local)
+{
+  int old = sqlg_count_qr_global_refs;
+    sqlg_count_qr_global_refs = 1;
+
+  DO_SET (data_source_t *, qn, &qf->qf_nodes)
+    {
+      qn_refd_slots (sc, qn, res, all_res, non_cl_local);
+      cv_refd_slots (sc, qn->src_pre_code, res, all_res, non_cl_local);
+    }
+  END_DO_SET();
+  sqlg_count_qr_global_refs = old;
+}
+
+void 
+remhash_ssl (state_slot_t * ssl, dk_hash_t * ht)
+{
+  remhash ((void*)ssl, ht);
+ again:
+  DO_HT (state_slot_t *, elt, void*, ignore, ht)
+    {
+      if (elt->ssl_index == ssl->ssl_index)
+	{
+	  remhash ((void*)elt, ht);
+	  goto again;
+	}
+    }
+  END_DO_HT;
+}
+
+
+void
+sqlg_asg_ssl (dk_hash_t * res, dk_hash_t * all_res, state_slot_t * ssl)
+{
+  /* remove from res and all res all ssls with the index of ssl */
+  if (!ssl)
+    return;
+  if (res)
+    remhash_ssl (ssl, res);
+  if (all_res)
+    remhash_ssl (ssl, all_res);
+}
+
+
+void
+asg_ssl_array (dk_hash_t * res, dk_hash_t * all_res, state_slot_t ** ssls)
+{
+  int inx;
+  if (!ssls)
+    return;
+  DO_BOX (state_slot_t *, ssl, inx, ssls)
+    {
+      ASG_SSL (res, all_res, ssl);
+    }
+  END_DO_BOX;
+}
+
+
+void
+ht_merge (dk_hash_t * target, dk_hash_t * ht)
+{
+  DO_HT (void*, k, void*, d, ht)
+    {
+      sethash (k, target, d);
+    }
+  END_DO_HT;
+}
+
+void
+qn_refd_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * all_res, int * non_cl_local)
+{
+  int inx;
+  cv_refd_slots (sc, qn->src_after_code, res, all_res, non_cl_local);
+  cv_refd_slots (sc, qn->src_after_test, res, all_res, non_cl_local);
+  if (IS_TS ((table_source_t*) qn))
+    {
+      table_source_t * ts = (table_source_t *) qn;
+      cv_refd_slots (sc, ts->ts_after_join_test, res, all_res, non_cl_local);
+      ks_refd_slots (sc, ts->ts_order_ks, res, all_res, non_cl_local);
+      ks_refd_slots (sc, ts->ts_main_ks, res, all_res, non_cl_local);
+      return;
+    }
+  else if ((qn_input_fn) update_node_input == qn->src_input)
+    {
+      update_node_t * upd = (update_node_t *) qn;
+      ref_ssls (res, upd->upd_values);
+      return;
+    }
+  else if ((qn_input_fn) insert_node_input == qn->src_input)
+    {
+      QNCAST (insert_node_t, ins, qn);
+      ref_ssl_list (res, ins->ins_values);
+      return;
+    }
+  else if ((qn_input_fn) setp_node_input == qn->src_input)
+    setp_refd_slots ((setp_node_t*) qn, res);
+  else if ((qn_input_fn)subq_node_input == qn->src_input)
+    {
+      QNCAST (subq_source_t, sqs, qn);
+      DO_BOX (state_slot_t *, out, inx, sqs->sqs_out_slots)
+	    {
+	      ASG_SSL (res, all_res, out);
+	    }
+	  END_DO_BOX;
+	  ASG_SSL (res, all_res, sqs->sqs_set_no); 
+    }
+  else if ((qn_input_fn) select_node_input == qn->src_input
+	   || (qn_input_fn) select_node_input_subq == qn->src_input)
+    {
+      select_node_t * sel = (select_node_t *) qn;
+      ref_ssls (res, sel->sel_out_slots);
+      REF_SSL (res, sel->sel_set_no);
+    }
+  else if ((qn_input_fn) hash_source_input == qn->src_input)
+    {
+      hash_source_t * hs = (hash_source_t *) qn;
+      ref_ssls (res, hs->hs_ref_slots);
+      cv_refd_slots (sc, hs->hs_after_join_test, res, all_res, non_cl_local);
+      DO_BOX (state_slot_t *, ssl, inx, hs->hs_out_slots)
+	{
+	  ASG_SSL (res, all_res, ssl);
+	}
+      END_DO_BOX;
+    }
+  else if ((qn_input_fn)in_iter_input == qn->src_input)
+    {
+      QNCAST (in_iter_node_t, ii, qn);
+      ASG_SSL (res, all_res, ii->ii_output);
+      ref_ssls (res, ii->ii_values);
+    }
+  else if ((qn_input_fn)rdf_inf_pre_input == qn->src_input)
+    {
+      QNCAST (rdf_inf_pre_node_t, ri, qn);
+      ASG_SSL (res, all_res, ri->ri_output);
+      REF_SSL (res, ri->ri_o);
+      REF_SSL (res, ri->ri_p);
+    }
+  else if ((qn_input_fn)trans_node_input == qn->src_input)
+    {
+      QNCAST (trans_node_t, tn, qn);
+      ASG_SSL (res, all_res, tn->tn_state_ssl);
+      ASG_SSL (res, all_res, tn->tn_state_ssl);
+      ASG_SSL (res, all_res, tn->tn_step_no_ret);
+      ASG_SSL (res, all_res, tn->tn_path_no_ret);
+      ASG_SSL (res, all_res, tn->tn_step_set_no);
+      asg_ssl_array (res, all_res, tn->tn_data); 
+      asg_ssl_array (res, all_res, tn->tn_input); 
+      asg_ssl_array (res, all_res, tn->tn_output); 
+      if (tn->tn_complement && tn->tn_is_primary)
+	qn_refd_slots (sc, (data_source_t*)tn->tn_complement, res, all_res, non_cl_local);
+      ref_ssls (res, tn->tn_input);
+    }
+  else if ((qn_input_fn)txs_input == qn->src_input)
+    {
+      QNCAST (text_node_t, txs, qn);
+      REF_SSL (res, txs->txs_text_exp);
+      REF_SSL (res, txs->txs_score_limit);
+      if (!txs->txs_is_driving)
+	{
+	  REF_SSL (all_res, txs->txs_d_id);
+	}
+      else 
+	ASG_SSL (res, all_res, txs->txs_d_id);
+      REF_SSL (res, txs->txs_init_id);
+      REF_SSL (res, txs->txs_end_id);
+      ASG_SSL (res, all_res, txs->txs_main_range_out);
+      ASG_SSL (res, all_res, txs->txs_attr_range_out);
+      ASG_SSL (res, all_res, txs->txs_score);
+      asg_ssl_array (res, all_res, txs->txs_offband);
+    }
+}
+
 
 static short
 cv_find_label (sql_comp_t * sc, dk_hash_t *ht, jmp_label_t label)
@@ -1650,14 +2161,15 @@ select_ref_generate (sql_comp_t * sc, ST * tree, dk_set_t * code,
 	case AMMSC_MIN:
 	case AMMSC_MAX:
 	  {
-	    state_slot_t *best = ssl_new_inst_variable (sc->sc_cc, "best", DV_UNKNOWN);
+	    state_slot_t *best = ssl_new_inst_variable (sc->sc_cc, AMMSC_MAX == tree->_.fn_ref.fn_code ? "best" : "min", DV_UNKNOWN);
+
 	    state_slot_t *arg = scalar_exp_generate (sc, tree->_.fn_ref.fn_arg, fun_ref_code);
 	    jmp_label_t end = sqlc_new_label (sc);
 	    jmp_label_t unk = sqlc_new_label (sc);
 	    jmp_label_t better = sqlc_new_label (sc);
 
 	    dk_set_push (&sc->sc_fun_ref_temps, (void *) best);
-
+	    best->ssl_qr_global = 1;
 	    sc->sc_fun_ref_defaults = NCONC (sc->sc_fun_ref_defaults, CONS (dk_alloc_box (0, DV_DB_NULL), NULL));
 	    sc->sc_fun_ref_default_ssls = NCONC (sc->sc_fun_ref_default_ssls, CONS (best, NULL));
 
@@ -1684,6 +2196,7 @@ select_ref_generate (sql_comp_t * sc, ST * tree, dk_set_t * code,
 	      sum = ssl_new_inst_variable (sc->sc_cc, "sum", DV_UNKNOWN);
 	    else
 	      sum = ssl_new_inst_variable (sc->sc_cc, "count", DV_UNKNOWN);
+	    sum->ssl_qr_global = 1;
 	    dk_set_push (&sc->sc_fun_ref_temps, (void *) sum);
 	    if (tree->_.fn_ref.fn_code == AMMSC_SUM)
 	      sc->sc_fun_ref_defaults = NCONC (sc->sc_fun_ref_defaults,
@@ -1723,6 +2236,7 @@ select_ref_generate (sql_comp_t * sc, ST * tree, dk_set_t * code,
 	case AMMSC_COUNT:
 	  {
 	    state_slot_t *count = ssl_new_inst_variable (sc->sc_cc, "count", DV_LONG_INT);
+	    count->ssl_qr_global = 1;
 	    dk_set_push (&sc->sc_fun_ref_temps, (void *) count);
 	    if (!tree->_.fn_ref.all_distinct)
 	      sc->sc_fun_ref_defaults = NCONC (sc->sc_fun_ref_defaults, CONS (box_num (-1), NULL));
@@ -1745,6 +2259,8 @@ select_ref_generate (sql_comp_t * sc, ST * tree, dk_set_t * code,
 	    caddr_t deflt;
 	    state_slot_t *sum = ssl_new_inst_variable (sc->sc_cc, "sum", DV_UNKNOWN);
 	    state_slot_t *count = ssl_new_inst_variable (sc->sc_cc, "count", DV_UNKNOWN);
+	    count->ssl_qr_global = 1;
+	    sum->ssl_qr_global = 1;
 	    deflt = dk_alloc_box (0, DV_DB_NULL);
 	    sc->sc_fun_ref_defaults = NCONC (sc->sc_fun_ref_defaults, CONS (deflt, NULL));
 	    sc->sc_fun_ref_default_ssls = NCONC (sc->sc_fun_ref_default_ssls, CONS (sum, NULL));
@@ -1777,7 +2293,8 @@ select_ref_generate (sql_comp_t * sc, ST * tree, dk_set_t * code,
 	    state_slot_t *ret = ssl_new_inst_variable (sc->sc_cc, "user_aggr_ret", DV_UNKNOWN);
 	    caddr_t deflt_env;
 	    state_slot_t ** acc_args = (state_slot_t **) dk_alloc_box (sizeof (state_slot_t *) * (1 + BOX_ELEMENTS(tree->_.fn_ref.fn_arglist)), DV_ARRAY_OF_POINTER);
-
+	    env->ssl_qr_global = 1;
+	    flag->ssl_qr_global = 1;
 	    acc_args[0] = env;
 	    const_short_1->ssl_dtp = DV_SHORT_INT;
 	    DO_BOX_FAST (ST *, arg_st, argidx, tree->_.fn_ref.fn_arglist)
@@ -1788,8 +2305,10 @@ select_ref_generate (sql_comp_t * sc, ST * tree, dk_set_t * code,
 	    deflt_env = NEW_DB_NULL;
 	    sc->sc_fun_ref_defaults = NCONC (sc->sc_fun_ref_defaults, CONS (deflt_env, NULL));
 	    sc->sc_fun_ref_default_ssls = NCONC (sc->sc_fun_ref_default_ssls, CONS (env, NULL));
-	    dk_set_push (&sc->sc_fun_ref_temps, (void *) env);
-	    dk_set_push (&sc->sc_fun_ref_temps, (void *) flag);
+	    NCONCF1 (sc->sc_fun_ref_defaults, box_num (0));
+	    NCONCF1 (sc->sc_fun_ref_default_ssls, flag);
+	    NCONCF1 (sc->sc_fun_ref_temps, (void *) env);
+	    NCONCF1 (sc->sc_fun_ref_temps, (void *) flag);
 	    cv_compare (fun_ref_code, BOP_EQ, flag, const_short_1,
 	      setenv_end, setenv_begin, setenv_begin);
 	    cv_label (fun_ref_code, setenv_begin);

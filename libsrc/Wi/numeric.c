@@ -1270,6 +1270,14 @@ DBG_NAME(t_numeric_allocate) (DBG_PARAMS_0)
 }
 
 
+numeric_t
+mp_numeric_allocate (mem_pool_t * mp)
+{
+  return (numeric_t) mp_alloc_box (mp, sizeof (struct numeric_s)
+				    + NUMERIC_MAX_DATA_BYTES - NUMERIC_PADDING, DV_NUMERIC);
+}
+
+
 /*
  *  Destructor for a number
  */

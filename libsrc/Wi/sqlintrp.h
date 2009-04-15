@@ -48,6 +48,11 @@ typedef struct _subqpred {
   int             subp_type;
   int             subp_comparison;
   state_slot_t *  subp_left;
+  state_slot_t *	subp_cl_run; /* for a multistate, array with a 1 at each set no for which the subp was evaluated */
+  state_slot_t *	subp_cl_out; /* for multistate, an array with a 1 for each set where the subp had a result row */
+  data_source_t *	subp_cl_clb;
+  short		subp_cl_set_no_in_clb;
+  code_node_t *		subp_cl_cn;
 } subq_pred_t;
 
 
@@ -143,6 +148,11 @@ struct instruction_s {
     struct {
       char		ins_type;
       query_t *		query;
+      code_node_t *	cl_cn;
+      state_slot_t *	cl_run; /* for multistate, array with a 1 for each set no for which the subq was evaluated */
+      state_slot_t *	cl_out; /* for multistate, array with a 1 for each set for which the subq had a value */
+      data_source_t *	cl_clb;
+      short		cl_set_no_in_clb;
     } subq;
     struct {
       char		ins_type;
@@ -268,14 +278,9 @@ extern unsigned char ins_lengths[];
 #define INSTR_NEXT(ins_p) \
         INSTR_ADD_BOFS (ins_p, INS_LEN (ins_p))
 
-typedef struct _pnstruct {
-  data_source_t   src_gen;
-  instruction_t ** cn_code;
-} prog_node_t;
 
-
-
-
+#define INS_QUERY(i) \
+  (ins->ins_type == INS_SUBQ ? ins->_.subq.query : ((subq_pred_t*)(ins->_.pred.cmp))->subp_query)
 
 
 int distinct_comp_func (caddr_t * qst, void * ha);
@@ -347,4 +352,9 @@ void subq_init (query_t * subq, caddr_t * inst);
 
 void ins_call (instruction_t * ins, caddr_t * qst, code_vec_t code_vec);
 void ks_check_params_changed (it_cursor_t * itc, key_source_t * ks, caddr_t * state);
+int exists_pred_func (caddr_t * qst, subq_pred_t * subp);
+int  ins_cl_exists (subq_pred_t * subp, caddr_t * inst);
+int ins_cl_subq (instruction_t * ins, caddr_t * inst);
+
+
 #endif /* _SQLINTRP_H */

@@ -51,7 +51,10 @@
 /* Sequence number, object id */
 typedef uptrlong oid_t;	/* really 32 bit, but the code is too buggy */
 
-typedef unsigned short key_id_t;
+typedef unsigned int key_id_t;
+typedef unsigned char row_ver_t; /* the bit mask for what is on the row and what is an offset to another row */
+typedef unsigned char key_ver_t; /* index into the bd_tree's key's key_bersions */
+typedef unsigned short row_size_t;
 
 typedef struct dbe_schema_s	dbe_schema_t;
 typedef struct dbe_table_s	dbe_table_t;
@@ -84,8 +87,6 @@ struct dbe_schema_s
 
 
 extern dk_mutex_t * db_schema_mtx; /* global schema hash tables */
-#define IN_SCHEMA mutex_enter (db_schema_mtx)
-#define LEAVE_SCHEMA mutex_enter (db_schema_mtx)
 
 #define DBE_NO_STAT_DATA	-1
 #define TB_RLS_U	0
@@ -156,6 +157,60 @@ typedef struct sql_type_s
     caddr_t *		sqt_tree;
   } sql_type_t;
 
+typedef struct cl_host_s cl_host_t;
+
+typedef struct col_partition_s
+{
+  oid_t	cp_col_id;
+  sql_type_t	cp_sqt;
+  short	cp_shift; /* shift so many bits down before hash */
+  char		cp_type;
+  int64	cp_mask; /* after shift, and with this */
+  int		cp_n_first; /* for a string, use so many leading chars */
+} col_partition_t;
+
+/* for cp_type */
+#define CP_INT 1
+#define CP_WORD 3
+
+
+typedef struct cl_host_group_s
+{
+  struct cluster_map_s *	chg_clm;
+  cl_host_t **	chg_hosts;
+  int32 *	chg_slices;
+  char		chg_status; /* any slices in read only */
+} cl_host_group_t;
+
+#define CLM_INITIAL_SLICES 1024
+
+/* cl_slice_status */
+#define CL_SLICE_RW 0  /* read write */
+#define CL_SLICE_LOG 1 /* read write but special logging on write */
+#define CL_SLICE_RO 2 /* read only */
+
+/* location of data based on hash */
+typedef struct cluster_map_s
+{
+  caddr_t	clm_name;
+  char		clm_is_modulo;
+  int		clm_n_slices;
+  int		clm_n_replicas;
+  char *		clm_slice_status;
+  cl_host_group_t **	clm_slice_map;
+  cl_host_group_t **	clm_hosts;
+  char		clm_any_in_transfer; /* true if logging should check whether an extra log entry is needed due to updating a slice being relocated.  True is any in cl_slice_status is CL_CLICE_LOG.  */
+} cluster_map_t;
+
+
+typedef struct key_partition_def_s
+{
+  cluster_map_t *	kpd_map;
+  col_partition_t **	kpd_cols;
+} key_partition_def_t;
+
+
+extern cluster_map_t * clm_replicated;
 
 
 typedef struct col_stat_s 
@@ -177,7 +232,7 @@ struct dbe_column_s
     int			col_is_autoincrement;
     dbe_table_t *	col_defined_in;
     sql_type_t		col_sqt;
-
+    char		col_compression;
     char		col_is_misc;
     char		col_is_misc_cont; /* true for a misc container, e.g. E_MISC of VXML_ENTITY */
     char		col_is_text_index;
@@ -205,19 +260,71 @@ struct dbe_column_s
 #define col_non_null col_sqt.sqt_non_null
 #define col_collation col_sqt.sqt_collation
 
+
+
+#define N_COMPRESS_OFFSETS 5
+#define N_ROW_VERSIONS 32
+#define ROW_NO_MASK 0x0fff 
+#define COL_OFFSET_SHIFT 12
+#define COL_VAR_LEN_MASK 0x3fff  /* and to get the var len field of a row length area entry */
+#define COL_VAR_FLAGS_MASK 0xc000 /* and to get the var len flag  bits */
+#define COL_VAR_SUFFIX 0x8000 /* bit set if this var len is a suffix of an earlier col in the same place */
+
+
+/* values of cl_compress and col_compress, ret codes for try offset and try prefix */
+#undef CC_NONE
+
+#define CC_UNDEFD 0
+#define CC_NONE 1
+#define CC_OFFSET 2
+#define CC_PREFIX 3
+
+
+#define ROW_SET_NULL(row, cl, rv)		\
+  row[cl->cl_null_flag[rv]] |= cl->cl_null_mask[rv]
+
+#define ROW_CLR_NULL(row, cl, rv)		\
+  row[cl->cl_null_flag[rv]] &= ~cl->cl_null_mask[rv]
+
+
 struct dbe_col_loc_s
 {
   oid_t		cl_col_id;
   sql_type_t	cl_sqt;
+  row_ver_t	cl_row_version_mask; /* and with row version is true if this cl is compressed on that row. 0x00 if always on row */
+  unsigned char	cl_compression:4;
+  unsigned char	cl_comp_asc:1; /* look for left to right for compression */
+  short		cl_nth;  /* 0 based ordinal pos in key in layout order */
   short		cl_fixed_len;
-  short		cl_pos;
-  short	cl_null_flag;
-  dtp_t		cl_null_mask;
+  short		cl_pos[N_ROW_VERSIONS];
+  short	cl_null_flag[N_ROW_VERSIONS];
+  dtp_t		cl_null_mask[N_ROW_VERSIONS];
 };
 
 
 #define CL_FIRST_VAR -1
 #define CL_VAR -2
+
+
+#define DO_CL(cl, cls) \
+  { int __inx; \
+    for (__inx = 0; cls[__inx].cl_col_id; __inx++) { \
+      dbe_col_loc_t * cl = &cls[__inx]; 
+
+#define END_DO_CL } }
+
+dbe_col_loc_t * key_next_list (dbe_key_t * key, dbe_col_loc_t * list);
+
+#define DO_ALL_CL(cl, key) \
+{\
+  dbe_col_loc_t * __list;\
+  for (__list = key->key_key_fixed; __list; __list = key_next_list (key, __list))\
+    {\
+      DO_CL (cl, __list)
+
+
+#define END_DO_ALL_CL  END_DO_CL; } }
+
 
 typedef struct dbe_key_frag_s
 {
@@ -226,6 +333,7 @@ typedef struct dbe_key_frag_s
   dbe_storage_t *	kf_storage;
   caddr_t	kf_name;  /* root is in main registry under this name */
   struct index_tree_s *	kf_it;
+  char			kf_all_in_em; /*true if all pages are in the extent map and none in the system general em */
 } dbe_key_frag_t;
 
 
@@ -239,12 +347,14 @@ typedef struct key_spec_s
 #define ITC_KEY_INC(itc, dm) if (itc->itc_insert_key) itc->itc_insert_key->dm++;
 
 
+#define KEY_MAX_VERSIONS KV_LONG_GAP  /* lowest special purpose kv number */
+#define KEY_VERSION_OVERFLOW -1
+
 struct dbe_key_s
 {
   char *		key_name;
   key_id_t		key_id;
   dbe_table_t *	key_table;
-  int			key_n_parts;
   dk_set_t		key_parts;
 
   int			key_n_significant;
@@ -255,30 +365,31 @@ struct dbe_key_s
   char			key_is_bitmap;
   key_id_t		key_migrate_to;
   key_id_t		key_super_id;
+  key_ver_t		key_version;
+  dbe_key_t **		key_versions;
   dk_set_t		key_supers;
+  key_partition_def_t *	key_partition;
   dbe_col_loc_t *	key_bm_cl; /* the var length string where the bits are, dependent part of a bitmap inx */
   dbe_col_loc_t *	key_bit_cl; /* for a bitmap inx, the last key part, the int or int64 that is the bit bitmap start */
   /* access inx */
-    long		key_touch;
-  long		key_read;
-  long		key_lock_wait;
-  long		key_lock_wait_time;
-  long		key_deadlocks;
-  long		key_lock_set;
-  long		key_lock_escalations;
-  long		key_page_end_inserts;
-  long		key_write_wait;
-  long		key_read_wait;
-  long		key_landing_wait;
-  long		key_pl_wait;
+  int64		key_touch;
+  int64		key_read;
+  int64		key_lock_wait;
+  int64		key_lock_wait_time;
+  int64		key_deadlocks;
+  int64		key_lock_set;
+  int64		key_lock_escalations;
+  int64		key_page_end_inserts;
+  int64		key_write_wait;
+  int64		key_read_wait;
+  int64		key_landing_wait;
+  int64		key_pl_wait;
 
   dp_addr_t		key_last_page;
   char		key_is_last_right_edge;
-  long		key_n_last_page_hits;
-  long		key_total_last_page_hits;
-  long		key_n_landings;
-  long		key_n_dirty;
-  long		key_n_new;
+  int64		key_n_last_page_hits;
+  int64		key_total_last_page_hits;
+  int64		key_n_landings;
 
   key_spec_t 		key_insert_spec;
   key_spec_t		key_bm_ins_spec;
@@ -290,19 +401,26 @@ struct dbe_key_s
   dbe_column_t *	key_text_col;
 
   /* row layout */
+  short *		key_part_in_layout_order; /* this is for each significant, the index in the order of layout: kf kv */
+  dbe_col_loc_t **	key_part_cls; /* cl's in key part order */
+  dk_set_t		key_key_compressibles; /* compressible cls on leaf ptr */
+  dk_set_t		key_row_compressibles; /* compressible cls on row */
+  dk_set_t		key_key_pref_compressibles; /* prefix compressible cls on leaf ptr */
+  dk_set_t		key_row_pref_compressibles; /* prefix compressible cls on row */
   dbe_col_loc_t *	key_key_fixed;
   dbe_col_loc_t *	key_key_var;
   dbe_col_loc_t *	key_row_fixed;
   dbe_col_loc_t *	key_row_var;
-  short		key_key_n_vars;	/* count of vars on leaf ptr */
-  short		key_row_n_vars;	/* count of vars on leaf */
-  short		key_length_area; /* if key/row have variable length, the offset of the first length word */
-  short		key_key_var_start;	/* offset of first var on leaf ptr */
-  short		key_row_var_start;	/* offset of first var on leaf row */
-  short		key_null_flag_start;
-  short		key_null_flag_bytes;
-  short		key_key_len;	/* if positive, the fixed length.  If neg the -position of the 2 byte len from start of leaf ptr */
-  short		key_row_len;  /* if positive, the fixed length.  If neg the -position of the 2 byte len from start of row */
+  short		key_length_area[N_ROW_VERSIONS]; /* if key/row have variable length, the offset of the first length word */
+  short		key_key_leaf[N_ROW_VERSIONS];
+  short		key_row_compressed_start[N_ROW_VERSIONS]; /* compress offsets of non-key offset compressibles */
+  short		key_n_row_compressed[N_ROW_VERSIONS]; /* compress offsets of non-key offset compressibles */
+  short		key_key_var_start[N_ROW_VERSIONS];	/* offset of first var on leaf ptr */
+  short		key_row_var_start[N_ROW_VERSIONS];	/* offset of first var on leaf row */
+  short		key_null_flag_start[N_ROW_VERSIONS];
+  short		key_null_flag_bytes[N_ROW_VERSIONS];
+  short		key_key_len[N_ROW_VERSIONS];	/* if positive, the fixed length.  If neg the -position of the 2 byte len from start of leaf ptr */
+  short		key_row_len[N_ROW_VERSIONS];  /* if positive, the fixed length.  If neg the -position of the 2 byte len from start of row */
 
 /* Note that key_insert() in row.c contains code that will not work when keys
 with multiple fragments are implemented, because It will always use the first
@@ -323,18 +441,23 @@ fragment instead of searching for the the fragment actually needed. */
 #define ITC_MARK_READ(it) \
 { \
   dbe_key_t * k1 = it->itc_insert_key; \
+  it->itc_read_waits += 10000; \
   if (k1) \
     k1->key_read++; \
+  if (itc->itc_ltrx) itc->itc_ltrx->lt_client->cli_activity.da_disk_reads++; \
 }
 
 #define ITC_MARK_LOCK_WAIT(it, t) \
 { \
   dbe_key_t *k1 = it->itc_insert_key; \
+  uint32 delay = get_msec_real_time () - t; \
   if (k1) \
     { \
       k1->key_lock_wait++; \
-      k1->key_lock_wait_time += get_msec_real_time () - t; \
+      k1->key_lock_wait_time += delay; \
     } \
+  it->itc_ltrx->lt_client->cli_activity.da_lock_wait_msec += delay; \
+  it->itc_ltrx->lt_client->cli_activity.da_lock_waits++; \
 }
 
 #define ITC_MARK_DEADLOCK(it) \
@@ -353,7 +476,10 @@ fragment instead of searching for the the fragment actually needed. */
 
 
 #define ITC_MARK_LANDED(itc) \
-  if (itc->itc_insert_key) itc->itc_insert_key->key_n_landings++
+{ \
+  if (itc->itc_insert_key) itc->itc_insert_key->key_n_landings++; \
+  if (itc->itc_ltrx) itc->itc_ltrx->lt_client->cli_activity.da_random_rows++; \
+}
 
 #define ITC_MARK_DIRTY(itc) \
   if (itc->itc_insert_key) itc->itc_insert_key->key_n_dirty++
@@ -361,6 +487,8 @@ fragment instead of searching for the the fragment actually needed. */
 #define ITC_MARK_NEW(itc) \
   if (itc->itc_insert_key) itc->itc_insert_key->key_n_new++
 
+#define ITC_MARK_ROW(itc) \
+  {if (itc->itc_ltrx) itc->itc_ltrx->lt_client->cli_activity.da_seq_rows++;}
 
 #define KEY_DECLARED_PARTS(k) \
   (k->key_decl_parts ? k->key_decl_parts : k->key_n_significant)
@@ -429,8 +557,12 @@ create_unique_index SYS_KEY_PARTS on SYS_KEY_PARTS (KP_KEY_ID KP_NTH)
 #define KI_OBJECT_ID		5
 #define KI_COLLATIONS		6
 #define KI_CHARSETS		7
-#define KI_LEFT_DUMMY           8
+#define KV_LEAF_PTR 0
+#define KV_LEFT_DUMMY           127
 #define KI_SUB                  9
+#define KV_GAP 126  /* on page layout, the next byte is 8 bit length of free space from KV_GAP */
+#define KV_LONG_GAP 125 /* on page layout, 2 next bytes are the length of free space, from DV_LONG_GAP */
+#define MAX_KV_GAP_BYTES 3 /* longest gap marker len */
 #define KI_FRAGS                10
 #define KI_UDT                  11
 
@@ -464,7 +596,7 @@ create_unique_index SYS_KEY_PARTS on SYS_KEY_PARTS (KP_KEY_ID KP_NTH)
 #define CI_KEYS_DECL_PARTS	21
 #define CI_KEYS_STORAGE 36
 #define CI_KEYS_OPTIONS 37
-
+#define CI_KEYS_VERSION 49
 #define CI_KPARTS_ID		11
 #define CI_KPARTS_N		12
 #define CI_KPARTS_COL_ID	13
@@ -517,6 +649,7 @@ create_unique_index SYS_KEY_PARTS on SYS_KEY_PARTS (KP_KEY_ID KP_NTH)
 #define CN_KEYS_DECL_PARTS	"KEY_DECL_PARTS"
 #define CN_KEYS_STORAGE "KEY_STORAGE"
 #define CN_KEYS_OPTIONS "KEY_OPTIONS"
+#define CN_KEYS_VERSION "KEY_VERSION"
 
 
 #define CN_KPARTS_ID		"KP_KEY_ID"

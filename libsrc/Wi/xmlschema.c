@@ -67,7 +67,8 @@ char * xmlt5 =
 "	VI_ID_COL varchar, VI_INDEX_TABLE varchar,"
 "       VI_ID_IS_PK integer, VI_ID_CONSTR varchar,"
 "       VI_OFFBAND_COLS varchar, VI_OPTIONS varchar, VI_LANGUAGE varchar, VI_ENCODING varchar,"
-"       primary key (VI_TABLE, VI_COL))";
+"       primary key (VI_TABLE, VI_COL))\n"
+"alter index SYS_VT_INDEX on SYS_VT_INDEX partition cluster REPLICATED";
 
 
 xml_schema_t *xml_global;
@@ -170,6 +171,7 @@ xmls_init (void)
 
   qr = sql_compile_static ("select A_ID, A_NAME from SYS_ATTR",
 		    bootstrap_cli, &err, SQLC_DEFAULT);
+  if (NULL != err) goto no_attrs;
   err = qr_quick_exec (qr, bootstrap_cli, "", &lc, 0);
   while (lc_next (lc))
     {
@@ -181,7 +183,7 @@ xmls_init (void)
     }
   lc_free (lc);
   qr_free (qr);
-
+no_attrs:
   ddl_sel_for_effect ("select count (*) from SYS_ELEMENT_TABLE where xmls_element_table (ET_ELEMENT, ET_TABLE)");
   ddl_sel_for_effect ("select count (*) from SYS_ELEMENT_MAP where xmls_element_col (EM_TABLE, EM_COL_ID, EM_A_ID)");
   tb = sch_name_to_table (isp_schema (NULL), "DB.DBA.SYS_VT_INDEX");

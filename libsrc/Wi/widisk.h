@@ -52,7 +52,7 @@ typedef unsigned char * db_buf_t;
 #define PAGE_SZ			8192
 #define PAGE_DATA_SZ		(PAGE_SZ - DP_DATA)
 
-#define ROW_ALIGN(s) ALIGN_4(s)
+#define ROW_ALIGN(s) ALIGN_2(s)
 
 #define BITS_IN_LONG		(sizeof (dp_addr_t) * 8)
 #define BITS_ON_PAGE		(PAGE_DATA_SZ * 8)
@@ -72,14 +72,17 @@ typedef unsigned char * db_buf_t;
 #define DP_NULL			0
 #define DP_DELETED		((dp_addr_t) -1)
 
-#define DP_PARENT		(0 * sizeof (dp_addr_t))
-#define DP_RIGHT_INSERTS	(1 * sizeof (dp_addr_t))
-#define DP_LAST_INSERT		(1 * sizeof (dp_addr_t) + 2)
-#define DP_BLOB_TS		(1 * sizeof (dp_addr_t))
-#define DP_FLAGS		(2 * sizeof (dp_addr_t))
-#define DP_FIRST		(2 * sizeof (dp_addr_t) + 2)
+#define DP_FLAGS		0
+#define DP_COMP_LEN 2
+#define DP_COMPRESS_OVERFLOW (1 * sizeof (dp_addr_t))
+#define DP_PARENT		(2 * sizeof (dp_addr_t))
+#define DP_RIGHT_INSERTS	(3 * sizeof (dp_addr_t))
+#define DP_LAST_INSERT		(3 * sizeof (dp_addr_t) + 2)
+#define DP_KEY_ID		(4 * sizeof (dp_addr_t))  /* overlaps with the blob len since only occurs in DPF_INDEX pages.  4 bytes */
+
+#define DP_BLOB_DIR (1 * sizeof (dp_addr_t)) /* overlap with index page comp overflow since blobs compressed stream wise if at all */
+#define DP_BLOB_TS		(2 * sizeof (dp_addr_t))
 #define DP_BLOB_LEN		(3 * sizeof (dp_addr_t))
-#define DP_KEY_ID		(3 * sizeof (dp_addr_t))  /* overlaps with the blob len since only occurs in DPF_INDEX pages */
 #define DP_OVERFLOW		(4 * sizeof (dp_addr_t))
 #define DP_DATA			(5 * sizeof (dp_addr_t))
 #define N_CFG_PAGE_WORDS	5	/* Highest value of the above */
@@ -108,18 +111,30 @@ typedef unsigned char * db_buf_t;
 #define DPF_BLOB_DIR		7
 /* a blob directory page (zzeng) */
 #define DPF_INCBACKUP_SET	8
+#define DPF_EXTENT_SET 9
+#define DPF_EXTENT_MAP 10
+#define DPF_HASH 11
+/* Like a page with rows but temporary hash index */
+#define DPF_COMPRESS_OVERFLOW 12
+/* this page has what did not fit on some  compressed page */
 /* fake DPF which indicates max possible value of the DPF */
-#define DPF_LAST_DPF		9
+#define DPF_LAST_DPF		13
 
+
+
+
+#define DPF_GZIP 32 /* if gzipped, this is ored to DP_FLAGS */
+#define DPF_COMP_OVERFLOWED 64 /* if set, no compression was made and the rest of the page is on the comp overflow.  The 2 bytes lost are in the comp len on this page. */
+
+#define DP_COMP_HEAD_LEN 4 /* 2 bytes for DP_FLAGS and 2 for DP_COMP_LEN */
 
 /*
  * Reference to disk page data
  */
-#define DPF_BACKUP_DELTA_MAP 8
-/* Like the free set but has a built set for each page checkpointed since last full backup */
-#define DPF_HASH 9
-/* Like a page with rows but temporary hash index */
 
+#define HASH_HEAD_LEN 6 /* 4 for next in bucket dp and 2 for next in bucket pos */
+#define HH_NEXT_DP 0
+#define HH_NEXT_POS 4
 
 #ifndef LOW_ORDER_FIRST
 # define LONG_TO_EXT(l) (l)
@@ -199,49 +214,20 @@ typedef unsigned char * db_buf_t;
 
 
 
-#define LONG_SET_NA(place, l) \
-  (((unsigned char *) (place))[0] = (unsigned char) ((l) >> 24), \
-   ((unsigned char *) (place))[1] = (unsigned char) ((l) >> 16), \
-   ((unsigned char *) (place))[2] = (unsigned char) ((l) >> 8), \
-   ((unsigned char *) (place))[3] = (unsigned char) ((l) ))
+#ifdef WORDS_BIGENDIAN 
 
-#define LONG_REF_NA(p) \
-  ((((int32) (((unsigned const char *) (p))[0])) << 24) | \
-   (((int32) (((unsigned const char *) (p))[1])) << 16) | \
-   (((int32) (((unsigned const char *) (p))[2])) << 8) | \
-   (((int32) (((unsigned const char *) (p))[3]))) )
+#define LONG_REF(ip) \
+  ((((int)(*(short*)(ip))) << 16) \
++ (((unsigned short*)(ip)) [1]))
 
 
-#define SHORT_SET_NA(place, l) \
-  (((unsigned char *) (place))[0] = (unsigned char) ((l) >> 8), \
-   ((unsigned char *) (place))[1] = (unsigned char) ((l) ))
+#define LONG_SET(ip, v) \
+{ \
+  ((unsigned short *) (ip))[0] = (v) >> 16;		\
+ ((unsigned short *) (ip))[1] = (unsigned short)(v);	\
+}
 
-#define SHORT_REF_NA(p) \
-  ((((short) (((unsigned const char *) (p))[0])) << 8)  | \
-   (((short) (((unsigned const char *) (p))[1]))))
-
-
-#define LONG_SET_BE(place, l) \
-  (((unsigned char *) (place))[3] = (unsigned char) ((l) >> 24), \
-   ((unsigned char *) (place))[2] = (unsigned char) ((l) >> 16), \
-   ((unsigned char *) (place))[1] = (unsigned char) ((l) >> 8), \
-   ((unsigned char *) (place))[0] = (unsigned char) ((l) ))
-
-#define LONG_REF_BE(p) \
-  ((((int32) (((unsigned char *) (p))[3])) << 24) | \
-   (((int32) (((unsigned char *) (p))[2])) << 16) | \
-   (((int32) (((unsigned char *) (p))[1])) << 8) | \
-   (((int32) (((unsigned char *) (p))[0]))) )
-
-
-#define SHORT_SET_BE(place, l) \
-  (((unsigned char *) (place))[1] = (unsigned char) ((l) >> 8), \
-   ((unsigned char *) (place))[0] = (unsigned char) ((l) ))
-
-#define SHORT_REF_BE(p) \
-  ((((short) (((unsigned char *) (p))[1])) << 8)  | \
-   (((short) (((unsigned char *) (p))[0]))))
-
+#else
 
 #define LONG_SET(p, l) \
   *((int32*) (p)) = (l)
@@ -250,6 +236,7 @@ typedef unsigned char * db_buf_t;
 #define LONG_REF(p) \
   (* ((int32*) (p)))
 
+#endif
 
 #define SHORT_SET(p, l) \
   *((short*) (p)) = (l)
@@ -272,45 +259,25 @@ typedef unsigned char * db_buf_t;
   {((unsigned int32*)(place))[0] = (v) >> 32; \
   ((unsigned int32*)(place))[1] = (int32)(v); }
 
-#if 0
-#define INT64_REF_NA(p) \
-  (((int64)LONG_REF_NA (p)) << 32 | ((uint32)LONG_REF_NA (((caddr_t)p) + 4)))
-
-#define INT64_SET_NA(p, v) \
-  {LONG_SET_NA ((p),  ((v) >> 32));				\
-    LONG_SET_NA (((caddr_t)(p)) + 4, 0xffffffff & (v)); }
-#endif
 
 
 /* Index entry flags. Used only for uncommitted rows */
 
 #define IEF_DELETE		0x80
-#define IEF_UPDATE		0x40
 
+#define IE_KEY_VERSION_OFF		0
+#define IE_ROW_VERSION_OFF		1
+#define LD_LEAF 2 /* position of leaf pointer in KV_LEFT_DUMMY */
+#define IE_FIRST_KEY		2
 
-
-#define IE_NEXT_IE 0
-#define IE_KEY_ID		2
-#define IE_FIRST_KEY		4
-#define IE_LEAF 4
-#define IE_LP_FIRST_KEY 8 /* first key on leaf pointer */
-#define IE_NEXT(ie)		(SHORT_REF (ie) & 0x3FFF)
-#define IE_SET_NEXT(ie, n) 	SHORT_SET ((ie), (SHORT_REF (ie) & 0xc000) | (n))
-
-#ifdef LOW_ORDER_FIRST
-#define IE_FLAGS(ie)		(((dtp_t *) (ie))[1])
-#define IE_SET_FLAGS(ie, f)	IE_FLAGS(ie) = f | (IE_FLAGS(ie) & 0x1f)
+#define IE_FLAGS(ie)		(((dtp_t *) (ie))[IE_KEY_VERSION_OFF])
+#define IE_SET_FLAGS(ie, f)	IE_FLAGS(ie) = f | (IE_FLAGS(ie) & 0x7f)
 #define IE_ADD_FLAGS(ie, f)	IE_FLAGS(ie) = f | IE_FLAGS(ie)
-#define IE_ISSET(ie, f)		((ie)[1] & (f))
+#define IE_ISSET(ie, f) ((ie)[IE_KEY_VERSION_OFF] & (f))
 
-#else
-
-#define IE_FLAGS(ie)		(((dtp_t *) (ie))[0])
-#define IE_SET_FLAGS(ie, f)	IE_FLAGS(ie) = (f) | (IE_FLAGS(ie) & 0x1f)
-#define IE_ADD_FLAGS(ie, f)	IE_FLAGS(ie) = (f) | IE_FLAGS(ie)
-#define IE_ISSET(ie, f)		((ie)[0] & (f))
-#endif
-
+#define IE_KEY_VERSION(ie)  (((db_buf_t)(ie))[IE_KEY_VERSION_OFF] & 0x7f)
+#define IE_SET_KEY_VERSION(ie, kv) (ie[IE_KEY_VERSION_OFF] = kv)
+#define IE_ROW_VERSION(ie) (((db_buf_t)(ie))[IE_ROW_VERSION_OFF])
 
 #define CFG_FILE "wi.cfg"
 
@@ -347,7 +314,7 @@ typedef struct io_queue_s io_queue_t;
 
 struct wi_database_s
   {
-    dp_addr_t		db_root;
+    dp_addr_t		db_extent_set;
     dp_addr_t		db_checkpoint_root;
     dp_addr_t		db_free_set;
     dp_addr_t		db_incbackup_set;
@@ -367,6 +334,10 @@ struct wi_database_s
     /* backup info again */
     dp_addr_t		db_bp_index;
     dp_addr_t		db_bp_wr_bytes;
+    /* cluster */
+    int32	db_host_id;	/* this db file set belongs to host nn */
+    int32	db_stripe_unit;
+    int32	db_extent_size;
   };
 
 struct disk_stripe_s

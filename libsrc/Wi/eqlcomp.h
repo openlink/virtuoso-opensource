@@ -44,7 +44,8 @@ query_t *eql_compile_2 (const char *string, client_connection_t * cli, caddr_t *
 #define SQLC_UNIQUE_ROWS -6
 #define SQLC_SQLO_SCORE -7
 #define SQLC_QR_TEXT_IS_CONSTANT -8
-
+#define SQLC_IS_RECOMPILE  0x100
+#define SQLC_PARSE_ONLY_REC 	-9
 
 query_t *eql_compile (const char *string, client_connection_t * cli);
 
@@ -189,5 +190,8 @@ void stssl_ins (comp_context_t * cc, instruction_t * ins);
 void stssl_query (comp_context_t * cc, query_t * qr);
 void stssl_cv (comp_context_t * cc, instruction_t * cv);
 void  il_init (comp_context_t * cc, inx_locality_t * il);
+void key_source_om (comp_context_t * cc, key_source_t * ks);
+void clb_free (cl_buffer_t * clb);
+void dsr_free (data_source_t * x);
 
 #endif /* __EQLCOMP_H_010520 */

@@ -42,6 +42,7 @@
 #define uc_printf(a)
 #endif
 
+extern long tc_atomic_wait_2pc;
 long atomic_cp_msecs;
 int auto_cpt_scheduled = 0;
 
@@ -60,26 +61,23 @@ it_can_reuse_logical (index_tree_t * it, dp_addr_t dp)
 
 
 void
-it_free_remap (index_tree_t * it, dp_addr_t logical, dp_addr_t remap)
+it_free_remap (index_tree_t * it, dp_addr_t logical, dp_addr_t remap, int dp_flags)
 {
-  /* Free the remap space of logical in THIS space, if appropriate
-     Use in rollback, delta merge, snapshot close */
+  /* Free the remap page of logical.  */
   it_map_t * itm = IT_DP_MAP (it, logical);
   ASSERT_IN_MTX (&itm->itm_mtx);
   if (!remap)
     remap = (dp_addr_t) (uptrlong) gethash (DP_ADDR2VOID (logical), &itm->itm_remap);
   if (remap != logical)
     {
-      dbs_free_disk_page (it->it_storage, remap);
-      LEAVE_DBS (it->it_storage);
+      em_free_dp (it->it_extent_map, remap, EXT_REMAP);
     }
   else
     {
       /* log == phys. Free is OK if not remapped in checkpoint */
       if (!DP_CHECKPOINT_REMAP (it->it_storage, logical))
 	{
-	  dbs_free_disk_page (it->it_storage, logical);
-	  LEAVE_DBS (it->it_storage);
+	  em_free_dp (it->it_extent_map, logical, dp_flags == DPF_INDEX ? EXT_INDEX : EXT_BLOB);
 	}
     }
 }
@@ -94,13 +92,31 @@ long busy_pre_image_scrap;
 #ifdef CHECKPOINT_TIMING
 long start_killing = 0, all_trx_killed = 0, cp_is_attomic = 0, cp_is_over = 0;
 #endif
+
+void
+lt_rb_check (lock_trx_t * lt)
+{
+  return;
+  DO_HT (ptrlong, k, rb_entry_t *, rbe, lt->lt_rb_hash)
+    {
+      rb_entry_t * rbe2 = rbe;
+      for (rbe2 = rbe; rbe2; rbe2 = rbe2->rbe_next)
+	{
+	  if (0 != IE_ROW_VERSION (rbe2->rbe_string + rbe2->rbe_row))
+	    GPF_T1 ("corrupt rbe in cpt");
+	}
+    }
+  END_DO_HT;
+}
+
+
 void
 cpt_rollback (int may_freeze)
 {
 #ifdef CHECKPOINT_TIMING
   start_killing = get_msec_real_time();
 #endif
-  wi_inst.wi_is_checkpoint_pending = 1;
+  wi_inst.wi_is_checkpoint_pending = LT_KILL_FREEZE == may_freeze ? CPT_CHECKPOINT : CPT_ATOMIC_PENDING;
 
  next:
   ASSERT_IN_TXN;
@@ -120,7 +136,7 @@ cpt_rollback (int may_freeze)
 	case LT_CLOSING:
 	case LT_COMMITTED:
 	  rdbg_printf (("trx %lx killed by checkpoint while closing\n", lt));
-	  lt_kill_other_trx (lt, NULL, NULL, LT_KILL_ROLLBACK);
+	  lt_kill_other_trx (lt, NULL, NULL, may_freeze);
 	  goto next;
 	case LT_FREEZE:
 	  if (!lt->lt_close_ack_threads && lt->lt_threads && !lt->lt_vdb_threads && !lt->lt_lw_threads)
@@ -150,12 +166,35 @@ cpt_rollback (int may_freeze)
 	  lt_kill_other_trx (lt, NULL, NULL, may_freeze);
 	  goto  next;
 
+	case LT_CL_PREPARED:
+	  if (CPT_ATOMIC_PENDING == wi_inst.wi_is_checkpoint_pending)
+	    {
+	      TC (tc_atomic_wait_2pc);
+	      lt_wait_until_dead (lt);
+	      goto next;
+	    }
+	  if (lt->lt_threads)
+	    {
+	      lt_wait_until_dead (lt);
+	      goto next;
+	    }
+	  break;
+	case LT_1PC_PENDING:
+	case LT_2PC_PENDING:
+	  if (CPT_ATOMIC_PENDING == wi_inst.wi_is_checkpoint_pending)
+	    {
+	      TC (tc_atomic_wait_2pc);
+	      lt_wait_until_dead (lt);
+	      goto next;
+	    }
+	  /* this is a state of wait for reply, will not resume the 2pc until cpt is done */
+	  break;
 	default:  GPF_T1 ("Unexpected lt_status in cpt_rollback");
 	}
     }
   END_DO_SET();
-
-
+  if (CPT_ATOMIC_PENDING == wi_inst.wi_is_checkpoint_pending)
+    wi_inst.wi_is_checkpoint_pending = CPT_ATOMIC;
 #ifdef CHECKPOINT_TIMING
   all_trx_killed = get_msec_real_time();
 #endif
@@ -173,8 +212,10 @@ server_lock_t server_lock;
 void
 lt_wait_checkpoint (void)
 {
+  du_thread_t * self = THREAD_CURRENT_THREAD;
   ASSERT_IN_TXN;
-  if (THREAD_CURRENT_THREAD == server_lock.sl_owner)
+  if (self == server_lock.sl_owner 
+      )
     return;
   while (wi_inst.wi_is_checkpoint_pending)
     {
@@ -193,12 +234,13 @@ void
 cpt_over (void)
 {
   ASSERT_IN_TXN;
+  wi_inst.wi_checkpoint_atomic = 0;
+  wi_inst.wi_is_checkpoint_pending = 0;
   DO_SET (du_thread_t *, thr, &wi_inst.wi_waiting_checkpoint)
   {
     semaphore_leave (thr->thr_sem);
   }
   END_DO_SET();
-  wi_inst.wi_is_checkpoint_pending = 0;
   dk_set_free (wi_inst.wi_waiting_checkpoint);
   wi_inst.wi_waiting_checkpoint = NULL;
 #ifdef CHECKPOINT_TIMING
@@ -301,7 +343,7 @@ cpt_write_remap (dbe_storage_t * dbs)
   /* Initialization */
   cp_buf->bd_storage = dbs;
   cp_page_fill = DP_DATA;
-
+  memset (cp_buf->bd_buffer + DP_DATA, 0, PAGE_DATA_SZ);
   cp_remap_pages = dbs->dbs_cp_remap_pages;
   n_remaps = dbs->dbs_cpt_remap->ht_count;
   n_pages = dk_set_length (cp_remap_pages);
@@ -313,7 +355,7 @@ cpt_write_remap (dbe_storage_t * dbs)
       dp_addr_t page;
       for (ctr = 0; ctr < n_more; ctr += REMAPS_ON_PAGE)
 	{
-	  page = dbs_get_free_disk_page (dbs, 0);
+	  page = em_new_dp (dbs->dbs_extent_map, EXT_INDEX, 0, NULL);
 	  if (page == 0)
 	    return 0;
 	  dk_set_push (&dbs->dbs_cp_remap_pages, DP_ADDR2VOID (page));
@@ -344,6 +386,7 @@ cpt_write_remap (dbe_storage_t * dbs)
 	  SHORT_SET (cp_buf->bd_buffer + DP_FLAGS, DPF_CP_REMAP);
 	  buf_disk_write (cp_buf, 0);
 	  cp_remap_pages = cp_remap_pages->next;
+	  memset (cp_buf->bd_buffer + DP_DATA, 0, PAGE_DATA_SZ);
 	  cp_page_fill = DP_DATA;
 	}
     }
@@ -396,325 +439,732 @@ cpt_may_unremap_page (dbe_storage_t * dbs, dp_addr_t dp)
 
 
 dbe_storage_t * cpt_dbs;
-dk_hash_t * cpt_uncommitted_remap;
-dk_hash_t * cpt_uncommitted_remap_dp; /* for the duration of the cpt, those dp's that are free in the cpt but taken in cpt plus set of uncommitted pages.  Not including blobs. */
-dk_hash_t * cpt_uncommitted_lt; /* for duration of cpt, those lt's with at least one actual rollback row */
+
+it_cursor_t *mcp_itc;
+
+long tc_cpt_unremap_dirty;
 
 
-#define DP_FREE_IN_CPT(dp) \
-  sethash (DP_ADDR2VOID (dp), cpt_uncommitted_remap_dp, (void*) 1)
-
-#define PAGE_NOT_CHANGED 0
-#define PAGE_UPDATED 1
 
 
-int
-itc_cpt_rollback_row (it_cursor_t * itc, buffer_desc_t ** buf_ret, int pos, row_lock_t * was_rl,
-		  page_lock_t * pl)
+typedef struct uc_insert_s
 {
-  buffer_desc_t *buf = *buf_ret;
-  lock_trx_t *lt = itc->itc_ltrx;
-  db_buf_t page = buf->bd_buffer;
-  long l;
-  key_id_t key_id;
-  if (0 == pos)
-    {
-      TC (tc_deld_row_rl_rb);
-      return PAGE_NOT_CHANGED;  /* rl on del'd row but shared by this txn */
-    }
-  itc->itc_position = pos;
+  it_cursor_t *	uci_registered;
+  row_lock_t *	uci_rl;
+  db_buf_t	uci_row;
+  dbe_key_t *	uci_key;
+  struct uc_insert_s *	uci_next;
+} uc_insert_t;
 
-  key_id = SHORT_REF (page + pos + IE_KEY_ID);
-  if (key_id)
+
+void
+rl_add_cpt_wait (row_lock_t * rl, it_cursor_t * wait)
     {
-      rb_entry_t *rbe = lt_rb_entry (lt, page + pos, NULL, NULL, 1);
-      if (!rbe)
-	{
-	  return PAGE_NOT_CHANGED;
-	}
-      sethash ((void*) itc->itc_ltrx, cpt_uncommitted_lt, (void*) 1);
-      if (RB_INSERT == rbe->rbe_op)
-	{
-	  /* the cpt rb of an insert is just unlinking the row.  This can result in a page with 0 rows and the page still will not be deleted.
-	   * Do not use or alter the page map */
-	  int prev_pos = 0;
-	  int del_pos;
-	  for (del_pos = SHORT_REF (page + DP_FIRST); del_pos; del_pos = IE_NEXT (page + del_pos))
-	    {
-	      if (pos == del_pos)
-		{
-		  if (!prev_pos)
-		    SHORT_SET (page + DP_FIRST, IE_NEXT (page + del_pos));
-		  else
-		    IE_SET_NEXT (page + prev_pos, IE_NEXT (page + del_pos));
-		  break;
-		}
-	      prev_pos = del_pos;
-	    }
-	}
-      else
-	{
-	  short prev_next = IE_NEXT (page + pos);
-	  l = row_reserved_length (page + pos, buf->bd_tree->it_key);
-	  if (rbe->rbe_row_len > ROW_ALIGN (l))
-	    {
-	      log_error ("In cpt of uncommitted: Space for row is shorter than pre-image"
-			 " This is normally a gpf but we do not break cpt so we let it slide.");
-	      return PAGE_NOT_CHANGED;
-	    }
-	  memcpy (page + pos,
-		  rbe->rbe_string + rbe->rbe_row,
-		  rbe->rbe_row_len);
-	  IE_SET_FLAGS (page + pos, 0);
-	  IE_SET_NEXT (page + pos, prev_next);
-	}
-      return PAGE_UPDATED;
+  it_cursor_t ** prev = &rl->pl_waiting;
+  wait->itc_next_on_lock = NULL;
+  while (*prev)
+    prev = &(*prev)->itc_next_on_lock;
+  *prev = wait;
     }
-  return PAGE_NOT_CHANGED;
+
+void
+page_lock_to_row_locks (buffer_desc_t * buf)
+    {
+  /* each row gets its own lock owned by the pl excl owner.  Waits are divided.  An itc at end will wait for the first rl but be marked at end.  */
+  it_cursor_t * waiting;
+  page_lock_t * pl = buf->bd_pl;
+  pl->pl_type &= ~PL_PAGE_LOCK; 
+  DO_ROWS (buf, map_pos, row, NULL)
+	{
+      row_lock_t * rl = rl_allocate ();
+      rl->rl_next = PL_RLS (pl, map_pos);
+      PL_RLS (pl, map_pos) = rl;
+      rl->pl_type = PL_EXCLUSIVE | RL_FOLLOW;
+      rl->pl_owner = pl->pl_owner;
+      rl->rl_pos = map_pos;
+      pl->pl_n_row_locks++;
+	}
+  END_DO_ROWS;
+  waiting = pl->pl_waiting;
+  while (waiting)
+		{
+      it_cursor_t * next = waiting->itc_next_on_lock;
+      int pos = waiting->itc_map_pos;
+      row_lock_t * rl;
+      if (ITC_AT_END == pos)
+	pos = 0;
+      rl = pl_row_lock_at (pl, pos);
+      rl_add_cpt_wait (rl, waiting);
+      waiting = next;
+		}
+  pl->pl_waiting = NULL;
+	    }
+
+
+row_lock_t *
+pl_remove_rl_at (page_lock_t * pl, int pos)
+{
+  row_lock_t ** prev = &PL_RLS(pl, pos);
+  row_lock_t * rl = *prev;
+  while (rl)
+	{
+      if (rl->rl_pos == pos)
+	{
+	  *prev = rl->rl_next;
+	  return rl;
+	}
+      prev = &rl->rl_next;
+      rl = rl->rl_next;
+    }
+  GPF_T1 ("supposed to have a rl for ins after img in cpt rb");
+  return NULL;
+}
+
+
+uc_insert_t * cpt_uci_list;
+uc_insert_t * cpt_last_uci;
+
+void
+cpt_ins_image (buffer_desc_t * buf, int map_pos)
+{
+  it_cursor_t ** prev, * registered;
+  rb_entry_t * rbe;
+  NEW_VARZ (uc_insert_t, uci);
+  mutex_enter (&wi_inst.wi_cpt_lt->lt_rb_mtx);
+  lt_rb_new_entry (wi_inst.wi_cpt_lt, -1, NULL, buf, BUF_ROW (buf, map_pos), RB_UPDATE);
+  rbe = (rb_entry_t *) gethash ((void*)(ptrlong)(uint32)-1, wi_inst.wi_cpt_lt->lt_rb_hash);
+  if (rbe->rbe_next) GPF_T1 ("uncommitted insert rbe entry can't have a next");
+  if (0 != IE_ROW_VERSION (rbe->rbe_string + rbe->rbe_row)) GPF_T1 ("insert rb entry bad from the start");
+  remhash ((void*)(ptrlong)(uint32)-1, wi_inst.wi_cpt_lt->lt_rb_hash);
+  mutex_leave (&wi_inst.wi_cpt_lt->lt_rb_mtx);
+  uci->uci_row = rbe->rbe_string + rbe->rbe_row;
+  uci->uci_key = buf->bd_tree->it_key;
+  if (!uci->uci_key->key_versions[IE_KEY_VERSION (uci->uci_row)])
+    GPF_T1 ("bad key version in insert rb image in cpt");
+  if (!cpt_last_uci)
+    {
+      cpt_uci_list = cpt_last_uci = uci;
+    }
+  else
+    {
+      cpt_last_uci->uci_next = uci;
+      cpt_last_uci = uci;
+    }
+  uci->uci_rl = pl_remove_rl_at (buf->bd_pl, map_pos);
+  registered = buf->bd_registered;
+  prev = &buf->bd_registered;
+  while (registered)
+    {
+      it_cursor_t * next = registered->itc_next_on_page;
+      if (registered->itc_map_pos == map_pos)
+	{
+	  *prev = registered->itc_next_on_page;
+	  registered->itc_next_on_page = uci->uci_registered;
+	  uci->uci_registered = registered;
+	}
+      else 
+	  {
+	  *prev = registered;
+	  prev = &registered->itc_next_on_page;
+	  }
+      registered = next;
+      }
+  dk_free ((caddr_t)rbe, sizeof (rb_entry_t));
+  lt_rb_check (wi_inst.wi_cpt_lt);
+    }
+
+
+void
+cpt_upd_image (buffer_desc_t * buf, int map_pos)
+{
+  lt_rb_update (wi_inst.wi_cpt_lt, buf, BUF_ROW (buf, map_pos));
+  lt_rb_check (wi_inst.wi_cpt_lt);
+}
+
+
+void 
+cpt_reinsert_uci (uc_insert_t * uci, it_cursor_t * itc)
+{
+  /* insert a rolled back insert.  Make a pl and insert the rl under it and set the registrations of waiting etc. */
+  rb_entry_t rbe;
+  int res, inx, old_lt_status;
+  buffer_desc_t * buf;
+  LOCAL_RD (rd);
+  rbe.rbe_row = 0;
+  rbe.rbe_string = uci->uci_row;
+  rbe.rbe_key_id = uci->uci_key->key_id;
+  rbe_page_row (&rbe, &rd);
+  rd.rd_op = RD_INSERT;
+  old_lt_status = uci->uci_rl->pl_owner->lt_status;
+  uci->uci_rl->pl_owner->lt_status = LT_PENDING;
+  ITC_INIT (itc, NULL, uci->uci_rl->pl_owner);
+  itc_from (itc, uci->uci_key);
+  itc->itc_insert_key = rd.rd_key;
+  itc->itc_search_mode = SM_INSERT;
+  itc->itc_key_spec = rd.rd_key->key_insert_spec;
+  for (inx = 0; inx < rd.rd_key->key_n_significant; inx++)
+    itc->itc_search_params[inx] = rd.rd_values[rd.rd_key->key_part_in_layout_order[inx]]; 
+  buf = itc_reset (itc);
+  res = itc_search (itc, &buf);
+  if (BUF_NEEDS_DELTA (buf))
+    {
+      ITC_IN_KNOWN_MAP (itc, itc->itc_page);
+      itc_delta_this_buffer (itc, buf, DELTA_MAY_LEAVE);
+      ITC_LEAVE_MAP_NC (itc);
+    }
+  rd.rd_rl = uci->uci_rl;
+  /* this will not escalate locks because the rl is given explicitly */
+  if (DVC_LESS == res)
+    itc_skip_entry (itc, buf);
+  else if (DVC_MATCH == res)
+    {
+      log_error ("suspect non-unq insert in replay of cpt rb");
+      itc_page_leave (itc, buf);
+      uci->uci_rl->pl_owner->lt_status = old_lt_status;
+      return;
+    }
+  rd.rd_keep_together_itcs = uci->uci_registered;
+  itc_insert_dv (itc, &buf, &rd, 0, uci->uci_rl);
+  uci->uci_rl->pl_owner->lt_status = old_lt_status;
+  rd_free (&rd);
 }
 
 
 int
-pl_cpt_rollback_page (page_lock_t * pl, it_cursor_t * itc, buffer_desc_t * buf)
+lt_all_visited (lock_trx_t * lt, dk_hash_t * visited)
 {
-  int change = PAGE_NOT_CHANGED, rc;
+  IN_LT_LOCKS (lt);
+  DO_HT (page_lock_t *, pl, void *, ignore, &lt->lt_lock)
+    {
+      if (!gethash ((void*)pl, visited))
+    {
+	  LEAVE_LT_LOCKS (lt);
+      return 0;
+    }
+    }
+  END_DO_HT;
+  LEAVE_LT_LOCKS (lt);
+	return 1;
+    }
+
+
+void
+pl_cpt_rollback_page (page_lock_t * pl, it_cursor_t * itc)
+{
+  dk_set_t rd_list = NULL;
+  row_delta_t ** rds;
+  lock_trx_t *lt = itc->itc_ltrx;
+  buffer_desc_t *buf = NULL;
+
+  if (DP_DELETED == pl->pl_page)
+    {
+      TC (tc_release_pl_on_deleted_dp);
+      return;
+    }
+  ITC_IN_KNOWN_MAP (itc, pl->pl_page);
+  page_wait_access (itc, pl->pl_page, NULL, &buf, PA_WRITE, RWG_WAIT_KEY);
+  if (PF_OF_DELETED == buf)
+    {
+      /* check needed here because the page could have gone out during the above wait and the wait itself could give 'a no wait status with bad timing  The page map does not serialize the whole delete as atomic. */
+      TC (tc_release_pl_on_deleted_dp);
+      ITC_LEAVE_MAPS (itc);
+      return;
+}
+
   itc->itc_page = pl->pl_page;
   if (PL_IS_PAGE (pl))
     {
-      int pos = SHORT_REF (buf->bd_buffer + DP_FIRST);
-      itc->itc_ltrx = pl->pl_owner;
-      while (pos)
+      DO_ROWS (buf, map_pos, row, NULL)
 	{
-	  int next_pos = IE_NEXT (buf->bd_buffer + pos);
-	  rc = itc_cpt_rollback_row (itc, &buf, pos, NULL, pl);
-	  change = MAX (change, rc);
-	  pos = next_pos;
+	  itc_rollback_row (itc, &buf, map_pos, NULL, pl, &rd_list);
 	}
-    }
+	END_DO_ROWS;
+	}
   else
-    {
+	{
       DO_RLOCK (rl, pl)
-      {
-	
-	if (PL_EXCLUSIVE == PL_TYPE (rl))
-	  {
-	    itc->itc_ltrx = rl->pl_owner;
-	    rc = itc_cpt_rollback_row (itc, &buf, rl->rl_pos, rl, pl);
-	    change = MAX (change, rc);
+	{
+	if (rl->pl_owner == lt)
+	{
+	    itc_rollback_row (itc, &buf, rl->rl_pos, rl, pl, &rd_list);
 	  }
       }
       END_DO_RLOCK;
     }
-  return change;
+  if (!rd_list)
+	    {
+      page_leave_outside_map (buf);
+      return;
+	    }
+  rds = (row_delta_t **) list_to_array (dk_set_nreverse (rd_list));
+  if (!PL_IS_PAGE (pl))
+    buf_sort ((buffer_desc_t **) rds, BOX_ELEMENTS (rds), (sort_key_func_t) rd_pos_key);
+  page_apply (itc, buf, BOX_ELEMENTS (rds), rds, PA_MODIFY);
+  rd_list_free (rds);
+	}
+
+
+dk_set_t
+lt_list_unvisited (lock_trx_t * lt, dk_hash_t * visited)
+{
+  int n = 0;
+  dk_set_t res = NULL;
+  IN_LT_LOCKS (lt);
+  DO_HT (page_lock_t *, pl, void*, ignore, &lt->lt_lock)
+    {
+      if (!gethash ((void*)pl, visited))
+	{
+	  dk_set_push (&res, (void*)pl);
+	  if (++n > 10000)
+	    break;
+    }
+    }
+  END_DO_HT;
+  LEAVE_LT_LOCKS (lt);
+  return res;
 }
 
 
-it_cursor_t *mcp_itc;
+void
+cpt_lt_rollback (lock_trx_t * lt)
+{
+  dk_hash_t * visited = hash_table_allocate (101);
+  it_cursor_t itc_auto;
+  it_cursor_t *itc = &itc_auto;
+  ITC_INIT (itc, NULL, lt);
+  do
+    {
+      dk_set_t locks = lt_list_unvisited (lt, visited);
+      DO_SET (page_lock_t *, pl, &locks)
+	{
+	  itc->itc_tree = pl->pl_it;
+	  itc->itc_insert_key = itc->itc_tree->it_key;
+	  sethash ((void*)pl, visited, (void*) 1);
+	  pl_cpt_rollback_page (pl, itc);
+	  lt_rb_check (wi_inst.wi_cpt_lt);	  ITC_LEAVE_MAPS (itc);
+	}
+      END_DO_SET ();
+      dk_set_free (locks);
+    } while (!lt_all_visited (lt, visited));
+  hash_table_free (visited);
+	}
+      
+void
+cpt_uncommitted ()
+	{
+  if (!wi_inst.wi_cpt_lt)
+	{
+      wi_inst.wi_cpt_lt = lt_allocate ();
+      dk_set_delete (&all_trxs, (void*)wi_inst.wi_cpt_lt);
+      wi_inst.wi_cpt_lt->lt_client = bootstrap_cli;
+      wi_inst.wi_cpt_lt->lt_status = LT_PENDING;
+	}
+  lt_rb_check (wi_inst.wi_cpt_lt);
+  cpt_uci_list = NULL;
+  cpt_last_uci = NULL;
+  DO_SET (lock_trx_t *, lt, &all_trxs)
+	{
+      if (lt->lt_rb_page)
+	lt_rb_check (lt);
+		}
+  END_DO_SET();
+  DO_SET (lock_trx_t *, lt, &all_trxs)
+		{
+      if (lt->lt_rb_page)
+	cpt_lt_rollback (lt);
+		}
+  END_DO_SET();
+	    }
 
 
 int
-pl_needs_cpt_rb (page_lock_t * pl)
-{
-  if (!gethash (DP_ADDR2VOID (pl->pl_page), &IT_DP_MAP (mcp_itc->itc_tree, pl->pl_page)->itm_remap))
+it_all_locks_visited (index_tree_t * it, dk_hash_t * visited)
+	    {
+  int inx;
+  for (inx = 0; inx < IT_N_MAPS; inx++)
     {
-      /* there is no delta for the page of the lock.  It cna't have uncommitted things */
-      return 0;
+      dk_mutex_t * itm_mtx = &it->it_maps[inx].itm_mtx;
+      mutex_enter (itm_mtx);
+      DO_HT (ptrlong, dp, page_lock_t *, pl, &it->it_maps[inx].itm_locks)
+	{
+	  if (!gethash ((void*)pl, visited))
+	    {
+	      mutex_leave (itm_mtx);
+	      return 0;
+	    }
+	}
+      END_DO_HT;
+      mutex_leave (itm_mtx);
     }
+  return 1;
+}
+
+void
+cpt_restore_row (buffer_desc_t * buf, int pos, dk_set_t * rd_list)
+    {
+  key_ver_t kv;
+  db_buf_t row;
+  if (ITC_AT_END == pos)
+	{
+      TC (tc_deld_row_rl_rb);
+      return;
+    }
+  row = BUF_ROW (buf, pos);
+  kv = IE_KEY_VERSION (row);
+  if (KV_LEAF_PTR != kv)
+    {
+      rb_entry_t *rbe = lt_rb_entry (wi_inst.wi_cpt_lt, buf, row, NULL, NULL, 1);
+      if (!rbe)
+	return;
+	{
+	  NEW_VARZ (row_delta_t, rd);
+	  rd->rd_allocated = RD_ALLOCATED;
+	  rbe_page_row (rbe, rd);
+	  rd->rd_map_pos = pos;
+	  rd->rd_op = RD_UPDATE;
+	  rd->rd_keep_together_dp = buf->bd_page;
+	  rd->rd_keep_together_pos = pos;
+	  dk_set_push (rd_list, (void*) rd);
+	}
+    }
+    }
+
+
+void
+cpt_pl_restore (page_lock_t * pl, it_cursor_t * itc)
+    {
+  /* take the after image from the rb state of wi_cpt_lt to put the uncommitted state back */ 
+  buffer_desc_t * buf;
+  dk_set_t rd_list = NULL;
+  row_delta_t ** rds;
   if (PL_IS_PAGE (pl))
-    {
-      return  (PL_EXCLUSIVE == PL_TYPE (pl));
-    }
+    return;
+  if (DP_DELETED == pl->pl_page)
+    return;
+  itc_from_it (itc, pl->pl_it);
+  ITC_IN_KNOWN_MAP (itc, pl->pl_page);
+  page_wait_access (itc, pl->pl_page, NULL, &buf, PA_WRITE, RWG_WAIT_ANY);
   DO_RLOCK (rl, pl)
-    {
+	{
       if (PL_EXCLUSIVE == PL_TYPE (rl))
-	return 1;
-    }
+	cpt_restore_row (buf, rl->rl_pos, &rd_list);
+	}
   END_DO_RLOCK;
-  return 0;
+  if (!rd_list)
+    {
+      page_leave_outside_map (buf);
+      return;
+    }
+  ITC_IN_KNOWN_MAP (itc, pl->pl_page);
+  itc_delta_this_buffer (itc, buf, 0);
+  ITC_LEAVE_MAP_NC (itc);  rds = (row_delta_t **) list_to_array (dk_set_nreverse (rd_list));
+  buf_sort ((buffer_desc_t **) rds, BOX_ELEMENTS (rds), (sort_key_func_t) rd_pos_key);
+  page_apply (itc, buf, BOX_ELEMENTS (rds), rds, PA_MODIFY);
+  rd_list_free (rds);
 }
 
 
-int cpt_out_of_space = 0;
-dk_set_t cpt_new_pages = NULL;
+void
+cpt_restore_uncommitted (it_cursor_t * itc)
+{
+  itc->itc_ltrx = wi_inst.wi_cpt_lt;
+  lt_rb_check (wi_inst.wi_cpt_lt);
+  DO_SET (index_tree_t *, it, &cpt_dbs->dbs_trees)
+    {
+      int inx;
+      dk_hash_t * visited = hash_table_allocate (101);
+      do {
+	for (inx = 0; inx < IT_N_MAPS; inx++)
+	{
+	    dk_mutex_t * itm_mtx = &it->it_maps[inx].itm_mtx;
+	    mutex_enter (itm_mtx);
+	    DO_HT (ptrlong, dp, page_lock_t *, pl, &it->it_maps[inx].itm_locks)
+	      {
+		if (!gethash ((void*)pl, visited))
+		  {
+		    sethash ((void*)pl, visited, (void*) 1);
+		    mutex_leave (itm_mtx);
+		    cpt_pl_restore (pl, itc);
+		    mutex_enter (itm_mtx);
+    }
+    }
+	    END_DO_HT;
+	    mutex_leave (itm_mtx);
+	  }
+      }
+      while (!it_all_locks_visited (it, visited));
+      hash_table_free (visited);
+    }
+  END_DO_SET();
+  while (cpt_uci_list)
+    {
+      uc_insert_t * next = cpt_uci_list->uci_next;
+      cpt_reinsert_uci (cpt_uci_list, itc);
+      dk_free ((caddr_t) cpt_uci_list, sizeof (uc_insert_t));
+      cpt_uci_list = next;
+    }
+  if (wi_inst.wi_cpt_lt)
+    {
+      lock_trx_t * lt = wi_inst.wi_cpt_lt;
+      /* already inside txn */
+      lt_free_rb (lt);
+      lt->lt_threads = 1;
+      lt->lt_close_ack_threads = 1;
+      lt_transact (lt, SQL_COMMIT);
+      lt->lt_threads = lt->lt_close_ack_threads = 0;
+    }
+}
+
 
 void
-cpt_out_of_disk ()
+cpt_uncommitted_blobs (int clear)
 {
-  dp_addr_t dp;
-  while ((dp = (dp_addr_t)(ptrlong)dk_set_pop (&cpt_new_pages)))
-    dbs_free_disk_page (cpt_dbs, dp);
+  /* when a cpt is done with uncommitted data, the pages of  uncommitted blobs must not appear as taken in the allocation map saved by cpt.  So reset them and then put them back on. */
   DO_SET (lock_trx_t *, lt, &all_trxs)
     {
-      if (lt->lt_rb_hash && lt->lt_rb_hash->ht_count)
-	lt_kill_other_trx (lt, NULL, NULL, LT_KILL_ROLLBACK);
+      if (lt->lt_dirty_blobs)
+	{
+	  DO_HT (void *, k, blob_layout_t *, bl, lt->lt_dirty_blobs)
+	    {
+	      /* for a blob that is uncommitted, do not record the pages as occupied in the cpt.  But do this only insofar there is a filled page dir.  And do not extend this beyond the first page of the page dir. 
+	       * So there will be a possible leak of a few pages if roll fwd from the cpt, otherwise no leak. */
+	      if (!bl->bl_it || bl->bl_it->it_storage != cpt_dbs)
+		continue;
+	      if (bl->bl_delete_later == BL_DELETE_AT_ROLLBACK)
+		{
+		  if (bl->bl_pages)
+		    {
+		      int inx;
+		      for (inx= 0; inx < box_length ((caddr_t)bl->bl_pages) / sizeof (dp_addr_t); inx++)
+	{
+			  if (bl->bl_pages[inx])
+			    {
+			      dbs_cpt_set_allocated (cpt_dbs, bl->bl_pages[inx], !clear);
+			    }
+			}
+		    }
+		  if (bl->bl_dir_start)
+		    {
+		      dbs_cpt_set_allocated (cpt_dbs, bl->bl_dir_start, !clear);
+		    }
+		}
+	    }
+	  END_DO_HT;
+    }
     }
   END_DO_SET();
 }
 
 
-#define CPT_RB_NO_DISK -1
+
+dk_hash_t * cpt_remap_reverse;
 
 
-int 
-cpt_uncommitted_backup (index_tree_t * it, int inx, dk_session_t * ses, dk_hash_t * ht)
-{
-  static caddr_t image;
-  dtp_t save[PAGE_SZ];
-  dk_hash_iterator_t hit;
-  page_lock_t * pl;
-  void * dp;
-  if (NULL == image)
-    image = dk_alloc_box (PAGE_SZ + 1, DV_STRING);
-  dk_hash_iterator (&hit, &it->it_maps[inx].itm_locks);
-  while (dk_hit_next (&hit, &dp, (void**) &pl))
+void
+buf_unremap (buffer_desc_t * buf)
     {
-      dp_addr_t cpt_remap, committed_remap, new_remap;
-      buffer_desc_t * buf;
-      if (!pl_needs_cpt_rb (pl))
-	continue;
-      mcp_itc->itc_itm1 = &it->it_maps[inx]; /*fool the assert and itc_leave_maps in page_wait_access */
-      page_wait_access (mcp_itc, pl->pl_page, NULL, &buf, PA_WRITE, RWG_WAIT_ANY);
-      mutex_enter (&IT_DP_MAP (it, inx)->itm_mtx);
-      if (!buf || PF_OF_DELETED == buf)
+  extent_map_t * em = DBS_DP_TO_EM (cpt_dbs, buf->bd_physical_page);
+  dp_addr_t phys_dp = buf->bd_physical_page;
+  DBG_PT_PRINTF ((" cpt unremapped L=%d P=%d \n", buf->bd_page, buf->bd_physical_page));
+  em_free_dp (em, buf->bd_physical_page, EXT_REMAP);
+  buf->bd_physical_page = buf->bd_page;
+  remhash (DP_ADDR2VOID (buf->bd_page), cpt_dbs->dbs_cpt_remap);
+  buf->bd_is_dirty = 1;
+  dp_set_backup_flag (cpt_dbs, buf->bd_page, 1);
+  if (dbs_is_free_page (cpt_dbs, buf->bd_page))
 	{
-	  log_error ("in cpt uncommitted_backup, pl on deleted dp %d .", pl->pl_page);
-	  continue;
+      log_error ("Suspect to have page unremapped from %d to free page L=%d", phys_dp, buf->bd_page);
 	}
-      memcpy (save, buf->bd_buffer, PAGE_SZ);
-      if (PAGE_NOT_CHANGED == pl_cpt_rollback_page (pl, mcp_itc, buf))
-	{
-	  page_leave_inner (buf);
-	  continue;
-	}
-      memcpy (image, buf->bd_buffer, PAGE_SZ);
-      memcpy (buf->bd_buffer, save, PAGE_SZ);
-      page_leave_inner (buf);
-      CATCH_WRITE_FAIL (ses)
-	{
-	  print_int (pl->pl_page, ses);
-	  print_string (image, ses);
-	}
-      FAILED
-	{
-	}
-      END_WRITE_FAIL (ses);
-      cpt_remap = DP_CHECKPOINT_REMAP (cpt_dbs, pl->pl_page);
-      committed_remap = buf->bd_physical_page;
-      if (!cpt_remap && committed_remap == pl->pl_page)
-	{
-	  new_remap = dbs_stop_cp == 3 ? 0 : dbs_get_free_disk_page (cpt_dbs, buf->bd_page);
-	  if (!new_remap) 
-	    {
-	      return CPT_RB_NO_DISK;
-	    }
-	  dk_set_push (&cpt_new_pages, (void*)(uptrlong)new_remap);
-	}
-
-
-      sethash (DP_ADDR2VOID (pl->pl_page),  ht, DP_ADDR2VOID (pl->pl_page));
     }
-  return 0;
+
+
+
+void
+cpt_unremap_ram (int target)
+{
+  /* take buffers that already happen to be in memory and unremap them, stop if quota met */
+  DO_SET (index_tree_t *, it, &cpt_dbs->dbs_trees)
+{
+      int inx;
+      for (inx = 0; inx < IT_N_MAPS; inx++)
+	{
+	  mutex_enter (&it->it_maps[inx].itm_mtx);
+	  DO_HT (ptrlong, dp, buffer_desc_t *, buf, &it->it_maps[inx].itm_dp_to_buf)
+	    {
+	      if (buf->bd_page != buf->bd_physical_page)
+		{
+		  buf_unremap (buf);
+		  if (cpt_dbs->dbs_cpt_remap->ht_count <= target)
+		    {
+		      mutex_leave (&it->it_maps[inx].itm_mtx);
+		      return;
+}
+		}
+	    }
+	  END_DO_HT;
+	  mutex_leave (&it->it_maps[inx].itm_mtx);
+
+	}
+    }
+  END_DO_SET();
 }
 
 
 void
-cpt_uncommitted (index_tree_t * it, int inx)
+cpt_em_unremap_read (extent_map_t * em, index_tree_t * it, int * bufs_done, int buf_quota, dk_set_t * bufs_list)
 {
-  dp_addr_t cpt_remap, committed_remap, new_remap;
-  dtp_t image[PAGE_SZ];
-  dk_hash_iterator_t hit;
-  page_lock_t * pl;
-  void * dp;
-  dk_hash_iterator (&hit, &it->it_maps[inx].itm_locks);
-  while (dk_hit_next (&hit, &dp, (void**) &pl))
+  DO_EXT (ext, em)
     {
-      buffer_desc_t * buf;
-      if (!pl_needs_cpt_rb (pl))
+      buffer_desc_t ** bufs;
+      if (EXT_TYPE (ext) != EXT_REMAP)
 	continue;
-      mcp_itc->itc_itm1 = &it->it_maps[inx]; /*fool the assert and itc_leave_maps in page_wait_access */
-      page_wait_access (mcp_itc, pl->pl_page, NULL, &buf, PA_WRITE, RWG_WAIT_ANY);
-      mutex_enter (&IT_DP_MAP (it, inx)->itm_mtx);
-      if (!buf || PF_OF_DELETED == buf)
+      bufs = ext_read (it, ext,1, cpt_remap_reverse);
+      if (!bufs)
+	continue;
+      dk_set_push (bufs_list, (void*) bufs);
+      *bufs_done += BOX_ELEMENTS (bufs);
+      if (*bufs_done > buf_quota)
+	goto enough_read;
+    }
+  END_DO_EXT;
+  if (*bufs_done < buf_quota)
+    return;
+ enough_read: ;
+}
+
+
+void bp_flush_all ();
+
+
+void
+cpt_unremap_bufs (it_cursor_t * itc, dk_set_t * bufs_list)
+{
+  DO_SET (buffer_desc_t **, bufs, bufs_list)
+    {
+      int inx;
+      DO_BOX (buffer_desc_t *, buf, inx, bufs)
 	{
-	  log_error ("in cpt uncommitted, pl on deleted dp %d .", pl->pl_page);
-	  continue;
+	  itc->itc_tree = buf->bd_tree;
+	  ITC_IN_KNOWN_MAP (itc, buf->bd_page);
+	  page_wait_access (itc, buf->bd_page, NULL, &buf, PA_WRITE, RWG_WAIT_ANY);
+	  buf_unremap (buf);
+	  buf->bd_registered = NULL;
+	  page_leave_outside_map (buf);
 	}
-      memcpy (image, buf->bd_buffer, PAGE_SZ);
-      
-      if (PAGE_NOT_CHANGED == pl_cpt_rollback_page (pl, mcp_itc, buf))
+      END_DO_BOX;
+      dk_free_box ((caddr_t)bufs);
+    }
+  END_DO_SET();
+  bp_flush_all ();
+  dk_set_free (*bufs_list);
+  *bufs_list = NULL;
+  iq_shutdown (IQ_SYNC);
+}
+
+
+void
+em_unremap (index_tree_t * it, it_cursor_t * itc, extent_map_t * em, int * bufs_done, int buf_quota, int target, dk_set_t * bufs_list)
+{
+  for (;;)
+    {
+      int l1 = dk_set_length (*bufs_list);
+      cpt_em_unremap_read (em, it, bufs_done, buf_quota, bufs_list);
+      if (l1 == dk_set_length (*bufs_list))
+	break;
+      if (*bufs_done > buf_quota)
 	{
-	  page_leave_inner (buf);
-	  continue;
+	  cpt_unremap_bufs (itc, bufs_list);
+	  *bufs_done = 0;
 	}
-      TC (tc_uncommit_cpt_page);
-      dp_set_backup_flag (cpt_dbs, buf->bd_page, 1);
-      cpt_remap = DP_CHECKPOINT_REMAP (cpt_dbs, pl->pl_page);
-      if (cpt_remap)
-	{
-	  /* now the uncommitted page has a cpt remap.  Hence it must be mapped back to physical 
-	   * Therefore write the rolled back cut to physical, the uncommitted to remap and remove the cpt remap and update the commit space remap */
-	  committed_remap = (dp_addr_t)(ptrlong) gethash (DP_ADDR2VOID (pl->pl_page), &IT_DP_MAP (it_from_g, pl->pl_page)->itm_remap);
-	  if (committed_remap != buf->bd_page)
-	    log_error ("In cpt of uncommitted, tehre is a cpt remap of %d for logical %d with commit space remap %d, which is bad.  Expected commit space mapping back to logical", cpt_remap, buf->bd_page, buf->bd_physical_page);
-	  buf->bd_physical_page = buf->bd_page;
-	  buf_disk_write (buf, buf->bd_page);
-	  memcpy (buf->bd_buffer, image, PAGE_SZ);
-	  buf->bd_physical_page = cpt_remap;
-	  buf->bd_is_dirty = 1;
-	  buf_disk_write (buf, buf->bd_physical_page);
-	  remhash (DP_ADDR2VOID (buf->bd_page), cpt_dbs->dbs_cpt_remap);
-	  sethash (DP_ADDR2VOID (buf->bd_page),  cpt_uncommitted_remap, DP_ADDR2VOID (cpt_remap));
-	  buf->bd_is_dirty = 0;
-	}
-      else
-	{
-	  /* No cpt remap. Write the rolled back page to logical */
-	  committed_remap = buf->bd_physical_page;
-	  if (gethash (DP_ADDR2VOID (pl->pl_page), &IT_DP_MAP (it_from_g, pl->pl_page)->itm_remap) != DP_ADDR2VOID (committed_remap))
-	    log_error ("In uncommitted cpt: isp_remap and bd_physical page not consistent");
-	  buf->bd_physical_page = buf->bd_page;
-	  buf->bd_is_dirty = 1;
-	  buf_disk_write (buf, buf->bd_physical_page);
-	  memcpy (buf->bd_buffer,image, PAGE_SZ);
-	  buf->bd_physical_page = committed_remap;
-	  if (committed_remap == buf->bd_page)
-	    {
-	      /* Here we have a new page that was uncommitted.  The rolled back version goes to logical but the uncommitted version now needs a remap.
-	       * Get a remap.  If not remap can be had, then do not give it a remap but this makes for a bad checkpoint.
-	       * The next checkpoint will write the page as if it were new again and all writes between checkpoints  will in fact go to the checkpoint, against the rules.  
-	       * To rectify this, force some unremaps at the end.  */
-	      new_remap = (dp_addr_t)(ptrlong) dk_set_pop (&cpt_new_pages);
-	      if (!new_remap)
-		new_remap = dbs_get_free_disk_page (cpt_dbs, buf->bd_page);
-	      if (!new_remap || dbs_stop_cp == 3)
-		{
-		  log_error ("In checkpoint of uncommitted, there is a new page %d for which no remap can be allocated because out of space."
-			     " Will try unremap and new cpt. ", buf->bd_page);
-		  cpt_out_of_space = 1;
-		}
-	      else
-		{
-		  committed_remap = new_remap;
-		  /*even though the new remap is allocated here,, it is not taken when starting from the cpt */
-		  DP_FREE_IN_CPT (new_remap);
-		  buf->bd_physical_page = committed_remap;
-		  buf->bd_is_dirty = 1;
-		  buf_disk_write (buf, buf->bd_physical_page);
-		  buf->bd_is_dirty = 0;
-		}
-	    }
-	  else
-	    {
-	      /* the remap is != the logical.  The remap is not taken in cpt space */
-	      DP_FREE_IN_CPT (committed_remap);
-	    }
-	  sethash (DP_ADDR2VOID (buf->bd_page), cpt_uncommitted_remap, DP_ADDR2VOID (committed_remap));
-	}
-      page_leave_inner (buf);
+      else 
+	break;
+      if (cpt_dbs->dbs_cpt_remap->ht_count <= target)
+	break;
     }
 }
 
-long tc_cpt_unremap_dirty;
+
+void
+cpt_place_buffers ()
+{
+  /* unremapped pages have been read into the dbs_cpt_tree.  Now place these into their correct trees 
+   * Because finding the right tree is too hard, mark these simply as unallocated.  If these are left hanging the assert in it_cache_check will fail when the dp gets used for sth else */
+
+  ptrlong dp;
+  buffer_desc_t * buf;
+  dk_hash_iterator_t hit;
+  int inx;
+  for (inx = 0; inx < IT_N_MAPS; inx++)
+    {
+      mutex_enter (&cpt_dbs->dbs_cpt_tree->it_maps[inx].itm_mtx);
+      dk_hash_iterator (&hit, &cpt_dbs->dbs_cpt_tree->it_maps[inx].itm_dp_to_buf);
+  while (dk_hit_next (&hit, (void **) &dp, (void**) &buf))
+    {
+	      if (buf->bd_is_write || buf->bd_readers)
+		GPF_T1 ("buf in cpt tree not supposed to be occupied");
+	      buf->bd_tree = NULL;
+	      buf->bd_page = 0;
+	      buf->bd_is_dirty = 0;
+	  buf->bd_storage = NULL;
+	}
+      clrhash (&cpt_dbs->dbs_cpt_tree->it_maps[inx].itm_dp_to_buf);
+      mutex_leave (&cpt_dbs->dbs_cpt_tree->it_maps[inx].itm_mtx);
+    }
+}
+
+
+
+
+void dbs_cache_check (dbe_storage_t * dbs, int mode);
+
+void
+cpt_unremap (dbe_storage_t * dbs, it_cursor_t * itc)
+{
+  int bufs_done = 0, buf_quota = main_bufs / 4, target;
+  dk_set_t bufs_list = NULL;
+  cpt_remap_reverse = hash_table_allocate (cpt_dbs->dbs_cpt_remap->ht_actual_size);
+  DO_HT (ptrlong, log, ptrlong, phys, dbs->dbs_cpt_remap)
+    {
+      sethash ((void*)phys, cpt_remap_reverse, (void*)log);
+    }
+  END_DO_HT;
+  target = MIN (dbs->dbs_max_cp_remaps, (dbs->dbs_cpt_remap->ht_count / 20) * 19);
+ again:
+  cpt_unremap_ram (target);
+  if (cpt_dbs->dbs_cpt_remap->ht_count > target)
+    {
+      em_unremap (dbs->dbs_cpt_tree, itc, dbs->dbs_extent_map, &bufs_done, buf_quota, target, &bufs_list);
+      cpt_unremap_bufs (itc, &bufs_list);
+      bufs_done = 0;
+      cpt_place_buffers ();
+      DO_SET (index_tree_t *, it, &dbs->dbs_trees)
+	{
+	  if (it->it_extent_map != dbs->dbs_extent_map && it->it_extent_map)
+	    {
+	      em_unremap (it, itc, it->it_extent_map, &bufs_done, buf_quota, target, &bufs_list);
+	      if (cpt_dbs->dbs_cpt_remap->ht_count <= target)
+		break;
+	    }
+	}
+      END_DO_SET();
+      cpt_unremap_bufs (itc, &bufs_list);
+    }
+  bp_flush_all ();
+  if (cpt_dbs->dbs_cpt_remap->ht_count > target)
+    goto again;
+  iq_shutdown (IQ_STOP);
+  /* verify all unremaps are written.  shutdown exityy with bufs in iq will lose the pages, very corrupt, often visible as bad parent linkand sometimes as just lost updates.  */
+  dbs_cache_check (dbs, IT_CHECK_FAST);
+  iq_restart ();
+  if (0 == cpt_write_remap (dbs))
+    {
+      log_error ("Checkpoint remap write failed, %ld remap pages",
+		 dbs->dbs_cpt_remap->ht_count);
+      target = 0;
+      goto again;
+    }
+  hash_table_free (cpt_remap_reverse);
+}
 
 
 void
@@ -723,25 +1173,25 @@ cpt_neodisk_page (const void *key, void *value)
   dp_addr_t logical = (dp_addr_t) (uptrlong) key;
   dp_addr_t physical = (dp_addr_t) (uptrlong) value;
   buffer_desc_t *after_image;
-  if (cpt_uncommitted_remap && gethash (DP_ADDR2VOID (logical), cpt_uncommitted_remap))
-    return; /* this has uncommitted stuff. Allready processed */
   if (!physical)
     GPF_T1 ("Zero phys page");
   if (physical == DP_DELETED)
-    {
+{
       dp_addr_t cp_remap =
 	  (dp_addr_t) (uptrlong) gethash (DP_ADDR2VOID (logical), cpt_dbs->dbs_cpt_remap);
       if (cp_remap)
-	{
+    {
 	  remhash (DP_ADDR2VOID (logical), cpt_dbs->dbs_cpt_remap);
-	  dbs_free_disk_page (cpt_dbs, cp_remap);
+	  em_free_dp (it_from_g->it_extent_map, cp_remap, EXT_REMAP);
 	}
-      dbs_free_disk_page (cpt_dbs, logical);
+      em_free_dp (it_from_g->it_extent_map, logical, EMF_INDEX_OR_BLOB);
       dp_set_backup_flag (cpt_dbs, logical, 0);
+      DBG_PT_PRINTF (("  cpt clear backup flag L=%d \n", logical));
       return;
     }
 
   dp_set_backup_flag (cpt_dbs, logical, 1);
+  DBG_PT_PRINTF (("  cpt set backup flag L=%d \n", logical));
 
   after_image =
     (buffer_desc_t *) gethash (DP_ADDR2VOID (logical), &IT_DP_MAP (it_from_g, logical)->itm_dp_to_buf);
@@ -750,11 +1200,11 @@ cpt_neodisk_page (const void *key, void *value)
       dp_addr_t cp_remap =
 	  (dp_addr_t) (uptrlong) gethash (DP_ADDR2VOID (logical), cpt_dbs->dbs_cpt_remap);
       if (cp_remap)
-	{
+	    {
 	  remhash (DP_ADDR2VOID (logical), cpt_dbs->dbs_cpt_remap);
-	  dbs_free_disk_page (cpt_dbs, cp_remap);
+	  em_free_dp (it_from_g->it_extent_map, cp_remap, EXT_REMAP);
+	    }
 	}
-    }
   else
     {
       dp_addr_t cp_remap =
@@ -762,10 +1212,10 @@ cpt_neodisk_page (const void *key, void *value)
       if (cp_remap)
 	{
 	  GPF_T1 ("A page that has P != L should not additionally have a cpt remap");
-	  dbs_free_disk_page (cpt_dbs, cp_remap);
-	}
-      sethash (DP_ADDR2VOID (logical), cpt_dbs->dbs_cpt_remap, DP_ADDR2VOID (physical));
+	  em_free_dp (it_from_g->it_extent_map, cp_remap, 0);
     }
+      sethash (DP_ADDR2VOID (logical), cpt_dbs->dbs_cpt_remap, DP_ADDR2VOID (physical));
+}
 
   if (after_image)
     {
@@ -778,7 +1228,7 @@ cpt_neodisk_page (const void *key, void *value)
 
 	  remhash (DP_ADDR2VOID (logical), cpt_dbs->dbs_cpt_remap);
 	  /* remhash is allowed because the cpt remap might have been made in the sethash above */
-	  dbs_free_disk_page (cpt_dbs, physical);
+	  em_free_dp (it_from_g->it_extent_map, physical, EXT_REMAP);
 	  rdbg_printf (("[C Unremap L %ld R %ld ]", logical, physical));
 
 	  after_image->bd_physical_page = after_image->bd_page;
@@ -807,186 +1257,14 @@ cpt_is_page_remapped (dp_addr_t page)
 }
 
 
-buffer_desc_t *
-dbs_buf_by_dp (dbe_storage_t * dbs, dp_addr_t dp)
-{
-  buffer_desc_t * buf = NULL;
-  DO_SET (index_tree_t *, it, &dbs->dbs_trees)
-    {
-      mutex_enter (&IT_DP_MAP (it, dp)->itm_mtx);
-      buf = (buffer_desc_t *) gethash (DP_ADDR2VOID (dp), &IT_DP_MAP (it, dp)->itm_dp_to_buf);
-      mutex_leave (&IT_DP_MAP (it, dp)->itm_mtx);
-      if (buf)
-	{
-	  uc_printf (("found l=%d in %s \n", buf->bd_page, it->it_key ? it->it_key->key_name 
-		      : it == cpt_dbs->dbs_cpt_tree  ? "cpt_tree" : "unknown"));
-	return buf;
-    }
-    }
-  END_DO_SET();
-  return NULL;
-}
-
-
-void
-cpt_unremap_page_in_ram (const void *key, void *value)
-{
-  dp_addr_t logical = (dp_addr_t) (uptrlong) key;
-  dp_addr_t physical = (dp_addr_t) (uptrlong) value;
-
-  /****** If page IS REMAPPED in CP and NOT remapped in
-    commit OR PENDING TXN, you may unremap */
-  if (!cpt_is_page_remapped (logical)
-      && cpt_may_unremap_page (cpt_dbs, logical))
-    {
-      buffer_desc_t *image = dbs_buf_by_dp (cpt_dbs, logical);
-      if (image)
-	{
-	  image->bd_physical_page = logical;
-	  image->bd_is_dirty = 1;
-	  remhash (DP_ADDR2VOID (logical), cpt_dbs->dbs_cpt_remap);
-	  dbs_free_disk_page (cpt_dbs, physical);
-	  rdbg_printf (("[U L %ld R %ld ]", logical, physical));
-	}
-    }
-  else
-    uc_printf ((" refused unremap l=%d p=%d \n", logical, physical));
-}
-
-
-void
-cpt_unremap_in_ram (void)
-{
-  /* if happens to be any buffers in RAM that are checkpoint
-     remapped and not mapped back. Return number */
-  maphash (cpt_unremap_page_in_ram, cpt_dbs->dbs_cpt_remap);
-}
-
-
-int mcp_batch;
-int mcp_fill;
-jmp_buf_splice mcp_next_batch;
 dk_hash_t *remap;
 
 
 
-remap_t *mcp_remaps;
-remap_t **mcp_remap_ptrs;
 
-
-void
-cpt_mark_unremap (const void *key, void *value)
-{
-  dp_addr_t logical = (dp_addr_t) (uptrlong) key;
-  dp_addr_t physical = (dp_addr_t) (uptrlong) value;
-
-  /* mark into mcp_batch */
-  if (logical == physical)
-    {
-      /* no move needed. Remove remap and return */
-      GPF_T1 ("Logical = physical remap not allowed in checkpoint");
-    }
-  if (cpt_is_page_remapped (logical))
-    return;
-  mcp_remaps[mcp_fill].rm_physical = physical;
-  mcp_remaps[mcp_fill].rm_logical = logical;
-  mcp_remap_ptrs[mcp_fill] = &mcp_remaps[mcp_fill];
-  mcp_fill++;
-  if (mcp_fill == mcp_batch)
-    longjmp_splice (&mcp_next_batch, 1);
-}
-
-
-dp_addr_t
-remap_phys_key (remap_t * r)
-{
-  return (r->rm_physical);
-}
 
 
 dk_mutex_t *checkpoint_mtx;
-
-
-
-index_tree_t *
-buf_belongs_to (buffer_desc_t * buf)
-{
-  /* will contain key and fragment identifier */
-  return NULL;
-}
-
-
-void
-cpt_place_buffers ()
-{
-  /* unremapped pages have been read into the dbs_cpt_tree.  Now place these into their correct trees 
-   * Because finding the right tree is too hard, mark these simply as unallocated.  If these are left hanging the assert in it_cache_check will fail when the dp gets used for sth else */
-
-  ptrlong dp;
-  buffer_desc_t * buf;
-  dk_hash_iterator_t hit;
-  int inx;
-  for (inx = 0; inx < IT_N_MAPS; inx++)
-    {
-      mutex_enter (&cpt_dbs->dbs_cpt_tree->it_maps[inx].itm_mtx);
-      dk_hash_iterator (&hit, &cpt_dbs->dbs_cpt_tree->it_maps[inx].itm_dp_to_buf);
-  while (dk_hit_next (&hit, (void **) &dp, (void**) &buf))
-    {
-      index_tree_t *it = buf_belongs_to (buf);
-      if (it)
-	{
-	  /*dp_addr_t buf_dp = buf->bd_page;*/
-	      GPF_T1 ("this is not implemented");
-	}
-      else
-	{
-	      if (buf->bd_is_write || buf->bd_readers)
-		GPF_T1 ("buf in cpt tree not supposed to be occupied");
-	      buf->bd_tree = NULL;
-	      buf->bd_page = 0;
-	      buf->bd_is_dirty = 0;
-	  buf->bd_storage = NULL;
-	}
-	}
-      clrhash (&cpt_dbs->dbs_cpt_tree->it_maps[inx].itm_dp_to_buf);
-      mutex_leave (&cpt_dbs->dbs_cpt_tree->it_maps[inx].itm_mtx);
-    }
-}
-
-
-void
-cpt_preread_unremaps (int stay_inside)
-{
-  int i;
-  mcp_fill = 0;
-  if (0 == setjmp_splice (&mcp_next_batch))
-    {
-      maphash (cpt_mark_unremap, remap);
-    }
-  buf_sort ((buffer_desc_t **) mcp_remap_ptrs, mcp_fill,
-      (sort_key_func_t) remap_phys_key);
-
-  uc_printf (("Going to unremap %d old pages\n", mcp_fill));
-
-  for (i = 0; i < mcp_fill; i++)
-    {
-      buffer_desc_t *buf;
-	  mcp_itc->itc_page = 0;
-	  mcp_itc->itc_tree = cpt_dbs->dbs_cpt_tree;
-	  buf = dbs_buf_by_dp (cpt_dbs, mcp_remap_ptrs[i]->rm_logical);
-	  if (!buf)
-	{
-	  ITC_IN_KNOWN_MAP (mcp_itc, mcp_remap_ptrs[i]->rm_logical);
-	  page_wait_access (mcp_itc, mcp_remap_ptrs[i]->rm_logical, NULL, &buf, PA_WRITE, RWG_WAIT_ANY);
-	  if (!buf || PF_OF_DELETED == buf)
-	    {
-	      log_error ("Reading deleted or occupied in cpt unremap L=%d", mcp_remap_ptrs[i]->rm_logical);
-	    }
-	  uc_printf ((" reading l=%d p=%d for unremap in cpt_tree\n", buf->bd_page, buf->bd_physical_page));
-	  BD_SET_IS_WRITE (buf, -0);
-	}
-    }
-}
 
 
 
@@ -1030,82 +1308,83 @@ wi_write_dirty (void)
 void
 dbs_backup_check (dbe_storage_t * dbs)
 {
-#ifdef DEBUG
+#if 1
   int n;
   for (n = 0; n < dbs->dbs_n_pages; n++)
     {
-      if (dp_backup_flag (dbs, n)
-	  && dbs_is_free_page (dbs, n))
+      int fl;
+      IN_DBS (dbs);
+      fl = dp_backup_flag (dbs, n);
+      LEAVE_DBS (dbs);
+      if (fl && dbs_is_free_page (dbs, n))
 	{
-	  printf (" dp=%d is in backup set and is free\n", n);
-	  GPF_T1 ("page in backup set and free");
+	  log_error (" dp=%d is in backup set and is free\n", n);
+	  /*GPF_T1 ("page in backup set and free");*/
 	}
     }
 #endif
 }
 
-
 void
-cpt_uncommitted_dps (int clear)
+dbs_cache_check (dbe_storage_t * dbs, int mode)
 {
-  /* when a cpt is done with uncommitted data, the pages that are uncommitted are must not appear as taken in the allocation map saved by cpt.  So reset them and then put them back on. */
-  DO_HT (ptrlong, dp, void *, d, cpt_uncommitted_remap_dp)
+  if (dbf_cpt_rb) 
+    return; /* quick in debug mode */
+  DO_SET (index_tree_t *, it, &dbs->dbs_trees)
     {
-      if (clear)
-	dbs_free_disk_page (cpt_dbs, dp);
-      else
-	dbs_page_allocated (cpt_dbs, dp);
+      it_cache_check (it, mode);
     }
-  END_DO_HT;
-  DO_HT (lock_trx_t *, lt, void *, d, cpt_uncommitted_lt)
-    {
-      if (lt->lt_dirty_blobs)
-	{
-	  DO_HT (void *, k, blob_layout_t *, bl, lt->lt_dirty_blobs)
-	    {
-	      /* for a blob that is uncommitted, do not record the pages as occupied in the cpt.  But do this only insofar there is a filled page dir.  And do not extend this beyond the first page of the page dir. 
-	       * So there will be a possible leak of a few pages if roll fwd from the cpt, otherwise no leak. */
-	      if (!bl->bl_it || bl->bl_it->it_storage != cpt_dbs)
-		continue;
-	      if (bl->bl_delete_later == BL_DELETE_AT_ROLLBACK)
-		{
-		  if (bl->bl_pages)
-		    {
-		      int inx;
-		      for (inx= 0; inx < box_length ((caddr_t)bl->bl_pages) / sizeof (dp_addr_t); inx++)
-			{
-			  if (bl->bl_pages[inx])
-			    {
-			      if (clear)
-				dbs_free_disk_page (cpt_dbs, bl->bl_pages[inx]);
-			      else
-				dbs_page_allocated (cpt_dbs, bl->bl_pages[inx]);
-			    }
-			}
-		    }
-		  if (bl->bl_dir_start)
-		    {
-		      if (clear)
-			dbs_free_disk_page (cpt_dbs, bl->bl_dir_start);
-		      else
-			dbs_page_allocated (cpt_dbs, bl->bl_dir_start);
-		    }
-		}
-	    }
-	  END_DO_HT;
-	}
-    }
-  END_DO_HT;
+  END_DO_SET();
 }
 
 
+void 
+bp_flush_all ()
+		    {
+		      int inx;
+  DO_BOX (buffer_pool_t *, bp, inx, wi_inst.wi_bps)
+			    {
+      IN_BP (bp);
+      mt_write_dirty (bp, 0, 0 /*PHYS_EQ_LOG*/ );
+      LEAVE_BP (bp);
+			}
+  END_DO_BOX;
+		    }
+
+
+void
+dbs_recov_write_page_set (dbe_storage_t * dbs, buffer_desc_t * buf)
+		    {
+  while (buf)
+    {
+      if (buf->bd_next)
+	{
+	  LONG_SET (buf->bd_buffer + DP_OVERFLOW, buf->bd_next->bd_page);
+	}
+      else
+	LONG_SET (buf->bd_buffer + DP_OVERFLOW, 0);
+      print_int (buf->bd_page, dbs->dbs_cpt_recov_ses);
+      session_buffered_write_char (DV_STRING, dbs->dbs_cpt_recov_ses);
+      print_long (PAGE_SZ, dbs->dbs_cpt_recov_ses);
+      session_buffered_write (dbs->dbs_cpt_recov_ses, (caddr_t)buf->bd_buffer, PAGE_SZ);
+      buf = buf->bd_next;
+    }
+}
+
+
+#define CRH_FREE_SET 0
+#define CRH_BACKUP_SET 1
+#define CRH_REG_DP 2
+#define CRH_REG_ARR 3
+
+
+
+#ifdef NOT_CURRENTLY_USED
 static void 
 dbs_cpt_recov_obackup_reset (dbe_storage_t * dbs)
 {
   buffer_desc_t * fs = dbs->dbs_free_set;
   buffer_desc_t * is = dbs->dbs_incbackup_set;
-  dk_hash_iterator_t hit;
-  void *dp, *remap_dp;
 
   memset (&bp_ctx, 0, sizeof (ol_backup_ctx_t));
   while (fs && is)
@@ -1115,11 +1394,7 @@ dbs_cpt_recov_obackup_reset (dbe_storage_t * dbs)
       fs = fs->bd_next;
       is = is->bd_next;
     }
-  ol_write_registry (wi_inst.wi_master, NULL, ol_regist_unmark);
-  dk_hash_iterator (&hit, dbs->dbs_cpt_remap);
-  while (dk_hit_next (&hit, &dp, &remap_dp))
-    dp_set_backup_flag (dbs, (dp_addr_t) (ptrlong) remap_dp, 0);
-
+  ol_write_registry (dbs, NULL, ol_regist_unmark);
   /* cp remap pages will be ignored, so do not leave trash
      for dbs_count_pageset_items_2 */
   DO_SET (caddr_t, _page, &dbs->dbs_cp_remap_pages)
@@ -1130,29 +1405,52 @@ dbs_cpt_recov_obackup_reset (dbe_storage_t * dbs)
   dbs_write_page_set (dbs, dbs->dbs_incbackup_set);
   dbs_write_cfg_page (dbs, 0);
 }
+#endif
+
+
+dk_set_t 
+dbs_cpt_recov_ems (dbe_storage_t * dbs, caddr_t * reg)
+{
+  dk_set_t all_ems = NULL;
+  int inx, n = BOX_ELEMENTS (reg);
+  for (inx = 0; inx < n; inx ++)
+    {
+      caddr_t * ent = (caddr_t*) reg[inx];
+      caddr_t name = ent[0];
+      if (0 == strncmp (name, "__EM:", 5)
+	  || 0 == strcmp (name, "__sys_ext_map"))
+	{
+	  extent_map_t * em = dbs_read_extent_map (dbs, name, atoi (ent[1]));
+	  dk_set_push (&all_ems, (void*)em);
+	  if (0 == strcmp (name, "__sys_ext_map"))
+	    dbs->dbs_extent_map = em;
+	}
+    }
+  return all_ems;
+}
+
 
 void 
-dbs_cpt_recov (void)
+dbs_cpt_recov (dbe_storage_t * dbs)
 {
+  dk_set_t all_ems = NULL;
   int cpt_recov_file_complete = 0;
+  extent_map_t * em;
   int cpt_log_fd;
   dk_session_t * ses = dk_session_allocate (SESCLASS_TCPIP);
   long npages = 0, unpages = 0;
   int rc = 0, exit_after_recov = 0;
   char * new_name;
-
-  dbs_cpt_recov_in_progress = 1;
-
-  DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
-    {
       if (!dbs->dbs_cpt_file_name)
-	continue;
+    return;
       cpt_log_fd = fd_open (dbs->dbs_cpt_file_name, OPEN_FLAGS_RO);
       if (cpt_log_fd < 0) /* no cpt backup */
-	continue;
+    return;
+  dbs_cpt_recov_in_progress = 1;
       log_info ("Starting a database that was killed during checkpoint.  Recovering using checkpoint recov file.");
       LSEEK (cpt_log_fd, 0, SEEK_SET);
       tcpses_set_fd (ses->dks_session, cpt_log_fd);
+  dbs->dbs_cpt_recov_ses = ses;
       CATCH_READ_FAIL (ses)
 	{
 	  long stat = read_int (ses);
@@ -1163,7 +1461,6 @@ dbs_cpt_recov (void)
 	      log_error ("The checkpoint was stopped in the middle of making cpt recov file, recov file ignored");
 	      goto err_end;
 	    }
-	  cpt_recov_file_complete = 1;
 	  while (DKSESSTAT_ISSET (ses, SST_OK))
 	    {
 	      dp_addr_t logical;
@@ -1181,10 +1478,20 @@ dbs_cpt_recov (void)
 			  dp_addr_t physical = (dp_addr_t)(uptrlong)unbox (obj);
 
 			  if (physical == DP_DELETED)
-			    dbs_free_disk_page (dbs, logical);
+		  {
+		    dp_set_backup_flag (dbs, logical, 0);
+		    em = dbs_dp_to_em (dbs, logical);
+		    if (em)
+		      em_free_dp (em, logical, EMF_ANY);
+		    else
+		      log_error ("In cpt recov, suspect to have a free that has no em, L=%d ", logical);
+		  }
 			  else
 			    {
 			      cp_buf->bd_page = logical;
+		    dp_set_backup_flag (dbs, logical, 1);
+		    if (physical != logical)
+		      {
 			      cp_buf->bd_physical_page = physical;
 			      cp_buf->bd_storage = dbs;
 			      buf_disk_read (cp_buf);
@@ -1193,10 +1500,10 @@ dbs_cpt_recov (void)
 			      buf_disk_write (cp_buf, logical);
 			      cp_buf->bd_is_dirty = 0;
 			      npages ++;
-			      /*fprintf (stderr, "remap l=%d p=%d\n", logical, physical);*/
-			      if (physical != logical)
-				dbs_free_disk_page (dbs, physical);
-			      /*remhash (DP_ADDR2VOID (logical), dbs->dbs_cpt_remap);*/
+			em = dbs_dp_to_em (dbs, physical);
+			if (em)
+			  em_free_dp (em, physical, EMF_ANY);
+		      }
 			    }
 			  break;
 			}
@@ -1213,23 +1520,72 @@ dbs_cpt_recov (void)
 			  unpages ++;
 			  break;
 			}
+	    case DV_ARRAY_OF_POINTER:
+	      /* the recov head block.  Read the sets and extents and the rest here */
+	      {
+		caddr_t * head = (caddr_t *)obj;
+		caddr_t * reg_arr = (caddr_t *)head[CRH_REG_ARR], *reg_arr_2;
+		if (!dbs->dbs_registry_hash)
+		  {
+		    dbs->dbs_registry_hash = id_str_hash_create (101);
+		    if (DBS_PRIMARY == dbs->dbs_type)
+		      registry = dbs->dbs_registry_hash;
+		  }
+		dbs->dbs_free_set = dbs_read_page_set (dbs, unbox (head[CRH_FREE_SET]), DPF_FREE_SET);
+		dbs->dbs_incbackup_set = dbs_read_page_set (dbs, unbox (head[CRH_BACKUP_SET]), DPF_INCBACKUP_SET);
+		dbs->dbs_extent_set = dbs_read_page_set (dbs, dbs->dbs_extent_set->bd_page, DPF_EXTENT_SET);
+		dbs->dbs_registry = unbox (head[CRH_REG_DP]);
+		reg_arr_2 = (caddr_t*) box_copy_tree ((caddr_t)reg_arr);
+		dbs_registry_from_array (dbs, reg_arr);
+		head[CRH_REG_ARR] = NULL;
+		all_ems = dbs_cpt_recov_ems (dbs, reg_arr_2);
+		dk_free_tree ((caddr_t) reg_arr_2);
+		break;
+	      }
 		  default:
 			{
 			  log_error ("Unknown object in checkpoint recovery file");
-			  dk_free_tree (obj);
 			  goto err_end;
 			}
 		}
-	      dk_free_box (obj);
+	  dk_free_tree (obj);
 	    }
-	err_end:
-	  session_flush_1 (ses);
 	}
       FAILED 
 	{
 	}
       END_READ_FAIL (ses);
+  cpt_recov_file_complete = 1;
+ err_end:
+  dbs->dbs_cpt_recov_ses = NULL;
       fd_close (cpt_log_fd, dbs->dbs_cpt_file_name);
+  /* it is read.  Now write the registry and sets and ems */
+  if (cpt_recov_file_complete)
+    {
+      cli_bootstrap_cli ();
+      IN_TXN;
+      if (LTE_OK != dbs_write_registry (dbs))
+	{
+	  log_error ("The new registry cannot be written during recov because of no space.  Recovery exits. Make more space available and restart recov");
+	  call_exit (-1);
+	}
+      LEAVE_TXN;
+      DO_SET (extent_map_t *, em, &all_ems)
+	{
+	  dbs_write_page_set (dbs, em->em_buf);
+	  em_free_mem (em);
+	}
+      END_DO_SET ();
+      clrhash (dbs->dbs_dp_to_extent_map);
+      dk_set_free (all_ems);
+      dbs_write_page_set (dbs, dbs->dbs_free_set);
+      dbs_write_page_set (dbs, dbs->dbs_incbackup_set);
+      dbs_write_page_set (dbs, dbs->dbs_extent_set);
+      clrhash (dbs->dbs_cpt_remap);
+      if (0 == cpt_write_remap (dbs))
+	dbs->dbs_cp_remap_pages = NULL;
+      dbs_sync_disks (dbs);    
+    }
       new_name = setext (dbs->dbs_cpt_file_name, "cpt-after-recov", EXT_SET);
       log_info ("Moving %s to %s for future reference.", dbs->dbs_cpt_file_name, new_name);
       rc = rename (dbs->dbs_cpt_file_name, new_name);
@@ -1250,17 +1606,7 @@ dbs_cpt_recov (void)
 	}
       if (!cpt_recov_file_complete)
 	log_error ("The checkpoint recov file was not complete, hence will roll forward from log.");
-      if (npages || unpages)
-	{
-	  clrhash (dbs->dbs_cpt_remap);
-	  dk_set_free (dbs->dbs_cp_remap_pages);
-	  dbs->dbs_cp_remap_pages = NULL;
-	  dbs_cpt_recov_obackup_reset (dbs); /* this write the cfg page also */
-	  dbs_sync_disks (dbs);
-	  log_info ("%ld pages processed based on checkpoint recov file, %ld had uncommitted data at time of checkpoint.", npages, unpages);
-	}
-    }
-  END_DO_SET();
+  log_info ("%ld pages processed based on checkpoint recov file.", npages);
   PrpcSessionFree (ses);
   if (exit_after_recov)
     {
@@ -1273,13 +1619,12 @@ dbs_cpt_recov (void)
 void 
 dbs_cpt_backup (void)
 {
-  int second_round = 0;
-  dk_set_t rem;
+  caddr_t * head, *reg;
   int inx;
   int cpt_log_fd;
   dk_session_t * ses = dk_session_allocate (SESCLASS_TCPIP);
- retry:
-  cpt_new_pages = NULL;
+  sch_save_roots (wi_inst.wi_schema);
+  registry_update_sequences ();
   DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
     {
       dk_hash_t * cpt_bkp;
@@ -1290,41 +1635,32 @@ dbs_cpt_backup (void)
       ftruncate (cpt_log_fd, 0);
       LSEEK (cpt_log_fd, 0, SEEK_SET);
       tcpses_set_fd (ses->dks_session, cpt_log_fd);
-
+      dbs->dbs_cpt_recov_ses = ses;
       CATCH_WRITE_FAIL (ses)
 	{
 	  print_int (0, ses);
 	  session_flush_1 (ses);
+	  LEAVE_TXN;
+	  dbs_recov_write_page_set (dbs, dbs->dbs_extent_set);
+	  dbs_cpt_recov_write_extents  (dbs);
+	  dbs_recov_write_page_set (dbs, dbs->dbs_free_set);
+	  dbs_recov_write_page_set (dbs, dbs->dbs_incbackup_set);
+	  IN_TXN;
+	  head = (caddr_t *)list (4, box_num (dbs->dbs_free_set->bd_page), 
+				  box_num (dbs->dbs_incbackup_set->bd_page),
+				  box_num (dbs->dbs_registry), dbs_registry_to_array (dbs));
+	  print_int (0, ses);
+	  print_object (head, ses, NULL, NULL);
+	  reg = (caddr_t *) head[CRH_REG_ARR];
+	  DO_BOX (caddr_t, elt, inx, reg)
+		{
+	      dk_free_box (elt);
+	      reg[inx] = NULL;
+	    }
+	  END_DO_BOX;
+	  dk_free_tree (head);
 	}
       END_WRITE_FAIL (ses);
-      cpt_uncommitted_remap = hash_table_allocate (101);
-      cpt_uncommitted_lt = hash_table_allocate (11);
-      cpt_uncommitted_remap_dp = hash_table_allocate (101); 
-      DO_SET (index_tree_t *, it, &dbs->dbs_trees)
-	{
-	  int rc;
-	  mcp_itc->itc_thread = THREAD_CURRENT_THREAD;
-	  itc_from_it (mcp_itc, it);
-	  it_from_g = it;
-	  for (inx = 0; inx < IT_N_MAPS; inx++)
-	    {
-	      mutex_enter (&it->it_maps[inx].itm_mtx);
-	      rc = cpt_uncommitted_backup (it, inx, ses, cpt_bkp);
-	      mutex_leave (&it->it_maps[inx].itm_mtx);
-	      if (CPT_RB_NO_DISK  == rc && !second_round)
-		{
-		  second_round = 1;
-		  log_error ("checkpoint ran out of disk space for rb of uncommitted.  Server exiting without starting the checkpoint.  Upon restart will recover from roll forward log.  More disk space should be made available");
-		  ftruncate (cpt_log_fd, 0);
-		  fd_close (cpt_log_fd, dbs->dbs_cpt_file_name);
-		  unlink (dbs->dbs_cpt_file_name);
-		  call_exit (-1);
-		  cpt_out_of_disk ();
-		  goto retry;
-		}
-	    }
-	}
-      END_DO_SET();
       DO_SET (index_tree_t *, it, &dbs->dbs_trees)
 	{
 	  for (inx = 0; inx < IT_N_MAPS; inx++)
@@ -1334,11 +1670,6 @@ dbs_cpt_backup (void)
 		{
 		  dp_addr_t logical = (dp_addr_t)(uptrlong) k;
 		  dp_addr_t physical = (dp_addr_t)(uptrlong) d;
-		  if (gethash (DP_ADDR2VOID(logical), cpt_bkp))
-		    {
-		      /*fprintf (stderr, "already in backup %d, phys=%d\n", logical, physical);*/
-		      continue;
-		    }
 		  CATCH_WRITE_FAIL (ses)
 		    {
 		      print_int (logical, ses);
@@ -1371,24 +1702,12 @@ dbs_cpt_backup (void)
 	}
       END_DO_HT;
       session_flush (ses);
-      if (dbs_stop_cp == 2)
+      if (2 == dbs_stop_cp)
 	{
+	  log_info ("Exiting in mid checkpoint recovery file write");
 	  call_exit (-1);
 	}
-
-
-      sch_save_roots (wi_inst.wi_schema);
-      if (LTE_OK != dbs_write_registry (dbs))
-	{
-	  log_error ("Since registry could not be written, checkpoint not started.  Server exiting.  Make more disk space available and restart, which will roll forward from log.");
-	  call_exit (-1);
-	}
-      dbs_write_page_set (dbs, dbs->dbs_free_set);
-      dbs_write_page_set (dbs, dbs->dbs_incbackup_set);
-      rem = dbs->dbs_cp_remap_pages;
-      dbs->dbs_cp_remap_pages = NULL;
-      dbs_write_cfg_page (dbs, 0);
-      dbs->dbs_cp_remap_pages = rem;
+      dbs_sync_disks (dbs);
       LSEEK (cpt_log_fd, 0, SEEK_SET);
       CATCH_WRITE_FAIL (ses)
 	{
@@ -1398,13 +1717,6 @@ dbs_cpt_backup (void)
       END_WRITE_FAIL (ses);
       fd_fsync (cpt_log_fd);
       fd_close (cpt_log_fd, dbs->dbs_cpt_file_name);
-      dbs_sync_disks (dbs);
-      hash_table_free (cpt_uncommitted_remap);
-      hash_table_free (cpt_uncommitted_lt);
-      hash_table_free (cpt_uncommitted_remap_dp);
-      cpt_uncommitted_remap = NULL;
-      cpt_uncommitted_lt = NULL;
-      cpt_uncommitted_remap_dp = NULL;
       hash_table_free (cpt_bkp);
     }
   END_DO_SET();
@@ -1414,54 +1726,37 @@ dbs_cpt_backup (void)
 int dbs_stop_cp = 0;
 
 void
-dbs_checkpoint (dbe_storage_t * dbs, char *log_name, int shutdown)
+dbs_checkpoint (char *log_name, int shutdown)
 {
   int mcp_delta_count, inx;
-  int volatile all_unremapped;
   long start_atomic;
   FILE *checkpoint_flag_fd = NULL;
-  mcp_batch = cp_unremap_quota;
-
-  mcp_remaps = (remap_t *) dk_alloc (mcp_batch * sizeof (remap_t));
-  mcp_remap_ptrs = (remap_t **) dk_alloc (mcp_batch * sizeof (caddr_t));
 
   mcp_delta_count = 0;
   LEAVE_TXN;
   wi_check_all_compact (0);
-  DO_BOX (buffer_pool_t *, bp, inx, wi_inst.wi_bps)
-    {
-      IN_BP (bp);
-      mt_write_dirty (bp, 0, 0 /*PHYS_EQ_LOG*/ );
-      LEAVE_BP (bp);
-    }
-  END_DO_BOX;
+
+  bp_flush_all ();
   if (!shutdown)
     {
       iq_shutdown (IQ_SYNC);
-
-      DO_BOX (buffer_pool_t *, bp, inx, wi_inst.wi_bps)
-	{
-	  IN_BP (bp);
-	  mt_write_dirty (bp, 0, 0 /*PHYS_EQ_LOG*/ );
-	  LEAVE_BP (bp);
-	}
-      END_DO_BOX;
+  bp_flush_all ();
       iq_shutdown (IQ_SYNC);
     }
 
   IN_TXN;
   cpt_rollback (LT_KILL_FREEZE);
+  start_atomic = get_msec_real_time ();
   iq_shutdown (IQ_STOP);
   wi_check_all_compact (0);
-  DO_SET (index_tree_t *, it, &dbs->dbs_trees)
-    {
-      it_cache_check (it);
-    }
-  END_DO_SET();
+  wi_inst.wi_checkpoint_atomic = 1;
+  iq_restart ();
 
-  dbs_backup_check (dbs);
+  mutex_enter (dbs_autocompact_mtx); /* an autcompact running in the background can confuse the unremap */
   WITHOUT_SIGNALS
     {
+    cpt_uncommitted ();
+    cpt_uncommitted_blobs (1);
       checkpoint_flag_fd = fopen(CHECKPOINT_IN_PROGRESS_FILE, "a");
       if (checkpoint_flag_fd != NULL)
 	{
@@ -1471,39 +1766,40 @@ dbs_checkpoint (dbe_storage_t * dbs, char *log_name, int shutdown)
 	      get_msec_real_time ());
 	  fclose(checkpoint_flag_fd);
 	}
-      start_atomic = get_msec_real_time ();
-
-      /* sync */
       mcp_itc = itc_create (NULL, NULL);
-      wi_write_dirty ();
+    bp_flush_all ();
+    iq_shutdown (IQ_STOP);
+    DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
+      {
       dbs_sync_disks (dbs);
-      cpt_dbs = dbs;
-      dbs_cpt_backup ();
-      if (dbs_stop_cp == 1)
+      }
+    END_DO_SET();
+  DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
 	{
-	  call_exit (-1);
+      dbs_cache_check (dbs, IT_CHECK_ALL);
+      dbs_backup_check (dbs);
 	}
-      if (dbs_stop_cp == 4)
-        virtuoso_sleep (60, 0);
+  END_DO_SET();
 
+    dbs_cpt_backup ();
+    iq_restart ();
       rdbg_printf (("\nCheckpoint atomic.\n"));
-      sch_save_roots (wi_inst.wi_schema);
-      dbs_write_registry (dbs);
       DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
 	{
-	  index_tree_t *del_it;
+	cpt_dbs = dbs;
 	  remap = dbs->dbs_cpt_remap;
-	  cpt_uncommitted_remap = hash_table_allocate (101);
-	  cpt_uncommitted_lt = hash_table_allocate (11);
-	  cpt_uncommitted_remap_dp = hash_table_allocate (101);
-
+	if (1 == dbs_stop_cp)
+	  {
+	    log_info ("Exiting in mid checkpoint");
+	    call_exit (-1);
+	  }
 	  DO_SET (index_tree_t *, it, &dbs->dbs_trees)
 	    {
-	      void *k, *d;
-	      dk_hash_iterator_t hit;
 	      mcp_itc->itc_thread = THREAD_CURRENT_THREAD;
 	      itc_from_it (mcp_itc, it);
 	      it_from_g = it;
+	    if (it->it_extent_map && it->it_extent_map->em_remap_on_hold)
+	      log_info ("In principle should not have em with remap on hold in cpt. key %s hold %d", it->it_key && it->it_key->key_name ? it->it_key->key_name : "unnamed", it->it_extent_map->em_remap_on_hold);
 	      for (inx = 0; inx < IT_N_MAPS; inx++)
 		{
 		  rdbg_printf (("%s %ld\n",
@@ -1511,27 +1807,15 @@ dbs_checkpoint (dbe_storage_t * dbs, char *log_name, int shutdown)
 			(long) it->it_maps[inx].itm_remap.ht_count));
 
 		  mutex_enter (&it->it_maps[inx].itm_mtx);
-		  cpt_uncommitted (it, inx);
 		  maphash (cpt_neodisk_page, &it->it_maps[inx].itm_remap);
 		  clrhash (&it->it_maps[inx].itm_remap);
-		  dk_hash_iterator (&hit, cpt_uncommitted_remap);
-		  while (dk_hit_next (&hit, &k, &d))
-		    {
-		      uc_printf ((" uncommitted in %s:%d l=%ld p=%ld cptremap=%ld \n",
-			    it->it_key->key_name, inx, (ptrlong)k, (ptrlong)d, (ptrlong)
-			    gethash (k, cpt_dbs->dbs_cpt_remap)));
-		      sethash (k, &it->it_maps[inx].itm_remap, d);
-		    }
-		  clrhash (cpt_uncommitted_remap);
 		  mutex_leave (&it->it_maps[inx].itm_mtx);
 		}
 	    }
 	  END_DO_SET();
-	  hash_table_free (cpt_uncommitted_remap);
-	  cpt_uncommitted_remap = NULL;
-	  wi_write_dirty ();
+	bp_flush_all ();
 
-	  while (NULL != (del_it = (index_tree_t *) dk_set_pop (&dbs->dbs_deleted_trees)))
+	DO_SET (index_tree_t *, del_it, &dbs->dbs_deleted_trees)
 	    {
 	      int inx;
 	      mcp_itc->itc_thread = THREAD_CURRENT_THREAD;
@@ -1544,74 +1828,60 @@ dbs_checkpoint (dbe_storage_t * dbs, char *log_name, int shutdown)
 		  mutex_leave (&del_it->it_maps[inx].itm_mtx);
 		}
 	    }
-	  all_unremapped = 0;
-	  while (1)
-	    {
-	      uint32 n_remaps = remap->ht_count;
-	      if (all_unremapped || n_remaps <= dbs->dbs_max_cp_remaps)
-		{
-		  if (0 == cpt_write_remap (dbs))
-		    {
-		      log_error ("Checkpoint remap write failed, %ld remap pages",
-			  dbs->dbs_cpt_remap->ht_count);
-		    }
-		  else
-		    break;
-		}
-	      cpt_preread_unremaps (1);
-	      cpt_unremap_in_ram ();
-	      wi_write_dirty ();
-	      if (cpt_dbs->dbs_cpt_remap->ht_count == (uint32) n_remaps)
-		all_unremapped = 1;
-	    }
-	  cpt_place_buffers ();
-	  cpt_uncommitted_dps (1);
+	END_DO_SET();
+	cpt_unremap (dbs, mcp_itc);
+	dbs_cpt_extents (dbs, dbs->dbs_deleted_trees);
+	dbs_write_registry (dbs);
 	  dbs_write_page_set (dbs, dbs->dbs_free_set);
-	  cpt_uncommitted_dps (0);
+	dbs_cpt_write_extents (dbs);
+	dk_set_free (dbs->dbs_deleted_trees);
+	dbs->dbs_deleted_trees = NULL;
 	  dbs_write_page_set (dbs, dbs->dbs_incbackup_set);
+	dbs_write_page_set (dbs, dbs->dbs_extent_set);
 	  dbs_write_cfg_page (dbs, 0);
-	  hash_table_free (cpt_uncommitted_lt);
-	  hash_table_free (cpt_uncommitted_remap_dp);
 	  IN_DBS (dbs);
 	  LEAVE_DBS (dbs);
-	  if (DBS_PRIMARY == dbs->dbs_type)
-	    log_checkpoint (dbs, log_name, shutdown);
 	}
       END_DO_SET();
-      mcp_itc->itc_itm1 = NULL;
-      itc_free (mcp_itc);
-      mcp_itc = NULL;
-      uc_printf (("Checkpoint made. %d delta pages.\n", mcp_delta_count));
-
-      dk_free ((caddr_t) mcp_remaps, mcp_batch * sizeof (remap_t));
-      dk_free ((caddr_t) mcp_remap_ptrs, mcp_batch * sizeof (caddr_t));
-      unlink(CHECKPOINT_IN_PROGRESS_FILE);
       DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
 	{
-	  if (!dbs->dbs_cpt_file_name)
-	    continue;
+      if (dbs->dbs_cpt_file_name)
+	{
+	  dbs_sync_disks (dbs);
 	  unlink (dbs->dbs_cpt_file_name); /* remove cpt backup file */
 	}
+      }
       END_DO_SET();
+    {   
+      dbe_storage_t * dbs = wi_inst.wi_master;
+      cpt_uncommitted_blobs (0);
+      cpt_restore_uncommitted (mcp_itc); /* restore uncommitted before log cpt because logcpt may have to rewrite a log of uncommitted if the cpt was between phases of 2pc */
+      log_checkpoint (dbs, log_name, shutdown);
+      unlink(CHECKPOINT_IN_PROGRESS_FILE);
+
+    }
+
+    mcp_itc->itc_itm1 = NULL;
+    itc_free (mcp_itc);
+    mcp_itc = NULL;
+    uc_printf (("Checkpoint made. %d delta pages.\n", mcp_delta_count));
+
       rdbg_printf (("Checkpoint atomic over.\n"));
     }
   RESTORE_SIGNALS;
-  DO_SET (index_tree_t *, it, &dbs->dbs_trees)
+  mutex_leave (dbs_autocompact_mtx);
+  DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
     {
-      it_cache_check (it);
+      dbs_cache_check (dbs, IT_CHECK_POST);
+      dbs_backup_check (dbs);
     }
   END_DO_SET();
-  dbs_backup_check (dbs);
   if (CPT_NORMAL == shutdown)
     cpt_over ();
-  if (CPT_SHUTDOWN != shutdown)
-    iq_restart ();
-
   auto_cpt_scheduled = 0;
   atomic_cp_msecs += get_msec_real_time () - start_atomic;
 
   LEAVE_TXN;
-  dbs_sync_disks (dbs);
   IN_TXN;
 }
 
@@ -1649,7 +1919,8 @@ srv_global_unlock (client_connection_t *cli, lock_trx_t *lt)
       cpt_over ();
       LEAVE_TXN;
       lt->lt_is_excl = 0;
-      lt->lt_replicate = (caddr_t*) box_copy_tree ((caddr_t) cli->cli_replicate);;
+      lt->lt_replicate = (caddr_t*) box_copy_tree ((caddr_t) cli->cli_replicate);
+      lt->lt_client->cli_row_autocommit = server_lock.sl_ac_save;
       LEAVE_CPT_1;
     }
 }
@@ -1659,6 +1930,7 @@ void
 srv_global_lock (query_instance_t * qi, int flag)
 {
   lock_trx_t * lt = qi->qi_trx;
+  caddr_t err = NULL;
   /*GK: in roll forward this is a no-op */
   if (in_log_replay)
     return;
@@ -1669,7 +1941,6 @@ srv_global_lock (query_instance_t * qi, int flag)
 	  server_lock.sl_count++;
 	  return;
 	}
-      if (lt_has_locks (qi->qi_trx))
 	{
 	  int rc;
 	  caddr_t err;
@@ -1691,6 +1962,8 @@ srv_global_lock (query_instance_t * qi, int flag)
       server_lock.sl_owner = THREAD_CURRENT_THREAD;
       lt_threads_set_inner (lt, 1);
       LEAVE_TXN;
+      server_lock.sl_ac_save = lt->lt_client->cli_row_autocommit;
+      lt->lt_client->cli_row_autocommit = 1;
       return;
     }
   else
