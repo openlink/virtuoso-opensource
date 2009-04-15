@@ -313,7 +313,7 @@ extern void sparp_rvr_intersect_red_cuts (sparp_t *sparp, rdf_val_range_t *rvr, 
 
 #define SPARP_EQUIV_AUDIT_NOBAD 0x01
 #ifdef DEBUG
-extern void dbg_sparp_rvr_audit (const char *file, int line, sparp_t *sparp, rdf_val_range_t *rvr);
+extern void dbg_sparp_rvr_audit (const char *file, int line, sparp_t *sparp, const rdf_val_range_t *rvr);
 #define sparp_rvr_audit(sparp,rvr) dbg_sparp_rvr_audit (__FILE__, __LINE__, sparp, rvr)
 extern void sparp_equiv_audit_all (sparp_t *sparp, int flags);
 extern void sparp_audit_mem (sparp_t *sparp);
@@ -328,7 +328,7 @@ extern void sparp_equiv_audit_retvals (sparp_t *sparp, SPART *top);
 
 /*! Creates a copy of given \c src (the structure plus member lists but not literals).
 If dest is equal to SPARP_RVR_CREATE then it allocates new rvr otherwise it overwrites \c dest */
-extern rdf_val_range_t *sparp_rvr_copy (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *src);
+extern rdf_val_range_t *sparp_rvr_copy (sparp_t *sparp, rdf_val_range_t *dest, const rdf_val_range_t *src);
 
 /*! Tries to zap \c dest and then restrict it by \c datatype and/or value. */
 extern void sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datatype, SPART *value);
@@ -457,10 +457,10 @@ extern SPART **sparp_treelist_full_clone (sparp_t *sparp, SPART **origs);
 
 /*! This creates a full copy of \c orig subtree without cloning equivs.
 Variables inside copy have unidirectional pointers to equivs until attached to other tree or same place in same tree. */
-extern SPART *sparp_tree_full_copy (sparp_t *sparp, const SPART *orig, SPART *parent_gp);
+extern SPART *sparp_tree_full_copy (sparp_t *sparp, const SPART *orig, const SPART *parent_gp);
 
 /*! This creates a copy of \c origs array and fills it with sparp_tree_full_copy of each member of the array. */
-extern SPART **sparp_treelist_full_copy (sparp_t *sparp, SPART **origs, SPART *parent_gp);
+extern SPART **sparp_treelist_full_copy (sparp_t *sparp, SPART **origs, const SPART *parent_gp);
 
 /*! This fills in \c acc with all distinct variable names found inside the tree, including subqueries.
 Found variable names are pushed into \c acc that may be non-empty when the procedure is called */

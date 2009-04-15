@@ -137,7 +137,7 @@ void rdf_ds_load_all (void)
   qmf->qmfIidOfShortTmpl = box_dv_short_string (" __i2idn (^{tree}^)");
   qmf->qmfUriOfShortTmpl = box_dv_short_string (" id_to_iri_nosignal (^{tree}^)");
   qmf->qmfStrsqlvalOfShortTmpl = box_dv_short_string (" __rdf_strsqlval (^{tree}^)");
-  qmf->qmfShortOfTypedsqlvalTmpl = box_dv_short_string (" DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (^{sqlval-of-tree}^, DB.DBA.RDF_MAKE_IID_OF_QNAME(^{datatype-of-tree}^), ^{language-of-tree}^)");
+  qmf->qmfShortOfTypedsqlvalTmpl = box_dv_short_string (" DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (^{sqlval-of-tree}^, __i2idn (^{datatype-of-tree}^), ^{language-of-tree}^)");
   qmf->qmfShortOfSqlvalTmpl = box_dv_short_string (" DB.DBA.RDF_OBJ_OF_SQLVAL (^{tree}^)");
   qmf->qmfShortOfLongTmpl = box_dv_short_string (" DB.DBA.RDF_OBJ_OF_LONG (^{tree}^)");
   qmf->qmfShortOfUriTmpl = box_dv_short_string (" __i2idn (^{tree}^)");
@@ -1994,7 +1994,7 @@ ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit)
         }
       else if ((SPAR_QNAME == lit->type)/* || (SPAR_QNAME_NS == lit->type)*/)
         {
-          ssg_puts (" DB.DBA.RDF_MAKE_IID_OF_QNAME (");
+          ssg_puts (" __i2id (");
           ssg_print_box_as_sql_atom (ssg, lit->_.lit.val, 1);
           ssg_putchar (')');
           return;
@@ -3438,7 +3438,10 @@ sparp_rettype_of_function (sparp_t *sparp, caddr_t name)
     }
   if (!strcmp (name, uname_xmlschema_ns_uri_hash_string))
     return SSG_VALMODE_LONG;
+  return res;
+#if 0
   return SSG_VALMODE_SQLVAL /* not "return res" */;
+#endif
 }
 
 
@@ -3715,6 +3718,16 @@ ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t n
         tmpl = ssg_tmpl_literal_short_of_X (needed, native);
       ssg_print_tmpl (ssg, needed, tmpl, NULL, NULL, tree, asname);
       return;
+    }
+  if ((SSG_VALMODE_BOOL == needed) && (SPAR_FUNCALL == SPART_TYPE (tree)))
+    {
+      caddr_t name = tree->_.funcall.qname;
+      if (!strcmp (name, "LONG::bif:position") ||
+        !strcmp (name, "bif:position") )
+        {
+          ssg_print_scalar_expn (ssg, tree, SSG_VALMODE_AUTO, asname);
+          return;
+        }
     }
   ssg_print_tmpl (ssg, native, ssg_tmpl_X_of_Y (needed, native), NULL, NULL, tree, asname);
   return;
@@ -5629,11 +5642,10 @@ ssg_collect_aliases_tables_and_conds (
 static SPART *
 ssg_patch_ft_arg1 (spar_sqlgen_t *ssg, SPART *ft_arg1, SPART *g)
 {
-  caddr_t ft_arg1_str = NULL;
-  int ft_arg1_spart_type = spar_plain_const_value_of_tree (ft_arg1, (ccaddr_t *) &ft_arg1_str);
-  caddr_t g_iri = NULL;
-  int g_spart_type = spar_plain_const_value_of_tree (g, (ccaddr_t *) &g_iri);
-  
+  ccaddr_t ft_arg1_str = NULL;
+  int ft_arg1_spart_type = spar_plain_const_value_of_tree (ft_arg1, &ft_arg1_str);
+  ccaddr_t g_iri = NULL;
+  int g_spart_type = spar_plain_const_value_of_tree (g, &g_iri);
   SPART *patched_ft_arg1;
   if ((SPAR_QNAME == g_spart_type) && (SPAR_LIT == ft_arg1_spart_type) &&
     (DV_STRING == DV_TYPE_OF (ft_arg1_str)) )
@@ -5710,9 +5722,8 @@ ssg_patch_ft_arg1 (spar_sqlgen_t *ssg, SPART *ft_arg1, SPART *g)
       if (DV_STRING == DV_TYPE_OF (ft_arg1_box))
         {
           int ft_arg1_box_len = box_length (ft_arg1_box);
-          char *tail;
-          patched_ft_arg1 = (SPART *) t_alloc_box (18 + ft_arg1_box_len, DV_STRING);
-          tail = (char *) patched_ft_arg1;
+          char *tail = t_alloc_box (18 + ft_arg1_box_len, DV_STRING);
+          patched_ft_arg1 = (SPART *)tail;
 /*                                  0          1          */
 /*                                  01234567.890123.45678 */
           memcpy (tail, "[ __enc \"UTF-8\" ] ", 18); tail += 18;

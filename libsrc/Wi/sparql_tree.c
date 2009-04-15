@@ -1448,7 +1448,7 @@ rvr_sprintffs_like (caddr_t value, rdf_val_range_t *rvr)
 
 #ifdef DEBUG
 void
-dbg_sparp_rvr_audit (const char *file, int line, sparp_t *sparp, rdf_val_range_t *rvr)
+dbg_sparp_rvr_audit (const char *file, int line, sparp_t *sparp, const rdf_val_range_t *rvr)
 {
   caddr_t err = NULL;
   int ctr;
@@ -1486,7 +1486,7 @@ rvr_err:
 #endif
 
 rdf_val_range_t *
-sparp_rvr_copy (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *src)
+sparp_rvr_copy (sparp_t *sparp, rdf_val_range_t *dest, const rdf_val_range_t *src)
 {
   if (SPARP_RVR_CREATE == dest)
     dest = (rdf_val_range_t *)t_alloc (sizeof (rdf_val_range_t));
@@ -1686,12 +1686,14 @@ conflict:
   /* sparp_rvr_audit (sparp, dest); -- that's not valid here */
   return;
 
+#if 0
 always_null:
   new_restr = SPART_VARR_ALWAYS_NULL | (dest->rvrRestrictions & (SPART_VARR_EXPORTED | SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
   memset (dest, 0, sizeof (rdf_val_range_t));
   dest->rvrRestrictions = new_restr;
   sparp_rvr_audit (sparp, dest);
   return;
+#endif
 }
 
 void
@@ -2233,7 +2235,7 @@ sparp_gp_full_clone (sparp_t *sparp, SPART *gp)
 }
 
 SPART *
-sparp_tree_full_copy (sparp_t *sparp, const SPART *orig, SPART *parent_gp)
+sparp_tree_full_copy (sparp_t *sparp, const SPART *orig, const SPART *parent_gp)
 {
   int fld_ctr, eq_idx;
   SPART *tgt;
@@ -2326,7 +2328,7 @@ sparp_tree_full_copy (sparp_t *sparp, const SPART *orig, SPART *parent_gp)
 }
 
 SPART **
-sparp_treelist_full_copy (sparp_t *sparp, SPART **origs, SPART *parent_gp)
+sparp_treelist_full_copy (sparp_t *sparp, SPART **origs, const SPART *parent_gp)
 {
   SPART **tgts = (SPART **)t_box_copy ((caddr_t) origs);
   int ctr;
@@ -3788,8 +3790,10 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
               switch (tree->_.graph.subtype)
                 {
                 case SPART_GRAPH_FROM: strcat (buf, "FROM (default)"); break;
+                case SPART_GRAPH_GROUP: strcat (buf, "FROM (default, group)"); break;
                 case SPART_GRAPH_NAMED: strcat (buf, "FROM NAMED"); break;
                 case SPART_GRAPH_NOT_FROM: strcat (buf, "NOT FROM"); break;
+                case SPART_GRAPH_NOT_GROUP: strcat (buf, "NOT FROM (group)"); break;
                 case SPART_GRAPH_NOT_NAMED: strcat (buf, "NOT NAMED"); break;
                 default: GPF_T;
                 }

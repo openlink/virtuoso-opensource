@@ -8629,7 +8629,7 @@ create function DB.DBA.RDF_GRAPH_USER_PERMS_ASSERT (in graph_iri varchar, in uid
     return graph_iri;
   signal ('RDF02', sprintf ('%s access denied: user %s (%s) has no write permission on graph %s',
     opname, cast (uid as varchar), coalesce ((select top 1 U_NAME from DB.DBA.SYS_USERS where U_ID=uid)), graph_iri ) );
-  return 0;
+  return null;
 }
 ;
 
@@ -8715,23 +8715,27 @@ create procedure DB.DBA.RDF_GRAPH_USER_PERMS_SET (in graph_iri varchar, in uname
 }
 ;
 
-create function DB.DBA.RDF_GRAPH_GROUP_LIST_GET (in group_iri varchar, in uid any, in req_perms integer) returns any
+create function DB.DBA.RDF_GRAPH_GROUP_LIST_GET (in group_iri any, in extra_graphs any, in uid any, in req_perms integer) returns any
 {
   declare group_iid IRI_ID;
   declare common_perms, perms integer;
   declare full_list, filtered_list any;
-  group_iid := iri_to_id (group_iri);
+  -- dbg_obj_princ ('DB.DBA.RDF_GRAPH_GROUP_LIST_GET (', group_iri, extra_graphs, uid, req_perms, ')');
   if (isstring (uid))
     uid := ((select U_ID from DB.DBA.SYS_USERS where U_NAME = uid and (U_NAME='nobody' or (U_SQL_ENABLE and not U_ACCOUNT_DISABLED))));
   if (uid is null)
     return vector ();
-  if (uid = 0)
-    return dict_get (__rdf_graph_group_dict(), group_iid);
   common_perms := coalesce (
     dict_get (__rdf_graph_default_perms_of_user_dict(), uid, NULL),
     dict_get (__rdf_graph_default_perms_of_user_dict(), 0, NULL),
     15 );
   -- dbg_obj_princ ('DB.DBA.RDF_GRAPH_GROUP_LIST_GET: common_perms = ', common_perms);
+  if (__tag (group_iri) = __tag of vector)
+    {
+      vectorbld_init (full_list);
+      foreach (any g_iri in group_iri) do
+        {
+          group_iid := iri_to_id (g_iri);
   if (not bit_and (common_perms, 8))
     {
       perms := coalesce (
@@ -8739,12 +8743,46 @@ create function DB.DBA.RDF_GRAPH_GROUP_LIST_GET (in group_iri varchar, in uid an
         dict_get (__rdf_graph_public_perms_dict(), group_iid, NULL),
         common_perms );
       -- dbg_obj_princ ('DB.DBA.RDF_GRAPH_GROUP_LIST_GET: perms for list = ', perms);
-      if (not bit_and (perms, 8))
-        return vector ();
     }
-  full_list := dict_get (__rdf_graph_group_dict(), group_iid);
+          else
+            perms := common_perms;
+          if (bit_and (perms, 8))
+            vectorbld_concat_acc (full_list, dict_get (__rdf_graph_group_dict(), group_iid, vector ()));
+        }
+      vectorbld_final (full_list);
+    }
+  else
+    {
+      group_iid := iri_to_id (group_iri);
+      if (not bit_and (common_perms, 8))
+        {
+          perms := coalesce (
+            (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = group_iid and RGU_USER_ID = uid),
+            dict_get (__rdf_graph_public_perms_dict(), group_iid, NULL),
+            common_perms );
+          -- dbg_obj_princ ('DB.DBA.RDF_GRAPH_GROUP_LIST_GET: perms for list = ', perms);
+        }
+      else
+        perms := common_perms;
+      if (bit_and (perms, 8))
+        full_list := dict_get (__rdf_graph_group_dict(), group_iid, vector ());
+      else
+        full_list := vector ();
+    }
+
   if (bit_and (common_perms, req_perms) = req_perms)
+    {
+      declare ctr integer;
+      if (extra_graphs is null)
     return full_list;
+      ctr := length (extra_graphs);
+      while (ctr > 0)
+        {
+          ctr := ctr - 1;
+          extra_graphs [ctr] := iri_to_id (extra_graphs[ctr]);
+        }
+      return vector_concat (full_list, extra_graphs);
+    }
   vectorbld_init (filtered_list);
   foreach (IRI_ID member_iid in full_list) do
     {
@@ -8756,6 +8794,18 @@ create function DB.DBA.RDF_GRAPH_GROUP_LIST_GET (in group_iri varchar, in uid an
       if (bit_and (perms, req_perms) = req_perms)
         vectorbld_acc (filtered_list, member_iid);
     }
+  foreach (any g in extra_graphs) do
+    {
+      declare g_iid IRI_ID;
+      g_iid := iri_to_id (g);
+      perms := coalesce (
+        (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = g_iid and RGU_USER_ID = uid),
+        dict_get (__rdf_graph_public_perms_dict(), g_iid, NULL),
+        common_perms );
+      -- dbg_obj_princ ('DB.DBA.RDF_GRAPH_GROUP_LIST_GET: perms for ', g_iid, ' = ', perms);
+      if (bit_and (perms, req_perms) = req_perms)
+        vectorbld_acc (filtered_list, g_iid);
+    }
   vectorbld_final (filtered_list);
   return filtered_list;
 }
@@ -8766,6 +8816,8 @@ create function DB.DBA.RDF_GRAPH_GROUP_LIST_GET (in group_iri varchar, in uid an
 
 create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
 {
+  if (USER <> 'dba')
+    signal ('RDFXX', 'Only DBA can reload quad map metadata');
   if (not exists (sparql define input:storage "" ask where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
               <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
@@ -9043,14 +9095,19 @@ check_new_style:
 create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
 {
   declare stat, msg varchar;
-  for (select RDT_TWOBYTE, RDT_QNAME from DB.DBA.RDF_DATATYPE) do
-    {
-      __rdf_twobyte_cache (121, RDT_QNAME, RDT_TWOBYTE);
-    }
-  for (select RL_ID, RL_TWOBYTE from DB.DBA.RDF_LANGUAGE) do
-    {
-      __rdf_twobyte_cache (122, RL_ID, RL_TWOBYTE);
-    }
+  declare fake integer;
+  if (USER <> 'dba')
+    signal ('RDFXX', 'Only DBA can alter RDF_QUAD schema or initialize RDF storage');
+  fake := (select count (__rdf_twobyte_cache (121, RDT_QNAME, RDT_TWOBYTE)) from DB.DBA.RDF_DATATYPE);
+  fake := (select count (__rdf_twobyte_cache (122, RL_ID, RL_TWOBYTE)) from DB.DBA.RDF_LANGUAGE);
+  fake := (select count (dict_put (__rdf_graph_group_dict(), g.RGG_IID,
+      (select DB.DBA.VECTOR_AGG (RGGM_MEMBER_IID) from DB.DBA.RDF_GRAPH_GROUP_MEMBER as gm
+         where gm.RGGM_GROUP_IID = g.RGG_IID order by gm.RGGM_MEMBER_IID ) ) )
+    from DB.DBA.RDF_GRAPH_GROUP as g );
+  fake := (select count (dict_put (__rdf_graph_default_perms_of_user_dict(), RGU_USER_ID, RGU_PERMISSIONS))
+    from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i0 );
+  fake := (select count (dict_put (__rdf_graph_public_perms_dict(), RGU_GRAPH_IID, RGU_PERMISSIONS))
+    from DB.DBA.RDF_GRAPH_USER where RGU_USER_ID = http_nobody_uid () );
   if (244 = coalesce ((select COL_DTP from SYS_COLS where "TABLE" = 'DB.DBA.RDF_QUAD' and "COLUMN"='G'), 0))
     {
       __set_64bit_min_bnode_iri_id();

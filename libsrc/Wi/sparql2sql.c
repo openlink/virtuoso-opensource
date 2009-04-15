@@ -2231,7 +2231,7 @@ sparp_check_mapping_of_sources (sparp_t *sparp, tc_context_t *tcc,
   DO_BOX_FAST (SPART *, source, source_ctr, tcc->tcc_sources)
     {
       int chk_res;
-      if ((SPART_GRAPH_NOT_FROM == source->_.graph.subtype) || (SPART_GRAPH_NOT_NAMED == source->_.graph.subtype))
+      if (SPART_GRAPH_MIN_NEGATION < source->_.graph.subtype)
         {
           if ((NULL != rvr) && (NULL != rvr->rvrFixedValue) &&
             sparp_fixedvalues_equal (sparp, (SPART *)(source->_.graph.iri), (SPART *)(rvr->rvrFixedValue)) )
@@ -2688,7 +2688,7 @@ sparp_find_triple_cases (sparp_t *sparp, SPART *triple, SPART **sources, int req
   tmp_tcc.tcc_source_invalidation_masks = (uint32 *)t_alloc_box (sizeof (uint32) * BOX_ELEMENTS (sources), DV_BIN);
   DO_BOX_FAST (SPART *, source, source_ctr, tmp_tcc.tcc_sources)
     {
-      if ((0 == required_source_type) || (source->_.graph.subtype == required_source_type))
+      if ((0 == required_source_type) || ((source->_.graph.subtype & ~SPART_GRAPH_GROUP_BIT) == required_source_type))
         {
           tmp_tcc.tcc_check_source_graphs++;
           tmp_tcc.tcc_source_invalidation_masks[source_ctr] = 0;

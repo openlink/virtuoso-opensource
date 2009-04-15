@@ -381,7 +381,7 @@ spar_simplify_graph_to_patch (sparp_t *sparp, SPART *g)
   if ((SPART_GRAPH_NOT_FROM == g->_.graph.subtype) || (SPART_GRAPH_NOT_NAMED == g->_.graph.subtype))
     spar_internal_error (sparp, "NOT FROM and NOT FROM NAMED are not fully supported by SPARUL operations, sorry");
   if (SPAR_QNAME == SPART_TYPE (g->_.graph.expn))
-    return (SPART *) g->_.graph.iri;
+    return (SPART *)(g->_.graph.iri);
   return g->_.graph.expn;  
 }
 

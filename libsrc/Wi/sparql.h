@@ -314,10 +314,14 @@ extern void sparyyerror_impl_1 (sparp_t *xpp, char *raw_text, int yystate, short
 #define SPART_TRIPLE_FIELDS_COUNT 4
 
 /* These values should be greater than any SQL opcode AND greater than 0x7F to not conflict with codepoints of "syntactically important" chars AND less than 0xFF to not conflict with YACC IDs for keywords. */
-#define SPART_GRAPH_FROM	201
-#define SPART_GRAPH_NAMED	202
-#define SPART_GRAPH_NOT_FROM	203
-#define SPART_GRAPH_NOT_NAMED	204
+#define SPART_GRAPH_FROM		0x100
+#define SPART_GRAPH_GROUP_BIT		0x1
+#define SPART_GRAPH_GROUP		0x101	/*!< == SPART_GRAPH_FROM | SPART_GRAPH_GROUP_BIT */
+#define SPART_GRAPH_NAMED		0x110
+#define SPART_GRAPH_MIN_NEGATION	0x17F
+#define SPART_GRAPH_NOT_FROM		0x180
+#define SPART_GRAPH_NOT_GROUP		0x181	/*!< == SPART_GRAPH_NOT_FROM | SPART_GRAPH_GROUP_BIT */
+#define SPART_GRAPH_NOT_NAMED		0x130
 
 #define SPARP_EQUIV(sparp,idx) ((sparp)->sparp_equivs[(idx)])
 
@@ -586,7 +590,7 @@ extern SPART* spartlist_with_tail (sparp_t *sparp, ptrlong length, caddr_t tail,
 extern caddr_t sparp_expand_qname_prefix (sparp_t *sparp, caddr_t qname);
 extern caddr_t sparp_expand_q_iri_ref (sparp_t *sparp, caddr_t ref);
 
-extern caddr_t sparp_iri_to_id_nosignal (sparp_t *sparp, caddr_t qname); /*!< returns t_boxed IRI_ID or plain NULL pointer */
+extern caddr_t sparp_iri_to_id_nosignal (sparp_t *sparp, ccaddr_t qname); /*!< returns t_boxed IRI_ID or plain NULL pointer */
 extern ccaddr_t sparp_id_to_iri (sparp_t *sparp, iri_id_t iid);	/*!< returns t_boxed string or plain NULL pointer */
 
 extern caddr_t spar_strliteral (sparp_t *sparp, const char *sparyytext, int strg_is_long, int is_json);
@@ -604,8 +608,9 @@ extern void spar_gp_add_member (sparp_t *sparp, SPART *memb);
 extern void spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options);
 extern int spar_filter_is_freetext (SPART *filt);
 extern void spar_gp_add_filter (sparp_t *sparp, SPART *filt);
-extern void spar_gp_add_filters_for_graph (sparp_t *sparp, SPART *graph_expn, dk_set_t precodes, int suppress_filters_for_good_names);
+extern void spar_gp_add_filters_for_graph (sparp_t *sparp, SPART *graph_expn, int graph_is_named, int suppress_filters_for_good_names);
 extern void spar_gp_add_filters_for_named_graph (sparp_t *sparp);
+extern SPART *spar_make_list_of_sources_expn (sparp_t *sparp, ptrlong from_subtype, ptrlong from_group_subtype, ptrlong from2_subtype, ptrlong req_perms, SPART *needle_in);
 extern SPART *spar_add_propvariable (sparp_t *sparp, SPART *lvar, int opcode, SPART *verb_qname, int verb_lexem_type, caddr_t verb_lexem_text);
 extern caddr_t spar_compose_report_flag (sparp_t *sparp);
 extern void spar_compose_retvals_of_construct (sparp_t *sparp, SPART *top, SPART *ctor_gp, const char *formatter, const char *agg_formatter, const char *agg_mdata);
@@ -624,8 +629,9 @@ extern SPART *spar_make_variable (sparp_t *sparp, caddr_t name);
 extern SPART *spar_make_blank_node (sparp_t *sparp, caddr_t name, int bracketed);
 extern SPART *spar_make_fake_blank_node (sparp_t *sparp); /*!< Not for use in real parse trees! */
 extern SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, caddr_t lang);
-extern void sparp_push_new_graph_source (sparp_t *sparp, dk_set_t *set_ptr, SPART *src);
+extern void sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtype, SPART *iri_expn, SPART **options);
 extern SPART *sparp_make_graph_precode (sparp_t *sparp, ptrlong subtype, SPART *iriref, SPART **options);
+extern SPART *spar_default_sparul_target (sparp_t *sparp, const char *clause_type);
 extern SPART *spar_make_regex_or_like_or_eq (sparp_t *sparp, SPART *strg, SPART *regexpn);
 extern SPART *spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPART **arguments);
 extern SPART *spar_make_sparul_clear (sparp_t *sparp, SPART *graph_precode);

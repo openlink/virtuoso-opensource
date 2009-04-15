@@ -76,7 +76,7 @@ void ssg_sdprin_literal (spar_sqlgen_t *ssg, SPART *tree)
       {
         char temp[40];
         caddr_t type_uri;
-        dt_to_iso8601_string ((const char *) tree, temp, sizeof (temp));
+        dt_to_iso8601_string ((ccaddr_t)tree, temp, sizeof (temp));
         switch (DT_DT_TYPE(tree))
           {
           case DT_TYPE_DATE: type_uri = uname_xmlschema_ns_uri_hash_date; break;
@@ -357,7 +357,7 @@ ssg_sdprint_equiv_restrs (spar_sqlgen_t *ssg, sparp_equiv_t *eq)
       ssg_puts (" FILTER (");
       ssg_sdprin_varname (ssg, eq->e_varnames[0]);
       ssg_puts (" = ");
-      ssg_sdprint_tree (ssg, (SPART *) eq->e_rvr.rvrFixedValue);
+      ssg_sdprint_tree (ssg, (SPART *)(eq->e_rvr.rvrFixedValue));
       ssg_puts (")");
       goto end_builtin_checks;
     }
@@ -686,13 +686,12 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
         for (srcctr = 0; srcctr < srccount; srcctr++)
           {
             SPART *src = tree->_.req_top.sources[srcctr];
-            if (SPART_GRAPH_NAMED != src->_.graph.subtype)
-              continue;
             ssg_newline (0);
             ssg_sdprint_tree (ssg, src);
-            if (SPART_GRAPH_FROM != src->_.graph.subtype)
+            if (SPART_GRAPH_MIN_NEGATION < src->_.graph.subtype)
               continue;
-            if (0 == from_count++)
+            from_count++;
+            if ((0 == from_count) && (SPART_GRAPH_FROM == src->_.graph.subtype))
               ssg->ssg_sd_single_from = src->_.graph.iri;
             else
               ssg->ssg_sd_single_from = NULL;
@@ -926,10 +925,16 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
       {
         switch (tree->_.graph.subtype)
           {
-          case SPART_GRAPH_FROM: ssg_puts (" FROM "); break;
-          case SPART_GRAPH_NAMED: ssg_puts (" FROM NAMED "); break;
-          case SPART_GRAPH_NOT_FROM: ssg_puts (" NOT FROM "); break;
-          case SPART_GRAPH_NOT_NAMED: ssg_puts (" NOT FROM NAMED "); break;
+          case SPART_GRAPH_FROM:
+          case SPART_GRAPH_GROUP:
+            ssg_puts (" FROM "); break;
+          case SPART_GRAPH_NAMED:
+            ssg_puts (" FROM NAMED "); break;
+          case SPART_GRAPH_NOT_FROM:
+          case SPART_GRAPH_NOT_GROUP:
+            ssg_puts (" NOT FROM "); break;
+          case SPART_GRAPH_NOT_NAMED:
+            ssg_puts (" NOT FROM NAMED "); break;
           default: spar_internal_error (ssg->ssg_sparp, "Bad tree->_.graph.subtype"); break;
           }
         ssg_sdprin_qname (ssg, (SPART *)(tree->_.graph.iri));
