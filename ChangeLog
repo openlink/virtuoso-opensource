@@ -1,3 +1,127 @@
+2009-04-15 09:41  source
+
+	* Updated version to 5.0.11-pre3
+
+2009-04-15 09:38  source
+
+	* Added pptx cardridge
+
+2009-04-15 09:34  source
+
+	* Added user keys management
+
+2009-04-15 09:31  source
+
+	* Added support for graph groups
+
+2009-04-14 23:54  source
+
+	* Fixed copyright year
+
+2009-04-14 15:31  source
+
+	* Added ubiquity commands
+	* Updated obj2json procedure
+	* Fixed automatic login
+
+2009-04-14 15:30  source
+
+	* Added portable contacts api
+
+2009-04-14 12:16  source
+
+	* Fixed header comment in shell scripts
+
+2009-04-14 11:53  source
+
+	* Fixed message
+
+2009-04-14 09:10  source
+
+	* Fixed musicbrainz
+
+2009-04-13 23:51  source
+
+	* Fixed compiler warnings
+
+2009-04-13 23:44  source
+
+	* Rolled back previous patch
+
+2009-04-13 23:44  source
+
+	* Fixed minor problems with last fm
+
+2009-04-13 09:52  source
+
+	* Added optimization of secuirity checks for public graphs in
+	  "allow nothing" storage
+
+2009-04-13 09:51  source
+
+	* Fixed debug output only with DT_DEBUG not with DEBUG
+
+2009-04-11 18:25  source
+
+	* Fixed missing prototype
+
+2009-04-10 23:06  source
+
+	* Added initial support for gzipped stream session
+
+2009-04-10 23:05  source
+
+	* Added id hash iter macro
+
+2009-04-10 23:04  source
+
+	* Added format_number()
+
+2009-04-10 23:04  source
+
+	* Fixed reserved word
+
+2009-04-10 11:38  source
+
+	* Fixed issues with geolocation
+
+2009-04-10 11:33  source
+
+	* FIxed spelling
+
+2009-04-09 17:53  source
+
+	* Fixed comment
+
+2009-04-09 17:39  source
+
+	* Added missing header
+
+2009-04-09 17:37  source
+
+	* Added openstreetmap
+
+2009-04-09 17:27  source
+
+	* Fixed 64bit compatibility
+
+2009-04-09 17:25  source
+
+	* Fixed code initialization
+
+2009-04-09 13:22  source
+
+	* Fixed header comment
+
+2009-04-08 12:57  source
+
+	* Fixed NYT
+
+2009-04-08 12:55  source
+
+	* Fixed SPARQL/SPARUL security
+	* Fixed problem with FT optimization
+
 2009-04-07 22:03  source
 
 	* Fixed read_int should return int64 as an unsigned blob ts is sometimes
