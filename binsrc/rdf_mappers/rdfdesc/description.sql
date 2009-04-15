@@ -253,20 +253,45 @@ again:
        http (sprintf ('<span %s>%f</span>', rdfa, _object));
        lang := 'xsd:float';
      }
---   else if (__tag (_object) = 191)
---     {
---       http (sprintf ('<span %s>%e</span>', rdfa, _object));
---       lang := 'xsd:double';
---     }
---	display doubles by casting to varchar for better appearance. 
-   else if (__tag (_object) in (219, 191))
+   else if (__tag (_object) = 191)
+     {
+       http (sprintf ('<span %s>%d</span>', rdfa, _object));
+       lang := 'xsd:double';
+     }
+   else if (__tag (_object) = 219)
      {
        http (sprintf ('<span %s>%s</span>', rdfa, cast (_object as varchar)));
        lang := 'xsd:double';
      }
    else if (__tag (_object) = 182)
      {
+       -- CMSB
+       declare _href, image_ext varchar;
+
+       _href := rdfdesc_http_url (_object);
        http (sprintf ('<span %s>', rdfa));
+       if (isstring(_object) and strstr(_object, 'http://') is not null)
+       {
+	 image_ext := subseq(lcase(_object), strrchr(_object, '.') + 1);
+	 if (image_ext is not null)
+	 {
+	   _href := case
+	    when (image_ext = 'bmp') then _object 
+	    when (image_ext = 'gif') then _object
+	    when (image_ext = 'jpeg') then _object
+	    when (image_ext = 'jpg') then _object
+	    when (image_ext = 'png') then _object
+	    when (image_ext = 'svg') then _object
+	    when (image_ext = 'tiff') then _object
+	    when (image_ext = 'tif') then _object
+	    else
+              rdfdesc_http_url (_object)
+	    end;
+	 }
+         http (sprintf ('<a class="uri" href="%s">%s</a>', _href, _object));
+       }
+       else
+       -- CMSB
        http (_object);
        http ('</span>');
        lang := '';
@@ -298,7 +323,7 @@ again:
 
    if (length (lang))
      {
-       http (sprintf ('<span class="datatype">(%s)</span>', lang));
+       http (sprintf ('(%s)', lang));
      }
 
    http ('</span></li>\n');

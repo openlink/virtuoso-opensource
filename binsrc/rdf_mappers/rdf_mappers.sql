@@ -213,6 +213,9 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     values ('(http://api.crunchbase.com/v/1/.*)|(http://www.crunchbase.com/.*)',
             'URL', 'DB.DBA.RDF_LOAD_CRUNCHBASE', null, 'CrunchBase', null);
 
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
+    values ('.+\\.pptx\x24', 'URL', 'DB.DBA.RDF_LOAD_PPTX_DOCUMENT', null, 'Powerpoint documents', null);
+
 -- we do default http & html handler first of all
 --update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 0 where RM_HOOK = 'DB.DBA.RDF_LOAD_HTTP_SESSION';
 --update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 1 where RM_HOOK = 'DB.DBA.RDF_LOAD_HTML_RESPONSE';
@@ -5201,6 +5204,319 @@ CREATE PROCEDURE RDFMAP_DBPEDIA_EXTRACT_PHP (in base varchar, in title varchar)
   http ('\x24manager->execute(\x24jobEnWiki);\n', ses);
   http ('?>\n', ses);
   return string_output_string (ses);
+}
+;
+
+--no_c_escapes-
+-- Cartridge for sponging Powerpoint PPTX files.
+
+create procedure DB.DBA.RDF_LOAD_PPTX_DOCUMENT (
+in graph_iri varchar, in new_origin_uri varchar, in dest varchar,
+inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
+)
+{
+  declare urihost, baseUri, original_dest varchar;
+  declare core_meta, app_meta, slides_meta varchar;
+  declare slide_list, slide_vec, slide_content, slide_path any;
+  declare meta_xml, tmpFile, fileName, fileExt varchar;
+  declare xt, xd any;
+  declare extracted_image_collection_dav_root, extracted_image_collection_dav_path varchar;
+
+  declare exit handler for sqlstate '*'
+  {
+    return 0;
+  };
+
+  if (__proc_exists ('UNZIP_UnzipFileFromArchive', 2) is null)
+    return 0;
+
+  -- Create a tmp file from input stream
+  tmpFile := tmp_file_name ('rdfm', 'pptx');
+  string_to_file (tmpFile, _ret_body, -2);
+
+  -- Extract the required meta-data from the PPTX file
+  core_meta := UNZIP_UnzipFileFromArchive (tmpFile, 'docProps/core.xml');
+  app_meta := UNZIP_UnzipFileFromArchive (tmpFile, 'docProps/app.xml');
+  slides_meta := UNZIP_UnzipFileFromArchive (tmpFile, 'ppt/_rels/presentation.xml.rels');
+
+  if (core_meta is null or app_meta is null or slides_meta is null)
+    return 0;
+
+  urihost := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+
+  fileExt := regexp_substr('.*(\.pptx|\.PPTX)$', new_origin_uri, 1);
+  fileName := subseq(new_origin_uri, strrchr(new_origin_uri, '/') + 1);
+  extracted_image_collection_dav_root :='/DAV/home/dav/sponged/';
+  extracted_image_collection_dav_path := extracted_image_collection_dav_root || fileName || '/';
+
+  -- Override dest so graph URI doesn't refer to original location of the source .PPTX file
+  -- Using a fixed URL, instead of the source document URL, as the graph name makes 
+  -- creating rewrite rules easier. The same rewrite rules can be used for alll sponged .PPTX files.
+  original_dest := coalesce(dest, graph_iri);
+  dest := 'http://' || urihost || '/PPTX';
+  baseUri := dest || '/' || fileName;
+
+  -- Construct graph $original_dest which contains link to graph $dest created solely for sponged PPTX metadata
+  {
+    declare ses, tmp any;
+
+    ses := string_output ();
+    http ('<rdf:RDF', ses);
+    http ('  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"\n', ses); 
+    http ('  xmlns:http="http://www.w3.org/2006/http#"\n', ses);
+    http ('  xmlns:dc="http://purl.org/dc/elements/1.1/"\n', ses);
+    http ('>\n', ses);
+    http ('<rdf:Description rdf:about="' || original_dest || '">\n', ses);
+
+    http ('<dc:relation>\n', ses);
+    http (baseUri, ses);
+    http ('</dc:relation>\n', ses);
+
+    http ('</rdf:Description>\n', ses);
+    http ('</rdf:RDF>\n', ses);
+    tmp := string_output_string (ses);
+    DB.DBA.RDF_LOAD_RDFXML (tmp, new_origin_uri, original_dest);
+  }
+
+  -- Get base RDF description of presentation
+  meta_xml := vector(core_meta, app_meta);
+  foreach (any meta in meta_xml) do
+  {
+    xt := xtree_doc (meta);
+    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/pptx2rdf.xsl', xt, 
+            vector ('baseUri', baseUri, 'sourceDoc', original_dest, 'urihost', urihost, 'fileExt', fileExt));
+    xd := serialize_to_UTF8_xml (xt);
+    DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  }
+
+  -- Get a colon-delimited list of slides contained in the presentation
+  xt := xtree_doc (slides_meta);
+  xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/pptx2rdf.xsl', xt, 
+          vector ('baseUri', baseUri, 'sourceDoc', original_dest, 'urihost', urihost, 'fileExt', fileExt, 'mode', 'get_slide_list'));
+  slide_list := serialize_to_UTF8_xml (xd);
+
+  -- Transform slide list into a vector
+  {
+    declare tmp, _start, _end any;
+    slide_vec := vector();
+    tmp := slide_list;
+    -- First slide occurs after first ':'
+    _start := strchr(tmp, ':');
+    while (_start is not null)
+    {
+      tmp := subseq(tmp, _start + 1);
+      _end := strchr(tmp, ':');
+      slide_path := subseq(tmp, 0, _end);
+      slide_vec := vector_concat (slide_vec, vector(slide_path));
+      _start := _end;
+    }
+    --dbg_printf('.PPTX Cartridge - slides');
+    --dbg_obj_print(slide_vec);
+  }
+
+  -- Handle any embedded images
+  {
+    declare create_dav_col int;
+    create_dav_col := 1;
+
+    foreach (any slide_path in slide_vec) do
+    {
+      declare slide_rels, slide_basename, slide_num varchar;
+      declare slide_images, image_path, image_vec any;
+
+      -- slide path takes form 'slides/slide<n>.xml'
+      slide_basename := subseq(slide_path, 7);
+      slide_num := regexp_substr('[0-9]+', slide_basename, 0);
+      slide_rels := UNZIP_UnzipFileFromArchive (tmpFile, 'ppt/slides/_rels/' || slide_basename || '.rels'); 
+
+      -- Generate RDF description of each embedded image
+      xt := xtree_doc (slide_rels);
+      xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/pptx2rdf.xsl', xt, 
+             vector ('baseUri', baseUri, 'sourceDoc', original_dest, 'urihost', urihost, 'fileExt', fileExt, 'mode', 
+	             'get_image_descs', 'slideNum', slide_num, 'imageDavPath', extracted_image_collection_dav_path));
+      if (xpath_eval('//text()', xd) is not null)
+      {
+        xd := serialize_to_UTF8_xml (xd);
+        DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+      }
+
+      -- Extract each embedded image file and place it in DAV storage
+      xt := xtree_doc (slide_rels);
+      xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/pptx2rdf.xsl', xt, 
+             vector ('baseUri', baseUri, 'sourceDoc', original_dest, 'urihost', urihost, 'fileExt', fileExt, 'mode', 'get_image_file_list'));
+      slide_images := serialize_to_UTF8_xml (xd);
+      -- slide_images is colon separated list of images in the slide
+      -- e.g. :../media/image4.png:../media/image5.png
+
+      -- Transform image list into a vector
+      {
+        declare tmp, _start, _end any;
+        image_vec := vector();
+        tmp := slide_images;
+        -- First image occurs after first ':'
+        _start := strchr(tmp, ':');
+        while (_start is not null)
+        {
+          tmp := subseq(tmp, _start + 1);
+          _end := strchr(tmp, ':');
+          image_path := subseq(tmp, 0, _end);
+          image_vec := vector_concat (image_vec, vector(image_path));
+          _start := _end;
+        }
+        --dbg_printf('.PPTX Cartridge - slide images');
+        --dbg_obj_print(image_vec);
+      }
+
+      -- Copy each image file to DAV
+      foreach (any img_path in image_vec) do
+      {
+        declare image_basename, image_str, image_ext, image_mime_type varchar;
+
+        -- Extract file e.g. ../media/image4.png
+	image_mime_type := null;
+        image_basename := regexp_substr('(media/)(.+)', image_path, 2);
+	image_ext := subseq(lcase(image_basename), strrchr(image_basename, '.') + 1);
+	if (image_ext is not null)
+	{
+	  image_mime_type := case
+	    when (image_ext = 'bmp') then 'image/bmp'
+	    when (image_ext = 'gif') then 'image/gif'
+	    when (image_ext = 'jpeg') then 'image/jpeg'
+	    when (image_ext = 'jpg') then 'image/jpeg'
+	    when (image_ext = 'png') then 'image/png'
+	    when (image_ext = 'svg') then 'image/svg+xml'
+	    when (image_ext = 'tiff') then 'image/tiff'
+	    when (image_ext = 'tif') then 'image/tiff'
+	    end;
+	}
+	else
+	{
+	  --dbg_printf('.PPTX Cartridge - Error: image_mime_type is null for embedded image %s', image_basename);
+	  ;
+	}
+
+	if (image_basename is not null and image_mime_type is not null)
+	{
+          image_str := UNZIP_UnzipFileFromArchive (tmpFile, 'ppt/media/' || image_basename);
+	  if (image_str is not null)
+	  {
+	    declare rc int;
+
+            if (create_dav_col)
+	    {
+              rc := DB.DBA.DAV_COL_CREATE(extracted_image_collection_dav_root, '110110110R', 'dav','dav','dav','dav');
+	      if (rc >= 0 or rc = (-3) )
+	      {
+		DB.DBA.DAV_DELETE(extracted_image_collection_dav_path, 1, 'dav', 'dav');
+                rc := DB.DBA.DAV_COL_CREATE(extracted_image_collection_dav_path, '110110110R', 'dav','dav','dav','dav');
+	      }
+	      if (rc >= 0)
+	        create_dav_col := 0;
+              else
+	        dbg_printf('.PPTX Cartridge - DAV_COL_CREATE failed(%d): %s', rc, extracted_image_collection_dav_path);
+	    }
+
+	    if (create_dav_col = 0)
+	    {
+              rc := DB.DBA.DAV_RES_UPLOAD (extracted_image_collection_dav_path || image_basename, image_str, image_mime_type,'110110110R','dav','dav','dav','dav');
+	      if (rc < 0)
+	        dbg_printf('.PPTX Cartridge - DAV_RES_UPLOAD failed (%d) with file %s', rc, extracted_image_collection_dav_path || image_basename);
+	    }
+	  }
+	  else
+	  {
+	    --dbg_printf('.PPTX Cartridge - Error: image_str is null for embedded image %s', image_basename);
+	    ;
+	  }
+	}
+      }
+    } 
+  }
+  -- end: Embedded image handling
+
+  --Get text content of all slides
+  {
+    declare presentation_text, slide_text, ses1, ses2, tmp2 any;
+    declare slide_basename varchar;
+
+    -- Get the raw text contained in each slide and concatenate it
+    presentation_text := '';
+    ses1 := string_output();
+    foreach (any slide_path in slide_vec) do
+    {
+      -- slide path takes form 'slides/slide<n>.xml'
+      slide_basename := subseq(slide_path, 7);
+      slide_content := UNZIP_UnzipFileFromArchive (tmpFile, 'ppt/' || slide_path); 
+      if (slide_content is null)
+      {
+        --dbg_printf('.PPTX Cartridge - Error: slide content is null for slide %s\n', slide_path);
+        goto next_slide;
+      }
+
+      xt := xtree_doc (slide_content);
+      xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/pptx2rdf.xsl', xt, 
+             vector ('baseUri', baseUri, 'sourceDoc', original_dest, 'urihost', urihost, 'fileExt', fileExt));
+      slide_text := cast(xpath_eval('/slide_text/text()', xd) as varchar);
+      http(slide_text || ' ', ses1);
+
+      --dbg_printf('.PPTX Cartridge - slide text\n');
+      --dbg_printf('%s', slide_text || ' ' );
+      --dbg_printf('<<');
+
+      -- Construct RDF to hold text from each individual slide
+      ses2 := string_output();
+      http ('<rdf:RDF', ses2);
+      http ('  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"\n', ses2); 
+      http ('  xmlns:http="http://www.w3.org/2006/http#"\n', ses2);
+      http ('  xmlns:bibo="http://purl.org/ontology/bibo/"\n', ses2);
+      http ('>\n', ses2);
+      http ('<rdf:Description rdf:about="' || baseUri || '/' || subseq(slide_basename, 0, strrchr(slide_basename, '.')) || '">\n', ses2);
+      http ('<bibo:content>\n', ses2);
+      http (slide_text || ' ', ses2);
+      http ('</bibo:content>\n', ses2);
+      http ('</rdf:Description>\n', ses2);
+      http ('</rdf:RDF>\n', ses2);
+      tmp2 := string_output_string (ses2);
+      DB.DBA.RDF_LOAD_RDFXML (tmp2, new_origin_uri, coalesce (dest, graph_iri));
+next_slide:
+        ;
+    }
+
+    presentation_text := string_output_string (ses1);
+
+    --dbg_printf('.PPTX Cartridge - presentation text:');
+    --dbg_printf('%s', presentation_text);
+    --dbg_printf('<<');
+
+    -- Construct RDF to hold combined text from *all* slides
+    {
+      declare ses, tmp any;
+
+      ses := string_output ();
+      http ('<rdf:RDF', ses);
+      http ('  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"\n', ses); 
+      http ('  xmlns:http="http://www.w3.org/2006/http#"\n', ses);
+      http ('  xmlns:bibo="http://purl.org/ontology/bibo/"\n', ses);
+      http ('  xmlns:dc="http://purl.org/dc/elements/1.1/"\n', ses);
+      http ('  xmlns:sioc="http://rdfs.org/sioc/ns#"\n', ses);
+      http ('>\n', ses);
+      http ('<rdf:Description rdf:about="' || baseUri || '">\n', ses);
+
+      http ('<bibo:content>\n', ses);
+      http (presentation_text, ses);
+      http ('</bibo:content>\n', ses);
+
+      http ('</rdf:Description>\n', ses);
+      http ('</rdf:RDF>\n', ses);
+      tmp := string_output_string (ses);
+      DB.DBA.RDF_LOAD_RDFXML (tmp, new_origin_uri, coalesce (dest, graph_iri));
+    }
+    --dbg_printf('.PPTX Cartridge - Presentation text extraction done');
+  }
+
+  --dbg_printf('.PPTX Cartridge - All done');
+
+  return 1;
 }
 ;
 
