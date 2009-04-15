@@ -366,4 +366,17 @@ caddr_t ap_alloc_box (auto_pool_t * ap, int n, dtp_t tag);
 caddr_t *ap_list (auto_pool_t * apool, long n, ...);
 caddr_t ap_box_iri_id (auto_pool_t * ap, int64 n);
 
+
+#define WITHOUT_TMP_POOL \
+  { \
+    mem_pool_t * __mp = THR_TMP_POOL; \
+    SET_THR_TMP_POOL (NULL);
+
+#define END_WITHOUT_TMP_POOL \
+    SET_THR_TMP_POOL (__mp); \
+  }
+
+#define NO_TMP_POOL \
+  if (THR_TMP_POOL) GPF_T1 ("not supposed to have a tmp pool in effect here");
+
 #endif /* ifdef __DKPOOL_H */
