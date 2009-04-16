@@ -32,10 +32,10 @@
     
     <xsl:template match="/">
 		<rdf:Description rdf:about="{$baseUri}">
-			<scot:hasSCOT rdf:resource="{concat($baseUri, '#tagcloud')}"/>
+			<scot:hasScot rdf:resource="{concat($baseUri, '#tagcloud')}"/>
 			<xsl:for-each select="tag">
 				<sioc:topic>
-					<skos:Concept rdf:about="{concat('http://www.nytimes.com/tag#', .)}">
+					<skos:Concept rdf:about="{translate(concat($baseUri, '#timestag/', .), ' ', '_')}">
 						<skos:prefLabel>
 							<xsl:value-of select="."/>
 						</skos:prefLabel>
@@ -45,21 +45,33 @@
 		</rdf:Description>
 		<scot:Tagcloud rdf:about="{concat($baseUri, '#tagcloud')}">
 			<xsl:for-each select="tag">
-				<scot:hasTag rdf:resource="{concat('http://www.nytimes.com/tag#', .)}"/>
+				<scot:hasTag rdf:resource="{translate(concat($baseUri, '#timestag/', .), ' ', '_')}"/>
 			</xsl:for-each>
 		</scot:Tagcloud>
 		<xsl:for-each select="tag">
-			<scot:Tag rdf:about="{concat('http://www.nytimes.com/tag#', .)}">
+			<scot:Tag rdf:about="{translate(concat($baseUri, '#timestag/', .), ' ', '_')}">
 				<scot:name>
 					<xsl:value-of select="."/>
 				</scot:name>
+				<skos:isSubjectOf rdf:resource="{$baseUri}"/>
+				<foaf:page rdf:resource="{$baseUri}"/>
+				<scot:cooccurWith rdf:resource="{concat($baseUri, '#coocurrence')}"/>
 			</scot:Tag>
-			<moat:Tag rdf:about="{concat('http://www.nytimes.com/tag#', .)}">
+			<moat:Tag rdf:about="{translate(concat($baseUri, '#timestag/', .), ' ', '_')}">
 				<moat:name>
 					<xsl:value-of select="."/>
 				</moat:name>
 			</moat:Tag>
 		</xsl:for-each>
+
+		<rdf:Description rdf:about="{concat($baseUri, '#coocurrence')}">
+			<rdf:type rdf:resource="&scot;Cooccurrence"/>
+			<xsl:for-each select="tag">
+				<scot:cooccurTag rdf:resource="{translate(concat($baseUri, '#timestag/', .), ' ', '_')}"/>
+			</xsl:for-each>
+			<scot:cooccurAFrequency rdf:datatype="&xsd;integer">1</scot:cooccurAFrequency>
+		</rdf:Description>
+
 	</xsl:template>
     
     <xsl:template match="text()|@*"/>
