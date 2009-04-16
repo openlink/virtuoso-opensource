@@ -129,7 +129,7 @@ void rdf_ds_load_all (void)
   qmf->qmfIsuriOfShortTmpl = box_dv_short_string (" is_named_iri_id (^{tree}^)");
   qmf->qmfIsblankOfShortTmpl = box_dv_short_string (" is_bnode_iri_id (^{tree}^)");
   qmf->qmfIslitOfShortTmpl = box_dv_short_string (" (1 - isiri_id (^{tree}^))");
-  qmf->qmfLongOfShortTmpl = box_dv_short_string (" __rdf_long_of_obj (^{tree}^)");
+  qmf->qmfLongOfShortTmpl = box_dv_short_string (" __ro2lo (^{tree}^)");
   qmf->qmfDatatypeOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_DATATYPE_OF_OBJ (^{tree}^)");
   qmf->qmfLanguageOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_LANGUAGE_OF_OBJ (^{tree}^)");
   qmf->qmfSqlvalOfShortTmpl = box_dv_short_string (" __rdf_sqlval_of_obj (^{tree}^)");
@@ -3395,6 +3395,10 @@ sparp_find_valmode_by_name_prefix (sparp_t *sparp, caddr_t name, ssg_valmode_t d
     return qm_format_default;
   if (!strncmp (name, "SPECIAL::", 9))
     return SSG_VALMODE_SPECIAL;
+/*                     0         1      */
+/*                     0123456789012345 */
+  if (!strncmp (name, "SHORT_OR_LONG::", 15))
+    return SSG_VALMODE_SHORT_OR_LONG;
   if (NULL != strstr (name, "::"))
     spar_error (sparp, "Unsupported prefix before '::' in name '%.200s'", name);
   return dflt;
@@ -3572,6 +3576,8 @@ ssg_tmpl_X_of_short (ssg_valmode_t needed, qm_format_t *qm_fmt)
     return qm_fmt->qmfLanguageOfShortTmpl;
   if (SSG_VALMODE_BOOL == needed)
     return qm_fmt->qmfBoolOfShortTmpl;
+  if (SSG_VALMODE_SHORT_OR_LONG == needed)
+    return qm_fmt->qmfLongOfShortTmpl;
   spar_internal_error (NULL, "ssg_" "tmpl_X_of_short(): bad mode needed");
   return NULL; /* Never reached, to keep compiler happy */
 }
@@ -3636,7 +3642,7 @@ ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t n
     native = sparp_expn_native_valmode (ssg->ssg_sparp, tree);
   if (SSG_VALMODE_BOOL == native)
     {
-      if ((SSG_VALMODE_SQLVAL == needed) || (SSG_VALMODE_LONG == needed))
+      if ((SSG_VALMODE_SQLVAL == needed) || (SSG_VALMODE_LONG == needed) || (SSG_VALMODE_SHORT_OR_LONG == needed))
         {
           ssg_print_scalar_expn (ssg, tree, SSG_VALMODE_BOOL, asname);
           return;
@@ -3645,7 +3651,7 @@ ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t n
     }
   if (
     ((SSG_VALMODE_LONG == native) && (SSG_VALMODE_SQLVAL == needed)) ||
-    ((SSG_VALMODE_SQLVAL == native) && (SSG_VALMODE_LONG == needed)) ||
+    ((SSG_VALMODE_SQLVAL == native) && ((SSG_VALMODE_LONG == needed) || (SSG_VALMODE_SHORT_OR_LONG == needed))) ||
     (IS_BOX_POINTER (native) && (
         ((SSG_VALMODE_SQLVAL == needed) && native->qmfIsSubformatOfLong) ||
         ((SSG_VALMODE_SQLVAL == needed) && native->qmfIsSubformatOfLongWhenEqToSql) ||
@@ -3672,12 +3678,12 @@ ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t n
     }
   if (IS_BOX_POINTER (native))
     {
-      if ((SSG_VALMODE_LONG == needed) && native->qmfIsSubformatOfLong)
+      if (((SSG_VALMODE_LONG == needed) || (SSG_VALMODE_SHORT_OR_LONG == needed)) && native->qmfIsSubformatOfLong)
         {
           ssg_print_scalar_expn (ssg, tree, native, asname);
           return;
         }
-      if ((SSG_VALMODE_LONG == needed) && native->qmfIsSubformatOfLongWhenRef)
+      if (((SSG_VALMODE_LONG == needed) || (SSG_VALMODE_SHORT_OR_LONG == needed)) && native->qmfIsSubformatOfLongWhenRef)
         {
           ptrlong tree_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, tree);
           if (tree_restr_bits & SPART_VARR_IS_REF)
@@ -3711,6 +3717,13 @@ ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t n
           ssg_print_scalar_expn (ssg, fromshort, needed, asname);
           return;
         }
+      if ((SSG_VALMODE_SHORT_OR_LONG == needed) &&
+        (!strcmp (native->qmfLongOfShortTmpl, " __ro2lo (^{tree}^)") ||
+          !strcmp (native->qmfLongOfShortTmpl, " ^{tree}^") ) )
+            {
+              ssg_print_scalar_expn (ssg, tree, SSG_VALMODE_AUTO, asname);
+              return;
+            }
       ssg_print_tmpl (ssg, native, ssg_tmpl_X_of_short (needed, native), NULL, NULL, tree, asname);
       return;
     }
@@ -3733,6 +3746,16 @@ ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t n
           ssg_print_scalar_expn (ssg, tree, SSG_VALMODE_AUTO, asname);
           return;
         }
+    }
+  if (SSG_VALMODE_SHORT_OR_LONG == needed)
+    {
+      if (SSG_VALMODE_LONG == native)
+        {
+          ssg_print_scalar_expn (ssg, tree, SSG_VALMODE_AUTO, asname);
+          return;
+        }
+      ssg_print_valmoded_scalar_expn (ssg, tree, SSG_VALMODE_LONG, native, asname);
+      return;
     }
   ssg_print_tmpl (ssg, native, ssg_tmpl_X_of_Y (needed, native), NULL, NULL, tree, asname);
   return;
