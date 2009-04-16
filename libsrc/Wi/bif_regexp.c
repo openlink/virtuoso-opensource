@@ -78,7 +78,7 @@ static caddr_t get_regexp_code (safe_hash_t * rx_codes, const char *pattern,
 
 caddr_t
 bif_regexp_str_arg (caddr_t * qst, state_slot_t ** args, int nth,
-  char *func, int *utf8, caddr_t *ret_to_free, caddr_t *err_ret)
+  char *func, int strg_is_utf8_by_default, int *utf8, caddr_t *ret_to_free, caddr_t *err_ret)
 {
   caddr_t arg = NULL;
   dtp_t arg_dtp;
@@ -108,8 +108,15 @@ bif_regexp_str_arg (caddr_t * qst, state_slot_t ** args, int nth,
     return NULL;
   if (*utf8 == 1)
     {
-      if (DV_STRING == arg_dtp || DV_UNAME == arg_dtp)
-        return (*ret_to_free = box_narrow_string_as_utf8 (NULL, arg, 0, QST_CHARSET (qst), err_ret, 1));
+      if (DV_UNAME == arg_dtp)
+        return arg;
+      if (DV_STRING == arg_dtp)
+        {
+          if (strg_is_utf8_by_default)
+            return arg;
+          else
+	    return (*ret_to_free = box_narrow_string_as_utf8 (NULL, arg, 0, QST_CHARSET (qst), err_ret, 1));
+        }
       if (DV_WIDE == arg_dtp || DV_LONG_WIDE == arg_dtp)
         return (*ret_to_free = box_wide_as_utf8_char (arg, box_length (arg) / sizeof (wchar_t) - 1, DV_SHORT_STRING));
       SET_INVALID_ARG("Invalid argument %d to %s. Must be narrow or wide string or an complete string RDF box");
@@ -121,8 +128,17 @@ bif_regexp_str_arg (caddr_t * qst, state_slot_t ** args, int nth,
           *utf8 = 1;
           return (*ret_to_free = box_wide_as_utf8_char (arg, box_length (arg) / sizeof (wchar_t) - 1, DV_SHORT_STRING));
         }
-      if (DV_STRING == arg_dtp || DV_UNAME == arg_dtp)
-        return arg;
+      if (DV_UNAME == arg_dtp)
+        {
+          *utf8 = 1;
+	  return arg;
+        }
+      if (DV_STRING == arg_dtp)
+        {
+          if (strg_is_utf8_by_default)
+            *utf8 = 1;
+          return arg;
+        }
       SET_INVALID_ARG("Invalid argument %d to %s. Must be narrow or wide string or an complete string RDF box");
     }
   /* The rest is for *utf8 == 2 */
@@ -185,9 +201,9 @@ bif_regexp_match (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     case 3: replace_the_instr = (long) bif_long_arg (qst, args, 2, "regexp_match");
     case 2: case 1: case 0: ;
     }
-  pattern = bif_regexp_str_arg (qst, args, 0, "regexp_match", &utf8_mode, &p_to_free, err_ret);
+  pattern = bif_regexp_str_arg (qst, args, 0, "regexp_match", 0, &utf8_mode, &p_to_free, err_ret);
   if (*err_ret) goto done;
-  str = bif_regexp_str_arg (qst, args, 1, "regexp_match", &utf8_mode, &str_to_free, err_ret);
+  str = bif_regexp_str_arg (qst, args, 1, "regexp_match", 0, &utf8_mode, &str_to_free, err_ret);
   if (*err_ret) goto done;
 
   if (utf8_mode)
@@ -277,9 +293,9 @@ bif_rdf_regex_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     case 3: c_opts |= regexp_optchars_to_bits (bif_string_arg (qst, args, 2, "rdf_regex_impl"));
     case 2: case 1: case 0: ;
     }
-  pattern = bif_regexp_str_arg (qst, args, 1, "rdf_regex_impl", &utf8_mode, &p_to_free, &err);
+  pattern = bif_regexp_str_arg (qst, args, 1, "rdf_regex_impl", 1, &utf8_mode, &p_to_free, &err);
   if (err) goto done;
-  str = bif_regexp_str_arg (qst, args, 0, "rdf_regex_impl", &utf8_mode, &str_to_free, &err);
+  str = bif_regexp_str_arg (qst, args, 0, "rdf_regex_impl", 0, &utf8_mode, &str_to_free, &err);
   if (err) goto done;
 
   if (utf8_mode)
@@ -321,9 +337,9 @@ bif_regexp_substr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t ret_str = NULL;
 
   utf8_mode = 0;
-  pattern = bif_regexp_str_arg (qst, args, 0, "regexp_substr", &utf8_mode, &p_to_free, err_ret);
+  pattern = bif_regexp_str_arg (qst, args, 0, "regexp_substr", 0, &utf8_mode, &p_to_free, err_ret);
   if (*err_ret) goto done;
-  str = bif_regexp_str_arg (qst, args, 1, "regexp_substr", &utf8_mode, &str_to_free, err_ret);
+  str = bif_regexp_str_arg (qst, args, 1, "regexp_substr", 0, &utf8_mode, &str_to_free, err_ret);
   if (*err_ret) goto done;
   offset = (int) bif_long_arg (qst, args, 2, "regexp_substr");
   switch ((BOX_ELEMENTS (args)))
@@ -408,11 +424,11 @@ bif_regexp_parse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   utf8_mode = utf8_mode2 = 0;
   offset = (int) bif_long_arg (qst, args, 2, "regexp_parse");
-  str = bif_regexp_str_arg (qst, args, 1, "regexp_parse", &utf8_mode, &str_to_free, err_ret);
+  str = bif_regexp_str_arg (qst, args, 1, "regexp_parse", 0, &utf8_mode, &str_to_free, err_ret);
   if (*err_ret) goto done;
 
   utf8_mode2 = utf8_mode ? utf8_mode : 2;
-  pattern = bif_regexp_str_arg (qst, args, 0, "regexp_parse", &utf8_mode2, &p_to_free, err_ret);
+  pattern = bif_regexp_str_arg (qst, args, 0, "regexp_parse", 0, &utf8_mode2, &p_to_free, err_ret);
   if (*err_ret) goto done;
 
   switch ((BOX_ELEMENTS (args)))
