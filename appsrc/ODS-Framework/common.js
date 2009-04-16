@@ -482,7 +482,7 @@ var serviceList = [
   ["brightkite.jpg", "http://brightkite.com/", "brightkite.com"],
   ["feed.jpg", "http://en.wikipedia.org/wiki/Web_feed", "Custom RSS/Atom"],
   ["dailymotion.jpg", "http://www.dailymotion.com/", "Dailymotion"],
-  ["delicious.jpg", "http://delicious.com/", "delicious"],
+  ["delicious.jpg", "http://del.icio.us/", "Del.icio.us"],
   ["digg.jpg", "http://www.digg.com/", "Digg"],
   ["diigo.jpg", "http://www.diigo.com/", "Diigo"],
   ["disqus.jpg", "http://www.disqus.com/", "Disqus"],
