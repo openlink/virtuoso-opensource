@@ -3395,6 +3395,10 @@ sparp_find_valmode_by_name_prefix (sparp_t *sparp, caddr_t name, ssg_valmode_t d
     return qm_format_default;
   if (!strncmp (name, "SPECIAL::", 9))
     return SSG_VALMODE_SPECIAL;
+/*                     0         1      */
+/*                     0123456789012345 */
+  if (!strncmp (name, "SHORT_OR_LONG::", 15))
+    return SSG_VALMODE_SHORT_OR_LONG;
   if (NULL != strstr (name, "::"))
     spar_error (sparp, "Unsupported prefix before '::' in name '%.200s'", name);
   return dflt;
@@ -3426,6 +3430,8 @@ sparp_rettype_of_function (sparp_t *sparp, caddr_t name)
     {
       if (!strcmp (name, "SPECIAL::sql:RDF_MAKE_GRAPH_IIDS_OF_QNAMES"))
         return SSG_VALMODE_LONG; /* Fake but this works for use as 2-nd arg of 'LONG::bif:position' */
+      if (!strcmp (name, "SPECIAL::sql:RDF_GRAPH_GROUP_LIST_GET"))
+        return SSG_VALMODE_LONG; /* Fake but this works for use as 2-nd arg of 'LONG::bif:position' */
       if (!strcmp (name, "SPECIAL::sql:RDF_DIST_SER_LONG"))
         return SSG_VALMODE_LONG; /* Fake but this works for use as arg of RDF_DIST_DESER_LONG */
       if (!strcmp (name, "SPECIAL::sql:RDF_DIST_DESER_LONG"))
@@ -3438,8 +3444,9 @@ sparp_rettype_of_function (sparp_t *sparp, caddr_t name)
     }
   if (!strcmp (name, uname_xmlschema_ns_uri_hash_string))
     return SSG_VALMODE_LONG;
-  return res;
 #if 0
+  return res;
+#else
   return SSG_VALMODE_SQLVAL /* not "return res" */;
 #endif
 }
@@ -3452,6 +3459,8 @@ sparp_argtype_of_function (sparp_t *sparp, caddr_t name, int arg_idx)
   if (SSG_VALMODE_SPECIAL == res)
     {
       if (!strcmp (name, "SPECIAL::sql:RDF_MAKE_GRAPH_IIDS_OF_QNAMES"))
+        return SSG_VALMODE_SQLVAL;
+      if (!strcmp (name, "SPECIAL::sql:RDF_GRAPH_GROUP_LIST_GET"))
         return SSG_VALMODE_SQLVAL;
       if (!strcmp (name, "SPECIAL::sql:RDF_DIST_SER_LONG"))
         return SSG_VALMODE_LONG;
@@ -3631,7 +3640,7 @@ ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t n
     native = sparp_expn_native_valmode (ssg->ssg_sparp, tree);
   if (SSG_VALMODE_BOOL == native)
     {
-      if ((SSG_VALMODE_SQLVAL == needed) || (SSG_VALMODE_LONG == needed))
+      if ((SSG_VALMODE_SQLVAL == needed) || (SSG_VALMODE_LONG == needed) || (SSG_VALMODE_SHORT_OR_LONG == needed))
         {
           ssg_print_scalar_expn (ssg, tree, SSG_VALMODE_BOOL, asname);
           return;
@@ -3640,7 +3649,7 @@ ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t n
     }
   if (
     ((SSG_VALMODE_LONG == native) && (SSG_VALMODE_SQLVAL == needed)) ||
-    ((SSG_VALMODE_SQLVAL == native) && (SSG_VALMODE_LONG == needed)) ||
+    ((SSG_VALMODE_SQLVAL == native) && ((SSG_VALMODE_LONG == needed) || (SSG_VALMODE_SHORT_OR_LONG == needed))) ||
     (IS_BOX_POINTER (native) && (
         ((SSG_VALMODE_SQLVAL == needed) && native->qmfIsSubformatOfLong) ||
         ((SSG_VALMODE_SQLVAL == needed) && native->qmfIsSubformatOfLongWhenEqToSql) ||
@@ -3667,12 +3676,12 @@ ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t n
     }
   if (IS_BOX_POINTER (native))
     {
-      if ((SSG_VALMODE_LONG == needed) && native->qmfIsSubformatOfLong)
+      if (((SSG_VALMODE_LONG == needed) || (SSG_VALMODE_SHORT_OR_LONG == needed)) && native->qmfIsSubformatOfLong)
         {
           ssg_print_scalar_expn (ssg, tree, native, asname);
           return;
         }
-      if ((SSG_VALMODE_LONG == needed) && native->qmfIsSubformatOfLongWhenRef)
+      if (((SSG_VALMODE_LONG == needed) || (SSG_VALMODE_SHORT_OR_LONG == needed)) && native->qmfIsSubformatOfLongWhenRef)
         {
           ptrlong tree_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, tree);
           if (tree_restr_bits & SPART_VARR_IS_REF)

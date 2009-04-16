@@ -1416,7 +1416,6 @@ create function DB.DBA.RDF_STRSQLVAL_OF_OBJ (in shortobj any) -- DEPRECATED
 }
 ;
 
-
 create function DB.DBA.RDF_OBJ_OF_LONG (in longobj any) returns any
 {
   if (__tag of rdf_box <> __tag(longobj))
@@ -2727,7 +2726,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TTL (inout triples any, inout ses any)
     }
   env := vector (dict_new (__min (tcount, 16000)), 0, '', '', '', 0, 0, 0, 0);
   { whenever sqlstate '*' goto end_pred_sort;
-  rowvector_digit_sort (triples, 1, 1);
+    rowvector_digit_sort (triples, 1, 1);
 end_pred_sort: ;
   }
   { whenever sqlstate '*' goto end_subj_sort;
@@ -3554,11 +3553,9 @@ create function DB.DBA.SPARQL_INSERT_DICT_CONTENT (in graph_iri any, in triples_
     signal ('RDF02', sprintf ('SPARUL INSERT access denied: user %s (%s) has no write permission on graph %s',
       cast (uid as varchar), coalesce ((select top 1 U_NAME from DB.DBA.SYS_USERS where U_ID=uid)), graph_iri ) );
   ins_count := ins_count + length (triples);
-  commit work;
   DB.DBA.RDF_INSERT_TRIPLES (graph_iri, triples, log_mode);
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
-  commit work;
   if (compose_report)
     return sprintf ('Insert into <%s>, %d triples -- done', graph_iri, ins_count);
   else
@@ -3581,11 +3578,9 @@ create function DB.DBA.SPARQL_DELETE_DICT_CONTENT (in graph_iri any, in triples_
     signal ('RDF02', sprintf ('SPARUL DELETE access denied: user %s (%s) has no write permission on graph %s',
       cast (uid as varchar), coalesce ((select top 1 U_NAME from DB.DBA.SYS_USERS where U_ID=uid)), graph_iri ) );
   del_count := del_count + length (triples);
-  commit work;
   DB.DBA.RDF_DELETE_TRIPLES (graph_iri, triples, log_mode);
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
-  commit work;
   if (compose_report)
     return sprintf ('Delete from <%s>, %d triples -- done', graph_iri, del_count);
   else
@@ -3645,7 +3640,7 @@ create function DB.DBA.SPARUL_CLEAR (in graph_iri any, in uid integer, in inside
   commit work;
   if (not inside_sponge)
     {
-    delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = graph_iri;
+      delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = graph_iri;
       delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI like concat ('destMD5=', md5 (graph_iri), '&graphMD5=%');
     }
   commit work;
@@ -4620,6 +4615,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL (in subj_dict any, in cons
 }
 ;
 
+
 --!AWK PUBLIC
 create procedure DB.DBA.RDF_DICT_OF_TRIPLES_TO_THREE_COLS (in dict any, in destructive integer := 0)
 {
@@ -5079,7 +5075,6 @@ create function JSO_LOAD_INSTANCE (in jgraph varchar, in jinst varchar, in delet
   JSO_MAKE_INHERITANCE (jgraph, jclass, jinst, jinst, jsubj_iid, noinherits, inh_stack);
 }
 ;
-
 
 create procedure JSO_LIST_INSTANCES_OF_GRAPH (in jgraph varchar, out instances any)
 {
@@ -8736,14 +8731,14 @@ create function DB.DBA.RDF_GRAPH_GROUP_LIST_GET (in group_iri any, in extra_grap
       foreach (any g_iri in group_iri) do
         {
           group_iid := iri_to_id (g_iri);
-  if (not bit_and (common_perms, 8))
-    {
-      perms := coalesce (
-        (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = group_iid and RGU_USER_ID = uid),
-        dict_get (__rdf_graph_public_perms_dict(), group_iid, NULL),
-        common_perms );
-      -- dbg_obj_princ ('DB.DBA.RDF_GRAPH_GROUP_LIST_GET: perms for list = ', perms);
-    }
+          if (not bit_and (common_perms, 8))
+            {
+              perms := coalesce (
+                (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = group_iid and RGU_USER_ID = uid),
+                dict_get (__rdf_graph_public_perms_dict(), group_iid, NULL),
+                common_perms );
+              -- dbg_obj_princ ('DB.DBA.RDF_GRAPH_GROUP_LIST_GET: perms for list = ', perms);
+            }
           else
             perms := common_perms;
           if (bit_and (perms, 8))
@@ -8774,7 +8769,7 @@ create function DB.DBA.RDF_GRAPH_GROUP_LIST_GET (in group_iri any, in extra_grap
     {
       declare ctr integer;
       if (extra_graphs is null)
-    return full_list;
+        return full_list;
       ctr := length (extra_graphs);
       while (ctr > 0)
         {
@@ -9464,6 +9459,7 @@ create function DB.DBA.RDF_IID_OF_QNAME (in qname varchar) returns IRI_ID
   return null;
 }
 ;
+
 create procedure SPARQL_INI_PARAMS (inout metas any, inout dta any)
 {
   declare item_cnt int;
@@ -9488,3 +9484,4 @@ create procedure SPARQL_INI_PARAMS (inout metas any, inout dta any)
   dta := vector (vector (res_dict));
 }
 ;
+

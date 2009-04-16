@@ -625,9 +625,7 @@ struct rdf_ds_field_s;
 struct rdf_ds_s;
 
 /* Special 'macro' names of ssg_valmode_t modes. The order of numeric values is important ssg_shortest_valmode() */
-#if 0
-#define SSG_VALMODE_SHORT		((ssg_valmode_t)((ptrlong)(0x300)))
-#endif
+#define SSG_VALMODE_SHORT_OR_LONG	((ssg_valmode_t)((ptrlong)(0x300)))
 #define SSG_VALMODE_LONG		((ssg_valmode_t)((ptrlong)(0x310)))
 #define SSG_VALMODE_SQLVAL		((ssg_valmode_t)((ptrlong)(0x320)))
 #define SSG_VALMODE_DATATYPE		((ssg_valmode_t)((ptrlong)(0x330)))

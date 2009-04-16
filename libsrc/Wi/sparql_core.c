@@ -1319,15 +1319,15 @@ spar_make_list_of_sources_expn (sparp_t *sparp, ptrlong from_subtype, ptrlong fr
     }
   if (NULL != graph_groups)
     {
-      SPART *lst_expn = spar_make_funcall (sparp, 0, "LONG::sql:RDF_GRAPH_GROUP_LIST_GET",
+      SPART *lst_expn = spar_make_funcall (sparp, 0, "SPECIAL::sql:RDF_GRAPH_GROUP_LIST_GET",
         (SPART **)t_list (4,
           ((NULL == graph_groups->next) ?
             (SPART *)(graph_groups->data) :
-            spar_make_funcall (sparp, 0, "LONG::bif:vector",
+            spar_make_funcall (sparp, 0, "bif:vector",
               (SPART **)t_list_to_array (graph_groups) ) ),
           ((NULL == single_graphs) ?
             (SPART *)t_NEW_DB_NULL :
-            spar_make_funcall (sparp, 0, "LONG::bif:vector",
+            spar_make_funcall (sparp, 0, "bif:vector",
               (SPART **)t_list_to_array (single_graphs) ) ),
           spar_boxed_exec_uid (sparp),
           t_box_num_nonull (req_perms) ) );
