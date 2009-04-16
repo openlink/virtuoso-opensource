@@ -36,8 +36,8 @@ rm -f oledb.bad
 CHECK_LOG()
 {
     passed=`grep "PASSED:" $LOGFILE | wc -l`
-    failed=`grep "^\*\*\*.*FAILED:" $LOGFILE | wc -l`
-    aborted=`grep "^\*\*\*.*ABORTED:" $LOGFILE | wc -l`
+    failed=`grep "\*\*\*.*FAILED:" $LOGFILE | wc -l`
+    aborted=`grep "\*\*\*.*ABORTED:" $LOGFILE | wc -l`
 
     ECHO ""
     LINE

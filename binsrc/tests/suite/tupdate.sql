@@ -35,9 +35,10 @@ set DEADLOCK_RETRIES = 200;
 load revstr.sql;
 load succ.sql;
 drop table words;
-create table words(word varchar, revword varchar, len integer, primary key(word));
-create index revword on words(revword);
-create index len on words(len);
+create table words(word varchar, revword varchar, len integer, primary key(word))
+  alter index words on words partition (word varchar);
+create index revword on words(revword) partition (revword varchar);
+create index len on words(len) partition (len int);
 foreach line in words.esp
  insert into words(word,revword,len) values(?,revstr(?1),length(?1));
 
@@ -48,12 +49,34 @@ ECHO BOTH ": Table word contains count(*) " $LAST[1] " lines\n";
 
 alter table words add word2 varchar;
 
--- Why this is done twice? Is it typo or is there some point in it?
-update words set word2 = word;
+
+
+update words table option (index primary key) set word2 = word where len <9;
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
 ECHO BOTH ": update words set word2 = word; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
---- ECHO BOTH $IF $EQU $ROWCNT 86061 "PASSED" "***FAILED";
---- ECHO BOTH ": " $ROWCNT " rows updated\n";
+ECHO BOTH $IF $EQU $ROWCNT 42406"PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows updated\n";
+
+-- check reading inx with mixed vcersions of keys 
+select count (*) from words where word > 'b';
+
+select count (*) from words a where exists (select 1 from words b table option (loop) where a.word = b.word);
+ECHO BOTH $IF $EQU $LAST[1] 86061 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": Table word contains count(*) " $LAST[1] " lines, mixed versions\n";
+
+
+
+select count (*) from words a where exists (select 1 from words b table option (loop) where b.word >= a.word and b.word < a.word || '0');
+ECHO BOTH $IF $EQU $LAST[1] 86061 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": Table word contains count(*) " $LAST[1] " lines, mixed versions with range\n";
+
+
+update words table option (index len) set word2 = word where len >= 9;
+ECHO BOTH $IF $EQU $ROWCNT 43655 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows updated by inx len gte 9\n";
+
 
 update words set word2 = word;
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
@@ -257,7 +280,7 @@ create procedure LOCK_TT_FILL (in N int)
 }
 
 
-select tc_stat ('tc_pl_split_while_wait');
+select sys_stat ('tc_pl_split_while_wait');
 echo both " tc_pl_split_while_wait=" $last[1] "\n";
 
 
@@ -506,6 +529,8 @@ ECHO BOTH $IF $NEQ $STATE OK "PASSED" "*** FAILED";
 ECHO BOTH ": BUG 7752: wrong max row len check STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 echo BOTH "COMPLETED: UPDATE TEST\n";
+
+exit
 
 echo BOTH "STARTED: keyset update tests\n";
 CONNECT;

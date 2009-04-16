@@ -28,7 +28,8 @@ ECHO BOTH "STARTED: freetext tests for table " $U{table} " ID type " $U{idtype} 
 
 drop table $U{table};
 
-create table $U{table} (ID $U{idtype} not null $U{pk}, DATA long varchar);
+create table $U{table} (ID $U{idtype} not null $U{pk}, DATA long varchar)
+alter index $U{table} on $U{table} partition (ID $U{idtype});
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "*** FAILED";
 ECHO BOTH ": creating freetext table " $U{table} " with ID type " $U{idtype} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 

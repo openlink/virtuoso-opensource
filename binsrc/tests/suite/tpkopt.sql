@@ -101,6 +101,7 @@ insert into idt (k1, k2, k3, d) values (1, 3, 3, 'd1');
 insert into idt (k1, k2, k3, d) values (1, 4, 3, 'd1');
 insert into idt (k1, k2, k3, d) values (4, 2, 3, 'd1');
 
+-- XXX: was 23000 error check, but cluster gives another error
 create unique index d on idt (d);
 echo both $if $neq $state OK "PASSED" "***FAILED";
 echo both ": make unique index on non unique column, state " $state "\n";

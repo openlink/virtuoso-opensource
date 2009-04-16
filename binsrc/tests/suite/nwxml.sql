@@ -24,13 +24,15 @@
 drop table XML_TEXT_XML_TEXT_WORDS;
 drop table XML_TEXT;
 
-create table XML_TEXT (XT_ID integer, XT_FILE varchar, XT_TEXT long varchar identified by XT_FILE, primary key (XT_ID));
-create index XT_FILE on XML_TEXT (XT_FILE);
+create table XML_TEXT (XT_ID bigint, XT_FILE varchar, XT_TEXT long varchar identified by XT_FILE, primary key (XT_ID))
+alter index XML_TEXT on DB.DBA.XML_TEXT partition (XT_ID int);
+create index XT_FILE on XML_TEXT (XT_FILE) partition (xt_file varchar);
 create text index on XML_TEXT (XT_TEXT) with key XT_ID;
+sequence_next ('XML_TEXT');
 
 vt_batch_update ('XML_TEXT', 'ON', NULL);
 
-sequence_set ('XML_TEXT', 1, 0);
+
 
 
 DB.DBA.vt_index_DB_DBA_XML_TEXT (0);

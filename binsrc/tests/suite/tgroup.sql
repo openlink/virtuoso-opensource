@@ -25,6 +25,8 @@
 --  
 --  
 
+echo both "Group By test\n";
+
 select count (word), LEFT (word, 2) from words group by 2 order by count (word);
 ECHO BOTH $IF $EQU $ROWCNT 379 "PASSED" "***FAILED";
 ECHO BOTH ": " $ROWCNT " distinct word beginning letter pairs\n";

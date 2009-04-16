@@ -410,30 +410,6 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": Q12\n";
 
 select
-	c_count,
-	count(*) as custdist
-from (
-	select
-		c_custkey,
-		count(o_orderkey) as c_count
-	from
-		(select * from CUSTOMER
-		left outer join ORDERS on
-		  c_custkey = o_custkey and
-		  o_comment not like '%special%requests%') as c_customer
-	group by
-		c_custkey
-	) as c_orders
-group by
-	c_count
-order by
-	custdist desc,
-	c_count desc;
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": Q13\n";
-
-select
 	100 * sum(case
 		when p_type like 'PROMO%'
 			then l_extendedprice*(1-l_discount)
@@ -553,42 +529,6 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": Q17\n";
 
-select
-	c_name,
-	c_custkey,
-	o_orderkey,
-	o_orderdate,
-	o_totalprice,
-	sum(l_quantity)
-from
-	LINEITEM,
-	ORDERS,
-	CUSTOMER
-where
-	o_orderkey in (
-			select
-				l_orderkey
-			from
-				LINEITEM
-			group by
-				l_orderkey
-			having
-				sum(l_quantity) > 250
-			)
-	and c_custkey = o_custkey
-	and o_orderkey = l_orderkey
-group by
-	c_name,
-	c_custkey,
-	o_orderkey,
-	o_orderdate,
-	o_totalprice
-order by
-	o_totalprice desc,
-	o_orderdate;
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": Q18\n";
 
 select
 	sum(l_extendedprice * (1 - l_discount) ) as revenue

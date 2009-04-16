@@ -235,7 +235,7 @@ START_SERVER()
     ddate=`date`
     starth=`date | cut -f 2 -d :`
     starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
-    while [ "z$stat" != "z" ]
+    while [ "z$stat" != "z" -a $timeout -gt 0 ]
     do
 	sleep 1
 	stat=`netstat -an | grep "[\.\:]$port " | grep LISTEN`
@@ -287,7 +287,10 @@ START_SERVER()
 	starth=`date | cut -f 2 -d :`
 	starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
 
-	if test -z "$FOREGROUND_OPTION"
+	if [ $timeout == 0 ]
+	then
+	    RUNSERVER $SERVER $port $*
+	elif test -z "$FOREGROUND_OPTION"
 	then
 #	    if test x$HOST_OS = x -o x$SERVER != xM2 -o x$SERVER != xM2.EXE
 #	    then
@@ -309,6 +312,10 @@ START_SERVER()
 #	    fi
 	fi
 #    fi
+	if [ $timeout == 0 ]
+	then
+	    return
+	fi
 	while true
 	do
 	    stat=`netstat -an | grep "[\.\:]$port " | grep LISTEN`
@@ -536,3 +543,19 @@ esac
 #  Make sure the logfile is cleared before running the tests
 #===========================================================================
 rm -f $LOGFILE
+rm -f cluster.ini
+
+CLEAN_DBLOGFILE ()
+{
+  rm -f $DBLOGFILE
+}
+
+CLEAN_DBFILE ()
+{
+  rm -f $DBFILE
+}
+
+if [ "x$CLUSTER" != "x" ]
+then
+    . $HOME/binsrc/tests/suite/cl_test_fn.sh
+fi

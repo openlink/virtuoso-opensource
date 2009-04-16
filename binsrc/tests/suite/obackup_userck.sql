@@ -122,8 +122,8 @@ create procedure check_seqs (in pr varchar, in imax integer, in val integer)
 
 create_seqs ('h', 10000);
  
--- since obackup will do checkpoint, this is not relevant
--- checkpoint;
+ 
+checkpoint;
  
 
 create_seqs ('ax', 10000);

@@ -39,6 +39,14 @@ MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 
 START_SERVER $PORT 1000
 RUN $INS $DSN 100000  100
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcptrb3.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: cpt rb  -- tcptrb3.sql"
+    exit 1
+fi
+
+
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcptrb.sql
 if test $STATUS -ne 0
 then
@@ -115,6 +123,13 @@ RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tbitmap.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tbitmap.sql"
+    exit 1
+fi
+
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tac.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: autocompact tac.sql "
     exit 1
 fi
 
@@ -254,7 +269,58 @@ then
     exit 1
 fi
 
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ttrans.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: ttrans.sql"
+    exit 1
+fi
+
 RUN $ISQL $DSN '"EXEC=drop table T1;"' ERRORS=STDOUT
+RUN $INS $DSN 100 20
+
+
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcljoin.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tcljoin.sql"
+    exit 1
+fi
+
+
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcldt.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tcldt.sql"
+    exit 1
+fi
+
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcldfg.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tcldfg.sql"
+    exit 1
+fi
+
+
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcllock.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tcllock.sql"
+    exit 1
+fi
+
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tanytime.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tanytime.sql"
+    exit 1
+fi
+
+
+
+
+RUN $ISQL $DS1 '"EXEC=drop table T1;"' ERRORS=STDOUT
 RUN $INS $DSN 200000 100
 
 RUN_BG_CHECK()

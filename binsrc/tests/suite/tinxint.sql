@@ -28,8 +28,8 @@ echo both "Index intersecction tests\n";
 
 update t1 set fi3 = mod (row_no, 11), fi2 = mod (row_no, 7);
 
-create index fi2 on t1 (fi2);
-create index fi3 on t1 (fi3);
+create index fi2 on t1 (fi2) partition (fi2 int);
+create index fi3 on t1 (fi3) partition (fi3 int);
 
 
 select count (*) from t1 where fi2 = 3 and fi3 = 3;

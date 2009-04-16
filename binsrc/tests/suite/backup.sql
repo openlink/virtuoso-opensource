@@ -36,9 +36,9 @@ drop table deleted_table_test;
 set readmode snapshot;
 set timeout 3000;
 ECHO BOTH "Starting backup itself, into file backup.log\n";
-backup 'backup.log';
+cl_exec ('backup \'backup.log\'');
 wait_for_children;
-backup 'backup2.log';
+cl_exec ('backup \'backup2.log\'');
 wait_for_children;
 ECHO BOTH "COMPLETED: On-Line Backup Test, part 1, recovery check soon follows\n";
 

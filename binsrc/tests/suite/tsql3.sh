@@ -185,17 +185,25 @@ then
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < trdfbox.sql 
-if test $STATUS -ne 0
-then
-    LOG "***ABORTED: rdf inference -- trdfbox.sql"
-    exit 1
-fi
-
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < trdfinf.sql 
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rdf inference -- trdfinf.sql"
+    exit 1
+fi
+
+
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < trdfinfifp.sql 
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: rdf inference -- trdfinfifp.sql"
+    exit 1
+fi
+
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ttrans2.sql 
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: rdf inference -- ttrans2.sql"
     exit 1
 fi
 
@@ -225,13 +233,6 @@ then
 	LOG "***ABORTED: view qualifier expansion (on part)"
 	exit 1
     fi
-fi
-
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < trdfhi.sql 
-if test $STATUS -ne 0
-then
-    LOG "***ABORTED: rdf using hash trdfhi.sql"
-    exit 1
 fi
 
 SHUTDOWN_SERVER

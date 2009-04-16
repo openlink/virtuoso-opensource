@@ -25,9 +25,9 @@
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #  
 #  
+
 LOGFILE=`pwd`/tpcd.output
 export LOGFILE
-TEST_SPARQL=${TEST_SPARQL-1}
 . ./test_fn.sh
 
 DS1=$PORT
@@ -37,6 +37,13 @@ DS2=`expr $PORT + 1`
 echo "Server=" $SERVER
 
 BANNER "STARTED SERIES OF TPC-D TESTS (tpcd.sh)"
+
+grep VDB ident.txt
+if test $? -ne 0
+then 
+    echo "The present build is not set up for VDB."
+    exit
+fi
 
 LOG "Starting the server on $DS1"
 LOG
@@ -51,37 +58,6 @@ rm -rf tpcdremote1
 mkdir tpcdremote1
 cd tpcdremote1
 MAKECFG_FILE ../$TESTCFGFILE $DS1 $CFGFILE
-
-case $SERVER in
-*[Mm]2*)
-cat >> $CFGFILE <<END_HTTP
-HTTPLogFile: http.log
-http_port: $HTTPPORT
-http_threads: 3
-http_keep_alive_timeout: 15
-http_max_keep_alives: 6
-http_max_cached_proxy_connections: 10
-http_proxy_connection_cache_timeout: 15
-END_HTTP
-;;
-*virtuoso*)
-cat >> $CFGFILE <<END_HTTP1
-[HTTPServer]
-HTTPLogFile = http.log
-ServerPort = $HTTPPORT
-ServerRoot = .
-ServerThreads = 3
-MaxKeepAlives = 6
-KeepAliveTimeout = 15
-MaxCachedProxyConnections = 10
-ProxyConnectionCacheTimeout = 15
-
-[URIQA]
-DefaultHost = localhost:$HTTPPORT
-END_HTTP1
-;;
-esac
-
 START_SERVER $DS1 1000
 cd ..
 
@@ -90,10 +66,10 @@ LOG "Loading the TPC-D tables into $DS1"
 LOG
 
 cd tpc-d
-sh ./LOAD.sh $DS1 dba dba tables
-sh ./LOAD.sh $DS1 dba dba procedures
-sh ./LOAD.sh $DS1 dba dba load
-sh ./LOAD.sh $DS1 dba dba indexes
+. ./LOAD.sh $DS1 dba dba tables
+. ./LOAD.sh $DS1 dba dba indexes
+. ./LOAD.sh $DS1 dba dba procedures
+. ./LOAD.sh $DS1 dba dba load
 cd ..
 
 LOG
@@ -125,7 +101,7 @@ LOG "Attaching the TPC-D tables from $DS1 into $DS2"
 LOG
 
 cd tpc-d
-sh ./LOAD.sh $DS2 dba dba attach $DS1 dba dba
+. ./LOAD.sh $DS2 dba dba attach $DS1 dba dba
 cd ..
 
 LOG

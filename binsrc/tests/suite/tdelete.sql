@@ -36,9 +36,11 @@ SET TIMEOUT 3600;
 drop table words_1;
 drop table words_2;
 
-create table words_1 (word varchar, len integer, primary key (word));
-create table words_2 (word varchar, len integer, revword varchar, primary key (word));
-create index w2_revword on words_2 (revword);
+create table words_1 (word varchar, len integer, primary key (word))
+ alter index words_1 on words_1 partition (word varchar);
+create table words_2 (word varchar, len integer, revword varchar, primary key (word))
+ alter index words_2 on words_2 partition (word varchar);
+create index w2_revword on words_2 (revword) partition (revword varchar);
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
 ECHO BOTH ": create index w2_revword on words_2 (revword); STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
@@ -145,5 +147,24 @@ ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
 ECHO BOTH ": select count (*) from words_2; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 ECHO BOTH $IF $EQU $LAST[1] 76469 "PASSED" "***FAILED";
 ECHO BOTH ": " $LAST[1] " rows_1 in words_2 after delete\n";
+
+delete from words table option (index primary key) where len > 7 option (index len);
+echo both $if $equ $state 42000 "PASSED" "***FAILED";
+echo both ": error with different inx for single key del and the search\n";
+
+set autocommit manual;
+delete from words table option (index len) where len > 7 option (index len);
+
+select count (*) from words table option (index len);
+echo both $if $equ $last[1] 25106 "PASSED" "***FAILED";
+echo both ": count after single key del\n";
+
+
+select count (*) from words table option (index primary key);
+echo both $if $equ $last[1] 76469 "PASSED" "***FAILED";
+echo both ": pk count after single key del\n";
+
+rollback work;
+set autocommit off;
 
 echo BOTH "COMPLETED: DELETE TEST\n";

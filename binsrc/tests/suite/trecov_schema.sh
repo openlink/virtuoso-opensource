@@ -116,6 +116,7 @@ sleep 10
 rm -rf new.*
 ECHO cat $CFGFILE | sed -e 's/virtuoso\./new./g' > new.ini
 cat $CFGFILE | sed -e 's/virtuoso\./new./g' > new.ini
+rm $DBLOGFILE
 
 RUN $SERVER $FOREGROUND_OPTION $CRASH_DUMP_OPTION +mode oa +dumpkeys schema
 cp $DBLOGFILE $DBLOGFILE.sr1
@@ -138,6 +139,7 @@ RUN mv $DBLOGFILE new.trx
 RUN $SERVER $FOREGROUND_OPTION -c new -R
 cp new.db new.db.sr3
 
+rm new.trx
 RUN $SERVER $FOREGROUND_OPTION -c new $CRASH_DUMP_OPTION
 
 RUN rm -f $DELETEMASK

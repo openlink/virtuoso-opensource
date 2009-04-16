@@ -267,6 +267,8 @@ in
 	zindexes)
             echo $_ISQL ./create_indexes.sql $* >> $LOGFILE
             $_ISQL ./create_indexes.sql $* >> $LOGFILE
+            echo $_ISQL ./create_partitions.sql $* >> $LOGFILE
+            $_ISQL ./create_partitions.sql $* >> $LOGFILE
 	    if test $? -ne 0
 	      then
 	        LOG "*** ABORTED: LOAD.sh -- create_indexes.sql"

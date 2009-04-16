@@ -28,10 +28,7 @@ drop table tblob
 drop table tblob2;
 drop table tb_stat;
 
-
-
-
-create table tblob (k integer not null primary key,
+create table TBLOB (k integer not null primary key,
 		    b1 long varchar,
 		    b2 long varchar,
 		    b3 long varbinary,
@@ -39,17 +36,20 @@ create table tblob (k integer not null primary key,
 		    e1 varchar,
 		    e2 varchar,
 		    en varchar,
-		    ed datetime);
-
-create index tb1 on tblob (e1);
-
+		    ed datetime)
+alter index TBLOB on TBLOB partition (k int);
 
 
-create table tblob2 (k integer not null primary key, b1 varchar, b2 varchar);
+create index TB1 on TBLOB (e1) partition (e1 varchar);
+
+
+create table tblob2 (k integer not null primary key, b1 varchar, b2 varchar)
+alter index tblob2 on tblob2 partition (k int);
 
 create table tb_stat (k integer not null primary key,
 		     b1_l integer, b2_l integer, b3_l integer, b4_l integer,
-		     e1 varchar, e2 varchar);
+		     e1 varchar, e2 varchar)
+alter index tb_stat on tb_stat partition (k int);
 
 
 insert into tblob (k, e1, e2) values (1, 'e1', 'e2');
@@ -68,15 +68,24 @@ create procedure tb_e2 ()
 
 tb_e2 ();
 
+echo both $if $neq $sqlstate OK "PASSED" "***FAILED";
+echo both ": row too long check\n";
+ 
 
 update tblob set b3 = '12345678901234567890';
 update tblob set b1 = b3, b2 = b3, b4 = b3;
+echo both $if $neq $sqlstate OK "PASSED" "***FAILED";
+echo both ": row too long check 2\n";
 
 update tblob set e1 = '123';
+echo both $if $neq $sqlstate OK "PASSED" "***FAILED";
+echo both ": row too long check 3\n";
 
 update tblob set e2 = make_string (4000);
+echo both $if $neq $sqlstate OK "PASSED" "***FAILED";
+echo both ": row too long check 4\n";
 
-
+update tblob set e2 = '1234';
 
 insert into tblob (k, b1, b2, b3) values (2, make_string (1000), make_string (900), make_string (800));
 
@@ -116,11 +125,7 @@ create procedure make_random_wide_string () returns nvarchar
 	    end;
       }
     return wide_ret;
-  };
-
-
-
-
+}
 
 
 create procedure tb_upd (in ct integer, in mode varchar)
@@ -143,15 +148,15 @@ create procedure tb_upd (in ct integer, in mode varchar)
 again:
   declare i, len integer;
   i := 0;
-  while (i < ct) {
+  while (i < ct) 
+    {
     update tblob set b1 = make_string (rnd (1000)),
-    b2 = make_string (rnd (1000)),
-    b3 = make_string (rnd (1000)),
+	b2 = make_string (rnd (1001)),
+	b3 = make_string (rnd (1003)),
     b4 = make_random_wide_string (),
-    e1 = make_string (rnd (1000)),
-    e2 = make_string (rnd (1000));
+	e1 = make_string (rnd (1004)),
+	e2 = make_string (rnd (1005));
     i := i + 1;
-    select length (cast (_ROW as varchar)) into len from tblob;
     -- dbg_obj_print (len);
     if (rnd (10) = 1 and mode <> 'rb')
       commit work;
@@ -223,7 +228,7 @@ create procedure tb_ins (in ct integer, in mode varchar)
 	      make_string (rnd (1000)), make_string (rnd (1000)), make_string (rnd (1000)),
 	      make_random_wide_string ());
     i := i + 1;
-    select length (cast (_ROW as varchar)) into len from tblob;
+    select length (_ROW) into len from tblob;
     -- dbg_obj_print (len);
     if (rnd (10) = 1 and mode <> 'rb')
       commit work;
@@ -259,7 +264,8 @@ create procedure bad_upd_1 (in q integer)
   update tblob set k = 1, b2 = b1 where k = 1111;
 }
 
-bad_upd_1 (1);
+--XXX: VJ
+--bad_upd_1 (1);
 
 
 echo both "starting blob random insert ...\n";
@@ -269,6 +275,58 @@ echo both "finished blob random insert\n";
 select * from tblob where length (blob_to_string (b4)) <> length (b4);
 echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
 echo both ": tblob length check\n";
+
+
+cl_exec ('__dbf_set (''dbf_cl_blob_autosend_limit'', 100000)');
+
+-- 2 blobs per cluster node
+
+foreach blob in words.esp insert into tblob (k, b1) values (10000, ?);
+foreach blob in words.esp insert into tblob (k, b1) values (10001, ?);
+foreach blob in words.esp insert into tblob (k, b1) values (10002, ?);
+foreach blob in words.esp insert into tblob (k, b1) values (10003, ?);
+foreach blob in words.esp insert into tblob (k, b1) values (10004, ?);
+foreach blob in words.esp insert into tblob (k, b1) values (10005, ?);
+foreach blob in words.esp insert into tblob (k, b1) values (10006, ?);
+foreach blob in words.esp insert into tblob (k, b1) values (10007, ?);
+
+
+foreach blob in words.esp update tblob set b1 = ? where k = 10000;
+foreach blob in words.esp update tblob set b1 = ? where k = 10001;
+
+foreach blob in words.esp update tblob set b1 = ?, b2 = '', b3 = '', b4 = '', e1 = '', e2 = ''  where k between 10000 and 10010;
+
+
+-- subseq done in cluster 
+select subseq (b1, 10000, 10500) from tblob where k > 9999;
+echo both $if $equ $rowcnt 8 "PASSED" "***FAILED";
+echo both ": b subseq 1\n";
+-- subseq in cluster with sql func, then subseq done in coordinator. id_to_iri is a location sequence break. 
+create procedure f (in q any) {return q;};
+create procedure f_noloc (in q any) { id_to_iri (#i1); return q;};
+
+
+select subseq (f (b1), 10000, 10500) from tblob where k > 9999;
+echo both $if $equ $rowcnt 8 "PASSED" "***FAILED";
+echo both ": b subseq 2\n";
+
+
+select subseq (f_noloc (b1), 10000, 10100) from tblob where k > 9999;
+echo both $if $equ $rowcnt 8 "PASSED" "***FAILED";
+echo both ": b subseq 3\n";
+
+
+-- master to c2
+update tblob set k = 11001 where k = 10000;
+-- c2 to c3
+update tblob set k = 11002 where k = 10001;
+
+-- c4 to master
+-- update tblob set k = 11000 where k = 10003;
+
+
+
+
 
 delete from tb_stat;
 insert into tb_stat select k, length (b1), length (b2), length (b3), length (b4), e1, e2 from tblob;

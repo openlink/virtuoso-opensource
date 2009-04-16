@@ -37,9 +37,11 @@ set timeout 1200;
 load revstr.sql;
 load succ.sql;
 drop table words;
-create table words(word varchar, revword varchar, len integer, primary key(word));
-create index revword on words(revword);
-create index len on words(len);
+create table words(word varchar, revword varchar, len integer, primary key(word))
+alter index words on words partition (word varchar);
+
+create index revword on words(revword) partition (revword varchar);
+create index len on words(len) partition (len int);
 foreach line in words.esp
  insert into words(word,revword,len) values(?,revstr(?1),length(?1));
 

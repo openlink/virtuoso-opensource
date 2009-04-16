@@ -192,7 +192,7 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": Bugzilla #4604 create user : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
-select u_name, u_group, USERS_GET_DEF_QUAL (u_data) from sys_users;
+select u_name, u_group, adm_users_def_qual(u_data) from sys_users;
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": Bugzilla #4604 select from sys_user : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";

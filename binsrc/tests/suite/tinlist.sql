@@ -14,6 +14,9 @@ select * from tinl where k1 in (1, 1+1, 3, 4);
 echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
 echo both ": 1st key in list \n";
 
+select * from tinl where k1 in (1, vector (1+1, 3), 4);
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+echo both ": 1st key in list 2-d element is array \n";
 
 select * from tinl where k1 in (1, 1+1, 3, 4) and k2 in (2, 4);
 echo both $if $equ $last[1] 2 "PASSED" "***FAILED";

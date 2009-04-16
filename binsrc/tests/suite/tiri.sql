@@ -27,7 +27,7 @@
 drop table it;
 drop table at;
 drop table it2;
-create table it (i IRI_ID primary key);
+create table it (i IRI_ID_8 primary key);
 create table at (i any primary key);
 
 
