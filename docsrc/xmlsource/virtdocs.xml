@@ -295,6 +295,10 @@
 <!ENTITY rdf_64bit_upgrade              	SYSTEM "funcref/rdf_64bit_upgrade.xml">
 <!ENTITY rdf_convert_rdfxml_to_ttl      	SYSTEM "funcref/rdf_convert_rdfxml_to_ttl.xml">
 
+<!ENTITY iri_split                              SYSTEM  "funcref/iri_split.xml">
+<!ENTITY xml_get_ns_prefix                      SYSTEM  "funcref/xml_get_ns_prefix.xml">
+<!ENTITY xml_get_ns_uri                         SYSTEM  "funcref/xml_get_ns_uri.xml">
+
 <!ENTITY sparql_eval                    	SYSTEM "funcref/sparql_eval.xml">
 <!ENTITY sparql_eval_to_array           	SYSTEM "funcref/sparql_eval_to_array.xml">
 <!ENTITY sparql_rexec                   	SYSTEM "funcref/sparql_rexec.xml">

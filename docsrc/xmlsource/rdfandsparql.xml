@@ -6882,7 +6882,488 @@ sparql clear graph <A-Named-Graph>;
 </para>
 </sect5>
 </sect4>
-
+</sect3>
+<sect3 id="virtuosospongerfacent">
+<title>Virtuoso Facets Web Service</title>
+<para>The Virtuoso Facets web service is a general purpose RDF query facility for facet based browsing.
+It takes an XML description of the view desired and generates the reply as an XML tree containing the
+requested data. The user agent or a local web page can use XSLT for rendering this for the end user.
+The selection of facets and values is represented as an XML tree. The rationale for this is the fact
+that such a representation is easier to process in an application than the SPARQL source text or a
+parse tree of SPARQL and more compactly captures the specific subset of SPARQL needed for faceted
+browsing. The web service returns the SPARQL source text also, thus this can serve as a basis for
+and-crafted queries.</para>
+<para>The top element of the tree is &lt;query&gt;, it must be in namespace
+"http://openlinksw.com/services/facets/1.0/".</para>
+<para>This has the following attributes:</para>
+<itemizedlist mark="bullet">
+  <listitem>graph="graph_iri" - default is search in all graphs but system defaults may override this</listitem>
+  <listitem>timeout="no_of_msec" - default is no timeout, but system defaults may override this</listitem>
+  <listitem>inference="name" where name is a name of an inference context declared with rdfs_rule_set.</listitem>
+  <listitem>same-as="boolean" - If "boolean" is "yes", then owl:sameAs links will be considered in the query evaluation.</listitem>
+</itemizedlist>
+<para>The result is a tree of the form:</para>
+<programlisting><![CDATA[
+<facets xmlns="http://openlinksw.com/services/facets/1.0/">
+<result><row><column datatype="..." shortform="..." xml:lang="..">...</column></row></result>
+<time>msecs</time>
+<complete>yes or no</complete>
+<db-activity>resource use string</db-activity>
+<sparql>sparql statement text</sparql>
+</facets>
+]]></programlisting>
+<para>By convention, the first column is the subject selected by the view element, typically a URI, the second a label of the URI
+and the third, if present, is either a count or a search summary.</para>
+<para>The first column's text child is the text form of the value. The column element has the following attributes
+qualifying this further:</para>
+<itemizedlist mark="bullet">
+  <listitem>datatype - The xsd type of the value. If this is a URI, the datatype is "uri" </listitem>
+  <listitem>shortform - If the value is a URI, this is an abbreviated form where known namespaces are replaced with
+their prefixes and very long URI's are truncated preserving start and end. </listitem>
+  <listitem>xml:lang - if the value is a language tagged string, this is the language</listitem>
+</itemizedlist>
+<para>The query has the top level element &lt;query&gt;. The child elements of this represent conditions
+pertaining to a single subject. A join is expressed with the property or property-of element. This has
+in turn children which state conditions on a property of the first subject. property and property-of
+elements can be nested to an arbitrary depth and many can occur inside one containing element. In this way,
+tree-shaped structures of joins can be expressed.</para>
+<para>Expressing more complex relationships, such as intermediate grouping, subqueries, arithmetic or
+such requires writing the query in SPARQL. The XML format is a shorthand for easy automatic composition
+of queries needed for showing facets, not a replacement for SPARQL.</para>
+<para>A facet query contains a single view element. This specifies which subject of the joined
+subjects is shown. Its attributes specify the manner of viewing, e.g. list of distinct values, distinct
+values with occurrence counts, properties or classes of the selected subjects etc.</para>
+<para>The top query element or any property or property-of element can have the following types of children:</para>
+<programlisting><![CDATA[
+<text property="iri">text pattern</text>
+]]></programlisting>
+<para>The subject has an O that matches the text pattern. If property is given, the text pattern must
+occur in a value of this property. If not specified, any property will do. The value "none" for property
+is the same as not specifying a property. This is restricted to occurring directly under the top level
+query element.</para>
+<programlisting><![CDATA[
+<class iri="iri" inference="ctx_name" />
+]]></programlisting>
+<para>The S must be an instance of this class. If infertence is specified then option (input:inference
+"ctx_name" is added and applies to this pattern alone.</para>
+<programlisting><![CDATA[
+<property iri="iri" same_as="yes" inference="ctx_name">]]></programlisting>
+<para>The child elements of this are conditions that apply to the value of this property of the S that
+is in scope in the enclosing &lt;query&gt; or &lt;property&gt; element. If same_as is present, then
+option (input:same-as "yes") is added to the triple pattern which specifies this property. If inference
+is present, then option (input:inference "ctx_name") is added to the triple pattern for the property.</para>
+<programlisting><![CDATA[
+<property-of iri="iri" same_as="yes" inference="ctx_name" >
+]]></programlisting>
+<para>The child elements of this are conditions that apply to an S which has property "iri" whose object
+is the S in scope in the enclosing &lt;query&gt; or &lt;property&gt; element. The options are otherwise
+the same as with property.</para>
+<programlisting><![CDATA[
+<value datatype="type" xml:lang="lng" op="= | < | > | >= | <=">value </value>
+]]></programlisting>
+<para>When this occurs inside &lt;property&gt; or &lt;property-of&gt; this means that the property in
+scope has the specified relation to the value. type and language can be used for XML typed or language
+tagged literals. The "uri" type means that the value is a qualified name of a URI. If this occurs
+directly under the &lt;query&gt; element, this means that the query starts with a fixed subject.
+If this is so, then there must be property or propertyof elements or the view element must specify
+properties or classes, list is not allowed as a view type. This is so because the query must have
+at least one triple pattern.</para>
+<programlisting><![CDATA[
+<view type="view" limit="n" offset="n" >
+]]></programlisting>
+<para>This may occur once inside a &lt;query&gt; element but may occur either at top level or inside
+property or property-of elements. This specifies what which subject is presented in the result set.</para>
+<para>The type can be:</para>
+<itemizedlist mark="bullet">
+  <listitem>"properties"
+<programlisting><![CDATA[
+select ?p count (*) { ?this_s ?p ?any_o ...}
+group by ?p
+order by desc 2
+limit l offset o
+]]></programlisting>
+  </listitem>
+  <listitem>"properties-in
+<programlisting><![CDATA[
+select ?p count (*) { ?any_s ?p ?this_s ... }
+group by ?p
+order by desc 2
+limit l offset o
+]]></programlisting>
+  </listitem>
+  <listitem>"classes"
+<programlisting><![CDATA[
+select ?c count (*)
+where { ?xx a ?c ... }
+group by ?c order by desc 2 limit l offset o
+]]></programlisting>
+  </listitem>
+  <listitem>"text"
+<programlisting><![CDATA[
+select distinct ?s (bif:search_excerpt (sql:search_terms (""pattern"), ?o)) ...
+limit l offset o
+]]></programlisting>
+  </listitem>
+  <listitem>"list"
+<programlisting><![CDATA[
+select distinct ?s long::sql:fct_label (?s) ...
+limit l offset o
+]]></programlisting>
+  </listitem>
+  <listitem></listitem>
+  <listitem>"list-count"
+<programlisting><![CDATA[
+select ?s count (*) ....
+group by ?s
+order by desc 2
+]]></programlisting>
+  </listitem>
+  <listitem>"alphabet"
+<programlisting><![CDATA[
+select (sql:subseq (?s, 0, 1)) count (*) ...
+group by (sql:subseq (?s, 0, 1))
+order by 1
+]]></programlisting>
+  </listitem>
+  <listitem>"geo"
+<programlisting><![CDATA[
+select distinct ?lat ?long ?s
+where ?s geo:lat ?lat . ?s geo:long ?long . ... }
+]]></programlisting>
+  </listitem>
+  <listitem>"years"
+<programlisting><![CDATA[
+select sql::year (?s) count (*) ...
+group by (bif:year (?s))
+order by 1
+offset o limit l
+]]></programlisting>
+  </listitem>
+  <listitem>"months"
+<programlisting><![CDATA[
+select sql::round_month (?s) count (*) ...
+group by (sql:round_month (?s))
+order by 1 offset o limit l
+]]></programlisting>
+  </listitem>
+  <listitem>"weeks"
+<programlisting><![CDATA[
+select sql::round_week (?s) count (*) ...
+group by (sql:round_week (?s)) order by 1 offset o limit l
+]]></programlisting>
+  </listitem>
+  <listitem>"describe"
+<programlisting><![CDATA[
+describe ?s ... offset o limit l
+]]></programlisting>
+  </listitem>
+</itemizedlist>
+<sect4 id="virtuosospongerfacentcust">
+  <title>Customizing</title>
+  <para>The following types of customization will be generally useful:</para>
+  <itemizedlist mark="bullet">
+    <listitem>Resource accounting and limitations, managing access and login</listitem>
+    <listitem>Localization, choice of labels shown with class/property/instance URI's</listitem>
+    <listitem>Adding types of views, for example timelines, map or business graphics </listitem>
+    <listitem>Controlling navigation, for example choosing what type of view is initially presented when opening a given property.</listitem>
+    <listitem>Page layout, captions, help texts, etc.</listitem>
+  </itemizedlist>
+  <para>The source code is deivided in two SQL files and a number of XSLT sheets. The file facet.sql has the code for the web service. The
+facet_view.sql file contains the procedures for the sample HTML interface.</para>
+</sect4>
+<sect4 id="virtuosospongerfacentexamples">
+  <title>Examples</title>
+<para>Note: in all examples the default namespace xmlns="http://openlinksw.com/services/facets/1.0/" is omitted for brevity.</para>
+<para>For people called Mike:</para>
+<programlisting><![CDATA[
+<query>
+  <text>Mike</text>
+  <view type="text"/>
+</query>
+]]></programlisting>
+<para>To open the list of people who Mike knows:</para>
+<programlisting><![CDATA[
+<query>
+  <text>Mike</text>
+  <view type="properties"/>
+</query>
+]]></programlisting>
+<para>To show the list of subjects Mike knows:</para>
+<programlisting><![CDATA[
+<query>
+  <text>Mike</text>
+  <property iri="foaf:knows>
+    <view type="list" />
+  </property>
+</query>
+]]></programlisting>
+<para>To show the properties of people Mike knows:</para>
+<programlisting><![CDATA[
+<query>
+  <text>Mike</text>
+  <property iri="foaf:knows>
+    <view type="properties" />
+  </property>
+</query>
+]]></programlisting>
+<para>To show the names:</para>
+<programlisting><![CDATA[
+<query>
+  <text>Mike</text>
+  <property iri="foaf:knows>
+    <property iri="foaf:name>
+      <view type="list" />
+    </property>
+  </property>
+</query>
+]]></programlisting>
+<para>To specify one named Joe:</para>
+<programlisting><![CDATA[
+<query>
+  <text>Mike</text>
+  <property iri="foaf:knows>
+     <property iri="foaf:name>
+        <value>Joe</value>
+     </property>
+    <view type="properties" />
+  </property>
+</query>
+]]></programlisting>
+<para>This lists the properties of the friends of Mike that are called Joe.</para>
+<para>To show the Mikes that know a Joe, one would change the shown variable in the navigation and get:</para>
+<programlisting><![CDATA[
+<query>
+  <text>Mike</text>
+  <property iri="foaf:knows>
+    <property iri="foaf:name>
+      <value>Joe</value>
+    </property>
+   </property>
+   <view type="text" />
+</query>
+]]></programlisting>
+<para>This would be the search summaries of subjects with Mike in some field that know a subject with name Joe.</para>
+<para>Now to specify that Mike must be a member of a discussion board:</para>
+<programlisting><![CDATA[
+<query>
+  <text>Mike</text>
+  <property iri="foaf:knows>
+    <property iri="foaf:name>
+     <value>Joe</value>
+   </property>
+  </property>
+  <view type="property-of" />
+</query>
+]]></programlisting>
+<para>This lists the properties of triples whom object is Mike. Pick sioc:member_of</para>
+<programlisting><![CDATA[
+<query>
+  <text>Mike</text>
+  <property iri="foaf:knows>
+    <property iri="foaf:name>
+      <value>Joe</value>
+    </property>
+  </property>
+  <property-of iri="sioc:member_of>
+    <view type="list" />
+  </property-of>
+</query>
+]]></programlisting>
+<para> This would show things where Mike is a member. To specify that the thing must be a forum:</para>
+<programlisting><![CDATA[
+<query>
+  <text>Mike</text>
+  <property iri="foaf:knows>
+    <property iri="foaf:name>
+      <value>Joe</value>
+    </property>
+  </property>
+  <property-of iri="sioc:member_of>
+    <view type="classes" />
+  </property-of>
+</query>
+]]></programlisting>
+<para>This shows classes of things where Mike is a member Clicking on sioc:Forum gives:</para>
+<programlisting><![CDATA[
+<query>
+  <text>Mike</text>
+  <property iri="foaf:knows>
+    <property iri="foaf:name>
+      <value>Joe</value>
+    </property>
+  </property>
+  <property-of iri="sioc:member_of>
+    <class iri="sioc:Forum" />
+    <view type="classes"/>
+  </property-of>
+</query>
+]]></programlisting>
+<para>The view stays with classes, but now scoped
+to the classes of things where Mike is a member that are instances of sioc:Forum.</para>
+<para>To go look at the list of Mikes with the added
+restriction, click the shown variable in the navigation and set it to s1.</para>
+<programlisting><![CDATA[
+<query>
+  <text>Mike</text>
+  <property iri="foaf:knows>
+    <property iri="foaf:name>
+      <value>Joe</value>
+    </property>
+  </property>
+  <property-of iri="sioc:member_of>
+   <class iri="sioc:Forum" />
+  </property-of>
+  <view type="list"/>
+</query>
+]]></programlisting>
+<para>To say that Joe must also have a geekCode, One clicks the shown variable and sets it to s2 and the view to properties.</para>
+<programlisting><![CDATA[
+<query>
+  <text>Mike</text>
+  <property iri="foaf:knows>
+    <property iri="foaf:name>
+      <value>Joe</value>
+    </property>
+    <view type="properties"/>
+  </property>
+  <property-of iri="sioc:member_of>
+    <class iri="sioc:Forum" />
+   </property-of>
+</query>
+]]></programlisting>
+<para>Pick geekCode</para>
+<programlisting><![CDATA[
+<query>
+  <text>Mike</text>
+  <property iri="foaf:knows>
+    <property iri="foaf:name>
+      <value>Joe</value>
+    </property>
+    <property iri="geekCode">
+      <view type="list"/>
+    </property>
+  </property>
+  <property-of iri="sioc:member_of>
+    <class iri="sioc:Forum" />
+  </property-of>
+</query>
+]]></programlisting>
+<para>We specify no restriction on the geekCode. Click the shown variable to take the focus back to Mike.</para>
+<programlisting><![CDATA[
+<query>
+  <text>Mike</text>
+  <property iri="foaf:knows>
+    <property iri="foaf:name>
+      <value>Joe</value>
+    </property>
+    <property iri="geekCode"></property>
+  </property>
+  <property-of iri="sioc:member_of>
+    <class iri="sioc:Forum" />
+  </property-of>
+  <view type="text"/>
+</query>
+]]></programlisting>
+</sect4>
+<sect4 id="virtuosospongerfacentui">
+  <title>WebService Interface</title>
+<sect5 id="virtuosospongerfacentuirest">
+  <title>REST interface</title>
+  <para>The Virtuoso Facets web service provide following REST interface:</para>
+  <para>Service description:</para>
+<itemizedlist mark="bullet">
+  <listitem>Endpoint: http://&lt;cname&gt;/fct/service for ex. http://lod.openlinksw.com/fct/service </listitem>
+  <listitem>HTTP method: POST</listitem>
+  <listitem>Content-Type: MUST be 'text/xml'</listitem>
+  <listitem>The entity body must be XML document with top element 'query' as described above.</listitem>
+  <listitem>The request response namespace MUST be "http://openlinksw.com/services/facets/1.0"</listitem>
+</itemizedlist>
+  <para>Error conditions:</para>
+  <para>The all error conditions are reported via 'Error explanation'</para>
+  <para>Files:</para>
+  <para>The facet_svc.sql contains web service code and virtual directory mapping, and it uses
+fct_req.xsl &amp; fct_resp.xsl as request &amp; response filters.</para>
+  <para>Example:</para>
+  <para>Using CURL program</para>
+<programlisting><![CDATA[
+curl -H "Content-Type: text/xml" -d @post.xml  http://lod.openlinksw.com/fct/service
+]]></programlisting>
+  <para>Where 'post.xml' document contains query document:</para>
+<programlisting><![CDATA[
+<?xml version="1.0"?>
+<query xmlns="http://openlinksw.com/services/facets/1.0" inference="" same-as="">
+  <text> Seattle Mariners traveled all the way to Japan to watch</text>
+  <view type="text" limit="20" offset=""/>
+</query>
+]]></programlisting>
+  <para>Produces following response:</para>
+<programlisting><![CDATA[
+<fct:facets xmlns:fct="http://openlinksw.com/services/facets/1.0/">
+<fct:sparql>   select distinct ?s1 as ?c1, (bif:search_excerpt (bif:vector ('THE', 'MARINERS', 'WAY', 'SEATTLE', 'WATCH', 'ALL', 'TO', 'JAPAN', 'TRAVELED'), ?o1)) as ?c2  where { ?s1 ?s1textp ?o1 . filter (bif:contains (?o1, '(THE AND MARINERS AND WAY AND SEATTLE AND WATCH AND ALL AND TO AND JAPAN AND TRAVELED)')) . } limit 20  offset 0 </fct:sparql>
+<fct:time>116</fct:time>
+<fct:complete>yes</fct:complete>
+<fct:db-activity>   134R rnd  9.488KR seq      0P disk  8.966MB /    602 messages</fct:db-activity>
+ <fct:result>
+  <fct:row>
+    <fct:column datatype="url" shortform="http://bobdupuy.mlbl...ld_baseball__6.html">http://bobdupuy.mlblogs.com/bobdupuy/2006/03/world_baseball__6.html></fct:column>
+    <fct:column />
+    <fct:column><span class="srch_xerpt">... While Chuck Armstrong president of <b>the</b> <b>Seattle</b> <b>Mariners</b> <b>traveled</b> <b>all</b> <b>the</b> <b>way</b> <b>to</b> <b>Japan</b> <b>to</b> <b>watch</b> Ichiro... for <b>the</b> advancing <b>Japan</b> team last week <b>the</b> star from <b>the</b> <b>Seattle</b> roster so far in Round 1 has without a doubt... leading <b>the</b> Dominican <b>to</b> its...</span></fct:column>
+  </fct:row>
+  <fct:row>
+    <fct:column datatype="url" shortform="http://bobdupuy.mlbl...ld_baseball__6.html">http://bobdupuy.mlblogs.com/bobdupuy/2006/03/world_baseball__6.html></fct:column>
+    <fct:column />
+    <fct:column><span class="srch_xerpt">Orlando While Chuck Armstrong president of <b>the</b> <b>Seattle</b> <b>Mariners</b> <b>traveled</b> <b>all</b> <b>the</b> <b>way</b> <b>to</b> <b>Japan</b> <b>to</b> <b>watch</b>... perform for <b>the</b> advancing <b>Japan</b> team last week <b>the</b> star from <b>the</b> <b>Seattle</b> roster so far in Round 1 has without...</span></fct:column>
+  </fct:row>
+ </fct:result>
+</fct:facets>
+]]></programlisting>
+</sect5>
+<sect5 id="virtuosospongerfacentuirest">
+  <title>SOAP interface</title>
+<para>The facet web service is also available via SOAP protocol.</para>
+<para>The request message contains single element 'query' with syntax explained earlier. Also the
+SOAPAction HTTP header should be '#query' . After successful evaluation of the query, the service
+will return a SOAP envelope containing in the Body element single 'facets' element described above.</para>
+<para>Example:</para>
+<para>This example shows execution of same command as in example for REST interface here it using SOAP:</para>
+<para>Request message:</para>
+<programlisting><![CDATA[
+<SOAP:Envelope xmlns:SOAP="http://schemas.xmlsoap.org/soap/envelope/">
+  <SOAP:Body>
+    <query xmlns="http://openlinksw.com/services/facets/1.0/" inference="" same-as="">
+      <text>Seattle Mariners traveled all the way to Japan to watch</text>
+      <view type="text" limit="20" offset="0"/>
+    </query>
+  </SOAP:Body>
+</SOAP:Envelope>
+]]></programlisting>
+<para>Response message:</para>
+<programlisting><![CDATA[
+<SOAP:Envelope xmlns:SOAP="http://schemas.xmlsoap.org/soap/envelope/">
+  <SOAP:Body>
+    <fct:facets xmlns:fct="http://openlinksw.com/services/facets/1.0/">
+      <fct:sparql>select distinct ?s1 as ?c1, (bif:search_excerpt (bif:vector ('THE', 'MARINERS', 'WAY', 'SEATTLE', 'WATCH', 'ALL', 'TO', 'JAPAN', 'TRAVELED'), ?o1)) as ?c2  where { ?s1 ?s1textp ?o1 . filter (bif:contains (?o1, '(THE AND MARINERS AND WAY AND SEATTLE AND WATCH AND ALL AND TO AND JAPAN AND TRAVELED)')) . } limit 20  offset 0</fct:sparql>
+      <fct:time>114</fct:time>
+      <fct:complete>yes</fct:complete>
+      <fct:db-activity>   134R rnd  9.488KR seq      0P disk  8.966MB /    602 messages</fct:db-activity>
+      <fct:result>
+        <fct:row>
+          <fct:column datatype="url" shortform="http://bobdupuy.mlbl...ld_baseball__6.html">http://bobdupuy.mlblogs.com/bobdupuy/2006/03/world_baseball__6.html</fct:column>
+          <fct:column/>
+          <fct:column><span class="srch_xerpt">... While Chuck Armstrong president of <b>the</b> <b>Seattle</b> <b>Mariners</b> <b>traveled</b> <b>all</b> <b>the</b> <b>way</b> <b>to</b> <b>Japan</b> <b>to</b> <b>watch</b> Ichiro... for <b>the</b> advancing <b>Japan</b> team last week <b>the</b> star from <b>the</b> <b>Seattle</b> roster so far in Round 1 has without a doubt... leading <b>the</b> Dominican <b>to</b> its...</span></fct:column>
+        </fct:row>
+        <fct:row>
+          <fct:column datatype="url" shortform="http://bobdupuy.mlbl...ld_baseball__6.html">http://bobdupuy.mlblogs.com/bobdupuy/2006/03/world_baseball__6.html</fct:column>
+          <fct:column/>
+          <fct:column><span class="srch_xerpt">Orlando While Chuck Armstrong president of <b>the</b> <b>Seattle</b> <b>Mariners</b> <b>traveled</b> <b>all</b> <b>the</b> <b>way</b> <b>to</b> <b>Japan</b> <b>to</b> <b>watch</b>... perform for <b>the</b> advancing <b>Japan</b> team last week <b>the</b> star from <b>the</b> <b>Seattle</b> roster so far in Round 1 has without...</span></fct:column>
+        </fct:row>
+      </fct:result>
+    </fct:facets>
+  </SOAP:Body>
+</SOAP:Envelope>
+]]></programlisting>
+</sect5>
+</sect4>
 </sect3>
  </sect2>
  <sect2 id="rdfenterpriseandintegration">
@@ -26265,6 +26746,198 @@ http://dbpedia.org/resource/BMW_R75
 4 Rows. -- 26 msec.
 ]]></programlisting>
 </sect2>
+
+  <sect2 id="rdfsparqlruleinversefunc"><title>Identity With Inverse Functional Properties </title>
+  <para>A graph used used with rdfs_rule_set may declare certain proprties to
+  be inversely functional. If one or more inverse functional properties (IFP's)
+  are declared in the inference context used with the query, enabled
+  with define input:inference = "context_name", then the following
+  samantics apply:</para>
+  <orderedlist>
+  <listitem>If a literal is compared with an IRI, then the literal is substituted by all the subject IRI's where this literal occurs as a value of an IFP.</listitem>
+  <listitem>If two IRI's are compared for equality, they will be considererd the same if there is an IFP P such that the same P has the same value on both subjects.</listitem>
+  <listitem>If an IRI is processed for distinctness in either distinct or group by, the IRI is first translated to be the IRI with the lowest ID among all IRI's that share an IFP value with this IRI.</listitem>
+  </orderedlist>
+  <para>Thus, if two IRI's are compared for distinctness, they will count as one if there is an IFP P with the same value with both IRI's. Literal data types are not translated into IRI's even if these literals occurred as IFP values of some subject.</para>
+  <para>It is possible to declare that specific values, even if they occur as values of an IFP in more than onme subject do not constitute identity between the subjects.
+  For example, if two subjects were inferred to be the same because they had the same foaf:mbox_sha1sum, the SHA1 hash of mailto:// would be excluded. Two individuals have an email address that has a common default value are not the same.
+  </para>
+  <para>In an ontology graph, a property IRI is declared to be inversely
+  functional by making it an instance of the
+  owl:InverseFunctionalProperty class. A value of an IFP can be
+  declared null, i.e. sharing the value does not imply identity by by
+  giving the IFP IRI a
+  &lt;http://www.openlinksw.com/schemas/virtrdf#nullIFPValue> property with
+  the value to be ignored as the object.
+  </para>
+  <emphasis>Example</emphasis>
+  <programlisting><![CDATA[
+  ttlp ('
+  <john1> a <person> .
+  <john2> a <person> .
+  <mary> a <person> .
+  <mike> a <person> .
+  <john1> <name> "John" .
+  <john2> <name> "John" .
+  <john1> <address> "101 A street" .
+  <john2> <address> "102 B street" .
+  <john2> <knows> <mike> .
+  <john1> <http://www.w3.org/2002/07/owl#sameAs> <john2> .
+  <mary> <knows> "John" .
+  <mike> <knows> <john1> .
+  <mike> <knows> <john2> .
+  <john1> <name> "Tarzan" .
+  <mike> <nam> "Tarzan" .
+  ', '', 'ifps');
+
+
+  ttlp ('
+  <name> a <http://www.w3.org/2002/07/owl#InverseFunctionalProperty> .
+  <name> <http://www.openlinksw.com/schemas/virtrdf#nullIFPValue> "Tarzan" .
+  ', '', 'ifp_list');
+
+  rdfs_rule_set ('ifps', 'ifp_list');
+
+  sparql define input:inference 'ifps'  select * from <ifps> where {<john1> ?p ?o};
+
+  p                                                                                 o
+  VARCHAR                                                                           VARCHAR
+  _______________________________________________________________________________
+
+  address                                                                           101 A street
+  name                                                                              John
+  http://www.w3.org/2002/07/owl#sameAs                                              john2
+  http://www.w3.org/1999/02/22-rdf-syntax-ns#type                                   person
+  name                                                                              Tarzan
+  name                                                                              John
+  knows                                                                             mike
+  http://www.w3.org/1999/02/22-rdf-syntax-ns#type                                   person
+  address                                                                           102 B street
+  ]]></programlisting>
+  <para>We see that we get the properties of &lt;john2> also.</para>
+  <programlisting><![CDATA[
+  sparql define input:inference "ifps" select distinct ?p from <ifps> where { ?p a <person>};
+
+  john2
+  mike
+  mary
+  ]]></programlisting>
+  <para>We see that we get only one John. But John is not the same as Mike
+  because they share the name Tarzan which is not considered as implying
+  identity. Which John we get is a matter of which gets the lowest
+  internal ID. This is variable and arbitrary at load time but once
+  loaded this is permanent as long as the set of subjects with the name
+  John does not change.</para>
+  </sect2>
+  <sect2 id="rdfsparqlruletransitivy"><title>Transitivity in SPARQL</title>
+  <para>Virtuoso SPARQL allows access to Virtuoso's SQL transitivity extension. Read the SQL section for a definition of the options.
+  The SPARQL syntax is slightly different from the SQL, although the option names and meanings are the same.
+  </para>
+  <para>In SPARQL, the transitive options occur after a subquery enclosed in braces:</para>
+  <para>The below produces all the IRI's that are the same as &lt;alice >.</para>
+  <programlisting><![CDATA[
+  select ?syn where {
+  {select ?syn where { { select ?x ?syn where {{ ?x owl:sameAs ?syn } union { ?syn owl:sameAs ?x}}  }option (transitive t_in (?x), t_out (?syn), t_distinct, t_min (0) ) } .
+  filter (?x = <alice>)}
+  ]]></programlisting>
+  <para>In this case, we provide a binding for ?x in the filter outside of the
+  transitive subquery. The subquery therefore is made to run from in to
+  out. The same effect would be accomplished if we bound ?syn and
+  select ?x, the designations of in and out are arbitrary and for
+  transitive steps that can be evaluated equally well in both directions
+  this makes no difference.
+  </para>
+  <para>The transitive subquery in the above is </para>
+  <programlisting><![CDATA[
+  {select ?syn where { { select ?x ?syn where {{ ?x owl:sameAs ?syn } union { ?syn owl:sameAs ?x}}  }option (transitive t_in (?x), t_out (?syn), t_distinct, t_min (0) ) } .
+  ]]></programlisting>
+  <para>Leaving out the option would just look for one step of owl:sameAs.
+  Making it transitive will apply the subquery to all bindings it
+  produces until all are visited at least once (the t_distinct modifier).
+  </para>
+  <para>If the transitive step consists of a single triple pattern, there is a shorthand:</para>
+  <programlisting><![CDATA[
+  <alice> foaf:knows ?friend option (transitive t_min (1))
+  ]]></programlisting>
+  <para>will bind ?friend to all directly and indirectly found foaf:known
+  individuals. If t_min had been 0, Malice> would have also been in the
+  generated bindings.</para>
+  <para>The syntax is</para>
+  <programlisting><![CDATA[
+  option (transitive transitivity_option[,...])
+
+  transitivity_option ::=  t_in (<variable_list>)
+  | t_out (<variable_list>)
+  | t_distinct
+  | t_shortest_only
+  | t_no_cycles
+  | t_cycles_only
+  | t_min (INTNUM)
+  | t_max (INTNUM)
+  | t_end_flag (<variable>)
+  | t_step (<variiable_or_step>)
+  | t_direction INTNUM
+
+  variable_list ::= <variable> [,...]
+
+  variable_or_step ::= <variable> | path_id' | 'step_no'
+  ]]></programlisting>
+  <para>Unlike SQL, variable names are used instead of column numbers.
+  Otherwise all the options have the same meaning.</para>
+  <para>Some examples of the use of transitivity are:</para>
+  <para>To find out what graphs contain owl:sameAs for Dan York, we do</para>
+  <programlisting><![CDATA[
+   select ?g count (*) where {
+   {select ?x ?alias ?g where {{ graph ?g {?x owl:sameAs ?alias }} union {graph ?g {?alias owl:sameAs ?x}}}}
+  	option (transitive, t_in (?x), t_out (?alias), t_distinct, t_min (1)) .
+   filter (?x = <http://www.advogato.org/person/dyork/foaf.rdf#me> ) .
+  } group by ?g order by desc 2 limit 30;
+  ]]></programlisting>
+  <para>Here we select all paths that start with the initial URI and pass
+  through one or more sameAs statements. Each step produces a result of
+  the transitive subquery. The graph where the sameAs triple was found
+  is returned and used as the grouping column. In this way we see how
+  many times each graph is used. Note that graphs are counted many
+  times since the graphs comtaining immediate sameAs statements are
+  counted for paths of length 1, then again as steps on paths that reach
+  to their aliases and so on.</para>
+  <programlisting><![CDATA[
+  select ?o ?dist ((select count (*) where {?o foaf:knows ?xx}))
+  where   {
+      {       select ?s ?o
+        where
+          {           ?s foaf:knows ?o         }
+      }     option (transitive, t_distinct, t_in(?s), t_out(?o), t_min (1), t_max (4), t_step ('step_no') as ?dist) .
+      filter (?s= <http://myopenlink.net/dataspace/person/kidehen#this>)
+    } order by ?dist desc 3 limit 50
+
+  ]]></programlisting>
+  <para>This query takes all the people known by kidehen, to a depth between 1
+  and 4 applications of the subquery. It then sorts them by the
+  distance and the descending count of connections of each found connection. This is
+  equivalent to the default connections list shown by LinkedIn.</para>
+  <para>To find how two people know each other and what graphs are involved in the connection, we do:</para>
+  <programlisting><![CDATA[
+  select ?link ?g ?step ?path
+  where  {
+      {      select ?s ?o ?g
+        where        {
+            graph ?g {?s foaf:knows ?o }}
+      } option (transitive, t_distinct, t_in(?s), t_out(?o), t_no_cycles, T_shortest_only,
+         t_step (?s) as ?link, t_step ('path_id') as ?path, t_step ('step_no') as ?step, t_direction 3) .
+      filter (?s= <http://myopenlink.net/dataspace/person/kidehen#this>
+  	&& ?o = <http://www.advogato.org/person/mparaz/foaf.rdf#me>)
+    } limit 20
+  ]]></programlisting>
+  <para>This query binds both the t_in and t_out variables. The ?g is left as
+  a free variable. Also, specifying ?s and the system defined constants
+  step_no and path_id as with t_step, we get for each transitive step a
+  row of results with the intermediate binding of ?s, the count of steps
+  from the initial ?s and a distinct identifier for the individual path,
+  since there can be many distinct paths that link the ?s and ?o
+  specified in the filter.</para>
+  <para>See the SQL transitive option section for details on the meaning of step_no and path_id.</para>
+  </sect2>
 </sect1>
 
 

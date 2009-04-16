@@ -386,6 +386,9 @@ create view sys_d_stat as
 These views offer detailed statistics on index access locality, lock contention and
 disk usage.
 </para>
+ <para>
+ 'reset' specified as the stat name will reset all counts for  the key in question.
+ </para>
 		</sect4>
 		<sect4 id="keystats">
 			<title>SYS_K_STAT - Key statistics</title>
@@ -966,4 +969,41 @@ select s_quantity from stock where s_i_id = 111 for update;
     locking since locking issues are timing sensitive.</para>
 
   </sect3>
+
+    <sect3 id="clientlevelresourceaccounting"><title>Client Level Resource Accounting</title>
+  <para>Starting with version 6, Virtuoso keeps track of the count of basic database operations performed on behalf of each connected client.
+  The resource use statistics are incremented as work on the connection proceeds. The db_activity () function can be called to return the accumulated operation counts and to optionally reset these.
+  </para>
+  <para>The db_activity built-in function has one optional argument. The possible values are:</para>
+  <itemizedlist>
+  <listitem>0 - (default) - Return human readable string and reset the counts.</listitem>
+  <listitem>1 - return an array of numbers and reset the counts.</listitem>
+  <listitem>2 - return a human readable string and leave the counts.</listitem>
+  <listitem>3 - return an array of numbers and leave the counts.</listitem>
+  </itemizedlist>
+  <para>The human readable string is of the form:</para>
+  <programlisting><![CDATA[
+   22.56MR rnd  1.102GR seq     10P disk  1.341GB /  102.7K messages
+  ]]></programlisting>
+  <para>The postfixes K, M, G, T mean  10^3 to 10^15, except when applied to bytes, where these mean consecutive powers of 1024.</para>
+  <para>The numbers, left to right are the count of random row lookups,
+  sequential row lookups, disk page reads, cluster inter-node traffic in
+  bytes and cluster inter-node message count as an integer number of
+  messages. If the configuration is a single server, the two last are 0.
+  </para>
+  <para>The random and sequential lookup counts are incremented regardless of whether the row was found or not or whether it matched search conditions.</para>
+  <para>If the information is retrieved as an array, the array contains integer numbners representing these plus some more metrics.</para>
+  <para>Index  - Meaning</para>
+  <itemizedlist>
+  <listitem>0 - Random lookups</listitem>
+  <listitem>1 - sequential lookups</listitem>
+  <listitem>3 - lock waits</listitem>
+  <listitem>4 - total msec spent in lock wait on some thread. In a cluster situation, this may be more than elapsed real time.</listitem>
+  <listitem>5 - Disk reads</listitem>
+  <listitem>6 - Speculative disk reads. These are also counted in disk reads. A speculative read is a prefetch made on the basis of a read history of a disk extent.</listitem>
+  <listitem>7 - Cluster inter node message count</listitem>
+  <listitem>8 - Total bytes sent in cluster inter node traffic. A message is counted once, when sent.</listitem>
+  </itemizedlist>
+  <para>If the thread calling db_activity is a web server thread, the totals are automatically reset when beginning the processing of the current web request.</para>
+    </sect2>
   </sect2>

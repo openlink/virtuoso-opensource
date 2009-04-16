@@ -165,6 +165,10 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &rdf_convert_rdfxml_to_ttl;
 
 
+&iri_split;&xml_get_ns_prefix;&xml_get_ns_uri;
+
+
+
 &sparql_eval;&sparql_eval_to_array;&sparql_rexec;&sparql_rexec_to_array;
 &sparql_rexec_with_meta;&rdf_regex;&rdf_langmatches;
 &rdf_ttl2hash;&rdf_quad_uri;&rdf_quad_uri_l;&rdf_quad_uri_l_typed;
