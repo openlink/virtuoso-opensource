@@ -499,7 +499,7 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation, unsigned short o
   dtp_t dtp2 = *dv2;
   int32 n1 = 0, n2 = 0;			/*not used before set */
   db_buf_t org_dv1 = dv1;
-  int64 ln1, ln2;
+  int64 ln1 = 0, ln2 = 0;
 
 
   if (dtp1 == dtp2)
@@ -3131,7 +3131,6 @@ itc_sample_1 (it_cursor_t * it, buffer_desc_t ** buf_ret, int64 * n_leaves_ret, 
     case DVC_LESS:
     case DVC_MATCH:
       {
-	int reset = 0;
 	if (leaf)
 	  {
 	    /* Go down on the left edge. */

@@ -1028,26 +1028,6 @@ tp_get_server_uuid ()
 #endif
 }
 
-static long
-tp_get_port (caddr_t trx_uuid_rw)
-{
-  trx_uuid_t *trx_uuid = (trx_uuid_t *) trx_uuid_rw;
-  return ntohl (trx_uuid->p_uuid.port);
-}
-static caddr_t
-tp_get_addr (caddr_t trx_uuid_rw)
-{
-  trx_uuid_t *trx_uuid = (trx_uuid_t *) trx_uuid_rw;
-  caddr_t addr = dk_alloc_box (4, DV_SHORT_STRING);
-  memcpy (addr, &trx_uuid->p_uuid.addr, 4);
-  return addr;
-}
-static long
-tp_get_trx_id (caddr_t trx_uuid_rw)
-{
-  trx_uuid_t *trx_uuid = (trx_uuid_t *) trx_uuid_rw;
-  return ntohl (trx_uuid->p_uuid.trx_id);
-}
 static void
 tp_set_trx_id (caddr_t trx_uuid_rw, long trx_id)
 {
@@ -1114,6 +1094,7 @@ tp_trx_enlist (rds_connection_t * rcon, query_instance_t * qi)
 tp_result_t
 tp_trx_commit_1 (lock_trx_t * lt, int is_commit)
 {
+  return LTE_OK;
 }
 
 tp_result_t

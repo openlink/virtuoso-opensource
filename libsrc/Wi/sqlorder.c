@@ -137,7 +137,6 @@ setp_node_t *
 sqlc_add_distinct_node (sql_comp_t * sc, data_source_t ** head,
     state_slot_t ** ssl_out, long nrows)
 {
-  state_slot_t * set_no;
   int inx;
   SQL_NODE_INIT (setp_node_t, setp, setp_node_input, setp_node_free);
   DO_BOX (state_slot_t *, ssl, inx, ssl_out)

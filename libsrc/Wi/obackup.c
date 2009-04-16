@@ -640,7 +640,7 @@ db_backup_pages (ol_backup_context_t * backup_ctx, dp_addr_t start_dp, dp_addr_t
 
   for (page_no = start_dp; page_no < end_page; page_no++)
     {
-      dp_addr_t log_page;
+      dp_addr_t log_page = 0;
       if (0 == page_no%10000)
 	log_info("Backing up page %ld", page_no);
       if (page_no == end_page - 1)

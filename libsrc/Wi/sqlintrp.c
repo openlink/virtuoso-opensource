@@ -676,7 +676,6 @@ void
 qn_init (table_source_t * ts, caddr_t * inst)
 {
   /* Reset a single state query node in a qr */
-  query_t * subq = ts->src_gen.src_query;
 
   if ((ts->src_gen.src_input == (qn_input_fn) table_source_input ||
        ts->src_gen.src_input == (qn_input_fn) table_source_input_unique) 

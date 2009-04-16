@@ -242,7 +242,7 @@ ri_outer_output (rdf_inf_pre_node_t * ri, state_slot_t * any_flag, caddr_t * ins
   data_source_t *next_qn = NULL;
   table_source_t *ts = NULL;
   hash_source_t *hs = NULL;
-  data_source_t *en;
+  data_source_t *en = NULL;
   code_vec_t after = NULL;
   if (!any_flag || qst_get (inst, any_flag))
     return;

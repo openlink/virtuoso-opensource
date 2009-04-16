@@ -1132,8 +1132,6 @@ ddl_commit_trx (query_instance_t *qi)
 {
   caddr_t repl;
   int rc;
-  int64  w_id = qi->qi_trx->lt_w_id;
-  int is_enlist = qi->qi_trx->lt_cl_enlisted;
   /* for 2pc, this is done really out of whakc.  Not proper sequence.  So remove the mark that this w id is gone cause there'll be ops with the id from the coordinator */ 
   IN_TXN;
   repl = box_copy_tree ((box_t) qi->qi_trx->lt_replicate); /* if logging is off, keep it off */
@@ -2669,7 +2667,7 @@ ddl_drop_index (caddr_t * qst, const char *table, const char *name, int log_to_t
   char *szTheTableName, *szTheIndexName;
   int atomic;
   caddr_t temp_tx_box;
-  caddr_t *repl;
+  caddr_t *repl = NULL;
   int is_cluster = 0;
 
   atomic = count_exceed (qi, table, MIN_FOR_ATOMIC, name);

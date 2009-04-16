@@ -1930,7 +1930,6 @@ void
 srv_global_lock (query_instance_t * qi, int flag)
 {
   lock_trx_t * lt = qi->qi_trx;
-  caddr_t err = NULL;
   /*GK: in roll forward this is a no-op */
   if (in_log_replay)
     return;
@@ -1943,7 +1942,7 @@ srv_global_lock (query_instance_t * qi, int flag)
 	}
 	{
 	  int rc;
-	  caddr_t err;
+	  caddr_t err = NULL;
 	  IN_TXN;
           rc = lt_commit (qi->qi_trx, TRX_CONT);
 	  LEAVE_TXN;

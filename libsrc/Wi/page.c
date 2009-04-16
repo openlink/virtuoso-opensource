@@ -102,7 +102,7 @@ row_length (db_buf_t  row, dbe_key_t * key)
     } 
   else 
     { 
-      dbe_key_t * row_key;
+      dbe_key_t * row_key = NULL;
       if (kv >= KV_LONG_GAP
 	  || !(row_key = key->key_versions[kv]))
 	{
@@ -1625,7 +1625,7 @@ void
 page_row_spacing (buffer_desc_t * buf, short row_gap, short ins_inx, int ins_gap)
 {
   /* rewrite the page with gap bytes gaop after all rows.  For the row at ins_inx, the gap is gap + ins_gap.  All the rest is left at the end. */
-  short gap;
+  short gap = 0;
   int fill = DP_DATA;
   dbe_key_t * key = buf->bd_tree->it_key;
   page_map_t * pm = buf->bd_content_map;

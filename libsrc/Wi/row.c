@@ -2666,7 +2666,6 @@ void
 itc_drop_index (it_cursor_t * itc, dbe_key_t * key)
     {
   /* this is locally autocommitting, sometimes run in atomic mode.  Preserve the lt_w_id */
-  int64 w_id = itc->itc_ltrx->lt_w_id;
   int ctr = 0, rc;
   buffer_desc_t *del_buf;
   itc_from (itc, key);

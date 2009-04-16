@@ -3020,7 +3020,7 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t str = bif_string_arg (qst, args, 0, szMe);
   int volatile len = box_length (str) - 1;
   int volatile arg_inx = 1;
-  int arg_len, arg_prec;
+  int arg_len = 0, arg_prec = 0;
 
   ptr = str;
   *err_ret = NULL;
@@ -9383,7 +9383,7 @@ bif_sequence_next_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
 {
   query_instance_t *qi = (query_instance_t *) QST_INSTANCE (qst);
   caddr_t name = bif_string_arg (qst, args, 0, "sequence_next");
-  boxint inc_by = 1, res;
+  boxint inc_by = 1, res = 0;
 
   if (strlen (name) > SEQ_MAX_CHARS)
     sqlr_new_error ("42000", "SEQMA", "Sequence name too long");
@@ -10468,7 +10468,7 @@ bif_deserialize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *)qst;
   caddr_t xx = bif_arg (qst, args, 0, "deserialize");
-  caddr_t tmp_xx, res;
+  caddr_t tmp_xx, res = NULL;
   dtp_t dtp = DV_TYPE_OF (xx);
   if (dtp == DV_SHORT_STRING || dtp == DV_LONG_STRING || dtp == DV_BIN)
     return (box_deserialize_string (xx, 0, 0));
@@ -10814,7 +10814,6 @@ bif_txn_killall (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int n = BOX_ELEMENTS (args);
   int lte = n >= 1 ? bif_long_arg (qst, args, 0, "txn_killall") : LTE_TIMEOUT;
-  int cl_timeout = n >= 2 ? bif_long_arg (qst, args, 1, "txn_killall") : 0;
   query_instance_t *qi = (query_instance_t *) qst;
   sec_check_dba (qi, "txn_killall");
   IO_SECT (qi)

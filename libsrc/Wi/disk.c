@@ -2783,7 +2783,7 @@ row_na_length (db_buf_t  row, dbe_key_t * key)
     }
   else
     {
-      dbe_key_t * row_key;
+      dbe_key_t * row_key = NULL;
       if (kv >= KV_LONG_GAP 
 	  || !(row_key = key->key_versions[kv]) )
 	STRUCTURE_FAULT1 ("bad kv in row_na_length"); 

@@ -3376,7 +3376,7 @@ bif_key_estimate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int v_fill = 0, inx;
   search_spec_t ** prev_sp;
   query_instance_t *qi = (query_instance_t *) qst;
-  dbe_key_t * key;
+  dbe_key_t * key = NULL;
   caddr_t tb_name = bif_string_arg (qst, args, 0, "sys_stat");
   caddr_t key_name = bif_string_arg (qst, args, 1, "sys_stat");
   dbe_table_t *tb = qi_name_to_table (qi, tb_name);

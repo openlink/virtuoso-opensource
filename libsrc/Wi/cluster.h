@@ -113,6 +113,9 @@ cl_op_t * clo_allocate (char op);
 itc_cluster_t * itcl_allocate (lock_trx_t * lt, caddr_t * inst);
 void cl_select_save_env (table_source_t * ts, itc_cluster_t * itcl, caddr_t * inst, cl_op_t * clo, int nth);
 int clo_destroy  (cl_op_t * clo);
+cl_host_t * cl_name_to_host (char * name);
+cu_func_t * cu_func (caddr_t name, int must_find);
+caddr_t cl_id_to_iri (query_instance_t * qi, caddr_t id);
 
 
 #endif
