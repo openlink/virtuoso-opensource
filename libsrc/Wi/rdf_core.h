@@ -210,6 +210,6 @@ extern id_hash_t *rdf_graph_default_perms_of_user_dict_htable;		/*!< Dictionary 
 extern id_hash_iterator_t *rdf_graph_default_perms_of_user_dict_hit;	/*!< Hash iterator for \c rdf_graph_default_perms_of_user_dict_htable */
 
 caddr_t iri_ensure (caddr_t * qst, caddr_t name, int flag, caddr_t * err_ret);
-
+void rdf_graph_keyword (iri_id_t id, char *ret);
 
 #endif

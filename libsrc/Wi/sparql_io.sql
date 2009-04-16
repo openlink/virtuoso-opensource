@@ -141,7 +141,7 @@ end_of_binding: ;
 create function DB.DBA.SPARQL_RSET_XML_HTTP_PRE (in colnames any, in accept varchar)
 {
   declare ses integer;
-  http_header ('Content-Type: ' || accept || '; charset=UTF-8\r\n');
+  http_header ('Content-Type: ' || subseq (accept, strchr (accept, ' ')+1) || '; charset=UTF-8\r\n');
   http_flush (1);
   ses := 0;
   DB.DBA.SPARQL_RSET_XML_WRITE_NS (ses);
@@ -598,6 +598,26 @@ create procedure "querySoap"  (in  "Command" varchar
    return res;
 }
 ;
+
+--!AWK PUBLIC
+create procedure SPARQL_WRITE_EXEC_STATUS (inout ses any, in line_format varchar, inout status any)
+{
+  declare lctr, lcount integer;
+  declare lines any;
+  if (status is null)
+    return;
+  http (sprintf (line_format, 'SQL State', status[0]), ses);
+  lines := split_and_decode (status[1], 0, '\0\0\n');
+  lcount := length (lines);
+  for (lctr := 0; lctr < lcount; lctr := lctr + 1)
+    {
+      http (sprintf (line_format, case (lctr) when 0 then 'SQL Message' else '' end, lines[lctr]), ses);
+    }
+  http (sprintf (line_format, 'Exec Time', cast (status[2] as varchar) || ' ms'), ses);
+  http (sprintf (line_format, 'DB Activity', cast (status[3] as varchar)), ses);
+}
+;
+
 
 create procedure SPARQL_RESULTS_XML_WRITE_HEAD (inout ses any, in mdta any)
 {
@@ -1128,10 +1148,17 @@ end_of_val_print: ;
 }
 ;
 
-create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, inout rset any, in accept varchar, in add_http_headers integer) returns varchar
+create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, inout rset any, in accept varchar, in add_http_headers integer, in status any := null) returns varchar
 {
   declare singlefield varchar;
   declare ret_mime varchar;
+  if (status is not null)
+    {
+      http_header (concat (coalesce (http_header_get (), ''), 
+          'X-SQL-State: ', status[0], '\r\nX-SQL-Message: ', status[1],
+          '\r\nX-Exec-Milliseconds: ', cast (status[2] as varchar), '\r\nX-Exec-DB-Activity: ', cast (status[3] as varchar),
+          '\r\n' ) );
+    }
   if ((1 >= length (rset)) and (1 = length (metas[0])))
     singlefield := metas[0][0][0];
   else
@@ -1189,6 +1216,8 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
           else
             ret_mime := 'text/rdf+n3';
           DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
+          if (status is not null)
+            SPARQL_WRITE_EXEC_STATUS (ses, '#%015s: %s\n', status);
 	}
       else if (strstr (accept, 'application/soap+xml') is not null)
 	{
@@ -1263,12 +1292,20 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
             ret_mime := 'text/rdf+n3';
         }
       http (rset[0][0], ses);
+      if (status is not null)
+        SPARQL_WRITE_EXEC_STATUS (ses, '#%015s: %s\n', status);
       goto body_complete;
     }
   if (strstr (accept, 'text/html') is not null)
     {
       ret_mime := 'text/html';
       SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE(ses, metas, rset, 0);
+      if (status is not null)
+        {
+          http ('<hr /><br /><pre>', ses);
+          SPARQL_WRITE_EXEC_STATUS (ses, '%015s: %V\n', status);
+          http ('</pre>', ses);
+        }
       goto body_complete;
     }
   if (strstr (accept, 'application/vnd.ms-excel') is not null)
@@ -1558,13 +1595,14 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
 {
   declare query, full_query, format, should_sponge, debug, def_qry varchar;
   declare dflt_graphs, named_graphs any;
-  declare paramctr, paramcount, qry_params, maxrows, can_sponge integer;
+  declare paramctr, paramcount, qry_params, maxrows, can_sponge, start_time integer;
   declare ses, content any;
-  declare def_max, add_http_headers, timeout, sp_ini, soap_ver int;
+  declare def_max, add_http_headers, hard_timeout, timeout, client_supports_partial_res, sp_ini, soap_ver int;
   declare http_meth, content_type, ini_dflt_graph, get_user varchar;
   declare state, msg varchar;
   declare metas, rset any;
   declare accept, soap_action, user_id varchar;
+  declare exec_time, exec_db_activity any;
 
   if (registry_get ('__sparql_endpoint_debug') = '1')
     {
@@ -1592,23 +1630,15 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   maxrows := 1024*1024; -- More than enough for web-interface.
   http_meth := http_request_get ('REQUEST_METHOD');
   ini_dflt_graph := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'DefaultGraph');
-  timeout := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'MaxQueryExecutionTime');
-  if (timeout is null)
-    timeout := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'ExecutionTimeout');
+  hard_timeout := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'MaxQueryExecutionTime'), '0')) * 1000;
+  timeout := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'ExecutionTimeout'), '0')) * 1000;
+  client_supports_partial_res := 0;
   def_qry := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'DefaultQuery');
   if (def_qry is null)
     def_qry := 'SELECT * WHERE {?s ?p ?o}';
   def_max := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'ResultSetMaxRows'), '-1'));
   -- if timeout specified and it's over 1 second
   user_id := connection_get ('SPARQLUserId', 'SPARQL');
-  if (timeout is not null)
-    timeout := atoi (timeout) * 1000;
-  else
-    timeout := 0;
-  if (timeout >= 1000)
-    {
-      set TRANSACTION_TIMEOUT=timeout;
-    }
   get_user := '';
   soap_ver := 0;
   soap_action := http_request_header (lines, 'SOAPAction', null, null);
@@ -1794,11 +1824,14 @@ http('			    <option value="application/sparql-results+json">JSON</option>\n');
 http('			    <option value="application/javascript">Javascript</option>\n');
 http('			  </select>\n');
 http('&nbsp;&nbsp;&nbsp;\n');
-http('<input name="debug" type="checkbox"' || case (debug) when '' then '' else ' checked' end || '/>\n');
-http('			  <label for="debug" class="n">Rigorous check of the query</label>\n');
+http('<input name="debug" type="checkbox"' || case (debug) when '' then '' else ' checked' end || '/>');
+http('&nbsp;<label for="debug" class="n"><nobr>Rigorous check of the query</nobr></label>\n');
 http('&nbsp;&nbsp;&nbsp;\n');
-http('			  <input type="submit" value="Run Query"/>\n');
-http('			  <input type="reset" value="Reset"/>\n');
+http('<input name="timeout" type="text"' || case (isnull (timeout)) when 0 then cast (timeout as varchar) else '' end || '/>');
+http('&nbsp;<label for="timeout" class="n"><nobr>Execution timeout, in milliseconds, values less than 1000 are ignored</nobr></label>\n');
+http('&nbsp;&nbsp;&nbsp;\n');
+http('			  <input type="submit" value="Run Query"/>');
+http('&nbsp;<input type="reset" value="Reset"/>\n');
 http('			</fieldset>\n');
 http('			</form>\n');
 http('		</div>\n');
@@ -1863,6 +1896,19 @@ http('</html>\n');
       else if ('format' = pname or 'output' = pname)
         {
 	  format := pvalue;
+	}
+      else if ('timeout' = pname)
+        {
+          declare t integer;
+          t := cast (pvalue as integer) * 1000;
+          if (t is not null and t >= 1000)
+            {
+              if (hard_timeout >= 1000)
+                timeout := __min (t, hard_timeout);
+              else
+                timeout := t;
+            }
+          client_supports_partial_res := 1;
 	}
       else if ('ini' = pname)
         {
@@ -2081,49 +2127,70 @@ host_found:
   metas := null;
   rset := null;
 
--- No need to choose accurately if there are no variants.
-  if (strchr (accept, ' ') is null)
+  if (client_supports_partial_res) -- partial results do not work with chunked encoding
     {
-      if (accept='application/sparql-results+xml')
-        full_query := 'define output:format "HTTP+XML application/sparql-results+xml" ' || full_query;
---      else if (accept='application/rdf+xml')
---        full_query := 'define output:format "HTTP+RDF/XML application/rdf+xml" ' || full_query;
-    }
+    -- No need to choose accurately if there are no variants.
+    -- Disabled due to empty results:
+    --  if (strchr (accept, ' ') is null)
+    --    {
+    --      if (accept='application/sparql-results+xml')
+    --        full_query := 'define output:format "HTTP+XML application/sparql-results+xml" ' || full_query;
+    ----      else if (accept='application/rdf+xml')
+    ----        full_query := 'define output:format "HTTP+RDF/XML application/rdf+xml" ' || full_query;
+    --    }
 -- No need to choose accurately if there is the best variant.
-    {
-      declare fmtxml, fmtttl varchar;
-      if (strstr (accept, 'application/sparql-results+xml') is not null)
-        fmtxml := '"HTTP+XML application/sparql-results+xml" ';
-      if (strstr (accept, 'text/rdf+n3') is not null)
-        fmtttl := '"HTTP+TTL text/rdf+n3" ';
-      else if (strstr (accept, 'text/rdf+ttl') is not null)
-        fmtttl := '"HTTP+TTL text/rdf+ttl" ';
-      else if (strstr (accept, 'application/turtle') is not null)
-        fmtttl := '"HTTP+TTL application/turtle" ';
-      else if (strstr (accept, 'application/x-turtle') is not null)
-        fmtttl := '"HTTP+TTL application/x-turtle" ';
-      if (isstring (fmtttl))
-        {
-          if (isstring (fmtxml))
-            full_query := 'define output:format ' || fmtxml || 'define output:dict-format ' || fmtttl || full_query;
-          else
-            full_query := 'define output:format ' || fmtttl || full_query;
-        }
+    -- Disabled due to empty results:
+    --    {
+    --      declare fmtxml, fmtttl varchar;
+    --      if (strstr (accept, 'application/sparql-results+xml') is not null)
+    --        fmtxml := '"HTTP+XML application/sparql-results+xml" ';
+    --      if (strstr (accept, 'text/rdf+n3') is not null)
+    --        fmtttl := '"HTTP+TTL text/rdf+n3" ';
+    --      else if (strstr (accept, 'text/rdf+ttl') is not null)
+    --        fmtttl := '"HTTP+TTL text/rdf+ttl" ';
+    --      else if (strstr (accept, 'application/turtle') is not null)
+    --        fmtttl := '"HTTP+TTL application/turtle" ';
+    --      else if (strstr (accept, 'application/x-turtle') is not null)
+    --        fmtttl := '"HTTP+TTL application/x-turtle" ';
+    --      if (isstring (fmtttl))
+    --        {
+    --          if (isstring (fmtxml))
+    --            full_query := 'define output:format ' || fmtxml || 'define output:dict-format ' || fmtttl || full_query;
+    --          else
+    --            full_query := 'define output:format ' || fmtttl || full_query;
+    --        }
+    --    }
+    ;
     }
-  -- http ('<!-- Query:\n' || query || '\n-->\n', 0);
   -- dbg_obj_princ ('accept = ', accept);
   -- dbg_obj_princ ('full_query = ', full_query);
   -- dbg_obj_princ ('qry_params = ', qry_params);
   commit work;
-  if (timeout >= 1000)
+  if (client_supports_partial_res and (timeout > 0))
     {
-      set TRANSACTION_TIMEOUT=timeout;
+      set RESULT_TIMEOUT = coalesce (timeout, hard_timeout);
+      set TRANSACTION_TIMEOUT=timeout + 10000;
+    }
+  else if (hard_timeout >= 1000)
+    {
+      set TRANSACTION_TIMEOUT=hard_timeout;
     }
   set_user_id (user_id);
+  start_time := msec_time();
   exec ( concat ('sparql ', full_query), state, msg, qry_params, vector ('max_rows', maxrows, 'use_cache', 1), metas, rset);
   commit work;
   -- dbg_obj_princ ('exec metas=', metas);
-  if (state <> '00000')
+  if (state = '00000')
+    goto write_results;
+  if (state = 'S1TAT')
+    {
+      exec_time := msec_time () - start_time;
+      exec_db_activity := db_activity ();
+--  reply := xmlelement ("facets", xmlelement ("sparql", qr), xmlelement ("time", msec_time () - start_time),
+--                       xmlelement ("complete", cplete),
+--                       xmlelement ("db-activity", db_activity ()), res[0][0]);
+    }
+  else
     {
       declare state2, msg2 varchar;
       state2 := '00000';
@@ -2142,7 +2209,14 @@ host_found:
     }
 write_results:
   if ((1 <> length (metas[0])) or ('aggret-0' <> metas[0][0][0]))
-  DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, add_http_headers);
+    {
+      declare status any;
+      if (isinteger (msg))
+        status := NULL;
+      else
+        status := vector (state, msg, exec_time, exec_db_activity);
+      DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, add_http_headers, status);
+    }
 }
 ;
 

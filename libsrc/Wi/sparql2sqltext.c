@@ -3426,6 +3426,8 @@ sparp_rettype_of_function (sparp_t *sparp, caddr_t name)
     {
       if (!strcmp (name, "SPECIAL::sql:RDF_MAKE_GRAPH_IIDS_OF_QNAMES"))
         return SSG_VALMODE_LONG; /* Fake but this works for use as 2-nd arg of 'LONG::bif:position' */
+      if (!strcmp (name, "SPECIAL::sql:RDF_GRAPH_GROUP_LIST_GET"))
+        return SSG_VALMODE_LONG; /* Fake but this works for use as 2-nd arg of 'LONG::bif:position' */
       if (!strcmp (name, "SPECIAL::sql:RDF_DIST_SER_LONG"))
         return SSG_VALMODE_LONG; /* Fake but this works for use as arg of RDF_DIST_DESER_LONG */
       if (!strcmp (name, "SPECIAL::sql:RDF_DIST_DESER_LONG"))
@@ -3438,8 +3440,9 @@ sparp_rettype_of_function (sparp_t *sparp, caddr_t name)
     }
   if (!strcmp (name, uname_xmlschema_ns_uri_hash_string))
     return SSG_VALMODE_LONG;
-  return res;
 #if 0
+  return res;
+#else
   return SSG_VALMODE_SQLVAL /* not "return res" */;
 #endif
 }
@@ -3452,6 +3455,8 @@ sparp_argtype_of_function (sparp_t *sparp, caddr_t name, int arg_idx)
   if (SSG_VALMODE_SPECIAL == res)
     {
       if (!strcmp (name, "SPECIAL::sql:RDF_MAKE_GRAPH_IIDS_OF_QNAMES"))
+        return SSG_VALMODE_SQLVAL;
+      if (!strcmp (name, "SPECIAL::sql:RDF_GRAPH_GROUP_LIST_GET"))
         return SSG_VALMODE_SQLVAL;
       if (!strcmp (name, "SPECIAL::sql:RDF_DIST_SER_LONG"))
         return SSG_VALMODE_LONG;
@@ -5656,18 +5661,15 @@ ssg_patch_ft_arg1 (spar_sqlgen_t *ssg, SPART *ft_arg1, SPART *g)
           char tmp[30], *tail;
 	  iri_id_t iid = unbox_iri_id (boxed_id);
           int ft_arg1_strlen, idlen, len;
-          if (iid >= MIN_64BIT_BNODE_IRI_ID)
-            snprintf (tmp, sizeof (tmp), "\'#ib" BOXINT_FMT "\'", (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
-          else
-            snprintf (tmp, sizeof (tmp), "\'#i" BOXINT_FMT "\'", (boxint)(iid) );
+          rdf_graph_keyword (iid, tmp);
           idlen = strlen (tmp);
           ft_arg1_strlen = box_length (ft_arg1_str) - 1;
-          len = ft_arg1_strlen + (1 + 24 + 2) + idlen;
+          len = ft_arg1_strlen + (2 + 25 + 2) + idlen;
           patched_ft_arg1 = (SPART *)(tail = dk_alloc_box (len, DV_STRING));
-          (tail++)[0] = '^'; memcpy (tail, tmp, idlen); tail += idlen;
+          (tail++)[0] = '^'; (tail++)[0] = '\''; memcpy (tail, tmp, idlen); tail += idlen;
                       /* 0         1           2     */
-                      /* 01234567890123.456789.01234 */
-          memcpy (tail, " AND ([ __enc \"UTF-8\" ] ", 24); tail += 24;
+                      /* .012345678901234.567890.12345 */
+          memcpy (tail, "\' AND ([ __enc \"UTF-8\" ] ", 25); tail += 25;
           memcpy (tail, ft_arg1_str, ft_arg1_strlen); tail += ft_arg1_strlen;
           strcpy (tail, ")");
           return patched_ft_arg1;

@@ -2658,7 +2658,7 @@ bif_rdf_obj_ft_rule_del (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t reason = bif_string_arg (qst, args, 2, "__rdf_obj_ft_rule_del");
   dk_set_t *known_reasons_ptr;
   int reason_pos;
-  caddr_t p_iri;
+  caddr_t p_iri = NULL;
   rdf_obj_ft_rule_iid_hkey_t iid_hkey;
   rdf_obj_ft_rule_iri_hkey_t iri_hkey;
   iid_hkey.hkey_g = g_id;
@@ -2824,29 +2824,34 @@ bif_rdf_obj_ft_rule_count_in_graph (caddr_t * qst, caddr_t * err_ret, state_slot
   return box_num (res);
 }
 
-caddr_t
-bif_rdf_graph_keyword (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+void
+rdf_graph_keyword (iri_id_t id, char *ret)
 {
   /* number in hex.  Low 6 digits first, then high digits */
   int brk;
   char ch[2];
   char str[30];
-  char ret[30];
-  iri_id_t id = bif_iri_id_arg (qst, args, 0, "rdf_graph_keyword");
   sprintf (str, "%llx", id);
   if ((brk = strlen (str)) <= 6)
     {
       sprintf (ret, "g%s", str);
-      return box_dv_short_string (ret);
+      return;
     }
   brk -= 6;
   ch[0] = str[brk];
   ch[1] = 0;
   str[brk] = 0;
   sprintf (ret, "g%s%s%s", ch, &str[brk+1], str);
-  return box_dv_short_string (ret);
 }
 
+caddr_t
+bif_rdf_graph_keyword (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  iri_id_t id = bif_iri_id_arg (qst, args, 0, "rdf_graph_keyword");
+  char ret[30];
+  rdf_graph_keyword (id, ret);
+  return box_dv_short_string (ret);
+}
 
 caddr_t
 bif_iri_split (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
