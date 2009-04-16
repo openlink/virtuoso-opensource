@@ -6175,10 +6175,6 @@ ddl_ensure_univ_tables (void)
 {
   ddl_ensure_table ("DB.DBA.SYS_DATA_SOURCE", univ_dd_text);
   ddl_ensure_table ("DB.DBA.SYS_PASS_THROUGH_FUNCTION", univ_dd_pt_text);
-#if UNIVERSE 
-  ddl_ensure_table ("do this always", upd_sys_ds_table_text);
-  ddl_ensure_table ("do this always", upd_sys_ds_table_text_2);
-#endif
 }
 
 

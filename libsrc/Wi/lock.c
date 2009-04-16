@@ -440,7 +440,6 @@ void lt_rollback_1 (lock_trx_t * lt, int free_trx);
 int
 lt_commit (lock_trx_t * lt, int free_trx)
 {
-  int lt_code;
   ASSERT_IN_TXN;
   CHECK_DK_MEM_RESERVE (lt);
   if (lt->lt_status == LT_BLOWN_OFF
