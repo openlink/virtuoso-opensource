@@ -20,7 +20,7 @@ bif:xquery_contains virtrdf:isSpecialPredicate bif:xquery_contains .
 
 # Don't forget to change version, both here and in DB.DBA.SPARQL_RELOAD_QM_GRAPH, to force reload.
 <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-  virtrdf:version '2009-02-17 0001' ;
+  virtrdf:version '2009-03-16 0001' ;
   virtrdf:item
     rdfdf:default-iid ,				rdfdf:default-iid-nullable ,
     rdfdf:default-iid-nonblank ,		rdfdf:default-iid-nonblank-nullable ,
@@ -79,7 +79,7 @@ rdfdf:default-iid
   virtrdf:qmf01uriOfShortTmpl " (lt (^{tree}^, min_bnode_iri_id ()))";		# STRING REQUIRED ... whether the short is uri, returns 0 or 1
   virtrdf:qmf01blankOfShortTmpl " (gte (^{tree}^, min_bnode_iri_id ()))";	# STRING REQUIRED ... whether the short is blank node ref, returns 0 or 1
 # Templates that convert short value into other types (can be applied to both field and not field expression)
-  virtrdf:qmfLongOfShortTmpl " ^{tree}^ ";					# STRING REQUIRED ... long from short
+  virtrdf:qmfLongOfShortTmpl " ^{tree}^";					# STRING REQUIRED ... long from short
   virtrdf:qmfSqlvalOfShortTmpl " __id2i (^{tree}^)";				# STRING REQUIRED ... SQL value from short
   virtrdf:qmfDatatypeOfShortTmpl " 'http://www.w3.org/2001/XMLSchema#anyURI'";	# STRING REQUIRED ... datatype IRI STRING from short
   virtrdf:qmfLanguageOfShortTmpl " NULL";					# STRING REQUIRED ... language ID STRING from short
