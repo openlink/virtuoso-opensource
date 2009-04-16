@@ -3159,7 +3159,7 @@ create procedure DB.DBA.RDF_LOAD_DELICIOUS_META (in graph_iri varchar, in new_or
 		return 0;
 	};
     username_ := get_keyword ('username', opts);
-	password_ := get_keyword ('password', opts); -- password = password+secret
+	password_ := get_keyword ('password', opts);
 	url := sprintf('https://api.del.icio.us/v1/posts/suggest?url=%s', new_origin_uri);
 	tmp := http_client (url=>url, uid=>username_, pwd=>password_, http_method=>'POST', proxy=>get_keyword_ucase ('get:proxy', opts));
 	xd := xtree_doc (tmp);
@@ -6705,13 +6705,14 @@ create procedure DB.DBA.RDF_LOAD_NYT_TIMESTAGS (in graph_iri varchar, in new_ori
 			tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
 			tree := json_parse (tmp);
 			xt := DB.DBA.NYT_TIMESTAGS_TO_XML (tree);
-			if (xt is null)
-				return 0;
+			if (xt is not null)
+			{
 			xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/nyttags2rdf.xsl', xt,
 				vector ('baseUri', coalesce (dest, graph_iri)));
 			cont := serialize_to_UTF8_xml (xd);
 			DB.DBA.RDF_LOAD_RDFXML (cont, new_origin_uri, coalesce (dest, graph_iri));
 		}
+	}
 	}
 	return 0;
 }
