@@ -691,7 +691,6 @@ group by
   cntrycode
 order by
   cntrycode;
-
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": Q22\n";

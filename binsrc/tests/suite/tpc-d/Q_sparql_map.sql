@@ -39,7 +39,7 @@ select
   sum(?l+>tpcd:linequantity) as ?sum_qty,
   sum(?l+>tpcd:lineextendedprice) as ?sum_base_price,
   sum(?l+>tpcd:lineextendedprice*(1 - ?l+>tpcd:linediscount)) as ?sum_disc_price,
-  sum(?l+>tpcd:lineextendedprice*(1 - ?l+>tpcd:linediscount)*(?l+>tpcd:linetax)) as ?sum_charge,
+  sum(?l+>tpcd:lineextendedprice*(1 - ?l+>tpcd:linediscount)*(1+?l+>tpcd:linetax)) as ?sum_charge,
   avg(?l+>tpcd:linequantity) as ?avg_qty,
   avg(?l+>tpcd:lineextendedprice) as ?avg_price,
   avg(?l+>tpcd:linediscount) as ?avg_disc,
@@ -47,7 +47,7 @@ select
 from <http://example.com/tpcd>
 where {
     ?l a tpcd:lineitem .
-    filter (?l+>tpcd:shipdate <= bif:dateadd ("day", 90, '1998-12-01'^^xsd:date)) }
+    filter (?l+>tpcd:shipdate <= bif:dateadd ("day", -90, '1998-12-01'^^xsd:date)) }
 order by ?l+>tpcd:returnflag ?l+>tpcd:linestatus
 ;
 
@@ -330,7 +330,6 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 
 ECHO "Q11";
--- Bad compilation, references limeitem 
 sparql
 define sql:signal-void-variables 1
 prefix tpcd: <http://www.openlinksw.com/schemas/tpcd#>
@@ -343,15 +342,7 @@ select
 from <http://example.com/tpcd>
 where {
       { select
-          (sum(?thr_ps+>tpcd:supplycost * ?thr_ps+>tpcd:availqty) * 0.0001) as ?threshold
-        where
-          {
-            ?thr_tps a tpcd:partsupp .
-            ?thr_ps+>tpcd:has_supplier+>tpcd:has_nation tpcd:name "GERMANY" .
-          }
-      }
-      { select
-          ?bigps+>tpcd:has_part as ?bpart,
+          ?bigps+>tpcd:has_ps_partkey as ?bpartkey,
           sum(?bigps+>tpcd:supplycost * ?bigps+>tpcd:availqty) as ?bigpsvalue
         where
           {
@@ -359,7 +350,14 @@ where {
             ?bigps+>tpcd:has_supplier+>tpcd:has_nation tpcd:name "GERMANY" .
           }
       }
-    filter (?bigpsvalue > ?threshold)
+    filter (?bigpsvalue > (
+        select
+          (sum(?thr_ps+>tpcd:supplycost * ?thr_ps+>tpcd:availqty) * 0.0001) as ?threshold
+        where
+          {
+            ?thr_ps a tpcd:partsupp .
+            ?thr_ps+>tpcd:has_supplier+>tpcd:has_nation tpcd:name "GERMANY" .
+          }))
   }
 order by
   desc (?bigpsvalue)
@@ -468,7 +466,7 @@ prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
 select
-  ?supplier ?supplier+>tpcd:name ?supplier+>tpcd:address ?supplier+>tpcd:phone ?total_revenue
+  ?supplier+>tpcd:suppkey ?supplier+>tpcd:name ?supplier+>tpcd:address ?supplier+>tpcd:phone ?total_revenue
 from <http://example.com/tpcd>
 where
   {
@@ -516,7 +514,7 @@ order by
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 
-ECHO "Q16 -- invalid integer value";
+ECHO "Q16";
 
 sparql
 define sql:signal-void-variables 1
@@ -528,21 +526,20 @@ select
   ?part+>tpcd:brand,
   ?part+>tpcd:type,
   ?part+>tpcd:size,
-  (count(distinct ?ps)) as ?supplier_cnt
+  (count(distinct ?supp)) as ?supplier_cnt
 from <http://example.com/tpcd>
 where
   {
-    ?ps tpcd:has_part ?part .
-    optional {
-        ?ps tpcd:comment ?badcomment . filter (?badcomment like "%Customer%Complaints%") }
+    ?ps a tpcd:partsupp ; tpcd:has_part ?part ; tpcd:has_supplier ?supp .
     filter (
       (?part+>tpcd:brand != "Brand#45") &&
       !(?part+>tpcd:type like "MEDIUM POLISHED%") &&
       (?part+>tpcd:size in (49, 14, 23, 45, 19, 3, 36, 9)) &&
-      !bound (?badcomment) )
+      !bif:exists ((select (1) where {
+        ?supp a tpcd:supplier; tpcd:comment ?badcomment . filter (?badcomment like "%Customer%Complaints%") } ) ) )
   }
 order by
-  desc ((count(distinct ?ps)))
+  desc ((count(distinct ?supp)))
   ?part+>tpcd:brand
   ?part+>tpcd:type
   ?part+>tpcd:size
@@ -565,10 +562,10 @@ from <http://example.com/tpcd>
 where
   {
     ?li a tpcd:lineitem ; tpcd:has_part ?part .
-    ?part tpcd:container "MED BOX" ; tpcd:brand "Brand#23" .
-    { select ?part, (0.2 * avg(?li2+>tpcd:linequantity)) as ?threshold
-      where { ?li2  a tpcd:lineitem ; tpcd:has_part ?part } }
-    filter (?li+>tpcd:linequantity < ?threshold) }
+    ?part tpcd:brand "Brand#23" ; tpcd:container "MED BOX" .
+    filter (?li+>tpcd:linequantity < (
+        select (0.2 * avg(?li2+>tpcd:linequantity)) as ?threshold
+      where { ?li2  a tpcd:lineitem ; tpcd:has_part ?part } ) ) }
 ;
 
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
@@ -582,7 +579,7 @@ prefix tpcd: <http://www.openlinksw.com/schemas/tpcd#>
 prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
-select ?cust+>foaf:name ?cust ?ord ?ord+>tpcd:orderdate ?ord+>tpcd:ordertotalprice sum(?li+>tpcd:linequantity)
+select ?cust+>foaf:name ?cust+>tpcd:custkey ?ord+>tpcd:orderkey ?ord+>tpcd:orderdate ?ord+>tpcd:ordertotalprice sum(?li+>tpcd:linequantity)
 from <http://example.com/tpcd>
 where
   {
@@ -634,11 +631,10 @@ where
   }
 ;
 
-
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 
-ECHO "Q20 -- infinite run";
+ECHO "Q20";
 
 sparql
 define sql:signal-void-variables 1
@@ -657,32 +653,29 @@ where
           ?supp, count (?big_ps) as ?big_ps_cnt
         where
           {
-            ?big_ps a tpcd:partsupp ; tpcd:has_supplier ?supp .
             ?supp+>tpcd:has_nation tpcd:name "CANADA" .
-              { select ?forest_part
-                where { ?forest_part a tpcd:part .
-                    filter ( ?forest_part+>tpcd:name like "forest%" ) }
-              }
-              { select
-                   ?big_ps, (0.5 * sum(?li+>tpcd:linequantity)) as ?qty_threshold
+            ?big_ps a tpcd:partsupp ; tpcd:has_supplier ?supp .
+            filter (
+              (?big_ps+>tpcd:has_part+>tpcd:name like "forest%") &&
+              (?big_ps+>tpcd:availqty > (
+                  select
+                    (0.5 * sum(?li+>tpcd:linequantity)) as ?qty_threshold
                   where
                     {
-                      ?li a tpcd:lineitem ; tpcd:has_part ?big_ps+>tpcd:has_part ; tpcd:has_supplier ?bigps+>tpcd:has_supplier .
+                      ?li a tpcd:lineitem ; tpcd:has_part ?big_ps+>tpcd:has_part ; tpcd:has_supplier ?supp .
                       filter ((?li+>tpcd:shipdate >= "1994-01-01"^^xsd:date) &&
-                        (?li+>tpcd:shipdate < bif:dateadd ("year", 1, "1994-01-01"^^xsd:date)) ) }
-              }
-            filter (?big_ps+>tpcd:availqty > ?qty_threshold)
+                        (?li+>tpcd:shipdate < bif:dateadd ("year", 1, "1994-01-01"^^xsd:date)) ) } ) ) )
           }
        }
   }
 order by
   ?supp+>tpcd:name
-zzz;
+;
 
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 
-ECHO "Q21 -- weird error in SQL codegen";
+ECHO "Q21";
 
 sparql
 define sql:signal-void-variables 1
@@ -721,7 +714,7 @@ order by
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 
-ECHO "Q22 -- infinite run";
+ECHO "Q22";
 
 sparql
 define sql:signal-void-variables 1
@@ -735,25 +728,24 @@ select
   sum (?cust+>tpcd:acctbal) as ?totacctbal
 from <http://example.com/tpcd>
 where {
-      { select
-          (avg (?cust2+>tpcd:acctbal)) as ?acctbal_threshold
-        where
-          {
-            ?cust2 a tpcd:customer .
-            filter ((?cust2+>tpcd:acctbal > 0.00) &&
-              bif:LEFT (?cust2+>tpcd:phone, 2) in ("13", "35", "31", "23", "29", "30", "17", "18") )
-          }
-      }
     ?cust a tpcd:customer .
-    optional { select ?cust (count(?ord)) as ?ord_cnt
-      where { ?cust a tpcd:customer ; tpcd:customer_of ?ord } }
-    filter ((?cust+>tpcd:acctbal > ?acctbal_threshold) &&
+    filter (
       bif:LEFT (?cust+>tpcd:phone, 2) in ("13", "35", "31", "23", "29", "30", "17", "18") &&
-      !bound (?ord_cnt) )
+      (?cust+>tpcd:acctbal >
+        ( select (avg (?cust2+>tpcd:acctbal)) as ?acctbal_threshold
+          where
+            {
+              ?cust2 a tpcd:customer .
+              filter ((?cust2+>tpcd:acctbal > 0.00) &&
+                bif:LEFT (?cust2+>tpcd:phone, 2) in ("13", "35", "31", "23", "29", "30", "17", "18") )
+            } ) ) &&
+      !bif:exists (
+        ( select (1)
+          where { ?cust tpcd:customer_of ?ord } ) ) )
   }
-order by
-  (bif:LEFT (?cust+>tpcd:phone, 2))
-zzz;
+group by (bif:LEFT (?cust+>tpcd:phone, 2))
+order by (bif:LEFT (?cust+>tpcd:phone, 2))
+;
 
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
