@@ -1106,7 +1106,7 @@ def main()
       <div id="FT_R">
         <a href="/ods/faq.html">FAQ</a> | <a href="/ods/privacy.html">Privacy</a> | <a href="/ods/rabuse.vspx">Report Abuse</a>
         <div>
-          Copyright &copy; 1999-2008 OpenLink Software
+          Copyright &copy; 1999-2009 OpenLink Software
         </div>
       </div>
      </div>
