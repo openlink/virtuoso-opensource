@@ -8309,7 +8309,8 @@ create table DB.DBA.RDF_GRAPH_GROUP (
   RGG_MEMBER_PATTERN varchar,
   RGG_COMMENT varchar
   )
-create index RDF_GRAPH_GROUP_IRI on DB.DBA.RDF_GRAPH_GROUP (RGG_IRI)
+alter index RDF_GRAPH_GROUP on DB.DBA.RDF_GRAPH_GROUP partition cluster replicated
+create index RDF_GRAPH_GROUP_IRI on DB.DBA.RDF_GRAPH_GROUP (RGG_IRI) partition cluster replicated
 ;
 
 create table DB.DBA.RDF_GRAPH_GROUP_MEMBER (
@@ -8317,6 +8318,7 @@ create table DB.DBA.RDF_GRAPH_GROUP_MEMBER (
   RGGM_MEMBER_IID IRI_ID not null,
   primary key (RGGM_GROUP_IID, RGGM_MEMBER_IID)
   )
+alter index RDF_GRAPH_GROUP_MEMBER on DB.DBA.RDF_GRAPH_GROUP_MEMBER partition cluster replicated
 ;
 
 create table DB.DBA.RDF_GRAPH_USER (
@@ -8325,6 +8327,7 @@ create table DB.DBA.RDF_GRAPH_USER (
   RGU_PERMISSIONS integer not null, -- 1 for read, 2 for write, 4 for sponge, 8 for list, 16 for admin, 256 for owner.
   primary key (RGU_GRAPH_IID, RGU_USER_ID)
   )
+alter index RDF_GRAPH_USER on DB.DBA.RDF_GRAPH_USER partition cluster replicated
 ;
 
 create procedure DB.DBA.RDF_GRAPH_GROUP_CREATE (in group_iri varchar, in quiet integer, in member_pattern varchar := null, in comment varchar := null)
