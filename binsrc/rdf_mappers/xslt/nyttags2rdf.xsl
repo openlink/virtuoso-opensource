@@ -8,6 +8,7 @@
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
 <!ENTITY nyt "http://www.nytimes.com/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY scot "http://scot-project.org/scot/ns#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -53,6 +54,9 @@
 				<scot:name>
 					<xsl:value-of select="."/>
 				</scot:name>
+				<dc:description>
+					New York Time Tag: <xsl:value-of select="."/>
+				</dc:description>
 				<skos:isSubjectOf rdf:resource="{$baseUri}"/>
 				<foaf:page rdf:resource="{$baseUri}"/>
 				<scot:cooccurWith rdf:resource="{concat($baseUri, '#coocurrence')}"/>

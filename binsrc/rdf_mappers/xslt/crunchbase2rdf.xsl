@@ -95,11 +95,19 @@
 		<rdf:type rdf:resource="&foaf;Document"/>
 		<rdf:type rdf:resource="&bibo;Document"/>
 		<rdf:type rdf:resource="&sioc;Container"/>
+		<xsl:variable name="res_num" select="count(/results)"/>
 		<xsl:for-each select="/results">
 		    <xsl:variable name="space">
 			<xsl:call-template name="space-name"/>
 		    </xsl:variable>
+			<xsl:choose>
+				<xsl:when test="$res_num &gt; 1">
 		    <foaf:topic rdf:resource="{vi:proxyIRI(concat($base, $space, '/', permalink, $suffix))}"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, $space, '/', permalink, $suffix))}"/>
+				</xsl:otherwise>
+			</xsl:choose>
 		    <dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, $space, '/', permalink, $suffix))}"/>
 		    <sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, $space, '/', permalink, $suffix))}"/>
 		</xsl:for-each>
