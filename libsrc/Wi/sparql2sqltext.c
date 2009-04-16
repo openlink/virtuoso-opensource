@@ -88,7 +88,7 @@ void rdf_ds_load_all (void)
   qmf->qmfIslitOfShortTmpl = box_dv_short_string (" 0");
   qmf->qmf01uriOfShortTmpl = box_dv_short_string (" (lt (^{tree}^, min_bnode_iri_id ()))");
   qmf->qmf01blankOfShortTmpl = box_dv_short_string (" (gte (^{tree}^, min_bnode_iri_id ()))");
-  qmf->qmfLongOfShortTmpl = box_dv_short_string (" ^{tree}^ ");
+  qmf->qmfLongOfShortTmpl = box_dv_short_string (" ^{tree}^");
   qmf->qmfDatatypeOfShortTmpl = box_dv_short_string (" 'http://www.w3.org/2001/XMLSchema#anyURI'");
   qmf->qmfLanguageOfShortTmpl = box_dv_short_string (" NULL");
   qmf->qmfSqlvalOfShortTmpl = box_dv_short_string (" id_to_iri (^{tree}^)");
@@ -5690,7 +5690,7 @@ ssg_patch_ft_arg1 (spar_sqlgen_t *ssg, SPART *ft_arg1, SPART *g)
           len = ft_arg1_strlen + (2 + 25 + 2) + idlen;
           patched_ft_arg1 = (SPART *)(tail = dk_alloc_box (len, DV_STRING));
           (tail++)[0] = '^'; (tail++)[0] = '\''; memcpy (tail, tmp, idlen); tail += idlen;
-                      /* 0         1           2     */
+                      /*  0         1          2       */
                       /* .012345678901234.567890.12345 */
           memcpy (tail, "\' AND ([ __enc \"UTF-8\" ] ", 25); tail += 25;
           memcpy (tail, ft_arg1_str, ft_arg1_strlen); tail += ft_arg1_strlen;
@@ -5749,8 +5749,8 @@ ssg_patch_ft_arg1 (spar_sqlgen_t *ssg, SPART *ft_arg1, SPART *g)
           int ft_arg1_box_len = box_length (ft_arg1_box);
           char *tail = t_alloc_box (18 + ft_arg1_box_len, DV_STRING);
           patched_ft_arg1 = (SPART *)tail;
-/*                                  0          1          */
-/*                                  01234567.890123.45678 */
+/*                       0          1          */
+/*                       01234567.890123.45678 */
           memcpy (tail, "[ __enc \"UTF-8\" ] ", 18); tail += 18;
           memcpy (tail, ft_arg1_box, ft_arg1_box_len);
           return patched_ft_arg1;
@@ -5969,7 +5969,7 @@ from_printed:
             {
               SPART *g = tree->_.triple.tr_graph;
               ft_arg1 = ssg_patch_ft_arg1 (ssg, ft_arg1, g);
-                }
+            }
           ssg_print_where_or_and (ssg, "freetext predicate");
           ssg_putchar (' ');
           ssg_puts (ft_pred->_.funcall.qname + 4);

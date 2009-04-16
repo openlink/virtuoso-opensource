@@ -1242,23 +1242,23 @@ spar_gp_add_filters_for_graph (sparp_t *sparp, SPART *graph_expn, int graph_is_n
       if (!(src->_.graph.subtype & SPART_GRAPH_GROUP_BIT))
         {
           SPART *graph_expn_copy = (
-    (SPAR_VARIABLE == SPART_TYPE (graph_expn)) ?
-    spar_make_variable (sparp, varname) :
-    spar_make_blank_node (sparp, varname, 0) );
-      filter = spartlist (sparp, 3,
+            (SPAR_VARIABLE == SPART_TYPE (graph_expn)) ?
+            spar_make_variable (sparp, varname) :
+            spar_make_blank_node (sparp, varname, 0) );
+          filter = spartlist (sparp, 3,
             ((SPART_GRAPH_MIN_NEGATION < src->_.graph.subtype) ? BOP_NEQ : BOP_EQ),
-        graph_expn_copy, src->_.graph.expn );
-        spar_gp_add_filter (sparp, filter);
+            graph_expn_copy, src->_.graph.expn );
+          spar_gp_add_filter (sparp, filter);
           return;
-    }
         }
+    }
   if (graph_is_named)
-        {
+    {
       good_list_expn = spar_make_list_of_sources_expn (sparp, SPART_GRAPH_NAMED, 0, 0, RDF_GRAPH_PERM_READ, graph_expn);
       bad_list_expn = spar_make_list_of_sources_expn (sparp, SPART_GRAPH_NOT_NAMED, 0, 0, 0x0, graph_expn);
-        }
+    }
   else
-        {
+    {
       good_list_expn = spar_make_list_of_sources_expn (sparp, SPART_GRAPH_FROM, SPART_GRAPH_GROUP, 0, RDF_GRAPH_PERM_READ, graph_expn);
       bad_list_expn = spar_make_list_of_sources_expn (sparp, SPART_GRAPH_NOT_FROM, SPART_GRAPH_NOT_GROUP, 0, 0x0, graph_expn);
     }
@@ -2054,7 +2054,7 @@ cannot_cast:
   return NULL;
 }
 
-void
+void 
 sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtype, SPART *iri_expn, SPART **options)
 {
   sparp_env_t *spare = sparp->sparp_env;
@@ -2095,7 +2095,7 @@ sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtype, SPART *ir
               spar_error (sparp, "An IRI <%.200s> can not be used in FROM%s clause because it is excluded by NOT FROM%s already",
                 iri, fty, fty );
             }
-        return; /* A (failed) attempt to overwrite NOT FROM with FROM */
+          return; /* A (failed) attempt to overwrite NOT FROM with FROM */
         }
       if (strcmp (c->_.graph.iri, iri))
         continue;
@@ -2501,8 +2501,8 @@ static caddr_t boxed_zero_iid = NULL;
               caddr_t graph_uname = box_dv_uname_nchars (graph_iri, box_length (graph_iri) - 1);
               qr_uses_jso (sparp->sparp_sparqre->sparqre_super_sc->sc_cc->cc_super_cc->cc_query, graph_uname);
             }
-        return unbox (hit[0]);
-    }
+          return unbox (hit[0]);
+        }
     }
   hit = (caddr_t *)id_hash_get (rdf_graph_default_perms_of_user_dict_htable, (caddr_t)(&(boxed_uid)));
   if (NULL != hit)
@@ -2512,7 +2512,7 @@ static caddr_t boxed_zero_iid = NULL;
           caddr_t uname = spar_immortal_exec_uname (sparp);
           qr_uses_jso (sparp->sparp_sparqre->sparqre_super_sc->sc_cc->cc_super_cc->cc_query, uname);
         }
-    return unbox (hit[0]);
+      return unbox (hit[0]);
     }
   if (NULL == boxed_zero_iid)
     boxed_zero_iid = box_iri_id (0);
@@ -2543,7 +2543,7 @@ spar_graph_needs_security_testing (sparp_t *sparp, SPART *g_expn, int req_perms)
       return (req_perms & ~default_perms);
     }
   default_perms = spar_graph_static_perms (sparp, NULL);
-  return (req_perms & ~default_perms);        
+  return (req_perms & ~default_perms);
 }
 
 caddr_t
@@ -2719,7 +2719,7 @@ sparp_clone_for_variant (sparp_t *sparp, int allow_output_formatting)
   ENV_BOX_COPY (spare_output_valmode_name);
   if (allow_output_formatting)
     {
-  ENV_BOX_COPY (spare_output_format_name);
+      ENV_BOX_COPY (spare_output_format_name);
       ENV_BOX_COPY (spare_output_scalar_format_name);
       ENV_BOX_COPY (spare_output_dict_format_name);
     }
@@ -3274,7 +3274,7 @@ bif_sparql_quad_maps_for_quad_impl (caddr_t * qst, caddr_t * err_ret, state_slot
                     expn_text = strses_string (ssg.ssg_out);
                     strses_flush (ssg.ssg_out);
                     map_desc = list (4,
-                      box_num (fld_ctr),
+                      box_num (fld_ctr), 
                       box_num (qmv->qmvColumnsFormKey),
                       col_descs,
                       expn_text );

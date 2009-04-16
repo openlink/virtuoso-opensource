@@ -1557,8 +1557,8 @@ sparp_rvr_tighten (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *addon
   if (dest->rvrDatatype != addon->rvrDatatype)
     {
       if (dest->rvrRestrictions & addon->rvrRestrictions & SPART_VARR_TYPED)
-            goto conflict; /* see below */
-          else
+        goto conflict; /* see below */
+      else
         {
           ccaddr_t isect_dt = sparp_largest_intersect_superdatatype (sparp, dest->rvrDatatype, addon->rvrDatatype);
           dest->rvrDatatype = isect_dt;
@@ -2775,8 +2775,8 @@ sparp_find_triple_of_var_or_retval (sparp_t *sparp, SPART *gp, SPART *var, int n
           if (need_strong_match)
             {
               if (fld == var)
-        return memb;
-    }
+                return memb;
+            }
           else
             {
               if (SPAR_IS_BLANK_OR_VAR (fld) && !strcmp (fld->_.var.vname, var->_.var.vname))
@@ -2935,7 +2935,7 @@ sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var)
 #if 0
 /* If nothing really good is found then let's find any appropriate item. */
   for (vctr = esrc->e_var_count; vctr--; /*no step*/)
-     {
+    {
        SPART *source = esrc->e_vars[vctr];
        if (!strcmp (source->_.var.vname, var->_.var.vname))
          return source;

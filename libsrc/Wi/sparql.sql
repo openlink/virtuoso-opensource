@@ -486,7 +486,7 @@ create function DB.DBA.RDF_TWOBYTE_OF_DATATYPE (in iid IRI_ID) returns integer
   whenever not found goto mknew;
   set isolation='committed';
   select RDT_TWOBYTE into res from DB.DBA.RDF_DATATYPE where RDT_IID = iid;
-    return res;
+  return res;
 
 mknew:
   set isolation='serializable';
@@ -521,7 +521,7 @@ create function DB.DBA.RDF_TWOBYTE_OF_LANGUAGE (in id varchar) returns integer
   whenever not found goto mknew;
   set isolation='committed';
   select RL_TWOBYTE into res from DB.DBA.RDF_LANGUAGE where RL_ID = id;
-    return res;
+  return res;
 
 mknew:
   set isolation='serializable';
@@ -695,7 +695,7 @@ found_xtree:
 	      update DB.DBA.RDF_OBJ set RO_FLAGS = bit_or (RO_FLAGS, 1) where RO_ID = id;
 	      insert soft rdf_ft (rf_id, rf_o) values (id, digest);
 	    }
-        dict_put (ro_id_dict, id, 1);
+          dict_put (ro_id_dict, id, 1);
         }
       if (not (rdf_box_is_storeable (digest)))
         signal ('RDFX2', 'DB.DBA.RDF_OBJ_ADD() tries to return bad digest');
@@ -737,7 +737,7 @@ serializable_veryshort:
 found_veryshort:
       if (ro_id_dict is not null)
 	{
-        dict_put (ro_id_dict, id, 1);
+	  dict_put (ro_id_dict, id, 1);
 	  insert soft rdf_ft (rf_id, rf_o) values (id, v);
 	}
       if (not (rdf_box_is_storeable (v)))
@@ -750,7 +750,7 @@ new_veryshort:
       insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL, RO_FLAGS, RO_DT_AND_LANG) values (id, v, 1, dt_and_lang);
       if (ro_id_dict is not null)
 	{
-        dict_put (ro_id_dict, id, 1);
+	  dict_put (ro_id_dict, id, 1);
 	  insert soft rdf_ft (rf_id, rf_o) values (id, v);
 	}
       if (not (rdf_box_is_storeable (v)))
@@ -782,16 +782,16 @@ serializable_long:
       table option (index RO_VAL) where RO_VAL = chksm
       and RO_DT_AND_LANG = dt_and_lang
       and not (bit_and (RO_FLAGS, 2))
-        and blob_to_string (RO_LONG) = v;
+      and blob_to_string (RO_LONG) = v;
       open id_cr (exclusive);
       fetch id_cr into id, old_flags;
 found_long:
-          digest := rdf_box (v, dt_twobyte, lang_twobyte, id, 1);
+      digest := rdf_box (v, dt_twobyte, lang_twobyte, id, 1);
       if ((not (bit_and (old_flags, 1))) and (1 < need_digest))
         update DB.DBA.RDF_OBJ set RO_FLAGS = bit_or (RO_FLAGS, 1) where RO_ID = id;
       if (ro_id_dict is not null)
 	{
-        dict_put (ro_id_dict, id, 1);
+	  dict_put (ro_id_dict, id, 1);
 	  insert soft rdf_ft (rf_id, rf_o) values (id, digest);
 	}
       if (not (rdf_box_is_storeable (digest)))
@@ -813,7 +813,7 @@ new_long:
         }
       if (ro_id_dict is not null)
 	{
-        dict_put (ro_id_dict, id, 1);
+	  dict_put (ro_id_dict, id, 1);
 	  insert into rdf_ft (rf_id, rf_o) values (id, digest);
 	}
       if (not (rdf_box_is_storeable (digest)))
@@ -841,12 +841,12 @@ serializable_short:
       open id_cr (exclusive);
       fetch id_cr into id, old_flags;
 found_short:
-          digest := rdf_box (v, dt_twobyte, lang_twobyte, id, 1);
+      digest := rdf_box (v, dt_twobyte, lang_twobyte, id, 1);
       if ((not (bit_and (old_flags, 1))) and (1 < need_digest))
         update DB.DBA.RDF_OBJ set RO_FLAGS = bit_or (RO_FLAGS, 1) where RO_ID = id;
       if (ro_id_dict is not null)
 	{
-        dict_put (ro_id_dict, id, 1);
+	  dict_put (ro_id_dict, id, 1);
 	  insert soft rdf_ft (rf_id, rf_o) values (id, digest);
 	}
       if (not (rdf_box_is_storeable (digest)))
@@ -868,7 +868,7 @@ new_short:
         }
       if (ro_id_dict is not null)
 	{
-        dict_put (ro_id_dict, id, 1);
+	  dict_put (ro_id_dict, id, 1);
 	  insert into rdf_ft (rf_id, rf_o) values (id, digest);
 	}
       if (not (rdf_box_is_storeable (digest)))
@@ -897,11 +897,11 @@ create function DB.DBA.RDF_FIND_RO_DIGEST (in dt_twobyte integeR, in v varchar, 
         return v;
       sum64 := xtree_sum64 (v);
       return (select rdf_box (v, dt_twobyte, lang_twobyte, RO_ID, 1)
-          from DB.DBA.RDF_OBJ table option (index RO_VAL)
-          where RO_VAL = sum64
+        from DB.DBA.RDF_OBJ table option (index RO_VAL)
+        where RO_VAL = sum64
         and RO_DT_AND_LANG = dt_and_lang
         and bit_and (RO_FLAGS, 2)
-      --!TBD ... and paranoid check
+        --!TBD ... and paranoid check
         );
     }
   if ((dt_twobyte = 257) and (lang_twobyte = 257) and (length (v) <= 20))
@@ -911,7 +911,7 @@ create function DB.DBA.RDF_FIND_RO_DIGEST (in dt_twobyte integeR, in v varchar, 
     {
       chksm := mdigest5 (v, 1);
       return (select rdf_box (v, dt_twobyte, lang_twobyte, RO_ID, 1)
-          from DB.DBA.RDF_OBJ table option (index RO_VAL)
+        from DB.DBA.RDF_OBJ table option (index RO_VAL)
         where RO_VAL = chksm
         and RO_DT_AND_LANG = dt_and_lang
         and not (bit_and (RO_FLAGS, 2))
@@ -920,8 +920,8 @@ create function DB.DBA.RDF_FIND_RO_DIGEST (in dt_twobyte integeR, in v varchar, 
   else
     {
       return (select rdf_box (v, dt_twobyte, lang_twobyte, RO_ID, 1)
-          from DB.DBA.RDF_OBJ table option (index RO_VAL)
-          where RO_VAL = v
+        from DB.DBA.RDF_OBJ table option (index RO_VAL)
+        where RO_VAL = v
         and RO_DT_AND_LANG = dt_and_lang
         and not (bit_and (RO_FLAGS, 2)) );
     }
@@ -1171,7 +1171,6 @@ create function DB.DBA.RDF_STRSQLVAL_OF_OBJ (in shortobj any) -- DEPRECATED
   return __rdf_strsqlval (shortobj);
 }
 ;
-
 
 create function DB.DBA.RDF_OBJ_OF_LONG (in longobj any) returns any
 {
@@ -2514,7 +2513,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TTL (inout triples any, inout ses any)
     }
   env := vector (dict_new (__min (tcount, 16000)), 0, '', '', '', 0, 0, 0, 0);
   { whenever sqlstate '*' goto end_pred_sort;
-  rowvector_digit_sort (triples, 1, 1);
+    rowvector_digit_sort (triples, 1, 1);
 end_pred_sort: ;
   }
   { whenever sqlstate '*' goto end_subj_sort;
@@ -3428,7 +3427,7 @@ create function DB.DBA.SPARUL_CLEAR (in graph_iri any, in uid integer, in inside
   commit work;
   if (not inside_sponge)
     {
-    delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = graph_iri;
+      delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = graph_iri;
       delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI like concat ('destMD5=', md5 (graph_iri), '&graphMD5=%');
     }
   commit work;
@@ -4862,7 +4861,6 @@ create function JSO_LOAD_INSTANCE (in jgraph varchar, in jinst varchar, in delet
   JSO_MAKE_INHERITANCE (jgraph, jclass, jinst, jinst, jsubj_iid, noinherits, inh_stack);
 }
 ;
-
 
 create procedure JSO_LIST_INSTANCES_OF_GRAPH (in jgraph varchar, out instances any)
 {
@@ -7434,6 +7432,7 @@ create procedure DB.DBA.RDF_QM_SET_DEFAULT_MAPPING (in storage varchar, in qmid 
 }
 ;
 
+
 -----
 -- RDF parallel load
 
@@ -8568,14 +8567,14 @@ create function DB.DBA.RDF_GRAPH_GROUP_LIST_GET (in group_iri any, in extra_grap
       foreach (any g_iri in group_iri) do
         {
           group_iid := iri_to_id (g_iri);
-  if (not bit_and (common_perms, 8))
-    {
-      perms := coalesce (
-        (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = group_iid and RGU_USER_ID = uid),
-        dict_get (__rdf_graph_public_perms_dict(), group_iid, NULL),
-        common_perms );
-      -- dbg_obj_princ ('DB.DBA.RDF_GRAPH_GROUP_LIST_GET: perms for list = ', perms);
-    }
+          if (not bit_and (common_perms, 8))
+            {
+              perms := coalesce (
+                (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = group_iid and RGU_USER_ID = uid),
+                dict_get (__rdf_graph_public_perms_dict(), group_iid, NULL),
+                common_perms );
+              -- dbg_obj_princ ('DB.DBA.RDF_GRAPH_GROUP_LIST_GET: perms for list = ', perms);
+            }
           else
             perms := common_perms;
           if (bit_and (perms, 8))
@@ -8606,7 +8605,7 @@ create function DB.DBA.RDF_GRAPH_GROUP_LIST_GET (in group_iri any, in extra_grap
     {
       declare ctr integer;
       if (extra_graphs is null)
-    return full_list;
+        return full_list;
       ctr := length (extra_graphs);
       while (ctr > 0)
         {
@@ -9199,6 +9198,7 @@ alter index SYS_RDF_SCHEMA on DB.DBA.SYS_RDF_SCHEMA partition cluster replicated
 ;
 
 
+
 create procedure rdfs_load_schema (in name varchar, in gn varchar)
 {
   declare gr iri_id;
@@ -9211,10 +9211,10 @@ create procedure rdfs_load_schema (in name varchar, in gn varchar)
   for select s, p, o from rdf_quad where g = gr and (p = rdf_owl_iri (1) or p = rdf_owl_iri (0) or p = rdf_owl_iri (2) or p = rdf_owl_iri (3) or p = rdf_sas_iri ()) do
     {
       if (p = rdf_sas_iri ())
-    {
+	{
 	  rdf_inf_dir (name, s, o, 2);
 	  rdf_inf_dir (name, s, o, 3);
-    }
+	}
       else
 	rdf_inf_dir (name, o, s, case when p = rdf_owl_iri (0) then 0 when p = rdf_owl_iri (1) then 1
 		     when p = rdf_owl_iri (2) then 2 else 3 end);
@@ -9226,7 +9226,7 @@ create procedure rdfs_load_schema (in name varchar, in gn varchar)
 
 
 create procedure rdf_schema_ld ()
-    {
+{
   if (1 <> sys_stat ('cl_run_local_only'))
     return 0;
   return (select  count (*) from sys_rdf_schema where 0 = rdfs_load_schema (rs_name, rs_uri));
@@ -9238,7 +9238,7 @@ rdf_schema_ld ()
 
 
 create procedure CL_RDF_INF_CHANGED_SRV (in name varchar)
-    {
+{
   set isolation = 'committed';
   return (select  count (*) from sys_rdf_schema where rs_name = name and 0 = rdfs_load_schema (rs_name, rs_uri));
 }
@@ -9267,10 +9267,10 @@ create procedure rdfs_rule_set (in name varchar, in gn varchar, in remove int :=
     cl_exec ('DB.DBA.CL_RDF_INF_CHANGED (?)', vector (name));
   else
     {
-  rdf_inf_clear (name);
-  rdfs_load_schema (name, gn);
-  log_text ('db.dba.rdfs_load_schema (?, ?)', name, gn);
-}
+      rdf_inf_clear (name);
+      rdfs_load_schema (name, gn);
+      log_text ('db.dba.rdfs_load_schema (?, ?)', name, gn);
+    }
 }
 ;
 
@@ -9282,6 +9282,7 @@ create function DB.DBA.RDF_IID_OF_QNAME (in qname varchar) returns IRI_ID
   return null;
 }
 ;
+
 create procedure SPARQL_INI_PARAMS (inout metas any, inout dta any)
 {
   declare item_cnt int;
@@ -9306,3 +9307,4 @@ create procedure SPARQL_INI_PARAMS (inout metas any, inout dta any)
   dta := vector (vector (res_dict));
 }
 ;
+

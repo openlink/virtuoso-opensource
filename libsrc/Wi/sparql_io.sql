@@ -2138,7 +2138,7 @@ host_found:
     ----      else if (accept='application/rdf+xml')
     ----        full_query := 'define output:format "HTTP+RDF/XML application/rdf+xml" ' || full_query;
     --    }
--- No need to choose accurately if there is the best variant.
+    -- No need to choose accurately if there is the best variant.
     -- Disabled due to empty results:
     --    {
     --      declare fmtxml, fmtttl varchar;
