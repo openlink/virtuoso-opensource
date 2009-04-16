@@ -11795,7 +11795,7 @@ qr_set:
 		  dk_free_tree (list_to_array (rlist));
 		  lc_free (lc);
 		  res = bif_exec_error (qst, args,
-		      srv_make_new_error ("22023", "SR078", "The result set is too long, must limit result for at most %lu rows", MAX_BOX_ELEMENTS));
+		      srv_make_new_error ("22023", "SR078", "The result set is too long, must limit result for at most %lu rows", (unsigned long) MAX_BOX_ELEMENTS));
 		  goto done;
 		}
 	    }
