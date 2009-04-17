@@ -61,7 +61,7 @@ noinst_HEADERS = \
 	wiservic.h wi_xid.h xmlenc_algos.h xmlenc.h xmlenc_test.h xmlgen.h \
 	xml.h xmlnode.h xmlres.h xmltree.h xpath.h xpathp.h xpathp_impl.h \
 	xpf.h xqf.h xslt_impl.h aqueue.h rdf_mapping_jso.h bitmap.h jso.h \
-	json_p.h bif_audio_tags.h shcompo.h cluster.h extend.h
+	json_p.h bif_audio_tags.h shcompo.h cluster.h extent.h
 
 
 generated_code = \

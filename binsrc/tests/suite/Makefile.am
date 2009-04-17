@@ -38,7 +38,6 @@ check_SCRIPTS = \
 	rtest.sh \
 	tblob_recode.sh \
 	tclstart.sh \
-	tclstop.h \
 	tclstop.sh \
 	tcpt.sh \
 	tdav.sh \
