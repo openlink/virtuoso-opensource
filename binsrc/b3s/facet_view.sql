@@ -842,8 +842,8 @@ fct_new ()
   <div id="main_srch" style="display: none">
     <div id="TAB_ROW">
       <div class="tab" id="TAB_TXT">Text Search</div>
+      <div class="tab" id="TAB_URILBL">URI Lookup (by Label)</div>
       <div class="tab" id="TAB_URI">URI Lookup</div>
-      <div class="tab" id="TAB_URILBL">URI Lookup by Label</div>
       <div class="tab_act">
         <a href="/fct/facet.vsp?cmd=featured&sid=<?= sid ?>&no_qry=1">Featured Queries</a>
         &nbsp;|&nbsp;
@@ -869,24 +869,6 @@ fct_new ()
         </div>
       </form>
     </div> <!-- #TAB_PAGE_TXT -->
-    <div id="TAB_PAGE_URI" class="tab_page" style="display: none">
-      <h2>OpenLink Entity Finder</h2>
-      <form method="get" action="/about/" id="new_uri_fm">
-        <input type="hidden" name="url" id="new_uri_val"/>
-	<input type="hidden" name="sid" value="<?= sid ?>"/>
-	<input type="hidden" name="urilookup" value="1"/>
-      </form>
-      <div id="new_uri">
-        <label class="left_txt"
-               for=  "new_uri_txt">URI</label>
-
-        <input id=  "new_uri_txt" 
-               size="60" 
-               type="text" 
-               autocomplete="off"/>
-        <button id="new_uri_btn">Describe</button><br/>
-      </div>
-    </div> <!-- #TAB_PAGE_URI -->
     <div id="TAB_PAGE_URILBL" class="tab_page" style="display: none">
       <h2>OpenLink Entity Finder</h2>
       <form method="get" action="/about/" id="new_lbl_fm">
@@ -906,6 +888,24 @@ fct_new ()
         <button id="new_lbl_btn">Describe</button><br/>
       </div>
     </div>
+    <div id="TAB_PAGE_URI" class="tab_page" style="display: none">
+      <h2>OpenLink Entity Finder</h2>
+      <form method="get" action="/about/" id="new_uri_fm">
+        <input type="hidden" name="url" id="new_uri_val"/>
+	<input type="hidden" name="sid" value="<?= sid ?>"/>
+	<input type="hidden" name="urilookup" value="1"/>
+      </form>
+      <div id="new_uri">
+        <label class="left_txt"
+               for=  "new_uri_txt">URI</label>
+
+        <input id=  "new_uri_txt" 
+               size="60" 
+               type="text" 
+               autocomplete="off"/>
+        <button id="new_uri_btn">Describe</button><br/>
+    </div>
+    </div> <!-- #TAB_PAGE_URI -->
   </div> <!-- #main_srch -->
   <div class="main_expln"><br/>
     Faceted Search &amp; Find Service<br/>
@@ -1154,7 +1154,15 @@ fct_vsp ()
   start_time := msec_time ();
 
   if ('text' = cmd)
+    {
+      if (length (http_param ('search_for')) = 0)
+	{
+	  http (sprintf ('<div class="ses_info">No search criteria</div>'));
+	  fct_new ();
+	  return;
+	}
     fct_set_text (tree, sid, http_param ('search_for'));
+    }
   else if ('set_focus' = cmd)
     fct_set_focus (tree, sid, atoi (http_param ('n')));
   else if ('set_view' = cmd)

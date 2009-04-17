@@ -150,7 +150,7 @@
             <div class="nav">
               <h3>Actions</h3>
               <ul>
-                <li><a href="<?V case when urilookup = '1' then 'javascript:window.history.back()' else refr end ?>">Go Back</a></li>
+                <li><a href="<?V case when urilookup = '1' then '/fct/facet.vsp?sid=' || sid else refr end ?>">Go Back</a></li>
                 <li><a href="usage.vsp?g=<?U _S ?>&sid=<?V sid ?>&urilookup=<?V urilookup ?>">Usage Statistics</a></li>
 <!--                <li><a href="/fct/facet.vsp?sid=<?V sid ?>&cmd=set_class&iri=<?V gr ?>">Choose <?V ''?> as Type</a></li>
                 <li><a href="/fct/facet.vsp?sid=<?V sid ?>&cmd=open_property">Choose <?V ''?> as Property (p)</a></li>

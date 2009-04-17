@@ -86,9 +86,10 @@
        When enabled, this feature lets you to set hard limit for resource usage per query associated with 
        unauthenticated users. Queries execute until the response time limit threshold is reached, and, if partial 
        results are available, they are returned with additional result set diagnostics flagging the partial nature 
-       of the result set. All query handling is partitioned thereby protecting against cross-client resource contention.</p>
-    <p><i>Virtuoso Entity Finder</i> currently enforces a 20 second hard time limit for queries. Each query is first run 
-       with a 2 second timeout - if only a partial result or no results are received, the user is prompted to retry 
+       of the result set. All query handling is partitioned thereby protecting against cross-client resource 
+       contention.</p>
+    <p><i>Virtuoso Entity Finder</i> currently enforces a 20 second hard time limit for queries. Each query is first 
+       run with a 2 second timeout - if only a partial result or no results are received, the user is prompted to retry 
        with double the previous time limit until the hard limit is reached.</p>
     <h2>Available datasets</h2>
     <p>

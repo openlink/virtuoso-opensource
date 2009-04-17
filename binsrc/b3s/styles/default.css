@@ -100,7 +100,7 @@ td.rnk { margin: 0; padding: 0; }
 img.rnk { float: left; clear: left; margin-top: 1px;}
 
 /*#new_srch { margin-top: 40px; margin-bottom: 40px; width: 100%; text-align: center;}
-#new_srch label.left_txt { margin-right: 10px;}*/
+label.left_txt { margin-right: 10px;}*/
 
 div.expln { margin: 0 100px 5px 100px;}
 div.doc_ctr { margin: 10px; }
@@ -221,6 +221,7 @@ div.tab_page {
 
 div.tab_page form { margin-top: 40px;}
 div.tab_page form label { font-weight: bold; }
+label.left_txt { font-weight: bold }
 
 div.pg_b_nav { float: left; clear: left; width: 100%; margin-left: 10px;}
 
@@ -281,11 +282,15 @@ input.num { text-align: right;}
 
 div.thr_ctr { display: inline; width: 16px; border: 0; padding: 0;margin: 0;}
 
-.dlg { background-color: #ddd;}
+.dlg { background-color: #fff;
+       border: 1px outset;
+       margin: 10px auto 10px auto;
+       width: 90%;}
 .dlg .title { margin: 0; 
               text-align: center; 
-              background-image: url(/images/dlg_title_bkg.png); 
-              border-bottom: 1px inset}
+              background-image: url(/fct/images/dlg_title_bkg.png); 
+              border-bottom: 1px inset;
+              padding: 2px 0 2px 0;}
 .dlg form { margin: 0; width: 100%;}
 .dlg .btn_bar { margin: 0; 
                 padding-top: 2ex; 

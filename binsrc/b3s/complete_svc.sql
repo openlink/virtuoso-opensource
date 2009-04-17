@@ -43,6 +43,12 @@ json_out_vec_tst (in v any)
 ;
 
 create procedure 
+json_esc_str (in s any)
+{
+  return sprintf ('"%s"', replace (replace (replace (s, '\\', '\\\\'), '"', '\\"'), '\n', '\\n'));
+}
+
+create procedure 
 json_out_vec (in v any, inout ses any)
 {
   declare s varchar;
@@ -62,7 +68,7 @@ json_out_vec (in v any, inout ses any)
       else
         {
           if (isstring(v[i]))
-            http (sprintf ('"%s",', replace (replace (v[i], '\\', '\\\\'), '"', '\\"')), s); --'
+            http (json_esc_str (v[i])||',', s);
         }
     }
 
@@ -121,6 +127,16 @@ DB.DBA.IRI_AUTOCOMPLETE () __SOAP_HTTP 'text/json'
       langs := http_request_header_full (lines, 'Accept-Language', 'en');
     }
 
+  {
+    declare exit handler for sqlstate '*' 
+    {
+      http ('{"error": {"sqlstate" : ' || 
+            json_esc_str(__SQL_STATE) || 
+            ',"sqlmessage":' || 
+            json_esc_str(__SQL_MESSAGE) || '},"results":[]}', ses);
+      return ses;
+    };
+
   if (iri_str is not null)
     res := DB.DBA.cmp_uri (iri_str);
   else if (lbl_str is not null)
@@ -156,6 +172,7 @@ DB.DBA.IRI_AUTOCOMPLETE () __SOAP_HTTP 'text/json'
   return ses;
  empty:
   return '{results: []}';
+  };
 }
 
 grant execute on DB.DBA.IRI_AUTOCOMPLETE to PROXY;
