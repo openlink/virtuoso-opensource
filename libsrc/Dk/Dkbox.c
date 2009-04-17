@@ -1412,7 +1412,7 @@ box_equal (cbox_t b1, cbox_t b2)
 {
   uint32 l1, l2;
   dtp_t b1_tag, b2_tag;
-  boxint b1_long_val, b2_long_val;
+  boxint b1_long_val = 0, b2_long_val = 0;
 
   if (b1 == b2)
     return 1;

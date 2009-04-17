@@ -1685,7 +1685,7 @@ inprocess_request (TAKE_G dk_session_t * ses, caddr_t * request)
   caddr_t *arguments;
   caddr_t arg_array[MAX_FUTURE_ARGUMENTS];
   volatile caddr_t result = NULL;
-  request_context_t context;
+  request_context_t context = {0};
   future_request_t *future;
 
   future = frq_create (ses, request);
@@ -3134,7 +3134,7 @@ dk_session_t *
 PrpcListen (char *addr, int sesclass)
 {
   USE_GLOBAL
-  dk_session_t * listening_session;
+  dk_session_t * listening_session = NULL;
 
   dks_n_housekeeping_sessions++;
   dk_set_resource_usage ();
