@@ -393,8 +393,9 @@ read_int (dk_session_t *session)
   return read_long (session);
   else if (DV_INT64 == dtp)
     return read_int64 (session);
-  else
-    box_read_error (session, dtp);
+
+  box_read_error (session, dtp);
+  return 0;
 }
 
 
