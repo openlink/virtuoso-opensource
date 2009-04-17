@@ -2371,6 +2371,7 @@ AC_CONFIG_FILES([
 	docsrc/Makefile
 	libsrc/Makefile
 	binsrc/bpel/Makefile
+	binsrc/b3s/Makefile
 	binsrc/cached_resources/Makefile
 	binsrc/dav/Makefile
 	binsrc/driver/Makefile
