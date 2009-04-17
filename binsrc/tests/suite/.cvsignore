@@ -16,6 +16,7 @@ wcopy
 *.trx
 *.lck
 *.db
+*.bp
 ident.txt
 audit.txt
 t.xsl

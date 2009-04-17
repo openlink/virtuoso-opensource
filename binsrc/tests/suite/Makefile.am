@@ -37,43 +37,47 @@ check_SCRIPTS = \
 	oledb.sh \
 	rtest.sh \
 	tblob_recode.sh \
+	tclstart.sh \
+	tclstop.h \
+	tclstop.sh \
 	tcpt.sh \
-	tdav_meta.sh \
 	tdav.sh \
+	tdav_meta.sh \
 	tdbp.sh \
 	tdconv.sh \
 	tdrop.sh \
-	testall.sh \
 	test_fn.sh \
 	test_server.sh \
+	testall.sh \
 	thttp.sh \
 	timsg.sh \
 	tjdbc.sh \
+	tp.sh \
 	tpcd.sh \
 	tproviders.sh \
 	tproxy.sh \
-	tp.sh \
-	trecov_schema.sh \
 	trecov.sh \
-	treplh.sh \
+	trecov_schema.sh \
 	trepl.sh \
+	treplh.sh \
 	tsec.sh \
 	tsoap12.sh \
-	tsparql_demo.sh \
 	tsparql.sh \
+	tsparql_demo.sh \
+	tsql.sh \
 	tsql2.sh \
 	tsql3.sh \
+	tsqllite.sh \
 	tsqlo.sh \
-	tsql.sh \
 	tstriping.sh \
 	tsxml.sh \
 	ttutorial.sh \
 	tupgrade_recov.sh \
-	tvad2.sh \
 	tvad.sh \
+	tvad2.sh \
 	tvsp.sh \
-	tvspxex.sh \
 	tvspx.sh \
+	tvspxex.sh \
 	twcopy.sh \
 	twiki.sh \
 	txslt.sh
