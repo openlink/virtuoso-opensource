@@ -1,0 +1,245 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<!--
+--
+--  $Id$
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2009 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+-->
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<?vsp
+
+   declare _S, odd_position any;
+   declare page_resource_uri, proxy_iri, rdf_link, label, _subject any;
+   declare white_page, arr, data, meta, h1, h2, inx, gr, host, refr, sid, inf, sas, langs, best_q, tp any;
+   declare urilookup integer;
+
+   white_page := 1;
+   sid := null;
+   inf := '';
+   sas := '';
+   if (sid is null)
+     sid := get_keyword ('sid', params); 
+   else 
+     sid := '';
+   refr := null;
+   if (sid is not null)
+     {
+       for select fct_state from fct_state where fct_sid = sid do
+         {
+	   inf := fct_inf_clause (fct_state);
+	   sas := fct_sas_clause (fct_state);
+	   inf := inf || ' ' || sas;
+	 }
+       refr := '/fct/facet.vsp?sid='||sid||'&cmd=refresh';	 
+     }
+   host := http_request_header (http_request_header (), 'Host');  
+   langs := http_request_header_full (lines, 'Accept-Language', 'en');
+   gr := get_keyword ('g', params, '');
+   arr := rfc1808_parse_uri (gr);
+   if (arr[0] = '' and arr[1] = '' and arr[2] <> '')
+     gr := 'http://' || gr;
+
+   urilookup := get_keyword ('urilookup', params);
+
+   page_resource_uri := gr;
+   page_resource_uri := replace (page_resource_uri, '%23', '#');
+   _S := page_resource_uri; 
+   proxy_iri := page_resource_uri;
+
+   odd_position := 0;
+   set http_charset='utf-8';
+   set isolation = 'uncommitted';
+   http_header ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\n');
+   label := ''; _subject := '';
+
+   exec (sprintf ('sparql  define input:inference "facets" select ?o (lang(?o)) where { <%S> virtrdf:label ?o }', _S), null, null, vector (), 0, meta, data);
+   label := b3s_label_get (data, langs);
+
+   exec (sprintf ('sparql %s prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/> 
+	select ?o (lang(?o)) where { <%S> rdfs:comment ?o }', inf, _S), null, null, vector (), 0, meta, data);
+   _subject := b3s_label_get (data, langs);
+
+   rdf_link := sprintf ('/sparql?query=%U', sprintf ('DESCRIBE <%s>',_S)); 
+
+  declare __res_desc varchar;
+  __res_desc := b3s_uri_curie(page_resource_uri);
+  if (not length (label))
+    label := page_resource_uri;
+  tp := atoi (get_keyword ('tp', params, '1'));  
+?>
+
+<!-- header -->
+<head>
+    <base href="http://<?V host ?>/fct/rdfdesc/" />
+    <title>Usage Statistics about: <?vsp http (sprintf ('%s', label)); ?></title>
+    <link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>" title="RDF" />
+    <link rel="stylesheet" type="text/css" href="styles/default.css" charset="utf-8" />
+    <link rel="stylesheet" type="text/css" href="styles/highlighter.css" charset="utf-8" />
+    <script type="text/javascript" >
+      var featureList=["tab"];
+    </script>
+    <script type="text/javascript" src="/fct/oat/toolkit/loader.js"></script>
+    <script type="text/javascript" src="s/description.js"></script>
+</head>
+<body class="usage_page">
+  <div id="HD">
+    <div id="hd_l">
+      <h1>
+        <div id="logo">
+          <a href="http://www.openlinksw.com">
+            <img src="/fct/images/openlink_site_logo.png" 
+                 alt="OpenLink Software"/>
+          </a>
+        </div>
+      </h1>
+    </div> <!-- hd_l -->
+    <div id="hd_r">
+      <a href="http://data.openlinksw.com/about/html/http://data.openlinksw.com/oplweb/product_family/virtuoso" 
+         title="OpenLink Virtuoso">
+        <img class="powered_by" src="/fct/images/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/>
+      </a>
+    </div> <!-- hd_r -->
+  </div> <!-- #HD -->
+  <div id="MD">
+    <div class="page_resource_info">
+      <h2>Usage stats on <a href="<?= case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp http (sprintf ('%s', label)); ?></a></h2>
+	      - an Entity in Data Space: <a href="http://<?V host ?>"><?V host ?></a>
+    </div>
+    <div class="subj_nav">
+      <?vsp if (_subject <> '') { ?>
+        <p class="subj_desc"><?vsp http (sprintf ('%s', _subject)); ?></p>
+      <?vsp } ?>
+      <?vsp if (refr is not null) { ?>
+        <div class="nav">
+          <h3>Actions</h3>
+          <ul>
+            <li><a href="<?V case when urilookup = '1' then 'javascript:window.history.back()' else refr end ?>">Go Back</a></li>
+          </ul>
+        </div>
+      <?vsp } ?>      
+    </div> <!-- .subj_nav -->
+
+<!-- proptable -->
+    <div id="TAB_ROW">
+	<div class="tab <?vsp http (case when tp = 1 then ' tab_selected' else '' end); ?>">
+          <a href="<?V http_path () ?>?g=<?U _S ?>&tp=1&sid=<?V sid ?>">Referenced by Graphs</a>
+        </div>
+	<div class="tab <?vsp http (case when tp = 2 then ' tab_selected' else '' end); ?>">
+          <a href="<?V http_path () ?>?g=<?U _S ?>&tp=2&sid=<?V sid ?>">Source Graphs</a>
+        </div>
+	<div class="tab <?vsp http (case when tp = 3 then ' tab_selected' else '' end); ?>">
+          <a href="<?V http_path () ?>?g=<?U _S ?>&tp=3&sid=<?V sid ?>">Expanded Same As</a>
+        </div>
+	<div class="tab <?vsp http (case when tp = 4 then ' tab_selected' else '' end); ?>">
+          <a href="<?V http_path () ?>?g=<?U _S ?>&tp=4&sid=<?V sid ?>">Expanded IFPs</a>
+        </div>
+      </div> <!-- TAB_ROW -->
+      <div id="TAB_CTR">
+      <div class="tab_page">
+        <table class="description">
+	  <?vsp
+	    declare qr varchar;
+	    if (tp = 1) -- refd in data sets
+	      {
+	        qr := sprintf ('sparql select ?g count (*) where { graph ?g { <%S> ?p ?o }} group by ?g order by desc 2 limit 20', _S);
+                http ('<tr><th class="property">Graph IRI</th><th class="value">Count</th></tr>\n');
+	      }
+	    if (tp = 2) -- defd in data sets
+	      {
+	        qr := sprintf ('sparql select ?g count (*) where { graph ?g { ?s ?p <%S>  }} group by ?g order by desc 2 limit 20', _S);
+                http ('<tr><th>Graph IRI</th><th>Count</th></tr>\n');
+	      }
+	    if (tp = 3) -- Expanded sas
+	      {
+	         qr := sprintf ('sparql select ?syn (sql:rnk_scale (<LONG::IRI_RANK> (?syn))) where {{ select ?s ?syn  where {{?syn owl:sameAs ?s } union {?s owl:sameAs ?syn}}} option (transitive, t_distinct, t_min (0), T_in (?s), t_out (?syn)) . filter (!isliteral (?syn) && ?s = <%S> ) } order by desc 2 limit 20', _S);
+                 http ('<tr><th>Subject</th><th>Rank</th></tr>\n');
+	      }
+	    if (tp = 4) -- Expanded ifp
+	      {
+	         qr := sprintf ('sparql select distinct ?syn ?p ?o (sql:rnk_scale (<LONG::IRI_RANK> (?syn))) where { <%S> ?p ?o .  filter (0 != (<LONG::bif:rdf_is_sub> ("b3sifp", ?p, lod:ifp_like, 3))) .  ?syn ?p ?o . } order by desc 4 limit 20', _S);
+		 http ('<tr><th>Subject</th><th>Property</th><th>Object</th><th>Rank</th></tr>\n');
+	      }
+	    exec (qr, null, null, vector (), 0, null, null, h1); 
+	    while (0 = exec_next (h1, null, null, data))	
+	      {
+	         http ('<tr>');
+                 if (tp = 1 or tp = 2)
+		   { 
+		     --for (declare i, l int, i := 0, l := length (data); i < l; i := i + 1)
+		     --	{
+		     --	  http_value (data[i], 'td');
+	             -- }	    
+		     http (sprintf ('<td>%V</td>', data[0]));
+		     http (sprintf ('<td align="right">%d</td>', data[1]));
+		   }   
+		 else if (tp = 3)
+		  {
+ 		     http (sprintf ('<td><a href="/about/?url=%U">%V</a></td>', data[0], b3s_uri_curie (data[0])));
+		     http (sprintf ('<td align="right">%.6g</td>', data[1]));
+		  } 
+                 else if (tp = 4)
+		  {
+ 		     http (sprintf ('<td><a href="/about/?url=%U">%V</a></td>', data[0], b3s_uri_curie (data[0])));
+		     http (sprintf ('<td><a href="/about/?url=%U">%V</a></td>', data[1], b3s_uri_curie (data[1])));
+		     if (__box_flags (data[2]) = 1)
+		       http (sprintf ('<td><a href="/about/?url=%U">%V</a></td>', data[2], b3s_uri_curie (data[2])));
+		     else
+                       {
+		         if (isstring (data[2]))
+			   http ('<td>' || data[2] || '</td>');
+			 else  
+                           http_value (data[2], 'td');
+		       }	 
+		     http (sprintf ('<td align="right">%.06g</td>', cast (data[3] as decimal)));
+		     --http (sprintf ('<td align="right">%s</td>', data[3]));
+		  } 
+	         http ('</tr>\n');
+	      }
+	    exec_close (h1);
+	  ?>
+      </table>
+      </div> <!-- .tab_page -->
+      </div> <!-- #TAB_CTR -->
+    </div> <!--  #MD -->
+<!-- footer -->
+    <div id="FT">
+      <div id="ft_t">
+        Explore using:
+        <a href="/ode/?uri=<?vsp http_url (page_resource_uri); ?>">OpenLink Data Explorer</a> |
+        <a href="http://dataviewer.zitgist.com/?uri=<?vsp http_url (proxy_iri); ?>">Zitgist Data Viewer</a> |
+        <a href="http://beckr.org/marbles?uri=<?vsp http_url (proxy_iri); ?>">Marbles</a> |
+        <a href="http://www4.wiwiss.fu-berlin.de/rdf_browser/?browse_uri=<?vsp http_url (proxy_iri); ?>">DISCO</a> |
+        <a href="http://dig.csail.mit.edu/2005/ajar/release/tabulator/0.8/tab.html?uri=<?vsp http_url (proxy_iri); ?>" >Tabulator</a>
+        &nbsp; &nbsp; Raw Data in:
+        <a href="<?=rdf_link || '&output=n3'?>">N3</a> |
+        <a href="<?=rdf_link || '&output=xml'?>">RDF/XML</a>
+        &nbsp; &nbsp;<a href="http://ode.openlinksw.com/">About</a>&nbsp; &nbsp;
+      </div> <!-- #ft_t -->
+      <div id="ft_b">
+        <a href="http://virtuoso.openlinksw.com" title="OpenLink Virtuoso"><img class="powered_by" src="/fct/images/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/></a>
+        <a href="http://linkeddata.org/"><img alt="This material is Open Knowledge" src="/fct/images/LoDLogo.gif" border="0"></a> &nbsp;
+        <a href="http://dbpedia.org/sparql"><img alt="W3C Semantic Web Technology" src="/fct/images/sw-sparql-blue.png" border="0"></a>
+        <a href="<?=rdf_link?>" title="RDF data"><img src="/fct/images/sw-rdf-blue.png" alt="[RDF Data]"></a>
+        <a href="http://www.opendefinition.org/"><img alt="This material is Open Knowledge" src="/fct/images/od_80x15_red_green.png" border="0"></a>
+	<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/"><img alt="Creative Commons License" style="border-width:0" src="http://i.creativecommons.org/l/by-sa/3.0/80x15.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-Share Alike 3.0 Unported License</a>.
+      </div> <!-- #ft_b -->
+    </div> <!-- #FT -->
+ </body>
+</html>

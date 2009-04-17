@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+-- 
+--  $Id$
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2009 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+-->
+<!DOCTYPE html 
+     PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<?vsp set http_charset='utf-8'; ?>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<title>OpenLink Entity Finder</title>
+<link rel="stylesheet" media="screen" type="text/css" href="styles/default.css"/>
+<script type="text/javascript" >
+    var featureList=["map", "combolist", "ajax2", "tab", "json"];
+</script>
+<script type="text/javascript" src="oat/toolkit/loader.js"></script>
+<script type="text/javascript" src="facet.js"></script>
+</head>
+<body>
+<div id="PG">
+<div id="HD">
+  <a href="http://www.openlinksw.com" class="logo">
+    <img id="opl_logo" src="/fct/images/openlink_site_logo.png" alt="OpenLink Software"/>
+  </a>
+</div><!-- #HD -->
+<div id="MD">
+<?vsp 
+-- dbg_obj_print (http_param ('cmd'));
+-- dbg_obj_print (http_param ('search_for'));
+-- dbg_obj_print (http_request_header ());
+-- dbg_obj_print (params);
+
+declare cmd varchar;
+declare langs any;
+
+cmd := http_param ('cmd');
+
+langs := http_request_header_full (lines, 'Accept-Language', 'en');
+connection_set ('langs', langs);
+
+if ('load' = cmd)
+  {
+    declare _fsq_id int;
+    declare _sid int;
+
+    _fsq_id := http_param ('fsq_id');
+
+    if (_fsq_id) 
+      {
+        _sid := fct_load (_fsq_id);
+	if (_sid is not null)
+          { 
+            http_rewrite ();
+	    http_request_status ('HTTP/1.1 302 Found');
+	    http_header (sprintf ('Location: /fct/facet.vsp?sid=%d&cmd=refresh\r\n', _sid));
+            goto load_redir;
+          }
+      }
+  }
+
+declare exit handler for sqlstate '*'
+{
+  http('<div class="error_msg dlg">\n');
+  http('  <div class="title"><h2>Error</h2></div>\n');
+  http('  <div class="body">An unexpected error was encountered while processing your request.</div>\n');
+  http('  <div class="diag">\n');
+  http('  <h3>Diagnostics</h3>\n');
+  http(sprintf ('<pre>SQLSTATE: %s</pre><br/>\n', __SQL_STATE));
+  http(sprintf ('<pre>SQLMSG  : %s</pre><br/>\n', __SQL_MESSAGE));
+  http('  </div>\n');
+  http('  <div class="btn_bar"><button onclick="document.location=''/fct/facet.vsp?qq=ww''">New Search</button></div>\n');  http('</div>\n');
+
+  commit work;
+  declare _state any;
+  select fct_state into _state from fct_state where fct_sid = http_param ('sid');
+  insert into fct_log (fl_sid, fl_cli_ip, fl_state, fl_where, fl_cmd, fl_sqlstate, fl_sqlmsg, fl_parms)
+         values (http_param('sid'), 
+	         http_client_ip (),
+		 _state,
+		 'ERR_HANDLER',
+		 http_param('cmd'), 
+		 __SQL_STATE,
+		 __SQL_MESSAGE,
+		 serialize(params));
+  goto footer;
+  
+};
+fct_vsp ();
+footer:;
+?>
+</div><!-- #MD -->
+<div id="FT">
+  <a href="http://virtuoso.openlinksw.com/"><img src="/fct/images/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/></a>
+  <a href="http://linkeddata.org"><img src="/fct/images/LoDLogo.gif" alt="Linked Data"/></a><br/>
+  <span class="copyright">Copyright &copy; 2009 OpenLink Software</span>
+  <div id="FT_L"></div>
+  <div id="FT_R"></div>
+</div>
+</div> <!-- #PG -->
+</body>
+</html>
+<?vsp
+load_redir:;
+?>
