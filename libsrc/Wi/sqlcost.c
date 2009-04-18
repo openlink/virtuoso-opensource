@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  sql cost functions
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "sqlnode.h"
@@ -518,12 +518,12 @@ sqlo_iri_constant_name_1 (ST* tree)
   if (DV_STRINGP (tree))
     return (caddr_t)tree;
   if (ST_P (tree, CALL_STMT) && 1 <= BOX_ELEMENTS (tree->_.call.params)
-      && DV_STRINGP (tree->_.call.name) 
+      && DV_STRINGP (tree->_.call.name)
 #ifdef NDEBUG
       && 0 == stricmp (tree->_.call.name, "__BFT")
 #else
       && 0 == stricmp (tree->_.call.name, "__box_flags_tweak")
-#endif      
+#endif
       && DV_STRINGP (tree->_.call.params[0]))
     return (caddr_t) tree->_.call.params[0];
   return NULL;
@@ -537,7 +537,7 @@ sqlo_iri_constant_name (ST* tree)
   if (DV_IRI_ID == DV_TYPE_OF (tree))
     return (caddr_t)tree;
   if (ST_P (tree, CALL_STMT) && 1 <= BOX_ELEMENTS (tree->_.call.params)
-      && DV_STRINGP (tree->_.call.name) 
+      && DV_STRINGP (tree->_.call.name)
       && 0 == strnicmp (tree->_.call.name, "__I2ID", 6)
       && DV_STRINGP ((name = sqlo_iri_constant_name_1 (tree->_.call.params[0]))))
     return name;
@@ -856,7 +856,7 @@ dfe_const_to_spec (df_elt_t * lower, df_elt_t * upper, dbe_key_t * key,
 }
 
 
-caddr_t 
+caddr_t
 itc_sample_cache_key (it_cursor_t * itc)
 {
   int inx;
@@ -913,7 +913,7 @@ sqlo_inx_sample_1 (dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int 
   sc_key = itc_sample_cache_key (itc);
   if (so->so_sc->sc_sample_cache)
     place = (caddr_t*) id_hash_get (so->so_sc->sc_sample_cache, (caddr_t) &sc_key);
-  else 
+  else
     {
       so->so_sc->sc_sample_cache = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
       place = NULL;
@@ -1137,10 +1137,10 @@ arity_scale (float ar)
     between good and bad plans because they both get execd 0 times.  So when
     card goes under 1, scale it between 1 and 0.1.  Increasing
     mapping, less stays less but logarithmically slowed down.  Ad hoc
-    formula */ 
+    formula */
 
   float l;
-  if (ar > 1) 
+  if (ar > 1)
     return ar;
   l = log (10/ar) / log (10);
   return  0.1 + (0.9 * (1 / l));
@@ -1597,7 +1597,7 @@ dfe_unit_cost (df_elt_t * dfe, float input_arity, float * u1, float * a1, float 
 	      if (dfe->dfe_type == DFE_EXISTS)
 		{
 		  /* an exists never has arity > 1.  If 1, guess 0.5.  If over 1, scale between 0.5 and 1 */
-		  *a1 = *a1 < 1 ? *a1 / 2 
+		  *a1 = *a1 < 1 ? *a1 / 2
 		    : 0.99 - (1 / (2 * *a1));
 		}
 	      else

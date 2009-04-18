@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Database Registry
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "sqlnode.h"
@@ -51,7 +51,7 @@ cpt_write_registry (dbe_storage_t * dbs, dk_session_t *ses)
 	  log_error ("A bad registry has been detected in cpt.  Making new registry.");
 	  prev_size = first = any_page = 0;
 	}
-      else 
+      else
 	prev_size = strses_length (strses);
       dk_free_box (strses);
     }
@@ -309,7 +309,7 @@ registry_exec ()
     }
 }
 
-void 
+void
 registry_set_sequence (caddr_t name, boxint value, caddr_t * err_ret)
 {
   char temp[2000];

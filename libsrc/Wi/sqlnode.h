@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  SQL query nodes
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #ifndef _SQLNODE_H
@@ -145,7 +145,7 @@ typedef struct state_const_slot_s
   (* ((ptrlong *) &qst[inx]))
 
 
-struct proc_name_s 
+struct proc_name_s
 {
   int 		pn_ref_count;
   query_t *	pn_query;
@@ -442,7 +442,7 @@ typedef struct key_source_s
 
 
 
-typedef struct inx_locality_s 
+typedef struct inx_locality_s
 {
   int		il_n_read;
   int		il_last_dp;
@@ -460,14 +460,14 @@ typedef struct inx_locality_s
 #define IOP_NEW_VAL 4
 #define IOP_READ_INDEX 5 /*for a bitmap iop, means must read inx because the cached bm does nothave the range */
 
-typedef struct inx_op_s 
+typedef struct inx_op_s
 {
   /* Members of an operator node combining multiple indices */
   int		iop_op;
   struct inx_op_s *	iop_parent;
   struct inx_op_s ** 	iop_terms;
   state_slot_t **	iop_max;
-  state_slot_t *	iop_state; /* pre-init, on row, at end */ 
+  state_slot_t *	iop_state; /* pre-init, on row, at end */
   dk_set_t	iop_extra_copies; /* if operands from different tables, fill copies of equal cols for all ssl's. ((org1 cp1-1 cp1-2...)(org2 cp2-1 cp2-2...)...)  */
 
   /* Members for the leaves, the actual indices */
@@ -516,7 +516,7 @@ typedef struct  in_iter_node_s
   state_slot_t **	ii_values;
   state_slot_t *	ii_output;
   state_slot_t *	ii_values_array;
-  state_slot_t *	ii_outer_any_passed; /* if rhs of left outer, flag here to see if any answer. If not, do outer output when at end */ 
+  state_slot_t *	ii_outer_any_passed; /* if rhs of left outer, flag here to see if any answer. If not, do outer output when at end */
   int		ii_nth_value;
 } in_iter_node_t;
 
@@ -847,7 +847,7 @@ typedef struct fun_ref_node_s
   } fun_ref_node_t;
 
 
-typedef struct breakup_node_s 
+typedef struct breakup_node_s
 {
   data_source_t	src_gen;
   int		brk_current_slot;
@@ -1235,10 +1235,10 @@ extern void sqls_define_uddi (void);
 extern void sqls_define_imsg (void);
 extern void sqls_define_auto (void);
 extern void sqls_define_sparql (void);
-extern void sqls_define_sys (void); 
-extern void sqls_define_repl (void); 
-extern void sqls_define_ws (void); 
-extern void sqls_define_pldbg (void); 
+extern void sqls_define_sys (void);
+extern void sqls_define_repl (void);
+extern void sqls_define_ws (void);
+extern void sqls_define_pldbg (void);
 extern void sqls_arfw_define (void);
 extern void sqls_arfw_define_adm (void);
 extern void sqls_arfw_define_ddk (void);

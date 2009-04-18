@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Dynamic SQL Expression Generator
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "libutil.h"
@@ -1376,7 +1376,7 @@ cv_assigned_slots (code_vec_t cv)
 	    dk_set_push (&res, (void*) ins->_.artm.result);
 	  break;
 	case INS_SUBQ:
-	  if (ins->_.subq.query && ins->_.subq.query->qr_select_node 
+	  if (ins->_.subq.query && ins->_.subq.query->qr_select_node
 	      && ((out = ins->_.subq.query->qr_select_node->sel_out_slots)))
 	    {
 	      int inx;
@@ -1384,7 +1384,7 @@ cv_assigned_slots (code_vec_t cv)
 		{
 		  if (ssl->ssl_type == SSL_VARIABLE || ssl->ssl_type == SSL_COLUMN)
 		    dk_set_push (&res,  (void*) ssl);
-		}	      
+		}
 	      END_DO_BOX;
 	    }
 	}

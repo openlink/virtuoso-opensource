@@ -1,24 +1,24 @@
 /*
  *  $Id$
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2009 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "sparql2sql.h"
@@ -521,7 +521,7 @@ sparp_equiv_alloc (sparp_t *sparp)
   eqs[eqcount++] = res;
   sparp->sparp_equiv_count = eqcount;
   return res;
-}  
+}
 
 sparp_equiv_t *
 sparp_equiv_get (sparp_t *sparp, SPART *haystack_gp, SPART *needle_var, int flags)
@@ -677,7 +677,7 @@ sparp_equiv_get_ro (sparp_equiv_t **equivs, ptrlong equiv_count, SPART *haystack
   eq_idxs = haystack_gp->_.gp.equiv_indexes;
 #ifdef DEBUG
   if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &equivs, 1000))
-    spar_internal_error (NULL, "sparp_equiv_get_ro(): stack overflow");    
+    spar_internal_error (NULL, "sparp_equiv_get_ro(): stack overflow");
   switch (SPART_TYPE(needle_var))
     {
     case SPAR_VARIABLE: break;
@@ -807,7 +807,7 @@ sparp_equiv_connect (sparp_t *sparp, sparp_equiv_t *outer, sparp_equiv_t *inner,
   if (i_listed_in_o)
     spar_internal_error (sparp, "sparp_" "equiv_connect(): unidirectional link (2) ?");
 #endif
-  if (!add_if_missing)    
+  if (!add_if_missing)
     return 0;
   outer->e_subvalue_idxs = (ptrlong *)t_list_concat_tail ((caddr_t)(outer->e_subvalue_idxs), 1, (ptrlong)(inner->e_own_idx));
   inner->e_receiver_idxs = (ptrlong *)t_list_concat_tail ((caddr_t)(inner->e_receiver_idxs), 1, (ptrlong)(outer->e_own_idx));
@@ -986,7 +986,7 @@ sparp_equiv_exact_copy (sparp_t *sparp, sparp_equiv_t *orig)
 int
 sparp_equiv_restrict_by_constant (sparp_t *sparp, sparp_equiv_t *pri, ccaddr_t datatype, SPART *value)
 {
-  rdf_val_range_t tmp;  
+  rdf_val_range_t tmp;
   sparp_rvr_set_by_constant (sparp, &tmp, datatype, value);
   sparp_rvr_tighten (sparp, &tmp, &(pri->e_rvr), ~0);
   if (tmp.rvrRestrictions & SPART_VARR_CONFLICT)
@@ -1661,7 +1661,7 @@ end_of_sff_processing:
     ((new_restr & SPART_VARR_IS_REF) && (new_restr & SPART_VARR_IS_LIT)) ||
     ((new_restr & SPART_VARR_IS_BLANK) && (new_restr & SPART_VARR_IS_IRI)) ||
     ((new_restr & SPART_VARR_ALWAYS_NULL) &&
-     (new_restr & (SPART_VARR_NOT_NULL | SPART_VARR_IS_LIT | SPART_VARR_IS_REF)) ) )    
+     (new_restr & (SPART_VARR_NOT_NULL | SPART_VARR_IS_LIT | SPART_VARR_IS_REF)) ) )
     goto conflict; /* see below */
 
 #if 0
@@ -2830,7 +2830,7 @@ qm_value_t *sparp_find_qmv_of_var_or_retval (sparp_t *sparp, SPART *var_triple, 
     }
   qm = var_triple->_.triple.tc_list[0]->tc_qm;
   qmv = JSO_FIELD_ACCESS(qm_value_t *, qm, qm_field_map_offsets[tr_idx])[0];
-  return qmv;   
+  return qmv;
 }
 
 SPART *sparp_find_gp_by_eq_idx_int (sparp_t *sparp, SPART *gp, ptrlong eq_idx)
@@ -3039,8 +3039,8 @@ sparp_get_options_of_tree (sparp_t *sparp, SPART *tree)
 {
   switch (SPART_TYPE (tree))
     {
-    case SPAR_GP: return tree->_.gp.options; 
-    case SPAR_TRIPLE: return tree->_.triple.options; 
+    case SPAR_GP: return tree->_.gp.options;
+    case SPAR_TRIPLE: return tree->_.triple.options;
     }
   return NULL;
 }
@@ -3232,7 +3232,7 @@ spar_var_name_of_ret_column (SPART *tree)
     case DV_ARRAY_OF_POINTER:
       switch (tree->type)
         {
-        case SPAR_ALIAS: return spar_var_name_of_ret_column (tree->_.alias.arg); 
+        case SPAR_ALIAS: return spar_var_name_of_ret_column (tree->_.alias.arg);
         case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL: return tree->_.var.vname;
         }
       return NULL;
@@ -3940,7 +3940,7 @@ printed:
 }
 
 
-void 
+void
 sparp_dbg_gp_print (sparp_t *sparp, SPART *tree)
 {
   int eq_ctr, eq_count;

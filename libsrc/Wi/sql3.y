@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  SQL Parser
- *   
+ *
  *   This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *   project.
- *   
+ *
  *  Copyright (C) 1998-2009 OpenLink Software
- *   
+ *
  *   This project is free software; you can redistribute it and/or modify it
  *   under the terms of the GNU General Public License as published by the
  *   Free Software Foundation; only version 2 of the License, dated June 1991.
- *   
+ *
  *   This program is distributed in the hope that it will be useful, but
  *   WITHOUT ANY WARRANTY; without even the implied warranty of
  *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *   General Public License for more details.
- *   
+ *
  *   You should have received a copy of the GNU General Public License along
  *   with this program; if not, write to the Free Software Foundation, Inc.,
  *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *   
+ *
  */
 
 /*
@@ -187,8 +187,8 @@
 %type <tree> string_concatenation_operator
 %type <list> opt_scalar_exp_commalist
 %type <tree> selection
-%type <list> breakup_list 
-%type <list> breakup_term 
+%type <list> breakup_list
+%type <list> breakup_term
 %type <box> atom
 %type <box> atom_no_obe
 %type <box> parameter_ref
@@ -536,10 +536,10 @@
 %type <tree> user_defined_type_alter
 %type <tree> alter_type_action
 %type <box> array_modifier
-%type <tree> cost_decl 
-%type <list> cost_number_list 
-%type <box> cost_number 
-%type <tree> partition_def 
+%type <tree> cost_decl
+%type <list> cost_number_list
+%type <box> cost_number
+%type <tree> partition_def
 
 
 %token <box> TYPE FINAL_L METHOD CHECKED SYSTEM GENERATED SOURCE RESULT LOCATOR INSTANCE_L CONSTRUCTOR SELF_L OVERRIDING STYLE SQL_L GENERAL DETERMINISTIC NO_L CONTAINS READS DATA
@@ -1914,14 +1914,14 @@ query_no_from_spec
 
 
 
-breakup_term 
+breakup_term
 : '(' select_scalar_exp_commalist  ')' { $$ = dk_set_conc ($2, t_CONS (t_list (5, BOP_AS, (ptrlong) 1, NULL, t_box_string ("__brkup_cond"), NULL), NULL)); }
 	| '(' select_scalar_exp_commalist WHERE search_condition ')' {
 	  ST * cond = (ST*) t_list (5, BOP_AS, t_list (2, SEARCHED_CASE, t_list (4, $4, (caddr_t)1,  t_list (2, QUOTE, NULL), 0)), NULL, t_box_string ("__brkup_cond"), NULL);
 	  $$ = dk_set_conc ($2, t_CONS (cond, NULL)); }
 	;
 
-breakup_list 
+breakup_list
 	: breakup_term { $$ = t_CONS ($1, NULL);}
 	| breakup_list breakup_term { $$ = t_NCONC ($1, t_CONS ($2, NULL)); }
 	;
@@ -2175,7 +2175,7 @@ comparison_predicate
 /*	| scalar_exp COMPARISON subquery
 		{
 		  if ($2 == BOP_NEQ)
-		    
+
 		      ST *tmp = SUBQ_PRED (ALL_PRED, $1, $3, BOP_EQ, NULL);
 		      NEGATE ($$, tmp);
 		    }
@@ -2946,10 +2946,10 @@ base_data_type
 	| IRI_ID '(' INTNUM ')'
 		{ $$ = t_listst (2, (ptrlong) DV_IRI_ID, $3);
 		}
-	| IRI_ID 
+	| IRI_ID
 		{ $$ = t_listst (2, (ptrlong) DV_IRI_ID, (ptrlong)12); /* #i+10digits */
 		}
-	| IRI_ID_8 
+	| IRI_ID_8
 		{ $$ = t_listst (2, (ptrlong) DV_IRI_ID_8, (ptrlong)22); /* #i+20digits */
 		}
 	;
@@ -3018,7 +3018,7 @@ column_data_type
 		  else
 		    $$ = t_listst (4, (long) DV_BLOB, t_box_num (0x7fffffff), NULL, $2);
 		}
-	| LONG_L ANY 
+	| LONG_L ANY
 		{
 		  $$ = t_listst (4, (long) DV_BLOB, t_box_num (0x7fffffff), NULL, t_box_string ("DB.DBA.__ANY"));
 		}
@@ -3256,9 +3256,9 @@ rout_alt_type
 cost_number
 	: INTNUM {  $$ = t_box_float ((float) unbox ($1)); }
 	| APPROXNUM { double d;
-  switch (DV_TYPE_OF ($1)) 
-    { 
-    case DV_SINGLE_FLOAT: $$ = $1; break; 
+  switch (DV_TYPE_OF ($1))
+    {
+    case DV_SINGLE_FLOAT: $$ = $1; break;
     case DV_DOUBLE_FLOAT: $$ = t_box_float ((float) unbox_double ($1)); break;
     case DV_NUMERIC: numeric_to_double ((numeric_t) $1, &d); $$ = t_box_float ((float)d); break;
     }
@@ -3287,7 +3287,7 @@ routine_statement
 	| open_statement
 	| rollback_statement
 	| commit_statement
-	| cost_decl 
+	| cost_decl
 	| /* empty */				{ $$ = t_listst (1, NULL_STMT); }
 	;
 
@@ -4295,34 +4295,34 @@ drop_assembly
 /* dummy partitioning defs for 6 compatibility */
 
 col_partition
-	: INTEGER 
-	| INTEGER '(' INTNUM ')' 
-	| INTEGER '(' BINARYNUM ')' 
-	| VARCHAR  
-	| VARCHAR '(' INTNUM ',' INTNUM ')'  
-	| VARCHAR '(' '-' INTNUM ',' INTNUM ')'  
-	| VARCHAR '(' INTNUM ',' BINARYNUM ')'  
-	| VARCHAR '(' '-' INTNUM ',' BINARYNUM ')'  
+	: INTEGER
+	| INTEGER '(' INTNUM ')'
+	| INTEGER '(' BINARYNUM ')'
+	| VARCHAR
+	| VARCHAR '(' INTNUM ',' INTNUM ')'
+	| VARCHAR '(' '-' INTNUM ',' INTNUM ')'
+	| VARCHAR '(' INTNUM ',' BINARYNUM ')'
+	| VARCHAR '(' '-' INTNUM ',' BINARYNUM ')'
 	;
 
 
 
 col_part_commalist
-	: NAME col_partition { } 
+	: NAME col_partition { }
 	| col_part_list ',' NAME col_partition
 	;
 
-col_part_list 
-	: /* empty */  
-	| '(' col_part_commalist ')' 
+col_part_list
+	: /* empty */
+	| '(' col_part_commalist ')'
 	;
-opt_cluster 
+opt_cluster
 	: /* empty */
 	| CLUSTER NAME
 	;
 
 
-opt_part_def 
+opt_part_def
 	: /* empty */
 	| PARTITION opt_cluster col_part_list
 	;

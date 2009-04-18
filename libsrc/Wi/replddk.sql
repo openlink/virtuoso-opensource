@@ -4,30 +4,30 @@
 --  $Id$
 --
 --  TRX replication support tables definition
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2006 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 -- Publications table (for transactional replication)
 create table SYS_TP_ITEM (
-       TI_SERVER 	varchar, 	-- publisher server name (local for publications, remote for subcr) 
+       TI_SERVER 	varchar, 	-- publisher server name (local for publications, remote for subcr)
        TI_ACCT 		varchar,        -- account name
        TI_TYPE 		integer,	-- type of item 2 - table, 3 - proc, 1 - DAV collection
        TI_ITEM 		varchar,	-- qualifier of item (full path)
@@ -65,7 +65,7 @@ alter table SYS_REPL_ACCOUNTS add P_TIME time
 ;
 --#ENDIF
 
-create view REPL_ACCOUNTS as select SERVER, ACCOUNT from SYS_REPL_ACCOUNTS 
+create view REPL_ACCOUNTS as select SERVER, ACCOUNT from SYS_REPL_ACCOUNTS
        where SERVER = repl_this_server () and ACCOUNT <> repl_this_server ()
 ;
 

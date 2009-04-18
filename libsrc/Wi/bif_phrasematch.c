@@ -3,25 +3,25 @@
  *
  *  $Id$
  *
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "libutil.h"
@@ -121,7 +121,7 @@ typedef struct ap_phrase_s {
 typedef struct ap_arrow_s {
   int		apa_is_markup;		/*!< One of APA_xxx values */
   int		apa_start;		/*!< Byte offset of the first byte of word in the source doc */
-  int		apa_end;		/*!< Byte offset of the first byte after the word in the source doc */  
+  int		apa_end;		/*!< Byte offset of the first byte after the word in the source doc */
   unsigned	apa_htmltm_bits;	/*!< Bits from HTMLTM_xxx set of all enclosing tags */
   int		apa_innermost_tag;	/*!< The index of the arrow of the innermost tag that is opened but not yet closed where the arrow begins */
   dk_set_t	apa_all_hits;		/*!< All hits that are in effect at this word (actual phrases only not checksum hits) */
@@ -493,7 +493,7 @@ ap_set_t *aps_register (query_instance_t *qst, ptrlong id, int allow_overwrite)
         }
       aps->aps_rwlock = NULL;
       aps_free (aps, AP_FREE_MEMBERS);
-      memcpy (aps, &aps_tmp, sizeof (ap_set_t));      
+      memcpy (aps, &aps_tmp, sizeof (ap_set_t));
       return aps;
     }
   return aps;
@@ -839,7 +839,7 @@ void aps_add_phrases (query_instance_t *qst, ap_set_t *aps, caddr_t **descrs)
       ap->app_link_data = (BOX_ELEMENTS (descrs[ctr]) > 1) ? descrs[ctr][1] : AP_DELETE_IT;
       ap->app_chksum = ap_phrase_chksum (ap->app_text, aps_elh__UTF8, &errcode);
       if (APS_PHRASE_VALID != errcode)
-        ap->app_text = NULL;     
+        ap->app_text = NULL;
     }
   qsort (new_phrases, ap_count, sizeof (ap_phrase_t), ap_phrase_cmp);
 /* Now actual insertion of phrases: */
@@ -848,7 +848,7 @@ void aps_add_phrases (query_instance_t *qst, ap_set_t *aps, caddr_t **descrs)
       ap_phrase_t *ap = new_phrases + ctr;
       uptrlong chksum, minchksum, maxchksum, idxX, idxY;
       if (NULL == ap->app_text)
-        continue;      
+        continue;
       if ((ctr > 0) && (ap[-1].app_chksum == ap->app_chksum) &&
         (NULL != ap[-1].app_text) && !strcmp (ap[-1].app_text, ap->app_text))
         continue; /* because one phrase has more than one action specified */
@@ -906,7 +906,7 @@ void aps_add_phrases (query_instance_t *qst, ap_set_t *aps, caddr_t **descrs)
 
 errexit:
   dk_free (new_phrases, ap_count * sizeof (ap_phrase_t));
-  sqlr_resignal (err);  
+  sqlr_resignal (err);
 }
 
 
@@ -931,7 +931,7 @@ ap_proc_inst_t *appi_create (query_instance_t *qi, caddr_t source_UTF8, ap_set_t
     {
       if ((NULL != sets[set_ctr]) && (lh == sets[set_ctr]->aps_lh))
         appi->appi_sets[(appi->appi_set_count)++] = sets[set_ctr];
-    }  
+    }
   return appi;
 }
 
@@ -1363,10 +1363,10 @@ void appi_word_cbk_ptext (const utf8char *buf, size_t bufsize, void *userdata)
     {
       vt_batch_t * vtb = appi->appi_vtb;
       lh_iterate_patched_words (
-	  vtb->vtb_default_eh, 
-	  appi->appi_lh, 
-	  (const char *)buf, bufsize, 
-	  appi->appi_lh->lh_is_vtb_word, 
+	  vtb->vtb_default_eh,
+	  appi->appi_lh,
+	  (const char *)buf, bufsize,
+	  appi->appi_lh->lh_is_vtb_word,
 	  appi->appi_lh->lh_normalize_word,
 	  (lh_word_callback_t *) vtb_hash_string_ins_callback, (void *)vtb);
     }
@@ -1437,7 +1437,7 @@ void appi_word_cbk_html (const utf8char *buf, size_t bufsize, void *userdata)
   ap_proc_inst_t *appi = ah->ah_appi;
   unsigned apa_start = buf - ah->ah_chars_begin;
   unsigned apa_end = apa_start + bufsize;
-  appi_add_word_arrow (buf, bufsize, 
+  appi_add_word_arrow (buf, bufsize,
     apa_start, apa_end,
     ah->ah_tags[ah->ah_depth - 1]->apa_htmltm_bits, ah->ah_arrow_idx[ah->ah_depth - 1],
     ah->ah_appi );
@@ -1445,10 +1445,10 @@ void appi_word_cbk_html (const utf8char *buf, size_t bufsize, void *userdata)
     {
       vt_batch_t * vtb = appi->appi_vtb;
       lh_iterate_patched_words (
-	  vtb->vtb_default_eh, 
-	  appi->appi_lh, 
-	  (const char *)buf, bufsize, 
-	  appi->appi_lh->lh_is_vtb_word, 
+	  vtb->vtb_default_eh,
+	  appi->appi_lh,
+	  (const char *)buf, bufsize,
+	  appi->appi_lh->lh_is_vtb_word,
 	  appi->appi_lh->lh_normalize_word,
 	  (lh_word_callback_t *) vtb_hash_string_ins_callback, (void *)vtb);
     }
@@ -1790,7 +1790,7 @@ bif_ap_class_status (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     case 0: apc_unregister ((query_instance_t *)qst, apc_id); return box_num (0);
     case 1:
       apc = apc_register ((query_instance_t *)qst, apc_id, allow_overwrite);
-      rwlock_unlock (apc->apc_rwlock);  
+      rwlock_unlock (apc->apc_rwlock);
       return box_num (1);
     default:
       apc = apc_get (apc_id, 0);
@@ -1815,7 +1815,7 @@ bif_ap_set_status (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     case 0: aps_unregister ((query_instance_t *)qst, aps_id); return box_num (0);
     case 1:
       aps = aps_register ((query_instance_t *)qst, aps_id, allow_overwrite);
-      rwlock_unlock (aps->aps_rwlock);  
+      rwlock_unlock (aps->aps_rwlock);
       return box_num (1);
     case 2:
       aps = aps_get (aps_id, 2);
@@ -1856,7 +1856,7 @@ bif_ap_phrase_chksum (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       sqlr_new_error ("42000", "APG09", "The phrase does not contain non-noise words");
     case APS_PHRASE_LONG:
       sqlr_new_error ("42000", "APG10", "The phrase contains too many words");
-    case APS_PHRASE_VALID:      
+    case APS_PHRASE_VALID:
       return box_num (chksum);
 #ifdef DEBUG
     default: GPF_T;
@@ -1931,7 +1931,7 @@ bif_ap_debug_langhandler (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 	      if (DV_STRING == DV_TYPE_OF (linkdata))
 	        session_buffered_write (out_ses, linkdata, box_length (linkdata) - 1);
               else
-	        session_buffered_write (out_ses, "...", 3);              
+	        session_buffered_write (out_ses, "...", 3);
 	    }
           session_buffered_write (out_ses, "][", 1);
         }
@@ -1981,7 +1981,7 @@ bif_ap_build_match_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   appi = appi_create ((query_instance_t *)qst, source_UTF8, sets, set_count, lh);
   if (BOX_ELEMENTS (args) > 5)
     {
-      vt_batch_t * vtb = bif_vtb_arg (qst, args, 5, "ap_build_match_list"); 
+      vt_batch_t * vtb = bif_vtb_arg (qst, args, 5, "ap_build_match_list");
       appi->appi_vtb = vtb;
     }
   if (is_html)

@@ -458,7 +458,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %nonassoc _BANG NOT_L
 %nonassoc _EQ _NOT_EQ
 %nonassoc IN_L LIKE_L
-%nonassoc _LT _LE _GT _GE 
+%nonassoc _LT _LE _GT _GE
 %left _PLUS _MINUS
 %left _SLASH _STAR
 %nonassoc UMINUS
@@ -476,7 +476,7 @@ sparql	/* [1]*	Query		 ::=  Prolog ( QueryBody | SparulAction* | ( QmStmt ('.' Q
 	| START_OF_SPARQL_TEXT END_OF_SPARQL_TEXT {
 		sparp_arg->sparp_expr = $$ = spar_make_topmost_sparul_sql (sparp_arg,
 		  (SPART **)t_list (0) ); }
-	| START_OF_SPARQL_TEXT spar_prolog spar_qm_stmts spar_opt_dot_and_end { 
+	| START_OF_SPARQL_TEXT spar_prolog spar_qm_stmts spar_opt_dot_and_end {
 		$$ = spar_make_topmost_qm_sql (sparp_arg);
 		sparp_arg->sparp_expr = $$; }
 	| error { sparyyerror ("(internal SPARQL processing error) SPARQL mark expected"); }
@@ -557,7 +557,7 @@ spar_select_query	/* [5]*	SelectQuery	 ::=  'SELECT' 'DISTINCT'? ( ( Retcol ( ',
             spar_where_clause spar_solution_modifier {
 		SPART *where_gp = spar_gp_finalize (sparp_arg, NULL);
 		$$ = spar_make_top (sparp_arg, $1, $3, spar_selid_pop (sparp_arg),
-		  where_gp, 
+		  where_gp,
 		  (SPART **)($6[0]), (SPART **)($6[1]), (caddr_t)($6[2]), (caddr_t)($6[3]) );
 		sparp_expand_top_retvals (sparp_arg, $$, 0 /* never cloned, hence 0 == safely_copy_all_vars */); }
 	;
@@ -599,7 +599,7 @@ spar_describe_query	/* [7]*	DescribeQuery	 ::=  'DESCRIBE' ( ( Var | IRIref | Ba
             spar_describe_rset spar_dataset_clauses_opt
 	    spar_where_clause_opt spar_solution_modifier {
 		SPART * where_gp = spar_gp_finalize (sparp_arg, NULL);
-		$$ = spar_make_top (sparp_arg, DESCRIBE_L, 
+		$$ = spar_make_top (sparp_arg, DESCRIBE_L,
                   $3,
                   spar_selid_pop (sparp_arg),
 		  where_gp, (SPART **)($6[0]), (SPART **)($6[1]), (caddr_t)($6[2]), (caddr_t)($6[3]) );
@@ -777,7 +777,7 @@ spar_group_gp		/* [19]*	GroupGraphPattern	 ::=  '{' ( GraphPattern | SelectQuery
 		SPART *where_gp;
 		where_gp = spar_gp_finalize (sparp_arg, NULL);
 		subselect_top = spar_make_top (sparp_arg,
-		  $1, $3, spar_selid_pop (sparp_arg), where_gp, 
+		  $1, $3, spar_selid_pop (sparp_arg), where_gp,
 		  (SPART **)($6[0]), (SPART **)($6[1]), (caddr_t)($6[2]), (caddr_t)($6[3]) );
 		sparp_expand_top_retvals (sparp_arg, subselect_top, 1 /* safely_copy_all_vars */);
 		spar_env_pop (sparp_arg);
@@ -963,12 +963,12 @@ spar_verb		/* [33]	Verb		 ::=  VarOrBlankNodeOrIRIref | 'a'	*/
 
 spar_triples_node	/* [34]	TriplesNode	 ::=  Collection | BlankNodePropertyList	*/
 	: _LSQBRA {	/* [35]	BlankNodePropertyList	 ::=  '[' PropertyListNotEmpty ']'	*/
-		SPART *bn = spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:lsqbra"), 1); 
+		SPART *bn = spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:lsqbra"), 1);
 		t_set_push (&(sparp_env()->spare_context_subjects), bn); }
 	    spar_props spar_triples_opt_semi_rsqbra {
 		$$ = t_set_pop (&(sparp_env()->spare_context_subjects)); }
 	| _LPAR {	/* [36]	Collection	 ::=  '(' GraphNode* ')'	*/
-		SPART *bn = spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:topcons"), 1); 
+		SPART *bn = spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:topcons"), 1);
 		t_set_push (&(sparp_env()->spare_context_subjects), bn);
 		t_set_push (&(sparp_env()->spare_context_subjects), bn); }
 	    spar_cons_collection _RPAR {
@@ -993,7 +993,7 @@ spar_cons_collection
 		  spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_first),
 		  $1, NULL, NULL ); }
 	| spar_cons_collection spar_graph_node {
-		SPART *bn = spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:cons"), 1); 
+		SPART *bn = spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:cons"), 1);
 		spar_gp_add_triple_or_special_filter (sparp_arg,
 		  NULL, NULL,
 		  spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_rest),
@@ -1192,7 +1192,7 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	*/
 		SPART *where_gp;
 		where_gp = spar_gp_finalize (sparp_arg, NULL);
 		subselect_top = spar_make_top (sparp_arg,
-		  $2, $4, spar_selid_pop (sparp_arg), where_gp, 
+		  $2, $4, spar_selid_pop (sparp_arg), where_gp,
 		  (SPART **)($7[0]), (SPART **)($7[1]), (caddr_t)($7[2]), (caddr_t)($7[3]) );
 		sparp_expand_top_retvals (sparp_arg, subselect_top, 1 /* safely_copy_all_vars */);
 		spar_env_pop (sparp_arg);
@@ -1449,7 +1449,7 @@ spar_action_solution
 	: /* empty */ { $$ = spar_make_fake_action_solution (sparp_arg); }
 	| spar_dataset_clauses_opt spar_where_clause spar_solution_modifier {
 		SPART *where_gp = spar_gp_finalize (sparp_arg, NULL);
-		$$ = (SPART **)t_list (5, 
+		$$ = (SPART **)t_list (5,
 		  where_gp, (SPART **)($3[0]), (SPART **)($3[1]), (caddr_t)($3[2]), (caddr_t)($3[3]) ); }
 	;
 
@@ -1642,7 +1642,7 @@ spar_qm_create_quad_storage	/* [Virt]	QmCreateStorage	 ::=  'CREATE' 'QUAD' 'STO
 spar_qm_alter_quad_storage	/* [Virt]	QmAlterStorage	 ::=  'ALTER' 'QUAD' 'STORAGE' QmIRIrefConst QmSourceDecl* QmMapTopGroup	*/
 	: ALTER_L QUAD_L STORAGE_L spar_qm_iriref_const_expn {
 		sparp_env()->spare_storage_name = $4;
-		t_set_push (&(sparp_env()->spare_acc_qm_sqls), 
+		t_set_push (&(sparp_env()->spare_acc_qm_sqls),
 		  spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_BEGIN_ALTER_QUAD_STORAGE",
                     (SPART **)t_list (1, t_box_copy (sparp_env()->spare_storage_name)), NULL ) );
                 sparp_jso_push_affected (sparp_arg, $4); }
@@ -1659,7 +1659,7 @@ spar_qm_alter_quad_storage	/* [Virt]	QmAlterStorage	 ::=  'ALTER' 'QUAD' 'STORAG
 
 spar_qm_drop_quad_storage	/* [Virt]	QmDropStorage	 ::=  'DROP' 'QUAD' 'STORAGE' QmIRIrefConst	*/
 	: DROP_L QUAD_L STORAGE_L spar_qm_iriref_const_expn {
-		t_set_push (&(sparp_env()->spare_acc_qm_sqls), 
+		t_set_push (&(sparp_env()->spare_acc_qm_sqls),
 		  spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DROP_QUAD_STORAGE",
                     (SPART **)t_list (1, $4), NULL ) );
                 sparp_jso_push_deleted (sparp_arg, uname_virtrdf_ns_uri_QuadStorage , $4);
@@ -1798,14 +1798,14 @@ spar_qm_map_op			/* [Virt]	QmMapOp		 ::=  */
 	| CREATE_L spar_qm_iriref_const_expn		/*... | ( 'CREATE' 'GRAPH'? QmIRIrefConst 'USING' 'STORAGE' QmIRIrefConst QmOptions? )	*/
 	    USING_L STORAGE_L spar_qm_iriref_const_expn spar_qm_options_opt	{
 		spar_qm_push_local (sparp_arg, CREATE_L, (SPART *)($2), 1);
-		t_set_push (&(sparp_env()->spare_acc_qm_sqls), 
+		t_set_push (&(sparp_env()->spare_acc_qm_sqls),
 		  spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_ATTACH_MAPPING",
                     (SPART **)t_list (2, t_box_copy (sparp_env()->spare_storage_name), $5),
 		    (SPART **)t_list_concat ((caddr_t)$6, (caddr_t)t_list (2, t_box_dv_uname_string ("ID"), $2)) ) ); }
 	| CREATE_L spar_graph_identified_by spar_qm_iriref_const_expn	/* note optional 'GRAPH' in previous case */
 	    USING_L STORAGE_L spar_qm_iriref_const_expn spar_qm_options_opt	{
 		spar_qm_push_local (sparp_arg, GRAPH_L, (SPART *)($3), 1);
-		t_set_push (&(sparp_env()->spare_acc_qm_sqls), 
+		t_set_push (&(sparp_env()->spare_acc_qm_sqls),
 		  spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_ATTACH_MAPPING",
                     (SPART **)t_list (2, t_box_copy (sparp_env()->spare_storage_name), $6),
 		    (SPART **)t_list_concat ((caddr_t)$7, (caddr_t)t_list (2, t_box_dv_uname_string ("GRAPH"), $3)) ) ); }

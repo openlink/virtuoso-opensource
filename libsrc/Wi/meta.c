@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  META
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #define NO_DBG_PRINTF
@@ -1022,7 +1022,7 @@ dbe_key_layout (dbe_key_t * key)
       key_make_bm_specs (key);
       dk_set_free (deps);
       key->key_bm_cl = key_find_cl (key, CI_BITMAP);
-      key->key_bit_cl = key_find_cl (key, 
+      key->key_bit_cl = key_find_cl (key,
 				    ((dbe_column_t *)dk_set_nth (key->key_parts, key->key_n_significant - 1))->col_id);
       /* one is the col where the bits are, the other the last key part, i.e. the beginning offset of the nbitmap */
     }
@@ -1148,7 +1148,7 @@ id_hash_t * proc_name_hash;
 
 #define PN_HEADER  ((ptrlong)(&((proc_name_t*)0)->pn_name))
 
-proc_name_t * 
+proc_name_t *
 proc_name (char * name)
 {
   proc_name_t ** place;
@@ -1188,7 +1188,7 @@ proc_name_ref (proc_name_t * pn)
 }
 
 
-void 
+void
 proc_name_free (proc_name_t * pn)
 {
   if (!pn)
@@ -2484,7 +2484,7 @@ key_ensure_visible_parts (dbe_key_t * key)
   {
     if (n_cols >= sizeof (cols) / sizeof (caddr_t))
       break;
-    if (0 != strcmp (col->col_name, "_IDN") 
+    if (0 != strcmp (col->col_name, "_IDN")
 	)
       {
 	cols[n_cols++] = col;

@@ -2,25 +2,25 @@
  *  bif_soap.c
  *
  *  $Id$
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 /* IvAn/VC6port/000725 Added to bypass compilation error */
@@ -280,7 +280,7 @@ query_instance_t soap_fake_top_qi;
 static void
 ses_sprintf (dk_session_t *ses, const char *fmt, ...)
 {
-  char buf[PAGE_SZ]; 
+  char buf[PAGE_SZ];
   int len;
   va_list list;
   va_start (list, fmt);
@@ -939,15 +939,15 @@ dtp_to_soap_type (dtp_t dtp)
 	  return "int";
 
 
-      case DV_ARRAY_OF_POINTER: 
-      case DV_LIST_OF_POINTER: 
+      case DV_ARRAY_OF_POINTER:
+      case DV_LIST_OF_POINTER:
       case DV_ARRAY_OF_XQVAL:
       case DV_ARRAY_OF_LONG:
       case DV_ARRAY_OF_DOUBLE:
       case DV_ARRAY_OF_FLOAT:
       case DV_STRING:
       case DV_SYMBOL:
-      case DV_WIDE: 
+      case DV_WIDE:
       case DV_LONG_WIDE:
       case DV_BLOB:
       case DV_BLOB_WIDE:
@@ -972,8 +972,8 @@ dtp_to_soap_type (dtp_t dtp)
       case DV_LONG_BIN:
       case DV_BIN:
 	  return "base64Binary";
-      /* Note: we cannot map the hexBinary as we do not have a separate dv  	  
-	  return "hexBinary"; */	  
+      /* Note: we cannot map the hexBinary as we do not have a separate dv
+	  return "hexBinary"; */
     }
 }
 
@@ -2555,7 +2555,7 @@ get_granted_qrs (client_connection_t * cli, query_t * module, char * qpref, size
 
   if (!cli || !cli->cli_user)
     return NULL;
-  
+
   id_casemode_hash_iterator (&it, sc->sc_name_to_object[sc_to_proc]);
   while (id_casemode_hit_next (&it, (caddr_t *) & ptp))
     {
@@ -2897,7 +2897,7 @@ soap12_custom_error (dk_session_t * ses, client_connection_t * cli, soap_ctx_t *
 
   if (scode >= 0 && scode < (sizeof (soap12_sub_errors) / sizeof (char*)))
     code2 = soap12_sub_errors[scode];
-  
+
 
   snprintf (tmp, sizeof (tmp),
       "\n<SOAP:Fault xmlns:rpc='%s' xmlns:enc='%s'>"
@@ -3189,7 +3189,7 @@ soap_serialize_parameters (dk_session_t * ses, client_connection_t * cli, query_
 		  *err = ws_soap_error (ses, "400",
 		      ERR_STATE (err_ret), ERR_MESSAGE (err_ret), ctx->soap_version, uddi, http_resp_code, ctx);
 		  dk_free_tree (err_ret);
-	        }	  
+	        }
 	    }
 	  else
 	    {
@@ -6641,7 +6641,7 @@ soap_print_dl_schema (dk_session_t * out, dk_set_t * proc_set,
 	      goto skip_out_pars;
 	    }
 	}
-      
+
       SES_PRINT (out, "Response\" >\n");
       SES_PRINT (out, "\t  <complexType>\n");
       SES_PRINT (out, "\t    <all>\n");
@@ -6733,7 +6733,7 @@ skip_out_pars:
 
 static int
 soap_print_schema (dk_session_t * out, dk_set_t * proc_set, char *qpref, size_t pref_len,
-    caddr_t qual, dk_set_t * ns_set, dk_set_t * types_set, int sch_elm_qual, soap_ctx_t *ctx, 
+    caddr_t qual, dk_set_t * ns_set, dk_set_t * types_set, int sch_elm_qual, soap_ctx_t *ctx,
     char * wsdl_ns, int dl_flag, int type_mask)
 {
   int rc = 0;
@@ -6812,7 +6812,7 @@ soap_print_schema (dk_session_t * out, dk_set_t * proc_set, char *qpref, size_t 
       END_DO_SET ();
 
       if (def_ns && !strcmp (def_ns, elm->ns_uri))
-	soap_print_dl_schema (out, proc_set, qpref, pref_len, qual, sch_elm_qual, ctx, 
+	soap_print_dl_schema (out, proc_set, qpref, pref_len, qual, sch_elm_qual, ctx,
 	    types_set, ns_set, elm->ns_uri, dl_flag, type_mask);
 
 
@@ -7290,7 +7290,7 @@ soap_wsdl_services (dk_session_t *out, query_t *module, caddr_t qual, const char
     SES_PRINT (out, "Virtuoso");
   SES_PRINT (out, "\" xmlns=\"" SOAP_WSDL_SCHEMA11 "\">\n");
 
-  soap_print_schema (out, &proc_set, qpref, pref_len, qual, &ns_set, &types_set, sch_elm_qual, &ctx, NULL, 
+  soap_print_schema (out, &proc_set, qpref, pref_len, qual, &ns_set, &types_set, sch_elm_qual, &ctx, NULL,
       ctx.def_enc, (SOAP_MSG_LITERAL|SOAP_MSG_LITERALW|SOAP_MSG_HTTP));
 
   /* messages */
@@ -7887,7 +7887,7 @@ output_message_end:
   return NULL;
 }
 
-static void 
+static void
 soap_wsdl20_rpc_sig (dk_session_t *out, query_t *proc)
 {
   int ix = 0;
@@ -7946,7 +7946,7 @@ soap_wsdl20_services (dk_session_t *out, query_t *module, caddr_t qual, const ch
   soap_ctx_t ctx;
   /* positions in the tmp_set array */
 #define SOAP_INTERFACE 0
-#define HTTP_INTERFACE 1  
+#define HTTP_INTERFACE 1
   dk_set_t proc_set = NULL, http_set = NULL, *tmp_set[2];
   caddr_t desc;
   char * svc_name = service_name && service_name[0] ? service_name : "Virtuoso";
@@ -8002,12 +8002,12 @@ soap_wsdl20_services (dk_session_t *out, query_t *module, caddr_t qual, const ch
 
   ses_sprintf (out, " xmlns:dl=\"%s\" \n", SOAP_TYPES_SCH (opts));
 
-  ses_sprintf (out, 
+  ses_sprintf (out,
       " xmlns:tns=\"%s/services.wsdl\"\n targetNamespace=\"%s/services.wsdl\"\n xmlns=\"" SOAP_WSDL_SCHEMA20 "\">\n",
       url, url);
 
   /* we override the default encoding for virtual directory as wsdl2 also needs element declarations for RPC */
-  soap_print_schema (out, &proc_set, qpref, pref_len, qual, &ns_set, &types_set, sch_elm_qual, &ctx, 
+  soap_print_schema (out, &proc_set, qpref, pref_len, qual, &ns_set, &types_set, sch_elm_qual, &ctx,
       SOAP_WSDL_SCHEMA20, SOAP_MSG_DOC, SOAP_MSG_DOC);
 
   DO_SET (query_t *, proc, &proc_set)
@@ -8023,8 +8023,8 @@ soap_wsdl20_services (dk_session_t *out, query_t *module, caddr_t qual, const ch
   END_DO_SET ();
 
   for (inx = SOAP_INTERFACE; inx <= HTTP_INTERFACE; inx ++)
-    {   
-      dk_set_t * set = tmp_set[inx]; 
+    {
+      dk_set_t * set = tmp_set[inx];
       /* interface */
       if (!*set || !dk_set_length (*set))
 	continue;
@@ -8169,7 +8169,7 @@ output_message_end:
     {
       int soap_major = inx/10, soap_minor = inx % 10;
       ses_sprintf (out, "\t<binding name='%sSoap%dBinding' \n\t\tinterface='tns:%sSoapInterface' \n\t\ttype='%s' "
-	  "\n\t\twsoap:version='%d.%d' \n\t\twsoap:protocol='" SOAP_BINDING_PROTOCOL_HTTP "'>\n", 
+	  "\n\t\twsoap:version='%d.%d' \n\t\twsoap:protocol='" SOAP_BINDING_PROTOCOL_HTTP "'>\n",
 	  svc_name, inx, svc_name, SOAP_BINDING_TYPE_SOAP, soap_major, soap_minor, inx);
       DO_SET (query_t *, proc, &proc_set)
 	{
@@ -8210,7 +8210,7 @@ output_message_end:
   if (dk_set_length (http_set))
     {
       ses_sprintf (out, "\t<binding name='%sHttpBinding' \n\t\tinterface='tns:%sHttpInterface' "
-	  "\n\t\ttype='%s' whttp:methodDefault='GET'>\n", 
+	  "\n\t\ttype='%s' whttp:methodDefault='GET'>\n",
 	  svc_name, svc_name, SOAP_BINDING_TYPE_HTTP);
       DO_SET (query_t *, proc, &http_set)
 	{
@@ -8235,14 +8235,14 @@ output_message_end:
   ses_sprintf (out, "\t<service name='%sService'>\n", svc_name);
   if (dk_set_length (proc_set))
     {
-      ses_sprintf (out, "\t\t<endpoint name='%sSoap11Endpoint' binding='tns:%sSoap11Binding' address='%s'/>\n", 
+      ses_sprintf (out, "\t\t<endpoint name='%sSoap11Endpoint' binding='tns:%sSoap11Binding' address='%s'/>\n",
 	  svc_name, svc_name, url);
-      ses_sprintf (out, "\t\t<endpoint name='%sSoap12Endpoint' binding='tns:%sSoap12Binding' address='%s'/>\n", 
+      ses_sprintf (out, "\t\t<endpoint name='%sSoap12Endpoint' binding='tns:%sSoap12Binding' address='%s'/>\n",
 	  svc_name, svc_name, url);
     }
   if (dk_set_length (http_set))
     {
-      ses_sprintf (out, "\t\t<endpoint name='%sHttpEndpoint' binding='tns:%sHttpBinding' address='%s/Http'/>\n", 
+      ses_sprintf (out, "\t\t<endpoint name='%sHttpEndpoint' binding='tns:%sHttpBinding' address='%s/Http'/>\n",
 	  svc_name, svc_name, url);
     }
   SES_PRINT (out, "\t</service>\n");
@@ -8260,7 +8260,7 @@ ws_soap_wsdl_services (ws_connection_t *ws, caddr_t doc)
   caddr_t url = ws_soap_get_url (ws, 0);
   caddr_t res;
   ws->ws_charset = CHARSET_UTF8;
-  if (doc && !strncmp (doc, "services20.", 11)) 
+  if (doc && !strncmp (doc, "services20.", 11))
     {
       res = soap_wsdl20_services (ws->ws_strses, NULL, ws_usr_qual (ws, 1), WS_SOAP_NAME (ws), NULL,
 	  SERVICE_NAME (ws), SERVICE_SCHEMA_NAME (ws), ws->ws_cli, url, SOAP_OPTIONS(ws), NULL);
@@ -9235,7 +9235,7 @@ soap_box_xml_entity_validating_1 (caddr_t *entity, caddr_t *err_ret, caddr_t typ
 	   if (!stricmp (udt->scl_name, "DB.DBA.XMLType") && !strcmp (fld->sfl_name, "xt_ent"))
 	     {
 	       xml_tree_ent_t * xte;
-	       elem_entity = (caddr_t*) xml_element_nonspace_child ((caddr_t) entity, 0); 
+	       elem_entity = (caddr_t*) xml_element_nonspace_child ((caddr_t) entity, 0);
 	       value = soap_box_xml_entity_validating_1 (elem_entity, err_ret, SOAP_XML_TYPE, 0, ctx, NULL);
 	       xte = xte_from_tree (value, &soap_fake_top_qi);
 	       if (*err_ret)
@@ -9260,7 +9260,7 @@ soap_box_xml_entity_validating_1 (caddr_t *entity, caddr_t *err_ret, caddr_t typ
 		   dk_set_push (&ret_set, box_dv_short_string (extract_last_xml_name_part (soap_fld_name)));
 		   dk_set_push (&ret_set, value);
 		 }
-	     }  
+	     }
 	 }
        END_DO_BOX;
        if (!udt_soap_struct_to_udi (&udt->scl_name, &ret_set, &ret, err_ret))
@@ -9644,30 +9644,30 @@ soap_print_scalar_value (dtp_t proposed_type, caddr_t value, dk_session_t *ses, 
       if (DV_TYPE_OF (value) != DV_BIN && !DV_STRINGP (value) && !DV_WIDESTRINGP (value) && !IS_BLOB_HANDLE_DTP (DV_TYPE_OF (value)))
 	SOAP_VALIDATE_ERROR (("22023", "SV092", "Non expected type of PL value : (%d) expected (%d)",
 	      DV_TYPE_OF (value), proposed_type));
-     
+
       if (IS_BLOB_HANDLE_DTP (DV_TYPE_OF (value)))
 	{
-	  blob_handle_t * bh = (blob_handle_t *) value;  
-	  char in_buf[3*4096], out_buf[(6*4096)+1]; 
+	  blob_handle_t * bh = (blob_handle_t *) value;
+	  char in_buf[3*4096], out_buf[(6*4096)+1];
 	  int readed, to_read, to_read_len;
 	  dk_session_t * bh_ses;
-	  size_t limit = (size_t) unbox(con_soap_get (ctx->cli, con_soap_blob_limit_name)); 
-	  
+	  size_t limit = (size_t) unbox(con_soap_get (ctx->cli, con_soap_blob_limit_name));
+
 	  if (bh->bh_length > MIME_POST_LIMIT && !limit)
 	    SOAP_VALIDATE_ERROR (("22023", "SV089", "Blob longer than maximum string length not allowed"));
 
 	  if (limit < 0 || limit >= MIME_POST_LIMIT)
 	    SOAP_VALIDATE_ERROR (("22023", "SV089", "Invalid Blob limit supplied"));
-	  
+
 	  if (bh->bh_ask_from_client)
 	    SOAP_VALIDATE_ERROR (("22023", "SV091", "BLOB submitted by client as SQL_DATA_AT_EXEC cannot be converted into anything."));
 	  if (limit > 0 && limit < bh->bh_length)
 	    {
-	      bh_src = blob_subseq (ctx->cli->cli_trx, value, 0, limit); 
+	      bh_src = blob_subseq (ctx->cli->cli_trx, value, 0, limit);
 	      src = bh_src;
 	      goto do_string;
 	    }
-	  
+
 	  bh_ses = strses_allocate ();
 	  strses_enable_paging (bh_ses, http_ses_size);
 	  to_read = bh_write_out (ctx->cli->cli_trx, bh, bh_ses);
@@ -9693,14 +9693,14 @@ soap_print_scalar_value (dtp_t proposed_type, caddr_t value, dk_session_t *ses, 
 		  out_buf [len] = 0;
 		  SES_PRINT (ses, out_buf);
 		}
-	    } 
+	    }
 	  while (to_read > 0);
 	  dk_free_box ((box_t) bh_ses);
 	}
       else
 	{
 	   src = (caddr_t) value;
-do_string:	   
+do_string:
 	   len = box_length(src);
 
 	   if (DV_TYPE_OF (value) != DV_BIN)
@@ -9709,7 +9709,7 @@ do_string:
 	   if (((len*2)+1) >= MIME_POST_LIMIT)
 	     {
 	       SOAP_VALIDATE_ERROR (("22023", "SV089", "Too long string value"));
-	     }  
+	     }
 
 	   dest = dk_alloc_box (len * 2 + 1, DV_SHORT_STRING);
 	   len = xenc_encode_base64 ((char *)src, (char *)dest, len);
@@ -9730,14 +9730,14 @@ do_string:
 	}
       else if (IS_BLOB_HANDLE_DTP (DV_TYPE_OF (value)))
 	{
-	  blob_handle_t * bh = (blob_handle_t *) value;  
-	  
+	  blob_handle_t * bh = (blob_handle_t *) value;
+
 	  if (!(IS_STRING_DTP (proposed_type) || IS_WIDE_STRING_DTP (proposed_type)))
 	    SOAP_VALIDATE_ERROR (("22023", "SV090", "Non expected string value"));
-	  
+
 	  if (bh->bh_length > MIME_POST_LIMIT)
 	    SOAP_VALIDATE_ERROR (("22023", "SV089", "Blob longer than maximum string length not allowed"));
-	  
+
 	  if (bh->bh_ask_from_client)
 	    SOAP_VALIDATE_ERROR (("22023", "SV091", "BLOB submitted by client as SQL_DATA_AT_EXEC cannot be converted into anything."));
 	  bh_result = blob_to_string (ctx->cli->cli_trx, value);
@@ -9752,7 +9752,7 @@ do_string:
 	{
 	  dk_free_box (bh_result);
 	  goto error;
-	}  
+	}
       if (wide)
 	{
 	  dks_wide_esc_write (ses, (wchar_t *)wide, box_length (wide) / sizeof (wchar_t) - 1, CHARSET_UTF8, DKS_ESC_PTEXT | (ctx->dks_esc_compat));
@@ -10292,8 +10292,8 @@ soap_print_box_validating (caddr_t box, const char * tag, dk_session_t *ses,
 	 }
      }
 
-   /* binary and blobs cannot be produced by encode_base64, hence if result 
-      is expected to be b64 then we allow to set proposed type to DV_BIN 
+   /* binary and blobs cannot be produced by encode_base64, hence if result
+      is expected to be b64 then we allow to set proposed type to DV_BIN
       which makes the encoding as b64 explicit */
    if (DV_TYPE_OF (box) == DV_BIN || IS_BLOB_HANDLE_DTP (DV_TYPE_OF (box)))
      allow_b64 = 1;

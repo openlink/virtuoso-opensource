@@ -1,25 +1,25 @@
---  
+--
 --  $Id$
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2006 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 --!AWK PUBLIC
 create procedure STD_COUNT (in _env varchar)
 {
@@ -76,7 +76,7 @@ create procedure VAR_POP_FIN (inout _ctx varchar)
 	c := aref (_env, 0);
 	if (c = 0)
 		return null;
-	return  (aref (_env, 2) - aref (_env, 1) * aref (_env, 1) / c) / c; 	
+	return  (aref (_env, 2) - aref (_env, 1) * aref (_env, 1) / c) / c;
 }
 ;
 
@@ -119,8 +119,8 @@ create procedure STDDEV_POP_FIN (inout _ctx varchar)
 	c := aref (_env, 0);
 	if (c = 0)
 		return null;
-	
-	return  sqrt ((aref (_env, 2) - aref (_env, 1) * aref (_env, 1) / c) / c) ; 	
+
+	return  sqrt ((aref (_env, 2) - aref (_env, 1) * aref (_env, 1) / c) / c) ;
 }
 ;
 
@@ -163,7 +163,7 @@ create procedure COVAR_ACC (inout _ctx any,
 		return;
 
 	declare _env any;
-	
+
 	_env := deserialize (_ctx);
 
 	aset (_env, 1, aref (_env,1)+expr1);
@@ -174,7 +174,7 @@ create procedure COVAR_ACC (inout _ctx any,
 	_ctx := serialize (_env);
 }
 ;
-	
+
 --!AWK PUBLIC
 create procedure COVAR_SAMP_FIN (inout _ctx any)
 {
@@ -268,7 +268,7 @@ create procedure REGR_SLOPE_ACC (inout _env varchar, in expr1 numeric, in expr2 
 		return;
 	declare _ctx any;
 	_ctx := deserialize (_env);
-	
+
 	declare _ctx1 varchar;
 	declare _ctx2 varchar;
 
@@ -278,7 +278,7 @@ create procedure REGR_SLOPE_ACC (inout _env varchar, in expr1 numeric, in expr2 
 	aset (_ctx, 0, aref (_ctx,0) + 1);
 	COVAR_ACC (_ctx1, expr1, expr2);
 	VAR_ACC (_ctx2, expr2);
-	
+
 	aset (_ctx, 1, _ctx1);
 	aset (_ctx, 2, _ctx2);
 
@@ -295,7 +295,7 @@ create procedure REGR_SLOPE_FIN (inout _env varchar)
 	declare c integer;
 
 	_ctx := deserialize (_env);
-		
+
 	c := aref (_ctx, 0);
 	if (c = 0)
 		return 0;
@@ -306,11 +306,11 @@ create procedure REGR_SLOPE_FIN (inout _env varchar)
 	declare _ctx2 varchar;
 	declare covar_pop_val numeric;
 	declare var_pop_val numeric;
-	
+
 	_ctx1 := aref (_ctx, 1);
 	_ctx2 := aref (_ctx, 2);
 
-	
+
 	covar_pop_val := COVAR_POP_FIN (_ctx1);
 	var_pop_val := VAR_POP_FIN (_ctx2);
 
@@ -327,12 +327,12 @@ create aggregate DB.DBA.REGR_SLOPE (in expr1 numeric, in expr2 numeric) returns 
 create procedure REGR_INTERCEPT_INIT (inout _env varchar)
 {
 	declare _ctx_regr_slope varchar;
-	
+
 	REGR_SLOPE_INIT (_ctx_regr_slope);
 	_env := serialize (vector (0, 0.0, 0.0, _ctx_regr_slope));
 }
 ;
-	
+
 --!AWK PUBLIC
 create procedure REGR_INTERCEPT_ACC (inout _env varchar, in expr1 numeric, in expr2 numeric)
 {
@@ -343,11 +343,11 @@ create procedure REGR_INTERCEPT_ACC (inout _env varchar, in expr1 numeric, in ex
 
 	declare _ctx any;
 	_ctx := deserialize (_env);
-	
+
 	aset (_ctx, 0, aref (_ctx, 0) + 1);
 	aset (_ctx, 1, aref (_ctx, 1) + expr1);
 	aset (_ctx, 2, aref (_ctx, 2) + expr2);
-	
+
 	declare _ctx_r varchar;
 	_ctx_r := aref (_ctx, 3);
 	REGR_SLOPE_ACC (_ctx_r, expr1, expr2);
@@ -368,7 +368,7 @@ create procedure REGR_INTERCEPT_FIN (inout _env varchar)
 	c := aref (_ctx, 0);
 	if ((c = 0) or (c = 1))
 		return null;
-	
+
 	return aref (_ctx, 1) / c - REGR_SLOPE_FIN (aref (_ctx, 3)) * aref (_ctx, 2) / c;
 }
 ;
@@ -419,7 +419,7 @@ create procedure REGR_AVG_ACC (inout _env varchar, in expr1 numeric, in expr2 nu
 		return;
 	declare _ctx any;
 	_ctx := deserialize (_env);
-	
+
 	aset (_ctx, 0, aref (_ctx, 0) + 1);
 	aset (_ctx, 1, aref (_ctx, 1) + expr1);
 	aset (_ctx, 2, aref (_ctx, 2) + expr2);
@@ -490,7 +490,7 @@ create procedure CORR_ACC (inout _env varchar, in e1 numeric, in e2 numeric)
 	declare _ctx_cov varchar;
 	declare _ctx_stdev1 varchar;
 	declare _ctx_stdev2 varchar;
-	
+
 	_ctx_cov := aref (_ctx, 1);
 	_ctx_stdev1 := aref (_ctx, 2);
 	_ctx_stdev2 := aref (_ctx, 3);
@@ -530,7 +530,7 @@ create procedure CORR_FIN (inout _env varchar)
 		return null;
 	if (_ctx_stdev2_val is null or _ctx_stdev2_val = 0)
 		return null;
-		
+
 	return _ctx_cov_val / _ctx_stdev1_val / _ctx_stdev2_val;
 }
 ;
@@ -562,7 +562,7 @@ create procedure REGR_R2_ACC (inout _env varchar, in e1 numeric, in e2 numeric)
 	if (e1 is null or e2 is null)
 		return;
 	declare _ctx  any;
-	
+
 	_ctx := deserialize (_env);
 
 	declare _ctx_vp1 varchar;
@@ -576,10 +576,10 @@ create procedure REGR_R2_ACC (inout _env varchar, in e1 numeric, in e2 numeric)
 	VAR_ACC (_ctx_vp1, e1);
 	VAR_ACC (_ctx_vp2, e2);
 	CORR_ACC (_ctx_corr, e1, e2);
-	
-	aset (_ctx, 0, _ctx_vp1);	
-	aset (_ctx, 1, _ctx_vp2);	
-	aset (_ctx, 2, _ctx_corr);	
+
+	aset (_ctx, 0, _ctx_vp1);
+	aset (_ctx, 1, _ctx_vp2);
+	aset (_ctx, 2, _ctx_corr);
 
 	_env := serialize (_ctx);
 }
@@ -597,7 +597,7 @@ create procedure REGR_R2_FIN (inout _env varchar)
 	declare _vp1 numeric;
 	declare _vp2 numeric;
 	declare _corr numeric;
-	
+
 	_vp2 := VAR_POP_FIN (aref(_ctx, 1));
 	if (_vp2 is null or _vp2 = 0)
 		return null;
@@ -656,9 +656,9 @@ create procedure REGR_S___FIN (inout _env varchar)
 		return null;
 	declare _ctx any;
 	_ctx := deserialize (_env);
-	
+
 	declare _var numeric;
-	
+
 	_var := VAR_POP_FIN (_env);
 	if (_var is null)
 		return null;
@@ -673,9 +673,9 @@ create procedure REGR_SXY_FIN (inout _env varchar)
 		return null;
 	declare _ctx any;
 	_ctx := deserialize (_env);
-	
+
 	declare _var numeric;
-	
+
 	_var := COVAR_POP_FIN (_env);
 	if (_var is null)
 		return null;
@@ -694,7 +694,7 @@ create aggregate DB.DBA.REGR_SYY (in e1 numeric, in e2 numeric) returns numeric 
 create aggregate DB.DBA.REGR_SXY (in e1 numeric, in e2 numeric) returns numeric from
 	STD13_INIT, REGR_SXY_ACC, REGR_SXY_FIN
 ;
-	
+
 --!AWK PUBLIC
 create procedure xte_nodebld_final_root (in acc any) returns any
 {

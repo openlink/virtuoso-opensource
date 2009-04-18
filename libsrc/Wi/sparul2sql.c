@@ -370,7 +370,7 @@ spar_compose_retvals_of_construct (sparp_t *sparp, SPART *top, SPART *ctor_gp,
     use_limits = 1;
   spar_compose_retvals_of_ctor (sparp, ctor_gp, "sql:SPARQL_CONSTRUCT", NULL, NULL,
     &(top->_.req_top.retvals), &cve, formatter, agg_formatter, agg_mdata, use_limits );
-  
+
 }
 
 SPART *
@@ -382,7 +382,7 @@ spar_simplify_graph_to_patch (sparp_t *sparp, SPART *g)
     spar_internal_error (sparp, "NOT FROM and NOT FROM NAMED are not fully supported by SPARUL operations, sorry");
   if (SPAR_QNAME == SPART_TYPE (g->_.graph.expn))
     return (SPART *)(g->_.graph.iri);
-  return g->_.graph.expn;  
+  return g->_.graph.expn;
 }
 
 void

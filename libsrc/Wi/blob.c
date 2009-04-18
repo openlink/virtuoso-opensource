@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  BLOBS
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 /*
@@ -496,7 +496,7 @@ typedef struct bh_get_layout_s {
 } bh_get_layout_t;
 
 
-int 
+int
 page_wait_blob_access (it_cursor_t * itc, dp_addr_t dp_to, buffer_desc_t ** buf_ret, int mode, blob_handle_t *bh, int itc_in_map_wrap)
 {
   short flag;
@@ -1834,7 +1834,7 @@ itc_set_blob_col (it_cursor_t * row_itc, db_buf_t col,
       strses = strses_allocate ();
       if (DV_OBJECT == dtp)
 	udt_serialize (data, strses);
-      else 
+      else
 	print_object (data, strses, NULL, NULL);
       source_bh = bh_alloc (DV_BLOB_HANDLE);
       source_bh->bh_string = (caddr_t) strses;

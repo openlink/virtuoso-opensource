@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  SQL server functions
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 /*
@@ -2540,7 +2540,7 @@ sf_make_auto_cp(void)
     {
       long now;
       sf_makecp (sf_make_new_log_name(wi_inst.wi_master), NULL, 1, CPT_NORMAL);
-      now = approx_msec_real_time (); 
+      now = approx_msec_real_time ();
       checkpointed_last_time = (unsigned long int) now; /* the main thread still running so set last time auto cpt finished */
     }
 }
@@ -3268,7 +3268,7 @@ cov_load (void)
 }
 #endif
 
-#define NO_LITE(f) if (!lite_mode) f (); 
+#define NO_LITE(f) if (!lite_mode) f ();
 
 void
 sql_code_global_init ()
@@ -3596,10 +3596,10 @@ srv_global_init (char *mode)
 #ifdef BIF_XML
   html_hash_init ();
 #endif
-#ifdef PLDBG  
-  if (lite_mode) 
+#ifdef PLDBG
+  if (lite_mode)
     pl_debug_all = 0;
-#endif  
+#endif
   wi_open (mode);
   dbs_cpt_recov ();
   sql_bif_init ();
@@ -3730,7 +3730,7 @@ srv_global_init (char *mode)
       sec_read_grants (NULL, NULL, NULL, 1); /* call second time to do read of execute grants */
       ddl_standard_procs ();
 #if REPLICATION_SUPPORT
-      if (!lite_mode) 
+      if (!lite_mode)
 	{
 	  repl_init ();
 	  repl_serv_init (0);
@@ -3762,7 +3762,7 @@ srv_global_init (char *mode)
     }
   local_commit (bootstrap_cli);
 #ifdef PLDBG
-  if (!lite_mode) 
+  if (!lite_mode)
     {
       pldbg_init ();
       cov_load ();

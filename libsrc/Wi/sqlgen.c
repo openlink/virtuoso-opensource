@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  sql executable graph generation
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 
@@ -276,7 +276,7 @@ sqlg_non_index_ins (df_elt_t * tb_dfe)
 	{
 	  if (tb_dfe->_.table.join_test)
 	    tb_dfe->_.table.join_test = (df_elt_t **) list (3, BOP_AND, sqlo_pred_body (tb_dfe->dfe_sqlo, LOC_LOCAL, tb_dfe, cp), tb_dfe->_.table.join_test);
-	  else 
+	  else
 	    tb_dfe->_.table.join_test = sqlo_pred_body (tb_dfe->dfe_sqlo, LOC_LOCAL, tb_dfe, cp);
 	  cp->dfe_is_placed = DFE_GEN;
 	}
@@ -489,7 +489,7 @@ sqlg_rdf_text_check (df_elt_t * tb_dfe, text_node_t * txs, state_slot_t * id_ssl
 	{
 	  state_slot_t * id2 = sqlc_new_temp (sc, "ro_id", DV_LONG_INT);
 	  dk_set_t code = NULL;
-	  cv_call (&code, NULL, t_box_string ("ro_digest_id"), id2, (state_slot_t **) t_list (1, id_ssl)); 
+	  cv_call (&code, NULL, t_box_string ("ro_digest_id"), id2, (state_slot_t **) t_list (1, id_ssl));
 	  txs->src_gen.src_pre_code = code_to_cv (sc, code);
 	}
     }
@@ -783,7 +783,7 @@ sqlg_inx_op_ssls (sqlo_t * so, inx_op_t * iop)
 int
 iop_one_col_free (inx_op_t * iop)
 {
-  /* the full spec is one longer than the start spec 
+  /* the full spec is one longer than the start spec
   * The iop_other trick is applicable only if all except the last key part are fixed in the inx int */
   int n_start = 0, n_full = 0;
   search_spec_t * sp1, *sp2;
@@ -2536,7 +2536,7 @@ bitmap_index_box);
 }
 
 
-caddr_t 
+caddr_t
 bif_grouping (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   ptrlong curr_bitmap = bif_long_arg (qst, args, 1, GROUPING_FUNC);
@@ -2549,7 +2549,7 @@ bif_grouping (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
-caddr_t 
+caddr_t
 bif_grouping_set_bitmap (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
     ptrlong bitmap_idx = bif_long_arg (qst, args, 0, GROUPING_SET_FUNC);
@@ -3185,7 +3185,7 @@ qr_skip_node (sqlo_t * so, query_t * qr)
       if ((qn_input_fn)end_node_input == f
 #if KEYCOMP
 	  || (qn_input_fn)dpipe_node_input == f
-#endif 
+#endif
 	  )
 	{
 	  post_nodes = 1;
@@ -3385,7 +3385,7 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query,
 		sqlg_rdf_inf (dfe, qn, &head);
 	      if (DFE_TABLE== dfe->dfe_type && dfe->_.table.ot->ot_is_outer)
 		sqlg_outer_with_iters (dfe, qn, &head);
-		
+
 	      while (qn_next (last_qn))
 		last_qn = qn_next (last_qn);
 	      break;

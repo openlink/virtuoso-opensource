@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Data Dictionary
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #ifndef _WIDD_H
@@ -158,7 +158,7 @@ typedef struct sql_type_s
 
 
 
-typedef struct col_stat_s 
+typedef struct col_stat_s
 {
   id_hash_t *	cs_distinct;
   int64		cs_len;
@@ -229,7 +229,7 @@ typedef struct dbe_key_frag_s
 } dbe_key_frag_t;
 
 
-typedef struct key_spec_s 
+typedef struct key_spec_s
 {
   struct search_spec_s * 	ksp_spec_array;
   int (*ksp_key_cmp) (struct buffer_desc_s * buf, int pos, struct it_cursor_s * itc);

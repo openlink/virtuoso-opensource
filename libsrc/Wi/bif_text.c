@@ -491,7 +491,7 @@ bif_wb_all_done  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  qst_set (qst, args[1], box_d_id (&d_id_1));
 	  if (inx < len - 1)
 	    qst_set (qst, args[2], box_num (1));
-	  else 
+	  else
 	    qst_set (qst, args[2], box_num (0));
 	  return box_num (0);
 	}

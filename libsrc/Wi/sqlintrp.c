@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  SQL interpreter
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "libutil.h"
@@ -444,7 +444,7 @@ report_error:
     }
   else /*if (is_computed)*/
     {
-      sqlr_new_error ("42001", "SR518", 
+      sqlr_new_error ("42001", "SR518",
 	  "Procedure name value of invalid type %s (%d) supplied in an indirect CALL statement",
 	  dv_type_title (DV_TYPE_OF (proc_name)), (int) DV_TYPE_OF (proc_name));
     }
@@ -488,7 +488,7 @@ report_error:
       if (!proc)
 	{
 	  char complete_proc_name_str[MAX_QUAL_NAME_LEN];
-	  complete_proc_name (proc_name, complete_proc_name_str, qi->qi_query->qr_qualifier, CLI_OWNER (qi->qi_client));  
+	  complete_proc_name (proc_name, complete_proc_name_str, qi->qi_query->qr_qualifier, CLI_OWNER (qi->qi_client));
 	  sqlr_new_error ("42001", "SR185", "Undefined procedure %s.", complete_proc_name_str);
 	}
     }
@@ -672,7 +672,7 @@ subq_init (query_t * subq, caddr_t * inst)
   DO_SET (table_source_t *, ts, &nodes)
     {
       if ((ts->src_gen.src_input == (qn_input_fn) table_source_input ||
-	  ts->src_gen.src_input == (qn_input_fn) table_source_input_unique) 
+	  ts->src_gen.src_input == (qn_input_fn) table_source_input_unique)
 	  && ts->ts_order_ks  /* not set if inx op */
 	  && ts->ts_order_ks->ks_key->key_id == KI_TEMP)
 	{
@@ -946,7 +946,7 @@ ins_fetch (instruction_t * ins, caddr_t * qst)
       sqlr_new_error ("24000", "SR190", "Fetch of unopened cursor.");
     }
 
-  /* 
+  /*
      On open cursor, check the params and if they changed , re-bind them
    */
   if (cr_state == CR_OPEN)
@@ -1883,7 +1883,7 @@ again:
 			  value = qst_get (qst, ins->_.vret.value);
 			  if (ins->_.vret.value->ssl_is_callret)
 			    qst[ins->_.vret.value->ssl_index] = NULL;
-			  else 
+			  else
 			    value = box_copy_tree (value);
 			}
 		      else
@@ -2272,7 +2272,7 @@ subq_comp_func (caddr_t * qst, void * _subp)
       GPF_T;			/*Bad subq predicate. */
     }
 
-  /*NOTREACHED*/ 
+  /*NOTREACHED*/
   return 0;
 }
 

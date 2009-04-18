@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  UPDATE statements
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "sqlnode.h"
@@ -434,7 +434,7 @@ upd_refit_row (it_cursor_t * itc, buffer_desc_t ** buf,
       int pos = itc->itc_position;
       if ((*buf)->bd_content_map->pm_bytes_free >= nl - ol && !is_leaf_ptr)
 	{
-	  /* if the page will not split, there could be space enough between this row and the start of the physically next one. */ 
+	  /* if the page will not split, there could be space enough between this row and the start of the physically next one. */
 	  int after = map_entry_after ((*buf)->bd_content_map, pos);
 	  int old_next = IE_NEXT (&page[pos + IE_NEXT_IE]);
 	  if (after - pos >= nl)
@@ -785,7 +785,7 @@ update_node_run_1 (update_node_t * upd, caddr_t * inst, caddr_t * state)
   }
 }
 
-static void 
+static void
 update_keyset_state_set (update_node_t * upd, caddr_t * state)
 {
   id_hash_t * sht, * vht;
@@ -805,10 +805,10 @@ update_keyset_state_set (update_node_t * upd, caddr_t * state)
       upd_state[2] = (caddr_t) box_dv_dict_hashtable (1024);
       qst_set (state, upd->upd_keyset_state, (caddr_t) upd_state);
     }
- 
+
   pos = unbox (upd_state[0]);
   last = unbox (upd_state[1]);
-  sht = (id_hash_t *) upd_state[2]; 
+  sht = (id_hash_t *) upd_state[2];
   if (!sht)
     GPF_T;
 
@@ -817,14 +817,14 @@ update_keyset_state_set (update_node_t * upd, caddr_t * state)
 
   v = qst_get (state, upd->upd_place);
   n_box = box_num ((ptrlong)upd->upd_place->ssl_index);
-  id_hash_set (vht, (caddr_t)&n_box, (caddr_t)&v); 
+  id_hash_set (vht, (caddr_t)&n_box, (caddr_t)&v);
   QST_GET_V (state, upd->upd_place) = NULL;
 
   sa[0] = upd->upd_values;
   sa[1] = upd->upd_trigger_args;
-  
+
   for (cnt = 0; cnt < 2; cnt++)
-    { 
+    {
       slots = sa[cnt];
       DO_BOX (state_slot_t *, sl, inx, slots)
 	{
@@ -842,7 +842,7 @@ update_keyset_state_set (update_node_t * upd, caddr_t * state)
 	      v = qst_get (state, sl);
 	      QST_GET_V (state, sl) = NULL;
 	    }
-	  id_hash_set (vht, (caddr_t)&n_box, (caddr_t)&v); 
+	  id_hash_set (vht, (caddr_t)&n_box, (caddr_t)&v);
 	}
       END_DO_BOX;
     }
@@ -856,7 +856,7 @@ update_keyset_state_set (update_node_t * upd, caddr_t * state)
 }
 
 
-static int 
+static int
 update_keyset_state_restore (update_node_t * upd, caddr_t * state, int * start)
 {
 #define UPD_SET_FROM_HT(sl) \
@@ -890,11 +890,11 @@ update_keyset_state_restore (update_node_t * upd, caddr_t * state, int * start)
       *start = 0;
       pos = 0;
     }
-  sht = (id_hash_t *) upd_state[2]; 
+  sht = (id_hash_t *) upd_state[2];
   if (!sht)
     GPF_T;
   pos++;
-  if (pos > last) 
+  if (pos > last)
     {
       /* finished */
       dk_free_box (upd_state[0]);
@@ -922,9 +922,9 @@ update_keyset_state_restore (update_node_t * upd, caddr_t * state, int * start)
 
   sa[0] = upd->upd_values;
   sa[1] = upd->upd_trigger_args;
-  
+
   for (cnt = 0; cnt < 2; cnt++)
-    { 
+    {
       slots = sa[cnt];
       DO_BOX (state_slot_t *, sl, inx, slots)
 	{
@@ -954,11 +954,11 @@ update_keyset_state_restore (update_node_t * upd, caddr_t * state, int * start)
 
    When update_node_run is called for continue, ie inst is set and state is
    null, do the updates.  Loop over the remembered things, put them in the
-   appropriate ssl and call the rest of update node run.  Do not copy the 
+   appropriate ssl and call the rest of update node run.  Do not copy the
    remembered values, just set them with qst_set.  This frees the previous value.
 */
 
-void 
+void
 update_node_run (update_node_t * upd, caddr_t * inst, caddr_t * state)
 {
   if (upd->upd_keyset)

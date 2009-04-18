@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  XSLT
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include <stdlib.h>
@@ -3002,7 +3002,7 @@ box_find_mt_unsafe_subtree (caddr_t box)
   switch DV_TYPE_OF (box)
     {
     case DV_STRING: case DV_LONG_INT: case DV_SINGLE_FLOAT: case DV_DOUBLE_FLOAT:
-    case DV_DB_NULL: case DV_UNAME: case DV_DATETIME: case DV_NUMERIC: 
+    case DV_DB_NULL: case DV_UNAME: case DV_DATETIME: case DV_NUMERIC:
     case DV_IRI_ID: case DV_ASYNC_QUEUE:
       return NULL;
     case DV_DICT_ITERATOR:
@@ -3046,7 +3046,7 @@ box_make_tree_mt_safe (caddr_t box)
   switch DV_TYPE_OF (box)
     {
     case DV_STRING: case DV_LONG_INT: case DV_SINGLE_FLOAT: case DV_DOUBLE_FLOAT:
-    case DV_DB_NULL: case DV_UNAME: case DV_DATETIME: case DV_NUMERIC: 
+    case DV_DB_NULL: case DV_UNAME: case DV_DATETIME: case DV_NUMERIC:
     case DV_IRI_ID: case DV_ASYNC_QUEUE:
       return;
     case DV_DICT_ITERATOR:
@@ -3187,7 +3187,7 @@ bif_dict_put (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         }
       mutex_enter (ht->ht_mutex);
     }
-  if ((0 < ht->ht_dict_max_entries) && 
+  if ((0 < ht->ht_dict_max_entries) &&
       ((ht->ht_inserts - ht->ht_deletes) > ht->ht_dict_max_entries) )
     goto skip_insertion; /* see below */
   if ((0 < ht->ht_dict_max_mem_in_use) &&
@@ -3233,7 +3233,7 @@ bif_dict_put (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   id_hash_iterator (hit, ht);
   ht->ht_dict_version++;
   hit->hit_dict_version = ht->ht_dict_version;
-skip_insertion:  
+skip_insertion:
   if (ht->ht_mutex)
     mutex_leave (ht->ht_mutex);
   res = ht->ht_inserts - ht->ht_deletes;

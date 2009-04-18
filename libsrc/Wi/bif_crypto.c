@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Cryptography functions
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "sqlnode.h"
@@ -409,7 +409,7 @@ int asn1_parse_to_xml(BIO *bp, unsigned char **pp, long length, int offset,
 					else
 					/* print the normal dump */
 						{
-						if (!nl) 
+						if (!nl)
 							{
 							/*if (BIO_write(bp,"\n",1) <= 0)
 								goto end;*/
@@ -417,7 +417,7 @@ int asn1_parse_to_xml(BIO *bp, unsigned char **pp, long length, int offset,
 							}
 						if (BIO_dump_indent(bp,
 							(const char *)opp,
-							((dump == -1 || dump > 
+							((dump == -1 || dump >
 							os->length)?os->length:dump),
 							dump_indent) <= 0)
 							goto end;
@@ -496,7 +496,7 @@ int asn1_parse_to_xml(BIO *bp, unsigned char **pp, long length, int offset,
 				}
 			else if (len > 0 && dump)
 				{
-				if (!nl) 
+				if (!nl)
 					{
 					/*if (BIO_write(bp,"\n",1) <= 0)
 						goto end;*/
@@ -509,7 +509,7 @@ int asn1_parse_to_xml(BIO *bp, unsigned char **pp, long length, int offset,
 				nl=1;
 				}
 
-			if (!nl) 
+			if (!nl)
 				{
 				/*if (BIO_write(bp,"\n",1) <= 0) goto end;*/
 				;
@@ -553,7 +553,7 @@ bif_asn1_to_xml(caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	if (len <= 0 || len == sizeof(tmpbuf))
 	{
 		res = NEW_DB_NULL;
-		goto err;	
+		goto err;
 	}
 	res = box_dv_short_string(tmpbuf);
 	err:
@@ -1099,8 +1099,8 @@ BN_box (BIGNUM * x)
   buf_len = (size_t)BN_num_bytes (x);
   if (buf_len <= BN_BYTES)
       buf = box_num ((unsigned long)x->d[0]);
-  else 
-    {  
+  else
+    {
       buf = dk_alloc_box (buf_len, DV_BIN);
       n = BN_bn2bin (x, (unsigned char*) buf);
       if (n != buf_len)
@@ -1313,23 +1313,23 @@ bif_get_certificate_info (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 		      RSA * x = k->pkey.rsa;
 		      ret = list (3, box_dv_short_string ("RSAPublicKey"), BN_box (x->e), BN_box (x->n));
 		    }
-		  else 
-#endif		
-#ifdef EVP_PKEY_DSA		
+		  else
+#endif
+#ifdef EVP_PKEY_DSA
 		  if (k->type == EVP_PKEY_DSA)
 		    {
 		      DSA * x = k->pkey.dsa;
 		      ret = list (2, box_dv_short_string ("DSAPublicKey"), BN_box (x->pub_key));
 		    }
 		  else
-#endif		
+#endif
 		    *err_ret = srv_make_new_error ("42000", "XXXXX", "The certificate's public key not supported");
 		  EVP_PKEY_free (k);
 		}
 	      else
 		*err_ret = srv_make_new_error ("42000", "XXXXX", "Can not read the public key from the certificate");
 	      break;
-	    }	     
+	    }
       default:
 	    {
 	      if (!internal)

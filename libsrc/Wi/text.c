@@ -5,25 +5,25 @@
  *  $Id$
  *
  *  Text search
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include <limits.h>
@@ -147,7 +147,7 @@ d_id_set (d_id_t * to, d_id_t * from)
     }
   else
     {
-#ifdef WIN32      
+#ifdef WIN32
       D_ID_NUM_SET (&to->id[0], D_ID_NUM_REF (&from->id[0]));
 #else
       memcpy (to, from, sizeof (int64) + 1);
@@ -2759,11 +2759,11 @@ bif_vtb_match (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   D_SET_INITIAL (&d_id_next);
   for (;;)
     {
-      QR_RESET_CTX 
+      QR_RESET_CTX
 	{
 	  sst_next (sst, &d_id_next, 0);
 	}
-      QR_RESET_CODE 
+      QR_RESET_CODE
 	{
 	  du_thread_t * self = THREAD_CURRENT_THREAD;
 	  caddr_t err = thr_get_error_code (self);

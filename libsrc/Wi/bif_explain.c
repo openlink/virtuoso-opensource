@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Implements bif 'explain'
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "odbcinc.h"
@@ -465,7 +465,7 @@ ts_print (table_source_t * ts)
     {
       char card[30];
       inx_op_t * iop = ts->ts_inx_op;
-      snprintf (card, sizeof (card), "%9.2g rows", ts->ts_cardinality); 
+      snprintf (card, sizeof (card), "%9.2g rows", ts->ts_cardinality);
       stmt_printf (("  Index AND %s {\n", card));
       DO_BOX (inx_op_t *, term, inx, iop->iop_terms)
 	{
@@ -488,10 +488,10 @@ ts_print (table_source_t * ts)
       END_DO_BOX;
       stmt_printf ((" }\n"));
     }
-  else 
+  else
     {
       char card[30];
-      snprintf (card, sizeof (card), "%9.2g rows", ts->ts_cardinality); 
+      snprintf (card, sizeof (card), "%9.2g rows", ts->ts_cardinality);
       if (!ts->ts_order_ks->ks_from_temp_tree && ts->ts_order_ks->ks_key)
 	stmt_printf (("from %s by %s %s %s\n",
 		      ts->ts_order_ks->ks_key->key_table->tb_name,
@@ -783,7 +783,7 @@ node_print (data_source_t * node)
       stmt_printf (("\n  over "));
       ssl_array_print (ii->ii_values);
       stmt_printf (("\n"));
-      
+
     }
 #ifdef BIF_XML
   else if (in == (qn_input_fn) txs_input)

@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Date support functions
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "CLI.h"
@@ -299,9 +299,9 @@ dt_now (caddr_t dt)
   struct tm result;
 
   tm = *(struct tm *)gmtime_r (&tim, &result);
-#else  
+#else
   tm = *(struct tm *)gmtime (&tim);
-#endif  
+#endif
   day = date2num (tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
   DT_SET_DAY (dt, day);
   DT_SET_HOUR (dt, tm.tm_hour);
@@ -330,7 +330,7 @@ time_t_to_dt (time_t tim, long fraction, char *dt)
 #if defined(HAVE_GMTIME_R)
   struct tm result;
   struct tm tm = *(struct tm *)gmtime_r (&tim, &result);
-#else  
+#else
   struct tm tm = *(struct tm *)gmtime (&tim);
 #endif
   day = date2num (tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
@@ -590,15 +590,15 @@ dt_init ()
   time_t tim;
 #if defined(HAVE_GMTIME_R)
   struct tm result;
-#endif  
+#endif
 
   tim = time (NULL);
   ltm = *localtime (&tim);
 #if defined(HAVE_GMTIME_R)
   gtm = *(struct tm *)gmtime_r (&tim, &result);
-#else 
+#else
   gtm = *(struct tm *)gmtime (&tim);
-#endif  
+#endif
   lt = mktime (&ltm);
   gt = mktime (&gtm);
   dt_local_tz = (int) (lt - gt) / 60;

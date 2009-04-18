@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Managing buffer rings and paging to disk.
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #ifdef HAVE_CONFIG_H
@@ -2077,7 +2077,7 @@ dbs_extend_pagesets (dbe_storage_t * dbs)
   dbs_extend_pageset (dbs, & dbs->dbs_incbackup_set, 1);
 }
 
-int 
+int
 fd_extend (dbe_storage_t * dbs, int fd, int n_pages)
 {
   OFF_T n;
@@ -2117,11 +2117,11 @@ dbs_seg_extend (dbe_storage_t * dbs, OFF_T n)
     {
       fd = dst_fd (dst);
       rc = fd_extend (dbs, fd, n);
-      dst_fd_done (dst, fd); 
+      dst_fd_done (dst, fd);
       if (rc != n)
 	{
 	  int inx2;
-	  for (inx2 = 0; inx2 < inx; inx2++) 
+	  for (inx2 = 0; inx2 < inx; inx2++)
 	    {
 	      fd = dst_fd (ds->ds_stripes[inx2]);
 	      FTRUNCATE (fd, org_sz);
@@ -2687,9 +2687,9 @@ dbs_sync_disks (dbe_storage_t * dbs)
 	break;
 
     case 1:
-#ifndef WIN32	
+#ifndef WIN32
       sync();
-#endif      
+#endif
       break;
 
     case 2:

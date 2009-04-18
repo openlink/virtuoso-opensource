@@ -734,7 +734,7 @@ spar_fill_lexem_bufs (sparp_t *sparp)
       sparp->sparp_lexdepth = 0;
       sparyyrestart (NULL);
       sparp->sparp_curr_lexem_buf = (spar_lexem_t *)t_alloc_box (sizeof (spar_lexem_t) * XP_LEXBUF_ELEMENTS, DV_ARRAY_OF_POINTER);
-/* Setting initial state and placing appropriate fake lexem to the lexbuffer */      
+/* Setting initial state and placing appropriate fake lexem to the lexbuffer */
       curr_lex = sparp->sparp_curr_lexem_buf + fill_ctr;
       curr_lex->sparl_lineno = sparp->sparp_lexlineno;
       curr_lex->sparl_depth = depth;
@@ -757,9 +757,9 @@ spar_fill_lexem_bufs (sparp_t *sparp)
 	    }
 	  depth = sparp->sparp_lexdepth;
 	  curr_lex->sparl_raw_text = t_box_dv_short_nchars (sparyytext, sparyyleng);
-#ifdef XPATHP_DEBUG	  
+#ifdef XPATHP_DEBUG
 	  curr_lex->sparl_state = GET_CURRENT_BEGIN;
-#endif	  
+#endif
 	  fill_ctr++;
           sparp->sparp_total_lexems_parsed++;
 	  if (fill_ctr == XP_LEXBUF_ELEMENTS)

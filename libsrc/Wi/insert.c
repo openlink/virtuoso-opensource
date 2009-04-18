@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Insert
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "sqlnode.h"
@@ -144,7 +144,7 @@ row_reserved_length (db_buf_t row, dbe_key_t * key)
   FILE * dmp = fopen ("bufdump.txt", "w"); \
   dbg_page_map_f (buf, dmp); \
   fclose (dmp); \
-} 
+}
 
 int
 pg_make_map (buffer_desc_t * buf)
@@ -453,7 +453,7 @@ itc_keep_together (it_cursor_t * itc, buffer_desc_t * buf, buffer_desc_t * buf_f
   if (itc->itc_bm_split_left_side && !itc->itc_bm_split_right_side)
     {
       /* this inserts the right side of a split bm inx entry. Move the crs registered on the left side to the right side
-       * if they are past the dividing value.  If just landed waiting, mark then to reset the search 
+       * if they are past the dividing value.  If just landed waiting, mark then to reset the search
        * The left and right are not always on the same page.  This is because the ins may have split or because of pre-existingf leaf pointers in the parent that just split the start of the left and of the right.  So different pages is not always split. */
       buffer_desc_t * left_buf;
       placeholder_t * left = itc->itc_bm_split_left_side;
@@ -924,7 +924,7 @@ itc_split (it_cursor_t * it, buffer_desc_t ** buf_ret, db_buf_t dv,
       right_leaf = lp_concat (it->itc_insert_key, left_leaf, right_leaf);
       left_leaf = NULL;
     }
-  else 
+  else
   itc_skip_entry (it, parent->bd_buffer);
 
   /* Position cursor on parent right after this leaf's pointer.
@@ -1133,7 +1133,7 @@ itc_insert_dv (it_cursor_t * it, buffer_desc_t ** buf_ret, db_buf_t dv,
   if (data_len <= map->pm_bytes_free)
     {
       /* No split, compress. */
-      int is_first = it->itc_position == SHORT_REF (buf->bd_buffer + DP_FIRST) 
+      int is_first = it->itc_position == SHORT_REF (buf->bd_buffer + DP_FIRST)
 	&& (INS_NEW_RL == new_rl || INS_DOUBLE_LP == new_rl);
       pg_check_map (buf);
       pg_write_compact (it, buf, it->itc_position, dv, PAGE_SZ, NULL, 0, new_rl);
@@ -1594,7 +1594,7 @@ itc_delete_single_leaf (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 		buffer_desc_t * leaf_buf;
 		/* The page w/ the single leaf is the root */
 	    itc_set_parent_link (itc, leaf, 0);
-		    
+
 		rdbg_printf_m (("Single leaf root popped old root L=%ld new root L=%ld \n", (long)(buf->bd_page), (long)leaf));
 	    ITC_IN_KNOWN_MAP (itc, leaf);
 	    itc->itc_tree->it_root = leaf;
@@ -1705,7 +1705,7 @@ delete_from_cursor:
 	GPF_T;			/* Bad free count */
       rdbg_printf_2 (("    Deleting page L=%d\n", old_buf->bd_page));
       parent = itc_write_parent (it, buf);
-      
+
       if (!parent)
 	    {
 	      /* The root went empty */
@@ -2129,7 +2129,7 @@ it_cp_check_node (index_tree_t *it, buffer_desc_t *parent, int mode)
 	  buffer_desc_t * buf;
 	  mutex_enter (&itm->itm_mtx);
 	  buf = (buffer_desc_t*) gethash ((void*)(ptrlong) leaf, &itm->itm_dp_to_buf);
-	  if (BUF_COMPACT_ALL_READY (buf, leaf, itm) 
+	  if (BUF_COMPACT_ALL_READY (buf, leaf, itm)
 	       && (COMPACT_ALL == mode ? 1 : buf->bd_is_dirty))
 	    {
 	      if (mode == COMPACT_DIRTY && !gethash ((void*)(void*)(ptrlong)leaf, &itm->itm_remap))
@@ -2178,7 +2178,7 @@ void
 itc_vacuum_compact (it_cursor_t * itc, buffer_desc_t * buf)
 {
   /*it_map_t * itm = IT_DP_MAP (itc->itc_tree, itc->itc_page);*/
-  if (buf->bd_registered 
+  if (buf->bd_registered
       || itc->itc_pl
       || buf->bd_read_waiting || buf->bd_write_waiting)
     {

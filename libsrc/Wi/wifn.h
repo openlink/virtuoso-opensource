@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Internal Functions
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #ifndef _WIFN_H
@@ -180,14 +180,14 @@ buffer_desc_t * page_fault_map_sem (it_cursor_t * it, dp_addr_t dp, int stay_ins
 #define PF_STAY_ATOMIC 1
 
 #ifdef MTX_DEBUG
-int page_wait_access_dbg (int line, const char * file, it_cursor_t * itc, dp_addr_t dp_to, buffer_desc_t * buf_from, 
+int page_wait_access_dbg (int line, const char * file, it_cursor_t * itc, dp_addr_t dp_to, buffer_desc_t * buf_from,
     buffer_desc_t ** buf_ret, int mode, int max_change);
 void page_leave_inner_dbg (int line, const char * file, buffer_desc_t * buf);
 #define page_wait_access(itc,dp,buf_from,buf_ret,mode,max_change) \
 	page_wait_access_dbg (__LINE__, __FILE__,itc,dp,buf_from,buf_ret,mode,max_change)
 #define page_leave_inner(buf) page_leave_inner_dbg (__LINE__, __FILE__,buf)
 #else
-int page_wait_access (it_cursor_t * itc, dp_addr_t dp_to, buffer_desc_t * buf_from, 
+int page_wait_access (it_cursor_t * itc, dp_addr_t dp_to, buffer_desc_t * buf_from,
     buffer_desc_t ** buf_ret, int mode, int max_change);
 void page_leave_inner (buffer_desc_t * buf);
 #endif
@@ -391,7 +391,7 @@ extern void buffer_set_free (buffer_desc_t* ps);
 int buf_set_dirty (buffer_desc_t * buf);
 int buf_set_dirty_inside (buffer_desc_t * buf);
 #else
-#define buf_set_dirty(b)  ((b)->bd_is_dirty = 1) 
+#define buf_set_dirty(b)  ((b)->bd_is_dirty = 1)
 #define buf_set_dirty_inside(b)  ((b)->bd_is_dirty = 1)
 #endif
 
@@ -828,7 +828,7 @@ void dbs_unfreeable (dbe_storage_t * dbs, dp_addr_t dp, int flag);
 #ifndef NDEBUG
 #define PAGE_SET_CHECKSUM
 #endif
-#ifdef PAGE_SET_CHECKSUM 
+#ifdef PAGE_SET_CHECKSUM
 extern void page_set_update_checksum (uint32 * page, int inx, int bit);
 extern void page_set_checksum_init (db_buf_t page);
 #else

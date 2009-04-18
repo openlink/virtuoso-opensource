@@ -1,20 +1,20 @@
 /*
  *  $Id$
- *   
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *   
+ *
  *  Copyright (C) 1998-2009 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *   
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *   
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
@@ -29,7 +29,7 @@
 #define jsonyyerror(str) jsonyyerror_impl(str)
 void jsonyyerror_impl(const char *s);
 int jsonyy_string_input (char *buf, int max);
-caddr_t *json_tree; 
+caddr_t *json_tree;
 caddr_t json_str;
 int jsonyydebug;
 int jsonyylex (void);
@@ -56,7 +56,7 @@ int json_line;
 %token <box> NULL_L
 
 %type <box> object
-%type <list> jsondoc 
+%type <list> jsondoc
 %type <set> members
 %type <set> members_opt
 %type <set> pair
@@ -72,16 +72,16 @@ jsondoc
 	| array { json_tree = (caddr_t *) $1; }
 	;
 
-object	: OBJ_BEGIN members_opt OBJ_END { 
+object	: OBJ_BEGIN members_opt OBJ_END {
        					$$ = (caddr_t)t_list_to_array (
 						t_NCONC (
 						/* header */
-						t_CONS(t_alloc_box (0, DV_COMPOSITE), 
-						t_CONS (t_box_string ("structure"), NULL))	
+						t_CONS(t_alloc_box (0, DV_COMPOSITE),
+						t_CONS (t_box_string ("structure"), NULL))
 						,
 						$2
 						)
-					     ); 
+					     );
 				    }
      	;
 
@@ -95,7 +95,7 @@ members : pair 		    { $$ = $1; }
 	| members COMMA error { jsonyyerror ("pair of field name and value is expected after ','"); }
 	;
 
-pair	
+pair
 	: STRING COLON value {
      		dk_set_t set = NULL;
 		t_set_push (&set, $3);
@@ -106,7 +106,7 @@ pair
 	;
 
 
-array	
+array
       	: ARR_BEGIN value_list_opt ARR_END { $$ = (caddr_t)t_list_to_array ($2);}
 	;
 
@@ -127,7 +127,7 @@ value	: STRING  { $$ = $1; }
 	| TRUE_L  { $$ = t_box_num (1); }
 	| FALSE_L { $$ = t_box_num (0); }
 	| NULL_L  { $$ = t_alloc_box (0, DV_DB_NULL); }
-	| object  { $$ = $1; } 
+	| object  { $$ = $1; }
       	| array   { $$ = $1; }
 	;
 
@@ -136,8 +136,8 @@ value	: STRING  { $$ = $1; }
 #define YY_INPUT(buf, res, max) \
   res = jsonyy_string_input (buf, max);
 
-void 
-jsonyyerror_impl(const char *s) 
+void
+jsonyyerror_impl(const char *s)
 {
   sqlr_new_error ("37000", "JSON1", "JSON parser failed: %.200s at line %d", s, json_line);
 }
@@ -151,7 +151,7 @@ jsonyywrap (void)
 int jsonyy_string_input (char *buf, int max)
 {
   int len = (int) strlen (json_str);
-  if (len == 0) 
+  if (len == 0)
     return 0;
   if (len > max)
     len = max;

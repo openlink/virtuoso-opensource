@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  XSLT translator
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "libutil.h"
@@ -639,7 +639,7 @@ void xslt_includes_recursion (xslt_sheet_t *xsh, caddr_t **sheet_tree_ptr, query
 	    dk_check_tree_iter (new_sheet_tree, BADBEEF_BOX, known);
 	    hash_table_free (known);
 	  }
-#endif	  
+#endif
 	  dk_free_tree ((box_t) sheet_tree);
 	  dk_free_tree ((box_t) inctree);
 	  sheet_tree = new_sheet_tree;
@@ -875,7 +875,7 @@ After processing 'text1<!--comment-->text2' two string children text1 and text2 
 		      !(strncmp (child_name, "http://www.w3.org/1999/xhtml:", 29) &&
 		        strncmp (child_name, "http://www.w3.org/1999/02/22-rdf-syntax-ns#:", 44)) &&
                       !(strcmp (name, "http://www.w3.org/1999/XSL/Transform:stylesheet") &&
-                        strcmp (name, "http://www.w3.org/1999/XSL/Transform:transform")) 
+                        strcmp (name, "http://www.w3.org/1999/XSL/Transform:transform"))
 		    )
                     { /* Relax syntax for weird comments inside the stylesheet. */
 	              tree[child_idx] = NULL;

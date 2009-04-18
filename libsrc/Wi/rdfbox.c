@@ -3,22 +3,22 @@
  *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2009 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "sqlnode.h"
@@ -441,7 +441,7 @@ bif_rdf_box_set_ro_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 
-int 
+int
 rbs_length (db_buf_t rbs)
 {
   long hl, l;
@@ -495,7 +495,7 @@ rb_copy (rdf_box_t * rb)
 int
 dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
 {
-  /* this is dv_compare  where one or both arguments are dv_rdf 
+  /* this is dv_compare  where one or both arguments are dv_rdf
    * The collation is perverse: If one is not a string, collate as per dv_compare of the data.
    * if both are strings and one is not an rdf box, treat the one that is not a box as an rdf string of max inlined chars and no lang orr type. */
   int len1, len2, cmp_len, mcmp;
@@ -673,7 +673,7 @@ In version 6 (Vajra), complete boxes are equal even if ro_id differ (say, one of
 int
 rdf_box_compare (ccaddr_t a1, ccaddr_t a2)
 {
-  /* this is cmp_boxes  where one or both arguments are dv_rdf 
+  /* this is cmp_boxes  where one or both arguments are dv_rdf
    * The collation is perverse: If one is not a string, collate as per dv_compare of the data.
    * if both are strings and one is not an rdf box, treat the one that is not a box as an rdf string of max inlined chars and no lang orr type. */
   rdf_box_t * rb1 = (rdf_box_t *) a1;
@@ -1195,7 +1195,7 @@ rb_serialize (caddr_t x, dk_session_t * ses)
     sr_report_future_error (ses, "", "Zero ro_id in incomplete DV_RDF value, can't serialize");
   if ((NULL != cli) && cli->cli_version < 3031)
     print_object (rb->rb_box, ses, NULL, NULL);
-  else 
+  else
     {
       int flags = 0;
       session_buffered_write_char (DV_RDF, ses);
@@ -1490,7 +1490,7 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
     {
       obj_box_value = obj;
       obj_box_value_dtp = obj_dtp;
-    }      
+    }
   switch (obj_box_value_dtp)
     {
     case DV_DATETIME:
@@ -1565,11 +1565,11 @@ bif_http_ttl_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     (sizeof (ttl_env_t) != box_length ((caddr_t)env)) ||
     (DV_DICT_ITERATOR != DV_TYPE_OF (env->te_used_prefixes)) ||
     (((DV_STRING == DV_TYPE_OF (env->te_prev_subj_ns)) || (DV_UNAME == DV_TYPE_OF (env->te_prev_subj_ns))) &&
-      ((DV_STRING != DV_TYPE_OF (env->te_prev_subj_loc)) ||	
+      ((DV_STRING != DV_TYPE_OF (env->te_prev_subj_loc)) ||
         ((DV_STRING != DV_TYPE_OF (env->te_prev_pred_ns)) && (DV_UNAME != DV_TYPE_OF (env->te_prev_pred_ns))) ||
         (DV_STRING != DV_TYPE_OF (env->te_prev_pred_loc)) ) ) ||
-    (DV_LONG_INT != DV_TYPE_OF (env->te_ns_count_s_o)) ||	
-    (DV_LONG_INT != DV_TYPE_OF (env->te_ns_count_p_dt)) )	
+    (DV_LONG_INT != DV_TYPE_OF (env->te_ns_count_s_o)) ||
+    (DV_LONG_INT != DV_TYPE_OF (env->te_ns_count_p_dt)) )
     sqlr_new_error ("22023", "SR601", "Argument 1 of http_ttl_triple() should be an array of special format");
   if (!iri_cast_and_split_ttl_qname (qi, subj, &tii.s.ns, &tii.s.loc, &tii.s.is_bnode))
     goto fail; /* see below */
@@ -1661,7 +1661,7 @@ bif_sparql_rset_ttl_write_row (caddr_t * qst, caddr_t * err_ret, state_slot_t **
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF ((caddr_t)env) ||
     (sizeof (ttl_env_t) != box_length ((caddr_t)env)) ||
     (DV_DICT_ITERATOR != DV_TYPE_OF (env->te_used_prefixes)) ||
-    (DV_LONG_INT != DV_TYPE_OF (env->te_ns_count_s_o)) ||	
+    (DV_LONG_INT != DV_TYPE_OF (env->te_ns_count_s_o)) ||
     (DV_LONG_INT != DV_TYPE_OF (env->te_ns_count_p_dt)) ||
     ((DV_LONG_INT != DV_TYPE_OF (env->te_out_ses)) && (DV_STRING_SESSION != DV_TYPE_OF (env->te_out_ses))) ||
     (DV_ARRAY_OF_POINTER != DV_TYPE_OF ((caddr_t)(env->te_cols))) ||

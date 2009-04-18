@@ -21,7 +21,7 @@
  *
  */
 
-typedef struct rdf_sub_s 
+typedef struct rdf_sub_s
 {
   caddr_t	rs_iri;
   dk_set_t	rs_superclasses;
@@ -36,7 +36,7 @@ typedef struct rdf_sub_s
 } rdf_sub_t;
 
 
-typedef struct rdf_inf_ctx_s 
+typedef struct rdf_inf_ctx_s
 {
   caddr_t			ric_name;
   id_hash_t * ric_iri_to_sub;
@@ -54,7 +54,7 @@ struct rdf_inf_node_s
   state_slot_t *	ri_isnon_org_o; /* for gs, fp, go, this ssl is true if the o is an enum other than the given o */
   caddr_t	ri_given; /* the iri for which to enum sub/super classes/properties */
   state_slot_t *	ri_output;
-  state_slot_t *	ri_outer_any_passed; /* if rhs of left outer, flag here to see if any answer. If not, do outer output when at end */ 
+  state_slot_t *	ri_outer_any_passed; /* if rhs of left outer, flag here to see if any answer. If not, do outer output when at end */
   int		ri_list_slot;
   state_slot_t *	ri_sas_in; /* the value whose same_as-s are to be listed */
   state_slot_t **	ri_sas_g;

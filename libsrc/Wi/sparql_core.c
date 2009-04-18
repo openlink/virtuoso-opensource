@@ -763,7 +763,7 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
         }
       if (!strcmp (param, "input:named-graph-exclude"))
         {
-          sparp_make_and_push_new_graph_source (sparp, SPART_GRAPH_NOT_NAMED, 
+          sparp_make_and_push_new_graph_source (sparp, SPART_GRAPH_NOT_NAMED,
             spartlist (sparp, 2, SPAR_QNAME, t_box_dv_uname_string (value)),
             NULL );
           /* No sparp->sparp_env->spare_default_graphs_locked = 1; here because NOT FROM can not be overridden */
@@ -1465,7 +1465,7 @@ spar_describe_restricted_by_physical (sparp_t *sparp, SPART **retvals)
     {
       triple_case_t **cases;
       int case_ctr;
-      int s_type = SPART_TYPE (s);      
+      int s_type = SPART_TYPE (s);
       if (SPAR_ALIAS == s_type)
         {
           s = s->_.alias.arg;
@@ -1713,9 +1713,9 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
   sparp_set_option (sparp, &options, T_OUT_L,
     spartlist (sparp, 2, SPAR_LIST, t_list (1, spar_make_variable (sparp, obj_vname))),
     SPARP_SET_OPTION_REPLACING );
-  where_gp = spar_gp_finalize (sparp, NULL); 
-  subselect_top = spar_make_top (sparp, SELECT_L, retvals, 
-    spar_selid_pop (sparp), where_gp, 
+  where_gp = spar_gp_finalize (sparp, NULL);
+  subselect_top = spar_make_top (sparp, SELECT_L, retvals,
+    spar_selid_pop (sparp), where_gp,
     (SPART **)NULL, (SPART **)NULL, t_box_num (SPARP_MAXLIMIT), t_box_num_nonull (0));
   sparp_expand_top_retvals (sparp, subselect_top, 1 /* safely_copy_all_vars */);
   spar_env_pop (sparp);
@@ -1834,7 +1834,7 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
           graph->_.var.rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
           break;
         }
-      if ((NULL != dflts) && (SPART_GRAPH_FROM == ((SPART *)(dflts->data))->_.graph.subtype) && 
+      if ((NULL != dflts) && (SPART_GRAPH_FROM == ((SPART *)(dflts->data))->_.graph.subtype) &&
          ((NULL == dflts->next) || (SPART_GRAPH_FROM != ((SPART *)(dflts->next->data))->_.graph.subtype)) )
         { /* If there's only one default graph then we can cheat and optimize the query a little bit by adding a restriction to the variable */
           SPART *single_dflt = (SPART *)(dflts->data);
@@ -1989,7 +1989,7 @@ SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, cadd
 {
   dtp_t tgt_dtp;
   caddr_t parsed_value = NULL;
-  sql_tree_tmp *tgt_dtp_tree;  
+  sql_tree_tmp *tgt_dtp_tree;
   SPART *res;
   if (NULL != lang)
     return spartlist (sparp, 4, SPAR_LIT, strg, type, lang);
@@ -2188,7 +2188,7 @@ sparp_make_graph_precode (sparp_t *sparp, ptrlong subtype, SPART *iriref, SPART 
   (mixed_tail++)[0] = (SPART *) t_box_dv_short_string ("refresh_free_text");
   (mixed_tail++)[0] = (SPART *) sparp->sparp_env->spare_sql_refresh_free_text;
   exec_user = sparp->sparp_sparqre->sparqre_exec_user;
-  return spartlist (sparp, 4, SPAR_GRAPH, subtype, iriref->_.qname.val, 
+  return spartlist (sparp, 4, SPAR_GRAPH, subtype, iriref->_.qname.val,
     spar_make_funcall (sparp, 0, "SPECIAL::bif:iri_to_id",
       (SPART **)t_list (1,
         spar_make_funcall (sparp, 0, "sql:RDF_SPONGE_UP",
@@ -2244,7 +2244,7 @@ spar_make_regex_or_like_or_eq (sparp_t *sparp, SPART *strg, SPART *regexpn)
       goto bad_regex; /* see below */
     }
   if (start_is_fixed && end_is_fixed)
-    return spartlist (sparp, 3, BOP_EQ, strg, 
+    return spartlist (sparp, 3, BOP_EQ, strg,
       spartlist (sparp, 4, SPAR_LIT, t_box_dv_short_nchars (val+1, final_len), NULL, NULL) );
   like_tmpl = t_alloc_box (final_len + 1, DV_STRING);
   tail = like_tmpl;
@@ -2260,7 +2260,7 @@ spar_make_regex_or_like_or_eq (sparp_t *sparp, SPART *strg, SPART *regexpn)
     GPF_T1 ("spar_" "make_regex_or_like_or_eq (): pointer arithmetic error on like_tmpl");
 /*#endif*/
   return spartlist (sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)LIKE_L,
-    t_list (2, strg, 
+    t_list (2, strg,
       spartlist (sparp, 4, SPAR_LIT, like_tmpl, NULL, NULL) ) );
 
 bad_regex:
@@ -2436,7 +2436,7 @@ spar_var_hash (caddr_t p_data)
 }
 
 
-int 
+int
 spar_var_cmp (caddr_t p_data1, caddr_t p_data2)
 {
   SPART *v1 = ((SPART **)p_data1)[0];
@@ -2464,7 +2464,7 @@ spar_boxed_exec_uid (sparp_t *sparp)
         sparp->sparp_boxed_exec_uid = t_box_num_nonull (U_ID_NOBODY);
     }
   return sparp->sparp_boxed_exec_uid;
-}  
+}
 
 caddr_t
 spar_immortal_exec_uname (sparp_t *sparp)
@@ -2481,7 +2481,7 @@ spar_immortal_exec_uname (sparp_t *sparp)
       box_dv_uname_make_immortal (sparp->sparp_immortal_exec_uname);
     }
   return sparp->sparp_immortal_exec_uname;
-}  
+}
 
 int
 spar_graph_static_perms (sparp_t *sparp, caddr_t graph_iri)
@@ -2543,7 +2543,7 @@ spar_graph_needs_security_testing (sparp_t *sparp, SPART *g_expn, int req_perms)
       return (req_perms & ~default_perms);
     }
   default_perms = spar_graph_static_perms (sparp, NULL);
-  return (req_perms & ~default_perms);        
+  return (req_perms & ~default_perms);
 }
 
 caddr_t
@@ -2664,7 +2664,7 @@ sparp_query_parse (char * str, spar_query_env_t *sparqre, int rewrite_all)
       sparp->sparp_enc = &eh__ISO8859_1;
     }
   sparp->sparp_lang = server_default_lh;
-  spare->spare_namespace_prefixes_outer = 
+  spare->spare_namespace_prefixes_outer =
     spare->spare_namespace_prefixes =
       sparqre->sparqre_external_namespaces;
 
@@ -3530,7 +3530,7 @@ bif_sparql_lex_test (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	      GPF_T;
 end_of_test:
 	      dk_free_tree (lexems);
-	      break;		
+	      break;
 	    default: GPF_T;
 	    }
 	  }

@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Virtuoso Server Extension API
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #ifndef _KSRVEXT_H
@@ -554,7 +554,7 @@ struct dk_session_s
     char		dks_to_close;
     char		dks_is_read_select_ready; /*! Is the next read known NOT to block */
     char		dks_ws_status;
-    
+
     short		dks_n_threads;
     /*! time of last usage (get_msec_real_time) - use for dropping idle HTTP keep alives */
     uint32		dks_last_used;

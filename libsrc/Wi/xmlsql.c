@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Dynamic SQL Compiler, part 2
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "odbcinc.h"
@@ -5031,11 +5031,11 @@ xml_template_node_serialize (caddr_t * current, dk_session_t * ses, void * xsst1
 		{
 		  caddr_t def_graph_uri = xml_find_attribute (current, "default-graph-uri", XMLSQL_NS);
 		  /* SPARQL define input:default-graph-uri ""(space) */
-		  size_t q_len = box_length (_text) + 7 + (def_graph_uri != NULL ? box_length (def_graph_uri) + 34 : 0); 
+		  size_t q_len = box_length (_text) + 7 + (def_graph_uri != NULL ? box_length (def_graph_uri) + 34 : 0);
 
 		  sqlx_query = dk_alloc_box (q_len, DV_STRING);
 		  if (def_graph_uri != NULL)
-		    snprintf (sqlx_query, q_len, "SPARQL define input:default-graph-uri \"%s\" %s", 
+		    snprintf (sqlx_query, q_len, "SPARQL define input:default-graph-uri \"%s\" %s",
 			def_graph_uri, _text);
 		  else
 		    snprintf (sqlx_query, q_len, "SPARQL %s", _text);

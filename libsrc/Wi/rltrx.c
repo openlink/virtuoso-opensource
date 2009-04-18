@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Locking concurrency control
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "sqlnode.h"
@@ -606,7 +606,7 @@ itc_make_rl (it_cursor_t * itc)
 #endif
   page_lock_t *pl = itc->itc_pl;
   row_lock_t *rl = rl_allocate ();
-#if 0 /* Disabled according to Orri's instruction 2007-JUL-19 */ 
+#if 0 /* Disabled according to Orri's instruction 2007-JUL-19 */
 #ifdef DEBUG
   if (cli && cli->cli_autocommit && itc->itc_ltrx == cli->cli_trx)
     GPF_T1 ("row lock on the cli_trx");
@@ -752,7 +752,7 @@ itc_read_committed_check (it_cursor_t * itc, int pos, buffer_desc_t * buf)
   gen_lock_t * gl;
   if (PL_IS_PAGE (pl))
     gl = (gen_lock_t *) pl;
-  else 
+  else
     {
       gl = (gen_lock_t *) pl_row_lock_at (pl, pos);
       if (!gl)
@@ -765,17 +765,17 @@ itc_read_committed_check (it_cursor_t * itc, int pos, buffer_desc_t * buf)
   page = buf->bd_buffer;
   if (itc->itc_ltrx == gl->pl_owner)
     return (IE_ISSET (page + pos, IEF_DELETE)) ? DVC_LESS : DVC_MATCH;
-  /* this is somebody else's lock.  Get the rb record. 
-   * Note that if the owner is committing at this time, this cr may have seen a after image  row before but here it will see a pre image . 
-   * To prevent this, use repeatable.  Read committed only means that no uncommitted states are shown, not that you do not get half transactions.  
+  /* this is somebody else's lock.  Get the rb record.
+   * Note that if the owner is committing at this time, this cr may have seen a after image  row before but here it will see a pre image .
+   * To prevent this, use repeatable.  Read committed only means that no uncommitted states are shown, not that you do not get half transactions.
    * If showing half transactions in read committtedf is good enough for Oracle it is good enough for us. */
-  
+
   rbe = lt_rb_entry (gl->pl_owner, page + pos, NULL, NULL, 1);
   if (!rbe)
     return DVC_MATCH; /* row not modified, just locked */
   if (RB_INSERT == rbe->rbe_op)
     return DVC_LESS; /* uncommitted insert */
-  itc->itc_row_data = rbe->rbe_string + rbe->rbe_row + IE_FIRST_KEY; 
+  itc->itc_row_data = rbe->rbe_string + rbe->rbe_row + IE_FIRST_KEY;
   /* rbe and related will stay allocated as long as the page is taken.  Will only disappear after the owner has finalized this page. */
   return DVC_MATCH;
 }
@@ -890,7 +890,7 @@ pl_set_finalize (page_lock_t * pl, buffer_desc_t * buf)
 #define PAGE_UPDATED 1
 #define PAGE_DELETED 2
 #define LEAF_CHG_MASK 4
-/* LEAF_CHG_MASK is on in the rc if the first row was deleted.  Thhis means that the leaf ptr should begin with the key of the first row. 
+/* LEAF_CHG_MASK is on in the rc if the first row was deleted.  Thhis means that the leaf ptr should begin with the key of the first row.
  * This is nice to have in order to avoid inserts to non leaf and in order not to miss follow locks on previous pages.  The point is that the seek must land beside the next smaller and if leaf ptrs are out of whack this is not always so */
 
 int
@@ -981,7 +981,7 @@ pl_finalize_absent (page_lock_t * pl, it_cursor_t * itc)
       page_leave_inner (buf);
       ITC_LEAVE_MAP_NC (itc);
     }
-  else 
+  else
     {
       remhash (DP_ADDR2VOID (dp), &itm->itm_dp_to_buf);
       ITC_LEAVE_MAP_NC (itc);
@@ -1046,7 +1046,7 @@ pl_finalize_page (page_lock_t * pl, it_cursor_t * itc)
 	  int next_pos = IE_NEXT (buf->bd_buffer + pos);
 	  rc = itc_finalize_row (itc, &buf, pos);
 	  change_leaf_ptr |= rc & LEAF_CHG_MASK;
-	  rc = rc & ~LEAF_CHG_MASK; 
+	  rc = rc & ~LEAF_CHG_MASK;
 	  change = MAX (change, rc);
 	  if (PAGE_DELETED == change)
 	    break;
@@ -1063,7 +1063,7 @@ pl_finalize_page (page_lock_t * pl, it_cursor_t * itc)
 	  {
 	    rc = itc_finalize_row (itc, &buf, rl->rl_pos);
 	    change_leaf_ptr |= rc & LEAF_CHG_MASK;
-	    rc = rc & ~LEAF_CHG_MASK; 
+	    rc = rc & ~LEAF_CHG_MASK;
 	    change = MAX (change, rc);
 	    if (PAGE_DELETED == change)
 	      goto rls_done;	/* no break, DO_RLOCKS is 2 nested loops */
@@ -1214,7 +1214,7 @@ pl_rollback_page (page_lock_t * pl, it_cursor_t * itc)
 	  int next_pos = IE_NEXT (buf->bd_buffer + pos);
 	  rc = itc_rollback_row (itc, &buf, pos, NULL, pl);
 	  change_leaf_ptr |= rc & LEAF_CHG_MASK;
-	  rc = rc & ~LEAF_CHG_MASK; 
+	  rc = rc & ~LEAF_CHG_MASK;
 	  change = MAX (change, rc);
 	  if (PAGE_DELETED == change)
 	    break;
@@ -1229,7 +1229,7 @@ pl_rollback_page (page_lock_t * pl, it_cursor_t * itc)
 	  {
 	    rc = itc_rollback_row (itc, &buf, rl->rl_pos, rl, pl);
 	    change_leaf_ptr |= rc & LEAF_CHG_MASK;
-	    rc = rc & ~LEAF_CHG_MASK; 
+	    rc = rc & ~LEAF_CHG_MASK;
 	    change = MAX (change, rc);
 	    if (PAGE_DELETED == change)
 	      goto rls_done;	/* not break, DO_RLOCKS is 2 nested loops */
@@ -1429,14 +1429,14 @@ lt_resume_waiting_end (lock_trx_t * lt)
 
 }
 
-dp_addr_t 
+dp_addr_t
 pl_page_key (page_lock_t * pl)
 {
   return pl->pl_page;
 }
 
 
-page_lock_t ** 
+page_lock_t **
 lt_locks_to_array (lock_trx_t * lt, page_lock_t ** arr, int max, int * fill_ret)
 {
   /* If they all fit, put them there without sort.  If a lot, alloc a new array. If more than 1/4 of buffers, also sort */
@@ -1463,7 +1463,7 @@ lt_locks_to_array (lock_trx_t * lt, page_lock_t ** arr, int max, int * fill_ret)
       for (inx = 0; inx < fill; inx++)
 	remhash ((void*)arr[inx], locks);
     }
-  else 
+  else
     clrhash (locks);
   mutex_leave (&lt->lt_locks_mtx);
   if (max > main_bufs / 4)

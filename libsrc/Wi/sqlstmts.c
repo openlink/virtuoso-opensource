@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Dynamic SQL Statement Compilations
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "libutil.h"
@@ -317,7 +317,7 @@ sqlc_insert_autoincrements (sql_comp_t * sc, insert_node_t * ins,
 		snprintf (temp, sizeof (temp), "%s.%s.%s.%s", tb->tb_qualifier, tb->tb_owner,
 		    col->col_defined_in->tb_name, col->col_name);
 		seq_name = box_dv_short_string (temp);
-		args = (state_slot_t **) sc_list (3, ssl_new_constant (sc->sc_cc, seq_name), old_sl, 
+		args = (state_slot_t **) sc_list (3, ssl_new_constant (sc->sc_cc, seq_name), old_sl,
 		    ssl_new_constant (sc->sc_cc, (caddr_t) (ptrlong) 1));
 		snext = t_sqlp_box_id_upcase ("sequence_set");
 		cv_bif_call (code, bif_sequence_set_no_check, snext, NULL, args);
@@ -1127,7 +1127,7 @@ sqlc_update_set_keyset (sql_comp_t * sc, table_source_t * ts)
 	    {
 	      upd->upd_keyset = 1;
 	      return;
-	    }	  
+	    }
 	}
       END_DO_BOX;
       part_no++;
@@ -1213,7 +1213,7 @@ sqlc_update_searched (sql_comp_t * sc, ST * tree)
 	 This must not be.  Make it so that the ts_current_of is not aliased to the
 	 ts_order_itc if we have this kind of update. Sqlcomp2.c.  Put a flag for
 	 this in sql_comp_t, set it in sqlc_update_searched.  Like this you  know
-	 when not to alias this. 
+	 when not to alias this.
        */
       tc_init (&tc, TRIG_UPDATE, tb,
 	  (caddr_t*) tree->_.update_src.cols, tree->_.update_src.vals, 0);

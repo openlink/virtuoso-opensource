@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Arithmetic operators and comparisons.
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "sqlnode.h"
@@ -1049,7 +1049,7 @@ box_identity (caddr_t arg, caddr_t ignore, caddr_t * qst, state_slot_t * target)
 
 
 /* Comparison rules for numbers in any collation index:
-  The cases are:  
+  The cases are:
 
   int64, double  - if double has no fract and is in 53 bit int range, compare as int.  Else as double and if they look eq as doubles then int is farther from 0.
 int64, decimal -  compare as decimal.
@@ -1061,17 +1061,17 @@ Operands of the same type compare natively.
 #if defined(WIN32) || defined (SOLARIS)
 double trunc (double x)
 {
-  if (x >= 0) 
+  if (x >= 0)
     return floor(x);
-  else 
+  else
     return ceil(x);
 }
 #endif
 
-int 
+int
 dvc_int_double (int64 i, double d)
 {
-  /* if double is in range where int cast is precise and has zero fraction, it is equal to int. 
+  /* if double is in range where int cast is precise and has zero fraction, it is equal to int.
    * if out of int range, double is opso facto lt or gt.
    * if double is in imprecise int range (1<<53 - 1<<64 -1) and the int cast to double is equal to the double, then the int is seen as farther from zero. */
   int r;
@@ -1094,7 +1094,7 @@ dvc_int_double (int64 i, double d)
 }
 
 
-int 
+int
 dvc_num_double (numeric_t num1, double d2)
 {
   double d1;
@@ -1111,7 +1111,7 @@ dvc_num_double (numeric_t num1, double d2)
 	return DVC_MATCH;
       if (0 < d2)
 	return DVC_GREATER;
-      else 
+      else
 	return DVC_LESS;
     }
   if (d1 < d2)
@@ -1161,7 +1161,7 @@ dv_num_compare (numeric_t dn1, numeric_t dn2, dtp_t dtp1, dtp_t dtp2)
 	    return (numeric_compare_dvc ((numeric_t) dn1, (numeric_t) dn2));
 	  default:
 	    GPF_T;		/* Impossible num type combination */
-	  }    
+	  }
     }
   switch (dtp1)
     {
@@ -1186,9 +1186,9 @@ dv_num_compare (numeric_t dn1, numeric_t dn2, dtp_t dtp1, dtp_t dtp2)
     case DV_NUMERIC:
       switch (dtp2)
 	{
-	case DV_LONG_INT: 
+	case DV_LONG_INT:
 	  REV (dvc_int_num (*(int64*)dn2, (numeric_t)dn1));
-	case DV_DOUBLE_FLOAT: 
+	case DV_DOUBLE_FLOAT:
 	  return dvc_num_double ((numeric_t)dn1, *(double*)dn2);
 	default: GPF_T1 ("bad num compare combination");
 	}

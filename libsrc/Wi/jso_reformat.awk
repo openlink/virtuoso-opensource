@@ -4,26 +4,26 @@
 #  $Id$
 #
 #  Embeds SQL code into a C file
-#  
+#
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
-#  
+#
 #  Copyright (C) 1998-2006 OpenLink Software
-#  
+#
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
 #  Free Software Foundation; only version 2 of the License, dated June 1991.
-#  
+#
 #  This program is distributed in the hope that it will be useful, but
 #  WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 #  General Public License for more details.
-#  
+#
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-#  
-#  
+#
+#
 
 function c_esc (strg)
 {
@@ -523,24 +523,24 @@ END 	{
     }
   }
 
-#          1                      2---------------------- 3             4------------- 5             6-------------------- 7             8---------------------- 9             10------------ 11            12------------------- 13            14----- 15            16----------- 17                            18------- 
+#          1                      2---------------------- 3             4------------- 5             6-------------------- 7             8---------------------- 9             10------------ 11            12------------------- 13            14----- 15            16----------- 17                            18-------
 match($0,"^(JSO_ARRAY[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([^[:blank:]]+)([[:blank:]]+)([a-zA-Z][a-zA-Z0-9]*)([[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([^[:blank:]]+)([[:blank:]]+)([a-zA-Z][a-zA-Z0-9]*)([[:blank:]]+)([0-9]+)([[:blank:]]+)(([0-9]+)|MAX)([[:blank:]]*--!<[[:blank:]]*)([^\r\n]*)$",line)	{
   write_array(line[2], line[4], line[6], line[8], line[10], line[12], line[14], line[16], line[18])
   next
   }
- 
+
 #          1                      2---------------------- 3             4------------- 5             6-------------------- 7             8---------------------- 9             10------------ 11            12------------------- 13            14----- 15            16----------- 17
 match($0,"^(JSO_ARRAY[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([^[:blank:]]+)([[:blank:]]+)([a-zA-Z][a-zA-Z0-9]*)([[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([^[:blank:]]+)([[:blank:]]+)([a-zA-Z][a-zA-Z0-9]*)([[:blank:]]+)([0-9]+)([[:blank:]]+)(([0-9]+)|MAX)([[:blank:]]*)$",line)	{
   write_array(line[2], line[4], line[6], line[8], line[10], line[12], line[14], line[16], "")
   next
   }
- 
+
 match($0,"^JSO_ARRAY.*$",line)	{
   report_error("Invalid arguments of JSO_ARRAY")
   next
   }
 
-#          1                      2------------- 3             4---------------------- 5             6-------------- 7                             8-------- 
+#          1                      2------------- 3             4---------------------- 5             6-------------- 7                             8--------
 match($0,"^(JSO_CONST[[:blank:]]+)([^[:blank:]]+)([[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([-]?[^ \t\n-]+)([[:blank:]]*--!<[[:blank:]]*)([^\r\n]*)$",line)	{
   write_const(line[2], line[4], line[6], line[8])
   next
@@ -551,13 +551,13 @@ match($0,"^(JSO_CONST[[:blank:]]+)([^[:blank:]]+)([[:blank:]]+)([a-zA-Z_][a-zA-Z
   write_const(line[2], line[4], line[6], "")
   next
   }
- 
+
 match($0,"^JSO_CONST.*$",line)	{
   report_error("Invalid arguments of JSO_CONST")
   next
   }
 
-#          1                             2---------------------- 3             4------------- 5             6--------------------- 7                             8-------- 
+#          1                             2---------------------- 3             4------------- 5             6--------------------- 7                             8--------
 match($0,"^(JSO_GROUP_BEGIN[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([^[:blank:]]+)([[:blank:]]+)([a-zA-Z][a-zA-Z0-9_]*)([[:blank:]]*--!<[[:blank:]]*)([^\r\n]*)$",line)	{
   write_group_begin(line[2], line[4], line[6], line[8])
   next
@@ -584,13 +584,13 @@ match($0,"^JSO_GROUP_END.*$",line)	{
   next
   }
 
-#          1                          2---------------------- 3             4------------- 7                             
+#          1                          2---------------------- 3             4------------- 7
 match($0,"^(JSO_NAMESPACE[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([^[:blank:]]+)(([[:blank:]])(+--!<[[:blank:]]*[^\r\n]*)?)$",line)	{
   nsprefixes[line[2]] = line[6]
   next
   }
 
-#          1                          2---------------------- 3             4------------- 7                             
+#          1                          2---------------------- 3             4------------- 7
 match($0,"^(JSO_NAMESPACE[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([^[:blank:]]+)(([[:blank:]])(+--!<[[:blank:]]*[^\r\n]*)?)$",line)	{
   nsprefixes[line[2]] = line[6]
   next
@@ -601,7 +601,7 @@ match($0,"^JSO_NAMESPACE.*$",line)	{
   next
   }
 
-#          1                             2---------------------- 3             4------------- 5             6-------------------- 7                             8-------- 
+#          1                             2---------------------- 3             4------------- 5             6-------------------- 7                             8--------
 match($0,"^(JSO_STRUCT_BEGIN[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([^[:blank:]]+)([[:blank:]]+)([a-zA-Z][a-zA-Z0-9]*)([[:blank:]]*--!<[[:blank:]]*)([^\r\n]*)$",line)	{
   write_struct_begin(line[2], line[4], line[6], line[8])
   next
@@ -618,7 +618,7 @@ match($0,"^JSO_STRUCT_BEGIN.*$",line)	{
   next
   }
 
-#          1                       2---------------------- 3             4---------------------- 5             6------- 7                             8-------- 
+#          1                       2---------------------- 3             4---------------------- 5             6------- 7                             8--------
 match($0,"^(JSO_SCALAR[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([A-Z_]+)([[:blank:]]*--!<[[:blank:]]*)([^\r\n]*)$",line)	{
   write_scalar(line[2], "JSO_" line[4], line[6], line[8])
   next
@@ -635,7 +635,7 @@ match($0,"^JSO_SCALAR.*$",line)	{
   next
   }
 
-#          1                        2---------------------- 3             4---------------------- 5             6------- 7                             8-------- 
+#          1                        2---------------------- 3             4---------------------- 5             6------- 7                             8--------
 match($0,"^(JSO_POINTER[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([A-Z_]+)([[:blank:]]*--!<[[:blank:]]*)([^\r\n]*)$",line)	{
   write_scalar(line[2], "JSO_IRI_OF_" line[4], line[6], line[8])
   next

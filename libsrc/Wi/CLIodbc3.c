@@ -407,7 +407,7 @@ virtodbc__SQLGetDiagRec (SQLSMALLINT HandleType,
     return virtodbc__SQLError (
 	(SQLHENV) (HandleType == SQL_HANDLE_ENV ? Handle : SQL_NULL_HANDLE),
 	(SQLHDBC) (HandleType == SQL_HANDLE_DBC ? Handle : SQL_NULL_HANDLE),
-	(SQLHSTMT) (HandleType == SQL_HANDLE_STMT ? Handle : (HandleType == SQL_HANDLE_DESC ? desc->d_stmt : SQL_NULL_HANDLE)), 
+	(SQLHSTMT) (HandleType == SQL_HANDLE_STMT ? Handle : (HandleType == SQL_HANDLE_DESC ? desc->d_stmt : SQL_NULL_HANDLE)),
 	Sqlstate, NativeErrorPtr, MessageText, BufferLength, TextLengthPtr, SQL_FALSE);
   else
     {
@@ -1384,7 +1384,7 @@ get_rdf_literal_prop (cli_connection_t * con, SQLSMALLINT ftype, short key)
       else
 	con->con_rdf_types = ht;
     }
-  else 
+  else
     ret = gethash ((void *)(ptrlong) key, ht);
 
   if (!ret) /* not in cache */
@@ -1404,7 +1404,7 @@ get_rdf_literal_prop (cli_connection_t * con, SQLSMALLINT ftype, short key)
 	  LEAVE_CON (con);
 	  return NULL;
 	}
-      rc = virtodbc__SQLBindParameter (hstmt, 1, SQL_PARAM_INPUT, SQL_C_SSHORT, 
+      rc = virtodbc__SQLBindParameter (hstmt, 1, SQL_PARAM_INPUT, SQL_C_SSHORT,
 	  SQL_SMALLINT, 0, 0, &key, 0, &m_ind);
       rc = virtodbc__SQLExecDirect(hstmt, (UCHAR *) qr, SQL_NTS);
       if (rc != SQL_SUCCESS)
@@ -1421,7 +1421,7 @@ get_rdf_literal_prop (cli_connection_t * con, SQLSMALLINT ftype, short key)
 	goto err_cleanup;
       ret = box_dv_short_string (buf);
       sethash ((void*)(ptrlong)key, ht, (void*) ret);
-err_cleanup:      
+err_cleanup:
       virtodbc__SQLFreeStmt (hstmt, SQL_CLOSE);
       virtodbc__SQLFreeHandle (SQL_HANDLE_STMT, (SQLHANDLE) hstmt);
     }
@@ -2467,9 +2467,9 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
           switch (DV_TYPE_OF(col))
             {
             case DV_TIMESTAMP: /* datetime */
-            case DV_DATE: 
-            case DV_TIME: 
-            case DV_DATETIME: 
+            case DV_DATE:
+            case DV_TIME:
+            case DV_DATETIME:
                *(SQLINTEGER *) ValuePtr = (int) DT_DT_TYPE(col);
                break;
             default:
@@ -2506,7 +2506,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	      rdf_box_t * rb = (rdf_box_t *) col;
 	      lang = rb->rb_lang;
 	      type = rb->rb_type;
-              val =lang << 16 | type; 
+              val =lang << 16 | type;
               *(SQLINTEGER *) ValuePtr = val;
             }
           else
@@ -2545,8 +2545,8 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	  else
 	    return (SQL_ERROR);
 	}
-      break;   
-    
+      break;
+
     case SQL_DESC_COL_BOX_FLAGS:
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLINTEGER);
@@ -2577,7 +2577,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	return (SQL_ERROR);
       break;
 
-    
+
     default:
       cli_dbg_printf ((": SQLGetDescField(...,Field %d, UNKNOWN (%d), ...) called\n", RecNumber, FieldIdentifier));
       break;
@@ -3065,7 +3065,7 @@ virtodbc__SQLColAttribute (SQLHSTMT statementHandle,
     case SQL_DESC_AUTO_UNIQUE_VALUE:
       FieldIdentifier = SQL_COLUMN_AUTO_INCREMENT;
       break;
-	
+
     case SQL_DESC_CASE_SENSITIVE:
       FieldIdentifier = SQL_COLUMN_CASE_SENSITIVE;
       break;

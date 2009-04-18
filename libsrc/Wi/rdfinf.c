@@ -271,7 +271,7 @@ ri_same_as_input (rdf_inf_pre_node_t * ri, caddr_t * inst,
 	  QST_INT (inst, ri->ri_sas_next_out) = 0;
 	  QST_INT (inst, ri->ri_sas_last_follow) = 0;
 	  QST_INT (inst, ri->ri_sas_next_follow) = 0;
-	  
+
 	  start = box_copy_tree (qst_get (inst, ri->ri_sas_in));
 	  hash_queue_add (follow, qi, ri->ri_sas_last_follow, start);
 	  start = box_copy_tree (start);
@@ -350,7 +350,7 @@ rdf_inf_pre_input (rdf_inf_pre_node_t * ri, caddr_t * inst,
 		  state = NULL;
 		  continue;
 		    }
-	      else 
+	      else
 		{
 		  SRC_IN_STATE ((data_source_t *)ri, inst) = NULL;;
 		  qn_send_output ((data_source_t *) ri, inst);
@@ -358,7 +358,7 @@ rdf_inf_pre_input (rdf_inf_pre_node_t * ri, caddr_t * inst,
 		  return;
 		}
 	    }
-	  else 
+	  else
 	    {
 	      /* see if the passing o/p has supers and generate the list of them if so */
 	      if (((RI_SUPERCLASS == ri->ri_mode  || RI_SUBCLASS == ri->ri_mode)
@@ -669,7 +669,7 @@ rdf_inf_pre_node_t *
 sqlg_rdf_inf_node (sql_comp_t *sc)
 {
   SQL_NODE_INIT (rdf_inf_pre_node_t, ri, rdf_inf_pre_input, rdf_inf_pre_free);
-  
+
   return ri;
 }
 
@@ -696,7 +696,7 @@ sqlg_rdf_ts_replace_ssl (table_source_t * ts, state_slot_t * old, state_slot_t *
 	  sp_list_replace_ssl (iop->iop_ks_full_spec.ksp_spec_array, old, new, col_id);
 	  sp_list_replace_ssl (iop->iop_ks_row_spec, old, new, col_id);
 	}
-      else 
+      else
 	{
 	  sp_list_replace_ssl  (ks->ks_spec.ksp_spec_array, old, new, col_id);
 	  sp_list_replace_ssl  (ks->ks_row_spec, old, new, col_id);
@@ -732,7 +732,7 @@ sqlg_col_ssl (df_elt_t * tb_dfe, char * name)
 void
 sqlg_ri_post_filter (table_source_t * ts, df_elt_t * tb_dfe, rdf_inf_pre_node_t * ri, int p_check)
 {
-  /* this makes a follow up node to 1. gs fp go to check that fp is rdfs_type. 
+  /* this makes a follow up node to 1. gs fp go to check that fp is rdfs_type.
    * the end node will also record the fact of a result existing for an oj.  The post join test for an oj will also go here. */
   code_vec_t ajt;
   sql_comp_t * sc = tb_dfe->dfe_sqlo->so_sc;
@@ -816,7 +816,7 @@ sqlg_outer_post_filter (table_source_t * ts, df_elt_t * tb_dfe, state_slot_t * a
     }
   if (IS_TS (ts))
     ts->ts_is_outer = 0;
-  else 
+  else
     ((hash_source_t *)ts)->hs_is_outer = 0;
 }
 
@@ -880,7 +880,7 @@ sqlg_trailing_subclass_inf (sqlo_t * so, data_source_t ** q_head, data_source_t 
     return;
   o_slot = sqlg_col_ssl (tb_dfe, "O");
   if (!o_slot)
-    return; /* o is unspecified and but is not accessed */ 
+    return; /* o is unspecified and but is not accessed */
   ri = sqlg_rdf_inf_node (so->so_sc);
   ri->ri_is_after = 1;
   sql_node_append (q_head, (data_source_t *)ri);
@@ -888,7 +888,7 @@ sqlg_trailing_subclass_inf (sqlo_t * so, data_source_t ** q_head, data_source_t 
   ri->ri_output = o_slot;
   if (p_dfe)
     ri->ri_p = p_dfe->dfe_ssl;
-  else 
+  else
     ri->ri_p = sqlg_col_ssl (tb_dfe, "P");
   ri->ri_o = ri->ri_output;
   ri->ri_list_slot = cc_new_instance_slot (tb_dfe->dfe_sqlo->so_sc->sc_cc);
@@ -897,7 +897,7 @@ sqlg_trailing_subclass_inf (sqlo_t * so, data_source_t ** q_head, data_source_t 
 
 
 void
-sqlg_leading_subproperty_inf (sqlo_t * so, data_source_t ** q_head, data_source_t * ts, df_elt_t * p_dfe, 
+sqlg_leading_subproperty_inf (sqlo_t * so, data_source_t ** q_head, data_source_t * ts, df_elt_t * p_dfe,
     caddr_t p_const, df_elt_t * o_dfe, caddr_t o_iri,
     rdf_inf_ctx_t * ctx, df_elt_t * tb_dfe, int inxop_inx, rdf_inf_pre_node_t * sas_p)
 {
@@ -937,7 +937,7 @@ sqlg_trailing_subproperty_inf (sqlo_t * so, data_source_t ** q_head, data_source
   rdf_inf_pre_node_t * ri;
   p_slot = sqlg_col_ssl (tb_dfe, "P");
   if (!p_slot)
-    return; /* P is unspecified and but is not accessed */ 
+    return; /* P is unspecified and but is not accessed */
   ri = sqlg_rdf_inf_node (so->so_sc);
   ri->ri_is_after = 1;
   sql_node_append (q_head, (data_source_t *)ri);
@@ -949,7 +949,7 @@ sqlg_trailing_subproperty_inf (sqlo_t * so, data_source_t ** q_head, data_source
 }
 
 
-rdf_inf_ctx_t * 
+rdf_inf_ctx_t *
 sqlg_rdf_inf_same_as_opt (df_elt_t * tb_dfe)
 {
   df_elt_t * dfe = tb_dfe;
@@ -969,7 +969,7 @@ sqlg_rdf_inf_same_as_opt (df_elt_t * tb_dfe)
 	  return ctx;
 	}
       dfe = dfe->dfe_super;
-    } 
+    }
   while (dfe);
   return NULL;
 }
@@ -989,7 +989,7 @@ sqlg_rdf_inf_same_as_opt (df_elt_t * tb_dfe)
 
 
 void
-sqlg_leading_same_as (sqlo_t * so, data_source_t ** q_head, data_source_t * ts, 
+sqlg_leading_same_as (sqlo_t * so, data_source_t ** q_head, data_source_t * ts,
     df_elt_t * g_dfe, df_elt_t * s_dfe, df_elt_t * p_dfe,  df_elt_t * o_dfe, int mode,
 		      rdf_inf_ctx_t * ctx, df_elt_t * tb_dfe, int inxop_inx, rdf_inf_pre_node_t ** ri_ret)
 {
@@ -1166,7 +1166,7 @@ sqlg_rdf_inf_1 (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** q_head, 
       LEADING_SUBP;
       LEADING_SUBCLASS;
     }
-  else 
+  else
     GPF_T1 (" all possibilities of spo already covered");
 }
 
@@ -1183,7 +1183,7 @@ sqlg_rdf_inf (df_elt_t * tb_dfe, data_source_t * qn, data_source_t ** q_head)
 	}
       END_DO_BOX;
     }
-  else 
+  else
     sqlg_rdf_inf_1 (tb_dfe, qn, q_head, -1);
 }
 
@@ -1220,7 +1220,7 @@ sqlg_outer_with_iters (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** h
 		  ii->ii_outer_any_passed = ssl_new_variable (tb_dfe->dfe_sqlo->so_sc->sc_cc, "any_passed", DV_LONG_INT);
 		  sqlg_outer_post_filter ((table_source_t *) ts, tb_dfe, ii->ii_outer_any_passed);
 		}
-	      else 
+	      else
 		{
 		  rdf_inf_pre_node_t * ri = (rdf_inf_pre_node_t *) first_iter;
 		  ri->ri_outer_any_passed = ssl_new_variable (tb_dfe->dfe_sqlo->so_sc->sc_cc, "any_passed", DV_LONG_INT);

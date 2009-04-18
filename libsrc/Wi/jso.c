@@ -5,22 +5,22 @@
  *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "jso.h"
@@ -82,7 +82,7 @@ void
 jso_define_const (const char *iri, ptrlong value)
 {
   caddr_t old_value;
-  iri = box_dv_uname_string (iri);  
+  iri = box_dv_uname_string (iri);
   old_value = gethash (iri, jso_consts);
   if (NULL != old_value)
     {
@@ -281,7 +281,7 @@ jso_validate (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known, in
     }
   switch (inst_rtti->jrtti_status)
     {
-    case JSO_STATUS_DELETED:  
+    case JSO_STATUS_DELETED:
       sqlr_new_error ("22023", "SR525", "JSO instance IRI <%.500s> is DELETED but is available from <%.500s>",
         inst_rtti->jrtti_inst_iri, root_rtti->jrtti_inst_iri );
     case JSO_STATUS_FAILED: break;
@@ -488,7 +488,7 @@ jso_pin (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known)
     }
   switch (inst_rtti->jrtti_status)
     {
-    case JSO_STATUS_DELETED:  
+    case JSO_STATUS_DELETED:
       sqlr_new_error ("22023", "SR513", "JSO instance IRI <%.500s> is DELETED but is available from <%.500s>",
         inst_rtti->jrtti_inst_iri, root_rtti->jrtti_inst_iri );
     case JSO_STATUS_FAILED:
@@ -898,7 +898,7 @@ bif_jso_set_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int do
 make_retval:
   if (NULL != fld_type_cd)
     return box_copy (((jso_rtti_t *)(fld_ptr[0]))->jrtti_inst_iri);
-/*    
+/*
   if (IS_BOX_POINTER (fld_ptr[0]) && IS_BOX_POINTER (old_fld_val) &&
      (DV_TYPE_OF (fld_ptr[0]) == DV_TYPE_OF (old_fld_val)) &&
      (box_length (fld_ptr[0]) == box_length (old_fld_val)) &&
@@ -965,7 +965,7 @@ jso_get_field_value_as_o (caddr_t val, ccaddr_t fld_type, int fld_req, ptrlong s
   if (DV_CUSTOM == DV_TYPE_OF (val))
     {
       jso_rtti_t *val_as_rtti = (jso_rtti_t *)val;
-      return box_copy (val_as_rtti->jrtti_inst_iri);      
+      return box_copy (val_as_rtti->jrtti_inst_iri);
     }
   return box_copy_tree (val);
 }

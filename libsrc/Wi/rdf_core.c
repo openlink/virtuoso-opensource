@@ -1,23 +1,23 @@
 /*
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2009 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "../Dk/Dkhash64.h"
@@ -71,7 +71,7 @@ uriqa_get_host_for_dynamic_local (query_instance_t *qi, int * is_https)
       LEAVE_TXN;
       if (place)
         res = box_copy (place[0]);
-      if (NULL != is_https) 
+      if (NULL != is_https)
 	*is_https = 0; /* default host scheme is considered to be http: */
     }
   return res;
@@ -147,7 +147,7 @@ tf_free (triple_feed_t *tf)
     hit_next(&dict_hit, (char **)(&dict_key), (char **)(&dict_val));
     /*no step*/ )
     {
-      dk_free_box (dict_key[0]);      
+      dk_free_box (dict_key[0]);
       dk_free_tree (dict_val[0]);
     }
   id_hash_free (tf->tf_blank_node_ids);
@@ -167,7 +167,7 @@ sqlr_set_cbk_name_and_proc (client_connection_t *cli, const char *cbk_name, cons
     proc_ret[0] = sch_proc_def (wi_inst.wi_schema, full_name_ret[0]);
   if (NULL == proc_ret[0])
     {
-      err_ret[0] = srv_make_new_error ("42001", "SR574", 
+      err_ret[0] = srv_make_new_error ("42001", "SR574",
         "Undefined procedure name \"%.100s\" is passed as callback parameter to %.100s()", cbk_name, funname );
       return;
     }
@@ -730,7 +730,7 @@ caddr_t DBG_NAME (ttlp_expand_qname_prefix) (DBG_PARAMS ttlp_t *ttlp_arg, caddr_
       if (NULL == ns_uri)
         {
 /* TimBL's sample:
-The empty prefix "" is by default , bound to the empty URI "". 
+The empty prefix "" is by default , bound to the empty URI "".
 this means that <#foo> can be written :foo and using @keywords one can reduce that to foo
 */
 #if 0
@@ -1179,7 +1179,7 @@ bif_turtle_lex_test (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	      GPF_T;
 end_of_test:
 	      dk_free_tree (lexems);
-	      break;		
+	      break;
 	    default: GPF_T;
 	    }
 	  }
@@ -1188,7 +1188,7 @@ end_of_test:
 }
 #endif
 
-typedef struct name_id_cache_s 
+typedef struct name_id_cache_s
 {
   dk_mutex_t *	nic_mtx;
   dk_hash_64_t *	nic_id_to_name;
@@ -1212,7 +1212,7 @@ nic_set (name_id_cache_t * nic, caddr_t name, boxint id)
       remhash_64 (old_id, nic->nic_id_to_name);
       sethash_64 (id, nic->nic_id_to_name,  (boxint)((ptrlong)(name_box)));
     }
-  else 
+  else
     {
       while (nic->nic_id_to_name->ht_count > nic->nic_size)
 	{
@@ -1246,7 +1246,7 @@ nic_name_id (name_id_cache_t * nic, char * name)
 }
 
 
-caddr_t 
+caddr_t
 nic_id_name (name_id_cache_t * nic, boxint id)
 {
   caddr_t ret;
@@ -1335,8 +1335,8 @@ tb_string_and_id_check (dbe_table_t * tb, dbe_column_t ** str_col, dbe_column_t 
   return 1;
 }
 
-#define N_IRI_SEQS 19 
-#define IRI_RANGE_SZ 10000 
+#define N_IRI_SEQS 19
+#define IRI_RANGE_SZ 10000
 
 extern dk_mutex_t * log_write_mtx;
 
@@ -1381,7 +1381,7 @@ rdf_new_iri_id (lock_trx_t * lt, char ** value_seq_ret)
   sequence_set (iri_seq[nth], id + 1, SET_ALWAYS, INSIDE_MAP);
   sequence_set (iri_seq_max[nth], id + IRI_RANGE_SZ, SET_ALWAYS, INSIDE_MAP);
   LEAVE_TXN;
-  if (!in_srv_global_init) 
+  if (!in_srv_global_init)
     {
       log_array = list (5, box_string ("DB.DBA.ID_RANGE_REPLAY (?, ?, ?, ?)"),
 	  box_dv_short_string (iri_seq[nth]), box_dv_short_string (iri_seq_max[nth]),
@@ -1408,14 +1408,14 @@ rdf_new_iri_id (lock_trx_t * lt, char ** value_seq_ret)
 
 
 
-caddr_t 
+caddr_t
 tb_new_id_and_name (lock_trx_t * lt, it_cursor_t * itc, dbe_table_t * tb, caddr_t name, char * value_seq_name)
 {
   int rc;
   caddr_t log_array;
   dbe_key_t * id_key = (dbe_key_t *)(tb->tb_keys->data == tb->tb_primary_key ? tb->tb_keys->next->data : tb->tb_keys->data);
   caddr_t seq_box = box_dv_short_string (value_seq_name);
-  int64 res = 0 == strcmp ("RDF_URL_IID_NAMED", seq_box)  
+  int64 res = 0 == strcmp ("RDF_URL_IID_NAMED", seq_box)
     ? rdf_new_iri_id (lt, &value_seq_name) : sequence_next_inc (seq_box, OUTSIDE_MAP, 1);
   dbe_column_t * id_col = (dbe_column_t *)id_key->key_parts->data;
   caddr_t res_box;
@@ -1464,7 +1464,7 @@ static caddr_t details = NULL;
 
 
 
-caddr_t 
+caddr_t
 tb_name_to_id (lock_trx_t * lt, char * tb_name, caddr_t name, char * value_seq_name)
 {
   /* the name param is freed */
@@ -1535,7 +1535,7 @@ re_search:
   return iri;
 }
 
-int 
+int
 iri_split (char * iri, caddr_t * pref, caddr_t * name)
 {
   char * local_start;
@@ -1566,10 +1566,10 @@ iri_split (char * iri, caddr_t * pref, caddr_t * name)
 	}
       if (!s)
 	local_start = iri;
-      else 
+      else
 	local_start = s + 1;
     }
-  else 
+  else
     local_start++;
 
 local_start_found:
@@ -1647,7 +1647,7 @@ key_name_to_iri_id (lock_trx_t * lt, caddr_t name, int make_new)
     }
   local_copy = box_copy (local);
   iri_id = tb_name_to_id (lt, "DB.DBA.RDF_IRI", local,
-    (  make_new ? 
+    (  make_new ?
       ((('_' == name[0]) && (':' == name[1])) ?
         "RDF_URL_IID_NAMED_BLANK" : "RDF_URL_IID_NAMED" ) :
       NULL ) );
@@ -1659,7 +1659,7 @@ key_name_to_iri_id (lock_trx_t * lt, caddr_t name, int make_new)
   nic_set (iri_name_cache, local_copy, unbox_iri_id (iri_id));
   dk_free_box (local_copy);
   return iri_id;
-} 
+}
 
 
 caddr_t
@@ -1874,7 +1874,7 @@ bif_iri_to_id_if_cached (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
-caddr_t 
+caddr_t
 tb_id_to_name (lock_trx_t * lt, char * tb_name, caddr_t id)
 {
   int res;
@@ -1920,7 +1920,7 @@ tb_id_to_name (lock_trx_t * lt, char * tb_name, caddr_t id)
 }
 
 
-caddr_t 
+caddr_t
 key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no)
 {
   boxint pref_id;
@@ -2104,7 +2104,7 @@ bif_rdf_twobyte_cache (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   else
     {
-      caddr_t key;  
+      caddr_t key;
       key = bif_arg (qst, args, 1, "__rdf_twobyte_cache");
       key_dtp = DV_TYPE_OF (key);
       if (DV_LONG_INT == key_dtp)

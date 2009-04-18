@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Row Operations.
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "sqlnode.h"
@@ -257,7 +257,7 @@ itc_box_column (it_cursor_t * it, db_buf_t page, oid_t col, dbe_col_loc_t * cl)
       if (DV_LONG_INT == it->itc_row_key->key_bit_cl->cl_sqt.sqt_dtp
 	  || DV_INT64 == it->itc_row_key->key_bit_cl->cl_sqt.sqt_dtp)
 	return box_num (it->itc_bp.bp_value);
-      else 
+      else
 	return box_iri_id (it->itc_bp.bp_value);
     }
   ITC_COL (it, (*cl), off, len);
@@ -965,7 +965,7 @@ box_to_any_1 (caddr_t data, caddr_t * err_ret)
   return box;
 }
 
-caddr_t 
+caddr_t
 box_to_any (caddr_t data, caddr_t * err_ret)
 {
   if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &err_ret, (PAGE_DATA_SZ+1000)))
@@ -976,7 +976,7 @@ box_to_any (caddr_t data, caddr_t * err_ret)
   return box_to_any_1 (data, err_ret);
 }
 
-caddr_t 
+caddr_t
 box_to_shorten_any (caddr_t data, caddr_t * err_ret)
 {
   dtp_t data_dtp = DV_TYPE_OF (data);
@@ -1187,7 +1187,7 @@ row_set_col_1 (db_buf_t row, dbe_col_loc_t * cl, caddr_t data, int * v_fill, int
 	    {
 	      ITC_SEARCH_PARAM (ins_itc, data);
 	    }
-	  else 
+	  else
 	    {
 	      caddr_t box = box_num (lv);
 	      ITC_SEARCH_PARAM (ins_itc, box);
@@ -1209,7 +1209,7 @@ row_set_col_1 (db_buf_t row, dbe_col_loc_t * cl, caddr_t data, int * v_fill, int
 	    {
 	      ITC_SEARCH_PARAM (ins_itc, data);
 	    }
-	  else 
+	  else
 	    {
 	      caddr_t box = box_num (lv);
 	      ITC_SEARCH_PARAM (ins_itc, box);
@@ -1261,7 +1261,7 @@ row_set_col_1 (db_buf_t row, dbe_col_loc_t * cl, caddr_t data, int * v_fill, int
 	  {
 	    INT64_SET (row + pos, iid);
 	  }
-	else 
+	else
 	  {
 	    /* to do not overflow */
 	    if (iid <= 0xFFFFFFFF)

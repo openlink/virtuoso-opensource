@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  HTTP client for Virtuoso
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 /*
@@ -107,7 +107,7 @@ if (HC_RET_ERR_ABORT == (r = fn (c))) \
 #define F_RESET(c, f) (c->hcctx_flags &= ~f)
 
 int http_cli_error (http_cli_ctx * ctx, caddr_t errcode, caddr_t errmsg)
-{ 
+{
   ctx->hcctx_err = srv_make_new_error (errcode, "HC001", errmsg);
   ctx->hcctx_state = HC_STATE_ERR_CLEANUP;
   return HC_RET_ERR_ABORT;
@@ -117,7 +117,7 @@ char * http_cli_proxy_server = NULL;
 char * http_cli_proxy_except = NULL;
 dk_set_t http_cli_proxy_except_set = NULL;
 
-int 
+int
 http_cli_target_is_proxy_exception (char * host)
 {
   if (!http_cli_proxy_except_set)
@@ -374,7 +374,7 @@ HC_RET
 http_cli_negotiate_socks4 (dk_session_t * ses, char * in_host, char * name, char ** err_ret)
 {
   unsigned char socksreq[270];
-  int port, rc; 
+  int port, rc;
   unsigned short ip[4];
   char *pos, host[1000], ip_addr[50];
   int packetsize;
@@ -382,7 +382,7 @@ http_cli_negotiate_socks4 (dk_session_t * ses, char * in_host, char * name, char
   pos = strchr (in_host, ':');
   if (pos)
     {
-      memcpy (host, in_host, pos - in_host); 
+      memcpy (host, in_host, pos - in_host);
       port = atoi (pos + 1);
     }
   else
@@ -394,7 +394,7 @@ http_cli_negotiate_socks4 (dk_session_t * ses, char * in_host, char * name, char
   socksreq[1] = 1; /* connect */
   *((unsigned short*)&socksreq[2]) = htons((unsigned short) port);
   srv_ip (ip_addr, sizeof (ip_addr), host);
-  if (4 == sscanf(ip_addr, "%hu.%hu.%hu.%hu", &ip[0], &ip[1], &ip[2], &ip[3])) 
+  if (4 == sscanf(ip_addr, "%hu.%hu.%hu.%hu", &ip[0], &ip[1], &ip[2], &ip[3]))
     {
       socksreq[4] = (unsigned char)ip[0];
       socksreq[5] = (unsigned char)ip[1];
@@ -445,7 +445,7 @@ HC_RET
 http_cli_negotiate_socks5 (dk_session_t * ses, char * in_host, char * user, char * pass, int resolve, char ** err_ret)
 {
   unsigned char socksreq[600];
-  int port, rc; 
+  int port, rc;
   unsigned short ip[4];
   char *pos, host[1000], ip_addr[50];
   int packetsize;
@@ -453,7 +453,7 @@ http_cli_negotiate_socks5 (dk_session_t * ses, char * in_host, char * user, char
   pos = strchr (in_host, ':');
   if (pos)
     {
-      memcpy (host, in_host, pos - in_host); 
+      memcpy (host, in_host, pos - in_host);
       port = atoi (pos + 1);
     }
   else
@@ -463,12 +463,12 @@ http_cli_negotiate_socks5 (dk_session_t * ses, char * in_host, char * user, char
     }
   socksreq[0] = 5; /* version */
   socksreq[1] = (user ? 2 : 1); /* methods supported */
-  socksreq[2] = 0; /* no auth */ 
-  socksreq[3] = 2; /* uid/pwd */ 
+  socksreq[2] = 0; /* no auth */
+  socksreq[3] = 2; /* uid/pwd */
 
   CATCH_WRITE_FAIL (ses)
     {
-      session_buffered_write (ses, (char *)socksreq, (2 + (int)socksreq[1])); 
+      session_buffered_write (ses, (char *)socksreq, (2 + (int)socksreq[1]));
       session_flush_1 (ses);
     }
   END_WRITE_FAIL(ses);
@@ -497,7 +497,7 @@ http_cli_negotiate_socks5 (dk_session_t * ses, char * in_host, char * user, char
 
       uslen = strlen (user);
       pwlen = strlen (pass);
-      socksreq[len++] = 1; 
+      socksreq[len++] = 1;
       socksreq[len++] = (char) uslen;
       memcpy(socksreq + len, user, (int) uslen);
       len += uslen;
@@ -507,7 +507,7 @@ http_cli_negotiate_socks5 (dk_session_t * ses, char * in_host, char * user, char
 
       CATCH_WRITE_FAIL (ses)
 	{
-	  session_buffered_write (ses, (char *)socksreq, len); 
+	  session_buffered_write (ses, (char *)socksreq, len);
 	  session_flush_1 (ses);
 	}
       END_WRITE_FAIL(ses);
@@ -542,7 +542,7 @@ http_cli_negotiate_socks5 (dk_session_t * ses, char * in_host, char * user, char
   if (resolve)
     {
       int hostname_len = strlen (host);
-      socksreq[3] = 3; /* dns name */  
+      socksreq[3] = 3; /* dns name */
       packetsize = (size_t)(5 + hostname_len + 2);
       socksreq[4] = (char) hostname_len;
       memcpy(&socksreq[5], host, hostname_len);
@@ -551,9 +551,9 @@ http_cli_negotiate_socks5 (dk_session_t * ses, char * in_host, char * user, char
   else
     {
       packetsize = 10;
-      socksreq[3] = 1; /* IPv4 follows, we lookup it locally */  
+      socksreq[3] = 1; /* IPv4 follows, we lookup it locally */
       srv_ip (ip_addr, sizeof (ip_addr), host);
-      if (4 == sscanf(ip_addr, "%hu.%hu.%hu.%hu", &ip[0], &ip[1], &ip[2], &ip[3])) 
+      if (4 == sscanf(ip_addr, "%hu.%hu.%hu.%hu", &ip[0], &ip[1], &ip[2], &ip[3]))
 	{
 	  socksreq[4] = (unsigned char)ip[0];
 	  socksreq[5] = (unsigned char)ip[1];
@@ -570,7 +570,7 @@ http_cli_negotiate_socks5 (dk_session_t * ses, char * in_host, char * user, char
 
   CATCH_WRITE_FAIL (ses)
     {
-      session_buffered_write (ses, (char *)socksreq, packetsize); 
+      session_buffered_write (ses, (char *)socksreq, packetsize);
       session_flush_1 (ses);
     }
   END_WRITE_FAIL(ses);
@@ -627,7 +627,7 @@ http_cli_handle_socks_conn_post (http_cli_ctx * ctx, caddr_t parm, caddr_t ret_v
     }
   else if (ctx->hcctx_proxy.hcp_socks_ver == 5)
     {
-      if (HC_RET_OK != http_cli_negotiate_socks5 (ctx->hcctx_http_out, ctx->hcctx_host, ctx->hcctx_proxy.hcp_user, ctx->hcctx_proxy.hcp_pass, 
+      if (HC_RET_OK != http_cli_negotiate_socks5 (ctx->hcctx_http_out, ctx->hcctx_host, ctx->hcctx_proxy.hcp_user, ctx->hcctx_proxy.hcp_pass,
 	  ctx->hcctx_proxy.hcp_resolve, &err_ret))
 	return http_cli_error (ctx, "HTCLI", err_ret);
     }
@@ -945,7 +945,7 @@ http_cli_add_req_hdr (http_cli_ctx * ctx, char* hdrin)
 {
   caddr_t hdr = box_dv_short_string (hdrin);
   int len = box_length (hdr) - 1;
-  char * tail = hdr + len - 1; 
+  char * tail = hdr + len - 1;
   while (*tail == 0x0A || *tail == 0x0D)
     *(tail--) = 0;
   SES_PRINT (ctx->hcctx_pub_req_hdrs, hdr);
@@ -1075,12 +1075,12 @@ http_cli_parse_resp_hdr (http_cli_ctx * ctx, char* hdr, int num_chars)
 	}
       if (ctx->hcctx_resp_content_length > 10000000L)
 	{
-#if 1	  
+#if 1
 	  ctx->hcctx_resp_content_is_strses = (char) 1;
-#else	  
+#else
 	  ctx->hcctx_err = srv_make_new_error ("42000", "HC003", "Reply content too large");
 	  return (HC_RET_ERR_ABORT);
-#endif	  
+#endif
 	}
     }
   if (!strnicmp ("Content-Encoding:", hdr, 17) && nc_strstr ((unsigned char *) hdr, (unsigned char *) "gzip"))
@@ -2124,7 +2124,7 @@ http_cli_init_std_auth (http_cli_ctx* ctx, caddr_t user, caddr_t pass)
 
 /*
    http_client
-   parameters: 
+   parameters:
 
    1. url
    2. user
@@ -2135,7 +2135,7 @@ http_cli_init_std_auth (http_cli_ctx* ctx, caddr_t user, caddr_t pass)
    7. certificate
    8. pk password
    9. response HTTP headers
-   10. timeout 
+   10. timeout
    11. proxy
 */
 
@@ -2178,7 +2178,7 @@ bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, ch
       if (http_hdr)
 	{
 	  if (NULL != nc_strstr ((unsigned char *) http_hdr, (unsigned char *) "User-Agent:")) /* we already have ua id in headers */
-	    ua_id = NULL; 
+	    ua_id = NULL;
           http_cli_add_req_hdr (ctx, http_hdr);
 	}
 
@@ -2222,7 +2222,7 @@ bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, ch
 	http_cli_set_proxy (ctx, proxy);
 
   if (NULL != (ret = http_client_cache_get ((query_instance_t *)qst, url, http_hdr, body, args, ret_arg_index)))
-    return ret;  
+    return ret;
 
   IO_SECT(qst);
 
@@ -2232,7 +2232,7 @@ bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, ch
 
   if (!http_cli_main (ctx))
     ret = box_copy_tree (ctx->hcctx_resp_body);
-  if (NULL == ret) 
+  if (NULL == ret)
     ret = box_dv_short_string ("");
 
 #ifdef DEBUG
@@ -2432,7 +2432,7 @@ bif_http_pipeline (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   if (!host) /* pipeline post, but no data at all */
     return list (0);
-  
+
   reqs = dk_set_nreverse (reqs);
 
   IO_SECT(qst);
@@ -2458,7 +2458,7 @@ bif_http_pipeline (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       caddr_t hdr;
       resp = NULL;
       if (!http_cli_read_response (ctx))
-	{ 
+	{
 	  if (ctx->hcctx_resp_body)
 	    resp = box_copy_tree (ctx->hcctx_resp_body);
 	  else

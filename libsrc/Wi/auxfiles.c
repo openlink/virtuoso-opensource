@@ -6,25 +6,25 @@
  *  License file (license.dat)
  *  Error logging (wi.err)
  *  Configuration file parsing (wi.cfg)
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "sqlnode.h"
@@ -491,7 +491,7 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
       dive_pa_mode = PA_WRITE;
     }
   atomic_dive = 0;
-      
+
   max_dirty = (int) (ptrlong) cfg_get_parm (wholefile, "\nmax_dirty_buffers:", 0);
   wi_inst.wi_max_dirty = max_dirty;
   if (cfg_get_parm (wholefile, "\nautocorrect_links:", 0))

@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  SQL Parser
- *   
+ *
  *   This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *   project.
- *   
+ *
  *   Copyright (C) 1998-2006 OpenLink Software
- *   
+ *
  *   This project is free software; you can redistribute it and/or modify it
  *   under the terms of the GNU General Public License as published by the
  *   Free Software Foundation; only version 2 of the License, dated June 1991.
- *   
+ *
  *   This program is distributed in the hope that it will be useful, but
  *   WITHOUT ANY WARRANTY; without even the implied warranty of
  *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *   General Public License for more details.
- *   
+ *
  *   You should have received a copy of the GNU General Public License along
  *   with this program; if not, write to the Free Software Foundation, Inc.,
  *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *   
+ *
  */
 
 %pure_parser
@@ -487,7 +487,7 @@ int xpyylex_from_xpp_bufs (caddr_t *yylval, xpp_t *xpp)
 %left K_AND
 %nonassoc K_NOT
 %nonassoc _EQ _NOT_EQ
-%nonassoc K2_EQ_L K2_GE_L K2_GT_L K2_LE_L K2_LT_L K2_NE_L _LT _LE _GT _GE _LT_LT _GT_GT _SAME _NOT_SAME K_LIKE 
+%nonassoc K2_EQ_L K2_GE_L K2_GT_L K2_LE_L K2_LT_L K2_NE_L _LT _LE _GT _GE _LT_LT _GT_GT _SAME _NOT_SAME K_LIKE
 %left BEFORE_L AFTER_L
 %left TO_L
 %left _PLUS _MINUS
@@ -534,7 +534,7 @@ top_xq	/* XQ2003[30] Module, XQ2003[31] MainModule, XQ2003[32] LibraryModule */
 	: END_OF_XPSCN_TEXT	{ yyerror ("The XQuery expression is totally empty"); }
 	| xq_version_decl_opt xq_prolog xq_expr END_OF_XPSCN_TEXT
 		{
-		  $$ = xp_make_module (xpp_arg, NULL, NULL, $3);	
+		  $$ = xp_make_module (xpp_arg, NULL, NULL, $3);
 		}
 	| xq_version_decl_opt MODULE_NAMESPACE_L XQNCNAME _EQ xq_strg ';'
 		{
@@ -568,7 +568,7 @@ xq_version_decl_opt
 	| XQ_XQUERY_VERSION_SQ_NSQSTRING_SQ ';' { ; }
 	| XQ_XQUERY_VERSION_DQ_NDQSTRING_DQ ';' { ; }
 	;
-	
+
 xq_prolog
 	: xq_prolog_setters_opt xq_prolog_decls_opt
 	;
@@ -1217,7 +1217,7 @@ xq_expr_ordering_block
 	: ORDERED_LBRA_L { $$ = XPP_ORDERING_ORDERED; }
 	| UNORDERED_LBRA_L { $$ = XPP_ORDERING_UNORDERED; }
 	;
-	
+
 
 xq_expr_node_test			/* XQ[40] */
 	: xq_expr_name_test
@@ -1579,7 +1579,7 @@ xp_option
            xp_error (xpp_arg, "The __doc XPATH option is deprecated after version 2.7 of Virtuoso Universal Server and not available in any version of Virtuoso Open Source");
 #endif
 	   }
-	| O_VIEW view_name { 
+	| O_VIEW view_name {
 		xp_reject_option_if_not_allowed (xpp_arg, XP_XPATH_OPTS);
 		if (NULL != xpp_arg->xpp_xp_env->xe_view)
 		  xp_error (xpp_arg, "XML view is specified twice by __view option");
@@ -1737,7 +1737,7 @@ xpath_function
 		{
 		  $$ = xp_make_call_or_funcall (xpp_arg, $1, list_to_array ($2));
 		  $$ = xp_make_call (xpp_arg, "not", list(1, $$));
-		}		
+		}
 	;
 
 xpath_arg_list

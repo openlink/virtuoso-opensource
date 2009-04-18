@@ -475,7 +475,7 @@ upd_truncate_row (it_cursor_t * itc, buffer_desc_t ** buf, int nl)
 /* this is bad whichever way one cuts it.
  *  A transit of an itc takes place when the bm row it is registered at splits.  Some goo to the right side.
  * Now this cannot be very well done inside the insert of the  right side because of page map lock order.
- * So it is done after the fact.  But many concurrent inserts can have the itc transiting. 
+ * So it is done after the fact.  But many concurrent inserts can have the itc transiting.
  * So every insert must remember which itc it made to transit.  But because many transits can be going at the same time for one itc,
  * we must count how many transits are in fact going and reset the transiting flag only after the last transit is done.  Hence there is a local and global list of transiting itcs.   Remove the local list from the global list and reset the transit flag for those that are no longer in the list. */
 
@@ -1075,7 +1075,7 @@ itc_bm_delete (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 
 
 /*
-  itc_init_bm_search 
+  itc_init_bm_search
   if there are no conditions for the bm col , the specs stay as they are.
   If there is an indexable condition for the bm col, then:
   itc_bmn_col gets the spec.
@@ -1110,7 +1110,7 @@ itc_init_bm_search (it_cursor_t * itc)
       itc->itc_bm_col_spec = NULL;
       return;
     }
-  if (CMP_EQ == bm_spec->sp_min_op 
+  if (CMP_EQ == bm_spec->sp_min_op
       || (CMP_GT == bm_spec->sp_min_op && !itc->itc_desc_order)
       || (CMP_GTE == bm_spec->sp_min_op && !itc->itc_desc_order))
     {
@@ -1154,8 +1154,8 @@ itc_bm_land (it_cursor_t * itc, buffer_desc_t * buf)
 	  itc->itc_desc_order = 0;
 	  itc->itc_key_spec = itc->itc_insert_key->key_bm_ins_leading;
 	}
-      else if (itc->itc_desc_order 
-	       && CMP_NONE != bm_spec->sp_min_op 
+      else if (itc->itc_desc_order
+	       && CMP_NONE != bm_spec->sp_min_op
 	       && CMP_NONE == bm_spec->sp_max_op)
 	itc->itc_key_spec = itc->itc_insert_key->key_bm_ins_leading; /* when desc order and lower limit, do not compare bm col in landed search because this would sometimes exclude the last bitmap row */
     }
@@ -1246,7 +1246,7 @@ pl_ce_set (placeholder_t * itc, db_buf_t ce, short ce_len, bitno_t bm_start, bit
   itc->itc_bp.bp_is_pos_valid = 1;
   itc->itc_bp.bp_at_end = 0;
   itc->itc_bp.bp_below_start = 0;
-  
+
   if (CE_IS_SINGLE (ce))
     {
       bitno_t ce_value = bm_start + (LONG_REF_NA (ce) & 0x7fffffff);
@@ -1834,7 +1834,7 @@ itc_bm_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 	    }
 	  else
 	    {
-	      pl_set_at_bit ((placeholder_t *) itc, itc->itc_row_data + off, bm_len, 
+	      pl_set_at_bit ((placeholder_t *) itc, itc->itc_row_data + off, bm_len,
 		  bm_start, itc->itc_bp.bp_value, itc->itc_desc_order);
 	      if (itc->itc_bp.bp_at_end)
 		return DVC_LESS; /* no more bits above / below the value, get the next row */

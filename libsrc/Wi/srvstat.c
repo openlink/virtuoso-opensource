@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Server Status Report
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "Dk.h"
@@ -645,9 +645,9 @@ cli_status_report (dk_session_t * ses)
     {
       caddr_t app_name = cli->cli_info[0];
       tcpses_print_client_ip (ses->dks_session, from, sizeof (from));
-      rep_printf ("PID: %ld, OS: %s, Application: %s, IP#: %s\n", 
-	  	(long) (cli->cli_info[1]), 
-		cli->cli_info[3], 
+      rep_printf ("PID: %ld, OS: %s, Application: %s, IP#: %s\n",
+	  	(long) (cli->cli_info[1]),
+		cli->cli_info[3],
 		app_name[0] ? app_name : "unknown",
 		from);
     }
@@ -995,8 +995,8 @@ status_report (const char * mode)
       st_started_since_minute = ts.minute;
     }
 
-  rep_printf ("Started on: %04d/%02d/%02d %02d:%02d GMT%+03d\n", 
-      st_started_since_year, st_started_since_month, st_started_since_day, 
+  rep_printf ("Started on: %04d/%02d/%02d %02d:%02d GMT%+03d\n",
+      st_started_since_year, st_started_since_month, st_started_since_day,
       st_started_since_hour, st_started_since_minute, dt_local_tz);
   if (lite_mode)
     rep_printf ("Lite Mode\n");
@@ -1347,7 +1347,7 @@ stat_desc_t stat_descs [] =
 };
 
 
-stat_desc_t dbf_descs [] = 
+stat_desc_t dbf_descs [] =
   {
     {"dbf_no_disk", &dbf_no_disk},
     {NULL, NULL, NULL}
@@ -1411,7 +1411,7 @@ bif_dbf_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	      *(sd->sd_value) = v;
 	      return (box_num (ov));
 	    }
-	  else 
+	  else
 	    sqlr_new_error ("42000", "SR...", "sys_stat_set, parameter not settable");
 	}
       sd++;
@@ -2589,7 +2589,7 @@ dbg_print_itcs (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
-char * 
+char *
 srv_st_dbms_name ()
 {
    return st_dbms_name;

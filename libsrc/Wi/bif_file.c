@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Bifs for file I/O
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #ifdef HAVE_CONFIG_H
@@ -447,7 +447,7 @@ is_allowed (char *path)
         }
       END_DO_SET ();
     }
-ret:  
+ret:
   dk_free_box (abs_path);
   return rc;
 }
@@ -928,7 +928,7 @@ file_stat (const char *fname, int what)
   caddr_t res = file_stat_int (boxed_fname, what);
   dk_free_box (boxed_fname);
   return res;
-}	
+}
 
 
 static caddr_t
@@ -1096,7 +1096,7 @@ bif_sys_dirlist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #ifndef WIN32
   df = opendir (fname_cvt);
 #else
-  fname_pattern_end = box_length (fname_cvt); 
+  fname_pattern_end = box_length (fname_cvt);
   while (0 == fname_cvt [fname_pattern_end - 1])
     fname_pattern_end--;
   fname_pattern = dk_alloc_box (fname_pattern_end + 3, DV_STRING);
@@ -1250,7 +1250,7 @@ next_file: ;
   if (BOX_ELEMENTS (args) > 3 && bif_long_arg (qst, args, 3, "sys_dirlist") &&
       IS_BOX_POINTER (lst) && BOX_ELEMENTS (lst))
     qsort (lst, BOX_ELEMENTS (lst), sizeof (caddr_t), str_compare);
-error_end:  
+error_end:
   dk_free_box (fname_cvt);
 #ifdef WIN32
   dk_free_box (fname_pattern);
@@ -1830,7 +1830,7 @@ bif_cfg_write (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     sqlr_new_error ("42000", "FA038",
 	"Lists of allowed executables cannot be modified");
 
-  if (pszSection && pszItemName 
+  if (pszSection && pszItemName
       && STR_EQUAL (pszSection, "Parameters")
       && STR_EQUAL (pszItemName, "AllowOSCalls"))
     sqlr_new_error ("42000", "FA038", "The flag for enable/disable system call cannot be modified");
@@ -3814,7 +3814,7 @@ zlib_box_uncompress (caddr_t src, dk_session_t * out, caddr_t * err_ret)
 static int
 zget_byte (z_stream * stream)
 {
-  if (stream->avail_in == 0) 
+  if (stream->avail_in == 0)
     return EOF;
   stream->avail_in--;
   return *(stream->next_in)++;
@@ -3834,7 +3834,7 @@ zcheck_header (z_stream * stream, caddr_t * err_ret)
   unsigned int len;
   int c;
 
-  if (stream->next_in[0] != 0x1f || stream->next_in[1] != 0x8b) 
+  if (stream->next_in[0] != 0x1f || stream->next_in[1] != 0x8b)
     {
       if (err_ret)
 	*err_ret = srv_make_new_error ("22025", "SR104", "Error in header, gz magic number not found");
@@ -3846,7 +3846,7 @@ zcheck_header (z_stream * stream, caddr_t * err_ret)
   /* Check the rest of the gzip header */
   method = zget_byte(stream);
   flags = zget_byte(stream);
-  if (method != Z_DEFLATED || (flags & RESERVED) != 0) 
+  if (method != Z_DEFLATED || (flags & RESERVED) != 0)
     {
       if (err_ret)
 	*err_ret = srv_make_new_error ("22025", "SR104", "Error in header, gz method unknown");
@@ -3856,22 +3856,22 @@ zcheck_header (z_stream * stream, caddr_t * err_ret)
   /* Discard time, xflags and OS code: */
   for (len = 0; len < 6; len++) (void) zget_byte(stream);
 
-  if ((flags & EXTRA_FIELD) != 0) 
+  if ((flags & EXTRA_FIELD) != 0)
     { /* skip the extra field */
       len  =  (unsigned int)zget_byte(stream);
       len += ((unsigned int)zget_byte(stream))<<8;
       /* len is garbage if EOF but the loop below will quit anyway */
       while (len-- != 0 && zget_byte(stream) != EOF) ;
     }
-  if ((flags & ORIG_NAME) != 0) 
+  if ((flags & ORIG_NAME) != 0)
     { /* skip the original file name */
       while ((c = zget_byte(stream)) != 0 && c != EOF) ;
     }
-  if ((flags & COMMENT) != 0) 
+  if ((flags & COMMENT) != 0)
     {   /* skip the .gz file comment */
       while ((c = zget_byte(stream)) != 0 && c != EOF) ;
     }
-  if ((flags & HEAD_CRC) != 0) 
+  if ((flags & HEAD_CRC) != 0)
     {  /* skip the header crc */
       for (len = 0; len < 2; len++) (void)zget_byte(stream);
     }
@@ -5524,7 +5524,7 @@ bif_vector_sort (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return out_vector;
 }
 
-int 
+int
 filep_destroy (caddr_t fdi)
 {
   int fd = (int) *(boxint *) fdi;
@@ -5578,14 +5578,14 @@ bif_file_rlo (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  "Access to %s is denied due to access control in ini file", fname);
     }
 
-  fd = fd_open (fname_cvt, OPEN_FLAGS_RO); 
+  fd = fd_open (fname_cvt, OPEN_FLAGS_RO);
   dk_free (fname_cvt, fname_cvt_len);
 #else
   if (!is_allowed (fname))
     sqlr_new_error ("42000", "FA004",
 	"Access to %s is denied due to access control in ini file", fname);
 
-  fd = fd_open (fname, OPEN_FLAGS_RO); 
+  fd = fd_open (fname, OPEN_FLAGS_RO);
 #endif
 
   if (fd == -1)
@@ -5615,7 +5615,7 @@ ses_read_line_unbuffered (dk_session_t * ses, char *buf, int max, char * state)
 	continue;
       if (inx < max - 1)
 	buf[inx++] = c;
-      if (c == 10 || c == 13) 
+      if (c == 10 || c == 13)
 	{
 	  *state = c;
 	  buf[inx-1] = 0;
@@ -5657,7 +5657,7 @@ bif_file_rl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       char state = '\0';
       OFF_T pos;
-      do 
+      do
 	{
 	  ses_read_line_unbuffered (file_in, str, max_len, &state);
 	  if (str[0])
@@ -5665,7 +5665,7 @@ bif_file_rl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  str[0]=0;
 	  inx--;
 	}
-      while (inx); 
+      while (inx);
       if (state == 13) /* after so many reads we look for last LF, if no LF, we restore position */
 	{
 	  char c;
@@ -5719,7 +5719,7 @@ bif_file_open (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       goto signal_error;
     }
   LSEEK (fd, 0, SEEK_SET);
-  strses_enable_paging (ses, DKSES_IN_BUFFER_LENGTH); 
+  strses_enable_paging (ses, DKSES_IN_BUFFER_LENGTH);
   sesfile = ses->dks_session->ses_file;
   sesfile->ses_file_descriptor = fd;
   sesfile->ses_fd_fill = sesfile->ses_fd_fill_chars = off;
@@ -5735,25 +5735,25 @@ signal_error:
 
 /* hooks for operating on gz stram via string session */
 
-OFF_T 
+OFF_T
 zlib_lseek (strsestmpfile_t * sesfile, OFF_T offset, int whence)
 {
   return gzseek (sesfile->ses_file_ctx, offset, whence);
 }
 
-size_t 
+size_t
 zlib_read (strsestmpfile_t * sesfile, void *buf, size_t nbyte)
 {
   return gzread (sesfile->ses_file_ctx, buf, nbyte);
 }
 
-static size_t 
+static size_t
 zlib_write (strsestmpfile_t * sesfile, const void *buf, size_t nbyte)
 {
   return -1; /* write is not supported in gz stream for now */
 }
 
-int 
+int
 zlib_close (strsestmpfile_t * sesfile)
 {
   return gzclose (sesfile->ses_file_ctx); /* this must close the fd passed earlier to gzdopen  */
@@ -5793,7 +5793,7 @@ bif_gz_file_open (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       goto signal_error;
     }
   LSEEK (fd, 0, SEEK_SET);
-  strses_enable_paging (ses, DKSES_IN_BUFFER_LENGTH); 
+  strses_enable_paging (ses, DKSES_IN_BUFFER_LENGTH);
   sesfile = ses->dks_session->ses_file;
   sesfile->ses_file_descriptor = -1;
 

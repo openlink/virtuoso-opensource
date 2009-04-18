@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Definitions for HTTP server
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #ifndef _HTTP_H
@@ -123,9 +123,9 @@ typedef struct ws_connection_s
     int			ws_ignore_disconnect;
     caddr_t 		ws_store_in_cache;     /* the url to be cached */
     int			ws_proxy_request;
-#ifdef _SSL    
+#ifdef _SSL
     SSL_CTX *		ws_ssl_ctx;
-#endif    
+#endif
   } ws_connection_t;
 
 #define WS_CHARSET(ws, qst) \
@@ -157,8 +157,8 @@ typedef struct ws_acl_s
 typedef struct acl_hit_s
   {
     int64 ah_initial; /* initial time */
-    long ah_count;    /* hits since initial */ 
-    float ah_avg;     /* for statistics */	
+    long ah_count;    /* hits since initial */
+    float ah_avg;     /* for statistics */
   } acl_hit_t;
 
 extern long tws_cached_connection_hits;

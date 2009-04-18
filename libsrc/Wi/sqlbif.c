@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  SQL Built In Functions
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 /*
@@ -2598,7 +2598,7 @@ bif_vector_concatenate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (DK_MEM_RESERVE)
     qi_signal_if_trx_error (qi);
   if ((len * sizeof (caddr_t)) & ~0xffffff)
-    sqlr_new_error ("22023", "SR486", "The result vector is too large"); 
+    sqlr_new_error ("22023", "SR486", "The result vector is too large");
   res = (caddr_t *) dk_try_alloc_box (len * sizeof(caddr_t), DV_ARRAY_OF_POINTER);
   for (inx = 0; inx < n_args; inx++)
   {
@@ -3718,7 +3718,7 @@ retry_unrdf:
       fmt_tail++;
     else
       sqlr_new_error ("22023", "SR523",
-	  "Invalid format string for sprintf_inverse at field %d (column %ld of format '%.1000s')", 
+	  "Invalid format string for sprintf_inverse at field %d (column %ld of format '%.1000s')",
 	  field_ctr, (long) (fmt_tail - fmt), fmt);
 
     field_end = fmt_tail;
@@ -3990,7 +3990,7 @@ retry_unrdf:
 
   sorry_unsupported:
     sqlr_new_error ("22023", "SR524",
-	"Sorry, unsupported format string for sprintf_inverse at field %d (column %ld of format '%.1000s')", 
+	"Sorry, unsupported format string for sprintf_inverse at field %d (column %ld of format '%.1000s')",
 	field_ctr, (long) (fmt_tail - fmt), fmt);
 
   POP_format_mismatch_mid_field:
@@ -4360,7 +4360,7 @@ bif_like_min (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    break;
 	  memmove (ptr, ptr+1, end - ptr);
 	  ptr ++;
-	} 
+	}
     }
   else
   ctr = strpbrk (str, "%_*[]");
@@ -4401,7 +4401,7 @@ bif_like_max (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    break;
 	  memmove (ptr, ptr+1, end - ptr);
 	  ptr ++;
-	} 
+	}
     }
   else
   ctr = strpbrk (str, "%_*[]");
@@ -6427,7 +6427,7 @@ bif_disconnect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     if (name || ses != this_client_ses)
       {
 	client_connection_t *cli = DKS_DB_DATA (ses);
-	if (cli && 
+	if (cli &&
   	    (!name || (cli->cli_user && (DVC_MATCH == cmp_like (cli->cli_user->usr_name, name, NULL, 0, LIKE_ARG_CHAR, LIKE_ARG_CHAR)))))
 	  {
 	    ASSERT_IN_TXN;
@@ -8905,7 +8905,7 @@ do_wide:
 	      goto cvt_error;
 	}
       ret = box_narrow_string_as_wide ((unsigned char *) tmp, NULL, 0, qst ? QST_CHARSET (qst) : NULL, &err, 0);
-      if (err) 
+      if (err)
 	sqlr_resignal (err);
       return ret;
     }
@@ -9204,10 +9204,10 @@ sequence_auto_increment_of (caddr_t name)
     {
       dot++;
       ndots++;
-      if (ndots == 2) start_pos = dot;   
+      if (ndots == 2) start_pos = dot;
       if (ndots == 5) end_pos = dot;
       if (ndots > 5) break;
-    } 
+    }
   if (ndots == 5) /* look-like a autoincrement */
     {
       dbe_column_t *col = NULL;
@@ -9232,7 +9232,7 @@ bif_sequence_is_auto_increment (caddr_t * qst, caddr_t * err_ret, state_slot_t *
   dbe_table_t * tb;
   sec_check_dba (qi, "sequence_is_auto_increment");
   tb = sequence_auto_increment_of (name);
-  if (tb) 
+  if (tb)
     return box_num (1);
   return box_num (0);
 }
@@ -9251,7 +9251,7 @@ bif_add_protected_sequence (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
   NO_CADDR_T;
 }
 
-void 
+void
 check_sequence_grants (query_instance_t * qi, caddr_t name)
 {
   dbe_table_t * tbl = NULL;
@@ -11166,7 +11166,7 @@ bif_checkpoint_interval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   c_checkpoint_interval = -1;
   cfg_autocheckpoint = 60000L * c_checkpoint_interval;
 #if 0
-  /* 
+  /*
    * PMN: THIS SHOULD NEVER BE WRITTEN BACK INTO THE .INI FILE !!!!
    */
   cfg_set_checkpoint_interval (c_checkpoint_interval);
@@ -13424,7 +13424,7 @@ sql_bif_init (void)
   else
   bifs_initialized = 1;
   dk_mem_hooks (DV_EXEC_CURSOR, box_non_copiable, type_lc_destroy, 0);
-  dk_mem_hooks (DV_PLACEHOLDER, box_non_copiable, plh_box_free, 0); 
+  dk_mem_hooks (DV_PLACEHOLDER, box_non_copiable, plh_box_free, 0);
 
   ssl_constant_init ();
   bif_cursors_init();
@@ -13636,7 +13636,7 @@ sql_bif_init (void)
   bif_define_typed ("get_keyword_ucase", bif_get_keyword_ucase, &bt_any);
   bif_define_typed ("position", bif_position, &bt_integer);
   bif_define_typed ("one_of_these", bif_one_of_these, &bt_integer);
-#if 0  
+#if 0
   bif_define_typed ("row_table", bif_row_table, &bt_varchar);
   bif_define_typed ("row_column", bif_row_column, &bt_any);
   bif_define ("row_identity", bif_row_identity);
@@ -13887,9 +13887,9 @@ sql_bif_init (void)
   init_pwd_magic_users ();
   bif_define ("__grouping", bif_grouping);
   bif_define ("__grouping_set_bitmap", bif_grouping_set_bitmap);
-#if 0  
+#if 0
   bif_define ("sequence_is_auto_increment", bif_sequence_is_auto_increment);
-#endif  
+#endif
   bif_define ("add_protected_sequence", bif_add_protected_sequence);
   bif_hosting_init ();
   bif_aq_init ();

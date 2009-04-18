@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Hash Index
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "sqlnode.h"
@@ -224,8 +224,8 @@ hi_allocate (unsigned int32 sz, int use_memcache, hash_area_t * ha)
 					       sizeof (hi_memcache_key_t), sizeof (caddr_t *), hi_memcache_hash, hi_memcache_cmp);
 	  SET_THR_TMP_POOL (NULL);
 	}
-      else 
-	hi->hi_memcache = id_hash_allocate (509, 
+      else
+	hi->hi_memcache = id_hash_allocate (509,
 	    sizeof (hi_memcache_key_t), sizeof (caddr_t *), hi_memcache_hash, hi_memcache_cmp);
       id_hash_set_rehash_pct (hi->hi_memcache, 120);
     }
@@ -259,7 +259,7 @@ hi_free (hash_index_t * hi)
 		{
 		  int len = BOX_ELEMENTS (dep);
 		  caddr_t * next_dep;
-		  if (!len) 
+		  if (!len)
 		    break;
 		  next_dep = ((caddr_t**)dep)[len - 1];
 		  dep[len - 1] = NULL;
@@ -967,7 +967,7 @@ check_err:
     }
   if (row_len - IE_FIRST_KEY != ROW_ALIGN (v_fill))
     {
-#if 1 /* debug dump of the values */     
+#if 1 /* debug dump of the values */
       FILE *dfile = fopen ("hvars_dump.txt", "w");
       if (dfile)
 	{
@@ -992,7 +992,7 @@ check_err:
 	  fflush (dfile);
 	  fclose (dfile);
 	}
-#endif      
+#endif
       log_error ("Incorrect row length in hash space fill : row_len=%d, v_fill=%d", row_len, v_fill);
       GPF_T1 ("Incorrect row length calculation in hash space fill");
     }
@@ -1342,7 +1342,7 @@ For procedures, we have no memcache. */
 
 
 
-int 
+int
 itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned long feed_temp_blobs)
 {
   hi_memcache_key_t hmk;
@@ -1432,7 +1432,7 @@ itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned l
       if (NULL != deps)
 	{
 	  int next_link = HA_FILL == ha->ha_op ? 1 : 0;
-		
+
 	  hi_memcache_key_t * saved_hmk = (hi_memcache_key_t *)(((char *)(deps)) - hi->hi_memcache->ht_key_length);
 	  ret->ihfr_hmk_data = saved_hmk->hmk_data;
 	  ret->ihfr_deps = (caddr_t *)(deps[0]);
@@ -1472,7 +1472,7 @@ itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned l
 	  id_hash_set (hi->hi_memcache, (caddr_t)(&hmk), (caddr_t)(&deps));
 	}
       /* Now we have the data stored so we can check for overflow */
-      if ((!ha->ha_memcache_only) && 
+      if ((!ha->ha_memcache_only) &&
 	  ((long) hi->hi_memcache->ht_count) > hi_end_memcache_size
 	  )
         do_flush = 1;
@@ -1677,7 +1677,7 @@ runX_begin: ;
 		caddr_t new_val = QST_GET (qst, ssl);
 		if (DV_DB_NULL == DV_TYPE_OF (new_val))
 		  goto next_mem_col;
-		
+
 		if (op->go_distinct_ha)
 		  {
 		    itc_ha_feed_ret_t ihfr;
@@ -1972,7 +1972,7 @@ hash_source_input_memcache (hash_source_t * hs, caddr_t * qst, caddr_t * qst_con
 	  hmk.hmk_hash = code;
 	  hmk.hmk_ha = ha;
 	  deps = (caddr_t *)id_hash_get (hi->hi_memcache, (caddr_t)(&hmk));
-	  
+
 	  if (deps)
 	    {
 	      hi_memcache_key_t * saved_hmk = (hi_memcache_key_t *)(((char *)(deps)) - hi->hi_memcache->ht_key_length);
@@ -1981,7 +1981,7 @@ hash_source_input_memcache (hash_source_t * hs, caddr_t * qst, caddr_t * qst_con
 	      next = deps[n_deps];
 	      if (!next)
 		qn_record_in_state ((data_source_t*) hs, qst, (caddr_t*) NULL);
-	      else 
+	      else
 		{
 		  qn_record_in_state ((data_source_t*) hs, qst, (caddr_t*) qst);
 		  qst[hs->hs_current_inx] = next;

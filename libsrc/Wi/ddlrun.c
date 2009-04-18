@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  SQL DDL Functionality
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "sqlnode.h"
@@ -4614,7 +4614,7 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
   caddr_t org_qual, proc_name = box_copy (qr->qr_proc_name);
   user_t *owner_user;
   dk_set_t old_qr_set = NULL;
-  dbe_schema_t *sc; 
+  dbe_schema_t *sc;
 
   mutex_enter (recomp_mtx);
   /* whe should get schema after we got mutex as it can be changed in the meantime */
@@ -5812,7 +5812,7 @@ const char * wsst =
 "}\n";
 
 
-const char * bm_proc_1 = 
+const char * bm_proc_1 =
 "create procedure ddl_bitmap_inx (in tb varchar, in bm_id integer)\n"
 "{\n"
 "  declare last_col, last_col_dtp int;\n"

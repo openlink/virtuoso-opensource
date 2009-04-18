@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Neodisk Checkpoint
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "sqlnode.h"
@@ -244,7 +244,7 @@ dbs_read_checkpoint_remap (dbe_storage_t * dbs, dp_addr_t from)
     }
 }
 
-int 
+int
 cpt_check_remap (dbe_storage_t * dbs)
 {
   dp_addr_t from = dbs->dbs_cp_remap_pages ? (dp_addr_t) (uptrlong) dbs->dbs_cp_remap_pages->data : 0;
@@ -495,7 +495,7 @@ pl_cpt_rollback_page (page_lock_t * pl, it_cursor_t * itc, buffer_desc_t * buf)
     {
       DO_RLOCK (rl, pl)
       {
-	
+
 	if (PL_EXCLUSIVE == PL_TYPE (rl))
 	  {
 	    itc->itc_ltrx = rl->pl_owner;
@@ -555,7 +555,7 @@ cpt_out_of_disk ()
 #define CPT_RB_NO_DISK -1
 
 
-int 
+int
 cpt_uncommitted_backup (index_tree_t * it, int inx, dk_session_t * ses, dk_hash_t * ht)
 {
   static caddr_t image;
@@ -603,7 +603,7 @@ cpt_uncommitted_backup (index_tree_t * it, int inx, dk_session_t * ses, dk_hash_
       if (!cpt_remap && committed_remap == pl->pl_page)
 	{
 	  new_remap = dbs_stop_cp == 3 ? 0 : dbs_get_free_disk_page (cpt_dbs, buf->bd_page);
-	  if (!new_remap) 
+	  if (!new_remap)
 	    {
 	      return CPT_RB_NO_DISK;
 	    }
@@ -640,7 +640,7 @@ cpt_uncommitted (index_tree_t * it, int inx)
 	  continue;
 	}
       memcpy (image, buf->bd_buffer, PAGE_SZ);
-      
+
       if (PAGE_NOT_CHANGED == pl_cpt_rollback_page (pl, mcp_itc, buf))
 	{
 	  page_leave_inner (buf);
@@ -651,7 +651,7 @@ cpt_uncommitted (index_tree_t * it, int inx)
       cpt_remap = DP_CHECKPOINT_REMAP (cpt_dbs, pl->pl_page);
       if (cpt_remap)
 	{
-	  /* now the uncommitted page has a cpt remap.  Hence it must be mapped back to physical 
+	  /* now the uncommitted page has a cpt remap.  Hence it must be mapped back to physical
 	   * Therefore write the rolled back cut to physical, the uncommitted to remap and remove the cpt remap and update the commit space remap */
 	  committed_remap = (dp_addr_t)(ptrlong) gethash (DP_ADDR2VOID (pl->pl_page), &IT_DP_MAP (it_from_g, pl->pl_page)->itm_remap);
 	  if (committed_remap != buf->bd_page)
@@ -681,7 +681,7 @@ cpt_uncommitted (index_tree_t * it, int inx)
 	    {
 	      /* Here we have a new page that was uncommitted.  The rolled back version goes to logical but the uncommitted version now needs a remap.
 	       * Get a remap.  If not remap can be had, then do not give it a remap but this makes for a bad checkpoint.
-	       * The next checkpoint will write the page as if it were new again and all writes between checkpoints  will in fact go to the checkpoint, against the rules.  
+	       * The next checkpoint will write the page as if it were new again and all writes between checkpoints  will in fact go to the checkpoint, against the rules.
 	       * To rectify this, force some unremaps at the end.  */
 	      new_remap = (dp_addr_t)(ptrlong) dk_set_pop (&cpt_new_pages);
 	      if (!new_remap)
@@ -801,7 +801,7 @@ cpt_is_page_remapped (dp_addr_t page)
     }
       mutex_leave (&IT_DP_MAP (it, page)->itm_mtx);
     }
-      
+
   END_DO_SET();
   return 0;
 }
@@ -818,7 +818,7 @@ dbs_buf_by_dp (dbe_storage_t * dbs, dp_addr_t dp)
       mutex_leave (&IT_DP_MAP (it, dp)->itm_mtx);
       if (buf)
 	{
-	  uc_printf (("found l=%d in %s \n", buf->bd_page, it->it_key ? it->it_key->key_name 
+	  uc_printf (("found l=%d in %s \n", buf->bd_page, it->it_key ? it->it_key->key_name
 		      : it == cpt_dbs->dbs_cpt_tree  ? "cpt_tree" : "unknown"));
 	return buf;
     }
@@ -919,7 +919,7 @@ buf_belongs_to (buffer_desc_t * buf)
 void
 cpt_place_buffers ()
 {
-  /* unremapped pages have been read into the dbs_cpt_tree.  Now place these into their correct trees 
+  /* unremapped pages have been read into the dbs_cpt_tree.  Now place these into their correct trees
    * Because finding the right tree is too hard, mark these simply as unallocated.  If these are left hanging the assert in it_cache_check will fail when the dp gets used for sth else */
 
   ptrlong dp;
@@ -1063,7 +1063,7 @@ cpt_uncommitted_dps (int clear)
 	{
 	  DO_HT (void *, k, blob_layout_t *, bl, lt->lt_dirty_blobs)
 	    {
-	      /* for a blob that is uncommitted, do not record the pages as occupied in the cpt.  But do this only insofar there is a filled page dir.  And do not extend this beyond the first page of the page dir. 
+	      /* for a blob that is uncommitted, do not record the pages as occupied in the cpt.  But do this only insofar there is a filled page dir.  And do not extend this beyond the first page of the page dir.
 	       * So there will be a possible leak of a few pages if roll fwd from the cpt, otherwise no leak. */
 	      if (!bl->bl_it || bl->bl_it->it_storage != cpt_dbs)
 		continue;
@@ -1099,7 +1099,7 @@ cpt_uncommitted_dps (int clear)
 }
 
 
-static void 
+static void
 dbs_cpt_recov_obackup_reset (dbe_storage_t * dbs)
 {
   buffer_desc_t * fs = dbs->dbs_free_set;
@@ -1131,7 +1131,7 @@ dbs_cpt_recov_obackup_reset (dbe_storage_t * dbs)
   dbs_write_cfg_page (dbs, 0);
 }
 
-void 
+void
 dbs_cpt_recov (void)
 {
   int cpt_recov_file_complete = 0;
@@ -1225,7 +1225,7 @@ dbs_cpt_recov (void)
 	err_end:
 	  session_flush_1 (ses);
 	}
-      FAILED 
+      FAILED
 	{
 	}
       END_READ_FAIL (ses);
@@ -1236,7 +1236,7 @@ dbs_cpt_recov (void)
       if (0 != rc)
         {
 	  exit_after_recov = 1;
-	}	  
+	}
       if (cpt_recov_file_complete && dbs->dbs_log_name)
 	{
 	  new_name = setext (dbs->dbs_log_name, "trx-after-recov", EXT_SET);
@@ -1246,7 +1246,7 @@ dbs_cpt_recov (void)
 	  if (0 != rc)
 	    {
 	      exit_after_recov = 1;
-	    }	  
+	    }
 	}
       if (!cpt_recov_file_complete)
 	log_error ("The checkpoint recov file was not complete, hence will roll forward from log.");
@@ -1270,7 +1270,7 @@ dbs_cpt_recov (void)
   dbs_cpt_recov_in_progress = 0;
 }
 
-void 
+void
 dbs_cpt_backup (void)
 {
   int second_round = 0;
@@ -1286,7 +1286,7 @@ dbs_cpt_backup (void)
       if (!dbs->dbs_cpt_file_name)
 	continue;
       cpt_bkp = hash_table_allocate (101);
-      cpt_log_fd = fd_open (dbs->dbs_cpt_file_name, OPEN_FLAGS);  
+      cpt_log_fd = fd_open (dbs->dbs_cpt_file_name, OPEN_FLAGS);
       ftruncate (cpt_log_fd, 0);
       LSEEK (cpt_log_fd, 0, SEEK_SET);
       tcpses_set_fd (ses->dks_session, cpt_log_fd);
@@ -1299,7 +1299,7 @@ dbs_cpt_backup (void)
       END_WRITE_FAIL (ses);
       cpt_uncommitted_remap = hash_table_allocate (101);
       cpt_uncommitted_lt = hash_table_allocate (11);
-      cpt_uncommitted_remap_dp = hash_table_allocate (101); 
+      cpt_uncommitted_remap_dp = hash_table_allocate (101);
       DO_SET (index_tree_t *, it, &dbs->dbs_trees)
 	{
 	  int rc;

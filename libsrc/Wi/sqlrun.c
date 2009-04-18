@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  SQL query execution
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "sqlnode.h"
@@ -822,10 +822,10 @@ ks_search_param_update (it_cursor_t * itc, search_spec_t * ks_spec, caddr_t itc_
   int res = KS_CAST_OK;
 
   if (itc_val == val)
-    return res; 
+    return res;
 
-  /* If the values are different, save the itc_search_par_fill & itc_owned_search_par_fill, 
-     free the owned one if such and set to NULL 
+  /* If the values are different, save the itc_search_par_fill & itc_owned_search_par_fill,
+     free the owned one if such and set to NULL
      call  the ks_search_param_cast & restore the fill.
    */
   for (inx = 0 ; inx < itc->itc_owned_search_par_fill; inx ++)
@@ -838,7 +838,7 @@ ks_search_param_update (it_cursor_t * itc, search_spec_t * ks_spec, caddr_t itc_
 	  dk_free_tree (own_par);
 	  sav_own_par_fill = itc->itc_owned_search_par_fill;
 	  itc->itc_owned_search_par_fill = inx;
-	  break; 
+	  break;
 	}
       else if (!own_par && sav_own_par_fill < 0)
 	{
@@ -849,7 +849,7 @@ ks_search_param_update (it_cursor_t * itc, search_spec_t * ks_spec, caddr_t itc_
   itc->itc_search_par_fill = ks_spec->sp_min;
   res = ks_search_param_cast (itc, ks_spec, val);
 
-  /*fprintf (stderr, "itc_val != val rc=%d owned_fill=%d old_own_fill=%d fill=%d old_fill=%d\n", 
+  /*fprintf (stderr, "itc_val != val rc=%d owned_fill=%d old_own_fill=%d fill=%d old_fill=%d\n",
       res, itc->itc_owned_search_par_fill, sav_own_par_fill, itc->itc_search_par_fill, sav_par_fill); */
 
   itc->itc_search_par_fill = sav_par_fill;
@@ -859,7 +859,7 @@ ks_search_param_update (it_cursor_t * itc, search_spec_t * ks_spec, caddr_t itc_
   return res;
 }
 
-void 
+void
 ks_check_params_changed (it_cursor_t * itc, key_source_t * ks, caddr_t * state)
 {
   search_spec_t * ks_spec = ks->ks_spec.ksp_spec_array;
@@ -1253,7 +1253,7 @@ table_source_input (table_source_t * ts, caddr_t * inst,
 		  connection_set (qi->qi_client, rate_name, fbox);
 		  dk_free_box (fbox);
 		}
-	      else 
+	      else
 		{
 		  float pct = (float) (ptrlong) ts->ts_rnd_pcnt;
 		  order_itc->itc_random_search = RANDOM_SEARCH_ON;
@@ -1287,9 +1287,9 @@ table_source_input (table_source_t * ts, caddr_t * inst,
 	  ITC_IN_KNOWN_MAP (order_itc, order_itc->itc_page);
 	  itc_assert_lock (order_itc);
 #endif
-	  if (ts->ts_current_of && !ts->ts_main_ks && 
+	  if (ts->ts_current_of && !ts->ts_main_ks &&
 	      !ts->ts_current_of->ssl_is_alias && !QST_GET_V (state, ts->ts_current_of))
-	    ts_set_placeholder (ts, state, order_itc, &order_buf); 
+	    ts_set_placeholder (ts, state, order_itc, &order_buf);
 	  itc_register (order_itc, order_buf);
 	  itc_page_leave (order_itc, order_buf);
 	  qn_record_in_state ((data_source_t *) ts, inst, state);
@@ -1306,9 +1306,9 @@ table_source_input (table_source_t * ts, caddr_t * inst,
 #ifndef NDEBUG
 		itc_assert_lock (order_itc);
 #endif
-		if (ts->ts_current_of && !ts->ts_main_ks && 
+		if (ts->ts_current_of && !ts->ts_main_ks &&
 		    !ts->ts_current_of->ssl_is_alias && !QST_GET_V (state, ts->ts_current_of))
-		  ts_set_placeholder (ts, state, order_itc, &order_buf); 
+		  ts_set_placeholder (ts, state, order_itc, &order_buf);
 		itc_register (order_itc, order_buf);
 		itc_page_leave (order_itc, order_buf);
 		qn_record_in_state ((data_source_t *) ts, inst, state);
@@ -1503,7 +1503,7 @@ itc_get_alt_key (it_cursor_t * cr_itc, it_cursor_t * del_itc,
     caddr_t value;
     dbe_col_loc_t * cl = itc_col_loc (cr_itc, image, col->col_id);
     if (!cl)
-      { 
+      {
 	if (col->col_non_null && col->col_default)
 	  value = box_cast_to (NULL, col->col_default, DV_TYPE_OF (col->col_default), col->col_sqt.sqt_dtp, col->col_precision, col->col_scale, NULL);
         else

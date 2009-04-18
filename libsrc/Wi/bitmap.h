@@ -85,7 +85,7 @@ typedef struct bm_pos_s
 
 
 #define BITS_IN_RANGE(b1, b2) \
-  (b1 < b2 ? b2 - b1 < 0x10000000 : b1 - b2 < 0x10000000) 
+  (b1 < b2 ? b2 - b1 < 0x10000000 : b1 - b2 < 0x10000000)
 
 #define BITNO_MAX 0x7fffffffffffffffLL
 #define BITNO_MIN  0x8000000000000000LL
