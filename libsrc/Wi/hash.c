@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Hash Index
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "sqlnode.h"
@@ -224,8 +224,8 @@ hi_allocate (unsigned int32 sz, int use_memcache, hash_area_t * ha)
 					       sizeof (hi_memcache_key_t), sizeof (caddr_t *), hi_memcache_hash, hi_memcache_cmp);
 	  SET_THR_TMP_POOL (NULL);
 	}
-      else 
-	hi->hi_memcache = id_hash_allocate (509, 
+      else
+	hi->hi_memcache = id_hash_allocate (509,
 	    sizeof (hi_memcache_key_t), sizeof (caddr_t *), hi_memcache_hash, hi_memcache_cmp);
       id_hash_set_rehash_pct (hi->hi_memcache, 120);
     }
@@ -259,7 +259,7 @@ hi_free (hash_index_t * hi)
 		{
 		  int len = BOX_ELEMENTS (dep);
 		  caddr_t * next_dep;
-		  if (!len) 
+		  if (!len)
 		    break;
 		  next_dep = ((caddr_t**)dep)[len - 1];
 		  dep[len - 1] = NULL;
@@ -737,14 +737,14 @@ hash_cast (query_instance_t * qi, hash_area_t * ha, int inx, state_slot_t * ssl,
 }
 
 void
-hash_row_set_col (row_delta_t * rd, row_fill_t * rf, dbe_col_loc_t *cl, caddr_t value, int feed_temp_blobs) 
+hash_row_set_col (row_delta_t * rd, row_fill_t * rf, dbe_col_loc_t *cl, caddr_t value, int feed_temp_blobs)
 {
   caddr_t err = NULL;
   rd->rd_itc->itc_search_par_fill = 0;
   rd->rd_non_comp_max = rf->rf_space;
   if (!feed_temp_blobs)
     row_insert_cast_temp (rd, cl, value, &err, NULL);
-  else 
+  else
     row_insert_cast (rd, cl, value, &err, NULL);
   if (err)
     sqlr_resignal (err);
@@ -956,7 +956,7 @@ check_err:
     }
   if (row_len != ROW_ALIGN (rf.rf_fill))
     {
-#if 1 /* debug dump of the values */     
+#if 1 /* debug dump of the values */
       FILE *dfile = fopen ("hvars_dump.txt", "w");
       if (dfile)
 	{
@@ -981,7 +981,7 @@ check_err:
 	  fflush (dfile);
 	  fclose (dfile);
 	}
-#endif      
+#endif
       log_error ("Incorrect row length in hash space fill : row_len=%d, rf_fill=%d", row_len, rf.rf_fill);
       GPF_T1 ("Incorrect row length calculation in hash space fill");
     }
@@ -991,7 +991,7 @@ check_err:
   row_len = ROW_ALIGN (row_len);
   itc->itc_hash_buf_fill = hb_fill + row_len;
   if (hb_fill + row_len + HASH_HEAD_LEN < PAGE_SZ)
-    page_write_gap (hash_buf->bd_buffer + hb_fill + row_len + HASH_HEAD_LEN, PAGE_SZ - (hb_fill + row_len + HASH_HEAD_LEN)); 
+    page_write_gap (hash_buf->bd_buffer + hb_fill + row_len + HASH_HEAD_LEN, PAGE_SZ - (hb_fill + row_len + HASH_HEAD_LEN));
 }
 
 
@@ -1345,7 +1345,7 @@ For procedures, we have no memcache. */
 
 
 
-int 
+int
 itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned long feed_temp_blobs)
 {
   hi_memcache_key_t hmk;
@@ -1416,7 +1416,7 @@ itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned l
 	      dtp = DV_TYPE_OF (value);
 	    }
 	  code = key_hash_box (value, dtp, code, &var_len, ssl->ssl_sqt.sqt_collation,
-	      ha->ha_key_cols[inx].cl_sqt.sqt_dtp, (HA_DISTINCT == ha->ha_op) );
+	      ha->ha_key_cols[inx].cl_sqt.sqt_dtp, (HA_DISTINCT == ha->ha_op));
 	  if (keys_on_stack)
 	    hmk.hmk_data[inx] = value;
 	}
@@ -1435,7 +1435,7 @@ itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned l
       if (NULL != deps)
 	{
 	  int next_link = HA_FILL == ha->ha_op ? 1 : 0;
-		
+
 	  hi_memcache_key_t * saved_hmk = (hi_memcache_key_t *)(((char *)(deps)) - hi->hi_memcache->ht_key_length);
 	  ret->ihfr_hmk_data = saved_hmk->hmk_data;
 	  ret->ihfr_deps = (caddr_t *)(deps[0]);
@@ -1475,7 +1475,7 @@ itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned l
 	  id_hash_set (hi->hi_memcache, (caddr_t)(&hmk), (caddr_t)(&deps));
 	}
       /* Now we have the data stored so we can check for overflow */
-      if ((!ha->ha_memcache_only) && 
+      if ((!ha->ha_memcache_only) &&
 	  ((long) hi->hi_memcache->ht_count) > hi_end_memcache_size
 	  )
         do_flush = 1;
@@ -1701,7 +1701,7 @@ runX_begin: ;
 		caddr_t new_val = QST_GET (qst, ssl);
 		if (DV_DB_NULL == DV_TYPE_OF (new_val))
 		  goto next_mem_col;
-		
+
 		if (op->go_distinct_ha)
 		  {
 		    itc_ha_feed_ret_t ihfr;
@@ -1890,7 +1890,7 @@ setp_order_row (setp_node_t * setp, caddr_t * qst)
   DO_ALL_CL (cl, ha->ha_key)
     {
       state_slot_t * ssl  = ha_ssl_for_col (ha, cl->cl_col_id);
-      row_insert_cast_temp (&rd, cl, QST_GET (qst, ssl), 
+      row_insert_cast_temp (&rd, cl, QST_GET (qst, ssl),
 			    &err, NULL);
 
       if (err)
@@ -1898,10 +1898,10 @@ setp_order_row (setp_node_t * setp, caddr_t * qst)
       if (nth < key->key_n_significant && rd.rd_non_comp_len - key->key_row_var_start[0] + key->key_key_var_start[0] > MAX_RULING_PART_BYTES)
 	sqlr_new_error ("22026", "SR...", "Sorting key too long in order by key, exceeds 1900 bytes.");
       nth++;
-    }
+	}
   END_DO_ALL_CL;
   for (inx = 0; inx < key->key_n_significant; inx++)
-    ins_itc->itc_search_params[inx] = ins_itc->itc_search_params[key->key_n_significant + key->key_part_in_layout_order[inx]]; 
+    ins_itc->itc_search_params[inx] = ins_itc->itc_search_params[key->key_n_significant + key->key_part_in_layout_order[inx]];
   rd.rd_values = &ins_itc->itc_search_params[key->key_n_significant];
   ins_itc->itc_write_waits = ins_itc->itc_read_waits = 0;
   ITC_FAIL (ins_itc)
@@ -1997,7 +1997,7 @@ hash_source_input_memcache (hash_source_t * hs, caddr_t * qst, caddr_t * qst_con
 	  hmk.hmk_hash = code;
 	  hmk.hmk_ha = ha;
 	  deps = (caddr_t *)id_hash_get (hi->hi_memcache, (caddr_t)(&hmk));
-	  
+
 	  if (deps)
 	    {
 	      hi_memcache_key_t * saved_hmk = (hi_memcache_key_t *)(((char *)(deps)) - hi->hi_memcache->ht_key_length);
@@ -2006,7 +2006,7 @@ hash_source_input_memcache (hash_source_t * hs, caddr_t * qst, caddr_t * qst_con
 	      next = deps[n_deps];
 	      if (!next)
 		qn_record_in_state ((data_source_t*) hs, qst, (caddr_t*) NULL);
-	      else 
+	      else
 		{
 		  qn_record_in_state ((data_source_t*) hs, qst, (caddr_t*) qst);
 		  qst[hs->hs_current_inx] = next;

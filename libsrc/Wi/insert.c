@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Insert
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "sqlnode.h"
@@ -100,12 +100,12 @@ page_gap_length (db_buf_t page, row_size_t pos)
 	return n;
       if (n + pos >= PAGE_SZ)
 	STRUCTURE_FAULT1 ("gap beyond end of page");
-      if ((n + pos) & 1) 
+      if ((n + pos) & 1)
 	STRUCTURE_FAULT1 ("odd pos in looking for gap");
       kv = page[n + pos];
       switch (kv)
     {
-	case KV_GAP: 
+	case KV_GAP:
 	  n += page[pos + n + 1];
 	  break;
 	case KV_LONG_GAP:
@@ -116,7 +116,7 @@ page_gap_length (db_buf_t page, row_size_t pos)
     }
       if (n == prev_n) STRUCTURE_FAULT1 ("zero length gap on page");
 }
-} 
+}
 
 int
 pg_make_map (buffer_desc_t * buf)
@@ -254,7 +254,7 @@ b159ck ()
 }
 
 
-int 
+int
 pg_row_check (buffer_desc_t * buf, int irow, int gpf_on_err)
 {
   db_buf_t row = buf->bd_buffer + buf->bd_content_map->pm_entries[irow];
@@ -319,7 +319,7 @@ pg_row_check (buffer_desc_t * buf, int irow, int gpf_on_err)
       bm_ck (row + off, len);
     }
  end:
-  if (error) 
+  if (error)
     {
       if (gpf_on_err)
 	{
@@ -355,11 +355,11 @@ pg_check_map_1 (buffer_desc_t * buf)
   if (org_map.pm_filled_to < buf->bd_content_map->pm_filled_to)
     GPF_T1 ("filled to of map is too low");
   org_map.pm_filled_to = buf->bd_content_map->pm_filled_to;
-  if (memcmp (&org_map, buf->bd_content_map, ((ptrlong)(&((page_map_t*)0)->pm_entries)) 
+  if (memcmp (&org_map, buf->bd_content_map, ((ptrlong)(&((page_map_t*)0)->pm_entries))
 	      /* + 2 * buf->bd_content_map->pm_count */ ))
     GPF_T1 ("map not in sync with buf");
   memcpy (buf->bd_content_map, &org_map, ((ptrlong)(&((page_map_t*)0)->pm_entries)) + 2 * org_map.pm_count);
-  
+
 #if 0
   /* debug code for catching insert/update of a particular row */
   page = buf->bd_buffer;
@@ -410,7 +410,7 @@ pg_move_cursors (it_cursor_t ** temp_itc, int fill, buffer_desc_t * buf_from,
       it_list = temp_itc[n];
       if (!it_list)
 	continue;
-      if (ITC_DELETED == it_list->itc_map_pos 
+      if (ITC_DELETED == it_list->itc_map_pos
 	  || (it_list->itc_page == buf_from->bd_page
 	      && it_list->itc_map_pos == from))
 	{
@@ -948,7 +948,7 @@ itc_compact (it_cursor_t * itc, buffer_desc_t * parent, page_rel_t * pr, int pr_
       {
       page_map_t * pm = pr[inx].pr_buf->bd_content_map;
       int copy_len = MIN (PAGE_DATA_SZ, buf->bd_content_map->pm_filled_to + MAX_KV_GAP_BYTES - DP_DATA);
-      /* copy 3 extra for the gap marker, but no more than page, since can reach to end w/o gap marker */ 
+      /* copy 3 extra for the gap marker, but no more than page, since can reach to end w/o gap marker */
       NEW_VARZ (row_delta_t, rd);
       rd->rd_allocated = RD_ALLOCATED;
       lp_box[inx] = rd;
@@ -1130,7 +1130,7 @@ it_cp_check_node (index_tree_t *it, buffer_desc_t *parent, int mode)
 	  buffer_desc_t * buf;
 	  mutex_enter (&itm->itm_mtx);
 	  buf = (buffer_desc_t*) gethash ((void*)(ptrlong) leaf, &itm->itm_dp_to_buf);
-	  if (BUF_COMPACT_ALL_READY (buf, leaf, itm) 
+	  if (BUF_COMPACT_ALL_READY (buf, leaf, itm)
 	       && (COMPACT_ALL == mode ? 1 : buf->bd_is_dirty))
 	    {
 	      if (mode == COMPACT_DIRTY && !gethash ((void*)(void*)(ptrlong)leaf, &itm->itm_remap))
@@ -1176,7 +1176,7 @@ itc_vacuum_compact (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 {
   int rc;
   buffer_desc_t * buf = *buf_ret;
-  if (buf->bd_registered 
+  if (buf->bd_registered
       || itc->itc_pl
       || buf->bd_read_waiting || buf->bd_write_waiting)
     {
@@ -1276,7 +1276,7 @@ int dbs_autocompact_in_progress;
 void
 wi_check_all_compact (int age_limit)
 {
-  /*  call before writing old dirty out. Also before pre-checkpoint flush of all things.  
+  /*  call before writing old dirty out. Also before pre-checkpoint flush of all things.
    * do not do many at the same time.  Also have in progress flag for background action which can autocompact and need a buffer, which can then recursively trigger autocompact which is not wanted */
   dbe_storage_t * dbs = wi_inst.wi_master;
   /*return;*/

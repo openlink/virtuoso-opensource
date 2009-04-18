@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Internal Functions
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #ifndef _WIFN_H
@@ -187,7 +187,7 @@ buffer_desc_t * page_fault_map_sem (it_cursor_t * it, dp_addr_t dp, int stay_ins
 
 int page_wait_access (it_cursor_t * itc, dp_addr_t dp_to,
 		  buffer_desc_t * buf_from,
-    buffer_desc_t ** buf_ret, int mode, int max_change);
+		  buffer_desc_t ** buf_ret, int mode, int max_change);
 void page_release_read (buffer_desc_t * buf);
 void page_read_queue_add (buffer_desc_t * buf, it_cursor_t * itc);
 void page_write_queue_add (buffer_desc_t * buf, it_cursor_t * itc);
@@ -409,7 +409,7 @@ extern void buffer_set_free (buffer_desc_t* ps);
 int buf_set_dirty (buffer_desc_t * buf);
 int buf_set_dirty_inside (buffer_desc_t * buf);
 #else
-#define buf_set_dirty(b)  ((b)->bd_is_dirty = 1) 
+#define buf_set_dirty(b)  ((b)->bd_is_dirty = 1)
 #define buf_set_dirty_inside(b)  ((b)->bd_is_dirty = 1)
 #endif
 
@@ -470,9 +470,9 @@ int page_prepare_write (buffer_desc_t * buf, db_buf_t * copy, int * copy_fill, i
 
 int page_col_cmp_1 (buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * cl, caddr_t value);
 #define page_col_cmp(buf, row, cl, val) \
-  (~DVC_NOORDER & page_col_cmp_1 (buf, row, cl, val)) 
+  (~DVC_NOORDER & page_col_cmp_1 (buf, row, cl, val))
 void  page_row_bm (buffer_desc_t * buf, int irow, row_delta_t * rd, int op, it_cursor_t * bm_pl);
-#define page_row(buf, irow, rd, op) page_row_bm (buf, irow, rd, op, NULL) 
+#define page_row(buf, irow, rd, op) page_row_bm (buf, irow, rd, op, NULL)
 #define RO_LEAF 1
 #define RO_ROW 2
 #define RO_RB_ROW 3
@@ -482,7 +482,7 @@ void  page_row_bm (buffer_desc_t * buf, int irow, row_delta_t * rd, int op, it_c
   row_delta_t rd;\
   memset (&rd, 0, sizeof (row_delta_t)); \
   rd.rd_values = rd##__vs; \
-  rd.rd_allocated = RD_ALLOCATED_VALUES; 
+  rd.rd_allocated = RD_ALLOCATED_VALUES;
 
 
 #define LOCAL_COPY_RD(rd) \
@@ -493,7 +493,7 @@ void  page_row_bm (buffer_desc_t * buf, int irow, row_delta_t * rd, int op, it_c
   rd.rd_temp = &rd##temp[0]; \
 rd.rd_temp_max = sizeof (rd##temp); \
   rd.rd_values = rd##__vs; \
-  rd.rd_allocated = RD_AUTO; 
+  rd.rd_allocated = RD_AUTO;
 
 
 
@@ -947,7 +947,7 @@ void page_set_check (db_buf_t page);
 #ifndef NDEBUG
 #define PAGE_SET_CHECKSUM
 #endif
-#ifdef PAGE_SET_CHECKSUM 
+#ifdef PAGE_SET_CHECKSUM
 extern void page_set_update_checksum (uint32 * page, int inx, int bit);
 extern void page_set_checksum_init (db_buf_t page);
 #else
@@ -998,7 +998,7 @@ extern int rdf_box_compare (ccaddr_t rb1, ccaddr_t rb2);
 /*rdf_core.c */
 int  iri_split (char * iri, caddr_t * pref, caddr_t * name);
 
-typedef struct name_id_cache_s 
+typedef struct name_id_cache_s
 {
   dk_mutex_t *	nic_mtx;
   dk_hash_64_t *	nic_id_to_name;

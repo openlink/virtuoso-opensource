@@ -1,29 +1,28 @@
-
 /*
  *  text.c
  *
  *  $Id$
  *
  *  Text search
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include <limits.h>
@@ -143,12 +142,12 @@ d_id_set (d_id_t * to, d_id_t * from)
     }
   else
     {
-#ifdef WIN32      
+#ifdef WIN32
       D_ID_NUM_SET (&to->id[0], D_ID_NUM_REF (&from->id[0]));
 #else
       if (D_ID_64 == ((dtp_t*)from)[0])
       memcpy (to, from, sizeof (int64) + 1);
-      else 
+      else
 	memcpy (to, from, 4);
 #endif
     }
@@ -2049,7 +2048,7 @@ sst_check_and_hit (search_stream_t * sst, d_id_t * d_id, int is_fixed)
 		  WP_LENGTH (rel_pos, hl, rel_len, rel_sst->sst_buffer, rel_sst->sst_fill);
 		  rel_len -= WP_FIRST_POS (rel_pos + hl);
 		  rel_pos += hl + WP_FIRST_POS (rel_pos + hl);
-		  wp_proximity  (pos, pos_len, rel_pos, rel_len, rel);
+		  wp_proximity (pos, pos_len, rel_pos, rel_len, rel);
 		}
 	      if (0 == rel->wrl_score)
 		return SST_AND_NEXT;
@@ -2263,10 +2262,10 @@ wp_wildcard_range (const char * word, caddr_t * lower, caddr_t * higher)
 	return RANGE_ERROR;
       if (cl_run_local_only)
 	{
-      *lower = box_dv_short_nchars (word, leading + 1);
-      (*lower)[leading - 1]--;
-      (*lower)[leading] = '\377';
-      (*lower)[leading + 1] = 0;
+	  *lower = box_dv_short_nchars (word, leading + 1);
+	  (*lower)[leading - 1]--;
+	  (*lower)[leading] = '\377';
+	  (*lower)[leading + 1] = 0;
 	}
       else
 	*lower = box_dv_short_nchars (word, leading); /* for cluster, the test is different, do not decrement lower bound extra */
@@ -2389,7 +2388,7 @@ wst_from_range (sst_tctx_t *tctx, ptrlong range_flags, const char * word, caddr_
 	}
     }
   return wst_from_wsts (tctx, range_flags, wsts);
-    }
+}
 search_stream_t *
 wst_from_word (sst_tctx_t *tctx, ptrlong range_flags, const char *word)
 {
@@ -2403,8 +2402,8 @@ wst_from_word (sst_tctx_t *tctx, ptrlong range_flags, const char *word)
       sst->sst_range_flags = range_flags;
       sst->sst_view_from = ((range_flags & SRC_RANGE_MAIN) ? FIRST_MAIN_WORD_POS : FIRST_ATTR_WORD_POS);
       sst->sst_view_to = ((range_flags & SRC_RANGE_ATTR) ? LAST_ATTR_WORD_POS : LAST_MAIN_WORD_POS);
-      sst->sst_error = srv_make_new_error ("22023", "FT370", 
-	  rc == RANGE_NOT_SUPPORTED ?  "Wildcards in text expressions are temporarily disabled in cluster configurations." : 
+      sst->sst_error = srv_make_new_error ("22023", "FT370",
+	  rc == RANGE_NOT_SUPPORTED ?  "Wildcards in text expressions are temporarily disabled in cluster configurations." :
 	  			"Wildcard word needs at least 4 leading characters");
       sst->sst_op = SRC_ERROR;
       return sst;
@@ -2446,7 +2445,7 @@ wst_from_word (sst_tctx_t *tctx, ptrlong range_flags, const char *word)
 	  else
 	    wst->wst_word_strings = (caddr_t *) wb->wb_word_recs;
 	}
-      else 
+      else
 	{
 	}
       return ((search_stream_t *) wst);
@@ -2767,11 +2766,11 @@ bif_vtb_match (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   D_SET_INITIAL (&d_id_next);
   for (;;)
     {
-      QR_RESET_CTX 
+      QR_RESET_CTX
 	{
 	  sst_next (sst, &d_id_next, 0);
 	}
-      QR_RESET_CODE 
+      QR_RESET_CODE
 	{
 	  du_thread_t * self = THREAD_CURRENT_THREAD;
 	  caddr_t err = thr_get_error_code (self);

@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  RDF/XML parser
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "Dk.h"
@@ -487,8 +487,8 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
         }
       else if (!stricmp (tmp_nsuri, "xml"))
         {
-/* 
-   	  XXX: moved above	  
+/*
+   	  XXX: moved above
           if (!strcmp (tmp_local, "lang"))
             XRL_SET_INHERITABLE (inner, xrl_language, box_dv_short_string (avalue), "Attribute 'xml:lang' is used twice");
           else if (!strcmp (tmp_local, "base"))
@@ -496,7 +496,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
           else if (0 != strcmp (tmp_local, "space"))
             xmlparser_logprintf (xp->xp_parser, XCFG_WARNING, 200,
               "Unsupported 'xml:...' attribute, only 'xml:lang', 'xml:base' and 'xml:space' are supported" );
-*/	      
+*/
           continue;
         }
 push_inner_attr_prop:

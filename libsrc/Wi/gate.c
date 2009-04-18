@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Hyperspace and gate.
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "sqlnode.h"
@@ -45,9 +45,9 @@ int
 itc_async_read_1 (it_cursor_t * itc, dp_addr_t dp, dp_addr_t phys_dp,
 		  buffer_desc_t * buf, buffer_desc_t * decoy)
 {
-#if 0  
+#if 0
 #error Not supposed to be on with 5.0
-  /* if the iq for the dp to read is busy, put the read in the iq instead of doing it here. 
+  /* if the iq for the dp to read is busy, put the read in the iq instead of doing it here.
    * Called outside map, returns 1 inside map if the read was scheduled, otherwise returns 0 outside map. */
   int n;
   io_queue_t * iq = db_io_queue (ITC_STORAGE (itc), phys_dp);
@@ -77,14 +77,14 @@ itc_async_read_1 (it_cursor_t * itc, dp_addr_t dp, dp_addr_t phys_dp,
   return 1;
 #else
   return 0;
-#endif  
+#endif
 }
 
 
 
 #ifdef ADAPTIVE_LAND
 
-void 
+void
 itc_adaptive_read_inc (it_cursor_t * itc, buffer_desc_t * dest_buf)
 {
   page_map_t * map = dest_buf->bd_content_map;
@@ -93,7 +93,7 @@ itc_adaptive_read_inc (it_cursor_t * itc, buffer_desc_t * dest_buf)
       BD_SET_IS_WRITE (dest_buf, 1);
       itc->itc_dive_mode = PA_WRITE;
     }
-  else 
+  else
     dest_buf->bd_readers++;
 }
 
@@ -140,7 +140,7 @@ page_wait_access (it_cursor_t * itc, dp_addr_t dp,  buffer_desc_t * buf_from, bu
     {
       ra_req_t * ra = NULL;
       IT_DP_REMAP (itc->itc_tree, dp, phys_dp);
-#ifdef MTX_DEBUG 
+#ifdef MTX_DEBUG
       em_check_dp (itc->itc_tree->it_extent_map, phys_dp);
       if (phys_dp != dp)
 	em_check_dp (itc->itc_tree->it_extent_map, dp);
@@ -208,7 +208,7 @@ page_wait_access (it_cursor_t * itc, dp_addr_t dp,  buffer_desc_t * buf_from, bu
       page_mark_change (buf, RWG_WAIT_DISK);
       if (PA_READ == mode)
 	page_release_read (buf);
-      
+
       ITC_LEAVE_MAPS (itc);
       /* complete transit.  This counts as no change since itc was all the time in source and dest was acquired without possibility of interference */
       BUF_BOUNDS_CHECK (buf);
@@ -340,7 +340,7 @@ page_release_read (buffer_desc_t * buf)
 	  if (PA_WRITE == waiting->itc_dive_mode)
 	    {
 	      /* if adaptive landing made this a write, then free no more cursors. */
-#ifdef MTX_DEBUG 
+#ifdef MTX_DEBUG
 	      buf->bd_writer = waiting->itc_thread;
 #endif
 	      buf->bd_read_waiting = next;
@@ -642,7 +642,7 @@ retry:
       ITC_LEAVE_MAP_NC (ctl_itc);
       goto retry;
     }
-  if (!buf->bd_is_write && !buf->bd_readers  
+  if (!buf->bd_is_write && !buf->bd_readers
       && BUF_NONE_WAITING (buf))
     {
       if (buf->bd_page != pl->itc_page)
@@ -768,7 +768,7 @@ itc_dive_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t to)
   dp_addr_t dp_from = itc->itc_page, back_link;
   it_map_t * itm1 = IT_DP_MAP (tree, dp_from);
   it_map_t * itm2 = IT_DP_MAP (tree, to);
-  /* cache place, use when looking for next sibling * 
+  /* cache place, use when looking for next sibling *
    *itc->itc_parent_page = itc->itc_page;
    *itc->itc_pos_on_parent = itc->itc_position;
    */
@@ -809,7 +809,7 @@ itc_dive_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t to)
 	}
       goto general_case;
     }
-  else 
+  else
 #if DIVE_WDEAD
     {
       /* now the mtx for the destination is higher than for the source.  We lock in wrong order and reverse if we can't have the second mtx */
@@ -878,7 +878,7 @@ itc_dive_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t to)
       return;
     }
   if (itc->itc_read_waits || itc->itc_write_waits)
-  waited = 1;
+    waited = 1;
   dest_buf = *buf_ret;
   goto check_link_2;
  check_link:
@@ -926,7 +926,7 @@ itc_landed_down_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t 
 	      page_map_t * pm = (*buf_ret)->bd_content_map;
 	      itc->itc_map_pos = pm->pm_count - 1;
 	    }
-	  else 
+	  else
 	    itc_prev_entry (itc, *buf_ret);
 	}
       return;
@@ -947,7 +947,7 @@ itc_landed_down_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t 
   pm = (*buf_ret)->bd_content_map;
   if (itc->itc_desc_order)
     {
-      itc->itc_map_pos = pm->pm_count - 1;
+        itc->itc_map_pos = pm->pm_count - 1;
     }
   else
     itc->itc_map_pos = 0;
@@ -1011,7 +1011,7 @@ up_again:
   return DVC_MATCH;
 }
 
-void 
+void
 itc_root_cache_enter (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t leaf)
 {
   index_tree_t * tree = itc->itc_tree;
@@ -1049,7 +1049,7 @@ itc_root_cache_enter (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t lea
       if (DP_DELETED == remap)
 	{
 	  TC (tc_root_image_ref_deleted);
-	  mutex_leave (&itm->itm_mtx); 
+	  mutex_leave (&itm->itm_mtx);
 	  *buf_ret = NULL;
 	  return;
 	}
@@ -1109,7 +1109,7 @@ it_new_root_image (index_tree_t * tree, buffer_desc_t * buf)
   int v, new_map_sz;
   buffer_desc_t * new_image;
   dk_mutex_t * root_cache_replace_mtx = &tree->it_maps[0].itm_mtx;
-  page_map_t * map = buf->bd_content_map; 
+  page_map_t * map = buf->bd_content_map;
   if (BUF_SEEMS_LEAF (buf, map))
     {
       tree->it_is_single_page = 1;
@@ -1210,7 +1210,7 @@ itc_reset (it_cursor_t * it)
       dp = tree->it_root;
       buf = tree->it_root_buf;
       /* if we are in the confirmed map of dp in tree and buf has this dp and this tree, then it is safe since this can only change in another thread holding this same map */
-      if (buf && buf->bd_page == dp && buf->bd_tree == tree 
+      if (buf && buf->bd_page == dp && buf->bd_tree == tree
 	  &&BUF_NONE_WAITING (buf))
 	{
 	  if (PA_READ == it->itc_dive_mode)
@@ -1337,7 +1337,7 @@ itc_set_parent_link (it_cursor_t * itc, dp_addr_t child_dp, dp_addr_t new_parent
     }
   if (buf->bd_being_read)
     {
-      /* this is rare but can happen if there is a reentry that needs to read the child page 
+      /* this is rare but can happen if there is a reentry that needs to read the child page
        * We must wait until the page really is in and then  be in map and set the parent.  Can't simply request access because this could deadlock with the reentered page wanting to access the parent which is all this time busy.  So this will be a busy wait here.  */
       TC (tc_dp_set_parent_being_read);
       ITC_LEAVE_MAPS (itc);
@@ -1348,7 +1348,7 @@ itc_set_parent_link (it_cursor_t * itc, dp_addr_t child_dp, dp_addr_t new_parent
       virtuoso_sleep (0, 1000);
       goto try_again;
     }
-  /* there is the  buffer, possibly occupied but since this is in the map, it is safe to set 
+  /* there is the  buffer, possibly occupied but since this is in the map, it is safe to set
    * the parent.i  It can only be read in up transit or delete while inside the map. */
   itc_delta_this_buffer (itc, buf, DELTA_STAY_INSIDE);
   rdbg_printf_2 (("	Parent of L=%d from L=%d to L=%d.\n",
@@ -1411,7 +1411,7 @@ itc_unregister_inner (it_cursor_t * itc, buffer_desc_t * buf, int is_transit)
   int ctr = 0;
   for (;;)
     {
-      if (!reg) 
+      if (!reg)
 	GPF_T1 ("cursor not registered on buffer in unregister");
       if (itc == reg)
 	{
@@ -1507,7 +1507,7 @@ itc_unregister_while_on_page (it_cursor_t * it_in, it_cursor_t * preserve_itc, b
     page_leave_outside_map (*preserve_buf);
     ITC_FAIL (reg_itc)
       {
-    buf = itc_set_by_placeholder (reg_itc, itc);
+	buf = itc_set_by_placeholder (reg_itc, itc);
       }
     ITC_FAILED
       {

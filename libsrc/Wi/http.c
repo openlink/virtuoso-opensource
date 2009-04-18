@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  HTTP access to Virtuoso
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 /* IvAn/VC6port/000725 Added to bypass compilation error */
@@ -294,20 +294,20 @@ static int http_acl_check_rate (ws_acl_t * elm, caddr_t name, int check_rate, in
       timeout_t tv;
 
       res = elm->ha_flag;
-      get_real_time (&tv); 
+      get_real_time (&tv);
       now = ((int64)tv.to_sec * 1000000) + (int64) tv.to_usec;
       /*now = get_msec_real_time ();*/
       loc_hash = elm->ha_hits;
-#ifdef DEBUG      
+#ifdef DEBUG
       if (!loc_hash)
 	GPF_T;
 #endif
       place = (acl_hit_t **) id_hash_get (loc_hash, (caddr_t)&name);
       if (place)
-	{ 
+	{
 	  float rate;
 	  float elapsed;
-	 
+
 	  hit = *place;
 
 	  elapsed = (float) (now - hit->ah_initial) / 1000000;
@@ -315,11 +315,11 @@ static int http_acl_check_rate (ws_acl_t * elm, caddr_t name, int check_rate, in
 	  rate = (float)((hit->ah_count + 1) / elapsed);
 	  hit->ah_avg = rate;
 
-	  if ((elapsed > 1) && rate > elm->ha_rate) 
+	  if ((elapsed > 1) && rate > elm->ha_rate)
 	    res = 1; /* deny */
 	  else if (elapsed > 86400) /* reset stats once per 24h, but only when not denied */
 	    memset (hit, 0, sizeof (acl_hit_t));
-#ifdef DEBUG 
+#ifdef DEBUG
 	  fprintf (stderr, "http acl rate-limit elapsed: %f, count: %ld, rate: %f, avg: %f, rc=%d\n", elapsed, hit->ah_count, rate, hit->ah_avg, res);
 #endif
 	}
@@ -1294,7 +1294,7 @@ ws_path_and_params (ws_connection_t * ws)
   ws_set_path_string (ws, is_dir);
 #ifdef VIRTUAL_DIR
   if (0 != strnicmp (ws->ws_path_string, "http://", 7))
-  ws_set_phy_path (ws, is_dir, NULL);
+    ws_set_phy_path (ws, is_dir, NULL);
   else /* raw proxy request */
     ws->ws_p_path_string = box_copy (ws->ws_path_string);
 #endif
@@ -1773,7 +1773,7 @@ static char *fmt1 =
   SES_PRINT (ws->ws_strses, tmp);
   dk_free_box (tmp);
   dks_esc_write (ws->ws_strses, message, strlen (message), ws->ws_charset, default_charset, DKS_ESC_PTEXT);
-  
+
   SES_PRINT (ws->ws_strses, "    URI  = '");
   dks_esc_write (ws->ws_strses, uri, strlen (uri), ws->ws_charset, default_charset, DKS_ESC_PTEXT);
   SES_PRINT (ws->ws_strses, "'\n");
@@ -2570,10 +2570,10 @@ error_end:
       ws->ws_try_pipeline = 0;
       ws_strses_reply (ws, NULL);
     }
- 
-  /* an initial lookup in FS directory would set method in error if it's not a POST, GET or HEAD 
+
+  /* an initial lookup in FS directory would set method in error if it's not a POST, GET or HEAD
      thus after we re-map, we need to set to unknown so DAV can process it
-   */ 
+   */
   if (WM_ERROR == ws->ws_method && IS_DAV_DOMAIN(ws, ""))
     ws->ws_method = WM_UNKNOWN;
   return retc;
@@ -2686,7 +2686,7 @@ error_end:
 #endif
 }
 
-static caddr_t 
+static caddr_t
 http_get_url_params (ws_connection_t * ws)
 {
   char *qmark_pos = strchr (ws->ws_req_line, '?');
@@ -2741,7 +2741,7 @@ static void http_get_def_page (caddr_t fpath, caddr_t *ts2, caddr_t all_str, cha
 
 /*##**********************************************************
 * This check if RDF data is asked and try to locate in the repository
-* 
+*
 *************************************************************/
 int http_check_rdf_accept = 1;
 
@@ -3639,7 +3639,7 @@ ws_serve_connection (ws_connection_t * ws)
   int try_pipeline = 0;
   dk_session_t * volatile ses = ws->ws_session;
 
-#ifdef _SSL  
+#ifdef _SSL
   if (ws->ws_ssl_ctx)
     {
       SSL_CTX * ssl_ctx = ws->ws_ssl_ctx;
@@ -3669,7 +3669,7 @@ ws_serve_connection (ws_connection_t * ws)
 	  tcpses_to_sslses (ses->dks_session, (void *)(new_ssl));
 	}
     }
-#endif  
+#endif
 
  next_input:
   ws->ws_cli->cli_http_ses = ws->ws_session;
@@ -3985,11 +3985,11 @@ ws_keep_alive_ready (dk_session_t * ses)
     }
 /*
      sometimes the select returns ses fd is ready for reading, but sequential read waits for input,
-     therefore this can't be done here as it would block all incoming connections. furthermore 
-     this should not be done if it is ssl connection as it will loose 1-st byte. 
-     anyway the ws_read_req follows, which will terminate request chain if connection is broken.  
+     therefore this can't be done here as it would block all incoming connections. furthermore
+     this should not be done if it is ssl connection as it will loose 1-st byte.
+     anyway the ws_read_req follows, which will terminate request chain if connection is broken.
 */
-#if 0  
+#if 0
   CATCH_READ_FAIL (ses)
     {
       session_buffered_read_char (ses);
@@ -4001,7 +4001,7 @@ ws_keep_alive_ready (dk_session_t * ses)
       return;
     }
   END_READ_FAIL (ses);
-#endif  
+#endif
   mutex_enter (ws_queue_mtx);
   remove_from_served_sessions (ses);
   DKS_CLEAR_DEFAULT_READ_READY_ACTION (ses);
@@ -4668,7 +4668,7 @@ bif_http_internal_redirect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
       ws->ws_p_path = ((NULL != parr) ? parr : (caddr_t *) list(0));
       ws->ws_proxy_request = (ws->ws_p_path_string ? (0 == strnicmp (ws->ws_p_path_string, "http://", 7)) : 0);
     }
-#endif  
+#endif
   if (BOX_ELEMENTS (args) > 2)
     new_url = bif_string_or_null_arg (qst, args, 2, "http_internal_redirect");
   if (!keep_lpath && NULL != new_url && NULL != ws->ws_lines && BOX_ELEMENTS (ws->ws_lines) > 0)
@@ -5805,12 +5805,12 @@ http_client_cache_hash (caddr_t head, caddr_t body)
   CATCH_WRITE_FAIL(ses)
     {
       if (head)
-	{	
+	{
 	  len = box_length (head);
 	  session_buffered_write (ses, head, len);
 	}
       if (body)
-	{	
+	{
 	  len = box_length (body);
 	  session_buffered_write (ses, body, len);
 	}
@@ -5838,21 +5838,21 @@ http_client_cache_get (query_instance_t * qi, caddr_t url, caddr_t header, caddr
   if (!qr)
     qr = sql_compile_static ("select HCC_HEADER, HCC_BODY from DB.DBA.SYS_HTTP_CLIENT_CACHE "
 	" where HCC_URI = ? and HCC_HASH = ?", qi->qi_client, &err, 0);
-  if (err) 
-    { 
-      log_error ("Error compiling http cache retrieval statement : %s: %s", 
-	  ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING]); 
-      dk_free_tree (err); 
+  if (err)
+    {
+      log_error ("Error compiling http cache retrieval statement : %s: %s",
+	  ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING]);
+      dk_free_tree (err);
       return NULL;
     }
   err = qr_rec_exec (qr, qi->qi_client, &lc, qi, NULL, 2,
       ":0", url, QRP_STR,
       ":1", http_client_cache_hash (header, body), QRP_RAW);
-  if (err) 
-    { 
-      log_error ("Error retrieving http client cache : %s: %s", 
-	  ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING]); 
-      dk_free_tree (err); 
+  if (err)
+    {
+      log_error ("Error retrieving http client cache : %s: %s",
+	  ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING]);
+      dk_free_tree (err);
     }
   else
     {
@@ -5900,12 +5900,12 @@ http_client_cache_register (query_instance_t * qi, caddr_t url, caddr_t header, 
   if (!qr)
     qr = sql_compile_static ("insert replacing DB.DBA.SYS_HTTP_CLIENT_CACHE (HCC_URI, HCC_HEADER, HCC_BODY, HCC_HASH) "
 	"values (?,?,?,?)", qi->qi_client, &err, 0);
-  if (err) 
-    { 
-      log_error ("Error compiling http cache register statement : %s: %s", 
-	  ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING]); 
-      dk_free_tree (err); 
-      err = NULL; 
+  if (err)
+    {
+      log_error ("Error compiling http cache register statement : %s: %s",
+	  ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING]);
+      dk_free_tree (err);
+      err = NULL;
       return;
     }
   err = qr_rec_exec (qr, qi->qi_client, NULL, qi, NULL, 4,
@@ -5914,12 +5914,12 @@ http_client_cache_register (query_instance_t * qi, caddr_t url, caddr_t header, 
       ":2", body, QRP_STR,
       ":3", http_client_cache_hash (header, req_body), QRP_RAW);
 
-  if (err) 
-    { 
-      log_error ("Error registering http client cache : %s: %s", 
-	  ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING]); 
-      dk_free_tree (err); 
-      err = NULL; 
+  if (err)
+    {
+      log_error ("Error registering http client cache : %s: %s",
+	  ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING]);
+      dk_free_tree (err);
+      err = NULL;
     }
 }
 
@@ -5957,7 +5957,7 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   char host[1000];
   long peer_max_timeout = 0;
 #endif
-  
+
   if (n_args > 2)
     method = bif_string_or_uname_arg (qst, args, 2, "http_get");
   if (n_args > 3)
@@ -5974,7 +5974,7 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   printf("\nhttp_get(\"%s\", ...)\n", uri);
 #endif
   if (NULL != (res = http_client_cache_get ((query_instance_t *)qst, uri, header, body, args, 1)))
-    return res;  
+    return res;
 
   IO_SECT (qst);
   if (!(http_pos = strstr (uri, "http://")))
@@ -6179,7 +6179,7 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  res = strses_string (out);
 	  dk_free_box (out);
 	}
-    } 
+    }
   http_client_cache_register ((query_instance_t *)qst, uri, header, body, head, res);
   if (to_free_head)
     dk_free_tree ((caddr_t) head);
@@ -6389,7 +6389,7 @@ bif_ses_read (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	session_buffered_write (out, buff, readed);
     }
   while (to_read > 0);
-err_end:      
+err_end:
   END_IO_SECT (err_ret);
   if (error)
     return dk_alloc_box (0, DV_DB_NULL);
@@ -7428,7 +7428,7 @@ https_cert_verify_callback (int ok, void *_ctx)
 	|| errnum == X509_V_ERR_CERT_UNTRUSTED
 #endif
 	|| errnum == X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE)
-      && verify == HTTPS_VERIFY_OPTIONAL_NO_CA ) 
+      && verify == HTTPS_VERIFY_OPTIONAL_NO_CA )
     {
       SSL_set_verify_result(ssl, X509_V_OK);
       ok = 1;
@@ -7535,7 +7535,7 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
 
   /* Initialize the parameters */
   len = BOX_ELEMENTS (https_opts);
-  if (len % 2) 
+  if (len % 2)
     {
       log_error ("HTTPS: Options must be an even length array.");
       goto err_exit;
@@ -7544,7 +7544,7 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
   for (i = 0; i < len; i += 2)
     {
       if (https_opts [i] && DV_STRINGP (https_opts [i]))
-	{ 
+	{
 	  if (!stricmp (https_opts [i], "https_cv") && DV_STRINGP (https_opts [i + 1])) /* CA file */
 	    https_cvfile = https_opts [i + 1];
 	  else if (!stricmp (https_opts [i], "https_cert") && DV_STRINGP (https_opts [i + 1])) /* x509 cert */
@@ -7578,7 +7578,7 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
 	}
     }
   if (https_set_certificate (ssl_ctx, cert, skey) <= 0)
-      goto err_exit;
+    goto err_exit;
 
   if (https_client_verify > 0)
     {
@@ -9284,7 +9284,7 @@ bif_http_recall_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   mutex_enter (thread_mtx);
   if (ses && ses->dks_n_threads > 0)
     {
-      ses->dks_waiting_http_recall_session = THREAD_CURRENT_THREAD; 
+      ses->dks_waiting_http_recall_session = THREAD_CURRENT_THREAD;
       sem = ses->dks_waiting_http_recall_session->thr_sem;
     }
   mutex_leave (thread_mtx);
@@ -9368,10 +9368,10 @@ box_tpcip_get_interfaces ()
 #if defined (__FreeBSD__) || defined (__APPLE__)
       ifrp = (struct ifreq *)((char *)&(ifrp->ifr_addr) + ifrp->ifr_addr.sa_len);
       len -= ifrp->ifr_addr.sa_len;
-#else      
+#else
       ifrp++;
       len -= sizeof (struct ifreq);
-#endif      
+#endif
     }
 #elif defined (SIO_GET_INTERFACE_LIST)
     {
@@ -9436,9 +9436,9 @@ http_init_part_one ()
   bif_define_typed ("dav_root", bif_dav_root, &bt_varchar);
   bif_define_typed ("http_path", bif_http_path, &bt_varchar);
   bif_define ("http_internal_redirect", bif_http_internal_redirect);
-#if 0  
+#if 0
   bif_define_typed ("http_get", bif_http_get, &bt_varchar);
-#endif  
+#endif
   bif_define_typed ("http_client_cache_enable", bif_http_client_cache_enable, &bt_varchar);
   bif_define_typed ("string_output", bif_string_output, &bt_varchar);
   bif_define_typed ("string_output_string", bif_string_output_string, &bt_varchar);
@@ -9590,7 +9590,7 @@ http_init_part_two ()
   dk_session_t *ftp_listen = NULL;
 #endif
 
-  if (lite_mode) 
+  if (lite_mode)
     return 1;
 
   ddl_std_proc (ws_def_expand_includes, 1);
@@ -9888,7 +9888,7 @@ http_init_part_two ()
 #endif
 
   if (CL_RUN_LOCAL == cl_run_local_only)
-  bpel_init();
+    bpel_init();
 
   /* last thing after server is up is to leave the bootstrap_cli trx */
   local_commit (bootstrap_cli);

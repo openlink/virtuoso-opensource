@@ -324,7 +324,7 @@ sparp_jso_push_deleted (sparp_t *sparp, ccaddr_t class_iri, ccaddr_t inst_iri)
   t_set_push (set_ptr, (caddr_t)inst_iri);
 }
 
-void 
+void
 ssg_qr_uses_jso (spar_sqlgen_t *ssg, ccaddr_t jso_inst, ccaddr_t jso_name)
 {
   comp_context_t *cc = ssg->ssg_sc->sc_cc;
@@ -1228,13 +1228,13 @@ void
 ssg_prin_id (spar_sqlgen_t *ssg, const char *name)
 {
 #ifdef DEBUG
-  if (NULL != strstr (name, "CRASH"))  
+  if (NULL != strstr (name, "CRASH"))
     ssg_puts ("!!!CRASH!!!");
 #endif
   if ('\"' == name[0])
     ssg_puts (name);
   else
-    {   
+    {
       ssg_putchar ('"');
       ssg_puts (name);
       ssg_putchar ('"');
@@ -1251,7 +1251,7 @@ ssg_prin_id_with_suffix (spar_sqlgen_t *ssg, const char *name, const char *suffi
   ssg_puts (tmp);
 #else
 #ifdef DEBUG
-  if (NULL != strstr (name, "CRASH"))  
+  if (NULL != strstr (name, "CRASH"))
     ssg_puts ("!!!CRASH!!!");
 #endif
   ssg_putchar ('"');
@@ -1619,7 +1619,7 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
   switch (SPART_TYPE (tree))
     {
     case BOP_NOT:
-      return 
+      return
         (SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL |
           (sparp_restr_bits_of_expn (sparp, tree->_.bin_exp.left) &
            SPART_VARR_NOT_NULL ) );
@@ -1628,7 +1628,7 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
     case BOP_SAME: case BOP_NSAME:
     case BOP_AND: case BOP_OR:
     case BOP_PLUS: case BOP_MINUS: case BOP_TIMES: case BOP_DIV: case BOP_MOD:
-      return 
+      return
         (SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL |
           (sparp_restr_bits_of_expn (sparp, tree->_.bin_exp.left) &
            sparp_restr_bits_of_expn (sparp, tree->_.bin_exp.right) &
@@ -2000,7 +2000,7 @@ ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit)
           return;
         }
       else
-        spar_sqlprint_error ("ssg_print_literal_as_long(): non-lit tree as argument");   
+        spar_sqlprint_error ("ssg_print_literal_as_long(): non-lit tree as argument");
     }
   else
     value = (caddr_t)lit;
@@ -2877,7 +2877,7 @@ ssg_print_bop_cmp_expn (spar_sqlgen_t *ssg, SPART *tree, const char *bool_op, co
 #endif
       return;
     }
-/* Plain use of cmp function */  
+/* Plain use of cmp function */
   if (top_filter_op)
     {
       ssg_puts ("(");
@@ -2992,11 +2992,11 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
                 spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)DATATYPE_L, t_list (1, arg2)) ),
               spartlist (ssg->ssg_sparp, 3, BOP_AND,
                 spartlist (ssg->ssg_sparp, 3, BOP_NOT,
-                  spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)BOUND_L, t_list (1, 
+                  spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)BOUND_L, t_list (1,
                       spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)DATATYPE_L, t_list (1, arg1)) ) ),
                   NULL ),
                 spartlist (ssg->ssg_sparp, 3, BOP_NOT,
-                  spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)BOUND_L, t_list (1, 
+                  spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)BOUND_L, t_list (1,
                       spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)DATATYPE_L, t_list (1, arg2)) ) ),
                   NULL ) ) ),
             spartlist (ssg->ssg_sparp, 3, BOP_OR,
@@ -3005,11 +3005,11 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
                 spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)LANG_L, t_list (1, arg2)) ),
               spartlist (ssg->ssg_sparp, 3, BOP_AND,
                 spartlist (ssg->ssg_sparp, 3, BOP_NOT,
-                  spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)BOUND_L, t_list (1, 
+                  spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)BOUND_L, t_list (1,
                       spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)LANG_L, t_list (1, arg1)) ) ),
                   NULL ),
                 spartlist (ssg->ssg_sparp, 3, BOP_NOT,
-                  spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)BOUND_L, t_list (1, 
+                  spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)BOUND_L, t_list (1,
                       spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)LANG_L, t_list (1, arg2)) ) ),
                   NULL ) ) ) ) );
 
@@ -3030,7 +3030,7 @@ expanded_sameterm_ready:
         {
           ssg_puts (" (cast ("); ssg_print_scalar_expn (ssg, arg1, SSG_VALMODE_SQLVAL, NULL_ASNAME);
           ssg_puts (" as varchar) like cast ("); ssg_print_scalar_expn (ssg, tree->_.builtin.args[1], SSG_VALMODE_SQLVAL, NULL_ASNAME);
-          ssg_puts (" as varchar))"); 
+          ssg_puts (" as varchar))");
         }
       return;
     case IN_L:
@@ -3084,7 +3084,7 @@ expanded_sameterm_ready:
 IN_cant_use_SQLVAL: ;
                 }
             }
-          else 
+          else
             op_fmt = SSG_VALMODE_LONG;
         }
 IN_op_fnt_found:
@@ -3103,7 +3103,7 @@ IN_op_fnt_found:
       DO_BOX_FAST (SPART *, argN, argctr, tree->_.builtin.args)
         {
           switch (argctr)
-            { 
+            {
             case 0: ssg_puts (top_filter_op ? " (" : " position ("); break;
             case 1: ssg_puts (top_filter_op ? " in (" : ", vector ("); break;
             default: ssg_puts (" ,");
@@ -3357,7 +3357,7 @@ IN_op_fnt_found:
         }
       return;
     default:
-      spar_sqlprint_error ("ssg_" "print_builtin_expn(): unsupported builtin");  
+      spar_sqlprint_error ("ssg_" "print_builtin_expn(): unsupported builtin");
       return;
     }
 }
@@ -3518,7 +3518,7 @@ ssg_print_uri_list (spar_sqlgen_t *ssg, dk_set_t uri_precodes, ssg_valmode_t nee
         ssg_puts (", ");
       ssg_print_scalar_expn (ssg, expn, needed, NULL_ASNAME);
     }
-  END_DO_SET ()  
+  END_DO_SET ()
 }
 
 void
@@ -3647,7 +3647,7 @@ ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t n
           ssg_print_scalar_expn (ssg, tree, SSG_VALMODE_BOOL, asname);
           return;
         }
-      native = SSG_VALMODE_LONG; 
+      native = SSG_VALMODE_LONG;
     }
   if (
     ((SSG_VALMODE_LONG == native) && (SSG_VALMODE_SQLVAL == needed)) ||
@@ -4556,7 +4556,7 @@ ssg_print_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *fi
         ptrlong tree_restr = fld_tree->_.var.rvr.rvrRestrictions;
         if (SPARP_ASSIGNED_EXTERNALLY (tree_restr))
           return; /* Because this means that equiv has equality on the field that is to be printed later; so there's nothing to do right here */
-        if (SPART_VARR_CONFLICT & tree_restr) 
+        if (SPART_VARR_CONFLICT & tree_restr)
           {
             ssg_print_where_or_and (ssg, "conflict! The query remained not entirely optimized");
             ssg_puts (" 0");
@@ -5071,7 +5071,7 @@ print_cross_equalities:
           for (col_ctr = 0; col_ctr < col_count; col_ctr++)
             {
               const char *eq_idx_asname;
-              if (!strcmp (var->_.var.tabid, var2->_.var.tabid) && 
+              if (!strcmp (var->_.var.tabid, var2->_.var.tabid) &&
                 (IS_BOX_POINTER (common_native) || (SSG_VALMODE_AUTO == common_native)) )
                 {
                   if (NULL == qmv2)
@@ -6262,7 +6262,7 @@ ssg_print_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, int tree_coun
             ssg->ssg_indent--;
             ssg_puts (") AS ");
             ssg_prin_id (ssg, tree->_.gp.selid);
-          } 
+          }
         break;
       }
     default: spar_sqlprint_error ("ssg_" "print_table_exp(): unsupported type of tree");
@@ -6822,7 +6822,7 @@ ssg_make_rb_complete_wrapped (spar_sqlgen_t *ssg)
   ssg_make_sql_query_text (ssg);
   ssg->ssg_indent--;
   ssg_puts (") AS ");
-  ssg_prin_id (ssg, rbc_selid);  
+  ssg_prin_id (ssg, rbc_selid);
 }
 
 void
@@ -6928,7 +6928,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
         }
       else if (SSG_RETVAL_DIST_SER_LONG & top_retval_flags)
         {
-          ssg_puts ("SELECT "); 
+          ssg_puts ("SELECT ");
           ssg_print_retval_cols (ssg, tree, retvals, top_selid, (const char *)((ptrlong)DISTINCT_L), 1);
           ssg_puts (" FROM (");
           ssg->ssg_indent += 1;

@@ -1,29 +1,28 @@
-
 /*
  *  space.c
  *
  *  $Id$
  *
  *  Delta spaces
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "wi.h"
@@ -58,7 +57,7 @@ it_cache_check (index_tree_t * it, int mode)
       ptrlong dp;
       buffer_desc_t * buf;
       mutex_enter (&itm->itm_mtx);
-	dk_hash_iterator (&hit, &itm->itm_dp_to_buf);
+      dk_hash_iterator (&hit, &itm->itm_dp_to_buf);
       while (dk_hit_next (&hit, (void**) &dp, (void**) &buf))
 	{
 	  if (!buf->bd_buffer)
@@ -134,7 +133,7 @@ it_cache_check (index_tree_t * it, int mode)
 	  mutex_leave (&itm->itm_mtx);
 	  continue; /* loop again, this time gpf on first error. */
 	}
-	mutex_leave (&itm->itm_mtx);
+      mutex_leave (&itm->itm_mtx);
     }
 }
 
@@ -221,7 +220,7 @@ it_new_page (index_tree_t * it, dp_addr_t addr, int type, int in_pmap,
 	    }
 	}
       else
-      return NULL;
+	return NULL;
     }
 
   if (DPF_INDEX == type)

@@ -84,9 +84,9 @@ typedef struct spar_lexem_s {
   ptrlong sparl_lineno;
   ptrlong sparl_depth;
   caddr_t sparl_raw_text;
-#ifdef SPARQL_DEBUG  
+#ifdef SPARQL_DEBUG
   ptrlong sparl_state;
-#endif  
+#endif
 } spar_lexem_t;
 
 typedef struct spar_lexbmk_s {
@@ -208,7 +208,7 @@ typedef struct sparp_env_s
     dk_set_t		spare_global_var_names;		/*!< List of all distinct global names used in the query, to know what should be passed to 'rdf grab' procedure view */
     int			spare_globals_are_numbered;	/*!< Flags if all global parameters are translated into ':N' because they're passed via 'params' argument of exec() inside a procedure view, */
     int			spare_global_num_offset;	/*!< If spare_globals_are_numbered then numbers of 'app-specific' global parameters starts from spare_global_num_offset up, some number of first params are system-specific. */
-    dk_set_t		spare_propvar_sets;		/*!< Stack of sets of propvars that should form triples */ 
+    dk_set_t		spare_propvar_sets;		/*!< Stack of sets of propvars that should form triples */
     dk_set_t		spare_acc_qm_sqls;		/*!< Backstack of first-level function calls that change quad maps, items are SPART * with SPAR_QM_SQL_FUNCALL type */
     caddr_t		spare_qm_default_table;		/*!< The name of default table (when a single table name is used without an alias for everything. */
     caddr_t		spare_qm_current_table_alias;	/*!< The last alias definition, used for processing of 'FROM table AS alias TEXT LITERAL ...' */

@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  sql expression dependencies and code layout
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include <string.h>
@@ -59,7 +59,7 @@ sql_tree_hash_1 (ST * st)
     {
     case DV_LONG_INT:
       return (uint32)(ptrlong) unbox ((caddr_t)st);
-    case DV_STRING: 
+    case DV_STRING:
     case DV_C_STRING:
     case DV_SYMBOL:
     case DV_UNAME:
@@ -86,7 +86,7 @@ sql_tree_hash_1 (ST * st)
 	first = st->type;
 	if (first < 10000)
 	  hash = first;
-	else 
+	else
 	  hash = sql_tree_hash_1 ((ST*)first);
 	if (SELECT_STMT == first && len > 4 && DV_ARRAY_OF_POINTER == DV_TYPE_OF (st->_.select_stmt.selection))
 	  {
@@ -143,18 +143,18 @@ sqlo_df_size (int type)
   size_t len = (size_t) &df_elt_head;
   switch (type)
     {
-      case DFE_CONST: 
+      case DFE_CONST:
 	  break;
       case DFE_COLUMN:
 	  len += sizeof (df_elt_head.col);
 	  break;
       case DFE_BOP:
-      case DFE_BOP_PRED: 
+      case DFE_BOP_PRED:
 	  len += sizeof (df_elt_head.bin);
 	  break;
       case DFE_CALL:
 	  len += sizeof (df_elt_head.call);
-	  break;  	  
+	  break;
       default:
 	  len = sizeof (df_elt_t);
     }
@@ -168,7 +168,7 @@ sqlo_new_dfe (sqlo_t * so, int type, ST * tree)
   TNEW (df_elt_t, dfe);
   memset (dfe, 0, sizeof (df_elt_t));
 #else  /* dfe_size */
-  df_elt_t * dfe; 
+  df_elt_t * dfe;
   size_t dfe_len = sqlo_df_size (type);
 
   dfe = (df_elt_t *) t_alloc (dfe_len);
@@ -379,7 +379,7 @@ sqlo_const_cond (sqlo_t * so, df_elt_t * dfe)
 	  if (dfe->_.bin.left == dfe->_.bin.right)
 	    return DFE_TRUE;
 	  return dfe;
-	  
+
 	case BOP_NULL:
 	  op = dfe->_.bin.left;
 	  if (DFE_CONST == op->dfe_type)
@@ -504,10 +504,10 @@ sqlo_df (sqlo_t * so, ST * tree)
   SQLO_MP_SAMPLE;
   if (sqlo_max_mp_size > 0 && (THR_TMP_POOL)->mp_bytes > sqlo_max_mp_size)
     {
-      sqlc_error (so->so_sc->sc_cc, "42000", 
-	  "The memory pool size %d reached the limit %d bytes, try to increase the MaxMemPoolSize ini setting", 
+      sqlc_error (so->so_sc->sc_cc, "42000",
+	  "The memory pool size %d reached the limit %d bytes, try to increase the MaxMemPoolSize ini setting",
 	  (THR_TMP_POOL)->mp_bytes, sqlo_max_mp_size);
-    } 
+    }
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
     {
       dfe = sqlo_new_dfe (so, DFE_CONST, tree);
@@ -1752,7 +1752,7 @@ sqlo_place_exp (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 	      placed = placed->dfe_prev;
 	  }
 	else if (!stricmp (dfe->dfe_tree->_.call.name, GROUPING_FUNC))
-	  {
+  {
 	    int cond = so->so_place_code_forr_cond;
             so->so_place_code_forr_cond = 1;
 	    placed = dfe_latest (so, n_args, args, 1);
@@ -1986,7 +1986,7 @@ sqlo_import_preds (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * dt_dfe, dk_set_t p
 	  if (DFE_TRUE == new_dfe)
 	    continue;
 	  if (DFE_FALSE == new_dfe)
-	    new_dfe = sqlo_wrap_dfe_true_or_false (so, new_dfe); 
+	    new_dfe = sqlo_wrap_dfe_true_or_false (so, new_dfe);
 	  if (DFE_DT == new_dfe->dfe_type || DFE_VALUE_SUBQ == new_dfe->dfe_type)
 	    new_dfe->dfe_type = DFE_EXISTS;
 	  if (new_dfe == pred)
@@ -2361,7 +2361,7 @@ sqlo_trans_dt_1_way (sqlo_t * so, df_elt_t * dfe, dk_set_t preds, ptrlong * in_p
 }
 
 
-int 
+int
 sqlo_trans_direction (df_elt_t * gen1, df_elt_t * gen2)
 {
   float c1 = gen1->dfe_unit + gen1->dfe_unit * gen1->dfe_arity;
@@ -2583,7 +2583,7 @@ sqlo_not_eq_with_any (sqlo_t * so, dk_set_t args, df_elt_t *right)
     return 1;
   DO_SET (df_elt_t *, other, &args)
     {
-      if (DFE_COLUMN == other->dfe_type 
+      if (DFE_COLUMN == other->dfe_type
 	  && sqlo_is_col_eq  (so->so_this_dt, other, right))
 	return 0;
     }
@@ -2704,7 +2704,7 @@ sqlo_in_list (df_elt_t * pred, df_elt_t *tb_dfe, caddr_t name)
     0 == stricmp (pred->_.bin.right->_.call.func_name, "one_of_these") )
     {
       df_elt_t ** args = pred->_.bin.right->_.call.args;
-      if (args[0] && DFE_COLUMN == args[0]->dfe_type  
+      if (args[0] && DFE_COLUMN == args[0]->dfe_type
 	  && (!tb_dfe || 0 == stricmp (args[0]->dfe_tree->_.col_ref.prefix, tb_dfe->_.table.ot->ot_new_prefix))
 	  && (!name || 0 == stricmp (args[0]->dfe_tree->_.col_ref.name, name)))
 	{
@@ -2727,7 +2727,7 @@ sqlo_in_list (df_elt_t * pred, df_elt_t *tb_dfe, caddr_t name)
 }
 
 
-dbe_column_t * 
+dbe_column_t *
 cp_left_col (df_elt_t * cp)
 {
   df_elt_t ** in_list;
@@ -2952,7 +2952,7 @@ sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
     {
       sqlo_place_inx_int_join  (so, tb_dfe, group, after_preds);
     }
-  else if (!opt_inx_name && !best_unq && !tb_dfe->_.table.is_text_order 
+  else if (!opt_inx_name && !best_unq && !tb_dfe->_.table.is_text_order
 	   && HR_FILL != tb_dfe->_.table.hash_role)
     {
       float best_cost = best_ic.ic_unit;
@@ -3103,7 +3103,7 @@ sqlo_make_inv_pred (sqlo_t * so, sinv_map_t * map, df_elt_t * left, df_elt_t * r
 int
 sqlo_col_inverse  (sqlo_t *so, df_elt_t * tb_dfe, df_elt_t * pred, dk_set_t * col_preds)
 {
-  /* if pred is f (c1,...cn) = exp independent of tb_dfe and inverse of f exists and c1...cn are cols of tb_dfe 
+  /* if pred is f (c1,...cn) = exp independent of tb_dfe and inverse of f exists and c1...cn are cols of tb_dfe
   * then generate AND of inverses of f app,lied to exp, equated to each of c1...cn */
   sinv_map_t * map;
   if (BOP_EQ != pred->_.bin.op)
@@ -3175,7 +3175,7 @@ sqlo_like_range (sqlo_t *so, df_elt_t * tb_dfe, df_elt_t * pred, dk_set_t * col_
     return;
   if (DFE_CONST == pred->_.bin.right->dfe_type
       && DV_STRINGP (pred->_.bin.right->dfe_tree)
-      && strchr ("_?*%[", ((char*)pred->_.bin.right->dfe_tree)[0])) 
+      && strchr ("_?*%[", ((char*)pred->_.bin.right->dfe_tree)[0]))
     return;
   DO_SET (dbe_key_t *, key, &tb->tb_keys)
     {
@@ -3196,7 +3196,7 @@ sqlo_like_range (sqlo_t *so, df_elt_t * tb_dfe, df_elt_t * pred, dk_set_t * col_
   t_set_push (col_preds, (void*) sqlo_df (so, tree));
 }
 
-void 
+void
 sqlo_in_place_in_pred (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t *col_preds, dk_set_t *after_preds)
 {
   dbe_key_t * key = tb_dfe->_.table.key;
@@ -4380,7 +4380,7 @@ sqt_types_set (sql_type_t *left, sql_type_t *right)
 }
 
 
-void 
+void
 sqlo_hash_filler (sqlo_t * so, df_elt_t * fill_dfe, dk_set_t preds, float * fill_unit, float * fill_arity, float * ov)
 {
   fill_dfe->_.table.is_unique = 0; /* the filler is not unique even if the ref is */
@@ -4401,7 +4401,7 @@ sqlo_hash_filler (sqlo_t * so, df_elt_t * fill_dfe, dk_set_t preds, float * fill
 int enable_hash_fill_preds = 1;
 
 
-void 
+void
 sqlo_best_hash_filler (sqlo_t * so, df_elt_t * fill_dfe, int remote, dk_set_t * org_preds, dk_set_t * post_preds, float * fill_unit, float * fill_arity, float * ov)
 {
   float best, ov1 = 0, ov2 = 0;
@@ -4441,7 +4441,7 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
   dk_set_t org_preds = NULL, post_preds = NULL;
   int mode, has_non_inv_key = 0, dt_mode;
   op_table_t * ot = dfe->_.table.ot;
-  if (DFE_TABLE != dfe->dfe_type) 
+  if (DFE_TABLE != dfe->dfe_type)
     return 0;
   if (ot && ot->ot_table && ot->ot_table->tb_name && 0 == stricmp (ot->ot_table->tb_name, "DB.DBA.RDF_QUAD"))
     return 0;
@@ -4659,7 +4659,7 @@ sqlo_try_in_loop (sqlo_t *so, op_table_t * ot, df_elt_t * tb_dfe, df_elt_t ** su
     return; /* if not a table or a table in a pss through dt.  For pass through ,let the remote decide */
   DO_SET (df_elt_t *, pred, &tb_dfe->_.table.all_preds)
     {
-      if (DFE_EXISTS == pred->dfe_type 
+      if (DFE_EXISTS == pred->dfe_type
 	  && 1 == dk_set_length (pred->dfe_tables ) && tb_dfe->_.table.ot == (op_table_t *)pred->dfe_tables->data
 	  && (pred->dfe_locus != tb_dfe->dfe_locus || (LOC_LOCAL == tb_dfe->dfe_locus && LOC_LOCAL == pred->dfe_locus ))
 	  && SUBQ_NO_LOOP != (int)(ptrlong) sqlo_opt_value (pred->_.sub.ot->ot_opts, OPT_SUBQ_LOOP))
@@ -4677,7 +4677,7 @@ sqlo_try_in_loop (sqlo_t *so, op_table_t * ot, df_elt_t * tb_dfe, df_elt_t ** su
 	      float in_loop_score;
 	      dk_set_t old_ot_preds;
 	      /* we try making the existence into an outer loop */
-	      copy->_.select_stmt.selection = 
+	      copy->_.select_stmt.selection =
 		t_list (1, t_list (5, BOP_AS, t_box_copy_tree ((caddr_t) subq_out_col),
 				   NULL, subq_out_col->_.col_ref.name, NULL));
 	      if (!copy->_.select_stmt.table_exp->_.table_exp.group_by)
@@ -4698,8 +4698,8 @@ sqlo_try_in_loop (sqlo_t *so, op_table_t * ot, df_elt_t * tb_dfe, df_elt_t ** su
 	      /* remove the subq pred and put the join equality there */
 	      old_ot_preds = t_set_copy (ot->ot_preds);
 	      t_set_delete (&ot->ot_preds, (void*) pred);
-	      subq_join = sqlo_df (so, (ST*) t_list (5, BOP_EQ, 
-						     t_list (3, COL_DOTTED, subq_prefix, subq_out_col->_.col_ref.name), 
+	      subq_join = sqlo_df (so, (ST*) t_list (5, BOP_EQ,
+						     t_list (3, COL_DOTTED, subq_prefix, subq_out_col->_.col_ref.name),
 						     t_list (3, COL_DOTTED, tb_dfe->_.table.ot->ot_new_prefix, joined_col_name),
 						     NULL, NULL));
 	      t_set_push (&ot->ot_preds, (void*) subq_join);
@@ -5083,7 +5083,7 @@ dfe_join_score (sqlo_t * so, op_table_t * ot,  df_elt_t *tb_dfe)
       if (dk_set_length (pred->dfe_tables) == 1
 	  && tb_dfe->_.table.ot == (op_table_t *) pred->dfe_tables->data)
 	{
-	score += 2;
+	  score += 2;
 	  if (DFE_TEXT_PRED == pred->dfe_type)
 	    score += 5;
 	}
@@ -5194,7 +5194,7 @@ sqlo_new_leaves (sqlo_t * so, op_table_t * ot, dk_set_t * all_leaves, dk_set_t *
 }
 
 
-void 
+void
 sqlo_restore_leaves (sqlo_t * so, dk_set_t new_leaves)
 {
   /* in the process of unplacing, the leaves stop being leaves */
@@ -5266,9 +5266,9 @@ sqlo_outer_placeable (sqlo_t * so, op_table_t * ot, df_elt_t * dfe)
   /* if the items needed to place join cond are in, the outer can go. */
   dk_set_t join_preds;
   int is_placed = 1, old = dfe->dfe_is_placed;
-  int is_outer = DFE_TABLE == dfe->dfe_type ? dfe->_.table.ot->ot_is_outer 
+  int is_outer = DFE_TABLE == dfe->dfe_type ? dfe->_.table.ot->ot_is_outer
     : dfe->_.sub.ot->ot_is_outer;
-  join_preds = DFE_TABLE == dfe->dfe_type ? dfe->_.table.ot->ot_join_preds 
+  join_preds = DFE_TABLE == dfe->dfe_type ? dfe->_.table.ot->ot_join_preds
     : dfe->_.sub.ot->ot_join_preds;
   if (!is_outer && !join_preds)
     return 1;
@@ -5372,7 +5372,7 @@ sqlo_layout_sort_tables (sqlo_t *so, op_table_t * ot, dk_set_t from_dfes, dk_set
     {
     if (!so->so_best)
       sqlc_new_error (so->so_sc->sc_cc, "37000", "TR...", "Query contains a transitive derived table but neither end of it is bound by equality to other columns or parameters");
-    else 
+    else
       return SQLO_BACKTRACK;
     }
   if (!res || !res->next)
@@ -5407,7 +5407,7 @@ ot_print_unplaced (op_table_t * ot)
 
 
 
-void 
+void
 sqlo_untry (sqlo_t * so, df_elt_t * dfe, df_elt_t * in_loop_dfe)
 {
   so->so_gen_pt = dfe->dfe_prev;
@@ -5419,7 +5419,7 @@ sqlo_untry (sqlo_t * so, df_elt_t * dfe, df_elt_t * in_loop_dfe)
     }
 }
 
-void 
+void
 sqlo_try (sqlo_t * so, op_table_t * ot, dk_set_t dfes, df_elt_t ** in_loop_ret, float * score_ret)
 {
   int score_set = 0;
@@ -5498,20 +5498,20 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
     sqlc_error (so->so_sc->sc_cc, "42000", "Stack Overflow");
   if (DK_MEM_RESERVE)
     sqlc_error (so->so_sc->sc_cc, "42000", "Out of memory");
-  SQLO_MP_SAMPLE;      
+  SQLO_MP_SAMPLE;
   if (sqlo_max_mp_size > 0 && (THR_TMP_POOL)->mp_bytes > sqlo_max_mp_size)
     {
       if (so->so_best) /* log a error */
 	{
-	  log_error ("The memory pool size %d reached the limit %d bytes, using the last best score.", 
+	  log_error ("The memory pool size %d reached the limit %d bytes, using the last best score.",
 	      (THR_TMP_POOL)->mp_bytes, sqlo_max_mp_size);
 	  return;
 	}
       else
-	sqlc_error (so->so_sc->sc_cc, "42000", 
-	    "The memory pool size %d reached the limit %d bytes, try to increase the MaxMemPoolSize ini setting.", 
+	sqlc_error (so->so_sc->sc_cc, "42000",
+	    "The memory pool size %d reached the limit %d bytes, try to increase the MaxMemPoolSize ini setting.",
 	    (THR_TMP_POOL)->mp_bytes, sqlo_max_mp_size);
-    } 
+    }
   sort_set = sqlo_layout_sort_tables (so, ot, ot->ot_from_dfes, &new_leaves);
   if (SQLO_BACKTRACK == sort_set)
     return;
@@ -5724,7 +5724,7 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 	    }
 	}
     }
-  else 
+  else
     sqlo_restore_leaves (so, new_leaves);
 }
 
@@ -5766,8 +5766,8 @@ sqlo_layout (sqlo_t * so, op_table_t * ot, int is_top, df_elt_t * super)
   if (SQLO_LAY_EXISTS == is_top
       && !is_in_pass_through)
     {
-      /* we do a subq and the whole top query is not pass through. 
-       * if super is remote and the subq fits in same loc, pass through into the same loc as its super 
+      /* we do a subq and the whole top query is not pass through.
+       * if super is remote and the subq fits in same loc, pass through into the same loc as its super
        * if the super is local or another vdb place, then do not apply pass through to the subq so as to allow virt side hash join etc. */
       locus_t * suggested_locus = sqlo_dt_locus (so, ot, super ? super->dfe_locus : LOC_LOCAL);
       if (suggested_locus == super->dfe_locus && LOC_LOCAL != super->dfe_locus)
@@ -6226,7 +6226,7 @@ sqlp_tree_has_fun_ref (ST *tree)
   return res;
 }
 
-static ST* 
+static ST*
 sqlp_collect_from_pkeys (sqlo_t * so, ST* tree)
 {
   int inx;
@@ -6246,15 +6246,15 @@ sqlp_collect_from_pkeys (sqlo_t * so, ST* tree)
 	tb = tb->_.table_ref.table;
       if (!ST_P (tb, TABLE_DOTTED))
 	return NULL;
-      
+
       tb_found = sch_name_to_table (so->so_sc->sc_cc->cc_schema, tb->_.table.name);
       view = (ST*) sch_view_def (so->so_sc->sc_cc->cc_schema, tb_found->tb_name);
-      
+
       if (view)
 	return NULL;
 
-      for (inx2 = 0, ptr = tb_found->tb_primary_key->key_parts; 
-	  inx2 < tb_found->tb_primary_key->key_n_significant; 
+      for (inx2 = 0, ptr = tb_found->tb_primary_key->key_parts;
+	  inx2 < tb_found->tb_primary_key->key_n_significant;
 	  inx2++, ptr = tb_found->tb_primary_key->key_parts->next)
 	{
 	  dbe_column_t * col = (dbe_column_t *) ptr->data;
@@ -6266,13 +6266,13 @@ sqlp_collect_from_pkeys (sqlo_t * so, ST* tree)
 	  END_DO_SET();
 	  t_set_push (&pk_set, t_sym_string (col->col_name));
 	}
-      
+
     }
   END_DO_BOX;
   return (ST *) t_list_to_array (dk_set_nreverse (pk_set));
 }
 
-void 
+void
 sqlo_unor_replace_col_refs (sqlo_t *so, ST ** orig_sel, ST * new_sel, ST * left)
 {
   int inx;
@@ -6284,12 +6284,12 @@ sqlo_unor_replace_col_refs (sqlo_t *so, ST ** orig_sel, ST * new_sel, ST * left)
       DO_BOX (ST *, elt, inx, left_sel)
 	{
 	  if (ST_P (elt, COL_DOTTED))
-	    { 
+	    {
 	      if (!(*orig_sel)->_.col_ref.prefix)
 		SQL_GPF_T (so->so_sc->sc_cc);
 	      if (!elt->_.col_ref.prefix)
 		SQL_GPF_T (so->so_sc->sc_cc);
-	      
+
 	      if (!CASEMODESTRCMP ((*orig_sel)->_.col_ref.name, elt->_.col_ref.name)
 		  && !CASEMODESTRCMP ((*orig_sel)->_.col_ref.prefix, elt->_.col_ref.prefix))
 		{
@@ -6313,7 +6313,7 @@ sqlo_unor_replace_col_refs (sqlo_t *so, ST ** orig_sel, ST * new_sel, ST * left)
 	sqlo_unor_replace_col_refs (so, &(((ST **)(*orig_sel))[inx]), new_sel, left);
     }
 }
-    
+
 static int
 sqlp_convert_or_to_union (sqlo_t * so, ST **ptree)
 {
@@ -6335,7 +6335,7 @@ sqlp_convert_or_to_union (sqlo_t * so, ST **ptree)
 	return 0;
 
       tree->_.select_stmt.selection = (caddr_t *) sqlp_stars (
-	        sqlp_wrapper_sqlxml ((ST **) t_listst (1, t_listst (3, COL_DOTTED, (long) 0, STAR))), 
+	        sqlp_wrapper_sqlxml ((ST **) t_listst (1, t_listst (3, COL_DOTTED, (long) 0, STAR))),
 	  	tree->_.select_stmt.table_exp->_.table_exp.from);
 
       sqlc_make_or_list (where, &or_list);
@@ -6355,7 +6355,7 @@ sqlp_convert_or_to_union (sqlo_t * so, ST **ptree)
       END_DO_SET ();
       new_tree = sqlp_view_def (NULL, new_tree, 1);
       new_tree = sqlc_union_dt_wrap (new_tree);
-      sqlo_unor_replace_col_refs (so, &orig_sel, (ST *)new_tree->_.select_stmt.selection, sqlp_union_tree_select (tree)); 
+      sqlo_unor_replace_col_refs (so, &orig_sel, (ST *)new_tree->_.select_stmt.selection, sqlp_union_tree_select (tree));
       new_tree->_.select_stmt.selection = (caddr_t *) orig_sel;
       *ptree = new_tree;
       return 1;
@@ -6573,11 +6573,11 @@ sqlo_top_select (sql_comp_t * sc, ST ** ptree)
       dfe = sqlo_top_1 (so, sc, ptree);
       sqlg_top (so, dfe);
       SQLO_MP_SAMPLE;
-#ifdef noDBG_SQLO_MP 
+#ifdef noDBG_SQLO_MP
       if (virtuoso_server_initialized)
-	fprintf (stderr, "sqlo_top_select %s %d mp_bytes=%d, max=%d\n", __FILE__, __LINE__, 
+	fprintf (stderr, "sqlo_top_select %s %d mp_bytes=%d, max=%d\n", __FILE__, __LINE__,
 	    (THR_TMP_POOL)->mp_bytes, sqlo_pick_mp_size);
-#endif      
+#endif
       so->so_copy_root = dfe;
     }
   THROW_CODE

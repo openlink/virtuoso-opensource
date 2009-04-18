@@ -2,25 +2,25 @@
  *  blobio.h
  *
  *  $Id$
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #ifndef _BLOBIO_H
@@ -48,7 +48,7 @@ typedef unsigned char wblob_state_t;
 struct blob_handle_s
   {
     dp_addr_t bh_page;		/* if blob is on disk as chained pages */
-    dp_addr_t bh_current_page;	/* Keep track of position over SQLGetData calls */
+    dp_addr_t 	bh_current_page;	/* Keep track of position over SQLGetData calls */
     dp_addr_t 	bh_dir_page;	/* points at first directory page */
     int32	bh_position;		/* -- */ /* point on page or string */
     short	bh_frag_no;
@@ -63,7 +63,7 @@ struct blob_handle_s
     char	bh_all_received;	/* true when client has sent end mark */
     char	bh_send_as_bh; /*do not inline as string over serialization, use for blob req in cluster */
     uint32	bh_bytes_coming;	/* byte count being sent by client */
-    long bh_param_index;	/* Use this index when asking from client */
+    long	bh_param_index;	/* Use this index when asking from client */
     dp_addr_t *bh_pages;	/* a contiguous array of pages IDs, allocated as a DV_CUSTOM. */
     struct index_tree_s *	bh_it;
     uint32		bh_key_id;

@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  sql cost functions
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "sqlnode.h"
@@ -605,11 +605,11 @@ sqlo_eval_text_count (dbe_table_t * tb, caddr_t str)
       ret = lc_ret (lc);
       if (DV_STRINGP (ret))
 	ddl_std_proc (ret, 0);
-      else 
+      else
 	goto err;
       lc_free (lc);
     }
-  err = qr_rec_exec (call, cli, &lc, CALLER_LOCAL, NULL, 2, 
+  err = qr_rec_exec (call, cli, &lc, CALLER_LOCAL, NULL, 2,
 		   ":0", cn, QRP_STR,
 		   ":1", str, QRP_STR);
   if (err)
@@ -618,8 +618,8 @@ sqlo_eval_text_count (dbe_table_t * tb, caddr_t str)
   lc_free (lc);
   cli->cli_user = usr;
   cli->cli_anytime_started = at_start;
-  if (entered) 
-    { 
+  if (entered)
+    {
       IN_TXN;
       lt_leave (lt);
       LEAVE_TXN;
@@ -630,7 +630,7 @@ sqlo_eval_text_count (dbe_table_t * tb, caddr_t str)
   cli->cli_anytime_started = at_start;
   log_error ("compiler text card estimate got error %s %s, assuming unknown count", !err ? "" : ERR_STATE (err), !err ? "no message:" : ERR_MESSAGE (err));
   if (entered)
-    { 
+    {
       IN_TXN;
       lt_leave (lt);
       LEAVE_TXN;
@@ -657,7 +657,7 @@ sqlo_text_count (dbe_table_t * tb, caddr_t  str)
       return place->tc_estimate;
     }
   mutex_leave (text_count_mtx);
-  
+
   ct = sqlo_eval_text_count (tb, str);
   if (-1 == ct)
     return -1;
@@ -783,18 +783,18 @@ dfe_text_cost (df_elt_t * dfe, float *u1, float * a1)
     {
       if (text_known)
 	text_selectivity = text_selectivity / (ot_tbl_size | 1);
-      else 
+      else
 	text_selectivity = 0.001;
       n_text_hits = ot_tbl_size * text_selectivity;
       text_key_cost = dbe_key_unit_cost (text_key->key_text_table->tb_primary_key);
-      if (dfe->_.table.is_unique 
+      if (dfe->_.table.is_unique
 	  || dfe->_.table.ot->ot_table->tb_primary_key != dfe->_.table.key)
 	{
 	  /* the id is given, text match is an after test */
 	  total_cost += 1.5 * text_key_cost * total_card;
 	  total_card *= text_selectivity;
 	}
-      else 
+      else
 	{
 	  /* the text index is driving.  Take into account card computed above for the rest */
 	  float non_text_selectivity = total_card / ot_tbl_size;
@@ -823,7 +823,7 @@ sqlo_iri_constant_name_1 (ST* tree)
   if (DV_STRINGP (tree))
     return (caddr_t)tree;
   if (ST_P (tree, CALL_STMT) && 1 <= BOX_ELEMENTS (tree->_.call.params)
-      && DV_STRINGP (tree->_.call.name) 
+      && DV_STRINGP (tree->_.call.name)
       && (0 == stricmp (tree->_.call.name, "__BFT") || 0 == stricmp (tree->_.call.name, "__box_flags_tweak")))
     return (caddr_t) sqlo_iri_constant_name_1  (tree->_.call.params[0]);
   return NULL;
@@ -837,7 +837,7 @@ sqlo_iri_constant_name (ST* tree)
   if (DV_IRI_ID == DV_TYPE_OF (tree))
     return (caddr_t)tree;
   if (ST_P (tree, CALL_STMT) && 1 <= BOX_ELEMENTS (tree->_.call.params)
-      && DV_STRINGP (tree->_.call.name) 
+      && DV_STRINGP (tree->_.call.name)
       && 0 == strnicmp (tree->_.call.name, "__I2ID", 6)
       && DV_STRINGP ((name = sqlo_iri_constant_name_1 (tree->_.call.params[0]))))
     return name;
@@ -1156,7 +1156,7 @@ dfe_const_to_spec (df_elt_t * lower, df_elt_t * upper, dbe_key_t * key,
 }
 
 
-caddr_t 
+caddr_t
 itc_sample_cache_key (it_cursor_t * itc)
 {
   int inx;
@@ -1246,7 +1246,7 @@ sqlo_inx_sample_1 (dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int 
     }
   if (so->so_sc->sc_sample_cache)
     place = (caddr_t*) id_hash_get (so->so_sc->sc_sample_cache, (caddr_t) &sc_key);
-  else 
+  else
     {
       so->so_sc->sc_sample_cache = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
       place = NULL;
@@ -1263,9 +1263,9 @@ sqlo_inx_sample_1 (dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int 
   res = MIN (tb_count, res);
   if (!sop || !sop->sop_ric)
     {
-  num = box_num (res);
-  if (so->so_sc->sc_sample_cache)
-    id_hash_set (so->so_sc->sc_sample_cache, (caddr_t)&sc_key, (caddr_t)&num);
+      num = box_num (res);
+      if (so->so_sc->sc_sample_cache)
+	id_hash_set (so->so_sc->sc_sample_cache, (caddr_t)&sc_key, (caddr_t)&num);
     }
   return res;
 }
@@ -1274,7 +1274,7 @@ extern caddr_t rdfs_type;
 
 
 int64
-sqlo_inx_inf_sample (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int n_parts, rdf_inf_ctx_t * ctx, rdf_sub_t * sub, 
+sqlo_inx_inf_sample (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int n_parts, rdf_inf_ctx_t * ctx, rdf_sub_t * sub,
 		     caddr_t * variable, index_choice_t * ic)
 {
   sample_opt_t sop;
@@ -1307,7 +1307,7 @@ ri_iterator_t * rit = ri_iterator (sub, ic->ic_inf_type, 1);
       if (is_first)
 	{
 	  if (any_est && sop.sop_res_from_ric_cache)
-{
+	    {
 	      dk_free_tree (sc_key);
 	      *variable = org_o;
 	      ic->ic_n_lookups = sub->rs_n_subs;
@@ -1340,7 +1340,7 @@ ri_iterator_t * rit = ri_iterator (sub, ic->ic_inf_type, 1);
 	  id_hash_set (ctx->ric_samples, (caddr_t)&sc_key, (caddr_t)&tc);
 	  mutex_leave (sop.sop_ric->ric_mtx);
 	}
-      else 
+      else
 	dk_free_tree (sc_key);
       sub->rs_n_subs = n_subs;
     }
@@ -1367,7 +1367,7 @@ rs_sub_count (rdf_sub_t * rs)
 	  rit->rit_next_sibling = 1;
 	  n_subs += sub->rs_n_subs;
 	}
-      else 
+      else
 	n_subs++;
     }
   rs->rs_n_subs = n_subs;
@@ -1375,7 +1375,7 @@ rs_sub_count (rdf_sub_t * rs)
 }
 
 
-void 
+void
 sqlo_non_leading_const_inf_cost (df_elt_t * tb_dfe, df_elt_t ** lowers, df_elt_t ** uppers, index_choice_t * ic)
 {
   /* take a col eq to const iterated over subs.  Se how many subs */
@@ -1403,10 +1403,10 @@ sqlo_non_leading_const_inf_cost (df_elt_t * tb_dfe, df_elt_t ** lowers, df_elt_t
 	  dbe_column_t * left_col = cp_left_col (pred);
 	  switch (left_col->col_name[0])
 	    {
-	    case 'P': 
-	      if (!p_dfe) 
+	    case 'P':
+	      if (!p_dfe)
 		{
-		  p_dfe_2 = pred->_.bin.right; 
+		  p_dfe_2 = pred->_.bin.right;
 		  org_p = p_dfe_2->dfe_tree;
 		}
 	      break;
@@ -1417,14 +1417,14 @@ sqlo_non_leading_const_inf_cost (df_elt_t * tb_dfe, df_elt_t ** lowers, df_elt_t
 		  org_o = o_dfe_2->dfe_tree;
 		}
 	      break;
-		}
 	    }
-	  END_DO_SET();
+	}
+      END_DO_SET();
       /* o_dfe_2 and p_dfe_2 are the inferred p and o that were not accounted for by the sample with leading constants */
       p_const = dfe_iri_const (p_dfe_2);
       o_const = dfe_iri_const (o_dfe_2);
       if (box_equal (rdfs_type, p_const)
-	  && o_const 
+	  && o_const
 	  && (sub = ric_iri_to_sub (ctx, o_const, RI_SUBCLASS, 0))
 	  && sub->rs_sub)
 	{
@@ -1449,7 +1449,7 @@ sqlo_non_leading_const_inf_cost (df_elt_t * tb_dfe, df_elt_t ** lowers, df_elt_t
 
 void
 sqlo_try_inf_filter (df_elt_t * tb_dfe, index_choice_t * ic)
-	    {
+{
   /* there is eq on a col with inf.  Try the eq on the inf col as an after test */
   df_elt_t * tst_dfe = NULL;
   rdf_inf_ctx_t * ric = ic->ic_ric;
@@ -1464,12 +1464,12 @@ sqlo_try_inf_filter (df_elt_t * tb_dfe, index_choice_t * ic)
 		{
       if (DFE_BOP_PRED == cp->dfe_type && ic->ic_inf_dfe == cp->_.bin.right)
 	{
-	  ST * tst = (ST*)t_list (4, BOP_EQ, (caddr_t)(ptrlong)1, t_list (3, CALL_STMT, t_sqlp_box_id_upcase ("rdf_is_sub"), 
+	  ST * tst = (ST*)t_list (4, BOP_EQ, (caddr_t)(ptrlong)1, t_list (3, CALL_STMT, t_sqlp_box_id_upcase ("rdf_is_sub"),
 									  t_list (4, ric->ric_name, cp->_.bin.left->dfe_tree, ic->ic_inf_dfe->dfe_tree, (caddr_t)(ptrlong)ic->ic_inf_type)), NULL);
 	  tst_dfe = sqlo_df (so, tst);
 	  t_set_push (&inf_after_test, (void*)tst_dfe);
 		}
-      else 
+      else
 	t_set_push (&no_inf_cp, (void*)cp);
 	    }
 	  END_DO_SET();
@@ -1489,10 +1489,10 @@ sqlo_try_inf_filter (df_elt_t * tb_dfe, index_choice_t * ic)
       tst_dfe->dfe_unit = COL_PRED_COST;
       tb_dfe->dfe_arity = ic->ic_arity; /* the filter is taken into account here */
       return;
-	}
+    }
   tb_dfe->dfe_unit = ic->ic_unit;
   tb_dfe->dfe_arity = ic->ic_arity;
-    }
+}
 
 int64
 sqlo_inx_sample (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int n_parts, index_choice_t * ic)
@@ -1512,7 +1512,7 @@ sqlo_inx_sample (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_elt_
 	    {
 	    case 'P': p_dfe = lowers[inx]->_.bin.right; org_p = p_dfe->dfe_tree; break;
 	    case 'O': o_dfe = lowers[inx]->_.bin.right; org_o = o_dfe->dfe_tree; break;
-    }
+	    }
 	}
       p_const = dfe_iri_const (p_dfe);
       if (box_equal (rdfs_type, p_const)
@@ -1666,10 +1666,10 @@ arity_scale (float ar)
     between good and bad plans because they both get execd 0 times.  So when
     card goes under 1, scale it between 1 and 0.1.  Increasing
     mapping, less stays less but logarithmically slowed down.  Ad hoc
-    formula */ 
+    formula */
 
   float l;
-  if (ar > 1) 
+  if (ar > 1)
     return ar;
   l = log (10/ar) / log (10);
   return  0.1 + (0.9 * (1 / l));
@@ -2124,7 +2124,7 @@ dfe_top_discount (df_elt_t * dfe, float * u1, float * a1)
 	      if (dfe->dfe_type == DFE_EXISTS)
 		{
 		  /* an exists never has arity > 1.  If 1, guess 0.5.  If over 1, scale between 0.5 and 1 */
-		  *a1 = *a1 < 1 ? *a1 / 2 
+		  *a1 = *a1 < 1 ? *a1 / 2
 		    : 0.99 - (1 / (2 * *a1));
 		}
 	      else

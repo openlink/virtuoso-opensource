@@ -1,25 +1,25 @@
---  
+--
 --  $Id$
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2006 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 create table _2PC.DBA.TRANSACTIONS (TRX_ID INTEGER, TRX_STATE VARCHAR)
 ;
@@ -55,7 +55,7 @@ again:
   }
 
 WHENEVER SQLSTATE '23000' GOTO again;
-  INSERT INTO _2PC.DBA.TRANSACTIONS (TRX_ID, TRX_STATE) 
+  INSERT INTO _2PC.DBA.TRANSACTIONS (TRX_ID, TRX_STATE)
    VALUES (_trx_id, 'STARTED');
   RETURN _trx_id;
 }
@@ -70,7 +70,7 @@ create procedure _2PC.DBA._FFFF_CHECK_TRX_ID ( IN _trx_id INTEGER)
   signal ('TP000', sprintf ('No such transaction id [%lx]', _trx_id));
 }
 ;
- 
+
 
 create procedure _2PC.DBA._0001_TRX_SSTATE ( IN _trx_id INTEGER, IN _state VARCHAR)
 {
@@ -113,7 +113,7 @@ create procedure _2PC.DBA.XA_GET_ALL_XIDS_COUNT ()
 {
   DECLARE xid VARCHAR;
   DECLARE c INTEGER;
- 
+
   c := 0;
 
   get_rec_xid_beg ();
@@ -131,7 +131,7 @@ create procedure _2PC.DBA.XA_GET_ALL_XIDS_COUNT ()
 create procedure _2PC.DBA.OLD_XA_GET_ALL_XIDS ()
 {
   declare xid varchar;
-  
+
   result_names (xid);
 
   get_rec_xid_beg ();
@@ -149,7 +149,7 @@ create procedure _2PC.DBA.OLD_XA_GET_ALL_XIDS ()
 create procedure _2PC.DBA.XA_GET_ALL_XIDS ()
 {
   declare xid varchar;
-  
+
   result_names (xid);
 
   declare xids any;

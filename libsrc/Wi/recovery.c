@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Backup & Recovery procedures
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "libutil.h"
@@ -176,7 +176,7 @@ walk_db (lock_trx_t * lt, page_func_t func)
 		  {
 		    log_error ("Blog ref'referenced as index tree top node dp=%d key=%s\n", buf->bd_page, itc->itc_insert_key->key_name);
 		  }
-		else 
+		else
 		  walk_dbtree (itc, &buf, 0, func, 0);
 		itc_page_leave (itc, buf);
 	      }
@@ -259,23 +259,23 @@ log_rd_blobs (it_cursor_t * itc, row_delta_t * rd)
   itc->itc_insert_key = key;
   /* printf ("### %ld >\n", key_id); */
   DO_CL (cl, key->key_row_var)
+    {
+      dtp_t dtp = cl->cl_sqt.sqt_dtp;
+      if (IS_BLOB_DTP (dtp))
 	{
-	  dtp_t dtp = cl->cl_sqt.sqt_dtp;
-	  if (IS_BLOB_DTP (dtp))
-	    {
 	  caddr_t val = rd->rd_values[cl->cl_nth];
 	  if (DV_DB_NULL == DV_TYPE_OF (val))
-		continue;
+	    continue;
 	  dtp = val[0];
-	      if (IS_BLOB_DTP (dtp))
-		{
+	  if (IS_BLOB_DTP (dtp))
+	    {
 		  dp_addr_t start = LONG_REF_NA (val + BL_DP);
 		  dp_addr_t dir_start = LONG_REF_NA (val + BL_PAGE_DIR);
 		  int64 diskbytes = INT64_REF_NA (val + BL_BYTE_LEN);
 		  blob_log_write (itc, start, dtp, dir_start, diskbytes,
 				  cl->cl_col_id, key->key_table->tb_name);
+		}
 	    }
-	}
     }
   END_DO_CL;
   fflush (stdout);
@@ -377,11 +377,11 @@ bkp_check_and_recover_blob_cols (it_cursor_t * itc, db_buf_t row)
   itc->itc_row_key = key;
   itc->itc_row_data = row;
   DO_CL (cl, key->key_row_var)
+    {
+      dtp_t dtp = cl->cl_sqt.sqt_dtp;
+      if (IS_BLOB_DTP (dtp))
 	{
-	  dtp_t dtp = cl->cl_sqt.sqt_dtp;
-	  if (IS_BLOB_DTP (dtp))
-	    {
-	      int off, len;
+	  int off, len;
 	      if (ITC_NULL_CK (itc, (*cl)))
 		continue;
 	      KEY_PRESENT_VAR_COL (key, row, (*cl), off, len);
@@ -393,15 +393,15 @@ bkp_check_and_recover_blob_cols (it_cursor_t * itc, db_buf_t row)
 		      char *col_name = __get_column_name (cl->cl_col_id, key);
 		      dtp_t *col = itc->itc_row_data + off;
 		      log_error ("will have to set blob for col %s in key %s to empty",
-			  col_name, key->key_name);
+				 col_name, key->key_name);
 
 		      INT64_SET_NA (col + BL_CHAR_LEN, 0L);
 		      INT64_SET_NA (col + BL_BYTE_LEN, 0L);
 		      updated = 1;
 		    }
 		}
-	    }
 	}
+    }
   END_DO_CL;
   return updated;
 }
@@ -473,7 +473,7 @@ key_is_recoverable (key_id_t key_id)
 
 
 void
-row_log (it_cursor_t * itc, buffer_desc_t * buf, int map_pos, dbe_key_t * row_key, row_delta_t * rd) 
+row_log (it_cursor_t * itc, buffer_desc_t * buf, int map_pos, dbe_key_t * row_key, row_delta_t * rd)
             {
   dtp_t temp[4096];
   if (row_key->key_is_bitmap)
@@ -499,17 +499,17 @@ row_log (it_cursor_t * itc, buffer_desc_t * buf, int map_pos, dbe_key_t * row_ke
 	pl_next_bit ((placeholder_t*)itc, bm, bm_len, bm_start, 0);
 	rd_free (rd);
       } while (!itc->itc_bp.bp_at_end);
-            }
-          else
-            {
+    }
+  else
+    {
 	rd->rd_temp = temp;
 	rd->rd_temp_max = sizeof (temp);
       page_row (buf, map_pos, rd, RO_ROW);
       log_insert (itc->itc_ltrx, rd, LOG_KEY_ONLY | INS_REPLACING);
       log_rd_blobs (itc, rd);
       rd_free (rd);
-            }
-        }
+    }
+}
 
 
 void
@@ -573,7 +573,7 @@ log_page (it_cursor_t * it, buffer_desc_t * buf, void* dummy)
 	      if (bkp_check_and_recover_blob_cols (it, row))
 		    buf_set_dirty (buf);
 		}
-	  row_log (it, buf, map_pos, row_key, &rd); 
+	  row_log (it, buf, map_pos, row_key, &rd);
 	      any++;
 	  n_bad_rows = 0;
 	  n_rows++;
@@ -1056,7 +1056,7 @@ db_pages_to_log (char *mode, volatile dp_addr_t start_dp, volatile dp_addr_t end
 	  if (!no_free_set)
 	    {
 	      IN_DBS (storage);
-	    dbs_locate_free_bit (storage, page_no, &array, &page, &inx, &bit);
+	      dbs_locate_free_bit (storage, page_no, &array, &page, &inx, &bit);
 	      LEAVE_DBS (storage);
 	    }
 	  if ((no_free_set

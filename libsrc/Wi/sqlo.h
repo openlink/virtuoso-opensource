@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  sql opt graph
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #ifndef _SQLO_H
@@ -129,7 +129,7 @@ typedef struct jt_mark_s
 
 
 
-typedef struct df_inx_op_s 
+typedef struct df_inx_op_s
 {
   char		dio_op;
   char		dio_is_join;  /* true if multiple tables, false if just using inx merge on keys of one table */
@@ -197,7 +197,7 @@ struct df_elt_s
   int32		dfe_hash;
   locus_t *	dfe_locus;
   dk_set_t	dfe_remote_locus_refs;
-  dk_set_t	locus_content; /* (moved from .sub as refd with any dfe_type) 
+  dk_set_t	locus_content; /* (moved from .sub as refd with any dfe_type)
 				  in a scenario copy, the state of loci at time of copy in subtree rooted here */
   ST *	dfe_tree;
   df_elt_t *	dfe_super;
@@ -485,9 +485,9 @@ typedef struct text_count_s
 
 
 /* for index choice being considered, for each index the below is filled in.
- * if looping over in or rdf subclass/subpred is involved, this is mentioned as ic_n_lookups 
+ * if looping over in or rdf subclass/subpred is involved, this is mentioned as ic_n_lookups
  * if checking indexable in or rdf subc/subp as after test is preferred, this is indicated by putting the removed col pred in ic_rm_col_preds and adding the corresponding after test in ic_after_test */
-typedef struct index_choice_s 
+typedef struct index_choice_s
 {
   dbe_key_t *	ic_key;
   float	ic_arity;
@@ -714,7 +714,7 @@ void qn_ins_before (sql_comp_t * sc, data_source_t ** head, data_source_t * ins_
 #define CV_INSTR_COST 0.1   /* avg cost of instruction in code_vec_run */
 
 #define HASH_COUNT_FACTOR(n)\
-  (0.05 * log(n) / log (2)) 
+  (0.05 * log(n) / log (2))
 
 
 /* cluster compiler funcs */
@@ -738,7 +738,5 @@ int sqlo_is_unq_preserving (caddr_t name);
 	(DV_STRINGP (x) || DV_TYPE_OF (x) == DV_SYMBOL)
 
 int box_is_subtree (caddr_t box, caddr_t subtree);
-
-
 
 #endif /* _SQLO_H */

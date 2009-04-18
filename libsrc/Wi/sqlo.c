@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  sql scope inference
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "libutil.h"
@@ -779,7 +779,7 @@ sqlo_rls_add_condition (sqlo_t *so, op_table_t *ot, dk_set_t *res, dbe_table_t *
       /* do the scope thing */
       memset (&sco, 0, sizeof (sql_scope_t));
       sco.sco_super = so->so_scope;
-      sco.sco_so = so; 
+      sco.sco_so = so;
       so->so_scope = &sco;
       t_set_push (&(sco.sco_tables), ot);
       ot->ot_prefix = NULL;
@@ -1167,9 +1167,9 @@ sqlo_dt_has_vcol_tables (sqlo_t *so, op_table_t *dot)
       DO_SET (op_virt_col_t *, vc, &ot->ot_virtual_cols)
 	{
 	  if (box_is_subtree ((caddr_t) dot->ot_dt->_.select_stmt.selection, (caddr_t) vc->vc_tree))
-	return 1;
-    }
-  END_DO_SET ();
+	    return 1;
+	}
+      END_DO_SET();
     }
   END_DO_SET ();
   return 0;
@@ -1963,8 +1963,8 @@ st_equal_no_serial (box_t st1, box_t st2)
   /*compare but ignore serial nos for bin preds */
   dtp_t dtp1 = DV_TYPE_OF (st1);
   dtp_t dtp2 = DV_TYPE_OF (st2);
-  if (dtp1 == dtp2 && dtp1 == DV_ARRAY_OF_POINTER 
-      && BIN_EXP_P ((ST*) st1) 
+  if (dtp1 == dtp2 && dtp1 == DV_ARRAY_OF_POINTER
+      && BIN_EXP_P ((ST*) st1)
       && ((ST*) st1)->type == ((ST*)st2)->type)
     {
       return (box_equal ((box_t) ((ST*)st1)->_.bin_exp.left, (box_t)((ST*)st2)->_.bin_exp.left)
@@ -2181,7 +2181,7 @@ sqlo_oby_remove_scalar_exps (sqlo_t *so, ST *** oby)
 /* remove identity self join */
 
 
-int 
+int
 sqlo_is_col (ST * tree, caddr_t pref, caddr_t col)
 {
   return (ST_P (tree, COL_DOTTED) && tree->_.col_ref.prefix && !strcmp (tree->_.col_ref.prefix, pref) && !strcmp (tree->_.col_ref.name, col));

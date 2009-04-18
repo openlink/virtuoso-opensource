@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Database Registry
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "sqlnode.h"
@@ -63,7 +63,7 @@ cpt_write_registry (dbe_storage_t * dbs, dk_session_t *ses)
 	  log_error ("A bad registry has been detected in cpt.  Making new registry.");
 	  prev_size = first = any_page = 0;
 	}
-      else 
+      else
 	prev_size = strses_length (strses);
       dk_free_box (strses);
     }
@@ -175,7 +175,7 @@ dbs_read_registry (dbe_storage_t * dbs, client_connection_t * cli)
       int err;
       dk_session_t *str = bloblike_pages_to_string_output (dbs, cli->cli_trx, dbs->dbs_registry, &err);
       if (cli == bootstrap_cli)
-      local_commit (bootstrap_cli);
+	local_commit (bootstrap_cli);
       return str;
     }
   else
@@ -226,10 +226,10 @@ box_deserialize_string (caddr_t text, int opt_len, short offset)
 	box[len ] = 0;
 	return box;
       }
-    case DV_RDF: 
+    case DV_RDF:
       if (!opt_len)
 	opt_len = box_length (text);
-      if (opt_len > sizeof (dvrdf_temp)) 
+      if (opt_len > sizeof (dvrdf_temp))
 	GPF_T1 ("rdf box serialization too long");
       if (offset)
 	{
@@ -284,10 +284,10 @@ mp_box_deserialize_string (mem_pool_t * mp, caddr_t text, int opt_len, short off
 	box[len ] = 0;
 	return box;
       }
-    case DV_RDF: 
+    case DV_RDF:
       if (!opt_len)
 	opt_len = box_length (text);
-      if (opt_len > sizeof (dvrdf_temp)) 
+      if (opt_len > sizeof (dvrdf_temp))
 	GPF_T1 ("rdf box serialization too long");
       if (offset)
 	{
@@ -423,7 +423,7 @@ registry_exec ()
     }
 }
 
-void 
+void
 registry_set_sequence (caddr_t name, boxint value, caddr_t * err_ret)
 {
   char temp[2000];

@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Locking concurrency control
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "sqlnode.h"
@@ -601,7 +601,7 @@ itc_make_rl (it_cursor_t * itc)
 #endif
   page_lock_t *pl = itc->itc_pl;
   row_lock_t *rl = rl_allocate ();
-#if 0 /* Disabled according to Orri's instruction 2007-JUL-19 */ 
+#if 0 /* Disabled according to Orri's instruction 2007-JUL-19 */
 #ifdef DEBUG
   if (cli && cli->cli_autocommit && itc->itc_ltrx == cli->cli_trx)
     GPF_T1 ("row lock on the cli_trx");
@@ -645,7 +645,7 @@ itc_set_lock_on_row (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 #endif
   if (!(*buf_ret)->bd_is_write)
     GPF_T1 ("itc_set_lock_on_row needs excl. page access");
-  if (!itc->itc_ltrx 
+  if (!itc->itc_ltrx
       || (itc->itc_lock_mode == PL_SHARED && itc->itc_isolation < ISO_REPEATABLE))
     return NO_WAIT;
   row = BUF_ROW ((*buf_ret), itc->itc_map_pos);
@@ -757,7 +757,7 @@ itc_read_committed_check (it_cursor_t * itc, buffer_desc_t * buf)
   gen_lock_t * gl;
   if (PL_IS_PAGE (pl))
     gl = (gen_lock_t *) pl;
-  else 
+  else
     {
       gl = (gen_lock_t *) pl_row_lock_at (pl, itc->itc_map_pos);
       if (!gl)
@@ -771,17 +771,17 @@ itc_read_committed_check (it_cursor_t * itc, buffer_desc_t * buf)
   row = page + buf->bd_content_map->pm_entries[itc->itc_map_pos];
   if (itc->itc_ltrx == gl->pl_owner)
     return (IE_ISSET (row, IEF_DELETE)) ? DVC_LESS : DVC_MATCH;
-  /* this is somebody else's lock.  Get the rb record. 
-   * Note that if the owner is committing at this time, this cr may have seen a after image  row before but here it will see a pre image . 
-   * To prevent this, use repeatable.  Read committed only means that no uncommitted states are shown, not that you don't get half transactions.  
+  /* this is somebody else's lock.  Get the rb record.
+   * Note that if the owner is committing at this time, this cr may have seen a after image  row before but here it will see a pre image .
+   * To prevent this, use repeatable.  Read committed only means that no uncommitted states are shown, not that you don't get half transactions.
    * If showing half transactions in read committed is good enough for Oracle it is good enough for us. */
-  
+
   rbe = lt_rb_entry (gl->pl_owner, buf, row, NULL, NULL, 1);
   if (!rbe)
     return DVC_MATCH; /* row not modified, just locked */
   if (RB_INSERT == rbe->rbe_op)
     return DVC_LESS; /* uncommitted insert */
-  itc->itc_row_data = rbe->rbe_string + rbe->rbe_row; 
+  itc->itc_row_data = rbe->rbe_string + rbe->rbe_row;
   /* rbe and related will stay allocated as long as the page is taken.  Will only disappear after the owner has finalized this page. */
   return DVC_MATCH;
 }
@@ -896,7 +896,7 @@ pl_set_finalize (page_lock_t * pl, buffer_desc_t * buf)
 #define PAGE_UPDATED 1
 #define PAGE_DELETED 2
 #define LEAF_CHG_MASK 4
-/* LEAF_CHG_MASK is on in the rc if the first row was deleted.  Thhis means that the leaf ptr should begin with the key of the first row. 
+/* LEAF_CHG_MASK is on in the rc if the first row was deleted.  Thhis means that the leaf ptr should begin with the key of the first row.
  * This is nice to have in order to avoid inserts to non leaf and in order not to miss follow locks on previous pages.  The point is that the seek must land beside the next smaller and if leaf ptrs are out of whack this is not always so */
 
 void
@@ -966,7 +966,7 @@ pl_finalize_absent (page_lock_t * pl, it_cursor_t * itc)
       page_leave_inner (buf);
       ITC_LEAVE_MAP_NC (itc);
     }
-  else 
+  else
     {
       remhash (DP_ADDR2VOID (dp), &itm->itm_dp_to_buf);
       ITC_LEAVE_MAP_NC (itc);
@@ -1225,7 +1225,7 @@ lt_wait_until_dead (lock_trx_t * lt)
   ASSERT_IN_TXN;
   TC (tc_wait_trx_self_kill);
   dk_set_push (&lt->lt_wait_end, (void *) thr);
-  if (!lt->lt_threads && LT_CL_PREPARED != lt->lt_status) 
+  if (!lt->lt_threads && LT_CL_PREPARED != lt->lt_status)
     GPF_T1 ("can't wait for self kill of a txn with no thread inside");
   rdbg_printf (("Wait for transact of %s T=%p\n", LT_NAME (lt), lt));
   LEAVE_TXN;
@@ -1368,7 +1368,7 @@ lt_resume_waiting_end (lock_trx_t * lt)
 
 }
 
-dp_addr_t 
+dp_addr_t
 pl_page_key (page_lock_t * pl)
 {
   return pl->pl_page;
@@ -1377,7 +1377,7 @@ pl_page_key (page_lock_t * pl)
 dk_mutex_t * pl_ref_count_mtx;
 
 
-page_lock_t ** 
+page_lock_t **
 lt_locks_to_array (lock_trx_t * lt, page_lock_t ** arr, int max, int * fill_ret)
 {
   /* If they all fit, put them there without sort.  If a lot, alloc a new array. If more than 1/4 of buffers, also sort */
@@ -1407,7 +1407,7 @@ lt_locks_to_array (lock_trx_t * lt, page_lock_t ** arr, int max, int * fill_ret)
       for (inx = 0; inx < fill; inx++)
 	remhash ((void*)arr[inx], locks);
     }
-  else 
+  else
     clrhash (locks);
   mutex_leave (&lt->lt_locks_mtx);
   if (max > main_bufs / 4)
@@ -1730,7 +1730,7 @@ rbe_copy_var (dbe_key_t * key, db_buf_t row, dbe_col_loc_t * cl)
 }
 
 
-void 
+void
 rbe_page_row (rb_entry_t * rbe, row_delta_t * rd)
 {
   int nth = 0;

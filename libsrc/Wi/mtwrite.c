@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Manages buffer rings and paging to disk.
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "wi.h"
@@ -38,7 +38,7 @@ int num_cont_pages=8;
 #undef rdbg_printf
 #define rdbg_printf(q) printf q
 #else
-#define idbg_printf(q) 
+#define idbg_printf(q)
 #endif
 
 
@@ -213,7 +213,7 @@ long tc_aio_seq_write;
 #define MAX_MERGE 100
 #define MERGE_THR_SIZE ((30*1024)+(MAX_MERGE*PAGE_SZ))
 
-void 
+void
 iq_read_merge (struct aiocb ** list, int n, char * temp)
 {
   int inx, inx2, bytes;
@@ -259,7 +259,7 @@ iq_read_merge (struct aiocb ** list, int n, char * temp)
 }
 
 
-void 
+void
 iq_write_merge (struct aiocb ** list, int n, char * temp)
 {
   int inx, inx2, bytes;
@@ -318,7 +318,7 @@ iq_listio (struct aiocb ** list, int fill)
 	continue;
       if (LIO_READ == list[inx]->aio_lio_opcode)
 	iq_read_merge (&list[inx], fill - inx, temp);
-      else 
+      else
 		iq_write_merge (&list[inx], fill - inx, temp);
     }
 }
@@ -339,7 +339,7 @@ aio_fd (buffer_desc_t * buf, dk_hash_t * aio_ht, OFF_T * off)
 	  sethash ((void*)dbs, aio_ht, (void*) dbs_ht);
 	}
       dst = dp_disk_locate (buf->bd_storage, buf->bd_physical_page, off);
-      fd = (int)(ptrlong) gethash ((void*)dst, dbs_ht); 
+      fd = (int)(ptrlong) gethash ((void*)dst, dbs_ht);
       if (!fd)
 	{
 	  fd = dst_fd (dst);
@@ -360,7 +360,7 @@ aio_fd (buffer_desc_t * buf, dk_hash_t * aio_ht, OFF_T * off)
 }
 
 
-void 
+void
 aio_fd_free (dk_hash_t * aio_ht)
 {
   DO_HT (dbe_storage_t *, dbs, dk_hash_t *, ht, aio_ht)
@@ -369,7 +369,7 @@ aio_fd_free (dk_hash_t * aio_ht)
 	{
 	  mutex_leave (dbs->dbs_file_mtx);
 	}
-      else 
+      else
 	{
 	  DO_HT (disk_stripe_t *, dst, ptrlong, fd, ht)
 	    {
@@ -391,7 +391,7 @@ extern long disk_reads;
 extern long disk_writes;
 
 
-void 
+void
 iq_aio (io_queue_t * iq)
 {
   /* runs a batch through aio. Enters and returns inside iq_mtx */
@@ -413,7 +413,7 @@ iq_aio (io_queue_t * iq)
 	{
 	  if (!fill)
 	    return;
-	  else 
+	  else
 	    break;
 	}
       buf = iq->iq_current;
@@ -450,7 +450,7 @@ iq_aio (io_queue_t * iq)
 	      /* now we are in the mtx of buf_itm and the buf was not reused while waiting for the mtx */
 	      it_map_t * buf_itm = IT_DP_MAP (buf->bd_tree, buf->bd_page);
 	      if (buf->bd_is_dirty
-		  && buf->bd_tree 
+		  && buf->bd_tree
 		  && buf->bd_page
 		  && !buf->bd_is_write
 		  && !buf->bd_write_waiting)
@@ -684,7 +684,7 @@ iq_loop (io_queue_t * iq)
 	  && !wi_inst.wi_checkpoint_atomic)
 	{
 	  /* if the  iq's are not being turned off and the iq has not gone empty within main_bufs operations, then it can be the iq will not go empty and cpt will be indefinitely delayed.  So let the cpt thread continue.  It will eventually stop all processing and turn off the iq's after activity is suspended.
-	  * n_iqs is squared because cpt  waits on each in turn.  In this way the max cpt wait is about the time it takes for the combined iq's to turn over the buffer pool worth of data. 
+	  * n_iqs is squared because cpt  waits on each in turn.  In this way the max cpt wait is about the time it takes for the combined iq's to turn over the buffer pool worth of data.
 	  * LOOK OUT.  Inside atomic checkpoint waiting for sync must be strict. During unremap Sync means all iq's empty  Else meltdown fuckup. If sync not strict, buffers get scrapped before written */
 	  iq_dry (iq);
 	}
@@ -723,7 +723,7 @@ iq_loop (io_queue_t * iq)
 	    {
 	      /* now we are in the mtx of buf_itm and the buf was not reused while waiting for the mtx */
 	      if (buf->bd_is_dirty
-		  && buf->bd_tree 
+		  && buf->bd_tree
 		  && buf->bd_page
 		  && !buf->bd_readers && !buf->bd_is_write
 		  && !buf->bd_write_waiting)
@@ -838,7 +838,7 @@ dst_assign_iq (disk_stripe_t * dst)
 void
 mtw_cpt_ck (buffer_desc_t * buf, int line)
 {
-  if (wi_inst.wi_checkpoint_atomic) 
+  if (wi_inst.wi_checkpoint_atomic)
     {
       if (!buf->bd_tree || !buf->bd_tree->it_key || KI_TEMP == buf->bd_tree->it_key->key_id)
 	return; /* no message for a temp because such can be wired down at cpt time and not writable */
@@ -877,8 +877,8 @@ mt_write_dirty (buffer_pool_t * bp, int age_limit, int phys_eq_log)
       if (wi_inst.wi_checkpoint_atomic && !buf->bd_is_dirty)
 	continue;
       if (age_limit && ( (bp->bp_ts - buf->bd_timestamp)) < age_limit)
-	{ 
-	  mtw_cpt_ck (buf, __LINE__); 
+	{
+	  mtw_cpt_ck (buf, __LINE__);
 	continue;
 	}
       if (bp_buf_enter (buf, &buf_itm))
@@ -895,7 +895,7 @@ mt_write_dirty (buffer_pool_t * bp, int age_limit, int phys_eq_log)
 	      buf->bd_readers++;
 	      bufs[fill++] = buf;
 	    }
-	  else 
+	  else
 	    mtw_cpt_ck (buf, __LINE__);
 	  mutex_leave (&buf_itm->itm_mtx);
 	}

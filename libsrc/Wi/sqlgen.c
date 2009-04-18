@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  sql executable graph generation
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 
@@ -278,7 +278,7 @@ sqlg_non_index_ins (df_elt_t * tb_dfe)
 	{
 	  if (tb_dfe->_.table.join_test)
 	    tb_dfe->_.table.join_test = (df_elt_t **) list (3, BOP_AND, sqlo_pred_body (tb_dfe->dfe_sqlo, LOC_LOCAL, tb_dfe, cp), tb_dfe->_.table.join_test);
-	  else 
+	  else
 	    tb_dfe->_.table.join_test = sqlo_pred_body (tb_dfe->dfe_sqlo, LOC_LOCAL, tb_dfe, cp);
 	  cp->dfe_is_placed = DFE_GEN;
 	}
@@ -346,38 +346,38 @@ next_part:
   END_DO_SET ();
 
   DO_SET (df_elt_t *, cp, &tb_dfe->_.table.col_preds)
-    {
-      if (DFE_GEN != cp->dfe_is_placed
-	  && (
-	    (cp->dfe_type == DFE_TEXT_PRED &&
-	     dk_set_member (ks->ks_key->key_parts, (void *) cp->_.text.col))
-	    || (!sqlo_in_list (cp, NULL, NULL) && dk_set_member (ks->ks_key->key_parts, (void *) cp->_.bin.left->_.col.col))))
-	{
-	  cp->dfe_is_placed = DFE_GEN;
-	  if (cp->dfe_type == DFE_TEXT_PRED)
-	    {
-	      dbe_col_loc_t * cl;
-	      spec = (search_spec_t *) dk_alloc (sizeof (search_spec_t));
-	      memset (spec, 0, sizeof (search_spec_t));
-	      spec->sp_is_boxed = 1;
-	      spec->sp_col = cp->_.text.col;
-	      spec->sp_collation = spec->sp_col->col_sqt.sqt_collation;
-	      spec->sp_max_op = CMP_NONE;
-	      spec->sp_min_op = CMP_EQ;
-	      spec->sp_min_ssl = cp->_.text.ssl;
-	      cl = key_find_cl (key, spec->sp_col->col_id);
-	      memcpy (&(spec->sp_cl), cl, sizeof (dbe_col_loc_t));
-	    }
-	  else
-	    spec = dfe_to_spec (cp, NULL, key);
-	  ks_spec_add (&ks->ks_row_spec, spec);
-	}
-      if (DFE_GEN != cp->dfe_is_placed
-	  && (in_list  = sqlo_in_list (cp, NULL, NULL)))
-	{
-	  t_set_pushnew (&tb_dfe->_.table.out_cols, in_list[0]);
-	}
-    }
+  {
+    if (DFE_GEN != cp->dfe_is_placed
+	&& (
+	  (cp->dfe_type == DFE_TEXT_PRED &&
+	   dk_set_member (ks->ks_key->key_parts, (void *) cp->_.text.col))
+	  || (!sqlo_in_list (cp, NULL, NULL) && dk_set_member (ks->ks_key->key_parts, (void *) cp->_.bin.left->_.col.col))))
+      {
+	cp->dfe_is_placed = DFE_GEN;
+	if (cp->dfe_type == DFE_TEXT_PRED)
+	  {
+	    dbe_col_loc_t * cl;
+	    spec = (search_spec_t *) dk_alloc (sizeof (search_spec_t));
+	    memset (spec, 0, sizeof (search_spec_t));
+	    spec->sp_is_boxed = 1;
+	    spec->sp_col = cp->_.text.col;
+	    spec->sp_collation = spec->sp_col->col_sqt.sqt_collation;
+	    spec->sp_max_op = CMP_NONE;
+	    spec->sp_min_op = CMP_EQ;
+	    spec->sp_min_ssl = cp->_.text.ssl;
+	    cl = key_find_cl (key, spec->sp_col->col_id);
+	    memcpy (&(spec->sp_cl), cl, sizeof (dbe_col_loc_t));
+	  }
+	else
+	  spec = dfe_to_spec (cp, NULL, key);
+	ks_spec_add (&ks->ks_row_spec, spec);
+      }
+    if (DFE_GEN != cp->dfe_is_placed
+	&& (in_list  = sqlo_in_list (cp, NULL, NULL)))
+      {
+	t_set_pushnew (&tb_dfe->_.table.out_cols, in_list[0]);
+      }
+  }
   END_DO_SET ();
   sqlg_ks_out_cols (so, tb_dfe, ks);
   ksp_cmp_func (&ks->ks_spec, &ks->ks_spec_nth);
@@ -491,7 +491,7 @@ sqlg_rdf_text_check (df_elt_t * tb_dfe, text_node_t * txs, state_slot_t * id_ssl
 	{
 	  state_slot_t * id2 = sqlc_new_temp (sc, "ro_id", DV_LONG_INT);
 	  dk_set_t code = NULL;
-	  cv_call (&code, NULL, t_box_string ("ro_digest_id"), id2, (state_slot_t **) t_list (1, id_ssl)); 
+	  cv_call (&code, NULL, t_box_string ("ro_digest_id"), id2, (state_slot_t **) t_list (1, id_ssl));
 	  txs->src_gen.src_pre_code = code_to_cv (sc, code);
 	}
     }
@@ -787,7 +787,7 @@ sqlg_inx_op_ssls (sqlo_t * so, inx_op_t * iop)
 int
 iop_one_col_free (inx_op_t * iop)
 {
-  /* the full spec is one longer than the start spec 
+  /* the full spec is one longer than the start spec
   * The iop_other trick is applicable only if all except the last key part are fixed in the inx int */
   int n_start = 0, n_full = 0;
   search_spec_t * sp1, *sp2;
@@ -947,7 +947,7 @@ sqlg_make_ts (sqlo_t * so, df_elt_t * tb_dfe)
     ts->src_gen.src_input = (qn_input_fn) table_source_input_unique;
 
   sqlc_ts_set_no_blobs (ts);
-    ts_alias_current_of (ts);
+  ts_alias_current_of (ts);
   table_source_om (sc->sc_cc, ts);
 
   if (ot->ot_opts && sqlo_opt_value (ot->ot_opts, OPT_RANDOM_FETCH))
@@ -1504,7 +1504,7 @@ sqlg_make_trans_dt  (sqlo_t * so, df_elt_t * dt_dfe, ST **target_names, dk_set_t
 	  && -1 == box_position ((caddr_t*)trans->_.trans.in, (caddr_t)(ptrlong)inx)
 	  && -1 == box_position ((caddr_t*)trans->_.trans.out, (caddr_t)(ptrlong)inx)
 	  && -1 == box_position_no_tag ((caddr_t*)tn->tn_step_out, (caddr_t)ssl)
-	  && ssl != tn->tn_step_no_ret 
+	  && ssl != tn->tn_step_no_ret
 	  && ssl != tn->tn_path_no_ret)
 	dk_set_push (&data_ssls, (void*)ssl);
     }
@@ -2279,7 +2279,7 @@ sqlg_setp_append (sqlo_t * so, data_source_t ** head, setp_node_t * setp)
       && !setp->setp_any_user_aggregate_gos)
     {
       key_source_t * ks = last->ts_main_ks ? last->ts_main_ks : last->ts_order_ks;
-      if (setp->src_gen.src_pre_code 
+      if (setp->src_gen.src_pre_code
 	  && cv_is_local (setp->src_gen.src_pre_code)
 	  &&  !ks->ks_local_code)
 	{
@@ -2289,11 +2289,11 @@ sqlg_setp_append (sqlo_t * so, data_source_t ** head, setp_node_t * setp)
       if (!setp->src_gen.src_pre_code
 	  && !(sc->sc_qn_to_dpipe && gethash ((void*)setp, sc->sc_qn_to_dpipe)))
 	{
-      ks->ks_setp = setp;
+	  ks->ks_setp = setp;
 	  return;
 	}
     }
-    sql_node_append (head, (data_source_t *) setp);
+  sql_node_append (head, (data_source_t *) setp);
 }
 
 
@@ -2311,7 +2311,7 @@ sqlg_distinct_fun_ref_col (sql_comp_t * sc, state_slot_t * data, dk_set_t prev_k
 }
 
 
-void 
+void
 sqlg_find_aggregate_sqt (dbe_schema_t *schema, sql_type_t *arg_sqt, ST *fref, sql_type_t *res_sqt)
 {
   user_aggregate_t *ua;
@@ -2397,7 +2397,7 @@ sqlg_alias_or_assign (sqlo_t * so, state_slot_t * ext, state_slot_t * source, dk
 
 #define fref_is_hash(f) (f->fnr_setp && f->fnr_setp->setp_ha && f->fnr_setp->setp_ha->ha_op == HA_FILL)
 
-dk_set_t 
+dk_set_t
 sqlg_continue_list (data_source_t * qn)
 {
   /* return list of qn and successors in continue order, i.e. inner loop first */
@@ -2449,7 +2449,7 @@ sqlg_place_fref (sql_comp_t * sc, data_source_t ** head, fun_ref_node_t * fref)
   /* if 2 frefs nested like in gb+oby, then the first to continue is the outermost (the oby).  It will continue the inner */
   if ((qn_input_fn)fun_ref_node_input == qn->src_input)
     dk_set_ins_before (&sc->sc_cc->cc_query->qr_nodes, (void*)qn, (void*)fref);
-  else 
+  else
     dk_set_ins_after (&sc->sc_cc->cc_query->qr_nodes, (void*)qn, (void*)fref);
 }
 
@@ -2660,7 +2660,7 @@ bitmap_index_box);
 		      go->go_ua_acc_setp_call = code_to_cv (so->so_sc, code);
 		      break;
 		    }
-                  case AMMSC_COUNT:
+		case AMMSC_COUNT:
                     break; /* Orri's patch for cast problem with count(distinct string-expn) ... group by other-expn  */
 		  default:
 		    arg->ssl_sqt = aggregate->ssl_sqt;
@@ -2869,7 +2869,7 @@ bitmap_index_box);
 }
 
 
-caddr_t 
+caddr_t
 bif_grouping (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   ptrlong curr_bitmap = bif_long_arg (qst, args, 1, GROUPING_FUNC);
@@ -2882,7 +2882,7 @@ bif_grouping (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
-caddr_t 
+caddr_t
 bif_grouping_set_bitmap (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
     ptrlong bitmap_idx = bif_long_arg (qst, args, 0, GROUPING_SET_FUNC);
@@ -3027,7 +3027,7 @@ sqlg_simple_fun_ref (sqlo_t * so, data_source_t ** head, df_elt_t * tb_dfe,
 	if (1 != cl_run_local_only && enable_multistate_code
 	    && qn_seq_is_multistate (*head))
 	  sqlg_cl_multistate_simple_agg (sc, &cum_code);
-    last->src_after_code = code_to_cv (so->so_sc, cum_code);
+	last->src_after_code = code_to_cv (so->so_sc, cum_code);
       }
     fref->src_gen.src_after_code = code_to_cv (sc, post_fref_code);
     fref->fnr_is_any = sc->sc_cc->cc_any_result_ind;
@@ -3055,7 +3055,7 @@ sqlg_oby_node (sqlo_t * so, data_source_t ** head, df_elt_t * oby, df_elt_t * dt
 	  if (oby->_.setp.oby_dep_cols && oby->_.setp.oby_dep_cols[inx])
 	    ;
 	  else
-	ssl_out[inx] = scalar_exp_generate (sc, exp, &pre_code);
+	    ssl_out[inx] = scalar_exp_generate (sc, exp, &pre_code);
 	}
       else
 	ssl_out[inx] = NULL;
@@ -3083,7 +3083,7 @@ sqlg_middle_distinct (sqlo_t * so, data_source_t ** head, df_elt_t * group, df_e
   int inx;
   if (IS_BOX_POINTER (top))
     top->_.top.all_distinct = 0;
-  else 
+  else
     tree->_.select_stmt.top = NULL;
   while ((l = qn_next (last_qn)))
     last_qn = l;
@@ -3130,11 +3130,11 @@ sqlg_group_node (sqlo_t * so, data_source_t ** head, df_elt_t * group, df_elt_t 
 			 dt_dfe, pre_code);
   else
     {
-      if (sqlg_distinct_same_as (so, head, 
+      if (sqlg_distinct_same_as (so, head,
 				 group->_.setp.specs,  dt_dfe, pre_code))
 	pre_code = NULL;
-    sqlg_make_sort_nodes (so, head, (ST**) tree->_.select_stmt.table_exp->_.table_exp.group_by_full,
-			  NULL,  dt_dfe, 1, pre_code, group);
+      sqlg_make_sort_nodes (so, head, (ST**) tree->_.select_stmt.table_exp->_.table_exp.group_by_full,
+			    NULL,  dt_dfe, 1, pre_code, group);
       sqlg_cl_multistate_group (so->so_sc);
     }
   read_node = sql_node_last (*head);
@@ -3412,7 +3412,7 @@ sqlg_alias_or_assign (sqlo_t * so, state_slot_t * ext, state_slot_t * source, dk
    * in this way an arbitrary depth of subqs get referred to the desired output.  If not possible,
    * due to constants or ref params, then an assignment is generated */
   /* if no union above, aliasing can be used */
-  if (!so->so_sc->sc_is_union && enable_dt_alias 
+  if (!so->so_sc->sc_is_union && enable_dt_alias
       && !ssl_is_special (ext)
       && !ssl_is_special (source))
     {
@@ -3525,7 +3525,7 @@ sqlg_handle_select_list (sqlo_t *so, df_elt_t * dfe, data_source_t ** head,
 	  en->src_gen.src_pre_code = code_to_cv (sc, code);
 	  if (dpipe)
 	    sql_node_append (head, (data_source_t*) dpipe);
-	  sql_node_append (head, (data_source_t*) en);
+	    sql_node_append (head, (data_source_t*) en);
 	}
     }
   if (SEL_IS_DISTINCT (tree))
@@ -3613,7 +3613,7 @@ qr_skip_node (sqlo_t * so, query_t * qr)
 	}
       if ((qn_input_fn)end_node_input == f
 #ifdef KEYCOMP
-#endif 
+#endif
 	  )
 	{
 	  post_nodes = 1;

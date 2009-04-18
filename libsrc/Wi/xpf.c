@@ -2,25 +2,25 @@
  *  xpf.c
  *
  *  $Id$
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "Dk.h"
@@ -5638,7 +5638,7 @@ void xpf_init(void)
   xpf_define_builtin ("format-number"		, xpf_format_number		/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   xpf_define_builtin ("function-available"	, xpf_function_available	/* XPath 1.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   xpf_define_builtin ("generate-id"		, xpf_generate_id		/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("id"			, xpf_id			/* XPath 1.0 */	, XPDV_NODESET	, 1	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0))	, NULL);
+  xpf_define_builtin ("id"			, xpf_id			/* XPath 1.0 */	, XPDV_NODESET	, 1	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0))	, NULL	);
   xpf_define_builtin ("if"			, xpf_if			/* Virt 3.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   xpf_define_builtin ("is-after"		, xpf_is_after			/* Virt 3.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   xpf_define_builtin ("is-before"		, xpf_is_before			/* Virt 3.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));

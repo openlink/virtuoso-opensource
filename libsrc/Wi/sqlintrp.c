@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  SQL interpreter
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "libutil.h"
@@ -444,7 +444,7 @@ report_error:
     }
   else /*if (is_computed)*/
     {
-      sqlr_new_error ("42001", "SR518", 
+      sqlr_new_error ("42001", "SR518",
 	  "Procedure name value of invalid type %s (%d) supplied in an indirect CALL statement",
 	  dv_type_title (DV_TYPE_OF (proc_name)), (int) DV_TYPE_OF (proc_name));
     }
@@ -488,7 +488,7 @@ report_error:
       if (!proc)
 	{
 	  char complete_proc_name_str[MAX_QUAL_NAME_LEN];
-	  complete_proc_name (proc_name, complete_proc_name_str, qi->qi_query->qr_qualifier, CLI_OWNER (qi->qi_client));  
+	  complete_proc_name (proc_name, complete_proc_name_str, qi->qi_query->qr_qualifier, CLI_OWNER (qi->qi_client));
 	  sqlr_new_error ("42001", "SR185", "Undefined procedure %s.", complete_proc_name_str);
 	}
     }
@@ -678,7 +678,7 @@ qn_init (table_source_t * ts, caddr_t * inst)
   /* Reset a single state query node in a qr */
 
   if ((ts->src_gen.src_input == (qn_input_fn) table_source_input ||
-       ts->src_gen.src_input == (qn_input_fn) table_source_input_unique) 
+       ts->src_gen.src_input == (qn_input_fn) table_source_input_unique)
       && ts->ts_order_ks  /* not set if inx op */
       && ts->ts_order_ks->ks_key->key_id == KI_TEMP)
     {
@@ -733,8 +733,8 @@ subq_init (query_t * subq, caddr_t * inst)
 	  QNCAST (subq_source_t, sqs, ts);
 	  subq_init (sqs->sqs_query, inst);
 	}
-	   else if ((ts->src_gen.src_input == (qn_input_fn) table_source_input ||
-	  ts->src_gen.src_input == (qn_input_fn) table_source_input_unique) 
+      else if ((ts->src_gen.src_input == (qn_input_fn) table_source_input ||
+	  ts->src_gen.src_input == (qn_input_fn) table_source_input_unique)
 	  && ts->ts_order_ks  /* not set if inx op */
 	  && ts->ts_order_ks->ks_key->key_id == KI_TEMP)
 	{
@@ -1032,7 +1032,7 @@ ins_fetch (instruction_t * ins, caddr_t * qst)
       sqlr_new_error ("24000", "SR190", "Fetch of unopened cursor.");
     }
 
-  /* 
+  /*
      On open cursor, check the params and if they changed , re-bind them
    */
   if (cr_state == CR_OPEN)
@@ -1659,7 +1659,7 @@ qi_check_trx_error (query_instance_t * qi, int flags)
 	}
       else
 	{
-      lt_rollback (lt, TRX_CONT);
+	  lt_rollback (lt, TRX_CONT);
 	  must_signal = CLI_IN_DAQ == lt->lt_client->cli_in_daq; /* if transactional daq call in coord node, must still signal regardless of handler */
 	}
       LEAVE_TXN;
@@ -1916,32 +1916,32 @@ again:
 	    }
 	  switch (ins->ins_type)
 	    {
-	      case IN_ARTM_PLUS:	HANDLE_ARTM(box_add);
-	      case IN_ARTM_MINUS:	HANDLE_ARTM(box_sub);
-	      case IN_ARTM_TIMES:	HANDLE_ARTM(box_mpy);
-	      case IN_ARTM_DIV:		HANDLE_ARTM(box_div);
-	      case IN_ARTM_IDENTITY:	HANDLE_ARTM(box_identity);
-	      case IN_ARTM_FPTR:	HANDLE_ARTM_FPTR(ins->_.artm_fptr.func);
+	    case IN_ARTM_PLUS:	HANDLE_ARTM(box_add);
+	    case IN_ARTM_MINUS:	HANDLE_ARTM(box_sub);
+	    case IN_ARTM_TIMES:	HANDLE_ARTM(box_mpy);
+	    case IN_ARTM_DIV:		HANDLE_ARTM(box_div);
+	    case IN_ARTM_IDENTITY:	HANDLE_ARTM(box_identity);
+	    case IN_ARTM_FPTR:	HANDLE_ARTM_FPTR(ins->_.artm_fptr.func);
 
-	      case IN_PRED:
-		    {
-		      int flag;
-		      qi_check_trx_error (qi, 0);
-		      flag = ins->_.pred.func (qst, ins->_.pred.cmp);
+	    case IN_PRED:
+	      {
+		int flag;
+		qi_check_trx_error (qi, 0);
+		flag = ins->_.pred.func (qst, ins->_.pred.cmp);
 		if (flag == DVC_QUEUED)
 		  {
 		    POP_QR_RESET;
 		    return (caddr_t)DVC_QUEUED;
 		  }
-		      if (flag == DVC_UNKNOWN)
-			ins = INSTR_ADD_OFS (code_vec, ins->_.pred.unkn);
-		      else if (flag)
-			ins = INSTR_ADD_OFS (code_vec, ins->_.pred.succ);
-		      else
-			ins = INSTR_ADD_OFS (code_vec, ins->_.pred.fail);
-		      break;
-		    }
-	      case IN_COMPARE:
+		if (flag == DVC_UNKNOWN)
+		  ins = INSTR_ADD_OFS (code_vec, ins->_.pred.unkn);
+		else if (flag)
+		  ins = INSTR_ADD_OFS (code_vec, ins->_.pred.succ);
+		else
+		  ins = INSTR_ADD_OFS (code_vec, ins->_.pred.fail);
+		break;
+	      }
+	    case IN_COMPARE:
 		    {
 		      int flag = cmp_boxes_safe (QST_GET (qst, ins->_.cmp.left), QST_GET (qst, ins->_.cmp.right),
 			  ins->_.cmp.left->ssl_sqt.sqt_collation, ins->_.cmp.right->ssl_sqt.sqt_collation);
@@ -1987,15 +1987,15 @@ again:
 		  ins_call_bif ((instruction_t *) ins, qst, code_vec);
 		  ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.bif)));
 		  break;
-	      case INS_SUBQ:
+  	    case INS_SUBQ:
 		if (DVC_QUEUED == ins_subq ((instruction_t *) ins, qst))
 		  {
 		    POP_QR_RESET;
 		    return (caddr_t)DVC_QUEUED;
 		  }
-		  ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.subq)));
-		  break;
-	      case INS_QNODE:
+		ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.subq)));
+		break;
+	    case INS_QNODE:
 		  ins_qnode ((instruction_t *) ins, qst);
 		  ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.qnode)));
 		  break;
@@ -2044,7 +2044,7 @@ again:
 			  value = qst_get (qst, ins->_.vret.value);
 			  if (ins->_.vret.value->ssl_is_callret)
 			    qst[ins->_.vret.value->ssl_index] = NULL;
-			  else 
+			  else
 			    value = box_copy_tree (value);
 			}
 		      else
@@ -2435,7 +2435,7 @@ subq_comp_func (caddr_t * qst, void * _subp)
       GPF_T;			/*Bad subq predicate. */
     }
 
-  /*NOTREACHED*/ 
+  /*NOTREACHED*/
   return 0;
 }
 

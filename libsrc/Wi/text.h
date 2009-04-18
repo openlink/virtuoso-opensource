@@ -2,25 +2,25 @@
  *  text.h
  *
  *  $Id$
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #ifndef _TEXT_H
@@ -162,13 +162,13 @@ struct word_stream_s
     int			wst_reset_reason;
     caddr_t *		wst_word_strings;
     int			wst_nth_word_string;
-    d_id_t		 wst_end_id; /* do not seek beyond this */
+    d_id_t		wst_end_id; /* do not seek beyond this */
     cl_req_group_t *	wst_clrg;
     cl_host_t *		wst_host;
     basket_t		wst_cl_word_strings; /* prefetched consecutive word strings from cluster */
     char		wst_all_fetched; /* all stuff is in word strings */
     char		wst_fixed_d_id; /* only the id sought  for and no other will do */
-  };
+};
 
 typedef struct word_stream_s word_stream_t;
 

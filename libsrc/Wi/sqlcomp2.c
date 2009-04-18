@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Dynamic SQL Compiler, part 2
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "libutil.h"
@@ -103,9 +103,9 @@ ts_set_local_code (table_source_t * ts, int is_cluster)
       ts->src_gen.src_after_code = NULL;
       if (ts->src_gen.src_count)
 	{
-      ks->ks_count = ts->src_gen.src_count;
-      ts->src_gen.src_count = 0;
-    }
+	  ks->ks_count = ts->src_gen.src_count;
+	  ts->src_gen.src_count = 0;
+	}
     }
   if (!ts->ts_is_outer
       && ts->src_gen.src_count
@@ -681,7 +681,7 @@ yy_new_error (const char *s, const char *state, const char *native)
       if (is_semi)
         {
           sql_err_text [sizeof (sql_err_text)-1] = '\0';
-          sql_err_text [strlen (sql_err_text)-7] = '\0'; 
+          sql_err_text [strlen (sql_err_text)-7] = '\0';
 	  buf_for_next[0] = '\0';
         }
       else
@@ -1048,11 +1048,11 @@ sc_free (sql_comp_t * sc)
   if (sc->sc_qn_to_dpipe)
     hash_table_free (sc->sc_qn_to_dpipe);
   if (sc->sc_ssl_eqs)
-  {
+    {
       DO_HT (state_slot_t *, ssl, dk_set_t, list, sc->sc_ssl_eqs)
-  {
+	{
 	  dk_set_free (list);
-  }
+	}
       END_DO_HT;
       hash_table_free (sc->sc_ssl_eqs);
     }
@@ -1384,7 +1384,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
   sqlc_compile_hook (cli, string2, err);
   if (!parse_sem)
     parse_sem = semaphore_allocate (1);
-  if (parse_sem->sem_entry_count > 1) 
+  if (parse_sem->sem_entry_count > 1)
     GPF_T1 ("compiler parse sem entry count > 1");
   if (!nested_sql_comp)
     {
@@ -1394,10 +1394,10 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
   string = wrap_sql_string (string2);
   if (SQLC_PARSE_ONLY_REC == cr_type)
     cr_type = SQLC_PARSE_ONLY;
-  else 
+  else
     {
-  semaphore_enter (parse_sem);
-  inside_sem = 1;
+      semaphore_enter (parse_sem);
+      inside_sem = 1;
     }
   SCS_STATE_PUSH;
   sqlc_set_client (cli);
@@ -1445,7 +1445,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	      qr_free (qr);
 	      if (err && !*err)
 		*err = srv_make_new_error (sql_err_state[0] ? sql_err_state : "37000",
-		    sql_err_native[0] ? sql_err_native : "SQ074", "%s", sql_err_text);
+					   sql_err_native[0] ? sql_err_native : "SQ074", "%s", sql_err_text);
 	      sqlc_set_client (old_cli);
 	      if (!nested_sql_comp)
 		{
@@ -1478,7 +1478,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	  semaphore_leave (parse_sem);
 	  inside_sem = 0;
 	}
-      else 
+      else
 	sqlc_inside_sem = 1;
       if (cr_type == SQLC_PARSE_ONLY)
 	{
@@ -1535,12 +1535,11 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	{
 	  qr->qr_brk = -1; /* set a debug flag */
 	}
-
-    SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_SQLC_ERROR, NULL);
-    if (_SQL_CURSOR_FORWARD_ONLY < cr_type
+      SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_SQLC_ERROR, NULL);
+      if (_SQL_CURSOR_FORWARD_ONLY < cr_type
 	&& _SQL_CURSOR_STATIC >= cr_type
 	&& st_is_query_exp (tree))
-      sqlc_cursor (&sc, &tree, cr_type);
+	sqlc_cursor (&sc, &tree, cr_type);
     else
       {
 	if (SQLC_UNIQUE_ROWS == cr_type /*&& st_is_query_exp (tree)*/)

@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Server Status Report
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "Dk.h"
@@ -393,7 +393,7 @@ dbs_mapped_back (dbe_storage_t * dbs)
 	      else
 		n_new++;
 	    }
-	}
+	    }
 	  mutex_leave (&it->it_maps[inx].itm_mtx);
 	}
 
@@ -704,9 +704,9 @@ cli_status_report (dk_session_t * ses)
     {
       caddr_t app_name = cli->cli_info[0];
       tcpses_print_client_ip (ses->dks_session, from, sizeof (from));
-      rep_printf ("PID: %ld, OS: %s, Application: %s, IP#: %s\n", 
-	  	(long) (cli->cli_info[1]), 
-		cli->cli_info[3], 
+      rep_printf ("PID: %ld, OS: %s, Application: %s, IP#: %s\n",
+	  	(long) (cli->cli_info[1]),
+		cli->cli_info[3],
 		app_name[0] ? app_name : "unknown",
 		from);
     }
@@ -1016,7 +1016,7 @@ st_collect_ps_info (dk_set_t * arr)
 		}
 	      LEAVE_CLIENT (cli);
 	    }
-	      else 
+	      else
 		{
 		  dk_set_push (arr, box_string (" client not available, pending compile, time shown is since last exec"));
 		  dk_set_push (arr, box_num (time_now - (*stmt)->sst_start_msec));
@@ -1066,9 +1066,9 @@ status_report (const char * mode, query_instance_t * qi)
 
   if (gen_info)
     {
-  rep_printf ("%s%.500s Server\n", PRODUCT_DBMS, build_special_server_model);
-  rep_printf ("Version " DBMS_SRV_VER "%s for %s as of %s \n",
-      build_thread_model, build_opsys_id, build_date);
+      rep_printf ("%s%.500s Server\n", PRODUCT_DBMS, build_special_server_model);
+      rep_printf ("Version " DBMS_SRV_VER "%s for %s as of %s \n",
+		  build_thread_model, build_opsys_id, build_date);
     }
   if (!st_started_since_year)
     {
@@ -1086,8 +1086,8 @@ status_report (const char * mode, query_instance_t * qi)
 
   if (gen_info)
     {
-  rep_printf ("Started on: %04d/%02d/%02d %02d:%02d GMT%+03d\n", 
-      st_started_since_year, st_started_since_month, st_started_since_day, 
+      rep_printf ("Started on: %04d/%02d/%02d %02d:%02d GMT%+03d\n",
+      st_started_since_year, st_started_since_month, st_started_since_day,
       st_started_since_hour, st_started_since_minute, dt_local_tz);
     }
   if (!gen_info)
@@ -1476,7 +1476,7 @@ stat_desc_t stat_descs [] =
 };
 
 
-stat_desc_t dbf_descs [] = 
+stat_desc_t dbf_descs [] =
   {
     {"dbf_no_disk", &dbf_no_disk},
     {"dbf_2pc_prepare_wait", &dbf_2pc_prepare_wait},
@@ -1577,7 +1577,7 @@ bif_dbf_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	      *(sd->sd_value) = v;
 	      return (box_num (ov));
 	    }
-	  else 
+	  else
 	    sqlr_new_error ("42000", "SR...", "sys_stat_set, parameter not settable");
 	}
       sd++;
@@ -1647,7 +1647,7 @@ bif_identify_self (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
-int32 
+int32
 key_n_buffers (dbe_key_t * key, int dirty)
 {
   int ct = 0, inx, inx2;
@@ -1666,7 +1666,7 @@ key_n_buffers (dbe_key_t * key, int dirty)
 }
 
 
-caddr_t 
+caddr_t
 key_page_list (dbe_key_t * key)
 {
   return em_page_list (key->key_fragments[0]->kf_it->it_extent_map, EXT_INDEX);
@@ -2199,7 +2199,7 @@ dbg_print_box_aux (caddr_t object, FILE * out, dk_hash_t *known)
       fprintf (out, "%ld ", (long) (ptrlong) object);
       return;
     }
-    if (gethash (object, known))
+  if (gethash (object, known))
     {
       fprintf (out, "\n[PRINTED_ABOVE[%p]]\n", object);
     }
@@ -2536,7 +2536,7 @@ col_comp_print (FILE * out, dbe_key_t * key, db_buf_t row, dbe_col_loc_t * cl)
 	  len = SHORT_REF (row + key->key_length_area[rv]);
 	  len -= off;
 	}
-      else 
+      else
 	{
 	  off = COL_VAR_LEN_MASK & SHORT_REF (row - pos);
 	  len = SHORT_REF (row + 2 - pos) - off;
@@ -2584,7 +2584,7 @@ row_map_fprint (FILE * out, buffer_desc_t * buf, db_buf_t row, dbe_key_t * key)
 	  goto next;
 	}
       if (dtp_is_fixed (cl->cl_sqt.sqt_dtp))
-	    {
+	{
 	  ROW_FIXED_COL (buf, row, rv, (*cl), xx);
 	}
       else
@@ -2606,7 +2606,7 @@ row_map_fprint (FILE * out, buffer_desc_t * buf, db_buf_t row, dbe_key_t * key)
             else
 	      fprintf (out, " #i" BOXINT_FMT, (boxint)(iid));
 	    col_comp_print (out, key, row, cl);
-	  break;
+            break;
           }
 	case DV_LONG_INT:
 	  ROW_INT_COL (buf, row, rv, (*cl), LONG_REF, n32);
@@ -2664,14 +2664,14 @@ row_map_fprint (FILE * out, buffer_desc_t * buf, db_buf_t row, dbe_key_t * key)
 	  fprintf (out, "<xx>");
 	  col_comp_print (out, key, row, cl);
 	  break;
-	case DV_BLOB: 
+	case DV_BLOB:
 	case DV_BLOB_WIDE:
 	case DV_BLOB_BIN:
 	  {
 	    dtp_t b_dtp = xx[0];
 	    if (IS_STRING_DTP (b_dtp))
 	      fprintf (out, " <inline blob %d> ", (int)b_dtp);
-	    else 
+	    else
 	      fprintf (out, "<blob dp=%d> ", LONG_REF_NA (xx + BL_DP));
 	  }
 	}
@@ -2737,7 +2737,7 @@ dbg_page_map_f (buffer_desc_t * buf, FILE * out)
       key_ver_t kv = IE_KEY_VERSION (row);
       dbe_key_t * row_key = NULL;
       if (!kv || KV_LEFT_DUMMY == kv )
-       row_key = page_key;
+	row_key = page_key;
       else
 	row_key = page_key->key_versions[kv];
       if (!row_key)
@@ -2882,7 +2882,7 @@ dbg_print_itcs (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
-char * 
+char *
 srv_st_dbms_name ()
 {
    return st_dbms_name;
@@ -3422,7 +3422,7 @@ bif_key_estimate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
-double 
+double
 rep_num_scale (double n, char ** scale_ret, int is_base_2)
 {
   double dec_scale[] = {1000, 1000000, 1000000000, 1000000000000, 0};
@@ -3472,7 +3472,7 @@ bif_db_activity (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     res = list (8, box_num (da->da_random_rows), box_num (da->da_seq_rows), box_num (da->da_lock_waits),
 		box_num (da->da_lock_wait_msec), box_num (da->da_disk_reads), box_num (da->da_spec_disk_reads),
 		box_num (da->da_cl_messages), box_num (da->da_cl_bytes));
-  else 
+  else
     {
       char txt[200];
       da_string (da, txt, sizeof (txt));

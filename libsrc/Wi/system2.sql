@@ -1,25 +1,25 @@
---  
+--
 --  $Id$
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2006 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 create procedure DB.DBA.SYS_INDEX_SPACE_STATS_PROC ()
 {
   declare ISS_KEY_ID, ISS_NROWS, ISS_ROW_BYTES, ISS_BLOB_PAGES, ISS_ROW_PAGES integer;
@@ -552,7 +552,7 @@ create procedure SYS_CREATE_TABLE_AS (
     if (exec_it <> 0)
       {
         --if (log_is_on and 1 = sys_stat ('cl_run_local_only'))
---	  log_enable (0);
+	--  log_enable (0);
         {
 	    declare exit handler for sqlstate '*'
             {
@@ -594,10 +594,10 @@ create procedure SYS_CREATE_TABLE_AS (
 	      }
         }
         --if (log_is_on and 1 = sys_stat ('cl_run_local_only'))
---          log_enable (1);
+        --  log_enable (1);
 	--if (1 = sys_stat ('cl_run_local_only'))
 	--  {
---        log_text ('DB.DBA.SYS_CREATE_TABLE_AS (?, ?, ?)', tb_name, _parse_tree, with_data);
+	--    log_text ('DB.DBA.SYS_CREATE_TABLE_AS (?, ?, ?)', tb_name, _parse_tree, with_data);
 	--  }
       }
     else

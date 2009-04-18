@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  DAV support
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 /* IvAn/ParseDTD/000721 system parser is wiped out
@@ -203,7 +203,7 @@ ws_dav_put (ws_connection_t * ws, query_t * http_call)
 
   dk_set_push (&parts, box_dv_short_string ("Content"));
   if (ws->ws_req_len == 0 && content_transfer_encoding &&  0 == strnicmp (content_transfer_encoding, "chunked", 7))
-    {	
+    {
        caddr_t chunks = http_read_chunked_content (ws->ws_session, &err, "", 1);
        if (err)
 	 goto err_ret;
@@ -262,7 +262,7 @@ ws_dav_put (ws_connection_t * ws, query_t * http_call)
       ":2", ws->ws_params, QRP_RAW,
       ":3", box_copy_tree ((box_t) ws->ws_lines), QRP_RAW);
 
-err_ret:  
+err_ret:
   if (IS_BOX_POINTER (err) && 0 != strcmp (ERR_STATE (err), "VSPRT"))
     {
       dk_free_box (ws->ws_header);

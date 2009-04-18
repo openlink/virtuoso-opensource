@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Online & Incremental Backup
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 
@@ -432,7 +432,7 @@ ol_write_page_set (ol_backup_context_t * ctx, buffer_desc_t * buf,  int clr)
 
 int
 ol_write_sets (ol_backup_context_t * ctx, dbe_storage_t * storage)
-	{
+{
   int res, inx;
   res = ol_write_page_set (ctx, ctx->octx_dbs->dbs_incbackup_set, 1);
   res = ol_write_page_set (ctx, ctx->octx_cpt_set, 0);
@@ -460,7 +460,7 @@ ol_write_sets (ol_backup_context_t * ctx, dbe_storage_t * storage)
 }
 
 
-int 
+int
 ol_regist_unmark (it_cursor_t * itc, buffer_desc_t * buf, ol_backup_context_t * ctx)
 {
   uint32* array;
@@ -473,7 +473,7 @@ ol_regist_unmark (it_cursor_t * itc, buffer_desc_t * buf, ol_backup_context_t * 
   if (array[inx] & 1<<bit)
     {
       page_set_update_checksum (array, inx, bit);
-  array[inx] &= ~(1 << bit);
+      array[inx] &= ~(1 << bit);
     }
   LEAVE_DBS (buf->bd_storage);
   return 0;
@@ -657,15 +657,15 @@ db_backup_pages (ol_backup_context_t * backup_ctx, dp_addr_t start_dp, dp_addr_t
 	  buf->bd_physical_page = page_no;
 	  buf->bd_storage = storage;
 
-		if (WI_ERROR == ol_buf_disk_read (buf))
-		  make_log_error (backup_ctx, READ_ERR_CODE, READ_ERR_STR, page_no);
-		else
-		  {
-		    ol_backup_page (NULL, buf, backup_ctx);
-		    if (backup_ctx->octx_is_invalid)
-		      return -1;
-		  }
-	      }
+	  if (WI_ERROR == ol_buf_disk_read (buf))
+	    make_log_error (backup_ctx, READ_ERR_CODE, READ_ERR_STR, page_no);
+	  else
+	    {
+	      ol_backup_page (NULL, buf, backup_ctx);
+	      if (backup_ctx->octx_is_invalid)
+		return -1;
+	    }
+    }
 
   /* these ones will be always written to the end backup file */
   if (-1 == ol_write_sets (backup_ctx, storage))
@@ -984,7 +984,7 @@ static int try_to_change_dir (ol_backup_context_t * ctx)
       IN_TXN; \
       lt_threads_dec_inner (qi->qi_trx); \
       LEAVE_TXN; \
-    } 
+    }
 
 #define OB_LEAVE_CPT(need_mtx,qi) \
       if (need_mtx) \
@@ -1331,12 +1331,11 @@ bif_backup_context_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
     END_DO_SET();
     buffer_set_free (fs);
   }
-    dbs_write_page_set (dbs, dbs->dbs_incbackup_set);
-    dbs_write_cfg_page (dbs, 0);
-
+  dbs_write_page_set (dbs, dbs->dbs_incbackup_set);
+  dbs_write_cfg_page (dbs, 0);
   OB_LEAVE_CPT (need_mtx, qi);
 
-  return NEW_DB_NULL;
+    return NEW_DB_NULL;
 }
 
 

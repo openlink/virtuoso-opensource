@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Virtuoso Server Extension API
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #ifndef _KSRVEXT_H
@@ -87,18 +87,18 @@ typedef struct local_cursor_s
 
 
 typedef struct stmt_options_s {
-  ptrlong         so_concurrency;
-  ptrlong         so_is_async;
-  ptrlong         so_max_rows;
-  ptrlong         so_timeout;
-  ptrlong         so_prefetch;
-  ptrlong         so_autocommit;
-  ptrlong         so_rpc_timeout;
-  ptrlong	  so_cursor_type;
-  ptrlong	  so_keyset_size;
-  ptrlong	  so_use_bookmarks;
-  ptrlong	  so_isolation;
-  ptrlong	  so_prefetch_bytes;
+  ptrlong            so_concurrency;
+  ptrlong            so_is_async;
+  ptrlong            so_max_rows;
+  ptrlong            so_timeout;
+  ptrlong            so_prefetch;
+  ptrlong            so_autocommit;
+  ptrlong            so_rpc_timeout;
+  ptrlong		  so_cursor_type;
+  ptrlong		  so_keyset_size;
+  ptrlong		  so_use_bookmarks;
+  ptrlong		  so_isolation;
+  ptrlong		  so_prefetch_bytes;
   ptrlong		so_unique_rows;
 } stmt_options_t;
 
@@ -409,7 +409,7 @@ struct mutex_s
     pthread_mutex_t	mtx_mtx;
 #endif
 #endif
-    void *              mtx_handle;
+    void *		mtx_handle;
 #ifdef APP_SPIN
     int			mtx_spins;
 #endif
@@ -418,7 +418,7 @@ struct mutex_s
 #endif
 
 #ifdef MTX_DEBUG
-    thread_t *          mtx_owner;
+    thread_t *		mtx_owner;
     char *	mtx_entry_file;
     int		mtx_entry_line;
     char *	mtx_leave_file;
@@ -556,7 +556,7 @@ struct dk_session_s
     char		dks_to_close;
     char		dks_is_read_select_ready; /*! Is the next read known NOT to block */
     char		dks_ws_status;
-    
+
     short		dks_n_threads;
     /*! time of last usage (get_msec_real_time) - use for dropping idle HTTP keep alives */
     uint32		dks_last_used;

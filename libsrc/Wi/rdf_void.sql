@@ -78,20 +78,20 @@ create procedure RDF_VOID_ALL_GEN (in target_graph varchar) -- e.g. http://log.o
   -- add dataset for all
   ns_ctr := 1;
   total := 0;
-  target_graph := rtrim (target_graph, '/#') || '/'; 
+  target_graph := rtrim (target_graph, '/#') || '/';
   RDF_VOID_NS (ses);
   http (sprintf ('\n'), ses);
   http (sprintf ('@prefix ns%d: <%s> .\n', ns_ctr, target_graph), ses); -- put NS prefix here
   http (sprintf ('ns%d:Dataset a void:Dataset . \n', ns_ctr), ses);
-  for select RGG_IID, RGG_IRI, RGG_COMMENT from RDF_GRAPH_GROUP where 
+  for select RGG_IID, RGG_IRI, RGG_COMMENT from RDF_GRAPH_GROUP where
     RGG_IRI like target_graph || '%'
     and
-    exists (select 1 from RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = RGG_IID) do 
+    exists (select 1 from RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = RGG_IID) do
     {
-       -- add subset for group to all here	
-       declare gr_pref_ctr int;	   
+       -- add subset for group to all here
+       declare gr_pref_ctr int;
        ns_ctr := ns_ctr + 1;
-       RGG_IRI := rtrim (RGG_IRI, '/#') || '/'; 
+       RGG_IRI := rtrim (RGG_IRI, '/#') || '/';
        http (sprintf ('@prefix ns%d: <%s> .\n', ns_ctr, RGG_IRI), ses); -- put NS prefix here
        http (sprintf ('ns%d:Dataset a void:Dataset . \n', ns_ctr), ses);
        http (sprintf ('ns1:Dataset void:subset ns%d:Dataset . \n', ns_ctr), ses);
@@ -100,11 +100,11 @@ create procedure RDF_VOID_ALL_GEN (in target_graph varchar) -- e.g. http://log.o
          {
 	   -- add subset for graph to group here
 	   ns_ctr := ns_ctr + 1;
-	   RDF_VOID_GEN_1 (id_to_iri (RGGM_MEMBER_IID), null, sprintf ('ns%d', ns_ctr), 
-	       target_graph || rtrim (id_to_iri (RGGM_MEMBER_IID), '/#') || '/', 
-	       ses, total); 
+	   RDF_VOID_GEN_1 (id_to_iri (RGGM_MEMBER_IID), null, sprintf ('ns%d', ns_ctr),
+	       target_graph || rtrim (id_to_iri (RGGM_MEMBER_IID), '/#') || '/',
+	       ses, total);
 	   http (sprintf ('ns%d:Dataset void:subset ns%d:Dataset . \n', gr_pref_ctr, ns_ctr), ses);
-         }	   
+         }
        http (sprintf ('\n'), ses);
     }
   return ses;
@@ -135,8 +135,8 @@ create procedure RDF_VOID_GEN (in graph varchar, in gr_name varchar := null)
 }
 ;
 
-create procedure RDF_VOID_GEN_1 (in graph varchar, in gr_name varchar := null, 
-				in ns_pref varchar := 'this', in this_ns varchar := '', 
+create procedure RDF_VOID_GEN_1 (in graph varchar, in gr_name varchar := null,
+				in ns_pref varchar := 'this', in this_ns varchar := '',
 				inout ses any, inout total int)
 {
   declare _cnt, has_links int;
@@ -151,7 +151,7 @@ create procedure RDF_VOID_GEN_1 (in graph varchar, in gr_name varchar := null,
   if (host is null)
     host := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
   -- if (host is null)
-  --  host := 'lod.openlinksw.com';    
+  --  host := 'lod.openlinksw.com';
 
   _cnt := (sparql define input:storage "" select count(*) where { graph `iri (?:graph)` { ?s ?p ?o . } });
   total := total + _cnt;

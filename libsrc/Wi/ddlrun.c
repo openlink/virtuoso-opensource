@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  SQL DDL Functionality
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "sqlnode.h"
@@ -198,7 +198,7 @@ char * proc_cl_clr_inx =
 "  cl_exec (sprintf ('__clear_index (''%S'', ''%S'')', t, k));\n"
   "}\n";
 
-char * proc_cl_log = 
+char * proc_cl_log =
 "create procedure __CL_LOG (in tx varchar)\n"
 "{\n"
 "  declare st varchar;\n"
@@ -413,70 +413,70 @@ ddl_option_string (query_instance_t * qi, caddr_t * opts, dtp_t dtp, dk_set_t *c
 		  dk_set_push (col_options, box_dv_short_string ("compress"));
 		  dk_set_push (col_options, (void*)box_copy (opt->_.op.arg_1));
 		  break;
-		  case COL_COLLATE:
-		      if (IS_STRING_DTP (dtp))
+		case COL_COLLATE:
+		  if (IS_STRING_DTP (dtp))
+		    {
+		      collation_t *coll = sch_name_to_collation (opt->_.op.arg_1);
+		      if (!coll)
 			{
-			  collation_t *coll = sch_name_to_collation (opt->_.op.arg_1);
-			  if (!coll)
+			  if (qi)
 			    {
-			      if (qi)
-				{
-				 SQL_DDL_ERROR (qi, ("42S22", "SQ003", "Collation %s is not defined", opt->_.op.arg_1));
-				}
-			    }
-			  else
-			    {
-			      if (IS_WIDE_STRING_DTP (dtp) && !coll->co_is_wide)
-				{
-				  if (qi)
-				    {
-				      SQL_DDL_ERROR (qi, ("42S22", "SQ140", "Collation %s is not wide", opt->_.op.arg_1));
-				    }
-				}
-			      else
-				{
-				  strcat_ck (ostr, opt->_.op.arg_1);
-				  have_col = 1;
-				}
+			      SQL_DDL_ERROR (qi, ("42S22", "SQ003", "Collation %s is not defined", opt->_.op.arg_1));
 			    }
 			}
 		      else
 			{
-			  if (qi)
+			  if (IS_WIDE_STRING_DTP (dtp) && !coll->co_is_wide)
 			    {
-			      SQL_DDL_ERROR (qi, ("42S22", "SQ004", "Collation defined for a non-string column"));
-			    }
-			}
-		      break;
-
-		  case COL_XML_ID:
-		      strcat_ck (ostr, " U ");
-		      strcat_ck (ostr, opt->_.op.arg_1);
-		      strcat_ck (ostr, " ");
-		      break;
-
-		  case CO_IDENTITY:
-			{
-			  int opt_inx;
-			  caddr_t * opt_arr = (caddr_t *) opt->_.op.arg_1;
-			  strcat_ck (ostr, "I");
-			  DO_BOX (ST *, opt, opt_inx, opt_arr)
-			    {
-			      switch (opt->type)
+			      if (qi)
 				{
-				  case CO_ID_START:
-				      dk_set_push (col_options, box_dv_short_string ("identity_start"));
-				      dk_set_push (col_options, box_copy (opt->_.op.arg_1));
-				      break;
-				  case CO_ID_INCREMENT_BY:
-				      dk_set_push (col_options, box_dv_short_string ("increment_by"));
-				      dk_set_push (col_options, box_copy (opt->_.op.arg_1));
-				      break;
+				  SQL_DDL_ERROR (qi, ("42S22", "SQ140", "Collation %s is not wide", opt->_.op.arg_1));
 				}
 			    }
-			  END_DO_BOX;
+			  else
+			    {
+			      strcat_ck (ostr, opt->_.op.arg_1);
+			      have_col = 1;
+			    }
 			}
-		      break;
+		    }
+		  else
+		    {
+		      if (qi)
+			{
+			  SQL_DDL_ERROR (qi, ("42S22", "SQ004", "Collation defined for a non-string column"));
+			}
+		    }
+		  break;
+
+		case COL_XML_ID:
+		  strcat_ck (ostr, " U ");
+		  strcat_ck (ostr, opt->_.op.arg_1);
+		  strcat_ck (ostr, " ");
+		  break;
+
+		case CO_IDENTITY:
+		  {
+		    int opt_inx;
+		    caddr_t * opt_arr = (caddr_t *) opt->_.op.arg_1;
+		    strcat_ck (ostr, "I");
+		    DO_BOX (ST *, opt, opt_inx, opt_arr)
+		      {
+			switch (opt->type)
+			  {
+			  case CO_ID_START:
+			    dk_set_push (col_options, box_dv_short_string ("identity_start"));
+			    dk_set_push (col_options, box_copy (opt->_.op.arg_1));
+			    break;
+			  case CO_ID_INCREMENT_BY:
+			    dk_set_push (col_options, box_dv_short_string ("increment_by"));
+			    dk_set_push (col_options, box_copy (opt->_.op.arg_1));
+			    break;
+			  }
+		      }
+		    END_DO_BOX;
+		  }
+		  break;
 		}
 	    }
 	}
@@ -1132,7 +1132,7 @@ ddl_commit_trx (query_instance_t *qi)
 {
   caddr_t repl;
   int rc;
-  /* for 2pc, this is done really out of whakc.  Not proper sequence.  So remove the mark that this w id is gone cause there'll be ops with the id from the coordinator */ 
+  /* for 2pc, this is done really out of whakc.  Not proper sequence.  So remove the mark that this w id is gone cause there'll be ops with the id from the coordinator */
   IN_TXN;
   repl = box_copy_tree ((box_t) qi->qi_trx->lt_replicate); /* if logging is off, keep it off */
   rc = lt_commit (qi->qi_trx, TRX_CONT);
@@ -1140,7 +1140,7 @@ ddl_commit_trx (query_instance_t *qi)
   LEAVE_TXN;
   if (LTE_OK != rc)
     sqlr_new_error ("4000X", "SR108",
-		    "Transaction could not commit after DDL statement. Last DDL statement rolled back: %s", 
+		    "Transaction could not commit after DDL statement. Last DDL statement rolled back: %s",
 		    qi->qi_trx->lt_error_detail ? qi->qi_trx->lt_error_detail : "");
 }
 
@@ -1683,7 +1683,7 @@ recomp_mtx_entry_check (dk_mutex_t * mtx, du_thread_t * self, void * cd)
 }
 
 
-char  * sys_cluster_text = 
+char  * sys_cluster_text =
 "create table SYS_CLUSTER ( "
   "  CL_NAME varchar, CL_HOSTS long varchar, CL_MAP long varchar, primary key (CL_NAME))";
 
@@ -2388,9 +2388,9 @@ ddl_create_subtable_keys (query_instance_t * qi, dbe_table_t * tb,
     key_ver_t new_kv = qi_new_key_version (qi, top_super_id);
     local_cursor_t *lc_parts;
     qr_rec_exec (inherit_key_qr, qi->qi_client, &lc_parts, qi, NULL, 5,
-	":FROM", tb->tb_name, QRP_STR,
-	":TO", sub->tb_name, QRP_STR,
-	":OLD_ID", (ptrlong) super_key_id, QRP_INT,
+		 ":FROM", tb->tb_name, QRP_STR,
+		 ":TO", sub->tb_name, QRP_STR,
+		 ":OLD_ID", (ptrlong) super_key_id, QRP_INT,
 		 ":NEW_ID", (ptrlong) new_id, QRP_INT,
 		 ":NEW_VER", (ptrlong)new_kv, QRP_INT);
     ddl_inherit_partition (qi, tb->tb_name, sub->tb_name, super_key_id);
@@ -2721,9 +2721,9 @@ ddl_drop_index (caddr_t * qst, const char *table, const char *name, int log_to_t
     }
   else
     {
-  ITC_INIT (it, QI_SPACE (qi), qi->qi_trx);
-  itc_drop_index (it, key);
-  itc_free (it);
+      ITC_INIT (it, QI_SPACE (qi), qi->qi_trx);
+      itc_drop_index (it, key);
+      itc_free (it);
     }
   AS_DBA (qi, qr_rec_exec (drop_key_stmt, qi->qi_client, NULL, qi, NULL, 2,
       ":0", key->key_table->tb_name, QRP_STR,
@@ -2737,7 +2737,7 @@ ddl_drop_index (caddr_t * qst, const char *table, const char *name, int log_to_t
       if (is_cluster)
 	log_text_cluster (qi, temp_tx);
       else
-      log_text (qi->qi_trx, temp_tx);
+	log_text (qi->qi_trx, temp_tx);
       temp_tx_box = box_string (temp_tx);
       log_repl_text_array_all (key->key_table->tb_name, 2, temp_tx_box, qi->qi_client, qi,
 	  LOG_REPL_TEXT_ARRAY_MASK_ALL);
@@ -4892,7 +4892,7 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
   caddr_t org_qual, proc_name = box_copy (qr->qr_proc_name);
   user_t *owner_user;
   dk_set_t old_qr_set = NULL;
-  dbe_schema_t *sc; 
+  dbe_schema_t *sc;
 
   mutex_enter (recomp_mtx);
   /* whe should get schema after we got mutex as it can be changed in the meantime */
@@ -5214,7 +5214,7 @@ ddl_store_proc (caddr_t * state, op_node_t * op)
     dk_free_box (escapes_text);
   if (err != SQL_SUCCESS)
     sqlr_resignal (err);
-  else 
+  else
     {
       int proc_op = (op->op_code != OP_STORE_TRIGGER);
       caddr_t *log_array = (caddr_t *) dk_alloc_box ((proc_op ? 2 : 3) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
@@ -6095,7 +6095,7 @@ const char * wsst =
 "}\n";
 
 
-const char * bm_proc_1 = 
+const char * bm_proc_1 =
 "create procedure ddl_bitmap_inx (in tb varchar, in bm_id integer)\n"
 "{\n"
 "  declare last_col, last_col_dtp int;\n"
@@ -6463,7 +6463,7 @@ ddl_ensure_univ_tables (void)
 {
   ddl_ensure_table ("DB.DBA.SYS_DATA_SOURCE", univ_dd_text);
   ddl_ensure_table ("DB.DBA.SYS_PASS_THROUGH_FUNCTION", univ_dd_pt_text);
-  local_commit (bootstrap_cli); /* otherwise don in ddl_ensure_table */  
+  local_commit (bootstrap_cli); /* otherwise don in ddl_ensure_table */
 }
 
 

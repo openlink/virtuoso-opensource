@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Dynamic SQL Statement Compilations
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "libutil.h"
@@ -320,7 +320,7 @@ sqlc_insert_autoincrements (sql_comp_t * sc, insert_node_t * ins,
 		snprintf (temp, sizeof (temp), "%s.%s.%s.%s", tb->tb_qualifier, tb->tb_owner,
 		    col->col_defined_in->tb_name, col->col_name);
 		seq_name = box_dv_short_string (temp);
-		args = (state_slot_t **) sc_list (3, ssl_new_constant (sc->sc_cc, seq_name), old_sl, 
+		args = (state_slot_t **) sc_list (3, ssl_new_constant (sc->sc_cc, seq_name), old_sl,
 		    ssl_new_constant (sc->sc_cc, (caddr_t) (ptrlong) 1));
 		snext = t_sqlp_box_id_upcase ("sequence_set");
 		cv_bif_call (code, bif_sequence_set_no_check, snext, NULL, args);
@@ -774,7 +774,7 @@ sqlc_insert (sql_comp_t * sc, ST * tree)
       sqlc_ins_keys (sc->sc_cc, ins);
       sqlg_cl_insert (sc, sc->sc_cc, ins, tree, &code);
       ins->src_gen.src_pre_code = code_to_cv (sc, code);
-    }
+  }
 }
 
 
@@ -890,10 +890,10 @@ upd_optimize (sql_comp_t *sc, update_node_t * upd)
 	}
       if (dtp_is_fixed (col->col_sqt.sqt_dtp))
 	{
-      dk_set_push (&fixed_cls, (void*) key_find_cl (key, (oid_t) cid));
+	  dk_set_push (&fixed_cls, (void*) key_find_cl (key, (oid_t) cid));
 	  dk_set_push (&fixed_vals, upd->upd_values[inx]);
 	}
-      else 
+      else
 	{
 	  dk_set_push (&var_cls, (void*) key_find_cl (key, (oid_t) cid));
 	  dk_set_push (&var_vals, upd->upd_values[inx]);
@@ -1203,7 +1203,7 @@ sqlc_update_searched (sql_comp_t * sc, ST * tree)
 	 This must not be.  Make it so that the ts_current_of is not aliased to the
 	 ts_order_itc if we have this kind of update. Sqlcomp2.c.  Put a flag for
 	 this in sql_comp_t, set it in sqlc_update_searched.  Like this you  know
-	 when not to alias this. 
+	 when not to alias this.
        */
       tc_init (&tc, TRIG_UPDATE, tb,
 	  (caddr_t*) tree->_.update_src.cols, tree->_.update_src.vals, 0);
@@ -1228,8 +1228,8 @@ sqlc_update_searched (sql_comp_t * sc, ST * tree)
       tc_free (&tc);
 
       upd->upd_place = sqlo_co_place (sc);
-      sql_node_append (&sc->sc_cc->cc_query->qr_head_node,
-	  (data_source_t *) upd);
+	sql_node_append (&sc->sc_cc->cc_query->qr_head_node,
+			 (data_source_t *) upd);
       sqlc_upd_param_types (sc, upd);
       upd_optimize (sc, upd);
     }

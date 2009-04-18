@@ -80,11 +80,11 @@ typedef struct itc_cluster_s
   int			itcl_nth_set;
   dbe_column_t **	itcl_out_cols;
   dk_set_t		itcl_out_slots;
-  query_frag_t *	itcl_dfg_qf; 
+  query_frag_t *	itcl_dfg_qf;
   caddr_t *		itcl_qst;
   mem_pool_t *		itcl_pool;
   cl_op_t ***		itcl_param_rows;
-  dk_set_t		itcl_last; 
+  dk_set_t		itcl_last;
 } itc_cluster_t;
 
 #define QFID_HOST(i) ((int)(((unsigned int64) (i)) >> 32))

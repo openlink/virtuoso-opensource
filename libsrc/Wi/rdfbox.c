@@ -3,22 +3,22 @@
  *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2009 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "sqlnode.h"
@@ -577,7 +577,7 @@ bif_rdf_box_set_ro_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #define RBS_SKIP_DTP	0x40
 
 
-int 
+int
 rbs_length (db_buf_t rbs)
 {
   long hl, l;
@@ -640,7 +640,7 @@ rb_serialize (caddr_t x, dk_session_t * ses)
     sr_report_future_error (ses, "", "Zero ro_id in incomplete DV_RDF value, can't serialize");
   if (DKS_DB_DATA (ses))
     print_object (rb->rb_box, ses, NULL, NULL);
-  else 
+  else
     {
       int flags = 0;
       session_buffered_write_char (DV_RDF, ses);
@@ -747,7 +747,7 @@ rb_copy (rdf_box_t * rb)
 int
 dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
 {
-  /* this is dv_compare  where one or both arguments are dv_rdf 
+  /* this is dv_compare  where one or both arguments are dv_rdf
    * The collation is perverse: If one is not a string, collate as per dv_compare of the data.
    * if both are strings and one is not an rdf box, treat the one that is not a box as an rdf string of max inlined chars and no lang orr type. */
   int len1, len2, cmp_len, mcmp;
@@ -925,7 +925,7 @@ In version 6 (Vajra), complete boxes are equal even if ro_id differ (say, one of
 int
 rdf_box_compare (ccaddr_t a1, ccaddr_t a2)
 {
-  /* this is cmp_boxes  where one or both arguments are dv_rdf 
+  /* this is cmp_boxes  where one or both arguments are dv_rdf
    * The collation is perverse: If one is not a string, collate as per dv_compare of the data.
    * if both are strings and one is not an rdf box, treat the one that is not a box as an rdf string of max inlined chars and no lang orr type. */
   rdf_box_t * rb1 = (rdf_box_t *) a1;
@@ -1592,7 +1592,7 @@ ttl_http_write_ref (dk_session_t *ses, ttl_env_t *env, ttl_iriref_t *ti)
 }
 
 #ifdef NOT_CURRENTLY_USED
-static caddr_t 
+static caddr_t
 rdf_box_get_lang (query_instance_t * qi, unsigned short lang)
 {
   caddr_t lang_id = nic_id_name (rdf_lang_cache, lang);
@@ -1600,9 +1600,9 @@ rdf_box_get_lang (query_instance_t * qi, unsigned short lang)
   local_cursor_t * lc = NULL;
   caddr_t err = NULL;
 
-  if (NULL != lang_id) 
+  if (NULL != lang_id)
     return lang_id;
-  if (!qr) 
+  if (!qr)
     qr = sql_compile ("select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = ?", qi->qi_client, &err, SQLC_DEFAULT);
   if (!err)
     {
@@ -1663,7 +1663,7 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
     {
       obj_box_value = obj;
       obj_box_value_dtp = obj_dtp;
-    }      
+    }
   switch (obj_box_value_dtp)
     {
     case DV_DATETIME:
@@ -1738,11 +1738,11 @@ bif_http_ttl_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     (sizeof (ttl_env_t) != box_length ((caddr_t)env)) ||
     (DV_DICT_ITERATOR != DV_TYPE_OF (env->te_used_prefixes)) ||
     (((DV_STRING == DV_TYPE_OF (env->te_prev_subj_ns)) || (DV_UNAME == DV_TYPE_OF (env->te_prev_subj_ns))) &&
-      ((DV_STRING != DV_TYPE_OF (env->te_prev_subj_loc)) ||	
+      ((DV_STRING != DV_TYPE_OF (env->te_prev_subj_loc)) ||
         ((DV_STRING != DV_TYPE_OF (env->te_prev_pred_ns)) && (DV_UNAME != DV_TYPE_OF (env->te_prev_pred_ns))) ||
         (DV_STRING != DV_TYPE_OF (env->te_prev_pred_loc)) ) ) ||
-    (DV_LONG_INT != DV_TYPE_OF (env->te_ns_count_s_o)) ||	
-    (DV_LONG_INT != DV_TYPE_OF (env->te_ns_count_p_dt)) )	
+    (DV_LONG_INT != DV_TYPE_OF (env->te_ns_count_s_o)) ||
+    (DV_LONG_INT != DV_TYPE_OF (env->te_ns_count_p_dt)) )
     sqlr_new_error ("22023", "SR601", "Argument 1 of http_ttl_triple() should be an array of special format");
   if (!iri_cast_and_split_ttl_qname (qi, subj, &tii.s.ns, &tii.s.loc, &tii.s.is_bnode))
     goto fail; /* see below */
@@ -1834,7 +1834,7 @@ bif_sparql_rset_ttl_write_row (caddr_t * qst, caddr_t * err_ret, state_slot_t **
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF ((caddr_t)env) ||
     (sizeof (ttl_env_t) != box_length ((caddr_t)env)) ||
     (DV_DICT_ITERATOR != DV_TYPE_OF (env->te_used_prefixes)) ||
-    (DV_LONG_INT != DV_TYPE_OF (env->te_ns_count_s_o)) ||	
+    (DV_LONG_INT != DV_TYPE_OF (env->te_ns_count_s_o)) ||
     (DV_LONG_INT != DV_TYPE_OF (env->te_ns_count_p_dt)) ||
     ((DV_LONG_INT != DV_TYPE_OF (env->te_out_ses)) && (DV_STRING_SESSION != DV_TYPE_OF (env->te_out_ses))) ||
     (DV_ARRAY_OF_POINTER != DV_TYPE_OF ((caddr_t)(env->te_cols))) ||
@@ -1847,7 +1847,7 @@ bif_sparql_rset_ttl_write_row (caddr_t * qst, caddr_t * err_ret, state_slot_t **
       if (!ses)
 	sqlr_new_error ("37000", "HT081",
 	    "Function sparql_rset_ttl_write_row() outside of HTTP context and no stream specified");
-        }
+    }
   colcount = box_length ((caddr_t)(env->te_cols)) / sizeof (ttl_iriref_t);
   if ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (row)) || (BOX_ELEMENTS (row) != colcount))
     sqlr_new_error ("22023", "SR606", "Argument 3 of sparql_rset_ttl_write_row() should be an array of values and length should match to the argument 2");
@@ -1857,18 +1857,18 @@ bif_sparql_rset_ttl_write_row (caddr_t * qst, caddr_t * err_ret, state_slot_t **
       env->te_prev_subj_ns = NULL;
     }
   for (colctr = 0; colctr < colcount; colctr++)
-            {
+    {
       ttl_iriref_t *col_ti = env->te_cols + colctr;
       caddr_t obj = row[colctr];
       dtp_t obj_dtp = DV_TYPE_OF (obj);
       int obj_is_iri;
       switch (obj_dtp)
-                {
+        {
         case DV_DB_NULL: continue;
         case DV_UNAME: case DV_IRI_ID: case DV_IRI_ID_8: obj_is_iri = 1; break;
         case DV_STRING: obj_is_iri = (BF_IRI & box_flags (obj)) ? 1 : 0; break;
         default: obj_is_iri = 0; break;
-            }
+        }
       col_ti->is_iri = obj_is_iri;
       if (obj_is_iri)
         iri_cast_and_split_ttl_qname (qi, obj, &(col_ti->ns), &(col_ti->loc), &(col_ti->is_bnode));
@@ -1877,11 +1877,11 @@ bif_sparql_rset_ttl_write_row (caddr_t * qst, caddr_t * err_ret, state_slot_t **
       if ((NULL != col_ti->ns) && ('\0' != col_ti->ns[0]))
         ttl_http_write_prefix_if_needed (qst, ses, env,
          (obj_is_iri ? &(env->te_ns_count_s_o) : &(env->te_ns_count_p_dt)) , col_ti );
-            }
+    }
   SES_PRINT (ses, "_:_ res:solution [");
   need_semicolon = 0;
   for (colctr = 0; colctr < colcount; colctr++)
-            {
+    {
       ttl_iriref_t *col_ti = env->te_cols + colctr;
       caddr_t obj = row[colctr];
       dtp_t obj_dtp = DV_TYPE_OF (obj);
@@ -2122,7 +2122,7 @@ rdf_box_init ()
   box_tmp_copier[DV_RDF] = (box_tmp_copy_f) rb_tmp_copy;
   PrpcSetWriter (DV_RDF, (ses_write_func) rb_serialize);
   dk_dtp_register_hash (DV_RDF, rdf_box_hash, rdf_box_hash_cmp);
-  rdf_graph_group_dict_htable = (id_hash_t *)box_dv_dict_hashtable (31);
+    rdf_graph_group_dict_htable = (id_hash_t *)box_dv_dict_hashtable (31);
   rdf_graph_group_dict_htable->ht_rehash_threshold = 120;
   rdf_graph_group_dict_htable->ht_dict_refctr = ID_HASH_LOCK_REFCOUNT;
   rdf_graph_group_dict_hit = (id_hash_iterator_t *)box_dv_dict_iterator ((caddr_t)rdf_graph_group_dict_htable);
@@ -2134,7 +2134,7 @@ rdf_box_init ()
   rdf_graph_default_perms_of_user_dict_htable->ht_rehash_threshold = 120;
   rdf_graph_default_perms_of_user_dict_htable->ht_dict_refctr = ID_HASH_LOCK_REFCOUNT;
   rdf_graph_default_perms_of_user_dict_hit = (id_hash_iterator_t *)box_dv_dict_iterator ((caddr_t)rdf_graph_default_perms_of_user_dict_htable);
-  bif_define ("rdf_box", bif_rdf_box);
+bif_define ("rdf_box", bif_rdf_box);
   bif_define ("ro_digest_from_parts", bif_ro_digest_from_parts);
   bif_define_typed ("is_rdf_box", bif_is_rdf_box, &bt_integer);
   bif_define_typed ("rdf_box_set_data", bif_rdf_box_set_data, &bt_any);

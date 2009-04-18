@@ -537,7 +537,7 @@ SQL_FILES		= \
 	$(srcdir)/useraggr.sql \
 	$(srcdir)/vt_text.sql \
 	$(srcdir)/phrasematch.sql \
-	$(srcdir)/hosting.sql 
+	$(srcdir)/hosting.sql
 
 SQL_FILES_1		= \
 	$(srcdir)/oledb.sql \
@@ -554,7 +554,7 @@ SQL_FILES_AUTO		= \
 	$(srcdir)/autoexec.sql
 
 SQL_FILES_BLOG		= \
-	$(top_srcdir)/binsrc/weblog2/widgets/rss2rdf.xsl 
+	$(top_srcdir)/binsrc/weblog2/widgets/rss2rdf.xsl
 
 SQL_FILES_DAV		= \
 	$(top_srcdir)/binsrc/dav/dav.sql \
@@ -617,10 +617,10 @@ SQL_FILES_SPARQL	= \
 	$(srcdir)/sparql_io.sql \
 	$(srcdir)/rdf_sponge.sql \
 	$(srcdir)/rdf_schema_objects.sql \
-	$(srcdir)/rdf_void.sql 
+	$(srcdir)/rdf_void.sql
 
 SQL_FILES_SYS 		= \
-	$(srcdir)/users.sql 
+	$(srcdir)/users.sql
 
 SQL_FILES_UDDI		= \
 	$(srcdir)/uddi.sql

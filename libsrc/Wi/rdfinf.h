@@ -21,7 +21,7 @@
  *
  */
 
-typedef struct rdf_sub_s 
+typedef struct rdf_sub_s
 {
   caddr_t	rs_iri;
   dk_set_t	rs_super;
@@ -32,9 +32,9 @@ typedef struct rdf_sub_s
 } rdf_sub_t;
 
 
-typedef struct rdf_inf_ctx_s 
+typedef struct rdf_inf_ctx_s
 {
-  caddr_t			ric_name;
+  caddr_t	ric_name;
   id_hash_t *	ric_iri_to_subclass;
   id_hash_t *	ric_iri_to_subproperty;
   caddr_t *	ric_ifp_list;
@@ -53,7 +53,7 @@ typedef struct ri_state_s
 } ri_state_t;
 
 
-typedef struct ri_iterator_s 
+typedef struct ri_iterator_s
 {
   id_hash_t *	rit_visited;
   char		rit_mode;
@@ -77,7 +77,7 @@ struct rdf_inf_node_s
   state_slot_t *	ri_isnon_org_o; /* for gs, fp, go, this ssl is true if the o is an enum other than the given o */
   caddr_t	ri_given; /* the iri for which to enum sub/super classes/properties */
   state_slot_t *	ri_output;
-  state_slot_t *	ri_outer_any_passed; /* if rhs of left outer, flag here to see if any answer. If not, do outer output when at end */ 
+  state_slot_t *	ri_outer_any_passed; /* if rhs of left outer, flag here to see if any answer. If not, do outer output when at end */
   state_slot_t *	ri_iterator;
   state_slot_t *	ri_sas_in; /* the value whose same_as-s are to be listed */
   state_slot_t **	ri_sas_g;
@@ -133,7 +133,7 @@ typedef struct trans_set_s
 } trans_set_t;
 
 
-struct trans_node_s 
+struct trans_node_s
 {
   data_source_t	src_gen;
   cl_buffer_t	clb;
@@ -182,7 +182,7 @@ struct trans_node_s
   state_slot_t *	tn_ifp_g_list;
 };
 
-#define TN_DEFAULT_MAX_MEMORY 100000000 
+#define TN_DEFAULT_MAX_MEMORY 100000000
 
 
 
@@ -195,14 +195,14 @@ rdf_inf_ctx_t * rdf_name_to_ctx (caddr_t name);
 rdf_sub_t * ric_iri_to_sub (rdf_inf_ctx_t * ctx, caddr_t iri, int mode, int create);
 void ri_outer_output (rdf_inf_pre_node_t * ri, state_slot_t * any_flag, caddr_t * inst);
 void sqlg_outer_with_iters (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** head);
-void sqlg_leading_multistate_same_as (sqlo_t * so, data_source_t ** q_head, data_source_t * ts, 
+void sqlg_leading_multistate_same_as (sqlo_t * so, data_source_t ** q_head, data_source_t * ts,
 				      df_elt_t * g_dfe, df_elt_t * s_dfe, df_elt_t * p_dfe,  df_elt_t * o_dfe, int mode,
 				 rdf_inf_ctx_t * ctx, df_elt_t * tb_dfe, int inxop_inx, rdf_inf_pre_node_t ** ri_ret);
 void sqlg_rdf_ts_replace_ssl (table_source_t * ts, state_slot_t * old, state_slot_t * new, int col_id, int inxop_inx);
 rdf_inf_ctx_t *  sqlg_rdf_inf_same_as_opt (df_elt_t * tb_dfe);
 char * ssl_inf_name (df_elt_t * dfe);
 void tn_free (trans_node_t * tn);
-data_source_t * sqlg_distinct_same_as (sqlo_t * so, data_source_t ** q_head, 
+data_source_t * sqlg_distinct_same_as (sqlo_t * so, data_source_t ** q_head,
 				       ST ** col_sts, df_elt_t * dt_dfe, 		       dk_set_t pre_code);
 
 

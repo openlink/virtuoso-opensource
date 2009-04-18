@@ -4,26 +4,26 @@
 --  $Id$
 --
 --  TRX replication support
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2006 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 create procedure REPL_PUB_REMOVE (in __pub varchar, in _item varchar, in _type integer, in _not_all varchar)
 {
@@ -1732,7 +1732,7 @@ create procedure REPL_SUBSCR_TBL (in serv varchar, in _pub varchar, in tbl varch
 	  declare _col_options any;
 	  _col_options := deserialize(_col[5]);
 
-	  if (_col_dtp in (125, 132) and _col_options is not null and 
+	  if (_col_dtp in (125, 132) and _col_options is not null and
               atoi (get_keyword ('xml_col', coalesce(_col_options, vector()), '0')) > 0)
 	    stmt := concat (stmt, sprintf ('\"%I\" LONG XML', _col_name));
 	  else

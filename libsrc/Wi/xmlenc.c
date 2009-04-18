@@ -2,25 +2,25 @@
  *  xmlenc.c
  *
  *  $Id$
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #ifdef HAVE_CONFIG_H
@@ -1497,7 +1497,7 @@ caddr_t bif_xenc_key_dsa_create (caddr_t * qst, caddr_t * err_r, state_slot_t **
   return NULL;
 }
 
-static 
+static
 caddr_t bif_xenc_key_DH_create (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
 {
   xenc_key_t * key;
@@ -1517,7 +1517,7 @@ caddr_t bif_xenc_key_DH_create (caddr_t * qst, caddr_t * err_r, state_slot_t ** 
     }
   else if (p)
     {
-      p = bif_string_arg (qst, args, 2, "xenc_key_DH_create"); 
+      p = bif_string_arg (qst, args, 2, "xenc_key_DH_create");
     }
 
   if (num <= 0)
@@ -1572,7 +1572,7 @@ caddr_t bif_xenc_key_DH_create (caddr_t * qst, caddr_t * err_r, state_slot_t ** 
   return NULL;
 }
 
-static 
+static
 caddr_t bif_xenc_DH_get_params (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
 {
   xenc_key_t * key;
@@ -1630,7 +1630,7 @@ caddr_t bif_xenc_DH_get_params (caddr_t * qst, caddr_t * err_r, state_slot_t ** 
   return ret;
 }
 
-static 
+static
 caddr_t bif_xenc_DH_compute_key (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
 {
   xenc_key_t * key;
@@ -1656,9 +1656,9 @@ caddr_t bif_xenc_DH_compute_key (caddr_t * qst, caddr_t * err_r, state_slot_t **
       dk_free_box (pub_b64);
       SQLR_NEW_KEY_ERROR (name);
     }
- 
+
   pub_key = BN_bin2bn ((unsigned char *)pub, len, NULL);
-  dh = key->xek_private_dh;  
+  dh = key->xek_private_dh;
   buf_len = DH_size (dh);
   buf = dk_alloc_box (buf_len, DV_BIN);
   shared_secret_len = DH_compute_key ((unsigned char *)buf, pub_key, dh);
@@ -1683,7 +1683,7 @@ caddr_t bif_xenc_DH_compute_key (caddr_t * qst, caddr_t * err_r, state_slot_t **
   return ret;
 }
 
-static 
+static
 caddr_t bif_xenc_xor (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
 {
   caddr_t x = box_copy (bif_string_arg (qst, args, 0, "xenc_xor"));
@@ -2007,7 +2007,7 @@ int __xenc_key_dh_init (char *name, int lock)
   xenc_key_t * pkey = xenc_get_key_by_name (name, lock);
   if (NULL == pkey)
     SQLR_NEW_KEY_ERROR (name);
- 
+
   dh = DH_generate_parameters (num, g, dh_cb, NULL);
   if (!dh)
     {
@@ -2375,8 +2375,8 @@ caddr_t bif_xenc_rand_bytes (caddr_t * qst, caddr_t * err_r, state_slot_t ** arg
 	{
 	  snprintf ((char *) tmp, sizeof (tmp), "%02x", (unsigned char) buf[i]);
 	  strcat_box_ck (ret, (char *)tmp);
-	}	 
-      ret[2 * len] = 0; 
+	}
+      ret[2 * len] = 0;
     }
   else if (2 == mode) /* base64 */
     {
@@ -2393,7 +2393,7 @@ caddr_t bif_xenc_rand_bytes (caddr_t * qst, caddr_t * err_r, state_slot_t ** arg
       ret = dk_alloc_box (len, DV_BIN);
       memcpy (ret, buf, len);
     }
-  return ret; 
+  return ret;
 }
 
 static caddr_t
@@ -5978,7 +5978,7 @@ static int x509_add_ext (X509 *cert, int nid, char *value)
   X509_EXTENSION_free(ex);
   return 1;
 }
-	
+
 static caddr_t
 bif_xenc_x509_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -6274,7 +6274,7 @@ bif_xenc_pem_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     goto err;
 
   b = BIO_new (BIO_s_mem());
-  PEM_write_bio_X509 (b, key->xek_x509); 
+  PEM_write_bio_X509 (b, key->xek_x509);
   if (pkey && key->xek_evp_private_key)
     PEM_write_bio_PrivateKey (b, key->xek_evp_private_key, NULL, NULL, 0, NULL, NULL);
   len = BIO_get_mem_data (b, &data_ptr);
@@ -6461,7 +6461,7 @@ void bif_xmlenc_init ()
   bif_define ("X509_get_subject", bif_x509_get_subject);
   bif_define ("xenc_sha1_digest", bif_xenc_sha1_digest);
   bif_define ("xenc_hmac_sha1_digest", bif_xenc_hmac_sha1_digest);
-#ifdef SHA256_ENABLE  
+#ifdef SHA256_ENABLE
   bif_define ("xenc_sha256_digest", bif_xenc_sha256_digest);
   bif_define ("xenc_hmac_sha256_digest", bif_xenc_hmac_sha256_digest);
 #endif

@@ -1154,7 +1154,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
   declare ret_mime varchar;
   if (status is not null)
     {
-      http_header (concat (coalesce (http_header_get (), ''), 
+      http_header (concat (coalesce (http_header_get (), ''),
           'X-SQL-State: ', status[0], '\r\nX-SQL-Message: ', status[1],
           '\r\nX-Exec-Milliseconds: ', cast (status[2] as varchar), '\r\nX-Exec-DB-Activity: ', cast (status[3] as varchar),
           '\r\n' ) );

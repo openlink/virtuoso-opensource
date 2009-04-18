@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Locking transaction structures
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #ifndef _LTRX_H
@@ -147,7 +147,7 @@ do { \
 	__FILE__, __LINE__, action, \
 	lt->lt_threads, \
 	lt, THREAD_CURRENT_THREAD)
-#define lt_log_debug(x) 
+#define lt_log_debug(x)
 #else
 #define LT_ENTER_SAVE(lt)
 #define LT_CLOSE_ACK_THREADS(lt)
@@ -380,7 +380,7 @@ typedef struct page_lock_s
 #define PL_SET_FLAG(pl, f) pl->pl_type |= f
 #define PL_SET_TYPE(pl, f) pl->pl_type = (pl->pl_type & 0xfc) | f
 
-/* put into pl_page after it is removed from the itm_locks.  Intermediate state, for a page lock, wait refs can be left hanging after the lock has no more owners and is thus free.  
+/* put into pl_page after it is removed from the itm_locks.  Intermediate state, for a page lock, wait refs can be left hanging after the lock has no more owners and is thus free.
  * Relates to pl_finish_ref_count.  This is used to delay free of a pl until all the wait refs from already closing lt's are handled. */
 #define PL_FINISHING ((dp_addr_t)-2)
 
@@ -571,7 +571,7 @@ void itc_assert_lock (it_cursor_t * itc);
 
 
 void lt_free_rb (lock_trx_t * lt);
-void lt_rb_new_entry (lock_trx_t * lt, uint32 rb_code, rb_entry_t * prev, 
+void lt_rb_new_entry (lock_trx_t * lt, uint32 rb_code, rb_entry_t * prev,
 		 buffer_desc_t * buf, db_buf_t row, char op);
 int32 rd_pos_key (row_delta_t * rd);
 

@@ -1,20 +1,20 @@
 /*
  *  $Id$
- *   
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *   
+ *
  *  Copyright (C) 1998-2009 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *   
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *   
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
@@ -49,21 +49,21 @@ HEX             ([0-9A-Fa-f])
 
 %%
 
-<INITIAL>"{"	{ return OBJ_BEGIN; } 
-<INITIAL>"}"	{ return OBJ_END; } 
-<INITIAL>"["	{ return ARR_BEGIN; } 
-<INITIAL>"]"	{ return ARR_END; } 
+<INITIAL>"{"	{ return OBJ_BEGIN; }
+<INITIAL>"}"	{ return OBJ_END; }
+<INITIAL>"["	{ return ARR_BEGIN; }
+<INITIAL>"]"	{ return ARR_END; }
 <INITIAL>":"	{ return COLON; }
 <INITIAL>","	{ return COMMA; }
 <INITIAL>"\""[^\\\"\n\r\t]*	{ yymore(); BEGIN(STRLIT); }
 
-<INITIAL>"\""[^\\\"\n\r\t]*"\"" 	{ 
+<INITIAL>"\""[^\\\"\n\r\t]*"\"" 	{
                    jsonyylval.box = t_box_dv_short_nchars (jsonyytext+1, strlen (jsonyytext)-2);
 		   return STRING;
 		}
 
-<STRLIT>[^\\\"\n\r\t]*"\"" 	{ 
-		   BEGIN(INITIAL); 
+<STRLIT>[^\\\"\n\r\t]*"\"" 	{
+		   BEGIN(INITIAL);
                    jsonyylval.box = spar_strliteral (NULL /* no sparp for JSON_LITERAL */, jsonyytext, 0, 1);
 		   return STRING;
 		}
@@ -86,7 +86,7 @@ HEX             ([0-9A-Fa-f])
 		      dk_free_tree (err);
                       jsonyyerror ("bad integer constant");
 		    }
-                  jsonyylval.box = t_box_num_and_zero (n); 
+                  jsonyylval.box = t_box_num_and_zero (n);
 		  return NUMBER;
 		}
 <INITIAL>"-"?[0-9]+"."[0-9]* |

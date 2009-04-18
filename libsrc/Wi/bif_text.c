@@ -491,7 +491,7 @@ bif_wb_all_done  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  qst_set (qst, args[1], box_d_id (&d_id_1));
 	  if (inx < len - 1)
 	    qst_set (qst, args[2], box_num (1));
-	  else 
+	  else
 	    qst_set (qst, args[2], box_num (0));
 	  return box_num (0);
 	}
@@ -1951,7 +1951,7 @@ static char *vt_create_text_index_text =
 "      else \n"
 "	{ \n"
 "	  if (is_part and sys_stat ('cl_run_local_only') = 0) \n"
-"	    signal ('22023', 'Explicit with key is required on partitioned table.'); \n" 
+"	    signal ('22023', 'Explicit with key is required on partitioned table.'); \n"
 "	  k_id := NULL; \n"
 "	  kn := NULL; \n"
 "	  text_id_col := concat (col, \'_ID\');\n"
@@ -1978,8 +1978,8 @@ static char *vt_create_text_index_text =
 "    if (isstring (use_id)) { \n"
 "      cl_col_opt := DB.DBA.VT_GET_CLUSTER_COL_OPTS (tb, kn, use_id) ;\n"
 "    } \n"
-"    str := sprintf (\'ALTER INDEX \"%I\" on \"%I\".\"%I\".\"%I\" partition %s (VT_D_ID int %s)\', \n" 
-"    name_part (vt_name, 2),  name_part (vt_name, 0), name_part (vt_name, 1), name_part (vt_name, 2), cl_part, cl_col_opt); \n" 
+"    str := sprintf (\'ALTER INDEX \"%I\" on \"%I\".\"%I\".\"%I\" partition %s (VT_D_ID int %s)\', \n"
+"    name_part (vt_name, 2),  name_part (vt_name, 0), name_part (vt_name, 1), name_part (vt_name, 2), cl_part, cl_col_opt); \n"
 "    DB.DBA.execstr (str);\n"
 "  } \n"
 "  declare the_key_table varchar; \n"
@@ -2903,7 +2903,7 @@ static char *vt_create_update_log_text =
 "		VT_OFFBAND_DATA \n"
 "	      from \n"
 "		<DB>.<DBA>.\"VTLOG_<VTLOGSUFF>\" table option (no cluster) \n"
-"	       order by 1 for update option (order); \n" 
+"	       order by 1 for update option (order); \n"
 " "
 "	  decses := string_output();	\n "
 "	  vtb := vt_batch (8191 <LANG_ENC>); \n"
@@ -3252,7 +3252,7 @@ static char *vt_clear_free_text_index_text =
 "} \n";
 
 
-vt_batch_t * 
+vt_batch_t *
 vtb_copy (vt_batch_t * vtb)
 {
   vtb->vtb_ref_count++;

@@ -2,25 +2,25 @@
  *  sqlfn.h
  *
  *  $Id$
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #ifndef _SQLFN_H
@@ -336,7 +336,7 @@ int ks_make_spec_list (it_cursor_t * it, search_spec_t * ks_spec, caddr_t * stat
 int ks_start_search (key_source_t * ks, caddr_t * inst, caddr_t * state,
     it_cursor_t * itc, buffer_desc_t ** buf_ret, table_source_t * ts,
 		 int search_mode);
-int itc_il_search (it_cursor_t * itc, buffer_desc_t ** buf_ret, caddr_t * qst, 
+int itc_il_search (it_cursor_t * itc, buffer_desc_t ** buf_ret, caddr_t * qst,
 	       inx_locality_t * il, placeholder_t * pl, int is_asc);
 
 void ts_outer_output (table_source_t * ts, caddr_t * qst);
@@ -546,7 +546,7 @@ EXE_EXPORT (void, sqlr_resignal, (caddr_t err));
 #define TA_REPORT_PTR		1213
 #define TA_REPORT_QST		1214
 #define TA_SQLC_ASG_SET 1215
-#define TA_DBG_STR 1216 
+#define TA_DBG_STR 1216
 
 void update_node_input (update_node_t * del, caddr_t * inst, caddr_t * state);
 
@@ -586,7 +586,7 @@ caddr_t ddl_col_nullable (char *name);
 
 void log_insert (lock_trx_t * lt, row_delta_t * rd, int flag);
 #define LOG_KEY_ONLY 128 /* or to insert flags to mark that the rd's key only is to be remade at replay */
-#define LOG_SYNC 256  /* with non txn insert, log_insert with this flag writes immediately */ 
+#define LOG_SYNC 256  /* with non txn insert, log_insert with this flag writes immediately */
 void log_update (lock_trx_t * lt, row_delta_t * rd,
     update_node_t * upd, caddr_t * qst);
 

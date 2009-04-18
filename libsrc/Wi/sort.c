@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  SQL ORDER BY sort and DISTINCT
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "sqlnode.h"
@@ -265,7 +265,7 @@ setp_node_run (setp_node_t * setp, caddr_t * inst, caddr_t * state, int print_bl
 	    }
 	  END_DO_SET();
 	}
-    setp_group_row (setp, inst);
+      setp_group_row (setp, inst);
     }
   return 1;
 }
@@ -505,7 +505,7 @@ subq_node_input (subq_source_t * sqs, caddr_t * inst, caddr_t * state)
 }
 
 
-void 
+void
 breakup_node_input (breakup_node_t * brk, caddr_t * inst, caddr_t * state)
 {
   ptrlong current;
@@ -542,7 +542,7 @@ breakup_node_input (breakup_node_t * brk, caddr_t * inst, caddr_t * state)
     }
 }
 
-void 
+void
 breakup_node_free (breakup_node_t * brk)
 {
   dk_free_box ((caddr_t) brk->brk_all_output);
@@ -551,7 +551,7 @@ breakup_node_free (breakup_node_t * brk)
 
 
 
-void 
+void
 in_iter_input (in_iter_node_t * ii, caddr_t * inst, caddr_t * state)
 {
   ptrlong current, n_total;
@@ -573,15 +573,15 @@ in_iter_input (in_iter_node_t * ii, caddr_t * inst, caddr_t * state)
 	      for (nth = 0; nth < n_vals; nth++)
 		{
 		  val = is_array ? ((caddr_t*)vals)[nth] : vals;
-	      DO_SET (caddr_t, member, &members)
-		{
-		  if (DVC_MATCH == cmp_boxes (val, member, ii->ii_output->ssl_sqt.sqt_collation, ii->ii_output->ssl_sqt.sqt_collation))
-		    goto next;
+		  DO_SET (caddr_t, member, &members)
+		    {
+		      if (DVC_MATCH == cmp_boxes (val, member, ii->ii_output->ssl_sqt.sqt_collation, ii->ii_output->ssl_sqt.sqt_collation))
+			goto next;
+		    }
+		  END_DO_SET();
+		  dk_set_push (&members, (void*) box_copy_tree (val));
+		next: ;
 		}
-	      END_DO_SET();
-	      dk_set_push (&members, (void*) box_copy_tree (val));
-	    next: ;
-	    }
 	    }
 	  END_DO_BOX;
 	  if (!members)
@@ -622,7 +622,7 @@ in_iter_input (in_iter_node_t * ii, caddr_t * inst, caddr_t * state)
     }
 }
 
-void 
+void
 in_iter_free (in_iter_node_t * ii)
 {
   dk_free_box ((caddr_t) ii->ii_values);

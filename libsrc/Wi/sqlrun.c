@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  SQL query execution
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "sqlnode.h"
@@ -611,7 +611,7 @@ qn_restore_local_save (data_source_t * qn, caddr_t * inst)
     qst_set_over (inst, qn->src_local_save[inx], qst_get (inst, qn->src_local_save[inx+1]));
 }
 
-int 
+int
 err_is_anytime (caddr_t err)
 {
   return (DV_ARRAY_OF_POINTER == DV_TYPE_OF (err)
@@ -647,7 +647,7 @@ cli_terminate_in_itc_fail (client_connection_t * cli, it_cursor_t * itc, buffer_
 	  at_printf (("host %d itc reset for anytime, dp %d inx %s %s\n", local_cll.cll_this_host, itc->itc_page, itc->itc_insert_key->key_name, cl_thr_stat ()));
 	  longjmp_splice (itc->itc_fail_context, 1);
 	}
-      else 
+      else
 	cli_anytime_timeout (lt->lt_client);
     }
   if (CLI_TERMINATE == cli->cli_terminate_requested)
@@ -681,7 +681,7 @@ qn_input (data_source_t * xx, caddr_t * inst, caddr_t * state)
     {
       if (state)
 	qn_set_local_save (xx, inst);
-      else 
+      else
 	qn_restore_local_save (xx, inst);
     }
   xx->src_input (xx, inst, state);
@@ -816,7 +816,7 @@ ks_search_param_wide (it_cursor_t * itc, search_spec_t * sp, caddr_t data, dtp_t
       dk_free_box (data);
       data = utf_data;
     }
-  else 
+  else
     data = box_wide_as_utf8_char (data, box_length (data) / sizeof (wchar_t) - 1, DV_LONG_STRING);
   ITC_SEARCH_PARAM (itc, data);
   ITC_OWNS_PARAM (itc, data);
@@ -850,7 +850,7 @@ ks_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
 
       switch (target_dtp)
 	{
-      case DV_WIDE: 
+      case DV_WIDE:
       case DV_LONG_WIDE:
 	  return ks_search_param_wide (itc, sp, data, dtp);
       case DV_INT64:
@@ -976,10 +976,10 @@ ks_search_param_update (it_cursor_t * itc, search_spec_t * ks_spec, caddr_t itc_
   int res = KS_CAST_OK;
 
   if (itc_val == val)
-    return res; 
+    return res;
 
-  /* If the values are different, save the itc_search_par_fill & itc_owned_search_par_fill, 
-     free the owned one if such and set to NULL 
+  /* If the values are different, save the itc_search_par_fill & itc_owned_search_par_fill,
+     free the owned one if such and set to NULL
      call  the ks_search_param_cast & restore the fill.
    */
   for (inx = 0 ; inx < itc->itc_owned_search_par_fill; inx ++)
@@ -992,7 +992,7 @@ ks_search_param_update (it_cursor_t * itc, search_spec_t * ks_spec, caddr_t itc_
 	  dk_free_tree (own_par);
 	  sav_own_par_fill = itc->itc_owned_search_par_fill;
 	  itc->itc_owned_search_par_fill = inx;
-	  break; 
+	  break;
 	}
       else if (!own_par && sav_own_par_fill < 0)
 	{
@@ -1003,7 +1003,7 @@ ks_search_param_update (it_cursor_t * itc, search_spec_t * ks_spec, caddr_t itc_
   itc->itc_search_par_fill = par_inx;
   res = ks_search_param_cast (itc, ks_spec, val);
 
-  /*fprintf (stderr, "itc_val != val rc=%d owned_fill=%d old_own_fill=%d fill=%d old_fill=%d\n", 
+  /*fprintf (stderr, "itc_val != val rc=%d owned_fill=%d old_own_fill=%d fill=%d old_fill=%d\n",
       res, itc->itc_owned_search_par_fill, sav_own_par_fill, itc->itc_search_par_fill, sav_par_fill); */
 
   itc->itc_search_par_fill = sav_par_fill;
@@ -1013,7 +1013,7 @@ ks_search_param_update (it_cursor_t * itc, search_spec_t * ks_spec, caddr_t itc_
   return res;
 }
 
-void 
+void
 ks_check_params_changed (it_cursor_t * itc, key_source_t * ks, caddr_t * state)
 {
   search_spec_t * ks_spec = ks->ks_spec.ksp_spec_array;
@@ -1298,9 +1298,9 @@ ts_set_placeholder (table_source_t * ts, caddr_t * state,
 		itc->itc_is_on_row = 1;
 		ITC_FAIL (itc)
 		  {
-		itc_unregister_while_on_page ((it_cursor_t *) old_pl, itc, buf_ret);
+		    itc_unregister_while_on_page ((it_cursor_t *) old_pl, itc, buf_ret);
 		  }
-		ITC_FAILED 
+		ITC_FAILED
 		  {
 		  }
 		END_FAIL (itc);
@@ -1359,7 +1359,7 @@ ts_outer_output (table_source_t * ts, caddr_t * qst)
       }
       END_DO_SET ();
     }
-  qn_ts_send_output ((data_source_t *) ts, qst, ts->ts_after_join_test);
+    qn_ts_send_output ((data_source_t *) ts, qst, ts->ts_after_join_test);
 }
 
 
@@ -1420,7 +1420,7 @@ table_source_input (table_source_t * ts, caddr_t * inst,
 		  connection_set (qi->qi_client, rate_name, fbox);
 		  dk_free_box (fbox);
 		}
-	      else 
+	      else
 		{
 		  float pct = (float) (ptrlong) ts->ts_rnd_pcnt;
 		  order_itc->itc_random_search = RANDOM_SEARCH_ON;
@@ -1634,8 +1634,8 @@ insert_node_input (insert_node_t * ins, caddr_t * inst, caddr_t * state)
       insert_node_run (ins, inst, state);
       if (cl_run_local_only || !ins->clb.clb_fill)
 	{
-      ROW_AUTOCOMMIT (inst);
-    }
+	  ROW_AUTOCOMMIT (inst);
+	}
     }
   if (state)
     qn_send_output ((data_source_t *) ins, inst);
@@ -1658,14 +1658,14 @@ itc_get_alt_key (it_cursor_t * del_itc, buffer_desc_t ** alt_buf_ret,
     int found = 0;
     caddr_t value = rd_col (rd, col->col_id, &found);
     if (!found)
-      { 
+      {
 	if (col->col_non_null && col->col_default)
 	  value = box_cast_to (NULL, col->col_default, DV_TYPE_OF (col->col_default), col->col_sqt.sqt_dtp, col->col_precision, col->col_scale, NULL);
         else
 	  value = NEW_DB_NULL;
 	ITC_OWNS_PARAM (del_itc, value);
       }
-#if 0 /* the rb_value if dtp is any is serialized value, no need to serialize again */   
+#if 0 /* the rb_value if dtp is any is serialized value, no need to serialize again */
     if (DV_ANY == col->col_sqt.sqt_dtp)
       {
 	caddr_t err = NULL, any;
@@ -1678,7 +1678,7 @@ itc_get_alt_key (it_cursor_t * del_itc, buffer_desc_t ** alt_buf_ret,
 	value = any;
 	ITC_OWNS_PARAM (del_itc, any);
       }
-#endif    
+#endif
     ITC_SEARCH_PARAM (del_itc, value);
     n_part++;
     if (n_part >= alt_key->key_n_significant)
@@ -1859,7 +1859,7 @@ delete_node_run (delete_node_t * del, caddr_t * inst, caddr_t * state)
       }
     QI_ROW_AFFECTED (inst);
     cr_key->key_table->tb_count_delta--;
-    if (more_keys)
+      if (more_keys)
       {
 	del_itc = &del_itc_auto;
 	ITC_INIT (del_itc, qi->qi_space, qi->qi_trx);
@@ -1986,11 +1986,11 @@ itc_make_deref_spec (it_cursor_t * itc, caddr_t * loc)
   DO_SET (dbe_column_t *, col, &key->key_parts)
     {
       caddr_t value = loc [1 + key_col_in_layout_seq (key, col)];
-    ITC_SEARCH_PARAM (itc, value);
-    n_part++;
-    if (n_part >= key->key_n_significant)
-      break;
-  }
+      ITC_SEARCH_PARAM (itc, value);
+      n_part++;
+      if (n_part >= key->key_n_significant)
+	break;
+    }
   END_DO_SET ();
   itc->itc_key_spec = key->key_insert_spec;
 }
@@ -2612,7 +2612,7 @@ qn_anytime_state (data_source_t * qn, caddr_t * inst)
 	      fun_ref_node_input ((fun_ref_node_t *)fref, inst, FREF_SINGLE_ANYTIME_FINISH);
 	      return AT_CONTINUED;
 	    }
-	  else 
+	  else
 	    {
 	      GPF_T;
 	    }
@@ -2644,7 +2644,7 @@ qn_anytime_state (data_source_t * qn, caddr_t * inst)
       QNCAST (subq_source_t, sqs, qn);
       if (SRC_IN_STATE  (qn, inst))
 	{
-	  QR_RESET_CTX 
+	  QR_RESET_CTX
 	    {
 	      at_printf (("reset subq %d\n", qn->src_in_state));
 	      reset = qn_anytime_state (sqs->sqs_query->qr_head_node, inst);
@@ -2653,7 +2653,7 @@ qn_anytime_state (data_source_t * qn, caddr_t * inst)
 	      at_printf (("Reset of subq %d returned %d, resetting next\n", qn->src_in_state, rc));
 	      return MAX (reset,rc);
 	    }
-	  QR_RESET_CODE 
+	  QR_RESET_CODE
 	    {
 	      QNCAST (query_instance_t, qi, inst);
 	      if (RST_ENOUGH == reset_code)
@@ -2681,7 +2681,7 @@ qn_anytime_state (data_source_t * qn, caddr_t * inst)
 	}
       return qn_anytime_state (qn_next (qn), inst);
     }
-  else 
+  else
     {
       if (SRC_IN_STATE (qn, inst))
 	{
@@ -2947,8 +2947,8 @@ qi_initial_enter_trx (query_instance_t * qi)
   lt = cli->cli_trx;
 
   lt_wait_checkpoint ();
-      if (!IS_INPROCESS_CLIENT (cli))
-	  lt_threads_inc_inner (lt);
+  if (!IS_INPROCESS_CLIENT (cli))
+    lt_threads_inc_inner (lt);
   if (LT_PENDING == lt->lt_status)
     {
       qi->qi_trx = lt;
@@ -2967,7 +2967,7 @@ qi_initial_enter_trx (query_instance_t * qi)
       return LTE_OK;
     }
   lt->lt_error_detail = detail;
-      lt_threads_dec_inner (lt);
+  lt_threads_dec_inner (lt);
   LEAVE_TXN;
   return rc;
 }
@@ -3008,7 +3008,7 @@ qr_exec (client_connection_t * cli, query_t * qr,
 	  SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_OBJECT_SPACE_OWNER, qi);
 	  qi->qi_object_space = OBJECT_SPACE_NOT_SET;
 	}
-      if (cli->cli_anytime_timeout 
+      if (cli->cli_anytime_timeout
 	  && (qr->qr_select_node || qr->qr_proc_name))
 	{
 	  memset (&cli->cli_activity, 0, sizeof (cli->cli_activity));
@@ -3151,10 +3151,10 @@ qr_exec (client_connection_t * cli, query_t * qr,
   caller = qi->qi_caller;	/* AIX cc -O  fucks up here. reassign org. value into caller or it won't work */
   if (qi->qi_is_partial)
     ret = cli_anytime_error (qi->qi_client);
-  else 
+  else
     {
-  ret = qi->qi_proc_ret;
-  qi->qi_proc_ret = NULL;
+      ret = qi->qi_proc_ret;
+      qi->qi_proc_ret = NULL;
     }
   n_affected = qi->qi_n_affected;
   self_thread = qi->qi_thread;
@@ -3237,7 +3237,7 @@ qr_dml_array_exec (client_connection_t * cli, query_t * qr,
 	  SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_OBJECT_SPACE_OWNER, qi);
 	  qi->qi_object_space = OBJECT_SPACE_NOT_SET;
 	}
-      if (cli->cli_anytime_timeout 
+      if (cli->cli_anytime_timeout
 	  && (qr->qr_select_node || qr->qr_proc_name))
 	{
 	  memset (&cli->cli_activity, 0, sizeof (cli->cli_activity));
@@ -3647,7 +3647,7 @@ qr_more (caddr_t * inst)
       PRPC_ANSWER_START (self, PARTIAL);
       if (!err)
       print_int (SQL_SUCCESS, __ses);
-      else 
+      else
 	print_object (err, __ses, NULL, NULL);
       PRPC_ANSWER_END (0);
     }

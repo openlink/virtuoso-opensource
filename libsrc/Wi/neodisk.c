@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Neodisk Checkpoint
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "sqlnode.h"
@@ -214,7 +214,7 @@ lt_wait_checkpoint (void)
 {
   du_thread_t * self = THREAD_CURRENT_THREAD;
   ASSERT_IN_TXN;
-  if (self == server_lock.sl_owner 
+  if (self == server_lock.sl_owner
       )
     return;
   while (wi_inst.wi_is_checkpoint_pending)
@@ -286,7 +286,7 @@ dbs_read_checkpoint_remap (dbe_storage_t * dbs, dp_addr_t from)
     }
 }
 
-int 
+int
 cpt_check_remap (dbe_storage_t * dbs)
 {
   dp_addr_t from = dbs->dbs_cp_remap_pages ? (dp_addr_t) (uptrlong) dbs->dbs_cp_remap_pages->data : 0;
@@ -473,7 +473,7 @@ page_lock_to_row_locks (buffer_desc_t * buf)
   /* each row gets its own lock owned by the pl excl owner.  Waits are divided.  An itc at end will wait for the first rl but be marked at end.  */
   it_cursor_t * waiting;
   page_lock_t * pl = buf->bd_pl;
-  pl->pl_type &= ~PL_PAGE_LOCK; 
+  pl->pl_type &= ~PL_PAGE_LOCK;
   DO_ROWS (buf, map_pos, row, NULL)
 	{
       row_lock_t * rl = rl_allocate ();
@@ -562,7 +562,7 @@ cpt_ins_image (buffer_desc_t * buf, int map_pos)
 	  registered->itc_next_on_page = uci->uci_registered;
 	  uci->uci_registered = registered;
 	}
-      else 
+      else
 	  {
 	  *prev = registered;
 	  prev = &registered->itc_next_on_page;
@@ -582,7 +582,7 @@ cpt_upd_image (buffer_desc_t * buf, int map_pos)
 }
 
 
-void 
+void
 cpt_reinsert_uci (uc_insert_t * uci, it_cursor_t * itc)
 {
   /* insert a rolled back insert.  Make a pl and insert the rl under it and set the registrations of waiting etc. */
@@ -603,7 +603,7 @@ cpt_reinsert_uci (uc_insert_t * uci, it_cursor_t * itc)
   itc->itc_search_mode = SM_INSERT;
   itc->itc_key_spec = rd.rd_key->key_insert_spec;
   for (inx = 0; inx < rd.rd_key->key_n_significant; inx++)
-    itc->itc_search_params[inx] = rd.rd_values[rd.rd_key->key_part_in_layout_order[inx]]; 
+    itc->itc_search_params[inx] = rd.rd_values[rd.rd_key->key_part_in_layout_order[inx]];
   buf = itc_reset (itc);
   res = itc_search (itc, &buf);
   if (BUF_NEEDS_DELTA (buf))
@@ -748,7 +748,7 @@ cpt_lt_rollback (lock_trx_t * lt)
     } while (!lt_all_visited (lt, visited));
   hash_table_free (visited);
 	}
-      
+
 void
 cpt_uncommitted ()
 	{
@@ -833,7 +833,7 @@ cpt_restore_row (buffer_desc_t * buf, int pos, dk_set_t * rd_list)
 void
 cpt_pl_restore (page_lock_t * pl, it_cursor_t * itc)
     {
-  /* take the after image from the rb state of wi_cpt_lt to put the uncommitted state back */ 
+  /* take the after image from the rb state of wi_cpt_lt to put the uncommitted state back */
   buffer_desc_t * buf;
   dk_set_t rd_list = NULL;
   row_delta_t ** rds;
@@ -926,7 +926,7 @@ cpt_uncommitted_blobs (int clear)
 	{
 	  DO_HT (void *, k, blob_layout_t *, bl, lt->lt_dirty_blobs)
 	    {
-	      /* for a blob that is uncommitted, do not record the pages as occupied in the cpt.  But do this only insofar there is a filled page dir.  And do not extend this beyond the first page of the page dir. 
+	      /* for a blob that is uncommitted, do not record the pages as occupied in the cpt.  But do this only insofar there is a filled page dir.  And do not extend this beyond the first page of the page dir.
 	       * So there will be a possible leak of a few pages if roll fwd from the cpt, otherwise no leak. */
 	      if (!bl->bl_it || bl->bl_it->it_storage != cpt_dbs)
 		continue;
@@ -1076,7 +1076,7 @@ em_unremap (index_tree_t * it, it_cursor_t * itc, extent_map_t * em, int * bufs_
 	  cpt_unremap_bufs (itc, bufs_list);
 	  *bufs_done = 0;
 	}
-      else 
+      else
 	break;
       if (cpt_dbs->dbs_cpt_remap->ht_count <= target)
 	break;
@@ -1087,7 +1087,7 @@ em_unremap (index_tree_t * it, it_cursor_t * itc, extent_map_t * em, int * bufs_
 void
 cpt_place_buffers ()
 {
-  /* unremapped pages have been read into the dbs_cpt_tree.  Now place these into their correct trees 
+  /* unremapped pages have been read into the dbs_cpt_tree.  Now place these into their correct trees
    * Because finding the right tree is too hard, mark these simply as unallocated.  If these are left hanging the assert in it_cache_check will fail when the dp gets used for sth else */
 
   ptrlong dp;
@@ -1251,7 +1251,7 @@ cpt_is_page_remapped (dp_addr_t page)
     }
       mutex_leave (&IT_DP_MAP (it, page)->itm_mtx);
     }
-      
+
   END_DO_SET();
   return 0;
 }
@@ -1328,7 +1328,7 @@ dbs_backup_check (dbe_storage_t * dbs)
 void
 dbs_cache_check (dbe_storage_t * dbs, int mode)
 {
-  if (dbf_cpt_rb) 
+  if (dbf_cpt_rb)
     return; /* quick in debug mode */
   DO_SET (index_tree_t *, it, &dbs->dbs_trees)
     {
@@ -1338,7 +1338,7 @@ dbs_cache_check (dbe_storage_t * dbs, int mode)
 }
 
 
-void 
+void
 bp_flush_all ()
 		    {
 		      int inx;
@@ -1380,7 +1380,7 @@ dbs_recov_write_page_set (dbe_storage_t * dbs, buffer_desc_t * buf)
 
 
 #ifdef NOT_CURRENTLY_USED
-static void 
+static void
 dbs_cpt_recov_obackup_reset (dbe_storage_t * dbs)
 {
   buffer_desc_t * fs = dbs->dbs_free_set;
@@ -1408,7 +1408,7 @@ dbs_cpt_recov_obackup_reset (dbe_storage_t * dbs)
 #endif
 
 
-dk_set_t 
+dk_set_t
 dbs_cpt_recov_ems (dbe_storage_t * dbs, caddr_t * reg)
 {
   dk_set_t all_ems = NULL;
@@ -1430,7 +1430,7 @@ dbs_cpt_recov_ems (dbe_storage_t * dbs, caddr_t * reg)
 }
 
 
-void 
+void
 dbs_cpt_recov (dbe_storage_t * dbs)
 {
   dk_set_t all_ems = NULL;
@@ -1551,7 +1551,7 @@ dbs_cpt_recov (dbe_storage_t * dbs)
 	  dk_free_tree (obj);
 	    }
 	}
-      FAILED 
+      FAILED
 	{
 	}
       END_READ_FAIL (ses);
@@ -1584,7 +1584,7 @@ dbs_cpt_recov (dbe_storage_t * dbs)
       clrhash (dbs->dbs_cpt_remap);
       if (0 == cpt_write_remap (dbs))
 	dbs->dbs_cp_remap_pages = NULL;
-      dbs_sync_disks (dbs);    
+      dbs_sync_disks (dbs);
     }
       new_name = setext (dbs->dbs_cpt_file_name, "cpt-after-recov", EXT_SET);
       log_info ("Moving %s to %s for future reference.", dbs->dbs_cpt_file_name, new_name);
@@ -1592,7 +1592,7 @@ dbs_cpt_recov (dbe_storage_t * dbs)
       if (0 != rc)
         {
 	  exit_after_recov = 1;
-	}	  
+	}
       if (cpt_recov_file_complete && dbs->dbs_log_name)
 	{
 	  new_name = setext (dbs->dbs_log_name, "trx-after-recov", EXT_SET);
@@ -1602,7 +1602,7 @@ dbs_cpt_recov (dbe_storage_t * dbs)
 	  if (0 != rc)
 	    {
 	      exit_after_recov = 1;
-	    }	  
+	    }
 	}
       if (!cpt_recov_file_complete)
 	log_error ("The checkpoint recov file was not complete, hence will roll forward from log.");
@@ -1616,7 +1616,7 @@ dbs_cpt_recov (dbe_storage_t * dbs)
   dbs_cpt_recov_in_progress = 0;
 }
 
-void 
+void
 dbs_cpt_backup (void)
 {
   caddr_t * head, *reg;
@@ -1631,7 +1631,7 @@ dbs_cpt_backup (void)
       if (!dbs->dbs_cpt_file_name)
 	continue;
       cpt_bkp = hash_table_allocate (101);
-      cpt_log_fd = fd_open (dbs->dbs_cpt_file_name, OPEN_FLAGS);  
+      cpt_log_fd = fd_open (dbs->dbs_cpt_file_name, OPEN_FLAGS);
       ftruncate (cpt_log_fd, 0);
       LSEEK (cpt_log_fd, 0, SEEK_SET);
       tcpses_set_fd (ses->dks_session, cpt_log_fd);
@@ -1646,7 +1646,7 @@ dbs_cpt_backup (void)
 	  dbs_recov_write_page_set (dbs, dbs->dbs_free_set);
 	  dbs_recov_write_page_set (dbs, dbs->dbs_incbackup_set);
 	  IN_TXN;
-	  head = (caddr_t *)list (4, box_num (dbs->dbs_free_set->bd_page), 
+	  head = (caddr_t *)list (4, box_num (dbs->dbs_free_set->bd_page),
 				  box_num (dbs->dbs_incbackup_set->bd_page),
 				  box_num (dbs->dbs_registry), dbs_registry_to_array (dbs));
 	  print_int (0, ses);
@@ -1852,7 +1852,7 @@ dbs_checkpoint (char *log_name, int shutdown)
 	}
       }
       END_DO_SET();
-    {   
+    {
       dbe_storage_t * dbs = wi_inst.wi_master;
       cpt_uncommitted_blobs (0);
       cpt_restore_uncommitted (mcp_itc); /* restore uncommitted before log cpt because logcpt may have to rewrite a log of uncommitted if the cpt was between phases of 2pc */

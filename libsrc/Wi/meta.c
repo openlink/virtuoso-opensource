@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  META
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #define NO_DBG_PRINTF
@@ -770,7 +770,7 @@ dtp_t var_dtps[] =
 /* do not offset compress these by default in dependent parts to get better update speed */
 dtp_t often_updated_dtps[] = {DV_LONG_INT, DV_INT64};
 
-dtp_t pref_compressible_dtps[] = 
+dtp_t pref_compressible_dtps[] =
   {DV_STRING, DV_BIN, 0};
 
 int
@@ -787,7 +787,7 @@ dtp_is_var (dtp_t dtp)
 }
 
 
-dtp_t offset_comp_dtps[] = 
+dtp_t offset_comp_dtps[] =
   { DV_LONG_INT, DV_INT64, DV_IRI_ID, DV_IRI_ID_8, DV_STRING, DV_BIN, DV_ANY };
 
 int
@@ -797,7 +797,7 @@ dtp_is_offset_comp (dtp_t dtp)
 }
 
 
-int 
+int
 dtp_no_comp_if_dep (dtp_t dtp)
 {
   return memchr (often_updated_dtps, dtp, sizeof (often_updated_dtps)) ? 1 : 0;
@@ -1072,7 +1072,7 @@ dbe_key_layout_1 (dbe_key_t * key)
       dbe_col_loc_null_fix (key->key_key_var, key_null_area);
     }
   key->key_key_leaf[0] = kf_fill + kv_fill;
-  key->key_key_var_start[0] = kf_fill + kv_fill + 4; 
+  key->key_key_var_start[0] = kf_fill + kv_fill + 4;
   null_fill = 0; /* dependent part starts, allow null flags */
   key_place_var (key, &kv_fill, &null_fill, &row_var, deps);
 #ifdef DEBUG
@@ -1189,7 +1189,7 @@ key_set_version (dbe_key_t * key)
   kv = (dbe_key_t **) gethash ((void*)(ptrlong)super_id, key_super_id_to_versions);
   if (!kv)
     {
-      kv = (dbe_key_t **) dk_alloc_box_zero (sizeof (caddr_t) * KEY_MAX_VERSIONS, DV_BIN); 
+      kv = (dbe_key_t **) dk_alloc_box_zero (sizeof (caddr_t) * KEY_MAX_VERSIONS, DV_BIN);
       sethash ((void*)(ptrlong)super_id, key_super_id_to_versions, (void*)kv);
     }
   key->key_versions = kv;
@@ -1380,7 +1380,7 @@ dbe_key_layout (dbe_key_t * key, dbe_schema_t * sc)
       key_make_bm_specs (key);
       key->key_bm_cl = key_find_cl (key, CI_BITMAP);
       key->key_bm_cl->cl_compression = CC_NONE;
-      key->key_bit_cl = key_find_cl (key, 
+      key->key_bit_cl = key_find_cl (key,
 				    ((dbe_column_t *)dk_set_nth (key->key_parts, key->key_n_significant - 1))->col_id);
       /* one is the col where the bits are, the other the last key part, i.e. the beginning offset of the nbitmap */
     }
@@ -1447,7 +1447,7 @@ dbe_key_free (dbe_key_t * key)
   dk_free_box (key->key_name);
   dk_free_tree ((box_t) key->key_options);
   dk_free_box ((box_t) key->key_part_cls);
-  dk_free ((caddr_t) key, sizeof (dbe_key_t));
+ dk_free ((caddr_t) key, sizeof (dbe_key_t));
 }
 
 
@@ -1516,7 +1516,7 @@ id_hash_t * proc_name_hash;
 
 #define PN_HEADER  ((ptrlong)(&((proc_name_t*)0)->pn_name))
 
-proc_name_t * 
+proc_name_t *
 proc_name (char * name)
 {
   proc_name_t ** place;
@@ -1556,7 +1556,7 @@ proc_name_ref (proc_name_t * pn)
 }
 
 
-void 
+void
 proc_name_free (proc_name_t * pn)
 {
   if (!pn)
@@ -2745,7 +2745,7 @@ qi_read_table_schema_old_keys (query_instance_t * qi, char *read_tb, dk_set_t ol
 	cl_ddl (qi, qi->qi_trx, read_tb, CLO_DDL_TABLE, NULL);
     }
   else
-  ddl_commit_trx (qi);
+    ddl_commit_trx (qi);
   defined_table = sch_name_to_table (wi_inst.wi_schema, read_tb);
   if (!defined_table)
     {
@@ -2880,7 +2880,7 @@ key_ensure_visible_parts (dbe_key_t * key)
   {
     if (n_cols >= sizeof (cols) / sizeof (caddr_t))
       break;
-    if (0 != strcmp (col->col_name, "_IDN") 
+    if (0 != strcmp (col->col_name, "_IDN")
 	)
       {
 	cols[n_cols++] = col;

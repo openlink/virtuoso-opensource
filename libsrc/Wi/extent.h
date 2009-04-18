@@ -42,7 +42,7 @@
 #define EMF_INDEX_OR_BLOB 64
 
 
-#define EXT_ROUND(dp) ((dp) & ~(EXTENT_SZ - 1))  
+#define EXT_ROUND(dp) ((dp) & ~(EXTENT_SZ - 1))
 
 typedef struct extent_s
 {

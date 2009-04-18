@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  SQL Built In Functions
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 /*
@@ -2676,7 +2676,7 @@ bif_vector_concatenate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (DK_MEM_RESERVE)
     qi_signal_if_trx_error (qi);
   if ((len * sizeof (caddr_t)) & ~0xffffff)
-    sqlr_new_error ("22023", "SR486", "The result vector is too large"); 
+    sqlr_new_error ("22023", "SR486", "The result vector is too large");
   res = (caddr_t *) dk_try_alloc_box (len * sizeof(caddr_t), DV_ARRAY_OF_POINTER);
   for (inx = 0; inx < n_args; inx++)
   {
@@ -3796,7 +3796,7 @@ retry_unrdf:
       fmt_tail++;
     else
       sqlr_new_error ("22023", "SR523",
-	  "Invalid format string for sprintf_inverse at field %d (column %ld of format '%.1000s')", 
+	  "Invalid format string for sprintf_inverse at field %d (column %ld of format '%.1000s')",
 	  field_ctr, (long) (fmt_tail - fmt), fmt);
 
     field_end = fmt_tail;
@@ -4068,7 +4068,7 @@ retry_unrdf:
 
   sorry_unsupported:
     sqlr_new_error ("22023", "SR524",
-	"Sorry, unsupported format string for sprintf_inverse at field %d (column %ld of format '%.1000s')", 
+	"Sorry, unsupported format string for sprintf_inverse at field %d (column %ld of format '%.1000s')",
 	field_ctr, (long) (fmt_tail - fmt), fmt);
 
   POP_format_mismatch_mid_field:
@@ -4438,10 +4438,10 @@ bif_like_min (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    break;
 	  memmove (ptr, ptr+1, end - ptr);
 	  ptr ++;
-	} 
+	}
     }
   else
-  ctr = strpbrk (str, "%_*[]");
+    ctr = strpbrk (str, "%_*[]");
   if (!ctr)
     {
       res = box_dv_short_string (str);
@@ -4479,10 +4479,10 @@ bif_like_max (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    break;
 	  memmove (ptr, ptr+1, end - ptr);
 	  ptr ++;
-	} 
+	}
     }
   else
-  ctr = strpbrk (str, "%_*[]");
+    ctr = strpbrk (str, "%_*[]");
   if (!ctr)
     {
       res = box_dv_short_string (str);
@@ -6449,7 +6449,7 @@ bif_disconnect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     if (name || ses != this_client_ses)
       {
 	client_connection_t *cli = DKS_DB_DATA (ses);
-	if (cli && 
+	if (cli &&
   	    (!name || (cli->cli_user && (DVC_MATCH == cmp_like (cli->cli_user->usr_name, name, NULL, 0, LIKE_ARG_CHAR, LIKE_ARG_CHAR)))))
 	  {
 	    ASSERT_IN_TXN;
@@ -7796,27 +7796,27 @@ bif_one_of_these (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       for (nth = 0; nth < n_values; nth++)
 	{
 	  value = is_array ? ((caddr_t*)values)[nth] : values;
-      val_dtp = DV_TYPE_OF (value);
-      if (IS_WIDE_STRING_DTP (item_dtp) && IS_STRING_DTP (val_dtp))
-	{
-	  caddr_t wide = box_narrow_string_as_wide ((unsigned char *) value, NULL, 0, QST_CHARSET (qst), err_ret, 1);
-	  if (*err_ret)
-	    return NULL;
-	  they_match = boxes_match (item, wide);
-	  dk_free_box (wide);
-	}
-      else if (IS_STRING_DTP (item_dtp) && IS_WIDE_STRING_DTP (val_dtp))
-	{
-	  caddr_t wide = box_narrow_string_as_wide ((unsigned char *) item, NULL, 0, QST_CHARSET (qst), err_ret, 1);
-	  if (*err_ret)
-	    return NULL;
-	  they_match = boxes_match (wide, value);
-	  dk_free_box (wide);
-	}
-      else if (item_dtp != val_dtp && item_dtp != DV_DB_NULL && val_dtp != DV_DB_NULL)
-	{
-	  caddr_t tmp_val = box_cast_to (qst, value, val_dtp, item_dtp, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, err_ret);
-	  if (*err_ret)
+	  val_dtp = DV_TYPE_OF (value);
+	  if (IS_WIDE_STRING_DTP (item_dtp) && IS_STRING_DTP (val_dtp))
+	    {
+	      caddr_t wide = box_narrow_string_as_wide ((unsigned char *) value, NULL, 0, QST_CHARSET (qst), err_ret, 1);
+	      if (*err_ret)
+		return NULL;
+	      they_match = boxes_match (item, wide);
+	      dk_free_box (wide);
+	    }
+	  else if (IS_STRING_DTP (item_dtp) && IS_WIDE_STRING_DTP (val_dtp))
+	    {
+	      caddr_t wide = box_narrow_string_as_wide ((unsigned char *) item, NULL, 0, QST_CHARSET (qst), err_ret, 1);
+	      if (*err_ret)
+		return NULL;
+	      they_match = boxes_match (wide, value);
+	      dk_free_box (wide);
+	    }
+	  else if (item_dtp != val_dtp && item_dtp != DV_DB_NULL && val_dtp != DV_DB_NULL)
+	    {
+	      caddr_t tmp_val = box_cast_to (qst, value, val_dtp, item_dtp, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, err_ret);
+	      if (*err_ret)
 		{
 		  if (qi->qi_no_cast_error)
 		    {
@@ -7824,17 +7824,17 @@ bif_one_of_these (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		      *err_ret = NULL;
 		      continue;
 		    }
-	    return NULL;
+		  return NULL;
 		}
+	      else
+		they_match = boxes_match (item, tmp_val);
+	      dk_free_tree (tmp_val);
+	    }
 	  else
-	    they_match = boxes_match (item, tmp_val);
-	  dk_free_tree (tmp_val);
+	    they_match = boxes_match (item, value);
+	  if (they_match)
+	    return (box_num (inx));
 	}
-      else
-	they_match = boxes_match (item, value);
-      if (they_match)
-	return (box_num (inx));
-    }
     }
   return (box_num (0));
 }
@@ -8963,7 +8963,7 @@ do_wide:
 	      goto cvt_error;
 	}
       ret = box_narrow_string_as_wide ((unsigned char *) tmp, NULL, 0, qst ? QST_CHARSET (qst) : NULL, &err, 0);
-      if (err) 
+      if (err)
 	sqlr_resignal (err);
       return ret;
     }
@@ -9262,10 +9262,10 @@ sequence_auto_increment_of (caddr_t name)
     {
       dot++;
       ndots++;
-      if (ndots == 2) start_pos = dot;   
+      if (ndots == 2) start_pos = dot;
       if (ndots == 5) end_pos = dot;
       if (ndots > 5) break;
-    } 
+    }
   if (ndots == 5) /* look-like a autoincrement */
     {
       dbe_column_t *col = NULL;
@@ -9290,7 +9290,7 @@ bif_sequence_is_auto_increment (caddr_t * qst, caddr_t * err_ret, state_slot_t *
   dbe_table_t * tb;
   sec_check_dba (qi, "sequence_is_auto_increment");
   tb = sequence_auto_increment_of (name);
-  if (tb) 
+  if (tb)
     return box_num (1);
   return box_num (0);
 }
@@ -9309,7 +9309,7 @@ bif_add_protected_sequence (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
   NO_CADDR_T;
 }
 
-void 
+void
 check_sequence_grants (query_instance_t * qi, caddr_t name)
 {
   dbe_table_t * tbl = NULL;
@@ -9341,7 +9341,7 @@ bif_sequence_is_auto_increment (caddr_t * qst, caddr_t * err_ret, state_slot_t *
   dbe_table_t * tb;
   sec_check_dba (qi, "sequence_is_auto_increment");
   tb = sequence_auto_increment_of (name);
-  if (tb) 
+  if (tb)
     return box_num (1);
   return box_num (0);
 }
@@ -9399,7 +9399,7 @@ bif_sequence_next_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
     check_sequence_grants (qi, name);
   if (cl_run_local_only)
   res = sequence_next_inc_1 (name, OUTSIDE_MAP, inc_by, err_ret);
-  else  
+  else
     {
       GPF_T;
     }
@@ -9866,7 +9866,7 @@ bif_key_replay_insert (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   rd.rd_allocated = RD_AUTO;
   rd.rd_key = key;
   rd.rd_op = RD_INSERT;
-  rd.rd_non_comp_len = key->key_row_var_start[0]; 
+  rd.rd_non_comp_len = key->key_row_var_start[0];
   rd.rd_non_comp_max = MAX_ROW_BYTES;
   rd.rd_itc = it;
   rd.rd_qst = qst;
@@ -9952,7 +9952,7 @@ bif_key_replay_insert (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (qi->qi_client->cli_is_log)
     rd_fixup_blob_refs (it, &rd);
   for (inx = 0; inx < key->key_n_significant; inx++)
-    it->itc_search_params[inx] = it->itc_search_params[key->key_n_significant + key->key_part_in_layout_order[inx]]; 
+    it->itc_search_params[inx] = it->itc_search_params[key->key_n_significant + key->key_part_in_layout_order[inx]];
   unq_buf_ptr = &unq_buf;
   it->itc_insert_key = key;
   if (key->key_is_bitmap)
@@ -9963,12 +9963,12 @@ bif_key_replay_insert (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   if (key->key_is_primary)
     ins_mode = INS_REPLACING;
-  else 
+  else
     ins_mode = INS_SOFT;
   if (KI_TEMP != key->key_id)
     rd.rd_make_ins_rbe = 1;
   ITC_FAIL (it)
-  {
+    {
       rc = itc_insert_unq_ck (it, &rd, unq_buf_ptr);
       if (DVC_MATCH == rc)
 	{
@@ -10000,10 +10000,10 @@ bif_key_replay_insert (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    }
 	  return (caddr_t)DVC_MATCH;
 	}
-  }
+    }
   ITC_FAILED
-  {
-  }
+    {
+    }
   END_FAIL (it);
   return 0;
 }
@@ -10818,9 +10818,9 @@ bif_txn_killall (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   sec_check_dba (qi, "txn_killall");
   IO_SECT (qi)
     {
-  IN_TXN;
+      IN_TXN;
       lt_killall (qi->qi_trx, lte);
-  LEAVE_TXN;
+      LEAVE_TXN;
     }
   END_IO_SECT (err_ret);
   return 0;
@@ -11101,7 +11101,7 @@ retry_compile:
 	  if (!err)
             goto retry_compile;
 	}
-#endif      
+#endif
       if (err)
 	{
 	  if (text && strlen (text) > 60)
@@ -11124,7 +11124,7 @@ end:
     cl_ddl (qi, qi->qi_trx, name, is_trig ? CLO_DDL_TRIG : CLO_DDL_PROC, tb_name);
   if (qi->qi_trx->lt_branch_of && !qi->qi_client->cli_is_log)
     {
-      caddr_t * arr = is_trig 
+      caddr_t * arr = is_trig
 	? (caddr_t*)list (3, box_dv_short_string ("__proc_changed (?, ?)"), box_dv_short_string (name), box_dv_short_string (tb_name))
 	: (caddr_t *)list (2, box_dv_short_string ("__proc_changed (?)"), box_dv_short_string (name));
       log_text_array (qi->qi_trx, (caddr_t) arr);
@@ -11440,7 +11440,7 @@ bif_checkpoint_interval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   c_checkpoint_interval = -1;
   cfg_autocheckpoint = 60000L * c_checkpoint_interval;
 #if 0
-  /* 
+  /*
    * PMN: THIS SHOULD NEVER BE WRITTEN BACK INTO THE .INI FILE !!!!
    */
   cfg_set_checkpoint_interval (c_checkpoint_interval);
@@ -11634,8 +11634,8 @@ bif_exec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   PROC_SAVE_PARENT;
   warnings = sql_warnings_save (NULL);
-      if (n_args > 4)
-	{
+  if (n_args > 4)
+    {
       dtp_t options_dtp;
       options = (caddr_t *)bif_arg(qst, args, 4, "exec");
       options_dtp = DV_TYPE_OF (options);
@@ -11646,7 +11646,7 @@ bif_exec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
               max_rows = unbox ((caddr_t)options);
               max_rows_is_set = 1;
               options = NULL;
-	}
+            }
           else if (DV_DB_NULL == options_dtp)
             options = NULL;
           else
@@ -11718,7 +11718,7 @@ qr_set:
       if (lc)
 	{
 	  qi->qi_n_affected = lc->lc_row_count;
-	lc_free (lc);
+	  lc_free (lc);
 	}
       PROC_RESTORE_SAVED;
       dk_free_tree ((caddr_t) proc_comp);
@@ -11869,7 +11869,7 @@ done:
   if (NULL != shc)
     shcompo_release (shc);
   else
-  qr_free (qr);
+    qr_free (qr);
   return res ? res : box_num (0);
 }
 
@@ -12687,8 +12687,8 @@ bif_bit_shift (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int64 x2 = (int64) bif_long_arg (qst, args, 1, "bit_shift");
   if (x2 >= 0)
     return box_num (x1 << x2);
-      else
-        return box_num (x1 >> (-x2));
+  else
+    return box_num (x1 >> (-x2));
 }
 
 caddr_t
@@ -13949,7 +13949,7 @@ sql_bif_init (void)
   bif_define_typed ("get_keyword_ucase", bif_get_keyword_ucase, &bt_any);
   bif_define_typed ("position", bif_position, &bt_integer);
   bif_define_typed ("one_of_these", bif_one_of_these, &bt_integer);
-#if 0  
+#if 0
   bif_define_typed ("row_table", bif_row_table, &bt_varchar);
   bif_define_typed ("row_column", bif_row_column, &bt_any);
   bif_define ("row_identity", bif_row_identity);
@@ -14202,9 +14202,9 @@ sql_bif_init (void)
   init_pwd_magic_users ();
   bif_define ("__grouping", bif_grouping);
   bif_define ("__grouping_set_bitmap", bif_grouping_set_bitmap);
-#if 0  
+#if 0
   bif_define ("sequence_is_auto_increment", bif_sequence_is_auto_increment);
-#endif  
+#endif
   bif_define ("add_protected_sequence", bif_add_protected_sequence);
   bif_hosting_init ();
   bif_aq_init ();
@@ -14268,7 +14268,7 @@ bif_set_no_cluster (char * n)
   bif_t bif = bif_find (n);
   if (!non_cluster_bifs)
     non_cluster_bifs = hash_table_allocate (22);
-  if (!n) 
+  if (!n)
     return;
   sethash ((void*)bif, non_cluster_bifs, (void*)1);
 }

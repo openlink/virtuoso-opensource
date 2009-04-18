@@ -4,21 +4,21 @@
  *  $Id$
  *
  *  Search
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
@@ -52,14 +52,14 @@
 
 #define INT64K_NN(offset, nth_param, lt, gt) \
   { \
-    boxint n1, n2; \
+    boxint n1, n2;					\
   dv2 = (db_buf_t) itc->itc_search_params[nth_param];	\
   cl = key->key_part_cls[offset]; \
   ROW_INT_COL (buf, row, rv, *cl, INT64_REF, n1); \
   n2 = unbox_inline (((caddr_t)dv2));		\
   if (n1 < n2) goto lt; \
   if (n1 > n2) goto gt; \
-}
+  }
 
 
 #define STRK_NN(nth_var, nth_param, lt, gt) \
@@ -117,7 +117,7 @@ if (DVC_GREATER == l1) goto gt; \
 
 
 #define ROW_ANY1_COL(key, buf, row, kv, rv, cl, dv, offset)	\
-{ \
+{\
   db_buf_t __row2; \
   row_ver_t rv2;\
   key_ver_t kv2; \
@@ -145,7 +145,7 @@ if (DVC_GREATER == l1) goto gt; \
         dv = row + key->key_key_var_start[rv]; \
       else if (kv == key->key_version) \
         dv = row + key->key_row_var_start[rv]; \
-  else \
+      else \
         { \
           key = key->key_versions[kv]; \
           dv = row + key->key_row_var_start[rv]; \
@@ -179,7 +179,7 @@ int cmpf_##name (buffer_desc_t * buf, int irow, it_cursor_t * itc) \
   if (KV_LEFT_DUMMY == kv)	\
     return DVC_LESS; \
   if (key->key_version != kv) \
-    key = key->key_versions[kv]; 
+    key = key->key_versions[kv];
 
 #define CMPF_END \
   return DVC_MATCH; \
@@ -194,22 +194,22 @@ CMPF_END
 
 CMPF_HEADER (intn_intn)
 INTK_NN (0, 0, lt, gt)
-INTK_NN (1, 1, lt, gt) 
+INTK_NN (1, 1, lt, gt)
 CMPF_END
 
 
 CMPF_HEADER (intn_intn_intn)
 INTK_NN (0, 0, lt, gt)
-INTK_NN (1, 1, lt, gt) 
-INTK_NN (2, 2, lt, gt) 
+INTK_NN (1, 1, lt, gt)
+INTK_NN (2, 2, lt, gt)
 CMPF_END
 
 
 CMPF_HEADER (intn_intn_intn_intn)
 INTK_NN (0, 0, lt, gt)
-INTK_NN (1, 1, lt, gt) 
-INTK_NN (2, 2, lt, gt) 
-INTK_NN (3, 3, lt, gt) 
+INTK_NN (1, 1, lt, gt)
+INTK_NN (2, 2, lt, gt)
+INTK_NN (3, 3, lt, gt)
 CMPF_END
 
 
@@ -247,7 +247,7 @@ CMPF_END
 CMPF_HEADER (irin_irin_anyn_irin_lte)
 IRIK_NN (0, 0, lt, gt)
 IRIK_NN (1, 1, lt, gt)
-ANYK1_NN (2, 2, lt, gt) 
+ANYK1_NN (2, 2, lt, gt)
 IRIK_NN (3, 3, match, gt)
 match:
 CMPF_END
@@ -274,7 +274,7 @@ CMPF_END
 CMPF_HEADER (irin_irin_anyn)
 IRIK_NN (0, 0, lt, gt)
 IRIK_NN (1, 1, lt, gt)
-ANYK1_NN (2, 2, lt, gt) 
+ANYK1_NN (2, 2, lt, gt)
 CMPF_END
 
 
@@ -283,7 +283,7 @@ CMPF_HEADER (irin_irin_irin_anyn)
 IRIK_NN (0, 0, lt, gt)
 IRIK_NN (1, 1, lt, gt)
 IRIK_NN (2, 2, lt, gt)
-ANYK1_NN (3, 3, lt, gt) 
+ANYK1_NN (3, 3, lt, gt)
 CMPF_END
 
 
@@ -314,22 +314,22 @@ CMPF_END
 
 CMPF_HEADER (int64n_int64n)
 INT64K_NN (0, 0, lt, gt)
-INT64K_NN (1, 1, lt, gt) 
+INT64K_NN (1, 1, lt, gt)
 CMPF_END
 
 
 CMPF_HEADER (int64n_int64n_int64n)
 INT64K_NN (0, 0, lt, gt)
-INT64K_NN (1, 1, lt, gt) 
+INT64K_NN (1, 1, lt, gt)
 INT64K_NN (2, 2, lt, gt)
 CMPF_END
 
 
 CMPF_HEADER (int64n_int64n_int64n_int64n)
 INT64K_NN (0, 0, lt, gt)
-INT64K_NN (1, 1, lt, gt) 
-INT64K_NN (2, 2, lt, gt) 
-INT64K_NN (3, 3, lt, gt) 
+INT64K_NN (1, 1, lt, gt)
+INT64K_NN (2, 2, lt, gt)
+INT64K_NN (3, 3, lt, gt)
 CMPF_END
 
 
@@ -352,7 +352,7 @@ CMPF_END
 CMPF_HEADER (iri64n_iri64n_anyn_iri64n)
 IRI64K_NN (0, 0, lt, gt)
 IRI64K_NN (1, 1, lt, gt)
-ANYK1_NN (2, 2, lt, gt) 
+ANYK1_NN (2, 2, lt, gt)
 IRI64K_NN (3, 3, lt, gt)
 CMPF_END
 
@@ -369,7 +369,7 @@ CMPF_END
 
 CMPF_HEADER (iri64n_anyn_iri64n_iri64n_lte)
 IRI64K_NN (0, 0, lt, gt)
-ANYK1_NN (1, 1, lt, gt) 
+ANYK1_NN (1, 1, lt, gt)
 IRI64K_NN (2, 2, lt, gt)
 IRI64K_NN (3, 3, match, gt)
 match:
@@ -409,7 +409,7 @@ CMPF_END
 CMPF_HEADER (iri64n_iri64n_anyn)
 IRI64K_NN (0, 0, lt, gt)
 IRI64K_NN (1, 1, lt, gt)
-ANYK1_NN (2, 2, lt, gt) 
+ANYK1_NN (2, 2, lt, gt)
 CMPF_END
 
 
@@ -418,7 +418,7 @@ CMPF_HEADER (iri64n_iri64n_iri64n_anyn)
 IRI64K_NN (0, 0, lt, gt)
 IRI64K_NN (1, 1, lt, gt)
 IRI64K_NN (2, 2, lt, gt)
-ANYK1_NN (3, 3, lt, gt) 
+ANYK1_NN (3, 3, lt, gt)
 CMPF_END
 
 
@@ -448,7 +448,7 @@ dk_set_t cfd_list = NULL;
 
 
 
-void 
+void
 ksp_cmp_func (key_spec_t * ksp, unsigned char * nth)
 {
   int n = 0;
@@ -465,9 +465,9 @@ ksp_cmp_func (key_spec_t * ksp, unsigned char * nth)
 	    goto next_func;
 	  if (CMP_EQ != sps->sp_min_op)
 	    all_eq = 0;
-	  if (desc[pinx].cmd_min_op != sps->sp_min_op 
-	      || desc[pinx].cmd_max_op != sps->sp_max_op 
-	      || desc[pinx].cmd_dtp != sps->sp_cl.cl_sqt.sqt_dtp 
+	  if (desc[pinx].cmd_min_op != sps->sp_min_op
+	      || desc[pinx].cmd_max_op != sps->sp_max_op
+	      || desc[pinx].cmd_dtp != sps->sp_cl.cl_sqt.sqt_dtp
 	      || desc[pinx].cmd_non_null != sps->sp_cl.cl_sqt.sqt_non_null)
 	    goto next_func;
 	  sps = sps->sp_next;
@@ -490,12 +490,12 @@ ksp_cmp_func (key_spec_t * ksp, unsigned char * nth)
 }
 
 
-void 
+void
 ksp_nth_cmp_func (key_spec_t * ksp, char nth)
 {
   if (!nth)
     ksp->ksp_key_cmp = NULL;
-  else 
+  else
     {
       cmp_func_desc_t * cfd = (cmp_func_desc_t *) dk_set_nth (cfd_list, nth - 1);
       if (!cfd) GPF_T1 ("Bad inline key comp id");
@@ -720,16 +720,16 @@ search_inline_init ()
 
 }
 
-#else 
+#else
 
-void 
+void
 ksp_cmp_func (key_spec_t * ksp, char * nth)
 {
   ksp->ksp_key_cmp = NULL;
 }
 
 
-void 
+void
 ksp_nth_cmp_func (key_spec_t * ksp, char nth)
 {
   ksp->ksp_cmp_func = NULL;

@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Diff functionality
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "libutil.h"
@@ -125,7 +125,7 @@ int print_LCS (ptrlong * X, ptrlong * Y, ptrlong * b)
 	    printf ("up\t");
 	  else if (r == 3)
 	    printf ("left\t");
-	  else 
+	  else
 	    printf ("-1\t");
 	}
       printf ("\n");
@@ -142,10 +142,10 @@ caddr_t* build_path_from_LCS (ptrlong * X, ptrlong * Y, ptrlong * b)
   int r;
   int cwidth = ylen + 1;
   dk_set_t path = 0;
-  int state = 0; 
+  int state = 0;
   i = xlen;
   j = ylen;
-  
+
   while ( (i >= 1) && (j >= 1))
     {
       r = b[i*cwidth+j];
@@ -198,7 +198,7 @@ caddr_t parse_text_to_lines_1 (caddr_t * start, caddr_t end_text,
 						      1 - just detect new line and write the suffix
 						      2 - detect suffix and add new line if needed */ )
 {
-  caddr_t pointer, line_start; 
+  caddr_t pointer, line_start;
   line_start = pointer = start[0];
   while (line_start < end_text)
     {
@@ -260,7 +260,7 @@ static int binstrchr (caddr_t line)
 
 int parse_text_to_lines (caddr_t text, id_hash_t* lhash, ptrlong** res_array, ptrlong* currid, caddr_t ** line_array)
 {
-  caddr_t pointer, line_start, end_text;  
+  caddr_t pointer, line_start, end_text;
   dk_set_t res_set = NULL;
   int res = -1;
   line_start = pointer = text;
@@ -286,9 +286,9 @@ int parse_text_to_lines (caddr_t text, id_hash_t* lhash, ptrlong** res_array, pt
 	  else
 	    {
 	      id = idptr[0];
-	      dk_free_box ((box_t) line); 
+	      dk_free_box ((box_t) line);
 	    }
-	  dk_set_push (&res_set, (caddr_t)id);	    
+	  dk_set_push (&res_set, (caddr_t)id);
 	}
       else
 	break;
@@ -304,7 +304,7 @@ int parse_text_to_lines (caddr_t text, id_hash_t* lhash, ptrlong** res_array, pt
       line_array[0] = (caddr_t*) dk_alloc_box ((1+currid[0]) * sizeof(caddr_t), DV_ARRAY_OF_POINTER);
       memset (line_array[0], 0, (1+currid[0]) * sizeof(caddr_t));
       id_hash_iterator (&hit, lhash);
-      
+
       while (hit_next (&hit, (char **)&line, (char **)&id))
 	{
 	  if (id && line)
@@ -313,7 +313,7 @@ int parse_text_to_lines (caddr_t text, id_hash_t* lhash, ptrlong** res_array, pt
     }
   return res;
 }
-	  
+
 
 caddr_t path_to_text (caddr_t* path, caddr_t * line_array, ptrlong mode)
 {
@@ -327,7 +327,7 @@ caddr_t path_to_text (caddr_t* path, caddr_t * line_array, ptrlong mode)
       (mode != DIFF_MODE_VIRT) &&
       (mode != DIFF_MODE_DIFF_E))
     return box_string ("not supported!!!");
-  
+
   while (inx < BOX_ELEMENTS (path))
     {
       ptrlong op = unbox (path[inx]);
@@ -433,7 +433,7 @@ caddr_t path_to_text (caddr_t* path, caddr_t * line_array, ptrlong mode)
 		      session_buffered_write (ses, prefix, strlen (prefix));
 		      session_buffered_write (ses, line, strlen (line));
 /* 		      session_buffered_write_char ('\n', ses); */
-		      
+
 		      ++inx; ++inx;
 		      if (inx > (forward_inx + 1))
 			break;
@@ -452,7 +452,7 @@ caddr_t path_to_text (caddr_t* path, caddr_t * line_array, ptrlong mode)
 }
 
 
-static 
+static
 int diff_cmd_get (diff_cmd_t * cmd, caddr_t cmd_line)
 {
   caddr_t _to;
@@ -476,14 +476,14 @@ int diff_cmd_get (diff_cmd_t * cmd, caddr_t cmd_line)
       cmd->dc_from = atoi (cmd_line);
       cmd->dc_to = cmd->dc_from;
       return DIFF_CMD_CMD;
-    } 
+    }
   return DIFF_CMD_UNKNOWN;
-}    
-	
+}
+
 static
 void diff_apply_fill_text (caddr_t * curr_text, caddr_t end_text, int * curr_line, int from, dk_session_t * ses)
 {
-  int lines = from - curr_line[0] + 1;  
+  int lines = from - curr_line[0] + 1;
   while ( (from < 0) || (lines--))
     {
       caddr_t line = parse_text_to_lines_1 (curr_text, end_text, 0);
@@ -506,9 +506,9 @@ void diff_apply_delete (caddr_t * curr_text, caddr_t end_text, int * curr_line)
   curr_line[0]++;
   dk_free_box ((box_t) line);
 }
-  
 
-      
+
+
 static
 void diff_apply_insert (char * insert_line,
 			dk_session_t * ses)
@@ -531,7 +531,7 @@ caddr_t diff_apply (caddr_t text, caddr_t patch, ptrlong mode)
   dk_set_t cmds = NULL;
   s_node_t * el;
   while (patch_start < patch_end)
-    {      
+    {
       caddr_t cmd_line = parse_text_to_lines_1 (&patch_start, patch_end, 2);
       dk_set_push (&cmds, cmd_line);
     }
@@ -564,7 +564,7 @@ caddr_t diff_apply (caddr_t text, caddr_t patch, ptrlong mode)
 	      {
 		if (DIFF_APPLY_STATE_INSERT == state)
 		  {
-		    diff_apply_insert (cmd_line + 2 /* skip "> " prefix */, 
+		    diff_apply_insert (cmd_line + 2 /* skip "> " prefix */,
 				       ses);
 		  }
 	      } break;
@@ -581,7 +581,7 @@ caddr_t diff_apply (caddr_t text, caddr_t patch, ptrlong mode)
   strses_free (ses);
   return res_text;
 }
-	  
+
 static
 ptrlong bif_diff_mode_arg (caddr_t *qst, state_slot_t ** args, int nth, const char* funcname)
 {
@@ -601,7 +601,7 @@ long count_lines (caddr_t text)
 {
   caddr_t pointer = text;
   long cnt = 0;
-  while ( (pointer = strchr(pointer, '\n')) ) 
+  while ( (pointer = strchr(pointer, '\n')) )
     {
       ++pointer;
       ++cnt;
@@ -621,7 +621,7 @@ caddr_t bif_diff (caddr_t *qst, caddr_t * err_ret, state_slot_t ** args)
   ptrlong * LCS;
   caddr_t path_text;
   ptrlong currid = -1;
-  caddr_t * path;  
+  caddr_t * path;
   ptrlong mode = DIFF_MODE_GNU;
   if (BOX_ELEMENTS (args) > 2)
     mode = bif_diff_mode_arg (qst, args, 2, "bif_diff");
@@ -629,26 +629,26 @@ caddr_t bif_diff (caddr_t *qst, caddr_t * err_ret, state_slot_t ** args)
   if ((count_lines (source_doc) > DIFF_MAX_LENGTH) ||
       (count_lines (dest_doc) > DIFF_MAX_LENGTH))
     sqlr_new_error ("DF001", "SR479", "Too long document, must not exceed %d lines",  DIFF_MAX_LENGTH);
-  
+
   if (0 > parse_text_to_lines (source_doc, line_hash, &source_array, &currid, NULL))
     {
       dk_free_box ((box_t) source_array);
       sqlr_new_error ("DF002", "SR480", "Source file is in binary format");
     }
-  
+
   if (0 > parse_text_to_lines (dest_doc, line_hash, &dest_array, &currid, &line_array))
     {
       dk_free_box ((box_t) source_array);
       dk_free_box ((box_t) dest_array);
       sqlr_new_error ("DF002", "SR481", "Destination file is in binary format");
     }
-    
+
   LCS = LCS_Delta (source_array, dest_array);
   path = build_path_from_LCS (source_array, dest_array, LCS);
   dk_free_box ((box_t) source_array);
   dk_free_box ((box_t) dest_array);
   dk_free_box ((box_t) LCS);
-  
+
   path_text = path_to_text (path, line_array, mode);
   id_hash_free (line_hash);
   dk_free_tree ((box_t) line_array);
@@ -664,7 +664,7 @@ caddr_t bif_diff_apply (caddr_t *qst, caddr_t * err_ret, state_slot_t ** args)
   ptrlong mode = DIFF_MODE_GNU;
   if (BOX_ELEMENTS (args) > 2)
     mode = bif_diff_mode_arg (qst, args, 2, "diff_apply");
-  
+
   return diff_apply (text, patch, mode);
 }
 

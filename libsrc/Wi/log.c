@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Transaction log write and recovery
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "sqlnode.h"
@@ -291,7 +291,7 @@ log_commit (lock_trx_t * lt)
       INT64_SET_NA (id + 1, lt->lt_w_id);
       cbox[LOGH_CL_2PC] = id;
     }
-  else 
+  else
     cbox[LOGH_CL_2PC] = 0;
   if (!lt->lt_branch_of && lt->lt_client->cli_user)
     cbox[LOGH_USER] = box_string (lt->lt_client->cli_user->usr_name);
@@ -496,10 +496,10 @@ log_final_transact(lock_trx_t* lt, int is_commit)
     {
       struct stat st;
       int fd = tcpses_get_fd(dbs->dbs_log_session->dks_session);
-      fstat(fd,&st);
-      LSEEK(fd,lt->lt_2pc._2pc_logged,SEEK_SET);
-      write(fd,is_commit ? LOG_2PC_COMMIT_S : LOG_2PC_ABORT_S ,1);
-      LSEEK(fd,0,SEEK_END);
+      fstat (fd, &st);
+      LSEEK (fd, lt->lt_2pc._2pc_logged, SEEK_SET);
+      write (fd, is_commit ? LOG_2PC_COMMIT_S : LOG_2PC_ABORT_S ,1);
+      LSEEK (fd, 0, SEEK_END);
       lt->lt_2pc._2pc_logged = 0;
       if (!--log_2pc_count)
         return log_change_if_needed (lt, 1);
@@ -523,7 +523,7 @@ log_skip_blobs (dk_session_t * ses)
 	  if (!DKSESSTAT_ISSET (ses, SST_OK))
 	    return;
 	  if (DV_ARRAY_OF_POINTER == dtp)
-{
+	    {
 	      ses->dks_in_read--;
 	      return;
 	    }
@@ -587,9 +587,9 @@ log_2pc_archive (int64 trx_id)
 }
 
 
-int 
+int
 log_2pc_archive_check (int64 trx_id, int64 * max_id_ret)
-    {
+{
   dbe_storage_t * dbs = wi_inst.wi_master;
   uint32 last_id = 0;
   int fd;
@@ -698,7 +698,7 @@ log_insert (lock_trx_t * lt, row_delta_t * rd, int flag)
     return;
   if (LOG_SYNC & flag)
     {
-      log_insert_sync (lt, rd, flag & ~LOG_SYNC); 
+      log_insert_sync (lt, rd, flag & ~LOG_SYNC);
       return;
     }
   log = lt->lt_log;
@@ -707,7 +707,7 @@ log_insert (lock_trx_t * lt, row_delta_t * rd, int flag)
     {
       session_buffered_write_char (LOG_KEY_INSERT, lt->lt_log);
       flag &= ~LOG_KEY_ONLY;
-    } 
+    }
   if (flag == INS_REPLACING)
     session_buffered_write_char (LOG_INSERT_REPL, lt->lt_log);
   else if (flag == INS_SOFT)
@@ -737,7 +737,7 @@ log_delete (lock_trx_t * lt, row_delta_t * rd, int this_key_only)
   if (this_key_only)
     session_buffered_write_char (LOG_KEY_DELETE, lt->lt_log);
   else
-  session_buffered_write_char (LOG_DELETE, lt->lt_log);
+    session_buffered_write_char (LOG_DELETE, lt->lt_log);
   lt_log_prime_key (lt, rd);
   mutex_leave (lt->lt_log_mtx);
 }
@@ -872,12 +872,12 @@ log_update (lock_trx_t * lt, row_delta_t * rd,
 }
 
 
-void 
+void
 log_sc_change_1 (lock_trx_t * lt)
 {
   session_buffered_write_char (LOG_SC_CHANGE_1, lt->lt_log);
 }
-void 
+void
 log_sc_change_2 (lock_trx_t * lt)
 {
   session_buffered_write_char (LOG_SC_CHANGE_2, lt->lt_log);
@@ -2033,9 +2033,9 @@ read_again:
       is_2pc = is_old_log_type ? LOG_2PC_DISABLED : (int) unbox(header[LOGH_2PC]);
       if (LOG_2PC_ABORT != is_2pc)
 	do_replay = 1;
-      else 
+      else
 	do_replay = 0;
-#else 
+#else
 	  do_replay = 1;
 #endif
       if (header[LOGH_CL_2PC])
@@ -2055,25 +2055,25 @@ read_again:
 	    log_2pc_archive (trx_id);
 	  if (LOG_CL_2PC_PREPARE == id[0])
 	    {
-	      int32 host = QFID_HOST (trx_id); 
+	      int32 host = QFID_HOST (trx_id);
 	      if (host == local_cll.cll_this_host) /* same host, not committed */
 		do_replay = 0;
 	      else
 		{
 		   GPF_T;
 		}
-	      
+
 	    }
 	}
       if (do_replay)
 	{
-        if (LTE_OK != (rc = log_replay_trx (str_in, cli, (caddr_t) header, 0, 0)))
-	  {
-	    log_error ("Roll forward txn error %d. Record between bytes "
-		OFF_T_PRINTF_FMT " and " OFF_T_PRINTF_FMT " in transaction log",
-	      rc,
-	      (OFF_T_PRINTF_DTP) log_rec_start,
-	      (OFF_T_PRINTF_DTP) file_in->dks_bytes_received);
+	  if (LTE_OK != (rc = log_replay_trx (str_in, cli, (caddr_t) header, 0, 0)))
+	    {
+	      log_error ("Roll forward txn error %d. Record between bytes "
+			 OFF_T_PRINTF_FMT " and " OFF_T_PRINTF_FMT " in transaction log",
+			 rc,
+			 (OFF_T_PRINTF_DTP) log_rec_start,
+			 (OFF_T_PRINTF_DTP) file_in->dks_bytes_received);
 	    }
 	}
       else

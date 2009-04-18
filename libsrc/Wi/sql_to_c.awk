@@ -4,26 +4,26 @@
 # $Id$
 #
 # Embeds SQL code into a C file
-#  
+#
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
-#  
+#
 #  Copyright (C) 1998-2006 OpenLink Software
-#  
+#
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
 #  Free Software Foundation; only version 2 of the License, dated June 1991.
-#  
+#
 #  This program is distributed in the hope that it will be useful, but
 #  WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 #  General Public License for more details.
-#  
+#
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-#  
-#  
+#
+#
 
 function strip_comments(text, pl_stats, arr)
 {
@@ -46,21 +46,21 @@ function strip_comments(text, pl_stats, arr)
      endif_comment = index (curline, "--#ENDIF")
      if (in_if && endif_comment > 0)
        {
-	 in_if = 0  
-       }	   
+	 in_if = 0
+       }
 
      if (if_comment > 0)
        {
-	 match (curline, /[0-9]+/, arr)  
+	 match (curline, /[0-9]+/, arr)
 	 ver = arr[0] + 0
 	 if (ver == srv_ver)
        {
 	 inx = inx + 1
 	 continue
-       }	   
+       }
 	 else
-	   in_if = 1  
-       }	   
+	   in_if = 1
+       }
 
      if (in_if)
        {
@@ -189,10 +189,10 @@ BEGIN   {
           while (getline < "sqlver.h" > 0)
 	  {
 	     if(match ($0, /^#define DBMS_SRV_VER_ONLY/))
-	       {	 
-	         res = match ($0, /[0-9]+/, arr) 
+	       {
+	         res = match ($0, /[0-9]+/, arr)
 		 srv_ver = arr[0] + 0
-                 break	     
+                 break
 	       }
 	  }
 	  close ("sqlver.h")
@@ -586,8 +586,8 @@ END 	{
 	      }
 	    if (pass_bootstrap_cli != 0)
 	      {
-	       print "#undef isp_schema\n#define isp_schema(x) isp_schema_1(x)\n"  
-	      }  
+	       print "#undef isp_schema\n#define isp_schema(x) isp_schema_1(x)\n"
+	      }
 	    if (n_xslts > 0)
 	      {
 		print "static const char * xslt_define = \"xslt_sheet (?, xtree_doc (?, 128, ?, 'LATIN-1', 'x-any', 'BuildStandalone=ENABLE'))\";"

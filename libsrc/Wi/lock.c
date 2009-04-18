@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Locking concurrency control
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #if defined (__APPLE__)
@@ -67,7 +67,7 @@ lt_new_w_id (lock_trx_t * lt)
 #include "2pc.h"
 #endif
 
-void 
+void
 log_debug_dummy (char * str, ...)
 {}
 
@@ -377,7 +377,7 @@ lt_restart (lock_trx_t * lt, int leave_flag)
   const char *	lt_last_increase_file[2];
   int		lt_last_increase_line[2];
 #endif
-    caddr_t repl = (excl || cli->cli_row_autocommit) ? box_copy_tree ((box_t) lt->lt_replicate) : NULL; 
+    caddr_t repl = (excl || cli->cli_row_autocommit) ? box_copy_tree ((box_t) lt->lt_replicate) : NULL;
     /* we we'll save the state of replication flag
 								    when  we're in atomic mode */
 #ifdef VIRTTP
@@ -624,14 +624,14 @@ lt_rollback_1 (lock_trx_t * lt, int free_trx)
   IN_TXN;
   lt_repl_rollback (lt);
   DBG_PT_ROLLBACK (lt);
-      if (lt->lt_status != LT_DELTA_ROLLED_BACK)
-	{
-	  ASSERT_IN_TXN;
-	  lt->lt_status = LT_BLOWN_OFF;
-	  LT_CLOSE_ACK_THREADS(lt);
-	  lt->lt_close_ack_threads++;
-	  lt_transact (lt, SQL_ROLLBACK);
-	}
+  if (lt->lt_status != LT_DELTA_ROLLED_BACK)
+    {
+      ASSERT_IN_TXN;
+      lt->lt_status = LT_BLOWN_OFF;
+      LT_CLOSE_ACK_THREADS(lt);
+      lt->lt_close_ack_threads++;
+      lt_transact (lt, SQL_ROLLBACK);
+    }
   if (lt_has_locks (lt))
     {
       GPF_T1 ("posthumous lock");
@@ -834,7 +834,7 @@ itc_bust_this_trx (it_cursor_t * it, buffer_desc_t ** buf, int may_ret)
   else
     {
       if (lt != wi_inst.wi_cpt_lt)
-      lt_ack_freeze (lt, it, buf);
+	lt_ack_freeze (lt, it, buf);
     }
 }
 
@@ -997,7 +997,7 @@ lt_kill_other_trx (lock_trx_t * lt, it_cursor_t * itc, buffer_desc_t * buf, int 
 	  lt->lt_status = LT_BLOWN_OFF;
 	  lt_wait_until_dead (lt);
 	}
-      else 
+      else
 	{
 	  /* waiting for io or acked the freeze */
 	}
@@ -1309,7 +1309,7 @@ lock_wait (gen_lock_t * pl, it_cursor_t * it, buffer_desc_t * buf,
   it->itc_write_waits += 1000;
   FAILCK (it);
   ITC_SEM_WAIT (it);
-  if (it->itc_ltrx->lt_lw_threads) 
+  if (it->itc_ltrx->lt_lw_threads)
     GPF_T1 ("lock wait over or but lw_threads. Wrong party signalled the thr sem.");
   FAILCK (it);
   ITC_MARK_LOCK_WAIT (it, time);
@@ -1485,7 +1485,7 @@ pl_is_owner (page_lock_t *pl, lock_trx_t * lt)
 }
 
 
-void 
+void
 pl_check_owners (page_lock_t * pl)
 {
   DO_RLOCK (rl, pl)
@@ -1501,7 +1501,7 @@ pl_check_owners (page_lock_t * pl)
 	    }
 	  END_DO_SET();
 	}
-      else 
+      else
 	{
 	  if (!pl_is_owner (pl, rl->pl_owner))
 	    GPF_T1 ("owner of rl is not owner of containing pl");
@@ -1771,7 +1771,7 @@ pl_release (page_lock_t * pl, lock_trx_t * lt, buffer_desc_t * buf)
       pl->pl_finish_ref_count--;
       if (0 == pl->pl_finish_ref_count)
       pl_free (pl);
-      else 
+      else
 	printf (" hold before free of pl L=%d with finish ref count\n", pl->pl_page);
       mutex_leave (pl_ref_count_mtx);
     }
@@ -1924,7 +1924,7 @@ the_grim_lock_reaper (void)
 	  LEAVE_TXN;
 	    goto kill_next_txn;
 	  }
-      if (lt->lt_threads && cli && cli->cli_anytime_timeout && cli->cli_anytime_started 
+      if (lt->lt_threads && cli && cli->cli_anytime_timeout && cli->cli_anytime_started
 	  && now - cli->cli_anytime_started > cli->cli_anytime_timeout
 	  && !cli->cli_terminate_requested)
 	{
@@ -1932,23 +1932,23 @@ the_grim_lock_reaper (void)
 	  cli->cli_activity.da_anytime_result = 1;
 	  at_printf (("host %d set anytime flag\n", local_cll.cll_this_host));
 	}
-      }
-      END_DO_SET ();
+    }
+  END_DO_SET ();
   LEAVE_TXN;
 
   IN_TXN;
-      DO_SET (lock_trx_t *, lt, &all_trxs)
-	{
-	  if (lt->lt_threads)
-	    server_is_idle = 0;
-	}
-      END_DO_SET ();
-      if (!threads_is_fiber && server_is_idle)
-	{
-	  wi_free_old_qrs ();
-	  srv_run_background_tasks();
-	}
-      wi_free_schemas ();
+  DO_SET (lock_trx_t *, lt, &all_trxs)
+    {
+      if (lt->lt_threads)
+	server_is_idle = 0;
+    }
+  END_DO_SET ();
+  if (!threads_is_fiber && server_is_idle)
+    {
+      wi_free_old_qrs ();
+      srv_run_background_tasks();
+    }
+  wi_free_schemas ();
   LEAVE_TXN;
   if (now - last_exec_time > AUTO_FLUSH_DELAY &&
       now - last_flush_time > AUTO_FLUSH_DELAY
@@ -2020,9 +2020,9 @@ the_grim_lock_reaper (void)
 	    buffer_free (old_img);
 	  }
 	else
-	prev = &old_img->bd_next;
-      old_img = next;
-    }
+	  prev = &old_img->bd_next;
+	old_img = next;
+      }
   }
   mutex_leave (old_roots_mtx);
   http_reaper ();

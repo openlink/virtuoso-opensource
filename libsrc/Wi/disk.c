@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Managing buffer rings and paging to disk.
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #ifdef HAVE_CONFIG_H
@@ -252,7 +252,7 @@ page_set_check (db_buf_t page)
   if (ck != pck)
     {
       log_error ("page set checksum ck=%x pck=%x xor = %x", (void*)(uptrlong)ck, (void*)(uptrlong)pck, (void*)(uptrlong) (ck ^ pck));
-    GPF_T1 ("page set checksum error");
+      GPF_T1 ("page set checksum error");
     }
  no_cksum: ;
 }
@@ -1049,7 +1049,7 @@ bp_wait_flush (buffer_pool_t * bp)
 }
 
 
-void 
+void
 bp_delayed_stat_action (buffer_pool_t * bp)
 {
   IN_BP (bp);
@@ -1098,12 +1098,12 @@ bp_get_buffer_1 (buffer_pool_t * bp, buffer_pool_t ** action_bp_ret, int mode)
 	      LEAVE_BP (bp);
 	      return NULL;
 	    }
-      bp_stats (bp);
-      age_limit = bp_stat_action (bp);
-    }
-  else
+	  bp_stats (bp);
+	  age_limit = bp_stat_action (bp);
+	}
+      else
 	{
-	  age_limit = bp->bp_bucket_limit[0] / n_again; 
+	  age_limit = bp->bp_bucket_limit[0] / n_again;
 	  /* can hang if age limit is too high and the stat batch can never finish because this thread never allows reentry into the bp because it stays busy looking for bufs of which all are too young */
 	  TC (tc_get_buffer_while_stat);
 	}
@@ -1476,7 +1476,7 @@ page_is_disk_order (buffer_desc_t * buf, row_size_t * lead_start, row_size_t * l
 }
 
 
-typedef struct row_writer_s 
+typedef struct row_writer_s
 {
   size_t	rw_fill;
   db_buf_t	rw_copy;
@@ -1485,7 +1485,7 @@ typedef struct row_writer_s
 
 
 
-void 
+void
 row_copy_no_comp (row_writer_t * rw, db_buf_t row, int row_len)
 {
   row_len = ROW_ALIGN (row_len);
@@ -1496,7 +1496,7 @@ row_copy_no_comp (row_writer_t * rw, db_buf_t row, int row_len)
 }
 
 
-int 
+int
 row_compress (row_writer_t * rw, db_buf_t row, int row_len)
 {
   row_len = ROW_ALIGN (row_len);
@@ -1514,9 +1514,9 @@ page_prepare_write (buffer_desc_t * buf, db_buf_t * copy, int * copy_fill, int p
 {
   int rc, is_order;
   row_size_t first_c, last_c;
-  dbe_key_t * key; 
+  dbe_key_t * key;
   row_writer_t rw;
-  
+
   if (DPF_INDEX != SHORT_REF (buf->bd_buffer + DP_FLAGS))
     {
       *copy = buf->bd_buffer;
@@ -1543,7 +1543,7 @@ page_prepare_write (buffer_desc_t * buf, db_buf_t * copy, int * copy_fill, int p
       if (rc != Z_OK)
 	GPF_T1 ("compress init failed");
       rw.rw_z_stream.avail_out = PAGE_SZ / 2 - DP_COMP_HEAD_LEN;
-      rw.rw_z_stream.next_out = rw.rw_copy + DP_COMP_HEAD_LEN; 
+      rw.rw_z_stream.next_out = rw.rw_copy + DP_COMP_HEAD_LEN;
       row_compress (&rw, buf->bd_buffer + DP_COMP_HEAD_LEN, DP_DATA - DP_COMP_HEAD_LEN);
     }
   else
@@ -1560,7 +1560,7 @@ page_prepare_write (buffer_desc_t * buf, db_buf_t * copy, int * copy_fill, int p
 	  if (Z_OK != rc)
 	    goto not_compressible;
 	}
-      else 
+      else
 	row_copy_no_comp (&rw, row, row_len);
     }
   END_DO_ROWS;
@@ -1573,7 +1573,7 @@ page_prepare_write (buffer_desc_t * buf, db_buf_t * copy, int * copy_fill, int p
 	  rw.rw_z_stream.next_in = gap_mark;
 	  rw.rw_z_stream.avail_in = 3;
 	}
-      else 
+      else
 	rw.rw_z_stream.avail_in = 0;
       rc = deflate (&rw.rw_z_stream, Z_FINISH);
       SHORT_SET (rw.rw_copy + DP_COMP_LEN, ((PAGE_SZ / 2) - DP_COMP_HEAD_LEN) - rw.rw_z_stream.avail_out);
@@ -1581,7 +1581,7 @@ page_prepare_write (buffer_desc_t * buf, db_buf_t * copy, int * copy_fill, int p
       if (rc != Z_STREAM_END)
 	goto not_compressible;
     }
-  else 
+  else
     {
       if (rw.rw_fill < PAGE_SZ - 1)
 	page_write_gap (rw.rw_copy + rw.rw_fill, PAGE_SZ - rw.rw_fill);
@@ -1614,7 +1614,7 @@ page_after_read (buffer_desc_t * buf)
   d_stream.avail_in = SHORT_REF (buf->bd_buffer + DP_COMP_LEN);
   d_stream.next_out = &page_buf[0];
   d_stream.avail_out = PAGE_SZ - DP_COMP_HEAD_LEN;
-  inflateInit (&d_stream); 
+  inflateInit (&d_stream);
   rc = inflate (&d_stream, Z_FINISH);
   if (Z_STREAM_END != rc)
     GPF_T1 ("bad uncompress");
@@ -1832,7 +1832,7 @@ buf_disk_write (buffer_desc_t * buf, dp_addr_t phys_dp_to)
 #endif
   if (dbs_cpt_recov_in_progress)
     out = buf->bd_buffer;
-  else 
+  else
     page_prepare_write (buf, &out, &n_out, c_compress_mode);
   /* dbg_sleep (2); */
   flags = SHORT_REF (buf->bd_buffer + DP_FLAGS);
@@ -1848,7 +1848,7 @@ buf_disk_write (buffer_desc_t * buf, dp_addr_t phys_dp_to)
     {
       if (KI_TEMP != (key_id_t)LONG_REF (buf->bd_buffer + DP_KEY_ID)
 	  && !sch_id_to_key (wi_inst.wi_schema, LONG_REF (buf->bd_buffer + DP_KEY_ID)))
-      GPF_T1 ("Writing index page with no key");
+	GPF_T1 ("Writing index page with no key");
     }
 
   if (DPF_INDEX == flags)
@@ -1970,7 +1970,7 @@ dbs_read_page_set (dbe_storage_t * dbs, dp_addr_t first_dp, int flag)
   dbs_unfreeable (dbs, first_dp, flag);
   buf_disk_read (first);
   if (flag != DPF_EXTENT_MAP)
-  page_set_checksum_init (first->bd_buffer + DP_DATA);
+    page_set_checksum_init (first->bd_buffer + DP_DATA);
   while ((dp_first = LONG_REF (prev->bd_buffer + DP_OVERFLOW)))
     {
       buffer_desc_t *buf = buffer_allocate (flag);
@@ -1992,13 +1992,13 @@ dbs_write_page_set (dbe_storage_t * dbs, buffer_desc_t * buf)
     {
       if (SHORT_REF (buf->bd_buffer + DP_FLAGS) != DPF_EXTENT_MAP)
 	{
-      page_set_check (buf->bd_buffer + DP_DATA);
-    }
+	  page_set_check (buf->bd_buffer + DP_DATA);
+	}
       if (buf->bd_next)
-    {
+	{
 	  LONG_SET (buf->bd_buffer + DP_OVERFLOW, buf->bd_next->bd_page);
-    }
-  else
+	}
+      else
 	LONG_SET (buf->bd_buffer + DP_OVERFLOW, 0);
       buf_disk_write (buf, 0);
       buf = buf->bd_next;
@@ -2193,15 +2193,14 @@ ftruncate64 (int fd, OFF_T length)
 long stripe_growth_ratio;
 
 
-
 void
 itc_hold_pages (it_cursor_t * itc, buffer_desc_t * buf, int n)
 {
   int held = 1;
   index_tree_t * it = itc->itc_tree;
   FAILCK (itc);
-    
-  if (it->it_extent_map == it->it_storage->dbs_extent_map 
+
+  if (it->it_extent_map == it->it_storage->dbs_extent_map
       && it->it_n_index_est + it->it_n_blob_est > KEY_OWN_EXTENT_THRESHOLD
       && it->it_key && it->it_key->key_id > DD_FIRST_PRIVATE_OID)
     {
@@ -2212,15 +2211,15 @@ itc_hold_pages (it_cursor_t * itc, buffer_desc_t * buf, int n)
     {
       itc->itc_n_pages_on_hold = n;
       held = em_hold_remap (itc->itc_tree->it_extent_map, &itc->itc_n_pages_on_hold);
-	}
-  if (!held)
-	{
-	  log_error ("Out of disk space for database");
-	  if (itc->itc_ltrx)
-	    itc->itc_ltrx->lt_error = LTE_NO_DISK; /* could be temp isp, no ltrx */
-	  itc_bust_this_trx (itc, &buf, ITC_BUST_THROW);
-	}
     }
+  if (!held)
+    {
+      log_error ("Out of disk space for database");
+      if (itc->itc_ltrx)
+	itc->itc_ltrx->lt_error = LTE_NO_DISK; /* could be temp isp, no ltrx */
+      itc_bust_this_trx (itc, &buf, ITC_BUST_THROW);
+    }
+}
 
 
 void
@@ -2617,9 +2616,9 @@ dbs_sync_disks (dbe_storage_t * dbs)
 	break;
 
     case 1:
-#ifndef WIN32	
+#ifndef WIN32
       sync();
-#endif      
+#endif
       break;
 
     case 2:
@@ -2771,23 +2770,23 @@ row_na_length (db_buf_t  row, dbe_key_t * key)
   int len;
   row_ver_t rv = IE_ROW_VERSION (row);
   key_ver_t kv = IE_KEY_VERSION (row);
-  if (!kv) 
+  if (!kv)
     {
-      len = key->key_key_len[rv]; 
+      len = key->key_key_len[rv];
       if (len <= 0)
-	len = COL_VAR_LEN_MASK & DBS_REV_SHORT_REF (row - len); 
+	len = COL_VAR_LEN_MASK & DBS_REV_SHORT_REF (row - len);
     }
-  else if (kv == KV_LEFT_DUMMY) 
+  else if (kv == KV_LEFT_DUMMY)
     {
-      len = 6; 
+      len = 6;
     }
   else
     {
       dbe_key_t * row_key = NULL;
-      if (kv >= KV_LONG_GAP 
+      if (kv >= KV_LONG_GAP
 	  || !(row_key = key->key_versions[kv]) )
-	STRUCTURE_FAULT1 ("bad kv in row_na_length"); 
-      len = row_key->key_row_len[rv]; 
+	STRUCTURE_FAULT1 ("bad kv in row_na_length");
+      len = row_key->key_row_len[rv];
       if (len <= 0)
 	len = COL_VAR_LEN_MASK & DBS_REV_SHORT_REF (row - len);
     }
@@ -2975,7 +2974,7 @@ dbs_rev_h_index  (dbe_storage_t * dbs, buffer_desc_t * buf)
 #endif
 }
 
-void 
+void
 dbs_rev_h_free_set  (dbe_storage_t * dbs, buffer_desc_t * buf)
 {
   int inx;
@@ -2988,7 +2987,7 @@ dbs_rev_h_free_set  (dbe_storage_t * dbs, buffer_desc_t * buf)
 }
 
 
-void 
+void
 dbs_rev_h_ext (dbe_storage_t * dbs, buffer_desc_t * buf)
 {
   GPF_T1 ("not implemented");
@@ -3299,8 +3298,8 @@ dbs_from_file (char * name, char * file, char type, volatile int * exists)
       dbs->dbs_stripe_unit = c_stripe_unit;
       dbs_extent_init (dbs);
       dbs_write_cfg_page (dbs, 0);
-  if (DBS_PRIMARY == type)
-    dbs_init_registry (dbs);
+      if (DBS_PRIMARY == type)
+	dbs_init_registry (dbs);
       dbs->dbs_n_free_pages = dbs_count_free_pages (dbs);
     }
   return dbs;
@@ -3469,7 +3468,7 @@ extern dk_mutex_t * dp_compact_mtx;
 #define TRX_RC_SZ 200
 #endif
 
-int 
+int
 itc_free_cb (caddr_t itc)
 {
   itc_free ((it_cursor_t *)itc);
@@ -3477,7 +3476,7 @@ itc_free_cb (caddr_t itc)
 }
 
 
-int 
+int
 it_free_cb (caddr_t it)
 {
   it_temp_free ((index_tree_t *)it);
@@ -3554,47 +3553,46 @@ dbe_key_open (dbe_key_t * key)
       kf->kf_name = box_dv_short_string (str);
       kf->kf_storage = key->key_storage;
     }
-
   DO_BOX (dbe_key_frag_t *, kf, inx, key->key_fragments)
-  {
-    caddr_t start_str;
-    dp_addr_t start_dp = 0;
-    IN_TXN;
-    start_str = registry_get (kf->kf_name);
-    LEAVE_TXN;
-    kf->kf_it = it_allocate (kf->kf_storage);
     {
+      caddr_t start_str;
+      dp_addr_t start_dp = 0;
+      IN_TXN;
+      start_str = registry_get (kf->kf_name);
+      LEAVE_TXN;
+      kf->kf_it = it_allocate (kf->kf_storage);
+      {
 	int inx;
-      char mtx_name[200];
-      snprintf (mtx_name, sizeof (mtx_name), "lock_rel_%100s", kf->kf_name);
-      mutex_option (kf->kf_it->it_lock_release_mtx, mtx_name, NULL, NULL);
+	char mtx_name[200];
+	snprintf (mtx_name, sizeof (mtx_name), "lock_rel_%100s", kf->kf_name);
+	mutex_option (kf->kf_it->it_lock_release_mtx, mtx_name, NULL,  NULL);
 	for (inx = 0; inx < IT_N_MAPS; inx++)
-	{
+	  {
 	    sprintf (mtx_name, "%s:%d", kf->kf_name, inx);
 	    mutex_option (&(kf->kf_it->it_maps[inx].itm_mtx), mtx_name, NULL /*it_page_map_entry_check*/, (void*) &kf->kf_it->it_maps[inx]);
+      }
+      }
+      kf->kf_it->it_key = key;
+      if (start_str)
+	start_dp = atol (start_str);
+      dk_free_tree (start_str);
+      if (!start_dp)
+	{
+	  it_map_t * itm;
+	  buffer_desc_t * buf = it_new_page (kf->kf_it, 0, DPF_INDEX, 0, 0);
+	  pg_init_new_root (buf);
+	  kf->kf_it->it_root = buf->bd_page;
+	  itm = IT_DP_MAP (kf->kf_it, buf->bd_page);
+	  mutex_enter (&itm->itm_mtx);
+	  page_leave_inner (buf);
+	  mutex_leave (&itm->itm_mtx);
 	}
-    }
-    kf->kf_it->it_key = key;
-    if (start_str)
-      start_dp = atol (start_str);
-    dk_free_tree (start_str);
-    if (!start_dp)
-      {
-	it_map_t *itm;
-	buffer_desc_t *buf = it_new_page (kf->kf_it, 0, DPF_INDEX, 0, 0);
-	pg_init_new_root (buf);
-	kf->kf_it->it_root = buf->bd_page;
-	itm = IT_DP_MAP (kf->kf_it, buf->bd_page);
-	mutex_enter (&itm->itm_mtx);
-	page_leave_inner (buf);
-	mutex_leave (&itm->itm_mtx);
-      }
-    else
-      {
-	kf->kf_it->it_root = start_dp;
-      }
+      else
+	{
+	  kf->kf_it->it_root = start_dp;
+	}
       kf_set_extent_map (kf);
-  }
+    }
   END_DO_BOX;
 }
 

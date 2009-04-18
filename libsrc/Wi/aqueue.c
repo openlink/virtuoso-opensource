@@ -49,7 +49,7 @@ aq_lt_leave (lock_trx_t * lt, aq_request_t * aqr)
       if (!aqr->aqr_error)
 	MAKE_TRX_ERROR (lte, aqr->aqr_error, NULL);
     }
-  else 
+  else
     {
       lte = lt_commit (lt, TRX_CONT);
       if (LTE_OK != lte)

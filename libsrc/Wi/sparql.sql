@@ -1,4 +1,4 @@
---  
+--
 --  $Id$
 --
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -4401,6 +4401,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL (in subj_dict any, in cons
   return res;
 }
 ;
+
 
 --!AWK PUBLIC
 create procedure DB.DBA.RDF_DICT_OF_TRIPLES_TO_THREE_COLS (in dict any, in destructive integer := 0)

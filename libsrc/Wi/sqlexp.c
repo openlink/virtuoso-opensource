@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Dynamic SQL Expression Generator
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "libutil.h"
@@ -165,7 +165,7 @@ sqlc_trans_funcs (sql_comp_t * sc, ST * tree, state_slot_t * ret)
       if (!sc->sc_trans
 	  || BOX_ELEMENTS (tree->_.call.params) < 1)
 	sqlc_new_error (sc->sc_cc, "37000", "TR...", "T_STEP is only allowed in transitive step dt");
-      
+
       arg = (caddr_t)tree->_.call.params[0];
       dtp = DV_TYPE_OF (arg);
       if (DV_LONG_INT == dtp)
@@ -183,7 +183,7 @@ sqlc_trans_funcs (sql_comp_t * sc, ST * tree, state_slot_t * ret)
 	sc->sc_trans->tn_step_no_ret = ret;
       else if (DV_STRINGP (arg) && !stricmp (arg, "path_id"))
 	sc->sc_trans->tn_path_no_ret = ret;
-      else 
+      else
 	sqlc_new_error (sc->sc_cc, "37000", "TR...", "the argument of t_step must be a 1 based column index in the selection of 'step_no' or 'path_id'");
       return ret;
     }
@@ -1438,7 +1438,7 @@ sqlo_proc_cl_locatable (caddr_t name, int level, query_t ** qr_ret)
     return 1;
   if (CL_LOCAL == qr->qr_cl_locatable)
     return 0;
-  WITHOUT_TMP_POOL 
+  WITHOUT_TMP_POOL
     {
       int is_sem = sqlc_inside_sem;
       if (is_sem)
@@ -1561,15 +1561,15 @@ ins_assigned (instruction_t * ins, dk_set_t * res)
 	dk_set_push (res, (void*) ins->_.artm.result);
 	  break;
 	case INS_SUBQ:
-	  if (ins->_.subq.query && ins->_.subq.query->qr_select_node 
+	  if (ins->_.subq.query && ins->_.subq.query->qr_select_node
 	      && ((out = ins->_.subq.query->qr_select_node->sel_out_slots)))
 	    {
 	      int inx;
 	      DO_BOX (state_slot_t *, ssl, inx, out)
 		{
 		  if (ssl->ssl_type == SSL_VARIABLE || ssl->ssl_type == SSL_COLUMN)
-		dk_set_push (res,  (void*) ssl);
-		}	      
+		    dk_set_push (res,  (void*) ssl);
+		}
 	      END_DO_BOX;
 	    }
 	}
@@ -1590,7 +1590,7 @@ cv_assigned_slots (code_vec_t cv)
 }
 
 
-void 
+void
 ref_ssls (dk_hash_t * ht, state_slot_t ** ssls)
 {
   int inx;
@@ -1601,7 +1601,7 @@ ref_ssls (dk_hash_t * ht, state_slot_t ** ssls)
   END_DO_BOX;
 }
 
-void 
+void
 ref_ssl_list (dk_hash_t * ht, dk_set_t ssls)
 {
   DO_SET (state_slot_t *, ssl, &ssls)
@@ -1698,7 +1698,7 @@ setp_refd_slots (setp_node_t * setp, dk_hash_t * res)
       REF_SSL (res, go->go_distinct);
     }
   END_DO_SET();
-} 
+}
 
 
 
@@ -1730,7 +1730,7 @@ ks_refd_slots (sql_comp_t * sc, key_source_t * ks, dk_hash_t * res, dk_hash_t * 
 }
 
 
-void 
+void
 qf_refd_slots (sql_comp_t * sc, query_frag_t * qf, dk_hash_t * res, dk_hash_t * all_res, int * non_cl_local)
 {
   int old = sqlg_count_qr_global_refs;
@@ -1745,7 +1745,7 @@ qf_refd_slots (sql_comp_t * sc, query_frag_t * qf, dk_hash_t * res, dk_hash_t * 
   sqlg_count_qr_global_refs = old;
 }
 
-void 
+void
 remhash_ssl (state_slot_t * ssl, dk_hash_t * ht)
 {
   remhash ((void*)ssl, ht);
@@ -1835,7 +1835,7 @@ qn_refd_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t *
 	      ASG_SSL (res, all_res, out);
 	    }
 	  END_DO_BOX;
-	  ASG_SSL (res, all_res, sqs->sqs_set_no); 
+	  ASG_SSL (res, all_res, sqs->sqs_set_no);
     }
   else if ((qn_input_fn) select_node_input == qn->src_input
 	   || (qn_input_fn) select_node_input_subq == qn->src_input)
@@ -1876,9 +1876,9 @@ qn_refd_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t *
       ASG_SSL (res, all_res, tn->tn_step_no_ret);
       ASG_SSL (res, all_res, tn->tn_path_no_ret);
       ASG_SSL (res, all_res, tn->tn_step_set_no);
-      asg_ssl_array (res, all_res, tn->tn_data); 
-      asg_ssl_array (res, all_res, tn->tn_input); 
-      asg_ssl_array (res, all_res, tn->tn_output); 
+      asg_ssl_array (res, all_res, tn->tn_data);
+      asg_ssl_array (res, all_res, tn->tn_input);
+      asg_ssl_array (res, all_res, tn->tn_output);
       if (tn->tn_complement && tn->tn_is_primary)
 	qn_refd_slots (sc, (data_source_t*)tn->tn_complement, res, all_res, non_cl_local);
       ref_ssls (res, tn->tn_input);
@@ -1892,7 +1892,7 @@ qn_refd_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t *
 	{
 	  REF_SSL (all_res, txs->txs_d_id);
 	}
-      else 
+      else
 	ASG_SSL (res, all_res, txs->txs_d_id);
       REF_SSL (res, txs->txs_init_id);
       REF_SSL (res, txs->txs_end_id);

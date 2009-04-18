@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  Data structures
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 
@@ -227,7 +227,7 @@ typedef struct wi_inst_s
 
 /* wi_is_checkpoint_pending */
 #define CPT_NONE 0
-#define CPT_CHECKPOINT 1 
+#define CPT_CHECKPOINT 1
 #define CPT_ATOMIC_PENDING 2 /* in the process of killing transactions before entering into atomic mode */
 #define CPT_ATOMIC 3 /* in atomic mode, only one transaction allowed */
 
@@ -679,15 +679,15 @@ struct it_cursor_s
   (itc->itc_row_data[cl.cl_null_flag[IE_ROW_VERSION (itc->itc_row_data)]] & cl.cl_null_mask[IE_ROW_VERSION (itc->itc_row_data)])
 
 #define ROW_INT_COL(buf, row, rv, cl, ref, n) \
-    { \
+{\
   short __off = (cl).cl_pos[rv];\
   if ((cl).cl_row_version_mask & rv)\
-    { \
+    {\
       unsigned short __irow2 = SHORT_REF (row + __off);\
       db_buf_t __row2 = buf->bd_buffer + buf->bd_content_map->pm_entries[__irow2 & ROW_NO_MASK];\
       __off = (cl).cl_pos[IE_ROW_VERSION(__row2)];\
       n = ref (__row2 + __off) + (__irow2 >> COL_OFFSET_SHIFT);\
-    } \
+    }\
   else \
     n =ref(row + __off); \
 }
@@ -698,15 +698,15 @@ struct it_cursor_s
   ((ISO_REPEATABLE == itc->itc_isolation || (PL_EXCLUSIVE == itc->itc_lock_mode && itc->itc_isolation == ISO_COMMITTED)) \
    && itc->itc_page != itc->itc_owns_page)
 #define ROW_FIXED_COL(buf, row, rv, cl, ptr) \
-{ \
+{\
   short __off = (cl).cl_pos[rv];\
   if ((cl).cl_row_version_mask & rv)\
-    { \
+    {\
       int __irow2 = SHORT_REF (row + __off);\
       db_buf_t __row2 = buf->bd_buffer + buf->bd_content_map->pm_entries[__irow2 & ROW_NO_MASK];\
       __off = (cl).cl_pos[IE_ROW_VERSION(__row2)];\
       ptr = __row2 + __off;\
-   } \
+    }\
   else \
     ptr = row + (cl).cl_pos[rv];\
 }
@@ -720,16 +720,16 @@ struct it_cursor_s
   row_ver_t rv = IE_ROW_VERSION (row);\
   len = (cl).cl_pos[rv];\
   if (CL_FIRST_VAR == len)\
-    { \
+    {\
       len = SHORT_REF (row + key->key_length_area[rv]);\
       off = IE_KEY_VERSION (row) ? key->key_row_var_start[rv] : key->key_key_var_start[rv];\
       len -= off;\
-   } \
+    }\
   else \
-  { \
+    {\
       off = SHORT_REF (row - len) & COL_VAR_LEN_MASK;\
       len = SHORT_REF (row + 2 - len) - off;\
-    } \
+    }\
 }
 
 
@@ -752,7 +752,7 @@ len = row_length (row, key)
 #define ITC_LOCK_IF_ON_ROW 2
 
 /* itc_to_reset - unsigned char, order is important */
-/* when calling page_wait_access, the itc_max_transit_change is one of these. 
+/* when calling page_wait_access, the itc_max_transit_change is one of these.
  * If the change during wait is greater than indicated here, the itc does not enter the buffer.
  * For example if the page of the buffer  splits, the itc will not know whether it still wants to enter the buffer and must restart the search.
  * When the wait is over, itc_to_reset is set to reflect what happened during the wait, again one of the below */
@@ -1143,7 +1143,7 @@ struct buffer_desc_s
 
 #ifdef BUF_BOUNDS
 extern buffer_desc_t * bounds_check_buf;
- 
+
 #define BUF_BOUNDS_CHECK(buf)  \
 { \
   unsigned short flags = SHORT_REF (buf->bd_buffer + DP_FLAGS); \
@@ -1152,10 +1152,10 @@ extern buffer_desc_t * bounds_check_buf;
   if (BUF_END_MARK != LONG_REF (buf->bd_buffer + PAGE_SZ)) { bounds_check_buf = buf; GPF_T1 ("bad buffer end mark"); } \
 }
 #define BUF_ALLOC_SZ (PAGE_SZ + sizeof (int32))
-#define BUF_END_MARK 0xfeedbeef   
+#define BUF_END_MARK 0xfeedbeef
 #define BUF_SET_END_MARK(buf) LONG_SET (buf->bd_buffer + PAGE_SZ, BUF_END_MARK)
 #else
-#define BUF_BOUNDS_CHECK(buf) 
+#define BUF_BOUNDS_CHECK(buf)
 #define BUF_ALLOC_SZ PAGE_SZ
 #define BUF_SET_END_MARK(buf)
 #endif
@@ -1199,7 +1199,7 @@ struct row_fill_s
 
 struct  page_fill_s
 {
-  it_cursor_t *	pf_itc; 
+  it_cursor_t *	pf_itc;
   dk_set_t	pf_left; /* if more than one buffers result, the leftmost is first, then the rest, except for the current */
   buffer_desc_t *	pf_org; /* use this to decode compression if getting stuff as rows */
   buffer_desc_t *	pf_current;
@@ -1242,7 +1242,7 @@ struct  page_fill_s
 
 
 
-struct row_delta_s 
+struct row_delta_s
 {
   char		rd_op;
   char		rd_make_ins_rbe; /* when plain on page, make ins rollback entry? */
@@ -1465,7 +1465,7 @@ extern int32 bdf_is_avail_mask; /* all bits on except read aside flag which does
       client_connection_t * cli = lt->lt_client; \
       char __term = cli->cli_terminate_requested;			\
       if (__term) cli_terminate_in_itc_fail (cli, itc, buf); \
-      if (cli->cli_session && cli->cli_session->dks_to_close) \
+      if (cli->cli_session && cli->cli_session->dks_to_close)	\
    { \
        LT_ERROR_DETAIL_SET (lt, \
 	   box_dv_short_string ("Client session disconnected")); \

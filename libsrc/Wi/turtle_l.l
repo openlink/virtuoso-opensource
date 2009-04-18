@@ -1,24 +1,24 @@
-/* 
+/*
  *  $Id$
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2009 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 %option 8bit
@@ -210,7 +210,7 @@ SPAR_NCNAME_X		([A-Za-z0-9_./#%+\x7f-\xfe-]*[A-Za-z0-9_/#%+\x7f-\xfe-])
   }
 
 <INITIAL>"<"(([^\\>\001-\040])|{SPAR_ECHAR})*">"	{
-    ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, 0, '>');  
+    ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, 0, '>');
     return Q_IRI_REF;
   }
 
@@ -236,7 +236,7 @@ SPAR_NCNAME_X		([A-Za-z0-9_./#%+\x7f-\xfe-]*[A-Za-z0-9_/#%+\x7f-\xfe-])
     BEGIN (TURTLE_SKIP_TO_DOT_WS); yymore (); }
 
 <INITIAL>({SPAR_NCNAME_PREFIX}?)":"{SPAR_NCNAME}	{ TTL_TOKBOX_Q(0,QNAME,"qualified URI"); }
-<INITIAL>({SPAR_NCNAME_PREFIX}?)":"{SPAR_NCNAME_X}	{ 
+<INITIAL>({SPAR_NCNAME_PREFIX}?)":"{SPAR_NCNAME_X}	{
     if (!(ttlp_arg[0].ttlp_flags & TTLP_NAME_MAY_CONTAIN_PATH))
       TTLYYERROR_OR_RECOVER ("Invalid characters in local part of QName; this error can be suppressed by parser flags");
     tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "Invalid characters in local part of QName");
@@ -590,7 +590,7 @@ rdf_load_turtle (
       blob_handle_t *bh = (blob_handle_t *) text_or_filename;
 #if 0 /* !!!TBD: add wide support: */
       text_strg_is_wide = ((DV_BLOB_WIDE_HANDLE == dtp_of_text) ? 1 : 0);
-#endif      
+#endif
       if (bh->bh_ask_from_client)
         {
           bcfi_reset (&bcfi, bh, qi->qi_client);

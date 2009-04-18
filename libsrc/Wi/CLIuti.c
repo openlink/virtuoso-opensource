@@ -906,7 +906,7 @@ stmt_process_result (cli_stmt_t * stmt, int needs_evl)
 	  dk_free_tree ((box_t) res);
 
           /* In case of SQLSetPos returning SQL_ERROR */
-	  if (stmt->stmt_compilation && 
+	  if (stmt->stmt_compilation &&
 	      QT_SELECT != stmt->stmt_compilation->sc_is_select &&
 	      stmt->stmt_rows_affected == -1)
 	      stmt->stmt_rows_affected = 0;
@@ -2677,7 +2677,7 @@ dv_to_place (caddr_t it,	/* Data in DV format  from the Kubl. */
 	case SQL_C_WCHAR:
 	  return dv_to_str_place (it, its_type, max, place, len_ret, str_from_pos, stmt, nth_col, len, c_type, sql_type);
 
-	case SQL_C_BOX:	
+	case SQL_C_BOX:
 	    {
 	      ret_len = sizeof (caddr_t);
 	      *((caddr_t *)place) = (caddr_t) it;
@@ -2692,7 +2692,7 @@ dv_to_place (caddr_t it,	/* Data in DV format  from the Kubl. */
 	    case DV_LONG_INT:
 	    case DV_SHORT_INT:
               {
-		boxint n = unbox (it);		
+		boxint n = unbox (it);
 		if (n < (int64) INT32_MIN || n > (int64) INT32_MAX)
 		  {
 		    set_error (&stmt->stmt_error, "22003", "CL098", "Integer value out of range");
@@ -3458,33 +3458,33 @@ col_desc_get_display_size (col_desc_t *cd, int cli_binary_timestamp)
     case DV_TIMESTAMP:
       {
 	int scale = unbox (cd->cd_scale);
- 	
+
 	if (cli_binary_timestamp)
 	  return 2 * unbox (cd->cd_precision);	/* SQL_BINARY */
  	else if (scale)
 	  return 20 + scale;
 	else
-	  return 19; 
+	  return 19;
       }
 
     case DV_DATETIME:
       {
 	int scale = unbox (cd->cd_scale);
- 	
+
  	if (scale)
 	  return 20 + scale;
 	else
-	  return 19; 
+	  return 19;
       }
 
     case DV_TIME:
       {
 	int scale = unbox (cd->cd_scale);
- 	
+
  	if (scale)
 	  return 9 + scale;
 	else
-	  return 8; 
+	  return 8;
       }
 
     default:

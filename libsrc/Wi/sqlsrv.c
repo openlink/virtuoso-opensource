@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  SQL server functions
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 /*
@@ -1854,31 +1854,30 @@ report_error:
     }
   else
     {
-  for (inx = 0; inx < n_params; inx++)
-    {
-      caddr_t *par = (caddr_t *) params[inx];
-      params[inx] = NULL;
-
-      if (!first_set)
+      for (inx = 0; inx < n_params; inx++)
 	{
-	  mutex_enter (cli->cli_mtx);
-	}
-      first_set = 0;
+	  caddr_t *par = (caddr_t *) params[inx];
+	  params[inx] = NULL;
 
-      err = qr_exec (cli, stmt->sst_query, CALLER_CLIENT,
-	  cursor_name ? box_string (cursor_name) : NULL,
-	  stmt, NULL, par, options, 0);
-      dk_free_box ((caddr_t) par);
-      ASSERT_OUTSIDE_MTX (cli->cli_mtx);
-      if (err != (caddr_t) SQL_SUCCESS)
-	{
-	  dk_free_tree (err);
-	  break;
-	}
+	  if (!first_set)
+	    {
+	      mutex_enter (cli->cli_mtx);
+	    }
+	  first_set = 0;
+	  err = qr_exec (cli, stmt->sst_query, CALLER_CLIENT,
+			 cursor_name ? box_string (cursor_name) : NULL,
+			 stmt, NULL, par, options, 0);
+	  dk_free_box ((caddr_t) par);
+	  ASSERT_OUTSIDE_MTX (cli->cli_mtx);
+	  if (err != (caddr_t) SQL_SUCCESS)
+	    {
+	      dk_free_tree (err);
+	      break;
+	    }
       else
 	sql_warnings_send_to_cli ();
-      stmt->sst_parms_processed = inx;
-    }
+	  stmt->sst_parms_processed = inx;
+	}
       dk_free_tree ((caddr_t) params);
     }
   if (n_params == 0)
@@ -2552,7 +2551,7 @@ sf_make_auto_cp(void)
     {
       long now;
       sf_makecp (sf_make_new_log_name(wi_inst.wi_master), NULL, 1, CPT_NORMAL);
-      now = approx_msec_real_time (); 
+      now = approx_msec_real_time ();
       checkpointed_last_time = (unsigned long int) now; /* the main thread still running so set last time auto cpt finished */
     }
 }
@@ -3307,7 +3306,7 @@ char * bpel_check_proc =
 "    }\n"
 "}\n";
 
-#define NO_LITE(f) if (!lite_mode) f (); 
+#define NO_LITE(f) if (!lite_mode) f ();
 
 void
 sql_code_global_init ()
@@ -3349,7 +3348,7 @@ sql_code_global_init ()
 void
 sql_code_arfw_global_init ()
 {
-/*  
+/*
   ddl_scheduler_arfw_init ();
 */
   sqls_arfw_define_sys ();
@@ -3679,10 +3678,10 @@ srv_global_init (char *mode)
 #ifdef BIF_XML
   html_hash_init ();
 #endif
-#ifdef PLDBG  
-  if (lite_mode) 
+#ifdef PLDBG
+  if (lite_mode)
     pl_debug_all = 0;
-#endif  
+#endif
   wi_open (mode);
   sql_bif_init ();
   if (lite_mode)
@@ -3722,7 +3721,7 @@ srv_global_init (char *mode)
     }
   if (!f_read_from_rebuilt_database)
     {
-  srv_calculate_sqlo_unit_msec ();
+      srv_calculate_sqlo_unit_msec ();
     }
   the_main_thread = current_process;	/* Used by the_grim_lock_reaper */
 
@@ -3767,9 +3766,9 @@ srv_global_init (char *mode)
 	  srv_global_init_drop ();
 	  local_commit (bootstrap_cli);
 	}
-	  sec_users = id_str_hash_create (101);
-	  sec_user_by_id = hash_table_allocate (101);
-	  sec_new_user (NULL, "dba", "dba");
+      sec_users = id_str_hash_create (101);
+      sec_user_by_id = hash_table_allocate (101);
+      sec_new_user (NULL, "dba", "dba");
       if (strchr (mode, 'b'))
 	db_replay_registry_sequences ();
       else
@@ -3813,7 +3812,7 @@ srv_global_init (char *mode)
       sec_read_grants (NULL, NULL, NULL, 1); /* call second time to do read of execute grants */
       ddl_standard_procs ();
 #if REPLICATION_SUPPORT
-      if (!lite_mode) 
+      if (!lite_mode)
 	{
 	  repl_init ();
 	  repl_serv_init (0);
@@ -3838,8 +3837,8 @@ srv_global_init (char *mode)
       bootstrap_cli->cli_trx->lt_threads = 0;
       IN_TXN;
       dbs_checkpoint ((char *)-1, 0);
-  LEAVE_TXN;
-  bootstrap_cli->cli_trx->lt_threads = 1;
+      LEAVE_TXN;
+      bootstrap_cli->cli_trx->lt_threads = 1;
     }
   if (!f_read_from_rebuilt_database)
     {
@@ -3854,7 +3853,7 @@ srv_global_init (char *mode)
     }
   local_commit (bootstrap_cli);
 #ifdef PLDBG
-  if (!lite_mode) 
+  if (!lite_mode)
     {
       pldbg_init ();
       cov_load ();
@@ -3940,7 +3939,7 @@ srv_make_new_error (const char *code, const char *virt_code, const char *msg, ..
 
   if (code[1] == 'Y')
     virtuoso_sleep (0, 10000);
-  
+
   {
     if ('S' == code[0] || '4' == code[0])
       at_printf (("Host %d make err %s %s in %s\n", local_cll.cll_this_host, code, temp, cl_thr_stat ()));
@@ -4014,10 +4013,10 @@ srv_make_trx_error (int code, caddr_t detail)
             probable_err = NULL;
           if (NULL == probable_err)
             {
-	  err = srv_make_new_error ("4000X", "SR176",
-	      "Transaction rolled back due to previous SQL error%s%s",
-	      detail ? " : " : "", detail ? detail : "");
-	  break;
+	      err = srv_make_new_error ("4000X", "SR176",
+	        "Transaction rolled back due to previous SQL error%s%s",
+	        detail ? " : " : "", detail ? detail : "");
+	      break;
             }
           else
             {
@@ -4067,7 +4066,7 @@ srv_make_trx_error (int code, caddr_t detail)
 				    "Transaction prepared but not committed.  Probably dropped commit message.  The branch will automatically query coordinator for the final status.  The situation will reset itself in a few seconds");
 	  break;
 
-      default:
+    default:
 	  err = srv_make_new_error ("4000X", "SR177", "Misc Transaction Error%s%s",
 	      detail ? " : " : "", detail ? detail : "");
 	  break;

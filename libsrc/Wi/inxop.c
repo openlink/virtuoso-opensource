@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  SQL query execution
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "sqlnode.h"
@@ -50,7 +50,7 @@ int
 itc_near_random (it_cursor_t * itc, placeholder_t * pl, buffer_desc_t ** buf_ret,
 		 ptrlong * n_hits, int is_asc)
 {
-  /* set by pl, see if on same page. If not, 
+  /* set by pl, see if on same page. If not,
    * do full lookup.  If asc order, a negative can be confirmed on local page if max of page less than key sought.*/
   int res;
   dp_addr_t target_dp;
@@ -83,7 +83,7 @@ itc_near_random (it_cursor_t * itc, placeholder_t * pl, buffer_desc_t ** buf_ret
 	{
 	  itc_unregister_inner (itc, *buf_ret, 0);
 	}
-      else 
+      else
 	{
 	  itc->itc_page = pl->itc_page;
 	}
@@ -102,7 +102,7 @@ itc_near_random (it_cursor_t * itc, placeholder_t * pl, buffer_desc_t ** buf_ret
 	    }
 	  page_leave_outside_map (*buf_ret);
 	}
-      else 
+      else
 	{
 	  res = itc_next (itc, buf_ret);
 	  if (DVC_MATCH == res)
@@ -124,7 +124,7 @@ itc_near_random (it_cursor_t * itc, placeholder_t * pl, buffer_desc_t ** buf_ret
 
 
 int
-itc_il_search (it_cursor_t * itc, buffer_desc_t ** buf_ret, caddr_t * qst, 
+itc_il_search (it_cursor_t * itc, buffer_desc_t ** buf_ret, caddr_t * qst,
 	       inx_locality_t * il, placeholder_t * pl, int is_asc)
 {
   ptrlong n = QST_PLONG (qst, il->il_n_read)++;
@@ -133,7 +133,7 @@ itc_il_search (it_cursor_t * itc, buffer_desc_t ** buf_ret, caddr_t * qst,
   if (!il->il_n_read)
     GPF_T1 ("il not inited.");
   /* the locality trick simply does not work with inx int with lubm if non bm inx.  A bm inx does no il trick.  So the il trick is commented out */
-  if (0 &&pl && pl->itc_is_registered 
+  if (0 &&pl && pl->itc_is_registered
       && n > 3 && n / (hits | 1) < 3)
     {
       res = itc_near_random (itc, pl, buf_ret,
@@ -141,13 +141,13 @@ itc_il_search (it_cursor_t * itc, buffer_desc_t ** buf_ret, caddr_t * qst,
       QST_PLONG (qst, il->il_last_dp) = itc->itc_page;
       return res;
     }
-  else 
+  else
     {
       *buf_ret = itc_reset (itc);
       res = itc_next (itc, buf_ret);
       if (itc->itc_page == QST_PLONG (qst, il->il_last_dp))
 	QST_PLONG (qst, il->il_n_hits)++;
-      else 
+      else
 	QST_PLONG (qst, il->il_last_dp) = itc->itc_page;
       return res;
     }
@@ -186,7 +186,7 @@ inx_op_set_params (inx_op_t * iop, it_cursor_t * itc)
 
 
 
-void 
+void
 inxop_bm_leading_output (it_cursor_t * itc, buffer_desc_t * buf)
 {
   dbe_key_t * key = itc->itc_insert_key;
@@ -234,7 +234,7 @@ typedef struct inxop_bm_s
 
 
 
-void 
+void
 inxop_set_iob (inx_op_t * iop, it_cursor_t *itc, buffer_desc_t * buf, caddr_t * qst)
 {
   int off, len, is_single;
@@ -265,7 +265,7 @@ inxop_set_bm_ssl (inx_op_t * iop, it_cursor_t *itc, caddr_t * qst)
 	{
 	  if (DV_IRI_ID == key->key_bit_cl->cl_sqt.sqt_dtp || DV_IRI_ID_8 == key->key_bit_cl->cl_sqt.sqt_dtp)
 	    qst_set_bin_string (itc->itc_out_state, ssl, (db_buf_t) &itc->itc_bp.bp_value, sizeof (iri_id_t), DV_IRI_ID);
-	  else 
+	  else
 	    qst_set_long (itc->itc_out_state, ssl, (int32) itc->itc_bp.bp_value);
 	}
     }
@@ -273,7 +273,7 @@ inxop_set_bm_ssl (inx_op_t * iop, it_cursor_t *itc, caddr_t * qst)
 }
 
 
-void 
+void
 itc_set_search_param (it_cursor_t * itc, int nth, caddr_t val, dtp_t dtp)
 {
   int inx, found = 0;
@@ -302,7 +302,7 @@ itc_set_search_param (it_cursor_t * itc, int nth, caddr_t val, dtp_t dtp)
 int enable_iop_other = 1;
 
 int
-inxop_bm_check_other (inx_op_t * iop, caddr_t * qst) 
+inxop_bm_check_other (inx_op_t * iop, caddr_t * qst)
 {
   /* see if the target is in the range of the other's bm.  If it is, advance the other by one.  Compare with this.  If this other is greater than the present, put the value of the other as new target and return 1. */
   caddr_t target_box = qst_get (qst, iop->iop_target_ssl);
@@ -344,7 +344,7 @@ inxop_bm_check_other (inx_op_t * iop, caddr_t * qst)
 
 
 int
-inxop_check_other (inx_op_t * iop, caddr_t * qst) 
+inxop_check_other (inx_op_t * iop, caddr_t * qst)
 {
   /* true if this iop must go to start because the other iop cannot match the present value.  If so
    * this sets the new target and the op on the next iteration is always IOP_TARGET */
@@ -394,13 +394,13 @@ inxop_iob_next (inx_op_t * iop, it_cursor_t * itc, inxop_bm_t * iob, int op, cad
 
 int next_ctr = 0;
 int64 prev_target;
-void 
+void
 check_target (it_cursor_t * itc)
 {
   int64 target = unbox_iri_int64 (itc->itc_search_params[3]);
-#ifdef DEBUG  
+#ifdef DEBUG
   if (target < prev_target) bing ();
-#endif  
+#endif
   prev_target = target;
 }
 
@@ -428,7 +428,7 @@ inxop_bm_next (inx_op_t * iop , query_instance_t * qi, int op,
 	    }
 	  return rc;
 	}
-    }				   
+    }
   ITC_FAIL (itc)
     {
       switch (op)
@@ -456,7 +456,7 @@ inxop_bm_next (inx_op_t * iop , query_instance_t * qi, int op,
 	  rc = itc_search (itc, &buf);
 	  if (DVC_LESS == rc)
 	    {
-	      /* the bm was not even checked, failed to find a match of leading parts.  
+	      /* the bm was not even checked, failed to find a match of leading parts.
 	       * or Could be we got a match of leading and the first bm col was gt and we wanted lte.  So recheck one forward with just */
 	      itc->itc_desc_order = 0;
 	      itc->itc_bp.bp_value = BITNO_MIN;
@@ -534,7 +534,7 @@ inxop_bm_next (inx_op_t * iop , query_instance_t * qi, int op,
 	      return IOP_AT_END;
 	    }
 	  inxop_set_iob (iop, itc, buf, qst);
-	  itc_register  (itc, buf);
+	  itc_register (itc, buf);
 	  itc_page_leave (itc, buf);
 	  return DVC_MATCH;
 	}
@@ -620,7 +620,7 @@ inxop_next (inx_op_t * iop , query_instance_t * qi, int op,
 	  /* if the statement is not a SELECT, take excl. lock */
 	  itc->itc_isolation = qi->qi_isolation;
 	}
-      
+
       DO_SET (state_slot_t*, ssl, &ks->ks_always_null)
 	{
 	  qst_set_bin_string (itc->itc_out_state, ssl, (db_buf_t) "", 0, DV_DB_NULL);
@@ -632,7 +632,7 @@ inxop_next (inx_op_t * iop , query_instance_t * qi, int op,
       itc->itc_key_spec = iop->iop_ks_full_spec;
       itc_set_search_param (itc, itc->itc_insert_key->key_n_significant - 1, qst_get (itc->itc_out_state, iop->iop_target_ssl), iop->iop_target_dtp);
     }
-  else 
+  else
     itc->itc_key_spec = iop->iop_ks_start_spec;
 
   if (itc->itc_insert_key->key_is_bitmap)
@@ -656,7 +656,7 @@ inxop_next (inx_op_t * iop , query_instance_t * qi, int op,
 	case IOP_TARGET:
 	  is_random = 1;
 	  itc->itc_search_mode = SM_READ_EXACT;
-	  rc = itc_il_search (itc, &buf, qst, &iop->iop_il, (placeholder_t*) itc, 
+	  rc = itc_il_search (itc, &buf, qst, &iop->iop_il, (placeholder_t*) itc,
 			      0 /*!itc->itc_desc_order */
 );
 	  if (DVC_GREATER == rc || DVC_INDEX_END == rc)
@@ -677,7 +677,7 @@ inxop_next (inx_op_t * iop , query_instance_t * qi, int op,
 	  break;
 	}
       FAILCK (itc);
-      
+
       if (DVC_MATCH == rc)
 	{
 	  itc_register (itc, buf);
@@ -708,10 +708,10 @@ inxop_next (inx_op_t * iop , query_instance_t * qi, int op,
 		      return IOP_NEW_VAL;
 		    }
 		}
-	      else 
+	      else
 		GPF_T1 ("iop should not have dvc_les here");
 	    }
-	  else 
+	  else
 	    {
 	      /* serial seek to target */
 	      GPF_T1 ("serial iop to target not done.");
@@ -731,7 +731,7 @@ inxop_next (inx_op_t * iop , query_instance_t * qi, int op,
 		      itc_page_leave (itc, buf);
 		      return IOP_NEW_VAL;
 		    }
-		  else 
+		  else
 		    GPF_T1 ("dvc less not expected here.");
 		}
 	    }
@@ -750,8 +750,8 @@ inxop_next (inx_op_t * iop , query_instance_t * qi, int op,
 }
 
 
-int 
-inx_op_and_next (inx_op_t * iop, query_instance_t * qi, 
+int
+inx_op_and_next (inx_op_t * iop, query_instance_t * qi,
 		int op, table_source_t * ts)
 {
   int inx;
@@ -762,7 +762,7 @@ inx_op_and_next (inx_op_t * iop, query_instance_t * qi,
     {
       DO_BOX (inx_op_t *, term, inx, iop->iop_terms)
 	{
-	  it_cursor_t * itc = (it_cursor_t *)QST_GET (qst, term->iop_itc);
+	  it_cursor_t * itc = (it_cursor_t*)QST_GET (qst, term->iop_itc);
 	  if (itc)
 	    {
 	      itc_free_owned_params (itc);

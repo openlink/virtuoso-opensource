@@ -349,7 +349,7 @@ cond_alias_descendant_found:
       END_DO_BOX_FAST;
       tmpl = cond->sparqtc_tmpl;
       if (NULL != subst)
-        tmpl = sparp_patch_tmpl (sparp, tmpl, subst); 
+        tmpl = sparp_patch_tmpl (sparp, tmpl, subst);
       if (0 > dk_set_position_of_string (cond_tmpls_ptr[0], tmpl))
         t_set_push (cond_tmpls_ptr, tmpl);
 
@@ -532,9 +532,9 @@ spar_make_topmost_qm_sql (sparp_t *sparp)
   t_set_push (acc_ptr,
     spar_make_qm_sql (sparp, "DB.DBA.RDF_QM_APPLY_CHANGES",
       (SPART **)t_list (2,
-        spar_make_vector_qm_sql (sparp, 
+        spar_make_vector_qm_sql (sparp,
           (SPART **)t_revlist_to_array (sparp->sparp_env->spare_qm_deleted)),
-        spar_make_vector_qm_sql (sparp, 
+        spar_make_vector_qm_sql (sparp,
           (SPART **)t_revlist_to_array (sparp->sparp_env->spare_qm_affected_jso_iris)) ),
       NULL ) );
   ops = (SPART **)t_revlist_to_array (acc_ptr[0]);
@@ -669,7 +669,7 @@ spar_qm_make_mapping_impl (sparp_t *sparp, int is_real, caddr_t qm_id, SPART **o
               qmv_conds = NULL;
               spar_qm_get_atables_and_aliases (sparp, qm_id, alias, atbl, &sub_atables, &map_aliases);
             }
-          else 
+          else
             {
               SPART **qmv_atables;
               int qmv_at_ctr;

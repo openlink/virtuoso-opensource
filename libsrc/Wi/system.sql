@@ -1,25 +1,25 @@
---  
+--
 --  $Id$
 --
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2006 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 create table SYS_VT_INDEX (VI_TABLE varchar, VI_INDEX varchar, VI_COL varchar,
 	VI_ID_COL varchar, VI_INDEX_TABLE varchar,
@@ -5239,7 +5239,7 @@ create procedure cl_init_seqs ()
 	  s_next := __sequence_set (sprintf ('__NEXT__%s', name), 0, 2);
 	  sequence_set (sprintf ('__MAX__%s', name), 0, 1);
 	  if (0 = s_next)
-	{
+	    {
 	      __sequence_set (sprintf ('__NEXT__%s', name), sequence_set (name, 0, 2), 1);
 	    }
 	}
@@ -5251,7 +5251,7 @@ create procedure cl_init_seqs ()
 
 create procedure cl_reset_seqs ()
 {
-  -- When removed host rejoins cluster, set it so that all seq nexts will get a new range 
+  -- When removed host rejoins cluster, set it so that all seq nexts will get a new range
   declare seqs, name any;
   declare inx, s_next int;
   seqs := get_all_sequences ();

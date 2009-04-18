@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  XQuery scanner
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 %option 8bit
@@ -379,7 +379,7 @@ static int xpscn_NUMBER_double (void *yylval, xpp_t *xpp)
 	QName/')' than to get portability pain in the [beep] with yyunput()
 	that is required for input_stream.backup(1) in one step with state
 	change. */
-	
+
 	/* XQuery 1.0 SCHEMACONTEXTSTEP is divided into
 	XQ_SCS that ends with no OCCURRENCEINDICATOR and
 	XQ_SCS_OI that ends with an optional OCCURRENCEINDICATOR
@@ -388,7 +388,7 @@ static int xpscn_NUMBER_double (void *yylval, xpp_t *xpp)
 %x XQ_SCS_OI
 
 	/* XQuery 1.0 SCHEMACONTEXTSTEP */
-%x XQ_VAR_NAME	
+%x XQ_VAR_NAME
 
 	/* XQuery 1.0 START_TAG */
 %x XQ_START_TAG
@@ -1072,7 +1072,7 @@ xp_fill_lexem_bufs (xpp_t *xpp)
       xpp->xpp_lexdepth = 0;
       xpyyrestart (NULL);
       xpp->xpp_curr_lexem_buf = (xp_lexem_t *)dk_alloc_box_zero (sizeof (xp_lexem_t) * XP_LEXBUF_ELEMENTS, DV_ARRAY_OF_POINTER);
-/* Setting initial state and placing appropriate fake lexem to the lexbuffer */      
+/* Setting initial state and placing appropriate fake lexem to the lexbuffer */
       curr_lex = xpp->xpp_curr_lexem_buf + fill_ctr;
       curr_lex->xpl_lineno = xpp->xpp_lexlineno;
       curr_lex->xpl_depth = depth;
@@ -1109,9 +1109,9 @@ xp_fill_lexem_bufs (xpp_t *xpp)
 	    }
 	  depth = xpp->xpp_lexdepth;
 	  curr_lex->xpl_raw_text = box_dv_short_nchars (xpyytext, xpyyleng);
-#ifdef XPATHP_DEBUG	  
+#ifdef XPATHP_DEBUG
 	  curr_lex->xpl_state = GET_CURRENT_BEGIN;
-#endif	  
+#endif
 	  fill_ctr++;
           xpp->xpp_total_lexems_parsed++;
 	  if (fill_ctr == XP_LEXBUF_ELEMENTS)

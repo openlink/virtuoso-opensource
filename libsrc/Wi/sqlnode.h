@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  SQL query nodes
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #ifndef _SQLNODE_H
@@ -181,7 +181,7 @@ typedef struct cl_buffer_s
       ((caddr_t*)inst)[__qr->qr_cl_run_started] = (caddr_t)(ptrlong)1; \
 }
 
-typedef struct setp_save_s 
+typedef struct setp_save_s
 {
   /* save state for cluster batch  execution of setp/fref pairs */
   state_slot_t *	ssa_array;
@@ -192,7 +192,7 @@ typedef struct setp_save_s
 } setp_save_t;
 
 
-struct proc_name_s 
+struct proc_name_s
 {
   int 		pn_ref_count;
   query_t *	pn_query;
@@ -447,7 +447,7 @@ typedef struct hash_area_s
 #define HA_PROC_FILL 5
 
 
-typedef struct clo_comp_t 
+typedef struct clo_comp_t
 {
   short			nth;
   char			is_desc; /* in merging asc/desc mixed sorts , must know the order col by col */
@@ -510,7 +510,7 @@ typedef struct key_source_s
 
 
 
-typedef struct inx_locality_s 
+typedef struct inx_locality_s
 {
   int		il_n_read;
   int		il_last_dp;
@@ -528,14 +528,14 @@ typedef struct inx_locality_s
 #define IOP_NEW_VAL 4
 #define IOP_READ_INDEX 5 /*for a bitmap iop, means must read inx because the cached bm does nothave the range */
 
-typedef struct inx_op_s 
+typedef struct inx_op_s
 {
   /* Members of an operator node combining multiple indices */
   int		iop_op;
   struct inx_op_s *	iop_parent;
   struct inx_op_s ** 	iop_terms;
   state_slot_t **	iop_max;
-  state_slot_t *	iop_state; /* pre-init, on row, at end */ 
+  state_slot_t *	iop_state; /* pre-init, on row, at end */
 
   /* Members for the leaves, the actual indices */
   key_source_t * 	iop_ks;
@@ -591,7 +591,7 @@ typedef struct  in_iter_node_s
   state_slot_t **	ii_values;
   state_slot_t *	ii_output;
   state_slot_t *	ii_values_array;
-  state_slot_t *	ii_outer_any_passed; /* if rhs of left outer, flag here to see if any answer. If not, do outer output when at end */ 
+  state_slot_t *	ii_outer_any_passed; /* if rhs of left outer, flag here to see if any answer. If not, do outer output when at end */
   int		ii_nth_value;
 } in_iter_node_t;
 
@@ -600,7 +600,7 @@ typedef struct outer_seq_end_s
 {
   data_source_t	src_gen;
   struct set_ctr_node_s *	ose_sctr;
-  state_slot_t *	ose_set_no; 
+  state_slot_t *	ose_set_no;
   state_slot_t *	ose_prev_set_no;
   state_slot_t **	ose_out_slots; /* the ssls that are null for the outer row */
   state_slot_t *	ose_buffered_row;
@@ -619,7 +619,7 @@ typedef struct set_ctr_node_s
 #define sctr_itcl clb.clb_itcl
 
 
-typedef struct stage_sum_s 
+typedef struct stage_sum_s
 {
   int		ssm_n_empty_mores;
   char		ssm_state_recd;
@@ -823,7 +823,7 @@ typedef struct insert_node_s
     ins_key_t **	ins_keys;
     query_t *		ins_policy_qr;
     caddr_t		ins_key_only; /* key name, if inserting only this key, as in create index */
-    state_slot_t *	ins_daq; /* in cluster, queue the insert here */ 
+    state_slot_t *	ins_daq; /* in cluster, queue the insert here */
   } insert_node_t;
 
 
@@ -839,7 +839,7 @@ typedef struct insert_node_s
 typedef struct cl_mod_state_s
 {
   state_slot_t *	cms_clrg;
-  query_frag_t *	cms_qf; /* a cluster del/upd, if on criving node, referes to enclosing qf */ 
+  query_frag_t *	cms_qf; /* a cluster del/upd, if on criving node, referes to enclosing qf */
   int			cms_n_sets;
   int			cms_n_received;
   char			cms_is_cl_frag; /* true if containing upd/del is a part of a remote query frag execd as part of clustered upd/del */
@@ -1057,7 +1057,7 @@ typedef struct setp_node_s
     dk_set_t		setp_const_gb_values;
 
     setp_save_t	setp_ssa;
-  } setp_node_t;
+} setp_node_t;
 
 /* setp_set_op */
 #define SO_NONE			0
@@ -1105,7 +1105,7 @@ typedef struct fun_ref_node_s
 #define FNR_RESULTS 3
 
 
-typedef struct breakup_node_s 
+typedef struct breakup_node_s
 {
   data_source_t	src_gen;
   int		brk_current_slot;
@@ -1530,10 +1530,10 @@ extern void sqls_define_uddi (void);
 extern void sqls_define_imsg (void);
 extern void sqls_define_auto (void);
 extern void sqls_define_sparql (void);
-extern void sqls_define_sys (void); 
-extern void sqls_define_repl (void); 
-extern void sqls_define_ws (void); 
-extern void sqls_define_pldbg (void); 
+extern void sqls_define_sys (void);
+extern void sqls_define_repl (void);
+extern void sqls_define_ws (void);
+extern void sqls_define_pldbg (void);
 extern void sqls_arfw_define (void);
 extern void sqls_arfw_define_adm (void);
 extern void sqls_arfw_define_ddk (void);

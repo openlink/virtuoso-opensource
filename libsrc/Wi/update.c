@@ -4,25 +4,25 @@
  *  $Id$
  *
  *  UPDATE statements
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 #include "sqlnode.h"
@@ -191,7 +191,7 @@ upd_recompose_row (caddr_t * state, update_node_t * upd,
 
   new_rd->rd_non_comp_len = new_tb->tb_primary_key->key_row_var_start[0];
   DO_ALL_CL (cl, new_tb->tb_primary_key)
-	{
+    {
       int old_found = 0;
       caddr_t old_val = rd_col (rd, cl->cl_col_id, &old_found);
       col = sch_id_to_column (wi_inst.wi_schema, cl->cl_col_id);
@@ -205,8 +205,8 @@ upd_recompose_row (caddr_t * state, update_node_t * upd,
 	  else
 	    {
 	caddr_t new_val_of_col = upd_nth_value (upd, state, nth_val);
-	  db_buf_t old_blob = (IS_BLOB_DTP (cl->cl_sqt.sqt_dtp)  && old_found && DV_DB_NULL != DV_TYPE_OF (old_val) && IS_BLOB_DTP (((db_buf_t)old_val)[0])) 
-	    ? (db_buf_t)old_val : dummy_blob;  
+	  db_buf_t old_blob = (IS_BLOB_DTP (cl->cl_sqt.sqt_dtp)  && old_found && DV_DB_NULL != DV_TYPE_OF (old_val) && IS_BLOB_DTP (((db_buf_t)old_val)[0]))
+	    ? (db_buf_t)old_val : dummy_blob;
 	  row_insert_cast (new_rd, cl, new_val_of_col, err_ret, old_blob);
 	if (*err_ret)
 	    goto col_error;
@@ -274,15 +274,15 @@ upd_recompose_row (caddr_t * state, update_node_t * upd,
 }
 
 
-int 
+int
 box_col_len (caddr_t box)
-    {
+{
   switch (DV_TYPE_OF (box))
-	{
+    {
     case DV_DB_NULL: return 0;
     case DV_STRING: return box_length (box) - 1;
     default: return box_length (box);
-	}
+    }
 }
 
 
@@ -297,11 +297,11 @@ upd_insert_2nd_key (dbe_key_t * key, it_cursor_t * ins_itc,
   DO_CL (cl, key->key_key_fixed)
     {
       rd.rd_values[nth++] = rd_col (main_rd, cl->cl_col_id, NULL);
-	}
+    }
   END_DO_CL;
   rd.rd_non_comp_len = key->key_row_var_start[0];
   DO_CL (cl, key->key_key_var)
-	{
+    {
       rd.rd_values[nth++] = rd_col (main_rd, cl->cl_col_id, NULL);
       rd.rd_non_comp_len += box_col_len (rd.rd_values[nth - 1]);
     }
@@ -330,10 +330,10 @@ upd_insert_2nd_key (dbe_key_t * key, it_cursor_t * ins_itc,
     }
   END_DO_CL;
   rd.rd_n_values = nth;
-  
+
   itc_from (ins_itc, key);
   for (inx = 0; inx < key->key_n_significant; inx++)
-    ITC_SEARCH_PARAM (ins_itc, rd.rd_values[key->key_part_in_layout_order[inx]]); 
+    ITC_SEARCH_PARAM (ins_itc, rd.rd_values[key->key_part_in_layout_order[inx]]);
 
 
   ins_itc->itc_key_spec = key->key_insert_spec;
@@ -366,7 +366,7 @@ upd_refit_row (it_cursor_t * itc, buffer_desc_t ** buf,
       ITC_LEAVE_MAP_NC (itc);
     }
   page_apply (rd->rd_itc, *buf, 1, &rd, 0);
-	}
+}
 
 
 long upd_quick_ctr = 0;
@@ -446,21 +446,21 @@ update_quick (update_node_t * upd, caddr_t * qst, buffer_desc_t * cr_buf,
 	  itc_page_leave (cr_itc, cr_buf);
 	  return;
 	}
-      row_set_col (&rf, cl, cr_itc->itc_search_params[cr_itc->itc_search_par_fill - 1]);  
+      row_set_col (&rf, cl, cr_itc->itc_search_params[cr_itc->itc_search_par_fill - 1]);
     }
   END_DO_BOX;
   if (upd->upd_var_cl && BOX_ELEMENTS (upd->upd_var_cl))
     {
       upd_quick_var (upd, qst, cr_buf, rd, err_ret);
     }
-  else 
+  else
     {
       page_row (cr_buf, cr_itc->itc_map_pos, rd, RO_LEAF);
-  itc_page_leave (cr_itc, cr_buf);
+      itc_page_leave (cr_itc, cr_buf);
       log_update (cr_itc->itc_ltrx, rd, upd, qst);
       rd_free (rd);
       itc_free (cr_itc);
-}
+    }
 }
 
 
@@ -478,10 +478,10 @@ update_node_run (update_node_t * upd, caddr_t * inst,
   dtp_t temp [2000];
   LOCAL_RD (rd);
   rd.rd_temp = temp;
-  rd.rd_temp_max = sizeof (temp); 
+  rd.rd_temp_max = sizeof (temp);
   if (!pl)
     sqlr_new_error ("24000", "SR250", "Cursor not positioned on update. %s",
-		upd->upd_place->ssl_name);
+		    upd->upd_place->ssl_name);
   {
     buffer_desc_t * volatile cr_buf = NULL;
     buffer_desc_t *main_buf, *del_buf;
@@ -498,60 +498,60 @@ update_node_run (update_node_t * upd, caddr_t * inst,
     ITC_INIT (cr_itc, qi->qi_space, qi->qi_trx);
 
     ITC_FAIL (cr_itc)
-    {
-      cr_buf = itc_set_by_placeholder (cr_itc, pl);
-      cr_itc->itc_lock_mode = PL_EXCLUSIVE;
-      if (!cr_itc->itc_is_on_row)
-	{
-	  rdbg_printf (("Row to update deld before update T=%d L=%d pos=%d\n",
+      {
+	cr_buf = itc_set_by_placeholder (cr_itc, pl);
+	cr_itc->itc_lock_mode = PL_EXCLUSIVE;
+	if (!cr_itc->itc_is_on_row)
+	  {
+	    rdbg_printf (("Row to update deld before update T=%d L=%d pos=%d\n",
 			  TRX_NO (cr_itc->itc_ltrx), cr_itc->itc_page, cr_itc->itc_map_pos));
 
-	  itc_page_leave (cr_itc, cr_buf);
-	  itc_free (cr_itc);
-	  sqlr_new_error ("24000", "SR251", "Cursor not on row in positioned UPDATE");
-	}
-      /* always true */
+	    itc_page_leave (cr_itc, cr_buf);
+	    itc_free (cr_itc);
+	    sqlr_new_error ("24000", "SR251", "Cursor not on row in positioned UPDATE");
+	  }
+	/* always true */
 	{
 	  cr_itc->itc_insert_key = pl->itc_tree->it_key; /* for debug info */
 	  itc_set_lock_on_row (cr_itc, (buffer_desc_t **)&cr_buf);
 	  if (!cr_itc->itc_is_on_row)
-	  {
-	    rdbg_printf (("Row to update deld during update lock  T=%d L=%d pos=%d\n",
+	    {
+	      rdbg_printf (("Row to update deld during update lock  T=%d L=%d pos=%d\n",
 			    TRX_NO (cr_itc->itc_ltrx), cr_itc->itc_page, cr_itc->itc_map_pos));
-	    itc_page_leave (cr_itc, cr_buf);
-	    sqlr_new_error ("01001", "SR252", "Row deleted while waiting to update");
-	  }
+	      itc_page_leave (cr_itc, cr_buf);
+	      sqlr_new_error ("01001", "SR252", "Row deleted while waiting to update");
+	    }
 	}
-      cr_key = itc_get_row_key (cr_itc, cr_buf);
-      if (cr_key->key_id == upd->upd_exact_key
+	cr_key = itc_get_row_key (cr_itc, cr_buf);
+	if (cr_key->key_id == upd->upd_exact_key
 	    && (upd->upd_fixed_cl || upd->upd_var_cl)
-	  && !qi->qi_trx->lt_is_excl)
-	{
-	  cr_itc->itc_insert_key = cr_key;
-	  cr_itc->itc_row_key = cr_key;
+	    && !qi->qi_trx->lt_is_excl)
+	  {
+	    cr_itc->itc_insert_key = cr_key;
+	    cr_itc->itc_row_key = cr_key;
 	    new_rd.rd_itc = cr_itc;
 	    new_rd.rd_non_comp_max = MAX_ROW_BYTES;
 	    new_rd.rd_key = cr_itc->itc_insert_key;
-	  upd_hi_pre (upd, qi);
+	    upd_hi_pre (upd, qi);
 	    new_rd.rd_temp = temp;
 	    new_rd.rd_temp_max = sizeof (temp);
 	    update_quick (upd, state, cr_buf, &new_rd, &row_err);
-	      if (row_err)
-		sqlr_resignal (row_err);
-	      QI_ROW_AFFECTED (inst);
-	      return;
-	    }
-      tb = cr_key->key_table;
-      cr_itc->itc_row_key = cr_key;
+	    if (row_err)
+	      sqlr_resignal (row_err);
+	    QI_ROW_AFFECTED (inst);
+	    return;
+	  }
+	tb = cr_key->key_table;
+	cr_itc->itc_row_key = cr_key;
 	page_row_bm (cr_buf, cr_itc->itc_map_pos, &rd, RO_ROW, cr_itc);
-      if (!cr_key->key_is_primary)
-	itc_page_leave (cr_itc, cr_buf);	/* do this inside the ITC_FAIL */
+	if (!cr_key->key_is_primary)
+	  itc_page_leave (cr_itc, cr_buf);	/* do this inside the ITC_FAIL */
 
-    }
+      }
     ITC_FAILED
-    {
-      itc_free (cr_itc);
-    }
+      {
+	itc_free (cr_itc);
+      }
     END_FAIL (cr_itc);
 
     if (!cr_key->key_is_primary)
@@ -562,26 +562,26 @@ update_node_run (update_node_t * upd, caddr_t * inst,
 
 	ITC_LEAVE_MAPS (cr_itc);
 	ITC_FAIL (main_itc)
-	{
+	  {
 	    res = itc_get_alt_key (main_itc, &main_buf, tb->tb_primary_key, &rd);
-	  if (res == DVC_MATCH)
-	    {
+	    if (res == DVC_MATCH)
+	      {
 		rd_free (&rd);
 		page_row (main_buf, main_itc->itc_map_pos, &rd, RO_ROW);
-	    }
-	  else
-	    {
-	      itc_page_leave (main_itc, main_buf);
+	      }
+	    else
+	      {
+		itc_page_leave (main_itc, main_buf);
 		rd_free (&rd);
-	      sqlr_new_error ("42S12", "SR253", "Could not find primary key on update.");
-	    }
-	}
+		sqlr_new_error ("42S12", "SR253", "Could not find primary key on update.");
+	      }
+	  }
 	ITC_FAILED
-	{
+	  {
 	    rd_free (&rd);
-	  itc_free (main_itc);
-	  itc_free (cr_itc);
-	}
+	    itc_free (main_itc);
+	    itc_free (cr_itc);
+	  }
 	END_FAIL (main_itc);
 	itc_free (cr_itc);
       }
@@ -604,18 +604,18 @@ update_node_run (update_node_t * upd, caddr_t * inst,
       }
     QI_ROW_AFFECTED (inst);
     upd_hi_pre (upd, qi);
- /* The following ITC_LEAVE_MAP (main_itc) is added to avoid deadlock on
- update MYTABLE set LONG_XML_COL = LONG_VARCHAR_XML_COL;
- because conversion may read blob by blob_to_string() and its itc will enter map.
-  */
+    /* The following ITC_LEAVE_MAP (main_itc) is added to avoid deadlock on
+       update MYTABLE set LONG_XML_COL = LONG_VARCHAR_XML_COL;
+       because conversion may read blob by blob_to_string() and its itc will enter map.
+    */
     ITC_LEAVE_MAPS (main_itc);
 #ifdef MTX_DEBUG
-  if (main_buf->bd_writer != THREAD_CURRENT_THREAD)
-    GPF_T1 ("Must have write on buffer to check it");
+    if (main_buf->bd_writer != THREAD_CURRENT_THREAD)
+      GPF_T1 ("Must have write on buffer to check it");
 #endif
 
-  /* blob ops in recompose row will use the itc to enter blobs and lose the pl.  Safe to save like this since the main_buf is never left in the process */
-  mtx_assert (main_itc->itc_pl == main_buf->bd_pl);
+    /* blob ops in recompose row will use the itc to enter blobs and lose the pl.  Safe to save like this since the main_buf is never left in the process */
+    mtx_assert (main_itc->itc_pl == main_buf->bd_pl);
     new_rd.rd_itc = main_itc;
     new_rd.rd_non_comp_max = new_tb->tb_any_blobs ? MAX_ROW_BYTES  * 2 : MAX_ROW_BYTES;
     new_rd.rd_key = new_tb->tb_primary_key;
@@ -625,7 +625,7 @@ update_node_run (update_node_t * upd, caddr_t * inst,
 	|| upd->cms.cms_is_cl_frag;
     keys = upd_recompose_row (state, upd, &rd, &new_rd,
 			      &row_err, &any_blob);
-  main_itc->itc_pl =main_buf->bd_pl;
+    main_itc->itc_pl =main_buf->bd_pl;
     if (row_err)
       {
 	itc_page_leave (main_itc, main_buf);
@@ -639,46 +639,46 @@ update_node_run (update_node_t * upd, caddr_t * inst,
 	sqlr_resignal (row_err);
       }
     ITC_FAIL (main_itc)
-    {
-      if (keys == BLOB_ERROR)
-	{
+      {
+	if (keys == BLOB_ERROR)
+	  {
 	    rd_free (&rd);
-	  itc_bust_this_trx (main_itc, &main_buf, ITC_BUST_THROW);	/* jumps into main_itc's fail ctr below */
-	}
+	    itc_bust_this_trx (main_itc, &main_buf, ITC_BUST_THROW);	/* jumps into main_itc's fail ctr below */
+	  }
 
 	if (is_cluster && ALL_KEYS == keys)
 	  log_delete (main_itc->itc_ltrx, &rd, LOG_KEY_ONLY);
 	else
 	  log_update (main_itc->itc_ltrx, &rd, upd, state);
-      if (keys == ALL_KEYS)
-	{
+	if (keys == ALL_KEYS)
+	  {
 	    int inx;
-	  itc_delete_this (main_itc, &main_buf, DVC_MATCH, NO_BLOBS);	/* blobs handled separately */
+	    itc_delete_this (main_itc, &main_buf, DVC_MATCH, NO_BLOBS);	/* blobs handled separately */
 	    main_itc->itc_insert_key = new_tb->tb_primary_key;
-	  keys = tb->tb_keys;
+	    keys = tb->tb_keys;
 	    new_rd.rd_make_ins_rbe = 1;
 	    if (!is_cluster)
 	      {
 		ITC_START_SEARCH_PARS (main_itc);
 		for (inx = 0; inx < main_itc->itc_insert_key->key_n_significant; inx++)
-		  ITC_SEARCH_PARAM (main_itc, new_rd.rd_values[main_itc->itc_insert_key->key_part_in_layout_order[inx]]); 
+		  ITC_SEARCH_PARAM (main_itc, new_rd.rd_values[main_itc->itc_insert_key->key_part_in_layout_order[inx]]);
 		main_itc->itc_key_spec = main_itc->itc_insert_key->key_insert_spec;
 		itc_insert_unq_ck (main_itc, &new_rd, NULL);
 	      }
-	}
-      else
-	{
+	  }
+	else
+	  {
 	    new_rd.rd_map_pos = rd.rd_map_pos;
 	    if (!main_itc->itc_ltrx->lt_is_excl)
 	      lt_rb_update (main_itc->itc_ltrx, main_buf, BUF_ROW (main_buf, main_itc->itc_map_pos));
 	    upd_refit_row (main_itc, &main_buf, &new_rd, RD_UPDATE);
-	}
-    }
+	  }
+      }
     ITC_FAILED
-    {
+      {
 	rd_free (&rd);
-      itc_free (main_itc);
-    }
+	itc_free (main_itc);
+      }
     END_FAIL (main_itc);
 
     if (keys)
@@ -688,27 +688,27 @@ update_node_run (update_node_t * upd, caddr_t * inst,
 	del_itc->itc_lock_mode = PL_EXCLUSIVE;
 
 	ITC_FAIL (del_itc)
-	{
-	  DO_SET (dbe_key_t *, key, &keys)
 	  {
-	    if (key == tb->tb_primary_key)
-	      goto next_key;
+	    DO_SET (dbe_key_t *, key, &keys)
+	      {
+		if (key == tb->tb_primary_key)
+		  goto next_key;
 		res = itc_get_alt_key (del_itc, &del_buf, key, &rd);
-	    itc_delete_this (del_itc, &del_buf, res, NO_BLOBS);
-	    upd_insert_2nd_key (key, del_itc,
+		itc_delete_this (del_itc, &del_buf, res, NO_BLOBS);
+		upd_insert_2nd_key (key, del_itc,
 				    &new_rd);
-	  next_key:;
+	      next_key:;
+	      }
+	    END_DO_SET ();
 	  }
-	  END_DO_SET ();
-	}
 	ITC_FAILED
-	{
+	  {
 	    rd_free (&rd);
-	  itc_free (main_itc);
-	  itc_free (del_itc);
-	  if (keys != tb->tb_keys)
-	    dk_set_free (keys);
-	}
+	    itc_free (main_itc);
+	    itc_free (del_itc);
+	    if (keys != tb->tb_keys)
+	      dk_set_free (keys);
+	  }
 	END_FAIL (del_itc);
 	if (keys != tb->tb_keys)
 	  dk_set_free (keys);
@@ -853,7 +853,7 @@ current_of_node_input (current_of_node_t * co, caddr_t * inst,
 }
 
 
-int 
+int
 itc_row_insert (it_cursor_t * itc, row_delta_t * rd, buffer_desc_t ** unq_buf,
 		    int blobs_in_place, int pk_only)
 {
@@ -864,7 +864,7 @@ itc_row_insert (it_cursor_t * itc, row_delta_t * rd, buffer_desc_t ** unq_buf,
   itc->itc_insert_key = rd->rd_key;
   itc->itc_key_spec = rd->rd_key->key_insert_spec;
   for (inx = 0; inx < rd->rd_key->key_n_significant; inx++)
-    itc->itc_search_params[inx] = rd->rd_values[rd->rd_key->key_part_in_layout_order[inx]]; 
+    itc->itc_search_params[inx] = rd->rd_values[rd->rd_key->key_part_in_layout_order[inx]];
   rd->rd_make_ins_rbe = 1;
   rc = itc_insert_unq_ck (itc, rd, unq_buf);
   if (pk_only)
@@ -991,28 +991,28 @@ itc_replace_row (it_cursor_t * main_itc, buffer_desc_t * main_buf, row_delta_t *
     if (!this_key_only)
       {
 	del_itc = itc_create (NULL, main_itc->itc_ltrx);
-    del_itc->itc_lock_mode = PL_EXCLUSIVE;
-    ITC_FAIL (del_itc)
-      {
-	DO_SET (dbe_key_t *, key, &tb->tb_keys)
+	del_itc->itc_lock_mode = PL_EXCLUSIVE;
+	ITC_FAIL (del_itc)
 	  {
-	    if (key->key_is_primary)
-	      goto next_key;
+	    DO_SET (dbe_key_t *, key, &tb->tb_keys)
+	      {
+		if (key->key_is_primary)
+		  goto next_key;
 		res = itc_get_alt_key (del_itc, &del_buf,
 				       key, &old_rd);
-	    itc_delete_this (del_itc, &del_buf, res, NO_BLOBS);
-	  next_key:;
+		itc_delete_this (del_itc, &del_buf, res, NO_BLOBS);
+	      next_key:;
+	      }
+	    END_DO_SET ();
 	  }
-	END_DO_SET ();
-      }
-    ITC_FAILED
-      {
-	itc_free (main_itc);
+	ITC_FAILED
+	  {
+	    itc_free (main_itc);
+	    itc_free (del_itc);
+	  }
+	END_FAIL (del_itc);
 	itc_free (del_itc);
       }
-    END_FAIL (del_itc);
-    itc_free (del_itc);
-  }
   }
   itc_row_insert (main_itc, rd, UNQ_ALLOW_DUPLICATES, 1, this_key_only);
   return REPLACE_OK;

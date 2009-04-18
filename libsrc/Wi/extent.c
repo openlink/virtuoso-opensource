@@ -4,26 +4,26 @@
  *  $Id$
  *
  *  Disk extent management
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
+ *
+ *
 */
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -64,7 +64,7 @@ dp_addr_t em_try_get_dp (extent_map_t * em, int pg_type, dp_addr_t near);
 dp_addr_t em_new_dp_1 (extent_map_t * em, int ext_type, dp_addr_t near);
 
 
-int 
+int
 fd_extend (dbe_storage_t * dbs, int fd, int n_pages)
 {
   OFF_T n;
@@ -103,11 +103,11 @@ dbs_seg_extend (dbe_storage_t * dbs, int n)
     {
       fd = dst_fd (dst);
       rc = fd_extend (dbs, fd, n);
-      dst_fd_done (dst, fd); 
+      dst_fd_done (dst, fd);
       if (rc != n)
 	{
 	  int inx2;
-	  for (inx2 = 0; inx2 < inx; inx2++) 
+	  for (inx2 = 0; inx2 < inx; inx2++)
 	    {
 	      fd = dst_fd (ds->ds_stripes[inx2]);
 	      ftruncate (fd, org_sz);
@@ -208,7 +208,7 @@ dbs_file_extend (dbe_storage_t * dbs, extent_t ** new_ext_ret, int is_in_sys_em)
       if (n != EXTENT_SZ)
 	return 0;
     }
-  else 
+  else
     {
       mutex_enter (dbs->dbs_file_mtx);
       n = fd_extend (dbs, dbs->dbs_fd, EXTENT_SZ);
@@ -710,7 +710,7 @@ em_new_extent (extent_map_t * em, int type, dp_addr_t extends)
     {
       ASSERT_IN_MTX (em->em_mtx);
     }
-  else 
+  else
     mutex_enter (sys_em->em_mtx);
 
   dp = em_get_extent (em, type, EXT_EXTENDS_NONE == extends ? 0 : extends, &new_ext);
@@ -741,7 +741,7 @@ em_new_extent (extent_map_t * em, int type, dp_addr_t extends)
   sethash (DP_ADDR2VOID (dp), em->em_dbs->dbs_dp_to_extent_map, (void*) em);
   LEAVE_DBS (em->em_dbs);
   new_ext->ext_flags = type;
-  
+
   if (EXT_INDEX == type)
     {
       if (EXT_EXTENDS_NONE == extends)
@@ -910,7 +910,7 @@ em_free_remap_hold (extent_map_t * em, int * hold)
       log_info ("Not supposed to free more hold than taken on %s h=%d free=%d", em->em_name, em->em_remap_on_hold, *hold);
       em->em_remap_on_hold = 0;
     }
-  else 
+  else
     em->em_remap_on_hold -= *hold;
   *hold = 0;
   mutex_leave (em->em_mtx);
@@ -945,7 +945,7 @@ em_new_dp (extent_map_t * em, int type, dp_addr_t near, int * hold)
 	    }
 	  if (em->em_remap_on_hold  > 0)
 	    em->em_remap_on_hold--;
-	  else 
+	  else
 	    {
 	      log_info ("not supposed to decrement hold below 0 on %s", em->em_remap_on_hold);
 	      em->em_remap_on_hold = 0;
@@ -954,7 +954,7 @@ em_new_dp (extent_map_t * em, int type, dp_addr_t near, int * hold)
 	}
     }
   else
-    dp = em_new_dp_1 (em, type, near); 
+    dp = em_new_dp_1 (em, type, near);
   if (EXT_INDEX == type && em != em->em_dbs->dbs_extent_map)
     sethash (DP_ADDR2VOID(dp), em->em_uninitialized, (void*) 1);
   em_printf ((" alloc L=%d t=%d\n", dp, type));
@@ -996,7 +996,7 @@ em_free_dp (extent_map_t * em, dp_addr_t dp, int flags)
   ext = EM_DP_TO_EXT (em, EXT_ROUND (dp));
   if (!ext)
     {
-      if (em == em->em_dbs->dbs_extent_map) 
+      if (em == em->em_dbs->dbs_extent_map)
 	GPF_T1 ("freeing dp that is not part of the em");
       mutex_leave (em->em_mtx);
       em_free_dp (em->em_dbs->dbs_extent_map, dp, flags);
@@ -1017,7 +1017,7 @@ em_free_dp (extent_map_t * em, dp_addr_t dp, int flags)
   if (0 == (ext->ext_pages[word] & 1 << bit))
     GPF_T1 ("double free of dp bit in ext");
   ext->ext_pages[word] &= ~(1 << bit);
-  ext->ext_flags &= ~EXT_FULL; 
+  ext->ext_flags &= ~EXT_FULL;
   if (0 == ext->ext_pages[word] && !(flags & EMF_DO_NOT_FREE_EXT))
     {
       int inx;
@@ -1065,7 +1065,7 @@ buf_ext_check (buffer_desc_t * buf)
   ext = EM_DP_TO_EXT (em, EXT_ROUND (dp));
   if (!ext)
     {
-      if (em == em->em_dbs->dbs_extent_map) 
+      if (em == em->em_dbs->dbs_extent_map)
 	GPF_T1 ("freeing dp that is not part of the em");
       mutex_leave (em->em_mtx);
       em = em->em_dbs->dbs_extent_map;
@@ -1077,7 +1077,7 @@ buf_ext_check (buffer_desc_t * buf)
     flags = EMF_INDEX_OR_REMAP;
   else if (DPF_BLOB == flags || DPF_BLOB_DIR == flags)
     flags = EXT_BLOB;
-  else 
+  else
     flags = EXT_INDEX;
   mutex_leave (em->em_mtx);
   if (!emf_is_type (type, flags))
@@ -1100,7 +1100,7 @@ em_check_dp (extent_map_t * em, dp_addr_t dp)
   ext = EM_DP_TO_EXT (em, EXT_ROUND (dp));
   if (!ext)
     {
-      if (em == em->em_dbs->dbs_extent_map) 
+      if (em == em->em_dbs->dbs_extent_map)
 	GPF_T1 ("em_check_dp: Accessing dp that is not part of the em");
       mutex_leave (em->em_mtx);
       em_check_dp (em->em_dbs->dbs_extent_map,dp);
@@ -1148,7 +1148,7 @@ dbs_cpt_set_allocated (dbe_storage_t * dbs, dp_addr_t dp, int is_allocd)
   extent_map_t * em = DBS_DP_TO_EM (dbs, dp);
   int word, bit, was_allocd;
   extent_t * ext;
-  if (!wi_inst.wi_checkpoint_atomic) 
+  if (!wi_inst.wi_checkpoint_atomic)
     GPF_T1 ("should not call dbs_cpt_set_allocated outside of checkpoint");
   if (!em)
     {
@@ -1181,7 +1181,7 @@ dbs_cpt_set_allocated (dbe_storage_t * dbs, dp_addr_t dp, int is_allocd)
   was_allocd = ext->ext_pages[word] & 1 << bit;
   if (is_allocd)
     ext->ext_pages[word] |= 1 << bit;
-  else 
+  else
     ext->ext_pages[word] &= ~(1 << bit);
   em->em_n_free_blob_pages += is_allocd ? 1 : -1;
   mutex_leave (em->em_mtx);
@@ -1194,7 +1194,7 @@ em_allocate (dbe_storage_t * dbs, dp_addr_t dp_of_map)
   NEW_VARZ (extent_map_t, em);
   if (dp_of_map)
     {
-      page_set_extend (dbs, &em->em_buf, dp_of_map, DPF_EXTENT_MAP); 
+      page_set_extend (dbs, &em->em_buf, dp_of_map, DPF_EXTENT_MAP);
       LONG_SET (em->em_buf->bd_buffer + DP_BLOB_LEN, 0);
       em->em_map_start = dp_of_map;
     }
@@ -1246,14 +1246,14 @@ em_free (extent_map_t * em)
 	{
 	  if (ext_is_empty (ext))
 	    dbs_extent_free (em->em_dbs, ext->ext_dp, 1);
-	  else 
+	  else
 	    {
 	      if (wi_inst.wi_checkpoint_atomic)
 		{
 		  ext_free_dps (em, ext);
 		  dbs_extent_free (em->em_dbs, ext->ext_dp, 1);
 		}
-	      else 
+	      else
 		GPF_T1 ("in freeing em, there is a non-empty ext");
 	    }
 	  break;
@@ -1348,7 +1348,7 @@ em_compact (extent_map_t * em, int free_em)
 	      target_fill = 0;
 	    }
 	  *(extent_t*) (target->bd_buffer + DP_DATA +  target_fill) = *ext;
-	  sethash (DP_ADDR2VOID (ext->ext_dp), em->em_dp_to_ext, 
+	  sethash (DP_ADDR2VOID (ext->ext_dp), em->em_dp_to_ext,
 		   (void*) (target->bd_buffer + DP_DATA + target_fill));
 	  target_fill += sizeof (extent_t);
 	  n_exts++;
@@ -1388,7 +1388,7 @@ em_compact (extent_map_t * em, int free_em)
       sprintf (str, "%d", em->em_buf->bd_page);
       dbs_registry_set (em->em_dbs, em->em_name, str, 0);
     }
-  else 
+  else
     {
       em->em_buf = NULL;
       dbs_registry_set (em->em_dbs, em->em_name, NULL, 0);
@@ -1477,7 +1477,7 @@ dbs_cpt_recov_write_extents (dbe_storage_t * dbs)
 }
 
 
-extent_map_t * 
+extent_map_t *
 dbs_dp_to_em (dbe_storage_t * dbs, dp_addr_t dp)
 {
   return (extent_map_t *) gethash (DP_ADDR2VOID (EXT_ROUND (dp)), dbs->dbs_dp_to_extent_map);
@@ -1521,7 +1521,7 @@ dbs_read_extent_map (dbe_storage_t * dbs, char * name, dp_addr_t dp)
 }
 
 
-buffer_desc_t ** 
+buffer_desc_t **
 ext_read (index_tree_t * it, extent_t * ext, int keep_ts, dk_hash_t * phys_to_log)
 {
   int inx, word, bit, fill = 0;
@@ -1608,7 +1608,7 @@ it_own_extent_map (index_tree_t * tree)
 	  mutex_leave (extent_map_create_mtx);
 	  return 0;
     }
-  snprintf (name, sizeof (name), "__EM:%s", 
+  snprintf (name, sizeof (name), "__EM:%s",
 	    KI_TEMP == tree->it_key->key_id ? "temp": tree->it_key->key_fragments[0]->kf_name);
   em->em_name = box_dv_short_string (name );
   tree->it_extent_map = em;
@@ -1617,7 +1617,7 @@ it_own_extent_map (index_tree_t * tree)
 }
 
 
-void 
+void
 kf_set_extent_map (dbe_key_frag_t * kf)
 {
   char name[1000];

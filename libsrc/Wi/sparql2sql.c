@@ -224,13 +224,13 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
             }
           return;
         }
-      t_set_push (&(env->spare_selids), retselid);      
+      t_set_push (&(env->spare_selids), retselid);
       while (NULL != lnar.names)
         {
           caddr_t varname = t_set_pop (&(lnar.names));
           SPART *var = spar_make_variable (sparp, varname);
           t_set_push (&new_vars, var);
-        }  
+        }
       t_set_pop (&(env->spare_selids));
       query->_.req_top.groupings = (SPART **)t_revlist_to_array (new_vars);
       return;
@@ -249,7 +249,7 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
       caddr_t varname = t_set_pop (&(lnar.names));
       SPART *var = spar_make_variable (sparp, varname);
       t_set_push (&new_vars, var);
-    }  
+    }
   t_set_pop (&(env->spare_selids));
   if ((SPART **)_STAR == retvals)
     {
@@ -470,7 +470,7 @@ sparp_gp_trav_cu_in_triples (sparp_t *sparp, SPART *curr, sparp_trav_state_t *st
                 {
                   case SPAR_VARIABLE:
                     name = retval->_.var.vname;
-                    curr->_.gp.subquery->_.req_top.orig_retvals[ctr] = 
+                    curr->_.gp.subquery->_.req_top.orig_retvals[ctr] =
                       retval = spartlist (sparp, 4, SPAR_ALIAS, retval, name, SSG_VALMODE_AUTO);
                     break;
                   case SPAR_ALIAS:
@@ -874,7 +874,7 @@ sparp_equiv_contains_t_io (sparp_t *sparp, sparp_equiv_t *eq)
     {
       sparp_equiv_t *sub = SPARP_EQUIV (sparp, sub_idx);
       if (sparp_equiv_contains_t_io (sparp, sub))
-        return 1;        
+        return 1;
     }
   END_DO_BOX_FAST_REV;
   return 0;
@@ -3163,7 +3163,7 @@ sparp_make_qm_cases (sparp_t *sparp, SPART *triple)
               new_fld_expn->_.var.tabid = t_box_copy (qm_tabid);
               new_fld_expn->_.var.vname = t_box_copy (fld_expn->_.var.vname);
               new_fld_expn->_.var.equiv_idx = SPART_BAD_EQUIV_IDX;
-              sparp_rvr_copy (sparp, &(new_fld_expn->_.var.rvr), &(fld_expn->_.var.rvr)); 
+              sparp_rvr_copy (sparp, &(new_fld_expn->_.var.rvr), &(fld_expn->_.var.rvr));
               eq = sparp_equiv_get (sparp, qm_case_gp, new_fld_expn, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_ADD_GSPO_USE);
               if (NULL == fld_qmv)
                 sparp_equiv_restrict_by_constant (sparp, eq, NULL, (SPART *)fld_const);
@@ -3462,7 +3462,7 @@ sparp_calc_importance_of_member (sparp_t *sparp, SPART *memb)
           if (SPAR_IS_BLANK_OR_VAR (field))
             {
               sparp_equiv_t *eq = SPARP_EQUIV (sparp, field->_.var.equiv_idx);
-              res += sparp_calc_importance_of_eq (sparp, eq);            
+              res += sparp_calc_importance_of_eq (sparp, eq);
             }
           else
             res += 12;
@@ -3495,7 +3495,7 @@ sparp_find_index_of_most_important_union (sparp_t *sparp, SPART *parent_gp)
         }
     }
   END_DO_BOX_FAST_REV;
-  return best_idx; 
+  return best_idx;
 }
 
 int
@@ -3652,7 +3652,7 @@ sparp_collect_atable_uses (sparp_t *sparp, ccaddr_t singletablename, qm_atable_a
 
 void
 sparp_collect_all_atable_uses (sparp_t *sparp, quad_map_t *qm)
-{    
+{
   int fld_ctr, max_uses = 0, default_qm_table_used = 0;
   ptrlong use_count = 0;
   qm_atable_use_t *uses;
@@ -3888,7 +3888,7 @@ sparp_try_reuse_tabid_in_union (sparp_t *sparp, SPART *curr, int base_idx)
         base_should_change_tabid = 1; /* There's a danger of tabid collision so printer will treat base and dep as breakup even if it is not true */
       dep_triples = dep->_.gp.members;
       if (BOX_ELEMENTS (dep_triples) != base_triples_count)
-        goto next_dep; /* see below */        
+        goto next_dep; /* see below */
       for (bt_ctr = base_triples_count; bt_ctr--; /* no step */)
         {
           SPART *base_triple = base_triples[bt_ctr];
@@ -4409,7 +4409,7 @@ sparp_try_reduce_trivial_optional_via_eq (sparp_t *sparp, SPART *opt, SPART *key
 There's one exception. If the only use of a variable is in dep_triple and it is made by same quad map value then there's no need in equality condition
 because both variable outside and variable inside will produce identical SQL code, hence no need to check the equality at all. */
               if ((1 < recv_eq->e_gspo_uses) || recv_eq->e_subquery_uses || (1 < BOX_ELEMENTS_0 (recv_eq->e_subvalue_idxs)))
-                return 0; 
+                return 0;
               if (1 == recv_eq->e_gspo_uses)
                 {
                   int d_fld_ctr;
@@ -5167,7 +5167,7 @@ sparp_rewrite_grab (sparp_t *sparp)
   if (rgc->rgc_intermediate)
     rgc_flags |= 0x0001;
   sparp->sparp_expr = spartlist (sparp, 21, SPAR_CODEGEN, /* #0 */
-    t_box_num ((ptrlong)(ssg_grabber_codegen)), 
+    t_box_num ((ptrlong)(ssg_grabber_codegen)),
     sparp_treelist_full_copy (sparp, sparp->sparp_expr->_.req_top.retvals, NULL),	/* #2 */
     t_box_dv_short_string ("sql:RDF_GRAB"),	/* #3 */
     sql_texts[0], sql_texts[1], sql_texts[2], /* #4-#6 */

@@ -1,23 +1,24 @@
 /*
- *   
- *   This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
- *   project.
- *   
+ *  $Id$
+ *
+ *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ *  project.
+ *
  *  Copyright (C) 1998-2009 OpenLink Software
- *   
- *   This project is free software; you can redistribute it and/or modify it
- *   under the terms of the GNU General Public License as published by the
- *   Free Software Foundation; only version 2 of the License, dated June 1991.
- *   
- *   This program is distributed in the hope that it will be useful, but
- *   WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- *   General Public License for more details.
- *   
- *   You should have received a copy of the GNU General Public License along
- *   with this program; if not, write to the Free Software Foundation, Inc.,
- *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *   
+ *
+ *  This project is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the
+ *  Free Software Foundation; only version 2 of the License, dated June 1991.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *
  */
 
 %pure_parser
@@ -178,7 +179,7 @@ trig_group_end
 
 trig_block_or_predicate_object_list
 	: predicate_object_list_or_garbage _DOT_WS
-	| opt_eq_lbra { 
+	| opt_eq_lbra {
                 tf_commit (ttlp_arg->ttlp_tf);
 		TTLYYERROR_ACTION_COND (TTLP_ALLOW_TRIG, "Left curly brace can appear here only if the source text is TriG");
                 ttlp_arg->ttlp_trig_graph_uri = ttlp_arg->ttlp_subj_uri; ttlp_arg->ttlp_subj_uri = NULL;
@@ -320,7 +321,7 @@ verb_and_object_list
 	    object_list_or_garbage
 	;
 
-object_list_or_garbage 
+object_list_or_garbage
 	: object_list
 	| _GARBAGE_BEFORE_DOT_WS
 	;
@@ -454,7 +455,7 @@ blank
 	;
 
 blank_block_subj
-        : 
+        :
 		{ dk_set_push (&(ttlp_arg->ttlp_saved_uris), (void *)(ptrlong)ttlp_arg->ttlp_pred_is_reverse);
                   dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_subj_uri);
 		  dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_pred_uri);
