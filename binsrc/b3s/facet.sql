@@ -519,7 +519,7 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any)
       if (loc = 'any')
 	{
 	  loc := '?anyloc';
-	  http (sprintf ('select ?location as ?c1 ?lat%d as ?c2 ?lng%d as ?c3 ', this_s, this_s, this_s), pre);
+	  http (sprintf ('select distinct ?location as ?c1 ?lat%d as ?c2 ?lng%d as ?c3 ', this_s, this_s, this_s), pre);
 	}
       else
         http (sprintf ('select distinct ?s%d as ?c1 ?lat%d as ?c2 ?lng%d as ?c3 ', this_s, this_s, this_s), pre);

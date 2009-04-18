@@ -137,41 +137,41 @@ DB.DBA.IRI_AUTOCOMPLETE () __SOAP_HTTP 'text/json'
       return ses;
     };
 
-  if (iri_str is not null)
-    res := DB.DBA.cmp_uri (iri_str);
-  else if (lbl_str is not null)
-    res := DB.DBA.cmp_label (lbl_str, langs);
-  else 
-    goto empty;
+    if (iri_str is not null)
+      res := DB.DBA.cmp_uri (iri_str);
+    else if (lbl_str is not null)
+      res := DB.DBA.cmp_label (lbl_str, langs);
+    else 
+      goto empty;
 
 --  dbg_obj_print (res);
 
-    if (length (res))
-      {
-        http ('{', ses);
+      if (length (res))
+        {
+          http ('{', ses);
 
-        if (isvector (res[0]))
-          http ('"restype":"multiple",', ses);
-        else 
-          http ('"restype":"single",', ses);
+          if (isvector (res[0]))
+            http ('"restype":"multiple",', ses);
+          else 
+            http ('"restype":"single",', ses);
 
-        if (iri_str)
-          http ('"qrytype":"iri",', ses);
-	else
-          http ('"qrytype":"lbl",', ses);
+          if (iri_str)
+            http ('"qrytype":"iri",', ses);
+	  else
+            http ('"qrytype":"lbl",', ses);
 
-        http ('"results":', ses);
-        json_out_vec (res, ses);
-      }
+          http ('"results":', ses);
+          json_out_vec (res, ses);
+        }
 
-    else goto empty;
+      else goto empty;
 
-  ses := rtrim (string_output_string (ses), ',');
-  ses := ses || '}';
+    ses := rtrim (string_output_string (ses), ',');
+    ses := ses || '}';
 
-  return ses;
- empty:
-  return '{results: []}';
+    return ses;
+   empty:
+    return '{results: []}';
   };
 }
 

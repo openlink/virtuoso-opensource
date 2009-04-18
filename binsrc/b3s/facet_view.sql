@@ -904,7 +904,7 @@ fct_new ()
                type="text" 
                autocomplete="off"/>
         <button id="new_uri_btn">Describe</button><br/>
-    </div>
+      </div>
     </div> <!-- #TAB_PAGE_URI -->
   </div> <!-- #main_srch -->
   <div class="main_expln"><br/>
@@ -1161,7 +1161,7 @@ fct_vsp ()
 	  fct_new ();
 	  return;
 	}
-    fct_set_text (tree, sid, http_param ('search_for'));
+      fct_set_text (tree, sid, http_param ('search_for'));
     }
   else if ('set_focus' = cmd)
     fct_set_focus (tree, sid, atoi (http_param ('n')));

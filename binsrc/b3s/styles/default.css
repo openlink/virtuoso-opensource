@@ -95,6 +95,7 @@ div.page_resource_info {
 }
 
 div.page_resource_info h2 { display: inline; padding: 0; margin-left: 10px;}
+div.page_resource_info p { padding: 0; margin-left: 10px;}
 
 td.rnk { margin: 0; padding: 0; }
 img.rnk { float: left; clear: left; margin-top: 1px;}
