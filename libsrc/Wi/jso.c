@@ -474,7 +474,7 @@ jso_pin (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known)
 {
   jso_rtti_t *known_rtti;
   jso_class_descr_t *cd = inst_rtti->jrtti_class;
-  caddr_t *inst, sub;
+  caddr_t *inst;
   int ctr;
   inst = inst_rtti->jrtti_self;
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (inst))
@@ -522,24 +522,56 @@ jso_pin (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known)
         jso_pin (sub, root_rtti, known);
     }
   END_DO_BOX_FAST;
-  for (ctr = BOX_ELEMENTS(inst); ctr--; /*no step*/)
+  if (JSO_CAT_ARRAY == cd->jsocd_cat)
     {
-      sub = inst[ctr];
-      switch (DV_TYPE_OF(sub))
+      for (ctr = BOX_ELEMENTS(inst); ctr--; /*no step*/)
         {
-        case DV_CUSTOM:
-          inst[ctr] = ((jso_rtti_t *)sub)->jrtti_self;
-          break;
-        case DV_LONG_INT:
-          ((ptrlong *)(inst+ctr))[0] = unbox (inst[ctr]);
-          break;
-        case DV_DOUBLE_FLOAT:
-          if (NULL != sub)
-            ((double *)(inst+ctr))[0] = unbox_double (inst[ctr]);
-          else
-            ((double *)(inst+ctr))[0] = 0;
-          break;
-        default: break;
+          caddr_t *sub_ptr = inst + ctr;
+          caddr_t sub = sub_ptr[0];
+          switch (DV_TYPE_OF(sub))
+            {
+            case DV_CUSTOM:
+              sub_ptr[0] = ((jso_rtti_t *)sub)->jrtti_self;
+              break;
+            case DV_LONG_INT:
+              ((ptrlong *)(sub_ptr))[0] = unbox (sub);
+              break;
+            case DV_DOUBLE_FLOAT:
+              if (NULL != sub)
+                ((double *)(sub_ptr))[0] = unbox_double (sub);
+              else
+                ((double *)(sub_ptr))[0] = 0;
+              break;
+            default: break;
+            }
+        }
+    }
+  else
+    {
+      for (ctr = cd->_.sd.jsosd_field_count; ctr--; /* no step */)
+        {
+          jso_field_descr_t *fd = cd->_.sd.jsosd_field_list + ctr;
+          caddr_t sub, *sub_ptr;
+          if (!strcmp (JSO_ANY, fd->jsofd_type))
+            continue;
+          sub_ptr = ((caddr_t *)(((char *)inst) + (fd->jsofd_byte_offset)));
+          sub = sub_ptr[0];
+          switch (DV_TYPE_OF(sub))
+            {
+            case DV_CUSTOM:
+              sub_ptr[0] = ((jso_rtti_t *)sub)->jrtti_self;
+              break;
+            case DV_LONG_INT:
+              ((ptrlong *)(sub_ptr))[0] = unbox (sub);
+              break;
+            case DV_DOUBLE_FLOAT:
+              if (NULL != sub)
+                ((double *)(sub_ptr))[0] = unbox_double (sub);
+              else
+                ((double *)(sub_ptr))[0] = 0;
+              break;
+            default: break;
+            }
         }
     }
   inst_rtti->jrtti_status = JSO_STATUS_LOADED;
