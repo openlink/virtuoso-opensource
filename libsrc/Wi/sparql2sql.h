@@ -321,7 +321,7 @@ extern void sparp_equiv_audit_gp (sparp_t *sparp, SPART *gp, int is_deprecated, 
 extern void sparp_equiv_audit_retvals (sparp_t *sparp, SPART *top);
 
 #else
-#define sparp_rvr_audit(sparp,rvr) 0
+#define sparp_rvr_audit(sparp,rvr)
 #define sparp_equiv_audit_all(sparp,flags)
 #define sparp_audit_mem(sparp)
 #endif

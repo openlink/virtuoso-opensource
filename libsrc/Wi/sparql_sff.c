@@ -356,8 +356,8 @@ sff_isect (const char *f1, const char *f2, char *res_buf)
 #endif
   const char *f1_tail = NULL, *f2_tail = NULL;
   char *res_tail = res_buf; /* pointer to the end of filled part of res_buf */
-  char f1_v, f2_v; /* Formatting chars of current variable parts in \c f1 and \c f2 */
-  char f2_fix; /* Current fixed char in \c f2 . There's no f1_fix because the beginning of f2 is always kept "more fixed" that the beginning of f1 */
+  char f1_v = 0, f2_v = 0; /* Formatting chars of current variable parts in \c f1 and \c f2 */
+  char f2_fix = 0; /* Current fixed char in \c f2 . There's no f1_fix because the beginning of f2 is always kept "more fixed" that the beginning of f1 */
   const char *f1_last_replaced = NULL; /* The beginning of last fragment in f1 that is replaced with fixed chars or vars from f2. */
   const char *f2_last_replaced = NULL; /* The beginning of last fragment in f2 that is replaced with fixed chars or vars from f1. */
   int strcmp_res;
