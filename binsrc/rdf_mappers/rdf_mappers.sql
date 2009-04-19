@@ -3275,6 +3275,42 @@ create procedure INSTALL_RDF_LOAD_DELICIOUS_META ()
 INSTALL_RDF_LOAD_DELICIOUS_META ()
 ;
 
+create procedure DB.DBA.RDF_LOAD_TECHNORATI_META (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare cont, xd, tmp any;
+	declare api_key, url varchar;
+	declare exit handler for sqlstate '*'
+	{
+		return 0;
+	};
+	api_key := _key;
+	url := sprintf('http://api.technorati.com/cosmos?key=%s&url=%s', api_key, new_origin_uri);
+	tmp := http_client(url, proxy=>get_keyword_ucase ('get:proxy', opts));
+	xd := xtree_doc (tmp);
+	xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/technorati2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
+	cont := serialize_to_UTF8_xml (xd);
+	DB.DBA.RM_RDF_LOAD_RDFXML (cont, new_origin_uri, coalesce (dest, graph_iri));
+	return 0;
+}
+;
+
+create procedure INSTALL_RDF_LOAD_TECHNORATI_META ()
+{
+  -- possible old behaviour
+  delete from SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_TECHNORATI_META';
+  -- register in PP chain
+  
+  insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
+      values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_TECHNORATI_META', null, 'Technorati Meta',
+	  vector ('min-score', '0.5', 'max-results', '10'));
+}
+;
+
+INSTALL_RDF_LOAD_TECHNORATI_META ()
+;
+
+
 create procedure DB.DBA.RDF_LOAD_OREILLY (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare xd, host_part, xt, url, tmp, api_key, hdr, exif any;
