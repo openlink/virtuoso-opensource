@@ -1,4 +1,5 @@
-<?xml version="1.0" encoding="UTF-8" ?> <!--
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
  -
  -  $Id$
  -
@@ -26,14 +27,14 @@
 <!ENTITY xml 'http://www.w3.org/XML/1998/namespace#'>
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 ]>
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" 
+	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
 	xmlns:dc="http://purl.org/dc/elements/1.1/"
-	xmlns:dcterms="http://purl.org/dc/terms/" 
-	xmlns:foaf="&foaf;" 
+	xmlns:dcterms="http://purl.org/dc/terms/"
+	xmlns:foaf="&foaf;"
 	xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
-	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/" 
+	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
 	xmlns:v="http://www.w3.org/2006/vcard/ns#"
 	xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
 	xmlns:vcard="http://www.w3.org/2001/vcard-rdf/3.0#"
@@ -43,7 +44,7 @@
 	<xsl:output method="xml" indent="yes" omit-xml-declaration="yes" />
 	<xsl:param name="baseUri" />
 	<xsl:param name="user" />
-	
+
 	<xsl:template match="/">
 		<rdf:RDF>
 			<xsl:apply-templates select="rsp[@stat='ok']/user" />
@@ -52,7 +53,7 @@
 			<xsl:apply-templates select="rsp[@stat='ok']/popevents" />
 		</rdf:RDF>
 	</xsl:template>
-	
+
 	<xsl:template match="rsp[@stat='ok']/user">
 		<xsl:if test="not empty(profile)">
 			<foaf:Person rdf:about="{profile}">
@@ -112,7 +113,7 @@
 			</xsl:if>
 		</xsl:if>
 	</xsl:template>
-	
+
 	<xsl:template match="rsp[@stat='ok']/friends">
 		<xsl:for-each select="friend">
 			<foaf:Person rdf:about="{profile}">
@@ -126,7 +127,7 @@
 			</rdf:Description>
 		</xsl:for-each>
 	</xsl:template>
-	
+
 	<xsl:template name="event">
 		<xsl:if test="not empty(network)">
 			<radio:network rdf:about="{vi:proxyIRI(concat($ns, '#', network/@id))}">
@@ -201,17 +202,17 @@
 			</rdf:Description>
 		</xsl:if>
 	</xsl:template>
-	
+
 	<xsl:template match="rsp[@stat='ok']/listenevents">
 		<xsl:for-each select="listenevent">
 			<xsl:call-template name="event"/>
 		</xsl:for-each>
 	</xsl:template>
-	
+
 	<xsl:template match="rsp[@stat='ok']/popevents">
 		<xsl:for-each select="popevent">
 			<xsl:call-template name="event"/>
 		</xsl:for-each>
 	</xsl:template>
-	
+
 </xsl:stylesheet>

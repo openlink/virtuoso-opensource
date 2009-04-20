@@ -91,7 +91,7 @@
 </xsl:template>
 
 <xsl:template match="channel|r:channel">
-  
+
   <channel rdf:about="{link|r:link|a:link/@href}">
     <xsl:apply-templates/>
     <items>

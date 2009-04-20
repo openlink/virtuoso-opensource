@@ -11,7 +11,7 @@
 
    connection_set ('ns_ctr', 1); /* for unknown xmlns to print in RDFa */
    proxy_iri_fn := get_keyword ('p', params, null);
-   host := http_request_header (http_request_header (), 'Host');  
+   host := http_request_header (http_request_header (), 'Host');
    gr := get_keyword ('g', params, '');
    arr := rfc1808_parse_uri (gr);
    if (arr[0] = '' and arr[1] = '' and arr[2] <> '')
@@ -23,17 +23,17 @@
 
    project_home_page := gr;
    project_home_page := replace (project_home_page, '%23', '#');
-   _G := project_home_page; 
+   _G := project_home_page;
 
    page_resource_uri := get_keyword ('res', params);
    do_sponge := 0;
    if (page_resource_uri is null)
      {
        do_sponge := 1;
-       page_resource_uri := gr; 
+       page_resource_uri := gr;
      }
    page_resource_uri := replace (page_resource_uri, '%23', '#');
-   _S := page_resource_uri; 
+   _S := page_resource_uri;
 
    if (proxy_iri_fn is null)
      proxy_iri := DB.DBA.RDF_SPONGE_PROXY_IRI (page_resource_uri, '', '');
@@ -42,7 +42,7 @@
    arr := rfc1808_parse_uri (proxy_iri);
    if (arr [1] like 'localhost%')
      arr [1] := 'demo.openlinksw.com';
-   proxy_iri := DB.DBA.vspx_uri_compose (arr); 
+   proxy_iri := DB.DBA.vspx_uri_compose (arr);
 
    arr := rfc1808_parse_uri (_G);
    if (arr[2] = '/' and DB.DBA.vspx_uri_compose (arr) <> _G)
@@ -57,8 +57,8 @@
      }
    else if (_S like 'nodeID://%')
      {
-       -- blank node is subject 
-       exec (sprintf ('sparql define input:storage "" select ?g where { graph ?g { <%S> ?p ?o . }} limit 1', _S), 
+       -- blank node is subject
+       exec (sprintf ('sparql define input:storage "" select ?g where { graph ?g { <%S> ?p ?o . }} limit 1', _S),
 	  null, null, vector (), 0, meta, data);
         if (length (data))
 	  _G := data[0][0];
@@ -67,10 +67,10 @@
    exec (sprintf ('sparql ask where { graph <%S> { <%S> ?p ?o }}', _G, _S), null, null, vector (), 0, meta, data);
    if (not length (data))
      {
-        exec (sprintf ('sparql select ?s where { graph <%S> { ?s ?p ?o filter regex (?s, "%S#.*") }}', _G, _S), 
+        exec (sprintf ('sparql select ?s where { graph <%S> { ?s ?p ?o filter regex (?s, "%S#.*") }}', _G, _S),
 	  null, null, vector (), 0, meta, data);
         if (length (data))
-          { 
+          {
             _S := data[0][0];
             page_resource_uri := _S;
           }
@@ -86,11 +86,11 @@
    label := cast (label as varchar);
    true_label := label;
 
-   exec (sprintf ('sparql prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/> 
+   exec (sprintf ('sparql prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/>
 	select ?o where { graph <%S> { <%S> rdfs:comment ?o } }', _G, _S), null, null, vector (), 0, meta, data);
    if (length (data)) _subject := data[0][0];
 
-   rdf_link := sprintf ('/sparql?default-graph-uri=%U&query=%U', _G, sprintf ('DESCRIBE <%s>',_S)); 
+   rdf_link := sprintf ('/sparql?default-graph-uri=%U&query=%U', _G, sprintf ('DESCRIBE <%s>',_S));
 
   declare __res_desc varchar;
   __res_desc := rdfdesc_uri_curie(page_resource_uri);
@@ -130,17 +130,17 @@
       <table class="description"><tr><th class="property">Property</th><th class="value">Value</th></tr>
 
 <?vsp
-      exec (sprintf ('select "p" as PRED from (sparql select distinct ?p where { graph <%S> { <%S> ?p ?o } }) sp order by 1', _G, _S), 
-		null, null, vector (), 0, null, null, h1); 
-      while (0 = exec_next (h1, null, null, data))	
+      exec (sprintf ('select "p" as PRED from (sparql select distinct ?p where { graph <%S> { <%S> ?p ?o } }) sp order by 1', _G, _S),
+		null, null, vector (), 0, null, null, h1);
+      while (0 = exec_next (h1, null, null, data))
 	{
            declare PRED any;
-	   pred := data[0];  
+	   pred := data[0];
 	   rdfdesc_http_print_l (PRED, odd_position);
 	   exec (sprintf ('sparql select ?o where { graph <%S> { <%S> <%S> ?o } } limit 300', _G, _S, PRED),
 		null, null, vector (), 0, null, null, h2);
-	   while (0 = exec_next (h2, null, null, data))	
-	      {	
+	   while (0 = exec_next (h2, null, null, data))
+	      {
                 declare OBJECT any;
 		OBJECT := data [0];
 		rdfdesc_http_print_r (OBJECT, PRED, true_label, 1);
@@ -151,19 +151,19 @@
 	}
       exec_close (h1);
       --goto skip_rev;
-      exec (sprintf ('select "p" as PRED from (sparql select distinct ?p where { graph <%S> { ?o ?p <%S> } }) sp order by 1', _G, _S), 
-		null, null, vector (), 0, null, null, h1); 
-      inx := 0;	
-      while (0 = exec_next (h1, null, null, data))	
+      exec (sprintf ('select "p" as PRED from (sparql select distinct ?p where { graph <%S> { ?o ?p <%S> } }) sp order by 1', _G, _S),
+		null, null, vector (), 0, null, null, h1);
+      inx := 0;
+      while (0 = exec_next (h1, null, null, data))
 	{
            declare PRED any;
-	   pred := data[0];  
+	   pred := data[0];
 	   inx := inx + 1;
 	   rdfdesc_http_print_l (PRED, odd_position, 1);
 	   exec (sprintf ('sparql select ?s where { graph <%S> { ?s <%S> <%S> } } limit 300', _G, PRED, _S),
 		null, null, vector (), 0, null, null, h2);
-	   while (0 = exec_next (h2, null, null, data))	
-	      {	
+	   while (0 = exec_next (h2, null, null, data))
+	      {
                 declare OBJECT any;
 		OBJECT := data [0];
 		rdfdesc_http_print_r (OBJECT, PRED, true_label, 0);

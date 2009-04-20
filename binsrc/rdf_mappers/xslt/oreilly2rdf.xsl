@@ -44,26 +44,26 @@
   xmlns:dcterms="http://purl.org/dc/terms/"
   xmlns:redwood-tags="http://www.holygoat.co.uk/owl/redwood/0.1/tags/"
   version="1.0">
-  
+
   <xsl:output method="xml" indent="yes"/>
-  
+
   <xsl:param name="base" />
-  
+
   <xsl:variable name="uc">ABCDEFGHIJKLMNOPQRSTUVWXYZ</xsl:variable>
   <xsl:variable name="lc">abcdefghijklmnopqrstuvwxyz</xsl:variable>
-  
+
   <xsl:template match="/">
       <rdf:RDF>
 		<xsl:apply-templates select="html/head"/>
 		<xsl:apply-templates select="/" mode="rdf-in-comment"/>
       </rdf:RDF>
   </xsl:template>
-  
+
   <xsl:template match="html/head">
       <rdf:Description rdf:about="{$base}">
 		<rdf:type rdf:resource="&foaf;Document"/>
 		<rdf:type rdf:resource="&bibo;Document"/>
-		<rdf:type rdf:resource="&sioc;Container"/>		
+		<rdf:type rdf:resource="&sioc;Container"/>
 		<sioc:container_of rdf:resource="{vi:proxyIRI($base)}"/>
 		<foaf:topic rdf:resource="{vi:proxyIRI($base)}"/>
 		<dcterms:subject rdf:resource="{vi:proxyIRI($base)}"/>

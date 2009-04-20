@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
  -  $Id$
@@ -38,7 +38,7 @@
     xmlns:h="http://www.w3.org/1999/xhtml"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
-    xmlns:dcterms="http://purl.org/dc/terms/" 
+    xmlns:dcterms="http://purl.org/dc/terms/"
     xmlns:xhv="&xhv;"
     xmlns:sioc="&sioc;"
     xmlns:bibo="&bibo;"
@@ -47,16 +47,16 @@
     xmlns:mo="&mo;"
     xmlns:mmd="&mmd;"
     version="1.0">
-	
+
 	<xsl:param name="baseUri" />
-	
+
 	<xsl:param name="nss" />
-	
+
 	<xsl:variable name="prefix" select="string($nss//namespace/@prefix)" />
 	<xsl:variable name="ns" select="string($nss//namespace)" />
-	
+
 	<xsl:output method="xml" version="1.0" encoding="utf-8" omit-xml-declaration="no" standalone="no" indent="yes" />
-	
+
 	<xsl:template match="/">
 		<rdf:RDF>
             <xsl:if test="$ns='http://www.abmeta.org/ns#'">
@@ -125,7 +125,7 @@
 		    </xsl:for-each>
 		</xsl:for-each>
     </xsl:template>
-    
+
     <xsl:template name="a-rev-single">
 		<xsl:param name="container"/>
 	    <xsl:param name="type"/>
@@ -144,7 +144,7 @@
 			</rdf:Description>
 		</xsl:if>
 	</xsl:template>
-	
+
 	<xsl:template name="set-link">
 	    <xsl:param name="type"/>
 	    <xsl:param name="link"/>

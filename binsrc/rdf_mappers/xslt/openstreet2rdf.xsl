@@ -55,7 +55,7 @@
     version="1.0">
 
     <xsl:output method="xml" encoding="utf-8" indent="yes"/>
-    
+
     <xsl:param name="baseUri" />
     <xsl:param name="lon" />
     <xsl:param name="lat" />
@@ -65,7 +65,7 @@
 			<xsl:apply-templates select="osm"/>
 		</rdf:RDF>
     </xsl:template>
-    
+
     <xsl:template match="osm">
 		<geo:Feature rdf:about="{$baseUri}">
 			<wgs84_pos:lat>
@@ -78,7 +78,7 @@
 				<geo:nearby rdf:resource="{concat('http://openstreetmap.org/?lat=', @lat, '&lon=', @lon)}"/>
 			</xsl:for-each>
 		</geo:Feature>
-			
+
 		<xsl:for-each select="node">
 			<geo:Feature rdf:about="{concat('http://openstreetmap.org/?lat=', @lat, '&lon=', @lon)}">
 				<wgs84_pos:lat>
@@ -117,7 +117,7 @@
 					</xsl:choose>
 				</xsl:for-each>
 			</geo:Feature>
-			
+
 			<xsl:if test="@user">
 				<foaf:Document rdf:about="{concat('http://openstreetmap.org/user/', @user)}">
 					<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat('http://openstreetmap.org/user/', @user))}"/>
@@ -126,7 +126,7 @@
 					<foaf:made rdf:resource="{concat('http://openstreetmap.org/?lat=', @lat, '&lon=', @lon)}"/>
 				</foaf:Person>
 			</xsl:if>
-			
+
 		</xsl:for-each>
     </xsl:template>
 
