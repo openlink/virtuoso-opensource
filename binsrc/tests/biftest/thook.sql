@@ -1,31 +1,32 @@
---  
+--
 --  $Id$
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2006 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
+
 drop table sec_log;
 drop table REPORT;
 drop table NEED_TO_KNOW;
 
 
-create table sec_log (sl_user varchar, sl_logged_in datetime, 
+create table sec_log (sl_user varchar, sl_logged_in datetime,
 		      sl_logged_out datetime, primary key (sl_user, sl_logged_in));
 ECHO BOTH $IF $EQU $STATE OK 'PASSED' '*** FAILED';
 ECHO BOTH ': creating security log table STATE=' $STATE ' MESSAGE=' $MESSAGE '\n';
@@ -73,32 +74,32 @@ delete from NEED_TO_KNOW;
 ECHO BOTH $IF $EQU $STATE OK 'PASSED' '*** FAILED';
 ECHO BOTH ': cleaning up the NEED_TO_KNOW table STATE=' $STATE ' MESSAGE=' $MESSAGE '\n';
 
-insert into NEED_TO_KNOW (NK_CLASS, NK_USER) 
+insert into NEED_TO_KNOW (NK_CLASS, NK_USER)
     values (1, (select U_ID from SYS_USERS where U_NAME = 'MANAGER'));
 ECHO BOTH $IF $EQU $STATE OK 'PASSED' '*** FAILED';
 ECHO BOTH ': enable MANAGER to see Reports class 1 STATE=' $STATE ' MESSAGE=' $MESSAGE '\n';
-	
-insert into NEED_TO_KNOW (NK_CLASS, NK_USER) 
+
+insert into NEED_TO_KNOW (NK_CLASS, NK_USER)
     values (2, (select U_ID from SYS_USERS where U_NAME = 'MANAGER'));
 ECHO BOTH $IF $EQU $STATE OK 'PASSED' '*** FAILED';
 ECHO BOTH ': enable MANAGER to see Reports class 2 STATE=' $STATE ' MESSAGE=' $MESSAGE '\n';
 
-insert into NEED_TO_KNOW (NK_CLASS, NK_USER) 
+insert into NEED_TO_KNOW (NK_CLASS, NK_USER)
     values (2, (select U_ID from SYS_USERS where U_NAME = 'U'));
 ECHO BOTH $IF $EQU $STATE OK 'PASSED' '*** FAILED';
 ECHO BOTH ': enable U to see Reports class 2 STATE=' $STATE ' MESSAGE=' $MESSAGE '\n';
-      
-insert into NEED_TO_KNOW (NK_CLASS, NK_USER) 
+
+insert into NEED_TO_KNOW (NK_CLASS, NK_USER)
     values (3, (select U_ID from SYS_USERS where U_NAME = 'MANAGER'));
 ECHO BOTH $IF $EQU $STATE OK 'PASSED' '*** FAILED';
 ECHO BOTH ': enable MANAGER to see Reports class 3 STATE=' $STATE ' MESSAGE=' $MESSAGE '\n';
 
-insert into NEED_TO_KNOW (NK_CLASS, NK_USER) 
+insert into NEED_TO_KNOW (NK_CLASS, NK_USER)
     values (3, (select U_ID from SYS_USERS where U_NAME = 'U'));
 ECHO BOTH $IF $EQU $STATE OK 'PASSED' '*** FAILED';
 ECHO BOTH ': enable U to see Reports class 3 STATE=' $STATE ' MESSAGE=' $MESSAGE '\n';
 
-insert into NEED_TO_KNOW (NK_CLASS, NK_USER) 
+insert into NEED_TO_KNOW (NK_CLASS, NK_USER)
     values (3, (select U_ID from SYS_USERS where U_NAME = 'OUTSIDER'));
 ECHO BOTH $IF $EQU $STATE OK 'PASSED' '*** FAILED';
 ECHO BOTH ': enable OUTSIDER to see Reports class 3 STATE=' $STATE ' MESSAGE=' $MESSAGE '\n';
@@ -147,7 +148,7 @@ create procedure DB.DBA.DBEV_DISCONNECT ()
   declare ctime datetime;
   dbg_obj_print (user, ' disconnected');
   ctime := connection_get ('login_time');
-  update sec_log set sl_logged_out = now () where 
+  update sec_log set sl_logged_out = now () where
     sl_user = user and sl_logged_in = ctime;
   if (row_count () = 0)
     signal ('ELOGO', 'Logout by user with no login record. This occurs when DBEV_CONNECT denied permission');

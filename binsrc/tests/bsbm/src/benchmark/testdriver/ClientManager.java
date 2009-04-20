@@ -12,7 +12,7 @@ public class ClientManager {
 	protected boolean[] ignoreQueries;
 	private ClientThread[] clients;
 	private TestDriver parent;
-	
+
 	ClientManager(AbstractParameterPool pool, TestDriver parent) {
 		activeThreadsInWarmup = 0;
 		activeThreadsInRun = 0;
@@ -21,12 +21,12 @@ public class ClientManager {
 		this.nrThreads = parent.nrThreads;
 		this.queryMix = parent.queryMix;
 		this.ignoreQueries = parent.ignoreQueries;
-		
+
 		this.pool = new PreCalcParameterPool(parent.parameterPool, nrWarmup);
 		this.pool.calcQueryMixes(queryMix, parent.nrRuns+nrWarmup);
 		queryMix.init();//Reset the Query Mix for further use
 	}
-	
+
 	public void createClients() {
 		clients = new ClientThread[nrThreads];
 		for(int i=0;i<nrThreads;i++) {
@@ -35,13 +35,13 @@ public class ClientManager {
 				sConn = new SQLConnection(parent.connEndpoint, parent.driverClassName, parent.connUser, parent.connPwd, parent.timeout);
 			else
 				sConn = new SPARQLConnection(parent.connEndpoint, parent.defaultGraph, parent.timeout);
-				
+
 			clients[i] = new ClientThread(pool, sConn, ignoreQueries.length, this, i+1);
 		}
 		System.out.println("Clients created.");
 		System.out.flush();
 	}
-	
+
 	/*
 	 * warmup run
 	 */
@@ -59,12 +59,12 @@ public class ClientManager {
 				return;
 			}
 		}
-		
+
 		System.out.println("Warmup phase ended...\n");
 		warmupPhase = false;
 		return;
 	}
-	
+
 	/*
 	 * start actual run
 	 */
@@ -94,7 +94,7 @@ public class ClientManager {
 		System.out.println("Benchmark run completed in " + totalRunTimeInSeconds + "s");
 		return;
 	}
-	
+
 	/*
 	 * If a client has finished its Warmup runs it should call this function
 	 */

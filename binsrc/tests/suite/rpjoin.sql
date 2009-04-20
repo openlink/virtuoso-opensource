@@ -104,3 +104,4 @@ SELECT CAST('GUARANTEED' AS VARCHAR), S.STRING1, S.STRING2, S.FDATE, G.S_STATUS,
 ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
 ECHO BOTH ": LEFT OUTER JOIN on procedure view and remote table " $rowcnt " rows\n";
 
+

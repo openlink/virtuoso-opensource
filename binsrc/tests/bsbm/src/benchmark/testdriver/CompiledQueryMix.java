@@ -3,7 +3,7 @@ package benchmark.testdriver;
 public class CompiledQueryMix {
 	protected CompiledQuery[] queryMix;
 	int queryNr;
-	
+
 	private double[] aqet;//arithmetic mean query execution time
 	private double[] qmin;//Query minimum execution time
 	private double[] qmax;//Query maximum execution time
@@ -14,7 +14,7 @@ public class CompiledQueryMix {
 	private int[] runsPerQuery;//Runs Per Query
 	private int[] timeoutsPerQuery;
 	private int run;//run: negative values are warm up runs
-	
+
 	private int currentQueryIndex;//Index of current query for queryMix
 	private int queryMixRuns;//number of query mix runs
 	private double queryMixRuntime;//whole runtime of actual run in seconds
@@ -22,7 +22,7 @@ public class CompiledQueryMix {
 	private double maxQueryMixRuntime;
 	private double queryMixGeoMean;
 	private double totalRuntime;//Total runtime of all runs
-	
+
 	/*
 	 * Initialize the CompileQueryMix with CompiledQueries and a max query number for array sizes
 	 */
@@ -31,40 +31,40 @@ public class CompiledQueryMix {
 		this.queryMix = queryMix;
 		init();
 	}
-	
+
 	public CompiledQueryMix(int maxQueryNr) {
 		this.queryNr = maxQueryNr;
-		
+
 		init();
 	}
-	
+
 	public void setNewCompiledQueryMix(CompiledQuery[] queryMix) {
 		this.queryMix = queryMix;
 	}
-	
+
 	/*
 	 * After every run this method initializes the CompiledQueryMix with a new CompiledQuery set.
 	 * All metrics are set to the start values.
 	 */
 	public void init(CompiledQuery[] queryMix) {
 		this.queryMix = queryMix;
-		
+
 		init();
 	}
-	
+
 	public void init() {
 		aqet = new double[queryNr];
 		qmin = new double[queryNr];
 		qmax = new double[queryNr];
-		
+
 		avgResults = new double[queryNr];
 		aqetg = new double[queryNr];
 		minResults = new int[queryNr];
 		maxResults = new int[queryNr];
-		
+
 		runsPerQuery = new int[queryNr];
 		timeoutsPerQuery = new int[queryNr];
-		
+
 		currentQueryIndex = 0;
 		queryMixRuns = 0;
 		queryMixRuntime = 0;
@@ -79,86 +79,86 @@ public class CompiledQueryMix {
 			qmax[i] = Double.MIN_VALUE;
 			maxResults[i] = Integer.MIN_VALUE;
 		}
-		
+
 		//Init qmin array
 		for(int i=0; i<qmin.length;i++) {
 			qmin[i] = Double.MAX_VALUE;
 			minResults[i] = Integer.MAX_VALUE;
 		}
 	}
-	
+
 	public void setRun(int run) {
 		this.run = run;
 	}
-	
+
 	/*
 	 * Calculate metrics for this run
 	 */
 	public void finishRun() {
 		currentQueryIndex = 0;
-		
+
 		if(run>=0) {
-			
+
 			queryMixRuns++;
-			
+
 			if(queryMixRuntime < minQueryMixRuntime)
 				minQueryMixRuntime = queryMixRuntime;
-			
+
 			if(queryMixRuntime > maxQueryMixRuntime)
 				maxQueryMixRuntime = queryMixRuntime;
-			
+
 			queryMixGeoMean += Math.log10(queryMixRuntime);
 			totalRuntime += queryMixRuntime;
 		}
-		
+
 		//Reset queryMixRuntime
 		queryMixRuntime = 0;
 		queryMix = null;
 	}
-	
+
 	public CompiledQuery getNext() {
 		return queryMix[currentQueryIndex];
 	}
-	
+
 	public Boolean hasNext() {
 		return currentQueryIndex < queryMix.length;
 	}
-	
+
 	public void reportTimeOut() {
 		int queryNr = queryMix[currentQueryIndex].getNr()-1;
 		timeoutsPerQuery[queryNr]++;
 	}
-	
+
 	/*
 	 * Set the time (seconds) of the current Query
 	 */
 	public void setCurrent(int numberResults, Double timeInSeconds) {
 		if(run>=0 && timeInSeconds>=0.0) {
 			int queryNr = queryMix[currentQueryIndex].getNr()-1;
-	
+
 			int nrRuns = runsPerQuery[queryNr]++;
 			aqet[queryNr] = (aqet[queryNr] * nrRuns + timeInSeconds) / (nrRuns+1);
 			avgResults[queryNr] = (avgResults[queryNr] * nrRuns + numberResults) / (nrRuns+1);
 			aqetg[queryNr] += Math.log10(timeInSeconds);
-			
+
 			if(timeInSeconds < qmin[queryNr])
 				qmin[queryNr] = timeInSeconds;
-			
+
 			if(timeInSeconds > qmax[queryNr])
 				qmax[queryNr] = timeInSeconds;
-			
+
 			if(numberResults < minResults[queryNr])
 				minResults[queryNr] = numberResults;
-			
+
 			if(numberResults > maxResults[queryNr])
 				maxResults[queryNr] = numberResults;
-				
+
 			queryMixRuntime += timeInSeconds;
 		}
-		
+
 		currentQueryIndex++;
 	}
-	
+
 
 	public double[] getAqet() {
 		return aqet;
@@ -191,7 +191,7 @@ public class CompiledQueryMix {
 	public double getTotalRuntime() {
 		return totalRuntime;
 	}
-	
+
 	public double getCQET() {
 		return totalRuntime / queryMixRuns;
 	}

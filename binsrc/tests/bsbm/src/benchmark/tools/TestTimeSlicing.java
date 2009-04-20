@@ -17,7 +17,7 @@ public class TestTimeSlicing {
         t3.setPriority(10);
         t3.start();
     }
-	
+
 	public static synchronized void doThis(int nr, MyThread t) {
 		if(nr!=thread) {
 			thread = nr;
@@ -26,19 +26,19 @@ public class TestTimeSlicing {
 			System.out.println("Thread " + nr + ": " + String.format(Locale.US, "%.6f",time/1000000000.0) + "s " + t.getPriority());
 		}
 	}
-} 
- 
-class MyThread extends Thread { 
-    int nr; 
- 
-    MyThread ( int nr ) { 
-        this.nr = nr; 
-    } 
- 
-    public void run() { 
+}
+
+class MyThread extends Thread {
+    int nr;
+
+    MyThread ( int nr ) {
+        this.nr = nr;
+    }
+
+    public void run() {
         while ( true ) {
         	TestTimeSlicing.doThis(nr, this);
 //        	yield();
         }
-    } 
+    }
 } 

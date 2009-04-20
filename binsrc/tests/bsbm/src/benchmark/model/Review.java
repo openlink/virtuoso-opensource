@@ -52,12 +52,12 @@ public class Review extends BSBMResource {
 	public Integer[] getRatings() {
 		return ratings;
 	}
-	
+
 	public String toString()
 	{
 		return getURIref(nr, publisher);
 	}
-	
+
 	public static String getURIref(int reviewNr, int ratingSiteNr)
 	{
 		StringBuffer s = new StringBuffer();

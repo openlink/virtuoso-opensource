@@ -108,3 +108,4 @@ return 0;
 drop table t1;
 -- the next test tjoin needs to fill this from scratch
 
+

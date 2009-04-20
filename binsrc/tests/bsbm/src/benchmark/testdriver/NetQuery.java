@@ -10,7 +10,7 @@ public class NetQuery {
 	HttpURLConnection conn;
 	Long start;
 	Long end;
-	
+
 	protected NetQuery(String serviceURL, String query, String encodedParamString, byte queryType, String defaultGraph, int timeout) {
 		try {
 			String urlString = serviceURL + "?query=" + java.net.URLEncoder.encode(query, "UTF-8") + encodedParamString;
@@ -41,7 +41,7 @@ public class NetQuery {
 			System.exit(-1);
 		}
 	}
-	
+
 	protected InputStream exec() {
 		try {
 			conn.connect();
@@ -68,14 +68,14 @@ public class NetQuery {
 		}
 
 	}
-	
+
 	protected double getExecutionTimeInSeconds() {
 		end = System.nanoTime();
 		Long interval = end-start;
 		Thread.yield();
 		return interval.doubleValue()/1000000000;
 	}
-	
+
 	protected void close() {
 		conn.disconnect();
 		conn = null;

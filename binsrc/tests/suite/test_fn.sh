@@ -1,7 +1,5 @@
 #!/bin/sh
 #
-#  test_fn.sh
-#
 #  $Id$
 #
 #  Generic test functions which should be read at the beginning of the
@@ -33,7 +31,6 @@
 LANG=C
 LC_ALL=POSIX
 export LANG LC_ALL
-
 
 #===========================================================================
 #  Set global environment variables for test suite

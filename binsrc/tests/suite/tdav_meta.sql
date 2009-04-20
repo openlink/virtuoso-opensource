@@ -1,25 +1,25 @@
---  
+--
 --  $Id$
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2006 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 --set echo on;
 
 --ECHO BOTH "Loading sample DAV files"
@@ -61,7 +61,6 @@ create procedure TDAV_META_LOAD ()
     DAV_COPY ('/DAV/mnt/tdav_meta/', '/DAV/tdav_meta_home/zip_samples/', 1, '110100000R', 'tdav_meta', NULL, 'tdav_meta', 'tdav_meta_pwd') );
 }
 ;
-
 
 create procedure TDAV_META_CHECK (in resname varchar, in propuri varchar, in propval varchar)
 {
@@ -112,8 +111,8 @@ create procedure TDAV_META_DUMP_CHECKS (in fname varchar := 'tdav_meta_checks.lo
       http (
         sprintf ('TDAV_META_CHECK (%s, %s, %s);\n',
           WS.WS.STR_SQL_APOS(RES_NAME),
-	  WS.WS.STR_SQL_APOS(RPN_URI),
-	  WS.WS.STR_SQL_APOS (DRI_CATVALUE) )
+          WS.WS.STR_SQL_APOS(RPN_URI),
+          WS.WS.STR_SQL_APOS (DRI_CATVALUE) )
         , ses );
     }
   string_to_file (fname, string_output_string (ses), -2);
@@ -128,7 +127,7 @@ create function TDAV_URIQA (in host varchar, in uri varchar, in method varchar, 
   retbody := http_get ('http://' || host || uri, rethdr, method, hdr, body);
   dbg_obj_print ('RESULT:', rethdr[0] || '\r\n\r\n' || retbody);
   return rethdr[0] || '\r\n\r\n' || retbody;
-}  
+}
 
 TDAV_META_LOAD ();
 --TDAV_META_DUMP_CHECKS ();

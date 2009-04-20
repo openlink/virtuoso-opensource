@@ -21,13 +21,13 @@ public class SPARQLConnection implements ServerConnection{
 	private String defaultGraph;
 	private static Logger logger = Logger.getLogger( SPARQLConnection.class );
 	private int timeout;
-	
+
 	public SPARQLConnection(String serviceURL, String defaultGraph, int timeout) {
 		this.serverURL = serviceURL;
 		this.defaultGraph = defaultGraph;
 		this.timeout = timeout;
 	}
-	
+
 	/*
 	 * Execute Query with Query Object
 	 */
@@ -37,7 +37,7 @@ public class SPARQLConnection implements ServerConnection{
 		else
 			executeQuery(query.getQueryString(), "", queryType, query.getNr(), query.getQueryMix());
 	}
-	
+
 	/*
 	 * execute Query with Query String
 	 */
@@ -80,11 +80,11 @@ public class SPARQLConnection implements ServerConnection{
 			logResultInfo(queryNr, queryMixRun, timeInSeconds,
 	                   queryString, queryType,
 	                   resultCount);
-		
+
 		queryMix.setCurrent(resultCount, timeInSeconds);
 		qe.close();
 	}
-	
+
 	public void executeQuery(CompiledQuery query, CompiledQueryMix queryMix) {
 		double timeInSeconds;
 
@@ -110,9 +110,9 @@ public class SPARQLConnection implements ServerConnection{
 			qe.close();
 			return;
 		}
-		
+
 		int resultCount = 0;
-		
+
 		try {
 			//Write XML result into result
 			if(queryType==Query.SELECT_TYPE)
@@ -129,16 +129,16 @@ public class SPARQLConnection implements ServerConnection{
 			qe.close();
 			return;
 		}
-		
+
 		if(logger.isEnabledFor( Level.ALL ) && queryMixRun > 0)
 			logResultInfo(queryNr, queryMixRun, timeInSeconds,
 	                   queryString, queryType,
 	                   resultCount);
-		
+
 		queryMix.setCurrent(resultCount, timeInSeconds);
 		qe.close();
 	}
-	
+
 private int countBytes(InputStream is) {
 	int nrBytes=0;
 	byte[] buf = new byte[10000];
@@ -158,7 +158,7 @@ private int countBytes(InputStream is) {
 //	System.out.println(sb.toString());
 	return nrBytes;
 }
-	
+
 	private void logResultInfo(int queryNr, int queryMixRun, double timeInSeconds,
 			                   String queryString, byte queryType,
 			                   int resultCount) {
@@ -168,7 +168,7 @@ private int countBytes(InputStream is) {
 		sb.append("\n\tQuery string:\n\n");
 		sb.append(queryString);
 		sb.append("\n\n");
-	
+
 		//Log results
 		if(queryType==Query.DESCRIBE_TYPE)
 			sb.append("\tQuery(Describe) result (" + resultCount + " Bytes): \n\n");
@@ -176,12 +176,12 @@ private int countBytes(InputStream is) {
 			sb.append("\tQuery(Construct) result (" + resultCount + " Bytes): \n\n");
 		else
 			sb.append("\tQuery results (" + resultCount + " results): \n\n");
-		
+
 
 		sb.append("\n__________________________________________________________________________________\n");
 		logger.log(Level.ALL, sb.toString());
 	}
-	
+
 	private int countResults(InputStream s) throws SocketTimeoutException {
 		ResultHandler handler = new ResultHandler();
 		int count=0;
@@ -199,14 +199,14 @@ private int countBytes(InputStream is) {
 		}
 		return count;
 	}
-	
+
 	private class ResultHandler extends DefaultHandler {
 		private int count;
-		
+
 		ResultHandler() {
 			count = 0;
 		}
-		
+
 		public void startElement( String namespaceURI,
                 String localName,   // local name
                 String qName,       // qualified name
@@ -219,7 +219,7 @@ private int countBytes(InputStream is) {
 			return count;
 		}
 	}
-	
+
 	public void close() {
 		//nothing to close
 	}
@@ -246,18 +246,18 @@ private int countBytes(InputStream is) {
 		Document doc = getXMLDocument(is);
 		XMLOutputter outputter = new XMLOutputter();
 		logResultInfo(query, outputter.outputString(doc));
-		
+
 		if(queryType==Query.SELECT_TYPE)
 			queryResult = gatherResultInfoForSelectQuery(queryString, queryNr, sorted, doc, rowNames);
-		
+
 		if(queryResult!=null)
 			queryResult.setRun(query.getQueryMix().getRun());
 		return queryResult;
 	}
-	
+
 	private void logResultInfo(Query query, String queryResult) {
 		StringBuffer sb = new StringBuffer();
-		
+
 		sb.append("\n\n\tQuery " + query.getNr() + " of run " + (query.getQueryMix().getQueryMixRuns()+1) + ":\n");
 		sb.append("\n\tQuery string:\n\n");
 		sb.append(query.getQueryString());
@@ -266,7 +266,7 @@ private int countBytes(InputStream is) {
 		sb.append("\n\n__________________________________________________________________________________\n");
 		logger.log(Level.ALL, sb.toString());
 	}
-	
+
 	private Document getXMLDocument(InputStream is) {
 		SAXBuilder builder = new SAXBuilder();
 		builder.setValidation(false);
@@ -283,16 +283,16 @@ private int countBytes(InputStream is) {
 		}
 		return doc;
 	}
-	
+
 	private QueryResult gatherResultInfoForSelectQuery(String queryString, int queryNr, boolean sorted, Document doc, String[] rows) {
 		Element root = doc.getRootElement();
 
 		//Get head information
 		Element child = root.getChild("head", Namespace.getNamespace("http://www.w3.org/2005/sparql-results#"));
-		
+
 		//Get result rows (<head>)
 		List headChildren = child.getChildren("variable", Namespace.getNamespace("http://www.w3.org/2005/sparql-results#"));
-		
+
 		Iterator it = headChildren.iterator();
 		ArrayList<String> headList = new ArrayList<String>();
 		while(it.hasNext()) {
@@ -302,14 +302,14 @@ private int countBytes(InputStream is) {
 		List resultChildren = root.getChild("results", Namespace.getNamespace("http://www.w3.org/2005/sparql-results#"))
 								   .getChildren("result", Namespace.getNamespace("http://www.w3.org/2005/sparql-results#"));
 		int nrResults = resultChildren.size();
-		
+
 		QueryResult queryResult = new QueryResult(queryNr, queryString, nrResults, sorted, headList);
-		
+
 		it = resultChildren.iterator();
 		while(it.hasNext()) {
 			Element resultElement = (Element) it.next();
 			String result = "";
-			
+
 			//get the row values and paste it together to one String
 			for(int i=0;i<rows.length;i++) {
 				List bindings = resultElement.getChildren("binding", Namespace.getNamespace("http://www.w3.org/2005/sparql-results#"));
@@ -323,7 +323,7 @@ private int countBytes(InputStream is) {
 							result += "\n" + rowName + ": " + ((Element)binding.getChildren().get(0)).getTextNormalize();
 				}
 			}
-			
+
 			queryResult.addResult(result);
 		}
 		return queryResult;

@@ -33,7 +33,7 @@ public class Qualification {
 	private int[] correctQueryCount;
 	private boolean resultsCountOnly = QualificationDefaultValues.resultsCountOnly;
 	private String qualificationLog = QualificationDefaultValues.qualificationLog;
-	
+
 	public Qualification(String correctFile, String testFile, String[] args) {
 		try {
 			examineStream = new ObjectInputStream(new FileInputStream(testFile));
@@ -47,18 +47,18 @@ public class Qualification {
 		}
 		processProgramParameters(args);
 	}
-	
+
 	public static void main(String[] argv) {
 		if(argv.length<2) {
 			printUsageInfo();
 			System.exit(-1);
 		}
-		
+
 		int arglength = argv.length;
 		Qualification validator = new Qualification(argv[arglength-2],argv[arglength-1],Arrays.copyOf(argv, arglength-2));
 		validator.test();
 	}
-	
+
 	/*
 	 * Process the program option parameters typed on the command line.
 	 */
@@ -77,7 +77,7 @@ public class Qualification {
 					printUsageInfo();
 					System.exit(-1);
 				}
-				i++;						
+				i++;
 			} catch(Exception e) {
 				System.err.println("Invalid arguments\n");
 				printUsageInfo();
@@ -85,44 +85,44 @@ public class Qualification {
 			}
 		}
 	}
-	
+
 	private void test() {
 		try{
 			FileWriter resultWriter = new FileWriter(qualificationLog);
 			System.out.println("Starting validation...\n");
-			
+
 			//Check seed
 			if(examineStream.readLong()!=correctStream.readLong()) {
 				System.err.println("Error: Trying to compare runs with different random number generator seeds!");
 				System.exit(-1);
 			}
-			
+
 			//Check scale factor
 			if(examineStream.readInt()!=correctStream.readInt()) {
 				System.err.println("Error: Trying to compare runs with different scale factors!");
 				System.exit(-1);
 			}
-			
+
 			//Check number of runs
 			if(examineStream.readInt()!=correctStream.readInt()) {
 				System.err.println("Error: Trying to compare runs with different query mix counts!");
 				System.exit(-1);
 			}
-			
+
 			Integer[] correctQuerymix = (Integer[]) correctStream.readObject();
 			Integer[] examineQuerymix = (Integer[]) examineStream.readObject();
-			
+
 			//Check ignored queries
 			boolean[] correctIgnoreQueries = (boolean[]) correctStream.readObject();
 			boolean[] examineIgnoreQueries = (boolean[]) examineStream.readObject();
-			
+
 			for(int i=0;i<correctIgnoreQueries.length && i<examineIgnoreQueries.length;i++) {
 				if(correctIgnoreQueries[i]!=examineIgnoreQueries[i]) {
 					System.err.println("Error: Not the same run setup! Ignored queries (Query " + (i+1) + ") for only one run found.");
 					System.exit(-1);
 				}
 			}
-			
+
 			for(int i=0;i<correctQuerymix.length;i++) {
 				int a = correctQuerymix[i];
 				int b = examineQuerymix[i];
@@ -131,7 +131,7 @@ public class Qualification {
 					System.exit(-1);
 				}
 			}
-			
+
 			String error = null;
 			QueryResult examine = null;
 			QueryResult correct = null;
@@ -142,15 +142,15 @@ public class Qualification {
 				examine = (QueryResult) examineStream.readObject();
 				correct = (QueryResult) correctStream.readObject();
 				error = null;
-				
+
 				//Check query numbers
 				if(examine.getQueryNr()!=correct.getQueryNr()) {
 					System.err.println("Error: Query order is different in both runs!");
 					System.exit(-1);
 				}
-				
+
 				totalQueryCount[examine.getQueryNr()-1]++;
-				
+
 				//Check variable names of result, only to use for comparing SPARQL results
 				if(!resultsCountOnly) {
 					ArrayList<String> headExamine = examine.getHeadList();
@@ -179,10 +179,10 @@ public class Qualification {
 						error = addError(error, text);
 					}
 					else {
-						//Only check content for SPARQL results 
+						//Only check content for SPARQL results
 						if(!resultsCountOnly) {
 							String text = examine.compareQueryResults(correct);
-	
+
 							if(text!=null)
 								error = addError(error, text);
 						}
@@ -196,7 +196,7 @@ public class Qualification {
 					resultWriter.append("\nResult for Query " + examine.getQueryNr() + " of run " + examine.getRun() + " differs:\n");
 					resultWriter.append(error);
 				}
-				
+
 			  } catch(EOFException e) {
 				  resultWriter.append("\n______________________________________________\n\nQualification overview:\n\n");
 				    for(int i=0;i<totalQueryCount.length;i++) {
@@ -215,18 +215,18 @@ public class Qualification {
 			  }
 			}
 		} catch(IOException e) { e.printStackTrace(); System.exit(-1);}
-		  catch(ClassNotFoundException e) { e.printStackTrace(); System.exit(-1); } 
+		  catch(ClassNotFoundException e) { e.printStackTrace(); System.exit(-1); }
 	}
-	
+
 	private String addError(String errorString, String error) {
 		if(errorString==null)
 			errorString = error;
 		else
 			errorString += error;
-		
+
 		return errorString;
 	}
-	
+
 	private static void printUsageInfo() {
 		String output = "Usage: java benchmark.qualification.Qualification <options> Correct.qual Test.qual\n\n" +
 		"Correct.qual: file of a correct run\n\n" +

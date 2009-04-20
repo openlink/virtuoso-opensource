@@ -1,8 +1,8 @@
 /*
  *  $Id$
  *
-   * URLSIMU - Url simulator
-   *
+ *  URLSIMU - Url simulator
+ *
  *  This program can be used for testing www-server software. It reads from
  *  a file a server address and a list of url-lines. It then writes these
  *  url-lines to the address given and reads back the responses.
@@ -24,7 +24,7 @@
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-   *
+ *
  */
 
 #include <stdio.h>

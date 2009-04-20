@@ -1,5 +1,4 @@
 #!/bin/sh
-#  tsql.sh
 #
 #  $Id$
 #
@@ -117,7 +116,6 @@ then
     LOG "***ABORTED: tbitmap.sql"
     exit 1
 fi
-
 
 RUN $INS $DSN 10000  100
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tinxint.sql

@@ -11,7 +11,7 @@ public class NTriples implements Serializer {
 	private FileWriter fileWriter;
 	private boolean forwardChaining;
 	private long nrTriples;
-	
+
 	public NTriples(String file, boolean forwardChaining)
 	{
 		try{
@@ -20,11 +20,11 @@ public class NTriples implements Serializer {
 			System.err.println("Could not open File");
 			System.exit(-1);
 		}
-		
+
 		this.forwardChaining = forwardChaining;
 		nrTriples = 0l;
 	}
-	
+
 	public void gatherData(ObjectBundle bundle) {
 		Iterator<BSBMResource> it = bundle.iterator();
 
@@ -64,7 +64,7 @@ public class NTriples implements Serializer {
 			}
 		}
 	}
-	
+
 	/*
 	 * Converts the ProductType Object into an N-Triples String
 	 * representation.
@@ -73,26 +73,26 @@ public class NTriples implements Serializer {
 	{
 		StringBuffer result = new StringBuffer();
 		//First the uriref for the subject
-		String subjectURIREF = pType.toString(); 
+		String subjectURIREF = pType.toString();
 
 		//rdf:type
 		result.append(createTriple(
 						subjectURIREF,
 						createURIref(RDF.type),
 						createURIref(BSBM.ProductType)));
-		
+
 		//rdfs:label
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(RDFS.label),
 				createLiteral(pType.getLabel())));
-		
+
 		//rdfs:comment
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(RDFS.comment),
 				createLiteral(pType.getComment())));
-		
+
 		//rdfs:subClassOf
 		if(pType.getParent()!=null)
 		{
@@ -102,13 +102,13 @@ public class NTriples implements Serializer {
 					createURIref(RDFS.subClassOf),
 					parentURIREF));
 		}
-		
+
 		//dc:publisher
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(DC.publisher),
 				createURIref(BSBM.getStandardizationInstitution(1))));
-		
+
 		//dc:date
 		GregorianCalendar date = new GregorianCalendar();
 		date.setTimeInMillis(pType.getPublishDate());
@@ -117,10 +117,10 @@ public class NTriples implements Serializer {
 				subjectURIREF,
 				createURIref(DC.date),
 				createDataTypeLiteral(dateString, createURIref(XSD.Date))));
-		
+
 		return result.toString();
 	}
-	
+
 	/*
 	 * Converts the Offer Object into an N-Triples String
 	 * representation.
@@ -129,34 +129,34 @@ public class NTriples implements Serializer {
 	{
 		StringBuffer result = new StringBuffer();
 		//First the uriref for the subject
-		String subjectURIREF = offer.toString(); 
+		String subjectURIREF = offer.toString();
 
 		//rdf:type
 		result.append(createTriple(
 						subjectURIREF,
 						createURIref(RDF.type),
 						createURIref(BSBM.Offer)));
-		
+
 		//bsbm:product
 		int productNr = offer.getProduct();
-		int producerNr = Generator.getProducerOfProduct(productNr); 
+		int producerNr = Generator.getProducerOfProduct(productNr);
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(BSBM.product),
 				Product.getURIref(productNr, producerNr)));
-		
+
 		//bsbm:vendor
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(BSBM.vendor),
 				Vendor.getURIref(offer.getVendor())));
-		
+
 		//bsbm:price
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(BSBM.price),
 				createDataTypeLiteral(offer.getPriceString(),createURIref(BSBM.USD))));
-		
+
 		//bsbm:validFrom
 		GregorianCalendar validFrom = new GregorianCalendar();
 		validFrom.setTimeInMillis(offer.getValidFrom());
@@ -165,7 +165,7 @@ public class NTriples implements Serializer {
 				subjectURIREF,
 				createURIref(BSBM.validFrom),
 				createDataTypeLiteral(validFromString, createURIref(XSD.DateTime))));
-		
+
 		//bsbm:validTo
 		GregorianCalendar validTo = new GregorianCalendar();
 		validTo.setTimeInMillis(offer.getValidTo());
@@ -174,25 +174,25 @@ public class NTriples implements Serializer {
 				subjectURIREF,
 				createURIref(BSBM.validTo),
 				createDataTypeLiteral(validToString, createURIref(XSD.DateTime))));
-		
+
 		//bsbm:deliveryDays
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(BSBM.deliveryDays),
 				createDataTypeLiteral(offer.getDeliveryDays().toString(), createURIref(XSD.Integer))));
-		
+
 		//bsbm:offerWebpage
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(BSBM.offerWebpage),
 				createURIref(offer.getOfferWebpage())));
-		
+
 		//dc:publisher
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(DC.publisher),
 				Vendor.getURIref(offer.getVendor())));
-		
+
 		//dc:date
 		GregorianCalendar date = new GregorianCalendar();
 		date.setTimeInMillis(offer.getPublishDate());
@@ -201,10 +201,10 @@ public class NTriples implements Serializer {
 				subjectURIREF,
 				createURIref(DC.date),
 				createDataTypeLiteral(dateString, createURIref(XSD.Date))));
-		
+
 		return result.toString();
 	}
-	
+
 	/*
 	 * Converts the Product Object into an N-Triples String
 	 * representation.
@@ -213,26 +213,26 @@ public class NTriples implements Serializer {
 	{
 		StringBuffer result = new StringBuffer();
 		//First the uriref for the subject
-		String subjectURIREF = product.toString(); 
+		String subjectURIREF = product.toString();
 
 		//rdf:type
 		result.append(createTriple(
 						subjectURIREF,
 						createURIref(RDF.type),
 						createURIref(BSBM.Product)));
-		
+
 		//rdfs:label
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(RDFS.label),
 				createLiteral(product.getLabel())));
-		
+
 		//rdfs:comment
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(RDFS.comment),
 				createLiteral(product.getComment())));
-		
+
 		//bsbm:productType
 		if(forwardChaining) {
 			ProductType pt = product.getProductType();
@@ -250,13 +250,13 @@ public class NTriples implements Serializer {
 					createURIref(RDF.type),
 					product.getProductType().toString()));
 		}
-		
+
 		//bsbm:producer
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(BSBM.producer),
 				Producer.getURIref(product.getProducer())));
-		
+
 		//bsbm:productPropertyNumeric
 		Integer[] ppn = product.getProductPropertyNumeric();
 		for(int i=0,j=1;i<ppn.length;i++,j++)
@@ -268,7 +268,7 @@ public class NTriples implements Serializer {
 						createURIref(BSBM.getProductPropertyNumeric(j)),
 						createDataTypeLiteral(value.toString(), createURIref(XSD.Integer))));
 		}
-		
+
 		//bsbm:productPropertyTextual
 		String[] ppt = product.getProductPropertyTextual();
 		for(int i=0,j=1;i<ppt.length;i++,j++)
@@ -280,7 +280,7 @@ public class NTriples implements Serializer {
 						createURIref(BSBM.getProductPropertyTextual(j)),
 						createDataTypeLiteral(value, createURIref(XSD.String))));
 		}
-		
+
 		//bsbm:productFeature
 		Iterator<Integer> pf = product.getFeatures().iterator();
 		while(pf.hasNext())
@@ -291,13 +291,13 @@ public class NTriples implements Serializer {
 					createURIref(BSBM.productFeature),
 					ProductFeature.getURIref(value)));
 		}
-		
+
 		//dc:publisher
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(DC.publisher),
 				Producer.getURIref(product.getProducer())));
-		
+
 		//dc:date
 		GregorianCalendar date = new GregorianCalendar();
 		date.setTimeInMillis(product.getPublishDate());
@@ -306,10 +306,10 @@ public class NTriples implements Serializer {
 				subjectURIREF,
 				createURIref(DC.date),
 				createDataTypeLiteral(dateString, createURIref(XSD.Date))));
-		
+
 		return result.toString();
 	}
-	
+
 	/*
 	 * Converts the Person Object into an N-Triples String
 	 * representation.
@@ -319,37 +319,37 @@ public class NTriples implements Serializer {
 		StringBuffer result = new StringBuffer();
 		//First the uriref for the subject
 		String subjectURIREF = person.toString();
-		
+
 		//rdf:type
 		result.append(createTriple(
 						subjectURIREF,
 						createURIref(RDF.type),
 						createURIref(FOAF.Person)));
-		
+
 		//foaf:name
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(FOAF.name),
 				createLiteral(person.getName())));
-		
+
 		//foaf:mbox_sha1sum
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(FOAF.mbox_sha1sum),
 				createLiteral(person.getMbox_sha1sum())));
-		
+
 		//bsbm:country
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(BSBM.country),
 				createURIref(ISO3166.find(person.getCountryCode()))));
-		
+
 		//dc:publisher
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(DC.publisher),
 				RatingSite.getURIref(person.getPublisher())));
-		
+
 		//dc:date
 		GregorianCalendar date = new GregorianCalendar();
 		date.setTimeInMillis(person.getPublishDate());
@@ -358,10 +358,10 @@ public class NTriples implements Serializer {
 				subjectURIREF,
 				createURIref(DC.date),
 				createDataTypeLiteral(dateString, createURIref(XSD.Date))));
-		
+
 		return result.toString();
 	}
-	
+
 	/*
 	 * Converts the Producer Object into an N-Triples String
 	 * representation.
@@ -370,44 +370,44 @@ public class NTriples implements Serializer {
 	{
 		StringBuffer result = new StringBuffer();
 		//First the uriref for the subject
-		String subjectURIREF = producer.toString(); 
+		String subjectURIREF = producer.toString();
 
 		//rdf:type
 		result.append(createTriple(
 						subjectURIREF,
 						createURIref(RDF.type),
 						createURIref(BSBM.Producer)));
-		
+
 		//rdfs:label
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(RDFS.label),
 				createLiteral(producer.getLabel())));
-		
+
 		//rdfs:comment
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(RDFS.comment),
 				createLiteral(producer.getComment())));
-		
+
 		//foaf:homepage
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(FOAF.homepage),
 				createURIref(producer.getHomepage())));
-		
+
 		//bsbm:country
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(BSBM.country),
 				createURIref(ISO3166.find(producer.getCountryCode()))));
-		
+
 		//dc:publisher
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(DC.publisher),
 				producer.toString()));
-		
+
 		//dc:date
 		GregorianCalendar date = new GregorianCalendar();
 		date.setTimeInMillis(producer.getPublishDate());
@@ -416,10 +416,10 @@ public class NTriples implements Serializer {
 				subjectURIREF,
 				createURIref(DC.date),
 				createDataTypeLiteral(dateString, createURIref(XSD.Date))));
-		
+
 		return result.toString();
 	}
-	
+
 	/*
 	 * Converts the ProductFeature Object into an N-Triples String
 	 * representation.
@@ -428,32 +428,32 @@ public class NTriples implements Serializer {
 	{
 		StringBuffer result = new StringBuffer();
 		//First the uriref for the subject
-		String subjectURIREF = createURIref(BSBM.INST_NS, "ProductFeature"+pf.getNr()); 
+		String subjectURIREF = createURIref(BSBM.INST_NS, "ProductFeature"+pf.getNr());
 
 		//rdf:type
 		result.append(createTriple(
 						subjectURIREF,
 						createURIref(RDF.type),
 						createURIref(BSBM.ProductFeature)));
-		
+
 		//rdfs:label
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(RDFS.label),
 				createLiteral(pf.getLabel())));
-		
+
 		//rdfs:comment
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(RDFS.comment),
 				createLiteral(pf.getComment())));
-		
+
 		//dc:publisher
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(DC.publisher),
 				createURIref(BSBM.getStandardizationInstitution(pf.getPublisher()))));
-		
+
 		//dc:date
 		GregorianCalendar date = new GregorianCalendar();
 		date.setTimeInMillis(pf.getPublishDate());
@@ -462,10 +462,10 @@ public class NTriples implements Serializer {
 				subjectURIREF,
 				createURIref(DC.date),
 				createDataTypeLiteral(dateString, createURIref(XSD.Date))));
-		
+
 		return result.toString();
 	}
-	
+
 	/*
 	 * Converts the Vendor Object into an N-Triples String
 	 * representation.
@@ -474,44 +474,44 @@ public class NTriples implements Serializer {
 	{
 		StringBuffer result = new StringBuffer();
 		//First the uriref for the subject
-		String subjectURIREF = vendor.toString(); 
+		String subjectURIREF = vendor.toString();
 
 		//rdf:type
 		result.append(createTriple(
 						subjectURIREF,
 						createURIref(RDF.type),
 						createURIref(BSBM.Vendor)));
-		
+
 		//rdfs:label
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(RDFS.label),
 				createLiteral(vendor.getLabel())));
-		
+
 		//rdfs:comment
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(RDFS.comment),
 				createLiteral(vendor.getComment())));
-		
+
 		//foaf:homepage
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(FOAF.homepage),
 				createURIref(vendor.getHomepage())));
-		
+
 		//bsbm:country
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(BSBM.country),
 				createURIref(ISO3166.find(vendor.getCountryCode()))));
-		
+
 		//dc:publisher
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(DC.publisher),
 				vendor.toString()));
-		
+
 		//dc:date
 		GregorianCalendar date = new GregorianCalendar();
 		date.setTimeInMillis(vendor.getPublishDate());
@@ -520,11 +520,11 @@ public class NTriples implements Serializer {
 				subjectURIREF,
 				createURIref(DC.date),
 				createDataTypeLiteral(dateString, createURIref(XSD.Date))));
-		
+
 		return result.toString();
 	}
-	
-	
+
+
 	/*
 	 * Converts the Review Object into an N-Triples String
 	 * representation.
@@ -533,26 +533,26 @@ public class NTriples implements Serializer {
 	{
 		StringBuffer result = new StringBuffer();
 		//First the uriref for the subject
-		String subjectURIREF = review.toString(); 
+		String subjectURIREF = review.toString();
 
 		//rdf:type
 		result.append(createTriple(
 						subjectURIREF,
 						createURIref(RDF.type),
 						createURIref(REV.Review)));
-		
+
 		//bsbm:reviewFor
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(BSBM.reviewFor),
 				Product.getURIref(review.getProduct(), review.getProducerOfProduct())));
-		
+
 		//rev:reviewer
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(REV.reviewer),
 				Person.getURIref(review.getPerson(), review.getPublisher())));
-		
+
 		//bsbm:reviewDate
 		GregorianCalendar reviewDate = new GregorianCalendar();
 		reviewDate.setTimeInMillis(review.getReviewDate());
@@ -561,19 +561,19 @@ public class NTriples implements Serializer {
 				subjectURIREF,
 				createURIref(BSBM.reviewDate),
 				createDataTypeLiteral(reviewDateString, createURIref(XSD.DateTime))));
-		
+
 		//dc:title
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(DC.title),
 				createLiteral(review.getTitle())));
-		
+
 		//rev:text
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(REV.text),
 				createLanguageLiteral(review.getText(),ISO3166.language[review.getLanguage()])));
-		
+
 		//bsbm:ratingX
 		Integer[] ratings = review.getRatings();
 		for(int i=0,j=1;i<ratings.length;i++,j++)
@@ -585,13 +585,13 @@ public class NTriples implements Serializer {
 						createURIref(BSBM.getRating(j)),
 						createDataTypeLiteral(value.toString(), createURIref(XSD.Integer))));
 		}
-		
+
 		//dc:publisher
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(DC.publisher),
 				RatingSite.getURIref(review.getPublisher())));
-		
+
 		//dc:date
 		GregorianCalendar date = new GregorianCalendar();
 		date.setTimeInMillis(review.getPublishDate());
@@ -600,12 +600,12 @@ public class NTriples implements Serializer {
 				subjectURIREF,
 				createURIref(DC.date),
 				createDataTypeLiteral(dateString, createURIref(XSD.Date))));
-		
+
 		return result.toString();
 	}
-	
 
-	
+
+
 	//Create Literal
 	private String createLiteral(String value)
 	{
@@ -615,7 +615,7 @@ public class NTriples implements Serializer {
 		result.append("\"");
 		return result.toString();
 	}
-	
+
 	//Create typed literal
 	private String createDataTypeLiteral(String value, String datatypeURI)
 	{
@@ -626,7 +626,7 @@ public class NTriples implements Serializer {
 		result.append(datatypeURI);
 		return result.toString();
 	}
-	
+
 	//Create language tagged literal
 	private String createLanguageLiteral(String text, String languageCode)
 	{
@@ -648,12 +648,12 @@ public class NTriples implements Serializer {
 		result.append(" ");
 		result.append(object);
 		result.append(" .\n");
-		
+
 		nrTriples++;
-		
+
 		return result.toString();
 	}
-	
+
 	//Create URIREF from namespace and element
 	private String createURIref(String namespace, String element)
 	{
@@ -664,7 +664,7 @@ public class NTriples implements Serializer {
 		result.append(">");
 		return result.toString();
 	}
-	
+
 	//Create URIREF from URI
 	private String createURIref(String uri)
 	{
@@ -674,8 +674,8 @@ public class NTriples implements Serializer {
 		result.append(">");
 		return result.toString();
 	}
-	
-	
+
+
 
 	public void serialize() {
 		//Close File

@@ -1,5 +1,4 @@
 #!/bin/sh
-#  tsql2.sh
 #
 #  $Id$
 #
@@ -54,7 +53,6 @@ then
     LOG "***ABORTED: tunder1.sql"
     exit 1
 fi
-
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tunder2.sql
 if test $STATUS -ne 0
 then

@@ -5,7 +5,7 @@ public class Person extends BSBMResource {
 	private String name;
 	private String mbox_sha1sum;
 	private String countryCode;
-	
+
 	public Person(int nr, String name, String countryCode, String mbox_sha1)
 	{
 		this.countryCode = countryCode;
@@ -50,7 +50,7 @@ public class Person extends BSBMResource {
 	{
 		return getURIref(nr, publisher);
 	}
-	
+
 	public static String getURIref(int personNr, int ratingSiteNr)
 	{
 		StringBuffer s = new StringBuffer();
@@ -61,7 +61,7 @@ public class Person extends BSBMResource {
 		s.append(">");
 		return s.toString();
 	}
-	
+
 	public static String getPrefixed(int personNr, int ratingSiteNr) {
 		StringBuffer s = new StringBuffer();
 		s.append(RatingSite.getRatingSiteNSprefixed(ratingSiteNr));

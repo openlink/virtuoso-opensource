@@ -16,21 +16,21 @@ public class ProductType extends BSBMResource implements Serializable{
 
 	//private boolean isLeaf;
 	private int depth;
-	
+
 	public ProductType(int nr, String label, String comment, ProductType parent)
 	{
 		this.nr 		= nr;
 		this.parent		= parent;
 		this.label		= label;
 		this.comment	= comment;
-		
+
 		if(parent!=null)
 			depth = parent.depth + 1;
 		else
 			depth = 0;
 
 	}
-	
+
 	public int getNr() {
 		return nr;
 	}
@@ -75,7 +75,7 @@ public class ProductType extends BSBMResource implements Serializable{
 	public int getDepth() {
 		return depth;
 	}
-	
+
 	public String toString()
 	{
 		StringBuffer s = new StringBuffer();
@@ -86,7 +86,7 @@ public class ProductType extends BSBMResource implements Serializable{
 		s.append(">");
 		return s.toString();
 	}
-	
+
 	public String getPrefixed() {
 		StringBuffer s = new StringBuffer();
 		s.append(BSBM.INST_PREFIX);

@@ -1,47 +1,48 @@
---  
+--
 --  $Id$
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2006 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
+
 drop table XSLTS;
 create table XSLTS (
     KIND varchar not null primary key,
     DATA long varchar);
 
 
-create procedure 
+create procedure
 XSLT_CHDIR (in dir varchar, in dummy any, out response varchar)
 {
   --dbg_obj_print ('XSLT_CHDIR', dir);
   response := 'OK';
-	    
+
   insert replacing XSLTS (KIND, DATA) values ('DIR', dir);
 }
 ;
 
-create procedure 
+create procedure
 XSLT_STYLESHEET (in stylesheet varchar, in dummy any, out response varchar)
 {
   --dbg_obj_print ('XSLT_STYLESHEET', stylesheet);
   response := 'OK';
-	    
+
   declare dir varchar;
   dir := '';
   select DATA into dir from XSLTS where KIND = 'DIR';
@@ -50,7 +51,7 @@ XSLT_STYLESHEET (in stylesheet varchar, in dummy any, out response varchar)
 }
 ;
 
-create procedure 
+create procedure
 XSLT_INPUT (in inp varchar, in dummy any, out response varchar)
 {
   --dbg_obj_print ('XSLT_INPUT', inp);
@@ -65,7 +66,7 @@ XSLT_INPUT (in inp varchar, in dummy any, out response varchar)
 }
 ;
 
-create procedure 
+create procedure
 XSLT_TRANSFORM (in outfile varchar, in iters integer, out response varchar)
 {
   --dbg_obj_print ('XSLT_TRANSFORM', outfile, 'iters=', iters);
@@ -80,7 +81,7 @@ XSLT_TRANSFORM (in outfile varchar, in iters integer, out response varchar)
   declare inx integer;
   inx := 0;
   while (inx < iters)
-    {    
+    {
       res := xslt ('virt://DB.DBA.XSLTS.KIND.DATA:STYLE', tree);
       inx := inx + 1;
     }

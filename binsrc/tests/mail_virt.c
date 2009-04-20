@@ -1,33 +1,27 @@
 /*
- *  
+ *  $Id$
+ *
+ *  Virtuoso Local mailer
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
- *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
+ *  Copyright (C) 1998-2009 OpenLink Software
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
-/*
-*
-* $Id$
-*
-* Virtuoso Local mailer 
-*
-*
-*/
+ *
+ */
 
 #include <Dk.h>
 
@@ -100,7 +94,7 @@ main (int argc, char ** argv)
 	  case 'r':
 	      uname = optarg;
 	      break;
-	      
+
 	  case 'i':
 	      ini = optarg;
 	      break;
@@ -111,14 +105,14 @@ main (int argc, char ** argv)
 	      break;
 	}
     }
- 
+
   if ((argc < 4 && !ini) || (argc < 3 && ini))
     {
       fprintf (stderr, "%s: missing arguments\nTry -? for help\n", argv [0]);
       return ERR_USAGE;
     }
 
-  if (ini) 
+  if (ini)
     {
       cfg = fopen (ini, "rt");
       if (!cfg)
@@ -142,7 +136,7 @@ main (int argc, char ** argv)
       fprintf (stderr, "Database connect failed DSN:%s UID:%s PWD:%s\n", dsn, uid, pwd);
       return ERR_TEMP;
     }
-  
+
   SQLAllocStmt (hdbc, &new_mail);
   if (SQL_ERROR == SQLPrepare (new_mail, (UCHAR *) new_mail_st, SQL_NTS))
     {
@@ -157,23 +151,23 @@ main (int argc, char ** argv)
       0, 0, (SQLPOINTER) 2, 0, &cbParam);
 
   cbParam = SQL_DATA_AT_EXEC;
-deadlock_no:      
+deadlock_no:
   retcode = SQLExecute (new_mail);
   if (retcode != SQL_NEED_DATA)
     {
       char state [10], msg [256];
       if (SQL_SUCCESS == SQLError (SQL_NULL_HENV, SQL_NULL_HDBC, new_mail, state, NULL, msg, 256, NULL))
        fprintf (stderr, "SQL Error status code: %s description: %s\n", state, msg);
-      if (0 == strcmp (state, "40001")) 
+      if (0 == strcmp (state, "40001"))
 	goto deadlock_no;
 	/*return ERR_TEMP;*/
       return ERR_SOFT;
     }
   fd = stdin;
-  while (retcode == SQL_NEED_DATA) 
+  while (retcode == SQL_NEED_DATA)
     {
       retcode = SQLParamData(new_mail, &pToken);
-      if (retcode == SQL_NEED_DATA) 
+      if (retcode == SQL_NEED_DATA)
 	{
 	  while (!feof (fd))
 	    {
@@ -183,6 +177,6 @@ deadlock_no:
 	    }
 	}
     }
-  return 0; 
+  return 0;
 };
 

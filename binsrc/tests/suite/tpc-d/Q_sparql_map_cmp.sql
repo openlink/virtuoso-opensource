@@ -668,7 +668,6 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": Q16\n";
 
-
 select cmp ('MS_OUT_Q16', 'OUT_Q16');
 ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
@@ -900,16 +899,16 @@ where {
       bif:LEFT (?cust+>tpcd:phone, 2) in ("13", "35", "31", "23", "29", "30", "17", "18") &&
       (?cust+>tpcd:acctbal >
         ( select (avg (?cust2+>tpcd:acctbal)) as ?acctbal_threshold
-        where
-          {
-            ?cust2 a tpcd:customer .
-            filter ((?cust2+>tpcd:acctbal > 0.00) &&
-              bif:LEFT (?cust2+>tpcd:phone, 2) in ("13", "35", "31", "23", "29", "30", "17", "18") )
+          where
+            {
+              ?cust2 a tpcd:customer .
+              filter ((?cust2+>tpcd:acctbal > 0.00) &&
+                bif:LEFT (?cust2+>tpcd:phone, 2) in ("13", "35", "31", "23", "29", "30", "17", "18") )
             } ) ) &&
       !bif:exists (
         ( select (1)
           where { ?cust tpcd:customer_of ?ord } ) ) )
-          }
+  }
 group by (bif:LEFT (?cust+>tpcd:phone, 2))
 order by (bif:LEFT (?cust+>tpcd:phone, 2))
 ) as subq

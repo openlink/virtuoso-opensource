@@ -1,7 +1,5 @@
 #!/bin/sh
 #
-#  tpc_run.sh
-#
 #  $Id$
 #
 #  Running the TPC benchmark

@@ -697,7 +697,7 @@ TCHAR *delayed_settings[MAX_DELAYED_SETTINGS + 2] =
 {NULL};
 int n_delayed_settings = 0;	/* A zero-based index to previous. */
 
-#define MIN_INPUT_SIZE 250000 
+#define MIN_INPUT_SIZE 250000
 TCHAR input1[MIN_INPUT_SIZE + 20];
 int input_size = MIN_INPUT_SIZE;
 TCHAR *input = input1;

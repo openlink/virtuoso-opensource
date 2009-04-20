@@ -271,6 +271,7 @@ then
     exit 1
 fi
 
+
 LOG "Shutdown databases"
 RUN $ISQL $DS1 '"EXEC=shutdown;"' ERRORS=STDOUT
 RUN $ISQL $DS2 '"EXEC=shutdown;"' ERRORS=STDOUT

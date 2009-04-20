@@ -13,7 +13,7 @@ public class ObjectBundle {
 	private int maxSize;
 	private int size;
 	private boolean finish;
-	
+
 	public boolean isFinish() {
 		return finish;
 	}
@@ -30,7 +30,7 @@ public class ObjectBundle {
 		this.serializer = serializer;
 		finish = false;
 	}
-	
+
 	public ObjectBundle(Serializer serializer, int maxsize)
 	{
 		objects = new Vector<BSBMResource>(maxsize);
@@ -39,11 +39,11 @@ public class ObjectBundle {
 		this.serializer = serializer;
 		finish = false;
 	}
-	
+
 	public void add(BSBMResource res)
 	{
 		objects.add(res);
-		
+
 		//Only if maxSize is set, automatic commit active
 		if(maxSize>0)
 		{
@@ -52,7 +52,7 @@ public class ObjectBundle {
 				commitToSerializer();
 		}
 	}
-	
+
 	public int size()
 	{
 		return objects.size();
@@ -61,7 +61,7 @@ public class ObjectBundle {
 	public String getGraphName() {
 		return graphName;
 	}
-	
+
 	public boolean commitToSerializer()
 	{
 		//Only do this if Serializer is set
@@ -77,7 +77,7 @@ public class ObjectBundle {
 	public void setGraphName(String namedGraph) {
 		this.graphName = namedGraph;
 	}
-	
+
 	public Iterator<BSBMResource> iterator()
 	{
 		return objects.iterator();

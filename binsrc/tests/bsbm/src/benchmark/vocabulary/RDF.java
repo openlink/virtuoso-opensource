@@ -11,14 +11,14 @@ import java.util.HashMap;
 public class RDF{
 	//The namespace of this vocabulary as String
 	public static final String NS = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
-	
+
 	//Get the URI of this vocabulary
 	public static String getURI() { return NS; }
-		
+
 	public static final String PREFIX = "rdf:";
-	
+
 	private static HashMap<String, String> uriMap = new HashMap<String, String>();
-	
+
 	/*
 	 * For prefixed versions
 	 */
@@ -32,7 +32,7 @@ public class RDF{
 			return newValue;
 		}
 	}
-	
+
 	//Resources
     public static final String Alt =  NS+"Alt";
     public static final String Bag =  NS+"Bag";

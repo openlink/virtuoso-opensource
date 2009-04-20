@@ -1,7 +1,5 @@
 #!/bin/sh
 #
-#  tpcd.sh
-#
 #  $Id$
 #
 #  TPC-D tests
@@ -24,7 +22,7 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #  
-#  
+#
 LOGFILE=`pwd`/tpcd.output
 export LOGFILE
 TEST_SPARQL=${TEST_SPARQL-1}

@@ -27,26 +27,26 @@ public class VirtSerializer implements Serializer {
 	private SQLTables tables;
 	private String database;
 	private static final int insertNumber = 1; //Number of insert tuples per insert operation
-	
+
 	public VirtSerializer (String directory, boolean forwardChaining, String database) {
 		outputDir = new File(directory);
 		outputDir.mkdirs();
-		
+
 		this.forwardChaining = forwardChaining;
 		nrTriples = 0l;
 		this.database = database;
-		
+
 		initTables();
 	}
-	
+
 	public void gatherData(ObjectBundle bundle) {
 		Iterator<BSBMResource> it = bundle.iterator();
-	
+
 		try {
 			while(it.hasNext())
 			{
 				BSBMResource obj = it.next();
-	
+
 				if(obj instanceof ProductType){
 					convertProductType((ProductType)obj);
 				}
@@ -90,17 +90,17 @@ public class VirtSerializer implements Serializer {
 		//nr
 		values.append(pType.getNr());
 		values.append(",");
-		
+
 		//rdfs:label
 		values.append("'");
 		values.append(pType.getLabel());
 		values.append("',");
-		
+
 		//rdfs:comment
 		values.append("'");
 		values.append(pType.getComment());
 		values.append("',");
-		
+
 		//rdfs:subClassOf
 		if(pType.getParent()!=null) {
 			values.append(pType.getParent().getNr());
@@ -108,11 +108,11 @@ public class VirtSerializer implements Serializer {
 		}
 		else
 			values.append("null,");
-		
+
 		//dc:publisher
 		values.append(pType.getPublisher());
 		values.append(",");
-		
+
 		//dc:date
 		GregorianCalendar date = new GregorianCalendar();
 		date.setTimeInMillis(pType.getPublishDate());
@@ -120,14 +120,14 @@ public class VirtSerializer implements Serializer {
 		values.append("cast ('");
 		values.append(dateString);
 		values.append("' as date))");
-		
+
 		if(tables.productTypeInsertCounter>=insertNumber) {
 			tables.productTypeInsertCounter = 0;
 			values.append(";\n");
 		}
 		tables.productTypeDump.append(values);
 	}
-	
+
 	/*
 	 * Converts the Offer Object into an N-Triples String
 	 * representation.
@@ -136,11 +136,11 @@ public class VirtSerializer implements Serializer {
 	{
 		  	StringBuffer values = getBuffer(tables.offerInsertCounter++, "Offer");
 		  	values.append("(");
-		  
+
 //		  	nr
 			values.append(offer.getNr());
 			values.append(",");
-			
+
 //			product
 			values.append(offer.getProduct());
 			values.append(",");
@@ -152,35 +152,35 @@ public class VirtSerializer implements Serializer {
 //			vendor
 			values.append(offer.getVendor());
 			values.append(",");
-			
+
 //			price
 			values.append(offer.getPrice());
 			values.append(",");
-			
+
 //			validFrom
 			GregorianCalendar validFrom = new GregorianCalendar();
 			validFrom.setTimeInMillis(offer.getValidFrom());
 			String validFromString = DateGenerator.formatDate(validFrom);
 			values.append("cast ('" + validFromString + "' as date),");
-			
-			
+
+
 //			validTo
 			GregorianCalendar validTo = new GregorianCalendar();
 			validTo.setTimeInMillis(offer.getValidTo());
 			String validToString = DateGenerator.formatDate(validTo);
 			values.append("cast ('" + validToString + "' as date),");
-			
+
 //			deliverDays
 			values.append(offer.getDeliveryDays());
 			values.append(",");
-			
+
 //			offerWebpage
 			values.append("'" + offer.getOfferWebpage() + "',");
-			
+
 //		 	dc:publisher
 			values.append(offer.getPublisher());
 			values.append(",");
-			
+
 			//dc:date
 			GregorianCalendar date = new GregorianCalendar();
 			date.setTimeInMillis(offer.getPublishDate());
@@ -188,14 +188,14 @@ public class VirtSerializer implements Serializer {
 			values.append("cast ('");
 			values.append(dateString);
 			values.append("' as date))");
-			
+
 			if(tables.offerInsertCounter>=insertNumber) {
 				tables.offerInsertCounter = 0;
 				values.append(";\n");
 			}
 			tables.offerDump.append(values);
 	}
-	
+
 	/*
 	 * Converts the Product Object into an N-Triples String
 	 * representation.
@@ -203,61 +203,61 @@ public class VirtSerializer implements Serializer {
 	private void convertProduct(Product product)throws IOException
 	{
 		StringBuffer values = getBuffer(tables.productInsertCounter++, "Product");
-		
+
 		values.append("(");
-		
+
 		//nr
 		values.append(product.getNr());
 		values.append(",");
-		
+
 		//label
 		values.append("'");
 		values.append(product.getLabel());
 		values.append("',");
-		
+
 		//comment
 		values.append("'");
 		values.append(product.getComment());
 		values.append("',");
-		
+
 		//producer
 		values.append(product.getProducer());
 		values.append(",");
-	
-		//rdf:type for product types 
+
+		//rdf:type for product types
 		if(forwardChaining) {
 			ProductType pt = product.getProductType();
 			while(pt!=null) {
 				StringBuffer valuesPTP = getBuffer(tables.productTypeProductInsertCounter++, "ProductTypeProduct");
-				
+
 				valuesPTP.append("(" + product.getNr() + ",");
 				valuesPTP.append(new Integer(pt.getNr()).toString());
 				valuesPTP.append(")");
-				
+
 				if(tables.productTypeProductInsertCounter>=insertNumber) {
 					tables.productTypeProductInsertCounter = 0;
 					valuesPTP.append(";\n");
 				}
 				tables.productTypeProductDump.append(valuesPTP);
-				
+
 				pt = pt.getParent();
 			}
 		}
 		else {
 			StringBuffer valuesPTP = getBuffer(tables.productTypeProductInsertCounter++, "ProductTypeProduct");
-			
+
 			valuesPTP.append("(" + product.getNr() + ",");
 			valuesPTP.append(new Integer(product.getProductType().getNr()).toString());
 			valuesPTP.append(")");
-			
+
 			if(tables.productTypeProductInsertCounter>=insertNumber) {
 				tables.productTypeProductInsertCounter = 0;
 				valuesPTP.append(";\n");
 			}
 			tables.productTypeProductDump.append(valuesPTP);
 		}
-		
-	
+
+
 		//propertyNum
 		Integer[] ppn = product.getProductPropertyNumeric();
 		for(Integer i=0,j=1;i<ppn.length;i++,j++)
@@ -268,7 +268,7 @@ public class VirtSerializer implements Serializer {
 			else
 				values.append("null,");
 		}
-		
+
 		//propertyTex
 		String[] ppt = product.getProductPropertyTextual();
 		for(Integer i=0,j=1;i<ppt.length;i++,j++)
@@ -279,7 +279,7 @@ public class VirtSerializer implements Serializer {
 			else
 				values.append("null,");
 		}
-		
+
 		//productFeatureProduct
 		Iterator<Integer> pf = product.getFeatures().iterator();
 		while(pf.hasNext())
@@ -290,7 +290,7 @@ public class VirtSerializer implements Serializer {
 
 			valuesPFP.append(product.getNr());
 			valuesPFP.append("," + value);
-			
+
 			valuesPFP.append(")");
 			if(tables.productFeatureProductInsertCounter>=insertNumber) {
 				tables.productFeatureProductInsertCounter = 0;
@@ -299,11 +299,11 @@ public class VirtSerializer implements Serializer {
 			tables.productFeatureProductDump.append(valuesPFP);
 
 		}
-		
+
 		//dc:publisher
 		values.append(new Integer(product.getProducer()).toString());
 		values.append(",");
-			
+
 		//dc:date
 		GregorianCalendar date = new GregorianCalendar();
 		date.setTimeInMillis(product.getPublishDate());
@@ -316,7 +316,7 @@ public class VirtSerializer implements Serializer {
 		}
 		tables.productDump.append(values);
 	}
-	
+
 	/*
 	 * Converts the Person Object into an N-Triples String
 	 * representation.
@@ -325,43 +325,43 @@ public class VirtSerializer implements Serializer {
 	{
 		StringBuffer values = getBuffer(tables.personInsertCounter++, "Person");
 		values.append("(");
-	
+
 		//nr
 		values.append(person.getNr());
 		values.append(",");
-		
+
 		//name
 		values.append("'");
 		values.append(person.getName());
 		values.append("',");
-		
+
 		//mbox_sha1sum
 		values.append("'");
 		values.append(person.getMbox_sha1sum());
 		values.append("',");
-		
+
 		//country
 		values.append("'");
 		values.append(person.getCountryCode());
 		values.append("',");
-		
+
 		//dc:publisher
 		values.append(person.getPublisher());
 		values.append(",");
-			
+
 		//dc:date
 		GregorianCalendar date = new GregorianCalendar();
 		date.setTimeInMillis(person.getPublishDate());
 		String dateString = DateGenerator.formatDate(date);
 		values.append("cast ('" + dateString + "' as date))");
-		
+
 		if(tables.personInsertCounter>=insertNumber) {
 			tables.personInsertCounter = 0;
 			values.append(";\n");
 		}
 		tables.personDump.append(values);
 	}
-	
+
 	/*
 	 * Converts the Producer Object into an N-Triples String
 	 * representation.
@@ -370,48 +370,48 @@ public class VirtSerializer implements Serializer {
 	{
 		StringBuffer values = getBuffer(tables.producerInsertCounter++, "Producer");
 		values.append("(");
-	
+
 		//nr
 		values.append(producer.getNr());
 		values.append(",");
-		
+
 		//label
 		values.append("'");
 		values.append(producer.getLabel());
 		values.append("',");
-		
+
 		//comment
 		values.append("'");
 		values.append(producer.getComment());
 		values.append("',");
-		
+
 		//homepage
 		values.append("'");
 		values.append(producer.getHomepage());
 		values.append("',");
-		
+
 		//country
 		values.append("'");
 		values.append(producer.getCountryCode());
 		values.append("',");
-		
+
 		//dc:publisher
 		values.append(producer.getPublisher());
 		values.append(",");
-			
+
 		//dc:date
 		GregorianCalendar date = new GregorianCalendar();
 		date.setTimeInMillis(producer.getPublishDate());
 		String dateString = DateGenerator.formatDate(date);
 		values.append("cast ('" + dateString + "' as date))");
-		
+
 		if(tables.producerInsertCounter>=insertNumber) {
 			tables.producerInsertCounter = 0;
 			values.append(";\n");
 		}
 		tables.producerDump.append(values);
 	}
-	
+
 	/*
 	 * Converts the ProductFeature Object into an N-Triples String
 	 * representation.
@@ -420,25 +420,25 @@ public class VirtSerializer implements Serializer {
 	{
 		StringBuffer values = getBuffer(tables.productFeatureInsertCounter++, "ProductFeature");
 		values.append("(");
-	
+
 		//nr
 		values.append(pf.getNr());
 		values.append(",");
-		
+
 		//rdfs:label
 		values.append("'");
 		values.append(pf.getLabel());
 		values.append("',");
-		
+
 		//rdfs:comment
 		values.append("'");
 		values.append(pf.getComment());
 		values.append("',");
-		
+
 		//dc:publisher
 		values.append(pf.getPublisher());
 		values.append(",");
-		
+
 		//dc:date
 		GregorianCalendar date = new GregorianCalendar();
 		date.setTimeInMillis(pf.getPublishDate());
@@ -446,14 +446,14 @@ public class VirtSerializer implements Serializer {
 		values.append("cast ('");
 		values.append(dateString);
 		values.append("' as date))");
-		
+
 		if(tables.productFeatureInsertCounter>=insertNumber) {
 			tables.productFeatureInsertCounter = 0;
 			values.append(";\n");
 		}
 		tables.productFeatureDump.append(values);
 	}
-	
+
 	/*
 	 * Converts the Vendor Object into an N-Triples String
 	 * representation.
@@ -462,49 +462,49 @@ public class VirtSerializer implements Serializer {
 	{
 		StringBuffer values = getBuffer(tables.vendorInsertCounter++, "Vendor");
 		values.append("(");
-	
+
 		//nr
 		values.append(vendor.getNr());
 		values.append(",");
-		
+
 		//label
 		values.append("'");
 		values.append(vendor.getLabel());
 		values.append("',");
-		
+
 		//comment
 		values.append("'");
 		values.append(vendor.getComment());
 		values.append("',");
-		
+
 		//homepage
 		values.append("'");
 		values.append(vendor.getHomepage());
 		values.append("',");
-		
+
 		//country
 		values.append("'");
 		values.append(vendor.getCountryCode());
 		values.append("',");
-		
+
 		//dc:publisher
 		values.append(vendor.getPublisher());
 		values.append(",");
-			
+
 		//dc:date
 		GregorianCalendar date = new GregorianCalendar();
 		date.setTimeInMillis(vendor.getPublishDate());
 		String dateString = DateGenerator.formatDate(date);
 		values.append("cast ('" + dateString + "' as date))");
-		
+
 		if(tables.vendorInsertCounter>=insertNumber) {
 			tables.vendorInsertCounter = 0;
 			values.append(";\n");
 		}
 		tables.vendorDump.append(values);
 	}
-	
-	
+
+
 	/*
 	 * Converts the Review Object into an N-Triples String
 	 * representation.
@@ -513,11 +513,11 @@ public class VirtSerializer implements Serializer {
 	{
 		StringBuffer values = getBuffer(tables.reviewInsertCounter++, "Review");
 		values.append("(");
-	
+
 		//nr
 		values.append(review.getNr());
 		values.append(",");
-		
+
 		//product
 		values.append(review.getProduct());
 		values.append(",");
@@ -529,28 +529,28 @@ public class VirtSerializer implements Serializer {
 		//person
 		values.append(review.getPerson());
 		values.append(",");
-		
+
 		//reviewDate
 		GregorianCalendar reviewDate = new GregorianCalendar();
 		reviewDate.setTimeInMillis(review.getReviewDate());
 		String reviewDateString = DateGenerator.formatDate(reviewDate);
 		values.append("cast ('" + reviewDateString + "' as date),");
-		
+
 		//title
 		values.append("'");
 		values.append(review.getTitle());
 		values.append("',");
-		
+
 		//title
 		values.append("'");
 		values.append(review.getText());
 		values.append("',");
-		
+
 		//language
 		values.append("'");
 		values.append(ISO3166.language[review.getLanguage()]);
 		values.append("',");
-		
+
 		//ratings
 		Integer[] ratings = review.getRatings();
 		for(int i=0;i<ratings.length;i++)
@@ -559,57 +559,57 @@ public class VirtSerializer implements Serializer {
 			values.append(value);
 			values.append(",");
 		}
-		
+
 		//dc:publisher
 		values.append(review.getPublisher());
 		values.append(",");
-			
+
 		//dc:date
 		GregorianCalendar date = new GregorianCalendar();
 		date.setTimeInMillis(review.getPublishDate());
 		String dateString = DateGenerator.formatDate(date);
 		values.append("cast ('" + dateString + "' as date))");
-		
+
 		if(tables.reviewInsertCounter>=insertNumber) {
 			tables.reviewInsertCounter = 0;
 			values.append(";\n");
 		}
 		tables.reviewDump.append(values);
 	}
-	
+
 	public void serialize() {
 		//Finish files and close
 		try {
 			tables.productTypeDump.flush();
 			tables.productTypeDump.close();
-			
+
 			tables.productFeatureDump.flush();
 			tables.productFeatureDump.close();
-			
+
 			tables.producerDump.flush();
 			tables.producerDump.close();
-			
+
 			tables.productDump.flush();
 			tables.productDump.close();
-			
+
 			tables.productTypeProductDump.flush();
 			tables.productTypeProductDump.close();
-			
+
 			tables.productFeatureProductDump.flush();
 			tables.productFeatureProductDump.close();
-			
+
 			tables.vendorDump.flush();
 			tables.vendorDump.close();
-			
+
 			tables.offerDump.flush();
 			tables.offerDump.close();
-			
+
 			tables.personDump.flush();
 			tables.personDump.close();
-			
+
 			tables.reviewDump.flush();
 			tables.reviewDump.close();
-			
+
 		} catch(IOException e) {
 			System.err.println(e.getMessage());
 			System.exit(-1);
@@ -631,7 +631,7 @@ public class VirtSerializer implements Serializer {
 		FileWriter productTypeDump;
 		FileWriter reviewDump;
 		FileWriter productFeatureProductDump;
-		
+
 		int offerInsertCounter;
 		int vendorInsertCounter;
 		int productFeatureInsertCounter;
@@ -642,11 +642,11 @@ public class VirtSerializer implements Serializer {
 		int productTypeInsertCounter;
 		int reviewInsertCounter;
 		int productFeatureProductInsertCounter;
-		
+
 		SQLTables() {
 		}
 	}
-	
+
 	private void initTables() {
 		tables = new SQLTables();
 		tables.offerInsertCounter=0;
@@ -659,7 +659,7 @@ public class VirtSerializer implements Serializer {
 		tables.productTypeInsertCounter=0;
 		tables.reviewInsertCounter=0;
 		tables.productFeatureProductInsertCounter=0;
-		
+
 		try {
 		tables.offerDump = new FileWriter(new File(outputDir, "08Offer.sql"));
 		tables.vendorDump = new FileWriter(new File(outputDir, "07Vendor.sql"));
@@ -671,7 +671,7 @@ public class VirtSerializer implements Serializer {
 		tables.productTypeDump = new FileWriter(new File(outputDir, "02ProductType.sql"));
 		tables.reviewDump = new FileWriter(new File(outputDir, "10Review.sql"));
 		tables.productFeatureProductDump = new FileWriter(new File(outputDir, "06ProductFeatureProduct.sql"));
-				
+
 		} catch(IOException e) {
 			e.printStackTrace();
 			System.exit(-1);
@@ -683,7 +683,7 @@ public class VirtSerializer implements Serializer {
 			sb.append("INSERT INTO " + tableName + " VALUES ");
 		else
 			sb.append(",");
-		
+
 		return sb;
 	}
 }

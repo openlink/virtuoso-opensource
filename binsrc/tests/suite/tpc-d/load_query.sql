@@ -19,7 +19,7 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
---  
+--
 ECHO BOTH "STARTED: TPC-D queries\n";
 load Q1.sql;
 load Q2.sql;

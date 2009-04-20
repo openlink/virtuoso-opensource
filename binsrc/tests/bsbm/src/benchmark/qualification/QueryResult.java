@@ -13,7 +13,7 @@ public class QueryResult implements Serializable{
 	private HashMap<String,Integer> resultHash;
 	private ArrayList<String> resultList;
 	private ArrayList<String> headList;
-	
+
 	public int getRun() {
 		return run;
 	}
@@ -28,9 +28,9 @@ public class QueryResult implements Serializable{
 		this.nrResults=nrResults;
 		this.sorted=sorted;
 		this.headList=heads;
-		
+
 		if(sorted)
-			resultList = new ArrayList<String>(); 
+			resultList = new ArrayList<String>();
 		else
 			resultHash = new HashMap<String,Integer>();
 	}
@@ -46,9 +46,9 @@ public class QueryResult implements Serializable{
 	public int getNrResults() {
 		return nrResults;
 	}
-	
+
 	public void addResult(String result) {
-		if(sorted) 
+		if(sorted)
 			resultList.add(result);
 		else {
 			Integer count = 1;
@@ -59,26 +59,26 @@ public class QueryResult implements Serializable{
 			resultHash.put(result, count);
 		}
 	}
-	
+
 	/*
 	 * Returns null if both QueryResults are the same, otherwise an error message is returned
 	 */
 	public String compareQueryResults(QueryResult other) {
 		String error = null;
-		
+
 		if(sorted) {
 			error = checkArrayList(other.resultList);
-			
+
 		} else {
 			error = checkHashMap(other);
 		}
-		
+
 		return error;
 	}
-	
+
 	private String checkArrayList(ArrayList<String> otherList) {
 		String error=null;
-		
+
 		for(int i=0;i<otherList.size();i++) {
 			if(!otherList.get(i).equals(resultList.get(i))) {
 				error = addError(error, "Wrong results and/or wrong ordering in row " + (i+1) + ".\n");
@@ -89,7 +89,7 @@ public class QueryResult implements Serializable{
 		}
 		return error;
 	}
-	
+
 	private String checkHashMap(QueryResult other) {
 		HashMap<String,Integer> otherMap = other.resultHash;
 		String error=null;
@@ -97,11 +97,11 @@ public class QueryResult implements Serializable{
 		int tooMany=0;
 		Set<String> keys = otherMap.keySet();
 		Iterator<String> it = keys.iterator();
-		
+
 		while(it.hasNext()) {
 			String key = it.next();
 			Integer countO = otherMap.get(key);
-			
+
 			if(resultHash.containsKey(key)) {
 				int count = resultHash.get(key);
 				if(count<countO)
@@ -116,22 +116,22 @@ public class QueryResult implements Serializable{
 
 			tooMany += nrResults - tooMany - other.nrResults + missing ;
 		}
-		
+
 		if(missing>0)
 			error = addError(error, missing + " results are missing. ");
-		
+
 		if(tooMany>0)
 			error = addError(error, tooMany + " results are incorrect.\n");
-		
+
 		return error;
 	}
-	
+
 	private String addError(String errorString, String error) {
 		if(errorString==null)
 			errorString = error;
 		else
 			errorString += error;
-		
+
 		return errorString;
 	}
 

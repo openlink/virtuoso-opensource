@@ -11,7 +11,7 @@ public class Product extends BSBMResource{
 	private Vector<Integer> features;
 	private Integer[] productPropertyNumerical;
 	private String[] productPropertyTextual;
-	
+
 	public Product(int productNr, String label, String comment, ProductType productType,
 				   int producer) {
 		this.producer = producer;
@@ -64,12 +64,12 @@ public class Product extends BSBMResource{
 	public void setProductPropertyTextual(String[] productPropertyTextual) {
 		this.productPropertyTextual = productPropertyTextual;
 	}
-	
+
 	public String toString()
 	{
 		return getURIref(nr, producer);
 	}
-	
+
 	public static String getURIref(int productNr, int producerNr)
 	{
 		StringBuffer s = new StringBuffer();
@@ -80,7 +80,7 @@ public class Product extends BSBMResource{
 		s.append(">");
 		return s.toString();
 	}
-	
+
 	public static String getPrefixed(int productNr, int producerNr) {
 		StringBuffer s = new StringBuffer();
 		s.append(Producer.getProducerNSprefixed(producerNr));

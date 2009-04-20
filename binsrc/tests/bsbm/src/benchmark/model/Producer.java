@@ -9,7 +9,7 @@ public class Producer extends BSBMResource {
 	private String comment;
 	private String homepage;
 	private String countryCode;
-	
+
 	public Producer(int nr, String label, String comment, String homepage, String countryCode)
 	{
 		this.nr 	 = nr;
@@ -58,12 +58,12 @@ public class Producer extends BSBMResource {
 	public void setCountryCode(String countryCode) {
 		this.countryCode = countryCode;
 	}
-	
+
 	public String toString()
 	{
 		return getURIref(nr);
 	}
-	
+
 	public static String getURIref(int producerNr)
 	{
 		StringBuffer s = new StringBuffer();
@@ -74,7 +74,7 @@ public class Producer extends BSBMResource {
 		s.append(">");
 		return s.toString();
 	}
-	
+
 
 	public static String getProducerNS(int producerNr)
 	{
@@ -85,7 +85,7 @@ public class Producer extends BSBMResource {
 		s.append("/");
 		return s.toString();
 	}
-	
+
 	public static String getProducerNSprefixed(int producerNr)
 	{
 		StringBuffer s = new StringBuffer();
@@ -94,7 +94,7 @@ public class Producer extends BSBMResource {
 		s.append(":");
 		return s.toString();
 	}
-	
+
 	public static String getPrefixed(int producerNr)
 	{
 		StringBuffer s = new StringBuffer();

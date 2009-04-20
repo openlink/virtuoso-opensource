@@ -12,7 +12,7 @@ public class RatingSite {
 		s.append("/");
 		return s.toString();
 	}
-	
+
 	public static String getURIref(int ratingSiteNr)
 	{
 		StringBuffer s = new StringBuffer();
@@ -23,7 +23,7 @@ public class RatingSite {
 		s.append(">");
 		return s.toString();
 	}
-	
+
 	public static String getRatingSiteNSprefixed(int ratingSiteNr)
 	{
 		StringBuffer s = new StringBuffer();
@@ -32,7 +32,7 @@ public class RatingSite {
 		s.append(":");
 		return s.toString();
 	}
-	
+
 	public static String getPrefixed(int ratingSiteNr)
 	{
 		StringBuffer s = new StringBuffer();

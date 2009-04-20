@@ -10,9 +10,9 @@ public class RDFS {
 	public static String getURI() { return NS; }
 
 	public static final String PREFIX = "rdfs:";
-	
+
 	private static HashMap<String, String> uriMap = new HashMap<String, String>();
-	
+
 	/*
 	 * For prefixed versions
 	 */
@@ -26,7 +26,7 @@ public class RDFS {
 			return newValue;
 		}
 	}
-	
+
 	//Resources
     public static final String Datatype =  NS+"Datatype";
     public static final String Literal =  NS+"Literal";
