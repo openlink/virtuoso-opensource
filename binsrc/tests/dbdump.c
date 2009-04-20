@@ -1,3 +1,26 @@
+/*
+ *  $Id$
+ *
+ *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ *  project.
+ *
+ *  Copyright (C) 1998-2009 OpenLink Software
+ *
+ *  This project is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the
+ *  Free Software Foundation; only version 2 of the License, dated June 1991.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *
+ */
+
 /* #define DBDUMP_VERSION "0.974"  16-MAY-1997 */
 /* #define DBDUMP_VERSION "0.975" 06-NOV-1997 */
 /* #define DBDUMP_VERSION "0.976" 28-JAN-1998 */
@@ -10,7 +33,6 @@
    dbdump - Database Dump using ODBC API calls.
 
    Programmed in January 1997 - March 1998 by Antti Karttunen
-   for Defender Technology Corp.
 
    A generic ODBC tool for dumping out both the schema and
    the contents of the database, in the format appropriate
@@ -27,8 +49,6 @@
    with the option -h also. (See the end of this module!)
 
    First version was 0.971
-
-   Copyright (C) 1997 Defender Technology Corp.
 
    CHANGES since 8-FEB-1997
 
@@ -6192,7 +6212,6 @@ char *html_page_string
     =
     "<HTML><HEAD><TITLE>DBDUMP - DataBase Dump, version " DBDUMP_VERSION "</TITLE>\n"
     "<META NAME=DESCRIPTION CONTENT=\"DBDUMP default template for table linking and dumping.\">\n"
-    "<META NAME=AUTHOR CONTENT=\"Antti Karttunen, karttu@megabaud.fi, Defender Technology.\">\n"
     "<SCRIPT LANGUAGE=\"JavaScript\">\n"
     "<!-- Hide the script from old browsers\n"
     "function check_radiobutton_with_value(items,with_value)\n"
@@ -6844,16 +6863,8 @@ char *html_page_string
     "If you have any datasources among your System DSN's, which themselves\n"
     "haven't been protected by the username/password checks\n"
     "then you might want to limit the access to this CGI-script with the\n"
-    "password, by explicitly configuring your Web server.\n"
-    "<P><LI>\n"
-    "Copyright (C) 1997-1998 Defender Technology Corp. See our site at\n"
-    "<A HREF=\"http://www.kubl.com\">www.kubl.com</A> for the latest\n"
-    "version of this utility.\n"
-    "See also <A HREF=\"http://www.kubl.com/kubl/kubl/kublisql.htm\">http://www.kubl.com/kubl/kubl/kublisql.htm</A>\n"
-    "for the online document of DBDUMP's companion utility, Kubl Isql.\n"
-    "<P>\n"
-    "You can ask more tips and send bug reports to this utility's\n"
-    "<A HREF=\"mailto:karttu@megabaud.fi\">author</A>\n" "</UL>\n" "<HR>\n" "</BODY>\n" "</HTML>\n";
+    "password, by explicitly configuring your Web server.\n";
+
 
 
 /***********************************************************************/

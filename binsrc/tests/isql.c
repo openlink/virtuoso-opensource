@@ -1,3 +1,26 @@
+/*
+ *  $Id$
+ *
+ *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ *  project.
+ *
+ *  Copyright (C) 1998-2009 OpenLink Software
+ *
+ *  This project is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the
+ *  Free Software Foundation; only version 2 of the License, dated June 1991.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *
+ */
+
 #include <stdlib.h>
 #undef MALLOC_DEBUG
 #include "Dk.h"
@@ -40,24 +63,6 @@ TCHAR *isql_version = ISQL_VERSION;
 /*
 
 ISQL/ISQLODBC  --  Interactive SQL client shell for KUBL DBMS
-
-Copyright (C) 1995 - 97 Defender Technology Corporation, Ltd.
-
-Permission is granted for our customers to freely use this program (*)
-as well as to develop it further for in-house use with KUBL DBMS.
-
-Redistribution in any format (whether as source or binary) without
-explicit permission from Defender Technology Corp, Ltd. is forbidden.
-
-(*) Source is currently named as isqlodbc.c or isql.c,
-executable as isql (Unix), isql.exe or isqlodbc.exe (Windows NT)
-The latest public release is downloadable either from
-http://www.kubl.com   or   http://www.infosto.fi/kubl/
-
-If you have spotted a bug or made an improvement to this code
-which you want to share, or have any suggestion regarding features
-you would like to see included in further releases, you can
-mail your note to kubl@infosto.fi or kublbugs@infosto.fi
 
 
 VERSION HISTORY:
@@ -10419,12 +10424,6 @@ _T("cgi-bin script (by configuring your Web-server),\n")
 _T("or to totally deny any public access to your local Web server.\n")
 
 _T("<P><LI>\n")
-
-#if 0
-_T("Copyright (C) 1997 - 1998 Defender Technology Corp. See our site at\n")
-"<A HREF=\"http://www.kubl.com\">www.kubl.com</A> for the latest\n"
-_T("version of this utility.\n")
-#endif
 
 _T("</UL>\n")
 _T("<HR>\n")
