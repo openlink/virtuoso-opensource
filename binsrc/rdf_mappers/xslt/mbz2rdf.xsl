@@ -30,6 +30,8 @@
 <!ENTITY mmd "http://musicbrainz.org/ns/mmd-1.0#">
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY audio "http://purl.org/media/audio#">
+<!ENTITY media "http://purl.org/media#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -44,6 +46,8 @@
     xmlns:mo="&mo;"
     xmlns:mmd="&mmd;"
     xmlns:dc="&dc;"
+    xmlns:audio="&audio;"
+    xmlns:media="&media;"
     >
 
     <xsl:output method="xml" indent="yes" />
@@ -80,7 +84,9 @@
 		<xsl:if test="not starts-with ($sas-iri, '#')">
 			<owl:sameAs rdf:resource="{$sas-iri}"/>
 		</xsl:if>
-	    <foaf:name><xsl:value-of select="mmd:name"/></foaf:name>
+			<foaf:name>
+				<xsl:value-of select="mmd:name"/>
+			</foaf:name>
 	    <xsl:for-each select="mmd:relation-list[@target-type='Artist']/mmd:relation/mmd:artist">
 		<mo:member rdf:resource="{vi:proxyIRI (concat ($base, 'artist/', @id, '.html'))}"/>
 	    </xsl:for-each>
@@ -140,14 +146,21 @@
 			</xsl:otherwise>
 		</xsl:choose>		
 	</rdf:Description>
-	<mo:Record rdf:about="{vi:proxyIRI (concat($base,'release/',@id, '.html'))}">
+		<rdf:Description rdf:about="{vi:proxyIRI (concat($base,'release/',@id, '.html'))}">
+			<rdf:type rdf:resource="&mo;Record"/>
+			<rdf:type rdf:resource="&audio;Album"/>
 		<owl:sameAs rdf:resource="{concat($base,'release/',@id)}"/>
-	    <dc:title><xsl:value-of select="mmd:title"/></dc:title>
+			<dcterms:title>
+				<xsl:value-of select="mmd:title"/>
+			</dcterms:title>
 	    <mo:release_type rdf:resource="&mo;{translate (substring-before (@type, ' '), $uc, $lc)}"/>
 	    <mo:release_status rdf:resource="&mo;{translate (substring-after (@type, ' '), $uc, $lc)}"/>
 	    <dcterms:created rdf:datatype="&xsd;dateTime">
 			<xsl:value-of select="mmd:release-event-list/mmd:event/@date"/>
 		</dcterms:created>
+			<dcterms:published rdf:datatype="&xsd;dateTime">
+				<xsl:value-of select="mmd:release-event-list/mmd:event/@date"/>
+			</dcterms:published>
    		<vcard:Country>
 		    <xsl:value-of select="mmd:release-event-list/mmd:event/@country"/>
 		</vcard:Country>
@@ -161,10 +174,12 @@
 			<xsl:value-of select="mmd:release-event-list/mmd:event/@catalog-number"/>
 		</mmd:catalog-number>
 		<foaf:maker rdf:resource="{vi:proxyIRI (concat($base, 'artist/', mmd:artist/@id, '.html'))}"/>	    
+			<dcterms:creator rdf:resource="{vi:proxyIRI (concat($base, 'artist/', mmd:artist/@id, '.html'))}"/>	    
 	    <xsl:for-each select="mmd:track-list/mmd:track">
+				<media:contains rdf:resource="{vi:proxyIRI (concat($base,'track/',@id, '.html'))}"/>
 		<mo:track rdf:resource="{vi:proxyIRI (concat($base,'track/',@id, '.html'))}"/>
 	    </xsl:for-each>
-	</mo:Record>
+		</rdf:Description>
 	<xsl:apply-templates select="mmd:track-list/mmd:track"/>
     </xsl:template>
 
@@ -183,33 +198,51 @@
 			</xsl:otherwise>
 		</xsl:choose>		
 	</rdf:Description>
-	<mo:Track rdf:about="{vi:proxyIRI (concat($base,'track/',@id, '.html'))}">
+		<rdf:Description rdf:about="{vi:proxyIRI (concat($base,'track/',@id, '.html'))}">
+			<rdf:type rdf:resource="&mo;Track"/>
+			<rdf:type rdf:resource="&audio;Recording"/>
 		<owl:sameAs rdf:resource="{concat($base,'track/',@id)}"/>
-	    <dc:title><xsl:value-of select="mmd:title"/></dc:title>
-	    <mo:track_number><xsl:value-of select="position()"/></mo:track_number>
-	    <mo:duration rdf:datatype="&xsd;integer"><xsl:value-of select="mmd:duration"/></mo:duration>
+			<dcterms:title>
+				<xsl:value-of select="mmd:title"/>
+			</dcterms:title>
+			<media:position>
+				<xsl:value-of select="position()"/>
+			</media:position>
+			<mo:track_number>
+				<xsl:value-of select="position()"/>
+			</mo:track_number>
+			<media:duration rdf:datatype="&xsd;integer">
+				<xsl:value-of select="mmd:duration"/>
+			</media:duration>
+			<mo:duration rdf:datatype="&xsd;integer">
+				<xsl:value-of select="mmd:duration"/>
+			</mo:duration>
 	    <xsl:if test="artist[@id]">
 			<foaf:maker rdf:resource="{vi:proxyIRI (concat ($base, 'artist/', mmd:artist/@id, '.html'))}"/>
+				<dcterms:creator rdf:resource="{vi:proxyIRI (concat ($base, 'artist/', mmd:artist/@id, '.html'))}"/>	    
 	    </xsl:if>
 	    <xsl:if test="release-list/release[@id]">
 			<mo:published_as rdf:resource="{vi:proxyIRI (concat($base,'release/', mmd:release-list/mmd:release/@id, '.html'))}" />
 		</xsl:if>
 		<xsl:if test="//release/artist[@id]">
 			<foaf:maker rdf:resource="{vi:proxyIRI (concat ($base, 'artist/', //mmd:release/mmd:artist/@id, '.html'))}"/>
+				<dcterms:creator rdf:resource="{vi:proxyIRI (concat ($base, 'artist/', //mmd:release/mmd:artist/@id, '.html'))}"/>	    
 	    </xsl:if>
 		<xsl:if test="//release[@id]">
 			<mo:published_as rdf:resource="{vi:proxyIRI (concat($base,'release/', //mmd:release/@id, '.html'))}" />
 		</xsl:if>
 	    <mo:musicbrainz rdf:resource="{vi:proxyIRI (concat ($base, 'track/', @id, '.html'))}"/>
-	</mo:Track>
+		</rdf:Description>
     </xsl:template>
 
     <xsl:template match="mmd:relation[@type='OfficialHomepage']" mode="url-rel">
 	<mo:fanpage rdf:resource="{@target}"/>
     </xsl:template>
+    
     <xsl:template match="mmd:relation[@type='Wikipedia']" mode="url-rel">
 	<mo:wikipedia rdf:resource="{@target}"/>
     </xsl:template>
+    
     <xsl:template match="mmd:relation[@type='Discogs']" mode="url-rel">
 	<mo:discogs rdf:resource="{@target}"/>
     </xsl:template>

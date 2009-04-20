@@ -6637,6 +6637,7 @@ create procedure DB.DBA.RDF_LOAD_NYT_ARTICLE_SEARCH (in graph_iri varchar, in ne
 	if (not isstring (api_key) or length (api_key) = 0)
 		return 0;
 	primary_topic := DB.DBA.RDF_SPONGE_PROXY_IRI (graph_iri);
+	
 	state := '00000';
 	tmp := sprintf( 'sparql define input:inference \'virtrdf-label\' select ?l from <%s> where
 		{ <%s> virtrdf:label ?l }', graph_iri, primary_topic);
@@ -6681,6 +6682,7 @@ create procedure RDF_LOAD_NYT_ARTICLE_SEARCH2(in data any, in api_key varchar, i
 		if (isstring (str[0]))
 		{
 			keywords := trim(str[0], '\n\t\t\n ');
+			keywords := replace(keywords, ' ', '+');
 			url := sprintf('http://api.nytimes.com/svc/search/v1/article?query=%s&order=closest&api-key=%s&format=xml', keywords, api_key);
 			tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
 			tree := json_parse (tmp);

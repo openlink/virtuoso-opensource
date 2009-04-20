@@ -31,6 +31,8 @@
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY audio "http://purl.org/media/audio#">
+<!ENTITY media "http://purl.org/media#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -44,6 +46,8 @@
     xmlns:dc="&dc;"
     xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
+    xmlns:audio="&audio;"
+    xmlns:media="&media;"
     >
 
     <xsl:output method="xml" indent="yes" />
@@ -91,24 +95,28 @@
 			<dcterms:subject rdf:resource="{vi:proxyIRI (concat($base,'release/',@id))}"/>
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI (concat($base,'release/',@id))}"/>
 		</rdf:Description>    
-		<mo:Record rdf:about="{vi:proxyIRI (concat($base,'release/',@id))}">
+		<rdf:Description rdf:about="{vi:proxyIRI (concat($base,'release/',@id))}">
+			<rdf:type rdf:resource="&mo;Record"/>
+			<rdf:type rdf:resource="&audio;Album"/>
 			<sioc:has_container rdf:resource="{concat($base,'release/',@id)}"/>
 			<xsl:if test="artists/artist/name">
 				<foaf:maker rdf:resource="{vi:proxyIRI (concat($base,'artist/', translate(artists/artist/name, ' ', '+')))}"/>	    
+				<dcterms:creator rdf:resource="{vi:proxyIRI (concat($base,'artist/', translate(artists/artist/name, ' ', '+')))}"/>	    
 			</xsl:if>
 			<xsl:if test="title">
-				<dc:title><xsl:value-of select="title"/></dc:title>
+				<dcterms:title><xsl:value-of select="title"/></dcterms:title>
 			</xsl:if>
 			<xsl:if test="format">
 				<dc:format><xsl:value-of select="format"/></dc:format>
 			</xsl:if>
 			<xsl:if test="year">
-				<dc:date><xsl:value-of select="year"/></dc:date>
+				<dcterms:published><xsl:value-of select="year"/></dcterms:published>
 			</xsl:if>
 			<xsl:for-each select="tracklist/track">
+				<media:contains rdf:resource="{vi:proxyIRI (concat($base,'track/', ../../@id, '/', position))}"/>
 				<mo:track rdf:resource="{vi:proxyIRI (concat($base,'track/', ../../@id, '/', position))}"/>
 			</xsl:for-each>
-		</mo:Record>
+		</rdf:Description>
 		<xsl:apply-templates select="tracklist/track"/>
     </xsl:template>
     
@@ -122,13 +130,27 @@
 			<dcterms:subject rdf:resource="{vi:proxyIRI (concat($base,'track/', ../../@id, '/', position))}"/>
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI (concat($base,'track/', ../../@id, '/', position))}"/>
 		</rdf:Description>
-		<mo:Track rdf:about="{vi:proxyIRI (concat($base,'track/', ../../@id, '/', position))}">
+		<rdf:Description rdf:about="{vi:proxyIRI (concat($base,'track/', ../../@id, '/', position))}">
+			<rdf:type rdf:resource="&mo;Track"/>
+			<rdf:type rdf:resource="&audio;Recording"/>
 			<sioc:has_container rdf:resource="{concat($base,'track/', ../../@id, '/', position)}"/>
 			<mo:track rdf:resource="{vi:proxyIRI (concat($base,'track/',../../@id, '/',position))}"/>
-			<mo:track_number><xsl:value-of select="position"/></mo:track_number>
-			<dc:title><xsl:value-of select="title"/></dc:title>
-			<mo:duration rdf:datatype="&xsd;integer"><xsl:value-of select="duration"/></mo:duration>
-		</mo:Track>
+			<media:position>
+				<xsl:value-of select="position"/>
+			</media:position>
+			<mo:track_number>
+				<xsl:value-of select="position"/>
+			</mo:track_number>
+			<dcterms:title>
+				<xsl:value-of select="title"/>
+			</dcterms:title>
+			<media:duration rdf:datatype="&xsd;integer">
+				<xsl:value-of select="duration"/>
+			</media:duration>
+			<mo:duration rdf:datatype="&xsd;integer">
+				<xsl:value-of select="duration"/>
+			</mo:duration>
+		</rdf:Description>
 	</xsl:template>
     
     <xsl:template match="resp[@stat='ok']/label">

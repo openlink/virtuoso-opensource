@@ -35,6 +35,8 @@
 <!ENTITY event "http://purl.org/NET/c4dm/event.owl#">
 <!ENTITY geo "http://www.w3.org/2003/01/geo/wgs84_pos#">
 <!ENTITY time "http://www.w3.org/2006/time#">
+<!ENTITY audio "http://purl.org/media/audio#">
+<!ENTITY media "http://purl.org/media#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -55,6 +57,8 @@
     xmlns:geo="&geo;"
     xmlns:time="&time;"
     xmlns:c="http://www.w3.org/2002/12/cal/icaltzd#"
+    xmlns:audio="&audio;"
+    xmlns:media="&media;"
     >
 
     <xsl:param name="baseUri" />
@@ -382,27 +386,32 @@
 	</xsl:template>
 
 	<xsl:template name="album">
-		<mo:Record rdf:about="{vi:proxyIRI(url)}">
-			<dc:title>
+		<rdf:Description rdf:about="{vi:proxyIRI(url)}">
+			<rdf:type rdf:resource="&mo;Record"/>
+			<rdf:type rdf:resource="&audio;Album"/>
+			<dcterms:title>
                 <xsl:value-of select="name"/>
-            </dc:title>
+            </dcterms:title>
             <xsl:for-each select="image">
+				<media:depiction rdf:resource="{.}"/>
 				<foaf:depiction rdf:resource="{.}"/>
 			</xsl:for-each>
 			<xsl:choose>
 				<xsl:when test="string(artist/url)">
+					<dcterms:creator rdf:resource="{vi:proxyIRI(translate(artist/url, ' ', '+'))}"/>	    
 					<foaf:maker rdf:resource="{vi:proxyIRI(translate(artist/url, ' ', '+'))}"/>
 				</xsl:when>
 				<xsl:otherwise>
 					<xsl:if test="string(artist)">
+						<dcterms:creator rdf:resource="{vi:proxyIRI(translate(concat($base, 'music/', artist), ' ', '+'))}"/>	    
 						<foaf:maker rdf:resource="{vi:proxyIRI(translate(concat($base, 'music/', artist), ' ', '+'))}"/>
 					</xsl:if>
 				</xsl:otherwise>
 			</xsl:choose>
 			<xsl:if test="releasedate">
-				<dc:date>
+				<dcterms:published>
 					<xsl:value-of select="releasedate" />
-				</dc:date>
+				</dcterms:published>
 			</xsl:if>
 			<xsl:if test="listeners">
 				<lfm:listeners>
@@ -417,17 +426,22 @@
 			<xsl:if test="string(mbid)">
 				<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/release/', mbid)}"/>
 			</xsl:if>
-		</mo:Record>
+		</rdf:Description>
 
     </xsl:template>
 
     <xsl:template name="track">
 		
-		<mo:Track rdf:about="{vi:proxyIRI(url)}">
-			<dc:title>
+		<rdf:Description rdf:about="{vi:proxyIRI(url)}">
+			<rdf:type rdf:resource="&mo;Track"/>
+			<rdf:type rdf:resource="&audio;Recording"/>
+			<dcterms:title>
                 <xsl:value-of select="name"/>
-            </dc:title>
+            </dcterms:title>
             <xsl:if test="duration">
+				<media:duration rdf:datatype="&xsd;integer">
+					<xsl:value-of select="duration"/>
+				</media:duration>
 				<mo:duration rdf:datatype="&xsd;integer">
 					<xsl:value-of select="duration"/>
 				</mo:duration>
@@ -448,12 +462,16 @@
 				</lfm:playcount>
 			</xsl:if>
 			<xsl:if test="album/@position">
+				<media:position>
+					<xsl:value-of select="album/@position"/>
+				</media:position>
 				<mo:track_number>
 					<xsl:value-of select="album/@position"/>
 				</mo:track_number>
 			</xsl:if>
 			<xsl:if test="string(artist/url)">
 				<foaf:maker rdf:resource="{vi:proxyIRI(translate(artist/url, ' ', '+'))}"/>
+				<dcterms:creator rdf:resource="{vi:proxyIRI(translate(artist/url, ' ', '+'))}"/>	    
 			</xsl:if>
 			<xsl:if test="album/url">
 				<mo:published_as rdf:resource="{vi:proxyIRI (album/url)}"/>
@@ -472,7 +490,7 @@
 			<xsl:if test="string(mbid)">
 				<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/track/', mbid)}"/>
 			</xsl:if>
-		</mo:Track>
+		</rdf:Description>
 
 		<xsl:for-each select="artist">
 			<mo:MusicArtist rdf:about="{vi:proxyIRI(url)}">
