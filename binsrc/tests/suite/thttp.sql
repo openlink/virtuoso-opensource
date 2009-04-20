@@ -1,25 +1,25 @@
---  
+--
 --  $Id$
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2006 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 echo BOTH "STARTED: HTTP server tests\n";
 CONNECT;
 
@@ -546,13 +546,13 @@ ECHO BOTH $IF $LT $LAST[1] 0 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": null password passed to DAV API : RET=" $LAST[1] "\n";
 
-select DAV_RES_UPLOAD ('/DAV/run.vsp', '<?vsp http (user); ?>', '', '111101101N', 
+select DAV_RES_UPLOAD ('/DAV/run.vsp', '<?vsp http (user); ?>', '', '111101101N',
     	'dav', 'administrators', 'dav', 'dav');
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": run.vsp upload : RET=" $LAST[1] "\n";
 
-select DAV_RES_UPLOAD ('/DAV/norun.vsp', '<?vsp http (user); ?>', '', '111101101N', 
+select DAV_RES_UPLOAD ('/DAV/norun.vsp', '<?vsp http (user); ?>', '', '111101101N',
     	'davuser', null, 'dav', 'dav');
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
@@ -580,7 +580,7 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": norun.vsp test : RET=[" $LAST[1] "]\n";
 
 
-select DAV_RES_UPLOAD ('/DAV/run.vsp', '<?vsp http (\'user=\'||user); ?>', '', '111101101N', 
+select DAV_RES_UPLOAD ('/DAV/run.vsp', '<?vsp http (\'user=\'||user); ?>', '', '111101101N',
     	'dav', 'administrators', 'davuser', 'davuser');
 ECHO BOTH $IF $LT $LAST[1] 0 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
@@ -604,7 +604,7 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": VHOST_DEFINE (lpath=>'/davex', ppath=>'/DAV/ex/') : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 
-select DAV_RES_UPLOAD ('/DAV/ex/runex.vsp', '<?vsp http (user); ?>', '', '111101101N', 
+select DAV_RES_UPLOAD ('/DAV/ex/runex.vsp', '<?vsp http (user); ?>', '', '111101101N',
     	'davuser', null, 'dav', 'dav');
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;

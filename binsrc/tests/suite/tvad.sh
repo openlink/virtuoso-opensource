@@ -135,7 +135,7 @@ GenVAD2 ()
 	  <name package="test1">
 		<prop name="Title" value="test" />
 		<prop name="Developer" value="OpenLink Software" />
-		<prop name="Copyright" value="(C) 2001 OpenLink Software" />
+		<prop name="Copyright" value="(C) 2001-2009 OpenLink Software" />
 		<prop name="Download" value="http://www.openlinksw.com/virtuoso/rdf_lib/download" />
 		<prop name="Download" value="http://www.openlinksw.co.uk/virtuoso/rdf_lib/download" />
 	  </name>
@@ -172,7 +172,7 @@ GenVAD3 ()
 	  <name package="test1">
 		<prop name="Title" value="test" />
 		<prop name="Developer" value="OpenLink Software" />
-		<prop name="Copyright" value="(C) 2001 OpenLink Software" />
+		<prop name="Copyright" value="(C) 2001-2009 OpenLink Software" />
 		<prop name="Download" value="http://www.openlinksw.com/virtuoso/rdf_lib/download" />
 		<prop name="Download" value="http://www.openlinksw.co.uk/virtuoso/rdf_lib/download" />
 	  </name>
@@ -208,7 +208,7 @@ GenVAD4 ()
 	  <name package="test2">
 		<prop name="Title" value="test" />
 		<prop name="Developer" value="OpenLink Software" />
-		<prop name="Copyright" value="(C) 2001 OpenLink Software" />
+		<prop name="Copyright" value="(C) 2001-2009 OpenLink Software" />
 		<prop name="Download" value="http://www.openlinksw.com/virtuoso/rdf_lib/download" />
 		<prop name="Download" value="http://www.openlinksw.co.uk/virtuoso/rdf_lib/download" />
 	  </name>

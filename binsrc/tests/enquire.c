@@ -391,7 +391,7 @@
    float.h is probably the float.h put together by the gcc makefile to
    cause errors.  We use our special define to assure float.h that we don't
    really need it.  */
-#define __GCC_FLOAT_NOT_NEEDED   
+#define __GCC_FLOAT_NOT_NEEDED
 #include <stdio.h>
 
 #ifdef STDC

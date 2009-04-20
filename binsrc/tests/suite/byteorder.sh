@@ -1,5 +1,4 @@
 #!/bin/sh
-#  tsql.sh
 #
 #  $Id$
 #

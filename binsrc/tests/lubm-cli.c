@@ -1,25 +1,25 @@
 /*
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
- *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
+ *  Copyright (C) 1998-2009 OpenLink Software
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ *
+ */
+
 #include       <stdio.h>
 #include       <string.h>
 #include       "odbcinc.h"
@@ -308,7 +308,7 @@ LUBM_PrintResult()
 
 	      if (print_result > 1)
 		{
-		  printf ("%-.*s", 
+		  printf ("%-.*s",
 		      displayWidths[colNum - 1], fetchBuffer);
 		  if (colNum < numCols)
 		    putchar ('|');
@@ -326,7 +326,7 @@ LUBM_PrintResult()
   while (SQLMoreResults (hstmt) == SQL_SUCCESS);
 
 endCursor:
-/*  
+/*
   printf ("\n");
   fprintf (stderr, "\n");
   if (totalSets == ARRAY_SIZE)
@@ -341,7 +341,7 @@ endCursor:
     }
   printf ("B3078 : array parameters selects returned %d resultsets\n", totalSets);
   fprintf (stderr, "B3078 : array parameters selects returned %d resultsets\n", totalSets);
-*/  
+*/
   SQLFreeStmt (hstmt, SQL_CLOSE);
 
   return 0;
@@ -352,7 +352,7 @@ char * q_pref = " prefix ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.o
 char * q_count_pref = " prefix ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#> select count (*) from <lubm> where ";
 char * inf_pref = " define input:inference 'inft' ";
 
-char * 
+char *
 get_University (char * buf)
 {
   int univ;
@@ -371,7 +371,7 @@ get_Department (char * buf)
   return buf;
 }
 
-char * 
+char *
 get_GraduateCourse (char * buf)
 {
   int dept, univ, course;
@@ -412,56 +412,56 @@ typedef struct qr_s {
    void * func;
  } qr_t;
 
-qr_t qrs[] = 
+qr_t qrs[] =
 {
-  /* Q1 */ 
+  /* Q1 */
   {1, "{ ?x rdf:type ub:GraduateStudent . ?x ub:takesCourse <%s> }", &get_GraduateCourse },
-  /* Q2 */ 
+  /* Q2 */
   {2, "{ ?x a ub:GraduateStudent . ?z a ub:Department . ?x ub:memberOf ?z . ?z ub:subOrganizationOf <%s> . ?x ub:undergraduateDegreeFrom <%s> }", &get_University},
-  /* Q3 */ 
+  /* Q3 */
   {1, "{ ?x a ub:Publication . ?x ub:publicationAuthor <%s> }", &get_AssistantProfessor},
-  /* Q4 */ 
+  /* Q4 */
   {1, "{ ?x a ub:Professor . ?x ub:worksFor <%s> . ?x ub:name ?y1 . ?x ub:emailAddress ?y2 . ?x ub:telephone ?y3 . }", &get_Department},
-  /* Q5 */ 
+  /* Q5 */
   {1, "{ ?x a ub:Person . ?x ub:memberOf <%s> }", &get_University},
-  /* Q6 */ 
+  /* Q6 */
   {1, "{ ?x a ub:Student . ?x ub:memberOf <%s> }", &get_Department },
-  /* Q7 */ 
+  /* Q7 */
   {1, "{ ?x a ub:Student . ?y a ub:Course . <%s> ub:teacherOf ?y . ?x ub:takesCourse ?y . }", &get_AssociateProfessor},
-  /* Q8 */ 
+  /* Q8 */
   {1, "{ ?x a ub:Student . ?y a ub:Department . ?x ub:memberOf ?y . ?y ub:subOrganizationOf <%s> . ?x ub:emailAddress ?z }", &get_University},
-  /* Q9 */ 
+  /* Q9 */
   {1, "{ ?x a ub:Student . ?y a ub:Faculty . ?z a ub:Course . ?x ub:advisor ?y . ?x ub:takesCourse ?z . ?y ub:teacherOf ?z . ?x ub:memberOf <%s> . }", &get_Department },
-  /* Q10 */ 
+  /* Q10 */
   {1, "{ ?x a ub:Student . ?x ub:takesCourse <%s> . }", &get_GraduateCourse},
-  /* Q11 */ 
+  /* Q11 */
   {1, "{ ?x a ub:ResearchGroup . ?x ub:subOrganizationOf <%s> . }", &get_University},
-  /* Q12 */ 
+  /* Q12 */
   {1, "{ ?x a ub:Professor . ?y a ub:Department . ?x ub:headOf ?y . ?y ub:subOrganizationOf <%s> . }", &get_University},
-  /* Q13 */ 
+  /* Q13 */
   {1, "{ ?x a ub:Person . ?x ub:degreeFrom <%s> . }", &get_University},
-  /* Q14 */ 
-  {1, "{ ?x a ub:UndergraduateStudent . ?x ub:memberOf ?z . ?z ub:subOrganizationOf <%s> . }", &get_University } 
+  /* Q14 */
+  {1, "{ ?x a ub:UndergraduateStudent . ?x ub:memberOf ?z . ?z ub:subOrganizationOf <%s> . }", &get_University }
 };
 
 /* union */
-qr_t uqrs[] = 
-{ 
-  /* Q1 */ 
+qr_t uqrs[] =
+{
+  /* Q1 */
   { 1, "{ ?x rdf:type ub:GraduateStudent . ?x ub:takesCourse <%s> }", &get_GraduateCourse },
-  /* Q2 */ 
+  /* Q2 */
   { 2, "{ ?x a ub:GraduateStudent . ?z a ub:Department . ?x ub:memberOf ?z . ?z ub:subOrganizationOf <%s> . ?x ub:undergraduateDegreeFrom <%s> }", &get_University},
-  /* Q3 */ 
+  /* Q3 */
   { 1, "{ ?x a ub:Publication . ?x ub:publicationAuthor <%s> }", &get_AssistantProfessor },
 
-  /* Q4 */ 
+  /* Q4 */
   { 3, "{ { ?x a ub:AssociateProfessor . ?x ub:worksFor <%s> . ?x ub:name ?y1 . ?x ub:emailAddress ?y2 . ?x ub:telephone ?y3 . } union "
        "{ ?x a ub:AssistantProfessor . ?x ub:worksFor <%s> . ?x ub:name ?y1 . ?x ub:emailAddress ?y2 . ?x ub:telephone ?y3 . } union"
        "{ ?x a ub:FullProfessor . ?x ub:worksFor <%s> . ?x ub:name ?y1 . ?x ub:emailAddress ?y2 . ?x ub:telephone ?y3 . } }",
        &get_Department },
 
-  /* Q5 */ 
-  { 24, 
+  /* Q5 */
+  { 24,
     "{ { ?x a ub:AssociateProfessor . ?x ub:memberOf <%s> } union "
 	"{ ?x a ub:FullProfessor . ?x ub:memberOf <%s> } union "
 	"{ ?x a ub:AssistantProfessor . ?x ub:memberOf <%s> } union "
@@ -488,19 +488,19 @@ qr_t uqrs[] =
 	"{ ?x a ub:ResearchAssistant . ?x ub:headOf <%s> } }",
     &get_Department },
 
-  /* Q6 */ 
+  /* Q6 */
   { 3, "{ { ?x a ub:UndergraduateStudent . ?x ub:memberOf <%s> } union { ?x a ub:ResearchAssistant . ?x ub:memberOf <%s> } union { ?x a ub:GraduateStudent . ?x ub:memberOf <%s> } }", &get_Department },
 
-  /* Q7 */ 
+  /* Q7 */
   { 6, "{ {  ?x a ub:UndergraduateStudent . ?y a ub:Course . <%s> ub:teacherOf ?y . ?x ub:takesCourse ?y . } union "
     "{  ?x a ub:UndergraduateStudent . ?y a ub:GraduateCourse . <%s> ub:teacherOf ?y . ?x ub:takesCourse ?y . } union "
     "{  ?x a ub:ResearchAssistant . ?y a ub:Course . <%s> ub:teacherOf ?y . ?x ub:takesCourse ?y . } union "
     "{  ?x a ub:ResearchAssistant . ?y a ub:GraduateCourse . <%s> ub:teacherOf ?y . ?x ub:takesCourse ?y . } union "
     "{  ?x a ub:GraduateStudent . ?y a ub:Course . <%s> ub:teacherOf ?y . ?x ub:takesCourse ?y . } union "
-    "{  ?x a ub:GraduateStudent . ?y a ub:GraduateCourse . <%s> ub:teacherOf ?y . ?x ub:takesCourse ?y . } } ", 
-    &get_AssociateProfessor }, 
+    "{  ?x a ub:GraduateStudent . ?y a ub:GraduateCourse . <%s> ub:teacherOf ?y . ?x ub:takesCourse ?y . } } ",
+    &get_AssociateProfessor },
 
-  /* Q8 */ 
+  /* Q8 */
   { 9, "{ { ?x a ub:UndergraduateStudent . ?y a ub:Department . ?x ub:memberOf ?y . ?y ub:subOrganizationOf <%s> . ?x ub:emailAddress ?z } union "
 "{ ?x a ub:UndergraduateStudent . ?y a ub:Department . ?x ub:worksFor ?y . ?y ub:subOrganizationOf <%s> . ?x ub:emailAddress ?z } union"
 " { ?x a ub:UndergraduateStudent . ?y a ub:Department . ?x ub:headOf ?y . ?y ub:subOrganizationOf <%s> . ?x ub:emailAddress ?z } union "
@@ -509,10 +509,10 @@ qr_t uqrs[] =
 " { ?x a ub:ResearchAssistant . ?y a ub:Department . ?x ub:headOf ?y . ?y ub:subOrganizationOf <%s> . ?x ub:emailAddress ?z } union "
 " { ?x a ub:GraduateStudent . ?y a ub:Department . ?x ub:memberOf ?y . ?y ub:subOrganizationOf <%s> . ?x ub:emailAddress ?z } union "
 " { ?x a ub:GraduateStudent . ?y a ub:Department . ?x ub:worksFor ?y . ?y ub:subOrganizationOf <%s> . ?x ub:emailAddress ?z } union "
-" { ?x a ub:GraduateStudent . ?y a ub:Department . ?x ub:headOf ?y . ?y ub:subOrganizationOf <%s> . ?x ub:emailAddress ?z } } ", 
+" { ?x a ub:GraduateStudent . ?y a ub:Department . ?x ub:headOf ?y . ?y ub:subOrganizationOf <%s> . ?x ub:emailAddress ?z } } ",
     &get_University },
 
-  /* Q9 */ 
+  /* Q9 */
  { 36, "{ { ?x a ub:ResearchAssistant . ?y a ub:Lecturer . ?z a ub:Course . ?x ub:advisor ?y . ?x ub:takesCourse ?z . ?y ub:teacherOf ?z . ?x ub:memberOf <%s> . } union "
 "  { ?x a ub:ResearchAssistant . ?y a ub:PostDoc . ?z a ub:Course . ?x ub:advisor ?y . ?x ub:takesCourse ?z . ?y ub:teacherOf ?z . ?x ub:memberOf <%s> . } union "
 "  { ?x a ub:ResearchAssistant . ?y a ub:VisitingProfessor . ?z a ub:Course . ?x ub:advisor ?y . ?x ub:takesCourse ?z . ?y ub:teacherOf ?z . ?x ub:memberOf <%s> . } union "
@@ -550,24 +550,24 @@ qr_t uqrs[] =
 "  { ?x a ub:GraduateStudent . ?y a ub:AssociateProfessor . ?z a ub:GraduateCourse . ?x ub:advisor ?y . ?x ub:takesCourse ?z . ?y ub:teacherOf ?z . ?x ub:memberOf <%s> . } union "
 "  { ?x a ub:GraduateStudent . ?y a ub:FullProfessor . ?z a ub:GraduateCourse . ?x ub:advisor ?y . ?x ub:takesCourse ?z . ?y ub:teacherOf ?z . ?x ub:memberOf <%s> . } } ", &get_Department },
 
-  /* Q10 */ 
+  /* Q10 */
  { 3, "{ { ?x a ub:ResearchAssistant . ?x ub:takesCourse <%s> . } union "
       "{ ?x a ub:UndergraduateStudent . ?x ub:takesCourse <%s> . } union "
       "{ ?x a ub:GraduateStudent . ?x ub:takesCourse <%s> . } } ",
-	&get_GraduateCourse }, 
+	&get_GraduateCourse },
 
-  /* Q11 */ 
+  /* Q11 */
  { 1, "{ ?x a ub:ResearchGroup . ?x ub:subOrganizationOf <%s> . }", &get_University },
 
-  /* Q12 */ 
- { 3, 
+  /* Q12 */
+ { 3,
     " { { ?x a ub:FullProfessor . ?y a ub:Department . ?x ub:headOf ?y . ?y ub:subOrganizationOf <%s> . } union "
     " { ?x a ub:AssistantProfessor . ?y a ub:Department . ?x ub:headOf ?y . ?y ub:subOrganizationOf <%s> . } union "
     " { ?x a ub:AssociateProfessor . ?y a ub:Department . ?x ub:headOf ?y . ?y ub:subOrganizationOf <%s> . } } ",
 	&get_University },
 
-  /* Q13 */ 
- { 24, 
+  /* Q13 */
+ { 24,
     "{ { ?x a ub:AssociateProfessor . ?x ub:doctoralDegreeFrom <%s> . } union "
 	"{ ?x a ub:FullProfessor . ?x ub:doctoralDegreeFrom <%s> . } union "
 	"{ ?x a ub:AssistantProfessor . ?x ub:doctoralDegreeFrom <%s> . } union "
@@ -594,8 +594,8 @@ qr_t uqrs[] =
 	"{ ?x a ub:ResearchAssistant . ?x ub:undergraduateDegreeFrom <%s> . } } ",
     &get_University },
 
-  /* Q14 */ 
-  {1, "{ ?x a ub:UndergraduateStudent . ?x ub:memberOf ?z . ?z ub:subOrganizationOf <%s> . }", &get_University } 
+  /* Q14 */
+  {1, "{ ?x a ub:UndergraduateStudent . ?x ub:memberOf ?z . ?z ub:subOrganizationOf <%s> . }", &get_University }
 
 };
 
@@ -615,7 +615,7 @@ LUBM_Execute(char * qr)
   return 0;
 }
 
-int 
+int
 LUBM_CheckIRI (char * iri)
 {
   int rc;
@@ -675,7 +675,7 @@ void LUBM_DoOne ()
 	{
 	  char * rand_str;
 	  int tries = 0;
-	  do 
+	  do
 	    {
 	      rand_str = (*func)(id);
               tries ++;
@@ -691,35 +691,35 @@ void LUBM_DoOne ()
 	  else if (n_pars == 3)
 	    sprintf (tmp, txt, rand_str, rand_str, rand_str);
 	  else if (n_pars == 6)
-	    sprintf (tmp, txt, 
+	    sprintf (tmp, txt,
 			rand_str, rand_str, rand_str,
 			rand_str, rand_str, rand_str
 			);
 	  else if (n_pars == 9)
-	    sprintf (tmp, txt, 
+	    sprintf (tmp, txt,
 			rand_str, rand_str, rand_str,
 			rand_str, rand_str, rand_str,
 			rand_str, rand_str, rand_str
 			);
 	  else if (n_pars == 24)
-	    sprintf (tmp, txt, 
-			rand_str, rand_str, rand_str, rand_str, 
-			rand_str, rand_str, rand_str, rand_str, 
-			rand_str, rand_str, rand_str, rand_str, 
-			rand_str, rand_str, rand_str, rand_str, 
-			rand_str, rand_str, rand_str, rand_str, 
-			rand_str, rand_str, rand_str, rand_str 
+	    sprintf (tmp, txt,
+			rand_str, rand_str, rand_str, rand_str,
+			rand_str, rand_str, rand_str, rand_str,
+			rand_str, rand_str, rand_str, rand_str,
+			rand_str, rand_str, rand_str, rand_str,
+			rand_str, rand_str, rand_str, rand_str,
+			rand_str, rand_str, rand_str, rand_str
 			);
 	  else if (n_pars == 36)
-	    sprintf (tmp, txt, 
-			rand_str, rand_str, rand_str, rand_str, rand_str, rand_str, 
-			rand_str, rand_str, rand_str, rand_str, rand_str, rand_str, 
-			rand_str, rand_str, rand_str, rand_str, rand_str, rand_str, 
-			rand_str, rand_str, rand_str, rand_str, rand_str, rand_str, 
-			rand_str, rand_str, rand_str, rand_str, rand_str, rand_str, 
-			rand_str, rand_str, rand_str, rand_str, rand_str, rand_str 
+	    sprintf (tmp, txt,
+			rand_str, rand_str, rand_str, rand_str, rand_str, rand_str,
+			rand_str, rand_str, rand_str, rand_str, rand_str, rand_str,
+			rand_str, rand_str, rand_str, rand_str, rand_str, rand_str,
+			rand_str, rand_str, rand_str, rand_str, rand_str, rand_str,
+			rand_str, rand_str, rand_str, rand_str, rand_str, rand_str,
+			rand_str, rand_str, rand_str, rand_str, rand_str, rand_str
 			);
-	  else 
+	  else
 	    {
 	      printf ("unhandled number of parameters");
 	      exit (-1);
@@ -728,7 +728,7 @@ void LUBM_DoOne ()
       else
         sprintf (tmp, txt);
 
-      
+
       if (print_result)
         printf ("Q#%d:", i+1);
       sprintf (buf, "sparql %s %s %s", q_kind == 1 ? inf_pref : "", 12 == i ? q_count_pref : q_pref, tmp);
@@ -754,14 +754,14 @@ void LUBM_DoOne ()
 	  int j;
 	  for (j = 0; j < 14; j++)
 	    ta_print_out (stdout, &(ta_qr[j]));
-	  printf ("-- %ld msec elapsed %f per/sec %ld times\n", 
+	  printf ("-- %ld msec elapsed %f per/sec %ld times\n",
 	      ta_exec.ta_total, (float)(ta_exec.ta_n_samples*1000)/ta_exec.ta_total, ta_exec.ta_n_samples);
 	  ta_init (&ta_exec, "LUBM metric");
 	}
     }
 }
 
-void 
+void
 LUBM_DoAll ()
 {
   int i, j;
@@ -783,17 +783,17 @@ LUBM_DoAll ()
     }
   for (j = 0; j < 14; j++)
     ta_print_out (stdout, &(ta_qr[j]));
-  printf ("-- %ld msec elapsed %f per/sec %ld times\n", 
+  printf ("-- %ld msec elapsed %f per/sec %ld times\n",
       ta_exec.ta_total, (float)(ta_exec.ta_n_samples*1000)/ta_exec.ta_total, ta_exec.ta_n_samples);
 }
 
-int 
+int
 main (int argc, char *argv[])
 {
   if (argc < 4)
     {
       printf ("Usage: %s [DSN] [user] [pass] [n-universities] [n-times] [inf|union|raw] [debug|debug-results]\n", argv[0]);
-      exit (0); 
+      exit (0);
     }
   if (argc > 4)
     max_univ = atoi (argv[4]);

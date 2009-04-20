@@ -4,26 +4,26 @@
  *  $Id$
  *
  *  Get fields out of an ini file and possibly rewrite them
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
+ *
+ *
 */
 
 #include <libutil.h>
@@ -37,24 +37,24 @@ char *f_value	  = NULL;
 int   f_create    = 0;		/* Dummy parameter */
 int   f_nocreate  = 0;
 
-struct pgm_option options[] = 
+struct pgm_option options[] =
 {
-  {"inifile",	'f', ARG_STR,  &f_inifile,	
+  {"inifile",	'f', ARG_STR,  &f_inifile,
   	N_("use this ini file")},
-  {"create",    'c', ARG_NONE, &f_create, 	
+  {"create",    'c', ARG_NONE, &f_create,
   	N_("create the ini file if it does not exist (default)")},
-  {"nocreate",  'n', ARG_NONE, &f_nocreate, 	
+  {"nocreate",  'n', ARG_NONE, &f_nocreate,
   	N_("do not create the ini file if it does not exist")},
-  {"section",	's', ARG_STR,  &f_section,	
+  {"section",	's', ARG_STR,  &f_section,
   	N_("name of the section")},
-  {"key",	'k', ARG_STR,  &f_key,		
+  {"key",	'k', ARG_STR,  &f_key,
   	N_("name of the key")},
   {"value",	'v', ARG_STR,  &f_value,
   	N_("the value you want to write")},
   {0}
 };
 
-struct pgm_info program_info = 
+struct pgm_info program_info =
 {
   NULL,
   version,

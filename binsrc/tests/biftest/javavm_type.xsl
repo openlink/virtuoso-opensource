@@ -1,27 +1,27 @@
 <?xml version="1.0"?>
 <!--
- -  
+ -
  -  $Id$
  -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
- -  
+ -
  -  Copyright (C) 1998-2006 OpenLink Software
- -  
+ -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
  -  Free Software Foundation; only version 2 of the License, dated June 1991.
- -  
+ -
  -  This program is distributed in the hope that it will be useful, but
  -  WITHOUT ANY WARRANTY; without even the implied warranty of
  -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  -  General Public License for more details.
- -  
+ -
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -  
- -  
+ -
+ -
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
                 xmlns:enc="http://schemas.xmlsoap.org/soap/encoding/"
@@ -34,10 +34,10 @@
     </xsl:template-->
 
     <xsl:template match="class">
-      create type "<xsl:value-of select="@pl_type" />" 
+      create type "<xsl:value-of select="@pl_type" />"
       <xsl:if test="@pl_under != ''">
         under "<xsl:value-of select="@pl_under"/>"
-      </xsl:if>	
+      </xsl:if>
       language <xsl:value-of select="@pl_lang" /> external name '<xsl:value-of select="@type" />'
       <xsl:if test="count (field[@static='0']) > 0">
         AS (<xsl:apply-templates select="field[@static='0']"/>)
@@ -45,7 +45,7 @@
       <xsl:value-of select="@restiction" />
       <xsl:apply-templates select="constructor" >
         <xsl:with-param name="class_name" select="@pl_type"/>
-      </xsl:apply-templates>	
+      </xsl:apply-templates>
       <xsl:if test="count (method) > 0 and count (constructor) > 0" >
       ,
       </xsl:if>
@@ -56,7 +56,7 @@
       <xsl:apply-templates select="field[@static='1']" />
       <xsl:if test="count (//class) > 1">
         ;
-      </xsl:if>	
+      </xsl:if>
     </xsl:template>
 
     <xsl:template match="field[@static='0']">

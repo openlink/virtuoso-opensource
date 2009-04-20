@@ -68,7 +68,7 @@ where a.g = iri_to_id (''inft'', 0) and b.g = iri_to_id (''inft'', 0)
 
 
 
-select s, p from rdf_quad table option (with 'inft') 
+select s, p from rdf_quad table option (with 'inft')
 where g = iri_to_id ('inft', 0) and o = iri_to_id ('c1', 0);
 echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
 echo both ": o = c1 3 rows\n";
@@ -85,7 +85,7 @@ echo both ": inf oj rowcnt\n";
 
 
 
---- Complete combinations 
+--- Complete combinations
 --- fs fp fo
 select id_to_iri (s), id_to_iri (p), id_to_iri (o)  from rdf_quad table option (with 'inft') where g = iri_to_id ('inft', 0);
 echo both $if $equ $rowcnt 13 "PASSED" "***FAILED";
@@ -160,7 +160,7 @@ select count distinct ?s ?p ?o from <g> where {?s ?p ?o}
 
 sparql define input:inference 'inft' select ?s ?p count  (?o) from <inft> from <extra> where {?s ?p ?o};
 
-sparql define input:inference 'inft' 
+sparql define input:inference 'inft'
 select ?icpe ?cl from <inft> from <extra> where { ?icpe <icpe> ?v . optional { ?icpe a ?cl } };
 echo both $if $equ $rowcnt 7 "PASSED" "***FAILED";
 echo both ": 2 graph oj \n";

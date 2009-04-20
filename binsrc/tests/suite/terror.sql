@@ -6,26 +6,26 @@
 --  Various tests that should return an error.
 --  The intent is that the server recover from these, hence results are
 --  not checked.
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2006 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 select blob_to_string (ROW_NO) from T2 where T2 = 11;
 select blob_to_string (ROW_NO) from BLOBS where ROW_NO = 1;
@@ -1110,5 +1110,209 @@ echo both "Error messages about reading free pages and bad blobs are expected ne
 --echo both $if $equ $sqlstate "22023" "PASSED" "***FAILED";
 --echo both ": deleted blob read in blob_to_string\n";
 
-echo both "Error messages about bad blobs or reading free pages are not expected after this point.\n";
+select deserialize ('');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": select deserialize ('') STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
+select deserialize ('''');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": select deserialize ('''') STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select deserialize (NULL);
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": select deserialize (NULL) STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+create procedure f1()
+{
+  declare x any;
+  x := N' ';
+  x [0] := 1000;
+  return x;
+};
+
+select length (cast (repeat ('x', 6000000) as nvarchar));
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": cast to long nvarchar  state " $STATE "\n";
+
+select length (cast (make_string (6000000) as nvarchar));
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": len of cast to long nvarchar  state " $STATE "\n";
+
+select cast (make_string (6000000) as nvarchar);
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": cast to long nvarchar  state " $STATE "\n";
+
+select cast (make_string (6) as nvarchar);
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": cast to nvarchar  state " $STATE "\n";
+
+select subseq ('asasa', -2, 3);
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": wrong subseq params  state " $STATE "\n";
+
+select subseq ('asasa', 2, -3);
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": wrong subseq params  state " $STATE "\n";
+
+select log10 (-1);
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": log10 (-1) state " $STATE "\n";
+
+select log (-1);
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": log10 (-1) state " $STATE "\n";
+
+select sqrt (-1) ;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": sqrt (-1) state " $STATE "\n";
+
+lisp_read ('nosense');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": lisp_read (nosense) state " $STATE "\n";
+
+lisp_read ('');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": lisp_read ('') state " $STATE "\n";
+
+select charset_recode ('\xff\xff', 'UTF-8', '_WIDE_');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": charset_recode with bad utf8 state " $STATE "\n";
+
+select mod (1,0);
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": mod (1,0) state " $STATE "\n";
+
+select 1/0;
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": div by zero state " $STATE "\n";
+
+select deserialize ('\xb6\xff\xff\xff\xff\xff');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": deserialize of bad string state " $STATE "\n";
+
+select charset_recode (repeat (charset_recode (f1(), '_WIDE_', 'UTF-8'), 4000000), 'UTF-8', '_WIDE_');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": recode of long wide state " $STATE "\n";
+
+select sqrt (null);
+ECHO BOTH $IF $EQU $LAST[1] NULL "PASSED" "***FAILED";
+ECHO BOTH ": sqrt(null) return " $LAST[1] "\n";
+
+select power (null, 1);
+ECHO BOTH $IF $EQU $LAST[1] NULL "PASSED" "***FAILED";
+ECHO BOTH ": power(null,1) return " $LAST[1] "\n";
+
+select power (1, null);
+ECHO BOTH $IF $EQU $LAST[1] NULL "PASSED" "***FAILED";
+ECHO BOTH ": power(1, null) return " $LAST[1] "\n";
+
+select floor (null);
+ECHO BOTH $IF $EQU $LAST[1] NULL "PASSED" "***FAILED";
+ECHO BOTH ": floor(null) return " $LAST[1] "\n";
+
+
+create procedure seqov () {declare i int; for (i:= 0; i < 1000000; i:= i+1) sequence_set (sprintf ('%d', i), 1, 0);};
+seqov ();
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": seq overflow state " $STATE "\n";
+
+create procedure regov () {declare i int; for (i:= 0; i < 1000000; i:= i+1) registry_set (sprintf ('%d', i), '1');};
+regov ();
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": registry overflow state " $STATE "\n";
+
+
+
+create procedure rov_rev () {declare i int; for (i:= 0; i < 1000000; i:= i+1) registry_remove (sprintf ('%d', i));};
+rov_rev ();
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": reg removal state " $STATE "\n";
+
+create procedure sov_rev () {declare i int; for (i:= 0; i < 1000000; i:= i+1) sequence_remove (sprintf ('%d', i));};
+sov_rev ();
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": seq removal state " $STATE "\n";
+
+select xmlagg (xmlelement ('a', a.key_table), xmlelement ('b', b.key_table), xmlelement ('c', c.key_table)) from sys_keys a, sys_keys b, sys_keys c;
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": xmlagg with too many members state " $STATE "\n";
+
+delete user TEST1;
+delete user TEST2;
+delete user TEST3;
+drop table tidn;
+
+
+create user TEST1;
+echo both $if $equ $state OK "PASSED" "***FAILED";
+echo both ": create user test1 " $state "\n";
+
+create user TEST2;
+echo both $if $equ $state OK "PASSED" "***FAILED";
+echo both ": create user test2 " $state "\n";
+
+create user TEST3;
+echo both $if $equ $state OK "PASSED" "***FAILED";
+echo both ": create user test3 " $state "\n";
+
+
+RECONNECT TEST1;
+
+select user;
+echo both $if $equ $last[1] TEST1 "PASSED" "***FAILED";
+echo both ": connected as " $last[1] "\n";
+
+registry_set ('RDF_RO_ID', 'bad');
+echo both $if $neq $state OK "PASSED" "***FAILED";
+echo both ": registry set for dba only sequence " $state "\n";
+
+registry_remove  ('RDF_RO_ID');
+echo both $if $neq $state OK "PASSED" "***FAILED";
+echo both ": registry remove for dba only sequence " $state "\n";
+
+sequence_set ('RDF_RO_ID', 0, 1);
+echo both $if $neq $state OK "PASSED" "***FAILED";
+echo both ": sequence set for dba only sequence " $state "\n";
+
+sequence_next ('RDF_RO_ID');
+echo both $if $neq $state OK "PASSED" "***FAILED";
+echo both ": sequence next for dba only sequence " $state "\n";
+
+sequence_remove ('RDF_RO_ID');
+echo both $if $neq $state OK "PASSED" "***FAILED";
+echo both ": sequence remove for dba only sequence " $state "\n";
+
+
+create table tidn (id int identity primary key, dt varchar);
+
+insert into tidn (dt) values ('a');
+echo both $if $equ $state OK "PASSED" "***FAILED";
+echo both ": create table&insert as user test1 " $state "\n";
+
+
+RECONNECT dba;
+
+grant insert on tidn to TEST2;
+
+RECONNECT TEST2;
+
+select user;
+echo both $if $equ $last[1] TEST2 "PASSED" "***FAILED";
+echo both ": connected as " $last[1] "\n";
+
+insert into tidn (dt) values ('a');
+echo both $if $equ $state OK "PASSED" "***FAILED";
+echo both ": create insert as user test2 " $state "\n";
+
+RECONNECT TEST3;
+
+select user;
+echo both $if $equ $last[1] TEST3 "PASSED" "***FAILED";
+echo both ": connected as " $last[1] "\n";
+
+
+insert into tidn (dt) values ('a');
+echo both $if $neq $state OK "PASSED" "***FAILED";
+echo both ": create insert as user test3 " $state "\n";
+
+reconnect dba;
