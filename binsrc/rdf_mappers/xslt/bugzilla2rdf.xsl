@@ -70,7 +70,7 @@
 				<xsl:value-of select="creation_ts"/>
 			</dcterms:created>
 			<dc:title>
-				<xsl:value-of select="short_desc"/>			
+				<xsl:value-of select="short_desc"/>
 			</dc:title>
 			<xsl:for-each select="long_desc">
 				<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', issue_when)}" />
@@ -105,7 +105,7 @@
 			<rdf:type rdf:resource="&sioct;Discussion"/>
 			<rdf:type rdf:resource="&wf;Task"/>
 			<dc:title>
-				<xsl:value-of select="short_desc"/>			
+				<xsl:value-of select="short_desc"/>
 			</dc:title>
 			<dcterms:created rdf:datatype="&xsd;dateTime">
 				<xsl:value-of select="creation_ts"/>

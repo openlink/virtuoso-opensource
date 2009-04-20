@@ -66,7 +66,7 @@
 			<xsl:apply-templates select="retrieveResponse/result"/>
 		</rdf:RDF>
     </xsl:template>
-    
+
     <xsl:template match="sf:*">
 		<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
 			<rdf:type rdf:resource="&sioc;Item"/>

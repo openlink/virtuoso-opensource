@@ -276,7 +276,7 @@ again:
 	 if (image_ext is not null)
 	 {
 	   _href := case
-	    when (image_ext = 'bmp') then _object 
+	    when (image_ext = 'bmp') then _object
 	    when (image_ext = 'gif') then _object
 	    when (image_ext = 'jpeg') then _object
 	    when (image_ext = 'jpg') then _object

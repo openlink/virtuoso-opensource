@@ -1,4 +1,5 @@
-<?xml version="1.0" encoding="UTF-8" ?> <!--
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
  -
  -  $Id$
  -
@@ -27,20 +28,20 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 ]>
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" 
+	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
 	xmlns:dc="http://purl.org/dc/elements/1.1/"
-	xmlns:dcterms="http://purl.org/dc/terms/" 
+	xmlns:dcterms="http://purl.org/dc/terms/"
 	xmlns:foaf="&foaf;"
-    xmlns:sioc="&sioc;"	
+    xmlns:sioc="&sioc;"
 	xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
-	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/" 
+	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
 	xmlns:v="http://www.w3.org/2006/vcard/ns#"
 	xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
 	xmlns:vcard="http://www.w3.org/2001/vcard-rdf/3.0#"
 	xmlns:opl-meetup="http://www.openlinksw.com/schemas/meetup/"
-    xmlns:c   ="http://www.w3.org/2002/12/cal/icaltzd#"	
+    xmlns:c   ="http://www.w3.org/2002/12/cal/icaltzd#"
 	version="1.0">
 	<xsl:variable name="ns">http://getsatisfaction.com</xsl:variable>
 	<xsl:output method="xml" indent="yes" omit-xml-declaration="yes" />
@@ -50,7 +51,7 @@
 
     <xsl:variable name="uc">ABCDEFGHIJKLMNOPQRSTUVWXYZ </xsl:variable>
     <xsl:variable name="lc">abcdefghijklmnopqrstuvwxyz_</xsl:variable>
-	
+
 	<xsl:template match="/">
 		<rdf:RDF>
 			<xsl:apply-templates select="results/items" />
@@ -64,7 +65,7 @@
 						<foaf:Group rdf:about="{vi:proxyIRI($base)}" >
 							<xsl:for-each select="item">
 								<xsl:if test="$what = 'events'">
-								<foaf:made rdf:resource="{event_url}"/>
+									<foaf:made rdf:resource="{event_url}"/>
 								</xsl:if>
 								<xsl:if test="$what = 'comments'">
 									<foaf:made rdf:resource="{vi:proxyIRI($base, '', link)}"/>
@@ -77,15 +78,15 @@
 					</xsl:if>
 				</foaf:primaryTopic>
 			</foaf:Document>
-		</xsl:if>					
+		</xsl:if>
 		<xsl:if test="$what = 'members'">
 			<foaf:Document rdf:about="{$base}">
 				<foaf:primaryTopic>
 					<foaf:Group rdf:about="{vi:proxyIRI($base)}">
-								<xsl:for-each select="item">
-									<foaf:member rdf:resource="{vi:proxyIRI(link)}"/>
-								</xsl:for-each>
-							</foaf:Group>
+						<xsl:for-each select="item">
+							<foaf:member rdf:resource="{vi:proxyIRI(link)}"/>
+						</xsl:for-each>
+					</foaf:Group>
 				</foaf:primaryTopic>
 			</foaf:Document>
 		</xsl:if>
@@ -216,14 +217,14 @@
 			<xsl:if test="$what = 'members' or $what = 'member'">
 				<xsl:if test="$what = 'members' and contains($baseUri, id) ">
 					<foaf:Document rdf:about="{$baseUri}">
-						<foaf:primaryTopic>				
+						<foaf:primaryTopic>
 							<foaf:Person rdf:about="{vi:proxyIRI(link)}"/>
 						</foaf:primaryTopic>
 					</foaf:Document>
 				</xsl:if>
-								
+
 				<foaf:Document rdf:about="{link}">
-					<foaf:primaryTopic>				
+					<foaf:primaryTopic>
 						<foaf:Person rdf:about="{vi:proxyIRI(link)}">
 							<foaf:name>
 								<xsl:value-of select="name" />
@@ -266,7 +267,7 @@
 								<xsl:value-of select="visited"/>
 							</dcterms:modified>
 							<xsl:if test="$what = 'members'">
-							<foaf:topic_interest rdf:resource="{vi:proxyIRI($base)}" />
+								<foaf:topic_interest rdf:resource="{vi:proxyIRI($base)}" />
 							</xsl:if>
 						</foaf:Person>
 					</foaf:primaryTopic>

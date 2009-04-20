@@ -80,7 +80,7 @@
 				<bibo:role rdf:resource="&bibo;author"/>
 			</dcterms:contributor>
 			<foaf:maker rdf:resource="{concat('http://www.librarything.com/author/', /response[@stat='ok']/ltml/item/author/@authorcode)}" />
-			<xsl:for-each select="commonknowledge/fieldList/field[@type='1']/versionList/version/factList/fact">			
+			<xsl:for-each select="commonknowledge/fieldList/field[@type='1']/versionList/version/factList/fact">
 				<dcterms:publisher rdf:parseType="Resource">
 					<rdf:type rdf:resource="&foaf;Organization"/>
 					<foaf:name>
@@ -94,7 +94,7 @@
 			</dcterms:created>
 		</rdf:Description>
     </xsl:template>
-    
+
     <xsl:template match="response[@stat='ok']/ltml/item[@type='author']">
 		<rdf:Description rdf:about="{$baseUri}">
 			<rdf:type rdf:resource="&foaf;Document"/>

@@ -1,4 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2009 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+-->
 <!DOCTYPE xsl:stylesheet [
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
@@ -15,7 +37,7 @@
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:opl="http://www.openlinksw.com/schema/attribution#"
     xmlns:dcterms = "http://purl.org/dc/terms/"
-	xmlns:scot="http://scot-project.org/scot/ns#"    
+	xmlns:scot="http://scot-project.org/scot/ns#"
     xmlns:skos="http://www.w3.org/2004/02/skos/core#"
     xmlns:moat="http://moat-project.org/ns#"
     xmlns:sioc="&sioc;"
@@ -26,11 +48,11 @@
     xmlns:dc="&dc;"
     xmlns:nyt="&nyt;"
     >
-    
+
     <xsl:param name="baseUri" />
 
     <xsl:output method="xml" indent="yes" />
-    
+
     <xsl:template match="/">
 		<rdf:Description rdf:about="{$baseUri}">
 			<scot:hasScot rdf:resource="{concat($baseUri, '#tagcloud')}"/>
@@ -77,7 +99,7 @@
 		</rdf:Description>
 
 	</xsl:template>
-    
+
     <xsl:template match="text()|@*"/>
 
 </xsl:stylesheet>

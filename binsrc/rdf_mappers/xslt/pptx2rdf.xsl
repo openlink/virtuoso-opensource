@@ -39,7 +39,7 @@
 <!ENTITY p "http://schemas.openxmlformats.org/presentationml/2006/main">
 <!ENTITY r "http://schemas.openxmlformats.org/package/2006/relationships">
 ]>
-<xsl:stylesheet version="1.0" 
+<xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:rdf="&rdf;"
@@ -107,7 +107,7 @@
   <xsl:template match="cp:coreProperties">
     <rdf:RDF>
       <!-- Describe a container document which points to the presentation resource -->
-      <!-- Container document URI = URI of .pptx file *minus* the file suffix 
+      <!-- Container document URI = URI of .pptx file *minus* the file suffix
       <rdf:Description rdf:about="{$entityURL}">
 	<rdf:type>bibo:Slideshow</rdf:type>
       -->
@@ -186,7 +186,7 @@
     </xsl:for-each>
     </slide_text>
   </xsl:template>
-  
+
   <!-- Template for parsing <file name>.pptx/ppt/_rels/presentation.xml.rels -->
   <!-- Get a colon-separated list of slides contained in slides folder, slides/slide1.xml:slides/slide2.xml:... -->
   <xsl:template match="r:Relationships" mode="get_slide_list">

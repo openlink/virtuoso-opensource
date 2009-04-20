@@ -36,21 +36,21 @@
 <!ENTITY atom "http://atomowl.org/ontologies/atomrdf#">
 <!ENTITY content "http://purl.org/rss/1.0/modules/content/">
 ]>
-<xsl:stylesheet 
-	xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
-	xmlns:rdf="&rdf;" 
+<xsl:stylesheet
+	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+	xmlns:rdf="&rdf;"
 	xmlns:rdfs="&rdfs;"
-	xmlns:dc="&dc;" 
-	xmlns:dcterms="&dcterms;" 
-	xmlns:content="&content;" 
-	xmlns:sioc="&sioc;" 
+	xmlns:dc="&dc;"
+	xmlns:dcterms="&dcterms;"
+	xmlns:content="&content;"
+	xmlns:sioc="&sioc;"
 	xmlns:rss="&rss;"
-	xmlns:foaf="&foaf;" 
-	xmlns:atom="&atom;" 
+	xmlns:foaf="&foaf;"
+	xmlns:atom="&atom;"
 	xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
-	xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/" 
+	xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/"
 	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
-	xmlns:digg="http://digg.com/docs/diggrss/" 
+	xmlns:digg="http://digg.com/docs/diggrss/"
 	xmlns:wfw="http://wellformedweb.org/CommentAPI/"
 	version="1.0">
 	<xsl:output indent="yes" />
@@ -153,7 +153,7 @@
 		</xsl:for-each>
 	</xsl:template>
 	<xsl:template match="dc:creator">
-				<foaf:maker rdf:resource="{$base}#{urlify (.)}" />
+		<foaf:maker rdf:resource="{$base}#{urlify (.)}" />
 	</xsl:template>
 	<xsl:template match="dc:creator" mode="user">
 				<xsl:variable name="uname" select="string(.)" />

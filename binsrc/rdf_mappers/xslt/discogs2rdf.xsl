@@ -37,7 +37,7 @@
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
-    xmlns:dcterms="http://purl.org/dc/terms/" 
+    xmlns:dcterms="http://purl.org/dc/terms/"
     xmlns:rdf="&rdf;"
     xmlns:rdfs="&rdfs;"
     xmlns:foaf="&foaf;"
@@ -53,7 +53,7 @@
     <xsl:output method="xml" indent="yes" />
     <xsl:param name="baseUri" />
     <xsl:variable name="base" select="'http://www.discogs.com/'"/>
-    
+
     <xsl:template match="/">
 		<rdf:RDF>
 			<xsl:apply-templates select="resp[@stat='ok']/artist"/>
@@ -94,14 +94,14 @@
 			<foaf:topic rdf:resource="{vi:proxyIRI (concat($base,'release/',@id))}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI (concat($base,'release/',@id))}"/>
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI (concat($base,'release/',@id))}"/>
-		</rdf:Description>    
+		</rdf:Description>
 		<rdf:Description rdf:about="{vi:proxyIRI (concat($base,'release/',@id))}">
 			<rdf:type rdf:resource="&mo;Record"/>
 			<rdf:type rdf:resource="&audio;Album"/>
 			<sioc:has_container rdf:resource="{concat($base,'release/',@id)}"/>
 			<xsl:if test="artists/artist/name">
-				<foaf:maker rdf:resource="{vi:proxyIRI (concat($base,'artist/', translate(artists/artist/name, ' ', '+')))}"/>	    
-				<dcterms:creator rdf:resource="{vi:proxyIRI (concat($base,'artist/', translate(artists/artist/name, ' ', '+')))}"/>	    
+				<foaf:maker rdf:resource="{vi:proxyIRI (concat($base,'artist/', translate(artists/artist/name, ' ', '+')))}"/>
+				<dcterms:creator rdf:resource="{vi:proxyIRI (concat($base,'artist/', translate(artists/artist/name, ' ', '+')))}"/>
 			</xsl:if>
 			<xsl:if test="title">
 				<dcterms:title><xsl:value-of select="title"/></dcterms:title>
@@ -119,7 +119,7 @@
 		</rdf:Description>
 		<xsl:apply-templates select="tracklist/track"/>
     </xsl:template>
-    
+
     <xsl:template match="track">
 		<rdf:Description rdf:about="{concat($base,'track/', ../../@id, '/', position)}">
 			<rdf:type rdf:resource="&foaf;Document"/>
@@ -152,7 +152,7 @@
 			</mo:duration>
 		</rdf:Description>
 	</xsl:template>
-    
+
     <xsl:template match="resp[@stat='ok']/label">
 		<rdf:Description rdf:about="{concat($base,'label/', name)}">
 			<rdf:type rdf:resource="&foaf;Document"/>
@@ -162,7 +162,7 @@
 			<foaf:topic rdf:resource="{vi:proxyIRI (concat($base,'label/', name))}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI (concat($base,'label/', name))}"/>
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI (concat($base,'label/', name))}"/>
-		</rdf:Description>       
+		</rdf:Description>
 		<mo:Label rdf:about="{vi:proxyIRI (concat($base,'label/', name))}">
 			<sioc:has_container rdf:resource="{concat($base,'label/', name)}"/>
 			<v:adr>

@@ -1,4 +1,5 @@
-<?xml version="1.0" encoding="UTF-8" ?> <!--
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
  -
  -  $Id$
  -
@@ -213,29 +214,29 @@
 	</xsl:template>
 
 	<xsl:template name="status_int">
-			<rdf:type rdf:resource="&sioct;BoardPost"/>
-			<sioc:has_container rdf:resource="{$baseUri}"/>
-			<dcterms:created rdf:datatype="&xsd;dateTime">
-				<xsl:value-of select="vi:string2date(created_at)"/>
-			</dcterms:created>
-			<dc:title>
-				<xsl:call-template name="add-href">
-					<xsl:with-param name="string" select="text"/>
-				</xsl:call-template>
-			</dc:title>
-			<sioc:content>
-				<xsl:call-template name="add-href">
-					<xsl:with-param name="string" select="text"/>
-				</xsl:call-template>
-			</sioc:content>
-			<dc:source>
-				<xsl:value-of select="source" />
-			</dc:source>
-			<xsl:if test="in_reply_to_status_id != ''">
-				<sioc:reply_of rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', in_reply_to_screen_name, '/status/', in_reply_to_status_id))}"/>
-			</xsl:if>
-			<rdfs:seeAlso rdf:resource="{concat('http://search.twitter.com/search/thread/', id)}"/>
-			<foaf:maker rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name))}"/>
+		<rdf:type rdf:resource="&sioct;BoardPost"/>
+		<sioc:has_container rdf:resource="{$baseUri}"/>
+		<dcterms:created rdf:datatype="&xsd;dateTime">
+			<xsl:value-of select="vi:string2date(created_at)"/>
+		</dcterms:created>
+		<dc:title>
+			<xsl:call-template name="add-href">
+				<xsl:with-param name="string" select="text"/>
+			</xsl:call-template>
+		</dc:title>
+		<sioc:content>
+			<xsl:call-template name="add-href">
+				<xsl:with-param name="string" select="text"/>
+			</xsl:call-template>
+		</sioc:content>
+		<dc:source>
+			<xsl:value-of select="source" />
+		</dc:source>
+		<xsl:if test="in_reply_to_status_id != ''">
+			<sioc:reply_of rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', in_reply_to_screen_name, '/status/', in_reply_to_status_id))}"/>
+		</xsl:if>
+		<rdfs:seeAlso rdf:resource="{concat('http://search.twitter.com/search/thread/', id)}"/>
+		<foaf:maker rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name))}"/>
 	</xsl:template>
 
 	<xsl:template name="status">

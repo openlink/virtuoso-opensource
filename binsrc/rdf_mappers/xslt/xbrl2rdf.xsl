@@ -151,15 +151,15 @@
 				</xsl:if>
 				<xsl:if test="$canonical_value_name">
 					<xsl:element name="{$canonical_value_name}" namespace="{$ns}">
-					<xsl:attribute name="rdf:datatype">
+						<xsl:attribute name="rdf:datatype">
        						<xsl:value-of select="$canonical_value_datatype" />
-					</xsl:attribute>
-					<xsl:value-of select="." />
-				</xsl:element>
+						</xsl:attribute>
+						<xsl:value-of select="." />
+					</xsl:element>
 				</xsl:if>
 				<sioc:has_container rdf:resource="{$contextRef}" />
 			</rdf:Description>
-			
+
 			<rdf:Description rdf:about="{$contextRef}">
 				<sioc:container_of rdf:resource="{concat($baseUri, '#', @contextRef, '/', $canonical_name)}" />
 			</rdf:Description>

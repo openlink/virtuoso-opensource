@@ -126,7 +126,7 @@
                 <dcterms:published>
 					<xsl:value-of select="album-release-date" />
                 </dcterms:published>
-                <dcterms:creator rdf:resource="{/artist/html-href}"/>	    
+                <dcterms:creator rdf:resource="{/artist/html-href}"/>
                 <mo:maker rdf:resource="{/artist/html-href}"/>
                 <rdfs:seeAlso rdf:resource="{play-href}"/>
                 <rdfs:seeAlso rdf:resource="{data-href}"/>
@@ -136,7 +136,7 @@
             </rdf:Description>
 		</xsl:for-each>
     </xsl:template>
-    
+
     <xsl:template match="album">
 		<rdf:Description rdf:about="{html-href}">
 			<rdf:type rdf:resource="&mo;Record"/>
@@ -151,7 +151,7 @@
             <dcterms:published>
 				<xsl:value-of select="album-release-date" />
             </dcterms:published>
-            <dcterms:creator rdf:resource="{primary-artist/html-href}"/>	
+            <dcterms:creator rdf:resource="{primary-artist/html-href}"/>
             <mo:maker rdf:resource="{primary-artist/html-href}"/>
             <rdfs:seeAlso rdf:resource="{play-href}"/>
             <rdfs:seeAlso rdf:resource="{data-href}"/>
@@ -188,7 +188,7 @@
                 <dcterms:title>
                     <xsl:value-of select="@name"/>
                 </dcterms:title>
-                <dcterms:creator rdf:resource="{/album/primary-artist/html-href}"/>	
+                <dcterms:creator rdf:resource="{/album/primary-artist/html-href}"/>
                 <mo:maker rdf:resource="{/album/primary-artist/html-href}"/>
                 <rdfs:seeAlso rdf:resource="{play-href}"/>
                 <rdfs:seeAlso rdf:resource="{data-href}"/>
@@ -204,7 +204,7 @@
                 <xsl:value-of select="@name"/>
             </dcterms:title>
             <mo:available_as rdf:resource="{primary-album/html-href}"/>
-            <dcterms:creator rdf:resource="{primary-artist/html-href}"/>	
+            <dcterms:creator rdf:resource="{primary-artist/html-href}"/>
             <mo:maker rdf:resource="{primary-artist/html-href}"/>
             <rdfs:seeAlso rdf:resource="{play-href}"/>
             <rdfs:seeAlso rdf:resource="{data-href}"/>
@@ -239,5 +239,5 @@
             </rdf:Description>
 		</xsl:for-each>
 	</xsl:template>
-	
+
 </xsl:stylesheet>

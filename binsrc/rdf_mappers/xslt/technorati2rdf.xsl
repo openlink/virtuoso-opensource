@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
  -  $Id$
@@ -58,12 +58,12 @@
     xmlns:a="http://www.w3.org/2005/Atom"
     xmlns:sioct="&sioct;"
 	version="1.0">
-	
+
 	<xsl:output method="xml" indent="yes" omit-xml-declaration="yes" />
-	
+
 	<xsl:param name="baseUri" />
 	<xsl:param name="what" />
-	
+
 	<xsl:template match="/">
 		<rdf:RDF>
 			<xsl:apply-templates select="tapi/document" />
@@ -71,7 +71,7 @@
 	</xsl:template>
 
 	<xsl:template match="tapi/document">
-	
+
 		<rdf:Description rdf:about="{$baseUri}">
 			<rdf:type rdf:resource="&foaf;Document"/>
 			<xsl:for-each select="item">
@@ -126,7 +126,7 @@
 				</dcterms:created>
 				<sioc:has_container rdf:resource="{weblog/url}"/>
 			</rdf:Description>
-			
+
 			<rdf:Description rdf:about="{weblog/url}">
 				<rdf:type rdf:resource="&sioct;MessageBoard"/>
 				<sioc:link rdf:resource="{weblog/url}"/>
@@ -135,9 +135,9 @@
 				</dc:title>
 				<rdfs:seeAlso rdf:resource="{weblog/rssurl}"/>
 			</rdf:Description>
-			
+
 		</xsl:for-each>
-	
+
 	</xsl:template>
 
 </xsl:stylesheet>

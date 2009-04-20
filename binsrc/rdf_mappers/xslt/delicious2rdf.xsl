@@ -1,4 +1,5 @@
-<?xml version="1.0" encoding="UTF-8" ?> <!--
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
  -
  -  $Id$
  -
@@ -57,21 +58,21 @@
     xmlns:a="http://www.w3.org/2005/Atom"
     xmlns:sioct="&sioct;"
 	version="1.0">
-	
+
 	<xsl:output method="xml" indent="yes" omit-xml-declaration="yes" />
-	
+
 	<xsl:param name="baseUri" />
 	<xsl:param name="what" />
-	
+
 	<xsl:template match="/">
 		<rdf:RDF>
 			<xsl:apply-templates select="rss/channel" />
 			<xsl:apply-templates select="suggest" />
 		</rdf:RDF>
 	</xsl:template>
-	
+
 	<xsl:template match="suggest">
-	
+
 		<rdf:Description rdf:about="{$baseUri}">
 			<rdf:type rdf:resource="&foaf;Document"/>
 			<scot:hasScot rdf:resource="{concat($baseUri, '#tagcloud')}"/>
@@ -79,19 +80,19 @@
 				<sioc:topic rdf:resource="{concat ('http://delicious.com/', .)}"/>
 			</xsl:for-each>
 		</rdf:Description>
-		
+
 		<scot:Tagcloud rdf:about="{concat($baseUri, '#tagcloud')}">
 			<xsl:for-each select="popular">
 				<scot:hasTag rdf:resource="{concat ('http://delicious.com/', .)}"/>
 			</xsl:for-each>
 		</scot:Tagcloud>
-	
+
 	</xsl:template>
-	
+
 	<xsl:template match="channel">
-		
+
 		<xsl:if test="$what='user'">
-	
+
 			<rdf:Description rdf:about="{$baseUri}">
 				<rdf:type rdf:resource="&foaf;Document"/>
 				<rdf:type rdf:resource="&bibo;Document"/>
@@ -104,7 +105,7 @@
 				</dc:description>
 				<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
 			</rdf:Description>
-			
+
 			<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
 				<sioc:has_container rdf:resource="{$baseUri}" />
 				<rdf:type rdf:resource="&sioc;BookmarkFolder"/>
@@ -115,11 +116,11 @@
 					<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', $guid1)}" />
 				</xsl:for-each>
 			</rdf:Description>
-			
+
 			<xsl:for-each select="item">
-				
+
 				<xsl:variable name="guid" select="substring-after(substring-before(guid, '#'), 'http://delicious.com/url/') " />
-				
+
 				<!--rdf:Description rdf:about="{vi:proxyIRI($baseUri, '' $guid)}">
 					<rdf:type rdf:resource="&foaf;Document"/>
 					<rdf:type rdf:resource="&bibo;Document"/>
@@ -131,7 +132,7 @@
 					<dcterms:subject rdf:resource="{vi:proxyIRI($guid)}"/>
 					<sioc:container_of rdf:resource="{vi:proxyIRI($guid)}"/>
 				</rdf:Description-->
-				
+
 				<rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', $guid)}">
 					<rdf:type rdf:resource="&bookmark;Bookmark"/>
 					<!--sioc:has_container rdf:resource="{$guid}" /-->
@@ -150,7 +151,7 @@
 					<rdfs:seeAlso rdf:resource="{comments}" />
 					<rdfs:seeAlso rdf:resource="{wfw:commentRss}" />
 				</rdf:Description>
-				
+
 				<xsl:for-each select="category">
 					<rdf:Description rdf:about="{concat (@domain, .)}">
 						<rdf:type rdf:resource="&scot;Tag"/>
@@ -169,7 +170,7 @@
 						<scot:cooccurWith rdf:resource="{vi:proxyIRI($baseUri, '', concat('coocurrence_', $guid))}"/>
 					</rdf:Description>
 				</xsl:for-each>
-				
+
 				<rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', concat('coocurrence_', $guid))}">
 					<rdf:type rdf:resource="&scot;Cooccurrence"/>
 					<xsl:for-each select="category">
@@ -177,9 +178,9 @@
 					</xsl:for-each>
 					<scot:cooccurAFrequency rdf:datatype="&xsd;integer">1</scot:cooccurAFrequency>
 				</rdf:Description>
-				
+
 			</xsl:for-each>
-			
+
 			<xsl:variable name="author" select="substring-after(link, 'http://delicious.com/')" />
 			<scot:Tagcloud rdf:about="{concat('http://delicious.com/tags/', $author)}">
 				<xsl:for-each select="//category">
@@ -187,7 +188,7 @@
 				</xsl:for-each>
 			</scot:Tagcloud>
 		</xsl:if>
-		
+
 		<xsl:if test="$what='tag'">
 			<rdf:Description rdf:about="{$baseUri}">
 				<xsl:variable name="tag" select="substring-after(substring-after(title, '/'), '/') " />
@@ -210,11 +211,11 @@
 					<scot:cooccurWith rdf:resource="{vi:proxyIRI($baseUri, '', concat('coocurrence_', $guid))}"/>
 				</xsl:for-each>
 			</rdf:Description>
-			
+
 			<xsl:for-each select="item">
 				<xsl:variable name="guid" select="substring-after(substring-before(guid, '#'), 'http://delicious.com/url/') " />
 				<xsl:variable name="domain" select="substring(category/@domain, 1, string-length(category/@domain) - 1)" />
-					
+
 				<rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', concat('coocurrence_', $guid))}">
 					<rdf:type rdf:resource="&scot;Cooccurrence"/>
 					<xsl:for-each select="category">
@@ -222,7 +223,7 @@
 					</xsl:for-each>
 					<scot:cooccurAFrequency rdf:datatype="&xsd;integer">1</scot:cooccurAFrequency>
 				</rdf:Description>
-				
+
 				<rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', $guid)}">
 					<rdf:type rdf:resource="&bookmark;Bookmark"/>
 					<!--sioc:has_container rdf:resource="{$guid}" /-->
@@ -242,22 +243,22 @@
 					<rdfs:seeAlso rdf:resource="{comments}" />
 					<rdfs:seeAlso rdf:resource="{wfw:commentRss}" />
 				</rdf:Description>
-				
+
 				<rdf:Description rdf:about="{vi:proxyIRI($domain)}">
 					<sioc:has_container rdf:resource="{$domain}" />
 					<rdf:type rdf:resource="&sioc;BookmarkFolder"/>
 					<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', $guid)}" />
 				</rdf:Description>
-				
+
 			</xsl:for-each>
-			
+
 			<xsl:variable name="author" select="substring-before(substring-after(link, 'http://delicious.com/'), '/')" />
 			<scot:Tagcloud rdf:about="{concat('http://delicious.com/tags/', $author)}">
 				<xsl:for-each select="//category">
 					<scot:hasTag rdf:resource="{concat (@domain, .)}"/>
 				</xsl:for-each>
 			</scot:Tagcloud>
-			
+
 		</xsl:if>
 
 		<xsl:if test="$what='tags'">
@@ -274,7 +275,7 @@
 			</scot:Tagcloud>
 		</xsl:if>
 
-		
+
 		<xsl:if test="$what='url'">
 			<rdf:Description rdf:about="{$baseUri}">
 				<rdf:type rdf:resource="&foaf;Document"/>
@@ -285,7 +286,7 @@
 				</dc:title>
 				<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
 			</rdf:Description>
-			
+
 			<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
 				<rdf:type rdf:resource="&bookmark;Bookmark"/>
 				<sioc:has_container rdf:resource="{$baseUri}" />
@@ -298,7 +299,7 @@
 				<bibo:uri rdf:resource="{//item/link}" />
 			</rdf:Description>
 		</xsl:if>
-		
+
 	</xsl:template>
 
 </xsl:stylesheet>

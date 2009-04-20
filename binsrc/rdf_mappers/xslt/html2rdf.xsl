@@ -45,67 +45,67 @@
   <xsl:param name="base" />
   <xsl:variable name="uc">ABCDEFGHIJKLMNOPQRSTUVWXYZ</xsl:variable>
   <xsl:variable name="lc">abcdefghijklmnopqrstuvwxyz</xsl:variable>
-  
+
   <xsl:template match="/">
       <rdf:RDF>
-	  <xsl:apply-templates select="html/head"/>
-	  <xsl:apply-templates select="/" mode="rdf-in-comment"/>
+		<xsl:apply-templates select="html/head"/>
+		<xsl:apply-templates select="/" mode="rdf-in-comment"/>
       </rdf:RDF>
   </xsl:template>
-  
+
   <xsl:template match="html/head">
       <rdf:Description rdf:about="{$base}">
-	  <rdf:type rdf:resource="&foaf;Document"/>
-	  <rdf:type rdf:resource="&bibo;Document"/>
-	  <rdf:type rdf:resource="&sioc;Container"/>
-	  <xsl:apply-templates select="title|meta"/>
-	  <xsl:apply-templates select="//img[@src]"/>
-	  <xsl:apply-templates select="//a[@href]"/>
-	  <xsl:apply-templates select="link[@rel='alternate']"/>
+		<rdf:type rdf:resource="&foaf;Document"/>
+		<rdf:type rdf:resource="&bibo;Document"/>
+		<rdf:type rdf:resource="&sioc;Container"/>
+		<xsl:apply-templates select="title|meta"/>
+		<xsl:apply-templates select="//img[@src]"/>
+		<xsl:apply-templates select="//a[@href]"/>
+		<xsl:apply-templates select="link[@rel='alternate']"/>
       </rdf:Description>
   </xsl:template>
-  
+
   <xsl:template match="link[@rel='alternate']">
       <rdfs:seeAlso rdf:resource="{@href}"/>
   </xsl:template>
-  
+
   <xsl:template match="*" mode="rdf-in-comment">
       <xsl:apply-templates mode="rdf-in-comment"/>
   </xsl:template>
-  
+
   <xsl:template match="text()|@*" mode="rdf-in-comment">
   </xsl:template>
-  
+
   <xsl:template match="comment()" mode="rdf-in-comment">
-      <!-- first we parse in 'safe' mode -->
-      <xsl:variable name="tmp" select="document-literal (., '', 2)"/>
-      <xsl:if test="$tmp/rdf:rdf/*">
-	  <xsl:variable name="doc" select="document-literal (replace (., '&quot;xmlns', '&quot; xmlns'))"/>
-	  <xsl:copy-of select="$doc/rdf:RDF/*"/>
-      </xsl:if>
+    <!-- first we parse in 'safe' mode -->
+    <xsl:variable name="tmp" select="document-literal (., '', 2)"/>
+		<xsl:if test="$tmp/rdf:rdf/*">
+		<xsl:variable name="doc" select="document-literal (replace (., '&quot;xmlns', '&quot; xmlns'))"/>
+		<xsl:copy-of select="$doc/rdf:RDF/*"/>
+	</xsl:if>
   </xsl:template>
-  
+
   <xsl:template match="title">
-      <dc:title>
-	  <xsl:value-of select="."/>
-      </dc:title>
+     <dc:title>
+		<xsl:value-of select="."/>
+     </dc:title>
   </xsl:template>
-  
+
   <xsl:template match="meta[translate (@name, $uc, $lc)='description']">
       <dc:description>
-	  <xsl:value-of select="@content"/>
+		<xsl:value-of select="@content"/>
       </dc:description>
   </xsl:template>
-  
+
   <xsl:template match="meta[translate (@name, $uc, $lc)='copyrights']">
       <dc:rights>
-	  <xsl:value-of select="@content"/>
+		<xsl:value-of select="@content"/>
       </dc:rights>
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='keywords']">
       <dc:subject>
-	  <xsl:value-of select="@content"/>
+		<xsl:value-of select="@content"/>
 	  </dc:subject>
       <!--xsl:variable name="res" select="vi:umbelGet (@content)"/>
       <xsl:for-each select="$res//object[@type='umbel:SubjectConcept']">

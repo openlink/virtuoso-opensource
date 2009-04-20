@@ -1,4 +1,5 @@
-<?xml version="1.0" encoding="UTF-8" ?> <!--
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
  -
  -  $Id$
  -
@@ -26,14 +27,14 @@
 <!ENTITY xml 'http://www.w3.org/XML/1998/namespace#'>
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 ]>
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" 
+	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
 	xmlns:dc="http://purl.org/dc/elements/1.1/"
-	xmlns:dcterms="http://purl.org/dc/terms/" 
-	xmlns:foaf="&foaf;" 
+	xmlns:dcterms="http://purl.org/dc/terms/"
+	xmlns:foaf="&foaf;"
 	xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
-	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/" 
+	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
 	xmlns:v="http://www.w3.org/2006/vcard/ns#"
 	xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
 	xmlns:vcard="http://www.w3.org/2001/vcard-rdf/3.0#"
@@ -52,7 +53,7 @@
 			<xsl:apply-templates select="FindCompetitorsByCompanyIDResponse/return" />
 		</rdf:RDF>
 	</xsl:template>
-	
+
 	<xsl:template match="FindCompetitorsByCompanyIDResponse/return">
 		<xsl:for-each select="competitor">
 			<foaf:Organization rdf:about="{concat($baseUri, '#', recname)}">
@@ -77,7 +78,7 @@
 			</vcard:ADR>
 		</xsl:for-each>
 	</xsl:template>
-	
+
 	<xsl:template match="GetFamilyTreeResponse/return">
 		<foaf:Organization rdf:about="{concat($baseUri, '#', name)}">
 			<foaf:name>
@@ -115,7 +116,7 @@
 			</vcard:Extadd>
 		</vcard:ADR>
 	</xsl:template>
-	
+
 	<xsl:template match="GetCompanyDetailResponse/return">
 		<foaf:Organization rdf:about="{$baseUri}">
 			<foaf:name>
@@ -197,5 +198,5 @@
 			</vcard:Extadd>
 		</vcard:ADR>
 	</xsl:template>
-	
+
 </xsl:stylesheet>

@@ -1,4 +1,5 @@
-<?xml version="1.0" encoding="UTF-8" ?> <!--
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
  -
  -  $Id$
  -
@@ -66,7 +67,7 @@
           <rdf:Description rdf:about="{URL}">
  		<rdf:type rdf:resource="&foaf;Document"/>
  		<rdf:type rdf:resource="&bibo;Document"/>
- 		<rdf:type rdf:resource="&sioc;Container"/>		
+ 		<rdf:type rdf:resource="&sioc;Container"/>
  		<sioc:container_of rdf:resource="{vi:proxyIRI(URL)}"/>
  		<foaf:topic rdf:resource="{vi:proxyIRI(URL)}"/>
  		<dcterms:subject rdf:resource="{vi:proxyIRI(URL)}"/>

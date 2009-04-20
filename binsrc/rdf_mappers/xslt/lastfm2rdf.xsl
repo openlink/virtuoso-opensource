@@ -111,7 +111,7 @@
 			<rdf:Description rdf:about="{vi:proxyIRI(concat($base, 'music/', translate(//similarartists/@artist, ' ', '+')))}">
 				<xsl:choose>
 					<xsl:when test="starts-with(url, 'http://')">
-				<mo:similar_to rdf:resource="{vi:proxyIRI(url)}"/>
+						<mo:similar_to rdf:resource="{vi:proxyIRI(url)}"/>
 					</xsl:when>
 					<xsl:otherwise>
 						<mo:similar_to rdf:resource="{vi:proxyIRI(concat('http://', url))}"/>
@@ -161,7 +161,7 @@
 			<rdf:Description rdf:about="{vi:proxyIRI(concat($base, 'music/', //similartracks/@artist, '/_/', //similartracks/@track))}">
 				<xsl:choose>
 					<xsl:when test="starts-with(url, 'http://')">
-				<mo:similar_to rdf:resource="{vi:proxyIRI(url)}"/>
+						<mo:similar_to rdf:resource="{vi:proxyIRI(url)}"/>
 					</xsl:when>
 					<xsl:otherwise>
 						<mo:similar_to rdf:resource="{vi:proxyIRI(concat('http://', url))}"/>
@@ -182,7 +182,7 @@
 		</rdf:Description>
 		<xsl:call-template name="album"/>
 	</xsl:template>
-	
+
 	<xsl:template match="lfm[@status='ok']/albums">
 		<rdf:Description rdf:about="{$baseUri}">
 			<rdf:type rdf:resource="&foaf;Document"/>
@@ -200,7 +200,7 @@
 			<xsl:call-template name="album"/>
 	    </xsl:for-each>
 	</xsl:template>
-	
+
    	<xsl:template match="lfm[@status='ok']/toptracks[@user]">
 		<rdf:Description rdf:about="{$baseUri}">
 			<rdf:type rdf:resource="&foaf;Document"/>
@@ -219,7 +219,7 @@
 	    </xsl:for-each>
 	</xsl:template>
 
-	
+
    	<xsl:template match="lfm[@status='ok']/topartists[@user]">
 		<rdf:Description rdf:about="{$baseUri}">
 			<rdf:type rdf:resource="&foaf;Document"/>
@@ -253,7 +253,7 @@
 			<xsl:call-template name="album"/>
 	    </xsl:for-each>
 	</xsl:template>
-	
+
    	<xsl:template match="lfm[@status='ok']/topalbums[@user]">
 		<rdf:Description rdf:about="{$baseUri}">
 			<rdf:type rdf:resource="&foaf;Document"/>
@@ -360,7 +360,7 @@
 			<xsl:for-each select="similar/artist">
 				<xsl:choose>
 					<xsl:when test="starts-with(url, 'http://')">
-				<mo:similar_to rdf:resource="{vi:proxyIRI(url)}"/>
+						<mo:similar_to rdf:resource="{vi:proxyIRI(url)}"/>
 					</xsl:when>
 					<xsl:otherwise>
 						<mo:similar_to rdf:resource="{vi:proxyIRI(concat('http://', url))}"/>
@@ -398,12 +398,12 @@
 			</xsl:for-each>
 			<xsl:choose>
 				<xsl:when test="string(artist/url)">
-					<dcterms:creator rdf:resource="{vi:proxyIRI(translate(artist/url, ' ', '+'))}"/>	    
+					<dcterms:creator rdf:resource="{vi:proxyIRI(translate(artist/url, ' ', '+'))}"/>
 					<foaf:maker rdf:resource="{vi:proxyIRI(translate(artist/url, ' ', '+'))}"/>
 				</xsl:when>
 				<xsl:otherwise>
 					<xsl:if test="string(artist)">
-						<dcterms:creator rdf:resource="{vi:proxyIRI(translate(concat($base, 'music/', artist), ' ', '+'))}"/>	    
+						<dcterms:creator rdf:resource="{vi:proxyIRI(translate(concat($base, 'music/', artist), ' ', '+'))}"/>
 						<foaf:maker rdf:resource="{vi:proxyIRI(translate(concat($base, 'music/', artist), ' ', '+'))}"/>
 					</xsl:if>
 				</xsl:otherwise>
@@ -431,7 +431,7 @@
     </xsl:template>
 
     <xsl:template name="track">
-		
+
 		<rdf:Description rdf:about="{vi:proxyIRI(url)}">
 			<rdf:type rdf:resource="&mo;Track"/>
 			<rdf:type rdf:resource="&audio;Recording"/>
@@ -471,7 +471,7 @@
 			</xsl:if>
 			<xsl:if test="string(artist/url)">
 				<foaf:maker rdf:resource="{vi:proxyIRI(translate(artist/url, ' ', '+'))}"/>
-				<dcterms:creator rdf:resource="{vi:proxyIRI(translate(artist/url, ' ', '+'))}"/>	    
+				<dcterms:creator rdf:resource="{vi:proxyIRI(translate(artist/url, ' ', '+'))}"/>
 			</xsl:if>
 			<xsl:if test="album/url">
 				<mo:published_as rdf:resource="{vi:proxyIRI (album/url)}"/>
@@ -570,7 +570,7 @@
 		</vcard:ADR>
 
     </xsl:template>
-    
+
     <xsl:template match="profile">
    		<rdf:Description rdf:about="{$baseUri}">
 			<rdf:type rdf:resource="&foaf;Document"/>
