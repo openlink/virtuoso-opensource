@@ -30,6 +30,350 @@
   xmlns:vm="http://www.openlinksw.com/vspx/ods/"
   xmlns:v="http://www.openlinksw.com/vspx/">
 
+  <v:method name="savePersonal" arglist="">
+    <![CDATA[
+      declare lat, lng any;
+      declare params, _arr any;
+
+      params := self.vc_page.vc_event.ve_params;
+      if (exists (select 1 from WA_USER_INFO where WAUI_U_ID <> self.u_id and WAUI_NICK = self.nickn.ufl_value))
+      {
+        self.nick := WA_MAKE_NICK (self.nickn.ufl_value);
+        self.nickn.vc_data_bind (self.vc_page.vc_event);
+        self.vc_error_message := 'This nick already used please enter another or use suggested';
+        self.vc_is_valid := 0;
+        return;
+      }
+      if (exists (select 1 from SYS_USERS where U_E_MAIL = self.regmail.ufl_value) and exists (select 1 from WA_SETTINGS where WS_UNIQUE_MAIL = 1))
+      {
+        self.vc_error_message := 'This e-mail address is already registered.';
+        self.vc_is_valid := 0;
+        return;
+      }
+      _arr := WA_STR_PARAM(params, 'sel_');
+      WA_USER_VISIBILITY (self.u_name, _arr, 2);
+
+      declare tag varchar;
+      declare tid integer;
+
+      tag := WA_TAG_PREPARE(self.s_tag.ufl_value);
+      if (not WA_VALIDATE_TAGS(tag))
+      {
+        self.vc_error_message := 'The Tags expression is not valid.';
+        self.vc_is_valid := 0;
+        return;
+      }
+      -- public tags
+      WA_USER_TAG_SET(http_nobody_uid(), self.u_id, tag);
+
+      declare dt datetime;
+
+      dt := null;
+      if (self.regbyear.ufl_value is not null and
+          self.regbmonth.ufl_value is not null and
+          self.regbday.ufl_value is not null and
+          self.regbyear.ufl_value <> '' and
+          self.regbmonth.ufl_value <> '' and
+          self.regbday.ufl_value <> '')
+      {
+        declare exit handler for sqlstate '*'
+        {
+          self.vc_is_valid := 0;
+          self.vc_error_message := sprintf ('An invalid date (%s-%s-%s) is specified', self.regbyear.ufl_value, self.regbmonth.ufl_value, self.regbday.ufl_value);
+          return;
+        };
+        dt := stringdate(sprintf('%s-%s-%s', self.regbyear.ufl_value, self.regbmonth.ufl_value, self.regbday.ufl_value));
+      }
+
+      -- before to edit rest of fields, set the org(anization) flag
+      self.is_org := self.cb_org.ufl_selected;
+      update WA_USER_INFO set WAUI_IS_ORG = self.cb_org.ufl_selected where WAUI_U_ID = self.u_id;
+
+      declare rc,rc_org, pwd1 any;
+      pwd1 := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = 'dav');
+      rc := 0;
+      rc_org := 0;
+
+      declare p_ext any;
+      p_ext := split_and_decode(self.s_photo.ufl_value,0,'\0\0.');
+
+      if (p_ext is not null and p_ext[length(p_ext)-1] is not null and lcase(p_ext[length(p_ext)-1]) not in ('jpg','png','gif'))
+      {
+        self.vc_error_message := ' Invalid image type. Please use jpg,png or gif for browser compatibility.';
+        self.vc_is_valid := 0;
+        self.previe_path:='';
+        return;
+      }
+
+      if (get_keyword ('up_photo', params, '') <> '' or (self.previe_path <> '' and self.s_photo.ufl_value <> ''))
+      {
+        declare dir, p_path, p_path_org, dotpos, up_cont any;
+        declare p_path_size2 any;
+
+        dir := rtrim (DAV_HOME_DIR (self.u_name), '/')||'/wa/images/';
+        up_cont := get_keyword ('up_photo', params);
+
+        p_path := self.s_photo.ufl_value;
+        if (self.s_photo.ufl_value not like '/%')
+          p_path := dir || p_path;
+
+        dotpos := REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1;
+        p_path_org := subseq (self.s_photo.ufl_value,0, dotpos) || '_org' || subseq (self.s_photo.ufl_value, dotpos);
+        p_path_size2 := subseq (self.s_photo.ufl_value,0, dotpos) || '_size2' || subseq (self.s_photo.ufl_value, dotpos);
+        if (self.s_photo.ufl_value not like '/%')
+      {
+          p_path_org := dir || p_path_org;
+          p_path_size2 := dir || p_path_size2;
+        }
+        rc := DAV_MAKE_DIR (dir, self.u_id, http_admin_gid (), '110100100N');
+
+        if (up_cont <> '')
+        {
+          rc := DAV_RES_UPLOAD (p_path, up_cont, '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
+          rc_org := DAV_RES_UPLOAD (p_path_org, up_cont, '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
+        }
+        else if (self.previe_path <> '' and self.s_photo.ufl_value <> '')
+                                {
+          rc := DB.DBA.DAV_COPY (self.previe_path, p_path, 1, '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
+          self.previe_path := '';
+                          }
+
+        if (rc < 0 or rc_org < 0)
+                                {
+          self.vc_is_valid := 0;
+          self.vc_error_message := DAV_PERROR (rc);
+                          }
+        if (rc > 0 or rc_org > 0)
+        {
+          declare exit handler for sqlstate '*'
+          {
+            sql_warning (__SQL_STATE, 'UIEP1', __SQL_MESSAGE);
+          };
+          declare img,thumb,thumb_size2 any;
+          img := null; thumb := null; thumb_size2 := null;
+          select blob_to_string (RES_CONTENT) into img from WS.WS.SYS_DAV_RES where RES_ID = rc;
+
+          if (img is not null)
+            thumb := WA_MAKE_THUMBNAIL_1 (img);
+          thumb_size2 := WA_MAKE_THUMBNAIL_1 (img, 115, 160);
+
+          if (thumb is not null)
+            DAV_RES_UPLOAD (p_path, thumb, '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
+
+          if (thumb_size2 is not null)
+            DAV_RES_UPLOAD (p_path_size2, thumb_size2, '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
+        }
+        if (p_path like '/DAV/%')
+          p_path := subseq (p_path, 4);
+        WA_USER_EDIT (self.u_name, 'WAUI_PHOTO_URL', p_path);
+      }
+      else
+                                {
+        if (get_keyword ('s_photo', params, '') = '')
+          WA_USER_EDIT (self.u_name, 'WAUI_PHOTO_URL', '');
+                          }
+      if (get_keyword ('up_audio', params, '') <> '')
+                      {
+        declare dir, p_path any;
+        dir := rtrim (DAV_HOME_DIR (self.u_name), '/')||'/wa/media/';
+
+        p_path := self.s_audio.ufl_value;
+        if (self.s_audio.ufl_value not like '/%')
+          p_path := dir|| p_path;
+
+                     rc := DAV_MAKE_DIR (dir, self.u_id, http_admin_gid (), '110100100N');
+        rc := DAV_RES_UPLOAD (p_path, get_keyword ('up_audio', params), '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
+
+                     if (rc < 0)
+                     {
+                       self.vc_is_valid := 0;
+                       self.vc_error_message := DAV_PERROR (rc);
+                    }
+        WA_USER_EDIT (self.u_name, 'WAUI_AUDIO_CLIP', p_path);
+                }
+      if (self.is_org)
+                  {
+        dt := null;
+        self.regtitle.ufl_value := null;
+        self.f_name.ufl_value := null;
+        self.l_name.ufl_value := null;
+        self.regender.ufl_value := null;
+        self.m_sign.ufl_value := null;
+        self.e_fbook.ufl_value := null;
+        self.e_fmusic.ufl_value := null;
+        self.e_fmovie.ufl_value  := null;
+                }
+
+      WA_USER_EDIT (self.u_name, 'WAUI_TITLE', self.regtitle.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_FIRST_NAME', self.f_name.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_LAST_NAME', self.l_name.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_FULL_NAME', self.full_name.ufl_value);
+      WA_USER_EDIT (self.u_name, 'E_MAIL', self.regmail.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_GENDER', self.regender.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BIRTHDAY', dt);
+
+      WA_USER_EDIT (self.u_name, 'WAUI_HADDRESS1', self.h_address1.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_HADDRESS2', self.h_address2.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_HCODE', self.h_code.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_HCITY', self.h_city.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_HSTATE', get_keyword ('h_state', params));
+      WA_USER_EDIT (self.u_name, 'WAUI_HCOUNTRY', self.h_country.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_HTZONE', self.h_tzone.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_HPHONE', self.h_phone.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_HMOBILE', self.h_mobile.ufl_value);
+
+      WA_USER_EDIT (self.u_name, 'WAUI_ICQ', self.u_icq.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_SKYPE', self.u_skype.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_AIM', self.u_aim.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_YAHOO', self.u_yahoo.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_MSN', self.u_msn.ufl_value);
+
+      lat := null;
+      lng := null;
+      if (length (self.h_lat.ufl_value) and length (self.h_lng.ufl_value))
+                {
+        lat := atof (self.h_lat.ufl_value);
+        lng := atof (self.h_lng.ufl_value);
+      }
+      WA_USER_EDIT (self.u_name, 'WAUI_LAT', lat);
+      WA_USER_EDIT (self.u_name, 'WAUI_LNG', lng);
+
+      WA_USER_EDIT (self.u_name, 'WAUI_MSIGNATURE', self.m_sign.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_FAVORITE_BOOKS', self.e_fbook.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_FAVORITE_MUSIC', self.e_fmusic.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_FAVORITE_MOVIES', self.e_fmovie.ufl_value);
+
+      -- WA_USER_EDIT (self.u_name, 'WAUI_FOAF', self.e_foaf.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_SUMMARY', self.s_summ.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_WEBPAGE', self.w_page.ufl_value);
+
+      WA_USER_EDIT (self.u_name, 'WAUI_SEARCHABLE', self.in_search.ufl_selected);
+      WA_USER_EDIT (self.u_name, 'WAUI_SHOWACTIVE', self.show_active.ufl_selected);
+
+      declare N, id integer;
+      declare suffix, tmp_a, tmp_b, tmp_e, tmp_m varchar;
+      declare IDc, IDd any;
+
+      tmp_a := '';
+      tmp_b := '';
+      tmp_e := '';
+      tmp_m := '';
+      IDc := vector ();
+      IDd := vector ();
+      for (N := 0; N < length (params); N := N + 4)
+                  {
+        if ((params [N] like 'a_fld_1_%') and (trim (params [N+1]) <> ''))
+                    {
+          suffix := replace (params [N], 'a_fld_1_', '');
+          tmp_a := tmp_a || trim (params [N+1]) || ';' || trim (get_keyword ('a_fld_2_'||suffix, params, '')) || '\n';
+                  }
+        else if ((params [N] like 'b_fld_1_%') and (trim (params [N+1]) <> ''))
+                      {
+          suffix := replace (params [N], 'b_fld_1_', '');
+          tmp_b := tmp_b || trim (params [N+1]) || ';' || trim (get_keyword ('b_fld_2_'||suffix, params, '')) || '\n';
+                      }
+        else if ((params [N] like 'c_fld_1_%') and (trim (params [N+1]) <> ''))
+                      {
+          suffix := replace (params [N], 'c_fld_1_', '');
+          id := cast (get_keyword ('c_fld_0_'||suffix, params, '-1') as integer);
+          if (id <> -1)
+                        {
+            update WA_USER_OL_ACCOUNTS
+               set WUO_NAME = trim (params [N+1]),
+                   WUO_URL = trim (get_keyword ('c_fld_2_'||suffix, params, ''))
+             where WUO_ID = id;
+            IDc := vector_concat (IDc, vector (id));
+                        }
+                      }
+        else if ((params [N] like 'd_fld_1_%') and (trim (params [N+1]) <> ''))
+                            {
+          suffix := replace (params [N], 'd_fld_1_', '');
+          id := cast (get_keyword ('d_fld_0_'||suffix, params, '-1') as integer);
+          if (id <> -1)
+          {
+            update WA_USER_BIOEVENTS
+               set WUB_EVENT = trim (params [N+1]),
+                   WUB_DATE = trim (get_keyword ('d_fld_2_'||suffix, params, '')),
+                   WUB_PLACE = trim (get_keyword ('d_fld_3_'||suffix, params, ''))
+             where WUB_ID = id;
+            IDd := vector_concat (IDd, vector (id));
+                            }
+        }
+        else if ((params [N] like 'e_fld_1_%') and (trim (params [N+1]) <> ''))
+                         {
+          suffix := replace (params [N], 'e_fld_1_', '');
+          tmp_e := tmp_e || trim (params [N+1]) || '\n';
+        }
+        else if ((params [N] like 'm_fld_1_%') and (trim (params [N+1]) <> ''))
+                           {
+          suffix := replace (params [N], 'm_fld_1_', '');
+          tmp_m := tmp_m || trim (params [N+1]) || ';' || trim (get_keyword ('m_fld_2_'||suffix, params, '')) || '\n';
+                           }
+                         }
+      self.interests := tmp_a;
+      self.interestTopics := tmp_b;
+      self.efoaf := tmp_e;
+      self.messaging := tmp_m;
+      WA_USER_EDIT (self.u_name, 'WAUI_INTERESTS', tmp_a);
+      WA_USER_EDIT (self.u_name, 'WAUI_INTEREST_TOPICS', tmp_b);
+      WA_USER_EDIT (self.u_name, 'WAUI_FOAF', tmp_e);
+      WA_USER_EDIT (self.u_name, 'WAUI_MESSAGING', tmp_m);
+
+      for (select WUO_ID as _id from WA_USER_OL_ACCOUNTS where WUO_U_ID = self.u_id and WUO_TYPE = 'P') do
+                    {
+        for (N := 0; N < length (IDc); N := N + 1)
+        {
+          if (IDc[N] = _id)
+            goto _exit;
+                    }
+        delete from WA_USER_OL_ACCOUNTS where WUO_ID = _id;
+      _exit:;
+      }
+      for (N := 0; N < length (params); N := N + 4)
+                    {
+        if ((params [N] like 'c_fld_1_%') and (trim (params [N+1]) <> ''))
+        {
+          suffix := replace (params [N], 'c_fld_1_', '');
+          id := cast (get_keyword ('c_fld_0_'||suffix, params, '-1') as integer);
+          if ((id = -1) and (trim (get_keyword ('c_fld_2_'||suffix, params, '')) <> ''))
+          {
+            insert into WA_USER_OL_ACCOUNTS ( WUO_NAME, WUO_URL, WUO_U_ID, WUO_TYPE)
+              values (trim (params [N+1]), trim (get_keyword ('c_fld_2_'||suffix, params, '')), self.u_id, 'P');
+                    }
+              }
+                  }
+      for (select WUB_ID as _id from WA_USER_BIOEVENTS where WUB_U_ID = self.u_id) do
+    {
+        for (N := 0; N < length (IDd); N := N + 1)
+                  {
+          if (IDd[N] = _id)
+            goto _exit2;
+                 }
+        delete from WA_USER_BIOEVENTS where WUB_ID = _id;
+      _exit2:;
+      }
+      for (N := 0; N < length (params); N := N + 4)
+                  {
+        if ((params [N] like 'd_fld_1_%') and (trim (params [N+1]) <> ''))
+                    {
+          suffix := replace (params [N], 'd_fld_1_', '');
+          id := cast (get_keyword ('d_fld_0_'||suffix, params, '-1') as integer);
+          if (id = -1)
+          {
+            insert into WA_USER_BIOEVENTS ( WUB_EVENT, WUB_DATE, WUB_PLACE, WUB_U_ID)
+              values (trim (params [N+1]), trim (get_keyword ('d_fld_2_'||suffix, params, '')), trim (get_keyword ('d_fld_3_'||suffix, params, '')), self.u_id);
+          }
+        }
+                  }
+
+      WA_USER_EDIT (self.u_name, 'WAUI_APP_ENABLE', atoi (self.app_enable.ufl_value));
+      update WA_USER_INFO set WAUI_NICK = self.nickn.ufl_value where WAUI_U_ID = self.u_id;
+
+      -- change user_text data
+      WA_USER_TEXT_SET(self.u_id, WA_GET_USER_INFO (0, self.u_id, WA_USER_VISIBILITY(self.u_name), 0, 1));
+    ]]>
+  </v:method>
+
   <v:variable persist="session" name="is_org" type="int" default="0"/>
   <v:variable persist="0" name="utitle" type="varchar" default="''"/>
   <v:variable persist="0" name="nick" type="varchar" default="''"/>
@@ -38,6 +382,7 @@
   <v:variable persist="0" name="fullname" type="varchar" default="''"/>
   <v:variable persist="0" name="gender" type="varchar" default="''"/>
   <v:variable persist="0" name="bdate" type="datetime" default="null"/>
+
   <v:variable persist="0" name="wpage" type="varchar" default="''"/>
   <v:variable persist="0" name="efoaf" type="varchar" default="''"/>
   <v:variable persist="0" name="msign" type="varchar" default="''"/>
@@ -206,7 +551,7 @@
 
       tmp := WA_USER_VISIBILITY(self.u_name);
       if (tmp is not null and length (tmp) >= 46 )
-      {
+            {
         self.sav0 := tmp[0];
         self.sav1 := tmp[1];
         self.sav2 := tmp[2];
@@ -240,26 +585,26 @@
         self.sav46 := tmp[46];
         self.sav48 := tmp[48];
         self.sav49 := tmp[49];
-      }
+              }
     ]]>
   </v:before-data-bind>
   <script type="text/javascript">
     <![CDATA[
       var edited = <?V case when length (self.fullname) then 'true' else 'false' end ?>;
       function fillFullName (f, fn, ln, flag)
-      {
+              {
         if (edited)
-        {
+                {
           if (flag)
             edited = false;
           return;
-        }
+                }
         if (f.value.length == 0 || (!edited && !flag))
           f.value = fn.value + ' ' + ln.value;
-        }
+              }
      ]]>
-   </script>
-   <v:form name="usr_personal" type="simple" method="POST" xhtml_enctype="multipart/form-data" action="uiedit.vspx?page=1">
+  </script>
+  <v:form name="usr_personal" type="simple" method="POST" xhtml_enctype="multipart/form-data" action="uiedit.vspx?page=1">
     <input type="hidden" name="dirty_force_global" id="dirty_force_global" value="<?vsp http(get_keyword ('dirty_force_global',self.vc_event.ve_params,'false')); ?>"/>
     <br />
     <div id="p" class="c1">
@@ -272,229 +617,229 @@
       </div>
       <div class="contents">
         <div id="p_content_0" class="tabContent">
-     <table  class="ctl_grp">
-        <tr>
-          <th><label for="labelww">Login name</label></th>
-          <td class="listing_col" nowrap="1">
-            <v:label name="labelww" value="--self.u_name" format="%s"/>
-          </td>
-        </tr>
-        <tr>
-          <th><label for="labelwwn">Nick name</label></th>
-          <td class="listing_col" nowrap="1">
+          <table class="ctl_grp">
+            <tr>
+              <th><label for="labelww">Login name</label></th>
+              <td class="listing_col" nowrap="1">
+                <v:label name="labelww" value="--self.u_name" format="%s"/>
+              </td>
+            </tr>
+            <tr>
+              <th><label for="labelwwn">Nick name</label></th>
+              <td class="listing_col" nowrap="1">
                 <v:text name="nickn" value="--self.nick" format="%s" xhtml_tabindex="1">
-             <v:validator test="length" min="3" max="100" name="vv_nickn" message="Nick name cannot be shorter than 3 chars or longer than 100 chars"/>
-	      </v:text>
-          </td>
-        </tr>
-        <tr>
+                  <v:validator test="length" min="3" max="100" name="vv_nickn" message="Nick name cannot be shorter than 3 chars or longer than 100 chars"/>
+                </v:text>
+              </td>
+            </tr>
+            <tr>
               <th />
-          <td class="listing_col" nowrap="1">
+              <td class="listing_col" nowrap="1">
                 <label>
                   <v:check-box name="cb_org" value="1" xhtml_id="cb_org" xhtml_onclick="javascript:swOrg(this);" xhtml_tabindex="2">
-              <v:after-data-bind>
-                if (not e.ve_is_post)
-                  control.ufl_selected := self.is_org;
-              </v:after-data-bind>
-            </v:check-box><![CDATA[&nbsp;]]>
+                    <v:after-data-bind>
+                      if (not e.ve_is_post)
+                        control.ufl_selected := self.is_org;
+                    </v:after-data-bind>
+                  </v:check-box><![CDATA[&nbsp;]]>
                   <b>Organization</b>
                 </label>
-          </td>
-      </tr>
+              </td>
+            </tr>
             <tr id="pers_1" class="initial_hidden">
-        <th><label for="regtitle">Title</label></th>
-        <td class="listing_col" nowrap="1">
+              <th><label for="regtitle">Title</label></th>
+              <td class="listing_col" nowrap="1">
                 <v:select-list name="regtitle" xhtml_tabindex="3">
-            <v:item name="" value=""/>
-            <v:item name="Mr" value="Mr"/>
-            <v:item name="Mrs" value="Mrs"/>
-            <v:item name="Dr" value="Dr"/>
-            <v:item name="Ms" value="Ms"/>
-            <v:before-data-bind>
-              <![CDATA[
-                control.ufl_value := self.utitle;
-                control.vc_data_bound := 1;
-              ]]>
-            </v:before-data-bind>
-          </v:select-list>
-          <vm:u-prop-select name="sel_0" value="self.sav0" />
-        </td>
-      </tr>
+                  <v:item name="" value=""/>
+                  <v:item name="Mr" value="Mr"/>
+                  <v:item name="Mrs" value="Mrs"/>
+                  <v:item name="Dr" value="Dr"/>
+                  <v:item name="Ms" value="Ms"/>
+                  <v:before-data-bind>
+                    <![CDATA[
+                      control.ufl_value := self.utitle;
+                      control.vc_data_bound := 1;
+                    ]]>
+                  </v:before-data-bind>
+                </v:select-list>
+                <vm:u-prop-select name="sel_0" value="self.sav0" />
+              </td>
+            </tr>
             <tr id="pers_2" class="initial_hidden">
-        <th><label for="f_name">First Name</label></th>
-        <td class="listing_col" nowrap="1">
+              <th><label for="f_name">First Name</label></th>
+              <td class="listing_col" nowrap="1">
                 <v:text name="f_name" error-glyph="*" value="--self.ftname" xhtml_style="width:216px" xhtml_tabindex="4" fmt-function="wa_utf8_to_wide" xhtml_onblur="javascript: fillFullName (this.form.full_name, this.form.f_name, this.form.l_name, false)">
-            <v:validator test="length" min="0" max="50" name="vv_f_name1" message="First name cannot be longer then 50 chars" empty-allowed="1"/>
-            <v:validator test="sql" name="vv_f_name2" expression="length(trim(self.f_name.ufl_value)) > 50" message="First name cannot be longer then 50 chars" empty-allowed="1"/>
-          </v:text>
-          <div style="display:inline; color:red;"><v:error-summary match="f_name" /></div>
-          <vm:u-prop-select name="sel_1" value="self.sav1" />
-        </td>
-      </tr>
+                  <v:validator test="length" min="0" max="50" name="vv_f_name1" message="First name cannot be longer then 50 chars" empty-allowed="1"/>
+                  <v:validator test="sql" name="vv_f_name2" expression="length(trim(self.f_name.ufl_value)) > 50" message="First name cannot be longer then 50 chars" empty-allowed="1"/>
+                </v:text>
+                <div style="display:inline; color:red;"><v:error-summary match="f_name" /></div>
+                <vm:u-prop-select name="sel_1" value="self.sav1" />
+              </td>
+            </tr>
             <tr id="pers_3" class="initial_hidden">
-        <th><label for="l_name">Last Name</label></th>
-        <td class="listing_col" nowrap="1">
+              <th><label for="l_name">Last Name</label></th>
+              <td class="listing_col" nowrap="1">
                 <v:text name="l_name" error-glyph="*" value="--self.lname" xhtml_style="width:216px" xhtml_tabindex="5" fmt-function="wa_utf8_to_wide" xhtml_onblur="javascript: fillFullName (this.form.full_name, this.form.f_name, this.form.l_name, false)">
-             <v:validator test="length" min="0" max="50" message="Last name cannot be longer then 50 chars" empty-allowed="1" name="vv_lname1"/>
-             <v:validator test="sql" expression="length(trim(self.l_name.ufl_value)) > 50" name="vv_lname2" message="Last name cannot be longer then 50 chars" empty-allowed="1"/>
-                  </v:text>
-                  <div style="display:inline; color:red;"><v:error-summary match="l_name" /></div>
-      <vm:u-prop-select name="sel_2" value="self.sav2" />
-                </td>
-              </tr>
-              <tr>
-                <th><label for="full_name">Full Name</label></th>
-                <td class="listing_col" nowrap="1">
+                  <v:validator test="length" min="0" max="50" message="Last name cannot be longer then 50 chars" empty-allowed="1" name="vv_lname1"/>
+                  <v:validator test="sql" expression="length(trim(self.l_name.ufl_value)) > 50" name="vv_lname2" message="Last name cannot be longer then 50 chars" empty-allowed="1"/>
+                </v:text>
+                <div style="display:inline; color:red;"><v:error-summary match="l_name" /></div>
+                <vm:u-prop-select name="sel_2" value="self.sav2" />
+              </td>
+            </tr>
+            <tr>
+              <th><label for="full_name">Full Name</label></th>
+              <td class="listing_col" nowrap="1">
                 <v:text name="full_name" error-glyph="*" value="--self.fullname" xhtml_style="width:216px" xhtml_tabindex="6" fmt-function="wa_utf8_to_wide" xhtml_onfocus="javascript: fillFullName (this.form.full_name, this.form.f_name, this.form.l_name, true)">
-             <v:validator test="length" min="0" max="100" name="vv_fulname1" message="Full name cannot be longer then 100 chars" empty-allowed="1" />
-             <v:validator test="sql" expression="length(trim(self.full_name.ufl_value)) > 100" name="vv_fulname2" message="Full name cannot be longer then 100 chars" mpty-allowed="1"/>
-                  </v:text>
-                  <div style="display:inline; color:red;"><v:error-summary match="full_name" /></div>
-      <vm:u-prop-select name="sel_3" value="self.sav3" />
-                </td>
-              </tr>
-              <tr>
-         <th>
-           <label for="regmail">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
-          <span class="explain"> (mandatory field)</span>
-      </th>
-                <td class="listing_col" nowrap="nowrap">
+                  <v:validator test="length" min="0" max="100" name="vv_fulname1" message="Full name cannot be longer then 100 chars" empty-allowed="1" />
+                  <v:validator test="sql" expression="length(trim(self.full_name.ufl_value)) > 100" name="vv_fulname2" message="Full name cannot be longer then 100 chars" mpty-allowed="1"/>
+                </v:text>
+                <div style="display:inline; color:red;"><v:error-summary match="full_name" /></div>
+                <vm:u-prop-select name="sel_3" value="self.sav3" />
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <label for="regmail">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+                <span class="explain"> (mandatory field)</span>
+              </th>
+              <td class="listing_col" nowrap="nowrap">
                 <v:text xhtml_id="regmail" name="regmail" value="--self.email" xhtml_class="_validate_ _mail_" xhtml_style="width:216px" xhtml_tabindex="7" xhtml_onblur="javascript: validateField(this);" />
-                  <vm:u-prop-select name="sel_4" value="self.sav4" />
-                </td>
-              </tr>
+                <vm:u-prop-select name="sel_4" value="self.sav4" />
+              </td>
+            </tr>
             <tr id="pers_4" class="initial_hidden">
-                <th><label for="regender">Gender</label></th>
-                <td class="listing_col" nowrap="1">
+              <th><label for="regender">Gender</label></th>
+              <td class="listing_col" nowrap="1">
                 <v:select-list name="regender" xhtml_tabindex="8">
-                    <v:item name="Not Specified" value="unknown"/>
-                    <v:item name="Male" value="male"/>
-                    <v:item name="Female" value="female"/>
-                    <v:before-data-bind>
-                      <v:script><![CDATA[
-                        control.ufl_value := self.gender;
-                        control.vc_data_bound := 1;
-                      ]]></v:script>
-                    </v:before-data-bind>
-                  </v:select-list>
-                  <vm:u-prop-select name="sel_5" value="self.sav5" />
-                </td>
-              </tr>
+                  <v:item name="Not Specified" value="unknown"/>
+                  <v:item name="Male" value="male"/>
+                  <v:item name="Female" value="female"/>
+                  <v:before-data-bind>
+                    <v:script><![CDATA[
+                      control.ufl_value := self.gender;
+                      control.vc_data_bound := 1;
+                    ]]></v:script>
+                  </v:before-data-bind>
+                </v:select-list>
+                <vm:u-prop-select name="sel_5" value="self.sav5" />
+              </td>
+            </tr>
             <tr id="pers_5" class="initial_hidden">
-                <th><label for="regbday">Birthday</label></th>
-                <td class="listing_col" nowrap="1">
+              <th><label for="regbday">Birthday</label></th>
+              <td class="listing_col" nowrap="1">
                 <v:select-list xhtml_id="regbmonth" name="regbday" value="" xhtml_tabindex="9">
-                    <v:after-data-bind>
-                      <![CDATA[
-                        declare m, arr varchar;
-                        declare ddd datetime;
-                        declare i int;
+                  <v:after-data-bind>
+                    <![CDATA[
+                      declare m, arr varchar;
+                      declare ddd datetime;
+                      declare i int;
 
-                        ddd := self.bdate;
-                        m := '';
-                        if (ddd is not null and ddd <> 0)
-                          m := dayofmonth(ddd);
-                        control.ufl_value := m;
-                        arr := make_array (32, 'any');
-                        arr[0] := '';
-                        for (i := 1; i <= 31; i := i + 1)
-                                {
-                            arr[i] := cast(i as varchar);
-                          }
-                        control.vsl_items := arr;
-                        control.vsl_item_values := arr;
-                        control.vs_set_selected ();
-                      ]]>
-                    </v:after-data-bind>
-                  </v:select-list>
+                      ddd := self.bdate;
+                      m := '';
+                      if (ddd is not null and ddd <> 0)
+                        m := dayofmonth(ddd);
+                      control.ufl_value := m;
+                      arr := make_array (32, 'any');
+                      arr[0] := '';
+                      for (i := 1; i <= 31; i := i + 1)
+              {
+                        arr[i] := cast(i as varchar);
+              }
+                      control.vsl_items := arr;
+                      control.vsl_item_values := arr;
+                      control.vs_set_selected ();
+                    ]]>
+                  </v:after-data-bind>
+                </v:select-list>
       -
                 <v:select-list xhtml_id="regbday" name="regbmonth" value="" xhtml_tabindex="10">
-                    <v:before-data-bind>
-                      <![CDATA[
-                        declare m, arr, marr varchar;
-                        declare ddd datetime;
-                        declare i int;
+                  <v:before-data-bind>
+                    <![CDATA[
+                      declare m, arr, marr varchar;
+                      declare ddd datetime;
+                      declare i int;
 
-                        ddd := self.bdate;
-                        m := '';
-                        if (ddd is not null and ddd <> 0)
-                          m := month(ddd);
-                        control.ufl_value := m;
-                        arr := make_array (13, 'any');
-                        marr := vector ('', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
-                        arr[0] := '';
-                        for (i := 1; i <= 12; i := i + 1)
-                                {
-                            arr[i] := cast(i as varchar);
-                          }
-                        control.vsl_items := marr;
-                        control.vsl_item_values := arr;
-                        control.vs_set_selected ();
-                      ]]>
-                    </v:before-data-bind>
-                  </v:select-list>
-                  -
+                      ddd := self.bdate;
+                      m := '';
+                      if (ddd is not null and ddd <> 0)
+                        m := month(ddd);
+                      control.ufl_value := m;
+                      arr := make_array (13, 'any');
+                      marr := vector ('', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
+                      arr[0] := '';
+                      for (i := 1; i <= 12; i := i + 1)
+              {
+                        arr[i] := cast(i as varchar);
+            }
+                      control.vsl_items := marr;
+                      control.vsl_item_values := arr;
+                      control.vs_set_selected ();
+                    ]]>
+                  </v:before-data-bind>
+                </v:select-list>
+                -
                 <v:select-list xhtml_id="regbyear" name="regbyear" value="" xhtml_tabindex="11">
-                    <v:after-data-bind>
-                      <![CDATA[
-                        declare m, arr varchar;
-                        declare ddd datetime;
-                        declare i, lim int;
+                  <v:after-data-bind>
+                    <![CDATA[
+                      declare m, arr varchar;
+                      declare ddd datetime;
+                      declare i, lim int;
 
-                        ddd := self.bdate;
-                        m := '';
-                        if (ddd is not null and ddd <> 0)
-                          m := year(ddd);
-                        control.ufl_value := m;
+                      ddd := self.bdate;
+                      m := '';
+                      if (ddd is not null and ddd <> 0)
+                        m := year(ddd);
+                      control.ufl_value := m;
 
-                        lim := year (now()) - 4;
-                        arr := make_array (lim - 1950 + 2, 'any');
-                        arr[0] := '';
-                        for (i := 1950; i <= lim; i := i + 1)
-                                {
-                            arr[i-1949] := cast(i as varchar);
-                          }
-                        control.vsl_items := arr;
-                        control.vsl_item_values := arr;
-                        control.vs_set_selected ();
-                      ]]>
-                    </v:after-data-bind>
-                  </v:select-list>
-                  <vm:u-prop-select name="sel_6" value="self.sav6" />
-                </td>
-              </tr>
-              <tr>
-                <th><label for="w_page" id="lb_1">Personal Webpage</label></th>
-                <td class="listing_col" nowrap="1">
+                      lim := year (now()) - 4;
+                      arr := make_array (lim - 1950 + 2, 'any');
+                      arr[0] := '';
+                      for (i := 1950; i <= lim; i := i + 1)
+	            {
+                        arr[i-1949] := cast(i as varchar);
+		        }
+                      control.vsl_items := arr;
+                      control.vsl_item_values := arr;
+                      control.vs_set_selected ();
+                    ]]>
+                  </v:after-data-bind>
+                </v:select-list>
+                <vm:u-prop-select name="sel_6" value="self.sav6" />
+              </td>
+            </tr>
+             <tr>
+               <th><label for="w_page" id="lb_1">Personal Webpage</label></th>
+               <td class="listing_col" nowrap="1">
                  <v:text name="w_page" value="--self.wpage" xhtml_tabindex="12" xhtml_class="_validate_ _url_ _canEmpty_" xhtml_style="width:216px" xhtml_onblur="javascript: validateField(this);"/>
-                  <vm:u-prop-select name="sel_7" value="self.sav7" />
-                </td>
-              </tr>
-              <tr>
+                 <vm:u-prop-select name="sel_7" value="self.sav7" />
+               </td>
+             </tr>
+             <tr>
                <th>
                  <label for="e_foaf">Other Personal URIs (Web IDs)</label>
-                </th>
-                <td class="listing_col" nowrap="1">
+               </th>
+               <td class="listing_col" nowrap="1">
                  <table>
                    <tr>
                      <td width="600px">
                        <table id="e_tbl" class="listing">
                          <thead>
-                         <tr class="listing_header_row">
-                           <th>
-                             URI
-                           </th>
-                           <th width="80px">
-                             Action
-                           </th>
-                         </tr>
+                           <tr class="listing_header_row">
+                             <th>
+                               URI
+                             </th>
+                             <th width="80px">
+                               Action
+                             </th>
+                           </tr>
                          </thead>
                          <?vsp
                            declare N integer;
 
                            N := 0;
                            for (select interest from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar) P where txt = self.efoaf) do
-                           {
+                {
                          ?>
                          <tr id="e_tr_<?V N ?>">
                            <td>
@@ -506,7 +851,7 @@
                          </tr>
                          <?vsp
                              N := N + 1;
-                           }
+                }
                            http (sprintf ('<tr id="e_tr_no" style="display: %s"><td colspan="2"><b>No Personal URIs</b></td></tr>', case when N = 0 then '' else 'none' end));
                          ?>
                        </table>
@@ -514,317 +859,311 @@
                      </td>
                      <td valign="top" nowrap="1">
                        <input type="button" value="Add" onclick="javascript: updateRow('e', null, {fld_1: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
-                  <vm:u-prop-select name="sel_8" value="self.sav8" />
-                </td>
-              </tr>
+                       <vm:u-prop-select name="sel_8" value="self.sav8" />
+                     </td>
+                   </tr>
                  </table>
                </td>
              </tr>
              <tr id="pers_17" class="initial_hidden">
-                <th><label for="m_sign">Mail Signature</label></th>
-                <td class="listing_col" nowrap="1">
+               <th><label for="m_sign">Mail Signature</label></th>
+               <td class="listing_col" nowrap="1">
                  <v:textarea name="m_sign" value="--self.msign" xhtml_rows="4" xhtml_cols="80" xhtml_tabindex="14" fmt-function="wa_utf8_to_wide" error-glyph="*">
-                    <v:validator test="length" min="0" max="255" name="vv_m_sign1" message="Mail Signature cannot be longer then 255 chars" empty-allowed="1"/>
-                  </v:textarea>
-                  <v:text type="hidden" name="sel_9" value="3"/>
-                </td>
-              </tr>
-              <tr>
-                <th><label for="s_summ">Summary</label></th>
-                <td class="listing_col" nowrap="1">
+                   <v:validator test="length" min="0" max="255" name="vv_m_sign1" message="Mail Signature cannot be longer then 255 chars" empty-allowed="1"/>
+                 </v:textarea>
+                 <v:text type="hidden" name="sel_9" value="3"/>
+               </td>
+             </tr>
+             <tr>
+               <th><label for="s_summ">Summary</label></th>
+               <td class="listing_col" nowrap="1">
                  <v:textarea name="s_summ" value="--self.summ" xhtml_rows="4" xhtml_cols="80" xhtml_tabindex="15" fmt-function="wa_utf8_to_wide" error-glyph="*"/>
-                  <vm:u-prop-select name="sel_33" value="self.sav33" />
-                </td>
-              </tr>
-              <tr>
-               <th><label for="s_tags">Tags</label>
-                 <span class="explain"> (comma separated list of keywords)</span>
+                 <vm:u-prop-select name="sel_33" value="self.sav33" />
+               </td>
+             </tr>
+             <tr>
+              <th><label for="s_tags">Tags</label>
+                <span class="explain"> (comma separated list of keywords)</span>
+              </th>
+              <td class="listing_col" nowrap="1">
+                <v:textarea name="s_tag" value="--WA_USER_TAG_GET(self.u_name)" xhtml_tabindex="16" xhtml_cols="50" xhtml_rows="5" />
+                <v:button action="browse" name="tagsbt" value="Import Tags..." selector="get_tags_popup.vspx" child-window-options="scrollbar=yes,resizable=yes,menubar=no,height=600,width=800">
+                  <v:field name="s_tag"/>
+                </v:button>
+              </td>
+             </tr>
+             <tr>
+               <th>
+                 <label for="e_int">Web page URL indicating a topic of interest</label>
                </th>
                <td class="listing_col" nowrap="1">
-                <v:textarea name="s_tag" value="--WA_USER_TAG_GET(self.u_name)" xhtml_tabindex="16" xhtml_cols="50" xhtml_rows="5" />
-                 <v:button action="browse" name="tagsbt" value="Import Tags..." selector="get_tags_popup.vspx" child-window-options="scrollbar=yes,resizable=yes,menubar=no,height=600,width=800">
-                   <v:field name="s_tag"/>
-                 </v:button>
-               </td>
-        </tr>
-        <tr>
-         <th>
-           <label for="e_int">Web page URL indicating a topic of interest</label>
-      </th>
-    <td class="listing_col" nowrap="1">
-        <table>
-      <tr>
-               <td width="600px">
-                 <table id="a_tbl" class="listing">
+                 <table>
+                   <tr>
+                     <td width="600px">
+                       <table id="a_tbl" class="listing">
                          <thead>
-                   <tr class="listing_header_row">
-                     <th>
-                       URL
-                     </th>
-                     <th>
-                       Label
-                     </th>
-                           <th width="80px">
-                       Action
-                     </th>
-                   </tr>
+                           <tr class="listing_header_row">
+                             <th>
+                               URL
+                             </th>
+                             <th>
+                               Label
+                             </th>
+                             <th width="80px">
+                               Action
+                             </th>
+                           </tr>
                          </thead>
-                   <?vsp
-                     declare N integer;
+                         <?vsp
+                           declare N integer;
 
-                     N := 0;
-                     for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = self.interests) do
-      {
-                   ?>
-                   <tr id="a_tr_<?V N ?>">
+                           N := 0;
+                           for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = self.interests) do
+                           {
+                         ?>
+                         <tr id="a_tr_<?V N ?>">
                            <td>
                              <input type="text" id="a_fld_1_<?V N ?>" name="a_fld_1_<?V N ?>" value="<?V interest ?>" style="width: 95%;" class="_validate_ _url_ _canEmpty_" onblur="javascript: validateField(this);" />
                            </td>
                            <td>
-                       <input type="text" id="a_fld_2_<?V N ?>" name="a_fld_2_<?V N ?>" value="<?V label ?>" style="width: 95%;" />
+                             <input type="text" id="a_fld_2_<?V N ?>" name="a_fld_2_<?V N ?>" value="<?V label ?>" style="width: 95%;" />
                            </td>
                            <td>
-                       <input type="button" value="Remove" onclick="javascript: updateRow('a', <?V N ?>);" />
+                             <input type="button" value="Remove" onclick="javascript: updateRow('a', <?V N ?>);" />
                            </td>
-                   </tr>
-                   <?vsp
-                       N := N + 1;
-                     }
+                         </tr>
+                         <?vsp
+                             N := N + 1;
+                   }
                            http (sprintf ('<tr id="a_tr_no" style="display: %s"><td colspan="3"><b>No Topic of Interests</b></td></tr>', case when N = 0 then '' else 'none' end));
-                   ?>
-                 </table>
-                 <input type="hidden" id="a_no" name="a_no" value="<?V N ?>" />
-               </td>
-               <td valign="top" nowrap="1">
+                         ?>
+                       </table>
+                       <input type="hidden" id="a_no" name="a_no" value="<?V N ?>" />
+                     </td>
+                     <td valign="top" nowrap="1">
                        <input type="button" value="Add" onclick="javascript: updateRow('a', null, {fld_1: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld_2: {}});" />
-                 <vm:u-prop-select name="sel_48" value="self.sav48" />
+                       <vm:u-prop-select name="sel_48" value="self.sav48" />
+                     </td>
+                   </tr>
+                 </table>
                </td>
              </tr>
-           </table>
-         </td>
-       </tr>
-       <tr>
-         <th>
-           <label for="e_int2">Resource URI indicating thing of interest</label>
-         </th>
-         <td class="listing_col" nowrap="1">
-           <table>
              <tr>
-               <td width="600px">
-                 <table id="b_tbl" class="listing">
+               <th>
+                 <label for="e_int2">Resource URI indicating thing of interest</label>
+               </th>
+               <td class="listing_col" nowrap="1">
+                 <table>
+                   <tr>
+                     <td width="600px">
+                       <table id="b_tbl" class="listing">
                          <thead>
-                   <tr class="listing_header_row">
-                     <th>
-                       URI
-                     </th>
-                     <th>
-                       Label
-                     </th>
-                           <th width="80px">
-                       Action
-                     </th>
-                   </tr>
+                           <tr class="listing_header_row">
+                             <th>
+                               URI
+                             </th>
+                             <th>
+                               Label
+                             </th>
+                             <th width="80px">
+                               Action
+                             </th>
+                           </tr>
                          </thead>
-                   <?vsp
-                     declare N integer;
+                         <?vsp
+                           declare N integer;
 
-                     N := 0;
-                     for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = self.interestTopics) do
-            {
-                   ?>
-                   <tr id="b_tr_<?V N ?>">
+                           N := 0;
+                           for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = self.interestTopics) do
+                           {
+                         ?>
+                         <tr id="b_tr_<?V N ?>">
                            <td>
                              <input type="text" id="b_fld_1_<?V N ?>" name="b_fld_1_<?V N ?>" value="<?V interest ?>" style="width: 95%;" class="_validate_ _url_ _canEmpty_" onblur="javascript: validateField(this);" />
                            </td>
                            <td>
-                       <input type="text" id="b_fld_2_<?V N ?>" name="b_fld_2_<?V N ?>" value="<?V label ?>" style="width: 95%;" />
+                             <input type="text" id="b_fld_2_<?V N ?>" name="b_fld_2_<?V N ?>" value="<?V label ?>" style="width: 95%;" />
                            </td>
                            <td>
-                       <input type="button" value="Remove" onclick="javascript: updateRow('b', <?V N ?>);" />
+                             <input type="button" value="Remove" onclick="javascript: updateRow('b', <?V N ?>);" />
                            </td>
-                   </tr>
-                   <?vsp
-                       N := N + 1;
-      }
+                         </tr>
+                         <?vsp
+                             N := N + 1;
+                 }
                            http (sprintf ('<tr id="b_tr_no" style="display: %s"><td colspan="3"><b>No Thing of Interests</b></td></tr>', case when N = 0 then '' else 'none' end));
-                   ?>
-                 </table>
-                 <input type="hidden" id="b_no" name="b_no" value="<?V N ?>" />
-    </td>
-               <td valign="top" nowrap="1">
+                         ?>
+                       </table>
+                       <input type="hidden" id="b_no" name="b_no" value="<?V N ?>" />
+                     </td>
+                     <td valign="top" nowrap="1">
                        <input type="button" value="Add" onclick="javascript: updateRow('b', null, {fld_1: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld_2: {value: ''}});" />
-                 <vm:u-prop-select name="sel_49" value="self.sav49" />
-    </td>
-      </tr>
-  </table>
-    </td>
-        </tr>
+                       <vm:u-prop-select name="sel_49" value="self.sav49" />
+                     </td>
+                   </tr>
+                 </table>
+               </td>
+             </tr>
              <tr id="pers_18" class="initial_hidden">
-                <th><label for="e_fbook" title="Free text">Favorite Books</label></th>
-                <td class="listing_col" nowrap="1">
+               <th><label for="e_fbook" title="Free text">Favorite Books</label></th>
+               <td class="listing_col" nowrap="1">
                  <v:text name="e_fbook" value="--self.books" xhtml_size="80" xhtml_tabindex="17" fmt-function="wa_utf8_to_wide" />
-                  <vm:u-prop-select name="sel_44" value="self.sav44" />
-                </td>
-              </tr>
+                 <vm:u-prop-select name="sel_44" value="self.sav44" />
+               </td>
+             </tr>
              <tr id="pers_19" class="initial_hidden">
-                <th><label for="e_fmusic" title="Free text">Favorite Music</label></th>
-                <td class="listing_col" nowrap="1">
+               <th><label for="e_fmusic" title="Free text">Favorite Music</label></th>
+               <td class="listing_col" nowrap="1">
                  <v:text name="e_fmusic" value="--self.music" xhtml_size="80" xhtml_tabindex="18" fmt-function="wa_utf8_to_wide" />
-                  <vm:u-prop-select name="sel_45" value="self.sav45" />
-                </td>
-              </tr>
+                 <vm:u-prop-select name="sel_45" value="self.sav45" />
+               </td>
+             </tr>
              <tr id="pers_20" class="initial_hidden">
-                <th><label for="e_fmovie" title="Free text">Favorite Movies</label></th>
-                <td class="listing_col" nowrap="1">
+               <th><label for="e_fmovie" title="Free text">Favorite Movies</label></th>
+               <td class="listing_col" nowrap="1">
                  <v:text name="e_fmovie" value="--self.movie" xhtml_size="80" xhtml_tabindex="19" fmt-function="wa_utf8_to_wide" />
-                  <vm:u-prop-select name="sel_46" value="self.sav46" />
-                </td>
-              </tr>
-              <tr>
-                <th><label for="up_photo">Upload Photo</label></th>
-                <td class="listing_col" nowrap="1">
+                 <vm:u-prop-select name="sel_46" value="self.sav46" />
+               </td>
+             </tr>
+             <tr>
+               <th><label for="up_photo">Upload Photo</label></th>
+               <td class="listing_col" nowrap="1">
                  <input name="up_photo" type="file" value="" xhtml_size="80" xhtml_tabindex="20" onchange='getFileName(this.form, this, this.form.s_photo);' fmt-function="wa_utf8_to_wide" />
-                   <v:button name="bt_preview_1" value="Preview" action="simple">
-                    <v:on-post>
-                    <![CDATA[
-                      if (get_keyword ('up_photo', e.ve_params, '') <> '')
-                      {
-                        declare dir, p_path, p_ext any;
+                  <v:button name="bt_preview_1" value="Preview" action="simple">
+                   <v:on-post>
+                     <![CDATA[
+                       if (get_keyword ('up_photo', e.ve_params, '') <> '')
+	          {
+                         declare dir, p_path, p_ext any;
                          dir := rtrim (DAV_HOME_DIR (self.u_name), '/')||'/wa/images/';
+                         p_ext := split_and_decode(self.s_photo.ufl_value,0,'\0\0.');
+                         p_path := dir||'preview_img.'||p_ext[length(p_ext)-1];
 
---                    declare _tmp_filedata any;
---                    _tmp_filedata:=get_keyword('attr-up_photo',e.ve_params);
---                    p_ext := split_and_decode(get_keyword('filename',_tmp_filedata),0,'\0\0.');
+                         if (p_ext is not null and p_ext[length(p_ext)-1] is not null and lcase(p_ext[length(p_ext)-1]) in ('jpg','png','gif'))
+	            {
+                           declare rc, pwd1 any;
+                           pwd1 := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = 'dav');
+                           rc := 0;
 
-                    p_ext := split_and_decode(self.s_photo.ufl_value,0,'\0\0.');
+                           rc := DAV_MAKE_DIR (dir, self.u_id, http_admin_gid (), '110100100N');
+                           rc := DAV_RES_UPLOAD (p_path, get_keyword ('up_photo', e.ve_params), '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
 
-                    p_path := dir||'preview_img.'||p_ext[length(p_ext)-1];
+                           if (rc < 0)
+                           {
+                             self.vc_is_valid := 0;
+                             self.vc_error_message := DAV_PERROR (rc);
+                           } else
+                             self.previe_path:=p_path;
+                         } else {
+                           self.vc_is_valid := 0;
+                           self.vc_error_message := ' Invalid image type. Please use jpg,png or gif for browser compatibility.';
+                           self.previe_path:='';
+	            }
+		        }
+                     ]]>
+                   </v:on-post>
+                 </v:button>
+                 <script type="text/javascript">
+                   <![CDATA[
+                     var previeImgPath='<?Vself.previe_path?>';
+                     function dimmerPreviewInit()
+              {
+                       if(previeImgPath.length>0)
+                {
+                         OAT.Loader.loadFeatures(["dimmer"],showPrevieImg);
+              }
+            }
+                     ODSInitArray.push(dimmerPreviewInit);
 
-                    if (p_ext is not null and p_ext[length(p_ext)-1] is not null and lcase(p_ext[length(p_ext)-1]) in ('jpg','png','gif'))
-                    {
-                     declare rc, pwd1 any;
-                     pwd1 := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = 'dav');
-                     rc := 0;
-
-                     rc := DAV_MAKE_DIR (dir, self.u_id, http_admin_gid (), '110100100N');
-                     rc := DAV_RES_UPLOAD (p_path, get_keyword ('up_photo', e.ve_params), '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
-
-                     if (rc < 0)
+                     function showPrevieImg()
                      {
-                       self.vc_is_valid := 0;
-                       self.vc_error_message := DAV_PERROR (rc);
-                     } else
-                       self.previe_path:=p_path;
-                    } else {
-                      self.vc_is_valid := 0;
-                      self.vc_error_message := ' Invalid image type. Please use jpg,png or gif for browser compatibility.';
-                      self.previe_path:='';
-                    }
-                }
-              ]]>
-              </v:on-post>
-              </v:button>
-           <script type="text/javascript">
-             <![CDATA[
-                var previeImgPath='<?Vself.previe_path?>';
-                function dimmerPreviewInit()
-                {
-                  if(previeImgPath.length>0)
-                  {
-                    OAT.Loader.loadFeatures(["dimmer"],showPrevieImg);
-                  }
-                }
-                ODSInitArray.push(dimmerPreviewInit);
+                       var div=OAT.Dom.create('div',{position:'relative',textAlign:'center'});
 
-                function showPrevieImg()
-                {
-                  var div=OAT.Dom.create('div',{position:'relative',textAlign:'center'});
+                       OAT.Event.attach(div,"click",OAT.Dimmer.hide);
 
-                  OAT.Event.attach(div,"click",OAT.Dimmer.hide);
+                       var img=OAT.Dom.create('img',{display:'block'});
+                       img.src=previeImgPath;
+                       OAT.Event.attach(div,"load",function(){OAT.Dom.center(div,1,1);});
 
-                  var img=OAT.Dom.create('img',{display:'block'});
-                  img.src=previeImgPath;
-                  OAT.Event.attach(div,"load",function(){OAT.Dom.center(div,1,1);});
-
-                  OAT.Dom.append([div,img]);
-                  OAT.Dimmer.show(div,{popup:true});
-                  function centerImg()
-                  {
-                    if(img.complete)
-                    {
-                      OAT.Dom.center(div,1,1);
-                      clearTimeout(centerImgE);
-                    }
-                  }
-                  var centerImgE=setInterval(centerImg,50);
-               }
-             ]]>
-           </script>
-                </td>
-              </tr>
-              <tr>
-                <th><label for="s_photo">Photo</label></th>
-                <td class="listing_col" nowrap="1">
+                       OAT.Dom.append([div,img]);
+                       OAT.Dimmer.show(div,{popup:true});
+                       function centerImg()
+                       {
+                         if(img.complete)
+                         {
+                           OAT.Dom.center(div,1,1);
+                           clearTimeout(centerImgE);
+                         }
+                       }
+                       var centerImgE=setInterval(centerImg,50);
+                     }
+                   ]]>
+                 </script>
+               </td>
+             </tr>
+             <tr>
+               <th><label for="s_photo">Photo</label></th>
+               <td class="listing_col" nowrap="1">
                  <v:text name="s_photo" value="--self.photo" xhtml_size="80" xhtml_tabindex="21" fmt-function="wa_utf8_to_wide" />
-                  <vm:u-prop-select name="sel_37" value="self.sav37" />
-                </td>
-              </tr>
-              <tr>
-                <th><label for="up_audio">Upload Audio</label></th>
-                <td class="listing_col" nowrap="1">
+                 <vm:u-prop-select name="sel_37" value="self.sav37" />
+               </td>
+             </tr>
+             <tr>
+               <th><label for="up_audio">Upload Audio</label></th>
+               <td class="listing_col" nowrap="1">
                  <input name="up_audio" type="file" value="" xhtml_size="80" xhtml_tabindex="22" onblur="javascript: getFileName(this.form, this, this.form.s_audio);" fmt-function="wa_utf8_to_wide" />
-                </td>
-              </tr>
-              <tr>
-                <th><label for="s_audio">Audio</label></th>
-                <td class="listing_col" nowrap="1">
+               </td>
+             </tr>
+             <tr>
+               <th><label for="s_audio">Audio</label></th>
+               <td class="listing_col" nowrap="1">
                  <v:text name="s_audio" value="--self.audio" xhtml_size="80" xhtml_tabindex="23" fmt-function="wa_utf8_to_wide" />
-                  <vm:u-prop-select name="sel_43" value="self.sav43" />
-                </td>
-              </tr>
-              <tr>
-          <th>
-            <label for="app_enable">Show &amp;lt;a&amp;gt;++ links</label>
-          </th>
-          <td>
+                 <vm:u-prop-select name="sel_43" value="self.sav43" />
+               </td>
+             </tr>
+             <tr>
+               <th>
+                 <label for="app_enable">Show &amp;lt;a&amp;gt;++ links</label>
+               </th>
+               <td>
                  <v:select-list xhtml_class="select" name="app_enable" xhtml_id="app_enable" xhtml_tabindex="25">
-              <v:item value="0" name="disabled"/>
-              <v:item value="1" name="click"/>
-              <v:item value="2" name="hover"/>
-              <v:before-data-bind>
-                <v:script>
-                  <![CDATA[
-                    control.ufl_value := cast (self.appEnable as varchar);
-                    control.vc_data_bound := 1;
-                  ]]>
-                </v:script>
-              </v:before-data-bind>
-            </v:select-list>
-          </td>
-        </tr>
-          <tr>
+                   <v:item value="0" name="disabled"/>
+                   <v:item value="1" name="click"/>
+                   <v:item value="2" name="hover"/>
+                   <v:before-data-bind>
+                     <v:script>
+                       <![CDATA[
+                         control.ufl_value := cast (self.appEnable as varchar);
+                         control.vc_data_bound := 1;
+                       ]]>
+                     </v:script>
+                   </v:before-data-bind>
+                 </v:select-list>
+               </td>
+             </tr>
+             <tr>
                <td />
                <td>
                  <label>
-              <v:check-box name="in_search" value="1" xhtml_id="in_search" >
-                <v:after-data-bind>
-                  if (not e.ve_is_post)
-                    control.ufl_selected := self.issearch;
-                </v:after-data-bind>
-              </v:check-box>
+                   <v:check-box name="in_search" value="1" xhtml_id="in_search" >
+                     <v:after-data-bind>
+                       if (not e.ve_is_post)
+                         control.ufl_selected := self.issearch;
+                     </v:after-data-bind>
+                   </v:check-box>
                    <b>Include my profile in search results</b>
                  </label>
-            </td>
-         </tr>
-        <tr>
+               </td>
+             </tr>
+             <tr>
                <td />
                <td>
                  <label>
-            <v:check-box name="show_active" value="--self.showactive" xhtml_id="show_active" >
-             <v:after-data-bind>
-              control.ufl_selected := self.showactive;
-             </v:after-data-bind>
-            </v:check-box>
+                   <v:check-box name="show_active" value="--self.showactive" xhtml_id="show_active" >
+                    <v:after-data-bind>
+                      control.ufl_selected := self.showactive;
+                    </v:after-data-bind>
+                   </v:check-box>
                    <b>Include in User active information</b>
                  </label>
                </td>
@@ -988,9 +1327,9 @@
                       <br/>
                       </v:check-box>
                       <label for="set_hlatlng_def">Default map location</label>
-          </td>
-        </tr>
-        <tr>
+                    </td>
+                  </tr>
+                  <tr>
                     <td>
                       <v:text name="h_lng"
                               value="--case when self.lng is not null then sprintf ('%.6f', coalesce (self.lng, 0.00)) else '' end"
@@ -1248,365 +1587,23 @@
     </div>
     <br />
     <div>
-            <v:button name="bt_cncl_1" value="Cancel" action="simple" >
-              <v:on-post>
-                self.vc_redirect (sprintf ('uhome.vspx?ufname=%U&amp;l=1', self.u_name));
-              </v:on-post>
-            </v:button>
-      <v:button name="user_sset_personal" value="Next" action="simple" xhtml_tabindex="21" xhtml_onclick="return validateInputs(this);">
-              <v:on-post>
-                <![CDATA[
-		  if (exists(select 1 from WA_USER_INFO where WAUI_U_ID <> self.u_id and WAUI_NICK = self.nickn.ufl_value))
-		  {
-		    self.nick := WA_MAKE_NICK (self.nickn.ufl_value);
-		    self.nickn.vc_data_bind (e);
-                    self.vc_error_message := 'This nick already used please enter another or use suggested';
-                    self.vc_is_valid := 0;
-      return;
-                  }
-            if (exists (select 1 from SYS_USERS where U_E_MAIL = self.regmail.ufl_value) and exists (select 1 from WA_SETTINGS where WS_UNIQUE_MAIL = 1))
-    {
-      self.vc_error_message := 'This e-mail address is already registered.';
-      self.vc_is_valid := 0;
-      return;
-    }
-
-            declare lat, lng any;
-                  declare _arr any;
-
-                  _arr := WA_STR_PARAM(params,'sel_');
-                  WA_USER_VISIBILITY (self.u_name, _arr, 2);
-
-                  declare tag varchar;
-                  declare tid integer;
-
-                  tag := WA_TAG_PREPARE(self.s_tag.ufl_value);
-                  if (not WA_VALIDATE_TAGS(tag))
-                  {
-                    self.vc_error_message := 'The Tags expression is not valid.';
-              self.vc_is_valid := 0;
-                    return;
-                 }
-                  -- public tags
-                  WA_USER_TAG_SET(http_nobody_uid(), self.u_id, tag);
-
-                  declare dt datetime;
-
-                 dt := null;
-                  if (self.regbyear.ufl_value is not null and
-                    self.regbmonth.ufl_value is not null and
-                    self.regbday.ufl_value is not null and
-                    self.regbyear.ufl_value <> '' and
-                    self.regbmonth.ufl_value <> '' and
-                    self.regbday.ufl_value <> '')
-                  {
-                    declare exit handler for sqlstate '*'
-                    {
-                      self.vc_is_valid := 0;
-                     self.vc_error_message := sprintf ('An invalid date (%s-%s-%s) is specified', self.regbyear.ufl_value, self.regbmonth.ufl_value, self.regbday.ufl_value);
-                      return;
-                    };
-                     dt := stringdate(sprintf('%s-%s-%s', self.regbyear.ufl_value, self.regbmonth.ufl_value, self.regbday.ufl_value));
-                  }
-
-  -- before to edit rest of fields, set the org(anization) flag
-                  self.is_org := self.cb_org.ufl_selected;
-                  update WA_USER_INFO set WAUI_IS_ORG = self.cb_org.ufl_selected where WAUI_U_ID = self.u_id;
-
-                  declare rc,rc_org, pwd1 any;
-                  pwd1 := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = 'dav');
-                  rc := 0;
-                  rc_org := 0;
-
-
-                  declare p_ext any;
-                  p_ext := split_and_decode(self.s_photo.ufl_value,0,'\0\0.');
-
-                  if(p_ext is not null and p_ext[length(p_ext)-1] is not null and lcase(p_ext[length(p_ext)-1]) not in ('jpg','png','gif'))
-                  {
-                    self.vc_error_message := ' Invalid image type. Please use jpg,png or gif for browser compatibility.';
-                    self.vc_is_valid := 0;
-                    self.previe_path:='';
-      return;
-                  }
-
-  if (get_keyword ('up_photo', e.ve_params, '') <> '' or (self.previe_path <> '' and self.s_photo.ufl_value <> ''))
-                  {
-      declare dir, p_path, p_path_org, dotpos, up_cont any;
-      declare p_path_size2 any;
-
-                    dir := rtrim (DAV_HOME_DIR (self.u_name), '/')||'/wa/images/';
-      up_cont := get_keyword ('up_photo', e.ve_params);
-
-      p_path := self.s_photo.ufl_value;
-      if (self.s_photo.ufl_value not like '/%')
-	p_path := dir || p_path;
-
-      dotpos := REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1;
-      p_path_org := subseq (self.s_photo.ufl_value,0, dotpos) || '_org' || subseq (self.s_photo.ufl_value, dotpos);
-      p_path_size2 := subseq (self.s_photo.ufl_value,0, dotpos) || '_size2' || subseq (self.s_photo.ufl_value, dotpos);
-      if (self.s_photo.ufl_value not like '/%')
-	{
-	  p_path_org := dir || p_path_org;
-	  p_path_size2 := dir || p_path_size2;
-	}
-
-                    rc := DAV_MAKE_DIR (dir, self.u_id, http_admin_gid (), '110100100N');
-
-      if (up_cont <> '')
-                    {
-	  rc := DAV_RES_UPLOAD (p_path, up_cont, '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
-	  rc_org := DAV_RES_UPLOAD (p_path_org, up_cont, '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
-	}
-      else if (self.previe_path <> '' and self.s_photo.ufl_value <> '')
-                    {
-	  rc := DB.DBA.DAV_COPY (self.previe_path, p_path, 1, '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
-                      self.previe_path := '';
-                    }
-
-          if (rc < 0 or rc_org < 0)
-            {
-              self.vc_is_valid := 0;
-              self.vc_error_message := DAV_PERROR (rc);
-            }
-          if (rc > 0 or rc_org >0)
-          {
-                     declare exit handler for sqlstate '*'
-                     {
-                  sql_warning (__SQL_STATE, 'UIEP1', __SQL_MESSAGE);
-        };
-              declare img,thumb,thumb_size2 any;
-              img := null; thumb := null; thumb_size2 := null;
-        select blob_to_string (RES_CONTENT) into img from WS.WS.SYS_DAV_RES where RES_ID = rc;
-
-        if (img is not null)
-	    thumb := WA_MAKE_THUMBNAIL_1 (img);
-          thumb_size2 := WA_MAKE_THUMBNAIL_1 (img, 115, 160);
-
-        if (thumb is not null)
-	    DAV_RES_UPLOAD (p_path, thumb, '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
-
-	  if (thumb_size2 is not null)
-		DAV_RES_UPLOAD (p_path_size2, thumb_size2, '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
-            }
-	  if (p_path like '/DAV/%')
-	    p_path := subseq (p_path, 4);
-          WA_USER_EDIT (self.u_name, 'WAUI_PHOTO_URL', p_path);
-    }
-  else
-        {
-         if(get_keyword ('s_photo', e.ve_params, '') = '')
-            WA_USER_EDIT (self.u_name, 'WAUI_PHOTO_URL', '');
-        }
-
-
-
-
-      if (get_keyword ('up_audio', e.ve_params, '') <> '')
-        {
-          declare dir, p_path any;
-          dir := rtrim (DAV_HOME_DIR (self.u_name), '/')||'/wa/media/';
-
-      p_path := self.s_audio.ufl_value;
-      if (self.s_audio.ufl_value not like '/%')
-	p_path := dir|| p_path;
-
-          rc := DAV_MAKE_DIR (dir, self.u_id, http_admin_gid (), '110100100N');
-          rc := DAV_RES_UPLOAD (p_path, get_keyword ('up_audio', e.ve_params), '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
-
-          if (rc < 0)
-            {
-              self.vc_is_valid := 0;
-              self.vc_error_message := DAV_PERROR (rc);
-            }
-
-          WA_USER_EDIT (self.u_name, 'WAUI_AUDIO_CLIP', p_path);
-              }
-
-      if (self.is_org)
-                          {
-          dt := null;
-          self.regtitle.ufl_value := null;
-          self.f_name.ufl_value := null;
-          self.l_name.ufl_value := null;
-          self.regender.ufl_value := null;
-          self.m_sign.ufl_value := null;
-          self.e_fbook.ufl_value := null;
-          self.e_fmusic.ufl_value := null;
-          self.e_fmovie.ufl_value  := null;
-        }
-
-                        WA_USER_EDIT (self.u_name, 'WAUI_TITLE', self.regtitle.ufl_value);
-                        WA_USER_EDIT (self.u_name, 'WAUI_FIRST_NAME', self.f_name.ufl_value);
-                        WA_USER_EDIT (self.u_name, 'WAUI_LAST_NAME', self.l_name.ufl_value);
-            WA_USER_EDIT (self.u_name, 'WAUI_FULL_NAME', self.full_name.ufl_value);
-            WA_USER_EDIT (self.u_name, 'E_MAIL', self.regmail.ufl_value);
-                        WA_USER_EDIT (self.u_name, 'WAUI_GENDER', self.regender.ufl_value);
-            WA_USER_EDIT (self.u_name, 'WAUI_BIRTHDAY', dt);
-
-            WA_USER_EDIT (self.u_name, 'WAUI_HADDRESS1', self.h_address1.ufl_value);
-            WA_USER_EDIT (self.u_name, 'WAUI_HADDRESS2', self.h_address2.ufl_value);
-            WA_USER_EDIT (self.u_name, 'WAUI_HCODE', self.h_code.ufl_value);
-            WA_USER_EDIT (self.u_name, 'WAUI_HCITY', self.h_city.ufl_value);
-            WA_USER_EDIT (self.u_name, 'WAUI_HSTATE', get_keyword ('h_state', e.ve_params));
-            WA_USER_EDIT (self.u_name, 'WAUI_HCOUNTRY', self.h_country.ufl_value);
-            WA_USER_EDIT (self.u_name, 'WAUI_HTZONE', self.h_tzone.ufl_value);
-            WA_USER_EDIT (self.u_name, 'WAUI_HPHONE', self.h_phone.ufl_value);
-            WA_USER_EDIT (self.u_name, 'WAUI_HMOBILE', self.h_mobile.ufl_value);
-
-            WA_USER_EDIT (self.u_name, 'WAUI_ICQ', self.u_icq.ufl_value);
-            WA_USER_EDIT (self.u_name, 'WAUI_SKYPE', self.u_skype.ufl_value);
-            WA_USER_EDIT (self.u_name, 'WAUI_AIM', self.u_aim.ufl_value);
-            WA_USER_EDIT (self.u_name, 'WAUI_YAHOO', self.u_yahoo.ufl_value);
-            WA_USER_EDIT (self.u_name, 'WAUI_MSN', self.u_msn.ufl_value);
-
-            lat := null;
-            lng := null;
-            if (length (self.h_lat.ufl_value) and length (self.h_lng.ufl_value))
-            {
-              lat := atof (self.h_lat.ufl_value);
-              lng := atof (self.h_lng.ufl_value);
-            }
-            WA_USER_EDIT (self.u_name, 'WAUI_LAT', lat);
-            WA_USER_EDIT (self.u_name, 'WAUI_LNG', lng);
-
-                        WA_USER_EDIT (self.u_name, 'WAUI_MSIGNATURE', self.m_sign.ufl_value);
-                        WA_USER_EDIT (self.u_name, 'WAUI_FAVORITE_BOOKS', self.e_fbook.ufl_value);
-                        WA_USER_EDIT (self.u_name, 'WAUI_FAVORITE_MUSIC', self.e_fmusic.ufl_value);
-                        WA_USER_EDIT (self.u_name, 'WAUI_FAVORITE_MOVIES', self.e_fmovie.ufl_value);
-
-            -- WA_USER_EDIT (self.u_name, 'WAUI_FOAF', self.e_foaf.ufl_value);
-                        WA_USER_EDIT (self.u_name, 'WAUI_SUMMARY', self.s_summ.ufl_value);
-                        WA_USER_EDIT (self.u_name, 'WAUI_WEBPAGE', self.w_page.ufl_value);
-
-                        WA_USER_EDIT (self.u_name, 'WAUI_SEARCHABLE', self.in_search.ufl_selected);
-                        WA_USER_EDIT (self.u_name, 'WAUI_SHOWACTIVE', self.show_active.ufl_selected);
-
-            declare N, id integer;
-            declare suffix, tmp_a, tmp_b, tmp_e, tmp_m varchar;
-            declare IDc, IDd any;
-
-            tmp_a := '';
-            tmp_b := '';
-            tmp_e := '';
-            tmp_m := '';
-            IDc := vector ();
-            IDd := vector ();
-                 for (N := 0; N < length (e.ve_params); N := N + 4)
-                 {
-                   if ((e.ve_params [N] like 'a_fld_1_%') and (trim (e.ve_params [N+1]) <> ''))
-                   {
-                     suffix := replace (e.ve_params [N], 'a_fld_1_', '');
-                tmp_a := tmp_a || trim (e.ve_params [N+1]) || ';' || trim (get_keyword ('a_fld_2_'||suffix, e.ve_params, '')) || '\n';
-                   }
-              else if ((e.ve_params [N] like 'b_fld_1_%') and (trim (e.ve_params [N+1]) <> ''))
-              {
-                suffix := replace (e.ve_params [N], 'b_fld_1_', '');
-                tmp_b := tmp_b || trim (e.ve_params [N+1]) || ';' || trim (get_keyword ('b_fld_2_'||suffix, e.ve_params, '')) || '\n';
-              }
-              else if ((e.ve_params [N] like 'c_fld_1_%') and (trim (e.ve_params [N+1]) <> ''))
-              {
-                suffix := replace (e.ve_params [N], 'c_fld_1_', '');
-                id := cast (get_keyword ('c_fld_0_'||suffix, e.ve_params, '-1') as integer);
-                if (id <> -1)
-                {
-			            update WA_USER_OL_ACCOUNTS
-			               set WUO_NAME = trim (e.ve_params [N+1]),
-			                   WUO_URL = trim (get_keyword ('c_fld_2_'||suffix, e.ve_params, ''))
-			             where WUO_ID = id;
-                  IDc := vector_concat (IDc, vector (id));
-                }
-              }
-              else if ((e.ve_params [N] like 'd_fld_1_%') and (trim (e.ve_params [N+1]) <> ''))
-              {
-                suffix := replace (e.ve_params [N], 'd_fld_1_', '');
-                id := cast (get_keyword ('d_fld_0_'||suffix, e.ve_params, '-1') as integer);
-                if (id <> -1)
-                {
-			            update WA_USER_BIOEVENTS
-			               set WUB_EVENT = trim (e.ve_params [N+1]),
-			                   WUB_DATE = trim (get_keyword ('d_fld_2_'||suffix, e.ve_params, '')),
-			                   WUB_PLACE = trim (get_keyword ('d_fld_3_'||suffix, e.ve_params, ''))
-			             where WUB_ID = id;
-                  IDd := vector_concat (IDd, vector (id));
-                 }
-              }
-              else if ((e.ve_params [N] like 'e_fld_1_%') and (trim (e.ve_params [N+1]) <> ''))
-              {
-                suffix := replace (e.ve_params [N], 'e_fld_1_', '');
-                tmp_e := tmp_e || trim (e.ve_params [N+1]) || '\n';
-              }
-              else if ((e.ve_params [N] like 'm_fld_1_%') and (trim (e.ve_params [N+1]) <> ''))
-              {
-                suffix := replace (e.ve_params [N], 'm_fld_1_', '');
-                tmp_m := tmp_m || trim (e.ve_params [N+1]) || ';' || trim (get_keyword ('m_fld_2_'||suffix, e.ve_params, '')) || '\n';
-              }
-            }
-            self.interests := tmp_a;
-            self.interestTopics := tmp_b;
-            self.efoaf := tmp_e;
-            self.messaging := tmp_m;
-            WA_USER_EDIT (self.u_name, 'WAUI_INTERESTS', tmp_a);
-            WA_USER_EDIT (self.u_name, 'WAUI_INTEREST_TOPICS', tmp_b);
-            WA_USER_EDIT (self.u_name, 'WAUI_FOAF', tmp_e);
-            WA_USER_EDIT (self.u_name, 'WAUI_MESSAGING', tmp_m);
-
-	          for (select WUO_ID as _id from WA_USER_OL_ACCOUNTS where WUO_U_ID = self.u_id and WUO_TYPE = 'P') do
-	          {
-	            for (N := 0; N < length (IDc); N := N + 1)
-	            {
-	              if (IDc[N] = _id)
-	                goto _exit;
-	            }
-              delete from WA_USER_OL_ACCOUNTS where WUO_ID = _id;
-            _exit:;
-		        }
-                 for (N := 0; N < length (e.ve_params); N := N + 4)
-                 {
-              if ((e.ve_params [N] like 'c_fld_1_%') and (trim (e.ve_params [N+1]) <> ''))
-                   {
-                suffix := replace (e.ve_params [N], 'c_fld_1_', '');
-                id := cast (get_keyword ('c_fld_0_'||suffix, e.ve_params, '-1') as integer);
-                if ((id = -1) and (trim (get_keyword ('c_fld_2_'||suffix, e.ve_params, '')) <> ''))
-                {
-			            insert into WA_USER_OL_ACCOUNTS ( WUO_NAME, WUO_URL, WUO_U_ID, WUO_TYPE)
-		                values (trim (e.ve_params [N+1]), trim (get_keyword ('c_fld_2_'||suffix, e.ve_params, '')), self.u_id, 'P');
-                }
-                   }
-                 }
-	          for (select WUB_ID as _id from WA_USER_BIOEVENTS where WUB_U_ID = self.u_id) do
-	          {
-	            for (N := 0; N < length (IDd); N := N + 1)
-	            {
-	              if (IDd[N] = _id)
-	                goto _exit2;
-	            }
-              delete from WA_USER_BIOEVENTS where WUB_ID = _id;
-            _exit2:;
-		        }
-            for (N := 0; N < length (e.ve_params); N := N + 4)
-            {
-              if ((e.ve_params [N] like 'd_fld_1_%') and (trim (e.ve_params [N+1]) <> ''))
-              {
-                suffix := replace (e.ve_params [N], 'd_fld_1_', '');
-                id := cast (get_keyword ('d_fld_0_'||suffix, e.ve_params, '-1') as integer);
-                if (id = -1)
-                {
-			            insert into WA_USER_BIOEVENTS ( WUB_EVENT, WUB_DATE, WUB_PLACE, WUB_U_ID)
-		                values (trim (e.ve_params [N+1]), trim (get_keyword ('d_fld_2_'||suffix, e.ve_params, '')), trim (get_keyword ('d_fld_3_'||suffix, e.ve_params, '')), self.u_id);
-                }
-              }
-            }
-
-			WA_USER_EDIT (self.u_name, 'WAUI_APP_ENABLE', atoi (self.app_enable.ufl_value));
-			update WA_USER_INFO set WAUI_NICK = self.nickn.ufl_value where WAUI_U_ID = self.u_id;
-
-
-                        -- change user_text data
-                        declare _pdata long varchar;
-                        _pdata := WA_GET_USER_INFO(0, self.u_id, WA_USER_VISIBILITY(self.u_name), 0, 1);
-                        WA_USER_TEXT_SET(self.u_id, _pdata);
-
+      <v:button name="bt_cncl_1" value="Cancel" action="simple" >
+        <v:on-post>
+          self.vc_redirect (sprintf ('uhome.vspx?ufname=%U&amp;l=1', self.u_name));
+        </v:on-post>
+      </v:button>
+      <v:button name="user_s_personal" value="Save" action="simple" xhtml_tabindex="21" xhtml_onclick="return validateInputs(this);">
+        <v:on-post>
+          <![CDATA[
+            self.savePersonal();
+          ]]>
+        </v:on-post>
+      </v:button>
+      <v:button name="user_sn_personal" value="Save and Next" action="simple" xhtml_tabindex="22" xhtml_onclick="return validateInputs(this);">
+        <v:on-post>
+          <![CDATA[
+            self.savePersonal();
+            if (self.vc_is_valid)
  		        self.vc_redirect ('uiedit.vspx?page=2');
                       ]]>
                     </v:on-post>
