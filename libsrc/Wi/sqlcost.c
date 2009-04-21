@@ -658,7 +658,17 @@ sqlo_text_count (dbe_table_t * tb, caddr_t  str)
     }
   mutex_leave (text_count_mtx);
 
-  ct = sqlo_eval_text_count (tb, str);
+  WITHOUT_TMP_POOL
+    {
+      int is_sem = sqlc_inside_sem;
+      if (is_sem)
+	semaphore_leave (parse_sem);
+      ct = sqlo_eval_text_count (tb, str);
+      if (is_sem)
+	semaphore_enter (parse_sem);
+    }
+  END_WITHOUT_TMP_POOL;
+
   if (-1 == ct)
     return -1;
   if (!ct)
