@@ -57,11 +57,6 @@ TEMPFILE=/tmp/isql.$$
 LN="ln -fs"
 RM="rm -f"
 fi
-VOS=0
-if [ -f ../../autogen.sh ]
-then
-    VOS=1
-fi
 
 if [ "z$SERVER" = "z" ]  
 then
@@ -73,6 +68,12 @@ then
     fi
 fi
 
+
+VOS=0
+if [ -f ../../autogen.sh ]
+then
+    VOS=1
+fi
 
 . $HOME/binsrc/tests/suite/test_fn.sh
 
@@ -86,32 +87,44 @@ fi
 
 
 version_init() {
-  rm -f version.tmp
-  file_list=`find ./ -name Entries`
-  for i in $file_list; do
-      cat $i | grep -v "version\." | grep '^/' | cut -d '/' -f 3 | sed -e 's/1\.//g' >> version.tmp
-	echo $i
-  done
-  BASE="0"
-  if [ -f version.base ] ; then
-      BASE=`cat version.base`
+  if [ $VOS -eq 1 ]
+  then
+      if [ -f vad_version ]
+      then
+	  VERSION=`cat vad_version`
+      else
+        LOG "The vad_version does not exist, please verify your checkout"
+	exit 1
+      fi
+  else
+      rm -f version.tmp
+      file_list=`find ./ -name Entries`
+      for i in $file_list; do
+	  cat $i | grep -v "version\." | grep '^/' | cut -d '/' -f 3 | sed -e 's/1\.//g' >> version.tmp
+	    echo $i
+      done
+      BASE="0"
+      if [ -f version.base ] ; then
+	  BASE=`cat version.base`
+      fi
+      VERSION=`cat version.tmp | awk ' BEGIN { cnt=0 } { cnt = cnt + $1 } END { print cnt }'`
+      CALC_VERSION=$VERSION
+      VERSION=`expr $BASE + $VERSION`
+      CURR_VERSION=$VERSION
+      if [ -f version.curr ] ; then
+	  CURR_VERSION=`cat version.curr`
+      fi
+      if [ $CURR_VERSION -gt $VERSION ] ; then
+	  BASE=`expr $CURR_VERSION - $CALC_VERSION + 1`
+	  echo "new base: " $BASE
+	  echo $BASE > version.base
+	  VERSION=$CURR_VERSION
+      fi
+      echo $VERSION > version.curr
+      VERSION="1.05.$VERSION"
+      echo $VERSION > vad_version
+      # rm -f version.tmp
   fi
-  VERSION=`cat version.tmp | awk ' BEGIN { cnt=0 } { cnt = cnt + $1 } END { print cnt }'`
-  CALC_VERSION=$VERSION
-  VERSION=`expr $BASE + $VERSION`
-  CURR_VERSION=$VERSION
-  if [ -f version.curr ] ; then
-      CURR_VERSION=`cat version.curr`
-  fi
-  if [ $CURR_VERSION -gt $VERSION ] ; then
-      BASE=`expr $CURR_VERSION - $CALC_VERSION + 1`
-      echo "new base: " $BASE
-      echo $BASE > version.base
-      VERSION=$CURR_VERSION
-  fi
-  echo $VERSION > version.curr
-  VERSION="1.05.$VERSION"
-  # rm -f version.tmp
 }
 
 virtuoso_start() {
