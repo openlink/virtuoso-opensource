@@ -217,6 +217,9 @@ It is divided into the following sections:
 			</listitem>
 			<listitem><para>[SPARQL] Settings in this optional section control SPARQL protocol endpoint default parameters and limits.</para>
 			</listitem>
+			<listitem><para>[I18N] encoding settings</para>
+			</listitem>
+
 			<listitem><para>[Replication] The replication section sets the transactional replication parameters for the server. </para>
 			</listitem>
 			<listitem><para>[Mono] The Mono section contains settings for Virtuoso with Mono Runtime CLR support.  </para>
@@ -1466,11 +1469,83 @@ Section <link linkend="rdfandsparql">RDF Data Access and Data Management</link> 
 	</para>
     </formalpara>
 </listitem>
-
+<listitem id="ini_SPARQL_MaxMemInUse">
+    <formalpara>
+	<title>MaxMemInUse = 0</title>
+	<para>
+        Maximum amount of memory that is allowed for temporary
+storing parts of a SPARQL query result. Default is zero for no limit.
+ResultSetMaxRows is maximum length of a SPARQL query result. Default is
+zero for no limit.
+These two options may be useful for protecting public web service
+endpoints against DOS attacks, but at the same time it may cause
+returning incomplete results without reporting errors. When used, it is
+strongly advised to set the value orders of magnitude larger than the
+expected size of longest reply. As a rule of thumb, timeout should
+happen before this limit has reached. Values less than 1000000 bytes are
+impractical in all cases.
+	</para>
+    </formalpara>
+</listitem>
 			</itemizedlist>
 <para>The SPARQL INI can be get as RDF via http://cname/sparql?ini service.</para>
 
 		</sect5>
+		<sect5 id="ini_I18N">
+                  <title>[I18N]</title>
+                  <itemizedlist>
+                    <listitem id="ini_I18N_WideFileNames">
+                      <formalpara>
+                        <title>WideFileNames = 1/0</title>
+                        <para>Default is 0. When 1 then file access and directory
+                    listing functions may use wide strings as file names. If a file name
+                    contains non-ASCII characters then directory listing result set will
+                    contain a wide string instead of narrow string with question marks.
+                    Note, however, that most of existing applications do not support wide
+                    strings for that purposes, so the feature should be used with extreme
+                    care.
+                        </para>
+                      </formalpara>
+                    </listitem>
+                    <listitem id="ini_I18N_VolumeEncoding">
+                      <formalpara>
+                        <title>VolumeEncoding</title>
+                        <para>Encoding identifier.
+                    If set, file names are translated from wide strings and default server
+                    encoding to the specified encoding before using them in file
+                    manipulation BIFs. This is useful when server's filesystem is in some
+                    national encoding or in UTF-8.
+                    The translation is bi-directional: directory listing items are
+                    translated from volume encoding to the default server encoding or wide.
+                        </para>
+                      </formalpara>
+                    </listitem>
+                    <listitem id="ini_I18N_VolumeEmergencyEncoding">
+                      <formalpara>
+                        <title>VolumeEmergencyEncoding</title>
+                        <para>Encoding identifier.
+                    If set, this encoding is used when the use of VolumeEncoding causes
+                    encoding errors. The most popular case is when an UNIX filesystem tree
+                    with UTF-8 contains some mounts of legacy storages with KOI or CP
+                    encoding. Less popular is UTF-8 volume encoding and UTF-8QR as emergency
+                    encoding to recover poorly encoded filenames.
+                        </para>
+                      </formalpara>
+                    </listitem>
+                    <listitem id="ini_I18N_VolumeEmergencyEncodingDirs">
+                      <formalpara>
+                        <title>VolumeEmergencyEncodingDirs</title>
+                        <para>List of directories in same syntax as
+                    DirsAllowed, default is empty.
+                    If set, all file names in the listed directories are supposed to be in
+                    VolumeEmergencyEncoding and VolumeEncoding is even not tried. The most
+                    popular case is when an UNIX filesystem tree with UTF-8 contains some
+                    mounts of legacy storages with KOI or CP encoding.
+                        </para>
+                      </formalpara>
+                    </listitem>
+                  </itemizedlist>
+                </sect5>
 		
 		<sect5 id="ini_Replication">
 			<title>[Replication]</title>
