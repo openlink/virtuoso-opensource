@@ -7,7 +7,7 @@ April 21, 2009, V5.0.11:
     - Added bif to open strses without dumping into temp file
     - Added full duplex flag for ses to allow different threads to do R/W
     - Added initial support for gzipped stream session
-    - Added support for squid, socks4 and socks5 proxy with optional auth
+    - Added support for HTTP, socks4 and socks5 proxy with optional auth
     - Added support for URIQA methods in http_client
     - Added support for gunzip in http_client
     - Fixed gpf on db:cert_key in certificate info
@@ -21,16 +21,16 @@ April 21, 2009, V5.0.11:
     - Added compiler extensions for SPARQL security
     - Added draft of RDF graph-level security metadata functions
     - Added Congress Web service
-    - Added Delicious cardridge
+    - Added Delicious cartridge
     - Added GoodRelations and Barters Ontology
-    - Added NYT article cardridge
-    - Added Openstreetmap cardridge
-    - Added OReilly cardridge
-    - Added pptx cardridge
+    - Added NYT article cartridge
+    - Added Openstreetmap cartridge
+    - Added OReilly cartridge
+    - Added pptx cartridge
     - Added SCOT
-    - Added Technocrati cardridge
+    - Added Technocrati cartridge
     - Added initial infrastructure for new SPARQL result serialization
-    - Added meta cardridge for doc links
+    - Added meta cartridge for doc links
     - Added support for SSG_VALMODE_SHORT_OR_LONG
     - Added support for define sparql-get:proxy for RDF mappers
     - Added support for nonstandard '[' predicate-object-list ']' '.' 
@@ -104,7 +104,7 @@ February 13, 2009, V5.0.10:
     - Added CURIE and UMBEL services
     - Added Amazon S3 DET
     - Added AB-meta,  Hoovers Last.FM, LibraryThing, Meetup, NYT,
-      RadioPop, Rhapsody, SalesForce, Twitter, WB cardridges
+      RadioPop, Rhapsody, SalesForce, Twitter, WB cartridges
     - Added Zemanda filter
     - Added support for time literals
     - Added error/warning/info reporting callback to triple feeder
@@ -183,7 +183,7 @@ November 3, 2008, V5.0.9:
     - Added support for triple option bif:contains .
     - Added application/vnd.ms-excel output option to SPARQL endpoint
     - Added /about/html/<iri> endpoint for html representation of rdf data
-    - Added Atom entry, DISCOGS, GETSATISFACTION, SlideShare, XBRL cardridges
+    - Added Atom entry, DISCOGS, GETSATISFACTION, SlideShare, XBRL cartridges
     - Added support for option(transitive) for triples
     - Added sparql-auth endpoint similar to /sparql plus digest authentication
     - Added initial support for SPARQL triple options SAME_AS, SAME_AS_S
