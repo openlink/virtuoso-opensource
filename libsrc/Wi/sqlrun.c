@@ -3755,6 +3755,8 @@ lc_next (local_cursor_t * lc)
     }
   qr = qi->qi_query;
   sel = qr->qr_select_node;
+  if (!sel)
+    return 0;
 
   lc->lc_position++;
   fill = (int) (ptrlong) inst[sel->sel_out_fill];
