@@ -116,7 +116,6 @@ EXTRA_DIST= \
 	spotlight_test.tar.gz \
 	tdav_meta_050512.zip \
 	tdav_meta_050528.zip \
-	test_1947.db.test \
 	test_news_server_file \
 	treplh-dsn-odbc.cfg \
 	treplh-test-odbc.cfg \
