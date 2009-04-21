@@ -89,4 +89,5 @@ EXTRA_DIST =  \
 	Skins/default/*.xslt \
 	Template/*.txt \
 	version.base \
-	version.curr
+	version.curr \
+	vad_version
