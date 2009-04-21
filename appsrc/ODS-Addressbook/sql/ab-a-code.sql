@@ -1736,6 +1736,23 @@ create procedure AB.WA.vector_search(
 
 -------------------------------------------------------------------------------
 --
+create procedure AB.WA.vector_reverse(
+  in aVector any)
+{
+  declare aResult any;
+  declare N integer;
+
+  aResult := vector();
+  for (N := length(aVector)-1; N >= 0; N := N - 1)
+  {
+    aResult := vector_concat (aResult, vector(aVector[N]));
+  }
+  return aResult;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure AB.WA.vector2str(
   inout aVector any,
   in delimiter varchar := ' ')
@@ -1821,6 +1838,28 @@ create procedure AB.WA.tagsDictionary2rs(
   result_names(c0, c1);
   for (N := 1; N < length(V); N := N + 2)
     result(V[N][0], V[N][1]);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.dictionary2rs(
+  inout aDictionary any)
+{
+  declare N integer;
+  declare tmp, c0, c1 varchar;
+  declare V any;
+
+  V := dict_to_vector(aDictionary, 1);
+  result_names(c0, c1);
+  for (N := 0; N < length (V); N := N + 2)
+  {
+    tmp := V[N+1];
+    if (__tag (tmp) = 193)
+      tmp := serialize (tmp);
+    tmp := cast (tmp as varchar);
+    result(V[N], tmp);
+  }
 }
 ;
 
@@ -5810,10 +5849,73 @@ create procedure AB.WA.news_comment_get_cn_type (in f_name varchar)
 
 -----------------------------------------------------------------------------------------
 --
--- Portable Contacts
+-- API Lib Procedures
 --
 -----------------------------------------------------------------------------------------
-create procedure AB.WA.pcObject ()
+create procedure AB.WA.owner2contactMap ()
+{
+  return vector (
+    'U_ID'           , 'P_ID'            ,
+    'U_NAME'         , 'P_NAME'          ,
+    'U_E_MAIL'       , 'P_MAIL'          ,
+    'WAUI_TITLE'     , 'P_TITLE'         ,
+    'WAUI_BIRTHDAY'  , 'P_BIRTHDAY'      ,
+    'WAUI_GENDER'    , 'P_GENDER'        ,
+    'WAUI_FIRST_NAME', 'P_FIRST_NAME'    ,
+    'WAUI_LAST_NAME' , 'P_LAST_NAME'     ,
+    'WAUI_GENDER'    , 'P_GENDER'        ,
+    'WAUI_ICQ'       , 'P_ICQ'           ,
+    'WAUI_SKYPE'     , 'P_SKYPE'         ,
+    'WAUI_YAHOO'     , 'P_YAHOO'         ,
+    'WAUI_AIM'       , 'P_AIM'           ,
+    'WAUI_MSN'       , 'P_MSN'           ,
+    'WAUI_HCOUNTRY'  , 'P_H_COUNTRY'     ,
+    'WAUI_HSTATE'    , 'P_H_STATE'       ,
+    'WAUI_HCITY'     , 'P_H_CITY'        ,
+    'WAUI_HCODE'     , 'P_H_CODE'        ,
+    'WAUI_HADDRESS1' , 'P_H_ADDRESS1'    ,
+    'WAUI_HADDRESS2' , 'P_H_ADDRESS2'    ,
+    'WAUI_HTZONE'    , 'P_H_TZONE'       ,
+    'WAUI_LAT'       , 'P_H_LAT'         ,
+    'WAUI_LNG'       , 'P_H_LNG'         ,
+    'WAUI_HPHONE'    , 'P_H_PHONE'       ,
+    'WAUI_HMOBILE'   , 'P_H_MOBILE'      ,
+    'WAUI_BCOUNTRY'  , 'P_B_COUNTRY'     ,
+    'WAUI_BSTATE'    , 'P_B_STATE'       ,
+    'WAUI_BCITY'     , 'P_B_CITY'        ,
+    'WAUI_BCODE'     , 'P_B_CODE'        ,
+    'WAUI_BADDRESS1' , 'P_B_ADDRESS1'    ,
+    'WAUI_BADDRESS2' , 'P_B_ADDRESS2'    ,
+    'WAUI_BTZONE'    , 'P_B_TZONE'       ,
+    'WAUI_BLAT'      , 'P_B_LAT'         ,
+    'WAUI_BLNG'      , 'P_B_LNG'         ,
+    'WAUI_BPHONE'    , 'P_B_PHONE'       ,
+    'WAUI_BMOBILE'   , 'P_B_MOBILE'      ,
+    'WAUI_WEBPAGE'   , 'P_WEB'           ,
+    'WAUI_BINDUSTRY' , 'P_B_INDUSTRY'    ,
+    'WAUI_BORG'      , 'P_B_ORGANIZATION',
+    'WAUI_BJOB'      , 'P_B_JOB'         ,
+    'WAUI_TAGS'      , 'P_TAGS'          );
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.apiHTTPError (
+  in error varchar)
+{
+  declare S varchar;
+
+  S := replace (error, 'HTTP/1.1 ', '');
+  http_header ('Content-Type: text/html; charset=UTF-8\r\n');
+  http_request_status (error);
+  http (sprintf ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN"><html><head><title>%s</title></head><body><h1>%s</h1></body></html>', S, S));
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.apiObject ()
 {
   return subseq (soap_box_structure ('x', 1), 0, 2);
 }
@@ -5821,7 +5923,7 @@ create procedure AB.WA.pcObject ()
 
 -----------------------------------------------------------------------------------------
 --
-create procedure AB.WA.pcIsObject (inout o any)
+create procedure AB.WA.isApiObject (inout o any)
 {
   if (isarray (o) and (length (o) > 1) and (__tag (o[0]) = 255))
     return 1;
@@ -5853,11 +5955,11 @@ create procedure AB.WA.obj2xml (
   {
     retValue := sprintf ('%V', o);
   }
-  else if (AB.WA.pcIsObject (o))
+  else if (AB.WA.isApiObject (o))
   {
     for (N := 2; N < length(o); N := N + 2)
     {
-      if (not AB.WA.pcIsObject (o[N+1]) and isarray (o[N+1]) and not isstring (o[N+1]))
+      if (not AB.WA.isApiObject (o[N+1]) and isarray (o[N+1]) and not isstring (o[N+1]))
       {
         retValue := retValue || AB.WA.obj2xml (o[N+1], d-1, o[N]);
       } else {
@@ -5883,6 +5985,9 @@ create procedure AB.WA.obj2xml (
 
 -----------------------------------------------------------------------------------------
 --
+-- Portable Contacts
+--
+-----------------------------------------------------------------------------------------
 create procedure AB.WA.pcMap ()
 {
   return vector ('id',              vector ('field',    'P_ID'),
@@ -5903,51 +6008,51 @@ create procedure AB.WA.pcMap ()
                  'emails',          vector ('sort',     'P_MAIL',
                                             'filter',   vector ('P_MAIL', 'P_H_MAIL', 'P_B_MAIL'),
                                             'type',     'vector/object',
-                                            'field',    vector ('P_MAIL',   vector ('template', vector_concat (AB.WA.pcObject (), vector ('primary', 'true'))),
-                                                                'P_H_MAIL', vector ('template', vector_concat (AB.WA.pcObject (), vector ('type', 'home'))),
-                                                                'P_B_MAIL', vector ('template', vector_concat (AB.WA.pcObject (), vector ('type', 'work')))
+                                            'field',    vector ('P_MAIL',   vector ('template', vector_concat (AB.WA.apiObject (), vector ('primary', 'true'))),
+                                                                'P_H_MAIL', vector ('template', vector_concat (AB.WA.apiObject (), vector ('type', 'home'))),
+                                                                'P_B_MAIL', vector ('template', vector_concat (AB.WA.apiObject (), vector ('type', 'work')))
                                                                )
                                            ),
                  'phoneNumbers',    vector ('sort',     'P_PHONE',
                                             'filter',   vector ('P_PHONE', 'P_H_PHONE', 'P_B_PHONE'),
                                             'type',     'vector/object',
-                                            'field',    vector ('P_PHONE',   vector ('template', vector_concat (AB.WA.pcObject (), vector ('primary', 'true'))),
-                                                                'P_H_PHONE', vector ('template', vector_concat (AB.WA.pcObject (), vector ('type', 'home'))),
-                                                                'P_B_PHONE', vector ('template', vector_concat (AB.WA.pcObject (), vector ('type', 'work')))
+                                            'field',    vector ('P_PHONE',   vector ('template', vector_concat (AB.WA.apiObject (), vector ('primary', 'true'))),
+                                                                'P_H_PHONE', vector ('template', vector_concat (AB.WA.apiObject (), vector ('type', 'home'))),
+                                                                'P_B_PHONE', vector ('template', vector_concat (AB.WA.apiObject (), vector ('type', 'work')))
                                                                )
                                            ),
                  'urls',            vector ('sort',     'P_H_WEB',
                                             'filter',   vector ('P_WEB', 'P_H_WEB', 'P_B_WEB'),
                                             'type',     'vector/object',
-                                            'field',    vector ('P_WEB',     vector ('template', vector_concat (AB.WA.pcObject (), vector ('primary', 'true'))),
-                                                                'P_H_WEB',   vector ('template', vector_concat (AB.WA.pcObject (), vector ('type', 'home'))),
-                                                                'P_B_WEB',   vector ('template', vector_concat (AB.WA.pcObject (), vector ('type', 'work')))
+                                            'field',    vector ('P_WEB',     vector ('template', vector_concat (AB.WA.apiObject (), vector ('primary', 'true'))),
+                                                                'P_H_WEB',   vector ('template', vector_concat (AB.WA.apiObject (), vector ('type', 'home'))),
+                                                                'P_B_WEB',   vector ('template', vector_concat (AB.WA.apiObject (), vector ('type', 'work')))
                                                                )
                                            ),
                  'ims',             vector ('sort',     'null',
                                             'filter',   'null',
                                             'type',     'vector/object',
-                                            'field',    vector ('P_ICQ',   vector ('template', vector_concat (AB.WA.pcObject (), vector ('type', 'icq'))),
-                                                                'P_SKYPE', vector ('template', vector_concat (AB.WA.pcObject (), vector ('type', 'skype'))),
-                                                                'P_AIM',   vector ('template', vector_concat (AB.WA.pcObject (), vector ('type', 'aim'))),
-                                                                'P_YAHOO', vector ('template', vector_concat (AB.WA.pcObject (), vector ('type', 'yahoo'))),
-                                                                'P_MSN',   vector ('template', vector_concat (AB.WA.pcObject (), vector ('type', 'msn')))
+                                            'field',    vector ('P_ICQ',   vector ('template', vector_concat (AB.WA.apiObject (), vector ('type', 'icq'))),
+                                                                'P_SKYPE', vector ('template', vector_concat (AB.WA.apiObject (), vector ('type', 'skype'))),
+                                                                'P_AIM',   vector ('template', vector_concat (AB.WA.apiObject (), vector ('type', 'aim'))),
+                                                                'P_YAHOO', vector ('template', vector_concat (AB.WA.apiObject (), vector ('type', 'yahoo'))),
+                                                                'P_MSN',   vector ('template', vector_concat (AB.WA.apiObject (), vector ('type', 'msn')))
                                                                )
                                            ),
                  'addresses',       vector ('sort',     'null',
                                             'filter',   'null',
                                             'type',     'vector/object2',
                                             'unique',   'type',
-                                            'field',    vector ('P_H_COUNTRY', vector ('property', 'country',       'template', vector_concat (AB.WA.pcObject (), vector ('type', 'home'))),
-                                                                'P_H_STATE',   vector ('property', 'region',        'template', vector_concat (AB.WA.pcObject (), vector ('type', 'home'))),
-                                                                'P_H_CODE',    vector ('property', 'postalCode',    'template', vector_concat (AB.WA.pcObject (), vector ('type', 'home'))),
-                                                                'P_H_CITY',    vector ('property', 'locality',      'template', vector_concat (AB.WA.pcObject (), vector ('type', 'home'))),
-                                                                'P_H_ADDRESS1',vector ('property', 'streetAddress', 'template', vector_concat (AB.WA.pcObject (), vector ('type', 'home'))),
-                                                                'P_B_COUNTRY', vector ('property', 'country',       'template', vector_concat (AB.WA.pcObject (), vector ('type', 'work'))),
-                                                                'P_B_STATE',   vector ('property', 'region',        'template', vector_concat (AB.WA.pcObject (), vector ('type', 'work'))),
-                                                                'P_B_CODE',    vector ('property', 'postalCode',    'template', vector_concat (AB.WA.pcObject (), vector ('type', 'work'))),
-                                                                'P_B_CITY',    vector ('property', 'locality',      'template', vector_concat (AB.WA.pcObject (), vector ('type', 'work'))),
-                                                                'P_B_ADDRESS1',vector ('property', 'streetAddress', 'template', vector_concat (AB.WA.pcObject (), vector ('type', 'work')))
+                                            'field',    vector ('P_H_COUNTRY', vector ('property', 'country',       'template', vector_concat (AB.WA.apiObject (), vector ('type', 'home'))),
+                                                                'P_H_STATE',   vector ('property', 'region',        'template', vector_concat (AB.WA.apiObject (), vector ('type', 'home'))),
+                                                                'P_H_CODE',    vector ('property', 'postalCode',    'template', vector_concat (AB.WA.apiObject (), vector ('type', 'home'))),
+                                                                'P_H_CITY',    vector ('property', 'locality',      'template', vector_concat (AB.WA.apiObject (), vector ('type', 'home'))),
+                                                                'P_H_ADDRESS1',vector ('property', 'streetAddress', 'template', vector_concat (AB.WA.apiObject (), vector ('type', 'home'))),
+                                                                'P_B_COUNTRY', vector ('property', 'country',       'template', vector_concat (AB.WA.apiObject (), vector ('type', 'work'))),
+                                                                'P_B_STATE',   vector ('property', 'region',        'template', vector_concat (AB.WA.apiObject (), vector ('type', 'work'))),
+                                                                'P_B_CODE',    vector ('property', 'postalCode',    'template', vector_concat (AB.WA.apiObject (), vector ('type', 'work'))),
+                                                                'P_B_CITY',    vector ('property', 'locality',      'template', vector_concat (AB.WA.apiObject (), vector ('type', 'work'))),
+                                                                'P_B_ADDRESS1',vector ('property', 'streetAddress', 'template', vector_concat (AB.WA.apiObject (), vector ('type', 'work')))
                                                                )
                                            ),
                  'tags',            vector ('sort',     'null',
@@ -6067,7 +6172,7 @@ create procedure AB.WA.pcContactObject (
   declare R, V, T, P, P1, aIndex any;
   declare tmp, pcField, pcFieldDef, pcUnique, pcUniqueValue, abValue, abFieldDef, abField, abFieldType, abFieldIndex any;
 
-  oEntry := AB.WA.pcObject ();
+  oEntry := AB.WA.apiObject ();
   for (N := 0; N < length (fields); N := N + 1)
   {
     pcField := fields[N];
@@ -6101,7 +6206,7 @@ create procedure AB.WA.pcContactObject (
           if (length (V) <> 2)
             goto _skip_field;
           if (isnull (AB.WA.vector_index (oEntry, V[0])))
-            oEntry := vector_concat (oEntry, vector (V[0], AB.WA.pcObject ()));
+            oEntry := vector_concat (oEntry, vector (V[0], AB.WA.apiObject ()));
           T := get_keyword (V[0], oEntry);
           T := AB.WA.set_keyword (V[1], T, abValue);
           oEntry := AB.WA.set_keyword (V[0], oEntry, T);
@@ -6123,7 +6228,7 @@ create procedure AB.WA.pcContactObject (
         if (isnull (AB.WA.vector_index (oEntry, pcField)))
           oEntry := vector_concat (oEntry, vector (pcField, vector ()));
         P := get_keyword (pcField, oEntry);
-        T := get_keyword ('template', abFieldDef, AB.WA.pcObject ());
+        T := get_keyword ('template', abFieldDef, AB.WA.apiObject ());
         T := AB.WA.set_keyword (get_keyword ('property', abFieldDef, 'value'), T, abValue);
         P := vector_concat (P, vector (T));
         oEntry := AB.WA.set_keyword (pcField, oEntry, P);
@@ -6133,7 +6238,7 @@ create procedure AB.WA.pcContactObject (
         if (isnull (AB.WA.vector_index (oEntry, pcField)))
           oEntry := vector_concat (oEntry, vector (pcField, vector ()));
         P := get_keyword (pcField, oEntry);
-        T := get_keyword ('template', abFieldDef, AB.WA.pcObject ());
+        T := get_keyword ('template', abFieldDef, AB.WA.apiObject ());
         pcUnique := get_keyword ('unique', pcFieldDef, 'type');
         pcUniqueValue := get_keyword (pcUnique, T);
         K := -1;
@@ -6180,13 +6285,41 @@ create procedure AB.WA.pcPrepareOwner (
 --
 create procedure AB.WA.portablecontacts () __SOAP_HTTP 'text/html'
 {
+  declare exit handler for sqlstate '*'
+  {
+    if (__SQL_STATE = '__400')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 400 Bad Request');
+    }
+    else if (__SQL_STATE = '__401')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 401 Unauthorized');
+    }
+    else if (__SQL_STATE = '__404')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 404 Not Found');
+    }
+    else if (__SQL_STATE = '__500')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 500 Not Found');
+    }
+    else if (__SQL_STATE = '__503')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 503 Service Unavailable');
+    }
+    else
+    {
+      dbg_obj_princ (__SQL_STATE, __SQL_MESSAGE);
+    }
+    return null;
+  };
 	declare uname varchar;
   declare N, M, L, domain_id, contact_id integer;
   declare filter, updatedSince, filterBy, filterOp, filterValue varchar;
   declare sort, sortBy, sortOrder varchar;
   declare startIndex, countItems varchar;
   declare fields, format varchar;
-  declare pcMap any;
+  declare tmp, pcMap, ocMap any;
   declare V, oResult, oEntries, oEntry, lines, path, params any;
   declare S, st, msg, meta, data any;
 
@@ -6196,16 +6329,21 @@ create procedure AB.WA.portablecontacts () __SOAP_HTTP 'text/html'
 
   domain_id := atoi (get_keyword_ucase ('inst_id', params));
 	if (not ODS..ods_check_auth (uname, domain_id, 'reader'))
-    goto _401;
+    signal ('__401', '');
 
-  if (path like '/ods/portablecontacts%')
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_TYPE_NAME = 'AddressBook'))
+    signal ('__401', '');
+
+  if (path not like '/ods/portablecontacts%')
+    signal ('__404', '');
+
     path := substring (path, length ('/ods/portablecontacts')+1, length (path));
   V := split_and_decode (trim (path, '/'), 0, '\0\0/');
   if ((length (V) < 2) or (V[0] <> '@me'))
-    goto _404;
+    signal ('__404', '');
 
   if (V[1] not in ('@all', '@owner'))
-    goto _404;
+    signal ('__404', '');
 
   -- output format
   format := ucase (get_keyword_ucase ('FORMAT', params, 'JSON'));
@@ -6228,54 +6366,31 @@ create procedure AB.WA.portablecontacts () __SOAP_HTTP 'text/html'
   oEntries := vector ();
   if (V[1] = '@owner')
   {
-    contact_id := AB.WA.domain_owner_id (domain_id);
-    data := vector ();
-    meta := vector ();
-    for (select * from DB.DBA.SYS_USERS, DB.DBA.WA_USER_INFO where WAUI_U_ID = U_ID and U_ID = contact_id) do
+    st := '00000';
+    S := 'select *, WA_USER_TAG_GET(U_NAME) WAUI_TAGS from DB.DBA.SYS_USERS, DB.DBA.WA_USER_INFO where WAUI_U_ID = U_ID and U_ID = ?';
+    exec (S, st, msg, vector (AB.WA.domain_owner_id (domain_id)), 0, meta, data);
+    if (('00000' = st) and (length (data) = 1))
     {
-      AB.WA.pcPrepareOwner (data, U_ID, meta, 'P_ID');
-      AB.WA.pcPrepareOwner (data, U_NAME, meta, 'P_NAME');
-      AB.WA.pcPrepareOwner (data, U_E_MAIL, meta, 'P_MAIL');
-      AB.WA.pcPrepareOwner (data, WAUI_BIRTHDAY, meta, 'P_BIRTHDAY');
-      AB.WA.pcPrepareOwner (data, WAUI_GENDER, meta, 'P_GENDER');
-      AB.WA.pcPrepareOwner (data, WAUI_FIRST_NAME, meta, 'P_FIRST_NAME');
-      AB.WA.pcPrepareOwner (data, WAUI_LAST_NAME, meta, 'P_LAST_NAME');
-      AB.WA.pcPrepareOwner (data, WAUI_GENDER, meta, 'P_GENDER');
-
-      AB.WA.pcPrepareOwner (data, WAUI_ICQ, meta, 'P_ICQ');
-      AB.WA.pcPrepareOwner (data, WAUI_SKYPE, meta, 'P_SKYPE');
-      AB.WA.pcPrepareOwner (data, WAUI_YAHOO, meta, 'P_YAHOO');
-      AB.WA.pcPrepareOwner (data, WAUI_AIM, meta, 'P_AIM');
-      AB.WA.pcPrepareOwner (data, WAUI_MSN, meta, 'P_MSN');
-
-      AB.WA.pcPrepareOwner (data, WAUI_HCOUNTRY, meta, 'P_H_COUNTRY');
-      AB.WA.pcPrepareOwner (data, WAUI_HSTATE, meta, 'P_H_STATE');
-      AB.WA.pcPrepareOwner (data, WAUI_HCITY, meta, 'P_H_CITY');
-      AB.WA.pcPrepareOwner (data, WAUI_HCODE, meta, 'P_H_CODE');
-      AB.WA.pcPrepareOwner (data, WAUI_HADDRESS1, meta, 'P_H_ADDRESS1');
-      AB.WA.pcPrepareOwner (data, WAUI_BCOUNTRY, meta, 'P_B_COUNTRY');
-      AB.WA.pcPrepareOwner (data, WAUI_BSTATE, meta, 'P_B_STATE');
-      AB.WA.pcPrepareOwner (data, WAUI_BCITY, meta, 'P_B_CITY');
-      AB.WA.pcPrepareOwner (data, WAUI_BCODE, meta, 'P_B_CODE');
-      AB.WA.pcPrepareOwner (data, WAUI_BADDRESS1, meta, 'P_B_ADDRESS1');
-
-      AB.WA.pcPrepareOwner (data, WAUI_HPHONE, meta, 'P_H_PHONE');
-      AB.WA.pcPrepareOwner (data, WAUI_BPHONE, meta, 'P_B_PHONE');
-
-      AB.WA.pcPrepareOwner (data, WAUI_WEBPAGE, meta, 'P_WEB');
-
-      AB.WA.pcPrepareOwner (data, WA_USER_TAG_GET(U_NAME), meta, 'P_TAGS');
+      data := data[0];
+      meta := AB.WA.simplifyMeta (meta);
+      ocMap := AB.WA.owner2contactMap();
+      for (N := 0; N < length (meta); N := N + 1)
+      {
+        tmp := get_keyword (meta[N], ocMap);
+        if (not isnull (tmp))
+          meta[N] := tmp;
     }
     oEntry := AB.WA.pcContactObject (fields, data, meta, pcMap);
     if (not isnull (oEntry))
       oEntries := vector_concat (oEntries, vector (oEntry));
+    }
   } else {
     contact_id := null;
     if (length (V) = 3)
     {
       contact_id := atoi (V[2]);
       if (contact_id = 0)
-        goto _404;
+        signal ('__404', '');
     }
 
     -- filter
@@ -6290,12 +6405,12 @@ create procedure AB.WA.portablecontacts () __SOAP_HTTP 'text/html'
     {
       filterOp := get_keyword_ucase ('FILTEROP', params);
       if (is_empty_or_null (filterOp))
-        goto _404;
+        signal ('__404', '');
       if (filterOp <> 'present')
       {
         filterValue := get_keyword_ucase ('FILTERVALUE', params);
         if (is_empty_or_null (filterValue))
-          goto _404;
+          signal ('__404', '');
       }
       V := AB.WA.pcFilterField (filterBy, pcMap);
       if (not is_empty_or_null (V))
@@ -6348,8 +6463,6 @@ create procedure AB.WA.portablecontacts () __SOAP_HTTP 'text/html'
     if (not is_empty_or_null (sort))
       S := S || ' order by ' || sort;
     exec (S, st, msg, vector (domain_id), 0, meta, data);
-    --dbg_obj_print ('S', S);
-    --dbg_obj_print ('st', st, msg);
     if ('00000' = st)
     {
       meta := AB.WA.simplifyMeta (meta);
@@ -6361,11 +6474,10 @@ create procedure AB.WA.portablecontacts () __SOAP_HTTP 'text/html'
       }
     }
   }
-  oResult := AB.WA.pcObject ();
+  oResult := AB.WA.apiObject ();
   oResult := vector_concat (oResult, vector ('startIndex', startIndex, 'countItems', countItems));
   if (length (oEntries))
     oResult := vector_concat (oResult, vector ('entry', oEntries));
-  -- dbg_obj_print ('oResult', oResult);
 
   http_request_status ('HTTP/1.1 200 OK');
   if (format = 'JSON')
@@ -6374,30 +6486,7 @@ create procedure AB.WA.portablecontacts () __SOAP_HTTP 'text/html'
   } else {
     http (AB.WA.obj2xml (oResult, 10));
   }
-_exit:;
   return '';
-
-_400:;
-  AB.WA.pcHTTPError ('HTTP/1.1 400 Bad Request');
-  goto _exit;
-
-_401:;
-  AB.WA.pcHTTPError ('HTTP/1.1 401 Unauthorized');
-  goto _exit;
-
-_404:;
-  AB.WA.pcHTTPError ('HTTP/1.1 404 Not Found');
-  http ('400 Bad Request');
-  goto _exit;
-
-_500:;
-  AB.WA.pcHTTPError ('HTTP/1.1 500 Not Found');
-  http ('400 Bad Request');
-  goto _exit;
-
-_503:;
-  AB.WA.pcHTTPError ('HTTP/1.1 503 Service Unavailable');
-  goto _exit;
 }
 ;
 
@@ -6406,26 +6495,653 @@ grant execute on AB.WA.portablecontacts to SOAP_ADDRESSBOOK
 
 -----------------------------------------------------------------------------------------
 --
-create procedure AB.WA.pcHTTPError (
-  in error varchar)
+-- Live Contacts (Microsoft)
+--
+-- ---------------------------------------------------------------------------------------
+create procedure AB.WA.lcPredefinedFilters (
+  in lcFilter varchar)
 {
-  declare S varchar;
-
-  S := replace (error, 'HTTP/1.1 ', '');
-  http_request_status (error);
-  http (sprintf ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN"><html><head><title>%s</title></head><body><h1>%s</h1></body></html>', S, S));
-
+  lcFilter := ucase (lcFilter);
+  if (lcFilter = 'HOTMAIL')
+    return 'LiveContacts(Contact(ID,CID,WindowsLiveID,AutoUpdateEnabled,AutoUpdateStatus,Profiles,Email,Phone,Location,URI),Tag)';
+  if (lcFilter = 'MESSENGERSERVER')
+    return 'LiveContacts(Contact(ID,CID,WindowsLiveID,AutoUpdateEnabled,AutoUpdateStatus,Profiles(Personal),Email,Phone),Tag)';
+  if (lcFilter = 'MESSENGERCLIENT')
+    return 'LiveContacts(Contact(ID,CID,WindowsLiveID,AutoUpdateEnabled,AutoUpdateStatus,Profiles,Email,Phone),Tag)';
+  if (lcFilter = 'PHONE')
+    return 'LiveContacts(Contact(ID,CID,WindowsLiveID,AutoUpdateEnabled,AutoUpdateStatus,Profiles(Personal(FirstName,LastName)),Email,Phone,Location),Tag)';
+  if (lcFilter = 'MINIMALPHONE')
+    return 'LiveContacts(Contact(ID,WindowsLiveID,Profiles(Personal(NameToFileAs,FirstName,LastName)),Email,Phone),Tag)';
+  if (lcFilter = 'MAPPOINT')
+    return 'LiveContacts(Contact(ID,WindowsLiveID,Profiles(Personal(NameToFileAs,FirstName,LastName)),Location))';
+  return null;
 }
 ;
 
 -----------------------------------------------------------------------------------------
 --
--- Live Contacts (Microsoft)
---
--- ---------------------------------------------------------------------------------------
-create procedure AB.WA.livecontacts () __SOAP_HTTP 'text/html'
+create procedure AB.WA.lcFilterFields_Int (
+  in lcFilter varchar,
+  in lcPath varchar,
+  inout lcFields any)
 {
-  dbg_obj_print ('portablecontacts');
+  declare L_Brace, R_Brace, L_Comma integer;
+
+  L_Brace := strchr (lcFilter, '(');
+  L_Comma := strchr (lcFilter, ',');
+  while (not isnull (L_Brace) or not isnull (L_Comma))
+  {
+    if (not isnull (L_Comma) and (isnull (L_Brace) or (L_Comma < L_Brace)))
+    {
+      lcFields := vector_concat (lcFields, vector (lcPath || case when lcPath = '' then '' else '.' end || trim (subseq (lcFilter, 0, l_Comma))));
+      lcFilter := trim (subseq (lcFilter, L_Comma+1, length (lcFilter)));
+      goto _loop;
+    }
+    R_Brace := strrchr (lcFilter, ')');
+    if (isnull (L_Brace) and not isnull (R_Brace))
+      return;
+    if (not isnull (L_Brace) and isnull (R_Brace))
+      return;
+    AB.WA.lcFilterFields_Int (trim (subseq (lcFilter, L_Brace+1, R_Brace)), lcPath || case when lcPath = '' then '' else '.' end || trim (subseq (lcFilter, 0, L_Brace)), lcFields);
+    lcFilter := trim (subseq (lcFilter, R_Brace+1, length (lcFilter)));
+  _loop:
+    L_Brace := strchr (lcFilter, '(');
+    L_Comma := strchr (lcFilter, ',');
+  }
+  if (lcFilter <> '')
+    lcFields := vector_concat (lcFields, vector (lcPath || case when lcPath = '' then '' else '.' end || lcFilter));
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.lcFilterFields (
+  in lcFilter varchar)
+{
+  declare lcPath, lcFields any;
+
+  lcPath := '';
+  lcFields := Vector ();
+  AB.WA.lcFilterFields_Int (lcFilter, lcPath, lcFields);
+
+  return lcFields;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.lcMap ()
+{
+  return vector ('ID',                                  vector ('field', 'P_ID'),
+                 'CID',                                 vector ('field', 'P_UID'),
+                 'URI',                                 vector ('field', 'P_IRI'),
+                 'Profiles.Personal.NickName',          vector ('field', 'P_NAME',      'xpath', vector ('Profiles.Personal.NickName', 'Profiles.Personal.LastName', 'Profiles.Personal.FirstName')),
+                 'Profiles.Personal.FirstName',         vector ('field', 'P_FIRST_NAME'),
+                 'Profiles.Personal.MiddleName',        vector ('field', 'P_MIDDLE_NAME'),
+                 'Profiles.Personal.LastName',          vector ('field', 'P_LAST_NAME'),
+                 'Profiles.Personal.Gender',            vector ('field', 'P_GENDER'),
+                 'Profiles.Personal.Birthdate',         vector ('field', 'P_BIRTHDAY',  'function', 'select subseq (AB.WA.dt_iso8601 (?), 0, 10)'),
+                 'Profiles.Professional.JobTitle',      vector ('field', 'P_B_JOB'),
+                 'Locations.Location.CountryRegion',    vector ('field', 'P_H_COUNTRY', 'xpath', vector ('Locations.Location[LocationType="Personal"].CountryRegion'), 'unique', 'LocationType', 'template', vector_concat (AB.WA.apiObject (), vector ('LocationType', 'Personal', 'IsDefault', 'true'))),
+                 'Locations.Location.SubDivision',      vector ('field', 'P_H_STATE',   'xpath', vector ('Locations.Location[LocationType="Personal"].SubDivision'),   'unique', 'LocationType', 'template', vector_concat (AB.WA.apiObject (), vector ('LocationType', 'Personal', 'IsDefault', 'true'))),
+                 'Locations.Location.PostalCode',       vector ('field', 'P_H_CODE',    'xpath', vector ('Locations.Location[LocationType="Personal"].PostalCode'),    'unique', 'LocationType', 'template', vector_concat (AB.WA.apiObject (), vector ('LocationType', 'Personal', 'IsDefault', 'true'))),
+                 'Locations.Location.PrimaryCity',      vector ('field', 'P_H_CITY',    'xpath', vector ('Locations.Location[LocationType="Personal"].PrimaryCity'),   'unique', 'LocationType', 'template', vector_concat (AB.WA.apiObject (), vector ('LocationType', 'Personal', 'IsDefault', 'true'))),
+                 'Locations.Location.StreetLine',       vector ('field', 'P_H_ADDRESS1','xpath', vector ('Locations.Location[LocationType="Personal"].StreetLine'),    'unique', 'LocationType', 'template', vector_concat (AB.WA.apiObject (), vector ('LocationType', 'Personal', 'IsDefault', 'true'))),
+                 'Locations.Location.StreetLine2',      vector ('field', 'P_H_ADDRESS2','xpath', vector ('Locations.Location[LocationType="Personal"].StreetLine2'),   'unique', 'LocationType', 'template', vector_concat (AB.WA.apiObject (), vector ('LocationType', 'Personal', 'IsDefault', 'true'))),
+                 'Locations.Location.Latitude',         vector ('field', 'P_H_LAT',     'xpath', vector ('Locations.Location[LocationType="Personal"].Latitude'),      'unique', 'LocationType', 'template', vector_concat (AB.WA.apiObject (), vector ('LocationType', 'Personal', 'IsDefault', 'true'))),
+                 'Locations.Location.Longitude',        vector ('field', 'P_H_LNG',     'xpath', vector ('Locations.Location[LocationType="Personal"].Longitude'),     'unique', 'LocationType', 'template', vector_concat (AB.WA.apiObject (), vector ('LocationType', 'Personal', 'IsDefault', 'true'))),
+                 'Locations.Location.CountryRegion[2]', vector ('field', 'P_B_COUNTRY', 'xpath', vector ('Locations.Location[LocationType="Business"].CountryRegion'), 'unique', 'LocationType', 'template', vector_concat (AB.WA.apiObject (), vector ('LocationType', 'Business'))),
+                 'Locations.Location.SubDivision[2]',   vector ('field', 'P_B_STATE',   'xpath', vector ('Locations.Location[LocationType="Business"].SubDivision'),   'unique', 'LocationType', 'template', vector_concat (AB.WA.apiObject (), vector ('LocationType', 'Business'))),
+                 'Locations.Location.PostalCode[2]',    vector ('field', 'P_B_CODE',    'xpath', vector ('Locations.Location[LocationType="Business"].PostalCode'),    'unique', 'LocationType', 'template', vector_concat (AB.WA.apiObject (), vector ('LocationType', 'Business'))),
+                 'Locations.Location.PrimaryCity[2]',   vector ('field', 'P_B_CITY',    'xpath', vector ('Locations.Location[LocationType="Business"].PrimaryCity'),   'unique', 'LocationType', 'template', vector_concat (AB.WA.apiObject (), vector ('LocationType', 'Business'))),
+                 'Locations.Location.StreetLine[2]',    vector ('field', 'P_B_ADDRESS1','xpath', vector ('Locations.Location[LocationType="Business"].StreetLine'),    'unique', 'LocationType', 'template', vector_concat (AB.WA.apiObject (), vector ('LocationType', 'Business'))),
+                 'Locations.Location.StreetLine2[2]',   vector ('field', 'P_B_ADDRESS2','xpath', vector ('Locations.Location[LocationType="Business"].StreetLine2'),   'unique', 'LocationType', 'template', vector_concat (AB.WA.apiObject (), vector ('LocationType', 'Business'))),
+                 'Locations.Location.Latitude[2]',      vector ('field', 'P_B_LAT',     'xpath', vector ('Locations.Location[LocationType="Business"].Latitude'),      'unique', 'LocationType', 'template', vector_concat (AB.WA.apiObject (), vector ('LocationType', 'Business'))),
+                 'Locations.Location.Longitude[2]',     vector ('field', 'P_B_LNG',     'xpath', vector ('Locations.Location[LocationType="Business"].Longitude'),     'unique', 'LocationType', 'template', vector_concat (AB.WA.apiObject (), vector ('LocationType', 'Business'))),
+                 'Emails.Email.Address',                vector ('field', 'P_MAIL',      'xpath', vector ('Emails.Email[EmailType="Personal"].Address'), 'unique', 'EmailType', 'template', vector_concat (AB.WA.apiObject (), vector ('EmailType', 'Personal', 'IsDefault', 'true'))),
+                 'Emails.Email.Address[2]',             vector ('field', 'P_B_MAIL',    'xpath', vector ('Emails.Email[EmailType="Business"].Address'), 'unique', 'EmailType', 'template', vector_concat (AB.WA.apiObject (), vector ('EmailType', 'Business'))),
+                 'Phones.Phone.Number',                 vector ('field', 'P_PHONE',     'xpath', vector ('Phones.Phone[PhoneType="Personal"].Number'), 'unique', 'PhoneType', 'template', vector_concat (AB.WA.apiObject (), vector ('PhoneType', 'Personal', 'IsDefault', 'true'))),
+                 'Phones.Phone.Number[2]',              vector ('field', 'P_B_PHONE',   'xpath', vector ('Phones.Phone[PhoneType="Business"].Number'), 'unique', 'PhoneType', 'template', vector_concat (AB.WA.apiObject (), vector ('PhoneType', 'Business'))),
+                 'URIs.URI.Address',                    vector ('field', 'P_WEB',       'xpath', vector ('URIs.URI[URIType="Personal"].Address'), 'unique', 'URIType', 'template', vector_concat (AB.WA.apiObject (), vector ('URIType', 'Personal', 'IsDefault', 'true'))),
+                 'URIs.URI.Address[2]',                 vector ('field', 'P_B_WEB',     'xpath', vector ('URIs.URI[URIType="Business"].Address'), 'unique', 'URIType', 'template', vector_concat (AB.WA.apiObject (), vector ('URIType', 'Business'))),
+                 'Tag',                                 vector ('field', 'P_TAGS',      'type', 'tag')
+                );
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.lcFindObject (
+  in lcObject any,
+  in lcProperty varchar,
+  in lcUnique varchar := null,
+  in lcUniqueValue varchar := null)
+{
+  declare N integer;
+
+  for (N := 2; N < length (lcObject); N := N + 2)
+  {
+    if (lcObject[N] = lcProperty)
+    {
+      if (isnull (lcUnique))
+        return N+1;
+      if (get_keyword (lcUnique, lcObject[N+1]) = lcUniqueValue)
+        return N+1;
+    }
+  }
+  return null;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.lcContactField (
+  in lcField varchar,
+  in lcMap varchar,
+  in lcFields any := null)
+{
+  if (not isnull (lcFields) and not AB.WA.vector_contains (lcFields, lcField))
+    return null;
+
+  return get_keyword (lcField, lcMap);
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.lcContactFieldIndex (
+  in abField varchar,
+  in abMeta any)
+{
+  declare N integer;
+
+  for (N := 0; N < length (abMeta); N := N + 1)
+    if (abField = abMeta[N])
+      return N;
+
+  return null;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.lcContactValue (
+  in lcField varchar,
+  inout data any,
+  inout meta any,
+  inout lcMap any)
+{
+  declare tmp, lcFieldDef any;
+  declare abValue, abField, abFieldIndex any;
+
+  abValue := null;
+  lcFieldDef := AB.WA.lcContactField (lcField, lcMap);
+  if (isnull (lcFieldDef))
+    goto _skip;
+  abField := get_keyword ('field', lcFieldDef);
+  if (isnull (abField))
+    goto _skip;
+  abFieldIndex := AB.WA.lcContactFieldIndex (abField, meta);
+  if (isnull (abFieldIndex))
+    goto _skip;
+  abValue := data[abFieldIndex];
+  if (is_empty_or_null (abValue))
+    goto _skip;
+  if (not isnull (get_keyword ('function', lcFieldDef)))
+  {
+    tmp := get_keyword ('function', lcFieldDef);
+    if (not isnull (tmp))
+    {
+      tmp := AB.WA.exec (tmp, vector (abValue));
+      if (length (tmp))
+        abValue := tmp[0][0];
+    }
+  }
+_skip:;
+  return abValue;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.lcContactObject (
+  inout fields any,
+  inout data any,
+  inout meta any,
+  inout lcMap any,
+  inout lcTags any)
+{
+  declare L, M, N, pos integer;
+  declare tmp, oEntry, oTag any;
+  declare V, T, T1 any;
+  declare abValue, abFieldDef, abField, abFieldType, abFieldIndex any;
+  declare lcField, lcFieldDef, lcTemplate, lcUnique, lcUniqueValue any;
+
+  oEntry := AB.WA.apiObject ();
+  for (N := 0; N < length (fields); N := N + 1)
+  {
+    lcField := fields[N];
+    abValue := AB.WA.lcContactValue (lcField, data, meta, lcMap);
+    if (is_empty_or_null (abValue))
+      goto _skip;
+    lcFieldDef := AB.WA.lcContactField (lcField, lcMap);
+    L := strchr (lcField, '[');
+    if (not isnull (L))
+      lcField := subseq (lcField, 0, L);
+    abFieldType := get_keyword ('type', lcFieldDef);
+    if (isnull (abFieldType))
+    {
+      if (isnull (strchr (lcField, '.')))
+      {
+        oEntry := vector_concat (oEntry, vector (lcField, abValue));
+      }
+      else
+      {
+        lcTemplate := get_keyword ('template', lcFieldDef, AB.WA.apiObject ());
+        V := split_and_decode (lcField, 0, '\0\0.');
+        if (length (V) < 2)
+          goto _skip;
+        if (isnull (get_keyword (V[0], oEntry)))
+        {
+          if (length (V) = 2)
+            oEntry := vector_concat (oEntry, vector (V[0], lcTemplate));
+          if (length (V) = 3)
+            oEntry := vector_concat (oEntry, vector (V[0], AB.WA.apiObject ()));
+        }
+        T := get_keyword (V[0], oEntry);
+        if (length (V) = 2)
+        {
+          T := AB.WA.set_keyword (V[1], T, abValue);
+        }
+        else if (length (V) = 3)
+        {
+          lcUnique := get_keyword ('unique', lcFieldDef);
+          if (isnull (lcUnique))
+          {
+            if (isnull (get_keyword (V[1], T)))
+              T := vector_concat (T, vector (V[1], lcTemplate));
+            T1 := get_keyword (V[1], T);
+            T1 := AB.WA.set_keyword (V[2], T1, abValue);
+            T := AB.WA.set_keyword (V[1], T, T1);
+          } else {
+            if (not isnull (lcUnique))
+              lcUniqueValue := get_keyword (lcUnique, lcTemplate);
+            L := AB.WA.lcFindObject (T, V[1], lcUnique, lcUniqueValue);
+            if (isnull (L))
+              T := vector_concat (T, vector (V[1], lcTemplate));
+            L := AB.WA.lcFindObject (T, V[1], lcUnique, lcUniqueValue);
+            T[L] := AB.WA.set_keyword (V[2], T[L], abValue);
+          }
+        }
+        oEntry := AB.WA.set_keyword (V[0], oEntry, T);
+      }
+    }
+    else if (abFieldType = 'tag')
+    {
+      if (isnull (lcTags))
+        lcTags := dict_new();
+      tmp := AB.WA.tags2vector (abValue);
+      foreach (any tag in tmp) do
+      {
+        tag := lcase (tag);
+        oTag := dict_get(lcTags, tag, vector());
+        oTag := vector_concat (oTag, vector (AB.WA.lcContactValue ('ID', data, meta, lcMap)));
+        dict_put(lcTags, tag, oTag);
+      }
+    }
+  _skip:;
+  }
+  if (length (oEntry) > 2)
+    return oEntry;
+  return null;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.lcPathAnalyze (
+  in domainID integer,
+  in lcPath varchar,
+  in lcMethod varchar,
+  inout objectType varchar,
+  inout objectBodyXPath any,
+  inout objectXPath varchar,
+  inout objectID integer)
+{
+  declare I, N integer;
+  declare tmp, V, A any;
+
+  objectType := '*';
+  objectXPath := '/LiveContacts';
+  objectBodyXPath := vector ();
+  objectID := null;
+
+  V := split_and_decode (trim (lcPath, '/'), 0, '\0\0/');
+  if ((length (V) <> 2) and (lcMethod = 'DELETE'))
+    signal ('__400', '');
+  if ((length (V) = 0) and (lcMethod in ('POST', 'PUT')))
+    signal ('__400', '');
+  if (length (V) = 0)
+    return 1;
+  if ((V[0] <> 'owner') and (V[0] <> 'contacts'))
+    signal ('__400', '');
+  if ((V[0] = 'owner') and (lcMethod = 'DELETE'))
+    signal ('__400', '');
+  if (V[0] = 'owner')
+  {
+    if (lcMethod in ('POST', 'DELETE'))
+      signal ('__400', '');
+    I := 1;
+    objectType := 'o';
+    objectXPath := objectXPath || '/Owner';
+    objectBodyXPath := vector_concat (objectBodyXPath, vector ('Owner'));
+  }
+  else
+  {
+    I := 1;
+    objectType := 'c';
+    objectXPath := objectXPath || '/Contacts';
+    objectBodyXPath := vector_concat (objectBodyXPath, vector ('Contact'));
+    if ((length (V) >= 2) and (V[1] like 'contact%'))
+    {
+      I := 2;
+      A := sprintf_inverse (V[1], 'contact(%d)', 1);
+      if (length (A) <> 1)
+        signal ('__404', '');
+      objectID := A[0];
+      if (lcMethod = 'POST')
+        signal ('__400', '');
+      if (not exists (select 1 from AB.WA.PERSONS where P_DOMAIN_ID = domainID and P_ID = objectID))
+        signal ('__400', '');
+      objectXPath := objectXPath || sprintf ('/Contact[ID=%d]', objectID);
+    }
+    if (isnull (ObjectID) and (lcMethod = 'PUT'))
+      signal ('__400', '');
+  }
+  for (N := I; N < length (V); N := N + 1)
+  {
+    A := sprintf_inverse (V[N], '%s(%s)', 1);
+    if (length (A) = 2)
+    {
+      tmp := get_keyword (A[0], vector ('Email', 'EmailType'));
+      if (not isnull (tmp))
+      {
+        objectXPath := objectXPath || sprintf ('/%s[%s=\'%s\']', A[0], tmp, A[1]);
+        objectBodyXPath := vector_concat (objectBodyXPath, vector (A[0]));
+      goto _skip;
+      }
+    }
+    objectXPath := objectXPath || '/' || V[N];
+    objectBodyXPath := vector_concat (objectBodyXPath, vector (V[N]));
+  _skip:;
+  }
+}
+;
+
+-- ---------------------------------------------------------------------------------------
+--
+create procedure AB.WA.livecontacts () __SOAP_HTTP 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    if (__SQL_STATE = '__201')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 201 Creates');
+    }
+    else if (__SQL_STATE = '__204')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 204 No Content');
+    }
+    else if (__SQL_STATE = '__400')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 400 Bad Request');
+    }
+    else if (__SQL_STATE = '__401')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 401 Unauthorized');
+    }
+    else if (__SQL_STATE = '__404')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 404 Not Found');
+    }
+    else if (__SQL_STATE = '__500')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 500 Not Found');
+    }
+    else if (__SQL_STATE = '__503')
+{
+      AB.WA.apiHTTPError ('HTTP/1.1 503 Service Unavailable');
+    }
+    else
+    {
+      dbg_obj_princ (__SQL_STATE, __SQL_MESSAGE);
+    }
+    return null;
+  };
+  declare L, N, M, domain_id integer;
+  declare xt, objectError, objectType, objectBodyXPath, objectXPath, objectID any;
+  declare tmp, uname, V, A, oResult, oContacts, oContact, oTag any;
+  declare lcLines, lcPath, lcParams, lcMethod, lcBody any;
+  declare ocMap, filter, lcFields, lcMap, lcTags, lcField, lcFieldDef, lcMapField, lcXPath any;
+  declare S, st, msg, meta, data any;
+
+  lcLines := http_request_header ();
+  lcPath := http_path ();
+  lcParams := http_param ();
+  lcMethod := ucase (http_request_get ('REQUEST_METHOD'));
+  lcBody := string_output_string (http_body_read ());
+
+  -- domain_id := 2;
+  domain_id := atoi (get_keyword_ucase ('inst_id', lcParams));
+  if (not ODS..ods_check_auth (uname, domain_id, 'reader'))
+    signal ('__401', '');
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_TYPE_NAME = 'AddressBook'))
+    signal ('__401', '');
+
+  if (lcPath not like '/ods/livecontacts%')
+    signal ('__404', '');
+
+  lcPath := substring (lcPath, length ('/ods/livecontacts')+1, length (lcPath));
+  lcMap := AB.WA.lcMap();
+  AB.WA.lcPathAnalyze (domain_id, lcPath, lcMethod, objectType, objectBodyXPath, objectXPath, objectID);
+
+  set_user_id ('dba');
+  if (lcMethod = 'GET')
+  {
+    filter := get_keyword ('filter', lcParams);
+    tmp := AB.WA.lcPredefinedFilters (filter);
+    if (not isnull (tmp))
+      filter := tmp;
+    lcFields := vector ();
+    if (isnull (filter))
+    {
+      for (N := 0; N < length (lcMap); N := N + 2)
+        lcFields := vector_concat (lcFields, vector (lcMap[N]));
+    } else {
+      tmp := AB.WA.lcFilterFields(filter);
+      for (M := 0; M < length (tmp); M := M + 1)
+      {
+        lcField := lcase (trim (tmp[M]));
+        if (lcField like 'livecontacts.%')
+          lcField := subseq (lcField, length ('LiveContacts.'));
+        if (lcField like 'contact.%')
+          lcField := subseq (lcField, length ('Contact.'));
+        if (lcField = '')
+          goto _next_filterField;
+        for (N := 0; N < length (lcMap); N := N + 2)
+        {
+          lcMapField := lcase (lcMap[N]);
+          L := strchr (lcMapField, '[');
+          if (not isnull (L))
+            lcMapField := subseq (lcMapField, 0, L);
+          if (lcMapField like lcField || '%')
+            lcFields := vector_concat (lcFields, vector (lcMap[N]));
+        }
+      _next_filterField:;
+      }
+    }
+    oResult := AB.WA.apiObject();
+    lcTags := null;
+    if ((objectType = '*') or (objectType = 'o'))
+    {
+      st := '00000';
+      S := 'select *, WA_USER_TAG_GET(U_NAME) WAUI_TAGS from DB.DBA.SYS_USERS, DB.DBA.WA_USER_INFO where WAUI_U_ID = U_ID and U_ID = ?';
+      exec (S, st, msg, vector (AB.WA.domain_owner_id (domain_id)), 0, meta, data);
+      if (('00000' = st) and (length (data) = 1))
+      {
+        data := data[0];
+        meta := AB.WA.simplifyMeta (meta);
+        ocMap := AB.WA.owner2contactMap();
+        for (N := 0; N < length (meta); N := N + 1)
+        {
+          tmp := get_keyword (meta[N], ocMap);
+          if (not isnull (tmp))
+            meta[N] := tmp;
+        }
+        oContact := AB.WA.lcContactObject (lcFields, data, meta, lcMap, lcTags);
+        if (not isnull (oContact))
+          oResult := vector_concat (oResult, vector ('Owner', oContact));
+      }
+    }
+    if ((objectType = '*') or (objectType = 'c'))
+    {
+      st := '00000';
+      S := 'select * from AB.WA.PERSONS where P_DOMAIN_ID = ?';
+      if (not isnull (objectID))
+        S := S || ' and P_ID = ' || cast (objectID as varchar);
+      exec (S, st, msg, vector (domain_id), 0, meta, data);
+      if ('00000' = st)
+      {
+        oContacts := AB.WA.apiObject();
+        meta := AB.WA.simplifyMeta (meta);
+        for (N := 0; N < length (data); N := N + 1)
+        {
+          oContact := AB.WA.lcContactObject (lcFields, data[N], meta, lcMap, lcTags);
+          if (not isnull (oContact))
+            oContacts := vector_concat (oContacts, vector ('Contact', oContact));
+        }
+      }
+      if (length (oContacts) > 2)
+        oResult := vector_concat (oResult, vector ('Contacts', oContacts));
+    }
+    if (not isnull (lcTags))
+    {
+      tmp := AB.WA.apiObject ();
+      for (select p.* from AB.WA.dictionary2rs(p0)(tag varchar, IDs varchar) p where p0 = lcTags order by tag) do
+      {
+        A := deserialize (IDs);
+        V := AB.WA.apiObject ();
+        for (N := 0; N < length (A); N := N + 1)
+          V := vector_concat (V, vector ('ContactID', A[N]));
+        tmp := vector_concat (tmp, vector ('Tag', vector_concat (AB.WA.apiObject (), vector ('Name', tag, 'ContactIDs', V))));
+      }
+      if (length (tmp) > 2)
+        oResult := vector_concat (oResult, vector ('Tags', tmp));
+    }
+    if (length (oResult) > 2)
+      oResult := vector_concat (AB.WA.apiObject (), vector ('LiveContacts', oResult));
+    http (AB.WA.obj2xml (oResult, 10));
+  }
+  else if (lcMethod = 'DELETE')
+  {
+    delete from AB.WA.PERSONS where P_DOMAIN_ID = domain_id and P_ID = objectID;
+    signal ('__204', '');
+  }
+  else if ((lcMethod = 'POST') or (lcMethod = 'PUT'))
+  {
+    -- Insert Contact ('POST'), Update Contact/Owner ('PUT')
+    declare abID, abPath, abCheckPath, abTmpPath, abNeedAdded, abField, abFields, abValue, abValues any;
+
+    if (length (objectBodyXPath) = 1)
+    {
+      abNeedAdded := 1;
+      abPath := '/' || objectBodyXPath[0];
+    } else {
+      abNeedAdded := 0;
+      abPath := '';
+      abCheckPath := '';
+      for (N := 1; N < length (objectBodyXPath); N := N + 1)
+      {
+        if (N <> length (objectBodyXPath)-1)
+          abPath := abPath || '/' || objectBodyXPath[N];
+        abCheckPath := abCheckPath || '/' || objectBodyXPath[N];
+      }
+    }
+    xt := xtree_doc (lcBody);
+    abID := -1;
+    abFields := vector ();
+    abValues := vector ();
+    for (N := 0; N < length (lcMap); N := N + 2)
+    {
+      lcField := lcMap[N];
+      lcFieldDef := lcMap[N+1];
+      if (isnull (lcFieldDef))
+        goto _next;
+      abValue := null;
+      abField := get_keyword ('field', lcFieldDef);
+      if (isnull (abField))
+        goto _next;
+      lcXPath := get_keyword ('xpath', lcFieldDef);
+      if (isNull (lcXPath))
+        lcXPath := vector (lcField);
+      tmp := null;
+      for (M := 0; M < length (lcXPath); M := M + 1)
+      {
+        abTmpPath := replace (lcXPath[M], '.', '/');
+        if (abNeedAdded)
+        {
+          tmp := cast (xquery_eval (abPath || '/' || abTmpPath, xt, 1) as varchar);
+        } else {
+          if (abTmpPath like (trim (abCheckPath, '/') || '%'))
+          {
+            abTmpPath := subseq (abTmpPath, length (abPath), length (abTmpPath));
+            tmp := cast (xquery_eval (abTmpPath, xt, 1) as varchar);
+          }
+        }
+        if (not is_empty_or_null (tmp))
+          goto _exit_xpath;
+      }
+    _exit_xpath:;
+      if (is_empty_or_null (tmp))
+        goto _next;
+      if (abField = 'P_BIRTHDAY')
+      {
+        tmp := AB.WA.dt_reformat (tmp, 'YMD');
+        if (is_empty_or_null (tmp))
+          goto _next;
+      }
+      if (not AB.WA.vector_contains (abFields, abField))
+      {
+        abFields := vector_concat (abFields, vector (abField));
+        abValues := vector_concat (abValues, vector (tmp));
+      }
+    _next:;
+    }
+    if (lcMethod = 'PUT')
+    {
+      if (objectType = 'c')
+      {
+        AB.WA.contact_update4 (objectID, domain_id, abFields, abValues, null);
+      } else {
+        uname := AB.WA.domain_owner_name (domain_id);
+        ocMap := AB.WA.vector_reverse (AB.WA.owner2contactMap ());
+        for (N := 0; N < length (abFields); N := N + 1)
+        {
+          tmp := get_keyword (abFields[N], ocMap);
+          if (not isnull (tmp))
+            WA_USER_EDIT (uname, tmp, abValues[N]);
+        }
+      }
+      signal ('__204', '');
+    } else {
+      abID := AB.WA.contact_update4 (abID, domain_id, abFields, abValues, null);
+      signal ('__201', '');
+    }
+  }
+  http_request_status ('HTTP/1.1 200 OK');
+  return '';
+
 }
 ;
 

@@ -30,6 +30,114 @@
   xmlns:vm="http://www.openlinksw.com/vspx/ods/"
   xmlns:v="http://www.openlinksw.com/vspx/">
 
+  <v:method name="saveBusiness" arglist="">
+    <![CDATA[
+      declare blat, blng any;
+      declare params any;
+
+      params := self.vc_page.vc_event.ve_params;
+      if (self.vc_is_valid = 0)
+        return;
+
+      blat := null;
+      blng := null;
+      if (length (self.b_lat.ufl_value) and length (self.b_lng.ufl_value))
+      {
+        blat := atof (self.b_lat.ufl_value);
+        blng := atof (self.b_lng.ufl_value);
+      }
+      WA_USER_VISIBILITY (self.u_name, WA_STR_PARAM (params, 'sel_'), 2);
+
+      WA_USER_EDIT (self.u_name, 'WAUI_BREGNO', self.b_regno.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BCAREER', self.b_career.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BEMPTOTAL', self.b_empltotal.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BVENDOR', self.b_vendor.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BSERVICE', self.b_service.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BOTHER', self.b_other.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BNETWORK', self.b_network.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_RESUME', self.b_resume.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BJOB', self.b_job.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BORG', self.b_org.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BORG_HOMEPAGE', self.b_org_page.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BINDUSTRY', self.b_industr.ufl_value);
+
+      WA_USER_EDIT (self.u_name, 'WAUI_BADDRESS1', self.b_address1.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BADDRESS2', self.b_address2.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BCODE', self.b_code.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BCITY', self.b_city.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BSTATE', get_keyword ('b_state', params));
+      WA_USER_EDIT (self.u_name, 'WAUI_BCOUNTRY', self.b_country.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BTZONE', self.b_tzone.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BLAT', blat);
+      WA_USER_EDIT (self.u_name, 'WAUI_BLNG', blng);
+      WA_USER_EDIT (self.u_name, 'WAUI_LATLNG_HBDEF', self.set_blatlng_def.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BPHONE', self.b_phone.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BMOBILE', self.b_mobile.ufl_value);
+
+      WA_USER_EDIT (self.u_name, 'WAUI_BICQ', self.b_icq.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BSKYPE', self.b_skype.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BAIM', self.b_aim.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BYAHOO', self.b_yahoo.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BMSN', self.b_msn.ufl_value);
+
+      declare N, id integer;
+      declare suffix, tmp_m varchar;
+      declare IDx any;
+
+      IDx := vector ();
+      tmp_m := '';
+      for (N := 0; N < length (params); N := N + 4)
+      {
+        if ((params [N] like 'd_fld_1_%') and (trim (params [N+1]) <> ''))
+        {
+          suffix := replace (params [N], 'd_fld_1_', '');
+          id := cast (get_keyword ('d_fld_0_'||suffix, params, '-1') as integer);
+          if (id <> -1)
+          {
+			      update WA_USER_OL_ACCOUNTS
+			         set WUO_NAME = trim (params [N+1]),
+			             WUO_URL = trim (get_keyword ('d_fld_2_'||suffix, params, ''))
+			       where WUO_ID = id;
+            IDx := vector_concat (IDx, vector (id));
+          }
+        }
+        else if ((params [N] like 'm_fld_1_%') and (trim (params [N+1]) <> ''))
+        {
+          suffix := replace (params [N], 'm_fld_1_', '');
+          tmp_m := tmp_m || trim (params [N+1]) || ';' || trim (get_keyword ('m_fld_2_'||suffix, params, '')) || '\n';
+        }
+      }
+      self.bmessaging := tmp_m;
+      WA_USER_EDIT (self.u_name, 'WAUI_BMESSAGING', tmp_m);
+	    for (select WUO_ID as _id from WA_USER_OL_ACCOUNTS where WUO_U_ID = self.u_id and WUO_TYPE = 'B') do
+	    {
+	      for (N := 0; N < length (IDx); N := N + 1)
+	      {
+	        if (IDx[N] = _id)
+	          goto _exit;
+	      }
+        delete from WA_USER_OL_ACCOUNTS where WUO_ID = _id;
+      _exit:;
+		  }
+      for (N := 0; N < length (params); N := N + 4)
+      {
+        if ((params [N] like 'd_fld_1_%') and (trim (params [N+1]) <> ''))
+        {
+          suffix := replace (params [N], 'd_fld_1_', '');
+          id := cast (get_keyword ('d_fld_0_'||suffix, params, '-1') as integer);
+          if ((id = -1) and (trim (get_keyword ('d_fld_2_'||suffix, params, '')) <> ''))
+          {
+			      insert into WA_USER_OL_ACCOUNTS ( WUO_NAME, WUO_URL, WUO_U_ID, WUO_TYPE)
+		          values (trim (params [N+1]), trim (get_keyword ('d_fld_2_'||suffix, params, '')), self.u_id, 'B');
+          }
+        }
+      }
+
+      -- change user_text data
+      WA_USER_TEXT_SET (self.u_id, WA_GET_USER_INFO(0, self.u_id, WA_USER_VISIBILITY(self.u_name), 0, 1));
+    ]]>
+  </v:method>
+
   <script type="text/javascript">
     <![CDATA[
 		  OAT.Loader.loadFeatures(["combolist", "ws"], function(){});
@@ -736,113 +844,18 @@
 			    self.vc_redirect (sprintf ('uhome.vspx?ufname=%U&amp;l=1', self.u_name));
 			  </v:on-post>
 			</v:button>
-      <v:button name="user_sset_buss" value="Next" action="simple" xhtml_tabindex="21" xhtml_onclick="return validateInputs(this);">
+      <v:button name="user_s_business" value="Save" action="simple" xhtml_tabindex="21" xhtml_onclick="return validateInputs(this);">
                     <v:on-post>
                       <![CDATA[
-            if (self.vc_is_valid = 0)
-              return;
-
-                        declare blat, blng any;
-                        blat := blng := null;
-                        if (length (self.b_lat.ufl_value) and length (self.b_lng.ufl_value))
-                        {
-                             blat := atof (self.b_lat.ufl_value);
-                             blng := atof (self.b_lng.ufl_value);
-            }
-                        declare _arr any;
-                        _arr := WA_STR_PARAM(params,'sel_');
-                        WA_USER_VISIBILITY (self.u_name, _arr, 2);
-
-                        WA_USER_EDIT (self.u_name, 'WAUI_BREGNO', self.b_regno.ufl_value);
-                        WA_USER_EDIT (self.u_name, 'WAUI_BCAREER', self.b_career.ufl_value);
-                        WA_USER_EDIT (self.u_name, 'WAUI_BEMPTOTAL', self.b_empltotal.ufl_value);
-                        WA_USER_EDIT (self.u_name, 'WAUI_BVENDOR', self.b_vendor.ufl_value);
-                        WA_USER_EDIT (self.u_name, 'WAUI_BSERVICE', self.b_service.ufl_value);
-                        WA_USER_EDIT (self.u_name, 'WAUI_BOTHER', self.b_other.ufl_value);
-                        WA_USER_EDIT (self.u_name, 'WAUI_BNETWORK', self.b_network.ufl_value);
-                        WA_USER_EDIT (self.u_name, 'WAUI_RESUME', self.b_resume.ufl_value);
-                        WA_USER_EDIT (self.u_name, 'WAUI_BJOB', self.b_job.ufl_value);
-                        WA_USER_EDIT (self.u_name, 'WAUI_BORG', self.b_org.ufl_value);
-                        WA_USER_EDIT (self.u_name, 'WAUI_BORG_HOMEPAGE', self.b_org_page.ufl_value);
-                        WA_USER_EDIT (self.u_name, 'WAUI_BINDUSTRY', self.b_industr.ufl_value);
-
-            WA_USER_EDIT (self.u_name, 'WAUI_BADDRESS1', self.b_address1.ufl_value);
-            WA_USER_EDIT (self.u_name, 'WAUI_BADDRESS2', self.b_address2.ufl_value);
-            WA_USER_EDIT (self.u_name, 'WAUI_BCODE', self.b_code.ufl_value);
-            WA_USER_EDIT (self.u_name, 'WAUI_BCITY', self.b_city.ufl_value);
-            WA_USER_EDIT (self.u_name, 'WAUI_BSTATE', get_keyword ('b_state', e.ve_params));
-            WA_USER_EDIT (self.u_name, 'WAUI_BCOUNTRY', self.b_country.ufl_value);
-            WA_USER_EDIT (self.u_name, 'WAUI_BTZONE', self.b_tzone.ufl_value);
-            WA_USER_EDIT (self.u_name, 'WAUI_BLAT', blat);
-            WA_USER_EDIT (self.u_name, 'WAUI_BLNG', blng);
-            WA_USER_EDIT (self.u_name, 'WAUI_LATLNG_HBDEF', self.set_blatlng_def.ufl_value);
-            WA_USER_EDIT (self.u_name, 'WAUI_BPHONE', self.b_phone.ufl_value);
-            WA_USER_EDIT (self.u_name, 'WAUI_BMOBILE', self.b_mobile.ufl_value);
-
-            WA_USER_EDIT (self.u_name, 'WAUI_BICQ', self.b_icq.ufl_value);
-            WA_USER_EDIT (self.u_name, 'WAUI_BSKYPE', self.b_skype.ufl_value);
-            WA_USER_EDIT (self.u_name, 'WAUI_BAIM', self.b_aim.ufl_value);
-            WA_USER_EDIT (self.u_name, 'WAUI_BYAHOO', self.b_yahoo.ufl_value);
-            WA_USER_EDIT (self.u_name, 'WAUI_BMSN', self.b_msn.ufl_value);
-
-            declare N, id integer;
-            declare suffix, tmp_m varchar;
-            declare IDx any;
-
-            IDx := vector ();
-            tmp_m := '';
-            for (N := 0; N < length (e.ve_params); N := N + 4)
-            {
-              if ((e.ve_params [N] like 'd_fld_1_%') and (trim (e.ve_params [N+1]) <> ''))
-              {
-                suffix := replace (e.ve_params [N], 'd_fld_1_', '');
-                id := cast (get_keyword ('d_fld_0_'||suffix, e.ve_params, '-1') as integer);
-                if (id <> -1)
-                {
-			            update WA_USER_OL_ACCOUNTS
-			               set WUO_NAME = trim (e.ve_params [N+1]),
-			                   WUO_URL = trim (get_keyword ('d_fld_2_'||suffix, e.ve_params, ''))
-			             where WUO_ID = id;
-                  IDx := vector_concat (IDx, vector (id));
-                }
-              }
-              else if ((e.ve_params [N] like 'm_fld_1_%') and (trim (e.ve_params [N+1]) <> ''))
-              {
-                suffix := replace (e.ve_params [N], 'm_fld_1_', '');
-                tmp_m := tmp_m || trim (e.ve_params [N+1]) || ';' || trim (get_keyword ('m_fld_2_'||suffix, e.ve_params, '')) || '\n';
-              }
-            }
-            self.bmessaging := tmp_m;
-            WA_USER_EDIT (self.u_name, 'WAUI_BMESSAGING', tmp_m);
-	          for (select WUO_ID as _id from WA_USER_OL_ACCOUNTS where WUO_U_ID = self.u_id and WUO_TYPE = 'B') do
-	          {
-	            for (N := 0; N < length (IDx); N := N + 1)
-	            {
-	              if (IDx[N] = _id)
-	                goto _exit;
-	            }
-              delete from WA_USER_OL_ACCOUNTS where WUO_ID = _id;
-            _exit:;
-		        }
-            for (N := 0; N < length (e.ve_params); N := N + 4)
-            {
-              if ((e.ve_params [N] like 'd_fld_1_%') and (trim (e.ve_params [N+1]) <> ''))
-              {
-                suffix := replace (e.ve_params [N], 'd_fld_1_', '');
-                id := cast (get_keyword ('d_fld_0_'||suffix, e.ve_params, '-1') as integer);
-                if ((id = -1) and (trim (get_keyword ('d_fld_2_'||suffix, e.ve_params, '')) <> ''))
-                {
-			            insert into WA_USER_OL_ACCOUNTS ( WUO_NAME, WUO_URL, WUO_U_ID, WUO_TYPE)
-		                values (trim (e.ve_params [N+1]), trim (get_keyword ('d_fld_2_'||suffix, e.ve_params, '')), self.u_id, 'B');
-                }
-              }
-            }
-
-                        -- change user_text data
-                        declare _bdata long varchar;
-                        _bdata := WA_GET_USER_INFO(0, self.u_id, WA_USER_VISIBILITY(self.u_name), 0, 1);
-                        WA_USER_TEXT_SET(self.u_id, _bdata);
-
+            self.saveBusiness();
+          ]]>
+        </v:on-post>
+      </v:button>
+      <v:button name="user_sn_business" value="Save and Next" action="simple" xhtml_tabindex="22" xhtml_onclick="return validateInputs(this);">
+        <v:on-post>
+          <![CDATA[
+            self.saveBusiness();
+            if (self.vc_is_valid)
             self.vc_redirect ('uiedit.vspx?page=3');
                       ]]>
                     </v:on-post>
