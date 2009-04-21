@@ -1,3 +1,78 @@
+April 21, 2009, V6.0.0-TP1:
+  *  Initial release of Virtuoso OpenSource V6.0
+
+April 21, 2009, V5.0.11:
+  * Database engine
+    - Added CA functions
+    - Added bif to open strses without dumping into temp file
+    - Added full duplex flag for ses to allow different threads to do R/W
+    - Added initial support for gzipped stream session
+    - Added support for squid, socks4 and socks5 proxy with optional auth
+    - Added support for URIQA methods in http_client
+    - Added support for gunzip in http_client
+    - Fixed gpf on db:cert_key in certificate info
+    - Fixed problem with FT optimization
+    - Fixed handling of fractions in datetime
+    - Fixed problem with checkpoint rollback which left empty pages
+    - Fixed 64bit portability
+    - Fixed compiler warnings
+
+  * SPARQL and RDF
+    - Added compiler extensions for SPARQL security
+    - Added draft of RDF graph-level security metadata functions
+    - Added Congress Web service
+    - Added Delicious cardridge
+    - Added GoodRelations and Barters Ontology
+    - Added NYT article cardridge
+    - Added Openstreetmap cardridge
+    - Added OReilly cardridge
+    - Added pptx cardridge
+    - Added SCOT
+    - Added Technocrati cardridge
+    - Added initial infrastructure for new SPARQL result serialization
+    - Added meta cardridge for doc links
+    - Added support for SSG_VALMODE_SHORT_OR_LONG
+    - Added support for define sparql-get:proxy for RDF mappers
+    - Added support for nonstandard '[' predicate-object-list ']' '.' 
+      syntax at top level of N3 files
+    - Added optimization of security checks for public graphs in 
+      "allow nothing" storage
+    - Added support for user-defined aggregates in SPARQL
+    - Added support for XML literals in RDF/XML, SPARQL XML resultset and 
+      JSON outputs
+    - Enhanced speed of TTL output
+    - Fixed SPARQL/SPARUL security
+    - Fixed audio, lastfm, meetup, musicbrainz, moat, twitter, xbrl and voID
+    - Fixed compilation of SPARQL_SELECT_DISTINCT query returning bad result
+    - Fixed conflict between user-defined aggregates and SPARUL aggregates
+    - Fixed GPF in rare case when using NOT FROM / NOT FROM NAMED
+    - Fixed handling of class instance array
+    - Fixed i18N issues with freetext search in RDF
+    - Fixed i18N serialization of RDF/XML box
+    - Fixed incorrect result when Accept is set to "text/rdf-n3"
+    - Fixed passing retvals of variables from OPTION(), like ?SCORE ?x, 
+      from deeply nested subselects
+
+  * ODS Applications
+    - Added FOAF+SSL
+    - Added bibliographical ontology
+    - Added Calendar API commands
+    - Added Calendar upstream commands
+    - Added certificate and key generation
+    - Added login X.509 button
+    - Added Messaging Services
+    - Added relationships ontology
+    - Added support for bibo meta data
+    - Added support for MS Live Contacts API
+    - Added SSL user registration
+    - Added SSL access rights
+    - Added ubiquity relationship commands
+    - Added user keys management
+    - Added portable contacts api
+    - Fixed handling of X509 certificates
+    - Fixed OpenID registration/auth with FOAF+SSL
+
+
 February 13, 2009, V5.0.10:
   * Database engine
     - Added optimizations

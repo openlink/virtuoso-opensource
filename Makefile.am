@@ -56,7 +56,7 @@ release:
 #  Generate ChangeLog
 #
 changelog:
-	cvs2cl --no-wrap --utc --hide-filenames --prune --window 86400
+	cvs2cl -F V6_0_0-DEVEL --no-wrap --utc --hide-filenames --prune --window 86400
 
 endif
 

@@ -1,3 +1,87 @@
+2009-04-21 11:08  source
+
+	* Merged from HEAD
+
+2009-04-21 09:03  source
+
+	* Merged from V6
+
+2009-04-20 21:22  source
+
+	* Removed debug warning
+
+2009-04-20 07:56  source
+
+	* Merged from HEAD
+
+2009-04-20 07:43  source
+
+	file technorati2rdf.xsl was added on branch V6_0_0-DEVEL on 2009-04-20 07:56:52 +0000
+
+2009-04-20 07:43  source
+
+	* Fixed whitespace and headers
+
+2009-04-19 10:03  source
+
+	* Added Technocrati cardridge
+
+2009-04-18 21:55  source
+
+	* Code cleanups
+
+2009-04-18 08:35  source
+
+	* Removed generated file
+
+2009-04-18 08:12  source
+
+	* Merged from HEAD
+
+2009-04-17 17:10  source
+
+	* Merged from V6
+
+2009-04-17 11:59  source
+
+	* Added missing files to distribution
+
+2009-04-17 11:12  source
+
+	* Added facet browser
+
+2009-04-17 11:07  source
+
+	* Initial checkin of V6 single engine code
+
+2009-04-16 22:41  source
+
+	* Fixed end section
+
+2009-04-16 19:08  source
+
+	* Merged from HEAD
+
+2009-04-16 15:26  source
+
+	* Merged from head
+
+2009-04-16 09:54  source
+
+	* Merged from V6
+
+2009-04-16 09:48  source
+
+	* Fixed header
+
+2009-04-16 07:54  source
+
+	* Fixed compiler warnings
+
+2009-04-15 14:32  source
+
+	* Initial checkin of V6 single engine code
+
 2009-04-15 09:41  source
 
 	* Updated version to 5.0.11-pre3
@@ -3508,10 +3592,6 @@
 	* Fixed dynamic loading on Mac OS X
 	* Code cleanups
 
-2008-09-15 21:38  source
-
-	* Added persistent thalia th prefix registration
-
 2008-09-15 21:37  source
 
 	* Merged from upstream project
@@ -5236,10 +5316,6 @@
 2008-06-30 07:50  source
 
 	* Use shared version of rte from ods framework
-
-2008-06-30 07:32  source
-
-	* Removed deprecated file
 
 2008-06-30 07:32  source
 
@@ -7211,10 +7287,6 @@
 
 	* Added support for DV_BIN in subseq
 
-2008-03-26 10:54  source
-
-	* Merged from upstream project
-
 2008-03-25 12:00  source
 
 	* Updated version to 5.0.6-rc10
@@ -7226,10 +7298,6 @@
 2008-03-25 11:50  source
 
 	* Updated version of vad package
-
-2008-03-25 11:34  source
-
-	* Removed deprecated files
 
 2008-03-25 11:03  source
 
@@ -8481,14 +8549,6 @@
 
 	* Added information on building on Mac OS X 10.5
 
-2008-02-08 15:08  source
-
-	* Removed generated file from CVS
-
-2008-02-08 14:29  source
-
-	* Regenerated with gperf 3.0.2
-
 2008-02-08 14:08  source
 
 	* Updated version to 5.0.5-rc1
@@ -8957,10 +9017,6 @@
 
 	* Added checks to make sure vad package generation did not produce
 	  any errors
-
-2008-01-24 16:15  source
-
-	* Regenerated
 
 2008-01-24 14:35  source
 
@@ -9963,10 +10019,6 @@
 
 	* Fixed sameAs urls for services
 
-2007-11-30 09:39  source
-
-	* Fixed typo
-
 2007-11-30 09:38  source
 
 	* Fixed SPARQL describe and construct in post
@@ -10400,10 +10452,6 @@
 2007-11-19 10:38  source
 
 	* Added AWK_PUBLIC for WS.WS.PARSE_URI
-
-2007-11-19 10:37  source
-
-	* Added XBRL ontology for XBRL2RDF sponger
 
 2007-11-19 10:36  source
 
@@ -11429,10 +11477,6 @@
 
 	* Fixed gdata feed
 
-2007-09-24 21:09  source
-
-	* Fixed table owner
-
 2007-09-24 21:08  source
 
 	* Updated version
@@ -11762,14 +11806,6 @@
 2007-09-17 19:46  source
 
 	* Fixed behaviour of 'properties'
-
-2007-09-17 14:31  source
-
-	* Regenerated
-
-2007-09-17 12:20  source
-
-	* Fixed properties label
 
 2007-09-17 12:20  source
 
@@ -13433,10 +13469,6 @@
 	* Updated newsgroups list control
 	* Added newsgroup search to interface and sparql query
 
-2007-05-15 16:59  source
-
-	* Fixed build problem
-
 2007-05-15 14:46  source
 
 	* Updated CSS files to be in sync with OAT
@@ -13673,10 +13705,6 @@
 
 	* Added Yahoo traffic service
 	* Added atomwl to feed mappings
-
-2007-05-08 17:35  source
-
-	* Fix for safari
 
 2007-05-08 17:34  source
 
@@ -14498,10 +14526,6 @@
 
 	* Small fixes to build demo database
 
-2007-03-29 10:32  source
-
-	* Fixed label text
-
 2007-03-29 10:30  source
 
 	* Fix for RDF FT upgrade bug
@@ -14572,6 +14596,10 @@
 2007-03-28 11:48  source
 
 	* Removed deprecated file
+
+2007-03-28 11:48  source
+
+	file tdav_meta_rdf_checks.sql was added on branch V6_0_0-DEVEL on 2009-04-16 12:37:43 +0000
 
 2007-03-28 11:48  source
 
@@ -14656,10 +14684,6 @@
 
 	* Moved to rdf_mappers
 	* Removed deprecated files
-
-2007-03-27 10:14  source
-
-	* Moved to rdf_mappers
 
 2007-03-27 10:09  source
 
@@ -14767,10 +14791,6 @@
 	* Changed showQuery to be default
 	* Changed show* params can now be turned off by setting 0 if default is
 	  changed
-
-2007-03-23 15:05  source
-
-	* Code cleanup
 
 2007-03-23 15:05  source
 
@@ -15545,10 +15565,6 @@
 2007-02-27 13:41  source
 
 	* Fixed non-DEBUG build
-
-2007-02-27 13:40  source
-
-	* Added more sponges
 
 2007-02-27 13:36  source
 
@@ -16609,10 +16625,6 @@
 
 	* Added short Usage description
 
-2006-10-25 10:26  source
-
-	* Regenerated
-
 2006-10-24 12:12  source
 
 	* Version check is greater, not greater or equal
@@ -17071,10 +17083,6 @@
 	* Google maps depends on CSS
 	* Fixed search problem
 	* Fixed banner display on user profile page
-
-2006-10-17 21:53  source
-
-	* Fixed search by tags
 
 2006-10-17 16:23  source
 
@@ -17902,10 +17910,6 @@
 
 	* SImplified code generation rules for gawk and gperf
 
-2006-08-10 22:30  source
-
-	* Regenerated using gperf 3.0.1
-
 2006-08-10 21:42  source
 
 	* Fixed small bug in usage handling
@@ -17993,10 +17997,6 @@
 2006-08-07 23:41  source
 
 	* Added new .xsl stylesheets
-
-2006-08-07 22:41  source
-
-	* Small fix to dav template
 
 2006-08-07 22:39  source
 
@@ -18317,10 +18317,6 @@
 
 	* Changed text
 
-2006-07-28 15:30  source
-
-	* Removed dbg_ info
-
 2006-07-28 15:29  source
 
 	* Triggers should not be disabled when creating ore removing news server
@@ -18584,10 +18580,6 @@
 2006-07-24 07:48  source
 
 	* Fixed empty resultset
-
-2006-07-21 13:26  source
-
-	* Updated images
 
 2006-07-21 13:03  source
 
@@ -19321,11 +19313,6 @@
 2006-06-23 14:26  source
 
 	* Fixed problem when hosted in DAV
-
-2006-06-23 14:24  source
-
-	* Sync with original SQL files
-	* Added autoload functionality
 
 2006-06-23 14:23  source
 
@@ -20161,10 +20148,6 @@
 
 	* Updated version to 4.5.2-rc2
 
-2006-04-25 14:49  source
-
-	* Fixed main SPARSQL sample page
-
 2006-04-25 14:45  source
 
 	* Enable writing the source file & line from the PL code into the
@@ -20358,10 +20341,6 @@
 2006-04-17 19:53  source
 
 	* Changed old SWORD/UWORD into ODBC 3.x SQLSMALLINT/SQLUSMALLINT
-
-2006-04-17 19:32  source
-
-	* Regenerated with gperf 3.0.1
 
 2006-04-17 19:20  source
 
