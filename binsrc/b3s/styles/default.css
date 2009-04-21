@@ -148,7 +148,8 @@ div.subj_nav div.nav {
   text-align: left; 
   width: 200px;
   margin-top: 10px; 
-  border-left: 1px solid #ddd; }
+  border-left: 1px solid #ddd; 
+}
 
 div.subj_nav div.nav ul { list-style-type: none; padding: 0; margin-left: 10px;}
 div.subj_nav div.nav h3 { text-align: left; margin-left: 10px; }

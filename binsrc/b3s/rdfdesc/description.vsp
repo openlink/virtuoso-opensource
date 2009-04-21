@@ -1,5 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<!--
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<?vsp
+--
 --
 --  $Id$
 --
@@ -21,9 +23,7 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
--->
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-<?vsp
+--
    declare _S, odd_position any;
    declare page_resource_uri, proxy_iri, rdf_link, label, _subject any;
    declare white_page, arr, data, meta, h1, h2, inx, gr, host, refr, sid, inf, sas, langs, best_q any;
@@ -146,18 +146,18 @@
           <?vsp if (_subject <> '') { ?>
             <p class="subj_desc"><?vsp http (sprintf ('%s', _subject)); ?></p>
           <?vsp } ?>
-          <?vsp if (refr is not null) { ?>
             <div class="nav">
               <h3>Actions</h3>
               <ul>
+          <?vsp if (refr is not null) { ?>
                 <li><a href="<?V case when urilookup = '1' then '/fct/facet.vsp?sid=' || sid else refr end ?>">Go Back</a></li>
+          <?vsp } ?>      
                 <li><a href="usage.vsp?g=<?U _S ?>&sid=<?V sid ?>&urilookup=<?V urilookup ?>">Usage Statistics</a></li>
 <!--                <li><a href="/fct/facet.vsp?sid=<?V sid ?>&cmd=set_class&iri=<?V gr ?>">Choose <?V ''?> as Type</a></li>
                 <li><a href="/fct/facet.vsp?sid=<?V sid ?>&cmd=open_property">Choose <?V ''?> as Property (p)</a></li>
                 <li><a href="">Choose <?V ''?> as Value (o)</a></li> -->
               </ul>
             </div>
-          <?vsp } ?>      
         </div>      
 <!-- proptable -->
       <table class="description"><tr><th class="property">Property</th><th class="value">Value</th></tr>

@@ -1,5 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
+<!DOCTYPE html 
+     PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<title>OpenLink Entity Finder</title>
+<link rel="stylesheet" media="screen" type="text/css" href="styles/default.css"/>
+<script type="text/javascript" >
+    var featureList=["map", "combolist", "ajax2", "tab", "json"];
+</script>
+<script type="text/javascript" src="oat/toolkit/loader.js"></script>
+<script type="text/javascript" src="facet.js"></script>
+</head>
+<body>
+<div id="PG">
+<div id="HD">
+  <a href="http://www.openlinksw.com" class="logo">
+    <img id="opl_logo" src="/fct/images/openlink_site_logo.png" alt="OpenLink Software"/>
+  </a>
+</div><!-- #HD -->
+<div id="MD">
+<?vsp 
+--
 -- 
 --  $Id$
 --
@@ -21,30 +43,7 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
--->
-<!DOCTYPE html 
-     PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<?vsp set http_charset='utf-8'; ?>
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-<head>
-<title>OpenLink Entity Finder</title>
-<link rel="stylesheet" media="screen" type="text/css" href="styles/default.css"/>
-<script type="text/javascript" >
-    var featureList=["map", "combolist", "ajax2", "tab", "json"];
-</script>
-<script type="text/javascript" src="oat/toolkit/loader.js"></script>
-<script type="text/javascript" src="facet.js"></script>
-</head>
-<body>
-<div id="PG">
-<div id="HD">
-  <a href="http://www.openlinksw.com" class="logo">
-    <img id="opl_logo" src="/fct/images/openlink_site_logo.png" alt="OpenLink Software"/>
-  </a>
-</div><!-- #HD -->
-<div id="MD">
-<?vsp 
+--
 -- dbg_obj_print (http_param ('cmd'));
 -- dbg_obj_print (http_param ('search_for'));
 -- dbg_obj_print (http_request_header ());

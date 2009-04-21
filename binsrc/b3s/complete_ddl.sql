@@ -28,10 +28,9 @@ urilbl_complete_lookup (
   ull_label_ruined varchar,
   ull_iid iri_id_8,
   ull_label varchar,
-  primary key (ull_label, ull_label_lang, ull_iid));
+  primary key (ull_label_ruined, ull_iid));
 
-create clustered index urilbl_complete_lookup1 
-  on urilbl_complete_lookup (ull_label_ruined, ull_label_lang, ull_iid);
+alter index urilbl_complete_lookup on urilbl_complete_lookup partition (ull_label_ruined varchar (6,0HEXFFFF));
 
 create table 
 urilbl_cpl_log (

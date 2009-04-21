@@ -1,5 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<!--
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<?vsp
+--
 --
 --  $Id$
 --
@@ -21,9 +23,7 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
--->
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-<?vsp
+--
 
    declare _S, odd_position any;
    declare page_resource_uri, proxy_iri, rdf_link, label, _subject any;
@@ -194,6 +194,10 @@
 		     --	{
 		     --	  http_value (data[i], 'td');
 	             -- }	    
+                     if (exists (select 1 from RDF_QUAD where G = iri_to_id ('http://lod.openlinksw.com/void/') and
+					S = iri_to_id (sprintf ('http://lod.openlinksw.com/void/%s/Dataset', rtrim (data[0], '/#')))))
+		     http (sprintf ('<td><a href="http://lod.openlinksw.com/void/%s/Dataset">%V</a></td>', rtrim (data[0], '/#'), data[0]));
+		     else
 		     http (sprintf ('<td>%V</td>', data[0]));
 		     http (sprintf ('<td align="right">%d</td>', data[1]));
 		   }   

@@ -227,7 +227,19 @@ urilbl_ac_init_db () {
   declare o_str varchar;
 
   set isolation = 'committed';
+
   urilbl_ac_init_log ('urilbl_ac_init_db: started');
+  cl_exec('registry_set (''urilbl_ac_init_status'',''1'')');
+
+  declare exit handler for sqlstate '*' {
+    urilbl_ac_init_log (sprintf ('***ERROR %s:%s', __SQL_STATE, __SQL_MESSAGE));
+    cl_exec('registry_set(''urilbl_ac_init_status'',''4711'')');
+    goto finished;
+  };
+
+-- XXX test that this inference graph exists a priori
+-- XXX check if the unresolved literal problem still needs a workaround
+
   for (sparql 
         define output:valmode 'LONG' 
         define input:inference 'facets' 
@@ -260,6 +272,8 @@ urilbl_ac_init_db () {
                                       n, n_ins, n_strange));
       commit work;
     }
+  cl_exec('registry_set (''urilbl_ac_init_status'',''2'')');
+ finished:;
   urilbl_ac_init_log (sprintf ('urilbl_ac_init_db: Finished. %d rows, %d ins, %d strange./n',
               n, n_ins, n_strange));
 }
