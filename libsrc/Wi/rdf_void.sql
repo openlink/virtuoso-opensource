@@ -69,12 +69,26 @@ create procedure RDF_VOID_STORE (in graph varchar, in to_graph_name varchar := n
 }
 ;
 
-create procedure RDF_VOID_ALL_GEN (in target_graph varchar) -- e.g. http://log.openlinksw.com/void/
+create procedure RDF_VOID_ALL_GEN (in target_graph varchar, in details int := 0) -- 1: e.g. http://log.openlinksw.com/void/ 2: to make distincts
 {
   declare total, subset, ns_ctr int;
-  declare ses any;
+  declare ses, hf any;
+  declare host varchar;
+
   ses := string_output (http_strses_memory_size ());
 
+  host := null;
+
+  if (is_http_ctx ())
+    host := http_request_header(http_request_header (), 'Host', null, null);
+  if (host is null)
+    host := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+  if (host is null)
+    {
+      hf := WS.WS.PARSE_URI (target_graph);
+      host := hf[1];
+    }
+   
   -- add dataset for all
   ns_ctr := 1;
   total := 0;
@@ -82,15 +96,17 @@ create procedure RDF_VOID_ALL_GEN (in target_graph varchar) -- e.g. http://log.o
   RDF_VOID_NS (ses);
   http (sprintf ('\n'), ses);
   http (sprintf ('@prefix ns%d: <%s> .\n', ns_ctr, target_graph), ses); -- put NS prefix here
-  http (sprintf ('ns%d:Dataset a void:Dataset . \n', ns_ctr), ses);
+  http (sprintf ('ns%d:Dataset a void:Dataset ; \n', ns_ctr), ses);
+  http (sprintf (' void:sparqlEndpoint <http://%s/sparql> . \n', host), ses);
   for select RGG_IID, RGG_IRI, RGG_COMMENT from RDF_GRAPH_GROUP where
     RGG_IRI like target_graph || '%'
     and
     exists (select 1 from RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = RGG_IID) do
     {
        -- add subset for group to all here
-       declare gr_pref_ctr int;
+       declare gr_pref_ctr, grp_cnt int;	   
        ns_ctr := ns_ctr + 1;
+       grp_cnt := 0;
        RGG_IRI := rtrim (RGG_IRI, '/#') || '/';
        http (sprintf ('@prefix ns%d: <%s> .\n', ns_ctr, RGG_IRI), ses); -- put NS prefix here
        http (sprintf ('ns%d:Dataset a void:Dataset . \n', ns_ctr), ses);
@@ -102,11 +118,19 @@ create procedure RDF_VOID_ALL_GEN (in target_graph varchar) -- e.g. http://log.o
 	   ns_ctr := ns_ctr + 1;
 	   RDF_VOID_GEN_1 (id_to_iri (RGGM_MEMBER_IID), null, sprintf ('ns%d', ns_ctr),
 	       target_graph || rtrim (id_to_iri (RGGM_MEMBER_IID), '/#') || '/',
-	       ses, total);
+	       ses, grp_cnt, 1, details); 
 	   http (sprintf ('ns%d:Dataset void:subset ns%d:Dataset . \n', gr_pref_ctr, ns_ctr), ses);
          }
+       http (sprintf ('ns%d:Dataset void:statItem ns%d:Stat . \n', gr_pref_ctr, gr_pref_ctr), ses);
+       http (sprintf ('ns%d:Stat a scovo:Item ; \n rdf:value %d ; \n', gr_pref_ctr, grp_cnt), ses);
+       http (sprintf (' scovo:dimension void:numOfTriples . \n'), ses);
        http (sprintf ('\n'), ses);
+       total := total + grp_cnt;
     }
+  http (sprintf ('ns1:Dataset void:statItem ns1:Stat . \n'), ses);
+  http (sprintf ('ns1:Stat a scovo:Item ; \n rdf:value %d ; \n', total), ses);
+  http (sprintf (' scovo:dimension void:numOfTriples . \n'), ses);
+  http (sprintf ('\n'), ses);
   return ses;
 }
 ;
@@ -130,16 +154,45 @@ create procedure RDF_VOID_GEN (in graph varchar, in gr_name varchar := null)
   ses := string_output (http_strses_memory_size ());
   RDF_VOID_NS (ses);
   http (sprintf ('\n'), ses);
-  RDF_VOID_GEN_1 (graph, gr_name, 'this', '', ses, dummy);
+  RDF_VOID_GEN_1 (graph, gr_name, 'this', '', ses, dummy, 1, 1);
   return ses;
+}
+;
+
+create procedure RDF_VOID_DIST_O_SRV (in graph any)
+{
+  declare cnt int;
+  cnt := (select count(distinct O) from DB.DBA.RDF_QUAD table option (no cluster) where G = graph);
+  return cnt;
+}
+; 
+
+create procedure RDF_VOID_DIST_O (in graph varchar)
+{
+  declare daq, r any;
+  declare s int;
+  daq := daq (0);
+  daq_call (daq, 'DB.DBA.SYS_COLS', 'SYS_COLS_BY_NAME', 'DB.DBA.RDF_VOID_DIST_O_SRV', vector (iri_to_id (graph)), 1);
+  while (r:= daq_next (daq))
+    {
+      if (length (r) >2 and isarray (r[2]) and r[2][0] = 3)
+	{
+	  declare err any;
+	  err := r[2][1];
+	  if (isarray (err))
+	    signal (err[2], err[2]);
+	}
+      s := s + r[2][1];
+    }
+  return s;
 }
 ;
 
 create procedure RDF_VOID_GEN_1 (in graph varchar, in gr_name varchar := null,
 				in ns_pref varchar := 'this', in this_ns varchar := '',
-				inout ses any, inout total int)
+				inout ses any, inout total int, in ep int := 1, in details int := 1)
 {
-  declare _cnt, has_links int;
+  declare _cnt, _cnt_subj, _cnt_obj, has_links int;
   declare preds, dict any;
   declare pref, name, pred, host varchar;
   declare nam, inx any;
@@ -164,10 +217,40 @@ create procedure RDF_VOID_GEN_1 (in graph varchar, in gr_name varchar := null,
   http (sprintf (' rdfs:seeAlso <%s> ; \n', graph), ses);
   if (gr_name is not null)
     http (sprintf (' rdfs:label "%s" ; \n', gr_name), ses);
+  if (ep)
   http (sprintf (' void:sparqlEndpoint <http://%s/sparql> ; \n', host), ses);
-  http (sprintf (' void:statItem %s:Stat . \n', ns_pref), ses);
+  http (sprintf (' void:statItem %s:Stat ; \n', ns_pref), ses);
+
+  http (sprintf (' void:statItem %s:DistinctSubjectsStat ; \n', ns_pref), ses);
+  http (sprintf (' void:statItem %s:DistinctObjectsStat . \n', ns_pref), ses);
+
   http (sprintf ('%s:Stat a scovo:Item ; \n rdf:value %d ; \n', ns_pref, _cnt), ses);
   http (sprintf (' scovo:dimension void:numOfTriples . \n'), ses);
+
+  if (details)
+  {
+    declare exit handler for sqlstate '*' { goto end1; };
+     _cnt_subj := (select count(distinct S) from DB.DBA.RDF_QUAD where G = iri_to_id (graph));
+     http (sprintf ('%s:DistinctSubjectsStat a scovo:Item ; \n rdf:value %d ; \n', ns_pref, _cnt_subj), ses);
+     http (sprintf (' scovo:dimension void:numOfTriples . \n'), ses);
+    end1:; 
+  }
+  if (details)
+  {
+    declare exit handler for sqlstate '*' { goto end2; };
+    if (1 <> sys_stat ('cl_run_local_only'))
+      {
+	_cnt_obj  := RDF_VOID_DIST_O (graph);
+      }
+    else
+      {
+	_cnt_obj  := (sparql define input:storage "" select count(distinct (?o)) where { graph `iri (?:graph)` { ?s ?p ?o . filter (isIRI (?o)) } });
+      }
+    http (sprintf ('%s:DistinctObjectsStat a scovo:Item ; \n rdf:value %d ; \n', ns_pref, _cnt_obj), ses);
+    http (sprintf (' scovo:dimension void:numOfTriples . \n'), ses);
+    end2:;
+  }
+
   http (sprintf ('\n'), ses);
 
   has_links := 0;

@@ -848,8 +848,8 @@ ks_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
   if (DV_DB_NULL == dtp)
     return KS_CAST_NULL;
 
-      switch (target_dtp)
-	{
+  switch (target_dtp)
+    {
       case DV_WIDE:
       case DV_LONG_WIDE:
 	  return ks_search_param_wide (itc, sp, data, dtp);
@@ -3646,7 +3646,7 @@ qr_more (caddr_t * inst)
     {
       PRPC_ANSWER_START (self, PARTIAL);
       if (!err)
-      print_int (SQL_SUCCESS, __ses);
+	print_int (SQL_SUCCESS, __ses);
       else
 	print_object (err, __ses, NULL, NULL);
       PRPC_ANSWER_END (0);

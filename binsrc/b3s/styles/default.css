@@ -227,6 +227,9 @@ label.left_txt { font-weight: bold }
 
 div.pg_b_nav { float: left; clear: left; width: 100%; margin-left: 10px;}
 
+div.ac_info { margin-top: 20px;}
+div.ac_info img.txt_i { vertical-align: middle; margin: 4px;}
+
 div.autocomplete_list { 
   padding: 0;
   margin: 0;

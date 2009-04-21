@@ -887,6 +887,12 @@ fct_new ()
 
         <button id="new_lbl_btn">Describe</button><br/>
       </div>
+      <?vsp if (registry_get ('urilbl_ac_init_status') <> '2') { ?>
+      <div class="ac_info">
+        <img class="txt_i" alt="info" src="/fct/images/info.png"/>
+        <span class="ac_info">Lookup data (re)generation in progress. Results will be incomplete.</span>
+      </div>
+      <?vsp } ?>
     </div>
     <div id="TAB_PAGE_URI" class="tab_page" style="display: none">
       <h2>OpenLink Entity Finder</h2>
@@ -1147,9 +1153,9 @@ fct_vsp ()
   if ('' = c_term) c_term := 'class';
   connection_set ('c_term', c_term);
 
-  insert into fct_log (fl_sid, fl_cli_ip, fl_where, fl_state, fl_cmd)
-         values (sid, http_client_ip(), 'DISPATCH', tree, cmd);
-  commit work;
+--  insert into fct_log (fl_sid, fl_cli_ip, fl_where, fl_state, fl_cmd)
+--         values (sid, http_client_ip(), 'DISPATCH', tree, cmd);
+--  commit work;
 
   start_time := msec_time ();
 
@@ -1220,9 +1226,9 @@ fct_vsp ()
 
   select fct_state into _state from fct_state where fct_sid = sid;
 
-  insert into fct_log (fl_sid, fl_cli_ip, fl_where, fl_state, fl_cmd, fl_msec)
-         values (sid, http_client_ip(), 'RETURN', _state, cmd, msec_time () - start_time);
-  commit work;
+--  insert into fct_log (fl_sid, fl_cli_ip, fl_where, fl_state, fl_cmd, fl_msec)
+--         values (sid, http_client_ip(), 'RETURN', _state, cmd, msec_time () - start_time);
+--  commit work;
 
   return;
 
