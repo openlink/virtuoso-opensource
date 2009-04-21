@@ -1,3 +1,31 @@
+2009-04-21 12:10  source
+
+	* Updated documentation
+
+2009-04-21 11:05  source
+
+	* Fixed 'Next' button in User's profile
+
+2009-04-21 11:04  source
+
+	* Added support for MS Live Contacts API
+
+2009-04-20 13:42  source
+
+	* Fixed header comment and whitespace
+
+2009-04-20 13:40  source
+
+	* Replaced old copyrights from Kubl era
+
+2009-04-20 07:43  source
+
+	* Fixed whitespace and headers
+
+2009-04-20 07:30  source
+
+	* Fixed audio mappers
+
 2009-04-19 10:04  source
 
 	* Updated version to 5.0.11-rc1
@@ -10,41 +38,17 @@
 
 	* Fixed compiler warnings
 
-2009-04-18 21:55  source
-
-	* Code cleanups
-
 2009-04-18 14:00  source
 
 	* Code cleanup
-
-2009-04-18 08:35  source
-
-	* Removed generated file
-
-2009-04-18 08:12  source
-
-	* Merged from HEAD
 
 2009-04-18 08:09  source
 
 	* Fixed handling of class instance array
 
-2009-04-17 11:59  source
-
-	* Added missing files to distribution
-
-2009-04-17 11:12  source
-
-	* Added facet browser
-
 2009-04-17 10:24  source
 
 	* Fixed compiler warnings
-
-2009-04-16 22:41  source
-
-	* Fixed end section
 
 2009-04-16 20:20  source
 
@@ -53,14 +57,6 @@
 2009-04-16 19:33  source
 
 	* Fix for FILTER regex(?o, "P\u00E5", "i" )
-
-2009-04-16 19:08  source
-
-	* Merged from HEAD
-
-2009-04-16 15:26  source
-
-	* Merged from head
 
 2009-04-16 15:25  source
 
@@ -79,14 +75,6 @@
 
 	* Added support for SSG_VALMODE_SHORT_OR_LONG
 
-2009-04-16 09:54  source
-
-	* Merged from V6
-
-2009-04-16 09:48  source
-
-	* Fixed header
-
 2009-04-16 07:57  source
 
 	* Fixed names in nyt tags
@@ -102,10 +90,6 @@
 2009-04-16 07:54  source
 
 	* Fixed compiler warnings
-
-2009-04-15 14:32  source
-
-	* Initial checkin of V6 single engine code
 
 2009-04-15 09:41  source
 
@@ -14684,10 +14668,6 @@
 
 2007-03-28 11:48  source
 
-	file tdav_meta_rdf_checks.sql was added on branch V6_0_0-DEVEL on 2009-04-16 12:37:43 +0000
-
-2007-03-28 11:48  source
-
 	* Added test for INF with SPARQL
 
 2007-03-28 11:47  source
@@ -20589,10 +20569,6 @@
 2006-04-12 14:31  source
 
 	* Added missing odbcsdk/include directory (pvk)
-
-2006-04-11 14:04  source
-
-	Initial release of Virtuoso Open Source Edition
 
 2006-04-11 14:04  source
 
