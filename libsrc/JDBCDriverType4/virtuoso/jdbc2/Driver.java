@@ -448,9 +448,9 @@ public class Driver implements java.sql.Driver
    public static void main(String args[])
    {
 #ifdef SSL
-      System.out.println("OpenLink Virtuoso(TM) Driver with SSL support for JDBC(TM) Version " + VIRT_JDBC_VER + " [Build " + major + "." + minor + "]");
+      System.out.println("OpenLink Virtuoso(TM) Driver with SSL support for JDBC(TM) Version " + VIRT_JDBC_VER + " [Build " + major + "." + minor + "/" + VirtuosoTypes.version+ "]");
 #else
-      System.out.println("OpenLink Virtuoso(TM) Driver for JDBC(TM) Version " + VIRT_JDBC_VER + " [Build " + major + "." + minor + "]");
+      System.out.println("OpenLink Virtuoso(TM) Driver for JDBC(TM) Version " + VIRT_JDBC_VER + " [Build " + major + "." + minor + "/" + VirtuosoTypes.version + "]");
 #endif
    }
 
