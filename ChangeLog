@@ -1,3 +1,19 @@
+2009-04-21 19:54  source
+
+	* Fixed missing file from distribution
+
+2009-04-21 16:44  source
+
+	* Removed deprecated file
+
+2009-04-21 16:43  source
+
+	* Regenerated driver
+
+2009-04-21 16:41  source
+
+	* Fixed versioning of package
+
 2009-04-21 16:28  source
 
 	* Updated version to 5.0.11 for final release
