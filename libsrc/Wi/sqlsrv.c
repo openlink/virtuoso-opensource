@@ -1023,12 +1023,12 @@ sf_sql_connect (char *username, char *password, char *cli_ver, caddr_t *info)
     }
 
   /* check if the client is of the right version */
-  if (cli_ver && ODBC_DRV_VER_G_NO (cli_ver) < 3104)
+  if (cli_ver && ODBC_DRV_VER_G_NO (cli_ver) < 2303) /* was 3104 */
     {
       if (cli_ver && ODBC_DRV_VER_G_NO (cli_ver) >= 1619)
 	{
 	  caddr_t err = srv_make_new_error ("08004", "SR451",
-	      "Not allowed to connect using client versions older than 3104");
+	      "Not allowed to connect using client versions older than 2303");
 	  PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, FINAL, 1);
 	  dk_free_tree (err);
 	}
@@ -1038,7 +1038,7 @@ sf_sql_connect (char *username, char *password, char *cli_ver, caddr_t *info)
 
       thrs_printf ((thrs_fo, "ses %p thr:%p in connect1\n", client, THREAD_CURRENT_THREAD));
       DKST_RPC_DONE (client);
-      log_error ("Refused connection to an old client (pre 3104)");
+      log_error ("Refused connection to an old client (pre 2303)");
       return 0;
     }
 
@@ -3607,6 +3607,16 @@ srv_global_init (char *mode)
     {
       log_info ("Starting for DBA password change.");
       mode_pass_change = 1;
+    }
+
+  if (!mode_pass_change)
+    {
+      /* better make sure this thing never leaves the house */
+      log_error ("");
+      log_error ("OPENLINK INTERNAL USE ONLY NOTICE:");
+      log_error ("This is a DEBUG build with limited functionality");
+      log_error ("Customers should contact OpenLink support");
+      log_error ("");
     }
 
   srv_pid = getpid ();
