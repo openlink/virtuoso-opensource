@@ -32,6 +32,7 @@
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#/">
+<!ENTITY content "http://purl.org/rss/1.0/modules/content/">
 <!ENTITY cp "http://schemas.openxmlformats.org/package/2006/metadata/core-properties">
 <!ENTITY ep "http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">
 <!ENTITY vt "http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">
@@ -52,6 +53,7 @@
     xmlns:bibo="&bibo;"
     xmlns:foaf="&foaf;"
     xmlns:sioc="&sioc;"
+    xmlns:content="&content;"
     xmlns:cp="&cp;"
     xmlns:ep="&ep;"
     xmlns:vt="&vt;"
@@ -60,7 +62,7 @@
     xmlns:r="&r;"
     >
 
-  <xsl:output method="xml" indent="yes" />
+  <xsl:output method="xml" indent="yes" cdata-section-elements="content:encoded" />
 
   <xsl:param name="baseUri" />
   <xsl:param name="urihost" />
@@ -70,6 +72,7 @@
   <xsl:param name="slideNum" />
   <xsl:param name="imageDavPath" />
   <xsl:param name="sourceDoc" />
+  <xsl:param name="slideUri" />
 
   <xsl:variable name="documentResourceURL">
     <xsl:value-of select="$baseUri"/>
@@ -81,6 +84,10 @@
 
   <xsl:variable name="entityURL">
     <xsl:value-of select="substring-before($baseUri, $fileExt)"/>
+  </xsl:variable>
+
+  <xsl:variable name="slideUri">
+    <xsl:value-of select="$slideUri"/>
   </xsl:variable>
 
   <xsl:template match="/">
@@ -96,6 +103,12 @@
       </xsl:when>
       <xsl:when test="contains($mode, 'get_image_file_list')">
         <xsl:apply-templates mode="get_image_file_list" />
+      </xsl:when>
+      <xsl:when test="contains($mode, 'raw_slide_content')">
+        <xsl:apply-templates mode="raw_slide_content" />
+      </xsl:when>
+      <xsl:when test="contains($mode, 'html_encode_slide_content')">
+        <xsl:apply-templates mode="html_encode_slide_content" />
       </xsl:when>
       <xsl:otherwise>
         <xsl:apply-templates />
@@ -127,7 +140,7 @@
       <rdf:Description rdf:about="{$documentResourceURL}">
 	<rdf:type>bibo:Slideshow</rdf:type>
 	<dcterms:format>application/vnd.openxmlformats-officedocument.presentationml.presentation</dcterms:format>
-	<dc:source><xsl:value-of select="$sourceDoc"/></dc:source>
+	<dc:source rdf:resource="{$sourceDoc}"/>
         <rdfs:label><xsl:value-of select="dc:title"/></rdfs:label>
         <xsl:copy-of select="dc:title"/>
         <xsl:copy-of select="dc:subject"/>
@@ -179,12 +192,47 @@
 
   <!-- Template for parsing <file name>.pptx/ppt/slides/slide[:digit:]+ -->
   <!-- Extract slide text -->
-  <xsl:template match="p:sld">
+  <xsl:template match="p:sld" mode="raw_slide_content">
     <slide_text>
     <xsl:for-each select=".//a:t">
+      <xsl:if test="not(contains(., 'All rights reserved' ))"> <!-- Skip copyright notices -->
       <xsl:value-of select="normalize-space()"/><xsl:text> </xsl:text>
+      </xsl:if>
     </xsl:for-each>
     </slide_text>
+  </xsl:template>
+
+  <!-- Extract slide text into content encoded bullet list -->
+  <xsl:template match="p:sld" mode="html_encode_slide_content">
+    <rdf:RDF>
+      <rdf:Description rdf:about="{$slideUri}">
+        <content:encoded>
+          &lt;ul&gt;
+          <xsl:for-each select=".//p:sp">
+            <xsl:choose>
+	      <xsl:when test=".//p:ph[@type='title']|.//p:ph[@type='ctrTitle']">
+	      </xsl:when>
+	        <!-- Skip if a child p:ph element of type "ctrTitle" or "title" is present, 
+	             since this will be the same as the slide's dc:title value -->
+	      <xsl:otherwise>
+                <xsl:for-each select=".//a:p">
+	          <xsl:if test="not(contains(., 'All rights reserved' ))"> <!-- Skip copyright notices -->
+	            <xsl:if test=".//a:t"> <!-- Guard against empty list items -->
+                      &lt;li&gt;
+                      <xsl:for-each select=".//a:t">
+                        <xsl:value-of select="normalize-space()"/><xsl:text> </xsl:text>
+                      </xsl:for-each>
+                      &lt;/li&gt;
+		    </xsl:if>
+	          </xsl:if>
+                </xsl:for-each>
+	      </xsl:otherwise>
+	    </xsl:choose>
+          </xsl:for-each>
+          &lt;/ul&gt;
+        </content:encoded>
+      </rdf:Description>
+    </rdf:RDF>
   </xsl:template>
 
   <!-- Template for parsing <file name>.pptx/ppt/_rels/presentation.xml.rels -->
@@ -203,7 +251,11 @@
         <xsl:attribute name="rdf:about">
           <xsl:value-of select="concat($documentResourceURL, '/slide', $slideNum)"/>
         </xsl:attribute>
-        <foaf:depiction><xsl:value-of select="concat('http://', $urihost, $imageDavPath, substring-after(., 'media/'))"/></foaf:depiction>
+        <foaf:depiction>
+	  <xsl:attribute name="rdf:resource">
+	    <xsl:value-of select="concat('http://', $urihost, $imageDavPath, substring-after(., 'media/'))"/>
+	  </xsl:attribute>
+	</foaf:depiction>
       </bibo:Slide>
     </xsl:for-each>
   </xsl:template>
