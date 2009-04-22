@@ -1488,10 +1488,7 @@ void
 sqlbif_sequence_init (void)
 {
   /* sequence_set bifs */
-  ddl_std_proc_1 (sequence_set_text, 0x1, 1);
-  ddl_std_proc_1 (cl_sequence_set_text, 0x1, 1);
-  pl_bif_name_define ("cl_sequence_set");
-  pl_bif_name_define ("sequence_set");
+  bif_define_typed ("sequence_set", bif_sequence_set, &bt_integer);
 }
 
 /* This should stay the last part of the file */
