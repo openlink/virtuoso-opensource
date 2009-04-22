@@ -32,8 +32,8 @@ sh tcpt.sh
 
 BANNER "STARTED RECOVERY TEST (trecov.sh)"
 
-#rm -f $DBLOGFILE
-#rm -f $DBFILE
+rm -f $DBLOGFILE
+rm -f $DBFILE
 MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 
 SHUTDOWN_SERVER
@@ -133,12 +133,7 @@ sleep 5
 # The following might need a change later if the implementation changes:
 if test -r "$DBLOGFILE"
 then
-    if test -s "$DBLOGFILE"
-    then
-	LOG "***FAILED: The file $DBLOGFILE is longer than zero bytes after checkpoint"
-    else
-	LOG "PASSED: The file $DBLOGFILE is empty after checkpoint"
-    fi
+    LOG "PASSED: The file $DBLOGFILE exists after checkpoint"
 else
     LOG "***FAILED: No $DBLOGFILE file exists after checkpoint."
 fi
@@ -243,6 +238,8 @@ then
   echo Removing $LOCKFILE >> $LOGFILE
   rm $LOCKFILE
 fi
+ls -la $DBLOGFILE
+rm -f $DBLOGFILE
 RUN $SERVER $FOREGROUND_OPTION $CRASH_DUMP_OPTION
 if test $STATUS -eq 0
 then
