@@ -5303,11 +5303,7 @@ inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
     http ('  xmlns:dc="http://purl.org/dc/elements/1.1/"\n', ses);
     http ('>\n', ses);
     http ('<rdf:Description rdf:about="' || original_dest || '">\n', ses);
-
-    http ('<dc:relation>\n', ses);
-    http (baseUri, ses);
-    http ('</dc:relation>\n', ses);
-
+    http ('<dc:relation rdf:resource="' || baseUri || '"/>\n', ses);
     http ('</rdf:Description>\n', ses);
     http ('</rdf:RDF>\n', ses);
     tmp := string_output_string (ses);
@@ -5480,8 +5476,11 @@ inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
     ses1 := string_output();
     foreach (any slide_path in slide_vec) do
     {
+      declare slideUri varchar;
+
       -- slide path takes form 'slides/slide<n>.xml'
       slide_basename := subseq(slide_path, 7);
+      slideUri :=  baseUri || '/' || subseq(slide_basename, 0, strrchr(slide_basename, '.'));
       slide_content := UNZIP_UnzipFileFromArchive (tmpFile, 'ppt/' || slide_path);
       if (slide_content is null)
       {
@@ -5491,7 +5490,8 @@ inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
 
       xt := xtree_doc (slide_content);
       xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/pptx2rdf.xsl', xt,
-             vector ('baseUri', baseUri, 'sourceDoc', original_dest, 'urihost', urihost, 'fileExt', fileExt));
+             vector ('baseUri', baseUri, 'sourceDoc', original_dest, 'urihost', urihost, 'fileExt', fileExt,
+	             'mode', 'raw_slide_content'));
       slide_text := cast(xpath_eval('/slide_text/text()', xd) as varchar);
       http(slide_text || ' ', ses1);
 
@@ -5499,21 +5499,29 @@ inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
       --dbg_printf('%s', slide_text || ' ' );
       --dbg_printf('<<');
 
+      -- Get text from each individual slide as RSS content:encoded
+      xt := xtree_doc (slide_content);
+      xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/pptx2rdf.xsl', xt, 
+             vector ('baseUri', baseUri, 'sourceDoc', original_dest, 'urihost', urihost, 'fileExt', fileExt, 
+	             'mode', 'html_encode_slide_content', 'slideUri', slideUri));
+      xd := serialize_to_UTF8_xml (xt);
+      DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+
       -- Construct RDF to hold text from each individual slide
-      ses2 := string_output();
-      http ('<rdf:RDF', ses2);
-      http ('  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"\n', ses2);
-      http ('  xmlns:http="http://www.w3.org/2006/http#"\n', ses2);
-      http ('  xmlns:bibo="http://purl.org/ontology/bibo/"\n', ses2);
-      http ('>\n', ses2);
-      http ('<rdf:Description rdf:about="' || baseUri || '/' || subseq(slide_basename, 0, strrchr(slide_basename, '.')) || '">\n', ses2);
-      http ('<bibo:content>\n', ses2);
-      http (slide_text || ' ', ses2);
-      http ('</bibo:content>\n', ses2);
-      http ('</rdf:Description>\n', ses2);
-      http ('</rdf:RDF>\n', ses2);
-      tmp2 := string_output_string (ses2);
-      DB.DBA.RDF_LOAD_RDFXML (tmp2, new_origin_uri, coalesce (dest, graph_iri));
+      -- ses2 := string_output();
+      -- http ('<rdf:RDF', ses2);
+      -- http ('  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"\n', ses2); 
+      -- http ('  xmlns:http="http://www.w3.org/2006/http#"\n', ses2);
+      -- http ('  xmlns:bibo="http://purl.org/ontology/bibo/"\n', ses2);
+      -- http ('>\n', ses2);
+      -- http ('<rdf:Description rdf:about="' || slideUri || '">\n', ses2);
+      -- http ('<bibo:content>\n', ses2);
+      -- http (slide_text || ' ', ses2);
+      -- http ('</bibo:content>\n', ses2);
+      -- http ('</rdf:Description>\n', ses2);
+      -- http ('</rdf:RDF>\n', ses2);
+      -- tmp2 := string_output_string (ses2);
+      -- DB.DBA.RDF_LOAD_RDFXML (tmp2, new_origin_uri, coalesce (dest, graph_iri));
 next_slide:
         ;
     }
