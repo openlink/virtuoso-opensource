@@ -973,6 +973,53 @@ LIMIT 1000
 	    </formalpara>
 	</listitem>
 
+
+	<listitem id="ini_LiteMode">
+	    <formalpara>
+		<title>LiteMode = 0/1 (default 0)</title>
+		<para>Runs server in lite mode. When Lite mode is on:
+                  <itemizedlist>
+                    <listitem>the web services are not initialized i.e. no web server, dav, soap, pop3 etc.</listitem>
+                    <listitem>the replication is stopped</listitem>
+                    <listitem>the pl debugging is disabled</listitem>
+                    <listitem>plugins are disabled</listitem>
+                    <listitem>rendezvous is disabled</listitem>
+                    <listitem>the relevant tables to the above are not created</listitem>
+                    <listitem>the index tree maps is set to 8 if no other setting is given</listitem>
+                    <listitem>memory reserve is not allocated</listitem>
+                  </itemizedlist>
+		</para>
+	    </formalpara>
+	</listitem>
+
+	<listitem id="ini_RdfFreeTextRulesSize ">
+	    <formalpara>
+		<title>RdfFreeTextRulesSize  = 10 or more </title>
+		<para>The size of hash to control rdf freee text index
+		</para>
+	    </formalpara>
+	</listitem>
+
+	<listitem id="ini_IndexTreeMaps">
+	    <formalpara>
+		<title>IndexTreeMaps = 2 -1024 (power of 2) </title>
+		<para>Size of index tree maps, larger is better for speed but consume memory, in
+lite is 2 in 'normal' mode is 256 by default.
+		</para>
+	    </formalpara>
+	</listitem>
+
+	<listitem id="ini_DisableTcpSocket">
+	    <formalpara>
+		<title>1/0 </title>
+		<para>Disable odbc listen on tcp port, if this given unix socket will always be used.
+In lite mode is 0, thus no tcp listen for sql/odbc connections, can connect
+only via unix socket.
+		</para>
+	    </formalpara>
+	</listitem>
+
+
           </itemizedlist>
 		</sect5>
   <sect5 id="ini_HTTPServer">
