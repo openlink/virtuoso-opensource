@@ -9357,7 +9357,10 @@ bif_sequence_set_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, i
   long mode = (long) bif_long_arg (qst, args, 2, "sequence_set");
 
   if (sec_check && mode != SEQUENCE_GET)
-    check_sequence_grants (qi, name);
+    {
+      query_instance_t *eff_qi = qi;
+      check_sequence_grants (eff_qi, name);
+    }
 
   res = sequence_set_1 (name, count, mode, OUTSIDE_MAP, err_ret);
   if (*err_ret)
