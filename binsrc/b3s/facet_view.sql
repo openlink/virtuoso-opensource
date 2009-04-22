@@ -1112,6 +1112,7 @@ fct_select_value (in tree any,
   fct_web (tree);
 }
 
+-- /* main */
 create procedure
 fct_vsp ()
 {
@@ -1197,7 +1198,14 @@ fct_vsp ()
   else if ('open' = cmd)
     fct_open_iri (tree, sid, http_param ('iri'));
   else if ('refresh' = cmd)
+    {
+      if (xpath_eval ('/query/*', tree) is null)
+        {
+	  fct_new ();
+	  return;
+        }
     fct_refresh (tree);
+    }
   else if ('set_inf' = cmd)
     fct_set_inf (tree, sid);
   else if ('select_value' = cmd)
