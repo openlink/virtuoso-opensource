@@ -415,7 +415,8 @@ create method ti_compile_page () returns any for WV.WIKI.TOPICINFO
   --dbg_obj_print ('ti_compile_page 9');
   
   --dbg_obj_print ('ti_compile_page 4444');
-  insert replacing WV.WIKI.TOPIC (TopicId, ClusterId, ResId, LocalName, LocalName2, Abstract, MailBox)
+  delete from WV.WIKI.TOPIC where TopicId = self.ti_id;
+  insert into WV.WIKI.TOPIC (TopicId, ClusterId, ResId, LocalName, LocalName2, Abstract, MailBox)
   values (self.ti_id, self.ti_cluster_id, self.ti_res_id, self.ti_local_name, self.ti_local_name_2, _abstract, self.ti_e_mail);
   if (connection_get ('oWiki import') is not null)
     {
@@ -4843,7 +4844,7 @@ create procedure WV.WIKI.PUT_NEW_FILES(in _cname varchar, in _overwrite int:=0, 
   _owner := WV.WIKI.CLUSTERPARAM (_cname, 'creator', 'dav');
   for select RES_NAME from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/VAD/wiki/' || _cname || '/' || _pattern || '.txt' do 
     {
-      result (RES_NAME);
+--      result (RES_NAME);
       WV.WIKI.CREATEINITIALPAGE (RES_NAME, _main, (select U_ID from DB.DBA.SYS_USERS where U_NAME = _owner), _cname, _overwrite);
     }
 }
