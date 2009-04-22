@@ -1388,32 +1388,6 @@ bif_rfc1808_expand_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_copy (res);
 }
 
-static const char *cl_sequence_set_text =
-" create procedure cl_sequence_set (in _name varchar, in _count int, in _mode int)\n"
-"{\n"
-"if (sys_stat (\'cl_master_host\') = sys_stat (\'cl_this_host\'))\n"
-"{\n"
-"__sequence_set (\'__MAX__\' || _name, 0, 0);\n"
-"__sequence_set (\'__NEXT__\' || _name, _count, _mode);\n"
-"__sequence_set (_name, _count, _mode);\n"
-"}\n"
-"else\n"
-"{\n"
-"__sequence_set (\'__MAX__\' || _name, 0, 0);\n"
-"__sequence_set (_name, 0, _mode);\n"
-"}\n"
-"}\n"
-;
-
-static const char *sequence_set_text =
-" create procedure sequence_set (in _name varchar, in _count int, in _mode int)\n"
-"{\n"
-"if (sys_stat (\'cl_run_local_only\') or _mode = 2)\n"
-"return __sequence_set (_name, _count, _mode);\n"
-"else\n"
-"cl_exec (\'cl_sequence_set (?, ?, ?)\', vector (_name, _count, _mode), txn => 1);\n"
-"}\n"
-;
 
 
 /*
