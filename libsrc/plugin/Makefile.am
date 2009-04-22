@@ -93,12 +93,15 @@ generated_code = \
 	export_gate_virtuoso.c import_gate_virtuoso.c import_gate_virtuoso.h \
 	export_plugin_lang25.c import_plugin_lang25.c import_plugin_lang25.h
 
-$(generated_code): Makefile gen_all_gates.sh gen_gate.sh
+$(generated_code): .generated
+
+.generated: Makefile.am gen_all_gates.sh gen_gate.sh gate_virtuoso.h plugin_lang25.h plugin_msdtc.h
 	cd $(top_srcdir)/libsrc/plugin; ./gen_all_gates.sh
 	-rm -rf tmp
+	touch .generated
 
-BUILT_SOURCES 	= $(generated_code)
-CLEANFILES	= $(generated_code)
+BUILT_SOURCES	= $(generated_code)
+DISTCLEANFILES	= $(generated_code) .generated
 
 
 # ----------------------------------------------------------------------

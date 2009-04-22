@@ -3,6 +3,7 @@
 *.lo
 *.la
 tmp
+.generated
 export_plugin_msdtc.c
 import_plugin_msdtc.c
 import_plugin_msdtc.h
