@@ -1,4 +1,4 @@
-April 21, 2009, V5.0.11:
+April 22, 2009, V5.0.11:
   * Database engine
     - Added CA functions
     - Added bif to open strses without dumping into temp file
@@ -11,6 +11,7 @@ April 21, 2009, V5.0.11:
     - Fixed problem with FT optimization
     - Fixed handling of fractions in datetime
     - Fixed problem with checkpoint rollback which left empty pages
+    - Fixed JDBC protocol version
     - Fixed 64bit portability
     - Fixed compiler warnings
 
