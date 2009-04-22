@@ -1167,7 +1167,7 @@ load_grddl:;
   --  }
   if (dest is null)
     {
-      DB.DBA.SPARUL_CLEAR (graph_iri, 1);
+      DB.DBA.SPARUL_CLEAR (graph_iri, 0, 1);
       commit work;
     }
   if (strstr (ret_content_type, 'text/plain') is not null)
@@ -1199,7 +1199,7 @@ create procedure DB.DBA.RDF_FORGET_HTTP_RESPONSE (in graph_iri varchar, in new_o
   declare dest varchar;
   dest := get_keyword_ucase ('get:destination', options);
   if (dest is null)
-    DB.DBA.SPARUL_CLEAR (graph_iri, 1);
+    DB.DBA.SPARUL_CLEAR (graph_iri, 0, 1);
 }
 ;
 
