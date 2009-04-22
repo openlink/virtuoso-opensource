@@ -62,7 +62,7 @@ public class Driver implements java.sql.Driver
    // The major and minor version number
    protected static final int major = 3;
 
-   protected static final int minor = 26;
+   protected static final int minor = 27;
 
    // Some variables
    private String host, port, user, password, database, charset, pwdclear;
@@ -448,9 +448,9 @@ public class Driver implements java.sql.Driver
    public static void main(String args[])
    {
 #ifdef SSL
-      System.out.println("OpenLink Virtuoso(TM) Driver with SSL support for JDBC(TM) Version " + VIRT_JDBC_VER + " [Build " + major + "." + minor + "]");
+      System.out.println("OpenLink Virtuoso(TM) Driver with SSL support for JDBC(TM) Version " + VIRT_JDBC_VER + " [Build " + major + "." + minor + "/" + VirtuosoTypes.version+ "]");
 #else
-      System.out.println("OpenLink Virtuoso(TM) Driver for JDBC(TM) Version " + VIRT_JDBC_VER + " [Build " + major + "." + minor + "]");
+      System.out.println("OpenLink Virtuoso(TM) Driver for JDBC(TM) Version " + VIRT_JDBC_VER + " [Build " + major + "." + minor + "/" + VirtuosoTypes.version + "]");
 #endif
    }
 
