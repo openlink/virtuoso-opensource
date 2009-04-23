@@ -1,3 +1,47 @@
+2009-04-23 08:45  source
+
+	* Updated version to 6.0.0-pre3
+
+2009-04-22 19:55  source
+
+	* Merged from HEAD
+
+2009-04-22 09:38  source
+
+	* Merged from V6
+
+2009-04-21 21:10  source
+
+	file .cvsignore was added on branch V6_0_0-DEVEL on 2009-04-21 23:41:01 +0000
+
+2009-04-21 20:50  source
+
+	* Fixed client version to 3039 for blob compatibility
+
+2009-04-21 16:44  source
+
+	* Removed deprecated file
+
+2009-04-21 16:43  source
+
+	* Regenerated driver
+
+2009-04-21 16:41  source
+
+	* Fixed versioning of package
+
+2009-04-21 16:41  source
+
+	file vad_version was added on branch V6_0_0-DEVEL on 2009-04-21 17:08:20 +0000
+
+2009-04-21 16:27  source
+
+	* Regenerated drivers
+
+2009-04-21 14:34  source
+
+	* Updated version to 06.00.3118
+
 2009-04-21 11:08  source
 
 	* Merged from HEAD
