@@ -244,6 +244,9 @@
 				RelativePath="..\libsrc\Wi\blobio.c">
 			</File>
 			<File
+				RelativePath="..\libsrc\Wi\cl_stubs.c">
+			</File>
+			<File
 				RelativePath="..\libsrc\Wi\crypt.c">
 			</File>
 			<File
@@ -260,6 +263,9 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\eqlcomp.c">
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\extent.c">
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\gate.c">
@@ -326,6 +332,9 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\odbccat.c">
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\page.c">
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\pldebug.c">
@@ -539,6 +548,12 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\sql_code_cache_impl.c">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\sql_code_dav.c">
@@ -602,9 +617,21 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\sql_code_pldbg.c">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\sql_code_repl.c">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\sql_code_sparql.c">
@@ -623,6 +650,12 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\sql_code_sys.c">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\sql_code_uddi.c">
@@ -671,6 +704,12 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\sql_code_ws.c">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\sqlbif.c">
@@ -785,6 +824,9 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\text.c">
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\trans.c">
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\turtle_l.c">

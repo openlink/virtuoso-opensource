@@ -494,6 +494,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libsrc\Wi\cl_stubs.c"
+				>
+			</File>
+			<File
 				RelativePath="..\libsrc\Wi\crypt.c"
 				>
 			</File>
@@ -515,6 +519,10 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\eqlcomp.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\extent.c"
 				>
 			</File>
 			<File
@@ -603,6 +611,10 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\odbccat.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\page.c"
 				>
 			</File>
 			<File
@@ -1531,6 +1543,10 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\text.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\trans.c"
 				>
 			</File>
 			<File
