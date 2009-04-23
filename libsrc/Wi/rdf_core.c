@@ -1744,13 +1744,14 @@ void
 iri_split_ttl_qname (const char * iri, caddr_t * pref_ret, caddr_t * name_ret, int abbreviate_nodeid)
 {
   const char *tail;
+  int iri_strlen;
   if (!iri)
     {
       *name_ret = box_dv_short_string ("null_iri");
       *pref_ret = box_dv_short_string ("null_prefix");
 	return;
     }
-  int iri_strlen = strlen (iri);
+  iri_strlen = strlen (iri);
   for (tail = iri + iri_strlen; tail > iri; tail--)
     {
       char c = tail[-1];
