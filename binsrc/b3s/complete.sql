@@ -262,7 +262,7 @@ urilbl_ac_init_db () {
       o_str := "LEFT"(o_str, 512);
 
       insert soft 
-          urilbl_complete_lookup (ull_label_lang, ull_label_ruined, ull_iid, ull_label) 
+          urilbl_complete_lookup_2 (ull_label_lang, ull_label_ruined, ull_iid, ull_label) 
           values (lng, urilbl_ac_ruin_label (o_str), s, o_str);
 
      cont:;
@@ -343,7 +343,7 @@ cmp_label (in lbl_str varchar, in langs varchar)
     };
 
     for (select ull_label_lang, ull_label, ull_iid
-         from urilbl_complete_lookup 
+         from urilbl_complete_lookup_2 
          where ull_label_ruined like urilbl_ac_ruin_label (lbl_str) || '%') do
       {
         if (cur_iid is not null and ull_iid <> cur_iid)

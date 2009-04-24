@@ -4,7 +4,7 @@
     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-<title>OpenLink Entity Finder</title>
+<title>Entity Search, Find, and Explore</title>
 <link rel="stylesheet" media="screen" type="text/css" href="styles/default.css"/>
 <script type="text/javascript" >
     var featureList=["map", "combolist", "ajax2", "tab", "json"];
