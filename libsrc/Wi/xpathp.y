@@ -1795,6 +1795,7 @@ text_exp
 	| text_exp K_AND K_NOT text_exp		{ TBIN_OP ($$, XP_AND_NOT, $1, $4); }
 	| text_exp K_OR text_exp		{ TBIN_OP ($$, BOP_OR, $1, $3); }
 	| text_exp K_NEAR text_exp		{ TBIN_OP ($$, XP_NEAR, $1, $3); }
+	| '(' text_exp ')' { $$ = $2; }
 	| _LPAR_LSQBRA xp_options ']' text_exp ')' { $$ = $4; }
 	| _LPAR_LSQBRA xp_options error { yyerror ("']' or option expected"); }
 	;
