@@ -3217,7 +3217,6 @@ create procedure DB.DBA.RDF_LOAD_DELICIOUS (in graph_iri varchar, in new_origin_
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/delicious2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri), 'what', what));
 	xd := serialize_to_UTF8_xml (xt);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
-	
 	declare result, meta, state, message any;
 	state := '00000';
 	exec (sprintf('sparql select ?l from <%s> where { <%s> <http://scot-project.org/scot/ns#name> ?l }', graph_iri, graph_iri), state, message, vector (), 0, meta, result);
@@ -3230,7 +3229,7 @@ create procedure DB.DBA.RDF_LOAD_DELICIOUS (in graph_iri varchar, in new_origin_
 			keyword := str[0];
 			state := '00000';
 			result := vector();
-			exec(sprintf ('select mu_id, mu_url from moat..moat_user_meanings where mu_tag = %s', keyword), state, message, vector(), 0, meta, result);
+			exec(sprintf ('select mu_id, mu_url from moat.DBA.moat_user_meanings where mu_tag = \'%s\'', keyword), state, message, vector(), 0, meta, result);
 			if (state = '00000')
 			{
 				declare i, l int;			
@@ -5283,8 +5282,7 @@ inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
     return 0;
 
   urihost := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
-
-  fileExt := regexp_substr('.*(\.pptx|\.PPTX)$', new_origin_uri, 1);
+  fileExt := regexp_substr('.*(\.pptx|\.PPTX)\$', new_origin_uri, 1);
   fileName := subseq(new_origin_uri, strrchr(new_origin_uri, '/') + 1);
   extracted_image_collection_dav_root :='/DAV/home/dav/sponged/';
   extracted_image_collection_dav_path := extracted_image_collection_dav_root || fileName || '/';
@@ -5355,13 +5353,13 @@ inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
     declare create_dav_col int;
     create_dav_col := 1;
 
-    foreach (any slide_path in slide_vec) do
+    foreach (any slide_path2 in slide_vec) do
     {
       declare slide_rels, slide_basename, slide_num varchar;
       declare slide_images, image_path, image_vec any;
 
       -- slide path takes form 'slides/slide<n>.xml'
-      slide_basename := subseq(slide_path, 7);
+      slide_basename := subseq(slide_path2, 7);
       slide_num := regexp_substr('[0-9]+', slide_basename, 0);
       slide_rels := UNZIP_UnzipFileFromArchive (tmpFile, 'ppt/slides/_rels/' || slide_basename || '.rels');
 
@@ -5478,17 +5476,17 @@ inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
     -- Get the raw text contained in each slide and concatenate it
     presentation_text := '';
     ses1 := string_output();
-    foreach (any slide_path in slide_vec) do
+    foreach (any slide_path3 in slide_vec) do
     {
       declare slideUri varchar;
 
       -- slide path takes form 'slides/slide<n>.xml'
-      slide_basename := subseq(slide_path, 7);
+      slide_basename := subseq(slide_path3, 7);
       slideUri :=  baseUri || '/' || subseq(slide_basename, 0, strrchr(slide_basename, '.'));
-      slide_content := UNZIP_UnzipFileFromArchive (tmpFile, 'ppt/' || slide_path);
+      slide_content := UNZIP_UnzipFileFromArchive (tmpFile, 'ppt/' || slide_path3); 
       if (slide_content is null)
       {
-        --dbg_printf('.PPTX Cartridge - Error: slide content is null for slide %s\n', slide_path);
+        --dbg_printf('.PPTX Cartridge - Error: slide content is null for slide %s\n', slide_path3);
         goto next_slide;
       }
 
