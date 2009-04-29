@@ -1210,7 +1210,9 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	*/
 		  else
 		    {
 		      SPART **args = (SPART **)(((dk_set_t)NIL_L == $2) ? NULL : t_revlist_to_array ($2));
-		      $$ = spar_make_funcall (sparp_arg, 0, $1->_.lit.val, args);
+                      caddr_t fname = $1->_.lit.val;
+                      spar_verify_funcall_security (sparp_arg, fname, args);
+		      $$ = spar_make_funcall (sparp_arg, 0, fname, args);
 		    } }
 	| spar_rdf_literal		{ $$ = (SPART *)($1); }
 	| spar_numeric_literal		{ $$ = (SPART *)($1); }
@@ -1255,7 +1257,9 @@ spar_built_in_regex	/* [53]	RegexExpn	 ::=  'REGEX' '(' Expn ',' Expn ( ',' Expn
 spar_function_call	/* [54]	FunctionCall	 ::=  IRIref ArgList	*/
 	: spar_iriref spar_arg_list	{
                   SPART **args = (SPART **)(((dk_set_t)NIL_L == $2) ? NULL : t_revlist_to_array ($2));
-		  $$ = spar_make_funcall (sparp_arg, 0, $1->_.lit.val, args); }
+                  caddr_t fname = $1->_.lit.val;
+                  spar_verify_funcall_security (sparp_arg, fname, args);
+		  $$ = spar_make_funcall (sparp_arg, 0, fname, args); }
 	;
 
 spar_arg_list_opt	/* ::=  ArgList?	*/

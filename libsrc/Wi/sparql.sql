@@ -4023,8 +4023,9 @@ from DB.DBA.SPARQL_DESC_AGG_INIT, DB.DBA.SPARQL_DESC_AGG_ACC, DB.DBA.SPARQL_DESC
 create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in good_graphs any, in bad_graphs any, in storage_name any, in options any)
 {
   declare all_subj_descs, phys_subjects, sorted_good_graphs, sorted_bad_graphs, g_dict, res any;
-  declare graphs_listed, g_ctr, good_g_count, bad_g_count, s_ctr, all_s_count, phys_s_count integer;
+  declare uid, graphs_listed, g_ctr, good_g_count, bad_g_count, s_ctr, all_s_count, phys_s_count integer;
   declare rdf_type_iid IRI_ID;
+  uid := get_keyword ('uid', options, http_nobody_uid());
   rdf_type_iid := iri_to_id (UNAME'http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
   res := dict_new ();
   if (isinteger (consts))
@@ -4046,7 +4047,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in go
       vectorbld_init (sorted_good_graphs);
       foreach (any g in good_graphs) do
     {
-          if (isiri_id (g) and g < min_bnode_iri_id ())
+          if (isiri_id (g) and g < min_bnode_iri_id () and DB.DBA.RDF_GRAPH_USER_PERMS_ACK (g, uid, 1))
             vectorbld_acc (sorted_good_graphs, g);
     }
       vectorbld_final (sorted_good_graphs);
@@ -4209,7 +4210,7 @@ describe_physical_subjects:
         {
           declare subj, graph any;
           subj := phys_subjects [s_ctr];
-      graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where O = subj and 0 = position (G, sorted_bad_graphs)));
+      graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where O = subj and 0 = position (G, sorted_bad_graphs) and DB.DBA.RDF_GRAPH_USER_PERMS_ACK (G, uid, 1)));
           if (graph is not null)
             dict_put (g_dict, graph, 0);
         }
@@ -4221,7 +4222,7 @@ describe_physical_subjects:
         {
           declare subj, graph any;
           subj := phys_subjects [s_ctr];
-          graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where S = subj and P = rdf_type_iid and 0 = position (G, sorted_bad_graphs)));
+          graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where S = subj and P = rdf_type_iid and 0 = position (G, sorted_bad_graphs) and DB.DBA.RDF_GRAPH_USER_PERMS_ACK (G, uid, 1)));
           if (graph is not null)
             dict_put (g_dict, graph, 0);
         }
@@ -4270,8 +4271,9 @@ describe_physical_subjects:
 create procedure DB.DBA.SPARQL_DESC_DICT_SPO (in subj_dict any, in consts any, in good_graphs any, in bad_graphs any, in storage_name any, in options any)
 {
   declare all_subj_descs, phys_subjects, sorted_good_graphs, sorted_bad_graphs, res any;
-  declare graphs_listed, g_ctr, good_g_count, bad_g_count, s_ctr, all_s_count, phys_s_count integer;
+  declare uid, graphs_listed, g_ctr, good_g_count, bad_g_count, s_ctr, all_s_count, phys_s_count integer;
   declare rdf_type_iid IRI_ID;
+  uid := get_keyword ('uid', options, http_nobody_uid());
   rdf_type_iid := iri_to_id (UNAME'http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
   res := dict_new ();
   if (isinteger (consts))
@@ -4293,7 +4295,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO (in subj_dict any, in consts any, i
       vectorbld_init (sorted_good_graphs);
       foreach (any g in good_graphs) do
         {
-          if (isiri_id (g) and g < min_bnode_iri_id ())
+          if (isiri_id (g) and g < min_bnode_iri_id () and DB.DBA.RDF_GRAPH_USER_PERMS_ACK (g, uid, 1))
             vectorbld_acc (sorted_good_graphs, g);
         }
       vectorbld_final (sorted_good_graphs);
@@ -4449,20 +4451,18 @@ describe_physical_subjects:
                 }
             }
         }
+      return res;
     }
-  else
-    {
       for (s_ctr := phys_s_count - 1; s_ctr >= 0; s_ctr := s_ctr - 1)
         {
           declare subj any;
           subj := phys_subjects [s_ctr];
-          for (select P as p1, O as obj1 from DB.DBA.RDF_QUAD where 0 = position (G, sorted_bad_graphs) and S = subj) do
+      for (select P as p1, O as obj1 from DB.DBA.RDF_QUAD where 0 = position (G, sorted_bad_graphs) and S = subj and DB.DBA.RDF_GRAPH_USER_PERMS_ACK (G, uid, 1)) do
             {
               -- dbg_obj_princ ('found4 ', subj, p1);
               dict_put (res, vector (subj, p1, __rdf_long_of_obj (obj1)), 0);
             }
         }
-    }
   return res;
 }
 ;
@@ -4470,8 +4470,9 @@ describe_physical_subjects:
 create procedure DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL (in subj_dict any, in consts any, in good_graphs any, in bad_graphs any, in storage_name any, in options any)
 {
   declare all_subj_descs, phys_subjects, sorted_good_graphs, sorted_bad_graphs, g_dict, res any;
-  declare graphs_listed, g_ctr, good_g_count, bad_g_count, s_ctr, all_s_count, phys_s_count integer;
+  declare uid, graphs_listed, g_ctr, good_g_count, bad_g_count, s_ctr, all_s_count, phys_s_count integer;
   declare rdf_type_iid IRI_ID;
+  uid := get_keyword ('uid', options, http_nobody_uid());
   rdf_type_iid := iri_to_id (UNAME'http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
   res := dict_new ();
   if (isinteger (consts))
@@ -4493,7 +4494,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL (in subj_dict any, in cons
       vectorbld_init (sorted_good_graphs);
       foreach (any g in good_graphs) do
         {
-          if (isiri_id (g) and g < min_bnode_iri_id ())
+          if (isiri_id (g) and g < min_bnode_iri_id () and DB.DBA.RDF_GRAPH_USER_PERMS_ACK (g, uid, 1))
             vectorbld_acc (sorted_good_graphs, g);
         }
       vectorbld_final (sorted_good_graphs);
@@ -4557,7 +4558,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL (in subj_dict any, in cons
         {
           declare subj, graph any;
           subj := phys_subjects [s_ctr];
-      graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where O = subj and 0 = position (G, sorted_bad_graphs)));
+          graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where O = subj and 0 = position (G, sorted_bad_graphs) and DB.DBA.RDF_GRAPH_USER_PERMS_ACK (G, uid, 1)));
           if (graph is not null)
             dict_put (g_dict, graph, 0);
         }
@@ -4569,7 +4570,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL (in subj_dict any, in cons
         {
           declare subj, graph any;
           subj := phys_subjects [s_ctr];
-          graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where S = subj and P = rdf_type_iid and 0 = position (G, sorted_bad_graphs)));
+          graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where S = subj and P = rdf_type_iid and 0 = position (G, sorted_bad_graphs) and DB.DBA.RDF_GRAPH_USER_PERMS_ACK (G, uid, 1)));
           if (graph is not null)
             dict_put (g_dict, graph, 0);
         }
@@ -8578,10 +8579,11 @@ create function DB.DBA.RDF_GRAPH_USER_PERMS_GET (in graph_iri varchar, in uid an
 }
 ;
 
-create function DB.DBA.RDF_GRAPH_USER_PERMS_ACK (in graph_iri varchar, in uid any, in req_perms integer) returns integer
+create function DB.DBA.RDF_GRAPH_USER_PERMS_ACK (in graph_iri any, in uid any, in req_perms integer) returns integer
 {
   declare graph_iid IRI_ID;
   declare perms integer;
+  -- dbg_obj_princ ('DB.DBA.RDF_GRAPH_USER_PERMS_ACK (', graph_iri, uid, req_perms, ')');
   graph_iid := iri_to_id (graph_iri);
   if (isstring (uid))
     uid := ((select U_ID from DB.DBA.SYS_USERS where U_NAME = uid and (U_NAME='nobody' or (U_SQL_ENABLE and not U_ACCOUNT_DISABLED))));
@@ -8606,6 +8608,7 @@ create function DB.DBA.RDF_GRAPH_USER_PERMS_ASSERT (in graph_iri varchar, in uid
 {
   declare graph_iid IRI_ID;
   declare perms integer;
+  -- dbg_obj_princ ('DB.DBA.RDF_GRAPH_USER_PERMS_ASSERT (', graph_iri, uid, req_perms, opname, ')');
   graph_iid := iri_to_id (graph_iri);
   if (isstring (uid))
     uid := ((select U_ID from DB.DBA.SYS_USERS where U_NAME = uid and (U_NAME='nobody' or (U_SQL_ENABLE and not U_ACCOUNT_DISABLED))));

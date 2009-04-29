@@ -34,6 +34,7 @@
 #include "sqlcmps.h"
 #include "sparql.h"
 #include "sparql2sql.h"
+#include "xml_ecm.h" /* for sorted dict, ECM_MEM_NOT_FOUND etc. */
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -1563,7 +1564,8 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, caddr_t limit, caddr_
         good_graphs,
         bad_graphs,
         sparp->sparp_env->spare_storage_name,
-        spar_make_funcall (sparp, 0, "bif:vector", NULL) ) ); /*!!!TBD describe options will come here */
+        spar_make_funcall (sparp, 0, "bif:vector", 
+          t_list (2, t_box_dv_short_string ("uid"), spar_boxed_exec_uid (sparp)) ) ) ); /*!!!TBD describe options will be added here */
   if (need_limofs_trick)
     return (SPART **)t_list (2, descr_call,
       spartlist (sparp, 4, SPAR_ALIAS, var_vector_expn, t_box_dv_short_string ("describe-1"), SSG_VALMODE_AUTO) );
@@ -2265,6 +2267,96 @@ spar_make_regex_or_like_or_eq (sparp_t *sparp, SPART *strg, SPART *regexpn)
 
 bad_regex:
  return spartlist (sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)REGEX_L, t_list (2, strg, regexpn));
+}
+
+void
+spar_verify_funcall_security (sparp_t *sparp, ccaddr_t fname, SPART **args)
+{
+  int uid, need_check_for_infection_chars = 0;
+  const char * tail;
+  char *c;
+  char buf[30];
+  const char *unsafe_sql_names[] = {
+    "RDF_INSERT_TRIPLES",
+    "RDF_DELETE_TRIPLES",
+    "RDF_GRAPH_GROUP_LIST_GET",
+    "RDF_LOAD_RDFXML",
+    "RDF_LOAD_RDFXML_MT",
+    "RDF_MODIFY_TRIPLES",
+    "SPARQL_INSERT_DICT_CONTENT",
+    "SPARQL_DELETE_DICT_CONTENT",
+    "SPARQL_DESC_AGG",
+    "SPARQL_DESC_AGG_ACC",
+    "SPARQL_DESC_AGG_INIT",
+    "SPARQL_DESC_AGG_FIN",
+    "SPARQL_DESC_DICT",
+    "SPARQL_DESC_DICT_SPO",
+    "SPARQL_DESC_DICT_SPO_PHYSICAL",
+    "SPARQL_MODIFY_BY_DICT_CONTENTS",
+    "SPARQL_SELECT_KNOWN_GRAPHS",
+    "SPARUL_LOAD",
+    "SPARUL_CLEAR",
+    "SPARUL_CREATE",
+    "SPARUL_DROP",
+    "SPARUL_RUN",
+    "TTLP",
+    "TTLP_EV_GET_IID",
+    "TTLP_EV_NEW_BLANK",
+    "TTLP_EV_NEW_GRAPH",
+    "TTLP_EV_NEW_GRAPH_A",
+    "TTLP_EV_TRIPLE",
+    "TTLP_EV_TRIPLE_A",
+    "TTLP_EV_TRIPLE_W",
+    "TTLP_EV_TRIPLE_L",
+    "TTLP_EV_TRIPLE_L_A",
+    "TTLP_EV_TRIPLE_L_W",
+    "TTLP_MT",
+    "TTLP_MT_LOCAL_FILE" };
+  const char *unsafe_bif_names[] = {
+    "FILE_TO_STRING",
+    "FILE_TO_STRING_OUTPUT",
+    "EXEC",
+    "STRING_TO_FILE",
+    "SYSTEM" };
+  tail = strstr (fname, "::");
+  if (NULL == tail)
+    tail = fname;
+  else
+    tail += 2;
+  if (NULL == sparp->sparp_boxed_exec_uid)
+    spar_boxed_exec_uid (sparp);
+  uid = unbox (sparp->sparp_boxed_exec_uid);
+  if (U_ID_DBA != uid)
+    {
+      strncpy (buf, tail+4, sizeof(buf)-1);
+      buf[sizeof(buf)-1] = '\0';
+      strupr (buf);
+    }
+  if (!strncmp (tail, "sql:", 4))
+    {
+      if ((U_ID_DBA != uid) && (ECM_MEM_NOT_FOUND != ecm_find_name (buf, unsafe_sql_names,
+          sizeof (unsafe_sql_names)/sizeof(unsafe_sql_names[0]), sizeof (caddr_t) ) ) )
+        goto restricted; /* see below */
+      need_check_for_infection_chars = 1;
+    }
+  else
+  if (!strncmp (tail, "bif:", 4))
+    {
+      if ((U_ID_DBA != uid) && (ECM_MEM_NOT_FOUND != ecm_find_name (buf, unsafe_sql_names,
+          sizeof (unsafe_sql_names)/sizeof(unsafe_sql_names[0]), sizeof (caddr_t) ) ) )
+        goto restricted; /* see below */
+      if ((U_ID_DBA != uid) && (ECM_MEM_NOT_FOUND != ecm_find_name (buf, unsafe_bif_names,
+          sizeof (unsafe_bif_names)/sizeof(unsafe_bif_names[0]), sizeof (caddr_t) ) ) )
+        goto restricted; /* see below */
+      need_check_for_infection_chars = 1;
+    }
+  if (need_check_for_infection_chars)
+    for (c = tail+4; '\0' != c[0]; c++)
+      if (strchr ("\'\"\\()., +-/*|\t\n\r", c[0]))
+        spar_error (sparp, "Function name \"%.200s\" contains invalid characters; this may be an attempt of bypassing security restrictions", fname);
+  return;
+restricted:
+  spar_error (sparp, "Function %.200s() can not be used in text of SPARQL query due to security restrictions", fname);
 }
 
 SPART *
