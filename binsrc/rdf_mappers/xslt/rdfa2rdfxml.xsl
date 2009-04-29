@@ -83,7 +83,30 @@
 	</xsl:template>
 
 	<xsl:template match="*[@rel]" priority="1">
+		<xsl:choose>
+		    <xsl:when test="not (@rev) and not (@property) and not (@about) and not (@content) 
+			and not (@href) and not (@typeof) and not (@resource) and not (@id)">
+			<xsl:choose>
+			    <xsl:when test="*[@typeof]">
+				<xsl:variable name="elem-name" select="substring-after (@rel, ':')" />
+				<xsl:variable name="elem-nss">
+				    <xsl:call-template name="nss-uri">
+					<xsl:with-param name="qname"><xsl:value-of select="@rel"/></xsl:with-param>
+				    </xsl:call-template>
+				</xsl:variable>
+				<xsl:element name="{$elem-name}" namespace="{$elem-nss}">
+				    <xsl:apply-templates/>
+				</xsl:element>
+			    </xsl:when>
+			    <xsl:otherwise>
+				    <xsl:apply-templates/>
+			    </xsl:otherwise>
+			</xsl:choose>
+		    </xsl:when>
+		    <xsl:otherwise>
 		<xsl:call-template name="a-rel" />
+		    </xsl:otherwise>
+		</xsl:choose>
 	</xsl:template>
 
 	<xsl:template name="a-prop">
@@ -142,6 +165,9 @@
 		    </rdf:type>
 		</xsl:for-each>
 		<!-- relation -->
+		<!--xsl:if test="$obj = ''">
+		    <xsl:message terminate="no"><xsl:value-of select="xpath-debug-xslline()"/></xsl:message>
+		</xsl:if-->
 		<xsl:element name="{$elem-name}" namespace="{$elem-nss}">
 		    <xsl:attribute name="rdf:resource">
 			<xsl:value-of select="$obj" />
@@ -180,6 +206,57 @@
 	    </rdf:Description>
 	</xsl:template>
 
+	<xsl:template match="*[@resource and not (@rel) and not (@rev)]|*[@href and not (@rel) and not (@rev)]">
+	    <xsl:if test="ancestor::*[@rel]">
+		<xsl:variable name="rels" select="vi:split-and-decode(ancestor::*/@rel, 0, ' ')"/>
+		<xsl:variable name="about">
+		    <xsl:call-template name="about-ancestor-or-self" />
+		</xsl:variable>
+		<xsl:variable name="types" select="@typeof"/>
+		<xsl:variable name="obj">
+		    <xsl:choose>
+			<xsl:when test="@href">
+			    <xsl:call-template name="uri-or-curie">
+				<xsl:with-param name="uri">
+				    <xsl:value-of select="@href" />
+				</xsl:with-param>
+			    </xsl:call-template>
+			</xsl:when>
+			<xsl:when test="@id">#<xsl:value-of select="@id" /></xsl:when>
+			<xsl:when test="@resource">
+			    <xsl:call-template name="uri-or-curie">
+				<xsl:with-param name="uri">
+				    <xsl:value-of select="@resource" />
+				</xsl:with-param>
+			    </xsl:call-template>
+			</xsl:when>
+			<xsl:when test="*[@about]">
+			    <xsl:call-template name="uri-or-curie">
+				<xsl:with-param name="uri">
+				    <xsl:value-of select="*/@about" />
+				</xsl:with-param>
+			    </xsl:call-template>
+			</xsl:when>
+		    </xsl:choose>
+		</xsl:variable>
+		<xsl:variable name="children">
+		    <res>
+		    <xsl:for-each select="$rels/results/result">
+			<xsl:call-template name="a-rel-single">
+			    <xsl:with-param name="rel"><xsl:value-of select="."/></xsl:with-param>
+			    <xsl:with-param name="obj"><xsl:value-of select="$obj"/></xsl:with-param>
+			    <xsl:with-param name="about"><xsl:value-of select="$about"/></xsl:with-param>
+			    <xsl:with-param name="types"><xsl:value-of select="$types"/></xsl:with-param>
+			</xsl:call-template>
+		    </xsl:for-each>
+		</res>
+		</xsl:variable>
+		<xsl:for-each select="$children/res/rdf:Description/*|$children/res/*[local-name () != 'Description']">
+		    <xsl:copy-of select="."/>
+		</xsl:for-each>
+	    </xsl:if>
+	</xsl:template>
+
 	<xsl:template name="a-rel">
 	    <xsl:variable name="rels" select="vi:split-and-decode(@rel, 0, ' ')"/>
 	    <xsl:variable name="about">
@@ -212,6 +289,9 @@
 		    </xsl:when>
 		</xsl:choose>
 	    </xsl:variable>
+	    <!--xsl:if test=" @resource and $obj = ''">
+		<xsl:message terminate="no"><xsl:value-of select="@rel"/>:<xsl:value-of select="xpath-debug-xslline()"/></xsl:message>
+	    </xsl:if-->
 	    <xsl:for-each select="$rels/results/result">
 		<xsl:call-template name="a-rel-single">
 		    <xsl:with-param name="rel"><xsl:value-of select="."/></xsl:with-param>
@@ -307,6 +387,7 @@
 	</xsl:template>
 
 	<xsl:template match="*[@about and @typeof and not (@rev) and not (@rel) and not (@property)]">
+	    <!--xsl:message terminate="no"><xsl:value-of select="xpath-debug-xslline()"/></xsl:message-->
 	    <xsl:variable name="about">
 		<xsl:call-template name="about-ancestor-or-self" />
 	    </xsl:variable>
@@ -323,6 +404,29 @@
 		</xsl:for-each>
 	    </rdf:Description>
 	    <xsl:apply-templates />
+	</xsl:template>
+
+	<xsl:template match="*[@typeof and not (@about) and not (@rel) and not (@rev) and not (@property)]">
+	    <!--xsl:message terminate="no"><xsl:value-of select="xpath-debug-xslline()"/></xsl:message-->
+	    <xsl:variable name="elem-name" select="substring-after (@typeof, ':')" />
+	    <xsl:variable name="elem-nss">
+		<xsl:call-template name="nss-uri">
+		    <xsl:with-param name="qname"><xsl:value-of select="@typeof"/></xsl:with-param>
+		</xsl:call-template>
+	    </xsl:variable>
+	    <xsl:variable name="children">
+		<res>
+		    <xsl:apply-templates />
+		</res>
+	    </xsl:variable>
+	    <xsl:element name="{$elem-name}" namespace="{$elem-nss}">
+		<xsl:for-each select="$children/res/rdf:Description/*|$children/res/*[local-name () != 'Description']">
+		    <xsl:copy-of select="."/>
+		</xsl:for-each>
+	    </xsl:element>
+	</xsl:template>
+
+	<xsl:template name="rel-ifp">
 	</xsl:template>
 
 	<xsl:template name="elem-cont">
