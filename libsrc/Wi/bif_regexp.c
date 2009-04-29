@@ -160,8 +160,8 @@ regexp_optchars_to_bits (const char *strg)
         {
         case 'i': case 'I': res |= PCRE_CASELESS; break;
         case 'm': case 'M': res |= PCRE_MULTILINE; break;
-        /*
-#define PCRE_DOTALL             0x0004
+        case 's': case 'S': res |= PCRE_DOTALL; break;
+/*
 #define PCRE_EXTENDED           0x0008
 #define PCRE_ANCHORED           0x0010
 #define PCRE_DOLLAR_ENDONLY     0x0020
@@ -170,7 +170,9 @@ regexp_optchars_to_bits (const char *strg)
 #define PCRE_NOTEOL             0x0100
 #define PCRE_UNGREEDY           0x0200
 #define PCRE_NOTEMPTY           0x0400
-#define PCRE_UTF8               0x0800
+        */
+        case 'u': case 'U': res |= PCRE_UTF8; break;
+        /*
 #define PCRE_NO_AUTO_CAPTURE    0x1000
         */
         }
