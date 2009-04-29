@@ -77,13 +77,13 @@
 			<rdf:type rdf:resource="&foaf;Document"/>
 			<scot:hasScot rdf:resource="{concat($baseUri, '#tagcloud')}"/>
 			<xsl:for-each select="popular">
-				<sioc:topic rdf:resource="{concat ('http://delicious.com/', .)}"/>
+				<sioc:topic rdf:resource="{concat ('http://delicious.com/tag/', .)}"/>
 			</xsl:for-each>
 		</rdf:Description>
 
 		<scot:Tagcloud rdf:about="{concat($baseUri, '#tagcloud')}">
 			<xsl:for-each select="popular">
-				<scot:hasTag rdf:resource="{concat ('http://delicious.com/', .)}"/>
+				<scot:hasTag rdf:resource="{concat ('http://delicious.com/tag/', .)}"/>
 			</xsl:for-each>
 		</scot:Tagcloud>
 

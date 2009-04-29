@@ -52,6 +52,7 @@
 	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
 	xmlns:digg="http://digg.com/docs/diggrss/"
 	xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+        xmlns:owl="&owl;"
 	version="1.0">
 	<xsl:output indent="yes" />
 	<xsl:param name="base" />
@@ -76,6 +77,7 @@
 				</xsl:otherwise>
 			</xsl:choose>
 			<sioc:link rdf:resource="{@rdf:about}" />
+                        <owl:sameAs  rdf:resource="{@rdf:about}" />
 			<xsl:apply-templates />
 			<xsl:copy-of select="geo:*" />
 			<xsl:copy-of select="openSearch:*" />
