@@ -215,7 +215,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Customer-dbpediacity ;
                         northwind:region customers.Region
                                 as virtrdf:Customer-region ;
-                        northwind:PostalCode customers.PostalCode
+                        northwind:postalCode customers.PostalCode
                                 as virtrdf:Customer-postal_code ;
                         foaf:phone customers.Phone
                                 as virtrdf:Customer-foaf_phone ;
