@@ -64,7 +64,6 @@ else
     RM="rm -rf"
 fi
 
-BPEL=$HOME/binsrc/bpel/
 VOS=0
 if [ "z$SERVER" = "z" ]  
 then
@@ -247,17 +246,18 @@ if [ $VOS -eq 1 ]
 then
     if [ "x$HOST_OS" = "x" ]
     then
-	(cd $BPEL; make)
-	(cd $HOME/binsrc/samples/sparql_demo ; make)
+	(cd $HOME/appsrc ; make)
+	(cd $HOME/binsrc/b3s ; make)
+	(cd $HOME/binsrc/bpel; make)
 	(cd $HOME/binsrc/isparql ; make)
-	(cd $HOME/binsrc/tutorial ; make)
-	(cd $HOME/binsrc/yacutia ; make)
 	(cd $HOME/binsrc/rdf_mappers ; make)
 	(cd $HOME/binsrc/samples/image_magick ; make)
-	(cd $HOME/appsrc ; make)
+	(cd $HOME/binsrc/samples/sparql_demo ; make)
+	(cd $HOME/binsrc/tutorial ; make)
+	(cd $HOME/binsrc/yacutia ; make)
     fi
 else
-    (cd $BPEL; make )
+    (cd $HOME/binsrc/bpel; make )
     [ -f doc_dav.vad ] || (chmod +x mkdoc.sh ; ./mkdoc.sh)
 fi
 
@@ -339,12 +339,13 @@ fi
 BREAK
 ECHO "Collecting and installing VAD packages"
 
-$LN $BPEL/bpel_dav.vad .
-$LN $HOME/binsrc/samples/sparql_demo/sparql_demo_dav.vad .
+$LN $HOME/binsrc/b3s/fct_dav.vad .
+$LN $HOME/binsrc/bpel/bpel_dav.vad .
 $LN $HOME/binsrc/isparql/isparql_dav.vad .
+$LN $HOME/binsrc/rdf_mappers/rdf_mappers_dav.vad .
+$LN $HOME/binsrc/samples/sparql_demo/sparql_demo_dav.vad .
 $LN $HOME/binsrc/tutorial/tutorial_dav.vad .
 $LN $HOME/binsrc/yacutia/conductor_dav.vad .
-$LN $HOME/binsrc/rdf_mappers/rdf_mappers_dav.vad .
 
 DO_COMMAND "vad_install ('conductor_dav.vad')" dba dba
 DO_COMMAND "vad_install ('doc_dav.vad')" dba dba
@@ -352,6 +353,7 @@ DO_COMMAND "vad_install ('rdf_mappers_dav.vad')" dba dba
 DO_COMMAND "vad_install ('isparql_dav.vad')" dba dba
 DO_COMMAND "vad_install ('bpel_dav.vad')" dba dba
 DO_COMMAND "vad_install ('sparql_demo_dav.vad')" dba dba
+DO_COMMAND "vad_install ('fct_dav.vad')" dba dba
 
 
 #
