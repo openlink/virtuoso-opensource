@@ -3010,7 +3010,7 @@ create procedure RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri varcha
 	}
 	else if (id0 = 'user')
 	{
-		if (id1 is not null and id1 <> '')
+		if (id1 is not null and id1 <> '' and (id2 = '' or id2 is null))
 		{
 			url := sprintf('http://ws.audioscrobbler.com/1.0/user/%s/profile.xml', id1);
 			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
@@ -3029,6 +3029,30 @@ create procedure RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri varcha
 
 			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&user=%s&api_key=%s', id1, api_key);
 			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
+			
+			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=user.getplaylists&user=%s&api_key=%s', id1, api_key);
+			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
+
+			tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+			xd := xtree_doc (tmp);
+			declare ids any;
+			ids := xpath_eval ('/lfm/playlists/playlist/id', xd, 0);
+			foreach (any y in ids) do
+			{
+				declare x, new_origin_uri2, url2 varchar;
+				x := cast(y as varchar);
+				new_origin_uri2 := concat(new_origin_uri, '#', x);
+				url2:= sprintf('http://ws.audioscrobbler.com/2.0/?method=playlist.fetch&playlistURL=lastfm://playlist/%s&api_key=%s', x, api_key);
+				tmp := http_client (url2, proxy=>get_keyword_ucase ('get:proxy', opts));
+				xd := xtree_doc (tmp);
+				xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/lastfm2rdf.xsl', xd, vector ('baseUri', new_origin_uri, 'id', x));
+				xd := serialize_to_UTF8_xml (xt);
+				DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+			}
+		}
+		else if (id1 is not null and id1 <> '' and (id2 = 'library' and id3 = 'playlists' and id4 <> '' and id4 is not null))
+		{
+			return 0;
 		}
 		else
 			return 0;
