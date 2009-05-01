@@ -23,6 +23,7 @@
 -->
 <!DOCTYPE xsl:stylesheet [
 <!ENTITY nfo "http://www.semanticdesktop.org/ontologies/nfo/#">
+<!ENTITY video "http://purl.org/media/video#">
 ]>
 
 <xsl:stylesheet
@@ -47,6 +48,7 @@
   xmlns:nfo="&nfo;"
   xmlns:media="http://search.yahoo.com/mrss/"
   xmlns:yt="http://gdata.youtube.com/schemas/2007"
+  xmlns:video="&video;"
   version="1.0">
 
 <xsl:output indent="yes" cdata-section-elements="content:encoded" />
@@ -97,7 +99,9 @@
 	    <xsl:for-each select="a:category[@term]">
 		<sioc:topic>
 		    <skos:Concept rdf:about="{concat (/a:feed/a:link[@rel='self']/@href, '#', @term)}">
-			<skos:prefLabel><xsl:value-of select="@term"/></skos:prefLabel>
+						<skos:prefLabel>
+							<xsl:value-of select="@term"/>
+						</skos:prefLabel>
 		    </skos:Concept>
 		</sioc:topic>
 	    </xsl:for-each>
@@ -109,6 +113,7 @@
 <xsl:template match="yt:statistics">
 	<rdf:Description rdf:about="{$baseUri}">
 		<rdf:type rdf:resource="&nfo;Video"/>
+		<rdf:type rdf:resource="&video;Movie"/>
 		<nfo:frameCount>
 			<xsl:value-of select="./@viewCount"/>
 		</nfo:frameCount>
@@ -118,6 +123,7 @@
 <xsl:template match="media:group">
 	<rdf:Description rdf:about="{$baseUri}">
 		<rdf:type rdf:resource="&nfo;Video"/>
+		<rdf:type rdf:resource="&video;Movie"/>
 		<nfo:duration>
 			<xsl:value-of select="yt:duration/@seconds"/>
 		</nfo:duration>
