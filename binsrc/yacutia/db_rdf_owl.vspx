@@ -155,7 +155,60 @@
     </v:button>
 </td>
   </tr>
+  <?vsp if (self.text_e = 0) { ?>
+
+  <tr>
+    <td>
+      <v:label width="100" format="%s" name="label1111" value="--('WebDAV resource:')"/>
+      <v:text width="200" type="simple" value="" name="filename" />
+      <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="res" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="mega advisory text" lang="en" return_box="filename"/>
+
+      <v:button action="submit" name="export" value="Export">
+        <v:on-post><![CDATA[
+	  if (get_keyword('export', params) is not null)
+            {
+              declare ses any;
+              ses := string_output ();
+
+              if (not length (self.filename.ufl_value))
+                {
+                  self.vc_is_valid := 0;
+                  self.vc_error_message := 'The path to the file to save must not be empty.';
+                  return;
+                }
+              declare own, grp, perms, msg any;
+              if (dav_path_validate (self.filename.ufl_value, own, grp, perms, msg) <> 1)
+                {
+                  self.vc_error_message := msg;
+                  self.vc_is_valid := 0;
+                  return;
+                }
+              if (dav_check_permissions(connection_get('vspx_user'), perms, '110', own, grp, msg) <> 1)
+                {
+                  self.vc_error_message := msg;
+                  self.vc_is_valid := 0;
+                  return;
+                }
+              YAC_DAV_RES_UPLOAD (self.filename.ufl_value, self.body_v, 'text/plain', '110100000N',
+                                  connection_get('vspx_user'), null, connection_get('vspx_user'));
+              self.sc_1.vc_enabled := 1;
+              self.sc_1.vc_data_bind (e);
+            }
+	  ]]></v:on-post>
+        </v:button>
+      </td>
+    </tr>
+
+   <?vsp } ?>
       </v:form>
+
+        <v:template type="simple" name="sc_1" enabled="0">
+          <tr>
+	    <td>
+	      <img class="dialog_icon" src="images/icons/about_32.png" alt="Info" title="Info"/> The onthology exported successfully.
+	    </td>
+          </tr>
+        </v:template>
       </table>
   </vm:pagebody>
   </vm:pagewrapper>
