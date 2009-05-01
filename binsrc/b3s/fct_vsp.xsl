@@ -282,9 +282,13 @@ function init(){
 		</a>
 	      </xsl:if>
 	      <a>
-		<xsl:attribute name="href">
-		  /fct/facet.vsp?cmd=<xsl:value-of select="$command"/>&amp;iri=<xsl:value-of select="urlify (column[1])"/>&amp;lang=<xsl:value-of select="column[1]/@xml:lang"/>&amp;datatype=<xsl:value-of select="urlify (column[1]/@datatype)"/>&amp;sid=<xsl:value-of select="$sid"/>
-		</xsl:attribute>
+		  <!--xsl:message terminate="no"><xsl:value-of select="$query/query/class/@iri"/><xsl:value-of select="column[1]"/></xsl:message-->  
+	      <xsl:variable name="current_iri" select="column[1]"/> 
+	      <xsl:if test="not $query/query/class[@iri = $current_iri]" > 
+		  <xsl:attribute name="href">
+		      /fct/facet.vsp?cmd=<xsl:value-of select="$command"/>&amp;iri=<xsl:value-of select="urlify (column[1])"/>&amp;lang=<xsl:value-of select="column[1]/@xml:lang"/>&amp;datatype=<xsl:value-of select="urlify (column[1]/@datatype)"/>&amp;sid=<xsl:value-of select="$sid"/>
+		  </xsl:attribute>
+	      </xsl:if>
 		<xsl:attribute name="title">
 		  <xsl:value-of select="column[1]"/>
 		</xsl:attribute>

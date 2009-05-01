@@ -74,7 +74,7 @@ fct_svc_exec (in tree any, in timeout int, in accept varchar, in lines any)
 			   xmlelement ("complete", case when sqls = 'S1TAT' then 'no' else 'yes' end),
 			   xmlelement ("timeout", timeout),
 			   xmlelement ("db-activity", act), res[0][0]);
-      ret := xslt ('file:///fct/fct_resp.xsl', ret);
+      ret := xslt (registry_get ('_fct_xslt_') || 'fct_resp.xsl', ret);
     }
   else
     {
@@ -102,6 +102,7 @@ create procedure fct_svc () __soap_http 'text/xml'
   tp := http_request_header (lines, 'Content-Type');
   accept := http_request_header_full (lines, 'Accept', '*/*');
   accept := DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (accept);
+  set http_charset='utf-8';
   if (tp <> 'text/xml')
     {
       http_status_set (500);
@@ -119,7 +120,7 @@ create procedure fct_svc () __soap_http 'text/xml'
 	  __SQL_STATE, __SQL_MESSAGE);
     };
   xt := xtree_doc (cnt);
-  xslt := xslt ('file:///fct/fct_req.xsl', xt);
+  xslt := xslt (registry_get ('_fct_xslt_') || 'fct_req.xsl', xt);
 
   tmp := cast (xpath_eval ('//query/@timeout', xslt) as varchar);
   if (tmp is null)
@@ -166,7 +167,7 @@ __SOAP_DOC 'http://openlinksw.com/services/facets/1.0/:facets'
   declare cnt, tp, ret, timeout, xt, xslt, maxt, tmp, lines, qr any;
   lines := http_request_header ();
   xt := xml_cut (xpath_eval ('/Envelope/Body/query', xml_tree_doc (ws_soap_request)));
-  xslt := xslt ('file:///fct/fct_req.xsl', xt);
+  xslt := xslt (registry_get ('_fct_xslt_') || 'fct_req.xsl', xt);
 
   tmp := cast (xpath_eval ('//query/@timeout', xslt) as varchar);
   if (tmp is null)
@@ -180,7 +181,7 @@ __SOAP_DOC 'http://openlinksw.com/services/facets/1.0/:facets'
   qr := fct_query (xpath_eval ('//query', xslt, 1));
   fct_svc_log (qr, lines);
   ret := fct_exec (xslt, timeout);
-  ret := xslt ('file:///fct/fct_resp.xsl', ret);
+  ret := xslt (registry_get ('_fct_xslt_') || 'fct_resp.xsl', ret);
   return ret;
 }
 ;

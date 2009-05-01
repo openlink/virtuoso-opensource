@@ -20,8 +20,10 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
-set ignore_params=on;
+--set ignore_params=on;
 -- Facets web page
+
+registry_set ('_fct_xslt_', case when registry_get('_fct_url_') = 0 then 'file://fct/' else registry_get('_fct_url_') end);
 
 create procedure
 fct_view_pos (in tree any)
@@ -249,14 +251,22 @@ fct_query_info (in tree any,
 }
 ;
 
-vhost_remove (lpath=>'/fct');
-vhost_define (lpath=>'/fct',ppath=>'/fct/',vsp_user=>'dba', def_page=>'facet.vsp');
+VHOST_REMOVE (lpath=>'/fct');
+VHOST_DEFINE (lpath=>'/fct',
+    	ppath=>case when registry_get('_fct_path_') = 0 then '/fct/' else registry_get('_fct_path_') end, 
+	is_dav=>atoi (case when registry_get('_fct_dav_') = 0 then '0' else registry_get('_fct_dav_') end),
+    	vsp_user=>'dba', def_page=>'facet.vsp');
+VHOST_REMOVE (lpath=>'/b3s');
+VHOST_DEFINE (lpath=>'/b3s',
+    	ppath=>case when registry_get('_fct_path_') = 0 then '/fct/' else registry_get('_fct_path_') end || 'www/', 
+	is_dav=>atoi (case when registry_get('_fct_dav_') = 0 then '0' else registry_get('_fct_dav_') end),
+    	vsp_user=>'dba', def_page=>'listall.vsp');
 
-create table fct_state (fct_sid int primary key, fct_state xmltype);
+EXEC_STMT ('create table fct_state (fct_sid int primary key, fct_state xmltype)', 0);
 
-alter index fct_state on fct_state partition (fct_sid int);
+EXEC_STMT ('alter index fct_state on fct_state partition (fct_sid int)', 0);
 
-create table fct_log (
+EXEC_STMT ('create table fct_log (
   fl_sid int,
   fl_ts timestamp,
   fl_cli_ip varchar,
@@ -267,22 +277,22 @@ create table fct_log (
   fl_sqlmsg varchar,
   fl_parms varchar,
   fl_msec int,
-  primary key (fl_sid, fl_ts));
+  primary key (fl_sid, fl_ts))', 0);
 
-alter index fct_log on fct_log partition (fl_sid int);
+EXEC_STMT ('alter index fct_log on fct_log partition (fl_sid int)', 0);
 
-create table fct_stored_qry (
+EXEC_STMT ('create table fct_stored_qry (
   fsq_id int identity,
   fsq_created timestamp,
   fsq_title varchar,
   fsq_expln varchar,
   fsq_state xmltype,
   fsq_featured int,
-  primary key (fsq_id));
+  primary key (fsq_id))', 0);
 
-alter index fct_stored_qry on fct_stored_qry partition (fsq_id int);
+EXEC_STMT ('alter index fct_stored_qry on fct_stored_qry partition (fsq_id int)',0);
 
-create index fsq_featured_ndx on fct_stored_qry (fsq_featured, fsq_id) partition;
+EXEC_STMT ('create index fsq_featured_ndx on fct_stored_qry (fsq_featured, fsq_id) partition',0);
 
 sequence_next ('fct_seq');
 
@@ -469,7 +479,7 @@ fct_web (in tree any)
 
   tp := cast (xpath_eval ('//view/@type', tree) as varchar);
 
-  http_value (xslt ('file://fct/fct_vsp.xsl',
+  http_value (xslt (registry_get ('_fct_xslt_') || 'fct_vsp.xsl',
                     reply,
 		    vector ('sid',
 		            connection_get ('sid'),
@@ -478,7 +488,10 @@ fct_web (in tree any)
 			    'type',
 			    fct_view_type (tp),
 			    'timeout',
-			    _min (timeout*2, atoi (registry_get ('fct_timeout_max'))))),
+			    _min (timeout*2, atoi (registry_get ('fct_timeout_max'))),
+			    'query',
+			    tree
+			    )),
 	      null, txt);
 
   fct_nav (tree, reply, txt);
@@ -492,11 +505,11 @@ fct_set_text (in tree any, in sid int, in txt varchar)
 {
   declare new_tree any;
 
-  new_tree := xslt ('file://fct/fct_set_text.xsl', tree, vector ('text', txt, 'prop', 'none'));
+  new_tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_text.xsl', tree, vector ('text', txt, 'prop', 'none'));
 
   if (xpath_eval ('//view', new_tree) is null)
     {
-      new_tree := xslt ('file://fct/fct_set_view.xsl',
+      new_tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
                         new_tree,
 		        vector ('pos', 0, 'type', 'text', 'limit', 20, 'op', 'view'));
     }
@@ -506,7 +519,7 @@ fct_set_text (in tree any, in sid int, in txt varchar)
 
   fct_web (new_tree);
 }
-
+;
 
 create procedure
 fct_set_text_property (in tree any, in sid int, in iri varchar)
@@ -514,50 +527,53 @@ fct_set_text_property (in tree any, in sid int, in iri varchar)
   declare new_tree, txt any;
 
   txt := cast (xpath_eval ('//text', tree) as varchar);
-  new_tree := xslt ('file://fct/fct_set_text.xsl', tree, vector ('text', txt, 'prop', iri));
-  new_tree := xslt ('file://fct/fct_set_view.xsl', new_tree, vector ('pos', 0, 'type', 'text', 'limit', 20, 'op', 'view'));
+  new_tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_text.xsl', tree, vector ('text', txt, 'prop', iri));
+  new_tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl', new_tree, vector ('pos', 0, 'type', 'text', 'limit', 20, 'op', 'view'));
 
   update fct_state set fct_state = new_tree where fct_sid = sid;
   commit work;
 
   fct_web (new_tree);
 }
+;
 
 create procedure
 fct_set_focus (in tree any, in sid int, in pos int)
 {
-  tree := xslt ('file://fct/fct_set_view.xsl',
+  tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
                 tree,
 		vector ('pos', pos - 1, 'op', 'view', 'type', 'list', 'limit', 20, 'offset', 0));
   update fct_state set fct_state = tree where fct_sid = sid;
   commit work;
   fct_web (tree);
 }
-
+;
 
 create procedure 
 fct_drop (in tree any, in sid int, in pos int)
 {
-  tree := xslt ('file://fct/fct_set_view.xsl', tree, vector ('pos', pos - 1, 'op', 'close'));
+  tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl', tree, vector ('pos', pos - 1, 'op', 'close'));
 
   if (xpath_eval ('//view', tree) is null)
-    tree := xslt ('file://fct/fct_set_view.xsl', tree, vector ('pos', 0, 'op', 'view', 'type', 'list', 'limit', 20, 'offset', 0));
+    tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl', tree, vector ('pos', 0, 'op', 'view', 'type', 'list', 'limit', 20, 'offset', 0));
 
   update fct_state set fct_state = tree where fct_sid = sid;
   commit work;
 
   fct_web (tree);
 }
+;
 
 create procedure
 fct_drop_cond (in tree any, in sid int, in cno int)
 {
-  tree := xslt ('file://fct/fct_drop_cond.xsl', tree, vector ('cno', cno));
+  tree := xslt (registry_get ('_fct_xslt_') || 'fct_drop_cond.xsl', tree, vector ('cno', cno));
 
   update fct_state set fct_state = tree where fct_sid = sid;
   commit work;
   fct_web (tree);
 }
+;
 
 create procedure
 fct_set_view (in tree     any, 
@@ -575,12 +591,12 @@ fct_set_view (in tree     any,
       declare txt varchar;
 
       txt := cast (xpath_eval ('//text', tree) as varchar);
-      tree := xslt ('file://fct/fct_set_text.xsl',
+      tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_text.xsl',
                     tree,
 		    vector ('text', txt, 'prop', 'none'));
     }
 
-  tree := xslt ('file://fct/fct_set_view.xsl',
+  tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
                 tree,
 		vector ('pos', pos,
 		        'op',
@@ -595,6 +611,7 @@ fct_set_view (in tree     any,
 
   fct_web (tree);
 }
+;
 
 create procedure
 fct_next (in tree any, in sid int)
@@ -632,7 +649,7 @@ fct_open_property  (in tree any, in sid int, in iri varchar, in name varchar)
 {
   declare pos int;
   pos := fct_view_pos (tree);
-  tree := xslt ('file://fct/fct_set_view.xsl',
+  tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
                 tree,
 		vector ('pos', pos,
 		        'op', 'prop',
@@ -648,7 +665,7 @@ fct_open_property  (in tree any, in sid int, in iri varchar, in name varchar)
   commit work;
   fct_web (tree);
 }
-
+;
 
 create procedure
 fct_set_class (in tree any,
@@ -661,7 +678,7 @@ fct_set_class (in tree any,
 
 --  dbg_printf ('setting class %s at pos: %d', iri, pos);
 
-  tree := xslt ('file://fct/fct_set_view.xsl',
+  tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
                 tree,
                 vector ('pos'   , pos,
 		        'op'    , 'class',
@@ -677,16 +694,17 @@ fct_set_class (in tree any,
   commit work;
   fct_web (tree);
 }
+;
 
 create procedure
 fct_featured (in tree xmltype, in sid int) {
-?>
+http ('
   <div class="dlg" id="featured_qry">
     <div class="title"><h2>Featured Queries</h2></div>
     <div class="expln"><p>These are queries stored in the facet server which are marked as featured. Click on a title in list below to load the query.</p></div>
     <div class="fm_sect">
       <table id="featured_list">
-<?vsp
+');
 	declare no_qry, cnt int;
 	cnt := 0;
 	no_qry := http_param ('no_qry');
@@ -699,27 +717,27 @@ fct_featured (in tree xmltype, in sid int) {
                order by fsq_featured desc) do
           {
             cnt := cnt + 1;
-?>
+http ('
             <tr>
-              <td><a href="/fct/facet.vsp?cmd=load&fsq_id=<?= fsq_id ?>"><?= fsq_title ?></a></td>
-              <td><?= fsq_expln ?></td>
+              <td><a href="/fct/facet.vsp?cmd=load&fsq_id='); http_value ( fsq_id ); http ('">'); http_value (fsq_title); http ('</a></td>
+              <td>'); http_value ( fsq_expln ); http ('</td>
             </tr>
-<?vsp
+');
           }
 	if (0 = cnt) 
           {
-?>
+http ('
 	    <tr><td>There are currently no featured queries.</td></td>
-<?vsp
+');
           }
-?>
+http ('
       </table>
     </div>
     <div class="btn_bar">
-      <button onclick="javascript:document.location='/fct/facet.vsp?cmd=refresh&sid=<?= case when no_qry then 0 else sid end ?>'">Cancel</button>
+      <button onclick="javascript:document.location=''/fct/facet.vsp?cmd=refresh&sid='); http_value ( case when no_qry then 0 else sid end ); http ('''">Cancel</button>
     </div>
   </div>
-<?vsp
+');
 }
 ;
 
@@ -727,11 +745,11 @@ create procedure
 fct_save_init (in tree xmltype, in sid int)
 {
 
-?>
+http ('
   <div class="dlg" id="save_frm">
     <div class="title"><h2>Save</h2></div>
     <form method="post"
-          action="/fct/facet.vsp?cmd=save&sid=<?= sid ?>" >
+          action="/fct/facet.vsp?cmd=save&sid='); http_value ( sid ); http ('" >
       <div class="fm_sect">
         <h3>Information</h3>
         <div class="expln">
@@ -744,11 +762,11 @@ fct_save_init (in tree xmltype, in sid int)
       </div> <!-- fm_sect -->
       <div class="btn_bar">
         <input type="submit" value="Save"/>
-        <button onclick="javascript:document.location='/fct/facet.vsp?cmd=refresh&sid=<?= sid ?>';return false;" >Cancel</button>
+        <button onclick="javascript:document.location=''/fct/facet.vsp?cmd=refresh&sid='); http_value ( sid ); http (''';return false;" >Cancel</button>
       </div>
     </form>
   </div>
-<?vsp
+');
 }
 ;
 
@@ -765,19 +783,20 @@ fct_save (in tree xmltype,
   insert into fct_stored_qry (fsq_id, fsq_title, fsq_expln, fsq_state)
     values (_fsq_id, title, _desc, tree);
 
-  ?>
+  http ('
 
 <div class="dlg" id="save_complete">
   <div class="title"><h2>Save Complete</h2></div>
   <div class="expln">
     <p><br/>
     Your query has been saved.<br/>
-    Please bookmark this link: <a href="/fct/facet.vsp?cmd=load&fsq_id=<?= _fsq_id ?>" title="<?= _desc ?>"><?= title ?></a> to return to it.</p>
+    Please bookmark this link: <a href="/fct/facet.vsp?cmd=load&fsq_id='); http_value ( _fsq_id ); http ('" title="'); http_value ( _desc ); http ('">'); http_value ( title ); http ('</a> to return to it.</p>
   </div>
-  <div class="btn_bar"><button onclick="javascript:document.location='/fct/facet.vsp?sid=<?= sid ?>&cmd=refresh'">Continue</button></div>
+  <div class="btn_bar"><button onclick="javascript:document.location=''/fct/facet.vsp?sid='); http_value ( sid ); http ('&cmd=refresh''">Continue</button></div>
 </div>
-  <?vsp
+  ');
 }
+;
 
 create procedure 
 fct_load (in from_stored int)
@@ -838,14 +857,14 @@ fct_new ()
         set fct_state = tree
 	where fct_sid = sid;
     }
-  ?>
+  http ('
   <div id="main_srch" style="display: none">
     <div id="TAB_ROW">
       <div class="tab" id="TAB_TXT">Text Search</div>
       <div class="tab" id="TAB_URILBL">URI Lookup (by Label)</div>
       <div class="tab" id="TAB_URI">URI Lookup</div>
       <div class="tab_act">
-        <a href="/fct/facet.vsp?cmd=featured&sid=<?= sid ?>&no_qry=1">Featured Queries</a>
+        <a href="/fct/facet.vsp?cmd=featured&sid='); http_value ( sid ); http ('&no_qry=1">Featured Queries</a>
         &nbsp;|&nbsp;
         <a href="/b3s/">Demo Queries</a>
         &nbsp;|&nbsp;
@@ -857,7 +876,7 @@ fct_new ()
     <div id="TAB_PAGE_TXT" class="tab_page" style="display: none">
       <h2>Entity Search, Find, and Explore</h2>
       <form method="post"
-            action="/fct/facet.vsp?cmd=text&sid=<?= sid ?>" >
+            action="/fct/facet.vsp?cmd=text&sid='); http_value ( sid ); http ('" >
         <div id="new_srch">
           <label class="left_txt"
                  for="new_search_txt">Search Text</label>
@@ -873,7 +892,7 @@ fct_new ()
       <h2>Entity Search, Find, and Explore</h2>
       <form method="get" action="/about/" id="new_lbl_fm">
         <input type="hidden" name="url" id="new_lbl_val"/>
-	<input type="hidden" name="sid" value="<?= sid ?>"/>
+	<input type="hidden" name="sid" value="'); http_value ( sid ); http ('"/>
 	<input type="hidden" name="urilookup" value="1"/>
       </form>
       <div id="new_uri">
@@ -887,18 +906,18 @@ fct_new ()
 
         <button id="new_lbl_btn">Describe</button><br/>
       </div>
-      <?vsp if (registry_get ('urilbl_ac_init_status') <> '2') { ?>
+      '); if (registry_get ('urilbl_ac_init_status') <> '2') { http ('
       <div class="ac_info">
         <img class="txt_i" alt="info" src="/fct/images/info.png"/>
         <span class="ac_info">Lookup data (re)generation in progress. Results will be incomplete.</span>
       </div>
-      <?vsp } ?>
+      '); } http ('
     </div>
     <div id="TAB_PAGE_URI" class="tab_page" style="display: none">
       <h2>Entity Search, Find, and Explore</h2>
       <form method="get" action="/about/" id="new_uri_fm">
         <input type="hidden" name="url" id="new_uri_val"/>
-	<input type="hidden" name="sid" value="<?= sid ?>"/>
+	<input type="hidden" name="sid" value="'); http_value ( sid ); http ('"/>
 	<input type="hidden" name="urilookup" value="1"/>
       </form>
       <div id="new_uri">
@@ -916,8 +935,9 @@ fct_new ()
   <div class="main_expln"><br/>
     Faceted Search &amp; Find Service<br/>
   </div>
- <?vsp
+ ');
 }
+;
 
 create procedure
 fct_set_inf (in tree any, in sid int)
@@ -943,40 +963,40 @@ fct_set_inf (in tree any, in sid int)
       sel_c_term     := cast (xpath_eval ('/query/@c-term',    tree) as varchar);
       sel_s_term     := cast (xpath_eval ('/query/@s-term',    tree) as varchar);
 
-      ?> <div id="opts_ctr">
+      http (' <div id="opts_ctr">
            <div id="opts" class="dlg">
              <div class="title"><h2>Options</h2></div>
-             <form action="/fct/facet.vsp?cmd=set_inf&sid=<?= sid ?>" method=post>
+             <form action="/fct/facet.vsp?cmd=set_inf&sid='); http_value ( sid ); http ('" method=post>
 	       <div class="fm_sect">
                  <h3>Inference</h3>
                  <label class="left_txt" for="opt_inference">Inference</label>
                  <select name="inference">
 	           <option value="">none</option>
-	           <?vsp for select RS_NAME from SYS_RDF_SCHEMA do { ?>
-		     <option value="<?V RS_NAME ?>" 
-	                     <?V case when selected_inf = RS_NAME then 'selected' else '' end ?>>
-                       <?V RS_NAME ?>
+	           '); for select RS_NAME from SYS_RDF_SCHEMA do { http ('
+		     <option value="'); http_value ( RS_NAME ); http ('" 
+	                     '); http_value ( case when selected_inf = RS_NAME then 'selected' else '' end ); http ('>
+                       '); http_value ( RS_NAME ); http ('
                      </option>
-		   <?vsp } ?>
+		   '); } http ('
 	         </select>
                  <br>
                  <input type="checkbox" 
                         name="same-as" 
                         value="yes" 
-                        id="same-as" <?= case when selected_sas = 'yes' then 'checked="true"' end  ?>> 
+                        id="same-as" '); http_value ( case when selected_sas = 'yes' then 'checked="true"' end  ); http ('> 
                  <label class="rt_ckb" for="same-as">Same As</label><br>
                </div>
                <div class="fm_sect">
 	         <h3>User Interface</h3>
 	         <label class="left_txt" for="tlogy">Terminology</label>
                  <select name="tlogy">
-	           <option value="eav" <?= case when sel_s_term = 'e' then 'selected="true"' else '' end ?>>Entity-Attribute-Value</option>
-	           <option value="spo" <?= case when sel_s_term = 's' then 'selected="true"' else '' end ?>>Subject-Predicate-Object</option>
+	           <option value="eav" '); http_value ( case when sel_s_term = 'e' then 'selected="true"' else '' end ); http ('>Entity-Attribute-Value</option>
+	           <option value="spo" '); http_value ( case when sel_s_term = 's' then 'selected="true"' else '' end ); http ('>Subject-Predicate-Object</option>
 	       	 </select><br/>
                  <input type="checkbox" 
                         name="view3" 
                         value="yes" 
-                        id="view3" <?= case when selected_view3 = 'yes' then 'checked="true"' end  ?>> 
+                        id="view3" '); http_value ( case when selected_view3 = 'yes' then 'checked="true"' end  ); http ('> 
                  <label class="rt_ckb" for="view3">Show Values, Types, Properties simultaneously</label><br>
                </div>
 <!--               <div class="fm_sect">
@@ -989,7 +1009,7 @@ fct_set_inf (in tree any, in sid int)
              </form>
 	   </div>
          </div>
-       <?vsp
+       ');
      return;
     }
 
@@ -1025,6 +1045,7 @@ fct_set_inf (in tree any, in sid int)
       fct_refresh (tree);
     }
 }
+;
 
 create procedure
 fct_open_iri (in tree any, in sid int, in iri varchar)
@@ -1050,16 +1071,18 @@ fct_open_iri (in tree any, in sid int, in iri varchar)
     signal (sqls, msg);
 
   txt := string_output ();
-  res_tree := xslt ('file://fct/open.xsl', res[0][0], vector ('sid', sid));
+  res_tree := xslt (registry_get ('_fct_xslt_') || 'open.xsl', res[0][0], vector ('sid', sid));
 
   http_value (res_tree, null);
 }
+;
 
 create procedure
 fct_refresh (in tree any)
 {
   fct_web (tree);
 }
+;
 
 create procedure
 fct_bold_tags (in s varchar)
@@ -1075,6 +1098,7 @@ fct_bold_tags (in s varchar)
   -- dbg_obj_print (ret);
   return ret;
 }
+;
 
 create procedure
 fct_select_value (in tree any,
@@ -1093,14 +1117,14 @@ fct_select_value (in tree any,
 
   pos := fct_view_pos (tree);
 
-  tree := xslt ('file://fct/fct_set_view.xsl',
+  tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
                 tree,
 		vector ('pos', pos, 'op', 'value', 'iri', val, 'lang', lang, 'datatype', dtp, 'cmp', op));
 
 --  dbg_obj_print (tree);
 
   if (op = '=')
-    tree := xslt ('file://fct/fct_set_view.xsl',
+    tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
                   tree,
 		  vector ('pos', 0, 'op', 'view', 'type', 'list', 'limit', 20, 'offset', 0));
 
@@ -1111,6 +1135,7 @@ fct_select_value (in tree any,
   commit work;
   fct_web (tree);
 }
+;
 
 -- /* main */
 create procedure
@@ -1204,7 +1229,7 @@ fct_vsp ()
 	  fct_new ();
 	  return;
         }
-    fct_refresh (tree);
+      fct_refresh (tree);
     }
   else if ('set_inf' = cmd)
     fct_set_inf (tree, sid);

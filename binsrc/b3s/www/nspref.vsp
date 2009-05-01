@@ -1,5 +1,6 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<!--
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<?vsp
 --
 --  $Id$
 --
@@ -21,9 +22,6 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
--->
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-<?vsp
   declare label varchar;
   label := 'Predefined name space prefixes';
 ?>

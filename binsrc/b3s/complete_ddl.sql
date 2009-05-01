@@ -20,21 +20,23 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
-drop table urilbl_complete_lookup_2;
+--drop table urilbl_complete_lookup_2;
 
-create table
+EXEC_STMT (
+'create table
 urilbl_complete_lookup_2 (
   ull_label_lang varchar,
   ull_label_ruined varchar,
   ull_iid iri_id_8,
   ull_label varchar,
-  primary key (ull_label_ruined, ull_iid));
+  primary key (ull_label_ruined, ull_iid))', 0);
 
-alter index urilbl_complete_lookup_2 on urilbl_complete_lookup_2 partition (ull_label_ruined varchar (6,0hexffff));
+EXEC_STMT ('alter index urilbl_complete_lookup_2 on urilbl_complete_lookup_2 partition (ull_label_ruined varchar (6,0hexffff))', 0);
 
-create table 
+EXEC_STMT (
+'create table 
 urilbl_cpl_log (
   ullog_ts timestamp,
   ullog_msg varchar,
-  primary key (ullog_ts, ullog_msg));
+  primary key (ullog_ts, ullog_msg))', 0);
 

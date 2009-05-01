@@ -36,7 +36,7 @@ num_str (in n int)
 
   return s;
 }
-
+;
 
 create procedure 
 str_inc (in str varchar, in pref int := 0)
@@ -55,7 +55,7 @@ str_inc (in str varchar, in pref int := 0)
       }
     return str;
 }
-
+;
 
 --create procedure split (in str varchar)
 --{
@@ -136,6 +136,7 @@ cmp_find_iri (in str varchar, in no_name int := 0)
 
   return iris;
 }
+;
 
 create procedure 
 cmp_find_ns (in str varchar)
@@ -150,7 +151,7 @@ cmp_find_ns (in str varchar)
 
   return nss;
 }
-
+;
 
 
 create procedure 
@@ -173,6 +174,7 @@ cmp_with_ns (in str varchar)
   str := pref_str || subseq (str, col);
   return str;
 }
+;
 
 
 create procedure 
@@ -205,6 +207,7 @@ cmp_uri (in str varchar)
 
   return vector (iris, nss);
 }
+;
 
 create procedure 
 urilbl_ac_ruin_label (in lbl varchar)
@@ -220,6 +223,7 @@ urilbl_ac_init_log (in msg varchar)
   dbg_printf(msg);
   insert into urilbl_cpl_log (ullog_msg) values (msg);
 }
+;
 
 create procedure
 urilbl_ac_init_db () {

@@ -23,6 +23,26 @@
 
 TOP=@TOP@
 
+nodist_vad_DATA = fct_dav.vad
+
+CLEANFILES =  \
+	*.vad \
+	make_ods_vad.log \
+	make_ods_vad.xml \
+	virtuoso.db \
+	virtuoso.ini \
+	virtuoso.lck \
+	virtuoso.log \
+	virtuoso.pxa \
+	virtuoso.tdb \
+	virtuoso.trx
+
+fct_dav.vad: $(EXTRA_DIST)
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost sh ./make_vad.sh
+
+clean-local:
+	-rm -rf vad
+
 # ----------------------------------------------------------------------
 #
 #  Additional files to distribute

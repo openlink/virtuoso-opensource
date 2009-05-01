@@ -44,7 +44,7 @@
     </xsl:template>
 
     <xsl:template match="text()" mode="raw">
-	<xsl:value-of select="."/>
+	<xsl:value-of select="serialize (.)"/>
     </xsl:template>
 
 </xsl:stylesheet>

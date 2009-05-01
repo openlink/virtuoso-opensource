@@ -25,12 +25,12 @@
 
 
 
-create table RDF_IRI_RANK (rnk_iri iri_id_8 primary key, rnk_string varchar no compress)
-alter index RDF_IRI_RANK on RDF_IRI_RANK partition (rnk_iri int (0hexffff00));
+EXEC_STMT ('create table RDF_IRI_RANK (rnk_iri iri_id_8 primary key, rnk_string varchar no compress)',0);
+EXEC_STMT ('alter index RDF_IRI_RANK on RDF_IRI_RANK partition (rnk_iri int (0hexffff00))',0);
 
 
-create table RDF_IRI_STAT (rst_iri iri_id_8 primary key, rst_string varchar no compress)
-alter index RDF_IRI_STAT on RDF_IRI_STAT partition (rst_iri int (0hexffff00));
+EXEC_STMT ('create table RDF_IRI_STAT (rst_iri iri_id_8 primary key, rst_string varchar no compress)',0);
+EXEC_STMT ('alter index RDF_IRI_STAT on RDF_IRI_STAT partition (rst_iri int (0hexffff00))',0);
 
 create procedure f_s (in f double precision)
 {
@@ -40,13 +40,13 @@ create procedure f_s (in f double precision)
 	return 0hexffff;
   return cast (i as int);
 }
-
+;
 
 create procedure s_f (in i int)
 {
   return exp ((i - 0hex7fff) / 1e3);
 }
-
+;
 
 grant execute on S_F to "SPARQL";
 
@@ -89,11 +89,10 @@ create procedure DB.DBA.IR_SRV (in iri iri_id_8)
     return vector (0, 1);
   return vector (str[nth] * 256 + str[nth + 1], 1);
 }
+;
 
 grant execute on DB.DBA.IR_SRV to "SPARQL";
 
-dpipe_define ('IRI_RANK', 'DB.DBA.RDF_IRI_RANK', 'RDF_IRI_RANK', 'DB.DBA.IR_SRV', 0);
-dpipe_define ('DB.DBA.IRI_RANK', 'DB.DBA.RDF_IRI_RANK', 'RDF_IRI_RANK', 'DB.DBA.IR_SRV', 0);
 
 
 create procedure DB.DBA.IRI_RANK (in iri iri_id_8)
@@ -108,7 +107,7 @@ create procedure DB.DBA.IRI_RANK (in iri iri_id_8)
     return 0;
   return str[nth] * 256 + str[nth + 1];
 }
-
+;
 
 grant execute on IR_SRV to "SPARQL";
 grant execute on IRI_RANK to "SPARQL";
@@ -120,7 +119,7 @@ create procedure rnk_store_w (inout first int, inout str varchar, inout fill int
   insert replacing rdf_iri_stat option (no cluster)  values (iri_id_from_num (first), str);
   commit  work;
 }
-
+;
 
 create procedure rnk_count_refs_srv ()
 {
@@ -174,7 +173,7 @@ create procedure rnk_count_refs_srv ()
  fill := nth + 6;
     rnk_store_w (s_first, str, fill);
 }
-
+;
 
 
 
@@ -193,9 +192,19 @@ create procedure DB.DBA.Ist_SRV (in iri iri_id_8)
   return vector (bit_shift (str[nth], 40) + bit_shift (str[nth + 1], 32) + bit_shift(str[nth + 2], 24)
 		 + bit_shift (str[nth + 3], 16) + bit_shift (str[nth + 4], 8) + str[nth + 5], 1);
 }
+;
 
+create procedure decl2_dpipe_define ()
+{
+  if (sys_stat ('cl_run_local_only'))
+    return;
+  dpipe_define ('IRI_RANK', 'DB.DBA.RDF_IRI_RANK', 'RDF_IRI_RANK', 'DB.DBA.IR_SRV', 0);
+  dpipe_define ('DB.DBA.IRI_RANK', 'DB.DBA.RDF_IRI_RANK', 'RDF_IRI_RANK', 'DB.DBA.IR_SRV', 0);
+  dpipe_define ('IRI_STAT', 'DB.DBA.RDF_IRI_STAT', 'RDF_IRI_STAT', 'DB.DBA.IST_SRV', 0);
+}
+;
 
-dpipe_define ('IRI_STAT', 'DB.DBA.RDF_IRI_STAT', 'RDF_IRI_STAT', 'DB.DBA.IST_SRV', 0);
+decl2_dpipe_define ();
 
 create procedure DB.DBA.IRI_STAT (in iri iri_id_8)
 {
@@ -212,11 +221,13 @@ create procedure DB.DBA.IRI_STAT (in iri iri_id_8)
   return bit_shift (str[nth], 40) + bit_shift (str[nth + 1], 32) + bit_shift(str[nth + 2], 24)
     + bit_shift (str[nth + 3], 16) + bit_shift (str[nth + 4], 8) + str[nth + 5];
 }
+;
 
 create procedure rst_old_sc (in rst int)
 {
   return bit_and (0hexffff, bit_shift (rst, -16));
 }
+;
 
 create procedure rnk_inc (in rnk int, in nth_iter int)
 {
@@ -232,6 +243,7 @@ create procedure rnk_inc (in rnk int, in nth_iter int)
   inc := log (1 + sc - prev_sc) / log (2);
   return (1e0 / n_out) * (inc / nth_iter);
 }
+;
 
 create procedure rnk_store_sc (inout first int, inout str varchar, inout fill int)
 {
@@ -240,6 +252,7 @@ create procedure rnk_store_sc (inout first int, inout str varchar, inout fill in
   insert replacing rdf_iri_rank option (no cluster)  values (iri_id_from_num (first), str);
   commit  work;
 }
+;
 
 create procedure rnk_get_ranks (in s_first iri_id)
 {
@@ -251,7 +264,7 @@ create procedure rnk_get_ranks (in s_first iri_id)
     return str || make_string (512 - length (str));
   return str;
 }
-
+;
 
 create procedure rnk_score (in nth_iter int)
 {
@@ -318,7 +331,7 @@ create procedure rnk_score (in nth_iter int)
  fill := nth + 2;
     rnk_store_sc (s_first, str, fill);
 }
-
+;
 
 create procedure RNK_SCORE_SRV (in nth int)
 {
@@ -327,6 +340,7 @@ create procedure RNK_SCORE_SRV (in nth int)
   aq_request (aq, 'DB.DBA.RNK_SCORE', vector (nth));
   aq_wait_all (aq);
 }
+;
 
 create procedure rnk_next_cycle ()
 {
@@ -366,7 +380,7 @@ create procedure rnk_next_cycle ()
 done:
   return n_done;
 }
-
+;
 
 create procedure s_rank ()
 {
@@ -377,3 +391,4 @@ create procedure s_rank ()
   cl_exec ('rnk_next_cycle ()');
   cl_exec ('rnk_score_srv (3)');
 }
+;

@@ -1,4 +1,4 @@
-<!--
+<?vsp
 -- 
 --  $Id$
 --
@@ -20,8 +20,6 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
--->
-<?vsp
   declare debug, def_qry, ini_dflt_graph, can_sponge any;
   declare consumer_key, consumer_secret, oauth_token, oauth_secret, signature, timest, nonce varchar;
   declare srv, res, signature_base, ret_url, url, tmp, sid, bin varchar;

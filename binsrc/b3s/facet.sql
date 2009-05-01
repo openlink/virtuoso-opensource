@@ -211,20 +211,31 @@ LBL_O_VALUE (in id int)
 }
 ;
 
-dpipe_define ('DB.DBA.FCT_LABEL', 'DB.DBA.RDF_QUAD', 'RDF_QUAD_OPGS', 'DB.DBA.FCT_LABEL_DP', 0);
-dpipe_define ('FCT_LABEL', 'DB.DBA.RDF_QUAD', 'RDF_QUAD_OPGS', 'DB.DBA.FCT_LABEL_DP', 0);
-dpipe_define ('LBL_O_VALUE', 'DB.DBA.RDF_OBJ', 'RDF_OBJ', 'DB.DBA.LBL_O_VALUE', 0);
+create procedure decl_dpipe_define ()
+{
+  if (sys_stat ('cl_run_local_only'))
+    return;
+  dpipe_define ('DB.DBA.FCT_LABEL', 'DB.DBA.RDF_QUAD', 'RDF_QUAD_OPGS', 'DB.DBA.FCT_LABEL_DP', 0);
+  dpipe_define ('FCT_LABEL', 'DB.DBA.RDF_QUAD', 'RDF_QUAD_OPGS', 'DB.DBA.FCT_LABEL_DP', 0);
+  dpipe_define ('LBL_O_VALUE', 'DB.DBA.RDF_OBJ', 'RDF_OBJ', 'DB.DBA.LBL_O_VALUE', 0);
+}
+;
+
+decl_dpipe_define ();
 
 ttlp ('
 @prefix foaf: <http://xmlns.com/foaf/0.1/>
 @prefix dc: <http://purl.org/dc/elements/1.1/>
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 @prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+@prefix geonames: <http://www.geonames.org/ontology#>
 
 rdfs:label rdfs:subPropertyOf virtrdf:label .
 dc:title rdfs:subPropertyOf virtrdf:label .
 foaf:name rdfs:subPropertyOf virtrdf:label .
-foaf:nick rdfs:subPropertyOf virtrdf:label .', 'xx', 'facets');
+foaf:nick rdfs:subPropertyOf virtrdf:label .
+geonames:name rdfs:subPropertyOf virtrdf:label . ', 
+'xx', 'facets');
 
 rdfs_rule_set ('facets', 'facets');
 
@@ -379,6 +390,7 @@ fct_xml_wrap (in tree any, in txt any)
 
   return string_output_string (ntxt);
 }
+;
 
 create procedure
 fct_n_cols (in tree any)
@@ -598,6 +610,38 @@ fct_text_1 (in tree any,
 }
 ;
 
+create procedure fct_curie_iri (in curie varchar)
+{
+  declare pos int;
+  declare pref, ns, loc varchar;
+
+  pos := strchr (curie, ':');
+  if (pos is null)
+    return null;
+  pref := subseq (curie, 0, pos);
+  loc := subseq (curie, pos + 1);
+  ns := __xml_get_ns_uri (pref, 2); 
+  if (ns is null)
+    return null;
+  return ns || loc;
+}
+;
+
+create procedure 
+fct_curie (in curie varchar)
+{
+  if (curie like '\\[%:%\\]')
+    {
+      declare tmp varchar;
+      tmp := trim (curie, '[]');
+      tmp := fct_curie_iri (tmp);
+      if (tmp is not null)
+	curie := tmp;
+    }
+  return curie; 
+}
+;
+
 create procedure
 fct_text (in tree any,
 	  in this_s int,
@@ -612,7 +656,16 @@ fct_text (in tree any,
 
   if ('class' = n)
     {
-      http (sprintf ('?s%d a <%s> .', this_s, cast (xpath_eval ('./@iri', tree) as varchar)), txt);
+      declare ciri varchar;
+      ciri := fct_curie (cast (xpath_eval ('./@iri', tree) as varchar));
+      if (cast (xpath_eval ('./@exclude', tree) as varchar) = 'yes')
+	{
+	  http (sprintf (' filter (!bif:exists ((select (1) where { ?s%d a <%s> } ))) .', this_s, ciri), txt);
+	}
+      else
+	{
+	  http (sprintf ('?s%d a <%s> .', this_s, ciri), txt);
+	}
       return;
     }
 
@@ -643,10 +696,20 @@ fct_text (in tree any,
   if ('property' = n)
     {
       declare new_s int;
+      declare piri varchar;
       max_s := max_s + 1;
       new_s := max_s;
-      http (sprintf (' ?s%d <%s> ?s%d .', this_s, cast (xpath_eval ('./@iri', tree, 1) as varchar), new_s), txt);
-      fct_text_1 (tree, new_s, max_s, txt, pre, post);
+      piri := fct_curie (cast (xpath_eval ('./@iri', tree, 1) as varchar));
+      if (cast (xpath_eval ('./@exclude', tree) as varchar) = 'yes')
+	{
+	  http (sprintf (' filter (!bif:exists ((select (1) where { ?s%d <%s> ?s%d } ))) .', this_s, piri, new_s), txt);
+	  return;  
+	}
+      else
+	{
+	  http (sprintf (' ?s%d <%s> ?s%d .', this_s, piri, new_s), txt);
+	  fct_text_1 (tree, new_s, max_s, txt, pre, post);
+	}
     }
 
   if ('property-of' = n)
@@ -654,7 +717,7 @@ fct_text (in tree any,
       declare new_s int;
       max_s := max_s + 1;
       new_s := max_s;
-      http (sprintf (' ?s%d <%s> ?s%d .', new_s, cast (xpath_eval ('./@iri', tree, 1) as varchar), this_s), txt);
+      http (sprintf (' ?s%d <%s> ?s%d .', new_s, fct_curie (cast (xpath_eval ('./@iri', tree, 1) as varchar)), this_s), txt);
       fct_text_1 (tree, new_s, max_s, txt, pre, post);
     }
 
@@ -732,7 +795,7 @@ fct_test (in str varchar, in timeout int := 0)
 
 --  dbg_obj_print (reply);
 
-  return xslt ('file://facet_text.xsl', reply);
+  return xslt (registry_get ('_fct_xslt_') || 'facet_text.xsl', reply);
 }
 ;
 

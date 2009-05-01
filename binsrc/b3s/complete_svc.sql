@@ -47,6 +47,7 @@ json_esc_str (in s any)
 {
   return sprintf ('"%s"', replace (replace (replace (s, '\\', '\\\\'), '"', '\\"'), '\n', '\\n'));
 }
+;
 
 create procedure 
 json_out_vec (in v any, inout ses any)
@@ -174,5 +175,6 @@ DB.DBA.IRI_AUTOCOMPLETE () __SOAP_HTTP 'text/json'
     return '{results: []}';
   };
 }
+;
 
 grant execute on DB.DBA.IRI_AUTOCOMPLETE to PROXY;
