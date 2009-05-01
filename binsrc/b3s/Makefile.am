@@ -26,16 +26,17 @@ TOP=@TOP@
 nodist_vad_DATA = fct_dav.vad
 
 CLEANFILES =  \
+	*.log \
 	*.vad \
-	make_ods_vad.log \
-	make_ods_vad.xml \
 	virtuoso.db \
 	virtuoso.ini \
 	virtuoso.lck \
 	virtuoso.log \
 	virtuoso.pxa \
 	virtuoso.tdb \
-	virtuoso.trx
+	virtuoso.trx \
+        vad_dav.xml \
+        vad_fs.xml
 
 fct_dav.vad: $(EXTRA_DIST)
 	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost sh ./make_vad.sh
@@ -49,24 +50,26 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	*.html \
-	*.js \
-	*.sql \
-	*.txt \
-	*.vsp \
-	*.xsl \
-	images/*.gif \
-	images/*.png \
-	images/rdf_w3c.svg \
-	images/sw-vert-v.svg \
-	rdfdesc/*.sql \
-	rdfdesc/*.vsp \
-	s/*.js \
-	styles/*.css \
-	VirtTripleLoader/.classpath \
-	VirtTripleLoader/.project \
-	VirtTripleLoader/src/virtTripleLoaderInit/*.java \
-	www/*.css \
-	www/*.html \
-	www/*.sql \
-	www/*.vsp
+	$(srcdir)/*.html \
+	$(srcdir)/*.js \
+	$(srcdir)/*.sql \
+	$(srcdir)/*.txt \
+	$(srcdir)/*.vsp \
+	$(srcdir)/*.xsl \
+	$(srcdir)/images/*.gif \
+	$(srcdir)/images/*.png \
+	$(srcdir)/images/rdf_w3c.svg \
+	$(srcdir)/images/sw-vert-v.svg \
+	$(srcdir)/make_vad.sh \
+	$(srcdir)/rdfdesc/*.sql \
+	$(srcdir)/rdfdesc/*.vsp \
+	$(srcdir)/s/*.js \
+	$(srcdir)/styles/*.css \
+	$(srcdir)/vad_version \
+	$(srcdir)/VirtTripleLoader/.classpath \
+	$(srcdir)/VirtTripleLoader/.project \
+	$(srcdir)/VirtTripleLoader/src/virtTripleLoaderInit/*.java \
+	$(srcdir)/www/*.css \
+	$(srcdir)/www/*.html \
+	$(srcdir)/www/*.sql \
+	$(srcdir)/www/*.vsp
