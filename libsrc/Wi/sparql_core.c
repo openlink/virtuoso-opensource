@@ -913,6 +913,12 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
           if (strcmp (value, u->usr_name))
             spar_error (sparp, "Assertion \"define sql:assert-user '%.200s'\" failed: the user is set to '%.200s'", value, u->usr_name);
           return; }
+      if (!strcmp (param, "sql:gs-app-callback")) {
+          sparp->sparp_gs_app_callback = t_box_sprintf (MAX_NAME_LEN, "DB.DBA.SPARQL_GS_APP_CALLBACK_%.50s", value);
+          return; }
+      if (!strcmp (param, "sql:gs-app-uid")) {
+          sparp->sparp_gs_app_uid = t_full_box_copy_tree (value);
+          return; }
       if (!strcmp (param, "sql:param") || !strcmp (param, "sql:params")) {
           t_set_push (&(sparp->sparp_env->spare_protocol_params), t_box_dv_uname_string (value));
           return; }
@@ -1320,17 +1326,19 @@ spar_make_list_of_sources_expn (sparp_t *sparp, ptrlong from_subtype, ptrlong fr
     }
   if (NULL != graph_groups)
     {
-      SPART *lst_expn = spar_make_funcall (sparp, 0, "SPECIAL::sql:RDF_GRAPH_GROUP_LIST_GET",
-        (SPART **)t_list (4,
-          ((NULL == graph_groups->next) ?
+      SPART *groups_expn = ((NULL == graph_groups->next) ?
             (SPART *)(graph_groups->data) :
-            spar_make_funcall (sparp, 0, "bif:vector",
-              (SPART **)t_list_to_array (graph_groups) ) ),
-          ((NULL == single_graphs) ?
+            spar_make_funcall (sparp, 0, "LONG::bif:vector",
+              (SPART **)t_list_to_array (graph_groups) ) );
+      SPART *singles_expn = ((NULL == single_graphs) ?
             (SPART *)t_NEW_DB_NULL :
-            spar_make_funcall (sparp, 0, "bif:vector",
-              (SPART **)t_list_to_array (single_graphs) ) ),
-          spar_boxed_exec_uid (sparp),
+            spar_make_funcall (sparp, 0, "LONG::bif:vector",
+              (SPART **)t_list_to_array (single_graphs) ) );
+      SPART *lst_expn = spar_make_funcall (sparp, 0, "SPECIAL::sql:RDF_GRAPH_GROUP_LIST_GET",
+        (SPART **)t_list (6,
+          groups_expn, singles_expn, spar_boxed_exec_uid (sparp),
+          ((NULL == sparp->sparp_gs_app_callback) ? t_NEW_DB_NULL : sparp->sparp_gs_app_callback),
+          ((NULL == sparp->sparp_gs_app_uid) ? t_NEW_DB_NULL : sparp->sparp_gs_app_uid),
           t_box_num_nonull (req_perms) ) );
       if (NULL == needle_expn)
         return lst_expn;
@@ -1512,6 +1520,7 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, caddr_t limit, caddr_
   SPART *agg_call;
   SPART *var_vector_expn;
   SPART *var_vector_arg;
+  SPART **opts;
   caddr_t limofs_name;
   const char *descr_name;
   int need_limofs_trick = ((SPARP_MAXLIMIT != unbox (limit)) || (0 != unbox (offset)));
@@ -1556,6 +1565,12 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, caddr_t limit, caddr_
   else
     good_graphs = (SPART *)t_box_num_nonull (0);
   bad_graphs = spar_make_list_of_sources_expn (sparp, SPART_GRAPH_NOT_FROM, SPART_GRAPH_NOT_GROUP, SPART_GRAPH_NOT_NAMED, 0x0, NULL);
+  if (NULL == sparp->sparp_gs_app_callback)
+    opts = (SPART **)t_list (2, t_box_dv_short_string ("uid"), spar_boxed_exec_uid (sparp));
+  else
+    opts = (SPART **)t_list (6, t_box_dv_short_string ("uid"), spar_boxed_exec_uid (sparp),
+      t_box_dv_short_string ("gs-app-callback"), sparp->sparp_gs_app_callback,
+      t_box_dv_short_string ("gs-app-uid"), ((NULL == sparp->sparp_gs_app_uid) ? t_NEW_DB_NULL : sparp->sparp_gs_app_uid) );
   descr_call = spar_make_funcall (sparp, 0, descr_name,
       (SPART **)t_list (6,
         agg_call,
@@ -1564,8 +1579,7 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, caddr_t limit, caddr_
         good_graphs,
         bad_graphs,
         sparp->sparp_env->spare_storage_name,
-        spar_make_funcall (sparp, 0, "bif:vector", 
-          t_list (2, t_box_dv_short_string ("uid"), spar_boxed_exec_uid (sparp)) ) ) ); /*!!!TBD describe options will be added here */
+        spar_make_funcall (sparp, 0, "bif:vector", opts) ) ); /*!!!TBD describe options will be added here */
   if (need_limofs_trick)
     return (SPART **)t_list (2, descr_call,
       spartlist (sparp, 4, SPAR_ALIAS, var_vector_expn, t_box_dv_short_string ("describe-1"), SSG_VALMODE_AUTO) );
@@ -2273,8 +2287,8 @@ void
 spar_verify_funcall_security (sparp_t *sparp, ccaddr_t fname, SPART **args)
 {
   int uid, need_check_for_infection_chars = 0;
-  const char * tail;
-  char *c;
+  const char *tail;
+  const char *c;
   char buf[30];
   const char *unsafe_sql_names[] = {
     "RDF_INSERT_TRIPLES",
@@ -2410,10 +2424,10 @@ spar_make_sparul_mdw (sparp_t *sparp, ptrlong subtype, const char *opname, SPART
           aux_op,
           t_NEW_DB_NULL,
           t_NEW_DB_NULL,
-          spar_boxed_exec_uid (sparp), log_mode, spar_compose_report_flag (sparp)) );
+          spar_exec_uid_and_gs_cbk (sparp), log_mode, spar_compose_report_flag (sparp)) );
   else
     call = spar_make_funcall (sparp, 0, t_box_sprintf (30, "sql:SPARUL_%.15s", opname),
-      (SPART **)t_list (4, graph_precode, spar_boxed_exec_uid (sparp), aux_op, spar_compose_report_flag (sparp)) );
+      (SPART **)t_list (4, graph_precode, spar_exec_uid_and_gs_cbk (sparp), aux_op, spar_compose_report_flag (sparp)) );
   top = spar_make_top (sparp, subtype,
     (SPART **)t_list (1, call),
     spar_selid_pop (sparp),
@@ -2575,16 +2589,27 @@ spar_immortal_exec_uname (sparp_t *sparp)
   return sparp->sparp_immortal_exec_uname;
 }
 
+SPART *
+spar_exec_uid_and_gs_cbk (sparp_t *sparp)
+{
+  caddr_t uid = spar_boxed_exec_uid (sparp);
+  caddr_t appid = ((NULL == sparp->sparp_gs_app_uid) ? t_NEW_DB_NULL : sparp->sparp_gs_app_uid);
+  if (NULL == sparp->sparp_gs_app_callback)
+    return (SPART *)uid;
+  return spar_make_funcall (sparp, 0, "bif:vector",
+    (SPART **)t_list (3, uid, sparp->sparp_gs_app_callback, appid) );
+}
+
 int
 spar_graph_static_perms (sparp_t *sparp, caddr_t graph_iri)
 {
-  caddr_t boxed_uid = spar_boxed_exec_uid (sparp);
+  caddr_t boxed_uid;
   caddr_t *hit;
 static caddr_t boxed_zero_iid = NULL;
   if (NULL != graph_iri)
     {
       caddr_t boxed_graph_iid = sparp_iri_to_id_nosignal (sparp, graph_iri);
-/*!!! TBD: add retrieval of permissions of specific user on specific graph */
+/*!!! TBD: add retrieval of permissions of specific user on specific graph AND move assignment of boxed_uid to some place ABOVE this point */
       hit = (caddr_t *)id_hash_get (rdf_graph_public_perms_dict_htable, (caddr_t)(&(boxed_graph_iid)));
       if (NULL != hit)
         {
@@ -2596,6 +2621,10 @@ static caddr_t boxed_zero_iid = NULL;
         return unbox (hit[0]);
     }
     }
+  if (NULL == sparp->sparp_gs_app_callback)
+    boxed_uid = spar_boxed_exec_uid (sparp);
+  else
+    boxed_uid = t_box_num (U_ID_NOBODY);
   hit = (caddr_t *)id_hash_get (rdf_graph_default_perms_of_user_dict_htable, (caddr_t)(&(boxed_uid)));
   if (NULL != hit)
     {

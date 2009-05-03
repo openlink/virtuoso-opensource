@@ -421,7 +421,7 @@ spar_compose_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top, SPART *gra
           ((INSERT_L == top->_.req_top.subtype) ? t_NEW_DB_NULL : (caddr_t)(rv[0])),
           ((INSERT_L == top->_.req_top.subtype) ? (caddr_t)(rv[0]) : t_NEW_DB_NULL),
           t_NEW_DB_NULL,
-          spar_boxed_exec_uid (sparp), log_mode, spar_compose_report_flag (sparp) ) );
+          spar_exec_uid_and_gs_cbk (sparp), log_mode, spar_compose_report_flag (sparp) ) );
     }
   else
     {
@@ -431,7 +431,7 @@ spar_compose_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top, SPART *gra
         top_fname = "sql:SPARQL_DELETE_DICT_CONTENT";
       rv[0] = spar_make_funcall (sparp, 0, top_fname,
         (SPART **)t_list (5, graph_to_patch, rv[0],
-          spar_boxed_exec_uid (sparp), log_mode, spar_compose_report_flag (sparp) ) );
+          spar_exec_uid_and_gs_cbk (sparp), log_mode, spar_compose_report_flag (sparp) ) );
     }
 }
 
@@ -486,11 +486,11 @@ spar_compose_retvals_of_modify (sparp_t *sparp, SPART *top, SPART *graph_to_patc
         ((NULL == sparp->sparp_env->spare_output_format_name) ? t_NEW_DB_NULL : sparp->sparp_env->spare_output_format_name),
         rv[0], ins[0],
         t_NEW_DB_NULL,
-        spar_boxed_exec_uid (sparp), log_mode, spar_compose_report_flag (sparp) ) );
+        spar_exec_uid_and_gs_cbk (sparp), log_mode, spar_compose_report_flag (sparp) ) );
   else
     rv[0] = spar_make_funcall (sparp, 0, "sql:SPARQL_MODIFY_BY_DICT_CONTENTS",
       (SPART **)t_list (6, graph_to_patch, rv[0], ins[0],
-        spar_boxed_exec_uid (sparp), log_mode, spar_compose_report_flag (sparp) ) );
+        spar_exec_uid_and_gs_cbk (sparp), log_mode, spar_compose_report_flag (sparp) ) );
 }
 
 SPART *

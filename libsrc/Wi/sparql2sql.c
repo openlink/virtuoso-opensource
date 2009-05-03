@@ -4617,7 +4617,7 @@ sparp_gp_trav_add_graph_perm_read_filters (sparp_t *sparp, SPART *curr, sparp_tr
       if (SPAR_TRIPLE != memb->type)
         continue;
       g_expn = memb->_.triple.tr_graph;
-      if (!spar_graph_needs_security_testing (sparp, g_expn, RDF_GRAPH_PERM_READ))
+      if (!spar_graph_needs_security_testing (sparp, g_expn, RDF_GRAPH_PERM_READ) && (NULL == sparp->sparp_gs_app_callback))
         continue;
       if (spar_plain_const_value_of_tree (g_expn, &fixed_g))
         {
@@ -4667,7 +4667,7 @@ sparp_gp_trav_add_graph_perm_read_filters (sparp_t *sparp, SPART *curr, sparp_tr
           g_copy->_.var.equiv_idx = SPART_BAD_EQUIV_IDX;
         }
       filter = spar_make_funcall (sparp, 0, "sql:RDF_GRAPH_USER_PERMS_ACK",
-        (SPART **)t_list (3, g_copy, spar_boxed_exec_uid (sparp), RDF_GRAPH_PERM_READ) );
+        (SPART **)t_list (3, g_copy, spar_exec_uid_and_gs_cbk (sparp), RDF_GRAPH_PERM_READ) );
       sparp_gp_attach_filter (sparp, curr, filter, 0, NULL);
       if (!g_norm_is_var ||
         ((SPART_VARR_NOT_NULL & g_norm_expn->_.var.rvr.rvrRestrictions) &&
@@ -5316,7 +5316,7 @@ ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
   PROC_PARAM_EQ_SPART ("_refresh_free_text", refresh_free_text);
   PROC_PARAM_EQ_SPART ("_plain_ret", ((ptrlong) use_plain_return));
   PROC_PARAM_EQ_SPART ("_grabber_flags", rgc_flags);
-  PROC_PARAM_EQ_SPART ("_uid", spar_boxed_exec_uid (ssg->ssg_sparp)); /* uid is not in the list of passed arguments! */
+  PROC_PARAM_EQ_SPART ("_uid", spar_exec_uid_and_gs_cbk (ssg->ssg_sparp)); /* uid is not in the list of passed arguments! */
 #undef PROC_PARAM_EQ_SPART
   if (use_plain_return)
     {
