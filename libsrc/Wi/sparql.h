@@ -279,6 +279,8 @@ typedef struct sparp_s {
   ccaddr_t *sparp_sprintff_isect_buf;	/*!< Temporary buffer to calculate intersections of value ranges; solely for sparp_rvr_intersect_sprintffs() */
   caddr_t sparp_boxed_exec_uid;		/*!< Cached value returned by spar_boxed_exec_uid(). Do not use directly, call spar_boxed_exec_uid() instead! */
   caddr_t sparp_immortal_exec_uname;	/*!< Cached value returned by spar_immortal_exec_uname(). Do not use directly, call spar_immortal_exec_uname() instead! */
+  caddr_t sparp_gs_app_callback;	/*!< NULL or name of application-specific callback function */
+  caddr_t sparp_gs_app_uid;		/*!< NULL or ID (supposedly app user ID) for application-specific callback */
 #ifdef DEBUG
   int sparp_internal_error_runs_audit;	/*!< Flags whether the sparp_internal_error has called audit so inner sparp_internal_error should not try to re-run audit or signal but should simply report */
 #endif
@@ -564,6 +566,8 @@ then the functions returns SPAR_LIT or SPAR_QNAME and sets \c cval_ret[0] to tha
 extern int spar_plain_const_value_of_tree (SPART *tree, ccaddr_t *cval_ret);
 extern caddr_t spar_boxed_exec_uid (sparp_t *sparp);
 extern caddr_t spar_immortal_exec_uname (sparp_t *sparp);
+extern SPART *spar_exec_uid_and_gs_cbk (sparp_t *sparp);
+
 extern int spar_graph_static_perms (sparp_t *sparp, caddr_t graph_iri);
 extern int spar_graph_needs_security_testing (sparp_t *sparp, SPART *g_expn, int req_perms);
 
@@ -633,6 +637,7 @@ extern void sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtyp
 extern SPART *sparp_make_graph_precode (sparp_t *sparp, ptrlong subtype, SPART *iriref, SPART **options);
 extern SPART *spar_default_sparul_target (sparp_t *sparp, const char *clause_type);
 extern SPART *spar_make_regex_or_like_or_eq (sparp_t *sparp, SPART *strg, SPART *regexpn);
+extern void spar_verify_funcall_security (sparp_t *sparp, ccaddr_t fname, SPART **args);
 extern SPART *spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPART **arguments);
 extern SPART *spar_make_sparul_clear (sparp_t *sparp, SPART *graph_precode);
 extern SPART *spar_make_sparul_load (sparp_t *sparp, SPART *graph_precode, SPART *src_precode);
