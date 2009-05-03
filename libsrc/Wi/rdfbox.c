@@ -70,6 +70,8 @@ rb_complete (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance_t
           (long)DV_TYPE_OF (val), (boxint)(rb->rb_ro_id), ((long)(((rdf_bigbox_t *)rb)->rbb_box_dtp)) );
       dk_free_tree (rb->rb_box);
       rb->rb_box = box_copy_tree (val);
+      if (DV_STRING == DV_TYPE_OF (rb->rb_box))
+        box_flags (rb->rb_box) |= BF_UTF8;
       rb->rb_is_complete = 1;
     }
   err = lc->lc_error;
@@ -1118,6 +1120,7 @@ bif_rdf_sqlval_of_obj (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   query_instance_t * qi = (query_instance_t *) qst;
   if (DV_RDF != so_dtp)
     {
+      caddr_t res;
       if ((DV_IRI_ID == so_dtp) || (DV_IRI_ID_8 == so_dtp))
         {
           caddr_t iri;
@@ -1131,7 +1134,10 @@ bif_rdf_sqlval_of_obj (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  box_flags (iri) = BF_IRI;
           return iri;
         }
-      return box_copy_tree (shortobj);
+      res = box_copy_tree (shortobj);
+      if (DV_STRING == DV_TYPE_OF (res))
+        box_flags (res) |= BF_UTF8;
+      return res;
     }
   rb = (rdf_box_t *)shortobj;
   if (!rb->rb_is_complete)
