@@ -6064,7 +6064,6 @@ bif_xenc_x509_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   X509_set_issuer_name(x,X509_NAME_dup (X509_get_subject_name (ca_key->xek_x509)));
 
   /* Add standard extensions */
-  x509_add_ext (x, NID_basic_constraints, "CA:TRUE");
   x509_add_ext (x, NID_subject_key_identifier, "hash");
 
   for (i = 0; i < BOX_ELEMENTS (exts); i += 2)
