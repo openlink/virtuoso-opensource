@@ -407,6 +407,10 @@ insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
 ;
 
 insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
+    values ('hAudio', 'http://purl.org/weborganics/mo-haudio', registry_get ('_rdf_mappers_path_') || 'xslt/haudio2rdf.xsl')
+;
+
+insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
     values ('hCalendar', 'http://dannyayers.com/microformats/hcalendar-profile', registry_get ('_rdf_mappers_path_') || 'xslt/hcal2rdf.xsl')
 ;
 
@@ -3006,7 +3010,7 @@ create procedure RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri varcha
 	}
 	else if (id0 = 'user')
 	{
-		if (id1 is not null and id1 <> '')
+		if (id1 is not null and id1 <> '' and (id2 = '' or id2 is null))
 		{
 			url := sprintf('http://ws.audioscrobbler.com/1.0/user/%s/profile.xml', id1);
 			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
@@ -3025,6 +3029,30 @@ create procedure RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri varcha
 
 			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&user=%s&api_key=%s', id1, api_key);
 			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
+			
+			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=user.getplaylists&user=%s&api_key=%s', id1, api_key);
+			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
+
+			tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+			xd := xtree_doc (tmp);
+			declare ids any;
+			ids := xpath_eval ('/lfm/playlists/playlist/id', xd, 0);
+			foreach (any y in ids) do
+			{
+				declare x, new_origin_uri2, url2 varchar;
+				x := cast(y as varchar);
+				new_origin_uri2 := concat(new_origin_uri, '#', x);
+				url2:= sprintf('http://ws.audioscrobbler.com/2.0/?method=playlist.fetch&playlistURL=lastfm://playlist/%s&api_key=%s', x, api_key);
+				tmp := http_client (url2, proxy=>get_keyword_ucase ('get:proxy', opts));
+				xd := xtree_doc (tmp);
+				xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/lastfm2rdf.xsl', xd, vector ('baseUri', new_origin_uri, 'id', x));
+				xd := serialize_to_UTF8_xml (xt);
+				DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+			}
+		}
+		else if (id1 is not null and id1 <> '' and (id2 = 'library' and id3 = 'playlists' and id4 <> '' and id4 is not null))
+		{
+			return 0;
 		}
 		else
 			return 0;
@@ -3213,7 +3241,6 @@ create procedure DB.DBA.RDF_LOAD_DELICIOUS (in graph_iri varchar, in new_origin_
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/delicious2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri), 'what', what));
 	xd := serialize_to_UTF8_xml (xt);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
-	
 	declare result, meta, state, message any;
 	state := '00000';
 	exec (sprintf('sparql select ?l from <%s> where { <%s> <http://scot-project.org/scot/ns#name> ?l }', graph_iri, graph_iri), state, message, vector (), 0, meta, result);
@@ -3226,7 +3253,7 @@ create procedure DB.DBA.RDF_LOAD_DELICIOUS (in graph_iri varchar, in new_origin_
 			keyword := str[0];
 			state := '00000';
 			result := vector();
-			exec(sprintf ('select mu_id, mu_url from moat..moat_user_meanings where mu_tag = %s', keyword), state, message, vector(), 0, meta, result);
+			exec(sprintf ('select mu_id, mu_url from moat.DBA.moat_user_meanings where mu_tag = \'%s\'', keyword), state, message, vector(), 0, meta, result);
 			if (state = '00000')
 			{
 				declare i, l int;			
@@ -5279,8 +5306,7 @@ inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
     return 0;
 
   urihost := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
-
-  fileExt := regexp_substr('.*(\.pptx|\.PPTX)$', new_origin_uri, 1);
+  fileExt := regexp_substr('.*(\.pptx|\.PPTX)\$', new_origin_uri, 1);
   fileName := subseq(new_origin_uri, strrchr(new_origin_uri, '/') + 1);
   extracted_image_collection_dav_root :='/DAV/home/dav/sponged/';
   extracted_image_collection_dav_path := extracted_image_collection_dav_root || fileName || '/';
@@ -5351,13 +5377,13 @@ inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
     declare create_dav_col int;
     create_dav_col := 1;
 
-    foreach (any slide_path in slide_vec) do
+    foreach (any slide_path2 in slide_vec) do
     {
       declare slide_rels, slide_basename, slide_num varchar;
       declare slide_images, image_path, image_vec any;
 
       -- slide path takes form 'slides/slide<n>.xml'
-      slide_basename := subseq(slide_path, 7);
+      slide_basename := subseq(slide_path2, 7);
       slide_num := regexp_substr('[0-9]+', slide_basename, 0);
       slide_rels := UNZIP_UnzipFileFromArchive (tmpFile, 'ppt/slides/_rels/' || slide_basename || '.rels');
 
@@ -5474,17 +5500,17 @@ inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
     -- Get the raw text contained in each slide and concatenate it
     presentation_text := '';
     ses1 := string_output();
-    foreach (any slide_path in slide_vec) do
+    foreach (any slide_path3 in slide_vec) do
     {
       declare slideUri varchar;
 
       -- slide path takes form 'slides/slide<n>.xml'
-      slide_basename := subseq(slide_path, 7);
+      slide_basename := subseq(slide_path3, 7);
       slideUri :=  baseUri || '/' || subseq(slide_basename, 0, strrchr(slide_basename, '.'));
-      slide_content := UNZIP_UnzipFileFromArchive (tmpFile, 'ppt/' || slide_path);
+      slide_content := UNZIP_UnzipFileFromArchive (tmpFile, 'ppt/' || slide_path3); 
       if (slide_content is null)
       {
-        --dbg_printf('.PPTX Cartridge - Error: slide content is null for slide %s\n', slide_path);
+        --dbg_printf('.PPTX Cartridge - Error: slide content is null for slide %s\n', slide_path3);
         goto next_slide;
       }
 

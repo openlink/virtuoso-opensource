@@ -4,7 +4,7 @@
 
    declare _G, _S, odd_position any;
    declare project_home_page any;
-   declare page_resource_uri, proxy_iri, rdf_link, label, true_label, _subject any;
+   declare page_resource_uri, proxy_iri, proxy_iri2, rdf_link, label, true_label, _subject any;
    declare arr, data, meta, h1, h2, inx, gr, host, pars any;
    declare _graph, _sub varchar;
    declare do_sponge, proxy_iri_fn int;
@@ -36,9 +36,15 @@
    _S := page_resource_uri;
 
    if (proxy_iri_fn is null)
+   {
      proxy_iri := DB.DBA.RDF_SPONGE_PROXY_IRI (page_resource_uri, '', '');
+     proxy_iri2 := DB.DBA.RDF_SPONGE_PROXY_IRI (page_resource_uri);
+   }
    else
+   {
      proxy_iri := call (proxy_iri_fn || '_get_proxy_iri') (page_resource_uri);
+     proxy_iri2 := call (proxy_iri_fn || '_get_proxy_iri') (page_resource_uri);
+   }
    arr := rfc1808_parse_uri (proxy_iri);
    if (arr [1] like 'localhost%')
      arr [1] := 'demo.openlinksw.com';
@@ -111,7 +117,7 @@
 <body onload="init();" about="<?V page_resource_uri ?>">
     <div id="header">
       <div id="hd_l">
-	  <h1 id="title">About: <a href="<?= case when page_resource_uri like 'nodeID://%' then rdfdesc_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp http (sprintf ('%s', label)); ?></a></h1>
+	  <h1 id="title">About: <a href="<?= case when page_resource_uri like 'nodeID://%' then rdfdesc_http_url (page_resource_uri) else proxy_iri2 end ?>"><?vsp http (sprintf ('%s', label)); ?></a></h1>
         <div id="homelink">
         </div>
         <div class="page-resource-uri">

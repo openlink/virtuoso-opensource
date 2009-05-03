@@ -24,6 +24,7 @@
 <!DOCTYPE xsl:stylesheet [
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#">
 <!ENTITY mo "http://purl.org/ontology/mo/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
@@ -48,6 +49,7 @@
     xmlns:foaf="&foaf;"
     xmlns:mo="&mo;"
     xmlns:mmd="&mmd;"
+    xmlns:bibo="&bibo;"    
     xmlns:atom="&atom;"
     xmlns:dc="&dc;"
 	xmlns:sioc="&sioc;"
@@ -62,6 +64,7 @@
     >
 
     <xsl:param name="baseUri" />
+    <xsl:param name="id" />
 
     <xsl:output method="xml" indent="yes" />
 
@@ -84,9 +87,29 @@
 			<xsl:apply-templates select="lfm[@status='ok']/events"/>
 			<xsl:apply-templates select="lfm[@status='ok']/user"/>
 			<xsl:apply-templates select="lfm[@status='ok']/friends"/>
+			<xsl:apply-templates select="lfm[@status='ok']/playlists[@user]"/>
+			<xsl:apply-templates select="lfm[@status='ok']/playlist"/>
 			<xsl:apply-templates select="profile"/>
 		</rdf:RDF>
     </xsl:template>
+
+    <xsl:template match="lfm[@status='ok']/playlist">
+		<rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', $id)}">
+			<rdf:type rdf:resource="&sioct;PlayList"/>
+			<dcterms:title>
+                <xsl:value-of select="title"/>
+            </dcterms:title>
+			<xsl:for-each select="trackList/track">
+				<sioc:container_of rdf:resource="{vi:proxyIRI(identifier)}"/>
+			</xsl:for-each>
+		</rdf:Description>
+		<xsl:for-each select="trackList/track">
+			<rdf:Description rdf:about="{vi:proxyIRI(identifier)}">
+				<sioc:has_container rdf:resource="{vi:proxyIRI($baseUri, '', $id)}"/>
+				<rdf:type rdf:resource="&sioct;Item"/>
+			</rdf:Description>
+		</xsl:for-each>
+	</xsl:template>
 
 	<xsl:template match="lfm[@status='ok']/artist">
 		<rdf:Description rdf:about="{$baseUri}">
@@ -219,6 +242,23 @@
 	    </xsl:for-each>
 	</xsl:template>
 
+	<xsl:template match="lfm[@status='ok']/playlists[@user]">
+		<rdf:Description rdf:about="{$baseUri}">
+			<rdf:type rdf:resource="&foaf;Document"/>
+			<rdf:type rdf:resource="&sioc;Container"/>
+			<sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
+			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
+			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
+		</rdf:Description>
+		<foaf:Person rdf:about="{vi:proxyIRI(concat($base, 'user/', @user))}">
+			<xsl:for-each select="playlist">
+				<foaf:interest rdf:resource="{vi:proxyIRI($baseUri, '', id)}"/>
+			</xsl:for-each>
+		</foaf:Person>
+	    <xsl:for-each select="playlist">
+			<xsl:call-template name="playlist"/>
+	    </xsl:for-each>
+	</xsl:template>
 
    	<xsl:template match="lfm[@status='ok']/topartists[@user]">
 		<rdf:Description rdf:about="{$baseUri}">
@@ -634,5 +674,55 @@
 		</foaf:Person>
 
     </xsl:template>
+
+    <xsl:template name="playlist">
+
+		<rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', id)}">
+			<rdf:type rdf:resource="&sioct;PlayList"/>
+			<dcterms:title>
+                <xsl:value-of select="title"/>
+            </dcterms:title>
+            <dc:description>
+                <xsl:value-of select="description"/>
+            </dc:description>
+            <xsl:if test="duration">
+				<media:duration rdf:datatype="&xsd;integer">
+					<xsl:value-of select="duration"/>
+				</media:duration>
+				<mo:duration rdf:datatype="&xsd;integer">
+					<xsl:value-of select="duration"/>
+				</mo:duration>
+			</xsl:if>
+			<lfm:id>
+				<xsl:value-of select="id"/>
+			</lfm:id>
+			<xsl:if test="streamable">
+				<lfm:streamable>
+					<xsl:value-of select="streamable"/>
+				</lfm:streamable>
+			</xsl:if>
+			<xsl:if test="size">
+				<lfm:size>
+					<xsl:value-of select="size"/>
+				</lfm:size>
+			</xsl:if>
+			<xsl:if test="creator">
+				<foaf:maker rdf:resource="{vi:proxyIRI(creator)}"/>
+				<dcterms:creator rdf:resource="{vi:proxyIRI(creator)}"/>
+			</xsl:if>
+			<xsl:if test="date">
+				<dcterms:published>
+					<xsl:value-of select="date" />
+				</dcterms:published>
+			</xsl:if>
+			<bibo:uri rdf:resource="{url}" />
+			<xsl:for-each select="image">
+				<foaf:depiction rdf:resource="{.}"/>
+			</xsl:for-each>
+			
+		</rdf:Description>
+
+    </xsl:template>
+
 
 </xsl:stylesheet>

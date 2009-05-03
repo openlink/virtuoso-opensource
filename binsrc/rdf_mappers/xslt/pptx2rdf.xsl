@@ -201,7 +201,6 @@
     </xsl:for-each>
     </slide_text>
   </xsl:template>
-
   <!-- Extract slide text into content encoded bullet list -->
   <xsl:template match="p:sld" mode="html_encode_slide_content">
     <rdf:RDF>
