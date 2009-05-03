@@ -1,0 +1,30 @@
+These files are derived from part of PCRE 7.9 by the Virtuoso team.
+
+In case of errors, please remember that the library was modified so any
+bugs should be reported to the Virtuoso team <vos.admin@openlinksw.com>
+just like any other errors in Virtuoso.
+
+
+THE MAIN PCRE LIBRARY
+---------------------
+
+Written by:       Philip Hazel
+Email local part: ph10
+Email domain:     cam.ac.uk
+
+University of Cambridge Computing Service,
+Cambridge, England.
+
+Copyright (c) 1997-2009 University of Cambridge
+All rights reserved
+
+
+THE C++ WRAPPER LIBRARY (not included in the virtuoso tree)
+-----------------------
+
+Written by:       Google Inc.
+
+Copyright (c) 2007-2008 Google Inc
+All rights reserved
+
+####

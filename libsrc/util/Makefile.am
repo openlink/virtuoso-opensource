@@ -87,11 +87,23 @@ libutil_la_SOURCES = \
 	virt_wcrtomb.c \
 	virt_wcs_mask.c \
 	virt_wcsnrtombs.c \
-	pcrelib/chartables.c \
-	pcrelib/get.c \
-	pcrelib/maketables.c \
-	pcrelib/pcre.c \
-	pcrelib/study.c
+	pcrelib/pcre_chartables.c \
+	pcrelib/pcre_compile.c \
+	pcrelib/pcre_config.c \
+	pcrelib/pcre_dfa_exec.c \
+	pcrelib/pcre_exec.c \
+	pcrelib/pcre_fullinfo.c \
+	pcrelib/pcre_get.c \
+	pcrelib/pcre_globals.c \
+	pcrelib/pcre_newline.c \
+	pcrelib/pcre_ord2utf8.c \
+	pcrelib/pcre_study.c \
+	pcrelib/pcre_tables.c \
+	pcrelib/pcre_try_flipped.c \
+	pcrelib/pcre_ucd.c \
+	pcrelib/pcre_valid_utf8.c \
+	pcrelib/pcre_version.c \
+	pcrelib/pcre_xclass.c
 
 
 BUILT_SOURCES = getdate.c
@@ -110,17 +122,13 @@ EXTRA_DIST = \
 	getdate.y \
 	MSG_BG.bin \
 	MSG_EN.bin \
-	pcrelib/chartables.c \
-	pcrelib/get.c \
-	pcrelib/internal.h \
-	pcrelib/maketables.c \
-	pcrelib/pcre.c \
-	pcrelib/pcre.h \
-	pcrelib/pcre_config.h \
-	pcrelib/printint.c \
-	pcrelib/study.c \
+	pcrelib/AUTHORS \
+	pcrelib/LICENCE \
+	pcrelib/*.c \
+	pcrelib/*.h \
 	win32/ptrlong.h \
 	win32/syslog.c \
 	win32/syslog.h \
 	winlog.mc \
 	winlog.rc
+
