@@ -30,7 +30,7 @@ AC_REVISION($Id$)
 ##########################################################################
 
 AC_INIT([Virtuoso Open Source Edition],
-	[5.0.11],
+	[5.0.12-pre1],
 	[vos.admin@openlinksw.com],
 	[virtuoso-opensource])
 AC_CONFIG_SRCDIR([libsrc/Dk.h])
@@ -1625,6 +1625,32 @@ AM_CONDITIONAL(WITH_RUBY, test "x$RUBY" != "x" -a "x$with_ruby" != "xno")
 AC_SUBST(RUBY_CFLAGS)
 AC_SUBST(RUBY_LDFLAGS)
 
+
+##########################################################################
+##									##
+##  Check out system zlib library					##
+##									##
+##########################################################################
+with_zlib="no"
+AC_ARG_WITH(external-zlib, [dnl
+AC_HELP_STRING([--with-external-zlib], [use  external zlib library])
+AC_HELP_STRING([--without-external-zlib], [use internal zlib support (default)])dnl
+], [
+     case "${withval}" in
+       yes)	with_zlib="yes";;
+       no)	with_zlib="internal";;
+       *)	AC_MSG_ERROR(bad value ${withval} for --enable-zlib) ;;
+     esac
+  ],
+  [ with_zlib="internal" ]
+)
+
+if test "x$with_zlib" != "xno"
+then
+    AC_CHECK_HEADER (zlib.h)
+    AC_CHECK_LIB (z, main, [with_zlib=yes], [with_zlib=internal])
+fi
+AM_CONDITIONAL(WITH_ZLIB, test "x$with_zlib" = "xinternal")
 
 dnl PUT OTHER EXTENSIONS HERE
 
