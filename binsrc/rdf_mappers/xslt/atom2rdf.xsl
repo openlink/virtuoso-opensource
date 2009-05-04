@@ -35,6 +35,9 @@
 <!ENTITY atomowl "http://atomowl.org/ontologies/atomrdf#">
 <!ENTITY content "http://purl.org/rss/1.0/modules/content/">
 <!ENTITY ff "http://api.friendfeed.com/2008/03">
+<!ENTITY gml "http://www.opengis.net/gml">
+<!ENTITY georss "http://www.georss.org/georss">
+<!ENTITY gphoto "http://schemas.google.com/photos/2007">
 ]>
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -56,6 +59,9 @@
   xmlns:gd="http://schemas.google.com/g/2005"
   xmlns:gb="http://www.openlinksw.com/schemas/google-base#"
   xmlns:media="http://search.yahoo.com/mrss/"
+  xmlns:gml="&gml;"
+  xmlns:georss="&georss;"
+  xmlns:gphoto="http://schemas.google.com/photos/2007"
   xmlns:ff="&ff;"
   version="1.0">
 
@@ -154,7 +160,7 @@
 			</sioc:topic>
 			</xsl:for-each>
 		</xsl:if>
-		<xsl:apply-templates select="g:*|gd:*|ff:*|media:*" mode="rdfitem"/>
+		<xsl:apply-templates select="g:*|gd:*|ff:*|media:*|gml:*|georss:*|gphoto:*" mode="rdfitem"/>
     </item>
 </xsl:template>
 
@@ -164,7 +170,7 @@
     </xsl:element>
 </xsl:template>
 
-<xsl:template match="ff:*|media:*" mode="rdfitem">
+<xsl:template match="ff:*|media:*|gml:*|georss:*|gphoto:*" mode="rdfitem">
 	<xsl:copy-of select="." />
 </xsl:template>
 

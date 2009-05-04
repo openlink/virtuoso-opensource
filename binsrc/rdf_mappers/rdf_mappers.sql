@@ -86,6 +86,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_YOUTUBE', null, 'YouTube');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('(http://picasaweb.google.com/.*)',
+            'URL', 'DB.DBA.RDF_LOAD_PICASA', null, 'Picasa');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://.*last.fm/.*)|'||
 			'(http://.*lastfm.*/.*)',
             'URL', 'DB.DBA.RDF_LOAD_LASTFM', null, 'LastFM');
@@ -3062,6 +3066,62 @@ create procedure RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri varcha
 	return 1;
 }
 ;
+
+create procedure DB.DBA.RDF_LOAD_PICASA (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare xd, host_part, xt, url, tmp, api_key, img_id, hdr, exif any;
+	declare album_name, user_name varchar;
+	
+	declare exit handler for sqlstate '*'
+	{
+		return 0;
+	};
+	if (new_origin_uri like 'http://picasaweb.google.com/%/%#%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://picasaweb.google.com/%s/%s#%s', 0);
+		img_id := tmp[2];
+		album_name := tmp[1];
+		user_name := tmp[0];
+		if ((user_name is null or user_name = '') or (album_name is null or album_name = ''))
+			return 0;
+	}
+	else if (new_origin_uri like 'http://picasaweb.google.com/%/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://picasaweb.google.com/%s/%s', 0);
+		album_name := tmp[1];
+		user_name := tmp[0];
+		if ((user_name is null or user_name = ''))
+			return 0;
+	}
+	else if (new_origin_uri like 'http://picasaweb.google.com/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://picasaweb.google.com/%s', 0);
+		user_name := tmp[0];
+		if ((user_name is null or user_name = ''))
+			return 0;
+	}
+	else
+	{
+		return 0;
+	}
+	
+	if (user_name is not null and user_name <> '')
+	{
+		url := sprintf('http://picasaweb.google.com/data/feed/api/user/%s', user_name);
+		tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+		xd := xtree_doc (tmp);
+		xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/picasa2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
+		xd := serialize_to_UTF8_xml (xt);
+		DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	}
+	else
+	{
+		return 0;
+	}
+	return 1;
+}
+;
+
 
 create procedure DB.DBA.RDF_LOAD_YOUTUBE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {

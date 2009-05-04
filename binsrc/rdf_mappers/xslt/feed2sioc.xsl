@@ -35,6 +35,10 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY atom "http://atomowl.org/ontologies/atomrdf#">
 <!ENTITY content "http://purl.org/rss/1.0/modules/content/">
+<!ENTITY gphoto "http://schemas.google.com/photos/2007">
+<!ENTITY media "http://search.yahoo.com/mrss/">
+<!ENTITY gml "http://www.opengis.net/gml">
+<!ENTITY georss "http://www.georss.org/georss">
 ]>
 <xsl:stylesheet
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -52,6 +56,10 @@
 	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
 	xmlns:digg="http://digg.com/docs/diggrss/"
 	xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+	xmlns:gphoto="http://schemas.google.com/photos/2007"
+	xmlns:media="&media;"
+	xmlns:gml="&gml;"
+	xmlns:georss="&georss;"
         xmlns:owl="&owl;"
 	version="1.0">
 	<xsl:output indent="yes" />
@@ -81,6 +89,10 @@
 			<xsl:apply-templates />
 			<xsl:copy-of select="geo:*" />
 			<xsl:copy-of select="openSearch:*" />
+			<xsl:copy-of select="gphoto:*" />
+			<xsl:copy-of select="georss:*" />
+			<xsl:copy-of select="gml:*" />
+			<xsl:copy-of select="media:*" />
 		</rdf:Description>
 	</xsl:template>
 	<xsl:template match="rdf:li">
@@ -109,6 +121,7 @@
 				</xsl:when>
 				<xsl:otherwise>
 					<rdf:type rdf:resource="&sioc;Post" />
+					<rdf:type rdf:resource="&sioc;Item" />
 				</xsl:otherwise>
 			</xsl:choose>
 			<sioc:has_container rdf:resource="{$base}" />
@@ -116,6 +129,10 @@
 			<xsl:copy-of select="rss:*" />
 			<xsl:copy-of select="sioc:*" />
 			<xsl:copy-of select="geo:*" />
+			<xsl:copy-of select="gphoto:*" />
+			<xsl:copy-of select="media:*" />
+			<xsl:copy-of select="georss:*" />
+			<xsl:copy-of select="gml:*" />
 			<xsl:if test="wfw:commentRss">
 				<rdfs:seeAlso rdf:resource="{wfw:commentRss}" />
 			</xsl:if>
