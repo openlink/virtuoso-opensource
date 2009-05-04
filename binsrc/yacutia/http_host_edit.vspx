@@ -41,6 +41,7 @@
       <v:variable name="lhosto" persist="0" type="varchar" default="null" param-name="lhost"/>
       <v:variable name="lhost1" persist="0" type="varchar" default="null"/>
       <v:variable name="vhost1" persist="0" type="varchar" default="null"/>
+      <v:variable name="key1" persist="0" type="varchar" default="'none'"/>
       <v:variable name="port1" persist="0" type="varchar" default="'80'"/>
     </vm:variables>
     <vm:header caption="Virtual Host Properties"/>
@@ -49,6 +50,18 @@
 	  declare pos int;
 	  if (self.vhost is null or self.lhost is null)
 	    return;
+	  for select top 1 HP_AUTH_OPTIONS from HTTP_PATH where HP_HOST = self.vhost and HP_LISTEN_HOST = self.lhost do
+	    {
+	      declare cert, opts varchar;
+	      opts := deserialize (HP_AUTH_OPTIONS);
+	      if (isarray (opts))
+	        {
+		  cert := get_keyword ('https_key', opts, 'none');
+		  if (cert like 'db:%')
+		    cert := subseq (cert, 3);
+		  self.key1 := cert;
+	        }
+	    }
 	  if (self.lhost = '*ini*')
             {
 	      self.lhost := server_http_port ();
@@ -129,6 +142,54 @@
               </td>
             </tr>
             <tr>
+              <td>SSL Key</td>
+	      <td>
+		  <v:data-list name="key_list" value="--self.key1"
+		      sql="select top 1 'none' as xenc_key from sys_keys union all
+		      select xenc_key from yac_list_keys (username) (xenc_key varchar) x where username = 'dba'"
+		      key-column="xenc_key"
+		      value-column="xenc_key"
+		      />
+		  &#160;
+		  <v:button action="simple" name="gen_key" value="Generate New" enabled="--xenc_key_exists ('id_rsa')">
+		      <v:on-post><![CDATA[
+			  declare k varchar;
+			  declare subj, host varchar;
+			  declare arr any;
+
+			  if (length (self.vhost))
+			    {
+			      k := 'https_key_' || replace (self.vhost1, '.', '_');
+			      host := self.vhost1;
+			    }
+			  else
+			    {
+			      k := 'https_key_' || cast (sequence_next ('https_key') as varchar);
+			      host := sys_stat ('st_host_name');
+			    }
+			  subj := get_certificate_info (2, decode_base64 (xenc_X509_certificate_serialize ('id_rsa')), 1);
+			  arr := split_and_decode (ltrim (subj, '/'), 0, '\0\0/=');
+			  xenc_key_RSA_create (k, 1024);
+			  xenc_x509_generate ('id_rsa', k, sequence_next ('ca_id_rsa'), 365,
+			    vector (
+			      'C', get_keyword ('C', arr),
+			      'ST',  get_keyword ('ST', arr),
+			      'O',  get_keyword ('O', arr),
+			      'OU',  get_keyword ('OU', arr),
+			      'CN',  host,
+			      'emailAddress',  get_keyword ('emailAddress', arr)),
+			      vector ('basicConstraints', 'critical,CA:FALSE',
+			        'authorityKeyIdentifier', 'keyid,issuer:always',
+			        'nsComment', 'Virtuoso Generated Certificate'));
+			  USER_KEY_STORE (user, k, 'X.509', 2, '', cast (xenc_pkcs12_export (k, 'HTTPS Certificate', '') as varchar));
+			  self.key_list.vc_data_bind (e);
+			  self.key_list.ufl_value := k;
+			  self.key_list.vs_set_selected ();
+			  ]]></v:on-post>
+		  </v:button>
+              </td>
+            </tr>
+            <tr>
               <td colspan="2" align="center">
                 <v:button action="simple" name="cancel_templ" value="Cancel">
                   <v:on-post>
@@ -164,7 +225,7 @@
 	   lhost := concat (lhost_if, ':', self.lhost_port.ufl_value);
 	   lhost := replace (lhost, '0.0.0.0', '');
 
-	   if (self.vhost = vhost and lhost = self.lhost)
+	   if (self.vhost = vhost and lhost = self.lhost and self.key_list.ufl_value = self.key1)
 	     goto same_host;
 
 	   for select
@@ -178,6 +239,14 @@
       	        st := '00000';
 	        msg := '';
 	        VHOST_REMOVE (vhost_o, lhost_o, HP_LPATH, 0);
+		if (self.key_list.ufl_value <> 'none')
+		  {
+		    declare opts any;
+		    opts := deserialize (HP_AUTH_OPTIONS);
+		    yac_set_ssl_key (self.key_list.ufl_value, opts);
+		    HP_AUTH_OPTIONS := serialize (opts);
+		    HP_SECURITY := 'SSL';
+		  }
 		exec('VHOST_DEFINE (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', st, msg,
 		     vector (vhost, lhost, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE,
 		             HP_DEFAULT, HP_AUTH_FUNC, HP_REALM, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS,
