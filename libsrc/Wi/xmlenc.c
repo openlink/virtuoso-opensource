@@ -1768,6 +1768,7 @@ caddr_t bif_xenc_key_rsa_create (caddr_t * qst, caddr_t * err_r, state_slot_t **
   caddr_t name = bif_string_arg (qst, args, 0, "xenc_key_RSA_create");
   int num = (int) bif_long_arg (qst, args, 1, "xenc_key_RSA_create");
   RSA *rsa = NULL;
+  EVP_PKEY *pk = NULL;
 
   mutex_enter (xenc_keys_mtx);
   if (NULL == (k = xenc_key_create (name, XENC_RSA_ALGO , DSIG_RSA_SHA1_ALGO, 0)))
@@ -1786,6 +1787,12 @@ caddr_t bif_xenc_key_rsa_create (caddr_t * qst, caddr_t * err_r, state_slot_t **
   k->xek_rsa = RSAPublicKey_dup (rsa);
   k->xek_private_rsa = rsa;
   k->ki.rsa.pad = RSA_PKCS1_PADDING;
+
+  if ((pk=EVP_PKEY_new()) != NULL)
+    {
+      if (EVP_PKEY_assign_RSA (pk,rsa))
+	k->xek_evp_private_key =  pk;
+    }
 
   mutex_leave (xenc_keys_mtx);
   return NULL;
