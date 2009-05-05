@@ -241,6 +241,9 @@ again:
 	 _label := null;
 
        rdfa := rdfdesc_rel_print (prop, rel, 0);
+       if (http_mime_type (_url) like 'image/%')
+	 http (sprintf ('<a class="uri" %s href="%s"><img src="%s" border="0"/></a>', rdfa, rdfdesc_http_url (_url), _url));
+       else
        http (sprintf ('<a class="uri" %s href="%s">%s</a>', rdfa, rdfdesc_http_url (_url), rdfdesc_uri_curie(_url, _label)));
 
      }
