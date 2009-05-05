@@ -2083,331 +2083,6 @@ where {
 ]]></programlisting>
 </sect4>
 </sect3>
-<sect3 id="sparqlbi"><title>Business Intelligence Extensions for SPARQL</title>
-<para>
-Virtuoso extends SPARQL with expressions in results, subqueries, aggregates and grouping.
-These extensions allow a straightforward translation of arbitrary SQL queries to SPARQL.
-This extension is called  "SPARQL BI", because the primary objective is to match needs of Business Intelligence.
-The extended features apply equally to querying physical quads or relational tables mapped through RDF views.
-</para>
-<note><para>In this section, many examples use TPC-H namespace. You may test them on your local demo database.
-They use data from TPC-H dataset that is mapped into graph with IRI like
-http://example.com/tpch , but you should replace fake host name &quot;example.com&quot; with host name of your own installation,
-<strong>verbatim</strong>, that is specified as &quot;DefaultHost&quot; parameter in [URIQA] section of Virtuoso configuration file.</para></note>
-<sect4 id="rdfsparqlaggregate"><title>Aggregates in SPARQL</title>
-<para>Virtuoso extends SPARQL with SQL like aggregate and group by functionality. This functionality is
-also available through embedding SPARQL text inside SQL but the SPARQL extension syntax has the benefit
-of working also over the SPARQL protocol and of looking more SPARQL-like.
-</para>
-<para>The supported aggregates are <emphasis>count</emphasis>, <emphasis>min</emphasis>, <emphasis>max</emphasis>,
-<emphasis>avg</emphasis> and <emphasis>sum</emphasis>. These can take an optional <emphasis>distinct</emphasis>
-keyword. These are permitted only in the selection part of a select query. If a selection list consists
-of a mix of variables and aggregates, the non-aggregate selected items are considered to be grouping
-columns and a group by over them is implicitly added at the end of the generated SQL query. There is
-no explicit syntax for group by or having in Virtuoso SPARQL.
-</para>
-<para>If a selection consists of aggregates exclusively, the result set has one row with the values
-of the aggregates. If there are aggregates and variables in the selection, the result set as has many
-rows as there are distinct combinations of the variables and the aggregates are calculated over each
-such distinct combination, as if there were a SQL group by over all non-aggregates.
-</para>
-<para>With the count aggregate the argument may be either <emphasis>*</emphasis>, meaning counting all rows or a variable
-name, meaning counting all the rows where this variable is bound. If there is no implicit <emphasis>group by</emphasis>,
-there can be an optional <emphasis>distinct</emphasis> keyword before the variable that is the argument of an aggregate.
-</para>
-<para>There is a special syntax for counting distinct combinations of selected variables. This is:</para>
-<programlisting><![CDATA[
-select count distinct ?v1 ... ?vn
-  from ....
-]]></programlisting>
-<para>User-defined aggregate functions are not supported in current version of SPARQL compiler.</para>
-<sect5 id="rdfsparqlaggregateexamples"><title>Examples</title>
-<programlisting><![CDATA[
-sparql
-select count (*)
-  from <http://mygraph.com>
- where {?s ?p ?o}
-
--- Returns the count of physical triples in http://mygraph.com.
-]]></programlisting>
-
-<programlisting><![CDATA[
-sparql define input:inference 'http://mygraph.com'
-select ?p count (?o)
-  from <http://mygraph.com>
- where {?s ?p ?o};
-
--- Returns the count of O's for each distinct P.
-]]></programlisting>
-
-<programlisting><![CDATA[
-sparql define input:inference 'http://mygraph.com'
-select count (?p) count (?o) count (distinct ?o)
- from <http://mygraph.com>
-where {?s ?p ?o};
-
--- returns the count of triples, including inferred triples and the count of distinct O values.
-]]></programlisting>
-
-<programlisting><![CDATA[
-sparql define input:inference 'http://mygraph.com'
-select count distinct ?s ?p ?o
-  from <http://mygraph.com>
- where {?s ?p ?o};
-
--- Returns the number of distinct bindings of ?s ?p ?o.
-]]></programlisting>
-<programlisting><![CDATA[
-sparql
-prefix tpch: <http://www.openlinksw.com/schemas/tpch#>
-select ?status count(*) sum(?extendedprice)
-from <http://localhost.localdomain:8310/tpch>
-where {
-    ?l a tpch:lineitem ;
-      tpch:lineextendedprice ?extendedprice ;
-      tpch:linestatus ?status .
-  };
-
--- Get counts and total prices of ordered items, grouped by item status.
-]]></programlisting>
-   <para><emphasis>Example with dataset of people, some duplicated:</emphasis></para>
-   <para>Suppose there is a dataset with many people, some of them duplicated. To list execute the query:
-   </para>
-<programlisting><![CDATA[
-sparql
-SELECT DISTINCT
- (?name) ?person ?mail
- WHERE {
-   ?person rdf:type foaf:Person .
-   ?person foaf:name ?name .
-   ?person foaf:mbox_sha1sum ?mail
- };
-]]></programlisting>
-   <para>Note the newline after DISTINCT to read the query.</para>
-   <para>SELECT DISTINCT is as in plain SPARQL, return values are expression ?name and two variables
-?person and ?mail. Unfortunately, there's no such thing as DISTINCT for a part of the result set row.
-If there's a regular need in such feature and duplicates are seldom then we may introduce an aggregate
-called, say, SPECIMEN, that will return the very first of aggregated values, unchanged:
-   </para>
-<programlisting><![CDATA[
-sparql
-SELECT ?name (specimen(?person)) (specimen(?mail))
-WHERE
- {
-    ?person rdf:type foaf:Person .
-    ?person foaf:name ?name .
-    ?person foaf:mbox_sha1sum ?mail
- };
-]]></programlisting>
-   <para>If duplicates are seldom and there's no requirement that ?person should correspond to ?mail
-(so the result should contains some person node and some mail but they don't have to be connected by
-foaf:mbox_sha1sum), then MIN aggregate will work:
-   </para>
-<programlisting><![CDATA[
-sparql
-SELECT ?name (min(?person)) (min(?mail))
-WHERE
-  {
-    ?person rdf:type foaf:Person .
-    ?person foaf:name ?name .
-    ?person foaf:mbox_sha1sum ?mail
-  };
-]]></programlisting>
-   <para>Otherwise, a complicated query is needed:</para>
-<programlisting><![CDATA[
-sparql
-SELECT
- ?name
- ((select (min (?person3))
-     where {
-         ?person3 rdf:type foaf:Person .
-         ?person3 foaf:name ?name .
-         ?person3 foaf:mbox_sha1sum ?mail } )) as ?person
- ?mail
- WHERE {
-     { select distinct ?name
-       where {
-           ?person1 rdf:type foaf:Person .
-           ?person1 foaf:name ?name .
-           ?person1 foaf:mbox_sha1sum ?mail1 } }
-     { select ?name (min(?mail2)) as ?mail
-       where {
-           ?person2 rdf:type foaf:Person .
-           ?person2 foaf:name ?name .
-           ?person2 foaf:mbox_sha1sum ?mail2 } }
- };
-]]></programlisting>
-</sect5>
-<sect5 id="rdfsparqlaggregatenote"><title>Note on Aggregates and Inference</title>
-<para>Inference is added to a SPARQL query only for the variables whose value is actually used. Thus,
-</para>
-<programlisting><![CDATA[
-select count (*)
- from <http://mygraph.com>
-where {?s ?p ?o}
-]]></programlisting>
-<para>will not make inferred values since s, p, and o are actually not used. Instead,
-</para>
-<programlisting><![CDATA[
-sparql
-select count (?s) count (?p) count (?o)
- from <http://mygraph.com>
-where {?s ?p ?o};
-]]></programlisting>
-<para>will get all the inferred triples also.
-</para>
-<para>
-This may be confusing and will likely be corrected in the future.
-</para>
-</sect5>
-</sect4>
-<sect4 id="rdfsparqlarrowop"><title>Pointer Operator (<emphasis>+&gt;</emphasis> and <emphasis>*&gt;</emphasis>)</title>
-<para>
-When expressions occur in result sets, many variables are introduced only to pass a value from triple pattern to the result expression.
-This is inconvenient because many triple patterns are trivial. Big number of variable names masquerade &quot;interesting&quot; variables that are used more than one in pattern part of the query and establish logical relationshops between parts of the query.
-As a solution we introduce pointer operators.</para>
-<para>
-The <emphasis>+&gt;</emphasis> (pointer) operator allows referring to a property value without naming it as a variable and explicit writing triple pattern. We can shorten the example above as</para>
-<programlisting><![CDATA[sparql
-prefix tpch: <http://www.openlinksw.com/schemas/tpch#>
-select ?l+>tpch:linestatus count(*) sum(?l+>tpch:lineextendedprice)
-from <http://localhost.localdomain:8310/tpch>
-where { ?l a tpch:lineitem }]]></programlisting>
-<para>
-The <emphasis>?subject+&gt;propertyname</emphasis> notation is exactly equivalent to having a triple pattern <emphasis>?subject propertyname ?aux_var</emphasis> binding an auxiliary variable to the mentioned property of the subject within the group pattern enclosing the reference.
-For a SELECT, the enclosing group pattern is considered to be the top level pattern of the where clause or in the event of a union, the top level of each term of the union.
-Each distinct pointer adds exactly one triple pattern to the enclosing group pattern, thus multiple uses of <emphasis>+&gt;</emphasis> with same arguments do not each add a triple pattern.
-Having multiple copies of an identical pattern might lead to changes in cardinality if multiple input graphs were being considered.
-If a lineitem had multiple discounts or extended prices, then we would get the cartesian product of both.
-</para>
-<para>
-If a property referenced via <emphasis>+&gt;</emphasis> is absent, the variable at left side of the operator is not bound in the enclosing group pattern because it should be bound in all triple patterns where it appears as a field, including implicitly added patterns.
-The <emphasis>?subject*&gt;propertyname</emphasis> notation is introduced in order to access optional property values. It adds an OPTIONAL group <emphasis>OPTIONAL { ?subject propertyname ?aux_var }</emphasis>, not plain triple pattern, so the binding of ?subject is not changed even if the object variable is not bound. If the property is set for all subjects in question then the results of <emphasis>*&gt;</emphasis> and <emphasis>+&gt;</emphasis> are the same. All other equal, <emphasis>+&gt;</emphasis> operator produces better SQL code than <emphasis>*&gt;</emphasis> so use <emphasis>*&gt;</emphasis> only when it is really needed.</para>
-</sect4>
-<sect4 id="rdfsparqlnesting"><title>Subqueries in SPARQL</title>
-<para>
-Pure SPARQL does not allow binding a value that is not retrieved through a triple pattern.
-We lift this restriction by allowing expressions in the result set and providing names for result columns.
-We also let a sparql SELECT statement to appear in other sparql statement in any place where a group pattern may appear,
-so names of result columns become names of variables bound using values from returned rows.
-This resembles derived tables in SQL.</para>
-<para>
-For instance, the following statement finds prices of 1000 order lines with biggest discounts.</para>
-
-<programlisting><![CDATA[sparql
-define sql:signal-void-variables 1
-prefix tpch: <http://www.openlinksw.com/schemas/tpch#>
-select ?line ?discount (?extendedprice * (1 - ?discount)) as ?finalprice
-from <http://localhost.localdomain:8310/tpch>
-where {
-  ?line a tpch:lineitem ;
-    tpch:lineextendedprice ?extendedprice ;
-    tpch:linediscount ?discount . }
-order by desc (?extendedprice * ?discount)
-limit 1000;]]></programlisting>
-
-<para>
-As soon as we ensure that the query works fine, we can use it in answering more complex question.
-Imagine that we want to find how big are customers who has got biggest discounts ever made by company.</para>
-
-<programlisting><![CDATA[sparql
-define sql:signal-void-variables 1
-prefix tpch: <http://www.openlinksw.com/schemas/tpch#>
-select ?cust sum(?extendedprice2 * (1 - ?discount2)) max (?bigdiscount)
-from <http://localhost.localdomain:8310/tpch>
-where
-    {
-    {
-      select ?line (?extendedprice * ?discount) as ?bigdiscount
-      where {
-        ?line a tpch:lineitem ;
-          tpch:lineextendedprice ?extendedprice ;
-          tpch:linediscount ?discount . }
-      order by desc (?extendedprice * ?discount)
-      limit 1000
-    }
-    ?line tpch:has_order ?order .
-    ?order tpch:has_customer ?cust .
-    ?cust tpch:customer_of ?order2 .
-    ?order2 tpch:order_of ?line2 .
-    ?line2 tpch:lineextendedprice ?extendedprice2 ;
-      tpch:linediscount ?discount2 .
-  }
-order by (sum(?extendedprice2 * (1 - ?discount2)) / max (?bigdiscount));]]></programlisting>
-
-<para>
-Looking at the result we can see that customers in question are really big so even big 10% discounts on individual items looks like additional 0.5% to 1.5% discounts from sums of total purchases.</para>
-<para>
-The inner select finds 1000 biggest (in absolute value) discounts and their order lines. For each line we find order of that line and the customer. For every found customers we find all orders he made and all lines of that orders (variable ?line2). The rest is trivial.</para>
-<para>
-Note that the inner select does not contains FROM clauses. It is not required because inner select inherits access permissions of all outer queries. It is also important that internal variable bindings of subquery are not visible in outer query, only result set variables are bound, similarly, variables bound in outer query are not accessible inside.</para>
-<para>
-Note also the declaration <emphasis>define sql:signal-void-variables 1</emphasis> that forces SPARQL compiler to signal errors if some variables can not be bound due to typos in names or attempts of making joins of disjoint domains. This diagnostics is especially important when the query is long.</para>
-</sect4>
-<sect4 id="rdfsparqlbackq"><title>Expressions in Triple Patterns</title>
-<para>In addition to expressions in filters and result sets, Virtuoso allows the use of expressions in triples of
-CONSTRUCT pattern or WHERE pattern: an expression can be used instead
-of constant or variable name for subject, predicate or object. In this
-case, an expression is surrounded by backquotes.</para>
-
-<para><emphasis>Example with WHERE Clause:</emphasis></para>
-<para>The following return all distinct 'fragment' parts of all subjects in all graphs that have some predicate whose value is equal to 2+2.</para>
-<programlisting><![CDATA[
-SQL>sparql select distinct (bif:subseq (?s, bif:strchr (?s, '#')))
-   where {
-     graph ?g {
-       ?s ?p `2+2` .
-       filter (! bif:isnull (bif:strchr (?s, '#') ) )
-     } };
-
-callret
-VARCHAR
-----------
-#four
-]]></programlisting>
-<para>Inside WHERE part, every expression in a triple pattern is replaced with new variable, a filter expression is added to the enclosing group. The new filter is an equality of new variable and the expression. Hence the sample above is identical to</para>
-<programlisting><![CDATA[
-sparql
-select distinct (bif:subseq (?s, bif:strchr (?s, '#')))
-   where {
-     graph ?g {
-       ?s ?p ?newvariable .
-       filter (! bif:isnull (bif:strchr (?s, '#') ) )
-       filter (?newvariable = (2+2)) .
-     } };
-]]></programlisting>
-<para><emphasis>Example with CONSTRUCT:</emphasis></para>
-<programlisting><![CDATA[
-CONSTRUCT {
-  <http://bio2rdf.org/interpro:IPR000181>
-<http://bio2rdf.org/ns/bio2rdf#hasLinkCount>
-`(select (count(?s)) as ?countS
-   where { ?s ?p <http://bio2rdf.org/interpro:IPR000181> })` }
-where { ?s1 ?p1 ?o1 } limit 1
-]]></programlisting>
-<para>The result should be:</para>
-<programlisting><![CDATA[
-<http://bio2rdf.org/interpro:IPR000181> <http://bio2rdf.org/ns/bio2rdf#hasLinkCount> "0"^^<http://www.w3.org/2001/XMLSchema#integer> .
-]]></programlisting>
-<para><emphasis>Example create graph:</emphasis></para>
-<programlisting><![CDATA[
-SQL>sparql insert into graph <http://MyNewGraph.com/> {
-<http://bio2rdf.org/interpro:IPR000181>
-<http://bio2rdf.org/ns/bio2rdf#hasLinkCount>
-  `(select (count(?s)) as ?countS
-    where { ?s ?p <http://bio2rdf.org/interpro:IPR000181> })` }
- where { ?s1 ?p1 ?o1 } limit 1  ;
-
-callret-0
-VARCHAR
-_______________________________________________________________________________
-
-Insert into <http://MyNewGraph.com/>, 1 triples -- done
-
-1 Rows. -- 30 msec.
-]]></programlisting>
-</sect4>
-</sect3>
 <sect3 id="rdfsparul"><title>SPARUL -- an Update Language For RDF Graphs</title>
      <sect4 id="rdfsparulintro"><title>Introduction</title>
        <para>Starting from version 5.0, Virtuoso supports
@@ -2665,6 +2340,331 @@ Delete from <http://BookStore.com>, 3 triples -- done
 ]]></programlisting>
    </sect4>
    </sect3>
+<sect3 id="sparqlbi"><title>Business Intelligence Extensions for SPARQL</title>
+<para>
+Virtuoso extends SPARQL with expressions in results, subqueries, aggregates and grouping.
+These extensions allow a straightforward translation of arbitrary SQL queries to SPARQL.
+This extension is called  "SPARQL BI", because the primary objective is to match needs of Business Intelligence.
+The extended features apply equally to querying physical quads or relational tables mapped through RDF views.
+</para>
+<note><para>In this section, many examples use TPC-H namespace. You may test them on your local demo database.
+They use data from TPC-H dataset that is mapped into graph with IRI like
+http://example.com/tpch , but you should replace fake host name &quot;example.com&quot; with host name of your own installation,
+<strong>verbatim</strong>, that is specified as &quot;DefaultHost&quot; parameter in [URIQA] section of Virtuoso configuration file.</para></note>
+<sect4 id="rdfsparqlaggregate"><title>Aggregates in SPARQL</title>
+<para>Virtuoso extends SPARQL with SQL like aggregate and group by functionality. This functionality is
+also available through embedding SPARQL text inside SQL but the SPARQL extension syntax has the benefit
+of working also over the SPARQL protocol and of looking more SPARQL-like.
+</para>
+<para>The supported aggregates are <emphasis>count</emphasis>, <emphasis>min</emphasis>, <emphasis>max</emphasis>,
+<emphasis>avg</emphasis> and <emphasis>sum</emphasis>. These can take an optional <emphasis>distinct</emphasis>
+keyword. These are permitted only in the selection part of a select query. If a selection list consists
+of a mix of variables and aggregates, the non-aggregate selected items are considered to be grouping
+columns and a group by over them is implicitly added at the end of the generated SQL query. There is
+no explicit syntax for group by or having in Virtuoso SPARQL.
+</para>
+<para>If a selection consists of aggregates exclusively, the result set has one row with the values
+of the aggregates. If there are aggregates and variables in the selection, the result set as has many
+rows as there are distinct combinations of the variables and the aggregates are calculated over each
+such distinct combination, as if there were a SQL group by over all non-aggregates.
+</para>
+<para>With the count aggregate the argument may be either <emphasis>*</emphasis>, meaning counting all rows or a variable
+name, meaning counting all the rows where this variable is bound. If there is no implicit <emphasis>group by</emphasis>,
+there can be an optional <emphasis>distinct</emphasis> keyword before the variable that is the argument of an aggregate.
+</para>
+<para>There is a special syntax for counting distinct combinations of selected variables. This is:</para>
+<programlisting><![CDATA[
+select count distinct ?v1 ... ?vn
+  from ....
+]]></programlisting>
+<para>User-defined aggregate functions are not supported in current version of SPARQL compiler.</para>
+<sect5 id="rdfsparqlaggregateexamples"><title>Examples</title>
+<programlisting><![CDATA[
+sparql
+select count (*)
+  from <http://mygraph.com>
+ where {?s ?p ?o}
+
+-- Returns the count of physical triples in http://mygraph.com.
+]]></programlisting>
+
+<programlisting><![CDATA[
+sparql define input:inference 'http://mygraph.com'
+select ?p count (?o)
+  from <http://mygraph.com>
+ where {?s ?p ?o};
+
+-- Returns the count of O's for each distinct P.
+]]></programlisting>
+
+<programlisting><![CDATA[
+sparql define input:inference 'http://mygraph.com'
+select count (?p) count (?o) count (distinct ?o)
+ from <http://mygraph.com>
+where {?s ?p ?o};
+
+-- returns the count of triples, including inferred triples and the count of distinct O values.
+]]></programlisting>
+
+<programlisting><![CDATA[
+sparql define input:inference 'http://mygraph.com'
+select count distinct ?s ?p ?o
+  from <http://mygraph.com>
+ where {?s ?p ?o};
+
+-- Returns the number of distinct bindings of ?s ?p ?o.
+]]></programlisting>
+<programlisting><![CDATA[
+sparql
+prefix tpch: <http://www.openlinksw.com/schemas/tpch#>
+select ?status count(*) sum(?extendedprice)
+from <http://localhost.localdomain:8310/tpch>
+where {
+    ?l a tpch:lineitem ;
+      tpch:lineextendedprice ?extendedprice ;
+      tpch:linestatus ?status .
+  };
+
+-- Get counts and total prices of ordered items, grouped by item status.
+]]></programlisting>
+   <para><emphasis>Example with dataset of people, some duplicated:</emphasis></para>
+   <para>Suppose there is a dataset with many people, some of them duplicated. To list execute the query:
+   </para>
+<programlisting><![CDATA[
+sparql
+SELECT DISTINCT
+ (?name) ?person ?mail
+ WHERE {
+   ?person rdf:type foaf:Person .
+   ?person foaf:name ?name .
+   ?person foaf:mbox_sha1sum ?mail
+ };
+]]></programlisting>
+   <para>Note the newline after DISTINCT to read the query.</para>
+   <para>SELECT DISTINCT is as in plain SPARQL, return values are expression ?name and two variables
+?person and ?mail. Unfortunately, there's no such thing as DISTINCT for a part of the result set row.
+If there's a regular need in such feature and duplicates are seldom then we may introduce an aggregate
+called, say, SPECIMEN, that will return the very first of aggregated values, unchanged:
+   </para>
+<programlisting><![CDATA[
+sparql
+SELECT ?name (specimen(?person)) (specimen(?mail))
+WHERE
+ {
+    ?person rdf:type foaf:Person .
+    ?person foaf:name ?name .
+    ?person foaf:mbox_sha1sum ?mail
+ };
+]]></programlisting>
+   <para>If duplicates are seldom and there's no requirement that ?person should correspond to ?mail
+(so the result should contains some person node and some mail but they don't have to be connected by
+foaf:mbox_sha1sum), then MIN aggregate will work:
+   </para>
+<programlisting><![CDATA[
+sparql
+SELECT ?name (min(?person)) (min(?mail))
+WHERE
+  {
+    ?person rdf:type foaf:Person .
+    ?person foaf:name ?name .
+    ?person foaf:mbox_sha1sum ?mail
+  };
+]]></programlisting>
+   <para>Otherwise, a complicated query is needed:</para>
+<programlisting><![CDATA[
+sparql
+SELECT
+ ?name
+ ((select (min (?person3))
+     where {
+         ?person3 rdf:type foaf:Person .
+         ?person3 foaf:name ?name .
+         ?person3 foaf:mbox_sha1sum ?mail } )) as ?person
+ ?mail
+ WHERE {
+     { select distinct ?name
+       where {
+           ?person1 rdf:type foaf:Person .
+           ?person1 foaf:name ?name .
+           ?person1 foaf:mbox_sha1sum ?mail1 } }
+     { select ?name (min(?mail2)) as ?mail
+       where {
+           ?person2 rdf:type foaf:Person .
+           ?person2 foaf:name ?name .
+           ?person2 foaf:mbox_sha1sum ?mail2 } }
+ };
+]]></programlisting>
+</sect5>
+<sect5 id="rdfsparqlaggregatenote"><title>Note on Aggregates and Inference</title>
+<para>Inference is added to a SPARQL query only for the variables whose value is actually used. Thus,
+</para>
+<programlisting><![CDATA[
+select count (*)
+ from <http://mygraph.com>
+where {?s ?p ?o}
+]]></programlisting>
+<para>will not make inferred values since s, p, and o are actually not used. Instead,
+</para>
+<programlisting><![CDATA[
+sparql
+select count (?s) count (?p) count (?o)
+ from <http://mygraph.com>
+where {?s ?p ?o};
+]]></programlisting>
+<para>will get all the inferred triples also.
+</para>
+<para>
+This may be confusing and will likely be corrected in the future.
+</para>
+</sect5>
+</sect4>
+<sect4 id="rdfsparqlarrowop"><title>Pointer Operator (<emphasis>+&gt;</emphasis> and <emphasis>*&gt;</emphasis>)</title>
+<para>
+When expressions occur in result sets, many variables are introduced only to pass a value from triple pattern to the result expression.
+This is inconvenient because many triple patterns are trivial. Big number of variable names masquerade &quot;interesting&quot; variables that are used more than one in pattern part of the query and establish logical relationshops between parts of the query.
+As a solution we introduce pointer operators.</para>
+<para>
+The <emphasis>+&gt;</emphasis> (pointer) operator allows referring to a property value without naming it as a variable and explicit writing triple pattern. We can shorten the example above as</para>
+<programlisting><![CDATA[sparql
+prefix tpch: <http://www.openlinksw.com/schemas/tpch#>
+select ?l+>tpch:linestatus count(*) sum(?l+>tpch:lineextendedprice)
+from <http://localhost.localdomain:8310/tpch>
+where { ?l a tpch:lineitem }]]></programlisting>
+<para>
+The <emphasis>?subject+&gt;propertyname</emphasis> notation is exactly equivalent to having a triple pattern <emphasis>?subject propertyname ?aux_var</emphasis> binding an auxiliary variable to the mentioned property of the subject within the group pattern enclosing the reference.
+For a SELECT, the enclosing group pattern is considered to be the top level pattern of the where clause or in the event of a union, the top level of each term of the union.
+Each distinct pointer adds exactly one triple pattern to the enclosing group pattern, thus multiple uses of <emphasis>+&gt;</emphasis> with same arguments do not each add a triple pattern.
+Having multiple copies of an identical pattern might lead to changes in cardinality if multiple input graphs were being considered.
+If a lineitem had multiple discounts or extended prices, then we would get the cartesian product of both.
+</para>
+<para>
+If a property referenced via <emphasis>+&gt;</emphasis> is absent, the variable at left side of the operator is not bound in the enclosing group pattern because it should be bound in all triple patterns where it appears as a field, including implicitly added patterns.
+The <emphasis>?subject*&gt;propertyname</emphasis> notation is introduced in order to access optional property values. It adds an OPTIONAL group <emphasis>OPTIONAL { ?subject propertyname ?aux_var }</emphasis>, not plain triple pattern, so the binding of ?subject is not changed even if the object variable is not bound. If the property is set for all subjects in question then the results of <emphasis>*&gt;</emphasis> and <emphasis>+&gt;</emphasis> are the same. All other equal, <emphasis>+&gt;</emphasis> operator produces better SQL code than <emphasis>*&gt;</emphasis> so use <emphasis>*&gt;</emphasis> only when it is really needed.</para>
+</sect4>
+<sect4 id="rdfsparqlnesting"><title>Subqueries in SPARQL</title>
+<para>
+Pure SPARQL does not allow binding a value that is not retrieved through a triple pattern.
+We lift this restriction by allowing expressions in the result set and providing names for result columns.
+We also let a sparql SELECT statement to appear in other sparql statement in any place where a group pattern may appear,
+so names of result columns become names of variables bound using values from returned rows.
+This resembles derived tables in SQL.</para>
+<para>
+For instance, the following statement finds prices of 1000 order lines with biggest discounts.</para>
+
+<programlisting><![CDATA[sparql
+define sql:signal-void-variables 1
+prefix tpch: <http://www.openlinksw.com/schemas/tpch#>
+select ?line ?discount (?extendedprice * (1 - ?discount)) as ?finalprice
+from <http://localhost.localdomain:8310/tpch>
+where {
+  ?line a tpch:lineitem ;
+    tpch:lineextendedprice ?extendedprice ;
+    tpch:linediscount ?discount . }
+order by desc (?extendedprice * ?discount)
+limit 1000;]]></programlisting>
+
+<para>
+As soon as we ensure that the query works fine, we can use it in answering more complex question.
+Imagine that we want to find how big are customers who has got biggest discounts ever made by company.</para>
+
+<programlisting><![CDATA[sparql
+define sql:signal-void-variables 1
+prefix tpch: <http://www.openlinksw.com/schemas/tpch#>
+select ?cust sum(?extendedprice2 * (1 - ?discount2)) max (?bigdiscount)
+from <http://localhost.localdomain:8310/tpch>
+where
+  {
+    {
+      select ?line (?extendedprice * ?discount) as ?bigdiscount
+      where {
+        ?line a tpch:lineitem ;
+          tpch:lineextendedprice ?extendedprice ;
+          tpch:linediscount ?discount . }
+      order by desc (?extendedprice * ?discount)
+      limit 1000
+    }
+    ?line tpch:has_order ?order .
+    ?order tpch:has_customer ?cust .
+    ?cust tpch:customer_of ?order2 .
+    ?order2 tpch:order_of ?line2 .
+    ?line2 tpch:lineextendedprice ?extendedprice2 ;
+      tpch:linediscount ?discount2 .
+  }
+order by (sum(?extendedprice2 * (1 - ?discount2)) / max (?bigdiscount));]]></programlisting>
+
+<para>
+Looking at the result we can see that customers in question are really big so even big 10% discounts on individual items looks like additional 0.5% to 1.5% discounts from sums of total purchases.</para>
+<para>
+The inner select finds 1000 biggest (in absolute value) discounts and their order lines. For each line we find order of that line and the customer. For every found customers we find all orders he made and all lines of that orders (variable ?line2). The rest is trivial.</para>
+<para>
+Note that the inner select does not contains FROM clauses. It is not required because inner select inherits access permissions of all outer queries. It is also important that internal variable bindings of subquery are not visible in outer query, only result set variables are bound, similarly, variables bound in outer query are not accessible inside.</para>
+<para>
+Note also the declaration <emphasis>define sql:signal-void-variables 1</emphasis> that forces SPARQL compiler to signal errors if some variables can not be bound due to typos in names or attempts of making joins of disjoint domains. This diagnostics is especially important when the query is long.</para>
+</sect4>
+<sect4 id="rdfsparqlbackq"><title>Expressions in Triple Patterns</title>
+<para>In addition to expressions in filters and result sets, Virtuoso allows the use of expressions in triples of
+CONSTRUCT pattern or WHERE pattern: an expression can be used instead
+of constant or variable name for subject, predicate or object. In this
+case, an expression is surrounded by backquotes.</para>
+
+<para><emphasis>Example with WHERE Clause:</emphasis></para>
+<para>The following return all distinct 'fragment' parts of all subjects in all graphs that have some predicate whose value is equal to 2+2.</para>
+<programlisting><![CDATA[
+SQL>sparql select distinct (bif:subseq (?s, bif:strchr (?s, '#')))
+   where {
+     graph ?g {
+       ?s ?p `2+2` .
+       filter (! bif:isnull (bif:strchr (?s, '#') ) )
+     } };
+
+callret
+VARCHAR
+----------
+#four
+]]></programlisting>
+<para>Inside WHERE part, every expression in a triple pattern is replaced with new variable, a filter expression is added to the enclosing group. The new filter is an equality of new variable and the expression. Hence the sample above is identical to</para>
+<programlisting><![CDATA[
+sparql
+select distinct (bif:subseq (?s, bif:strchr (?s, '#')))
+   where {
+     graph ?g {
+       ?s ?p ?newvariable .
+       filter (! bif:isnull (bif:strchr (?s, '#') ) )
+       filter (?newvariable = (2+2)) .
+     } };
+]]></programlisting>
+<para><emphasis>Example with CONSTRUCT:</emphasis></para>
+<programlisting><![CDATA[
+CONSTRUCT {
+  <http://bio2rdf.org/interpro:IPR000181>
+<http://bio2rdf.org/ns/bio2rdf#hasLinkCount>
+`(select (count(?s)) as ?countS
+   where { ?s ?p <http://bio2rdf.org/interpro:IPR000181> })` }
+where { ?s1 ?p1 ?o1 } limit 1
+]]></programlisting>
+<para>The result should be:</para>
+<programlisting><![CDATA[
+<http://bio2rdf.org/interpro:IPR000181> <http://bio2rdf.org/ns/bio2rdf#hasLinkCount> "0"^^<http://www.w3.org/2001/XMLSchema#integer> .
+]]></programlisting>
+<para><emphasis>Example create graph:</emphasis></para>
+<programlisting><![CDATA[
+SQL>sparql insert into graph <http://MyNewGraph.com/> {
+<http://bio2rdf.org/interpro:IPR000181>
+<http://bio2rdf.org/ns/bio2rdf#hasLinkCount>
+  `(select (count(?s)) as ?countS
+    where { ?s ?p <http://bio2rdf.org/interpro:IPR000181> })` }
+ where { ?s1 ?p1 ?o1 } limit 1  ;
+
+callret-0
+VARCHAR
+_______________________________________________________________________________
+
+Insert into <http://MyNewGraph.com/>, 1 triples -- done
+
+1 Rows. -- 30 msec.
+]]></programlisting>
+</sect4>
+</sect3>
 </sect2>
 <sect2 id="rdfsparqlinline"><title>SPARQL Inline in SQL</title>
 <para>Virtuoso extends the SQL 92 syntax with SPARQL queries and subqueries. Instead of writing a SQL SELECT query or subquery, one can write the SPARQL keyword and a SPARQL query after the keyword.</para>

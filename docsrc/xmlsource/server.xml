@@ -1011,7 +1011,7 @@ lite is 2 in 'normal' mode is 256 by default.
 
 	<listitem id="ini_DisableTcpSocket">
 	    <formalpara>
-		<title>1/0 </title>
+		<title>DisableTcpSocket = 1/0 </title>
 		<para>Disable odbc listen on tcp port, if this given unix socket will always be used.
 In lite mode is 0, thus no tcp listen for sql/odbc connections, can connect
 only via unix socket.
@@ -1508,7 +1508,7 @@ Section <link linkend="rdfandsparql">RDF Data Access and Data Management</link> 
 	</para>
     </formalpara>
 </listitem>
-<listitem id="ini_SPARQL_DeferInferenceRulesInit ">
+<listitem id="ini_SPARQL_DeferInferenceRulesInit">
     <formalpara>
 	<title>DeferInferenceRulesInit = 1 </title>
 	<para>

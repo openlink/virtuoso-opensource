@@ -24,7 +24,7 @@
 <refentry id="fn_tree_md5">
   <refmeta>
     <refentrytitle>tree_md5</refentrytitle>
-    <refmiscinfo>misc</refmiscinfo>
+    <refmiscinfo>hash</refmiscinfo>
     <refmiscinfo>array</refmiscinfo>
   </refmeta>
   <refnamediv>
