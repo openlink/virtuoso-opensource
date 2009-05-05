@@ -5530,8 +5530,10 @@ create procedure yac_list_keys (in username varchar)
 {
   declare xenc_name varchar;
   declare arr any;
-  arr := USER_GET_OPTION (username, 'KEYS');
   result_names (xenc_name);
+  if (not exists (select 1 from SYS_USERS where U_NAME = username))
+    return;
+  arr := USER_GET_OPTION (username, 'KEYS');
   for (declare i, l int, i := 0, l := length (arr); i < l; i := i + 2)
     if (length (arr[i])) 
       result (arr[i]);
