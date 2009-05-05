@@ -73,7 +73,7 @@ where {
 
 
 -- what kinds of objects are there about Paris Hilton
---* Types of Things With Text -- sample is Paris Hiltton
+--* Types of Things With Text -- sample is Paris Hilton
 sparql
 select ?tp count (*)
 where
@@ -192,7 +192,7 @@ limit 10
 
 
 
--- Most asymetrically known
+-- Most asymmetrically known
 
 sparql
 select count (*)

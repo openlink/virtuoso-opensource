@@ -71,7 +71,7 @@ select fct_test  ('<query> <text property="http://purl.org/dc/elements/1.1/descr
 select xslt ('file://fct/fct_vsp.xsl', xtree_doc ('<facets><result><row><column>http://xyz.com/xyz.htm</column></row></result></facets>'), vector ('sid', 2, 'type', 'properties'))
 
 
-create procedure fct_exp (in str varcha)
+create procedure fct_exp (in str varchar)
 {
   declare txt any;
   declare max_s int;

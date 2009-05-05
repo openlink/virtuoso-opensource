@@ -412,7 +412,7 @@ create procedure pick_query(in smode varchar, inout val any, inout query varchar
   }
   else if (smode='3')
   {
-----* Types of Things With Text -- sample is Paris Hiltton
+----* Types of Things With Text -- sample is Paris Hilton
 --sparql
 --select ?tp count (*)
 --where
@@ -687,7 +687,7 @@ s3 := ' .
   }
   else if (smode='103')
   {
----- 4 placehoder is : http://myopenlink.net/dataspace/person/kidehen#this
+---- 4 placeholder is : http://myopenlink.net/dataspace/person/kidehen#this
 --sparql
 --select distinct ?n ((select count (*) where {?p foaf:interest ?i . ?ps foaf:interest ?i}))
 --   ((select count (*) where { ?p foaf:interest ?i}))
