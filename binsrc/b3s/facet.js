@@ -318,3 +318,16 @@ OAT.Autocomplete = function (_input, _value_input, _button, _form, optObj) {
 
     OAT.Dom.append([document.body,self.list]);
 }
+
+function fct_sel_neg (cb)
+{
+  var a = $('a_' + cb.value);
+  if (cb.checked == true)
+    {
+      var pos = a.href.lastIndexOf ('&exclude=yes');
+      if (pos > 0)
+	a.href.substring (0, pos);
+    }
+  else
+    a.href = a.href + '&exclude=yes';
+}

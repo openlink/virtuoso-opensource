@@ -222,21 +222,21 @@ grant execute on ext_http_proxy_1 to PROXY
 
 
 
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_about_http_proxy_rule_1', 1,
-'/about/([^/\?\&]*)?/?([^/\?\&:]*)/(.*)', vector ('force', 'login', 'url'), 2,
-'/about?url=%U&force=%U&login=%U', vector ('url', 'force', 'login'), null, null, 2);
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_fctabout_http_proxy_rule_1', 1,
+'/describe/([^/\?\&]*)?/?([^/\?\&:]*)/(.*)', vector ('force', 'login', 'url'), 2,
+'/describe?url=%U&force=%U&login=%U', vector ('url', 'force', 'login'), null, null, 2);
 
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_about_http_proxy_rule_2', 1,
-    '/about/html/(.*)', vector ('g'), 1,
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_fctabout_http_proxy_rule_2', 1,
+    '/describe/html/(.*)', vector ('g'), 1,
     '/fct/rdfdesc/description.vsp?g=%U', vector ('g'), null, null, 2);
 
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_about_http_proxy_rule_3', 1,
-    '/about/\\?url=(.*)', vector ('g'), 1,
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_fctabout_http_proxy_rule_3', 1,
+    '/describe/\\?url=(.*)', vector ('g'), 1,
     '/fct/rdfdesc/description.vsp?g=%s', vector ('g'), null, null, 2);
 
-DB.DBA.URLREWRITE_CREATE_RULELIST ('ext_about_http_proxy_rule_list1', 1, 
-    vector ('ext_about_http_proxy_rule_1', 'ext_about_http_proxy_rule_2', 'ext_about_http_proxy_rule_3'));
+DB.DBA.URLREWRITE_CREATE_RULELIST ('ext_fctabout_http_proxy_rule_list1', 1, 
+    vector ('ext_fctabout_http_proxy_rule_1', 'ext_fctabout_http_proxy_rule_2', 'ext_fctabout_http_proxy_rule_3'));
 
-DB.DBA.VHOST_REMOVE (lpath=>'/about');
-DB.DBA.VHOST_DEFINE (lpath=>'/about', ppath=>'/SOAP/Http/EXT_HTTP_PROXY_1', soap_user=>'PROXY',
-    opts=>vector('url_rewrite', 'ext_about_http_proxy_rule_list1'));
+DB.DBA.VHOST_REMOVE (lpath=>'/describe');
+DB.DBA.VHOST_DEFINE (lpath=>'/describe', ppath=>'/SOAP/Http/EXT_HTTP_PROXY_1', soap_user=>'PROXY',
+    opts=>vector('url_rewrite', 'ext_fctabout_http_proxy_rule_list1'));

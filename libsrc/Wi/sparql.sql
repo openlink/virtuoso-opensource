@@ -5819,8 +5819,10 @@ create function DB.DBA.RDF_QM_DROP_MAPPING (in storage varchar, in mapname any) 
 {
   declare graphiri varchar;
   declare qmid, qmgraph varchar;
+  declare silent integer;
   qmid := get_keyword_ucase ('ID', mapname, NULL);
   qmgraph := get_keyword_ucase ('GRAPH', mapname, NULL);
+  silent := get_keyword_ucase ('SILENT', mapname, 0);
   graphiri := DB.DBA.JSO_SYS_GRAPH ();
   if (qmid is null)
     {
@@ -5834,6 +5836,15 @@ create function DB.DBA.RDF_QM_DROP_MAPPING (in storage varchar, in mapname any) 
               } ));
       if (qmid is null)
         return vector (vector ('00100', 'Quad map for graph <' || qmgraph || '> is not found'));
+    }
+  else
+    {
+      if (silent and not exists ((sparql define input:storage ""
+        prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+        select (1) where {
+            graph ?:graphiri {
+                `iri(?:qmid)` a ?t } } ) ) ) 
+        return vector (vector ('00000', 'Quad map <' || qmid || '> does not exist, the DROP statement is ignored due to SILENT option'));
     }
   DB.DBA.RDF_QM_ASSERT_JSO_TYPE (qmid, 'http://www.openlinksw.com/schemas/virtrdf#QuadMap');
   if (storage is null)
@@ -6527,8 +6538,16 @@ create function DB.DBA.RDF_QM_DEFINE_SUBCLASS (in subclassiri varchar, in superc
 }
 ;
 
-create function DB.DBA.RDF_QM_DROP_CLASS (in classiri varchar) returns any
+create function DB.DBA.RDF_QM_DROP_CLASS (in classiri varchar, in silent integer := 0) returns any
 {
+  declare graphiri varchar;
+  graphiri := DB.DBA.JSO_SYS_GRAPH ();
+  if (silent and not exists ((sparql define input:storage ""
+    prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+    select (1) where {
+        graph ?:graphiri {
+            `iri(?:classiri)` a ?t } } ) ) ) 
+    return vector (vector ('00000', 'Class <' || classiri || '> does not exist, the DROP statement is ignored due to SILENT option'));
   if (DB.DBA.RDF_QM_ASSERT_JSO_TYPE (classiri, 'http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat', 1))
     {
       declare side_s IRI_ID;
@@ -6540,10 +6559,16 @@ create function DB.DBA.RDF_QM_DROP_CLASS (in classiri varchar) returns any
 }
 ;
 
-create function DB.DBA.RDF_QM_DROP_QUAD_STORAGE (in storage varchar) returns any
+create function DB.DBA.RDF_QM_DROP_QUAD_STORAGE (in storage varchar, in silent integer := 0) returns any
 {
   declare graphiri varchar;
   graphiri := DB.DBA.JSO_SYS_GRAPH ();
+  if (silent and not exists ((sparql define input:storage ""
+    prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+    select (1) where {
+        graph ?:graphiri {
+            `iri(?:storage)` a ?t } } ) ) ) 
+    return vector (vector ('00000', 'Quad storage <' || storage || '> does not exist, the DROP statement is ignored due to SILENT option'));
   DB.DBA.RDF_QM_ASSERT_STORAGE_FLAG (storage, 0);
   DB.DBA.RDF_QM_GC_SUBTREE (storage);
   sparql define input:storage ""

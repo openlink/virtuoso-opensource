@@ -37,7 +37,7 @@ RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0)
    ret := make_array (2, 'any');
    sparql_pref := 'SPARQL\n';
    uriqa_str := '^{URIQADefaultHost}^';
-   drop_map := 'SPARQL drop quad map virtrdf:'|| qualifier ||'\n;\n\n';
+   drop_map := 'SPARQL drop silent quad map virtrdf:'|| qualifier ||'\n;\n\n';
    sns := ns := sprintf ('prefix %s: <http://%s/%s#>\n', qualifier, cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), qualifier);
    -- ## voID
    if (gen_stat)

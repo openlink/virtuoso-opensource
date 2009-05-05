@@ -203,15 +203,15 @@
 		   }   
 		 else if (tp = 3)
 		  {
- 		     http (sprintf ('<td><a href="/about/?url=%U">%V</a></td>', data[0], b3s_uri_curie (data[0])));
+ 		     http (sprintf ('<td><a href="/describe/?url=%U">%V</a></td>', data[0], b3s_uri_curie (data[0])));
 		     http (sprintf ('<td align="right">%.6g</td>', data[1]));
 		  } 
                  else if (tp = 4)
 		  {
- 		     http (sprintf ('<td><a href="/about/?url=%U">%V</a></td>', data[0], b3s_uri_curie (data[0])));
-		     http (sprintf ('<td><a href="/about/?url=%U">%V</a></td>', data[1], b3s_uri_curie (data[1])));
+ 		     http (sprintf ('<td><a href="/describe/?url=%U">%V</a></td>', data[0], b3s_uri_curie (data[0])));
+		     http (sprintf ('<td><a href="/describe/?url=%U">%V</a></td>', data[1], b3s_uri_curie (data[1])));
 		     if (__box_flags (data[2]) = 1)
-		       http (sprintf ('<td><a href="/about/?url=%U">%V</a></td>', data[2], b3s_uri_curie (data[2])));
+		       http (sprintf ('<td><a href="/describe/?url=%U">%V</a></td>', data[2], b3s_uri_curie (data[2])));
 		     else
                        {
 		         if (isstring (data[2]))

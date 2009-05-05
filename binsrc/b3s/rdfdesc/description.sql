@@ -168,7 +168,7 @@ b3s_http_url (in url varchar, in sid varchar := null)
     more := sprintf ('&sid=%s', sid);
   else
     more := '';
-  return sprintf ('/about/?url=%U%s', url, more);
+  return sprintf ('/describe/?url=%U%s', url, more);
 };
 
 create procedure 

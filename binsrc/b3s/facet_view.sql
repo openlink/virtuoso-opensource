@@ -166,12 +166,24 @@ fct_query_info (in tree any,
 
   if ('class' = n)
     {
-      http (sprintf ('%s is a <span class="iri">%s</span> . <a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop_cond&cno=%d">Drop</a>',
-                     fct_var_tag (this_s, ctx),
-		     fct_short_form (cast (xpath_eval ('./@iri', tree) as varchar)),
-		     connection_get ('sid'),
-		     cno),
-            txt);
+      if (cast (xpath_eval ('./@exclude', tree) as varchar) = 'yes')
+	{
+	  http (sprintf ('%s  does not have class <span class="iri">%s</span> . <a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop_cond&cno=%d">Drop</a>',
+		fct_var_tag (this_s, ctx),
+		fct_short_form (cast (xpath_eval ('./@iri', tree) as varchar)),
+		connection_get ('sid'),
+		cno),
+	      txt);
+	}
+      else
+	{
+	  http (sprintf ('%s is a <span class="iri">%s</span> . <a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop_cond&cno=%d">Drop</a>',
+		fct_var_tag (this_s, ctx),
+		fct_short_form (cast (xpath_eval ('./@iri', tree) as varchar)),
+		connection_get ('sid'),
+		cno),
+	      txt);
+	}
       cno := cno + 1;
     }
   else if ('query' = n)
@@ -208,10 +220,20 @@ fct_query_info (in tree any,
       declare new_s int;
       max_s := max_s + 1;
       new_s := max_s;
-      http (sprintf (' %s <span class="iri">%s</span> %s . ',
+      if (cast (xpath_eval ('./@exclude', tree) as varchar) = 'yes')
+	{
+	  http (sprintf (' %s does not have property <span class="iri">%s</span> %s . ',
                      fct_var_tag (this_s, ctx),
 		     fct_short_form (cast (xpath_eval ('./@iri', tree, 1) as varchar)), 
                      fct_var_tag (new_s, ctx)), txt);
+	}
+      else
+	{
+	  http (sprintf (' %s <span class="iri">%s</span> %s . ',
+                     fct_var_tag (this_s, ctx),
+		     fct_short_form (cast (xpath_eval ('./@iri', tree, 1) as varchar)), 
+                     fct_var_tag (new_s, ctx)), txt);
+	}
       if (ctx)
 	http (sprintf ('<a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop&n=%d">Drop %s%d</a> ',
 	               connection_get ('sid'), new_s, connection_get('s_term'), new_s), txt);
@@ -645,7 +667,7 @@ fct_prev (in tree any, in sid int)
 ;
 
 create procedure
-fct_open_property  (in tree any, in sid int, in iri varchar, in name varchar)
+fct_open_property  (in tree any, in sid int, in iri varchar, in name varchar, in exclude varchar := null)
 {
   declare pos int;
   pos := fct_view_pos (tree);
@@ -657,7 +679,11 @@ fct_open_property  (in tree any, in sid int, in iri varchar, in name varchar)
 			'iri', iri,
 			'type', 'list',
 			'limit', 20,
-			'offset', 0));
+			'offset', 0,
+			'exclude', exclude));
+  if (xpath_eval ('//view', tree) is null)
+    tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl', tree, 
+    	vector ('pos', pos, 'op', 'view', 'type', 'properties', 'limit', 20, 'offset', 0));
   update fct_state
     set fct_state = tree
     where fct_sid = sid;
@@ -670,7 +696,8 @@ fct_open_property  (in tree any, in sid int, in iri varchar, in name varchar)
 create procedure
 fct_set_class (in tree any,
 	       in sid int,
-	       in iri varchar)
+	       in iri varchar,
+	       in exclude varchar := null)
 {
   declare pos int;
 
@@ -685,7 +712,8 @@ fct_set_class (in tree any,
 			'iri'   , iri,
 			'type'  , 'list',
 			'limit' , 20,
-			'offset', 0));
+			'offset', 0,
+			'exclude', exclude));
 
   update fct_state
     set fct_state = tree
@@ -890,7 +918,7 @@ fct_new ()
     </div> <!-- #TAB_PAGE_TXT -->
     <div id="TAB_PAGE_URILBL" class="tab_page" style="display: none">
       <h2>Entity Search, Find, and Explore</h2>
-      <form method="get" action="/about/" id="new_lbl_fm">
+      <form method="get" action="/describe/" id="new_lbl_fm">
         <input type="hidden" name="url" id="new_lbl_val"/>
 	<input type="hidden" name="sid" value="'); http_value ( sid ); http ('"/>
 	<input type="hidden" name="urilookup" value="1"/>
@@ -915,7 +943,7 @@ fct_new ()
     </div>
     <div id="TAB_PAGE_URI" class="tab_page" style="display: none">
       <h2>Entity Search, Find, and Explore</h2>
-      <form method="get" action="/about/" id="new_uri_fm">
+      <form method="get" action="/describe/" id="new_uri_fm">
         <input type="hidden" name="url" id="new_uri_val"/>
 	<input type="hidden" name="sid" value="'); http_value ( sid ); http ('"/>
 	<input type="hidden" name="urilookup" value="1"/>
@@ -1211,15 +1239,15 @@ fct_vsp ()
   else if ('set_text_property' = cmd)
     fct_set_text_property (tree, sid, http_param ('iri'));
   else if ('open_property' = cmd)
-    fct_open_property (tree, sid, http_param ('iri'), 'property');
+    fct_open_property (tree, sid, http_param ('iri'), 'property', http_param ('exclude'));
   else if ('open_property_of' = cmd)
-    fct_open_property (tree, sid, http_param ('iri'), 'property-of');
+    fct_open_property (tree, sid, http_param ('iri'), 'property-of', http_param ('exclude'));
   else if ('drop' = cmd)
     fct_drop (tree, sid, atoi (http_param ('n')));
   else if ('drop_cond' = cmd)
     fct_drop_cond (tree, sid, atoi (http_param ('cno')));
   else if ('set_class' = cmd)
-    fct_set_class (tree, sid, http_param ('iri'));
+    fct_set_class (tree, sid, http_param ('iri'), http_param ('exclude'));
   else if ('open' = cmd)
     fct_open_iri (tree, sid, http_param ('iri'));
   else if ('refresh' = cmd)

@@ -82,11 +82,16 @@
 	<xsl:attribute name="iri">
 	  <xsl:value-of select="$iri"/>
 	</xsl:attribute>
+	<xsl:if test="$exclude = 'yes'">
+	    <xsl:attribute name="exclude">yes</xsl:attribute>
+	</xsl:if>
+	<xsl:if test="$exclude != 'yes'">
 	<xsl:element name="view">
 	  <xsl:attribute name="type"> <xsl:value-of select="$type"/></xsl:attribute>
 	  <xsl:attribute name="limit"> <xsl:value-of select="$limit"/></xsl:attribute>
 	  <xsl:attribute name="offset"> <xsl:value-of select="$offset"/></xsl:attribute>
 	</xsl:element>
+	</xsl:if>
       </xsl:element>
     </xsl:if>
 
@@ -98,7 +103,11 @@
 			     count (./preceding::*[name () = 'query' or
 			                           name () = 'property' or
 					           name () = 'property-of'])">
-        <class iri="{$iri}"/>
+        <class iri="{$iri}">
+	    <xsl:if test="$exclude = 'yes'">
+		<xsl:attribute name="exclude">yes</xsl:attribute>
+	    </xsl:if>
+	</class>
       </xsl:when>
 
       <xsl:when test="$op = 'class'">

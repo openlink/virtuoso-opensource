@@ -185,7 +185,7 @@
 			  {
 			    http (sprintf ('<td><a href="search.vsp?q=%U&sc=%U&fa=Execute">', smode, '<'||tmp||'>'));
 		            http_value (tmp);
-			    http (sprintf('</a>&nbsp;<a href="/about/?url=%U">Browse</a>',tmp));
+			    http (sprintf('</a>&nbsp;<a href="/describe/?url=%U">Browse</a>',tmp));
 			  }	
 			else if (smode  = '1001' and j = 0)
                           {
@@ -195,7 +195,7 @@
 			    http (sprintf('&nbsp;<b><a href="search.vsp?q=1004&sc=%U&fa=Execute">Authors</a></b>',tmp));
 		          }		
 			else if (smode not in ('2'))
-		   	  http (sprintf ('<td><a class="uri" href="%s">%s</a>', concat('http://b3s.openlinksw.com/about/?url=', sprintf ('%U',tmp)), get_curie (tmp)));
+		   	  http (sprintf ('<td><a class="uri" href="%s">%s</a>', concat('http://b3s.openlinksw.com/describe/?url=', sprintf ('%U',tmp)), get_curie (tmp)));
  		        else
                           http (sprintf ('<td><a class="uri" href="%s">%s</a>', concat('http://demo.openlinksw.com/ode/?uri=',tmp), get_curie (tmp)));
                         if (smode in ('5','6','7', '8','9', '101') and j=0)

@@ -78,7 +78,7 @@ function init(){
         var x;
 	if (href.length > 0) {
 	  x = OAT.Dom.create ("a");
-	  x.href = '/about/?url='+escape (href);
+	  x.href = '/describe/?url='+escape (href);
 	  if (label.length > 0)
 	    x.innerHTML = label;
 	  else
@@ -275,19 +275,20 @@ function init(){
 	      <xsl:if test="'url' = column[1]/@dataview-type">
 		<a>
 		  <xsl:attribute name="href">
-		    /about/?url=<xsl:value-of select="urlify (column[1])"/>&amp;sid=<xsl:value-of select="$sid"/>
+		    /describe/?url=<xsl:value-of select="urlify (column[1])"/>&amp;sid=<xsl:value-of select="$sid"/>
 		  </xsl:attribute>
 		  <xsl:attribute name="class">describe</xsl:attribute>
 		    Describe
 		</a>
 	      </xsl:if>
-	      <a>
+	      <xsl:if test="$view-type = 'properties' or $view-type = 'classes'">
+		  <input type="checkbox" name="cb" value="{position (.)}" checked="true" onclick="javascript:fct_sel_neg (this)"/>
+	      </xsl:if>
+	      <a id="a_{position (.)}">
 		  <!--xsl:message terminate="no"><xsl:value-of select="$query/query/class/@iri"/><xsl:value-of select="column[1]"/></xsl:message-->  
 	      <xsl:variable name="current_iri" select="column[1]"/> 
 	      <xsl:if test="not $query/query/class[@iri = $current_iri]" > 
-		  <xsl:attribute name="href">
-		      /fct/facet.vsp?cmd=<xsl:value-of select="$command"/>&amp;iri=<xsl:value-of select="urlify (column[1])"/>&amp;lang=<xsl:value-of select="column[1]/@xml:lang"/>&amp;datatype=<xsl:value-of select="urlify (column[1]/@datatype)"/>&amp;sid=<xsl:value-of select="$sid"/>
-		  </xsl:attribute>
+		  <xsl:attribute name="href">/fct/facet.vsp?cmd=<xsl:value-of select="$command"/>&amp;iri=<xsl:value-of select="urlify (column[1])"/>&amp;lang=<xsl:value-of select="column[1]/@xml:lang"/>&amp;datatype=<xsl:value-of select="urlify (column[1]/@datatype)"/>&amp;sid=<xsl:value-of select="$sid"/></xsl:attribute>
 	      </xsl:if>
 		<xsl:attribute name="title">
 		  <xsl:value-of select="column[1]"/>
@@ -343,7 +344,7 @@ function init(){
 		<xsl:choose>
 		  <xsl:when test="'url' = ./@datatype">
 		    <a>
-		      <xsl:attribute name="href">/about/?url=<xsl:value-of select="urlify (.)"/></xsl:attribute>
+		      <xsl:attribute name="href">/describe/?url=<xsl:value-of select="urlify (.)"/></xsl:attribute>
 		      <xsl:attribute name="title"><xsl:value-of select="."/></xsl:attribute>
 		      <xsl:choose>
 			<xsl:when test="'' != ./@shortform"><xsl:value-of select="./@shortform"/></xsl:when>

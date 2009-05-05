@@ -283,11 +283,11 @@ sticker_init() {
   echo "         result ('ERROR', 'The $VAD_DESC package requires server version $NEED_VERSION or greater'); " >> $STICKER
   echo "         signal ('FATAL', 'The $VAD_DESC package requires server version $NEED_VERSION or greater'); " >> $STICKER
   echo "      } " >> $STICKER
-  echo "    if (not exists (select 1 from DB.DBA.SYS_KEYS where upper (KEY_NAME) = 'RDF_QUAD_OPGS')) " >> $STICKER
-  echo "      { " >> $STICKER
-  echo "         result ('ERROR', 'The $VAD_DESC package requires additional indexes, please refer to the documentation'); " >> $STICKER
-  echo "         signal ('FATAL', 'The $VAD_DESC package requires additional indexes, please refer to the documentation'); " >> $STICKER
-  echo "      } " >> $STICKER
+  #echo "    if (not exists (select 1 from DB.DBA.SYS_KEYS where upper (KEY_NAME) = 'RDF_QUAD_OPGS')) " >> $STICKER
+  #echo "      { " >> $STICKER
+  #echo "         result ('ERROR', 'The $VAD_DESC package requires additional indexes, please refer to the documentation'); " >> $STICKER
+  #echo "         signal ('FATAL', 'The $VAD_DESC package requires additional indexes, please refer to the documentation'); " >> $STICKER
+  #echo "      } " >> $STICKER
   echo "  ]]></sql>" >> $STICKER
   echo "  <sql purpose=\"post-install\">" >> $STICKER
   echo "    ; " >> $STICKER
@@ -306,6 +306,8 @@ else
   echo "    registry_set('_"$VAD_NAME"_path_', '/vad/vsp/$VAD_NAME/');" >> $STICKER
   echo "    registry_set('_"$VAD_NAME"_dav_', '$ISDAV');" >> $STICKER
 fi
+
+  echo "    if (exists (select 1 from DB.DBA.SYS_KEYS where upper (KEY_NAME) = 'RDF_QUAD_OPGS')) { " >> $STICKER
 
   for f in $SQLDEPS
   do  
@@ -330,6 +332,14 @@ fi
 	 echo "    DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/$f', 0, 'report', $ISDAV);" >> $STICKER
      fi
   done
+
+  echo "    } else { " >> $STICKER
+  echo "    VHOST_REMOVE (lpath=>'/fct'); " >> $STICKER
+  echo "    VHOST_DEFINE (lpath=>'/fct', " >> $STICKER
+  echo "        	ppath=>case when registry_get('_fct_path_') = 0 then '/fct/' else registry_get('_fct_path_') end, " >> $STICKER
+  echo "    	is_dav=>atoi (case when registry_get('_fct_dav_') = 0 then '0' else registry_get('_fct_dav_') end), " >> $STICKER
+  echo "        	vsp_user=>'dba', def_page=>'install.html'); " >> $STICKER
+  echo "    } " >> $STICKER
 
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER

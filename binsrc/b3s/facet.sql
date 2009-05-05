@@ -686,9 +686,9 @@ fct_text (in tree any,
       else
         sc_opt := '';
       if (prop is not null)
-      prop := '<' || prop || '>';
+	prop := '<' || prop || '>';
       else
-      prop := sprintf ('?s%dtextp', this_s);
+	prop := sprintf ('?s%dtextp', this_s);
       http (sprintf (' ?s%d %s ?o%d . ?o%d bif:contains  ''%s'' %s .', this_s, prop, this_s, this_s,
 		     fti_make_search_string (cast (tree as varchar)), sc_opt), txt);
     }
@@ -702,8 +702,11 @@ fct_text (in tree any,
       piri := fct_curie (cast (xpath_eval ('./@iri', tree, 1) as varchar));
       if (cast (xpath_eval ('./@exclude', tree) as varchar) = 'yes')
 	{
-	  http (sprintf (' filter (!bif:exists ((select (1) where { ?s%d <%s> ?s%d } ))) .', this_s, piri, new_s), txt);
-	  return;  
+	  http (sprintf (' filter (!bif:exists ((select (1) where { ?s%d <%s> ?v%d } ))) .', this_s, piri, new_s), txt);
+	  max_s := max_s - 1;
+	  new_s := max_s;
+	  fct_text_1 (tree, new_s, max_s, txt, pre, post);
+	  return;
 	}
       else
 	{
