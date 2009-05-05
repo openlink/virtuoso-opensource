@@ -282,6 +282,8 @@
 <!ENTITY rdf_audit_metadata     		SYSTEM "funcref/rdf_audit_metadata.xml">
 <!ENTITY rdf_void_store                         SYSTEM  "funcref/rdf_void_store.xml">
 <!ENTITY rdf_backup_metadata    		SYSTEM "funcref/rdf_backup_metadata.xml">
+<!ENTITY rdf_graph_group_create                 SYSTEM  "funcref/rdf_graph_group_create.xml">
+<!ENTITY rdf_graph_group_ins                    SYSTEM  "funcref/rdf_graph_group_ins.xml">
 
 <!ENTITY rdf_load_rdfxml        		SYSTEM "funcref/rdf_load_rdfxml.xml">
 <!ENTITY rdf_load_rdfxml_mt     		SYSTEM "funcref/rdf_load_rdfxml_mt.xml">
@@ -464,6 +466,7 @@
 <!ENTITY trace_on				SYSTEM "funcref/trace_on.xml">
 <!ENTITY trace_status				SYSTEM "funcref/trace_status.xml">
 <!ENTITY tree_md5				SYSTEM "funcref/tree_md5.xml">
+<!ENTITY hs_resolve				SYSTEM	"funcref/hs_resolve.xml">
 <!ENTITY trigonometric				SYSTEM "funcref/trigonometric.xml">
 <!ENTITY trim					SYSTEM "funcref/trim.xml">
 <!ENTITY txn_error				SYSTEM "funcref/txn_error.xml">

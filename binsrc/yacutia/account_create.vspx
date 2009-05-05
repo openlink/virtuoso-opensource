@@ -701,6 +701,7 @@
                   </table> <!-- complex_selector -->
                 </td>
               </tr> <!-- account roles row -->
+	<?vsp if (self.mode = 'edit') { ?>
         <tr>
 	    <td>
                   <table class="complex_selector">
@@ -756,6 +757,7 @@
 	    </v:button>
 	    </td>
 	</tr>
+	<?vsp } ?>
         <tr>
           <td colspan="4">
             <v:button action="simple" name="cancel" value="Cancel" xhtml_tabindex="21">

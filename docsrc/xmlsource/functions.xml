@@ -162,8 +162,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 <!-- TBD: &rdf_load_turtle; -->
 &rdf_restore_metadata;&rdf_load_rdfxml_mt;&rdf_load_rdfxml;&ttlp;&ttlp_mt;&ttlp_mt_local_file;
 &rdf_triples_to_rdf_xml_text;&rdf_triples_to_ttl;&rdf_64bit_upgrade;
-&rdf_convert_rdfxml_to_ttl;
-
+&rdf_convert_rdfxml_to_ttl;rdf_graph_group_create;rdf_graph_group_ins;
 
 &iri_split;&xml_get_ns_prefix;&xml_get_ns_uri;
 
@@ -214,7 +213,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &tcpip_gethostbyname; &tcpip_gethostbyaddr;
 
 &tmp_file_name; &tidy_html; &tidy_list_errors; &timezone; &trace_off; &trace_on;
-&trace_status; &tree_md5; &trigonometric; &trim; &txn_error; &txn_killall;
+&trace_status; &tree_md5; &hs_resolve; &trigonometric; &trim; &txn_error; &txn_killall;
 
 &ucase; &uddi_delete_binding; &uddi_delete_business; &uddi_delete_service;
 &uddi_delete_tModel; &uddi_discard_authToken; &uddi_find_binding; &uddi_find_business;

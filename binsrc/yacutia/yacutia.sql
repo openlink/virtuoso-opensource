@@ -5530,10 +5530,48 @@ create procedure yac_list_keys (in username varchar)
 {
   declare xenc_name varchar;
   declare arr any;
-  arr := USER_GET_OPTION (username, 'KEYS');
   result_names (xenc_name);
+  if (not exists (select 1 from SYS_USERS where U_NAME = username))
+    return;
+  arr := USER_GET_OPTION (username, 'KEYS');
   for (declare i, l int, i := 0, l := length (arr); i < l; i := i + 2)
     if (length (arr[i])) 
       result (arr[i]);
+}
+;
+
+create procedure yac_vec_add (in k varchar, in v varchar, inout opts any)
+{
+  declare pos any;
+  if (not isarray (opts) or isstring (opts))
+    opts := vector ();
+  pos := position (k, opts);
+  if (pos > 0)
+    opts [pos] := v;
+  else
+    opts := vector_concat (opts, vector (k, v));
+}
+;
+
+
+create procedure
+yac_set_ssl_key (in k varchar, inout opts any)
+{
+  if (k = 'none' or not length (k))
+    {
+      declare new_opts any;
+      new_opts := vector ();
+      for (declare i, l int, i := 0, l := length (opts); i < l; i := i + 2)
+        {
+	  if (opts[i] not in ('https_cert', 'https_key'))
+	    new_opts := vector_concat (new_opts, vector (opts[i], opts[i+1]));
+	}
+      opts := new_opts;
+    }
+  else
+    {
+      yac_vec_add ('https_cert', 'db:'||k, opts);
+      yac_vec_add ('https_key',  'db:'||k, opts);
+    }
 }
 ;
