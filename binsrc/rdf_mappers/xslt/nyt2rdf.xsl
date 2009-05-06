@@ -29,6 +29,7 @@
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
 <!ENTITY nyt "http://www.nytimes.com/">
+<!ENTITY sioc "http://rdfs.org/sioc/ns#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -41,34 +42,27 @@
     xmlns:bibo="&bibo;"
     xmlns:dc="&dc;"
     xmlns:nyt="&nyt;"
+    xmlns:sioc="&sioc;"
     >
+
+    <xsl:param name="baseUri" />
 
     <xsl:output method="xml" indent="yes" />
 
     <xsl:template match="/results">
 		<rdf:Description rdf:about="{$baseUri}">
 			<xsl:for-each select="results">
-				<xsl:variable name="frag">
-					<xsl:call-template name="substring-after-last">
-						<xsl:with-param name="string" select="url"/>
-						<xsl:with-param name="character" select="'#'"/>
-					</xsl:call-template>
-				</xsl:variable>
-				<rdfs:seeAlso rdf:resource="{concat($baseUri,'#', $frag)}"/>
+				<xsl:variable name="pos" select="concat('nytimes_', position())" />
+				<rdfs:seeAlso rdf:resource="{concat($baseUri,'#', $pos)}"/>
 			</xsl:for-each>
 		</rdf:Description>
 		<xsl:for-each select="results">
-			<xsl:variable name="frag">
-				<xsl:call-template name="substring-after-last">
-					<xsl:with-param name="string" select="url"/>
-					<xsl:with-param name="character" select="'#'"/>
-				</xsl:call-template>
-			</xsl:variable>
-			<rdf:Description rdf:about="{concat($baseUri,'#', $frag)}">
+			<xsl:variable name="pos" select="concat('nytimes_', position())" />
+			<rdf:Description rdf:about="{concat($baseUri,'#', $pos)}">
 				<opl:providedBy>
-					<foaf:Organization rdf:about="http://www.nytimes.com/">
+					<foaf:Organization rdf:about="http://www.nytimes.com">
 						<foaf:name>The New York Times</foaf:name>
-						<foaf:homepage rdf:resource="http://www.nytimes.com/"/>
+						<foaf:homepage rdf:resource="http://www.nytimes.com"/>
 					</foaf:Organization>
 				</opl:providedBy>
 				<rdf:type rdf:resource="&foaf;Document"/>
@@ -76,6 +70,7 @@
 				<dc:title>
 					<xsl:value-of select="title" />
 				</dc:title>
+				<xsl:if test="byline and byline != ''">
 				<dcterms:contributor rdf:parseType="Resource">
 					<rdf:type rdf:resource="&foaf;Person"/>
 						<foaf:name>
@@ -83,6 +78,7 @@
 						</foaf:name>
 					<bibo:role rdf:resource="&bibo;author"/>
 				</dcterms:contributor>
+				</xsl:if>
 				<dc:date>
 					<xsl:value-of select="date"/>
 				</dc:date>
@@ -90,25 +86,10 @@
 					<xsl:value-of select="body"/>
 				</dc:description>
 				<bibo:uri rdf:resource="{url}" />
+				<sioc:link rdf:resource="{url}" />
 			</rdf:Description>
 		</xsl:for-each>
     </xsl:template>
-
-    <xsl:template name="substring-after-last">
-		<xsl:param name="string"/>
-		<xsl:param name="character"/>
-		<xsl:choose>
-		<xsl:when test="contains($string,$character)">
-			<xsl:call-template name="substring-after-last">
-				<xsl:with-param name="string" select="substring-after($string, $character)"/>
-				<xsl:with-param name="character" select="$character"/>
-			</xsl:call-template>
-		</xsl:when>
-		<xsl:otherwise>
-			<xsl:value-of select="$string"/>
-		</xsl:otherwise>
-		</xsl:choose>
-	</xsl:template>
 
     <xsl:template match="text()|@*"/>
 

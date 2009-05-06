@@ -85,7 +85,7 @@
 						</xsl:otherwise>
 					</xsl:choose>
 				</xsl:variable>
-				<rdfs:seeAlso rdf:resource="{vi:proxyIRI($baseUri, '', $resourceURI)}"/>
+				<rdfs:topic rdf:resource="{vi:proxyIRI($baseUri, '', $resourceURI)}"/>
 			</xsl:for-each>
 		</rdf:Description>
 
