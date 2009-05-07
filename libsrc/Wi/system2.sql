@@ -602,6 +602,60 @@ create procedure SYS_CREATE_TABLE_AS (
 }
 ;
 
+--!AWK PUBLIC
+create procedure 
+encode_b32_num (in i integer) returns varchar
+{
+  declare s varchar;
+  declare x integer;
+
+  x := i;
+  s := '';
+
+  declare b32_s varchar;
+  b32_s := 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+
+  while (1 = 1)
+    {
+      s := chr (aref (b32_s, mod(x, 32))) || s;
+      x := floor (x / 32);
+      if (x = 0) goto done;
+    }
+ done:
+  return s;
+}
+;
+
+--!AWK PUBLIC
+create procedure 
+decode_b32_num (in s varchar) returns integer
+{
+  declare x integer; x := 0;
+  declare y integer;
+  
+  declare b32_s varchar;
+  b32_s := 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+
+  declare i integer;
+  i := 0;
+
+  while (i < length(s))
+    {
+      y := locate (chr (aref (s, i)), b32_s);
+
+      if (y > 0)
+	    x := (x * 32) + y - 1;
+      else
+        signal ('42000', 'Invalid character in decode_b32_num');
+      
+      i := i + 1;
+	}
+  return x;
+}
+;
+
+
+
 -- add all known sequences created by DBA
 add_protected_sequence ('/!URIQA/')
 ;
