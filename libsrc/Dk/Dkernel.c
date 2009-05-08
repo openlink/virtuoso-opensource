@@ -1038,7 +1038,7 @@ future_wrapper (void *ignore)
   int error;
   caddr_t *arguments;
   caddr_t arg_array[MAX_FUTURE_ARGUMENTS];
-  int argcount, finx, client_freed = 0, was_second = 0;
+  int argcount, finx, was_second = 0;
 
   du_thread_t *this_thread = THREAD_CURRENT_THREAD;
 
@@ -1052,6 +1052,7 @@ future_wrapper (void *ignore)
 
   for (;;)
     {
+      int client_freed = 0;
       future = c_thread->dkt_requests[0];
       client = future->rq_client;
       if (future->rq_to_close)
