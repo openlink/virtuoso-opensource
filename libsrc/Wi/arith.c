@@ -890,7 +890,7 @@ numeric_bin_op (numeric_bop_t num_op, numeric_t x, numeric_t y, caddr_t * qst,
       char state[10];
       char msg[200];
       numeric_error (rc, state, sizeof (state), msg, sizeof (msg));
-      sqlr_new_error (state, "SR083", msg);
+      sqlr_new_error (state, "SR083", "%s", msg);
     }
   return res_box;
 }

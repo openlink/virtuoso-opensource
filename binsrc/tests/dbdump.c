@@ -649,7 +649,7 @@ chemalloc (size_t size, char *where)	/* where can be NULL or empty */
   if (NO (result = (char *) malloc (size)))
     {
       char num[11];
-      sprintf (num, "%d", size);
+      sprintf (num, "%ld", (long) size);
     print_again:
       if (0 == i)
 	{
@@ -3421,7 +3421,7 @@ print_datetime_col (char *timebinstr, SQLLEN collen, int type)
   if (times_conform_to_odbc_flag)
     {
       if (times_to_strings_flag)
-	sprintf (temp, "%*s", collen, timebinstr);
+	sprintf (temp, "%*s", (int) collen, timebinstr);
       else if (type == SQL_DATE)
 	{
 	  /* Defined in /odbcsdk/include/sqlext.h */
@@ -3444,7 +3444,7 @@ print_datetime_col (char *timebinstr, SQLLEN collen, int type)
 	}
       else			/* Shouldn't happen! */
 	{
-	  sprintf (temp, "SHOULD NOT HAPPEN: print_date_col called(collen=%d,type=%d)", collen, type);
+	  sprintf (temp, "SHOULD NOT HAPPEN: print_date_col called(collen=%ld,type=%d)", (long int) collen, type);
 	}
     }
   else				/* Native KUBL mode. */
@@ -3465,7 +3465,7 @@ print_datetime_col (char *timebinstr, SQLLEN collen, int type)
 	}
       else			/* localtime returned NULL pointer. */
 	{
-	  sprintf (temp, "INV-TIME(%d):%08lx:%08lx", collen, tv.tv_sec, tv.tv_usec);
+	  sprintf (temp, "INV-TIME(%ld):%08lx:%08lx", (long) collen, tv.tv_sec, tv.tv_usec);
 	}
     }
 

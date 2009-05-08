@@ -340,7 +340,7 @@ sqlr_error (const char *code, const char *string, ...)
   va_start (list, string);
   vsnprintf (temp, sizeof (temp), string, list);
   va_end (list);
-  err = srv_make_new_error (code, "SR449", temp);
+  err = srv_make_new_error (code, "SR449", "%s", temp);
   self = THREAD_CURRENT_THREAD;
   thr_set_error_code (self, err);
   longjmp_splice (self->thr_reset_ctx, RST_ERROR);
@@ -446,7 +446,7 @@ itc_sqlr_error (it_cursor_t * itc, buffer_desc_t * buf, const char *code,
   va_start (list, string);
   vsnprintf (temp, sizeof (temp), string, list);
   va_end (list);
-  err = srv_make_new_error (code, "SR450", temp);
+  err = srv_make_new_error (code, "SR450", "%s", temp);
   if (buf)
     itc_page_leave (itc, buf);
   thr_set_error_code (self, err);

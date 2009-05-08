@@ -2405,7 +2405,7 @@ xj_table (xpp_t *xpp, xv_join_elt_t * xj)
 void
 xe_error (const char * state, const char * str)
 {
-  caddr_t err = srv_make_new_error (state, "XM010", str);
+  caddr_t err = srv_make_new_error (state, "XM010", "%s", str);
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_XP_RST, err);
   lisp_throw (CATCH_XP, RST_ERROR);
 }
@@ -5228,7 +5228,7 @@ sqlr_new_error_xdl_base (const char *code, const char *virt_code, xp_debug_locat
   n = vsnprintf (temp, sizeof(temp), string, vlst);
   snprint_xdl (temp+n, sizeof(temp)-n, xdl);
   temp[sizeof(temp)-1] = '\0';
-  err = srv_make_new_error (code, virt_code, temp);
+  err = srv_make_new_error (code, virt_code, "%s", temp);
   self = THREAD_CURRENT_THREAD;
   thr_set_error_code (self, err);
   longjmp_splice (self->thr_reset_ctx, RST_ERROR);

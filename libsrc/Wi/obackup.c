@@ -1145,7 +1145,7 @@ long ol_backup (const char* prefix, long pages, long timeout, caddr_t* backup_pa
   OB_LEAVE_CPT (need_mtx,qi);
   backup_context_free (ctx);
 
-  sqlr_new_error ("42000", backup_status.errcode, backup_status.errstring);
+  sqlr_new_error ("42000", backup_status.errcode, "%s", backup_status.errstring);
   return 0; /* keeps compiler happy */
 }
 
@@ -2357,7 +2357,7 @@ caddr_t * ob_file_list (char * fname)
     }
   else
     {
-      sqlr_new_error ("39000", "FA020", strerror (errno));
+      sqlr_new_error ("39000", "FA020", "%s", strerror (errno));
     }
   lst = list_to_array (dk_set_nreverse (dir_list));
   return (caddr_t*) lst;

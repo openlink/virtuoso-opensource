@@ -3773,7 +3773,7 @@ zlib_box_compress (caddr_t src, caddr_t * err_ret)
 	  state = "22000";
 	  break;
 	}
-      *err_ret = srv_make_new_error (state, "SR103", err_msg);
+      *err_ret = srv_make_new_error (state, "SR103", "%s", err_msg);
     }
   return NULL;
 }

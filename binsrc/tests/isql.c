@@ -4738,12 +4738,12 @@ field_print_normal (TCHAR *str, SQLULEN w, int rightp, int inx)
  */
       w = FIELD_WIDTH_SANITY_CHECK;
     }
+
   if ((n_out_cols - 1) == inx)	/* The rightmost column? */
     {				/* Avoid any unnecessary padding on right side. */
       if (rightp)
 	{
-	  isqlt_stprintf (temp, _T("%%%lu") PCT_S _T(""), (unsigned long) w);
-	  isql_printf (temp, str);
+	  isql_printf (_T("%*") PCT_S _T(""), (int) w , str);
 	}
       else
 	{
@@ -4754,13 +4754,12 @@ field_print_normal (TCHAR *str, SQLULEN w, int rightp, int inx)
     {
       if (rightp)
 	{
-	  isqlt_stprintf (temp, _T("%%%lu") PCT_S _T("  "), (unsigned long) w);
+	  isql_printf (_T("%*") PCT_S _T("  "), (int) w , str);
 	}
       else
 	{
-	  isqlt_stprintf (temp, _T("%%-%lu") PCT_S _T("  "), (unsigned long) w);
+	  isql_printf (_T("%-*") PCT_S _T("  "), (int) w , str);
 	}
-      isql_printf (temp, str);
     }
 }
 

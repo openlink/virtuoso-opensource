@@ -1667,7 +1667,7 @@ caddr_t bif_xenc_DH_compute_key (caddr_t * qst, caddr_t * err_r, state_slot_t **
   if (shared_secret_len < 0)
     {
       ERR_error_string_n (ERR_get_error(), err_buf, sizeof (err_buf));
-      sqlr_new_error ("22023", "XENCX", err_buf);
+      sqlr_new_error ("22023", "XENCX", "%s", err_buf);
     }
 
   b64 = dk_alloc_box (buf_len*2, DV_STRING);
@@ -3168,7 +3168,7 @@ bif_xmlenc_encrypt (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	{
 	  /* must free everything */
 	  /* ... */
-	  sqlr_new_error (".....", ".....",err_ret);
+	  sqlr_new_error (".....", ".....", "%s", err_ret);
 	}
       _DO_BOX (ent_inx, txt_ents)
 	{
@@ -3413,7 +3413,7 @@ bif_xmlenc_encrypt (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if(sign_err)
     sqlr_new_error ("42000", "XENC34", "could not sign SOAP signed info: %s", err_buf);
   if (err_ret_sec_tags)
-    sqlr_new_error ("42000", "XENC35", err_ret_sec_tags);
+    sqlr_new_error ("42000", "XENC35", "%s", err_ret_sec_tags);
   return ret_text;
 }
 

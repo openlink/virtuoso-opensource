@@ -1356,7 +1356,7 @@ db_check (query_instance_t * qi)
     {
       char *err = "Database check transaction failed";
       log_info (err);
-      sqlr_new_error ("40009", "SR118", err);
+      sqlr_new_error ("40009", "SR118", "%s", err);
     }
 
   log_info ("Database check complete");
