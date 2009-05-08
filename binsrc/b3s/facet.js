@@ -44,7 +44,7 @@ function fct_uri_ac_get_matches (ac_ctl)
 
     c_thr = $('new_uri_txt');
 
-    OAT.AJAX.GET("/services/rdf/iriautocomplete.get?uri" + "=" + val, 
+    OAT.AJAX.GET("/services/rdf/iriautocomplete.get?uri" + "=" + escape (val), 
                  false, 
                  fct_uri_ac_ajax_handler,{});
 }
@@ -58,7 +58,7 @@ function fct_lbl_ac_get_matches (ac_ctl)
 
     c_thr = $('new_lbl_txt');
 
-    OAT.AJAX.GET("/services/rdf/iriautocomplete.get?lbl" + "=" + val, 
+    OAT.AJAX.GET("/services/rdf/iriautocomplete.get?lbl" + "=" + escape (val), 
                  false, 
                  fct_lbl_ac_ajax_handler,{});
 }

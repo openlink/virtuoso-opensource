@@ -48,7 +48,7 @@ VAD_NAME_RELEASE="$VAD_PKG_NAME"_dav.vad
 NEED_VERSION=06.00.3117
 DSN="$HOST:$PORT"
 SQLDEPS="ns.sql facet.sql complete_ddl.sql"
-EXCEPT="b3sq.sql facet_test.sql"
+EXCEPT="b3sq.sql facet_test.sql fct_inx.sql"
 
 HOST_OS=`uname -s | grep WIN`
 if [ "x$HOST_OS" != "x" ]
@@ -306,6 +306,11 @@ else
   echo "    registry_set('_"$VAD_NAME"_path_', '/vad/vsp/$VAD_NAME/');" >> $STICKER
   echo "    registry_set('_"$VAD_NAME"_dav_', '$ISDAV');" >> $STICKER
 fi
+  echo "    if (not exists (select 1 from DB.DBA.SYS_KEYS where upper (KEY_NAME) = 'RDF_QUAD_OPGS') and (select count(*) from (select top 10000 1 as x from RDF_QUAD) stb) < 10000) { " >> $STICKER
+   echo "      log_message ('Altering the index layout on RDF_QUAD'); " >> $STICKER
+  echo "       DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/fct_inx.sql', 0, 'report', $ISDAV);" >> $STICKER
+  echo "       log_message ('done.'); " >> $STICKER
+  echo "    } " >> $STICKER
 
   echo "    if (exists (select 1 from DB.DBA.SYS_KEYS where upper (KEY_NAME) = 'RDF_QUAD_OPGS')) { " >> $STICKER
 
@@ -333,12 +338,15 @@ fi
      fi
   done
 
+  echo "        result ('00000', 'GUI is accesible via http://host:port/fct');" >> $STICKER
+  echo "        result ('00000', 'Post-installation guide is available from http://host:port/fct/post_install.html');" >> $STICKER
   echo "    } else { " >> $STICKER
   echo "    VHOST_REMOVE (lpath=>'/fct'); " >> $STICKER
   echo "    VHOST_DEFINE (lpath=>'/fct', " >> $STICKER
   echo "        	ppath=>case when registry_get('_fct_path_') = 0 then '/fct/' else registry_get('_fct_path_') end, " >> $STICKER
   echo "    	is_dav=>atoi (case when registry_get('_fct_dav_') = 0 then '0' else registry_get('_fct_dav_') end), " >> $STICKER
   echo "        	vsp_user=>'dba', def_page=>'install.html'); " >> $STICKER
+  echo "        result ('00000', 'Cannot complete installation, read instructions at http://host:port/fct');" >> $STICKER
   echo "    } " >> $STICKER
 
   echo "    ]]>" >> $STICKER
