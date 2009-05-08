@@ -4090,6 +4090,37 @@ http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	   
 http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Tim Berners-Lee: WWW and UU and I
 http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Tim Berners-Lee: WorldWideWeb, the first Web client
 ]]></programlisting>
+    <para><emphasis>Example: Use of schedular to interface Virtuoso Quad Store with PTSW using the following program:</emphasis></para>
+<programlisting><![CDATA[
+
+
+create procedure PTSW_CRAWL ()
+{
+  declare xt, xp any;
+  declare content, headers any;
+
+  content := http_get ('http://pingthesemanticweb.com/export/', headers);
+  xt := xtree_doc (content);
+  xp := xpath_eval ('//rdfdocument/@url', xt, 0);
+  foreach (any x in xp) do
+    {
+      x := cast (x as varchar);
+      dbg_obj_print (x);
+      {
+	declare exit handler for sqlstate '*' {
+	  log_message (sprintf ('PTSW crawler can not load : %s', x));
+	};
+        sparql load ?:x into graph ?:x;
+	update DB.DBA.SYS_HTTP_SPONGE set HS_LOCAL_IRI = x, HS_EXPIRATION = null where HS_LOCAL_IRI = 'destMD5=' || md5 (x) || '&graphMD5=' || md5 (x);
+	commit work;
+      }
+    }
+}
+;
+
+insert soft SYS_SCHEDULED_EVENT (SE_SQL, SE_START, SE_INTERVAL, SE_NAME)
+	values ('DB.DBA.PTSW_CRAWL ()', cast (stringtime ('0:0') as DATETIME), 60, 'PTSW Crawling');
+]]></programlisting>
     </sect2>
     <sect2 id="rdfinsertmethodsparqlqueryandsponger">
       <title>Using SPARQL Query and Sponger (i.e. we Sponge the Resources in the FROM Clause or values for the graph-uri parameter in SPARQL protocol URLs)</title>
