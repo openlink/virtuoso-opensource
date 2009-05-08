@@ -104,7 +104,7 @@ function format_select(query_obg)
   <option <?V case (s_param) when 'soft' then ' selected="selected"' else '' end ?> value="soft">Retrieve remote RDF data for all missing source graphs</option>
   <option <?V case (s_param) when 'grab-all' then ' selected="selected"' else '' end ?> value="grab-all">Retrieve all missing remote RDF data that might be useful</option>
   <option <?V case (s_param) when 'grab-seealso' then ' selected="selected"' else '' end ?> value="grab-all-seealso">Retrieve all missing remote RDF data that might be useful, including seeAlso references</option>
-  <option <?V case (s_param) when 'grab-everything' then ' selected="selected"' else '' end ?> value="grab-everything">Try to download all referenced resources (this may be very slow and ineffecient)</option>
+  <option <?V case (s_param) when 'grab-everything' then ' selected="selected"' else '' end ?> value="grab-everything">Try to download all referenced resources (this may be very slow and inefficient)</option>
 </select>
 			  <br />
 <?vsp  }

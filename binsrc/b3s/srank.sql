@@ -99,6 +99,8 @@ create procedure DB.DBA.IRI_RANK (in iri iri_id_8)
 {
   declare str varchar;
   declare n, nth, ni int;
+  if (__tag (iri) <> 243 and __tag (iri) <> 244)
+    return 0;
   ni := iri_id_num (iri);
   n := bit_and (0hexffffffffffffff00, ni);
  nth := 2 * bit_and (ni, 0hexff);

@@ -30,6 +30,9 @@ fct_uri_curie (in uri varchar)
 
   delim := -1;
 
+  if (uri is null)
+    return uri;
+
   uriSearch := uri;
   nsPrefix := null;
 
@@ -72,6 +75,9 @@ fct_short_uri (in x any)
     return x;
 
   pref := iri_split (x, loc);
+
+  if (pref is null)
+    return x;
 
   sh := __xml_get_ns_prefix (pref, 2);
 

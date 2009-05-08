@@ -58,6 +58,8 @@ create procedure b3s_page_get_type (in val any)
   if (strstr (val, 'http://rdfs.org/sioc/ns#') = 0 ) return 'sioc';
   if (strstr (val, 'http://purl.org/ontology/bibo/') = 0 ) return 'bibo';
 
+  if (pref is null)
+    return val;
   res := __xml_get_ns_prefix (pref, 2);
   if (res is null)
     return val;
@@ -134,6 +136,8 @@ create procedure b3s_uri_curie (in uri varchar)
   delim := -1;
 
   uriSearch := uri;
+  if (uri is null)
+    return '';
   nsPrefix := null;
   while (nsPrefix is null and delim <> 0) {
 

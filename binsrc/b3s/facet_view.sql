@@ -168,7 +168,7 @@ fct_query_info (in tree any,
     {
       if (cast (xpath_eval ('./@exclude', tree) as varchar) = 'yes')
 	{
-	  http (sprintf ('%s  does not have class <span class="iri">%s</span> . <a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop_cond&cno=%d">Drop</a>',
+	  http (sprintf ('%s  is not a <span class="iri">%s</span> . <a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop_cond&cno=%d">Drop</a>',
 		fct_var_tag (this_s, ctx),
 		fct_short_form (cast (xpath_eval ('./@iri', tree) as varchar)),
 		connection_get ('sid'),
