@@ -94,6 +94,9 @@
 							</sioc:content>
 							<foaf:maker rdf:resource="{vi:proxyIRI(a:author/a:uri)}"/>
 						</rdf:Description>
+						<foaf:Person rdf:about="{vi:proxyIRI(a:author/a:uri)}">
+							<foaf:made rdf:resource="{vi:proxyIRI(a:link[@rel='alternate']/@href)}"/>
+						</foaf:Person>
 					</xsl:for-each>
 				</xsl:when>
 				<xsl:when test="$what = 'thread1'">
@@ -131,6 +134,10 @@
 							<rdfs:seeAlso rdf:resource="{substring-before(a:link[@rel='thread']/@href, '.atom')}"/>
 							<foaf:maker rdf:resource="{vi:proxyIRI(a:author/a:uri)}"/>
 						</rdf:Description>
+
+						<foaf:Person rdf:about="{vi:proxyIRI(a:author/a:uri)}">
+							<foaf:made rdf:resource="{vi:proxyIRI(a:link[@rel='alternate']/@href)}"/>
+						</foaf:Person>
 					</xsl:for-each>
 				</xsl:when>
 				<xsl:when test="$what = 'status'">
@@ -246,6 +253,12 @@
 		<rdf:Description rdf:about="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name, '/status/', id))}">
 			<xsl:call-template name="status_int"/>
 		</rdf:Description>
+		
+		<foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name))}">
+			<foaf:made rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name, '/status/', id))}"/>
+			<foaf:made rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name, '/statuses/', id))}"/>
+		</foaf:Person>
+		
 		<xsl:if test="in_reply_to_status_id != ''">
 			<rdf:Description rdf:about="{vi:proxyIRI(concat('http://twitter.com/', in_reply_to_screen_name, '/status/', in_reply_to_status_id))}">
 				<sioc:has_reply rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name, '/status/', id))}"/>

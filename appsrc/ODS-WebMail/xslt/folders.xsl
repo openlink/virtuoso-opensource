@@ -36,12 +36,190 @@
     </xsl:choose>
     <form name="f1" action="folders.vsp" method="post">
       <xsl:call-template name="hid_sid"/>
-      <input type="hidden" name="bp">
-        <xsl:attribute name="value"><xsl:value-of select="bp"/></xsl:attribute>
+      <xsl:choose>
+        <xsl:when test="object/@id">
+          <input type="hidden" name="folder_id">
+            <xsl:attribute name="value"><xsl:value-of select="object/@id"/></xsl:attribute>
+          </input>
+          <input type="hidden" name="systemFlag">
+            <xsl:attribute name="value"><xsl:value-of select="object/@systemFlag"/></xsl:attribute>
+          </input>
+          <input type="hidden" name="smartFlag">
+            <xsl:attribute name="value"><xsl:value-of select="object/@smartFlag"/></xsl:attribute>
+          </input>
+          <table width="100%" cellpadding="0" cellspacing="0" class="content">
+            <caption>
+              <span>Manage Folders</span>
+            </caption>
+            <tr>
+              <th width="20%">
+                <label for="name">Name</label>
+              </th>
+              <td colspan="3">
+                <input type="text" name="name" id="name">
+                  <xsl:attribute name="value"><xsl:value-of select="object/name"/></xsl:attribute>
+                </input>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <label for="folders">Parent</label>
+              </th>
+              <td colspan="3">
+                <xsl:choose>
+                  <xsl:when test="object/@smartFlag = 'S'">
+                    <xsl:variable name="tmp" select="object/parent_id" />
+                    <input type="hidden" name="parent_id">
+                      <xsl:attribute name="value"><xsl:value-of select="object/parent_id"/></xsl:attribute>
+                    </input>
+                    <xsl:value-of select="//folders/folder[@id = $tmp]/name"/>
+                  </xsl:when>
+                  <xsl:otherwise>
+                    <select name="parent_id" id="parent_id">
+                      <xsl:apply-templates select="folders/folder"/>
+                    </select>
+                  </xsl:otherwise>
+                </xsl:choose>
+              </td>
+            </tr>
+            <xsl:if test="object/@smartFlag = 'S'">
+              <tr>
+                <th>
+                  <label for="q_from">From</label>
+                </th>
+                <td>
+                  <input type="text" size="30" name="q_from" id="q_from">
+                    <xsl:attribute name="value"><xsl:value-of select="object/query/q_from"/></xsl:attribute>
+                  </input>
+                </td>
+                <th>
+                  <label for="q_after">Received after</label>
+                </th>
+                <td>
+                  <input type="text" name="q_after" size="10" id="q_after">
+                    <xsl:attribute name="value"><xsl:value-of select="object/query/q_after"/></xsl:attribute>
+                  </input>
+                  <span>
+                    <img id="q_after_select" src="/oMail/i/pick_calendar.gif" onclick="javascript: cPopup.select($('q_after'), 'q_after_select', 'yyyy-MM-dd');" border="0" />
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <th>
+                  <label for="q_to">To</label>
+                </th>
+                <td>
+                  <input type="text" size="30" name="q_to" id="q_to">
+                    <xsl:attribute name="value"><xsl:value-of select="object/query/q_to"/></xsl:attribute>
+                  </input>
+                </td>
+                <th>
+                  <label for="q_before">Received before</label>
+                </th>
+                <td>
+                  <input type="text" name="q_before" size="10" id="q_before">
+                    <xsl:attribute name="value"><xsl:value-of select="object/query/q_before"/></xsl:attribute>
+                  </input>
+                  <span>
+                    <img id="q_before_select" src="/oMail/i/pick_calendar.gif" onclick="javascript: cPopup.select($('q_before'), 'q_before_select', 'yyyy-MM-dd');" border="0" />
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <th>
+                  <label for="q_subject">Subject</label>
+                </th>
+                <td>
+                  <input type="text" size="30" name="q_subject" id="q_subject">
+                    <xsl:attribute name="value"><xsl:value-of select="object/query/q_subject"/></xsl:attribute>
       </input>
-      <input type="hidden" name="fa">
-        <xsl:attribute name="value">cnf</xsl:attribute>
+                </td>
+                <th>
+                  <label for="q_fid">In folder(s)</label>
+                </th>
+                <td>
+                  <xsl:call-template name="searchFolders" />
+                </td>
+              </tr>
+              <tr>
+                <th>
+                  <label for="q_body">Body has word(s)</label>
+                </th>
+                <td>
+                  <input type="text" size="30" name="q_body" id="q_body">
+                    <xsl:attribute name="value"><xsl:value-of select="object/query/q_body"/></xsl:attribute>
       </input>
+                </td>
+                <th>
+                  <label for="att">With attachment(s)</label>
+                </th>
+                <td class="mb">
+                  <input type="checkbox" name="q_attach" value="1" id="att">
+                    <xsl:if test="object/query/q_attach = 1">
+                      <xsl:attribute name="checked"/>
+                    </xsl:if>
+                  </input>
+                </td>
+              </tr>
+              <tr>
+                <th>
+                  <label for="q_tags">Comma separated tags</label>
+                </th>
+                <td>
+                  <input type="text" size="30" name="q_tags" id="body">
+                    <xsl:attribute name="value"><xsl:value-of select="object/query/q_tags"/></xsl:attribute>
+                  </input>
+                </td>
+                <th>
+                  <label for="q_read">Unread mails</label>
+                </th>
+                <td class="mb">
+                  <input type="checkbox" name="q_read" value="1" id="q_read">
+                    <xsl:if test="object/query/q_read = 1">
+                      <xsl:attribute name="checked"/>
+                    </xsl:if>
+                  </input>
+                </td>
+              </tr>
+            </xsl:if>
+            <tfoot>
+              <tr>
+                <th colspan="4">
+                  <xsl:call-template name="make_submit">
+                    <xsl:with-param name="name">fa_save</xsl:with-param>
+                    <xsl:with-param name="value">Save</xsl:with-param>
+                    <xsl:with-param name="alt">Save</xsl:with-param>
+                  </xsl:call-template>
+                  <xsl:call-template name="make_submit">
+                    <xsl:with-param name="name">fa_cancel</xsl:with-param>
+                    <xsl:with-param name="value">Cancel</xsl:with-param>
+                    <xsl:with-param name="alt">Cancel</xsl:with-param>
+                  </xsl:call-template>
+                </th>
+              </tr>
+            </tfoot>
+          </table>
+        </xsl:when>
+        <xsl:otherwise>
+        	<div>
+      	    <xsl:call-template name="make_href">
+      	      <xsl:with-param name="url">folders.vsp</xsl:with-param>
+      	      <xsl:with-param name="params">fp=0,-1</xsl:with-param>
+      	      <xsl:with-param name="label">Create Folder</xsl:with-param>
+      	      <xsl:with-param name="img">/oMail/i/add_16.png</xsl:with-param>
+      	      <xsl:with-param name="img_label"> Create Folder</xsl:with-param>
+      	      <xsl:with-param name="class">button2</xsl:with-param>
+      	    </xsl:call-template>
+      	    <xsl:call-template name="make_href">
+      	      <xsl:with-param name="url">folders.vsp</xsl:with-param>
+      	      <xsl:with-param name="params">fp=0,-2</xsl:with-param>
+      	      <xsl:with-param name="label">Create Smart Folder</xsl:with-param>
+      	      <xsl:with-param name="img">/oMail/i/add_16.png</xsl:with-param>
+      	      <xsl:with-param name="img_label"> Create Smart Folder</xsl:with-param>
+      	      <xsl:with-param name="class">button2</xsl:with-param>
+      	    </xsl:call-template>
+      	  </div>
+          <br />
       <table width="100%" border="0" cellpadding="0" cellspacing="0" class="content">
         <thead>
           <tr>
@@ -57,8 +235,8 @@
         </tbody>
         <xsl:call-template name="calc_size"/>
       </table>
-      <br/>
-      <xsl:apply-templates select="folders" mode="combo"/>
+        </xsl:otherwise>
+      </xsl:choose>
     </form>
   </xsl:template>
   <!-- ====================================================================================== -->
@@ -72,7 +250,7 @@
             <xsl:with-param name="url">box.vsp</xsl:with-param>
             <xsl:with-param name="label"><xsl:value-of select="name"/></xsl:with-param>
             <xsl:with-param name="title">Select folder <xsl:value-of select="name"/></xsl:with-param>
-            <xsl:with-param name="params">bp=<xsl:value-of select="folder_id"/>,,,</xsl:with-param>
+            <xsl:with-param name="params">bp=<xsl:value-of select="@id"/>,,,</xsl:with-param>
           </xsl:call-template>
         </td>
         <td align="right">
@@ -89,40 +267,42 @@
           <xsl:call-template name="nbsp"/>
         </td>
         <td nowrap="nowrap">
-          <xsl:if test="folder_id > 99">
+          <xsl:if test="@id > 99">
             <xsl:call-template name="make_href">
-              <xsl:with-param name="url">tools.vsp</xsl:with-param>
-              <xsl:with-param name="params">tp=<xsl:value-of select="folder_id"/>,2</xsl:with-param>
+              <xsl:with-param name="url">folders.vsp</xsl:with-param>
+              <xsl:with-param name="params">fp=<xsl:value-of select="@id"/>,3</xsl:with-param>
               <xsl:with-param name="label">Empty Folder</xsl:with-param>
+              <xsl:with-param name="onclick">javascript: return confirm('Are you sure that you want to empty this folder?');</xsl:with-param>
               <xsl:with-param name="img">/oMail/i/trash_16.png</xsl:with-param>
               <xsl:with-param name="img_label"> Empty</xsl:with-param>
-              <xsl:with-param name="class">button</xsl:with-param>
+              <xsl:with-param name="class">button2</xsl:with-param>
             </xsl:call-template>
           </xsl:if>
           <xsl:call-template name="nbsp"/>
         </td>
         <td nowrap="nowrap">
-          <xsl:if test="folder_id > 130">
+          <xsl:if test="@systemFlag = 'N'">
             <xsl:call-template name="make_href">
-              <xsl:with-param name="url">tools.vsp</xsl:with-param>
-              <xsl:with-param name="params">tp=<xsl:value-of select="folder_id"/>,0</xsl:with-param>
+              <xsl:with-param name="url">folders.vsp</xsl:with-param>
+              <xsl:with-param name="params">fp=<xsl:value-of select="@id"/>,1</xsl:with-param>
               <xsl:with-param name="label">Edit Folder</xsl:with-param>
               <xsl:with-param name="img">/oMail/i/edit_16.png</xsl:with-param>
               <xsl:with-param name="img_label"> Edit</xsl:with-param>
-              <xsl:with-param name="class">button</xsl:with-param>
+              <xsl:with-param name="class">button2</xsl:with-param>
             </xsl:call-template>
           </xsl:if>
           <xsl:call-template name="nbsp"/>
         </td>
         <td nowrap="nowrap">
-          <xsl:if test="folder_id > 130">
+          <xsl:if test="@systemFlag = 'N'">
             <xsl:call-template name="make_href">
-              <xsl:with-param name="url">tools.vsp</xsl:with-param>
-              <xsl:with-param name="params">tp=<xsl:value-of select="folder_id"/>,1</xsl:with-param>
+              <xsl:with-param name="url">folders.vsp</xsl:with-param>
+              <xsl:with-param name="params">fp=<xsl:value-of select="@id"/>,2</xsl:with-param>
+              <xsl:with-param name="onclick">javascript: return confirm('Are you sure that you want to delete this folder?');</xsl:with-param>
               <xsl:with-param name="label">Delete Folder</xsl:with-param>
               <xsl:with-param name="img">/oMail/i/del_16.png</xsl:with-param>
               <xsl:with-param name="img_label"> Delete</xsl:with-param>
-              <xsl:with-param name="class">button</xsl:with-param>
+              <xsl:with-param name="class">button2</xsl:with-param>
             </xsl:call-template>
           </xsl:if>
           <xsl:call-template name="nbsp"/>
@@ -172,20 +352,46 @@
             <xsl:with-param name="label">Create Folder</xsl:with-param>
             <xsl:with-param name="img">/oMail/i/add_16.png</xsl:with-param>
             <xsl:with-param name="img_label"> Create</xsl:with-param>
-            <xsl:with-param name="class">button</xsl:with-param>
+            <xsl:with-param name="class">button2</xsl:with-param>
           </xsl:call-template>
         </td>
       </tr>
     </table>
   </xsl:template>
   <!-- ====================================================================================== -->
-  <xsl:template match="folder">
+  <xsl:template match="folder[@smartFlag='N']">
+    <xsl:if test="@id != //object/@id">
     <option>
-      <xsl:attribute name="value"><xsl:value-of select="folder_id"/></xsl:attribute>
+        <xsl:attribute name="value"><xsl:value-of select="@id"/></xsl:attribute>
+        <xsl:if test="@id = //object/parent_id">
+          <xsl:attribute name="selected">1</xsl:attribute>
+        </xsl:if>
       <xsl:value-of select="level/@str"/>
       <xsl:value-of select="name"/>
     </option>
     <xsl:apply-templates select="folders/folder"/>
+    </xsl:if>
+  </xsl:template>
+  <!-- ====================================================================================== -->
+  <xsl:template match="folder[@smartFlag='N']" mode="search">
+    <xsl:if test="@id != //object/@id">
+      <option>
+        <xsl:attribute name="value"><xsl:value-of select="@id"/></xsl:attribute>
+        <xsl:if test="@id = //object/query/q_fid">
+          <xsl:attribute name="selected">1</xsl:attribute>
+        </xsl:if>
+        <xsl:value-of select="level/@str"/>
+        <xsl:value-of select="name"/>
+      </option>
+      <xsl:apply-templates select="folders/folder" mode="search" />
+    </xsl:if>
+  </xsl:template>
+  <!-- ====================================================================================== -->
+  <xsl:template name="searchFolders">
+    <select name="q_fid" style="width:150px" id="folders" mode="search">
+      <option value="0"> All folders </option>
+      <xsl:apply-templates select="folders/folder" mode="search" />
+    </select>
   </xsl:template>
   <!-- ====================================================================================== -->
   <xsl:template name="calc_size">

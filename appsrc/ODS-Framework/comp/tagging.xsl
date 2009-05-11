@@ -857,7 +857,6 @@ function selectAllCheckboxes (form, btn, txt)
 				    ord := ord + 1;
 				    insert into tag_user (tu_u_id, tu_trs, tu_order) values (self.u_id, id, ord);
 				  }
-				delete from tag_rules where rs_trs = id;
 
 				delete from tag_content_tc_text_query where tt_tag_set = id;
 				delete from SYS_ANN_PHRASE where AP_APS_ID = self.trs_aps_id;
@@ -871,6 +870,17 @@ function selectAllCheckboxes (form, btn, txt)
 				values (self.trs_aps_id, self.u_name || '\'s ' || self.trs_name.ufl_value,
 					self.u_id, http_nogroup_gid (), self.trs_apc_id, 'x-any', null, 10000, 1);
 
+			        declare moat_save any;
+			        moat_save := vector ();
+		                foreach (any r in self.trs_data) do
+		                  {
+				     for select mu_url from moat.DBA.moat_user_meanings where mu_trs_id = id and mu_tag = r[1] do
+				        {
+					  moat_save := vector_concat (moat_save, vector (vector (r[1], mu_url)));
+					}
+		  	          }		  
+
+				delete from tag_rules where rs_trs = id;
 				foreach (any r in self.trs_data) do
 				  {
 				    insert into tag_rules (rs_trs, rs_query, rs_tag, rs_is_phrase)
@@ -884,6 +894,10 @@ function selectAllCheckboxes (form, btn, txt)
 				        tt_query_tag_content (r[0], self.u_id, '', '', serialize (vector (id, r[1], r[2])));
 				      }
 				  }
+				foreach (any r in moat_save) do
+				  {
+				    insert soft moat.DBA.moat_user_meanings (mu_trs_id, mu_tag, mu_url) values (id, r[0], r[1]);
+			          }	  
 			    ]]></v:method>
 			<v:button action="simple" name="trs_btn" value="Save">
 			    <v:on-post><![CDATA[

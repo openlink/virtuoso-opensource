@@ -37,7 +37,7 @@
         <xsl:attribute name="value"><xsl:value-of select="mode"/></xsl:attribute>
       </input>
       <div id="mgrid_info">
-        <xsl:variable name="cf" select="folders//folder[folder_id = $fid]"/>
+        <xsl:variable name="cf" select="folders//folder[@id = $fid]"/>
         <span>
           <b>Search: </b>
             <xsl:choose>
@@ -140,12 +140,12 @@
     </select>
   </xsl:template>
   <!-- ====================================================================================== -->
-  <xsl:template match="folder">
+  <xsl:template match="folder[@smartFlag='N']">
     <option>
-      <xsl:if test="/page/query/q_fid = folder_id">
+      <xsl:if test="/page/query/q_fid = @id">
         <xsl:attribute name="selected"/>
       </xsl:if>
-      <xsl:attribute name="value"><xsl:value-of select="folder_id"/></xsl:attribute>
+      <xsl:attribute name="value"><xsl:value-of select="@id"/></xsl:attribute>
       <xsl:value-of select="level/@str"/>
       <xsl:value-of select="name"/>
     </option>
@@ -202,12 +202,12 @@
                     <label for="q_after">Received after</label>
                   </th>
                   <td>
-                    <input type="checkbox" name="q_after" value="1" onclick="AllowDate('q_after')" id="q_after">
-                      <xsl:if test="query/q_after/@use = 1">
-                        <xsl:attribute name="checked"/>
-                      </xsl:if>
+                    <input type="text" name="q_after" size="10" id="q_after">
+                      <xsl:attribute name="value"><xsl:value-of select="query/q_after"/></xsl:attribute>
                     </input>
-                    <xsl:apply-templates select="query/q_after/select" mode="openx"/>
+                    <span>
+                      <img id="q_after_select" src="/oMail/i/pick_calendar.gif" onclick="javascript: cPopup.select($('q_after'), 'q_after_select', 'yyyy-MM-dd');" border="0" />
+                    </span>
                   </td>
                 </tr>
                 <tr>
@@ -223,12 +223,12 @@
                     <label for="q_before">Received before</label>
                   </th>
                   <td>
-                    <input type="checkbox" name="q_before" value="1" onclick="AllowDate('q_before')" id="q_before">
-                      <xsl:if test="query/q_before/@use = 1">
-                        <xsl:attribute name="checked"/>
-                      </xsl:if>
+                    <input type="text" name="q_before" size="10" id="q_before">
+                      <xsl:attribute name="value"><xsl:value-of select="query/q_before"/></xsl:attribute>
                     </input>
-                    <xsl:apply-templates select="query/q_before/select" mode="openx"/>
+                    <span>
+                      <img id="q_before_select" src="/oMail/i/pick_calendar.gif" onclick="javascript: cPopup.select($('q_before'), 'q_before_select', 'yyyy-MM-dd');" border="0" />
+                    </span>
                   </td>
                 </tr>
                 <tr>
@@ -257,10 +257,10 @@
                     </input>
                   </td>
                   <th>
-                    <label for="att">With attachment(s)</label>
+                    <label for="q_attach">With attachment(s)</label>
                   </th>
                   <td class="mb">
-                    <input type="checkbox" name="q_attach" value="1" id="att">
+                    <input type="checkbox" name="q_attach" value="1" id="q_attach">
                       <xsl:if test="query/q_attach = 1">
                         <xsl:attribute name="checked"/>
                       </xsl:if>
@@ -276,7 +276,15 @@
                       <xsl:attribute name="value"><xsl:value-of select="query/q_tags"/></xsl:attribute>
                     </input>
                   </td>
-                  <td colspan="2">&nbsp;
+                  <th>
+                    <label for="q_read">Unread mails</label>
+                  </th>
+                  <td class="mb">
+                    <input type="checkbox" name="q_read" value="1" id="q_read">
+                      <xsl:if test="query/q_read = 1">
+                        <xsl:attribute name="checked"/>
+                      </xsl:if>
+                    </input>
                   </td>
                 </tr>
               </table>
@@ -340,29 +348,17 @@
             <xsl:with-param name="alt">Search</xsl:with-param>
           </xsl:call-template>
           <xsl:call-template name="make_submit">
+            <xsl:with-param name="name">fa_save</xsl:with-param>
+            <xsl:with-param name="value">Save</xsl:with-param>
+            <xsl:with-param name="alt">Save</xsl:with-param>
+          </xsl:call-template>
+          <xsl:call-template name="make_submit">
             <xsl:with-param name="name">fa_cancel</xsl:with-param>
             <xsl:with-param name="value">Cancel</xsl:with-param>
             <xsl:with-param name="alt">Cancel Search</xsl:with-param>
           </xsl:call-template>
         </div>
         <script>
-          function ChStatus(pre, status) {
-            eval(pre + '_d.disabled = ' + status);
-            eval(pre + '_m.disabled = ' + status);
-            eval(pre + '_y.disabled = ' + status);
-          }
-
-          function AllowDate(param) {
-            pre = 'document.f1.' + param;
-            obj = eval(pre);
-            if(obj.checked == 0)
-              ChStatus(pre, 1);
-            else
-              ChStatus(pre,0);
-          }
-          AllowDate('q_after');
-          AllowDate('q_before');
-
           initTab2(2, 1);
         </script>
       </xsl:otherwise>

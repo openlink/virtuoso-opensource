@@ -647,10 +647,10 @@
   </xsl:template>
 
   <!-- ====================================================================================== -->
-  <xsl:template match="folder">
+  <xsl:template match="folder[@smartFlag='N']">
     <option>
-      <xsl:attribute name="value"><xsl:value-of select="folder_id"/></xsl:attribute>
-      <xsl:if test="folder_id = /page/message/folder_id">
+      <xsl:attribute name="value"><xsl:value-of select="@id" /></xsl:attribute>
+      <xsl:if test="@id = /page/message/folder_id">
         <xsl:attribute name="selected">1</xsl:attribute>
       </xsl:if>
       <xsl:value-of select="level/@str"/>

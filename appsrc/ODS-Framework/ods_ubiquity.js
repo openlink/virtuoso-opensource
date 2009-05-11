@@ -634,6 +634,9 @@ CmdUtils.CreateCommand({
   }
 });
 
+////////////////////////////////////
+///// ods users ////////////////////
+////////////////////////////////////
 CmdUtils.CreateCommand({
   name: "ods-get-user",
   takes: {"username": noun_arb_text},
@@ -732,6 +735,86 @@ CmdUtils.CreateCommand({
 });
 
 CmdUtils.CreateCommand({
+  name: "ods-create-user-topicOfInterest",
+  takes: {"topicURI": noun_arb_text},
+  modifiers: {"label": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-create-topicOfInterest &lt;topicURI&gt; label &lt;topicLabel&gt;",
+  execute: function (topicURI, modifiers) {
+    try {
+      checkParameter(topicURI.text, "topicURI");
+      var params = {topicURI: topicURI.text};
+      addParameter(modifiers, "label", params, "topicLabel");
+      odsExecute("user.topicOfInterest.new", params);
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-user-topicOfInterest",
+  takes: {"topicURI": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-delete-topicOfInterest &lt;topicURI&gt;",
+  execute: function (topicURI) {
+    try {
+      checkParameter(topicURI.text, "topicURI");
+      var params = {topicURI: topicURI.text};
+      odsExecute("user.topicOfInterest.delete", params);
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-create-user-thingOfInterest",
+  takes: {"thingURI": noun_arb_text},
+  modifiers: {"label": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-create-thingOfInterest &lt;thingURI&gt; label &lt;thingLabel&gt;",
+  execute: function (thingURI, modifiers) {
+    try {
+      checkParameter(thingURI.text, "thingURI");
+      var params = {thingURI: thingURI.text};
+      addParameter(modifiers, "label", params, "thingLabel");
+      odsExecute("user.thingOfInterest.new", params);
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-user-thingOfInterest",
+  takes: {"thingURI": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-delete-thingOfInterest &lt;thingURI&gt;",
+  execute: function (thingURI) {
+    try {
+      checkParameter(thingURI.text, "thingURI");
+      var params = {thingURI: thingURI.text};
+      odsExecute("user.thingOfInterest.delete", params);
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
   name: "ods-create-user-annotation",
   takes: {"iri": noun_arb_text},
   modifiers: {"has": noun_arb_text, "with": noun_arb_text},
@@ -819,6 +902,133 @@ CmdUtils.CreateCommand({
   }
 });
 
+CmdUtils.CreateCommand({
+  name: "ods-create-user-offer",
+  takes: {"offerName": noun_arb_text},
+  modifiers: {"comment": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-create-user-offer &lt;offerName&gt; comment &lt;offerComment&gt;",
+  execute: function (offerName, modifiers) {
+    try {
+      checkParameter(offerName.text, "offerName");
+      var params = {offerName: offerName.text};
+      addParameter(modifiers, "comment", params, "offerComment");
+      odsExecute("user.offer.new", params);
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-user-offer",
+  takes: {"offerName": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-delete-user-offer &lt;offerName&gt;",
+  execute: function (offerName) {
+    try {
+      checkParameter(offerName.text, "offerName");
+      var params = {offerName: offerName.text};
+      odsExecute("user.offer.delete", params);
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-create-user-offer-property",
+  takes: {"offerName": noun_arb_text},
+  modifiers: {"property": noun_arb_text, "value": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-create-user-offer-property &lt;offerName&gt; property &lt;offerProperty&gt; value &lt;offerPropertyValue&gt;",
+  execute: function (offerName, modifiers) {
+    try {
+      checkParameter(offerName.text, "offerName");
+      var params = {offerName: offerName.text};
+      addParameter(modifiers, "property", params, "offerProperty", true);
+      addParameter(modifiers, "value", params, "offerPropertyValue");
+      odsExecute("user.offer.property.new", params);
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-user-offer-property",
+  takes: {"offerName": noun_arb_text},
+  modifiers: {"property": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-delete-user-offer-property &lt;offerName&gt; property &lt;offerProperty&gt;",
+  execute: function (offerName, modifiers) {
+    try {
+      checkParameter(offerName.text, "offerName");
+      var params = {offerName: offerName.text};
+      addParameter(modifiers, "property", params, "offerProperty", true);
+      odsExecute("user.offer.property.delete", params);
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-create-user-wish",
+  takes: {"wishName": noun_arb_text},
+  modifiers: {"type": noun_arb_text, "comment": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-create-user-wish &lt;wishName&gt; type &lt;Wants|Has&gt; comment &lt;wishComment&gt;",
+  execute: function (wishName, modifiers) {
+    try {
+      checkParameter(wishName.text, "wishName");
+      var params = {wishName: wishName.text};
+      addParameter(modifiers, "type", params, "wishType", true);
+      addParameter(modifiers, "comment", params, "wishComment");
+      odsExecute("user.wish.new", params);
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-user-wish",
+  takes: {"wishName": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-delete-user-wish &lt;wishName&gt;",
+  execute: function (wishName) {
+    try {
+      checkParameter(wishName.text, "wishName");
+      var params = {wishName: wishName.text};
+      odsExecute("user.wish.delete", params);
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+////////////////////////////////////
+///// ods instances ////////////////
+////////////////////////////////////
 CmdUtils.CreateCommand({
   name: "ods-get-instance-id",
   takes: {"instanceName": noun_arb_text},

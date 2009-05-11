@@ -26,18 +26,8 @@
   <xsl:include href="common.xsl"/>
   <!-- ====================================================================================== -->
   <xsl:template match="page">
-    <script language="JavaScript">
-      function cdel(acc_id){
-        if(confirm('Are you sure you want to delete this account ')){
-          document.dacc.del_acc_id.value = acc_id;
-          document.dacc.submit();
-          return true;
-        }
-      }
-    </script>
     <form action="ch_pop3.vsp" method="post" name="dacc">
       <xsl:call-template name="hid_sid"/>
-      <input type="hidden" name="del_acc_id" value="0"/>
       <xsl:apply-templates select="accounts"/>
       <xsl:apply-templates select="account"/>
     </form>
@@ -139,7 +129,9 @@
         </xsl:call-template>
         <xsl:call-template name="nbsp"/>
         <xsl:call-template name="make_href">
-          <xsl:with-param name="url">javascript:cdel(<xsl:value-of select="acc_id"/>)</xsl:with-param>
+          <xsl:with-param name="url">ch_pop3.vsp</xsl:with-param>
+          <xsl:with-param name="params">cp=<xsl:value-of select="acc_id"/>,3</xsl:with-param>
+          <xsl:with-param name="onclick">javascript: return confirm('Are you sure you want to delete this account?');</xsl:with-param>
           <xsl:with-param name="label">Delete POP3 Account</xsl:with-param>
           <xsl:with-param name="img">/oMail/i/del_16.png</xsl:with-param>
           <xsl:with-param name="img_label"> Delete</xsl:with-param>
@@ -318,11 +310,11 @@
     </select>
   </xsl:template>
   <!-- ====================================================================================== -->
-  <xsl:template match="folder">
+  <xsl:template match="folder[@smartFlag='N']">
     <xsl:param name="path"/>
     <option>
-      <xsl:attribute name="value"><xsl:value-of select="folder_id"/></xsl:attribute>
-      <xsl:if test="folder_id = /page/account/acc_edit/folder_id">
+      <xsl:attribute name="value"><xsl:value-of select="@id"/></xsl:attribute>
+      <xsl:if test="@id = /page/account/acc_edit/folder_id">
         <xsl:attribute name="selected">selected</xsl:attribute>
       </xsl:if>
       <xsl:value-of select="$path"/>

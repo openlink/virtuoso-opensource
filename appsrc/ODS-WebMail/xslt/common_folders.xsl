@@ -41,10 +41,10 @@
                 <xsl:call-template name="nbsp"/>
                 <xsl:call-template name="make_href">
                   <xsl:with-param name="url">box.vsp</xsl:with-param>
-                  <xsl:with-param name="label"><xsl:value-of select="substring(name,1,10)"/><xsl:if test="string-length(name) > 10">...</xsl:if></xsl:with-param>
-                  <xsl:with-param name="params">bp=<xsl:value-of select="folder_id"/>,0,<xsl:value-of select="/page/messages/order"/>,<xsl:value-of select="/page/messages/direction"/><xsl:value-of select="/page/eparams"/></xsl:with-param>
+            <xsl:with-param name="label"><xsl:value-of select="substring(name,1,15)"/><xsl:if test="string-length(name) > 15">...</xsl:if></xsl:with-param>
+            <xsl:with-param name="params">bp=<xsl:value-of select="@id"/>,0,<xsl:value-of select="/page/messages/order"/>,<xsl:value-of select="/page/messages/direction"/><xsl:value-of select="/page/eparams"/></xsl:with-param>
                   <xsl:with-param name="class">
-                    <xsl:if test="folder_id = /page/folder_id">bc</xsl:if>
+              <xsl:if test="@id = /page/folder_id">bc</xsl:if>
                   </xsl:with-param>
                 </xsl:call-template>
                 <xsl:if test="new_cnt + all_cnt != 0">
@@ -59,7 +59,7 @@
   <!-- ====================================================================================== -->
   <xsl:template match="ftree/fnode">
     <xsl:choose>
-      <xsl:when test="parent::ftree/parent::folder/folder_id = $fid">
+      <xsl:when test="parent::ftree/parent::folder/@id = $fid">
         <xsl:variable name="open">_open</xsl:variable>
       </xsl:when>
       <xsl:otherwise>

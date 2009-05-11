@@ -220,7 +220,7 @@
             <xsl:with-param name="id">spam_msg_action</xsl:with-param>
             <xsl:with-param name="value">1</xsl:with-param>
             <xsl:with-param name="checked"><xsl:if test=". > 0">1</xsl:if></xsl:with-param>
-            <xsl:with-param name="onclick">javascript: WebMail.enableRadioGroup('spam_msg_action');</xsl:with-param>
+            <xsl:with-param name="onclick">javascript: OMAIL.enableRadioGroup('spam_msg_action');</xsl:with-param>
           </xsl:call-template>
           When messages are determined to be Spam
         </label>

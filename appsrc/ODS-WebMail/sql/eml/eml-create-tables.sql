@@ -100,14 +100,44 @@ OMAIL.WA.exec_no_error (
 
 OMAIL.WA.exec_no_error (
  'create table OMAIL.WA.FOLDERS (
-    DOMAIN_ID   INTEGER         NOT NULL,
-    USER_ID     INTEGER         NOT NULL,
-    FOLDER_ID   INTEGER         NOT NULL,
-    PARENT_ID   INTEGER,
-    NAME        VARCHAR(100)    NOT NULL,
+    DOMAIN_ID   integer         not null,
+    USER_ID     integer         not null,
+    FOLDER_ID   integer         not null,
+    PARENT_ID   integer         default 0,
+    SYSTEM_FLAG char(1)         default ''N'',
+    SMART_FLAG  char(1)         default ''N'',
+    SEQ_NO      integer,
+    NAME        varchar         not null,
+    PATH        varchar,
+    DATA        long varchar,
 
     PRIMARY KEY (DOMAIN_ID,USER_ID,FOLDER_ID)
   )'
+)
+;
+
+OMAIL.WA.exec_no_error (
+  'alter table OMAIL.WA.FOLDERS add SYSTEM_FLAG char(1) default ''N''', 'C', 'OMAIL.WA.FOLDERS', 'SYSTEM_FLAG'
+)
+;
+
+OMAIL.WA.exec_no_error (
+  'alter table OMAIL.WA.FOLDERS add SMART_FLAG char(1) default ''N''', 'C', 'OMAIL.WA.FOLDERS', 'SMART_FLAG'
+)
+;
+
+OMAIL.WA.exec_no_error (
+  'alter table OMAIL.WA.FOLDERS add SEQ_NO integer', 'C', 'OMAIL.WA.FOLDERS', 'SEQ_NO'
+)
+;
+
+OMAIL.WA.exec_no_error (
+  'alter table OMAIL.WA.FOLDERS add PATH varchar', 'C', 'OMAIL.WA.FOLDERS', 'PATH'
+)
+;
+
+OMAIL.WA.exec_no_error (
+  'alter table OMAIL.WA.FOLDERS add DATA long varchar', 'C', 'OMAIL.WA.FOLDERS', 'DATA'
 )
 ;
 
@@ -298,7 +328,8 @@ OMAIL.WA.exec_no_error (
    {
      if (O.DOMAIN_ID = 1)
        OMAIL.WA.dashboard_delete(O.DOMAIN_ID, O.USER_ID, O.MSG_ID);
-     if (O.DOMAIN_ID <> 1) {
+     if (O.DOMAIN_ID <> 1)
+     {
        declare _name, _group any;
 
        _name := OMAIL.WA.domain_nntp_name (O.DOMAIN_ID);
@@ -316,7 +347,8 @@ OMAIL.WA.exec_no_error (
   'CREATE TRIGGER EML_MSG_PARTS_A_I after insert on OMAIL.WA.MSG_PARTS referencing new as N
    {
      OMAIL.WA.dsize_update(N.DOMAIN_ID, N.USER_ID, N.MSG_ID);
-     if ((N.DOMAIN_ID <> 1) and (N.PART_ID = 1)) {
+     if ((N.DOMAIN_ID <> 1) and (N.PART_ID = 1))
+     {
        declare id integer;
        declare rfc_id, rfc_header, rfc_references, subject, address, addresses varchar;
        declare ts datetime;
@@ -363,7 +395,8 @@ OMAIL.WA.exec_no_error (
 OMAIL.WA.exec_no_error (
   'CREATE TRIGGER EML_MSG_PARTS_NEWS_A_I after insert on OMAIL.WA.MSG_PARTS order 30 referencing new as N
    {
-     if ((N.DOMAIN_ID <> 1) and (N.PART_ID = 1)) {
+     if ((N.DOMAIN_ID <> 1) and (N.PART_ID = 1))
+     {
        declare grp, ngnext integer;
        declare rfc_id, nInstance any;
 
@@ -574,7 +607,8 @@ create procedure OMAIL.WA.MSG_PARTS_TDATA_HOOK (inout vtb any, inout d_id any, i
   if (not is_empty_or_null(_tdata))
     vt_batch_feed (vtb, _tdata, mode);
 
-  if (not is_empty_or_null(_tags)) {
+  if (not is_empty_or_null(_tags))
+  {
     _tags := split_and_decode (_tags, 0, '\0\0,');
     foreach (any tag in _tags) do {
       tag := concat('^T', trim(tag));

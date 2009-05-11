@@ -254,7 +254,8 @@ function confirmAction (confirmMsq, form, txt, selectionMsq)
 }
 
 // ---------------------------------------------------------------------------
-function selectAllCheckboxes (obj, prefix) {
+function selectAllCheckboxes (obj, prefix)
+{
   var objForm = obj.form;
   for (var i = 0; i < objForm.elements.length; i++) {
     var o = objForm.elements[i];
@@ -360,9 +361,9 @@ function addChecked (objForm, objName, selectionMsq)
     var destField = window.opener.document.f1.elements[objForm.elements["set"].value];
 
     destField.value = (destField.value).replace(';', ',');
-    destField.value = WebMail.trim(destField.value);
-    destField.value = WebMail.trim(destField.value, ',');
-    destField.value = WebMail.trim(destField.value);
+    destField.value = OMAIL.trim(destField.value);
+    destField.value = OMAIL.trim(destField.value, ',');
+    destField.value = OMAIL.trim(destField.value);
     destField.value = destField.value + ',';
     for (var i = 0; i < objForm.elements.length; i = i + 1)
     {
@@ -378,9 +379,8 @@ function addChecked (objForm, objName, selectionMsq)
         }
       }
     }
-    destField.value = WebMail.trim(destField.value, ',');
+    destField.value = OMAIL.trim(destField.value, ',');
   }
-
   window.close();
 }
 
@@ -394,25 +394,42 @@ function davBrowse (fld)
 }
 
 // ---------------------------------------------------------------------------
-var WebMail = new Object();
+var OMAIL = new Object();
 
-// ---------------------------------------------------------------------------
-WebMail.trim = function (sString, sChar)
+OMAIL.forms = new Object();
+
+OMAIL.trim = function (sString, sChar)
+{
+
+  if (sString)
 {
   if (sChar == null)
+    {
     sChar = ' ';
-
+    }
   while (sString.substring(0,1) == sChar)
+    {
     sString = sString.substring(1, sString.length);
-
+    }
   while (sString.substring(sString.length-1, sString.length) == sChar)
+    {
     sString = sString.substring(0,sString.length-1);
-
+    }
+  }
   return sString;
 }
 
-// ---------------------------------------------------------------------------
-WebMail.toggleCell = function (cell)
+OMAIL.enableRadioGroup = function (cell)
+{
+  var c = $(cell);
+  var r = document.forms['f1'].elements[cell+'_radio'];
+  for (var i = 0; i < r.length; i = i + 1)
+  {
+    r[i].disabled = !c.checked;
+  }
+}
+
+OMAIL.toggleCell = function (cell)
 {
   var c = $('row_'+cell);
   c.style.display = (c.style.display == "none") ? showRow : "none";
@@ -432,43 +449,6 @@ WebMail.toggleCell = function (cell)
     createHidden (document, 'eparams', '&x_'+cell+'='+v);
   }
   return false;
-}
-
-// ---------------------------------------------------------------------------
-WebMail.enableRadioGroup = function (cell)
-{
-  var c = $(cell);
-  var r = document.forms['f1'].elements[cell+'_radio'];
-  for (var i = 0; i < r.length; i = i + 1)
-  {
-    r[i].disabled = !c.checked;
-  }
-}
-
-// ---------------------------------------------------------------------------
-var OMAIL = new Object();
-
-OMAIL.forms = new Object();
-
-OMAIL.trim = function (sString, sChar)
-{
-
-  if (sString)
-  {
-    if (sChar == null)
-    {
-      sChar = ' ';
-    }
-    while (sString.substring(0,1) == sChar)
-    {
-      sString = sString.substring(1, sString.length);
-    }
-    while (sString.substring(sString.length-1, sString.length) == sChar)
-    {
-      sString = sString.substring(0,sString.length-1);
-    }
-  }
-  return sString;
 }
 
 OMAIL.writeCookie = function (name, value, hours)

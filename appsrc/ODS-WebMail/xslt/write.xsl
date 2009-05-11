@@ -84,11 +84,11 @@
               x_dcc = true;
           }
           if (x_cc)
-            WebMail.toggleCell('cc');
+            OMAIL.toggleCell('cc');
           if (x_bcc)
-            WebMail.toggleCell('bcc');
+            OMAIL.toggleCell('bcc');
           if (x_dcc)
-            WebMail.toggleCell('dcc');
+            OMAIL.toggleCell('dcc');
         }
 
       ]]>
@@ -160,12 +160,12 @@
             </xsl:for-each>
           </select>
           <xsl:call-template name="nbsp"/>
-          <a href="#" onClick="javascript: WebMail.toggleCell('cc'); return false;"><label id="label_cc">Add CC</label></a>
+          <a href="#" onClick="javascript: OMAIL.toggleCell('cc'); return false;"><label id="label_cc">Add CC</label></a>
           <xsl:call-template name="nbsp"/>
-          <a href="#" onClick="javascript: WebMail.toggleCell('bcc'); return false;"><label id="label_bcc">Add BCC</label></a>
+          <a href="#" onClick="javascript: OMAIL.toggleCell('bcc'); return false;"><label id="label_bcc">Add BCC</label></a>
           <xsl:if test="(//conversation = 1) and (//discussion = 1)">
             <xsl:call-template name="nbsp"/>
-            <a href="#" onClick="javascript: WebMail.toggleCell('dcc'); return false;"><label id="label_dcc">Add DCC</label></a>
+            <a href="#" onClick="javascript: OMAIL.toggleCell('dcc'); return false;"><label id="label_dcc">Add DCC</label></a>
           </xsl:if>
         </td>
       </tr>

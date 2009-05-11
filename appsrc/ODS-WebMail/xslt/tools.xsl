@@ -102,15 +102,15 @@
     </tr>
   </xsl:template>
   <!-- ====================================================================================== -->
-  <xsl:template match="folder">
-    <xsl:if test="folder_id != /page/object/object_id">
+  <xsl:template match="folder[@smartFlag='N']">
+    <xsl:if test="@id != /page/object/object_id">
       <option>
-        <xsl:attribute name="value"><xsl:value-of select="folder_id"/></xsl:attribute>
-        <xsl:value-of select="level/@str"/>
-        <xsl:value-of select="name"/>
-        <xsl:if test="folder_id = /page/object/parent_id">
+        <xsl:if test="@id = /page/object/parent_id">
           <xsl:attribute name="selected">selected</xsl:attribute>
         </xsl:if>
+        <xsl:attribute name="value"><xsl:value-of select="@id"/></xsl:attribute>
+        <xsl:value-of select="level/@str"/>
+        <xsl:value-of select="name"/>
       </option>
       <xsl:apply-templates select="folders/folder"/>
     </xsl:if>

@@ -574,6 +574,9 @@
 			<xsl:for-each select="image">
 				<foaf:depiction rdf:resource="{.}"/>
 			</xsl:for-each>
+			<xsl:for-each select="artists/artist">
+				<foaf:topic rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(. , ' ', '+')))}"/>
+			</xsl:for-each>
             <lfm:attendance>
 				<xsl:value-of select="attendance"/>
             </lfm:attendance>
