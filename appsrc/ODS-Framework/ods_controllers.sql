@@ -1,19 +1,40 @@
+--
+--  $Id$
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2009 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
 
---!
---! ODS API for accessing & data manipulation
---! All requests are authorized via one of :
---! 1) HTTP authentication (not yet supported)
---! 2) OAuth
---! 3) VSPX session (sid & realm)
---! 4) username=<user>&password=<pass>
---! The effective user is authenticated account
---!
---! Important:
---! Any API method MUST follow namin convention as follows
---! methods : ods.<object type>.<action>
---! parameters : <lower_case>
---! composite patameters: atom-pub, OpenSocial XML format
---! response : GData format , i.e. Atom extension
+--
+-- ODS API for accessing & data manipulation
+-- All requests are authorized via one of:
+--   1) HTTP authentication (not yet supported)
+--   2) OAuth
+--   3) VSPX session (sid & realm)
+--   4) username=<user>&password=<pass>
+-- The effective user is authenticated account
+--
+-- Important:
+-- Any API method MUST follow namin convention as follows
+-- methods : ods.<object type>.<action>
+-- parameters : <lower_case>
+-- composite patameters: atom-pub, OpenSocial XML format
+-- response : GData format , i.e. Atom extension
 --
 -- Note: some of methods bellow uses ods_api.sql code
 
@@ -322,7 +343,7 @@ create procedure ODS.ODS_API."user.update" (
 	in user_info any) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
   declare pars any;
 
   declare exit handler for sqlstate '*' {
@@ -353,7 +374,7 @@ create procedure ODS.ODS_API."user.password_change" (
 	in new_password varchar) __soap_http 'text/xml'
 {
   declare uname, msg varchar;
-  declare rc int;
+  declare rc integer;
 
   declare exit handler for sqlstate '*' {
     rollback work;
@@ -377,7 +398,7 @@ create procedure ODS.ODS_API."user.delete" (
   in name varchar) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
 
   declare exit handler for sqlstate '*' {
     rollback work;
@@ -403,7 +424,7 @@ create procedure ODS.ODS_API."user.enable" (
   in name varchar) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
 
   declare exit handler for sqlstate '*' {
     rollback work;
@@ -431,7 +452,7 @@ create procedure ODS.ODS_API."user.disable" (
   in name varchar) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
 
   declare exit handler for sqlstate '*' {
     rollback work;
@@ -492,7 +513,7 @@ create procedure ODS.ODS_API."user.invite" (
   in custom_message varchar := '') __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
   declare i, uids, sn_id, msg, url any;
   declare copy varchar;
   declare _u_full_name, _u_e_mail varchar;
@@ -570,7 +591,7 @@ ret:
 create procedure ODS.ODS_API."user.invitation" (in invitation_id int, in approve smallint) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
   declare sn_me, sn_from int;
   declare e_mail varchar;
   declare msg varchar;
@@ -609,7 +630,7 @@ ret:
 create procedure ODS.ODS_API."user.invitations.get" () __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
   declare sn_me, sn_from int;
   declare e_mail varchar;
 
@@ -654,10 +675,13 @@ create procedure ODS.ODS_API."user.relation_update" (in friend varchar, in relat
 -- User Settings
 
 -- Tagging Rules
-create procedure ODS.ODS_API."user.tagging_rules.add" (in rulelist_name varchar, in rules any, in is_public int := 1) __soap_http 'text/xml'
+create procedure ODS.ODS_API."user.tagging_rules.add" (
+  in rulelist_name varchar,
+  in rules any,
+  in is_public int := 1) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
   declare aps_id, apc_id, id, _u_id, ord int;
   declare msg varchar;
 
@@ -726,10 +750,11 @@ ret:
 }
 ;
 
-create procedure ODS.ODS_API."user.tagging_rules.delete" (in rulelist_name varchar) __soap_http 'text/xml'
+create procedure ODS.ODS_API."user.tagging_rules.delete" (
+  in rulelist_name varchar) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
   declare _aps_id, _apc_id, id, _u_id int;
   declare msg varchar;
 
@@ -759,7 +784,9 @@ create procedure ODS.ODS_API."user.tagging_rules.delete" (in rulelist_name varch
       goto ret;
     };
 
-  select trs_id, trs_apc_id, trs_aps_id into id, _apc_id, _aps_id from DB.DBA.tag_rule_set
+  select trs_id, trs_apc_id, trs_aps_id
+    into id, _apc_id, _aps_id
+    from DB.DBA.tag_rule_set
       where trs_owner = _u_id and trs_name = rulelist_name;
 
   delete from DB.DBA.tag_rules where rs_trs = id;
@@ -774,10 +801,12 @@ ret:
 }
 ;
 
-create procedure ODS.ODS_API."user.tagging_rules.update" (in rulelist_name varchar, in rules any) __soap_http 'text/xml'
+create procedure ODS.ODS_API."user.tagging_rules.update" (
+  in rulelist_name varchar,
+  in rules any) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
   declare aps_id, apc_id, id, _u_id int;
   declare msg varchar;
 
@@ -807,7 +836,9 @@ create procedure ODS.ODS_API."user.tagging_rules.update" (in rulelist_name varch
       goto ret;
     };
 
-  select trs_id, trs_apc_id, trs_aps_id into id, apc_id, aps_id from DB.DBA.tag_rule_set
+  select trs_id, trs_apc_id, trs_aps_id
+    into id, apc_id, aps_id
+    from DB.DBA.tag_rule_set
       where trs_owner = _u_id and trs_name = rulelist_name;
 
   rc := id;
@@ -839,7 +870,7 @@ ret:
 create procedure ODS.ODS_API."user.hyperlinking_rules.add" (in rules any) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
   declare aps_id, apc_id, id, _u_id int;
   declare ap_name varchar;
   declare msg varchar;
@@ -883,7 +914,7 @@ create procedure ODS.ODS_API."user.hyperlinking_rules.update" (in rules any) __s
 create procedure ODS.ODS_API."user.hyperlinking_rules.delete" (in rules any) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
   declare aps_id, apc_id, id, _u_id int;
   declare ap_name varchar;
 
@@ -906,14 +937,146 @@ create procedure ODS.ODS_API."user.hyperlinking_rules.delete" (in rules any) __s
 }
 ;
 
+create procedure ODS.ODS_API."user.topicOfInterest.new" (
+  in topicURI varchar,
+  in topicLabel varchar := null) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc integer;
+  declare _u_id, notFound integer;
+  declare oldData, newData any;
+
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  notFound := 1;
+  topicURI := trim (topicURI);
+  topicLabel := coalesce (trim (topicLabel), '');
+  newData := '';
+  oldData := (select WAUI_INTERESTS from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname);
+  for (select property, label from DB.DBA.WA_USER_INTERESTS (txt) (property varchar, label varchar) P where txt = oldData) do
+  {
+    if (property = topicURI)
+    {
+      notFound := 0;
+      newData := newData || topicURI || ';' || topicLabel || '\n';
+    } else {
+      newData := newData || property || ';' || label || '\n';
+    }
+  }
+  if (notFound)
+    newData := newData || topicURI || ';' || topicLabel || '\n';
+  DB.DBA.WA_USER_EDIT (uname, 'WAUI_INTERESTS', newData);
+  return ods_serialize_int_res (1);
+}
+;
+
+create procedure ODS.ODS_API."user.topicOfInterest.delete" (
+  in topicURI varchar) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc integer;
+  declare _u_id integer;
+  declare oldData, newData any;
+
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  topicURI := trim (topicURI);
+  newData := '';
+  oldData := (select WAUI_INTERESTS from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname);
+  for (select property, label from DB.DBA.WA_USER_INTERESTS (txt) (property varchar, label varchar) P where txt = oldData) do
+  {
+    if (property <> topicURI)
+      newData := newData || property || ';' || label || '\n';
+  }
+  DB.DBA.WA_USER_EDIT (uname, 'WAUI_INTERESTS', newData);
+  return ods_serialize_int_res (1);
+}
+;
+
+create procedure ODS.ODS_API."user.thingOfInterest.new" (
+  in thingURI varchar,
+  in thingLabel varchar := null) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc integer;
+  declare _u_id, notFound integer;
+  declare oldData, newData any;
+
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  notFound := 1;
+  thingURI := trim (thingURI);
+  thingLabel := coalesce (trim (thingLabel), '');
+  newData := '';
+  oldData := (select WAUI_INTEREST_TOPICS from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname);
+  for (select property, label from DB.DBA.WA_USER_INTERESTS (txt) (property varchar, label varchar) P where txt = oldData) do
+  {
+    if (property = thingURI)
+    {
+      notFound := 0;
+      newData := newData || thingURI || ';' || thingLabel || '\n';
+    } else {
+      newData := newData || property || ';' || label || '\n';
+    }
+  }
+  if (notFound)
+    newData := newData || thingURI || ';' || thingLabel || '\n';
+  DB.DBA.WA_USER_EDIT (uname, 'WAUI_INTEREST_TOPICS', newData);
+  return ods_serialize_int_res (1);
+}
+;
+
+create procedure ODS.ODS_API."user.thingOfInterest.delete" (
+  in thingURI varchar) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc integer;
+  declare _u_id integer;
+  declare oldData, newData any;
+
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  thingURI := trim (thingURI);
+  newData := '';
+  oldData := (select WAUI_INTEREST_TOPICS from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname);
+  for (select property, label from DB.DBA.WA_USER_INTERESTS (txt) (property varchar, label varchar) P where txt = oldData) do
+  {
+    if (property <> thingURI)
+      newData := newData || property || ';' || label || '\n';
+  }
+  DB.DBA.WA_USER_EDIT (uname, 'WAUI_INTEREST_TOPICS', newData);
+  return ods_serialize_int_res (1);
+}
+;
+
 create procedure ODS.ODS_API."user.annotation.new" (
   in claimIri varchar,
   in claimRelation varchar,
   in claimValue varchar) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
-  declare _u_id int;
+  declare rc integer;
+  declare _u_id integer;
 
   declare exit handler for sqlstate '*' {
     rollback work;
@@ -939,8 +1102,8 @@ create procedure ODS.ODS_API."user.annotation.delete" (
   in claimValue varchar) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
-  declare _u_id int;
+  declare rc integer;
+  declare _u_id integer;
 
   declare exit handler for sqlstate '*' {
     rollback work;
@@ -967,8 +1130,8 @@ create procedure ODS.ODS_API."user.bioevent.new" (
   in bioPlace varchar := null) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
-  declare _u_id int;
+  declare rc integer;
+  declare _u_id integer;
 
   declare exit handler for sqlstate '*' {
     rollback work;
@@ -993,8 +1156,8 @@ create procedure ODS.ODS_API."user.bioevent.delete" (
   in bioPlace varchar := null) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
-  declare _u_id int;
+  declare rc integer;
+  declare _u_id integer;
 
   declare exit handler for sqlstate '*' {
     rollback work;
@@ -1018,6 +1181,194 @@ create procedure ODS.ODS_API."user.bioevent.delete" (
      where WUB_U_ID = _u_id
        and WUB_ID = bioID;
   }
+  rc := 1;
+  return ods_serialize_int_res (rc);
+}
+;
+
+create procedure ODS.ODS_API."user.offer.new" (
+  in offerName varchar,
+  in offerComment varchar := null) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc integer;
+  declare _u_id integer;
+
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  insert into DB.DBA.WA_USER_OFFERLIST (WUOL_U_ID, WUOL_OFFER, WUOL_COMMENT)
+    values (_u_id, offerName, offerComment);
+
+  rc := (select max (WUOL_ID) from DB.DBA.WA_USER_OFFERLIST);
+  return ods_serialize_int_res (rc);
+}
+;
+
+create procedure ODS.ODS_API."user.offer.delete" (
+  in offerName varchar := null) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc integer;
+  declare _u_id integer;
+
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  delete
+    from DB.DBA.WA_USER_OFFERLIST
+   where WUOL_U_ID = _u_id
+     and WUOL_OFFER = offerName;
+  rc := 1;
+  return ods_serialize_int_res (rc);
+}
+;
+
+create procedure ODS.ODS_API."user.offer.property.new" (
+  in offerName varchar,
+  in offerProperty varchar,
+  in offerPropertyValue varchar) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc integer;
+  declare _u_id, notFound integer;
+  declare oldData, newData any;
+
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  if (not exists (select 1 from DB.DBA.WA_USER_OFFERLIST where WUOL_U_ID = _u_id and WUOL_OFFER = offerName))
+		return ods_serialize_sql_error ('37000', 'The item is not found');
+
+  notFound := 1;
+  offerProperty := trim (offerProperty);
+  offerPropertyValue := coalesce (trim (offerPropertyValue), '');
+  newData := '';
+  oldData := (select WUOL_PROPERTIES from DB.DBA.WA_USER_OFFERLIST where WUOL_U_ID = _u_id and WUOL_OFFER = offerName);
+  for (select property, label from DB.DBA.WA_USER_INTERESTS (txt) (property varchar, label varchar) P where txt = oldData) do
+  {
+    if (property = offerProperty)
+    {
+      notFound := 0;
+      newData := newData || offerProperty || ';' || offerPropertyValue || '\n';
+    } else {
+      newData := newData || property || ';' || label || '\n';
+    }
+  }
+  if (notFound)
+    newData := newData || offerProperty || ';' || offerPropertyValue || '\n';
+  update DB.DBA.WA_USER_OFFERLIST
+     set WUOL_PROPERTIES = newData
+   where WUOL_U_ID = _u_id
+     and WUOL_OFFER = offerName;
+  return ods_serialize_int_res (1);
+}
+;
+
+create procedure ODS.ODS_API."user.offer.property.delete" (
+  in offerName varchar,
+  in offerProperty varchar) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc integer;
+  declare _u_id integer;
+  declare oldData, newData any;
+
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  if (not exists (select 1 from DB.DBA.WA_USER_OFFERLIST where WUOL_U_ID = _u_id and WUOL_OFFER = offerName))
+		return ods_serialize_sql_error ('37000', 'The item is not found');
+
+  offerProperty := trim (offerProperty);
+  newData := '';
+  oldData := (select WUOL_PROPERTIES from DB.DBA.WA_USER_OFFERLIST where WUOL_U_ID = _u_id and WUOL_OFFER = offerName);
+  for (select property, label from DB.DBA.WA_USER_INTERESTS (txt) (property varchar, label varchar) P where txt = oldData) do
+  {
+    if (property <> offerProperty)
+      newData := newData || property || ';' || label || '\n';
+  }
+  update DB.DBA.WA_USER_OFFERLIST
+     set WUOL_PROPERTIES = newData
+   where WUOL_U_ID = _u_id
+     and WUOL_OFFER = offerName;
+  return ods_serialize_int_res (1);
+}
+;
+
+create procedure ODS.ODS_API."user.wish.new" (
+  in wishName varchar,
+  in wishType varchar,
+  in wishComment varchar := null) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc integer;
+  declare _u_id integer;
+
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  if (wishType <> 'wl:%')
+  {
+    if (lcase (wishType) = 'has')
+      wishType := 'wl:has';
+    if (lcase (wishType) = 'wants')
+      wishType := 'wl:wants';
+  }
+  if (wishType not in ('wl:wants', 'wl:has'))
+		return ods_serialize_sql_error ('37000', 'Bad property type.');
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  insert into DB.DBA.WA_USER_WISHLIST (WUWL_U_ID, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTY)
+    values (_u_id, wishName, wishComment, wishType);
+
+  rc := (select max (WUWL_ID) from DB.DBA.WA_USER_WISHLIST);
+  return ods_serialize_int_res (rc);
+}
+;
+
+create procedure ODS.ODS_API."user.wish.delete" (
+  in wishName varchar := null) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc integer;
+  declare _u_id integer;
+
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  delete
+    from DB.DBA.WA_USER_WISHLIST
+   where WUWL_U_ID = _u_id
+     and WUWL_BARTER = wishName;
   rc := 1;
   return ods_serialize_int_res (rc);
 }
@@ -1311,7 +1662,7 @@ create procedure ODS.ODS_API."instance.create" (
 	in "public" int) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
   declare msg varchar;
 
   declare exit handler for sqlstate '*' {
@@ -1341,7 +1692,7 @@ create procedure ODS.ODS_API."instance.update" (
 	in "public" int) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
   declare dummy int;
   declare msg varchar;
 
@@ -1371,7 +1722,7 @@ create procedure ODS.ODS_API."instance.delete" (
   in inst_id integer) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
   declare inst any;
   declare h any;
   declare msg varchar;
@@ -1410,7 +1761,7 @@ create procedure ODS.ODS_API."instance.join" (
 {
   declare _wai_name, acc_type, app_type any;
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
   declare _u_id, _result any;
   declare msg varchar;
 
@@ -1455,7 +1806,7 @@ create procedure ODS.ODS_API."instance.disjoin" (
   in inst_id integer) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
 
   declare exit handler for sqlstate '*' {
     rollback work;
@@ -1615,7 +1966,7 @@ create procedure ODS.ODS_API."instance.get.id" (
   in instanceName varchar) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
 
   declare exit handler for sqlstate '*' {
     rollback work;
@@ -1635,7 +1986,7 @@ create procedure ODS.ODS_API."instance.freeze" (
   in inst_id integer) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
 
   declare exit handler for sqlstate '*'
   {
@@ -1663,7 +2014,7 @@ create procedure ODS.ODS_API."instance.unfreeze" (
   in inst_id integer) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
 
   declare exit handler for sqlstate '*'
   {
@@ -1741,10 +2092,20 @@ grant execute on ODS.ODS_API."user.tagging_rules.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.hyperlinking_rules.add" to ODS_API;
 grant execute on ODS.ODS_API."user.hyperlinking_rules.update" to ODS_API;
 grant execute on ODS.ODS_API."user.hyperlinking_rules.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.topicOfInterest.new" to ODS_API;
+grant execute on ODS.ODS_API."user.topicOfInterest.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.thingOfInterest.new" to ODS_API;
+grant execute on ODS.ODS_API."user.thingOfInterest.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.annotation.new" to ODS_API;
 grant execute on ODS.ODS_API."user.annotation.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.bioevent.new" to ODS_API;
 grant execute on ODS.ODS_API."user.bioevent.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.offer.new" to ODS_API;
+grant execute on ODS.ODS_API."user.offer.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.offer.property.new" to ODS_API;
+grant execute on ODS.ODS_API."user.offer.property.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.wish.new" to ODS_API;
+grant execute on ODS.ODS_API."user.wish.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.getFOAFData" to ODS_API;
 grant execute on ODS.ODS_API."user.getFOAFSSLData" to ODS_API;
 
@@ -1834,7 +2195,7 @@ create procedure ODS.ODS_API."briefcase.resource.get" (
   in path varchar) __soap_http 'text/xml'
 {
   declare uname, upassword varchar;
-  declare rc int;
+  declare rc integer;
   declare content, tp any;
   declare inst_id integer;
 
@@ -1866,7 +2227,7 @@ create procedure ODS.ODS_API."briefcase.resource.store" (
 	in permissions varchar := '110100100RM') __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
   declare uid, gid int;
   declare inst_id integer;
 
@@ -1893,7 +2254,7 @@ create procedure ODS.ODS_API."briefcase.resource.delete" (
   in path varchar) __soap_http 'text/xml'
 {
   declare uname, upassword varchar;
-  declare rc int;
+  declare rc integer;
   declare inst_id integer;
 
   declare exit handler for sqlstate '*'
@@ -1919,7 +2280,7 @@ create procedure ODS.ODS_API."briefcase.collection.create" (
   in permissions varchar := '110100100RM') __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
   declare uid, gid int;
   declare inst_id integer;
 
@@ -1946,7 +2307,7 @@ create procedure ODS.ODS_API."briefcase.collection.delete" (
   in path varchar) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
   declare inst_id integer;
 
   declare exit handler for sqlstate '*'
@@ -1972,7 +2333,7 @@ create procedure ODS.ODS_API."briefcase.copy" (
   in permissions varchar := '110100000RR') __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
   declare uid, gid int;
   declare inst_id, inst_id2 int;
 
@@ -2004,7 +2365,7 @@ create procedure ODS.ODS_API."briefcase.move" (
   in to_path varchar) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
   declare inst_id, inst_id2 int;
 
   declare exit handler for sqlstate '*'
@@ -2033,7 +2394,7 @@ create procedure ODS.ODS_API."briefcase.property.set" (
   in value varchar) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
   declare inst_id integer;
 
   declare exit handler for sqlstate '*'
@@ -2057,7 +2418,7 @@ create procedure ODS.ODS_API."briefcase.property.remove" (
   in property varchar) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
   declare inst_id integer;
 
   declare exit handler for sqlstate '*'
@@ -2081,7 +2442,7 @@ create procedure ODS.ODS_API."briefcase.property.get" (
   in property varchar := null) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
   declare st char;
   declare inst_id integer;
 

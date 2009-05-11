@@ -104,8 +104,8 @@
 		    <label for="wl_property">Type</label>
 		    <br />
         <v:select-list name="wl_property" xhtml_id="wl_property">
-          <v:item name="Wants" value="wants"/>
-          <v:item name="Has" value="has"/>
+          <v:item name="Wants" value="wl:wants"/>
+          <v:item name="Has" value="wl:has"/>
         </v:select-list>
 		    <br />
 		    <label for="wl_comment">Comment</label>
