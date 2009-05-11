@@ -149,7 +149,7 @@
       <xsl:copy>
         <xsl:copy-of select="@*" />
         <xsl:apply-templates select="tr[th]">
-          <xsl:with-param name="acs_marker"><img src="{wv:ResourceHREF('images/d.gif', $baseadjust)}" alt="Sort by ascending order" title="Sort by ascending order"/></xsl:with-param>
+          <xsl:with-param name="acs_marker"><img src="{wv:ResourceHREF('images/d.gif', $baseadjust)}" alt="Sort in ascending order" title="Sort in ascending order"/></xsl:with-param>
         </xsl:apply-templates>
         <xsl:apply-templates select="tr[td]">
           <xsl:sort select="td[position()=$col]/text()"/>
@@ -160,7 +160,7 @@
       <xsl:copy>
         <xsl:copy-of select="@*" />
         <xsl:apply-templates select="tr[th]">
-          <xsl:with-param name="acs_marker"><img src="{wv:ResourceHREF('images/u.gif', $baseadjust)}" alt="Sort by descending order" title="Sort by descending order"/></xsl:with-param>
+          <xsl:with-param name="acs_marker"><img src="{wv:ResourceHREF('images/u.gif', $baseadjust)}" alt="Sort in descending order" title="Sort in descending order"/></xsl:with-param>
         </xsl:apply-templates>
         <xsl:apply-templates select="tr[td]">
           <xsl:sort select="td[position()=$col]/text()" order="descending" />
@@ -214,9 +214,9 @@
                 <xsl:with-param name="wikiref_params">sort=<xsl:value-of select="@id"/>&amp;col=<xsl:value-of select="position()"/>&amp;acs=<xsl:value-of select="3 - $acs"/></xsl:with-param>
                 <xsl:with-param name="wikiref_cont">
                   <xsl:value-of select="node()" />
+              		<xsl:copy-of select="$acs_marker"/>
                 </xsl:with-param>
               </xsl:call-template>
-              <xsl:copy-of select="$acs_marker"/>
             </xsl:when>
             <xsl:otherwise>
               <xsl:call-template name="wikiref">

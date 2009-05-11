@@ -29,20 +29,20 @@ body {
   padding: 0;
   margin: 0;
   font-family: sans-serif;
-  font-size: 10pt;
+  font-size: 1em;
   background-color: #86b9d9}
 
 h1,h2,h3,h4 {
-  margin-left: 4px;
 }
 
 h1 { }
-h2 { }
+h2 {
+	margin-top: 25px;  }
 h3 { }
 h4 { }
 
 table { 
-  font-size: 9pt;
+  font-size: inherit;
   font-family: Verdana, Arial, Helvetica, sans-serif}
 
 form { display: inline; padding: 0px; margin: 0px}
@@ -57,7 +57,9 @@ input, textarea
   font-family: inherit}
 
 pre {
-  background-color: white}
+  background-color: white;
+  color: black;
+  white-space: pre-wrap}
 
 /* Main page elements */
 
@@ -182,10 +184,12 @@ div.ul-search {
 
 div.topic-text {
   padding: 2px; 
-  margin: 10px;
-  margin-left: 3px}
+  margin: 10px}
+
 .topic-text pre {
     background-color: #eeeeee;
+    padding: 5px;
+    border: 1px dashed silver;
 } 
 
 div.fm {
@@ -260,25 +264,47 @@ a.rdf-lnk {
  
 .wikitable
 {
- font: 10px Verdana, Arial, Helvetica, sans-serif;
+	font-size: inherit;
+	font-family: inherit;
   background-color: #DDD;
-  border: 0px solid #999999;
+  color: black;
+  border: 1px solid #999;
+  border-collapse: collapse;
 }
-
 .wikitable td
 {
-  background-color: #FFFFFF;
-  border-width: 0px 0px 0px 0px;
-  padding: 0px;
+  border-collapse: collapse;
+	background-color: #FFFFFF;
+	padding: 2px;
+  border: 1px solid silver;
 }
 
 .wikitable th
 {
-  background-color: #eeddee;
-  border-width: 1px 1px 1px 1px;
+	border-collapse: collapse;
+  background-color: ddd;
+  font-family: Tahoma;
+  color: black;
+  border: 1px solid silver;
   text-align: center;
-  padding: 1px;
 }
+.wikitable th a {
+	text-decoration: none;
+	color: black;
+	display: block;
+	background-color: inherit;
+}
+.wikitable th a img {
+	border: none;
+	position: relative;
+	top: 3px;
+}
+
+.wikitable th a:hover {
+	text-decoration: underline;
+	color: black;
+	background-color: #99ccff;
+	}
 
 .wikitable1 {
     font: 12px Verdana, Arial, Helvetica, sans-serif;
@@ -347,8 +373,7 @@ div.wiki-error {
     text-align: left}
 
 .wikitoc ul {
-  list-style-type: none;
-  font-size: 12pt}
+  font-size: 1em}
 
 
 #node-footer {
@@ -627,11 +652,7 @@ div.wiki-source-type {
   font-weight: bold}
 
 .wikitoc ul {
-   list-style-type: none;
-   list-style-position: inside;
-   padding: 0 0 0 0;
-   margin: 0 0 0 0;
-   font-size: 12pt}
+   font-size: 1em}
 
 .wikitoc li:hover { 
   background-color: #FDF;}

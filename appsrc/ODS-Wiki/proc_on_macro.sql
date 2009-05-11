@@ -690,21 +690,63 @@ create function WV.WIKI.MACRO_TOC  (inout _data varchar, inout _context any, ino
 	get_keyword ('ti_curuser_wikiname', _env, 'WikiGuest'),
 	null), 2);
 
-  return xquery_eval ('
+	
+  declare _html, _txt varchar;
+  declare hayches any;
+  declare _out varchar; _out := '';
+  declare n, p int;
+  declare i, j integer; i := 0;
+  declare _num_h1 integer;
+  
+  _num_h1 := length(xpath_eval('//h1', _xml_doc, 0, vector('baseadjust', connection_get ('WIKIV BaseAdjust'))));
+  if (_num_h1 = 1) {
+   	hayches := xpath_eval('//h2 | //h3 | //h4 | //h5 ', 
+    	_xml_doc, 0, 
+  		vector('baseadjust', connection_get ('WIKIV BaseAdjust'))); --dbg_obj_print(hayches);
+  } else {
+    hayches := xpath_eval('//h1 | //h2 | //h3 | //h4 ', 
+  		_xml_doc, 0, 
+  		vector('baseadjust', connection_get ('WIKIV BaseAdjust'))); --dbg_obj_print(hayches);
+  }
+  
+  while (i < length(hayches)) {
+  	_txt := WV.WIKI.TRIM(cast(xpath_eval('text()', hayches[i], 1) as varchar));
+  	if (i = 0) {
+  		_out := _out || sprintf('<li><a href="#%V">%V</a></li>\n', _txt, _txt);
+	} else {
+ 		n := cast (subseq (cast(xpath_eval('local-name()', hayches[i], 1) as varchar), 1) as int);
+ 		p := cast (subseq (cast(xpath_eval('local-name()', hayches[i - 1], 1) as varchar), 1) as int);
+ 		--dbg_obj_print(hayches[i], n, p);
+  		if (n = p) {
+  			_out := _out || sprintf('<li><a href="#%V">%V</a></li>\n', _txt, _txt);
+		} 
+  		if (n > p) {
+  			_out := _out || repeat('\n<ul>', n - p);
+  			_out := _out || sprintf('<li><a href="#%V">%V</a></li>\n', _txt, _txt);
+		} 
+  		if (n < p) {
+  			_out := _out || repeat('</ul>\n\n', p - n);
+  			_out := _out || sprintf('<li><a href="#%V">%V</a></li>\n', _txt, _txt);
+		} 
+	}
+  	i := i + 1;
+  } 
+  n := cast (subseq (cast(xpath_eval('local-name()', hayches[0], 1) as varchar), 1) as int);
+  p := cast (subseq (cast(xpath_eval('local-name()', hayches[i-1], 1) as varchar), 1) as int);
+  _out := _out || repeat('</ul>\n', p - n);
+  return '
 <div class="MACRO_TOC" xmlns:wv="http://www.openlinksw.com/Virtuoso/WikiV/">
  <div class="wikitoc">
   <ul>
-  {
-    for \$t in //h1 | //h2 | //h3 | //h4 | //h5 | //h6
-    return
-	<li> { for \044nb in wv:nnbsps(\$t/local-name())//y return <label style="width: 10px; color:white;">_</span> }<a href="#{wv:trim(\$t/text())}"> { \$t/text() } </a>  </li>
-  }
+' || _out || '
   </ul>
  </div>
-</div>', _xml_doc, 1, vector('baseadjust', connection_get ('WIKIV BaseAdjust')));
-	
+</div>
+';
+
 }
 ;
+
 
 
 create function WV.WIKI.NNBSPS (in header_class varchar)
