@@ -1118,7 +1118,6 @@ page_col_cmp_1 (buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * cl, caddr_t v
       dv2 = (db_buf_t) value;
       return (dv_compare (dv1, dv2, cl->cl_sqt.sqt_collation, offset));
     default:
-      log_error ("Type %d not supported in comparison", cl->cl_sqt.sqt_dtp);
       GPF_T1 ("type not supported in comparison");
     }
   return 0;

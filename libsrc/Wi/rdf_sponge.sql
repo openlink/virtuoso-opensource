@@ -740,7 +740,18 @@ resp_received:
       return local_iri;
     }
   if (ret_body is null)
+    {
+      rollback work;
+      update DB.DBA.SYS_HTTP_SPONGE
+	  set HS_SQL_STATE = 'RDFXX',
+	  HS_SQL_MESSAGE = sprintf ('Unable to retrieve RDF data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]),
+	  HS_EXPIRATION = now (),
+	  HS_EXP_IS_TRUE = 0
+	      where
+	      HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
+      commit work;
     signal ('RDFXX', sprintf ('Unable to retrieve RDF data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]));
+    }
   --!!!TBD: proper character set handling in response
   new_download_size := length (ret_body);
 
@@ -1055,7 +1066,7 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
     {
       --if (dest is null)
       --  DB.DBA.SPARUL_CLEAR (coalesce (dest, graph_iri), 1);
-      whenever sqlstate '*' goto resignal_parse_error;
+      whenever sqlstate '*' goto load_grddl;
       log_enable (2, 1);
       xt := xtree_doc (ret_body);
       -- we test for GRDDL inside RDF/XML, if so do it inside mappers, else it will fail because of dv:transformation attr
@@ -1077,7 +1088,7 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
        strstr (ret_content_type, 'application/turtle') is not null or strstr (ret_content_type, 'application/x-turtle') is not null
      )
     {
-      whenever sqlstate '*' goto resignal_parse_error;
+      whenever sqlstate '*' goto load_grddl;
       log_enable (2, 1);
       --if (dest is null)
       --  DB.DBA.SPARUL_CLEAR (coalesce (dest, graph_iri), 1);
@@ -1214,6 +1225,26 @@ create procedure DB.DBA.RDF_FORGET_HTTP_RESPONSE (in graph_iri varchar, in new_o
 ;
 
 create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any, in uid integer := -1)
+{
+  declare aq varchar;
+  declare dest, local_iri varchar;
+
+  aq := async_queue (1);
+  aq_request (aq, 'DB.DBA.RDF_SPONGE_UP_1', vector (graph_iri, options, uid));
+  commit work;
+  aq_wait_all (aq);
+
+  graph_iri := cast (graph_iri as varchar);
+  dest := get_keyword_ucase ('get:destination', options);
+  if (dest is not null)
+    local_iri := 'destMD5=' || md5(dest) || '&graphMD5=' || md5(graph_iri);
+  else
+    local_iri := graph_iri;
+  return local_iri;
+}
+;
+
+create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in uid integer := -1)
 {
   declare dest, get_soft, local_iri, immg, res_graph_iri varchar;
   declare perms integer;
@@ -1352,6 +1383,7 @@ create procedure DB.DBA.RDF_GRANT_SPONGE ()
     'grant execute on DB.DBA.SPARQL_EVAL_TO_ARRAY to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_EVAL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_SPONGE_UP to SPARQL_SPONGE',
+    'grant execute on DB.DBA.RDF_SPONGE_UP_1 to SPARQL_SPONGE',
     'grant execute on DB.DBA.RDF_SPONGE_UP_LIST to SPARQL_SPONGE' );
   foreach (varchar cmd in cmds) do
     {

@@ -423,7 +423,7 @@ bif_hosting_http_handler (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   err[0] = 0;
   hcli = hosting_client_attach (qi->qi_client, ver, err, sizeof (err));
   if (err[0] != 0)
-    sqlr_new_error ("42000", "HO004", err);
+    sqlr_new_error ("42000", "HO004", "%s", err);
 
   err[0] = 0;
   _lines = hosting_make_string_array (qst, lines);

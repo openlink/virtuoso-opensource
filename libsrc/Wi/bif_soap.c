@@ -343,7 +343,7 @@ ws_uddi_error (dk_session_t * ses, char *state, char *message, int soap_version)
 
   /*fprintf (stderr, "UDDI_ERROR: >\n %s\n", tmp);*/
   session_buffered_write (ses, tmp, strlen (tmp));
-  return srv_make_new_error ("VSPRT", "SP001", message);
+  return srv_make_new_error ("VSPRT", "SP001", "%s", message);
 }
 
 
@@ -545,7 +545,7 @@ ws_soap12_error (dk_session_t *ses, char *code, char *state, char *message, int 
       "</env:Envelope>");
   SES_PRINT (ses, tmp);
 
-  return srv_make_new_error ("VSPRT", "SP002", message);
+  return srv_make_new_error ("VSPRT", "SP002", "%s", message);
 }
 
 static caddr_t
@@ -582,7 +582,7 @@ ws_soap_error (dk_session_t *ses, char *code, char *state, char *message,
       (soap_version == 1 ? state : ""),
       (soap_version == 1 ? "</runcode>" : ""));
   session_buffered_write (ses, tmp, strlen (tmp));
-  return srv_make_new_error ("VSPRT", "SP003", message);
+  return srv_make_new_error ("VSPRT", "SP003", "%s", message);
 }
 
 static caddr_t
@@ -4572,7 +4572,7 @@ reconnect:
 		}
 	      else
 		strcpy_ck (err1, "Cannot connect via HTTPS");
-	      err = srv_make_new_error ("08001", "HTS01", err1);
+	      err = srv_make_new_error ("08001", "HTS01", "%s", err1);
 	    }
 	  else
 	    tcpses_to_sslses (http_out->dks_session, ssl);
@@ -8191,7 +8191,7 @@ output_message_end:
 	      buf[0] = '\x0';
 	      /* operation in soapAction option is !'empty' && !'only' */
 	      if ((prt_action && tolower (prt_action[0]) != 'e' && tolower (prt_action[0]) != 'o') || !prt_action)
-		snprintf (buf, sizeof (buf), service_schema_name);
+		snprintf (buf, sizeof (buf), "%s", service_schema_name);
 	      /* operation in soapAction option is 'yes' || 'only' */
 	      if ((prt_action && (tolower (prt_action[0]) == 'y' || tolower (prt_action[0]) == 'o')) || !prt_action)
 		{

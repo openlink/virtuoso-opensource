@@ -704,7 +704,7 @@ xslt_includes (xslt_sheet_t *xsh, caddr_t * top, query_instance_t * qi)
 			    {
 			      err_msg = box_copy (ERR_MESSAGE(err));
 			      dk_free_box (err);
-			      sqlr_new_error_xsltree_xdl ("XS370", "XS050", elt, err_msg);
+			      sqlr_new_error_xsltree_xdl ("XS370", "XS050", elt, "%s", err_msg);
 			    }
 			}
 		    }

@@ -108,7 +108,7 @@ if (HC_RET_ERR_ABORT == (r = fn (c))) \
 
 int http_cli_error (http_cli_ctx * ctx, caddr_t errcode, caddr_t errmsg)
 {
-  ctx->hcctx_err = srv_make_new_error (errcode, "HC001", errmsg);
+  ctx->hcctx_err = srv_make_new_error (errcode, "HC001", "%s", errmsg);
   ctx->hcctx_state = HC_STATE_ERR_CLEANUP;
   return HC_RET_ERR_ABORT;
 }
@@ -880,7 +880,7 @@ http_cli_connect (http_cli_ctx * ctx)
 		}
 	      else
 		strcpy_ck (err1, "Cannot connect via HTTPS");
-	      ctx->hcctx_err = srv_make_new_error ("08001", "HTS01", err1);
+	      ctx->hcctx_err = srv_make_new_error ("08001", "HTS01", "%s", err1);
 	    }
 	  else
 	    tcpses_to_sslses (ctx->hcctx_http_out->dks_session, ctx->hcctx_ssl);

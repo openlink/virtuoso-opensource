@@ -1584,10 +1584,10 @@ caddr_t * xml_find_signedinfo (caddr_t * doc)
 
 #define xenc_signal_error(c,v,m) \
 	if (err_ret) { \
-	  *err_ret = srv_make_new_error (c, v, m); \
+	  *err_ret = srv_make_new_error (c, v, "%s", m); \
           return NULL; \
 	} else { \
-	  sqlr_new_error (c, v, m); \
+	  sqlr_new_error (c, v, "%s", m); \
 	}
 
 caddr_t *

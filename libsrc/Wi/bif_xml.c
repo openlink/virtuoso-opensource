@@ -1887,13 +1887,12 @@ tb_make_iq (dbe_table_t * tb, query_instance_t * qi)
     char tail[1000];
     char text [4000];
     char tmp [4000];
-    char * head  = "insert into \"%s\" (E_ID, E_LEVEL, E_NAME, E_MISC, E_WHITESPACE, E_LEADING, E_TRAILING ";
     int fill = 0;
     oid_t * cols;
     NEW_VARZ (xml_insert_qr_t, iq);
     tail[0] = 0;
     cols = (oid_t*) dk_alloc_box (tb->tb_misc_id_to_col_id->ht_count * sizeof (ptrlong), DV_ARRAY_OF_LONG);
-    snprintf (text, sizeof (text), head, tb->tb_name);
+    snprintf (text, sizeof (text), "insert into \"%s\" (E_ID, E_LEVEL, E_NAME, E_MISC, E_WHITESPACE, E_LEADING, E_TRAILING ", tb->tb_name);
     dk_hash_iterator (&hit, tb->tb_misc_id_to_col_id);
 
     while (dk_hit_next (&hit, (void**) &mid, (void**)&cid))
