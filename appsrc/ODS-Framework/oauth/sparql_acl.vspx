@@ -228,7 +228,7 @@
 		      </div>
 		    </v:form>
 		    <br/>
-		    <div><v:url name="uh" value="Back to main menu" url="/auth_policy/" /></div>
+		    <div><v:url name="uh" value="Back to main menu" url="/policy_manager/" /></div>
 	      </td>
 	  </tr>
       </table>

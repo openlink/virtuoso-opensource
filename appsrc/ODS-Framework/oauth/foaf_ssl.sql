@@ -5,6 +5,8 @@ create procedure FOAF_SSL_AUTH (in realm varchar)
 {
   declare stat, msg, meta, data, info, qr, hf, graph, fing, gr any;
   declare agent varchar;
+  declare acc int;
+  acc := 0;
 
   declare exit handler for sqlstate '*'
     {
@@ -43,6 +45,7 @@ create procedure FOAF_SSL_AUTH (in realm varchar)
   stat := '00000';
 --  dbg_printf ('%s', qr);
   exec (qr, stat, msg, vector (), 0, meta, data);
+  again_check:;
   if (stat = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and data[0][1] = bin2hex (info[2]))
     {
       declare arr, uid any;
@@ -53,6 +56,18 @@ create procedure FOAF_SSL_AUTH (in realm varchar)
       exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
       commit work;
       return 1;
+    }
+  else if (acc = 0)
+    {
+      qr := sprintf ('sparql prefix cert: <http://www.w3.org/ns/auth/cert#> prefix rsa: <http://www.w3.org/ns/auth/rsa#> ' ||
+      'select ?exp_val ?mod_val from <%S> '||
+      ' where { <%S> <http://xmlns.com/foaf/0.1/holdsAccount> ?acc . ?id cert:identity ?acc ; rsa:public_exponent ?exp ; rsa:modulus ?mod . ?exp cert:decimal ?exp_val . ?mod cert:hex ?mod_val . }',
+      gr, agent);
+      stat := '00000';
+      --  dbg_printf ('%s', qr);
+      exec (qr, stat, msg, vector (), 0, meta, data);
+      acc := 1;
+      goto again_check;
     }
   err_ret:
   exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
@@ -65,6 +80,8 @@ create procedure FOAF_SSL_AUTH (in realm varchar)
 create procedure FOAF_CHECK_WEBID (in agent varchar)
 {
   declare stat, msg, meta, data, info, qr, hf, graph, fing, gr any;
+  declare acc int;
+  acc := 0;
 
   declare exit handler for sqlstate '*'
     {
@@ -90,11 +107,24 @@ create procedure FOAF_CHECK_WEBID (in agent varchar)
   stat := '00000';
 --  dbg_printf ('%s', qr);
   exec (qr, stat, msg, vector (), 0, meta, data);
+  again_check:;
   if (stat = '00000' and length (data) and length (data[0][0]) and length (data[0][1]))
     {
       delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (gr);
       commit work;
       return 1;
+    }
+  else if (acc = 0)
+    {
+      qr := sprintf ('sparql prefix cert: <http://www.w3.org/ns/auth/cert#> prefix rsa: <http://www.w3.org/ns/auth/rsa#> ' ||
+      'select ?exp_val ?mod_val from <%S> '||
+      ' where { <%S> <http://xmlns.com/foaf/0.1/holdsAccount> ?acc . ?id cert:identity ?acc ; rsa:public_exponent ?exp ; rsa:modulus ?mod . ?exp cert:decimal ?exp_val . ?mod cert:hex ?mod_val . }',
+      gr, agent);
+      stat := '00000';
+      --  dbg_printf ('%s', qr);
+      exec (qr, stat, msg, vector (), 0, meta, data);
+      acc := 1;
+      goto again_check;
     }
   err_ret:
   delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (gr);
