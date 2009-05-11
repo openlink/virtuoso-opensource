@@ -83,22 +83,22 @@
                 <ul class="lmenu">
                   <li class="lmenu_title">
                     <xsl:call-template name="make_href">
+                        <xsl:with-param name="params" />
                       <xsl:with-param name="url">folders.vsp</xsl:with-param>
-                        <xsl:with-param name="params"></xsl:with-param>
                         <xsl:with-param name="label">Folders</xsl:with-param>
                       </xsl:call-template>
                     </li>
                     <li class="lmenu_title">
                       <xsl:call-template name="make_href">
+                        <xsl:with-param name="params" />
                         <xsl:with-param name="url">filters.vsp</xsl:with-param>
-                        <xsl:with-param name="params"></xsl:with-param>
                         <xsl:with-param name="label">Filters</xsl:with-param>
                     </xsl:call-template>
                   </li>
                   <li class="lmenu_title">
                     <xsl:call-template name="make_href">
+                        <xsl:with-param name="params" />
                       <xsl:with-param name="url">ch_pop3.vsp</xsl:with-param>
-                        <xsl:with-param name="params"></xsl:with-param>
                       <xsl:with-param name="label">External POP3 Accounts</xsl:with-param>
                     </xsl:call-template>
                   </li>
@@ -121,20 +121,20 @@
           </div>
           <div id="FT_R">
             <xsl:call-template name="make_href">
+              <xsl:with-param name="params" />
               <xsl:with-param name="url"><xsl:value-of select="/page/ods/link"/>faq.html</xsl:with-param>
-              <xsl:with-param name="params"></xsl:with-param>
               <xsl:with-param name="label">FAQ</xsl:with-param>
             </xsl:call-template>
             |
             <xsl:call-template name="make_href">
+              <xsl:with-param name="params" />
               <xsl:with-param name="url"><xsl:value-of select="/page/ods/link"/>privacy.html</xsl:with-param>
-              <xsl:with-param name="params"></xsl:with-param>
               <xsl:with-param name="label">Privacy</xsl:with-param>
             </xsl:call-template>
             |
             <xsl:call-template name="make_href">
+              <xsl:with-param name="params" />
               <xsl:with-param name="url"><xsl:value-of select="/page/ods/link"/>rabuse.vspx</xsl:with-param>
-              <xsl:with-param name="params"></xsl:with-param>
               <xsl:with-param name="label">Report Abuse</xsl:with-param>
             </xsl:call-template>
             <div><xsl:call-template name="copyright"/></div>
@@ -316,6 +316,7 @@
       <div style="background-color: #fff;">
         <div style="float: left;">
           <xsl:call-template name="make_href">
+          <xsl:with-param name="params" />
             <xsl:with-param name="url"><xsl:value-of select="//user_info/domain_path" /></xsl:with-param>
             <xsl:with-param name="title">Mail Home</xsl:with-param>
             <xsl:with-param name="img">/oMail/i/omailbanner_sml.jpg</xsl:with-param>
@@ -329,12 +330,14 @@
           <input type="hidden" name="mode" value=""/>
           <xsl:call-template name="nbsp"/>
           <xsl:call-template name="make_href">
+            <xsl:with-param name="params" />
             <xsl:with-param name="url">javascript: document.forms['FS'].submit();</xsl:with-param>
             <xsl:with-param name="title">Simple Search</xsl:with-param>
             <xsl:with-param name="label">Search</xsl:with-param>
           </xsl:call-template>
           |
           <xsl:call-template name="make_href">
+            <xsl:with-param name="params" />
             <xsl:with-param name="url">javascript: document.forms['FS'].elements['mode'].value = 'advanced'; document.forms['FS'].submit();</xsl:with-param>
             <xsl:with-param name="title">Advanced Search</xsl:with-param>
             <xsl:with-param name="label">Advanced</xsl:with-param>
@@ -349,11 +352,13 @@
         </div>
         <div style="text-align: right; padding-right: 0.5em; padding-bottom: 0.25em;">
           <xsl:call-template name="make_href">
+          <xsl:with-param name="params" />
             <xsl:with-param name="url">set_mail.vsp</xsl:with-param>
             <xsl:with-param name="label">Preferences</xsl:with-param>
           </xsl:call-template>
           |
           <xsl:call-template name="make_href">
+          <xsl:with-param name="params" />
           <xsl:with-param name="url">javascript: OMAIL.aboutDialog();</xsl:with-param>
           <xsl:with-param name="title">About</xsl:with-param>
           <xsl:with-param name="label">About</xsl:with-param>
@@ -371,6 +376,7 @@
           <xsl:attribute name="class">on</xsl:attribute>
         </xsl:if>
         <xsl:call-template name="make_href">
+          <xsl:with-param name="params" />
           <xsl:with-param name="url">box.vsp</xsl:with-param>
           <xsl:with-param name="label">Inbox</xsl:with-param>
         </xsl:call-template>
@@ -380,6 +386,7 @@
           <xsl:attribute name="class">on</xsl:attribute>
         </xsl:if>
         <xsl:call-template name="make_href">
+          <xsl:with-param name="params" />
           <xsl:with-param name="url">write.vsp</xsl:with-param>
           <xsl:with-param name="label">Write message</xsl:with-param>
         </xsl:call-template>
@@ -389,6 +396,7 @@
           <xsl:attribute name="class">on</xsl:attribute>
         </xsl:if>
         <xsl:call-template name="make_href">
+          <xsl:with-param name="params" />
           <xsl:with-param name="url">folders.vsp</xsl:with-param>
           <xsl:with-param name="label">Manage</xsl:with-param>
         </xsl:call-template>

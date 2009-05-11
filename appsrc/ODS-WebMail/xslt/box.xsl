@@ -34,7 +34,7 @@
         <xsl:attribute name="value"><xsl:value-of select="bp"/></xsl:attribute>
       </input>
       <div id="mgrid_info">
-        <xsl:variable name="cf" select="folders//folder[folder_id = $fid]"/>
+        <xsl:variable name="cf" select="folders//folder[@id = $fid]"/>
         <span>
           <b>Folder:</b><xsl:call-template name="nbsp"/><xsl:value-of select="$cf/name"/>,<xsl:call-template name="nbsp"/>
           <b>Page:</b><xsl:call-template name="nbsp"/><xsl:value-of select="round((messages/skiped + messages/show_res - 1) div messages/show_res)"/> of <xsl:value-of select="floor((messages/all_res + messages/show_res - 1) div messages/show_res)"/>, <xsl:call-template name="nbsp"/>
@@ -84,7 +84,7 @@
       </xsl:otherwise>
     </xsl:choose>
     <xsl:choose>
-      <xsl:when test="(number(/page/folder_id) = 100) or (number(/page/folder_id) = 110) or (number(/page/folder_id) = 125) or (number(/page/folder_id) = 0)">
+      <xsl:when test="/page/folder_type = 'R'">
         <xsl:variable name="cell">From</xsl:variable>
       </xsl:when>
       <xsl:otherwise>
@@ -92,7 +92,7 @@
       </xsl:otherwise>
     </xsl:choose>
     <xsl:choose>
-      <xsl:when test="(number(/page/folder_id) = 100) or (number(/page/folder_id) = 110) or (number(/page/folder_id) = 125) or (number(/page/folder_id) = 0)">
+      <xsl:when test="/page/folder_type = 'R'">
         <xsl:variable name="date_cell">Received</xsl:variable>
       </xsl:when>
       <xsl:otherwise>
@@ -343,10 +343,11 @@
       </table>
     </xsl:if>
   </xsl:template>
+
   <!-- ====================================================================================== -->
-  <xsl:template match="folder">
+  <xsl:template match="folder[@smartFlag='N']">
     <option>
-      <xsl:attribute name="value"><xsl:value-of select="folder_id"/></xsl:attribute>
+      <xsl:attribute name="value"><xsl:value-of select="@id"/></xsl:attribute>
       <xsl:value-of select="level/@str"/>
       <xsl:value-of select="name"/>
     </option>
@@ -422,7 +423,7 @@
   <xsl:template name="show_name">
     <xsl:variable name="max_len">20</xsl:variable>
     <xsl:choose>
-      <xsl:when test="(number(/page/folder_id) = 100) or (number(/page/folder_id) = 110) or (number(/page/folder_id) = 125) or (number(/page/folder_id) = 0)">
+      <xsl:when test="/page/folder_type = 'R'">
         <xsl:variable name="name" select="string(address/addres_list/from/name)"/>
         <xsl:variable name="addr" select="string(address/addres_list/from/email)"/>
       </xsl:when>
@@ -453,7 +454,7 @@
   <!-- ========================================================================== -->
   <xsl:template name="show_name_alt">
     <xsl:choose>
-      <xsl:when test="(number(/page/folder_id) = 100) or (number(/page/folder_id) = 110) or (number(/page/folder_id) = 125) or (number(/page/folder_id) = 0)">
+      <xsl:when test="/page/folder_type = 'R'">
         <xsl:variable name="name" select="string(address/addres_list/from/name)"/>
         <xsl:variable name="addr" select="string(address/addres_list/from/email)"/>
       </xsl:when>
