@@ -96,7 +96,12 @@
 		          name_part(self.name,0), name_part (self.name,1), name_part (self.name,2)), stat, msg);
 		      stat := '00000'; msg := null;
 		    }
+		  if (self.mode = 'create')  
+		    set_qualifier (self.cat);  
+		  else
+  		    set_qualifier (name_part(self.name,0));  
                   exec (self.crproc_textfield.ufl_value, stat, msg);
+		  set_qualifier ('DB');  
                   __set_user_id (user);
 		  if (stat = '00000') {
                     http_request_status ('HTTP/1.1 302 Found');
