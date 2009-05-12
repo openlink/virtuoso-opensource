@@ -39,6 +39,7 @@
       <v:variable persist="0" name="base_url" type="any" default="null"/>
       <v:variable name="exec_ret" type="any" default="null" persist="temp"/>
       <v:variable persist="0" name="body_v" type="any" default="null" param-name="cr_view"/>
+      <v:variable persist="0" name="vds" type="any" default="null" />
       <v:variable persist="0" name="text_e" type="integer" default="0"/>
   </vm:variables>
 
@@ -84,6 +85,7 @@
 	      };
 	      self.base_url := _base_url;
 	      self.body_v := DB.DBA.RDF_OWL_FROM_TBL (_base_url, self.db_object_to_process);
+	      self.vds := RDF_OWL_GEN_VD (_base_url);
 	    }
 
 	    ]]>
@@ -117,7 +119,10 @@
   <tr>
       <td>
       <?vsp if (self.text_e = 0) { ?>
-      <v:textarea name="cr_view" xhtml_cols="120" xhtml_rows="25" value="--self.body_v"/>
+      <v:textarea name="cr_view" xhtml_cols="120" xhtml_rows="25" value="--self.body_v"/><br/>
+      Virtual Directory Definition<br/>
+      <v:textarea name="cr_vd" xhtml_cols="120" xhtml_rows="10" value="--self.vds"/><br/>
+      <v:check-box name="cr_vd_cb" value="1" xhtml_id="vds_cb" initial-checked="1" /> <label for="vds_cb">Create Virtual Directory</label>
       <?vsp } ?>
       <input type="hidden" name="host" value="<?V get_keyword('host', self.vc_event.ve_params) ?>"/><br/>
       <v:button action="simple" name="cncl" value="Cancel">
@@ -128,15 +133,30 @@
       <v:button action="simple" name="exec" value="Load">
 	  <v:on-post><![CDATA[
 	     declare stat, msg varchar;
-	     declare res, arr, data, meta any;
+	     declare res, arr, data, meta, inx any;
 	     declare gr varchar;
 
-	     res := make_array (1, 'any');
+	     arr := null;
+	     if (self.cr_vd_cb.ufl_selected)
+	       arr := sql_split_text (self.vds);
+	     res := make_array (1 + length (arr), 'any');
 	     gr := sprintf ('http://%s/schemas/%s#', cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), self.base_url);
 	     stat := '00000';
 	     msg := 'OK';
 	     exec ('DB.DBA.TTLP (?, \'\', ?)', stat, msg, vector (self.body_v, gr), 0, meta, data);
 	     res[0] := vector (vector (stat, msg));
+
+	     inx := 1;
+	     if (self.cr_vd_cb.ufl_selected)
+	       foreach (varchar q in arr) do
+	         {
+	           stat := '00000';
+                   msg := 'OK';
+		   exec (q, stat, msg, vector (), 0, meta, data);
+		   res[inx] := vector (vector (stat, msg));
+		   inx := inx + 1;
+	         }
+
 	     self.text_e := 1;
 	     self.exec_ret := res;
 	     self.back.vc_enabled := 1;
