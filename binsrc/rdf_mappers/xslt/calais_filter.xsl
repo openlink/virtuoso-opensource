@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2008 OpenLink Software
+ -  Copyright (C) 1998-2009 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -55,7 +55,7 @@
 		    <xsl:sort select="calais:score" data-type="number" order="descending"/>
 		    <!--xsl:message terminate="no"><xsl:value-of select="calais:score"/></xsl:message>
 		    <xsl:message terminate="no"><xsl:value-of select="position()"/></xsl:message-->
-		    <xsl:if test="position () <= $max-results">
+		    <xsl:if test="position () &lt;= $max-results">
 			<rdfs:seeAlso rdf:resource="{@about}"/>
 		    </xsl:if>
 		</xsl:for-each>

@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2008 OpenLink Software
+ -  Copyright (C) 1998-2009 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -171,7 +171,7 @@
 			<xsl:when test="starts-with($string, '@')">
 				<xsl:variable name="tmp1" select="substring-before($string, ' ')"/>
 				<xsl:variable name="tmp2" select="substring-after($string, ' ')"/>
-				<xsl:variable name="tmp3" select="concat('<a href=\'', vi:proxyIRI(concat('http://twitter.com/', substring-after($tmp1, '@'))), '\'>', $tmp1, '</a> ', $tmp2)"/>
+				<xsl:variable name="tmp3" select="concat('&lt;a href=\'', vi:proxyIRI(concat('http://twitter.com/', substring-after($tmp1, '@'))), '\'>', $tmp1, '&lt;/a&gt; ', $tmp2)"/>
 				<xsl:value-of select="$tmp3"/>
 			</xsl:when>
 			<xsl:otherwise>
