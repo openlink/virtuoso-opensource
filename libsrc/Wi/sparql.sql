@@ -5099,7 +5099,7 @@ create procedure JSO_LIST_INSTANCES_OF_GRAPH (in jgraph varchar, out instances a
   declare md, res, st, msg any;
   st:= '00000';
   exec (
-    'select DB.DBA.VECTOR_AGG (
+    sprintf ('select DB.DBA.VECTOR_AGG (
       vector (
         id_to_iri ("jclass"),
         id_to_iri ("jinst"),
@@ -5109,7 +5109,7 @@ create procedure JSO_LIST_INSTANCES_OF_GRAPH (in jgraph varchar, out instances a
       define input:storage ""
       select ?jclass ?jinst ?s
       where {
-        graph ?? {
+        graph <%S> {
           { ?jinst rdf:type ?jclass .
             filter (!isBLANK (?jinst)) }
           union
@@ -5117,8 +5117,8 @@ create procedure JSO_LIST_INSTANCES_OF_GRAPH (in jgraph varchar, out instances a
             ?s rdf:name ?jinst .
             filter (isBLANK (?s))
             } } }
-      ) as inst',
-    st, msg, vector (jgraph), 1, md, res);
+      ) as inst', jgraph),
+    st, msg, vector (), 1, md, res);
   if (st <> '00000') signal (st, msg);
  	instances := res[0][0];
 }
