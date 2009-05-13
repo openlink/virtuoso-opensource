@@ -616,7 +616,9 @@ create procedure DB.DBA.RDF_SPONGE_PROXY_IRI (in uri varchar := '', in login var
 {
   declare cname any;
   declare ret any;
-  declare default_host varchar;
+  declare default_host, url_sch varchar;
+  declare ua any;
+
   if (is_http_ctx ())
     default_host := http_request_header(http_request_header (), 'Host', null, null);
   else
@@ -633,10 +635,17 @@ create procedure DB.DBA.RDF_SPONGE_PROXY_IRI (in uri varchar := '', in login var
     frag := '#' || frag;
   if (strchr (uri, '#') is not null)
     frag := '';
+
+  ua := rfc1808_parse_uri (uri);
+  url_sch := ua[0];
+  ua [0] := '';
+  uri := vspx_uri_compose (ua);  
+  uri := ltrim (uri, '/');
+
   if (length (login))
-    ret := sprintf ('http://%s/about/rdf/%U/%s%s', cname, login, uri, frag);
+    ret := sprintf ('http://%s/about/rdf/%s/%U/%s%s', cname, url_sch, login, uri, frag);
   else
-    ret := sprintf ('http://%s/about/rdf/%s%s', cname, uri, frag);
+    ret := sprintf ('http://%s/about/rdf/%s/%s%s', cname, url_sch, uri, frag);
   return ret;
 }
 ;
