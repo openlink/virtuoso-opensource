@@ -219,7 +219,10 @@ typedef struct sql_comp_s
     trans_node_t *	sc_trans; /* the tn while forming the step dt */
     dk_set_t		sc_dfg_stages;
     query_frag_t *	sc_qf;
+    fun_ref_node_t *	sc_outer_fref;
     char		sc_in_dfg_subq;
+    char		sc_fref_nesting; /* if nested gby/oby, true if colocating the gby */
+    char		sc_qf_n_temp_trees; /* how many gb/oby temps in qf.  If many, make shorter batches to save mem */
   } sql_comp_t;
 
 
@@ -413,6 +416,10 @@ caddr_t * sel_expand_stars (sql_comp_t * sc, ST ** selection, ST** from);
 
 int cv_is_local_1 (code_vec_t cv, int is_cluster);
 #define cv_is_local(cv) cv_is_local_1 (cv, 0)
+
+#define CV_IS_LOCAL_CLUSTER 1 /* check funcs are partitionable and not aggregates */
+#define CV_IS_LOCAL_AGG 2 /* check that funcs are partitionable, allow aggrs */
+
 dk_set_t cv_assigned_slots (code_vec_t cv);
 void sqlc_ct_generate (sql_comp_t * sc, comp_table_t * ct);
 
@@ -529,7 +536,7 @@ void ha_free (hash_area_t * ha);
 #ifdef BIF_XML
 ST ** sqlc_ancestor_args (ST * tree);
 ST ** sqlc_contains_args (ST * tree, int * ctype);
-
+char sqlc_contains_fn_to_char (const char *name);
 void upd_arrange_misc (sql_comp_t * sc, update_node_t * upd);
 void ins_arrange_misc (sql_comp_t * sc, insert_node_t * upd);
 int sqlc_xpath (sql_comp_t * sc, char * str, caddr_t * err_ret);
@@ -574,6 +581,8 @@ extern int sqlg_count_qr_global_refs;
   {if (res && ssl && SSL_CONSTANT != ssl->ssl_type \
        && (sqlg_count_qr_global_refs||  !ssl->ssl_qr_global)  && SSL_PLACEHOLDER != ssl->ssl_type && SSL_ITC != ssl->ssl_type) \
 sethash ((void*)ssl, res, (void*)1); }
+
+void  ref_ssl_list (dk_hash_t * ht, dk_set_t ssls);
 
 #define ASG_SSL(res, all_res, ssl) \
   { sqlc_asg_mark (ssl); \

@@ -550,6 +550,7 @@ typedef struct sql_tree_s
 	    caddr_t	acc_name;
 	    caddr_t	final_name;
 	    caddr_t	merge_name;
+	    ptrlong	need_order;
 	  } user_aggregate;
 	struct
 	  {

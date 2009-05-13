@@ -446,6 +446,8 @@ ks_print (key_source_t * ks)
       stmt_printf ((" Local setp:\n"));
       node_print ((data_source_t *) ks->ks_setp);
     }
+  if (ks->ks_qf_output)
+    stmt_printf (("  qf output\n"));
 }
 
 
@@ -664,6 +666,22 @@ node_print (data_source_t * node)
 	{
 	  stmt_printf ((" -> "));
 	  ssl_list_print (setp->setp_dependent);
+	  if (setp->setp_card)
+	    stmt_printf ((" up to %9.2g distinct", setp->setp_card));
+	  if (setp->setp_any_user_aggregate_gos)
+	    {
+	      DO_SET (gb_op_t *, go, &setp->setp_gb_ops)
+		{
+		  if (go->go_ua_init_setp_call)
+		    {
+		      stmt_printf (("\nuser aggr init\n"));
+		      code_vec_print (go->go_ua_init_setp_call);
+		      stmt_printf ((" user aggr acc\n"));
+		      code_vec_print (go->go_ua_acc_setp_call);
+		    }
+		}
+	      END_DO_SET();
+	    }
 	  stmt_printf (("\n"));
 	}
       stmt_printf (("\n"));

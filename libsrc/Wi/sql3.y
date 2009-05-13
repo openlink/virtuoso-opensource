@@ -290,6 +290,7 @@
 /* procedures */
 %type <tree> user_aggregate_declaration
 %type <box> user_aggregate_merge_opt
+%type <box> user_aggregate_order_opt
 %type <tree> routine_declaration
 %type <tree> module_body_part
 %type <tree> module_declaration
@@ -3214,16 +3215,21 @@ sql
 user_aggregate_declaration
 	: CREATE AGGREGATE new_table_name rout_parameter_list opt_return
 	  FROM new_proc_or_bif_name ',' new_proc_or_bif_name ',' new_proc_or_bif_name
-	  user_aggregate_merge_opt
+	  user_aggregate_merge_opt user_aggregate_order_opt
 		{
-		  $$ = t_listst (8, USER_AGGREGATE_DECL, $3, $4, $5,
-		    $7, $9, $11, $12 );
+		  $$ = t_listst (9, USER_AGGREGATE_DECL, $3, $4, $5,
+				 $7, $9, $11, $12, $13 );
 		}
 	;
 
 user_aggregate_merge_opt
 	: /* empty */		{ $$ = NULL; }
 	| ',' new_proc_or_bif_name	{ $$ = $2; }
+	;
+
+user_aggregate_order_opt
+	: /* empty */		{ $$ = NULL; }
+	| ORDER	{ $$ = (caddr_t)1; }
 	;
 
 routine_declaration

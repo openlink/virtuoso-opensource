@@ -1261,7 +1261,7 @@ itc_row_check (it_cursor_t * itc, buffer_desc_t * buf)
   ks = itc->itc_ks;
   if (ks)
     {
-      if (ks->ks_out_cols)
+      if (ks->ks_out_slots)
 	{
 	  int inx = 0;
 	  out_map_t * om = ITC_OUT_MAP (itc);

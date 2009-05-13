@@ -1315,7 +1315,7 @@ bp_mtx_entry_check (dk_mutex_t * mtx, du_thread_t * self, void * cd)
   return 1;
 }
 
-#if 1 || defined (VALGRIND) || defined (PURIFY) || defined (BUF_BOUNDS)
+#if defined (VALGRIND) || defined (PURIFY) || defined (BUF_BOUNDS)
 #define MALLOC_BUFS 1
 #endif
 
@@ -1349,6 +1349,8 @@ bp_make_buffer_list (int n)
     {
       buf = &bp->bp_bufs[c];
 #ifdef MALLOC_BUFS
+      if (c_use_o_direct) 
+	GPF_T1 ("An exec ompiled with malloc_bufs defd is not compatible with the use O_DIRECT setting");
       buf->bd_buffer = malloc (BUF_ALLOC_SZ);
       BUF_SET_END_MARK (buf);
 #else

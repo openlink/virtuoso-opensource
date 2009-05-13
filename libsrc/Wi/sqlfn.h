@@ -1263,5 +1263,9 @@ void sparql_init (void);
 int box_position (caddr_t * box, caddr_t elt);
 int box_position_no_tag (caddr_t * box, caddr_t elt);
 
+void cl_fref_read_input (cl_fref_read_node_t * clf, caddr_t * inst, caddr_t * state);
+void clf_free (cl_fref_read_node_t * clf);
+void  ssa_iter_input (ssa_iter_node_t * ssi, caddr_t * inst, caddr_t * state);
+void ssi_free (ssa_iter_node_t * ssi);
 
 #endif /* _SQLFN_H */

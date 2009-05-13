@@ -982,6 +982,7 @@ sqlc_user_aggregate_decl (sql_comp_t * sc, ST * tree)
     aggr->ua_merge.uaf_bif = box_num ((ptrlong) bif_find (aggr->ua_merge.uaf_name));
   else
     aggr->ua_merge.uaf_bif = NULL;
+  aggr->ua_need_order = tree->_.user_aggregate.need_order;
 }
 
 

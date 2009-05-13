@@ -178,6 +178,7 @@ extern long tc_read_aside;
 extern int em_ra_window;
 extern int em_ra_threshold;
 extern int enable_dfg;
+extern int enable_setp_partition;
 extern int enable_min_card;
 extern int enable_dfg_print;
 extern int enable_distinct_sas;
@@ -1492,6 +1493,7 @@ stat_desc_t dbf_descs [] =
     {"cl_res_buffer_bytes", &cl_res_buffer_bytes, SD_INT32},
     {"cl_batches_per_rpc", &cl_batches_per_rpc, SD_INT32},
     {"enable_dfg", &enable_dfg, SD_INT32},
+    {"enable_setp_partition", &enable_setp_partition, SD_INT32},
     {"enable_dfg_print", &enable_dfg_print, SD_INT32},
     {"enable_min_card", &enable_min_card},
     {"enable_distinct_sas", &enable_distinct_sas, SD_INT32},

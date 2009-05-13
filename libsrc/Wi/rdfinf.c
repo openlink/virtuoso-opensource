@@ -1789,6 +1789,21 @@ qn_prev (data_source_t ** head , data_source_t * qn)
 }
 
 
+data_source_t *
+qn_ensure_prev (sql_comp_t * sc, data_source_t ** head , data_source_t * qn)
+{
+  data_source_t * prev = qn_prev (head, qn);
+  if (prev)
+    return prev;
+  {
+    SQL_NODE_INIT (end_node_t, en, end_node_input, NULL);
+    dk_set_push (&en->src_gen.src_continuations, (void*)*head); 
+    *head = en;
+    return (data_source_t*)en;
+  }
+}
+
+
 #define IS_ITER(q) \
   (((qn_input_fn) rdf_inf_pre_input == (qn)->src_input && !((rdf_inf_pre_node_t *)(qn))->ri_is_after) \
     || (qn_input_fn)in_iter_input  == (qn)->src_input)

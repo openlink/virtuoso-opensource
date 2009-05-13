@@ -3135,6 +3135,7 @@ sqlg_group_node (sqlo_t * so, data_source_t ** head, df_elt_t * group, df_elt_t 
 	pre_code = NULL;
       sqlg_make_sort_nodes (so, head, (ST**) tree->_.select_stmt.table_exp->_.table_exp.group_by_full,
 			    NULL,  dt_dfe, 1, pre_code, group);
+      so->so_sc->sc_sort_insert_node->setp_card = group->_.setp.gb_card;
       sqlg_cl_multistate_group (so->so_sc);
     }
   read_node = sql_node_last (*head);

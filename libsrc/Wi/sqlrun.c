@@ -2628,6 +2628,11 @@ qn_anytime_state (data_source_t * qn, caddr_t * inst)
 	    return AT_NOP;
 	  at_printf (("mark agg qf %d as not continuable\n", qf->src_gen.src_in_state));
 	  SRC_IN_STATE (qf, inst) = NULL;
+	  DO_SET (data_source_t *, qfn, &qf->qf_nodes)
+	    {
+	      SRC_IN_STATE (qfn, inst) = NULL;
+	    }
+	  END_DO_SET();
 	  return AT_RESET;
 	}
       if (SRC_IN_STATE (qn, inst))
@@ -2681,7 +2686,6 @@ qn_anytime_state (data_source_t * qn, caddr_t * inst)
 	}
       return qn_anytime_state (qn_next (qn), inst);
     }
-  else
     {
       if (SRC_IN_STATE (qn, inst))
 	{

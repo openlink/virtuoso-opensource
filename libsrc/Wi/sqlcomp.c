@@ -591,6 +591,9 @@ sqlc_ancestor_args (ST * tree)
 char
 sqlc_contains_fn_to_char (const char *name)
 {
+  char c1 = name[0];
+  if (! ('x' == c1 || 'X' == c1 || 'c' == c1 || 'C' == c1))
+    return 0;
   if (0 == stricmp (name, "contains"))
     return 'c';
   else if (0 == stricmp (name, "xcontains"))

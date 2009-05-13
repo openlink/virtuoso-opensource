@@ -2142,6 +2142,52 @@ dfe_top_discount (df_elt_t * dfe, float * u1, float * a1)
 	    }
 	}
 
+
+float 
+dfe_exp_card (sqlo_t * so, df_elt_t * dfe)
+{
+  if (!dfe)
+    return 1;
+  switch (dfe->dfe_type)
+    {
+    case DFE_COLUMN:
+      if (dfe->_.col.col)
+	return dfe->_.col.col->col_n_distinct;
+      return 1000;
+    case DFE_BOP:
+      return dfe_exp_card (so, dfe->_.bin.left) * dfe_exp_card (so, dfe->_.bin.right);
+    case DFE_CALL:
+      {
+	float c = 1;
+	int inx;
+	DO_BOX (df_elt_t *, arg, inx, dfe->_.call.args)
+	  {
+	    c *= dfe_exp_card (so, arg);
+	  }
+	END_DO_BOX;
+	return c;
+      }
+    default: return 1;
+    }
+}
+
+
+float 
+dfe_group_by_card (df_elt_t * dfe)
+{
+  sqlo_t * so = dfe->dfe_sqlo;
+  int inx;
+  float c = 1;
+  DO_BOX (ST *, spec, inx, dfe->_.setp.specs)
+    {
+      df_elt_t * exp = sqlo_df (so, dfe->_.setp.is_distinct ? (ST*)spec : spec->_.o_spec.col);
+      c *= dfe_exp_card (so, exp);
+    }
+  END_DO_BOX;
+  return c;
+}
+
+
 void
 dfe_unit_cost (df_elt_t * dfe, float input_arity, float * u1, float * a1, float * overhead_ret)
 {
@@ -2203,15 +2249,20 @@ dfe_unit_cost (df_elt_t * dfe, float input_arity, float * u1, float * a1, float 
       /* group is either log (n_in/in_per_group) or linear. Arity is 1/n_per_group */
       /* assume 2 per group, for out arity of 0,5 */
       *a1 = 0.5;
-      if (!dfe->_.setp.group_cols && dfe->_.setp.fun_refs)
+      if (!dfe->_.setp.specs && dfe->_.setp.fun_refs)
 	{ /* pure fun ref node */
 	  *u1 = (float) (dk_set_length (dfe->_.setp.fun_refs) * 0.03);
 	  *a1 = 1 / input_arity;
 	}
-      else if (dfe->_.setp.is_linear)
+      else 
+	{
+	  if (dfe->_.setp.is_linear)
 	*u1 = 1;
       else
 	*u1 = (float) MAX (1, 1 + log (input_arity / *a1) / log (2));
+	  dfe->_.setp.gb_card = dfe_group_by_card (dfe);
+	  *a1 = dfe->_.setp.gb_card > input_arity ? 0.5 : dfe->_.setp.gb_card / input_arity;
+	}
       break;
 
     case DFE_CALL:

@@ -13720,6 +13720,12 @@ bif_partition_def (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
+caddr_t
+bif_dpipe_define (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return NULL;
+}
+
 void
 sql_bif_init (void)
 {
@@ -13744,6 +13750,7 @@ sql_bif_init (void)
   bif_define ("dbg_obj_prin1", bif_dbg_obj_princ);
   bif_define ("__cache_check", bif_cache_check);
   bif_define ("partition_def", bif_partition_def);
+  bif_define ("dpipe_define_1", bif_dpipe_define);
 
 #if 1
   bif_define ("xid_test", test_xid_encode_decode);

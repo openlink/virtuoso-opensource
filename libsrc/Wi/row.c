@@ -2692,6 +2692,7 @@ itc_drop_index (it_cursor_t * itc, dbe_key_t * key)
 	    LEAVE_TXN;
 	    if (LTE_OK != rc)
 	      {
+		itc_unregister (itc);
 		return;
 	      }
 	    del_buf = page_reenter_excl (itc);

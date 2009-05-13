@@ -666,8 +666,14 @@ sqlo_natural_join_cond (sqlo_t * so, op_table_t * left_ot,
 op_virt_col_t *
 sqlo_virtual_col_crr (sqlo_t * so, op_table_t * ot, const char * name, dtp_t dtp, int is_out)
 {
-  op_virt_col_t *vc = (op_virt_col_t *) t_alloc (sizeof (op_virt_col_t));
-
+  op_virt_col_t *vc;
+  DO_SET (op_virt_col_t *, pre, &ot->ot_virtual_cols)
+    {
+      if (0 == stricmp (pre->vc_tree->_.col_ref.name, name))
+	return pre;
+    }
+  END_DO_SET();
+  vc = (op_virt_col_t *) t_alloc (sizeof (op_virt_col_t));
   vc->vc_tree = t_listst (3, COL_DOTTED, ot->ot_new_prefix, t_box_string (name));
   vc->vc_dtp = dtp;
   vc->vc_is_out = is_out;
@@ -1161,11 +1167,13 @@ static int
 sqlo_dt_has_vcol_tables (sqlo_t *so, op_table_t *dot)
 {
   /* if dot, the dt to be inlined select virtual cols from tables used inside, do not inline.
-   * reason is that they look undefd if refd before the contains or such that defs them. */
+   * exception for text hit score */
   DO_SET (op_table_t *, ot, &dot->ot_from_ots)
     {
       DO_SET (op_virt_col_t *, vc, &ot->ot_virtual_cols)
 	{
+	  if (nc_strstr ("score", vc->vc_tree->_.col_ref.name))
+	    continue;
 	  if (box_is_subtree ((caddr_t) dot->ot_dt->_.select_stmt.selection, (caddr_t) vc->vc_tree))
 	    return 1;
 	}
@@ -2414,7 +2422,7 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
 	  sqlo_add_table_ref (so, &texp->_.table_exp.from[inx], &res);
 	}
       END_DO_BOX;
-      /*sqlo_implied_columns (so, texp->_.table_exp.where);*/
+      sqlo_implied_columns_of_contains (so, texp->_.table_exp.where);
       sqlo_scope (so, &(texp->_.table_exp.where));
       DO_SET (ST *, jc, &res)
 	{
@@ -2893,9 +2901,6 @@ sqlo_scope (sqlo_t * so, ST ** ptree)
 	{
 	  ST *res;
  	  so->so_bin_op_is_negate = tree->type == BOP_NOT ? 1 : 0;
-	  if (sqlc_contains_args (tree, NULL))
-	    sqlo_implied_columns_of_contains (so, tree);
-
 	  sqlo_scope (so, &(tree->_.bin_exp.left));
 	  sqlo_scope (so, &(tree->_.bin_exp.right));
  	  so->so_bin_op_is_negate = 0;

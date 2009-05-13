@@ -1529,7 +1529,7 @@ cv_is_local_1 (code_vec_t cv, int is_cluster)
 	case INS_CALL_BIF:
 	  if (bif_uses_index (ins->_.bif.bif))
 	    return 0;
-	  if (is_cluster && bif_is_aggregate (ins->_.bif.bif))
+	  if (CV_IS_LOCAL_CLUSTER == is_cluster && bif_is_aggregate (ins->_.bif.bif))
 	    return 0;
 	  if (is_cluster && bif_is_no_cluster (ins->_.bif.bif))
 	    return 0;
@@ -1696,6 +1696,7 @@ setp_refd_slots (setp_node_t * setp, dk_hash_t * res)
       if (go->go_ua_arglist)
 	ref_ssls (res, go->go_ua_arglist);
       REF_SSL (res, go->go_distinct);
+      ASG_SSL (res, NULL, go->go_old_val);
     }
   END_DO_SET();
 }

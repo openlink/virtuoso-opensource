@@ -193,5 +193,7 @@ void  il_init (comp_context_t * cc, inx_locality_t * il);
 void key_source_om (comp_context_t * cc, key_source_t * ks);
 void clb_free (cl_buffer_t * clb);
 void dsr_free (data_source_t * x);
+void qn_free (data_source_t * qn);
+void cl_order_free (clo_comp_t ** ord);
 
 #endif /* __EQLCOMP_H_010520 */

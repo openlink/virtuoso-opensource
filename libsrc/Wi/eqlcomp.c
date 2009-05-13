@@ -268,6 +268,15 @@ dsr_free (data_source_t * x)
   dk_free ((caddr_t) x, -1);
 }
 
+void
+qn_free (data_source_t * qn)
+{
+  if (!qn)
+    return;
+  if (qn->src_free)
+    qn->src_free (qn);
+  dsr_free (qn);
+}
 
 
 void
@@ -1102,6 +1111,22 @@ clb_free (cl_buffer_t * clb)
   dk_free_box (clb->clb_save);
 }
 
+
+void
+cl_order_free (clo_comp_t ** ords)
+{
+  int inx;
+  if (!ords)
+    return;
+  DO_BOX (caddr_t, ord, inx, ords)
+    {
+      dk_free (ord, sizeof (clo_comp_t));
+    }
+  END_DO_BOX;
+  dk_free_box ((caddr_t)ords);
+}
+
+
 void
 ks_free (key_source_t * ks)
 {
@@ -1118,15 +1143,7 @@ ks_free (key_source_t * ks)
   dk_set_free (ks->ks_always_null);
   dk_free_box ((caddr_t)ks->ks_qf_output);
   if (ks->ks_cl_order)
-    {
-      int inx;
-      DO_BOX (caddr_t, ord, inx, ks->ks_cl_order)
-	{
-	  dk_free (ord, sizeof (clo_comp_t));
-	}
-      END_DO_BOX;
-      dk_free_box ((caddr_t)ks->ks_cl_order);
-    }
+    cl_order_free (ks->ks_cl_order);
   dk_free ((caddr_t) ks, sizeof (key_source_t));
 }
 

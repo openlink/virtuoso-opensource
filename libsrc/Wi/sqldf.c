@@ -1244,7 +1244,31 @@ dfe_skip_exp_dfes (df_elt_t * dfe, df_elt_t ** placing_value_subqs, int n_subqs)
 }
 
 
-int enable_min_card = 0;
+int enable_min_card = 1;
+
+df_elt_t *
+dfe_super_or_prev (df_elt_t * dfe)
+{
+  while (dfe)
+    {
+      if (dfe->dfe_super)
+	return dfe->dfe_super;
+      dfe = dfe->dfe_prev;
+    }
+  return NULL;
+}
+
+int 
+dfe_is_super (df_elt_t *super, df_elt_t * sub)
+{
+  for (sub = sub; sub; sub = dfe_super_or_prev (sub))
+    {
+      if (super == sub)
+	return 1;
+    }
+  return 0;
+}
+
 
 df_elt_t *
 dfe_skip_to_min_card (df_elt_t * place, df_elt_t * super, df_elt_t * dfe)
@@ -1256,10 +1280,21 @@ dfe_skip_to_min_card (df_elt_t * place, df_elt_t * super, df_elt_t * dfe)
     return place;
   while (place)
     {
-      if (place == super)
+      if (dfe_is_super (place, super))
 	break;
-      if (DFE_DT == place->dfe_type && !place->dfe_next)
-	break; /* if a dt is last, then we are in the process of building the dt and things from inside this dt ipso facto can't go after this dt. */
+      switch (place->dfe_type)
+	{
+	case DFE_TABLE:
+	  if (place->_.table.is_being_placed)
+	    goto over;
+	case DFE_DT:
+	case DFE_VALUE_SUBQ:
+	case DFE_EXISTS:
+	  if (dfe->_.sub.is_being_placed)
+	    goto over;
+	case DFE_QEXP:
+	    goto over;
+	}
       if (DFE_TABLE == place->dfe_type || DFE_DT == place->dfe_type)
 	{
 	  arity *= place->dfe_arity * 0.99;
@@ -1272,6 +1307,7 @@ dfe_skip_to_min_card (df_elt_t * place, df_elt_t * super, df_elt_t * dfe)
 	}
       place = place->dfe_next;
     }
+ over:
   return best;
 }
 
@@ -5426,8 +5462,17 @@ sqlo_try (sqlo_t * so, op_table_t * ot, dk_set_t dfes, df_elt_t ** in_loop_ret, 
   float this_score;
   DO_SET (df_elt_t *, dfe, &dfes)
     {
+      if (DFE_TABLE == dfe->dfe_type)
+	dfe->_.table.is_being_placed = 1;
+      else if (DFE_DT == dfe->dfe_type)
+	dfe->_.sub.is_being_placed = 1;
       sqlo_place_table (so, dfe);
-      if (!dfe->_.table.is_leaf)
+      if (DFE_TABLE == dfe->dfe_type)
+	dfe->_.table.is_being_placed = 0;
+      else if (DFE_DT == dfe->dfe_type)
+	dfe->_.sub.is_being_placed = 0;
+
+      if (DFE_TABLE != dfe->dfe_type || !dfe->_.table.is_leaf)
 	{
 	  this_score = sqlo_score (ot->ot_work_dfe, ot->ot_work_dfe->_.sub.in_arity);
 	  sqlo_try_hash (so, dfe, ot, &this_score);
@@ -5864,14 +5909,18 @@ dfe_copy (sqlo_t * so, df_elt_t * dfe)
 df_elt_t **
 df_body_to_array (df_elt_t * body)
 {
+  df_elt_t * next = NULL;
   int len = dfe_body_len (body);
   df_elt_t ** copy = (df_elt_t **) t_alloc_box (sizeof (caddr_t) * len, DV_ARRAY_OF_POINTER);
   df_elt_t * elt;
   int fill = 1;
   copy[0] = (df_elt_t *) (ptrlong) body->dfe_type;
-  for (elt = body->_.sub.first->dfe_next; elt; elt = elt->dfe_next)
+  for (elt = body->_.sub.first->dfe_next; elt; elt = next)
+    {
+      next = elt->dfe_next;
     copy[fill++] = sqlo_layout_copy_1 (elt->dfe_sqlo, elt, NULL);
-
+      elt->dfe_next = elt->dfe_prev = NULL;
+    }
   return ((df_elt_t **) copy);
 }
 

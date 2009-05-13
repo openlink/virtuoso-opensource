@@ -192,6 +192,31 @@ typedef struct setp_save_s
 } setp_save_t;
 
 
+typedef struct ssa_iter_node_s 
+{
+  data_source_t 	src_gen;
+  int		ssi_state;
+  struct setp_node_s *	ssi_setp;
+} ssa_iter_node_t;
+
+#define IS_QN(qn, in) ((qn_input_fn)in == ((data_source_t*)qn)->src_input)
+#define IS_SSI(qn) ((qn_input_fn)ssa_iter_input == ((data_source_t*)qn)->src_input)
+
+typedef struct cl_fref_red_node_s
+{
+  /* on coordinator, node reading the sets from a partitioned gby/oby qf */
+  data_source_t 	src_gen;
+  struct fun_ref_node_s *	clf_fref;
+  int			clf_status;
+  struct clo_comp_s **		clf_order;
+  struct setp_node_s *		clf_setp;
+  int			clf_set_no;
+  int			clf_nth_in_set;
+  dk_set_t		clf_out_slots;
+} cl_fref_read_node_t;
+
+
+
 struct proc_name_s
 {
   int 		pn_ref_count;
@@ -219,7 +244,7 @@ struct query_s
     bitf_t		qr_is_bunion_term:1;
     bitf_t		qr_is_remote_proc:1;
     bitf_t		qr_unique_rows:1;
-    bitf_t		qr_is_qf_agg:1;  /* true if this is clustered aggregate fragg's qr */
+    bitf_t		qr_is_qf_agg:2;  /* true if this is clustered aggregate fragg's qr */
     bitf_t		qr_brk:1;
     bitf_t		qr_is_call:2; /* true if this is top level proc call */
     bitf_t		qr_remote_mode:2;
@@ -314,6 +339,8 @@ struct query_s
     int			qr_chkmark;
 #endif
   };
+#define QF_AGG_MERGE 1 /* it is group by with std aggregates to be merged on  coordinator */
+#define QF_AGG_PARTITIONED 2 /* the aggregations are distinct, no adding up */
 
 #if defined (MALLOC_DEBUG) || defined (VALGRIND)
 #define DK_ALLOC_QUERY(qr) { \
@@ -447,7 +474,7 @@ typedef struct hash_area_s
 #define HA_PROC_FILL 5
 
 
-typedef struct clo_comp_t
+typedef struct clo_comp_s 
 {
   short			nth;
   char			is_desc; /* in merging asc/desc mixed sorts , must know the order col by col */
@@ -582,6 +609,8 @@ typedef struct table_source_s
     short		ts_prefetch_rows; /* recommend cluster end batch   after this many because top later */
   } table_source_t;
 
+typedef table_source_t sort_read_node_t;
+
 typedef struct rdf_inf_node_s rdf_inf_pre_node_t;
 typedef struct trans_node_s trans_node_t;
 
@@ -678,7 +707,7 @@ struct query_frag_s
   char			qf_n_stages;
   char			qf_lock_mode;
   bitf_t		qf_is_update:1;
-  bitf_t		qf_is_agg:1;
+  bitf_t		qf_is_agg:2;
   char			qf_need_enlist; /* excl parts later in the chain, enlist from start */
   char			qf_nth; /* ordinal no of qf in qr, for debug */
   state_slot_t **	qf_agg_res;
@@ -708,9 +737,13 @@ typedef struct dpipe_node_s
   data_source_t	src_gen;
   cl_buffer_t		clb;
   char			dp_is_order;
+  char			dp_is_colocated; /* already in the right partition, just call the func locally */
   struct cu_func_s **	dp_funcs;
   state_slot_t **	dp_inputs;
   state_slot_t **	dp_outputs;
+  table_source_t *	dp_loc_ts;
+  state_slot_t ***	dp_input_args;
+  state_slot_t *	dp_local_cache; /* if this is colocated and has no dpipe, use this for remembering some results */
 } dpipe_node_t;
 
 #define dp_itcl clb.clb_itcl
@@ -1051,13 +1084,19 @@ typedef struct setp_node_s
     state_slot_t **	setp_ordered_gb_out;
     key_spec_t 	setp_insert_spec;
     hash_area_t *	setp_reserve_ha;
-    int	                setp_any_distinct_gos;
-    int			setp_any_user_aggregate_gos;
+    char	                setp_any_distinct_gos;
+    char			setp_any_user_aggregate_gos;
+    char		setp_partitioned; /* oby or gby in needing no merge in cluster */
     dk_set_t		setp_const_gb_args;
     dk_set_t		setp_const_gb_values;
 
     setp_save_t	setp_ssa;
+    table_source_t *	setp_loc_ts;
+    float		setp_card;  /* for a group by, guess of how many distinct values of grouping cols */
+    char		setp_is_qf_last; /* if set, the next can be a read node of partitioned setp but do not call it from the setp. */
 } setp_node_t;
+
+#define IS_SETP(qn) IS_QN (qn, setp_node_input)
 
 /* setp_set_op */
 #define SO_NONE			0
@@ -1092,9 +1131,19 @@ typedef struct fun_ref_node_s
     hi_signature_t *	fnr_hi_signature;
     query_frag_t *	fnr_cl_qf; /* if the aggregation is done in remotes, this is the qf that holds the state */
     setp_save_t		fnr_ssa; /* save for multiple set aggregation */
+    struct cl_fref_read_node_s *	fnr_cl_reader;
     int			fnr_cl_state;
+    char		fnr_partitioned;
+    char		fnr_is_order; /* if partitioned setp, must read in order?*/
     char		fnr_is_set_ctr; /* if outermost multistate fref, double as a set ctr if no other set ctr */
   } fun_ref_node_t;
+
+/* fnr_partitioned */
+#define FNR_PARTITIONED 1
+#define FNR_REDUNDANT 2 
+
+
+#define IS_FREF(qn) ((qn_input_fn)fun_ref_node_input == ((data_source_t*)qn)->src_input)
 
 
 #define FNR_NONE 0
@@ -1515,6 +1564,7 @@ struct user_aggregate_s
 /*! Merge function or NULL, that gets two inout box of environments, merges them and saves the result to the first one; returns nothing
     If the name is NULL, then the parallelization of grouping is prohibited. */
     user_aggregate_fun_t	ua_merge;
+    char		ua_need_order;
   };
 
 

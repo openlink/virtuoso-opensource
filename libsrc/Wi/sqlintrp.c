@@ -736,7 +736,8 @@ subq_init (query_t * subq, caddr_t * inst)
       else if ((ts->src_gen.src_input == (qn_input_fn) table_source_input ||
 	  ts->src_gen.src_input == (qn_input_fn) table_source_input_unique)
 	  && ts->ts_order_ks  /* not set if inx op */
-	  && ts->ts_order_ks->ks_key->key_id == KI_TEMP)
+	  && ts->ts_order_ks->ks_key->key_id == KI_TEMP
+		    && ts->ts_order_cursor)
 	{
 	  /* if there is a read from sort temp and there is a cursor for the space, delete it here, so as not to reuse the cursor on a different temp space later */
 	  it_cursor_t *volatile order_itc = TS_ORDER_ITC (ts, inst);

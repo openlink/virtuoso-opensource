@@ -1368,6 +1368,7 @@ itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned l
   int keys_on_stack;
   int do_flush;
   index_tree_t * tree = (index_tree_t *) QST_GET_V (qst, ha->ha_tree);
+  /*if (56420 == unbox (qst[29])) bing (); */
   if (!tree)
     {
       tree = it_temp_allocate (wi_inst.wi_temp);

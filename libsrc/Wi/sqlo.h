@@ -224,6 +224,7 @@ struct df_elt_s
       df_elt_t **	vdb_join_test; /* the part of a remote table's join test that must be done on the vdb */
       dk_set (df_elt_t*)	out_cols;
 
+      bitf_t is_being_placed; /* true while laying out preds for this */
       bitf_t is_unique:1;
       bitf_t is_arity_sure:4;  /* if unique or comes from inx sample or n distinct.  Value is no of key parts in sample */
       bitf_t is_oby_order:1;
@@ -266,6 +267,7 @@ struct df_elt_s
       char	is_locus_first;
       bitf_t	is_contradiction:1;
       bitf_t	is_complete:1; /* false if join order is being decided, true after fixed */
+      bitf_t 	is_being_placed;
     } sub;
     struct {
       /* union dt head, or union coming from a table + or */
@@ -292,12 +294,12 @@ struct df_elt_s
       df_elt_t **	args;
     } call;
     struct {
-      int 	is_linear;
+      char 	is_linear;
       char	is_distinct;
+      float	gb_card;
       ST **	specs;
       dk_set_t *	oby_dep_cols; /* if exps laid after oby, this is the list of all cols each exp depends on.  If exps generated, these must be in oby keys or deps */
       dk_set_t 	fun_refs;
-      dk_set_t	group_cols;
       df_elt_t **	after_test;
       dk_set_t 		having_preds;
       op_table_t *ot;
@@ -367,10 +369,10 @@ struct sql_scope_s
   dk_set_t 	sco_tables;
   dk_set_t	sco_named_vars;
   sql_scope_t *	sco_super;
-  int	sco_fun_refs_allowed;
+  char	sco_fun_refs_allowed;
+  int		sco_has_jt;
   sqlo_t *	sco_so;
   dk_set_t 	sco_jts;
-  int		sco_has_jt;
 };
 
 
@@ -730,6 +732,7 @@ void dk_set_ins_before (dk_set_t * s, void* point, void* new_elt);
 void sqlg_cl_colocate (sql_comp_t * sc, data_source_t * qn, fun_ref_node_t * prev_fref);
 void  sqlg_top_max (query_t * qr);
 void sqlg_cl_bracket_outer (sqlo_t * so, data_source_t * first);
+data_source_t * qn_ensure_prev (sql_comp_t * sc, data_source_t ** head , data_source_t * qn);
 int sqlo_is_col_eq (op_table_t * ot, df_elt_t * col, df_elt_t * val);
 void sqlo_post_oby_ref (sqlo_t * so, df_elt_t * dt_dfe, df_elt_t * sel_dfe, int inx);
 int sqlo_is_unq_preserving (caddr_t name);

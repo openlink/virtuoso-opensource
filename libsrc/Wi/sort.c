@@ -395,7 +395,7 @@ setp_node_input (setp_node_t * setp, caddr_t * inst, caddr_t * state)
   if (setp->setp_set_op == INTERSECT_ST ||
       setp->setp_set_op == INTERSECT_ALL_ST)
     cont = !cont;
-  if (cont)
+  if (cont && !setp->setp_is_qf_last)
     qn_send_output ((data_source_t *) setp, state);
 }
 
@@ -638,8 +638,16 @@ sort_read_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
   ptrlong top = unbox (qst_get (inst, setp->setp_top));
   ptrlong skip = setp->setp_top_skip ? unbox (qst_get (inst, setp->setp_top_skip)) : 0;
   ptrlong fill = unbox (qst_get (inst, setp->setp_row_ctr));
+  if (setp->setp_partitioned)
+    {
+      top += skip;
+      skip = 0;
+    }
   if (!arr)
+    {
+      SRC_IN_STATE (ts, inst) = NULL;
     return;
+    }
   if (state)
     QST_INT (inst, ks->ks_pos_in_temp) = skip;
   for (;;)
