@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2008 OpenLink Software
+ -  Copyright (C) 1998-2009 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -75,12 +75,12 @@
 				<xsl:value-of select="$lon"/>
 			</wgs84_pos:long>
 			<xsl:for-each select="node">
-				<geo:nearby rdf:resource="{concat('http://openstreetmap.org/?lat=', @lat, '&lon=', @lon)}"/>
+				<geo:nearby rdf:resource="{concat('http://openstreetmap.org/?lat=', @lat, '&amp;lon=', @lon)}"/>
 			</xsl:for-each>
 		</geo:Feature>
 
 		<xsl:for-each select="node">
-			<geo:Feature rdf:about="{concat('http://openstreetmap.org/?lat=', @lat, '&lon=', @lon)}">
+			<geo:Feature rdf:about="{concat('http://openstreetmap.org/?lat=', @lat, '&amp;lon=', @lon)}">
 				<wgs84_pos:lat>
 					<xsl:value-of select="@lat"/>
 				</wgs84_pos:lat>
@@ -123,7 +123,7 @@
 					<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat('http://openstreetmap.org/user/', @user))}"/>
 				</foaf:Document>
 				<foaf:Person rdf:about="{vi:proxyIRI(concat('http://openstreetmap.org/user/', @user))}">
-					<foaf:made rdf:resource="{concat('http://openstreetmap.org/?lat=', @lat, '&lon=', @lon)}"/>
+					<foaf:made rdf:resource="{concat('http://openstreetmap.org/?lat=', @lat, '&amp;lon=', @lon)}"/>
 				</foaf:Person>
 			</xsl:if>
 

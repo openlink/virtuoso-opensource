@@ -170,7 +170,7 @@
     <xsl:for-each select="vt:lpstr">
       <xsl:choose>
 	<!-- Skip slides which describe the presentation layout/theme/template -->
-        <xsl:when test="position() <= (number(../@size) - number(/ep:Properties/ep:Slides))">
+        <xsl:when test="position() &lt;= (number(../@size) - number(/ep:Properties/ep:Slides))">
         </xsl:when>
 
         <xsl:otherwise>
