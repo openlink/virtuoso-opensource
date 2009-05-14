@@ -38,7 +38,7 @@ RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0)
    sparql_pref := 'SPARQL\n';
    uriqa_str := '^{URIQADefaultHost}^';
    drop_map := 'SPARQL drop silent quad map virtrdf:'|| qualifier ||'\n;\n\n';
-   sns := ns := sprintf ('prefix %s: <http://%s/%s#>\n', qualifier, cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), qualifier);
+   sns := ns := sprintf ('prefix %s: <http://%s/schemas/%s/>\n', qualifier, cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), qualifier);
    -- ## voID
    if (gen_stat)
      {
@@ -355,6 +355,23 @@ rdf_view_dv_to_sql_str_type (in _dv varchar)
 ;
 
 create procedure
+rdf_view_dv_to_xsd_str_type (in _dv varchar)
+{
+   if (_dv = 189 or _dv = 188) return 'int';
+   else if (_dv = 182 or _dv = 125 or _dv = 131) return 'string';
+   else if (__tag of double precision = _dv) return 'numeric';
+   else if (__tag of real = _dv) return 'float';
+   else if (__tag of numeric = _dv) return 'numeric';
+   else if (__tag of date = _dv) return 'date';
+   else if (__tag of time = _dv) return 'time';
+   else if (__tag of datetime = _dv) return 'dateTime';
+   else if (__tag of timestamp = _dv) return 'dateTime';
+   else if (__tag of nvarchar = _dv) return 'string';
+   signal ('42000', sprintf ('The current implementation do no supports data type %s (%i) for IRI classes', dv_type_title (_dv), _dv));
+}
+;
+
+create procedure
 rdf_view_create_class (in _tbl varchar, in _host varchar, in qualifier varchar)
 {
    declare ret, qual, tbl_name, tbl_name_l, pks, pk_text, sk_str any;
@@ -420,7 +437,7 @@ RDF_OWL_FROM_TBL (in qual varchar, in _tbls any)
 {
   declare ses any;
   declare ns varchar;
-  ns := sprintf ('@prefix %s: <http://%s/%s#> .\n', qual, cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), qual);
+  ns := sprintf ('@prefix %s: <http://%s/schemas/%s/> .\n', qual, cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), qual);
   ses := string_output ();
   http ('@prefix owl: <http://www.w3.org/2002/07/owl#> .\n', ses);
   http ('@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n', ses);
@@ -444,7 +461,7 @@ RDF_OWL_FROM_TBL (in qual varchar, in _tbls any)
 	  col := rdf_view_col (col);
 	  http (sprintf ('%s:%s a rdf:Property .\n', qual, col), ses);
 	  http (sprintf ('%s:%s rdfs:domain %s:%s .\n', qual, col, qual, cls), ses);
-	  xsd := rdf_view_dv_to_sql_str_type (dtp);
+	  xsd := rdf_view_dv_to_xsd_str_type (dtp);
 	  http (sprintf ('%s:%s rdfs:range xsd:%s .\n', qual, col, xsd), ses);
 	  http (sprintf ('%s:%s rdfs:label "%S" .\n', qual, col, label), ses);
 	}
@@ -480,13 +497,13 @@ create procedure RDF_VIEW_GEN_VD (in qual varchar)
   ses := string_output ();
   pref := lower (qual);
 
-  if (
+  if (0 and (
       exists (select 1 from URL_REWRITE_RULE where URR_RULE = pref || '_rule1') or
       exists (select 1 from URL_REWRITE_RULE where URR_RULE = pref || '_rule2') or
       exists (select 1 from URL_REWRITE_RULE where URR_RULE = pref || '_rule3') or
       exists (select 1 from URL_REWRITE_RULE_LIST where URRL_LIST = pref || '_rule_list1') or
       exists (select 1 from HTTP_PATH where HP_HOST = '*ini*' and HP_LISTEN_HOST = '*ini*' and HP_LPATH = '/'||qual)
-     )
+     ) )
     return '\n-- WARNING: there are already created virtual directory "/'||qual||'", skipping virtual directory generation\n'||
     '-- WARNING: To avoid this message chose different base URL or drop existing virtual directory and its rewrite rules.\n';
 
@@ -538,27 +555,74 @@ create procedure RDF_VIEW_GEN_VD (in qual varchar)
     303
     );', ses);
   http ('\n', ses);
-  http('DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-      ''<pref>_rule3'',
-      1,
-      ''/<qual>\x24'',
-      vector(),
-      1,
-      ''/sparql?query=CONSTRUCT+{+%%3fs+%%3fp+%%3fo+}+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/schemas/<qual>%%23%%3E+WHERE{%%3fs+%%3fp+%%3fo}&format=%U'',
-      vector(''*accept*''),
-      null,
-      ''(text/rdf.n3)|(application/rdf.xml)'',
-      2,
-      null
-      );', ses);
-  http ('\n', ses);
-  http ('DB.DBA.URLREWRITE_CREATE_RULELIST ( ''<pref>_rule_list1'', 1, vector ( ''<pref>_rule1'', ''<pref>_rule2'', ''<pref>_rule3'', ''<pref>_rule4''));', ses);
+  http ('DB.DBA.URLREWRITE_CREATE_RULELIST ( ''<pref>_rule_list1'', 1, vector ( ''<pref>_rule1'', ''<pref>_rule2'', ''<pref>_rule4''));', ses);
 
   http ('\n', ses);
   http ('DB.DBA.VHOST_REMOVE (lpath=>''/<qual>'');', ses);
   http ('\n', ses);
   http('DB.DBA.VHOST_DEFINE (lpath=>''/<qual>'', ppath=>''/'', vsp_user=>''dba'', is_dav=>0,
           is_brws=>0, opts=>vector (''url_rewrite'', ''<pref>_rule_list1'')
+	  );',ses);
+   ses := string_output_string (ses);
+   ses := replace (ses, '<pref>', pref);
+   ses := replace (ses, '<qual>', qual);
+   return ses;
+}
+;
+
+create procedure RDF_OWL_GEN_VD (in qual varchar)
+{
+  declare ses, pref any;
+  ses := string_output ();
+  pref := lower (qual);
+
+  if ( 0 and (
+      exists (select 1 from URL_REWRITE_RULE where URR_RULE = pref || '_owl_rule1') or
+      exists (select 1 from URL_REWRITE_RULE where URR_RULE = pref || '_owl_rule2') or
+      exists (select 1 from URL_REWRITE_RULE_LIST where URRL_LIST = pref || '_owl_rule_list1') or
+      exists (select 1 from HTTP_PATH where HP_HOST = '*ini*' and HP_LISTEN_HOST = '*ini*' and HP_LPATH = '/schemas/'||qual)
+     ) )
+    return '\n-- WARNING: there are already created virtual directory "/schemas/'||qual||'", skipping virtual directory generation\n'||
+    '-- WARNING: To avoid this message chose different base URL or drop existing virtual directory and its rewrite rules.\n';
+
+  http (
+  'DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+    ''<pref>_owl_rule2'',
+      1,
+    ''(/[^#]*)'',
+    vector(''path''),
+      1,
+    ''/sparql?query=DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%3E+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/schemas/<qual>%%23%%3E&format=%U'',
+    vector(''path'', ''*accept*''),
+      null,
+      ''(text/rdf.n3)|(application/rdf.xml)'',
+      2,
+      null
+      );', ses);
+
+  http ('\n', ses);
+  http (
+  'DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+    ''<pref>_owl_rule1'',
+    1,
+    ''([^#]*)'',
+    vector(''path''),
+    1,
+    ''/about/html/http://^{URIQADefaultHost}^%s'',
+    vector(''path''),
+    null,
+    null,
+    2,
+    303
+    );', ses);
+  http ('\n', ses);
+  http ('DB.DBA.URLREWRITE_CREATE_RULELIST ( ''<pref>_owl_rule_list1'', 1, vector ( ''<pref>_owl_rule1'', ''<pref>_owl_rule2''));', ses);
+
+  http ('\n', ses);
+  http ('DB.DBA.VHOST_REMOVE (lpath=>''/schemas/<qual>'');', ses);
+  http ('\n', ses);
+  http('DB.DBA.VHOST_DEFINE (lpath=>''/schemas/<qual>'', ppath=>''/'', vsp_user=>''dba'', is_dav=>0,
+          is_brws=>0, opts=>vector (''url_rewrite'', ''<pref>_owl_rule_list1'')
 	  );',ses);
    ses := string_output_string (ses);
    ses := replace (ses, '<pref>', pref);

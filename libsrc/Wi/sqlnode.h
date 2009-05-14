@@ -1061,7 +1061,6 @@ typedef struct op_node_s
 typedef struct setp_node_s
   {
     data_source_t	src_gen;
-    state_slot_t *	setp_temp_tree;
     hash_area_t *	setp_ha;
     dk_set_t		setp_keys;
     dk_set_t		setp_key_is_desc;
