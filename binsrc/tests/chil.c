@@ -71,7 +71,7 @@ pause_if_necessary (char *prompt)	/* If output not redirected. */
   if (!is_started_as_service () && isatty (fileno (stdout)))
     {
       if (prompt)
-	printf (prompt);
+	puts (prompt);
       getchar ();
     }
 }

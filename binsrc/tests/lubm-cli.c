@@ -726,7 +726,7 @@ void LUBM_DoOne ()
 	    }
 	}
       else
-        sprintf (tmp, txt);
+        sprintf (tmp, "%s", txt);
 
 
       if (print_result)

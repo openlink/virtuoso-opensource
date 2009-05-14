@@ -4738,12 +4738,12 @@ field_print_normal (TCHAR *str, SQLULEN w, int rightp, int inx)
  */
       w = FIELD_WIDTH_SANITY_CHECK;
     }
+
   if ((n_out_cols - 1) == inx)	/* The rightmost column? */
     {				/* Avoid any unnecessary padding on right side. */
       if (rightp)
 	{
-	  isqlt_stprintf (temp, _T("%%%lu") PCT_S _T(""), (unsigned long) w);
-	  isql_printf (temp, str);
+	  isql_printf (_T("%*") PCT_S _T(""), (int) w , str);
 	}
       else
 	{
@@ -4754,13 +4754,12 @@ field_print_normal (TCHAR *str, SQLULEN w, int rightp, int inx)
     {
       if (rightp)
 	{
-	  isqlt_stprintf (temp, _T("%%%lu") PCT_S _T("  "), (unsigned long) w);
+	  isql_printf (_T("%*") PCT_S _T("  "), (int) w , str);
 	}
       else
 	{
-	  isqlt_stprintf (temp, _T("%%-%lu") PCT_S _T("  "), (unsigned long) w);
+	  isql_printf (_T("%-*") PCT_S _T("  "), (int) w , str);
 	}
-      isql_printf (temp, str);
     }
 }
 
@@ -5342,6 +5341,9 @@ do_string_argument_sql_api_command (TCHAR *text,
 #define GETTYPEINFO_COMMAND _T("GetTypeInfo")
 #define STATS_COMMAND       _T("Statistics")
 #define SPECCOL_COMMAND     _T("SpecialColumns")
+#define QUALIFIERS_COMMAND	_T("TableQualifiers")
+#define OWNERS_COMMAND		_T("TableOwners")
+#define TYPES_COMMAND		_T("TableTypes")
 
 
 int
@@ -5504,6 +5506,72 @@ do_sql_api_command (TCHAR *text)
 				   (isqlt_tcschr (opt, 'N') || isqlt_tcschr (opt, 'n')))
 					? ((UWORD) SQL_NO_NULLS)
 					: ((UWORD) SQL_NULLABLE))));
+      max_col_width = MAX_COL_WIDTH;
+    }
+
+  else if (!strcasecmp (command, QUALIFIERS_COMMAND))
+    {
+      UWORD ThisFunctionExists = TRUE;
+
+#if !(defined(WIN32) && defined(UDBC))
+      SQLGetFunctions (hdbc, SQL_API_SQLTABLES, &ThisFunctionExists);
+#endif
+      if (ThisFunctionExists == FALSE)
+	{
+	  if (savepoint)
+	    {
+	      *savepoint = saveslash;
+	    }
+	  isql_fprintf (error_stream, _T ("*** This ODBC driver doesn't implement SQLTABLES !\n"));
+	  return (DO_SQL_API_COMMAND_IS_NOT_AVAILABLE);
+	}
+
+      isql_printf (_T ("Showing SQLTables(QUALIFIERS)\n"));
+      rc = SQLTables (stmt, UCP ("%"), SQL_NTS, NULL, 0, NULL, 0, NULL, 0);
+      max_col_width = MAX_COL_WIDTH;
+    }
+
+  else if (!strcasecmp (command, OWNERS_COMMAND))
+    {
+      UWORD ThisFunctionExists = TRUE;
+
+#if !(defined(WIN32) && defined(UDBC))
+      SQLGetFunctions (hdbc, SQL_API_SQLTABLES, &ThisFunctionExists);
+#endif
+      if (ThisFunctionExists == FALSE)
+	{
+	  if (savepoint)
+	    {
+	      *savepoint = saveslash;
+	    }
+	  isql_fprintf (error_stream, _T ("*** This ODBC driver doesn't implement SQLTABLES !\n"));
+	  return (DO_SQL_API_COMMAND_IS_NOT_AVAILABLE);
+	}
+
+      isql_printf (_T ("Showing SQLTables(OWNERS)\n"));
+      rc = SQLTables (stmt, NULL, 0, UCP ("%"), SQL_NTS, NULL, 0, NULL, 0);
+      max_col_width = MAX_COL_WIDTH;
+    }
+
+  else if (!strcasecmp (command, TYPES_COMMAND))
+    {
+      UWORD ThisFunctionExists = TRUE;
+
+#if !(defined(WIN32) && defined(UDBC))
+      SQLGetFunctions (hdbc, SQL_API_SQLTABLES, &ThisFunctionExists);
+#endif
+      if (ThisFunctionExists == FALSE)
+	{
+	  if (savepoint)
+	    {
+	      *savepoint = saveslash;
+	    }
+	  isql_fprintf (error_stream, _T ("*** This ODBC driver doesn't implement SQLTABLES !\n"));
+	  return (DO_SQL_API_COMMAND_IS_NOT_AVAILABLE);
+	}
+
+      isql_printf (_T ("Showing SQLTables(TABLETYPES)\n"));
+      rc = SQLTables (stmt, NULL, 0, NULL, 0, NULL, 0, UCP ("%"), SQL_NTS);
       max_col_width = MAX_COL_WIDTH;
     }
 
@@ -8088,6 +8156,9 @@ _T("OpenLink Interactive SQL ") ISQL_TYPE _T(".\n")
 _T("Type a SQL statement followed by a ';'.\n")
 _T("\n")
 _T("Database and Table information:\n")
+_T("    TABLEQUALIFIERS                  Show all qualifiers\n")
+_T("    TABLEOWNERS                      Show all owners\n")
+_T("    TABLETYPES                       Show all table types\n")
 _T("    TABLES [tablename_pattern] [/table_type]  Show tables in the database.\n")
 _T("    e.g: TABLES a%%/TABLE; (Show all ordinary tables beginning with 'a')\n")
 _T("    COLUMNS [tablename] [/colname]   COLUMNPRIVILEGES tablename [/colnamepat]\n")

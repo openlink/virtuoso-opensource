@@ -962,8 +962,9 @@ create procedure DB.DBA.SPARQL_REXEC_WITH_META (
 </programlisting>
 
 </sect3>
+<sect3 id="rdfrequestparamsextensions"><title>SPARQL Protocol Extensions</title>
 
-<sect3 id="rdfrequestparamsofunctions"><title>Request Parameters</title>
+<sect4 id="rdfrequestparamsofunctions"><title>Request Parameters</title>
 <table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
     <title>Request Parameters List</title>
     <tgroup align="char" charoff="50" char="." cols="3">
@@ -1019,12 +1020,18 @@ create procedure DB.DBA.SPARQL_REXEC_WITH_META (
         <entry>No</entry>
         <entry></entry>
       </row>
+      <row>
+        <entry>xslt-uri</entry>
+        <entry>absolute URL of XSLT file to be applied to SPARQL Qery results</entry>
+        <entry>No</entry>
+        <entry></entry>
+      </row>
     </tbody>
   </tgroup>
 </table>
-</sect3>
+</sect4>
 
-<sect3 id="rdfresponsecodeofprotocol"><title>Response Codes</title>
+<sect4 id="rdfresponsecodeofprotocol"><title>Response Codes</title>
 <para>If the query is a CONSTRUCT or DESCRIBE then the result set
 consists of a single row and a single column, the value inside is a
 dictionary of triples in 'long valmode'. Note that the dictionary
@@ -1033,9 +1040,9 @@ loose database connection trying to fetch a result set row that
 contain a dictionary object. This disconnect will be safe for server,
 so the client can re-connect to the server, but the disconnected
 transaction will be rolled back.</para>
-</sect3>
+</sect4>
 
-<sect3 id="rdfsupportedmimesofprotocol"><title>Response Format</title>
+<sect4 id="rdfsupportedmimesofprotocol"><title>Response Format</title>
 <para>All standard MIME types of SPARQL Protocol are supported:</para>
 <table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
     <title>Supported MIME Types list</title>
@@ -1043,7 +1050,7 @@ transaction will be rolled back.</para>
     <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
     <thead>
       <row>
-        <entry>Mimetype</entry>
+        <entry>Content-Type</entry>
         <entry>Supported for result of Query</entry>
       </row>
     </thead>
@@ -1059,6 +1066,14 @@ transaction will be rolled back.</para>
       <row>
         <entry>'application/rdf+xml'</entry>
         <entry>CONSTRUCT</entry>
+      </row>
+      <row>
+        <entry>'application/rdf+json'</entry>
+        <entry>CONSTRUCT</entry>
+      </row>
+      <row>
+        <entry>'application/rdf+json'</entry>
+        <entry>DESCRIBE</entry>
       </row>
       <row>
         <entry>'application/rdf+xml'</entry>
@@ -1078,9 +1093,9 @@ transaction will be rolled back.</para>
 <para>If the HTTP header returned by the remote server does not contain 'Content-Type' line, the MIME type may be guessed from the text of the returned body. </para>
 <para>The current implementation does not support results of SELECT returned in RDF /XML, TURTLE or 'sparql-results-2'.</para>
 <para>Error messages returned from the service are returned as XML documents, using the mime type application/xml. The documents consist of a single element containing an error message.</para>
-</sect3>
+</sect4>
 
-<sect3 id="rdfsupportedmimesaddofprotocol"><title>Additional Response Formats -- SELECT</title>
+<sect4 id="rdfsupportedmimesaddofprotocol"><title>Additional Response Formats -- SELECT</title>
 <para>Use the format parameter to select one of the following alternate output formats:</para>
 
 <table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
@@ -1091,7 +1106,7 @@ transaction will be rolled back.</para>
       <row>
         <entry>Format Value</entry>
         <entry>Description</entry>
-        <entry>Mimetype</entry>
+        <entry>Content-Type</entry>
       </row>
     </thead>
     <tbody>
@@ -1101,33 +1116,89 @@ transaction will be rolled back.</para>
         <entry>text/html</entry>
       </row>
       <row>
-        <entry>json</entry>
+        <entry>JSON</entry>
         <entry>JSON serialization of results. Conforms to the draft specification Serializing SPARQL Query Results in JSON</entry>
         <entry>application/sparql-results+json</entry>
       </row>
       <row>
-        <entry>js</entry>
+        <entry>Javascript</entry>
         <entry>Javascript serialization of results. Generates an HTML table with the CSS class sparql. The table contains a column indicating row number and additional columns for each query variable. Each query solution contributes one row of the table. Unbound variables are indicated with a non-breaking space in the appropriate table cells.</entry>
         <entry>application/javascript</entry>
       </row>
       <row>
-        <entry>table</entry>
-        <entry></entry>
-        <entry>text/html</entry>
-      </row>
-      <row>
         <entry>XML</entry>
         <entry></entry>
-        <entry>text/html</entry>
+        <entry>application/sparql-results+xml</entry>
       </row>
       <row>
         <entry>TURTLE</entry>
         <entry></entry>
-        <entry>text/html</entry>
+        <entry>text/rdf+n3</entry>
       </row>
     </tbody>
   </tgroup>
 </table>
+</sect4>
+
+<sect4 id="rdfsupportedmimesaddofprotocol"><title>Additional HTTP Response Formats -- DESCRIBE &amp; CONSTRUCT</title>
+
+<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+    <title>Additional HTTP Response Formats -- DESCRIBE &amp; CONSTRUCT</title>
+    <tgroup align="char" charoff="50" char="." cols="3">
+    <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+    <thead>
+      <row>
+        <entry>Format Value</entry>
+        <entry>Description</entry>
+        <entry>Content-Type</entry>
+      </row>
+    </thead>
+    <tbody>
+      <row>
+        <entry>JSON</entry>
+        <entry></entry>
+        <entry>application/rdf+json</entry>
+      </row>
+    </tbody>
+  </tgroup>
+</table>
+</sect4>
+
+<sect4 id="rdfsupportedmimesaddofprotocol"><title>Virtuoso/PL APIs</title>
+<para>Virtuoso also provides SPARQL Protocol client APIs in PL, so you can communicate with SPARQL
+Query Services from within SQL stored-procedures. The APIs are as follows:
+</para>
+<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+    <title>Virtuoso/PL APIs</title>
+    <tgroup align="char" charoff="50" char="." cols="2">
+    <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+    <thead>
+      <row>
+        <entry>API</entry>
+        <entry>Notes</entry>
+      </row>
+    </thead>
+    <tbody>
+      <row>
+        <entry>DB.DBA.SPARQL_REXEC</entry>
+        <entry>behaves like DBA.SPARQL_EVAL, but executes the query on the specified server. The procedure
+does not return anything. Instead, it creates a result set.</entry>
+      </row>
+      <row>
+        <entry>DB.DBA.SPARQL_REXEC_TO_ARRAY</entry>
+        <entry>behaves like DBA.SPARQL_EXEC_TO_ARRAY(), but executes the query on the specified server. The
+function return a vector of rows, where every row is represented by a vector of values of fields.</entry>
+      </row>
+      <row>
+        <entry>DB.DBA.SPARQL_REXEC_WITH_META</entry>
+        <entry>has no local SPARQL_EVAL analog. It produces not only an array of result rows but also array
+of metadata about result set in a format used by the exec() function.</entry>
+      </row>
+    </tbody>
+  </tgroup>
+</table>
+</sect4>
+
 </sect3>
 
 <sect3 id="rdfsparqlendpointexamples"><title>Examples</title>
@@ -1136,6 +1207,288 @@ transaction will be rolled back.</para>
 a collection of SPARQL query language use-cases that enable interactive and simplified testing of a Triple Store's implementation.
 Can be found at 'http://example.com:8080/sparql_demo/' depending on the local Virtuoso Server Configuration, or live at <ulink url="http://demo.openlinksw.com/sparql_demo">Virtuoso Demo Server</ulink>.
 </para>
+<para><emphasis>curl example with SPARQL queries:</emphasis></para>
+<programlisting><![CDATA[
+curl -F "query=SELECT DISTINCT ?p FROM <http://demo.openlinksw.com/DAV/home/demo/rdf_sink/> WHERE {?s ?p ?o}" http://demo.openlinksw.com/sparql
+]]></programlisting>
+    <para>The result should be:</para>
+<programlisting><![CDATA[
+<?xml version="1.0" ?>
+<sparql xmlns="http://www.w3.org/2005/sparql-results#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2001/sw/DataAccess/rf1/result2.xsd">
+ <head>
+  <variable name="p"/>
+ </head>
+ <results distinct="false" ordered="true">
+  <result>
+   <binding name="p"><uri>http://www.w3.org/1999/02/22-rdf-syntax-ns#type</uri></binding>
+  </result>
+  <result>
+   <binding name="p"><uri>http://xmlns.com/foaf/0.1/nick</uri></binding>
+  </result>
+  <result>
+   <binding name="p"><uri>http://xmlns.com/foaf/0.1/name</uri></binding>
+  </result>
+  <result>
+   <binding name="p"><uri>http://xmlns.com/foaf/0.1/homepage</uri></binding>
+  </result>
+  <result>
+   <binding name="p"><uri>http://xmlns.com/foaf/0.1/knows</uri></binding>
+  </result>
+  <result>
+   <binding name="p"><uri>http://xmlns.com/foaf/0.1/workplaceHomepage</uri></binding>
+  </result>
+  <result>
+   <binding name="p"><uri>http://xmlns.com/foaf/0.1/mbox</uri></binding>
+  </result>
+ </results>
+</sparql>
+]]></programlisting>
+<para><emphasis>Other examples with curl and SPARQL queries:</emphasis></para>
+<programlisting><![CDATA[
+curl -F "query=SELECT distinct ?Concept FROM <http://dbpedia.org> WHERE {?s a ?Concept} limit 10" http://dbpedia.org/sparql
+]]></programlisting>
+<programlisting><![CDATA[
+curl -F "query=SELECT distinct ?Concept FROM <http://myopenlink.net/dataspace/person/kidehen> WHERE {?s a ?Concept} limit 10" http://demo.openlinksw.com/sparql
+]]></programlisting>
+<programlisting><![CDATA[
+curl -F "query=SELECT distinct ?Concept FROM <http://data.openlinksw.com/oplweb/product_family/virtuoso> WHERE {?s a ?Concept} limit 10" http://demo.openlinksw.com/sparql
+]]></programlisting>
+<programlisting><![CDATA[
+curl -F "query=SELECT distinct ?Concept FROM <http://openlinksw.com/dataspace/organization/openlink> WHERE {?s a ?Concept} limit 10" http://demo.openlinksw.com/sparql
+]]></programlisting>
+<para><emphasis>Simple example with curl and sparql-ssl endpoint</emphasis></para>
+<programlisting><![CDATA[
+$ curl -H "Accept: text/rdf+n3"  --cert test.pem -k https://demo.openlinksw.com/dataspace/person/demo
+Enter PEM pass phrase: *****
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix ns1:    <https://demo.openlinksw.com/dataspace/demo/socialnetwork/demo%27s%20AddressBook/1046#> .
+@prefix foaf:   <http://xmlns.com/foaf/0.1/> .
+ns1:this        rdf:type        foaf:Person .
+@prefix ns3:    <http://www.pipian.com/rdf/tami/juliette.n3#> .
+ns3:juliette    rdf:type        foaf:Document .
+@prefix ns4:    <https://demo.openlinksw.com/dataspace/person/> .
+ns4:demo        rdf:type        foaf:PersonalProfileDocument .
+@prefix ns5:    <https://demo.openlinksw.com/dataspace/person/demo#> .
+@prefix geo:    <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+ns5:based_near  rdf:type        geo:Point .
+@prefix ns7:    <https://demo.openlinksw.com/dataspace/demo/socialnetwork/demo%27s%20AddressBook/1042#> .
+ns7:this        rdf:type        foaf:Person .
+ns5:this        rdf:type        foaf:Person .
+@prefix ns8:    <https://demo.openlinksw.com/dataspace/person/demo/online_account/> .
+@prefix sioc:   <http://rdfs.org/sioc/ns#> .
+ns8:demo        rdf:type        sioc:User .
+@prefix ns10:   <https://demo.openlinksw.com/dataspace/demo/socialnetwork/myAddressBook/1001#> .
+ns10:this       rdf:type        foaf:Person .
+@prefix ns11:   <https://demo.openlinksw.com/dataspace/demo/socialnetwork/demo%27s%20AddressBook/1045#> .
+ns11:this       rdf:type        foaf:Person .
+@prefix ns12:   <https://demo.openlinksw.com/dataspace/demo#> .
+ns12:this       rdf:type        sioc:User .
+ns5:org rdf:type        foaf:Organization .
+@prefix ns13:   <https://demo.openlinksw.com/dataspace/demo/socialnetwork/demo%27s%20AddressBook/1048#> .
+ns13:this       rdf:type        foaf:Person .
+@prefix ns14:   <https://demo.openlinksw.com/dataspace/demo/socialnetwork/myAddressBook/1001#this#> .
+ns14:org        rdf:type        foaf:Organization .
+@prefix ns15:   <https://demo.openlinksw.com/dataspace/person/imitko#> .
+ns15:this       rdf:type        foaf:Person .
+@prefix ns16:   <https://demo.openlinksw.com/dataspace/demo/socialnetwork/myAddressBook/1049#> .
+ns16:this       rdf:type        foaf:Person .
+@prefix ns17:   <https://demo.openlinksw.com/dataspace/demo/socialnetwork/myAddressBook/1000#> .
+ns17:this       rdf:type        foaf:Person .
+ns8:MySpace     rdf:type        sioc:User .
+@prefix ns18:   <https://demo.openlinksw.com/dataspace/demo/socialnetwork/demo%27s%20AddressBook/1044#> .
+ns18:this       rdf:type        foaf:Person .
+@prefix dc:     <http://purl.org/dc/elements/1.1/> .
+ns4:demo        dc:title        "demo demo's FOAF file" .
+ns14:org        dc:title        "OpenLink" .
+ns5:org dc:title        "OpenLink" .
+ns18:this       foaf:name       "Kingsley Idehen" .
+ns13:this       foaf:name       "Juliette" .
+ns17:this       foaf:name       "Kingsley Idehen" .
+ns5:this        foaf:name       "demo demo" .
+ns15:this       foaf:name       "Mitko Iliev" .
+ns10:this       foaf:name       "test test12" .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+ns5:this        rdfs:seeAlso    ns4:demo .
+ns15:this       rdfs:seeAlso    ns4:imitko .
+ns4:demo        foaf:maker      ns5:this .
+ns15:this       foaf:nick       "imitko" .
+ns7:this        foaf:nick       "Orri Erling" .
+ns13:this       foaf:nick       "Juliette" .
+ns10:this       foaf:nick       "test1" .
+ns5:this        foaf:nick       "demo" .
+ns18:this       foaf:nick       "Kingsley" .
+ns17:this       foaf:nick       "Kingsley" .
+ns16:this       foaf:nick       "test2" .
+ns1:this        foaf:nick       "TEST" .
+ns11:this       foaf:nick       "TEST" .
+ns5:this        foaf:holdsAccount       ns8:demo ,
+                ns8:MySpace ,
+                ns12:this .
+@prefix ns21:   <http://myopenlink.net/dataspace/person/imitko#> .
+ns5:this        foaf:knows      ns21:this ,
+                ns17:this ,
+                ns16:this ,
+                ns3:juliette ,
+                ns10:this ,
+                ns7:this .
+@prefix ns22:   <http://myopenlink.net/dataspace/person/kidehen#> .
+ns5:this        foaf:knows      ns22:this ,
+                ns18:this ,
+                ns11:this ,
+                ns1:this .
+@prefix ns23:   <http://bblfish.net/people/henry/card#me\u0020> .
+ns5:this        foaf:knows      ns23: ,
+                ns13:this ,
+                ns15:this ;
+        foaf:firstName  "demo" ;
+        foaf:family_name        "demo" ;
+        foaf:gender     "male" ;
+        foaf:icqChatID  "125968" ;
+        foaf:msnChatID  "45demo78" ;
+        foaf:aimChatID  "demo1234" ;
+        foaf:yahooChatID        "demo678" ;
+        foaf:based_near ns5:based_near .
+@prefix ns24:   <http://www.openlinksw.com> .
+ns5:this        foaf:workplaceHomepage  ns24: .
+ns5:org foaf:homepage   ns24: .
+ns5:this        foaf:homepage   ns24: .
+ns14:org        foaf:homepage   ns24: .
+ns4:demo        foaf:primaryTopic       ns5:this .
+ns5:based_near  geo:lat "47.333332" ;
+        geo:long        "13.333333" .
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix ns1:    <https://demo.openlinksw.com/dataspace/demo#> .
+@prefix foaf:   <http://xmlns.com/foaf/0.1/> .
+ns1:this        rdf:type        foaf:OnlineAccount .
+@prefix ns3:    <https://demo.openlinksw.com/dataspace/person/demo/online_account/> .
+ns3:MySpace     rdf:type        foaf:OnlineAccount .
+ns3:demo        rdf:type        foaf:OnlineAccount .
+@prefix ns4:    <https://demo.openlinksw.com/dataspace/person/demo#> .
+ns4:this        foaf:holdsAccount       ns3:MySpace ,
+                ns1:this ,
+                ns3:demo .
+@prefix vcard:  <http://www.w3.org/2001/vcard-rdf/3.0#> .
+ns4:this        vcard:ADR       ns4:addr .
+ns4:addr        vcard:Country   "United States" ;
+        vcard:Locality  "New York" ;
+        vcard:Region    "Nebraska" .
+@prefix ns6:    <http://myspace.com> .
+ns3:MySpace     foaf:accountServiceHomepage     ns6: .
+@prefix ns7:    <skype:demo?> .
+ns3:demo        foaf:accountServiceHomepage     ns7:chat ;
+        foaf:accountName        "demo" .
+ns3:MySpace     foaf:accountName        "MySpace" .
+@prefix ns8:    <http://vocab.org/bio/0.1/> .
+ns4:this        ns8:olb "this is short resume of user Demo." .
+@prefix ns9:    <https://demo.openlinksw.com/dataspace/> .
+ns4:this        foaf:openid     ns9:demo ;
+        ns8:keywords    "demo, openlinksw, virtuoso, weblog, rdf" .
+@prefix foaf:   <http://xmlns.com/foaf/0.1/> .
+@prefix ns1:    <https://demo.openlinksw.com/dataspace/demo/subscriptions/> .
+@prefix ns2:    <https://demo.openlinksw.com/dataspace/person/demo#> .
+ns1:DemoFeeds   foaf:maker      ns2:this .
+@prefix ns3:    <https://demo.openlinksw.com/dataspace/demo/community/> .
+ns3:demoCommunity       foaf:maker      ns2:this .
+@prefix ns4:    <https://demo.openlinksw.com/dataspace/demo/eCRM/demo%27s%20eCRM> .
+ns4:    foaf:maker      ns2:this .
+@prefix ns5:    <https://demo.openlinksw.com/dataspace/demo/calendar/> .
+ns5:mycalendar  foaf:maker      ns2:this .
+@prefix ns6:    <https://demo.openlinksw.com/dataspace/demo/photos/> .
+ns6:MyGallery   foaf:maker      ns2:this .
+@prefix ns7:    <https://demo.openlinksw.com/dataspace/demo/briefcase/> .
+ns7:mybriefcase foaf:maker      ns2:this .
+@prefix ns8:    <https://demo.openlinksw.com/dataspace/demo/wiki/> .
+ns8:ESBWiki     foaf:maker      ns2:this .
+@prefix ns9:    <https://demo.openlinksw.com/dataspace/demo/bookmark/> .
+ns9:mybookmarks foaf:maker      ns2:this .
+@prefix ns10:   <https://demo.openlinksw.com/dataspace/demo/weblog/> .
+ns10:myblog     foaf:maker      ns2:this .
+@prefix ns11:   <https://demo.openlinksw.com/dataspace/demo/socialnetwork/demo%27s%20AddressBook> .
+ns11:   foaf:maker      ns2:this .
+@prefix ns12:   <https://demo.openlinksw.com/dataspace/demo/community/demo%27s%20Community> .
+ns12:   foaf:maker      ns2:this .
+ns8:mywiki      foaf:maker      ns2:this .
+@prefix ns13:   <https://demo.openlinksw.com/dataspace/demo/eCRM/demo%20demo%27s%20eCRM> .
+ns13:   foaf:maker      ns2:this .
+@prefix ns14:   <https://demo.openlinksw.com/dataspace/demo/polls/> .
+ns14:mypolls    foaf:maker      ns2:this .
+@prefix ns15:   <https://demo.openlinksw.com/dataspace/demo/socialnetwork/> .
+ns15:myAddressBook      foaf:maker      ns2:this .
+ns3:SP2 foaf:maker      ns2:this .
+ns2:this        foaf:made       ns11: ,
+                ns4: ,
+                ns3:demoCommunity ,
+                ns12: ,
+                ns15:myAddressBook ,
+                ns10:myblog ,
+                ns9:mybookmarks ,
+                ns7:mybriefcase ,
+                ns5:mycalendar ,
+                ns14:mypolls ,
+                ns8:mywiki ,
+                ns1:DemoFeeds ,
+                ns8:ESBWiki ,
+                ns6:MyGallery ,
+                ns3:SP2 ,
+                ns13: .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+ns9:mybookmarks rdfs:label      "demo demo's Bookmarks" .
+ns15:myAddressBook      rdfs:label      "demo demo's AddressBook" .
+ns4:    rdfs:label      "demo demo's eCRM" .
+ns12:   rdfs:label      "demo's Community" .
+ns14:mypolls    rdfs:label      "demo demo's Polls" .
+ns13:   rdfs:label      "demo demo's eCRM Description" .
+ns8:mywiki      rdfs:label      "demo demo's Wiki" .
+ns7:mybriefcase rdfs:label      "demo demo's Briefcase" .
+ns1:DemoFeeds   rdfs:label      "demo demo's Feeds" .
+ns10:myblog     rdfs:label      "demo's Weblog" .
+ns5:mycalendar  rdfs:label      "demo demo's Calendar" .
+ns11:   rdfs:label      "demo demo's AddressBook" .
+ns6:MyGallery   rdfs:label      "demo demo's Gallery" .
+ns8:ESBWiki     rdfs:label      "demo demo's Wiki" .
+ns3:demoCommunity       rdfs:label      "demo demo's Community" .
+ns3:SP2 rdfs:label      "demo demo's Community" .
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix ns1:    <https://demo.openlinksw.com/dataspace/person/demo#> .
+@prefix ns2:    <http://www.w3.org/ns/auth/rsa#> .
+ns1:cert        rdf:type        ns2:RSAPublicKey .
+@prefix dc:     <http://purl.org/dc/elements/1.1/> .
+@prefix ns4:    <https://demo.openlinksw.com/dataspace/person/demo/projects#ods%20project> .
+ns4:    dc:title        "ods project" .
+@prefix foaf:   <http://xmlns.com/foaf/0.1/> .
+ns4:    foaf:maker      ns1:this .
+ns1:this        foaf:made       ns4: .
+@prefix ns6:    <http://www.w3.org/ns/auth/cert#> .
+ns1:cert        ns6:identity    ns1:this ;
+        ns2:modulus     ns1:cert_mod .
+ns1:cert_mod    ns6:hex "b8edefa13092d05e85257d6be0aca54218091278583f1d18759c4bced0007948fa6e920018abc3c30b8885d303ec2e679f3a7c15036d38452ddd9ebfcbb41
+e1bd08dca66b7737b744fd9e441ebefa425311363711714cd0fe3b334a79ce50be9eb3443193bcbf2f1486481e775382f1a1792a2a8438543ca6f478c3b13c5db2a7f9a12a9a5aed5ec498
+6be0169a1859d027170812a28914d158fb76a5933f11777a06c8db64d10f7c02900c4bb4bbf2d24c0e34c6ca135fdb5e05241bc029196ceef13a2006f07d1800f17762c0cfe05b3dac3042
+09e1b7a3973122e850e96fcd0396544f82f0b11a46f0d868ba0f3d8efd957e7ef224871905a06c3c5d85ac9" .
+ns1:cert        ns2:public_exponent     ns1:cert_exp .
+ns1:cert_exp    ns6:decimal     "65537" .
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix ns1:    <https://demo.openlinksw.com/dataspace/person/demo#> .
+@prefix ns2:    <http://vocab.org/bio/0.1/> .
+ns1:event       rdf:type        ns2:Birth .
+@prefix foaf:   <http://xmlns.com/foaf/0.1/> .
+@prefix ns4:    <mailto:demo@openlinksw.com> .
+ns1:this        foaf:mbox       ns4: ;
+        foaf:birthday   "01-01" .
+@prefix dc:     <http://purl.org/dc/elements/1.1/> .
+ns1:event       dc:date "1968-01-01" .
+ns1:this        ns2:event       ns1:event .
+]]></programlisting>
+<para><emphasis>Simple example with curl and sparql-oauth endpoint</emphasis></para>
+<para>Note: this is just an example as token had expired already. You can go to <link linkend="sparqloauthendpoint">this</link> section to see how to interact with our Virtuoso UI.</para>
+<programlisting><![CDATA[
+curl "http://demo.openlinksw.com/oauth/sparql.vsp?debug=on&default-graph-uri=http%3A%2F%2Fdemo.openlinksw.com
+%2Fdataspace%2Fperson%2Fdemo&format=text%2Fhtml&oauth_consumer_key=ea26546eae07a95386ae3ea608bf85ebb2c4515f
+&oauth_nonce=a3033100df304fda&oauth_signature_method=HMAC-SHA1&oauth_timestamp=1242021005
+&oauth_token=e515527b7bfcaf1e8ed87e7db18d2c16b9164f31&oauth_version=1.0
+&query=select%20distinct%20%3FURI%20%3FObjectType%20where%20%7B%3FURI%20a%20%3FObjectType%7D%20limit%2050
+&oauth_signature=6hieBkuE9WMg7jdP2%2FX%2BRw2sMj8%3D
+]]></programlisting>
 <para><emphasis>Simple example with CONSTRUCT:</emphasis></para>
 <para>Go to the sparql endpoint UI: i.e. go to http://host:port/sparql</para>
 <para>Enter for Default Graph URI: http://www.w3.org/2001/sw/DataAccess/proto-tests/data/construct/simple-data.rdf</para>
@@ -1447,10 +1800,10 @@ DB.DBA.VHOST_DEFINE (lpath=>'/Northwind', ppath=>'/DAV/home/demo/', vsp_user=>'d
 DB.DBA.XML_SET_NS_DECL ('northwind', 'http://demo.openlinksw.com/schemas/northwind#', 2);
 ]]></programlisting>
 </sect3>
-<sect3 id="rdfproxyservice"><title>RDF proxy service</title>
+<sect3 id="rdfproxyservice"><title>Sponger Proxy URI Service</title>
     <para>
 	In certain cases like for Ajax applications, it's prohibited to issue HTTP requests to another server that origin server.
-	In other cases it is needed to transform the content of target to an RDF format. To this purpose the Virtuoso Server provide a RDF proxy service. This service takes as argument target URL and may return content as-is or will try to transform with SPARQL sponger and return RDF data representing the target. In case of transformation to RDF the serialization of the output can be forced by a URL parameter of by content negotiation.
+	In other cases it is needed to transform the content of target to an RDF format. To this purpose the Virtuoso Server provide a Sponger Proxy URI Service. This service takes as argument target URL and may return content as-is or will try to transform with SPARQL sponger and return RDF data representing the target. In case of transformation to RDF the serialization of the output can be forced by a URL parameter of by content negotiation.
     </para>
     <para>
 	When the rdf_mappers package is installed, Virtuoso reserves the path '/about/[rdf|html]/' for RDF
@@ -1462,12 +1815,12 @@ requests on port 8080 then client applications should use the 'service endpoint'
     </para>
     <para>
 	If the rdf_mappers package is not installed, then the path '/proxy/rdf/' is used for
-RDF proxy service.
+Sponger Proxy URI Service.
     </para>
     <para>
-	The old pattern '/proxy/' for RDF proxy service is deprecated.
+	The old pattern '/proxy/' for Sponger Proxy URI Service is deprecated.
     </para>
-    <para><emphasis>Note: </emphasis>In order the RDF proxy service to work correctly, in case you do
+    <para><emphasis>Note: </emphasis>In order the Sponger Proxy URI Service to work correctly, in case you do
 not have the rdf_mappers package installed, you need to enable SPARQL_UPDATE and grant RDF_SPONGE_UP
 for SPARQL user:
     </para>
@@ -1497,7 +1850,7 @@ for SPARQL user:
 grant execute on DB.DBA.RDF_SPONGE_UP to "SPARQL";
 ]]></programlisting>
     <para>
-	The RDF proxy service takes following URL parameters when using the style: http://host:port/proxy?..:
+	The Sponger Proxy URI Service takes following URL parameters when using the style: http://host:port/proxy?..:
     </para>
     <itemizedlist mark="bullet" spacing="compact">
 	<listitem><emphasis>force</emphasis> if 'rdf' is specified will try to extract RDF data from target and return it</listitem>
@@ -1537,7 +1890,8 @@ etc ...
 </sect3>
 <sect3 id="sparqliniservice"><title>SPARQL ini service</title>
     <para>
-	The SPARQL INI section values can be get as RDF via http://cname/sparql?ini
+	The SPARQL INI section values can be exposed in RDF form
+using the pattern via http://cname/sparql?ini
     </para>
     <para>Example: http://demo.openlinksw.com/sparql?ini</para>
 <programlisting><![CDATA[
@@ -2378,6 +2732,94 @@ select count distinct ?v1 ... ?vn
   from ....
 ]]></programlisting>
 <para>User-defined aggregate functions are not supported in current version of SPARQL compiler.</para>
+<sect5 id="rdfsparqlaggregatepathexpressions"><title>Path Expressions</title>
+<para>Virtuoso has support for paths consisting of dereferencing properties in SPARQL. Virtuoso allows
+simple paths in expressions and has a separate feature for transitivity:</para>
+
+<itemizedlist mark="bullet">
+  <listitem>S+&gt;P: for "one or many values of P of S"</listitem>
+  <listitem>S*&gt;P: for "zero or many values of P of S", so *&gt; may form a LEFT OUTER JOIN when +&gt; form an INNER JOIN.</listitem>
+  <listitem>S|&gt;P: is reserved for potential "single value of P of S or an error if there are many values"</listitem>
+</itemizedlist>
+<para>If this property is set (for ex. by an RDF View) then +&gt; should be used.</para>
+
+<para><emphasis>Simple Example</emphasis></para>
+<programlisting><![CDATA[
+select ?f+>foaf:name ?f|>foaf:mbox where { ?x foaf:name "Alice" . ?x foaf:knows ?f . filter (?f+>foaf:name = "John") }
+]]></programlisting>
+<para>means:</para>
+<programlisting><![CDATA[
+select ?fname ?mbox
+where
+  {
+    ?x foaf:knows ?f .
+    ?x foaf:knows ?f .
+    optional {?f foaf:mbox ?mbox} .
+    ?f foaf:name ?fname .
+    ?x foaf:name "Alice" .
+    ?x foaf:knows ?f2 .
+    ?f2 foaf:name "John" .
+  }
+]]></programlisting>
+<para><emphasis>Other Examples</emphasis></para>
+<programlisting><![CDATA[
+sparql
+define sql:signal-void-variables 1
+prefix tpcd: <http://www.openlinksw.com/schemas/tpcd#>
+prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
+prefix sioc: <http://rdfs.org/sioc/ns#>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+select
+  ?l+>tpcd:returnflag,
+  ?l+>tpcd:linestatus,
+  sum(?l+>tpcd:linequantity) as ?sum_qty,
+  sum(?l+>tpcd:lineextendedprice) as ?sum_base_price,
+  sum(?l+>tpcd:lineextendedprice*(1 - ?l+>tpcd:linediscount)) as ?sum_disc_price,
+  sum(?l+>tpcd:lineextendedprice*(1 - ?l+>tpcd:linediscount)*(1+?l+>tpcd:linetax)) as ?sum_charge,
+  avg(?l+>tpcd:linequantity) as ?avg_qty,
+  avg(?l+>tpcd:lineextendedprice) as ?avg_price,
+  avg(?l+>tpcd:linediscount) as ?avg_disc,
+  count(1) as ?count_order
+from <http://example.com/tpcd>
+where {
+    ?l a tpcd:lineitem .
+    filter (?l+>tpcd:shipdate <= bif:dateadd ("day", -90, '1998-12-01'^^xsd:date)) }
+order by ?l+>tpcd:returnflag ?l+>tpcd:linestatus
+;
+]]></programlisting>
+<programlisting><![CDATA[
+sparql
+define sql:signal-void-variables 1
+prefix tpcd: <http://www.openlinksw.com/schemas/tpcd#>
+select
+  ?supp+>tpcd:acctbal,
+  ?supp+>tpcd:name,
+  ?supp+>tpcd:has_nation+>tpcd:name as ?nation_name,
+  ?part+>tpcd:partkey,
+  ?part+>tpcd:mfgr,
+  ?supp+>tpcd:address,
+  ?supp+>tpcd:phone,
+  ?supp+>tpcd:comment
+from <http://example.com/tpcd>
+where {
+  ?ps a tpcd:partsupp; tpcd:has_supplier ?supp; tpcd:has_part ?part .
+  ?supp+>tpcd:has_nation+>tpcd:has_region tpcd:name 'EUROPE' .
+  ?part tpcd:size 15 .
+  ?ps tpcd:supplycost ?minsc .
+  { select ?part min(?ps+>tpcd:supplycost) as ?minsc
+    where {
+        ?ps a tpcd:partsupp; tpcd:has_part ?part; tpcd:has_supplier ?ms .
+        ?ms+>tpcd:has_nation+>tpcd:has_region tpcd:name 'EUROPE' .
+      } }
+    filter (?part+>tpcd:type like '%BRASS') }
+order by
+  desc (?supp+>tpcd:acctbal)
+  ?supp+>tpcd:has_nation+>tpcd:name
+  ?supp+>tpcd:name
+  ?part+>tpcd:partkey
+;
+]]></programlisting>
+</sect5>
 <sect5 id="rdfsparqlaggregateexamples"><title>Examples</title>
 <programlisting><![CDATA[
 sparql
@@ -4090,6 +4532,37 @@ http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	   
 http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Tim Berners-Lee: WWW and UU and I
 http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Tim Berners-Lee: WorldWideWeb, the first Web client
 ]]></programlisting>
+    <para><emphasis>Example: Use of schedular to interface Virtuoso Quad Store with PTSW using the following program:</emphasis></para>
+<programlisting><![CDATA[
+
+
+create procedure PTSW_CRAWL ()
+{
+  declare xt, xp any;
+  declare content, headers any;
+
+  content := http_get ('http://pingthesemanticweb.com/export/', headers);
+  xt := xtree_doc (content);
+  xp := xpath_eval ('//rdfdocument/@url', xt, 0);
+  foreach (any x in xp) do
+    {
+      x := cast (x as varchar);
+      dbg_obj_print (x);
+      {
+	declare exit handler for sqlstate '*' {
+	  log_message (sprintf ('PTSW crawler can not load : %s', x));
+	};
+        sparql load ?:x into graph ?:x;
+	update DB.DBA.SYS_HTTP_SPONGE set HS_LOCAL_IRI = x, HS_EXPIRATION = null where HS_LOCAL_IRI = 'destMD5=' || md5 (x) || '&graphMD5=' || md5 (x);
+	commit work;
+      }
+    }
+}
+;
+
+insert soft SYS_SCHEDULED_EVENT (SE_SQL, SE_START, SE_INTERVAL, SE_NAME)
+	values ('DB.DBA.PTSW_CRAWL ()', cast (stringtime ('0:0') as DATETIME), 60, 'PTSW Crawling');
+]]></programlisting>
     </sect2>
     <sect2 id="rdfinsertmethodsparqlqueryandsponger">
       <title>Using SPARQL Query and Sponger (i.e. we Sponge the Resources in the FROM Clause or values for the graph-uri parameter in SPARQL protocol URLs)</title>
@@ -4283,7 +4756,7 @@ into graph <http://www.openlinksw.com/> -- done</callret-0>
     </sect2>
     <sect2 id="rdfinsertmethodproxy">
       <title>Using the RDF Proxy (Sponger) Service</title>
-    <para>Triples can be inserted also using the RDF proxy service. For more information and examples see <link linkend="rdfproxyservice">here</link>.</para>
+    <para>Triples can be inserted also using the Sponger Proxy URI Service. For more information and examples see <link linkend="rdfproxyservice">here</link>.</para>
     </sect2>
 </sect1>
 
@@ -4514,11 +4987,11 @@ RDF mapper functionality when dereferencing web or file resources which don't na
 service takes a target URL and either returns the content "as is" or tries to transform (by sponging)
 to RDF. Thus, the proxy service can be used as a 'pipe' for RDF browsers to browse non-RDF sources.</para>
     <para>When the rdf_mappers package is installed, Virtuoso reserves the path '/about/[rdf|html]/' for
-RDF proxy service. For example, if a Virtuoso installation on host example.com listens for HTTP
+Sponger Proxy URI Service. For example, if a Virtuoso installation on host example.com listens for HTTP
 requests on port 8080 then client applications should use a 'service endpoint' string equal to
 'http://example.com:8080/about/[rdf|html]/'. If the rdf_mappers package is not installed, then
 the service uses the path '/proxy/rdf/'.</para>
-    <para>Note: The old RDF proxy service pattern '/proxy/' is now deprecated.</para>
+    <para>Note: The old Sponger Proxy URI Service pattern '/proxy/' is now deprecated.</para>
     <para><emphasis>Example:</emphasis></para>
     <para>The following URLs return information about musician John Cale, gleaned from the MusicBrainz
 music metadatabase, rendered as RDF or HTML respectively. (The sponged data is available in the HTML
@@ -26248,9 +26721,6 @@ a subpredicate of c, then a is also a subpredicate of c.
 Virtuoso has limited support for the OWL sameAs predicate.
 </para>
 <para>
-In the following, the abbreviation owl:sameAs is used for  the IRI http://www.w3.org/2002/07/owl#sameAs .
-</para>
-<para>
 If sameAs traversal is enabled and a triple pattern with a given
 subject or object is being matched, all the synonyms of the S and O
 will be tried and results generated for all the tried bindings of S
@@ -26262,20 +26732,58 @@ All sameAs triples from all the graphs applicable to instantiating
 the triple pattern at hand are considered.
 </para>
 <para>
-Thus, if we have
+Thus for example:
 </para>
+<para>The inital SPARQL query:</para>
 <programlisting><![CDATA[
-<thing> <owl:sameAs> <gizmo> .
-<thing> <label> "thingy" .
+SQL>SPARQL
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix owl: <http://www.w3.org/2002/07/owl#>
+prefix sioc: <http://rdfs.org/sioc/ns#>
+select *
+from <http://myopenlink.net/dataspace>
+where
+ {
+    ?person a foaf:Person FILTER REGEX(?person ,"http://myopenlink.net/dataspace/person/kidehen#this").
+    ?person foaf:name ?name .
+    ?person owl:sameAs ?sameas .
+  }
+limit 10;
+person                                               name             sameas
+VARCHAR                                              VARCHAR          VARCHAR
+_______________________________________________________________________________
+
+http://myopenlink.net/dataspace/person/kidehen#this  Kingsley Idehen  http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this
+http://myopenlink.net/dataspace/person/kidehen#this  Kingsley Idehen  http://my.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this
+http://myopenlink.net/dataspace/person/kidehen#this  Kingsley Idehen  http://kidehen.idehen.net/dataspace/person/kidehen#this
+http://myopenlink.net/dataspace/person/kidehen#this  Kingsley Idehen  http://qdos.com/user/e922b748a2eb667bf37b188018002dec
+http://myopenlink.net/dataspace/person/kidehen#this  Kingsley Idehen  http://knowee.net/kidehen/ids/id3684976382
+http://myopenlink.net/dataspace/person/kidehen#this  Kingsley Idehen  http://dbpedia.org/resource/Kingsley_Idehen
+http://myopenlink.net/dataspace/person/kidehen#this  Kingsley Idehen  http://dbtune.org/last-fm/kidehen
+http://myopenlink.net/dataspace/person/kidehen#this  Kingsley Idehen  http://revyu.com/people/kidehen
+http://myopenlink.net/dataspace/person/kidehen#this  Kingsley Idehen  http://identi.ca/user/14092
+http://myopenlink.net/dataspace/person/kidehen#this  Kingsley Idehen  http://myopenlink.net/proxy?url=http%3A%2F%2Fwww.facebook.com%2Fpeople%2FKingsley_Idehen%2F605980750&force=rdf&login=kidehen
+
+10 Rows. -- 181 msec.
+]]></programlisting>
+<para>So if we have:</para>
+<programlisting><![CDATA[
+<http://myopenlink.net/dataspace/person/kidehen#this>  	<http://www.w3.org/2002/07/owl#sameAs> <http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this> .
+<http://myopenlink.net/dataspace/person/kidehen#this>  	<http://xmlns.com/foaf/0.1/name>  	Kingsley Idehen
 ]]></programlisting>
 <para>
-and we instantiate <emphasis>?s &lt;label> "thingy"</emphasis>
-we get <emphasis>?s</emphasis> bound to <emphasis>&lt;thing></emphasis>.
+and we instantiate <emphasis>?s &lt;http://xmlns.com/foaf/0.1/name> "Kingsley Idehen"</emphasis>
+we get <emphasis>?s</emphasis> bound to <emphasis>&lt;http://myopenlink.net/dataspace/person/kidehen#this></emphasis>.
 </para>
 <para>
-If we instantiate <emphasis>&lt;gizmo> &lt;label> ?l</emphasis>
-we get <emphasis>?l</emphasis> bound to <emphasis>"thingy"</emphasis> because the subject was given and it was expanded to its synonyms.
+If we instantiate <emphasis>&lt;http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this>
+&lt;http://xmlns.com/foaf/0.1/name> ?l</emphasis>
+we get <emphasis>?l</emphasis> bound to <emphasis>"Kingsley Idehen"</emphasis> because the subject was given and it was expanded to its synonyms.
 </para>
+
+
+
+
 <para>
 If binding a variable in a pattern where the variable was free, we do not expand the value to the complete set of its synonyms.
 </para>

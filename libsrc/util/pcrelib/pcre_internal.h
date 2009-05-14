@@ -45,7 +45,7 @@ functions whose names all begin with "_pcre_". */
 #ifndef PCRE_INTERNAL_H
 #define PCRE_INTERNAL_H
 
-#include "Dk/Dkconfig.h"
+#include "Dk/Dksystem.h"
 #undef PACKAGE_NAME
 #undef PACKAGE_STRING
 #undef PACKAGE_TARNAME

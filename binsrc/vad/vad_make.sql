@@ -2317,7 +2317,7 @@ create procedure "VAD"."DBA"."VAD_AUTO_UPGRADE" ()
 
 	   VAD.DBA.VAD_TEST_READ (vaddir||f, pname, pver, pfull, pdate, 0, 1);
 
-	   ver := vad_check_version (pname);
+	   ver := DB.DBA.VAD_CHECK_VERSION (pname);
 	   if (ver is not null)
 	     {
 		if (exists (select top 1 1 from VAD.DBA.VAD_REGISTRY

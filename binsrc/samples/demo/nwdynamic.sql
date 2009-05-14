@@ -212,7 +212,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as northwind:DLF-map-Customer-dbpediacity ;
                         northwind:region customers.Region
                                 as northwind:DLF-map-Customer-region ;
-                        northwind:PostalCode customers.PostalCode
+                        northwind:postalCode customers.PostalCode
                                 as northwind:DLF-map-Customer-postal_code ;
                         foaf:phone customers.Phone
                                 as northwind:DLF-map-Customer-foaf_phone ;

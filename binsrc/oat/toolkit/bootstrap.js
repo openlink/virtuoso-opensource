@@ -48,7 +48,7 @@ OAT.Loader.Dependencies = { /* dependency tree */
 	rdf:"xml",
 	rdfbrowser:["rdfstore","tree","anchor","rdftabs","tab","dav","notify"],
 	rdfmini:["rdfstore","rdftabs","notify"],
-	rdfstore:["rdf","dereference","n3"],
+	rdfstore:["rdf","dereference","n3","json"],
 	rectwin:["drag","resize"],
 	roundwin:["drag","resize","simplefx"],
 	rssreader:"xml",
