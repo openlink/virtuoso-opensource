@@ -163,6 +163,9 @@ create procedure rdfdesc_uri_curie (in uri varchar, in label varchar := null)
 create procedure rdfdesc_http_url (in url varchar)
 {
   declare host, pref, proxy_iri_fn varchar;
+  declare url_sch varchar;
+  declare ua any;
+
   proxy_iri_fn := connection_get ('proxy_iri_fn'); -- set inside description.vsp to indicate local browsing of an 3-d party dataset
   if (proxy_iri_fn is not null)
     {
@@ -174,7 +177,16 @@ create procedure rdfdesc_http_url (in url varchar)
   host := http_request_header(http_request_header(), 'Host', null, null);
   pref := 'http://'||host||'/about/html/';
   if (url not like pref || '%')
-    url := pref || url;
+    {
+      ua := rfc1808_parse_uri (url);
+      url_sch := ua[0];
+      ua [0] := '';
+      if (url_sch = 'nodeID')
+	ua [2] := '';
+      url := vspx_uri_compose (ua);  
+      url := ltrim (url, '/');
+      url := pref || url_sch || '/' || url;
+    }
   url := replace (url, '#', '%23');
   return url;
 };
@@ -365,21 +377,56 @@ DB.DBA.URLREWRITE_CREATE_RULELIST ('ext_http_proxy_rule_list1', 1, vector ('ext_
 
 DB.DBA.EXEC_STMT ('grant SPARQL_SPONGE to "SPARQL"', 0);
 
+create procedure rdf_virt_proxy_ver ()
+{
+  return '1.4';
+}
+;
+
 -- /* extended http proxy service */
 create procedure virt_proxy_init_about ()
 {
-  if (registry_get ('DB.DBA.virt_proxy_init_about_state') = '1.2')
+  if (0 and registry_get ('DB.DBA.virt_proxy_init_about_state') = rdf_virt_proxy_ver ())
     return;
 
+  -- /about/rdf/<url>
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_about_http_proxy_rule_1', 1,
-      '/about/([^/\?\&]*)?/?([^/\?\&:]*)/(.*)', vector ('force', 'login', 'url'), 2,
-      '/about?url=%U&force=%U&login=%U', vector ('url', 'force', 'login'), null, null, 2);
+      '/about/([^/\?\&:]*)/(.*)', vector ('force', 'url'), 2,
+      '/about?url=%U&force=%U', vector ('url', 'force'), null, null, 2);
 
+  -- /about/rdf/urn/<urn-path>
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_about_http_proxy_rule_2', 1,
+      '/about/([^/\?\&:]*)/([^/\?\&:]*)/(.*)', vector ('force', 'schema', 'url'), 3,
+      '/about?url=%U:%U&force=%U', vector ('schema', 'url', 'force'), null, null, 2);
+
+  -- /about/rdf/http/<domain+path>
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_about_http_proxy_rule_3', 1,
+      '/about/([^/\?\&:]*)/(http|https|nodeID)/(.*)', vector ('force', 'schema', 'url'), 3,
+      '/about?url=%U://%U&force=%U', vector ('schema', 'url', 'force'), null, null, 2);
+
+  -- same as above, but for html
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_about_http_proxy_rule_4', 1,
       '/about/html/(.*)', vector ('g'), 1,
       '/rdfdesc/description.vsp?g=%U', vector ('g'), null, null, 2);
 
-  DB.DBA.URLREWRITE_CREATE_RULELIST ('ext_about_http_proxy_rule_list1', 1, vector ('ext_about_http_proxy_rule_1', 'ext_about_http_proxy_rule_2'));
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_about_http_proxy_rule_5', 1,
+      '/about/html/([^/\?\&:]*)/(.*)', vector ('sch', 'g'), 2,
+      '/rdfdesc/description.vsp?g=%U:%U', vector ('sch', 'g'), null, null, 2);
+
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_about_http_proxy_rule_6', 1,
+      '/about/html/(http|https|nodeID)/(.*)', vector ('sch', 'g'), 2,
+      '/rdfdesc/description.vsp?g=%U://%U', vector ('sch', 'g'), null, null, 2);
+
+  DB.DBA.URLREWRITE_CREATE_RULELIST ('ext_about_http_proxy_rule_list1', 1, 
+      	vector (
+	  	'ext_about_http_proxy_rule_1', 
+	  	'ext_about_http_proxy_rule_2', 
+	  	'ext_about_http_proxy_rule_3', 
+	  	'ext_about_http_proxy_rule_4', 
+	  	'ext_about_http_proxy_rule_5', 
+	  	'ext_about_http_proxy_rule_6'
+		));
+
   DB.DBA.VHOST_REMOVE (lpath=>'/about');
   DB.DBA.VHOST_DEFINE (lpath=>'/about', ppath=>'/SOAP/Http/ext_http_proxy', soap_user=>'PROXY',
       opts=>vector('url_rewrite', 'ext_about_http_proxy_rule_list1'));
@@ -388,7 +435,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_about_http_proxy_rule_2', 1,
   DB.DBA.VHOST_DEFINE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/about', ppath=>'/SOAP/Http/ext_http_proxy', soap_user=>'PROXY',
       opts=>vector('url_rewrite', 'ext_about_http_proxy_rule_list1'));
 
-  registry_set ('DB.DBA.virt_proxy_init_about_state', '1.2');
+  registry_set ('DB.DBA.virt_proxy_init_about_state', rdf_virt_proxy_ver ());
 }
 ;
 
