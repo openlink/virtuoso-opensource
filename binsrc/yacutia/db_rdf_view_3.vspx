@@ -71,16 +71,15 @@
     }
     ]]></script>
 <table>
-    <v:on-init>
-	self.exist_sql := self._view + self.view_vd + self.owl_vd;
-    </v:on-init>
       <v:form name="account_form" type="simple" method="POST" action="">
     <v:text type="hidden"
       name="fsave" value="--concat ('/INLINEFILE/script.sql?VSP=', WS.WS.EXPAND_URL (http_path(), 'file_save.vsp'))"/>
-    <v:text type="hidden" name="osave" value="--concat ('/INLINEFILE/ontology.nt?VSP=', WS.WS.EXPAND_URL (http_path(), 'file_save.vsp'))"/>
+  <v:text type="hidden" 
+      name="osave" value="--concat ('/INLINEFILE/ontology.nt?VSP=', WS.WS.EXPAND_URL (http_path(), 'file_save.vsp'), '&ext=.n3')"/>
       <v:before-data-bind><![CDATA[
 	  declare _base_url, _db_object_to_process, e_array, path any;
 
+	  self.exist_sql := self._view + self.view_vd + self.owl_vd;
 	  if (self.db_object_to_process is NULL)
 	    {
 	       self.db_object_to_process := get_keyword('list', self.vc_event.ve_params, NULL);
@@ -92,8 +91,6 @@
 
 	  _base_url := get_keyword('host', self.vc_event.ve_params, NULL);
 
-	  path := concat('/DAV/temp/', self.sid, '.sql');
-          DB.DBA.YACUTIA_DAV_DELETE (path, 1, 0);
 	  if (self.body_v is NULL)
 	    {
 	      declare tbls any;
@@ -122,11 +119,19 @@
   	        self.body_v := self.body_v || '\n\n-- Virtual directories for instance data\n' || DB.DBA.RDF_VIEW_GEN_VD (_base_url);
 	      if (self.owl_vd)
   	        self.body_v := self.body_v || '\n\n-- Virtual directories for ontology\n' || DB.DBA.RDF_OWL_GEN_VD (_base_url);
+	      path := concat('/DAV/temp/', self.sid, '.sql');
+	      DB.DBA.YACUTIA_DAV_DELETE (path, 1, 0);
 	      DB.DBA.YACUTIA_DAV_COL_CREATE('/DAV/temp/', '110110000NN', 'dav', 'administrators');
 	      DB.DBA.YACUTIA_DAV_RES_UPLOAD (path, self.body_v, '', '110110000NN', 'dav', 'administrators', now(), now(), null);
 	    }
 	   if (self.body_o is null and self.owl)
+             { 
 	      self.body_o := DB.DBA.RDF_OWL_FROM_TBL (_base_url, self.db_object_to_process);
+	       path := concat('/DAV/temp/', self.sid, '.n3');
+	       DB.DBA.YACUTIA_DAV_DELETE (path, 1, 0);
+	       DB.DBA.YACUTIA_DAV_COL_CREATE('/DAV/temp/', '110110000NN', 'dav', 'administrators');
+	       DB.DBA.YACUTIA_DAV_RES_UPLOAD (path, self.body_o, '', '110110000NN', 'dav', 'administrators', now(), now(), null);
+	     }  
 	    ]]>
     </v:before-data-bind>
   <tr>
@@ -211,6 +216,10 @@
 	  <input type="hidden" name="host" value="<?V get_keyword('host', self.vc_event.ve_params) ?>"/><br/>
 	  <v:button action="simple" name="cncl" value="Cancel">
 	  <v:on-post><![CDATA[
+	      path := concat('/DAV/temp/', self.sid, '.sql');
+	      DB.DBA.YACUTIA_DAV_DELETE (path, 1, 0);
+	      path := concat('/DAV/temp/', self.sid, '.n3');
+	      DB.DBA.YACUTIA_DAV_DELETE (path, 1, 0);
 	      self.vc_redirect ('db_rdf_objects.vspx');
 	      ]]></v:on-post>
       </v:button>
@@ -234,17 +243,20 @@
                     res[inx] := vector (vector (stat, msg));
 		  inx := inx + 1;
 		}
+             if (self.owl)
+               {	     
 	     gr := sprintf ('http://%s/schemas/%s#', cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), self.base_url);
 	     stat := '00000';
 	     msg := 'OK';
 	     exec ('DB.DBA.TTLP (?, \'\', ?)', stat, msg, vector (self.body_o, gr), 0, meta, data);
 	     res [length(arr)] := vector (vector (stat, msg));
+	       }
 	     self.text_e := 1;
 	     self.exec_ret := res;
 	     self.back.vc_enabled := 1;
 	     control.vc_enabled := 0;
-	     self.b_loc_save1.vc_enabled := self.exec.vc_enabled;
-	     self.b_loc_save2.vc_enabled := self.exec.vc_enabled;
+	     self.b_loc_save1.vc_enabled := 0;
+	     self.b_loc_save2.vc_enabled := 0;
 	    ]]></v:on-post>
     </v:button>
     <v:button action="simple" name="b_loc_save1" value="Save definitions to file" xhtml_onclick="javascript:saveSQL()" enabled="--self.exist_sql"/>
@@ -254,27 +266,25 @@
 	      self.text_e := 0;
 	      control.vc_enabled := 0;
 	      self.exec.vc_enabled := 1;
-	     self.b_loc_save1.vc_enabled := self.exec.vc_enabled;
-	     self.b_loc_save2.vc_enabled := self.exec.vc_enabled;
+	     self.b_loc_save1.vc_enabled := self.exist_sql;
+	     self.b_loc_save2.vc_enabled := self.owl;
 	    ]]></v:on-post>
     </v:button>
 </td>
   </tr>
-     <?vsp if (0 and self.text_e = 0) { ?>
+     <?vsp if (self.text_e = 0) { ?>
 
   <tr>
     <td>
-      <v:label width="100" format="%s" name="label1111" value="--('WebDAV resource:')"/>
+	<?vsp if (self.exist_sql) { ?>
+      WebDAV path for definitions:
       <v:text width="200" type="simple" value="" name="filename" />
-      <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="res" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="mega advisory text" lang="en" return_box="filename"/>
+      <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="col" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="" lang="en" return_box="filename"/>
 
-      <v:button action="submit" name="export" value="Export">
+      <v:button action="submit" name="export" value="Export Definitions">
         <v:on-post><![CDATA[
 	  if (get_keyword('export', params) is not null)
             {
-              declare ses any;
-              ses := string_output ();
-
               if (not length (self.filename.ufl_value))
                 {
                   self.vc_is_valid := 0;
@@ -294,13 +304,63 @@
                   self.vc_is_valid := 0;
                   return;
                 }
+              declare exit handler for sqlstate '*'
+                {
+                  self.vc_error_message := 'Can not export definitions, please enter correct resource path in WebDAV.';
+                  self.vc_is_valid := 0;
+                  return;
+  	        };		
               YAC_DAV_RES_UPLOAD (self.filename.ufl_value, self.body_v, 'text/plain', '110100000N',
                                   connection_get('vspx_user'), null, connection_get('vspx_user'));
               self.sc_1.vc_enabled := 1;
               self.sc_1.vc_data_bind (e);
             }
 	  ]]></v:on-post>
+          </v:button><br/>
+	  <?vsp } ?>
+	  <?vsp if (self.owl) { ?>
+      WebDAV path for ontology:
+      <v:text width="200" type="simple" value="" name="filename2" />
+      <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="col" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="" lang="en" return_box="filename2"/>
+
+      <v:button action="submit" name="export2" value="Export Ontology">
+        <v:on-post><![CDATA[
+	  if (get_keyword('export2', params) is not null)
+            {
+
+              if (not length (self.filename2.ufl_value))
+                {
+                  self.vc_is_valid := 0;
+                  self.vc_error_message := 'The path to the file to save must not be empty.';
+                  return;
+                }
+              declare own, grp, perms, msg any;
+              if (dav_path_validate (self.filename2.ufl_value, own, grp, perms, msg) <> 1)
+                {
+                  self.vc_error_message := msg;
+                  self.vc_is_valid := 0;
+                  return;
+                }
+              if (dav_check_permissions(connection_get('vspx_user'), perms, '110', own, grp, msg) <> 1)
+                {
+                  self.vc_error_message := msg;
+                  self.vc_is_valid := 0;
+                  return;
+                }
+              declare exit handler for sqlstate '*'
+                {
+                  self.vc_error_message := 'Can not export ontology, please enter correct resource path in WebDAV.';
+                  self.vc_is_valid := 0;
+                  return;
+  	        };		
+		YAC_DAV_RES_UPLOAD (self.filename2.ufl_value, self.body_o, 'text/rdf+n3', '110100000N',
+                                  connection_get('vspx_user'), null, connection_get('vspx_user'));
+              self.sc_2.vc_enabled := 1;
+              self.sc_2.vc_data_bind (e);
+            }
+	  ]]></v:on-post>
         </v:button>
+	  <?vsp } ?>
       </td>
     </tr>
 
@@ -310,7 +370,14 @@
         <v:template type="simple" name="sc_1" enabled="0">
           <tr>
 	    <td>
-	      <img class="dialog_icon" src="images/icons/about_32.png" alt="Info" title="Info"/> The RDF View definition exported successfully.
+	      <img class="dialog_icon" src="images/icons/about_32.png" alt="Info" title="Info"/> The RDF View definition is exported successfully.
+	    </td>
+          </tr>
+        </v:template>
+        <v:template type="simple" name="sc_2" enabled="0">
+          <tr>
+	    <td>
+	      <img class="dialog_icon" src="images/icons/about_32.png" alt="Info" title="Info"/> The Ontology is exported successfully.
 	    </td>
           </tr>
         </v:template>

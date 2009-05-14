@@ -79,11 +79,11 @@
 	      <td><?vsp http ('http://' || cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost') || '/'); ?>
 		  <input type="text" name="base_start" value="<?V self.base_start ?>"/></td>
 	  </tr>
-      <tr>
+      <!--tr>
 	      <td>Generate Statistics</td>
 	      <td>
 		  <input type="checkbox" name="cb1" value="1"/></td>
-      </tr>
+      </tr-->
       <tr>
 	  <td colspan="2">
 	  <div class="scroll_area">
@@ -144,7 +144,7 @@
       </tr>
       <tr>
 	  <td class="listing_col_action" colspan="2">
-	      <v:button action="simple" value="Generate Mappings" name="create_basic">
+	      <!--v:button action="simple" value="Generate Mappings" name="create_basic">
 		  <v:on-post>
 		      <v:script>
 			  <![CDATA[
@@ -223,8 +223,8 @@
 			  ]]>
 		      </v:script>
 		  </v:on-post>
-	      </v:button>
-	      <v:button action="simple" value="Generation Wizard" name="create_all">
+	      </v:button-->
+	      <v:button action="simple" value="Generate" name="create_all">
 		  <v:on-post>
 		      <v:script>
 			  <![CDATA[
