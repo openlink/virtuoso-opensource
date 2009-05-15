@@ -1482,12 +1482,216 @@ ns1:this        ns2:event       ns1:event .
 <para><emphasis>Simple example with curl and sparql-oauth endpoint</emphasis></para>
 <para>Note: this is just an example as token had expired already. You can go to <link linkend="sparqloauthendpoint">this</link> section to see how to interact with our Virtuoso UI.</para>
 <programlisting><![CDATA[
-curl "http://demo.openlinksw.com/oauth/sparql.vsp?debug=on&default-graph-uri=http%3A%2F%2Fdemo.openlinksw.com
-%2Fdataspace%2Fperson%2Fdemo&format=text%2Fhtml&oauth_consumer_key=ea26546eae07a95386ae3ea608bf85ebb2c4515f
-&oauth_nonce=a3033100df304fda&oauth_signature_method=HMAC-SHA1&oauth_timestamp=1242021005
-&oauth_token=e515527b7bfcaf1e8ed87e7db18d2c16b9164f31&oauth_version=1.0
-&query=select%20distinct%20%3FURI%20%3FObjectType%20where%20%7B%3FURI%20a%20%3FObjectType%7D%20limit%2050
-&oauth_signature=6hieBkuE9WMg7jdP2%2FX%2BRw2sMj8%3D
+$ curl "http://demo.openlinksw.com/oauth/sparql.vsp?debug=on&default-graph-uri=&format=text%2Fhtml&oauth_consumer_key=27f105a327f5f23163e0636f78901
+8dacdd70bb5&oauth_nonce=a14d43339fcb2638&oauth_signature_method=HMAC-SHA1&oauth_timestamp=1242106643&oauth_token=42e2af4d9264ef42521c1010aff99f60a8
+ee95a2&oauth_version=1.0&query=select%20distinct%20%3FURI%20%3FObjectType%20where%20%7B%3FURI%20a%20%3FObjectType%7D%20limit%2050&oauth_signature=C
+w9yJ2saU1vgHuFxWcughai5cZY%3D"
+<table class="sparql" border="1">
+  <tr>
+    <th>URI</th>
+    <th>ObjectType</th>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#default-iid</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#default-iid-nullable</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#default-iid-nonblank</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#default-iid-nonblank-nullable</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#default</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#default-nullable</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-varchar</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-varchar-nullable</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-longvarchar</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-longvarchar-nullable</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-longvarbinary</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-longvarbinary-nullable</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-varchar-uri</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-varchar-uri-nullable</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-integer</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-integer-nullable</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-integer-uri</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-integer-uri-nullable</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-doubleprecision</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-doubleprecision-nullable</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-date</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-date-nullable</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-datetime</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-datetime-nullable</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#multipart-uri</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#multipart-uri-nullable</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#multipart-uri-fn-nullable</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#multipart-literal-fn-nullable</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-varchar-uri-fn</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-varchar-uri-fn-nullable</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-integer-uri-fn</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-integer-uri-fn-nullable</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-varchar-literal-fn</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-varchar-literal-fn-nullable</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-integer-literal-fn</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-integer-literal-fn-nullable</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.w3.org/1999/02/22-rdf-syntax-ns#type</td>
+    <td>http://www.w3.org/1999/02/22-rdf-syntax-ns#Property</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#default-iid-SuperFormats</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#array-of-QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#default-iid-nullable-SuperFormats</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#array-of-QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#default-iid-nonblank-SuperFormats</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#array-of-QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#default-iid-nonblank-nullable-SuperFormats</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#array-of-QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#default-SuperFormats</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#array-of-QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#default-nullable-SuperFormats</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#array-of-QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-varchar-SuperFormats</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#array-of-QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-varchar-nullable-SuperFormats</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#array-of-QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-longvarchar-SuperFormats</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#array-of-QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-longvarchar-nullable-SuperFormats</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#array-of-QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-longvarbinary-SuperFormats</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#array-of-QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-longvarbinary-nullable-SuperFormats</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#array-of-QuadMapFormat</td>
+  </tr>
+  <tr>
+    <td>http://www.openlinksw.com/virtrdf-data-formats#sql-varchar-uri-SuperFormats</td>
+    <td>http://www.openlinksw.com/schemas/virtrdf#array-of-QuadMapFormat</td>
+  </tr>
+</table>
 ]]></programlisting>
 <para><emphasis>Simple example with CONSTRUCT:</emphasis></para>
 <para>Go to the sparql endpoint UI: i.e. go to http://host:port/sparql</para>
@@ -2487,6 +2691,345 @@ create procedure DELETE_PERSONAL_DATA (in foaf_graph varchar)
   pdata_array := dict_list_keys (pdata_dict, 1);
   RDF_DELETE_TRIPLES (foaf_graph, pdata_array);
 };
+
+DELETE_PERSONAL_DATA (
+  'http://local.virt/DAV/sparql_demo/data/data-xml/source-simple2/source-data-01.rdf' );
+]]></programlisting>
+       <para>Starting from Virtuoso 5.0, application may use SPARUL to do the same in a convenient way:
+       </para>
+<programlisting><![CDATA[
+create procedure DELETE_PERSONAL_DATA (in foaf_graph varchar)
+{
+  sparql delete { ?s ?p ?o }
+      where { graph ?:foaf_graph {
+              ?s ?p ?o . ?s rdf:type <http://xmlns.com/foaf/0.1/Person>
+            } }
+};
+]]></programlisting>
+     </sect4>
+     <sect4 id="rdfsparulexamples"><title>Examples</title>
+       <para>The graph where changes take place may be specified by an option in front of query, instead
+of being specified in 'insert into graph' clause.
+       </para>
+<programlisting><![CDATA[
+sparql define input:default-graph-uri <A-Named-Graph>
+insert { <http://myopenlink.net/dataspace/Kingsley#this>
+         <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
+         <http://rdfs.org/sioc/ns#User> };
+]]></programlisting>
+       <para>The following two statements are equivalent but the latter may work faster, especially
+if there are many RDF views in the system or if some RDF views may contain triples for the graph
+in question. Note that neither of these two affect data that might come from RDF views.
+       </para>
+<programlisting><![CDATA[
+sparql delete from graph <A-Named-Graph> { ?s ?p ?o } from <A-Named-Graph> where { ?s ?p ?o };
+sparql clear graph <A-Named-Graph>;
+]]></programlisting>
+       <para>Keywords 'insert in' and 'insert into' are interchangeable in Virtuoso for backward
+compatibility but SPARUL spec lists only 'insert into':
+       </para>
+<programlisting><![CDATA[
+sparql insert into graph <A-Named-Graph> {  <http://myopenlink.net/dataspace/Kingsley#this>
+                                            <http://rdfs.org/sioc/ns#id>
+                                            <Kingsley> };
+sparql insert into graph <A-Named-Graph> {  <http://myopenlink.net/dataspace/Caroline#this>
+                                            <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
+                                            <http://rdfs.org/sioc/ns#User> };
+]]></programlisting>
+       <para>It is possible to use various expressions to calculate fields of new triples. This is
+ very convenient, even if not a part of the original spec.
+       </para>
+<programlisting><![CDATA[
+sparql insert into graph <A-Named-Graph> { ?s <http://rdfs.org/sioc/ns#id> `iri (bif:concat (str (?o), "Idehen"))` }
+where { ?s <http://rdfs.org/sioc/ns#id> ?o };
+]]></programlisting>
+       <para>'Modify graph' may be used as a sort of 'update' operation.
+       </para>
+<programlisting><![CDATA[
+sparql modify graph <A-Named-Graph> delete { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o } insert { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type1> ?o } where { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o };
+sparql delete from graph <A-Named-Graph> { <http://myopenlink.net/dataspace/Caroline#this> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type1> <http://rdfs.org/sioc/ns#User> };
+]]></programlisting>
+       <para>The RDF information resource URI can be generated via a string expression.</para>
+<programlisting><![CDATA[
+sparql load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/inputs/SparqlDawg/data-xml/Expr1/manifest.rdf")
+   into graph <A-Named-Graph>;
+]]></programlisting>
+       <para>Number of operations can be sent to a web service endpoint as a single statement and
+executed in sequence.
+       </para>
+<programlisting><![CDATA[
+sparql
+  insert in graph <A-Named-Graph> { <http://myopenlink.net/dataspace/Kingsley#this>
+                                    <http://rdfs.org/sioc/ns#id>
+                                    <Kingsley> }
+  insert into graph <A-Named-Graph> { <http://myopenlink.net/dataspace/Caroline#this>
+                                      <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
+                                      <http://rdfs.org/sioc/ns#User> }
+  insert into graph <A-Named-Graph> { ?s <http://rdfs.org/sioc/ns#id> `iri (bif:concat (str (?o), "Idehen"))` }
+              where { ?s <http://rdfs.org/sioc/ns#id> ?o };
+  modify graph <A-Named-Graph> delete { ?s <p2> ?o } insert { ?s <p2new> ?o } where { ?s <p2> ?o }
+  delete from graph <A-Named-Graph> { <http://myopenlink.net/dataspace/Caroline#this> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type1> <http://rdfs.org/sioc/ns#User> };
+  load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/inputs/SparqlDawg/data-xml/Expr1/manifest.rdf") into graph <A-Named-Graph>
+;
+]]></programlisting>
+
+<para>In case of huge RDF data ( for ex. 600 million triples ) loaded in the Virtuoso sever in a single graph,
+the fastest operation to drop the graph is:</para>
+<programlisting><![CDATA[
+sparql clear graph <graph-iri>;
+]]></programlisting>
+<para>The operation may be accelerated using log_enable (0) or even log_enable (2),
+with log_enable(1) after the operation.
+</para>
+      </sect4>
+   <sect4 id="rdfsparulexamples"><title>More Detailed Examples</title>
+<para>Adding triples to graph</para>
+<programlisting><![CDATA[
+sparql
+INSERT INTO GRAPH <http://BookStore.com>
+{ <http://www.dajobe.org/foaf.rdf#i> <http://purl.org/dc/elements/1.1/title>  "SPARQL and RDF" .
+  <http://www.dajobe.org/foaf.rdf#i> <http://purl.org/dc/elements/1.1/date> <1999-01-01T00:00:00>.
+  <http://www.w3.org/People/Berners-Lee/card#i> <http://purl.org/dc/elements/1.1/title> "Design notes" .
+  <http://www.w3.org/People/Berners-Lee/card#i> <http://purl.org/dc/elements/1.1/date> <2001-01-01T00:00:00>.
+  <http://www.w3.org/People/Connolly/#me> <http://purl.org/dc/elements/1.1/title> "Fundamentals of Compiler Design" .
+  <http://www.w3.org/People/Connolly/#me> <http://purl.org/dc/elements/1.1/date> <2002-01-01T00:00:00>. };
+]]></programlisting>
+<para>Adding triples to graph</para>
+<programlisting><![CDATA[
+]]></programlisting>
+<para>A SPARQL/Update request that contains a triple to be deleted and a triple to be added (used here to correct a book title).
+</para>
+<programlisting><![CDATA[
+SPARQL
+MODIFY GRAPH <http://BookStore.com>
+DELETE
+ { <http://www.w3.org/People/Connolly/#me>  <http://purl.org/dc/elements/1.1/title>  "Fundamentals of Compiler Design" }
+INSERT
+ { <http://www.w3.org/People/Connolly/#me>  <http://purl.org/dc/elements/1.1/title>  "Fundamentals" };
+callret-0
+VARCHAR
+_______________________________________________________________________________
+
+Modify <http://BookStore.com>, delete 1 and insert 1 triples -- done
+
+1 Rows. -- 20 msec.
+]]></programlisting>
+<para>The example below has a request to delete all records of old books (with date before year 2000)
+</para>
+<programlisting><![CDATA[
+sparql
+PREFIX dc:  <http://purl.org/dc/elements/1.1/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+DELETE FROM GRAPH <http://BookStore.com> { ?book ?p ?v }
+WHERE
+  { GRAPH  <http://BookStore.com>
+   { ?book dc:date ?date
+     FILTER ( xsd:dateTime(?date) < xsd:dateTime("2000-01-01T00:00:00")).
+    ?book ?p ?v.
+   }
+  };
+_______________________________________________________________________________
+
+Delete from <http://BookStore.com>, 6 triples -- done
+
+1 Rows. -- 10 msec.
+]]></programlisting>
+<para>This snippet copies records from one named graph to another named graph based on a pattern:
+</para>
+<programlisting><![CDATA[
+sparql
+PREFIX dc:  <http://purl.org/dc/elements/1.1/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+INSERT INTO GRAPH <http://NewBookStore.com> { ?book ?p ?v }
+WHERE
+  { GRAPH  <http://BookStore.com>
+   { ?book dc:date ?date
+     FILTER ( xsd:dateTime(?date) > xsd:dateTime("2000-01-01T00:00:00")).
+     ?book ?p ?v.
+   }
+  };
+callret-0
+VARCHAR
+_______________________________________________________________________________
+
+Insert into <http://NewBookStore.com>, 6 triples -- done
+
+1 Rows. -- 30 msec.
+]]></programlisting>
+<para>An example to move records from one named graph to another named graph based on a pattern:
+</para>
+<programlisting><![CDATA[
+sparql
+PREFIX dc:  <http://purl.org/dc/elements/1.1/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+INSERT INTO GRAPH <http://NewBookStore.com>
+ { ?book ?p ?v }
+WHERE
+  { GRAPH  <http://BookStore.com>
+     { ?book dc:date ?date .
+       FILTER ( xsd:dateTime(?date) > xsd:dateTime("2000-01-01T00:00:00")).
+       ?book ?p ?v.
+     }
+  };
+_______________________________________________________________________________
+
+Insert into <http://NewBookStore.com>, 6 triples -- done
+
+1 Rows. -- 10 msec.
+
+sparql
+PREFIX dc:  <http://purl.org/dc/elements/1.1/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+DELETE FROM GRAPH <http://BookStore.com>
+ { ?book ?p ?v }
+WHERE
+  { GRAPH  <http://BookStore.com>
+      { ?book dc:date ?date .
+        FILTER ( xsd:dateTime(?date) > xsd:dateTime("2000-01-01T00:00:00")).
+        ?book ?p ?v.
+      }
+  };
+_______________________________________________________________________________
+
+Delete from <http://BookStore.com>, 3 triples -- done
+
+1 Rows. -- 10 msec.
+]]></programlisting>
+   </sect4>
+   </sect3>
+<sect3 id="sparqlbi"><title>Business Intelligence Extensions for SPARQL</title>
+<para>
+Virtuoso extends SPARQL with expressions in results, subqueries, aggregates and grouping.
+These extensions allow a straightforward translation of arbitrary SQL queries to SPARQL.
+This extension is called  "SPARQL BI", because the primary objective is to match needs of Business Intelligence.
+The extended features apply equally to querying physical quads or relational tables mapped through RDF views.
+</para>
+<note><para>In this section, many examples use TPC-H namespace. You may test them on your local demo database.
+They use data from TPC-H dataset that is mapped into graph with IRI like
+http://example.com/tpch , but you should replace fake host name &quot;example.com&quot; with host name of your own installation,
+<strong>verbatim</strong>, that is specified as &quot;DefaultHost&quot; parameter in [URIQA] section of Virtuoso configuration file.</para></note>
+<sect4 id="rdfsparqlaggregate"><title>Aggregates in SPARQL</title>
+<para>Virtuoso extends SPARQL with SQL like aggregate and group by functionality. This functionality is
+also available through embedding SPARQL text inside SQL but the SPARQL extension syntax has the benefit
+of working also over the SPARQL protocol and of looking more SPARQL-like.
+</para>
+<para>The supported aggregates are <emphasis>count</emphasis>, <emphasis>min</emphasis>, <emphasis>max</emphasis>,
+<emphasis>avg</emphasis> and <emphasis>sum</emphasis>. These can take an optional <emphasis>distinct</emphasis>
+keyword. These are permitted only in the selection part of a select query. If a selection list consists
+of a mix of variables and aggregates, the non-aggregate selected items are considered to be grouping
+columns and a group by over them is implicitly added at the end of the generated SQL query. There is
+no explicit syntax for group by or having in Virtuoso SPARQL.
+</para>
+<para>If a selection consists of aggregates exclusively, the result set has one row with the values
+of the aggregates. If there are aggregates and variables in the selection, the result set as has many
+rows as there are distinct combinations of the variables and the aggregates are calculated over each
+such distinct combination, as if there were a SQL group by over all non-aggregates.
+</para>
+<para>With the count aggregate the argument may be either <emphasis>*</emphasis>, meaning counting all rows or a variable
+name, meaning counting all the rows where this variable is bound. If there is no implicit <emphasis>group by</emphasis>,
+there can be an optional <emphasis>distinct</emphasis> keyword before the variable that is the argument of an aggregate.
+</para>
+<para>There is a special syntax for counting distinct combinations of selected variables. This is:</para>
+<programlisting><![CDATA[
+select count distinct ?v1 ... ?vn
+  from ....
+]]></programlisting>
+<para>User-defined aggregate functions are not supported in current version of SPARQL compiler.</para>
+<sect5 id="rdfsparqlaggregatepathexpressions"><title>Path Expressions</title>
+<para>Virtuoso has support for paths consisting of dereferencing properties in SPARQL. Virtuoso allows
+simple paths in expressions and has a separate feature for transitivity:</para>
+
+<itemizedlist mark="bullet">
+  <listitem>S+&gt;P: for "one or many values of P of S"</listitem>
+  <listitem>S*&gt;P: for "zero or many values of P of S", so *&gt; may form a LEFT OUTER JOIN when +&gt; form an INNER JOIN.</listitem>
+  <listitem>S|&gt;P: is reserved for potential "single value of P of S or an error if there are many values"</listitem>
+</itemizedlist>
+<para>If this property is set (for ex. by an RDF View) then +&gt; should be used.</para>
+
+<para><emphasis>Simple Example</emphasis></para>
+<programlisting><![CDATA[
+select ?f+>foaf:name ?f|>foaf:mbox where { ?x foaf:name "Alice" . ?x foaf:knows ?f . filter (?f+>foaf:name = "John") }
+]]></programlisting>
+<para>means:</para>
+<programlisting><![CDATA[
+select ?fname ?mbox
+where
+  {
+    ?x foaf:knows ?f .
+    ?x foaf:knows ?f .
+    optional {?f foaf:mbox ?mbox} .
+    ?f foaf:name ?fname .
+    ?x foaf:name "Alice" .
+    ?x foaf:knows ?f2 .
+    ?f2 foaf:name "John" .
+  }
+]]></programlisting>
+<para><emphasis>Other Examples</emphasis></para>
+<programlisting><![CDATA[
+sparql
+define sql:signal-void-variables 1
+prefix tpcd: <http://www.openlinksw.com/schemas/tpcd#>
+prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
+prefix sioc: <http://rdfs.org/sioc/ns#>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+select
+  ?l+>tpcd:returnflag,
+  ?l+>tpcd:linestatus,
+  sum(?l+>tpcd:linequantity) as ?sum_qty,
+  sum(?l+>tpcd:lineextendedprice) as ?sum_base_price,
+  sum(?l+>tpcd:lineextendedprice*(1 - ?l+>tpcd:linediscount)) as ?sum_disc_price,
+  sum(?l+>tpcd:lineextendedprice*(1 - ?l+>tpcd:linediscount)*(1+?l+>tpcd:linetax)) as ?sum_charge,
+  avg(?l+>tpcd:linequantity) as ?avg_qty,
+  avg(?l+>tpcd:lineextendedprice) as ?avg_price,
+  avg(?l+>tpcd:linediscount) as ?avg_disc,
+  count(1) as ?count_order
+from <http://example.com/tpcd>
+where {
+    ?l a tpcd:lineitem .
+    filter (?l+>tpcd:shipdate <= bif:dateadd ("day", -90, '1998-12-01'^^xsd:date)) }
+order by ?l+>tpcd:returnflag ?l+>tpcd:linestatus
+;
+]]></programlisting>
+<programlisting><![CDATA[
+sparql
+define sql:signal-void-variables 1
+prefix tpcd: <http://www.openlinksw.com/schemas/tpcd#>
+select
+  ?supp+>tpcd:acctbal,
+  ?supp+>tpcd:name,
+  ?supp+>tpcd:has_nation+>tpcd:name as ?nation_name,
+  ?part+>tpcd:partkey,
+  ?part+>tpcd:mfgr,
+  ?supp+>tpcd:address,
+  ?supp+>tpcd:phone,
+  ?supp+>tpcd:comment
+from <http://example.com/tpcd>
+where {
+  ?ps a tpcd:partsupp; tpcd:has_supplier ?supp; tpcd:has_part ?part .
+  ?supp+>tpcd:has_nation+>tpcd:has_region tpcd:name 'EUROPE' .
+  ?part tpcd:size 15 .
+  ?ps tpcd:supplycost ?minsc .
+  { select ?part min(?ps+>tpcd:supplycost) as ?minsc
+    where {
+        ?ps a tpcd:partsupp; tpcd:has_part ?part; tpcd:has_supplier ?ms .
+        ?ms+>tpcd:has_nation+>tpcd:has_region tpcd:name 'EUROPE' .
+      } }
+    filter (?part+>tpcd:type like '%BRASS') }
+order by
+  desc (?supp+>tpcd:acctbal)
+  ?supp+>tpcd:has_nation+>tpcd:name
+  ?supp+>tpcd:name
+  ?part+>tpcd:partkey
+;
+]]></programlisting>
+</sect5>
+<sect5 id="rdfsparqlaggregateexamples"><title>Examples</title>
+<programlisting><![CDATA[
+sparql
+select count (*)
+  from <http://mygraph.com>
+ where {?s ?p ?o}
 
 DELETE_PERSONAL_DATA (
   'http://local.virt/DAV/sparql_demo/data/data-xml/source-simple2/source-data-01.rdf' );
