@@ -65,6 +65,7 @@ cluster_map_t *clm_replicated;
 int cluster_enable = 0;
 int enable_dfg_print = 0;
 int enable_dfg = 1;
+int enable_setp_partition;
 int enable_multistate_code = 0;
 
 int32 c_cluster_threads;
