@@ -67,6 +67,11 @@ again:
   else
     {      
       declare _topic WV.WIKI.TOPICINFO;
+      declare exit handler for sqlstate '*' {
+	res := 0;
+	ADD_LOG_ENTRY (streamid, sprintf ('[%s] %s',__SQL_STATE, __SQL_MESSAGE));
+	goto skip_this;
+      };
       _topic := WV.WIKI.TOPICINFO();
       _topic.ti_id := _topicid;
       _topic.ti_find_metadata_by_id ();
@@ -75,6 +80,7 @@ again:
       else if (op = 'U')
         res := PROCESS_ATOM_UPDATE (streamid, _topic);
     }
+  skip_this:
   update UPSTREAM_ENTRY set UE_LAST_TRY = now(), UE_STATUS = res where UE_ID = id;
   commit work;
   open cr (exclusive, prefetch 1);
@@ -117,6 +123,11 @@ again:
   else
     {
       declare _topic WV.WIKI.TOPICINFO;
+      declare exit handler for sqlstate '*' {
+	res := 0;
+	ADD_LOG_ENTRY (streamid, sprintf ('[%s] %s',__SQL_STATE, __SQL_MESSAGE));
+	goto skip_this;
+      };
       _topic := WV.WIKI.TOPICINFO();
       _topic.ti_id := _topicid;
       _topic.ti_find_metadata_by_id ();
@@ -125,6 +136,7 @@ again:
       else if (op = 'U')
         res := PROCESS_ATOM_UPDATE (streamid, _topic);
     }
+  skip_this:
   update UPSTREAM_ENTRY set UE_LAST_TRY = now(), UE_STATUS = res where UE_ID = id and UE_TOPIC_ID = topicid;
   commit work;
   open cr (exclusive, prefetch 1);
@@ -174,7 +186,10 @@ create procedure WV.DBA.ATOM_ENTRY (
    http (sprintf ('<updated>%s</updated>', WV.WIKI.DATEFORMAT (_updated, 'iso8601')), ss);
    http (sprintf ('<published>%s</published>', WV.WIKI.DATEFORMAT(_published, 'iso8601')), ss);
    http (sprintf ('<summary type="text"></summary>', _summary), ss);
-   http (sprintf ('<content type="text"><![CDATA[%s]]></content>', _text), ss);
+   http ('<content type="text">', ss);
+   http_escape (_text, 1, ss, 1, 1);
+   http ('</content>', ss);
+   --http (sprintf ('<content type="text"><![CDATA[%s]]></content>', _text), ss);
    http ('</entry>', ss);
    return string_output_string (ss);
 }

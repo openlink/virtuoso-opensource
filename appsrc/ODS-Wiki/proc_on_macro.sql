@@ -731,9 +731,11 @@ create function WV.WIKI.MACRO_TOC  (inout _data varchar, inout _context any, ino
 	}
   	i := i + 1;
   } 
+  if (length(hayches) > 0) {                                                                                                                                                                                                                                           
   n := cast (subseq (cast(xpath_eval('local-name()', hayches[0], 1) as varchar), 1) as int);
   p := cast (subseq (cast(xpath_eval('local-name()', hayches[i-1], 1) as varchar), 1) as int);
   _out := _out || repeat('</ul>\n', p - n);
+  }                                                                                                                                                                                                                                                                    
   return '
 <div class="MACRO_TOC" xmlns:wv="http://www.openlinksw.com/Virtuoso/WikiV/">
  <div class="wikitoc">
