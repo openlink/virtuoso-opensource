@@ -395,7 +395,7 @@ create procedure virt_proxy_init_about ()
       '/about?url=%U&force=%U', vector ('url', 'force'), null, null, 2);
 
   -- /about/rdf/urn/<urn-path>
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_about_http_proxy_rule_2', 1,
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_about_http_proxy_rule_2', 1,
       '/about/([^/\?\&:]*)/([^/\?\&:]*)/(.*)', vector ('force', 'schema', 'url'), 3,
       '/about?url=%U:%U&force=%U', vector ('schema', 'url', 'force'), null, null, 2);
 
