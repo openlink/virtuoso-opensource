@@ -42,7 +42,9 @@
       <v:variable name="lhost1" persist="0" type="varchar" default="null"/>
       <v:variable name="vhost1" persist="0" type="varchar" default="null"/>
       <v:variable name="key1" persist="0" type="varchar" default="'none'"/>
+      <v:variable name="verify1" persist="0" type="varchar" default="0"/>
       <v:variable name="port1" persist="0" type="varchar" default="'80'"/>
+      <v:variable name="stopit" persist="0" type="int" default="1"/>
     </vm:variables>
     <vm:header caption="Virtual Host Properties"/>
     <vm:pagebody>
@@ -60,8 +62,11 @@
 		  if (cert like 'db:%')
 		    cert := subseq (cert, 3);
 		  self.key1 := cert;
+		  self.verify1 := cast (get_keyword ('https_verify', opts, 0) as varchar);
 	        }
 	    }
+	  if (self.stopit and 1 = http_listen_host (self.lhost, 2)) 
+	    http_listen_host (self.lhost, 1);  
 	  if (self.lhost = '*ini*')
             {
 	      self.lhost := server_http_port ();
@@ -190,6 +195,17 @@
               </td>
             </tr>
             <tr>
+              <td>HTTPS verify</td>
+              <td>
+		  <v:select-list name="verify" value="--self.verify1" >
+		      <v:item name="none" value="0"/>
+		      <v:item name="required" value="1"/>
+		      <v:item name="optional" value="2"/>
+		      <v:item name="optional no ca" value="3"/>
+		</v:select-list>
+              </td>
+            </tr>
+            <tr>
               <td colspan="2" align="center">
                 <v:button action="simple" name="cancel_templ" value="Cancel">
                   <v:on-post>
@@ -205,7 +221,7 @@
            if (not self.vc_is_valid)
              return;
 
-           declare vhost_o, lhost_o, vhost, lhost, st, msg, lhost_if any;
+           declare vhost_o, lhost_o, vhost, lhost, st, msg, lhost_if, ssl_opts any;
            vhost_o := self.vhosto;
 	   lhost_o := self.lhosto;
 
@@ -225,9 +241,9 @@
 	   lhost := concat (lhost_if, ':', self.lhost_port.ufl_value);
 	   lhost := replace (lhost, '0.0.0.0', '');
 
-	   if (self.vhost = vhost and lhost = self.lhost and self.key_list.ufl_value = self.key1)
+	   if (self.vhost = vhost and lhost = self.lhost and self.key_list.ufl_value = self.key1 and self.verify1 = self.verify.ufl_value)
 	     goto same_host;
-
+           ssl_opts := null;
 	   for select
 	       HP_HOST, HP_LISTEN_HOST, HP_PPATH, HP_LPATH,
 	       HP_AUTH_FUNC, HP_AUTH_OPTIONS, HP_DEFAULT, HP_STORE_AS_DAV,
@@ -243,9 +259,11 @@
 		  {
 		    declare opts any;
 		    opts := deserialize (HP_AUTH_OPTIONS);
-		    yac_set_ssl_key (self.key_list.ufl_value, opts);
+		    yac_set_ssl_key (self.key_list.ufl_value, self.verify.ufl_value, opts);
 		    HP_AUTH_OPTIONS := serialize (opts);
 		    HP_SECURITY := 'SSL';
+		    if (ssl_opts is null)
+		      ssl_opts := opts;
 		  }
 		exec('VHOST_DEFINE (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', st, msg,
 		     vector (vhost, lhost, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE,
@@ -261,6 +279,8 @@
 		    return;
                   }
 	     }
+	    http_listen_host (lhost, 0, ssl_opts);  
+	    self.stopit := 0; 
 	    commit work;
 	    same_host:
             self.vc_redirect (sprintf ('http_serv_mgmt.vspx'));
