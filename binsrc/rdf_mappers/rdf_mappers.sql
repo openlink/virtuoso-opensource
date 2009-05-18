@@ -650,6 +650,18 @@ create procedure DB.DBA.RDF_SPONGE_PROXY_IRI (in uri varchar := '', in login var
 }
 ;
 
+create procedure DB.DBA.XSLT_ESCAPE (in body any) returns varchar
+{
+  declare str_out any;
+  declare s, s2 varchar;
+  s2 := serialize_to_UTF8_xml (body);
+  str_out := string_output();
+  http_value(s2, null, str_out);
+  s := string_output_string(str_out);
+  return s;
+}
+;
+
 create procedure MOAT_APPLY (in ap_uid any, in phrase varchar)
 {
   declare ap_set_ids any;
@@ -738,12 +750,14 @@ grant execute on DB.DBA.XSLT_STRING2ISO_DATE to public;
 grant execute on DB.DBA.XSLT_STRING2ISO_DATE2 to public;
 grant execute on DB.DBA.RDF_SPONGE_PROXY_IRI to public;
 grant execute on DB.DBA.RDF_SPONGE_DBP_IRI to public;
+grant execute on DB.DBA.XSLT_ESCAPE to public;
 
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:regexp-match', 'DB.DBA.XSLT_REGEXP_MATCH');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:split-and-decode', 'DB.DBA.XSLT_SPLIT_AND_DECODE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:unix2iso-date', 'DB.DBA.XSLT_UNIX2ISO_DATE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:sha1_hex', 'DB.DBA.XSLT_SHA1_HEX');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:str2date', 'DB.DBA.XSLT_STR2DATE');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:escape', 'DB.DBA.XSLT_ESCAPE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:string2date', 'DB.DBA.XSLT_STRING2ISO_DATE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:string2date2', 'DB.DBA.XSLT_STRING2ISO_DATE2');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:proxyIRI', 'DB.DBA.RDF_SPONGE_PROXY_IRI');
@@ -2220,9 +2234,13 @@ create procedure DB.DBA.RDF_LOAD_SLIDESHARE (in graph_iri varchar, in new_origin
 		tmp := sprintf_inverse (new_origin_uri, 'http://www.slideshare.net/%s/%s', 0);
 		username := trim(tmp[0], '/');
 		itemname := trim(tmp[1], '/');
+		if (strchr(itemname, '?') is not null)
+			itemname := left(new_origin_uri, strchr(new_origin_uri, '?'));
+		else
+			itemname := new_origin_uri;
 		if (username is null)
 			return 0;
-		url := sprintf ('http://www.slideshare.net/api/1/get_slideshow_info?api_key=%U&ts=%U&hash=%U&slideshow_url=%U', ApiKey, ts, hash1, new_origin_uri);
+		url := sprintf ('http://www.slideshare.net/api/1/get_slideshow_info?api_key=%U&ts=%U&hash=%U&slideshow_url=%U', ApiKey, ts, hash1, itemname);
 	}
 	else if (new_origin_uri like 'http://www.slideshare.net/%')
 	{
