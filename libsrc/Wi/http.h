@@ -102,6 +102,7 @@ typedef struct ws_connection_s
     caddr_t 		ws_header;
     caddr_t		ws_file;
     caddr_t		ws_path_string;
+    caddr_t 		ws_resource;
     caddr_t		ws_status_line;
     int			ws_status_code;
     int			ws_try_pipeline;

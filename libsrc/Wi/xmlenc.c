@@ -1950,7 +1950,7 @@ caddr_t bif_xenc_key_create_cert (caddr_t * qst, caddr_t * err_r, state_slot_t *
   if (!xenc_persist_key (k, qst, 1, err_r))
     return NEW_DB_NULL;
   */
-  return box_dv_short_string (name);
+  return box_dv_short_string (k->xek_name);
 }
 
 static /* xenc_key_remove */
@@ -2002,7 +2002,7 @@ int __xenc_key_dsa_init (char *name, int lock)
       sqlr_new_error ("42000", "XENC12",
 		    "Can't generate the DSA private key");
     }
-  pkey->ki.dsa.dsa_st = dsa;
+  pkey->xek_dsa = dsa;
   pkey->xek_private_dsa = dsa;
   return 0;
 }
@@ -5999,21 +5999,38 @@ bif_xenc_x509_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   xenc_key_t * cli_key = xenc_get_key_by_name (cli_pub_key, 1);
   X509 *x = NULL;
   EVP_PKEY *pk = NULL, *cli_pk = NULL;
-  RSA *rsa;
+  RSA *rsa = NULL;
+  DSA *dsa = NULL;
   X509_NAME *name = NULL;
   int i;
 
-  if (!ca_key || ca_key->xek_type != DSIG_KEY_RSA || !ca_key->xek_evp_private_key || !ca_key->xek_x509)
+  /* check ca cert */
+  if (!ca_key || !ca_key->xek_evp_private_key || !ca_key->xek_x509)
     {
       *err_ret = srv_make_new_error ("22023", "XECXX", "Missing or invalid signer certificate");
       goto err;
     }
-  if (!cli_key || cli_key->xek_type != DSIG_KEY_RSA || !cli_key->xek_rsa)
+  if (!cli_key)
     {
-      *err_ret = srv_make_new_error ("22023", "XECXX", "Missing or invalid public key");
+      *err_ret = srv_make_new_error ("22023", "XECXX", "Missing public key");
+      goto err;
+    }
+  /* check pub key */
+  if (cli_key->xek_type != DSIG_KEY_RSA && cli_key->xek_type != DSIG_KEY_DSA)
+    {
+      *err_ret = srv_make_new_error ("22023", "XECXX", "Public Key must be DSA or RSA");
       goto err;
     }
 
+  rsa = cli_key->xek_type == DSIG_KEY_RSA ? cli_key->xek_rsa : NULL;
+  dsa = cli_key->xek_type == DSIG_KEY_DSA ? cli_key->xek_dsa : NULL;
+
+  if (!rsa && !dsa)
+    {
+      *err_ret = srv_make_new_error ("22023", "XECXX", "Missing private key");
+      goto err;
+    }
+  /* check params */
   if ((BOX_ELEMENTS (subj) % 2) != 0)
     {
       *err_ret = srv_make_new_error ("22023", "XECXX", "Subject array must be name/value pairs");
@@ -6030,14 +6047,18 @@ bif_xenc_x509_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   cli_pk = cli_key->xek_evp_key;
   if (!cli_pk)
     {
-      rsa = cli_key->xek_rsa;
       if ((cli_pk=EVP_PKEY_new()) == NULL)
 	{
 	  *err_ret = srv_make_new_error ("42000", "XECXX", "Can not create pkey");
 	  goto err;
 	}
 
-      if (!EVP_PKEY_assign_RSA (cli_pk,rsa))
+      if (rsa && !EVP_PKEY_assign_RSA (cli_pk,rsa))
+	{
+	  *err_ret = srv_make_new_error ("42000", "XECXX", "Can not assign primary key");
+	  goto err;
+	}
+      if (dsa && !EVP_PKEY_assign_DSA (cli_pk,dsa))
 	{
 	  *err_ret = srv_make_new_error ("42000", "XECXX", "Can not assign primary key");
 	  goto err;
@@ -6087,7 +6108,7 @@ bif_xenc_x509_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       x509_add_ext (x, nid, exts[i+1]);
     }
 
-  if (!X509_sign (x, pk, EVP_md5()))
+  if (!X509_sign (x, pk, (pk->type == EVP_PKEY_RSA ? EVP_md5() : EVP_dss1()) ))
     {
       pk = NULL; /* keep one in the xenc_key */
       *err_ret = srv_make_new_error ("42000", "XECXX", "Can not sign certificate");
@@ -6116,13 +6137,30 @@ bif_xenc_x509_ss_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
   xenc_key_t * key = xenc_get_key_by_name (key_name, 1);
   X509 *x = NULL;
   EVP_PKEY *pk = NULL;
-  RSA *rsa;
+  RSA *rsa = NULL;
+  DSA *dsa = NULL;
   X509_NAME *name = NULL;
+  char buf [512];
   int i;
 
-  if (!key || key->xek_type != DSIG_KEY_RSA || !key->xek_private_rsa)
+  if (!key)
     {
-      *err_ret = srv_make_new_error ("22023", "XECXX", "Missing or invalid RSA private key");
+      *err_ret = srv_make_new_error ("22023", "XECXX", "Missing key");
+      goto err;
+    }
+
+  if (key->xek_type != DSIG_KEY_RSA && key->xek_type != DSIG_KEY_DSA)
+    {
+      *err_ret = srv_make_new_error ("22023", "XECXX", "Key is not DSA nor RSA");
+      goto err;
+    }
+
+  rsa = key->xek_type == DSIG_KEY_RSA ? key->xek_private_rsa : NULL;
+  dsa = key->xek_type == DSIG_KEY_DSA ? key->xek_private_dsa : NULL;
+
+  if (!rsa && !dsa)
+    {
+      *err_ret = srv_make_new_error ("22023", "XECXX", "Missing private key");
       goto err;
     }
 
@@ -6144,7 +6182,6 @@ bif_xenc_x509_ss_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
       goto err;
     }
 
-  rsa = key->xek_private_rsa;
   pk = key->xek_evp_private_key;
 
   if (!pk)
@@ -6155,7 +6192,12 @@ bif_xenc_x509_ss_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
 	  goto err;
 	}
 
-      if (!EVP_PKEY_assign_RSA (pk,rsa))
+      if (rsa && !EVP_PKEY_assign_RSA (pk,rsa))
+	{
+	  *err_ret = srv_make_new_error ("42000", "XECXX", "Can not assign primary key");
+	  goto err;
+	}
+      else if (dsa && !EVP_PKEY_assign_DSA (pk,dsa))
 	{
 	  *err_ret = srv_make_new_error ("42000", "XECXX", "Can not assign primary key");
 	  goto err;
@@ -6191,7 +6233,6 @@ bif_xenc_x509_ss_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
   X509_set_issuer_name(x,name);
 
   /* Add standard extensions */
-  x509_add_ext (x, NID_basic_constraints, "CA:FALSE");
   x509_add_ext (x, NID_subject_key_identifier, "hash");
 
   for (i = 0; i < BOX_ELEMENTS (exts); i += 2)
@@ -6208,10 +6249,10 @@ bif_xenc_x509_ss_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
       x509_add_ext (x, nid, exts[i+1]);
     }
 
-  if (!X509_sign (x, pk, EVP_md5()))
+  if (!X509_sign (x, pk, (pk->type == EVP_PKEY_RSA ? EVP_md5() : EVP_dss1())))
     {
       pk = NULL; /* keep one in the xenc_key */
-      *err_ret = srv_make_new_error ("42000", "XECXX", "Can not sign certificate");
+      *err_ret = srv_make_new_error ("42000", "XECXX", "Can not sign certificate : %s", get_ssl_error_text (buf, sizeof (buf)));
       goto err;
     }
 
@@ -6283,6 +6324,50 @@ bif_xenc_pem_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   PEM_write_bio_X509 (b, key->xek_x509);
   if (pkey && key->xek_evp_private_key)
     PEM_write_bio_PrivateKey (b, key->xek_evp_private_key, NULL, NULL, 0, NULL, NULL);
+  len = BIO_get_mem_data (b, &data_ptr);
+  if (len > 0 && data_ptr)
+    {
+      ret = dk_alloc_box (len + 1, DV_STRING);
+      memcpy (ret, data_ptr, len);
+      ret[len] = 0;
+    }
+  BIO_free (b);
+  return ret;
+err:
+  return NEW_DB_NULL;
+}
+
+static caddr_t
+bif_xenc_pubkey_pem_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t key_name = bif_string_arg (qst, args, 0, "xenc_pubkey_pem_export");
+  xenc_key_t * key = xenc_get_key_by_name (key_name, 1);
+  BIO * b;
+  char *data_ptr;
+  int len;
+  caddr_t ret = NULL;
+  EVP_PKEY * k;
+
+  if (!key || !key->xek_x509)
+    goto err;
+
+  b = BIO_new (BIO_s_mem());
+  k = X509_get_pubkey (key->xek_x509);
+#ifdef EVP_PKEY_RSA
+  if (k->type == EVP_PKEY_RSA)
+    {
+      RSA * x = k->pkey.rsa;
+      PEM_write_bio_RSAPublicKey (b, x); 
+    }
+#endif		
+#ifdef EVP_PKEY_DSA		
+  if (k->type == EVP_PKEY_DSA)
+    {
+      DSA * x = k->pkey.dsa;
+      PEM_write_bio_DSA_PUBKEY (b, x);
+    }
+#endif		
+  EVP_PKEY_free (k);
   len = BIO_get_mem_data (b, &data_ptr);
   if (len > 0 && data_ptr)
     {
@@ -6447,6 +6532,7 @@ void bif_xmlenc_init ()
   bif_define ("xenc_x509_generate", bif_xenc_x509_generate);
   bif_define ("xenc_pkcs12_export", bif_xenc_pkcs12_export);
   bif_define ("xenc_pem_export", bif_xenc_pem_export);
+  bif_define ("xenc_pubkey_pem_export", bif_xenc_pubkey_pem_export);
   bif_define ("xenc_SPKI_read", bif_xenc_SPKI_read);
 
 #ifdef _KERBEROS

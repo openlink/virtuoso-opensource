@@ -42,6 +42,8 @@ shcompo_get_or_compile (shcompo_vtable_t *vt, caddr_t key, int key_is_const, str
     {
       res = val_ptr[0];
       res->shcompo_ref_count++;
+      if (!key_is_const)
+	dk_free_tree (key);
       mutex_leave (vt->shcompo_cache_mutex);
       if (NULL != res->shcompo_comp_mutex)
         {
@@ -120,6 +122,8 @@ shcompo_get (shcompo_vtable_t *vt, caddr_t key)
     {
       res = val_ptr[0];
       res->shcompo_ref_count++;
+      if (!key_is_const)
+	dk_free_tree (key);
       mutex_leave (vt->shcompo_cache_mutex);
       if (NULL != res->shcompo_comp_mutex)
         {
@@ -423,7 +427,7 @@ bif_exec_shcompo_test (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   query_instance_t *qi = (query_instance_t *)qst;
   caddr_t txt = bif_string_arg (qst, args, 0, "bif_exec_shcompo_test");
   caddr_t err = NULL;
-  shcompo_t *shc = shcompo_get_or_compile (&shcompo_vtable__test, list (4, txt, (ptrlong)11, (ptrlong)22, (ptrlong)0), 1, qi, NULL, &err);
+  shcompo_t *shc = shcompo_get_or_compile (&shcompo_vtable__test, list (4, box_copy_tree (txt), (ptrlong)11, (ptrlong)22, (ptrlong)0), 0, qi, NULL, &err);
   if (NULL != err)
     sqlr_resignal (err);
   shcompo_recompile_if_needed (&shc);

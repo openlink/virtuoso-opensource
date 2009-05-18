@@ -120,14 +120,37 @@ sqlo_allocate_df_elts (int size)
 }
 
 
+int
+sqlo_has_node (ST * tree, int type)
+{
+  if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (tree))
+    {
+      int inx;
+      if (ST_P (tree, type))
+	return 1;
+      DO_BOX (ST*, st, inx, tree)
+	{
+	  if (sqlo_has_node (st, type))
+	    return 1;
+	}
+      END_DO_BOX;
+    }
+  return 0;
+}
+
+
 df_elt_t *
 sqlo_df_elt (sqlo_t * so, ST * tree)
 {
   df_elt_t ** place = NULL;
   id_hashed_key_t hash = sql_tree_hash ((caddr_t) &tree);
   if (so->so_df_private_elts)
+    {
     place = (df_elt_t **) id_hash_get_with_hash_number (so->so_df_private_elts, (caddr_t) &tree, hash);
-
+      /* if this is not a leaf like col, literal or param, then do not use the global one even if there is one.  Except when there is an aggregate, they must be shared over the whole tree */
+      if (! (ST_P (tree, COL_DOTTED) || DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree) || sqlo_has_node (tree, FUN_REF)))
+	return place ? *place : NULL;
+    }
   if (!place)
     place = (df_elt_t **) id_hash_get_with_hash_number (so->so_df_elts, (caddr_t) &tree, hash);
 
@@ -1287,11 +1310,13 @@ dfe_skip_to_min_card (df_elt_t * place, df_elt_t * super, df_elt_t * dfe)
 	case DFE_TABLE:
 	  if (place->_.table.is_being_placed)
 	    goto over;
+	  break;
 	case DFE_DT:
 	case DFE_VALUE_SUBQ:
 	case DFE_EXISTS:
-	  if (dfe->_.sub.is_being_placed)
+	  if (place->_.sub.is_being_placed)
 	    goto over;
+	  break;
 	case DFE_QEXP:
 	    goto over;
 	}
@@ -4084,6 +4109,22 @@ sqlo_parse_tree_count_node (ST *tree, long *nodes, int n_nodes)
 }
 
 
+#define SET_BEING_PLACED(tb, f) \
+{\
+  if (DFE_TABLE == tb->dfe_type)  \
+    tb->_.table.is_being_placed = f;\
+  else if (DFE_DT == tb->dfe_type || DFE_EXISTS == tb->dfe_type || DFE_VALUE_SUBQ == tb->dfe_type)\
+    tb->_.sub.is_being_placed = f;\
+}
+
+#define SET_BEING_PLACED(tb, f) \
+{\
+  if (DFE_TABLE == tb->dfe_type)  \
+    tb->_.table.is_being_placed = f;\
+  else if (DFE_DT == tb->dfe_type || DFE_EXISTS == tb->dfe_type || DFE_VALUE_SUBQ == tb->dfe_type)\
+    tb->_.sub.is_being_placed = f;\
+}
+
 void
 sqlo_tb_check_invariant_preds (sqlo_t *so, df_elt_t *tb_dfe, dk_set_t preds)
 {
@@ -4119,6 +4160,14 @@ sqlo_tb_check_invariant_preds (sqlo_t *so, df_elt_t *tb_dfe, dk_set_t preds)
 }
 
 
+#define SET_BEING_PLACED(tb, f) \
+{\
+  if (DFE_TABLE == tb->dfe_type)  \
+    tb->_.table.is_being_placed = f;\
+  else if (DFE_DT == tb->dfe_type || DFE_EXISTS == tb->dfe_type || DFE_VALUE_SUBQ == tb->dfe_type)\
+    tb->_.sub.is_being_placed = f;\
+}
+
 void
 sqlo_place_table (sqlo_t * so, df_elt_t * tb_dfe)
 {
@@ -4132,6 +4181,7 @@ sqlo_place_table (sqlo_t * so, df_elt_t * tb_dfe)
       sqlo_place_dfe_after (so, tb_dfe->dfe_locus, so->so_gen_pt, tb_dfe);
       return;
     }
+  SET_BEING_PLACED (tb_dfe, 1);
 
   /*GK: locate the text pred */
   if (DFE_DT != tb_dfe->dfe_type)
@@ -4148,6 +4198,7 @@ sqlo_place_table (sqlo_t * so, df_elt_t * tb_dfe)
 	}
       END_DO_SET ();
     }
+  SET_BEING_PLACED (tb_dfe, 1);
 
   DO_SET (df_elt_t *, pred, &so->so_this_dt->ot_preds)
     {
@@ -4241,6 +4292,7 @@ next_pred:
       if (!so->so_this_dt->ot_is_contradiction)
 	sqlo_tb_check_invariant_preds (so, tb_dfe, contr_preds);
     }
+  SET_BEING_PLACED (tb_dfe, 1);
 
   if (ot->ot_join_preds && !ST_P (ot->ot_dt, PROC_TABLE))
     {
@@ -4313,6 +4365,7 @@ next_pred:
 	  tb_dfe->_.table.all_preds = dk_set_conc (nj_preds, tb_dfe->_.table.all_preds);
 	}
     }
+  SET_BEING_PLACED (tb_dfe, 0);
 }
 
 
@@ -4413,6 +4466,7 @@ sqt_types_set (sql_type_t *left, sql_type_t *right)
     {
       *left = *right;
     }
+  SET_BEING_PLACED (tb_dfe, 0);
 }
 
 
@@ -4997,7 +5051,7 @@ sqlo_dt_unplace (sqlo_t * so, df_elt_t * start_dfe)
       next = dfe->dfe_next;
       if (DFE_DT != super->dfe_type && DFE_EXISTS != super->dfe_type
 	  && DFE_VALUE_SUBQ != super->dfe_type)
-	GPF_T1 ("unplace dfe without dt as super");
+	SQL_GPF_T1 (so->so_sc->sc_cc, "unplace dfe without dt as super.   As work around, can try to eliminate common subexpressions between the query in general and control expressions like colaesce or case.");
       L2_DELETE (super->_.sub.first, super->_.sub.last, dfe, dfe_);
       sqlo_dfe_unplace (so, dfe);
     }
@@ -5462,15 +5516,7 @@ sqlo_try (sqlo_t * so, op_table_t * ot, dk_set_t dfes, df_elt_t ** in_loop_ret, 
   float this_score;
   DO_SET (df_elt_t *, dfe, &dfes)
     {
-      if (DFE_TABLE == dfe->dfe_type)
-	dfe->_.table.is_being_placed = 1;
-      else if (DFE_DT == dfe->dfe_type)
-	dfe->_.sub.is_being_placed = 1;
       sqlo_place_table (so, dfe);
-      if (DFE_TABLE == dfe->dfe_type)
-	dfe->_.table.is_being_placed = 0;
-      else if (DFE_DT == dfe->dfe_type)
-	dfe->_.sub.is_being_placed = 0;
 
       if (DFE_TABLE != dfe->dfe_type || !dfe->_.table.is_leaf)
 	{
@@ -6581,6 +6627,7 @@ sqlo_calculate_view_scope (query_instance_t *qi, ST **tree, char *view_name)
 	  fprintf (stderr, "\n");
 	}
     }
+  SET_BEING_PLACED (tb_dfe, 0);
 }
 
 

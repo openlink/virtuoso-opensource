@@ -1280,6 +1280,7 @@ ws_path_and_params (ws_connection_t * ws)
   if (n_fill > 1 || (n_fill == 1 && name[0] != '.'))
     dk_set_push (&paths, box_line (name, n_fill));
   ws->ws_path = (caddr_t*) list_to_array (dk_set_nreverse (paths));
+  ws->ws_resource = BOX_ELEMENTS (ws->ws_path) > 0 ? box_copy (ws->ws_path [BOX_ELEMENTS (ws->ws_path) - 1]) : NULL;
 #ifdef DEBUG
   {
     int i;
@@ -1435,6 +1436,8 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
       ws->ws_path = NULL;
       dk_free_tree ((box_t) ws->ws_params);
       ws->ws_params = NULL;
+      dk_free_tree ((box_t) ws->ws_resource);
+      ws->ws_resource = NULL;
     }
   dk_free_tree ((box_t) ws->ws_stream_params);
   ws->ws_stream_params = NULL;
@@ -1482,10 +1485,161 @@ query_t *http_xslt_qr;
 
 long http_print_warnings_in_output = 0;
 
+#define HTTP_SET_STATUS_LINE(ws,s,when) if (!ws->ws_status_line) \
+                                          ws->ws_status_line = box_dv_short_string (s); \
+				        else if (when) \
+					  { \
+					    dk_free_tree (ws->ws_status_line); \
+					    ws->ws_status_line = box_dv_short_string (s); \
+					  } \
+                                        if (ws->ws_status_line && strlen (ws->ws_status_line) > 9) \
+					   sscanf (ws->ws_status_line + 9, "%3d", &ws->ws_status_code); \
+                                        else \
+					   ws->ws_status_code = 200
+
+
+static caddr_t *
+ws_split_ac_header (const char * header)
+{
+  char *tmp, *tok_s = NULL, *tok;
+  dk_set_t set = NULL;
+  caddr_t string = box_dv_short_string (header);
+  tok = strtok_r (string, ",", &tok_s);
+  while (tok)
+    {
+      char * sep;
+      while (*tok && isspace (*tok))
+	tok++;
+      sep = strchr (tok, ';');
+      if (NULL != sep)
+	{
+          *sep = 0;
+	  tmp = sep > tok ? sep - 1 : NULL;
+	}
+      else if (tok_s)
+	tmp = tok_s - 2;
+      else if (tok && strlen (tok) > 1)
+	tmp = tok + strlen (tok) - 1;
+      else
+	tmp = NULL;
+      while (tmp && tmp >= tok && isspace (*tmp))
+	*(tmp--) = 0;
+      if (*tok)
+	{
+	  dk_set_push (&set, box_dv_short_string (tok));
+	}
+      tok = strtok_r (NULL, ",", &tok_s);
+    }
+  dk_free_box (string); 
+  return (caddr_t *)list_to_array (dk_set_nreverse (set));
+}
+
+static caddr_t *
+ws_header_line_to_array (caddr_t string)
+{
+  int len;
+  char buf [1000];
+  dk_set_t lines = NULL;
+  caddr_t * headers = NULL;
+  dk_session_t * ses = NULL;
+
+  ses = strses_allocate ();
+  session_buffered_write (ses, string, box_length (string) - 1);
+  CATCH_READ_FAIL (ses)
+    {
+      len = dks_read_line (ses, buf, sizeof (buf));
+      if (0 != len)
+	dk_set_push (&lines, box_line (buf, len));
+    }
+  END_READ_FAIL (ses);
+  dk_free_box (ses);
+  headers = (caddr_t *) list_to_array (dk_set_nreverse (lines));
+  return headers;
+}
+
+static const char *
+ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check_only, OFF_T clen, const char * charset)
+{
+  static char *fmt = 
+      "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n"
+      "<html><head>\n"
+      "<title>406 Not Acceptable</title>\n"
+      "</head><body>\n"
+      "<h1>406 Not Acceptable</h1>\n"
+      "<p>An appropriate representation of the requested resource %s could not be found on this server.</p>\n"
+      "Available variant(s):\n"
+      "<ul>\n"
+      "<li><a href=\"%s\">%s</a> , type %s, charset %s</li>\n"
+      "</ul>\n"
+      "</body></html>\n";
+  char * accept;
+  char buf [1000];
+  caddr_t ctype = NULL, cenc = NULL;
+  caddr_t * asked;
+  char * match = NULL;
+  int inx;
+  int ignore = (ws->ws_p_path_string ?
+      ((0 == strnicmp (ws->ws_p_path_string, "http://", 7)) ||
+      (1 == is_http_handler (ws->ws_p_path_string))) : 0);
+  /*			    0123456789012*/
+  if (ignore || 0 !=  strncmp (code, "HTTP/1.1 200", 12))
+    return check_only ? NULL : code;
+  accept = ws_header_field (ws->ws_lines, "Accept:", NULL); 
+  if (!accept) /* consider it is everything, so we just skip the whole logic */
+    return check_only ? NULL : code;
+
+  if (!mime && ws->ws_header)
+    {
+      caddr_t * headers = ws_header_line_to_array (ws->ws_header); 
+      mime = ctype = ws_mime_header_field (headers, "Content-Type", NULL, 0);
+      cenc = ws_mime_header_field (headers, "Content-Type", "charset", 0);
+      if (NULL != cenc)
+	charset = cenc;
+      dk_free_tree (headers);
+    }
+  if (!mime)
+    mime = "text/html";
+  asked = ws_split_ac_header (accept);
+  DO_BOX (caddr_t, p, inx, asked)
+    {
+      if (DVC_MATCH == cmp_like (mime, p, NULL, 0, LIKE_ARG_CHAR, LIKE_ARG_CHAR)) 
+	{
+	  match = p;
+	  break;
+	}
+    }
+  END_DO_BOX;
+  if (!match)
+    {
+      char * cname = ws->ws_resource ? ws->ws_resource : "index.html";
+      caddr_t tmpbuf;
+
+      code = "HTTP/1.1 406 Unacceptable";
+      dk_free_tree (ws->ws_header);
+      snprintf (buf, sizeof (buf), "Alternates: {\"%s\" 1 {type %s} {charset %s} {length " OFF_T_PRINTF_FMT "}}\r\n", 
+	  cname, mime, charset, clen);
+      ws->ws_header = box_dv_short_string (buf);
+      strses_flush (ws->ws_strses);
+      tmpbuf = box_sprintf (1000, fmt, cname, cname, cname, mime, charset);
+      session_buffered_write (ws->ws_strses, tmpbuf, strlen (tmpbuf));
+      dk_free_box (tmpbuf);
+      if (check_only)
+	{
+	  HTTP_SET_STATUS_LINE (ws, code, 1);
+	}
+      check_only = 0;
+    }
+  dk_free_tree (ctype);
+  dk_free_tree (cenc);
+  dk_free_tree (asked);
+  return check_only ? NULL : code;
+}
+
 void
 ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 {
   char tmp[4000];
+  const char * acode;
   caddr_t volatile accept_gz = NULL;
   volatile long len = strses_length (ws->ws_strses);
 #ifdef BIF_XML
@@ -1584,6 +1738,12 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
     }
   if (ws->ws_status_line)
     code = ws->ws_status_line;
+  acode = ws_check_accept (ws, media_type, code, 0, len, xsl_encoding ? xsl_encoding : CHARSET_NAME (charset, "ISO-8859-1"));
+  if (acode != code)
+    {
+      len = strses_length (ws->ws_strses);
+      code = acode;
+    }
   if (0 != strncmp (code, "HTTP/1.1 2", 10) && 0 != strncmp (code, "HTTP/1.1 3", 10) && ws->ws_proto_no < 11)
     ws->ws_try_pipeline = 0;
   snprintf (tmp, sizeof (tmp), "%.1000s\r\nServer: %.1000s\r\n%s",
@@ -1786,18 +1946,6 @@ static char *fmt1 =
 }
 
 #define REPLY_SENT "reply sent"
-
-#define HTTP_SET_STATUS_LINE(ws,s,when) if (!ws->ws_status_line) \
-                                          ws->ws_status_line = box_dv_short_string (s); \
-				        else if (when) \
-					  { \
-					    dk_free_tree (ws->ws_status_line); \
-					    ws->ws_status_line = box_dv_short_string (s); \
-					  } \
-                                        if (ws->ws_status_line && strlen (ws->ws_status_line) > 9) \
-					   sscanf (ws->ws_status_line + 9, "%3d", &ws->ws_status_code); \
-                                        else \
-					   ws->ws_status_code = 200
 
 char * www_root = ".";
 
@@ -2212,6 +2360,12 @@ ws_file (ws_connection_t * ws)
     strcpy_ck (head_beg, "HTTP/1.1 200 OK");
 
   dk_free_box (etag_in);
+
+  if (NULL != ws_check_accept (ws, ctype, head_beg, 1, off, CHARSET_NAME (charset, "ISO-8859-1")))
+    {
+      close (fd);
+      return;
+    }
 
   if (st.st_mtime > 0)
     {
