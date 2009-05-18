@@ -1,13 +1,13 @@
 
-TTLP ('@prefix foaf: <http://xmlns.com/foaf/0.1/>
-@prefix dc: <http://purl.org/dc/elements/1.1/>
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-@prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
-@prefix fbase: <http://rdf.freebase.com/ns/>
-@prefix skos: <http://www.w3.org/2008/05/skos#>
+TTLP ('@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#> .
+@prefix fbase: <http://rdf.freebase.com/ns/type.object.> .
+@prefix skos: <http://www.w3.org/2008/05/skos#> .
 rdfs:label rdfs:subPropertyOf virtrdf:label .
 dc:title rdfs:subPropertyOf virtrdf:label .
-fbase:type.object.name rdfs:subPropertyOf virtrdf:label .
+fbase:name rdfs:subPropertyOf virtrdf:label .
 foaf:name rdfs:subPropertyOf virtrdf:label .
 <http://s.opencalais.com/1/pred/name> rdfs:subPropertyOf virtrdf:label .
 foaf:nick rdfs:subPropertyOf virtrdf:label .
