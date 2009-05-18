@@ -332,6 +332,8 @@ void ddl_init_schema (void);
 
 void ddl_init_proc (void);
 
+void ddl_read_views (int second_init);
+
 void ddl_standard_procs (void);
 
 void ddl_commit (query_instance_t * qi);

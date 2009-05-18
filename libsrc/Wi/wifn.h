@@ -936,6 +936,7 @@ extern int c_use_aio;
 
 extern long dbev_enable; /* from sqlsrv.c */
 extern int in_srv_global_init;
+extern int sparql_inited;
 extern long vd_param_batch;
 extern long cfg_disable_vdb_stat_refresh;
 

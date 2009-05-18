@@ -4060,7 +4060,7 @@ static const char proc_XML_VIEW_DROP_PROCS[] =
 
 
 void
-ddl_read_views (void)
+ddl_read_views (int second_init)
 {
   char owner[MAX_NAME_LEN];
   char v_q[MAX_NAME_LEN];
@@ -4104,6 +4104,8 @@ again:
       char *qual = lc_nth_col (lc, 0);
       char *name = lc_nth_col (lc, 1);
       err = NULL;
+      if (second_init && sch_view_def (wi_inst.wi_schema, name))
+	continue;
       text_is_reload = (text == strstr (text, "xml_reload_mapping_schema_decl"));
       sch_split_name ("", name, v_q, owner, v_n);
       if ((0 == strcmp (owner, "DBA")) || ('\0' == owner[0]))
@@ -4118,11 +4120,16 @@ again:
 	}
       if (!text_is_reload && !first_run)
         continue;
+      if (text_is_reload && second_init)
+        continue;
+      if (second_init)
+	log_debug ("Re-compiling %s view", name);
       view_qr = sql_compile (text, bootstrap_cli, &err, SQLC_DO_NOT_STORE_PROC);
       if (err)
 	{
 	  if (strlen (text) > 60)
 	    text[59] = 0;
+	  if (NULL == strstr (((caddr_t*)err)[QC_ERROR_STRING], "RDFNI")) 
 	  log_error ("Error compiling definition of %s '%s': %s: %s\n%s",
 	      (text_is_reload ? "mapping schema" : "view"), name,
 	      ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING],
@@ -4152,7 +4159,7 @@ again:
   bootstrap_cli->cli_user = org_user;
   CLI_RESTORE_QUAL (bootstrap_cli, org_qual);
   lc_free (lc);
-  if (first_run)
+  if (first_run && !second_init)
     {
       first_run = 0;
       goto again;
@@ -4332,7 +4339,7 @@ read_proc_tables (int remotes)
 
   if (!remotes)
     {
-      ddl_read_views ();
+      ddl_read_views (0);
       QR_RESET_CTX
 	{
 	  ddl_read_constraints (NULL, NULL);

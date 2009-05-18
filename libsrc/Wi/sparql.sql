@@ -9589,3 +9589,5 @@ create procedure SPARQL_INI_PARAMS (inout metas any, inout dta any)
 }
 ;
 
+DB.DBA.EXEC_STMT ('JSO_LOAD_AND_PIN_SYS_GRAPH ()', 0)
+;

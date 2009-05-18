@@ -79,6 +79,7 @@
 int mode_pass_change;
 
 int in_srv_global_init = 0;
+int sparql_inited = 0;
 
 #ifdef VIRTTP
 #include "2pc.h"
@@ -3276,6 +3277,8 @@ sql_code_global_init ()
   sqls_define_sys ();
   sqls_define ();
   sqls_define_sparql ();
+  sparql_inited = 1;
+  ddl_read_views (1);
   NO_LITE (sqls_define_ddk);
   NO_LITE (sqls_define_repl);
   NO_LITE (sqls_define_ws);
