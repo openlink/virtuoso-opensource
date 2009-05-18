@@ -4109,22 +4109,6 @@ sqlo_parse_tree_count_node (ST *tree, long *nodes, int n_nodes)
 }
 
 
-#define SET_BEING_PLACED(tb, f) \
-{\
-  if (DFE_TABLE == tb->dfe_type)  \
-    tb->_.table.is_being_placed = f;\
-  else if (DFE_DT == tb->dfe_type || DFE_EXISTS == tb->dfe_type || DFE_VALUE_SUBQ == tb->dfe_type)\
-    tb->_.sub.is_being_placed = f;\
-}
-
-#define SET_BEING_PLACED(tb, f) \
-{\
-  if (DFE_TABLE == tb->dfe_type)  \
-    tb->_.table.is_being_placed = f;\
-  else if (DFE_DT == tb->dfe_type || DFE_EXISTS == tb->dfe_type || DFE_VALUE_SUBQ == tb->dfe_type)\
-    tb->_.sub.is_being_placed = f;\
-}
-
 void
 sqlo_tb_check_invariant_preds (sqlo_t *so, df_elt_t *tb_dfe, dk_set_t preds)
 {
@@ -4198,7 +4182,6 @@ sqlo_place_table (sqlo_t * so, df_elt_t * tb_dfe)
 	}
       END_DO_SET ();
     }
-  SET_BEING_PLACED (tb_dfe, 1);
 
   DO_SET (df_elt_t *, pred, &so->so_this_dt->ot_preds)
     {
@@ -4292,7 +4275,6 @@ next_pred:
       if (!so->so_this_dt->ot_is_contradiction)
 	sqlo_tb_check_invariant_preds (so, tb_dfe, contr_preds);
     }
-  SET_BEING_PLACED (tb_dfe, 1);
 
   if (ot->ot_join_preds && !ST_P (ot->ot_dt, PROC_TABLE))
     {
@@ -4466,7 +4448,6 @@ sqt_types_set (sql_type_t *left, sql_type_t *right)
     {
       *left = *right;
     }
-  SET_BEING_PLACED (tb_dfe, 0);
 }
 
 
@@ -6627,7 +6608,6 @@ sqlo_calculate_view_scope (query_instance_t *qi, ST **tree, char *view_name)
 	  fprintf (stderr, "\n");
 	}
     }
-  SET_BEING_PLACED (tb_dfe, 0);
 }
 
 
