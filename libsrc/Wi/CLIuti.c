@@ -2334,14 +2334,14 @@ dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
 		      {
 			piece_len = max - 1;
 			cli_wide_to_narrow (stmt->stmt_connection->con_charset,
-			    0, (wchar_t *) it + str_from_pos, piece_len, (unsigned char *) place, piece_len, NULL, NULL);
+					    0, ((wchar_t *) it) + str_from_pos, piece_len, (unsigned char *) place, piece_len, NULL, NULL);
 			place[piece_len] = 0;
 			set_data_truncated_success_info (stmt, "CL074", nth_col);
 		      }
 		    else
 		      {
 			cli_wide_to_narrow (stmt->stmt_connection->con_charset,
-			    0, (wchar_t *) it + str_from_pos, len + 1, (unsigned char *) place, max - 1, NULL, NULL);
+					    0, ((wchar_t *) it) + str_from_pos, len + 1, (unsigned char *) place, max - 1, NULL, NULL);
 			piece_len = len;
 		      }
 

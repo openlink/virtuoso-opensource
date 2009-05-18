@@ -122,8 +122,6 @@ shcompo_get (shcompo_vtable_t *vt, caddr_t key)
     {
       res = val_ptr[0];
       res->shcompo_ref_count++;
-      if (!key_is_const)
-	dk_free_tree (key);
       mutex_leave (vt->shcompo_cache_mutex);
       if (NULL != res->shcompo_comp_mutex)
         {

@@ -276,6 +276,31 @@ nf:
 }
 ;
 
+--!AWK PLBIF sql_foreign_keys
+create procedure
+sql_foreign_keys (in dsn varchar, in qual varchar, in owner varchar, in name varchar, in qual2 varchar, in owner2 varchar, in name2 varchar)
+{
+  declare result, infos any;
+  declare _qual, _owner, _name varchar;
+  _qual := qual;
+  _owner := owner;
+  _name := name;
+  infos := null;
+  whenever not found goto nf;
+  select deserialize (DS_CONN_STR) into infos from DB.DBA.SYS_DATA_SOURCE where DS_DSN = dsn;
+
+  sql_normalize_qon (dsn, infos, qual, owner, name);
+  sql_normalize_qon (dsn, infos, qual2, owner2, name2);
+
+  result := _sql_foreign_keys (dsn, qual, owner, name, qual2, owner2, name2);
+
+  sql_filter_qon (infos, result, _qual, _owner, _name);
+  return result;
+nf:
+  signal ('HZ000', 'Invalid DSN in sql_foreign_keys', 'VD075');
+}
+;
+
 
 -- KLUDGES
 
