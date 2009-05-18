@@ -48,7 +48,7 @@ VAD_NAME_RELEASE="$VAD_PKG_NAME"_dav.vad
 NEED_VERSION=06.00.3117
 DSN="$HOST:$PORT"
 SQLDEPS="ns.sql facet.sql complete_ddl.sql"
-EXCEPT="b3sq.sql facet_test.sql fct_inx.sql"
+EXCEPT="b3sq.sql facet_test.sql fct_inx.sql srank.sql srank_1.sql"
 
 HOST_OS=`uname -s | grep WIN`
 if [ "x$HOST_OS" != "x" ]
@@ -184,7 +184,7 @@ directory_init() {
       cp $f vad/code/fct/"`basename $f`"
   done
 
-  for f in `find . -type f | grep -v '.sql' | grep -v 'CVS' | grep -v VirtTripleLoader`
+  for f in `find . -type f | grep -v '.sql' | grep -v '.vad' | grep -v 'vad_' | grep -v 'CVS' | grep -v VirtTripleLoader`
   do
       cp $f vad/vsp/fct/$f
   done
@@ -194,6 +194,8 @@ directory_init() {
   cp -Rf $HOME/binsrc/samples/dbpedia/vsp/statics vad/vsp/fct/rdfdesc
   cp -Rf styles vad/vsp/fct/rdfdesc
   cp -Rf s vad/vsp/fct/rdfdesc
+
+  cat srank.sql | sed -e "s/, index rdf_quad_opgs//g" > vad/code/fct/srank_1.sql
 
 }
 
@@ -312,7 +314,6 @@ fi
   echo "       log_message ('done.'); " >> $STICKER
   echo "    } " >> $STICKER
 
-  echo "    if (exists (select 1 from DB.DBA.SYS_KEYS where upper (KEY_NAME) = 'RDF_QUAD_OPGS')) { " >> $STICKER
 
   for f in $SQLDEPS
   do  
@@ -338,16 +339,23 @@ fi
      fi
   done
 
+  echo "    if (exists (select 1 from DB.DBA.SYS_KEYS where upper (KEY_NAME) = 'RDF_QUAD_OPGS')) " >> $STICKER
+
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/srank.sql', 0, 'report', $ISDAV); " >> $STICKER
+  echo "    else { " >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/srank_1.sql', 0, 'report', $ISDAV); " >> $STICKER
+  echo "        result ('00000', 'You should read http://host:port/fct/install.html for instructions');" >> $STICKER
+  echo "    }    " >> $STICKER
   echo "        result ('00000', 'GUI is accesible via http://host:port/fct');" >> $STICKER
   echo "        result ('00000', 'Post-installation guide is available from http://host:port/fct/post_install.html');" >> $STICKER
-  echo "    } else { " >> $STICKER
-  echo "    VHOST_REMOVE (lpath=>'/fct'); " >> $STICKER
-  echo "    VHOST_DEFINE (lpath=>'/fct', " >> $STICKER
-  echo "        	ppath=>case when registry_get('_fct_path_') = 0 then '/fct/' else registry_get('_fct_path_') end, " >> $STICKER
-  echo "    	is_dav=>atoi (case when registry_get('_fct_dav_') = 0 then '0' else registry_get('_fct_dav_') end), " >> $STICKER
-  echo "        	vsp_user=>'dba', def_page=>'install.html'); " >> $STICKER
-  echo "        result ('00000', 'Cannot complete installation, read instructions at http://host:port/fct');" >> $STICKER
-  echo "    } " >> $STICKER
+#  echo "    } else { " >> $STICKER
+#  echo "    VHOST_REMOVE (lpath=>'/fct'); " >> $STICKER
+#  echo "    VHOST_DEFINE (lpath=>'/fct', " >> $STICKER
+#  echo "        	ppath=>case when registry_get('_fct_path_') = 0 then '/fct/' else registry_get('_fct_path_') end, " >> $STICKER
+#  echo "    	is_dav=>atoi (case when registry_get('_fct_dav_') = 0 then '0' else registry_get('_fct_dav_') end), " >> $STICKER
+#  echo "        	vsp_user=>'dba', def_page=>'install.html'); " >> $STICKER
+#  echo "        result ('00000', 'Cannot complete installation, read instructions at http://host:port/fct');" >> $STICKER
+#  echo "    } " >> $STICKER
 
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
