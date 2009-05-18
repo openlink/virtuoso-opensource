@@ -48,6 +48,7 @@
       <v:variable persist="0" name="owl_vd" type="int" default="0" param-name="owl_vd"/>
       <v:variable persist="0" name="view_vd" type="int" default="0" param-name="view_vd"/>
       <v:variable persist="0" name="exist_sql" type="int" default="0" />
+      <v:variable persist="0" name="exec_it" type="int" default="0" param-name="exec" />
   </vm:variables>
 
   <vm:header caption="RDF View definition"/>
@@ -71,6 +72,40 @@
     }
     ]]></script>
 <table>
+    <v:method name="exec_all" arglist="inout control vspx_control"><![CDATA[
+	      declare stat, msg varchar;
+	      declare res, arr, data, meta, gr any;
+	      declare inx int;
+
+	      arr := sql_split_text (self.body_v);
+	      res := make_array (length (arr) + 1, 'any');
+
+	      inx := 0;
+	      foreach (varchar q in arr) do
+	        {
+		  stat := '00000';
+		  exec (q, stat, msg, vector (), 0, meta, data);
+                  if (stat = '00000')
+                    res[inx] := data;
+	          else
+                    res[inx] := vector (vector (stat, msg));
+		  inx := inx + 1;
+		}
+             if (self.owl)
+               {	     
+		 gr := sprintf ('http://%s/schemas/%s#', cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), self.base_url);
+		 stat := '00000';
+		 msg := 'OK';
+		 exec ('DB.DBA.TTLP (?, \'\', ?)', stat, msg, vector (self.body_o, gr), 0, meta, data);
+		 res [length(arr)] := vector (vector (stat, msg));
+	       }
+	     self.text_e := 1;
+	     self.exec_ret := res;
+	     self.back.vc_enabled := 1;
+	     control.vc_enabled := 0;
+	     self.b_loc_save1.vc_enabled := 0;
+	     self.b_loc_save2.vc_enabled := 0;
+	     ]]></v:method>
       <v:form name="account_form" type="simple" method="POST" action="">
     <v:text type="hidden"
       name="fsave" value="--concat ('/INLINEFILE/script.sql?VSP=', WS.WS.EXPAND_URL (http_path(), 'file_save.vsp'))"/>
@@ -132,6 +167,11 @@
 	       DB.DBA.YACUTIA_DAV_COL_CREATE('/DAV/temp/', '110110000NN', 'dav', 'administrators');
 	       DB.DBA.YACUTIA_DAV_RES_UPLOAD (path, self.body_o, '', '110110000NN', 'dav', 'administrators', now(), now(), null);
 	     }  
+	    if (self.exec_it = 1)
+	      {
+	        self.exec_all (self.exec);
+                self.exec_it := 0;
+	      }
 	    ]]>
     </v:before-data-bind>
   <tr>
@@ -169,7 +209,7 @@
 		   if (stat = '00000' and length (data) and length (data[0]))
 		   {
 		   http ('<div>Instance Data: ');
-		   http_value (data[0][0], 'span');
+	           http (sprintf ('<a href="%s" target="_blank">%s</a>', data[0][0], data[0][0]));
 		   http ('</div>');
 	           }
 	        }
@@ -180,8 +220,8 @@
 		   exec (qr, stat, msg, vector (), 1, meta, data);
 		   if (stat = '00000' and length (data) and length (data[0]))
 		   {
-		   http ('<div>VoID: ');
-		   http_value (data[0][0], 'span');
+		   http ('<div>Statistics Data (VoiD Graph): ');
+	           http (sprintf ('<a href="%s" target="_blank">%s</a>', data[0][0], data[0][0]));
 		   http ('</div>');
 	           }
 	        }
@@ -193,7 +233,7 @@
 		   if (stat = '00000' and length (data) and length (data[0]))
 		   {
 		   http ('<div>Ontology: ');
-		   http_value (data[0][0], 'span');
+	           http (sprintf ('<a href="%s" target="_blank">%s</a>', data[0][0], data[0][0]));
 		   http ('</div>');
 	           }
 	        }
@@ -225,42 +265,11 @@
       </v:button>
       <v:button action="simple" name="exec" value="Execute">
 	  <v:on-post><![CDATA[
-	      declare stat, msg varchar;
-	      declare res, arr, data, meta, gr any;
-	      declare inx int;
-
-	      arr := sql_split_text (self.body_v);
-	      res := make_array (length (arr) + 1, 'any');
-
-	      inx := 0;
-	      foreach (varchar q in arr) do
-	        {
-		  stat := '00000';
-		  exec (q, stat, msg, vector (), 0, meta, data);
-                  if (stat = '00000')
-                    res[inx] := data;
-	          else
-                    res[inx] := vector (vector (stat, msg));
-		  inx := inx + 1;
-		}
-             if (self.owl)
-               {	     
-	     gr := sprintf ('http://%s/schemas/%s#', cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), self.base_url);
-	     stat := '00000';
-	     msg := 'OK';
-	     exec ('DB.DBA.TTLP (?, \'\', ?)', stat, msg, vector (self.body_o, gr), 0, meta, data);
-	     res [length(arr)] := vector (vector (stat, msg));
-	       }
-	     self.text_e := 1;
-	     self.exec_ret := res;
-	     self.back.vc_enabled := 1;
-	     control.vc_enabled := 0;
-	     self.b_loc_save1.vc_enabled := 0;
-	     self.b_loc_save2.vc_enabled := 0;
+	      self.exec_all (control);
 	    ]]></v:on-post>
     </v:button>
-    <v:button action="simple" name="b_loc_save1" value="Save definitions to file" xhtml_onclick="javascript:saveSQL()" enabled="--self.exist_sql"/>
-    <v:button action="simple" name="b_loc_save2" value="Save ontology to file" xhtml_onclick="javascript:saveOwl()" enabled="--self.owl"/>
+    <v:button action="simple" name="b_loc_save1" value="Save Data Mappings" xhtml_onclick="javascript:saveSQL()" enabled="--self.exist_sql"/>
+    <v:button action="simple" name="b_loc_save2" value="Save Ontology Mappings" xhtml_onclick="javascript:saveOwl()" enabled="--self.owl"/>
     <v:button name="back" action="simple" value="Back" enabled="--self.text_e">
 	  <v:on-post><![CDATA[
 	      self.text_e := 0;
@@ -277,11 +286,11 @@
   <tr>
     <td>
 	<?vsp if (self.exist_sql) { ?>
-      WebDAV path for definitions:
+      WebDAV location:
       <v:text width="200" type="simple" value="" name="filename" />
       <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="col" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="" lang="en" return_box="filename"/>
 
-      <v:button action="submit" name="export" value="Export Definitions">
+      <v:button action="submit" name="export" value="Save Data Mappings">
         <v:on-post><![CDATA[
 	  if (get_keyword('export', params) is not null)
             {
@@ -319,11 +328,11 @@
           </v:button><br/>
 	  <?vsp } ?>
 	  <?vsp if (self.owl) { ?>
-      WebDAV path for ontology:
+      WebDAV location:
       <v:text width="200" type="simple" value="" name="filename2" />
       <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="col" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="" lang="en" return_box="filename2"/>
 
-      <v:button action="submit" name="export2" value="Export Ontology">
+      <v:button action="submit" name="export2" value="Save Ontology Mappings">
         <v:on-post><![CDATA[
 	  if (get_keyword('export2', params) is not null)
             {
