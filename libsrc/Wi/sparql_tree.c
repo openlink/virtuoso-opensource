@@ -62,6 +62,10 @@ sparp_gp_trav_int (sparp_t *sparp, SPART *tree,
   sparp_trav_state_t *save_sts_this = BADBEEF_BOX; /* To keep gcc 4.0 happy */
   SPART *save_ancestor_gp = BADBEEF_BOX; /* To keep gcc 4.0 happy */
   int retcode = 0;
+
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &sub_gps, 1000))
+    spar_internal_error (NULL, "sparp_gp_trav_int(): stack overflow");
+
   if (sts_this == (sparp->sparp_stss + SPARP_MAX_SYNTDEPTH))
     spar_error (sparp, "The nesting depth of subexpressions exceed limits of SPARQL compiler");
 
