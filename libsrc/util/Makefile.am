@@ -126,6 +126,7 @@ EXTRA_DIST = \
 	pcrelib/LICENCE \
 	pcrelib/*.c \
 	pcrelib/*.h \
+	pcrelib/*.src \
 	win32/ptrlong.h \
 	win32/syslog.c \
 	win32/syslog.h \
