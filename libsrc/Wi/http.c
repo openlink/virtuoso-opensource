@@ -1574,8 +1574,11 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
   caddr_t * asked;
   char * match = NULL;
   int inx;
+  int ignore = (ws->ws_p_path_string ?
+      ((0 == strnicmp (ws->ws_p_path_string, "http://", 7)) ||
+      (1 == is_http_handler (ws->ws_p_path_string))) : 0);
   /*			    0123456789012*/
-  if (0 !=  strncmp (code, "HTTP/1.1 200", 12))
+  if (ignore || 0 !=  strncmp (code, "HTTP/1.1 200", 12))
     return check_only ? NULL : code;
   accept = ws_header_field (ws->ws_lines, "Accept:", NULL); 
   if (!accept) /* consider it is everything, so we just skip the whole logic */
