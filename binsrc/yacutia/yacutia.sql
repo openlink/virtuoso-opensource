@@ -5558,7 +5558,7 @@ create procedure yac_vec_add (in k varchar, in v varchar, inout opts any)
 
 
 create procedure
-yac_set_ssl_key (in k varchar, inout opts any)
+yac_set_ssl_key (in k varchar, in v varchar, inout opts any)
 {
   if (k = 'none' or not length (k))
     {
@@ -5566,7 +5566,7 @@ yac_set_ssl_key (in k varchar, inout opts any)
       new_opts := vector ();
       for (declare i, l int, i := 0, l := length (opts); i < l; i := i + 2)
         {
-	  if (opts[i] not in ('https_cert', 'https_key'))
+	  if (opts[i] not in ('https_cert', 'https_key', 'https_verify', 'https_cv_depth'))
 	    new_opts := vector_concat (new_opts, vector (opts[i], opts[i+1]));
 	}
       opts := new_opts;
@@ -5575,6 +5575,8 @@ yac_set_ssl_key (in k varchar, inout opts any)
     {
       yac_vec_add ('https_cert', 'db:'||k, opts);
       yac_vec_add ('https_key',  'db:'||k, opts);
+      yac_vec_add ('https_verify', cast (v as int), opts);
+      yac_vec_add ('https_cv_depth', 10, opts);
     }
 }
 ;

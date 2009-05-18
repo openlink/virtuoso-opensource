@@ -263,6 +263,46 @@
 			  ]]>
 		      </v:script>
 		  </v:on-post>
+	      </v:button>
+	      <v:button action="simple" value="Generate &amp; Publish" name="create_all_at_once">
+		  <v:on-post>
+		      <v:script>
+			  <![CDATA[
+			  declare i, arr any;
+			  declare chil vspx_control;
+			  declare cb vspx_check_box;
+			  declare tb varchar;
+			  declare ds vspx_data_set;
+			  declare host, st varchar;
+
+			  ds := self."ds_tables";
+			  i := 0;
+			  arr := vector ();
+			  while ((chil := ds.ds_iterate_rows (i)) is not null)
+			    {
+			      cb := chil.vc_find_control ('cb_tables_select');
+			      tb := get_keyword (cb.vc_instance_name, e.ve_params);
+			      if (tb is not null)
+			        arr := vector_concat (arr, vector (tb));
+			    }
+
+			  host := get_keyword ('base_start', e.ve_params, '');
+			  st := get_keyword ('cb1', e.ve_params, '0');
+
+			  if (length (arr) > 0)
+			   {
+			     arr := encode_base64 (serialize (arr));
+			     self.db_object_to_process := arr;
+			     self.vc_redirect (sprintf ('db_rdf_view_3.vspx?list=%U&host=%U&owl=1&view=1&st=1&owl_vd=1&view_vd=1&exec=1', arr, host));
+			   }
+			 else
+			   {
+			     self.vc_error_message := 'There are no object selected to perform operation.';
+			     self.vc_is_valid := 0;
+			   }
+			  ]]>
+		      </v:script>
+		  </v:on-post>
 
 	      </v:button>
 

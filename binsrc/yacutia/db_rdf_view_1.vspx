@@ -49,12 +49,12 @@
       <v:form name="account_form" type="simple" method="POST" action="">
 	  <tr>
 	      <td>
-		  <v:check-box name="gen_owl" value="1" initial-checked="--self.owl" xhtml_id="gen_owl"/> <label for="gen_owl">Data Source Ontology</label>
+		  <v:check-box name="gen_owl" value="1" initial-checked="--self.owl" xhtml_id="gen_owl"/> <label for="gen_owl">Data Source Ontology Mappings</label>
 	      </td>
 	  </tr>
 	  <tr>
 	      <td>
-		  <v:check-box name="gen_view" value="1" initial-checked="--self._view" xhtml_id="gen_view"/> <label for="gen_view">Instance Data</label>
+		  <v:check-box name="gen_view" value="1" initial-checked="--self._view" xhtml_id="gen_view"/> <label for="gen_view">Instance Data View Mappings</label>
 	      </td>
 	  </tr>
 	  <tr>
