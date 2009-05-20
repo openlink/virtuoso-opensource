@@ -6803,7 +6803,7 @@ create procedure RDF_LOAD_LOD2(in data any, in api_key varchar, in opts any, in 
 			post := sprintf('<?xml version="1.0"?>
 				<query xmlns="http://openlinksw.com/services/facets/1.0" inference="" same-as="">
 				<text>%s</text>
-				<view type="text" limit="20" offset=""/>
+				<view type="text" limit="10" offset=""/>
 				</query>', keywords);
 			tmp := http_client (url=>'http://lod.openlinksw.com/fct/service',
 				http_method=>'POST',
