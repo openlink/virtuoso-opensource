@@ -1508,6 +1508,8 @@ stat_desc_t dbf_descs [] =
     {"cl_max_keep_alives_missed", &cl_max_keep_alives_missed, SD_INT32},
     {"cl_non_logged_write_mode", &cl_non_logged_write_mode},
     {"cl_dead_w_interval", &cl_dead_w_interval, SD_INT32},
+    {"timeout_resolution_sec", &atomic_timeout.to_sec, SD_INT32},
+    {"timeout_resolution_usec", &atomic_timeout.to_usec, SD_INT32},
     {NULL, NULL, NULL}
   };
 

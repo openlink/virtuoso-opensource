@@ -4764,7 +4764,6 @@ sparp_dig_and_glue_loj_filter_for_eq (sparp_t *sparp, sparp_equiv_t *eq)
       sparp_gp_detach_filter (sparp, gp, filter_ctr, NULL);
       sparp_gp_attach_filter (sparp, good_recv_gp, filt, BOX_ELEMENTS_0 (good_recv_gp->_.gp.filters) - good_recv_gp->_.gp.glued_filters_count, NULL);
       good_recv_gp->_.gp.glued_filters_count += 1;
-      return 1;
     }
   return 0;
 }

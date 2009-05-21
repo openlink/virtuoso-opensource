@@ -769,6 +769,7 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
           }
         place_qm = ((SSG_SD_QUAD_MAP & ssg->ssg_sd_flags) &&
           (1 == BOX_ELEMENTS_0 (tree->_.triple.tc_list)) &&
+          (NULL != ssg->ssg_sparp->sparp_storage) &&
           (0 != (BOX_ELEMENTS_0 (ssg->ssg_sparp->sparp_storage->qsUserMaps) +
               BOX_ELEMENTS_0 (ssg->ssg_sparp->sparp_storage->qsMjvMaps) ) ) );
         if (ssg->ssg_sd_forgotten_dot)

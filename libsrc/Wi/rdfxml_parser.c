@@ -359,7 +359,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
         }
     }
   n_attrs = attrdata->local_attrs_count;
-  /* we do one loop first to see if there a xml:base, then rest */
+  /* we do one loop first to see if there are xml:base, xml:lang or xml:space then rest */
   for (inx = 0; inx < n_attrs; inx ++)
     {
       char *raw_aname = attrdata->local_attrs[inx].ta_raw_name.lm_memblock;
@@ -472,17 +472,24 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
                   return;
                 }
             }
+	  else if (!strcmp (tmp_local, "type"))
+	    {
+              goto push_inner_attr_prop; /* see below */
+	    }
 	  else if (!strcmp (tmp_local, "value"))
 	    {
 #ifdef RECOVER_RDF_VALUE
 	      rdf_val = avalue;
 #else
-              goto push_inner_attr_prop;
+              goto push_inner_attr_prop; /* see below */
 #endif
 	    }
           else
+            {
             xmlparser_logprintf (xp->xp_parser, XCFG_WARNING, 200,
               "Unsupported 'rdf:...' attribute" );
+                goto push_inner_attr_prop; /* see below */
+            }
           continue;
         }
       else if (!stricmp (tmp_nsuri, "xml"))

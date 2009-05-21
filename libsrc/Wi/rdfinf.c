@@ -994,9 +994,21 @@ char * cl_rdf_init_proc =
 
 char * cl_rdf_init_srv =
 "create procedure CL_RDF_INF_INIT_SRV ()\n"
-" {declare c int;\n"
-" set isolation = 'committed';  rdf_init_thread (1); rdf_sas_iri (); rdf_inf_const_init (); select  count (*) into c from sys_rdf_schema where 0 = rdfs_load_schema (rs_name, rs_uri);\n"
-"  JSO_LOAD_AND_PIN_SYS_GRAPH_RO  (); commit work; rdf_init_thread (0); }";
+" { \n"
+"   declare c int;\n"
+"   set isolation = 'committed'; \n"
+"   rdf_init_thread (1); \n"
+"   rdf_sas_iri (); \n"
+"   DB.DBA.II_I_LOOK (null, 0); \n"
+"   DB.DBA.II_P_LOOK ('unknown prefix', null, 0); \n"
+"   DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (null); \n"
+"   DB.DBA.RDF_QNAME_OF_IID (null); \n"
+"   rdf_inf_const_init (); \n"
+"   select  count (*) into c from sys_rdf_schema where 0 = rdfs_load_schema (rs_name, rs_uri); \n"
+"   JSO_LOAD_AND_PIN_SYS_GRAPH_RO  (); \n"
+"   commit work; \n"
+"   rdf_init_thread (0); \n"
+" } \n";
 
 dk_set_t rdf_inf_init_queue;
 user_t * cl_rdf_inf_init_user;

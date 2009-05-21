@@ -3399,7 +3399,9 @@ create function DB.DBA.SPARQL_MODIFY_BY_DICT_CONTENTS (in graph_iri any, in del_
 }
 ;
 
+--#IF VER=5
 --!AFTER
+--#ENDIF
 create function DB.DBA.SPARUL_CLEAR (in graph_iri any, in uid integer, in inside_sponge integer := 0, in compose_report integer := 0) returns any
 {
   commit work;

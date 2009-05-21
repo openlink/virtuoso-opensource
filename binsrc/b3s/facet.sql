@@ -894,7 +894,7 @@ fct_exec (in tree any,
                                xmlelement ("view", xmlattributes (offs as "offset", lim as "limit")),
                                results[0], results[1], results[2]);
 
-  string_to_file ('ret.xml', serialize_to_UTF8_xml (res), -2);
+  --string_to_file ('ret.xml', serialize_to_UTF8_xml (res), -2);
 
 --  dbg_obj_print (res);
   return res;

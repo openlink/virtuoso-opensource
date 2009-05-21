@@ -89,8 +89,9 @@ long busy_pre_image_scrap;
 
 
 
+int32  cp_is_over = 0;
 #ifdef CHECKPOINT_TIMING
-long start_killing = 0, all_trx_killed = 0, cp_is_attomic = 0, cp_is_over = 0;
+long start_killing = 0, all_trx_killed = 0, cp_is_attomic = 0;
 #endif
 
 void
@@ -243,9 +244,7 @@ cpt_over (void)
   END_DO_SET();
   dk_set_free (wi_inst.wi_waiting_checkpoint);
   wi_inst.wi_waiting_checkpoint = NULL;
-#ifdef CHECKPOINT_TIMING
   cp_is_over = get_msec_real_time();
-#endif
 }
 
 

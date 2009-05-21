@@ -893,7 +893,7 @@ void ssg_print_tmpl (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, ccaddr_t tm
       switch (tree_type)
         {
         case SPAR_RETVAL:
-          if (NULL != tree->_.retval.triple)
+          if ((NULL != tree->_.retval.triple) && (SPART_TRIPLE_FIELDS_COUNT > tree->_.retval.tr_idx))
             {
               quad_map_t *qm = tree->_.retval.triple->_.triple.tc_list[0]->tc_qm;
               qm_val = SPARP_FIELD_QMV_OF_QM (qm,tree->_.retval.tr_idx);
@@ -3501,7 +3501,7 @@ ssg_prin_function_name (spar_sqlgen_t *ssg, ccaddr_t name)
       ssg_puts ("DB.DBA.");
       ssg_puts(name); /*not ssg_prin_id (ssg, name);*/
     }
-  else
+  else if ('\0' != name[0])
     {
       ssg_puts ("DB.DBA.");
       ssg_prin_id (ssg, name);
@@ -5356,7 +5356,7 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
 	ssg_valmode_t native = sparp_rettype_of_function (ssg->ssg_sparp, tree->_.funcall.qname);
         if (needed != native)
           {
-            if ((SSG_VALMODE_LONG == needed) && (SSG_VALMODE_SQLVAL == native))
+            if (((SSG_VALMODE_LONG == needed) || (SSG_VALMODE_SHORT_OR_LONG == needed)) && (SSG_VALMODE_SQLVAL == native))
               {
                 ssg_puts (" DB.DBA.RDF_LONG_OF_SQLVAL (");
                 ssg_print_retval_simple_expn (ssg, gp, tree, SSG_VALMODE_SQLVAL, NULL_ASNAME);

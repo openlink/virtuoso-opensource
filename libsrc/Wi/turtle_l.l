@@ -280,8 +280,8 @@ SPAR_NCNAME_X		([A-Za-z0-9_./#%+\x7f-\xfe-]*[A-Za-z0-9_/#%+\x7f-\xfe-])
 
 <INITIAL>['']['']['']		{ yymore(); BEGIN TURTLE_SSSQ; }
 <INITIAL>[""][""][""]		{ yymore(); BEGIN TURTLE_DDDQ; }
-<TURTLE_SSSQ>['']['']['']	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT, '\''); BEGIN INITIAL; return TURTLE_STRING; }
-<TURTLE_DDDQ>[""][""][""]	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT, '\"'); BEGIN INITIAL; return TURTLE_STRING; }
+<TURTLE_SSSQ>[''][''](['']+)	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT, '\''); BEGIN INITIAL; return TURTLE_STRING; }
+<TURTLE_DDDQ>[""][""]([""]+)	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT, '\"'); BEGIN INITIAL; return TURTLE_STRING; }
 <TURTLE_SSSQ>['']['']['']"@"	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT_AT, '\''); BEGIN TURTLE_AT_AFTER_QUOTED; return TURTLE_STRING; }
 <TURTLE_DDDQ>[""][""][""]"@"	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT_AT, '\"'); BEGIN TURTLE_AT_AFTER_QUOTED; return TURTLE_STRING; }
 <TURTLE_SSSQ>(([''](['']?))?{S_NL})		{ ttlp_arg[0].ttlp_lexlineno++; yymore(); }
