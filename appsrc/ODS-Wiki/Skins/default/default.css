@@ -969,3 +969,106 @@ td.cpDayColumnHeader
 {
  color: #808080;
 }
+
+
+
+
+.advanced-search {
+    margin: 0px;
+  padding: 10px;
+ background-color: white;
+  padding-left: 50px;
+  padding-bottom: 60px;
+  min-width: 1000px;
+  position: relative;
+  top: -60px;
+}
+#search_type {
+    margin: 10px;
+}
+.search_head {
+  float: left;
+  display: block;
+  width: 150px;
+  text-align: right;
+  margin-right: 10px;
+  font-size: 0.9em;
+  font-weight: bold;
+  padding-top: 5px;
+}
+.search_text {
+    float: left;
+}
+#search_options {
+    float: left;
+    border-left: 1px solid silver;
+    margin-left: 10px;
+    padding-left: 10px;
+    display: none;
+}
+#search_clusters {
+    margin: 10px;
+}
+#search_category {
+    margin: 10px;
+}
+#search_tags {
+    margin: 10px;
+}
+#search_timespan {
+    margin: 10px;
+}
+#search_sort {
+    margin: 10px;
+    padding-top: 20px;
+    clear: left;
+}
+#search_max {
+    margin: 10px;
+}
+#search_buttons, #search_navbuttons {
+    clear: left;
+    text-align: center;
+    padding: 10px;
+    width: 500px
+}
+
+.search-result-in-format {
+  width: 300px;
+  float: right;
+  margin-right: 100px;
+}
+   
+#search_results {
+    margin-right: 500px;
+    min-width: 600px;
+    clear: both;
+}
+
+.search_result {
+  margin-bottom: 20px;
+}
+
+.search_result_exp {
+    float: left;
+    margin: 3px;
+    margin-left: 30px;
+}
+
+.search_author {
+    clear: left;
+    float: left;
+    margin-right: 50px;
+    font-size: 0.95em;
+}
+
+.search_lastchange {
+    clear: left;
+    float: left;
+    margin-right: 50px;
+    font-size: 0.95em;
+}
+
+.search_bottom {
+    clear: left;
+}
