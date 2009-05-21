@@ -1369,10 +1369,16 @@ whenever not found goto nf;
   select DP_CLUSTER, DP_PATTERN into cluster_id, pattern  from WV.WIKI.DOMAIN_PATTERN_1 where domain = DP_PATTERN and _host like DP_HOST;
       default_cluster := (select ClusterName from WV.WIKI.CLUSTERS where ClusterId = cluster_id);
   declare _domain_length int;
+  declare domain_path any;
+
+  domain_path := split_and_decode (domain, 0, '\0\0/');  
   if (domain = '/')
     _domain_length := 1;
   else
-    _domain_length := length (split_and_decode (domain, 0, '\0\0/'));
+    _domain_length := length (domain_path);
+  if (domain_path [_domain_length - 1] = default_cluster)   
+    path := subseq (path, _domain_length - 1);
+  else  
   path := subseq (path, _domain_length);
   if (domain = '/')
     _base_adjust := '/';

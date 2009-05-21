@@ -2585,7 +2585,8 @@ is_this_timed_out (void *key, future_t * future)	/* MAALIS mty */
 void
 timeout_round (TAKE_G dk_session_t * ses)
 {
-  static timeout_t last_time;
+  static int32 last_time_msec;
+  int32 atomic_msec;
   ss_dprintf_2 (("Timeout round."));
 #ifdef NO_THREAD
   if (NULL == ses)				 /* if single thread session must be passed */
@@ -2593,9 +2594,12 @@ timeout_round (TAKE_G dk_session_t * ses)
 #endif
   get_real_time (&time_now);
   time_now_msec = time_now.to_sec * 1000 + time_now.to_usec / 1000;
-  if (time_now.to_sec - last_time.to_sec < atomic_timeout.to_sec)
+  atomic_msec = atomic_timeout.to_sec * 1000 + (atomic_timeout.to_usec / 1000);
+  if (atomic_msec < 100)
+    atomic_msec = 100;
+  if (time_now_msec - last_time_msec < atomic_msec)
     return;
-  last_time = time_now;
+  last_time_msec = time_now_msec;
 
   if (background_action)
     {

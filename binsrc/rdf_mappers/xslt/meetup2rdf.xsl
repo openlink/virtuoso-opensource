@@ -108,17 +108,23 @@
 					<dc:description>
 						<xsl:value-of select="comment"/>
 					</dc:description>
+					<xsl:if test="string-length(state) &gt; 0">
 					<vcard:Region rdf:resource="{vi:dbpIRI ('', translate (state, $lc, $uc))}"/>
 					<vcard:Region>
 						<xsl:value-of select="state" />
 					</vcard:Region>
+					</xsl:if>
+					<xsl:if test="string-length(zip) &gt; 0">
 					<vcard:Pcode>
 						<xsl:value-of select="zip" />
 					</vcard:Pcode>
+					</xsl:if>
+					<xsl:if test="string-length(country) &gt; 0">
 					<vcard:Country rdf:resource="{vi:dbpIRI ('', translate (country, $lc, $uc))}"/>
 					<vcard:Country>
 						<xsl:value-of select="country" />
 					</vcard:Country>
+					</xsl:if>
 				</rdf:Description>
 			</xsl:if>
 			<xsl:if test="$what = 'events' or $what = 'event'">
@@ -176,21 +182,27 @@
 							<dc:description>
 								<xsl:value-of select="description" />
 							</dc:description>
+							<xsl:if test="string-length(state) &gt; 0">
 							<vcard:Region>
 								<xsl:value-of select="state" />
 							</vcard:Region>
 							<vcard:Region rdf:resource="{vi:dbpIRI ('', translate (state, $lc, $uc))}"/>
+							</xsl:if>
+							<xsl:if test="string-length(zip) &gt; 0">
 							<vcard:Pcode>
 								<xsl:value-of select="zip" />
 							</vcard:Pcode>
+							</xsl:if>
 							<opl-meetup:id>
 								<xsl:value-of select="id" />
 							</opl-meetup:id>
 							<foaf:homepage rdf:resource="{link}" />
+							<xsl:if test="string-length(country) &gt; 0">
 							<vcard:Country>
 								<xsl:value-of select="country" />
 							</vcard:Country>
 							<vcard:Country rdf:resource="{vi:dbpIRI ('', translate (country, $lc, $uc))}"/>
+							</xsl:if>
 							<xsl:if test="photo_url != ''">
 								<foaf:depiction rdf:resource="{photo_url}" />
 							</xsl:if>
@@ -200,10 +212,12 @@
 							<opl-meetup:members>
 								<xsl:value-of select="members" />
 							</opl-meetup:members>
+							<xsl:if test="string-length(city) &gt; 0">
 							<vcard:Locality>
 								<xsl:value-of select="city" />
 							</vcard:Locality>
 							<vcard:Locality rdf:resource="{vi:dbpIRI ('', translate (city, ' ', '_'))}"/>
+							</xsl:if>	
 							<dcterms:modified rdf:datatype="&xsd;dateTime">
 								<xsl:value-of select="updated"/>
 							</dcterms:modified>
@@ -238,31 +252,39 @@
 							<dc:description>
 								<xsl:value-of select="bio" />
 							</dc:description>
+							<xsl:if test="string-length(state) &gt; 0">
 							<vcard:Region>
 								<xsl:value-of select="state" />
 							</vcard:Region>
 							<vcard:Region rdf:resource="{vi:dbpIRI ('', translate (state, $lc, $uc))}"/>
+							</xsl:if>
+							<xsl:if test="string-length(zip) &gt; 0">
 							<vcard:Pcode>
 								<xsl:value-of select="zip" />
 							</vcard:Pcode>
+							</xsl:if>
 							<opl-meetup:id>
 								<xsl:value-of select="id" />
 							</opl-meetup:id>
 							<foaf:homepage rdf:resource="{link}" />
+							<xsl:if test="string-length(country) &gt; 0">
 							<vcard:Country>
 								<xsl:value-of select="country" />
 							</vcard:Country>
 							<vcard:Country rdf:resource="{vi:dbpIRI ('', translate (country, $lc, $uc))}"/>
+							</xsl:if>
 							<xsl:if test="photo_url != ''">
 								<foaf:depiction rdf:resource="{photo_url}" />
 							</xsl:if>
 							<dcterms:created rdf:datatype="&xsd;dateTime">
 								<xsl:value-of select="joined"/>
 							</dcterms:created>
+							<xsl:if test="string-length(city) &gt; 0">
 							<vcard:Locality rdf:resource="{vi:dbpIRI ('', translate (city, ' ', '_'))}"/>
 							<vcard:Locality>
 								<xsl:value-of select="city" />
 							</vcard:Locality>
+							</xsl:if>
 							<dcterms:modified rdf:datatype="&xsd;dateTime">
 								<xsl:value-of select="visited"/>
 							</dcterms:modified>

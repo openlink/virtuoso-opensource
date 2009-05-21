@@ -194,7 +194,7 @@
 					  if (0 = FOAF_CHECK_WEBID (self.webid.ufl_value))
                                             {
 					      self.vc_is_valid := 0;
-                                              self.vc_error_message := 'The WebID is inaccessible or do not contains certificate properties';
+                                              self.vc_error_message := 'The WebID is inaccessible or does not contain certificate properties';
 					      return;
 					    }
 					  if (self.edit_oauth is null)
