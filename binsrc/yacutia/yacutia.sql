@@ -317,6 +317,8 @@ create procedure adm_menu_tree ()
    <node name="RDF Schema Objects" url="db_rdf_view_1.vspx"  id="273" place="1"/>
    <node name="RDF Schema Objects" url="db_rdf_view_2.vspx"  id="273" place="1"/>
    <node name="RDF Schema Objects" url="db_rdf_view_3.vspx"  id="273" place="1"/>
+   <node name="RDF Schema Objects" url="db_rdf_view_tb.vspx"  id="273" place="1"/>
+   <node name="RDF Schema Objects" url="db_rdf_view_cols.vspx"  id="273" place="1"/>
  </node>
  <node name="Replication"  url="db_repl_basic.vspx" id="80" tip="Replications" allowed="yacutia_repl">
    <node name="Basic" url="db_repl_basic.vspx"  id="8001" >

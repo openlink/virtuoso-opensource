@@ -363,6 +363,7 @@
 
   <v:method name="nCalcDate" arglist="in N integer">
     <![CDATA[
+      -- dbg_obj_print ('self.cnMonth', self.cnMonth, N, self.cnDays);
       if (self.cnDays [N] > 0)
         return cast (dateadd ('day', self.cnDays [N] - 1, self.cnMonth) as date);
       if ((self.cnDays [N] < 0) and (N < 24))
@@ -940,8 +941,8 @@
       <v:variable persist="0" name="e_order" type="varchar" default="'E_EVENT_START'" />
       <v:variable persist="0" name="e_direction" type="varchar" default="'asc'" />
 
-      <v:variable persist="0" name="t_order" type="varchar" default="'E_EVENT_START'" />
-      <v:variable persist="0" name="t_direction" type="varchar" default="'asc'" />
+      <v:variable persist="0" name="ts_order" type="varchar" default="'E_EVENT_START'" />
+      <v:variable persist="0" name="ts_direction" type="varchar" default="'asc'" />
 
       <v:variable persist="0" name="s_order" type="varchar" default="'E_EVENT_START'" />
       <v:variable persist="0" name="s_direction" type="varchar" default="'asc'" />
@@ -1885,8 +1886,8 @@
                             if (self.tv_status <> 'All')
                               control.ds_sql := control.ds_sql || sprintf (' and a.E_STATUS = ''%s''', self.tv_status);
 
-                            self.sortChange (get_keyword ('t_sortColumn', e.ve_params), 't_order', 't_direction', self.ds);
-                            control.ds_sql := sprintf ('%s order by %s %s', control.ds_sql, self.t_order, self.t_direction);
+                            self.sortChange (get_keyword ('t_sortColumn', e.ve_params), 'ts_order', 'ts_direction', self.ds);
+                            control.ds_sql := sprintf ('%s order by %s %s', control.ds_sql, self.ts_order, self.ts_direction);
                           }
                           else if (self.cScope = 'search')
                           {
@@ -1964,15 +1965,15 @@
                               </vm:if>
                               <vm:if test="self.cScope = 'tasks'">
                                 <th nowrap="nowrap">
-                                  <?vsp self.sortColumn ('Name', 'E_SUBJECT', 't_sortColumn', self.t_order, self.t_direction); ?>
+                                  <?vsp self.sortColumn ('Name', 'E_SUBJECT', 't_sortColumn', self.ts_order, self.ts_direction); ?>
                                 </th>
-                                <?vsp self.columnHeaderShow ('task_E_START',     0, 1, 'Start',     '5%', 'E_EVENT_START', 't_sortColumn', self.t_order, self.t_direction); ?>
-                                <?vsp self.columnHeaderShow ('task_E_END',       1, 1, 'Due',       '5%', 'E_EVENT_END',   't_sortColumn', self.t_order, self.t_direction); ?>
-                                <?vsp self.columnHeaderShow ('task_E_COMPLETED', 0, 1, 'Completed', '1%', 'E_COMPLETED',   't_sortColumn', self.t_order, self.t_direction); ?>
-                                <?vsp self.columnHeaderShow ('task_E_STATUS',    1, 1, 'Status',    '3%', 'E_STATUS',      't_sortColumn', self.t_order, self.t_direction); ?>
-                                <?vsp self.columnHeaderShow ('task_E_PRIORITY',  1, 1, 'Priority',  '1%', 'E_PRIORITY',    't_sortColumn', self.t_order, self.t_direction); ?>
-                                <?vsp self.columnHeaderShow ('task_E_UPDATED',   0, 1, 'Updated',   '1%', 'E_UPDATED',     't_sortColumn', self.t_order, self.t_direction); ?>
-                                <?vsp self.columnHeaderShow ('task_E_CREATED',   0, 1, 'Created',   '1%', 'E_CREATED',     't_sortColumn', self.t_order, self.t_direction); ?>
+                                <?vsp self.columnHeaderShow ('task_E_START',     0, 1, 'Start',     '5%', 'E_EVENT_START', 't_sortColumn', self.ts_order, self.ts_direction); ?>
+                                <?vsp self.columnHeaderShow ('task_E_END',       1, 1, 'Due',       '5%', 'E_EVENT_END',   't_sortColumn', self.ts_order, self.ts_direction); ?>
+                                <?vsp self.columnHeaderShow ('task_E_COMPLETED', 0, 1, 'Completed', '1%', 'E_COMPLETED',   't_sortColumn', self.ts_order, self.ts_direction); ?>
+                                <?vsp self.columnHeaderShow ('task_E_STATUS',    1, 1, 'Status',    '3%', 'E_STATUS',      't_sortColumn', self.ts_order, self.ts_direction); ?>
+                                <?vsp self.columnHeaderShow ('task_E_PRIORITY',  1, 1, 'Priority',  '1%', 'E_PRIORITY',    't_sortColumn', self.ts_order, self.ts_direction); ?>
+                                <?vsp self.columnHeaderShow ('task_E_UPDATED',   0, 1, 'Updated',   '1%', 'E_UPDATED',     't_sortColumn', self.ts_order, self.ts_direction); ?>
+                                <?vsp self.columnHeaderShow ('task_E_CREATED',   0, 1, 'Created',   '1%', 'E_CREATED',     't_sortColumn', self.ts_order, self.ts_direction); ?>
                               </vm:if>
                               <vm:if test="self.cScope = 'search'">
                                 <th nowrap="nowrap" width="1%">

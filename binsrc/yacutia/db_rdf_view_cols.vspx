@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="db_rdf_class" decor="yacutia_decor.vspx" style="yacutia_style.xsl"
+        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <vm:pagetitle>RDF View definition</vm:pagetitle>
+  <vm:pagewrapper>
+  <vm:variables>
+    <v:variable name="is_popup" persist="0" type="integer" default="0" />
+  </vm:variables>
+  <vm:menu>
+  </vm:menu>
+  <vm:variables>
+      <v:variable persist="0" name="objects" type="any" default="null" param-name="list"/>
+      <v:variable persist="0" name="base" type="any" default="null" param-name="host"/>
+      <v:variable persist="0" name="cols1" type="any" default="null" param-name="cols"/>
+      <v:variable persist="0" name="tbls" type="any" default="null"/>
+      <v:variable persist="0" name="cols" type="any" default="null"/>
+      <v:variable persist="0" name="tbl" type="any" default="null" param-name="tb"/>
+  </vm:variables>
+
+  <vm:header caption="RDF View definition"/>
+  <vm:pagebody>
+      <v:on-init><![CDATA[
+	  declare pos int;
+	  declare cols, all_cols any;
+	  if (self.tbls is null)
+	    {
+	      self.tbls := deserialize (decode_base64 (self.objects));
+	    }
+	  if (self.cols is null)
+	    {
+	      self.cols := deserialize (decode_base64 (self.cols1));
+              if (length (self.cols) <> length (self.tbls))
+	        self.cols := make_array (length (self.tbls), 'any');
+	    } 
+	  pos := position (self.tbl, self.tbls);
+	  cols := self.cols [pos - 1];
+	  if (not isarray (cols))
+	    {
+	      cols := make_array ((select count(*) from SYS_COLS where "TABLE" = self.tbl), 'any');
+	      all_cols := self.cols;
+	      all_cols [pos - 1] := cols;
+	      self.cols := all_cols;
+	    }	  
+	  ]]></v:on-init>
+      <script type="text/javascript"><![CDATA[
+	  function hideshow (t,m)
+	  {
+	    if (t.value != 2)
+	      OAT.Dom.hide ($(m));
+            else 
+	      OAT.Dom.show ($(m));
+	  }
+	  ]]></script>	  
+      <h2>Select Columns for "<?V self.tbl ?>"</h2>
+      <table>
+      <v:form name="account_form" type="simple" method="POST" action="">
+	  <tr>
+	      <td>
+		  <table class="listing">
+		      <colgroup/><colgroup/>
+		      <thead>
+			  <tr class="listing_row_odd">
+			      <th>Column Name</th>
+			      <th>Binding/MIME Type</th>
+			  </tr>
+		      </thead>
+		      <?vsp 
+		      declare i int;
+		      declare pos int;
+		      declare cols any;
+		      pos := position (self.tbl, self.tbls);
+		      cols := self.cols [pos - 1];
+		      for select "COLUMN" as col, COL_ID from SYS_COLS where "TABLE" = self.tbl order by COL_ID do
+		        {
+		      ?>
+		      <tr class="<?V case when mod (i, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+			  <td><?V col ?></td>
+			  <td>
+			      <select name="sel_<?V COL_ID ?>" id="sel_<?V COL_ID ?>" onclick="javascript:hideshow(this, 'mime_<?V COL_ID ?>')">
+				  <option value="0">literal</option>
+				  <option value="1">skip</option>
+				  <option value="2">binary object</option>
+			      </select>
+			      <input type="text" value="application/octet-stream" name="mime_<?V COL_ID ?>" id="mime_<?V COL_ID ?>" style="display:none;"/>
+			  </td>
+		      </tr>
+		      <?vsp
+		          i := i + 1;
+		        }
+		      ?>
+		  </table>
+	      </td>
+	  </tr>
+	  <tr>
+	      <td>
+		  <v:button action="simple" name="cncl" value="Cancel">
+		      <v:on-post><![CDATA[
+			  self.vc_redirect (sprintf ('db_rdf_view_tb.vspx?list=%U&host=%U&cols=%U', 
+			  		self.objects, self.base, self.cols1
+					));
+			  ]]></v:on-post>
+		  </v:button>
+		  <v:button action="simple" name="exec" value="Save">
+		      <v:on-post><![CDATA[
+			  declare i int;
+			  declare pos int;
+			  declare cols, all_cols any;
+			  declare x int;
+			  -- check if at least one is selected
+			  if (0)
+			    {
+                              self.vc_error_message := 'Must select at least one column';
+			      self.vc_is_valid := 0;
+			      return;
+			    }
+			  pos := position (self.tbl, self.tbls);
+			  cols := self.cols [pos - 1];
+			  for select "COLUMN" as col, COL_ID from SYS_COLS where "TABLE" = self.tbl order by COL_ID do
+			    {
+			      x := atoi (get_keyword (sprintf ('sel_%d', COL_ID), e.ve_params, '0'));
+			      if (x = 2)
+			        {
+			          x := get_keyword (sprintf ('mime_%d', COL_ID), e.ve_params);
+				  if (length (x) = 0) x := 'application/octet-stream';
+				}  
+			       	
+			      cols[i] := x;
+			      i := i + 1;
+			    }
+			  all_cols := self.cols;
+			  all_cols [pos - 1] := cols;
+			  self.vc_redirect (sprintf ('db_rdf_view_tb.vspx?list=%U&host=%U&cols=%U', 
+			  		self.objects, self.base, encode_base64 (serialize (all_cols))
+					));
+			  ]]></v:on-post>
+		  </v:button>
+	      </td>
+	  </tr>
+   </v:form>
+
+        <v:template type="simple" name="sc_1" enabled="0">
+          <tr>
+	    <td>
+	      <img class="dialog_icon" src="images/icons/about_32.png" alt="Info" title="Info"/> The RDF View definition exported successfully.
+	    </td>
+          </tr>
+        </v:template>
+      </table>
+  </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

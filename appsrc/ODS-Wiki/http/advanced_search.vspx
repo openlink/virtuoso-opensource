@@ -432,12 +432,13 @@ endf:
 	self.ds.vc_enabled := 1;
 	self.ds.vc_data_bind (e);
 	self.ds.vc_enabled := 1;
-	if (self.ds_len = 0)
-	  self.result_str := 'Nothing has been found';
-	else
-	  self.result_str := sprintf ('Results (%d)', self.ds_len);
+				if (self.ds_len = 0) {
+	  			self.result_str := sprintf('Nothing has been found containing: <strong>"%V"</strong>.', self.expr.ufl_value);
+				} else {
+	  			self.result_str := sprintf ('There are (%d) items found containing: <strong>"%V"</strong>.', self.ds_len, self.expr.ufl_value);
+				}
 	self.ct1.vc_data_bind (e);
-	self.report_name.vc_data_bind (e);
+        -- self.report_name.vc_data_bind (e);
 	self.button_prev.vc_data_bind (e);
 	self.button_next.vc_data_bind (e);
 	
@@ -465,134 +466,158 @@ endf:
 					<v:form type="simple" method="POST" action="advanced_search.vspx">
 						<div class="advanced-search">
 							<v:template name="sboxt" type="simple">
-								<h1>Search Expression</h1>
+							
+								<h2>Search Query Details</h2>
+
 								<div class="error">
 									<v:error-summary/>
 								</div>
-								<table class="formdata">
-									<tr>
-										<td colspan="2">
-											<v:textarea name="expr" value="" xhtml_rows="2" xhtml_cols="70" error-glyph="*">
-													<v:before-render>
-            control.ufl_value := charset_recode (control.ufl_value, 'UTF-8', '_WIDE_');
-          </v:before-render>
-											</v:textarea>
-										</td>
-									</tr>
-									<tr>
-                    <td nowrap="nowarap">
-                      <v:radio-button name="stype_0" xhtml_id="stype_0" group-name="stype" value="0" auto-submit="1">
+
+		<div id="search_type">
+			<span class="search_head">Search method: </span>
+		
+						<span id="search_type_ft">
+                      <v:radio-button name="stype_0" xhtml_id="stype_0" group-name="stype" value="0" auto-submit="0">
                         <v:before-render>
                           <![CDATA[
                             control.ufl_selected := equ (self.stype, 0);
                           ]]>
                         </v:before-render>
 			                </v:radio-button>
-                      <xsl:call-template name="nbsp" />
-                      <b><label for="stype_0">Free-text Search</label></b>
-                    </td>
-                    <td nowrap="nowarap">
-                      <v:radio-button name="stype_1" xhtml_id="stype_1" group-name="stype" value="2" auto-submit="1">
+											<label for="stype_0">Free-text Search</label>
+						</span>
+						
+						<span id="search_type_topic">
+                      <v:radio-button name="stype_1" xhtml_id="stype_1" group-name="stype" value="2" auto-submit="0">
                         <v:before-render>
                           <![CDATA[
                             control.ufl_selected := gt (self.stype, 0);
                           ]]>
                         </v:before-render>
                       </v:radio-button>
-                      <xsl:call-template name="nbsp" />
-                      <b><label for="stype_1">Topic Search</label></b>
-                    </td>
-            	</tr>
-            	<?vsp if (self.stype = 0)
+                      <label for="stype_1">Topic Search</label>
+            </span>
+		</div>
+
+		<div class="search_text">
+			<h3>Search Text</h3>
+											<v:textarea name="expr" value="" xhtml_rows="2" xhtml_cols="50" error-glyph="*">
+													<v:before-render>
+            control.ufl_value := charset_recode (control.ufl_value, 'UTF-8', '_WIDE_');
+          </v:before-render>
+											</v:textarea>
+		</div>
+
+		<div id="search_options">
+		
+            	<?vsp if (1=1 or self.stype = 0)
             	  {
             	?>
-                <tr>
-										<th>Clusters:</th>
-										<td>
-											<v:data-list name="cluster_1" xhtml_id="cluster" value="--self.s_cluster" list-document="--self.clusters" list-match="/clusters/cluster" list-key-path="." list-value-path="."/>
-										</td>
-									</tr>
-									<tr>
-										<th>Category has word(s)</th>
-										<td>
-											<v:text name="catw" value="" xhtml_size="20" xhtml_class="textbox" xhtml_disabled="@@hidden@@"/>
-										</td>
-									</tr>
-									<tr>
-										<th>With tags</th>
-										<td>
-											<v:text name="tagw" value="" xhtml_size="20" xhtml_class="textbox" xhtml_disabled="@@hidden@@"/>
-										</td>
-									</tr>
 
-              <tr>
-                <th>Updated:</th>
-              </tr>
-									<tr>
-                <th>
-                  <v:label for="t_sinceDate" value="&nbsp;&nbsp;&nbsp;&nbsp;From: " />
-                </th>
-										<td>
+			<h3>Free-text Search Options</h3>
+		
+			<div id="search_clusters" title="Choose the Wiki clusters (primary topic domains) to search">
+				<span class="search_head">Clusters:</span>
+											<v:data-list name="cluster_1" xhtml_id="cluster" value="--self.s_cluster" list-document="--self.clusters" list-match="/clusters/cluster" list-key-path="." list-value-path="."/>
+			</div>
+		
+			<div id="search_category" title="Documents must be part of a category with the following words">
+				<span class="search_head">Category key-words: </span>
+											<v:text name="catw" value="" xhtml_size="20" xhtml_class="textbox" xhtml_disabled="@@hidden@@"/>
+			</div>
+		
+			<div id="search_tags" title="Documents must have the following tags">
+				<span class="search_head">Tag key-words: </span>
+											<v:text name="tagw" value="" xhtml_size="20" xhtml_class="textbox" xhtml_disabled="@@hidden@@"/>
+			</div>
+
+			<div id="search_timespan" title="Documents must have been updated between the dates supplied">
+				<span class="search_head">Updated between: </span>
+					<span id="search_from">
+	                  <v:label for="t_sinceDate" value="From: " />
                   <v:text name="t_sinceDate" xhtml_id="t_sinceDate" xhtml_onclick="cPopup.select(\$(\'t_sinceDate\'), \'t_sinceDate_select\', \'yyyy-MM-dd\')" xhtml_size="12" />
                   <a href="#" name="t_sinceDate_select" id="t_sinceDate_select" onclick="cPopup.select($('t_sinceDate'), 't_sinceDate_select', 'yyyy-MM-dd'); return false;" class="noapp">
                     <img border="0" title="pick" alt="pick" src="images/pick_calendar.gif" />
                   </a>
-        </td>
-									</tr>
-									<tr>
-                <th>
-                  <v:label for="t_beforeDate" value="&nbsp;&nbsp;&nbsp;&nbsp;To: " />
-                </th>
-										<td>
+	        </span>
+	        <span id="search_until">
+	                  <v:label for="t_beforeDate" value="To: " />
                   <v:text name="t_beforeDate" xhtml_id="t_beforeDate" xhtml_onclick="cPopup.select(\$(\'t_beforeDate\'), \'t_beforeDate_select\', \'yyyy-MM-dd\')" xhtml_size="12" />
                   <a href="#" name="t_beforeDate_select" id="t_beforeDate_select" onclick="cPopup.select($('t_beforeDate'), 't_beforeDate_select', 'yyyy-MM-dd'); return false;" class="noapp">
                     <img border="0" title="pick" alt="pick" src="images/pick_calendar.gif" />
                   </a>
-        </td>
-									</tr>
-									<tr>
-										<th>Sort by:</th>
-										<td>
-											<v:data-list name="sortby" xhtml_id="sortby" value="--self.sort_by" list-document="--XMLELEMENT('sortby', XMLELEMENT ('type', 'More Relevant First'), XMLELEMENT ('type', 'More Recent First'))" list-match="/sortby/type" list-key-path="." list-value-path="."/>
-										</td>
-									</tr>
+	        </span>
+			</div>
+
             	<?vsp
             	  }
             	?>
+		</div>
+            	
+
+		<div id="search_sort" title="Sort my results by">
+			<span class="search_head">Sort by: </span>
+											<v:data-list name="sortby" xhtml_id="sortby" value="--self.sort_by" list-document="--XMLELEMENT('sortby', XMLELEMENT ('type', 'More Relevant First'), XMLELEMENT ('type', 'More Recent First'))" list-match="/sortby/type" list-key-path="." list-value-path="."/>
+		</div>
+
 									<v:template type="simple">
-										<tr>
-											<td colspan="2">
-												<div>Max results
+		<div id="search_max" title="Maximum number of results to be returned per page">
+			<span class="search_head">Max results: </span>
            <v:text name="maxhit" default_value="10" xhtml_size="5" error-glyph="*">
 														<v:validator name="vvnum1" test="regexp" regexp="^[0-9]+$" message="Only digits are allowed for setting &quot;Max results&quot;" runat="client"/>
 														<v:validator name="vvnum2" test="value" min="1" max="100" message="&quot;Max results&quot; value must be less than 100 and greater than 0" runat="client"/>
 													</v:text>
 												</div>
-											</td>
-										</tr>
 									</v:template>
-									<tr>
-										<td colspan="2">
+
+		<div id="search_buttons">
 											<v:button action="simple" name="post" value="Search" xhtml_title="Search" xhtml_alt="Search">
 												<v:on-post><![CDATA[   self.pageno := 1; self.run_search (e);     ]]></v:on-post>
 											</v:button>
 	
 											<vm:back-button/>
-										</td>
-									</tr>
-								</table>
+
+<script type="text/javascript" language="javascript1.2">
+
+var opt;
+opt = 0;
+
+function to1() {
+	var e = document.getElementById("search_options");
+	if (e == null) {
+		return;
+	}
+	if (opt == 0) {
+		e.style.display = 'block';
+		e.style.visibility = 'visible';
+		opt = 1;
+	} else {
+		e.style.display = 'none';
+		e.style.visibility = 'hidden';
+		opt = 0;
+	}
+}
+
+</script>											
+
+											<input type="button" onClick="to1();" name="toggleOptions" value="Options" />
+		</div>
+
+
               <vm:if test="(self.cAction <> 'view')">
                 <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;">
                 </div>
               </vm:if>
 
 							</v:template>
+							
 							<h2>
 								<v:label name="ct1" value="--self.result_str" format="%s"/>
 							</h2>
+
 							<v:template name="result_in_formats" type="simple" enabled="--length(self.ds_data)">
 								<div class="search-result-in-format">
-							  in formats:
+							  search result formats:
 							    <a href="<?V 'advanced_search.vspx?' || self.upar || '&output=atom' ?>">
                            <img border="0" alt="ATOM" title="ATOM" src="images/atom-icon-16.gif"/>
 							      </a>
@@ -604,46 +629,53 @@ endf:
 							      </a>
 									</div>
 							</v:template>
+
+							  <div id="search_results">
+
 							<v:data-set name="ds" data="--self.ds_data" meta="--self.ds_meta" nrows="100" scrollable="1" instantiate="-- case when self.ds_len > 0 then 1 else 0 end">
-              <div class="report">Search result for
-                <span>
-										<v:label name="report_name" value="--self.expr.ufl_value"/>
-									</span>
-								</div>
-              <table id="content" class="search-result">
-                <!--tr>
-										<th align="left" width="20%">Name</th>
-										<th align="left" width="10%">Size</th>
-										<th align="left" width="10%">Owner</th>
-										<th align="left" width="10%">Date</th>
-                </tr-->
+
 									<v:template name="tmpl1" type="repeat">
 										<v:template name="tmpl7" type="if-not-exists">
 											<div class="message">No matches found</div>
 										</v:template>
+
 										<v:template name="tmp18" type="browse">
-											<tr class="search-first-col">
-												<td>
-			  <span>
+											<div class="search_result">
+											  <span class="search_link">
                                       <?vsp
-                                        http (sprintf ('<a href="%s%s">%s</a>', WV.WIKI.READONLYWIKIIRI (subseq (control.te_rowset[5], 0, strstr(control.te_rowset[5], '.')), subseq (control.te_rowset[5], strstr(control.te_rowset[5], '.') + 1)),
+													http (sprintf ('<a href="%s%s">%s</a>', 
+														WV.WIKI.READONLYWIKIIRI (subseq (control.te_rowset[5], 0, strstr(control.te_rowset[5], '.')), 
+															subseq (control.te_rowset[5], strstr(control.te_rowset[5], '.') + 1)),
 													 case when (self.sid is not null and self.sid <> '')
 													   then '?sid=' || self.sid || '&realm=' || self.realm
 													   else ''
-                          end, control.te_rowset[5] ));
-			  ?> by <?vsp http (sprintf ('<a href="%s">%V</a>',
-			  	sioc..person_iri (sioc..user_obj_iri (control.te_rowset[2])), control.te_rowset[9])); ?><br />
+                          	end, 
+                          	control.te_rowset[5] ));
+			  								?> 
+			  								</span>
+
+												<span class="search_result_exp">
 													<?vsp http (control.te_rowset[4]); ?>
-			<br/>
-			<small><i>Last change: <?V DB.DBA.wa_abs_date(control.te_rowset[3]) ?></i></small>
 		    </span>
-												</td>
-											</tr>
+			  								
+			  								<span class="search_author">Author: 
+			  								<?vsp http (sprintf ('<a href="%s">%V</a>',
+			  									sioc..person_iri (sioc..user_obj_iri (control.te_rowset[2])), control.te_rowset[9])); ?>
+			  								</span>
+
+												<span class="search_lastchange">
+													Last modified: <?V DB.DBA.wa_abs_date(control.te_rowset[3]) ?>
+		    								</span>
+		    								<div class="search_bottom"><span></span></div>
+											</div>
 										</v:template>
+
 									</v:template>
-								</table>
 							</v:data-set>
+
 						</div>
+
+						<div id="search_navbuttons">
 						<v:template name="button_prev" type="simple" enabled="--case when self.pageno > 1 then 1 else 0 end">
 							<v:button xhtml_class="real_button" action="simple" name="prev" value="Previous" xhtml_title="Previous" html_alt="Previous">
 								<v:on-post><![CDATA[
@@ -660,6 +692,8 @@ endf:
 							  ]]></v:on-post>
 							</v:button>
 						</v:template>
+						</div>
+						</div>
 					</v:form>
 			</vm:body>
   &lt;?vsp<![CDATA[

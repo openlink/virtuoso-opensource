@@ -27,7 +27,7 @@
 				OmitFramePointers="FALSE"
 				OptimizeForProcessor="2"
 				AdditionalIncludeDirectories="..\libsrc\Xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\langfunc;..\libsrc\plugin,."
-				PreprocessorDefinitions="DLDAPI_WINDOWS;_SSL;YYTOKENTYPE;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;NDEBUG;IN_LIBUTIL;_LIBC;_GNU_SOURCE;SUPPORT_UTF8;GLOBALREF=extern;__WITH_LIBDK"
+				PreprocessorDefinitions="DLDAPI_WINDOWS;_SSL;YYTOKENTYPE;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;NDEBUG;IN_LIBUTIL;_LIBC;_GNU_SOURCE;SUPPORT_UTF8;GLOBALREF=extern;__WITH_LIBDK;PCRE_STATIC"
 				MinimalRebuild="FALSE"
 				ExceptionHandling="FALSE"
 				BasicRuntimeChecks="0"
@@ -82,7 +82,7 @@
 				AdditionalOptions="/Zm200 "
 				Optimization="3"
 				AdditionalIncludeDirectories="..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\zlib;..\binsrc\driver;..\libsrc\langfunc;..\libsrc\plugin,."
-				PreprocessorDefinitions="DLDAPI_WINDOWS;_SSL;BIF_XML;_IMSG;VAD;YYTOKENTYPE;WINDOWS;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;_Windows;NDEBUG;IN_LIBUTIL;_LIBC;_GNU_SOURCE;SUPPORT_UTF8;GLOBALREF=extern;__WITH_LIBDK"
+				PreprocessorDefinitions="DLDAPI_WINDOWS;_SSL;BIF_XML;_IMSG;VAD;YYTOKENTYPE;WINDOWS;INPROCESS_CLIENT;_MBCS;WIN32;_Windows;NDEBUG;IN_LIBUTIL;_LIBC;_GNU_SOURCE;SUPPORT_UTF8;GLOBALREF=extern;__WITH_LIBDK;PCRE_STATIC"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
@@ -312,25 +312,55 @@
 			Name="RegExp"
 			Filter="">
 			<File
-				RelativePath="..\libsrc\util\pcrelib\chartables.c">
+				RelativePath="..\libsrc\util\pcrelib\pcre_chartables.c">
 			</File>
 			<File
-				RelativePath="..\libsrc\util\pcrelib\get.c">
+				RelativePath="..\libsrc\util\pcrelib\pcre_compile.c">
 			</File>
 			<File
-				RelativePath="..\libsrc\util\pcrelib\internal.h">
+				RelativePath="..\libsrc\util\pcrelib\pcre_config.c">
 			</File>
 			<File
-				RelativePath="..\libsrc\util\pcrelib\maketables.c">
+				RelativePath="..\libsrc\util\pcrelib\pcre_dfa_exec.c">
 			</File>
 			<File
-				RelativePath="..\libsrc\util\pcrelib\pcre.c">
+				RelativePath="..\libsrc\util\pcrelib\pcre_exec.c">
 			</File>
 			<File
-				RelativePath="..\libsrc\util\pcrelib\pcre.h">
+				RelativePath="..\libsrc\util\pcrelib\pcre_fullinfo.c">
 			</File>
 			<File
-				RelativePath="..\libsrc\util\pcrelib\study.c">
+				RelativePath="..\libsrc\util\pcrelib\pcre_get.c">
+			</File>
+			<File
+				RelativePath="..\libsrc\util\pcrelib\pcre_globals.c">
+			</File>
+			<File
+				RelativePath="..\libsrc\util\pcrelib\pcre_newline.c">
+			</File>
+			<File
+				RelativePath="..\libsrc\util\pcrelib\pcre_ord2utf8.c">
+			</File>
+			<File
+				RelativePath="..\libsrc\util\pcrelib\pcre_study.c">
+			</File>
+			<File
+				RelativePath="..\libsrc\util\pcrelib\pcre_tables.c">
+			</File>
+			<File
+				RelativePath="..\libsrc\util\pcrelib\pcre_try_flipped.c">
+			</File>
+			<File
+				RelativePath="..\libsrc\util\pcrelib\pcre_ucd.c">
+			</File>
+			<File
+				RelativePath="..\libsrc\util\pcrelib\pcre_valid_utf8.c">
+			</File>
+			<File
+				RelativePath="..\libsrc\util\pcrelib\pcre_version.c">
+			</File>
+			<File
+				RelativePath="..\libsrc\util\pcrelib\pcre_xclass.c">
 			</File>
 		</Filter>
 		<Filter
@@ -376,10 +406,10 @@
 				RelativePath="..\libsrc\langfunc\language__ru_RU.c">
 			</File>
 			<File
-				RelativePath="..\libsrc\langfunc\language__x_ViDoc.c">
+				RelativePath="..\libsrc\langfunc\language__x_ViAny.c">
 			</File>
 			<File
-				RelativePath="..\libsrc\langfunc\language__x_ViAny.c">
+				RelativePath="..\libsrc\langfunc\language__x_ViDoc.c">
 			</File>
 			<File
 				RelativePath="..\libsrc\langfunc\unicode3.c">
