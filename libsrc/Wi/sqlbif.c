@@ -7751,6 +7751,7 @@ caddr_t
 bif_one_of_these (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   char *me = "one_of_these";
+  query_instance_t * qi = (query_instance_t *) qst;
   int n_args = BOX_ELEMENTS (args);
   caddr_t item = bif_arg (qst, args, 0, me);
   dtp_t item_dtp = DV_TYPE_OF (item);
@@ -7761,7 +7762,12 @@ bif_one_of_these (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   for (inx = 1; inx < n_args; inx++)
     {
-      value = qst_get (qst, args[inx]);
+      caddr_t values = qst_get (qst, args[inx]);
+      int is_array = DV_ARRAY_OF_POINTER == DV_TYPE_OF (values);
+      int nth, n_values = is_array ? BOX_ELEMENTS (values) : 1;
+      for (nth = 0; nth < n_values; nth++)
+	{
+	  value = is_array ? ((caddr_t*)values)[nth] : values;
       val_dtp = DV_TYPE_OF (value);
       if (IS_WIDE_STRING_DTP (item_dtp) && IS_STRING_DTP (val_dtp))
 	{
@@ -7783,7 +7789,15 @@ bif_one_of_these (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	{
 	  caddr_t tmp_val = box_cast_to (qst, value, val_dtp, item_dtp, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, err_ret);
 	  if (*err_ret)
+		{
+		  if (qi->qi_no_cast_error)
+		    {
+		      dk_free_tree (*err_ret);
+		      *err_ret = NULL;
+		      continue;
+		    }
 	    return NULL;
+		}
 	  else
 	    they_match = boxes_match (item, tmp_val);
 	  dk_free_tree (tmp_val);
@@ -7792,6 +7806,7 @@ bif_one_of_these (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	they_match = boxes_match (item, value);
       if (they_match)
 	return (box_num (inx));
+    }
     }
   return (box_num (0));
 }

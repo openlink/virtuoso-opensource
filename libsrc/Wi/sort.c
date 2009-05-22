@@ -546,7 +546,12 @@ in_iter_input (in_iter_node_t * ii, caddr_t * inst, caddr_t * state)
 	    qst_set (inst, ii->ii_outer_any_passed, NULL);
 	  DO_BOX (state_slot_t *, ssl, inx, ii->ii_values)
 	    {
-	      caddr_t val = qst_get (inst, ssl);
+	      caddr_t vals = qst_get (inst, ssl), val;
+	      int is_array = DV_ARRAY_OF_POINTER == DV_TYPE_OF (vals);
+	      int nth, n_vals = is_array ? BOX_ELEMENTS (vals) : 1;
+	      for (nth = 0; nth < n_vals; nth++)
+		{
+		  val = is_array ? ((caddr_t*)vals)[nth] : vals;
 	      DO_SET (caddr_t, member, &members)
 		{
 		  if (DVC_MATCH == cmp_boxes (val, member, ii->ii_output->ssl_sqt.sqt_collation, ii->ii_output->ssl_sqt.sqt_collation))
@@ -555,6 +560,7 @@ in_iter_input (in_iter_node_t * ii, caddr_t * inst, caddr_t * state)
 	      END_DO_SET();
 	      dk_set_push (&members, (void*) box_copy_tree (val));
 	    next: ;
+	    }
 	    }
 	  END_DO_BOX;
 	  arr = (caddr_t*)list_to_array (dk_set_nreverse (members));
