@@ -156,8 +156,7 @@ create function WV.DBA.ATOM_RTOPIC (
 {
 -- target cluster is prohibited for now
    return local_name;
-    if (rcluster is null
-	or rcluster = '')
+  if (rcluster is null or rcluster = '')
       return default_cluster || '.' || local_name;
     return rcluster || '.' || local_name;
 }
@@ -175,12 +174,13 @@ create procedure WV.DBA.ATOM_ENTRY (
        in _updated datetime,
        in _published datetime,
   in _summary varchar,
-       in _text varchar
-)
+  in _text varchar,
+  in _topic WV.WIKI.TOPICINFO := null)
 {
    declare ss any;
    ss := string_output ();
-   http ('<entry xmlns="http://www.w3.org/2005/Atom">', ss);
+
+  http ('<entry xmlns="http://www.w3.org/2005/Atom" xmlns:wv="http://www.openlinksw.com/Virtuoso/WikiV/">', ss);
    http (sprintf ('<title type="text">%s</title>', _title), ss);
    http (sprintf ('<id>%s</id>', _id ), ss);
    http (sprintf ('<updated>%s</updated>', WV.WIKI.DATEFORMAT (_updated, 'iso8601')), ss);
@@ -189,7 +189,33 @@ create procedure WV.DBA.ATOM_ENTRY (
    http ('<content type="text">', ss);
    http_escape (_text, 1, ss, 1, 1);
    http ('</content>', ss);
-   --http (sprintf ('<content type="text"><![CDATA[%s]]></content>', _text), ss);
+  -- attachments
+  if (not isnull (_topic))
+  {
+    declare _attachment_path varchar;
+    declare _type, _content any;
+    declare _attachments_list any;
+
+    _attachment_path := DB.DBA.DAV_SEARCH_PATH (_topic.ti_col_id, 'C') || _topic.ti_local_name || '/';
+    _attachments_list := DB.DBA.DAV_DIR_LIST (_attachment_path, 0, 'dav', (select pwd_magic_calc (U_NAME, U_PWD, 1) from WS.WS.SYS_DAV_USER where U_ID = http_dav_uid()));
+    if (not isinteger (_attachments_list) and length (_attachments_list))
+    {
+      http ('<wv:attachments>', ss);
+      foreach (any _attachment in _attachments_list) do
+      {
+        DB.DBA.DAV_RES_CONTENT_INT (_attachment[4], _content, _type, 0, 0);
+        http ('<wv:attachment>', ss);
+        http (sprintf ('<wv:name>%s</wv:name>', _attachment[10]), ss);
+        http (sprintf ('<wv:type>%s</wv:type>', _attachment[9]), ss);
+        http (sprintf ('<wv:permissions>%s</wv:permissions>', _attachment[5]), ss);
+        http ('<wv:content encoding="base64"><![CDATA[', ss);
+        http (encode_base64 (cast (_content as varchar)), ss);
+        http (']]></wv:content>', ss);
+        http ('</wv:attachment>', ss);
+      }
+      http ('</wv:attachments>', ss);
+    }
+  }
    http ('</entry>', ss);
    return string_output_string (ss);
 }
@@ -231,16 +257,19 @@ create procedure PROCESS_ATOM_INSERT (in streamid int, inout _topic WV.WIKI.TOPI
 	commit work;
 	return 0;
    };
+
    declare res varchar;
+  declare rc, rcc any;
+
    for select UP_URI, UP_USER, UP_PASSWD, UP_RCLUSTER from UPSTREAM where UP_ID = streamid do
      {
-      declare rc, rcc any;
       res := WV.DBA.ATOM_ENTRY (WV.DBA.ATOM_RTOPIC (UP_RCLUSTER, _topic.ti_cluster_name, _topic.ti_local_name),
                          WV.DBA.ATOM_UUID(),
                          now(),
                          now(),
                          '',
-                         _topic.ti_text);
+                              _topic.ti_text,
+                              _topic);
       http_get (UP_URI, rc, 'POST', HDR_TERM (UP_USER, UP_PASSWD), res);
       commit work;
 
@@ -263,16 +292,17 @@ create procedure PROCESS_ATOM_UPDATE (in streamid int, inout _topic WV.WIKI.TOPI
    };
 
   declare res varchar;
-   for select UP_URI, UP_USER, UP_PASSWD, UP_RCLUSTER from UPSTREAM where UP_ID = streamid do
-     {
       declare rc, rcc any;
 
+  for select UP_URI, UP_USER, UP_PASSWD, UP_RCLUSTER from UPSTREAM where UP_ID = streamid do
+  {
       res := WV.DBA.ATOM_ENTRY (WV.DBA.ATOM_RTOPIC (UP_RCLUSTER, _topic.ti_cluster_name, _topic.ti_local_name),
                          WV.DBA.ATOM_UUID(),
                          now(),
                          now(),
                          '',
-                         _topic.ti_text);
+                              _topic.ti_text,
+                              _topic);
       http_get (UP_URI, rc, 'PUT', HDR_TERM (UP_USER, UP_PASSWD), res);
       commit work;
       rcc := C_RESP (rc);
@@ -294,11 +324,11 @@ create procedure PROCESS_ATOM_DELETE (in streamid int, in clustername varchar, i
    };
 
   declare res varchar;
-   for select UP_URI, UP_USER, UP_PASSWD, UP_RCLUSTER from UPSTREAM where UP_ID = streamid do
-     {
        declare http_res varchar;
       declare rc, rcc any;
 
+  for select UP_URI, UP_USER, UP_PASSWD, UP_RCLUSTER from UPSTREAM where UP_ID = streamid do
+  {
       res := WV.DBA.ATOM_ENTRY (WV.DBA.ATOM_RTOPIC (UP_RCLUSTER, clustername, localname),
                          WV.DBA.ATOM_UUID(),
                          now(),

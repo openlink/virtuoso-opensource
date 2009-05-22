@@ -2450,9 +2450,11 @@ create procedure WV.WIKI.ATTACH2 (in _uid int, in _filename varchar, in _type va
   _topic := WV.WIKI.TOPICINFO ();
   _topic.ti_id := id;
   _topic.ti_find_metadata_by_id ();
+  _topic.ti_register_for_upstream('U');
 
   _attachment_col_id := WV.WIKI.GETATTCOLID (_topic);
-  if (_attachment_col_id < 0) {
+  if (_attachment_col_id < 0)
+  {
     _attachment_col_id := WV.WIKI.CREATEDAVCOLLECTION (_topic.ti_col_id, _topic.ti_local_name, _uid,  WV.WIKI.WIKIUSERGID());
       DB.DBA.DAV_PROP_SET_INT(DB.DBA.DAV_SEARCH_PATH (_attachment_col_id, 'C'),
 			      'oWiki:topic-id', serialize (_topic.ti_id),
@@ -2485,6 +2487,7 @@ create procedure WV.WIKI.ATTACHMENTACTION (
   _topic := WV.WIKI.TOPICINFO ();
   _topic.ti_id := _topic_id;
   _topic.ti_find_metadata_by_id ();
+  _topic.ti_register_for_upstream('U');
 
   declare _attachment_col_id int;
   _attachment_col_id := WV.WIKI.GETATTCOLID (_topic);

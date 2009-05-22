@@ -195,7 +195,7 @@ create procedure WV.WIKI.gdata (
 	 in "start-index" int := 1,
   in "max-results" int := 10) __SOAP_HTTP 'text/xml'
 {
-  declare _topic_id, _unauthorized integer;
+  declare _topic_id, _uid, _unauthorized integer;
   declare _user, _password, _role, _uid varchar;
   declare _http_path, _path, _action, _version varchar;
   declare _auth, _session, _method, _content_type, _options, _status, _content, _vCalendar, xt any;
@@ -380,10 +380,8 @@ create procedure WV.WIKI.gdata (
         xml_tree_doc_encoding (xt, 'utf-8');
     }      
     }
-    if (_method = 'PUT')
+    if (_method in ('PUT', 'POST', 'DELETE'))
     {
-      content := cast (xpath_eval ('/entry/content/text()', xt) as varchar);
-        
           _newtopic := WV.WIKI.TOPICINFO();
 	  _newtopic.ti_default_cluster := coalesce (_cluster, 'Main');
 	  _newtopic.ti_raw_name := cast (xpath_eval ('/entry/title/text()', xt) as varchar);
@@ -392,34 +390,42 @@ create procedure WV.WIKI.gdata (
           _newtopic.ti_find_id_by_local_name ();
       if (_newtopic.ti_id)
 	    {
-        WV.WIKI.UPLOADPAGE (_newtopic.ti_col_id, _newtopic.ti_local_name || '.txt', content, _user);
-      } else {
-        _status := 'HTTP/1.1 404 Not Found';
-        }
-    }
-    else if (_method = 'POST')
-    {
-      content := cast (xpath_eval ('/entry/content/text()', xt) as varchar);
+        -- delete attachments
+        declare _attachment_path varchar;
 
-      _newtopic := WV.WIKI.TOPICINFO();
-      _newtopic.ti_default_cluster := coalesce (_cluster, 'Main');
-      _newtopic.ti_raw_name := cast (xpath_eval ('/entry/title/text()', xt) as varchar);
-      _newtopic.ti_parse_raw_name ();
-      _newtopic.ti_fill_cluster_by_name ();
+        _attachment_path := DB.DBA.DAV_SEARCH_PATH (_newtopic.ti_col_id, 'C') || _newtopic.ti_local_name || '/';
+        DB.DBA.DAV_DELETE_INT (_attachment_path, 0, null, null, 0);
+    }
+      if (_method in ('PUT', 'POST'))
+      {
+        if ((_method = 'PUT') and (_newtopic.ti_id = 0))
+    {
+          _status := 'HTTP/1.1 404 Not Found';
+        } else {
+      content := cast (xpath_eval ('/entry/content/text()', xt) as varchar);
       WV.WIKI.UPLOADPAGE (_newtopic.ti_col_id, _newtopic.ti_local_name || '.txt', content, _user);
+          if (_method = 'POST')
       _status := 'HTTP/1.1 201 Created';
+
+          -- update attachments
+          declare N, _attachments integer;
+          declare _attachment_name, _attachment_type, _attachment_content any;
+
+          _uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = _user);
+          _attachments := xpath_eval ('[ xmlns:wv="http://www.openlinksw.com/Virtuoso/WikiV/" ] count(/entry/wv:attachments/wv:attachment)', xt);
+          for (N := 0; N < _attachments; N := N + 1)
+          {
+            _attachment_name := cast (xpath_eval (sprintf ('[ xmlns:wv="http://www.openlinksw.com/Virtuoso/WikiV/" ] /entry/wv:attachments/wv:attachment[%d]/wv:name', N+1), xt) as varchar);
+            _attachment_type := cast (xpath_eval (sprintf ('[ xmlns:wv="http://www.openlinksw.com/Virtuoso/WikiV/" ] /entry/wv:attachments/wv:attachment[%d]/wv:type', N+1), xt) as varchar);
+            _attachment_content := decode_base64 (cast (xpath_eval (sprintf ('[ xmlns:wv="http://www.openlinksw.com/Virtuoso/WikiV/" ] /entry/wv:attachments/wv:attachment[%d]/wv:content/text()', N+1), xt) as varchar));
+            WV.WIKI.ATTACH2 (_uid, _attachment_name, _attachment_type,  _newtopic.ti_id,  _attachment_content,  ' -- ');
+          }
+        }
     }
     else if (_method = 'DELETE')
     {
-          _newtopic := WV.WIKI.TOPICINFO();
-	  _newtopic.ti_default_cluster := coalesce (_cluster, 'Main');
-	  _newtopic.ti_raw_name := cast (xpath_eval ('/entry/title/text()', xt) as varchar);
-	  _newtopic.ti_parse_raw_name ();
-	  _newtopic.ti_fill_cluster_by_name ();
-          _newtopic.ti_find_id_by_local_name ();
-	  if (_newtopic.ti_id <> 0)
+        if (_newtopic.ti_id)
         {
-	       _newtopic.ti_find_metadata_by_id ();
         DB.DBA.DAV_DELETE_INT (DB.DBA.DAV_SEARCH_PATH (_newtopic.ti_res_id, 'R'), 1, null, null, 0);
         _status := 'HTTP/1.1 200 OK';
       } else {
@@ -427,6 +433,7 @@ create procedure WV.WIKI.gdata (
       }
         }
     }
+  }
 
 _exit:;
   _content := http_body_read ();
