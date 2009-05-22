@@ -379,9 +379,35 @@ DB.DBA.EXEC_STMT ('grant SPARQL_SPONGE to "SPARQL"', 0);
 
 create procedure rdf_virt_proxy_ver ()
 {
-  return '1.4';
+  return '1.5';
 }
 ;
+
+create procedure
+DB.DBA.RDF_VIEW_GET_BINARY (in path varchar, in accept varchar) __SOAP_HTTP 'application/octet-stream'
+{
+  declare host, suff, qr varchar;
+  declare arr, stat, msg, meta, data any;
+
+  host := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+  arr := split_and_decode (path, 0, '\0\0/');
+  suff := arr[1];
+  qr := sprintf ('sparql prefix aowl: <http://bblfish.net/work/atom-owl/2006-06-06/>'||
+  ' select ?c ?t from <http://%s/%s#> { <http://%s%s> aowl:body ?c ; aowl:type ?t  }', host, suff, host, path); 
+  stat := '00000'; 	  
+  set_user_id ('SPARQL');
+  exec (qr, stat, msg, vector (), 0, meta, data);
+  if (stat = '00000' and length (data) and length (data[0]))
+    {
+      http_header (sprintf ('Content-Type: %s\r\n', data[0][1]));
+      http (data[0][0]);
+    }
+  return '';
+}
+;
+
+grant execute on DB.DBA.RDF_VIEW_GET_BINARY to PROXY;
+
 
 -- /* extended http proxy service */
 create procedure virt_proxy_init_about ()
@@ -434,6 +460,9 @@ create procedure virt_proxy_init_about ()
   DB.DBA.VHOST_REMOVE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/about');
   DB.DBA.VHOST_DEFINE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/about', ppath=>'/SOAP/Http/ext_http_proxy', soap_user=>'PROXY',
       opts=>vector('url_rewrite', 'ext_about_http_proxy_rule_list1'));
+
+  DB.DBA.VHOST_REMOVE (lpath=>'/services/rdf/object.binary');
+  DB.DBA.VHOST_DEFINE (lpath=>'/services/rdf/object.binary', ppath=>'/SOAP/Http/RDF_VIEW_GET_BINARY', soap_user=>'PROXY');
 
   registry_set ('DB.DBA.virt_proxy_init_about_state', rdf_virt_proxy_ver ());
 }
