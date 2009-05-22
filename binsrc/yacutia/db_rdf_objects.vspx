@@ -224,7 +224,7 @@
 		      </v:script>
 		  </v:on-post>
 	      </v:button-->
-	      <v:button action="simple" value="Generate" name="create_all">
+	      <v:button action="simple" value="Generate via Wizard" name="create_all">
 		  <v:on-post>
 		      <v:script>
 			  <![CDATA[
@@ -253,7 +253,7 @@
 			   {
 			     arr := encode_base64 (serialize (arr));
 			     self.db_object_to_process := arr;
-			     self.vc_redirect (sprintf ('db_rdf_view_1.vspx?list=%U&host=%U', arr, host));
+			     self.vc_redirect (sprintf ('db_rdf_view_tb.vspx?list=%U&host=%U', arr, host));
 			   }
 			 else
 			   {

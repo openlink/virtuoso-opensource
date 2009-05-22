@@ -40,6 +40,7 @@
       <v:variable persist="0" name="owl" type="int" default="0" param-name="owl"/>
       <v:variable persist="0" name="_view" type="int" default="0" param-name="view"/>
       <v:variable persist="0" name="st" type="int" default="0" param-name="st"/>
+      <v:variable persist="0" name="cols" type="any" default="null" param-name="cols"/>
   </vm:variables>
 
   <vm:header caption="RDF View definition"/>
@@ -70,23 +71,25 @@
 		  </v:button>
 		  <v:button name="back" action="simple" value="Back" >
 		      <v:on-post><![CDATA[
-			  self.vc_redirect (sprintf ('db_rdf_view_1.vspx?list=%U&host=%U&owl=%d&view=%d&st=%d', 
+			  self.vc_redirect (sprintf ('db_rdf_view_1.vspx?list=%U&host=%U&owl=%d&view=%d&st=%d&cols=%U', 
 			  		self.objects, self.base, 
 			  		self.owl,
 			  		self._view,
-			  		self.st
+					self.st,
+					self.cols
 					));
 			  ]]></v:on-post>
 		  </v:button>
 		  <v:button action="simple" name="exec" value="Next">
 		      <v:on-post><![CDATA[
-			  self.vc_redirect (sprintf ('db_rdf_view_3.vspx?list=%U&host=%U&owl=%d&view=%d&st=%d&owl_vd=%d&view_vd=%d', 
+			  self.vc_redirect (sprintf ('db_rdf_view_3.vspx?list=%U&host=%U&owl=%d&view=%d&st=%d&owl_vd=%d&view_vd=%d&cols=%U', 
 			  		self.objects, self.base, 
 			  		self.owl,
 			  		self._view,
 			  		self.st,
 			  		self.gen_owl_vd.ufl_selected,
-			  		self.gen_view_vd.ufl_selected
+					self.gen_view_vd.ufl_selected,
+					self.cols
 					));
 			  ]]></v:on-post>
 		  </v:button>
