@@ -1499,7 +1499,7 @@ long http_print_warnings_in_output = 0;
 
 
 static caddr_t *
-ws_split_ac_header (const char * header)
+ws_split_ac_header (const caddr_t header)
 {
   char *tmp, *tok_s = NULL, *tok;
   dk_set_t set = NULL;
@@ -1572,7 +1572,7 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
       "<li><a href=\"%s\">%s</a> , type %s, charset %s</li>\n"
       "</ul>\n"
       "</body></html>\n";
-  char * accept;
+  caddr_t accept;
   char buf [1000];
   caddr_t ctype = NULL, cenc = NULL;
   caddr_t * asked;
@@ -1584,7 +1584,7 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
   /*			    0123456789012*/
   if (ignore || 0 !=  strncmp (code, "HTTP/1.1 200", 12))
     return check_only ? NULL : code;
-  accept = ws_header_field (ws->ws_lines, "Accept:", NULL); 
+  accept = ws_mime_header_field (ws->ws_lines, "Accept", NULL, 0); 
   if (!accept) /* consider it is everything, so we just skip the whole logic */
     return check_only ? NULL : code;
 
@@ -1632,6 +1632,7 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
   dk_free_tree (ctype);
   dk_free_tree (cenc);
   dk_free_tree (asked);
+  dk_free_tree (accept);
   return check_only ? NULL : code;
 }
 
@@ -6627,6 +6628,7 @@ bif_http_request_header_full (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
 	  int inx;
 	  size_t len;
 	  char *p, *q;
+	  dk_session_t *ses = NULL;
 	  DO_BOX (caddr_t, line, inx, lines)
 	    {
 	      p = strchr (line, ':');
@@ -6645,11 +6647,24 @@ bif_http_request_header_full (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
 		    }
 		  else
 		    q = p;
-		  ret = box_dv_short_string (q);
-		  break;
+		  if (!ses)
+		    {
+		      ses = strses_allocate ();
+		      session_buffered_write (ses, q, strlen (q));
+		    }
+		  else
+		    {
+		      session_buffered_write (ses, ", ", 2);
+		      session_buffered_write (ses, q, strlen (q));
+		    }
 		}
 	    }
 	  END_DO_BOX;
+	  if (NULL != ses)
+	    {
+	      ret = strses_string (ses);
+	      dk_free_box ((box_t) ses);
+	    }
 	}
       return (ret ? ret : box_copy (deflt));
     }

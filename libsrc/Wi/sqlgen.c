@@ -1793,9 +1793,16 @@ sqlg_dfe_code (sqlo_t * so, df_elt_t * dfe, dk_set_t * code, int succ, int fail,
       }
     case DFE_VALUE_SUBQ:
       {
-	query_t * qr = sqlg_dt_query (so, dfe, NULL, (ST **) t_list (1, dfe->dfe_tree)); /* this is to prevent assignment of NULL to constant ssl*/
-	state_slot_t * ssl = qr->qr_select_node->sel_out_slots[0];
-	df_elt_t * org_dfe = sqlo_df (so, dfe->dfe_tree); /* the org one, not a layout copy is used to associate the ssl to the code */
+	int old_ord = so->so_sc->sc_order;
+	query_t * qr;
+	state_slot_t * ssl;
+	df_elt_t * org_dfe;
+	/* a value subq will be vectored in a code node and there the order between sets must be deterministic */
+	so->so_sc->sc_order = TS_ORDER_KEY;
+	qr  = sqlg_dt_query (so, dfe, NULL, (ST **) t_list (1, dfe->dfe_tree)); /* this is to prevent assignment of NULL to constant ssl*/
+	ssl  = qr->qr_select_node->sel_out_slots[0];
+	so->so_sc->sc_order = old_ord;
+	org_dfe  = sqlo_df (so, dfe->dfe_tree); /* the org one, not a layout copy is used to associate the ssl to the code */
 	org_dfe->dfe_ssl = ssl;
 	qr->qr_select_node->src_gen.src_input = (qn_input_fn) select_node_input_subq;
 	dk_set_push (&sc->sc_cc->cc_query->qr_subq_queries, qr);

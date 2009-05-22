@@ -1690,6 +1690,8 @@ setp_refd_slots (setp_node_t * setp, dk_hash_t * res)
       ASG_SSL (res, NULL, ssl);
     }
   END_DO_SET();
+  REF_SSL (res, setp->setp_top);
+  REF_SSL (res, setp->setp_top_skip);
   REF_SSL (res, setp->setp_ssa.ssa_set_no);
   DO_SET (gb_op_t *, go, &setp->setp_gb_ops)
     {

@@ -683,10 +683,14 @@ qn_init (table_source_t * ts, caddr_t * inst)
       && ts->ts_order_ks->ks_key->key_id == KI_TEMP)
     {
       /* if there is a read from sort temp and there is a cursor for the space, delete it here, so as not to reuse the cursor on a different temp space later */
-      it_cursor_t *volatile order_itc = TS_ORDER_ITC (ts, inst);
+      it_cursor_t *volatile order_itc = NULL;
+      if (ts->ts_order_cursor)
+	{
+	  order_itc = TS_ORDER_ITC (ts, inst);
       TS_ORDER_ITC (ts, inst) = NULL;
       if (order_itc)
 	itc_free (order_itc);
+    }
     }
 
 

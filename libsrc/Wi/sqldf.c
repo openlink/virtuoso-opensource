@@ -1301,6 +1301,8 @@ dfe_skip_to_min_card (df_elt_t * place, df_elt_t * super, df_elt_t * dfe)
   float best_arity = 1, arity = 1;
   if (!enable_min_card)
     return place;
+  if (!dfe->dfe_tables)
+    return place;
   while (place)
     {
       if (dfe_is_super (place, super))

@@ -189,7 +189,9 @@ char * proc_fill_index =
 "    }\n"
 "  tb_name := sprintf ('\"%I\".\"%I\".\"%I\"', name_part (tb_name, 0), name_part (tb_name, 1), name_part (tb_name, 2));\n"
 "  str := sprintf ('insert into %s index \"%I\" (%s) select %s from %s table option (index primary key)', tb_name, inx, cols, cols, tb_name);\n"
+"  set triggers off;\n"
 "  exec (str);\n"
+"  set triggers on;\n"
 "}\n";
 
 char * proc_cl_clr_inx =

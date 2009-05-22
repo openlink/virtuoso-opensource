@@ -574,6 +574,8 @@ sqlo_eval_text_count (dbe_table_t * tb, caddr_t str)
   local_cursor_t * lc = NULL;
   caddr_t err = NULL;
   char cn[500];
+  if (cli->cli_clt)
+    return -1; /* if in a cluster transaction branch, can't do partitioned ops */
   if (!lt->lt_threads)
     {
       entered = 1;
