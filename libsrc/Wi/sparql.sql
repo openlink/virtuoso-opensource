@@ -316,7 +316,12 @@ create procedure DB.DBA.XML_LOAD_ALL_NS_DECLS ()
   DB.DBA.XML_SET_NS_DECL (	'sql'	, 'sql:'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'virtrdf'	, 'http://www.openlinksw.com/schemas/virtrdf#'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'vcard'	, 'http://www.w3.org/2001/vcard-rdf/3.0#'	, 2);
+  DB.DBA.XML_SET_NS_DECL (	'xf'	, 'http://www.w3.org/2004/07/xpath-functions'	, 2);
+  DB.DBA.XML_SET_NS_DECL (	'xml'	, 'http://www.w3.org/XML/1998/namespace'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'xsd'	, 'http://www.w3.org/2001/XMLSchema#'	, 2);
+  DB.DBA.XML_SET_NS_DECL (	'xsl10'	, 'http://www.w3.org/XSL/Transform/1.0'	, 2);
+  DB.DBA.XML_SET_NS_DECL (	'xsl1999'	, 'http://www.w3.org/1999/XSL/Transform'	, 2);
+  DB.DBA.XML_SET_NS_DECL (	'xslwd'	, 'http://www.w3.org/TR/WD-xsl'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'yago'	, 'http://dbpedia.org/class/yago/'	, 2);
 }
 ;
@@ -4190,6 +4195,13 @@ describe_physical_subjects:
                   -- dbg_obj_princ ('found5 ', subj, p1, ' in ', graph);
                   dict_put (res, vector (subj, p1, __rdf_long_of_obj (obj1)), 0);
                 }
+	      for (select S as s1, P as p1 from DB.DBA.RDF_QUAD
+		  where G = graph and O = subj and P <> rdf_type_iid
+		  option (QUIETCAST)) do
+		{
+		  -- dbg_obj_princ ('found2 ', s1, p1, subj, ' in ', graph);
+		  dict_put (res, vector (s1, p1, subj), 1);
+		}
             }
         }
       return res;
