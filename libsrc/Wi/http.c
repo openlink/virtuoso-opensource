@@ -1280,7 +1280,6 @@ ws_path_and_params (ws_connection_t * ws)
   if (n_fill > 1 || (n_fill == 1 && name[0] != '.'))
     dk_set_push (&paths, box_line (name, n_fill));
   ws->ws_path = (caddr_t*) list_to_array (dk_set_nreverse (paths));
-  ws->ws_resource = BOX_ELEMENTS (ws->ws_path) > 0 ? box_copy (ws->ws_path [BOX_ELEMENTS (ws->ws_path) - 1]) : NULL;
 #ifdef DEBUG
   {
     int i;
@@ -1291,6 +1290,7 @@ ws_path_and_params (ws_connection_t * ws)
 #endif
   if (lc == '/' || (lc == '.' && n_fill == 1))
     is_dir = 1;
+  ws->ws_resource = BOX_ELEMENTS (ws->ws_path) > 0 && !is_dir ? box_copy (ws->ws_path [BOX_ELEMENTS (ws->ws_path) - 1]) : NULL;
 
   ws_set_path_string (ws, is_dir);
 #ifdef VIRTUAL_DIR
@@ -1580,7 +1580,7 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
   /*			    0123456789012*/
   if (ignore || 0 !=  strncmp (code, "HTTP/1.1 200", 12))
     return check_only ? NULL : code;
-  accept = ws_mime_header_field (ws->ws_lines, "Accept", NULL, 0); 
+  accept = ws_mime_header_field (ws->ws_lines, "Accept", NULL, 1); 
   if (!accept) /* consider it is everything, so we just skip the whole logic */
     return check_only ? NULL : code;
 
@@ -1607,7 +1607,7 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
   END_DO_BOX;
   if (!match)
     {
-      char * cname = ws->ws_resource ? ws->ws_resource : "index.html";
+      char * cname = ws->ws_resource ? ws->ws_resource : ( ws->ws_map && ws->ws_map->hm_def_page ? ws->ws_map->hm_def_page : "index.html");
       caddr_t tmpbuf;
 
       code = "HTTP/1.1 406 Unacceptable";
