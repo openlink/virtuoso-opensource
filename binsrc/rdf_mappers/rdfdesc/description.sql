@@ -284,10 +284,10 @@ again:
        -- CMSB
        declare _href, image_ext varchar;
 
-       _href := rdfdesc_http_url (_object);
        http (sprintf ('<span %s>', rdfa));
-       if (isstring(_object) and strstr(_object, 'http://') is not null)
+       if (isstring(_object) and _object like 'http://%')
        {
+	 _href := rdfdesc_http_url (_object);
 	 image_ext := subseq(lcase(_object), strrchr(_object, '.') + 1);
 	 if (image_ext is not null)
 	 {
