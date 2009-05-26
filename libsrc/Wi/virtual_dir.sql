@@ -1065,7 +1065,15 @@ end_loop:;
 	  host := http_request_header(http_request_header(), 'Host', null, null);
 	  pref := 'http://'||host||http_map_get ('domain')||'/rdf/';
 	  if (url like pref || '%')
+	    {
 	    url := subseq (url, length (pref));
+	      if (url like 'http/%')
+	        url := 'http:/' || subseq (url, 4);
+              else if (url like 'https/%')
+	        url := 'https:/' || subseq (url, 5);
+              else if (url like 'nodeID/%')
+	        url := 'nodeID:/' || subseq (url, 6);
+	    }
 	  -- escape chars which are not allowed
 	  url := replace (url, '''', '%27');
 	  url := replace (url, '<', '%3C');
