@@ -2024,10 +2024,12 @@ virtodbc__SQLGetInfo (
 {
   CON (dbc, hdbc);
   char *strres = NULL;
-  SQLLEN intres = 0;
-  SQLRETURN rc = SQL_SUCCESS;
   SQLUSMALLINT shortres = 0;
+  SQLUINTEGER intres = 0;
+  SQLULEN ulenres = 0;
+  SQLRETURN rc = SQL_SUCCESS;
   int is_short = 0;
+  int is_ulen = 0;
 
   switch (fInfoType)
     {
@@ -2049,20 +2051,23 @@ virtodbc__SQLGetInfo (
       strres = (char *) dbc->con_dsn;
       break;
 
-      /* The next three: This information type is implemented by the
-         Driver Manager alone.  */
-#ifndef __alpha
-      /* Doesn't work on 64 bit machines - disable them for now - PmN */
+#if 0
+    /* 
+     * The next three are implemented by the Driver Manager alone.
+     */
     case SQL_DRIVER_HDBC:
-      intres = (SQLLEN) hdbc;
+      ulenres = (SQLULEN) hdbc;
+      is_ulen = 1;
       break;
 
     case SQL_DRIVER_HENV:
-      intres = (SQLLEN) dbc->con_environment;
+      ulenres = (SQLULEN) dbc->con_environment;
+      is_ulen = 1;
       break;
 
     case SQL_DRIVER_HSTMT:
-      intres = (SQLLEN) rgbInfoValue;	/* Or *((SQLHSTMT *)rgbInfoValue) ? */
+      ulenres = (SQLULEN) rgbInfoValue;		 /* Or *((SQLHSTMT *)rgbInfoValue) ? */
+      is_ulen = 1;
       break;
 #endif
 
@@ -3350,10 +3355,17 @@ virtodbc__SQLGetInfo (
     {
       if (rgbInfoValue)
 	*(SQLUSMALLINT *) rgbInfoValue = shortres;
-
       if (pcbInfoValue)
 	*pcbInfoValue = 2;
+      goto ret;
+    }
 
+  if (is_ulen)
+    {
+      if (rgbInfoValue)
+	*(SQLULEN *) rgbInfoValue = ulenres;
+      if (pcbInfoValue)
+	*pcbInfoValue = sizeof (SQLULEN);
       goto ret;
     }
 
@@ -3378,10 +3390,9 @@ virtodbc__SQLGetInfo (
   else
     {
       if (rgbInfoValue)
-	*(SQLLEN *) rgbInfoValue = intres;
-
+	*(SQLUINTEGER *) rgbInfoValue = intres;
       if (pcbInfoValue)
-	*pcbInfoValue = 4;
+	*pcbInfoValue = sizeof (SQLUINTEGER);
     }
 
   goto ret;
