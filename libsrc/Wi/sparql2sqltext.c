@@ -2525,6 +2525,10 @@ ssg_print_bop_bool_expn (spar_sqlgen_t *ssg, SPART *tree, const char *bool_op, c
   int bop_is_comparison = ((BOP_LT == ttype) || (BOP_LTE == ttype) || (BOP_GT == ttype) || (BOP_GTE == ttype));
   ssg_valmode_t left_vmode, right_vmode, min_mode;
   ptrlong left_restr_bits = -1, right_restr_bits = -1;
+
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &ssg, 1000))
+    spar_internal_error (NULL, "ssg_print_scalar_expn (): stack overflow");
+
   if (bop_has_bool_args)
     {
       left_vmode = right_vmode = min_mode = SSG_VALMODE_BOOL;
@@ -3808,10 +3812,9 @@ ssg_triple_retval_alias (spar_sqlgen_t *ssg, SPART *triple, int field_idx, int c
 void
 ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, const char *asname)
 {
-#ifdef DEBUG
   if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &ssg, 1000))
     spar_internal_error (NULL, "ssg_print_scalar_expn (): stack overflow");
-#endif
+
   if (SSG_VALMODE_AUTO == needed)
     needed = sparp_expn_native_valmode (ssg->ssg_sparp, tree);
   switch (SPART_TYPE (tree))
@@ -4249,6 +4252,9 @@ print_asname:
 void
 ssg_print_filter_expn (spar_sqlgen_t *ssg, SPART *tree)
 {
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &ssg, 1000))
+    spar_internal_error (NULL, "ssg_print_scalar_expn (): stack overflow");
+
   switch (SPART_TYPE (tree))
     {
     case BOP_AND:	ssg_print_bop_bool_expn (ssg, tree, " AND "	, " __and ("	, 1, SSG_VALMODE_BOOL); return;
