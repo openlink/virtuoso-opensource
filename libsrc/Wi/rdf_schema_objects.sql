@@ -216,7 +216,7 @@ rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0, 
 
    ret := ret || rdf_view_get_relations (_tbls, suffix);
 
-   ret := ret || ' { \n   create virtrdf:' || qual ||
+   ret := ret || ' { \n   create virtrdf:' || qualifier ||
    ' as graph iri ("http://' || uriqa_str || '/' || qualifier || '#") option (exclusive) \n    { \n';
 
    for (declare xx any, xx := 0; xx < length (_tbls) ; xx := xx + 1)
