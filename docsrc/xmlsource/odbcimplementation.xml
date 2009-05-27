@@ -862,4 +862,21 @@ as a separate operation.
 </para>
 	</sect2>
 
+<sect2 id="EXECPYTHONSCRIPT">
+		<title>Executing SQL from Python script</title>
+<para>In order to execute SQL from Python script, you need to add the following lines to the /etc/odbc.ini
+file:</para>
+<programlisting><![CDATA[
+[Local Virtuoso]
+Driver  = /PREFIX/lib/virtodbc_r.so
+Address = localhost:1111
+]]></programlisting>
+<para>where PREFIX is replaced by the full path where Virtuoso is installed and also assuming that
+is used let's say port 1111 in virtuoso.ini (which is set by default).
+</para>
+<para>Then you should be able to connect with:</para>
+<programlisting><![CDATA[
+c = pyodbc.connect('DSN=Local Virtuoso;UID=dba;PWD=dba')
+]]></programlisting>
+	</sect2>
 </sect1>
