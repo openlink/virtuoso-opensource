@@ -1543,9 +1543,12 @@ ws_header_line_to_array (caddr_t string)
   session_buffered_write (ses, string, box_length (string) - 1);
   CATCH_READ_FAIL (ses)
     {
-      len = dks_read_line (ses, buf, sizeof (buf));
-      if (0 != len)
-	dk_set_push (&lines, box_line (buf, len));
+      for (;;)
+	{
+	  len = dks_read_line (ses, buf, sizeof (buf));
+	  if (0 != len)
+	    dk_set_push (&lines, box_line (buf, len));
+	}
     }
   END_READ_FAIL (ses);
   dk_free_box (ses);
