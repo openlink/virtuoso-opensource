@@ -38,8 +38,17 @@
       <vm:navigation-new on="settings"/>
       <vm:subnavigation-new on="site"/>
       <vm:body>
+        <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;">
+        </div>
         <script type="text/javascript">
           <![CDATA[
+            // no page leave check
+            sflag = true;
+
+            // CalendarPopup
+            var cPopup = new CalendarPopup('cDiv');
+            cPopup.isShowYearNavigation = true;
+
 		        OAT.Loader.loadFeatures(["ws", "combolist"], function(){});
 function getFileName(form, from, to)
 {

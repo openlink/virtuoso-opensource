@@ -28,11 +28,77 @@
         style="index.xsl"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
 	      doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  <v:method name="addProperty" arglist="in obj any, in objProperty varchar, in paramsProperty varchar, in params any">
+    <![CDATA[
+      declare tmp ay;
+
+      tmp := trim (get_keyword (paramsProperty, params));
+      if (not is_empty_or_null (tmp))
+        obj := vector_concat (obj, vector (objProperty, tmp));
+      return obj;
+    ]]>
+  </v:method>
+  <v:method name="jsonObject" arglist="">
+    <![CDATA[
+      return subseq (soap_box_structure ('x', 1), 0, 2);
+    ]]>
+  </v:method>
+
+  <v:on-init>
+    if (isnull (self.ol_properties))
+      self.ol_properties := self.jsonObject();
+  </v:on-init>
 	<v:variable name="edit_ol" type="integer" default="null" param-name="edit" />
 	<v:variable name="delete_ol" type="integer" default="null" param-name="del" />
 	<v:variable name="ol_properties" type="any" default="null" />
 	<v:form type="simple" method="POST" xhtml_enctype="multipart/form-data" action="uiedit.vspx?page=6">
-    <h3>GoodRelations Ontology Triples</h3>
+    <script type="text/javascript">
+      <![CDATA[
+        function addProductLine(No, obj)
+        {
+          var tr = $('tr_X');
+          if (tr)
+          {
+            var S = tr.innerHTML;
+            if (!No)
+              No = parseInt($('no_X').value)+1;
+            S = S.replace('<b>Product</b>', '<b>Product #'+No+'</b>');
+            var suffix = '_'+No;
+            var tr = OAT.Dom.create('tr');
+            tr.id = 'tr' + suffix;
+            tr.innerHTML = S.replace(/_X/g, suffix);
+            $('tbl_X').appendChild(tr);
+            $('no_X').value = No;
+            if (No != 1)
+              OAT.Dom.show ('remove_X');
+            $('description'+suffix).value = '';
+            if (obj)
+            {
+              $('description'+suffix).value = obj.description;
+              $('offerURI'+suffix).value = obj.offerURI;
+              $('sell'+suffix).checked = obj.sell;
+              $('repair'+suffix).checked = obj.repair;
+              $('maintain'+suffix).checked = obj.maintain;
+              $('lease'+suffix).checked = obj.lease;
+              $('disposal'+suffix).checked = obj.disposal;
+              $('buy'+suffix).checked = obj.buy;
+              $('service'+suffix).checked = obj.service;
+            }
+          }
+        }
+        function removeProductLine()
+        {
+          var No = parseInt($('no_X').value);
+          var suffix = '_'+No;
+          OAT.Dom.unlink('tr'+suffix);
+          No -= 1;
+          if (No == 1)
+            OAT.Dom.hide ('remove_X');
+          $('no_X').value = No;
+        }
+      ]]>
+    </script>
+    <h3>Offer Lists (GoodRelations Ontology)</h3>
 	  <table class="listing" rules="groups">
 	    <tr class="listing_header_row">
 		    <th>Offer</th>
@@ -54,7 +120,7 @@
               {
                 self.ol_offer.ufl_value := control.te_rowset[1];
                 self.ol_comment.ufl_value := control.te_rowset[2];
-                self.ol_properties := control.te_rowset[3];
+                self.ol_properties := deserialize (control.te_rowset[3]);
               }
 	          </v:after-data-bind>
 			      <tr class="<?V case when self.edit_ol = control.te_rowset[0] then 'listing_row_selected' when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
@@ -67,7 +133,7 @@
 				               xhtml_alt="Edit"
 				        />
 			        </td>
-			        <td>
+			        <td width="100px">
 				        <v:url name="delete_ol_url"
 				               value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
 				               format="%s"
@@ -90,71 +156,339 @@
 	  </table>
 	  <div class="fm">
 	    <fieldset>
-		    <label for="ol_offer">Offer</label>
-		    <br />
+				<legend><b>Offer</b></legend>
+				<table>
+				  <tr>
+				    <th width="100px">
+		          Offer name
+		        </th>
+		        <td>
         <v:text name="ol_offer" value="" xhtml_id="ol_offer" xhtml_size="50" xhtml_class="_validate_" />
-		    <br/>
-		    <label for="ol_comment">Comment</label>
-		    <br />
+            </td>
+          </tr>
+				  <tr>
+				    <th valign="top">
+		          Comment
+		        </th>
+		        <td>
 		    <v:textarea name="ol_comment" value="" xhtml_id="ol_comment" xhtml_rows="5" xhtml_cols="50"/>
-		    <br />
-		    <label for="ol_properties">Properties</label>
-		    <br />
+            </td>
+          </tr>
+				</table>
+	    </fieldset>
+	    <fieldset>
+				<legend><b>Products</b></legend>
+        <input type="hidden" id="no_X" name="no_X" value="0"/>
+        <table id="tbl_X">
+          <tr>
+            <td>
+              <input type="button" value="Add" onclick="javascript: addProductLine(); return false;" /><input type="button" id="remove_X" value="Remove Last" onclick="javascript: removeProductLine(); return false;" style="display: none;"/>
+            </td>
+          </tr>
+          <tr id="tr_X" style="display: none;">
+            <td>
+      	      <fieldset>
+        				<legend><b>Product</b></legend>
+        	      <fieldset>
+        				  <legend><b>
+        				    Describe the type of products you are offering
+        				  </b></legend>
         <table>
           <tr>
-            <td width="600px">
-              <table id="o_tbl" class="listing">
-                <thead>
-                  <tr class="listing_header_row">
-                    <th>
-                      Property
+          				    <th valign="top" width="150px">
+          		          Short description
                     </th>
-                    <th>
-                      Label
+          		        <td>
+        					      <textarea name="description_X" id="description_X" rows="3" cols="40" class="_validate_">&amp;nbsp;</textarea>
+                      </td>
+                    </tr>
+          				  <tr>
+          				    <th valign="top">
+          		          Web page for the offering
                     </th>
-                    <th width="80px">
-                      Action
-                    </th>
+          		        <td>
+                        <input name="offerURI_X" type="text" id="offerURI_X" size="40" value="http://"/>
+                      </td>
                   </tr>
-                </thead>
+          				</table>
+        				</fieldset>
+        				<fieldset>
+        					<legend><b>
+        					  Check all types of transactions (sell, lease, repair, ...) that you offer on the  range of products selected above
+        					</b></legend>
+          				<label>
+        						<input type="checkbox" name="sell_X" id="sell_X" value="1" />Used in the broad sense - no matter whether you sell the good from stock or develop, engineer, or produce it on custom demand.)
+          				</label>
+          	      <br />
+          				<label>
+        					  <input type="checkbox" name="repair_X" id="repair_X" value="1" />Repair (Actions that restore the originally intended function of a product that suffers from outage or malfunction.)
+          				</label>
+          	      <br />
+          				<label>
+        						<input type="checkbox" name="maintain_X" id="maintain_X" value="1" />Maintenance (Actions that undo or compensate for wear or other deterioriation caused by regular usage, in order to restore the originally intended function of the product, or to prevent outage or malfunction.)
+          				</label>
+          	      <br />
+          				<label>
+        						<input type="checkbox" name="lease_X" id="lease_X" value="1" />Rental / Lease Out
+          				</label>
+          	      <br />
+          				<label>
+        						<input type="checkbox" name="disposal_X" id="disposal_X" value="1" />Disposal
+          				</label>
+          	      <br />
+          				<label>
+        						<input type="checkbox" name="buy_X" id="buy_X" value="1" />Buy (I.e., you are looking for offers of the range of products or services indicated above)
+          				</label>
+          	      <br />
+          				<label>
+        					  <input type="checkbox" name="service_X" id="service_X" value="1" />Other services related to the range indicated above
+          				</label>
+        				</fieldset>
+      				</fieldset>
+     				</td>
+   				</tr>
+          <script type="text/javascript">
                 <?vsp
-                  declare N integer;
+            declare N, M integer;
+            declare products any;
 
-                  N := 0;
-                  for (select property, label from DB.DBA.WA_USER_INTERESTS (txt) (property varchar, label varchar) P where txt = self.ol_properties) do
+            M := 0;
+            products := get_keyword ('products', self.ol_properties, vector ());
+            for (N := 0; N < length (products); N := N + 1)
                   {
+              M := 1;
+ 				      http (sprintf ('addProductLine (%d, %s);', N+1, ODS..obj2json (products[N])));
+ 				    }
+ 				    if (M = 0)
+ 				      http ('addProductLine (1);');
                 ?>
-                <tr id="o_tr_<?V N ?>">
+          </script>
+			  </table>
+			</fieldset>
+	    <fieldset>
+	      <legend><b>
+	        Specify the validity of your statement
+	      </b></legend>
+				<table>
+				  <tr>
+				    <th width="100px">
+		          Valid from
+		        </th>
                   <td>
-                    <input type="text" id="o_fld_1_<?V N ?>" name="o_fld_1_<?V N ?>" value="<?V property ?>" style="width: 95%;" class="_validate_" />
+      				<input type="text" id="date1" name="date1" value="<?V case when isnull (get_keyword ('datetime1', self.ol_properties)) then '' else left (datestring (get_keyword ('datetime1', self.ol_properties)), 10) end ?>" size="10" onclick="javascript: cPopup.select ($('date1'), 'date1_select', 'yyyy-MM-dd');" />
+              <a href="#" name="date1_select" id="date1_select" onclick="cPopup.select ($('date1'), 'date1_select', 'yyyy-MM-dd'); return false;"></a>
+      				<input type="text" id="time1" name="time1" value="<?V case when isnull (get_keyword ('datetime1', self.ol_properties)) then '' else subseq (datestring (get_keyword ('datetime1', self.ol_properties)), 11, 16) end ?>" style="width:35px;" />
                   </td>
+          </tr>
+				  <tr>
+				    <th>
+		          Valid to
+		        </th>
                   <td>
-                    <input type="text" id="o_fld_2_<?V N ?>" name="o_fld_2_<?V N ?>" value="<?V label ?>" style="width: 95%;" />
-                  </td>
-                  <td>
-                    <input type="button" value="Remove" onclick="javascript: updateRow('o', <?V N ?>);" />
+      				<input type="text" id="date2" name="date2" value="<?V case when isnull (get_keyword ('datetime2', self.ol_properties)) then '' else left (datestring (get_keyword ('datetime2', self.ol_properties)), 10) end ?>" size="10" onclick="javascript: cPopup.select ($('date2'), 'date2_select', 'yyyy-MM-dd');" />
+              <a href="#" name="date2_select" id="date2_select" onclick="javascript: cPopup.select ($('date2'), 'date2_select', 'yyyy-MM-dd'); return false;"></a>
+      				<input type="text" id="time2" name="time2" value="<?V case when isnull (get_keyword ('datetime2', self.ol_properties)) then '' else subseq (datestring (get_keyword ('datetime2', self.ol_properties)), 11, 16) end ?>" style="width:35px;" />
                   </td>
                 </tr>
+				  <tr>
+				    <th valign="top">
+		          Eligible countries
+		        </th>
+		        <td>
+      				<select name="eligCountry" id="eligCountry" size="6" multiple="multiple">
                 <?vsp
-                    N := N + 1;
+      				    declare M integer;
+      				    declare S varchar;
+      				    declare tmp any;
+
+      				    tmp := get_keyword ('eligCountry', self.ol_properties, vector ());
+                  for (select WC_NAME from WA_COUNTRY) do
+                  {
+                    S := '';
+                    for (N := 0; N < length (tmp); N := N + 1)
+                    {
+                      if (WC_NAME = tmp[N])
+                        S := ' selected="selected"';
+                    }
+                    http (sprintf ('<option value="%s"%s>%s</option>', WC_NAME, S, WC_NAME));
                   }
-                  http (sprintf ('<tr id="o_tr_no" style="display: %s"><td colspan="3"><b>No Offer Properties</b></td></tr>', case when N = 0 then '' else 'none' end));
                 ?>
-              </table>
-              <input type="hidden" id="o_no" name="o_no" value="<?V N ?>" />
-            </td>
-            <td valign="top" nowrap="1">
-              <input type="button" value="Add" onclick="javascript: updateRow('o', null, {fld_1: {className: '_validate_'}, fld_2: {}});" />
+      				</select>
             </td>
           </tr>
         </table>
-	      <br /><br />
+	      <fieldset>
+  	      <legend><b>
+    			  Eligible types of business partners: <b>check all that apply</b>
+  	      </b></legend>
+  	      <label>
+            <v:check-box name="endUsers" xhtml_id="endUsers" value="1">
+              <v:before-render>
+                control.ufl_selected := cast (get_keyword ('endUsers', self.ol_properties) as integer);
+              </v:before-render>
+            </v:check-box>
+            End Users
+  				</label>
+  	      <br />
+  	      <label>
+            <v:check-box name="public" xhtml_id="public" value="1">
+              <v:before-render>
+                control.ufl_selected := cast (get_keyword ('public', self.ol_properties) as integer);
+              </v:before-render>
+            </v:check-box>
+  				  Public institutions
+  				</label>
+  	      <br />
+  	      <label>
+            <v:check-box name="reseller" xhtml_id="reseller" value="1">
+              <v:before-render>
+                control.ufl_selected := cast (get_keyword ('reseller', self.ol_properties) as integer);
+              </v:before-render>
+            </v:check-box>
+            Resellers
+  				</label>
+  	    </fieldset>
+	    </fieldset>
+	    <fieldset>
+	      <legend><b>
+	        Specify the payment options (optional)
+	      </b></legend>
+	      <label>
+          <v:check-box name="mastercard" xhtml_id="mastercard" value="1">
+            <v:before-render>
+              control.ufl_selected := cast (get_keyword ('mastercard', self.ol_properties) as integer);
+            </v:before-render>
+          </v:check-box>
+  				MasterCard
+  			</label>
+	      <label>
+          <v:check-box name="visa" xhtml_id="visa" value="1">
+            <v:before-render>
+              control.ufl_selected := cast (get_keyword ('visa', self.ol_properties) as integer);
+            </v:before-render>
+          </v:check-box>
+  				VISA
+  			</label>
+	      <label>
+          <v:check-box name="amex" xhtml_id="amex" value="1">
+            <v:before-render>
+              control.ufl_selected := cast (get_keyword ('amex', self.ol_properties) as integer);
+            </v:before-render>
+          </v:check-box>
+  				American Express
+  			</label>
+	      <label>
+          <v:check-box name="diners" xhtml_id="diners" value="1">
+            <v:before-render>
+              control.ufl_selected := cast (get_keyword ('diners', self.ol_properties) as integer);
+            </v:before-render>
+          </v:check-box>
+  				Diner's Club
+  			</label>
+	      <label>
+          <v:check-box name="discover2" xhtml_id="discover2" value="1">
+            <v:before-render>
+              control.ufl_selected := cast (get_keyword ('discover', self.ol_properties) as integer);
+            </v:before-render>
+          </v:check-box>
+  				Discover
+				</label>
+	      <br />
+	      <label>
+          <v:check-box name="openinvoice" xhtml_id="openinvoice" value="1">
+            <v:before-render>
+              control.ufl_selected := cast (get_keyword ('openinvoice', self.ol_properties) as integer);
+            </v:before-render>
+          </v:check-box>
+  				Open invoice
+				</label>
+	      <br />
+	      <label>
+          <v:check-box name="cash" xhtml_id="cash" value="1">
+            <v:before-render>
+              control.ufl_selected := cast (get_keyword ('cash', self.ol_properties) as integer);
+            </v:before-render>
+          </v:check-box>
+  				Cash on delivery
+				</label>
+	      <br />
+	      <label>
+          <v:check-box name="check" xhtml_id="check" value="1">
+            <v:before-render>
+              control.ufl_selected := cast (get_keyword ('check', self.ol_properties) as integer);
+            </v:before-render>
+          </v:check-box>
+  				Check in advance
+				</label>
+	      <br />
+				<label>
+          <v:check-box name="bank" xhtml_id="bank" value="1">
+            <v:before-render>
+              control.ufl_selected := cast (get_keyword ('bank', self.ol_properties) as integer);
+            </v:before-render>
+          </v:check-box>
+  				Bank transfer in advance
+  		  </label>
+	    </fieldset>
+	    <fieldset>
+	      <legend><b>
+	        Specify the delivery options (optional)
+	      </b></legend>
+	      <label>
+          <v:check-box name="dhl" xhtml_id="dhl" value="1">
+            <v:before-render>
+              control.ufl_selected := cast (get_keyword ('dhl', self.ol_properties) as integer);
+            </v:before-render>
+          </v:check-box>
+			    DHL
+				</label>
+	      <br />
+				<label>
+          <v:check-box name="ups" xhtml_id="ups" value="1">
+            <v:before-render>
+              control.ufl_selected := cast (get_keyword ('ups', self.ol_properties) as integer);
+            </v:before-render>
+          </v:check-box>
+				  UPS
+				</label>
+	      <br />
+				<label>
+          <v:check-box name="mailDelivery" xhtml_id="mailDelivery" value="1">
+            <v:before-render>
+              control.ufl_selected := cast (get_keyword ('mailDelivery', self.ol_properties) as integer);
+            </v:before-render>
+          </v:check-box>
+				  Air or surface mail (postal services)
+		    </label>
+	      <br />
+				<label>
+          <v:check-box name="fedex" xhtml_id="fedex" value="1">
+            <v:before-render>
+              control.ufl_selected := cast (get_keyword ('fedex', self.ol_properties) as integer);
+            </v:before-render>
+          </v:check-box>
+				  FedEx
+				</label>
+	      <br />
+				<label>
+          <v:check-box name="download" xhtml_id="download" value="1">
+            <v:before-render>
+              control.ufl_selected := cast (get_keyword ('download', self.ol_properties) as integer);
+            </v:before-render>
+          </v:check-box>
+				  Direct download (e.g. for software)
+				</label>
+	    </fieldset>
+	    <fieldset>
+	      <legend><b>
+	        Action
+	      </b></legend>
 	      <span class="fm_ctl_btn">
 		      <v:button name="ol_cancel" value="Cancel" action="simple" enabled="--equ (isnull (self.edit_ol), 0)">
 		        <v:on-post>
               self.ol_offer.ufl_value := null;
               self.ol_comment.ufl_value := null;
-              self.ol_properties := null;
+              self.ol_properties := self.jsonObject();
               self.edit_ol := null;
 
               self.ol_save.vc_data_bind (e);
@@ -163,19 +497,85 @@
 		      </v:button>
 		      <v:button name="ol_save" value="--case when self.edit_ol is null then 'Add' else 'Update' end" action="simple" xhtml_onclick="return validateInputs(this);">
 		        <v:on-post><![CDATA[
-              declare N integer;
-              declare suffix, tmp_o varchar;
+              declare N, L integer;
+              declare suffix varchar;
+              declare dt datetime;
+              declare params, tmp, obj, products, product any;
 
-              tmp_o := '';
-              for (N := 0; N < length (e.ve_params); N := N + 4)
+              params := e.ve_params;
+              obj := self.jsonObject();
+
+              dt := null;
+              tmp := trim (get_keyword ('date1', params, '') || ' ' || get_keyword ('time1', params, ''));
+              if (tmp <> '')
               {
-                if ((e.ve_params [N] like 'o_fld_1_%') and (trim (e.ve_params [N+1]) <> ''))
+                declare exit handler for sqlstate '*'
                 {
-                  suffix := replace (e.ve_params [N], 'o_fld_1_', '');
-                  tmp_o := tmp_o || trim (e.ve_params [N+1]) || ';' || trim (get_keyword ('o_fld_2_'||suffix, e.ve_params, '')) || '\n';
+                  self.vc_is_valid := 0;
+                  self.vc_error_message := sprintf ('An invalid date (%s) is specified', tmp);
+                  return;
+                };
+                dt := stringdate (tmp);
                 }
+              if (not isnull (dt))
+                obj := vector_concat (obj, vector ('datetime1', dt));
+              dt := null;
+              tmp := trim (get_keyword ('date2', params, '') || ' ' || get_keyword ('time2', params, ''));
+              if (tmp <> '')
+              {
+                declare exit handler for sqlstate '*'
+                {
+                  self.vc_is_valid := 0;
+                  self.vc_error_message := sprintf ('An invalid date (%s) is specified', tmp);
+                  return;
+                };
+                dt := stringdate (tmp);
               }
-              self.ol_properties := tmp_o;
+              if (not isnull (dt))
+                obj := vector_concat (obj, vector ('datetime2', dt));
+              tmp := vector ();
+              for (N := 0; N < length (params); N := N + 4)
+              {
+                if (params[N] = 'eligCountry')
+                  tmp := vector_concat (tmp, vector (params[N+1]));
+              }
+              obj := vector_concat (obj, vector ('eligCountry', tmp));
+              obj := self.addProperty (obj, 'endUsers', 'endUsers', params);
+              obj := self.addProperty (obj, 'public', 'public', params);
+              obj := self.addProperty (obj, 'reseller', 'reseller', params);
+              obj := self.addProperty (obj, 'mastercard', 'mastercard', params);
+              obj := self.addProperty (obj, 'visa', 'visa', params);
+              obj := self.addProperty (obj, 'amex', 'amex', params);
+              obj := self.addProperty (obj, 'diners', 'diners', params);
+              obj := self.addProperty (obj, 'discover', 'discover2', params);
+              obj := self.addProperty (obj, 'openinvoice', 'openinvoice', params);
+              obj := self.addProperty (obj, 'cash', 'cash', params);
+              obj := self.addProperty (obj, 'check', 'check', params);
+              obj := self.addProperty (obj, 'bank', 'bank', params);
+              obj := self.addProperty (obj, 'dhl', 'dhl', params);
+              obj := self.addProperty (obj, 'ups', 'ups', params);
+              obj := self.addProperty (obj, 'mailDelivery', 'mailDelivery', params);
+              obj := self.addProperty (obj, 'fedex', 'fedex', params);
+              obj := self.addProperty (obj, 'download', 'download', params);
+              products := vector ();
+              L := cast (get_keyword ('no_X', params, 0) as integer);
+              for (N := 1; N <= L; N := N + 1)
+              {
+                suffix := '_' || cast (N as varchar);
+                product := self.jsonObject();;
+                product := self.addProperty (product, 'description', 'description'||suffix, params);
+                product := self.addProperty (product, 'offerURI', 'offerURI'||suffix, params);
+                product := self.addProperty (product, 'sell', 'sell'||suffix, params);
+                product := self.addProperty (product, 'repair', 'repair'||suffix, params);
+                product := self.addProperty (product, 'maintain', 'maintain'||suffix, params);
+                product := self.addProperty (product, 'lease', 'lease'||suffix, params);
+                product := self.addProperty (product, 'disposal', 'disposal'||suffix, params);
+                product := self.addProperty (product, 'buy', 'buy'||suffix, params);
+                product := self.addProperty (product, 'service', 'service'||suffix, params);
+                products := vector_concat (products, vector (product));
+              }
+              obj := vector_concat (obj, vector ('products', products));
+              self.ol_properties := obj;
 
               if (not self.vc_is_valid)
                 return;
@@ -183,20 +583,20 @@
               if (self.edit_ol is null)
               {
                 insert into WA_USER_OFFERLIST (WUOL_U_ID, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES)
-                  values (self.u_id, self.ol_offer.ufl_value, self.ol_comment.ufl_value, self.ol_properties);
+                  values (self.u_id, self.ol_offer.ufl_value, self.ol_comment.ufl_value, serialize (self.ol_properties));
               }
               else
               {
                 update WA_USER_OFFERLIST
                    set WUOL_OFFER = self.ol_offer.ufl_value,
                        WUOL_COMMENT = self.ol_comment.ufl_value,
-                       WUOL_PROPERTIES = self.ol_properties
+                       WUOL_PROPERTIES = serialize (self.ol_properties)
                  where WUOL_ID = self.edit_ol;
               }
 
               self.ol_offer.ufl_value := null;
               self.ol_comment.ufl_value := null;
-              self.ol_properties := null;
+              self.ol_properties := self.jsonObject();
               self.edit_ol := null;
 
               control.vc_data_bind (e);

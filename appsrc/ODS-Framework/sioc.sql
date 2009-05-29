@@ -454,6 +454,11 @@ create procedure wishlist_forum_iri (in wai_name varchar, in wai_member varchar)
   return forum_iri ('wishlist', wai_name, wai_member);
 };
 
+create procedure favorite_forum_iri (in wai_name varchar, in wai_member varchar)
+{
+  return forum_iri ('favoritethings', wai_name, wai_member);
+};
+
 create procedure ods_sioc_clean_all ()
 {
   declare graph_iri varchar;
@@ -478,7 +483,8 @@ create procedure ods_sioc_forum_ext_type (in app varchar)
 	'SocialNetwork', ext_iri ('SocialNetwork'),
 	'Calendar',      ext_iri ('Calendar'),
 	'OfferList',     ext_iri ('OfferList'),
-	'WishList',      ext_iri ('WishList')
+	'WishList',      ext_iri ('WishList'),
+	'FavoriteThings',ext_iri ('FavoriteThings')
 	), app);
 };
 
@@ -501,7 +507,8 @@ create procedure ods_sioc_forum_type (in app varchar)
 	'SocialNetwork', 'Container',
 	'Calendar',      'Container',
 	'OfferList',     'Container',
-	'WishList',      'Container'
+	'WishList',      'Container',
+	'FavoriteThings','Container'
 	), app);
   return sioc_iri (pclazz);
 };
@@ -610,6 +617,11 @@ create procedure offerlist_item_iri (in forum_iri varchar, in ID integer)
 };
 
 create procedure wishlist_item_iri (in forum_iri varchar, in ID integer)
+{
+  return forum_iri || '/' || cast (ID as varchar);
+};
+
+create procedure favorite_item_iri (in forum_iri varchar, in ID integer)
 {
   return forum_iri || '/' || cast (ID as varchar);
 };
@@ -933,6 +945,7 @@ create procedure sioc_user_info (
 	    }
 	}
     }
+  protected := null;
   if (server_https_port () is not null)
     {
       declare ssl_port, host, sp any;
@@ -947,6 +960,31 @@ create procedure sioc_user_info (
 	host := host || ':' || ssl_port;
       hf[1] := host;
       protected := DB.DBA.vspx_uri_compose (hf);
+    }
+  if (protected is null and 
+      exists (select 1 from DB.DBA.HTTP_PATH where HP_LPATH = '/dataspace' and HP_SECURITY = 'SSL' and HP_LISTEN_HOST <> '*sslini*'))
+    {
+      declare ssl_port, host, sp any;
+      hf := rfc1808_parse_uri (iri);
+      hf[5] := '';
+      hf[0] := 'https';
+      for select top 1 HP_HOST, HP_LISTEN_HOST from DB.DBA.HTTP_PATH 
+	where HP_LPATH = '/dataspace' and HP_SECURITY = 'SSL' and HP_LISTEN_HOST <> '*sslini*' do
+	  {
+	    declare pos int;
+	    host := HP_HOST;
+	    if (HP_LISTEN_HOST not like '%:443') -- no default https 
+	      {
+		pos := strchr (HP_LISTEN_HOST, ':');
+		if (pos >= 0)
+		  host := host || subseq (HP_LISTEN_HOST, pos);
+	      }
+	  }
+      hf[1] := host;
+      protected := DB.DBA.vspx_uri_compose (hf);
+    }
+  if (protected is not null)
+    {
       DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdfs_iri ('seeAlso'), protected);
       if (length (cert))
 	{
@@ -1212,8 +1250,9 @@ create procedure sioc_user_bioevent (in graph_iri varchar, in user_iri varchar, 
 
 create procedure sioc_user_offerlist (in user_id integer, in ol_id integer, in ol_offer varchar, in ol_comment varchar, in ol_properties varchar)
 {
+  declare N, M integer;
   declare user_name any;
-  declare graph_iri, forum_iri, user_iri, iri any;
+  declare graph_iri, forum_iri, user_iri, iri, tmp, obj, products, product any;
   declare exit handler for sqlstate '*'
 {
     sioc_log_message (__SQL_MESSAGE);
@@ -1222,16 +1261,111 @@ create procedure sioc_user_offerlist (in user_id integer, in ol_id integer, in o
   graph_iri := get_graph ();
   user_iri := user_iri (user_id);
   user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id);
-  forum_iri := offerlist_forum_iri (forum_name (user_name, 'OfferList'), user_name);
+  forum_iri := offerlist_forum_iri (ol_offer, user_name);
+  sioc_forum (graph_iri, graph_iri, forum_iri, ol_offer, 'OfferList', ol_comment, null, user_name);
+  DB.DBA.RDF_QUAD_URI (graph_iri, forum_iri, rdf_iri ('type'), offer_iri ('BusinessEntity'));
 
-  iri := offerlist_item_iri (forum_iri, ol_id);
-  delete_quad_s_or_o (graph_iri, iri, iri);
+  obj := deserialize (ol_properties);
+  products := get_keyword ('products', obj);
+  for (N := 0; N < length (products); N := N + 1)
+  {
+    product := products[N];
+    iri := offerlist_item_iri (forum_iri, N+1);
 
-  ods_sioc_post (graph_iri, iri, forum_iri, user_iri, ol_offer, null, null);
-  if (length (ol_comment))
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dc_iri ('description'), ol_comment);
-  for (select property, label from DB.DBA.WA_USER_INTERESTS (txt) (property varchar, label varchar) P where txt = ol_properties) do
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, property, label);
+    -- step 2a
+    ods_sioc_post (graph_iri, iri, forum_iri, user_iri, get_keyword ('description', product), null, null, get_keyword ('offerURI', product));
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdf_iri ('type'), offer_iri ('Offering'));
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, forum_iri, offer_iri ('offers'), iri);
+
+    -- step 2b
+    if (not DB.DBA.is_empty_or_null (get_keyword ('sell', product)))
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('hasBusinessFunction'), offer_iri ('Sell'));
+    if (not DB.DBA.is_empty_or_null (get_keyword ('repair', product)))
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('hasBusinessFunction'), offer_iri ('Repair'));
+    if (not DB.DBA.is_empty_or_null (get_keyword ('maintain', product)))
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('hasBusinessFunction'), offer_iri ('Maintain'));
+    if (not DB.DBA.is_empty_or_null (get_keyword ('lease', product)))
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('hasBusinessFunction'), offer_iri ('LeaseOut'));
+    if (not DB.DBA.is_empty_or_null (get_keyword ('disposal', product)))
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('hasBusinessFunction'), offer_iri ('Dispose'));
+    if (not DB.DBA.is_empty_or_null (get_keyword ('buy', product)))
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('hasBusinessFunction'), offer_iri ('Buy'));
+    if (not DB.DBA.is_empty_or_null (get_keyword ('service', product)))
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('hasBusinessFunction'), offer_iri ('ProvideService'));
+
+    -- step 3
+    tmp := get_keyword ('eligCountry', obj, vector ());
+    for (M := 0; M < length (tmp); M := M + 1)
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, offer_iri ('eligibleRegions'), tmp[M]);
+
+    if (not DB.DBA.is_empty_or_null (get_keyword ('endUsers', obj)))
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('eligibleCustomerTypes'), offer_iri ('Enduser'));
+    if (not DB.DBA.is_empty_or_null (get_keyword ('public', obj)))
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('eligibleCustomerTypes'), offer_iri ('Public'));
+    if (not DB.DBA.is_empty_or_null (get_keyword ('reseller', obj)))
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('eligibleCustomerTypes'), offer_iri ('Reseller'));
+
+    if (not DB.DBA.is_empty_or_null (get_keyword ('datetime1', obj)))
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, offer_iri ('validFrom'), sioc_date (get_keyword ('datetime1', obj)));
+    if (not DB.DBA.is_empty_or_null (get_keyword ('datetime2', obj)))
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, offer_iri ('validThrough'), sioc_date (get_keyword ('datetime2', obj)));
+
+    -- step 4
+    if (not DB.DBA.is_empty_or_null (get_keyword ('mastercard', obj)))
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('acceptedPaymentMethods'), offer_iri ('MasterCard'));
+    if (not DB.DBA.is_empty_or_null (get_keyword ('visa', obj)))
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('acceptedPaymentMethods'), offer_iri ('VISA'));
+    if (not DB.DBA.is_empty_or_null (get_keyword ('amex', obj)))
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('acceptedPaymentMethods'), offer_iri ('AmericanExpress'));
+    if (not DB.DBA.is_empty_or_null (get_keyword ('diners', obj)))
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('acceptedPaymentMethods'), offer_iri ('DinersClub'));
+    if (not DB.DBA.is_empty_or_null (get_keyword ('discover', obj)))
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('acceptedPaymentMethods'), offer_iri ('Discover'));
+    if (not DB.DBA.is_empty_or_null (get_keyword ('openinvoice', obj)))
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('acceptedPaymentMethods'), offer_iri ('ByInvoice'));
+    if (not DB.DBA.is_empty_or_null (get_keyword ('cash', obj)))
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('acceptedPaymentMethods'), offer_iri ('Cash'));
+    if (not DB.DBA.is_empty_or_null (get_keyword ('check', obj)))
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('acceptedPaymentMethods'), offer_iri ('CheckInAdvance'));
+    if (not DB.DBA.is_empty_or_null (get_keyword ('bank', obj)))
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('acceptedPaymentMethods'), offer_iri ('ByBankTransferInAdvance'));
+
+     -- step 5
+    if (not DB.DBA.is_empty_or_null (get_keyword ('dhl', obj)))
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('availableDeliveryMethods'), offer_iri ('DHL'));
+    if (not DB.DBA.is_empty_or_null (get_keyword ('ups', obj)))
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('availableDeliveryMethods'), offer_iri ('UPS'));
+    if (not DB.DBA.is_empty_or_null (get_keyword ('mailDelivery', obj)))
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('availableDeliveryMethods'), offer_iri ('DeliveryModeMail'));
+    if (not DB.DBA.is_empty_or_null (get_keyword ('fedex', obj)))
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('availableDeliveryMethods'), offer_iri ('FederalExpress'));
+    if (not DB.DBA.is_empty_or_null (get_keyword ('download', obj)))
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('availableDeliveryMethods'), offer_iri ('DeliveryModeDirectDownload'));
+  }
+};
+
+create procedure sioc_user_offerlist_delete (in user_id integer, in ol_id integer, in ol_offer varchar, in ol_comment varchar, in ol_properties varchar)
+{
+  declare N integer;
+  declare user_name any;
+  declare graph_iri, forum_iri, iri, obj, products any;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id);
+  graph_iri := get_graph ();
+  forum_iri := offerlist_forum_iri (ol_offer, user_name);
+  delete_quad_s_or_o (graph_iri, forum_iri, forum_iri);
+
+  obj := deserialize (ol_properties);
+  products := get_keyword ('products', obj);
+  for (N := 0; N < length (products); N := N + 1)
+  {
+    iri := offerlist_item_iri (forum_iri, N+1);
+    delete_quad_s_or_o (graph_iri, iri, iri);
+  }
 };
 
 create procedure sioc_user_wishlist (in user_id integer, in wl_id integer, in wl_wishlist varchar, in wl_comment varchar, in wl_property varchar)
@@ -1254,6 +1388,28 @@ create procedure sioc_user_wishlist (in user_id integer, in wl_id integer, in wl
   ods_sioc_post (graph_iri, iri, forum_iri, user_iri, wl_wishlist, null, null);
   if (length (wl_comment))
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dc_iri ('description'), wl_comment);
+};
+
+create procedure sioc_user_favorite (in user_id integer, in f_id integer, in f_label varchar, in f_uri varchar)
+{
+  declare user_name any;
+  declare graph_iri, forum_iri, user_iri, iri any;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  graph_iri := get_graph ();
+  user_iri := user_iri (user_id);
+  user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id);
+  forum_iri := favorite_forum_iri (forum_name (user_name, 'FavoriteThings'), user_name);
+
+  iri := favorite_item_iri (forum_iri, f_id);
+  delete_quad_s_or_o (graph_iri, iri, iri);
+
+  ods_sioc_post (graph_iri, iri, forum_iri, user_iri, f_label, null, null);
+  if (length (f_uri))
+    DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdfs_iri ('seeAlso'), f_uri);
 };
 
 create procedure sioc_user_account (in graph_iri varchar, in iri varchar, in  nam varchar, in  url varchar)
@@ -1989,17 +2145,8 @@ create procedure fill_ods_sioc (in doall int := 0)
 		    {
           sioc_user_bioevent (graph_iri, iri, WUB_ID, WUB_EVENT, WUB_DATE, WUB_PLACE);
 		    }
-		  notCreated := 1;
 		  for select WUOL_U_ID, WUOL_ID, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES from DB.DBA.WA_USER_OFFERLIST where WUOL_U_ID = U_ID do
 		    {
-		      -- create OfferList Container
-		      if (notCreated)
-		    {
-            forum_name := forum_name (U_NAME, 'OfferList');
-            forum_iri := offerlist_forum_iri (forum_name, U_NAME);
-		        sioc_forum (graph_iri, graph_iri, forum_iri, forum_name, 'OfferList', null, null, U_NAME);
-		        notCreated := 0;
-		      }
           sioc_user_offerlist (WUOL_U_ID, WUOL_ID, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES);
 		    }
 		  notCreated := 1;
@@ -2014,6 +2161,19 @@ create procedure fill_ods_sioc (in doall int := 0)
 		        notCreated := 0;
 		      }
           sioc_user_wishlist (WUWL_U_ID, WUWL_ID, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTY);
+		    }
+		  notCreated := 1;
+		  for select WUF_U_ID, WUF_ID, WUF_LABEL, WUF_URI from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = U_ID do
+		    {
+		      -- create FavoriteThings Container
+		      if (notCreated)
+		      {
+            forum_name := forum_name (U_NAME, 'FavoriteThings');
+      	    forum_iri := favorite_forum_iri (forum_name, U_NAME);
+		        sioc_forum (graph_iri, graph_iri, forum_iri, forum_name, 'FavoriteThings', null, null, U_NAME);
+		        notCreated := 0;
+		      }
+          sioc_user_favorite (WUF_U_ID, WUF_ID, WUF_LABEL, WUF_URI);
 		    }
 		  if (length (WAUI_SKYPE))
 		    sioc_user_account (graph_iri, iri, WAUI_SKYPE, 'skype:'||WAUI_SKYPE||'?chat');
@@ -2740,22 +2900,11 @@ create trigger WA_USER_BIOEVENTS_SIOC_D after delete on DB.DBA.WA_USER_BIOEVENTS
 -- Offer List
 create trigger WA_USER_OFFERLIST_SIOC_I after insert on DB.DBA.WA_USER_OFFERLIST referencing new as N
 {
-  declare user_id integer;
-  declare user_name, forum_name, graph_iri, forum_iri any;
   declare exit handler for sqlstate '*'
   {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
-  user_id := N.WUOL_U_ID;
-  if ((select count (WUOL_ID) from DB.DBA.WA_USER_OFFERLIST where WUOL_U_ID = user_id) = 1)
-  {
-  graph_iri := get_graph ();
-    user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id);
-    forum_name := forum_name (user_name, 'OfferList');
-    forum_iri := offerlist_forum_iri (forum_name, user_name);
-    sioc_forum (graph_iri, graph_iri, forum_iri, forum_name, 'OfferList', null, null, user_name);
-  }
   sioc_user_offerlist (N.WUOL_U_ID, N.WUOL_ID, N.WUOL_OFFER, N.WUOL_COMMENT, N.WUOL_PROPERTIES);
 };
 
@@ -2766,26 +2915,18 @@ create trigger WA_USER_OFFERLIST_SIOC_U after update on DB.DBA.WA_USER_OFFERLIST
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
+  sioc_user_offerlist_delete (O.WUOL_U_ID, O.WUOL_ID, O.WUOL_OFFER, O.WUOL_COMMENT, O.WUOL_PROPERTIES);
   sioc_user_offerlist (N.WUOL_U_ID, N.WUOL_ID, N.WUOL_OFFER, N.WUOL_COMMENT, N.WUOL_PROPERTIES);
 };
 
 create trigger WA_USER_OFFERLIST_SIOC_D after delete on DB.DBA.WA_USER_OFFERLIST referencing old as O
 {
-  declare user_id, user_name any;
-  declare graph_iri, forum_iri, iri any;
   declare exit handler for sqlstate '*'
   {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
-  user_id := O.WUOL_U_ID;
-  user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id);
-  graph_iri := get_graph ();
-  forum_iri := offerlist_forum_iri (forum_name (user_name, 'OfferList'), user_name);
-  iri := offerlist_item_iri (forum_iri, O.WUOL_ID);
-  delete_quad_s_or_o (graph_iri, iri, iri);
-  if ((select count (WUOL_ID) from DB.DBA.WA_USER_OFFERLIST where WUOL_U_ID = user_id) = 0)
-    SIOC..delete_quad_s_or_o (graph_iri, forum_iri, forum_iri);
+  sioc_user_offerlist_delete (O.WUOL_U_ID, O.WUOL_ID, O.WUOL_OFFER, O.WUOL_COMMENT, O.WUOL_PROPERTIES);
 };
 
 -- Wish List
@@ -2836,6 +2977,57 @@ create trigger WA_USER_WISHLIST_SIOC_D after delete on DB.DBA.WA_USER_WISHLIST r
   iri := offerlist_item_iri (forum_iri, O.WUWL_ID);
   delete_quad_s_or_o (graph_iri, iri, iri);
   if ((select count (WUWL_ID) from DB.DBA.WA_USER_WISHLIST where WUWL_U_ID = user_id) = 0)
+    SIOC..delete_quad_s_or_o (graph_iri, forum_iri, forum_iri);
+};
+
+-- Favorite Things
+create trigger WA_USER_FAVORITES_SIOC_I after insert on DB.DBA.WA_USER_FAVORITES referencing new as N
+{
+  declare user_id integer;
+  declare user_name, forum_name, graph_iri, forum_iri any;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  user_id := N.WUF_U_ID;
+  if ((select count (WUF_ID) from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = user_id) = 1)
+  {
+    graph_iri := get_graph ();
+    user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id);
+    forum_name := forum_name (user_name, 'FavoriteThings');
+    forum_iri := favorite_forum_iri (forum_name, user_name);
+    sioc_forum (graph_iri, graph_iri, forum_iri, forum_name, 'FavoriteThings', null, null, user_name);
+  }
+  sioc_user_favorite (N.WUF_U_ID, N.WUF_ID, N.WUF_LABEL, N.WUF_URI);
+};
+
+create trigger WA_USER_FAVORITES_SIOC_U after update on DB.DBA.WA_USER_FAVORITES referencing old as O, new as N
+{
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  sioc_user_favorite (N.WUF_U_ID, N.WUF_ID, N.WUF_LABEL, N.WUF_URI);
+};
+
+create trigger WA_USER_FAVORITES_SIOC_D after delete on DB.DBA.WA_USER_FAVORITES referencing old as O
+{
+  declare user_id, user_name any;
+  declare graph_iri, forum_iri, iri any;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  user_id := O.WUF_U_ID;
+  user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id);
+  graph_iri := get_graph ();
+  forum_iri := favorite_forum_iri (forum_name (user_name, 'FavoriteThings'), user_name);
+  iri := offerlist_item_iri (forum_iri, O.WUF_ID);
+  delete_quad_s_or_o (graph_iri, iri, iri);
+  if ((select count (WUF_ID) from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = user_id) = 0)
     SIOC..delete_quad_s_or_o (graph_iri, forum_iri, forum_iri);
 };
 
@@ -4825,6 +5017,8 @@ ret:
 
 
 use DB;
+
+DB.DBA."RDFData_MAKE_DET_COL" ('/DAV/VAD/wa/RDFData/', sioc..get_graph ());
 
 
 delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = 'ODS_SIOC_RDF';

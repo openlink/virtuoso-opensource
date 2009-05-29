@@ -127,7 +127,7 @@
     </v:data-source>
     <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
       <div style="padding: 0 0 0.5em 0;">
-        <v:button action="simple" style="url" value="''" xhtml_class="img_button">
+        <v:button name="lButton_1" action="simple" style="url" value="''" xhtml_class="img_button">
           <v:before-render>
             <![CDATA[
               control.ufl_value := '<img src="images/icons/go_16.png" border="0" /> Add LDAP Server';
@@ -197,7 +197,7 @@
                 <v:label value="--case when ((control.vc_parent as vspx_row_template).te_column_value('LS_DEFAULT') = 1) then 'Yes' else '' end" format="%s"/>
               </td>
               <td nowrap="nowrap">
-                <v:button action="simple" style="url" value="''" xhtml_class="img_button">
+                <v:button name="lButton_2" action="simple" style="url" value="''" xhtml_class="img_button">
                   <v:before-render>
                     <![CDATA[
                       control.ufl_value := '<img src="images/icons/confg_16.png" border="0" alt="Edit LDAP Server" title="Edit LDAP Server"/> Edit';
@@ -230,7 +230,7 @@
                     ]]>
                   </v:on-post>
                 </v:button>
-                <v:button action="simple" style="url" value="''" xhtml_class="img_button">
+                <v:button name="lButton_3" action="simple" style="url" value="''" xhtml_class="img_button">
                   <v:before-render>
                     <![CDATA[
                       control.ufl_value := '<img src="images/icons/trash_16.png" border="0" alt="Delete LDAP Server" title="Delete LDAP Server"/> Delete';
@@ -244,7 +244,7 @@
                     ]]>
                   </v:on-post>
                 </v:button>
-                <v:button action="simple" style="url" value="''" xhtml_class="img_button">
+                <v:button name="lButton_4" action="simple" style="url" value="''" xhtml_class="img_button">
                   <v:before-render>
                     <![CDATA[
                       control.ufl_value := '<img src="images/icons/foaf.png" border="0" alt="Generate FOAF" title="Generate FOAF"/>';
@@ -302,7 +302,7 @@
 
     </v:data-set>
   </vm:if>
-  <v:template type="simple" enabled="--case when (self.v_mode = 'LDAP/foaf') then 1 else 0 end">
+  <v:template name="lTemplate" type="simple" enabled="--case when (self.v_mode = 'LDAP/foaf') then 1 else 0 end">
     <div><v:label value="--'Export from LDAP Server ' || self.v_name || ' to FOAF'" /></div>
     <div style="height: 400px; overflow: auto;">
       <table id="lfoaf" class="listing" cellspacing="0">
@@ -345,7 +345,7 @@
       </table>
     </div>
     <div class="new-form-footer">
-      <v:button action="simple" value="Generate FOAF" xhtml_class="form-button">
+      <v:button name="lButton_5" action="simple" value="Generate FOAF" xhtml_class="form-button">
         <v:on-post>
           <![CDATA[
             declare N, M, L, isFounded integer;
@@ -399,7 +399,7 @@
           ]]>
         </v:on-post>
       </v:button>
-      <v:button action="simple" value="Back" xhtml_class="form-button">
+      <v:button name="lButton_6" action="simple" value="Back" xhtml_class="form-button">
         <v:on-post>
           <![CDATA[
             self.v_mode := 'LDAP/browse';
@@ -484,7 +484,7 @@
       </vm:if>
     </table>
     <div class="new-form-footer">
-      <v:button action="simple" value="Next" xhtml_class="form-button">
+      <v:button name="lButton_7" action="simple" value="Next" xhtml_class="form-button">
         <v:on-post>
           <![CDATA[
           	declare host varchar;
@@ -514,7 +514,7 @@
           ]]>
         </v:on-post>
       </v:button>
-      <v:button action="simple" value="Cancel" xhtml_class="form-button">
+      <v:button name="lButton_8" action="simple" value="Cancel" xhtml_class="form-button">
         <v:on-post>
           <![CDATA[
             self.v_mode := 'LDAP/browse';
@@ -567,7 +567,7 @@
       </table>
     </div>
     <div class="new-form-footer">
-      <v:button action="simple" value="Save" xhtml_class="form-button">
+      <v:button name="lButton_9" action="simple" value="Save" xhtml_class="form-button">
         <v:on-post>
           <![CDATA[
             declare N integer;
@@ -600,7 +600,7 @@
           ]]>
         </v:on-post>
       </v:button>
-      <v:button action="simple" value="Cancel" xhtml_class="form-button">
+      <v:button name="lButton_10" action="simple" value="Cancel" xhtml_class="form-button">
         <v:on-post>
           <![CDATA[
             self.v_mode := 'LDAP/browse';

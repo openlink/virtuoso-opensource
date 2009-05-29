@@ -232,7 +232,7 @@ create procedure obj2json (
 		}
 		retValue := '"' || retValue || '"';
 	}
-  else if (isarray (o) and (length (o) > 1) and (__tag (o[0]) = 255))
+  else if (isarray (o) and (length (o) > 1) and ((__tag (o[0]) = 255) or (o[0] is null and o[1] = '<soap_box_structure>')))
   {
   	retValue := '{';
   	for (N := 2; N < length(o); N := N + 2)
@@ -1396,6 +1396,19 @@ create procedure ODS.ODS_API.appendProperty (
 grant execute on DB.DBA.RDF_GRAB to SPARQL_SELECT;
 grant execute on DB.DBA.RDF_GRAB_SINGLE_ASYNC to SPARQL_SELECT;
 
+create procedure ODS.ODS_API.vector_contains(
+  in aVector any,
+  in aValue varchar)
+{
+  declare N integer;
+
+  for (N := 0; N < length(aVector); N := N + 1)
+    if (aValue = aVector[N])
+      return 1;
+  return 0;
+}
+;
+
 create procedure ODS.ODS_API.get_foaf_data_array (
   in foafIRI varchar,
   in spongerMode integer := 1,
@@ -1403,11 +1416,13 @@ create procedure ODS.ODS_API.get_foaf_data_array (
   in sslLoginCheck integer := 0)
 {
   declare N, M integer;
-  declare S, IRI, foafGraph, _identity varchar;
+  declare S, IRI, foafGraph, _identity, _loc_idn varchar;
   declare V, st, msg, data, meta any;
   declare certLogin any;
   declare "title", "name", "nick", "firstName", "givenname", "family_name", "mbox", "gender", "birthday", "lat", "lng" any;
-  declare "icqChatID", "msnChatID", "aimChatID", "yahooChatID", "workplaceHomepage", "homepage", "phone", "organizationTitle", "keywords", "depiction", "interest" any;
+  declare "icqChatID", "msnChatID", "aimChatID", "yahooChatID", "workplaceHomepage", "homepage", "phone", "organizationTitle", "keywords", "depiction", "resume" any;
+  declare "interest", "topic_interest", "onlineAccounts", "sameAs" any;
+  declare "vInterest", "vTopic_interest", "vOnlineAccounts", "vSameAs" any;
   declare host, port, arr any;
 
   set_user_id ('dba');
@@ -1415,21 +1430,11 @@ create procedure ODS.ODS_API.get_foaf_data_array (
   V := rfc1808_parse_uri (_identity);
   if (is_https_ctx () and cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal') = '1' and V[1] = registry_get ('URIQADefaultHost'))
     {
+      V [0] := 'local';
+      V [1] := '';
+      _loc_idn := db.dba.vspx_uri_compose (V);
       V [0] := 'https';
-      host := V[1];
-      port := server_https_port ();
-      if (port = '443') port := '';
-      else port := ':' || port;
-      arr := split_and_decode (host, 0, '\0\0:');
-      if (length (arr) = 2)
-	{
-	  host := arr[0] || port;
-	}
-      else
-        {
-	  host := host || port;
-	}
-      V [1] := host;
+      V [1] := http_request_header (http_request_header(), 'Host', null, registry_get ('URIQADefaultHost'));
       _identity := db.dba.vspx_uri_compose (V);
     }
   V := rfc1808_parse_uri (trim (foafIRI));
@@ -1470,7 +1475,7 @@ create procedure ODS.ODS_API.get_foaf_data_array (
                   SIOC..cert_iri (''),
                   SIOC..rsa_iri (''),
                   foafGraph,
-                  foafIRI);
+                  _loc_idn);
     commit work;
     exec (S, st, msg, vector (), 0, meta, data);
     if (not (st = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and data[0][1] = bin2hex (info[2])))
@@ -1493,7 +1498,8 @@ create procedure ODS.ODS_API.get_foaf_data_array (
                   prefix foaf: <http://xmlns.com/foaf/0.1/>
                   prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
                   prefix bio: <http://vocab.org/bio/0.1/>
-                  select ?title
+                 select ?person
+                        ?title
                          ?name
                          ?nick
                          ?firstName
@@ -1514,9 +1520,14 @@ create procedure ODS.ODS_API.get_foaf_data_array (
                          ?organizationTitle
                          ?keywords
                          ?depiction
+                        ?resume
                          ?interest
                          ?interest_label
-                         ?person
+                        ?topic_interest
+                        ?topic_interest_label
+                        ?onlineAccount
+                        ?onlineAccount_url
+                        ?sameAs
 		               from <%s>
                    where {
                            {
@@ -1546,40 +1557,56 @@ create procedure ODS.ODS_API.get_foaf_data_array (
                              optional { ?organization dc:title ?organizationTitle }.
                              optional { ?person foaf:interest ?interest .
                                         ?interest rdfs:label ?interest_label. } .
+                            optional { ?person foaf:topic_interest ?topic_interest .
+                                       ?topic_interest rdfs:label ?topic_interest_label. } .
+                            optional { ?person foaf:holdsAccount ?oa .
+                                       ?oa a foaf:OnlineAccount.
+                                       ?oa foaf:accountServiceHomepage ?onlineAccount_url.
+                                       ?oa foaf:accountName ?onlineAccount. } .
+                            optional { ?person owl:sameAs ?sameAs } .
+                            optional { ?person bio:olb ?resume } .
                            }
                         }', foafGraph);
   commit work;
   exec (S, st, msg, vector (), 0, meta, data);
   M := 0;
   "interest" := '';
+  "topic_interest" := '';
+  "onlineAccounts" := '';
+  "sameAs" := '';
+  "vInterest" := vector ();
+  "vTopic_interest" := vector ();
+  "vOnlineAccounts" := vector ();
+  "vSameAs" := vector ();
   for (N := 0; N < length (data); N := N + 1)
   {
-    if (_identity = data[N][23])
+    if (_identity = data[N][0])
     {
       if (M = 0)
     {
         M := 1;
-      "title" := data[N][0];
-      "name" := data[N][1];
-      "nick" := data[N][2];
-      "firstName" := data[N][3];
-      "givenname" := data[N][4];
-      "family_name" := data[N][5];
-      "mbox" := data[N][6];
-      "gender" := lcase (data[N][7]);
-      "birthday" := data[N][8];
-      "lat" := data[N][9];
-      "lng" := data[N][10];
-      "icqChatID" := data[N][11];
-      "msnChatID" := data[N][12];
-      "aimChatID" := data[N][13];
-      "yahooChatID" := data[N][14];
-      "workplaceHomepage" := data[N][15];
-      "homepage" := data[N][16];
-      "phone" := data[N][17];
-        "organizationTitle" := data[N][18];
-        "keywords" := data[N][19];
-        "depiction" := data[N][20];
+        "title" := data[N][1];
+        "name" := data[N][2];
+        "nick" := data[N][3];
+        "firstName" := data[N][4];
+        "givenname" := data[N][5];
+        "family_name" := data[N][6];
+        "mbox" := data[N][7];
+        "gender" := lcase (data[N][8]);
+        "birthday" := data[N][9];
+        "lat" := data[N][10];
+        "lng" := data[N][11];
+        "icqChatID" := data[N][12];
+        "msnChatID" := data[N][13];
+        "aimChatID" := data[N][14];
+        "yahooChatID" := data[N][15];
+        "workplaceHomepage" := data[N][16];
+        "homepage" := data[N][17];
+        "phone" := data[N][18];
+        "organizationTitle" := data[N][19];
+        "keywords" := data[N][20];
+        "depiction" := data[N][21];
+        "resume" := data[N][22];
 
         if (sslLoginCheck)
           appendProperty (V, 'certLogin', certLogin);
@@ -1606,12 +1633,36 @@ create procedure ODS.ODS_API.get_foaf_data_array (
       appendProperty (V, 'tags', "keywords");                               -- WAUI_
       appendProperty (V, 'depiction', "depiction");                         -- WAUI_
     }
-      if (data[N][21] is not null and data[N][21] <> '')
-        "interest" := "interest" || data[N][21] || ';' || data[N][22] || '\n';
+      if (data[N][23] is not null and data[N][23] <> '' and not ODS.ODS_API.vector_contains ("vInterest", data[N][23]))
+      {
+        "interest" := "interest" || data[N][23] || ';' || data[N][24] || '\n';
+        "vInterest" := vector_concat ("vInterest", vector (data[N][23]));
+      }
+      if (data[N][25] is not null and data[N][25] <> '' and not ODS.ODS_API.vector_contains ("vTopic_interest", data[N][25]))
+      {
+        "topic_interest" := "topic_interest" || data[N][25] || ';' || data[N][26] || '\n';
+        "vTopic_interest" := vector_concat ("vTopic_interest", vector (data[N][25]));
+      }
+      if (data[N][27] is not null and data[N][27] <> '' and not ODS.ODS_API.vector_contains ("vOnlineAccounts", data[N][27]))
+      {
+        "onlineAccounts" := "onlineAccounts" || data[N][27] || ';' || data[N][28] || '\n';
+        "vOnlineAccounts" := vector_concat ("vOnlineAccounts", vector (data[N][27]));
+      }
+      if (data[N][29] is not null and data[N][29] <> '' and not ODS.ODS_API.vector_contains ("vSameAs", data[N][29]))
+      {
+        "sameAs" := "sameAs" || data[N][29] || '\n';
+        "vSameAs" := vector_concat ("vSameAs", vector (data[N][29]));
+      }
   }
   }
   if ("interest" <> '')
     appendProperty (V, 'interest', "interest");
+  if ("topic_interest" <> '')
+    appendProperty (V, 'topic_interest', "topic_interest");
+  if ("onlineAccounts" <> '')
+    appendProperty (V, 'onlineAccounts', "onlineAccounts");
+  if ("sameAs" <> '')
+    appendProperty (V, 'sameAs', "sameAs");
 
 _exit:;
   exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
