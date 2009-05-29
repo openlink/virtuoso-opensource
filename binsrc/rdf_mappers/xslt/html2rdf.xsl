@@ -66,7 +66,7 @@
 		<xsl:variable name="doc1">
 			<xsl:copy-of select="/html/body" />
 		</xsl:variable>
-		<content:encoded><xsl:value-of select="vi:escape($doc1)" /></content:encoded>
+		<!--content:encoded><xsl:value-of select="vi:escape($doc1)" /></content:encoded-->
       </rdf:Description>
   </xsl:template>
 

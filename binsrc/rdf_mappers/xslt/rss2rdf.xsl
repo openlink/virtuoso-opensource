@@ -38,6 +38,7 @@
   xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
   xmlns:georss="http://www.georss.org/georss"
   xmlns:sioc="http://rdfs.org/sioc/ns#"
+  xmlns:skos="http://www.w3.org/2004/02/skos/core#"
   version="1.0">
 
 <xsl:output indent="yes" cdata-section-elements="content:encoded" />
@@ -181,9 +182,9 @@
 
 <xsl:template match="item/description|r:item/r:description">
   <dc:description><xsl:call-template name="removeTags" /></dc:description>
-  <xsl:if test="not(../content:encoded)">
+  <!--xsl:if test="not(../content:encoded)">
     <content:encoded><xsl:value-of select="." /></content:encoded>
-  </xsl:if>
+  </xsl:if-->
 </xsl:template>
 
 <xsl:template match="pubDate|r:pubDate">
