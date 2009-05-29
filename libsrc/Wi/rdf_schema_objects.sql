@@ -236,12 +236,12 @@ rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0, 
 	   for select "COLUMN" from SYS_COLS where "TABLE" = tbl order by COL_ID do
 	     {
 	       col_name := lower ("COLUMN");
-	       if (cols_arr[inx] = 0) -- binary object
+	       if (cols_arr[inx] = 0 or cols_arr[inx] = 4)
 		 {
 	       ret := ret || rdf_view_sp (6) || sprintf ('%s:%s %s.%s as virtrdf:%s-%s ;\n',
 				qualifier, rdf_view_col("COLUMN"), tname, rdf_view_sql_col ("COLUMN"), tbl_name_l, rdf_view_col("COLUMN") );
 	     }
-	       else if (isstring (cols_arr[inx]))
+	       else if (isstring (cols_arr[inx])) -- binary object
 		 {
 		    ret := ret || rdf_view_sp (6) || sprintf ('%s:%s %s as virtrdf:%s-%s ;\n',
 		       qualifier, rdf_view_col("COLUMN"),
@@ -544,6 +544,7 @@ RDF_OWL_FROM_TBL (in qual varchar, in _tbls any, in cols any := null)
   http ('@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n', ses);
   http ('@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n', ses);
   http ('@prefix aowl: <http://bblfish.net/work/atom-owl/2006-06-06/> .\n', ses);
+  http ('@prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#> .\n', ses);
   http (ns, ses);
   http (sprintf ('\n%s: a owl:Ontology .\n', qual), ses);
   foreach (varchar tbl in _tbls) do
@@ -571,6 +572,11 @@ RDF_OWL_FROM_TBL (in qual varchar, in _tbls any, in cols any := null)
 	    }
 	  else if (cols_arr[inx] = 1)
 	    goto skip_this;
+	  else if (cols_arr[inx] = 4)
+	    {
+	      http (sprintf ('%s:%s rdfs:subPropertyOf virtrdf:label . \n', qual, col), ses);
+	      http (sprintf ('%s:%s rdfs:range xsd:%s .\n', qual, col, xsd), ses);
+	    }
 	  else
 	    {
 	      http (sprintf ('%s:%s a owl:DatatypeProperty .\n', qual, col), ses);
