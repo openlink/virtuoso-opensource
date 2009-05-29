@@ -1045,11 +1045,16 @@ td.cpDayColumnHeader
     clear: both;
 }
 
+.search_link {
+    float: left;
+}
+
 .search_result {
   margin-bottom: 20px;
 }
 
 .search_result_exp {
+	clear: left;
     float: left;
     margin: 3px;
     margin-left: 30px;
