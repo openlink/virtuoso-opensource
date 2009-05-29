@@ -252,18 +252,22 @@
 	       HP_OPTIONS, HP_IS_DEFAULT_HOST
 	       from DB.DBA.HTTP_PATH where HP_HOST = vhost_o and HP_LISTEN_HOST = lhost_o do
 	     {
+	        declare opts any;
       	        st := '00000';
 	        msg := '';
 	        VHOST_REMOVE (vhost_o, lhost_o, HP_LPATH, 0);
-		if (self.key_list.ufl_value <> 'none')
-		  {
-		    declare opts any;
 		    opts := deserialize (HP_AUTH_OPTIONS);
 		    yac_set_ssl_key (self.key_list.ufl_value, self.verify.ufl_value, opts);
 		    HP_AUTH_OPTIONS := serialize (opts);
+		if (self.key_list.ufl_value <> 'none')
+		  {
 		    HP_SECURITY := 'SSL';
 		    if (ssl_opts is null)
 		      ssl_opts := opts;
+		  }
+		else
+                  {
+                    HP_SECURITY := null;
 		  }
 		exec('VHOST_DEFINE (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', st, msg,
 		     vector (vhost, lhost, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE,
