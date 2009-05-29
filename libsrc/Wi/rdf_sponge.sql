@@ -997,6 +997,7 @@ create procedure DB.DBA.RDF_SW_PING (in endp varchar, in url varchar)
 {
   declare rc any;
   declare err, msg any;
+  declare xt any;
   commit work;
   declare exit handler for sqlstate '*'
   {
@@ -1005,13 +1006,23 @@ create procedure DB.DBA.RDF_SW_PING (in endp varchar, in url varchar)
     commit work;
     return;
   };
-  rc := DB.DBA.XMLRPC_CALL (endp, 'weblogUpdates.ping', vector ('', url));
+
   err := '';
   msg := 'n/a';
-  if (isarray (rc))
+  xt := null;
+  if (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'RestPingService') = '1')
     {
-      declare xt any;
+      rc := http_get (endp||sprintf ('?url=%U', url)); 
+      xt := xtree_doc (rc);
+    }
+  else
+    {
+      rc := DB.DBA.XMLRPC_CALL (endp, 'weblogUpdates.ping', vector ('', url));
+      if (isarray (rc))
       xt := xml_tree_doc (rc);
+    }
+  if (xt is not null)
+    {
       err := cast (xpath_eval ('//flerror/text()', xml_cut(xt), 1) as varchar);
       msg := cast (xpath_eval ('//message/text()', xml_cut(xt), 1) as varchar);
     }
