@@ -856,7 +856,7 @@ sparp_optimize_BOP_OR_filter (sparp_t *sparp, SPART *curr, SPART *filt)
     new_rvr.rvrRestrictions |= SPART_VARR_IS_REF | SPART_VARR_IS_IRI;
   new_rvr.rvrRestrictions |= SPART_VARR_NOT_NULL | SPART_VARR_SPRINTFF;
   new_rvr.rvrSprintffCount = dk_set_length (ctx.bofc_strings);
-  new_rvr.rvrSprintffs = (ccaddr_t *)t_alloc_box (DV_ARRAY_OF_POINTER, new_rvr.rvrSprintffCount * sizeof(caddr_t));
+  new_rvr.rvrSprintffs = (ccaddr_t *)t_alloc_box (new_rvr.rvrSprintffCount * sizeof(caddr_t), DV_ARRAY_OF_POINTER);
   for (sff_ctr = new_rvr.rvrSprintffCount; sff_ctr--; /* no step */)
     new_rvr.rvrSprintffs[sff_ctr] = sprintff_from_strg (dk_set_pop (&(ctx.bofc_strings)), 1);
   sparp_equiv_tighten (sparp, eq_l, &new_rvr, ~0);

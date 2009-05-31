@@ -577,6 +577,13 @@ create procedure VHOST_REMOVE (in vhost varchar := '*ini*',
            else vhost
          end
        , 0, ':=:');
+  lport := split_and_decode (
+     case
+       when lhost = '*ini*' then server_http_port ()
+       when lhost = '*sslini*' then ssl_port
+       else lhost
+     end
+   , 0, ':=:');
       if (__tag (varr) = 193 and length (varr) > 1)
 	vhost := varr[0];
       if (__tag (lport) = 193 and length (lport) > 1)

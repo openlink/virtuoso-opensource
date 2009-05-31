@@ -36,7 +36,12 @@
 #include "turtle_p.h"
 #include "numeric.h"
 #include "turtle_p.h"
+#include "nquad_p.h"
 #include "security.h"
+#if (__NQUAD_NONPUNCT_END != __TTL_NONPUNCT_END)
+  Sources of parsers are out of sync: mismatch between token declarations in nquad_p.y and turtle_p.y
+#endif
+
 
 #define YY_EXTRA_TYPE ttlp_t *
 
@@ -632,7 +637,7 @@ rdf_load_turtle (
 
 iter_is_set:
   tf->tf_graph_uri = box_copy (graph_uri);
-  ttlp->ttlp_err_hdr = "TURTLE RDF loader";
+  ttlp->ttlp_err_hdr = ((flags & TTLP_ALLOW_NQUAD) ? "NQuads RDF loader" : ((flags & TTLP_ALLOW_TRIG) ? "TriG RDF loader" : "TURTLE RDF loader"));
   if (NULL == query_charset)
     query_charset = default_charset;
   if (NULL == query_charset)
@@ -657,12 +662,18 @@ iter_is_set:
       tf->tf_graph_iid = tf_get_iid (tf, tf->tf_graph_uri);
       tf_commit (tf);
       tf_new_graph (tf, tf->tf_graph_uri);
+      /* ttlyydebug = 1; */
+      if (flags & TTLP_ALLOW_NQUAD)
+        nqyyparse (ttlp, scanner);
+      else
       ttlyyparse (ttlp, scanner);
+      /* ttlyydebug = 0; */
       tf_commit (tf);
     }
   QR_RESET_CODE
     {
       du_thread_t *self = THREAD_CURRENT_THREAD;
+      /* ttlyydebug = 0; */
       ttlp->ttlp_catched_error = thr_get_error_code (self);
       thr_set_error_code (self, NULL);
       if (NULL != ttlp->ttlp_iter_abend)

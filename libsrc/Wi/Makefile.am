@@ -72,6 +72,8 @@ generated_code = \
 	rdf_mapping_jso.h \
 	rdf_mapping_jso.ttl \
 	rdf_mapping_jso.ttl-sample \
+	nquad_p.c \
+	nquad_p.h \
 	scn3.c \
 	scn3split.c \
 	sparql_l.c \
@@ -116,6 +118,8 @@ C_FILES_SPARQL	= \
 	rdfinf.c \
 	rdf_mapping_jso.c \
 	rdfxml_parser.c \
+	nquad_p.c \
+	nquad_p.h \
 	sparql2sql.c \
 	sparql2sqltext.c \
 	sparqld.c \
@@ -672,6 +676,8 @@ SQL_FILES_WS		= \
 	$(top_srcdir)/binsrc/vspx/vspx_log_format.xsl \
 	$(top_srcdir)/binsrc/vspx/vspx.xsd \
 	$(top_srcdir)/binsrc/vspx/vspx.xsl
+
+
 json_p.c json_p.h: $(srcdir)/json.y Makefile.am
 	@$(GEN) $(YACC) -o json_p.c -vd -pjsonyy $(srcdir)/json.y
 
@@ -686,15 +692,8 @@ sqlwords.h: $(srcdir)/sqlwords.gperf
 		-Nlex_hash_kw \
 		$(srcdir)/sqlwords.gperf
 
-sql3.c: sql3.y
+sql3.c sql3.h: sql3.y
 	@$(GEN) $(YACC) -o sql3.c -vd $(srcdir)/sql3.y
-
-sql3.h: sql3.c
-	## Recover from the removal of $@
-	@if test -f $@; then :; else \
-	  rm -f sql3.c; \
-	  $(MAKE) $(AM_MAKEFLAGS) sql3.c; \
-	fi
 
 scn3.c: scn3.l sql3.c sqlwords.h
 	@$(GEN) $(LEX) -o scn3.c $(srcdir)/scn3.l
@@ -706,15 +705,8 @@ sql_code_cache.c: $(top_srcdir)/binsrc/cached_resources/cached_resources.c sql_c
 	@echo "#include \"sql_code_cache_impl.c\"" > $@
 	@echo "#include \"$(top_srcdir)/binsrc/cached_resources/cached_resources.c\"" >> $@
 
-xpathp.c: xpathp.y
+xpathp.c xpathp.h : xpathp.y
 	@$(GEN) $(YACC) -o xpathp.c -vd -pxpyy $(srcdir)/xpathp.y
-
-xpathp.h: xpathp.c
-	## Recover from the removal of $@
-	@if test -f $@; then :; else \
-	  rm -f xpathp.c; \
-	  $(MAKE) $(AM_MAKEFLAGS) xpathp.c; \
-	fi
 
 xpathp_lex_props.c: list_lex_props.sh xpathp.y
 	list_lex_props.sh xpathp.y xpathp_lex_props.c
@@ -722,15 +714,8 @@ xpathp_lex_props.c: list_lex_props.sh xpathp.y
 xpscn.c: xpscn.l xpathp.h
 	@$(GEN) $(LEX) -o xpscn.c -Pxpyy $(srcdir)/xpscn.l
 
-sparql_p.c: sparql_p.y
+sparql_p.c sparql_p.h: sparql_p.y
 	@$(GEN) $(YACC) -o sparql_p.c -vd -psparyy $(srcdir)/sparql_p.y
-
-sparql_p.h: sparql_p.c
-	## Recover from the removal of $@
-	@if test -f $@; then :; else \
-	  rm -f sparql_p.c; \
-	  $(MAKE) $(AM_MAKEFLAGS) sparql_p.c; \
-	fi
 
 sparql_lex_props.c: list_lex_props.sh sparql_p.y
 	list_lex_props.sh sparql_p.y sparql_lex_props.c
@@ -738,15 +723,11 @@ sparql_lex_props.c: list_lex_props.sh sparql_p.y
 sparql_l.c: sparql_l.l sparql_p.h
 	@$(GEN) $(LEX) -o sparql_l.c -Psparyy $(srcdir)/sparql_l.l
 
-turtle_p.c: turtle_p.y
-	@$(GEN) $(YACC) -o turtle_p.c -vd -pttlyy $(srcdir)/turtle_p.y
+nquad_p.c nquad_p.h: nquad_p.y
+	@$(GEN) $(YACC) -o nquad_p.c -vd -pnqyy $(srcdir)/nquad_p.y
 
-turtle_p.h: turtle_p.c
-	## Recover from the removal of $@
-	@if test -f $@; then :; else \
-	  rm -f turtle_p.c; \
-	  $(MAKE) $(AM_MAKEFLAGS) turtle_p.c; \
-	fi
+turtle_p.c turtle_p.h: turtle_p.y
+	@$(GEN) $(YACC) -o turtle_p.c -vd -pttlyy $(srcdir)/turtle_p.y
 
 turtle_lex_props.c: list_lex_props.sh turtle_p.y
 	list_lex_props.sh turtle_p.y turtle_lex_props.c

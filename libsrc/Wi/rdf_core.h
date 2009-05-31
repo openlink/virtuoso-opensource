@@ -99,6 +99,7 @@ extern void tf_report (triple_feed_t *tf, char msg_type, const char *sqlstate, c
 #define TTLP_ACCEPT_DIRTY_SYNTAX	0x0040
 #define TTLP_ERROR_RECOVERY		0x0080
 #define TTLP_ALLOW_TRIG			0x0100
+#define TTLP_ALLOW_NQUAD		0x0200
 
 #define TTLP_ALLOW_QNAME_A		0x01
 #define TTLP_ALLOW_QNAME_HAS		0x02

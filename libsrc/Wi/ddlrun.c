@@ -4884,6 +4884,8 @@ end:;
 }
 
 
+client_connection_t * recomp_cli;
+
 query_t *
 qr_recompile (query_t * qr, caddr_t * err_ret)
 {
@@ -4918,11 +4920,17 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
 	  new_qr = NULL;
 	}
     }
-
-  org_user = bootstrap_cli->cli_user;
-  org_qual = bootstrap_cli->cli_qualifier;
-  CLI_QUAL_ZERO (bootstrap_cli);
-  CLI_SET_QUAL (bootstrap_cli, qr->qr_qualifier);
+  if (!recomp_cli)
+    {
+      recomp_cli = client_connection_create ();
+      recomp_cli->cli_replicate = REPL_NO_LOG;
+      local_start_trx (recomp_cli);
+      local_commit_end_trx (recomp_cli);
+    }
+  org_user = recomp_cli->cli_user;
+  org_qual = recomp_cli->cli_qualifier;
+  CLI_QUAL_ZERO (recomp_cli);
+  CLI_SET_QUAL (recomp_cli, qr->qr_qualifier);
   if (0 == strcmp (owner, "DBA"))
     owner = "dba";
   owner_user = sec_name_to_user (owner);
@@ -4938,7 +4946,7 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
       ST * tree = qr->qr_parse_tree_to_reparse ? (ST *)NULL : ((ST *) (QR_IS_MODULE_PROC (qr) ?  qr->qr_module->qr_parse_tree : qr->qr_parse_tree));
       if (cr_type <= _SQL_CURSOR_FORWARD_ONLY)
 	cr_type = SQLC_DO_NOT_STORE_PROC;
-      bootstrap_cli->cli_user = owner_user;
+      recomp_cli->cli_user = owner_user;
 
       if (QR_IS_MODULE_PROC (qr))
 	{
@@ -4966,9 +4974,9 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
 	  sch_set_module_def (sc, qr->qr_module->qr_proc_name, NULL);
 	}
       if (tree)
-        new_qr = sql_compile_1 ("", bootstrap_cli, &err, cr_type, tree, NULL);
+        new_qr = sql_compile_1 ("", recomp_cli, &err, cr_type, tree, NULL);
       else
-	new_qr = sql_compile (text, bootstrap_cli, &err, cr_type);
+	new_qr = sql_compile (text, recomp_cli, &err, cr_type);
       /* users other than dba cannot execute own procedures after restart */
       /*if (owner_user && new_qr)
 	new_qr->qr_proc_owner = owner_user->usr_id;*/
@@ -4976,8 +4984,8 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
 	new_qr = NULL;
     }
 
-  bootstrap_cli->cli_user = org_user;
-  CLI_RESTORE_QUAL (bootstrap_cli, org_qual);
+  recomp_cli->cli_user = org_user;
+  CLI_RESTORE_QUAL (recomp_cli, org_qual);
 
   if (QR_IS_MODULE_PROC (qr))
     {
@@ -5021,7 +5029,7 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
 	{
 	  dk_free_tree (err);
 	  err = NULL;
-	  cl_rdf_inf_init (bootstrap_cli, &err);
+	  cl_rdf_inf_init (recomp_cli, &err);
 	  if (!err)
 	    return qr_recompile (qr, err_ret);
 	}
