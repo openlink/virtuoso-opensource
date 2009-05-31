@@ -87,7 +87,7 @@ fct_view_info (in tree any, in ctx int, in txt any)
     {
       http (sprintf ('Displaying types of %s%d', connection_get ('s_term'), pos), txt);
     }
-  if ('text' = mode)
+  if ('text' = mode or 'text-d' = mode)
     {
       http (sprintf ('Displaying values and text summaries associated with pattern %s%d', 
 	             connection_get ('s_term'), pos), txt);
@@ -192,7 +192,7 @@ fct_query_info (in tree any,
       fct_view_info (tree, ctx, txt);
       fct_query_info_1 (tree, 1, max_s, 1, ctx, txt, cno);
     }
-  else if (n = 'text')
+  else if (n = 'text' or n = 'text-d')
     {
       declare prop varchar;
       prop := cast (xpath_eval ('./@property', tree, 1) as varchar);
@@ -384,7 +384,7 @@ fct_nav (in tree any,
   if ('properties-in' <> tp)
     fct_view_link ('properties-in', 'Referencing properties', txt);
 
-  if ('text' <> tp)
+  if ('text' <> tp and tp <> 'text-d')
     {
       if (tp <> 'list-count')
 	fct_view_link ('list-count', 'Distinct values with counts', txt);
@@ -522,6 +522,7 @@ fct_web (in tree any)
 }
 ;
 
+--# text view set
 create procedure
 fct_set_text (in tree any, in sid int, in txt varchar)
 {
@@ -533,7 +534,7 @@ fct_set_text (in tree any, in sid int, in txt varchar)
     {
       new_tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
                         new_tree,
-		        vector ('pos', 0, 'type', 'text', 'limit', 20, 'op', 'view'));
+		        vector ('pos', 0, 'type', 'text-d', 'limit', 20, 'op', 'view'));
     }
 
   update fct_state set fct_state = new_tree where fct_sid = sid;
@@ -543,6 +544,7 @@ fct_set_text (in tree any, in sid int, in txt varchar)
 }
 ;
 
+--# text view set
 create procedure
 fct_set_text_property (in tree any, in sid int, in iri varchar)
 {
@@ -550,7 +552,7 @@ fct_set_text_property (in tree any, in sid int, in iri varchar)
 
   txt := cast (xpath_eval ('//text', tree) as varchar);
   new_tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_text.xsl', tree, vector ('text', txt, 'prop', iri));
-  new_tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl', new_tree, vector ('pos', 0, 'type', 'text', 'limit', 20, 'op', 'view'));
+  new_tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl', new_tree, vector ('pos', 0, 'type', 'text-d', 'limit', 20, 'op', 'view'));
 
   update fct_state set fct_state = new_tree where fct_sid = sid;
   commit work;

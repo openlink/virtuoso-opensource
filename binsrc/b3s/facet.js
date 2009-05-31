@@ -79,9 +79,9 @@ function fct_uri_ac_ajax_handler (resp)
 	}
 
       if (resp_obj.restype == "single")
-	uri_ac.set_opts (resp_obj.results);
+	uri_ac.set_uri_opts (resp_obj.results);
       else 
-	uri_ac.set_opts (resp_obj.results[0].concat(resp_obj.results[1]));
+	uri_ac.set_uri_opts (resp_obj.results[0].concat(resp_obj.results[1]));
 
     uri_ac.show_popup ();
 }
@@ -278,6 +278,18 @@ OAT.Autocomplete = function (_input, _value_input, _button, _form, optObj) {
 	if (opt_list.length) {
 	    for (var i=0;i<opt_list.length;i=i+2) {
 		this.add_option(opt_list[i], opt_list[i+1]);
+	    }
+	    self.btn.disabled = false;
+	}
+	else
+	    self.btn.disabled = true;
+    }
+	
+    this.set_uri_opts = function (opt_list)
+    {	
+	if (opt_list.length) {
+	    for (var i=0;i<opt_list.length;i=i+1) {
+		this.add_option(opt_list[i]);
 	    }
 	    self.btn.disabled = false;
 	}

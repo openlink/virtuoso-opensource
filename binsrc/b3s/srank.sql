@@ -63,7 +63,7 @@ create procedure rnk_scale (in i int)
 
   if (ret > 1 and ret < 10)
     {
-      return 3 + ((atan (ret-1) * 4) / 3.14);
+      return 3 + ((atan (ret-1) * 4) / 3.14e0);
     }
 
   else 
@@ -93,6 +93,8 @@ create procedure DB.DBA.IR_SRV (in iri iri_id_8)
 
 grant execute on DB.DBA.IR_SRV to "SPARQL";
 
+dpipe_define ('IRI_RANK', 'DB.DBA.RDF_IRI_RANK', 'RDF_IRI_RANK', 'DB.DBA.IR_SRV', 128);
+dpipe_define ('DB.DBA.IRI_RANK', 'DB.DBA.RDF_IRI_RANK', 'RDF_IRI_RANK', 'DB.DBA.IR_SRV', 128);
 
 
 create procedure DB.DBA.IRI_RANK (in iri iri_id_8)
@@ -200,9 +202,9 @@ create procedure decl2_dpipe_define ()
 {
   if (sys_stat ('cl_run_local_only'))
     return;
-  dpipe_define ('IRI_RANK', 'DB.DBA.RDF_IRI_RANK', 'RDF_IRI_RANK', 'DB.DBA.IR_SRV', 0);
-  dpipe_define ('DB.DBA.IRI_RANK', 'DB.DBA.RDF_IRI_RANK', 'RDF_IRI_RANK', 'DB.DBA.IR_SRV', 0);
-  dpipe_define ('IRI_STAT', 'DB.DBA.RDF_IRI_STAT', 'RDF_IRI_STAT', 'DB.DBA.IST_SRV', 0);
+  dpipe_define ('IRI_RANK', 'DB.DBA.RDF_IRI_RANK', 'RDF_IRI_RANK', 'DB.DBA.IR_SRV', 128);
+  dpipe_define ('DB.DBA.IRI_RANK', 'DB.DBA.RDF_IRI_RANK', 'RDF_IRI_RANK', 'DB.DBA.IR_SRV', 128);
+  dpipe_define ('IRI_STAT', 'DB.DBA.RDF_IRI_STAT', 'RDF_IRI_STAT', 'DB.DBA.IST_SRV', 128);
 }
 ;
 

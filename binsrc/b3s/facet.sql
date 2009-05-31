@@ -176,23 +176,51 @@ FCT_LABEL (in x any, in g_id iri_id_8, in ctx varchar)
 create procedure
 FCT_LABEL_DP (in x any, in g_id iri_id_8, in ctx varchar)
 {
+  return FCT_LABEL_DP_L (x, g_id, ctx, null);
+}
+;
+
+create procedure
+FCT_LABEL_DP_L (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar)
+{
   declare best_str any;
   declare best_l, l int;
   declare label_iri iri_id_8;
+  declare q, best_q, str_lang, lng_pref any;
+
   if (not isiri_id (x))
     return vector (null, 1);
   rdf_check_init ();
   label_iri := iri_id_from_num (atoi (registry_get ('fct_label_iri')));
   best_str := null;
   best_l := 0;
+  best_q := 0;
   for select o, p
         from rdf_quad table option (no cluster)
         where s = x and p in (rdf_super_sub_list (ctx, label_iri, 3)) do
     {
+      if (is_rdf_box (o))
+	{
+          lng_pref := rdf_box_lang (o);
+	  str_lang := (select RL_ID from RDF_LANGUAGE where RL_TWOBYTE = lng_pref);
+	}
+      else
+        str_lang := 'en';	
+      q := cmp_get_lang_by_q (lng, str_lang);
+
       if (is_rdf_box (o) or isstring (o))
 	{
+	  if (q > best_q)
+	    {
+	      best_str := o;
+	      best_q := q;
+	    }
+	}
+
+      if (0)
+	{
 	  if (is_rdf_box (o) and not rdf_box_is_complete (o))
-	    L := 20;
+	    l := 20;
 	  else
 	    l := length (o);
 	  if (l > best_l)
@@ -222,6 +250,7 @@ create procedure decl_dpipe_define ()
   if (sys_stat ('cl_run_local_only'))
     return;
   dpipe_define ('DB.DBA.FCT_LABEL', 'DB.DBA.RDF_QUAD', 'RDF_QUAD_OPGS', 'DB.DBA.FCT_LABEL_DP', 0);
+  dpipe_define ('FCT_LABEL_L', 'DB.DBA.RDF_QUAD', 'RDF_QUAD_OPGS', 'DB.DBA.FCT_LABEL_DP_L', 0);
   dpipe_define ('FCT_LABEL', 'DB.DBA.RDF_QUAD', 'RDF_QUAD_OPGS', 'DB.DBA.FCT_LABEL_DP', 0);
   dpipe_define ('LBL_O_VALUE', 'DB.DBA.RDF_OBJ', 'RDF_OBJ', 'DB.DBA.LBL_O_VALUE', 0);
 }
@@ -291,7 +320,7 @@ fct_post (in tree any, in post any, in lim int, in offs int)
 create procedure
 fct_dtp (in x any)
 {
-  if (isiri_id (x))
+  if (isiri_id (x) or __box_flags (x) = 1)
     return 'url';
   return id_to_iri (rdf_datatype_of_long (x));
 }
@@ -308,13 +337,23 @@ fct_lang (in x any)
 }
 ;
 
+create procedure fct_get_mode (in tree any, in xp any)
+{
+  declare view_type varchar;
+  view_type := cast (xpath_eval (xp, tree, 1) as varchar);
+  if (sys_stat ('cl_run_local_only') and view_type = 'text-d')
+    view_type := 'text';
+  return view_type;  
+}
+;
+
 create procedure
 fct_xml_wrap (in tree any, in txt any)
 {
   declare view_type varchar;
-  view_type := cast (xpath_eval ('//view/@type', tree, 1) as varchar);
+  view_type := fct_get_mode (tree, '//view/@type');
 
-  declare ntxt any;
+  declare ntxt, texp any;
   ntxt := string_output ();
 
   declare n_cols int;
@@ -347,6 +386,15 @@ fct_xml_wrap (in tree any, in txt any)
                                                   xmlelement ("column",
                                                               fct_bold_tags("c2")))))
              from (sparql define output:valmode "LONG" ', view_type), ntxt);
+	}
+      else if (view_type = 'text-d')
+	{
+	  texp := cast (xpath_eval ('string (//query/text)', tree, 1) as varchar);
+	  http (sprintf ('select  xmlelement (\'result\', 
+	  			     xmlattributes (\'text-d\' as "type"), 
+				     s_sum_page ("res", vector (\'%S\'))) 
+				     from (sparql select 
+				     	(<sql:vector_agg> (<bif:vector> (?c1, ?sm))) as ?res where { {', texp), ntxt);
 	}
       else
 	{
@@ -460,7 +508,7 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any)
 
   http (sprintf (' %s %s %s ', fct_graph_clause (tree), fct_inf_clause (tree), fct_sas_clause (tree)), pre);
 
-  mode := cast (xpath_eval ('./@type', tree, 1) as varchar);
+  mode := fct_get_mode (tree, './@type');
 
   if ('list' = mode)
     {
@@ -523,6 +571,18 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any)
       http ('}}}', post);
       return;
     }
+  if ('text-d' = mode)
+    {
+      declare exp any;
+      exp := cast (xpath_eval ('//text', tree) as varchar);
+      http (sprintf ('select (<SHORT_OR_LONG::>(?s%d)) as ?c1,  (<sql:S_SUM> ( <SHORT_OR_LONG::IRI_RANK> (?s%d), <SHORT_OR_LONG::>(?s%dtextp), <SHORT_OR_LONG::>(?o%d), ?sc ) ) as ?sm ', this_s, this_s, this_s, this_s), pre);
+
+      http (sprintf ('order by desc (<sql:sum_rank> ((<sql:S_SUM> ( <SHORT_OR_LONG::IRI_RANK> (?s%d), <SHORT_OR_LONG::>(?s%dtextp), <SHORT_OR_LONG::>(?o%d), ?sc ) ) ) )', this_s, this_s, this_s), post);	    
+      fct_post (tree, post, lim, offs);
+      http ('}}', post);
+      return;
+    }
+
 
   if ('graphs' = mode)
     {
@@ -687,7 +747,7 @@ fct_text (in tree any,
       declare prop, sc_opt, v varchar;
       v := cast (xpath_eval ('//view/@type', tree) as varchar);
       prop := cast (xpath_eval ('./@property', tree, 1) as varchar);
-      if ('text' = v)
+      if ('text' = v or 'text-d' = v)
         sc_opt := ' option (score ?sc) ';
       else
         sc_opt := '';

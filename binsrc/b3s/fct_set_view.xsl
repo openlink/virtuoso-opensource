@@ -57,7 +57,7 @@
       <xsl:element name="view">
         <xsl:attribute name="type">
           <xsl:choose>
-            <xsl:when test="'list' = $type and ./text">text</xsl:when>
+            <xsl:when test="'list' = $type and ./text">text-d</xsl:when>
             <xsl:otherwise><xsl:value-of select="$type"/></xsl:otherwise>
           </xsl:choose>
         </xsl:attribute>

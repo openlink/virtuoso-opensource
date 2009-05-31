@@ -69,11 +69,13 @@ fct_svc_exec (in tree any, in timeout int, in accept varchar, in lines any)
     {
       if (not isarray (res) or 0 = length (res) or not isarray (res[0]) or 0 = length (res[0]))
 	res := vector (vector (xtree_doc ('<result/>')));
+      else
+        res := res[0][0];	
 
       ret := xmlelement ("facets", xmlelement ("sparql", qr), xmlelement ("time", msec_time () - start_time),
 			   xmlelement ("complete", case when sqls = 'S1TAT' then 'no' else 'yes' end),
 			   xmlelement ("timeout", timeout),
-			   xmlelement ("db-activity", act), res[0][0]);
+			   xmlelement ("db-activity", act), res);
       ret := xslt (registry_get ('_fct_xslt_') || 'fct_resp.xsl', ret);
     }
   else

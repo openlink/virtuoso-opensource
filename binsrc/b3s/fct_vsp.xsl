@@ -57,6 +57,7 @@
 </xsl:if>
 <!--xsl:choose>
   <xsl:when test="$type = 'text'"><h3>Text match results</h3></xsl:when>
+  <xsl:when test="$type = 'text-d'"><h3>Text match results</h3></xsl:when>
   <xsl:when test="$type = 'text-properties'"><h3>List of Properties With Matching Text</h3></xsl:when>
   <xsl:when test="$type = 'classes'"><h3>Types</h3></xsl:when>
   <xsl:when test="$type = 'properties'"><h3>Properties</h3></xsl:when>
@@ -250,7 +251,7 @@ function init(){
 	<div class="dbg"><xsl:value-of select="$view-type"/></div>
 	<tr><th>Type</th><th>Label</th><th>Count</th></tr>
       </xsl:when>
-      <xsl:when test="$view-type = 'text'">
+      <xsl:when test="$view-type = 'text' or $view-type = 'text-d'">
 	<div class="dbg"><xsl:value-of select="$view-type"/></div>
 	<tr><th>Entity</th><th>Title</th><th>Text excerpt</th></tr>
       </xsl:when>
