@@ -1432,5 +1432,7 @@ extern int in_crash_dump;
 #define mutex_leave(m)  pthread_mutex_unlock (&((m)->mtx_mtx))
 #endif
 
+#define EXTENT_SZ 256
+
 #endif /* _WI_H */
 
