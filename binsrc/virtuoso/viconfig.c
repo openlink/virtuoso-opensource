@@ -1907,10 +1907,13 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
 #endif
 	    }
 	  free (segszstr);
-	  if (n_pages % n_stripes)
+	  if (n_pages % (EXTENT_SZ * n_stripes) != 0)
 	    {
-	      log_error ("The size for stripe segment %d must be a multiple of %d", nsegs, n_stripes);
-	      return;
+	      int unit = EXTENT_SZ * n_stripes;
+	      long old_pages = n_pages;
+	      n_pages = ((n_pages / unit) + 1) * unit;
+	      log_warning ("The size for stripe segment %d is %ld pages, not a multiple of %d, will use %d pages", 
+		  nsegs, old_pages, unit, n_pages);
 	    }
 
 	  seg = (disk_segment_t *) dk_alloc (sizeof (disk_segment_t));

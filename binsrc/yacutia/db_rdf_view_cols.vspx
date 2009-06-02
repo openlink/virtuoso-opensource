@@ -99,7 +99,7 @@
 		      <colgroup/><colgroup/>
 		      <thead>
 			  <tr class="listing_row_odd">
-			      <th>Column Name</th>
+			      <th>Column Name *</th>
 			      <th>Binding/MIME Type</th>
 			  </tr>
 		      </thead>
@@ -136,6 +136,7 @@
 		        }
 		      ?>
 		  </table>
+		  <div>*To designate one column for subject label, check the box.</div>
 	      </td>
 	  </tr>
 	  <tr>
