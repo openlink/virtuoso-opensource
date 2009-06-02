@@ -15,6 +15,7 @@ foaf:nick rdfs:subPropertyOf virtrdf:label .
 skos:prefLabel rdfs:subPropertyOf virtrdf:label .
 <http://www.geonames.org/ontology#name> rdfs:subPropertyOf virtrdf:label .
 <http://purl.org/dc/terms/title> rdfs:subPropertyOf virtrdf:label .
+foaf:accountName rdfs:subPropertyOf virtrdf:label .
 ', '', 'virtrdf-label');
 
 rdfs_rule_set ('virtrdf-label', 'virtrdf-label');
