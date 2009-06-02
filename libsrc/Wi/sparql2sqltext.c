@@ -2525,6 +2525,8 @@ ssg_print_bop_bool_expn (spar_sqlgen_t *ssg, SPART *tree, const char *bool_op, c
   int bop_is_comparison = ((BOP_LT == ttype) || (BOP_LTE == ttype) || (BOP_GT == ttype) || (BOP_GTE == ttype));
   ssg_valmode_t left_vmode, right_vmode, min_mode;
   ptrlong left_restr_bits = -1, right_restr_bits = -1;
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &ssg, 1000))
+    spar_internal_error (NULL, "ssg_print_scalar_expn (): stack overflow");
   if (bop_has_bool_args)
     {
       left_vmode = right_vmode = min_mode = SSG_VALMODE_BOOL;
@@ -3808,10 +3810,9 @@ ssg_triple_retval_alias (spar_sqlgen_t *ssg, SPART *triple, int field_idx, int c
 void
 ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, const char *asname)
 {
-#ifdef DEBUG
   if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &ssg, 1000))
     spar_internal_error (NULL, "ssg_print_scalar_expn (): stack overflow");
-#endif
+
   if (SSG_VALMODE_AUTO == needed)
     needed = sparp_expn_native_valmode (ssg->ssg_sparp, tree);
   switch (SPART_TYPE (tree))
@@ -4249,6 +4250,9 @@ print_asname:
 void
 ssg_print_filter_expn (spar_sqlgen_t *ssg, SPART *tree)
 {
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &ssg, 1000))
+    spar_internal_error (NULL, "ssg_print_scalar_expn (): stack overflow");
+
   switch (SPART_TYPE (tree))
     {
     case BOP_AND:	ssg_print_bop_bool_expn (ssg, tree, " AND "	, " __and ("	, 1, SSG_VALMODE_BOOL); return;
@@ -4530,50 +4534,23 @@ ssg_print_fld_uri_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t
 }
 
 void
-ssg_print_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *field, caddr_t tabid, SPART *triple, int fld_idx, int print_outer_filter)
+ssg_print_fld_var_restrictions_ex (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *field, caddr_t tabid, SPART *fld_tree, SPART *triple, SPART *fld_if_outer, rdf_val_range_t *rvr)
 {
   sparp_env_t *env = ssg->ssg_sparp->sparp_env;
-  SPART *fld_tree = triple->_.triple.tr_fields [fld_idx];
-  ptrlong fld_tree_type = SPART_TYPE (fld_tree);
-  SPART *fld_if_outer = print_outer_filter ? fld_tree : NULL;
-  switch (fld_tree_type)
-    {
-    case SPAR_LIT:
-      {
-        ssg_print_fld_lit_restrictions (ssg, qmap, field, tabid, triple, fld_idx, print_outer_filter);
-        return;
-      }
-    case SPAR_QNAME:
-    /*case SPAR_QNAME_NS:*/
-      {
-        caddr_t uri = fld_tree->_.lit.val;
-        ssg_print_fld_uri_restrictions (ssg, qmap, field, tabid, uri, triple, fld_idx, print_outer_filter);
-        return;
-      }
-    case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
-      {
         ptrlong field_restr = field->qmvFormat->qmfValRange.rvrRestrictions;
-        ptrlong tree_restr = fld_tree->_.var.rvr.rvrRestrictions;
-        if (SPARP_ASSIGNED_EXTERNALLY (tree_restr))
-          return; /* Because this means that equiv has equality on the field that is to be printed later; so there's nothing to do right here */
-        if (SPART_VARR_CONFLICT & tree_restr)
-          {
-            ssg_print_where_or_and (ssg, "conflict! The query remained not entirely optimized");
-            ssg_puts (" 0");
-            return;
-          }
+  ptrlong tree_restr = rvr->rvrRestrictions;
         if ((SPART_VARR_NOT_NULL & tree_restr) && (!(SPART_VARR_NOT_NULL & field_restr)))
           {
             ssg_print_where_or_and (ssg, "nullable variable is not null");
             if (0 == field->qmvFormat->qmfColumnCount)
               ssg_print_tmpl (ssg, field->qmvFormat, "(^{tree}^ is not null)", tabid, field, NULL, NULL_ASNAME);
-            else if (print_outer_filter)
+      else if (NULL != fld_if_outer)
               ssg_print_tmpl (ssg, field->qmvFormat, "(^{tree-0}^ is not null)", tabid, field, fld_tree, NULL_ASNAME);
             else
               ssg_print_tmpl (ssg, field->qmvFormat, "(^{alias-0}^.^{column-0}^ is not null)", tabid, field, NULL, NULL_ASNAME);
           }
 /* SPONGE_SEEALSO () as a fake filter for a variable */
-        if ((SPAR_VARIABLE == fld_tree_type) &&
+  if ((SPAR_VARIABLE == SPART_TYPE (fld_tree)) &&
           !(SPART_VARR_IS_LIT & tree_restr) &&
           !(SPART_VARR_EXTERNAL & tree_restr) &&
           (NULL != env->spare_grab.rgc_sa_preds) &&
@@ -4640,6 +4617,89 @@ Maybe the best thing is to prohibit seealso declarations in subqueries at all.
             ssg_print_tmpl (ssg, field->qmvFormat, field->qmvFormat->qmfIslitOfShortTmpl, tabid, field, fld_if_outer, NULL_ASNAME);
           }
         /*!!! TBD: checks for type, lang */
+}
+
+void
+ssg_print_retval_restrictions_ex (spar_sqlgen_t *ssg, SPART *retval, rdf_val_range_t *rvr)
+{
+  ptrlong retval_restr = retval->_.retval.rvr.rvrRestrictions;
+  ptrlong tree_restr = rvr->rvrRestrictions;
+  if (((SPART_VARR_NOT_NULL & tree_restr) ||
+         ((SPART_VARR_IS_REF & tree_restr) && (!(SPART_VARR_IS_REF & retval_restr))) ) &&
+       (!(SPART_VARR_NOT_NULL & retval_restr) ) )
+    {
+      ssg_print_where_or_and (ssg, "nullable retval is not null");
+      ssg_print_scalar_expn (ssg,
+        spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)BOUND_L, t_list (1, retval)),
+        SSG_VALMODE_BOOL, NULL_ASNAME);
+    }
+  if ((SPART_VARR_IS_BLANK & tree_restr) && (!(SPART_VARR_IS_BLANK & retval_restr)))
+    {
+      ssg_print_where_or_and (ssg, "retval is blank node");
+      ssg_print_scalar_expn (ssg,
+        spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)isBLANK_L, t_list (1, retval)),
+        SSG_VALMODE_BOOL, NULL_ASNAME);
+    }
+  else if ((SPART_VARR_IS_IRI & tree_restr) && (!(SPART_VARR_IS_IRI & retval_restr)))
+    {
+      ssg_print_where_or_and (ssg, "retval is IRI");
+      ssg_print_scalar_expn (ssg,
+        spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)isIRI_L, t_list (1, retval)),
+        SSG_VALMODE_BOOL, NULL_ASNAME);
+    }
+  else if ((SPART_VARR_IS_REF & tree_restr) && (!(SPART_VARR_IS_REF & retval_restr)))
+    {
+      ssg_print_where_or_and (ssg, "'any' retval is a reference");
+      ssg_print_scalar_expn (ssg,
+        spartlist (ssg->ssg_sparp, 3, BOP_NOT,
+          spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)isLITERAL_L, t_list (1, retval)),
+          NULL ),
+        SSG_VALMODE_BOOL, NULL_ASNAME);
+    }
+  else if ((SPART_VARR_IS_LIT & tree_restr) && (!(SPART_VARR_IS_LIT & retval_restr)))
+    {
+      ssg_print_where_or_and (ssg, "'any' variable is a literal");
+      ssg_print_scalar_expn (ssg,
+        spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)isLITERAL_L, t_list (1, retval)),
+        SSG_VALMODE_BOOL, NULL_ASNAME);
+    }
+/*!!! TBD: checks for type, lang */
+}
+
+
+
+void
+ssg_print_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *field, caddr_t tabid, SPART *triple, int fld_idx, int print_outer_filter)
+{
+  SPART *fld_tree = triple->_.triple.tr_fields [fld_idx];
+  ptrlong fld_tree_type = SPART_TYPE (fld_tree);
+  SPART *fld_if_outer = print_outer_filter ? fld_tree : NULL;
+  switch (fld_tree_type)
+    {
+    case SPAR_LIT:
+      {
+        ssg_print_fld_lit_restrictions (ssg, qmap, field, tabid, triple, fld_idx, print_outer_filter);
+        return;
+      }
+    case SPAR_QNAME:
+    /*case SPAR_QNAME_NS:*/
+      {
+        caddr_t uri = fld_tree->_.lit.val;
+        ssg_print_fld_uri_restrictions (ssg, qmap, field, tabid, uri, triple, fld_idx, print_outer_filter);
+        return;
+      }
+    case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
+      {
+        ptrlong tree_restr = fld_tree->_.var.rvr.rvrRestrictions;
+        if (SPARP_ASSIGNED_EXTERNALLY (tree_restr))
+          return; /* Because this means that equiv has equality on the field that is to be printed later; so there's nothing to do right here */
+        if (SPART_VARR_CONFLICT & tree_restr) 
+          {
+            ssg_print_where_or_and (ssg, t_box_sprintf (100, "conflict on ?%.50s! The query remained not entirely optimized", fld_tree->_.var.vname));
+            ssg_puts (" 0");
+            return;
+          }
+        ssg_print_fld_var_restrictions_ex (ssg, qmap, field, tabid, fld_tree, triple, fld_if_outer, &(fld_tree->_.var.rvr));
         return;
       }
     default:
@@ -4883,6 +4943,65 @@ write_assuffix:
   return 1;
 }
 
+void
+ssg_print_nice_equality_for_var_and_eq_fixed_val (spar_sqlgen_t *ssg, rdf_val_range_t *rvr, SPART *var, SPART *var_triple)
+        {
+          ssg_valmode_t vmode;
+          SPART_buf var_rv_buf/*, glob_rv_buf*/;
+          SPART *var_rv/*, *glob_rv*/;
+          int col_ctr, col_count;
+  if (SPAR_RETVAL == SPART_TYPE (var))
+    {
+      var_rv = var;
+    }
+  else
+    {
+      quad_map_t *qm;
+#ifndef NDEBUG
+      if (!SPAR_IS_BLANK_OR_VAR (var) || (NULL == var_triple))
+        spar_internal_error (ssg->ssg_sparp, "ssg_" "print_nice_equality_for_var_and_eq_fixed_val(): bad call");
+#endif
+          qm = var_triple->_.triple.tc_list[0]->tc_qm;
+          if (SPART_TRIPLE_FIELDS_COUNT > var->_.var.tr_idx)
+            {
+              qm_value_t *qmv = JSO_FIELD_ACCESS(qm_value_t *, qm, qm_field_map_offsets[var->_.var.tr_idx])[0];
+              if ((NULL == qmv) && (!SPART_VARNAME_IS_GLOB (var->_.var.vname))) /* It's fixed and it's constant in qm hence it matches compile-time, no run-time check needed */
+            return;
+            }
+          SPART_AUTO (var_rv, var_rv_buf, SPAR_RETVAL);
+          memcpy (&(var_rv->_.retval), &(var->_.var), sizeof (var->_.var));
+          var_rv->_.retval.triple = var_triple;
+    }
+          vmode = sparp_expn_native_valmode (ssg->ssg_sparp, var_rv);
+          col_count = (IS_BOX_POINTER (vmode) ? vmode->qmfColumnCount : 1);
+          for (col_ctr = 0; col_ctr < col_count; col_ctr++)
+            {
+              const char *eq_idx_asname = ((1 == col_count) ? NULL_ASNAME : (COL_IDX_ASNAME + col_ctr));
+              ssg_print_where_or_and (ssg, ((0 != col_ctr) ? NULL : "fixed value of equiv class (short)"));
+      if (NULL == var_rv->_.retval.triple)
+#if 0
+          ssg_print_equiv_retval_expn (ssg, var_rv->_.retval.gp, SPARP_EQUIV (ssg->ssg_sparp, var_rv->_.retval.equiv_idx), /*SSG_RETVAL_FROM_GOOD_SELECTED |*/ SSG_RETVAL_MUST_PRINT_SOMETHING, vmode, eq_idx_asname);
+#endif
+        ssg_print_scalar_expn (ssg, var_rv, vmode, eq_idx_asname);
+      else
+              ssg_print_tr_var_expn (ssg, var, vmode, eq_idx_asname);
+              ssg_puts (" =");
+      ssg_print_scalar_expn (ssg, (SPART *)(rvr->rvrFixedValue), vmode, eq_idx_asname);
+            }
+  if ((0 == col_count) || !(SPART_VARR_IS_REF & rvr->rvrRestrictions))
+            {
+              ssg_print_where_or_and (ssg, "fixed value of equiv class (sqlval)");
+      if (NULL == var_rv->_.retval.triple)
+#if 0
+          ssg_print_equiv_retval_expn (ssg, var_rv->_.retval.gp, SPARP_EQUIV (ssg->ssg_sparp, var_rv->_.retval.equiv_idx), /*SSG_RETVAL_FROM_GOOD_SELECTED |*/ SSG_RETVAL_MUST_PRINT_SOMETHING, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+#endif
+        ssg_print_scalar_expn (ssg, var_rv, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+      else
+              ssg_print_tr_var_expn (ssg, var, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+              ssg_puts (" =");
+      ssg_print_literal_as_sqlval (ssg, NULL, (SPART *)(rvr->rvrFixedValue));
+    }
+}
 
 void
 ssg_print_equivalences (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq,
@@ -4898,7 +5017,7 @@ if (NULL != jright_alias)
       spar_internal_error (NULL, "ssg_print_equivalences (): invalid pair of jleft_alias and jright_alias");
 #endif
     goto print_cross_equalities;
-  }
+            }
 
   /* Printing equalities with constants */
   for (var_ctr = 0; var_ctr < eq->e_var_count; var_ctr++)
@@ -4909,39 +5028,8 @@ if (NULL != jright_alias)
         continue;
       if (SPART_VARR_FIXED & eq->e_rvr.rvrRestrictions)
         {
-          ssg_valmode_t vmode;
           SPART *var_triple = sparp_find_triple_of_var_or_retval (ssg->ssg_sparp, NULL, var, 1);
-          SPART_buf var_rv_buf/*, glob_rv_buf*/;
-          SPART *var_rv/*, *glob_rv*/;
-          quad_map_t *qm;
-          int col_ctr, col_count;
-          qm = var_triple->_.triple.tc_list[0]->tc_qm;
-          if (SPART_TRIPLE_FIELDS_COUNT > var->_.var.tr_idx)
-            {
-              qm_value_t *qmv = JSO_FIELD_ACCESS(qm_value_t *, qm, qm_field_map_offsets[var->_.var.tr_idx])[0];
-              if ((NULL == qmv) && (!SPART_VARNAME_IS_GLOB (var->_.var.vname))) /* It's fixed and it's constant in qm hence it matches compile-time, no run-time check needed */
-                continue;
-            }
-          SPART_AUTO (var_rv, var_rv_buf, SPAR_RETVAL);
-          memcpy (&(var_rv->_.retval), &(var->_.var), sizeof (var->_.var));
-          var_rv->_.retval.triple = var_triple;
-          vmode = sparp_expn_native_valmode (ssg->ssg_sparp, var_rv);
-          col_count = (IS_BOX_POINTER (vmode) ? vmode->qmfColumnCount : 1);
-          for (col_ctr = 0; col_ctr < col_count; col_ctr++)
-            {
-              const char *eq_idx_asname = ((1 == col_count) ? NULL_ASNAME : (COL_IDX_ASNAME + col_ctr));
-              ssg_print_where_or_and (ssg, ((0 != col_ctr) ? NULL : "fixed value of equiv class (short)"));
-              ssg_print_tr_var_expn (ssg, var, vmode, eq_idx_asname);
-              ssg_puts (" =");
-              ssg_print_scalar_expn (ssg, (SPART *)(eq->e_rvr.rvrFixedValue), vmode, eq_idx_asname);
-            }
-          if ((0 == col_count) || !(SPART_VARR_IS_REF & eq->e_rvr.rvrRestrictions))
-            {
-              ssg_print_where_or_and (ssg, "fixed value of equiv class (sqlval)");
-              ssg_print_tr_var_expn (ssg, var, SSG_VALMODE_SQLVAL, NULL_ASNAME);
-              ssg_puts (" =");
-              ssg_print_literal_as_sqlval (ssg, NULL, (SPART *)(eq->e_rvr.rvrFixedValue));
-            }
+          ssg_print_nice_equality_for_var_and_eq_fixed_val (ssg, &(eq->e_rvr), var, var_triple);
           continue;
         }
       if ((SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL) & eq->e_rvr.rvrRestrictions)
@@ -5103,6 +5191,8 @@ print_field_and_retval_equalities:
           ssg_valmode_t sub2_native;
           ssg_valmode_t common_native;
           int col_ctr, col_count;
+          if (!SPARP_EQ_IS_ASSIGNED_LOCALLY (sub2_eq))
+            continue;
           if (NULL != jright_alias)
             {
               if (strcmp (sub2_gp->_.gp.selid, jright_alias))
@@ -5112,9 +5202,13 @@ print_field_and_retval_equalities:
             }
           else if (OPTIONAL_L == sub2_gp->_.gp.subtype)
             {
+#if 0
               ccaddr_t jl = ssg_find_jl_by_jr (ssg, gp, sub2_gp->_.gp.selid);
               if (!strcmp (tabid, jl))
                 continue;
+#else
+                continue;
+#endif
             }
           var_native = sparp_expn_native_valmode (ssg->ssg_sparp, var);
           sub2_native = sparp_equiv_native_valmode (ssg->ssg_sparp, sub2_gp, sub2_eq);
@@ -6569,9 +6663,9 @@ retval_list_complete:
 #if 0
           ssg_puts (t_box_sprintf (100, " /* alias %s #%d */", itm_alias, first_tabexpn_itm_idx));
 #endif
+          itm_is_opt = ((SPAR_GP == itm->type) && (OPTIONAL_L == itm->_.gp.subtype));
           if (0 < itm_idx)
             {
-              itm_is_opt = ((SPAR_GP == itm->type) && (OPTIONAL_L == itm->_.gp.subtype));
               if (itm_is_opt)
                 {
                   ssg_newline (0);
@@ -6597,6 +6691,7 @@ retval_list_complete:
           ssg_print_table_exp (ssg, member, member->_.gp.members + first_tabexpn_itm_idx, itm_idx + 1 - first_tabexpn_itm_idx, 1); /* PASS 1, printing what's in FROM */
           if (itm_is_opt)
             {
+              int itm_eq_ctr;
               save_where_l_printed = ssg->ssg_where_l_printed;
               save_where_l_text = ssg->ssg_where_l_text;
               ssg->ssg_where_l_printed = 0;
@@ -6604,10 +6699,13 @@ retval_list_complete:
               ssg_newline (0);
               ssg_puts ("ON (");
               ssg->ssg_indent++;
+              if (0 < itm_idx)
+                {
               for (equiv_ctr = 0; equiv_ctr < member->_.gp.equiv_count; equiv_ctr++)
                 {
                   sparp_equiv_t *eq = ssg->ssg_equivs[member->_.gp.equiv_indexes[equiv_ctr]];
                   ssg_print_equivalences (ssg, member, eq, prev_itm_alias, itm_alias);
+                }
                 }
               filter_count = BOX_ELEMENTS_0 (member->_.gp.filters);
               for (filter_idx = filter_count - member->_.gp.glued_filters_count; filter_idx < filter_count; filter_idx++)
@@ -6615,6 +6713,43 @@ retval_list_complete:
                   SPART *filt = member->_.gp.filters[filter_idx];
                   ssg_print_filter (ssg, filt);
                 }
+              SPARP_FOREACH_GP_EQUIV (ssg->ssg_sparp, itm, itm_eq_ctr, itm_eq)
+                {
+                  sparp_equiv_t *memb_eq = NULL;
+                  SPART *left_tree = NULL;
+                  if (!itm_eq->e_replaces_filter)
+                    continue;
+                  if (SPARP_EQ_IS_ASSIGNED_LOCALLY (itm_eq))
+                    continue;
+                  sparp_find_best_join_eq_for_optional (ssg->ssg_sparp, member, itm_idx, itm_eq, &memb_eq, &left_tree);
+                  if (NULL == left_tree)
+                    spar_sqlprint_error (t_box_sprintf (100, "filter for ?%.30s can not be expressed in SQL (bad optimization)", itm_eq->e_varnames[0]));
+                  else
+                    {
+                      rdf_val_range_t tmp_rvr;
+                      memcpy (&tmp_rvr, &(itm_eq->e_rvr), sizeof (rdf_val_range_t));
+                      tmp_rvr.rvrRestrictions = itm_eq->e_replaces_filter;
+                      if (SPAR_IS_BLANK_OR_VAR (left_tree))
+                        {
+                          SPART *left_triple = member->_.gp.members[itm_idx-1];
+                          quad_map_t *left_qm = left_triple->_.triple.tc_list[0]->tc_qm;
+                          qm_value_t *left_qmv = NULL;
+                          if (SPART_TRIPLE_FIELDS_COUNT > left_tree->_.var.tr_idx)
+                            left_qmv = SPARP_FIELD_QMV_OF_QM (left_qm, left_tree->_.var.tr_idx);
+                          ssg_print_fld_var_restrictions_ex (ssg, left_qm, left_qmv, left_triple->_.triple.tabid, left_tree, left_triple, NULL /*fld_if_outer*/, &tmp_rvr);
+                          if (SPART_VARR_FIXED & tmp_rvr.rvrRestrictions)
+                            ssg_print_nice_equality_for_var_and_eq_fixed_val (ssg, &tmp_rvr, left_tree, left_triple);
+                        }
+                      else
+                        {
+                          /*SPART *left_gp = member->_.gp.members[itm_idx-1];*/
+                          ssg_print_retval_restrictions_ex (ssg, left_tree, &tmp_rvr);
+                          if (SPART_VARR_FIXED & tmp_rvr.rvrRestrictions)
+                            ssg_print_nice_equality_for_var_and_eq_fixed_val (ssg, &tmp_rvr, left_tree, NULL);
+                        }
+                    }
+                }
+              END_SPARP_FOREACH_GP_EQUIV;
               if (0 == ssg->ssg_where_l_printed)
                 ssg_puts ("1");
               ssg->ssg_indent--;
@@ -6623,10 +6758,6 @@ retval_list_complete:
               ssg->ssg_where_l_text = save_where_l_text;
             }
           prev_itm_alias = itm_alias;
-        }
-      if (OPTIONAL_L == member->_.gp.members[0]->_.gp.subtype)
-        {
-          ssg_puts (" ON (1)");
         }
 
 end_of_table_list: ;
@@ -6643,7 +6774,7 @@ end_of_table_list: ;
               sparp_equiv_t *eq = ssg->ssg_equivs[gp->_.gp.equiv_indexes[equiv_ctr]];
               if ((SPART_VARR_CONFLICT & eq->e_rvr.rvrRestrictions) && (SPART_VARR_NOT_NULL & eq->e_rvr.rvrRestrictions))
                 {
-                  ssg_print_where_or_and (ssg, "conflict on NOT NULL variable");
+                  ssg_print_where_or_and (ssg, t_box_sprintf (100, "conflict on NOT NULL variable ?%.50s", eq->e_varnames[0]));
                   ssg_puts (" 0");
                   goto end_of_where_list;
                 }

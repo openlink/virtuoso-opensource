@@ -142,7 +142,7 @@ typedef struct sparp_equiv_s
     ptrlong e_const_reads;	/*!< Number of constant-read uses in filters and in 'graph' of members */
     ptrlong e_optional_reads;	/*!< Number of uses in scalar subqueries of filters; both local and member filter are counted */
     ptrlong e_subquery_uses;	/*!< Number of all local uses in subquery (0 for plain queries, 1 in groups of subtype SELECT_L) */
-    ptrlong e_replaces_filter;	/*!< Nonzero if a filter has been replaced (and removed) by tightening of this equiv or by merging this and some other equiv */
+    ptrlong e_replaces_filter;	/*!< Bitmask of SPART_RVR_XXX bits, nonzero if a filter has been replaced (and removed) by tightening of this equiv or by merging this and some other equiv */
     rdf_val_range_t e_rvr;	/*!< Restrictions that are common for all variables */
     ptrlong *e_subvalue_idxs;	/*!< Subselects where values of these variables come from */
     ptrlong *e_receiver_idxs;	/*!< Aliases of surrounding query where values of variables from this equiv are used */
@@ -160,16 +160,22 @@ typedef struct sparp_equiv_s
 
 #define SPARP_FIXED_AND_NOT_NULL(v) ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) & (v)))
 
+#define SPARP_ASSIGNED_BY_CONTEXT(v) \
+  ((v) & (SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL))
+
 #define SPARP_ASSIGNED_EXTERNALLY(v) \
   (SPARP_FIXED_AND_NOT_NULL (v) || ((v) & (SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL)))
 
 #define SPARP_EQ_IS_FIXED_AND_NOT_NULL(eq) SPARP_FIXED_AND_NOT_NULL ((eq)->e_rvr.rvrRestrictions)
 
+#define SPARP_EQ_IS_ASSIGNED_BY_CONTEXT(eq) \
+  (SPARP_ASSIGNED_BY_CONTEXT ((eq)->e_rvr.rvrRestrictions))
+
 #define SPARP_EQ_IS_ASSIGNED_EXTERNALLY(eq) \
   (SPARP_ASSIGNED_EXTERNALLY ((eq)->e_rvr.rvrRestrictions))
 
 #define SPARP_EQ_IS_ASSIGNED_LOCALLY(eq) \
-  ((0 != (eq)->e_gspo_uses) || (0 != (eq)->e_subquery_uses) || (0 != (eq)->e_nested_bindings) || (0 != BOX_ELEMENTS_0 ((eq)->e_subvalue_idxs)))
+  ((0 != (eq)->e_gspo_uses) || (0 != (eq)->e_subquery_uses) || (0 != (eq)->e_nested_bindings))
 
 #define SPARP_EQ_IS_USED(eq) \
   ((0 != eq->e_const_reads) || (0 != BOX_ELEMENTS_0 (eq->e_receiver_idxs)))
@@ -197,6 +203,9 @@ extern sparp_equiv_t *sparp_equiv_get (sparp_t *sparp, SPART *haystack_gp, SPART
 extern sparp_equiv_t *sparp_equiv_get_ro (sparp_equiv_t **equivs, ptrlong equiv_count, SPART *haystack_gp, SPART *needle_var, int flags);
 /*! Finds an equiv class that supplies a subvalue to the \c receiver from the specified \c haystack_gp */
 extern sparp_equiv_t *sparp_equiv_get_subvalue_ro (sparp_equiv_t **equivs, ptrlong equiv_count, SPART *haystack_gp, sparp_equiv_t *receiver);
+/*! Returns if variables from \c equiv are used in \c tree (or the tree is a gp of some subvalue of \c equiv.
+The returned value is actually boolean but the real value of "true" can be used for debugging purposes. */
+extern void *sparp_tree_uses_var_of_eq (sparp_t *sparp, SPART *tree, sparp_equiv_t *equiv);
 
 /*! Returns 2 if connection exists, 1 if did not exist but added, 0 if not exists and not added. GPFs if tries to add the second up */
 extern int sparp_equiv_connect (sparp_t *sparp, sparp_equiv_t *outer, sparp_equiv_t *inner, int add_if_missing);
@@ -333,19 +342,40 @@ extern rdf_val_range_t *sparp_rvr_copy (sparp_t *sparp, rdf_val_range_t *dest, c
 /*! Tries to zap \c dest and then restrict it by \c datatype and/or value. */
 extern void sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datatype, SPART *value);
 
-/*! Restricts \c dest by additional restrictions from \c addon that match the mask of \c changeable_flags */
+/*! Restricts \c dest by additional restrictions from \c addon that match the mask of \c changeable_flags.
+The operation may set SPART_VARR_CONFLICT even if SPART_VARR_CONFLICT bit is not set in \c changeable_flags. */
 extern void sparp_rvr_tighten (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *addon, int changeable_flags);
+
+#if 0 /* Attention: this code is not complete */
+/*! Restricts \c dest by additional restrictions from \c addon that match the mask of \c changeable_flags.
+The operation will not set SPART_VARR_CONFLICT if addon is not a conflict.
+Instead, it removes original restrictions in \c dest when they contradict to \c addon. */
+extern void sparp_rvr_override (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *addon, int changeable_flags);
+#endif
 
 /*! Disables restrictions of \c eq that are in contradiction with \c addon and match the mask of \c changeable_flags.
 The function can not be used if \c addon has SPART_VARR_CONFLICT set */
 extern void sparp_rvr_loose (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *addon, int changeable_flags);
 
-/*! Restricts \c eq by additional restrictions of \c addon that match the mask of \c changeable_flags */
+#ifndef NDEBUG
+/*! Restricts \c eq by additional restrictions of \c addon that match the mask of \c changeable_flags, using sparp_rvr_tighten() */
 extern void sparp_equiv_tighten (sparp_t *sparp, sparp_equiv_t *eq, rdf_val_range_t *addon, int changeable_flags);
+
+#if 0 /* Attention: this code is not complete */
+/*! Restricts \c eq by additional restrictions of \c addon that match the mask of \c changeable_flags, using sparp_rvr_override() */
+extern void sparp_equiv_override (sparp_t *sparp, sparp_equiv_t *eq, rdf_val_range_t *addon, int changeable_flags);
+#endif
 
 /*! Disables restrictions of \c eq that are in contradiction with \c addon and match the mask of \c changeable_flags.
 The function can not be used if \c addon has SPART_VARR_CONFLICT set */
 extern void sparp_equiv_loose (sparp_t *sparp, sparp_equiv_t *eq, rdf_val_range_t *addon, int changeable_flags);
+#else
+#define sparp_equiv_tighten(sparp,eq,addon,flags) sparp_rvr_tighten((sparp),&((eq)->e_rvr),(addon),(flags))
+#if 0 /* Attention: this code is not complete */
+#define sparp_equiv_override(sparp,eq,addon,flags) sparp_rvr_override((sparp),&((eq)->e_rvr),(addon),(flags))
+#endif
+#define sparp_equiv_loose(sparp,eq,addon,flags) sparp_rvr_loose((sparp),&((eq)->e_rvr),(addon),(flags))
+#endif
 
 /*! Returns true if the \c tree is an expression that is free from non-global variables */
 extern int sparp_tree_is_global_expn (sparp_t *sparp, SPART *tree);
@@ -532,6 +562,10 @@ extern void sparp_req_top_deprecate (sparp_t *sparp, SPART *top);
 No effects if called for the second time. */
 extern void sparp_rotate_comparisons_by_rank (SPART *filt);
 
+/*! This replaces group patterns with conflicts into explicitly empty patterns.
+\c returns 1 if \c parent_gp is made empty (by sparp_gp_produce_nothing (), 0 otherwise */
+extern int sparp_detach_conflicts (sparp_t *sparp, SPART *parent_gp);
+
 /*! This converts union of something and unions into flat union.
 Any single-item subjoin of one GP is treated as union.
 The changed part is changed again while there are some subunions but unchanged part is not visited recursively.
@@ -582,6 +616,13 @@ extern void sparp_remove_totally_useless_equivs (sparp_t *sparp);
 #define SPARP_UNLINK_IF_ASSIGNED_EXTERNALLY 0x1
 /*! Removes equivalence classes that were supposed to be pure connections but are not connections at all. */
 extern void sparp_remove_redundant_connections (sparp_t *sparp, ptrlong flags);
+
+/*! Given an OPTIONAL_L right side of loj (specified by combination of \c parent and \c pos_of_curr_memb) and an equiv \c eq,
+this finds the most restrictive variable or retval at left side, and fills in \c ret_parent_eq[0] and \c ret_tree_in_parent[0].
+If \c eq->e_replaces_filter and eq is not assigned locally then a condition with ret_tree_in_parent[0] instead of \c eq will act as a filter.
+The repated expression can be placed in ON (...) clause of the generated LEFT OUTER JOIN and thus preserved from being lost due to lack of
+appropriated variables in scope of WHERE clause of SELECT at the right size of loj. */
+extern void sparp_find_best_join_eq_for_optional (sparp_t *sparp, SPART *parent, int pos_of_curr_memb, sparp_equiv_t *eq, sparp_equiv_t **ret_parent_eq, SPART **ret_tree_in_parent);
 
 /*! Convert a query with grab vars into a select with procedure view with seed/iter/final sub-SQLs as arguments. */
 extern void sparp_rewrite_grab (sparp_t *sparp);
@@ -800,6 +841,7 @@ extern int ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp,
 extern void ssg_print_sparul_run_call (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, int compose_report);
 extern void ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_valmode_t needed, const char *asname);
 
+extern void ssg_print_fld_var_restrictions_ex (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *field, caddr_t tabid, SPART *fld_tree, SPART *triple, SPART *fld_if_outer, rdf_val_range_t *rvr);
 extern void ssg_print_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *field, caddr_t tabid, SPART *triple, int fld_idx, int print_outer_filter);
 extern void ssg_print_all_table_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qm, caddr_t alias, SPART *triple, int enabled_field_bitmask, int print_outer_filter);
 extern void ssg_print_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, int tree_count, int pass);

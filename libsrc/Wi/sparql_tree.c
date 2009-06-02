@@ -42,6 +42,16 @@ extern "C" {
 #endif
 #include "xml_ecm.h"
 
+#ifdef DEBUG
+#if 0
+#define sparp_check_tree(t) t_check_tree_heads((t), ((caddr_t *)(&(((SPART *)NULL)->_.triple.tc_list)))-((caddr_t *)NULL))
+#else
+#define sparp_check_tree(t) t_check_tree(t)
+#endif
+#else
+#define sparp_check_tree(t)
+#endif
+
 /* ROUTINES FOR SPART TREE TRAVERSAL */
 
 int
@@ -62,6 +72,10 @@ sparp_gp_trav_int (sparp_t *sparp, SPART *tree,
   sparp_trav_state_t *save_sts_this = BADBEEF_BOX; /* To keep gcc 4.0 happy */
   SPART *save_ancestor_gp = BADBEEF_BOX; /* To keep gcc 4.0 happy */
   int retcode = 0;
+
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &sub_gps, 1000))
+    spar_internal_error (NULL, "sparp_gp_trav_int(): stack overflow");
+
   if (sts_this == (sparp->sparp_stss + SPARP_MAX_SYNTDEPTH))
     spar_error (sparp, "The nesting depth of subexpressions exceed limits of SPARQL compiler");
 
@@ -767,6 +781,36 @@ sparp_equiv_get_subvalue_ro (sparp_equiv_t **equivs, ptrlong equiv_count, SPART 
   return res; /* Bad, if any, can wait. */
 }
 
+void *
+sparp_tree_uses_var_of_eq (sparp_t *sparp, SPART *tree, sparp_equiv_t *equiv)
+{
+  int ctr;
+  if (SPAR_TRIPLE == SPART_TYPE (tree))
+    {
+      for (ctr = equiv->e_var_count; ctr--; /* no step */)
+        {
+          caddr_t var_tabid = equiv->e_vars[ctr]->_.var.tabid;
+          if ((NULL != var_tabid) && !strcmp (var_tabid, tree->_.triple.tabid))
+            return equiv->e_vars[ctr];
+        }
+    }
+  else
+    {
+#ifdef DEBUG
+      if (SPAR_GP != SPART_TYPE (tree))
+        spar_internal_error (sparp, "sparp_tree_uses_var_of_eq(): bad tree");
+#endif
+      DO_BOX_FAST_REV (ptrlong, sub_eq_idx, ctr, equiv->e_subvalue_idxs)
+        {
+          sparp_equiv_t *sub_equiv = SPARP_EQUIV (sparp, sub_eq_idx);
+          if (sub_equiv->e_gp == tree)
+            return sub_equiv;
+        }
+      END_DO_BOX_FAST_REV;
+    }
+  return NULL;
+}
+
 /* Returns 1 if connection exists (or added), 0 otherwise. GPFs if tries to add the second up */
 int
 sparp_equiv_connect (sparp_t *sparp, sparp_equiv_t *outer, sparp_equiv_t *inner, int add_if_missing)
@@ -811,7 +855,7 @@ sparp_equiv_connect (sparp_t *sparp, sparp_equiv_t *outer, sparp_equiv_t *inner,
     return 0;
   outer->e_subvalue_idxs = (ptrlong *)t_list_concat_tail ((caddr_t)(outer->e_subvalue_idxs), 1, (ptrlong)(inner->e_own_idx));
   inner->e_receiver_idxs = (ptrlong *)t_list_concat_tail ((caddr_t)(inner->e_receiver_idxs), 1, (ptrlong)(outer->e_own_idx));
-  if ((0 < inner->e_gspo_uses) || (0 < inner->e_nested_bindings) || (0 < inner->e_subquery_uses))
+  if (SPARP_EQ_IS_ASSIGNED_LOCALLY(inner))
     outer->e_nested_bindings += 1;
   return 1;
 }
@@ -856,7 +900,7 @@ sparp_equiv_disconnect (sparp_t *sparp, sparp_equiv_t *outer, sparp_equiv_t *inn
 #endif
   outer->e_subvalue_idxs = (ptrlong *)t_list_remove_nth ((caddr_t)(outer->e_subvalue_idxs), i_listed_in_o);
   inner->e_receiver_idxs = (ptrlong *)t_list_remove_nth ((caddr_t)(inner->e_receiver_idxs), o_listed_in_i);
-  if ((0 < inner->e_gspo_uses) || (0 < inner->e_nested_bindings) || (0 < inner->e_subquery_uses))
+  if (SPARP_EQ_IS_ASSIGNED_LOCALLY (inner))
     outer->e_nested_bindings -= 1;
   return 1;
 }
@@ -1107,7 +1151,7 @@ sparp_equiv_merge (sparp_t *sparp, sparp_equiv_t *pri, sparp_equiv_t *sec)
   DO_BOX_FAST_REV (ptrlong, sub_idx, ctr1, pri->e_subvalue_idxs)
     {
       sparp_equiv_t *sub_eq = SPARP_EQUIV(sparp,sub_idx);
-      if ((0 < sub_eq->e_gspo_uses) || (0 < sub_eq->e_subquery_uses) || (0 < sub_eq->e_nested_bindings))
+      if (SPARP_EQ_IS_ASSIGNED_LOCALLY(sub_eq))
         pri->e_nested_bindings += 1;
     }
   END_DO_BOX_FAST;
@@ -1490,6 +1534,10 @@ sparp_rvr_copy (sparp_t *sparp, rdf_val_range_t *dest, const rdf_val_range_t *sr
 {
   if (SPARP_RVR_CREATE == dest)
     dest = (rdf_val_range_t *)t_alloc (sizeof (rdf_val_range_t));
+#ifdef DEBUG
+  if ((src->rvrRestrictions & SPART_VARR_IS_REF) && (src->rvrRestrictions & SPART_VARR_IS_LIT))
+    dbg_printf (("sparp" "_rvr_copy will copy %x (ref|lit)\n", (unsigned)(src->rvrRestrictions)));
+#endif
   if (src->rvrRestrictions & SPART_VARR_CONFLICT)
     {
       memset (dest, 0, sizeof (rdf_val_range_t));
@@ -1550,6 +1598,14 @@ sparp_rvr_tighten (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *addon
 {
   ptrlong new_restr;
   new_restr = (dest->rvrRestrictions | (addon->rvrRestrictions & changeable_flags));
+#ifdef DEBUG
+  if (((new_restr & SPART_VARR_IS_REF) && (new_restr & SPART_VARR_IS_LIT)) &&
+      !((dest->rvrRestrictions & SPART_VARR_IS_REF) && (dest->rvrRestrictions & SPART_VARR_IS_LIT)) )
+    dbg_printf (("sparp" "_rvr_tighten will tighten %x with %x (ref|lit)\n", (unsigned)(dest->rvrRestrictions), (unsigned)(addon->rvrRestrictions)));
+  if ((new_restr & SPART_VARR_CONFLICT) &&
+      !(dest->rvrRestrictions & SPART_VARR_CONFLICT) )
+    dbg_printf (("sparp" "_rvr_tighten will tighten %x with %x (SPART_VARR_CONFLICT)\n", (unsigned)(dest->rvrRestrictions), (unsigned)(addon->rvrRestrictions)));
+#endif
   if (new_restr & SPART_VARR_CONFLICT)
     goto conflict; /* see below */
   sparp_rvr_audit (sparp, dest);
@@ -1696,6 +1752,176 @@ always_null:
 #endif
 }
 
+#if 0 /* Attention: this code is not complete */
+void
+sparp_rvr_override (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *addon, int changeable_flags, int reasons_for_conflict)
+{
+  ptrlong new_restr;
+  new_restr = (dest->rvrRestrictions | (addon->rvrRestrictions & changeable_flags));
+  if (new_restr & SPART_VARR_CONFLICT)
+    goto conflict; /* see below */
+  sparp_rvr_audit (sparp, dest);
+  sparp_rvr_audit (sparp, addon);
+  if (dest->rvrDatatype != addon->rvrDatatype)
+    {
+      if (dest->rvrRestrictions & addon->rvrRestrictions & SPART_VARR_TYPED)
+        {
+          if (reasons_for_conflict & SPART_VARR_TYPED)
+            goto conflict; /* see below */
+          else
+            dest->rvrDatatype = addon->rvrDatatype;
+        }
+      else
+        {
+          ccaddr_t isect_dt = sparp_largest_intersect_superdatatype (sparp, dest->rvrDatatype, addon->rvrDatatype);
+          dest->rvrDatatype = isect_dt;
+        }
+    }
+  if (addon->rvrRestrictions & changeable_flags & SPART_VARR_FIXED)
+    {
+      if (dest->rvrRestrictions & SPART_VARR_FIXED)
+        {
+          if (!sparp_fixedvalues_equal (sparp, (SPART *)(dest->rvrFixedValue), (SPART *)(addon->rvrFixedValue)))
+            {
+              if (reasons_for_conflict & SPART_VARR_FIXED)
+                goto conflict; /* see below */
+              else
+                dest->rvrFixedValue = addon->rvrFixedValue;
+            }
+        }
+      else
+        {
+#ifdef DEBUG
+              if (SPAR_LIT != SPART_TYPE ((SPART *)(addon->rvrFixedValue)))
+                GPF_T1("sparp_" "rvr_tighten(): addon->rvrFixedValue is not a literal");
+#endif
+          dest->rvrFixedValue = addon->rvrFixedValue;
+        }
+    }
+  if (new_restr & SPART_VARR_FIXED)
+    {
+      caddr_t fv = rvr_string_fixedvalue (dest);
+      if (NULL != fv)
+        {
+          int ctr;
+          if (dest->rvrRestrictions & SPART_VARR_SPRINTFF)
+            {
+              for (ctr = dest->rvrSprintffCount; ctr--; /* no step */)
+                {
+                  if (sprintff_like (fv, dest->rvrSprintffs[ctr]))
+                    goto fv_like_dest_sff; /* see below */
+                }
+              if (reasons_for_conflict & SPART_VARR_SPRINTFF)
+                goto conflict; /* see below */
+              else
+                goto turn_sff_off; /* see below */
+            }
+fv_like_dest_sff:
+          if (addon->rvrRestrictions & changeable_flags & SPART_VARR_SPRINTFF)
+            {
+              for (ctr = addon->rvrSprintffCount; ctr--; /* no step */)
+                {
+                  if (sprintff_like (fv, addon->rvrSprintffs[ctr]))
+                    goto fv_like_addon_sff; /* see below */
+                }
+              if (reasons_for_conflict & SPART_VARR_SPRINTFF)
+                goto conflict; /* see below */
+              else
+                goto turn_sff_off; /* see below */
+            }
+fv_like_addon_sff:
+turn_sff_off:
+          new_restr &= ~SPART_VARR_SPRINTFF; /* With fixed string value, there's no need in sprintffs at all */
+          dest->rvrSprintffCount = 0;
+          goto end_of_sff_processing; /* see below */
+        }
+    }
+  if (addon->rvrRestrictions & changeable_flags & SPART_VARR_SPRINTFF)
+    {
+      if (dest->rvrRestrictions & SPART_VARR_SPRINTFF)
+        {
+          sparp_rvr_intersect_sprintffs (sparp, dest, addon->rvrSprintffs, addon->rvrSprintffCount);
+          if (0 == dest->rvrSprintffCount)
+            goto conflict; /* see below */
+        }
+      else
+        {
+          dest->rvrSprintffs = (ccaddr_t *) t_box_copy ((caddr_t)(addon->rvrSprintffs));
+          dest->rvrSprintffCount = addon->rvrSprintffCount;
+        }
+    }
+
+end_of_sff_processing:
+  if (addon->rvrRestrictions & changeable_flags & SPART_VARR_IRI_CALC)
+    {
+      if (dest->rvrRestrictions & SPART_VARR_IRI_CALC)
+        {
+          sparp_rvr_intersect_iri_classes (sparp, dest, addon->rvrIriClasses, addon->rvrIriClassCount);
+          if (0 == dest->rvrIriClassCount)
+#if 0 /*!!! TBD enable when iri classes are valid */
+            goto conflict; /* see below */
+#else
+            new_restr &= ~SPART_VARR_IRI_CALC;
+#endif
+        }
+      else
+        {
+          dest->rvrIriClasses = (ccaddr_t *) t_box_copy ((caddr_t)(addon->rvrIriClasses));
+          dest->rvrIriClassCount = addon->rvrIriClassCount;
+        }
+    }
+  if (0 != addon->rvrRedCutCount)
+    sparp_rvr_add_red_cuts (sparp, dest, addon->rvrRedCuts, addon->rvrRedCutCount);
+  if (dest->rvrRestrictions & SPART_VARR_FIXED)
+    {
+      int cut_ctr;
+      for (cut_ctr = dest->rvrRedCutCount; cut_ctr--; /* no step */)
+        {
+          ccaddr_t cut_val = dest->rvrRedCuts [cut_ctr];
+          if (sparp_fixedvalues_equal (sparp, (SPART *)cut_val, (SPART *)(dest->rvrFixedValue)))
+            goto conflict; /* see below */
+        }
+    }
+  if (
+    ((new_restr & SPART_VARR_IS_REF) && (new_restr & SPART_VARR_IS_LIT)) ||
+    ((new_restr & SPART_VARR_IS_BLANK) && (new_restr & SPART_VARR_IS_IRI)) ||
+    ((new_restr & SPART_VARR_ALWAYS_NULL) &&
+     (new_restr & (SPART_VARR_NOT_NULL | SPART_VARR_IS_LIT | SPART_VARR_IS_REF)) ) )    
+    goto conflict; /* see below */
+
+#if 0
+  do {
+      dk_session_t *ses = strses_allocate ();
+      caddr_t strg;
+      spart_dump_rvr (ses, dest);
+      strg = strses_string (ses);
+      printf ("Nice tighten op: %s\n", strg);
+      dk_free_box ((caddr_t)ses);
+      dk_free_box (strg);
+    } while (0);
+#endif
+  dest->rvrRestrictions = new_restr;
+  sparp_rvr_audit (sparp, dest);
+  sparp_rvr_audit (sparp, addon);
+  return;
+
+conflict:
+  new_restr |= SPART_VARR_CONFLICT;
+  dest->rvrRestrictions = new_restr;
+  /* sparp_rvr_audit (sparp, dest); -- that's not valid here */
+  return;
+
+#if 0
+always_null:
+  new_restr = SPART_VARR_ALWAYS_NULL | (dest->rvrRestrictions & (SPART_VARR_EXPORTED | SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
+  memset (dest, 0, sizeof (rdf_val_range_t));
+  dest->rvrRestrictions = new_restr;
+  sparp_rvr_audit (sparp, dest);
+  return;
+#endif
+}
+#endif
+
 void
 sparp_rvr_loose (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *addon, int changeable_flags)
 {
@@ -1774,27 +2000,35 @@ end_of_sff_processing:
   sparp_rvr_audit (sparp, addon);
  }
 
+#ifndef NDEBUG
 void
 sparp_equiv_tighten (sparp_t *sparp, sparp_equiv_t *eq, rdf_val_range_t *addon, int changeable_flags)
 {
-#ifdef DEBUG
   if (eq->e_deprecated)
     spar_internal_error (sparp, "sparp_" "equiv_tighten(): can't change deprecated eq");
-#endif
   sparp_rvr_tighten (sparp, &(eq->e_rvr), addon, changeable_flags);
 }
+
+#if 0
+void
+sparp_equiv_override (sparp_t *sparp, sparp_equiv_t *eq, rdf_val_range_t *addon, int changeable_flags)
+{
+  if (eq->e_deprecated)
+    spar_internal_error (sparp, "sparp_" "equiv_tighten(): can't change deprecated eq");
+  sparp_rvr_override (sparp, &(eq->e_rvr), addon, changeable_flags);
+}
+#endif
 
 void
 sparp_equiv_loose (sparp_t *sparp, sparp_equiv_t *eq, rdf_val_range_t *addon, int changeable_flags)
 {
-#ifdef DEBUG
   if (eq->e_deprecated)
     spar_internal_error (sparp, "sparp_" "equiv_loose(): can't change deprecated eq");
-#endif
   if (addon->rvrRestrictions & SPART_VARR_CONFLICT)
     return;
   sparp_rvr_loose (sparp, &(eq->e_rvr), addon, changeable_flags);
 }
+#endif
 
 
 /* RELATIONS BETWEEN QUAD MAP FORMATS AND BUILT-IN VALMODES */
@@ -1867,7 +2101,7 @@ sparp_gp_detach_member_int (sparp_t *sparp, SPART *parent_gp, int member_idx, dk
 #ifdef DEBUG
   int old_len = BOX_ELEMENTS (old_members);
   if ((0 > member_idx) || (old_len <= member_idx))
-    spar_internal_error (sparp, "sparp_" "gp_detach_member(): bad member_idx");
+    spar_internal_error (sparp, "sparp_" "gp_detach_member_int(): bad member_idx");
 #endif
   memb = old_members[member_idx];
   if (SPAR_GP == SPART_TYPE (memb))
@@ -1897,9 +2131,9 @@ sparp_gp_detach_member_int (sparp_t *sparp, SPART *parent_gp, int member_idx, dk
               sparp_equiv_t *subv_eq = SPARP_EQUIV (sparp, subv_eq_idx);
               SPART *subv_gp = sparp_find_gp_by_eq_idx (sparp, subv_eq_idx);
               if (subv_gp != subv_eq->e_gp)
-                spar_internal_error (sparp, "sparp_" "gp_detach_member(): subv_gp != subv_eq->e_gp");
+                spar_internal_error (sparp, "sparp_" "gp_detach_member_int(): subv_gp != subv_eq->e_gp");
               if (subv_gp == memb)
-                spar_internal_error (sparp, "sparp_" "gp_detach_member(): receiver not disconnected");
+                spar_internal_error (sparp, "sparp_" "gp_detach_member_int(): receiver not disconnected");
             }
           END_DO_BOX_FAST;
         }
@@ -1911,7 +2145,7 @@ sparp_gp_detach_member_int (sparp_t *sparp, SPART *parent_gp, int member_idx, dk
       int fld_ctr;
 #ifdef DEBUG
       if (SPAR_TRIPLE != SPART_TYPE (memb))
-        spar_internal_error (sparp, "sparp_" "gp_detach_member(): type of memb is neither SPAR_GP nor SPAR_TRIPLE");
+        spar_internal_error (sparp, "sparp_" "gp_detach_member_int(): type of memb is neither SPAR_GP nor SPAR_TRIPLE");
 #endif
       for (fld_ctr = SPART_TRIPLE_FIELDS_COUNT; fld_ctr--; /*no step*/)
         {
@@ -2347,6 +2581,7 @@ sparp_gp_detach_member (sparp_t *sparp, SPART *parent_gp, int member_idx, sparp_
   dk_set_t *touched_equivs_set_ptr = ((NULL != touched_equivs_ptr) ? &touched_equivs_set : NULL);
   SPART **old_members = parent_gp->_.gp.members;
   SPART *memb;
+  sparp_check_tree (parent_gp);
   memb = sparp_gp_detach_member_int (sparp, parent_gp, member_idx, touched_equivs_set_ptr);
   if (NULL != touched_equivs_ptr)
     touched_equivs_ptr[0] = (sparp_equiv_t **)(t_revlist_to_array (touched_equivs_set));
@@ -2362,6 +2597,7 @@ sparp_gp_detach_all_members (sparp_t *sparp, SPART *parent_gp, sparp_equiv_t ***
   dk_set_t *touched_equivs_set_ptr = ((NULL != touched_equivs_ptr) ? &touched_equivs_set : NULL);
   SPART **old_members = parent_gp->_.gp.members;
   int member_idx;
+  sparp_check_tree (parent_gp);
   for (member_idx = BOX_ELEMENTS (old_members); member_idx--; /* no step */)
     sparp_gp_detach_member_int (sparp, parent_gp, member_idx, touched_equivs_set_ptr);
   if (NULL != touched_equivs_ptr)
@@ -2418,6 +2654,8 @@ sparp_gp_attach_member (sparp_t *sparp, SPART *parent_gp, SPART *memb, int inser
   dk_set_t touched_equivs_set = NULL;
   dk_set_t *touched_equivs_set_ptr = ((NULL != touched_equivs_ptr) ? &touched_equivs_set : NULL);
   SPART **old_members = parent_gp->_.gp.members;
+  sparp_check_tree (parent_gp);
+  sparp_check_tree (memb);
 #ifdef DEBUG
   if ((0 > insert_before_idx) || (BOX_ELEMENTS (parent_gp->_.gp.members) < insert_before_idx))
     spar_internal_error (sparp, "sparp_" "gp_attach_member(): bad member_idx");
@@ -2437,6 +2675,8 @@ sparp_gp_attach_many_members (sparp_t *sparp, SPART *parent_gp, SPART **new_memb
   SPART **old_members = parent_gp->_.gp.members;
   int ins_count = BOX_ELEMENTS (new_members);
   int memb_ctr;
+  sparp_check_tree (parent_gp);
+  sparp_check_tree (new_members);
 #ifdef DEBUG
   if ((0 > insert_before_idx) || (BOX_ELEMENTS (parent_gp->_.gp.members) < insert_before_idx))
     spar_internal_error (sparp, "sparp_" "gp_attach_member(): bad member_idx");

@@ -197,8 +197,7 @@ typedef struct sparp_env_s
     dk_set_t		spare_context_predicates;	/*!< Expressions that are default values for predicate field */
     dk_set_t		spare_context_objects;		/*!< Expressions that are default values for objects field */
     dk_set_t		spare_context_gp_subtypes;	/*!< Subtypes of not-yet-completed graph patterns */
-    dk_set_t		spare_acc_req_triples;		/*!< Sets of accumulated required triples of GPs */
-    dk_set_t		spare_acc_opt_triples;		/*!< Sets of accumulated optional triples of GPs */
+    dk_set_t		spare_acc_triples;		/*!< Sets of accumulated triples of GPs */
     dk_set_t		spare_acc_filters;		/*!< Sets of accumulated filters of GPs */
     dk_set_t		spare_good_graph_varnames;	/*!< Varnames found in non-optional triples before or outside, (including non-optional inside previous non-optional siblings), but not after or inside */
     dk_set_t		spare_good_graph_varname_sets;	/*!< Pointers to the spare_known_gspo_varnames stack, to pop */

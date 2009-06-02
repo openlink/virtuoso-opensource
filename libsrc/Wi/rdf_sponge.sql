@@ -1235,7 +1235,7 @@ create procedure DB.DBA.RDF_FORGET_HTTP_RESPONSE (in graph_iri varchar, in new_o
 }
 ;
 
-create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any, in uid integer := -1)
+create function DB.DBA.RDF_SPONGE_UP_DISABLED (in graph_iri varchar, in options any, in uid integer := -1)
 {
   declare aq varchar;
   declare dest, local_iri varchar;
@@ -1255,7 +1255,7 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any, in u
 }
 ;
 
-create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in uid integer := -1)
+create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any, in uid integer := -1)
 {
   declare dest, get_soft, local_iri, immg, res_graph_iri varchar;
   declare perms integer;
