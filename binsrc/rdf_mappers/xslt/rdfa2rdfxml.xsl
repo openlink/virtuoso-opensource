@@ -206,7 +206,8 @@
 	    </rdf:Description>
 	</xsl:template>
 
-	<xsl:template match="*[@resource and not (@rel) and not (@rev)]|*[@href and not (@rel) and not (@rev)]">
+	<xsl:template match="*[@resource and not (ancestor-or-self::*[@rel]) and not (ancestor-or-self::*[@rev])]|
+	    		     *[@href and not (ancestor-or-self::*[@rel]) and not (ancestor-or-self::*[@rev])]">
 	    <xsl:if test="ancestor::*[@rel]">
 		<xsl:variable name="rels" select="vi:split-and-decode(ancestor::*/@rel, 0, ' ')"/>
 		<xsl:variable name="about">
