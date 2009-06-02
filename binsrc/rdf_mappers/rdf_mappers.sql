@@ -2199,6 +2199,7 @@ create procedure DB.DBA.RDF_LOAD_SLIDESHARE (in graph_iri varchar, in new_origin
 	};
 	ts :=  cast(datediff ('second', stringdate ('1970-1-1'), now ()) as varchar);
 	hash1 := slideshare_hex_sha1_digest(concat(SharedSecret, ts));
+	
 	if (new_origin_uri like 'http://www.slideshare.net/search/slideshow?q=%&%' or
 		new_origin_uri like 'http://www.slideshare.net/search/slideshow?%&q=%&%')
 	{
@@ -2211,6 +2212,14 @@ create procedure DB.DBA.RDF_LOAD_SLIDESHARE (in graph_iri varchar, in new_origin
 			if (query is null)
 				return 0;
 		}
+		url := sprintf ('http://www.slideshare.net/api/1/search_slideshows?api_key=%U&ts=%U&hash=%U&q=%U', ApiKey, ts, hash1, query);
+	}
+	else if (new_origin_uri like 'http://www.slideshare.net/search/slideshow?q=%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.slideshare.net/search/slideshow?q=%s', 0);
+		query := tmp[0];
+		if (query is null)
+			return 0;
 		url := sprintf ('http://www.slideshare.net/api/1/search_slideshows?api_key=%U&ts=%U&hash=%U&q=%U', ApiKey, ts, hash1, query);
 	}
 	else if (new_origin_uri like 'http://www.slideshare.net/tag/%')

@@ -38,6 +38,7 @@
 	version="1.0">
 	<xsl:output method="xml" indent="yes" />
 	<xsl:param name="baseUri" />
+	
 	<xsl:template match="/">
 		<rdf:RDF>
 			<xsl:apply-templates select="Slideshows" />
@@ -47,45 +48,69 @@
 			<xsl:apply-templates select="Slideshow" />
 		</rdf:RDF>
 	</xsl:template>
+	
 	<xsl:template match="Slideshows|Tag|User|Group">
 		<bibo:Collection rdf:about="{$baseUri}">
 			<bibo:uri rdf:resource="{$baseUri}" />
+			<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
+			<xsl:if test="Meta/Query">
 			<bibo:identifier>
 				<xsl:value-of select="Meta/Query" />
 			</bibo:identifier>
+			</xsl:if>
+			<xsl:if test="Meta/Query">
 			<dcterms:title>
 				<xsl:value-of select="Meta/Query" />
 			</dcterms:title>
+			</xsl:if>
 			<xsl:for-each select="Slideshow">
-				<xsl:variable name="res" select="vi:proxyIRI(URL)" />
-				<sioc:container_of rdf:resource="{$res}" />
+				<xsl:choose>
+					<xsl:when test="URL">
+						<sioc:container_of rdf:resource="{vi:proxyIRI(URL)}" />
+					</xsl:when>
+					<xsl:otherwise>
+						<sioc:container_of rdf:resource="{vi:proxyIRI(Permalink)}" />
+					</xsl:otherwise>
+				</xsl:choose>
 			</xsl:for-each>
 		</bibo:Collection>
 		<xsl:apply-templates select="Slideshow" />
 	</xsl:template>
+	
 	<xsl:template match="Slideshows/Slideshow|Slideshow">
+		<xsl:choose>
+			<xsl:when test="URL">
+				<xsl:variable name="res" select="URL" />
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:variable name="res" select="Permalink" />
+			</xsl:otherwise>
+		</xsl:choose>
+	  
+	  
 		<rdf:Description rdf:about="{$baseUri}">
  		<rdf:type rdf:resource="&foaf;Document"/>
  		<rdf:type rdf:resource="&bibo;Document"/>
  		<rdf:type rdf:resource="&sioc;Container"/>
- 		<sioc:container_of rdf:resource="{vi:proxyIRI(URL)}"/>
- 		<foaf:topic rdf:resource="{vi:proxyIRI(URL)}"/>
- 		<dcterms:subject rdf:resource="{vi:proxyIRI(URL)}"/>
- 		<foaf:primaryTopic rdf:resource="{vi:proxyIRI(URL)}"/>
+ 		<sioc:container_of rdf:resource="{vi:proxyIRI($res)}"/>
+ 		<foaf:topic rdf:resource="{vi:proxyIRI($res)}"/>
+ 		<dcterms:subject rdf:resource="{vi:proxyIRI($res)}"/>
+ 		<xsl:if test="$res = $baseUri">
+ 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI($res)}"/>
+ 		</xsl:if>
  	  </rdf:Description>
  	  
-          <rdf:Description rdf:about="{URL}">
+      <rdf:Description rdf:about="{$res}">
  		<rdf:type rdf:resource="&foaf;Document"/>
  		<rdf:type rdf:resource="&bibo;Document"/>
  		<rdf:type rdf:resource="&sioc;Container"/>
- 		<sioc:container_of rdf:resource="{vi:proxyIRI(URL)}"/>
- 		<foaf:topic rdf:resource="{vi:proxyIRI(URL)}"/>
- 		<dcterms:subject rdf:resource="{vi:proxyIRI(URL)}"/>
- 		<foaf:primaryTopic rdf:resource="{vi:proxyIRI(URL)}"/>
+ 		<sioc:container_of rdf:resource="{vi:proxyIRI($res)}"/>
+ 		<foaf:topic rdf:resource="{vi:proxyIRI($res)}"/>
+ 		<dcterms:subject rdf:resource="{vi:proxyIRI($res)}"/>
+ 		<foaf:primaryTopic rdf:resource="{vi:proxyIRI($res)}"/>
  	  </rdf:Description>
 
-		<bibo:Slideshow rdf:about="{vi:proxyIRI(URL)}">
-			<xsl:variable name="res" select="vi:proxyIRI(URL)" />
+		<bibo:Slideshow rdf:about="{vi:proxyIRI($res)}">
 			<xsl:choose>
 				<xsl:when test="Embed">
 					<xsl:variable name="owner" select="vi:proxyIRI(concat('http://www.slideshare.net/', Owner))" />
@@ -102,11 +127,12 @@
 					<xsl:variable name="thumbnail" select="ThumbnailURL" />
 				</xsl:otherwise>
 			</xsl:choose>
-			<bibo:uri rdf:resource="{$res}" />
+			<bibo:uri rdf:resource="{vi:proxyIRI($res)}" />
 			<dcterms:title>
 				<xsl:value-of select="Title" />
 			</dcterms:title>
 			<bibo:owner rdf:resource="{$owner}" />
+			<foaf:maker rdf:resource="{$owner}" />
 			<bibo:identifier>
 				<xsl:choose>
 					<xsl:when test="Id">
