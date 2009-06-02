@@ -39,6 +39,27 @@ int aq_free (async_queue_t * aq);
 
 long tc_aq_from_queue;
 
+
+void
+aq_lt_leave (lock_trx_t * lt, aq_request_t * aqr)
+{
+  int lte = lt->lt_error;
+  if (aqr->aqr_error || LT_PENDING != lt->lt_status)
+    {
+      lt_rollback (lt, TRX_CONT);
+      if (!aqr->aqr_error)
+	MAKE_TRX_ERROR (lte, aqr->aqr_error, NULL);
+    }
+  else 
+    {
+      lte = lt_commit (lt, TRX_CONT);
+      if (LTE_OK != lte)
+	MAKE_TRX_ERROR (lte, aqr->aqr_error, NULL);
+    }
+  lt_leave (lt);
+}
+
+
 void
 aq_thread_func (aq_thread_t * aqt)
 {
@@ -70,7 +91,7 @@ aq_thread_func (aq_thread_t * aqt)
       assert (aqt->aqt_thread->thr_sem->sem_entry_count == 0);
       aqr->aqr_args = NULL;
       IN_TXN;
-      lt_leave (aqt->aqt_cli->cli_trx);
+      aq_lt_leave (aqt->aqt_cli->cli_trx, aqr);
       LEAVE_TXN;
 
       mutex_enter (aq->aq_mtx);
