@@ -49,6 +49,8 @@
       <v:variable name="target_url" type="varchar" default="''" persist="0" />
       <v:variable name="target_uid" type="varchar" default="''" persist="0" />
       <v:variable name="target_pwd" type="varchar" default="''" persist="0" />
+      <v:variable name="_store_fn" type="varchar" default="''" persist="0" />
+      <v:variable name="_ext_fn" type="varchar" default="''" persist="0" />
     </vm:variables>
     <vm:menu>
       <vm:menuitem value="WebDAV Content Management"/>
@@ -86,10 +88,10 @@
               _n_own := 0;
               select VS_DESCR, VS_HOST, VS_URL, VS_INX, VS_ROOT,
                 VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW, VS_OPTIONS,
-                VS_SRC, VS_METHOD, VS_OWN, VS_OTHER, VS_OPAGE, VS_REDIRECT, VS_STORE, VS_DLOAD_META, deserialize (VS_UDATA)
+                VS_SRC, VS_METHOD, VS_OWN, VS_OTHER, VS_OPAGE, VS_REDIRECT, VS_STORE, VS_DLOAD_META, deserialize (VS_UDATA), VS_STORE_FN, VS_EXTRACT_FN
                 into self._descr, self._host, self._url, _idx, self._root,
                 self._newd, self._del, self._flow, self._dflow, self._auth,
-                self._img, self._dav, _n_own, _oth, self._opage, self._redir, self._store, self._get_rdf, self._udata
+                self._img, self._dav, _n_own, _oth, self._opage, self._redir, self._store, self._get_rdf, self._udata, self._store_fn, self._ext_fn
                 from WS.WS.VFS_SITE where VS_HOST = get_keyword ('EDIT', self.vc_page.vc_event.ve_params) and VS_ROOT = get_keyword ('root', self.vc_page.vc_event.ve_params);
               self._own := (select U_NAME from WS.WS.SYS_DAV_USER where U_ID = _n_own);
               update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = self._host and VQ_ROOT = self._root;
@@ -271,6 +273,30 @@
               </td>
             </tr>
             <tr>
+              <td>Store Function</td>
+              <td>
+                <v:text name="store_fn" value="--self._store_fn" xhtml_size="50"/>
+                <v:browse-button name="br_store" value="Browse..."
+                        selector="vdir_browser.vspx"
+                        child-window-options="scrollbars=yes, resizable=yes, menubar=no, height=630, width=600"
+                        browser-options="caption=Choose+authentication+function&amp;dir-separator=.&amp;quote-char=&amp;filter-char=%25&amp;content-proc=db.dba.vproc_browse_proc&amp;content-meta-proc=db.dba.vproc_browse_proc_meta&amp;multi-sel=0&amp;dir-sel=0&amp;&amp;retname=t_auth_func">
+                  <v:field name="store_fn" />
+                </v:browse-button>
+              </td>
+            </tr>
+            <tr>
+              <td>Extract Function</td>
+              <td>
+                <v:text name="ext_fn" value="--self._ext_fn" xhtml_size="50"/>
+                <v:browse-button name="br_ext" value="Browse..."
+                        selector="vdir_browser.vspx"
+                        child-window-options="scrollbars=yes, resizable=yes, menubar=no, height=630, width=600"
+                        browser-options="caption=Choose+authentication+function&amp;dir-separator=.&amp;quote-char=&amp;filter-char=%25&amp;content-proc=db.dba.vproc_browse_proc&amp;content-meta-proc=db.dba.vproc_browse_proc_meta&amp;multi-sel=0&amp;dir-sel=0&amp;&amp;retname=t_auth_func">
+                  <v:field name="ext_fn" />
+                </v:browse-button>
+              </td>
+            </tr>
+            <tr>
               <td/>
               <td>
                 <v:check-box name="img" value="1" initial-checked="--case when self._img = 'checked' then 1 else 0 end" xhtml_id="img"/>
@@ -426,6 +452,8 @@
                         self._newd := get_keyword ('newd', params);
                         self._flow := get_keyword ('flow', params);
                         self._dflow := get_keyword ('dflow', params);
+                        self._store_fn := get_keyword ('store_fn', params);
+                        self._ext_fn := get_keyword ('ext_fn', params);
                         self._del := get_keyword ('del', params);
                         if (self.mode = 'edit')
                           self._opage := self._opage;
@@ -436,7 +464,7 @@
                         self._dav := get_keyword ('dav', params);
                         self._own := get_keyword ('own', params);
                         self._redir := get_keyword ('redir', params);
-			self._store := get_keyword ('store', params);
+			self._store := get_keyword ('store', params, '0');
 			self._get_rdf := atoi (get_keyword ('get_rdf', params, '0'));
 
 			opts := vector ();
@@ -506,7 +534,9 @@
                               VS_REDIRECT = self._redir,
 			      VS_STORE = self._store,
 			      VS_DLOAD_META = self._get_rdf,
-			      VS_UDATA = serialize (self._udata)
+			      VS_UDATA = serialize (self._udata),
+			      VS_STORE_FN = self._store_fn,
+			      VS_EXTRACT_FN = self._ext_fn
                             where
                               VS_HOST = self._host and
                               VS_ROOT = self._root;
@@ -522,9 +552,11 @@
                           insert into WS.WS.VFS_SITE(
                             VS_DESCR, VS_HOST, VS_URL, VS_INX, VS_OWN,
                             VS_ROOT, VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW,
-                            VS_SRC, VS_METHOD, VS_OTHER, VS_OPTIONS, VS_OPAGE, VS_REDIRECT, VS_STORE, VS_DLOAD_META, VS_UDATA)
+			    VS_SRC, VS_METHOD, VS_OTHER, VS_OPTIONS, VS_OPAGE, VS_REDIRECT, VS_STORE, VS_DLOAD_META, VS_UDATA, 
+			    VS_STORE_FN, VS_EXTRACT_FN)
                             values(self._descr, self._host, self._url, _idx, (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = self._own),
-                            self._root, stringdate(self._newd), self._del, self._flow, self._dflow, self._img, self._dav, _oth, self._auth, self._opage, self._redir, self._store, self._get_rdf, serialize (self._udata));
+			    self._root, stringdate(self._newd), self._del, self._flow, self._dflow, self._img, self._dav, _oth, self._auth, 
+			    self._opage, self._redir, self._store, self._get_rdf, serialize (self._udata), self._store_fn, self._ext_fn);
                           insert into WS.WS.VFS_QUEUE(VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT) values(self._host, self._url, now(), 'waiting', self._root);
                         }
 
