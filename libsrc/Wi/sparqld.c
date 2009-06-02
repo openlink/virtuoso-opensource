@@ -276,7 +276,7 @@ ssg_sdprint_equiv_restrs (spar_sqlgen_t *ssg, sparp_equiv_t *eq)
   ptrlong mixed_field_restr = 0;
   int ctr;
   const char *builtin_name = NULL;
-  if (SPART_VARR_CONFLICT & eq->e_rvr.rvrRestrictions)
+  if ((SPART_VARR_CONFLICT & eq->e_rvr.rvrRestrictions) && (0 != eq->e_gspo_uses))
     {
       ssg_newline (0);
       ssg_puts (" FILTER (0 != 0)");
@@ -560,11 +560,20 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
           }
         ssg_putchar ('{');
         ssg->ssg_indent += 2;
+#if 0
+        if ((0 == BOX_ELEMENTS_0 (tree->_.gp.members)) && (NULL == tree->_.gp.subquery))
+          {
+            ssg_puts ("<nosuch://S> <nosuch://P> <nosuch://O> . FILTER (0 != 0) .");
+          }
+        else
+#endif
+          {
         DO_BOX_FAST (SPART *, sub, ctr, tree->_.gp.members)
           {
             ssg_sdprint_tree (ssg, sub);
           }
         END_DO_BOX_FAST;
+          }
         if (ssg->ssg_sd_forgotten_dot)
           {
             ssg_puts (" .");
@@ -768,6 +777,7 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
           }
         place_qm = ((SSG_SD_QUAD_MAP & ssg->ssg_sd_flags) &&
           (1 == BOX_ELEMENTS_0 (tree->_.triple.tc_list)) &&
+          (NULL != ssg->ssg_sparp->sparp_storage) &&
           (0 != (BOX_ELEMENTS_0 (ssg->ssg_sparp->sparp_storage->qsUserMaps) +
               BOX_ELEMENTS_0 (ssg->ssg_sparp->sparp_storage->qsMjvMaps) ) ) );
         if (ssg->ssg_sd_forgotten_dot)

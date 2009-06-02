@@ -977,8 +977,7 @@ void spar_gp_init (sparp_t *sparp, ptrlong subtype)
   sparp_env_t *env = sparp->sparp_env;
   spar_dbg_printf (("spar_gp_init (..., %ld)\n", (long)subtype));
   spar_selid_push (sparp);
-  t_set_push (&(env->spare_acc_req_triples), NULL);
-  t_set_push (&(env->spare_acc_opt_triples), NULL);
+  t_set_push (&(env->spare_acc_triples), NULL);
   t_set_push (&(env->spare_acc_filters), NULL);
   t_set_push (&(env->spare_context_gp_subtypes), (caddr_t)subtype);
   t_set_push (&(env->spare_good_graph_varname_sets), env->spare_good_graph_varnames);
@@ -1016,8 +1015,9 @@ spar_gp_finalize (sparp_t *sparp, SPART **options)
   sparp_env_t *env = sparp->sparp_env;
   caddr_t orig_selid = env->spare_selids->data;
   dk_set_t propvars = (dk_set_t) t_set_pop (&(env->spare_propvar_sets));
-  dk_set_t req_membs;
-  dk_set_t opt_membs;
+  dk_set_t membs;
+  int all_ctr = 0;
+  int opt_ctr = 0;
   dk_set_t filts;
   ptrlong subtype;
   SPART *res;
@@ -1036,13 +1036,13 @@ spar_gp_finalize (sparp_t *sparp, SPART **options)
         {
           SPART *pv_gp;
           pv_gp = spar_gp_finalize (sparp, NULL);
-          t_set_push (((dk_set_t *)(&(env->spare_acc_req_triples->data))) /* not &req_membs */, pv_gp);
+          t_set_push (((dk_set_t *)(&(env->spare_acc_triples->data))) /* not &membs */, pv_gp);
         }
     }
   END_DO_SET();
 /* Pop the rest of the environment and adjust graph varnames */
-  req_membs = (dk_set_t) t_set_pop (&(env->spare_acc_req_triples));
-  opt_membs = (dk_set_t) t_set_pop (&(env->spare_acc_opt_triples));
+  membs = (dk_set_t) t_set_pop (&(env->spare_acc_triples));
+  membs = dk_set_nreverse (membs);
   filts = (dk_set_t) t_set_pop (&(env->spare_acc_filters));
   subtype = (ptrlong)((void *)t_set_pop (&(env->spare_context_gp_subtypes)));
   env->spare_good_graph_bmk = t_set_pop (&(env->spare_good_graph_varname_sets));
@@ -1052,39 +1052,36 @@ spar_gp_finalize (sparp_t *sparp, SPART **options)
    the bookmark is t_set_pop-ed, but the content remains at its place */
   if (OPTIONAL_L == subtype) /* Variables nested in optionals can not be good graph variables... */
     env->spare_good_graph_varnames = env->spare_good_graph_bmk;
-/* Add extra GP to guarantee proper left side of the left outer join */
-  if ((1 < dk_set_length (req_membs)) && (0 < dk_set_length (opt_membs)))
+  DO_SET (SPART *, memb, &membs)
     {
-      SPART *left_group;
-      spar_gp_init (sparp, 0);
-      spar_gp_replace_selid (sparp, req_membs, orig_selid, env->spare_selids->data);
-      env->spare_acc_req_triples->data = req_membs;
-      left_group = spar_gp_finalize (sparp, NULL);
-      req_membs = NULL;
-      t_set_push (&req_membs, left_group);
-    }
-/* Add extra GP to guarantee proper support of {... OPTIONAL { ... ?x ... } ... OPTIONAL { ... ?x ... } } */
-  if (1 < dk_set_length (opt_membs))
+      if ((SPAR_GP == SPART_TYPE (memb)) && (OPTIONAL_L == memb->_.gp.subtype))
+        {
+          if (((0 == opt_ctr) && (1 < all_ctr)) || /* Add extra GP to guarantee proper left side of the left outer join */
+            (0 < opt_ctr) )/* Add extra GP to guarantee proper support of {... OPTIONAL { ... ?x ... } ... OPTIONAL { ... ?x ... } } */
     {
-      SPART *last_opt;
+              dk_set_t left = NULL;
+              int left_ctr;
       SPART *left_group;
-      last_opt = (SPART *)t_set_pop (&opt_membs);
+              for (left_ctr = 0; left_ctr < all_ctr; left_ctr++)
+                t_set_push (&left, t_set_pop (&membs));
       spar_gp_init (sparp, 0);
-      spar_gp_replace_selid (sparp, req_membs, orig_selid, env->spare_selids->data);
-      env->spare_acc_req_triples->data = req_membs;
-      spar_gp_replace_selid (sparp, opt_membs, orig_selid, env->spare_selids->data);
-      env->spare_acc_opt_triples->data = opt_membs;
+              spar_gp_replace_selid (sparp, left, orig_selid, env->spare_selids->data);
+              env->spare_acc_triples->data = left;
       left_group = spar_gp_finalize (sparp, NULL);
-      req_membs = NULL;
-      t_set_push (&req_membs, left_group);
-      opt_membs = NULL;
-      t_set_push (&opt_membs, last_opt);
+              t_set_push (&membs, left_group);
+              all_ctr = 1;
+              opt_ctr = 0;
+              continue;
+            }
+          opt_ctr++;
     }
+      all_ctr++;
+    }
+  END_DO_SET()
 /* Plain composing of SPAR_GP tree node */
   res = spartlist (sparp, 10,
     SPAR_GP, subtype,
-    /* opt members are at the first place in NCONC because there's a reverse in t_revlist_to_array */
-    t_revlist_to_array (t_NCONC (opt_membs, req_membs)),
+    t_list_to_array (membs),
     t_revlist_to_array (filts),
     NULL,
     orig_selid,
@@ -1109,10 +1106,7 @@ void spar_gp_add_member (sparp_t *sparp, SPART *memb)
 {
   dk_set_t *set_ptr;
   spar_dbg_printf (("spar_gp_add_member ()\n"));
-  if ((SPAR_GP == SPART_TYPE (memb)) && (OPTIONAL_L == memb->_.gp.subtype))
-    set_ptr = (dk_set_t *)(&(sparp->sparp_env->spare_acc_opt_triples->data));
-  else
-    set_ptr = (dk_set_t *)(&(sparp->sparp_env->spare_acc_req_triples->data));
+  set_ptr = (dk_set_t *)(&(sparp->sparp_env->spare_acc_triples->data));
   t_set_push (set_ptr, memb);
 }
 
@@ -1167,7 +1161,7 @@ spar_gp_add_filter (sparp_t *sparp, SPART *filt)
       caddr_t ft_pred_name = filt->_.funcall.qname;
       SPART *ft_literal_var;
       caddr_t var_name;
-      dk_set_t *req_triples_ptr;
+      dk_set_t *triples_ptr;
       SPART **args, *triple_with_var_obj = NULL;
       int argctr, argcount, fld_ctr;
       args = filt->_.funcall.argtrees;
@@ -1178,8 +1172,8 @@ spar_gp_add_filter (sparp_t *sparp, SPART *filt)
       if (SPAR_VARIABLE != SPART_TYPE (ft_literal_var))
         spar_error (sparp, "The first argument of special predicate %s() should be a variable", ft_pred_name);
       var_name = ft_literal_var->_.var.vname;
-      req_triples_ptr = (dk_set_t *)(&(sparp->sparp_env->spare_acc_req_triples->data));
-      DO_SET (SPART *, memb, req_triples_ptr)
+      triples_ptr = (dk_set_t *)(&(sparp->sparp_env->spare_acc_triples->data));
+      DO_SET (SPART *, memb, triples_ptr)
         {
           SPART *obj;
           if (SPAR_TRIPLE != SPART_TYPE (memb))
@@ -1342,8 +1336,13 @@ spar_make_list_of_sources_expn (sparp_t *sparp, ptrlong from_subtype, ptrlong fr
           t_box_num_nonull (req_perms) ) );
       if (NULL == needle_expn)
         return lst_expn;
+#if 0 /* For version 5 */
       return spar_make_funcall (sparp, 0, "LONG::bif:position",
         (SPART **)t_list (2, needle_expn, lst_expn) );
+#else
+      return spartlist (sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)IN_L,
+        (SPART **)t_list (2, needle_expn, lst_expn) );
+#endif
     }
   if (NULL == needle_expn)
     return spar_make_funcall (sparp, 0, "LONG::bif:vector",
@@ -1666,7 +1665,7 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
   sparp_env_t *saved_env = sparp->sparp_env;
   dk_set_t selid_stack = sparp->sparp_env->spare_selids;
   dk_set_t filters_stack = sparp->sparp_env->spare_acc_filters;
-  dk_set_t members_stack = sparp->sparp_env->spare_acc_req_triples;
+  dk_set_t members_stack = sparp->sparp_env->spare_acc_triples;
 #endif
   SPART *subselect_top, *where_gp, *wrapper_gp, *fields[4];
   SPART *subj_var, *obj_var, **retvals;
@@ -1755,8 +1754,8 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
     spar_internal_error (sparp, "spar_" "gp_add_transitive_triple(): mismatch in selid");
   if (filters_stack != sparp->sparp_env->spare_acc_filters)
     spar_internal_error (sparp, "spar_" "gp_add_transitive_triple(): mismatch in filters");
-  if (members_stack != sparp->sparp_env->spare_acc_req_triples)
-    spar_internal_error (sparp, "spar_" "gp_add_transitive_triple(): mismatch in req_triples");
+  if (members_stack != sparp->sparp_env->spare_acc_triples)
+    spar_internal_error (sparp, "spar_" "gp_add_transitive_triple(): mismatch in triples");
 #endif
 }
 
@@ -2901,8 +2900,7 @@ spar_env_push (sparp_t *sparp)
   /* no copy for spare_context_predicates */
   /* no copy for spare_context_objects */
   /* no copy for spare_context_gp_subtypes */
-  /* no copy for spare_acc_req_triples */
-  /* no copy for spare_acc_opt_triples */
+  /* no copy for spare_acc_triples */
   /* no copy for spare_acc_filters */
   ENV_COPY (spare_good_graph_varnames);
   ENV_COPY (spare_good_graph_varname_sets);
