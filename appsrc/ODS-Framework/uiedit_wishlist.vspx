@@ -31,7 +31,7 @@
 	<v:variable name="edit_wl" type="integer" default="null" param-name="edit" />
 	<v:variable name="delete_wl" type="integer" default="null" param-name="del" />
 	<v:form type="simple" method="POST" xhtml_enctype="multipart/form-data" action="uiedit.vspx?page=7">
-    <h3>WishList Ontology Triples</h3>
+    <h3>Wish Lists</h3>
 	  <table class="listing" rules="groups">
 	    <tr class="listing_header_row">
 		    <th>Barter</th>

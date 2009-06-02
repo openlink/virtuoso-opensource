@@ -6744,6 +6744,35 @@ create procedure DB.DBA.RDF_LOAD_ZEMANTA (in graph_iri varchar, in new_origin_ur
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_ALCHEMY (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare url, txt, cont, xt, xd, tmp any;
+  declare sc_min float;
+  declare max_res int;
+
+  declare exit handler for sqlstate '*'
+  {
+    return 0;
+  };
+  
+  if (not isstring (_key) or length (_key) = 0)
+    return 0;
+  sc_min := atof (get_keyword ('min-score', opts, '0.5'));
+  max_res := atoi (get_keyword ('max-results', opts, '10'));
+  
+  url := sprintf('http://access.alchemyapi.com/calls/url/URLGetNamedEntities?url=%s&apikey=%s&outputMode=rdf', new_origin_uri, _key);
+  tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+  xt := xtree_doc (tmp);
+  xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/alchemy2rdf.xsl', xt,
+	vector ('baseUri', coalesce (dest, graph_iri), 'what', 'entity'));
+  cont := serialize_to_UTF8_xml (xd);
+  DB.DBA.RDF_LOAD_RDFXML (cont, new_origin_uri, coalesce (dest, graph_iri));
+  
+  return 0;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_LOD (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
@@ -6812,6 +6841,81 @@ create procedure RDF_LOAD_LOD2(in data any, in api_key varchar, in opts any, in 
 				proxy=>get_keyword_ucase ('get:proxy', opts));
 			xt := xtree_doc (tmp);
 			xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/lod2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+			cont := serialize_to_UTF8_xml (xd);
+			DB.DBA.RDF_LOAD_RDFXML (cont, new_origin_uri, coalesce (dest, graph_iri));
+		}
+	}
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_YAHOO_BOSS (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare data, meta, state, message any;
+	declare tree, txt, cont, xt, xd, tmp any;
+	declare url, keywords, api_key, primary_topic varchar;
+	api_key := _key;
+	
+	declare exit handler for sqlstate '*'
+	{
+		return 0;
+	};
+	
+	if (not isstring (api_key) or length (api_key) = 0)
+		return 0;
+	
+	primary_topic := DB.DBA.RDF_SPONGE_PROXY_IRI (graph_iri);
+	
+	state := '00000';
+	tmp := sprintf( 'sparql define input:inference \'virtrdf-label\' select ?l from <%s> where
+		{ <%s> virtrdf:label ?l }', graph_iri, primary_topic);
+	exec (tmp, state, message, vector (), 0, meta, data);
+	if (state = '00000' and length (data) > 0)
+		RDF_LOAD_YAHOO_BOSS2(data, api_key, opts, dest, graph_iri, new_origin_uri);
+
+	state := '00000';
+	tmp := sprintf( 'sparql define input:inference \'virtrdf-label\' select ?l from <%s> where
+		{ <%s> virtrdf:label ?l }', graph_iri, graph_iri);
+	exec (tmp, state, message, vector (), 0, meta, data);
+	if (state = '00000' and length (data) > 0)
+		RDF_LOAD_YAHOO_BOSS2(data, api_key, opts, dest, graph_iri, new_origin_uri);
+
+	data := null;
+	state := '00000';
+	tmp := sprintf( 'sparql define input:inference \'virtrdf-label\' select ?l from <%s> where
+		{ <%s> dc:title ?l }', graph_iri, primary_topic);
+	exec (tmp, state, message, vector (), 0, meta, data);
+	if (state = '00000' and length (data) > 0)
+		RDF_LOAD_YAHOO_BOSS2(data, api_key, opts, dest, graph_iri, new_origin_uri);
+
+	data := null;
+	state := '00000';
+	tmp := sprintf( 'sparql define input:inference \'virtrdf-label\' select ?l from <%s> where
+		{ <%s> dc:title ?l }', graph_iri, graph_iri);
+	exec (tmp, state, message, vector (), 0, meta, data);
+	if (state = '00000' and length (data) > 0)
+		RDF_LOAD_YAHOO_BOSS2(data, api_key, opts, dest, graph_iri, new_origin_uri);
+
+	return 0;
+}
+;
+
+create procedure RDF_LOAD_YAHOO_BOSS2(in data any, in api_key varchar, in opts any, in dest varchar, in graph_iri varchar, in new_origin_uri varchar)
+{
+	declare keywords, url, tmp, tree, cont varchar;
+	declare xt, xd any;
+
+	foreach (any str in data) do
+	{
+		if (isstring (str[0]))
+		{
+			keywords := trim(str[0], '\n\t\t\n ');
+			keywords := replace(keywords, ' ', '+');
+			url := sprintf('http://boss.yahooapis.com/ysearch/web/v1/%s?appid=%s&format=xml&view=searchmonkey_rdf', keywords, api_key);
+			tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+			xt := xtree_doc (tmp);
+			xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/yahoo_boss2rdf.xsl', xt,
+				vector ('baseUri', coalesce (dest, graph_iri)));
 			cont := serialize_to_UTF8_xml (xd);
 			DB.DBA.RDF_LOAD_RDFXML (cont, new_origin_uri, coalesce (dest, graph_iri));
 		}
@@ -6957,7 +7061,15 @@ insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC
 	  vector ('min-score', '0.5', 'max-results', '10'));
 
 insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
+      values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_ALCHEMY', null, 'Alchemy',
+	  vector ('min-score', '0.5', 'max-results', '10'));
+
+insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
       values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_NYT_ARTICLE_SEARCH', null, 'NYT: The Article Search',
+	  vector ('min-score', '0.5', 'max-results', '10'));
+
+insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
+      values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_YAHOO_BOSS', null, 'Yahoo BOSS',
 	  vector ('min-score', '0.5', 'max-results', '10'));
 
 insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)

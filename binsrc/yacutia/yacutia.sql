@@ -262,7 +262,7 @@ create procedure adm_menu_tree ()
    </node>
  </node>
  <node name="Database" url="databases.vspx"  id="43" tip="Database Server local and remote resource manipulation" allowed="yacutia_db">
-   <node name="SQL Schema Objects" url="databases.vspx"  id="44" allowed="yacutia_databases_page">
+   <node name="SQL Database Objects" url="databases.vspx"  id="44" allowed="yacutia_databases_page">
      <node name="Databases-drop" url="databases_drop.vspx" id="45" place="1" allowed="yacutia_databases_page"/>
      <node name="Databases-drop" url="db_drop_conf.vspx" id="46" place="1" allowed="yacutia_databases_page"/>
      <node name="Databases-drop" url="db_drop_errs.vspx" id="47" place="1" allowed="yacutia_databases_page"/>
@@ -311,14 +311,14 @@ create procedure adm_menu_tree ()
      <node name="Load Modules" url="hosted_modules_select2.vspx" id="77" place="1" allowed="yacutia_runtime_loaded_select2"/>
      <node name="Modules Grant" url="hosted_grant.vspx" id="78" place="1" allowed="yacutia_runtime_hosted_grant"/>
    </node>
-   <node name="RDF Schema Objects" url="db_rdf_objects.vspx"  id="271" allowed="yacutia_rdf_schema_objects_page"/>
-   <node name="RDF Schema Objects" url="db_rdf_class.vspx"  id="272" place="1"/>
-   <node name="RDF Schema Objects" url="db_rdf_owl.vspx"  id="273" place="1"/>
-   <node name="RDF Schema Objects" url="db_rdf_view_1.vspx"  id="273" place="1"/>
-   <node name="RDF Schema Objects" url="db_rdf_view_2.vspx"  id="273" place="1"/>
-   <node name="RDF Schema Objects" url="db_rdf_view_3.vspx"  id="273" place="1"/>
-   <node name="RDF Schema Objects" url="db_rdf_view_tb.vspx"  id="273" place="1"/>
-   <node name="RDF Schema Objects" url="db_rdf_view_cols.vspx"  id="273" place="1"/>
+   <node name="RDF Views" url="db_rdf_objects.vspx"  id="271" allowed="yacutia_rdf_schema_objects_page"/>
+   <node name="RDF Views" url="db_rdf_class.vspx"  id="272" place="1"/>
+   <node name="RDF Views" url="db_rdf_owl.vspx"  id="273" place="1"/>
+   <node name="RDF Views" url="db_rdf_view_1.vspx"  id="273" place="1"/>
+   <node name="RDF Views" url="db_rdf_view_2.vspx"  id="273" place="1"/>
+   <node name="RDF Views" url="db_rdf_view_3.vspx"  id="273" place="1"/>
+   <node name="RDF Views" url="db_rdf_view_tb.vspx"  id="273" place="1"/>
+   <node name="RDF Views" url="db_rdf_view_cols.vspx"  id="273" place="1"/>
  </node>
  <node name="Replication"  url="db_repl_basic.vspx" id="80" tip="Replications" allowed="yacutia_repl">
    <node name="Basic" url="db_repl_basic.vspx"  id="8001" >

@@ -110,9 +110,9 @@
 <xsl:template match="a:content">
   <dc:description><xsl:call-template name="removeTags" /></dc:description>
   <description><xsl:value-of select="." /></description>
-  <xsl:if test="not(../content:encoded)">
+  <!--xsl:if test="not(../content:encoded)">
     <content:encoded><xsl:value-of select="." /></content:encoded>
-  </xsl:if>
+  </xsl:if-->
 </xsl:template>
 
 <xsl:template match="a:published">

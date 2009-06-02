@@ -73,11 +73,14 @@
 	  ]]>
 	</v:method>
 
-  <v:method name="remove_ns" arglist="in aValue varchar, in ns varchar">
+  <v:method name="vector_contains" arglist="in aVector any, in aValue varchar">
     <![CDATA[
-      if (aValue like ns || '%')
-        return substring (aValue, length (ns)+1, length (aValue));
-      return aValue;
+      declare N integer;
+
+      for (N := 0; N < length(aVector); N := N + 1)
+        if (aValue = aVector[N])
+          return 1;
+      return 0;
 	  ]]>
 	</v:method>
 
@@ -100,6 +103,7 @@
   <v:variable name="iResume" type="varchar" default="null" />
   <v:variable name="iInterests" type="varchar" default="null" />
   <v:variable name="iTopicInterests" type="varchar" default="null" />
+  <v:variable name="iOnlineAccounts" type="varchar" default="null" />
   <v:variable name="iSameAs" type="varchar" default="null" />
 
   <v:variable name="show_data" type="int" default="0" />
@@ -161,132 +165,43 @@
 
             if (self.i_source_0.ufl_selected)
             {
-              declare step integer;
-              declare url any;
+              declare data any;
 
               self.i_source := 0;
-              url := self.foaf_url.ufl_value;
-
-              declare exit handler for sqlstate '*'
+              data := ODS.ODS_API.get_foaf_data_array (self.foaf_url.ufl_value, 0);
+              if (length (data) = 0)
+                data := ODS.ODS_API.get_foaf_data_array (self.foaf_url.ufl_value, 1);
+              if (length (data) = 0)
               {
-                self.vc_is_valid := 0;
-                self.vc_error_message := 'Invalid FOAF URL.';
-              };
-
-              exec (sprintf ('sparql define get:soft "soft" select * from <%S> where { ?s ?p ?o }', url), null, null, vector (), 0);
-
-              step := 0;
-              self.iInterests := null;
-              self.iTopicInterests := null;
-              self.iSameAs := self.foaf_url.ufl_value;
-              for select * from
-                 (sparql
-		  define input:storage ""
-                  prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-                  prefix foaf: <http://xmlns.com/foaf/0.1/>
-                  prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
-                  prefix owl: <http://www.w3.org/2002/07/owl#>
-                  prefix bio: <http://vocab.org/bio/0.1/>
-                  select ?title
-                         ?name
-                         ?firstName
-                         ?givenName
-                         ?family_name
-                         ?mbox
-                         ?gender
-                         ?birthday
-                         ?lat
-                         ?lng
-                         ?icqChatID
-                         ?msnChatID
-                         ?aimChatID
-                         ?yahooChatID
-                         ?workplaceHomepage
-                         ?homepage
-                         ?phone
-                         ?resume
-                         ?interest
-                         ?interest_label
-                         ?topic_interest
-                         ?topic_interest_label
-                         ?sameAs
-                   where {graph ?:url
-                           {
-                             [] a foaf:PersonalProfileDocument ;
-                             foaf:primaryTopic ?person .
-                             optional { ?person foaf:name ?name } .
-                             optional { ?person foaf:title ?title } .
-                             optional { ?person foaf:nick ?nick } .
-                             optional { ?person foaf:firstName ?firstName } .
-                             optional { ?person foaf:givenname ?givenName } .
-                             optional { ?person foaf:family_name ?family_name } .
-                             optional { ?person foaf:mbox ?mbox } .
-                             optional { ?person foaf:gender ?gender } .
-                             optional { ?person foaf:birthday ?birthday } .
-                             optional { ?person foaf:based_near ?based_near .
-                                        ?based_near geo:lat ?lat ;
-                                                    geo:long ?lng . } .
-                             optional { ?person foaf:icqChatID ?icqChatID } .
-                             optional { ?person foaf:msnChatID ?msnChatID } .
-                             optional { ?person foaf:aimChatID ?aimChatID } .
-                             optional { ?person foaf:yahooChatID ?yahooChatID } .
-                             optional { ?person foaf:workplaceHomepage ?workplaceHomepage } .
-                             optional { ?person foaf:homepage ?homepage } .
-                             optional { ?person foaf:phone ?phone } .
-                             optional { ?person foaf:interest ?interest .
-                                        ?interest rdfs:label ?interest_label. } .
-                             optional { ?person foaf:topic_interest ?topic_interest .
-                                        ?topic_interest rdfs:label ?topic_interest_label. } .
-                             optional { ?person owl:sameAs ?sameAs } .
-                             optional { ?person bio:olb ?resume } .
-                           }
-                         }
-                 ) sub
-              do
-              {
-                if (step = 0)
-                {
-                  self.iTitle := self.check_title (title);
-                  self.iName := name;
-                  self.iFirstName := coalesce (firstName, givenName);
-                  self.iFamily_name := family_name;
-                  self.iMbox := self.remove_ns (mbox, 'mailto:');
-                  self.iGender := gender;
-                  self.iBirthday := birthday;
-                  self.iLat := lat;
-                  self.iLng := lng;
-                  self.iIcqChatID := icqChatID;
-                  self.iMsnChatID := msnChatID;
-                  self.iAimChatID := aimChatID;
-                  self.iYahooChatID := yahooChatID;
-                  self.iWorkplaceHomepage := workplaceHomepage;
-                  self.iHomepage := homepage;
-                  self.iPhone := self.remove_ns (phone, 'tel:');
-                  self.iResume := resume;
-                }
-                if (interest is not null)
-                {
-                  self.iInterests := self.iInterests || interest || ';' || interest_label || '\n';
-                }
-                if (topic_interest is not null)
-                {
-                  self.iTopicInterests := self.iTopicInterests || topic_interest || ';' || topic_interest_label || '\n';;
-                }
-                if ((sameAs is not null) and (sameAs <> self.foaf_url.ufl_value))
-                {
-                  self.iSameAs := self.iSameAs  || '\n' || sameAs;
-                }
-                step := 1;
-                self.show_data := 1;
-              }
-              if (self.show_data = 0)
-              {
-                self.vc_is_valid := 0;
                 self.vc_error_message := 'The specified URL doesn\'t contains personal FOAF profile.';
-              } else {
+                self.vc_is_valid := 0;
+                return;
+                }
+              self.iTitle := get_keyword ('title', data);
+              self.iName := get_keyword ('name', data);
+              self.iFirstName := coalesce (get_keyword ('firstName', data), get_keyword ('givenName', data));
+              self.iFamily_name := get_keyword ('family_name', data);
+              self.iMbox := get_keyword ('mbox', data);
+              self.iGender := get_keyword ('gender', data);
+              self.iBirthday := get_keyword ('birthday', data);
+              self.iLat := get_keyword ('lat', data);
+              self.iLng := get_keyword ('lng', data);
+              self.iIcqChatID := get_keyword ('icqChatID', data);
+              self.iMsnChatID := get_keyword ('msnChatID', data);
+              self.iAimChatID := get_keyword ('aimChatID', data);
+              self.iYahooChatID := get_keyword ('yahooChatID', data);
+              self.iWorkplaceHomepage := get_keyword ('workplaceHomepage', data);
+              self.iHomepage := get_keyword ('homepage', data);
+              self.iPhone := get_keyword ('phone', data);
+              self.iResume := get_keyword ('resume', data);
+              self.iInterests := get_keyword ('interest', data);
+              self.iTopicInterests := get_keyword ('topic_interest', data);
+              self.iOnlineAccounts := get_keyword ('onlineAccounts', data);
+              self.iSameAs := get_keyword ('sameAs', data);
+
+                self.show_data := 1;
                 control.vc_data_bind (e);
               }
-            }
             else if (self.i_source_1.ufl_selected)
             {
               self.i_source := 1;
@@ -462,16 +377,16 @@
         </v:template>
         <v:template name="iTemplate_16" type="simple" condition="length (self.iInterests)">
           <tr>
-            <td>Resource URI indicating thing of interest</td>
+            <td valign="top">Resource URI indicating thing of interest</td>
             <td>
               <?vsp
-                for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = self.iInterests) do
+                for (select fld1, fld2 from DB.DBA.WA_USER_INTERESTS (txt) (fld1 varchar, fld2 varchar) P where txt = self.iInterests) do
             	  {
-            	    if (length (interest))
+            	    if (length (fld1))
             	    {
-            	      http (interest);
-            	      if (length (label))
-            		      http (sprintf (' (%s)', label));
+            	      http (fld1);
+            	      if (length (fld2))
+            		      http (sprintf (' (%s)', fld2));
             	      http ('<br />');
             	    }
             	  }
@@ -481,16 +396,16 @@
         </v:template>
         <v:template name="iTemplate_17" type="simple" condition="length (self.iTopicInterests)">
           <tr>
-            <td>Web page URL indicating a topic of interest   </td>
+            <td valign="top">Web page URL indicating a topic of interest   </td>
             <td>
               <?vsp
-                for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = self.iTopicInterests) do
+                for (select fld1, fld2 from DB.DBA.WA_USER_INTERESTS (txt) (fld1 varchar, fld2 varchar) P where txt = self.iTopicInterests) do
             	  {
-            	    if (length (interest))
+            	    if (length (fld1))
             	    {
-            	      http (interest);
-            	      if (length (label))
-            		      http (sprintf (' (%s)', label));
+            	      http (fld1);
+            	      if (length (fld2))
+            		      http (sprintf (' (%s)', fld2));
             	      http ('<br />');
             	    }
             	  }
@@ -498,16 +413,35 @@
             </td>
           </tr>
         </v:template>
-        <v:template name="iTemplate_18" type="simple" condition="length (self.iSameAs)">
+        <v:template name="iTemplate_18" type="simple" condition="length (self.iOnlineAccounts)">
           <tr>
-            <td>Other Identity URIs (synonyms)</td>
+            <td valign="top">Online Accounts</td>
             <td>
               <?vsp
-                for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = self.iSameAs) do
+                for (select fld1, fld2 from DB.DBA.WA_USER_INTERESTS (txt) (fld1 varchar, fld2 varchar) P where txt = self.iOnlineAccounts) do
             	  {
-            	    if (length (interest))
+            	    if (length (fld1))
             	    {
-            	      http (interest);
+            	      http (fld1);
+            	      if (length (fld2))
+            		      http (sprintf (' (%s)', fld2));
+            	      http ('<br />');
+            	    }
+            	  }
+              ?>
+            </td>
+          </tr>
+        </v:template>
+        <v:template name="iTemplate_19" type="simple" condition="length (self.iSameAs)">
+          <tr>
+            <td valign="top">Other Identity URIs (synonyms)</td>
+            <td>
+              <?vsp
+                for (select fld1, fld2 from DB.DBA.WA_USER_INTERESTS (txt) (fld1 varchar, fld2 varchar) P where txt = self.iSameAs) do
+            	  {
+            	    if (length (fld1))
+            	    {
+            	      http (fld1);
             	      http ('<br />');
             	    }
             	  }
@@ -544,16 +478,28 @@
               WA_USER_EDIT (self.u_name, 'WAUI_RESUME', self.iResume);
               WA_USER_EDIT (self.u_name, 'WAUI_INTERESTS', self.iInterests);
               WA_USER_EDIT (self.u_name, 'WAUI_INTEREST_TOPICS', self.iTopicInterests);
+              if (length (self.iOnlineAccounts))
+              {
+                delete from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_U_ID = self.u_id;
+                for (select fld1, fld2 from DB.DBA.WA_USER_INTERESTS (txt) (fld1 varchar, fld2 varchar) P where txt = self.iOnlineAccounts) do
+            	  {
+            	    if (length (fld1))
+            	    {
+                    insert into DB.DBA.WA_USER_OL_ACCOUNTS ( WUO_NAME, WUO_URL, WUO_U_ID, WUO_TYPE)
+                      values (fld1, fld2, self.u_id, 'P');
+            	    }
+            	  }
+              }
             }
 
             commit work;
-            self.vc_redirect ('uiedit.vspx?page=8');
+            self.vc_redirect ('uiedit.vspx?page=10');
           ]]>
         </v:on-post>
       </v:button>
       <v:button action="simple" name="bt_imp3" value="Cancel">
         <v:on-post><![CDATA[
-          self.vc_redirect ('uiedit.vspx?page=8');
+          self.vc_redirect ('uiedit.vspx?page=10');
         ]]></v:on-post>
       </v:button>
     </v:template>

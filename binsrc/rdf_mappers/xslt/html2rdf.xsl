@@ -40,6 +40,7 @@
   xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
   xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
   xmlns:umbel="http://umbel.org/umbel#"
+  xmlns:content="http://purl.org/rss/1.0/modules/content/"
   version="1.0">
   <xsl:output method="xml" indent="yes"/>
   <xsl:param name="base" />
@@ -62,6 +63,10 @@
 		<xsl:apply-templates select="//img[@src]"/>
 		<xsl:apply-templates select="//a[@href]"/>
 		<xsl:apply-templates select="link[@rel='alternate']"/>
+		<xsl:variable name="doc1">
+			<xsl:copy-of select="/html/body" />
+		</xsl:variable>
+		<!--content:encoded><xsl:value-of select="vi:escape($doc1)" /></content:encoded-->
       </rdf:Description>
   </xsl:template>
 

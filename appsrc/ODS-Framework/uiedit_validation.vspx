@@ -67,7 +67,7 @@
     </table>
   </div>
   <div class="new-form-footer">
-    <v:button action="simple" value="Save" xhtml_class="form-button">
+    <v:button name="vButton_save" action="simple" value="Save" xhtml_class="form-button">
       <v:on-post>
         <![CDATA[
           declare N integer;

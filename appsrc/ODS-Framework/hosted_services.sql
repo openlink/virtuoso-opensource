@@ -3464,6 +3464,35 @@ wa_exec_no_error_log(
 );
 wa_exec_no_error('create index WA_USER_BIOEVENTS_USER on WA_USER_BIOEVENTS (WUB_U_ID)');
 
+wa_exec_no_error_log(
+    'CREATE TABLE WA_USER_FAVORITES (
+      WUF_ID integer identity,
+      WUF_U_ID integer,
+      WUF_LABEL varchar,
+      WUF_URI varchar,
+
+      primary key (WUF_ID)
+     )'
+);
+wa_exec_no_error('create index WA_USER_FAVORITES_USER on WA_USER_FAVORITES (WUF_U_ID)');
+
+create procedure wa_favorites_upgrade() {
+
+  if (registry_get ('__wa_favorites_upgrade') = 'done')
+    return;
+  registry_set ('__wa_favorites_upgrade', 'done');
+  for (select WAUI_U_ID, WAUI_FAVORITE_BOOKS, WAUI_FAVORITE_MUSIC, WAUI_FAVORITE_MOVIES from DB.DBA.WA_USER_INFO) do
+  {
+    if (not DB.DBA.is_empty_or_null (WAUI_FAVORITE_BOOKS))
+      insert into DB.DBA.WA_USER_FAVORITES ( WUF_LABEL, WUF_U_ID) values (WAUI_FAVORITE_BOOKS, WAUI_U_ID);
+    if (not DB.DBA.is_empty_or_null (WAUI_FAVORITE_MUSIC))
+      insert into DB.DBA.WA_USER_FAVORITES ( WUF_LABEL, WUF_U_ID) values (WAUI_FAVORITE_MUSIC, WAUI_U_ID);
+    if (not DB.DBA.is_empty_or_null (WAUI_FAVORITE_MOVIES))
+      insert into DB.DBA.WA_USER_FAVORITES ( WUF_LABEL, WUF_U_ID) values (WAUI_FAVORITE_MOVIES, WAUI_U_ID);
+  }
+}
+;
+wa_favorites_upgrade();
 
 create procedure WA_USER_TAG_WAUTG_TAGS_INDEX_HOOK (inout vtb any, inout d_id integer)
 {
@@ -6638,52 +6667,67 @@ DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_user_home_rulelist', 1, vector ('ods_use
 
 create procedure ods_define_common_vd (in _host varchar, in _lhost varchar, in isdav int := 1)
 {
+  declare _opts any;
+  declare _sec varchar;
+  _opts := vector ();
+  _sec := null;
+  for select deserialize (HP_AUTH_OPTIONS) as aopts 
+    from DB.DBA.HTTP_PATH where HP_HOST = _host and HP_LISTEN_HOST = _lhost and HP_SECURITY = 'SSL' and HP_LPATH = '/' do
+    {
+      _opts := aopts;
+      _sec := 'SSL';
+    }
+  
   -- common access point
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/ods');
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/ods',
-      ppath=>'/DAV/VAD/wa/', is_dav=>isdav, vsp_user=>'dba', def_page=>'index.html');
+      ppath=>'/DAV/VAD/wa/', is_dav=>isdav, vsp_user=>'dba', def_page=>'index.html', sec=>_sec, auth_opts=>_opts);
 
   -- new interface
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/ods/users');
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/ods/users',
-      ppath=>'/DAV/VAD/wa/users', is_dav=>isdav, vsp_user=>'dba');
+      ppath=>'/DAV/VAD/wa/users', is_dav=>isdav, vsp_user=>'dba', sec=>_sec, auth_opts=>_opts);
 
   -- RDF folder
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/ods/data/rdf');
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/ods/data/rdf',
-      ppath=>'/DAV/VAD/wa/RDFData/All/', is_dav=>isdav, vsp_user=>'dba');
+      ppath=>'/DAV/VAD/wa/RDFData/All/', is_dav=>isdav, vsp_user=>'dba', sec=>_sec, auth_opts=>_opts);
 
   -- gdata.sql
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/dataspace');
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/dataspace',
       ppath=>'/DAV/VAD/wa/', vsp_user=>'dba', is_dav=>isdav, def_page=>'index.html',is_brws=>0,
-      opts=>vector ('url_rewrite', 'ods_rule_list1'));
+      opts=>vector ('url_rewrite', 'ods_rule_list1'), sec=>_sec, auth_opts=>_opts);
+
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/dataspace/GData');
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/dataspace/GData',
-      ppath=>'/SOAP/Http/gdata', soap_user=>'GDATA_ODS');
+      ppath=>'/SOAP/Http/gdata', soap_user=>'GDATA_ODS', sec=>_sec, auth_opts=>_opts);
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/openid');
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/openid',
-      ppath=>'/SOAP/Http/server', soap_user=>'OpenID');
+      ppath=>'/SOAP/Http/server', soap_user=>'OpenID', sec=>_sec, auth_opts=>_opts);
   --ods_api.sql
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/ods_services');
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/ods_services',
-      ppath=>'/SOAP/',soap_user=>'GDATA_ODS', opts=>vector ('url_rewrite', 'ods_svc_rule_list1'));
+      ppath=>'/SOAP/',soap_user=>'GDATA_ODS', opts=>vector ('url_rewrite', 'ods_svc_rule_list1'), sec=>_sec, auth_opts=>_opts);
   --opensocial.sql
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/feeds');
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/feeds',
-      ppath=>'/SOAP/Http', soap_user=>'GDATA_ODS', opts=>vector ('url_rewrite', 'os_rule_list_ot'));
+      ppath=>'/SOAP/Http', soap_user=>'GDATA_ODS', opts=>vector ('url_rewrite', 'os_rule_list_ot'), sec=>_sec, auth_opts=>_opts);
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/activities');
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/activities',
-      ppath=>'/SOAP/Http', soap_user=>'GDATA_ODS', opts=>vector ('url_rewrite', 'os_rule_list_act'));
+      ppath=>'/SOAP/Http', soap_user=>'GDATA_ODS', opts=>vector ('url_rewrite', 'os_rule_list_act'), sec=>_sec, auth_opts=>_opts);
 
   -- VD for user's home folders
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/home');
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/home',
-      ppath=>'/DAV/home/', is_dav=>isdav);
+      ppath=>'/DAV/home/', is_dav=>isdav, sec=>_sec, auth_opts=>_opts);
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/public_home');
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/public_home',
-      ppath=>'/DAV/home/', is_dav=>isdav, is_brws=>1, vsp_user=>'dba');
+      ppath=>'/DAV/home/', is_dav=>isdav, is_brws=>1, vsp_user=>'dba', sec=>_sec, auth_opts=>_opts);
 
+  DB.DBA.VHOST_REMOVE (vhost=>_host, lhost=>_lhost, lpath=>'/ods/api');
+  DB.DBA.VHOST_DEFINE (vhost=>_host, lhost=>_lhost, lpath=>'/ods/api', 
+      ppath=>'/SOAP/Http', soap_user=>'ODS_API', opts=>vector ('500_page', 'error_handler'), sec=>_sec, auth_opts=>_opts);
 
   if (exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST = _host and HP_LISTEN_HOST = _lhost and HP_LPATH = '/DAV'))
     {
@@ -6692,7 +6736,7 @@ create procedure ods_define_common_vd (in _host varchar, in _lhost varchar, in i
       DB.DBA.VHOST_REMOVE (vhost=>_host, lhost=>_lhost, lpath=>'/');
       DB.DBA.VHOST_DEFINE (vhost=>_host, lhost=>_lhost, lpath=>'/',
 	  ppath=>'/', is_dav=>0, def_page=>'index.html',
-	  opts=>vector ('url_rewrite', 'ods_user_home_rulelist', 'url_rewrite_keep_lpath', 1));
+	      opts=>vector ('url_rewrite', 'ods_user_home_rulelist', 'url_rewrite_keep_lpath', 1), sec=>_sec, auth_opts=>_opts);
     }
   else
     {

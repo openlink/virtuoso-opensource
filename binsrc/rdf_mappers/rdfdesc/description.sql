@@ -102,7 +102,7 @@ create procedure rdfdesc_rel_print (in val any, in rel any, in flag int := 0)
   delim := __max (delim1, delim2, delim3);
   nss := null;
   loc := val;
-  if (delim < 0) return;
+  if (delim < 0) return loc;
   nss := subseq (val, 0, delim + 1);
   loc := subseq (val, delim + 1);
 
@@ -254,7 +254,7 @@ again:
 
        rdfa := rdfdesc_rel_print (prop, rel, 0);
        if (http_mime_type (_url) like 'image/%')
-	 http (sprintf ('<a class="uri" %s href="%s"><img src="%s" border="0"/></a>', rdfa, rdfdesc_http_url (_url), _url));
+	 http (sprintf ('<a class="uri" %s href="%s"><img src="%s" height="160" border="0"/></a>', rdfa, rdfdesc_http_url (_url), _url));
        else
        http (sprintf ('<a class="uri" %s href="%s">%s</a>', rdfa, rdfdesc_http_url (_url), rdfdesc_uri_curie(_url, _label)));
 
@@ -284,10 +284,10 @@ again:
        -- CMSB
        declare _href, image_ext varchar;
 
-       _href := rdfdesc_http_url (_object);
        http (sprintf ('<span %s>', rdfa));
-       if (isstring(_object) and strstr(_object, 'http://') is not null)
+       if (isstring(_object) and _object like 'http://%')
        {
+	 _href := rdfdesc_http_url (_object);
 	 image_ext := subseq(lcase(_object), strrchr(_object, '.') + 1);
 	 if (image_ext is not null)
 	 {

@@ -180,7 +180,7 @@ create procedure sessionValidateX509 (
 {
   declare retValue any;
   declare fingerPrint, info, agent any;
-  declare st, msg, meta, data, S, hf, graph, gr any;
+  declare st, msg, meta, data, S, hf, graph, gr, vec, loc_idn any;
 
   retValue := null;
   graph := null;
@@ -212,12 +212,20 @@ create procedure sessionValidateX509 (
     };
 
     hf := rfc1808_parse_uri (agent);
+    vec := hf;
     hf[5] := '';
     gr := DB.DBA.vspx_uri_compose (hf);
     graph := uuid ();
     S := sprintf ('sparql load <%s> into graph <%s>', gr, graph);
     exec (S, st, msg);
     commit work;
+    loc_idn := agent;
+    if (is_https_ctx () and cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal') = '1' and vec [1] = registry_get ('URIQADefaultHost'))
+      {
+	vec [0] := 'local';
+	vec [1] := '';
+	loc_idn := db.dba.vspx_uri_compose (vec);
+      }
     S := sprintf ('sparql ' ||
                   'prefix cert: <%s> ' ||
                   'prefix rsa: <%s> ' ||
@@ -234,7 +242,8 @@ create procedure sessionValidateX509 (
                   SIOC..cert_iri (''),
                   SIOC..rsa_iri (''),
                   graph,
-                  agent);
+                  loc_idn);
+
     st := '00000';
     exec (S, st, msg, vector (), 0, meta, data);
     if ((st <> '00000') or (length (data) = 0))
