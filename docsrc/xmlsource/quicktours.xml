@@ -349,13 +349,13 @@ the tab "Interactive SQL". Enter a SQL statement and click the button "Execute".
     <para>A table on a remote datasource may be linked into the Virtuoso database so that it appears
 as a local table. Start a browser and point to Conductor, for ex. http://localhost:8890/conductor/.
 Go to tab "Database", then select "External Data Sources" and then "Sata Sources". Specify the remote datasource
-that you wish to link to Virtuoso. For example, click the link "connect" for DSN "msql5ma".
+that you wish to link to Virtuoso. For example, click the link "connect" for DSN "VirtuosoDemoTest".
     </para>
     <figure id="conndsn1a" float="1">
       <title>Enter login name and password.</title>
       <graphic fileref="conndsn1a.png"/>
     </figure>
-    <para>As result should be shown for DSN "msql5ma" the links "Link objects", "Change Credentials", "Disconnect". Click the "Link objects" link.
+    <para>As result should be shown for DSN "VirtuosoDemoTest" the links "Link objects", "Change Credentials", "Disconnect". Click the "Link objects" link.
     </para>
     <figure id="conndsn1b" float="1">
       <title>Connected to datasource.</title>
@@ -383,7 +383,7 @@ A table may be unlinked by pressing its "Unlink" icon.
 			<title>Querying Linked Tables</title>
     <para>Once the tables have been linked into Virtuoso, they can be queried using the Interactive
 SQL query. From the Conductor UI go to <emphasis>Database/Interactive SQL</emphasis>. Type a SQL that accesses a remote
-table such as: SELECT * FROM DB.msql5ma.dept. Click the "Execute" button.
+table such as: SELECT * FROM Demo.VirtuosoDemoTest.CustomersLinked. Click the "Execute" button.
     </para>
 			<para>Press the Execute button and review the results.</para>
 			<figure id="rmtdsnqry" float="1">

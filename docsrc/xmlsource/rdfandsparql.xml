@@ -4141,7 +4141,539 @@ _______________________________________________________________________________
 </sect2>
 </sect1>
 
+<sect1 id="rdfgraphsecurity"><title>RDF Graphs Security</title>
+<sect2 id="rdfgraphsecuritygroups"><title>RDF Graph Groups</title>
+<para>In some cases, the data-set of a SPARQL query is not known at compile time. It is possible to pass
+IRIs of source graphs via parameters, but the method is not perfect as:</para>
+<itemizedlist mark="bullet">
+  <listitem>not all protocols are suitable for parameter passing, and no one is an interoperable standard</listitem>
+  <listitem>passing list of IRIs as a parameter will usually require the use of Virtuoso-specific functions
+in the text of SPARQL query, that's bad for some query builders.</listitem>
+  <listitem>lack of knowledge about actual graphs may damage query optimization</listitem>
+</itemizedlist>
+<para>It would be nice to create named lists of graphs and a clause like "select from all graph names of the specified list".
+<emphasis>"Graph groups"</emphasis> serve for this purpose. That is Virtuoso-specific SPARQL extension that let create a named list of IRIs such that
+if name of the list is used in <emphasis>FROM</emphasis> clause like <emphasis>IRI</emphasis> of default
+graph then it is equivalent to list of <emphasis>FROM</emphasis> clauses, one clause for each item of the
+list.</para>
+<para>Internally, descriptions of graph groups are kept in two tables:</para>
+<emphasis>Table of graph groups:</emphasis>
+<programlisting><![CDATA[
+create table DB.DBA.RDF_GRAPH_GROUP (
+  RGG_IID IRI_ID not null primary key,	-- IRI ID of RGG_IRI field
+  RGG_IRI varchar not null,		-- Name of the group
+  RGG_MEMBER_PATTERN varchar,		-- Member IRI pattern
+  RGG_COMMENT varchar			-- Comment
+  )
+create index RDF_GRAPH_GROUP_IRI on DB.DBA.RDF_GRAPH_GROUP (RGG_IRI)
+;
+]]></programlisting>
+<para><emphasis>Table of contents of groups:</emphasis></para>
 
+<programlisting><![CDATA[
+create table DB.DBA.RDF_GRAPH_GROUP_MEMBER (
+  RGGM_GROUP_IID IRI_ID not null,	-- IRI_ID of the group
+  RGGM_MEMBER_IID IRI_ID not null,	-- IRI_ID of the group member
+  primary key (RGGM_GROUP_IID, RGGM_MEMBER_IID)
+  )
+;
+]]></programlisting>
+
+<para>Fields <emphasis>RGG_MEMBER_PATTERN</emphasis> and <emphasis>RGG_COMMENT</emphasis> are not used by system internals but applications may wish to write their data there for future reference.
+<emphasis>RGG_COMMENT</emphasis> is supposed to be human-readable description of the group and <emphasis>RGG_MEMBER_PATTERN</emphasis> may be useful for functions that automatically add
+IRIs of a given graph to all graph groups such that the graph IRI string match <emphasis>RGG_MEMBER_PATTERN</emphasis> regexp pattern.
+</para>
+<para>A dictionary of all groups and their members is cached in memory for fast access.
+Due to this reason, applications may read these tables and modify <emphasis>RGG_MEMBER_PATTERN</emphasis> and <emphasis>RGG_COMMENT</emphasis> if needed but not change other fields directly.
+The following API procedures makes changes in a safe way:
+</para>
+<programlisting><![CDATA[
+DB.DBA.RDF_GRAPH_GROUP_CREATE (
+  in group_iri varchar,
+  in quiet integer,
+  in member_pattern varchar := null,
+  in comment varchar := null)
+]]></programlisting>
+
+<para>That creates a new empty graph group. An error is signaled if the group exists already and quiet
+parameter is zero.</para>
+
+<programlisting><![CDATA[
+DB.DBA.RDF_GRAPH_GROUP_INS (in group_iri varchar, in memb_iri varchar)
+DB.DBA.RDF_GRAPH_GROUP_DEL (in group_iri varchar, in memb_iri varchar)
+]]></programlisting>
+
+
+<para>These two are to add or remove member to an existing group. Double insert or removal of not a member
+will not signal errors, but missing group will.be signaled.</para>
+
+<programlisting><![CDATA[
+DB.DBA.RDF_GRAPH_GROUP_DROP (
+  in group_iri varchar,
+  in quiet integer)
+]]></programlisting>
+
+<para>That removes graph group. An error is signaled if the group did not exist before the call and quiet
+parameter is zero.</para>
+
+<para>Graph groups are <emphasis>"macro-expanded"</emphasis> only in FROM clauses and have no effect on
+FROM NAMED or on GRAPH &lt;IRI&gt; {...} . Technically, it is not prohibited to use an IRI as both plain
+graph IRI and graph group IRI in one storage but this is confusing and is not recommended.</para>
+
+<para>Graph groups can not be members of other graph groups, i.e. the IRI of a graph group can appear in the
+list of members of some group but it will be treated as plain graph IRI and will not cause recursive
+expansion of groups.</para>
+</sect2>
+<sect2 id="rdfgraphsecuritynotfrom"><title>NOT FROM and NOT FROM NAMED Clauses</title>
+<para>In addition to standard FROM and FROM NAMED clauses, Virtuoso extends SPARQL with NOT FROM and NOT
+FROM NAMED clauses of "opposite" meaning.</para>
+
+<programlisting><![CDATA[
+SELECT ... NOT FROM <x> ... WHERE {...}
+]]></programlisting>
+
+<para>means "select from other graphs, but not from the given one".
+This is especially useful because NOT FROM supports graph groups (NOT FROM NAMED supports only plain graphs).
+So if</para>
+
+<programlisting><![CDATA[
+<http://example.com/users/private>
+]]></programlisting>
+
+<para>is a graph group of all graphs with confidential data about users then</para>
+
+<programlisting><![CDATA[
+SELECT * NOT FROM <http://example.com/users/private> WHERE {...}
+]]></programlisting>
+
+<para>will be restricted only to insecure data.</para>
+
+<para>NOT FROM overrides any FROM and NOT FROM NAMED overrides any FROM NAMED, the order of clauses in the
+query text is not important.</para>
+
+<para>The SPARQL web service endpoint configuration string may contain pragmas
+<emphasis>input:default-graph-exclude</emphasis> and <emphasis>input:named-graph-exclude</emphasis> that
+become equivalent to NOT FROM and NOT FROM NAMED clauses like <emphasis>input:default-graph-uri</emphasis>
+and <emphasis>input:named-graph-uri</emphasis> mimics FROM and FROM NAMED.</para>
+</sect2>
+<sect2 id="rdfgraphsecurity"><title>Graph-Level Security</title>
+<para>Virtuoso supports graph-level security for "physical" RDF storage. That is somewhat similar to table
+access permissions in SQL. However, the difference between SPARQL and SQL data models results in totally
+different style of security administration. In SQL, when new application is installed it comes with its own
+set of tables and every query in its code explicitly specifies tables in use. Security restrictions of two
+applications interfere only if applications knows each other and are supposedly designed to cooperate. It
+is possible to write an application that will get list of available tables and retrieve data from any given
+table but that is a special case and it usually requires DBA privileges.</para>
+
+<para>In SPARQL, data of different applications shares one table and the query language allows to select data
+of all applications at once. This feature makes SPARQL convenient for cross-application data integration. At
+the same time, that become a giant security hole if any sensitive data are stored.</para>
+
+<para>A blind copying SQL security model to SPARQL domain would result in significant loss of performance or
+weak security or even both problems at the same time. That is why SPARQL model is made much more restrictive,
+even if it becomes inconvenient for some administration tasks.</para>
+
+<para>Graph-level security does not replace traditional SQL security. A user should become member of
+appropriate group (SPARQL_SELECT, SPARQL_SPONGE or SPARQL_UPDATE) in order to start using its graph-level
+privileges.</para>
+</sect2>
+<sect2 id="rdfgraphsecurityunddefperm"><title>Understanding Default Permissions</title>
+
+<para>In relational database, default permissions are trivial. DBA is usually the only account that can
+access any table for both read and write. Making some table public or private does not affect applications
+that do not refer that table in the code. Tables are always created before making security restrictions on
+them.</para>
+
+<para>Chances are very low that an application will unintentionally create some table and fill in with
+confidential data. There are no unauthenticated users, any client has some user ID and no one user is
+"default user" so permissions of any two users are always independent.</para>
+
+<para>SPARQL access can be anonymous and graphs can be created during routine data manipulation.
+For anonymous user, only public resources are available. Thus "default permissions" on some or all graphs are
+actually permissions of "nobody" user, (the numeric ID of this user can be obtained by http_nobody_uid()
+function call). As a consequence, there's a strong need in "default permission" for a user, this is the only
+way to specify what to do with all graphs that does not exist now it might exist in some future.
+</para>
+
+<para>An attempt to make default permissions wider than specific is always potential security hole in SPARQL,
+so this is strictly prohibited.</para>
+
+<para>Four sorts of access are specified by four bits of an integer "permission bit-mask", plain old UNIX
+style:</para>
+
+<itemizedlist mark="bullet">
+  <listitem>Bit 1 permits read access.</listitem>
+  <listitem>Bit 2 permits write access via SPARUL and it's basically useless without bit 1 set.</listitem>
+  <listitem>Bit 4 permits write access via "RDF sponge" methods and it's basically useless
+without bits 1 and 2 set.</listitem>
+  <listitem>Bit 8 allows to obtain list of members of graph group; an IRI can be used as graph IRI and as
+graph group IRI at the same time so bit 8 can be freely combined with any of bits 1, 2 or 4.</listitem>
+</itemizedlist>
+
+<para>Note that obtaining the list of members of a graph group does not grant any access permissions to
+triples from member graphs. It is quite safe to mix secure and public graphs in one graph group.</para>
+
+<para>When a SPARQL query should check whether a given user have permission to access a given graph then
+the order of checks is as follows:</para>
+
+<orderedlist>
+  <listitem>permissions of the user on the specific graph;</listitem>
+  <listitem>default permissions of the user on all graphs;</listitem>
+  <listitem>public permissions on the specific graph;</listitem>
+  <listitem>public permissions on all graphs</listitem>
+</orderedlist>
+
+<para>If no one above mentioned permission is set then the access is "read/write/sponge/list".</para>
+<para>For "nobody" user, steps 3 and 4 become exact copies of steps 1 and 2 so they are skipped.</para>
+</sect2>
+<sect2 id="rdfgraphsecurityintconfsec"><title>Initial Configuration of SPARQL Security</title>
+<para>It is convenient to configure the RDF storage security by adding restrictions in the order inverse
+to the order of checks:</para>
+
+<itemizedlist mark="bullet">
+  <listitem>Step 1: Set public permissions on all graphs to the most restricted level of any application
+that will be installed. So if any single graph will be unreadable for public, then public permissions on
+all graphs should be set to 0 or 8.</listitem>
+  <listitem>Step 2: Public permissions on "insecure" graphs should be set. So if the database contains
+DBpedia or WordNet or some other data of Linking Open Data project then public permissions for that graphs
+may be set to 1.</listitem>
+  <listitem>Step3: Configure trusted users, such as administrative DBA-like accounts, and to specify their
+permissions on all graphs.</listitem>
+  <listitem>Step 4: Some additional right can be granted to some specific users on some specific graphs.</listitem>
+</itemizedlist>
+
+<para>Note that there's no need to permit something to DBA itself, because DBA's default permissions are
+set automatically.</para>
+<sect3 id="rdfgraphsecurityintconfsecuser"><title>Configuring New User</title>
+<itemizedlist mark="bullet">
+  <listitem>Step 1: Grant SPARQL_SELECT, SPARQL_SPONGE or SPAR_UPDATE to the user.</listitem>
+  <listitem>Step 2: Set user's permissions on all graphs.</listitem>
+  <listitem>Step 3: Grant rights on some specific graphs.</listitem>
+</itemizedlist>
+</sect3>
+<sect3 id="rdfgraphsecurityintex"><title>Example: Blogs and Resource Sharing</title>
+<para>Consider a "groupware" application that let users create personal resources with access policies.</para>
+
+<programlisting><![CDATA[
+-- First, create few users, in alphabetical order.
+DB.DBA.USER_CREATE ('Anna', 'Anna');
+DB.DBA.USER_CREATE ('Brad', 'Brad');
+DB.DBA.USER_CREATE ('Carl', 'Carl');
+grant SPARQL_UPDATE to "Anna";
+grant SPARQL_UPDATE to "Brad";
+grant SPARQL_UPDATE to "Carl";
+
+-- At least some data are supposed to be confidential, thus the whole storage becomes confidential.
+DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('nobody', 0);
+
+-- Moreover, no one of created users have access to all graphs (even for reading).
+DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('Anna', 0);
+DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('Brad', 0);
+DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('Carl', 0);
+
+-- Anna can only read her personal system data graph.
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Anna/system', 'Anna', 1);
+
+-- Anna can read and write her private data graph.
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Anna/private', 'Anna', 3);
+
+-- Anna and Bred are friends and can read each others notes for friends.
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Anna/friends', 'Anna', 3);
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Anna/friends', 'Brad', 1);
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Brad/friends', 'Brad', 3);
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Brad/friends', 'Anna', 1);
+
+-- Brad and Carl share write access to graph of his company.
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/BubbleSortingServicesInc', 'Brad', 3);
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/BubbleSortingServicesInc', 'Carl', 3);
+
+-- Anna writes a blog for public.
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Anna/blog', 'Anna', 3);
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Anna/blog', 'nobody', 1);
+
+-- DBpedia is public read and local discussion wiki is readable and writable.
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://dbpedia.org/', 'nobody', 1);
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/wiki', 'nobody', 3);
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/publicB', 'nobody', 3);
+
+-- Graph groups have its own security.
+DB.DBA.RDF_GRAPH_GROUP_CREATE ('http://example.com/Personal', 1);
+DB.DBA.RDF_GRAPH_GROUP_INS ('http://example.com/Personal', 'http://example.com/Anna/system');
+DB.DBA.RDF_GRAPH_GROUP_INS ('http://example.com/Personal', 'http://example.com/Anna/private');
+DB.DBA.RDF_GRAPH_GROUP_INS ('http://example.com/Personal', 'http://example.com/Brad/system');
+DB.DBA.RDF_GRAPH_GROUP_INS ('http://example.com/Personal', 'http://example.com/Brad/private');
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Personal', 'Anna', 8);
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Personal', 'Brad', 8);
+]]></programlisting>
+
+<para>If Anna and Brad execute same</para>
+
+<programlisting><![CDATA[
+select *
+from <http://example.com/Personal>
+where { ?s ?p ?o }
+]]></programlisting>
+
+<para>then results will be totally different: users will not get access to each others data.</para>
+</sect3>
+</sect2>
+<sect2 id="rdfgraphsecurityappcallb"><title>Application Callbacks for Graph Level Security</title>
+<para>In some cases, different applications should provide different security for different users. Two
+SPARQL pragmas are provided for this purpose:</para>
+
+<itemizedlist mark="bullet">
+  <listitem>Pragma sql:gs-app-callback is to specify Virtuoso/PL callback function that return permission bits for given graph.</listitem>
+  <listitem>Pragma sql:gs-app-uid is to specify application-specific user ID that is some string that is passed to the callback "as is".</listitem>
+</itemizedlist>
+
+<para>The name of callback is always DB.DBA.SPARQL_GS_APP_CALLBACK_nnn, where nnn is value of
+sql:gs-app-callback.</para>
+
+<para>The callback is called only if the application has access to the graph in question so it may restrict
+the caller's account but not grant more permissions.</para>
+<sect3 id="rdfgraphsecurityappcallbex"><title>Example</title>
+<para>Let user of application get full access to graphs whose IRIs contain user's name in path.
+In addition, let all of them permission to use all graph groups and let the "moderator" user read everything.</para>
+
+<programlisting><![CDATA[
+reconnect "dba";
+
+create function DB.DBA.SPARQL_GS_APP_CALLBACK_TEST (in g_iid IRI_ID, in app_uid varchar) returns integer
+{
+  declare g_uri varchar;
+-- A fake IRI ID #i0 is used to mention account's default permissions for all graphs.
+  if (#i0 = g_iid)
+    {
+      if ('moderator' = app_uid)
+        return 9; -- Moderator can read and list everything.
+      return 8; -- Other users can list everything.
+    }
+  g_uri := id_to_iri (g_iid);
+  if (strstr (g_uri, '/' || app_uid || '/'))
+    return 15; -- User has full access to "his" graph.
+  return 8; -- User can list any given graph group.
+}
+;
+
+SPARQL
+define sql:gs-app-callback "TEST"
+define sql:gs-app-uid "Anna"
+select ?g ?s where { ?s <p> ?o }
+;
+]]></programlisting>
+</sect3>
+</sect2>
+</sect1>
+
+<sect1 id="rdfrdfviewgnr"><title>Automated Generation of RDF Views over Relational Data Sources</title>
+<sect2 id="rdfrdfviewgnrintro"><title>Introduction</title>
+<para>Virtuoso offers from Conductor UI an HTML based Wizard interface for dynamically generating &amp;
+publishing RDF based Linked Data from ODBC or JDBC accessible relational data sources. Basically,
+a mechanism for building RDF based Linked Data views over relational data sources.
+</para>
+<para>The proliferation of relational databases across enterprises and behind Web sites, makes them a
+vital data source for the burgeoning Linked Data Web. Thus, the process of publishing Linked Data from
+these sources needs to be as unobtrusive as possible. Naturally, a balance has to be struck between
+unobtrusive generation of Linked Data and traditional relational database management system (RDBMS)
+virtues such as:
+</para>
+<orderedlist>
+  <listitem>Scalability</listitem>
+  <listitem>Security</listitem>
+  <listitem>Analytical Expressivity of SQL</listitem>
+  <listitem>Separation of Data Access and Data Storage via ODBC, JDBC, ADO.NET CLIs.</listitem>
+</orderedlist>
+<para>Publishing RDF based Linked Data using Virtuoso via its HTML based Admin UI (aka. Conductor)
+achieves the following:
+</para>
+<orderedlist>
+  <listitem>Identifying ODBC or JDBC data sources that host the data you seek to publish
+(assuming the data isn't Virtuoso RDBMS hosted)</listitem>
+  <listitem>Attaching/Linking tables or views from the external data sources into Virtuoso
+via their Data Source Names (DSNs)</listitem>
+  <listitem>Identifying the external tables or views that host the data to be published</listitem>
+  <listitem>Using the Linked Data publishing Wizard to produce a Data Source Ontology
+and associated Instance Data</listitem>
+  <listitem>Exposing the Data Source Ontology and associated Instance Data in Linked Data form
+via endpoints that use Re-write rules to disambiguate data object (resource) identity and resource
+description via HTTP based content negotiation.</listitem>
+</orderedlist>
+<para>
+</para>
+</sect2>
+<sect2 id="rdfrdfviewgnroneclick"><title>One Click Linked Data Generation &amp; Deployment</title>
+<para>The steps that follow provide an one click guide for publishing ODBC or JDBC accessible RDBMS
+data, in RDF Linked Data form, using the "Generate &amp; Publish" Conductor feature.
+</para>
+<orderedlist>
+  <listitem>Go to http://&lt;cname&gt;:port/conductor</listitem>
+  <listitem>Log in as dba user (or user with DBA privileges)</listitem>
+  <listitem>Follow menu path Database -> RDF Views
+    <figure id="rd1" float="1">
+      <title>RDF Views</title>
+      <graphic fileref="ui/rd1.png"/>
+    </figure>
+</listitem>
+  <listitem>In the form presented perform the following steps:
+<orderedlist>
+  <listitem>Select the Database Name Qualifier (e.g., "Demo")
+that exposes the Tables / Views for this exercise </listitem>
+  <listitem>Enter Base URL to which your URL rewrite rules will be bound
+(e.g. http://&lt;cname&gt;:8890/Demo)</listitem>
+  <listitem>Select specific Tables containing the data to be published (e.g. Shippers and Suppliers)</listitem>
+  <listitem>Click the "Generate &amp; Publish" button</listitem>
+</orderedlist>
+    <figure id="rd2" float="1">
+      <title>RDF Views Generate and Publish</title>
+      <graphic fileref="ui/rd2.png"/>
+    </figure>
+  </listitem>
+  <listitem>As result will be performed the entire process of ontology and instance data generation plus
+deployment (re-write rules generation and application).</listitem>
+  <listitem>Your RDF view declarations and Linked Data publishing activities would have completed
+successfully. Error messages will be presented if the Wizard encountered problems.
+    <figure id="rd13" float="1">
+      <title>RDF View declarations and Linked Data publishing activities</title>
+      <graphic fileref="ui/rd13.png"/>
+    </figure>
+</listitem>
+  <listitem>Optionally, you could also perform one of the following tasks:
+<orderedlist>
+  <listitem>Save Data Mappings: when clicked, offers to save the generated Definitions to local file system</listitem>
+  <listitem>Save Ontology Mappings: when clicked, offers to save the generated Ontology to local file system</listitem>
+  <listitem>Click on the "Cancel" should you want to return to the initial RDF View Generation form.</listitem>
+</orderedlist>
+</listitem>
+</orderedlist>
+</sect2>
+<sect2 id="rdfrdfviewgnrwizzard"><title>Using the Conductor's HTML based wizard</title>
+<para>The steps that follow provide an actual step-by guide for publishing ODBC or JDBC accessible RDBMS
+data, in RDF Linked Data form,  using the Conductor's HTML based wizard:
+</para>
+<orderedlist>
+  <listitem>Go to http://&lt;cname&gt;:port/conductor</listitem>
+  <listitem>Log in as dba user (or user with DBA privileges)</listitem>
+  <listitem>Follow menu path Database -> RDF Views
+    <figure id="rd1" float="1">
+      <title>RDF Views</title>
+      <graphic fileref="ui/rd1.png"/>
+    </figure>
+</listitem>
+  <listitem>In the form presented perform the following steps:
+<orderedlist>
+  <listitem>Select the Database Name Qualifier (e.g., "Demo")  that exposes the Tables / Views for this
+exercise</listitem>
+  <listitem>Enter Base URL to which your URL rewrite rules will be bound (e.g. http://&lt;cname&gt;:8890/Demo)</listitem>
+  <listitem>Select specific Tables containing the data to be published (e.g., Shippers and Suppliers)</listitem>
+  <listitem>Click the "Generate via Wizard" button
+    <figure id="rd2" float="1">
+      <title>Generate via Wizard</title>
+      <graphic fileref="ui/rd2.png"/>
+    </figure>
+</listitem>
+</orderedlist>
+</listitem>
+  <listitem>At this point you are presented edit column selection option:
+    <figure id="rd3" float="1">
+      <title>Column Selection</title>
+      <graphic fileref="ui/rd3.png"/>
+    </figure>
+</listitem>
+ <listitem>In order to map large varbinary types to mime types like image/gif, which results in Web pages
+with images when describing the URIs from RDF Views, select the "Edit" link. For ex. for table Demo.demo.Shippers.
+<itemizedlist mark="bullet">
+  <listitem>You can leave the Binding/MIME Type literal or</listitem>
+  <listitem>Set to skip in order the column not to be used or</listitem>
+  <listitem>Select the "binary object" value in order the column to be referenced as binary</listitem>
+</itemizedlist>
+</listitem>
+
+  <listitem>In the shown form you can change the Binding/MIME Type of the table columns:
+    <figure id="rd14" float="1">
+      <title>Binding/MIME Types</title>
+      <graphic fileref="ui/rd14.png"/>
+    </figure>
+<para>
+</para>
+</listitem>
+  <listitem>After finishing with your changes click the "Save" button.</listitem>
+  <listitem>You can also cancel the changes and go back by clicking the "Cancel" button.</listitem>
+  <listitem>In the RDF View Definition form make sure you click the "Next" button.</listitem>
+  <listitem>At this point you are presented with Select Generation Targets options:
+<orderedlist>
+  <listitem>Data Source Ontology Mappings</listitem>
+  <listitem>Instance Data View Mappings</listitem>
+  <listitem>VoID statistic</listitem>
+  <listitem>Make sure you click the "Next" button.</listitem>
+</orderedlist>
+    <figure id="rd15" float="1">
+      <title>Generation Targets options</title>
+      <graphic fileref="ui/rd15.png"/>
+    </figure>
+</listitem>
+  <listitem>As result of you selections from the prior form the following will be presented:
+<orderedlist>
+  <listitem>Data Source Ontology Rules</listitem>
+  <listitem>Instance Data Rules
+</listitem>
+</orderedlist>
+    <figure id="rd4" float="1">
+      <title>Generation Targets options</title>
+      <graphic fileref="ui/rd4.png"/>
+    </figure>
+</listitem>
+  <listitem>Select the desired option(s) and click the "Next" button which unveils a generated
+Instance Data and/or Ontology form.
+    <figure id="rd5" float="1">
+      <title>Instance Data and/or Ontology</title>
+      <graphic fileref="ui/rd5.png"/>
+    </figure>
+</listitem>
+  <listitem>The form presented provides an "Execute" button which is how you achieve the following:
+<orderedlist>
+  <listitem>Application of the generated declarations (instance data and ontology) to your Virtuoso instance</listitem>
+  <listitem>Publishing / Deployment declarations that expose Wizard generated Rewrite Rules and associated endpoints.
+    <figure id="rd6" float="1">
+      <title>Publishing / Deployment declarations</title>
+      <graphic fileref="ui/rd6.png"/>
+    </figure>
+</listitem>
+</orderedlist>
+</listitem>
+  <listitem>Optionally, you could also perform one of the following tasks:
+<orderedlist>
+  <listitem>Save Data Mappings: when clicked, offers to save the generated Definitions to local file system</listitem>
+  <listitem>Save Ontology Mappings: when clicked, offers to save the generated Ontology to local file system</listitem>
+  <listitem>Export as WebDAV resource: for select WebDAV resource performs export to it:
+<itemizedlist mark="bullet">
+  <listitem>Click "Browse"</listitem>
+  <listitem>Enter a WebDAV resource and click the "Select" button.</listitem>
+</itemizedlist>
+    <figure id="rd7" float="1">
+      <title>WebDAV resource</title>
+      <graphic fileref="ui/rd7.png"/>
+    </figure>
+</listitem>
+</orderedlist>
+<para>Note, the WebDAV resource path value will be shown in the WebDAV location field. Then click the
+"Save Data Mappings"/ or "Save Ontology Mappings" button. To complete the option task of saving your
+generated (or edited) view declarations.</para>
+    <figure id="rd8" float="1">
+      <title>WebDAV resource</title>
+      <graphic fileref="ui/rd8.png"/>
+    </figure>
+</listitem>
+  <listitem>At this point your RDF view declarations and Linked Data publishing activities would
+have completed successfully. Error messages will be presented if the Wizard encountered problems.
+    <figure id="rd9" float="1">
+      <title>RDF view declarations and Linked Data publishing activities Finish</title>
+      <graphic fileref="ui/rd9.png"/>
+    </figure>
+</listitem>
+  <listitem>Click on the "Cancel" should you want to return to the initial RDF View Generation form.</listitem>
+</orderedlist>
+</sect2>
+</sect1>
 <sect1 id="rdfinsertmethods"><title>RDF Insert Methods in Virtuoso</title>
     <sect2 id="rdfinsertmethodshttppost"><title>HTTP Post using Content-Type: application/sparql-query</title>
 	<para>With POST can be accomplished SPARQL Insert/Update etc.</para>

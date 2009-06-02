@@ -114,6 +114,44 @@
 
 &secureodbc;
 
+  <sect2 id="virtmanconfodbcdsnunix"><title>Manually configuring a Virtuoso ODBC DSN on Unix</title>
+<para>If you have [[http://www.iodbc.org][iODBC]] installed, you can configure Virtuoso data sources by
+adding the following entry into the relevant .odbc.ini file. Usually it is the value of the ODBCINI
+environment variable or $HOME/.odbc.ini:
+</para>
+<para>Sample DSN:
+</para>
+<programlisting><![CDATA[
+[LocalVirt]
+Driver=/usr/local/lib/virtodbc_32.so
+# absolute path to the shared object
+Address=localhost:1111
+# host and port of the Virtuoso server
+]]></programlisting>
+<para>If the application that will load the ODBC driver is multithreaded, use the virtodbc32_r.so driver instead.
+</para>
+    <sect3 id="virtmanconfodbcdsnunixlink"><title>Linking Client Applications</title>
+<para>
+The isql and other utilities are linked directly with the Virtuoso client code.  See the Makefiles for the
+libraries used. These are identical in function with the ODBC driver but accept a host:port in the place of
+a data-source name to be resolved from the odbc ini file.
+</para>
+<para>Generally applications should pass via ODBC. Directly linking with the ODBC driver shared object
+is also possible.
+</para>
+    </sect3>
+<sect3 id="virtmanconfodbcdsnunixjdbc"><title>JDBC</title>
+<para>If you specified:</para>
+<programlisting><![CDATA[
+ --with-jdbc3=<path of JDK>
+]]></programlisting>
+<para>
+to the configure in the installation root directory, running make will produce the files
+libsrc/JDBCDriverType4/virtjdbc3.jar and virtjdbc3ssl.jar. These can be placed on the
+Java class path. See <link linkend="VirtuosoDriverJDBC">Virtuoso JDBC Documentation</link> for URL formats etc.
+</para>
+    </sect3>
+  </sect2>
   <sect2 id="odbccompliance"><title>ODBC Compliance</title>
 
   <para>The Virtuoso Driver for ODBC conforms to both the ODBC
@@ -862,4 +900,21 @@ as a separate operation.
 </para>
 	</sect2>
 
+<sect2 id="EXECPYTHONSCRIPT">
+		<title>Executing SQL from Python script</title>
+<para>In order to execute SQL from Python script, you need to add the following lines to the /etc/odbc.ini
+file:</para>
+<programlisting><![CDATA[
+[Local Virtuoso]
+Driver  = /PREFIX/lib/virtodbc_r.so
+Address = localhost:1111
+]]></programlisting>
+<para>where PREFIX is replaced by the full path where Virtuoso is installed and also assuming that
+is used let's say port 1111 in virtuoso.ini (which is set by default).
+</para>
+<para>Then you should be able to connect with:</para>
+<programlisting><![CDATA[
+c = pyodbc.connect('DSN=Local Virtuoso;UID=dba;PWD=dba')
+]]></programlisting>
+	</sect2>
 </sect1>
