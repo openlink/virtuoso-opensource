@@ -79,7 +79,7 @@ RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in 
    create_class_stmt := '';
 
    for (declare xx any, xx := 0; xx < length (_tbls) ; xx := xx + 1)
-     create_class_stmt := create_class_stmt || rdf_view_create_class (_tbls[xx], uriqa_str, qualifier, cols);
+     create_class_stmt := create_class_stmt || rdf_view_create_class (sparql_pref || sns, _tbls[xx], uriqa_str, qualifier, cols);
 
    -- ## voID
    create_count_count := '';
@@ -129,10 +129,10 @@ RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in 
    if (create_count_count <> '')
      create_count_count := create_count_count || '\n\n';
 
-   create_class_stmt := sparql_pref || sns || create_class_stmt || '\n;\n\n';
+   --create_class_stmt := sparql_pref || sns || create_class_stmt || '\n;\n\n';
    create_view_stmt := rdf_view_create_view (qualifier, _tbls, gen_stat, cols);
    create_view_stmt := sparql_pref || ns || create_view_stmt || '\n;\n\n';
-   return drop_map || create_class_stmt || create_count_count || create_view_stmt;
+   return drop_map || create_class_stmt || '\n\n' || create_count_count || create_view_stmt;
 }
 ;
 
@@ -450,7 +450,7 @@ rdf_view_dv_to_xsd_str_type (in _dv varchar)
 ;
 
 create procedure
-rdf_view_create_class (in _tbl varchar, in _host varchar, in qualifier varchar, in cols any := null)
+rdf_view_create_class (in decl varchar, in _tbl varchar, in _host varchar, in qualifier varchar, in cols any := null)
 {
    declare ret, qual, tbl_name, tbl_name_l, pks, pk_text, sk_str any;
    declare cols_arr, inx, col_name any;
@@ -472,7 +472,7 @@ rdf_view_create_class (in _tbl varchar, in _host varchar, in qualifier varchar, 
      }
    pk_text := trim (pk_text, ',');
    sk_str  := trim (sk_str , '/');
-   ret := sprintf ('create iri class %s:%s "http://%s/%s/%s/%s#this" (%s) . \n',
+   ret := decl || sprintf ('create iri class %s:%s "http://%s/%s/%s/%s#this" (%s) . ;\n',
 		qualifier, tbl_name_l, _host, qualifier, tbl_name_l, sk_str, pk_text);
    cols_arr := get_keyword (_tbl, cols);
    inx := 0;
@@ -487,7 +487,7 @@ rdf_view_create_class (in _tbl varchar, in _host varchar, in qualifier varchar, 
 	     ext := '.' || ext; 
 	   else  
 	     ext := '';
-	   ret := ret || sprintf ('create iri class %s:%s_%s "http://%s/%s/objects/%s/%s/%s%s" (%s) . \n',
+	   ret := ret || decl || sprintf ('create iri class %s:%s_%s "http://%s/%s/objects/%s/%s/%s%s" (%s) . ;\n',
 		qualifier, tbl_name_l, col_name, _host, qualifier, tbl_name_l, sk_str, col, ext, pk_text);
 	 }
        inx := inx + 1; 
