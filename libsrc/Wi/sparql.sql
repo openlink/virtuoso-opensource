@@ -3632,14 +3632,14 @@ create function DB.DBA.SPARUL_CLEAR (in graph_iri any, in uid integer, in inside
   case (gt (__trx_disk_log_length (0, VT_D_ID, VT_D_ID_2), 1000000))
   when 0 then 1 else 1 + exec (coalesce ('commit work', VT_D_ID, VT_D_ID_2)) end;
   commit work;
+  if (isiri_id (graph_iri))
+    graph_iri := id_to_iri (graph_iri);
   if (not inside_sponge)
     {
       delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = graph_iri;
       delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI like concat ('destMD5=', md5 (graph_iri), '&graphMD5=%');
     }
   commit work;
-  if (isiri_id (graph_iri))
-    graph_iri := id_to_iri (graph_iri);
   if (compose_report)
     return sprintf ('Clear <%s> -- done', graph_iri);
   else
@@ -3855,14 +3855,14 @@ create function DB.DBA.RDF_REGEX (in s varchar, in p varchar, in coll varchar :=
 --!AWK PUBLIC
 create function DB.DBA.RDF_LANGMATCHES (in r varchar, in t varchar)
 {
+  if ((t is null) or (r is null))
+    return null;
   if ('*' = t)
     {
       if (r <> '')
         return 1;
       return 0;
     }
-  if ((t is null) or (r is null))
-    return 0;
   t := upper (t);
   r := upper (r);
   if (r = t)
