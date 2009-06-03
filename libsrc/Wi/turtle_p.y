@@ -434,8 +434,12 @@ object
 		ttlp_arg->ttlp_last_complete_uri = NULL;
 		ttlp_triple_l_and_inf (ttlp_arg, ttlp_arg->ttlp_obj, ttlp_arg->ttlp_obj_type, NULL);	}
         | TTL_RECOVERABLE_ERROR { }
-	| TURTLE_STRING _CARET_CARET TTL_RECOVERABLE_ERROR { }
-        | TTL_RECOVERABLE_ERROR _CARET_CARET q_complete { }
+	| TURTLE_STRING _CARET_CARET TTL_RECOVERABLE_ERROR {
+		dk_free_tree (ttlp_arg->ttlp_obj);
+		ttlp_arg->ttlp_obj = $1; }
+        | TTL_RECOVERABLE_ERROR _CARET_CARET q_complete {
+		dk_free_tree (ttlp_arg->ttlp_last_complete_uri);
+		ttlp_arg->ttlp_last_complete_uri = NULL; }
         | TTL_RECOVERABLE_ERROR _CARET_CARET TTL_RECOVERABLE_ERROR { }
 	;
 

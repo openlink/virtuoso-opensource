@@ -61,23 +61,6 @@ sqlo_depends_on_locus (df_elt_t * dfe, locus_t * loc)
    compiled as a end_node_t at the start (as it's done for the scalar
    subqueries & function calls.
  */
-static int
-sqlo_has_any_subq_preds (ST *tree)
-{
-  if (DV_TYPE_OF (tree) == DV_ARRAY_OF_POINTER)
-    {
-      int inx;
-      if (BOX_ELEMENTS (tree) > 0 && SUBQ_P(tree))
-	return 1;
-      DO_BOX (ST *, elt, inx, ((ST **)tree))
-	{
-	  if (sqlo_has_any_subq_preds (elt))
-	    return 1;
-	}
-      END_DO_BOX;
-    }
-  return 0;
-}
 
 
 int

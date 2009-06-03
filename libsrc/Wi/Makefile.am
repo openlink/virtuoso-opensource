@@ -61,13 +61,15 @@ noinst_HEADERS = \
 	wiservic.h wi_xid.h xmlenc_algos.h xmlenc.h xmlenc_test.h xmlgen.h \
 	xml.h xmlnode.h xmlres.h xmltree.h xpath.h xpathp.h xpathp_impl.h \
 	xpf.h xqf.h xslt_impl.h aqueue.h rdf_mapping_jso.h bitmap.h jso.h \
-	json_p.h bif_audio_tags.h shcompo.h
+	json_p.h bif_audio_tags.h shcompo.h nquad_p.h
 
 
 generated_code = \
 	json_l.c \
 	json_p.c \
 	json_p.h \
+	nquad_p.c \
+	nquad_p.h \
 	rdf_mapping_jso.c \
 	rdf_mapping_jso.h \
 	rdf_mapping_jso.ttl \
@@ -158,6 +160,7 @@ libwi_la_SOURCES = \
 	inxop.c \
 	json_l.c \
 	json_p.c \
+	nquad_p.c \
 	lisprdr.c \
 	lock.c \
 	log.c \
@@ -270,6 +273,7 @@ libwi_odbc_la_SOURCES = \
 	inxop.c \
 	json_l.c \
 	json_p.c \
+	nquad_p.c \
 	lisprdr.c \
 	lock.c \
 	log.c \
@@ -664,12 +668,15 @@ SQL_FILES_WS		= \
 	$(top_srcdir)/binsrc/vspx/vspx_log_format.xsl \
 	$(top_srcdir)/binsrc/vspx/vspx.xsd \
 	$(top_srcdir)/binsrc/vspx/vspx.xsl
+
 json_p.c json_p.h: $(srcdir)/json.y Makefile.am
 	@$(GEN) $(YACC) -o json_p.c -vd -pjsonyy $(srcdir)/json.y
 
 json_l.c: $(srcdir)/json.l json_p.h Makefile.am
 	@$(GEN) $(LEX) -o json_l.c -Pjsonyy $(srcdir)/json.l
 
+nquad_p.c nquad_p.h: $(srcdir)/nquad_p.y Makefile.am
+	@$(GEN) $(YACC) -o nquad_p.c -vd -pnqyy $(srcdir)/nquad_p.y
 
 sqlwords.h: $(srcdir)/sqlwords.gperf
 	@${GEN} --stdout ${GPERF} \

@@ -15,6 +15,8 @@ depwi.mk
 json_l.c
 json_p.c
 json_p.h
+nquad_p.c
+nquad_p.h
 Makefile
 Makefile.in
 mklic

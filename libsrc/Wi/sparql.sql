@@ -2731,7 +2731,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TTL (inout triples any, inout ses any)
     }
   env := vector (dict_new (__min (tcount, 16000)), 0, '', '', '', 0, 0, 0, 0);
   { whenever sqlstate '*' goto end_pred_sort;
-    rowvector_digit_sort (triples, 1, 1);
+    rowvector_subj_sort (triples, 1, 1);
 end_pred_sort: ;
   }
   { whenever sqlstate '*' goto end_subj_sort;
@@ -3071,14 +3071,9 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (inout triples any, inout ses 
       return;
     }
   env := vector (0, 0);
-  { whenever sqlstate '*' goto end_pred_sort;
-    rowvector_digit_sort (triples, 1, 1);
-end_pred_sort: ;
-  }
-  { whenever sqlstate '*' goto end_subj_sort;
+-- No error handler heres because failed sorting by predicate or subject would result in poorly structured output.
+  rowvector_subj_sort (triples, 1, 1);
     rowvector_subj_sort (triples, 0, 1);
-end_subj_sort: ;
-  }
   http ('{\n  ', ses);
   status := 0;
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)

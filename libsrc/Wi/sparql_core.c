@@ -2076,7 +2076,7 @@ sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtype, SPART *ir
   caddr_t iri = iri_expn->_.qname.val;
   dk_set_t *set_ptr;
   int *is_locked_ptr = NULL;
-  int dupe_found = 0;
+  SPART *dupe_found = NULL;
   caddr_t **group_members_ptr;
   SPART *precode;
   switch (subtype)
@@ -2116,11 +2116,14 @@ sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtype, SPART *ir
         continue;
       if ((c->_.graph.subtype == subtype) && (SPAR_QNAME != SPART_TYPE (c->_.graph.expn)))
         t_set_delete (set_ptr, c);
-      dupe_found = 1;
+      else
+        {
+          dupe_found = c;
       break;
     }
+    }
   END_DO_SET()
-  if (!dupe_found && (subtype < SPART_GRAPH_MIN_NEGATION) && is_locked_ptr && is_locked_ptr[0])
+  if ((NULL == dupe_found) && (subtype < SPART_GRAPH_MIN_NEGATION) && is_locked_ptr && is_locked_ptr[0])
     {
       const char *fty = ((SPART_GRAPH_NAMED == subtype) ? " NAMED" : "");
       spar_error (sparp, "FROM %s <%.200s> clause violates security restrictions on allowed graph names", fty, iri);
@@ -2154,6 +2157,10 @@ sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtype, SPART *ir
   if ((SPART_GRAPH_GROUP == subtype) && (NULL != options))
     spar_error (sparp, "FROM <%.200s> clause refers to a graph group so it can not have any options", iri);
   precode = sparp_make_graph_precode (sparp, subtype, iri_expn, options);
+  if ((NULL != dupe_found) && (dupe_found->_.graph.subtype == subtype) &&
+    (SPAR_QNAME == SPART_TYPE (dupe_found->_.graph.expn)) && 
+    (SPAR_QNAME == SPART_TYPE (precode->_.graph.expn)) )
+    return;
   if (SPART_GRAPH_MIN_NEGATION < subtype)
     {
       dk_set_t tmp = NULL;
@@ -2854,6 +2861,8 @@ sparp_clone_for_variant (sparp_t *sparp, int allow_output_formatting)
   ENV_SET_COPY (spare_common_sponge_options);
   ENV_SET_COPY (spare_default_graphs);
   ENV_SET_COPY (spare_named_graphs);
+  ENV_COPY (spare_default_graphs_listed);
+  ENV_COPY (spare_named_graphs_listed);
   ENV_COPY (spare_default_graphs_locked);
   ENV_COPY (spare_named_graphs_locked);
   ENV_SET_COPY (spare_common_sql_table_options);
