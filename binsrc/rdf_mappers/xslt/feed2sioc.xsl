@@ -150,9 +150,9 @@
 	</xsl:template>
 	<xsl:template match="rss:link">
 		<sioc:link rdf:resource="{string(.)}" />
-		<xsl:if test="not (../wfw:commentRss)">
+		<!--xsl:if test="not (../wfw:commentRss)">
 			<rdfs:seeAlso rdf:resource="{vi:proxyIRI (.)}" />
-		</xsl:if>
+		</xsl:if-->
 	</xsl:template>
 	<xsl:template match="dc:date">
 		<dcterms:created rdf:datatype="&xsd;dateTime">
