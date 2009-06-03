@@ -1190,6 +1190,25 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
             ret_mime := 'text/rdf+n3';
           DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
 	}
+      if (
+        strstr (accept, 'text/plain') is not null)
+        {
+            ret_mime := 'text/plain';
+          DB.DBA.RDF_TRIPLES_TO_NT (triples, ses);
+	}
+      else if (
+        strstr (accept, 'application/json') is not null or
+        strstr (accept, 'application/rdf+json') is not null or
+        strstr (accept, 'application/x-rdf+json') is not null )
+        {
+          if (strstr (accept, 'application/json') is not null)
+            ret_mime := 'application/json';
+          else if (strstr (accept, 'application/rdf+json') is not null)
+            ret_mime := 'application/rdf+json';
+          else if (strstr (accept, 'application/x-rdf+json') is not null)
+            ret_mime := 'application/x-rdf+json';
+          DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (triples, ses);
+	}
       else if (strstr (accept, 'application/soap+xml') is not null)
 	{
 	  declare soap_ns, spt_ns varchar;
@@ -1677,22 +1696,25 @@ http('{\n');
 http('  var query = query_obg.value; \n');
 http('  var format = query_obg.form.format;\n');
 http('\n');
-http('  if (query.match(/construct/i) && last_format == 1) {\n');
+http('  if ((query.match(/construct/i) || query.match(/describe/i)) && last_format == 1) {\n');
 http('    for(var i = format.options.length; i > 0; i--)\n');
 http('      format.options[i] = null;');
 http('    format.options[1] = new Option(\'N3/Turtle\',\'text/rdf+n3\');\n');
-http('    format.options[2] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
+http('    format.options[2] = new Option(\'JSON\',\'application/rdf+json\');\n');
+http('    format.options[3] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
+http('    format.options[4] = new Option(\'N-Triples\',\'text/plain\');\n');
 http('    format.selectedIndex = 1;\n');
 http('    last_format = 2;\n');
 http('  }\n');
 http('\n');
-http('  if (!query.match(/construct/i) && last_format == 2) {\n');
+http('  if (!(query.match(/construct/i) || query.match(/describe/i)) && last_format == 2) {\n');
 http('    for(var i = format.options.length; i > 0; i--)\n');
 http('      format.options[i] = null;\n');
 http('    format.options[1] = new Option(\'HTML\',\'text/html\');\n');
-http('    format.options[2] = new Option(\'XML\',\'application/sparql-results+xml\');\n');
-http('    format.options[3] = new Option(\'JSON\',\'application/sparql-results+json\');\n');
-http('    format.options[4] = new Option(\'Javascript\',\'application/javascript\');\n');
+http('    format.options[2] = new Option(\'Spreadsheet\',\'application/vnd.ms-excel\');\n');
+http('    format.options[3] = new Option(\'XML\',\'application/sparql-results+xml\');\n');
+http('    format.options[4] = new Option(\'JSON\',\'application/sparql-results+json\');\n');
+http('    format.options[5] = new Option(\'Javascript\',\'application/javascript\');\n');
 http('    format.selectedIndex = 1;\n');
 http('    last_format = 1;\n');
 http('  }\n');
@@ -2237,6 +2259,10 @@ create procedure DB.DBA.SPARQL_ROUTE_DICT_CONTENT_DAV (
         DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 1, out_ses);
       else if ('text/rdf+n3' = mime)
         DB.DBA.RDF_TRIPLES_TO_TTL (triples, out_ses);
+      else if ('text/plain' = mime)
+        DB.DBA.RDF_TRIPLES_TO_NT (triples, out_ses);
+      else if ('application/json' = mime)
+        DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (triples, out_ses);
       rc := DB.DBA.DAV_RES_UPLOAD (split, out_ses, mime, old_perms, old_uid, old_gid, uid, pwd);
       if (isinteger (rc) and rc < 0)
         signal ('RDFXX', sprintf ('Unable to change "%.200s" in DAV: %s', split, DB.DBA.DAV_PERROR (rc)));

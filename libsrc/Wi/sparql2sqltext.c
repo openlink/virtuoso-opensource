@@ -293,6 +293,14 @@ ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subtype,
       case ASK_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL"; return;
       default: return;
       }
+  if (!strcmp (name, "JSON"))
+    switch (subtype)
+      {
+      case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON"; return;
+      case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TALIS_JSON"; return;
+      case ASK_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_JSON"; return;
+      default: return;
+      }
   if (!strcmp (name, "_JAVA_"))
     switch (subtype)
       {
@@ -893,7 +901,7 @@ void ssg_print_tmpl (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, ccaddr_t tm
       switch (tree_type)
         {
         case SPAR_RETVAL:
-          if (NULL != tree->_.retval.triple)
+          if ((NULL != tree->_.retval.triple) && (SPART_TRIPLE_FIELDS_COUNT > tree->_.retval.tr_idx))
             {
               quad_map_t *qm = tree->_.retval.triple->_.triple.tc_list[0]->tc_qm;
               qm_val = SPARP_FIELD_QMV_OF_QM (qm,tree->_.retval.tr_idx);
@@ -3505,7 +3513,7 @@ ssg_prin_function_name (spar_sqlgen_t *ssg, ccaddr_t name)
       ssg_puts ("DB.DBA.");
       ssg_puts(name); /*not ssg_prin_id (ssg, name);*/
     }
-  else
+  else if ('\0' != name[0])
     {
       ssg_puts ("DB.DBA.");
       ssg_prin_id (ssg, name);

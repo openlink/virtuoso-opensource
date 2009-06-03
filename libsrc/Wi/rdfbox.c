@@ -1366,6 +1366,7 @@ iri_cast_and_split_ttl_qname (query_instance_t *qi, caddr_t iri, caddr_t *ns_pre
   return 0;
 }
 
+/*! Environment of TTL serializer */
 typedef struct ttl_env_s {
   id_hash_iterator_t *te_used_prefixes;	/*!< Item 1 is the dictionary of used namespace prefixes */
   caddr_t te_prev_subj_ns;		/*!< Item 2 is the namespace part of previous subject. It is DV_STRING except the very beginning of the serialization when it can be of any type except DV_STRING (non-string will be freed and replaced with NULL pointer inside the printing procedure) */
@@ -1654,6 +1655,234 @@ fail:
   dk_free_box (tii.o.uri);	dk_free_box (tii.o.ns);		dk_free_box (tii.o.loc);	dk_free_box (tii.o.prefix);
   dk_free_box (tii.dt.uri);	dk_free_box (tii.dt.ns);	dk_free_box (tii.dt.loc);	dk_free_box (tii.dt.prefix);
   return (caddr_t)(ptrlong)(status);
+}
+
+/*! Environment of Talis JSON serializer */
+typedef struct talis_json_env_s {
+  caddr_t tje_prev_subj;		/*!< Item 1 is the string value of previous subject. It is DV_STRING except the very beginning of the serialization when it can be of any type except DV_STRING (non-string will be freed and replaced with NULL pointer inside the printing procedure) */
+  caddr_t tje_prev_pred;		/*!< Item 2 is the string value of previous subject predicate. */
+} talis_json_env_t;
+
+int
+iri_cast_talis_json_qname (query_instance_t *qi, caddr_t iri_or_id, caddr_t *iri_ret, int *iri_is_new_box_ret, int *is_bnode_ret)
+{
+  is_bnode_ret[0] = 0;
+  switch (DV_TYPE_OF (iri_or_id))
+    {
+    case DV_STRING: case DV_UNAME:
+      iri_ret[0] = iri_or_id;
+      is_bnode_ret[0] = (('_' == iri_or_id[0]) && (':' == iri_or_id[0]));
+      iri_is_new_box_ret[0] = 0;
+      return 1;
+    case DV_IRI_ID: case DV_IRI_ID_8:
+      {
+        int res;
+        iri_id_t iid = unbox_iri_id (iri_or_id);
+        if (0L == iid)
+          return 0;
+        if (min_bnode_iri_id () <= iid)
+          {
+            is_bnode_ret[0] = 1;
+            iri_is_new_box_ret[0] = 1;
+            if (min_named_bnode_iri_id () > iid)
+              iri_ret[0] = BNODE_IID_TO_TALIS_JSON_LABEL (iid);
+            else
+              iri_ret[0] = key_id_to_iri (qi, iid);
+            return (NULL != iri_ret[0]);
+          }
+        is_bnode_ret[0] = 0;
+        iri_is_new_box_ret[0] = 1;
+        iri_ret[0] = key_id_to_iri (qi, iid);
+        return (NULL != iri_ret[0]);
+      }
+    }
+  return 0;
+}
+
+
+static void
+http_talis_json_write_obj (dk_session_t *ses, query_instance_t *qi, caddr_t obj, dtp_t obj_dtp)
+{
+  caddr_t obj_box_value;
+  dtp_t obj_box_value_dtp;
+  ccaddr_t type_uri = NULL;
+  if (DV_RDF == obj_dtp)
+    {
+      rdf_box_t *rb = (rdf_box_t *)obj;
+      if (!rb->rb_is_complete)
+        rb_complete (rb, qi->qi_trx, qi);
+      obj_box_value = rb->rb_box;
+      obj_box_value_dtp = DV_TYPE_OF (obj_box_value);
+      if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
+        type_uri = rdf_type_twobyte_to_iri (rb->rb_type);
+    }
+  else
+    {
+      obj_box_value = obj;
+      obj_box_value_dtp = obj_dtp;
+    }      
+                             /* 0           1           2           3   */
+                             /* 01.23456.7890.12345678.901.234567.89012 */
+  session_buffered_write (ses, "{ \'type\' : \'literal\', \'value\' : ", 32);
+
+  switch (obj_box_value_dtp)
+    {
+    case DV_DATETIME:
+      {
+        char temp [50];
+        dt_to_iso8601_string (obj_box_value, temp, sizeof (temp));
+        session_buffered_write_char ('\'', ses);
+        session_buffered_write (ses, temp, strlen (temp));
+        session_buffered_write_char ('\'', ses);
+        if (NULL == type_uri)
+          switch (DT_DT_TYPE(obj))
+            {
+            case DT_TYPE_DATE: type_uri = uname_xmlschema_ns_uri_hash_date; break;
+            case DT_TYPE_TIME: type_uri = uname_xmlschema_ns_uri_hash_time; break;
+            default : type_uri = uname_xmlschema_ns_uri_hash_dateTime; break;
+            }
+        break;
+      }
+    case DV_STRING:
+      session_buffered_write_char ('\'', ses);
+      dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_SQ);
+      session_buffered_write_char ('\'', ses);
+      break;
+    case DV_DB_NULL:
+      session_buffered_write (ses, "(NULL)", 6);
+      break;
+    default:
+      {
+        caddr_t tmp_utf8_box = box_cast_to_UTF8 ((caddr_t *)qi, obj_box_value);
+        if (DV_RDF == obj_dtp)
+          session_buffered_write_char ('\'', ses);
+        session_buffered_write (ses, tmp_utf8_box, box_length (tmp_utf8_box) - 1);
+        if (DV_RDF == obj_dtp)
+          session_buffered_write_char ('\'', ses);
+        dk_free_box (tmp_utf8_box);
+        if (NULL == type_uri)
+          type_uri = xsd_type_of_box (obj_box_value);
+        break;
+      }
+    }
+  if (DV_RDF == obj_dtp)
+    {
+      rdf_box_t *rb = (rdf_box_t *)obj;
+      if (RDF_BOX_DEFAULT_LANG != rb->rb_lang)
+        {
+          caddr_t lang_id = rdf_lang_twobyte_to_string (rb->rb_lang);
+          if (NULL != lang_id) /* just in case if lang cannot be found, may be signal an error ? */
+            {                            /* 012.34567.8901.23 */
+              session_buffered_write (ses, " , \'lang\' : \'", 13);
+              lang_id = rdf_lang_twobyte_to_string (((rdf_box_t *)obj)->rb_lang);
+              if (NULL != lang_id)
+                dks_esc_write (ses, lang_id, box_length (lang_id) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_SQ);
+              session_buffered_write_char ('\'', ses);
+            }
+        }
+    }
+  if (NULL != type_uri)
+    {                            /* 012.345678901.2345.67 */
+      session_buffered_write (ses, " , \'datatype\' : \'", 17);
+      dks_esc_write (ses, type_uri, box_length (type_uri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_SQ);
+      session_buffered_write_char ('\'', ses);
+    }
+  session_buffered_write (ses, " }", 2);
+}
+
+caddr_t
+bif_http_talis_json_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *)qst;
+  talis_json_env_t *env = (talis_json_env_t *)bif_arg (qst, args, 0, "http_talis_json_triple");
+  caddr_t subj_iri_or_id = bif_arg (qst, args, 1, "http_talis_json_triple");
+  caddr_t pred_iri_or_id = bif_arg (qst, args, 2, "http_talis_json_triple");
+  caddr_t obj = bif_arg (qst, args, 3, "http_talis_json_triple");
+  dk_session_t *ses = http_session_no_catch_arg (qst, args, 4, "http_talis_json_triple");
+  int status = 0;
+  int obj_is_iri = 0;
+  dtp_t obj_dtp = 0;
+  caddr_t subj_iri = NULL, pred_iri = NULL, obj_iri = NULL;
+  int subj_iri_is_new = 0, pred_iri_is_new, obj_iri_is_new = 0;
+  int is_bnode, obj_is_bnode;
+  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF ((caddr_t)env) ||
+    (sizeof (talis_json_env_t) != box_length ((caddr_t)env)) ||
+    ((DV_STRING == DV_TYPE_OF (env->tje_prev_subj)) && (DV_STRING != DV_TYPE_OF (env->tje_prev_pred))) )
+    sqlr_new_error ("22023", "SR607", "Argument 1 of http_talis_json_triple() should be an array of special format");
+  if (!iri_cast_talis_json_qname (qi, subj_iri_or_id, &subj_iri, &subj_iri_is_new, &is_bnode /* never unused after return */))
+    goto fail; /* see below */
+  if (!iri_cast_talis_json_qname (qi, pred_iri_or_id, &pred_iri, &pred_iri_is_new, &is_bnode /* never unused after return */))
+    goto fail; /* see below */
+  obj_dtp = DV_TYPE_OF (obj);
+  switch (obj_dtp)
+    {
+    case DV_UNAME: case DV_IRI_ID: case DV_IRI_ID_8: obj_is_iri = 1; break;
+    case DV_STRING: obj_is_iri = (BF_IRI & box_flags (obj)) ? 1 : 0; break;
+    default: obj_is_iri = 0; break;
+    }
+  if (obj_is_iri)
+    {
+      if (!iri_cast_talis_json_qname (qi, obj, &obj_iri, &obj_iri_is_new, &obj_is_bnode /* used ;) */))
+        goto fail; /* see below */
+    }
+  if ((DV_STRING != DV_TYPE_OF (env->tje_prev_subj)) && (DV_UNAME != DV_TYPE_OF (env->tje_prev_subj)))
+    {
+      dk_free_tree (env->tje_prev_subj);	env->tje_prev_subj = NULL;
+      dk_free_tree (env->tje_prev_pred);	env->tje_prev_pred = NULL;
+    }
+  if ((NULL == env->tje_prev_subj) || strcmp (env->tje_prev_subj, subj_iri))
+    {
+      if (NULL != env->tje_prev_pred)
+        {                            /* 012345.6789 */
+          session_buffered_write (ses, " } } ,\n  ", 9);
+          dk_free_tree (env->tje_prev_subj);	env->tje_prev_subj = NULL;
+          dk_free_tree (env->tje_prev_pred);	env->tje_prev_pred = NULL;
+        }                        /* 01.23 */
+      session_buffered_write (ses, "{ \'", 3);
+      dks_esc_write (ses, subj_iri, box_length (subj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_SQ);
+                                 /* .01234 */
+      session_buffered_write (ses, "\' : ", 4);
+      env->tje_prev_subj = subj_iri_is_new ? subj_iri : box_copy (subj_iri); subj_iri_is_new = 0;
+    }
+  if ((NULL == env->tje_prev_pred) || strcmp (env->tje_prev_pred, pred_iri))
+    {
+      if (NULL != env->tje_prev_pred)
+        {                            /* 0123.456789 */
+          session_buffered_write (ses, " } ,\n    ", 9);
+          dk_free_tree (env->tje_prev_pred);	env->tje_prev_pred = NULL;
+        }                        /* 01.23 */
+      session_buffered_write (ses, "{ \'", 3);
+      dks_esc_write (ses, pred_iri, box_length (pred_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_SQ);
+                                 /* .01234 */
+      session_buffered_write (ses, "\' : ", 4);
+      env->tje_prev_pred = pred_iri_is_new ? pred_iri : box_copy (pred_iri); pred_iri_is_new = 0;
+    }
+  else                         /* 01.23456789 */
+    session_buffered_write (ses, " ,\n      ", 9);
+  if (obj_is_iri)
+    {
+      if (obj_is_bnode)              /* 0           1            2           3  */
+        {                            /* 01.23456.7890.123456.789.012345.6789.01 */
+          session_buffered_write (ses, "{ \'type\' : \'bnode\', \'value\' : \'", 31);
+          dks_esc_write (ses, obj_iri, box_length (obj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_SQ);
+                                     /* .0123 */
+          session_buffered_write (ses, "\' }", 3);
+        }
+      else                           /* 0           1            2            */
+        {                            /* 01.23456.7890.1234.567.890123.4567.89 */
+          session_buffered_write (ses, "{ \'type\' : \'uri\', \'value\' : \'", 29);
+          dks_esc_write (ses, obj_iri, box_length (obj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_SQ);
+                                     /* .0123 */
+          session_buffered_write (ses, "\' }", 3);
+        }
+    }
+  else
+    http_talis_json_write_obj (ses, qi, obj, obj_dtp);
+  status = 1;
+fail:
+  if (subj_iri_is_new) dk_free_box (subj_iri);
+  if (pred_iri_is_new) dk_free_box (pred_iri);
+  return (caddr_t)((ptrlong)status);
 }
 
 caddr_t
@@ -1987,6 +2216,8 @@ rdf_box_init ()
   bif_define_typed ("__rdf_redu_deser_long", bif_rdf_dist_deser_long, &bt_any);
   bif_define ("http_ttl_triple", bif_http_ttl_triple);
   bif_set_uses_index (bif_http_ttl_triple);
+  bif_define ("http_talis_json_triple", bif_http_talis_json_triple);
+  bif_set_uses_index (bif_http_talis_json_triple);
   bif_define ("sparql_rset_ttl_write_row", bif_sparql_rset_ttl_write_row);
   bif_set_uses_index (bif_sparql_rset_xml_write_row);
   bif_define ("sparql_rset_xml_write_row", bif_sparql_rset_xml_write_row);

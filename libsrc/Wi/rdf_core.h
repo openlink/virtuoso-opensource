@@ -49,6 +49,9 @@ extern ccaddr_t xsd_type_of_box (caddr_t arg);
 #define BNODE_IID_TO_TTL_LABEL_LOCAL(iid) (((iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
   box_sprintf (30, "vb" BOXINT_FMT, (boxint)((iid)-MIN_64BIT_BNODE_IRI_ID)) : \
   box_sprintf (30, "v" BOXINT_FMT, (boxint)(iid)) )
+#define BNODE_IID_TO_TALIS_JSON_LABEL(iid) (((iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
+  box_sprintf (30, "_:vb" BOXINT_FMT, (boxint)((iid)-MIN_64BIT_BNODE_IRI_ID)) : \
+  box_sprintf (30, "_:v" BOXINT_FMT, (boxint)(iid)) )
 
 
 /* Set of callback to accept the stream of RDF quads that are grouped by graph and share blank node IDs */

@@ -2746,6 +2746,27 @@ end_subj_sort: ;
 }
 ;
 
+create procedure DB.DBA.RDF_TRIPLES_TO_NT (inout triples any, inout ses any)
+{
+  declare env any;
+  declare tcount, tctr integer;
+  tcount := length (triples);
+  -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_TTL:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
+  if (0 = tcount)
+    {
+      http ('# Empty NT\n', ses);
+      return;
+    }
+  env := vector (dict_new (1), 0, '', '', '', 10000, 10000, 0, 0);
+  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
+    {
+      http_ttl_triple (env, triples[tctr][0], triples[tctr][1], triples[tctr][2], ses);
+      http (' .\n', ses);
+      env[1] := 0; 
+    }
+}
+;
+
 create procedure DB.DBA.RDF_GRAPH_TO_TTL (in graph_iri varchar, inout ses any)
 {
   declare tcount integer;
@@ -3038,6 +3059,39 @@ res_for_pred:
 --}
 --;
 
+create procedure DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (inout triples any, inout ses any)
+{
+  declare env any;
+  declare tcount, tctr, status integer;
+  tcount := length (triples);
+  -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_TALIS_JSON:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
+  if (0 = tcount)
+    {
+      http ('{ }\n', ses);
+      return;
+    }
+  env := vector (0, 0);
+  { whenever sqlstate '*' goto end_pred_sort;
+    rowvector_digit_sort (triples, 1, 1);
+end_pred_sort: ;
+  }
+  { whenever sqlstate '*' goto end_subj_sort;
+    rowvector_subj_sort (triples, 0, 1);
+end_subj_sort: ;
+  }
+  http ('{\n  ', ses);
+  status := 0;
+  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
+    {
+      if (http_talis_json_triple (env, triples[tctr][0], triples[tctr][1], triples[tctr][2], ses))
+        status := 1;
+    }
+  if (status)
+    http (' } }\n', ses);
+  http ('}\n', ses);
+}
+;
+
 -----
 -- Export into external serializations for 'define output:format "..."'
 
@@ -3221,6 +3275,21 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL (inout triples_dict any) re
 }
 ;
 
+create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_NT (inout triples_dict any) returns long varchar
+{
+  declare triples, ses any;
+  ses := string_output ();
+  if (214 <> __tag (triples_dict))
+    {
+      triples := vector ();
+    }
+  else
+    triples := dict_list_keys (triples_dict, 1);
+  DB.DBA.RDF_TRIPLES_TO_NT (triples, ses);
+  return ses;
+}
+;
+
 create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDF_XML (inout triples_dict any) returns long varchar
 {
   declare triples, ses any;
@@ -3232,6 +3301,21 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDF_XML (inout triples_dict any
   else
     triples := dict_list_keys (triples_dict, 1);
   DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 1, ses);
+  return ses;
+}
+;
+
+create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TALIS_JSON (inout triples_dict any) returns long varchar
+{
+  declare triples, ses any;
+  ses := string_output ();
+  if (214 <> __tag (triples_dict))
+    {
+      triples := vector ();
+    }
+  else
+    triples := dict_list_keys (triples_dict, 1);
+  DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (triples, ses);
   return ses;
 }
 ;
@@ -9073,8 +9157,10 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_RDFXML_TO_DICT to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_LONG_TO_TTL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_TTL to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_TRIPLES_TO_NT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_GRAPH_TO_TTL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_TRIPLES_TO_TALIS_JSON to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_INIT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_ACC to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_FIN to SPARQL_SELECT',
