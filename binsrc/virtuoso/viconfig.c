@@ -193,6 +193,7 @@ extern char *http_log_name;
 int32 c_error_log_level;
 int32 c_server_threads;
 int32 c_number_of_buffers;
+int32 c_lock_in_mem;
 int32 c_max_dirty_buffers;
 int32 c_max_checkpoint_remap;
 int32 c_unremap_quota;
@@ -663,6 +664,9 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "NumberOfBuffers", &c_number_of_buffers) == -1)
     c_number_of_buffers = 2000;
+
+  if (cfg_getlong (pconfig, section, "LockInMem", &c_lock_in_mem) == -1)
+    c_lock_in_mem = 0;
 
   if (cfg_getlong (pconfig, section, "MaxDirtyBuffers", &c_max_dirty_buffers) == -1)
     c_max_dirty_buffers = 0;
@@ -1540,6 +1544,7 @@ void
 new_db_read_cfg (dbe_storage_t * ignore, char *mode)
 {
   main_bufs = c_number_of_buffers;
+  cf_lock_in_mem = c_lock_in_mem;
   cp_unremap_quota = c_unremap_quota;
   correct_parent_links = c_bad_parent_links;
   disable_listen_on_unix_sock = c_disable_listen_on_unix_sock;
