@@ -5019,20 +5019,37 @@ if (NULL != jright_alias)
     goto print_cross_equalities;
             }
 
+  if ((SPART_VARR_FIXED & eq->e_rvr.rvrRestrictions) && 
+    (SPART_VARR_FIXED & eq->e_replaces_filter) &&
+    (0 == eq->e_gspo_uses) && (0 < eq->e_var_count) )
+    {
+      SPART *sample_var = eq->e_vars[0];
+      ssg_valmode_t vmode;
+      /* Dirty hack: we force code generator to "forget" about the constant to print some subvalue */
+      eq->e_rvr.rvrRestrictions &= ~SPART_VARR_FIXED;
+      sample_var->_.var.rvr.rvrRestrictions &= ~SPART_VARR_FIXED;
+      vmode = sparp_expn_native_valmode (ssg->ssg_sparp, sample_var);
+      ssg_print_where_or_and (ssg, "value of equiv class, fixed by replaced filter");
+      if (IS_BOX_POINTER (vmode) && !(vmode->qmfIsBijection))
+        vmode = SSG_VALMODE_LONG;
+      ssg_print_scalar_expn (ssg, sample_var, vmode, NULL_ASNAME);
+      eq->e_rvr.rvrRestrictions |= SPART_VARR_FIXED;
+      sample_var->_.var.rvr.rvrRestrictions |= SPART_VARR_FIXED;
+      ssg_puts (" =");
+      ssg_print_scalar_expn (ssg, eq->e_rvr.rvrFixedValue, vmode, NULL_ASNAME);
+    }
   /* Printing equalities with constants */
   for (var_ctr = 0; var_ctr < eq->e_var_count; var_ctr++)
     {
       SPART *var = eq->e_vars[var_ctr];
       caddr_t tabid = var->_.var.tabid;
-      if (NULL == tabid)
-        continue;
-      if (SPART_VARR_FIXED & eq->e_rvr.rvrRestrictions)
+      if ((SPART_VARR_FIXED & eq->e_rvr.rvrRestrictions) && (NULL != tabid))
         {
           SPART *var_triple = sparp_find_triple_of_var_or_retval (ssg->ssg_sparp, NULL, var, 1);
           ssg_print_nice_equality_for_var_and_eq_fixed_val (ssg, &(eq->e_rvr), var, var_triple);
           continue;
         }
-      if ((SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL) & eq->e_rvr.rvrRestrictions)
+      if ((NULL != tabid) && ((SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL) & eq->e_rvr.rvrRestrictions))
         {
           SPART *glob_var;
           caddr_t glob_name;
@@ -5102,7 +5119,9 @@ if (NULL != jright_alias)
               ssg_print_scalar_expn (ssg, glob_rv, SSG_VALMODE_SQLVAL, NULL_ASNAME);
             }
         }
-      if (SPART_VARR_TYPED & eq->e_rvr.rvrRestrictions)
+      if ((SPART_VARR_TYPED & eq->e_rvr.rvrRestrictions) &&
+        ((NULL != tabid) ||
+         ((SPART_VARR_TYPED & eq->e_replaces_filter) && (0 == eq->e_gspo_uses) && (0 == var_ctr)) ) )
         {
           if (SPART_VARR_TYPED & var->_.var.rvr.rvrRestrictions)
             {

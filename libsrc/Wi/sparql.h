@@ -183,7 +183,7 @@ typedef struct sparp_env_s
     dk_set_t		spare_common_sponge_options;	/*!< Options that are added to every FROM ... OPTION ( ... ) list */
     dk_set_t		spare_default_graphs;		/*!< Default graphs and NOT FROM graphs as set by protocol or FROM graph-uri-precode. All NOT FROM are after all FROM! */
     dk_set_t		spare_named_graphs;		/*!< Named graphs and NOT FROM NAMED graphs as set by protocol or clauses. All NOT FROM NAMED are after all FROM NAMED! */
-    int			spare_default_graphs_listed;	/*!< At least one default graph was set, so the list of default graphs is exhaustive even if empty or consists of solely NOT FROM (NOT FROM may remove all FROM, making the list empty */
+    int			spare_default_graphs_listed;	/*!< At least one default graph was set, so the list of default graphs is exhaustive even if empty or consists of solely NOT FROM (NOT FROM may remove all FROM, making the list empty) */
     int			spare_named_graphs_listed;	/*!< At least one named graph was set, so the list of named graphs is exhaustive even if empty or consists of solely NOT FROM NAMED */
     int			spare_default_graphs_locked;	/*!< Default graphs are set by protocol and can not be overwritten. There's no locking for NOT FROM */
     int			spare_named_graphs_locked;	/*!< Named graphs are set by protocol and can not be overwritten. There's no locking for NOT FROM NAMED */

@@ -523,7 +523,9 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
           }
         ssg_newline (0);
         t_set_push (&(ssg->ssg_sd_outer_gps), tree);
+#if 0 /* I can't understand it */
         ssg->ssg_sd_outer_gps = NULL; /* The first triple pattern in the group can not use ';' or ',' shorthand */
+#endif
         switch (tree->_.gp.subtype)
           {
           case SELECT_L:
