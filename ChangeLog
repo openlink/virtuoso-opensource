@@ -1,3 +1,600 @@
+2009-06-03 23:30  source
+
+	* Updated version to 5.0.12-pre2
+
+2009-06-03 23:30  source
+
+	* Fixed problems with History page
+
+2009-06-03 23:19  source
+
+	* Fixed minor issue
+
+2009-06-03 23:18  source
+
+	* Added GoodRelations
+
+2009-06-03 23:17  source
+
+	* Added configuration parameter LockInMem
+
+2009-06-03 23:16  source
+
+	* Updated documentation
+
+2009-06-03 23:16  source
+
+	* Fixed problem with MALLOC_DEBUG and large boxes
+
+2009-06-03 23:16  source
+
+	* Fixed use unsigned comparison in event of negative times
+
+2009-06-03 15:21  source
+
+	* Added support for NQuads
+	* Fixed minor problem in TURTLE parser
+	* Fixed Talis JSON support
+
+2009-06-03 15:04  source
+
+	* Added support for Talis-style JSON an N-Triples
+
+2009-06-03 15:01  source
+
+	* Fixed use LSEEK in case system has largefile support
+
+2009-06-03 13:38  source
+
+	* Fixed build rule
+	* Removed generated file from CVS
+
+2009-06-03 12:34  source
+
+	* Added initial support for failover/roundrobin connections
+
+2009-06-02 15:07  source
+
+	* Fixed separate class decl
+
+2009-06-02 12:16  source
+
+	* Fixed use hooks for import
+
+2009-06-02 12:08  source
+
+	* Added hooks for rdf import
+
+2009-06-02 11:51  source
+
+	* Fixed missing define
+
+2009-06-02 11:30  source
+
+	* Fixed use namespace to work properly with some browsers
+
+2009-06-02 11:29  source
+
+	* Fixed labels
+
+2009-06-02 11:26  source
+
+	* Fixed minor issues
+
+2009-06-02 11:26  source
+
+	* Fixed check for bad rdf/xml
+
+2009-06-02 11:26  source
+
+	* Fixed props in label OWL
+
+2009-06-02 11:23  source
+
+	* Added new optimizations for handling of OPTIONAL clause in SPARQL
+	* Fixed small bugs
+
+2009-06-02 11:21  source
+
+	* Fixed SPARUL_CLEAR with IRI_ID argument instead of IRI
+	  and LANGMATCHES on NULL
+
+2009-06-02 11:20  source
+
+	* Fixed use 0 for negative scale in exec result names
+
+2009-06-02 11:19  source
+
+	* Fixed automatic commit on rb of an aq function; leaves no locks
+	  in error exit
+
+2009-06-02 11:16  source
+
+	* Fixed check number of pages in segment is multiple of 256 * n stripes
+
+2009-05-29 13:19  source
+
+	* Added Favorites tab
+	* Fixed Offer List
+	* Fixed FOAF+SSL with non-default ssl listener
+	* Fixed FOAF import
+	* Fixed case mode
+
+2009-05-29 13:17  source
+
+	* Fixed control of search links; sometimes the following float got ahead
+	  of them
+
+2009-05-29 13:10  source
+
+	* Updated version
+
+2009-05-29 13:09  source
+
+	* Fixed RDF Database Objects to RDF Views
+	* Fixed labeling support
+	* Fixed upto 10 inst data urls to be seen
+
+2009-05-29 13:08  source
+
+	* Fixed setup ssl flag
+
+2009-05-29 13:03  source
+
+	* Fixed labeling support
+
+2009-05-29 13:03  source
+
+	* Fixed use rest protocol
+
+2009-05-29 13:03  source
+
+	* Fixed must use a loop
+
+2009-05-29 12:59  source
+
+	* Fixed disable content encoded
+
+2009-05-29 12:59  source
+
+	* Fixed scale images to 160px height
+	* Fixed minor issues
+
+2009-05-29 12:58  source
+
+	* Added Alchemy cartridge
+	* Added Yahoo Boss cartridge
+
+2009-05-27 11:40  source
+
+	* Updated documentation
+
+2009-05-27 11:39  source
+
+	* Fixed canonic port
+
+2009-05-26 15:03  source
+
+	* Fixed SQLGetInfo returning 32bit integer values/masks
+
+2009-05-26 11:37  source
+
+	* Added support for content:encoded
+
+2009-05-26 11:36  source
+
+	* Fixed check for http://
+
+2009-05-26 11:33  source
+
+	* Fixed wrong suffix
+
+2009-05-26 11:32  source
+
+	* Fixed bad argument to call
+
+2009-05-26 11:31  source
+
+	* Added extra stack protect
+
+2009-05-26 11:31  source
+
+	* Fixed use new iri scheme
+
+2009-05-26 11:31  source
+
+	* Fixed use 822 mode for Accept
+
+2009-05-25 10:02  source
+
+	* Fixed headers concatination as they can be N*
+
+2009-05-22 16:43  source
+
+	* Added support for upstreaming attachements
+
+2009-05-22 16:43  source
+
+	* Fixed loading package
+
+2009-05-22 16:24  source
+
+	* Fixed win32 build
+
+2009-05-22 16:21  source
+
+	* Added new service to return binary content
+
+2009-05-22 16:20  source
+
+	* Fixed rdf generator
+
+2009-05-22 16:13  source
+
+	* Added support for vectors in IN predicate
+
+2009-05-22 15:56  source
+
+	* Fixed DESCRIBE with known graph
+
+2009-05-22 15:55  source
+
+	* Added support to use column descriptions for content handling
+
+2009-05-21 09:50  source
+
+	* Fixed advanced search cosmetics
+
+2009-05-20 15:01  source
+
+	* Fixed settable freq for timeout round
+
+2009-05-20 14:59  source
+
+	* Fixed minor issues
+
+2009-05-20 14:55  source
+
+	* Fixed when last part of vd has same name as default cluster, use
+	  that as cluster
+
+2009-05-20 14:54  source
+
+	* Fixed UI profile
+
+2009-05-20 14:53  source
+
+	* Fixed language in error message
+
+2009-05-19 10:48  source
+
+	* Added LOD meta cartridge
+
+2009-05-19 10:47  source
+
+	* Fixed small issues
+
+2009-05-18 22:53  source
+
+	* Fixed problem with sparql test
+
+2009-05-18 20:20  source
+
+	* Fixed problem compiling rdf view containing sparql subselect
+	  When view is defined as sparql subselect, signal error on 1st init
+	  phase.  After rdf is initialized, read view again and try to re-compile
+	  the ones containing sparql subselect. This is needed to handle dt from
+	  sparql query over rdf view.
+
+2009-05-18 20:17  source
+
+	* Fixed ignore the 406 error code for hosing and eventually proxy
+
+2009-05-18 20:16  source
+
+	* Added stack check
+
+2009-05-18 20:16  source
+
+	* Minor fixes
+
+2009-05-18 20:15  source
+
+	* FIxed invalid N3 format
+
+2009-05-18 20:14  source
+
+	* Added version tag
+
+2009-05-18 10:15  source
+
+	* Added missing file for debugging
+
+2009-05-18 10:03  source
+
+	* Fixed button
+	* Fixed href to sample URLs
+
+2009-05-18 10:02  source
+
+	* Fixed stop vhost before editing
+
+2009-05-15 10:45  source
+
+	* Fixed zero-lenght case stepping through wiki toc h-tags
+	* Fixed error handling with upstreaming
+
+2009-05-15 10:43  source
+
+	* Fixed use different SHA function
+
+2009-05-15 10:39  source
+
+	* Updated version numbers of vad packages
+
+2009-05-15 10:36  source
+
+	* Fixed return 406 when asked for some unavailable mime type
+
+2009-05-15 10:35  source
+
+	* Added DSA support for certificates
+
+2009-05-14 15:00  source
+
+	* Fixed RDF generation
+
+2009-05-14 13:33  source
+
+	* Fixed memory leak
+
+2009-05-14 12:19  source
+
+	* Updated documentation
+
+2009-05-14 12:19  source
+
+	* Added RDF view wizard
+
+2009-05-13 12:17  source
+
+	* Fixed proxy iri
+
+2009-05-13 12:15  source
+
+	* Fixed startup latency
+
+2009-05-12 21:59  source
+
+	* Fixed problem when stored procedure needs to be created in another
+	  qualifier
+
+2009-05-12 21:58  source
+
+	* Added support for separate virtual directories
+
+2009-05-12 21:54  source
+
+	* Fixed separate vd for ontology
+
+2009-05-12 21:53  source
+
+	* Fixed URLs like /resource/Category:Internet_Society when doing TCN
+	* Fixed missing escape of resource
+
+2009-05-12 21:45  source
+
+	* Fixed validation
+	* Fixed copyright to 2009
+
+2009-05-11 07:20  source
+
+	* Fixed windows build
+
+2009-05-11 07:20  source
+
+	* Added new commands TableQualifiers, TableOwners and TableTypes
+
+2009-05-11 07:19  source
+
+	* Fixed temp disable using aq until gpf is fixed
+
+2009-05-11 07:18  source
+
+	* Added support for Smart Folders
+
+2009-05-11 07:17  source
+
+	* Fixed speed of TOC generation
+	* Fixed cosmetics
+
+2009-05-11 07:16  source
+
+	* Added new Ubiquity commands for OfferList, WishList and TopicOfInterests
+
+2009-05-11 07:16  source
+
+	* Fixed oauth checking foaf+ssl
+
+2009-05-11 07:15  source
+
+	* Fixed saving moat meaning
+
+2009-05-08 14:41  source
+
+	* Fixed gcc -Wformat-security warnings
+
+2009-05-08 08:04  source
+
+	* Updated documentation
+
+2009-05-08 08:03  source
+
+	* Added test for encode_b32_num
+
+2009-05-08 07:58  source
+
+	* Fixed problem with possible wrong execution path if more than one
+	  client in queue
+
+2009-05-07 19:23  source
+
+	* Added support for executing sponge in AQ, eliminating possiblity
+	  of incorrect cache
+	* Fixed if bad RDF revert to cartridges
+
+2009-05-07 19:22  source
+
+	* Added functions encode_b32_num and decode_b32_num for shortning
+	  integer ids
+
+2009-05-07 19:19  source
+
+	* Fixed minor problems
+
+2009-05-06 19:57  source
+
+	* Fixed minor problem
+
+2009-05-06 19:57  source
+
+	* Added made links
+
+2009-05-05 13:43  source
+
+	* Fixed show images as images
+
+2009-05-05 13:38  source
+
+	* Fixed problem adding new accounts
+
+2009-05-05 13:32  source
+
+	* Merged documentation changes
+
+2009-05-05 13:24  source
+
+	* Added support for optional SILENT keyword in quad map manipulation
+	  grammar
+
+2009-05-04 22:30  source
+
+	* Fixed set the evp key member when making the rsa key
+
+2009-05-04 19:44  source
+
+	* Fixed stored procedure call to use proper namespace
+
+2009-05-04 19:42  source
+
+	* Fixed schema
+
+2009-05-04 19:35  source
+
+	* Added Picasa cartridge
+
+2009-05-04 19:33  source
+
+	* Fixed setting up https
+
+2009-05-04 10:51  source
+
+	* Updated version to 5.0.12-pre1
+
+2009-05-04 09:40  source
+
+	* Merged from upstream project
+
+2009-05-03 12:54  source
+
+	* Fixed problems with i18n in REGEX
+
+2009-05-03 12:53  source
+
+	* Merged pcre version 7.9 from upstream project
+	* Applied local patches
+
+2009-05-03 10:27  source
+
+	* Added application specific callbacks to graph-level security
+
+2009-05-01 21:24  source
+
+	* Added support for playlists
+
+2009-05-01 21:24  source
+
+	* Fixed minor issue with proxy_iri
+
+2009-05-01 21:23  source
+
+	* Fixed minor issues
+
+2009-05-01 09:50  source
+
+	* Fixed labels on northwind ontology
+
+2009-05-01 09:42  source
+
+	* Added option to Export to DAV
+
+2009-04-29 14:55  source
+
+	* Fixed loading error
+	* Fixed PPTX
+
+2009-04-29 14:54  source
+
+	* Fixed minor issues
+
+2009-04-29 14:53  source
+
+	* Added haudio cartridge
+
+2009-04-29 14:50  source
+
+	* Fixed rdfa single rel and typeof
+
+2009-04-29 14:48  source
+
+	* Added additional checks for graph security
+
+2009-04-29 14:48  source
+
+	* Added support for (exp) in FT expressions
+
+2009-04-29 14:47  source
+
+	* Added extra flags s (DOTALL) and u (UTF-8) for regex_match
+
+2009-04-22 19:52  source
+
+	* Added workaround for problem with insert replacing
+
+2009-04-22 19:52  source
+
+	* Updated WishList and OfferList RDF data
+
+2009-04-22 19:41  source
+
+	* Fixed new param for sparul_clear
+
+2009-04-22 19:38  source
+
+	* Fixed pptx cartridge
+
+2009-04-22 19:38  source
+
+	* Added labels
+
+2009-04-22 19:36  source
+
+	* Fixed only show tab when rdf_mappers are installed
+
+2009-04-22 19:28  source
+
+	* Updated documentation
+
 2009-04-22 10:27  source
 
 	* FIxed parallel make
@@ -11360,10 +11957,6 @@
 
 	* Fixed instructions for sourceforge CVS checkout
 
-2007-10-04 10:38  source
-
-	* Added support for using URIQA default host information
-
 2007-10-04 10:06  source
 
 	* Merged latest documentation fixes
@@ -11630,15 +12223,6 @@
 
 	* Merged from upstream project
 
-2007-09-24 10:49  source
-
-	* Fixed building php4
-	* Added support for DAV virtual dirs
-
-2007-09-24 10:48  source
-
-	* Fixed small typo
-
 2007-09-23 20:27  source
 
 	* Fixed make check
@@ -11657,11 +12241,6 @@
 2007-09-23 17:28  source
 
 	* Increased line length
-
-2007-09-22 14:17  source
-
-	* Fixed make dist
-	* Small cleanups
 
 2007-09-21 20:09  source
 
@@ -11693,10 +12272,6 @@
 
 	* Added libxml.m4 so we can still create configure even if box does not have
 	  libxml2 installed
-
-2007-09-21 15:15  source
-
-	* Added support for hosting PHP programs in DAV
 
 2007-09-21 13:41  source
 
@@ -13259,14 +13834,6 @@
 2007-05-31 12:28  source
 
 	* Updated version to 5.0.1 for final release
-
-2007-05-31 12:18  source
-
-	* Fixed typo
-
-2007-05-31 12:15  source
-
-	* Fixed building php4/php5 hosting
 
 2007-05-31 11:53  source
 
@@ -15326,10 +15893,6 @@
 
 2007-03-16 12:26  source
 
-	* Added support for long documents
-
-2007-03-16 12:26  source
-
 	* Added support for xsd:date and xsd_time
 	* Small bugfixes
 
@@ -15621,14 +16184,6 @@
 2007-03-14 14:13  source
 
 	* Removed argument
-
-2007-03-14 14:13  source
-
-	* Fixed support for long documents
-	* Call the dav's metadata extractor as a last chance to get meta information
-	* Added check to FLICKR about meta information of image
-	* Allow sql optimizer to figure which index to use
-	* Fixed versioning permissions
 
 2007-03-14 14:08  source
 
@@ -16188,16 +16743,6 @@
 
 	* Small enhancements to testsuite
 
-2007-01-22 14:07  source
-
-	* Fixed bug "integer instead of directory list"
-	* Various small fixes
-
-2007-01-22 14:06  source
-
-	* Added support for application/rdf+xml, application/rdf+ttl and
-	  application/rdf+n3 types
-
 2007-01-22 14:01  source
 
 	* Limit search expression to 1k to prevent DOS
@@ -16593,15 +17138,6 @@
 
 	* Changed bif name to upper case
 
-2006-11-30 13:34  source
-
-	* Added check for DB.DBA.SYNCML
-	* Use disk when handling large dav files
-
-2006-11-30 13:32  source
-
-	* Changed qname-to-iid translation
-
 2006-11-30 13:29  source
 
 	* Fixed text for sys_keys table
@@ -16622,10 +17158,6 @@
 
 	* Added information on optional components/libraries
 	* Fixed layout
-
-2006-11-20 21:23  source
-
-	* Fixed spelling
 
 2006-11-07 20:49  source
 
@@ -16656,10 +17188,6 @@
 2006-10-27 18:45  source
 
 	* Set version to 4.5.6 for final release
-
-2006-10-27 16:43  source
-
-	* Fixed library ordering for PHP5 build
 
 2006-10-27 16:10  source
 
@@ -16704,10 +17232,6 @@
 2006-10-27 11:40  source
 
 	* Set version to 4.5.6-rc1
-
-2006-10-27 11:36  source
-
-	* Fixed whitespace
 
 2006-10-27 11:35  source
 
@@ -16916,14 +17440,6 @@
 	* Fixed properties page url
 	* Fixed logout page
 
-2006-10-22 08:40  source
-
-	* Additional fix for inefficient CBD delete
-
-2006-10-21 22:40  source
-
-	* Speed improvements for CBD deletion
-
 2006-10-21 21:22  source
 
 	* Updated version to 4.5.5-rc3
@@ -17095,10 +17611,6 @@
 2006-10-20 15:42  source
 
 	* Fixed dc.description Support
-
-2006-10-20 15:13  source
-
-	* Removed duplicate OAT toolkit
 
 2006-10-20 15:08  source
 
@@ -17498,10 +18010,6 @@
 	* Fixed autoloader to recognize graph keyword
 	* Removed alert
 
-2006-10-09 14:05  source
-
-	* Fix for MPUT/MGET
-
 2006-10-09 14:03  source
 
 	* Fix for 'SPARQL define input:default-graph-uri ...' when an IRI was
@@ -17740,6 +18248,10 @@
 
 	* Regenerated
 
+2006-09-25 14:28  source
+
+	* Cached resources may be upgraded when the server is upgraded
+
 2006-09-25 14:27  source
 
 	* Fixed GPF when casemode is not a number
@@ -17751,16 +18263,6 @@
 2006-09-25 14:25  source
 
 	* Test proc view cost declaration
-
-2006-09-25 14:23  source
-
-	* Cached resources may be upgraded when the server is upgraded
-
-2006-09-25 14:23  source
-
-	* Fix to append missing trainling slashes in IRIs
-	* Fixed retrieval of local URIAL data on queries like Get /URIQA/DAV/PUB
-	  without additional data in header
 
 2006-09-25 14:20  source
 
@@ -17815,10 +18317,6 @@
 2006-09-11 11:05  source
 
 	* Added syntax highlight for results
-
-2006-09-11 11:01  source
-
-	* Merged from upstream project
 
 2006-09-11 11:00  source
 
@@ -17989,10 +18487,6 @@
 2006-08-17 18:27  source
 
 	* Small cleanups
-
-2006-08-17 13:37  source
-
-	* Added DAV_COPY for locked-checkout
 
 2006-08-17 13:36  source
 
@@ -18171,14 +18665,6 @@
 
 	* Fixed typo in tool detection
 
-2006-08-10 08:32  source
-
-	* Fixed GPF when using php interpreter outside of the http context
-
-2006-08-10 07:58  source
-
-	* Register key hosting variables in PHP
-
 2006-08-08 16:53  source
 
 	* Updated version to 4.5.4 for final release
@@ -18218,10 +18704,6 @@
 	* Default cluster is identified by URI conversation
 	* Adjusted date format
 
-2006-08-08 11:13  source
-
-	* Fixed header and whitespace
-
 2006-08-08 11:12  source
 
 	* Fixed whitespace
@@ -18246,6 +18728,10 @@
 
 	* Added support for CREATE VIEW ... AS SPARQL SELECT
 
+2006-08-07 23:41  source
+
+	* Added new .xsl stylesheets
+
 2006-08-07 22:41  source
 
 	* Small fix to dav template
@@ -18254,17 +18740,9 @@
 
 	* Fixed bug with missing aliases in DAV_DIR_FILTER()
 
-2006-08-07 21:58  source
-
-	* Removed non-existing test files
-
 2006-08-07 20:46  source
 
 	* Minor fixes for building sql_code_dav.c
-
-2006-08-07 20:43  source
-
-	* Added new .xsl stylesheets
 
 2006-08-07 20:22  source
 
@@ -18273,10 +18751,6 @@
 2006-08-07 19:21  source
 
 	* Fixed Tags bug
-
-2006-08-07 18:20  source
-
-	* Fix for RES_TAGS in DAV_DIR_FILTER
 
 2006-08-07 18:18  source
 
@@ -18500,14 +18974,6 @@
 
 	* Added endpoint for default host
 
-2006-08-03 18:07  source
-
-	* Added DAV_GET_RES_TYPE_URI_BY_MIME_TYPE
-
-2006-08-03 18:07  source
-
-	* Fixed trailing slash
-
 2006-08-03 12:35  source
 
 	* Fixed build problem using --disable-mono and --with-iodbc in configure
@@ -18518,10 +18984,6 @@
 	* Fixed default graph default value
 	* Cleared absolute files
 	* Cleaned code
-
-2006-08-01 11:31  source
-
-	* Fixed default graph for dav to http://host/DAV
 
 2006-08-01 11:26  source
 
@@ -18615,10 +19077,6 @@
 
 	* Added text for Opera problem with HTTP status code 400
 
-2006-07-27 15:26  source
-
-	* New files from upstream OAT project
-
 2006-07-27 14:38  source
 
 	* Fixed column lengths for SQLGetTypeInfo
@@ -18646,11 +19104,6 @@
 2006-07-26 15:57  source
 
 	* Added blog comment in SIOC
-
-2006-07-26 15:54  source
-
-	* Fixed visualization problem when loading page
-	* Fixed CRLF
 
 2006-07-26 15:51  source
 
@@ -18781,10 +19234,6 @@
 
 2006-07-24 13:46  source
 
-	* Fixed debug comment
-
-2006-07-24 13:46  source
-
 	* Fixed IE bug
 
 2006-07-24 13:45  source
@@ -18847,10 +19296,6 @@
 
 	* Fixed BIF function name changed from DB.DBA.RDF_EXP_LOAD_RDFXML to
 	  DB.DBA.RDF_LOAD_RDFXML
-
-2006-07-24 07:57  source
-
-	* Merged newer version of OAT
 
 2006-07-24 07:56  source
 
@@ -19033,10 +19478,6 @@
 
 	* Updated version to 4.5.4-pre3
 
-2006-07-17 15:29  source
-
-	* Removed debug messages
-
 2006-07-17 15:20  source
 
 	* Added missing file
@@ -19180,10 +19621,6 @@
 
 	* New Dawg behaviour
 
-2006-07-14 17:30  source
-
-	* Merged patches from upstream OAT archive
-
 2006-07-14 17:27  source
 
 	* Fixed a bug in setting permisions, owners & groups in webdav
@@ -19237,10 +19674,6 @@
 2006-07-13 13:12  source
 
 	* Added Ajax version of sparql sample
-
-2006-07-13 13:08  source
-
-	* Added meta data for ODS-Gallery
 
 2006-07-13 12:30  source
 
@@ -19351,22 +19784,6 @@
 
 	* Fixed snapshot replication
 
-2006-07-13 08:17  source
-
-	* Fixed copyright headers
-
-2006-07-13 08:11  source
-
-	* Fixed dav permissions
-
-2006-07-13 08:09  source
-
-	* Added more metadata vectors
-
-2006-07-13 08:08  source
-
-	* Removed debug lines
-
 2006-07-13 07:59  source
 
 	* Fixed files content-types when loaded in DAV
@@ -19390,10 +19807,6 @@
 2006-06-27 19:22  source
 
 	* Fixed SOAP problem with InteropTestRpcEncoded
-
-2006-06-27 19:20  source
-
-	* Added meta information on bookmarks
 
 2006-06-27 19:17  source
 
@@ -19594,15 +20007,6 @@
 2006-06-23 15:10  source
 
 	* Get only last directory part
-
-2006-06-23 15:10  source
-
-	* Fixed autoversioning
-	* Added dav_version_fold_int
-
-2006-06-23 15:07  source
-
-	* Added additional meta information
 
 2006-06-23 15:00  source
 
@@ -19916,10 +20320,6 @@
 
 	* Fixed building ODS briefcase
 
-2006-05-31 13:49  source
-
-	* Removed deprecated file
-
 2006-05-31 13:48  source
 
 	* Fix for TTL output of result sets
@@ -19945,10 +20345,6 @@
 2006-05-31 13:40  source
 
 	* Updated documentation
-
-2006-05-31 13:39  source
-
-	* Additional fixes for detecting office formats
 
 2006-05-31 13:12  source
 
@@ -20126,10 +20522,6 @@
 
 	* Fixed tag names
 
-2006-05-26 11:51  source
-
-	* Fixed search on webdav properties
-
 2006-05-26 11:48  source
 
 	* Added backlink support
@@ -20193,10 +20585,6 @@
 2006-05-25 11:21  source
 
 	* Changed name to OpenLink Data Spaces
-
-2006-05-25 11:20  source
-
-	* More reliable recognition of MIME type
 
 2006-05-25 11:16  source
 
@@ -20283,19 +20671,6 @@
 	* Added XMLA testsuite
 	* Added DAV/RDF testsuite
 	* Various small fixes and cleanups
-
-2006-05-24 09:05  source
-
-	* Various small bugfixes
-
-2006-05-24 09:02  source
-
-	* Triggers are now faster because they do not result in free-text indexing
-
-2006-05-24 09:02  source
-
-	* Fix for parsing of MIME-type of RDF/XML files that have ho first-level
-	  'Description' elements.
 
 2006-05-24 08:58  source
 
@@ -20577,10 +20952,6 @@
 
 2006-04-25 14:15  source
 
-	* Merged latest version of dav
-
-2006-04-25 14:15  source
-
 	* Merged latest version of wikiv
 
 2006-04-25 14:14  source
@@ -20685,10 +21056,6 @@
 
 	* Merged latest documentation updates
 
-2006-04-18 18:37  source
-
-	* Additional functions for RDF
-
 2006-04-18 18:36  source
 
 	* Fixed call to dk_mem_hooks
@@ -20786,14 +21153,6 @@
 2006-04-13 18:25  source
 
 	* Removed bad test from testsuite
-
-2006-04-13 18:24  source
-
-	* Merged latest dav fixes
-
-2006-04-13 18:23  source
-
-	* Removed debugging statements
 
 2006-04-13 18:20  source
 
