@@ -34,10 +34,14 @@ import com.hp.hpl.jena.update.*;
 import com.hp.hpl.jena.sparql.util.IndentedWriter;
 import com.hp.hpl.jena.shared.*;
 
+import virtuoso.jdbc3.VirtuosoConnectionPoolDataSource;
 
 public class VirtuosoUpdateRequest 
 {
     private List requests = new ArrayList() ;
+    static final String charset = "UTF-8";
+
+    private VirtuosoConnectionPoolDataSource pds = new VirtuosoConnectionPoolDataSource();
 
     String virt_graph = null;
     String virt_url  = null;
@@ -73,7 +77,20 @@ public class VirtuosoUpdateRequest
     { 
 	try
 	{
-	    Connection connection = DriverManager.getConnection(virt_url, virt_user, virt_pass);
+	    Connection connection;
+
+	    if (virt_url.startsWith("jdbc:virtuoso://")) {
+
+		Class.forName("virtuoso.jdbc3.Driver");
+		connection = DriverManager.getConnection(virt_url, virt_user, virt_pass);
+	    } else {
+		pds.setServerName(virt_url);
+		pds.setUser(virt_user);
+		pds.setPassword(virt_pass);
+		pds.setCharset(charset);
+		javax.sql.PooledConnection pconn = pds.getPooledConnection();
+		connection = pconn.getConnection();
+	    }
 
 	    stmt = connection.createStatement();
 

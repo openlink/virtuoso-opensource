@@ -171,6 +171,7 @@ typedef enum
   oPWDCLEAR,
   oSERVERCERT,
 #endif
+  oROUNDROBIN,
   oFORCE_DBMS_NAME,
   oIsolationLevel,
   oNoSystemTables,
@@ -203,6 +204,7 @@ static CfgRecord attrs[] = {
   { _T ("PWDCLEAR"),		_T ("PWDClearText"),		32,	_T ("")},
   { _T ("SERVERCERT"),		_T ("ServerCert"),		511,	_T ("")},
 #endif
+  { _T ("ROUNDROBIN"),		_T ("RoundRobin"),		32,	_T ("")},
   { _T ("FORCE_DBMS_NAME"),	_T ("ForceDBMSName"),		511,	_T ("")},
   { _T ("IsolationLevel"),	_T ("IsolationLevel"),		32,	_T ("")},
   { _T ("NoSystemTables"),	_T ("NoSystemTables"),		32,	_T ("")},
@@ -583,6 +585,7 @@ virtodbc__SQLDriverConnect (SQLHDBC hdbc,
   TCHAR *SERVERCERTW;
   TCHAR *FORCE_DMBS_NAMEW;
   TCHAR *DAYLIGHTW;
+  TCHAR *ROUNDROBINW;
 #ifdef _SSL
   TCHAR *PWDCLEARW;
 #endif
@@ -655,6 +658,17 @@ virtodbc__SQLDriverConnect (SQLHDBC hdbc,
   con->con_ca_list = NULL;
   con->con_pwd_cleartext = 0;
 #endif
+
+  if (cfgdata[oROUNDROBIN].data && _tcslen (cfgdata[oROUNDROBIN].data))
+    {
+      char *nst, nst1;
+
+      nst = virt_wide_to_ansi (cfgdata[oROUNDROBIN].data);
+      nst1 = toupper (*nst);
+      con->con_round_robin = OPTION_TRUE (nst1) ? 1 : 0;
+      free_wide_buffer (nst);
+    }
+
   FORCE_DMBS_NAMEW = cfgdata[oFORCE_DBMS_NAME].data && _tcslen (cfgdata[oFORCE_DBMS_NAME].data) ? cfgdata[oFORCE_DBMS_NAME].data : NULL;
   if (FORCE_DMBS_NAMEW)
     {
@@ -683,7 +697,7 @@ virtodbc__SQLDriverConnect (SQLHDBC hdbc,
   CHARSETW = (cfgdata[oCHARSET].data && _tcslen (cfgdata[oCHARSET].data)) ? cfgdata[oCHARSET].data : NULL;
   CHARSET = con->con_charset_name = virt_wide_to_ansi (CHARSETW);
 
-  if (strchr (HOST, ':') == NULL)
+  if (strchr (HOST, ':') == NULL && strchr(HOST,',') == NULL)
     {
       snprintf (tempHostName, sizeof (tempHostName), "%s:1111", HOST);
       szHost = tempHostName;

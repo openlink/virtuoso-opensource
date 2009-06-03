@@ -42,12 +42,13 @@ import com.hp.hpl.jena.graph.query.*;
 import com.hp.hpl.jena.datatypes.*;
 import com.hp.hpl.jena.rdf.model.*;
 
+import virtuoso.jdbc3.VirtuosoConnectionPoolDataSource;
 
 public class VirtGraph extends GraphBase
 {
     static public final String DEFAULT = "virt:DEFAULT";
     private String graphName;
-    private String url;
+    private String url_hostlist;
     private String user;
     private String password;
     private int prefetchSize = 200;
@@ -56,6 +57,9 @@ public class VirtGraph extends GraphBase
     static final String sdelete = "sparql define output:format '_JAVA_' delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
     static final int BATCH_SIZE = 5000;
     static final String utf8 = "charset=UTF-8";
+    static final String charset = "UTF-8";
+
+    private VirtuosoConnectionPoolDataSource pds = new VirtuosoConnectionPoolDataSource();
 
 
     public VirtGraph()
@@ -63,9 +67,9 @@ public class VirtGraph extends GraphBase
 	this(null, "jdbc:virtuoso://localhost:1111/charset=UTF-8", null, null);
     }
 
-    public VirtGraph(String url, String user, String password)
+    public VirtGraph(String url_hostlist, String user, String password)
     {
-	this(null, url, user, password);
+	this(null, url_hostlist, user, password);
     }
 
     public VirtGraph(String graphName)
@@ -73,16 +77,16 @@ public class VirtGraph extends GraphBase
 	this(graphName, "jdbc:virtuoso://localhost:1111/charset=UTF-8", null, null);
     }
 
-    public VirtGraph(String graphName, String _url, String user, String password)
+    public VirtGraph(String graphName, String _url_hostlist, String user, String password)
     {
 	super();
 
-	this.url = _url.trim();
-	if (url.indexOf(utf8) == -1) {
-	   if (url.charAt(url.length()-1) != '/') 
-	     url = url + "/" + utf8;
+	this.url_hostlist = _url_hostlist.trim();
+	if (url_hostlist.indexOf(utf8) == -1) {
+	   if (url_hostlist.charAt(url_hostlist.length()-1) != '/') 
+	     url_hostlist = url_hostlist + "/" + utf8;
 	   else
-	     url = url + utf8;
+	     url_hostlist = url_hostlist + utf8;
 	}
 
 	this.graphName = graphName;
@@ -90,20 +94,26 @@ public class VirtGraph extends GraphBase
 	this.password = password;
 
 	if(this.graphName == null)
-		this.graphName = DEFAULT;
+	    this.graphName = DEFAULT;
 
-	if (connection == null)
-	{
-	    try
-	    {
-		Class.forName("virtuoso.jdbc3.Driver");
-		connection = DriverManager.getConnection(url, user, password);
+	try {
+	    if (connection == null) {
+	        if (url_hostlist.startsWith("jdbc:virtuoso://")) {
+		    Class.forName("virtuoso.jdbc3.Driver");
+		    connection = DriverManager.getConnection(url_hostlist, user, password);
+	        } else {
+		    pds.setServerName(url_hostlist);
+		    pds.setUser(user);
+		    pds.setPassword(password);
+		    pds.setCharset(charset);
+		    javax.sql.PooledConnection pconn = pds.getPooledConnection();
+		    connection = pconn.getConnection();
+	        }
 	    }
-	    catch(Exception e)
-	    {
-	        throw new JenaException(e);
-	    }
+	} catch(Exception e) {
+	    throw new JenaException(e);
 	}
+
     }
 
 // getters
@@ -114,7 +124,7 @@ public class VirtGraph extends GraphBase
 
     public String getGraphUrl()
     {
-	return this.url;
+	return this.url_hostlist;
     }
 
     public String getGraphUser()

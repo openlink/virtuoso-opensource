@@ -80,6 +80,7 @@
 #define IDS_ISOLATIONLEVEL2             1032
 #define IDS_ISOLATIONLEVEL3             1033
 #define IDS_ISOLATIONLEVEL4             1034
+#define IDC_RROBIN                      1035
 
 // Next default values for new objects
 //
@@ -89,7 +90,7 @@
 #define _APS_3D_CONTROLS                1
 #define _APS_NEXT_RESOURCE_VALUE        108
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1034
+#define _APS_NEXT_CONTROL_VALUE         1036
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

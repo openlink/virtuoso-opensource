@@ -32,6 +32,8 @@ import org.openrdf.repository.Repository;
 import org.openrdf.repository.RepositoryConnection;
 import org.openrdf.repository.RepositoryException;
 
+import virtuoso.jdbc3.VirtuosoConnectionPoolDataSource;
+
 /**
  * A Sesame repository that contains RDF data that can be queried and updated.
  * Access to the repository can be acquired by openening a connection to it.
@@ -50,30 +52,29 @@ public class VirtuosoRepository implements Repository {
 	ValueFactory valueFactory = new ValueFactoryImpl();
 	File dataDir;
 	
-	public String url;
+        private VirtuosoConnectionPoolDataSource pds = new VirtuosoConnectionPoolDataSource();
+	public String url_hostlist;
 	public String user;
 	public String password;
 	public String defGraph;
 	public boolean useLazyAdd = false;
 	public int prefetchSize = 200;
 	public int resultsHandlerType = 0;
+	private String charset = "UTF-8";
         static final String utf8 = "charset=UTF-8";
 	private boolean initialized = false;
     
-        static {
-		try {
-			Class.forName("virtuoso.jdbc3.Driver");
-		}
-		catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		}
-        }
 	
 	/**
 	 * Construct a VirtuosoRepository with a specified parameters
 	 * 
-	 * @param url
-	 *        the Virtuoso JDBC URL connection string
+	 * @param url_hostlist
+	 *        the Virtuoso JDBC URL connection string or hostlist for poolled connection.
+	 *        Virtuoso database hostlist 
+	 *        <pre>
+	 *        "hostone:1112,hosttwo:1113" 
+	 *     or "hostone,hosttwo" if default port=1111 is used on hosts
+	 *        </pre>
 	 * @param user
 	 *        the database user on whose behalf the connection is being made
 	 * @param password
@@ -91,15 +92,15 @@ public class VirtuosoRepository implements Repository {
          *        or when batch size become more than predefined batch max_size. 
          *
 	 */
-	public VirtuosoRepository(String url, String user, String password, String defGraph, boolean useLazyAdd) {
+	public VirtuosoRepository(String url_hostlist, String user, String password, String defGraph, boolean useLazyAdd) {
 
 	        super();
-		this.url = url.trim();
-		if (this.url.indexOf(utf8) == -1) {
-	   		if (this.url.charAt(this.url.length()-1) != '/')
-	     			this.url = this.url + "/" + utf8;
+		this.url_hostlist = url_hostlist.trim();
+		if (this.url_hostlist.indexOf(utf8) == -1) {
+	   		if (this.url_hostlist.charAt(this.url_hostlist.length()-1) != '/')
+	     			this.url_hostlist = this.url_hostlist + "/" + utf8;
 	   		else
-	     			this.url = this.url + utf8;
+	     			this.url_hostlist = this.url_hostlist + utf8;
 		}
 		
 		this.user = user;
@@ -112,8 +113,13 @@ public class VirtuosoRepository implements Repository {
 	 * Construct a VirtuosoRepository with a specified parameters
 	 * <tt>defGraph</tt> will be set to <tt>"sesame:nil"</tt>.
 	 * 
-	 * @param url
-	 *        the Virtuoso JDBC URL connection string
+	 * @param url_hostlist
+	 *        the Virtuoso JDBC URL connection string or hostlist for poolled connection.
+	 *        Virtuoso database hostlist 
+	 *        <pre>
+	 *        "hostone:1112,hosttwo:1113" 
+	 *     or "hostone,hosttwo" if default port=1111 is used on hosts
+	 *        </pre>
 	 * @param user
 	 *        the database user on whose behalf the connection is being made
 	 * @param password
@@ -128,16 +134,21 @@ public class VirtuosoRepository implements Repository {
          *        or when batch size become more than predefined batch max_size. 
          *
 	 */
-	public VirtuosoRepository(String url, String user, String password, boolean useLazyAdd) {
-	        this(url, user, password, "sesame:nil", useLazyAdd);
+	public VirtuosoRepository(String url_hostlist, String user, String password, boolean useLazyAdd) {
+	        this(url_hostlist, user, password, "sesame:nil", useLazyAdd);
 	}
 
 	/**
 	 * Construct a VirtuosoRepository with a specified parameters.
 	 * useLazyAdd will be set to <tt>false</tt>.
 	 * 
-	 * @param url
-	 *        the Virtuoso JDBC URL connection string
+	 * @param url_hostlist
+	 *        the Virtuoso JDBC URL connection string or hostlist for poolled connection.
+	 *        Virtuoso database hostlist 
+	 *        <pre>
+	 *        "hostone:1112,hosttwo:1113" 
+	 *     or "hostone,hosttwo" if the default port=1111 is used for hosts
+	 *        </pre>
 	 * @param user
 	 *        the database user on whose behalf the connection is being made
 	 * @param password
@@ -147,8 +158,8 @@ public class VirtuosoRepository implements Repository {
 	 *        is empty, exclude <tt>exportStatements, hasStatement, getStatements</tt> methods 
          *
 	 */
-	public VirtuosoRepository(String url, String user, String password, String defGraph) {
-	        this(url, user, password, defGraph, false);
+	public VirtuosoRepository(String url_hostlist, String user, String password, String defGraph) {
+	        this(url_hostlist, user, password, defGraph, false);
 	}
 
 	/**
@@ -156,8 +167,13 @@ public class VirtuosoRepository implements Repository {
 	 * <tt>useLazyAdd</tt> will be set to <tt>false</tt>.
 	 * <tt>defGraph</tt> will be set to <tt>"sesame:nil"</tt>.
 	 * 
-	 * @param url
-	 *        the Virtuoso JDBC URL connection string
+	 * @param url_hostlist
+	 *        the Virtuoso JDBC URL connection string or hostlist for poolled connection.
+	 *        Virtuoso database hostlist 
+	 *        <pre>
+	 *        "hostone:1112,hosttwo:1113" 
+	 *     or "hostone,hosttwo" if the default port=1111 is used for hosts
+	 *        </pre>
 	 * @param user
 	 *        the database user on whose behalf the connection is being made
 	 * @param password
@@ -167,8 +183,8 @@ public class VirtuosoRepository implements Repository {
 	 *        is empty, exclude <tt>exportStatements, hasStatement, getStatements</tt> methods 
          *
 	 */
-	public VirtuosoRepository(String url, String user, String password) {
-	        this(url, user, password, false);
+	public VirtuosoRepository(String url_hostlist, String user, String password) {
+	        this(url_hostlist, user, password, false);
 	}
 
 	/**
@@ -192,14 +208,32 @@ public class VirtuosoRepository implements Repository {
 	 *         If something went wrong during the creation of the Connection.
 	 */
 	public RepositoryConnection getConnection() throws RepositoryException {
-		try {
-			java.sql.Connection connection = DriverManager.getConnection(url, user, password);
-			return new VirtuosoRepositoryConnection(this, connection);
+		if (url_hostlist.startsWith("jdbc:virtuoso://")) {
+			try {
+				Class.forName("virtuoso.jdbc3.Driver");
+				java.sql.Connection connection = DriverManager.getConnection(url_hostlist, user, password);
+				return new VirtuosoRepositoryConnection(this, connection);
+			}
+			catch (Exception e) {
+				System.out.println("Connection to " + url_hostlist + " is FAILED.");
+				throw new RepositoryException(e);
+			}
 		}
-		catch (Exception e) {
-			System.out.println("Connection to " + url + " is FAILED.");
-			throw new RepositoryException(e);
-		}
+		else {
+			try {
+				pds.setServerName(url_hostlist);
+				pds.setUser(user);
+				pds.setPassword(password);
+				pds.setCharset(charset);
+				javax.sql.PooledConnection pconn = pds.getPooledConnection();
+				java.sql.Connection connection = pconn.getConnection();
+				return new VirtuosoRepositoryConnection(this, connection);
+			}
+			catch (Exception e) {
+				System.out.println("Connection to " + url_hostlist + " is FAILED.");
+				throw new RepositoryException(e);
+			}
+		}	
 	}
 
 	/**

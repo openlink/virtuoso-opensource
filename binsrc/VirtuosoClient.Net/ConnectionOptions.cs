@@ -25,6 +25,7 @@
 using System;
 using System.Collections;
 using System.Collections.Specialized;
+using System.Text;
 
 #if ODBC_CLIENT
 namespace OpenLink.Data.VirtuosoOdbcClient
@@ -43,7 +44,57 @@ namespace OpenLink.Data.Virtuoso
 		{
 			internal abstract void Set (string settingString);
 			internal abstract string Get ();
+			internal virtual ArrayList GetList () { return null;}
 		};
+
+		private sealed class ListOption : Option
+		{
+			internal override void Set (string settingString)
+			{
+				setting =  settingString;
+				items =  new ArrayList();
+				
+				StringBuilder buff = new StringBuilder();
+				string val;
+				for(int i = 0; i < settingString.Length; i++)
+				{
+					char c = settingString[i];
+					if (c == ',')
+					{
+						val = buff.ToString().Trim();
+						if (val != String.Empty)
+							items.Add(val);
+						buff.Length = 0;
+					}
+					else if (!Char.IsWhiteSpace(c))
+					{
+						buff.Append(c);
+					}
+				}
+
+				val = buff.ToString().Trim();
+				if (val != String.Empty)
+					items.Add(val);
+			}
+
+			internal override string Get ()
+			{
+				return setting;
+			}
+
+			internal override ArrayList GetList ()
+			{
+				return items;
+			}
+
+			internal ArrayList items;
+			internal string setting;
+                    public override string ToString()
+                    {
+                        return setting;
+                    }
+
+		}
 
 		private sealed class StringOption : Option
 		{
@@ -142,9 +193,10 @@ namespace OpenLink.Data.Virtuoso
 		internal const string MAXPOOLSIZE = "Max Pool Size";
 		internal const string POOLING = "Pooling";
 		internal const string ENLIST = "Enlist";
+		internal const string ROUNDROBIN = "Round Robin";
 
 		private BooleanOption odbc;
-		private StringOption host;
+		private ListOption host;
 		private StringOption uid;
 		private StringOption pwd;
 		private StringOption database;
@@ -157,6 +209,7 @@ namespace OpenLink.Data.Virtuoso
 		private IntegerOption maxPoolSize;
 		private BooleanOption pooling;
 		private BooleanOption enlist;
+		private BooleanOption roundrobin;
 
 		/// <summary>
 		/// Contains the original connection string.
@@ -173,7 +226,7 @@ namespace OpenLink.Data.Virtuoso
 		internal ConnectionOptions ()
 		{
 			odbc = new BooleanOption ();
-			host = new StringOption ();
+			host = new ListOption ();
 			uid = new StringOption ();
 			pwd = new StringOption ();
 			database = new StringOption ();
@@ -186,6 +239,7 @@ namespace OpenLink.Data.Virtuoso
 			maxPoolSize = new IntegerOption ();
 			pooling = new BooleanOption ();
 			enlist = new BooleanOption ();
+			roundrobin = new BooleanOption ();
 			Reset ();
 
 			options = CollectionsUtil.CreateCaseInsensitiveHashtable (23);
@@ -213,6 +267,7 @@ namespace OpenLink.Data.Virtuoso
 			options.Add (MAXPOOLSIZE, maxPoolSize);
 			options.Add (POOLING, pooling);
 			options.Add (ENLIST, enlist);
+			options.Add (ROUNDROBIN, roundrobin);
 		}
 
 		internal void Reset ()
@@ -229,8 +284,9 @@ namespace OpenLink.Data.Virtuoso
 			connectionLifetime.setting = DEFAULT_CONN_LIFETIME;
 			minPoolSize.setting = DEFAULT_MIN_POOL_SIZE;
 			maxPoolSize.setting = DEFAULT_MAX_POOL_SIZE;
-            pooling.setting = true;
-            enlist.setting = Platform.HasDtc ();
+            		pooling.setting = true;
+            		enlist.setting = Platform.HasDtc ();
+            		roundrobin.setting = false;
 		}
 
 		internal void Verify ()
@@ -279,6 +335,11 @@ namespace OpenLink.Data.Virtuoso
 		internal string DataSource
 		{
 			get { return host.setting; }
+		}
+
+		internal ArrayList DataSourceList
+		{
+			get { return host.GetList(); }
 		}
 
 		internal string Database
@@ -335,6 +396,11 @@ namespace OpenLink.Data.Virtuoso
 		internal bool Enlist
 		{
 			get { return enlist.setting; }
+		}
+
+		internal bool RoundRobin
+		{
+			get { return roundrobin.setting; }
 		}
 
 		internal string ConnectionString

@@ -43,7 +43,7 @@ extern "C" {
 #undef SQLDriverConnect
 #undef SQLConnect
 
-#define MAX_SERVER_LEN		70
+#define MAX_SERVER_LEN		1024
 #define MAX_UID_LEN		64
 #define MAX_PWD_LEN		64
 
@@ -304,7 +304,7 @@ virtodbc_connect (
   else if (props.Get (_T("Host"), szHost, NUMCHARS (szHost)))
     {
       /* Server is persisted in a DSN and may contain a rendezvous name */
-      bResolveRV = (_tcschr (szHost, ':') == NULL);
+      bResolveRV = (_tcschr (szHost, ':') == NULL && _tcschr (szHost, ',') == NULL);
     }
 
 #ifdef _RENDEZVOUS 
@@ -336,6 +336,10 @@ virtodbc_connect (
   /* PWDCleartext */
   props.Get (_T("PWDClearText"), szValue, NUMCHARS (szValue));
   con->con_pwd_cleartext = _ttoi (szValue);
+
+  if (props.Get (_T("RoundRobin"), szValue, NUMCHARS (szValue)))
+    con->con_round_robin = OPTION_TRUE (szValue[0]) ? 1 : 0;
+
 
   /* Encrypt */
   if (con->con_encrypt)
