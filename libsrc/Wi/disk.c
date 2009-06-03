@@ -1675,7 +1675,7 @@ buf_disk_write (buffer_desc_t * buf, dp_addr_t phys_dp_to)
 #if 0
 	  {
 	    unsigned char page [PAGE_SZ];
-	    if (36 * PAGE_SZ == lseek (dbs->dbs_fd, 36 * PAGE_SZ, SEEK_SET))
+	    if (36 * PAGE_SZ == LSEEK (dbs->dbs_fd, 36 * PAGE_SZ, SEEK_SET))
 	      {
 		if (PAGE_SZ == read (dbs->dbs_fd, page, PAGE_SZ))
 		  {
@@ -2109,7 +2109,7 @@ dbs_seg_extend (dbe_storage_t * dbs, OFF_T n)
     last = last->next;
   ds = (disk_segment_t*)last->data;
   fd = dst_fd (ds->ds_stripes[0]);
-  org_sz = lseek (fd, 0, SEEK_END);
+  org_sz = LSEEK (fd, 0, SEEK_END);
   dst_fd_done (ds->ds_stripes[0], fd);
   if (((n * ds->ds_n_stripes)  % BITS_ON_PAGE) == 1)
     n++;

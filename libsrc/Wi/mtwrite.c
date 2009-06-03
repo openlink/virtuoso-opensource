@@ -231,7 +231,7 @@ iq_read_merge (struct aiocb ** list, int n, char * temp)
       list[inx]->__error_code = -1;
       last_planned = list[inx]->aio_offset;
     }
-  seek = lseek (fd, first_offset, SEEK_SET);
+  seek = LSEEK (fd, first_offset, SEEK_SET);
   if (seek != first_offset)
     GPF_T1 ("bad return from lseek");
   if (first_offset == last_planned)
@@ -277,7 +277,7 @@ iq_write_merge (struct aiocb ** list, int n, char * temp)
       list[inx]->__error_code = -1;
       last_planned = list[inx]->aio_offset;
     }
-  seek = lseek (fd, first_offset, SEEK_SET);
+  seek = LSEEK (fd, first_offset, SEEK_SET);
   if (seek != first_offset)
     GPF_T1 ("bad return from lseek");
   if (first_offset == last_planned)
