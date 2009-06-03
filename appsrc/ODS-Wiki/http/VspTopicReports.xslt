@@ -106,6 +106,11 @@
             <xsl:attribute name="name">id</xsl:attribute>
             <xsl:attribute name="value"><xsl:value-of select="$ti_id"/></xsl:attribute>
           </input>
+          <input>
+            <xsl:attribute name="type">hidden</xsl:attribute>
+            <xsl:attribute name="name">sid</xsl:attribute>
+            <xsl:attribute name="value"><xsl:value-of select="$sid"/></xsl:attribute>
+          </input>
         </form>
       </xsl:if>
     </span>
