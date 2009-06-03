@@ -587,6 +587,245 @@ any URL and requisite SPARQL Prrotocol parameters, an interactive HTML for captu
 be presented.</para>
 </sect3>
 
+<sect3 id="rdfrequestparamsextensions"><title>SPARQL Protocol Extensions</title>
+
+<sect4 id="rdfrequestparamsofunctions"><title>Request Parameters</title>
+<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+    <title>Request Parameters List</title>
+    <tgroup align="char" charoff="50" char="." cols="3">
+    <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+    <thead>
+      <row>
+        <entry>Parameter</entry>
+        <entry>Notes</entry>
+        <entry>Required?</entry>
+        <entry>Occurrence</entry>
+      </row>
+    </thead>
+    <tbody>
+      <row>
+        <entry>service</entry>
+        <entry>service URI such as 'http://example.com/sparql/'</entry>
+        <entry>Yes</entry>
+        <entry></entry>
+      </row>
+      <row>
+        <entry>query</entry>
+        <entry>text of the query</entry>
+        <entry>Yes</entry>
+        <entry></entry>
+      </row>
+      <row>
+        <entry>dflt_graph</entry>
+        <entry>default graph URI (string or NULL)</entry>
+        <entry>No</entry>
+        <entry></entry>
+      </row>
+      <row>
+        <entry>named_graphs</entry>
+        <entry>vector of named graphs (or NULL to not override what's specified in the query</entry>
+        <entry>Yes</entry>
+        <entry></entry>
+      </row>
+      <row>
+        <entry>req_hdr</entry>
+        <entry>additional HTTP header lines that should be passed to the service; 'Host: ...' is most popular</entry>
+        <entry>No</entry>
+        <entry></entry>
+      </row>
+      <row>
+        <entry>maxrows</entry>
+        <entry>limit on numbers of rows that should be returned (actual size of result set may differ)</entry>
+        <entry>No</entry>
+        <entry></entry>
+      </row>
+      <row>
+        <entry>bnode_dict</entry>
+        <entry>dictionary of known blank node names, or NULL for usual loading</entry>
+        <entry>No</entry>
+        <entry></entry>
+      </row>
+      <row>
+        <entry>xslt-uri</entry>
+        <entry>absolute URL of XSLT file to be applied to SPARQL Qery results</entry>
+        <entry>No</entry>
+        <entry></entry>
+      </row>
+    </tbody>
+  </tgroup>
+</table>
+</sect4>
+
+<sect4 id="rdfresponsecodeofprotocol"><title>Response Codes</title>
+<para>If the query is a CONSTRUCT or DESCRIBE then the result set
+consists of a single row and a single column, the value inside is a
+dictionary of triples in 'long valmode'. Note that the dictionary
+object can not be sent to SQL client, say, via ODBC. The client can
+loose database connection trying to fetch a result set row that
+contain a dictionary object. This disconnect will be safe for server,
+so the client can re-connect to the server, but the disconnected
+transaction will be rolled back.</para>
+</sect4>
+
+<sect4 id="rdfsupportedmimesofprotocol"><title>Response Format</title>
+<para>All standard MIME types of SPARQL Protocol are supported:</para>
+<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+    <title>Supported MIME Types list</title>
+    <tgroup align="char" charoff="50" char="." cols="3">
+    <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+    <thead>
+      <row>
+        <entry>Content-Type</entry>
+        <entry>Supported for result of Query</entry>
+      </row>
+    </thead>
+    <tbody>
+      <row>
+        <entry>'application/sparql-results+xml'</entry>
+        <entry>SELECT</entry>
+      </row>
+      <row>
+        <entry>'application/sparql-results+xml'</entry>
+        <entry>ASK</entry>
+      </row>
+      <row>
+        <entry>'application/rdf+xml'</entry>
+        <entry>CONSTRUCT</entry>
+      </row>
+      <row>
+        <entry>'application/rdf+json'</entry>
+        <entry>CONSTRUCT</entry>
+      </row>
+      <row>
+        <entry>'application/rdf+json'</entry>
+        <entry>DESCRIBE</entry>
+      </row>
+      <row>
+        <entry>'application/rdf+xml'</entry>
+        <entry>DESCRIBE</entry>
+      </row>
+      <row>
+        <entry>'text/rdf+n3'</entry>
+        <entry>CONSTRUCT</entry>
+      </row>
+      <row>
+        <entry>'text/rdf+n3'</entry>
+        <entry>DESCRIBE</entry>
+      </row>
+    </tbody>
+  </tgroup>
+</table>
+<para>If the HTTP header returned by the remote server does not contain 'Content-Type' line, the MIME type may be guessed from the text of the returned body. </para>
+<para>The current implementation does not support results of SELECT returned in RDF /XML, TURTLE or 'sparql-results-2'.</para>
+<para>Error messages returned from the service are returned as XML documents, using the mime type application/xml. The documents consist of a single element containing an error message.</para>
+</sect4>
+
+<sect4 id="rdfsupportedmimesaddofprotocol"><title>Additional Response Formats -- SELECT</title>
+<para>Use the format parameter to select one of the following alternate output formats:</para>
+
+<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+    <title>Additional Response formats list</title>
+    <tgroup align="char" charoff="50" char="." cols="3">
+    <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+    <thead>
+      <row>
+        <entry>Format Value</entry>
+        <entry>Description</entry>
+        <entry>Content-Type</entry>
+      </row>
+    </thead>
+    <tbody>
+      <row>
+        <entry>HTML</entry>
+        <entry>HTML document containing query summary and tabular results</entry>
+        <entry>text/html</entry>
+      </row>
+      <row>
+        <entry>JSON</entry>
+        <entry>JSON serialization of results. Conforms to the draft specification Serializing SPARQL Query Results in JSON</entry>
+        <entry>application/sparql-results+json</entry>
+      </row>
+      <row>
+        <entry>Javascript</entry>
+        <entry>Javascript serialization of results. Generates an HTML table with the CSS class sparql. The table contains a column indicating row number and additional columns for each query variable. Each query solution contributes one row of the table. Unbound variables are indicated with a non-breaking space in the appropriate table cells.</entry>
+        <entry>application/javascript</entry>
+      </row>
+      <row>
+        <entry>XML</entry>
+        <entry></entry>
+        <entry>application/sparql-results+xml</entry>
+      </row>
+      <row>
+        <entry>TURTLE</entry>
+        <entry></entry>
+        <entry>text/rdf+n3</entry>
+      </row>
+    </tbody>
+  </tgroup>
+</table>
+</sect4>
+
+<sect4 id="rdfsupportedmimesaddofprotocol"><title>Additional HTTP Response Formats -- DESCRIBE &amp; CONSTRUCT</title>
+
+<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+    <title>Additional HTTP Response Formats -- DESCRIBE &amp; CONSTRUCT</title>
+    <tgroup align="char" charoff="50" char="." cols="3">
+    <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+    <thead>
+      <row>
+        <entry>Format Value</entry>
+        <entry>Description</entry>
+        <entry>Content-Type</entry>
+      </row>
+    </thead>
+    <tbody>
+      <row>
+        <entry>JSON</entry>
+        <entry></entry>
+        <entry>application/rdf+json</entry>
+      </row>
+    </tbody>
+  </tgroup>
+</table>
+</sect4>
+
+<sect4 id="rdfsupportedmimesaddofprotocol"><title>Virtuoso/PL APIs</title>
+<para>Virtuoso also provides SPARQL Protocol client APIs in PL, so you can communicate with SPARQL
+Query Services from within SQL stored-procedures. The APIs are as follows:
+</para>
+<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+    <title>Virtuoso/PL APIs</title>
+    <tgroup align="char" charoff="50" char="." cols="2">
+    <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+    <thead>
+      <row>
+        <entry>API</entry>
+        <entry>Notes</entry>
+      </row>
+    </thead>
+    <tbody>
+      <row>
+        <entry>DB.DBA.SPARQL_REXEC</entry>
+        <entry>behaves like DBA.SPARQL_EVAL, but executes the query on the specified server. The procedure
+does not return anything. Instead, it creates a result set.</entry>
+      </row>
+      <row>
+        <entry>DB.DBA.SPARQL_REXEC_TO_ARRAY</entry>
+        <entry>behaves like DBA.SPARQL_EXEC_TO_ARRAY(), but executes the query on the specified server. The
+function return a vector of rows, where every row is represented by a vector of values of fields.</entry>
+      </row>
+      <row>
+        <entry>DB.DBA.SPARQL_REXEC_WITH_META</entry>
+        <entry>has no local SPARQL_EVAL analog. It produces not only an array of result rows but also array
+of metadata about result set in a format used by the exec() function.</entry>
+      </row>
+    </tbody>
+  </tgroup>
+</table>
+</sect4>
+
+</sect3>
+
 <sect3 id="rdfsupportedprotocolendpointuri"><title>Service Endpoint Security</title>
 <para>Earlier releases of Virtuoso secured the SPARQL endpoint via privileges assigned to the service
 specific SQL user account: "SPARQL". This account was optionally granted "SPARQL_SELECT" or
@@ -646,6 +885,22 @@ click the ">>" button so to add it to the right-positioned list.</listitem>
 ( SPARQL_UPDATE inherits it ), then select on all graph will return access violation error as the user
 account has no permissions to read it. Thus the account need to have privileges on all tables included
 in any rdf view in order to be able to select on *all* graphs.</para>
+<sect4 id="sparqwebservicetbl"><title>Manage SPARQL Web Service Endpoint</title>
+<para>
+Web service endpoint may provide different default configurations for different host names mentioned in HTTP request.
+SPARQL Web Service Endpoints host names configurations can be manage via the table <emphasis>DB.DBA.SYS_SPARQL_HOST</emphasis>.
+</para>
+<programlisting>
+create table DB.DBA.SYS_SPARQL_HOST (
+  SH_HOST	varchar not null primary key, -- host mask
+  SH_GRAPH_URI	varchar,      -- 'default default' graph uri
+  SH_USER_URI	varchar,      -- reserved for any use in applications
+  SH_DEFINES	long varchar  -- additional defines for requests
+)
+</programlisting>
+<para>Detailed description of the table columns you can find <link linkend="rdfdefaultgraph">here</link></para>
+<para>Additionally, read <link linkend="rdfperfindexes">these notes</link> for managing public web service endpoints.</para>
+</sect4>
 <sect4 id="sparqloauthendpointauth"><title>Authentication</title>
 <para>Virtuoso 5.0.7 onwards,  introduced the addition of a new "SPARQL_SPONGE" role which can be assigned
 to specifically for controlling sponger middleware services which perform writes and graph creations within
@@ -960,244 +1215,6 @@ create procedure DB.DBA.SPARQL_REXEC_WITH_META (
     out metadata any,  -- metadata like exec () returns.
     out resultset any) -- results as 'long valmode' values.
 </programlisting>
-
-</sect3>
-<sect3 id="rdfrequestparamsextensions"><title>SPARQL Protocol Extensions</title>
-
-<sect4 id="rdfrequestparamsofunctions"><title>Request Parameters</title>
-<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
-    <title>Request Parameters List</title>
-    <tgroup align="char" charoff="50" char="." cols="3">
-    <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
-    <thead>
-      <row>
-        <entry>Parameter</entry>
-        <entry>Notes</entry>
-        <entry>Required?</entry>
-        <entry>Occurrence</entry>
-      </row>
-    </thead>
-    <tbody>
-      <row>
-        <entry>service</entry>
-        <entry>service URI such as 'http://example.com/sparql/'</entry>
-        <entry>Yes</entry>
-        <entry></entry>
-      </row>
-      <row>
-        <entry>query</entry>
-        <entry>text of the query</entry>
-        <entry>Yes</entry>
-        <entry></entry>
-      </row>
-      <row>
-        <entry>dflt_graph</entry>
-        <entry>default graph URI (string or NULL)</entry>
-        <entry>No</entry>
-        <entry></entry>
-      </row>
-      <row>
-        <entry>named_graphs</entry>
-        <entry>vector of named graphs (or NULL to not override what's specified in the query</entry>
-        <entry>Yes</entry>
-        <entry></entry>
-      </row>
-      <row>
-        <entry>req_hdr</entry>
-        <entry>additional HTTP header lines that should be passed to the service; 'Host: ...' is most popular</entry>
-        <entry>No</entry>
-        <entry></entry>
-      </row>
-      <row>
-        <entry>maxrows</entry>
-        <entry>limit on numbers of rows that should be returned (actual size of result set may differ)</entry>
-        <entry>No</entry>
-        <entry></entry>
-      </row>
-      <row>
-        <entry>bnode_dict</entry>
-        <entry>dictionary of known blank node names, or NULL for usual loading</entry>
-        <entry>No</entry>
-        <entry></entry>
-      </row>
-      <row>
-        <entry>xslt-uri</entry>
-        <entry>absolute URL of XSLT file to be applied to SPARQL Qery results</entry>
-        <entry>No</entry>
-        <entry></entry>
-      </row>
-    </tbody>
-  </tgroup>
-</table>
-</sect4>
-
-<sect4 id="rdfresponsecodeofprotocol"><title>Response Codes</title>
-<para>If the query is a CONSTRUCT or DESCRIBE then the result set
-consists of a single row and a single column, the value inside is a
-dictionary of triples in 'long valmode'. Note that the dictionary
-object can not be sent to SQL client, say, via ODBC. The client can
-loose database connection trying to fetch a result set row that
-contain a dictionary object. This disconnect will be safe for server,
-so the client can re-connect to the server, but the disconnected
-transaction will be rolled back.</para>
-</sect4>
-
-<sect4 id="rdfsupportedmimesofprotocol"><title>Response Format</title>
-<para>All standard MIME types of SPARQL Protocol are supported:</para>
-<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
-    <title>Supported MIME Types list</title>
-    <tgroup align="char" charoff="50" char="." cols="3">
-    <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
-    <thead>
-      <row>
-        <entry>Content-Type</entry>
-        <entry>Supported for result of Query</entry>
-      </row>
-    </thead>
-    <tbody>
-      <row>
-        <entry>'application/sparql-results+xml'</entry>
-        <entry>SELECT</entry>
-      </row>
-      <row>
-        <entry>'application/sparql-results+xml'</entry>
-        <entry>ASK</entry>
-      </row>
-      <row>
-        <entry>'application/rdf+xml'</entry>
-        <entry>CONSTRUCT</entry>
-      </row>
-      <row>
-        <entry>'application/rdf+json'</entry>
-        <entry>CONSTRUCT</entry>
-      </row>
-      <row>
-        <entry>'application/rdf+json'</entry>
-        <entry>DESCRIBE</entry>
-      </row>
-      <row>
-        <entry>'application/rdf+xml'</entry>
-        <entry>DESCRIBE</entry>
-      </row>
-      <row>
-        <entry>'text/rdf+n3'</entry>
-        <entry>CONSTRUCT</entry>
-      </row>
-      <row>
-        <entry>'text/rdf+n3'</entry>
-        <entry>DESCRIBE</entry>
-      </row>
-    </tbody>
-  </tgroup>
-</table>
-<para>If the HTTP header returned by the remote server does not contain 'Content-Type' line, the MIME type may be guessed from the text of the returned body. </para>
-<para>The current implementation does not support results of SELECT returned in RDF /XML, TURTLE or 'sparql-results-2'.</para>
-<para>Error messages returned from the service are returned as XML documents, using the mime type application/xml. The documents consist of a single element containing an error message.</para>
-</sect4>
-
-<sect4 id="rdfsupportedmimesaddofprotocol"><title>Additional Response Formats -- SELECT</title>
-<para>Use the format parameter to select one of the following alternate output formats:</para>
-
-<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
-    <title>Additional Response formats list</title>
-    <tgroup align="char" charoff="50" char="." cols="3">
-    <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
-    <thead>
-      <row>
-        <entry>Format Value</entry>
-        <entry>Description</entry>
-        <entry>Content-Type</entry>
-      </row>
-    </thead>
-    <tbody>
-      <row>
-        <entry>HTML</entry>
-        <entry>HTML document containing query summary and tabular results</entry>
-        <entry>text/html</entry>
-      </row>
-      <row>
-        <entry>JSON</entry>
-        <entry>JSON serialization of results. Conforms to the draft specification Serializing SPARQL Query Results in JSON</entry>
-        <entry>application/sparql-results+json</entry>
-      </row>
-      <row>
-        <entry>Javascript</entry>
-        <entry>Javascript serialization of results. Generates an HTML table with the CSS class sparql. The table contains a column indicating row number and additional columns for each query variable. Each query solution contributes one row of the table. Unbound variables are indicated with a non-breaking space in the appropriate table cells.</entry>
-        <entry>application/javascript</entry>
-      </row>
-      <row>
-        <entry>XML</entry>
-        <entry></entry>
-        <entry>application/sparql-results+xml</entry>
-      </row>
-      <row>
-        <entry>TURTLE</entry>
-        <entry></entry>
-        <entry>text/rdf+n3</entry>
-      </row>
-    </tbody>
-  </tgroup>
-</table>
-</sect4>
-
-<sect4 id="rdfsupportedmimesaddofprotocol"><title>Additional HTTP Response Formats -- DESCRIBE &amp; CONSTRUCT</title>
-
-<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
-    <title>Additional HTTP Response Formats -- DESCRIBE &amp; CONSTRUCT</title>
-    <tgroup align="char" charoff="50" char="." cols="3">
-    <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
-    <thead>
-      <row>
-        <entry>Format Value</entry>
-        <entry>Description</entry>
-        <entry>Content-Type</entry>
-      </row>
-    </thead>
-    <tbody>
-      <row>
-        <entry>JSON</entry>
-        <entry></entry>
-        <entry>application/rdf+json</entry>
-      </row>
-    </tbody>
-  </tgroup>
-</table>
-</sect4>
-
-<sect4 id="rdfsupportedmimesaddofprotocol"><title>Virtuoso/PL APIs</title>
-<para>Virtuoso also provides SPARQL Protocol client APIs in PL, so you can communicate with SPARQL
-Query Services from within SQL stored-procedures. The APIs are as follows:
-</para>
-<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
-    <title>Virtuoso/PL APIs</title>
-    <tgroup align="char" charoff="50" char="." cols="2">
-    <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
-    <thead>
-      <row>
-        <entry>API</entry>
-        <entry>Notes</entry>
-      </row>
-    </thead>
-    <tbody>
-      <row>
-        <entry>DB.DBA.SPARQL_REXEC</entry>
-        <entry>behaves like DBA.SPARQL_EVAL, but executes the query on the specified server. The procedure
-does not return anything. Instead, it creates a result set.</entry>
-      </row>
-      <row>
-        <entry>DB.DBA.SPARQL_REXEC_TO_ARRAY</entry>
-        <entry>behaves like DBA.SPARQL_EXEC_TO_ARRAY(), but executes the query on the specified server. The
-function return a vector of rows, where every row is represented by a vector of values of fields.</entry>
-      </row>
-      <row>
-        <entry>DB.DBA.SPARQL_REXEC_WITH_META</entry>
-        <entry>has no local SPARQL_EVAL analog. It produces not only an array of result rows but also array
-of metadata about result set in a format used by the exec() function.</entry>
-      </row>
-    </tbody>
-  </tgroup>
-</table>
-</sect4>
 
 </sect3>
 
@@ -4497,12 +4514,11 @@ and associated Instance Data</listitem>
   <listitem>Exposing the Data Source Ontology and associated Instance Data in Linked Data form
 via endpoints that use Re-write rules to disambiguate data object (resource) identity and resource
 description via HTTP based content negotiation.</listitem>
-  <listitem></listitem>
 </orderedlist>
 <para>
 </para>
 </sect2>
-<sect2 id="rdfrdfviewgnroneclick"><title>Introduction</title>
+<sect2 id="rdfrdfviewgnroneclick"><title>One Click Linked Data Generation &amp; Deployment</title>
 <para>The steps that follow provide an one click guide for publishing ODBC or JDBC accessible RDBMS
 data, in RDF Linked Data form, using the "Generate &amp; Publish" Conductor feature.
 </para>
@@ -4547,7 +4563,7 @@ successfully. Error messages will be presented if the Wizard encountered problem
 </listitem>
 </orderedlist>
 </sect2>
-<sect2 id="rdfrdfviewgnrwizzard"><title></title>
+<sect2 id="rdfrdfviewgnrwizzard"><title>Using the Conductor's HTML based wizard</title>
 <para>The steps that follow provide an actual step-by guide for publishing ODBC or JDBC accessible RDBMS
 data, in RDF Linked Data form,  using the Conductor's HTML based wizard:
 </para>
@@ -5237,7 +5253,7 @@ non-RDF but get RDF and this can go to the Quad Store)</para>
       <para>Click the button "Import Queues".</para>
       <para>For "Robot target" with label "Tim Berners-Lee's electronic Business Card"
 click the start link.</para>
-      <para>As result should be shown t he number of the pages retrieved.</para>
+      <para>As result should be shown the number of the pages retrieved.</para>
       <figure id="rdfinsertwebdav2" float="1">
         <title>Using Virtuoso Crawler</title>
 	<graphic fileref="ui/rdfinsert2.png"/>
@@ -26858,7 +26874,7 @@ doap:developer ?dev .
 
 name          mbox              projectName
 VARCHAR       VARCHAR           VARCHAR
-_______________________________________________________________________________
+____________________ ___________________________________________
 
 Adam Lerer    NULL              NULL
 Dan Connolly  NULL              NULL
@@ -26891,20 +26907,24 @@ WHERE
               ?foaf foaf:name ?foafsname .
               ?foaf foaf:homepage ?foafshomepage .
            }
- };
+ }
+LIMIT 10;
 
-friendsname       friendshomepage                                       foafsname       foafshomepage
-VARCHAR           VARCHAR                                               VARCHAR         VARCHAR
-_______________________________________________________________________________
 
-Tim Berners-Lee   http://www.w3.org/People/Berners-Lee/                 Dan Connolly    http://www.w3.org/People/Connolly/
-Tim Berners-Lee   http://www.w3.org/People/Berners-Lee/                 Eric Miller     http://purl.org/net/eric/
-Dave Beckett      http://www.dajobe.org/                                NULL            NULL
-Richard Cyganiak  http://richard.cyganiak.de/                           Dan Connolly    http://www.w3.org/People/Connolly/
 
-...
-73 Rows. -- 1452 msec.
-SQL>
+
+friendsname  	   friendshomepage                         foafsname  	    foafshomepage
+ANY                ANY                                     ANY              ANY
+ Tim Berners Lee   http://www.w3.org/People/Berners-Lee/   Dan Connolly	    http://www.w3.org/People/Connolly/
+ Tim Berners Lee   http://www.w3.org/People/Berners-Lee/   Henry J. Story   http://bblfish.net/
+ Tim Berners Lee   http://www.w3.org/People/Berners-Lee/   Henry Story	    http://bblfish.net/
+ Tim Berners Lee   http://www.w3.org/People/Berners-Lee/   Henry J. Story   http://bblfish.net/people/henry/card
+ Tim Berners Lee   http://www.w3.org/People/Berners-Lee/   Henry Story	    http://bblfish.net/people/henry/card
+ Tim Berners Lee   http://www.w3.org/People/Berners-Lee/   Ruth Dhanaraj    http://web.mit.edu/ruthdhan/www
+ Tim Berners Lee   http://www.w3.org/People/Berners-Lee/   Dan Brickley	    http://danbri.org/
+ Tim Berners Lee   http://www.w3.org/People/Berners-Lee/   Dan Brickley	    http://danbri.org/
+ Tim Berners Lee   http://www.w3.org/People/Berners-Lee/   Daniel Krech	    http://eikeon.com/
+ Tim Berners Lee   http://www.w3.org/People/Berners-Lee/   Daniel Krech	    http://eikeon.com/
 
 ]]></programlisting>
 </sect2>
@@ -27593,8 +27613,22 @@ graph. If no index begins with G, this becomes a full table scan and
 is unworkable, leading to an extremely slow server start and making
 operations like drop graph as good as unusable.</para>
 
-<para>Public web service endpoints are proven to be sources of especially bad queries. While local application develpers can obtain instructions from database administrator and use ISQL access to the database in order to tune execution plans, &quot;external&quot; clients do not know details of configuration and/or lacks appropriate skills. The most common problem is that public endpoints usually get requests that does not mention the required graph, because that queries were initially written for use with triple stores. If the web service provides access to a single graph (or to a short list of graphs) then it is strongly recommended to configure it by adding a row into <emphasis>DB.DBA.SYS_SPARQL_HOST</emphasis>. The idea is that if the client specifies default graph in the request or uses named graphs and group graph patterns then he is probably smarter than average and will provide meaningful queries. If no graph names are specified then the query will benefit from preset graph because this will give the compiler some more indexes to choose from -- indexes taht begin with G.</para>
-<para>Sometimes web service endpoint is used to access data of only one application, not all data in the system. In that case one may wish to declare a separate storage that consists of only RDF Views made by that application and define <emphasis>input:storage</emphasis> in appropriate row of <emphasis>DB.DBA.SYS_SPARQL_HOST</emphasis>.</para>
+<para>Public web service endpoints are proven to be sources of especially bad queries. While local
+application develpers can obtain instructions from database administrator and use ISQL access to
+the database in order to tune execution plans, &quot;external&quot; clients do not know details of
+configuration and/or lacks appropriate skills. The most common problem is that public endpoints usually
+get requests that does not mention the required graph, because that queries were initially written for
+use with triple stores. If the web service provides access to a single graph (or to a short list of graphs)
+then it is strongly recommended to configure it by adding a row into
+<emphasis>DB.DBA.SYS_SPARQL_HOST</emphasis>. The idea is that if the client specifies default graph in
+the request or uses named graphs and group graph patterns then he is probably smarter than average and
+will provide meaningful queries. If no graph names are specified then the query will benefit from
+preset graph because this will give the compiler some more indexes to choose from -- indexes taht begin
+with G.</para>
+<para>Sometimes web service endpoint is used to access data of only one application, not all data in the
+system. In that case one may wish to declare a separate storage that consists of only RDF Views made
+by that application and define <emphasis>input:storage</emphasis> in appropriate row of
+<emphasis>DB.DBA.SYS_SPARQL_HOST</emphasis>.</para>
 </sect2>
 <sect2 id="rdfperfcost"><title>Erroneous Cost Estimates and Explicit Join Order</title>
 
