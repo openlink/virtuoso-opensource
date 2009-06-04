@@ -38,14 +38,14 @@ create procedure WS.WS.COPY_PAGE (in _host varchar, in _url varchar, in _root va
   declare _dav_enabled, _auth varchar;
   declare dt, redirs, redir_flag, store_flag, try_to_get_rdf integer;
   declare _since datetime;
-  declare _udata any;
+  declare _udata, ext_hook, store_hook any;
 
   _url_to_update := _url;
 
   whenever not found goto nf_opt;
   select VS_NEWER, VS_OPTIONS, VS_METHOD, VS_URL, VS_SRC, VS_OPAGE,
-         coalesce (VS_REDIRECT, 1), coalesce (VS_STORE, 1), coalesce (VS_DLOAD_META, 0), deserialize (VS_UDATA)
-      into _since, _opts, _dav_method, _start_url, _d_imgs, _opage, redir_flag, store_flag, try_to_get_rdf, _udata
+         coalesce (VS_REDIRECT, 1), coalesce (VS_STORE, 1), coalesce (VS_DLOAD_META, 0), deserialize (VS_UDATA), VS_EXTRACT_FN, VS_STORE_FN
+      into _since, _opts, _dav_method, _start_url, _d_imgs, _opage, redir_flag, store_flag, try_to_get_rdf, _udata, ext_hook, store_hook
       from VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
   select VU_ETAG into _etag from VFS_URL where VU_HOST = _host and VU_URL = _url and VU_ROOT = _root;
 nf_opt:
@@ -101,6 +101,9 @@ html_mode:
     _header := _auth;
   else if (_header <> '' and _auth <> '')
     _header := concat (_header, '\n', _auth);
+
+ if (try_to_get_rdf)
+   _header := 'Accept: application/rdf+xml, text/rdf+n3, */*\n' || _header;
 
   {
      declare retr integer;
@@ -163,7 +166,9 @@ check_redir:
 
   if (_tmp = '200' and (isstring (_content) or __tag (_content) = 185))
     {
-      if (_url like '%.htm%' or _url like '%/' or _c_type like 'text/html%')
+      if (ext_hook is not null and __proc_exists (ext_hook))
+	call (ext_hook) (_host, _url, _root, _content);
+      else if (_url like '%.htm%' or _url like '%/' or _c_type like 'text/html%')
 	{
 	  if (_dav_method is null or _dav_method <> 'checked')
 	    {
@@ -174,9 +179,14 @@ check_redir:
 	    }
 	}
       _etag := WS.WS.FIND_KEYWORD (_resp, 'ETag:');
+      if (store_hook is not null and __proc_exists (store_hook))
+	call (store_hook) (_host, _url, _root, _content, _etag, _c_type, store_flag, _udata);
+      else 
+	{
       WS.WS.LOCAL_STORE (_host, _url, _root, _content, _etag, _c_type, store_flag);
       if (try_to_get_rdf)
         WS.WS.VFS_EXTRACT_RDF (_host, _root, _start_url, _udata, _url, _content, _c_type, _header, _resp);
+    }
     }
   else if (_tmp = '401')
     {

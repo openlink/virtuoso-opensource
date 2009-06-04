@@ -80,6 +80,8 @@ create table WS.WS.VFS_SITE (
     VS_UDATA	long varbinary,
     VS_DLOAD_META int default 0,
     VS_INST_ID	int,
+    VS_EXTRACT_FN  varchar,
+    VS_STORE_FN  varchar,
     primary key (VS_HOST, VS_ROOT))
 create index VS_HOST_ROOT on WS.WS.VFS_SITE (VS_HOST, VS_URL, VS_ROOT)
 ;
@@ -120,6 +122,13 @@ create procedure WS.WS.VFS_TBL_UPGRADE ()
       DB.DBA.execstr ('alter table WS.WS.VFS_SITE add VS_REDIRECT int default 1');
       DB.DBA.execstr ('alter table WS.WS.VFS_SITE add VS_STORE int default 1');
       DB.DBA.execstr ('alter table WS.WS.VFS_SITE add VS_UDATA long varbinary');
+    }
+  _state := null;
+  exec ('select VS_EXTRACT_FN from WS.WS.VFS_SITE', _state, _err);
+  if (_state is not null)
+    {
+      DB.DBA.execstr ('alter table WS.WS.VFS_SITE add VS_EXTRACT_FN varchar');
+      DB.DBA.execstr ('alter table WS.WS.VFS_SITE add VS_STORE_FN varchar');
     }
 }
 ;
