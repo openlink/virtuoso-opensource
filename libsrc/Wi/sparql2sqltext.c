@@ -904,7 +904,7 @@ void ssg_print_tmpl (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, ccaddr_t tm
           if ((NULL != tree->_.retval.triple) && (SPART_TRIPLE_FIELDS_COUNT > tree->_.retval.tr_idx))
             {
               quad_map_t *qm = tree->_.retval.triple->_.triple.tc_list[0]->tc_qm;
-              qm_val = SPARP_FIELD_QMV_OF_QM (qm,tree->_.retval.tr_idx);
+              qm_val = SPARP_FIELD_QMV_OF_QM (qm, tree->_.retval.tr_idx);
             }
         }
     }
