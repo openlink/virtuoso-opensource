@@ -6767,10 +6767,11 @@ create procedure DB.DBA.RDF_LOAD_ALCHEMY (in graph_iri varchar, in new_origin_ur
   
   if (not isstring (_key) or length (_key) = 0)
     return 0;
+    
   sc_min := atof (get_keyword ('min-score', opts, '0.5'));
   max_res := atoi (get_keyword ('max-results', opts, '10'));
   
-  url := sprintf('http://access.alchemyapi.com/calls/url/URLGetNamedEntities?url=%s&apikey=%s&outputMode=rdf', new_origin_uri, _key);
+  url := sprintf('http://access.alchemyapi.com/calls/url/URLGetRankedNamedEntities?url=%s&apikey=%s&outputMode=rdf', new_origin_uri, _key);
   tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
   xt := xtree_doc (tmp);
   xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/alchemy2rdf.xsl', xt,
@@ -6778,6 +6779,38 @@ create procedure DB.DBA.RDF_LOAD_ALCHEMY (in graph_iri varchar, in new_origin_ur
   cont := serialize_to_UTF8_xml (xd);
   DB.DBA.RDF_LOAD_RDFXML (cont, new_origin_uri, coalesce (dest, graph_iri));
   
+  url := sprintf('http://access.alchemyapi.com/calls/url/URLGetText?url=%s&apikey=%s&outputMode=rdf', new_origin_uri, _key);
+  tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+  xt := xtree_doc (tmp);
+  xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/alchemy2rdf.xsl', xt,
+	vector ('baseUri', coalesce (dest, graph_iri), 'what', 'text'));
+  cont := serialize_to_UTF8_xml (xd);
+  DB.DBA.RDF_LOAD_RDFXML (cont, new_origin_uri, coalesce (dest, graph_iri));
+
+  url := sprintf('http://access.alchemyapi.com/calls/url/URLGetKeywords?url=%s&apikey=%s&outputMode=rdf', new_origin_uri, _key);
+  tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+  xt := xtree_doc (tmp);
+  xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/alchemy2rdf.xsl', xt,
+	vector ('baseUri', coalesce (dest, graph_iri), 'what', 'keyword'));
+  cont := serialize_to_UTF8_xml (xd);
+  DB.DBA.RDF_LOAD_RDFXML (cont, new_origin_uri, coalesce (dest, graph_iri));
+
+  url := sprintf('http://access.alchemyapi.com/calls/url/URLGetCategory?url=%s&apikey=%s&outputMode=rdf', new_origin_uri, _key);
+  tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+  xt := xtree_doc (tmp);
+  xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/alchemy2rdf.xsl', xt,
+	vector ('baseUri', coalesce (dest, graph_iri), 'what', 'category'));
+  cont := serialize_to_UTF8_xml (xd);
+  DB.DBA.RDF_LOAD_RDFXML (cont, new_origin_uri, coalesce (dest, graph_iri));  
+
+  url := sprintf('http://access.alchemyapi.com/calls/url/URLGetLanguage?url=%s&apikey=%s&outputMode=rdf', new_origin_uri, _key);
+  tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+  xt := xtree_doc (tmp);
+  xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/alchemy2rdf.xsl', xt,
+	vector ('baseUri', coalesce (dest, graph_iri), 'what', 'language'));
+  cont := serialize_to_UTF8_xml (xd);
+  DB.DBA.RDF_LOAD_RDFXML (cont, new_origin_uri, coalesce (dest, graph_iri));
+
   return 0;
 }
 ;

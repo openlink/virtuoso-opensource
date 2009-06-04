@@ -75,21 +75,23 @@ BEGIN
     LTEXT           "This wizard will help you create an ODBC data source that you can use to connect to OpenLink Virtuoso.",
                     IDC_STATIC,0,0,234,17
     LTEXT           "What name do you want to use to refer to the data source?",
-                    IDC_STATIC,0,23,234,8
-    RTEXT           "Na&me:",IDC_STATIC,0,40,58,8
-    EDITTEXT        IDC_DSN,64,37,170,14,ES_AUTOHSCROLL
+                    IDC_STATIC,0,19,234,8
+    RTEXT           "Na&me:",IDC_STATIC,0,36,58,8
+    EDITTEXT        IDC_DSN,64,33,170,14,ES_AUTOHSCROLL
     LTEXT           "How do you want to describe the data source?",
-                    IDC_STATIC,0,64,234,8
-    RTEXT           "&Description:",IDC_STATIC,0,81,58,8
-    EDITTEXT        IDC_COMMENT,64,78,170,14,ES_AUTOHSCROLL
+                    IDC_STATIC,0,58,234,8
+    RTEXT           "&Description:",IDC_STATIC,0,75,58,8
+    EDITTEXT        IDC_COMMENT,64,72,170,14,ES_AUTOHSCROLL
     LTEXT           "Which Virtuoso Server do you want to connect to?",
-                    IDC_STATIC,0,105,234,8
-    RTEXT           "&Server:",IDC_STATIC,0,122,58,8
-    COMBOBOX        IDC_SERVER,64,119,170,50,CBS_DROPDOWN | CBS_SORT |
+                    IDC_STATIC,0,98,234,8
+    RTEXT           "&Server:",IDC_STATIC,0,115,58,8
+    COMBOBOX        IDC_SERVER,64,112,170,50,CBS_DROPDOWN | CBS_SORT |
                     WS_VSCROLL | WS_TABSTOP
     CONTROL         "This server &requires a secure connection (SSL)",
-                    IDC_USESSL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,64,135,
+                    IDC_USESSL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,64,128,
                     163,10
+    CONTROL         "Use RoundRobin for failover connection",IDC_RROBIN,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,64,141,143,10
 END
 
 IDD_CONFIGPAGE3 DIALOG DISCARDABLE  0, 0, 234, 157

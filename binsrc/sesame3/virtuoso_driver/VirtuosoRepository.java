@@ -64,8 +64,8 @@ public class VirtuosoRepository implements Repository {
 	private String url;
 	private String user;
 	private String password;
-	private String host;
-	private int port;
+	private String host = "localhost";
+	private int port = 1111;
 	private String charset = "UTF-8";
 	String defGraph;
 
@@ -74,6 +74,42 @@ public class VirtuosoRepository implements Repository {
 	private boolean initialized = false;
     
 	
+
+	/**
+	 * Construct a VirtuosoRepository with a specified parameters
+	 * 
+	 * @param hostlist
+	 *        the Virtuoso database hostlist 
+	 *        <pre>
+	 *        "hostone:1112,hosttwo:1113" 
+	 *     or "hostone,hosttwo" if default port=1111 is used on hosts
+	 *        </pre>
+	 * @param user
+	 *        the database user on whose behalf the connection is being made
+	 * @param password
+	 *        the user's password
+	 * @param defGraph
+	 *        a default Graph name, used for Sesame calls, when contexts list
+	 *        is empty, exclude <tt>exportStatements, hasStatement, getStatements</tt> methods 
+	 * @param useLazyAdd
+	 *        set <tt>true</tt>  to enable using batch optimization for sequence of 
+	 *        <pre>
+	 *	  add(Resource subject, URI predicate, Value object, Resource... contexts);
+         *        add(Statement statement, Resource... contexts);
+	 *        </pre>
+         *        methods, when autoCommit mode is off. The triples will be sent to DBMS on commit call
+         *        or when batch size become more than predefined batch max_size. 
+         *
+	 */
+	public VirtuosoRepository(String hostlist, String user, String password, String defGraph, boolean useLazyAdd) {
+
+	        super();
+		this.host = hostlist;
+		this.user = user;
+		this.password = password;
+		this.defGraph = defGraph;
+		this.useLazyAdd = useLazyAdd;
+	}
 
 	/**
 	 * Construct a VirtuosoRepository with a specified parameters
@@ -211,7 +247,7 @@ public class VirtuosoRepository implements Repository {
 			return new VirtuosoRepositoryConnection(this, connection);
 		}
 		catch (Exception e) {
-			System.out.println("Connection to " + url + " is FAILED.");
+			System.out.println("Connection to " + host + " is FAILED.");
 			throw new StoreException(e);
 		}
 	}

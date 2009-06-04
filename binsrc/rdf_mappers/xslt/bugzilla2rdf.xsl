@@ -63,6 +63,12 @@
     </xsl:template>
     <xsl:template match="issuezilla/issue">
 		<rdf:Description rdf:about="{$baseUri}">
+			<rdf:type rdf:resource="&foaf;Document"/>
+			<rdf:type rdf:resource="&bibo;Document"/>
+			<rdf:type rdf:resource="&sioc;Container"/>
+			<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
+		</rdf:Description>
+		<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
 			<rdf:type rdf:resource="&sioc;Thread"/>
 			<rdf:type rdf:resource="&sioct;Discussion"/>
 			<rdf:type rdf:resource="&wf;Task"/>
@@ -73,12 +79,12 @@
 				<xsl:value-of select="short_desc"/>
 			</dc:title>
 			<xsl:for-each select="long_desc">
-				<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', issue_when)}" />
-				<sioc:has_reply rdf:resource="{vi:proxyIRI($baseUri, '', issue_when)}" />
+				<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', replace(issue_when, ' ', '_'))}" />
+				<sioc:has_reply rdf:resource="{vi:proxyIRI($baseUri, '', replace(issue_when, ' ', '_'))}" />
 		    </xsl:for-each>
 		</rdf:Description>
 		<xsl:for-each select="long_desc">
-			<rdf:Description rdf:about="{vi:proxyIRI($baseUri,'',issue_when)}">
+			<rdf:Description rdf:about="{vi:proxyIRI($baseUri,'', replace(issue_when, ' ', '_'))}">
 				<rdf:type rdf:resource="&sioct;Comment"/>
 				<rdf:type rdf:resource="&sioc;Post"/>
 				<dc:date>
@@ -101,6 +107,12 @@
     </xsl:template>
     <xsl:template match="bugzilla/bug">
 		<rdf:Description rdf:about="{$baseUri}">
+			<rdf:type rdf:resource="&foaf;Document"/>
+			<rdf:type rdf:resource="&bibo;Document"/>
+			<rdf:type rdf:resource="&sioc;Container"/>
+			<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
+		</rdf:Description>
+		<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">    	
 			<rdf:type rdf:resource="&sioc;Thread"/>
 			<rdf:type rdf:resource="&sioct;Discussion"/>
 			<rdf:type rdf:resource="&wf;Task"/>
@@ -111,12 +123,12 @@
 				<xsl:value-of select="creation_ts"/>
 			</dcterms:created>
 			<xsl:for-each select="long_desc">
-				<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', bug_when)}" />
-				<sioc:has_reply rdf:resource="{vi:proxyIRI($baseUri, '', bug_when)}" />
+				<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', replace(bug_when, ' ', '_'))}" />
+				<sioc:has_reply rdf:resource="{vi:proxyIRI($baseUri, '', replace(bug_when, ' ', '_'))}" />
 		    </xsl:for-each>
 		</rdf:Description>
 		<xsl:for-each select="long_desc">
-			<rdf:Description rdf:about="{vi:proxyIRI($baseUri,'',bug_when)}">
+			<rdf:Description rdf:about="{vi:proxyIRI($baseUri,'',replace(bug_when, ' ', '_'))}">
 				<rdf:type rdf:resource="&sioct;Comment"/>
 				<rdf:type rdf:resource="&sioc;Post"/>
 				<dc:date>

@@ -189,8 +189,8 @@ dk_alloc_box_long (size_t bytes, dtp_t tag)
   unsigned char *ptr;
   size_t align_bytes;
 #ifdef MALLOC_DEBUG
-  if (bytes & ~0xffffff)
-    GPF_T1 ("box to allocate is too large");
+  if (bytes > 100000000)
+    GPF_T1 ("malloc debug only check for large boxes, over 100M");
 #endif
   /* This assumes dk_alloc aligns at least at 4 */
 #ifdef DOUBLE_ALIGN
@@ -572,6 +572,13 @@ dk_free_box (box_t box)
 #endif
 
 #ifdef DOUBLE_ALIGN
+#ifdef MALLOC_DEBUG 
+  if (len >= 0xffffff)
+    {
+      dbg_free (__FILE__, __LINE__, ptr - 8);
+      return 0;
+    }
+#endif
   dk_free (ptr - 8, len + 8);
 #else
   dk_free (ptr - 4, len + 4);

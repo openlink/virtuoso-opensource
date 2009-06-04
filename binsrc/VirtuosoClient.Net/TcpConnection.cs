@@ -23,6 +23,7 @@
 //
 
 using System;
+using System.Collections;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -39,6 +40,7 @@ namespace OpenLink.Data.Virtuoso
 	internal class TcpConnection : ManagedConnection
 	{
 		private static byte[] thePass = Encoding.ASCII.GetBytes ("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+		private Random rnd = new Random(unchecked((int) (DateTime.Now.Ticks)));
 
 		private TcpSession session = null;
 
@@ -59,7 +61,47 @@ namespace OpenLink.Data.Virtuoso
 		public override void Open (ConnectionOptions options)
 		{
 			Socket socket = new Socket (AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-			socket.Connect (GetEndPoint (options));
+			bool useRoundRobin = options.RoundRobin;
+			int hostIndex = 0;
+			int startIndex = 0;
+
+			ArrayList ds_list = options.DataSourceList;
+			if (ds_list != null)
+			{
+				if (ds_list.Count <= 1)
+					useRoundRobin = false;
+
+				if (ds_list.Count > 1 && useRoundRobin)
+					startIndex = hostIndex = rnd.Next(ds_list.Count);
+
+				while(true)
+				{
+			        	try {
+			        		if (ds_list.Count == 0)
+			        		{
+							socket.Connect (GetEndPoint (null));
+						}
+						else
+						{
+							socket.Connect (GetEndPoint ((string)ds_list[hostIndex]));
+						}
+			        	        break;
+			        	} catch (SocketException e) {
+			        		hostIndex++;
+			        		if (useRoundRobin)
+			        		{
+			        			if (ds_list.Count == hostIndex)
+			        				hostIndex = 0;
+			        			if (hostIndex == startIndex)
+			        				throw e;
+			        		}
+			        		else if (ds_list.Count == hostIndex) // Failover mode last rec
+			        		{
+			        			throw e;
+			        		}
+			        	}
+				}
+			}
 
 			try
 			{
@@ -136,12 +178,11 @@ namespace OpenLink.Data.Virtuoso
 			base.Close ();
 		}
 
-		private IPEndPoint GetEndPoint (ConnectionOptions options)
+		private IPEndPoint GetEndPoint (string ds)
 		{
 			string host;
 			int port;
 
-			string ds = options.DataSource;
 			if (ds == null || ds == String.Empty)
 			{
 				host = Values.DEFAULT_HOST;

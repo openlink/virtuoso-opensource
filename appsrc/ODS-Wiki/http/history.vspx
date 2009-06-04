@@ -39,7 +39,7 @@
       <v:variable name="source_page" type="varchar"/>
       <v:on-init><![CDATA[
         self.sid := get_keyword('sid', params);
-        self.realm := get_keyword('realm', params, 'wiki');
+    self.realm := get_keyword('realm', params, 'wa');
 	self.vspx_user := coalesce ((select VS_UID from DB.DBA.VSPX_SESSION where VS_SID = self.sid and VS_REALM = self.realm), 'WikiGuest');
 	declare _topic WV.WIKI.TOPICINFO;
 	_topic := WV.WIKI.TOPICINFO();
@@ -63,7 +63,7 @@
       <v:before-data-bind><![CDATA[
 	self.revisions := self.topic.ti_revisions(1,0);
 	WV.WIKI.VECTOR_NREVERSE (self.revisions);
---	self.ds.vc_data_bind(e);
+    --	elf.ds.vc_data_bind(e);
       ]]></v:before-data-bind>
       <vm:page title="History">
       <vm:body>
@@ -79,12 +79,15 @@
 		 <v:data-set name="ds" data="--self.revisions" meta="--vector()" scrollable="1" nrows="1000">
 		   <v:template name="template1" type="repeat" name-to-remove="" set-to-remove=""> 
 		     <v:template name="template7" type="if-not-exists" name-to-remove="table" set-to-remove="both">
-		      <tr> <td colspan="3">No Revisions</td></tr>
+    		        <tr>
+    		          <td colspan="3">No Revisions</td>
+    		        </tr>
 		     </v:template>
 		     <v:template name="template2" type="browse" name-to-remove="table" set-to-remove="both">
 		      <tr>
 		       <td>
-		        <img src="images/notep_16.png" title="View Revision" alt="View Revision"/><v:button name="link" action="simple" style="url" value="--'1.' || (control.vc_parent as vspx_row_template).te_rowset">
+    		            <img src="images/notep_16.png" title="View Revision" alt="View Revision"/>
+    		            <v:button name="link" action="simple" style="url" value="--'1.' || (control.vc_parent as vspx_row_template).te_rowset">
 			   <v:on-post><![CDATA[
 			     -- self.vc_redirect ('../main/' || WV.WIKI.READONLYWIKIWORDLINK (self.topic.ti_cluster_name, self.topic.ti_local_name) || '?rev=' || (control.vc_parent as vspx_row_template).te_rowset);
 			     self.vc_redirect (self.topic.ti_fill_url() || '?rev=' || (control.vc_parent as vspx_row_template).te_rowset);
@@ -94,7 +97,8 @@
 		       </td>
 		       <td>
 		        <v:template name="diff_tmpl" type="simple" enabled="--case when (control.vc_parent as vspx_row_template).te_ctr = ((control.vc_parent.vc_parent as vspx_data_set).ds_rows_total - 1) then 0 else 1 end">
-		         <img src="images/opts_16.png" title="View Diff" alt="View Diff"/><v:button name="diff" action="simple" style="url" value="View Diff">
+      		            <img src="images/opts_16.png" title="View Diff" alt="View Diff"/>
+      		            <v:button name="diff" action="simple" style="url" value="View Diff">
 			   <v:on-post><![CDATA[
 			     -- self.vc_redirect ('../main/' || WV.WIKI.READONLYWIKIWORDLINK (self.topic.ti_cluster_name, self.topic.ti_local_name) || sprintf ('?command=diff&rev=%ld', cast ((control.vc_parent.vc_parent as vspx_row_template).te_rowset as int) -1 ));
            self.vc_redirect (sprintf ('%s?command=diff&rev=%ld', self.topic.ti_fill_url(), cast ((control.vc_parent.vc_parent as vspx_row_template).te_rowset as int) -1 ));
@@ -105,13 +109,15 @@
 		       </td>
 		       <td>
 		        <v:template name="delete_tmpl" type="simple" enabled="--case when (control.vc_parent as vspx_row_template).te_ctr > 0 and self.allow_change then 1 else 0 end">
-		         <img src="images/del_16.png" title="Delete Revision" alt="Delete" enabled="--self.allow_change"/><v:button name="del" action="simple" value="Delete" style="url" enabled="--self.allow_change">
+      		            <img src="images/del_16.png" title="Delete Revision" alt="Delete" enabled="--self.allow_change"/>
+      		            <v:button name="del" action="simple" value="Delete" style="url" enabled="--self.allow_change">
 			  <v:on-init>control.vc_parent.vc_focus := 1;</v:on-init>
 			  <v:on-post><![CDATA[
 			     self.vc_redirect (sprintf ('revision_delete.vspx?id=%ld&rev=%s', self.topic.ti_id, (control.vc_parent.vc_parent as vspx_row_template).te_rowset));
 			  ]]></v:on-post>
 			 </v:button> 
-		         <img src="images/undo_16.png" title="Undo" alt="Undo" enabled="--self.allow_change"/><v:button name="rollback" action="simple" value="Rollback" style="url" enabled="--self.allow_change">
+      		            <img src="images/undo_16.png" title="Undo" alt="Undo" enabled="--self.allow_change"/>
+      		            <v:button name="rollback" action="simple" value="Rollback" style="url" enabled="--self.allow_change">
 			  <v:on-init>control.vc_parent.vc_focus := 1;</v:on-init>
 			  <v:on-post><![CDATA[
 			     self.vc_redirect (sprintf ('revision_rollback.vspx?id=%ld&rev=%s', self.topic.ti_id, (control.vc_parent.vc_parent as vspx_row_template).te_rowset));

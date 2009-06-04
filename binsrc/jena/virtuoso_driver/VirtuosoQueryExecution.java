@@ -54,6 +54,7 @@ import com.hp.hpl.jena.sparql.util.ModelUtils;
 import com.hp.hpl.jena.util.FileManager;
 import com.hp.hpl.jena.query.*;
 
+import virtuoso.jdbc3.VirtuosoConnectionPoolDataSource;
 
 public class VirtuosoQueryExecution  implements QueryExecution
 {
@@ -65,15 +66,10 @@ public class VirtuosoQueryExecution  implements QueryExecution
     String virt_pass = null;
     int prefetchSize = 200;
     java.sql.Statement stmt = null;
+    static final String charset = "UTF-8";
 
-    static {
-	try {
-		Class.forName("virtuoso.jdbc3.Driver");
-	}
-	catch (ClassNotFoundException e) {
-            throw new JenaException("Can't load class 'virtuoso.jdbc3.Driver' :"+e);
-	}
-    }
+    private VirtuosoConnectionPoolDataSource pds = new VirtuosoConnectionPoolDataSource();
+
 
     public VirtuosoQueryExecution (String query, VirtGraph graph)
     {
@@ -105,7 +101,21 @@ public class VirtuosoQueryExecution  implements QueryExecution
 
 	try
 	{
-	    Connection connection = DriverManager.getConnection(virt_url, virt_user, virt_pass);
+
+	    Connection connection;
+
+	    if (virt_url.startsWith("jdbc:virtuoso://")) {
+
+		Class.forName("virtuoso.jdbc3.Driver");
+		connection = DriverManager.getConnection(virt_url, virt_user, virt_pass);
+	    } else {
+		pds.setServerName(virt_url);
+		pds.setUser(virt_user);
+		pds.setPassword(virt_pass);
+		pds.setCharset(charset);
+		javax.sql.PooledConnection pconn = pds.getPooledConnection();
+		connection = pconn.getConnection();
+	    }
 
 	    stmt = connection.createStatement();
 	    stmt.setFetchSize(prefetchSize);
@@ -197,8 +207,22 @@ public class VirtuosoQueryExecution  implements QueryExecution
     public Model execConstruct(Model model)
     {
 	try {
-	    Connection connection = DriverManager.getConnection(virt_url, virt_user, virt_pass);
 
+	    Connection connection;
+
+	    if (virt_url.startsWith("jdbc:virtuoso://")) {
+
+		Class.forName("virtuoso.jdbc3.Driver");
+		connection = DriverManager.getConnection(virt_url, virt_user, virt_pass);
+	    } else {
+		pds.setServerName(virt_url);
+		pds.setUser(virt_user);
+		pds.setPassword(virt_pass);
+		pds.setCharset(charset);
+		javax.sql.PooledConnection pconn = pds.getPooledConnection();
+		connection = pconn.getConnection();
+	    }
+	    
 	    stmt = connection.createStatement();
 	    stmt.setFetchSize(prefetchSize);
 	    java.sql.ResultSet rs = stmt.executeQuery(virt_query);
@@ -233,7 +257,20 @@ public class VirtuosoQueryExecution  implements QueryExecution
     public Model execDescribe(Model model)
     {
 	try {
-	    Connection connection = DriverManager.getConnection(virt_url, virt_user, virt_pass);
+	    Connection connection;
+
+	    if (virt_url.startsWith("jdbc:virtuoso://")) {
+
+		Class.forName("virtuoso.jdbc3.Driver");
+		connection = DriverManager.getConnection(virt_url, virt_user, virt_pass);
+	    } else {
+		pds.setServerName(virt_url);
+		pds.setUser(virt_user);
+		pds.setPassword(virt_pass);
+		pds.setCharset(charset);
+		javax.sql.PooledConnection pconn = pds.getPooledConnection();
+		connection = pconn.getConnection();
+	    }
 
 	    stmt = connection.createStatement();
 	    stmt.setFetchSize(prefetchSize);
@@ -265,7 +302,20 @@ public class VirtuosoQueryExecution  implements QueryExecution
         boolean ret = false;
 
 	try {
-	    Connection connection = DriverManager.getConnection(virt_url, virt_user, virt_pass);
+	    Connection connection;
+
+	    if (virt_url.startsWith("jdbc:virtuoso://")) {
+
+		Class.forName("virtuoso.jdbc3.Driver");
+		connection = DriverManager.getConnection(virt_url, virt_user, virt_pass);
+	    } else {
+		pds.setServerName(virt_url);
+		pds.setUser(virt_user);
+		pds.setPassword(virt_pass);
+		pds.setCharset(charset);
+		javax.sql.PooledConnection pconn = pds.getPooledConnection();
+		connection = pconn.getConnection();
+	    }
 
 	    stmt = connection.createStatement();
 	    java.sql.ResultSet rs = stmt.executeQuery(virt_query);

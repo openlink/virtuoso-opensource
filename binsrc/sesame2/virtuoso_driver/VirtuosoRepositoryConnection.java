@@ -594,12 +594,29 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	public void exportStatements(Resource subject, URI predicate, Value object, boolean includeInferred, RDFHandler handler, Resource... contexts) throws RepositoryException, RDFHandlerException {
 		contexts = checkContext(contexts);
                 CloseableIteration<Statement, RepositoryException> it;
-                it = selectFromQuadStore(subject, predicate, object, includeInferred, false, contexts);
 		handler.startRDF();
-		while (it.hasNext())
-			handler.handleStatement(it.next());
+
+		// Export namespace information
+		RepositoryResult<Namespace> nsIt = getNamespaces();
+		try {
+			while (nsIt.hasNext()) {
+				Namespace ns = nsIt.next();
+				handler.handleNamespace(ns.getPrefix(), ns.getName());
+			}
+		}
+		finally {
+			nsIt.close();
+		}
+
+                it = selectFromQuadStore(subject, predicate, object, includeInferred, false, contexts);
+		try {
+			while (it.hasNext())
+				handler.handleStatement(it.next());
+		}
+		finally {
+			it.close();
+		}
 		handler.endRDF();
-		it.close();
 	}
 
 
@@ -849,6 +866,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		verifyIsOpen();
 		sendDelayAdd();
 
+		final boolean useStatementContext = (contexts != null && contexts.length == 0); // If no context are specified, each statement is added to statement context
 		boolean autoCommit = isAutoCommit();
 		setAutoCommit(false);
 
@@ -897,8 +915,14 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 				public void handleStatement(Statement st) throws RDFHandlerException {
 				   try {
-					for (int i = 0; i < _contexts.length; i++) {
-						ps.setString(1, _contexts[i].stringValue());
+					Resource[] hcontexts;
+					if (st.getContext() != null && useStatementContext) {
+						hcontexts = new Resource[] {st.getContext()};
+					} else {
+						hcontexts = _contexts;
+					}
+					for (int i = 0; i < contexts.length; i++) {
+						ps.setString(1, hcontexts[i].stringValue());
 						bindResource(ps, 2, st.getSubject());
 						bindURI(ps, 3, st.getPredicate());
 						bindValue(ps, 4, st.getObject());
@@ -1164,7 +1188,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		sendDelayAdd();
 
 		boolean useStatementContext = (contexts != null && contexts.length == 0); // If no context are specified, each statement is added to statement context
-		Resource[] _contexts = checkContext(contexts); // otherwise, either use all contexts, or do not specify a context
+		Resource[] _contexts = checkDMLContext(contexts); // otherwise, either use all contexts, or do not specify a context
 
 		boolean autoCommit = isAutoCommit();
 		setAutoCommit(false);
@@ -1178,11 +1202,12 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 				if (st.getContext() != null && useStatementContext) {
 					contexts = new Resource[] {st.getContext()};
+				} else {
+					contexts = _contexts;
 				}
 
-				for (int i = 0; i < _contexts.length; i++) {
-
-					ps.setString(1, _contexts[i].stringValue());
+				for (int i = 0; i < contexts.length; i++) {
+					ps.setString(1, contexts[i].stringValue());
 					bindResource(ps, 2, st.getSubject());
 					bindURI(ps, 3, st.getPredicate());
 					bindValue(ps, 4, st.getObject());
@@ -1307,15 +1332,16 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		try {
 			while (it.hasNext()) {
 				Statement st = it.next();
-				_contexts = contexts;
 
 				if (contexts != null && contexts.length == 0 &&  st.getContext() != null) {
 					_contexts = new Resource[] { st.getContext() }; // try the context given by the statement
+				} else {
+					_contexts = contexts;
 				}
 				_contexts = checkDMLContext(_contexts);
 
-				for (int i = 0; i < contexts.length; i++)
-		     			removeContext(st.getSubject(), st.getPredicate(), st.getObject(), contexts[i]);
+				for (int i = 0; i < _contexts.length; i++)
+		     			removeContext(st.getSubject(), st.getPredicate(), st.getObject(), _contexts[i]);
 		     	}
 		}
 		catch(RepositoryException e) {
@@ -1360,15 +1386,16 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		try {
 			while (statements.hasNext()) {
 				Statement st = statements.next();
-				_contexts = contexts;
 
 				if (contexts != null && contexts.length == 0 &&  st.getContext() != null) {
 					_contexts = new Resource[] { st.getContext() }; // try the context given by the statement
+				} else {
+					_contexts = contexts;
 				}
 				_contexts = checkDMLContext(_contexts);
 
-				for (int i = 0; i < contexts.length; i++)
-		     			removeContext(st.getSubject(), st.getPredicate(), st.getObject(), contexts[i]);
+				for (int i = 0; i < _contexts.length; i++)
+		     			removeContext(st.getSubject(), st.getPredicate(), st.getObject(), _contexts[i]);
 		     	}
 		}
 		catch(RepositoryException e) {

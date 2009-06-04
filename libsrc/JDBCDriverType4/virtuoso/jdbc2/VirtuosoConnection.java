@@ -37,6 +37,7 @@ import com.sun.net.ssl.*;
 #endif
 #endif
 import openlink.util.*;
+import java.util.Vector;
 #if JDK_VER >= 16
 import openlink.util.OPLHeapNClob;
 import java.util.Map;
@@ -146,6 +147,89 @@ public class VirtuosoConnection implements Connection
   private boolean  useCachePrepStatements = false;
 #endif
 
+  private Vector hostList = new Vector();
+  private boolean useRoundRobin;
+
+
+   protected class VhostRec 
+   {
+     protected String host;
+     protected int port;
+
+     protected VhostRec(String _host, String _port)  throws VirtuosoException
+     {
+       host = _host;
+       try {
+         port = Integer.parseInt(_port);
+       } catch(NumberFormatException e) {
+         throw new VirtuosoException("Wrong port number : " + e.getMessage(),VirtuosoException.BADFORMAT);
+       }
+     }
+
+     protected VhostRec(String _host, int _port)  throws VirtuosoException
+     {
+       host = _host;
+       port = _port;
+     }
+   }
+
+   
+   protected Vector parse_vhost(String vhost, String _host, int _port) throws VirtuosoException
+   {
+     Vector hostlist =  new Vector();
+
+     String port = Integer.toString(_port);
+     String attr = null;
+     StringBuffer buff = new StringBuffer();
+
+     for (int i = 0; i < vhost.length(); i++) {
+       char c = vhost.charAt(i);
+
+       switch (c) {
+         case ',':
+           String val = buff.toString().trim();
+           if (attr == null) {
+             attr = val;
+             val  = port;
+           }
+	   if (attr != null && attr.length() > 0)
+              hostlist.add(new VhostRec(attr, val));
+	   attr = null;
+	   buff.setLength(0);
+	   break;
+         case ':':
+	   attr = buff.toString().trim();
+	   buff.setLength(0);
+	   break;
+         default:
+	   buff.append(c);
+	   break;
+       }
+     }
+
+     String val = buff.toString().trim();
+     if (attr == null) {
+       attr = val;
+       val  = port;
+     }
+     if (attr != null && attr.length() > 0) {
+       hostlist.add(new VhostRec(attr, val));
+     }
+
+     if (hostlist.size() == 0)
+       hostlist.add(new VhostRec(_host, _port));
+
+     return hostlist;
+   }
+   
+
+   private synchronized int getNextRoundRobinHostIndex() 
+   {
+     int indexRange = hostList.size();
+     return (int)(Math.random() * indexRange);
+   }
+
+
    /**
     * Constructs a new connection to Virtuoso database and makes the
     * connection.
@@ -161,6 +245,9 @@ public class VirtuosoConnection implements Connection
    {
       int sendbs = 32768;
       int recvbs = 32768;
+
+      hostList = parse_vhost(prop.getProperty("_vhost", ""), host, port);
+
       // Set some variables
       this.req_no = 0;
       this.url = url;
@@ -210,10 +297,15 @@ public class VirtuosoConnection implements Connection
       rdf_type_rev = new Hashtable ();
       rdf_lang_rev = new Hashtable ();
 #if JDK_VER >= 16
-      useCachePrepStatements = getBoolAttr(prop, "USEPSTMTPOOL", false);
-      int poolSize = getIntAttr(prop, "PSTMTPOOLSIZE", 25);
+      useCachePrepStatements = getBoolAttr(prop, "usepstmtpool", false);
+      int poolSize = getIntAttr(prop, "pstmtpoolsize", 25);
       createCaches(poolSize);
 #endif
+
+      useRoundRobin = getBoolAttr(prop, "roundrobin", false);
+      if (hostList.size() <= 1)
+        useRoundRobin = false;
+      
       // Connect to the database
       connect(host,port,(String)prop.get("database"), sendbs, recvbs, (prop.get("log_enable") != null ? ((Number)prop.get("log_enable")).intValue() : -1));
    }
@@ -257,13 +349,49 @@ public class VirtuosoConnection implements Connection
    private void connect(String host, int port,String db, int sendbs, int recvbs, int log_enable) throws VirtuosoException
    {
       // Connect to the database
-      connect(host,port,sendbs,recvbs);
+      int hostIndex = 0;
+      int startIndex = 0;
+
+      if (hostList.size() > 1 && useRoundRobin)
+        startIndex = hostIndex = getNextRoundRobinHostIndex();
+
+      while(true)
+      {
+        try {
+          if (hostList.size() == 0) {
+            connect(host, port, sendbs, recvbs);
+          } else {
+            VhostRec v = (VhostRec)hostList.elementAt(hostIndex);
+            connect(v.host, v.port, sendbs, recvbs);
+          }
+          break;
+        } catch (VirtuosoException e) {
+
+          if (e.getErrorCode() != VirtuosoException.IOERROR)
+            throw e;
+
+          hostIndex++;
+
+          if (useRoundRobin) {
+            if (hostList.size() == hostIndex)
+              hostIndex = 0;
+
+            if (hostIndex == startIndex)
+              throw e;
+          } 
+          else if (hostList.size() == hostIndex) { /* Failover mode last rec*/
+            throw e;
+          }
+        }
+      }
+
       // Set database with statement
       if(db!=null) new VirtuosoStatement(this).executeQuery("use "+db);
       //System.out.println  ("log enable="+log_enable);
       if (log_enable >= 0 && log_enable <= 3)
         new VirtuosoStatement(this).executeQuery("log_enable ("+log_enable+")"); 
    }
+
 
    private long cdef_param (openlink.util.Vector cdefs, String name, long deflt)
      {

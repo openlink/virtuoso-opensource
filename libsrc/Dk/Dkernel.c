@@ -2597,7 +2597,7 @@ timeout_round (TAKE_G dk_session_t * ses)
   atomic_msec = atomic_timeout.to_sec * 1000 + (atomic_timeout.to_usec / 1000);
   if (atomic_msec < 100)
     atomic_msec = 100;
-  if (time_now_msec - last_time_msec < atomic_msec)
+  if ((uint32)time_now_msec - (uint32)last_time_msec < atomic_msec)
     return;
   last_time_msec = time_now_msec;
 

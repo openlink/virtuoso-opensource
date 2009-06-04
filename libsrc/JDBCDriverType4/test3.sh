@@ -26,12 +26,11 @@ CLASSPATH=$JAVA_HOME/lib/jre/rt.jar
 CLASSPATHSSL=$JAVA_HOME/lib/jre/rt.jar
 export JAVA_HOME CLASSPATH CLASSPATHSSL
 
-MACOSX=`grep Darwin ../../Makeconfig`
-if [ z != "z$MACOSX" ]
+if [ -x "$JAVA_HOME/Commands/java" ]
 then
-    JAVA=$JAVA_HOME/Commands/java
+    JAVA="$JAVA_HOME/Commands/java"
 else
-    JAVA=$JAVA_HOME/bin/java
+    JAVA="$JAVA_HOME/bin/java"
 fi
 
 echo "............. Test the JDBC 3.0 driver without SSL"

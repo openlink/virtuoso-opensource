@@ -102,6 +102,18 @@
       </dc:description>
   </xsl:template>
 
+  <xsl:template match="meta[translate (@name, $uc, $lc)='author']">
+      <dc:creator>
+		<xsl:value-of select="@content"/>
+      </dc:creator>
+  </xsl:template>
+
+  <xsl:template match="meta[translate (@name, $uc, $lc)='byl']">
+      <dc:creator>
+		<xsl:value-of select="@content"/>
+      </dc:creator>
+  </xsl:template>
+
   <xsl:template match="meta[translate (@name, $uc, $lc)='copyrights']">
       <dc:rights>
 		<xsl:value-of select="@content"/>

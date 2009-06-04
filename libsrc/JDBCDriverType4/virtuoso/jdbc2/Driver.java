@@ -62,16 +62,20 @@ public class Driver implements java.sql.Driver
    // The major and minor version number
    protected static final int major = 3;
 
-   protected static final int minor = 27;
+   protected static final int minor = 28;
 
    // Some variables
-   private String host, port, user, password, database, charset, pwdclear;
+   private String host = "localhost";
+   private String port = "1111";
+   private String  user, password, database, charset, pwdclear;
    private Integer timeout, log_enable;
 #ifdef SSL
    private String keystore_cert, keystore_pass, keystore_path;
    private String ssl_provider;
 #endif
    private Integer fbs, sendbs, recvbs;
+
+   private final String VirtPrefix = "jdbc:virtuoso://";
 
    /**
     * Constructs a Virtuoso DBMS Driver instance. This function has not to be called
@@ -148,24 +152,8 @@ public class Driver implements java.sql.Driver
          // First check the URL
          if(acceptsURL(url))
          {
-            if(user!=null) info.put("user",user);
-            if(password!=null) info.put("password",password);
-            if(database!=null) info.put("database",database);
-            if(timeout!=null) info.put("timeout",timeout);
-            if(log_enable!=null) info.put("log_enable",log_enable);
-            if(charset!=null) info.put("charset",charset);
-            if(pwdclear!=null) info.put("pwdclear",pwdclear);
-#ifdef SSL
-            if(keystore_cert!=null) info.put("certificate",keystore_cert);
-            if(keystore_pass!=null) info.put("keystorepass",keystore_pass);
-            if(keystore_path!=null) info.put("keystorepath",keystore_path);
-            if(ssl_provider!=null) info.put("provider",ssl_provider);
-#endif
-            if(fbs!=null) info.put("fbs",fbs);
-            if(sendbs!=null) info.put("sendbs",sendbs);
-            if(recvbs!=null) info.put("recvbs",recvbs);
-	    //System.err.println ("PwdClear is " + pwdclear);
-            return new VirtuosoConnection(url,host,Integer.parseInt(port),info);
+            Properties props = urlToInfo(url, info);
+            return new VirtuosoConnection(url,host,Integer.parseInt(port),props);
          }
       }
       catch(NumberFormatException e)
@@ -188,111 +176,134 @@ public class Driver implements java.sql.Driver
     */
    public boolean acceptsURL(String url) throws VirtuosoException
    {
-      int i, j;
-      // Set some variables to null
-      host = "localhost";
-      port = "1111";
-      charset = null;
-      pwdclear = null;
-#ifdef SSL
-      keystore_cert = keystore_pass = keystore_path = null;
-#endif
-      database = user = password = null;
-      fbs = new Integer(VirtuosoTypes.DEFAULTPREFETCH);
-      recvbs = sendbs = new Integer(32768);
-
-      if((i = url.indexOf("//")) > 0)
-      {
-         String part1 = url.substring(0,i), part2 = url.substring(i + 2);
-         // Check the name of the driver
-         if(!part1.equalsIgnoreCase("jdbc:virtuoso:"))
-            return false;
-         // Get the hostname and port
-         if((i = part2.indexOf(":")) >= 0)
-         {
-            host = part2.substring(0,i);
-            part2 = part2.substring(i + 1);
-         }
-         else
-         {
-            if((j = part2.indexOf("/")) < 0)
-            {
-               host = part2.substring(0);
-               return true;
-            }
-            host = part2.substring(0,j);
-            part2 = part2.substring(j);
-         }
-         if((j = part2.indexOf("/")) < 0)
-         {
-            port = part2.substring(0);
-            return true;
-         }
-         else
-           if(j != 0 )
-           {
-              port = part2.substring(0,j);
-              part2 = part2.substring(j);
-           }
-#ifdef SSL
-         if((j = part2.toLowerCase().indexOf("/provider=")) >= 0)
-            ssl_provider = (part2.substring(j + 10).indexOf("/") < 0) ? part2.substring(j + 10) :
-                part2.substring(j + 10,j + 10 + part2.substring(j + 10).indexOf("/"));
-         if((j = part2.toLowerCase().indexOf("/cert=")) >= 0)
-            keystore_cert = (part2.substring(j + 6).indexOf("/") < 0) ? part2.substring(j + 6) :
-                part2.substring(j + 6,j + 6 + part2.substring(j + 6).indexOf("/"));
-         if((j = part2.toLowerCase().indexOf("/pass=")) >= 0)
-            keystore_pass = (part2.substring(j + 6).indexOf("/") < 0) ? part2.substring(j + 6) :
-                part2.substring(j + 6,j + 6 + part2.substring(j + 6).indexOf("/"));
-         if((j = part2.toLowerCase().indexOf("/kpath=")) >= 0)
-	 {
-            char fsep = System.getProperty("file.separator").charAt(0);
-            keystore_path = (part2.substring(j + 7).indexOf("/") < 0) ? part2.substring(j + 7) :
-                part2.substring(j + 7,j + 7 + part2.substring(j + 7).indexOf("/"));
-            if(fsep != '\\')
-	        keystore_path = keystore_path.replace('\\', fsep);
-         }
-	 if((j = part2.toLowerCase().indexOf("/ssl")) >= 0)
-            keystore_cert = (keystore_cert == null) ? "" : keystore_cert;
-#endif
-         if((j = part2.toLowerCase().indexOf("/database=")) >= 0)
-            database = (part2.substring(j + 10).indexOf("/") < 0) ? part2.substring(j + 10) :
-                part2.substring(j + 10,j + 10 + part2.substring(j + 10).indexOf("/"));
-         if((j = part2.toLowerCase().indexOf("/uid=")) >= 0)
-            user = (part2.substring(j + 5).indexOf("/") < 0) ? part2.substring(j + 5) :
-                part2.substring(j + 5,j + 5 + part2.substring(j + 5).indexOf("/"));
-         if((j = part2.toLowerCase().indexOf("/pwd=")) >= 0)
-            password = (part2.substring(j + 5).indexOf("/") < 0) ? part2.substring(j + 5) :
-                part2.substring(j + 5,j + 5 + part2.substring(j + 5).indexOf("/"));
-         if((j = part2.toLowerCase().indexOf("/timeout=")) >= 0)
-            timeout = new Integer((part2.substring(j + 9).indexOf("/") < 0) ? part2.substring(j + 9) :
-                part2.substring(j + 9,j + 9 + part2.substring(j + 9).indexOf("/")));
-         if((j = part2.toLowerCase().indexOf("/log_enable=")) >= 0)
-            log_enable = new Integer((part2.substring(j + 12).indexOf("/") < 0) ? part2.substring(j + 12) :
-                part2.substring(j + 12, j + 12 + part2.substring(j + 12).indexOf("/")));
-         if((j = part2.toLowerCase().indexOf("/charset=")) >= 0)
-            charset = (part2.substring(j + 9).indexOf("/") < 0) ? part2.substring(j + 9) :
-                part2.substring(j + 9,j + 9 + part2.substring(j + 9).indexOf("/"));
-         if((j = part2.toLowerCase().indexOf("/pwdtype=")) >= 0)
-            pwdclear = (part2.substring(j + 9).indexOf("/") < 0) ? part2.substring(j + 9) :
-                part2.substring(j + 9,j + 9 + part2.substring(j + 9).indexOf("/"));
-         if((j = part2.toLowerCase().indexOf("/fbs=")) >= 0)
-            fbs = new Integer((part2.substring(j + 5).indexOf("/") < 0) ? part2.substring(j + 5) :
-                part2.substring(j + 5,j + 5 + part2.substring(j + 5).indexOf("/")));
-         if((j = part2.toLowerCase().indexOf("/sendbs=")) >= 0)
-            sendbs = new Integer((part2.substring(j + 8).indexOf("/") < 0) ? part2.substring(j + 8) :
-                part2.substring(j + 8,j + 8 + part2.substring(j + 8).indexOf("/")));
-         if((j = part2.toLowerCase().indexOf("/recvbs=")) >= 0)
-            recvbs = new Integer((part2.substring(j + 8).indexOf("/") < 0) ? part2.substring(j + 8) :
-                part2.substring(j + 8,j + 8 + part2.substring(j + 8).indexOf("/")));
-	 //System.err.println ("2PwdClear is " + pwdclear);
-      }
-      else
-         if(!url.equalsIgnoreCase("jdbc:virtuoso"))
-            return false;
-      return true;
+     if (url.startsWith (VirtPrefix))
+       return true;
+     return false;
    }
 
+
+   protected Properties urlToInfo(String url, Properties _info)
+   {
+    host = "localhost";
+    port = "1111";
+    fbs = new Integer(VirtuosoTypes.DEFAULTPREFETCH);
+    sendbs = new Integer(32768);
+    recvbs = new Integer(32768);
+
+    Properties props = new Properties();
+
+    for (Enumeration en = _info.propertyNames(); en.hasMoreElements();  )  {
+      String key = (String)en.nextElement();
+      String property = (String)_info.getProperty(key);
+      props.setProperty(key.toLowerCase(), property);
+    }
+
+    char inQuote = '\0';
+    String attr = null; // name
+    StringBuffer buff = new StringBuffer();
+
+    String part = url.substring(VirtPrefix.length());
+    boolean isFirst = true;
+
+    for (int i = 0; i < part.length(); i++) {
+      char c = part.charAt(i);
+
+      switch (c) {
+        case '\'':
+        case '"':
+          if (inQuote == c)
+            inQuote = '\0';
+          else if (inQuote == '\0')
+            inQuote = c;
+          break;
+        case '/':
+	  if (inQuote == '\0') {
+            String val = buff.toString().trim();
+            if (attr == null) { //  "jdbc:virtuoso://local:5000/MyParam/UID=sa/"
+              attr = val;
+              val  = "";
+            }
+	    if (attr != null && attr.length() > 0) {
+	      //  The first part is the host:port stuff
+              if (isFirst) {
+                isFirst = false;
+		props.setProperty("_vhost", attr);
+              } else {
+	        props.setProperty(attr.toLowerCase(), val);
+              }
+	    }
+	    attr = null;
+	    buff.setLength(0);
+	  } else {
+	    buff.append(c);
+	  }
+	  break;
+        case '=':
+	  if (inQuote == '\0') {
+	    attr = buff.toString().trim();
+	    buff.setLength(0);
+	  } else {
+	    buff.append(c);
+	  }
+	  break;
+        default:
+	  buff.append(c);
+	  break;
+      }
+    }
+
+    String val = buff.toString().trim();
+    if (attr == null) {
+      attr = val;
+      val  = "";
+    }
+    if (attr != null && attr.length() > 0) {
+      props.put(attr.toLowerCase(), val);
+    }
+
+    val = props.getProperty("kpath");
+    if (val != null) {
+      char fsep = System.getProperty("file.separator").charAt(0);
+      if (fsep != '\\') {
+        val = val.replace('\\', fsep);
+        props.put("kpath", val);
+      }
+    }
+
+    val = props.getProperty("ssl");
+    if (val != null) {
+      if (props.getProperty("cert")==null)
+        props.setProperty("cert", "");
+    }
+
+    val = props.getProperty("pwdtype");
+    if (val != null) 
+      props.setProperty("pwdclear", val);
+  
+    val = props.getProperty("uid");
+    if (val != null) 
+      props.setProperty("user", val);
+  
+    val = props.getProperty("pwd");
+    if (val != null) 
+      props.setProperty("password", val);
+  
+    val = props.getProperty("cert");
+    if (val != null) 
+      props.setProperty("certificate", val);
+  
+    val = props.getProperty("pass");
+    if (val != null) 
+      props.setProperty("keystorepass", val);
+  
+    val = props.getProperty("kpath");
+    if (val != null) 
+      props.setProperty("keystorepath", val);
+  
+    return props;
+   }
+
+   
    /**
     * Gets information about the possible properties for this driver.
     * <p>The getPropertyInfo method is intended to allow a generic GUI tool to
@@ -411,6 +422,25 @@ public class Driver implements java.sql.Driver
          pinfo[3] = new DriverPropertyInfo("recvbs",null);
          pinfo[3].required = false;
       }
+      if(info.get("roundrobin") == null)
+      {
+         pinfo[3] = new DriverPropertyInfo("roundrobin",null);
+         pinfo[3].required = false;
+      }
+
+#if JDK_VER >= 16
+      if(info.get("usepstmtpool") == null)
+      {
+         pinfo[3] = new DriverPropertyInfo("usepstmtpool",null);
+         pinfo[3].required = false;
+      }
+      if(info.get("pstmtpoolsize") == null)
+      {
+         pinfo[3] = new DriverPropertyInfo("pstmtpoolsize",null);
+         pinfo[3].required = false;
+      }
+#endif
+
       return pinfo;
    }
 
@@ -448,9 +478,9 @@ public class Driver implements java.sql.Driver
    public static void main(String args[])
    {
 #ifdef SSL
-      System.out.println("OpenLink Virtuoso(TM) Driver with SSL support for JDBC(TM) Version " + VIRT_JDBC_VER + " [Build " + major + "." + minor + "/" + VirtuosoTypes.version+ "]");
+      System.out.println("OpenLink Virtuoso(TM) Driver with SSL support for JDBC(TM) Version " + VIRT_JDBC_VER + " [Build " + major + "." + minor + "]");
 #else
-      System.out.println("OpenLink Virtuoso(TM) Driver for JDBC(TM) Version " + VIRT_JDBC_VER + " [Build " + major + "." + minor + "/" + VirtuosoTypes.version + "]");
+      System.out.println("OpenLink Virtuoso(TM) Driver for JDBC(TM) Version " + VIRT_JDBC_VER + " [Build " + major + "." + minor + "]");
 #endif
    }
 

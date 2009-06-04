@@ -45,7 +45,7 @@
 /* string lengths */
 #define MAX_DSN_LEN		64
 #define MAX_COMMENT_LEN		255
-#define MAX_SERVER_LEN		70
+#define MAX_SERVER_LEN		1024
 #define MAX_UID_LEN		64
 #define MAX_PWD_LEN		64
 #define MAX_DB_LEN		64
@@ -110,6 +110,7 @@ struct TSetupDlg : public TWizard
     TCheckCtl m_USEDSTCORRECT;
     TCheckCtl m_NOSYSTEMTABLES;
     TCheckCtl m_TREATVIEWSASTABLES;
+    TCheckCtl m_ROUNDROBIN;
 
     BOOL m_bFileDSN;
     TKVList& m_props;
@@ -175,6 +176,7 @@ PTSTR _virtuoso_tags =
   _T("IsolationLevel\0")
   _T("NoSystemTables\0")
   _T("TreatViewsAsTables\0")
+  _T("RoundRobin\0")
   ;
 
 static HINSTANCE g_hInstance;
@@ -702,6 +704,9 @@ TSetupDlg::LoadFromProps (void)
   m_props.Get (_T("TreatViewsAsTables"), szValue, NUMCHARS (szValue));
   m_TREATVIEWSASTABLES.Check (OPTION_TRUE (szValue[0]));
 
+  m_props.Get (_T("RoundRobin"), szValue, NUMCHARS (szValue));
+  m_ROUNDROBIN.Check (OPTION_TRUE (szValue[0]));
+
   SetFocus (hFocusWnd);
 }
 
@@ -805,6 +810,10 @@ TSetupDlg::SaveToProps (void)
   else
     m_props.Define (_T("TreatViewsAsTables"), _T("No"));
 
+  if (m_ROUNDROBIN.Checked ())
+    m_props.Define (_T("RoundRobin"), _T("Yes"));
+  else
+    m_props.Define (_T("RoundRobin"), _T("No"));
 }
 
 void
@@ -840,6 +849,7 @@ TSetupDlg::OnInitDialog (void)
   m_COMMENT.Attach (hWnd, IDC_COMMENT, MAX_COMMENT_LEN);
   m_SERVER.Attach (m_hWnd, hWnd, IDC_SERVER, MAX_SERVER_LEN);
   m_USESSL.Attach (hWnd, IDC_USESSL);
+  m_ROUNDROBIN.Attach (hWnd, IDC_RROBIN);
 
   /* Page 2 */
   hWnd = AddPage (IDD_CONFIGPAGE2);
