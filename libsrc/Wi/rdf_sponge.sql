@@ -1169,6 +1169,15 @@ load_grddl:;
 	    {
 	      if (__proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS')) -- optional step, by default skip
 		call ('DB.DBA.RDF_LOAD_POST_PROCESS') (graph_iri, new_origin_uri, dest, ret_body, ret_content_type, options);
+	      if (aq is not null)
+		{
+		  declare uri varchar;
+		  if (uri not like 'http://%/about/rdf/%') 
+  		    uri := new_origin_uri;
+		  else  
+		    uri := 'http://' || registry_get ('URIQADefaultHost') || '/about/rdf/' || new_origin_uri;
+		  aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, uri));
+		}
               if (__tag(rc) = 193)
                 return rc;
 	      return (case when rc < 0 then 0 else 1 end);
