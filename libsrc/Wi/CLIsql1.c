@@ -724,6 +724,7 @@ verify_inprocess_client (cli_connection_t * con)
 
 #endif
 
+#define MAXPAIRS 64
 
 /* This was SQLConnect */
 SQLRETURN
@@ -754,25 +755,88 @@ internal_sql_connect (
 #ifdef INPROCESS_CLIENT
   int inprocess_client = dsn && (strncmp (dsn, ":in-process:", 12) == 0);
 #endif
+  char addr_lst[1024 + 1];
+  char *index[MAXPAIRS];
+  int index_count = 0;
+  int useRoundRobin = con->con_round_robin;
+  char *cp, *tok;
+  int hostIndex = 0;
+  int startIndex = 0;
 
   if (con->con_charset)
     {
       wide_charset_free (con->con_charset);
       con->con_charset = NULL;
     }
-  strncpy (addr, dsn, (sizeof (addr) - 1));
+  strncpy (addr_lst, dsn, (sizeof (addr_lst) - 1));
+
+  for (tok = cp = addr_lst; *cp != 0 && index_count < MAXPAIRS; cp++)
+    if (*cp == ',')
+      {
+        *cp = 0;
+        index[index_count++] = tok;
+        tok = cp + 1;
+      }
+  if (tok < cp && *cp == 0 && index_count < MAXPAIRS)
+    index[index_count++] = tok;
+
+  szPasswd = (char *) szAuthStr;
+
+#ifdef _SSL
+  /* We need to ensure that SSL error stack is clear before peeking a error */
+  ERR_clear_error ();
+#if !defined (WIN32)
+  {
+    char *ssl_usage = con->con_encrypt;
+    if (ssl_usage && strlen (ssl_usage) > 0 && atoi (ssl_usage) == 0)
+      szPasswd = ssl_get_password (con->con_encrypt, tpass);
+  }
+#endif
+#endif
+
 
 #ifdef INPROCESS_CLIENT
   if (inprocess_client)
     {
+      void *client = get_inprocess_client ();
+
+      if (client == NULL)
+	{
+	  set_error (&con->con_error, "08001", "CL092", "In-process connect failed.");
+
+	  return SQL_ERROR;
+	}
+
+      con->con_inprocess_client = client;
+
       strcpy_ck (addr, "localhost:");
       if (dsn[12] == 0)
 	strcat_ck (addr, "1111");
       else
 	strcat_ck (addr, dsn + 12);
+
+      ses = PrpcInprocessConnect (addr);
+      if (ses == NULL)
+	{
+	  set_error (&con->con_error, "08001", "CL093", "In-process connect failed.");
+	  return SQL_ERROR;
+	}
     }
   else
 #endif
+    {
+      srand ((unsigned) time (NULL));
+
+      if (index_count > 1 && useRoundRobin)
+        startIndex = hostIndex = (rand () % index_count);
+
+      while(1)
+        {
+          if (index_count == 0)
+            strncpy (addr, index[0], (sizeof (addr) - 1));
+          else
+            strncpy (addr, index[hostIndex], (sizeof (addr) - 1));
+
 #if defined(WIN32)
   if (alldigits (addr))
     {
@@ -791,19 +855,34 @@ internal_sql_connect (
 #endif
     }
 
-  szPasswd = (char *) szAuthStr;
+          ses = PrpcConnect1 (addr, SESCLASS_TCPIP, con->con_encrypt, szPasswd, con->con_ca_list);
 
-#ifdef _SSL
-  /* We need to ensure that SSL error stack is clear before peeking a error */
-  ERR_clear_error ();
-#if !defined (WIN32)
+          if (!DKSESSTAT_ISSET (ses, SST_OK))
   {
-    char *ssl_usage = con->con_encrypt;
-    if (ssl_usage && strlen (ssl_usage) > 0 && atoi (ssl_usage) == 0)
-      szPasswd = ssl_get_password (con->con_encrypt, tpass);
+              hostIndex++;
+              if (useRoundRobin) 
+                {
+                  if (index_count == hostIndex)
+                    hostIndex = 0;
+                  if (hostIndex == startIndex)
+                    break; /* FAIL */
   }
-#endif
-#endif
+              else if (index_count == hostIndex) 
+                {
+                  break; /*FAIL*/
+                }
+              else
+                {
+                  PrpcDisconnect (ses);
+                  PrpcSessionFree (ses);
+                  /*TRY NEXT HOST FROM LIST*/
+                }
+            }
+          else
+            break; /*OK CONNECTED*/
+        }
+    }
+
 
 #ifdef INPROCESS_CLIENT
   if (inprocess_client)

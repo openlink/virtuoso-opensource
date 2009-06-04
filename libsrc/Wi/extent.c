@@ -97,7 +97,7 @@ dbs_seg_extend (dbe_storage_t * dbs, int n)
     last = last->next;
   ds = (disk_segment_t*)last->data;
   fd = dst_fd (ds->ds_stripes[0]);
-  org_sz = lseek (fd, 0, SEEK_END);
+  org_sz = LSEEK (fd, 0, SEEK_END);
   dst_fd_done (ds->ds_stripes[0], fd);
   DO_BOX (disk_stripe_t *, dst, inx, ds->ds_stripes)
     {

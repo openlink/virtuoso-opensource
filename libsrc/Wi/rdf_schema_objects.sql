@@ -52,14 +52,71 @@ create procedure rdf_view_tbl_opts (in tbls any, in cols any)
 }  
 ;
 
+create procedure rdf_view_tbl_pk_cols (inout tbls any, out pkcols any)
+{
+  declare i, l, mixed int;
+  i := 0;
+  mixed := 0;
+  l := length (tbls);
+  if (mod (l, 2) = 0)
+    {
+      for (i := 0; i < l; i := i + 2)
+        {
+	  if (__tag (tbls[i+1]) = 193)
+	    mixed := 1;
+	}
+    }
+  if (mixed)
+    {
+      declare newtb any;
+      newtb := make_array (l/2, 'any');
+      pkcols := make_array (l, 'any');
+      for (i := 0; i < l; i := i + 2)
+         {
+	   declare cols any;
+	   declare j int;
+	   newtb[i/2] := tbls[i];
+	   cols := make_array (length (tbls [i + 1]), 'any');
+	   j := 0;
+	   foreach (varchar c in tbls [i + 1]) do
+	     {
+	       cols[j] := (select vector (sc."COLUMN", sc."COL_DTP", sc."COL_SCALE", sc."COL_PREC") 
+	   	from DB.DBA.SYS_COLS sc where upper (sc."COLUMN") = upper (c) and upper ("TABLE") = upper (tbls[i]));
+	       if (length (cols[j]) = 0)
+		 signal ('22023', sprintf ('Non existing column %s for table %s', c, tbls[i]));
+	       j := j + 1;
+	     }
+	   pkcols[i] := tbls[i]; 
+	   pkcols[i+1] := cols; 
+	 }
+      tbls := newtb;
+    }
+  else
+    {
+      pkcols := make_array (l*2, 'any');
+      for (i := 0; i < l; i := i + 1)
+        {
+	  pkcols[i*2] := tbls[i];
+	  pkcols[(i*2)+1] := rdf_view_get_primary_key (tbls[i]);
+	}
+    }
+  foreach (varchar t in tbls) do
+    {
+      if (not exists (select 1 from SYS_KEYS where KEY_TABLE = t))
+	signal ('22023', sprintf ('Non existing table %s', t));
+    }
+}
+;
+
 create procedure
 RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in cols any := null)
 {
    declare create_count_count, create_class_stmt, create_view_stmt, sparql_pref, ns, sns, uriqa_str, ret, drop_map any;
-   declare total_select, total_tb, total, qual any;
+   declare total_select, total_tb, total, qual, pkcols any;
    declare vname varchar;
 
    ret := make_array (2, 'any');
+   rdf_view_tbl_pk_cols (_tbls, pkcols);
    cols := rdf_view_tbl_opts (_tbls, cols);
    sparql_pref := 'SPARQL\n';
    uriqa_str := '^{URIQADefaultHost}^';
@@ -79,7 +136,7 @@ RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in 
    create_class_stmt := '';
 
    for (declare xx any, xx := 0; xx < length (_tbls) ; xx := xx + 1)
-     create_class_stmt := create_class_stmt || rdf_view_create_class (sparql_pref || sns, _tbls[xx], uriqa_str, qualifier, cols);
+     create_class_stmt := create_class_stmt || rdf_view_create_class (sparql_pref || sns, _tbls[xx], uriqa_str, qualifier, cols, pkcols);
 
    -- ## voID
    create_count_count := '';
@@ -130,7 +187,7 @@ RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in 
      create_count_count := create_count_count || '\n\n';
 
    --create_class_stmt := sparql_pref || sns || create_class_stmt || '\n;\n\n';
-   create_view_stmt := rdf_view_create_view (qualifier, _tbls, gen_stat, cols);
+   create_view_stmt := rdf_view_create_view (qualifier, _tbls, gen_stat, cols, pkcols);
    create_view_stmt := sparql_pref || ns || create_view_stmt || '\n;\n\n';
    return drop_map || create_class_stmt || '\n\n' || create_count_count || create_view_stmt;
 }
@@ -185,7 +242,7 @@ create procedure rdf_view_cls_name (in nam varchar)
 ;
 
 create procedure
-rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0, in cols any := null)
+rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0, in cols any, in pkcols any)
 {
    declare ret, qual, qual_l, tbl_name, tbl_name_l, pks, pk_text, uriqa_str any;
    declare suffix, tname, tbl, own, pref_l any;
@@ -229,7 +286,7 @@ rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0, 
 	   tname := tbl_name_l || suffix;
 
 	   ret := ret || rdf_view_sp (6) || '# Maps from columns of "' || tbl || '"\n';
-	   ret := ret || rdf_view_sp (6) || rdf_view_get_pk_rel (qualifier, suffix, tbl, 0);
+	   ret := ret || rdf_view_sp (6) || rdf_view_get_pk_rel (qualifier, suffix, tbl, 0, pkcols);
 	   ret := ret || sprintf (' a %s:%s ;\n', qualifier, rdf_view_cls_name (tbl_name));
 
 	   inx := 0;
@@ -245,7 +302,7 @@ rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0, 
 		 {
 		    ret := ret || rdf_view_sp (6) || sprintf ('%s:%s %s as virtrdf:%s-%s ;\n',
 		       qualifier, rdf_view_col("COLUMN"),
-		       rdf_view_get_bin_rel (qualifier, suffix, tbl, col_name),
+		       rdf_view_get_bin_rel (qualifier, suffix, tbl, col_name, pkcols),
 		       tbl_name_l, rdf_view_col("COLUMN"));
 		 }
                inx := inx + 1; 
@@ -254,8 +311,8 @@ rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0, 
 	       or
 	       exists (select top 1 1 from SYS_FOREIGN_KEYS where FK_TABLE = tbl and 0 < position (PK_TABLE, _tbls)))
 	     ret := ret || rdf_view_sp (6) || '# Maps from foreign-key relations of "' || tbl || '"\n';
-	   ret := ret || rdf_view_get_fk_pk_rel (qualifier, suffix, tbl, _tbls);
-	   ret := ret || rdf_view_get_pk_fk_rel (qualifier, suffix, tbl, _tbls);
+	   ret := ret || rdf_view_get_fk_pk_rel (qualifier, suffix, tbl, _tbls, pkcols);
+	   ret := ret || rdf_view_get_pk_fk_rel (qualifier, suffix, tbl, _tbls, pkcols);
 
    	    ret := trim (ret, '\n');
    	    ret := trim (ret, ';');
@@ -267,7 +324,7 @@ rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0, 
 	       if (isstring (cols_arr[inx]))
 		 {
 		    ret := ret || rdf_view_sp (6) || sprintf ('%s a aowl:Content ; aowl:body %s.%s as virtrdf:%s-%s-content ; aowl:type "%s" .\n',
-		       rdf_view_get_bin_rel (qualifier, suffix, tbl, col_name),
+		       rdf_view_get_bin_rel (qualifier, suffix, tbl, col_name, pkcols),
 		       tname, rdf_view_sql_col ("COLUMN"),
 		       tbl_name_l, rdf_view_col("COLUMN"), cols_arr[inx]);
 		 }
@@ -313,15 +370,14 @@ rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0, 
 ;
 
 create procedure
-rdf_view_get_pk_rel (in pref varchar, in suffix varchar, inout tbl varchar, in set_tb int := 0)
+rdf_view_get_pk_rel (in pref varchar, in suffix varchar, inout tbl varchar, in set_tb int, in  pkcols any)
 {
   declare pks any;
   declare tbl_name, tbl_name_l, tname, pk_text, ret varchar;
 
-  pks := rdf_view_get_primary_key (tbl);
   tbl_name := name_part (tbl, 3);
   tbl_name_l := lcase (tbl_name);
-  pks := rdf_view_get_primary_key (tbl);
+  pks := get_keyword (tbl, pkcols); --rdf_view_get_primary_key (tbl);
   tname := tbl_name_l || suffix;
   pk_text := '';
 
@@ -336,15 +392,14 @@ rdf_view_get_pk_rel (in pref varchar, in suffix varchar, inout tbl varchar, in s
 ;
 
 create procedure
-rdf_view_get_bin_rel (in pref varchar, in suffix varchar, in tbl varchar, in col_name varchar)
+rdf_view_get_bin_rel (in pref varchar, in suffix varchar, in tbl varchar, in col_name varchar, in pkcols any)
 {
   declare pks any;
   declare tbl_name, tbl_name_l, tname, pk_text, ret varchar;
 
-  pks := rdf_view_get_primary_key (tbl);
   tbl_name := name_part (tbl, 3);
   tbl_name_l := lcase (tbl_name);
-  pks := rdf_view_get_primary_key (tbl);
+  pks := get_keyword (tbl, pkcols); --rdf_view_get_primary_key (tbl);
   tname := tbl_name_l || suffix;
   pk_text := '';
 
@@ -357,7 +412,7 @@ rdf_view_get_bin_rel (in pref varchar, in suffix varchar, in tbl varchar, in col
 ;
 
 create procedure
-rdf_view_get_fk_pk_rel (in pref varchar, in suffix varchar, in tbl varchar, in tbls any)
+rdf_view_get_fk_pk_rel (in pref varchar, in suffix varchar, in tbl varchar, in tbls any, in pkcols any)
 {
   declare ret any;
   declare tbl_name, tbl_name_l, tname, pk_text varchar;
@@ -370,7 +425,7 @@ rdf_view_get_fk_pk_rel (in pref varchar, in suffix varchar, in tbl varchar, in t
   for select distinct PK_TABLE as pkt from SYS_FOREIGN_KEYS where FK_TABLE = tbl and PK_TABLE <> tbl and 0 < position (PK_TABLE, tbls) do
     {
       declare fk_rel  any;
-      pk_text := rdf_view_get_pk_rel (pref, suffix, pkt, 1);
+      pk_text := rdf_view_get_pk_rel (pref, suffix, pkt, 1, pkcols);
       fk_rel := rdf_view_sp (6) || sprintf ('%s:has_%s %s as virtrdf:%s_has_%s ;\n', pref, rdf_view_tb (pkt), pk_text, tbl_name_l, rdf_view_tb (pkt));
       http (fk_rel, ret);
     }
@@ -379,7 +434,7 @@ rdf_view_get_fk_pk_rel (in pref varchar, in suffix varchar, in tbl varchar, in t
 ;
 
 create procedure
-rdf_view_get_pk_fk_rel (in pref varchar, in suffix varchar, in tbl varchar, in tbls any)
+rdf_view_get_pk_fk_rel (in pref varchar, in suffix varchar, in tbl varchar, in tbls any, in pkcols any)
 {
   declare ret any;
   declare tbl_name, tbl_name_l, tname, pk_text varchar;
@@ -392,7 +447,7 @@ rdf_view_get_pk_fk_rel (in pref varchar, in suffix varchar, in tbl varchar, in t
   for select distinct FK_TABLE as pkt from SYS_FOREIGN_KEYS where PK_TABLE = tbl and FK_TABLE <> tbl and 0 < position (FK_TABLE, tbls) do
     {
       declare fk_rel  any;
-      pk_text := rdf_view_get_pk_rel (pref, suffix, pkt, 1);
+      pk_text := rdf_view_get_pk_rel (pref, suffix, pkt, 1, pkcols);
       fk_rel := rdf_view_sp (6) || sprintf ('%s:%s_of %s as virtrdf:%s_%s_of ;\n', pref, tbl_name_l, pk_text, tbl_name_l, rdf_view_tb (pkt));
       http (fk_rel, ret);
     }
@@ -450,7 +505,7 @@ rdf_view_dv_to_xsd_str_type (in _dv varchar)
 ;
 
 create procedure
-rdf_view_create_class (in decl varchar, in _tbl varchar, in _host varchar, in qualifier varchar, in cols any := null)
+rdf_view_create_class (in decl varchar, in _tbl varchar, in _host varchar, in qualifier varchar, in cols any, in pkcols any)
 {
    declare ret, qual, tbl_name, tbl_name_l, pks, pk_text, sk_str any;
    declare cols_arr, inx, col_name any;
@@ -458,7 +513,7 @@ rdf_view_create_class (in decl varchar, in _tbl varchar, in _host varchar, in qu
    qual := name_part (_tbl, 0);
    tbl_name := name_part (_tbl, 3);
    tbl_name_l := rdf_view_tb (tbl_name);
-   pks := rdf_view_get_primary_key (_tbl);
+   pks := get_keyword (_tbl, pkcols); --rdf_view_get_primary_key (_tbl);
    pk_text := '';
    sk_str := '';
 
@@ -532,10 +587,11 @@ rdf_view_get_relations (in _tbls varchar, in _suff varchar)
 create procedure
 RDF_OWL_FROM_TBL (in qual varchar, in _tbls any, in cols any := null)
 {
-  declare ses, cols_arr any;
+  declare ses, cols_arr, pkcols any;
   declare ns varchar;
   declare inx int;
 
+  rdf_view_tbl_pk_cols (_tbls, pkcols);
   cols := rdf_view_tbl_opts (_tbls, cols);
   ns := sprintf ('@prefix %s: <http://%s/schemas/%s/> .\n', qual, cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), qual);
   ses := string_output ();

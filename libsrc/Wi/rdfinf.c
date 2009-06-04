@@ -1133,15 +1133,15 @@ rdf_inf_init ()
   bif_define ("rdf_inf_const_init", bif_rdf_inf_const_init);
   bif_define ("rdf_inf_clear", bif_rdf_inf_clear);
   bif_define ("rdf_sas_iri", bif_rdf_sas_iri);
-  bif_uses_index (bif_rdf_sas_iri);
+  bif_set_uses_index (bif_rdf_sas_iri);
   bif_define ("rdf_owl_iri", bif_rdf_owl_iri);
-  bif_uses_index (bif_rdf_owl_iri);
+  bif_set_uses_index (bif_rdf_owl_iri);
   bif_define ("rdf_inf_ifp_list", bif_rdf_inf_ifp_list);
   bif_define ("rdf_inf_set_ifp_list", bif_rdf_inf_set_ifp_list);
   bif_define ("rdf_inf_set_ifp_exclude_list", bif_rdf_inf_set_ifp_exclude_list);
   bif_define ("rdf_inf_ifp_is_excluded", bif_rdf_inf_ifp_is_excluded);
   bif_define ("rdf_check_init" , bif_rdf_check_init);
-  bif_uses_index (bif_rdf_check_init);
+  bif_set_uses_index (bif_rdf_check_init);
   bif_define ("rdf_super_sub_list", bif_rdf_super_sub_list);
   bif_define ("rdf_is_sub", bif_rdf_is_sub);
   dk_mem_hooks (DV_RI_ITERATOR, box_non_copiable, rit_free, 0);

@@ -5867,7 +5867,7 @@ bif_file_init (void)
   bif_define ("http_mime_type_add", bif_http_mime_type_add);
   bif_define_typed ("http_mime_type", bif_http_mime_type, &bt_varchar);
   bif_define_typed ("delay", bif_sleep, &bt_integer);
-  bif_uses_index (bif_sleep); /* is io sect, means can't hold a page wired */
+  bif_set_uses_index (bif_sleep); /* is io sect, means can't hold a page wired */
   bif_define_typed ("trace_on", bif_trace_on, &bt_any);
   bif_define_typed ("trace_status", bif_trace_status, &bt_any);
   bif_define_typed ("trace_off", bif_trace_off, &bt_any);

@@ -1256,7 +1256,7 @@ create procedure DB.DBA.ddl_check_constraint (in pk_table varchar, in decl any)
 
   uniq := registry_get ('FK_UNIQUE_CHEK');
 
-  if (uniq <> 'ON')
+  if (uniq <> 'ON' or bit_and (decl [8], 1))
     return;
   -- first we check primary key constraint of PK table
   if (n_pc = n_pkc)
@@ -1417,7 +1417,7 @@ create procedure ddl_alter_constr (in tb varchar, in op integer, in decl any)
   ddl_owner_check (tb);
   --dbg_obj_print ('in ddl_alter_constr', decl);
   type := decl[0];
-  if (op = 2 and length (decl) = 8 and type = 1 and 127 = __tag (aref (decl, 7)))
+  if (op = 2 and length (decl) = 9 and type = 1 and 127 = __tag (aref (decl, 7)))
     {
       declare _name varchar;
       _name := convert (varchar, decl[7]);
@@ -1470,7 +1470,7 @@ create procedure ddl_unq_modify (in tb varchar, in op integer, in decl any)
   declare inx, len, int_name integer;
 
   int_name := 0;
-  if (length (decl) = 8 and op = 2)
+  if (length (decl) = 9 and op = 2)
     nconstr := aref (decl, 7);
   else
     nconstr := aref (decl, 1);

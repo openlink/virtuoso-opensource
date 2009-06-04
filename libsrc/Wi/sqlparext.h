@@ -524,6 +524,7 @@ typedef struct sql_tree_s
 	    ptrlong	u_rule;
 	    ptrlong	d_rule;
 	    char *	fk_name;
+	    ptrlong	fk_state;
 	  } fkey;
 	struct {
 	  caddr_t	proc;

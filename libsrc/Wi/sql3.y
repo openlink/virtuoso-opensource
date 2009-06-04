@@ -477,6 +477,7 @@
 %type <tree> opt_referential_triggered_action
 %type <tree> referential_rule
 %type <intval> referential_action
+%type <intval> referential_state
 %type <list> kwd_commalist
 %type <list> as_commalist /*sqlxml*/
 %type <list> opt_arg_commalist
@@ -557,7 +558,7 @@
 %type <list> colnum_commalist_2
 %type <box> colnum_commalist
 
-%token <box> TYPE FINAL_L METHOD CHECKED SYSTEM GENERATED SOURCE RESULT LOCATOR INSTANCE_L CONSTRUCTOR SELF_L OVERRIDING STYLE SQL_L GENERAL DETERMINISTIC NO_L CONTAINS READS DATA
+%token <box> TYPE FINAL_L METHOD CHECKED SYSTEM GENERATED SOURCE RESULT LOCATOR INSTANCE_L CONSTRUCTOR SELF_L OVERRIDING STYLE SQL_L GENERAL DETERMINISTIC NO_L CONTAINS READS DATA DISABLE_L NOVALIDATE_L ENABLE_L VALIDATE_L
 %token <box> MODIFIES INPUT CALLED ADA C COBOL FORTRAN MUMPS PASCAL_L PLI NAME_L TEXT_L JAVA INOUT_L REMOTE KEYSET VALUE PARAMETER VARIABLE ADMIN_L ROLE_L TEMPORARY CLR ATTRIBUTE
 %token <box> __SOAP_DOC __SOAP_DOCW __SOAP_HEADER __SOAP_HTTP __SOAP_NAME __SOAP_TYPE __SOAP_XML_TYPE __SOAP_FAULT __SOAP_DIME_ENC __SOAP_ENC_MIME __SOAP_OPTIONS FOREACH POSITION_L
 %token ARE REF STATIC_L SPECIFIC DYNAMIC COLUMN START_L
@@ -758,6 +759,10 @@ identifier
 	| GENERAL { $$ = t_sqlp_box_id_upcase (yytext); }
 	| DETERMINISTIC { $$ = t_sqlp_box_id_upcase (yytext); }
 	| NO_L { $$ = t_sqlp_box_id_upcase (yytext); }
+	| DISABLE_L { $$ = t_sqlp_box_id_upcase (yytext); }
+	| NOVALIDATE_L { $$ = t_sqlp_box_id_upcase (yytext); }
+	| VALIDATE_L { $$ = t_sqlp_box_id_upcase (yytext); }
+	| ENABLE_L { $$ = t_sqlp_box_id_upcase (yytext); }
 	| CONTAINS { $$ = t_sqlp_box_id_upcase (yytext); }
 	| READS { $$ = t_sqlp_box_id_upcase (yytext); }
 	| DATA { $$ = t_sqlp_box_id_upcase (yytext); }
@@ -885,11 +890,19 @@ referential_action
 	| SET DEFAULT	{ $$ = 3; }
 	;
 
+referential_state
+	: 				{ $$ = 0; }
+	| ENABLE_L  VALIDATE_L  	{ $$ = 0; }
+	| ENABLE_L  NOVALIDATE_L  	{ $$ = 1; }
+	| DISABLE_L VALIDATE_L  	{ $$ = 2; }
+	| DISABLE_L NOVALIDATE_L  	{ $$ = 3; }
+	;
+
 references
-	: REFERENCES q_table_name opt_column_commalist opt_referential_triggered_action
+	: REFERENCES q_table_name opt_column_commalist opt_referential_triggered_action referential_state
 		{
 		  caddr_t *l = (caddr_t *) $4;
-		  $$ = t_listst (8, FOREIGN_KEY, NULL, $2, $3, NULL, l[0], l[1], NULL);
+		  $$ = t_listst (9, FOREIGN_KEY, NULL, $2, $3, NULL, l[0], l[1], NULL, $5);
 		}
 	;
 
@@ -1091,7 +1104,7 @@ opt_drop_behavior
 opt_table_constraint_def
 	: CONSTRAINT identifier opt_drop_behavior
 		{
-		  $$ = t_listst (8, FOREIGN_KEY, NULL, NULL, NULL, NULL, NULL, NULL, (ptrlong) $2);
+		  $$ = t_listst (9, FOREIGN_KEY, NULL, NULL, NULL, NULL, NULL, NULL, (ptrlong) $2, (ptrlong) 0);
 		}
 	| table_constraint_def { $$ = $1; }
 	;

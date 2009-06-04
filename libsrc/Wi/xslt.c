@@ -3791,7 +3791,7 @@ bif_rowvector_sort_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
 #endif
       dk_free_box (temp);
     }
-  else /* if ('D' == algo) */
+  else /* if (('D' == algo) || ('S' == algo)) */
     {
       uint32 *offsets;
       dsort_itm_t *src, *tgt, *swap;
@@ -3827,6 +3827,23 @@ bif_rowvector_sort_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
             key_val = unbox (key);
           else if (DV_IRI_ID == key_dtp)
             key_val = unbox_iri_id (key);
+          else if (('S' == algo) && ((DV_STRING == key_dtp) || (DV_UNAME == key_dtp)))
+            {
+              caddr_t iid = key_name_to_iri_id (((query_instance_t *)qst)->qi_trx, key, 0);
+              if (NULL != iid)
+                {
+                  key_val = unbox_iri_id (iid);
+                  dk_free_box (iid);
+                }
+              else
+                {
+                  if (DV_UNAME == key_dtp)
+                    DV_UNAME_BOX_HASH(key_val,key);
+                  else
+                    BYTE_BUFFER_HASH(key_val,key,box_length(key)-1);
+                  key_val |= 0x80000000L;
+                }
+            }
           else
             {
               dk_free ((void *)src, vect_elems * sizeof (dsort_itm_t));
@@ -3916,6 +3933,12 @@ caddr_t
 bif_rowvector_digit_sort (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   return bif_rowvector_sort_imp (qst, err_ret, args, "rowvector_digit_sort", 'D');
+}
+
+caddr_t
+bif_rowvector_subj_sort (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_rowvector_sort_imp (qst, err_ret, args, "rowvector_subj_sort", 'S');
 }
 
 void
@@ -4158,5 +4181,6 @@ xslt_init (void)
   bif_define ("gvector_sort", bif_gvector_sort);
   bif_define ("gvector_digit_sort", bif_gvector_digit_sort);
   bif_define ("rowvector_digit_sort", bif_rowvector_digit_sort);
+  bif_define ("rowvector_subj_sort", bif_rowvector_subj_sort);
 }
 

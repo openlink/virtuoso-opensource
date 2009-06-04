@@ -1001,6 +1001,18 @@ static int try_to_change_dir (ol_backup_context_t * ctx)
 	  LEAVE_TXN; \
 	}
 
+#define OB_LEAVE_CPT_1(need_mtx,qi) \
+      if (need_mtx) \
+	{ \
+	  LEAVE_CPT(qi->qi_trx); \
+	} \
+      else \
+	{ \
+	  IN_TXN; \
+	  lt_threads_inc_inner (qi->qi_trx); \
+	  LEAVE_TXN; \
+	}
+
 long ol_backup (const char* prefix, long pages, long timeout, caddr_t* backup_path_arr, query_instance_t *qi)
 {
   dbe_storage_t * dbs = wi_inst.wi_master;
@@ -1017,6 +1029,7 @@ long ol_backup (const char* prefix, long pages, long timeout, caddr_t* backup_pa
   log_name = sf_make_new_log_name (wi_inst.wi_master);
   IN_TXN;
   dbs_checkpoint (log_name, CPT_INC_RESET);
+  cpt_over ();
   LEAVE_TXN;
 
   cfg_buf->bd_page = cfg_buf->bd_physical_page = 0;
@@ -1028,7 +1041,7 @@ long ol_backup (const char* prefix, long pages, long timeout, caddr_t* backup_pa
   ctx = backup_context_allocate (prefix, pages, timeout, backup_path_arr, &err);
   if (err)
     {
-      OB_LEAVE_CPT (need_mtx,qi);
+      OB_LEAVE_CPT_1 (need_mtx,qi);
       sqlr_resignal (err);
     }
   ctx->octx_dbs = wi_inst.wi_master;
@@ -1089,7 +1102,7 @@ long ol_backup (const char* prefix, long pages, long timeout, caddr_t* backup_pa
   log_info ("Log = %s", wi_inst.wi_master->dbs_log_name);
 #endif
 
-  OB_LEAVE_CPT (need_mtx,qi);
+  OB_LEAVE_CPT_1 (need_mtx,qi);
   _pages = ctx->octx_page_count - _pages;
   backup_context_free(ctx);
   backup_status.is_running = 0;
@@ -1105,7 +1118,7 @@ long ol_backup (const char* prefix, long pages, long timeout, caddr_t* backup_pa
   backup_status.is_error = 1;
   backup_status.is_running = 0;
 
-  OB_LEAVE_CPT (need_mtx,qi);
+  OB_LEAVE_CPT_1 (need_mtx,qi);
   backup_context_free (ctx);
 
   sqlr_new_error ("42000", backup_status.errcode, "%s", backup_status.errstring);

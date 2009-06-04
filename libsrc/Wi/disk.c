@@ -1919,7 +1919,7 @@ buf_disk_write (buffer_desc_t * buf, dp_addr_t phys_dp_to)
 #if 0
 	  {
 	    unsigned char page [PAGE_SZ];
-	    if (36 * PAGE_SZ == lseek (dbs->dbs_fd, 36 * PAGE_SZ, SEEK_SET))
+	    if (36 * PAGE_SZ == LSEEK (dbs->dbs_fd, 36 * PAGE_SZ, SEEK_SET))
 	      {
 		if (PAGE_SZ == read (dbs->dbs_fd, page, PAGE_SZ))
 		  {

@@ -34,7 +34,6 @@
 #include "sqlcomp.h"
 #include "numeric.h"
 #include "blobio.h"
-#include "widv.h"
 #include "wirpce.h"
 #include "date.h"
 #include "datesupp.h"
@@ -123,6 +122,7 @@ typedef struct cli_connection_s
     caddr_t		con_encrypt;
     caddr_t		con_ca_list;
     int 		con_pwd_cleartext;
+    int 		con_round_robin;
     long		con_shutdown;
 
 #ifdef INPROCESS_CLIENT
