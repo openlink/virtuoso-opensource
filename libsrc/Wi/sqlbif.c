@@ -1339,7 +1339,11 @@ bif_exec_result_names (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		  if (DV_TYPE_OF (value[1]) != DV_LONG_INT || !strcmp (dv_type_title ((int) (ptrlong) value[1]), "UNK_DV_TYPE"))
 		    goto error;
 		  if (DV_TYPE_OF (value[2]) != DV_LONG_INT || unbox (value[2]) < 0 || unbox (value[2]) > 20)
-		    goto error;
+		    {
+		      /* scale can be negative w oracle jdbc */
+		      dk_free_tree (value[2]);
+		      value[2] = 0;
+		    }
 		  if (DV_TYPE_OF (value[3]) != DV_LONG_INT || unbox (value[3]) < 0)
 		    goto error;
 

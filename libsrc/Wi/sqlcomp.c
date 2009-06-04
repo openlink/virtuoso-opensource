@@ -119,6 +119,8 @@ sqlc_find_crr (sql_comp_t * sc, ST * ref)
    * 2. the crr partially matched is a column, not a proc variable (i.e. crr_ct != NULL). */
   col_ref_rec_t * found = NULL;
   int many_found = 0;
+  if (STAR == ref->_.col_ref.name)
+    sqlc_new_error (sc, "37000", ".....", " A * is not allowed in a variable's place in an expression");
   DO_SET (col_ref_rec_t *, crr, &sc->sc_col_ref_recs)
     {
       if (ST_P (crr->crr_col_ref, COL_DOTTED)
