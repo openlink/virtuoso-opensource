@@ -452,6 +452,9 @@ case when 0 and check_package('rdf_mappers') then
    '<node name="Graphs"  url="sparql_graph.vspx"  id="183" allowed="yacutia_message">
      <node name="Graphs" url="sparql_graph.vspx" id="184" place="1" allowed="yacutia_sparql_page" />
    </node>',
+   '<node name="Schemas"  url="rdf_schemas.vspx"  id="183" allowed="yacutia_message">
+     <node name="Schemas" url="rdf_schemas.vspx" id="184" place="1" allowed="yacutia_sparql_page" />
+   </node>',
 '</node>
  <node name="NNTP" url="msg_news_conf.vspx"  id="157" tip="Mail and news messaging" allowed="yacutia_message">',
    --<node name="Mail Configuration" url="msg_mail_conf.vspx"  id="158" yacutia_mail_config_page"">
@@ -5582,3 +5585,218 @@ yac_set_ssl_key (in k varchar, in v varchar, inout opts any)
     }
 }
 ;
+
+create procedure yac_uri_curie (in uri varchar, in label varchar := null)
+{
+  declare delim integer;
+  declare uriSearch, nsPrefix varchar;
+
+  delim := -1;
+  uriSearch := uri;
+  nsPrefix := null;
+  if (not length (label))
+    label := null;
+  while (nsPrefix is null and delim <> 0)
+    {
+      delim := coalesce (strrchr (uriSearch, '/'), 0);
+      delim := __max (delim, coalesce (strrchr (uriSearch, '#'), 0));
+      delim := __max (delim, coalesce (strrchr (uriSearch, ':'), 0));
+      nsPrefix := coalesce (__xml_get_ns_prefix (subseq (uriSearch, 0, delim + 1), 2),
+      			    __xml_get_ns_prefix (subseq (uriSearch, 0, delim),     2));
+      uriSearch := subseq (uriSearch, 0, delim);
+    }
+  if (nsPrefix is not null)
+    {
+      declare rhs varchar;
+      rhs := subseq(uri, length (uriSearch) + 1, null);
+      if (not length (rhs))
+	return uri;
+      else
+	return nsPrefix || ':' || coalesce (label, rhs);
+    }
+  return uri;
+}
+;
+
+CREATE PROCEDURE OWL_N3 ()
+{
+  declare ses any;
+  ses := string_output ();
+  http ('@prefix ns7: <http://www.w3.org/TR/2004/REC-owl-test-20040210/> .\n', ses);
+  http ('@prefix ns4: <http://www.w3.org/2000/01/> .\n', ses);
+  http ('@prefix owl: <http://www.w3.org/2002/07/owl#> .\n', ses);
+  http ('@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n', ses);
+  http ('@prefix ns5: <http://www.w3.org/TR/2004/REC-owl-features-20040210/> .\n', ses);
+  http ('@prefix ns6: <http://www.w3.org/TR/2004/REC-owl-semantics-20040210/> .\n', ses);
+  http ('@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n', ses);
+  http ('@prefix ns3: <http://www.w3.org/2002/07/> .\n', ses);
+  http ('@prefix ns8: <http://www.daml.org/2001/03/daml+oil> .\n', ses);
+  http ('@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n', ses);
+  http ('owl:sameAs rdf:type rdf:Property ;\n', ses);
+  http ('	rdfs:label "sameAs" .\n', ses);
+  http ('owl:Thing rdf:type owl:Class ;\n', ses);
+  http ('	rdfs:label "Thing" .\n', ses);
+  http ('_:bnode0 rdf:first owl:Nothing .\n', ses);
+  http ('_:bnode1 rdf:type owl:Class ;\n', ses);
+  http ('	owl:complementOf owl:Nothing .\n', ses);
+  http ('_:bnode2 rdf:first _:bnode1 ;\n', ses);
+  http ('	rdf:rest rdf:nil .\n', ses);
+  http ('_:bnode0 rdf:rest _:bnode2 .\n', ses);
+  http ('owl:Thing owl:unionOf _:bnode0 .\n', ses);
+  http ('owl:sameAs rdfs:domain owl:Thing ;\n', ses);
+  http ('	rdfs:range owl:Thing .\n', ses);
+  http ('ns3:owl rdf:type owl:Ontology ;\n', ses);
+  http ('	owl:imports ns4:rdf-schema ;\n', ses);
+  http ('	rdfs:isDefinedBy <http://www.w3.org/TR/2004/REC-owl-features-20040210/> ,\n', ses);
+  http ('		<http://www.w3.org/TR/2004/REC-owl-semantics-20040210/> ,\n', ses);
+  http ('		<http://www.w3.org/TR/2004/REC-owl-test-20040210/> ;\n', ses);
+  http ('	rdfs:comment "This file specifies in RDF Schema format the\\r\\n    built-in classes and properties that together form the basis of\\r\\n    the RDF/XML syntax of OWL Full, OWL DL and OWL Lite.\\r\\n    We do not expect people to import this file\\r\\n    explicitly into their ontology. People that do import this file\\r\\n    should expect their ontology to be an OWL Full ontology. \\r\\n  " ;\n', ses);
+  http ('	owl:versionInfo "10 February 2004, revised \x24Date: 2004/09/24 18:12:02 \x24" ;\n', ses);
+  http ('	owl:priorVersion <http://www.daml.org/2001/03/daml+oil> .\n', ses);
+  http ('owl:Ontology rdf:type rdfs:Class ;\n', ses);
+  http ('	rdfs:label "Ontology" .\n', ses);
+  http ('owl:imports rdf:type owl:OntologyProperty ,\n', ses);
+  http ('		rdf:Property ;\n', ses);
+  http ('	rdfs:label "imports" ;\n', ses);
+  http ('	rdfs:domain owl:Ontology ;\n', ses);
+  http ('	rdfs:range owl:Ontology .\n', ses);
+  http ('rdfs:isDefinedBy rdf:type owl:AnnotationProperty .\n', ses);
+  http ('rdfs:comment rdf:type owl:AnnotationProperty .\n', ses);
+  http ('owl:versionInfo rdf:type rdf:Property ,\n', ses);
+  http ('		owl:AnnotationProperty ;\n', ses);
+  http ('	rdfs:label "versionInfo" .\n', ses);
+  http ('owl:priorVersion rdf:type rdf:Property ,\n', ses);
+  http ('		owl:OntologyProperty ;\n', ses);
+  http ('	rdfs:label "priorVersion" ;\n', ses);
+  http ('	rdfs:domain owl:Ontology ;\n', ses);
+  http ('	rdfs:range owl:Ontology .\n', ses);
+  http ('owl:Class rdf:type rdfs:Class ;\n', ses);
+  http ('	rdfs:label "Class" ;\n', ses);
+  http ('	rdfs:subClassOf rdfs:Class .\n', ses);
+  http ('rdfs:label rdf:type owl:AnnotationProperty .\n', ses);
+  http ('owl:Nothing rdf:type owl:Class ;\n', ses);
+  http ('	rdfs:label "Nothing" ;\n', ses);
+  http ('	owl:complementOf owl:Thing .\n', ses);
+  http ('owl:complementOf rdf:type rdf:Property ;\n', ses);
+  http ('	rdfs:label "complementOf" ;\n', ses);
+  http ('	rdfs:domain owl:Class ;\n', ses);
+  http ('	rdfs:range owl:Class .\n', ses);
+  http ('owl:unionOf rdf:type rdf:Property ;\n', ses);
+  http ('	rdfs:label "unionOf" ;\n', ses);
+  http ('	rdfs:domain owl:Class ;\n', ses);
+  http ('	rdfs:range rdf:List .\n', ses);
+  http ('owl:equivalentClass rdf:type rdf:Property ;\n', ses);
+  http ('	rdfs:label "equivalentClass" ;\n', ses);
+  http ('	rdfs:subPropertyOf rdfs:subClassOf ;\n', ses);
+  http ('	rdfs:domain owl:Class ;\n', ses);
+  http ('	rdfs:range owl:Class .\n', ses);
+  http ('owl:disjointWith rdf:type rdf:Property ;\n', ses);
+  http ('	rdfs:label "disjointWith" ;\n', ses);
+  http ('	rdfs:domain owl:Class ;\n', ses);
+  http ('	rdfs:range owl:Class .\n', ses);
+  http ('owl:equivalentProperty rdf:type rdf:Property ;\n', ses);
+  http ('	rdfs:label "equivalentProperty" ;\n', ses);
+  http ('	rdfs:subPropertyOf rdfs:subPropertyOf .\n', ses);
+  http ('owl:differentFrom rdf:type rdf:Property ;\n', ses);
+  http ('	rdfs:label "differentFrom" ;\n', ses);
+  http ('	rdfs:domain owl:Thing ;\n', ses);
+  http ('	rdfs:range owl:Thing .\n', ses);
+  http ('owl:distinctMembers rdf:type rdf:Property ;\n', ses);
+  http ('	rdfs:label "distinctMembers" .\n', ses);
+  http ('owl:AllDifferent rdf:type rdfs:Class ;\n', ses);
+  http ('	rdfs:label "AllDifferent" .\n', ses);
+  http ('owl:distinctMembers rdfs:domain owl:AllDifferent ;\n', ses);
+  http ('	rdfs:range rdf:List .\n', ses);
+  http ('owl:intersectionOf rdf:type rdf:Property ;\n', ses);
+  http ('	rdfs:label "intersectionOf" ;\n', ses);
+  http ('	rdfs:domain owl:Class ;\n', ses);
+  http ('	rdfs:range rdf:List .\n', ses);
+  http ('owl:oneOf rdf:type rdf:Property ;\n', ses);
+  http ('	rdfs:label "oneOf" ;\n', ses);
+  http ('	rdfs:domain rdfs:Class ;\n', ses);
+  http ('	rdfs:range rdf:List .\n', ses);
+  http ('owl:Restriction rdf:type rdfs:Class ;\n', ses);
+  http ('	rdfs:label "Restriction" ;\n', ses);
+  http ('	rdfs:subClassOf owl:Class .\n', ses);
+  http ('owl:onProperty rdf:type rdf:Property ;\n', ses);
+  http ('	rdfs:label "onProperty" ;\n', ses);
+  http ('	rdfs:domain owl:Restriction ;\n', ses);
+  http ('	rdfs:range rdf:Property .\n', ses);
+  http ('owl:allValuesFrom rdf:type rdf:Property ;\n', ses);
+  http ('	rdfs:label "allValuesFrom" ;\n', ses);
+  http ('	rdfs:domain owl:Restriction ;\n', ses);
+  http ('	rdfs:range rdfs:Class .\n', ses);
+  http ('owl:hasValue rdf:type rdf:Property ;\n', ses);
+  http ('	rdfs:label "hasValue" ;\n', ses);
+  http ('	rdfs:domain owl:Restriction .\n', ses);
+  http ('owl:someValuesFrom rdf:type rdf:Property ;\n', ses);
+  http ('	rdfs:label "someValuesFrom" ;\n', ses);
+  http ('	rdfs:domain owl:Restriction ;\n', ses);
+  http ('	rdfs:range rdfs:Class .\n', ses);
+  http ('owl:minCardinality rdf:type rdf:Property ;\n', ses);
+  http ('	rdfs:label "minCardinality" ;\n', ses);
+  http ('	rdfs:domain owl:Restriction ;\n', ses);
+  http ('	rdfs:range xsd:nonNegativeInteger .\n', ses);
+  http ('owl:maxCardinality rdf:type rdf:Property ;\n', ses);
+  http ('	rdfs:label "maxCardinality" ;\n', ses);
+  http ('	rdfs:domain owl:Restriction ;\n', ses);
+  http ('	rdfs:range xsd:nonNegativeInteger .\n', ses);
+  http ('owl:cardinality rdf:type rdf:Property ;\n', ses);
+  http ('	rdfs:label "cardinality" ;\n', ses);
+  http ('	rdfs:domain owl:Restriction ;\n', ses);
+  http ('	rdfs:range xsd:nonNegativeInteger .\n', ses);
+  http ('owl:ObjectProperty rdf:type rdfs:Class ;\n', ses);
+  http ('	rdfs:label "ObjectProperty" ;\n', ses);
+  http ('	rdfs:subClassOf rdf:Property .\n', ses);
+  http ('owl:DatatypeProperty rdf:type rdfs:Class ;\n', ses);
+  http ('	rdfs:label "DatatypeProperty" ;\n', ses);
+  http ('	rdfs:subClassOf rdf:Property .\n', ses);
+  http ('owl:inverseOf rdf:type rdf:Property ;\n', ses);
+  http ('	rdfs:label "inverseOf" ;\n', ses);
+  http ('	rdfs:domain owl:ObjectProperty ;\n', ses);
+  http ('	rdfs:range owl:ObjectProperty .\n', ses);
+  http ('owl:TransitiveProperty rdf:type rdfs:Class ;\n', ses);
+  http ('	rdfs:label "TransitiveProperty" ;\n', ses);
+  http ('	rdfs:subClassOf owl:ObjectProperty .\n', ses);
+  http ('owl:SymmetricProperty rdf:type rdfs:Class ;\n', ses);
+  http ('	rdfs:label "SymmetricProperty" ;\n', ses);
+  http ('	rdfs:subClassOf owl:ObjectProperty .\n', ses);
+  http ('owl:FunctionalProperty rdf:type rdfs:Class ;\n', ses);
+  http ('	rdfs:label "FunctionalProperty" ;\n', ses);
+  http ('	rdfs:subClassOf rdf:Property .\n', ses);
+  http ('owl:InverseFunctionalProperty rdf:type rdfs:Class ;\n', ses);
+  http ('	rdfs:label "InverseFunctionalProperty" ;\n', ses);
+  http ('	rdfs:subClassOf owl:ObjectProperty .\n', ses);
+  http ('owl:AnnotationProperty rdf:type rdfs:Class ;\n', ses);
+  http ('	rdfs:label "AnnotationProperty" ;\n', ses);
+  http ('	rdfs:subClassOf rdf:Property .\n', ses);
+  http ('rdfs:seeAlso rdf:type owl:AnnotationProperty .\n', ses);
+  http ('owl:OntologyProperty rdf:type rdfs:Class ;\n', ses);
+  http ('	rdfs:label "OntologyProperty" ;\n', ses);
+  http ('	rdfs:subClassOf rdf:Property .\n', ses);
+  http ('owl:backwardCompatibleWith rdf:type rdf:Property ,\n', ses);
+  http ('		owl:OntologyProperty ;\n', ses);
+  http ('	rdfs:label "backwardCompatibleWith" ;\n', ses);
+  http ('	rdfs:domain owl:Ontology ;\n', ses);
+  http ('	rdfs:range owl:Ontology .\n', ses);
+  http ('owl:incompatibleWith rdf:type rdf:Property ,\n', ses);
+  http ('		owl:OntologyProperty ;\n', ses);
+  http ('	rdfs:label "incompatibleWith" ;\n', ses);
+  http ('	rdfs:domain owl:Ontology ;\n', ses);
+  http ('	rdfs:range owl:Ontology .\n', ses);
+  http ('owl:DeprecatedClass rdf:type rdfs:Class ;\n', ses);
+  http ('	rdfs:label "DeprecatedClass" ;\n', ses);
+  http ('	rdfs:subClassOf rdfs:Class .\n', ses);
+  http ('owl:DeprecatedProperty rdf:type rdfs:Class ;\n', ses);
+  http ('	rdfs:label "DeprecatedProperty" ;\n', ses);
+  http ('	rdfs:subClassOf rdf:Property .\n', ses);
+  http ('owl:DataRange rdf:type rdfs:Class ;\n', ses);
+  http ('	rdfs:label "DataRange" .\n', ses);
+  return string_output_string (ses);
+}
+;
+
+TTLP (OWL_N3 (), 'http://www.w3.org/2002/07/owl#', 'http://www.w3.org/2002/07/owl#');
+
+RDFS_RULE_SET ('http://www.w3.org/2002/07/owl#', 'http://www.w3.org/2002/07/owl#');
+RDF_GRAPH_GROUP_CREATE ('http://www.openlinksw.com/schemas/virtrdf#schemas', 1);
