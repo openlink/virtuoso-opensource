@@ -42,24 +42,133 @@ create procedure rdf_view_tbl_opts (in tbls any, in cols any)
       declare col_cnt int;
       col_cnt := (select count(*) from SYS_COLS where "TABLE" = t);
       res [inx * 2] := t;
-      if (isarray (cols[inx]) and length (cols[inx]) =  col_cnt)
+      if (isarray (cols[inx]) and length (cols[inx]) = 2 and isarray (cols[inx][1]) and length (cols[inx][1]) = col_cnt)
         res [(inx * 2) + 1] := cols [inx];
       else
-        res [(inx * 2) + 1] := make_array (col_cnt, 'any'); 	
+	{
+	  declare newcols, i any;
+	  newcols := make_array (col_cnt, 'any');
+          for (i := 0; i < col_cnt; i := i + 1)
+	     newcols [i] := vector (0, null);
+          res [(inx * 2) + 1] := vector (null, newcols);
+	}	  
       inx := inx + 1;
     }
   return res;
 }  
 ;
 
+create procedure rdf_view_tbl_pk_cols (inout tbls any, out pkcols any)
+{
+  declare i, l, mixed int;
+  i := 0;
+  mixed := 0;
+  l := length (tbls);
+  if (mod (l, 2) = 0)
+    {
+      for (i := 0; i < l; i := i + 2)
+        {
+	  if (__tag (tbls[i+1]) = 193)
+	    mixed := 1;
+	}
+    }
+  if (mixed)
+    {
+      declare newtb any;
+      newtb := make_array (l/2, 'any');
+      pkcols := make_array (l, 'any');
+      for (i := 0; i < l; i := i + 2)
+         {
+	   declare cols any;
+	   declare j int;
+	   newtb[i/2] := tbls[i];
+	   cols := make_array (length (tbls [i + 1]), 'any');
+	   j := 0;
+	   foreach (varchar c in tbls [i + 1]) do
+	     {
+	       cols[j] := (select vector (sc."COLUMN", sc."COL_DTP", sc."COL_SCALE", sc."COL_PREC") 
+	   	from DB.DBA.SYS_COLS sc where upper (sc."COLUMN") = upper (c) and upper ("TABLE") = upper (tbls[i]));
+	       if (length (cols[j]) = 0)
+		 signal ('22023', sprintf ('Non existing column %s for table %s', c, tbls[i]));
+	       j := j + 1;
+	     }
+	   pkcols[i] := tbls[i]; 
+	   pkcols[i+1] := cols; 
+	 }
+      tbls := newtb;
+    }
+  else
+    {
+      pkcols := make_array (l*2, 'any');
+      for (i := 0; i < l; i := i + 1)
+        {
+	  pkcols[i*2] := tbls[i];
+	  pkcols[(i*2)+1] := rdf_view_get_primary_key (tbls[i]);
+	}
+    }
+  foreach (varchar t in tbls) do
+    {
+      if (not exists (select 1 from SYS_KEYS where KEY_TABLE = t))
+	signal ('22023', sprintf ('Non existing table %s', t));
+    }
+}
+;
+
+create procedure rdf_view_ns_get (in cols any, in f int)
+{
+  declare ses any;
+  declare i int;
+  ses := string_output ();
+  for (i := 0; i < length (cols); i := i + 2)
+    rdf_view_ns_get_1 (cols[i+1], ses, f);
+  return string_output_string (ses);
+}
+;
+
+create procedure rdf_view_ns_get_1 (in cols any, inout ses any, in f int)
+{
+  declare dict, class any;
+  declare ns, uri any;
+
+  dict := dict_new ();
+--  dbg_obj_print (cols);
+  class := cols[0];
+  cols := cols[1];
+  ns := rdf_view_get_ns (class, uri);
+  if (ns is not null)
+    dict_put (dict, ns, uri);
+  foreach (any p in cols) do
+    {
+      ns := null;
+--      dbg_obj_print (p);
+      if (length (p[1]))
+        ns := rdf_view_get_ns (p[1], uri);
+      if (ns is not null)
+	dict_put (dict, ns, uri);
+    } 
+  cols := dict_to_vector (dict, 1);  
+  for (declare i int, i := 0; i < length (cols); i := i + 2)
+    {
+      if (cols [i] not in ('rdf', 'rdfs', 'scovo', 'sioc', 'aowl', 'xsd', 'virtrdf'))
+	{
+	  if (f)
+	    http (sprintf ('@prefix %s: <%s> . \n', cols[i], cols[i+1]), ses);
+	  else
+	    http (sprintf ('prefix %s: <%s>  \n', cols[i], cols[i+1]), ses);
+	}
+    }
+}
+;
+
 create procedure
 RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in cols any := null)
 {
    declare create_count_count, create_class_stmt, create_view_stmt, sparql_pref, ns, sns, uriqa_str, ret, drop_map any;
-   declare total_select, total_tb, total, qual any;
+   declare total_select, total_tb, total, qual, pkcols any;
    declare vname varchar;
 
    ret := make_array (2, 'any');
+   rdf_view_tbl_pk_cols (_tbls, pkcols);
    cols := rdf_view_tbl_opts (_tbls, cols);
    sparql_pref := 'SPARQL\n';
    uriqa_str := '^{URIQADefaultHost}^';
@@ -74,12 +183,13 @@ RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in 
        ns := ns || 'prefix void: <http://rdfs.org/ns/void#> \n';
        ns := ns || 'prefix scovo: <http://purl.org/NET/scovo#> \n';
      }
-   ns := ns || 'prefix sioc: <http://rdfs.org/sioc/ns#> \n';
+--   ns := ns || 'prefix sioc: <http://rdfs.org/sioc/ns#> \n';
    ns := ns || 'prefix aowl: <http://bblfish.net/work/atom-owl/2006-06-06/> \n';
+   ns := ns || rdf_view_ns_get (cols, 0);
    create_class_stmt := '';
 
    for (declare xx any, xx := 0; xx < length (_tbls) ; xx := xx + 1)
-     create_class_stmt := create_class_stmt || rdf_view_create_class (sparql_pref || sns, _tbls[xx], uriqa_str, qualifier, cols);
+     create_class_stmt := create_class_stmt || rdf_view_create_class (sparql_pref || sns, _tbls[xx], uriqa_str, qualifier, cols, pkcols);
 
    -- ## voID
    create_count_count := '';
@@ -130,7 +240,7 @@ RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in 
      create_count_count := create_count_count || '\n\n';
 
    --create_class_stmt := sparql_pref || sns || create_class_stmt || '\n;\n\n';
-   create_view_stmt := rdf_view_create_view (qualifier, _tbls, gen_stat, cols);
+   create_view_stmt := rdf_view_create_view (qualifier, _tbls, gen_stat, cols, pkcols);
    create_view_stmt := sparql_pref || ns || create_view_stmt || '\n;\n\n';
    return drop_map || create_class_stmt || '\n\n' || create_count_count || create_view_stmt;
 }
@@ -184,8 +294,86 @@ create procedure rdf_view_cls_name (in nam varchar)
 }
 ;
 
+create procedure rdf_view_get_ns (in uri varchar, out uriSearch varchar)
+{
+  declare delim integer;
+  declare nsPrefix varchar;
+
+  delim := -1;
+  uriSearch := uri;
+  nsPrefix := null;
+  if (uri is null)
+    return null;
+  while (nsPrefix is null and delim <> 0)
+    {
+      delim := coalesce (strrchr (uriSearch, '/'), 0);
+      delim := __max (delim, coalesce (strrchr (uriSearch, '#'), 0));
+      delim := __max (delim, coalesce (strrchr (uriSearch, ':'), 0));
+      nsPrefix := coalesce (__xml_get_ns_prefix (subseq (uriSearch, 0, delim + 1), 2),
+      			    __xml_get_ns_prefix (subseq (uriSearch, 0, delim),     2));
+      uriSearch := subseq (uriSearch, 0, delim + 1);
+    }
+  if (nsPrefix is null)
+    {
+      declare cnt int;
+      uriSearch := uri;
+      delim := coalesce (strrchr (uriSearch, '/'), 0);
+      delim := __max (delim, coalesce (strrchr (uriSearch, '#'), 0));
+      delim := __max (delim, coalesce (strrchr (uriSearch, ':'), 0));
+      uriSearch := subseq (uriSearch, 0, delim + 1);
+      cnt := 0;  
+      while (__xml_get_ns_uri (sprintf ('rv%d', cnt), 2) is not null)
+	{
+	  cnt := cnt + 1;
+	}
+      nsPrefix := sprintf ('rv%d', cnt);
+      DB.DBA.XML_SET_NS_DECL (nsPrefix, uriSearch, 2);
+    }
+  return nsPrefix;
+}
+;
+
+create procedure rdf_view_uri_curie (in uri varchar)
+{
+  declare delim integer;
+  declare uriSearch, nsPrefix varchar;
+
+  delim := -1;
+  uriSearch := uri;
+  nsPrefix := null;
+  while (nsPrefix is null and delim <> 0)
+    {
+      delim := coalesce (strrchr (uriSearch, '/'), 0);
+      delim := __max (delim, coalesce (strrchr (uriSearch, '#'), 0));
+      delim := __max (delim, coalesce (strrchr (uriSearch, ':'), 0));
+      nsPrefix := coalesce (__xml_get_ns_prefix (subseq (uriSearch, 0, delim + 1), 2),
+      			    __xml_get_ns_prefix (subseq (uriSearch, 0, delim),     2));
+      uriSearch := subseq (uriSearch, 0, delim);
+    }
+  if (nsPrefix is not null)
+    {
+      declare rhs varchar;
+      rhs := subseq(uri, length (uriSearch) + 1, null);
+      if (not length (rhs))
+	return uri;
+      else
+	return nsPrefix || ':' || rhs;
+    }
+  return uri;
+}
+;
+
+create procedure rdf_view_col_type (in qual varchar, in col varchar, in opts any)
+{
+  if (not length (opts))
+    return sprintf ('%s:%s', qual, col);
+  else 
+    return rdf_view_uri_curie (opts);
+}
+;
+
 create procedure
-rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0, in cols any := null)
+rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0, in cols any, in pkcols any)
 {
    declare ret, qual, qual_l, tbl_name, tbl_name_l, pks, pk_text, uriqa_str any;
    declare suffix, tname, tbl, own, pref_l any;
@@ -229,24 +417,27 @@ rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0, 
 	   tname := tbl_name_l || suffix;
 
 	   ret := ret || rdf_view_sp (6) || '# Maps from columns of "' || tbl || '"\n';
-	   ret := ret || rdf_view_sp (6) || rdf_view_get_pk_rel (qualifier, suffix, tbl, 0);
+	   ret := ret || rdf_view_sp (6) || rdf_view_get_pk_rel (qualifier, suffix, tbl, 0, pkcols);
 	   ret := ret || sprintf (' a %s:%s ;\n', qualifier, rdf_view_cls_name (tbl_name));
+	   if (length (cols_arr[0]))
+	     ret := ret || rdf_view_sp (6) || sprintf (' a %s ;\n', rdf_view_uri_curie (cols_arr[0]));
 
 	   inx := 0;
 	   for select "COLUMN" from SYS_COLS where "TABLE" = tbl order by COL_ID do
 	     {
 	       col_name := lower ("COLUMN");
-	       if (cols_arr[inx] = 0 or cols_arr[inx] = 4)
+	       if (cols_arr[1][inx][0] = 0 or cols_arr[1][inx][0] = 4)
 		 {
-	       ret := ret || rdf_view_sp (6) || sprintf ('%s:%s %s.%s as virtrdf:%s-%s ;\n',
-				qualifier, rdf_view_col("COLUMN"), tname, rdf_view_sql_col ("COLUMN"), tbl_name_l, rdf_view_col("COLUMN") );
-	     }
-	       else if (isstring (cols_arr[inx])) -- binary object
+	           ret := ret || rdf_view_sp (6) || sprintf ('%s %s.%s as %s:%s-%s ;\n',
+				rdf_view_col_type (qualifier, rdf_view_col("COLUMN"), cols_arr[1][inx][1]), 
+				tname, rdf_view_sql_col ("COLUMN"), qualifier, tbl_name_l, rdf_view_col("COLUMN") );
+		 }
+	       else if (isstring (cols_arr[1][inx][0])) -- binary object
 		 {
-		    ret := ret || rdf_view_sp (6) || sprintf ('%s:%s %s as virtrdf:%s-%s ;\n',
-		       qualifier, rdf_view_col("COLUMN"),
-		       rdf_view_get_bin_rel (qualifier, suffix, tbl, col_name),
-		       tbl_name_l, rdf_view_col("COLUMN"));
+		    ret := ret || rdf_view_sp (6) || sprintf ('%s %s as %s:%s-%s ;\n',
+		       rdf_view_col_type (qualifier, rdf_view_col("COLUMN"), cols_arr[1][inx][1]), 
+		       rdf_view_get_bin_rel (qualifier, suffix, tbl, col_name, pkcols),
+		       qualifier, tbl_name_l, rdf_view_col("COLUMN"));
 		 }
                inx := inx + 1; 
 	     }
@@ -254,8 +445,8 @@ rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0, 
 	       or
 	       exists (select top 1 1 from SYS_FOREIGN_KEYS where FK_TABLE = tbl and 0 < position (PK_TABLE, _tbls)))
 	     ret := ret || rdf_view_sp (6) || '# Maps from foreign-key relations of "' || tbl || '"\n';
-	   ret := ret || rdf_view_get_fk_pk_rel (qualifier, suffix, tbl, _tbls);
-	   ret := ret || rdf_view_get_pk_fk_rel (qualifier, suffix, tbl, _tbls);
+	   ret := ret || rdf_view_get_fk_pk_rel (qualifier, suffix, tbl, _tbls, pkcols);
+	   ret := ret || rdf_view_get_pk_fk_rel (qualifier, suffix, tbl, _tbls, pkcols);
 
    	    ret := trim (ret, '\n');
    	    ret := trim (ret, ';');
@@ -264,12 +455,12 @@ rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0, 
 	   for select "COLUMN" from SYS_COLS where "TABLE" = tbl order by COL_ID do
 	     {
 	       col_name := lower ("COLUMN");
-	       if (isstring (cols_arr[inx]))
+	       if (isstring (cols_arr[1][inx][0]))
 		 {
-		    ret := ret || rdf_view_sp (6) || sprintf ('%s a aowl:Content ; aowl:body %s.%s as virtrdf:%s-%s-content ; aowl:type "%s" .\n',
-		       rdf_view_get_bin_rel (qualifier, suffix, tbl, col_name),
+		    ret := ret || rdf_view_sp (6) || sprintf ('%s a aowl:Content ; aowl:body %s.%s as %s:%s-%s-content ; aowl:type "%s" .\n',
+		       rdf_view_get_bin_rel (qualifier, suffix, tbl, col_name, pkcols),
 		       tname, rdf_view_sql_col ("COLUMN"),
-		       tbl_name_l, rdf_view_col("COLUMN"), cols_arr[inx]);
+		       qualifier, tbl_name_l, rdf_view_col("COLUMN"), cols_arr[1][inx][0]);
 		 }
                inx := inx + 1; 
 	     }
@@ -279,13 +470,13 @@ rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0, 
    if (gen_stat)
      {
        ret := ret || rdf_view_sp (6) || '# voID Statistics \n';
-       ret := ret || rdf_view_sp (6) || sprintf ('%s-stat: a void:Dataset as virtrdf:dataset-%s ; \n', pref_l, qual_l);
-       ret := ret || rdf_view_sp (6) || sprintf (' void:sparqlEndpoint <http://%s/sparql> as virtrdf:dataset-sparql-%s ; \n',
-       			cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), qual_l);
+       ret := ret || rdf_view_sp (6) || sprintf ('%s-stat: a void:Dataset as %s:dataset-%s ; \n', pref_l, qualifier, qual_l);
+       ret := ret || rdf_view_sp (6) || sprintf (' void:sparqlEndpoint <http://%s/sparql> as %s:dataset-sparql-%s ; \n',
+       			cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), qualifier, qual_l);
 
        ret := ret || rdf_view_sp (6) ||	sprintf ('void:statItem %s-stat:Stat . \n', pref_l);
        ret := ret || rdf_view_sp (6) || sprintf ('%s-stat:Stat a scovo:Item ; \n', pref_l);
-       ret := ret || rdf_view_sp (6) || sprintf (' rdf:value %s.cnt as virtrdf:stat-decl-%s ; \n', rdf_view_tb (qualifier||'__Total'||suffix), qual_l);
+       ret := ret || rdf_view_sp (6) || sprintf (' rdf:value %s.cnt as %s:stat-decl-%s ; \n', rdf_view_tb (qualifier||'__Total'||suffix), qualifier, qual_l);
        ret := ret || rdf_view_sp (6) || sprintf (' scovo:dimension void:numOfTriples . \n\n');
 
        for (declare xx any, xx := 0; xx < length (_tbls) ; xx := xx + 1)
@@ -294,16 +485,16 @@ rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0, 
 	       tbl_name := name_part (tbl, 2);
 	       tbl_name_l := rdf_view_tb (tbl_name);
 	       tname := tbl_name_l || suffix;
-	       ret := ret || rdf_view_sp (6) || sprintf ('%s-stat: void:statItem %s-stat:%sStat as virtrdf:statitem-%s-%s . \n',
-	       				pref_l, pref_l, tbl_name, qual_l, tbl_name_l);
-	       ret := ret || rdf_view_sp (6) || sprintf ('%s-stat:%sStat a scovo:Item as virtrdf:statitem-decl-%s-%s ; \n',
-	       				pref_l, tbl_name, qual_l, tbl_name_l);
-	       ret := ret || rdf_view_sp (6) || sprintf ('rdf:value %s.cnt as virtrdf:statitem-cnt-%s-%s ; \n',
-	       						rdf_view_tb (tbl_name||'Count') || suffix, qual_l, tbl_name_l);
-	       ret := ret || rdf_view_sp (6) || sprintf ('scovo:dimention void:numberOfResources as virtrdf:statitem-type-1-%s-%s ; \n',
-	       						qual_l, tbl_name_l);
-	       ret := ret || rdf_view_sp (6) || sprintf ('scovo:dimention %s:%s as virtrdf:statitem-type-2-%s-%s .\n\n',
-	       						qualifier, rdf_view_cls_name (tbl_name), qual_l, tbl_name_l);
+	       ret := ret || rdf_view_sp (6) || sprintf ('%s-stat: void:statItem %s-stat:%sStat as %s:statitem-%s-%s . \n',
+	       				pref_l, pref_l, tbl_name, qualifier, qual_l, tbl_name_l);
+	       ret := ret || rdf_view_sp (6) || sprintf ('%s-stat:%sStat a scovo:Item as %s:statitem-decl-%s-%s ; \n',
+	       				pref_l, tbl_name, qualifier, qual_l, tbl_name_l);
+	       ret := ret || rdf_view_sp (6) || sprintf ('rdf:value %s.cnt as %s:statitem-cnt-%s-%s ; \n',
+	       						rdf_view_tb (tbl_name||'Count') || suffix, qualifier, qual_l, tbl_name_l);
+	       ret := ret || rdf_view_sp (6) || sprintf ('scovo:dimention void:numberOfResources as %s:statitem-type-1-%s-%s ; \n',
+	       						qualifier, qual_l, tbl_name_l);
+	       ret := ret || rdf_view_sp (6) || sprintf ('scovo:dimention %s:%s as %s:statitem-type-2-%s-%s .\n\n',
+	       						qualifier, rdf_view_cls_name (tbl_name), qualifier, qual_l, tbl_name_l);
 	  }
      }
 
@@ -313,15 +504,14 @@ rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0, 
 ;
 
 create procedure
-rdf_view_get_pk_rel (in pref varchar, in suffix varchar, inout tbl varchar, in set_tb int := 0)
+rdf_view_get_pk_rel (in pref varchar, in suffix varchar, inout tbl varchar, in set_tb int, in  pkcols any)
 {
   declare pks any;
   declare tbl_name, tbl_name_l, tname, pk_text, ret varchar;
 
-  pks := rdf_view_get_primary_key (tbl);
   tbl_name := name_part (tbl, 3);
   tbl_name_l := lcase (tbl_name);
-  pks := rdf_view_get_primary_key (tbl);
+  pks := get_keyword (tbl, pkcols); --rdf_view_get_primary_key (tbl);
   tname := tbl_name_l || suffix;
   pk_text := '';
 
@@ -336,15 +526,14 @@ rdf_view_get_pk_rel (in pref varchar, in suffix varchar, inout tbl varchar, in s
 ;
 
 create procedure
-rdf_view_get_bin_rel (in pref varchar, in suffix varchar, in tbl varchar, in col_name varchar)
+rdf_view_get_bin_rel (in pref varchar, in suffix varchar, in tbl varchar, in col_name varchar, in pkcols any)
 {
   declare pks any;
   declare tbl_name, tbl_name_l, tname, pk_text, ret varchar;
 
-  pks := rdf_view_get_primary_key (tbl);
   tbl_name := name_part (tbl, 3);
   tbl_name_l := lcase (tbl_name);
-  pks := rdf_view_get_primary_key (tbl);
+  pks := get_keyword (tbl, pkcols); --rdf_view_get_primary_key (tbl);
   tname := tbl_name_l || suffix;
   pk_text := '';
 
@@ -357,7 +546,7 @@ rdf_view_get_bin_rel (in pref varchar, in suffix varchar, in tbl varchar, in col
 ;
 
 create procedure
-rdf_view_get_fk_pk_rel (in pref varchar, in suffix varchar, in tbl varchar, in tbls any)
+rdf_view_get_fk_pk_rel (in pref varchar, in suffix varchar, in tbl varchar, in tbls any, in pkcols any)
 {
   declare ret any;
   declare tbl_name, tbl_name_l, tname, pk_text varchar;
@@ -370,8 +559,8 @@ rdf_view_get_fk_pk_rel (in pref varchar, in suffix varchar, in tbl varchar, in t
   for select distinct PK_TABLE as pkt from SYS_FOREIGN_KEYS where FK_TABLE = tbl and PK_TABLE <> tbl and 0 < position (PK_TABLE, tbls) do
     {
       declare fk_rel  any;
-      pk_text := rdf_view_get_pk_rel (pref, suffix, pkt, 1);
-      fk_rel := rdf_view_sp (6) || sprintf ('%s:has_%s %s as virtrdf:%s_has_%s ;\n', pref, rdf_view_tb (pkt), pk_text, tbl_name_l, rdf_view_tb (pkt));
+      pk_text := rdf_view_get_pk_rel (pref, suffix, pkt, 1, pkcols);
+      fk_rel := rdf_view_sp (6) || sprintf ('%s:has_%s %s as %s:%s_has_%s ;\n', pref, rdf_view_tb (pkt), pk_text, pref, tbl_name_l, rdf_view_tb (pkt));
       http (fk_rel, ret);
     }
   return string_output_string (ret);
@@ -379,7 +568,7 @@ rdf_view_get_fk_pk_rel (in pref varchar, in suffix varchar, in tbl varchar, in t
 ;
 
 create procedure
-rdf_view_get_pk_fk_rel (in pref varchar, in suffix varchar, in tbl varchar, in tbls any)
+rdf_view_get_pk_fk_rel (in pref varchar, in suffix varchar, in tbl varchar, in tbls any, in pkcols any)
 {
   declare ret any;
   declare tbl_name, tbl_name_l, tname, pk_text varchar;
@@ -392,8 +581,8 @@ rdf_view_get_pk_fk_rel (in pref varchar, in suffix varchar, in tbl varchar, in t
   for select distinct FK_TABLE as pkt from SYS_FOREIGN_KEYS where PK_TABLE = tbl and FK_TABLE <> tbl and 0 < position (FK_TABLE, tbls) do
     {
       declare fk_rel  any;
-      pk_text := rdf_view_get_pk_rel (pref, suffix, pkt, 1);
-      fk_rel := rdf_view_sp (6) || sprintf ('%s:%s_of %s as virtrdf:%s_%s_of ;\n', pref, tbl_name_l, pk_text, tbl_name_l, rdf_view_tb (pkt));
+      pk_text := rdf_view_get_pk_rel (pref, suffix, pkt, 1, pkcols);
+      fk_rel := rdf_view_sp (6) || sprintf ('%s:%s_of %s as %s:%s_%s_of ;\n', pref, tbl_name_l, pk_text, pref, tbl_name_l, rdf_view_tb (pkt));
       http (fk_rel, ret);
     }
   return string_output_string (ret);
@@ -450,7 +639,7 @@ rdf_view_dv_to_xsd_str_type (in _dv varchar)
 ;
 
 create procedure
-rdf_view_create_class (in decl varchar, in _tbl varchar, in _host varchar, in qualifier varchar, in cols any := null)
+rdf_view_create_class (in decl varchar, in _tbl varchar, in _host varchar, in qualifier varchar, in cols any, in pkcols any)
 {
    declare ret, qual, tbl_name, tbl_name_l, pks, pk_text, sk_str any;
    declare cols_arr, inx, col_name any;
@@ -458,7 +647,7 @@ rdf_view_create_class (in decl varchar, in _tbl varchar, in _host varchar, in qu
    qual := name_part (_tbl, 0);
    tbl_name := name_part (_tbl, 3);
    tbl_name_l := rdf_view_tb (tbl_name);
-   pks := rdf_view_get_primary_key (_tbl);
+   pks := get_keyword (_tbl, pkcols); --rdf_view_get_primary_key (_tbl);
    pk_text := '';
    sk_str := '';
 
@@ -478,11 +667,11 @@ rdf_view_create_class (in decl varchar, in _tbl varchar, in _host varchar, in qu
    inx := 0;
    for select "COLUMN" as col from SYS_COLS where "TABLE" = _tbl order by COL_ID do
      {
-       if (isstring (cols_arr[inx]))
+       if (isstring (cols_arr[1][inx][0]))
 	 {
 	   declare ext varchar;
 	   col_name := lower (col);
-	   ext := (select top 1 T_EXT from WS.WS.SYS_DAV_RES_TYPES where T_TYPE = cols_arr[inx]);
+	   ext := (select top 1 T_EXT from WS.WS.SYS_DAV_RES_TYPES where T_TYPE = cols_arr[1][inx][0]);
 	   if (length (ext) > 0)
 	     ext := '.' || ext; 
 	   else  
@@ -532,10 +721,11 @@ rdf_view_get_relations (in _tbls varchar, in _suff varchar)
 create procedure
 RDF_OWL_FROM_TBL (in qual varchar, in _tbls any, in cols any := null)
 {
-  declare ses, cols_arr any;
+  declare ses, cols_arr, pkcols any;
   declare ns varchar;
   declare inx int;
 
+  rdf_view_tbl_pk_cols (_tbls, pkcols);
   cols := rdf_view_tbl_opts (_tbls, cols);
   ns := sprintf ('@prefix %s: <http://%s/schemas/%s/> .\n', qual, cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), qual);
   ses := string_output ();
@@ -546,6 +736,7 @@ RDF_OWL_FROM_TBL (in qual varchar, in _tbls any, in cols any := null)
   http ('@prefix aowl: <http://bblfish.net/work/atom-owl/2006-06-06/> .\n', ses);
   http ('@prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#> .\n', ses);
   http (ns, ses);
+  http (rdf_view_ns_get (cols, 1), ses);
   http (sprintf ('\n%s: a owl:Ontology .\n', qual), ses);
   foreach (varchar tbl in _tbls) do
     {
@@ -559,20 +750,24 @@ RDF_OWL_FROM_TBL (in qual varchar, in _tbls any, in cols any := null)
       http (sprintf ('%s:%s rdfs:label "%s" .\n', qual, cls, tbl), ses);
       inx := 0;
       cols_arr := get_keyword (tbl, cols);
+      if (length (cols_arr[0]))
+	http (sprintf ('%s:%s rdfs:subClassOf %s .\n', qual, cls, rdf_view_uri_curie (cols_arr[0])), ses);
       for select "COLUMN" as col, COL_DTP as dtp from SYS_COLS where "TABLE" = tbl order by COL_ID do
 	{
 	  declare xsd, label varchar;
 	  label := col;
 	  col := rdf_view_col (col);
 	  xsd := rdf_view_dv_to_xsd_str_type (dtp);
-	  if (isstring (cols_arr[inx]))
+	  if (cols_arr[1][inx][0] = 1 or length (cols_arr[1][inx][1]) > 0)
+	    goto skip_this;
+	  else if (isstring (cols_arr[1][inx][0]))
 	    {
 	      http (sprintf ('%s:%s a owl:ObjectProperty .\n', qual, col), ses);
+	      --if (length (cols_arr[1][inx][1]))
+	      --   http (sprintf ('%s:%s rdfs:subPropertyOf %s .\n', qual, col, rdf_view_uri_curie (cols_arr[1][inx][1])), ses);
 	      http (sprintf ('%s:%s rdfs:range aowl:Content .\n', qual, col), ses);
 	    }
-	  else if (cols_arr[inx] = 1)
-	    goto skip_this;
-	  else if (cols_arr[inx] = 4)
+	  else if (cols_arr[1][inx][0] = 4)
 	    {
 	      http (sprintf ('%s:%s rdfs:subPropertyOf virtrdf:label . \n', qual, col), ses);
 	      http (sprintf ('%s:%s rdfs:range xsd:%s .\n', qual, col, xsd), ses);
