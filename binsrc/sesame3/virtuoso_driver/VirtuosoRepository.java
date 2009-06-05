@@ -150,6 +150,34 @@ public class VirtuosoRepository implements Repository {
 	 * Construct a VirtuosoRepository with a specified parameters
 	 * <tt>defGraph</tt> will be set to <tt>"sesame:nil"</tt>.
 	 * 
+	 * @param hostlist
+	 *        the Virtuoso database hostlist 
+	 *        <pre>
+	 *        "hostone:1112,hosttwo:1113" 
+	 *     or "hostone,hosttwo" if default port=1111 is used on hosts
+	 *        </pre>
+	 * @param user
+	 *        the database user on whose behalf the connection is being made
+	 * @param password
+	 *        the user's password
+	 * @param useLazyAdd
+	 *        set <tt>true</tt>  to enable using batch optimization for sequence of 
+	 *        <pre>
+	 *	  add(Resource subject, URI predicate, Value object, Resource... contexts);
+         *        add(Statement statement, Resource... contexts);
+	 *        </pre>
+         *        methods, when autoCommit mode is off. The triples will be sent to DBMS on commit call
+         *        or when batch size become more than predefined batch max_size. 
+         *
+	 */
+	public VirtuosoRepository(String hostlist, String user, String password, boolean useLazyAdd) {
+	        this(hostlist, user, password, "sesame:nil", useLazyAdd);
+	}
+
+	/**
+	 * Construct a VirtuosoRepository with a specified parameters
+	 * <tt>defGraph</tt> will be set to <tt>"sesame:nil"</tt>.
+	 * 
 	 * @param host
 	 *        the Virtuoso database hostname
 	 * @param port
@@ -170,6 +198,29 @@ public class VirtuosoRepository implements Repository {
 	 */
 	public VirtuosoRepository(String host, int port, String user, String password, boolean useLazyAdd) {
 	        this(host, port, user, password, "sesame:nil", useLazyAdd);
+	}
+
+	/**
+	 * Construct a VirtuosoRepository with a specified parameters.
+	 * useLazyAdd will be set to <tt>false</tt>.
+	 * 
+	 * @param hostlist
+	 *        the Virtuoso database hostlist 
+	 *        <pre>
+	 *        "hostone:1112,hosttwo:1113" 
+	 *     or "hostone,hosttwo" if default port=1111 is used on hosts
+	 *        </pre>
+	 * @param user
+	 *        the database user on whose behalf the connection is being made
+	 * @param password
+	 *        the user's password
+	 * @param defGraph
+	 *        a default Graph name, used for Sesame calls, when contexts list
+	 *        is empty, exclude <tt>exportStatements, hasStatement, getStatements</tt> methods 
+         *
+	 */
+	public VirtuosoRepository(String hostlist, String user, String password, String defGraph) {
+	        this(hostlist, user, password, defGraph, false);
 	}
 
 	/**
@@ -198,6 +249,27 @@ public class VirtuosoRepository implements Repository {
 	 * <tt>useLazyAdd</tt> will be set to <tt>false</tt>.
 	 * <tt>defGraph</tt> will be set to <tt>"sesame:nil"</tt>.
 	 * 
+	 * @param hostlist
+	 *        the Virtuoso database hostlist 
+	 *        <pre>
+	 *        "hostone:1112,hosttwo:1113" 
+	 *     or "hostone,hosttwo" if default port=1111 is used on hosts
+	 *        </pre>
+	 * @param user
+	 *        the database user on whose behalf the connection is being made
+	 * @param password
+	 *        the user's password
+         *
+	 */
+	public VirtuosoRepository(String hostlist, String user, String password) {
+	        this(hostlist, user, password, false);
+	}
+
+	/**
+	 * Construct a VirtuosoRepository with a specified parameters.
+	 * <tt>useLazyAdd</tt> will be set to <tt>false</tt>.
+	 * <tt>defGraph</tt> will be set to <tt>"sesame:nil"</tt>.
+	 * 
 	 * @param host
 	 *        the Virtuoso database hostname
 	 * @param port
@@ -206,9 +278,6 @@ public class VirtuosoRepository implements Repository {
 	 *        the database user on whose behalf the connection is being made
 	 * @param password
 	 *        the user's password
-	 * @param defGraph
-	 *        a default Graph name, used for Sesame calls, when contexts list
-	 *        is empty, exclude <tt>exportStatements, hasStatement, getStatements</tt> methods 
          *
 	 */
 	public VirtuosoRepository(String host, int port, String user, String password) {
