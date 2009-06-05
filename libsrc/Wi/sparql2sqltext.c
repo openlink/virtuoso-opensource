@@ -3996,7 +3996,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
               {
                 ssg_puts (" NULL");
               }
-            else if (SSG_VALMODE_LONG == needed)
+            else if ((SSG_VALMODE_LONG == needed) || (SSG_VALMODE_SHORT_OR_LONG == needed))
               {
                 ssg_puts (" iri_to_id (");
                 ssg_print_box_as_sql_atom (ssg, (caddr_t)tree, 1);
@@ -5475,6 +5475,8 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
         int bigtext, arg_ctr, arg_count = BOX_ELEMENTS (tree->_.funcall.argtrees);
         xqf_str_parser_desc_t *parser_desc;
 	ssg_valmode_t native = sparp_rettype_of_function (ssg->ssg_sparp, tree->_.funcall.qname);
+        if ((SSG_VALMODE_SHORT_OR_LONG == needed) && (SSG_VALMODE_LONG == native))
+          needed = SSG_VALMODE_LONG;
         if (needed != native)
           {
             if (((SSG_VALMODE_LONG == needed) || (SSG_VALMODE_SHORT_OR_LONG == needed)) && (SSG_VALMODE_SQLVAL == native))
