@@ -74,6 +74,16 @@
 				</xsl:choose>
 			</xsl:for-each>
 		</bibo:Collection>
+		<xsl:for-each select="/User">
+			<foaf:Person rdf:about="{vi:proxyIRI($baseUri)}">
+				<foaf:nick>
+					<xsl:value-of select="name" />
+				</foaf:nick>
+				<xsl:for-each select="Slideshow">
+					<foaf:made rdf:resource="{vi:proxyIRI(Permalink)}" />
+				</xsl:for-each>
+			</foaf:Person>
+		</xsl:for-each>		
 		<xsl:apply-templates select="Slideshow" />
 	</xsl:template>
 	
