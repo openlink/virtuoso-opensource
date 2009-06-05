@@ -250,6 +250,13 @@ SPAR_NCNAME_X		([A-Za-z0-9_./#%+\x7f-\xfe-]*[A-Za-z0-9_/#%+\x7f-\xfe-])
 <INITIAL>({SPAR_NCNAME_PREFIX}?)":"		{ TTL_TOKBOX_Q(0,QNAME_NS,"namespace"); }
 <INITIAL>{SPAR_NCNAME}				{ TTL_TOKBOX_Q(0,QNAME,"name without prefix"); }
 <INITIAL>"_:"{SPAR_NCNAME}			{ TTL_TOKBOX_Q(0,BLANK_NODE_LABEL,"blank node label"); }
+
+<INITIAL>"_:"{SPAR_NCCHAR}+	{
+    if (!(ttlp_arg[0].ttlp_flags & TTLP_ACCEPT_DIRTY_NAMES))
+      TTLYYERROR_OR_RECOVER ("Ill formed blank node label; this error can be suppressed by parser flags");
+    tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "Ill formed blank node label");
+    TTL_TOKBOX_Q(0,BLANK_NODE_LABEL,"blank node label"); }
+
 <INITIAL>"?"{SPAR_NCNAME}	{
     if (!(ttlp_arg[0].ttlp_flags & TTLP_ACCEPT_VARIABLES))
       TTLYYERROR_OR_RECOVER ("Full N3 syntax allow variables, TURTLE does not; this error can be suppressed by parser flags");

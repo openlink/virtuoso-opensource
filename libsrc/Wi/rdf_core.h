@@ -92,16 +92,16 @@ extern void tf_triple_l (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_
 extern void tf_report (triple_feed_t *tf, char msg_type, const char *sqlstate, const char *sqlmore, const char *descr);
 
 
-#define TTLP_STRING_MAY_CONTAIN_CRLF	0x0001
-#define TTLP_VERB_MAY_BE_BLANK		0x0002
-#define TTLP_ACCEPT_VARIABLES		0x0004
-#define TTLP_SKIP_LITERAL_SUBJECTS	0x0008
-#define TTLP_NAME_MAY_CONTAIN_PATH	0x0010
-#define TTLP_ACCEPT_DIRTY_NAMES		0x0020
-#define TTLP_ACCEPT_DIRTY_SYNTAX	0x0040
-#define TTLP_ERROR_RECOVERY		0x0080
-#define TTLP_ALLOW_TRIG			0x0100
-#define TTLP_ALLOW_NQUAD		0x0200
+#define TTLP_STRING_MAY_CONTAIN_CRLF	0x0001	/*!< Single quoted and double quoted strings may contain newlines. */
+#define TTLP_VERB_MAY_BE_BLANK		0x0002	/*!< Allows bnode predicates (but SPARQL processor may ignore them!) */
+#define TTLP_ACCEPT_VARIABLES		0x0004	/*!< Allows variables, but triples with variables are ignored. */
+#define TTLP_SKIP_LITERAL_SUBJECTS	0x0008	/*!< Allows literal subjects, but triples with them are ignored. */
+#define TTLP_NAME_MAY_CONTAIN_PATH	0x0010	/*!< Allows '/', '#', '%' and '+' in local part of QName ("Qname with path") */
+#define TTLP_ACCEPT_DIRTY_NAMES		0x0020	/*!< Allows ill bnode labels and invalid symbols between '<' and '>', i.e. in relative IRIs. */
+#define TTLP_ACCEPT_DIRTY_SYNTAX	0x0040	/*!< Relax TURTLE syntax to include popular violations. */
+#define TTLP_ERROR_RECOVERY		0x0080	/*!< Try to recover from lexical errors as much as it is possible. */
+#define TTLP_ALLOW_TRIG			0x0100	/*!< Allows TriG syntax, thus loading data in more than one graph. */
+#define TTLP_ALLOW_NQUAD		0x0200	/*!< Enables NQuads syntax but disables TURTLE and TriG */
 
 #define TTLP_ALLOW_QNAME_A		0x01
 #define TTLP_ALLOW_QNAME_HAS		0x02
