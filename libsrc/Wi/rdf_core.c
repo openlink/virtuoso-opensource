@@ -1463,7 +1463,6 @@ static caddr_t details = NULL;
 }
 
 
-
 caddr_t
 tb_name_to_id (lock_trx_t * lt, char * tb_name, caddr_t name, char * value_seq_name)
 {
@@ -1586,10 +1585,10 @@ iri_split_ttl_qname (const char * iri, caddr_t * pref_ret, caddr_t * name_ret, i
   for (tail = iri + iri_strlen; tail > iri; tail--)
     {
       char c = tail[-1];
-      if (!isalnum(c) && ('_' != c) && !(c & 0x80))
+      if (!isalnum(c) && ('_' != c) && ('-' != c) && !(c & 0x80))
         break;
     }
-  if (isdigit (tail[0]) || ((tail > iri) && (NULL == strchr ("#/:?", tail[-1]))))
+  if (isdigit (tail[0]) || ('-' == tail[0]) || ((tail > iri) && (NULL == strchr ("#/:?", tail[-1]))))
     tail = iri + iri_strlen;
 /*                                                         0123456789 */
   if (abbreviate_nodeid && (tail-iri >= 9) && !memcmp (iri, "nodeID://", 9))
@@ -1607,7 +1606,6 @@ iri_split_ttl_qname (const char * iri, caddr_t * pref_ret, caddr_t * name_ret, i
 
 name_id_cache_t * iri_name_cache;
 name_id_cache_t * iri_prefix_cache;
-
 
 caddr_t
 key_name_to_iri_id (lock_trx_t * lt, caddr_t name, int make_new)
@@ -1873,7 +1871,6 @@ bif_iri_to_id_if_cached (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return res;
 }
 
-
 caddr_t
 tb_id_to_name (lock_trx_t * lt, char * tb_name, caddr_t id)
 {
@@ -2025,7 +2022,7 @@ key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, caddr_t *subj
           int prefix_box_len = box_length (prefix);
           int host_strlen = strlen (host);
           caddr_t expanded_prefix = dk_alloc_box (prefix_box_len - 6 + (proto_strlen + host_strlen), DV_STRING);
-	    memcpy (expanded_prefix, proto, proto_strlen);
+          memcpy (expanded_prefix, proto, proto_strlen);
           memcpy (expanded_prefix + proto_strlen, host, host_strlen);
           memcpy (expanded_prefix + proto_strlen + host_strlen, prefix + 6, prefix_box_len - 6);
           dk_free_box (prefix);
@@ -2298,7 +2295,6 @@ caddr_t DBG_NAME (tf_formula_bnode_iid) (DBG_PARAMS ttlp_t *ttlp_arg, caddr_t tx
   dk_set_pop (&(ttlp_arg[0].ttlp_saved_uris));
   return res;
 }
-
 
 char * range_replay =
 "create procedure ID_RANGE_REPLAY (in iri_seq varchar, in iri_seq_max varchar, in id int, in max_id int)\n"

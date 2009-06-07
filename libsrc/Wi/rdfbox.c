@@ -442,7 +442,6 @@ bif_rdf_box_set_ro_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
-
 int
 rbs_length (db_buf_t rbs)
 {
@@ -464,8 +463,6 @@ rbs_length (db_buf_t rbs)
     l += 2;
   return hl + l;
 }
-
-
 
 int
 rb_free (rdf_box_t * rb)
@@ -1063,6 +1060,7 @@ caddr_t
 rdf_dist_or_redu_ser_long (caddr_t val, caddr_t * err_ret, int is_reduiced, const char *fun_name)
 {
   dtp_t val_dtp = DV_TYPE_OF (val);
+
   if (DV_STRING == val_dtp)
     {
       if ((1 >= box_length (val)) || !(0x80 & val[0]))
@@ -1342,7 +1340,7 @@ iri_cast_and_split_ttl_qname (query_instance_t *qi, caddr_t iri, caddr_t *ns_pre
                 if (!isalnum(c) && ('_' != c) && ('-' != c) && !(c & 0x80))
                   break;
               }
-            if (isdigit (tail[0]) || ((tail > local) && (NULL == strchr ("#/:?", tail[-1]))))
+            if (isdigit (tail[0]) || ('-' == tail[0]) || ((tail > local) && (NULL == strchr ("#/:?", tail[-1]))))
               tail = local + local_len;
             if (tail != local)
               {
@@ -1398,6 +1396,15 @@ ttl_http_write_prefix_if_needed (caddr_t *qst, dk_session_t *ses, ttl_env_t *env
   if (NULL != prefx_ptr)
     {
       ti->prefix = box_copy (prefx_ptr[0]);
+      return 0;
+    }
+  if ('\0' == ti->loc[0])
+    { /* We do not generate namespace prefixes of namespaces that are used as whole IRIs */
+      if (NULL == ti->uri)
+        {
+          ti->uri = ti->ns;
+          ti->ns = NULL;
+        }
       return 0;
     }
   ns_counter_val = unbox_inline (ns_counter_ptr[0]);
@@ -1909,7 +1916,7 @@ bif_sparql_rset_ttl_write_row (caddr_t * qst, caddr_t * err_ret, state_slot_t **
       if (!ses)
 	sqlr_new_error ("37000", "HT081",
 	    "Function sparql_rset_ttl_write_row() outside of HTTP context and no stream specified");
-        }
+    }
   colcount = box_length ((caddr_t)(env->te_cols)) / sizeof (ttl_iriref_t);
   if ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (row)) || (BOX_ELEMENTS (row) != colcount))
     sqlr_new_error ("22023", "SR606", "Argument 3 of sparql_rset_ttl_write_row() should be an array of values and length should match to the argument 2");
@@ -1919,18 +1926,18 @@ bif_sparql_rset_ttl_write_row (caddr_t * qst, caddr_t * err_ret, state_slot_t **
       env->te_prev_subj_ns = NULL;
     }
   for (colctr = 0; colctr < colcount; colctr++)
-            {
+    {
       ttl_iriref_t *col_ti = env->te_cols + colctr;
       caddr_t obj = row[colctr];
       dtp_t obj_dtp = DV_TYPE_OF (obj);
       int obj_is_iri;
       switch (obj_dtp)
-                {
+        {
         case DV_DB_NULL: continue;
         case DV_UNAME: case DV_IRI_ID: case DV_IRI_ID_8: obj_is_iri = 1; break;
         case DV_STRING: obj_is_iri = (BF_IRI & box_flags (obj)) ? 1 : 0; break;
         default: obj_is_iri = 0; break;
-            }
+        }
       col_ti->is_iri = obj_is_iri;
       if (obj_is_iri)
         iri_cast_and_split_ttl_qname (qi, obj, &(col_ti->ns), &(col_ti->loc), &(col_ti->is_bnode));
@@ -1939,11 +1946,11 @@ bif_sparql_rset_ttl_write_row (caddr_t * qst, caddr_t * err_ret, state_slot_t **
       if ((NULL != col_ti->ns) && ('\0' != col_ti->ns[0]))
         ttl_http_write_prefix_if_needed (qst, ses, env,
          (obj_is_iri ? &(env->te_ns_count_s_o) : &(env->te_ns_count_p_dt)) , col_ti );
-            }
+    }
   SES_PRINT (ses, "_:_ res:solution [");
   need_semicolon = 0;
   for (colctr = 0; colctr < colcount; colctr++)
-            {
+    {
       ttl_iriref_t *col_ti = env->te_cols + colctr;
       caddr_t obj = row[colctr];
       dtp_t obj_dtp = DV_TYPE_OF (obj);
@@ -2209,7 +2216,6 @@ rdf_box_init ()
   bif_set_uses_index (bif_rdf_long_to_ttl);
   bif_define_typed ("__rq_iid_of_o", bif_rq_iid_of_o, &bt_any);
   bif_define ("__rdf_long_from_batch_params", bif_rdf_long_from_batch_params);
-
   bif_define_typed ("__rdf_dist_ser_long", bif_rdf_dist_ser_long, &bt_varchar);
   bif_define_typed ("__rdf_dist_deser_long", bif_rdf_dist_deser_long, &bt_any);
   bif_define_typed ("__rdf_redu_ser_long", bif_rdf_redu_ser_long, &bt_varchar);
