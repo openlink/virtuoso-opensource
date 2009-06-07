@@ -906,7 +906,7 @@ cpt_restore_uncommitted (it_cursor_t * itc)
     {
       lock_trx_t * lt = wi_inst.wi_cpt_lt;
       /* already inside txn */
-      lt_free_rb (lt);
+      lt_free_rb (lt, 0);
       lt->lt_threads = 1;
       lt->lt_close_ack_threads = 1;
       lt_transact (lt, SQL_COMMIT);

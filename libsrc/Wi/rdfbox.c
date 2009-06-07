@@ -1483,7 +1483,7 @@ iri_cast_and_split_ttl_qname (query_instance_t *qi, caddr_t iri, caddr_t *ns_pre
                 if (!isalnum(c) && ('_' != c) && ('-' != c) && !(c & 0x80))
                   break;
               }
-            if (isdigit (tail[0]) || ((tail > local) && (NULL == strchr ("#/:?", tail[-1]))))
+            if (isdigit (tail[0]) || ('-' == tail[0]) || ((tail > local) && (NULL == strchr ("#/:?", tail[-1]))))
               tail = local + local_len;
             if (tail != local)
               {
@@ -1539,6 +1539,15 @@ ttl_http_write_prefix_if_needed (caddr_t *qst, dk_session_t *ses, ttl_env_t *env
   if (NULL != prefx_ptr)
     {
       ti->prefix = box_copy (prefx_ptr[0]);
+      return 0;
+    }
+  if ('\0' == ti->loc[0])
+    { /* We do not generate namespace prefixes of namespaces that are used as whole IRIs */
+      if (NULL == ti->uri)
+        {
+          ti->uri = ti->ns;
+          ti->ns = NULL;
+        }
       return 0;
     }
   ns_counter_val = unbox_inline (ns_counter_ptr[0]);

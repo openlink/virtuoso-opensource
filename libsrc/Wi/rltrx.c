@@ -1086,6 +1086,9 @@ itc_rollback_row (it_cursor_t * itc, buffer_desc_t ** buf_ret, int pos, row_lock
       rb_entry_t *rbe = lt_rb_entry (lt, buf, row, NULL, NULL, 1);
       if (!rbe)
 	  return PAGE_NOT_CHANGED;
+#ifdef MTX_DEBUG
+      rbe->rbe_used = 1;
+#endif
       if (PL_IS_PAGE (buf->bd_pl) && wi_inst.wi_checkpoint_atomic)
 	page_lock_to_row_locks (buf);
       if (RB_INSERT == rbe->rbe_op)
@@ -1494,9 +1497,10 @@ lt_transact (lock_trx_t * lt, int op)
       LEAVE_LT_LOCKS (lt);
     }
   LEAVE_LT_LOCKS (lt);
-  lt_free_rb (lt);
+  lt_free_rb (lt, SQL_ROLLBACK == op);
   lt_blob_transact (itc, op);
   IN_TXN;
+
   if (lt->lt_waiting_for_this)
     {
       GPF_T1 ("txn wait edges can't appear on a closing txn");
@@ -1904,7 +1908,7 @@ lt_rb_update (lock_trx_t * lt, buffer_desc_t * buf, db_buf_t row)
 
 
 void
-lt_free_rb (lock_trx_t * lt)
+lt_free_rb (lock_trx_t * lt, int is_rb)
 {
   rb_entry_t *rbe;
   caddr_t k;
@@ -1924,6 +1928,10 @@ lt_free_rb (lock_trx_t * lt)
       while (rbe)
 	{
 	  rb_entry_t *next = rbe->rbe_next;
+#ifdef MTX_DEBUG
+	  if (is_rb && !rbe->rbe_used)
+	    bing ();
+#endif
 	  dk_free ((caddr_t) rbe, sizeof (rb_entry_t));
 	  rbe = next;
 	}

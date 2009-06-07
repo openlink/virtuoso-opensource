@@ -104,6 +104,7 @@ typedef struct rb_entry_s
     short	rbe_row;
     short	rbe_row_len;
     char	rbe_op;
+    char	rbe_used;
   } rb_entry_t;
 
 #define RB_INSERT ((char) -1)
@@ -533,7 +534,7 @@ void lt_rb_insert (lock_trx_t * lt, buffer_desc_t * buf, db_buf_t key);
 void lt_no_rb_insert (lock_trx_t * lt, db_buf_t row);
 void lt_rb_update (lock_trx_t * lt, buffer_desc_t * buf, db_buf_t  row);
 int pg_key_len (db_buf_t key1);
-void lt_free_rb (lock_trx_t * lt);
+void lt_free_rb (lock_trx_t * lt, int is_rb);
 
 void lt_close_snapshot (lock_trx_t * lt);
 int lt_set_checkpoint (lock_trx_t * lt);
@@ -570,7 +571,6 @@ void itc_assert_lock (it_cursor_t * itc);
 
 
 
-void lt_free_rb (lock_trx_t * lt);
 void lt_rb_new_entry (lock_trx_t * lt, uint32 rb_code, rb_entry_t * prev,
 		 buffer_desc_t * buf, db_buf_t row, char op);
 int32 rd_pos_key (row_delta_t * rd);

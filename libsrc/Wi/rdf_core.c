@@ -1755,10 +1755,10 @@ iri_split_ttl_qname (const char * iri, caddr_t * pref_ret, caddr_t * name_ret, i
   for (tail = iri + iri_strlen; tail > iri; tail--)
     {
       char c = tail[-1];
-      if (!isalnum(c) && ('_' != c) && !(c & 0x80))
+      if (!isalnum(c) && ('_' != c) && ('-' != c) && !(c & 0x80))
         break;
     }
-  if (isdigit (tail[0]) || ((tail > iri) && (NULL == strchr ("#/:?", tail[-1]))))
+  if (isdigit (tail[0]) || ('-' == tail[0]) || ((tail > iri) && (NULL == strchr ("#/:?", tail[-1]))))
     tail = iri + iri_strlen;
 /*                                                         0123456789 */
   if (abbreviate_nodeid && (tail-iri >= 9) && !memcmp (iri, "nodeID://", 9))

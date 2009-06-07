@@ -791,6 +791,8 @@ itc_bm_insert_in_row (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd)
     {
       itc->itc_key_spec = itc->itc_insert_key->key_insert_spec;
       itc->itc_desc_order = 0;
+      upd_rd.rd_key = itc->itc_insert_key;
+      upd_rd.rd_make_ins_rbe = rd->rd_make_ins_rbe;
       upd_rd.rd_itc = itc;
       rc = itc_insert_unq_ck (itc, &upd_rd, NULL);
       itc_bm_split_move_crs (itc, local_transits);

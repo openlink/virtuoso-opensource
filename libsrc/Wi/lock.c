@@ -150,7 +150,7 @@ lt_free (lock_trx_t * lt)
     GPF_T1 ("Freeing txn that's in MTS");
 #endif
   LT_THREADS_REPORT (lt, "LT_FREE");
-  lt_free_rb (lt);
+  lt_free_rb (lt, 0);
   dk_set_free (lt->lt_waits_for);
   dk_set_free (lt->lt_waiting_for_this);
   dk_free_tree ((caddr_t) lt->lt_replicate);
