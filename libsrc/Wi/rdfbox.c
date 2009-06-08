@@ -1403,7 +1403,7 @@ ttl_http_write_prefix_if_needed (caddr_t *qst, dk_session_t *ses, ttl_env_t *env
       if (NULL == ti->uri)
         {
           ti->uri = ti->ns;
-          ti->ns = NULL;
+          ti->ns = uname___empty;
         }
       return 0;
     }
