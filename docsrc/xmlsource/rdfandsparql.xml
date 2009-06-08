@@ -2740,6 +2740,20 @@ in question. Note that neither of these two affect data that might come from RDF
 sparql delete from graph <A-Named-Graph> { ?s ?p ?o } from <A-Named-Graph> where { ?s ?p ?o };
 sparql clear graph <A-Named-Graph>;
 ]]></programlisting>
+<para>The following statement deletes all records with db:London as subject:</para>
+<programlisting><![CDATA[
+sparql
+delete from graph <A-Named-Graph> { ?s ?p ?o }
+from <A-Named-Graph>
+where { ?s ?p ?o . filter ( ?s = db:London ) };
+]]></programlisting>
+<para>Also the statement be written in this way:</para>
+<programlisting><![CDATA[
+sparql
+delete from graph <A-Named-Graph> { db:London ?p ?o ?p ?o }
+from <A-Named-Graph>
+where { db:London ?p ?o };
+]]></programlisting>
        <para>Keywords 'insert in' and 'insert into' are interchangeable in Virtuoso for backward
 compatibility but SPARUL spec lists only 'insert into':
        </para>
@@ -4492,48 +4506,43 @@ these sources needs to be as unobtrusive as possible. Naturally, a balance has t
 unobtrusive generation of Linked Data and traditional relational database management system (RDBMS)
 virtues such as:
 </para>
-<orderedlist>
+<itemizedlist mark="bullet">
   <listitem>Scalability</listitem>
   <listitem>Security</listitem>
   <listitem>Analytical Expressivity of SQL</listitem>
   <listitem>Separation of Data Access and Data Storage via ODBC, JDBC, ADO.NET CLIs.</listitem>
-</orderedlist>
-<para>Publishing RDF based Linked Data using Virtuoso via its HTML based Admin UI (aka. Conductor)
-achieves the following:
+</itemizedlist>
+<para>The following steps must be taken to publish RDF-based Linked Data:
 </para>
 <orderedlist>
   <listitem>Identifying ODBC or JDBC data sources that host the data you seek to publish
-(assuming the data isn't Virtuoso RDBMS hosted)</listitem>
-  <listitem>Attaching/Linking tables or views from the external data sources into Virtuoso
-via their Data Source Names (DSNs)</listitem>
-  <listitem>Identifying the external tables or views that host the data to be published</listitem>
-  <listitem>Using the Linked Data publishing Wizard to produce a Data Source Ontology
-and associated Instance Data</listitem>
-  <listitem>Exposing the Data Source Ontology and associated Instance Data in Linked Data form
-via endpoints that use Re-write rules to disambiguate data object (resource) identity and resource
-description via HTTP based content negotiation.</listitem>
+(assuming the data isn't Virtuoso RDBMS hosted -- in which case, skip ahead to step #3).</listitem>
+  <listitem>Attach/Link TABLEs or VIEWs from the external data sources into Virtuoso via their Data Source Names (DSNs).</listitem>
+  <listitem>Identify the internal or external TABLEs or VIEWs that hold the data you wish to publish.</listitem>
+  <listitem>Configure Endpoints and Re-write Rules to disambiguate data object (resource) identity and description through HTTP-based content negotiation.</listitem>
+  <listitem>Expose the Data Source Ontology and associated Instance Data in Linked Data form through those Endpoints and Re-write Rules.</listitem>
 </orderedlist>
 <para>
+These steps may be largely automated (the "One-Click" Deployment below), or performed manually ("Using the Conductor's HTML-based Wizard" further down).
 </para>
 </sect2>
 <sect2 id="rdfrdfviewgnroneclick"><title>One Click Linked Data Generation &amp; Deployment</title>
-<para>The steps that follow provide an one click guide for publishing ODBC or JDBC accessible RDBMS
-data, in RDF Linked Data form, using the "Generate &amp; Publish" Conductor feature.
+<para>The following steps provide a one-click guide for publishing ODBC- or JDBC-accessible RDBMS data in RDF Linked Data form, using the "Generate &amp; Publish" Conductor feature.
 </para>
 <orderedlist>
   <listitem>Go to http://&lt;cname&gt;:port/conductor</listitem>
-  <listitem>Log in as dba user (or user with DBA privileges)</listitem>
+  <listitem>Log in as user dba (or another user with DBA privileges)</listitem>
   <listitem>Follow menu path Database -> RDF Views
     <figure id="rd1" float="1">
       <title>RDF Views</title>
       <graphic fileref="ui/rd1.png"/>
     </figure>
 </listitem>
-  <listitem>In the form presented perform the following steps:
+  <listitem>In the form presented, perform the following steps:
 <orderedlist>
   <listitem>Select the Database Name Qualifier (e.g., "Demo")
 that exposes the Tables / Views for this exercise </listitem>
-  <listitem>Enter Base URL to which your URL rewrite rules will be bound
+  <listitem>Enter the Base URL to which your URL rewrite rules will be bound
 (e.g. http://&lt;cname&gt;:8890/Demo)</listitem>
   <listitem>Select specific Tables containing the data to be published (e.g. Shippers and Suppliers)</listitem>
   <listitem>Click the "Generate &amp; Publish" button</listitem>
@@ -4543,10 +4552,8 @@ that exposes the Tables / Views for this exercise </listitem>
       <graphic fileref="ui/rd2.png"/>
     </figure>
   </listitem>
-  <listitem>As result will be performed the entire process of ontology and instance data generation plus
-deployment (re-write rules generation and application).</listitem>
-  <listitem>Your RDF view declarations and Linked Data publishing activities would have completed
-successfully. Error messages will be presented if the Wizard encountered problems.
+  <listitem>Virtuoso will perform the entire process of ontology generation, instance data generation, and linked data deployment (re-write rules generation and application).</listitem>
+  <listitem>Error messages will be presented if the Wizard encounters problems. If there are no error messages, your RDF view declarations and Linked Data publishing activities will have completed successfully.
     <figure id="rd13" float="1">
       <title>RDF View declarations and Linked Data publishing activities</title>
       <graphic fileref="ui/rd13.png"/>
@@ -4561,131 +4568,126 @@ successfully. Error messages will be presented if the Wizard encountered problem
 </listitem>
 </orderedlist>
 </sect2>
-<sect2 id="rdfrdfviewgnrwizzard"><title>Using the Conductor's HTML based wizard</title>
-<para>The steps that follow provide an actual step-by guide for publishing ODBC or JDBC accessible RDBMS
-data, in RDF Linked Data form,  using the Conductor's HTML based wizard:
+<sect2 id="rdfrdfviewgnrwizzard"><title>Manual Linked Data Generation &amp; Deployment using the Conductor's HTML-based wizard</title>
+<para>The following step-by guide will lead you through manually publishing ODBC- or JDBC-accessible RDBMS data in RDF Linked Data form, using the Conductor's HTML-based wizard:
 </para>
 <orderedlist>
   <listitem>Go to http://&lt;cname&gt;:port/conductor</listitem>
-  <listitem>Log in as dba user (or user with DBA privileges)</listitem>
+  <listitem>Log in as user dba (or another user with DBA privileges)</listitem>
   <listitem>Follow menu path Database -> RDF Views
     <figure id="rd1" float="1">
       <title>RDF Views</title>
       <graphic fileref="ui/rd1.png"/>
     </figure>
-</listitem>
-  <listitem>In the form presented perform the following steps:
-<orderedlist>
+  </listitem>
+  <listitem>In the form presented, perform the following steps:
+    <orderedlist>
   <listitem>Select the Database Name Qualifier (e.g., "Demo")  that exposes the Tables / Views for this
 exercise</listitem>
-  <listitem>Enter Base URL to which your URL rewrite rules will be bound (e.g. http://&lt;cname&gt;:8890/Demo)</listitem>
+      <listitem>Enter the Base URL to which your URL rewrite rules will be bound (e.g. http://&lt;cname&gt;:8890/Demo)</listitem>
   <listitem>Select specific Tables containing the data to be published (e.g., Shippers and Suppliers)</listitem>
   <listitem>Click the "Generate via Wizard" button
     <figure id="rd2" float="1">
       <title>Generate via Wizard</title>
       <graphic fileref="ui/rd2.png"/>
     </figure>
-</listitem>
-</orderedlist>
-</listitem>
-  <listitem>At this point you are presented edit column selection option:
+      </listitem>
+    </orderedlist>
+  </listitem>
+  <listitem>At this point, you are presented with the option to edit your column selection. Select the "Edit" link, for example, for table Demo.demo.Shippers.
     <figure id="rd3" float="1">
       <title>Column Selection</title>
       <graphic fileref="ui/rd3.png"/>
     </figure>
-</listitem>
- <listitem>In order to map large varbinary types to mime types like image/gif, which results in Web pages
-with images when describing the URIs from RDF Views, select the "Edit" link. For ex. for table Demo.demo.Shippers.
-<itemizedlist mark="bullet">
-  <listitem>You can leave the Binding/MIME Type literal or</listitem>
-  <listitem>Set to skip in order the column not to be used or</listitem>
-  <listitem>Select the "binary object" value in order the column to be referenced as binary</listitem>
-</itemizedlist>
-</listitem>
-
-  <listitem>In the shown form you can change the Binding/MIME Type of the table columns:
+  </listitem>
+  <listitem>For images or other binary data in MIME formats to be revealed as anything other than generic "binary objects", you must map large
+varbinary types to the appropriate MIME types like image/gif. To do so, select the Edit link for Binding/MIME Type of the relevant table columns.
+You can:
+    <itemizedlist mark="bullet">
+      <listitem>Leave the Binding/MIME Type literal; or</listitem>
+      <listitem>Set to skip, such that the column will not be used in RDF generation; or </listitem>
+      <listitem>Select the binary object value in order for the column to be referenced as binary.</listitem>
+    </itemizedlist>
     <figure id="rd14" float="1">
       <title>Binding/MIME Types</title>
       <graphic fileref="ui/rd14.png"/>
     </figure>
-<para>
-</para>
-</listitem>
-  <listitem>After finishing with your changes click the "Save" button.</listitem>
-  <listitem>You can also cancel the changes and go back by clicking the "Cancel" button.</listitem>
-  <listitem>In the RDF View Definition form make sure you click the "Next" button.</listitem>
-  <listitem>At this point you are presented with Select Generation Targets options:
-<orderedlist>
+  </listitem>
+  <listitem>After finishing with your changes click the Save button, or cancel the changes and go back by
+clicking the Cancel button.</listitem>
+  <listitem>At this point, the RDF View Definition form will let you Select Generation Targets options:
+    <orderedlist>
   <listitem>Data Source Ontology Mappings</listitem>
   <listitem>Instance Data View Mappings</listitem>
   <listitem>VoID statistic</listitem>
-  <listitem>Make sure you click the "Next" button.</listitem>
-</orderedlist>
+    </orderedlist>
     <figure id="rd15" float="1">
       <title>Generation Targets options</title>
       <graphic fileref="ui/rd15.png"/>
     </figure>
-</listitem>
-  <listitem>As result of you selections from the prior form the following will be presented:
-<orderedlist>
+  </listitem>
+  <listitem>Make sure you click the "Next" button.</listitem>
+  <listitem>Based on your selections in the prior form, the RDF View Definition Deployment Options form will be offered:
+    <orderedlist>
   <listitem>Data Source Ontology Rules</listitem>
   <listitem>Instance Data Rules
-</listitem>
-</orderedlist>
+      </listitem>
+    </orderedlist>
     <figure id="rd4" float="1">
       <title>Generation Targets options</title>
       <graphic fileref="ui/rd4.png"/>
     </figure>
-</listitem>
+  </listitem>
   <listitem>Select the desired option(s) and click the "Next" button which unveils a generated
 Instance Data and/or Ontology form.
     <figure id="rd5" float="1">
       <title>Instance Data and/or Ontology</title>
       <graphic fileref="ui/rd5.png"/>
     </figure>
-</listitem>
-  <listitem>The form presented provides an "Execute" button which is how you achieve the following:
-<orderedlist>
-  <listitem>Application of the generated declarations (instance data and ontology) to your Virtuoso instance</listitem>
-  <listitem>Publishing / Deployment declarations that expose Wizard generated Rewrite Rules and associated endpoints.
+  </listitem>
+  <listitem>Click the Execute button and Virtuoso will:
+    <orderedlist>
+      <listitem>Apply the generated declarations (instance data and ontology) to your Virtuoso instance</listitem>
+      <listitem>Publish / Deploy declarations that expose the Wizard-generated Rewrite Rules and associated endpoints.
     <figure id="rd6" float="1">
       <title>Publishing / Deployment declarations</title>
       <graphic fileref="ui/rd6.png"/>
     </figure>
-</listitem>
-</orderedlist>
-</listitem>
-  <listitem>Optionally, you could also perform one of the following tasks:
-<orderedlist>
-  <listitem>Save Data Mappings: when clicked, offers to save the generated Definitions to local file system</listitem>
-  <listitem>Save Ontology Mappings: when clicked, offers to save the generated Ontology to local file system</listitem>
-  <listitem>Export as WebDAV resource: for select WebDAV resource performs export to it:
-<itemizedlist mark="bullet">
+      </listitem>
+    </orderedlist>
+  </listitem>
+  <listitem>Optionally, you can also perform one of the following tasks:
+    <orderedlist>
+      <listitem>Save Data Mappings: when clicked, offers to save the generated Definitions to local file
+system</listitem>
+      <listitem>Save Ontology Mappings: when clicked, offers to save the generated Ontology to local file
+system</listitem>
+      <listitem>Export as WebDAV resource: exports the selected objects/items as a WebDAV resource:
+        <itemizedlist mark="bullet">
   <listitem>Click "Browse"</listitem>
   <listitem>Enter a WebDAV resource and click the "Select" button.</listitem>
-</itemizedlist>
+        </itemizedlist>
     <figure id="rd7" float="1">
       <title>WebDAV resource</title>
       <graphic fileref="ui/rd7.png"/>
     </figure>
-</listitem>
-</orderedlist>
-<para>Note, the WebDAV resource path value will be shown in the WebDAV location field. Then click the
-"Save Data Mappings"/ or "Save Ontology Mappings" button. To complete the option task of saving your
-generated (or edited) view declarations.</para>
+     </listitem>
+    </orderedlist>
+    <para>Note, the WebDAV resource path value will be shown in the WebDAV location field.</para>
+  </listitem>
+  <listitem>Then click the "Save Data Mappings" or "Save Ontology Mappings" button, to complete the option task of saving your generated (or edited) view declarations.
     <figure id="rd8" float="1">
       <title>WebDAV resource</title>
       <graphic fileref="ui/rd8.png"/>
     </figure>
-</listitem>
-  <listitem>At this point your RDF view declarations and Linked Data publishing activities would
-have completed successfully. Error messages will be presented if the Wizard encountered problems.
+  </listitem>
+  <listitem>Error messages will be presented if the Wizard encounters problems. If there are no error messages, your RDF view declarations and Linked Data publishing activities will have completed successfully.
     <figure id="rd9" float="1">
       <title>RDF view declarations and Linked Data publishing activities Finish</title>
       <graphic fileref="ui/rd9.png"/>
     </figure>
 </listitem>
-  <listitem>Click on the "Cancel" should you want to return to the initial RDF View Generation form.</listitem>
+  <listitem>Click on Cancel to return to the initial RDF View Generation form.</listitem>
 </orderedlist>
 </sect2>
 </sect1>
