@@ -774,6 +774,9 @@ void vdb_leave_lt (lock_trx_t * lt, caddr_t *err_ret);
 
 void remote_table_source_input (remote_table_source_t * ts, caddr_t * inst,
     caddr_t * state);
+void rts_skip_to_set (remote_table_source_t * rts, caddr_t * inst, int set);
+int  rts_target_set (remote_table_source_t * rts, caddr_t * inst, state_slot_t * set_ssl, int set_no);
+
 
 
 caddr_t deref_node_main_row (it_cursor_t * it, buffer_desc_t ** buf,
@@ -1267,5 +1270,9 @@ void cl_fref_read_input (cl_fref_read_node_t * clf, caddr_t * inst, caddr_t * st
 void clf_free (cl_fref_read_node_t * clf);
 void  ssa_iter_input (ssa_iter_node_t * ssi, caddr_t * inst, caddr_t * state);
 void ssi_free (ssa_iter_node_t * ssi);
+
+
+caddr_t box_append_1 (caddr_t box, caddr_t elt);
+
 
 #endif /* _SQLFN_H */

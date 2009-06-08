@@ -295,6 +295,7 @@ struct dbe_storage_s
   dk_hash_t *	dbs_dp_to_extent_map;
   buffer_desc_t *	dbs_extent_set;
   dp_addr_t		dbs_n_pages_in_extent_set;
+  int32			dbs_initial_gen; /* generic no of exe tat inited the db */
 } ;
 
 
@@ -652,6 +653,7 @@ struct it_cursor_s
     /* data areas. not cleared at alloc */
     caddr_t		itc_search_params[MAX_SEARCH_PARAMS];
     caddr_t		itc_owned_search_params[MAX_SEARCH_PARAMS];
+    extent_map_t *	itc_hold_em; /* if pages on hold, record where so they can be returned if the em changes */
     short			itc_ra_root_fill;
     int			itc_n_reads;
     int			itc_nth_seq_page; /* in sequential read, nth consecutive page entered.  Use for starting read ahead.  */

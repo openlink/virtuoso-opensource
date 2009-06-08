@@ -2211,11 +2211,14 @@ itc_hold_pages (it_cursor_t * itc, buffer_desc_t * buf, int n)
     }
   if (held)
     {
+      extent_map_t * hold_em = itc->itc_tree->it_extent_map;
       itc->itc_n_pages_on_hold = n;
-      held = em_hold_remap (itc->itc_tree->it_extent_map, &itc->itc_n_pages_on_hold);
+      held = em_hold_remap (hold_em, &itc->itc_n_pages_on_hold);
+      itc->itc_hold_em = hold_em;
     }
   if (!held)
     {
+      itc->itc_n_pages_on_hold = 0;
       log_error ("Out of disk space for database");
       if (itc->itc_ltrx)
 	itc->itc_ltrx->lt_error = LTE_NO_DISK; /* could be temp isp, no ltrx */
@@ -2227,7 +2230,8 @@ itc_hold_pages (it_cursor_t * itc, buffer_desc_t * buf, int n)
 void
 itc_free_hold (it_cursor_t * itc)
 {
-  em_free_remap_hold (itc->itc_tree->it_extent_map, &itc->itc_n_pages_on_hold);
+  if (itc->itc_n_pages_on_hold)
+    em_free_remap_hold (itc->itc_hold_em, &itc->itc_n_pages_on_hold);
 }
 
 
@@ -2676,6 +2680,7 @@ dbs_write_cfg_page (dbe_storage_t * dbs, int is_first)
   db.db_free_set = dbs->dbs_free_set->bd_page;
   db.db_incbackup_set = dbs->dbs_incbackup_set->bd_page;
   db.db_stripe_unit = dbs->dbs_stripe_unit;
+  db.db_initial_gen = dbs->dbs_initial_gen;
   if (bp_ctx.db_bp_ts)
     {
       strncpy (db.db_bp_prfx, bp_ctx.db_bp_prfx, BACKUP_PREFIX_SZ);
@@ -3259,6 +3264,7 @@ dbs_from_file (char * name, char * file, char type, volatile int * exists)
       /* There's a file. */
       dbs_read_cfg_page (dbs, &cfg_page);
       dbs->dbs_stripe_unit = cfg_page.db_stripe_unit ? cfg_page.db_stripe_unit : 1;
+      dbs->dbs_initial_gen = cfg_page.db_initial_gen;
 #ifdef BYTE_ORDER_REV_SUPPORT
       if (dbs_reverse_db)
 	dbs_reverse_cfg_page (&cfg_page);
@@ -3299,6 +3305,7 @@ dbs_from_file (char * name, char * file, char type, volatile int * exists)
       IN_DBS (dbs);
       dbs->dbs_stripe_unit = c_stripe_unit;
       dbs_extent_init (dbs);
+      dbs->dbs_initial_gen = atoi (DBMS_SRV_GEN_MAJOR	) * 100 + atoi (DBMS_SRV_GEN_MINOR);
       dbs_write_cfg_page (dbs, 0);
       if (DBS_PRIMARY == type)
 	dbs_init_registry (dbs);

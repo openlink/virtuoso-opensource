@@ -338,6 +338,7 @@ struct wi_database_s
     int32	db_host_id;	/* this db file set belongs to host nn */
     int32	db_stripe_unit;
     int32	db_extent_size;
+    int32	db_initial_gen;
   };
 
 struct disk_stripe_s
