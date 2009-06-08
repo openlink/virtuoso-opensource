@@ -475,12 +475,12 @@ if (length(rowset) > 2 and not isnull(rowset[2]))
 else
   if (rowset[0] <> 0)
     {
-      imgname := 'images/dav_browser/mime_16.png';
+      imgname := 'images/dav_browser/foldr_16.png';
       http(sprintf('<td><input type="checkbox" name="CBC_%s"/></td>', rowset[1]));
     }
   else
     {
-      imgname := 'images/dav_browser/mime_16.png';
+      imgname := 'images/dav_browser/file_gen_16.png';
       http(sprintf('<td><input type="checkbox" name="CBR_%s"/></td>', rowset[1]));
     }
                         ?>
@@ -2238,7 +2238,7 @@ else
                     }
                 ?>
                     <tr class="<?V case when mod (row, 2) = 0 then 'even' end ?>">
-                  <td><img src="images/dav_browser/folder_16.png"/></td>
+                  <td><img src="images/dav_browser/foldr_16.png"/></td>
                   <td><?V full_path ?></td>
                   <td>N/A</td>
                   <td><?V modtime ?></td>
@@ -2314,7 +2314,7 @@ else
 
                 ?>
                     <tr class="<?V case when mod (row, 2) = 0 then 'even' end ?>">
-                  <td><img src="images/dav_browser/mime_16.png"/></td>
+                      <td><img src="images/dav_browser/file_gen_16.png"/></td>
                   <td><?V full_path ?></td>
                   <td><?V ressize ?></td>
                   <td><?V modtime ?></td>
@@ -3085,7 +3085,7 @@ else
                 </v:button>
                 <v:button name="b_create" 
                           style="image" 
-                          value="images/dav_browser/folder_new_16.png" 
+                          value="images/dav_browser/foldr_new_16.png" 
                           xhtml_alt="New folder" 
                           xhtml_title="New folder" 
                           action="simple">
@@ -3304,14 +3304,14 @@ else
                                    concat('/', self.curpath, '/', (control as vspx_row_template).te_rowset[1], '/')));
                             else
                               http('<td/>');
-                            imgname := 'images/dav_browser/folder_16.png';
+                            imgname := 'images/dav_browser/foldr_16.png';
                           }
                           else
                           {
                             if (self.command <> 5 and self.command <> 6)
                               http(sprintf('<td><input type="checkbox" name="CBR_%s"/></td>', 
                                    concat('/', self.curpath, '/', (control as vspx_row_template).te_rowset[1])));
-                            imgname := 'images/dav_browser/mime_16.png';
+                            imgname := 'images/dav_browser/file_gen_16.png';
                           }
                         ?>
                         <td>

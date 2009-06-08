@@ -41,6 +41,8 @@
       <v:variable persist="0" name="tbls" type="any" default="null"/>
       <v:variable persist="0" name="cols" type="any" default="null"/>
       <v:variable persist="0" name="tbl" type="any" default="null" param-name="tb"/>
+      <v:variable persist="0" name="owl_iri" type="any" default="null"/>
+      <v:variable persist="0" name="cls_iri" type="any" default="null"/>
   </vm:variables>
 
   <vm:header caption="RDF View definition"/>
@@ -60,9 +62,22 @@
 	    } 
 	  pos := position (self.tbl, self.tbls);
 	  cols := self.cols [pos - 1];
+	  if (self.cls_iri is null and self.owl_iri is null and isarray (cols))
+	    {
+	      self.cls_iri := cols[0];
+	      self.owl_iri := (sparql define input:storage "" 
+	      define input:inference <http://www.w3.org/2002/07/owl#>
+		  select ?g from <local:/schemas/> { graph ?g { ?:self.cls_iri a rdfs:Class . }});
+	    }
+--	  dbg_obj_print (self.cls_iri, self.owl_iri);  
 	  if (not isarray (cols))
 	    {
 	      cols := make_array ((select count(*) from SYS_COLS where "TABLE" = self.tbl), 'any');
+	      for (declare i int; i < length (cols); i := i + 1)
+	        {
+                  cols [i] := vector (0, '');
+	        }	
+              cols := vector ('', cols);		
 	      all_cols := self.cols;
 	      all_cols [pos - 1] := cols;
 	      self.cols := all_cols;
@@ -90,25 +105,67 @@
 		}
 	  }
 	  ]]></script>	  
-      <h2>Select Columns for "<?V self.tbl ?>"</h2>
+      <h2>Choose Mapping Options for "<?V self.tbl ?>"</h2>
       <table>
       <v:form name="account_form" type="simple" method="POST" action="">
+	  <v:on-post><![CDATA[
+       if (e.ve_button = control)
+         {
+	    if (e.ve_initiator = self.d_owl_iri)
+	      {
+	        self.owl_iri := self.d_owl_iri.ufl_value;
+                self.d_cls_iri.vc_data_bind (e);
+	      }
+	    if (e.ve_initiator = self.d_cls_iri)
+	      {
+	        self.cls_iri := self.d_cls_iri.ufl_value;
+	      }
+	 }
+	      ]]></v:on-post>
 	  <tr>
 	      <td>
+		  Base Ontology: 
+		  <v:data-list sql="select top 1 'none' as graph from SYS_KEYS 
+		      			union all 
+					select id_to_iri (RGGM_MEMBER_IID) from RDF_GRAPH_GROUP_MEMBER
+					where RGGM_GROUP_IID = iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#schemas')
+				    "
+				    key-column="graph" value-column="graph" name="d_owl_iri" auto-submit="1" value="--self.owl_iri"/> 
+		  <br/>
+		  Base Class: 
+		  <v:data-list sql="select top 1 '' as cls, 'auto' as curie from SYS_KEYS 
+		      			union all 
+				    select cls, yac_uri_curie(cls) from (sparql define input:storage ''
+				    define input:inference <http://www.w3.org/2002/07/owl#> 
+				    select distinct ?cls { graph ?:self.owl_iri { ?cls a rdfs:Class . }}) x" 
+				    key-column="cls" value-column="curie" name="d_cls_iri" auto-submit="1" value="--self.cls_iri"/>   
+		  <br/>
+		  <br/>
 		  <table class="listing">
 		      <colgroup/><colgroup/>
 		      <thead>
 			  <tr class="listing_row_odd">
 			      <th>Column Name *</th>
+			      <th>Property</th>
 			      <th>Binding/MIME Type</th>
 			  </tr>
 		      </thead>
 		      <?vsp 
 		      declare i int;
 		      declare pos int;
-		      declare cols any;
+		      declare cols, tps, props any;
+		      declare cls, owl any;
 		      pos := position (self.tbl, self.tbls);
-		      cols := self.cols [pos - 1];
+		      cols := self.cols [pos - 1][1];
+		      tps := self.cols [pos - 1][0];
+		      cls := self.cls_iri;
+		      owl := self.owl_iri;
+--		      dbg_obj_print (owl, cls);
+		      props := (select vector_agg (vector (prop, yac_uri_curie (prop))) from 
+				  (sparql define input:storage ""
+				      select distinct ?prop  
+				      { graph ?:owl { ?prop rdfs:domain ?cls .  }}) x);
+		      --dbg_obj_print (props);
 		      for select "COLUMN" as col, COL_ID from SYS_COLS where "TABLE" = self.tbl order by COL_ID do
 		        {
 		      ?>
@@ -116,19 +173,32 @@
 			  <td>
 			      <?vsp
 			      http (sprintf ('<input type="checkbox" name="cb_%d" value="1" onclick="javascript:cleanothers(this)" %s" />', 
-			      COL_ID, case when cols[i] = 4 then 'checked="true"' else '' end)); ?>
-			      <?V col ?></td>
+			      COL_ID, case when cols[i][0] = 4 then 'checked="true"' else '' end)); ?>
+			      <?V col ?>
+			  </td>
+			  <td>
+			      <select name="prop_<?V COL_ID ?>" id="prop_<?V COL_ID ?>">
+				  <?vsp
+				  http (sprintf('<option value="" >auto</option>'));
+				      foreach (any p in props) do 
+				      {
+				      	http (sprintf('<option value="%V" %s>%V</option>', 
+				           p[0], case when cols[i][1] = p[0] then 'selected="true"' else '' end, p[1]));
+				      }
+				  ?>
+			      </select>
+			  </td>
 			  <td>
 			      <select name="sel_<?V COL_ID ?>" id="sel_<?V COL_ID ?>" onclick="javascript:hideshow(this, 'mime_<?V COL_ID ?>')">
 				  <?vsp
-				  http (sprintf('<option value="0" %s>literal</option>', case when cols[i] in (0,4) then 'selected' else '' end));
-				  http (sprintf('<option value="1" %s>skip</option>', case when cols[i] = 1 then 'selected' else '' end));
-				  http (sprintf('<option value="2" %s>binary object</option>',  case when isstring (cols[i]) then 'selected' else '' end));
+				  http (sprintf('<option value="0" %s>literal</option>', case when cols[i][0] in (0,4) then 'selected' else '' end));
+				  http (sprintf('<option value="1" %s>skip</option>', case when cols[i][0] = 1 then 'selected' else '' end));
+				  http (sprintf('<option value="2" %s>binary object</option>',  case when isstring (cols[i][0]) then 'selected' else '' end));
 				  ?>
 			      </select>
-			      <input type="text" value="<?V case when isstring (cols[i]) then cols[i] else 'application/octet-stream' end ?>" 
+			      <input type="text" value="<?V case when isstring (cols[i][0]) then cols[i][0] else 'application/octet-stream' end ?>" 
 				  name="mime_<?V COL_ID ?>" id="mime_<?V COL_ID ?>" 
-				  style="<?V case when isstring (cols[i]) then '' else 'display:none;' end ?>"/>
+				  style="<?V case when isstring (cols[i][0]) then '' else 'display:none;' end ?>"/>
 			  </td>
 		      </tr>
 		      <?vsp
@@ -154,6 +224,7 @@
 			  declare pos int;
 			  declare cols, all_cols any;
 			  declare x,lab int;
+			  declare prop varchar;
 			  -- check if at least one is selected
 			  if (0)
 			    {
@@ -162,7 +233,7 @@
 			      return;
 			    }
 			  pos := position (self.tbl, self.tbls);
-			  cols := self.cols [pos - 1];
+			  cols := self.cols [pos - 1][1];
 			  for select "COLUMN" as col, COL_ID from SYS_COLS where "TABLE" = self.tbl order by COL_ID do
 			    {
 			      x := atoi (get_keyword (sprintf ('sel_%d', COL_ID), e.ve_params, '0'));
@@ -174,11 +245,12 @@
 		              lab := atoi (get_keyword (sprintf ('cb_%d', COL_ID), e.ve_params, '0')); 		
 			      if (lab)
 		                x := 4;	      
-			      cols[i] := x;
+                              prop := get_keyword (sprintf ('prop_%d', COL_ID), e.ve_params, '');
+			      cols[i] := vector (x, prop);
 			      i := i + 1;
 			    }
 			  all_cols := self.cols;
-			  all_cols [pos - 1] := cols;
+			  all_cols [pos - 1] := vector (self.cls_iri, cols);
 			  self.vc_redirect (sprintf ('db_rdf_view_tb.vspx?list=%U&host=%U&cols=%U', 
 			  		self.objects, self.base, encode_base64 (serialize (all_cols))
 					));
