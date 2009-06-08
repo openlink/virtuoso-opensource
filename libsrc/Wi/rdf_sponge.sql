@@ -1147,6 +1147,7 @@ load_grddl:;
 	  new_opts := vector_concat (options, RM_OPTIONS, vector ('content-type', ret_content_type));
 	  if (RM_TYPE <> 'HTTP')
 	    {
+	      commit work;
 	      if (npars = 7)
 	        rc := call (RM_HOOK) (graph_iri, new_origin_uri, dest, ret_body, aq, ps, RM_KEY);
 	      else
@@ -1154,6 +1155,7 @@ load_grddl:;
 	    }
           else
 	    {
+	      commit work;
 	      if (npars = 7)
 	        rc := call (RM_HOOK) (graph_iri, new_origin_uri, dest, ret_body, aq, ps, vector (req_hdr_arr, ret_hdr));
 	      else
@@ -1172,9 +1174,8 @@ load_grddl:;
 	      if (aq is not null)
 		{
 		  declare uri varchar;
-		  if (uri not like 'http://%/about/rdf/%') 
   		    uri := new_origin_uri;
-		  else  
+		  if (uri not like 'http://%/about/rdf/%') 
 		    uri := 'http://' || registry_get ('URIQADefaultHost') || '/about/rdf/' || new_origin_uri;
 		  aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, uri));
 		}
