@@ -72,7 +72,7 @@
 --	  dbg_obj_print (self.cls_iri, self.owl_iri);  
 	  if (not isarray (cols))
 	    {
-	      cols := make_array ((select count(*) from SYS_COLS where "TABLE" = self.tbl), 'any');
+	      cols := make_array ((select count(*) from TABLE_COLS where "TABLE" = self.tbl), 'any');
 	      for (declare i int; i < length (cols); i := i + 1)
 	        {
                   cols [i] := vector (0, '');
@@ -166,7 +166,7 @@
 				      select distinct ?prop  
 				      { graph ?:owl { ?prop rdfs:domain ?cls .  }}) x);
 		      --dbg_obj_print (props);
-		      for select "COLUMN" as col, COL_ID from SYS_COLS where "TABLE" = self.tbl order by COL_ID do
+		      for select "COLUMN" as col, COL_ID from TABLE_COLS where "TABLE" = self.tbl order by COL_ID do
 		        {
 		      ?>
 		      <tr class="<?V case when mod (i, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
@@ -234,7 +234,7 @@
 			    }
 			  pos := position (self.tbl, self.tbls);
 			  cols := self.cols [pos - 1][1];
-			  for select "COLUMN" as col, COL_ID from SYS_COLS where "TABLE" = self.tbl order by COL_ID do
+			  for select "COLUMN" as col, COL_ID from TABLE_COLS where "TABLE" = self.tbl order by COL_ID do
 			    {
 			      x := atoi (get_keyword (sprintf ('sel_%d', COL_ID), e.ve_params, '0'));
 			      if (x = 2)
