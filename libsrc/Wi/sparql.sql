@@ -3718,14 +3718,14 @@ create function DB.DBA.RDF_REGEX (in s varchar, in p varchar, in coll varchar :=
 --!AWK PUBLIC
 create function DB.DBA.RDF_LANGMATCHES (in r varchar, in t varchar)
 {
+  if ((t is null) or (r is null))
+    return null;
   if ('*' = t)
     {
       if (r <> '')
         return 1;
       return 0;
     }
-  if ((t is null) or (r is null))
-    return 0;
   t := upper (t);
   r := upper (r);
   if (r = t)
@@ -4058,6 +4058,13 @@ describe_physical_subjects:
                   -- dbg_obj_princ ('found5 ', subj, p1, ' in ', graph);
                   dict_put (res, vector (subj, p1, __rdf_long_of_obj (obj1)), 0);
                 }
+	      for (select S as s1, P as p1 from DB.DBA.RDF_QUAD
+		  where G = graph and O = subj and P <> rdf_type_iid
+		  option (QUIETCAST)) do
+		{
+		  -- dbg_obj_princ ('found2 ', s1, p1, subj, ' in ', graph);
+		  dict_put (res, vector (s1, p1, subj), 1);
+		}
             }
         }
       return res;
@@ -4428,13 +4435,6 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL (in subj_dict any, in cons
                   -- dbg_obj_princ ('found5 ', subj, p1, ' in ', graph);
                   dict_put (res, vector (subj, p1, __rdf_long_of_obj (obj1)), 0);
                 }
-	      for (select S as s1, P as p1 from DB.DBA.RDF_QUAD
-		  where G = graph and O = subj and P <> rdf_type_iid
-		  option (QUIETCAST)) do
-		{
-		  -- dbg_obj_princ ('found2 ', s1, p1, subj, ' in ', graph);
-		  dict_put (res, vector (s1, p1, subj), 1);
-		}
             }
         }
       return res;

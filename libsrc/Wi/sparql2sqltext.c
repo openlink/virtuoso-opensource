@@ -5022,29 +5022,37 @@ if (NULL != jright_alias)
 #ifdef DEBUG
     ccaddr_t jl = ssg_find_jl_by_jr (ssg, gp, jright_alias);
     if (strcmp (jl, jleft_alias))
-      spar_internal_error (NULL, "ssg_print_equivalences (): invalid pair of jleft_alias and jright_alias");
+      spar_internal_error (ssg->ssg_sparp, "ssg_" "print_equivalences (): invalid pair of jleft_alias and jright_alias");
 #endif
     goto print_cross_equalities;
             }
-
   if ((SPART_VARR_FIXED & eq->e_rvr.rvrRestrictions) && 
     (SPART_VARR_FIXED & eq->e_replaces_filter) &&
-    (0 == eq->e_gspo_uses) && (0 < eq->e_var_count) )
+    (0 == eq->e_gspo_uses) && (0 < BOX_ELEMENTS_0 (eq->e_subvalue_idxs)) )
     {
-      SPART *sample_var = eq->e_vars[0];
-      ssg_valmode_t vmode;
+      SPART *sample_var, *bop;
       /* Dirty hack: we force code generator to "forget" about the constant to print some subvalue */
+      if (0 < eq->e_var_count)
+        sample_var = eq->e_vars[0];
+      else
+        {
+          caddr_t name = eq->e_varnames[0];
+          sample_var = spartlist (ssg->ssg_sparp, 6 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)),
+            SPAR_VARIABLE, name,
+            eq->e_gp->_.gp.selid, NULL,
+            (ptrlong)(0), SPART_BAD_EQUIV_IDX, SPART_RVR_LIST_OF_NULLS );
+          if (SPART_VARNAME_IS_GLOB(name))
+            sample_var->_.var.rvr.rvrRestrictions |= SPART_VARR_GLOBAL;
+          if (eq != sparp_equiv_get (ssg->ssg_sparp, eq->e_gp, sample_var, SPARP_EQUIV_INS_VARIABLE))
+            spar_internal_error (ssg->ssg_sparp, "ssg_" "print_equivalences(): bad equiv for sample var");
+        }
+      bop = spartlist (ssg->ssg_sparp, 3, BOP_EQ, sample_var, eq->e_rvr.rvrFixedValue);
       eq->e_rvr.rvrRestrictions &= ~SPART_VARR_FIXED;
       sample_var->_.var.rvr.rvrRestrictions &= ~SPART_VARR_FIXED;
-      vmode = sparp_expn_native_valmode (ssg->ssg_sparp, sample_var);
       ssg_print_where_or_and (ssg, "value of equiv class, fixed by replaced filter");
-      if (IS_BOX_POINTER (vmode) && !(vmode->qmfIsBijection))
-        vmode = SSG_VALMODE_LONG;
-      ssg_print_scalar_expn (ssg, sample_var, vmode, NULL_ASNAME);
+      ssg_print_bop_bool_expn (ssg, bop, " = "	, " equ ("	, 1, SSG_VALMODE_BOOL);
       eq->e_rvr.rvrRestrictions |= SPART_VARR_FIXED;
       sample_var->_.var.rvr.rvrRestrictions |= SPART_VARR_FIXED;
-      ssg_puts (" =");
-      ssg_print_scalar_expn (ssg, eq->e_rvr.rvrFixedValue, vmode, NULL_ASNAME);
     }
   /* Printing equalities with constants */
   for (var_ctr = 0; var_ctr < eq->e_var_count; var_ctr++)
