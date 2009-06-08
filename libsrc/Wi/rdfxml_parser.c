@@ -858,7 +858,7 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
     }
   tf = tf_alloc ();
   tf->tf_qi = qi;
-  tf->tf_graph_uri = graph_uri;
+  tf->tf_default_graph_uri = graph_uri;
   tf->tf_app_env = app_env;
   tf->tf_creator = "rdf_load_rdfxml";
   tf->tf_input_name = source_name;
@@ -867,9 +867,7 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
   QR_RESET_CTX
     {
       tf_set_cbk_names (tf, cbk_names);
-      tf->tf_graph_iid = tf_get_iid (tf, tf->tf_graph_uri);
-      tf_commit (tf);
-      tf_new_graph (tf, tf->tf_graph_uri);
+      TF_CHANGE_GRAPH_TO_DEFAULT (tf);
       if (0 == setjmp (context.xp_error_ctx))
         rc = VXmlParse (parser, text, xrie.xrie_text_len);
       else

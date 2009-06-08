@@ -152,7 +152,10 @@ tf_free (triple_feed_t *tf)
       dk_free_tree (dict_val[0]);
     }
   id_hash_free (tf->tf_blank_node_ids);
-  dk_free_tree (tf->tf_graph_iid);
+  if (tf->tf_current_graph_uri != tf->tf_default_graph_uri)
+    dk_free_tree (tf->tf_current_graph_uri);
+  dk_free_tree (tf->tf_default_graph_iid);
+  dk_free_tree (tf->tf_current_graph_iid);
   dk_free (tf, sizeof (triple_feed_t));
 }
 
@@ -290,7 +293,7 @@ tf_get_iid (triple_feed_t *tf, caddr_t uri)
       BOX_AUTO_TYPED (void **, params, params_buf, sizeof (caddr_t) * 4, DV_ARRAY_OF_POINTER);
       res = NULL;
       params[0] = &uri;
-      params[1] = &(tf->tf_graph_iid);
+      params[1] = TF_GRAPH_ARG(tf);
       params[2] = &(tf->tf_app_env);
       params[3] = &res;
       err = qr_exec (tf->tf_qi->qi_client, tf->tf_cbk_qrs[TRIPLE_FEED_GET_IID], tf->tf_qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);
@@ -310,7 +313,7 @@ tf_new_graph (triple_feed_t *tf, caddr_t uri)
   caddr_t err = NULL;
   BOX_AUTO_TYPED (void **, params, params_buf, sizeof (caddr_t) * 3, DV_ARRAY_OF_POINTER);
   params[0] = &uri;
-  params[1] = &(tf->tf_graph_iid);
+  params[1] = TF_GRAPH_ARG(tf);
   params[2] = &(tf->tf_app_env);
   err = qr_exec (tf->tf_qi->qi_client, tf->tf_cbk_qrs[TRIPLE_FEED_NEW_GRAPH], tf->tf_qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);
   BOX_DONE (params, params_buf);
@@ -328,7 +331,7 @@ tf_commit (triple_feed_t *tf)
   if (NULL == tf->tf_cbk_names[TRIPLE_FEED_COMMIT])
     return;
   BOX_AUTO_TYPED (void **, params, params_buf, sizeof (caddr_t) * 2, DV_ARRAY_OF_POINTER);
-  params[0] = &(tf->tf_graph_iid);
+  params[0] = TF_GRAPH_ARG(tf);
   params[1] = &(tf->tf_app_env);
   err = qr_exec (tf->tf_qi->qi_client, tf->tf_cbk_qrs[TRIPLE_FEED_COMMIT], tf->tf_qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);
   BOX_DONE (params, params_buf);
@@ -362,7 +365,7 @@ tf_report (triple_feed_t *tf, char msg_type, const char *sqlstate, const char *s
   params[1] = &msg_type_box;
   params[2] = &inp_name_box;
   params[3] = &(tf->tf_base_uri);
-  params[4] = &(tf->tf_graph_uri);
+  params[4] = &(tf->tf_current_graph_uri);
   params[5] = &line_no_box;
   params[6] = &triple_no_box;
   params[7] = &sqlstate_box;
@@ -551,7 +554,6 @@ ttlp_alloc (void)
 void
 ttlp_free (ttlp_t *ttlp)
 {
-  dk_free_tree (ttlp->ttlp_tf->tf_graph_uri);
   dk_free_box (ttlp->ttlp_default_ns_uri);
   while (NULL != ttlp->ttlp_namespaces)
     dk_free_tree ((box_t) dk_set_pop (&(ttlp->ttlp_namespaces)));
@@ -565,6 +567,7 @@ ttlp_free (ttlp_t *ttlp)
   dk_free_tree (ttlp->ttlp_obj_lang);
   dk_free_tree (ttlp->ttlp_formula_iid);
   dk_free_tree (ttlp->ttlp_tf->tf_base_uri);
+  dk_free_tree (ttlp->ttlp_tf->tf_default_graph_uri);
   tf_free (ttlp->ttlp_tf);
   dk_free (ttlp, sizeof (ttlp_t));
 }
@@ -892,7 +895,7 @@ tf_triple (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t o_uri)
     }
 #endif
   BOX_AUTO_TYPED (void **, params, params_buf, sizeof (caddr_t) * 5, DV_ARRAY_OF_POINTER);
-  params[0] = &(tf->tf_graph_iid);
+  params[0] = TF_GRAPH_ARG(tf);
   params[1] = &s_uri;
   params[2] = &p_uri;
   params[3] = &o_uri;
@@ -921,7 +924,7 @@ void tf_triple_l (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t obj_s
       rdf_dbg_printf (("\ntf_triple_l (..., %s, %s)", obj_datatype, obj_language)); break;
     }
   BOX_AUTO_TYPED (void **, params, params_buf, sizeof (caddr_t) * 7, DV_ARRAY_OF_POINTER);
-  params[0] = &(tf->tf_graph_iid);
+  params[0] = TF_GRAPH_ARG(tf);
   params[1] = &s_uri;
   params[2] = &p_uri;
   params[3] = &obj_sqlval;
@@ -2472,7 +2475,7 @@ caddr_t DBG_NAME (tf_bnode_iid) (DBG_PARAMS triple_feed_t *tf, caddr_t txt)
     }
   BOX_AUTO_TYPED (void **, params, params_buf, sizeof (caddr_t) * 3, DV_ARRAY_OF_POINTER);
   res = NULL;
-  params[0] = &(tf->tf_graph_uri);
+  params[0] = &(tf->tf_current_graph_uri);
   params[1] = &(tf->tf_app_env);
   params[2] = &res;
   err = qr_exec (tf->tf_qi->qi_client, tf->tf_cbk_qrs[TRIPLE_FEED_NEW_BLANK], tf->tf_qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);

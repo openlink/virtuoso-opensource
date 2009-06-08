@@ -161,7 +161,7 @@ SPAR_VARNAME	([A-Za-z0-9\x7f-\xfe_]+)
 SPAR_NCCHAR	([A-Za-z0-9_\x7f-\xfe-])
 SPAR_NCNAME_PREFIX	({SPAR_NCCHAR1p}([A-Za-z0-9_.\x7f-\xfe-]*{SPAR_NCCHAR})?)
 SPAR_NCNAME		({SPAR_NCCHAR1}([A-Za-z0-9_.\x7f-\xfe-]*{SPAR_NCCHAR})?)
-SPAR_NCNAME_X		([A-Za-z0-9_./#%+\x7f-\xfe-]*[A-Za-z0-9_/#%+\x7f-\xfe-])
+SPAR_NCNAME_X		([A-Za-z0-9_./#%+?&=\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=\x7f-\xfe-]+)
 
 %%
 
@@ -643,7 +643,7 @@ rdf_load_turtle (
     "Unable to parse TURTLE from data of type %s (%d)", dv_type_title (dtp_of_text), dtp_of_text);
 
 iter_is_set:
-  tf->tf_graph_uri = box_copy (graph_uri);
+  tf->tf_default_graph_uri = box_copy (graph_uri);
   ttlp->ttlp_err_hdr = ((flags & TTLP_ALLOW_NQUAD) ? "NQuads RDF loader" : ((flags & TTLP_ALLOW_TRIG) ? "TriG RDF loader" : "TURTLE RDF loader"));
   if (NULL == query_charset)
     query_charset = default_charset;
@@ -666,9 +666,7 @@ iter_is_set:
       yy_push_state (INITIAL, scanner);
 #endif
       tf_set_cbk_names (tf, (const char **)cbk_names);
-      tf->tf_graph_iid = tf_get_iid (tf, tf->tf_graph_uri);
-      tf_commit (tf);
-      tf_new_graph (tf, tf->tf_graph_uri);
+      TF_CHANGE_GRAPH_TO_DEFAULT (tf);
       /* ttlyydebug = 1; */
       if (flags & TTLP_ALLOW_NQUAD)
         nqyyparse (ttlp, scanner);
@@ -693,11 +691,16 @@ iter_is_set:
   END_QR_RESET
   if (NULL != srcfile)
     fclose (srcfile);
+#ifdef MALLOC_DEBUG_1
+  dbg_allows_free_nulls++;
+#endif
   ttlyylex_destroy (scanner);
+#ifdef MALLOC_DEBUG_1
+  dbg_allows_free_nulls--;
+#endif
   err_ret[0] = ttlp->ttlp_catched_error;
   ttlp->ttlp_catched_error = NULL;
-  res = ttlp->ttlp_tf->tf_graph_uri;
-  ttlp->ttlp_tf->tf_graph_uri = NULL;
+  res = box_copy (graph_uri);
   ttlp_free (ttlp);
   return res;
 }

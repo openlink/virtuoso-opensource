@@ -180,16 +180,12 @@ trig_group_end
 trig_block_or_predicate_object_list
 	: predicate_object_list_or_garbage _DOT_WS
 	| opt_eq_lbra {
-                tf_commit (ttlp_arg->ttlp_tf);
+		triple_feed_t *tf = ttlp_arg->ttlp_tf;
 		TTLYYERROR_ACTION_COND (TTLP_ALLOW_TRIG, "Left curly brace can appear here only if the source text is TriG");
-                ttlp_arg->ttlp_trig_graph_uri = ttlp_arg->ttlp_subj_uri; ttlp_arg->ttlp_subj_uri = NULL;
-                dk_free_tree (ttlp_arg->ttlp_tf->tf_graph_iid);
-                ttlp_arg->ttlp_tf->tf_graph_iid = NULL; /* to avoid double free in case of error in tf_get_iid() below */
-                ttlp_arg->ttlp_tf->tf_graph_iid = tf_get_iid (ttlp_arg->ttlp_tf, ttlp_arg->ttlp_trig_graph_uri); }
+                TF_CHANGE_GRAPH (tf, ttlp_arg->ttlp_subj_uri); }
 	    inner_triple_clauses trig_group_end dot_opt {
-		tf_commit (ttlp_arg->ttlp_tf);
-		dk_free_tree (ttlp_arg->ttlp_trig_graph_uri);
-		ttlp_arg->ttlp_trig_graph_uri = NULL; }
+		triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		TF_CHANGE_GRAPH_TO_DEFAULT (tf); }
 	;
 
 opt_eq_lbra
@@ -372,12 +368,12 @@ rev_verb
 literal_subject
 	: true_L
 	| false_L
-	| TURTLE_INTEGER
-	| TURTLE_DECIMAL
-	| TURTLE_DOUBLE
-	| TURTLE_STRING
-	| TURTLE_STRING LANGTAG
-	| TURTLE_STRING _CARET_CARET q_complete	{
+	| TURTLE_INTEGER	{ dk_free_tree ($1); }
+	| TURTLE_DECIMAL	{ dk_free_tree ($1); }
+	| TURTLE_DOUBLE		{ dk_free_tree ($1); }
+	| TURTLE_STRING		{ dk_free_tree ($1); }
+	| TURTLE_STRING LANGTAG	{ dk_free_tree ($1); dk_free_tree ($2); }
+	| TURTLE_STRING { dk_free_tree ($1); } _CARET_CARET q_complete	{
 			dk_free_tree (ttlp_arg->ttlp_last_complete_uri);
 			ttlp_arg->ttlp_last_complete_uri = NULL; }
 	;
