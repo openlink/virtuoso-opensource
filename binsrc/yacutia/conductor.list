@@ -202,18 +202,19 @@ conductor/images/dav_browser/close_16.png
 conductor/images/dav_browser/confg_16.png
 conductor/images/dav_browser/edit_16.png
 conductor/images/dav_browser/file_gen_16.png
-conductor/images/dav_browser/folder_16.png
-conductor/images/dav_browser/folder_new_16.png
 conductor/images/dav_browser/foldr_16.png
+conductor/images/dav_browser/foldr_new_16.png
 conductor/images/dav_browser/go_16.png
-conductor/images/dav_browser/mime_16.png
 conductor/images/dav_browser/open_16.png
 conductor/images/dav_browser/up_16.png
 conductor/images/document.gif
 conductor/images/Empty-folder.gif
 conductor/images/folder_full.gif
+conductor/images/folder-full.gif
 conductor/images/Folder.gif
 conductor/images/folder_up.gif
+conductor/images/folder-up.gif
+conductor/images/icons/about_32.png
 conductor/images/icons/add_16.png
 conductor/images/icons/add_script_16.png
 conductor/images/icons/add_table_16.png
@@ -233,8 +234,7 @@ conductor/images/icons/fastf_16.png
 conductor/images/icons/filter_16.png
 conductor/images/icons/filter_32.png
 conductor/images/icons/first_16.png
-conductor/images/icons/folder_16.png
-conductor/images/icons/folder_open_16.png
+conductor/images/icons/foldr_16.png
 conductor/images/icons/go_16.png
 conductor/images/icons/group_16.png
 conductor/images/icons/help_24.png
@@ -243,8 +243,6 @@ conductor/images/icons/key_16.png
 conductor/images/icons/last_16.png
 conductor/images/icons/link_16.png
 conductor/images/icons/lock_16.png
-conductor/images/icons/messagebox_info.png
-conductor/images/icons/messagebox_warning.png
 conductor/images/icons/next_16.png
 conductor/images/icons/open_16.png
 conductor/images/icons/prefs_16.png
@@ -256,6 +254,7 @@ conductor/images/icons/skipb_16.png
 conductor/images/icons/skipf_16.png
 conductor/images/icons/smarrblk.gif
 conductor/images/icons/stop_16.png
+conductor/images/icons/stop_32.png
 conductor/images/icons/table_16.png
 conductor/images/icons/tour_16.png
 conductor/images/icons/trash_16.png
@@ -264,6 +263,7 @@ conductor/images/icons/user_16.png
 conductor/images/icons/view_16.png
 conductor/images/icons/web_16.png
 conductor/images/open_folder.gif
+conductor/images/open-folder.gif
 conductor/images/opl.jpg
 conductor/images/sel_nav2_grad2.gif
 conductor/images/sel_nav_grad2.gif
