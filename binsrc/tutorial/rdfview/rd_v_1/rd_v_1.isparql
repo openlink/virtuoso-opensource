@@ -5,7 +5,7 @@
 <proxy>true</proxy>
 <query>#service:/sparql
 SELECT * WHERE {?s ?p ?o} limit 100</query>
-<graph>URIQA_MACRO</graph>
+<graph>http://URIQA_MACRO/tutorial/Northwind</graph>
 </ISparqlDynamicPage>
 <service>/sparql</service>
 </iSPARQL>
