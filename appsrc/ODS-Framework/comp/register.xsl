@@ -801,11 +801,11 @@ if (uoid and not is_agreed)
     return;
   }
 
-	   this_page := case when is_http_ctx () then 'https://' else 'http://' end || host || http_path () || sprintf ('?uoid=%d', uoid);
+  	         this_page := case when is_https_ctx () then 'https://' else 'http://' end || host || http_path () || sprintf ('?uoid=%d', uoid);
 if(self.ods_returnurl is not null)
    this_page := this_page || sprintf ('&RETURL=%s', self.ods_returnurl);
 
-	   trust_root := case when is_http_ctx () then 'https://' else 'http://' end || host;
+  	         trust_root := case when is_https_ctx () then 'https://' else 'http://' end || host;
 
 declare exit handler for sqlstate '*'
 {
