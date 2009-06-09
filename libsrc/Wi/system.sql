@@ -5154,3 +5154,5 @@ select k.KEY_TABLE as "TABLE",
        where k.KEY_ID = kp.KP_KEY_ID and k.KEY_IS_MAIN = 1 and k.KEY_MIGRATE_TO is null and kp.KP_COL = c.COL_ID
 ;
 
+grant select on DB.DBA.TABLE_COLS to public
+;
