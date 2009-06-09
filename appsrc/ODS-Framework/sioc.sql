@@ -3599,7 +3599,7 @@ create procedure ods_rdf_describe (in path varchar, in fmt varchar, in is_foaf i
   else
     accept := '';
   iri := 'http://'||get_cname()||path;
-  qr := sprintf ('SPARQL DESCRIBE <%s> FROM <%s>', iri, get_graph ());
+  qr := sprintf ('SPARQL define input:storage ""  DESCRIBE <%s> FROM <%s>', iri, get_graph ());
 --  dbg_printf ('%s', qr);
   stat := '00000';
   set_user_id ('SPARQL');
@@ -3822,7 +3822,7 @@ create procedure foaf_check_friend (in iri varchar, in agent varchar)
     return 1;
   stat := '00000';
   msg := 'OK';
-  exec (sprintf ('sparql prefix foaf: <http://xmlns.com/foaf/0.1/> ask from <local:/dataspace> where { <%S> foaf:knows <%S> }',
+  exec (sprintf ('sparql define input:storage ""  prefix foaf: <http://xmlns.com/foaf/0.1/> ask from <local:/dataspace> where { <%S> foaf:knows <%S> }',
 	iri, agent), stat, msg, vector (), 0, meta, data);
   if (stat = '00000' and length (data) and length (data[0]) and data[0][0] = 1)
     return 1;
@@ -3864,7 +3864,7 @@ create procedure foaf_check_ssl_int (in iri varchar, out graph varchar)
   stat := '00000';
   exec (qr, stat, msg);
   commit work;
-  qr := sprintf ('sparql prefix cert: <' || cert_iri ('') || '> ' || ' prefix rsa: <' || rsa_iri ('') || '> ' ||
+  qr := sprintf ('sparql define input:storage ""  prefix cert: <' || cert_iri ('') || '> ' || ' prefix rsa: <' || rsa_iri ('') || '> ' ||
   	'select ?exp_val ?mod_val from <%S> '||
   	' where { ?id cert:identity <%S> ; rsa:public_exponent ?exp ; rsa:modulus ?mod . ?exp cert:decimal ?exp_val . ?mod cert:hex ?mod_val . }',
 	graph, agent);
@@ -3937,15 +3937,16 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 
   iri := user_obj_iri (u_name);
 
-  decl := 'sparql '
+  decl := 'sparql define input:storage "" '
          --' define input:inference <' || graph || '>' ||
 	  || std_pref_declare ();
 
-  qrs := make_array (7, 'any');
+  qrs := make_array (8, 'any');
   qrs[6] := null;
+  qrs[7] := null;
   if (is_https_ctx () and foaf_check_ssl (pers_iri))
     {
-      qrs[6] := sprintf ('sparql construct { ?s ?p ?o } from <local:/dataspace/protected/%U> where { ?s ?p ?o }', u_name);
+      qrs[6] := sprintf ('sparql define input:storage ""  construct { ?s ?p ?o } from <local:/dataspace/protected/%U> where { ?s ?p ?o }', u_name);
     }
 
   part := sprintf (
@@ -4119,12 +4120,6 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?event_iri rdf:type ?bioEvent .
 	    ?event_iri bio:date ?bioDate .
 	    ?event_iri bio:place ?bioPlace .
-	    ?person gr:offers ?ol_iri .
-	    ?ol_iri ?ol_property ?ol_label .
-	    ?person wl:wants ?wl_iri .
-	    ?wl_iri ?wl_property ?wl_label .
-	    ?person wl:has ?wl2_iri .
-	    ?wl2_iri ?wl2_property ?wl2_label .
 	  }
 	  WHERE
 	  {
@@ -4139,9 +4134,6 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	      optional { ?topic_interest rdfs:label ?topic_interest_label  } .
 	      optional { ?idn cert:identity ?person ; rsa:public_exponent ?exp ; rsa:modulus ?mod . ?exp cert:decimal ?exp_val . ?mod cert:hex ?mod_val  } .
 	      optional { ?person bio:event ?event_iri . ?event_iri rdf:type ?bioEvent . ?event_iri bio:date ?bioDate . ?event_iri bio:place ?bioPlace } .
-	        optional { ?person gr:offers ?ol_iri . ?ol_iri ?ol_property ?ol_label .} .
-	        optional { ?person wl:wants ?wl_iri . ?wl_iri ?wl_property ?wl_label .} .
-	        optional { ?person wl:has ?wl2_iri . ?wl2_iri ?wl2_property ?wl2_label .} .
 	      }
 	    }
 	  }', graph, graph, u_name);
@@ -4150,6 +4142,33 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
   qrs [5] := qry;
   if (p <> 0)
     qrs [5] := null;
+
+  part := sprintf (
+	' CONSTRUCT {
+	    ?person gr:offers ?ol_iri .
+	    ?ol_iri ?ol_property ?ol_label .
+	    ?person wl:wants ?wl_iri .
+	    ?wl_iri ?wl_property ?wl_label .
+	    ?person wl:has ?wl2_iri .
+	    ?wl2_iri ?wl2_property ?wl2_label .
+	  }
+	  WHERE
+	  {
+	    graph <%s>
+	    {
+	      {
+	        ?person foaf:holdsAccount <%s/%s#this> .
+	        optional { ?person gr:offers ?ol_iri . ?ol_iri ?ol_property ?ol_label .} .
+	        optional { ?person wl:wants ?wl_iri . ?wl_iri ?wl_property ?wl_label .} .
+	        optional { ?person wl:has ?wl2_iri . ?wl2_iri ?wl2_property ?wl2_label .} .
+	      }
+	    }
+	  }', graph, graph, u_name);
+
+  qry := decl || part;
+  qrs [7] := qry;
+  if (p <> 0)
+    qrs [7] := null;
 
   part := sprintf (
 	  ' CONSTRUCT {
