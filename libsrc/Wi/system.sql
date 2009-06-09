@@ -5737,3 +5737,21 @@ create table SYS_HTTP_CLIENT_CACHE (
     primary key (HCC_URI, HCC_HASH))
 ;
 
+create view DB.DBA.TABLE_COLS as 
+select k.KEY_TABLE as "TABLE", 
+       c."COLUMN" as "COLUMN", 
+       c.COL_ID,
+       c.COL_DTP, 
+       c.COL_PREC, 
+       c.COL_SCALE, 
+       c.COL_DEFAULT, 
+       c.COL_CHECK, 
+       c.COL_NULLABLE, 
+       c.COL_NTH, 
+       c.COL_OPTIONS 
+       from DB.DBA.SYS_KEYS k, DB.DBA.SYS_KEY_PARTS kp, DB.DBA.SYS_COLS c 
+       where k.KEY_ID = kp.KP_KEY_ID and k.KEY_IS_MAIN = 1 and k.KEY_MIGRATE_TO is null and kp.KP_COL = c.COL_ID
+;
+
+grant select on DB.DBA.TABLE_COLS to public
+;

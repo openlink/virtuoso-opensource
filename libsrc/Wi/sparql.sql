@@ -40,8 +40,18 @@ create function DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (in qname any) returns IRI_ID
 }
 ;
 
+create function DB.DBA.RDF_MAKE_IID_OF_QNAME_COMP (in qname any) returns IRI_ID
+{
+  return iri_to_id_nosignal (qname, 0);
+}
+;
+
 --!AFTER
 DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (null)
+;
+
+--!AFTER
+DB.DBA.RDF_MAKE_IID_OF_QNAME_COMP (null)
 ;
 
 create function DB.DBA.RDF_QNAME_OF_IID (in iid IRI_ID) returns varchar -- DEPRECATED
@@ -6903,14 +6913,14 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
       sqlcol := sqlcols [colctr];
       final_tblname := DB.DBA.SQLQNAME_NOTATION_TO_QNAME (sqlcol[0], 3);
       final_colname := DB.DBA.SQLNAME_NOTATION_TO_NAME (sqlcol[2]);
-      if (not exists (select top 1 1 from DB.DBA.SYS_COLS where "TABLE" = final_tblname))
+      if (not exists (select top 1 1 from DB.DBA.TABLE_COLS where "TABLE" = final_tblname))
         {
           if (sqlcol[1] is not null)
             signal ('22023', 'No table ' || sqlcol[0] || ' (alias ' || sqlcol[1] || ') in database, please check spelling and character case');
           else
             signal ('22023', 'No table ' || sqlcol[0] || ' in database, please check spelling and character case');
         }
-      if (not exists (select top 1 1 from DB.DBA.SYS_COLS where "TABLE" = final_tblname and "COLUMN" = final_colname))
+      if (not exists (select top 1 1 from DB.DBA.TABLE_COLS where "TABLE" = final_tblname and "COLUMN" = final_colname))
         {
           if (sqlcol[1] is not null)
             signal ('22023', 'No column ' || sqlcol[2] || ' in table ' || sqlcol[0] || ' (alias ' || sqlcol[1] || ') in database, please check spelling and character case');
@@ -6934,7 +6944,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
       final_tblname := DB.DBA.SQLQNAME_NOTATION_TO_QNAME (sqlcol[0], 3);
       final_colname := DB.DBA.SQLNAME_NOTATION_TO_NAME (sqlcol[2]);
       select COL_DTP, coalesce (COL_NULLABLE, 1) into coldtp, colnullable
-      from DB.DBA.SYS_COLS where "TABLE" = final_tblname and "COLUMN" = final_colname;
+      from DB.DBA.TABLE_COLS where "TABLE" = final_tblname and "COLUMN" = final_colname;
       coltype := case (coldtp)
         when __tag of long varchar then 'longvarchar'
         when __tag of timestamp then 'datetime' -- timestamp

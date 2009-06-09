@@ -40,7 +40,7 @@ create procedure rdf_view_tbl_opts (in tbls any, in cols any)
   foreach (varchar t in tbls) do
     {
       declare col_cnt int;
-      col_cnt := (select count(*) from SYS_COLS where "TABLE" = t);
+      col_cnt := (select count(*) from TABLE_COLS where "TABLE" = t);
       res [inx * 2] := t;
       if (isarray (cols[inx]) and length (cols[inx]) = 2 and isarray (cols[inx][1]) and length (cols[inx][1]) = col_cnt)
         res [(inx * 2) + 1] := cols [inx];
@@ -48,8 +48,15 @@ create procedure rdf_view_tbl_opts (in tbls any, in cols any)
 	{
 	  declare newcols, i any;
 	  newcols := make_array (col_cnt, 'any');
-          for (i := 0; i < col_cnt; i := i + 1)
+          i := 0;
+	  for select "COLUMN", COL_DTP from TABLE_COLS where "TABLE" = t order by COL_ID do
+	    {
+	      if (COL_DTP <> 131)
 	     newcols [i] := vector (0, null);
+              else 	
+		newcols [i] := vector ('application/octet-stream', null);
+	      i := i + 1;
+	    }
           res [(inx * 2) + 1] := vector (null, newcols);
 	}	  
       inx := inx + 1;
@@ -87,7 +94,7 @@ create procedure rdf_view_tbl_pk_cols (inout tbls any, out pkcols any)
 	   foreach (varchar c in tbls [i + 1]) do
 	     {
 	       cols[j] := (select vector (sc."COLUMN", sc."COL_DTP", sc."COL_SCALE", sc."COL_PREC") 
-	   	from DB.DBA.SYS_COLS sc where upper (sc."COLUMN") = upper (c) and upper ("TABLE") = upper (tbls[i]));
+	   	from DB.DBA.TABLE_COLS sc where upper (sc."COLUMN") = upper (c) and upper ("TABLE") = upper (tbls[i]));
 	       if (length (cols[j]) = 0)
 		 signal ('22023', sprintf ('Non existing column %s for table %s', c, tbls[i]));
 	       j := j + 1;
@@ -116,26 +123,37 @@ create procedure rdf_view_tbl_pk_cols (inout tbls any, out pkcols any)
 
 create procedure rdf_view_ns_get (in cols any, in f int)
 {
-  declare ses any;
+  declare ses, dict, nss any;
   declare i int;
   ses := string_output ();
+  dict := dict_new ();
   for (i := 0; i < length (cols); i := i + 2)
-    rdf_view_ns_get_1 (cols[i+1], ses, f);
+    rdf_view_ns_get_1 (cols[i+1], dict);
+  nss := dict_to_vector (dict, 1);  
+  for (declare i int, i := 0; i < length (nss); i := i + 2)
+    {
+      if (cols [i] not in ('rdf', 'rdfs', 'scovo', 'sioc', 'aowl', 'xsd', 'virtrdf'))
+	{
+	  if (f)
+	    http (sprintf ('@prefix %s: <%s> . \n', nss[i], nss[i+1]), ses);
+	  else
+	    http (sprintf ('prefix %s: <%s>  \n', nss[i], nss[i+1]), ses);
+	}
+    }
   return string_output_string (ses);
 }
 ;
 
-create procedure rdf_view_ns_get_1 (in cols any, inout ses any, in f int)
+create procedure rdf_view_ns_get_1 (in cols any, inout dict any)
 {
-  declare dict, class any;
+  declare class any;
   declare ns, uri any;
 
-  dict := dict_new ();
 --  dbg_obj_print (cols);
   class := cols[0];
   cols := cols[1];
   ns := rdf_view_get_ns (class, uri);
-  if (ns is not null)
+  if (length (ns))
     dict_put (dict, ns, uri);
   foreach (any p in cols) do
     {
@@ -143,20 +161,9 @@ create procedure rdf_view_ns_get_1 (in cols any, inout ses any, in f int)
 --      dbg_obj_print (p);
       if (length (p[1]))
         ns := rdf_view_get_ns (p[1], uri);
-      if (ns is not null)
+      if (length (ns))
 	dict_put (dict, ns, uri);
     } 
-  cols := dict_to_vector (dict, 1);  
-  for (declare i int, i := 0; i < length (cols); i := i + 2)
-    {
-      if (cols [i] not in ('rdf', 'rdfs', 'scovo', 'sioc', 'aowl', 'xsd', 'virtrdf'))
-	{
-	  if (f)
-	    http (sprintf ('@prefix %s: <%s> . \n', cols[i], cols[i+1]), ses);
-	  else
-	    http (sprintf ('prefix %s: <%s>  \n', cols[i], cols[i+1]), ses);
-	}
-    }
 }
 ;
 
@@ -200,7 +207,7 @@ RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in 
        vname := _tbls[xx]||'Count';
        total_select := total_select || sprintf ('(cnt%d*cnt%d)+', xx*2, (xx*2)+1);
        total_tb := total_tb ||
-       	sprintf ('\n (select count(*) cnt%d from "%I"."%I"."%I") tb%d, \n (select count(*)+1 as cnt%d from DB.DBA.SYS_COLS where "TABLE" = ''%S'') tb%d,',
+       	sprintf ('\n (select count(*) cnt%d from "%I"."%I"."%I") tb%d, \n (select count(*)+1 as cnt%d from DB.DBA.TABLE_COLS where "TABLE" = ''%S'') tb%d,',
 		xx*2, name_part (_tbls[xx], 0), name_part (_tbls[xx], 1), name_part (_tbls[xx], 2), xx*2, (xx*2)+1, _tbls[xx], (xx*2)+1);
        if (not exists (select 1 from SYS_VIEWS where V_NAME = vname))
 	 {
@@ -302,7 +309,7 @@ create procedure rdf_view_get_ns (in uri varchar, out uriSearch varchar)
   delim := -1;
   uriSearch := uri;
   nsPrefix := null;
-  if (uri is null)
+  if (length (uri) = 0)
     return null;
   while (nsPrefix is null and delim <> 0)
     {
@@ -317,9 +324,11 @@ create procedure rdf_view_get_ns (in uri varchar, out uriSearch varchar)
     {
       declare cnt int;
       uriSearch := uri;
+      delim := -1;
       delim := coalesce (strrchr (uriSearch, '/'), 0);
       delim := __max (delim, coalesce (strrchr (uriSearch, '#'), 0));
       delim := __max (delim, coalesce (strrchr (uriSearch, ':'), 0));
+      if (delim > 0)
       uriSearch := subseq (uriSearch, 0, delim + 1);
       cnt := 0;  
       while (__xml_get_ns_uri (sprintf ('rv%d', cnt), 2) is not null)
@@ -327,6 +336,8 @@ create procedure rdf_view_get_ns (in uri varchar, out uriSearch varchar)
 	  cnt := cnt + 1;
 	}
       nsPrefix := sprintf ('rv%d', cnt);
+      if (uri = '')
+	signal ('.....', 'Empty IRI is not allowed here');
       DB.DBA.XML_SET_NS_DECL (nsPrefix, uriSearch, 2);
     }
   return nsPrefix;
@@ -409,11 +420,13 @@ rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0, 
 
    for (declare xx any, xx := 0; xx < length (_tbls) ; xx := xx + 1)
       {
-  	   declare cols_arr, inx, col_name any;
+  	   declare cols_arr, inx, col_name, owner, owner_l any;
 	   tbl := _tbls[xx];
 	   cols_arr := get_keyword (tbl, cols);
 	   tbl_name := name_part (tbl, 2);
+	   owner := name_part (tbl, 1);
 	   tbl_name_l := rdf_view_tb (tbl_name);
+	   owner_l := rdf_view_tb (owner);
 	   tname := tbl_name_l || suffix;
 
 	   ret := ret || rdf_view_sp (6) || '# Maps from columns of "' || tbl || '"\n';
@@ -423,21 +436,21 @@ rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0, 
 	     ret := ret || rdf_view_sp (6) || sprintf (' a %s ;\n', rdf_view_uri_curie (cols_arr[0]));
 
 	   inx := 0;
-	   for select "COLUMN" from SYS_COLS where "TABLE" = tbl order by COL_ID do
+	   for select "COLUMN" from TABLE_COLS where "TABLE" = tbl order by COL_ID do
 	     {
 	       col_name := lower ("COLUMN");
 	       if (cols_arr[1][inx][0] = 0 or cols_arr[1][inx][0] = 4)
 		 {
-	           ret := ret || rdf_view_sp (6) || sprintf ('%s %s.%s as %s:%s-%s ;\n',
+	           ret := ret || rdf_view_sp (6) || sprintf ('%s %s.%s as %s:%s-%s-%s ;\n',
 				rdf_view_col_type (qualifier, rdf_view_col("COLUMN"), cols_arr[1][inx][1]), 
-				tname, rdf_view_sql_col ("COLUMN"), qualifier, tbl_name_l, rdf_view_col("COLUMN") );
+				tname, rdf_view_sql_col ("COLUMN"), qualifier, owner_l, tbl_name_l, rdf_view_col("COLUMN") );
 	     }
 	       else if (isstring (cols_arr[1][inx][0])) -- binary object
 		 {
-		    ret := ret || rdf_view_sp (6) || sprintf ('%s %s as %s:%s-%s ;\n',
+		    ret := ret || rdf_view_sp (6) || sprintf ('%s %s as %s:%s-%s-%s ;\n',
 		       rdf_view_col_type (qualifier, rdf_view_col("COLUMN"), cols_arr[1][inx][1]), 
 		       rdf_view_get_bin_rel (qualifier, suffix, tbl, col_name, pkcols),
-		       qualifier, tbl_name_l, rdf_view_col("COLUMN"));
+		       qualifier, owner_l, tbl_name_l, rdf_view_col("COLUMN"));
 		 }
                inx := inx + 1; 
 	     }
@@ -452,15 +465,15 @@ rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0, 
    	    ret := trim (ret, ';');
    	    ret := ret || '.\n';
 	   inx := 0;
-	   for select "COLUMN" from SYS_COLS where "TABLE" = tbl order by COL_ID do
+	   for select "COLUMN" from TABLE_COLS where "TABLE" = tbl order by COL_ID do
 	     {
 	       col_name := lower ("COLUMN");
 	       if (isstring (cols_arr[1][inx][0]))
 		 {
-		    ret := ret || rdf_view_sp (6) || sprintf ('%s a aowl:Content ; aowl:body %s.%s as %s:%s-%s-content ; aowl:type "%s" .\n',
+		    ret := ret || rdf_view_sp (6) || sprintf ('%s a aowl:Content ; aowl:body %s.%s as %s:%s-%s-%s-content ; aowl:type "%s" .\n',
 		       rdf_view_get_bin_rel (qualifier, suffix, tbl, col_name, pkcols),
 		       tname, rdf_view_sql_col ("COLUMN"),
-		       qualifier, tbl_name_l, rdf_view_col("COLUMN"), cols_arr[1][inx][0]);
+		       qualifier, owner_l, tbl_name_l, rdf_view_col("COLUMN"), cols_arr[1][inx][0]);
 		 }
                inx := inx + 1; 
 	     }
@@ -665,7 +678,7 @@ rdf_view_create_class (in decl varchar, in _tbl varchar, in _host varchar, in qu
 		qualifier, tbl_name_l, _host, qualifier, tbl_name_l, sk_str, pk_text);
    cols_arr := get_keyword (_tbl, cols);
    inx := 0;
-   for select "COLUMN" as col from SYS_COLS where "TABLE" = _tbl order by COL_ID do
+   for select "COLUMN" as col from TABLE_COLS where "TABLE" = _tbl order by COL_ID do
      {
        if (isstring (cols_arr[1][inx][0]))
 	 {
@@ -752,7 +765,7 @@ RDF_OWL_FROM_TBL (in qual varchar, in _tbls any, in cols any := null)
       cols_arr := get_keyword (tbl, cols);
       if (length (cols_arr[0]))
 	http (sprintf ('%s:%s rdfs:subClassOf %s .\n', qual, cls, rdf_view_uri_curie (cols_arr[0])), ses);
-      for select "COLUMN" as col, COL_DTP as dtp from SYS_COLS where "TABLE" = tbl order by COL_ID do
+      for select "COLUMN" as col, COL_DTP as dtp from TABLE_COLS where "TABLE" = tbl order by COL_ID do
 	{
 	  declare xsd, label varchar;
 	  label := col;

@@ -507,7 +507,7 @@ sparp_exec_Narg (sparp_t *sparp, const char *pl_call_text, query_t **cached_qr_p
 
 
 static query_t *iri_to_id_nosignal_cached_qr = NULL;
-static const char *iri_to_id_nosignal_text = "DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (?)";
+static const char *iri_to_id_nosignal_text = "DB.DBA.RDF_MAKE_IID_OF_QNAME_COMP (?)";
 
 caddr_t
 sparp_iri_to_id_nosignal (sparp_t *sparp, ccaddr_t qname)
