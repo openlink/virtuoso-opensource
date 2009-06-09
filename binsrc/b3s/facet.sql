@@ -393,8 +393,7 @@ fct_xml_wrap (in tree any, in txt any)
 	  http (sprintf ('select  xmlelement (\'result\', 
 	  			     xmlattributes (\'text-d\' as "type"), 
 				     s_sum_page ("res", vector (\'%S\'))) 
-				     from (sparql select 
-				     	(<sql:vector_agg> (<bif:vector> (?c1, ?sm))) as ?res where { {', texp), ntxt);
+				     from (sparql ', texp), ntxt);
 	}
       else
 	{
@@ -575,7 +574,9 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any)
     {
       declare exp any;
       exp := cast (xpath_eval ('//text', tree) as varchar);
-      http (sprintf ('select (<SHORT_OR_LONG::>(?s%d)) as ?c1,  (<sql:S_SUM> ( <SHORT_OR_LONG::IRI_RANK> (?s%d), <SHORT_OR_LONG::>(?s%dtextp), <SHORT_OR_LONG::>(?o%d), ?sc ) ) as ?sm ', this_s, this_s, this_s, this_s), pre);
+      http (sprintf ('select 
+		  	(<sql:vector_agg> (<bif:vector> (?c1, ?sm))) as ?res where { { 
+      select (<SHORT_OR_LONG::>(?s%d)) as ?c1,  (<sql:S_SUM> ( <SHORT_OR_LONG::IRI_RANK> (?s%d), <SHORT_OR_LONG::>(?s%dtextp), <SHORT_OR_LONG::>(?o%d), ?sc ) ) as ?sm ', this_s, this_s, this_s, this_s), pre);
 
       http (sprintf ('order by desc (<sql:sum_rank> ((<sql:S_SUM> ( <SHORT_OR_LONG::IRI_RANK> (?s%d), <SHORT_OR_LONG::>(?s%dtextp), <SHORT_OR_LONG::>(?o%d), ?sc ) ) ) )', this_s, this_s, this_s), post);	    
       fct_post (tree, post, lim, offs);
