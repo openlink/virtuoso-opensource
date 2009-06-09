@@ -5863,6 +5863,7 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
           if (registry_get ('__sparql_mappers_debug') = '1')
 	    dbg_obj_prin1 ('Match PP ', MC_HOOK);
 	  new_opts := vector_concat (options, MC_OPTIONS, vector ('content-type', ret_content_type));
+	  commit work;
 	  rc := call (MC_HOOK) (graph_iri, new_origin_uri, dest, ret_body, dummy, dummy, MC_KEY, new_opts);
           if (registry_get ('__sparql_mappers_debug') = '1')
 	    {
