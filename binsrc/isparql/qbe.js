@@ -84,7 +84,7 @@ function init_qbe() {
 			} else {
 				this.svgsparql.selectNode(goodNode);
 			}
-			goodNode.MySetLabel(1,val); 
+			goodNode.MySetLabel(1,val);
 			this.svgsparql.deselectEdges();
 			this.svgsparql.deselectNodes();
 			this.svgsparql.deselectGroups();
@@ -99,7 +99,7 @@ function init_qbe() {
 				var l2 = this.svgsparql.nodes[i].getLabel(1);
 				if (l2 == old) { count++; }
 			}
-			if (count == 1) { this.svgsparql.qbe.Schemas.DeleteNode(old); } 
+			if (count == 1) { this.svgsparql.qbe.Schemas.DeleteNode(old); }
 			this.svgsparql.qbe.Schemas.InsertNode(this.svgsparql.qbe.Schemas.Bound,newLabel,"class",false,false);
 		}
 		this.setLabel(which,newLabel);
@@ -114,7 +114,7 @@ function init_qbe() {
 				var l2 = this.svgsparql.edges[i].getLabel(1);
 				if (l2 == old) { count++; }
 			}
-			if (count == 1) { this.svgsparql.qbe.Schemas.DeleteNode(old); } 
+			if (count == 1) { this.svgsparql.qbe.Schemas.DeleteNode(old); }
 			this.svgsparql.qbe.Schemas.InsertNode(this.svgsparql.qbe.Schemas.Bound,newLabel,"property_attr",false,false);
 		}
 		this.setLabel(which,newLabel);
@@ -178,18 +178,18 @@ iSPARQL.QBE = function () {
     },
 		selectNodeCallback:function(node) {
 			node.svg.setAttribute("stroke-width","4");
-			node.svg.setAttribute("stroke","#00f"); 
+			node.svg.setAttribute("stroke","#00f");
 			OAT.Dom.hide("qbe_props_edge");
 			OAT.Dom.hide("qbe_props_group");
 			OAT.Dom.show("qbe_props_node");
 			OAT.Dom.show("qbe_props_common");
 			self.props_win.caption.innerHTML = '&nbsp;Node';
-			
-		  
+
+
       var t = node.getLabel(2);
       if (t == '--type--') t = '';
 
-			$("qbe_node_type").selectedIndex = node.getType(); 
+			$("qbe_node_type").selectedIndex = node.getType();
 			$("qbe_node_id").value = node.getLabel(1);
 			$("qbe_node_res_type").value = t;
 			$("qbe_visible").disabled = false;
@@ -213,7 +213,7 @@ iSPARQL.QBE = function () {
 			OAT.Dom.show("qbe_props_edge");
 			OAT.Dom.show("qbe_props_common");
 			self.props_win.caption.innerHTML = '&nbsp;Connector';
-			
+
 			var val = edge.getLabel(1);
 			if (val == '?') val = '';
 			$("qbe_edge_value").value = val;
@@ -254,7 +254,7 @@ iSPARQL.QBE = function () {
         $("qbe_visible").disabled = true;
         $("qbe_orderby").disabled = true;
         $("qbe_group_id").disabled = true;
-  			$("qbe_group_type").selectedIndex = group.getType(); 
+  			$("qbe_group_type").selectedIndex = group.getType();
       }
 
 		  $("qbe_group_id").value = group.getLabel(1);
@@ -270,33 +270,33 @@ iSPARQL.QBE = function () {
 			OAT.Dom.hide("qbe_props_group");
 			self.props_win.caption.innerHTML = '&nbsp;';
 		},
-		addNodeCallback:function(node,loadMode) { 
+		addNodeCallback:function(node,loadMode) {
 			if (loadMode) { return; }
-			node.setType(OAT.SVGSparqlData.NODE_CIRCLE); 
+			node.setType(OAT.SVGSparqlData.NODE_CIRCLE);
 			node.MySetLabel(1,'?');
 			// node.MySetLabel(2,'--type--'); /* no type for resources! this works only for literals! */
 			self.svgsparql.deselectEdges();
 			self.svgsparql.deselectNodes();
 			self.svgsparql.deselectGroups();
-			self.svgsparql.selectNode(node); 
+			self.svgsparql.selectNode(node);
 		},
-		addEdgeCallback:function(edge,loadMode) { 
+		addEdgeCallback:function(edge,loadMode) {
 			//edge.setVisible(true);
 			if (loadMode) { return; }
 			edge.MySetLabel(1,'?');
 			self.svgsparql.deselectNodes();
 			self.svgsparql.deselectEdges();
 			self.svgsparql.deselectGroups();
-			self.svgsparql.selectEdge(edge); 
+			self.svgsparql.selectEdge(edge);
 		},
-		addGroupCallback:function(group,loadMode) { 
+		addGroupCallback:function(group,loadMode) {
 			group.setVisible(true);
 			group.setFill(self.group_color_seq.getNext());
 			if (loadMode) { return; }
 			group.MySetLabel(1,'?');
 			self.svgsparql.deselectEdges();
 			self.svgsparql.deselectGroups();
-			self.svgsparql.selectGroup(group); 
+			self.svgsparql.selectGroup(group);
 		},
 		removeNodeCallback:function(node) {
 			var type = node.getType();
@@ -307,7 +307,7 @@ iSPARQL.QBE = function () {
 					var l2 = self.svgsparql.nodes[i].getLabel(1);
 					if (l2 == label) { count++; }
 				}
-				if (count == 1) { self.Schemas.DeleteNode(label); } 
+				if (count == 1) { self.Schemas.DeleteNode(label); }
 			}
 			self.removeOrderBy(node);
 		},
@@ -318,15 +318,15 @@ iSPARQL.QBE = function () {
 				var l2 = self.svgsparql.edges[i].getLabel(1);
 				if (l2 == label) { count++; }
 			}
-			if (count == 1) { self.Schemas.DeleteNode(label); } 
+			if (count == 1) { self.Schemas.DeleteNode(label); }
 			self.removeOrderBy(edge);
 		},
 		removeGroupCallback:function(group){
 			self.removeOrderBy(group);
 		}
 	};
-	if (!OAT.Browser.isIE) { 
-		this.svgsparql = new OAT.SVGSparql("qbe_parent",options); 
+	if (!OAT.Browser.isIE) {
+		this.svgsparql = new OAT.SVGSparql("qbe_parent",options);
 		this.svgsparql.qbe = this;
 	}
 	var restrictionFunction = function(new_width,new_height)  { return new_width < 600; }
@@ -335,7 +335,7 @@ iSPARQL.QBE = function () {
 	OAT.Resize.create("qbe_resizer_area", "qbe_canvas", OAT.Resize.TYPE_XY,restrictionFunction);
 	OAT.Resize.create("qbe_resizer_area", "qbe_parent", OAT.Resize.TYPE_XY,restrictionFunction);
 	$("qbe_resizer_area").style.backgroundImage = 'url("'+OAT.Preferences.imagePath+"resize.gif"+'")';
-	
+
 	var win_width = 260;
 	var win_x = -20;
 
@@ -355,10 +355,10 @@ iSPARQL.QBE = function () {
 	$("page_qbe").appendChild(this.props_win.div);
 	self.l.addLayer(this.props_win.div);
 	this.props_win.content.appendChild($("qbe_props"));
- 
+
 	this.orderby_grid = new OAT.Grid("qbe_orderby_grid",0)
 	self.orderby_grid.createHeader([{value:'order by',sortable:0,draggable:0,resizable:0}]);
-	
+
 	this.addOrderBy = function(obj,addmode) {
 	    var index = self.orderby_grid.header.cells.length;
 	    if (obj.node2 && obj.node2.orderby_cell && !addmode) { index = obj.node2.orderby_cell.number; }
@@ -381,7 +381,7 @@ iSPARQL.QBE = function () {
 		var data = self.getSaveData();
 		iSPARQL.IO.save(data);
 	}
-	
+
 	/* return data for saving */
 	this.getSaveData = function() {
 		var dataObj = {
@@ -399,11 +399,11 @@ iSPARQL.QBE = function () {
 		dataObj.canvas = self.svgsparql.toXML();
 		dataObj.defaultGraph = $v('qbe_graph');
 
-		if(qe.cacheIndex == -1) { 
+		if(qe.cacheIndex == -1) {
 			var cache = qe.cache[qe.cacheIndex];
 			dataObj.data = (cache)? cache.data : false;
 		}
-  		
+
 		for (var i=0;i < self.Schemas.Imported.length;i++) {
   			dataObj.prefixes.push(self.Schemas.Imported[i]);
 		}
@@ -412,7 +412,7 @@ iSPARQL.QBE = function () {
 	}
 
 	this.prefixes = [];
-  
+
 	this.resetPrefixes = function(){
 		self.prefixes = [];
 		for (var i=0;i<window.defaultPrefixes.length;i++) {
@@ -443,13 +443,13 @@ iSPARQL.QBE = function () {
 		var first = "";
 		var second = "";
 		var pf = false;
-		
+
 		for (var i=0;i<self.prefixes.length;i++) {
 			var prefix = self.prefixes[i];
 			if (s.substring(0,prefix.uri.length) == prefix.uri) {
 				first = prefix.uri;
 				pf = prefix.label+":";
-				second = s.substring(prefix.uri.length); 
+				second = s.substring(prefix.uri.length);
 				return [first,second,pf];
 			}
 		}
@@ -461,7 +461,7 @@ iSPARQL.QBE = function () {
 		second = s.substring(index+1);
 		return [first,second,pf];
 	}
-	
+
 	this.expandPrefix = function(str)	{
 	  var tmp = '';
 	  if(str.match(/^\?/))
@@ -470,7 +470,7 @@ iSPARQL.QBE = function () {
 	    return '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>';
 	  else if((tmp = str.match(/<(.*)>/)))
 	    return str;
-	  else 
+	  else
 	  {
 	    var idx = str.indexOf(':');
       if (idx != -1)
@@ -540,8 +540,8 @@ iSPARQL.QBE = function () {
 		},
 		Add:function(schema) {
 			var parts = self.getPrefixParts(schema);
-			if (!parts) { 
-				alert("Malformed schema!"); 
+			if (!parts) {
+				alert("Malformed schema!");
 				return;
 			}
 			var label = parts[2] || parts[0];
@@ -595,15 +595,15 @@ iSPARQL.QBE = function () {
 				}
 			}
 		},
-		NodeDragProcess:function(elm) { 
+		NodeDragProcess:function(elm) {
 			elm.firstChild.style.color = "#f00";
 			elm.firstChild.style.listStyleType = "none";
 		},
-		NodeDragDrop:function(target,x_,y_) { 
+		NodeDragDrop:function(target,x_,y_) {
 			/* insert into "Bound" tree */
 		    var treeNode = this.originalElement.node;
 			self.Schemas.InsertNode(self.Schemas.Bound,treeNode.uri,treeNode.uritype,treeNode.label,treeNode.comment);
-			
+
 		    var val = self.putPrefix('<' + treeNode.uri + '>');
 		    if (target == qbe.svgsparql) {
 				if (treeNode.uritype == 'class') {
@@ -617,11 +617,11 @@ iSPARQL.QBE = function () {
 				var pos = OAT.Dom.position(target.svgsparql.parent);
 				var x = x_ - pos[0];
 				var y = y_ - pos[1];
-				target.setValueByDrop(val,treeNode.uritype,x,y); 
+				target.setValueByDrop(val,treeNode.uritype,x,y);
 			} else if (target == self.props_win.content) {
-				if (self.svgsparql.selectedNode) 
+				if (self.svgsparql.selectedNode)
 				self.svgsparql.selectedNode.setValueByDrop(val,treeNode.uritype);
-				else if (self.svgsparql.selectedEdge) 
+				else if (self.svgsparql.selectedEdge)
 				self.svgsparql.selectedEdge.setValueByDrop(val,treeNode.uritype);
 			}
 		},
@@ -648,45 +648,45 @@ iSPARQL.QBE = function () {
 			if (!parts) { return; }
 			var schemaLabel = parts[2] || parts[0];
 			var schemaNode = self.Schemas.MergeSchema(parent,parts[0],parts[0],schemaLabel,false);
-			
+
 			var nodeLabel = label || parts[1];
-			
+
 			/* search for Classes / Properties node */
 			var labels = {};
 			for (var i=0;i<schemaNode.children.length;i++) {
 				var child = schemaNode.children[i];
 				labels[child._label.innerHTML] = child;
 			}
-			
+
 			var parentNode = false;
 			if (type == 'class') {
 				if ("Classes" in labels) {
 					parentNode = labels["Classes"];
 				} else {
-					parentNode = schemaNode.createChild('Classes',1); 
+					parentNode = schemaNode.createChild('Classes',1);
 					parentNode.collapse();
 				}
 			} else {
 				if ("Properties" in labels) {
 					parentNode = labels["Properties"];
 				} else {
-					parentNode = schemaNode.createChild('Properties',1); 
+					parentNode = schemaNode.createChild('Properties',1);
 					parentNode.collapse();
 				}
 			}
-			
+
 			for (var i=0;i<parentNode.children.length;i++) {
 				var child = parentNode.children[i];
 				if (child.uri == uri) { return; } /* already inserted */
 			}
-			
-			var leaf = parentNode.createChild(nodeLabel,0); 
+
+			var leaf = parentNode.createChild(nodeLabel,0);
 
 			if (comment) {
 				leaf.li.alt = comment;
 				leaf.li.title = comment;
 			}
-			
+
 			leaf.uri = uri;
 			leaf.uritype = type;
 			leaf.bound = schemaNode.bound;
@@ -721,7 +721,7 @@ iSPARQL.QBE = function () {
 				var child1 = schemaNode.children[i];
 				for (var j=0;j<child1.children.length;j++) {
 					var child2 = child1.children[j];
-					if (child2.uri == url) { 
+					if (child2.uri == url) {
 						containerNode = child1;
 						finalNode = child2;
 					}
@@ -883,14 +883,14 @@ iSPARQL.QBE = function () {
 		}
 	}
 	self.Schemas.Reset();
-	
+
 	OAT.MSG.attach(self.Schemas.Tree, OAT.MSG.TREE_EXPAND, function(sender,msgcode,node) {
 		if (node.uritype) {
 			self.Schemas.Update(node);
 		}
 		if (node == self.Schemas.Unbound) { self.Schemas.Refresh(true); }
 	});
-  
+
 
 	var schema_cl = new OAT.Combolist([],self.prefixes[0].uri);
 	schema_cl.input.name = "schema";
@@ -903,25 +903,25 @@ iSPARQL.QBE = function () {
 	for (var i = 0;i < self.prefixes.length; i++) {
 		if (!self.prefixes[i].hidden) { schema_cl.addOption(self.prefixes[i].uri); }
 	}
-      
+
 	this.func_clear = function() {
 		tab.go(tab_qbe);
 		if (confirm('Are you sure you want to clear the pane?')) {
 			self.clear();
 		}
 	}
-	
+
 	this.func_load = function() {
     	var callback = function(path,file,data){
         	self.loadFromString(data.query);
 		}
 		iSPARQL.IO.load(callback);
 	}
-	
+
 	this.func_save = function() {
 		self.save();
 	}
-	
+
 	this.func_saveas = function() {
 		self.save();
 	}
@@ -931,19 +931,19 @@ iSPARQL.QBE = function () {
 	var icon_load, icon_save, icon_saveas, icon_run, icon_generate, icon_get_from_adv, icon_arrange;
 	//var icon_back, icon_forward, icon_start, icon_finish;
 	var icon_datasets, icon_graph_add;
-	
+
 	var t = new OAT.Toolbar("qbe_toolbar");
-	
+
 	icon_clear = t.addIcon(0,"images/new.png","Clear Pane",self.func_clear);
 	OAT.Dom.attach("menu_qbe_clear","click",self.func_clear);
 
-	icon_load = t.addIcon(0,"images/open_h.png","Open",self.func_load); 
+	icon_load = t.addIcon(0,"images/open_h.png","Open",self.func_load);
 	OAT.Dom.attach("menu_qbe_load","click",self.func_load);
 
-	icon_save = t.addIcon(0,"images/save_h.png","Save",self.func_save); 
+	icon_save = t.addIcon(0,"images/save_h.png","Save",self.func_save);
 	OAT.Dom.attach("menu_qbe_save","click",self.func_save);
 
-	icon_saveas = t.addIcon(0,"images/save_as_h.png","Save As...",self.func_saveas); 
+	icon_saveas = t.addIcon(0,"images/save_as_h.png","Save As...",self.func_saveas);
 	OAT.Dom.attach("menu_qbe_saveas","click",self.func_saveas);
 
 	t.addSeparator();
@@ -961,13 +961,13 @@ iSPARQL.QBE = function () {
 		self.svgsparql.mode = OAT.SVGSparqlData.MODE_ADD;
 	});
 	var process = function(elm) { elm.firstChild.style.color = "#f00"; elm.firstChild.style.listStyleType = "none";}
-	var drop = function(target,x_,y_) { 
+	var drop = function(target,x_,y_) {
 	    if (target == qbe.svgsparql) {
 			var pos = OAT.Dom.position(target.parent);
 			var x = x_ - pos[0];
 			var y = y_ - pos[1];
 			node = target.addNode(x,y,"",0);
-	    }; 
+	    };
 	}
 	if (self.svgsparql) { self.svgsparql.ghostdrag.addSource(icon_add,process,drop); }
 	OAT.Dom.unlink(icon_add.firstChild);
@@ -983,11 +983,11 @@ iSPARQL.QBE = function () {
 		icon_add.toggleState(0);
 		self.svgsparql.mode = OAT.SVGSparqlData.MODE_DRAW;
 	});
-	var process = function(elm) { 
-		elm.firstChild.style.color = "#f00"; 
+	var process = function(elm) {
+		elm.firstChild.style.color = "#f00";
 		elm.firstChild.style.listStyleType = "none";
 	}
-	var drop = function(target,x_,y_) { 
+	var drop = function(target,x_,y_) {
 	    if (target != qbe.svgsparql && !target.node2) {
 				var pos = OAT.Dom.position(target.svgsparql.parent);
 				var x = x_ - pos[0];
@@ -1051,16 +1051,16 @@ iSPARQL.QBE = function () {
 	this.func_run = function() {
 	  self.RunQuery();
 	}
-	
+
 	this.func_generate = function() {
 		//if (tab.selectedIndex != 0 && !tab_qbe.window) return;
-		tab.go(tab_query); 
+		tab.go(tab_query);
 		$('query').value = self.QueryGenerate();
 		$('default-graph-uri').value = '';
 		$('adv_sponge').value = $v('qbe_sponge');
 		iSPARQL.Common.setQuery($('query').value);
 	}
-	
+
 	this.func_get_from_adv = function() {
 		tab.go(tab_qbe);
 		//if (tab.selectedIndex != 0 && !tab_qbe.window) return;
@@ -1069,14 +1069,14 @@ iSPARQL.QBE = function () {
 		$('qbe_graph').value = $v('default-graph-uri').trim();
 		$('qbe_sponge').value = $v('adv_sponge');
 	}
-	
+
 	this.func_arrange = function() {
 		tab.go(tab_qbe);
 		//if (tab.selectedIndex != 0 && !tab_qbe.window) return;
 		self.svgsparql.reposition();
 	}
 
-	icon_run = t.addIcon(0,"images/cr22-action-player_play.png","Run Query",self.func_run); 
+	icon_run = t.addIcon(0,"images/cr22-action-player_play.png","Run Query",self.func_run);
 	OAT.Dom.attach("menu_qbe_run","click",self.func_run);
 
 	t.addSeparator();
@@ -1084,12 +1084,12 @@ iSPARQL.QBE = function () {
 	icon_generate = t.addIcon(0,"images/cr22-action-exec.png","Generate",self.func_generate);
 	OAT.Dom.attach("menu_qbe_generate","click",self.func_generate);
 
-	icon_get_from_adv = t.addIcon(0,"images/compfile.png","Get from Advanced",self.func_get_from_adv); 
+	icon_get_from_adv = t.addIcon(0,"images/compfile.png","Get from Advanced",self.func_get_from_adv);
 	OAT.Dom.attach("menu_qbe_get_from_adv","click",self.func_get_from_adv);
 
 	t.addSeparator();
 
-	icon_arrange = t.addIcon(0,"images/make_kdevelop.png","Auto Arrange",self.func_arrange); 
+	icon_arrange = t.addIcon(0,"images/make_kdevelop.png","Auto Arrange",self.func_arrange);
 	OAT.Dom.attach("menu_qbe_arrange","click",self.func_arrange);
 
 	t.addSeparator();
@@ -1101,16 +1101,16 @@ iSPARQL.QBE = function () {
 			OAT.Dom.hide(self.dataset_win.div);
 		}
 		self.l.raise(self.dataset_win.div);
-	}); 
+	});
 	//icon_datasets.style.cssFloat = 'right';
 
 	var ds_graph_add = function() {
 		self.addDataSource($v('qbe_graph').trim());
 		$('qbe_graph').value = '';
-		//return;    
+		//return;
 		self.Schemas.Refresh();
 	};
-  
+
 	var qbe_graph_input = OAT.Dom.create("input");
 	qbe_graph_input.id = "qbe_graph";
 	qbe_graph_input.name = "qbe_graph";
@@ -1133,7 +1133,7 @@ iSPARQL.QBE = function () {
 	qbe_datasource_cnt.innerHTML = '0';
 
 	OAT.Dom.append([t.div,qbe_datasource_cnt,qbe_graph_label,qbe_graph_input]);
-	
+
 	icon_graph_add = t.addIcon(0,"images/edit_add.png","add",ds_graph_add)
 	//OAT.Dom.attach("qbe_datasource_graph_add","click",ds_graph_add);
 	icon_graph_add.style.marginTop = '6px';
@@ -1144,23 +1144,23 @@ iSPARQL.QBE = function () {
 	this.dataset_win.content.appendChild($("qbe_dataset_div"));
 	this.dataset_win.onclose = function() { OAT.Dom.hide(self.dataset_win.div); }
 	OAT.Dom.hide(self.dataset_win.div);
-  
+
 	this.dataSourceNum = 1;
 
 	this.addDataSource = function(val,type) {
 	    if (!val){ alert('Empty Information Source!'); return false; }
-	    
+
 	    var table = $('qbe_dataset_list');
 	    if (!table.tBodies.length) {
 			var body = OAT.Dom.create("tbody")
 	    	table.appendChild(body);
 	    }
-	    
+
 	    var row = OAT.Dom.create("tr");
 	    OAT.Dom.addClass(row,"odd");
 	    row.id = 'ds_list_row'+self.dataSourceNum;
 	    table.tBodies[0].appendChild(row);
-	    
+
 	    var cell_cb = OAT.Dom.create("td");
 	    cell_cb.innerHTML = '<input type="checkbox" name="ds_cbk" value="'+self.dataSourceNum+'" checked="checked"/>';
 	    cell_cb.style.textAlign = "center";
@@ -1169,18 +1169,18 @@ iSPARQL.QBE = function () {
 	    var cell_cb = OAT.Dom.create("td");
 	    cell_cb.innerHTML = '<select id="ds_type_'+self.dataSourceNum+'"><option value="F">From</option><option value="N"'+((type == 'N')?' selected="selected"':'')+'>Named</option></select>';
 	    row.appendChild(cell_cb);
-	  
+
 	    var cell_ds = OAT.Dom.create("td");
 	    cell_ds.innerHTML = '<input type="text" style="width: 440px;" id="ds_'+self.dataSourceNum+'" value="'+val+'"/>';
 	    row.appendChild(cell_ds);
-	  
+
 	    var cell_rm = OAT.Dom.create("td");
 	    cell_rm.style.textAlign = "center";
 	    row.appendChild(cell_rm);
 	    var rem_btn = OAT.Dom.create("button");
 	    rem_btn.innerHTML = '<img src="images/edit_remove.png" title="del" alt="del"/> del';
 	    cell_rm.appendChild(rem_btn);
-	    
+
 	  	OAT.Dom.attach(rem_btn,"click",function(){
 			OAT.Dom.unlink(row);
 			if (!table.tBodies[0].rows.length) { OAT.Dom.unlink(table.tBodies[0]); }
@@ -1191,11 +1191,11 @@ iSPARQL.QBE = function () {
 	  	OAT.Dom.attach($('ds_'+self.dataSourceNum),"change",function(){
 			self.Schemas.Refresh();
 	  	});
-	    
+
 	    $('qbe_datasource_cnt').innerHTML++;
 	    self.dataSourceNum++;
-	   
-		return true; 
+
+		return true;
 	}
 	OAT.Dom.attach("qbe_dataset_add_btn","click",function() {
 		self.addDataSource($v('qbe_dataset_add'));
@@ -1224,7 +1224,7 @@ iSPARQL.QBE = function () {
 		}
 		return from;
 	}
-  
+
 	OAT.Keyboard.add('return',self.func_run,null,null,null,$('qbe_graph'));
 	OAT.Dom.attach($('qbe_graph'),"change",self.Schemas.Refresh);
 
@@ -1232,9 +1232,9 @@ iSPARQL.QBE = function () {
 	/* input field for value editing */
 	OAT.Dom.attach("qbe_node_id","keyup",function() {
 		var obj = false;
-		if (self.svgsparql.selectedNode) 
-		{ 
-		  obj = self.svgsparql.selectedNode; 
+		if (self.svgsparql.selectedNode)
+		{
+		  obj = self.svgsparql.selectedNode;
   		if (obj)
   		{
         obj.MySetLabel(1,$v("qbe_node_id"));
@@ -1245,9 +1245,9 @@ iSPARQL.QBE = function () {
 	/* input fields for value editing */
 	OAT.Dom.attach("qbe_node_res_type","keyup",function() {
 		var obj = false;
-		if (self.svgsparql.selectedNode) 
-		{ 
-		  obj = self.svgsparql.selectedNode; 
+		if (self.svgsparql.selectedNode)
+		{
+		  obj = self.svgsparql.selectedNode;
   		if (obj)
   		{
         var val = $v("qbe_node_res_type");
@@ -1258,9 +1258,9 @@ iSPARQL.QBE = function () {
 	});
 	OAT.Dom.attach("qbe_edge_value","keyup",function() {
 		var obj = false;
-		if (self.svgsparql.selectedEdge) 
+		if (self.svgsparql.selectedEdge)
 		{
-		  obj = self.svgsparql.selectedEdge; 
+		  obj = self.svgsparql.selectedEdge;
       var val = $v("qbe_edge_value");
       if (val.trim() == '') val = '?';
   		if (obj)
@@ -1271,32 +1271,32 @@ iSPARQL.QBE = function () {
 	/* input field for value editing */
 	OAT.Dom.attach("qbe_group_id","keyup",function() {
 		var obj = false;
-		if (self.svgsparql.selectedGroup) 
-		{ 
-		  obj = self.svgsparql.selectedGroup; 
+		if (self.svgsparql.selectedGroup)
+		{
+		  obj = self.svgsparql.selectedGroup;
   		if (obj)
   		{
         obj.MySetLabel(1,$v("qbe_group_id"));
   		}
 		}
 	});
-	
+
 	/* input field for node type switching */
 	OAT.Dom.attach("qbe_node_type","change",function() {
 		var obj = false;
 		if (self.svgsparql.selectedNode) {
-			obj = self.svgsparql.selectedNode; 
+			obj = self.svgsparql.selectedNode;
 			obj.setType($v('qbe_node_type'));
 			self.svgsparql.selectNode(obj);
 		}
-	}); 
+	});
 
 	/* input field for group type switching */
 	OAT.Dom.attach("qbe_group_type","change",function() {
 		var obj = false;
-		if (self.svgsparql.selectedGroup) 
+		if (self.svgsparql.selectedGroup)
 		{
-		  obj = self.svgsparql.selectedGroup; 
+		  obj = self.svgsparql.selectedGroup;
 		  if ($v("qbe_group_type") == OAT.SVGSparqlData.GROUP_GRAPH)
 		  {
 		    obj.MySetType($v("qbe_group_type"));
@@ -1308,20 +1308,20 @@ iSPARQL.QBE = function () {
   		}
   		self.svgsparql.selectGroup(obj);
 		}
-	}); 
+	});
 
 	/* input field for node type switching */
 	OAT.Dom.attach("qbe_edge_type","change",function() {
 		var obj = false;
-		if (self.svgsparql.selectedEdge) 
-		{ 
-		  obj = self.svgsparql.selectedEdge; 
+		if (self.svgsparql.selectedEdge)
+		{
+		  obj = self.svgsparql.selectedEdge;
 		  if($("qbe_edge_type").checked)
   		  obj.setType(1);
   		else
   		  obj.setType(0);
 		}
-	}); 
+	});
 
 	/* obj 'visibility' */
 	OAT.Dom.attach("qbe_visible","change",function() {
@@ -1358,7 +1358,7 @@ iSPARQL.QBE = function () {
 	var fileRef = function() {
 	  var path = iSPARQL.Common.getFilePath();
 	  var pathDefault = iSPARQL.Common.getDefaultPath();
-	    
+
 	  var ext = $v('qbe_savetype');
 
 		var name = OAT.Dav.getNewFile(path,'.' + ext);
@@ -1380,7 +1380,7 @@ iSPARQL.QBE = function () {
 		}
 		qe.execute(p);
 	}
-	
+
 	this.loadFromString = function(data) {
 		var findByLabel = function(objs, label) {
 			for (var i = 0;i < objs.length;i++)
@@ -1430,7 +1430,7 @@ iSPARQL.QBE = function () {
 	            new_group.setVisible(false);
 	          if (group) new_group.setParent(group);
 	  		    walkSparqlQuery(obj.content,nodes,new_group);
-	  
+
 	          if (findByLabel(nodes,g) != -1)
 	          {
 	            var inx = findByLabel(nodes,g);
@@ -1444,7 +1444,7 @@ iSPARQL.QBE = function () {
 	      			self.svgsparql.removeNode(node);
 	            nodes.splice(inx,1);
 	          }
-	  
+
 	  		    return new_group;
 	        break;
 	        case "pattern":
@@ -1462,18 +1462,18 @@ iSPARQL.QBE = function () {
 	            nodes.push(node1);
 	          } else
 	            node1 = nodes[findByLabel(nodes,s)];
-	            
+
 	          var o = self.putPrefix(obj.o);
-	          if (obj.p == '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>' && 
+	          if (obj.p == '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>' &&
 	               (!o.match(/^\?/) ||
 	                o.match(/^\?/) && obj.obj.variables.length != 0 && obj.obj.variables.find(o.substring(1)) == -1)
 	             )
 	          {
 	            node1.MySetLabel(2,o);
-	            return node1;  
+	            return node1;
 	            break;
 	          }
-	          
+
 	          if (findByLabel(nodes,o) == -1) {
 	            node2 = self.svgsparql.addNode(0,0,"",1);
 	            node2.MySetLabel(1,o);
@@ -1481,14 +1481,14 @@ iSPARQL.QBE = function () {
 	              node2.setType(OAT.SVGSparqlData.NODE_CIRCLE);
 	            else
 	              node2.MySetLabel(2,self.putPrefix(obj.otype));
-	              
+
 	            if (!o.match(/^\?/) || (o.match(/^\?/) && obj.obj.variables.length != 0 && obj.obj.variables.find(o.substring(1)) == -1))
 	              node2.setVisible(false);
 	            if (group) node2.setGroup(group);
 	            nodes.push(node2);
 	          } else
 	            node2 = nodes[findByLabel(nodes,o)];
-	            
+
 	          var p = self.putPrefix(obj.p);
 	    			var edge = self.svgsparql.addEdge(node1,node2,"",1);
 	    			edge.MySetLabel(1,p);
@@ -1496,14 +1496,14 @@ iSPARQL.QBE = function () {
 	    			  edge.setType(OAT.SVGSparqlData.EDGE_DASHED);
 	          if (!p.match(/^\?/) || (p.match(/^\?/) && obj.obj.variables.length != 0 && obj.obj.variables.find(p.substring(1)) == -1))
 	            edge.setVisible(false);
-	          return node1;  
+	          return node1;
 	        break;
 	        default:
 	        break;
 	      }
 	  	  return ret;
 	  	}
-  	
+
 	  	try {
 			if (data.match(/<[\w:_ ]+>/)) {
 				var xml = OAT.Xml.createXmlDoc(data);
@@ -1513,7 +1513,7 @@ iSPARQL.QBE = function () {
 			if (xml.firstChild && xml.firstChild.tagName == 'sparql_design') {
 				self.clear();
 				self.svgsparql.fromXML(xml);
-				
+
 			} else if (xml.firstChild && xml.getElementsByTagName("iSPARQL").length) {
 			  if (xml.getElementsByTagName("ISparqlDynamicPage").length)
 			  {
@@ -1528,7 +1528,7 @@ iSPARQL.QBE = function () {
 				if (isparql_node.getElementsByTagName("sparql_design").length) {
 				  self.svgsparql.fromXML(isparql_node.getElementsByTagName("sparql_design")[0]);
 				}
-				
+
 				if (xml.getElementsByTagName("schema").length) {
 				  var schemas = xml.getElementsByTagName("schema");
 				  for (var i=0;i < schemas.length;i++)
@@ -1544,12 +1544,12 @@ iSPARQL.QBE = function () {
 				  var service = xml.getElementsByTagName("service")[0];
 				  $('service').value = OAT.Xml.textValue(service);
 				}
-				
+
 					for (var i=0;i<self.svgsparql.groups.length;i++)
 					  self.svgsparql.groups[i].MySetType(self.svgsparql.groups[i].getType());
 					design_loaded = true;
 			  }
-			  
+
 			} else if (xml.firstChild && xml.getElementsByTagName("sparql").length) {
 			  var nodes = xml.getElementsByTagName("sparql");
 			  for (var i=0;i<nodes.length;i++)
@@ -1578,7 +1578,7 @@ iSPARQL.QBE = function () {
 				self.Schemas.Reset();
 				for (var i=0;i<sq.prefixes.length;i++)
 				  self.Schemas.Import(sq.prefixes[i].uri,1);
-				  
+
 			  $('qbe_graph').value = '';
 			  if (sq.from instanceof Array)  {
 			  for(var i = 0;i<sq.from.length ;i++)
@@ -1605,11 +1605,11 @@ iSPARQL.QBE = function () {
 				new_group.MySetType(OAT.SVGSparqlData.GROUP_CONSTRUCT);
 					walkSparqlQuery(sq.construct,const_nodes,new_group);
 				  }
-			  
+
 				var nodes = [];
 				walkSparqlQuery(sq.where,nodes,false);
 			} else {
-				
+
 				for (var i=0;i<self.svgsparql.nodes.length;i++) {
 					var node = self.svgsparql.nodes[i];
 					self.Schemas.InsertNode(self.Schemas.Bound,node.getLabel(1),"class",false,false);
@@ -1645,15 +1645,15 @@ iSPARQL.QBE = function () {
 
 			// self.Schemas.Refresh();
 			if (!design_loaded) { self.svgsparql.reposition(); }
-			
+
 		} catch (e) {
 			self.clear();
 			alert('There was an error trying to visualize the query. Please check if the query is valid.');
 		}
 	}
-	
+
 	this.QueryGenerate = function()	{
-	  	  
+
     var proc_nodes = {};
     var used_prefixes = Array();
     var gc = 0;
@@ -1662,9 +1662,9 @@ iSPARQL.QBE = function () {
     var oc = 0;
   	var sq = new OAT.SparqlQuery();
   	var where;
-  	
+
   	var QueryGenerateProcNode = function(node,sq_grp,sq,group) {
-  	  
+
   	  if (!proc_nodes[group]) proc_nodes[group] = [];
 	    if (node instanceof OAT.SVGSparqlGroup)
 	    {
@@ -1672,28 +1672,28 @@ iSPARQL.QBE = function () {
 	      {
             var sq_grp_new = new OAT.SparqlQueryDataUnion(sq_grp,sq);
             sq_grp.children.push(sq_grp_new);
-        } 
-        else if (node.getType() == OAT.SVGSparqlData.GROUP_OPTIONAL) 
+        }
+        else if (node.getType() == OAT.SVGSparqlData.GROUP_OPTIONAL)
         {
             var grp = new OAT.SparqlQueryDataOptional(sq_grp,sq);
             var sq_grp_new = new OAT.SparqlQueryDataGroup(grp,sq);
             grp.content = sq_grp_new;
             sq_grp.children.push(grp);
-        } 
-        else if (node.getType() == OAT.SVGSparqlData.GROUP_CONSTRUCT) 
+        }
+        else if (node.getType() == OAT.SVGSparqlData.GROUP_CONSTRUCT)
         {
             var sq_grp_new = new OAT.SparqlQueryDataGroup(sq,sq);
             sq.construct = sq_grp_new;
-        } 
+        }
         else
         {
           if (node.getLabel(1) == '?' || node.getLabel(1) == '')
-          { 
-            if (gc > 0) node.MySetLabel(1,'?g' + gc); 
-            else node.MySetLabel(1,'?g'); 
-            gc++; 
+          {
+            if (gc > 0) node.MySetLabel(1,'?g' + gc);
+            else node.MySetLabel(1,'?g');
+            gc++;
           }
-        
+
           var grp = new OAT.SparqlQueryDataGraph(sq_grp,sq);
           grp.name = node.getLabel(1);
           var sq_grp_new = new OAT.SparqlQueryDataGroup(grp,sq);
@@ -1705,22 +1705,22 @@ iSPARQL.QBE = function () {
             if ((tmp = node.getLabel(1).match(/\?(.*)$/)) && sq.variables.find(tmp[1]) == -1)
               sq.variables.push(tmp[1]);
         }
-        
+
         var primary_nodes = [];
       	// find primary nodes (the once that are not a child of any)
-    		for (var i=0;i < node.nodes.length;i++) 
+    		for (var i=0;i < node.nodes.length;i++)
     		{
     			var tmp_node = node.nodes[i];
     			var is_prim = 1;
     			if (node != tmp_node.group)
     			  is_prim = 0;
     			else
-      		  for (var n=0;n < tmp_node.edges.length;n++) 
+      		  for (var n=0;n < tmp_node.edges.length;n++)
           	{
-          	  if ((tmp_node.edges[n].node1.group != tmp_node.group && 
-          	       tmp_node.edges[n].node2.group == tmp_node.group) 
+          	  if ((tmp_node.edges[n].node1.group != tmp_node.group &&
+          	       tmp_node.edges[n].node2.group == tmp_node.group)
           	       ||
-          	      (tmp_node.edges[n].node2.group != tmp_node.group && 
+          	      (tmp_node.edges[n].node2.group != tmp_node.group &&
           	       tmp_node.edges[n].node1.group == tmp_node.group))
           	  {
                 var ptr = new OAT.SparqlQueryDataPattern(sq_grp_new,sq);
@@ -1728,7 +1728,7 @@ iSPARQL.QBE = function () {
                 QueryGenerateProcEdge(ptr,tmp_node.edges[n],sq_grp_new,sq,node);
           	  }
           	  if (tmp_node.edges[n].node2 == tmp_node)
-          	  { 
+          	  {
           	    is_prim = 0;
           	    break;
           	  }
@@ -1736,21 +1736,21 @@ iSPARQL.QBE = function () {
         	if (is_prim)
         	  primary_nodes.push(tmp_node);
     		}
-    		for (var n=0;n < primary_nodes.length;n++) 
+    		for (var n=0;n < primary_nodes.length;n++)
   		    QueryGenerateProcNode(primary_nodes[n],sq_grp_new,sq,node);
 
         var child_groups = [];
-    		for (var i=0;i < self.svgsparql.groups.length;i++) 
+    		for (var i=0;i < self.svgsparql.groups.length;i++)
     		{
     			var new_grp = self.svgsparql.groups[i];
     			var is_prim = 1;
   			  if (node != new_grp.parent)
   			    is_prim = 0;
   			  else
-    		    for (var n=0;n < new_grp.edges.length;n++) 
+    		    for (var n=0;n < new_grp.edges.length;n++)
         	  {
         	    if (new_grp.edges[n].node2 == grp)
-        	    { 
+        	    {
         	      is_prim = 0;
         	      break;
         	    }
@@ -1758,7 +1758,7 @@ iSPARQL.QBE = function () {
         	if (is_prim)
         	  child_groups.push(new_grp);
     		}
-    		for (var n=0;n < child_groups.length;n++) 
+    		for (var n=0;n < child_groups.length;n++)
   		    QueryGenerateProcNode(child_groups[n],sq_grp_new,sq,child_groups[n]);
 
         return grp;
@@ -1768,13 +1768,13 @@ iSPARQL.QBE = function () {
 		  if (node instanceof OAT.SVGSparqlNode && proc_nodes[group].find(node) == -1)
 		  {
         var t = node.getLabel(2);
-  
+
         if (node.getLabel(1) == '?' || node.getLabel(1) == '')
-        { if (sc > 0) node.MySetLabel(1,'?s' + sc); 
+        { if (sc > 0) node.MySetLabel(1,'?s' + sc);
           else node.MySetLabel(1,'?s');
-          sc++; 
+          sc++;
         }
-        
+
         if (t != '' && t != '--type--' && node.getType() == OAT.SVGSparqlData.NODE_CIRCLE)
         {
           var ptr = new OAT.SparqlQueryDataPattern(sq_grp,sq);
@@ -1794,20 +1794,20 @@ iSPARQL.QBE = function () {
             sq.variables.push(tmp[1]);
           //query_vars += node.getSValue() + ' ';
 		  }
-		  
+
 		  // then we go though all edges
-  		for (var n=0;n < node.edges.length;n++) 
+  		for (var n=0;n < node.edges.length;n++)
   		{
   		  // we go through all edges where the current node is a primary (left side) one
 			  if (//proc_nodes.find(node.edges[n].node1) == -1 &&
-			       node == node.edges[n].node1 && 
+			       node == node.edges[n].node1 &&
 			       (
 			         node instanceof OAT.SVGSparqlNode &&
 			         node.getType() == OAT.SVGSparqlData.NODE_CIRCLE
 			       )
 			     )
 			  {
-			    if (node.edges[n].node2 instanceof OAT.SVGSparqlNode && node.group != node.edges[n].node2.group) 
+			    if (node.edges[n].node2 instanceof OAT.SVGSparqlNode && node.group != node.edges[n].node2.group)
 			    {
 			      return false;
           } else {
@@ -1824,7 +1824,7 @@ iSPARQL.QBE = function () {
             }
             var next_grp = sq_grp;
           }
-          
+
           QueryGenerateProcEdge(ptr,node.edges[n],sq_grp,sq,group)
     		}
 			}
@@ -1833,21 +1833,21 @@ iSPARQL.QBE = function () {
   	}
 
   	var QueryGenerateProcEdge = function(ptr,edge,sq_grp,sq,group) {
-      // Init the names  
+      // Init the names
       if (edge.node1.getLabel(1) == '?' || edge.node1.getLabel(1) == '')
-      { if (sc > 0) edge.node1.MySetLabel(1,'?s' + sc); 
-        else edge.node1.MySetLabel(1,'?s'); 
-        sc++; 
+      { if (sc > 0) edge.node1.MySetLabel(1,'?s' + sc);
+        else edge.node1.MySetLabel(1,'?s');
+        sc++;
       }
       if (edge.getLabel(1) == '?' || edge.getLabel(1) == '')
-      { if (pc > 0) edge.MySetLabel(1,'?p' + pc); 
-        else edge.MySetLabel(1,'?p'); 
-        pc++; 
+      { if (pc > 0) edge.MySetLabel(1,'?p' + pc);
+        else edge.MySetLabel(1,'?p');
+        pc++;
       }
       if (edge.node2.getLabel(1) == '?' || edge.node2.getLabel(1) == '')
-      { if (oc > 0) edge.node2.MySetLabel(1,'?o' + oc); 
-        else edge.node2.MySetLabel(1,'?o'); 
-        oc++; 
+      { if (oc > 0) edge.node2.MySetLabel(1,'?o' + oc);
+        else edge.node2.MySetLabel(1,'?o');
+        oc++;
       }
       // Lets see if it is visible
       if (edge.getVisible())
@@ -1861,7 +1861,7 @@ iSPARQL.QBE = function () {
       self.optPrefix(ptr.s,used_prefixes);
       self.optPrefix(ptr.p,used_prefixes);
       self.optPrefix(ptr.o,used_prefixes);
-      
+
       // If it is a value node then we need to set the proper type
       if (edge.node2 instanceof OAT.SVGSparqlNode && edge.node2.getType() == OAT.SVGSparqlData.NODE_RECT)
       {
@@ -1880,7 +1880,7 @@ iSPARQL.QBE = function () {
 			return ptr;
   	}
 
-		for (var i=0;i < self.svgsparql.nodes.length;i++) 
+		for (var i=0;i < self.svgsparql.nodes.length;i++)
 		{
 		  if(self.svgsparql.nodes[i].getLabel(1).match(/\?s[0-9]*\W*/))
 		    sc++;
@@ -1891,7 +1891,7 @@ iSPARQL.QBE = function () {
 		  else if(self.svgsparql.nodes[i].getLabel(1).match(/\?p[0-9]*\W*/))
 		    pc++;
 		}
-		for (var i=0;i < self.svgsparql.groups.length;i++) 
+		for (var i=0;i < self.svgsparql.groups.length;i++)
 		{
 		  if(self.svgsparql.groups[i].getLabel(1).match(/\?s[0-9]*\W*/))
 		    sc++;
@@ -1902,7 +1902,7 @@ iSPARQL.QBE = function () {
 		  else if(self.svgsparql.groups[i].getLabel(1).match(/\?p[0-9]*\W*/))
 		    pc++;
 		}
-		for (var i=0;i < self.svgsparql.edges.length;i++) 
+		for (var i=0;i < self.svgsparql.edges.length;i++)
 		{
 		  if(self.svgsparql.edges[i].getLabel(1).match(/\?s[0-9]*\W*/))
 		    sc++;
@@ -1917,17 +1917,17 @@ iSPARQL.QBE = function () {
 
   	var primary_nodes = [];
   	// find primary nodes (the once that are not a child of any)
-		for (var i=0;i < self.svgsparql.nodes.length;i++) 
+		for (var i=0;i < self.svgsparql.nodes.length;i++)
 		{
 			var node = self.svgsparql.nodes[i];
 			var is_prim = 1;
 			if (node.group)
 			  is_prim = 0;
 			else
-  		  for (var n=0;n < node.edges.length;n++) 
+  		  for (var n=0;n < node.edges.length;n++)
       	{
       	  if (node.edges[n].node2 == node)
-      	  { 
+      	  {
       	    is_prim = 0;
       	    break;
       	  }
@@ -1937,17 +1937,17 @@ iSPARQL.QBE = function () {
 		}
 
     var child_groups = [];
-		for (var i=0;i < self.svgsparql.groups.length;i++) 
+		for (var i=0;i < self.svgsparql.groups.length;i++)
 		{
 			var grp = self.svgsparql.groups[i];
 			var is_prim = 1;
 		  if (false != grp.parent)
 		    is_prim = 0;
 		  else
-		    for (var n=0;n < grp.edges.length;n++) 
+		    for (var n=0;n < grp.edges.length;n++)
     	  {
     	    if (grp.edges[n].node2 == grp)
-    	    { 
+    	    {
     	      is_prim = 0;
     	      break;
     	    }
@@ -1968,13 +1968,13 @@ iSPARQL.QBE = function () {
     var qbe_graph = $v('qbe_graph').trim();
   	var from = [];
   	var named = [];
-    	
+
   	if (qbe_graph != '')
   	  from.push('<' + qbe_graph + '>');
 
     // get all checked named_graphs from named graphs tab
     var ds_cbks = document.getElementsByName('ds_cbk');
-    
+
     if(ds_cbks && ds_cbks.length > 0) {
       for(var n = 0; n < ds_cbks.length; n++)
       {
@@ -1986,16 +1986,16 @@ iSPARQL.QBE = function () {
           {
             if ($v('ds_type_'+ds_cbks[n].value) == 'N')
               named.push('<' + val + '>');
-            else 
+            else
               from.push('<' + val + '>');
           }
         }
       }
     }
-    
+
     sq.from = from;
     sq.from_named = named;
-    
+
 		for (var i=1;i < self.orderby_grid.header.cells.length;i++)
 		{
 		  var label = self.orderby_grid.header.cells[i].value.innerHTML;
@@ -2017,9 +2017,9 @@ iSPARQL.QBE = function () {
     full_query = sq.toString();
 
     return full_query;
-    
+
 	}
-	
+
 	if (window.__inherited) {
 		if (window.__inherited.callback) {
 			/* query returning */
@@ -2028,7 +2028,7 @@ iSPARQL.QBE = function () {
 				window.close();
 			}
 			OAT.Dom.attach("qbe_return_btn","click",returnRef);
-		} else { OAT.Dom.hide("qbe_return_btn");} 
+		} else { OAT.Dom.hide("qbe_return_btn");}
 
 	} else {
 		if (self.svgsparql) { self.loadFromString(default_qry); }

@@ -65,7 +65,7 @@ then
     VOS=1
 fi
 
-if [ "z$SERVER" = "z" ]  
+if [ "z$SERVER" = "z" ]
 then
     if [ "x$HOST_OS" != "x" ]
     then
@@ -92,10 +92,10 @@ VERSION_INIT()
       then
 	  VERSION=`cat vad_version`
       else
-        LOG "The vad_version does not exist, please verify your checkout"	 
+        LOG "The vad_version does not exist, please verify your checkout"
 	exit 1
       fi
-  else  
+  else
       rm -f version.tmp
       for i in `find . -name 'Entries' | grep -v "vad/" | grep -v "toolkit[a-z\-_]*/"`; do
 	  cat $i | grep "^[^D].*" | cut -f 3 -d "/" | sed -e "s/1\.//g" >> version.tmp
@@ -119,7 +119,7 @@ virtuoso_start() {
   starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
   timeout=600
   $myrm -f *.lck
-  if [ "z$HOST_OS" != "z" ] 
+  if [ "z$HOST_OS" != "z" ]
     then
       "$SERVER" +foreground &
   else
@@ -229,15 +229,15 @@ directory_init() {
   mkdir vad/data/iSPARQL/toolkit/images/markers
   mkdir vad/data/iSPARQL/toolkit/styles
   TOOLKIT_DIR=$HOME/binsrc/oat/toolkit
-  if [ -d toolkit ]; then 
+  if [ -d toolkit ]; then
     TOOLKIT_DIR=toolkit
   fi
   TOOLKIT_IMG_DIR=$HOME/binsrc/oat/images
-  if [ -d toolkit/images ]; then 
+  if [ -d toolkit/images ]; then
     TOOLKIT_IMG_DIR=toolkit/images
   fi
   TOOLKIT_CSS_DIR=$HOME/binsrc/oat/styles
-  if [ -d toolkit/styles ]; then 
+  if [ -d toolkit/styles ]; then
     TOOLKIT_CSS_DIR=toolkit/styles
   fi
   cp -p $TOOLKIT_DIR/*.js vad/data/iSPARQL/toolkit/

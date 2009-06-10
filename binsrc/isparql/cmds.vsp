@@ -1,0 +1,378 @@
+/*
+ *  $Id$
+ *
+ *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ *  project.
+ *
+ *  Copyright (C) 1998-2009 OpenLink Software
+ *
+ *  This project is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the
+ *  Free Software Foundation; only version 2 of the License, dated June 1991.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *
+*/
+
+<?vsp
+http_rewrite ();
+http_header ('Content_Type: text/javascript\r\n');
+declare _uri varchar;
+_uri := get_keyword('cmd_uri', params);
+--dbg_obj_print (_uri);
+?>
+
+var noun_type_id = {
+  _name: "id",
+  suggest: function(text, html) {
+    if (text.indexOf(".") >= 0) {return [];}
+    var number = parseInt(text);
+    if (isNaN(number)) {return [];}
+    if (number < 1) {return [];}
+    text = number;
+    return [ CmdUtils.makeSugg(text, null, number)];
+  }
+};
+
+var noun_type_integer = {
+  _name: "integer",
+  suggest: function(text, html) {
+    if (text.indexOf(".") >= 0) {return [];}
+    var number = parseInt(text);
+    if (isNaN(number)) {return [];}
+    text = number;
+    return [ CmdUtils.makeSugg(text, null, number)];
+  }
+}
+
+iSPARQL_ubiq = {
+  defaultPreferences: {"endpoint": "<?= _uri ?>", "endpoint_type": "isparql"},
+  getPrefValue: function(prefName)
+  {
+    if (!(Application.prefs.has(prefName)))
+    {
+      Utils.reportInfo ('no pref');
+      if (iSPARQL_ubiq.defaultPreferences.hasOwnProperty(prefName))
+        return iSPARQL_ubiq.defaultPreferences[prefName];
+      else return '';
+    }
+    return Application.prefs.get(prefName).value;
+  },
+  setPrefValue: function(prefName, prefValue)
+  {
+    Utils.reportInfo ('setPrefValue: ' + prefName + " " + prefValue);
+    if (!Application.prefs.has(prefName))
+    {
+      Application.prefs.setValue(prefName, prefValue);
+      return prefValue;
+    }
+    else
+    {
+      var new_pref = Application.prefs.get(prefName);
+      new_pref.value = prefValue;
+    }
+  },
+  setEndpoint: function(serverUrl)
+  {
+    iSPARQL_ubiq.setPrefValue('opl.isparql_ubiq.endpoint', serverUrl);
+  },
+  getEndpoint: function()
+  {
+    var ip = iSPARQL_ubiq.getPrefValue('opl.isparql_ubiq.endpoint');
+    if (!ip) ip = 'http://linkeddata.uriburner.com/isparql';
+    return ip;
+  },
+  setEndpointType: function (endpointType)
+  {
+    iSPARQL_ubiq.setPrefValue ('opl.isparql_ubiq.endpoint_type', endpointType);
+  },
+  getEndpointType: function ()
+  {
+    var et =  iSPARQL_ubiq.getPrefValue ('opl.isparql_ubiq.endpoint_type');
+
+    if (!et) return 'isparql';
+    return et;
+  },
+  setDefaultGraph: function (graphURI)
+  {
+    iSPARQL_ubiq.setPrefValue ('opl.isparql_ubiq.default_graph', graphURI);
+  },
+  getDefaultGraph: function ()
+  {
+    iSPARQL_ubiq.getPrefValue ('opl.isparql_ubiq.default_graph');
+  },
+  setSpongerOpts: function (spongeOpts)
+  {
+    iSPARQL_ubiq.setPrefValue ('opl.isparql_ubiq.sponger_opts', graphURI);
+  },
+  getSpongerOpts: function ()
+  {
+    iSPARQL_ubiq.getPrefValue ('opl.isparql_ubiq.sponger_opts');
+  },
+  setOAuthSvcUrl: function (url)
+  {
+      iSPARQL_ubiq.setPrefValue ('opl.isparql_ubiq.oauth_svc_url', url.text);
+  },
+  getOAuthSvcUrl: function (url)
+  {
+      iSPARQL_ubiq.getPrefValue ('opl.isparql_ubiq.oauth_svc_url');
+  },
+  getAuthType: function()
+  {
+    return null;
+  },
+  getUser:  function() { return null },
+  getSID: function () { return null },
+  runQuery: function()
+  {
+    return;
+  },
+  tabulateResult: function ()
+  {
+    return;
+  },
+  showResult: function ()
+  {
+    return;
+  },
+  checkParameter: function (parameter, parameterName)
+  {
+    if (!parameter || parameter.length < 1)
+    {
+      if (parameterName) {throw "Please, enter " + parameterName;}
+      throw "Bad parameter";
+    }
+  },
+  addParameter: function (modifiers, modifierName, parameters, parameterName, modifierCheck)
+  {
+    if (modifierCheck)
+    {
+      if (!modifiers[modifierName]) {throw "Please, enter " + modifierName;}
+        iSPARQL_ubiq.checkParameter(modifiers[modifierName].text, modifierName);
+    }
+    if (modifiers[modifierName] && modifiers[modifierName].text)
+    {
+      var S = modifiers[modifierName].text.toString();
+      if (S.length > 0)
+        parameters[parameterName] = modifiers[modifierName].text;
+    }
+  },
+  addParameterPrefOpt: function (modifiers, modifierName, parameters, parameterName, prefName)
+  {
+    if (modifiers[modifierName] && modifiers[modifierName].text)
+    {
+      var S = modifiers[modifierName].text.toString();
+      if (S.length > 0)
+        parameters[parameterName] = modifiers[modifierName].text;
+    }
+    else {
+      var v = iSPARQL_ubiq.getPrefValue (prefName);
+      if (v.length > 0)
+        {
+          parameters[parameterName] = v;
+        }
+    }
+  },
+  handleException: function (ex)
+  {
+    Utils.reportWarning (ex.toString());
+  }
+};
+
+urispec = "<?=_uri?>"
+
+// CmdUtils.log (FeedManager.getSubscribedFeeds());
+
+if (!Application.prefs.has ('opl.isparql_endpoint_changed') ||
+    false == iSPARQL_ubiq.getPrefValue ('opl.isparql_endpoint_changed'))
+  {
+    Utils.reportWarning ('Setting new default endpoint: ' + urispec);
+    iSPARQL_ubiq.setEndpoint (urispec);
+    iSPARQL_ubiq.setEndpointType ('isparql');
+  }
+else
+  {
+    CmdUtils.log ('Not changing user-defined endpoint upon install.');
+  }
+
+/* OAuth = {
+  OAuthCtx: {
+    requestTokenUrl: "",
+    userAuthorizationUrl: "",
+    accessTokenUrl: "",
+    consumerKey: "",
+    consumerSecret: "" },
+
+  getRequestTokenUrl:      function() {},
+  setRequestTokenUrl:      function(url) {},
+  getUserAuthorizationUrl: function() {},
+  setUserAuthorizationUrl: function(url) {},
+  getAccessTokenUrl:       function() {},
+  setAccessTokenUrl:       function(url) {},
+
+  makeTS: function () {
+    d = new Date ();
+    return d.getTime() / 1000;
+  },
+
+  makeNonce: function () {
+    return Utils.base64
+  },
+
+  getOAuthCtx: function() {},
+  putOAuthCtx: function () {},
+
+  setServer: function () {},
+  getConsumerKey: function () {},
+  getRequestToken: function () {
+    var params;
+    params["oauth_timestamp"] = OAuth.makeTS ();
+  },
+  getAccessToken: function () {},
+  makeRequest: function () {},
+  handleError: function () {},
+  encodeParams: function () {},
+}; */
+
+CmdUtils.CreateCommand({
+  name: "isparql-set-endpoint",
+  takes: {"endpoint": noun_arb_text},
+  modifiers: {"type": noun_arb_text},
+  homepage: "http://myopenlink.net/isparql",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "isparql@openlinksw.com"},
+  license: "MPL",
+  help: "Setup isparql-query endpoint and its type - 'isparql' for isparql, 'sparql' for regular sparql endopint)",
+  execute: function (endpoint, modifiers) {
+    try {
+      iSPARQL_ubiq.setEndpoint (endpoint.text);
+      if (modifiers["type"]) iSPARQL_ubiq.setEndpointType (modifiers["type"].text);
+      iSPARQL_ubiq.setPrefValue ('opl.isparql_endpoint_changed', true);
+      Utils.reportInfo ("set endpoint to: " + endpoint.text);
+    } catch (ex) {
+      iSPARQL_ubiq.handleException (ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "isparql-set-default-graph",
+  takes: {"default_graph": noun_arb_text},
+  homepage: "http://myopenlink.net/isparql",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "isparql@openlinksw.com"},
+  license: "MPL",
+  help: "Setup default graph for isparql-query.",
+  execute: function (endpoint, modifiers) {
+    try {
+      iSPARQL_ubiq.setDefaultGraph (modifiers["defaultgraph"].text);
+      iSPARQL_ubiq.setSpongerOpts (modifiers["spongeropts"].text);
+    }
+    catch (ex) {
+      iSPARQL_ubiq.handleException (ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "isparql-query",
+  takes: {"query": noun_arb_text},
+  modifiers: {"default_graph": noun_arb_text, "sponger_opts": noun_arb_text },
+  homepage: "http://myopenlink.net/isparql",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "isparql@openlinksw.com"},
+  license: "MPL",
+  help: "Run a SPARQL query in iSPARQL or regular SPARQL endpoint, depending of the endpoint settings.<br/>" +
+        "Try: <code>isparql-query select * where {?s ?p ?o} limit 10</code>",
+  execute: function (query, modifiers) {
+    var parms = [];
+    var endpointType = iSPARQL_ubiq.getEndpointType ();
+    var ep = iSPARQL_ubiq.getEndpoint();
+    parms["query"] = query.text;
+    if (endpointType == 'isparql')
+      {
+        ep = ep + '/execute.html';
+        parms["endpoint"] = '/sparql';
+      }
+
+    iSPARQL_ubiq.addParameterPrefOpt (modifiers,
+                                 "default_graph",
+                                 parms,
+                                 "default_graph",
+                                 "opl.isparql_ubiq.default_graph");
+    iSPARQL_ubiq.addParameterPrefOpt (modifiers,
+                                 "sponger_opts",
+                                 parms,
+                                 "sponger_opts",
+                                 "opl.isparql_ubiq.sponger_opts");
+    try
+      {
+        Utils.openUrlInBrowser (ep + Utils.paramsToString (parms));
+      }
+    catch (ex)
+      {
+        iSPARQL_ubiq.handleException (ex);
+      }
+  }
+});
+
+//CmdUtils.CreateCommand({
+//  name: "isparql-auth",
+//  modifiers: {"foaf_uri": noun_type_url,
+//              "oauth_url": noun_type_url,
+//              "user": noun_arb_text,
+//              "pass": noun_arb_text,
+//              "auth_type": noun_arb_text},
+//  homepage: "http://myopenlink.net/isparql",
+//  icon: "http://www.openlinksw.com/favicon.ico",
+//  author: {name: "OpenLink Software", email: "isparql@openlinksw.com"},
+//  license: "MPL",
+//  help: "Set up authorization for SPARQL queries. auth_type shoudl be one of: sql, foaf+ssl or oauth.",
+//  execute: function (modifiers) {
+//
+//  }
+//});
+
+CmdUtils.CreateCommand({
+  name: "isparql-view-settings",
+  homepage: "http://myopenlink.net/isparql",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "isparql-view-settings will display current endpoint, default graph and sponger option settings",
+  preview: function (previewBlock) {
+    var previewTemplate =
+"<table>"+
+  "<tr><td>Endpoint URI</td><td>${endpoint}</td></tr>"+
+  "<tr><td>Endpoint type</td><td>${endpoint_type}</td></tr>"+
+  "<tr><td>Default Graph</td><td>${default_graph}</td></tr>"+
+  "<tr><td>Sponger Options</td><td>${sponger_opts}</td></tr>"+
+"</table>";
+//"<table>"+
+//  "<tr><td>Auth type</td><td>${auth_type}</td></tr>"+
+//  "<tr><td>User</td><td>${user}</td></tr>"+
+//  "<tr><td>SesID</td><td>${sid}</td></tr>"+
+//"</table>";
+    var previewData = {
+        endpoint: iSPARQL_ubiq.getEndpoint(),
+        default_graph: iSPARQL_ubiq.getDefaultGraph(),
+        sponger_opts: iSPARQL_ubiq.getSpongerOpts(),
+        endpoint_type: iSPARQL_ubiq.getEndpointType()
+//        auth_type: iSPARQL_ubiq.getAuthType(),
+//        user: iSPARQL_ubiq.getUser(),
+//        sid: iSPARQL_ubiq.getSID()
+    };
+    previewBlock.innerHTML = CmdUtils.renderTemplate (previewTemplate, previewData);
+  }
+});
+
+
+// http://demo.openlinksw.com/sparql?default-graph-uri=http%3A%2F%2Fdemo.openlinksw.com%2Fdataspace%2Fperson%2Fdemo&should-sponge=&query=select+distinct+%3FURI+%3FObjectType+where+{%3FURI+a+%3FObjectType}+limit+50&format=text%2Fhtml&debug=on
+

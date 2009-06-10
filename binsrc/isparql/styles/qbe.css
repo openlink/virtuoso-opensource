@@ -127,29 +127,31 @@ ul#schemas_tree {
   padding: 2px;
 }
 
+#qbe_props input[type=checkbox] {
+  margin-left: 70px;
+}
+
 #qbe_props_node,
 #qbe_props_edge {
-  height:66px;
 }
 
 #qbe_props label {
   width:75px;
-  float: left;
 }
 
 #qbe_props input[type=text] {
   width:145px;
 }
+
 #qbe_props_visible {
-  display:inline;
-  width:100px;
 }
+
+#qbe_props_visible input { margin: 0 } 
+
 #qbe_props_orderby {
-  float:right;
-  display:inline;
-  width:100px;
-  margin-right:10px;
 }
+
+#qbe_props_orderby { margin: 0 } 
 
 #schemas button {
  width:110px;

@@ -14,7 +14,7 @@
 */
 
 window.defaultPrefixes = [
-						 {"label":'foaf', "uri":'http://xmlns.com/foaf/0.1/'},
+				 		 {"label":'foaf', "uri":'http://xmlns.com/foaf/0.1/'},
 						 {"label":'owl', "uri":'http://www.w3.org/2002/07/owl#'},
 						 {"label":'sioct', "uri":'http://rdfs.org/sioc/types#'},
 						 {"label":'sioc', "uri":'http://rdfs.org/sioc/ns#'},
@@ -85,7 +85,7 @@ var QueryExec = function(optObj) {
 	
 	this.init = function() {
 		this.dom.result = OAT.Dom.create("div");
-		this.dom.request = OAT.Dom.create("div"); 
+		this.dom.request = OAT.Dom.create("div");
 		this.dom.response = OAT.Dom.create("pre");
 		this.dom.query = OAT.Dom.create("pre");
 		this.dom.select = OAT.Dom.create("select");
@@ -103,10 +103,10 @@ var QueryExec = function(optObj) {
 			li.innerHTML = tabs1[i];
 			self.tab.add(li,tabs2[i]);
 		}
-		if (self.options.div) { 
+		if (self.options.div) {
 			OAT.Dom.clear(self.options.div);
 			OAT.Dom.append([self.options.div,self.dom.select,OAT.Dom.create("br")]);
-			OAT.Dom.append([self.options.div,self.dom.ul,self.dom.tab]); 
+			OAT.Dom.append([self.options.div,self.dom.ul,self.dom.tab]);
 		}
 		self.initNav();
 		
@@ -135,25 +135,25 @@ var QueryExec = function(optObj) {
 		self.dom.last.title = "Last";
 		OAT.Dom.append([self.dom.ul,self.dom.first,self.dom.prev,self.dom.next,self.dom.last]);
 		OAT.Dom.attach(self.dom.first,"click",function(){
-			if (self.cacheIndex > 0) { 
+			if (self.cacheIndex > 0) {
 				self.cacheIndex = 0;
-				self.draw() 
+				self.draw()
 			}
 		});
 		OAT.Dom.attach(self.dom.prev,"click",function(){
-			if (self.cacheIndex > 0) { 
+			if (self.cacheIndex > 0) {
 				self.cacheIndex--;
 				self.draw();
 			}
 		});
 		OAT.Dom.attach(self.dom.next,"click",function(){
-			if (self.cacheIndex > -1 && self.cacheIndex < self.cache.length-1) { 
+			if (self.cacheIndex > -1 && self.cacheIndex < self.cache.length-1) {
 				self.cacheIndex++;
 				self.draw();
 			}
 		});
 		OAT.Dom.attach(self.dom.last,"click",function(){
-			if (self.cacheIndex > -1 && self.cacheIndex < self.cache.length-1) { 
+			if (self.cacheIndex > -1 && self.cacheIndex < self.cache.length-1) {
 				self.cacheIndex = self.cache.length-1;
 				self.draw();
 			}
@@ -201,7 +201,7 @@ var QueryExec = function(optObj) {
 		if (opts.sponge && self.options.virtuoso) { paramsObj["should-sponge"] = opts.sponge; }
 
 		var pragmas = [];
-		if (opts.pragmas) { 
+		if (opts.pragmas) {
 			for (var i=0;i<opts.pragmas.length;i++) {
 				var pragma = opts.pragmas[i];
 				var name = pragma[0];
@@ -217,9 +217,9 @@ var QueryExec = function(optObj) {
 			arr.push(p+"="+encodeURIComponent(paramsObj[p]));
 		}
 		if (opts.namedGraphs) {
-		for (var i=0;i<opts.namedGraphs.length;i++) {
-			arr.push("named-graph-uri="+encodeURIComponent(opts.namedGraphs[i]));
-		}
+			for (var i=0;i<opts.namedGraphs.length;i++) {
+				arr.push("named-graph-uri="+encodeURIComponent(opts.namedGraphs[i]));
+			}
 		}
 		return arr.join("&");
 	}
@@ -250,8 +250,8 @@ var QueryExec = function(optObj) {
 			var regs = where[1].match(/<[^>]+>/g);
 			if (regs) for (var i=0;i<regs.length;i++) {
 				var entity = regs[i].substring(1,regs[i].length-1);
-				if (!(entity in entities)) { 
-					entities[entity] = 1; 
+				if (!(entity in entities)) {
+					entities[entity] = 1;
 					entCount++;
 				}
 			}
@@ -286,7 +286,7 @@ var QueryExec = function(optObj) {
 				"property":"Property"
 			}
 			for (var i=0;i<header.length;i++) {
-				if (header[i] in map) { header[i] = map[header[i]]; } 
+				if (header[i] in map) { header[i] = map[header[i]]; }
 			}
 		}
 		grid.createHeader(header);
@@ -297,9 +297,9 @@ var QueryExec = function(optObj) {
 		for (var i=0;i<solutions.length;i++) {
 			var row = [];
 			var simplified_row = [];
-			for (var j=0;j<header.length;j++) { 
-				row.push(""); 
-				simplified_row.push(""); 
+			for (var j=0;j<header.length;j++) {
+				row.push("");
+				simplified_row.push("");
 			}
 			
 			var sol = solutions[i];
@@ -314,7 +314,9 @@ var QueryExec = function(optObj) {
 
 				if (self.dom.select.value == "0") {
 					var value = simplified_row[index];
-					if (!value) value="";
+
+					if (!value) value = "";
+
 					var simple = self.store.simplify(value);
 					simplified_row[index] = simple;
 				}
@@ -390,7 +392,7 @@ var QueryExec = function(optObj) {
 					["triples","Grid View",{}],
 					["svg","SVG Graph",{}],
 					["images","Images",{}],
-					["map","Yahoo Map",{provider:OAT.MapData.TYPE_Y}] 
+					["map","Yahoo Map",{provider:OAT.MapData.TYPE_Y}]
 				];
 				
 				if(self.mini) {
@@ -422,7 +424,7 @@ var QueryExec = function(optObj) {
 		for (var i=0;i<plist.length;i++) {
 			var prefix = plist[i];
 			if (s.substring(0,prefix.uri.length) == prefix.uri) {
-				return prefix.label + ":" + s.substring(prefix.uri.length); 
+				return prefix.label + ":" + s.substring(prefix.uri.length);
 			}
 		}
 		return s;
