@@ -67,7 +67,7 @@
 	      <td>
 		  <v:button action="simple" name="cncl" value="Back">
 		      <v:on-post><![CDATA[
-			  self.vc_redirect ('db_rdf_view_tb.vspx');
+			  self.vc_redirect (sprintf ('db_rdf_view_tb.vspx?host=%U&list=%U&cols=%U', self.base, self.objects, self.cols));
 			  ]]></v:on-post>
 		  </v:button>
 		  <v:button action="simple" name="exec" value="Next">
@@ -86,6 +86,28 @@
 			      return;
 			    }
 			  self.vc_redirect (sprintf ('db_rdf_view_2.vspx?list=%U&host=%U&owl=%d&view=%d&st=%d&cols=%U', 
+			  		self.objects, self.base, 
+			  		self.gen_owl.ufl_selected,
+			  		self.gen_view.ufl_selected,
+					self.gen_st.ufl_selected,
+					self.cols
+					));
+			  ]]></v:on-post>
+		  </v:button>
+		  <v:button action="simple" name="exec1" value="Prepare to Excute">
+		      <v:on-post><![CDATA[
+			  self.vc_redirect (sprintf ('db_rdf_view_3.vspx?list=%U&host=%U&&owl=%d&view=%d&st=%d&owl_vd=1&view_vd=1&cols=%U', 
+			  		self.objects, self.base, 
+			  		self.gen_owl.ufl_selected,
+			  		self.gen_view.ufl_selected,
+					self.gen_st.ufl_selected,
+					self.cols
+					));
+			  ]]></v:on-post>
+		  </v:button>
+		  <v:button action="simple" name="exec2" value="Generate">
+		      <v:on-post><![CDATA[
+			  self.vc_redirect (sprintf ('db_rdf_view_3.vspx?list=%U&host=%U&&owl=%d&view=%d&st=%d&owl_vd=1&view_vd=1&cols=%U&exec=1', 
 			  		self.objects, self.base, 
 			  		self.gen_owl.ufl_selected,
 			  		self.gen_view.ufl_selected,

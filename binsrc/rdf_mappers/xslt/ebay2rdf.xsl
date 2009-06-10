@@ -28,6 +28,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY gr "http://purl.org/goodrelations/v1#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -37,6 +38,7 @@
     xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
     xmlns:dcterms="&dcterms;"
+    xmlns:gr="&gr;"
     xmlns:ebay="urn:ebay:apis:eBLBaseComponents">
 
     <xsl:output method="xml" indent="yes" />
@@ -51,7 +53,7 @@
 
     <xsl:template priority="1" match="Timestamp|Ask|Version|Build"/>
 
-    <xsl:template match="GetItemResponse|Item" priority="1">
+    <xsl:template match="GetSingleItemResponse|Item" priority="1">
 	<xsl:apply-templates select="*"/>
     </xsl:template>
 
@@ -67,6 +69,7 @@
 	    </rdf:Description>
 	    <rdf:Description rdf:about="{vi:proxyIRI ($resourceURL)}">
 		<rdf:type rdf:resource="&sioc;Item"/>
+				<rdf:type rdf:resource="&gr;ProductOrService"/>
 		<sioc:has_container rdf:resource="{$resourceURL}"/>
 		<xsl:apply-templates/>
 	    </rdf:Description>
@@ -79,6 +82,28 @@
 		<xsl:value-of select="."/>
 	    </xsl:attribute>
 	</xsl:element>
+    </xsl:template>
+
+    <xsl:template match="Title">
+		<rdfs:label>
+			<xsl:value-of select="."/>
+		</rdfs:label>
+    </xsl:template>
+    
+    <xsl:template match="Location">
+		<gr:availableAtOrFrom>
+			<xsl:value-of select="."/>
+		</gr:availableAtOrFrom>
+    </xsl:template>
+
+    <xsl:template match="ConvertedCurrentPrice">
+		<gr:hasPriceSpecification>
+		  <gr:UnitPriceSpecification>
+            <gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasCurrencyValue>
+            <gr:hasCurrency rdf:datatype="&xsd;string"><xsl:value-of select="@currencyID"/></gr:hasCurrency>
+			<gr:valueAddedTaxIncluded rdf:datatype="&xsd;boolean">true</gr:valueAddedTaxIncluded>
+          </gr:UnitPriceSpecification>
+		</gr:hasPriceSpecification>
     </xsl:template>
 
     <xsl:template match="*[* and ../../*]">

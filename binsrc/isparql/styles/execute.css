@@ -103,6 +103,7 @@ ul.tabres li.tab {
   padding: 0px 3px;
   display: inline;
   border: 1px solid #000;
+  border-bottom: 0;
   background-color: #aba;
   cursor: pointer;
 }
@@ -125,7 +126,7 @@ ul.tabres li.nav_right a {
 }
 
 ul.tabres li.tab_selected {
-  border-bottom: 1px solid #fff;
+  border-bottom: 2px solid #fff;
   background-color: #fff;
 }
 

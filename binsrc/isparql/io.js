@@ -7,7 +7,7 @@
  *
  *  See LICENSE file for details.
  *
- * dataObj 
+ * dataObj
  * 		   -> data: query data/results if any
  * 		   -> query: query text
  * 		   -> endpoint: data endpoint
@@ -37,7 +37,7 @@ iSPARQL.Preferences = {
 }
 
 iSPARQL.IO = {
-	/* serialize current query to plain string 
+	/* serialize current query to plain string
  	 * format is"
  	 * # pragma { name } = { value }
  	 * # endpoint
@@ -72,12 +72,12 @@ iSPARQL.IO = {
 
 	serializeLdr:function(dataObj) {
 		var xslt = iSPARQL.Preferences.xslt + 'dynamic-page.xsl';
-    	var xmlTemplate  =  '<?xml version="1.0" encoding="UTF-8"?>\n'+
-        					'<?xml-stylesheet type="text/xsl" href="' + xslt + '"?>\n'+
-  							'<iSPARQL xmlns="urn:schemas-openlink-com:isparql">\n'+
-  							'<ISparqlDynamicPage>\n'+
-  							'</ISparqlDynamicPage>\n'+
-  							'</iSPARQL>';
+		var xmlTemplate = '<?xml version="1.0" encoding="UTF-8"?>\n'+
+				  '<?xml-stylesheet type="text/xsl" href="' + xslt + '"?>\n'+
+				  '<iSPARQL xmlns="urn:schemas-openlink-com:isparql">\n'+
+				  '<ISparqlDynamicPage>\n'+
+				  '</ISparqlDynamicPage>\n'+
+				  '</iSPARQL>';
 		var xml = OAT.Xml.createXmlDoc(xmlTemplate);
 		var page = xml.getElementsByTagName("ISparqlDynamicPage")[0];
 		var isparql = xml.getElementsByTagName("iSPARQL")[0];
@@ -94,12 +94,12 @@ iSPARQL.IO = {
 		if(dataObj.proxy) { addNode(page,"proxy",dataObj.proxy); }
 		if(dataObj.query) { addNode(page,"query",dataObj.query); }
 
-		if(dataObj.prefixes) { 
+		if(dataObj.prefixes) {
 			var schemas = addNode(page,"schemas");
 			for(var i=0;i<dataObj.prefixes.length;i++) {
 				var schemaNode = dataObj.prefixes[i];
 				addNode(schemas,"schema",schemaNode);
-			} 
+			}
 		}
 
 		if(dataObj.namedGraphs) {
@@ -130,9 +130,9 @@ iSPARQL.IO = {
 
 	serializeXml:function(dataObj) {
 		var xmlTemplate = '<?xml version="1.0" encoding="UTF-8"?>\n'+
-						  '<root xmlns:sql="urn:schemas-openlink-com:xml-sql">\n'+
-						  '<sql:sparql></sql:sparql>\n'+
-  						  '</root>';
+				  '<root xmlns:sql="urn:schemas-openlink-com:xml-sql">\n'+
+				  '<sql:sparql></sql:sparql>\n'+
+				  '</root>';
 		var xml = OAT.Xml.createXmlDoc(xmlTemplate);
 
 		var root = xml.getElementsByTagName("root")[0];
@@ -248,7 +248,7 @@ iSPARQL.IO = {
 			schemas:[],
 			pragmas:[],
 			prefixes:[],
-			namedGraphs:[],
+                        namedGraphs:[],
                         endpoint:"/sparql",
                         query:false,
 			proxy:""
@@ -342,10 +342,10 @@ iSPARQL.IO = {
 		var options = {
 			extensionFilters:[
 				['rq','rq','SPARQL Definitions','text/plain'],
-    		    ['isparql','isparql','Dynamic Linked Data Page','text/xml'],
-    		    ['ldr','ldr','Dynamic Linked Data Resource','text/xml'],
+				['isparql','isparql','Dynamic Linked Data Page','text/xml'],
+				['ldr','ldr','Dynamic Linked Data Resource','text/xml'],
 				['rdf','rdf','RDF Data','application/xml'],
-    		    ['xml','xml','XML Server Page','text/xml']
+				['xml','xml','XML Server Page','text/xml']
 			],
 			callback:function(){},
 			dataCallback:function(file,ext) {
@@ -360,10 +360,10 @@ iSPARQL.IO = {
 		var options = {
 			extensionFilters:[
 				['rq','rq','SPARQL Definitions','text/plain'],
-    		    ['isparql','isparql','Dynamic Linked Data Page','text/xml'],
-    		    ['ldr','ldr','Dynamic Linked Data Resource','text/xml'],
-    		    ['xml','xml','XML Server Page','text/xml'],
-    		    ['','*','All files','']
+				['isparql','isparql','Dynamic Linked Data Page','text/xml'],
+				['ldr','ldr','Dynamic Linked Data Resource','text/xml'],
+				['xml','xml','XML Server Page','text/xml'],
+				['','*','All files','']
 			],
 			dataCallback:function(){},
 			callback:function(path,file,data) {

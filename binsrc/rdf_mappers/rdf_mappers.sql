@@ -42,6 +42,7 @@ update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '(http://twitter.com/.*)|(http://
 update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '(http://.*amazon.[^/]+/gp/product/.*)|'||
     '(http://.*amazon.[^/]+/o/ASIN/.*)|'||
     '(http://.*amazon.[^/]+/[^/]+/dp/[^/]+/.*)|'||
+    '(http://.*amazon.[^/]+/[^/]+/dp/[^/]+(/.*)?)|'||
     '(http://.*amazon.[^/]+/exec/obidos/ASIN/.*)|' ||
     '(http://.*amazon.[^/]+/exec/obidos/tg/detail/-/[^/]+/.*)'
     where RM_HOOK = 'DB.DBA.RDF_LOAD_AMAZON_ARTICLE';
@@ -2199,7 +2200,6 @@ create procedure DB.DBA.RDF_LOAD_SLIDESHARE (in graph_iri varchar, in new_origin
 	};
 	ts :=  cast(datediff ('second', stringdate ('1970-1-1'), now ()) as varchar);
 	hash1 := slideshare_hex_sha1_digest(concat(SharedSecret, ts));
-	
 	if (new_origin_uri like 'http://www.slideshare.net/search/slideshow?q=%&%' or
 		new_origin_uri like 'http://www.slideshare.net/search/slideshow?%&q=%&%')
 	{
@@ -3398,6 +3398,34 @@ create procedure INSTALL_RDF_LOAD_DELICIOUS_META ()
 INSTALL_RDF_LOAD_DELICIOUS_META ()
 ;
 
+create procedure DB.DBA.RDF_LOAD_GEONAMES_META (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare cont any;
+	declare tree, xt, xd, tmp any;
+	declare url, what, username_, password_ varchar;
+	declare exit handler for sqlstate '*'
+	{
+		return 0;
+	};
+	return 0;
+}
+;
+
+create procedure INSTALL_RDF_LOAD_GEONAMES_META ()
+{
+  -- possible old behaviour
+  delete from SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_GEONAMES_META';
+  -- register in PP chain
+  insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
+      values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_GEONAMES_META', null, 'Geonames Meta',
+	  vector ('min-score', '0.5', 'max-results', '10'));
+}
+;
+
+INSTALL_RDF_LOAD_GEONAMES_META ()
+;
+
 create procedure DB.DBA.RDF_LOAD_TECHNORATI_META (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
@@ -3661,6 +3689,11 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
       tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/o/ASIN/%s', 0);
       asin := rtrim (tmp[2], '/');
     }
+  else if (new_origin_uri like 'http://%amazon.%/%/dp/%%%3%')
+    {
+      tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/%s/dp/%s%%3%s', 0);
+      asin := tmp[3];
+    }
   else if (new_origin_uri like 'http://%amazon.%/%/dp/%/%')
     {
       tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/%s/dp/%s/%s', 0);
@@ -3687,10 +3720,8 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
   api_key := _key;
   if (asin is null or not isstring (api_key))
     return 0;
-
-  url := sprintf ('http://ecs.amazonaws.com/onca/xml?Service=AWSECommerceService&AWSAccessKeyId=%s&Operation=ItemLookup&ItemId=%s&ResponseGroup=ItemAttributes',
+  url := sprintf ('http://ecs.amazonaws.com/onca/xml?Service=AWSECommerceService&AWSAccessKeyId=%s&Operation=ItemLookup&ItemId=%s&ResponseGroup=ItemAttributes,Offers',
           api_key, asin);
-
   tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
   if (hdr[0] not like 'HTTP/1._ 200 %')
     signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
@@ -3805,9 +3836,6 @@ create procedure DB.DBA.RDF_LOAD_EBAY_ARTICLE (in graph_iri varchar, in new_orig
     };
 
   use_sandbox := 0;
-  karr := deserialize (ser_key);
-  if (not isarray (karr) or length (karr) <> 2)
-    return 0;
 
   if (new_origin_uri like 'http://cgi.sandbox.ebay.com/%&item=%&%')
     {
@@ -3819,16 +3847,14 @@ create procedure DB.DBA.RDF_LOAD_EBAY_ARTICLE (in graph_iri varchar, in new_orig
   else
     return 0;
 
-  api_key := karr[0];
-  user_id := karr[1];
-  if (tmp is null or length (tmp) <> 3 or not isstring (api_key) or not isstring (user_id))
+  api_key := ser_key;
+  
+  if (tmp is null or length (tmp) <> 3 or not isstring (api_key))
     return 0;
 
   item_id := tmp[1];
 
-  url := sprintf ('http://rest.api%s.ebay.com/restapi?CallName=GetItem&RequestToken=%s&RequestUserId=%s&ItemID=%s&Version=491',
-          case when use_sandbox = 1 then '.sandbox' else '' end,
-      api_key, user_id, item_id);
+  url := sprintf ('http://open.api.ebay.com/shopping?callname=GetSingleItem&responseencoding=XML&appid=%s&siteid=0&version=515&ItemID=%s&IncludeSelector=Description,ItemSpecifics', api_key, item_id);
   tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
   if (hdr[0] not like 'HTTP/1._ 200 %')
     signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
@@ -5464,8 +5490,6 @@ inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
       slide_vec := vector_concat (slide_vec, vector(slide_path));
       _start := _end;
     }
-    --dbg_printf('.PPTX Cartridge - slides');
-    --dbg_obj_print(slide_vec);
   }
 
   -- Handle any embedded images
@@ -5517,8 +5541,6 @@ inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
           image_vec := vector_concat (image_vec, vector(image_path));
           _start := _end;
         }
-        --dbg_printf('.PPTX Cartridge - slide images');
-        --dbg_obj_print(image_vec);
       }
 
       -- Copy each image file to DAV
@@ -5792,7 +5814,7 @@ create procedure DB.DBA.RM_LOAD_PREFIXES ()
 	  if (length (nss[i]) = 0 or nss[i] = 'xml')
 	    ;
 	  else if ((pref := dict_get (dict, nss[i+1])) <> nss[i])
-	    ; --dbg_obj_print ('Already declared:', RES_NAME, ' ', nss[i+1], ' ', nss[i], ' ', pref);
+	    ;
 	  else if (dict_get (dict, nss[i+1]) is null)
 	    dict_put (dict, nss[i+1], nss[i]);
         }
@@ -6891,6 +6913,104 @@ create procedure RDF_LOAD_LOD2(in data any, in api_key varchar, in opts any, in 
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_EBAY (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout ser_key any, inout opts any)
+{
+	declare data, meta, state, message any;
+	declare primary_topic, tmp, api_key any;
+	declare exit handler for sqlstate '*'
+	{
+		return 0;
+	};
+	api_key := ser_key;
+	if (not isstring (api_key))
+		return 0;
+		
+	primary_topic := DB.DBA.RDF_SPONGE_PROXY_IRI (graph_iri);
+	
+	state := '00000';
+	tmp := sprintf( 'sparql define input:inference \'virtrdf-label\' select ?l from <%s> where { <%s> virtrdf:label ?l . ?s rdf:type <http://purl.org/ontology/bibo/Book> }',
+		graph_iri, primary_topic);
+	exec (tmp, state, message, vector (), 0, meta, data);
+	if (state = '00000' and length (data) > 0)
+		RDF_LOAD_EBAY2(data, api_key, opts, dest, graph_iri, new_origin_uri);
+	return 1;
+}
+;
+
+create procedure RDF_LOAD_EBAY2(in data any, in api_key varchar, in opts any, in dest varchar, in graph_iri varchar, in new_origin_uri varchar)
+{
+	declare keywords, url, tmp, tree, cont varchar;
+	declare xt, xd any;
+	
+	foreach (any str in data) do
+	{
+		if (isstring (str[0]))
+		{
+			keywords := trim(str[0], '\n\t\t\n ');
+			keywords := replace(keywords, ' ', '+');
+			url := sprintf ('http://open.api.ebay.com/shopping?version=517&appid=%s&callname=FindItems&QueryKeywords=%s&ItemSort=BestMatch', api_key, keywords);
+			tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+			xt := xtree_doc (tmp);
+			xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/ebay_meta2rdf.xsl', xt,
+				vector ('baseUri', coalesce (dest, graph_iri)));
+			cont := serialize_to_UTF8_xml (xd);
+			DB.DBA.RDF_LOAD_RDFXML (cont, new_origin_uri, coalesce (dest, graph_iri));
+		}
+	}
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_AMAZON (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout ser_key any, inout opts any)
+{
+	declare data, meta, state, message any;
+	declare primary_topic, tmp, api_key any;
+	declare exit handler for sqlstate '*'
+	{
+		return 0;
+	};
+	api_key := ser_key;
+	if (not isstring (api_key))
+		return 0;
+	
+	primary_topic := DB.DBA.RDF_SPONGE_PROXY_IRI (graph_iri);
+	
+	state := '00000';
+	tmp := sprintf( 'sparql define input:inference \'virtrdf-label\' select ?l from <%s> where { <%s> virtrdf:label ?l . ?s rdf:type <http://purl.org/ontology/bibo/Book> }',
+		graph_iri, primary_topic);
+	
+	exec (tmp, state, message, vector (), 0, meta, data);
+	if (state = '00000' and length (data) > 0)
+		RDF_LOAD_AMAZON2(data, api_key, 'Books', opts, dest, graph_iri, new_origin_uri);
+	return 1;
+}
+;
+
+create procedure RDF_LOAD_AMAZON2(in data any, in api_key varchar, in what varchar, in opts any, in dest varchar, in graph_iri varchar, in new_origin_uri varchar)
+{
+	declare keywords, url, tmp, tree, cont varchar;
+	declare xt, xd any;
+	
+	foreach (any str in data) do
+	{
+		if (isstring (str[0]))
+		{
+			keywords := trim(str[0], '\n\t\t\n ');
+			keywords := replace(keywords, ' ', '+');
+			url := sprintf ('http://ecs.amazonaws.com/onca/xml?Service=AWSECommerceService&AWSAccessKeyId=%s&Operation=ItemSearch&SearchIndex=%s&Keywords=%s&ResponseGroup=ItemAttributes',
+				api_key, what, keywords);
+			tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+			xt := xtree_doc (tmp);
+			xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/amazon_meta2rdf.xsl', xt,
+				vector ('baseUri', coalesce (dest, graph_iri)));
+			cont := serialize_to_UTF8_xml (xd);
+			DB.DBA.RDF_LOAD_RDFXML (cont, new_origin_uri, coalesce (dest, graph_iri));
+		}
+	}
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_YAHOO_BOSS (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
@@ -7116,6 +7236,14 @@ insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC
 	  vector ('min-score', '0.5', 'max-results', '10'));
 
 insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
+      values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_EBAY', null, 'eBay Search for products',
+	  vector ('min-score', '0.5', 'max-results', '10'));
+
+insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
+      values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_AMAZON', null, 'Amazon Search for products',
+	  vector ('min-score', '0.5', 'max-results', '10'));
+
+insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
       values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_LOD', null, 'Virtuoso Facets Web Service',
 	  vector ('min-score', '0.5', 'max-results', '10'));
 
@@ -7179,7 +7307,12 @@ create procedure RM_META_MAPPERS_SET_ORDER ()
 {
    declare inx int;
    declare top_arr, arr, http, html, feed, calais any;
-   arr := (select DB.DBA.VECTOR_AGG (MC_ID) from DB.DBA.RDF_META_CARTRIDGES order by MC_SEQ);
+   
+   arr := vector();
+   for (select MC_ID from DB.DBA.RDF_META_CARTRIDGES order by MC_ID) do
+   {
+	arr := vector_concat(arr, vector(MC_ID));
+   }
    inx := 0;
    foreach (int pid in arr) do
      {
