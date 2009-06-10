@@ -314,6 +314,7 @@ var QueryExec = function(optObj) {
 
 				if (self.dom.select.value == "0") {
 					var value = simplified_row[index];
+					if (!value) value="";
 					var simple = self.store.simplify(value);
 					simplified_row[index] = simple;
 				}
