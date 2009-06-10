@@ -87,13 +87,13 @@
       <tr>
 	  <td colspan="2">
 	  <div class="scroll_area">
+    <table class="listing">
           <v:data-set name="ds_tables"
             sql="select distinct KEY_TABLE as table_name from SYS_KEYS
             where upper(name_part (KEY_TABLE, 0)) like upper(:self.browse_cat)
             and KEY_IS_MAIN = 1 and KEY_MIGRATE_TO is NULL and not exists (select 1 from DB.DBA.SYS_VIEWS where V_NAME = KEY_TABLE) order by 1"
 	    nrows="1000" scrollable="1" cursor-type="keyset" edit="0" width="80" initial-enable="1">
-            <v:template name="temp_ds_tables_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-              <table class="listing" >
+            <v:template name="temp_ds_tables_header" type="simple">
                 <colgroup/><colgroup/><colgroup/>
                 <thead>
                   <tr class="listing_row_odd">
@@ -103,19 +103,15 @@
                      <th>Action</th>
                   </tr>
                 </thead>
-              </table>
             </v:template>
-            <v:template name="temp_ds_tables_repeat" type="repeat" name-to-remove="" set-to-remove="">
-              <v:template name="temp_ds_tables_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
-                <table> <!-- dummy -->
+            <v:template name="temp_ds_tables_repeat" type="repeat">
+              <v:template name="temp_ds_tables_empty" type="if-not-exists">
                   <tr>
                     <td colspan="3" class="Attention">No tables match the criteria</td>
                   </tr>
-                </table>
               </v:template>
 
-              <v:template name="temp_ds_tables_browse" type="browse" name-to-remove="table" set-to-remove="both">
-                <table> <!-- dummy -->
+              <v:template name="temp_ds_tables_browse" type="browse">
                   <?vsp self.row_count := self.row_count + 1;
                         http (sprintf ('<tr class="%s">', case when mod (self.row_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
                   ?>
@@ -135,10 +131,10 @@
                       </v:button>
                     </td>
                   <?vsp http ('</tr>'); ?>
-                </table>
               </v:template>
             </v:template>
 	  </v:data-set>
+      </table>
 	</div>
         </td>
       </tr>
