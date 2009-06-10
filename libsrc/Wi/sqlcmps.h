@@ -585,8 +585,11 @@ sethash ((void*)ssl, res, (void*)1); }
 void  ref_ssl_list (dk_hash_t * ht, dk_set_t ssls);
 
 #define ASG_SSL(res, all_res, ssl) \
-  { sqlc_asg_mark (ssl); \
-    sqlg_asg_ssl (res, all_res, ssl); }
+  if (IS_REAL_SSL (ssl)) \
+    { \
+      sqlc_asg_mark (ssl); \
+      sqlg_asg_ssl (res, all_res, ssl); \
+    }
 
 
 void sqlg_asg_ssl (dk_hash_t * res, dk_hash_t * all_res, state_slot_t * ssl);

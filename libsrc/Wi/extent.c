@@ -419,6 +419,8 @@ dbs_extent_free (dbe_storage_t * dbs, dp_addr_t ext_dp, int must_be_in_em)
 	}
       if (ext == em->em_last_remap_ext)
 	em->em_last_remap_ext = NULL;
+      if (ext == em->em_last_blob_ext)
+	em->em_last_blob_ext = NULL;
       remhash (DP_ADDR2VOID (ext_dp), dbs->dbs_dp_to_extent_map);
     }
   else if (must_be_in_em)
@@ -511,6 +513,8 @@ em_try_get_dp (extent_map_t * em, int pg_type, dp_addr_t near)
     {
       int inx;
       buffer_desc_t * buf = em->em_buf;
+      if (EXT_BLOB == pg_type && !em->em_n_free_blob_pages)
+	return 0;
       while (buf)
 	{
 	  for (inx = 0; inx < LONG_REF (buf->bd_buffer + DP_BLOB_LEN); inx+=  sizeof (extent_t))
@@ -866,7 +870,7 @@ em_new_remap (extent_map_t * em, dp_addr_t near)
   if (dp)
     {
       em->em_last_remap_ext = EM_DP_TO_EXT (em, EXT_ROUND (dp));
-      EM_DEC_FREE (em, EXT_FREE);
+      EM_DEC_FREE (em, EXT_REMAP);
       return dp;
     }
   new_ext = em->em_last_remap_ext = em_new_extent (em, EXT_REMAP, 0);
@@ -878,6 +882,40 @@ em_new_remap (extent_map_t * em, dp_addr_t near)
   if (!dp)
     GPF_T1 ("no dp but new remap ext");
   EM_DEC_FREE (em, EXT_REMAP);
+  return dp;
+}
+
+
+dp_addr_t
+em_new_blob (extent_map_t * em, dp_addr_t near)
+{
+  dp_addr_t dp;
+  extent_t * new_ext;
+  if (em->em_last_blob_ext)
+    {
+      dp = ext_get_dp (em->em_last_blob_ext, 0);
+      if (dp)
+	{
+	  EM_DEC_FREE (em, EXT_BLOB);
+	  return dp;
+	}
+    }
+  dp = em_try_get_dp (em, EXT_BLOB, DP_ANY);
+  if (dp)
+    {
+      em->em_last_blob_ext = EM_DP_TO_EXT (em, EXT_ROUND (dp));
+      EM_DEC_FREE (em, EXT_BLOB);
+      return dp;
+    }
+  new_ext = em->em_last_blob_ext = em_new_extent (em, EXT_BLOB, 0);
+  if (!new_ext)
+    {
+      return 0;
+    }
+  dp = ext_get_dp (em->em_last_blob_ext, 0);
+  if (!dp)
+    GPF_T1 ("no dp but new remap ext");
+  EM_DEC_FREE (em, EXT_BLOB);
   return dp;
 }
 
@@ -953,6 +991,8 @@ em_new_dp (extent_map_t * em, int type, dp_addr_t near, int * hold)
 	  (*hold)--;
 	}
     }
+  else if (EXT_BLOB == type)
+    dp = em_new_blob (em, near);
   else
     dp = em_new_dp_1 (em, type, near);
   if (EXT_INDEX == type && em != em->em_dbs->dbs_extent_map)
@@ -1319,6 +1359,7 @@ em_compact (extent_map_t * em, int free_em)
   buffer_desc_t * target = em->em_buf;
   int target_fill = 0;
   em->em_last_remap_ext = NULL;
+  em->em_last_blob_ext = NULL;
   DO_EXT (ext, em)
     {
       if (EXT_FREE == EXT_TYPE (ext))

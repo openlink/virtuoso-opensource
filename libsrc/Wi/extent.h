@@ -60,12 +60,13 @@ struct extent_map_s
   dp_addr_t		em_map_start; /* first dp of stored em */
   dp_addr_t		em_n_pages;
   dp_addr_t		em_n_free_pages;
-  extent_t *		em_last_remap_ext;
   dp_addr_t		em_n_remap_pages;
   dp_addr_t		em_n_free_remap_pages;
   int32		em_remap_on_hold;  /* no of pages provisionally reserved for possible delta caused by tree splitting */
   dp_addr_t		em_n_blob_pages;
   dp_addr_t		em_n_free_blob_pages;
+  extent_t *		em_last_remap_ext;
+  extent_t *		em_last_blob_ext;
   buffer_desc_t *	em_buf;
   dk_hash_t *		em_dp_to_ext;
   dk_mutex_t *		em_mtx;
