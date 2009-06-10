@@ -7345,10 +7345,10 @@ create procedure DB.DBA.RDF_MQL_RESOURCE_IS_SENATOR (
   dbp_resource_name := tmp[0];
 
   -- 3) Use the extracted person_name to build a URI to DBpedia's description of the person.
-  -- 4) Query the DBpedia description to see if the person is of rdf:type yago:Senator110578471
+  -- 4) Query the DBpedia description to see if the person is of rdf:type &lt;http://dbpedia.org/class/yago/Artist109812338&gt;
   qry := 'prefix yago: <http://dbpedia.org/class/yago/> \n';
   qry := qry || 'prefix dbp: <http://dbpedia.org/resource/> \n';
-  qry := qry || sprintf ('ask from <http://dbpedia.org> where {dbp:%s a yago:Senator110578471}',
+  qry := qry || sprintf ('ask from <http://dbpedia.org> where {dbp:%s a <http://dbpedia.org/class/yago/Artist109812338>}',
  			    dbp_resource_name);
   qry_res := http_client (url=>sprintf('%s?query=%U', 'http://dbpedia.org/sparql', qry),
  			    timeout=>30);
@@ -27330,18 +27330,18 @@ Named Graph
 SQL>rdfs_rule_set ('http://dbpedia.org/resource/inference/rules/yago#',
 'http://dbpedia.org/resource/classes/yago#');
 
--- Query for the "The Lord of the Rings" which is a "Book" as
--- explicitly claimed in the DBpedia data set (instance data)
+-- Query for the "The Lord of the Rings" which is a "Fantasy Novel" as explicitly
+-- claimed in the DBpedia data set (instance data)
 
 SQL>SPARQL
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX dbpedia: <http://dbpedia.org/property/>
 PREFIX yago: <http://dbpedia.org/class/yago/>
-
 SELECT ?s
 FROM <http://dbpedia.org>
-WHERE {
-?s a yago:Book106410904 .
+WHERE
+{
+  ?s a <http://dbpedia.org/class/yago/FantasyNovels> .
 ?s dbpedia:name "The Lord of the Rings"@en .
 };
 
@@ -27351,13 +27351,12 @@ _______________________________________________________________________________
 
 http://dbpedia.org/resource/The_Lord_of_the_Rings
 
-1 Rows. -- 321 msec.
+1 Rows. -- 241 msec.
 
--- Query aimed at Books via query scoped to the "Publication" class
--- of which it is a subclass in the Yago Hierarchy
+-- Query aimed at Novel via query scoped to the "Fiction" class of
+-- which it is a subclass in the Yago Hierarchy
 SQL>SPARQL
-define input:inference
-'http://dbpedia.org/resource/inference/rules/yago#'
+define input:inference 'http://dbpedia.org/resource/inference/rules/yago#'
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX dbpedia: <http://dbpedia.org/property/>
 PREFIX yago: <http://dbpedia.org/class/yago/>
@@ -27365,7 +27364,7 @@ PREFIX yago: <http://dbpedia.org/class/yago/>
 SELECT ?s
 FROM <http://dbpedia.org>
 WHERE {
-?s a yago:Publication106589574 .
+?s a <http://dbpedia.org/class/yago/Fiction106367107> .
 ?s dbpedia:name "The Lord of the Rings"@en .
 };
 
@@ -27373,13 +27372,18 @@ s
 VARCHAR
 _______________________________________________________________________________
 
+
 http://dbpedia.org/resource/The_Lord_of_the_Rings
+http://dbpedia.org/resource/The_Lord_of_the_Rings
+http://dbpedia.org/resource/The_Lord_of_the_Rings
+http://dbpedia.org/resource/The_Lord_of_the_Rings
+
+4 Rows. -- 4767 msec.
 
 
 -- # Variant of query with Virtuoso's Full Text Index extension: bif:contains
 SQL>SPARQL
-define input:inference
-'http://dbpedia.org/resource/inference/rules/yago#'
+define input:inference 'http://dbpedia.org/resource/inference/rules/yago#'
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX dbpedia: <http://dbpedia.org/property/>
 PREFIX yago: <http://dbpedia.org/class/yago/>
@@ -27387,7 +27391,7 @@ PREFIX yago: <http://dbpedia.org/class/yago/>
 SELECT ?s ?n
 FROM <http://dbpedia.org>
 WHERE {
-?s a yago:Publication106589574 .
+?s a <http://dbpedia.org/class/yago/Fiction106367107> .
 ?s dbpedia:name ?n .
 ?n bif:contains 'Lord and Rings'
 };
@@ -27397,14 +27401,13 @@ VARCHAR                                                                         
 _______________________________________________________________________________
 
 http://dbpedia.org/resource/The_Lord_of_the_Rings                                 The Lord of the Rings
-http://dbpedia.org/resource/Journeys_of_Frodo                                     Journeys of Frodo: An Atlas of J. R. R. Tolkien's The Lord of the Ri
-ngs
-http://dbpedia.org/resource/The_Lord_of_the_Rings:_A_Reader%27s_Companion         The Lord of the Rings: A Reader's Companion
-http://dbpedia.org/resource/Tolkien:_A_Look_Behind_%22The_Lord_of_the_Rings%22    A Look Behind "The Lord of the Rings""
+http://dbpedia.org/resource/The_Lord_of_the_Rings    The Lord of the Rings
+http://dbpedia.org/resource/The_Lord_of_the_Rings    The Lord of the Rings
+http://dbpedia.org/resource/The_Lord_of_the_Rings    The Lord of the Rings
 
-4 Rows. -- 29573 msec.
+4 Rows. -- 5538 msec.
 
--- Retrieve all individuals instances of the Book Class
+-- Retrieve all individuals instances of the FantasyNovels Class
 SQL>SPARQL
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX dbpedia: <http://dbpedia.org/property/>
@@ -27412,8 +27415,9 @@ PREFIX yago: <http://dbpedia.org/class/yago/>
 
 SELECT ?s ?n
 FROM <http://dbpedia.org>
-WHERE {
-?s a yago:Book106410904 .
+WHERE
+{
+  ?s a <http://dbpedia.org/class/yago/FantasyNovels> .
 ?s dbpedia:name ?n .
 }
 limit 10;
@@ -27421,24 +27425,23 @@ s                                                                               
 VARCHAR                                                                           VARCHAR
 _______________________________________________________________________________
 
-http://dbpedia.org/resource/.hack//AI_buster                                      .hack// AI buster
-http://dbpedia.org/resource/1000_Love_and_Sex_Quiz                                1000 Love and Sex Quiz
-http://dbpedia.org/resource/1491:_New_Revelations_of_the_Americas_Before_Columbus  1491: New Revelations of the Americas Before Columbus
-http://dbpedia.org/resource/.hack//AI_buster_2                                    .hack// AI buster 2
-http://dbpedia.org/resource/100_Books_by_August_Derleth                           100 Books by August Derleth
-http://dbpedia.org/resource/1634:_The_Baltic_War                                  1634: The Baltic War
-http://dbpedia.org/resource/003%C2%BD:_The_Adventures_of_James_Bond_Junior        003-+: The Adventures of James Bond Junior"
-http://dbpedia.org/resource/1001_Movies_You_Must_See_Before_You_Die               1001 Movies You Must See Before You Die
-http://dbpedia.org/resource/1066_and_All_That                                     1066 and All That
-http://dbpedia.org/resource/14%2C000_Things_to_be_Happy_About                     14,000 Things to be Happy About
+http://dbpedia.org/resource/ATLA_-_A_Story_of_the_Lost_Island                     Atla
+http://dbpedia.org/resource/A_Crown_of_Swords                                     A Crown of Swords
+http://dbpedia.org/resource/A_Game_of_Thrones                                     A Game of Thrones
+http://dbpedia.org/resource/A_Secret_Atlas                                        A Secret Atlas
+http://dbpedia.org/resource/A_Storm_of_Swords                                     A Storm of Swords
+http://dbpedia.org/resource/A_Voyage_to_Arcturus                                  A Voyage to Arcturus
+http://dbpedia.org/resource/A_Wizard_Alone                                        A Wizard Alone
+http://dbpedia.org/resource/Above_the_Veil                                        Above the Veil
+http://dbpedia.org/resource/Black_Easter                                          Black Easter
+http://dbpedia.org/resource/Lord_of_Chaos                                         Lord of Chaos
 
-10 Rows. -- 1422 msec.
+10 Rows. -- 781 msec.
 
--- Retrieve all individuals instances of Publication Class which
--- should include all Books.
+-- Retrieve all individuals instances of Fiction Class which should
+-- include all Novels.
 SQL>SPARQL
-define input:inference
-'http://dbpedia.org/resource/inference/rules/yago#'
+define input:inference 'http://dbpedia.org/resource/inference/rules/yago#'
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX dbpedia: <http://dbpedia.org/property/>
 PREFIX yago: <http://dbpedia.org/class/yago/>
@@ -27446,21 +27449,56 @@ PREFIX yago: <http://dbpedia.org/class/yago/>
 SELECT ?s ?n
 FROM <http://dbpedia.org>
 WHERE {
-?s a yago:Publication106589574 .
+?s a <http://dbpedia.org/class/yago/Fiction106367107> .
 ?s dbpedia:name ?n .
 };
 s                                                                                 n
 VARCHAR                                                                           VARCHAR
 _______________________________________________________________________________
 
-http://dbpedia.org/resource/461_Ocean_Boulevard                                   461 Ocean Boulevard
-http://dbpedia.org/resource/A_Love_Supreme                                        A Love Supreme
-http://dbpedia.org/resource/A_Night_at_Red_Rocks_with_the_Colorado_Symphony_Orchestra  A Night at Red Rocks with the Colorado Symphony Orchestra
-http://dbpedia.org/resource/At_Fillmore_East                                      At Fillmore East
-http://dbpedia.org/resource/August_and_Everything_After                           August and Everything After
+http://dbpedia.org/resource/Last_Son_of_Krypton                                   Last Son of Krypton
+http://dbpedia.org/resource/Tuvaluan_language                                     Tuvaluan
+http://dbpedia.org/resource/Card_Walker                                           E. Cardon Walker
+http://dbpedia.org/resource/Les_Clark                                             Les Clark
+http://dbpedia.org/resource/Marc_Davis                                            Marc Davis
+http://dbpedia.org/resource/Eric_Larson                                           Eric Larson
+http://dbpedia.org/resource/Marty_Sklar                                           Marty Sklar
+http://dbpedia.org/resource/Peter_Ellenshaw                                       Peter Ellenshaw
+http://dbpedia.org/resource/Adriana_Caselotti                                     Adriana Caselotti
+http://dbpedia.org/resource/Jimmie_Dodd                                           Jimmie Dodd
 ...
+15296 Rows.
 ]]></programlisting>
-<emphasis>Equivalence between classes</emphasis>
+<para><emphasis>Pure SPARQL Examples:</emphasis></para>
+
+<programlisting><![CDATA[
+-- Query aimed at Fantasy Novel via query scoped to the "Fiction" class of
+-- which it is a subclass in the Yago Hierarchy
+
+SQL>SPARQL
+define input:inference 'http://dbpedia.org/resource/inference/rules/yago#'
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX dbpedia: <http://dbpedia.org/property/>
+PREFIX yago: <http://dbpedia.org/class/yago/>
+SELECT ?s
+FROM <http://dbpedia.org>
+WHERE {
+?s a <http://dbpedia.org/class/yago/Fiction106367107> .
+?s dbpedia:name "The Lord of the Rings"@en .
+};
+s
+VARCHAR
+_______________________________________________________________________________
+
+http://dbpedia.org/resource/The_Lord_of_the_Rings
+http://dbpedia.org/resource/The_Lord_of_the_Rings
+http://dbpedia.org/resource/The_Lord_of_the_Rings
+http://dbpedia.org/resource/The_Lord_of_the_Rings
+
+4 Rows. -- 150 msec.
+]]></programlisting>
+
+<para><emphasis>Equivalence between classes</emphasis></para>
 <para>The example below is based on <ulink url="http://umbel.org/documentation.html">UMBEL</ulink> and DBpedia integraion:</para>
 <programlisting><![CDATA[
 -- Load UMBEL & DBpedia Instance Level Cross-Links (owl:sameAs) Triples
@@ -28130,34 +28168,78 @@ better data layout on disk, as well as fewer pages to load for the same content.
 the graph, just drop the FROM &lt;http://dbpedia.org&gt; from each query. The returned row counts are
 indicated below each query's text.</para>
 <programlisting><![CDATA[
-sparql SELECT ?p ?o FROM <http://dbpedia.org> WHERE {
-  <http://dbpedia.org/resource/Metropolitan_Museum_of_Art> ?p ?o };
+SQL>SPARQL
+SELECT ?p ?o
+FROM <http://dbpedia.org>
+WHERE
+  {
+    <http://dbpedia.org/resource/Metropolitan_Museum_of_Art> ?p ?o .
+  };
 
--- 1337 rows
+p                                                                                 o
+VARCHAR                                                                           VARCHAR
+_______________________________________________________________________________
 
-sparql PREFIX p: <http://dbpedia.org/property/>
+http://www.w3.org/1999/02/22-rdf-syntax-ns#type                                   http://umbel.org/umbel/ac/Artifact
+http://www.w3.org/1999/02/22-rdf-syntax-ns#type                                   http://dbpedia.org/class/yago/MuseumsInNewYorkCity
+http://www.w3.org/1999/02/22-rdf-syntax-ns#type                                   http://dbpedia.org/class/yago/ArtMuseumsAndGalleriesInTheUnitedStates
+http://www.w3.org/1999/02/22-rdf-syntax-ns#type                                   http://dbpedia.org/class/yago/Museum103800563
+..
+-- 335 rows
+
+SQL>SPARQL
+PREFIX p: <http://dbpedia.org/property/>
 SELECT ?film1 ?actor1 ?film2 ?actor2
-FROM <http://dbpedia.org> WHERE {
+FROM <http://dbpedia.org>
+WHERE
+  {
   ?film1 p:starring <http://dbpedia.org/resource/Kevin_Bacon> .
   ?film1 p:starring ?actor1 .
   ?film2 p:starring ?actor1 .
-  ?film2 p:starring ?actor2 . };
+    ?film2 p:starring ?actor2 .
+};
 
+film1                                       actor1                                    film2                                        ctor2
+VARCHAR                                     VARCHAR                                   VARCHAR                                      ARCHAR
+http://dbpedia.org/resource/The_River_Wild  http://dbpedia.org/resource/Kevin_Bacon   http://dbpedia.org/resource/The_River_Wild   http://dbpedia.org/resource/Kevin_Bacon
+http://dbpedia.org/resource/The_River_Wild  http://dbpedia.org/resource/Kevin_Bacon   http://dbpedia.org/resource/The_River_Wild   http://dbpedia.org/resource/Meryl_Streep
+http://dbpedia.org/resource/The_River_Wild  http://dbpedia.org/resource/Kevin_Bacon   http://dbpedia.org/resource/The_River_Wild   http://dbpedia.org/resource/Joseph_Mazzello
+http://dbpedia.org/resource/The_River_Wild  http://dbpedia.org/resource/Kevin_Bacon   http://dbpedia.org/resource/The_River_Wild   http://dbpedia.org/resource/David_Strathairn
+http://dbpedia.org/resource/The_River_Wild  http://dbpedia.org/resource/Kevin_Bacon   http://dbpedia.org/resource/The_River_Wild   http://dbpedia.org/resource/John_C._Reilly
+...
 --  23910 rows
 
-sparql PREFIX p: <http://dbpedia.org/property/>
-SELECT ?artist ?artwork ?museum ?director FROM <http://dbpedia.org>
-WHERE {
+SQL>SPARQL
+PREFIX p: <http://dbpedia.org/property/>
+SELECT ?artist ?artwork ?museum ?director
+FROM <http://dbpedia.org>
+WHERE
+  {
   ?artwork p:artist ?artist .
   ?artwork p:museum ?museum .
-  ?museum p:director ?director };
+    ?museum p:director ?director
+  };
 
+artist                                          artwork                                              museum                                                                            director
+VARCHAR                                         VARCHAR                                              VARCHAR                                                                           VARCHAR
+_______________________________________________
+
+http://dbpedia.org/resource/Paul_C%C3%A9zanne   http://dbpedia.org/resource/The_Basket_of_Apples     http://dbpedia.org/resource/Art_Institute_of_Chicago                              James Cuno
+http://dbpedia.org/resource/Paul_Signac         http://dbpedia.org/resource/Neo-impressionism        http://dbpedia.org/resource/Art_Institute_of_Chicago                              James Cuno
+http://dbpedia.org/resource/Georges_Seurat      http://dbpedia.org/resource/Neo-impressionism        http://dbpedia.org/resource/Art_Institute_of_Chicago                              James Cuno
+http://dbpedia.org/resource/Edward_Hopper       http://dbpedia.org/resource/Nighthawks               http://dbpedia.org/resource/Art_Institute_of_Chicago                              James Cuno
+http://dbpedia.org/resource/Mary_Cassatt        http://dbpedia.org/resource/The_Child%27s_Bath       http://dbpedia.org/resource/Art_Institute_of_Chicago                              James Cuno
+..
 -- 303 rows
 
-sparql PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+SQL>sparql
+PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-SELECT ?s ?homepage FROM <http://dbpedia.org>  WHERE {
+SELECT ?s ?homepage
+FROM <http://dbpedia.org>
+WHERE
+  {
    <http://dbpedia.org/resource/Berlin> geo:lat ?berlinLat .
    <http://dbpedia.org/resource/Berlin> geo:long ?berlinLong .
    ?s geo:lat ?lat .
@@ -28169,13 +28251,30 @@ SELECT ?s ?homepage FROM <http://dbpedia.org>  WHERE {
      ?lat        >=     ?berlinLat - 0.03190235436 &&
      ?long       <=     ?berlinLong + 0.08679199218) };
 
--- 56 rows
+s                                                                                 homepage
+VARCHAR                                                                           VARCHAR
+_______________________________________________________________________________
 
-sparql PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+http://dbpedia.org/resource/Berlin_University_of_the_Arts                         http://www.udk-berlin.de/
+http://dbpedia.org/resource/Berlin_University_of_the_Arts                         http://www.udk-berlin.de/
+http://dbpedia.org/resource/Berlin_Zoological_Garden                              http://www.zoo-berlin.de/en.html
+http://dbpedia.org/resource/Federal_Ministry_of_the_Interior_%28Germany%29        http://www.bmi.bund.de
+http://dbpedia.org/resource/Neues_Schauspielhaus                                  http://www.goya-berlin.com/
+http://dbpedia.org/resource/Bauhaus_Archive                                       http://www.bauhaus.de/english/index.htm
+http://dbpedia.org/resource/Canisius-Kolleg_Berlin                                http://www.canisius-kolleg.de
+http://dbpedia.org/resource/Franz%C3%B6sisches_Gymnasium_Berlin                   http://www.fg-berlin.cidsnet.de
+..
+-- 48 rows
+
+SQL>sparql
+PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX p: <http://dbpedia.org/property/>
-SELECT ?s ?a ?homepage FROM <http://dbpedia.org>  WHERE {
+SELECT ?s ?a ?homepage
+FROM <http://dbpedia.org>
+WHERE
+  {
    <http://dbpedia.org/resource/New_York_City> geo:lat ?nyLat .
    <http://dbpedia.org/resource/New_York_City> geo:long ?nyLong .
    ?s geo:lat ?lat .
@@ -28187,8 +28286,25 @@ SELECT ?s ?a ?homepage FROM <http://dbpedia.org>  WHERE {
      ?long       >=     ?nyLong - 0.8679199218 &&
      ?lat        >=     ?nyLat - 0.3190235436 &&
      ?long       <=     ?nyLong + 0.8679199218) };
+s                                                                                 a               homepage
+VARCHAR                                                                           VARCHAR              VARCHAR
+_______________________________________________________________________________
 
--- 13 rows
+http://dbpedia.org/resource/GE_Building                                           http://dbpedia.org/resource/Associated_Architects              http://www.associated-architects.co.uk
+http://dbpedia.org/resource/Giants_Stadium                                        http://dbpedia.org/resource/HNTB              http://www.hntb.com/
+http://dbpedia.org/resource/Fort_Tryon_Park_and_the_Cloisters                     http://dbpedia.org/resource/Frederick_Law_Olmsted              http://www.asla.org/land/061305/olmsted.html
+http://dbpedia.org/resource/Central_Park                                          http://dbpedia.org/resource/Frederick_Law_Olmsted              http://www.asla.org/land/061305/olmsted.html
+http://dbpedia.org/resource/Prospect_Park_%28Brooklyn%29                          http://dbpedia.org/resource/Frederick_Law_Olmsted              http://www.asla.org/land/061305/olmsted.html
+http://dbpedia.org/resource/Meadowlands_Stadium                                   http://dbpedia.org/resource/360_Architecture              http://oakland.athletics.mlb.com/oak/ballpark/new/faq.jsp
+http://dbpedia.org/resource/Citi_Field                                            http://dbpedia.org/resource/HOK_Sport_Venue_Event              http://www.hoksve.com/
+http://dbpedia.org/resource/Citigroup_Center                                      http://dbpedia.org/resource/Hugh_Stubbins_Jr.              http://www.klingstubbins.com
+http://dbpedia.org/resource/150_Greenwich_Street                                  http://dbpedia.org/resource/Fumihiko_Maki              http://www.pritzkerprize.com/maki2.htm
+http://dbpedia.org/resource/Freedom_Tower                                         http://dbpedia.org/resource/David_Childs              http://www.som.com/content.cfm/www_david_m_childs
+http://dbpedia.org/resource/7_World_Trade_Center                                  http://dbpedia.org/resource/David_Childs              http://www.som.com/content.cfm/www_david_m_childs
+http://dbpedia.org/resource/The_New_York_Times_Building                           http://dbpedia.org/resource/Renzo_Piano              http://www.rpbw.com/
+http://dbpedia.org/resource/Trump_World_Tower                                     http://dbpedia.org/resource/Costas_Kondylis              http://www.kondylis.com
+
+13 Rows. -- 2183 msec.
 ]]></programlisting>
     </sect2>
 <sect2 id="rdfstorebenchmarks"><title>RDF Store Benchmarks</title>
