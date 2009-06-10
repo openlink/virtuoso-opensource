@@ -148,7 +148,7 @@ wi_free_schemas ()
       any_freed = 0;
       DO_SET (dbe_schema_t *, sc, &wi_inst.wi_free_schemas)
       {
-	if (now - sc->sc_free_since > 2000)
+	if (now - sc->sc_free_since > 20000)
 	  {
 	    dk_set_delete (&wi_inst.wi_free_schemas, (void *) sc);
 	    dbe_schema_free (sc);

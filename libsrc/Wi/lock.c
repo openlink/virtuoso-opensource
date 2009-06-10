@@ -1756,10 +1756,9 @@ the_grim_lock_reaper (void)
 	{
 	  wi_free_old_qrs ();
 	  srv_run_background_tasks();
-	}
       wi_free_schemas ();
+    }
   LEAVE_TXN;
-
   failed_login_purge ();
 
   if (cfg_autocheckpoint > 0)	/* Autocheckpointing wanted? */
