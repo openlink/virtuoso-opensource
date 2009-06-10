@@ -28,6 +28,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY gr "http://purl.org/goodrelations/v1#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -38,6 +39,7 @@
     xmlns:foaf="&foaf;"
     xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
+    xmlns:gr="&gr;"
     xmlns:dcterms="&dcterms;">
 
     <xsl:output method="xml" indent="yes" />
@@ -67,11 +69,16 @@
 	    </rdf:Description>
 	    <rdf:Description rdf:about="{$resourceURL}">
 		<rdf:type rdf:resource="&sioc;Item"/>
+		<rdf:type rdf:resource="&gr;ProductOrService"/>
 		<rdfs:label><xsl:value-of select="//ItemAttributes/Title"/></rdfs:label>
 		<xsl:choose>
 		    <xsl:when test="//ProductGroup[ . = 'Book']">
 			<rdf:type rdf:resource="&bibo;Book"/>
 			<xsl:apply-templates select="//ItemAttributes/*" mode="bibo"/>
+			<xsl:apply-templates select="//OfferSummary/*" mode="bibo"/>
+			<xsl:apply-templates select="//Offers/*" mode="bibo"/>
+			<xsl:apply-templates select="//OfferSummary/*" mode="gr"/>
+			<xsl:apply-templates select="//Offers/*" mode="gr"/>
 		    </xsl:when>
 		    <xsl:otherwise>
 			<xsl:apply-templates/>
@@ -108,6 +115,16 @@
 
     <xsl:template match="*" mode="bibo">
 	<xsl:apply-templates select="self::*"/>
+    </xsl:template>
+
+    <xsl:template match="LowestUsedPrice" mode="gr">
+		<gr:hasPriceSpecification>
+		  <gr:UnitPriceSpecification>
+            <gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="Amount"/></gr:hasCurrencyValue>
+            <gr:hasCurrency rdf:datatype="&xsd;string"><xsl:value-of select="CurrencyCode"/></gr:hasCurrency>
+			<gr:valueAddedTaxIncluded rdf:datatype="&xsd;boolean">true</gr:valueAddedTaxIncluded>
+          </gr:UnitPriceSpecification>
+		</gr:hasPriceSpecification>
     </xsl:template>
 
     <xsl:template match="*[starts-with(.,'http://') or starts-with(.,'urn:')]">
