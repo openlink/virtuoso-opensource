@@ -27342,7 +27342,7 @@ FROM <http://dbpedia.org>
 WHERE
 {
   ?s a <http://dbpedia.org/class/yago/FantasyNovels> .
-?s dbpedia:name "The Lord of the Rings"@en .
+  ?s dbpedia:name "The Lord of the Rings"@en .
 };
 
 s
@@ -27418,7 +27418,7 @@ FROM <http://dbpedia.org>
 WHERE
 {
   ?s a <http://dbpedia.org/class/yago/FantasyNovels> .
-?s dbpedia:name ?n .
+  ?s dbpedia:name ?n .
 }
 limit 10;
 s                                                                                 n
