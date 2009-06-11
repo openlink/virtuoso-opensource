@@ -184,13 +184,13 @@ xid_bin_decode (const char* xid_str)
 
   xid = (virtXID *) (xid_ptr = dk_alloc_box (sizeof (virtXID), DV_BIN));
 
-  length = decode_ptr ((unsigned char*)xid_str, sizeof (long) * 2, (unsigned char*) &tmp);
+  length = decode_ptr ((unsigned char*)xid_str, sizeof (int32) * 2, (unsigned char*) &tmp);
   xid->formatID = LONG_REF_NA (&tmp);
 
-  length += decode_ptr ((unsigned char*) (xid_str + length), sizeof (long) * 2, (unsigned char*) &tmp);
+  length += decode_ptr ((unsigned char*) (xid_str + length), sizeof (int32) * 2, (unsigned char*) &tmp);
   xid->gtrid_length = LONG_REF_NA (&tmp);
 
-  length += decode_ptr ((unsigned char*) (xid_str + length), sizeof (long) * 2, (unsigned char*) &tmp);
+  length += decode_ptr ((unsigned char*) (xid_str + length), sizeof (int32) * 2, (unsigned char*) &tmp);
   xid->bqual_length = LONG_REF_NA (&tmp);
 
   decode_ptr ((unsigned char*) (xid_str + length), (int) (strlen (xid_str) - length), (unsigned char*) xid->data);

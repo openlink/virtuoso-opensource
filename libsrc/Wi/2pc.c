@@ -378,16 +378,15 @@ tp_message_hook (void *queue_v)
 	    }
 	}
 
+      LEAVE_TXN;
     ready:
       if (tp_data->cli_tp_enlisted == CONNECTION_LOCAL)
 	{
 	  lt_log_debug (("tp_msg_hook : msg %d on a non-enlisted lt. skip.\n",
 		  (int) mm->mm_type));
-	  LEAVE_TXN;
 	  goto free;
 	}
 
-      LEAVE_TXN;
 
       switch (mm->mm_type)
 	{
