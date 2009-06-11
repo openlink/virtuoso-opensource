@@ -152,7 +152,7 @@
 		<xsl:value-of select="//meta[@name='isbn']/@content" />
       </xsl:variable>
       <xsl:variable name="resourceURL">
-		<xsl:value-of select="concat('http://www.amazon.com/', translate($title, ' ', '-'), '/dp/', $isbn, '#this')"/>
+		<xsl:value-of select="concat('http://www.amazon.com/', translate($title, ' ', '-'), '/dp/', $isbn)"/>
       </xsl:variable>
 	  <owl:sameAs rdf:resource="{$resourceURL}" />
   </xsl:template>

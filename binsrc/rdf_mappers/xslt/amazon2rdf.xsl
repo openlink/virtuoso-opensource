@@ -77,13 +77,13 @@
 			<xsl:apply-templates select="//ItemAttributes/*" mode="bibo"/>
 			<xsl:apply-templates select="//OfferSummary/*" mode="bibo"/>
 			<xsl:apply-templates select="//Offers/*" mode="bibo"/>
-			<xsl:apply-templates select="//OfferSummary/*" mode="gr"/>
-			<xsl:apply-templates select="//Offers/*" mode="gr"/>
 		    </xsl:when>
 		    <xsl:otherwise>
 			<xsl:apply-templates/>
 		    </xsl:otherwise>
 		</xsl:choose>
+			<xsl:apply-templates select="//OfferSummary/*" mode="gr"/>
+			<xsl:apply-templates select="//Offers/*" mode="gr"/>
 	    </rdf:Description>
 	</rdf:RDF>
     </xsl:template>
@@ -113,10 +113,6 @@
     </dcterms:publisher>
     </xsl:template>
 
-    <xsl:template match="*" mode="bibo">
-	<xsl:apply-templates select="self::*"/>
-    </xsl:template>
-
     <xsl:template match="LowestUsedPrice" mode="gr">
 		<gr:hasPriceSpecification>
 		  <gr:UnitPriceSpecification>
@@ -127,6 +123,14 @@
 		</gr:hasPriceSpecification>
     </xsl:template>
 
+    <xsl:template match="*" mode="bibo">
+	<xsl:apply-templates select="self::*"/>
+    </xsl:template>
+    
+    <xsl:template match="*" mode="gr">
+	<xsl:apply-templates select="self::*"/>
+    </xsl:template>
+    
     <xsl:template match="*[starts-with(.,'http://') or starts-with(.,'urn:')]">
 	<xsl:element namespace="{$ns}" name="{name()}">
 	    <xsl:attribute name="rdf:resource">
