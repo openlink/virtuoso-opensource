@@ -6929,12 +6929,14 @@ create procedure DB.DBA.RDF_LOAD_EBAY (in graph_iri varchar, in new_origin_uri v
 	primary_topic := DB.DBA.RDF_SPONGE_PROXY_IRI (graph_iri);
 	
 	state := '00000';
-	tmp := sprintf( 'sparql define input:inference \'virtrdf-label\' select ?l from <%s> where { <%s> virtrdf:label ?l . ?s rdf:type <http://purl.org/ontology/bibo/Book> }',
+	tmp := sprintf( 'sparql define input:inference \'virtrdf-label\' select ?l from <%s> where { <%s> virtrdf:label ?l }',
 		graph_iri, primary_topic);
+	--. ?s rdf:type <http://purl.org/ontology/bibo/Book> }',
+
 	exec (tmp, state, message, vector (), 0, meta, data);
 	if (state = '00000' and length (data) > 0)
 		RDF_LOAD_EBAY2(data, api_key, opts, dest, graph_iri, new_origin_uri);
-	return 1;
+	return 0;
 }
 ;
 
@@ -6977,13 +6979,14 @@ create procedure DB.DBA.RDF_LOAD_AMAZON (in graph_iri varchar, in new_origin_uri
 	primary_topic := DB.DBA.RDF_SPONGE_PROXY_IRI (graph_iri);
 	
 	state := '00000';
-	tmp := sprintf( 'sparql define input:inference \'virtrdf-label\' select ?l from <%s> where { <%s> virtrdf:label ?l . ?s rdf:type <http://purl.org/ontology/bibo/Book> }',
+	tmp := sprintf( 'sparql define input:inference \'virtrdf-label\' select ?l from <%s> where { <%s> virtrdf:label ?l }',
 		graph_iri, primary_topic);
+	-- . ?s rdf:type <http://purl.org/ontology/bibo/Book> }',
 	
 	exec (tmp, state, message, vector (), 0, meta, data);
 	if (state = '00000' and length (data) > 0)
 		RDF_LOAD_AMAZON2(data, api_key, 'Books', opts, dest, graph_iri, new_origin_uri);
-	return 1;
+	return 0;
 }
 ;
 
@@ -7236,11 +7239,11 @@ insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC
 	  vector ('min-score', '0.5', 'max-results', '10'));
 
 insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
-      values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_EBAY', null, 'eBay Search for products',
+      values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_AMAZON', null, 'Amazon Search for products',
 	  vector ('min-score', '0.5', 'max-results', '10'));
 
 insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
-      values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_AMAZON', null, 'Amazon Search for products',
+      values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_EBAY', null, 'eBay Search for products',
 	  vector ('min-score', '0.5', 'max-results', '10'));
 
 insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)

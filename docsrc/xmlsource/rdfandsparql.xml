@@ -4494,6 +4494,330 @@ select ?g ?s where { ?s <p> ?o }
 </sect2>
 </sect1>
 
+<sect1 id="rdfgraphsecurity"><title>RDF Graphs Security</title>
+<sect2 id="rdfgraphsecuritygroups"><title>RDF Graph Groups</title>
+<para>In some cases, the data-set of a SPARQL query is not known at compile time. It is possible to pass
+IRIs of source graphs via parameters, but the method is not perfect as:</para>
+<itemizedlist mark="bullet">
+  <listitem>not all protocols are suitable for parameter passing, and no one is an interoperable standard</listitem>
+  <listitem>passing list of IRIs as a parameter will usually require the use of Virtuoso-specific functions
+in the text of SPARQL query, that's bad for some query builders.</listitem>
+  <listitem>lack of knowledge about actual graphs may damage query optimization</listitem>
+</itemizedlist>
+<para>It would be nice to create named lists of graphs and a clause like "select from all graph names of the specified list".
+<emphasis>"Graph groups"</emphasis> serve for this purpose. That is Virtuoso-specific SPARQL extension that let create a named list of IRIs such that
+if name of the list is used in <emphasis>FROM</emphasis> clause like <emphasis>IRI</emphasis> of default
+graph then it is equivalent to list of <emphasis>FROM</emphasis> clauses, one clause for each item of the
+list.</para>
+<para>Internally, descriptions of graph groups are kept in two tables:</para>
+<emphasis>Table of graph groups:</emphasis>
+<programlisting><![CDATA[
+create table DB.DBA.RDF_GRAPH_GROUP (
+  RGG_IID IRI_ID not null primary key,	-- IRI ID of RGG_IRI field
+  RGG_IRI varchar not null,		-- Name of the group
+  RGG_MEMBER_PATTERN varchar,		-- Member IRI pattern
+  RGG_COMMENT varchar			-- Comment
+  )
+create index RDF_GRAPH_GROUP_IRI on DB.DBA.RDF_GRAPH_GROUP (RGG_IRI)
+;
+]]></programlisting>
+<para><emphasis>Table of contents of groups:</emphasis></para>
+
+<programlisting><![CDATA[
+create table DB.DBA.RDF_GRAPH_GROUP_MEMBER (
+  RGGM_GROUP_IID IRI_ID not null,	-- IRI_ID of the group
+  RGGM_MEMBER_IID IRI_ID not null,	-- IRI_ID of the group member
+  primary key (RGGM_GROUP_IID, RGGM_MEMBER_IID)
+  )
+;
+]]></programlisting>
+
+<para>Fields <emphasis>RGG_MEMBER_PATTERN</emphasis> and <emphasis>RGG_COMMENT</emphasis> are not used by system internals but applications may wish to write their data there for future reference.
+<emphasis>RGG_COMMENT</emphasis> is supposed to be human-readable description of the group and <emphasis>RGG_MEMBER_PATTERN</emphasis> may be useful for functions that automatically add
+IRIs of a given graph to all graph groups such that the graph IRI string match <emphasis>RGG_MEMBER_PATTERN</emphasis> regexp pattern.
+</para>
+<para>A dictionary of all groups and their members is cached in memory for fast access.
+Due to this reason, applications may read these tables and modify <emphasis>RGG_MEMBER_PATTERN</emphasis> and <emphasis>RGG_COMMENT</emphasis> if needed but not change other fields directly.
+The following API procedures makes changes in a safe way:
+</para>
+<programlisting><![CDATA[
+DB.DBA.RDF_GRAPH_GROUP_CREATE (
+  in group_iri varchar,
+  in quiet integer,
+  in member_pattern varchar := null,
+  in comment varchar := null)
+]]></programlisting>
+
+<para>That creates a new empty graph group. An error is signaled if the group exists already and quiet
+parameter is zero.</para>
+
+<programlisting><![CDATA[
+DB.DBA.RDF_GRAPH_GROUP_INS (in group_iri varchar, in memb_iri varchar)
+DB.DBA.RDF_GRAPH_GROUP_DEL (in group_iri varchar, in memb_iri varchar)
+]]></programlisting>
+
+
+<para>These two are to add or remove member to an existing group. Double insert or removal of not a member
+will not signal errors, but missing group will.be signaled.</para>
+
+<programlisting><![CDATA[
+DB.DBA.RDF_GRAPH_GROUP_DROP (
+  in group_iri varchar,
+  in quiet integer)
+]]></programlisting>
+
+<para>That removes graph group. An error is signaled if the group did not exist before the call and quiet
+parameter is zero.</para>
+
+<para>Graph groups are <emphasis>"macro-expanded"</emphasis> only in FROM clauses and have no effect on
+FROM NAMED or on GRAPH &lt;IRI&gt; {...} . Technically, it is not prohibited to use an IRI as both plain
+graph IRI and graph group IRI in one storage but this is confusing and is not recommended.</para>
+
+<para>Graph groups can not be members of other graph groups, i.e. the IRI of a graph group can appear in the
+list of members of some group but it will be treated as plain graph IRI and will not cause recursive
+expansion of groups.</para>
+</sect2>
+<sect2 id="rdfgraphsecuritynotfrom"><title>NOT FROM and NOT FROM NAMED Clauses</title>
+<para>In addition to standard FROM and FROM NAMED clauses, Virtuoso extends SPARQL with NOT FROM and NOT
+FROM NAMED clauses of "opposite" meaning.</para>
+
+<programlisting><![CDATA[
+SELECT ... NOT FROM <x> ... WHERE {...}
+]]></programlisting>
+
+<para>means "select from other graphs, but not from the given one".
+This is especially useful because NOT FROM supports graph groups (NOT FROM NAMED supports only plain graphs).
+So if</para>
+
+<programlisting><![CDATA[
+<http://example.com/users/private>
+]]></programlisting>
+
+<para>is a graph group of all graphs with confidential data about users then</para>
+
+<programlisting><![CDATA[
+SELECT * NOT FROM <http://example.com/users/private> WHERE {...}
+]]></programlisting>
+
+<para>will be restricted only to insecure data.</para>
+
+<para>NOT FROM overrides any FROM and NOT FROM NAMED overrides any FROM NAMED, the order of clauses in the
+query text is not important.</para>
+
+<para>The SPARQL web service endpoint configuration string may contain pragmas
+<emphasis>input:default-graph-exclude</emphasis> and <emphasis>input:named-graph-exclude</emphasis> that
+become equivalent to NOT FROM and NOT FROM NAMED clauses like <emphasis>input:default-graph-uri</emphasis>
+and <emphasis>input:named-graph-uri</emphasis> mimics FROM and FROM NAMED.</para>
+</sect2>
+<sect2 id="rdfgraphsecurity"><title>Graph-Level Security</title>
+<para>Virtuoso supports graph-level security for "physical" RDF storage. That is somewhat similar to table
+access permissions in SQL. However, the difference between SPARQL and SQL data models results in totally
+different style of security administration. In SQL, when new application is installed it comes with its own
+set of tables and every query in its code explicitly specifies tables in use. Security restrictions of two
+applications interfere only if applications knows each other and are supposedly designed to cooperate. It
+is possible to write an application that will get list of available tables and retrieve data from any given
+table but that is a special case and it usually requires DBA privileges.</para>
+
+<para>In SPARQL, data of different applications shares one table and the query language allows to select data
+of all applications at once. This feature makes SPARQL convenient for cross-application data integration. At
+the same time, that become a giant security hole if any sensitive data are stored.</para>
+
+<para>A blind copying SQL security model to SPARQL domain would result in significant loss of performance or
+weak security or even both problems at the same time. That is why SPARQL model is made much more restrictive,
+even if it becomes inconvenient for some administration tasks.</para>
+
+<para>Graph-level security does not replace traditional SQL security. A user should become member of
+appropriate group (SPARQL_SELECT, SPARQL_SPONGE or SPARQL_UPDATE) in order to start using its graph-level
+privileges.</para>
+</sect2>
+<sect2 id="rdfgraphsecurityunddefperm"><title>Understanding Default Permissions</title>
+
+<para>In relational database, default permissions are trivial. DBA is usually the only account that can
+access any table for both read and write. Making some table public or private does not affect applications
+that do not refer that table in the code. Tables are always created before making security restrictions on
+them.</para>
+
+<para>Chances are very low that an application will unintentionally create some table and fill in with
+confidential data. There are no unauthenticated users, any client has some user ID and no one user is
+"default user" so permissions of any two users are always independent.</para>
+
+<para>SPARQL access can be anonymous and graphs can be created during routine data manipulation.
+For anonymous user, only public resources are available. Thus "default permissions" on some or all graphs are
+actually permissions of "nobody" user, (the numeric ID of this user can be obtained by http_nobody_uid()
+function call). As a consequence, there's a strong need in "default permission" for a user, this is the only
+way to specify what to do with all graphs that does not exist now it might exist in some future.
+</para>
+
+<para>An attempt to make default permissions wider than specific is always potential security hole in SPARQL,
+so this is strictly prohibited.</para>
+
+<para>Four sorts of access are specified by four bits of an integer "permission bit-mask", plain old UNIX
+style:</para>
+
+<itemizedlist mark="bullet">
+  <listitem>Bit 1 permits read access.</listitem>
+  <listitem>Bit 2 permits write access via SPARUL and it's basically useless without bit 1 set.</listitem>
+  <listitem>Bit 4 permits write access via "RDF sponge" methods and it's basically useless
+without bits 1 and 2 set.</listitem>
+  <listitem>Bit 8 allows to obtain list of members of graph group; an IRI can be used as graph IRI and as
+graph group IRI at the same time so bit 8 can be freely combined with any of bits 1, 2 or 4.</listitem>
+</itemizedlist>
+
+<para>Note that obtaining the list of members of a graph group does not grant any access permissions to
+triples from member graphs. It is quite safe to mix secure and public graphs in one graph group.</para>
+
+<para>When a SPARQL query should check whether a given user have permission to access a given graph then
+the order of checks is as follows:</para>
+
+<orderedlist>
+  <listitem>permissions of the user on the specific graph;</listitem>
+  <listitem>default permissions of the user on all graphs;</listitem>
+  <listitem>public permissions on the specific graph;</listitem>
+  <listitem>public permissions on all graphs</listitem>
+</orderedlist>
+
+<para>If no one above mentioned permission is set then the access is "read/write/sponge/list".</para>
+<para>For "nobody" user, steps 3 and 4 become exact copies of steps 1 and 2 so they are skipped.</para>
+</sect2>
+<sect2 id="rdfgraphsecurityintconfsec"><title>Initial Configuration of SPARQL Security</title>
+<para>It is convenient to configure the RDF storage security by adding restrictions in the order inverse
+to the order of checks:</para>
+
+<itemizedlist mark="bullet">
+  <listitem>Step 1: Set public permissions on all graphs to the most restricted level of any application
+that will be installed. So if any single graph will be unreadable for public, then public permissions on
+all graphs should be set to 0 or 8.</listitem>
+  <listitem>Step 2: Public permissions on "insecure" graphs should be set. So if the database contains
+DBpedia or WordNet or some other data of Linking Open Data project then public permissions for that graphs
+may be set to 1.</listitem>
+  <listitem>Step3: Configure trusted users, such as administrative DBA-like accounts, and to specify their
+permissions on all graphs.</listitem>
+  <listitem>Step 4: Some additional right can be granted to some specific users on some specific graphs.</listitem>
+</itemizedlist>
+
+<para>Note that there's no need to permit something to DBA itself, because DBA's default permissions are
+set automatically.</para>
+<sect3 id="rdfgraphsecurityintconfsecuser"><title>Configuring New User</title>
+<itemizedlist mark="bullet">
+  <listitem>Step 1: Grant SPARQL_SELECT, SPARQL_SPONGE or SPAR_UPDATE to the user.</listitem>
+  <listitem>Step 2: Set user's permissions on all graphs.</listitem>
+  <listitem>Step 3: Grant rights on some specific graphs.</listitem>
+</itemizedlist>
+</sect3>
+<sect3 id="rdfgraphsecurityintex"><title>Example: Blogs and Resource Sharing</title>
+<para>Consider a "groupware" application that let users create personal resources with access policies.</para>
+
+<programlisting><![CDATA[
+-- First, create few users, in alphabetical order.
+DB.DBA.USER_CREATE ('Anna', 'Anna');
+DB.DBA.USER_CREATE ('Brad', 'Brad');
+DB.DBA.USER_CREATE ('Carl', 'Carl');
+grant SPARQL_UPDATE to "Anna";
+grant SPARQL_UPDATE to "Brad";
+grant SPARQL_UPDATE to "Carl";
+
+-- At least some data are supposed to be confidential, thus the whole storage becomes confidential.
+DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('nobody', 0);
+
+-- Moreover, no one of created users have access to all graphs (even for reading).
+DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('Anna', 0);
+DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('Brad', 0);
+DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('Carl', 0);
+
+-- Anna can only read her personal system data graph.
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Anna/system', 'Anna', 1);
+
+-- Anna can read and write her private data graph.
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Anna/private', 'Anna', 3);
+
+-- Anna and Bred are friends and can read each others notes for friends.
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Anna/friends', 'Anna', 3);
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Anna/friends', 'Brad', 1);
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Brad/friends', 'Brad', 3);
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Brad/friends', 'Anna', 1);
+
+-- Brad and Carl share write access to graph of his company.
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/BubbleSortingServicesInc', 'Brad', 3);
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/BubbleSortingServicesInc', 'Carl', 3);
+
+-- Anna writes a blog for public.
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Anna/blog', 'Anna', 3);
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Anna/blog', 'nobody', 1);
+
+-- DBpedia is public read and local discussion wiki is readable and writable.
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://dbpedia.org/', 'nobody', 1);
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/wiki', 'nobody', 3);
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/publicB', 'nobody', 3);
+
+-- Graph groups have its own security.
+DB.DBA.RDF_GRAPH_GROUP_CREATE ('http://example.com/Personal', 1);
+DB.DBA.RDF_GRAPH_GROUP_INS ('http://example.com/Personal', 'http://example.com/Anna/system');
+DB.DBA.RDF_GRAPH_GROUP_INS ('http://example.com/Personal', 'http://example.com/Anna/private');
+DB.DBA.RDF_GRAPH_GROUP_INS ('http://example.com/Personal', 'http://example.com/Brad/system');
+DB.DBA.RDF_GRAPH_GROUP_INS ('http://example.com/Personal', 'http://example.com/Brad/private');
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Personal', 'Anna', 8);
+DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Personal', 'Brad', 8);
+]]></programlisting>
+
+<para>If Anna and Brad execute same</para>
+
+<programlisting><![CDATA[
+select *
+from <http://example.com/Personal>
+where { ?s ?p ?o }
+]]></programlisting>
+
+<para>then results will be totally different: users will not get access to each others data.</para>
+</sect3>
+</sect2>
+<sect2 id="rdfgraphsecurityappcallb"><title>Application Callbacks for Graph Level Security</title>
+<para>In some cases, different applications should provide different security for different users. Two
+SPARQL pragmas are provided for this purpose:</para>
+
+<itemizedlist mark="bullet">
+  <listitem>Pragma sql:gs-app-callback is to specify Virtuoso/PL callback function that return permission bits for given graph.</listitem>
+  <listitem>Pragma sql:gs-app-uid is to specify application-specific user ID that is some string that is passed to the callback "as is".</listitem>
+</itemizedlist>
+
+<para>The name of callback is always DB.DBA.SPARQL_GS_APP_CALLBACK_nnn, where nnn is value of
+sql:gs-app-callback.</para>
+
+<para>The callback is called only if the application has access to the graph in question so it may restrict
+the caller's account but not grant more permissions.</para>
+<sect3 id="rdfgraphsecurityappcallbex"><title>Example</title>
+<para>Let user of application get full access to graphs whose IRIs contain user's name in path.
+In addition, let all of them permission to use all graph groups and let the "moderator" user read everything.</para>
+
+<programlisting><![CDATA[
+reconnect "dba";
+
+create function DB.DBA.SPARQL_GS_APP_CALLBACK_TEST (in g_iid IRI_ID, in app_uid varchar) returns integer
+{
+  declare g_uri varchar;
+-- A fake IRI ID #i0 is used to mention account's default permissions for all graphs.
+  if (#i0 = g_iid)
+    {
+      if ('moderator' = app_uid)
+        return 9; -- Moderator can read and list everything.
+      return 8; -- Other users can list everything.
+    }
+  g_uri := id_to_iri (g_iid);
+  if (strstr (g_uri, '/' || app_uid || '/'))
+    return 15; -- User has full access to "his" graph.
+  return 8; -- User can list any given graph group.
+}
+;
+
+SPARQL
+define sql:gs-app-callback "TEST"
+define sql:gs-app-uid "Anna"
+select ?g ?s where { ?s <p> ?o }
+;
+]]></programlisting>
+</sect3>
+</sect2>
+</sect1>
+
 <sect1 id="rdfrdfviewgnr"><title>Automated Generation of RDF Views over Relational Data Sources</title>
 <sect2 id="rdfrdfviewgnrintro"><title>Introduction</title>
 <para>Virtuoso offers from Conductor UI an HTML based Wizard interface for dynamically generating &amp;
@@ -4579,9 +4903,9 @@ that exposes the Tables / Views for this exercise </listitem>
       <title>RDF Views</title>
       <graphic fileref="ui/rd1.png"/>
     </figure>
-</listitem>
+  </listitem>
   <listitem>In the form presented, perform the following steps:
-<orderedlist>
+    <orderedlist>
   <listitem>Select the Database Name Qualifier (e.g., "Demo")  that exposes the Tables / Views for this
 exercise</listitem>
       <listitem>Enter the Base URL to which your URL rewrite rules will be bound (e.g. http://&lt;cname&gt;:8890/Demo)</listitem>
@@ -4591,88 +4915,88 @@ exercise</listitem>
       <title>Generate via Wizard</title>
       <graphic fileref="ui/rd2.png"/>
     </figure>
-</listitem>
-</orderedlist>
-</listitem>
+      </listitem>
+    </orderedlist>
+  </listitem>
   <listitem>At this point, you are presented with the option to edit your column selection. Select the "Edit" link, for example, for table Demo.demo.Shippers.
     <figure id="rd3" float="1">
       <title>Column Selection</title>
       <graphic fileref="ui/rd3.png"/>
     </figure>
-</listitem>
+  </listitem>
   <listitem>For images or other binary data in MIME formats to be revealed as anything other than generic "binary objects", you must map large
 varbinary types to the appropriate MIME types like image/gif. To do so, select the Edit link for Binding/MIME Type of the relevant table columns.
 You can:
-<itemizedlist mark="bullet">
+    <itemizedlist mark="bullet">
       <listitem>Leave the Binding/MIME Type literal; or</listitem>
       <listitem>Set to skip, such that the column will not be used in RDF generation; or </listitem>
       <listitem>Select the binary object value in order for the column to be referenced as binary.</listitem>
-</itemizedlist>
+    </itemizedlist>
     <figure id="rd14" float="1">
       <title>Binding/MIME Types</title>
       <graphic fileref="ui/rd14.png"/>
     </figure>
-</listitem>
+  </listitem>
   <listitem>After finishing with your changes click the Save button, or cancel the changes and go back by
 clicking the Cancel button.</listitem>
   <listitem>At this point, the RDF View Definition form will let you Select Generation Targets options:
-<orderedlist>
+    <orderedlist>
   <listitem>Data Source Ontology Mappings</listitem>
   <listitem>Instance Data View Mappings</listitem>
   <listitem>VoID statistic</listitem>
-</orderedlist>
+    </orderedlist>
     <figure id="rd15" float="1">
       <title>Generation Targets options</title>
       <graphic fileref="ui/rd15.png"/>
     </figure>
-</listitem>
+  </listitem>
   <listitem>Make sure you click the "Next" button.</listitem>
   <listitem>Based on your selections in the prior form, the RDF View Definition Deployment Options form will be offered:
-<orderedlist>
+    <orderedlist>
   <listitem>Data Source Ontology Rules</listitem>
   <listitem>Instance Data Rules
-</listitem>
-</orderedlist>
+      </listitem>
+    </orderedlist>
     <figure id="rd4" float="1">
       <title>Generation Targets options</title>
       <graphic fileref="ui/rd4.png"/>
     </figure>
-</listitem>
+  </listitem>
   <listitem>Select the desired option(s) and click the "Next" button which unveils a generated
 Instance Data and/or Ontology form.
     <figure id="rd5" float="1">
       <title>Instance Data and/or Ontology</title>
       <graphic fileref="ui/rd5.png"/>
     </figure>
-</listitem>
+  </listitem>
   <listitem>Click the Execute button and Virtuoso will:
-<orderedlist>
+    <orderedlist>
       <listitem>Apply the generated declarations (instance data and ontology) to your Virtuoso instance</listitem>
       <listitem>Publish / Deploy declarations that expose the Wizard-generated Rewrite Rules and associated endpoints.
     <figure id="rd6" float="1">
       <title>Publishing / Deployment declarations</title>
       <graphic fileref="ui/rd6.png"/>
     </figure>
-</listitem>
-</orderedlist>
-</listitem>
+      </listitem>
+    </orderedlist>
+  </listitem>
   <listitem>Optionally, you can also perform one of the following tasks:
-<orderedlist>
+    <orderedlist>
       <listitem>Save Data Mappings: when clicked, offers to save the generated Definitions to local file
 system</listitem>
       <listitem>Save Ontology Mappings: when clicked, offers to save the generated Ontology to local file
 system</listitem>
       <listitem>Export as WebDAV resource: exports the selected objects/items as a WebDAV resource:
-<itemizedlist mark="bullet">
+        <itemizedlist mark="bullet">
   <listitem>Click "Browse"</listitem>
   <listitem>Enter a WebDAV resource and click the "Select" button.</listitem>
-</itemizedlist>
+        </itemizedlist>
     <figure id="rd7" float="1">
       <title>WebDAV resource</title>
       <graphic fileref="ui/rd7.png"/>
     </figure>
-</listitem>
-</orderedlist>
+     </listitem>
+    </orderedlist>
     <para>Note, the WebDAV resource path value will be shown in the WebDAV location field.</para>
   </listitem>
   <listitem>Then click the "Save Data Mappings" or "Save Ontology Mappings" button, to complete the option task of saving your generated (or edited) view declarations.
@@ -4680,7 +5004,7 @@ system</listitem>
       <title>WebDAV resource</title>
       <graphic fileref="ui/rd8.png"/>
     </figure>
-</listitem>
+  </listitem>
   <listitem>Error messages will be presented if the Wizard encounters problems. If there are no error messages, your RDF view declarations and Linked Data publishing activities will have completed successfully.
     <figure id="rd9" float="1">
       <title>RDF view declarations and Linked Data publishing activities Finish</title>
@@ -7345,10 +7669,10 @@ create procedure DB.DBA.RDF_MQL_RESOURCE_IS_SENATOR (
   dbp_resource_name := tmp[0];
 
   -- 3) Use the extracted person_name to build a URI to DBpedia's description of the person.
-  -- 4) Query the DBpedia description to see if the person is of rdf:type yago:Senator110578471
+  -- 4) Query the DBpedia description to see if the person is of rdf:type &lt;http://dbpedia.org/class/yago/Artist109812338&gt;
   qry := 'prefix yago: <http://dbpedia.org/class/yago/> \n';
   qry := qry || 'prefix dbp: <http://dbpedia.org/resource/> \n';
-  qry := qry || sprintf ('ask from <http://dbpedia.org> where {dbp:%s a yago:Senator110578471}',
+  qry := qry || sprintf ('ask from <http://dbpedia.org> where {dbp:%s a <http://dbpedia.org/class/yago/Artist109812338>}',
  			    dbp_resource_name);
   qry_res := http_client (url=>sprintf('%s?query=%U', 'http://dbpedia.org/sparql', qry),
  			    timeout=>30);
@@ -28112,19 +28436,19 @@ Named Graph
 SQL>rdfs_rule_set ('http://dbpedia.org/resource/inference/rules/yago#',
 'http://dbpedia.org/resource/classes/yago#');
 
--- Query for the "The Lord of the Rings" which is a "Book" as
--- explicitly claimed in the DBpedia data set (instance data)
+-- Query for the "The Lord of the Rings" which is a "Fantasy Novel" as explicitly
+-- claimed in the DBpedia data set (instance data)
 
 SQL>SPARQL
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX dbpedia: <http://dbpedia.org/property/>
 PREFIX yago: <http://dbpedia.org/class/yago/>
-
 SELECT ?s
 FROM <http://dbpedia.org>
-WHERE {
-?s a yago:Book106410904 .
-?s dbpedia:name "The Lord of the Rings"@en .
+WHERE
+{
+  ?s a <http://dbpedia.org/class/yago/FantasyNovels> .
+  ?s dbpedia:name "The Lord of the Rings"@en .
 };
 
 s
@@ -28133,13 +28457,12 @@ _______________________________________________________________________________
 
 http://dbpedia.org/resource/The_Lord_of_the_Rings
 
-1 Rows. -- 321 msec.
+1 Rows. -- 241 msec.
 
--- Query aimed at Books via query scoped to the "Publication" class
--- of which it is a subclass in the Yago Hierarchy
+-- Query aimed at Novel via query scoped to the "Fiction" class of
+-- which it is a subclass in the Yago Hierarchy
 SQL>SPARQL
-define input:inference
-'http://dbpedia.org/resource/inference/rules/yago#'
+define input:inference 'http://dbpedia.org/resource/inference/rules/yago#'
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX dbpedia: <http://dbpedia.org/property/>
 PREFIX yago: <http://dbpedia.org/class/yago/>
@@ -28147,7 +28470,7 @@ PREFIX yago: <http://dbpedia.org/class/yago/>
 SELECT ?s
 FROM <http://dbpedia.org>
 WHERE {
-?s a yago:Publication106589574 .
+?s a <http://dbpedia.org/class/yago/Fiction106367107> .
 ?s dbpedia:name "The Lord of the Rings"@en .
 };
 
@@ -28155,13 +28478,18 @@ s
 VARCHAR
 _______________________________________________________________________________
 
+
 http://dbpedia.org/resource/The_Lord_of_the_Rings
+http://dbpedia.org/resource/The_Lord_of_the_Rings
+http://dbpedia.org/resource/The_Lord_of_the_Rings
+http://dbpedia.org/resource/The_Lord_of_the_Rings
+
+4 Rows. -- 4767 msec.
 
 
 -- # Variant of query with Virtuoso's Full Text Index extension: bif:contains
 SQL>SPARQL
-define input:inference
-'http://dbpedia.org/resource/inference/rules/yago#'
+define input:inference 'http://dbpedia.org/resource/inference/rules/yago#'
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX dbpedia: <http://dbpedia.org/property/>
 PREFIX yago: <http://dbpedia.org/class/yago/>
@@ -28169,7 +28497,7 @@ PREFIX yago: <http://dbpedia.org/class/yago/>
 SELECT ?s ?n
 FROM <http://dbpedia.org>
 WHERE {
-?s a yago:Publication106589574 .
+?s a <http://dbpedia.org/class/yago/Fiction106367107> .
 ?s dbpedia:name ?n .
 ?n bif:contains 'Lord and Rings'
 };
@@ -28179,14 +28507,13 @@ VARCHAR                                                                         
 _______________________________________________________________________________
 
 http://dbpedia.org/resource/The_Lord_of_the_Rings                                 The Lord of the Rings
-http://dbpedia.org/resource/Journeys_of_Frodo                                     Journeys of Frodo: An Atlas of J. R. R. Tolkien's The Lord of the Ri
-ngs
-http://dbpedia.org/resource/The_Lord_of_the_Rings:_A_Reader%27s_Companion         The Lord of the Rings: A Reader's Companion
-http://dbpedia.org/resource/Tolkien:_A_Look_Behind_%22The_Lord_of_the_Rings%22    A Look Behind "The Lord of the Rings""
+http://dbpedia.org/resource/The_Lord_of_the_Rings    The Lord of the Rings
+http://dbpedia.org/resource/The_Lord_of_the_Rings    The Lord of the Rings
+http://dbpedia.org/resource/The_Lord_of_the_Rings    The Lord of the Rings
 
-4 Rows. -- 29573 msec.
+4 Rows. -- 5538 msec.
 
--- Retrieve all individuals instances of the Book Class
+-- Retrieve all individuals instances of the FantasyNovels Class
 SQL>SPARQL
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX dbpedia: <http://dbpedia.org/property/>
@@ -28194,33 +28521,33 @@ PREFIX yago: <http://dbpedia.org/class/yago/>
 
 SELECT ?s ?n
 FROM <http://dbpedia.org>
-WHERE {
-?s a yago:Book106410904 .
-?s dbpedia:name ?n .
+WHERE
+{
+  ?s a <http://dbpedia.org/class/yago/FantasyNovels> .
+  ?s dbpedia:name ?n .
 }
 limit 10;
 s                                                                                 n
 VARCHAR                                                                           VARCHAR
 _______________________________________________________________________________
 
-http://dbpedia.org/resource/.hack//AI_buster                                      .hack// AI buster
-http://dbpedia.org/resource/1000_Love_and_Sex_Quiz                                1000 Love and Sex Quiz
-http://dbpedia.org/resource/1491:_New_Revelations_of_the_Americas_Before_Columbus  1491: New Revelations of the Americas Before Columbus
-http://dbpedia.org/resource/.hack//AI_buster_2                                    .hack// AI buster 2
-http://dbpedia.org/resource/100_Books_by_August_Derleth                           100 Books by August Derleth
-http://dbpedia.org/resource/1634:_The_Baltic_War                                  1634: The Baltic War
-http://dbpedia.org/resource/003%C2%BD:_The_Adventures_of_James_Bond_Junior        003-+: The Adventures of James Bond Junior"
-http://dbpedia.org/resource/1001_Movies_You_Must_See_Before_You_Die               1001 Movies You Must See Before You Die
-http://dbpedia.org/resource/1066_and_All_That                                     1066 and All That
-http://dbpedia.org/resource/14%2C000_Things_to_be_Happy_About                     14,000 Things to be Happy About
+http://dbpedia.org/resource/ATLA_-_A_Story_of_the_Lost_Island                     Atla
+http://dbpedia.org/resource/A_Crown_of_Swords                                     A Crown of Swords
+http://dbpedia.org/resource/A_Game_of_Thrones                                     A Game of Thrones
+http://dbpedia.org/resource/A_Secret_Atlas                                        A Secret Atlas
+http://dbpedia.org/resource/A_Storm_of_Swords                                     A Storm of Swords
+http://dbpedia.org/resource/A_Voyage_to_Arcturus                                  A Voyage to Arcturus
+http://dbpedia.org/resource/A_Wizard_Alone                                        A Wizard Alone
+http://dbpedia.org/resource/Above_the_Veil                                        Above the Veil
+http://dbpedia.org/resource/Black_Easter                                          Black Easter
+http://dbpedia.org/resource/Lord_of_Chaos                                         Lord of Chaos
 
-10 Rows. -- 1422 msec.
+10 Rows. -- 781 msec.
 
--- Retrieve all individuals instances of Publication Class which
--- should include all Books.
+-- Retrieve all individuals instances of Fiction Class which should
+-- include all Novels.
 SQL>SPARQL
-define input:inference
-'http://dbpedia.org/resource/inference/rules/yago#'
+define input:inference 'http://dbpedia.org/resource/inference/rules/yago#'
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX dbpedia: <http://dbpedia.org/property/>
 PREFIX yago: <http://dbpedia.org/class/yago/>
@@ -28228,21 +28555,56 @@ PREFIX yago: <http://dbpedia.org/class/yago/>
 SELECT ?s ?n
 FROM <http://dbpedia.org>
 WHERE {
-?s a yago:Publication106589574 .
+?s a <http://dbpedia.org/class/yago/Fiction106367107> .
 ?s dbpedia:name ?n .
 };
 s                                                                                 n
 VARCHAR                                                                           VARCHAR
 _______________________________________________________________________________
 
-http://dbpedia.org/resource/461_Ocean_Boulevard                                   461 Ocean Boulevard
-http://dbpedia.org/resource/A_Love_Supreme                                        A Love Supreme
-http://dbpedia.org/resource/A_Night_at_Red_Rocks_with_the_Colorado_Symphony_Orchestra  A Night at Red Rocks with the Colorado Symphony Orchestra
-http://dbpedia.org/resource/At_Fillmore_East                                      At Fillmore East
-http://dbpedia.org/resource/August_and_Everything_After                           August and Everything After
+http://dbpedia.org/resource/Last_Son_of_Krypton                                   Last Son of Krypton
+http://dbpedia.org/resource/Tuvaluan_language                                     Tuvaluan
+http://dbpedia.org/resource/Card_Walker                                           E. Cardon Walker
+http://dbpedia.org/resource/Les_Clark                                             Les Clark
+http://dbpedia.org/resource/Marc_Davis                                            Marc Davis
+http://dbpedia.org/resource/Eric_Larson                                           Eric Larson
+http://dbpedia.org/resource/Marty_Sklar                                           Marty Sklar
+http://dbpedia.org/resource/Peter_Ellenshaw                                       Peter Ellenshaw
+http://dbpedia.org/resource/Adriana_Caselotti                                     Adriana Caselotti
+http://dbpedia.org/resource/Jimmie_Dodd                                           Jimmie Dodd
 ...
+15296 Rows.
 ]]></programlisting>
-<emphasis>Equivalence between classes</emphasis>
+<para><emphasis>Pure SPARQL Examples:</emphasis></para>
+
+<programlisting><![CDATA[
+-- Query aimed at Fantasy Novel via query scoped to the "Fiction" class of
+-- which it is a subclass in the Yago Hierarchy
+
+SQL>SPARQL
+define input:inference 'http://dbpedia.org/resource/inference/rules/yago#'
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX dbpedia: <http://dbpedia.org/property/>
+PREFIX yago: <http://dbpedia.org/class/yago/>
+SELECT ?s
+FROM <http://dbpedia.org>
+WHERE {
+?s a <http://dbpedia.org/class/yago/Fiction106367107> .
+?s dbpedia:name "The Lord of the Rings"@en .
+};
+s
+VARCHAR
+_______________________________________________________________________________
+
+http://dbpedia.org/resource/The_Lord_of_the_Rings
+http://dbpedia.org/resource/The_Lord_of_the_Rings
+http://dbpedia.org/resource/The_Lord_of_the_Rings
+http://dbpedia.org/resource/The_Lord_of_the_Rings
+
+4 Rows. -- 150 msec.
+]]></programlisting>
+
+<para><emphasis>Equivalence between classes</emphasis></para>
 <para>The example below is based on <ulink url="http://umbel.org/documentation.html">UMBEL</ulink> and DBpedia integraion:</para>
 <programlisting><![CDATA[
 -- Load UMBEL & DBpedia Instance Level Cross-Links (owl:sameAs) Triples
@@ -29104,34 +29466,78 @@ better data layout on disk, as well as fewer pages to load for the same content.
 the graph, just drop the FROM &lt;http://dbpedia.org&gt; from each query. The returned row counts are
 indicated below each query's text.</para>
 <programlisting><![CDATA[
-sparql SELECT ?p ?o FROM <http://dbpedia.org> WHERE {
-  <http://dbpedia.org/resource/Metropolitan_Museum_of_Art> ?p ?o };
+SQL>SPARQL
+SELECT ?p ?o
+FROM <http://dbpedia.org>
+WHERE
+  {
+    <http://dbpedia.org/resource/Metropolitan_Museum_of_Art> ?p ?o .
+  };
 
--- 1337 rows
+p                                                                                 o
+VARCHAR                                                                           VARCHAR
+_______________________________________________________________________________
 
-sparql PREFIX p: <http://dbpedia.org/property/>
+http://www.w3.org/1999/02/22-rdf-syntax-ns#type                                   http://umbel.org/umbel/ac/Artifact
+http://www.w3.org/1999/02/22-rdf-syntax-ns#type                                   http://dbpedia.org/class/yago/MuseumsInNewYorkCity
+http://www.w3.org/1999/02/22-rdf-syntax-ns#type                                   http://dbpedia.org/class/yago/ArtMuseumsAndGalleriesInTheUnitedStates
+http://www.w3.org/1999/02/22-rdf-syntax-ns#type                                   http://dbpedia.org/class/yago/Museum103800563
+..
+-- 335 rows
+
+SQL>SPARQL
+PREFIX p: <http://dbpedia.org/property/>
 SELECT ?film1 ?actor1 ?film2 ?actor2
-FROM <http://dbpedia.org> WHERE {
+FROM <http://dbpedia.org>
+WHERE
+  {
   ?film1 p:starring <http://dbpedia.org/resource/Kevin_Bacon> .
   ?film1 p:starring ?actor1 .
   ?film2 p:starring ?actor1 .
-  ?film2 p:starring ?actor2 . };
+    ?film2 p:starring ?actor2 .
+};
 
+film1                                       actor1                                    film2                                        ctor2
+VARCHAR                                     VARCHAR                                   VARCHAR                                      ARCHAR
+http://dbpedia.org/resource/The_River_Wild  http://dbpedia.org/resource/Kevin_Bacon   http://dbpedia.org/resource/The_River_Wild   http://dbpedia.org/resource/Kevin_Bacon
+http://dbpedia.org/resource/The_River_Wild  http://dbpedia.org/resource/Kevin_Bacon   http://dbpedia.org/resource/The_River_Wild   http://dbpedia.org/resource/Meryl_Streep
+http://dbpedia.org/resource/The_River_Wild  http://dbpedia.org/resource/Kevin_Bacon   http://dbpedia.org/resource/The_River_Wild   http://dbpedia.org/resource/Joseph_Mazzello
+http://dbpedia.org/resource/The_River_Wild  http://dbpedia.org/resource/Kevin_Bacon   http://dbpedia.org/resource/The_River_Wild   http://dbpedia.org/resource/David_Strathairn
+http://dbpedia.org/resource/The_River_Wild  http://dbpedia.org/resource/Kevin_Bacon   http://dbpedia.org/resource/The_River_Wild   http://dbpedia.org/resource/John_C._Reilly
+...
 --  23910 rows
 
-sparql PREFIX p: <http://dbpedia.org/property/>
-SELECT ?artist ?artwork ?museum ?director FROM <http://dbpedia.org>
-WHERE {
+SQL>SPARQL
+PREFIX p: <http://dbpedia.org/property/>
+SELECT ?artist ?artwork ?museum ?director
+FROM <http://dbpedia.org>
+WHERE
+  {
   ?artwork p:artist ?artist .
   ?artwork p:museum ?museum .
-  ?museum p:director ?director };
+    ?museum p:director ?director
+  };
 
+artist                                          artwork                                              museum                                                                            director
+VARCHAR                                         VARCHAR                                              VARCHAR                                                                           VARCHAR
+_______________________________________________
+
+http://dbpedia.org/resource/Paul_C%C3%A9zanne   http://dbpedia.org/resource/The_Basket_of_Apples     http://dbpedia.org/resource/Art_Institute_of_Chicago                              James Cuno
+http://dbpedia.org/resource/Paul_Signac         http://dbpedia.org/resource/Neo-impressionism        http://dbpedia.org/resource/Art_Institute_of_Chicago                              James Cuno
+http://dbpedia.org/resource/Georges_Seurat      http://dbpedia.org/resource/Neo-impressionism        http://dbpedia.org/resource/Art_Institute_of_Chicago                              James Cuno
+http://dbpedia.org/resource/Edward_Hopper       http://dbpedia.org/resource/Nighthawks               http://dbpedia.org/resource/Art_Institute_of_Chicago                              James Cuno
+http://dbpedia.org/resource/Mary_Cassatt        http://dbpedia.org/resource/The_Child%27s_Bath       http://dbpedia.org/resource/Art_Institute_of_Chicago                              James Cuno
+..
 -- 303 rows
 
-sparql PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+SQL>sparql
+PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-SELECT ?s ?homepage FROM <http://dbpedia.org>  WHERE {
+SELECT ?s ?homepage
+FROM <http://dbpedia.org>
+WHERE
+  {
    <http://dbpedia.org/resource/Berlin> geo:lat ?berlinLat .
    <http://dbpedia.org/resource/Berlin> geo:long ?berlinLong .
    ?s geo:lat ?lat .
@@ -29143,13 +29549,30 @@ SELECT ?s ?homepage FROM <http://dbpedia.org>  WHERE {
      ?lat        >=     ?berlinLat - 0.03190235436 &&
      ?long       <=     ?berlinLong + 0.08679199218) };
 
--- 56 rows
+s                                                                                 homepage
+VARCHAR                                                                           VARCHAR
+_______________________________________________________________________________
 
-sparql PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+http://dbpedia.org/resource/Berlin_University_of_the_Arts                         http://www.udk-berlin.de/
+http://dbpedia.org/resource/Berlin_University_of_the_Arts                         http://www.udk-berlin.de/
+http://dbpedia.org/resource/Berlin_Zoological_Garden                              http://www.zoo-berlin.de/en.html
+http://dbpedia.org/resource/Federal_Ministry_of_the_Interior_%28Germany%29        http://www.bmi.bund.de
+http://dbpedia.org/resource/Neues_Schauspielhaus                                  http://www.goya-berlin.com/
+http://dbpedia.org/resource/Bauhaus_Archive                                       http://www.bauhaus.de/english/index.htm
+http://dbpedia.org/resource/Canisius-Kolleg_Berlin                                http://www.canisius-kolleg.de
+http://dbpedia.org/resource/Franz%C3%B6sisches_Gymnasium_Berlin                   http://www.fg-berlin.cidsnet.de
+..
+-- 48 rows
+
+SQL>sparql
+PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX p: <http://dbpedia.org/property/>
-SELECT ?s ?a ?homepage FROM <http://dbpedia.org>  WHERE {
+SELECT ?s ?a ?homepage
+FROM <http://dbpedia.org>
+WHERE
+  {
    <http://dbpedia.org/resource/New_York_City> geo:lat ?nyLat .
    <http://dbpedia.org/resource/New_York_City> geo:long ?nyLong .
    ?s geo:lat ?lat .
@@ -29161,8 +29584,25 @@ SELECT ?s ?a ?homepage FROM <http://dbpedia.org>  WHERE {
      ?long       >=     ?nyLong - 0.8679199218 &&
      ?lat        >=     ?nyLat - 0.3190235436 &&
      ?long       <=     ?nyLong + 0.8679199218) };
+s                                                                                 a               homepage
+VARCHAR                                                                           VARCHAR              VARCHAR
+_______________________________________________________________________________
 
--- 13 rows
+http://dbpedia.org/resource/GE_Building                                           http://dbpedia.org/resource/Associated_Architects              http://www.associated-architects.co.uk
+http://dbpedia.org/resource/Giants_Stadium                                        http://dbpedia.org/resource/HNTB              http://www.hntb.com/
+http://dbpedia.org/resource/Fort_Tryon_Park_and_the_Cloisters                     http://dbpedia.org/resource/Frederick_Law_Olmsted              http://www.asla.org/land/061305/olmsted.html
+http://dbpedia.org/resource/Central_Park                                          http://dbpedia.org/resource/Frederick_Law_Olmsted              http://www.asla.org/land/061305/olmsted.html
+http://dbpedia.org/resource/Prospect_Park_%28Brooklyn%29                          http://dbpedia.org/resource/Frederick_Law_Olmsted              http://www.asla.org/land/061305/olmsted.html
+http://dbpedia.org/resource/Meadowlands_Stadium                                   http://dbpedia.org/resource/360_Architecture              http://oakland.athletics.mlb.com/oak/ballpark/new/faq.jsp
+http://dbpedia.org/resource/Citi_Field                                            http://dbpedia.org/resource/HOK_Sport_Venue_Event              http://www.hoksve.com/
+http://dbpedia.org/resource/Citigroup_Center                                      http://dbpedia.org/resource/Hugh_Stubbins_Jr.              http://www.klingstubbins.com
+http://dbpedia.org/resource/150_Greenwich_Street                                  http://dbpedia.org/resource/Fumihiko_Maki              http://www.pritzkerprize.com/maki2.htm
+http://dbpedia.org/resource/Freedom_Tower                                         http://dbpedia.org/resource/David_Childs              http://www.som.com/content.cfm/www_david_m_childs
+http://dbpedia.org/resource/7_World_Trade_Center                                  http://dbpedia.org/resource/David_Childs              http://www.som.com/content.cfm/www_david_m_childs
+http://dbpedia.org/resource/The_New_York_Times_Building                           http://dbpedia.org/resource/Renzo_Piano              http://www.rpbw.com/
+http://dbpedia.org/resource/Trump_World_Tower                                     http://dbpedia.org/resource/Costas_Kondylis              http://www.kondylis.com
+
+13 Rows. -- 2183 msec.
 ]]></programlisting>
     </sect2>
 <sect2 id="rdfstorebenchmarks"><title>RDF Store Benchmarks</title>
