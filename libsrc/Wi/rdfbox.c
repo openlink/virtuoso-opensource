@@ -699,6 +699,9 @@ rb_serialize (caddr_t x, dk_session_t * ses)
           if (rb->rb_is_complete)
 	    flags |= RBS_COMPLETE;
           session_buffered_write_char (flags, ses);
+	  if (!rb->rb_box)
+	    print_int (0, ses);  /* a zero int with should be printed with int tag for partitioning etc */
+	  else
           print_object (rb->rb_box, ses, NULL, NULL);
         }
       if (rb->rb_ro_id)
