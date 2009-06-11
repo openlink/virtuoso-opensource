@@ -1016,8 +1016,7 @@ spar_gp_finalize (sparp_t *sparp, SPART **options)
   caddr_t orig_selid = env->spare_selids->data;
   dk_set_t propvars = (dk_set_t) t_set_pop (&(env->spare_propvar_sets));
   dk_set_t membs;
-  int all_ctr = 0;
-  int opt_ctr = 0;
+  int all_ctr, opt_ctr;
   dk_set_t filts;
   ptrlong subtype;
   SPART *res;
@@ -1052,6 +1051,9 @@ spar_gp_finalize (sparp_t *sparp, SPART **options)
    the bookmark is t_set_pop-ed, but the content remains at its place */
   if (OPTIONAL_L == subtype) /* Variables nested in optionals can not be good graph variables... */
     env->spare_good_graph_varnames = env->spare_good_graph_bmk;
+check_optionals:
+  all_ctr = 0;
+  opt_ctr = 0;
   DO_SET (SPART *, memb, &membs)
     {
       if ((SPAR_GP == SPART_TYPE (memb)) && (OPTIONAL_L == memb->_.gp.subtype))
@@ -1069,9 +1071,7 @@ spar_gp_finalize (sparp_t *sparp, SPART **options)
               env->spare_acc_triples->data = left;
       left_group = spar_gp_finalize (sparp, NULL);
               t_set_push (&membs, left_group);
-              all_ctr = 1;
-              opt_ctr = 0;
-              continue;
+              goto check_optionals; /* see above */
             }
           opt_ctr++;
     }
