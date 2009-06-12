@@ -1863,7 +1863,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
 	  df_elt_t ** in_list = sqlo_in_list (pred, NULL, NULL);
 	  if (DFE_TEXT_PRED == pred->dfe_type)
 	    continue;
-	  left_col = in_list ? in_list[0]->_.col.col : pred->_.bin.left->_.col.col;
+	  left_col = in_list ? in_list[0]->_.col.col : DFE_COLUMN == pred->_.bin.left->dfe_type ? pred->_.bin.left->_.col.col : NULL;
 	  if (DFE_BOP_PRED == pred->dfe_type && !dk_set_member (key->key_parts, (void*) left_col))
 	    {
 	      sqlo_pred_unit (pred, NULL, &p_cost, &p_arity);
