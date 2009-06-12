@@ -1339,7 +1339,6 @@ virt_xa_set_lt (void *xid)
 }
 
 
-#if 1
 int
 virt_xa_client (void *xid, struct tp_data_s **tpd, int op)
 {
@@ -1410,26 +1409,6 @@ virt_xa_id (char *xid_str)
 {
   return xid_bin_decode (xid_str);
 }
-#else
-int
-virt_xa_client (char *xid, struct client_connection_s *cli,
-    struct client_connection_s **ret_cli)
-{
-  static query_t *qr = 0;
-  caddr_t err;
-  local_cursor_t *lc;
-
-  if (!qr)
-    qr = sql_compile
-	("select xid from coalesce (T_TEXT, blob_to_string (T_MORE)), name_part (T_NAME, 1), T_SCH from DB.DBA.SYS_TRIGGERS where T_NAME = ? AND T_TABLE = ?",
-	cli, &err, SQLC_DEFAULT);
-  if (!err)
-    {
-      err = qr_rec_exec (qr, cli, &lc, CALLER_LOCAL, NULL, 1,
-	  ":0", name, QRP_STR);
-    }
-}
-#endif
 
 caddr_t
 virt_xa_xid_in_log (void *xid)
