@@ -340,16 +340,16 @@
                       <v:after-data-bind>
                         <v:script>
                           <![CDATA[
-(control as vspx_select_list).vsl_items := vector();
-(control as vspx_select_list).vsl_item_values := vector();
-(control as vspx_select_list).vsl_selected_inx := self.search_type;
-(control as vspx_select_list).vsl_items := vector_concat ((control as vspx_select_list).vsl_items,
+                            (control as vspx_select_list).vsl_items := vector();
+                            (control as vspx_select_list).vsl_item_values := vector();
+                            (control as vspx_select_list).vsl_selected_inx := self.search_type;
+                            (control as vspx_select_list).vsl_items := vector_concat ((control as vspx_select_list).vsl_items,
                                                           vector ('By resource name'));
-(control as vspx_select_list).vsl_item_values := vector_concat ((control as vspx_select_list).vsl_item_values,
+                            (control as vspx_select_list).vsl_item_values := vector_concat ((control as vspx_select_list).vsl_item_values,
                                                                 vector ('0'));
-(control as vspx_select_list).vsl_items := vector_concat ((control as vspx_select_list).vsl_items,
+                            (control as vspx_select_list).vsl_items := vector_concat ((control as vspx_select_list).vsl_items,
                                                            vector ('By content'));
-(control as vspx_select_list).vsl_item_values := vector_concat ((control as vspx_select_list).vsl_item_values,
+                            (control as vspx_select_list).vsl_item_values := vector_concat ((control as vspx_select_list).vsl_item_values,
                                                                 vector ('1'));
                           ]]>
                         </v:script>
@@ -473,16 +473,16 @@ self.vc_data_bind (e);
                     <v:template name="template41" type="browse" name-to-remove="table" set-to-remove="both">
                       <table>
                         <?vsp
-self.r_count1 := self.r_count1 + 1;
+                          self.r_count1 := self.r_count1 + 1;
                           http (sprintf ('<tr class="%s">', case when mod (self.r_count1, 2) then 'listing_row_odd' else 'listing_row_even' end));
 
-declare imgname varchar;
-declare rowset any;
+                          declare imgname varchar;
+                          declare rowset any;
 
-rowset := (control as vspx_row_template).te_rowset;
-if (length(rowset) > 2 and not isnull(rowset[2]))
+                          rowset := (control as vspx_row_template).te_rowset;
+                          if (length(rowset) > 2 and not isnull(rowset[2]))
   imgname := rowset[2];
-else
+                          else
   if (rowset[0] <> 0)
     {
       imgname := 'images/dav_browser/foldr_16.png';
@@ -658,7 +658,7 @@ else
                   <script type="text/javascript" src="toolkit/loader.js"><xsl:text> </xsl:text></script>-->
                   <script type="text/javascript" src="dav_browser_props.js"><xsl:text> </xsl:text></script>
                   <script type="text/javascript">
-                    function init(){
+                    function init() {
                       init_upload();
                     }
                   </script>
@@ -1341,7 +1341,7 @@ else
                       ?>
                     </script>
                     <script type="text/javascript">
-                      function init(){
+                      function init() {
                         init_prop_edit();
                       }
                     </script>
@@ -3259,7 +3259,7 @@ else
                                 if (self.command = 6)
                                   res := DB.DBA.YACUTIA_DAV_MOVE(concat(_source_dir, _resname, '/'), concat('/', self.t_dest.ufl_value, '/', _resname, '/'), 1);
                                 if (self.command = 7)
-                                  res := DB.DBA.YACUTIA_DAV_DELETE(concat(_source_dir, _resname, '/'));
+                                  res := DB.DBA.YACUTIA_DAV_DELETE (concat(_source_dir, _resname, '/'));
                                 if (res < 0)
                                 {
                                   self.need_overwrite := 1;
