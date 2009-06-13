@@ -396,6 +396,8 @@ typedef struct scheduler_io_data_s
   io_action_func 	sio_partner_dead_action;
   int 			sio_read_fail_on;
   int 			sio_write_fail_on;
+  io_action_func	sio_w_timeout_hook;
+  io_action_func	sio_r_timeout_hook;
   jmp_buf_splice 	sio_read_broken_context;
   jmp_buf_splice 	sio_write_broken_context;
   void *		sio_client_data;	/* For application use */
