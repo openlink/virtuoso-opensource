@@ -2560,7 +2560,7 @@ db.dba.dav_browse_proc1 (in path varchar,
                                                         dirlist[i][0],
                                                         NULL,
                                                         'N/A',
-                                                        yac_hum_datefmt (dirlist[i][3]),
+                                                        Y_UI_DATE (dirlist[i][3]),
                                                         'folder',
                                                         user_name,
                                                         group_name,
@@ -2572,7 +2572,7 @@ db.dba.dav_browse_proc1 (in path varchar,
                                                         dirlist[i][10],
                                                         NULL,
                                                         'N/A',
-                                                        yac_hum_datefmt (dirlist[i][3]),
+                                                        Y_UI_DATE (dirlist[i][3]),
                                                         'folder',
                                                         user_name,
                                                         group_name,
@@ -2627,8 +2627,8 @@ db.dba.dav_browse_proc1 (in path varchar,
                                                 vector (vector (0,
                                                                 dirlist[i][0],
                                                                 NULL,
-                                                                yac_hum_fsize (dirlist[i][2]),
-                                                                yac_hum_datefmt (dirlist[i][3]),
+                                                                Y_UI_SIZE (dirlist[i][2]),
+                                                                Y_UI_DATE (dirlist[i][3]),
                                                                 dirlist[i][9],
                                                                 user_name,
                                                                 group_name,
@@ -2639,8 +2639,8 @@ db.dba.dav_browse_proc1 (in path varchar,
                                                 vector( vector (0,
                                                                 dirlist[i][10],
                                                                 NULL,
-                                                                yac_hum_fsize (dirlist[i][2]),
-                                                                yac_hum_datefmt (dirlist[i][3]),
+                                                                Y_UI_SIZE (dirlist[i][2]),
+                                                                Y_UI_DATE (dirlist[i][3]),
                                                                 dirlist[i][9],
                                                                 user_name,
                                                                 group_name,
@@ -2866,6 +2866,428 @@ db.dba.dav_crfolder_proc (in path varchar,
 }
 ;
 
+create procedure DB.DBA.Y_UI_SIZE (
+  in itemSize integer,
+  in itemType varchar := 'R')
+{
+  declare S varchar;
+
+  if ((itemSize = 0) and (itemType = 'C'))
+    return '';
+
+  S := '%d<span style="font-family: Monospace;">&nbsp;%s</span>';
+  if (itemSize < 1024)
+    return sprintf (S, itemSize, 'B&nbsp;');
+  if (itemSize < (1024 * 1024))
+    return sprintf (S, floor(itemSize / 1024), 'KB');
+  if (itemSize < (1024 * 1024 * 1024))
+    return sprintf (S, floor(itemSize / (1024 * 1024)), 'MB');
+  if (itemSize < (1024 * 1024 * 1024 * 1024))
+    return sprintf (S, floor(itemSize / (1024 * 1024 * 1024)), 'GB');
+  return sprintf (S, floor(itemSize / (1024 * 1024 * 1024 * 1024)), 'TB');
+}
+;
+
+create procedure DB.DBA.Y_UI_DATE (
+  in itemDate datetime)
+{
+	itemDate := left (cast (itemDate as varchar), 19);
+	return sprintf ('%s <font size="1">%s</font>', left(itemDate, 10), subseq (itemDate, 11, 16));
+}
+;
+
+create procedure DB.DBA.Y_DAV_PARAMS (
+  inout c_user any,
+  inout c_password any)
+{
+  c_user := connection_get ('vspx_user');
+  if (c_user = 'dba')
+    c_user := 'dav';
+  c_password := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from SYS_USERS where U_NAME = c_user);
+}
+;
+
+create procedure DB.DBA.Y_DAV_ERROR (in code any)
+{
+  if (isinteger(code) and (code < 0))
+    return 1;
+  return 0;
+}
+;
+
+create procedure DB.DBA.Y_PATH_PARENT (
+  in path value)
+{
+  path := trim(path, '/');
+  if (isnull (strrchr(path, '/')))
+    return '';
+  return left(trim(path, '/'), strrchr(trim(path, '/'), '/'));
+}
+;
+
+create procedure DB.DBA.Y_PATH_NAME (
+  in path value)
+{
+  path := trim (path, '/');
+  if (isnull (strrchr (path, '/')))
+    return path;
+  return right (path, length (path)-strrchr(path, '/')-1);
+}
+;
+
+create procedure DB.DBA.Y_DAV_PROP_SET (
+  in path varchar,
+  in propName varchar,
+  in propValue any,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
+{
+  DB.DBA.Y_DAV_PARAMS (auth_name, auth_pwd);
+  DB.DBA.DAV_PROP_REMOVE (path, propname, auth_name, auth_pwd);
+  return DB.DBA.DAV_PROP_SET (path, propname, propvalue, auth_name, auth_pwd);
+}
+;
+
+create procedure DB.DBA.Y_DAV_PROP_GET (
+  in path varchar,
+  in propName varchar,
+  in propValue varchar := null,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
+{
+  declare retValue any;
+
+  DB.DBA.Y_DAV_PARAMS (auth_name, auth_pwd);
+  retValue := DB.DBA.DAV_PROP_GET (path, propName, auth_name, auth_pwd);
+  if (isinteger(retValue) and (retValue < 0) and (not isnull (propValue)))
+    return propValue;
+  return retValue;
+}
+;
+
+create procedure DB.DBA.Y_DAV_PROP_REMOVE (
+  in path varchar,
+  in propname varchar,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
+{
+  DB.DBA.Y_DAV_PARAMS (auth_name, auth_pwd);
+  return DB.DBA.DAV_PROP_REMOVE(path, propname, auth_name, auth_pwd);
+}
+;
+
+create procedure DB.DBA.Y_DAV_IS_LOCKED (
+  in path varchar,
+  in type varchar := 'R')
+{
+  declare id integer;
+
+  id := DB.DBA.DAV_SEARCH_ID (path, type);
+  return DB.DBA.DAV_IS_LOCKED (id, type);
+}
+;
+
+create procedure DB.DBA.Y_DAV_LOCK (
+  in path varchar,
+  in type varchar := 'R',
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
+{
+  declare retValue varchar;
+
+  DB.DBA.Y_DAV_PARAMS (auth_name, auth_pwd);
+  retValue := DB.DBA.DAV_LOCK (path, type, '', '', auth_name, null, null, null, auth_name, auth_pwd);
+  if (isstring (retValue))
+    return 1;
+  return retValue;
+}
+;
+
+create procedure DB.DBA.Y_DAV_UNLOCK (
+  in path varchar,
+  in type varchar := 'R',
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
+{
+  declare id integer;
+  declare locks, retValue any;
+
+  DB.DBA.Y_DAV_PARAMS (auth_name, auth_pwd);
+  id := DB.DBA.DAV_SEARCH_ID (path, type);
+  locks := DB.DBA.DAV_LIST_LOCKS_INT (id, type);
+  foreach (any lock in locks) do
+  {
+    retValue := DB.DBA.DAV_UNLOCK (path, lock[2], auth_name, auth_pwd);
+    if (DB.DBA.Y_DAV_ERROR (retValue))
+      return retValue;
+  }
+  return 1;
+}
+;
+
+create procedure DB.DBA.Y_DAV_RES_CONTENT (
+  in path varchar,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
+{
+  declare content, contentType any;
+  declare retValue any;
+
+  DB.DBA.Y_DAV_PARAMS (auth_name, auth_pwd);
+  retValue := DB.DBA.DAV_RES_CONTENT (path, content, contentType, auth_name, auth_pwd);
+  if (retValue >= 0)
+    return content;
+  return retValue;
+}
+;
+
+create procedure DB.DBA.Y_AUTO_VERSION_FULL (
+  in value varchar)
+{
+  if (value = 'A')
+    return 'DAV:checkout-checkin';
+  if (value = 'B')
+    return 'DAV:checkout-unlocked-checkin';
+  if (value = 'C')
+    return 'DAV:checkout';
+  if (value = 'D')
+    return 'DAV:locked-checkout';
+  return '';
+}
+;
+
+create procedure DB.DBA.Y_AUTO_VERSION_SHORT (
+  in value varchar)
+{
+  if (value = 'DAV:checkout-checkin')
+    return 'A';
+  if (value = 'DAV:checkout-unlocked-checkin')
+    return 'B';
+  if (value = 'DAV:checkout')
+    return 'C';
+  if (value = 'DAV:locked-checkout')
+    return 'D';
+  return '';
+}
+;
+
+create procedure DB.DBA.Y_DAV_GET_VERSION_CONTROL (
+  in path varchar)
+{
+  if (DB.DBA.Y_DAV_ERROR (DB.DBA.DAV_SEARCH_ID (path, 'R')))
+    return 0;
+  if (DB.DBA.Y_DAV_PROP_GET (path, 'DAV:checked-in', '') <> '')
+    return 1;
+  if (DB.DBA.Y_DAV_PROP_GET (path, 'DAV:checked-out', '') <> '')
+    return 1;
+  return 0;
+}
+;
+
+create procedure DB.DBA.Y_DAV_GET_AUTOVERSION (
+  in path varchar,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
+{
+  if (DB.DBA.Y_DAV_ERROR (DB.DBA.DAV_SEARCH_ID (path, 'R')))
+  {
+    declare id integer;
+
+    id := DAV_SEARCH_ID (path, 'C');
+    if (not isinteger(id))
+      return '';
+    return coalesce ((select COL_AUTO_VERSIONING from WS.WS.SYS_DAV_COL where COL_ID = DB.DBA.DAV_SEARCH_ID (path, 'C')), '');
+  }
+  return DB.DBA.Y_AUTO_VERSION_SHORT (DB.DBA.Y_DAV_PROP_GET (path, 'DAV:auto-version'));
+}
+;
+
+create procedure DB.DBA.Y_DAV_SET_AUTOVERSION (
+  in path varchar,
+  in value any)
+{
+  declare retValue any;
+
+  retValue := 0;
+  if (DB.DBA.Y_DAV_ERROR (DB.DBA.DAV_SEARCH_ID (path, 'R')))
+  {
+    retValue := DB.DBA.Y_DAV_SET_VERSIONING_CONTROL (path, value);
+  } else {
+    value := DB.DBA.Y_AUTO_VERSION_FULL (value);
+    if (value = '')
+    {
+      retValue := DB.DBA.Y_DAV_PROP_REMOVE (path, 'DAV:auto-version');
+    } else {
+      if (not DB.DBA.Y_DAV_GET_VERSION_CONTROL (path))
+        DB.DBA.Y_DAV_VERSION_CONTROL (path);
+      retValue := DB.DBA.Y_DAV_PROP_SET (path, 'DAV:auto-version', value);
+    }
+  }
+  return retValue;
+}
+;
+
+create procedure DB.DBA.Y_DAV_VERSION_CONTROL (
+  in path varchar,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
+{
+  DB.DBA.Y_DAV_PARAMS (auth_name, auth_pwd);
+  return DB.DBA.DAV_VERSION_CONTROL (path, auth_name, auth_pwd);
+}
+;
+create procedure DB.DBA.Y_DAV_REMOVE_VERSION_CONTROL (
+  in path varchar,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
+{
+  DB.DBA.Y_DAV_PARAMS (auth_name, auth_pwd);
+  return DB.DBA.DAV_REMOVE_VERSION_CONTROL (path, auth_name, auth_pwd);
+}
+;
+
+create procedure DB.DBA.Y_DAV_CHECKIN (
+  in path varchar,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
+{
+  DB.DBA.Y_DAV_PARAMS (auth_name, auth_pwd);
+  return DB.DBA.DAV_CHECKIN (path, auth_name, auth_pwd);
+}
+;
+
+create procedure DB.DBA.Y_DAV_CHECKOUT (
+  in path varchar,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
+{
+  DB.DBA.Y_DAV_PARAMS (auth_name, auth_pwd);
+  return DB.DBA.DAV_CHECKOUT (path, auth_name, auth_pwd);
+}
+;
+
+create procedure DB.DBA.Y_DAV_UNCHECKOUT (
+  in path varchar,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
+{
+  DB.DBA.Y_DAV_PARAMS (auth_name, auth_pwd);
+  return DB.DBA.DAV_UNCHECKOUT (path, auth_name, auth_pwd);
+}
+;
+
+create procedure DB.DBA.Y_DAV_GET_VERSION_COUNT (
+  in path varchar)
+{
+  declare exit handler for SQLSTATE '*' {return 0;};
+
+  return xpath_eval ('count (//version)', xtree_doc (DB.DBA.Y_DAV_GET_VERSION_HISTORY (path)));
+}
+;
+
+create procedure DB.DBA.Y_DAV_GET_VERSION_ROOT (
+  in path varchar)
+{
+  declare exit handler for SQLSTATE '*' {return '';};
+  declare retValue any;
+
+  retValue := DB.DBA.Y_DAV_PROP_GET (DB.DBA.Y_DAV_GET_VERSION_HISTORY_PATH (path), 'DAV:root-version', '');
+  return case when DB.DBA.Y_DAV_ERROR (retValue) then '' else cast (xpath_eval ('/href', xml_tree_doc(retValue)) as varchar) end;
+}
+;
+
+create procedure DB.DBA.Y_DAV_GET_VERSION_HISTORY_PATH (
+  in path varchar)
+{
+  declare parent, name varchar;
+
+  name := DB.DBA.Y_PATH_NAME (path);
+  parent := DB.DBA.Y_PATH_PARENT (path);
+
+  return concat('/', parent, '/VVC/', name, '/history.xml');
+}
+;
+
+create procedure DB.DBA.Y_DAV_GET_VERSION_HISTORY (
+  in path varchar)
+{
+  declare exit handler for SQLSTATE '*' {return null;};
+
+  return DB.DBA.Y_DAV_RES_CONTENT (DB.DBA.Y_DAV_GET_VERSION_HISTORY_PATH(path));
+}
+;
+
+create procedure DB.DBA.Y_DAV_GET_VERSION_SET (
+  in path varchar)
+{
+  declare N integer;
+  declare c0 varchar;
+  declare c1 integer;
+  declare versionSet, hrefs any;
+
+  result_names(c0, c1);
+
+  declare exit handler for SQLSTATE '*' {return;};
+
+  versionSet := DB.DBA.Y_DAV_PROP_GET (DB.DBA.Y_DAV_GET_VERSION_HISTORY_PATH (path), 'DAV:version-set');
+  hrefs := xpath_eval ('/href', xtree_doc(versionSet), 0);
+  for (N := 0; N < length (hrefs); N := N + 1)
+    result(cast (hrefs[N] as varchar), either (equ (N+1,length (hrefs)),0,1));
+}
+;
+
+create procedure DB.DBA.Y_DAV_GET_INFO (
+  in path varchar,
+  in info varchar)
+{
+  declare tmp any;
+
+  if (info = 'vc')
+  {
+    if (DB.DBA.Y_DAV_GET_VERSION_CONTROL(path))
+      return 'ON';
+    return 'OFF';
+  }
+  else if (info = 'avcState')
+  {
+    tmp := DB.DBA.Y_DAV_GET_AUTOVERSION(path);
+    if (tmp <> '')
+      return replace (DB.DBA.Y_auto_version_full(tmp), 'DAV:', '');
+    return 'OFF';
+  }
+  else if (info = 'vcState')
+  {
+    if (not is_empty_or_null(DB.DBA.Y_DAV_PROP_GET (path, 'DAV:checked-in', '')))
+      return 'Check-In';
+    if (not is_empty_or_null(DB.DBA.Y_DAV_PROP_GET (path, 'DAV:checked-out', '')))
+      return 'Check-Out';
+    return 'Standard';
+  }
+  else if (info = 'lockState')
+  {
+    if (DB.DBA.Y_DAV_IS_LOCKED(path))
+      return 'ON';
+    return 'OFF';
+  }
+  else if (info = 'versionControl')
+  {
+    return DB.DBA.Y_DAV_GET_VERSION_CONTROL (path);
+  }
+  else if (info = 'autoversion')
+  {
+    return DB.DBA.Y_DAV_GET_AUTOVERSION (path);
+  }
+  else if (info = 'checked-in')
+  {
+    return DB.DBA.Y_DAV_PROP_GET (path, 'DAV:checked-in', '');
+  }
+  else if (info = 'checked-out')
+  {
+    return DB.DBA.Y_DAV_PROP_GET (path, 'DAV:checked-out', '');
+  }
+  return '';
+}
+;
 
 create procedure db.dba.fs_browse_proc_meta() returns any
 {
@@ -3306,9 +3728,7 @@ _end_cycle:
 
 create procedure db.dba.yac_user_caps_meta() returns any
 {
-  declare retval any;
-  retval := vector ('Type','Name','Permissions', 'Inherited Permissions');
-  return retval;
+  return vector ('Type', 'Name', 'Permissions', 'Inherited Permissions');
 }
 ;
 

@@ -2050,3 +2050,10 @@ span.help_link a
 {
   margin-top: 70px;
 }
+
+.vdir_listtable
+{
+  width: 100%;
+  background-image: url(images/stl_blu1_grad.gif);
+  background-repeat: repeat-x;
+}
