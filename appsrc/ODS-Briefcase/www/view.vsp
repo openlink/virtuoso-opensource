@@ -31,8 +31,6 @@
   if (auth_pwd[0] = 0)
     auth_pwd := pwd_magic_calc(auth_uid, auth_pwd, 1);
 
-  commit work;
-
   uri := ODRIVE.WA.http_escape (ODRIVE.WA.dav_url(file), 7);
   req_header := '';
   req_header := concat(req_header, 'Accept-Charset: UTF-8,*\n');
@@ -46,7 +44,11 @@ _again:
   N := N + 1;
   saveUri := uri;
   commit work;
-  content := http_get (uri, res_header, 'GET', req_header);
+  content := http_client_ext (url=>uri,
+                              http_method=>'GET',
+                              http_headers=>req_header,
+                              headers=>res_header);
+
   contentType := http_request_header (res_header, 'Content-Type');
   if (res_header[0] like 'HTTP/1._ 30_%')
   {
