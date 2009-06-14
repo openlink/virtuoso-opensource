@@ -1671,7 +1671,7 @@
                 <v:template name="tform_17" type="simple" enabled="-- case when ((self.dav_type = 'C') and (self.command_mode = 10)) then 1 else 0 end">
                   <tr>
                     <th> </th>
-                    <td valign="center">
+                    <td>
                       <input type="checkbox" name="dav_recursive" disabled="disabled" title="Recursive" />
                       <b><v:label for="dav_recursive" value="--'Apply changes to all subfolders and resources'" /></b>
                     </td>

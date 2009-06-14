@@ -342,7 +342,15 @@ function init() {
 		}
 	}
 
-	tab = new OAT.Tab ("main_col",{dockMode:true,dockElement:"tabs",goCallback:tab_goCallback,onDock:onDock,onUnDock:onUnDock,dockWindowWidth:1000,dockWindowHeight:600});
+	tab = new OAT.Tab ("main_col",
+                           {dockMode:true,
+                            dockElement:"tabs",
+                            goCallback:tab_goCallback,
+                            onDock:onDock,
+                            onUnDock:onUnDock,
+                            dockWindowWidth:1000,
+                            dockWindowHeight:600});
+
 	tab_qbe = tab.add ("tab_qbe","page_qbe");
 	tab_query = tab.add ("tab_query","page_query");
 	tab_results = tab.add("tab_results","page_results");
@@ -448,7 +456,12 @@ function init() {
 	var page_params = OAT.Dom.uriParams();
 
 	if (page_params['default-graph-uri']) default_dgu = page_params['default-graph-uri'];
-	if (page_params['query']) default_qry = page_params['query'];
+	if (page_params['query']) 
+          {
+            default_qry = page_params['query'];
+            tab.go(1); // Advanced
+          }
+
 	if (page_params['should-sponge']) default_spng = page_params['should-sponge'];
 
 	$('default-graph-uri').value = default_dgu;
@@ -498,9 +511,10 @@ function init() {
 	OAT.Dom.append([qe.dom.ul,loadToQBE],[loadToQBE,img]);
 
 	var loadToAdvanced = OAT.Dom.create("li",{},"nav");
-	loadToAdvanced.title = 'Load query to Advanced';
+	loadToAdvanced.title = 'Load query in Advanced view';
 	var img = OAT.Dom.create("img");
 	img.src = "images/cr22-action-edit.png";
+
 	OAT.Dom.attach(loadToAdvanced,'click',function(){
 		tab.go(tab_query);
 		var cache = qe.cache[qe.cacheIndex];

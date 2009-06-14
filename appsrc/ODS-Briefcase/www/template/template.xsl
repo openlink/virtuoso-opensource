@@ -743,7 +743,7 @@
             <th >
               <v:label value="--sprintf ('Content is %s in Version Control', either(equ(ODRIVE.WA.DAV_GET (self.dav_item, 'versionControl'),1), '', 'not'))" format="%s" />
             </th>
-            <td valign="center">
+            <td>
               <v:button name="template_vc" action="simple" value="--sprintf ('%s VC', either(equ(ODRIVE.WA.DAV_GET (self.dav_item, 'versionControl'),1), 'Disable', 'Enable'))" xhtml_class="button" xhtml_disabled="disabled">
                 <v:on-post>
                   <![CDATA[
@@ -774,7 +774,7 @@
             <th >
               File commands
             </th>
-            <td valign="center">
+            <td>
               <v:button name="tepmpate_lock" action="simple" value="Lock" enabled="-- case when (ODRIVE.WA.DAV_IS_LOCKED(ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'))) then 0 else 1 end" xhtml_class="button">
                 <v:on-post>
                   <![CDATA[
@@ -813,7 +813,7 @@
             <th >
               Versioning commands
             </th>
-            <td valign="center">
+            <td>
               <v:button name="tepmpate_checkIn" action="simple" value="Check-In" enabled="-- case when (is_empty_or_null(ODRIVE.WA.DAV_GET (self.dav_item, 'checked-in'))) then 1 else 0 end" xhtml_class="button">
                 <v:on-post>
                   <![CDATA[
@@ -867,7 +867,7 @@
             <th >
               Number of Versions in History
             </th>
-            <td valign="center">
+            <td>
               <v:label value="--ODRIVE.WA.DAV_GET_VERSION_COUNT(ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'))" format="%d" />
             </td>
           </tr>
@@ -875,7 +875,7 @@
             <th >
               Root version
             </th>
-            <td valign="center">
+            <td>
               <v:button style="url" action="simple" value="--ODRIVE.WA.DAV_GET_VERSION_ROOT(ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'))" format="%s">
                 <v:on-post>
                   <![CDATA[
@@ -973,7 +973,12 @@
                           </v:label>
                         </td>
                         <td nowrap="nowrap">
-                          <v:button  name="button_versions_delete" action="simple" style="image" value="image/del_16.png" enabled="-- (control.vc_parent as vspx_row_template).te_column_value('c1')" xhtml_onclick="javascript: return confirm(\'Are you sure you want to delete the chosen version and all previous versions?\');">
+                          <v:button name="button_versions_delete" action="simple" style="url" value="Version Delete" enabled="--(control.vc_parent as vspx_row_template).te_column_value('c1')">
+                            <v:after-data-bind>
+                              <![CDATA[
+                                control.ufl_value := '<img src="image/del_16.png" border="0" alt="Version Delete" title="Version Delete" onclick="javascript: if (!confirm(\'Are you sure you want to delete the chosen version and all previous versions?\')) { event.cancelBubble = true;};" />';
+                              ]]>
+                            </v:after-data-bind>
                             <v:on-post>
                               <![CDATA[
                                 declare retValue any;

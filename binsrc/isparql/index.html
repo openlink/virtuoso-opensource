@@ -62,13 +62,21 @@ function gen_ubiq_meta() {
   hd.appendChild (ln);
 }
 
-function gen_bookmarklet() {
+function gen_isparql_bookmarklet() {
   var loc = document.location.href;
   loc = loc.substr(0, loc.length - document.location.search.length-1);
-  var _from = '<' + document.location.protocol + '//' + document.location.host + '>';
-  var qry_parm = '?query='+ escape ('select * from ' + _from + ' where { ?s ?p ?o }');
+  var qry_parm = '?default-graph-uri= &query='+ escape ('select * from <');
+  var w = escape('> where { ?s ?p ?o }');
   var l = loc + qry_parm;
-  $('bookmarklet_anchor').href = 'javascript: (function () { location="'+ l + '";})()';
+  $('isparql_bookmarklet_a').href = 'javascript: (function () { location="'+ l + '" + encodeURIComponent(document.location) + "' + w + '";})()';
+ }
+
+function gen_sparql_bookmarklet () {
+  loc = document.location.protocol + '//' + document.location.host + '/sparql';
+  var qry_parm = '?query='+ escape ('select * from <');
+  var w = escape('> where { ?s ?p ?o }');
+  var l = loc + qry_parm;
+  $('sparql_bookmarklet_a').href = 'javascript: (function () { location="'+ l + '" + encodeURIComponent(document.location) + "' + w + '";})()';
 }
 
 function myInit() {
@@ -82,7 +90,8 @@ function myInit() {
   // <a>++
   OAT.Anchor.imagePath = OAT.Preferences.imagePath;
   OAT.Anchor.zIndex = 1001;
-  gen_bookmarklet();
+  gen_isparql_bookmarklet();
+  gen_sparql_bookmarklet();
 }
 
 OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
@@ -429,7 +438,7 @@ OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
                 <img src="images/ubiq_icon_16.png" alt="Ubiquity icon"/><span class="text">Ubiquity</span>
               </a>
             </div>
-            &nbsp;<a id="bookmarklet_anchor" href="javascript:(function(){location='http://www.zonk.net/';})();">Bookmarklet</a>
+            &nbsp;Bookmarklet - drag this link to your browser's bookmark bar: <a id="isparql_bookmarklet_a" href="javascript:(function(){location='http://www.openlinksw.com/';})();">iSPARQL</a> <a id="sparql_bookmarklet_a" href="" style="display:none">SPARQL</a>
 	  </div>
           <div class="foot_r" id="foot_r">Copyright &copy; 2009 OpenLink Software, Inc.</div>
         </div>

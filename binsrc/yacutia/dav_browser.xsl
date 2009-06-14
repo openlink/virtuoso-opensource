@@ -112,7 +112,8 @@
       document.form1.perm2.checked = false;
       if (fname.lastIndexOf ('.xsl') == (fname.length - 4))
         document.form1.perm2.checked = true;
-    };
+          }
+
   function chkbx(bx1, bx2)
     {
       if (bx1.checked == true &amp;&amp; bx2.checked == true)
@@ -297,6 +298,12 @@
     ds.vc_data_bind (e);
       ]]>
     </v:method>
+    <v:method name="option_prepare" arglist="in value any, in name any, in selectedValue any">
+      <![CDATA[
+        return sprintf ('<option value="%s" %s>%s</option>', cast (value as varchar), case when (value = selectedValue) then 'selected="selected"' else '' end, cast(name as varchar));
+      ]]>
+    </v:method>
+
     <div id="dav_browser_style">
           <v:template name="title_template"
                       type="simple"
@@ -333,16 +340,16 @@
                       <v:after-data-bind>
                         <v:script>
                           <![CDATA[
-(control as vspx_select_list).vsl_items := vector();
-(control as vspx_select_list).vsl_item_values := vector();
-(control as vspx_select_list).vsl_selected_inx := self.search_type;
-(control as vspx_select_list).vsl_items := vector_concat ((control as vspx_select_list).vsl_items,
+                            (control as vspx_select_list).vsl_items := vector();
+                            (control as vspx_select_list).vsl_item_values := vector();
+                            (control as vspx_select_list).vsl_selected_inx := self.search_type;
+                            (control as vspx_select_list).vsl_items := vector_concat ((control as vspx_select_list).vsl_items,
                                                           vector ('By resource name'));
-(control as vspx_select_list).vsl_item_values := vector_concat ((control as vspx_select_list).vsl_item_values,
+                            (control as vspx_select_list).vsl_item_values := vector_concat ((control as vspx_select_list).vsl_item_values,
                                                                 vector ('0'));
-(control as vspx_select_list).vsl_items := vector_concat ((control as vspx_select_list).vsl_items,
+                            (control as vspx_select_list).vsl_items := vector_concat ((control as vspx_select_list).vsl_items,
                                                            vector ('By content'));
-(control as vspx_select_list).vsl_item_values := vector_concat ((control as vspx_select_list).vsl_item_values,
+                            (control as vspx_select_list).vsl_item_values := vector_concat ((control as vspx_select_list).vsl_item_values,
                                                                 vector ('1'));
                           ]]>
                         </v:script>
@@ -391,7 +398,11 @@ self.vc_data_bind (e);
                 </tr>
               </table>
               <v:template name="search_results" type="simple" instantiate="-- case when (self.search_word <> '' and self.search_word is not null) then 1 else 0 end">
-                <v:data-set name="ds_items1"  data="--DB.DBA.dav_browse_proc1 (curpath, show_details, dir_select, filter, search_type, search_word, self.dav_list_ord, self.dav_list_ord_seq)" meta="--DB.DBA.dav_browse_proc_meta1 ()" nrows="0" scrollable="1" width="80">
+                <v:data-set name="ds_items1"
+                            data="--DB.DBA.dav_browse_proc1 (curpath, show_details, dir_select, filter, search_type, search_word, self.dav_list_ord, self.dav_list_ord_seq)"
+                            meta="--DB.DBA.dav_browse_proc_meta1 ()"
+                            nrows="0" scrollable="1"
+                            width="80">
                   <v:param name="curpath" value="self.curpath" />
                   <v:param name="filter" value="self.filter" />
                   <v:param name="show_details" value="0" />
@@ -462,17 +473,16 @@ self.vc_data_bind (e);
                     <v:template name="template41" type="browse" name-to-remove="table" set-to-remove="both">
                       <table>
                         <?vsp
-self.r_count1 := self.r_count1 + 1;
-http (sprintf ('<tr class="%s">',
-               case when mod (self.r_count1, 2) then 'listing_row_odd' else 'listing_row_even' end));
+                          self.r_count1 := self.r_count1 + 1;
+                          http (sprintf ('<tr class="%s">', case when mod (self.r_count1, 2) then 'listing_row_odd' else 'listing_row_even' end));
 
-declare imgname varchar;
-declare rowset any;
+                          declare imgname varchar;
+                          declare rowset any;
 
-rowset := (control as vspx_row_template).te_rowset;
-if (length(rowset) > 2 and not isnull(rowset[2]))
+                          rowset := (control as vspx_row_template).te_rowset;
+                          if (length(rowset) > 2 and not isnull(rowset[2]))
   imgname := rowset[2];
-else
+                          else
   if (rowset[0] <> 0)
     {
       imgname := 'images/dav_browser/foldr_16.png';
@@ -521,12 +531,13 @@ else
                           ?>
                         </td>
                         <?vsp
+                          declare S varchar;
                           declare j integer;
-                          j := 3;
-                          while (j < length(rowset))
+
+                          for (j := 3; j < length(rowset); j := j + 1)
                           {
-                            http('<td nowrap="1">' || coalesce(rowset[j], '') || '</td>');
-                            j := j + 1;
+                            S := case when (j = 3) then 'align="right"' else '' end;
+                            http (sprintf ('<td nowrap="1" %s>%s</td>', S, coalesce(rowset[j], '')));
                           }
                         ?>
                         <td nowrap="1">
@@ -647,7 +658,7 @@ else
                   <script type="text/javascript" src="toolkit/loader.js"><xsl:text> </xsl:text></script>-->
                   <script type="text/javascript" src="dav_browser_props.js"><xsl:text> </xsl:text></script>
                   <script type="text/javascript">
-                    function init(){
+                    function init() {
                       init_upload();
                     }
                   </script>
@@ -660,30 +671,32 @@ else
 		      </v:select-list>
 		    </td>
 		  </tr>
-
 		  <v:template type="simple" name="sw1" condition="self.dst_sel.ufl_value = 'rdf'">
-
                   <tr id="rd1">
-		    <td><v:radio-button name="rb1" group-name="rb" value="fs">
+            		    <td>
+            		      <v:radio-button name="rb1" group-name="rb" value="fs">
 			<v:before-render>
 			  if (get_keyword ('rb', self.vc_event.ve_params) = 'fs'
 			  or get_keyword ('rb', self.vc_event.ve_params) is null)
 			    control.ufl_selected := 1;
 			</v:before-render>
 		      </v:radio-button>
-			File<span class="redstar">*</span></td>
+            			    File<span class="redstar">*</span>
+            			  </td>
                     <td>
                       <input type="file" name="t_rdf_file" size="100"></input>
                     </td>
                   </tr>
                   <tr id="rd1">
-		    <td><v:radio-button name="rb2" group-name="rb" value="ur">
+		                <td>
+		                  <v:radio-button name="rb2" group-name="rb" value="ur">
 			<v:before-render>
 			  if (get_keyword ('rb', self.vc_event.ve_params) = 'ur')
 			    control.ufl_selected := 1;
 			</v:before-render>
 		      </v:radio-button>
-		      URI<span class="redstar">*</span></td>
+		                    URI<span class="redstar">*</span>
+		                </td>
                     <td>
                       <input type="text" name="t_rdf_url" size="100"></input>
                     </td>
@@ -808,11 +821,11 @@ else
                                 declare i, _uid integer;
                                 declare _perm_box any;
                                 declare _p, _perms varchar;
-                                i := 0;
+
                                 _perms := '';
                                 _perm_box := make_array(9, 'any');
                                 _uid := coalesce(atoi(get_keyword('owner', self.vc_page.vc_event.ve_params, null)), (select min(U_ID) from WS.WS.SYS_DAV_USER));
-                                while (i < 9)
+                                for (i := 0; i < 9; i := i + 1)
                                 {
                                   _p := get_keyword(sprintf('perm%i', i), self.vc_page.vc_event.ve_params, '');
                                   if (_p <> '')
@@ -825,26 +838,21 @@ else
                                     _perms := concat(_perms, '0');
                                     aset(_perm_box, i, '');
                                   }
-                                  i := i + 1;
                                 }
                                 if (_perms = '000000000')
                                 {
                                   _perms := (select U_DEF_PERMS from WS.WS.SYS_DAV_USER where U_ID = _uid);
-                                  i := 0;
-                                  while (i < 9)
+                                  for (i := 0; i < 9; i := i + 1)
                                   {
                                     if(aref(_perms, i) = ascii('1'))
                                       aset(_perm_box, i, 'checked');
                                     else
                                       aset(_perm_box, i, '');
-                                    i := i + 1;
                                   }
                                 }
-                                i := 0;
-                                while (i < 9)
+                                for (i := 0; i < 9; i := i + 1)
                                 {
                                   http(sprintf('<td CLASS="SubAction" align="center"><input type="checkbox" name="perm%i" %s></td>', i, aref(_perm_box, i)));
-                                  i := i + 1;
                                 }
                               ?>
                             </tr>
@@ -866,7 +874,7 @@ else
                         i := 0;
                         while (i < length(_fidx))
                         {
-                          http(sprintf('<option value="%s" %s>%s</option>', aref(_fidx, i), select_if(idx, aref(_fidx, i)), aref(_fidx, i + 1)));
+                          http(sprintf('<option value="%s" %s>%s</option>', _fidx[i], select_if(idx, _fidx[i]), _fidx[i+1]));
                           i := i + 2;
                         }
                       ?>
@@ -883,16 +891,12 @@ else
                         declare _fidx any;
                         declare _idx varchar;
                         declare i integer;
+
                         _idx := get_keyword('inh', self.vc_page.vc_event.ve_params, 'N');
                         _fidx := vector ('N', 'Off', 'T', 'Direct members', 'R', 'Recursively');
-                        i := 0;
-                        while (i < length (_fidx))
+                          for (i := 0; i < length (_fidx); i := i + 2)
                         {
-                          http (sprintf ('<option value="%s" %s>%s</option>',
-                                         aref (_fidx, i),
-                                         select_if (_idx, aref (_fidx, i)),
-                                         aref (_fidx, i + 1)));
-                          i := i + 2;
+                            http (sprintf ('<option value="%s" %s>%s</option>', _fidx[i], select_if (_idx, _fidx[i]), _fidx[i+1]));
                         }
 	               }
                       ?>
@@ -908,13 +912,12 @@ else
                       <?vsp
                         declare _fidx, idx any;
                         declare i integer;
+
                         idx := get_keyword('idx', self.vc_page.vc_event.ve_params, 'N');
                         _fidx := yac_syncml_version ();
-                        i := 0;
-                        while (i < length(_fidx))
+                        for (i := 0; i < length(_fidx); i := i + 2)
                         {
-                          http(sprintf('<option value="%s" %s>%s</option>', aref(_fidx, i), select_if(idx, aref(_fidx, i)), aref(_fidx, i + 1)));
-                          i := i + 2;
+                          http(sprintf('<option value="%s" %s>%s</option>', _fidx[i], select_if(idx, _fidx[i]), _fidx[i+1]));
                         }
                       ?>
                     </select>
@@ -927,13 +930,12 @@ else
                       <?vsp
                         declare _fidx, idx any;
                         declare i integer;
+
                         idx := get_keyword('idx', self.vc_page.vc_event.ve_params, 'N');
                         _fidx := yac_syncml_type ();
-                        i := 0;
-                        while (i < length(_fidx))
+                        for (i := 0; i < length(_fidx); i := i + 2)
                         {
-                          http(sprintf('<option value="%s" %s>%s</option>', aref(_fidx, i), select_if(idx, aref(_fidx, i)), aref(_fidx, i + 1)));
-                          i := i + 2;
+                          http(sprintf('<option value="%s" %s>%s</option>', _fidx[i], select_if(idx, _fidx[i]), _fidx[i+1]));
                         }
                       ?>
                     </select>
@@ -982,9 +984,7 @@ else
 				    return;
 				  };
 				  uri := get_keyword ('t_rdf_url', e.ve_params);
-				  exec (sprintf (
-				  'sparql define get:soft "soft" define get:uri "%s" select * from <%s> where { ?s ?p ?o }',
-				  uri, _graph));
+                    				  exec (sprintf ('sparql define get:soft "soft" define get:uri "%s" select * from <%s> where { ?s ?p ?o }', uri, _graph));
 		                  goto end_post;
 				}
 
@@ -1191,8 +1191,8 @@ else
                   </tr>
                   <tr>
                     <td><?V subseq(resname, strrchr(resname, '/') + 1) ?></td>
-                    <td><?V size1 ?></td>
-                    <td><?V left(cast(mod_date as varchar), 19) ?></td>
+                    <td><?vsp http (DB.DBA.Y_UI_SIZE (size1)); ?></td>
+                    <td><?vsp http (DB.DBA.Y_UI_DATE (mod_date)); ?></td>
                     <td><?V res_type1 ?></td>
                     <td><?V res_owner2 ?></td>
                     <td><?V res_group2 ?></td>
@@ -1203,8 +1203,8 @@ else
                   </tr>
                   <tr>
                     <td><?V subseq(resname, strrchr(resname, '/') + 1) ?></td>
-                    <td><?V length(_file) ?></td>
-                    <td><?V left(cast(now() as varchar), 19) ?></td>
+                    <td><?vsp http (DB.DBA.Y_UI_SIZE (length (_file))); ?></td>
+                    <td><?vsp http (DB.DBA.Y_UI_DATE (now())); ?></td>
                     <td><?V res_type1 ?></td>
                     <td><?V owner_name ?></td>
                     <td><?V group_name ?></td>
@@ -1286,10 +1286,6 @@ else
         }
         nferr:;
     </v:before-data-bind>
-                <!--<script type="text/javascript">
-                  var toolkitPath="toolkit"; var featureList=["combolist"];
-                </script>
-                <script type="text/javascript" src="toolkit/loader.js"><xsl:text> </xsl:text></script>-->
                 <script type="text/javascript" src="dav_browser_props.js"><xsl:text> </xsl:text></script>
               <table>
                 <?vsp
@@ -1345,22 +1341,10 @@ else
                       ?>
                     </script>
                     <script type="text/javascript">
-                      function init(){
+                      function init() {
                         init_prop_edit();
                       }
                     </script>
-                    <!--
-                    <?vsp
-                      http(sprintf('<input type="text" name="mime_type1" value="%s"/>', _res_type));
-                    ?>
-                    <select name="mime_types_select" onchange="if (this[this.selectedIndex].value != '') this.form.mime_type1.value = this[this.selectedIndex].value">
-                      <option value=""></option>
-                    <?vsp
-                      for(select distinct T_TYPE from WS.WS.SYS_DAV_RES_TYPES order by T_TYPE)do
-                        http(sprintf('<option value="%s">%s</option>',T_TYPE,T_TYPE));
-                    ?>
-                    </select>
-                    -->
                   </td>
                 </tr>
                 <?vsp
@@ -1456,18 +1440,14 @@ else
                     <select name="idx">
                       <?vsp
                         declare _fidx any;
-                        declare _idx, c varchar;
+                        declare _idx varchar;
                         declare i integer;
+
                         _idx := ucase (subseq (perms, 9, 10));
                         _fidx := vector ('N', 'Off', 'T', 'Direct members', 'R', 'Recursively');
-                        i := 0;
-                        while (i < length (_fidx))
+                        for (i := 0; i < length (_fidx); i := i + 2)
                         {
-                          http (sprintf ('<option value="%s" %s>%s</option>',
-                                         aref (_fidx, i),
-                                         select_if (_idx, aref (_fidx, i)),
-                                         aref (_fidx, i + 1)));
-                          i := i + 2;
+                          http (sprintf ('<option value="%s" %s>%s</option>', _fidx[i], select_if (_idx, _fidx[i]), _fidx[i+1]));
                         }
                       ?>
                     </select>
@@ -1483,16 +1463,12 @@ else
                         declare _fidx any;
                         declare _idx varchar;
                         declare i integer;
+
                         _idx := _inh;
                         _fidx := vector ('N', 'Off', 'T', 'Direct members', 'R', 'Recursively');
-                        i := 0;
-                        while (i < length (_fidx))
+                          for (i := 0; i < length (_fidx); i := i + 2)
                         {
-                          http (sprintf ('<option value="%s" %s>%s</option>',
-                                         aref (_fidx, i),
-                                         select_if (_idx, aref (_fidx, i)),
-                                         aref (_fidx, i + 1)));
-                          i := i + 2;
+                            http (sprintf ('<option value="%s" %s>%s</option>', _fidx[i], select_if (_idx, _fidx[i]), _fidx[i+1]));
                         }
 	               }
                       ?>
@@ -1508,13 +1484,12 @@ else
                       <?vsp
                         declare _fidx, idx any;
                         declare i integer;
+
                         idx := yac_syncml_version_get (self.source_dir);
                         _fidx := yac_syncml_version ();
-                        i := 0;
-                        while (i < length(_fidx))
+                        for (i := 0; i < length(_fidx); i := i + 2)
                         {
-                          http(sprintf('<option value="%s" %s>%s</option>', aref(_fidx, i), select_if(idx, aref(_fidx, i)), aref(_fidx, i + 1)));
-                          i := i + 2;
+                          http(sprintf('<option value="%s" %s>%s</option>', _fidx[i], select_if(idx, _fidx[i]), _fidx[i+1]));
                         }
                       ?>
                     </select>
@@ -1527,13 +1502,12 @@ else
                       <?vsp
                         declare _fidx, idx any;
                         declare i integer;
+
                         idx := yac_syncml_type_get (self.source_dir);
                         _fidx := yac_syncml_type ();
-                        i := 0;
-                        while (i < length(_fidx))
+                        for (i := 0; i < length(_fidx); i := i + 2)
                         {
-                          http(sprintf('<option value="%s" %s>%s</option>', aref(_fidx, i), select_if(idx, aref(_fidx, i)), aref(_fidx, i + 1)));
-                          i := i + 2;
+                          http(sprintf('<option value="%s" %s>%s</option>', _fidx[i], select_if(idx, _fidx[i]), _fidx[i+1]));
                         }
                       ?>
                     </select>
@@ -1554,12 +1528,12 @@ else
                   }
                 ?>
                 <tr>
-                  <th valign="top">WebDAV Properties</th>
+                  <th valign="top" nowrap="nowrap">WebDAV Properties</th>
                   <td>
-                    <table>
+                    <table cellspacing="0">
                       <tr>
-                        <td>
-                          <table>
+                        <td valign="top">
+                          <table cellspacing="0">
                             <tr>
                               <td>
                                 Predefined names
@@ -1584,14 +1558,12 @@ else
                       'xml-stylesheet', 0,
                       'xper', 0);
   _len := length (prop_arr);
-  _ix := 0;
-  while (_ix < _len)
+                                        for (_ix := 0; _ix < _len; _ix := _ix + 2)
     {
       (control as vspx_select_list).vsl_items :=
         vector_concat ((control as vspx_select_list).vsl_items, vector (aref (prop_arr, _ix)));
       (control as vspx_select_list).vsl_item_values :=
         vector_concat ((control as vspx_select_list).vsl_item_values, vector (aref (prop_arr, _ix)));
-      _ix := _ix + 2;
     }
                                       ]]>
                                     </v:script>
@@ -1620,6 +1592,9 @@ else
                                 <v:button action="simple" name="grant" value="Add">
                                   <v:on-post>
                                     <![CDATA[
+                            			    if (e.ve_initiator <> control)
+                            			      return;
+
   declare cust_name, pname, pvalue, tp varchar;
   declare _res_id, is_dir integer;
 
@@ -1759,6 +1734,9 @@ else
                                 <v:button action="simple" name="revoke" value="Delete">
                                   <v:on-post>
                                     <![CDATA[
+                            			    if (e.ve_initiator <> control)
+                            			      return;
+
   declare _res_id, is_dir, idx integer;
   declare pname, tp varchar;
 
@@ -1799,11 +1777,370 @@ else
                           </table>
                         </td>
                       </tr>
+                    </table>
+                  </td>
+                </tr>
+                <?vsp
+                  }
+                ?>
+                <?vsp
+                  if (is_dir = 0)
+                  {
+                ?>
+                <tr id="fi10">
+                  <th valign="top" nowrap="nowrap">Versioning</th>
+                  <td>
+                    <table style="width: 100%;" cellspacing="0">
+                      <tr>
+                        <td>
+                          <v:label value="File State" />
+                        </td>
+                        <td>
+                          <?vsp
+                            http (sprintf ('Lock is <b>%s</b>, ', DB.DBA.Y_DAV_GET_INFO (self.source_dir, 'lockState')));
+                            http (sprintf ('Version Control is <b>%s</b>, ', DB.DBA.Y_DAV_GET_INFO (self.source_dir, 'vc')));
+                            http (sprintf ('Auto Versioning is <b>%s</b>, ', DB.DBA.Y_DAV_GET_INFO (self.source_dir, 'avcState')));
+                            http (sprintf ('Version State is <b>%s</b>', DB.DBA.Y_DAV_GET_INFO (self.source_dir, 'vcState')));
+                          ?>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <v:label value="--sprintf ('Content is %s in Version Control', either(equ(DB.DBA.Y_DAV_GET_INFO (self.source_dir, 'versionControl'),1), '', 'not'))" format="%s" />
+                        </td>
+                        <td>
+                          <v:button name="template_vc" action="simple" value="--sprintf ('%s VC', either(equ(DB.DBA.Y_DAV_GET_INFO (self.source_dir, 'versionControl'),1), 'Disable', 'Enable'))" xhtml_class="button">
+                            <v:on-post>
+                              <![CDATA[
+                      			    if (e.ve_initiator <> control)
+                      			      return;
+
+                                declare retValue any;
+
+                                if (DB.DBA.Y_DAV_GET_INFO (self.source_dir, 'versionControl'))
+                                {
+                                  retValue := DB.DBA.Y_DAV_REMOVE_VERSION_CONTROL (self.source_dir);
+                                } else {
+                                  retValue := DB.DBA.Y_DAV_VERSION_CONTROL (self.source_dir);
+                                }
+                                if (DB.DBA.Y_DAV_ERROR(retValue))
+                                {
+                                  self.vc_error_message := DB.DBA.DAV_PERROR(retValue);
+                                  self.vc_is_valid := 0;
+                                  return;
+                                }
+                                self.vc_data_bind (e);
+                              ]]>
+                            </v:on-post>
+                          </v:button>
+                        </td>
+                      </tr>
+                      <tr id="davRow_version">
+                        <td>
+                          <v:label for="dav_autoversion" value="--'Auto Versioning Content'" />
+                        </td>
+                        <td>
+                          <?vsp
+                            if (0)
+                            {
+                          ?>
+                              <v:button name="action" action="simple" style="url" value="Submit">
+                                <v:on-post>
+                                  <![CDATA[
+                      			        declare retValue any;
+
+                                    retValue := DB.DBA.Y_DAV_SET_AUTOVERSION (self.source_dir, self.dav_autoversion.ufl_value);
+                                    if (DB.DBA.Y_DAV_ERROR (retValue))
+                                    {
+                                      self.vc_error_message := DB.DBA.DAV_PERROR (retValue);
+                                      self.vc_is_valid := 0;
+                                      return;
+                                    }
+                      			        self.vc_data_bind (e);
+                                  ]]>
+                                </v:on-post>
+                              </v:button>
+                          <?vsp
+                            }
+                          ?>
+                		      <v:select-list name="dav_autoversion" value="--DB.DBA.Y_DAV_GET_AUTOVERSION (self.source_dir)" xhtml_onchange="javascript: doPost(\'form1\', \'action\'); return false">
+                      			<v:item name="No" value=""/>
+                      			<v:item name="Checkout -> Checkin" value="A"/>
+                      			<v:item name="Checkout -> Unlocked -> Checkin" value="B"/>
+                      			<v:item name="Checkout" value="C"/>
+                      			<v:item name="Locked -> Checkout" value="D"/>
+                  			  </v:select-list>
+                        </td>
+                      </tr>
+                      <v:template name="t4" type="simple" enabled="-- case when (equ(DB.DBA.Y_DAV_GET_INFO (self.source_dir, 'versionControl'),1)) then 1 else 0 end">
+                        <tr>
+                          <td>
+                            File commands
+                          </td>
+                          <td>
+                            <v:button name="tepmpate_lock" action="simple" value="Lock" enabled="-- case when (DB.DBA.Y_DAV_IS_LOCKED(self.source_dir)) then 0 else 1 end" xhtml_class="button">
+                              <v:on-post>
+                                <![CDATA[
+                        			    if (e.ve_initiator <> control)
+                        			      return;
+
+                                  declare retValue any;
+
+                                  retValue := DB.DBA.Y_DAV_LOCK (self.source_dir);
+                                  if (DB.DBA.Y_DAV_ERROR (retValue))
+                                  {
+                                    self.vc_error_message := DB.DBA.DAV_PERROR (retValue);
+                                    self.vc_is_valid := 0;
+                                    return;
+                                  }
+                                  self.vc_data_bind (e);
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+                            <v:button name="tepmpate_unlock" action="simple" value="Unlock" enabled="-- case when (DB.DBA.Y_DAV_IS_LOCKED (self.source_dir)) then 1 else 0 end" xhtml_class="button">
+                              <v:on-post>
+                                <![CDATA[
+                        			    if (e.ve_initiator <> control)
+                        			      return;
+
+                                  declare retValue any;
+
+                                  retValue := DB.DBA.Y_DAV_UNLOCK (self.source_dir);
+                                  if (DB.DBA.Y_DAV_ERROR(retValue))
+                                  {
+                                    self.vc_error_message := DB.DBA.DAV_PERROR (retValue);
+                                    self.vc_is_valid := 0;
+                                    return;
+                                  }
+                                  self.vc_data_bind (e);
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            Versioning commands
+                          </td>
+                          <td>
+                            <v:button name="tepmpate_checkIn" action="simple" value="Check-In" enabled="-- case when (is_empty_or_null(DB.DBA.Y_DAV_GET_INFO (self.source_dir, 'checked-in'))) then 1 else 0 end" xhtml_class="button">
+                              <v:on-post>
+                                <![CDATA[
+                        			    if (e.ve_initiator <> control)
+                        			      return;
+
+                                  declare retValue any;
+
+                                  retValue := DB.DBA.Y_DAV_CHECKIN (self.source_dir);
+                                  if (DB.DBA.Y_DAV_ERROR(retValue))
+                                  {
+                                    self.vc_error_message := DB.DBA.DAV_PERROR(retValue);
+                                    self.vc_is_valid := 0;
+                                    return;
+                                  }
+                                  self.vc_data_bind (e);
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+                            <v:button  name="tepmpate_checkOut" action="simple" value="Check-Out" enabled="-- case when (is_empty_or_null(DB.DBA.Y_DAV_GET_INFO (self.source_dir, 'checked-out'))) then 1 else 0 end" xhtml_class="button">
+                              <v:on-post>
+                                <![CDATA[
+                        			    if (e.ve_initiator <> control)
+                        			      return;
+
+                                  declare retValue any;
+
+                                  retValue := DB.DBA.Y_DAV_CHECKOUT (self.source_dir);
+                                  if (DB.DBA.Y_DAV_ERROR(retValue))
+                                  {
+                                    self.vc_error_message := DB.DBA.DAV_PERROR(retValue);
+                                    self.vc_is_valid := 0;
+                                    return;
+                                  }
+                                  self.vc_data_bind (e);
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+                            <v:button  name="tepmpate_uncheckOut" action="simple" value="Uncheck-Out" enabled="-- case when (is_empty_or_null(DB.DBA.Y_DAV_GET_INFO (self.source_dir, 'checked-in'))) then 1 else 0 end" xhtml_class="button">
+                              <v:on-post>
+                                <![CDATA[
+                        			    if (e.ve_initiator <> control)
+                        			      return;
+
+                                  declare retValue any;
+
+                                  retValue := DB.DBA.Y_DAV_UNCHECKOUT (self.source_dir);
+                                  if (DB.DBA.Y_DAV_ERROR(retValue))
+                                  {
+                                    self.vc_error_message := DB.DBA.DAV_PERROR(retValue);
+                                    self.vc_is_valid := 0;
+                                    return;
+                                  }
+                                  self.vc_data_bind (e);
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            Number of Versions in History
+                          </td>
+                          <td>
+                            <v:label value="--DB.DBA.Y_DAV_GET_VERSION_COUNT (self.source_dir)" format="%d" />
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            Root version
+                          </td>
+                          <td valign="center">
+                            <v:button style="url" action="simple" value="--DB.DBA.Y_DAV_GET_VERSION_ROOT(self.source_dir)" format="%s">
+                              <v:on-post>
+                                <![CDATA[
+                        			    if (e.ve_initiator <> control)
+                        			      return;
+
+                                  if (self.browse_type = 2)
+                                  {
+                                    declare path, mimeType varchar;
+
+                                    path := DB.DBA.Y_DAV_GET_VERSION_ROOT(self.source_dir);
+                                    mimeType := DB.DBA.Y_DAV_PROP_GET (path, ':getcontenttype', '');
+                                    http_request_status ('HTTP/1.1 302 Found');
+                                    http_header (sprintf ('Content-type: %s\t\nLocation: %s\r\n', mimeType, path));
+                                  }
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td valign="top">Versions</td>
+                          <td>
+                            <v:data-set name="ds_versions" sql="select rs.* from DB.DBA.Y_DAV_GET_VERSION_SET(rs0)(c0 varchar, c1 integer) rs where rs0 = :p0" nrows="0" scrollable="1">
+                              <v:param name="p0" value="--self.source_dir" />
+
+                              <v:template name="ds_versions_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+                                <table class="vdir_listtable" style="width: 100%;" id="versions" cellspacing="0">
+                                  <tr class="vdir_listheader">
+                                    <th style="text-align: center;">Path</th>
+                                    <th style="text-align: center;">Number</th>
+                                    <th style="text-align: center;">Size</th>
+                                    <th style="text-align: center;">Modified</th>
+                                    <th style="text-align: center;">Action</th>
+                                  </tr>
+                                </table>
+                              </v:template>
+
+                              <v:template name="ds_versions_repeat" type="repeat">
+
+                                <v:template name="ds_versions_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                                  <table>
+                                    <tr align="center">
+                                      <td colspan="5">No versions</td>
+                                    </tr>
+                                  </table>
+                                </v:template>
+
+                                <v:template name="ds_versions_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                                  <table>
+                                    <tr>
+                                      <td nowrap="nowrap">
+                                        <v:button name="button_versions_show" style="url" action="simple" value="--(control.vc_parent as vspx_row_template).te_column_value('c0')" format="%s">
+                                          <v:on-post>
+                                            <![CDATA[
+                                    			    if (e.ve_initiator <> control)
+                                    			      return;
+                                              if (self.browse_type = 2)
+                                              {
+                                                declare path, mimeType varchar;
+
+                                                path := (control.vc_parent as vspx_row_template).te_column_value('c0');
+                                                mimeType := DB.DBA.Y_DAV_PROP_GET (path, ':getcontenttype', '');
+                                                http_request_status ('HTTP/1.1 302 Found');
+                                                http_header (sprintf ('Content-type: %s\t\nLocation: %s\r\n', mimeType, path));
+                                              }
+                                            ]]>
+                                          </v:on-post>
+                                        </v:button>
+                                      </td>
+                                      <td nowrap="nowrap" align="right">
+                                        <v:label value="--DB.DBA.Y_PATH_NAME ((control.vc_parent as vspx_row_template).te_column_value('c0'))" />
+                                      </td>
+                                      <td nowrap="nowrap" align="right">
+                                        <v:label>
+                                          <v:after-data-bind>
+                                            <![CDATA[
+                                              control.ufl_value := DB.DBA.Y_UI_SIZE (DB.DBA.Y_DAV_PROP_GET ((control.vc_parent as vspx_row_template).te_column_value('c0'), ':getcontentlength'), 'R');
+                                            ]]>
+                                          </v:after-data-bind>
+                                        </v:label>
+                                      </td>
+                                      <td nowrap="nowrap" align="right">
+                                        <v:label>
+                                          <v:after-data-bind>
+                                            <![CDATA[
+                                              control.ufl_value := DB.DBA.Y_UI_DATE (DB.DBA.Y_DAV_PROP_GET((control.vc_parent as vspx_row_template).te_column_value('c0'), ':getlastmodified'));
+                                            ]]>
+                                          </v:after-data-bind>
+                                        </v:label>
+                                      </td>
+                                      <td nowrap="nowrap">
+                                        <v:button name="button_versions_delete" action="simple" style="url" value="Version Delete" enabled="--(control.vc_parent as vspx_row_template).te_column_value('c1')">
+                                          <v:after-data-bind>
+                                            <![CDATA[
+                                              control.ufl_value := '<img src="images/icons/del_16.png" border="0" alt="Version Delete" title="Version Delete" onclick="javascript: if (!confirm(\'Are you sure you want to delete the chosen version and all previous versions?\')) { event.cancelBubble = true;};" />';
+                                            ]]>
+                                          </v:after-data-bind>
+                                          <v:on-post>
+                                            <![CDATA[
+                                    			    if (e.ve_initiator <> control)
+                                    			      return;
+
+                                              declare retValue any;
+
+                                              retValue := DB.DBA.YACUTIA_DAV_DELETE ((control.vc_parent as vspx_row_template).te_column_value('c0'));
+                                              if (DB.DBA.Y_DAV_ERROR (retValue))
+                                              {
+                                                self.vc_error_message := DB.DBA.DAV_PERROR(retValue);
+                                                self.vc_is_valid := 0;
+                                                return;
+                                              }
+                                              self.vc_data_bind (e);
+                                            ]]>
+                                          </v:on-post>
+                                        </v:button>
+                                      </td>
+                                    </tr>
+                                  </table>
+                                </v:template>
+
+                              </v:template>
+
+                              <v:template name="ds_versions_footer" type="simple" name-to-remove="table" set-to-remove="top">
+                                <table>
+                                </table>
+                              </v:template>
+
+                            </v:data-set>
+                          </td>
+                        </tr>
+                      </v:template>
+                    </table>
+                  </td>
+	              </tr>
+                <?vsp
+                  }
+                ?>
                       <tr align="center">
                         <td colspan="2">
                           <v:button action="simple" name="b_prop_cancel" value="Cancel" >
                             <v:on-post>
                               <![CDATA[
+                			    if (e.ve_initiator <> control)
+                			      return;
+
   self.command := 0;
   self.source_dir := '';
   self.vc_data_bind(e);
@@ -1813,6 +2150,9 @@ else
                           <v:button action="simple" name="b_prop_update" value="Update" >
                             <v:on-post>
                               <![CDATA[
+                			    if (e.ve_initiator <> control)
+                			      return;
+
   declare i, own_id, own_grp integer;
   declare mimetype, _recurse, _res_name varchar;
   declare _fidx, _file any;
@@ -1876,25 +2216,20 @@ else
        sync_type := get_keyword ('s_t', self.vc_page.vc_event.ve_params, 'N');
 
        yac_syncml_update_type (sync_ver, sync_type, self.source_dir);
-
     }
 
-  i := 0;
   _perms := '';
   _fidx := vector ('N', 'Off', 'T', 'Direct members', 'R', 'Recursively');
   _idx := get_keyword ('idx', self.vc_page.vc_event.ve_params, _fidx[0]);
   _inh := get_keyword ('inh', self.vc_page.vc_event.ve_params, _fidx[0]);
 
-  while (i < 9)
+                          for (i := 0; i < 9; i := i + 1)
     {
       _p := get_keyword(sprintf('perm%i', i), self.vc_page.vc_event.ve_params, '');
-
       if (_p <> '')
         _perms := concat(_perms, '1');
       else
         _perms := concat(_perms, '0');
-
-      i := i + 1;
     }
 
   if ('' <> get_keyword ('recurse', params, ''))
@@ -1921,7 +2256,8 @@ else
           _target_col := WS.WS.COL_PATH (_res_id);
 
           declare cur_type, cur_perms varchar;
-          declare res_cur cursor for select RES_PERMS, RES_TYPE from WS.WS.SYS_DAV_RES
+                              declare res_cur cursor for select RES_PERMS, RES_TYPE
+                                                           from WS.WS.SYS_DAV_RES
               where substring (RES_FULL_PATH, 1, length (_target_col)) = _target_col;
 
           whenever not found goto next_one;
@@ -2024,12 +2360,6 @@ else
                         </td>
                       </tr>
                     </table>
-                  </td>
-                </tr>
-                <?vsp
-  }
-                ?>
-              </table>
             </v:template>
               <v:template name="edit_text_template" type="simple" enabled="-- equ(self.command, 11)">
               <table>
@@ -2186,7 +2516,10 @@ else
     {
       full_path := aref (self.col_array, i);
       colid := DAV_SEARCH_ID (full_path, 'c');
-      ownern := null; groupn := null; modtime := now (); _perms := '100100000N';
+                        ownern := null;
+                        groupn := null;
+                        modtime := now ();
+                        _perms := '100100000N';
       whenever not found goto nf2;
       if (isinteger (colid))
         {
@@ -2197,7 +2530,7 @@ else
    }
       nf2:;
 
-      modtime := left (cast (modtime as varchar), 19);
+                        modtime := DB.DBA.Y_UI_DATE (modtime);
       whenever not found goto nf3;
       if (ownern is not null)
         select U_NAME into ownername from DB.DBA.SYS_USERS where U_ID=ownern;
@@ -2241,7 +2574,7 @@ else
                   <td><img src="images/dav_browser/foldr_16.png"/></td>
                   <td><?V full_path ?></td>
                   <td>N/A</td>
-                  <td><?V modtime ?></td>
+                      <td><?vsp http (modtime); ?></td>
                   <td>folder</td>
                   <td><?V ownername ?></td>
                   <td><?V groupname ?></td>
@@ -2265,8 +2598,12 @@ else
         colid := DAV_SEARCH_ID(full_path, 'r');
 
         whenever not found goto nf4;
-                    ownern := null; groupn := null; modtime := now (); _perms := '100100000N';
-        restype := 'N/A'; ressize := 0;
+                        ownern := null;
+                        groupn := null;
+                        modtime := now ();
+                        _perms := '100100000N';
+                        restype := 'N/A';
+                        ressize := 0;
         if (isinteger (colid))
           {
            select RES_OWNER, RES_GROUP, RES_MOD_TIME, RES_PERMS, RES_TYPE, length(RES_CONTENT)
@@ -2274,7 +2611,8 @@ else
           }
         nf4:
 
-                    modtime := left(cast(modtime as varchar), 19);
+                        modtime := DB.DBA.Y_UI_DATE (modtime);
+                        ressize := DB.DBA.Y_UI_SIZE (ressize);
                     if (ownern is not null)
                       ownername := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID=ownern), 'none');
                     else
@@ -2283,10 +2621,8 @@ else
                       groupname := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID=groupn), 'none');
                     else
                       groupname := 'none';
-                    len1 := length(_perms);
-                    j := 0;
                     perms := '';
-                    while (j < len1)
+                        for (j := 0; j < length(_perms); j := j + 1)
                     {
                       if ((j = 0 or j = 3 or j = 6))
                       {
@@ -2309,15 +2645,14 @@ else
                         else
                           perms := concat(perms, '-');
                       }
-                      j := j + 1;
                     }
 
                 ?>
                     <tr class="<?V case when mod (row, 2) = 0 then 'even' end ?>">
                       <td><img src="images/dav_browser/file_gen_16.png"/></td>
                   <td><?V full_path ?></td>
-                  <td><?V ressize ?></td>
-                  <td><?V modtime ?></td>
+                      <td><?vsp http (ressize); ?></td>
+                      <td><?vsp http (modtime); ?></td>
                   <td><?V restype ?></td>
                   <td><?V ownername ?></td>
                   <td><?V groupname ?></td>
@@ -2924,7 +3259,7 @@ else
                                 if (self.command = 6)
                                   res := DB.DBA.YACUTIA_DAV_MOVE(concat(_source_dir, _resname, '/'), concat('/', self.t_dest.ufl_value, '/', _resname, '/'), 1);
                                 if (self.command = 7)
-                                  res := DB.DBA.YACUTIA_DAV_DELETE(concat(_source_dir, _resname, '/'));
+                                  res := DB.DBA.YACUTIA_DAV_DELETE (concat(_source_dir, _resname, '/'));
                                 if (res < 0)
                                 {
                                   self.need_overwrite := 1;
@@ -3099,8 +3434,7 @@ else
                     </v:script>
                   </v:on-post>
                 </v:button>
-                <v:select-list name="details_dropdown" 
-                               xhtml_onchange="javascript:doPost(\'form1\', \'reload\'); return false">
+                <v:select-list name="details_dropdown" xhtml_onchange="javascript:doPost(\'form1\', \'reload\'); return false">
                   <v:after-data-bind>
                     <v:script>
                       <![CDATA[
@@ -3142,8 +3476,7 @@ else
               <div id="dav_br_list_vport">
                 <div id="dav_br_list">
                   <v:data-set name="ds_items"
-          data="--DB.DBA.dav_browse_proc1
-            (curpath, show_details, dir_select, filter, -1, '', self.dav_list_ord, self.dav_list_ord_seq)"
+                              data="--DB.DBA.dav_browse_proc1 (curpath, show_details, dir_select, filter, -1, '', self.dav_list_ord, self.dav_list_ord_seq)"
                               meta="--DB.DBA.dav_browse_proc_meta1 ()"
                               nrows="0"
                               scrollable="1"
@@ -3333,8 +3666,7 @@ else
                                        self.curpath,
                                        '/',
 				       (control.vc_parent as vspx_row_template).te_rowset[1]);
-				       control.bt_url := sprintf ('view_dav_res.vsp?file=%U&sid=%s&realm=%s',
-				        file, self.sid, self.realm);
+				                          control.bt_url := sprintf ('view_dav_res.vsp?file=%U&sid=%s&realm=%s', file, self.sid, self.realm);
 		                    }
 				  ]]></v:before-render>
                             <v:on-post>
@@ -3385,12 +3717,13 @@ else
                           ?>
                         </td>
                         <?vsp
+                          declare S varchar;
                           declare j integer;
-                          j := 3;
-                          while (j < length(rowset))
+
+                          for (j := 3; j < length(rowset); j := j + 1)
                           {
-                            http('<td nowrap="1">' || coalesce(rowset[j], '') || '</td>');
-                            j := j + 1;
+                            S := case when (j = 3) then 'align="right"' else '' end;
+                            http (sprintf ('<td nowrap="1" %s>%s</td>', S, coalesce(rowset[j], '')));
                           }
                         ?>
                         <td nowrap="1">

@@ -123,9 +123,16 @@ service_write (dk_session_t * ses, char *buffer, int bytes)
 	      else
 		{
 		  timeout_t tv = { 100, 0 };
+		retry:
 		  tcpses_is_write_ready (ses->dks_session, &tv);
 		  if (SESSTAT_W_ISSET (ses->dks_session, SST_TIMED_OUT))
 		    {
+		      scheduler_io_data_t * sio = SESSION_SCH_DATA (ses);
+		      if (sio->sio_w_timeout_hook && sio->sio_w_timeout_hook (ses))
+			{
+			  SESSTAT_W_CLR (ses->dks_session, SST_TIMED_OUT);
+			  goto retry;
+			}
 		      SESSTAT_W_SET (ses->dks_session, SST_BROKEN_CONNECTION);
 		      longjmp_splice (&SESSION_SCH_DATA (ses)->sio_write_broken_context, 1);
 		    }
