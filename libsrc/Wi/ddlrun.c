@@ -4887,6 +4887,31 @@ end:;
 
 
 client_connection_t * recomp_cli;
+du_thread_t * recomp_thread;
+
+
+void 
+qr_recompile_enter (int * is_entered)
+{
+  if (THREAD_CURRENT_THREAD == recomp_thread)
+    return;
+  mutex_enter (recomp_mtx);
+  recomp_thread = THREAD_CURRENT_THREAD;
+  *is_entered = 1;
+}
+
+
+void 
+qr_recompile_leave (int * is_entered)
+{
+  if (*is_entered)
+    {
+      recomp_thread = NULL;
+      *is_entered = 0;
+      mutex_leave (recomp_mtx);
+    }
+}
+
 
 query_t *
 qr_recompile (query_t * qr, caddr_t * err_ret)
@@ -4899,8 +4924,8 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
   user_t *owner_user;
   dk_set_t old_qr_set = NULL;
   dbe_schema_t *sc;
-
-  mutex_enter (recomp_mtx);
+  int is_entered = 0;
+  qr_recompile_enter (&is_entered);
   /* whe should get schema after we got mutex as it can be changed in the meantime */
   sc = wi_inst.wi_schema;
   if (proc_name && !qr->qr_trig_table)
@@ -4913,7 +4938,7 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
       if (NULL != new_qr && new_qr != qr)
 	{
 	  dk_free_tree (proc_name);
-	  mutex_leave (recomp_mtx);
+	  qr_recompile_leave (&is_entered);
 	  return new_qr;
 	}
       else
@@ -5024,7 +5049,7 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
   if (!err && !QR_IS_MODULE_PROC (qr))
     new_qr->qr_proc_grants = qr->qr_proc_grants;
 
-  mutex_leave (recomp_mtx);
+  qr_recompile_leave (&is_entered);
   if (err)
     {
       if (strstr (((caddr_t*)err)[2], "RDFNI"))
