@@ -28,10 +28,9 @@ LANG=C
 LC_ALL=POSIX
 export LANG LC_ALL
 
-
 MODE=$1
 LOGDIR=`pwd`
-VERSION="1.3.281"
+VERSION="1.3.282"
 LOGFILE="${LOGDIR}/vad_make.log"
 STICKER_DAV="vad_dav.xml"
 STICKER_FS="vad_filesystem.xml"

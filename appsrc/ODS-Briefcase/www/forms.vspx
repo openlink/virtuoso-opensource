@@ -300,7 +300,7 @@
         }
         self.v_step := 'end';
       }
-      else if (self.v_form = 'tag')
+      else if (self.v_form = 'tags')
       {
   	    declare itemPath, tags, tagsPublic, tagsPrivate any;
 
