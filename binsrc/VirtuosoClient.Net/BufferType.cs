@@ -166,6 +166,25 @@ namespace OpenLink.Data.Virtuoso
 		}
 	}
 
+	internal sealed class BufferTypeBigInt : BufferTypeFixed
+	{
+		internal BufferTypeBigInt ()
+			: base (typeof (System.Int64), CLI.SqlCType.SQL_C_BIGINT, 8, 8)
+		{
+		}
+
+		internal override int ManagedToNative (object value, IntPtr buffer, int length)
+		{
+			Marshal.WriteInt64 (buffer, (long) value);
+			return 0;
+		}
+
+		internal override object NativeToManaged (IntPtr buffer, int length)
+		{
+			return Marshal.ReadInt64 (buffer);
+		}
+	}
+
 	internal sealed class BufferTypeLong : BufferTypeFixed
 	{
 		internal BufferTypeLong ()
@@ -595,6 +614,7 @@ namespace OpenLink.Data.Virtuoso
 
 		internal static readonly BufferTypeShort Short = new BufferTypeShort ();
 		internal static readonly BufferTypeLong Long = new BufferTypeLong ();
+		internal static readonly BufferTypeBigInt BigInt = new BufferTypeBigInt ();
 		internal static readonly BufferTypeFloat Float = new BufferTypeFloat ();
 		internal static readonly BufferTypeDouble Double = new BufferTypeDouble ();
 		internal static readonly BufferTypeNumeric Numeric = new BufferTypeNumeric ();
@@ -617,6 +637,7 @@ namespace OpenLink.Data.Virtuoso
 				case TypeCode.DBNull:			return null;
 				case TypeCode.Int16:			return Short;
 				case TypeCode.Int32:			return Long;
+				case TypeCode.Int64:			return BigInt;
 				case TypeCode.Single:			return Float;
 				case TypeCode.Double:			return Double;
 				case TypeCode.Decimal:			return Numeric;

@@ -53,6 +53,7 @@ namespace OpenLink.Data.Virtuoso
 		VarBinary,
 		LongVarBinary,
 		Xml,
+		BigInt,
 		Any,
 	}
 }

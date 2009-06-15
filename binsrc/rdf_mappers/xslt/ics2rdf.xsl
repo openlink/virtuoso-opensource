@@ -37,6 +37,7 @@
     >
 
     <xsl:output method="xml" indent="yes"/>
+    <xsl:param name="baseUri" />
 
     <xsl:variable name="uc">ABCDEFGHIJKLMNOPQRSTUVWXYZ</xsl:variable>
     <xsl:variable name="lc">abcdefghijklmnopqrstuvwxyz</xsl:variable>
@@ -97,6 +98,7 @@
     <xsl:template match="IMC-VCALENDAR" priority="10">
 	<xsl:variable name="elt"><xsl:call-template name="vname"/></xsl:variable>
 	<xsl:element name="{$elt}" namespace="&ical;">
+	    <xsl:attribute name="about" namespace="&rdf;"><xsl:value-of select="$baseUri"/></xsl:attribute>
 	    <xsl:apply-templates select="*"/>
 	</xsl:element>
     </xsl:template>
@@ -158,7 +160,7 @@
 	<xsl:value-of select="normalize-space(.)"/>
     </xsl:template>
 
-    <xsl:template match="URL|DIR">
+    <xsl:template match="URL|DIR" priority="1">
 	<ical:url rdf:resource="{.}"/>
     </xsl:template>
 

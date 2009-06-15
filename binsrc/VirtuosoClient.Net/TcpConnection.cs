@@ -1,4 +1,6 @@
 //  
+// $Id$
+//
 //  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 //  project.
 //  
@@ -19,7 +21,6 @@
 //  
 //  
 //
-// $Id$
 //
 
 using System;
@@ -40,7 +41,7 @@ namespace OpenLink.Data.Virtuoso
 	internal class TcpConnection : ManagedConnection
 	{
 		private static byte[] thePass = Encoding.ASCII.GetBytes ("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-		private Random rnd = new Random(unchecked((int) (DateTime.Now.Ticks)));
+		private static Random rnd = new Random(unchecked((int) (DateTime.Now.Ticks)));
 
 		private TcpSession session = null;
 
@@ -207,6 +208,8 @@ namespace OpenLink.Data.Virtuoso
 #else			
 			IPAddress address = Dns.GetHostEntry (host).AddressList[0];
 #endif			
+			if (IPAddress.IsLoopback (address) || address.IsIPv6LinkLocal)
+				address = IPAddress.Loopback;
 			return new IPEndPoint (address, port);
 		}
 

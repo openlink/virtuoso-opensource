@@ -181,6 +181,18 @@ namespace OpenLink.Data.Virtuoso
 		}
 	}
 
+	internal sealed class DataTypeBigInt : NumericDataType
+	{
+		internal DataTypeBigInt (
+			string typeName,
+			VirtDbType vdbType,
+			System.Data.DbType dbType,
+			CLI.SqlType sqlType)
+			: base (typeName, vdbType, dbType, sqlType, BufferTypes.BigInt)
+		{
+		}
+	}
+
 	internal sealed class DataTypeInt32 : NumericDataType
 	{
 		internal DataTypeInt32 (
@@ -335,6 +347,7 @@ namespace OpenLink.Data.Virtuoso
 		internal static DataTypeBinary Binary;
 		internal static DataTypeBinary VarBinary;
 		internal static DataTypeBinary LongVarBinary;
+		internal static DataTypeBigInt BigInt;
 		internal static DataTypeInt32 Integer;
 		internal static DataTypeInt16 SmallInt;
 		internal static DataTypeSingle Real;
@@ -361,6 +374,7 @@ namespace OpenLink.Data.Virtuoso
 			Binary = new DataTypeBinary ("BINARY", VirtDbType.Binary, System.Data.DbType.Binary, CLI.SqlType.SQL_BINARY, false);
 			VarBinary = new DataTypeBinary ("VARBINARY", VirtDbType.VarBinary, System.Data.DbType.Binary, CLI.SqlType.SQL_VARBINARY, false);
 			LongVarBinary = new DataTypeBinary ("LONG VARBINARY", VirtDbType.LongVarBinary, System.Data.DbType.Binary, CLI.SqlType.SQL_LONGVARBINARY, true);
+			BigInt = new DataTypeBigInt ("BIGINT", VirtDbType.BigInt, System.Data.DbType.Int64, CLI.SqlType.SQL_BIGINT);
 			Integer = new DataTypeInt32 ("INTEGER", VirtDbType.Integer, System.Data.DbType.Int32, CLI.SqlType.SQL_INTEGER);
 			SmallInt = new DataTypeInt16 ("SMALLINT", VirtDbType.SmallInt, System.Data.DbType.Int16, CLI.SqlType.SQL_SMALLINT);
 			Real = new DataTypeSingle ("REAL", VirtDbType.Real, System.Data.DbType.Single, CLI.SqlType.SQL_REAL);
@@ -388,6 +402,7 @@ namespace OpenLink.Data.Virtuoso
 			case CLI.SqlType.SQL_BINARY:		return Timestamp;
 			case CLI.SqlType.SQL_VARBINARY:		return VarBinary;
 			case CLI.SqlType.SQL_LONGVARBINARY:	return LongVarBinary;
+			case CLI.SqlType.SQL_BIGINT:		return BigInt;
 			case CLI.SqlType.SQL_INTEGER:		return Integer;
 			case CLI.SqlType.SQL_SMALLINT:		return SmallInt;
 			case CLI.SqlType.SQL_REAL:		return Real;
@@ -415,6 +430,7 @@ namespace OpenLink.Data.Virtuoso
 			case VirtDbType.DateTime:		return DateTime;
 				//case VirtDbType.Decimal:		return Decimal;
 			case VirtDbType.Float:			return Float;
+			case VirtDbType.BigInt:			return BigInt;
 			case VirtDbType.Integer:		return Integer;
 			case VirtDbType.LongNVarChar:		return NLongVarChar;
 			case VirtDbType.LongVarBinary:		return LongVarBinary;
@@ -446,6 +462,7 @@ namespace OpenLink.Data.Virtuoso
 			case DbType.Double:				return Double;
 			case DbType.Int16:				return SmallInt;
 			case DbType.Int32:				return Integer;
+			case DbType.Int64:				return BigInt;
 			case DbType.Single:				return Real;
 			case DbType.String:				return NVarChar;
 			case DbType.StringFixedLength:			return NChar;
@@ -476,6 +493,7 @@ namespace OpenLink.Data.Virtuoso
 			case BoxTag.DV_BOX_FLAGS:
 			case BoxTag.DV_WIDE:
 			case BoxTag.DV_LONG_WIDE:		return NVarChar;
+			case BoxTag.DV_INT64:			return BigInt;
 			}
 			return VarChar;
 		}
