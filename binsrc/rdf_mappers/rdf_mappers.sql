@@ -36,6 +36,7 @@ delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_AMAZON_ARTIC
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FQL';
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_YOUTUBE';
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_MBZ';
+delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_BESTBUY';
 
 -- insertion of cartridges
 
@@ -61,6 +62,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('http://.*openstreetmap.org/.*',
     'URL', 'DB.DBA.RDF_LOAD_OPENSTREETMAP', null, 'OpenStreetMap');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+	values ('http://.*bestbuy.com/.*',
+	'URL', 'DB.DBA.RDF_LOAD_BESTBUY', null, 'BestBuy articles');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://.*amazon.[^/]+/gp/product/.*)|'||
@@ -3763,7 +3768,7 @@ create procedure DB.DBA.RDF_LOAD_ICAL (in graph_iri varchar, in new_origin_uri v
 }
 ;
 
-create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+create procedure DB.DBA.RDF_LOAD_BESTBUY (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare xd, xt, url, tmp, api_key, asin, hdr, exif any;
@@ -3773,6 +3778,39 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
       return 0;
     };
 
+  if (new_origin_uri like 'http://www.bestbuy.com/site/olspage.jsp?%&id=%')
+    {
+      tmp := sprintf_inverse (new_origin_uri, 'http://www.bestbuy.com/site/olspage.jsp?%s&id=%s', 0);
+      asin := rtrim (tmp[1], '/&');
+    }
+  else
+  {
+    return 0;
+   }
+  api_key := _key;
+  if (asin is null or not isstring (api_key))
+    return 0;
+  url := sprintf ('http://api.remix.bestbuy.com/v1/products(productId=%s)?apiKey=%s&format=xml', asin, api_key);
+  tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+  if (hdr[0] not like 'HTTP/1._ 200 %')
+    signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
+  xd := xtree_doc (tmp);
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/bestbuy2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
+  xd := serialize_to_UTF8_xml (xt);
+  DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  return 1;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare xd, xt, url, tmp, api_key, asin, hdr, exif any;
+  asin := null;
+  declare exit handler for sqlstate '*'
+	{
+      return 0;
+    };
   if (new_origin_uri like 'http://%amazon.%/gp/product/%')
     {
       tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/gp/product/%s', 0);
@@ -6809,8 +6847,6 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_META (in graph_iri varchar, in new_origi
 	state := '00000';
 	tmp := sprintf( 'sparql define input:inference \'virtrdf-label\' select ?l from <%s> where { <%s> virtrdf:label ?l }',
 		graph_iri, primary_topic);
-	-- . ?s rdf:type <http://purl.org/ontology/bibo/Book> }',
-	
 	exec (tmp, state, message, vector (), 0, meta, data);
 	if (state = '00000' and length (data) > 0)
 		RDF_LOAD_AMAZON_META2(data, api_key, 'Books', opts, dest, graph_iri, new_origin_uri);
@@ -6841,6 +6877,55 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_META2(in data any, in api_key varchar, i
 	}
 }
 ;
+
+create procedure DB.DBA.RDF_LOAD_BESTBUY_META (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout ser_key any, inout opts any)
+{
+	declare data, meta, state, message any;
+	declare primary_topic, tmp, api_key any;
+	declare exit handler for sqlstate '*'
+	{
+		return 0;
+	};
+	api_key := ser_key;
+	if (not isstring (api_key))
+		return 0;
+	
+	primary_topic := DB.DBA.RDF_SPONGE_PROXY_IRI (graph_iri);
+	state := '00000';
+	tmp := sprintf( 'sparql define input:inference \'virtrdf-label\' select ?l from <%s> where { <%s> virtrdf:label ?l }',
+		graph_iri, primary_topic);
+	exec (tmp, state, message, vector (), 0, meta, data);
+	if (state = '00000' and length (data) > 0)
+		RDF_LOAD_BESTBUY_META2(data, api_key, opts, dest, graph_iri, new_origin_uri);
+	return 0;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_BESTBUY_META2(in data any, in api_key varchar, in opts any, in dest varchar, in graph_iri varchar, in new_origin_uri varchar)
+{
+	declare keywords, url, tmp, tree, cont varchar;
+	declare xt, xd any;
+	
+	foreach (any str in data) do
+	{
+		if (isstring (str[0]))
+		{
+			keywords := trim(str[0], '\n\t\t\n ');
+			keywords := replace(keywords, ' ', '+');
+			url := sprintf ('http://api.remix.bestbuy.com/v1/products(name="%s")?apiKey=%s&format=xml',
+				keywords, api_key);
+			tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+			xt := xtree_doc (tmp);
+			xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/bestbuy_meta2rdf.xsl', xt,
+				vector ('baseUri', coalesce (dest, graph_iri)));
+			cont := serialize_to_UTF8_xml (xd);
+			DB.DBA.RDF_LOAD_RDFXML (cont, new_origin_uri, coalesce (dest, graph_iri));
+		}
+	}
+}
+;
+
 
 create procedure DB.DBA.RDF_LOAD_OREILLY_META (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout ser_key any, inout opts any)
@@ -7184,6 +7269,10 @@ insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC
 
 insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
       values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_AMAZON_META', null, 'Amazon Search for products',
+	  vector ('min-score', '0.5', 'max-results', '10'));
+
+insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
+      values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_BESTBUY_META', null, 'BestBuy Search for products',
 	  vector ('min-score', '0.5', 'max-results', '10'));
 
 insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
