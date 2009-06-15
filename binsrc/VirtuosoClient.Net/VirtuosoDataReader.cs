@@ -837,8 +837,19 @@ namespace OpenLink.Data.Virtuoso
 		private object GetColumnData (int i)
 		{
 			ColumnData column = columns[i];
+            		Type type = column.columnType.bufferType.type;
 			if (column.data == null)
 				column.data = innerCommand.GetColumnData (i, columns);
+            		if (column.data != null && !Convert.IsDBNull(column.data) && type != column.data.GetType())
+            		{
+                		if (column.data is IConvertData)
+                    			return ((IConvertData)column.data).ConvertData(type);
+                		else if (column.data is IConvertible)
+                    			return Convert.ChangeType(column.data, type);
+                		else
+                    			return column.data.ToString();
+            		}
+            		else
 			return column.data;
 		}
 
