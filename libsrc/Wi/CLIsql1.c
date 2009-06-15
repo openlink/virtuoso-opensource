@@ -86,7 +86,15 @@ SQLRETURN SQL_API
 virtodbc__SQLAllocEnv (
 	SQLHENV * phenv)
 {
+  static int firsttime = 1;
   cli_dbg_printf (("SQLAllocEnv called.\n"));
+
+  if (firsttime) 
+    {
+      srand ((unsigned int) time(NULL));
+      firsttime = 0;
+    }
+
   PrpcInitialize ();
   blobio_init ();
   {
@@ -825,8 +833,6 @@ internal_sql_connect (
   else
 #endif
     {
-      srand ((unsigned) time (NULL));
-
       if (index_count > 1 && useRoundRobin)
         startIndex = hostIndex = (rand () % index_count);
 
