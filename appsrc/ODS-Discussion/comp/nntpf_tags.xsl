@@ -39,8 +39,7 @@
                <input type="text" id="new_tag" style="width:140px"/>
                <a href="javascript:void(0)" onClick="doTag( $v('curr_ngroup'),$v('curr_post'),$v('new_tag'),'add'); return false"><img src="images/add_10.png" alt="Add Tag" title="Add Tag" border="0" /></a>
                <?vsp
-               }else
-               {
+      } else {
                ?>
                  <img src="images/spacer.png" style="height:10px;width:170px;"/>
                <?vsp
@@ -49,7 +48,6 @@
                <a href="javascript: void(0);" onClick="hideTagsDiv()">close</a>
                <br/>
                <div id="tagslist_div">
-               
                </div>
                <br/>
               </div>
@@ -60,8 +58,7 @@
       var wsdl = "<?VWA_LINK(0, '/')?>ods_services/services.wsdl";
       var serviceName = "discussions_taglist";
       var inputObject = {
-          discussions_taglist:{
-                               ngroup_id:ngroupId,
+            discussions_taglist: {ngroup_id:ngroupId,
                                post_id:postId,
                                u_id:<?V(case when length(self.u_name)>0 then (select U_ID from DB.DBA.SYS_USERS where U_NAME=self.u_name) else '-1' end)?>
           }  
@@ -70,11 +67,11 @@
      OAT.WS.invoke(wsdl,  serviceName, genTagsListSeponceProcessor, inputObject);
     }
     
-    function genTagsListSeponceProcessor(outputObject) {
+        function genTagsListSeponceProcessor(outputObject)
+        {
         if(typeof(outputObject.discussions_taglistResponse.CallReturn) != 'undefined')
         {
            res=outputObject.discussions_taglistResponse.CallReturn;
-           
            var listHTML='';
            var isAdminTag=0;
            if(res.length>0)
@@ -90,18 +87,15 @@
                 {
                  isAdminTag=1;
                  listHTML=listHTML+'<br/>';
-                }else
-                { 
-              listHTML=listHTML+
-                          '<span style="float:left;"><a href="javascript:void(0)" onClick="showTag(\''+tagsArr[i]+'\');" title="Show items with tag '+tagsArr[i]+'"><b>'+tagsArr[i]+'</b></a>';
+                    } else {
+                      listHTML=listHTML+'<span style="float:left;"><a href="javascript:void(0)" onClick="showTag(\''+tagsArr[i]+'\');" title="Show items with tag '+tagsArr[i]+'"><b>'+tagsArr[i]+'</b></a>';
               <?vsp
                if(length(self.u_name))
                {
               ?>
                  if(!isAdminTag)
                  {
-              listHTML=listHTML+
-                            '<a href="javascript:void(0)" onclick="doTag( $v(\'curr_ngroup\'),$v(\'curr_post\'),\''+tagsArr[i]+'\',\'del\'); return false"><img src="images/del_10.png" alt="Delete Tag" title="Delete Tag" border="0"/></a>';
+                        listHTML=listHTML+'<a href="javascript:void(0)" onclick="doTag( $v(\'curr_ngroup\'),$v(\'curr_post\'),\''+tagsArr[i]+'\',\'del\'); return false"><img src="images/del_10.png" alt="Delete Tag" title="Delete Tag" border="0"/></a>';
                  }
               <?vsp
                }
@@ -123,25 +117,14 @@
            $('tagslist_div').innerHTML=listHTML;
         }
     }
-
-    
     function tagsInit()
     { 
      genTagsList($v('curr_ngroup'),$v('curr_post'));
-     
-
                if(typeof($('show_tagsblock'))!='undefined' && $('show_tagsblock').value==1)
-                 {
                   showTagsDiv('<?Vself.grp_sel_thr?>','<?Vself.cur_art?>',$('curr_a'));
                  }
-
-     
-    }
-  
     function doTag(_ngroupId,_postId,_tag,_tagAction)
     {
-      
-      
       var wsdl = "<?VWA_LINK(0, '/')?>ods_services/services.wsdl";
       var serviceName = "discussions_dotag";
       var inputObject = {
@@ -152,23 +135,15 @@
                             do_action:_tagAction,
                             user_name:'<?Vself.u_name?>',
                             user_pass:'<?V(case when length(self.u_name)>0 then (select md5(U_PASSWORD) from DB.DBA.SYS_USERS where U_NAME=self.u_name) else '' end)?>'
-                            
           }
       }
-      
-      
-      function callback(outputObject) {
+          function callback(outputObject)
+          {
         genTagsList(_ngroupId,_postId);
-        
         updateTagsCount(_ngroupId,_postId);
-        
       }
-      
       OAT.WS.invoke(wsdl,  serviceName, callback, inputObject);
-
-
     }
-    
     function updateTagsCount(ngroupId,_postId)
     {
       var wsdl = "<?VWA_LINK(0, '/')?>ods_services/services.wsdl";
@@ -180,24 +155,16 @@
                             u_id:<?V(case when length(self.u_name)>0 then (select U_ID from DB.DBA.SYS_USERS where U_NAME=self.u_name) else '0' end)?>
           }
       }
-      
-      
-      function callback(outputObject) {
-
+          function callback(outputObject)
+          {
         $('tags_div').curr_a_elm.innerHTML='tags ('+outputObject.discussions_tagscountResponse.CallReturn+')';
       }
-      
       OAT.WS.invoke(wsdl,  serviceName, callback, inputObject);
-
     }
- 
-    
     function showTagsDiv(ngroupId,postId,curr_a_elm)
     {
-
      $('curr_ngroup').value=ngroupId;
      $('curr_post').value=postId;
-
      genTagsList(ngroupId,postId);
 
      var calendarH=0;
@@ -213,10 +180,7 @@
            {
               myDiv.style.left = (anchorTopLeft[0]+10)+'px';     
          myDiv.style.top = (anchorTopLeft[1]+20+calendarH)+'px';
-         
-           }
-           else
-           {
+          } else {
               myDiv.style.left = (anchorTopLeft[0]+10)+'px';     
          myDiv.style.top = (anchorTopLeft[1]+12+calendarH)+'px';
            }
@@ -229,27 +193,20 @@
          {
            $('LT').style.height=(calendarH+25+$('tags_div').offsetHeight)+'px';
          }
-      }
-      else
-      {
+          } else {
          if($('LT').offsetHeight<(calendarH+6+$('tags_div').offsetHeight))
          {
            $('LT').style.height=(calendarH+15+$('tags_div').offsetHeight)+'px';
          }
       }
-
     }
-    
     function hideTagsDiv()
     {
       OAT.Dom.hide('tags_div');
-
-      if(typeof($('show_tagsblock'))!='undefined' && $('show_tagsblock').value==1) showCalendar();
+          if (typeof($('show_tagsblock'))!='undefined' && $('show_tagsblock').value==1)
+            showCalendar();
       nntpCal.div.style.display="block";
-        
     }
-
-
     function showTag(tag)
     {
       var sid='<?Vself.sid?>';
@@ -263,15 +220,7 @@
      
       return false;
     }
-
-//dummy comment
-
-
     ]]>
 </script>
-
-
   </xsl:template>
-
 </xsl:stylesheet>
-

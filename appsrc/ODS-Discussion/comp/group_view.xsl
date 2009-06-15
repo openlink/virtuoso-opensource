@@ -39,10 +39,6 @@
 
     <v:on-init>
       <![CDATA[
---    dbg_obj_print ('on-init self.fordate = ', self.fordate);
-
-      
-
        declare order_full_str varchar;
        
        self.order_by_str:='';
@@ -51,13 +47,14 @@
        self.order_way_str      := get_keyword('order_way', self.vc_event.ve_params,'');
        self.prev_order_way_str := get_keyword('prev_order_way', self.vc_event.ve_params,'');
 
-       if (self.order_way_str='' ){
+        if (self.order_way_str='' )
+        {
           self.order_way_str:='ASC';
-          if(self.order_by_str='date') self.order_way_str:='DESC';
+          if (self.order_by_str='date')
+            self.order_way_str:='DESC';
        }
-
-       if (self.prev_order_way_str='') self.prev_order_way_str:=self.order_way_str;
-
+        if (self.prev_order_way_str='')
+          self.prev_order_way_str:=self.order_way_str;
        self.order_full_str:=' order by ';
        self.order_full_str:=self.order_full_str||(case when self.order_by_str='date'    then '_date'
                                                        when self.order_by_str='creator' then '_from'
@@ -85,11 +82,8 @@
     {
       declare h vspx_data_set;
       declare g vspx_data_source;
---      dbg_obj_print ('+++++++++++++++++++++++++++++++++++++++++++++++++++++ cancel_article = ',
---                     cancel_article);
       ns_delete_message (cancel_article, 1);
       g := udt_get (self, 'dss');
---		  g.vc_reset ();
       g.ds_rows_offs := 0;
       g.vc_data_bind (e);
       h := udt_get (self, 'ds_list_message');
@@ -129,35 +123,6 @@
                      control.ds_make_statistic();
                    </v:after-data-bind>
     </v:data-source>               
-<!--
-
-    <v:data-source nrows="10"
-                   initial-offset="0"
-                   name="dss"
-                   expression-type="sql">
-      <v:expression>
-        <![CDATA[
-          select _datestr, _subj, _from, _nm_id from 
-          nntpf_group_list_sp(_group, _orderby)
-                             (_datestr varchar,
-                              _subj varchar,
-                              _from varchar,
-                              _nm_id varchar) nntpf_group_list               
-          where _group = ? and _orderby = ?
-        ]]>
-      </v:expression>
-      <v:column name="_datestr" />
-      <v:column name="_subj" />
-      <v:column name="_from" />
-      <v:column name="_nm_id" />
-      <v:param name="P1" value="self.grp_sel_no_thr" />
-      <v:param name="P2" value="self.order_full_str" />
-      <v:after-data-bind>
-         control.ds_make_statistic ();
-      </v:after-data-bind>
-    </v:data-source>               
--->                   
-
     <v:data-set name="ds_list_message"
                 data-source="self.dss"
                 scrollable="1"
@@ -311,23 +276,25 @@
           <?vsp
   if (not self.art_id = control.te_rowset[3])
     {
-      http (sprintf ('<tr class="%s">',
-            case when mod (self.r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
+              http (sprintf ('<tr class="%s">', case when mod (self.r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
     }
   else
     {
       http (sprintf ('<tr class="article_listing_current">'));
     }
           ?>
-          <td><span class="dc-date">
+          <td>
+            <span class="dc-date">
             <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s" width="80"/>
               </span>
           </td>
-          <td><span class="dc-subject">
+          <td>
+            <span class="dc-subject">
             <v:label value="--sprintf('%V', (control.vc_parent as vspx_row_template).te_rowset[2])" format="%s" width="80"/>
               </span>
           </td>
-          <td><span class="dc-creator">
+          <td>
+            <span class="dc-creator">
             <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s" width="80"/>
               </span>
           </td>
@@ -339,24 +306,20 @@
             <?vsp
   if (nntpf_show_cancel_link (control.te_rowset[3]))
     {
-      http (sprintf (' | <a href="#" onclick="javascript: doPostValueN (''nntpf'', ''cancel_artic'', ''%s''); return false">Cancel</a>',
-                     control.te_rowset[3]));
+                http (sprintf (' | <a href="#" onclick="javascript: doPostValueN (''nntpf'', ''cancel_artic'', ''%s''); return false">Cancel</a>', control.te_rowset[3]));
     }
             ?>
             </td>
            <td align="left">
-               <v:url value="--sprintf('tags (%d)', discussions_tagscount(cast (self.grp_sel_no_thr as varchar),sprintf ('%s', encode_base64 (cast ((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))),case when length(self.u_name)>0 then (select U_ID from DB.DBA.SYS_USERS where U_NAME=self.u_name) else '-1' end) )"
+              <v:url value="--sprintf('tags (%d)', discussions_tagscount(cast (self.grp_sel_no_thr as varchar), sprintf ('%U', encode_base64 (cast ((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))),case when length(self.u_name)>0 then (select U_ID from DB.DBA.SYS_USERS where U_NAME=self.u_name) else '-1' end) )"
                     url="--'javascript:void(0)'"
                     xhtml_class="nntp_group_rss"
                     xhtml_onClick="--concat ('showTagsDiv(\'',cast (self.grp_sel_no_thr as varchar),'\'',
-                                                         ',\'',sprintf ('%s', encode_base64 (cast ((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))),'\',this)')"
-                  enabled="--(case when length(self.u_name)>0 or discussions_tagscount(cast (self.grp_sel_no_thr as varchar),sprintf ('%s', encode_base64 (cast ((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))),case when length(self.u_name)>0 then (select U_ID from DB.DBA.SYS_USERS where U_NAME=self.u_name) else '-1' end)>0 then 1 else 0 end)"
-
+                                                           ',\'', sprintf ('%U', encode_base64 (cast ((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))),'\',this)')"
+                     enabled="--(case when length(self.u_name)>0 or discussions_tagscount(cast (self.grp_sel_no_thr as varchar),sprintf ('%U', encode_base64 (cast ((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))),case when length(self.u_name)>0 then (select U_ID from DB.DBA.SYS_USERS where U_NAME=self.u_name) else '-1' end)>0 then 1 else 0 end)"
                />
-               <v:label value="--'tags (0)'" enabled="--(case when length(self.u_name)=0 and discussions_tagscount(cast (self.grp_sel_no_thr as varchar),sprintf ('%s', encode_base64 (cast ((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))),case when length(self.u_name)>0 then (select U_ID from DB.DBA.SYS_USERS where U_NAME=self.u_name) else '-1' end)=0 then 1 else 0 end)"/>
-
+              <v:label value="--'tags (0)'" enabled="--(case when length(self.u_name)=0 and discussions_tagscount(cast (self.grp_sel_no_thr as varchar),sprintf ('%U', encode_base64 (cast ((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))),case when length(self.u_name)>0 then (select U_ID from DB.DBA.SYS_USERS where U_NAME=self.u_name) else '-1' end)=0 then 1 else 0 end)"/>
            </td>
-
           <?vsp
   http('</tr>');
   self.r_count := self.r_count + 1;
@@ -367,9 +330,6 @@
         <table width="100%" class="news_summary_encapsul" cellspacing="0" cellpadding="0">
           <tr>
             <td align="center" colspan="4">
-<!--              
-              <v:button name="ds_list_message_first" style="url" action="simple" value="&lt;&lt;"/>
--->
               <![CDATA[&nbsp;]]>
               <v:button name="ds_list_message_prev" style="url" action="simple" value="&lt;"/>
               <![CDATA[&nbsp;]]>
@@ -384,29 +344,15 @@ _pages:=ceiling(_total_rows/_nrows);
 if(self.ds_list_message.ds_data_source.ds_total_pages<_pages)
    self.ds_list_message.ds_data_source.ds_total_pages:=_pages;
 ?>
-              
 	      <v:template name="template_pager" type="page-navigator">
-<!--
-                   <v:button
-                     name="ds_list_message_pager"
-                     style="url"
-                     action="simple"
-                     value="--sprintf ('%d..%d', (self.ds_list_message.ds_data_source.ds_current_pager_idx - 1) * self.article_list_lenght + 1,
-                                                 __min (self.ds_list_message.ds_data_source.ds_current_pager_idx * self.article_list_lenght,
-                                                 self.ds_list_message.ds_data_source.ds_total_rows))"
-                     xhtml_disabled="--case when self.ds_list_message.ds_data_source.ds_current_pager_idx = self.ds_list_message.ds_data_source.ds_current_page then 'true' else '@@hidden@@' end"
-                     xhtml_style="--case when self.ds_list_message.ds_data_source.ds_current_pager_idx = self.ds_list_message.ds_data_source.ds_current_page then 'width:24pt;color:red;font-weight:bolder;text-decoration:underline' else 'width:24pt' end"
-                   />
--->
 <?vsp
 declare _enabled integer;
+
 _enabled:=0;
 if(self.ds_list_message.ds_data_source.ds_total_pages >= self.ds_list_message.ds_data_source.ds_current_pager_idx)
   _enabled:=1;;
 ?>
-
-                   <v:button
-                     name="ds_list_message_pager"
+                <v:button name="ds_list_message_pager"
                      style="url"
                      action="simple"
                      value="--cast(self.ds_list_message.ds_data_source.ds_current_pager_idx as varchar)"
@@ -415,21 +361,14 @@ if(self.ds_list_message.ds_data_source.ds_total_pages >= self.ds_list_message.ds
                      enabled ="_enabled"
                    />
 			<?vsp
-
-		
 				if (self.ds_list_message.ds_data_source.ds_total_pages - self.ds_list_message.ds_data_source.ds_current_pager_idx > 0)
 				   http ('&nbsp; | &nbsp;');
 			?>
                 </v:template>
                 
               <![CDATA[&nbsp;]]>
-              <v:button name="ds_list_message_next" style="url" action="simple" value="&gt;"
-                        enabled ="_enabled"
-              />
+              <v:button name="ds_list_message_next" style="url" action="simple" value="&gt;" enabled ="_enabled"/>
               <![CDATA[&nbsp;]]>
-<!--
-              <v:button name="ds_list_message_last" style="url" action="simple" value="&gt;&gt;"/>
--->
 	      <input type="hidden" name="group" value="<?= get_keyword ('group', self.vc_page.vc_event.ve_params) ?>"/>
 	      <input type="hidden" name="view" value="<?= self.article_list_lenght ?>"/>
 	      <input type="hidden" name="old_view" value="<?=self.old_view?>"/>
@@ -457,7 +396,9 @@ if(self.ds_list_message.ds_data_source.ds_total_pages >= self.ds_list_message.ds
       <?vsp
       nntpf_display_article ((id), NULL, self.sid);
       ?>
-      </td></tr></table>
+            </td>
+          </tr>
+        </table>
       <?vsp
           }
 ?>

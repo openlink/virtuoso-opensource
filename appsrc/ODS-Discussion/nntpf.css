@@ -28,18 +28,20 @@ body
   font-size: 9pt;
   color: #233;
   padding: 0;
-  margin: 0}
+  margin: 0;
 }
 
 #HD { float: left; clear: left; width: 100%}
 #MD { float: left; clear: left; width: 100%;background-color: #e3eff5}
 
-div.page_head {
+div.page_head
+{
   width: 100%;
   margin: 0;
   padding: 0;
   background-color: #fff;
-  vertical-align: middle}
+  vertical-align: middle
+}
 
 a 
 {
@@ -300,7 +302,9 @@ width: 75px;
   background-image: url(images/default_widget.png);
   background-repeat: repeat-x;
 }
-.news_view_number {
+
+.news_view_number
+{
   padding: 4px;
   margin: 4px;
   background-color: #DAE2E5;
@@ -353,7 +357,7 @@ div.copyright
   border-top: 2px solid #fff;
   margin-right: 10px;
   background-color: #fff;
-  background-image: url(images/ods_main_footer.png);}
+  background-image: url(images/ods_main_footer.png);
 }
 
 table.user_id
@@ -510,18 +514,22 @@ span.thr_msg_sel
     margin-left: 10px;
 }
 
-#FT_L { float: left;
+#FT_L {
+  float: left;
   clear: left;
   margin-top: 10px;
   margin-left: 8px;
-  border: 1px solid #788}
+  border: 1px solid #788;
+}
 
-#FT_R { float: right;
+#FT_R {
+  float: right;
   clear: right;
   margin-top: 10px;
   margin-bottom: 10px;
   margin-right: 5px;
-  color: #788}
+  color: #788;
+}
 
 #FT_R a {
   text-decoration: none;
@@ -537,13 +545,16 @@ background: #FFFFFF;
 border: 1px solid #67A3BD;
 }
 
-table.tab_deck {
+table.tab_deck
+{
   margin: 0;
   padding: 0;
   border: 1px solid #444;}
 
-td.tab_deck {
-  margin:0;padding:0;}
+td.tab_deck
+{
+  margin:0;padding:0;
+}
 
 table.navtab_tabs_ctr {
   margin: 0;
@@ -555,18 +566,26 @@ tr.navtab_row {
 tr.navtab_row td {
   margin:0px;
   padding:3px 10px 3px 10px;
-  border-right: 1px solid #FFFFFF;}
+  border-right: 1px solid #FFFFFF;
+}
+
 tr.navtab_row td a { 
   display: block;
   margin: 0;
   padding: 4px;
   text-decoration: none;
-  color: #333;}
+  color: #333;
+}
+
 td.navtab_sel {
   margin: 0px;
   padding: 0px;
-  background-color: #FFFFFF}
+  background-color: #FFFFFF;
+}
+
 td.navtab_sel a {}
+
 td.navtab:hover {
-  background-color: #adf}
+  background-color: #adf;
+}
 

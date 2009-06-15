@@ -24,10 +24,9 @@
 create procedure discussions_dropinvalid_tagstable()
 {
     declare c_count integer;
-    c_count:=0;
 
+  c_count := 0;
     SELECT count(c."COLUMN") into c_count from  "SYS_COLS" c where c."TABLE"='DB.DBA.NNTPF_TAG';
-
     if(c_count>2)
        nntpf_exec_no_error ('drop table NNTPF_TAG');
 
@@ -38,11 +37,14 @@ nntpf_exec_no_error ('discussions_dropinvalid_tagstable()')
 nntpf_exec_no_error ('drop procedure discussions_dropinvalid_tagstable')
 ;
 
-
-nntpf_exec_no_error ('create table NNTPF_TAG (
+nntpf_exec_no_error (
+'create table NNTPF_TAG (
                         NT_TAGS varchar,
                         NT_COUNT integer,
-                      primary key (NT_TAGS))')
+
+   primary key (NT_TAGS)
+ )
+')
 ;
 
 create procedure discussions_dropinvalid_ngroup_post_tags_table()
@@ -58,16 +60,19 @@ nntpf_exec_no_error ('discussions_dropinvalid_ngroup_post_tags_table()')
 nntpf_exec_no_error ('drop procedure discussions_dropinvalid_ngroup_post_tags_table')
 ;
 
-nntpf_exec_no_error ('create table NNTPF_NGROUP_POST_TAGS (
+nntpf_exec_no_error (
+'create table NNTPF_NGROUP_POST_TAGS (
                         NNPT_NGROUP_ID integer,
                         NNPT_POST_ID varchar,
                         NNPT_ID integer identity,
                         NNPT_UID integer,
                         NNPT_TAGS varchar,
-                      constraint FK_NNTPF_TAG_GROUPS FOREIGN KEY (NNPT_NGROUP_ID) references DB.DBA.NEWS_GROUPS (NG_GROUP) on delete cascade,
-                      primary key (NNPT_NGROUP_ID, NNPT_POST_ID,NNPT_UID))')
-;
 
+                      constraint FK_NNTPF_TAG_GROUPS FOREIGN KEY (NNPT_NGROUP_ID) references DB.DBA.NEWS_GROUPS (NG_GROUP) on delete cascade,
+   primary key (NNPT_NGROUP_ID, NNPT_POST_ID,NNPT_UID)
+ )
+')
+;
 
 nntpf_exec_no_error ('create index NNTPF_TAG_POST_ID on NNTPF_NGROUP_POST_TAGS (NNPT_POST_ID)')
 ;
@@ -78,19 +83,15 @@ create procedure NNTPF_NGROUP_POST_TAGS_NNPT_TAGS_INDEX_HOOK(inout vtb any, inou
   declare _uid any;
 
   declare exit handler for not found { goto nf;};
-  select
-    NNPT_UID
-  into
-    _uid
-  from
-    NNTPF_NGROUP_POST_TAGS
-  where
-    NNPT_ID = d_id;
+  select NNPT_UID
+    into _uid
+    from NNTPF_NGROUP_POST_TAGS
+   where NNPT_ID = d_id;
 
-  if(_uid is null) goto nf;
+  if (_uid is null)
+    goto nf;
 
   vt_batch_feed(vtb, sprintf('^UID%d',_uid), 0);
-
   nf:
   return 0;
 }
@@ -101,32 +102,21 @@ create procedure NNTPF_NGROUP_POST_TAGS_NNPT_TAGS_UNINDEX_HOOK(inout vtb any, in
   declare _uid any;
 
   declare exit handler for not found { goto nf;};
-  select
-    NNPT_UID
-  into
-    _uid
-  from
-    NNTPF_NGROUP_POST_TAGS
-  where
-    NNPT_ID = d_id;
+  select NNPT_UID
+    into _uid
+    from NNTPF_NGROUP_POST_TAGS
+   where NNPT_ID = d_id;
 
-
-  if(_uid is null) goto nf;
+  if(_uid is null)
+    goto nf;
 
   vt_batch_feed(vtb, sprintf('^UID%d',_uid), 1);
-
   nf:
   return 0;
 }
 ;
 
-
-
-nntpf_exec_no_error ('
-                      CREATE TEXT INDEX ON NNTPF_NGROUP_POST_TAGS (NNPT_TAGS) WITH KEY NNPT_ID
-                      CLUSTERED WITH (NNPT_ID) USING FUNCTION LANGUAGE \'x-ViDoc\' ENCODING \'UTF-8\'
-                    ')
-;
+nntpf_exec_no_error ('CREATE TEXT INDEX ON NNTPF_NGROUP_POST_TAGS (NNPT_TAGS) WITH KEY NNPT_ID CLUSTERED WITH (NNPT_ID) USING FUNCTION LANGUAGE \'x-ViDoc\' ENCODING \'UTF-8\'');
 
 create trigger NEWS_MULTI_MSG_D_NGROUP_POST_TAGS after delete on NEWS_MULTI_MSG referencing old as O
 {
@@ -148,23 +138,33 @@ nf:
   return;
 };
 
+create procedure discussions_decode_post_id (in post_id varchar)
+{
+  if (not isnull (post_id))
+{
+    declare V any;
+
+    V := split_and_decode (post_id);
+    if (isarray (V) and length (V) > 0)
+      post_id := V[0];
+  }
+  return decode_base64(post_id);
+}
+;
+
 create procedure discussions_dotag_int (in ngroup_id varchar, in post_id varchar, in tag varchar, in do_action varchar, in _uid integer )
 {
-
-
-  post_id:=decode_base64(post_id);
+  post_id := discussions_decode_post_id (post_id);
 
   declare _ngroup_id integer;
   _ngroup_id:=cast(ngroup_id as integer);
 
-
   if(do_action='add')
   {
-
     declare inc_stat,i integer;
-    inc_stat:=0;
-
     declare _tags_arr any;
+
+    inc_stat := 0;
     _tags_arr:=split_and_decode (tag, 0, '\0\0 ');
 
     if(not exists( select 1 from NNTPF_TAG where NT_TAGS=tag ))
@@ -180,8 +180,7 @@ create procedure discussions_dotag_int (in ngroup_id varchar, in post_id varchar
 
       curr_tags_arr:=split_and_decode (new_tag_cont, 0, '\0\0,');
 
-      i:=0;
-      while(i<length(_tags_arr))
+      for (i := 0; i<length(_tags_arr); i := i+1)
       {
         declare _elm_pos integer;
         _elm_pos:=0;
@@ -190,8 +189,9 @@ create procedure discussions_dotag_int (in ngroup_id varchar, in post_id varchar
            _elm_pos:=position (_tags_arr[i],curr_tags_arr);
 
         if(_elm_pos<>0 or length(trim(_tags_arr[i]))=0)
+        {
              inc_stat:=0;
-        else {
+        } else {
              if (length(trim(new_tag_cont))=0)
                  new_tag_cont:=_tags_arr[i];
              else
@@ -200,31 +200,17 @@ create procedure discussions_dotag_int (in ngroup_id varchar, in post_id varchar
              update NNTPF_NGROUP_POST_TAGS set NNPT_TAGS=new_tag_cont where NNPT_NGROUP_ID=_ngroup_id and NNPT_POST_ID=post_id and NNPT_UID=_uid;
              inc_stat:=1;
         }
-
         if(inc_stat)
          update NNTPF_TAG set NT_COUNT=NT_COUNT+1 where NT_TAGS=_tags_arr[i];
-
-        i:=i+1;
-
       }
-
-    }else
-     {
+    } else {
       insert into NNTPF_NGROUP_POST_TAGS(NNPT_NGROUP_ID,NNPT_POST_ID,NNPT_UID,NNPT_TAGS) values (_ngroup_id,post_id,_uid,nntpf_implode(_tags_arr,','));
-
-      i:=0;
-      while(i<length(_tags_arr))
-      {
---      update NNTPF_TAG set NT_COUNT=NT_COUNT+1 where NT_TAGS in (nntpf_implode(_tags_arr,'\',\''));
+      for (i := 0; i<length(_tags_arr); i := i+1)
       update NNTPF_TAG set NT_COUNT=NT_COUNT+1 where NT_TAGS=_tags_arr[i];
-         i:=i+1;
       }
     }
-
-
-  }else if(do_action='del')
+  else if (do_action='del')
   {
-
     declare dec_stat integer;
     dec_stat:=0;
 
@@ -263,10 +249,10 @@ create procedure discussions_dotag_int (in ngroup_id varchar, in post_id varchar
 
 create procedure discussions_taglist(in ngroup_id varchar, in post_id varchar, in u_id integer)
 {
+  post_id := discussions_decode_post_id (post_id);
+
     declare _ngroup_id integer;
     _ngroup_id:=cast(ngroup_id as integer);
-
-    post_id:=decode_base64(post_id);
 
     declare _tags varchar;
     _tags:='';
@@ -277,7 +263,6 @@ create procedure discussions_taglist(in ngroup_id varchar, in post_id varchar, i
     _end:
     
       _tags:=vector(_tags,',###,',discussions_admin_taglist(ngroup_id,post_id,u_id));
-    
     return _tags;
 }
 ;
@@ -286,16 +271,15 @@ create procedure discussions_admin_taglist(in ngroup_id varchar, in post_id varc
     declare _ngroup_id integer;
     _ngroup_id:=cast(ngroup_id as integer);
 
-
-    post_id:=decode_base64(post_id);
+  post_id := discussions_decode_post_id (post_id);
 
     declare _tags,_admin_tags varchar;
     _tags:='';
-
-    for 
-      select NNPT_TAGS from NNTPF_NGROUP_POST_TAGS where NNPT_NGROUP_ID=_ngroup_id and NNPT_POST_ID=post_id and
-             NNPT_UID in (select U_ID from SYS_USERS where U_GROUP in (0,3) and U_ID<> exclude_user_id) 
-    do
+  for (select NNPT_TAGS
+         from NNTPF_NGROUP_POST_TAGS
+        where NNPT_NGROUP_ID=_ngroup_id
+          and NNPT_POST_ID=post_id
+          and NNPT_UID in (select U_ID from SYS_USERS where U_GROUP in (0,3) and U_ID<> exclude_user_id)) do
     {
       if(length(NNPT_TAGS))
       {
@@ -314,6 +298,7 @@ create procedure discussions_admin_taglist(in ngroup_id varchar, in post_id varc
 create procedure discussions_tagscount(in ngroup_id varchar, in post_id varchar, in u_id integer )
 {
     declare _ngroup_id integer;
+
     _ngroup_id:=cast(ngroup_id as integer);
 
     declare tags,_tags_arr,_admin_tags_arr any;
@@ -322,10 +307,8 @@ create procedure discussions_tagscount(in ngroup_id varchar, in post_id varchar,
     _tags_arr := split_and_decode (tags[0], 0, '\0\0,');
     _admin_tags_arr:=split_and_decode (tags[2], 0, '\0\0,');
 
-
     if(length(_tags_arr) or length(_admin_tags_arr))
        return length(_tags_arr)+length(_admin_tags_arr);
-    else
       return 0;
 }
 ;
