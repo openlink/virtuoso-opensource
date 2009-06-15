@@ -850,7 +850,7 @@ namespace OpenLink.Data.Virtuoso
                     			return column.data.ToString();
             		}
             		else
-			return column.data;
+				return column.data;
 		}
 
 		private void ResetColumn (int i)

@@ -82,6 +82,7 @@ namespace OpenLink.Data.Virtuoso
 		{
 			SQL_C_DEFAULT = 99,
 			SQL_C_CHAR = SqlType.SQL_CHAR,
+			SQL_C_BIGINT = SqlType.SQL_BIGINT,
 			SQL_C_LONG = SqlType.SQL_INTEGER,
 			SQL_C_SHORT = SqlType.SQL_SMALLINT,
 			SQL_C_FLOAT = SqlType.SQL_REAL,
