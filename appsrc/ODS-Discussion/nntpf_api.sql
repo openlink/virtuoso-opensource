@@ -24,9 +24,10 @@
 -- discussion.group.add
 -- discussion.group.get
 -- discussion.group.remove
--- discussion.message.get
 -- discussion.feed.new
 -- discussion.feed.remove
+-- discussion.message.new
+-- discussion.message.get
 -- discussion.comment.new
 -- discussion.comment.get
 
@@ -106,9 +107,6 @@ create procedure ODS.ODS_API."discussion.group.new" (
   return ods_serialize_int_res (rc);
 }
 ;
-
--- discussion.feed.new
--- discussion.feed.remove
 
 -------------------------------------------------------------------------------
 --

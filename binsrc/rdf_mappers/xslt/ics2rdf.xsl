@@ -161,7 +161,7 @@
     </xsl:template>
 
     <xsl:template match="URL|DIR" priority="1">
-	<ical:url rdf:resource="{.}"/>
+	<ical:url rdf:resource="{val}"/>
     </xsl:template>
 
     <xsl:template match="*">

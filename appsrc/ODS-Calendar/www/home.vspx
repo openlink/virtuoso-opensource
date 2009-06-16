@@ -969,6 +969,7 @@
       <v:variable name="icSource" type="any" default="-1" />
       <v:variable name="icUser" type="varchar" />
       <v:variable name="icPassword" type="varchar" />
+      <v:variable name="icSync" type="integer" default="1" />
 
       <v:variable name="exType" type="integer" />
       <v:variable name="exName" type="varchar" />
@@ -1304,6 +1305,7 @@
                     self.v_tags := '';
                           self.icUser := '';
                           self.icPassword := '';
+                          self.icSync := 1;
                   }
                         else if (cCommand = 'export')
                         {
@@ -3867,6 +3869,15 @@
                 </td>
               </tr>
               <?vsp self.myTags ('i_tags'); ?>
+                  <tr>
+                    <th />
+                    <td>
+                      <label>
+                        <v:check-box name="i_sync" is-boolean="1" true-value="1" false-value="0" value="--self.icSync" />
+                        <b>Sync after import</b>
+                      </label>
+                    </td>
+                  </tr>
           </table>
         </div>
 
@@ -3940,7 +3951,7 @@
                   self.v_tags := CAL.WA.vector2tags (tmp);
 
                   -- vCard
-                          CAL.WA.import_vcal (self.domain_id, content, vector ('tags', self.v_tags, 'events', 1, 'tasts', 1));
+                      CAL.WA.import_vcal (self.domain_id, content, vector ('tags', self.v_tags, 'events', 1, 'tasts', 1, 'sync', self.i_sync.ufl_selected));
 
                       commit work;
                   self.cAction := 'browse';

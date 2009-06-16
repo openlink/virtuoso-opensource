@@ -23,14 +23,14 @@
 
 -- This is not complete UDT definition.
 -- It is an example for applications that are not fully function and integrated to ODS Framework.
--- It is an example for minimun definition that will give minimu integration to ODS Framework.
+-- It is an example for minimum definition that will give minimum integration to ODS Framework.
 -- application of the type used in the example can not have instances.
 
 
 USE "ODS"
 ;
 -- this will define the type of the application so it's name will be possible to change, and it will be part of ODS Framework navigation
--- be carefull with WAT_MAXINST it should be exactli 1. If 0 application will not be shown in ODS. If more then 1 you will have access to this application as it is defined to have multiple instances(types defined this way do not support that).
+-- be careful with WAT_MAXINST it should be exactly 1. If 0 application will not be shown in ODS. If more then 1 you will have access to this application as it is defined to have multiple instances(types defined this way do not support that).
 
 insert replacing DB.DBA.WA_TYPES(WAT_NAME, WAT_DESCRIPTION, WAT_TYPE, WAT_REALM,WAT_MAXINST) values ('Discussion', 'Discussion', 'ODS.DISCUSSION.discussion', 'wa',1)
 ;
@@ -62,7 +62,7 @@ create constructor method discussion (inout stream any) for ODS.DISCUSSION.discu
 }
 ;
 
--- This method is essention. It return the path where user will be relocated when he has clicked on application tab in ODS navigation.
+-- This method is essential. It return the path where user will be relocated when he has clicked on application tab in ODS navigation.
 create method wa_home_url () for ODS.DISCUSSION.discussion {
   declare uri,ods_url, vspx_user varchar;
   ods_url:=coalesce(registry_get ('wa_home_link'),'/ods');
