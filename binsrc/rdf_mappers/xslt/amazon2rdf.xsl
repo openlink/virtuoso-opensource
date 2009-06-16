@@ -123,6 +123,14 @@
 		</gr:hasPriceSpecification>
     </xsl:template>
 
+    <xsl:template match="Manufacturer" mode="gr">
+		<gr:hasManufacturer>
+		  <gr:BusinessEntity>
+            <gr:legalName><xsl:value-of select="."/></gr:legalName>
+          </gr:BusinessEntity>
+		</gr:hasManufacturer>
+    </xsl:template>
+    
     <xsl:template match="*" mode="bibo">
 	<xsl:apply-templates select="self::*"/>
     </xsl:template>
@@ -132,11 +140,13 @@
     </xsl:template>
     
     <xsl:template match="*[starts-with(.,'http://') or starts-with(.,'urn:')]">
+    <xsl:if test="string-length(.) &gt; 0">
 	<xsl:element namespace="{$ns}" name="{name()}">
 	    <xsl:attribute name="rdf:resource">
 		<xsl:value-of select="vi:proxyIRI (.)"/>
 	    </xsl:attribute>
 	</xsl:element>
+	</xsl:if>
     </xsl:template>
 
     <xsl:template match="*[* and ../../*]">
@@ -147,8 +157,10 @@
     </xsl:template>
 
     <xsl:template match="*">
+    <xsl:if test="string-length(.) &gt; 0">
 	<xsl:element namespace="{$ns}" name="{name()}">
 	    <xsl:apply-templates select="@*|node()"/>
 	</xsl:element>
+	</xsl:if>
     </xsl:template>
 </xsl:stylesheet>

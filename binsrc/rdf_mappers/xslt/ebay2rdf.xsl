@@ -77,11 +77,13 @@
     </xsl:template>
 
     <xsl:template match="*[starts-with(.,'http://') or starts-with(.,'urn:')]">
+    <xsl:if test="string-length(.) &gt; 0">
 	<xsl:element namespace="{$ns}" name="{name()}">
 	    <xsl:attribute name="rdf:resource">
 		<xsl:value-of select="."/>
 	    </xsl:attribute>
 	</xsl:element>
+	</xsl:if>
     </xsl:template>
 
     <xsl:template match="Title">
@@ -114,8 +116,10 @@
     </xsl:template>
 
     <xsl:template match="*">
+    <xsl:if test="string-length(.) &gt; 0">
 	<xsl:element namespace="{$ns}" name="{name()}">
 	    <xsl:apply-templates select="@*|node()"/>
 	</xsl:element>
+	</xsl:if>
     </xsl:template>
 </xsl:stylesheet>
