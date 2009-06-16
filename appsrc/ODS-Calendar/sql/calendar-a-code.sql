@@ -2254,15 +2254,9 @@ create procedure CAL.WA.dt_deformat (
   in pString varchar,
   in pFormat varchar := 'd.m.Y')
 {
-  declare
-    y,
-    m,
-    d integer;
-  declare
-    N,
-    I integer;
-  declare
-    ch varchar;
+  declare y, m, d integer;
+  declare N, I integer;
+  declare ch varchar;
 
   pFormat := CAL.WA.dt_formatTemplate (pFormat);
   N := 1;
@@ -2270,21 +2264,23 @@ create procedure CAL.WA.dt_deformat (
   d := 0;
   m := 0;
   y := 0;
-  while (N <= length (pFormat)) {
+  while (N <= length (pFormat))
+  {
     ch := upper (substring (pFormat, N, 1));
     if (ch = 'M')
       m := CAL.WA.dt_deformat_tmp (pString, I);
     if (ch = 'D')
       d := CAL.WA.dt_deformat_tmp (pString, I);
-    if (ch = 'Y') {
+    if (ch = 'Y')
+    {
       y := CAL.WA.dt_deformat_tmp (pString, I);
       if (y < 50)
         y := 2000 + y;
       if (y < 100)
         y := 1900 + y;
-    };
+    }
     N := N + 1;
-  };
+  }
   return stringdate(concat(cast (m as varchar), '.', cast (d as varchar), '.', cast (y as varchar)));
 }
 ;
@@ -5261,7 +5257,7 @@ create procedure CAL.WA.import_vcal (
   in updatedBefore integer := null)
 {
   declare N, nLength integer;
-  declare oEvents, oTasks, oTags any;
+  declare oEvents, oTasks, oTags, oSync any;
   declare tmp, xmlData, xmlItems, itemName, V any;
   declare id,
           uid,
@@ -5294,11 +5290,13 @@ create procedure CAL.WA.import_vcal (
   oEvents := 1;
   oTasks := 1;
   oTags := '';
+  oSync := 0;
   if (not isnull (options))
   {
     oEvents := cast (get_keyword ('events', options, oEvents) as integer);
     oTasks := cast (get_keyword ('tasks', options, oTasks) as integer);
     oTags := get_keyword ('tags', options, '');
+    oSync := cast (get_keyword ('sync', options, oSync) as integer);
   }
 
   -- using DAV parser
@@ -5471,6 +5469,15 @@ create procedure CAL.WA.import_vcal (
     }
   }
 }
+  -- sync calendars
+  if (oSync)
+  {
+    for (select EX_ID from CAL.WA.EXCHANGE where EX_DOMAIN_ID = domain_id and EX_TYPE = 0) do
+    {
+      CAL.WA.exchange_exec (EX_ID);
+      commit work;
+    }
+  }
   return vcalImported;
 }
 ;
