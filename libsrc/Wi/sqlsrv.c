@@ -1919,7 +1919,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
       return;
     }
 
-  _2pc_printf(("got a tp massage=%x cli %p\n",op,cli));
+  _2pc_printf(("got a tp massage=%x cli %p, lt_threads: %d\n", op, cli, cli->cli_trx ? cli->cli_trx->lt_threads : -1));
   switch (op)
     {
     case SQL_TP_UNENLIST:
@@ -2060,13 +2060,27 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	  {
 	    NEW_VAR(tp_future_t,future);
 	    tp_message_t * msg;
+	    lock_trx_t * curr_lt;
 	    /*
 	      tp_data_t * tpd = cli->cli_tp_data;
 	    */
-	    lock_trx_t * curr_lt;
 	    if (!tpd)
 	      GPF_T;
 	    curr_lt = tpd->cli_tp_lt;
+
+	    if (!curr_lt)
+	      {
+		virt_xa_remove_xid (xid);
+		lt_enter_anyway (cli->cli_trx);
+		IN_TXN;
+		lt_rollback (cli->cli_trx, TRX_FREE);
+		LEAVE_TXN;
+		err = srv_make_new_error ("TP110", "XA01", "Wrong sequence [%s]", xid_str);
+		DKST_RPC_DONE (client);
+		PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
+		dk_free_tree (err);
+		return;
+	      }
 
 	    if ((op == SQL_XA_COMMIT) && (curr_lt->lt_status == LT_PENDING))
 	      {

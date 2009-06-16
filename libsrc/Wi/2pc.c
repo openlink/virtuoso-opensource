@@ -612,7 +612,8 @@ lt_2pc_commit (lock_trx_t * lt)
 #ifdef MSDTC_DEBUG
   lt->lt_in_mts = 0;
 #endif
-  lt_restart (lt, TRX_CONT);
+  lt_restart (lt, TRX_CONT_LT_LEAVE);
+  IN_TXN;
 
   return LTE_OK;
 }
@@ -993,7 +994,7 @@ tp_get_server_uuid ()
 {
 #if defined (UUID_BY_PORT)
 
-#if defined (_REENTRANT)
+#if defined (_REENTRANT) && (defined (linux) || defined (SOLARIS))
   char buff[4096];
   int herrnop;
   struct hostent ht;
@@ -1363,9 +1364,7 @@ virt_xa_client (void *xid, struct tp_data_s **tpd, int op)
 	  memcpy (&x->xid, xid, sizeof (virtXID));
 	  xid = (void *) &x->xid;
 	  x->xid_sem = semaphore_allocate (0);
-	  id_hash_set (global_xa_map->xm_xids, (caddr_t) & xid,
-	      (caddr_t) & x);
-
+	  id_hash_set (global_xa_map->xm_xids, (caddr_t) & xid, (caddr_t) & x);
 	  mutex_leave (global_xa_map->xm_mtx);
 	  semaphore_enter (x->xid_sem);
 
