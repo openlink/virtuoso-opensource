@@ -574,10 +574,16 @@ namespace OpenLink.Data.Virtuoso
 
 		internal static Int64 UnmarshalInt64 (Stream stream)
 		{
-		  	Int64 i1, i2;
-			i1 = UnmarshalLongInt (stream);
-			i2 = UnmarshalLongInt (stream);
-			return (i1 << 32) | i2;
+			long ret;
+			ret = ((long)ReadByte(stream) & 0xff) << 56;
+			ret |= ((long)ReadByte(stream) & 0xff) << 48;
+			ret |= ((long)ReadByte(stream) & 0xff) << 40;
+			ret |= ((long)ReadByte(stream) & 0xff) << 32;
+			ret |= ((long)ReadByte(stream) & 0xff) << 24;
+			ret |= ((long)ReadByte(stream) & 0xff) << 16;
+			ret |= ((long)ReadByte(stream) & 0xff) << 8;
+			ret |= ((long)ReadByte(stream) & 0xff);
+			return ret;
 		} 
 
 		internal static unsafe void MarshalSingle (Stream stream, float value)
