@@ -1219,8 +1219,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
           if (status is not null)
             SPARQL_WRITE_EXEC_STATUS (ses, '#%015s: %s\n', status);
 	}
-      if (
-        strstr (accept, 'text/plain') is not null)
+      else if (strstr (accept, 'text/plain') is not null)
         {
             ret_mime := 'text/plain';
           DB.DBA.RDF_TRIPLES_TO_NT (triples, ses);

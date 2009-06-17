@@ -1931,6 +1931,30 @@ create procedure DB.DBA.TTLP (in strg varchar, in base varchar, in graph varchar
 }
 ;
 
+create procedure DB.DBA.TTLP_VALIDATE (in strg varchar, in base varchar, in graph varchar := null, in flags integer := 0, in report_cbk varchar := '')
+{
+  declare app_env any;
+  declare old_log_mode int;
+  if (126 = __tag (strg))
+    strg := cast (strg as varchar);
+  return rdf_load_turtle (strg, base, graph, flags,
+    vector ('', '', '', '', '', '', report_cbk),
+    app_env);
+}
+;
+
+create procedure DB.DBA.TTLP_VALIDATE_LOCAL_FILE (in strg varchar, in base varchar, in graph varchar := null, in flags integer := 0, in report_cbk varchar := '')
+{
+  declare app_env any;
+  declare old_log_mode int;
+  if (126 = __tag (strg))
+    strg := cast (strg as varchar);
+  return rdf_load_turtle_local_file (strg, base, graph, flags,
+    vector ('', '', '', '', '', '', report_cbk),
+    app_env);
+}
+;
+
 create procedure DB.DBA.RDF_TTL2HASH_EXEC_NEW_GRAPH (inout g varchar, inout g_iid IRI_ID, inout app_env any) {
   -- dbg_obj_princ ('DB.DBA.RDF_TTL2HASH_EXEC_NEW_GRAPH(', g, g_iid, app_env, ')');
   ;

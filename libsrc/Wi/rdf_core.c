@@ -296,7 +296,7 @@ tf_get_iid (triple_feed_t *tf, caddr_t uri)
       params[1] = TF_GRAPH_ARG(tf);
       params[2] = &(tf->tf_app_env);
       params[3] = &res;
-      err = qr_exec (tf->tf_qi->qi_client, tf->tf_cbk_qrs[TRIPLE_FEED_GET_IID], tf->tf_qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);
+      err = qr_exec (tf->tf_qi->qi_client, cbk_qr, tf->tf_qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);
       BOX_DONE (params, params_buf);
     }
   if (NULL != err)
@@ -308,14 +308,17 @@ tf_get_iid (triple_feed_t *tf, caddr_t uri)
 void
 tf_new_graph (triple_feed_t *tf, caddr_t uri)
 {
+  query_t *cbk_qr = tf->tf_cbk_qrs[TRIPLE_FEED_NEW_GRAPH];
   char params_buf [BOX_AUTO_OVERHEAD + sizeof (caddr_t) * 3];
   void **params;
   caddr_t err = NULL;
+  if (NULL == cbk_qr)
+    return;
   BOX_AUTO_TYPED (void **, params, params_buf, sizeof (caddr_t) * 3, DV_ARRAY_OF_POINTER);
   params[0] = &uri;
   params[1] = TF_GRAPH_ARG(tf);
   params[2] = &(tf->tf_app_env);
-  err = qr_exec (tf->tf_qi->qi_client, tf->tf_cbk_qrs[TRIPLE_FEED_NEW_GRAPH], tf->tf_qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);
+  err = qr_exec (tf->tf_qi->qi_client, cbk_qr, tf->tf_qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);
   BOX_DONE (params, params_buf);
   if (NULL != err)
     sqlr_resignal (err);
@@ -328,12 +331,13 @@ tf_commit (triple_feed_t *tf)
   char params_buf [BOX_AUTO_OVERHEAD + sizeof (caddr_t) * 2];
   void **params;
   caddr_t err;
-  if (NULL == tf->tf_cbk_names[TRIPLE_FEED_COMMIT])
+  query_t *cbk_qr = tf->tf_cbk_qrs[TRIPLE_FEED_COMMIT];
+  if (NULL == cbk_qr)
     return;
   BOX_AUTO_TYPED (void **, params, params_buf, sizeof (caddr_t) * 2, DV_ARRAY_OF_POINTER);
   params[0] = TF_GRAPH_ARG(tf);
   params[1] = &(tf->tf_app_env);
-  err = qr_exec (tf->tf_qi->qi_client, tf->tf_cbk_qrs[TRIPLE_FEED_COMMIT], tf->tf_qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);
+  err = qr_exec (tf->tf_qi->qi_client, cbk_qr, tf->tf_qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);
   BOX_DONE (params, params_buf);
   if (NULL != err)
     sqlr_resignal (err);
@@ -373,7 +377,7 @@ tf_report (triple_feed_t *tf, char msg_type, const char *sqlstate, const char *s
   params[9] = &descr_box;
   params[10] = &(tf->tf_app_env);
   /*params[11] = &res;*/
-  err = qr_exec (tf->tf_qi->qi_client, tf->tf_cbk_qrs[TRIPLE_FEED_MESSAGE], tf->tf_qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);
+  err = qr_exec (tf->tf_qi->qi_client, cbk_qr, tf->tf_qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);
 #ifdef DEBUG
   if (NULL != err)
     {
@@ -885,6 +889,9 @@ tf_triple (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t o_uri)
   char params_buf [BOX_AUTO_OVERHEAD + sizeof (caddr_t) * 5];
   void **params;
   caddr_t err;
+  query_t *cbk_qr = tf->tf_cbk_qrs[TRIPLE_FEED_TRIPLE];
+  if (NULL == cbk_qr)
+    return;
 #ifdef DEBUG
   switch (DV_TYPE_OF (o_uri))
     {
@@ -900,7 +907,7 @@ tf_triple (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t o_uri)
   params[2] = &p_uri;
   params[3] = &o_uri;
   params[4] = &(tf->tf_app_env);
-  err = qr_exec (tf->tf_qi->qi_client, tf->tf_cbk_qrs[TRIPLE_FEED_TRIPLE], tf->tf_qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);
+  err = qr_exec (tf->tf_qi->qi_client, cbk_qr, tf->tf_qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);
   BOX_DONE (params, params_buf);
   tf->tf_triple_count++;
   if (!(tf->tf_triple_count % TF_TRIPLE_PROGRESS_MESSAGE_MOD))
@@ -914,6 +921,10 @@ void tf_triple_l (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t obj_s
   char params_buf [BOX_AUTO_OVERHEAD + sizeof (caddr_t) * 7];
   void **params;
   caddr_t err;
+  query_t *cbk_qr = tf->tf_cbk_qrs[TRIPLE_FEED_TRIPLE_L];
+  if (NULL == cbk_qr)
+    return;
+#ifdef DEBUG
   switch (DV_TYPE_OF (obj_sqlval))
     {
     case DV_LONG_INT:
@@ -923,6 +934,7 @@ void tf_triple_l (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t obj_s
     default:
       rdf_dbg_printf (("\ntf_triple_l (..., %s, %s)", obj_datatype, obj_language)); break;
     }
+#endif
   BOX_AUTO_TYPED (void **, params, params_buf, sizeof (caddr_t) * 7, DV_ARRAY_OF_POINTER);
   params[0] = TF_GRAPH_ARG(tf);
   params[1] = &s_uri;
@@ -931,7 +943,7 @@ void tf_triple_l (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t obj_s
   params[4] = &obj_datatype;
   params[5] = &obj_language;
   params[6] = &(tf->tf_app_env);
-  err = qr_exec (tf->tf_qi->qi_client, tf->tf_cbk_qrs[TRIPLE_FEED_TRIPLE_L], tf->tf_qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);
+  err = qr_exec (tf->tf_qi->qi_client, cbk_qr, tf->tf_qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);
   BOX_DONE (params, params_buf);
   tf->tf_triple_count++;
   if (!(tf->tf_triple_count % TF_TRIPLE_PROGRESS_MESSAGE_MOD))
@@ -2464,6 +2476,9 @@ caddr_t DBG_NAME (tf_bnode_iid) (DBG_PARAMS triple_feed_t *tf, caddr_t txt)
   char params_buf [BOX_AUTO_OVERHEAD + sizeof (caddr_t) * 3];
   void **params;
   caddr_t res, *hit, err;
+  query_t *cbk_qr = tf->tf_cbk_qrs[TRIPLE_FEED_NEW_BLANK];
+  if (NULL == cbk_qr)
+    return box_iri_id (min_bnode_iri_id());
   if (NULL != txt)
     {
       hit = (caddr_t *)id_hash_get (tf->tf_blank_node_ids, (caddr_t)(&(txt)));
@@ -2478,7 +2493,7 @@ caddr_t DBG_NAME (tf_bnode_iid) (DBG_PARAMS triple_feed_t *tf, caddr_t txt)
   params[0] = &(tf->tf_current_graph_uri);
   params[1] = &(tf->tf_app_env);
   params[2] = &res;
-  err = qr_exec (tf->tf_qi->qi_client, tf->tf_cbk_qrs[TRIPLE_FEED_NEW_BLANK], tf->tf_qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);
+  err = qr_exec (tf->tf_qi->qi_client, cbk_qr, tf->tf_qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);
   BOX_DONE (params, params_buf);
   if (NULL != err)
     sqlr_resignal (err);
