@@ -128,6 +128,43 @@ create procedure b3s_label_get (inout data any, in langs any)
 }
 ;
 
+create procedure b3s_rel_print (in val any, in rel any, in flag int := 0)
+{
+  declare delim, delim1, delim2, delim3 integer;
+  declare inx int;
+  declare nss, loc, nspref varchar;
+
+  delim1 := coalesce (strrchr (val, '/'), -1);
+  delim2 := coalesce (strrchr (val, '#'), -1);
+  delim3 := coalesce (strrchr (val, ':'), -1);
+  delim := __max (delim1, delim2, delim3);
+  nss := null;
+  loc := val;
+  if (delim < 0) return loc;
+  nss := subseq (val, 0, delim + 1);
+  loc := subseq (val, delim + 1);
+
+  nspref := __xml_get_ns_prefix (nss, 2);
+  if (nspref is null)
+    {
+      inx := connection_get ('ns_ctr');
+      connection_set ('ns_ctr', inx + 1);
+      nspref := sprintf ('ns%d', inx);
+    }
+
+
+  nss := sprintf ('xmlns:%s="%s"', nspref, nss);
+  if (flag)
+    loc := sprintf ('property="%s:%s"', nspref, loc);
+  else if (rel)
+    loc := sprintf ('rel="%s:%s"', nspref, loc);
+  else
+    loc := sprintf ('rev="%s:%s"', nspref, loc);
+  return concat (loc, ' ', nss);
+}
+;
+
+
 create procedure b3s_uri_curie (in uri varchar)
 {
   declare delim integer;
@@ -194,9 +231,9 @@ b3s_http_print_l (in p_text any, inout odd_position int, in r int := 0, in sid v
 ;
 
 create procedure 
-b3s_http_print_r (in _object any, in sid varchar := null)
+b3s_http_print_r (in _object any, in sid varchar, in prop any, in label any, in rel int := 1)
 {
-   declare lang, rdfs_type any;
+   declare lang, rdfs_type, rdfa any;
 
    if (_object is null) 
      return;
@@ -218,6 +255,7 @@ b3s_http_print_r (in _object any, in sid varchar := null)
        endg:;
      }
 
+   rdfa := b3s_rel_print (prop, rel, 1);
    http ('<li><span class="literal">');
 again:
    if (__tag (_object) = 246)
@@ -236,37 +274,40 @@ again:
        else
 	 _url := _object;
 
-	   http (sprintf ('<a class="uri" href="%s">%s</a>', b3s_http_url (_url, sid), b3s_uri_curie(_url)));
+       rdfa := b3s_rel_print (prop, rel, 0);
+       http (sprintf ('<a class="uri" %s href="%s">%s</a>', rdfa, b3s_http_url (_url, sid), b3s_uri_curie(_url)));
 
      }
    else if (__tag (_object) = 189)
      {
-       http (sprintf ('%d', _object));
+       http (sprintf ('<span %s>%d</span>', rdfa, _object));
        lang := 'xsd:integer';
      }
    else if (__tag (_object) = 190)
      {
-       http (sprintf ('%f', _object));
+       http (sprintf ('<span %s>%f</span>', rdfa, _object));
        lang := 'xsd:float';
      }
    else if (__tag (_object) = 191)
      {
-       http (sprintf ('%d', _object));
+       http (sprintf ('<span %s>%d</span>', rdfa, _object));
        lang := 'xsd:double';
      }
    else if (__tag (_object) = 219)
      {
-       http (sprintf ('%s', cast (_object as varchar)));
+       http (sprintf ('<span %s>%s</span>', rdfa, cast (_object as varchar)));
        lang := 'xsd:double';
      }
    else if (__tag (_object) = 182)
      {
+       http (sprintf ('<span %s>', rdfa));
        http (_object);
+       http ('</span>');
        lang := '';
      }
    else if (__tag (_object) = 211)
      {
-       http (sprintf ('%s', datestring (_object)));
+       http (sprintf ('<span %s>%s</span>', rdfa, datestring (_object)));
        lang := 'xsd:date';
      }
    else if (__tag (_object) = 230)
@@ -274,11 +315,17 @@ again:
        _object := serialize_to_UTF8_xml (_object);
        _object := replace (_object, '<xhtml:', '<');
        _object := replace (_object, '</xhtml:', '</');
+       http (sprintf ('<span %s>', rdfa));
        http (_object);
+       http ('</span>');
        http (sprintf ('(%s)', rdfs_type));
      }
    else if (__tag (_object) = 225)
+     {
+       http (sprintf ('<span %s>', rdfa));
      http (charset_recode (_object, '_WIDE_', 'UTF-8'));
+       http ('</span>');
+     }
    else
      http (sprintf ('FIXME %i', __tag (_object)));
 

@@ -25,7 +25,7 @@
 --
 --
    declare _S, odd_position any;
-   declare page_resource_uri, proxy_iri, rdf_link, label, _subject any;
+   declare page_resource_uri, proxy_iri, rdf_link, label, true_label, _subject any;
    declare white_page, arr, data, meta, h1, h2, inx, gr, host, refr, sid, inf, sas, langs, best_q any;
    declare urilookup integer;
 
@@ -86,6 +86,7 @@
    exec (sprintf ('sparql define input:inference "facets" select ?o (lang(?o)) where { <%S> virtrdf:label ?o }', _S), null, null, vector (), 0, meta, data);
 
    label := b3s_label_get (data, langs);
+   true_label := label;
 
    exec (sprintf ('sparql %s prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/> 
 	select ?o (lang(?o)) where { <%S> rdfs:comment ?o }', inf, _S), null, null, vector (), 0, meta, data);
@@ -116,7 +117,7 @@
     <script type="text/javascript" src="/fct/oat/toolkit/loader.js"></script>
     <script type="text/javascript" src="s/description.js"></script>
 </head>
-  <body>
+  <body about="<?V page_resource_uri ?>">
     <div id="PG">
       <div id="HD">
         <div id="hd_l">
@@ -176,7 +177,7 @@
 	      {	
                 declare OBJECT any;
 		OBJECT := data [0];
-		b3s_http_print_r (OBJECT, sid);
+		b3s_http_print_r (OBJECT, sid, PRED, true_label, 1);
 	      }
 	   exec_close (h2);
 
@@ -202,7 +203,7 @@
 	      {	
                 declare OBJECT any;
 		OBJECT := data [0];
-		b3s_http_print_r (OBJECT, sid);
+		b3s_http_print_r (OBJECT, sid, PRED, true_label, 0);
 	      }
 	   exec_close (h2);
 
@@ -228,8 +229,9 @@ skip_rev:
         Explore using:
         <a href="http://linkeddata.uriburner.com/ode/?uri=<?vsp http_url (page_resource_uri); ?>">OpenLink Data Explorer</a> 
         &nbsp; &nbsp; Raw Data in:
-        <a href="<?=rdf_link || '&output=n3'?>">N3</a> |
-        <a href="<?=rdf_link || '&output=xml'?>">RDF/XML</a>
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'text/rdf+n3') ?>">N3</a> |
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/rdf+xml') ?>">RDF/XML</a> |
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/rdf+json')?>">RDF/JSON</a>
         &nbsp; &nbsp;<a href="/fct/facet_doc.html">About</a>&nbsp; &nbsp;
       </div> <!-- #ft_t -->
       <div id="ft_b">
