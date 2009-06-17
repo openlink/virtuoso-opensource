@@ -221,9 +221,9 @@
     </xsl:template>
 
     <xsl:template match="longitude">
-	<geo:lng rdf:datatype="&xsd;float">
+	<geo:long rdf:datatype="&xsd;float">
 	    <xsl:value-of select="."/>
-	</geo:lng>
+	</geo:long>
     </xsl:template>
 
     <xsl:template match="image" priority="10">

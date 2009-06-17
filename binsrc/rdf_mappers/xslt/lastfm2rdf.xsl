@@ -607,9 +607,9 @@
 			<geo:lat rdf:datatype="&xsd;float">
 				<xsl:value-of select="venue/location/geo:point/geo:lat"/>
 			</geo:lat>
-			<geo:lng rdf:datatype="&xsd;float">
+			<geo:long rdf:datatype="&xsd;float">
 				<xsl:value-of select="venue/location/geo:point/geo:long"/>
-			</geo:lng>
+			</geo:long>
 		</vcard:ADR>
 
     </xsl:template>

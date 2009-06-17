@@ -88,6 +88,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_PICASA', null, 'Picasa');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+	values ('(http://.*geonames.org/.*)',
+	'URL', 'DB.DBA.RDF_LOAD_GEONAMES', null, 'Geonames');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://.*last.fm/.*)|'||
 			'(http://.*lastfm.*/.*)',
             'URL', 'DB.DBA.RDF_LOAD_LASTFM', null, 'LastFM');
@@ -3323,6 +3327,33 @@ create procedure DB.DBA.RDF_LOAD_PICASA (in graph_iri varchar, in new_origin_uri
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_GEONAMES (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare xd, xt, url, tmp, geo_id any;
+	declare pos int;
+	declare exit handler for sqlstate '*'
+	{
+		return 0;
+	};
+	if (new_origin_uri like 'http://%.geonames.org/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://%s.geonames.org/%s', 0);
+		geo_id := tmp[1];
+		pos := strchr(geo_id, '/');
+		if (pos > 0)
+			geo_id := left(geo_id, pos);
+		url := sprintf('http://sws.geonames.org/%s/about.rdf', geo_id);
+	}
+	else
+		return 0;
+	tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+	xd := xtree_doc (tmp);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/geonames2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
+	xd := serialize_to_UTF8_xml (xt);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	return 1;
+}
+;
 
 create procedure DB.DBA.RDF_LOAD_YOUTUBE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
@@ -3544,20 +3575,6 @@ delete from DB.DBA.RDF_META_CARTRIDGES where MC_HOOK = 'DB.DBA.RDF_LOAD_NYTCF';
 delete from DB.DBA.RDF_META_CARTRIDGES where MC_HOOK = 'DB.DBA.RDF_LOAD_YAHOO_BOSS';
 delete from DB.DBA.RDF_META_CARTRIDGES where MC_HOOK = 'DB.DBA.RDF_LOAD_DELICIOUS';
 delete from DB.DBA.RDF_META_CARTRIDGES where MC_HOOK = 'DB.DBA.RDF_LOAD_OREILLY';
-
-create procedure DB.DBA.RDF_LOAD_GEONAMES_META (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
-    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
-{
-	declare cont any;
-	declare tree, xt, xd, tmp any;
-	declare url, what, username_, password_ varchar;
-	declare exit handler for sqlstate '*'
-	{
-		return 0;
-	};
-	return 0;
-}
-;
 
 create procedure DB.DBA.RDF_LOAD_TECHNORATI_META (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
@@ -6828,6 +6845,71 @@ create procedure DB.DBA.RDF_LOAD_EBAY_META2(in data any, in api_key varchar, in 
 	}
 }
 ;
+
+create procedure DB.DBA.RDF_LOAD_GEONAMES_META (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout ser_key any, inout opts any)
+{
+	declare data, meta, state, message any;
+	declare tmp any;
+	declare url, keywords varchar;
+	declare exit handler for sqlstate '*'
+	{
+		return 0;
+	};
+	
+	state := '00000';
+	tmp := sprintf( 'sparql select ?l from <%s> where { ?x <http://www.w3.org/2001/vcard-rdf/3.0#Country> ?l }',
+		graph_iri, graph_iri);
+	exec (tmp, state, message, vector (), 0, meta, data);
+	if (state = '00000' and length (data) > 0)
+		RDF_LOAD_GEONAMES_META2(data, opts, dest, graph_iri, new_origin_uri);
+	state := '00000';
+	tmp := sprintf( 'sparql select ?l from <%s> where { ?x <http://www.w3.org/2001/vcard-rdf/3.0#Region> ?l }',
+		graph_iri, graph_iri);
+	exec (tmp, state, message, vector (), 0, meta, data);
+	if (state = '00000' and length (data) > 0)
+		RDF_LOAD_GEONAMES_META2(data, opts, dest, graph_iri, new_origin_uri);
+	state := '00000';
+	tmp := sprintf( 'sparql select ?l from <%s> where { ?x <http://www.w3.org/2001/vcard-rdf/3.0#Locality> ?l }',
+		graph_iri, graph_iri);
+	exec (tmp, state, message, vector (), 0, meta, data);
+	if (state = '00000' and length (data) > 0)
+		RDF_LOAD_GEONAMES_META2(data, opts, dest, graph_iri, new_origin_uri);
+	state := '00000';
+	tmp := sprintf( 'sparql select ?l from <%s> where { ?x <http://last.fm/country> ?l }',
+		graph_iri, graph_iri);
+	exec (tmp, state, message, vector (), 0, meta, data);
+	if (state = '00000' and length (data) > 0)
+		RDF_LOAD_GEONAMES_META2(data, opts, dest, graph_iri, new_origin_uri);
+	return 0;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_GEONAMES_META2(in data any, in opts any, in dest varchar, in graph_iri varchar, in new_origin_uri varchar)
+{
+	declare keywords, url, tmp, tree, cont varchar;
+	declare xt, xd any;
+	foreach (any str in data) do
+	{
+		if (isstring (str[0]))
+		{
+			keywords := trim(str[0], '\n\t\t\n ');
+			keywords := replace(keywords, ' ', '+');
+			if (left(keywords, 6) <> 'nodeID')
+			{
+				url := sprintf ('http://ws.geonames.org/search?q=%s&lang=en&style=full', keywords); -- &maxRows=100
+				tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+				xt := xtree_doc (tmp);
+				xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/geonames_meta2rdf.xsl', xt,
+					vector ('baseUri', coalesce (dest, graph_iri)));
+				cont := serialize_to_UTF8_xml (xd);
+				DB.DBA.RDF_LOAD_RDFXML (cont, new_origin_uri, coalesce (dest, graph_iri));
+			}
+		}
+	}
+}
+;
+
 
 create procedure DB.DBA.RDF_LOAD_AMAZON_META (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout ser_key any, inout opts any)

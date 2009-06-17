@@ -96,9 +96,9 @@
 					<rdf:type rdf:resource="&sioct;Comment"/>
 					<sioc:has_container rdf:resource="{vi:proxyIRI ($base)}"/>
 					<sioc:has_creator rdf:resource="{vi:proxyIRI (link)}"/>
-					<geo:lng rdf:datatype="&xsd;float">
+					<geo:long rdf:datatype="&xsd;float">
 						<xsl:value-of select="lon"/>
-					</geo:lng>
+					</geo:long>
 					<geo:lat rdf:datatype="&xsd;float">
 						<xsl:value-of select="lat"/>
 					</geo:lat>
@@ -146,9 +146,9 @@
 							<c:location>
 								<xsl:value-of select="venue_name"/>
 							</c:location>
-							<geo:lng rdf:datatype="&xsd;float">
+							<geo:long rdf:datatype="&xsd;float">
 								<xsl:value-of select="venue_lon"/>
-							</geo:lng>
+							</geo:long>
 							<geo:lat rdf:datatype="&xsd;float">
 								<xsl:value-of select="venue_lat"/>
 							</geo:lat>
@@ -173,9 +173,9 @@
 							<foaf:name>
 								<xsl:value-of select="name" />
 							</foaf:name>
-							<geo:lng rdf:datatype="&xsd;float">
+							<geo:long rdf:datatype="&xsd;float">
 								<xsl:value-of select="lon"/>
-							</geo:lng>
+							</geo:long>
 							<geo:lat rdf:datatype="&xsd;float">
 								<xsl:value-of select="lat"/>
 							</geo:lat>
@@ -243,9 +243,9 @@
 							<foaf:name>
 								<xsl:value-of select="name" />
 							</foaf:name>
-							<geo:lng rdf:datatype="&xsd;float">
+							<geo:long rdf:datatype="&xsd;float">
 								<xsl:value-of select="lon"/>
-							</geo:lng>
+							</geo:long>
 							<geo:lat rdf:datatype="&xsd;float">
 								<xsl:value-of select="lat"/>
 							</geo:lat>
