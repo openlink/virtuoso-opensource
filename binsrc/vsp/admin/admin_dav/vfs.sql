@@ -342,9 +342,9 @@ create procedure WS.WS.SERV_QUEUE (in __tgt varchar, in __root varchar, in _upd 
     }
 
    -- if url function not specified then call default
-if (WS.WS.ISEMPTY (_fn))
+   if (WS.WS.ISEMPTY (_fn))
      url_fn := 'WS.WS.URL_BY_DATE';
-else
+   else
      url_fn := _fn;
 
     urllist := make_array (nthreads, 'any'); 
