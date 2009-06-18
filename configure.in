@@ -1766,6 +1766,36 @@ AM_CONDITIONAL(WITH_PTHREADS, test "x$WITH_PTHREADS" = "xyes" )
 
 
 ##########################################################################
+#                                                                        #
+# AIO                                                                    #
+#                                                                        #
+##########################################################################
+AC_ARG_ENABLE(aio, [dnl
+AC_HELP_STRING([--enable-aio], [enable AIO support])
+AC_HELP_STRING([--disable-aio], [disable AIO support (default)])dnl
+], [
+     case "${enableval}" in
+       yes)	with_aio="yes" ;;
+       no)	with_aio="no" ;;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-aio) ;;
+     esac
+  ],
+  [ with_aio="no" ]
+)
+
+if test "$with_aio" != "no"
+then
+   AIOLIB=""
+   AC_CHECK_HEADERS(aio.h sched.h)
+   AC_CHECK_LIB(rt, aio_read, [
+	AIOLIB="-lrt" 
+	AC_DEFINE(HAVE_AIO, 1, "Enable AIO support")
+   ])
+   srvrlibs="$srvrlibs $AIOLIB"
+fi
+
+
+##########################################################################
 ##									##
 ##  Check out additional libs 						##
 ##									##
