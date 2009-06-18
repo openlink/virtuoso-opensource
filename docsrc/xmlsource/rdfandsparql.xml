@@ -2412,10 +2412,13 @@ or related filters and predicates.
 <programlisting>
 select *
   from &lt;people&gt;
- where {?s foaf:Name ?name . ?name bif:contains "rich*" .}
+ where {?s foaf:Name ?name . ?name bif:contains "'rich*'".}
 </programlisting>
 <para>would match all subjects whose <emphasis>foaf:Name</emphasis> contained a word starting with Rich.
 This would match Richard, Richie etc.
+</para>
+<para>Note that words and phrases should be enclosed in quotes if they contain spaces or
+other non-alphanumeric chars.
 </para>
 <para>If the <emphasis>bif:contains</emphasis> or related predicate is applied to an object that is not
 a string or is not the object of an indexed triple, no match will be found.
