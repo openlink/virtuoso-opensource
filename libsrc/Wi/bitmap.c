@@ -824,7 +824,7 @@ key_bm_insert (it_cursor_t * itc, row_delta_t * rd)
   buffer_desc_t * buf;
   dbe_key_t * key = itc->itc_insert_key;
 
-
+  FAILCK (itc);
 #if 0
   /*code for debug break on a particular triple insert */
   {

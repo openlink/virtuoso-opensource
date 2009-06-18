@@ -2143,7 +2143,7 @@ bdfi_read (void *read_cd, char *tgtbuf, size_t bsize)
   {
     dp_addr_t nth_page;
     if (!iter->bdfi_bh->bh_page_dir_complete)
-      blob_read_dir (tmp_itc, &iter->bdfi_bh->bh_pages, &iter->bdfi_bh->bh_page_dir_complete, iter->bdfi_bh->bh_dir_page);
+      blob_read_dir (tmp_itc, &iter->bdfi_bh->bh_pages, &iter->bdfi_bh->bh_page_dir_complete, iter->bdfi_bh->bh_dir_page, NULL);
 
 get_more:
     nth_page = iter->bdfi_bh->bh_pages[iter->bdfi_page_idx];
@@ -2352,7 +2352,7 @@ static void xper_get_blob_page_dir (xper_doc_t *xpd)
       dbe_key_t* xper_key = sch_id_to_key (wi_inst.wi_schema, KI_COLS);
       itc_from (tmp_itc, xper_key);
     }
-  blob_read_dir (tmp_itc, &bh->bh_pages, &bh->bh_page_dir_complete, bh->bh_dir_page);
+  blob_read_dir (tmp_itc, &bh->bh_pages, &bh->bh_page_dir_complete, bh->bh_dir_page, NULL);
   itc_free (tmp_itc);
 }
 

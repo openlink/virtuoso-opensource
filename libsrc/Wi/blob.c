@@ -1284,7 +1284,7 @@ blob_chain_delete (it_cursor_t * itc, blob_layout_t * bl)
       __blob_chain_delete (itc, bl->bl_start, bl->bl_start, 1, NULL);
     }
   if (!bl->bl_page_dir_complete)
-    blob_read_dir (itc, &bl->bl_pages, &bl->bl_page_dir_complete, bl->bl_dir_start);
+    blob_read_dir (itc, &bl->bl_pages, &bl->bl_page_dir_complete, bl->bl_dir_start, NULL);
   if (bl->bl_page_dir_complete) /* see if no error in reading page dir */
     blob_delete_via_dir (itc, bl);
   blob_layout_free (bl);
@@ -2842,7 +2842,7 @@ bh_find_page (blob_handle_t * bh, size_t offset)
 
 
 int
-blob_read_dir (it_cursor_t * tmp_itc, dp_addr_t ** pages, int * is_complete, dp_addr_t start)
+blob_read_dir (it_cursor_t * tmp_itc, dp_addr_t ** pages, int * is_complete, dp_addr_t start, dk_set_t * dir_page_ret)
 {
   int error = 0;
   buffer_desc_t *buf = NULL;
@@ -2854,6 +2854,8 @@ blob_read_dir (it_cursor_t * tmp_itc, dp_addr_t ** pages, int * is_complete, dp_
   while (start)
     {
       long next;
+      if (dir_page_ret)
+	dk_set_push (dir_page_ret, DP_ADDR2VOID (start));
       if (!page_wait_blob_access (tmp_itc, start, &buf, PA_READ, NULL, 1))
 	{
 	  error = 1;
@@ -2908,7 +2910,7 @@ bh_fetch_dir (lock_trx_t * lt, blob_handle_t * bh)
     return 0;
   ITC_INIT (itc, isp, lt);
   itc_from_it (itc, bh->bh_it);
-  return blob_read_dir (itc, &bh->bh_pages, &bh->bh_page_dir_complete, bh->bh_dir_page);
+  return blob_read_dir (itc, &bh->bh_pages, &bh->bh_page_dir_complete, bh->bh_dir_page, NULL);
 }
 
 

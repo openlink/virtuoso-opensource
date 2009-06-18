@@ -99,6 +99,9 @@ extern long tc_aio_seq_read;
 extern long tc_aio_seq_write;
 
 long tc_read_absent_while_finalize;
+extern long tc_merge_reads;
+extern long tc_merge_read_pages;
+
 long tc_fix_outdated_leaf_ptr;
 long tc_bm_split_left_separate_but_no_split;
 long tc_aq_sleep;
@@ -182,6 +185,7 @@ extern int enable_setp_partition;
 extern int enable_min_card;
 extern int enable_dfg_print;
 extern int enable_distinct_sas;
+extern int c_use_aio;
 
 long  tft_random_seek;
 long  tft_seq_seek;
@@ -1271,6 +1275,8 @@ stat_desc_t stat_descs [] =
 
     {"tc_unused_read_aside", &tc_unused_read_aside},
     {"tc_read_aside", &tc_read_aside},
+    {"tc_merge_reads", &tc_merge_reads},
+    {"tc_merge_read_pages", &tc_merge_read_pages},
     {"tc_first_free_replace", &tc_first_free_replace },
     {"tc_hi_lock_new_lock", &tc_hi_lock_new_lock },
     {"tc_hi_lock_old_dp_no_lock", &tc_hi_lock_old_dp_no_lock },
@@ -1510,6 +1516,7 @@ stat_desc_t dbf_descs [] =
     {"cl_dead_w_interval", &cl_dead_w_interval, SD_INT32},
     {"timeout_resolution_sec", &atomic_timeout.to_sec, SD_INT32},
     {"timeout_resolution_usec", &atomic_timeout.to_usec, SD_INT32},
+    {"c_use_aio", &c_use_aio, SD_INT32},
     {NULL, NULL, NULL}
   };
 

@@ -914,11 +914,35 @@ cpt_restore_uncommitted (it_cursor_t * itc)
     }
 }
 
+dk_hash_t * cpt_uc_blob_dps;
+
+int
+cpt_bl_fetch_dir (blob_layout_t * bl, dk_set_t * dir_pages)
+{
+  it_cursor_t itc_auto;
+  it_cursor_t * itc = &itc_auto;
+  if (!bl->bl_dir_start)
+    return BLOB_OK;
+  ITC_INIT (itc, NULL, NULL);
+  itc_from_it (itc, bl->bl_it);
+  bl->bl_page_dir_complete = 0;
+  return blob_read_dir (itc, &bl->bl_pages, &bl->bl_page_dir_complete, bl->bl_dir_start, dir_pages);
+}
+
 
 void
 cpt_uncommitted_blobs (int clear)
 {
   /* when a cpt is done with uncommitted data, the pages of  uncommitted blobs must not appear as taken in the allocation map saved by cpt.  So reset them and then put them back on. */
+  if (!clear)
+    {
+      DO_HT (ptrlong, dp, void*, ign, cpt_uc_blob_dps)
+	{
+	  dbs_cpt_set_allocated (cpt_dbs, dp, 1);
+	}
+      END_DO_HT;
+      return;
+    }
   DO_SET (lock_trx_t *, lt, &all_trxs)
     {
       if (lt->lt_dirty_blobs)
@@ -929,22 +953,36 @@ cpt_uncommitted_blobs (int clear)
 	       * So there will be a possible leak of a few pages if roll fwd from the cpt, otherwise no leak. */
 	      if (!bl->bl_it || bl->bl_it->it_storage != cpt_dbs)
 		continue;
-	      if (bl->bl_delete_later == BL_DELETE_AT_ROLLBACK)
+	      if (bl->bl_delete_later & BL_DELETE_AT_ROLLBACK)
 		{
 		  if (bl->bl_pages)
 		    {
+		      dk_set_t * dir_pages = NULL;
 		      int inx;
+		      if (BLOB_OK != cpt_bl_fetch_dir (bl, &dir_pages))
+			{
+			  dk_set_free (dir_pages);
+			  continue;
+			}
 		      for (inx= 0; inx < box_length ((caddr_t)bl->bl_pages) / sizeof (dp_addr_t); inx++)
 	{
 			  if (bl->bl_pages[inx])
 			    {
+			      {
 			      dbs_cpt_set_allocated (cpt_dbs, bl->bl_pages[inx], !clear);
+				if (clear)
+				  sethash (DP_ADDR2VOID (bl->bl_pages[inx]), cpt_uc_blob_dps, (void*)1);
 			    }
 			}
 		    }
-		  if (bl->bl_dir_start)
+		      DO_SET (ptrlong, dp, &dir_pages)
 		    {
-		      dbs_cpt_set_allocated (cpt_dbs, bl->bl_dir_start, !clear);
+			  dbs_cpt_set_allocated (cpt_dbs, dp, !clear);
+			  if (clear)
+			    sethash (DP_ADDR2VOID (dp), cpt_uc_blob_dps, (void*)1);
+			}
+		      END_DO_SET();
+		      dk_set_free (dir_pages);
 		    }
 		}
 	    }
@@ -1188,8 +1226,8 @@ cpt_neodisk_page (const void *key, void *value)
       DBG_PT_PRINTF (("  cpt clear backup flag L=%d \n", logical));
       return;
     }
-
-  dp_set_backup_flag (cpt_dbs, logical, 1);
+  if (!gethash (DP_ADDR2VOID (logical), cpt_uc_blob_dps))
+    dp_set_backup_flag (cpt_dbs, logical, 1); /* mark page in commit space for backup unless it is an uncommitted blob */
   DBG_PT_PRINTF (("  cpt set backup flag L=%d \n", logical));
 
   after_image =
@@ -1754,6 +1792,7 @@ dbs_checkpoint (char *log_name, int shutdown)
   mutex_enter (dbs_autocompact_mtx); /* an autcompact running in the background can confuse the unremap */
   WITHOUT_SIGNALS
     {
+    cpt_uc_blob_dps = hash_table_allocate (100);
     cpt_uncommitted ();
     cpt_uncommitted_blobs (1);
       checkpoint_flag_fd = fopen(CHECKPOINT_IN_PROGRESS_FILE, "a");
@@ -1855,6 +1894,8 @@ dbs_checkpoint (char *log_name, int shutdown)
       dbe_storage_t * dbs = wi_inst.wi_master;
       cpt_uncommitted_blobs (0);
       cpt_restore_uncommitted (mcp_itc); /* restore uncommitted before log cpt because logcpt may have to rewrite a log of uncommitted if the cpt was between phases of 2pc */
+      hash_table_free (cpt_uc_blob_dps);
+      cpt_uc_blob_dps = NULL;
       log_checkpoint (dbs, log_name, shutdown);
       unlink(CHECKPOINT_IN_PROGRESS_FILE);
 

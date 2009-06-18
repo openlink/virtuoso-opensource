@@ -781,7 +781,7 @@ extern void blob_layout_free (blob_layout_t * bl);
 #endif
 
 box_t blob_layout_ctor (dtp_t blob_handle_dtp, dp_addr_t start, dp_addr_t dir_start, int64 length, int64 diskbytes, index_tree_t * it);
-int blob_read_dir (it_cursor_t * itc, dp_addr_t ** pages, int * is_complete, dp_addr_t dir_start);
+int blob_read_dir (it_cursor_t * itc, dp_addr_t ** pages, int * is_complete, dp_addr_t dir_start, dk_set_t * dir_page_ret);
 box_t blob_layout_from_handle_ctor (blob_handle_t *bh);
 int itc_print_blob_col_non_txn (it_cursor_t * row_itc, dk_session_t * row, caddr_t data, int is_extension);
 int bh_fill_buffer_from_blob (index_tree_t * it, lock_trx_t * lt, blob_handle_t * bh,

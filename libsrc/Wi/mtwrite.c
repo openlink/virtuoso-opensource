@@ -76,6 +76,8 @@ db_io_queue (dbe_storage_t * dbs, dp_addr_t dp)
 
 
 long tc_write_cancel;
+long tc_merge_reads;
+long tc_merge_read_pages;
 
 void
 buf_cancel_write (buffer_desc_t * buf)
@@ -198,7 +200,7 @@ long tc_aio_seq_read;
 long tc_aio_seq_write;
 
 
-/*#define HAVE_AIO */
+#define HAVE_AIO
 #ifdef HAVE_AIO
 
 #include <aio.h>
@@ -244,6 +246,8 @@ iq_read_merge (struct aiocb ** list, int n, char * temp)
       return;
     }
   list[0]->__error_code = -1;
+  tc_merge_reads++;
+  tc_merge_read_pages += ((last_planned - first_offset) + PAGE_SZ) / PAGE_SZ;
   bytes = read (fd, temp,  (last_planned - first_offset) + PAGE_SZ);
   if (bytes != (last_planned - first_offset) + PAGE_SZ)
     GPF_T1 ("bad no of bytes returned for merged read");
@@ -821,7 +825,7 @@ dst_assign_iq (disk_stripe_t * dst)
     iq->iq_mtx = mutex_allocate ();
     mutex_option (iq->iq_mtx, (char *) (iq->iq_id ? iq->iq_id : "IQ"), iq_mtx_entry_check, (void *) iq);
     thr = PrpcThreadAllocate (
-			      (thread_init_func) iq_loop, (c_use_aio == 2 ? MERGE_THR_SIZE : 50000) , iq);
+			      (thread_init_func) iq_loop, (1 || c_use_aio == AIO_MERGING) ? MERGE_THR_SIZE : 50000, iq);
     if (!thr)
       {
 	log_error ("Can's start the server because it can't create a system thread. Exiting");

@@ -2608,7 +2608,9 @@ key_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * it, ins_key_t * ik
     {
       if (!qi->qi_non_txn_insert)
 	rd.rd_make_ins_rbe = 1;
+      ITC_SAVE_FAIL (it);
       key_bm_insert (it, &rd);
+      ITC_RESTORE_FAIL (it);
       itc_free_owned_params (it);
       return DVC_LESS;
     }
