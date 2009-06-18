@@ -29,6 +29,7 @@
    declare white_page, arr, data, meta, h1, h2, inx, gr, host, refr, sid, inf, sas, langs, best_q any;
    declare urilookup integer;
 
+   connection_set ('ns_ctr', 1); /* for unknown xmlns to print in RDFa */
    white_page := 1;
    sid := null;
    inf := '';
