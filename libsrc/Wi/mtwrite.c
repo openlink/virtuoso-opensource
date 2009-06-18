@@ -199,15 +199,14 @@ extern int c_use_aio;
 long tc_aio_seq_read;
 long tc_aio_seq_write;
 
+#define AIO_NONE 0
+#define AIO_NATIVE 1
+#define AIO_MERGING 2
 
-#define HAVE_AIO
 #ifdef HAVE_AIO
 
 #include <aio.h>
 
-#define AIO_NONE 0
-#define AIO_NATIVE 1
-#define AIO_MERGING 2
 
 
 #define IQ_LISTIO
@@ -824,8 +823,7 @@ dst_assign_iq (disk_stripe_t * dst)
     iq->iq_id = (dst) ? box_copy (dst->dst_iq_id) : NULL;
     iq->iq_mtx = mutex_allocate ();
     mutex_option (iq->iq_mtx, (char *) (iq->iq_id ? iq->iq_id : "IQ"), iq_mtx_entry_check, (void *) iq);
-    thr = PrpcThreadAllocate (
-			      (thread_init_func) iq_loop, (1 || c_use_aio == AIO_MERGING) ? MERGE_THR_SIZE : 50000, iq);
+    thr = PrpcThreadAllocate ((thread_init_func) iq_loop, (c_use_aio == AIO_MERGING) ? MERGE_THR_SIZE : 50000, iq);
     if (!thr)
       {
 	log_error ("Can's start the server because it can't create a system thread. Exiting");
