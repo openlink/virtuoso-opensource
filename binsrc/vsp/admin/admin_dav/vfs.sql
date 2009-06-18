@@ -32,6 +32,36 @@ use WS
 create procedure WS.WS.COPY_PAGE (in _host varchar, in _url varchar, in _root varchar,
     in _upd integer, in _dbg integer)
 {
+  declare exit handler for sqlstate '*', not found 
+    {
+      rollback work;
+      __SQL_STATE := cast (__SQL_STATE as varchar);
+      if (__SQL_STATE <> '40001')
+	{
+	  update VFS_QUEUE set VQ_STAT = 'error', VQ_ERROR = __SQL_MESSAGE
+	      where VQ_HOST = _host and VQ_ROOT = _root and VQ_URL = _url;
+	  commit work;
+	  ERR_MAIL_SEND (_host, _url, _root, __SQL_STATE, __SQL_MESSAGE);
+	}
+      else
+	{
+	  update VFS_QUEUE set VQ_STAT = 'waiting' 
+	      where VQ_HOST = _host and VQ_URL = _url and VQ_ROOT = _root;
+	  commit work;
+	}
+      if (__SQL_STATE <> '40001' and __SQL_STATE <> '2E000' and __SQL_STATE not like '0800_' and __SQL_STATE <> 'HTCLI')
+	{
+	  resignal;
+	}
+      return null;
+    };
+  return WS.WS.COPY_PAGE_1 (_host, _url, _root, _upd, _dbg); 
+}
+;
+
+create procedure WS.WS.COPY_PAGE_1 (in _host varchar, in _url varchar, in _root varchar,
+    in _upd integer, in _dbg integer)
+{
   declare _content, _resp , _method, _header, _etag, _tmp, _start_url, _dav_opts varchar;
   declare _idx, _del, _stat, _msg, _desc, _t_url, _opts, _c_type varchar;
   declare _resp_w, _dav_method, _d_imgs, _opage, _url_to_update varchar;
@@ -120,6 +150,12 @@ html_mode:
 	 else
 	   goto get_again;
        };
+     declare exit handler for sqlstate 'HTCLI' {
+         if (retr <= 0)
+	   resignal;
+	 else
+	   goto get_again;
+       };
 
 get_again:
   retr := retr - 1;
@@ -134,6 +170,10 @@ get_again:
 
 check_redir:
 
+  if (isarray(_resp) and length (_resp) and not isstring (_resp [0]))
+    {
+      signal ('2E000', 'Bad header received');
+    }
   if (redir_flag and isarray(_resp) and length (_resp) and
       (aref (_resp, 0) like 'HTTP/1._ 302%' or aref (_resp, 0) like 'HTTP/1._ 301%'))
     {
@@ -219,20 +259,38 @@ nf_del:
 ;
 
 
--- top level procedure for serv queues handle deadlock status
+-- /* top level procedure for processing queues */
 create procedure WS.WS.SERV_QUEUE_TOP (in _tgt varchar, in _root varchar, in _upd integer,
-    in _dbg integer, in _fn varchar, in _clnt_data any)
+    in _dbg integer, in _fn varchar, in _clnt_data any, in threads int := 1)
 {
-  declare _msg, _stat varchar;
+  declare _msg, _stat, oq varchar;
 do_again:
   _stat := '00000';
   _msg := '';
-  exec ('WS.WS.SERV_QUEUE (?, ?, ?, ?, ?, ?)', _stat, _msg,
-      vector (_tgt, _root, _upd, _dbg, _fn, _clnt_data));
+  exec ('WS.WS.SERV_QUEUE (?, ?, ?, ?, ?, ?, ?)', _stat, _msg,
+      vector (_tgt, _root, _upd, _dbg, _fn, _clnt_data, threads));
   if (_stat = '40001')
     {
       rollback work;
       goto do_again;
+    }
+  commit work;
+  oq := (select DB.DBA.VECTOR_AGG (vector (HOST, ROOT)) from (select distinct VQ_HOST as HOST, VQ_ROOT as ROOT 
+  	from VFS_QUEUE where VQ_STAT = 'waiting' and VQ_OTHER = 'other') x);
+  commit work;
+do_again1:  
+  foreach (any elm in oq) do
+    {
+      _stat := '00000';
+      _msg := '';
+      exec ('WS.WS.SERV_QUEUE (?, ?, ?, ?, ?, ?, ?)', _stat, _msg,
+	  vector (elm[0], elm[1], _upd, _dbg, _fn, _clnt_data, threads));
+      if (_stat = '40001')
+	{
+	  rollback work;
+	  goto do_again1;
+	}
+      commit work;
     }
   --dbg_obj_print ('COMPLETED WITH STATUS: ', _stat, ' ', _msg);
 }
@@ -240,143 +298,96 @@ do_again:
 
 
 
--- serving queues
+-- /* processing crawler queue */
 -- _upd 0:init, 1:update site; _dbg 0:normal, 1:retrieve only one entry and stop, 2:retrieve options
 --                                  3:send retrieved status to http client
 create procedure WS.WS.SERV_QUEUE (in __tgt varchar, in __root varchar, in _upd integer,
-    in _dbg integer, in _fn varchar, in _clnt_data any)
+    in _dbg integer, in _fn varchar, in _clnt_data any, in nthreads int := 1)
 {
-  declare _host, _url, _etag, _opts, _target varchar;
-  declare _count, _total, _n_stat integer;
-  declare _resp, _tgt_url, _fill_url varchar;
-  declare _msg, _stat, _oroot, _fn1 varchar;
+  declare _host, _url varchar;
+  declare _total integer;
+  declare _tgt_url varchar;
+  declare url_fn varchar;
   declare _last_shut integer;
   declare _tgt, _root varchar;
-  declare c_url cursor for select VU_URL from VFS_URL where
-      VU_HOST = _tgt and VU_ROOT = _root and VU_URL <> _tgt_url;
-  declare co_queue cursor for select VQ_HOST, VQ_URL, VQ_ROOT from VFS_QUEUE where
-      VQ_STAT = 'waiting' and VQ_OTHER = 'other' order by VQ_HOST, VQ_URL;
+  declare _next_url varchar;
+  declare _rc integer;
+  declare urllist, aq any;
+
   _total := 0;
   _tgt := __tgt;
   _root := __root;
-  registry_set ('WEB_COPY',
-      'X sequence_set (''WEB_COPY_SSHUT'', datediff (''second'', stringdate (''1980-01-01''), now ()), 0)');
+  registry_set ('WEB_COPY', 'X sequence_set (''WEB_COPY_SSHUT'', datediff (''second'', stringdate (''1980-01-01''), now ()), 0)');
   _last_shut := coalesce (sequence_set ('WEB_COPY_SSHUT', 0, 2), 0);
+
   update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting'
-      where VQ_STAT = 'pending' and datediff ('second', stringdate ('1980-01-01'), VQ_TS) < _last_shut;
+      where VQ_STAT = 'pending' and (VQ_TS is null or datediff ('second', stringdate ('1980-01-01'), VQ_TS) < _last_shut);
+  commit work;
 
   whenever not found goto n_site;
   select VS_URL into _tgt_url from VFS_SITE where VS_HOST = _tgt and VS_ROOT = _root;
--- If update action asked
+  -- if it is update 
   if (_upd = 1)
     {
-      whenever not found goto next_step;
-      select count (*) into _count from VFS_QUEUE where
-	  VQ_HOST = _tgt and VQ_ROOT = _root and VQ_URL <> _tgt_url;
-next_step:
-      if (_count is null or _count = 0)
+      if (not exists (select 1 from VFS_QUEUE where VQ_HOST = _tgt and VQ_ROOT = _root and VQ_URL <> _tgt_url))
 	{
-	  whenever not found goto end_fill;
-	  open c_url;
-	  while (1)
+	  for select VU_URL from VFS_URL where VU_HOST = _tgt and VU_ROOT = _root and VU_URL <> _tgt_url do
 	    {
-	      fetch c_url into _fill_url;
 	      insert into VFS_QUEUE (VQ_HOST, VQ_ROOT, VQ_URL, VQ_STAT, VQ_TS)
-		  values (_tgt, _root, _fill_url, 'waiting', now ());
+		  values (_tgt, _root, VU_URL, 'waiting', now ());
 	    }
-end_fill:
-	  close c_url;
-	  update VFS_QUEUE set VQ_STAT = 'waiting' where
-	  VQ_HOST = _tgt and VQ_ROOT = _root and VQ_URL = _tgt_url;
+	  update VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = _tgt and VQ_ROOT = _root and VQ_URL = _tgt_url;
 	  commit work;
 	}
     }
 
--- If hook function not specified then call default
-if (WS.WS.ISEMPTY (_fn))
-  _fn1 := 'WS.WS.URL_BY_DATE';
-else
-  _fn1 := _fn;
+   -- if url function not specified then call default
+   if (WS.WS.ISEMPTY (_fn))
+     url_fn := 'WS.WS.URL_BY_DATE';
+   else
+     url_fn := _fn;
 
-    declare _next_url varchar;
-    declare _rc integer;
-    _rc := 1;
--- Go thru entries
-    while (_rc > 0)
-      {
-        _rc := call (_fn1) (_tgt, _root, _next_url, _clnt_data);
-        if (_rc = 0 or not isstring (_next_url))
-          goto fn_end;
-	commit work;
-        _stat := '00000'; _msg := '';
-        exec ('WS.WS.COPY_PAGE (?, ?, ?, ?, ?)', _stat, _msg,
-	    vector (_tgt, _next_url, _root, _upd, _dbg));
-	if (_stat <> '00000')
-	  {
-	    rollback work;
-	    -- TODO: add e-mail to DAV admin
-	    if (_stat <> '40001')
-	      {
-	        update VFS_QUEUE set VQ_STAT = 'error'
-		  where VQ_HOST = _tgt and VQ_ROOT = _root and VQ_URL = _next_url and VQ_STAT <> 'retrieved';
-		DB.DBA.NEW_MAIL ('dav', sprintf ('Subject: Error importing http://%s%s\r\n\r\n(This is automatically generated message from Web Robot)\r\nThe following URL can''t be imported:\r\nhttp://%s%s -> %s\r\nCode: %s Message: %s\r\n.\r\n',_tgt, _next_url, _tgt, _next_url, _root, _stat, _msg));
-	      }
-	    else
-	      update VFS_QUEUE set VQ_STAT = 'waiting'
-		  where VQ_HOST = _tgt and VQ_URL = _next_url and VQ_ROOT = _root;
-	    if (_stat <> '40001' and _stat <> '2E000' and _stat not like '0800_')
-	      {
-		if (_dbg = 3)
-		  {
-		    declare _msgv varchar;
-                    _msgv := sprintf ('%V', _msg);
-                    http (concat ('<p><strong>Error: </strong><pre>', _msgv, '</pre></p>\n'));
-		  }
-	        goto fn_end;
-	      }
-	  }
-	else
-	  _total := _total + 1;
-	commit work;
-      }
-fn_end:;
--- get other sites
-    whenever not found goto qo_end;
+    urllist := make_array (nthreads, 'any'); 
+    aq := async_queue (nthreads);
+    -- process the queue
     while (1)
       {
-        open co_queue (prefetch 1);
-	fetch co_queue into _host, _url, _oroot;
-        _stat := '00000'; _msg := '';
-        update VFS_QUEUE set VQ_STAT = 'pending' where VQ_HOST = _host and VQ_URL = _url and VQ_ROOT = _oroot;
-	commit work;
-	close co_queue;
-        exec ('WS.WS.COPY_PAGE (?, ?, ?, ?, ?)', _stat, _msg,
-	    vector (_host, _url, _oroot, _upd, _dbg));
-	if (_stat <> '00000')
+	declare found_one, ndone int;
+	declare exit handler for sqlstate '*' 
 	  {
 	    rollback work;
-	    if (_stat <> '40001')
-	      update VFS_QUEUE set VQ_STAT = 'error'
-		  where VQ_HOST = _host and VQ_ROOT = _oroot and VQ_STAT <> 'retrieved';
-	    else
-              update VFS_QUEUE set VQ_STAT = 'waiting'
-		  where VQ_HOST = _host and VQ_URL = _url and VQ_ROOT = _oroot;
-	    if (_stat <> '40001' and _stat <> '2E000' and _stat not like '0800_')
+	    goto fn_end;
+	  };
+	found_one := 0; ndone := 0;
+	for (declare i int, i := 0; i < nthreads; i := i + 1)
 	      {
-		if (_dbg = 3)
-                   http (concat ('<p><strong>Error: ',  _msg, '</strong></p>\n'));
-	        goto qo_end;
-	      }
+	     _rc := call (url_fn) (_tgt, _root, _next_url, _clnt_data);
+	     if (_rc > 0 and isstring (_next_url))
+		  {
+	         found_one := 1;
+		 urllist [i] := _next_url;
 	  }
 	else
-	  _total := _total + 1;
-	commit work;
-	if (_dbg = 1)
-	  goto qo_end;
+	       urllist [i] := 0;
       }
-qo_end:;
-    close co_queue;
--- end getting other sites
+	commit work;
+        if (0 = found_one)
+          goto fn_end;
+
+	foreach (any elm in urllist) do
+	  {
+	    if (elm <> 0)
+	      {
+	        aq_request (aq, 'WS.WS.COPY_PAGE', vector (_tgt, elm, _root, _upd, _dbg));
+		ndone := ndone + 1;
+	      }
+	  }
+	commit work;
+	aq_wait_all (aq);
+	_total := _total + ndone;
+      }
+fn_end:;
+
   delete from VFS_QUEUE where VQ_STAT = 'retrieved' and VQ_URL <> _tgt_url and VQ_HOST = _tgt and VQ_ROOT = _root;
   if (_dbg = 3)
     http (concat ('<strong>Total links visited: ', cast (_total as varchar), '</strong>\n'));
@@ -386,6 +397,18 @@ n_site:;
 }
 ;
 
+create procedure ERR_MAIL_SEND (in _tgt varchar, in _next_url varchar, in _root varchar, in  _stat varchar, in _msg varchar)
+{
+  DB.DBA.NEW_MAIL ('dav', sprintf (
+  'Subject: Error importing http://%s%s\r\n\r\n'||
+  '(This is automatically generated message from Web Robot)\r\n'||
+  'The following URL can''t be imported:\r\nhttp://%s%s -> %s\r\n'||
+  'Code: %s Message: %s\r\n.\r\n',
+  _tgt, _next_url, 
+  _tgt, _next_url, _root, 
+  _stat, _msg));
+}
+;
 
 create procedure WS.WS.LOCAL_STORE (in _host varchar, in _url varchar, in _root varchar,
                               inout _content varchar, in _s_etag varchar, in _c_type varchar,
@@ -1494,6 +1517,7 @@ create procedure WS.WS.URL_BY_DATE (in host varchar, in coll varchar, out url va
   whenever not found goto done;
   declare cr cursor for select VQ_URL from WS.WS.VFS_QUEUE
       where VQ_HOST = host and VQ_ROOT = coll and VQ_STAT = 'waiting' order by VQ_HOST, VQ_ROOT, VQ_TS for update;
+  url := null;
   open cr;
   fetch cr into next_url;
   update WS.WS.VFS_QUEUE set VQ_STAT = 'pending' where VQ_HOST = host and VQ_ROOT = coll and VQ_URL = next_url;

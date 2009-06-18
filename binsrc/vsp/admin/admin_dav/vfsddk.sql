@@ -50,6 +50,7 @@ create table WS.WS.VFS_QUEUE (
     VQ_ROOT 	varchar,
     VQ_STAT	varchar (15),
     VQ_OTHER	varchar,
+    VQ_ERROR	long varchar,
     primary key (VQ_HOST, VQ_URL, VQ_ROOT))
 create index VQ_HOST_ROOT_STAT on WS.WS.VFS_QUEUE (VQ_HOST, VQ_ROOT, VQ_STAT)
 create index VQ_HOST_ROOT on WS.WS.VFS_QUEUE (VQ_HOST, VQ_ROOT)
@@ -111,6 +112,10 @@ create procedure WS.WS.VFS_TBL_UPGRADE ()
   exec ('select VQ_OTHER from WS.WS.VFS_QUEUE', _state, _err);
   if (_state is not null)
     DB.DBA.execstr ('alter table WS.WS.VFS_QUEUE add VQ_OTHER varchar');
+  _state := null;
+  exec ('select VQ_ERROR from WS.WS.VFS_QUEUE', _state, _err);
+  if (_state is not null)
+    DB.DBA.execstr ('alter table WS.WS.VFS_QUEUE add VQ_ERROR long varchar');
   _state := null;
   exec ('select VU_OTHER from WS.WS.VFS_URL', _state, _err);
   if (_state is not null)
