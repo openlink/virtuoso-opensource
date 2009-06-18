@@ -317,7 +317,7 @@ create procedure WS.WS.SERV_QUEUE (in __tgt varchar, in __root varchar, in _upd 
   _total := 0;
   _tgt := __tgt;
   _root := __root;
-  registry_set ('WEB_COPY', 'X sequence_set (''WEB_COPY_SSHUT'', datediff (''second'', stringdate (''1980-01-01''), now ()), 0)');
+  registry_set ('WEB_COPY', 'X __sequence_set (''WEB_COPY_SSHUT'', datediff (''second'', stringdate (''1980-01-01''), now ()), 0)');
   _last_shut := coalesce (sequence_set ('WEB_COPY_SSHUT', 0, 2), 0);
 
   update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting'
@@ -1515,7 +1515,7 @@ create procedure WS.WS.URL_BY_DATE (in host varchar, in coll varchar, out url va
 {
   declare next_url varchar;
   whenever not found goto done;
-  declare cr cursor for select VQ_URL from WS.WS.VFS_QUEUE
+  declare cr cursor for select top 1 VQ_URL from WS.WS.VFS_QUEUE
       where VQ_HOST = host and VQ_ROOT = coll and VQ_STAT = 'waiting' order by VQ_HOST, VQ_ROOT, VQ_TS for update;
   url := null;
   open cr;
