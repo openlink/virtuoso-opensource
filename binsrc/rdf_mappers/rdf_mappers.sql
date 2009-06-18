@@ -30,13 +30,6 @@ delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '(text/html)|(application/
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '.+\.svg\$';
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '.+\.od[ts]\$';
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '.+\.ics\$';
-delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_DIGG';
-delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_TWITTER';
-delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_AMAZON_ARTICLE';
-delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FQL';
-delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_YOUTUBE';
-delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_MBZ';
-delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_BESTBUY';
 
 -- insertion of cartridges
 
@@ -3566,15 +3559,6 @@ create procedure DB.DBA.RDF_LOAD_DELICIOUS (in graph_iri varchar, in new_origin_
 ;
 
 -- remove wrong meta-cartridge patterns
-delete from DB.DBA.RDF_META_CARTRIDGES where MC_HOOK = 'DB.DBA.RDF_LOAD_AMAZON';
-delete from DB.DBA.RDF_META_CARTRIDGES where MC_HOOK = 'DB.DBA.RDF_LOAD_EBAY';
-delete from DB.DBA.RDF_META_CARTRIDGES where MC_HOOK = 'DB.DBA.RDF_LOAD_LOD';
-delete from DB.DBA.RDF_META_CARTRIDGES where MC_HOOK = 'DB.DBA.RDF_LOAD_ALCHEMY';
-delete from DB.DBA.RDF_META_CARTRIDGES where MC_HOOK = 'DB.DBA.RDF_LOAD_NYTC';
-delete from DB.DBA.RDF_META_CARTRIDGES where MC_HOOK = 'DB.DBA.RDF_LOAD_NYTCF';
-delete from DB.DBA.RDF_META_CARTRIDGES where MC_HOOK = 'DB.DBA.RDF_LOAD_YAHOO_BOSS';
-delete from DB.DBA.RDF_META_CARTRIDGES where MC_HOOK = 'DB.DBA.RDF_LOAD_DELICIOUS';
-delete from DB.DBA.RDF_META_CARTRIDGES where MC_HOOK = 'DB.DBA.RDF_LOAD_OREILLY';
 
 create procedure DB.DBA.RDF_LOAD_TECHNORATI_META (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
@@ -6897,7 +6881,7 @@ create procedure DB.DBA.RDF_LOAD_GEONAMES_META2(in data any, in opts any, in des
 			keywords := replace(keywords, ' ', '+');
 			if (left(keywords, 6) <> 'nodeID')
 			{
-				url := sprintf ('http://ws.geonames.org/search?q=%s&lang=en&style=full', keywords); -- &maxRows=100
+				url := sprintf ('http://ws.geonames.org/search?q=%s&lang=en&style=full&maxRows=5', keywords);
 				tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
 				xt := xtree_doc (tmp);
 				xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/geonames_meta2rdf.xsl', xt,
