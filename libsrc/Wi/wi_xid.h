@@ -36,9 +36,9 @@
 #define XIDDATASIZE	128		/* size in bytes */
 
 struct virt_xid_t {
-	long formatID;			/* format identifier */
-	long gtrid_length;		/* value not to exceed 64 */
-	long bqual_length;		/* value not to exceed 64 */
+	int32 formatID;			/* format identifier */
+	int32 gtrid_length;		/* value not to exceed 64 */
+	int32 bqual_length;		/* value not to exceed 64 */
 	char data[XIDDATASIZE];
   };
 typedef struct virt_xid_t virtXID;

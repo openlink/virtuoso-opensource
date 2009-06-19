@@ -97,6 +97,17 @@ extern int ttlyyerror_if_long_qname (ttlp_t *ttlp_arg, int lexcode, caddr_t box,
     ttlyylval.box = box_dv_short_string (yytext+(n)); \
     TTL_TOKBOX_Q_FINAL(lexcode,lex_type_descr) }
 
+#define TTL_TOKBOX_BNODE(n,lexcode,lex_type_descr) { \
+    int slen = strlen (yytext+(n)); \
+    if (slen > 1+MAX_XML_LNAME_LENGTH) { \
+        if (!(ttlp_arg[0].ttlp_flags & TTLP_ACCEPT_DIRTY_NAMES)) \
+          TTLYYERROR_OR_RECOVER ("Blank node label is abnormally long; this error can be suppressed by parser flags"); \
+        else \
+          tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "Blank node label is abnormally long"); \
+      } \
+    ttlyylval.box = box_dv_short_string (yytext+(n)); \
+    return (lexcode); }
+
 #define TTL_SPECIAL_QNAME(bit,id) \
  if (!(ttlp_arg[0].ttlp_special_qnames & bit)) \
    return id; \
@@ -152,6 +163,7 @@ SPAR_SQ_PLAIN	([^\\''\r\n])
 SPAR_DQ_PLAIN	([^\\""\r\n])
 SPAR_ECHAR	([\\]([atbvnrf\\""'']|("u"{HEX}{HEX}{HEX}{HEX})|("U"{HEX}{HEX}{HEX}{HEX}{HEX}{HEX}{HEX}{HEX})))
 SPAR_LANGTAG	([a-zA-Z]+)(("-"([a-zA-Z0-9]+))*)
+SPAR_OLD_LANGTAG	([a-z]+)"_"([a-zA-Z0-9]+)
 S_NL		((\r\n)|(\n\r)|\n|\r)
 HEX		([0-9A-Fa-f])
 
@@ -159,9 +171,10 @@ SPAR_NCCHAR1p	([A-Za-z\x7f-\xfe])
 SPAR_NCCHAR1	([A-Za-z\x7f-\xfe_])
 SPAR_VARNAME	([A-Za-z0-9\x7f-\xfe_]+)
 SPAR_NCCHAR	([A-Za-z0-9_\x7f-\xfe-])
+SPAR_NCCHAR_X	([A-Za-z0-9_#%?&=*\x7f-\xfe-])
 SPAR_NCNAME_PREFIX	({SPAR_NCCHAR1p}([A-Za-z0-9_.\x7f-\xfe-]*{SPAR_NCCHAR})?)
 SPAR_NCNAME		({SPAR_NCCHAR1}([A-Za-z0-9_.\x7f-\xfe-]*{SPAR_NCCHAR})?)
-SPAR_NCNAME_X		([A-Za-z0-9_./#%+?&=\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=\x7f-\xfe-]+)
+SPAR_NCNAME_X		([A-Za-z0-9_./#%+?&=@*\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*\x7f-\xfe-]+)
 
 %%
 
@@ -249,13 +262,13 @@ SPAR_NCNAME_X		([A-Za-z0-9_./#%+?&=\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=\x7f-\xfe-]+)
 
 <INITIAL>({SPAR_NCNAME_PREFIX}?)":"		{ TTL_TOKBOX_Q(0,QNAME_NS,"namespace"); }
 <INITIAL>{SPAR_NCNAME}				{ TTL_TOKBOX_Q(0,QNAME,"name without prefix"); }
-<INITIAL>"_:"{SPAR_NCNAME}			{ TTL_TOKBOX_Q(0,BLANK_NODE_LABEL,"blank node label"); }
+<INITIAL>"_:"{SPAR_NCNAME}			{ TTL_TOKBOX_BNODE(0,BLANK_NODE_LABEL,"blank node label"); }
 
-<INITIAL>"_:"{SPAR_NCCHAR}+	{
+<INITIAL>"_:"{SPAR_NCCHAR_X}+	{
     if (!(ttlp_arg[0].ttlp_flags & TTLP_ACCEPT_DIRTY_NAMES))
       TTLYYERROR_OR_RECOVER ("Ill formed blank node label; this error can be suppressed by parser flags");
     tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "Ill formed blank node label");
-    TTL_TOKBOX_Q(0,BLANK_NODE_LABEL,"blank node label"); }
+    TTL_TOKBOX_BNODE(0,BLANK_NODE_LABEL,"blank node label"); }
 
 <INITIAL>"?"{SPAR_NCNAME}	{
     if (!(ttlp_arg[0].ttlp_flags & TTLP_ACCEPT_VARIABLES))
@@ -269,8 +282,21 @@ SPAR_NCNAME_X		([A-Za-z0-9_./#%+?&=\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=\x7f-\xfe-]+)
   }
 
 <TURTLE_AT_AFTER_QUOTED>{SPAR_LANGTAG}	{
-    ttlyylval.box = box_dv_short_nchars (yytext, yyleng);
     BEGIN INITIAL;
+    ttlyylval.box = box_dv_short_nchars (yytext, yyleng);
+    return LANGTAG;
+  }
+
+<TURTLE_AT_AFTER_QUOTED>{SPAR_OLD_LANGTAG}	{
+    char *tail;
+    BEGIN INITIAL;
+    if (!(ttlp_arg[0].ttlp_flags & TTLP_ACCEPT_DIRTY_NAMES))
+      TTLYYERROR_OR_RECOVER ("Obsolete format of language; this error can be recovered if proper parser flags are set");
+    tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "Obsolete format of language");
+    ttlyylval.box = box_dv_short_nchars (yytext, yyleng);
+    for (tail = ttlyylval.box + (yyleng); tail >= ttlyylval.box; tail--)
+      if ('_' == tail[0])
+        tail[0] = '-';
     return LANGTAG;
   }
 

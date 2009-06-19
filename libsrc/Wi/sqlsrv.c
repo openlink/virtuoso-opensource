@@ -1917,18 +1917,19 @@ void sf_sql_tp_transact(short op, char* xid_str)
 {
   dk_session_t *client = IMMEDIATE_CLIENT;
   client_connection_t *cli = DKS_DB_DATA (client);
-  _2pc_printf(("sf_sql_tp_transact %x\n",op));
+  caddr_t err;
 
-  if (((SQL_TP_ABORT == op) ||
-      (SQL_TP_COMMIT == op)) &&
-       !cli->cli_tp_data)
+  _2pc_printf(("sf_sql_tp_transact %x\n",op));
+  if (((SQL_TP_ABORT == op) || (SQL_TP_COMMIT == op)) && !cli->cli_tp_data)
     {
+      err = srv_make_new_error ("TP105", "XA02", "Unexpected operation in tp transact code: %d", op);
       DKST_RPC_DONE (client);
-      PrpcAddAnswer ((caddr_t)SQL_ERROR, DV_ARRAY_OF_POINTER, 1, 1);
+      PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
+      dk_free_tree (err);
       return;
     }
 
-  _2pc_printf(("got a tp massage=%x cli %p\n",op,cli));
+  _2pc_printf(("got a tp massage=%x cli %p, lt_threads: %d\n", op, cli, cli->cli_trx ? cli->cli_trx->lt_threads : -1));
   switch (op)
     {
     case SQL_TP_UNENLIST:
@@ -1966,8 +1967,10 @@ void sf_sql_tp_transact(short op, char* xid_str)
       } break;
     case SQL_XA_JOIN:
       {
+	err = srv_make_new_error ("TP107", "XA02", "XA join is not supported");
 	    DKST_RPC_DONE (client);
-	    PrpcAddAnswer ((caddr_t) SQL_ERROR, DV_ARRAY_OF_POINTER, 1, 1);
+	PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
+	dk_free_tree (err);
 	    return;
       }
     case SQL_XA_ENLIST:
@@ -1979,12 +1982,15 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	xid = xid_bin_decode (xid_str);
 	if (!xid)
 	  {
+	    err = srv_make_new_error ("TP108", "XA02", "XID identifier can not be decoded");
 	    DKST_RPC_DONE (client);
-	    PrpcAddAnswer ((caddr_t) SQL_ERROR, DV_ARRAY_OF_POINTER, 1, 1);
+	    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
+	    dk_free_tree (err);
 	    return;
 	  }
 
 	tpd = (tp_data_t*)dk_alloc(sizeof(tp_data_t));
+	memset (tpd, 0, sizeof (tp_data_t));
 	cli->cli_tp_data = tpd;
 
       again:
@@ -1993,7 +1999,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	  goto again;
 	if (rc == VXA_ERROR)
 	   {
-	    caddr_t err = srv_make_new_error ("TP102", "XA02", "Duplicate global transaction identifier");
+	    err = srv_make_new_error ("TP102", "XA02", "Duplicate global transaction identifier");
 	    DKST_RPC_DONE (client);
 	    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
 	    dk_free_tree (err);
@@ -2002,7 +2008,6 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	    return;
 	  }
 
-	memset(tpd,0,sizeof(tp_data_t));
 	tpd = (tp_data_t*)dk_alloc(sizeof(tp_data_t));
 	memset(tpd,0,sizeof(tp_data_t));
 	tpd->cli_tp_enlisted = CONNECTION_PREPARED;
@@ -2038,7 +2043,6 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	if (virt_xa_client (xid, &tpd, op) == -1)
 	  {
 	    caddr_t trx = virt_xa_xid_in_log (xid);
-	    caddr_t err;
 	    if (trx)
 	      {
 		_2pc_printf(("tp pre/comm 1 =%x cli %p\n",op,cli));
@@ -2066,14 +2070,27 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	  {
 	    NEW_VAR(tp_future_t,future);
 	    tp_message_t * msg;
-	    caddr_t err;
+	    lock_trx_t * curr_lt;
 	    /*
 	      tp_data_t * tpd = cli->cli_tp_data;
 	    */
-	    lock_trx_t * curr_lt;
 	    if (!tpd)
 	      GPF_T;
 	    curr_lt = tpd->cli_tp_lt;
+
+	    if (!curr_lt)
+	      {
+		virt_xa_remove_xid (xid);
+		lt_enter_anyway (cli->cli_trx);
+		IN_TXN;
+		lt_rollback (cli->cli_trx, TRX_FREE);
+		LEAVE_TXN;
+		err = srv_make_new_error ("TP110", "XA01", "Wrong sequence [%s]", xid_str);
+		DKST_RPC_DONE (client);
+		PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
+		dk_free_tree (err);
+		return;
+	      }
 
 	    if ((op == SQL_XA_COMMIT) && (curr_lt->lt_status == LT_PENDING))
 	      {
@@ -2153,8 +2170,10 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	tp_data_t * tpd;
 	if (virt_xa_client (xid, &tpd, SQL_XA_WAIT) == -1)
 	  {
+	    err = srv_make_new_error ("TP109", "XA02", "XID identifier can not be decoded");
 	    DKST_RPC_DONE (client);
-	    PrpcAddAnswer ((caddr_t) SQL_ERROR, DV_ARRAY_OF_POINTER, 1,1);
+	    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1,1);
+	    dk_free_tree (err);
 	    return;
 	  }
 	xa_wait_commit (tpd);

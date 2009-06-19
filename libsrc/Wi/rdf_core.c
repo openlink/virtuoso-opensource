@@ -2478,7 +2478,10 @@ caddr_t DBG_NAME (tf_bnode_iid) (DBG_PARAMS triple_feed_t *tf, caddr_t txt)
   caddr_t res, *hit, err;
   query_t *cbk_qr = tf->tf_cbk_qrs[TRIPLE_FEED_NEW_BLANK];
   if (NULL == cbk_qr)
+    {
+      dk_free_box (txt);
     return box_iri_id (min_bnode_iri_id());
+    }
   if (NULL != txt)
     {
       hit = (caddr_t *)id_hash_get (tf->tf_blank_node_ids, (caddr_t)(&(txt)));
@@ -2496,7 +2499,10 @@ caddr_t DBG_NAME (tf_bnode_iid) (DBG_PARAMS triple_feed_t *tf, caddr_t txt)
   err = qr_exec (tf->tf_qi->qi_client, cbk_qr, tf->tf_qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);
   BOX_DONE (params, params_buf);
   if (NULL != err)
+    {
+      dk_free_box (txt);
     sqlr_resignal (err);
+    }
   if (NULL == txt)
     return res;
   id_hash_set (tf->tf_blank_node_ids, (caddr_t)(&txt), (caddr_t)(&res));
@@ -2508,9 +2514,10 @@ caddr_t DBG_NAME (tf_formula_bnode_iid) (DBG_PARAMS ttlp_t *ttlp_arg, caddr_t tx
 {
   caddr_t btext = box_sprintf (10+strlen (txt), "%ld%s", (long)(unbox_iri_id(ttlp_arg[0].ttlp_formula_iid)), txt);
   caddr_t res;
-  dk_set_push (&(ttlp_arg[0].ttlp_saved_uris), btext);
+  dk_free_box (txt);
+  /*dk_set_push (&(ttlp_arg[0].ttlp_saved_uris), btext);*/
   res = DBG_NAME (tf_bnode_iid) (DBG_ARGS ttlp_arg[0].ttlp_tf, btext);
-  dk_set_pop (&(ttlp_arg[0].ttlp_saved_uris));
+  /*dk_set_pop (&(ttlp_arg[0].ttlp_saved_uris));*/
   return res;
 }
 

@@ -137,7 +137,7 @@ static const char *sparyyerror_msg_tooshallow = "Too many closing parentheses";
     return name; \
   }
 
-#if 0 /* correct and ready to use, but no longer unused */
+#if 0 /* correct and ready to use, but no longer used */
 static void sparyyerror_if_long_lname (sparp_t *sparp, caddr_t box, const char *lex_type_descr)
 {
   size_t boxlen = box_length (box);
