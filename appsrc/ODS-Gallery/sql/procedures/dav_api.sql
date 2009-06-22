@@ -83,11 +83,9 @@ create procedure PHOTO.WA.dav_browse(
 
   current_gallery := path;
   -- TODO - da se proveri roliata na user-a za tozi instance(viewr gleda, writer - pishe)
-  _col_id := DAV_SEARCH_ID(path,'C');
+  _col_id := DB.DBA.DAV_SEARCH_ID(path, 'C');
   if (_col_id < 0)
-  {
     signal('E0001','Path is not valid');
-  }
 
   SELECT COL_PERMS,COL_OWNER,U_NAME
     INTO _col_perms,_col_owner,_col_user_name
@@ -102,14 +100,12 @@ create procedure PHOTO.WA.dav_browse(
     is_own := 0;
   }
 
-  dirlist := DAV_DIR_LIST (current_gallery, 
+  dirlist := DB.DBA.DAV_DIR_LIST (current_gallery,
                            0, 
                            current_user.auth_uid, 
                            current_user.auth_pwd);
   if (__tag(dirlist) = 189)
-  {
     goto ret;
-  }
 
   declare ctr integer;
   declare pub_date,start_date,end_date, description,geolocation,default_thumbnail,obsolete any;
@@ -145,18 +141,16 @@ create procedure PHOTO.WA.dav_browse(
       res_user :=  PHOTO.WA._get_user_name(album.owner_id);
 
       album.thumb_id := (select RES_ID from WS.WS.SYS_DAV_RES where RES_COL = dirlist[ctr][4] AND regexp_match('^\\.',RES_NAME) IS NULL );
-      default_thumbnail := DAV_PROP_GET(album.fullpath,'default_thumbnail',res_user[0],res_user[1]);
+      default_thumbnail := DB.DBA.DAV_PROP_GET (album.fullpath,'default_thumbnail',res_user[0],res_user[1]);
       if (__tag(default_thumbnail) <> 189)
-      {
         album.thumb_id := cast(default_thumbnail  as integer);
-      }
 
-      pub_date := DAV_PROP_GET(album.fullpath,'pub_date',res_user[0],res_user[1]);
+      pub_date := DB.DBA.DAV_PROP_GET (album.fullpath, 'pub_date', res_user[0], res_user[1]);
 --      if(__tag(pub_date ) <> 189){
 --        album.pub_date := cast(pub_date  as datetime);
 --      }
 
-      start_date := DAV_PROP_GET(album.fullpath,'start_date',res_user[0],res_user[1]);
+      start_date := DB.DBA.DAV_PROP_GET (album.fullpath,'start_date',res_user[0],res_user[1]);
       if(__tag(start_date ) <> 189)
       {
         album.start_date := cast(start_date  as datetime);
@@ -166,7 +160,7 @@ create procedure PHOTO.WA.dav_browse(
         album.start_date := cast(now() as datetime);
       }
         
-      end_date := DAV_PROP_GET(album.fullpath,'end_date',res_user[0],res_user[1]);
+      end_date := DB.DBA.DAV_PROP_GET (album.fullpath,'end_date',res_user[0],res_user[1]);
       if(__tag(end_date ) <> 189)
       {
         album.end_date := cast(end_date  as datetime);
@@ -176,13 +170,13 @@ create procedure PHOTO.WA.dav_browse(
         album.end_date := cast(now() as datetime);
       }
 
-      description := DAV_PROP_GET(album.fullpath,'description',res_user[0],res_user[1]);
+      description := DB.DBA.DAV_PROP_GET (album.fullpath,'description',res_user[0],res_user[1]);
       if (__tag(description) <> 189)
       {
         album.description := cast(description  as varchar);
       }
 
-      geolocation := DAV_PROP_GET(album.fullpath,'geolocation',res_user[0],res_user[1]);
+      geolocation := DB.DBA.DAV_PROP_GET (album.fullpath,'geolocation',res_user[0],res_user[1]);
       if(__tag(geolocation) <> 189)
       {
         album.geolocation := PHOTO.WA.string2vector(geolocation,';');
@@ -191,8 +185,7 @@ create procedure PHOTO.WA.dav_browse(
       if(album.geolocation is null)
          album.geolocation:=(vector('0.0','0.0','false'));
       
-
-      obsolete := coalesce( DAV_PROP_GET(album.fullpath,'obsolete',res_user[0],res_user[1]),0);
+      obsolete := coalesce( DB.DBA.DAV_PROP_GET (album.fullpath,'obsolete',res_user[0],res_user[1]),0);
       if (__tag(obsolete) <> 189)
       {
         album.obsolete := atoi(obsolete);
@@ -200,7 +193,7 @@ create procedure PHOTO.WA.dav_browse(
         album.obsolete := 0;
       }
 
-      private_tags := DAV_PROP_GET(album.fullpath,':virtprivatetags',res_user[0],res_user[1]);
+      private_tags := DB.DBA.DAV_PROP_GET (album.fullpath,':virtprivatetags',res_user[0],res_user[1]);
       if (__tag(private_tags) <> 189)
       {
         album.private_tags := PHOTO.WA.tags2vector(private_tags);
@@ -403,7 +396,7 @@ create procedure PHOTO.WA.edit_album(
   {
     col_id := PHOTO.WA.DAV_MOVE(current_user, concat(home_path,old_name,'/'),concat(home_path,new_name,'/'));
   }else{
-    col_id := DAV_SEARCH_ID(concat(home_path,old_name,'/'),'C');
+    col_id := DB.DBA.DAV_SEARCH_ID(concat(home_path,old_name,'/'),'C');
   }
 
   if(col_id > 0){
@@ -479,7 +472,7 @@ create procedure PHOTO.WA.thumbnail_album(
 
   declare col_id integer;
 
-  col_id := DAV_SEARCH_ID(concat(home_path,gallery_name,'/'),'C');
+  col_id := DB.DBA.DAV_SEARCH_ID(concat(home_path,gallery_name,'/'),'C');
 
   if(col_id > 0)
   {
@@ -624,9 +617,8 @@ create procedure PHOTO.WA.dav_delete(
 
   auth_uid := PHOTO.WA._session_user(vector('realm','wa','sid',sid),current_user);
   if (auth_uid = '')
-  {
     return vector();
-  }
+
   res_ids := vector();
   for (i := 0; i < length(ids); i := i + 1)
     {
@@ -635,11 +627,9 @@ create procedure PHOTO.WA.dav_delete(
       {   
       result := DB.DBA.DAV_DELETE (path, null, current_user.auth_uid, current_user.auth_pwd);
       if (result > 0)
-      {
         res_ids := vector_concat(res_ids,vector(ids[i]));
       }
     }
-  }
   return res_ids;
 }
 ;
@@ -648,13 +638,12 @@ create procedure PHOTO.WA.dav_delete(
 create procedure PHOTO.WA.delete_image_thumbnail(
   in image_path varchar,
   in auth_uid integer,
-  in auth_pwd varchar)
-returns  integer
+  in auth_pwd varchar) returns  integer
 {
   declare image_id,col_id,result integer;
   declare image_name,thumb_path varchar;
   
-  image_id:=DAV_SEARCH_ID (image_path,'R'); 
+  image_id := DB.DBA.DAV_SEARCH_ID (image_path, 'R');
   if (image_id < 0)
     return -1;
 
@@ -686,8 +675,7 @@ create procedure PHOTO.WA.get_dav_auth (inout _auth varchar, inout _pwd varchar)
 create procedure PHOTO.WA.get_image(
   in sid varchar,
   in p_gallery_id integer,
-  in _res_id integer)
-  returns SOAP_album
+  in _res_id integer) returns SOAP_album
 {
   declare _owner_id,path,_res_mod_time,_path,_res_perms,visibility,_res_group,_res_owner,_res_cr_time,_res_type,_res_name,visibility,description,auth_uid any;
   declare current_user photo_user;
@@ -706,7 +694,7 @@ create procedure PHOTO.WA.get_image(
     visibility := 0; -- private
   }
 
-  description := DAV_PROP_GET(_path,'description',current_user.auth_uid,current_user.auth_pwd);
+  description := DB.DBA.DAV_PROP_GET (_path,'description',current_user.auth_uid,current_user.auth_pwd);
   if (__tag(description) <> 189)
   {
     description := cast(description  as varchar);
@@ -752,9 +740,9 @@ create procedure PHOTO.WA.edit_image(
 
   if(old_name <> new_name)
   {
-    col_id := DAV_MOVE(concat(path,old_name),concat(path,new_name),1,current_user.auth_uid,current_user.auth_pwd);
+    col_id := DB.DBA.DAV_MOVE (concat(path,old_name),concat(path,new_name),1,current_user.auth_uid,current_user.auth_pwd);
   }
-  col_id := DAV_SEARCH_ID(concat(path,new_name),'R');
+  col_id := DB.DBA.DAV_SEARCH_ID (concat (path, new_name), 'R');
   if (col_id > 0)
   {
     DB.DBA.DAV_PROP_REMOVE (DB.DBA.DAV_SEARCH_PATH (col_id,'R'),'description',current_user.auth_uid,current_user.auth_pwd);
@@ -876,7 +864,7 @@ returns varchar array
 
   if (cast (path as varchar) <> '')
   {
-    current_tags := DAV_PROP_GET(path,':virtprivatetags',current_user.auth_uid,current_user.auth_pwd);
+    current_tags := DB.DBA.DAV_PROP_GET (path,':virtprivatetags',current_user.auth_uid,current_user.auth_pwd);
     resultTags := concat(current_tags, ',', new_tags);
     resultTags := PHOTO.WA.tags2vector(resultTags);
     resultTags := PHOTO.WA.tags2unique(resultTags);
@@ -902,7 +890,7 @@ returns  varchar array
 
   if (cast (path as varchar) <> '')
   {
-    current_tags := DAV_PROP_GET(path,':virtprivatetags',current_user.auth_uid,current_user.auth_pwd);
+    current_tags := DB.DBA.DAV_PROP_GET (path,':virtprivatetags',current_user.auth_uid,current_user.auth_pwd);
     resultTags := PHOTO.WA.tag_delete(current_tags,tag);
     DB.DBA.DAV_PROP_REMOVE (path,':virtprivatetags',current_user.auth_uid,current_user.auth_pwd);
     result := DB.DBA.DAV_PROP_SET (path,':virtprivatetags',resultTags,current_user.auth_uid,current_user.auth_pwd);
@@ -921,7 +909,7 @@ create procedure PHOTO.WA.sioc_tag(
   in path varchar,
   in tags varchar)
 {
-  declare iri,creator_iri,tiri,creator_iri any;
+  declare iri, creator_iri, tiri any;
   declare _ind integer;
 
   iri := sioc.DBA.dav_res_iri (path);
