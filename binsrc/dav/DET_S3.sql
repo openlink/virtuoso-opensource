@@ -512,11 +512,10 @@ create function DB.DBA.S3__deleteObject (
     authHeader := DB.DBA.S3__makeAWSHeader (accessCode, secretKey, S);
     reqHdr := sprintf ('Authorization: %s\r\nDate: %s', authHeader, dateUTC);
     commit work;
-    -- http_client_ext (url=>DB.DBA.S3__makeHostUrl (workPath),
-    --                  http_method=>'DELETE',
-    --                  http_headers=>reqHdr,
-    --                  headers=>resHdr);
-    xt := http_get (DB.DBA.S3__makeHostUrl (workPath), resHdr, 'DELETE', reqHdr);
+    http_client_ext (url=>DB.DBA.S3__makeHostUrl (workPath),
+                     http_method=>'DELETE',
+                     http_headers=>reqHdr,
+                     headers=>resHdr);
     if (resHdr[0] like 'HTTP/1._ 4__ %' or resHdr[0] like 'HTTP/1._ 5__ %')
     {
       -- dbg_obj_princ ('xt', xt);
