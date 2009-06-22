@@ -299,24 +299,18 @@ object_with_ctx
 	;
 
 ctx_opt
-	: /* empty */
+	: /* empty */	{
+		triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		if ((NULL == tf->tf_current_graph_uri) || strcmp (tf->tf_current_graph_uri, tf->tf_default_graph_uri))
+		  TF_CHANGE_GRAPH_TO_DEFAULT (tf);
+                  }
 	| q_complete {
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
-		if ((NULL == tf->tf_graph_uri) || strcmp (tf->tf_graph_uri, ttlp_arg->ttlp_last_complete_uri))
-                  {
-                    if (NULL != tf->tf_graph_uri)
-                      tf_commit (tf);
-                    dk_free_tree (tf->tf_graph_uri);
-                    tf->tf_graph_uri = ttlp_arg->ttlp_last_complete_uri;
-		    ttlp_arg->ttlp_last_complete_uri = NULL;
-                    tf->tf_graph_iid = tf_get_iid (tf, tf->tf_graph_uri);
-                    tf_new_graph (tf, tf->tf_graph_uri);
-                  }
-                else
-                  {
+		if ((NULL == tf->tf_current_graph_uri) || strcmp (tf->tf_current_graph_uri, ttlp_arg->ttlp_last_complete_uri))
+		  TF_CHANGE_GRAPH (tf, ttlp_arg->ttlp_last_complete_uri);
+                else {
 		    dk_free_tree (ttlp_arg->ttlp_last_complete_uri);
-		    ttlp_arg->ttlp_last_complete_uri = NULL;
-		  } }
+		    ttlp_arg->ttlp_last_complete_uri = NULL; } }
 	| TTL_RECOVERABLE_ERROR { }
 	| _GARBAGE_BEFORE_DOT_WS { }
 	;

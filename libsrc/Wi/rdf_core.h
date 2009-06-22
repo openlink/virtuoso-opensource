@@ -70,12 +70,14 @@ typedef struct triple_feed_s {
   id_hash_t *tf_blank_node_ids;
   caddr_t tf_app_env;		/*!< Environment for use by callbacks, owned by caller */
   const char *tf_input_name;	/*!< URI or file name or other name of source, can be NULL, owned by caller */
-  caddr_t tf_graph_uri;		/*!< Graph uri, owned by caller */
+  caddr_t tf_default_graph_uri;	/*!< Default graph uri, owned by caller */
+  caddr_t tf_current_graph_uri;	/*!< Currently active graph uri, owned by caller if equal to tf_default_graph_uri, local otherwise */
   caddr_t tf_base_uri;		/*!< Base URI to resolve relative URIs, owned by caller  */
-  caddr_t tf_graph_iid;		/*!< Graph iri ID, local */
+  caddr_t tf_default_graph_iid;	/*!< Default graph iri ID, local */
+  caddr_t tf_current_graph_iid;	/*!< Current graph iri ID, local */
   const char *tf_creator;	/*!< Name of BIF that created the feed (this name is printed in diagnostics) */
   ccaddr_t tf_cbk_names[COUNTOF__TRIPLE_FEED];	/*!< Callback names, owned by caller */
-  query_t *tf_cbk_qrs[COUNTOF__TRIPLE_FEED];
+  query_t *tf_cbk_qrs[COUNTOF__TRIPLE_FEED];	/*!< Compiled callback queries, they can be NULLs for empty string names or names that starts with '!' */
   ptrlong tf_triple_count;	/*!< Number of triples that are sent to callbacks already, must be boxed before sending to SQL callbacks! */
   ptrlong tf_message_count;	/*!< Number of messages that are reported already, must be boxed before sending to SQL callbacks! */
   int *tf_line_no_ptr;		/*!< Pointer to some line number counter somewhere outside, may be NULL */
@@ -91,6 +93,38 @@ extern void tf_triple (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t 
 extern void tf_triple_l (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t obj_sqlval, caddr_t obj_datatype, caddr_t obj_language);
 extern void tf_report (triple_feed_t *tf, char msg_type, const char *sqlstate, const char *sqlmore, const char *descr);
 
+#define TF_ONE_GRAPH_AT_TIME(tf) (NULL != (tf)->tf_cbk_names[TRIPLE_FEED_NEW_GRAPH])
+
+#define TF_CHANGE_GRAPH(tf,new_uri) do { \
+    if ((NULL != (tf)->tf_cbk_names[TRIPLE_FEED_NEW_GRAPH]) && (NULL != (tf)->tf_current_graph_uri)) \
+      tf_commit ((tf)); \
+    if ((tf)->tf_current_graph_uri != (tf)->tf_default_graph_uri) \
+      dk_free_tree ((tf)->tf_current_graph_uri); \
+    (tf)->tf_current_graph_uri = (new_uri); \
+    (new_uri) = NULL; \
+    if (TF_ONE_GRAPH_AT_TIME(tf)) { \
+        dk_free_tree ((tf)->tf_current_graph_iid); \
+        (tf)->tf_current_graph_iid = NULL; /* to avoid double free in case of error in tf_get_iid() below */ \
+        (tf)->tf_current_graph_iid = tf_get_iid ((tf), (tf)->tf_current_graph_uri); \
+        tf_new_graph ((tf), (tf)->tf_current_graph_uri); } \
+  } while (0)
+
+#define TF_CHANGE_GRAPH_TO_DEFAULT(tf) do { \
+    if ((NULL != (tf)->tf_cbk_names[TRIPLE_FEED_NEW_GRAPH]) && (NULL != (tf)->tf_current_graph_uri)) \
+      tf_commit ((tf)); \
+    if ((tf)->tf_current_graph_uri != (tf)->tf_default_graph_uri) \
+      dk_free_tree ((tf)->tf_current_graph_uri); \
+    (tf)->tf_current_graph_uri = (tf)->tf_default_graph_uri; \
+    if (NULL != (tf)->tf_cbk_names[TRIPLE_FEED_NEW_GRAPH]) { \
+        dk_free_tree ((tf)->tf_current_graph_iid); \
+        if (TF_ONE_GRAPH_AT_TIME(tf)) { \
+            (tf)->tf_current_graph_iid = NULL; /* to avoid double free in case of error in tf_get_iid() below */ \
+            (tf)->tf_default_graph_iid = tf_get_iid ((tf), (tf)->tf_default_graph_uri); } \
+        (tf)->tf_current_graph_iid = box_copy ((tf)->tf_default_graph_iid); \
+        tf_new_graph ((tf), (tf)->tf_current_graph_uri); } \
+  } while (0)
+
+#define TF_GRAPH_ARG(tf) ((TF_ONE_GRAPH_AT_TIME((tf))) ? &((tf)->tf_current_graph_iid) : &(tf->tf_current_graph_uri))
 
 #define TTLP_STRING_MAY_CONTAIN_CRLF	0x0001	/*!< Single quoted and double quoted strings may contain newlines. */
 #define TTLP_VERB_MAY_BE_BLANK		0x0002	/*!< Allows bnode predicates (but SPARQL processor may ignore them!) */
@@ -131,7 +165,6 @@ typedef struct ttlp_s
   caddr_t ttlp_default_ns_uri;	/*!< IRI associated with ':' prefix */
   dk_set_t ttlp_namespaces;	/*!< get_keyword style list of namespace prefixes (keys) and IRIs (values) */
   dk_set_t ttlp_saved_uris;	/*!< Stack that keeps URIs. YACC stack is not used to let us free memory on error */
-  caddr_t ttlp_graph_uri;	/*!< Graph URI that may be used in error reporting if \c ttlp_trig_graph_uri does not override it. */
   caddr_t ttlp_last_complete_uri;	/*!< Last \c QNAME or \c Q_IRI_REF that is expanded and resolved if needed */
   caddr_t ttlp_subj_uri;	/*!< Current subject URI, but it become object URI if ttlp_pred_is_reverse */
   caddr_t ttlp_pred_uri;	/*!< Current predicate URI */
@@ -140,7 +173,6 @@ typedef struct ttlp_s
   caddr_t ttlp_obj_lang;	/*!< Current object language mark */
   int ttlp_pred_is_reverse;	/*!< Flag if ttlp_pred_uri is used as reverse, e.g. in 'O is P of S' syntax */
   caddr_t ttlp_formula_iid;	/*!< IRI ID of the blank node of the formula ( '{ ... }' notation of N3 */
-  caddr_t ttlp_trig_graph_uri;	/*!< Current graph URI as specified by TriG syntax, if 0 != (ttlp_flags & TTLP_ALLOW_TRIG) */
   /* feeder */
   triple_feed_t *ttlp_tf;
 } ttlp_t;

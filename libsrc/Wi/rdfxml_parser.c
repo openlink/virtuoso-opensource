@@ -359,7 +359,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
         }
     }
   n_attrs = attrdata->local_attrs_count;
-  /* we do one loop first to see if there a xml:base, then rest */
+  /* we do one loop first to see if there are xml:base, xml:lang or xml:space then rest */
   for (inx = 0; inx < n_attrs; inx ++)
     {
       char *raw_aname = attrdata->local_attrs[inx].ta_raw_name.lm_memblock;
@@ -472,17 +472,24 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
                   return;
                 }
             }
+	  else if (!strcmp (tmp_local, "type"))
+	    {
+              goto push_inner_attr_prop; /* see below */
+	    }
 	  else if (!strcmp (tmp_local, "value"))
 	    {
 #ifdef RECOVER_RDF_VALUE
 	      rdf_val = avalue;
 #else
-              goto push_inner_attr_prop;
+              goto push_inner_attr_prop; /* see below */
 #endif
 	    }
           else
+            {
             xmlparser_logprintf (xp->xp_parser, XCFG_WARNING, 200,
               "Unsupported 'rdf:...' attribute" );
+                goto push_inner_attr_prop; /* see below */
+            }
           continue;
         }
       else if (!stricmp (tmp_nsuri, "xml"))
@@ -851,7 +858,7 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
     }
   tf = tf_alloc ();
   tf->tf_qi = qi;
-  tf->tf_graph_uri = graph_uri;
+  tf->tf_default_graph_uri = graph_uri;
   tf->tf_app_env = app_env;
   tf->tf_creator = "rdf_load_rdfxml";
   tf->tf_input_name = source_name;
@@ -860,9 +867,7 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
   QR_RESET_CTX
     {
       tf_set_cbk_names (tf, cbk_names);
-      tf->tf_graph_iid = tf_get_iid (tf, tf->tf_graph_uri);
-      tf_commit (tf);
-      tf_new_graph (tf, tf->tf_graph_uri);
+      TF_CHANGE_GRAPH_TO_DEFAULT (tf);
       if (0 == setjmp (context.xp_error_ctx))
         rc = VXmlParse (parser, text, xrie.xrie_text_len);
       else
