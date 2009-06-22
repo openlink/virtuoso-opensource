@@ -3039,7 +3039,6 @@ sf_overflow (future_request_t * frq)
 {
   client_connection_t * cli = DKS_DB_DATA (frq->rq_client);
   lock_trx_t * lt;
-  cli_scrap_cursors (cli, NULL, NULL);
   IN_TXN;
   lt = cli->cli_trx;
   if (0 == lt->lt_threads)
@@ -3060,7 +3059,8 @@ sf_overflow (future_request_t * frq)
       else
 	{
 	  TC (tc_no_thread_kill_running);
-	  /* Lt_kill_other_trx (lt, NULL, NULL); */
+	  if (LT_DELTA_ROLLED_BACK != lt->lt_status)
+	    lt_kill_other_trx (lt, NULL, NULL, LT_KILL_ROLLBACK);
 	}
     }
   LEAVE_TXN;
