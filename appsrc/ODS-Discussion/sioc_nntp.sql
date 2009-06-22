@@ -40,7 +40,8 @@ create procedure fill_ods_nntp_sioc (in graph_iri varchar, in site_iri varchar, 
     _msg := '';
     deadl := 5;
     cnt := 0;
-    declare exit handler for sqlstate '40001' {
+    declare exit handler for sqlstate '40001'
+    {
       if (deadl <= 0)
 	resignal;
       rollback work;
@@ -55,9 +56,9 @@ create procedure fill_ods_nntp_sioc (in graph_iri varchar, in site_iri varchar, 
 
       firi := forum_iri ('nntpf', NG_NAME);
       sioc_forum (graph_iri, site_iri, firi, NG_NAME, 'nntpf', NG_DESC);
-
       t_cnt:=0;
-	    for select NNPT_TAGS, NNPT_UID from DB.DBA.NNTPF_NGROUP_POST_TAGS
+      for select NNPT_TAGS, NNPT_UID
+            from DB.DBA.NNTPF_NGROUP_POST_TAGS
 	      where NNPT_NGROUP_ID = NG_GROUP and NNPT_POST_ID = '' do
 	      {
 	    ods_sioc_tags (graph_iri, firi, sprintf ('"^UID%d",', NNPT_UID)|| NNPT_TAGS);
@@ -69,13 +70,13 @@ create procedure fill_ods_nntp_sioc (in graph_iri varchar, in site_iri varchar, 
       riri := nntp_role_iri (NG_NAME);
       DB.DBA.RDF_QUAD_URI (graph_iri, riri, sioc_iri ('has_scope'), firi);
       DB.DBA.RDF_QUAD_URI (graph_iri, firi, sioc_iri ('scope_of'), riri);
-      for select NM_KEY_ID from DB.DBA.NEWS_MULTI_MSG
+      for select NM_KEY_ID
+            from DB.DBA.NEWS_MULTI_MSG
 	where NM_GROUP = NG_GROUP and NM_KEY_ID > _msg order by NM_KEY_ID do
 	  {
 	    declare par_iri, par_id, links_to any;
             declare _NM_ID, _NM_REC_DATE, _NM_HEAD, _NM_BODY any;
 
-	    --dbg_obj_print ('grp=', NG_GROUP, ' key=', NM_KEY_ID);
 	    whenever not found goto nxt;
 	    select NM_ID, NM_REC_DATE, NM_HEAD, NM_BODY
 		into _NM_ID, _NM_REC_DATE, _NM_HEAD, _NM_BODY
@@ -96,11 +97,10 @@ create procedure fill_ods_nntp_sioc (in graph_iri varchar, in site_iri varchar, 
 	    DB.DBA.nntpf_decode_subj (title);
 	    link := sprintf ('http://%s/nntpf/nntpf_disp_article.vspx?id=%U', DB.DBA.WA_CNAME (), encode_base64 (_NM_ID));
 	    links_to := DB.DBA.nntpf_get_links (_NM_BODY);
---	    dbg_obj_print (iri, links_to);
 	    ods_sioc_post (graph_iri, iri, firi, null, title, _NM_REC_DATE, _NM_REC_DATE, link, _NM_BODY, null, links_to, maker_iri);
 	    t_cnt := 0;
-	    --dbg_obj_print ('grp=', NG_GROUP, ' key=', NM_KEY_ID);
-	    for select NNPT_TAGS, NNPT_UID from DB.DBA.NNTPF_NGROUP_POST_TAGS
+  	    for select NNPT_TAGS, NNPT_UID
+  	          from DB.DBA.NNTPF_NGROUP_POST_TAGS
 	      where NNPT_NGROUP_ID = NG_GROUP and NNPT_POST_ID = NM_KEY_ID do
 	      {
 		ods_sioc_tags (graph_iri, iri, sprintf ('"^UID%d",', NNPT_UID)|| NNPT_TAGS);
@@ -125,10 +125,10 @@ create procedure fill_ods_nntp_sioc (in graph_iri varchar, in site_iri varchar, 
 		_msg := NM_KEY_ID;
 	      }
 	  }
-       for select U_NAME from DB.DBA.SYS_USERS where U_DAV_ENABLE = 1 and U_NAME <> 'nobody' and U_NAME <> 'nogroup' and U_IS_ROLE = 0
-	 do
+      for select U_NAME from DB.DBA.SYS_USERS where U_DAV_ENABLE = 1 and U_NAME <> 'nobody' and U_NAME <> 'nogroup' and U_IS_ROLE = 0 do
 	   {
 	     declare user_iri varchar;
+
              user_iri := user_obj_iri (U_NAME);
 	     DB.DBA.RDF_QUAD_URI (graph_iri, riri, sioc_iri ('function_of'), user_iri);
 	     DB.DBA.RDF_QUAD_URI (graph_iri, user_iri, sioc_iri ('has_function'), riri);
@@ -276,12 +276,9 @@ create trigger NNTPF_NGROUP_POST_TAGS_U after update on DB.DBA.NNTPF_NGROUP_POST
 
   oobj := DB.DBA.RDF_OBJ_OF_SQLVAL (sprintf ('"^UID%d",', O.NNPT_UID)||O.NNPT_TAGS);
   delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (graph_iri) and O = oobj and S = DB.DBA.RDF_IID_OF_QNAME (iri);
-  ods_sioc_tags_delete(graph_iri, iri,
-                       sprintf ('"^UID%d",', N.NNPT_UID) ||
-                       O.NNPT_TAGS);
-  ods_sioc_tags (graph_iri, iri,
-      sprintf ('"^UID%d",', N.NNPT_UID) ||
-      N.NNPT_TAGS);
+  ods_sioc_tags_delete(graph_iri, iri, sprintf ('"^UID%d",', N.NNPT_UID) || O.NNPT_TAGS);
+  ods_sioc_tags (graph_iri, iri, sprintf ('"^UID%d",', N.NNPT_UID) || N.NNPT_TAGS);
+
   scot_tags_delete (-1 * O.NNPT_NGROUP_ID, iri, O.NNPT_TAGS);
   scot_tags_insert (-1 * N.NNPT_NGROUP_ID, iri, N.NNPT_TAGS);
   return;
@@ -361,8 +358,6 @@ create trigger NEWS_MULTI_MSG_SIOC_D after delete on DB.DBA.NEWS_MULTI_MSG refer
   delete_quad_s_or_o (graph_iri, iri, iri);
   return;
 };
-
-use DB;
 
 use DB;
 -- NNTPF

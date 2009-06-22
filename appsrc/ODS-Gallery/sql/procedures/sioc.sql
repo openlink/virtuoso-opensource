@@ -21,7 +21,7 @@
 --
 use sioc;
 
-create procedure fill_ods_photos_sioc (in graph_iri varchar, in site_iri varchar, in _wai_name varchar := null)
+create procedure SIOC..fill_ods_photos_sioc (in graph_iri varchar, in site_iri varchar, in _wai_name varchar := null)
     {
   declare post_iri, forum_iri, creator_iri,private_tags,tags,user_pwd,cm_iri,title,links_to,c_link varchar;
   declare pos,dir,album,_ind,ts,modf,link, svc_iri any;
@@ -64,7 +64,7 @@ create procedure fill_ods_photos_sioc (in graph_iri varchar, in site_iri varchar
   }
 ;
 
-create procedure photo_insert (
+create procedure SIOC..photo_insert (
   in res_id integer,
   in res_name varchar,
   in res_full_path varchar,
@@ -82,9 +82,7 @@ create procedure photo_insert (
   };
 
   if (res_full_path is null)
-    {
       res_full_path := (select r.RES_FULL_PATH from WS.WS.SYS_DAV_RES r where r.RES_ID = res_id);
-    }
 
   pos := strrchr (res_full_path, '/');
   if (pos is null)
@@ -94,8 +92,6 @@ create procedure photo_insert (
   pos := strrchr (dir, '/');
   dir := subseq (res_full_path, 0, pos+1);
   album := subseq (res_full_path, pos);
-  graph_iri := get_graph ();
-
   for (select p.GALLERY_ID,
               p.WAI_NAME,
               p.HOME_URL
@@ -106,6 +102,7 @@ create procedure photo_insert (
         and p.WAI_NAME = i.WAI_NAME 
           and i.WAI_IS_PUBLIC = 1) do
   {
+    graph_iri := get_graph ();
       forum_iri   := photo_iri (WAI_NAME);
     post_iri    := post_iri_ex (forum_iri, res_id);
     creator_iri := user_iri (res_owner_id);
@@ -114,20 +111,17 @@ create procedure photo_insert (
     if (isnull (DB.DBA.DAV_HIDE_ERROR (content)))
       content := 'null';
 	      
-    ods_sioc_post (graph_iri, post_iri, forum_iri, creator_iri, res_name, res_created, res_updated, link, content);
+    SIOC..ods_sioc_post (graph_iri, post_iri, forum_iri, creator_iri, res_name, res_created, res_updated, link, content);
 
     -- tags
     tags := DB.DBA.DAV_PROP_GET_INT (res_id, 'R', ':virtprivatetags', 0);
     if (not (isinteger(tags) and (tags < 0)))
-    {
-      scot_tags_insert (GALLERY_ID, post_iri, tags);
-    }
+      SIOC..scot_tags_insert (GALLERY_ID, post_iri, tags);
   }
-  return;
 }
 ;
 
-create procedure photo_delete (
+create procedure SIOC..photo_delete (
   in res_id integer,
   in res_name varchar,
   in res_full_path varchar,
@@ -135,8 +129,8 @@ create procedure photo_delete (
 {
   declare pos integer;
   declare dir, album, graph_iri, post_iri, forum_iri varchar;
-
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
@@ -162,9 +156,8 @@ create procedure photo_delete (
     graph_iri := get_graph ();
       forum_iri     := photo_iri (WAI_NAME);
     post_iri    := post_iri_ex (forum_iri, res_id);
-    delete_quad_s_or_o (graph_iri, post_iri, post_iri);
+    SIOC..delete_quad_s_or_o (graph_iri, post_iri, post_iri);
   }
-  return;
 }
 ;
 	      
@@ -204,7 +197,13 @@ create trigger SYS_DAV_RES_PHOTO_SIOC_D after delete on WS.WS.SYS_DAV_RES refere
 }
 ;
 
-create procedure ods_photo_sioc_tags (in path varchar, in res_id int, in owner int, in owner_name varchar, in tags any, in op varchar)
+create procedure SIOC..ods_photo_sioc_tags (
+  in path varchar,
+  in res_id int,
+  in owner int,
+  in owner_name varchar,
+  in tags any,
+  in op varchar)
 {
   declare pos int;
   declare dir, iri, post_iri varchar;
@@ -222,14 +221,14 @@ create procedure ods_photo_sioc_tags (in path varchar, in res_id int, in owner i
       iri := photo_iri (WAI_NAME);
       post_iri  := post_iri_ex (iri, res_id);
       if (op = 'U' or op = 'D')
-	scot_tags_delete (WAI_ID, post_iri, tags);
+      SIOC..scot_tags_delete (WAI_ID, post_iri, tags);
       if (op = 'I' or op = 'U')
-	scot_tags_insert (WAI_ID, post_iri, tags);
+      SIOC..scot_tags_insert (WAI_ID, post_iri, tags);
     }
 }
 ;
 
-create procedure comment_insert (
+create procedure SIOC..comment_insert (
   in _comment_id integer,
   in _res_id integer,
   in _gallery_id integer,
@@ -263,14 +262,14 @@ create procedure comment_insert (
   post_iri  := post_iri_ex (forum_iri, _res_id);
     cm_iri    := gallery_comment_iri (post_iri, _comment_id);
 
-    ods_sioc_post (graph_iri, cm_iri, forum_iri, null, _res_name , _create_date, _modify_date, c_link, _text);
+    SIOC..ods_sioc_post (graph_iri, cm_iri, forum_iri, null, _res_name , _create_date, _modify_date, c_link, _text);
   DB.DBA.RDF_QUAD_URI (graph_iri, post_iri, 'http://rdfs.org/sioc/ns#has_reply', cm_iri);
   DB.DBA.RDF_QUAD_URI (graph_iri, cm_iri, 'http://rdfs.org/sioc/ns#reply_of', post_iri);
   }
 }
 ;
 
-create procedure comment_delete (
+create procedure SIOC..comment_delete (
   in _comment_id integer,
   in _res_id integer,
   in _gallery_id integer)
@@ -289,7 +288,7 @@ create procedure comment_delete (
       forum_iri := photo_iri (WAI_NAME);
   post_iri  := post_iri_ex (forum_iri, _res_id);
     cm_iri   := gallery_comment_iri (post_iri, _comment_id);
-    DELETE_QUAD_S_OR_O (graph_iri, cm_iri, cm_iri);
+    SIOC..delete_quad_s_or_o (graph_iri, cm_iri, cm_iri);
   }
 }
 ;
@@ -331,13 +330,19 @@ create trigger PHOTO_COMMENTS_SIOC_D after delete on PHOTO.WA.COMMENTS referenci
 }
 ;
 
-create procedure gallery_post_iri(in res_full_path varchar){
-  return dav_res_iri (res_full_path);  
+create procedure SIOC..gallery_post_iri(in res_full_path varchar)
+{
+  return SIOC..dav_res_iri (res_full_path);
 }
 ;
 
-create procedure gallery_post_iri_new(in user_id integer,in album varchar,in image varchar){
+create procedure SIOC..gallery_post_iri_new (
+  in user_id integer,
+  in album varchar,
+  in image varchar)
+{
   declare _user_name varchar;
+
     select U_NAME 
       into _user_name  
      from DB.DBA.SYS_USERS 
@@ -347,19 +352,18 @@ create procedure gallery_post_iri_new(in user_id integer,in album varchar,in ima
 }
 ;
 
-create procedure gallery_post_url (
+create procedure SIOC..gallery_post_url (
   in home_path varchar,
   in album varchar,
   in image varchar := '')
 {
   if (image = '')
     return  sprintf ('http://%s%U/#%U', get_cname(), home_path, album);
-  else
   return  sprintf ('http://%s%U/#%U/%U', get_cname(), home_path, album, image);
 }
 ;
 
-create procedure gallery_comment_iri (in iri varchar, in comment_id int)
+create procedure SIOC..gallery_comment_iri (in iri varchar, in comment_id int)
 {
   return sprintf ('%s:comment_%s',iri,cast(comment_id as varchar));
 }
@@ -375,7 +379,7 @@ create procedure gallery_comment_url(in iri varchar, in comment_id int)
 use DB;
 -- PHOTO
 
-create procedure sioc.DBA.gallery_prop_get (in path varchar, in uid varchar, in pwd varchar, in def varchar)
+create procedure SIOC..gallery_prop_get (in path varchar, in uid varchar, in pwd varchar, in def varchar)
 {
   declare rc int;
   rc := DB.DBA.DAV_PROP_GET (path, 'description', uid, pwd_magic_calc (uid, pwd, 1));
@@ -387,8 +391,6 @@ create procedure sioc.DBA.gallery_prop_get (in path varchar, in uid varchar, in 
   return rc;
 };
 
-use DB;
-
 wa_exec_no_error ('drop view ODS_PHOTO_POSTS');
 
 create view ODS_PHOTO_POSTS as select
@@ -397,14 +399,14 @@ create view ODS_PHOTO_POSTS as select
 		RES_FULL_PATH RES_FULL_PATH,
 		RES_NAME RES_NAME,
 		RES_TYPE RES_TYPE,
-		sioc..sioc_date (RES_CR_TIME) as  RES_CREATED,
-		sioc..sioc_date (RES_MOD_TIME) as RES_MODIFIED,
+		SIOC..sioc_date (RES_CR_TIME) as  RES_CREATED,
+		SIOC..sioc_date (RES_MOD_TIME) as RES_MODIFIED,
 		uo.U_NAME U_OWNER,
 		uo.U_PASSWORD U_PWD,
 	        um.U_NAME U_MEMBER,
-		sioc..gallery_post_url (p.HOME_URL, COL_NAME, RES_NAME) as RES_LINK,
-		sioc..gallery_prop_get (RES_FULL_PATH, uo.U_NAME, uo.U_PASSWORD, RES_NAME) as RES_DESCRIPTION VARCHAR,
-		sioc..dav_res_iri (RES_FULL_PATH) || '/sioc.rdf' as SEE_ALSO
+		SIOC..gallery_post_url (p.HOME_URL, COL_NAME, RES_NAME) as RES_LINK,
+		SIOC..gallery_prop_get (RES_FULL_PATH, uo.U_NAME, uo.U_PASSWORD, RES_NAME) as RES_DESCRIPTION VARCHAR,
+		SIOC..dav_res_iri (RES_FULL_PATH) || '/sioc.rdf' as SEE_ALSO
 		from
 		PHOTO..SYS_INFO p, WA_MEMBER m, WS.WS.SYS_DAV_RES, SYS_USERS uo, SYS_USERS um, WS.WS.SYS_DAV_COL
 		where
@@ -422,8 +424,8 @@ create view ODS_PHOTO_COMMENTS as select
 	COMMENT_ID,
 	p.RES_ID,
 	p.RES_NAME RES_NAME,
-	sioc..sioc_date (CREATE_DATE) as CREATE_DATE,
-	sioc..sioc_date (MODIFY_DATE) as MODIFY_DATE,
+	SIOC..sioc_date (CREATE_DATE) as CREATE_DATE,
+	SIOC..sioc_date (MODIFY_DATE) as MODIFY_DATE,
 	USER_ID,
 	TEXT,
 	WAI_NAME,
