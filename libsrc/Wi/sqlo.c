@@ -2736,6 +2736,30 @@ sqlo_count_unq_preserving (ST *tree)
 
 
 void
+sqlo_scalar_subq_scope (sqlo_t * so, ST ** ptree)
+{
+  ST * tree = *ptree;
+  dk_set_t s;
+  sql_scope_t * sco = so->so_scope;
+  ST * org, * res;
+  for (s = sco->sco_scalar_subqs; s; s = s->next->next)
+    {
+      org = (ST*)s->data;
+      if (box_equal (org, tree))
+	{
+	  *ptree = (ST*)t_box_copy_tree ((caddr_t)s->next->data);
+	  return;
+	}
+    }
+  org = (ST*)t_box_copy_tree ((caddr_t)tree);
+  sqlo_scope (so, ptree);
+  res = (ST*)t_box_copy_tree ((caddr_t)*ptree);
+  t_set_push (&sco->sco_scalar_subqs, (void*)res);
+  t_set_push (&sco->sco_scalar_subqs, (void*)org);
+}
+
+
+void
 sqlo_scope (sqlo_t * so, ST ** ptree)
 {
   ST *tree;
@@ -2821,7 +2845,7 @@ sqlo_scope (sqlo_t * so, ST ** ptree)
 	break;
       }
     case SCALAR_SUBQ:
-      sqlo_scope (so, &(tree->_.bin_exp.left));
+      sqlo_scalar_subq_scope (so, &(tree->_.bin_exp.left));
       break;
     case CALL_STMT:
       {

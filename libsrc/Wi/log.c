@@ -2108,9 +2108,11 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 	  LSEEK (tcpses_get_fd (dbs->dbs_log_session->dks_session), 0, SEEK_SET);
 	  FTRUNCATE (tcpses_get_fd (dbs->dbs_log_session->dks_session), (OFF_T) (0));
 	  dbs->dbs_log_length = 0;
-	  log_set_byte_order_check (1);
           if (CPT_SHUTDOWN != shutdown)
-	    log_set_server_version_check (1);
+	    {
+	      log_set_byte_order_check (1);
+	      log_set_server_version_check (1);
+	    }
 	  log_info ("Checkpoint made, log reused");
 	}
       else
@@ -2143,9 +2145,11 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 	}
       cfg_replace_log (new_log);
       dbs->dbs_log_length = 0;
-      log_set_byte_order_check (1);
       if (CPT_SHUTDOWN != shutdown)
-        log_set_server_version_check (1);
+	{
+	  log_set_byte_order_check (1);
+          log_set_server_version_check (1);
+	}
       log_info ("Checkpoint made, new log is %s", new_log);
     }
   DO_SET (lock_trx_t *, lt, &all_trxs)
@@ -2154,6 +2158,11 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 	  && strses_length (lt->lt_log))
 	{
 	  int rc;
+	  if (!dbs->dbs_log_length)
+	    {
+	      log_set_byte_order_check (1);
+	      log_set_server_version_check (1);
+	    }
 	  mutex_enter (log_write_mtx);
 	  rc = log_commit (lt);
 	  if (LTE_OK != rc)

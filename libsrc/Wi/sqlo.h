@@ -373,6 +373,7 @@ struct sql_scope_s
   int		sco_has_jt;
   sqlo_t *	sco_so;
   dk_set_t 	sco_jts;
+  dk_set_t	sco_scalar_subqs; /* if identical value subq many times in a scope, like in select and in oby, then rename just once, so get common subexp just once */
 };
 
 
