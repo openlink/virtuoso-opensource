@@ -2415,7 +2415,7 @@ create procedure CAL.WA.dt_stringtime (
 -----------------------------------------------------------------------------------------
 --
 create procedure CAL.WA.dt_timeFloor (
-  in pTime integer,
+  in pTime datetime,
   in pRound integer := 0)
 {
   declare h, m integer;
@@ -2430,15 +2430,10 @@ create procedure CAL.WA.dt_timeFloor (
 -----------------------------------------------------------------------------------------
 --
 create procedure CAL.WA.dt_timeCeiling (
-  in pTime integer,
+  in pTime datetime,
   in pRound integer := 0)
 {
-  declare h, m integer;
-
-  if (pRound = 0)
-    return pTime;
-  CAL.WA.dt_timeDecode (pTime, h, m);
-  return CAL.WA.dt_timeEncode (h, ceiling (cast (m as float) / pRound) * pRound);
+  return CAL.WA.dt_timeFloor (dateadd ('minute', pRound, pTime), pRound);
 }
 ;
 
@@ -4596,7 +4591,6 @@ create procedure CAL.WA.attendees_mails ()
       goto _next;
     };
 
-    -- dbg_obj_print ('tuka sme ama sto ne znam');
     url := sprintf ('%sattendees.vspx?uid=%U', CAL.WA.calendar_url (domain_id), uid);
     content_html := sprintf (H, subject, period, url, url, url);
     content_text := sprintf (T, subject, period, url);

@@ -38,7 +38,7 @@
 
   <![CDATA[
     <?vsp
-      declare N integer;
+      declare N, cPrivacy integer;
       declare data, sql, sqlParams, state, msg, meta, rows, maxRows any;
 
       set http_charset = 'UTF-8';
@@ -52,6 +52,7 @@
         self.domain_id := cast (get_keyword ('domain_id', data, '-1') as integer);
         self.account_id := CAL.WA.domain_owner_id (self.domain_id);
         self.settings := CAL.WA.settings (self.account_id);
+        cPrivacy := case when cast (get_keyword ('user_id', data, '-1') as integer) = -1 then 1 else 0 end;
 
         http ('<?xml version="1.0" encoding="UTF-8"?>\n');
         http ('<rss version="2.0">\n');
@@ -88,7 +89,7 @@
           data := null;
           CAL.WA.xml_set('keywords', data, self.v_keywords);
           CAL.WA.xml_set('tags', data, self.v_tags);
-          sql := CAL.WA.search_sql (self.domain_id, self.account_id, data);
+          sql := CAL.WA.search_sql (self.domain_id, cPrivacy, data);
           sqlParams := vector (self.domain_id, self.account_id, data, self.v_max);
         }
         if (self.v_scope = 'events')

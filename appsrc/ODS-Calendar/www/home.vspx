@@ -363,7 +363,6 @@
 
   <v:method name="nCalcDate" arglist="in N integer">
     <![CDATA[
-      -- dbg_obj_print ('self.cnMonth', self.cnMonth, N, self.cnDays);
       if (self.cnDays [N] > 0)
         return cast (dateadd ('day', self.cnDays [N] - 1, self.cnMonth) as date);
       if ((self.cnDays [N] < 0) and (N < 24))
@@ -1105,8 +1104,17 @@
                 if (cCommand in ('rss', 'atom', 'rdf'))
                 {
                   S := sprintf('export.vspx?output=%s&scope=%s', cCommand, self.cScope);
-                  if (self.cScope = 'search')
+                        if (self.cScope = 'events')
                   {
+                          S := S || sprintf ('&order=%s&direction=%s', self.e_order, self.e_direction);
+                        }
+                        if (self.cScope = 'tasks')
+                        {
+                          S := S || sprintf ('&order=%s&direction=%s', self.ts_order, self.ts_direction);
+                        }
+                        else if (self.cScope = 'search')
+                        {
+                          S := S || sprintf ('&order=%s&direction=%s', self.s_order, self.s_direction);
                     if (trim (self.s_keywords.ufl_value) <> '')
                       S := S || '&keywords=' || trim (self.s_keywords.ufl_value);
                     if (trim (self.s_tags.ufl_value) <> '')
