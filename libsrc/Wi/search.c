@@ -1695,6 +1695,8 @@ itc_hash_page_search (it_cursor_t * itc, buffer_desc_t ** buf_ret)
   for (;;)
     {
       key_ver_t kv;
+      if (ITC_AT_END == itc->itc_map_pos)
+	return DVC_INDEX_END; /* the next in itc_next can move this to end.  Must not ref the kv, else can get by accidentr a 1 and think it's a row */
       row = page + itc->itc_map_pos;
       kv = IE_KEY_VERSION (row);
       if (kv!= 1)
