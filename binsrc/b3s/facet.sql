@@ -237,6 +237,66 @@ FCT_LABEL_DP_L (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar)
 ;
 
 create procedure
+FCT_LABEL_S (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar)
+{
+  declare best_str any;
+  declare best_l, l int;
+  declare label_iri iri_id_8;
+  declare q, best_q, str_lang, lng_pref any;
+
+  if (not isiri_id (x))
+    return vector (null, 1);
+  rdf_check_init ();
+  label_iri := iri_id_from_num (atoi (registry_get ('fct_label_iri')));
+  best_str := null;
+  best_l := 0;
+  best_q := 0;
+  for select o, p
+        from rdf_quad table option (no cluster)
+        where s = x and p in (rdf_super_sub_list (ctx, label_iri, 3)) do
+    {
+      if (is_rdf_box (o))
+	{
+          lng_pref := rdf_box_lang (o);
+	  str_lang := (select RL_ID from RDF_LANGUAGE where RL_TWOBYTE = lng_pref);
+	}
+      else
+        str_lang := 'en';	
+      q := cmp_get_lang_by_q (lng, str_lang);
+
+      if (is_rdf_box (o) or isstring (o))
+	{
+	  if (q > best_q)
+	    {
+	      best_str := o;
+	      best_q := q;
+	    }
+	}
+
+      if (0)
+	{
+	  if (is_rdf_box (o) and not rdf_box_is_complete (o))
+	    l := 20;
+	  else
+	    l := length (o);
+	  if (l > best_l)
+	    {
+	      best_str := o;
+	      best_l := l;
+	    }
+	}
+    }
+  if (is_rdf_box (best_str) and not rdf_box_is_complete (best_str))
+    {
+      set isolation = 'committed';
+      return (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end
+		   from DB.DBA.RDF_OBJ table option (no cluster) where RO_ID = rdf_box_ro_id (best_str));
+    }
+  return best_str;
+}
+;
+
+create procedure
 LBL_O_VALUE (in id int)
 {
   set isolation = 'committed';
@@ -341,7 +401,7 @@ create procedure fct_get_mode (in tree any, in xp any)
 {
   declare view_type varchar;
   view_type := cast (xpath_eval (xp, tree, 1) as varchar);
-  if (sys_stat ('cl_run_local_only') and view_type = 'text-d')
+  if (0 and sys_stat ('cl_run_local_only') and view_type = 'text-d')
     view_type := 'text';
   return view_type;  
 }
@@ -390,10 +450,10 @@ fct_xml_wrap (in tree any, in txt any)
       else if (view_type = 'text-d')
 	{
 	  texp := cast (xpath_eval ('string (//query/text)', tree, 1) as varchar);
-	  http (sprintf ('select  xmlelement (\'result\', 
+	  http ('select  xmlelement (\'result\', 
 	  			     xmlattributes (\'text-d\' as "type"), 
-				     s_sum_page ("res", vector (\'%S\'))) 
-				     from (sparql ', texp), ntxt);
+				     "res") 
+				     from (sparql ', ntxt);
 	}
       else
 	{
@@ -575,8 +635,8 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any)
       declare exp any;
       exp := cast (xpath_eval ('//text', tree) as varchar);
       http (sprintf ('select 
-		  	(<sql:vector_agg> (<bif:vector> (?c1, ?sm))) as ?res where { { 
-      select (<SHORT_OR_LONG::>(?s%d)) as ?c1,  (<sql:S_SUM> ( <SHORT_OR_LONG::IRI_RANK> (?s%d), <SHORT_OR_LONG::>(?s%dtextp), <SHORT_OR_LONG::>(?o%d), ?sc ) ) as ?sm ', this_s, this_s, this_s, this_s), pre);
+		  	(<sql:s_sum_page> (<sql:vector_agg> (<bif:vector> (?c1, ?sm)), <bif:vector> (%s)))  as ?res where { { 
+      select (<SHORT_OR_LONG::>(?s%d)) as ?c1,  (<sql:S_SUM> ( <SHORT_OR_LONG::IRI_RANK> (?s%d), <SHORT_OR_LONG::>(?s%dtextp), <SHORT_OR_LONG::>(?o%d), ?sc ) ) as ?sm ', element_split (exp), this_s, this_s, this_s, this_s), pre);
 
       http (sprintf ('order by desc (<sql:sum_rank> ((<sql:S_SUM> ( <SHORT_OR_LONG::IRI_RANK> (?s%d), <SHORT_OR_LONG::>(?s%dtextp), <SHORT_OR_LONG::>(?o%d), ?sc ) ) ) )', this_s, this_s, this_s), post);	    
       fct_post (tree, post, lim, offs);

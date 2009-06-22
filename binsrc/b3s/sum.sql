@@ -56,12 +56,18 @@ create procedure s_sum_fin (inout env any)
 create aggregate DB.DBA.S_SUM (in s_rank double precision, in p iri_id, in o any, in sc int) returns any from 
   s_sum_init, s_sum_acc, s_sum_fin;
 
+grant execute on DB.DBA.S_SUM_INIT to "SPARQL";  
+grant execute on DB.DBA.S_SUM_ACC to "SPARQL";  
+grant execute on DB.DBA.S_SUM_FIN to "SPARQL";  
+grant execute on DB.DBA.S_SUM to "SPARQL";  
+
 create procedure sum_rank (inout arr any)
 {
   return  rnk_scale (arr[0]) + cast (arr[2] as real) / (arr[1] / 3);
 }
 ;
 
+grant execute on DB.DBA.SUM_RANK to "SPARQL";  
 
 create procedure sum_o_p_score (inout o any, inout p any)
 {
@@ -100,7 +106,7 @@ create procedure sum_result (inout final any, inout res any, inout text_exp any,
   for (inx := 0; inx < length (sorted); inx := inx + 3)
   tot	 := tot || rdf_box_data (sorted[inx]);
  exc := fct_bold_tags (search_excerpt (text_exp, tot));
-  --dbg_obj_print (' summaries of ', tot, ' = ', exc);
+-- dbg_obj_print (' summaries of ', tot, ' ', lbl, ' ', exc);
  elt := xmlelement ('row', 
 		    xmlelement ('column', xmlattributes ('trank' as "datatype"), cast (cast (tsum as real) / ((end_inx - start_inx) / 3) as varchar)),
 		    xmlelement ('column', xmlattributes ('erank' as "datatype"), cast (s_rank as varchar)),
@@ -119,8 +125,46 @@ create procedure sum_final (inout x any)
 }
 ;
 
+create procedure s_sum_page_s (in rows any, in text_exp varchar)
+{
+  /* fill the os and translate the iris and make sums */
+  declare inx, s, prev_s, prev_fill, fill, inx2, n, s_rank, lbl any;
+  declare dp, os, res, final any;
+  declare lng_pref any;
+  lng_pref := connection_get ('langs');
+  xte_nodebld_init (final);
+  n := 0;
+  for (inx := 0; inx < length (rows); inx := inx + 1)
+    {
+      os := aref (rows, inx, 1);
+      for (inx2 := 3; inx2 < os[1] + 3; inx2 := inx2 + 3)
+        n := n + 1;
+    }
+  n := 3 * n;
+  --dbg_obj_print ('result length ', n);
+  res := make_array (n, 'any');  
+  fill := 0;
+  for (inx := 0; inx < length (rows); inx := inx + 1)
+    {
+      os := aref (rows, inx, 1);
+      s_rank := rnk_scale (os[0]);
+      s := ID_TO_IRI (rows[inx][0]);
+      lbl := FCT_LABEL_S (rows[inx][0], 0, 'facets', lng_pref); 
+      prev_fill := fill;
+      for (inx2 := 3; inx2 < os[1] + 3; inx2 := inx2 + 3)
+        {
+	  res[fill] := __RO2SQ (os[inx2]);
+	  res[fill + 1] := os[inx2 + 1];
+	  res[fill + 2] := os[inx2 + 2];
+	  fill := fill + 3;
+	}
+      sum_result (final, res, text_exp, s, prev_fill, fill, s_rank, lbl);
+    }
+  return sum_final (final);
+}
+;
 
-create procedure s_sum_page (in rows any, in text_exp varchar)
+create procedure s_sum_page_c (in rows any, in text_exp varchar)
 {
   /* fill the os and translate the iris and make sums */
   declare inx, s, prev_s, prev_fill, fill, inx2, n, s_rank, lbl any;
@@ -161,6 +205,18 @@ create procedure s_sum_page (in rows any, in text_exp varchar)
   --sum_result (final, res, text_exp, s, prev_fill, fill, s_rank);
   return sum_final (final);
 }
+;
+
+create procedure s_sum_page (in rows any, in text_exp varchar)
+{
+  if (sys_stat ('cl_run_local_only'))
+    return s_sum_page_s (rows, text_exp);
+  else
+    return s_sum_page_c (rows, text_exp);
+}
+;
+
+grant execute on s_sum_page to "SPARQL"
 ;
 
 create procedure sum_tst (in text_exp varchar, in text_words varchar := null)
