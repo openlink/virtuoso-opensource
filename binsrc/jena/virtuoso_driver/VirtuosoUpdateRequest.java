@@ -39,37 +39,21 @@ import virtuoso.jdbc3.VirtuosoConnectionPoolDataSource;
 public class VirtuosoUpdateRequest 
 {
     private List requests = new ArrayList() ;
-    static final String charset = "UTF-8";
-
-    private VirtuosoConnectionPoolDataSource pds = new VirtuosoConnectionPoolDataSource();
-
-    String virt_graph = null;
-    String virt_url  = null;
-    String virt_user = null;
-    String virt_pass = null;
+    private VirtGraph graph;
+    private String virt_query;
 
     java.sql.Statement stmt = null;
 
-    static {
-	try {
-		Class.forName("virtuoso.jdbc3.Driver");
-	}
-	catch (ClassNotFoundException e) {
-            throw new JenaException("Can't load class 'virtuoso.jdbc3.Driver' :"+e);
-	}
+
+    public VirtuosoUpdateRequest (VirtGraph _graph)
+    {
+	graph = _graph;
     }
 
-    public VirtuosoUpdateRequest (VirtGraph graph)
+    public VirtuosoUpdateRequest (String query, VirtGraph _graph)
     {
-	virt_graph = graph.getGraphName ();
-	virt_url  = graph.getGraphUrl ();
-	virt_pass = graph.getGraphPassword ();
-	virt_user = graph.getGraphUser ();
-    }
-
-    public VirtuosoUpdateRequest (String query, VirtGraph graph)
-    {
-        this(graph);
+        this(_graph);
+        virt_query = query;
 	requests.add((Object)query);
     }
 
@@ -77,20 +61,7 @@ public class VirtuosoUpdateRequest
     { 
 	try
 	{
-	    Connection connection;
-
-	    if (virt_url.startsWith("jdbc:virtuoso://")) {
-
-		Class.forName("virtuoso.jdbc3.Driver");
-		connection = DriverManager.getConnection(virt_url, virt_user, virt_pass);
-	    } else {
-		pds.setServerName(virt_url);
-		pds.setUser(virt_user);
-		pds.setPassword(virt_pass);
-		pds.setCharset(charset);
-		javax.sql.PooledConnection pconn = pds.getPooledConnection();
-		connection = pconn.getConnection();
-	    }
+	    Connection connection = graph.getConnection();
 
 	    stmt = connection.createStatement();
 
@@ -102,7 +73,6 @@ public class VirtuosoUpdateRequest
 
 	    stmt.close();
 	    stmt = null;
-	    connection.close();
 	}
 	catch(Exception e)
 	{
