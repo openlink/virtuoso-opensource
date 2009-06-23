@@ -3630,12 +3630,7 @@ srv_global_init (char *mode)
 
   if (!mode_pass_change)
     {
-      /* better make sure this thing never leaves the house */
-      log_error ("");
-      log_error ("OPENLINK INTERNAL USE ONLY NOTICE:");
-      log_error ("This is a DEBUG build with limited functionality");
-      log_error ("Customers should contact OpenLink support");
-      log_error ("");
+	/*NOTHING*/
     }
 
   srv_pid = getpid ();
