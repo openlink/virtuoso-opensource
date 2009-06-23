@@ -86,7 +86,7 @@ BEGIN
                     IDC_STATIC,0,98,234,8
     RTEXT           "&Server:",IDC_STATIC,0,115,58,8
     COMBOBOX        IDC_SERVER,64,112,170,50,CBS_DROPDOWN | CBS_SORT |
-                    WS_VSCROLL | WS_TABSTOP
+                    WS_VSCROLL | WS_TABSTOP | CBS_AUTOHSCROLL
     CONTROL         "This server &requires a secure connection (SSL)",
                     IDC_USESSL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,64,128,
                     163,10

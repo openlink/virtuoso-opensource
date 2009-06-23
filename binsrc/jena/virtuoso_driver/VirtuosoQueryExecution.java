@@ -58,25 +58,20 @@ import virtuoso.jdbc3.VirtuosoConnectionPoolDataSource;
 
 public class VirtuosoQueryExecution  implements QueryExecution
 {
-    QueryIterConcat output = null;
+    private QueryIterConcat output = null;
     String virt_graph = null;
-    String virt_query = null;
-    String virt_url  = null;
-    String virt_user = null;
-    String virt_pass = null;
+    private VirtGraph graph;
+    private String virt_query;
+
     int prefetchSize = 200;
     java.sql.Statement stmt = null;
-    static final String charset = "UTF-8";
-
-    private VirtuosoConnectionPoolDataSource pds = new VirtuosoConnectionPoolDataSource();
 
 
-    public VirtuosoQueryExecution (String query, VirtGraph graph)
+
+    public VirtuosoQueryExecution (String query, VirtGraph _graph)
     {
+	graph = _graph;
 	virt_graph = graph.getGraphName ();
-	virt_url  = graph.getGraphUrl ();
-	virt_pass = graph.getGraphPassword ();
-	virt_user = graph.getGraphUser ();
 	prefetchSize = graph.getFetchSize ();
 
 	StringTokenizer tok = new StringTokenizer(query);
@@ -102,20 +97,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
 	try
 	{
 
-	    Connection connection;
-
-	    if (virt_url.startsWith("jdbc:virtuoso://")) {
-
-		Class.forName("virtuoso.jdbc3.Driver");
-		connection = DriverManager.getConnection(virt_url, virt_user, virt_pass);
-	    } else {
-		pds.setServerName(virt_url);
-		pds.setUser(virt_user);
-		pds.setPassword(virt_pass);
-		pds.setCharset(charset);
-		javax.sql.PooledConnection pconn = pds.getPooledConnection();
-		connection = pconn.getConnection();
-	    }
+	    Connection connection = graph.getConnection();
 
 	    stmt = connection.createStatement();
 	    stmt.setFetchSize(prefetchSize);
@@ -125,7 +107,6 @@ public class VirtuosoQueryExecution  implements QueryExecution
 
 	    stmt.close();
 	    stmt = null;
-	    connection.close();
 	    return ret;
 	}
 	catch(Exception e)
@@ -208,21 +189,8 @@ public class VirtuosoQueryExecution  implements QueryExecution
     {
 	try {
 
-	    Connection connection;
+	    Connection connection = graph.getConnection();
 
-	    if (virt_url.startsWith("jdbc:virtuoso://")) {
-
-		Class.forName("virtuoso.jdbc3.Driver");
-		connection = DriverManager.getConnection(virt_url, virt_user, virt_pass);
-	    } else {
-		pds.setServerName(virt_url);
-		pds.setUser(virt_user);
-		pds.setPassword(virt_pass);
-		pds.setCharset(charset);
-		javax.sql.PooledConnection pconn = pds.getPooledConnection();
-		connection = pconn.getConnection();
-	    }
-	    
 	    stmt = connection.createStatement();
 	    stmt.setFetchSize(prefetchSize);
 	    java.sql.ResultSet rs = stmt.executeQuery(virt_query);
@@ -240,7 +208,6 @@ public class VirtuosoQueryExecution  implements QueryExecution
 
 	    stmt.close();
 	    stmt = null;
-	    connection.close();
 
 	} catch (Exception e) {
             throw new JenaException("Convert results are FAILED.:"+e);
@@ -257,20 +224,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
     public Model execDescribe(Model model)
     {
 	try {
-	    Connection connection;
-
-	    if (virt_url.startsWith("jdbc:virtuoso://")) {
-
-		Class.forName("virtuoso.jdbc3.Driver");
-		connection = DriverManager.getConnection(virt_url, virt_user, virt_pass);
-	    } else {
-		pds.setServerName(virt_url);
-		pds.setUser(virt_user);
-		pds.setPassword(virt_pass);
-		pds.setCharset(charset);
-		javax.sql.PooledConnection pconn = pds.getPooledConnection();
-		connection = pconn.getConnection();
-	    }
+	    Connection connection = graph.getConnection();
 
 	    stmt = connection.createStatement();
 	    stmt.setFetchSize(prefetchSize);
@@ -289,7 +243,6 @@ public class VirtuosoQueryExecution  implements QueryExecution
 
 	    stmt.close();
 	    stmt = null;
-	    connection.close();
 
 	} catch (Exception e) {
             throw new JenaException("Convert results are FAILED.:"+e);
@@ -302,20 +255,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
         boolean ret = false;
 
 	try {
-	    Connection connection;
-
-	    if (virt_url.startsWith("jdbc:virtuoso://")) {
-
-		Class.forName("virtuoso.jdbc3.Driver");
-		connection = DriverManager.getConnection(virt_url, virt_user, virt_pass);
-	    } else {
-		pds.setServerName(virt_url);
-		pds.setUser(virt_user);
-		pds.setPassword(virt_pass);
-		pds.setCharset(charset);
-		javax.sql.PooledConnection pconn = pds.getPooledConnection();
-		connection = pconn.getConnection();
-	    }
+	    Connection connection = graph.getConnection();
 
 	    stmt = connection.createStatement();
 	    java.sql.ResultSet rs = stmt.executeQuery(virt_query);
@@ -329,7 +269,6 @@ public class VirtuosoQueryExecution  implements QueryExecution
 
 	    stmt.close();
 	    stmt = null;
-	    connection.close();
 
 	} catch (Exception e) {
             throw new JenaException("Convert results are FAILED.:"+e);

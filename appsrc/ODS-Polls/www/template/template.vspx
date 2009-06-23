@@ -34,6 +34,7 @@
       if (POLLS.WA.domain_is_public (self.domain_id))
       {
         http(sprintf('\n<link rel="meta" type="application/rdf+xml" title="SIOC" href="%s" />', POLLS.WA.sioc_url (self.domain_id)));
+      http (sprintf ('\n    <link rel="search" type="application/opensearchdescription+xml" title="%s OpenSearch Description" href="%sexport.vspx?mode=opensearchdescription" />', domainName, POLLS.WA.polls_url (self.domain_id)));
       }
       http (sprintf ('\n    <link rel="alternate" type="application/rss+xml" title="%V RSS" href="%s" />', domainName, POLLS.WA.gems_url (self.domain_id)||'Polls.rss'));
       http (sprintf ('\n    <link rel="alternate" type="application/atom+xml" title="%V Atom" href="%s" />', domainName, POLLS.WA.gems_url (self.domain_id)||'Polls.atom'));

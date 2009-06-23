@@ -23,8 +23,10 @@
  -
 -->
 <v:page name="export" xmlns:v="http://www.openlinksw.com/vspx/" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-  <v:variable name="domain_id" type="integer" param-name="did" default="-1"/>
-  <v:variable name="account_id" type="integer" param-name="aid" default="-1"/>
+  <v:variable name="v_mode" type="varchar" default="''" param-name="mode"/>
+
+  <v:variable name="domain_id" type="integer" default="-1"/>
+  <v:variable name="account_id" type="integer" default="-1"/>
 
   <v:variable name="v_output" type="varchar" param-name="output" default="''"/>
   <v:variable name="v_keywords" type="varchar" default="''" param-name="keywords"/>
@@ -40,12 +42,35 @@
 
   <![CDATA[
     <?vsp
+      declare data, sql, sqlParams, state, msg, meta, rows, maxRows any;
+      
       set http_charset = 'UTF-8';
       http_rewrite ();
       http_request_status ('HTTP/1.1 200 OK');
 
-      declare data, sql, sqlParams, state, msg, meta, rows, maxRows any;
+      self.domain_id := AB.WA.session_domain (params);
+      self.account_id := AB.WA.domain_owner_id (self.domain_id);
 
+      if (self.v_mode = 'opensearchdescription') 
+      {
+        http_header ('Content-Type: text/xml\r\n'); 
+        http (         '<?xml version="1.0" encoding="UTF-8"?>\n');
+        http (         '<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/">');
+        http (sprintf ('<Url type="text/html" template="%Vsearch.vspx?mode=opensearch&amp;q={searchTerms}&amp;cnt={count}&amp;page={startPage}" />', AB.WA.ab_url (self.domain_id)));
+        http (sprintf ('<ShortName>%V</ShortName>', AB.WA.domain_name (self.domain_id)));
+        http (sprintf ('<LongName>%V</LongName>', AB.WA.domain_description (self.domain_id)));
+        http (sprintf ('<Description>About: %V</Description>', AB.WA.domain_description (self.domain_id)));
+        http (         '<Tags>contacts</Tags>');
+        http (sprintf ('<Image height="16" width="16" type="image/png">%V/ods/images/icons/ods_ab_16.png</Image>', AB.WA.host_url ()));
+        http (sprintf ('<Developer>%V</Developer>', AB.WA.account_name (self.account_id)));
+        http (sprintf ('<Contact>%V</Contact>', AB.WA.account_mail (self.account_id)));
+        http (sprintf ('<Attribution>%V</Attribution>', (select top 1 WS_COPYRIGHT from WA_SETTINGS)));
+        http (         '<SyndicationRight>open</SyndicationRight>');
+        http (         '<AdultContent>false</AdultContent>');
+        http (         '</OpenSearchDescription>');
+        
+        goto _end;
+      } else {
       AB.WA.xml_set('keywords', data, self.v_keywords);
       AB.WA.xml_set('expression', data, self.v_expression);
       AB.WA.xml_set('tags', data, self.v_tags);
@@ -59,11 +84,13 @@
       if (state <> '00000')
         goto _error;
 
-      if (self.v_output in ('rss', 'rdf', 'atom03', 'atom10')) {
+        if (self.v_output in ('rss', 'rdf', 'atom03', 'atom10')) 
+        {
         http ('<?xml version="1.0" encoding="UTF-8"?>\n');
         http ('<rss version="2.0">\n');
         http ('<channel>\n');
-        for (select U_NAME, U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = self.account_id) do {
+          for (select U_NAME, U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = self.account_id) do 
+          {
           http ('<title>');
             http_value (AB.WA.utf2wide(AB.WA.domain_name (self.domain_id)));
           http ('</title>\n');
@@ -86,7 +113,8 @@
             http_value (AB.WA.ab_url (self.domain_id));
           http ('</link>\n');
         }
-        foreach (any row in rows) do {
+          foreach (any row in rows) do 
+          {
           http ('<item>\n');
             http ('<title>');
               http_value (AB.WA.utf2wide (row[2]));
@@ -103,12 +131,14 @@
             http ('<pubDate>');
               http_value (AB.WA.dt_rfc1123 (row[5]));
             http ('</pubDate>\n');
-            for (select TV_TAG from AB..TAGS_VIEW where tags = row[3]) do {
+              for (select TV_TAG from AB..TAGS_VIEW where tags = row[3]) do 
+              {
               http ('<category>');
                 http_value (TV_TAG);
               http ('</category>\n');
             }
-            if (self.v_output <> 'rss') {
+              if (self.v_output <> 'rss') 
+              {
               http ('<ods:modified xmlns:ods="http://www.openlinksw.com/ods/">');
                 http_value (AB.WA.dt_iso8601 (row[5]));
               http ('</ods:modified>\n');
@@ -129,6 +159,7 @@
           http_xslt (AB.WA.xslt_full ('rss2rdf.xsl'));
 
         goto _end;
+      }
       }
     _error:
       http('<?xml version="1.0" ?><empty />');

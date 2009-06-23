@@ -59,7 +59,7 @@
       self.update_params();
 
       POLLS.WA.test(self.v_keywords, vector('name', 'Keywords', 'class', 'free-text'));
-      if (self.v_mode <> 'simple')
+      if (self.v_mode not in ('simple', 'opensearch'))
       {
         POLLS.WA.test(self.v_expression, vector('name', 'Expression', 'class', 'free-text-expression'));
         POLLS.WA.test(self.v_tags, vector('name', 'Tags', 'class', 'tags'));
@@ -73,21 +73,21 @@
       self.ds_tags := vector ();
 
       POLLS.WA.xml_set('keywords', data, self.v_keywords);
-      if (self.v_mode <> 'simple')
+      if (self.v_mode not in ('simple', 'opensearch'))
       {
         POLLS.WA.xml_set('expression', data, self.v_expression);
         POLLS.WA.xml_set('tags', data, self.v_tags);
       }
       if (length(xpath_eval('//entry', data, 0)) = 0)
       {
-        if (e.ve_is_post or (self.v_mode = 'simple'))
+        if (e.ve_is_post or (self.v_mode in ('simple', 'opensearch')))
         {
           self.vc_error_message := 'Empty search criteria.';
           self.vc_is_valid := 0;
         }
         return;
       }
-      if (self.v_mode = 'simple')
+      if (self.v_mode in ('simple', 'opensearch'))
       {
         POLLS.WA.xml_set('MyPolls', data, 1);
       } else {
@@ -184,10 +184,8 @@
   </v:on-init>
   <v:after-data-bind>
     <![CDATA[
-      if (not e.ve_is_post or ((self.v_mode = 'simple') and isnull (e.ve_button)) or (get_keyword ('tag', e.ve_params, '') <> ''))
-      {
+      if (not e.ve_is_post or ((self.v_mode in ('simple', 'opensearch')) and isnull (e.ve_button)) or (get_keyword ('tag', e.ve_params, '') <> ''))
         self.do_search (e);
-      }
     ]]>
   </v:after-data-bind>
   <vm:pagetitle>Search results</vm:pagetitle>
@@ -203,7 +201,7 @@
       <v:variable name="v_mode" type="varchar" default="'simple'"/>
       <v:variable name="v_step" param-name="step" type="integer" default="0"/>
 
-      <v:variable name="v_keywords" type="varchar" default="''" param-name="keywords"/>
+      <v:variable name="v_keywords" type="varchar" default="''" param-name="q"/>
       <v:variable name="v_expression" type="varchar" default="''"/>
       <v:variable name="v_tags" type="varchar" default="''"/>
       <v:variable name="v_own" type="integer" default="1"/>
@@ -224,13 +222,15 @@
         <![CDATA[
           declare params, settings any;
 
-          self.pChars := cast(get_keyword('chars', self.settings, '60') as integer);
-
           params := self.vc_page.vc_event.ve_params;
+          self.pChars := cast(get_keyword('chars', self.settings, '60') as integer);
           self.v_mode := get_keyword('mode', params, self.v_mode);
 
+          if (self.v_mode = 'opensearch')
+            self.v_step := 1;         
+
           -- main
-          self.v_keywords := trim (get_keyword('a_keywords', params, get_keyword('s_keywords', params, get_keyword('keywords', params, ''))));
+          self.v_keywords := trim (get_keyword('a_keywords', params, get_keyword('s_keywords', params, get_keyword('q', params, ''))));
           self.v_expression := trim (get_keyword('f_expression', params, get_keyword('type', params, self.v_expression)));
           self.v_tags := trim (get_keyword('f_tags', params, get_keyword('tags', params, self.v_tags)));
           if (get_keyword('tag', params, '') <> '')
@@ -288,14 +288,14 @@
         </v:before-render>
         <div style="padding-bottom: 5px;">
           <?vsp
-            http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=rss%s"><img src="image/rss-icon-16.gif" border="0" title="RSS 2.0" alt="RSS 2.0"/> RSS</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
+            http(sprintf('<a href="export.vspx?output=rss%s"><img src="image/rss-icon-16.gif" border="0" title="RSS 2.0" alt="RSS 2.0"/> RSS</a>&nbsp;&nbsp;', self.do_url('export', '')));
             if (POLLS.WA.settings_atomVersion(self.account_id) = '1.0')
             {
-              http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=atom10%s"><img src="image/blue-icon-16.gif" border="0" title="Atom 1.0" alt="Atom 1.0"/> Atom</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
+              http(sprintf('<a href="export.vspx?output=atom10%s"><img src="image/blue-icon-16.gif" border="0" title="Atom 1.0" alt="Atom 1.0"/> Atom</a>&nbsp;&nbsp;', self.do_url('export', '')));
             } else {
-              http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=atom03%s"><img src="image/blue-icon-16.gif" border="0" title="Atom 0.3" alt="Atom 0.3"/> Atom</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
+              http(sprintf('<a href="export.vspx?output=atom03%s"><img src="image/blue-icon-16.gif" border="0" title="Atom 0.3" alt="Atom 0.3"/> Atom</a>&nbsp;&nbsp;', self.do_url('export', '')));
             }
-            http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=rdf%s"><img src="image/rdf-icon-16.gif" border="0" title="RDF 1.0" alt="RDF 1.0"/> RDF</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
+            http(sprintf('<a href="export.vspx?output=rdf%s"><img src="image/rdf-icon-16.gif" border="0" title="RDF 1.0" alt="RDF 1.0"/> RDF</a>&nbsp;&nbsp;', self.do_url('export', '')));
           ?>
         </div>
       </v:template>
@@ -411,7 +411,7 @@
         </tr>
       </table>
       <br />
-      <v:template type="simple" enabled="--either(equ(self.v_mode, 'simple'), 0, 1)">
+      <vm:if test="self.v_mode not in ('simple', 'opensearch')">
         <div id="s" class="c1">
           <div class="tabs">
             &nbsp;<vm:tabCaption tab="s" tabsCount="2" tabNo="0" caption="Criteria" />
@@ -523,8 +523,8 @@
             </v:on-post>
           </v:button>
         </div>
-      </v:template>
-      <v:template type="simple" enabled="--either(neq(self.v_mode, 'simple'), 0, 1)">
+      </vm:if>
+      <vm:if test="self.v_mode in ('simple', 'opensearch')">
         <div class="new-form-body">
           <table cellspacing="0">
             <tr>
@@ -558,7 +558,7 @@
             </tr>
           </table>
         </div>
-      </v:template>
+      </vm:if>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>
