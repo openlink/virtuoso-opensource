@@ -38,7 +38,8 @@ create procedure POLLS.WA.session_domain (
   options := http_map_get('options');
   if (not is_empty_or_null (options))
     domain_id := get_keyword ('domain', options);
-  if (is_empty_or_null (domain_id)) {
+  if (is_empty_or_null (domain_id)) 
+  {
     aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
     domain_id := cast(aPath[1] as integer);
   }
@@ -68,7 +69,8 @@ create procedure POLLS.WA.session_restore(
   options := http_map_get('options');
   if (not is_empty_or_null(options))
     domain_id := get_keyword('domain', options);
-  if (is_empty_or_null (domain_id)) {
+  if (is_empty_or_null (domain_id)) 
+  {
     aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
     domain_id := cast(aPath[1] as integer);
   }

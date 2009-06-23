@@ -34,6 +34,7 @@
       if (AB.WA.domain_is_public (self.domain_id))
       {
         http(sprintf('\n<link rel="meta" type="application/rdf+xml" title="SIOC" href="%s" />', AB.WA.sioc_url (self.domain_id)));
+      http (sprintf ('\n    <link rel="search" type="application/opensearchdescription+xml" title="%s OpenSearch Description" href="%sexport.vspx?mode=opensearchdescription" />', domainName, AB.WA.ab_url (self.domain_id)));
       }
       http (sprintf ('\n    <link rel="alternate" type="application/rss+xml" title="%V" href="%s" />', domainName, AB.WA.gems_url (self.domain_id)||'AddressBook.rss'));
       http (sprintf ('\n    <link rel="alternate" type="application/atom+xml" title="%V" href="%s" />', domainName, AB.WA.gems_url (self.domain_id)||'AddressBook.atom'));
@@ -49,7 +50,7 @@
         var toolkitPath="/ods/oat";
         var imagePath="/ods/images/oat/";
         
-        var featureList=["ajax2", "ws", "json", "anchor", "panelbar", "combolist", "dav", "dialog"];
+        var featureList=["ajax2", "json", "ws", "anchor", "dialog", "dav", "panelbar", "combolist"];
       </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
       <script type="text/javascript" src="js/CalendarPopup.js"></script>

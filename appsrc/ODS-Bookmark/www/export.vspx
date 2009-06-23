@@ -23,8 +23,10 @@
  -
 -->
 <v:page name="export" xmlns:v="http://www.openlinksw.com/vspx/" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-  <v:variable name="domain_id" type="integer" param-name="did" default="-1"/>
-  <v:variable name="account_id" type="integer" param-name="aid" default="-1"/>
+  <v:variable name="v_mode" type="varchar" default="''" param-name="mode"/>
+
+  <v:variable name="domain_id" type="integer" default="-1" />
+  <v:variable name="account_id" type="integer" default="-1" />
 
   <v:variable name="v_output" type="varchar" param-name="output" default="''"/>
   <v:variable name="v_keywords" type="varchar" default="''" param-name="keywords"/>
@@ -43,9 +45,36 @@
 
   <![CDATA[
     <?vsp
+      declare data, sql, sqlParams, state, msg, meta, rows, maxRows any;
+
       set http_charset = 'UTF-8';
       http_rewrite ();
       http_request_status ('HTTP/1.1 200 OK');
+      
+      self.domain_id := BMK.WA.session_domain (params);
+      self.account_id := BMK.WA.domain_owner_id (self.domain_id);
+
+      if (self.v_mode = 'opensearchdescription') 
+      {
+        http_header ('Content-Type: text/xml\r\n'); 
+        http (         '<?xml version="1.0" encoding="UTF-8"?>\n');
+        http (         '<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/">');
+        http (sprintf ('<Url type="text/html" template="%Vsearch.vspx?mode=opensearch&amp;q={searchTerms}&amp;cnt={count}&amp;page={startPage}" />', BMK.WA.bookmarks_url (self.domain_id)));
+        http (sprintf ('<ShortName>%V</ShortName>', BMK.WA.domain_name (self.domain_id)));
+        http (sprintf ('<LongName>%V</LongName>', BMK.WA.domain_description (self.domain_id)));
+        http (sprintf ('<Description>About: %V</Description>', BMK.WA.domain_description (self.domain_id)));
+        http (         '<Tags>contacts</Tags>');
+        http (sprintf ('<Image height="16" width="16" type="image/png">%V/ods/images/icons/ods_bookmarks_16.png</Image>', BMK.WA.host_url ()));
+        http (sprintf ('<Image height="32" width="32" type="image/png">%V/ods/images/icons/ods_bookmarks_32.png</Image>', BMK.WA.host_url ()));
+        http (sprintf ('<Developer>%V</Developer>', BMK.WA.account_name (self.account_id)));
+        http (sprintf ('<Contact>%V</Contact>', BMK.WA.account_mail (self.account_id)));
+        http (sprintf ('<Attribution>%V</Attribution>', (select top 1 WS_COPYRIGHT from WA_SETTINGS)));
+        http (         '<SyndicationRight>open</SyndicationRight>');
+        http (         '<AdultContent>false</AdultContent>');
+        http (         '</OpenSearchDescription>');
+        
+        goto _end;
+      } else {
       if (self.v_output = 'BMK')
       {
         declare params any;
@@ -66,8 +95,6 @@
         }
         else if (self.v_output in ('rss', 'rdf', 'xbel', 'atom03', 'atom10'))
         {
-          declare data, sql, sqlParams, state, msg, meta, rows, maxRows any;
-
           BMK.WA.xml_set('keywords', data, self.v_keywords);
           BMK.WA.xml_set('expression', data, self.v_expression);
           BMK.WA.xml_set('tags', data, self.v_tags);
@@ -185,6 +212,7 @@
         }
       _error:
         http('<?xml version="1.0" ?><empty />');
+      }
       }
     _end:
       return;
