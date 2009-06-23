@@ -701,6 +701,10 @@ scn3.c: scn3.l sql3.c sqlwords.h
 scn3split.c: scn3.l sql3.c sqlwords.h
 	@$(GEN) $(LEX) -o scn3split.c -Pscn3splityy $(srcdir)/scn3.l
 
+$(top_srcdir)/binsrc/cached_resources/cached_resources.c:
+	@echo "* Generating cached_resources.c"
+	@cd $(top_srcdir)/binsrc/cached_resources && $(MAKE)
+
 sql_code_cache.c: $(top_srcdir)/binsrc/cached_resources/cached_resources.c sql_code_cache_impl.c
 	@echo "#include \"sql_code_cache_impl.c\"" > $@
 	@echo "#include \"$(top_srcdir)/binsrc/cached_resources/cached_resources.c\"" >> $@
