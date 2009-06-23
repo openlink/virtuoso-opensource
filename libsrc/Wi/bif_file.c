@@ -2749,7 +2749,7 @@ mime_memmem (const void *haystack, size_t haystack_len,
 {
   register const char *begin;
   register const char *last_possible =
-      (const char *) haystack + haystack_len - needle_len - 4;
+      (const char *) haystack + haystack_len - needle_len - 2;
 
   if (haystack_len < needle_len)
     return NULL;
