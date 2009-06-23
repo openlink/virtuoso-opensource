@@ -417,3 +417,11 @@ div#sparql_link a {
 #featured_list { font-size: 9pt;}
 #featured_list td { font-size: 9pt;}
 
+#demo_queries_ctr { margin: 10px; }
+ul.demo_qry_list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+ul.demo_qry_list div.expln { margin: 10px; }
+ul.demo_qry_list pre { margin: 10px; }

@@ -896,7 +896,13 @@ fct_new ()
       <div class="tab_act">
         <a href="/fct/facet.vsp?cmd=featured&sid='); http_value ( sid ); http ('&no_qry=1">Featured Queries</a>
         &nbsp;|&nbsp;
-        <a href="/b3s/">Demo Queries</a>
+        <a href="');
+  if (registry_get ('fct_site') = 'bbc')
+    http('/fct/bbc_demo_queries.vsp');
+  else 
+    http ('/b3s/');
+  
+  http ('">Demo Queries</a>
         &nbsp;|&nbsp;
         <a href="facet_doc.html">About</a>
       </div>
