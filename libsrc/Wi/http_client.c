@@ -1550,7 +1550,7 @@ http_cli_calc_auth_basic (http_cli_ctx * ctx, caddr_t _p, caddr_t _r, caddr_t _e
   uint32 len;
 
   memset (enc_buf, 0, sizeof (enc_buf));
-  len = box_length (ctx->hcctx_user) + box_length (ctx->hcctx_pass) + 1;
+  len = strlen (ctx->hcctx_user) + strlen (ctx->hcctx_pass) + 1;
 
   if ((len+1) > sizeof (tmp_buf))
     {

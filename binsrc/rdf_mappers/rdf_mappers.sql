@@ -6830,6 +6830,71 @@ create procedure DB.DBA.RDF_LOAD_EBAY_META2(in data any, in api_key varchar, in 
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_GETGLUE_META (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout ser_key any, inout opts any)
+{
+	declare primary_topic, tmp, username_, password_, data, meta, state, message any;
+	declare exit handler for sqlstate '*'
+	{
+		return 0;
+	};
+	username_ := get_keyword ('username', opts);
+	password_ := get_keyword ('password', opts);
+	if (not isstring (username_) or not isstring (password_))
+		return 0;
+	primary_topic := DB.DBA.RDF_SPONGE_PROXY_IRI (graph_iri);
+	state := '00000';
+	tmp := sprintf( 'sparql define input:inference \'virtrdf-label\' select ?l from <%s> where { <%s> virtrdf:label ?l }', graph_iri, primary_topic);
+	exec (tmp, state, message, vector (), 0, meta, data);
+	if (state = '00000' and length (data) > 0)
+		RDF_LOAD_GETGLUE_META2(data, username_, password_, opts, dest, graph_iri, new_origin_uri);
+	return 0;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_GETGLUE_META2(in data any, in username_ varchar, in password_ varchar, in opts any, in dest varchar, in graph_iri varchar, in new_origin_uri varchar)
+{
+	declare keywords, url, tmp, tree, cont varchar;
+	declare xt, xd any;
+	foreach (any str in data) do
+	{
+		if (isstring (str[0]))
+		{
+			keywords := trim(str[0], '\n\t\t\n ');
+			keywords := replace(keywords, ' ', '+');
+			
+			url := sprintf ('http://api.getglue.com/v1/user/profile?userId=%s',	keywords);
+			tmp := http_get (url, null, 'GET', 'Authorization: Basic ' || encode_base64 (concat(username_, ':', password_)), '', get_keyword_ucase ('get:proxy', opts));
+			xt := xtree_doc (tmp);
+			xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/getglue2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri), 'what', 'profile'));
+			cont := serialize_to_UTF8_xml (xd);
+			DB.DBA.RDF_LOAD_RDFXML (cont, new_origin_uri, coalesce (dest, graph_iri));
+			
+			url := sprintf ('http://api.getglue.com/v1/user/friends?userId=%s',	keywords);
+			tmp := http_get (url, null, 'GET', 'Authorization: Basic ' || encode_base64 (concat(username_, ':', password_)), '', get_keyword_ucase ('get:proxy', opts));
+			xt := xtree_doc (tmp);
+			xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/getglue2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri), 'what', 'friends'));
+			cont := serialize_to_UTF8_xml (xd);
+			DB.DBA.RDF_LOAD_RDFXML (cont, new_origin_uri, coalesce (dest, graph_iri));
+			
+			url := sprintf ('http://api.getglue.com/v1/user/followers?userId=%s',	keywords);
+			tmp := http_get (url, null, 'GET', 'Authorization: Basic ' || encode_base64 (concat(username_, ':', password_)), '', get_keyword_ucase ('get:proxy', opts));
+			xt := xtree_doc (tmp);
+			xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/getglue2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri), 'what', 'followers'));
+			cont := serialize_to_UTF8_xml (xd);
+			DB.DBA.RDF_LOAD_RDFXML (cont, new_origin_uri, coalesce (dest, graph_iri));
+
+			url := sprintf ('http://api.getglue.com/v1/user/objects?userId=%s&category=all', keywords);
+			tmp := http_get (url, null, 'GET', 'Authorization: Basic ' || encode_base64 (concat(username_, ':', password_)), '', get_keyword_ucase ('get:proxy', opts));
+			xt := xtree_doc (tmp);
+			xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/getglue2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri), 'what', 'objects'));
+			cont := serialize_to_UTF8_xml (xd);
+			DB.DBA.RDF_LOAD_RDFXML (cont, new_origin_uri, coalesce (dest, graph_iri));
+		}
+	}
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_GEONAMES_META (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout ser_key any, inout opts any)
 {
@@ -6840,7 +6905,6 @@ create procedure DB.DBA.RDF_LOAD_GEONAMES_META (in graph_iri varchar, in new_ori
 	{
 		return 0;
 	};
-	
 	state := '00000';
 	tmp := sprintf( 'sparql select ?l from <%s> where { ?x <http://www.w3.org/2001/vcard-rdf/3.0#Country> ?l }',
 		graph_iri, graph_iri);
@@ -7363,6 +7427,10 @@ insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC
 
 insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
 	values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_GEONAMES_META', null, 'Geonames Meta',
+	vector ('min-score', '0.5', 'max-results', '10'));
+	
+insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
+	values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_GETGLUE_META', null, 'Get Glue Meta',
 	vector ('min-score', '0.5', 'max-results', '10'));
 	
 insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
