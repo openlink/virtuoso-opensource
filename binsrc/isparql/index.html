@@ -153,8 +153,10 @@ OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
 		    <option value="200">200</option>
 		    <option value="0">[no limit]</option>
 		  </select>
+                  &nbsp;|&nbsp;
 		  <input type="checkbox" value="on" id="qbe_distinct"/>
 		  <label for="qbe_distinct">Distinct</label>
+                  &nbsp;|&nbsp;
 		  <label for="qbe_query_Type">Type:</label>
 		  <select id="qbe_query_type">
 		    <option value="SELECT" selected="selected">SELECT</option>
@@ -337,23 +339,22 @@ OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
           <div id="res_area"></div> <!-- #res_area -->
         </div> <!-- page_query -->
         <div class="controls" id="controls">
-	  <div id="opttoggler"><span id="togglerarrow">&#9656;</span> Sponger Options</div>
+	  <h3 id="opttoggler"><span id="togglerarrow">&#9656;</span> Sponger Options</h3>
 	  <fieldset class="endpoint" id="endpoint" style="display:none"> <!-- endpoint -->
             <legend>Endpoint</legend>
 	  </fieldset>
 	  <fieldset class="derefOpts" id="derefOpts" style="display:none">
-            <legend>Data dereferencing options:</legend>
-            <table style="border-collapse: collapse;">
+            <legend>Data Dereferencing Options</legend>
+            <table>
               <tr>
-	        <td style="padding-right: 8px;">
-		  <span class="title">Caching Schemas</span><br/> <!-- XXX -->
-		  <select id="cachingSchemesCtl" style="margin-bottom:5px;width: 100px;">
-		    <option value="">Default</span></option>
+	        <td class="cachingOpts" style="padding-right: 8px;">
+		  <label for="cachingSchemesCtl">Caching Schemes</label<!-- XXX -->
+		  <select id="cachingSchemesCtl">
+		    <option value="replacing">None (replacing)</option>
 		    <option value="soft">Automatic</span></option>
-		    <option value="replacing">None</option>
 		  </select><br/>
-		  <span class="title">Nodes Retrieved</span><br/>
-		  <select id="nodesRetrievedCtl" style="margin-bottom:5px;width: 100px;"> <!-- XXX should be text input -->
+		  <label for="nodesRetrievedCtl">Nodes Retrieved</label>
+		  <select id="nodesRetrievedCtl"> <!-- XXX should be text input -->
 		    <option value="">Default</option>
 		    <option value="100">Max 100</option>
 		    <option value="200">Max 200</option>
@@ -361,8 +362,8 @@ OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
 		    <option value="400">Max 400</option>
 		    <option value="500">Max 500</option>
 		  </select><br/>
-		  <span class="title">Nodes Crawled</span><br/>
-                  <select id="nodesCrawledCtl" style="width: 100px;">
+		  <label for="nodesCrawledCtl">Nodes Crawled</label>
+                  <select id="nodesCrawledCtl">
 		    <option value="">Default</option>
 		    <option value="1">Max 1</option>
 		    <option value="2">Max 2</option>
@@ -376,8 +377,8 @@ OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
 		    <option value="10">Max 10</option>
 		  </select>
 		</td>
-                <td style="border-left: 2px outset #ddd;padding-left: 10px;vertical-align:top;width:325px;">
-		  <span class="title">Path Traversal Schemes<span><br/>
+                <td style="border-left: 2px outset #ddd;padding-left: 10px;vertical-align:top;">
+		  <h4 class="title">Path Traversal Schemes</h4>
 		  <input type="radio"
 		         name="pathTraversalSchemes"
 			 value=""
@@ -385,7 +386,7 @@ OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
 			 checked="checked"/>
 		  <label for="pathTravSchemesDefault"
 		         id="pathTravSchemesDefaultLabel"
-			 class="ckb">Default settings</label><br/>
+			 class="ckb">Server Default</label><br/> <!-- XXX should have list to show -->
 
 		  <input type="radio"
 		         name="pathTraversalSchemes"
@@ -393,34 +394,36 @@ OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
 			 id="pathTravSchemesGraball"/>
 		  <label for="pathTravSchemesGraball"
 		         id="pathTravSchemesGraballLabel"
-			 class="ckb">Follow all Properties</label><br/>
+			 class="ckb">Follow All Properties</label><br/>
 
 		  <input type="radio"
 		         name="pathTraversalSchemes"
 			 value="grab-seealso"
 			 id="pathTravSchemesSeealso"/>
-
 		  <label for="pathTravSchemesSeealso"
 		         id="pathTravSchemesSeealsoLabel"
-			 class="ckb">Follow Properties</label><br/>
+			 class="ckb">Custom List&#8230;</label><br/>
 
-		  <input type="button" id="spongerPredsAdd" value="Add" style="margin-top:10px;"/>
-		  <input type="button" id="spongerPredsDel" style="margin-top:10px;" value="Remove"/><br/>
-		  <input type="button" id="spongerPredsDefault" value="Restore default set"/>
 		</td>
 		<td>
+                  <div id="pathTravSchemesPredSelCtr">
+                    <label for="pathTravSchemesPreds">Follow These Properties:</label><br/>
 		  <select id="pathTravSchemesPreds"
 		          multiple="multiple"
-			  style="height: 100px;width: 150px;margin-right: 10px;">
+			    style="height: 100px;">
 		    <option value="http://xmlns.com/foaf/0.1/" selected="selected">foaf:knows</option>
 		    <option value="http://rdfs.org/sioc/ns#" selected="selected">sioc:links_to</option>
 		    <option value="http://www.w3.org/2000/01/rdf-schema#" selected="selected">rdfs:isDefinedBy</option>
 		    <option value="http://www.w3.org/2000/01/rdf-schema#" selected="selected">rdfs:seeAlso</option>
 		    <option value="http://www.w3.org/2002/07/owl#" selected="selected">owl:sameAs</option>
-		  </select>
+		    </select><br/>
+		    <input type="button" id="spongerPredsAdd" value="Add" style="margin-top:10px;"/>
+		    <input type="button" id="spongerPredsDel" style="margin-top:10px;" value="Remove"/>
+		    <input type="button" id="spongerPredsDefault" value="Revert to Defaults"/>
+                  </div> <!-- #pathTravSchemePredSelCtr -->
 		</td>
                 <td style="border-left: 2px outset #ddd;padding-left: 10px;vertical-align:top;width: 160px;">
-		  <span class="title">Bound Variables<span><br/>
+		  <h4 class="title">Variable Bindings<h4>
 		  <select id="spongerVars" multiple="multiple" style="height: 100px;width: 150px;margin-right: 10px;display:none;"></select>
                   <input type="button" id="spongerVarsAdd" value="Add" style="margin-top:10px;"/>
 		  <input type="button" id="spongerVarsDel" style="margin-top:10px;" value="Remove"/><br/>

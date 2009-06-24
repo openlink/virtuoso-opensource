@@ -31,7 +31,7 @@ ul, li {
 	padding: 0px}
 
 #content {
-	/*position: absolute;
+/*position: absolute;
   top: 23px; */
   width: 100%;
   background: #e8f3f6;
@@ -48,19 +48,30 @@ fieldset.derefOpts {
 	border: 1px solid #666;
 }
 
+fieldset.derefOpts td { vertical-align: top;}
 span.title {
 	font-weight: bold;
 }
 
+td.cachingOpts label { float: left; clear: left; width: 150px; }
+td.cachingOpts input { float; left;}
+
 div.controls {
 	background-color: #eee;
-	padding: 10px 10px 0px 40px;
+  margin-left: 10px;
 	border: 1px solid #666;
 }
 
+div.controls h3 { margin: 0 0 0 3px; padding: 0; font-size: 10pt; }
+
+#pathTravSchemesPredSelCtr { margin-left: 5px; }
+#pathTravSchemesPredSelCtr label { margin-bottom: 3px; }
+
+#pathTravSchemesPreds { width: 100%; }
+
 fieldset.queryopts {
 	display: block;
-	width: 360px;
+  width: 400px;
 }
 
 fieldset.endpoint {
@@ -88,15 +99,12 @@ div#pragmaAddProp {
 }
 
 
-div#opttoggler {
-	width: 180px;
-	position: relative;
-	left: -33px;
-	top: -8px;
+h3#opttoggler {
+  width: 95%;
 	margin-bottom: 5px;
 	font-weight: bold;
-	font-size: 12pt;
-	color: #333;
+  font-size: 10pt;
+  color: #335;
 	cursor: hand;
 	cursor: pointer;
 }
@@ -110,6 +118,8 @@ fieldset.derefOpts button {
 fieldset.derefOpts button span {
 	font-weight: normal;
 }
+
+fieldset.derefOpts h4 { font-size: 10pt; margin-bottom: 5px;}
 
 
 /*
