@@ -172,15 +172,32 @@ RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in 
 {
    declare create_count_count, create_class_stmt, create_view_stmt, sparql_pref, ns, sns, uriqa_str, ret, drop_map any;
    declare total_select, total_tb, total, qual, pkcols any;
-   declare vname varchar;
+   declare vname, mask varchar;
 
    ret := make_array (2, 'any');
    rdf_view_tbl_pk_cols (_tbls, pkcols);
    cols := rdf_view_tbl_opts (_tbls, cols);
    sparql_pref := 'SPARQL\n';
    uriqa_str := '^{URIQADefaultHost}^';
-   drop_map := 'SPARQL drop silent quad map virtrdf:'|| qualifier ||'\n;\n\n';
    sns := ns := sprintf ('prefix %s: <http://%s/schemas/%s/> \n', qualifier, cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), qualifier);
+
+   drop_map := '';
+   mask := sprintf ('http://%s/schemas/%s/qm-%%', cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), qualifier);
+   for select "o" from (sparql define input:storage "" 
+   select ?o from virtrdf: 
+   { 
+     virtrdf:DefaultQuadStorage-UserMaps ?p ?o . 
+     filter ( ?p != rdf:type && ?o like ?:mask)  
+   }) x do
+   {
+     drop_map := drop_map || sprintf ('SPARQL drop silent quad map <%s> .;\n', "o");
+   } 
+
+   --for (declare xx any, xx := 0; xx < length (_tbls) ; xx := xx + 1)
+   --   drop_map := drop_map || sprintf ('SPARQL %s drop silent quad map %s:qm-%s\n;\n', ns, qualifier, rdf_view_tb (name_part (_tbls[xx], 2)));
+   --if (gen_stat)
+   --  drop_map := drop_map || sprintf ('SPARQL %s drop silent quad map %s:qm-VoidStatistics\n;\n', ns, qualifier);
+
    -- ## voID
    if (gen_stat)
      {
@@ -246,9 +263,13 @@ RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in 
    if (create_count_count <> '')
      create_count_count := create_count_count || '\n\n';
 
-   --create_class_stmt := sparql_pref || sns || create_class_stmt || '\n;\n\n';
-   create_view_stmt := rdf_view_create_view (qualifier, _tbls, gen_stat, cols, pkcols);
-   create_view_stmt := sparql_pref || ns || create_view_stmt || '\n;\n\n';
+    create_view_stmt := '';
+   for (declare inx int, inx := 0; inx < length (_tbls) ; inx := inx + 1)
+      create_view_stmt := create_view_stmt || sparql_pref || ns || rdf_view_create_view (inx, qualifier, _tbls, gen_stat, cols, pkcols) || '\n;\n\n';
+
+   if (gen_stat)      
+     create_view_stmt := create_view_stmt || sparql_pref || ns || rdf_view_create_void_view (qualifier, _tbls, gen_stat, cols, pkcols) || '\n;\n\n';   
+
    return drop_map || create_class_stmt || '\n\n' || create_count_count || create_view_stmt;
 }
 ;
@@ -384,50 +405,39 @@ create procedure rdf_view_col_type (in qual varchar, in col varchar, in opts any
 ;
 
 create procedure
-rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0, in cols any, in pkcols any)
+rdf_view_create_view (in nth int, in qualifier varchar, in _tbls any, in gen_stat int := 0, in cols any, in pkcols any)
 {
    declare ret, qual, qual_l, tbl_name, tbl_name_l, pks, pk_text, uriqa_str any;
    declare suffix, tname, tbl, own, pref_l any;
-
-   uriqa_str := '^{URIQADefaultHost}^';
-   qual := name_part (_tbls[0], 0);
-   own := name_part (_tbls[0], 1);
-   qual_l := lcase (qual);
-   pref_l := lcase (qualifier);
+   declare cols_arr, inx, col_name, owner, owner_l any;
 
    ret := 'alter quad storage virtrdf:DefaultQuadStorage \n';
    suffix := '_s';
-
-   for (declare xx any, xx := 0; xx < length (_tbls) ; xx := xx + 1)
-     {
-       ret := ret || ' from ' || rdf_view_sql_tb (_tbls[xx]) || ' as ' || rdf_view_tb (name_part (_tbls[xx], 3) || suffix) || '\n';
-       -- ## voID
-       if (gen_stat)
-	 {
-           ret := ret || ' from ' || rdf_view_sql_tb (_tbls[xx]||'Count') || ' as ' || rdf_view_tb (name_part (_tbls[xx]||'Count', 3) || suffix) || '\n';
-         }
-     }
-   -- ## voID
-   if (gen_stat)
-     {
-       ret := ret || ' from ' || rdf_view_sql_tb (qual||'.'||own||'.'||qualifier||'__Total') || ' as ' || rdf_view_tb (qualifier||'__Total'||suffix) || '\n';
-     }
-
-   ret := ret || rdf_view_get_relations (_tbls, suffix);
-
-   ret := ret || ' { \n   create virtrdf:' || qualifier ||
-   ' as graph iri ("http://' || uriqa_str || '/' || qualifier || '#") option (exclusive) \n    { \n';
-
-   for (declare xx any, xx := 0; xx < length (_tbls) ; xx := xx + 1)
-      {
-  	   declare cols_arr, inx, col_name, owner, owner_l any;
-	   tbl := _tbls[xx];
+   uriqa_str := '^{URIQADefaultHost}^';
+   qual := name_part (_tbls[nth], 0);
+   own := name_part (_tbls[nth], 1);
+   qual_l := lcase (qual);
+   pref_l := lcase (qualifier);
+   tbl := _tbls[nth];
 	   cols_arr := get_keyword (tbl, cols);
 	   tbl_name := name_part (tbl, 2);
 	   owner := name_part (tbl, 1);
 	   tbl_name_l := rdf_view_tb (tbl_name);
 	   owner_l := rdf_view_tb (owner);
 	   tname := tbl_name_l || suffix;
+
+
+   ret := ret || ' from ' || rdf_view_sql_tb (tbl) || ' as ' || rdf_view_tb (name_part (tbl, 3) || suffix) || '\n';
+
+   ret := ret || rdf_view_get_relations (tbl, _tbls, suffix);
+
+   ret := ret || sprintf (' { \n   create %s:qm-%s', qualifier, tbl_name_l) ||
+   ' as graph iri ("http://' || uriqa_str || '/' || qualifier || '#") ';
+
+   if (gen_stat = 0 and nth = (length (_tbls) - 1))
+     ret := ret || 'option (exclusive)' ;
+   ret := ret ||' \n    { \n';
+
 
 	   ret := ret || rdf_view_sp (6) || '# Maps from columns of "' || tbl || '"\n';
 	   ret := ret || rdf_view_sp (6) || rdf_view_get_pk_rel (qualifier, suffix, tbl, 0, pkcols);
@@ -478,10 +488,37 @@ rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0, 
                inx := inx + 1; 
 	     }
    	    ret := ret || '\n';
-      }
-   -- ## voID
-   if (gen_stat)
+
+   ret := ret || '    }\n }\n';
+   return ret;
+}
+;
+
+create procedure
+rdf_view_create_void_view (in qualifier varchar, in _tbls any, in gen_stat int := 0, in cols any, in pkcols any)
+{
+   declare ret, qual, qual_l, tbl_name, tbl_name_l, pks, pk_text, uriqa_str any;
+   declare suffix, tname, tbl, own, pref_l any;
+
+   uriqa_str := '^{URIQADefaultHost}^';
+   qual := name_part (_tbls[0], 0);
+   own := name_part (_tbls[0], 1);
+   qual_l := lcase (qual);
+   pref_l := lcase (qualifier);
+
+   ret := 'alter quad storage virtrdf:DefaultQuadStorage \n';
+   suffix := '_s';
+
+   for (declare xx any, xx := 0; xx < length (_tbls) ; xx := xx + 1)
      {
+       ret := ret || ' from ' || rdf_view_sql_tb (_tbls[xx]||'Count') || ' as ' || rdf_view_tb (name_part (_tbls[xx]||'Count', 3) || suffix) || '\n';
+     }
+   ret := ret || ' from ' || rdf_view_sql_tb (qual||'.'||own||'.'||qualifier||'__Total') || ' as ' || 
+   	rdf_view_tb (qualifier||'__Total'||suffix) || '\n';
+
+   ret := ret || sprintf (' { \n   create %s:qm-VoidStatistics', qualifier) ||
+   ' as graph iri ("http://' || uriqa_str || '/' || qualifier || '#") option (exclusive) \n    { \n';
+
        ret := ret || rdf_view_sp (6) || '# voID Statistics \n';
        ret := ret || rdf_view_sp (6) || sprintf ('%s-stat: a void:Dataset as %s:dataset-%s ; \n', pref_l, qualifier, qual_l);
        ret := ret || rdf_view_sp (6) || sprintf (' void:sparqlEndpoint <http://%s/sparql> as %s:dataset-sparql-%s ; \n',
@@ -509,7 +546,6 @@ rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0, 
 	       ret := ret || rdf_view_sp (6) || sprintf ('scovo:dimention %s:%s as %s:statitem-type-2-%s-%s .\n\n',
 	       						qualifier, rdf_view_cls_name (tbl_name), qualifier, qual_l, tbl_name_l);
 	  }
-     }
 
    ret := ret || '    }\n }';
    return ret;
@@ -706,22 +742,30 @@ rdf_view_get_primary_key (in _tbl varchar)
 ;
 
 create procedure
-rdf_view_get_relations (in _tbls varchar, in _suff varchar)
+rdf_view_get_relations (in _tbl varchar, in _tbls varchar, in _suff varchar)
 {
    declare ret any;
 
    ret := '';
    foreach (any tbl in _tbls) do
-       for (SELECT name_part (PK_TABLE, 1) as PK_TABLE_SCHEMA, PK_TABLE,
-	   name_part (PK_TABLE, 2) as PK_TABLE_NAME, PKCOLUMN_NAME as PK_COLUMN_NAME,
+       for (SELECT name_part (PK_TABLE, 1) as PK_TABLE_SCHEMA, 
+	   PK_TABLE,
+	   name_part (PK_TABLE, 2) as PK_TABLE_NAME, 
+	   PKCOLUMN_NAME as PK_COLUMN_NAME,
 	   name_part (FK_TABLE, 1) as FK_TABLE_SCHEMA,
-	   name_part (FK_TABLE, 2) as FK_TABLE_NAME, FKCOLUMN_NAME AS FK_COLUMN_NAME,
+	   name_part (FK_TABLE, 2) as FK_TABLE_NAME, 
+	   FKCOLUMN_NAME AS FK_COLUMN_NAME,
 	   KEY_SEQ, UPDATE_RULE, DELETE_RULE, FK_NAME
 	   FROM DB.DBA.SYS_FOREIGN_KEYS WHERE FK_TABLE = tbl and PK_TABLE <> tbl) do
 
 	 {
-	   if (position (PK_TABLE, _tbls) <> 0)
+	   if (position (PK_TABLE, _tbls) <> 0 and (tbl = _tbl or PK_TABLE = _tbl))
 	     {
+	       if (tbl = _tbl)
+		 ret := ret || ' from ' || rdf_view_sql_tb (PK_TABLE) || ' as ' || rdf_view_tb (name_part (PK_TABLE, 3) || _suff) || '\n';
+	       else
+		 ret := ret || ' from ' || rdf_view_sql_tb (tbl) || ' as ' || rdf_view_tb (name_part (tbl, 3) || _suff) || '\n';
+
 	       ret := ret || sprintf (' where (^{%s%s.}^."%I" = ^{%s%s.}^."%I") \n',
 	       rdf_view_tb (FK_TABLE_NAME), _suff, FK_COLUMN_NAME,
 	       rdf_view_tb (PK_TABLE_NAME), _suff, PK_COLUMN_NAME);
@@ -848,7 +892,7 @@ create procedure RDF_VIEW_GEN_VD (in qual varchar)
     ''(/[^#]*)'',
     vector(''path''),
     1,
-    ''/sparql?query=DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%3E+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/<qual>%%23%%3E&format=%U'',
+    ''/sparql?query=DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/<qual>%%23%%3E&format=%U'',
     vector(''path'', ''path'', ''*accept*''),
     null,
     ''(text/rdf.n3)|(application/rdf.xml)'',
