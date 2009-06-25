@@ -179,11 +179,12 @@ iSPARQL.QBE = function () {
 		selectNodeCallback:function(node) {
 			node.svg.setAttribute("stroke-width","4");
 			node.svg.setAttribute("stroke","#00f");
+			OAT.Dom.hide("qbe_props_help");
 			OAT.Dom.hide("qbe_props_edge");
 			OAT.Dom.hide("qbe_props_group");
 			OAT.Dom.show("qbe_props_node");
 			OAT.Dom.show("qbe_props_common");
-			self.props_win.caption.innerHTML = '&nbsp;Node';
+			self.props_win.caption.innerHTML = 'Node';
 
 
       var t = node.getLabel(2);
@@ -204,15 +205,17 @@ iSPARQL.QBE = function () {
 			node.svg.setAttribute("stroke-width","0.001"); /* cannot be zero due to bug in firefox */
 			OAT.Dom.hide("qbe_props_common");
 			OAT.Dom.hide("qbe_props_node");
-			self.props_win.caption.innerHTML = '&nbsp;';
+			OAT.Dom.show("qbe_props_help");
+			self.props_win.caption.innerHTML = 'Inspector';
 		},
 		selectEdgeCallback:function(edge) {
 			edge.svg.setAttribute("stroke","#f00");
+			OAT.Dom.hide("qbe_props_help");
 			OAT.Dom.hide("qbe_props_node");
 			OAT.Dom.hide("qbe_props_group");
 			OAT.Dom.show("qbe_props_edge");
 			OAT.Dom.show("qbe_props_common");
-			self.props_win.caption.innerHTML = '&nbsp;Connector';
+			self.props_win.caption.innerHTML = 'Connector';
 
 			var val = edge.getLabel(1);
 			if (val == '?') val = '';
@@ -230,16 +233,18 @@ iSPARQL.QBE = function () {
 			edge.svg.setAttribute("stroke","#888"); /* cannot be zero due to bug in firefox */
 			OAT.Dom.hide("qbe_props_common");
 			OAT.Dom.hide("qbe_props_edge");
-			self.props_win.caption.innerHTML = '&nbsp;';
+			OAT.Dom.show("qbe_props_help");
+			self.props_win.caption.innerHTML = 'Inspector';
 		},
 		selectGroupCallback:function(group) {
 			group.svg.setAttribute("stroke-width","2");
 			group.svg.setAttribute("stroke","#f00");
+			OAT.Dom.hide("qbe_props_help");
 			OAT.Dom.hide("qbe_props_node");
 			OAT.Dom.hide("qbe_props_edge");
 			OAT.Dom.show("qbe_props_group");
 			OAT.Dom.show("qbe_props_common");
-			self.props_win.caption.innerHTML = '&nbsp;Group';
+			self.props_win.caption.innerHTML = 'Group';
 
 			var val = group.getLabel(1);
 			if (val == '?') val = '';
@@ -339,7 +344,7 @@ iSPARQL.QBE = function () {
 	var win_width = 260;
 	var win_x = -20;
 
-	this.schema_win = new OAT.Window({title:"Schemas", close:0, min:0, max:0, width:win_width, height:340, x:win_x,y:212});
+	this.schema_win = new OAT.Window({title:"Schemas", close:0, min:0, max:0, width:win_width, height:340, x:win_x,y:248});
 	this.schema_win.move._Drag_movers[0][1].restrictionFunction = function(l,t) {
 		return l < 0 || t < 0;
 	}
@@ -348,13 +353,14 @@ iSPARQL.QBE = function () {
 	this.schema_win.content.appendChild($("schemas"));
 	OAT.Resize.create(this.schema_win.resize, "schemas_tree_container", OAT.Resize.TYPE_XY);
 
-	this.props_win = new OAT.Window({title:"", close:0, min:0, max:0, width:win_width, height:120, x:win_x,y:72});
+	this.props_win = new OAT.Window({title:"", close:0, min:0, max:0, width:win_width, height:170, x:win_x,y:72});
 	this.props_win.move._Drag_movers[0][1].restrictionFunction = function(l,t) {
 		return l < 0 || t < 0;
 	}
 	$("page_qbe").appendChild(this.props_win.div);
 	self.l.addLayer(this.props_win.div);
 	this.props_win.content.appendChild($("qbe_props"));
+	this.props_win.caption.innerHTML = '&nbsp;Inspector';
 
 	this.orderby_grid = new OAT.Grid("qbe_orderby_grid",0)
 	self.orderby_grid.createHeader([{value:'order by',sortable:0,draggable:0,resizable:0}]);

@@ -172,6 +172,9 @@ OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
             </div> <!-- #qbe_bottom -->
           </div> <!-- #qbe_query_div -->
           <div id="qbe_props">
+            <div id="qbe_props_help">
+              <p>Please select a node or edge to view its properties.</p>
+            </div>
 	    <div id="qbe_props_node" style="display:none;">
 	      <label for="qbe_node_type">Type:</label>
 	      <select id="qbe_node_type">
@@ -199,14 +202,10 @@ OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
               <input type="text" id="qbe_group_id" />
             </div> <!-- #qbe_props_group -->
 	    <div id="qbe_props_common" style="display:none;">
-	      <div id="qbe_props_orderby">
 	        <input type="checkbox" id="qbe_orderby" />
-	        <label for="qbe_orderby" class="ckb">Order By</label>
-	      </div> <!-- #qbe_props_orderby -->
-	      <div id="qbe_props_visible">
+	      <label for="qbe_orderby" class="ckb">Order By</label><br/>
 	        <input type="checkbox" id="qbe_visible" />
 	        <label for="qbe_visible" class="ckb">Visible</label>
-	      </div> <!-- #qbe_props_visible -->
             </div> <!-- #qbe_props_common -->
           </div> <!-- #qbe_props -->
           <div id="schemas"> <!#-- schemas (sub)window -->

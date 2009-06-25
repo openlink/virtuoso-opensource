@@ -43,7 +43,6 @@ fieldset {
 
 fieldset.derefOpts {
 	width: 90%;
-	float: center;
 	margin-top: 10px;
 	border: 1px solid #666;
 }
@@ -54,11 +53,11 @@ span.title {
 }
 
 td.cachingOpts label { float: left; clear: left; width: 150px; }
-td.cachingOpts input { float; left;}
+td.cachingOpts input { float: left;}
 
 div.controls {
 	background-color: #eee;
-  margin-left: 10px;
+  margin: 0 10px 0 10px;
 	border: 1px solid #666;
 }
 
@@ -78,7 +77,6 @@ fieldset.endpoint {
 	margin-top: 10px;
 	display: block;
 	width: 90%;
-	float: center;
 	border: 1px solid #666;
 }
 
@@ -328,6 +326,7 @@ div#virtuoso_options
 {
   display: block;
   float: left;
+  width: 75px;
 }
 #virtuoso_options br
 {
@@ -351,15 +350,17 @@ div#virtuoso_options
   height: 16px;
 }
 
-.combo_list_list {
+div.combo_list_list {
   background-color: white;
   border: 1px solid black;
   padding: 2px;
-  overflow: auto}
+  overflow: auto;
+  cursor: pointer;}
 
-.combo_list_option:hover {
+div.combo_list_option:hover {
   background-color: #0080FF;
-  color: white}
+  color: white;
+  cursor: pointer;}
 
 #explain {
   float: right;
