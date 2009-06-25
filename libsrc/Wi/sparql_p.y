@@ -469,7 +469,12 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 
 /* TOP-LEVEL begin */
 sparql	/* [1]*	Query		 ::=  Prolog ( QueryBody | SparulAction* | ( QmStmt ('.' QmStmt)* '.'? ) )	*/
-	: START_OF_SPARQL_TEXT spar_prolog spar_query_body END_OF_SPARQL_TEXT { sparp_arg->sparp_expr = $$ = $3; }
+	: START_OF_SPARQL_TEXT spar_prolog /* {
+		if (sparp_arg->sparp_env->spare_default_graphs_listed || sparp_arg->sparp_env->spare_named_graphs_listed) {
+		  sparp_arg->sparp_env->spare_default_graphs_locked = 1;
+		  sparp_arg->sparp_env->spare_named_graphs_locked = 1;
+		  } } */
+	    spar_query_body END_OF_SPARQL_TEXT { sparp_arg->sparp_expr = $$ = $3; }
 	| START_OF_SPARQL_TEXT spar_prolog spar_sparul_actions END_OF_SPARQL_TEXT {
 		sparp_arg->sparp_expr = $$ = spar_make_topmost_sparul_sql (sparp_arg,
 		  (SPART **)t_revlist_to_array ($3) ); }

@@ -743,7 +743,12 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
           sparp_make_and_push_new_graph_source ( sparp, SPART_GRAPH_FROM,
             spartlist (sparp, 2, SPAR_QNAME, t_box_dv_uname_string (value)),
             NULL );
+          return;
+        }
+      if (!strcmp (param, "input:freeze"))
+        {
           sparp->sparp_env->spare_default_graphs_locked = 1;
+          sparp->sparp_env->spare_named_graphs_locked = 1;
           return;
         }
       if (!strcmp (param, "input:default-graph-exclude"))
@@ -759,7 +764,6 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
           sparp_make_and_push_new_graph_source ( sparp, SPART_GRAPH_NAMED,
             spartlist (sparp, 2, SPAR_QNAME, t_box_dv_uname_string (value)),
             NULL );
-          sparp->sparp_env->spare_named_graphs_locked = 1;
           return;
         }
       if (!strcmp (param, "input:named-graph-exclude"))
