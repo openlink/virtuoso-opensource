@@ -46,6 +46,7 @@ clean:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
+	cached_resources.c \
 	cache_gen.sh res_to_c.awk \
 	openlinksw-sparql/virtrdf-data-formats.ttl \
 	w3-2000-01/rdf-schema \
