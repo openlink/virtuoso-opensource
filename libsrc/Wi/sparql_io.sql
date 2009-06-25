@@ -999,7 +999,15 @@ create procedure SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, inout meta
 	    }
 	  else if (__tag of XML = rdf_box_data_tag (val)) -- string output
 	    {
-              http (__rdf_strsqlval (val), ses);
+              if (is_js)
+                {
+                  declare tmpses any;
+                  tmpses := string_output();
+                  http_value (val, 0, tmpses);
+                  http_escape (cast (tmpses as varchar), esc_mode, ses, 1, 1);
+                }
+              else
+                http_value (val, 0, ses);
 	    }
           else
             {
