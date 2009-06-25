@@ -22,7 +22,7 @@ function sparql_qry (q_elm) {
 }
 
 function isparql_qry (q_elm) {
-  document.location = isparql_ep + '?query=' + get_and_encode_query (q_elm);
+  document.location = isparql_ep + '?default-graph-uri=%20&query=' + get_and_encode_query (q_elm);
 }
 
 function get_and_encode_query (q_elm)

@@ -388,6 +388,8 @@ done:
 
 create procedure s_rank ()
 {
+  if (not exists (select 1 from SYS_KEYS, SYS_KEY_PARTS, SYS_COLS where KEY_TABLE = 'DB.DBA.RDF_QUAD' and KEY_ID = KP_KEY_ID and KP_COL = COL_ID and KEY_MIGRATE_TO is null and KP_NTH = 0 and KEY_TABLE = \TABLE and \COLUMN = 'S'))
+    signal ('42000', 'The RDF_QUAD table do not have index with leading "S", can not perform the operation');
   cl_exec ('rnk_count_refs_srv ()');
   cl_exec ('rnk_score_srv (1)');
   cl_exec ('rnk_next_cycle ()');
