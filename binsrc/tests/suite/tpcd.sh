@@ -165,22 +165,22 @@ then
     LOG "***ABORTED: tpcd.sh test -- tpc-d/Q_sparql_map_cmp.sql"
     exit 1
 fi
+RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpc-d/Q_sparql_map_translations.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tpcd.sh test -- tpc-d/Q_sparql_map_translations.sql"
+    exit 1
+fi
 RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpc-d/Q_sparql_map_endpoint.sql
 if test $STATUS -ne 0
 then
-    LOG "***ABORTED: tpcd.sh test -- tpc-d/Q_sparql_map_cmp.sql"
+    LOG "***ABORTED: tpcd.sh test -- tpc-d/Q_sparql_map_endpoint.sql"
     exit 1
 fi
 RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpc-d/Q_sparql_phy_cmp.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tpcd.sh test -- tpc-d/Q_sparql_phy_cmp.sql"
-    exit 1
-fi
-RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpc-d/Q_sparql_map_translations.sql
-if test $STATUS -ne 0
-then
-    LOG "***ABORTED: tpcd.sh test -- tpc-d/Q_sparql_map_translations.sql"
     exit 1
 fi
 
