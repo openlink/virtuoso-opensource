@@ -91,7 +91,7 @@
           <v:data-set name="ds_tables"
             sql="select distinct KEY_TABLE as table_name from SYS_KEYS
             where upper(name_part (KEY_TABLE, 0)) like upper(:self.browse_cat)
-            and KEY_IS_MAIN = 1 and KEY_MIGRATE_TO is NULL and not exists (select 1 from DB.DBA.SYS_VIEWS where V_NAME = KEY_TABLE) order by 1"
+            and KEY_IS_MAIN = 1 and KEY_MIGRATE_TO is NULL and (KEY_TABLE not like '%__Total' and KEY_TABLE not like '%Count') order by 1"
 	    nrows="1000" scrollable="1" cursor-type="keyset" edit="0" width="80" initial-enable="1">
             <v:template name="temp_ds_tables_header" type="simple">
                 <colgroup/><colgroup/><colgroup/>

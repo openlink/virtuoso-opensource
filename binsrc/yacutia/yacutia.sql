@@ -320,6 +320,7 @@ create procedure adm_menu_tree ()
    <node name="RDF Views" url="db_rdf_view_3.vspx"  id="273" place="1"/>
    <node name="RDF Views" url="db_rdf_view_tb.vspx"  id="273" place="1"/>
    <node name="RDF Views" url="db_rdf_view_cols.vspx"  id="273" place="1"/>
+   <node name="RDF Views" url="db_rdf_view_pk.vspx"  id="273" place="1"/>
  </node>
  <node name="Replication"  url="db_repl_basic.vspx" id="80" tip="Replications" allowed="yacutia_repl">
    <node name="Basic" url="db_repl_basic.vspx"  id="8001" >
@@ -6221,3 +6222,13 @@ TTLP (OWL_N3 (), 'http://www.w3.org/2002/07/owl#', 'http://www.w3.org/2002/07/ow
 
 RDFS_RULE_SET ('http://www.w3.org/2002/07/owl#', 'http://www.w3.org/2002/07/owl#');
 RDF_GRAPH_GROUP_CREATE ('http://www.openlinksw.com/schemas/virtrdf#schemas', 1);
+
+create procedure yac_get_pk (in tb varchar)
+{
+  declare pka, pkn any;
+  pka := rdf_view_get_primary_key (tb);
+  pkn := vector ();
+  foreach (any x in pka) do
+    pkn := vector_concat (pkn, vector (x[0]));  
+}
+;

@@ -61,6 +61,7 @@ conductor/db_rdf_view_1.vspx
 conductor/db_rdf_view_2.vspx
 conductor/db_rdf_view_3.vspx
 conductor/db_rdf_view_cols.vspx
+conductor/db_rdf_view_pk.vspx
 conductor/db_rdf_view_tb.vspx
 conductor/db_repl_basic_create.vspx
 conductor/db_repl_basic_local_create.vspx
@@ -210,10 +211,8 @@ conductor/images/dav_browser/up_16.png
 conductor/images/document.gif
 conductor/images/Empty-folder.gif
 conductor/images/folder_full.gif
-conductor/images/folder-full.gif
 conductor/images/Folder.gif
 conductor/images/folder_up.gif
-conductor/images/folder-up.gif
 conductor/images/icons/about_32.png
 conductor/images/icons/add_16.png
 conductor/images/icons/add_script_16.png
@@ -263,7 +262,6 @@ conductor/images/icons/user_16.png
 conductor/images/icons/view_16.png
 conductor/images/icons/web_16.png
 conductor/images/open_folder.gif
-conductor/images/open-folder.gif
 conductor/images/opl.jpg
 conductor/images/sel_nav2_grad2.gif
 conductor/images/sel_nav_grad2.gif

@@ -41,6 +41,7 @@
       <v:variable persist="0" name="_view" type="int" default="1" param-name="view"/>
       <v:variable persist="0" name="st" type="int" default="1" param-name="st"/>
       <v:variable persist="0" name="cols" type="any" default="null" param-name="cols"/>
+      <v:variable persist="0" name="pklist" type="any" default="null" param-name="pk"/>
   </vm:variables>
 
   <vm:header caption="RDF View definition"/>
@@ -67,7 +68,7 @@
 	      <td>
 		  <v:button action="simple" name="cncl" value="Back">
 		      <v:on-post><![CDATA[
-			  self.vc_redirect (sprintf ('db_rdf_view_tb.vspx?host=%U&list=%U&cols=%U', self.base, self.objects, self.cols));
+			  self.vc_redirect (sprintf ('db_rdf_view_tb.vspx?host=%U&list=%U&cols=%U&pk=%U', self.base, self.objects, self.cols, self.pklist));
 			  ]]></v:on-post>
 		  </v:button>
 		  <v:button action="simple" name="exec" value="Next">
@@ -85,34 +86,37 @@
 			      self.vc_is_valid := 0;
 			      return;
 			    }
-			  self.vc_redirect (sprintf ('db_rdf_view_2.vspx?list=%U&host=%U&owl=%d&view=%d&st=%d&cols=%U', 
+			  self.vc_redirect (sprintf ('db_rdf_view_2.vspx?list=%U&host=%U&owl=%d&view=%d&st=%d&cols=%U&pk=%U', 
 			  		self.objects, self.base, 
 			  		self.gen_owl.ufl_selected,
 			  		self.gen_view.ufl_selected,
 					self.gen_st.ufl_selected,
-					self.cols
+					self.cols,
+					self.pklist
 					));
 			  ]]></v:on-post>
 		  </v:button>
 		  <v:button action="simple" name="exec1" value="Prepare to Excute">
 		      <v:on-post><![CDATA[
-			  self.vc_redirect (sprintf ('db_rdf_view_3.vspx?list=%U&host=%U&&owl=%d&view=%d&st=%d&owl_vd=1&view_vd=1&cols=%U', 
+			  self.vc_redirect (sprintf ('db_rdf_view_3.vspx?list=%U&host=%U&&owl=%d&view=%d&st=%d&owl_vd=1&view_vd=1&cols=%U&pk=%U', 
 			  		self.objects, self.base, 
 			  		self.gen_owl.ufl_selected,
 			  		self.gen_view.ufl_selected,
 					self.gen_st.ufl_selected,
-					self.cols
+					self.cols,
+					self.pklist
 					));
 			  ]]></v:on-post>
 		  </v:button>
 		  <v:button action="simple" name="exec2" value="Generate">
 		      <v:on-post><![CDATA[
-			  self.vc_redirect (sprintf ('db_rdf_view_3.vspx?list=%U&host=%U&&owl=%d&view=%d&st=%d&owl_vd=1&view_vd=1&cols=%U&exec=1', 
+			 self.vc_redirect (sprintf ('db_rdf_view_3.vspx?list=%U&host=%U&&owl=%d&view=%d&st=%d&owl_vd=1&view_vd=1&cols=%U&exec=1&pk=%U', 
 			  		self.objects, self.base, 
 			  		self.gen_owl.ufl_selected,
 			  		self.gen_view.ufl_selected,
 					self.gen_st.ufl_selected,
-					self.cols
+					self.cols,
+					self.pklist
 					));
 			  ]]></v:on-post>
 		  </v:button>

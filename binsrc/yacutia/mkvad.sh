@@ -475,7 +475,7 @@ CHECK_LOG
 RUN egrep  '"\*\*.*FAILED:|\*\*.*ABORTED:"' "$LOGFILE"
 if test $STATUS -eq 0
 then
-	$myrm -f *.vad
+	rm -f *.vad
 	exit 1
 fi
 

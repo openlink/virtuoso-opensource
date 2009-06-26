@@ -43,6 +43,7 @@
       <v:variable persist="0" name="tbl" type="any" default="null" param-name="tb"/>
       <v:variable persist="0" name="owl_iri" type="any" default="null"/>
       <v:variable persist="0" name="cls_iri" type="any" default="null"/>
+      <v:variable persist="0" name="pklist" type="any" default="null" param-name="pk"/>
   </vm:variables>
 
   <vm:header caption="RDF View definition"/>
@@ -72,10 +73,13 @@
 --	  dbg_obj_print (self.cls_iri, self.owl_iri);  
 	  if (not isarray (cols))
 	    {
+	      declare i int;
+              i := 0;
 	      cols := make_array ((select count(*) from TABLE_COLS where "TABLE" = self.tbl), 'any');
-	      for (declare i int; i < length (cols); i := i + 1)
+	      for select "COLUMN" as colname, COL_DTP from TABLE_COLS where "TABLE" = self.tbl order by COL_ID do 
 	        {
                   cols [i] := vector (0, '');
+		  i := i + 1; 
 	        }	
               cols := vector ('', cols);		
 	      all_cols := self.cols;
@@ -213,8 +217,8 @@
 	      <td>
 		  <v:button action="simple" name="cncl" value="Cancel">
 		      <v:on-post><![CDATA[
-			  self.vc_redirect (sprintf ('db_rdf_view_tb.vspx?list=%U&host=%U&cols=%U', 
-			  		self.objects, self.base, self.cols1
+			  self.vc_redirect (sprintf ('db_rdf_view_tb.vspx?list=%U&host=%U&cols=%U&pk=%U', 
+			  		self.objects, self.base, self.cols1, self.pklist
 					));
 			  ]]></v:on-post>
 		  </v:button>
@@ -223,7 +227,7 @@
 			  declare i int;
 			  declare pos int;
 			  declare cols, all_cols any;
-			  declare x,lab int;
+			  declare x, lab int;
 			  declare prop varchar;
 			  -- check if at least one is selected
 			  if (0)
@@ -251,8 +255,8 @@
 			    }
 			  all_cols := self.cols;
 			  all_cols [pos - 1] := vector (self.cls_iri, cols);
-			  self.vc_redirect (sprintf ('db_rdf_view_tb.vspx?list=%U&host=%U&cols=%U', 
-			  		self.objects, self.base, encode_base64 (serialize (all_cols))
+			  self.vc_redirect (sprintf ('db_rdf_view_tb.vspx?list=%U&host=%U&cols=%U&pk=%U', 
+			  		self.objects, self.base, encode_base64 (serialize (all_cols)), self.pklist
 					));
 			  ]]></v:on-post>
 		  </v:button>
