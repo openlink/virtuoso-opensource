@@ -536,9 +536,9 @@ rdf_view_create_void_view (in qualifier varchar, in _tbls any, in gen_stat int :
 	       tbl_name_l := rdf_view_tb (tbl_name);
 	       tname := tbl_name_l || suffix;
 	       ret := ret || rdf_view_sp (6) || sprintf ('%s-stat: void:statItem %s-stat:%sStat as %s:statitem-%s-%s . \n',
-	       				pref_l, pref_l, tbl_name, qualifier, qual_l, tbl_name_l);
+				    pref_l, pref_l, rdf_view_cls_name (tbl_name), qualifier, qual_l, tbl_name_l);
 	       ret := ret || rdf_view_sp (6) || sprintf ('%s-stat:%sStat a scovo:Item as %s:statitem-decl-%s-%s ; \n',
-	       				pref_l, tbl_name, qualifier, qual_l, tbl_name_l);
+				    pref_l, rdf_view_cls_name (tbl_name), qualifier, qual_l, tbl_name_l);
 	       ret := ret || rdf_view_sp (6) || sprintf ('rdf:value %s.cnt as %s:statitem-cnt-%s-%s ; \n',
 	       						rdf_view_tb (tbl_name||'Count') || suffix, qualifier, qual_l, tbl_name_l);
 	       ret := ret || rdf_view_sp (6) || sprintf ('scovo:dimention void:numberOfResources as %s:statitem-type-1-%s-%s ; \n',
@@ -639,9 +639,10 @@ rdf_view_get_pk_fk_rel (in pref varchar, in suffix varchar, in tbl varchar, in t
 ;
 
 create procedure
-rdf_view_dv_to_printf_str_type (in _dv varchar)
+rdf_view_dv_to_printf_str_type (in _dv varchar, in sc int)
 {
    if (_dv = 189 or _dv = 188) return '%d';
+   else if (_dv in (__tag of double precision, __tag of numeric) and sc = 0) return '%d';
    else if (_dv = 182 or _dv = 225) return '%U';
    else if (__tag of double precision = _dv) return '%g';
    else if (__tag of real = _dv) return '%f';
@@ -706,7 +707,7 @@ rdf_view_create_class (in decl varchar, in _tbl varchar, in _host varchar, in qu
    for (declare i any, i := 0; i < length (pks) ; i := i + 1)
      {
        pk_text := pk_text || 'in ' || '_' || rdf_view_cls_name (pks[i][0]) || ' ' || rdf_view_dv_to_sql_str_type(pks[i][1]) || ' not null,';
-       sk_str := sk_str || '/' || rdf_view_cls_name (pks[i][0]) || '/' || rdf_view_dv_to_printf_str_type (pks[i][1]);
+       sk_str := sk_str || '/' || rdf_view_cls_name (pks[i][0]) || '/' || rdf_view_dv_to_printf_str_type (pks[i][1], pks[i][2]);
      }
    pk_text := trim (pk_text, ',');
    sk_str  := trim (sk_str , '/');
@@ -744,9 +745,11 @@ rdf_view_get_primary_key (in _tbl varchar)
 create procedure
 rdf_view_get_relations (in _tbl varchar, in _tbls varchar, in _suff varchar)
 {
-   declare ret any;
+   declare ret, aliases any;
 
    ret := '';
+   aliases := dict_new (10);
+   dict_put (aliases, _tbl, 1);
    foreach (any tbl in _tbls) do
        for (SELECT name_part (PK_TABLE, 1) as PK_TABLE_SCHEMA, 
 	   PK_TABLE,
@@ -761,11 +764,17 @@ rdf_view_get_relations (in _tbl varchar, in _tbls varchar, in _suff varchar)
 	 {
 	   if (position (PK_TABLE, _tbls) <> 0 and (tbl = _tbl or PK_TABLE = _tbl))
 	     {
+	       declare alias any;
 	       if (tbl = _tbl)
-		 ret := ret || ' from ' || rdf_view_sql_tb (PK_TABLE) || ' as ' || rdf_view_tb (name_part (PK_TABLE, 3) || _suff) || '\n';
+		 alias := PK_TABLE;
 	       else
-		 ret := ret || ' from ' || rdf_view_sql_tb (tbl) || ' as ' || rdf_view_tb (name_part (tbl, 3) || _suff) || '\n';
+		 alias := tbl;
 
+	       if (dict_get (aliases, alias) is null)
+		 {
+		   ret := ret || ' from ' || rdf_view_sql_tb (alias) || ' as ' || rdf_view_tb (name_part (alias, 3) || _suff) || '\n';
+		   dict_put (aliases, alias, 1);
+		 }
 	       ret := ret || sprintf (' where (^{%s%s.}^."%I" = ^{%s%s.}^."%I") \n',
 	       rdf_view_tb (FK_TABLE_NAME), _suff, FK_COLUMN_NAME,
 	       rdf_view_tb (PK_TABLE_NAME), _suff, PK_COLUMN_NAME);

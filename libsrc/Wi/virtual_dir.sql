@@ -1058,7 +1058,7 @@ end_loop:;
 	    }
 	  if ("output-format" is not null)
 	    {
-	      if ("output-format" = 'rdf' or "output-format" = 'rdf+xml')
+	      if ("output-format" = 'rdf' or "output-format" = 'rdf+xml' or "output-format" = 'xml')
 		accept := 'application/rdf+xml';
 	      else if ("output-format" = 'ttl' or "output-format" = 'turtle' or "output-format" = 'n3')
 		accept := 'text/rdf+n3';
