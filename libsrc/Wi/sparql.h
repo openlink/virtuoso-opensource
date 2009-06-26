@@ -254,6 +254,7 @@ typedef struct sparp_s {
   int sparp_in_precode_expn;		/*!< The parser reads precode-safe expression so it can not contain non-global variables */
   int sparp_allow_aggregates_in_expn;	/*!< The parser reads result-set expressions or HAVING but not HAVING SELECT ... */
   int sparp_query_uses_aggregates;	/*!< Nonzero if there is at least one aggregate in the whole source query, (not in the current SELECT!). This is solely for bypassing expanding top retvals for "plain SPARQL" queries, not for other logic of the compiler */
+  dk_set_t sparp_created_jsos;		/*!< Get-keyword style list of created JS objects. Object IRIs are keys, types (as free-text const char *) are values. This is solely for early (and incomplete) detection of probable errors. */
 /* Environment of lex */
   size_t sparp_text_ofs;
   size_t sparp_text_len;
@@ -316,13 +317,13 @@ extern void sparyyerror_impl_1 (sparp_t *xpp, char *raw_text, int yystate, short
 
 /* These values should be greater than any SQL opcode AND greater than 0x7F to not conflict with codepoints of "syntactically important" chars AND less than 0xFF to not conflict with YACC IDs for keywords. */
 #define SPART_GRAPH_FROM		0x100
-#define SPART_GRAPH_GROUP_BIT		0x1
+#define SPART_GRAPH_GROUP_BIT		0x001
 #define SPART_GRAPH_GROUP		0x101	/*!< == SPART_GRAPH_FROM | SPART_GRAPH_GROUP_BIT */
 #define SPART_GRAPH_NAMED		0x110
 #define SPART_GRAPH_MIN_NEGATION	0x17F
 #define SPART_GRAPH_NOT_FROM		0x180
 #define SPART_GRAPH_NOT_GROUP		0x181	/*!< == SPART_GRAPH_NOT_FROM | SPART_GRAPH_GROUP_BIT */
-#define SPART_GRAPH_NOT_NAMED		0x130
+#define SPART_GRAPH_NOT_NAMED		0x190
 
 #define SPARP_EQUIV(sparp,idx) ((sparp)->sparp_equivs[(idx)])
 

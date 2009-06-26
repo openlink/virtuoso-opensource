@@ -725,6 +725,20 @@ spar_qm_make_mapping_impl (sparp_t *sparp, int is_real, caddr_t qm_id, SPART **o
       while (all_cond_tmpls != sub_cond_tmpls)
         t_set_push (&final_cond_tmpls, t_set_pop (&all_cond_tmpls));
     }
+  if ((NULL != raw_id) && dk_set_get_keyword (sparp->sparp_created_jsos, raw_id, NULL))
+    spar_error (sparp, "The identifier of Quad Map %.100s is already used in the previous part of the statement", raw_id);
+  if ((NULL != qm_id) && dk_set_get_keyword (sparp->sparp_created_jsos, qm_id, NULL))
+    spar_error (sparp, "The identifier of Quad Map %.100s is already used in the previous part of the statement", qm_id);
+  if (NULL != raw_id)
+    {
+      t_set_push (&(sparp->sparp_created_jsos), "Quad Map");
+      t_set_push (&(sparp->sparp_created_jsos), raw_id);
+    }
+  if (NULL != qm_id)
+    {
+      t_set_push (&(sparp->sparp_created_jsos), "Quad Map");
+      t_set_push (&(sparp->sparp_created_jsos), qm_id);
+    }
   return spar_make_qm_sql (sparp, "DB.DBA.RDF_QM_DEFINE_MAPPING",
       (SPART **)t_list (13,
 	storage_name, raw_id, qm_id, parent_id,

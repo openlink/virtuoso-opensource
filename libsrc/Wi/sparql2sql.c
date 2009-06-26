@@ -2867,7 +2867,7 @@ sparp_find_triple_cases (sparp_t *sparp, SPART *triple, SPART **sources, int req
           tmp_tcc.tcc_source_invalidation_masks[source_ctr] = 0;
         }
       else if (!((SPART_GRAPH_NOT_FROM == source->_.graph.subtype) ||
-          (SPART_GRAPH_NOT_NAMED != source->_.graph.subtype) ) )
+          (SPART_GRAPH_NOT_NAMED == source->_.graph.subtype) ) )
         tmp_tcc.tcc_source_invalidation_masks[source_ctr] = 0x1;
     }
   END_DO_BOX_FAST;

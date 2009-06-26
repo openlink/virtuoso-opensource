@@ -1520,10 +1520,18 @@ spar_qm_create_iri_class	/* [Virt]	QmCreateIRIClass	 ::=  'CREATE' 'IRI' 'CLASS'
 			/*... ( ( String QmSqlfuncArglist )	*/
 			/*...| ( 'USING' QmSqlfuncHeader ',' QmSqlfuncHeader ) )	*/
 	: CREATE_L IRI_L CLASS_L spar_qm_iriref_const_expn SPARQL_STRING spar_qm_sqlfunc_arglist spar_qm_iri_class_optionlist_opt {
+		if (dk_set_get_keyword (sparp_arg->sparp_created_jsos, $4, NULL))
+		  spar_error (sparp_arg, "The identifier of IRI class %.100s is already used in the previous part of the statement", $4);
+		t_set_push (&(sparp_arg->sparp_created_jsos), "IRI class");
+		t_set_push (&(sparp_arg->sparp_created_jsos), $4);
 		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT",
 		  (SPART **)t_list (3, $4, $5, $6), $7 );
                 sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
 	| CREATE_L IRI_L CLASS_L spar_qm_iriref_const_expn USING_L spar_qm_sqlfunc_header_commalist spar_qm_iri_class_optionlist_opt {
+		if (dk_set_get_keyword (sparp_arg->sparp_created_jsos, $4, NULL))
+		  spar_error (sparp_arg, "The identifier of IRI class %.100s is already used in the previous part of the statement", $4);
+		t_set_push (&(sparp_arg->sparp_created_jsos), "IRI class");
+		t_set_push (&(sparp_arg->sparp_created_jsos), $4);
 		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FUNCTIONS",
 		  (SPART **)t_list (2, $4, spar_make_vector_qm_sql (sparp_arg, (SPART **)t_revlist_to_array ($6))), $7 );
                 sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
@@ -1532,6 +1540,10 @@ spar_qm_create_iri_class	/* [Virt]	QmCreateIRIClass	 ::=  'CREATE' 'IRI' 'CLASS'
 spar_qm_create_literal_class	/* [Virt]	QmCreateLiteralClass	 ::=  'CREATE' 'LITERAL' 'CLASS' QmIRIrefConst	*/
 			/*... 'USING' QmSqlfuncHeader ',' QmSqlfuncHeader QmLiteralClassOptions?	*/
 	: CREATE_L LITERAL_L CLASS_L spar_qm_iriref_const_expn USING_L spar_qm_sqlfunc_header_commalist spar_qm_literal_class_optionlist_opt {
+		if (dk_set_get_keyword (sparp_arg->sparp_created_jsos, $4, NULL))
+		  spar_error (sparp_arg, "The identifier of literal class %.100s is already used in the previous part of the statement", $4);
+		t_set_push (&(sparp_arg->sparp_created_jsos), "literal class");
+		t_set_push (&(sparp_arg->sparp_created_jsos), $4);
 		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_FUNCTIONS",
 		  (SPART **)t_list (2, $4, spar_make_vector_qm_sql (sparp_arg, (SPART **)t_revlist_to_array ($6))), $7 );
                 sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
@@ -1539,6 +1551,8 @@ spar_qm_create_literal_class	/* [Virt]	QmCreateLiteralClass	 ::=  'CREATE' 'LITE
 
 spar_qm_drop_iri_class		/* [Virt]	QmDropIRIClass	 ::=  'DROP' 'SILENT'? 'IRI' 'CLASS' QmIRIrefConst	*/
 	: DROP_L spar_silent_opt IRI_L CLASS_L spar_qm_iriref_const_expn {
+		if (dk_set_get_keyword (sparp_arg->sparp_created_jsos, $5, NULL))
+		  spar_error (sparp_arg, "The identifier of IRI class %.100s is already used in the previous part of the statement", $5);
 		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DROP_CLASS",
 		  (SPART **)t_list (2, $5, $2 /* yes, $2 after $5 */), NULL );
                 sparp_jso_push_deleted (sparp_arg, uname_virtrdf_ns_uri_QuadMapFormat , $5);
@@ -1547,6 +1561,8 @@ spar_qm_drop_iri_class		/* [Virt]	QmDropIRIClass	 ::=  'DROP' 'SILENT'? 'IRI' 'C
 
 spar_qm_drop_literal_class		/* [Virt]	QmDropLiteralClass	 ::=  'DROP' 'SILENT'? 'LITERAL' 'CLASS' QmIRIrefConst	*/
 	: DROP_L spar_silent_opt LITERAL_L CLASS_L spar_qm_iriref_const_expn {
+		if (dk_set_get_keyword (sparp_arg->sparp_created_jsos, $5, NULL))
+		  spar_error (sparp_arg, "The identifier of literal class %.100s is already used in the previous part of the statement", $5);
 		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DROP_CLASS",
 		  (SPART **)t_list (2, $5, $2 /* yes, $2 after $5 */), NULL );
                 sparp_jso_push_deleted (sparp_arg, uname_virtrdf_ns_uri_QuadMapFormat , $5);
@@ -1632,6 +1648,10 @@ spar_qm_literal_class_option	/* [Virt]	QmLiteralClassOption	 ::=  */
 spar_qm_create_quad_storage	/* [Virt]	QmCreateStorage	 ::=  'CREATE' 'QUAD' 'STORAGE' QmIRIrefConst QmSourceDecl* QmMapTopGroup	*/
 	: CREATE_L QUAD_L STORAGE_L spar_qm_iriref_const_expn {
 		sparp_env()->spare_storage_name = $4;
+		if (dk_set_get_keyword (sparp_arg->sparp_created_jsos, $4, NULL))
+		  spar_error (sparp_arg, "The identifier of Quad Storage %.100s is already used in the previous part of the statement", $4);
+		t_set_push (&(sparp_arg->sparp_created_jsos), "Quad Storage");
+		t_set_push (&(sparp_arg->sparp_created_jsos), $4);
 		t_set_push (&(sparp_env()->spare_acc_qm_sqls),
 		  spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DEFINE_QUAD_STORAGE",
                     (SPART **)t_list (1, t_box_copy (sparp_env()->spare_storage_name)), NULL ) );
@@ -1670,6 +1690,8 @@ spar_qm_alter_quad_storage	/* [Virt]	QmAlterStorage	 ::=  'ALTER' 'QUAD' 'STORAG
 
 spar_qm_drop_quad_storage	/* [Virt]	QmDropStorage	 ::=  'DROP' 'SILENT'? 'QUAD' 'STORAGE' QmIRIrefConst	*/
 	: DROP_L spar_silent_opt QUAD_L STORAGE_L spar_qm_iriref_const_expn {
+		if (dk_set_get_keyword (sparp_arg->sparp_created_jsos, $5, NULL))
+		  spar_error (sparp_arg, "The identifier of Quad Storage %.100s is already used in the previous part of the statement", $5);
 		t_set_push (&(sparp_env()->spare_acc_qm_sqls),
 		  spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DROP_QUAD_STORAGE",
                     (SPART **)t_list (2, $5, $2 /* yes, $2 after $5 */), NULL ) );
