@@ -406,8 +406,8 @@ public class VirtuosoStatement implements Statement
    public ResultSet executeQuery(String sql) throws VirtuosoException
    {
       exec_type = VirtuosoTypes.QT_SELECT;
-      VirtuosoResultSet rs = sendQuery(sql);
-      return rs;
+      vresultSet = sendQuery(sql);
+      return vresultSet;
    }
 
    /**
@@ -484,7 +484,7 @@ public class VirtuosoStatement implements Statement
 	       try
 	       {
 		   // First of all, check if there's at least the first result set
-		   if(vresultSet == null || !vresultSet.more_result())
+		   if(vresultSet == null || vresultSet.isLastResult)
 		       return false;
 		   // Send the fetch query
 		   Object[] args = new Object[2];

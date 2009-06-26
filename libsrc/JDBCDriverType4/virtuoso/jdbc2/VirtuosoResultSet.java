@@ -106,6 +106,9 @@ public class VirtuosoResultSet implements ResultSet
    // A flag to know if this result set group all results
    private boolean more_result;
 
+   protected boolean isLastResult = false;
+   protected boolean isLastRow = false;
+
    // A flag to know which kind of op was retrieved
    private int kindop;
 
@@ -361,7 +364,8 @@ public class VirtuosoResultSet implements ResultSet
 		    {
 		      pstmt.vresultSet.getMoreResults();
 		    }
-		  while(pstmt.vresultSet.more_result());
+//---		  while(pstmt.vresultSet.more_result());
+		  while(!pstmt.vresultSet.isLastRow && isLastResult);
 		  rowIsDeleted = (pstmt.vresultSet.getUpdateCount() > 0);
 		  break;
 	      case VirtuosoTypes.SQL_UPDATE:
@@ -383,7 +387,8 @@ public class VirtuosoResultSet implements ResultSet
 		    {
 		      pstmt.vresultSet.getMoreResults();
 		    }
-		  while(pstmt.vresultSet.more_result());
+//---		  while(pstmt.vresultSet.more_result());
+		  while(!pstmt.vresultSet.isLastRow && isLastResult);
 		  rowIsInserted = (pstmt.vresultSet.getUpdateCount() > 0);
 		  break;
 	      case VirtuosoTypes.SQL_REFRESH:
@@ -460,6 +465,7 @@ public class VirtuosoResultSet implements ResultSet
 		    stmt_co_last_in_batch = true;
                case VirtuosoTypes.QA_ROW:
                   //System.out.println("---> QA_ROW");
+                  isLastRow = true;
                   result.removeElementAt(0);
                   // Get each row
                   if(currentRow == 0)
@@ -561,6 +567,9 @@ public class VirtuosoResultSet implements ResultSet
                      updateCount = ((Number)result.elementAt(1)).intValue();
                      is_complete = true;
                   }
+                  isLastRow = true;
+                  if (kindop != VirtuosoTypes.QT_PROC_CALL)
+                    isLastResult = true;
                   break;
                case VirtuosoTypes.QA_ROW_DELETED:
                   //System.out.println("---> QA_ROWS_DELETED");
@@ -586,6 +595,8 @@ public class VirtuosoResultSet implements ResultSet
 			  VirtuosoFuture.rpc_log.flush();
 		      }
 		  }
+                  isLastResult = true;
+                  isLastRow = true;
                   //System.out.println("---> QA_ERROR err=[" + (String)result.elementAt(2) + "] stat=[" + (String)result.elementAt(1) + "]");
                   // Throw an exception corresponding the error
                   throw new VirtuosoException((String)result.elementAt(2),(String)result.elementAt(1),VirtuosoException.SQLERROR);
@@ -610,6 +621,8 @@ public class VirtuosoResultSet implements ResultSet
 		     statement.objparams.setElementAt(result.elementAt(j),j - 2);
                    }
                   is_complete = true;
+                  isLastResult = true;
+                  isLastRow = true;
 		  break;
                case VirtuosoTypes.QA_NEED_DATA:
 		  sendBlobData(result);
@@ -622,6 +635,9 @@ public class VirtuosoResultSet implements ResultSet
          }
          else
          {
+            isLastRow = true;
+            if (kindop != VirtuosoTypes.QT_PROC_CALL)
+               isLastResult = true;
             // Catch a null which means that there are others rows
             if(curr == null)
             {
