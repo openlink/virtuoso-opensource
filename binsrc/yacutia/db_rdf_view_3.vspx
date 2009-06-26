@@ -50,6 +50,7 @@
       <v:variable persist="0" name="exist_sql" type="int" default="0" />
       <v:variable persist="0" name="exec_it" type="int" default="0" param-name="exec" />
       <v:variable persist="0" name="cols" type="any" default="null" param-name="cols"/>
+      <v:variable persist="0" name="pklist" type="any" default="null" param-name="pk"/>
   </vm:variables>
 
   <vm:header caption="RDF View definition"/>
@@ -135,7 +136,7 @@
 
 	  if (self.body_v is NULL)
 	    {
-	      declare tbls, cols any;
+	      declare tbls, cols, pklist any;
 	      cols := null;
 	      if (self.cols is not null)
               cols := deserialize (decode_base64 (self.cols));
@@ -148,6 +149,11 @@
 	      };
 	      tbls := self.db_object_to_process;
 
+	      if (self.pklist is not null and self.pklist <> '')
+	        pklist := deserialize (decode_base64 (self.pklist));
+              else
+	        pklist := null; 
+
 	      self.body_v := '';
 	      if (self._view)
 	        {
@@ -157,8 +163,25 @@
 			    sprintf ('grant select on "%I"."%I"."%I" to SPARQL_SELECT;\n',
 			    name_part (tb, 0), name_part (tb, 1), name_part (tb, 2));
 		    }
+	         }
+	      if (pklist is not null)
+                {
+		   declare newtb any; 
+                   newtb := vector ();
+		   foreach (any t in tbls) do
+		     {
+		       declare pk any;
+		       pk := get_keyword (t, pklist);
+		       if (pk is null)
+		         pk := yac_get_pk (t);
+		       newtb := vector_concat (newtb, vector (t, pk)); 	 
+		     }
+		   tbls := newtb;  
+                }		
+	      if (self._view)
+	        {
 		  self.body_v := self.body_v || '\n\n';
-		  self.body_v := self.body_v || DB.DBA.RDF_VIEW_FROM_TBL (_base_url, self.db_object_to_process, self.voidst, cols);
+		  self.body_v := self.body_v || DB.DBA.RDF_VIEW_FROM_TBL (_base_url, tbls, self.voidst, cols);
 	        }
 	      if (self.view_vd)
   	        self.body_v := self.body_v || '\n\n-- Virtual directories for instance data\n' || DB.DBA.RDF_VIEW_GEN_VD (_base_url);
@@ -210,7 +233,14 @@
 	        }
 	      ?>
 	  </table>
+	  <?vsp
+	  if (self.view_vd or self.owl_vd) 
+	    {
+	  ?>
 	  <h2>Sample URIs</h2>
+	  <?vsp
+	    }
+	  ?>
 	  <?vsp
 	       declare defhost, stat, msg, data, meta, data2, meta2, qr, gr any;
 	       stat := '00000';

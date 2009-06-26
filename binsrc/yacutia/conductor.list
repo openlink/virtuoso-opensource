@@ -61,6 +61,7 @@ conductor/db_rdf_view_1.vspx
 conductor/db_rdf_view_2.vspx
 conductor/db_rdf_view_3.vspx
 conductor/db_rdf_view_cols.vspx
+conductor/db_rdf_view_pk.vspx
 conductor/db_rdf_view_tb.vspx
 conductor/db_repl_basic_create.vspx
 conductor/db_repl_basic_local_create.vspx
