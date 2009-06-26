@@ -2533,7 +2533,7 @@ ssg_print_bop_bool_expn (spar_sqlgen_t *ssg, SPART *tree, const char *bool_op, c
   int bop_is_comparison = ((BOP_LT == ttype) || (BOP_LTE == ttype) || (BOP_GT == ttype) || (BOP_GTE == ttype));
   ssg_valmode_t left_vmode, right_vmode, min_mode;
   ptrlong left_restr_bits = -1, right_restr_bits = -1;
-  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &ssg, 1000))
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &ssg, 4000))
     spar_internal_error (NULL, "ssg_print_scalar_expn (): stack overflow");
   if (bop_has_bool_args)
     {
@@ -3818,7 +3818,7 @@ ssg_triple_retval_alias (spar_sqlgen_t *ssg, SPART *triple, int field_idx, int c
 void
 ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, const char *asname)
 {
-  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &ssg, 1000))
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &ssg, 4000))
     spar_internal_error (NULL, "ssg_print_scalar_expn (): stack overflow");
 
   if (SSG_VALMODE_AUTO == needed)
@@ -4258,7 +4258,7 @@ print_asname:
 void
 ssg_print_filter_expn (spar_sqlgen_t *ssg, SPART *tree)
 {
-  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &ssg, 1000))
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &ssg, 4000))
     spar_internal_error (NULL, "ssg_print_scalar_expn (): stack overflow");
 
   switch (SPART_TYPE (tree))
@@ -5012,20 +5012,14 @@ ssg_print_nice_equality_for_var_and_eq_fixed_val (spar_sqlgen_t *ssg, rdf_val_ra
 }
 
 void
-ssg_print_equivalences (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq,
-  ccaddr_t jleft_alias, ccaddr_t jright_alias )
+ssg_print_equivalences (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, dk_set_t jleft_aliases,
+  ccaddr_t jright_alias, int print_join_conds, int print_equs_to_globals )
 {
   int var_ctr, var2_ctr;
   int sub_ctr, sub2_ctr;
-if (NULL != jright_alias)
-  {
-#ifdef DEBUG
-    ccaddr_t jl = ssg_find_jl_by_jr (ssg, gp, jright_alias);
-    if (strcmp (jl, jleft_alias))
-      spar_internal_error (ssg->ssg_sparp, "ssg_" "print_equivalences (): invalid pair of jleft_alias and jright_alias");
-#endif
-    goto print_cross_equalities;
-            }
+  int good_eq_is_printed = 0;
+  if (!print_equs_to_globals)
+    goto print_cross_equs; /* see below */;
   if ((SPART_VARR_FIXED & eq->e_rvr.rvrRestrictions) && 
     (SPART_VARR_FIXED & eq->e_replaces_filter) &&
     (0 == eq->e_gspo_uses) && (0 < BOX_ELEMENTS_0 (eq->e_subvalue_idxs)) )
@@ -5153,11 +5147,16 @@ if (NULL != jright_alias)
             }
         }
     }
-
-print_cross_equalities:
-  /* Printing cross-equalities */
+print_cross_equs:
+  /* Printing cross-equalities, i.e. join conditions (what can be placed in ON (...) after join */
   if (SPARP_EQ_IS_ASSIGNED_EXTERNALLY (eq))
     return; /* As soon as all are equal to globals, no need in cross-equalities */
+  if (!print_join_conds)
+    return;
+#if 0
+  if ((NULL == jright_alias) && ((0 == eq->e_gp->_.gp.subtype) || (WHERE_L == eq->e_gp->_.gp.subtype)))
+    return; /* All cross equivs of join are printed in ON (...) clauses */
+#endif
   for (var_ctr = 0; var_ctr < eq->e_var_count; var_ctr++)
     {
       SPART *var = eq->e_vars[var_ctr];
@@ -5165,8 +5164,6 @@ print_cross_equalities:
       caddr_t tabid = var->_.var.tabid;
       if (NULL == tabid)
         continue;
-      if (NULL != jright_alias)
-        goto print_field_and_retval_equalities;
       for (var2_ctr = var_ctr + 1; var2_ctr < eq->e_var_count; var2_ctr++)
         {
           SPART *var2 = eq->e_vars[var2_ctr];
@@ -5177,6 +5174,15 @@ print_cross_equalities:
           int col_ctr, col_count;
           if (NULL == tabid2)
             continue;
+          if (NULL != jright_alias)
+            {
+              if (
+                (strcmp (jright_alias, tabid) ||
+                  ((0 > dk_set_position_of_string (jleft_aliases, tabid2)) && strcmp (jright_alias, tabid2)) ) &&
+                (strcmp (jright_alias, tabid2) ||
+                  ((0 > dk_set_position_of_string (jleft_aliases, tabid)) && strcmp (jright_alias, tabid)) ) )
+                continue;
+            }
           var_native = sparp_expn_native_valmode (ssg->ssg_sparp, var);
           var2_native = sparp_expn_native_valmode (ssg->ssg_sparp, var2);
           common_native = ssg_largest_eq_valmode (var_native, var2_native);
@@ -5215,9 +5221,17 @@ print_cross_equalities:
               ssg_puts (" =");
               ssg_print_tr_var_expn (ssg, var2, SSG_VALMODE_SQLVAL, NULL_ASNAME);
             }
+          if (var2->_.var.rvr.rvrRestrictions & SPART_VARR_NOT_NULL)
+            good_eq_is_printed = 1;
         }
-
-print_field_and_retval_equalities:
+    }
+  for (var_ctr = 0; var_ctr < eq->e_var_count; var_ctr++)
+    {
+      SPART *var = eq->e_vars[var_ctr];
+      ssg_valmode_t var_native;
+      caddr_t tabid = var->_.var.tabid;
+      if (NULL == tabid)
+        continue;
       for (sub2_ctr = 0; sub2_ctr < BOX_ELEMENTS_INT_0 (eq->e_subvalue_idxs); sub2_ctr++)
         {
           ptrlong sub2_eq_idx = eq->e_subvalue_idxs[sub2_ctr];
@@ -5230,12 +5244,14 @@ print_field_and_retval_equalities:
             continue;
           if (NULL != jright_alias)
             {
-              if (strcmp (sub2_gp->_.gp.selid, jright_alias))
-                continue;
-              if (strcmp (tabid, jleft_alias))
+              if (
+                (strcmp (sub2_gp->_.gp.selid, jright_alias) ||
+                 (0 > dk_set_position_of_string (jleft_aliases, tabid)) ) &&
+                (strcmp (tabid, jright_alias) ||
+                 (0 > dk_set_position_of_string (jleft_aliases, sub2_gp->_.gp.selid)) ) )
                 continue;
             }
-          else if (OPTIONAL_L == sub2_gp->_.gp.subtype)
+          if (!strcmp (tabid, jright_alias) && (OPTIONAL_L == sub2_gp->_.gp.subtype))
             {
 #if 0
               ccaddr_t jl = ssg_find_jl_by_jr (ssg, gp, sub2_gp->_.gp.selid);
@@ -5274,6 +5290,8 @@ print_field_and_retval_equalities:
               ssg_puts (" =");
               ssg_print_equiv_retval_expn (ssg, sub2_gp, sub2_eq, SSG_RETVAL_FROM_GOOD_SELECTED | SSG_RETVAL_MUST_PRINT_SOMETHING, SSG_VALMODE_SQLVAL, NULL_ASNAME);
             }
+          if (strcmp (sub2_gp->_.gp.selid, jright_alias) ? (OPTIONAL_L != sub2_gp->_.gp.subtype) : (var->_.var.rvr.rvrRestrictions & SPART_VARR_NOT_NULL))
+            good_eq_is_printed = 1;
         }
     }
   for (sub_ctr = 0; sub_ctr < BOX_ELEMENTS_INT_0 (eq->e_subvalue_idxs); sub_ctr++)
@@ -5281,35 +5299,24 @@ print_field_and_retval_equalities:
       ptrlong sub_eq_idx = eq->e_subvalue_idxs[sub_ctr];
       sparp_equiv_t *sub_eq = ssg->ssg_equivs[sub_eq_idx];
       SPART *sub_gp = sparp_find_gp_by_eq_idx (ssg->ssg_sparp, sub_eq_idx);
+      caddr_t sub_selid = sub_gp->_.gp.selid;
       for (sub2_ctr = sub_ctr + 1; sub2_ctr < BOX_ELEMENTS_INT_0 (eq->e_subvalue_idxs); sub2_ctr++)
         {
           ptrlong sub2_eq_idx = eq->e_subvalue_idxs[sub2_ctr];
           sparp_equiv_t *sub2_eq = ssg->ssg_equivs[sub2_eq_idx];
           SPART *sub2_gp = sparp_find_gp_by_eq_idx (ssg->ssg_sparp, sub2_eq_idx);
+          caddr_t sub2_selid = sub2_gp->_.gp.selid;
           ssg_valmode_t sub_native, sub2_native, common_native;
           int col_ctr, col_count;
-          if ((OPTIONAL_L == sub_gp->_.gp.subtype) &&
-            (OPTIONAL_L == sub2_gp->_.gp.subtype) )
+          if (good_eq_is_printed && (OPTIONAL_L == sub2_gp->_.gp.subtype))
             continue;
           if (NULL != jright_alias)
             {
               if (
-                (strcmp (sub2_gp->_.gp.selid, jright_alias) ||
-                 strcmp (sub_gp->_.gp.selid, jleft_alias ) ) &&
-                (strcmp (sub_gp->_.gp.selid, jright_alias) ||
-                 strcmp (sub2_gp->_.gp.selid, jleft_alias ) ) )
-                continue;
-            }
-          else if (OPTIONAL_L == sub2_gp->_.gp.subtype)
-            {
-              ccaddr_t jl = ssg_find_jl_by_jr (ssg, gp, sub2_gp->_.gp.selid);
-              if (!strcmp (sub_gp->_.gp.selid, jl))
-                continue;
-            }
-          else if (OPTIONAL_L == sub_gp->_.gp.subtype)
-            {
-              ccaddr_t jl = ssg_find_jl_by_jr (ssg, gp, sub_gp->_.gp.selid);
-              if (!strcmp (sub2_gp->_.gp.selid, jl))
+                (strcmp (jright_alias, sub_selid) ||
+                  ((0 > dk_set_position_of_string (jleft_aliases, sub2_selid)) && strcmp (jright_alias, sub2_selid)) ) &&
+                (strcmp (jright_alias, sub2_selid) ||
+                  ((0 > dk_set_position_of_string (jleft_aliases, sub_selid)) && strcmp (jright_alias, sub_selid)) ) )
                 continue;
             }
           sub_native = sparp_equiv_native_valmode (ssg->ssg_sparp, sub_gp, sub_eq);
@@ -6572,13 +6579,142 @@ fld_restrictions_may_vary:
       int eq_idx = first_mcase->_.gp.equiv_indexes[equiv_ctr];
       sparp_equiv_t *eq = ssg->ssg_equivs[eq_idx];
       /* ssg_puts (t_box_sprintf (100, "/" "* eq = %d *" "/", eq_idx)); */
-      ssg_print_equivalences (ssg, first_mcase, eq, NULL, NULL);
+      ssg_print_equivalences (ssg, first_mcase, eq, NULL, NULL, 1 /* print join conds */, 1 /* print equalities to globals */);
     }
   ssg->ssg_where_l_printed = save_where_l_printed;
   ssg->ssg_where_l_text = save_where_l_text;
   ssg->ssg_indent--;
   ssg_puts (") AS ");
   ssg_prin_id (ssg, first_mcase->_.gp.selid);
+}
+
+caddr_t
+ssg_print_union_member_item (spar_sqlgen_t *ssg, SPART *member, int *itm_idx_ptr, int itm_count, dk_set_t prev_itm_aliases, int print_glued_filters)
+{
+  SPART *itm = member->_.gp.members [itm_idx_ptr[0]];
+  int first_tabexpn_itm_idx = itm_idx_ptr[0];
+  int save_where_l_printed;
+  const char *save_where_l_text;
+  ccaddr_t itm_alias;
+  int itm_is_opt = 0;
+  itm_alias = ssg_id_of_gp_or_triple (itm);
+#if 0
+  ssg_puts (t_box_sprintf (100, " /* alias %s #%d */", itm_alias, first_tabexpn_itm_idx));
+#endif
+  itm_is_opt = ((SPAR_GP == itm->type) && (OPTIONAL_L == itm->_.gp.subtype));
+  if (0 < itm_idx_ptr[0])
+    {
+      if (itm_is_opt)
+        {
+          ssg_newline (0);
+          ssg_puts ("LEFT OUTER JOIN");
+        }
+      else
+        {
+#if 0
+          ssg_putchar (',');
+          ssg_newline (1);
+#else
+          ssg_newline (0);
+          ssg_puts ("INNER JOIN");
+#endif
+        }
+    }
+  if (SPAR_TRIPLE == itm->type)
+    {
+      while (itm_idx_ptr[0] + 1 < itm_count)
+        {
+          SPART *next_itm = member->_.gp.members [itm_idx_ptr[0]+1];
+          ccaddr_t next_itm_alias = ((SPAR_TRIPLE == next_itm->type) ? next_itm->_.triple.tabid : "");
+          if (strcmp (next_itm_alias, itm_alias))
+            break;
+          itm_idx_ptr[0]++;
+        }
+    }
+  ssg_print_table_exp (ssg, member, member->_.gp.members + first_tabexpn_itm_idx, itm_idx_ptr[0] + 1 - first_tabexpn_itm_idx, 1); /* PASS 1, printing what's in FROM */
+/* Here we check for (NULL != prev_itm_aliases) instead of (0 < itm_idx_ptr[0]) because the counter will not work for leading triples with self-joins on PK (note "++" right above) */
+  if ((NULL != prev_itm_aliases) || itm_is_opt)
+    {
+      int itm_eq_ctr, filter_count, filter_idx;
+      save_where_l_printed = ssg->ssg_where_l_printed;
+      save_where_l_text = ssg->ssg_where_l_text;
+      ssg->ssg_where_l_printed = 0;
+      ssg->ssg_where_l_text = NULL;
+      ssg_newline (0);
+      ssg_puts ("ON (");
+      ssg->ssg_indent++;
+      if (0 < itm_idx_ptr[0])
+        {
+          int equiv_ctr;
+          for (equiv_ctr = 0; equiv_ctr < member->_.gp.equiv_count; equiv_ctr++)
+            {
+              sparp_equiv_t *eq = ssg->ssg_equivs[member->_.gp.equiv_indexes[equiv_ctr]];
+              ssg_print_equivalences (ssg, member, eq, prev_itm_aliases, itm_alias, 1 /* print join conds */, 0 /* do not print equalities to globals */);
+            }
+        }
+      if (print_glued_filters)
+        {
+          filter_count = BOX_ELEMENTS_0 (member->_.gp.filters);
+          for (filter_idx = filter_count - member->_.gp.glued_filters_count; filter_idx < filter_count; filter_idx++)
+            {
+              SPART *filt = member->_.gp.filters[filter_idx];
+              ssg_print_filter (ssg, filt);
+            }
+        }
+      if (SPAR_GP == itm->type)
+        {
+          SPARP_FOREACH_GP_EQUIV (ssg->ssg_sparp, itm, itm_eq_ctr, itm_eq)
+            {
+              sparp_equiv_t *memb_eq = NULL;
+              SPART *left_tree = NULL;
+              if (!itm_eq->e_replaces_filter)
+                continue;
+              if (SPARP_EQ_IS_ASSIGNED_LOCALLY (itm_eq))
+                continue;
+              sparp_find_best_join_eq_for_optional (ssg->ssg_sparp, member, itm_idx_ptr[0], itm_eq, &memb_eq, &left_tree);
+              if (NULL == left_tree)
+                {
+                  if (itm_eq->e_replaces_filter & (SPART_VARR_FIXED | SPART_VARR_IS_BLANK | SPART_VARR_IS_IRI |  SPART_VARR_IS_LIT | SPART_VARR_IS_REF | SPART_VARR_NOT_NULL))
+                    {
+                      ssg_print_where_or_and (ssg, "conflict: no var at left of join");
+                      ssg_puts (" (1=2)");
+                    }
+                }
+              else
+                {
+                  rdf_val_range_t tmp_rvr;
+                  memcpy (&tmp_rvr, &(itm_eq->e_rvr), sizeof (rdf_val_range_t));
+                  tmp_rvr.rvrRestrictions = itm_eq->e_replaces_filter;
+                  if (SPAR_IS_BLANK_OR_VAR (left_tree))
+                    {
+                      SPART *left_triple = member->_.gp.members[itm_idx_ptr[0]-1];
+                      quad_map_t *left_qm = left_triple->_.triple.tc_list[0]->tc_qm;
+                      qm_value_t *left_qmv = NULL;
+                      if (SPART_TRIPLE_FIELDS_COUNT > left_tree->_.var.tr_idx)
+                        left_qmv = SPARP_FIELD_QMV_OF_QM (left_qm, left_tree->_.var.tr_idx);
+                      ssg_print_fld_var_restrictions_ex (ssg, left_qm, left_qmv, left_triple->_.triple.tabid, left_tree, left_triple, NULL /*fld_if_outer*/, &tmp_rvr);
+                      if (SPART_VARR_FIXED & tmp_rvr.rvrRestrictions)
+                        ssg_print_nice_equality_for_var_and_eq_fixed_val (ssg, &tmp_rvr, left_tree, left_triple);
+                    }
+                  else
+                    {
+                      /*SPART *left_gp = member->_.gp.members[itm_idx_ptr[0]-1];*/
+                      ssg_print_retval_restrictions_ex (ssg, left_tree, &tmp_rvr);
+                      if (SPART_VARR_FIXED & tmp_rvr.rvrRestrictions)
+                        ssg_print_nice_equality_for_var_and_eq_fixed_val (ssg, &tmp_rvr, left_tree, NULL);
+                    }
+                }
+            }
+          END_SPARP_FOREACH_GP_EQUIV;
+        }
+      if (0 == ssg->ssg_where_l_printed)
+        ssg_puts ("1");
+      ssg->ssg_indent--;
+      ssg_puts (")");
+      ssg->ssg_where_l_printed = save_where_l_printed;
+      ssg->ssg_where_l_text = save_where_l_text;
+    }
+  return itm_alias;
 }
 
 void
@@ -6604,9 +6740,11 @@ ssg_print_union (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int head_flags,
   for (memb_ctr = 0; memb_ctr < memb_count; memb_ctr += (1 + breakup_shift))
     {
       SPART *member = members[memb_ctr];
-      ccaddr_t prev_itm_alias = uname___empty;
-      int first_tabexpn_itm_idx, itm_idx, itm_count, filter_idx, filter_count;
+      dk_set_t prev_itm_aliases = NULL;
+      int itm_idx, itm_count, filter_idx, filter_count;
       int curr_retval_flags = retval_flags;
+      int idx_of_last_optional_in_member;
+      char need_self_joins_in_where = '?';
       caddr_t *first_breakup_tabids;
       breakup_shift = 0;
       if (retval_flags & SSG_RETVAL_USES_ALIAS)
@@ -6679,6 +6817,7 @@ retval_list_complete:
           else
             ssg_puts ("(SELECT TOP 1 1 AS __stub FROM DB.DBA.RDF_QUAD WHERE 0) AS ");
           ssg_prin_id (ssg, buf);
+          need_self_joins_in_where = 'Y';
           goto end_of_table_list; /* see below */
         }
       if (OPTIONAL_L == member->_.gp.members[0]->_.gp.subtype)
@@ -6689,112 +6828,22 @@ retval_list_complete:
           ssg_puts ("(SELECT TOP 1 1 AS __stub FROM DB.DBA.RDF_QUAD) AS ");
           ssg_prin_id (ssg, buf);
           ssg_puts (" LEFT OUTER JOIN");
+          need_self_joins_in_where = 'N';
         }
-      for (itm_idx = 0; itm_idx < itm_count; itm_idx++)
+      idx_of_last_optional_in_member = -1;
+      for (itm_idx = itm_count; itm_idx--; /*no step*/)
         {
           SPART *itm = member->_.gp.members [itm_idx];
-          ccaddr_t itm_alias;
-          int itm_is_opt = 0;
-          itm_alias = ssg_id_of_gp_or_triple (itm);
-          first_tabexpn_itm_idx = itm_idx;
-#if 0
-          ssg_puts (t_box_sprintf (100, " /* alias %s #%d */", itm_alias, first_tabexpn_itm_idx));
-#endif
-          itm_is_opt = ((SPAR_GP == itm->type) && (OPTIONAL_L == itm->_.gp.subtype));
-          if (0 < itm_idx)
-            {
-              if (itm_is_opt)
+          if ((SPAR_GP == SPART_TYPE(itm)) && (OPTIONAL_L == itm->_.gp.subtype))
                 {
-                  ssg_newline (0);
-                  ssg_puts ("LEFT OUTER JOIN");
-                }
-              else
-                {
-                  ssg_putchar (',');
-                  ssg_newline (1);
-                }
-            }
-          if (SPAR_TRIPLE == itm->type)
-            {
-              while (itm_idx + 1 < itm_count)
-                {
-                  SPART *next_itm = member->_.gp.members [itm_idx+1];
-                  ccaddr_t next_itm_alias = ((SPAR_TRIPLE == next_itm->type) ? next_itm->_.triple.tabid : "");
-                  if (strcmp (next_itm_alias, itm_alias))
+              idx_of_last_optional_in_member = itm_idx;
                     break;
-                  itm_idx++;
                 }
             }
-          ssg_print_table_exp (ssg, member, member->_.gp.members + first_tabexpn_itm_idx, itm_idx + 1 - first_tabexpn_itm_idx, 1); /* PASS 1, printing what's in FROM */
-          if (itm_is_opt)
-            {
-              int itm_eq_ctr;
-              save_where_l_printed = ssg->ssg_where_l_printed;
-              save_where_l_text = ssg->ssg_where_l_text;
-              ssg->ssg_where_l_printed = 0;
-              ssg->ssg_where_l_text = NULL;
-              ssg_newline (0);
-              ssg_puts ("ON (");
-              ssg->ssg_indent++;
-              if (0 < itm_idx)
-                {
-              for (equiv_ctr = 0; equiv_ctr < member->_.gp.equiv_count; equiv_ctr++)
-                {
-                  sparp_equiv_t *eq = ssg->ssg_equivs[member->_.gp.equiv_indexes[equiv_ctr]];
-                  ssg_print_equivalences (ssg, member, eq, prev_itm_alias, itm_alias);
-                }
-                }
-              filter_count = BOX_ELEMENTS_0 (member->_.gp.filters);
-              for (filter_idx = filter_count - member->_.gp.glued_filters_count; filter_idx < filter_count; filter_idx++)
-                {
-                  SPART *filt = member->_.gp.filters[filter_idx];
-                  ssg_print_filter (ssg, filt);
-                }
-              SPARP_FOREACH_GP_EQUIV (ssg->ssg_sparp, itm, itm_eq_ctr, itm_eq)
-                {
-                  sparp_equiv_t *memb_eq = NULL;
-                  SPART *left_tree = NULL;
-                  if (!itm_eq->e_replaces_filter)
-                    continue;
-                  if (SPARP_EQ_IS_ASSIGNED_LOCALLY (itm_eq))
-                    continue;
-                  sparp_find_best_join_eq_for_optional (ssg->ssg_sparp, member, itm_idx, itm_eq, &memb_eq, &left_tree);
-                  if (NULL == left_tree)
-                    spar_sqlprint_error (t_box_sprintf (100, "filter for ?%.30s can not be expressed in SQL (bad optimization)", itm_eq->e_varnames[0]));
-                  else
-                    {
-                      rdf_val_range_t tmp_rvr;
-                      memcpy (&tmp_rvr, &(itm_eq->e_rvr), sizeof (rdf_val_range_t));
-                      tmp_rvr.rvrRestrictions = itm_eq->e_replaces_filter;
-                      if (SPAR_IS_BLANK_OR_VAR (left_tree))
+      for (itm_idx = 0; itm_idx < itm_count; itm_idx++)
                         {
-                          SPART *left_triple = member->_.gp.members[itm_idx-1];
-                          quad_map_t *left_qm = left_triple->_.triple.tc_list[0]->tc_qm;
-                          qm_value_t *left_qmv = NULL;
-                          if (SPART_TRIPLE_FIELDS_COUNT > left_tree->_.var.tr_idx)
-                            left_qmv = SPARP_FIELD_QMV_OF_QM (left_qm, left_tree->_.var.tr_idx);
-                          ssg_print_fld_var_restrictions_ex (ssg, left_qm, left_qmv, left_triple->_.triple.tabid, left_tree, left_triple, NULL /*fld_if_outer*/, &tmp_rvr);
-                          if (SPART_VARR_FIXED & tmp_rvr.rvrRestrictions)
-                            ssg_print_nice_equality_for_var_and_eq_fixed_val (ssg, &tmp_rvr, left_tree, left_triple);
-                        }
-                      else
-                        {
-                          /*SPART *left_gp = member->_.gp.members[itm_idx-1];*/
-                          ssg_print_retval_restrictions_ex (ssg, left_tree, &tmp_rvr);
-                          if (SPART_VARR_FIXED & tmp_rvr.rvrRestrictions)
-                            ssg_print_nice_equality_for_var_and_eq_fixed_val (ssg, &tmp_rvr, left_tree, NULL);
-                        }
-                    }
-                }
-              END_SPARP_FOREACH_GP_EQUIV;
-              if (0 == ssg->ssg_where_l_printed)
-                ssg_puts ("1");
-              ssg->ssg_indent--;
-              ssg_puts (")");
-              ssg->ssg_where_l_printed = save_where_l_printed;
-              ssg->ssg_where_l_text = save_where_l_text;
-            }
-          prev_itm_alias = itm_alias;
+          caddr_t this_alias = ssg_print_union_member_item (ssg, member, &itm_idx, itm_count, prev_itm_aliases, (itm_idx == idx_of_last_optional_in_member));
+          t_set_push (&prev_itm_aliases, this_alias);
         }
 
 end_of_table_list: ;
@@ -6821,8 +6870,8 @@ end_of_table_list: ;
         {
           SPART *itm = member->_.gp.members [itm_idx];
           ccaddr_t itm_alias;
+          int first_tabexpn_itm_idx = itm_idx;
           itm_alias = ssg_id_of_gp_or_triple (itm);
-          first_tabexpn_itm_idx = itm_idx;
 #if 0
           ssg_puts (t_box_sprintf (100, " /* alias %s #%d */", itm_alias, first_tabexpn_itm_idx));
 #endif
@@ -6839,10 +6888,12 @@ end_of_table_list: ;
             }
           ssg_print_table_exp (ssg, member, member->_.gp.members + first_tabexpn_itm_idx, itm_idx + 1 - first_tabexpn_itm_idx, 2); /* PASS 2, printing what's in WHERE */
         }
+      if ('?' == need_self_joins_in_where)
+        need_self_joins_in_where = ((1 >= dk_set_length (prev_itm_aliases)) ? 'Y' : 'N');
       for (equiv_ctr = 0; equiv_ctr < member->_.gp.equiv_count; equiv_ctr++)
         {
           sparp_equiv_t *eq = ssg->ssg_equivs[member->_.gp.equiv_indexes[equiv_ctr]];
-          ssg_print_equivalences (ssg, member, eq, NULL, NULL);
+          ssg_print_equivalences (ssg, member, eq, NULL, NULL, ('Y' == need_self_joins_in_where) /* print join conds only for 0 or 1 item */, 1 /* print equalities to globals */);
         }
       filter_count = BOX_ELEMENTS_0 (member->_.gp.filters) - member->_.gp.glued_filters_count;
       for (filter_idx = 0; filter_idx < filter_count; filter_idx++)

@@ -174,7 +174,7 @@ SPAR_NCCHAR	([A-Za-z0-9_\x7f-\xfe-])
 SPAR_NCCHAR_X	([A-Za-z0-9_#%?&=*\x7f-\xfe-])
 SPAR_NCNAME_PREFIX	({SPAR_NCCHAR1p}([A-Za-z0-9_.\x7f-\xfe-]*{SPAR_NCCHAR})?)
 SPAR_NCNAME		({SPAR_NCCHAR1}([A-Za-z0-9_.\x7f-\xfe-]*{SPAR_NCCHAR})?)
-SPAR_NCNAME_X		([A-Za-z0-9_./#%+?&=@*\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*\x7f-\xfe-]+)
+SPAR_NCNAME_X		([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xfe-]+)
 
 %%
 
