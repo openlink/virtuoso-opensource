@@ -194,7 +194,7 @@ _______________________________________________________________________________
     </example>
   </refsect1>
   <refsect1 id="seealso_smime_sign"><title>See Also</title>
-    <para><link linkend="fn_smime_sign">smime_verify</link></para>
+    <para><link linkend="fn_smime_verify">smime_verify</link></para>
 		<para><link linkend="fn_pem_certificates_to_array">pem_certificates_to_array</link></para>
   </refsect1>
 </refentry>
