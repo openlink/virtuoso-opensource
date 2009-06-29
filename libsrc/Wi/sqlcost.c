@@ -1504,7 +1504,9 @@ sqlo_try_inf_filter (df_elt_t * tb_dfe, index_choice_t * ic)
     }
   tb_dfe->dfe_unit = ic->ic_unit;
   tb_dfe->dfe_arity = ic->ic_arity;
+  tb_dfe->_.table.is_arity_sure = ic->ic_leading_constants;
 }
+
 
 int64
 sqlo_inx_sample (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int n_parts, index_choice_t * ic)

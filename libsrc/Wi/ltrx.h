@@ -391,7 +391,7 @@ typedef struct page_lock_s
 
 
 
-#define PL_RLS(pl, pos)  pl->pl_rows[((pos >> 2) + (pos >> 10)) & 0x3]
+#define PL_RLS(pl, pos)  pl->pl_rows[(pos) & 0x3]
 
 
 #define ITC_MAYBE_LOCK(itc, pos) \

@@ -463,6 +463,23 @@ ext_get_dp (extent_t * ext, dp_addr_t near)
 
 
 extent_t *
+em_alloc_ext (extent_map_t * em, int type)
+{
+  DO_EXT (ext, em)
+    {
+      if (EXT_FREE == EXT_TYPE (ext))
+	{
+	  memset (ext, 0, sizeof (extent_t));
+	  ext->ext_flags = type;
+	  return ext;
+	}
+    }
+  END_DO_EXT;
+  return NULL;
+}
+
+
+extent_t *
 em_first_ext (extent_map_t * em, int type)
 {
   extent_t * new_ext;
@@ -603,8 +620,12 @@ em_extend (extent_map_t * em, int type)
   /* add an empty extent record into an em and returns that.  null if out of disk */
   extent_t * ext;
   int fill;
-  buffer_desc_t * last = page_set_last (em->em_buf);
+  buffer_desc_t * last;
   dbe_storage_t * dbs = em->em_dbs;
+  ext = em_alloc_ext (em, type);
+  if (ext)
+    return ext;
+  last  = page_set_last (em->em_buf);
   fill = LONG_REF (last->bd_buffer + DP_BLOB_LEN);
   if (em == em->em_dbs->dbs_extent_map && EXT_INDEX == type)
     return em_sys_extend (em);

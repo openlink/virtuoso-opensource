@@ -837,7 +837,7 @@ node_print (data_source_t * node)
   else if (in == (qn_input_fn) hash_source_input)
     {
       hash_source_t *hs = (hash_source_t *) node;
-      stmt_printf (("Hash source "));
+      stmt_printf (("Hash source %s ", hs->hs_is_outer ? "outer" : ""));
       ssl_array_print (hs->hs_ref_slots);
       stmt_printf ((" -> "));
       ssl_array_print (hs->hs_out_slots);
