@@ -1415,10 +1415,10 @@ mutex_stat ()
   DO_SET (dk_mutex_t *, mtx, &all_mtxs)
     {
 #ifdef APP_SPIN
-      printf ("%s %lx E: %ld W %ld  spinw: %ld spin: %d\n", mtx->mtx_name ? mtx->mtx_name : "<?>", (unsigned long) mtx,
+      printf ("%s %p E: %ld W %ld  spinw: %ld spin: %d\n", mtx->mtx_name ? mtx->mtx_name : "<?>",  mtx,
 	      mtx->mtx_enters, mtx->mtx_waits, mtx->mtx_spin_waits, mtx->mtx_spins);
 #else
-      printf ("%s %lx E: %ld W %ld \n", mtx->mtx_name ? mtx->mtx_name : "<?>", (unsigned long) mtx,
+      printf ("%s %p E: %ld W %ld \n", mtx->mtx_name ? mtx->mtx_name : "<?>",  mtx,
 	      mtx->mtx_enters, mtx->mtx_waits);
 #endif
     }

@@ -125,20 +125,38 @@ ul#schemas_tree {
 
 #qbe_props {
   padding: 2px;
+  float: left;
+  clear: left;
+  width: 98%;
+}
+
+#qbe_props_common {
+  margin-top: 4px;
+  float: left;
+  clear: left;
+  width: 100%;
 }
 
 #qbe_props input[type=checkbox] {
-  margin-left: 70px;
+  margin-left: 78px;
+  float: left;
+  clear: left;
 }
 
 #qbe_props_node,
 #qbe_props_edge {
+  float: left;
+  clear: left;
 }
 
 #qbe_props label {
   width:75px;
+  float: left;
+  clear: left;
+  margin-right: 3px;
 }
 
+#qbe_props label.ckb { clear: none;}
 #qbe_props input[type=text] {
   width:145px;
 }
@@ -154,6 +172,7 @@ ul#schemas_tree {
 #qbe_props_orderby { margin: 0 } 
 
 #schemas button {
+ margin-top: 3px;
  width:110px;
  height:26px;
 }

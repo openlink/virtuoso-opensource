@@ -31,12 +31,16 @@
 
 #menu a {
 	behavior: url("/isparql/toolkit/styles/hover.htc");
+  color: inherit;
+  text-decoration: none;
 }
 	
 #menu li:hover, #menu li.hover, #menu a:hover, #menu a.hover {
 	color: #fff;
 	background-color: blue
 }
+
+#menu li:hover a { color: #fff }
 
 #menu ul {
 	position: absolute;

@@ -182,17 +182,11 @@ function init() {
 		}
 
 		var hideSeeAlsoControls = function() {
-			OAT.Dom.hide("pathTravSchemesPreds");
-			OAT.Dom.hide("spongerPredsAdd");
-			OAT.Dom.hide("spongerPredsDel");
-			OAT.Dom.hide("spongerPredsDefault");
+			OAT.Dom.hide("pathTravSchemesPredSelCtr");
 		}
 
 		var showSeeAlsoControls = function() {
-			OAT.Dom.show("pathTravSchemesPreds");
-			OAT.Dom.show("spongerPredsAdd");
-			OAT.Dom.show("spongerPredsDel");
-			OAT.Dom.show("spongerPredsDefault");
+			OAT.Dom.show("pathTravSchemesPredSelCtr");
 		}
 
 		var addGrabVar = function() {
@@ -464,10 +458,13 @@ function init() {
 
 	if (page_params['should-sponge']) default_spng = page_params['should-sponge'];
 
+        if (default_dgu = ' ') default_dgu = '';
 	$('default-graph-uri').value = default_dgu;
 	$('query').value = default_qry;
+
 	iSPARQL.Common.setQuery(default_qry);
 	iSPARQL.Common.setDefaultGraph(default_dgu);
+
 	if (!fixed_sponge) {
 		fixed_sponge = '';
 	} else {
