@@ -7167,6 +7167,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
         when __tag of numeric then 'numeric'
         when __tag of nvarchar then 'nvarchar'
         when __tag of long nvarchar then 'longnvarchar'
+	when __tag of bigint then 'integer'
         else NULL end;
       if (coltype is null)
         signal ('22023', 'The datatype of column "' || sqlcols[0][2] ||
