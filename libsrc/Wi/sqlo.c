@@ -901,7 +901,10 @@ sqlo_add_table_ref (sqlo_t * so, ST ** tree_ret, dk_set_t *res)
 		ot->ot_new_prefix = sqlo_new_prefix (so);
 		ot->ot_left_sel = sqlp_union_tree_select (view);
 		if (ST_P (view, PROC_TABLE))
+		  {
 		  sqlo_proc_table_cols (so, ot);
+		    ot->ot_is_proc_view = 1;
+		  }
 		sco_add_table (so->so_scope, ot);
 		t_set_push (&so->so_tables, (void*) ot);
 
@@ -957,6 +960,7 @@ sqlo_add_table_ref (sqlo_t * so, ST ** tree_ret, dk_set_t *res)
 	right_ot = (op_table_t *) so->so_tables->data;
 	sqlo_natural_join_cond (so, left_ot, right_ot, tree);
 	sqlo_scope (so, &(tree->_.join.cond));
+	t_st_and (&right_ot->ot_join_cond, tree->_.join.cond); /*always ste, even if some joins may be made into dts later*/
 	sco_merge (old_sco, sco);
 	so->so_scope = old_sco;
 	if (tree->_.join.type == OJ_LEFT || tree->_.join.type == OJ_FULL)
@@ -1740,8 +1744,11 @@ sqlo_expand_jts (sqlo_t *so, ST **ptree, ST *select_stmt, int was_top)
     {
       res += sqlo_expand_jts (so, &tree->_.join.left, select_stmt, was_top);
       res += sqlo_expand_jts (so, &tree->_.join.right, select_stmt, was_top);
-
+      if (0 == res && J_INNER == tree->_.join.type)
+	return res;
+      if (OJ_LEFT != tree->_.join.type)
       res += sqlo_jt_dt_wrap (so, &tree->_.join.left, select_stmt, was_top, 1);
+      if (OJ_RIGHT != tree->_.join.type)
       res += sqlo_jt_dt_wrap (so, &tree->_.join.right, select_stmt, was_top, 1);
 
       if (tree->_.join.type == OJ_FULL)

@@ -233,12 +233,21 @@ sqlo_df_from (sqlo_t * so, df_elt_t * tb_dfe, ST ** from)
 	}
       if (ot->ot_join_cond)
 	{
+	  if (ot->ot_is_outer || ot->ot_is_proc_view)
+	    {
 	  dk_set_t saved_preds = top_ot->ot_preds;
 	  so->so_is_top_and = 1;
 	  top_ot->ot_preds = NULL;
 	  sqlo_df (so, ot->ot_join_cond);
 	  ot->ot_join_preds = top_ot->ot_preds;
 	  top_ot->ot_preds = saved_preds;
+	    }
+	  else 
+	    {
+	      so->so_is_top_and = 1;
+	      sqlo_df (so, ot->ot_join_cond);
+	      ot->ot_join_cond = NULL;
+	    }
 	  so->so_is_top_and = 0;
 	}
     }
