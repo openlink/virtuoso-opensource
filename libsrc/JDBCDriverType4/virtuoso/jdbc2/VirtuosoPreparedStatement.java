@@ -243,10 +243,11 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
        }
    }
 
-   public int[] executeBatchUpdate() throws VirtuosoException
+   public int[] executeBatchUpdate() throws BatchUpdateException
    {
      int size = batch.size();
      int[] res = new int[size];  
+     int inx = 0;
      synchronized (connection)
        {
 	 Object[] args = new Object[6];
@@ -261,7 +262,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	     // Put the options array in the args array
 	     args[5] = getStmtOpts();
 	     future = connection.getFuture(VirtuosoFuture.exec,args, this.rpc_timeout);
-	     for (int inx = 0; inx < size; inx++)
+	     for (inx = 0; inx < size; inx++)
 	     {
 		 vresultSet.setUpdateCount (0);
 		 vresultSet.getMoreResults ();
@@ -270,8 +271,12 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	   }
 	 catch(IOException e)
 	   {
-	     throw new VirtuosoException("Problem during serialization : " + e.getMessage(),VirtuosoException.IOERROR);
+	     throwBatchUpdateException(res, "Problem during serialization : " + e.getMessage(), inx);
 	   }
+	 catch(VirtuosoException e)
+	  {
+	     throwBatchUpdateException (res, e, inx);
+	  }
        }
      return res;
    }
@@ -1084,12 +1089,20 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
     * driver does not support batch statements
     */
 
-   private void throwBatchUpdateException (int [] result, String msg, int inx) throws BatchUpdateException
+   private void throwBatchUpdateException (int [] result, SQLException ex, int inx) throws BatchUpdateException
    {
      int [] _result = new int[inx + 1];
      System.arraycopy (result, 0, _result, 0, inx);
      _result[inx] = _EXECUTE_FAILED;
-     throw new BatchUpdateException(msg, _result);
+     throw new BatchUpdateException(ex.getMessage(), ex.getSQLState(), ex.getErrorCode(), _result);
+   }
+
+   private void throwBatchUpdateException (int [] result, String mess, int inx) throws BatchUpdateException
+   {
+     int [] _result = new int[inx + 1];
+     System.arraycopy (result, 0, _result, 0, inx);
+     _result[inx] = _EXECUTE_FAILED;
+     throw new BatchUpdateException(mess, "HY000", 0, _result);
    }
 
    public int[] executeBatch() throws BatchUpdateException
@@ -1099,7 +1112,6 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
          return new int[0];
       // Else execute one by one SQL request
       int[] result = new int[batch.size()];
-      int inx = 0;
       // Flag to say if there's a problem
       boolean error = false;
 
@@ -1109,25 +1121,23 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
       try
 	{
       	  if (vresultSet.kindop()==VirtuosoTypes.QT_SELECT)
-	    throwBatchUpdateException (result, "Batch executes only update statements", inx);
+	    throwBatchUpdateException (result, "Batch executes only update statements", 0);
 
 	  result = executeBatchUpdate ();
+	}
+      catch(VirtuosoException ex)
+        {
+	    throwBatchUpdateException (result, ex, 0);
+	}
+      finally
+        {
+#if JDK_VER >= 12
+	  batch.clear();
+#else
+	  batch.removeAllElements();
+#endif
+	}
 
-#if JDK_VER >= 12
-	  batch.clear();
-#else
-	  batch.removeAllElements();
-#endif
-	}
-      catch (SQLException e)
-	{
-#if JDK_VER >= 12
-	  batch.clear();
-#else
-	  batch.removeAllElements();
-#endif
-	  throwBatchUpdateException (result, e.getMessage(), inx);
-	}
 
       return result;
    }

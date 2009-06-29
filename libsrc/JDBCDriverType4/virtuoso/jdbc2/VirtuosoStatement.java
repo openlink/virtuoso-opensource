@@ -826,6 +826,7 @@ public class VirtuosoStatement implements Statement
       int i;
       // Flag to say if there's a problem
       boolean error = false;
+      VirtuosoException ex = null;
 #if JDK_VER >= 12
       i = 0;
       for(ListIterator it = batch.listIterator(); it.hasNext(); )
@@ -852,6 +853,7 @@ public class VirtuosoStatement implements Statement
          {
             error = true;
             result[i] = -3;
+            ex = e;
          }
          outcount++;
 #if JDK_VER >= 12
@@ -868,7 +870,10 @@ public class VirtuosoStatement implements Statement
          outres = new int[outcount];
          for (i=0; i<outcount; i++)
            outres[i]=result[i];
-         throw new BatchUpdateException(outres);
+         if (ex != null)
+           throw new BatchUpdateException(ex.getMessage(), ex.getSQLState(), ex.getErrorCode(), outres);
+         else
+           throw new BatchUpdateException(outres);
       }
       return result;
    }
