@@ -4508,6 +4508,14 @@ The trick is safe because no equiv-based optimization takes place after any invo
               if (!(eq->e_rvr.rvrRestrictions & SPART_VARR_NOT_NULL))
                 {
                   sparp_equiv_t *outer_eq = sparp_equiv_get (sparp, curr, (SPART *)(eq->e_varnames[0]), SPARP_EQUIV_GET_NAMESAKES);
+                  if (NULL == outer_eq)
+                    {
+#ifdef DEBUG
+                      if (eq->e_rvr.rvrRestrictions & SPART_VARR_EXPORTED)
+                        spar_internal_error (sparp, "sparp_" "gp_trav_flatten_and_reuse_tabids(): exported eq in base without eq in curr");
+#endif
+                      continue;
+                    }
                   if ((outer_eq->e_rvr.rvrRestrictions & SPART_VARR_NOT_NULL) || (1 < outer_eq->e_nested_bindings))
                     {
                       bad_eq = eq;
