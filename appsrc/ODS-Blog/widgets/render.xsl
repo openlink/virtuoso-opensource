@@ -67,6 +67,11 @@
 	<xsl:call-template name="apply-inner"><xsl:with-param name="doc" select="$doc"/></xsl:call-template>
     </xsl:template>
 
+    <xsl:template match="vm:related">
+	<xsl:variable name="doc"><stub><xsl:call-template name="related"/></stub></xsl:variable>
+	<xsl:call-template name="apply-inner"><xsl:with-param name="doc" select="$doc"/></xsl:call-template>
+    </xsl:template>
+
     <xsl:template match="vm:comments">
 	<xsl:variable name="doc"><stub><xsl:call-template name="comments"/></stub></xsl:variable>
 	<xsl:call-template name="apply-inner"><xsl:with-param name="doc" select="$doc"/></xsl:call-template>

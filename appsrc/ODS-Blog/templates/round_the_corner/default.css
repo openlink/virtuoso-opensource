@@ -520,6 +520,13 @@ div.referrals-ctr {
   padding: 4px;
 }
 
+div.related-ctr {
+  border: none;
+  display: block;
+  text-align: left;
+  padding: 4px;
+}
+
 div.comments-ctr {
   border: none;
   display: block;

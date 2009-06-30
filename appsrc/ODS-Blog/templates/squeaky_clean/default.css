@@ -632,6 +632,12 @@ div.referrals-ctr {
   text-align: left;
 }
 
+div.related-ctr {
+  border: none;
+  display: block;
+  text-align: left;
+}
+
 div.comments-ctr {
   border: none;
   display: block;

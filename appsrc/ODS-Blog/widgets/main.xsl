@@ -3118,6 +3118,7 @@ window.onload = function (e)
           <xsl:when test="$test = 'tagid'"> self.tagid is not null</xsl:when>
           <xsl:when test="$test = 'trackbacks'">get_keyword ('EnableTrackback', self.opts, 0)</xsl:when>
           <xsl:when test="$test = 'referral'">get_keyword ('EnableReferral', self.opts, 1)</xsl:when>
+          <xsl:when test="$test = 'related'">get_keyword ('EnableRelated', self.opts, 1)</xsl:when>
           <xsl:when test="$test = 'login'"> length (self.sid) </xsl:when>
           <xsl:when test="$test = 'have_tags'"> exists (select top 1 1 from BLOG..BLOG_POST_TAGS_STAT_2 where postid = t_post_id and blogid = control.te_rowset[10]) </xsl:when>
           <xsl:when test="$test = 'have_categories'"> exists (select top 1 1 from BLOG..MTYPE_BLOG_CATEGORY where MTB_POST_ID = t_post_id and MTB_BLOG_ID = control.te_rowset[10]) </xsl:when>
@@ -3315,6 +3316,68 @@ window.onload = function (e)
         </div>
   </xsl:template>
 
+  <xsl:template match="vm:related-list">
+    <div class="related-contents">
+      <?vsp
+        declare title, N, S, st, msg, pars, meta, data, vt, hits, words, S any;
+        
+        data := vector ();
+        title := (select B_TITLE from BLOG..SYS_BLOGS where B_POST_ID = self.postid);
+    	  if (length (title))
+  	    {
+  	      vt := vt_batch ();
+  	      vt_batch_feed (vt, title, 0, 0, 'x-any');
+          S := FTI_MAKE_SEARCH_STRING (title);
+  	      {
+  	        declare exit handler for sqlstate '*'
+  		      { 
+  		        goto _skip;
+  		      };
+  	        vt_parse ('[__lang \'x-ViDoc\' __enc \'UTF-8\'] ' || S);
+  	      }
+  	      pars := vector (self.postid, concat ('[__lang \'x-ViDoc\' __enc \'UTF-8\'] ', S));
+  	      S := 
+            ' select top 10 B.B_BLOG_ID, B.B_POST_ID, B.B_TITLE, B.SCORE ' ||
+            '   from BLOG..SYS_BLOGS B,                     ' ||
+            '        BLOG..SYS_BLOG_INFO BI,                ' ||
+            '        DB.DBA.WA_INSTANCE WAI                 ' ||
+            '  where B.B_BLOG_ID = BI.BI_BLOG_ID            ' ||
+            '    and BI.BI_WAI_NAME = WAI.WAI_NAME          ' ||
+            '    and WAI.WAI_IS_PUBLIC = 1                  ' ||
+            '    and B.B_POST_ID <> ?                       ' ||
+            '    and contains (B.B_CONTENT, ?)              ' ||
+            '  order by B.SCORE desc';
+	        st := '00000';
+          exec (S, st, msg, pars, 0, meta, data);
+	        if (st <> '00000')
+	          data := vector ();
+	      }    
+	    _skip:;
+	      if (length (data) = 0)
+	      {
+      ?>
+      <div class="tb-url">
+        No Related Posts
+      </div>
+      <?vsp
+	      } 
+	      else 
+	      {  
+          for (N := 0; N < length (data); N := N + 1)
+  	      {
+      ?>
+      <div class="tb-url">
+        <a href="&lt;?V SIOC..blog_post_iri (data[N][0], data[N][1]) ?>">
+          <?V data[N][2] ?>
+        </a>
+      </div>
+      <?vsp
+          }
+        }
+      ?>
+    </div>
+  </xsl:template>
+
   <xsl:template match="vm:trackback-url|vm:pingback-url|vm:comment-url">
       <xsl:choose>
 	  <xsl:when test="local-name()='trackback-url'">
@@ -3457,6 +3520,9 @@ window.onload = function (e)
   </xsl:template>
   <xsl:template match="vm:referrals">
       <xsl:call-template name="referrals"/>
+  </xsl:template>
+  <xsl:template match="vm:related">
+      <xsl:call-template name="related"/>
   </xsl:template>
   <xsl:template match="vm:comments">
       <xsl:call-template name="comments"/>
@@ -6652,6 +6718,10 @@ window.onload = function (e)
         </tr>
         <tr>
           <td/>
+          <td><v:check-box name="rl1" xhtml_id="rl1" value="1" initial-checked="--get_keyword ('EnableRelated', self.opts, 0)"/><label for="pb1">Related enabled</label></td>
+        </tr>
+        <tr>
+          <td/>
           <td><v:check-box name="sid_mutation" xhtml_id="sid_mutation" value="1" initial-checked="--get_keyword ('EnableSIDMutation', self.opts, 0)"/><label for="sid_mutation">Enhanced Security enabled (SID mutation on each page refresh)</label></td>
         </tr>
         <tr>
@@ -6710,6 +6780,7 @@ window.onload = function (e)
                   opts := self.opts;
                   opts := BLOG.DBA.BLOG2_SET_OPTION('EnableSIDMutation', opts, self.sid_mutation.ufl_selected);
                   opts := BLOG.DBA.BLOG2_SET_OPTION('EnableReferral', opts, self.pb1.ufl_selected);
+                  opts := BLOG.DBA.BLOG2_SET_OPTION('EnableRelated', opts, self.rl1.ufl_selected);
                   opts := BLOG.DBA.BLOG2_SET_OPTION('EnableTrackback', opts, self.tb1.ufl_selected);
                   opts := BLOG.DBA.BLOG2_SET_OPTION('CommentApproval', opts, self.mb1.ufl_selected);
                   opts := BLOG.DBA.BLOG2_SET_OPTION('OpenID', opts, self.oid1.ufl_selected);

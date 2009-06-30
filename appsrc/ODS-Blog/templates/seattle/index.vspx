@@ -109,6 +109,7 @@
                           <vm:comments-view>
                             <vm:trackbacks />
                             <vm:referrals />
+                            <vm:related />
                             <vm:if test="comments">
                               <vm:comments />
                               <vm:post-comment />
