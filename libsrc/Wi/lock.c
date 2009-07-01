@@ -1947,8 +1947,8 @@ the_grim_lock_reaper (void)
     {
       wi_free_old_qrs ();
       srv_run_background_tasks();
-    }
   wi_free_schemas ();
+    }
   LEAVE_TXN;
   if (now - last_exec_time > AUTO_FLUSH_DELAY &&
       now - last_flush_time > AUTO_FLUSH_DELAY

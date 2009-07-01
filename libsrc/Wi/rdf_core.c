@@ -637,9 +637,9 @@ caddr_t ttlp_strliteral (ttlp_t *ttlp_arg, const char *strg, int mode, char deli
 	{
 	case '\\':
           {
-	    const char *bs_src		= "abfnrtv\\\'\">uU";
-	    const char *bs_trans	= "\a\b\f\n\r\t\v\\\'\">\0\0";
-            const char *bs_lengths	= "\2\2\2\2\2\2\2\2\2\2\2\6\012";
+	    const char *bs_src		= "abfnrtv\\\'\">uU\n\r";
+	    const char *bs_trans	= "\a\b\f\n\r\t\v\\\'\">\0\0\0\0";
+            const char *bs_lengths	= "\2\2\2\2\2\2\2\2\2\2\2\6\012\2\2";
 	    const char *hit = strchr (bs_src, src_tail[1]);
 	    char bs_len, bs_tran;
 	    const char *nextchr;
@@ -658,6 +658,12 @@ caddr_t ttlp_strliteral (ttlp_t *ttlp_arg, const char *strg, int mode, char deli
 	      }
             if ('\0' != bs_tran)
               (tgt_tail++)[0] = bs_tran;
+	    else if (('\n' == src_tail[1]) || ('\r' == src_tail[1]))
+              {
+                (tgt_tail++)[0] = '\n';
+                while (('\n' == nextchr[0]) || ('\r' == nextchr[0]))
+                  nextchr++;
+              }
 	    else
 	      {
 		unichar acc = 0;

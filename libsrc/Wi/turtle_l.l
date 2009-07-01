@@ -347,10 +347,8 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
         BEGIN TURTLE_BAD_SQ;
       }
     else
-      {
         tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "End-of-line in a short single-quoted string");
-        ttlp_arg[0].ttlp_lexlineno++; yymore();
-      } }
+    ttlp_arg[0].ttlp_lexlineno++; yymore(); }
 <TURTLE_DQ>{S_NL}	{
     if (!(TTLP_STRING_MAY_CONTAIN_CRLF & ttlp_arg[0].ttlp_flags))
       {
@@ -358,18 +356,30 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
         BEGIN TURTLE_BAD_DQ;
       }
     else
-      {
         tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "End-of-line in a short double-quoted string");
-        ttlp_arg[0].ttlp_lexlineno++; yymore();
-      } }
+    ttlp_arg[0].ttlp_lexlineno++; yymore(); }
+<TURTLE_SQ>[\\]{S_NL}	{
+    if (!(TTLP_STRING_MAY_CONTAIN_CRLF & ttlp_arg[0].ttlp_flags))
+      {
+        TTLYYERROR_OR_REPORT ("End-of-line escape sequence in a single-quoted string is not permitted by strict TURTLE; this error can be suppressed by parser flags");
+        BEGIN TURTLE_BAD_SQ;
+      }
+    ttlp_arg[0].ttlp_lexlineno++; yymore(); }
+<TURTLE_DQ>[\\]{S_NL}	{
+    if (!(TTLP_STRING_MAY_CONTAIN_CRLF & ttlp_arg[0].ttlp_flags))
+      {
+        TTLYYERROR_OR_REPORT ("End-of-line escape sequence in a double-quoted string is not permitted by strict TURTLE; this error can be suppressed by parser flags");
+        BEGIN TURTLE_BAD_DQ;
+      }
+    ttlp_arg[0].ttlp_lexlineno++; yymore(); }
 <TURTLE_SQ>(({SPAR_SQ_PLAIN}|{SPAR_ECHAR})+)		{ yymore(); }
 <TURTLE_DQ>(({SPAR_DQ_PLAIN}|{SPAR_ECHAR})+)		{ yymore(); }
 <TURTLE_SQ>[\\]		{
     TTLYYERROR_OR_REPORT ("Bad escape sequence in a short single-quoted string");
-    BEGIN (TURTLE_BAD_SQ); }
+    BEGIN (TURTLE_BAD_SQ); yymore(); }
 <TURTLE_DQ>[\\]		{
     TTLYYERROR_OR_REPORT ("Bad escape sequence in a short double-quoted string");
-    BEGIN (TURTLE_BAD_DQ); }
+    BEGIN (TURTLE_BAD_DQ); yymore(); }
 <TURTLE_BAD_SQ>(({SPAR_SQ_PLAIN}|{SPAR_ECHAR})+) {}
 <TURTLE_BAD_DQ>(({SPAR_DQ_PLAIN}|{SPAR_ECHAR})+) {}
 <TURTLE_BAD_SQ>{S_NL}	{ ttlp_arg[0].ttlp_lexlineno++; yymore(); }
