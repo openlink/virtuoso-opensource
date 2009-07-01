@@ -3623,7 +3623,8 @@ int sparp_gp_trav_1var (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_thi
   return SPAR_GPT_NODOWN;
 }
 
-int sparp_gp_trav_localize_filters (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
+int
+sparp_gp_trav_localize_filters (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   int filt_ctr, filt_count;
   if (SPAR_GP != curr->type) /* Not a gp ? -- nothing to do */
@@ -3662,6 +3663,7 @@ int sparp_gp_trav_localize_filters (sparp_t *sparp, SPART *curr, sparp_trav_stat
       END_DO_BOX_FAST_REV;
       if (10 < subval_count)
         continue; /* Too many subvalues found after correction for member unions */
+      /* Now it's safe to localize the filter in each place where a subvalue comes from */
       DO_BOX_FAST_REV (ptrlong, subval_eq_idx, subval_ctr, sv_eq->e_subvalue_idxs)
         {
           sparp_equiv_t *sub_eq = SPARP_EQUIV (sparp, subval_eq_idx);
@@ -3669,6 +3671,37 @@ int sparp_gp_trav_localize_filters (sparp_t *sparp, SPART *curr, sparp_trav_stat
           SPART *filter_clone;
           if (SELECT_L == sub_gp->_.gp.subtype)
             continue; /*!!!TBD remove when HAVING is supported so filter can be moved inside subselect safely. Now that is impossible for e.g. { select count (...) as ?x ... } filter (?x < 10) */
+/* In case of union, we can't place filter right in UNION gp, because nobody expects it there.
+Instead, we place a copy of the filter in each branch of the union. */
+          if (UNION_L == sub_gp->_.gp.subtype)
+            {
+              int sub_memb_ctr, bad_subcase_found = 0;
+              if (!filt_is_detached)
+                {
+/* If some branches are inappropriate for that trick then we don't detach the external filter in order to guarantee that results of all bracnes are filtered somewhere outside. */
+                  DO_BOX_FAST_REV (SPART *, sub_memb, sub_memb_ctr, sub_gp->_.gp.members)
+                    {
+                      if ((SPAR_GP != SPART_TYPE (sub_memb)) || (0 != sub_memb->_.gp.subtype))
+                        {
+                          bad_subcase_found = 1;
+                          break;
+                        }
+                    }
+                  END_DO_BOX_FAST_REV;
+                }
+              DO_BOX_FAST_REV (SPART *, sub_memb, sub_memb_ctr, sub_gp->_.gp.members)
+                {
+                  if (!bad_subcase_found && !filt_is_detached)
+                    {
+                      sparp_gp_detach_filter (sparp, curr, filt_ctr, NULL);
+                      filt_is_detached = 1;
+                    }
+                  filter_clone = sparp_tree_full_copy (sparp, filt, curr);
+                  sparp_gp_attach_filter (sparp, sub_memb, filter_clone, 0, NULL);
+                }
+              END_DO_BOX_FAST_REV;
+              continue;
+            }
           if (!filt_is_detached)
             {
               sparp_gp_detach_filter (sparp, curr, filt_ctr, NULL);
