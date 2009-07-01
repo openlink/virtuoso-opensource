@@ -210,6 +210,67 @@ public class TestBlob
 	    catch (Exception e)
 	      {
 	      }
+
+
+            System.out.println("Testing long nvarchar:");
+
+	    stmt.executeUpdate ("create table EX..TESTBLOB ( BLOB_COL LONG NVARCHAR )");
+            ps = conn.prepareStatement("insert into EX..TESTBLOB (BLOB_COL) values(?)");
+            String data = new String("12345678901234");
+            byteData = data.getBytes();
+            ps.setBytes(1, byteData);
+            System.out.println("insert execute update" );
+            ires = ps.executeUpdate();
+            System.out.println("insert results:"+ires);
+            ps.close();
+
+            System.out.println("insert commit");
+            conn.commit();
+
+            System.out.println("********* SELECT *****************************");
+            ps = conn.prepareStatement("SELECT BLOB_COL FROM EX..TESTBLOB");
+            System.out.println("select execute");
+            rs = ps.executeQuery();
+            while ( rs.next() )
+            {
+                System.out.println("result0");
+
+                InputStream stream = rs.getBinaryStream("BLOB_COL");
+                ByteArrayOutputStream ostream = new ByteArrayOutputStream();
+
+                int length;
+                System.out.println("result1");
+                while (true)
+                {
+                    byte[] buffer = new byte[32767];
+                    System.out.println("result2");
+                    length = stream.read(buffer);
+                    System.out.println("result3:" + length);
+                    if ( length < 0 )
+                        break;
+                    ostream.write(buffer, 0, length);
+                }
+
+                byte[] x = ostream.toByteArray();
+
+                System.out.println ( "select results: len=" +x.length);
+		if (x.length != byteData.length)
+		  throw new Exception ("different length orig=" + byteData.length + " returned=" + x.length);
+		for (int inx = 0; inx < x.length; inx++)
+		  if (x[inx] != byteData[inx])
+		    throw new Exception ("different content orig=" + byteData[inx] + " returned=" + byteData[inx]);
+
+            }
+            rs.close();
+            ps.close();
+
+	    try
+	      {
+		stmt.executeUpdate ("drop table EX..TESTBLOB");
+	      }
+	    catch (Exception e)
+	      {
+	      }
      }
      catch ( SQLException e )
      {

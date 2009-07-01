@@ -267,6 +267,12 @@
 			      <vm:referrals-list/>
 			  </div>
 		      </vm:if>
+		      <vm:if test="related">
+			  <div class="related-ctr">
+			      <a name="related" /><h2>Related</h2>
+			      <vm:related-list/>
+			  </div>
+		      </vm:if>
 		      <vm:if test="comments-or-enabled">
 			  <div class="comments-ctr">
 			      <h2><a name="comments">Comments</a></h2>

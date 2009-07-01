@@ -208,6 +208,15 @@
     </v:if>
   </xsl:template>
 
+  <xsl:template name="related">
+    <v:if test="referral">
+      <div class="related-ctr">
+	      <a name="related" /><h2>Related</h2>
+	      <vm:related-list/>
+      </div>
+    </v:if>
+  </xsl:template>
+
   <xsl:template name="comments">
     <vm:if test="comments-or-enabled">
       <div class="comments-ctr">

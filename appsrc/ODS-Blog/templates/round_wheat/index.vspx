@@ -249,6 +249,7 @@
                   <vm:comments-view>
                     <vm:trackbacks />
                     <vm:referrals />
+                    <vm:related />
                     <vm:comments />
                     <vm:post-comment />
                   </vm:comments-view>

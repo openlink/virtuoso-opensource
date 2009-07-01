@@ -46,3 +46,4 @@ cat testsuite2.jar testsuite2.jar testsuite2.jar > bloor.pdf
 $JAVA_HOME/bin/java -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestBlob edsj
 $JAVA_HOME/bin/java -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.test2276 $1
 $JAVA_HOME/bin/java -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestTimeUpdate $1
+$JAVA_HOME/bin/java -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestMoreRes $1

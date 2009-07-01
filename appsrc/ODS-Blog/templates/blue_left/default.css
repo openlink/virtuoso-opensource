@@ -474,16 +474,6 @@ div.pingback-title {
   font-weight: bold;
 }
 
-div.pingback-contents {
-  background-color: white;
-  margin: 3px;
-  border: none;
-  display: block;
-  padding: 6px;
-  text-align: left;
-  margin-left: 24px;
-}
-
 div.referrals-title {
   margin-left: 20px;
   margin-right: 20px;
@@ -494,6 +484,34 @@ div.referrals-title {
 }
 
 div.referrals-contents {
+  margin: 3px;
+  border: none;
+  display: block;
+  padding: 6px;
+  text-align: left;
+  margin-left: 24px;
+}
+
+div.pingback-contents {
+  background-color: white;
+  margin: 3px;
+  border: none;
+  display: block;
+  padding: 6px;
+  text-align: left;
+  margin-left: 24px;
+}
+
+div.related-title {
+  margin-left: 20px;
+  margin-right: 20px;
+  margin-top: 6px;
+  margin-bottom: 6px;
+  font-size: 110%;
+  font-weight: bold;
+}
+
+div.related-contents {
   background-color: white;
   margin: 3px;
   border: none;

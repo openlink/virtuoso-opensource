@@ -48,7 +48,7 @@ $JAVA -classpath $CLASSPATH:virtjdbc3ssl.jar:testsuite3.jar testsuite.TestCallab
 $JAVA -classpath $CLASSPATH:virtjdbc3ssl.jar:testsuite3.jar testsuite.TestScroll $1
 $JAVA -classpath $CLASSPATH:virtjdbc3ssl.jar:testsuite3.jar testsuite.TestScrollManual $1
 $JAVA -classpath $CLASSPATH:virtjdbc3ssl.jar:testsuite3.jar testsuite.TestScrollPrepare $1
-$JAVA -classpath $CLASSPATH:virtjdbc3ssl.jar:testsuite3.jar testsuite.TestVarCommandsary $1
+$JAVA -classpath $CLASSPATH:virtjdbc3ssl.jar:testsuite3.jar testsuite.TestVarbinary $1
 $JAVA -classpath $CLASSPATH:virtjdbc3ssl.jar:testsuite3.jar testsuite.TestNumeric $1
 rm -f bloor.pdf
 cat testsuite3.jar testsuite3.jar testsuite3.jar > bloor.pdf
@@ -57,5 +57,6 @@ diff bloor.pdf out.pdf
 $JAVA -classpath $CLASSPATH:virtjdbc3ssl.jar:testsuite3.jar testsuite.test2276 $1
 $JAVA -classpath $CLASSPATH:virtjdbc3ssl.jar:testsuite3.jar testsuite.TestTimeUpdate $1
 $JAVA -classpath $CLASSPATH:virtjdbc3ssl.jar:testsuite3.jar testsuite.SPRgetColumns $1
+$JAVA -classpath $CLASSPATH:virtjdbc3ssl.jar:testsuite3.jar testsuite.TestMoreRes $1
 #GK: not for now : no params passing
 # $JAVA -classpath $CLASSPATH:virtjdbc3ssl.jar:testsuite3.jar testsuite.TestDataSource $1

@@ -42,7 +42,7 @@ public class TestExecuteClob
             filename = args[0];
          }
          Class.forName("virtuoso.jdbc4.Driver");
-         System.out.println("--------------------- Test of the clob features -------------------");
+         System.out.println("--------------------- Test of the clob features (varchar) ------------");
          System.out.print("Establish connection at " + url);
          Connection connection = DriverManager.getConnection(url,"dba","dba");
          if(connection instanceof virtuoso.jdbc4.VirtuosoConnection)
@@ -85,6 +85,32 @@ public class TestExecuteClob
          System.out.print("Execute DROP TABLE");
          stmt.executeUpdate("drop table EX..ECLOB");
          System.out.println("    PASSED");
+
+         System.out.println("--------------------- Test of the clob features (nvarchar)-----------");
+         System.out.print("Execute CREATE TABLE");
+         if(stmt.executeUpdate("create table EX..ECLOB (ID integer,FILLER long nvarchar,primary key(ID))") == 0)
+            System.out.println("    PASSED");
+         else
+         {
+            System.out.println("    FAILED");
+            System.exit(-1);
+         }
+         System.out.print("Execute INSERT INTO");
+         fs = new java.io.FileInputStream(filename);
+         pstmt = connection.prepareStatement("insert into EX..ECLOB(id,FILLER) values(?,?)");
+         pstmt.setLong(1,3000);
+         pstmt.setAsciiStream(2,fs,1024 * 20);
+         pstmt.execute();
+         System.out.println("    PASSED");
+         System.out.println("Execute SELECT");
+         rs = stmt.executeQuery("select * from EX..ECLOB");
+         rs.next();
+         clob = rs.getClob(2);
+         System.out.println(new String(clob.getSubString(4060,1024 * 2)));
+         System.out.println("    PASSED");
+         System.out.print("Execute DROP TABLE");
+         stmt.executeUpdate("drop table EX..ECLOB");
+         System.out.println("    PASSED");
          System.out.print("Close statement at " + url);
          pstmt.close();
          stmt.close();
@@ -104,4 +130,3 @@ public class TestExecuteClob
    }
 
 }
-

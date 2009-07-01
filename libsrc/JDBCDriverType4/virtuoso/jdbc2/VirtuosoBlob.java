@@ -256,6 +256,8 @@ public class VirtuosoBlob
        //System.out.println ("vb: VirtuosoBlob.getBytes1");
        if(!request)
 	 {
+           pos--;
+
 	   if(pos>buffer.length || pos+length>buffer.length)
 	     {
 	       //System.out.println ("vb: return null");
@@ -282,12 +284,14 @@ public class VirtuosoBlob
 	       // we should go from start
 	       //System.out.println ("vb: rewind pos:" + pos + " ofs:" + bh_offset());
 	       rewind();
-	       init_read_len = new Long ((pos - 1) *
-		   (dtp == VirtuosoTypes.DV_BLOB_WIDE_HANDLE ? -1 : 1));
+//	       init_read_len = new Long ((pos - 1) *
+//		   (dtp == VirtuosoTypes.DV_BLOB_WIDE_HANDLE ? -1 : 1));
+	       init_read_len = new Long (pos - 1);
 	     }
 	   else if (pos - 1 > bh_offset ())
-	     init_read_len = new Long ((pos - bh_offset() - 1) *
-		 (dtp == VirtuosoTypes.DV_BLOB_WIDE_HANDLE ? -1 : 1));
+	     init_read_len = new Long (pos - bh_offset() - 1);
+//	     init_read_len = new Long ((pos - bh_offset() - 1) *
+//		 (dtp == VirtuosoTypes.DV_BLOB_WIDE_HANDLE ? -1 : 1));
 
 
 	   if (init_read_len != null)
@@ -359,8 +363,9 @@ public class VirtuosoBlob
 	     {
 	       Object[] args = new Object[9];
 	       args[0] = new Long(this.bh_current_page);
-	       args[1] = new Long(length *
-		       (dtp == VirtuosoTypes.DV_BLOB_WIDE_HANDLE ? -1 : 1));
+//	       args[1] = new Long(length *
+//		       (dtp == VirtuosoTypes.DV_BLOB_WIDE_HANDLE ? -1 : 1));
+	       args[1] = new Long(length);
 	       args[2] = new Long(this.bh_position);
                args[3] = new Long(this.key_id);
                args[4] = new Long(this.frag_no);

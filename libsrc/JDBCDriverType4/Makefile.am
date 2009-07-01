@@ -54,7 +54,7 @@ jdk1-target:
 	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) std1
 
 jdk1-test:
-	env "JDK1=@ac_jdk1_path@" $(SHELL) ./test1.sh
+	env "JDK1=@ac_jdk1_path@" $(SHELL) ./test1.sh "jdbc:virtuoso://localhost:$(PORT)/"
 
 
 .PHONY: jdk2-target
@@ -63,7 +63,7 @@ jdk2-target:
 	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) ssl2
 
 jdk2-test:
-	env "JDK2=@ac_jdk2_path@" $(SHELL) ./test2.sh
+	env "JDK2=@ac_jdk2_path@" $(SHELL) ./test2.sh "jdbc:virtuoso://localhost:$(PORT)/"
 
 
 .PHONY: jdk3-target
@@ -72,7 +72,7 @@ jdk3-target:
 	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) ssl3
 
 jdk3-test:
-	env "JDK3=@ac_jdk3_path@" $(SHELL) ./test3.sh
+	env "JDK3=@ac_jdk3_path@" $(SHELL) ./test3.sh "jdbc:virtuoso://localhost:$(PORT)/"
 
 
 .PHONY: jdk4-target
@@ -81,7 +81,7 @@ jdk4-target:
 	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) ssl4
 
 jdk4-test:
-	env "JDK4=@ac_jdk4_path@" $(SHELL) ./test4.sh
+	env "JDK4=@ac_jdk4_path@" $(SHELL) ./test4.sh "jdbc:virtuoso://localhost:$(PORT)/"
 
 
 install-data-local:
