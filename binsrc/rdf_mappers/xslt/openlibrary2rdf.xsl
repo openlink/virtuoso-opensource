@@ -28,6 +28,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY geo "http://www.w3.org/2003/01/geo/wgs84_pos#">
+<!ENTITY book "http://purl.org/NET/book/vocab#">
 ]>
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -43,6 +44,7 @@
   xmlns:foaf="&foaf;"
   xmlns:sioc="&sioc;"
   xmlns:bibo="&bibo;"
+  xmlns:book="&book;"
   version="1.0">
   <xsl:output method="xml" indent="yes"/>
   <xsl:param name="baseUri" />
@@ -55,6 +57,9 @@
 		<foaf:primaryTopic rdf:resource="{$res}"/>
 		<dcterms:subject rdf:resource="{$res}"/>
 	  </rdf:Description>
+	  <rdf:Description rdf:about="{$res}">
+		<rdf:type rdf:resource="&book;Book"/>
+          </rdf:Description>
 	<bibo:Book rdf:about="{$res}">
 	    <foaf:homepage rdf:resource="{$baseUri}"/>
 	    <xsl:apply-templates select="results/result"/>
@@ -72,11 +77,17 @@
 	</dcterms:title>
     </xsl:if>
     <xsl:if test="isbn_13">
+	<book:isbn>
+	    <xsl:value-of select="isbn_13"/>
+	</book:isbn>
 	<bibo:isbn13>
 	    <xsl:value-of select="isbn_13"/>
 	</bibo:isbn13>
     </xsl:if>
     <xsl:if test="isbn_10">
+	<book:isbn>
+	    <xsl:value-of select="isbn_10"/>
+	</book:isbn>
 	<bibo:isbn10>
 	    <xsl:value-of select="isbn_10"/>
 	</bibo:isbn10>

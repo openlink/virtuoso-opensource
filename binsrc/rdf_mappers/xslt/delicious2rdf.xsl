@@ -28,6 +28,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY book "http://purl.org/NET/book/vocab#">
 <!ENTITY sioct "http://rdfs.org/sioc/types#">
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
 <!ENTITY moat "http://moat-project.org/ns#">
@@ -50,6 +51,7 @@
 	xmlns:twitter="http://www.openlinksw.com/schemas/twitter/"
     xmlns:sioc="&sioc;"
     xmlns:bibo="&bibo;"
+    xmlns:book="&book;"
     xmlns:owl="&owl;"
 	xmlns:scot="&scot;"
 	xmlns:moat="&moat;"
