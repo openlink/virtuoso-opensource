@@ -1214,7 +1214,7 @@ create procedure  DB.DBA.SOCIAL_TREE_TO_XML_REC	(in	tree any, in tag varchar, in
 	}
 	else if (length (tree) > 1 and __tag (tree[0]) = 255)
 	{
-		if (left(tag,	7) = 'http://' or left(tag,	6) = 'ttp://' or left(tag, 7) = 'mailto:')
+		if (left(tag,	7) = 'http://' or left(tag,	6) = 'ttp://' or left(tag, 7) = 'mailto:' or left(tag, 4) = 'sgn:')
 		{
 			http ('<Document>\n', ses);
 			http_value (tag, 'about', ses);
@@ -1227,7 +1227,7 @@ create procedure  DB.DBA.SOCIAL_TREE_TO_XML_REC	(in	tree any, in tag varchar, in
 		{
 			DB.DBA.SOCIAL_TREE_TO_XML_REC (tree[i+1], tree[i], ses);
 		}
-		if (left(tag,	7) = 'http://' or left(tag,	6) = 'ttp://' or left(tag, 7) = 'mailto:')
+		if (left(tag,	7) = 'http://' or left(tag,	6) = 'ttp://' or left(tag, 7) = 'mailto:' or left(tag, 4) = 'sgn:')
 			http ('</Document>\n',	ses);
 		else
                 {
@@ -3807,6 +3807,7 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare xd, xt, url, tmp, api_key, asin, hdr, exif any;
+  declare pos integer;
   asin := null;
   declare exit handler for sqlstate '*'
 	{
@@ -3851,6 +3852,12 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
   {
     return 0;
    }
+	pos := strchr(asin, '/');
+	if (pos is not null)
+	{
+		asin := left(asin, pos);
+	}
+		
   api_key := _key;
   if (asin is null or not isstring (api_key))
     return 0;
@@ -3860,7 +3867,7 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
   if (hdr[0] not like 'HTTP/1._ 200 %')
     signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
   xd := xtree_doc (tmp);
-  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/amazon2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/amazon2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri), 'asin', asin ));
   xd := serialize_to_UTF8_xml (xt);
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
@@ -4152,30 +4159,16 @@ create procedure DB.DBA.RDF_LOAD_WIKIPEDIA_ARTICLE
     (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
          inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
-    declare get_uri, body any;
+    declare get_uri, body, dbpiri any;
     declare code, base any;
     get_uri := split_and_decode (new_origin_uri, 0, '\0\0/');
     get_uri := get_uri[length (get_uri) - 1];
     base := get_keyword ('DBpediaBase', opts);
-    if (base is not null and isstring (file_stat (base)) and __proc_exists ('php_str', 2) is not null)
-      {
-	declare exit handler for sqlstate '*'
-	  {
-	    goto fallback;
-	  };
-	  code := RDFMAP_DBPEDIA_EXTRACT_PHP (base, get_uri);
-	  body := php_str (code);
-	  delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (coalesce (dest, graph_iri));
-	  DB.DBA.TTLP (body, base, coalesce (dest, graph_iri));
-	  return 1;
-      }
-    else
       {
 	declare exit handler for sqlstate '*'
 	  {
 	    return 0;
 	  };
-	fallback:;
 	body := sprintf('<?xml version=\"1.0\" encoding=\"utf-8\"?>
 	        <rdf:RDF
 	        xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"
@@ -4187,9 +4180,23 @@ create procedure DB.DBA.RDF_LOAD_WIKIPEDIA_ARTICLE
 	--body := http_get ('http://dbpedia.org/data/'|| get_uri, null, 'GET', 'Accept: application/xml, */*');
 	--delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (coalesce (dest, graph_iri));
 	DB.DBA.RM_RDF_LOAD_RDFXML (body, new_origin_uri, coalesce (dest, graph_iri));
-	return 1;
       }
-    return 0;
+    if (base is not null and isstring (file_stat (base)) and __proc_exists ('php_str', 2) is not null)
+      {
+	declare exit handler for sqlstate '*'
+	  {
+	    goto fallback;
+	  };
+	  code := RDFMAP_DBPEDIA_EXTRACT_PHP (base, get_uri);
+	  body := php_str (code);
+	  if (length (body) > 2 and body[0] = 239 and body[1] = 187 and body[2] = 191)
+	    body := subseq (body, 3);
+	  dbpiri := 'http://dbpedia.org/resource/'|| get_uri;  
+	  delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (coalesce (dest, dbpiri));
+	  DB.DBA.TTLP (body, dbpiri, dbpiri);
+      }
+    fallback:
+    return 1;
 }
 ;
 
@@ -5296,20 +5303,15 @@ CREATE PROCEDURE RDFMAP_DBPEDIA_EXTRACT_PHP (in base varchar, in title varchar)
   http ('set_include_path (\x24basePath.\':\'.\x24basePath.\'/extractors:\'.\x24basePath.\'/destinations\');\n', ses);
   http ('require_once \'dbpedia.php\';\n', ses);
   http ('\n', ses);
-  http ('function __autoload(\x24class_name) {\n', ses);
-  http ('    require_once \x24class_name . \'.php\';\n', ses);
-  http ('}\n', ses);
-  http ('\n', ses);
   http ('\x24manager = new ExtractionManager();\n', ses);
-  http ('\x24jobEnWiki = new ExtractionJob (new LiveWikipedia("en"), new ArrayObject(\x24pageTitlesEn));\n', ses);
+  http ('\x24jobEnWiki = new ExtractionJob (new LiveWikipediaCollection("en"), new ArrayObject(\x24pageTitlesEn));\n', ses);
   http ('\n', ses);
   http ('\x24group = new ExtractionGroup(new SimpleDumpDestination());\n', ses);
   http ('\x24group->addExtractor(new LabelExtractor());\n', ses);
   http ('\x24group->addExtractor(new ArticleCategoriesExtractor ());\n', ses);
   http ('\x24group->addExtractor(new PageLinksExtractor ());\n', ses);
   http ('\x24group->addExtractor(new WikipageExtractor ());\n', ses);
-  http ('\x24group->addExtractor(new LongAbstractExtractor ());\n', ses);
-  http ('\x24group->addExtractor(new ShortAbstractExtractor ());\n', ses);
+  http ('\x24group->addExtractor(new ActiveAbstractExtractor ());\n', ses);
   http ('\x24group->addExtractor(new PersondataExtractor ());\n', ses);
   http ('\x24group->addExtractor(new ChemboxExtractor ());\n', ses);
   http ('\x24group->addExtractor(new GeoExtractor ());\n', ses);
