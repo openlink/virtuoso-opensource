@@ -83,6 +83,6 @@
   </refsect1>
   <refsect1 id="seealso_pem_certificates_to_array"><title>See Also</title>
     <para><link linkend="fn_smime_sign">smime_sign</link></para>
-    <para><link linkend="fn_smime_sign">smime_verify</link></para>
+    <para><link linkend="fn_smime_verify">smime_verify</link></para>
   </refsect1>
 </refentry>
