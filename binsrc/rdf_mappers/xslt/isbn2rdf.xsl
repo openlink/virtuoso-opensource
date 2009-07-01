@@ -51,9 +51,7 @@
     <xsl:template match="/">
 	<rdf:RDF>
 	    <rdf:Description rdf:about="{$baseUri}">
-		<rdf:type rdf:resource="&foaf;Document"/>
 		<rdf:type rdf:resource="&bibo;Document"/>
-		<rdf:type rdf:resource="&sioc;Container"/>
 		<xsl:for-each select="ISBNdb/BookList/BookData">
 		    <xsl:variable name="res" select="vi:proxyIRI(concat('http://isbndb.com/d/book/', @book_id, '.html'))"/>
 		    <sioc:container_of rdf:resource="{$res}"/>
