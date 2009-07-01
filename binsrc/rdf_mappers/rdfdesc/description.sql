@@ -257,7 +257,7 @@ again:
        if (http_mime_type (_url) like 'image/%')
 	 http (sprintf ('<a class="uri" %s href="%s"><img src="%s" height="160" border="0"/></a>', rdfa, rdfdesc_http_url (_url), _url));
        else
-       http (sprintf ('<a class="uri" %s href="%s">%s</a>', rdfa, rdfdesc_http_url (_url), rdfdesc_uri_curie(_url, _label)));
+	 http (sprintf ('<a class="uri" %s href="%s">%s</a>', rdfa, rdfdesc_http_url (_url), rdfdesc_uri_curie(_url, _label)));
 
      }
    else if (__tag (_object) = 189)
@@ -309,7 +309,7 @@ again:
        }
        else
        -- CMSB
-       http (_object);
+         http (_object);
        http ('</span>');
        lang := '';
      }
@@ -464,6 +464,37 @@ create procedure virt_proxy_init_about ()
 
   DB.DBA.VHOST_REMOVE (lpath=>'/services/rdf/object.binary');
   DB.DBA.VHOST_DEFINE (lpath=>'/services/rdf/object.binary', ppath=>'/SOAP/Http/RDF_VIEW_GET_BINARY', soap_user=>'PROXY');
+
+  --# the new iris
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_new_page', 1,
+      '/about/id/(http|https|nodeID)/(.*)', vector ('sch', 'g'), 2,
+      '/about/html/%s/%s', vector ('sch', 'g'), null, null, 2, 303, null);
+
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_new_data', 1,
+      '/about/id/(http|https|nodeID)/(.*)', vector ('sch', 'g'), 2,
+      '/about/data/__%U%%3A%%2F%%2F%U', vector ('sch', 'g'), null, '(application/rdf.xml)|(text/rdf.n3)|(application/x-turtle)', 2, 303, null);
+
+  delete from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = 'ext_ahp_rule_list_new';
+  DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '__(.*)', '\x241.xml', 'application/rdf+xml', 0.95, location_hook=>null);
+  DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '__(.*)', '\x241.n3',  'text/rdf+n3', 0.80, location_hook=>null);
+  DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '__(.*)', '\x241.ttl',  'application/x-turtle', 0.70, location_hook=>null);
+
+  DB.DBA.URLREWRITE_CREATE_RULELIST ( 'ext_ahp_rule_list_new', 1, vector ('ext_ahp_rule_new_page', 'ext_ahp_rule_new_data'));
+
+  DB.DBA.VHOST_REMOVE (lpath=>'/about/id');
+  DB.DBA.VHOST_DEFINE (lpath=>'/about/id', ppath=>'/', is_dav=>0, def_page=>'', opts=>vector('url_rewrite', 'ext_ahp_rule_list_new'));
+
+  --# the rdf
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_data_1', 1,
+      '/about/data/(.*)\\.(xml|n3|ttl)\0x24', vector ('url', 'fmt'), 2,
+      '/about?url=%s&force=rdf&output-format=%U', vector ('url', 'fmt'), null, null, 2);
+
+  DB.DBA.URLREWRITE_CREATE_RULELIST ( 'ext_ahp_rule_list_data', 1, vector ('ext_ahp_rule_data_1'));
+
+  DB.DBA.VHOST_REMOVE (lpath=>'/about/data');
+  DB.DBA.VHOST_DEFINE (lpath=>'/about/data', ppath=>'/', is_dav=>0, def_page=>'', opts=>vector('url_rewrite', 'ext_ahp_rule_list_data'));
+
+  EXEC_STMT ('grant execute on  DB.DBA.HTTP_RDF_ACCEPT to PROXY', 0);
 
   registry_set ('DB.DBA.virt_proxy_init_about_state', rdf_virt_proxy_ver ());
 }

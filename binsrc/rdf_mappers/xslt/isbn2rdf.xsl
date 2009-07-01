@@ -24,6 +24,7 @@
 <!DOCTYPE xsl:stylesheet [
 <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY book "http://purl.org/NET/book/vocab#">
 <!ENTITY xsd  "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
@@ -42,6 +43,7 @@
   xmlns:foaf="&foaf;"
   xmlns:sioc="&sioc;"
   xmlns:bibo="&bibo;"
+  xmlns:book="&book;"
   version="1.0">
     <xsl:output method="xml" indent="yes"/>
     <xsl:param name="baseUri" />
@@ -49,9 +51,7 @@
     <xsl:template match="/">
 	<rdf:RDF>
 	    <rdf:Description rdf:about="{$baseUri}">
-		<rdf:type rdf:resource="&foaf;Document"/>
 		<rdf:type rdf:resource="&bibo;Document"/>
-		<rdf:type rdf:resource="&sioc;Container"/>
 		<xsl:for-each select="ISBNdb/BookList/BookData">
 		    <xsl:variable name="res" select="vi:proxyIRI(concat('http://isbndb.com/d/book/', @book_id, '.html'))"/>
 		    <sioc:container_of rdf:resource="{$res}"/>
@@ -68,11 +68,18 @@
     </xsl:template>
 
     <xsl:template match="ISBNdb/BookList/BookData">
+	<rdf:Description rdf:about="{vi:proxyIRI(concat('http://isbndb.com/d/book/', @book_id, '.html'))}">
+		<rdf:type rdf:resource="&book;Book"/>
+	</rdf:Description>
+
 	<bibo:Book rdf:about="{vi:proxyIRI(concat('http://isbndb.com/d/book/', @book_id, '.html'))}">
             <xsl:if test="@isbn">
             <bibo:isbn10>
                 <xsl:value-of select="@isbn"/>
             </bibo:isbn10>
+            <book:isbn>
+                <xsl:value-of select="@isbn"/>
+            </book:isbn>
             </xsl:if>
             <bibo:uri>
                 <xsl:value-of select="concat('http://isbndb.com/d/book/', @book_id, '.html')"/>

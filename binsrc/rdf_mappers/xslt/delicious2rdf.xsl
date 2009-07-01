@@ -28,6 +28,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY book "http://purl.org/NET/book/vocab#">
 <!ENTITY sioct "http://rdfs.org/sioc/types#">
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
 <!ENTITY moat "http://moat-project.org/ns#">
@@ -50,6 +51,7 @@
 	xmlns:twitter="http://www.openlinksw.com/schemas/twitter/"
     xmlns:sioc="&sioc;"
     xmlns:bibo="&bibo;"
+    xmlns:book="&book;"
     xmlns:owl="&owl;"
 	xmlns:scot="&scot;"
 	xmlns:moat="&moat;"
@@ -74,7 +76,7 @@
 	<xsl:template match="suggest">
 
 		<rdf:Description rdf:about="{$baseUri}">
-			<rdf:type rdf:resource="&foaf;Document"/>
+			<rdf:type rdf:resource="&bibo;Document"/>
 			<scot:hasScot rdf:resource="{concat($baseUri, '#tagcloud')}"/>
 			<xsl:for-each select="popular">
 				<sioc:topic rdf:resource="{concat ('http://delicious.com/tag/', .)}"/>
@@ -94,9 +96,7 @@
 		<xsl:if test="$what='user'">
 
 			<rdf:Description rdf:about="{$baseUri}">
-				<rdf:type rdf:resource="&foaf;Document"/>
 				<rdf:type rdf:resource="&bibo;Document"/>
-				<rdf:type rdf:resource="&sioc;Container"/>
 				<dc:title>
 					<xsl:value-of select="title"/>
 				</dc:title>
@@ -122,9 +122,7 @@
 				<xsl:variable name="guid" select="substring-after(substring-before(guid, '#'), 'http://delicious.com/url/') " />
 
 				<!--rdf:Description rdf:about="{vi:proxyIRI($baseUri, '' $guid)}">
-					<rdf:type rdf:resource="&foaf;Document"/>
 					<rdf:type rdf:resource="&bibo;Document"/>
-					<rdf:type rdf:resource="&sioc;Container"/>
 					<dc:title>
 						<xsl:value-of select="title"/>
 					</dc:title>
@@ -278,9 +276,7 @@
 
 		<xsl:if test="$what='url'">
 			<rdf:Description rdf:about="{$baseUri}">
-				<rdf:type rdf:resource="&foaf;Document"/>
 				<rdf:type rdf:resource="&bibo;Document"/>
-				<rdf:type rdf:resource="&sioc;Container"/>
 				<dc:title>
 					<xsl:value-of select="title"/>
 				</dc:title>

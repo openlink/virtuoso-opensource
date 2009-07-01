@@ -51,9 +51,7 @@
 	<rdf:RDF>
 	    <xsl:if test="/results/ROOT/result/*">
 		<rdf:Description rdf:about="{$baseUri}">
-		    <rdf:type rdf:resource="&foaf;Document"/>
 		    <rdf:type rdf:resource="&bibo;Document"/>
-		    <rdf:type rdf:resource="&sioc;Container"/>
 		    <sioc:container_of rdf:resource="{vi:proxyIRI($baseUri)}"/>
 		    <foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
 		    <dcterms:subject rdf:resource="{vi:proxyIRI($baseUri)}"/>

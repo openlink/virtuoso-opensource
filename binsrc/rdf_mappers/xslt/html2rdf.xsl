@@ -56,9 +56,7 @@
 
   <xsl:template match="html/head">
       <rdf:Description rdf:about="{$base}">
-		<rdf:type rdf:resource="&foaf;Document"/>
 		<rdf:type rdf:resource="&bibo;Document"/>
-		<rdf:type rdf:resource="&sioc;Container"/>
 		<xsl:apply-templates select="title|meta"/>
 		<xsl:apply-templates select="//img[@src]"/>
 		<xsl:apply-templates select="//a[@href]"/>

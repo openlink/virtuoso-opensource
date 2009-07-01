@@ -32,6 +32,7 @@
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY audio "http://purl.org/media/audio#">
 <!ENTITY media "http://purl.org/media#">
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -46,6 +47,7 @@
     xmlns:mo="&mo;"
     xmlns:mmd="&mmd;"
     xmlns:dc="&dc;"
+    xmlns:bibo="&bibo;"
     xmlns:audio="&audio;"
     xmlns:media="&media;"
     >
@@ -66,8 +68,7 @@
 
     <xsl:template match="mmd:artist[@type='Group']">
 		<rdf:Description rdf:about="{$baseUri}">
-			<rdf:type rdf:resource="&foaf;Document"/>
-			<rdf:type rdf:resource="&sioc;Container"/>
+			<rdf:type rdf:resource="&bibo;Document"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI (concat($base,'artist/',@id, '.html'))}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI (concat($base,'artist/',@id, '.html'))}"/>
 			<xsl:choose>
@@ -103,8 +104,7 @@
 
     <xsl:template match="mmd:artist[@type='Person']">
 		<rdf:Description rdf:about="{$baseUri}">
-			<rdf:type rdf:resource="&foaf;Document"/>
-			<rdf:type rdf:resource="&sioc;Container"/>
+			<rdf:type rdf:resource="&bibo;Document"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI (concat($base,'artist/',@id, '.html'))}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI (concat($base,'artist/',@id, '.html'))}"/>
 			<xsl:choose>
@@ -134,8 +134,7 @@
 
     <xsl:template match="mmd:release">
 		<rdf:Description rdf:about="{$baseUri}">
-			<rdf:type rdf:resource="&foaf;Document"/>
-			<rdf:type rdf:resource="&sioc;Container"/>
+			<rdf:type rdf:resource="&bibo;Document"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI (concat($base,'release/',@id, '.html'))}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI (concat($base,'release/',@id, '.html'))}"/>
 			<xsl:choose>
@@ -186,8 +185,7 @@
 
     <xsl:template match="mmd:track">
 		<rdf:Description rdf:about="{$baseUri}">
-			<rdf:type rdf:resource="&foaf;Document"/>
-			<rdf:type rdf:resource="&sioc;Container"/>
+			<rdf:type rdf:resource="&bibo;Document"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI (concat($base,'track/',@id, '.html'))}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI (concat($base,'track/',@id, '.html'))}"/>
 			<xsl:choose>

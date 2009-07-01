@@ -139,15 +139,15 @@
 <?vsp
       exec (sprintf ('select "p" as PRED from (sparql select distinct ?p where { graph <%S> { <%S> ?p ?o } }) sp order by 1', _G, _S),
 		null, null, vector (), 0, null, null, h1);
-      while (0 = exec_next (h1, null, null, data))
+      while (0 = exec_next (h1, null, null, data))	
 	{
            declare PRED any;
 	   pred := data[0];
 	   rdfdesc_http_print_l (PRED, odd_position);
 	   exec (sprintf ('sparql select ?o where { graph <%S> { <%S> <%S> ?o } } limit 300', _G, _S, PRED),
 		null, null, vector (), 0, null, null, h2);
-	   while (0 = exec_next (h2, null, null, data))
-	      {
+	   while (0 = exec_next (h2, null, null, data))	
+	      {	
                 declare OBJECT any;
 		OBJECT := data [0];
 		rdfdesc_http_print_r (OBJECT, PRED, true_label, 1);
@@ -160,8 +160,8 @@
       --goto skip_rev;
       exec (sprintf ('select "p" as PRED from (sparql select distinct ?p where { graph <%S> { ?o ?p <%S> } }) sp order by 1', _G, _S),
 		null, null, vector (), 0, null, null, h1);
-      inx := 0;
-      while (0 = exec_next (h1, null, null, data))
+      inx := 0;	
+      while (0 = exec_next (h1, null, null, data))	
 	{
            declare PRED any;
 	   pred := data[0];
@@ -169,8 +169,8 @@
 	   rdfdesc_http_print_l (PRED, odd_position, 1);
 	   exec (sprintf ('sparql select ?s where { graph <%S> { ?s <%S> <%S> } } limit 300', _G, PRED, _S),
 		null, null, vector (), 0, null, null, h2);
-	   while (0 = exec_next (h2, null, null, data))
-	      {
+	   while (0 = exec_next (h2, null, null, data))	
+	      {	
                 declare OBJECT any;
 		OBJECT := data [0];
 		rdfdesc_http_print_r (OBJECT, PRED, true_label, 0);
@@ -191,13 +191,9 @@ skip_rev:
 <!-- footer -->
     <div id="footer">
       <div id="ft_t">
-        Explore using:
-        <a href="/ode/?uri=<?vsp http_url (page_resource_uri); ?>">OpenLink Data Explorer</a> |
-        <a href="http://dataviewer.zitgist.com/?uri=<?vsp http_url (proxy_iri); ?>">Zitgist Data Viewer</a> |
-        <a href="http://beckr.org/marbles?uri=<?vsp http_url (proxy_iri); ?>">Marbles</a> |
-        <a href="http://www4.wiwiss.fu-berlin.de/rdf_browser/?browse_uri=<?vsp http_url (proxy_iri); ?>">DISCO</a> |
-        <a href="http://dig.csail.mit.edu/2005/ajar/release/tabulator/0.8/tab.html?uri=<?vsp http_url (proxy_iri); ?>" >Tabulator</a>
-        &nbsp; &nbsp; Raw Data in:
+        Explore Linked Data using:
+        <a href="/ode/?uri=<?vsp http_url (page_resource_uri); ?>">OpenLink Data Explorer</a>
+        &nbsp; &nbsp; Raw Linked Data formats:
         <a href="<?=rdf_link || '&output=n3'?>">N3</a> |
         <a href="<?=rdf_link || '&output=rdf'?>">RDF/XML</a>
         &nbsp; &nbsp;<a href="http://ode.openlinksw.com/">About</a>&nbsp; &nbsp;

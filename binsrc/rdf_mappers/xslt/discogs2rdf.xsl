@@ -65,9 +65,7 @@
 
     <xsl:template match="resp[@stat='ok']/artist">
 		<rdf:Description rdf:about="{$baseUri}">
-			<rdf:type rdf:resource="&foaf;Document"/>
 			<rdf:type rdf:resource="&bibo;Document"/>
-			<rdf:type rdf:resource="&sioc;Container"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI (concat($base,'artist/',translate(name, ' ', '+') ))}"/>
 			<foaf:topic rdf:resource="{vi:proxyIRI (concat($base,'artist/',translate(name, ' ', '+')))}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI (concat($base,'artist/',translate(name, ' ', '+')))}"/>
@@ -87,9 +85,7 @@
 
     <xsl:template match="resp[@stat='ok']/release|release">
 		<rdf:Description rdf:about="{concat($base,'release/',@id)}">
-			<rdf:type rdf:resource="&foaf;Document"/>
 			<rdf:type rdf:resource="&bibo;Document"/>
-			<rdf:type rdf:resource="&sioc;Container"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI (concat($base,'release/',@id))}"/>
 			<foaf:topic rdf:resource="{vi:proxyIRI (concat($base,'release/',@id))}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI (concat($base,'release/',@id))}"/>
@@ -122,9 +118,7 @@
 
     <xsl:template match="track">
 		<rdf:Description rdf:about="{concat($base,'track/', ../../@id, '/', position)}">
-			<rdf:type rdf:resource="&foaf;Document"/>
 			<rdf:type rdf:resource="&bibo;Document"/>
-			<rdf:type rdf:resource="&sioc;Container"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI (concat($base,'track/', ../../@id, '/', position))}"/>
 			<foaf:topic rdf:resource="{vi:proxyIRI (concat($base,'track/', ../../@id, '/', position))}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI (concat($base,'track/', ../../@id, '/', position))}"/>
@@ -155,9 +149,7 @@
 
     <xsl:template match="resp[@stat='ok']/label">
 		<rdf:Description rdf:about="{concat($base,'label/', name)}">
-			<rdf:type rdf:resource="&foaf;Document"/>
 			<rdf:type rdf:resource="&bibo;Document"/>
-			<rdf:type rdf:resource="&sioc;Container"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI (concat($base,'label/', name))}"/>
 			<foaf:topic rdf:resource="{vi:proxyIRI (concat($base,'label/', name))}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI (concat($base,'label/', name))}"/>

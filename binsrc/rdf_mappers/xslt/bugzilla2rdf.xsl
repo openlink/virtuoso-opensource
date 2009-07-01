@@ -63,9 +63,7 @@
     </xsl:template>
     <xsl:template match="issuezilla/issue">
 		<rdf:Description rdf:about="{$baseUri}">
-			<rdf:type rdf:resource="&foaf;Document"/>
 			<rdf:type rdf:resource="&bibo;Document"/>
-			<rdf:type rdf:resource="&sioc;Container"/>
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
 		</rdf:Description>
 		<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
@@ -107,9 +105,7 @@
     </xsl:template>
     <xsl:template match="bugzilla/bug">
 		<rdf:Description rdf:about="{$baseUri}">
-			<rdf:type rdf:resource="&foaf;Document"/>
 			<rdf:type rdf:resource="&bibo;Document"/>
-			<rdf:type rdf:resource="&sioc;Container"/>
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
 		</rdf:Description>
 		<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">    	

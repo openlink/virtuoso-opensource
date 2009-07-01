@@ -92,9 +92,7 @@
     <xsl:template match="/">
 	<rdf:RDF>
 	    <rdf:Description rdf:about="{$baseUri}">
-		<rdf:type rdf:resource="&foaf;Document"/>
 		<rdf:type rdf:resource="&bibo;Document"/>
-		<rdf:type rdf:resource="&sioc;Container"/>
 		<xsl:variable name="res_num" select="count(/results)"/>
 		<xsl:for-each select="/results">
 		    <xsl:variable name="space">

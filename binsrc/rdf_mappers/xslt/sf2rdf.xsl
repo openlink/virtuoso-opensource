@@ -37,6 +37,7 @@
 <!ENTITY content "http://purl.org/rss/1.0/modules/content/">
 <!ENTITY wf "http://www.w3.org/2005/01/wf/flow#">
 <!ENTITY sf "urn:sobject.enterprise.soap.sforce.com">
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
 ]>
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -51,6 +52,7 @@
   xmlns:dcterms="http://purl.org/dc/terms/"
   xmlns:sioct="&sioct;"
   xmlns:sioc="&sioc;"
+  xmlns:bibo="&bibo;"
   xmlns:xsd="&xsd;"
   xmlns:sf="&sf;"
   version="1.0">
@@ -59,8 +61,7 @@
     <xsl:template match="/">
 		<rdf:RDF>
 			<rdf:Description rdf:about="{$baseUri}">
-				<rdf:type rdf:resource="&foaf;Document"/>
-				<rdf:type rdf:resource="&sioc;Container"/>
+				<rdf:type rdf:resource="&bibo;Document"/>
 				<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}" />
 			</rdf:Description>
 			<xsl:apply-templates select="retrieveResponse/result"/>

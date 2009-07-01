@@ -73,7 +73,7 @@
 	<xsl:template match="tapi/document">
 
 		<rdf:Description rdf:about="{$baseUri}">
-			<rdf:type rdf:resource="&foaf;Document"/>
+			<rdf:type rdf:resource="&bibo;Document"/>
 			<xsl:for-each select="item">
 				<xsl:variable name="resourceURI">
 					<xsl:choose>
