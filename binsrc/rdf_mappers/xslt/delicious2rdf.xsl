@@ -74,7 +74,7 @@
 	<xsl:template match="suggest">
 
 		<rdf:Description rdf:about="{$baseUri}">
-			<rdf:type rdf:resource="&foaf;Document"/>
+			<rdf:type rdf:resource="&bibo;Document"/>
 			<scot:hasScot rdf:resource="{concat($baseUri, '#tagcloud')}"/>
 			<xsl:for-each select="popular">
 				<sioc:topic rdf:resource="{concat ('http://delicious.com/tag/', .)}"/>
@@ -94,9 +94,7 @@
 		<xsl:if test="$what='user'">
 
 			<rdf:Description rdf:about="{$baseUri}">
-				<rdf:type rdf:resource="&foaf;Document"/>
 				<rdf:type rdf:resource="&bibo;Document"/>
-				<rdf:type rdf:resource="&sioc;Container"/>
 				<dc:title>
 					<xsl:value-of select="title"/>
 				</dc:title>
@@ -122,9 +120,7 @@
 				<xsl:variable name="guid" select="substring-after(substring-before(guid, '#'), 'http://delicious.com/url/') " />
 
 				<!--rdf:Description rdf:about="{vi:proxyIRI($baseUri, '' $guid)}">
-					<rdf:type rdf:resource="&foaf;Document"/>
 					<rdf:type rdf:resource="&bibo;Document"/>
-					<rdf:type rdf:resource="&sioc;Container"/>
 					<dc:title>
 						<xsl:value-of select="title"/>
 					</dc:title>
@@ -278,9 +274,7 @@
 
 		<xsl:if test="$what='url'">
 			<rdf:Description rdf:about="{$baseUri}">
-				<rdf:type rdf:resource="&foaf;Document"/>
 				<rdf:type rdf:resource="&bibo;Document"/>
-				<rdf:type rdf:resource="&sioc;Container"/>
 				<dc:title>
 					<xsl:value-of select="title"/>
 				</dc:title>

@@ -58,9 +58,7 @@
 			<xsl:choose>
 				<xsl:when test="$what = 'thread2'">
 					<rdf:Description rdf:about="{a:feed/a:link[@rel='alternate']/@href}">
-						<rdf:type rdf:resource="&foaf;Document"/>
 						<rdf:type rdf:resource="&bibo;Document"/>
-						<rdf:type rdf:resource="&sioc;Container"/>
 						<rdf:type rdf:resource="&sioct;Thread"/>
 						<dc:title>
 							<xsl:value-of select="a:feed/a:title"/>
@@ -101,9 +99,7 @@
 				</xsl:when>
 				<xsl:when test="$what = 'thread1'">
 					<rdf:Description rdf:about="{$baseUri}">
-						<rdf:type rdf:resource="&foaf;Document"/>
 						<rdf:type rdf:resource="&bibo;Document"/>
-						<rdf:type rdf:resource="&sioc;Container"/>
 						<dc:title>
 							<xsl:value-of select="a:feed/a:title"/>
 						</dc:title>
@@ -205,9 +201,7 @@
 		<xsl:variable name="about" select="vi:proxyIRI($baseUri)" />
 		<rdf:Description rdf:about="{$baseUri}">
 			<rdf:type rdf:resource="&sioct;MessageBoard"/>
-			<rdf:type rdf:resource="&foaf;Document"/>
 			<rdf:type rdf:resource="&bibo;Document"/>
-			<rdf:type rdf:resource="&sioc;Container"/>
 			<xsl:for-each select="status">
 				<xsl:variable name="res" select="vi:proxyIRI(concat('http://twitter.com/', user/screen_name, '/status/', id))"/>
 				<sioc:container_of rdf:resource="{$res}"/>

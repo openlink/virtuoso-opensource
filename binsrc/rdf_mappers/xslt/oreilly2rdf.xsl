@@ -63,10 +63,7 @@
 
   <xsl:template match="html/head">
       <rdf:Description rdf:about="{$base}">
-		<rdf:type rdf:resource="&foaf;Document"/>
 		<rdf:type rdf:resource="&bibo;Document"/>
-		<rdf:type rdf:resource="&sioc;Container"/>
-		<rdf:type rdf:resource="&sioc;Container"/>
 		<sioc:container_of rdf:resource="{vi:proxyIRI($base)}"/>
 		<foaf:topic rdf:resource="{vi:proxyIRI($base)}"/>
 		<dcterms:subject rdf:resource="{vi:proxyIRI($base)}"/>

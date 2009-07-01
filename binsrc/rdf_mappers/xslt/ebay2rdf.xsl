@@ -60,9 +60,7 @@
     <xsl:template match="/">
 	<rdf:RDF>
 	    <rdf:Description rdf:about="{$resourceURL}">
-		<rdf:type rdf:resource="&foaf;Document"/>
 		<rdf:type rdf:resource="&bibo;Document"/>
-		<rdf:type rdf:resource="&sioc;Container"/>
 		<sioc:container_of rdf:resource="{vi:proxyIRI ($resourceURL)}"/>
 		<foaf:primaryTopic rdf:resource="{vi:proxyIRI ($resourceURL)}"/>
 		<dcterms:subject rdf:resource="{vi:proxyIRI ($resourceURL)}"/>

@@ -67,9 +67,7 @@
 
     <xsl:template match="html">
 		<rdf:Description rdf:about="{$baseUri}">
-			<rdf:type rdf:resource="&foaf;Document"/>
 			<rdf:type rdf:resource="&bibo;Document"/>
-			<rdf:type rdf:resource="&sioc;Container"/>
 		</rdf:Description>
 		<xsl:if test="head[@typeof != '']">
 			<rdf:Description rdf:about="{$baseUri}">

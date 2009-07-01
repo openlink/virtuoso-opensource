@@ -33,6 +33,7 @@
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
 ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:rdf="&rdf;"
@@ -41,6 +42,7 @@
     xmlns:dcterms="&dcterms;"
     xmlns:a="http://www.w3.org/2005/Atom"
     xmlns:sioc="&sioc;"
+    xmlns:bibo="&bibo;"
     xmlns:foaf="&foaf;"
     xmlns:g="http://base.google.com/ns/1.0"
     xmlns:gb="http://www.openlinksw.com/schemas/google-base#"
@@ -59,8 +61,7 @@
 
     <xsl:template match="a:entry[g:*]" priority="1">
 	<rdf:Description rdf:about="{link[@rel='self']/@href}">
-	    <rdf:type rdf:resource="&sioc;Container"/>
-	    <rdf:type rdf:resource="&foaf;Document"/>
+	    <rdf:type rdf:resource="&bibo;Document"/>
 	    <foaf:topic rdf:resource="{vi:proxyIRI (link[@rel='self']/@href)}"/>
 	</rdf:Description>
 	<rdf:Description rdf:about="{vi:proxyIRI (link[@rel='self']/@href)}">

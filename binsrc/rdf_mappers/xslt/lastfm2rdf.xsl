@@ -113,8 +113,7 @@
 
 	<xsl:template match="lfm[@status='ok']/artist">
 		<rdf:Description rdf:about="{$baseUri}">
-			<rdf:type rdf:resource="&foaf;Document"/>
-			<rdf:type rdf:resource="&sioc;Container"/>
+			<rdf:type rdf:resource="&bibo;Document"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI(url)}"/>
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(url)}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI(url)}"/>
@@ -124,8 +123,7 @@
 
    	<xsl:template match="lfm[@status='ok']/similarartists">
 		<rdf:Description rdf:about="{$baseUri}">
-			<rdf:type rdf:resource="&foaf;Document"/>
-			<rdf:type rdf:resource="&sioc;Container"/>
+			<rdf:type rdf:resource="&bibo;Document"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/>
 			<!--foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/-->
 			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/>
@@ -147,8 +145,7 @@
 
 	<xsl:template match="lfm[@status='ok']/track">
 		<rdf:Description rdf:about="{$baseUri}">
-			<rdf:type rdf:resource="&foaf;Document"/>
-			<rdf:type rdf:resource="&sioc;Container"/>
+			<rdf:type rdf:resource="&bibo;Document"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI(url)}"/>
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(url)}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI(url)}"/>
@@ -158,8 +155,7 @@
 
    	<xsl:template match="lfm[@status='ok']/toptracks[@artist]">
 		<rdf:Description rdf:about="{$baseUri}">
-			<rdf:type rdf:resource="&foaf;Document"/>
-			<rdf:type rdf:resource="&sioc;Container"/>
+			<rdf:type rdf:resource="&bibo;Document"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/>
 			<!--foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/-->
 			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/>
@@ -174,8 +170,7 @@
 
    	<xsl:template match="lfm[@status='ok']/similartracks">
 		<rdf:Description rdf:about="{$baseUri}">
-			<rdf:type rdf:resource="&foaf;Document"/>
-			<rdf:type rdf:resource="&sioc;Container"/>
+			<rdf:type rdf:resource="&bibo;Document"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, 'music/', @artist, '/_/', @track))}"/>
 			<!--foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'music/', @artist, '/_/', @track))}"/-->
 			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'music/', @artist, '/_/', @track))}"/>
@@ -197,8 +192,7 @@
 
 	<xsl:template match="lfm[@status='ok']/album">
 		<rdf:Description rdf:about="{$baseUri}">
-			<rdf:type rdf:resource="&foaf;Document"/>
-			<rdf:type rdf:resource="&sioc;Container"/>
+			<rdf:type rdf:resource="&bibo;Document"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI(url)}"/>
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(url)}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI(url)}"/>
@@ -208,8 +202,7 @@
 
 	<xsl:template match="lfm[@status='ok']/albums">
 		<rdf:Description rdf:about="{$baseUri}">
-			<rdf:type rdf:resource="&foaf;Document"/>
-			<rdf:type rdf:resource="&sioc;Container"/>
+			<rdf:type rdf:resource="&bibo;Document"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
@@ -226,8 +219,7 @@
 
    	<xsl:template match="lfm[@status='ok']/toptracks[@user]">
 		<rdf:Description rdf:about="{$baseUri}">
-			<rdf:type rdf:resource="&foaf;Document"/>
-			<rdf:type rdf:resource="&sioc;Container"/>
+			<rdf:type rdf:resource="&bibo;Document"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
@@ -244,8 +236,7 @@
 
 	<xsl:template match="lfm[@status='ok']/playlists[@user]">
 		<rdf:Description rdf:about="{$baseUri}">
-			<rdf:type rdf:resource="&foaf;Document"/>
-			<rdf:type rdf:resource="&sioc;Container"/>
+			<rdf:type rdf:resource="&bibo;Document"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
@@ -262,8 +253,7 @@
 
    	<xsl:template match="lfm[@status='ok']/topartists[@user]">
 		<rdf:Description rdf:about="{$baseUri}">
-			<rdf:type rdf:resource="&foaf;Document"/>
-			<rdf:type rdf:resource="&sioc;Container"/>
+			<rdf:type rdf:resource="&bibo;Document"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
@@ -280,8 +270,7 @@
 
    	<xsl:template match="lfm[@status='ok']/topalbums[@artist]">
 		<rdf:Description rdf:about="{$baseUri}">
-			<rdf:type rdf:resource="&foaf;Document"/>
-			<rdf:type rdf:resource="&sioc;Container"/>
+			<rdf:type rdf:resource="&bibo;Document"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/>
 			<!--foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/-->
 			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/>
@@ -296,8 +285,7 @@
 
    	<xsl:template match="lfm[@status='ok']/topalbums[@user]">
 		<rdf:Description rdf:about="{$baseUri}">
-			<rdf:type rdf:resource="&foaf;Document"/>
-			<rdf:type rdf:resource="&sioc;Container"/>
+			<rdf:type rdf:resource="&bibo;Document"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
@@ -314,8 +302,7 @@
 
 	<xsl:template match="lfm[@status='ok']/event">
 		<rdf:Description rdf:about="{$baseUri}">
-			<rdf:type rdf:resource="&foaf;Document"/>
-			<rdf:type rdf:resource="&sioc;Container"/>
+			<rdf:type rdf:resource="&bibo;Document"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI(url)}"/>
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(url)}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI(url)}"/>
@@ -325,8 +312,7 @@
 
    	<xsl:template match="lfm[@status='ok']/events">
 		<rdf:Description rdf:about="{$baseUri}">
-			<rdf:type rdf:resource="&foaf;Document"/>
-			<rdf:type rdf:resource="&sioc;Container"/>
+			<rdf:type rdf:resource="&bibo;Document"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/>
 			<!--foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/-->
 			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/>
@@ -341,8 +327,7 @@
 
 	<xsl:template match="lfm[@status='ok']/user">
 		<rdf:Description rdf:about="{$baseUri}">
-			<rdf:type rdf:resource="&foaf;Document"/>
-			<rdf:type rdf:resource="&sioc;Container"/>
+			<rdf:type rdf:resource="&bibo;Document"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI(url)}"/>
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(url)}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI(url)}"/>
@@ -352,8 +337,7 @@
 
    	<xsl:template match="lfm[@status='ok']/friends">
 		<rdf:Description rdf:about="{$baseUri}">
-			<rdf:type rdf:resource="&foaf;Document"/>
-			<rdf:type rdf:resource="&sioc;Container"/>
+			<rdf:type rdf:resource="&bibo;Document"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, 'user/', @for))}"/>
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'user/', @for))}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'user/', @for))}"/>
@@ -616,8 +600,7 @@
 
     <xsl:template match="profile">
    		<rdf:Description rdf:about="{$baseUri}">
-			<rdf:type rdf:resource="&foaf;Document"/>
-			<rdf:type rdf:resource="&sioc;Container"/>
+			<rdf:type rdf:resource="&bibo;Document"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri)}"/>
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI($baseUri)}"/>

@@ -60,12 +60,11 @@
 			<xsl:variable name="pos" select="concat('nytimes_', position())" />
 			<rdf:Description rdf:about="{concat($baseUri,'#', $pos)}">
 				<opl:providedBy>
-					<foaf:Organization rdf:about="http://www.nytimes.com">
+					<foaf:Organization rdf:about="http://www.nytimes.com#this">
 						<foaf:name>The New York Times</foaf:name>
 						<foaf:homepage rdf:resource="http://www.nytimes.com"/>
 					</foaf:Organization>
 				</opl:providedBy>
-				<rdf:type rdf:resource="&foaf;Document"/>
 				<rdf:type rdf:resource="&bibo;Document"/>
 				<dc:title>
 					<xsl:value-of select="title" />
