@@ -648,6 +648,7 @@ sqlo_natural_join_cond (sqlo_t * so, op_table_t * left_ot,
       else
 	sqlc_new_error (so->so_sc->sc_cc, "37000", "SQ067",
 	    "Explicit join condition not allowed in natural join");
+      tree->_.join.is_natural = 0;
       tree->_.join.cond = ctree;
     }
   else
@@ -1162,10 +1163,33 @@ sqlo_dt_has_vcol_tables (sqlo_t *so, op_table_t *dot)
 
 
 int
-sqlo_expand_dt (sqlo_t *so, ST *tree, int inx, op_table_t *ot, dk_set_t *new_froms)
+sqlo_join_exp_inlineable (ST * exp)
 {
-  ST *texp = tree->_.select_stmt.table_exp;
-  ST *from =  texp->_.table_exp.from[inx];
+  /* any join exp that does not have a full oj */
+  if (ST_P (exp, JOINED_TABLE)
+      && OJ_FULL == exp->_.join.type)
+    return 0;
+  if (ST_P (exp, SELECT_STMT))
+    return 1;
+  else if (ARRAYP (exp))
+    {
+      int inx;
+      DO_BOX (ST *, s, inx, exp)
+	{
+	  if (!sqlo_join_exp_inlineable (s))
+	    return 0;
+	}
+      END_DO_BOX;
+      return 1;
+    }
+  else 
+    return 1;
+}
+
+
+int
+sqlo_dt_inlineable (sqlo_t *so, ST *tree, ST * from, op_table_t *ot, int single_only)
+{
   ST *dtexp = from->_.table_ref.table;
   ST *dt_orig = ST_P (dtexp, SELECT_STMT) ? dtexp->_.select_stmt.table_exp : NULL;
 
@@ -1187,10 +1211,14 @@ sqlo_expand_dt (sqlo_t *so, ST *tree, int inx, op_table_t *ot, dk_set_t *new_fro
 	return 0;
       DO_BOX (ST *, dt_from, dt_inx, dt_orig->_.table_exp.from)
 	{
+	  if (single_only && dt_inx > 0)
+	    return 0;
 	  while (ST_P (dt_from, TABLE_REF))
 	    dt_from = dt_from->_.table_ref.table;
-	  if (ST_P (dt_from, JOINED_TABLE) &&
-	      tree->_.join.type != J_INNER)
+	  if (single_only && ST_P (dt_from, JOINED_TABLE))
+	    return 0;
+	  if (ST_P (dt_from, JOINED_TABLE)
+	      && !sqlo_join_exp_inlineable (dt_from))
 	    return 0;
 	}
       END_DO_BOX;
@@ -1200,8 +1228,21 @@ sqlo_expand_dt (sqlo_t *so, ST *tree, int inx, op_table_t *ot, dk_set_t *new_fro
 		dot->ot_prefix, dot->ot_new_prefix,
 		dot->ot_table ? dot->ot_table->tb_name : "(NONE)"));
 	}
+      return 1;
+    }
+  return 0;
+}
 
-      texp->_.table_exp.from[inx] = NULL;
+
+void
+sqlo_expand_dt (sqlo_t *so, ST *tree, ST ** from_ret, op_table_t *ot, int is_in_jt, dk_set_t *new_froms)
+{
+  /* inline the dt in *from so it is  inlined in the from clause of tree.  The where of the dt merges into the where of the enclosing.  If the dt is inside a joined table, the list of tables becomes a cross join with the where inside the where of the enclosing.  If the inlined dt is in a from commalist, flatten the dt's tables  into the from */
+  ST *texp = tree->_.select_stmt.table_exp;
+  ST *from = *from_ret;
+  ST *dtexp = from->_.table_ref.table;
+  op_table_t *dot = sqlo_find_dt (so, dtexp);
+
       sqlo_replace_col_refs_prefixes (so, (ST *) tree->_.select_stmt.selection, dot->ot_new_prefix,
 	  (ST **) dtexp->_.select_stmt.selection, 0);
       sqlo_replace_col_refs_prefixes (so, tree->_.select_stmt.table_exp, dot->ot_new_prefix,
@@ -1211,7 +1252,6 @@ sqlo_expand_dt (sqlo_t *so, ST *tree, int inx, op_table_t *ot, dk_set_t *new_fro
 	t_st_and (dot->ot_fun_refs ?
 	    &texp->_.table_exp.having :
 	    &texp->_.table_exp.where, dtexp->_.select_stmt.table_exp->_.table_exp.where);
-      texp->_.table_exp.from[inx] = dtexp->_.select_stmt.table_exp->_.table_exp.from[0];
       t_set_delete (&so->so_tables, dot);
       t_set_delete (&ot->ot_from_ots, dot);
       ot->ot_from_ots = dk_set_conc (ot->ot_from_ots, dot->ot_from_ots);
@@ -1225,7 +1265,10 @@ sqlo_expand_dt (sqlo_t *so, ST *tree, int inx, op_table_t *ot, dk_set_t *new_fro
       if (dot->ot_join_cond)
 	t_st_and (&ot->ot_join_cond, dot->ot_join_cond);
 
-      t_set_push (new_froms, texp->_.table_exp.from[inx]);
+  if (is_in_jt)
+    {
+      /* make the tables of the dt into a join exp. */
+      ST * res_exp = dtexp->_.select_stmt.table_exp->_.table_exp.from[0];
       if (BOX_ELEMENTS (dtexp->_.select_stmt.table_exp->_.table_exp.from) > 1)
 	{
 	  int n_new = BOX_ELEMENTS (dtexp->_.select_stmt.table_exp->_.table_exp.from);
@@ -1234,13 +1277,102 @@ sqlo_expand_dt (sqlo_t *so, ST *tree, int inx, op_table_t *ot, dk_set_t *new_fro
 	  for (inx2 = 1; inx2 < n_new; inx2++)
 	    {
 	      ST *felt = dtexp->_.select_stmt.table_exp->_.table_exp.from[inx2];
+	      res_exp = listst (6, JOINED_TABLE, (ptrlong)0, J_CROSS, res_exp, felt, NULL);
+	    }
+	}
+      *from_ret = res_exp;
+    }
+  else
+    {
+      t_set_push (new_froms, (void*)dtexp->_.select_stmt.table_exp->_.table_exp.from[0]);
+      if (BOX_ELEMENTS (dtexp->_.select_stmt.table_exp->_.table_exp.from) > 1)
+	{
+	  int n_new = BOX_ELEMENTS (dtexp->_.select_stmt.table_exp->_.table_exp.from);
+	  int inx2;
+	  for (inx2 = 1; inx2 < n_new; inx2++)
+	    {
+	      ST *felt = dtexp->_.select_stmt.table_exp->_.table_exp.from[inx2];
 	      t_set_push (new_froms, felt);
 	    }
 	}
-      return 1;
     }
-  else
+}
+
+
+int
+sqlo_inline_jt (sqlo_t * so, ST * tree, ST * exp, op_table_t * ot)
+{
+  /* take a tree of joined tables and inline dt's where can.  Ret 1 if anything changed */
+  int inx, any = 0;
+  if (ST_P (exp, JOINED_TABLE))
+    {
+      if (OJ_FULL == exp->_.join.type)
     return 0;
+      if (sqlo_dt_inlineable (so, tree, exp->_.join.left, ot, 0))
+	{
+	  sqlo_expand_dt (so, tree, &exp->_.join.left, ot, 1, NULL);
+	  any = 1;
+	}
+      else if (ST_P (exp->_.join.left, TABLE_REF) && ST_P (exp->_.join.left->_.table_ref.table, JOINED_TABLE))
+	any += sqlo_inline_jt (so, tree, exp->_.join.left->_.table_ref.table, ot);
+      if (OJ_LEFT == exp->_.join.type 
+	  && sqlo_dt_inlineable (so, tree, exp->_.join.right, ot, 1))
+	{
+	  /* left oj with single table dt to the right. */
+	  ST * texp = exp->_.join.right->_.table_ref.table->_.select_stmt.table_exp;
+	  t_st_and (&exp->_.join.cond, texp->_.table_exp.where);
+	  texp->_.table_exp.where = NULL;
+	  sqlo_expand_dt (so, tree, &exp->_.join.right, ot, 1, NULL);
+	  any++;
+	}
+      return any;
+    }
+  if (ST_P (exp, SELECT_STMT))
+    return 0;
+  else  if (ARRAYP (exp))
+    {
+      DO_BOX (ST *, s, inx, (ST**)exp)
+	{
+	  any += sqlo_inline_jt (so, tree, s, ot);
+	}
+      END_DO_BOX;
+      return any;
+    }
+  return 0;
+}
+
+
+int
+sqlo_expand_dt_1 (sqlo_t * so, ST * tree, op_table_t * ot)
+{
+  int inx, has_dt_expanded = 0;
+  dk_set_t new_froms = NULL;
+  ST * texp = tree->_.select_stmt.table_exp;
+  DO_BOX (ST *, from, inx, texp->_.table_exp.from)
+    {
+      if (ST_P (from, DERIVED_TABLE))
+	{
+	  if (!sqlo_dt_inlineable (so, tree, from, ot, 0))
+	    t_set_push (&new_froms, from);
+	  else
+	    {
+	      sqlo_expand_dt (so, tree, &texp->_.table_exp.from[inx], ot, 0, &new_froms);
+	      has_dt_expanded = 1;
+	    }
+	}
+      else if (ST_P (from, TABLE_REF) && ST_P (from->_.table_ref.table, JOINED_TABLE))
+	{
+	  int is_exp = sqlo_inline_jt (so, tree, from, ot);
+	  t_set_push (&new_froms, (void*)from);
+	  has_dt_expanded += is_exp;
+	}
+      else 
+	t_set_push (&new_froms, (void*)from);
+    }
+  END_DO_BOX;
+  if (has_dt_expanded)
+    texp->_.table_exp.from = (ST**)t_list_to_array (dk_set_nreverse (new_froms));
+  return has_dt_expanded;
 }
 #endif
 
@@ -1744,7 +1876,7 @@ sqlo_expand_jts (sqlo_t *so, ST **ptree, ST *select_stmt, int was_top)
     {
       res += sqlo_expand_jts (so, &tree->_.join.left, select_stmt, was_top);
       res += sqlo_expand_jts (so, &tree->_.join.right, select_stmt, was_top);
-      if (0 == res && J_INNER == tree->_.join.type)
+      if (0 == res && (J_INNER == tree->_.join.type || J_CROSS == tree->_.join.type))
 	return res;
       if (OJ_LEFT != tree->_.join.type)
       res += sqlo_jt_dt_wrap (so, &tree->_.join.left, select_stmt, was_top, 1);
@@ -2347,7 +2479,6 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
   op_table_t * old_dt = so->so_this_dt;
   dk_set_t res = NULL;
 #ifndef NO_DT_EXPANSION
-  dk_set_t new_froms = NULL;
 #endif
   TNEW (op_table_t, ot);
   TNEW (sql_scope_t, sco);
@@ -2474,24 +2605,11 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
       if (texp &&
 	  !sqlo_opt_value (ST_OPT (texp, caddr_t *, _.table_exp.opts), OPT_ORDER))
 	{
-	  DO_BOX (ST *, from, inx, texp->_.table_exp.from)
-	    {
-	      if (ST_P (from, DERIVED_TABLE))
-		{
-		  if (!sqlo_expand_dt (so, tree, inx, ot, &new_froms))
-		    t_set_push (&new_froms, from);
-		  else
-		    has_dt_expanded = 1;
-		}
-	      else
-		t_set_push (&new_froms, from);
-	    }
-	  END_DO_BOX;
+	  has_dt_expanded = sqlo_expand_dt_1 (so, tree, ot);
 	}
       if (has_dt_expanded)
 	{
 	  char old_rescope = so->so_is_rescope;
-	  texp->_.table_exp.from = (ST **) t_list_to_array (dk_set_nreverse (new_froms));
 	  so->so_this_dt = old_dt;
 	  so->so_is_rescope = 1;
 	  so->so_scope = so->so_scope->sco_super;
