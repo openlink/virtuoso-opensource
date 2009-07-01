@@ -46,5 +46,6 @@ copy testsuite4.jar bloor.pdf
 %JAVA_HOME%\bin\java -classpath %CLASSPATH%;virtjdbc4ssl.jar;testsuite4.jar testsuite.test2276 %1%
 %JAVA_HOME%\bin\java -classpath %CLASSPATH%;virtjdbc4ssl.jar;testsuite4.jar testsuite.TestTimeUpdate %1%
 %JAVA_HOME%\bin\java -classpath %CLASSPATH%;virtjdbc4ssl.jar;testsuite4.jar testsuite.SPRgetColumns %1%
+%JAVA_HOME%\bin\java -classpath %CLASSPATH%;virtjdbc4ssl.jar;testsuite4.jar testsuite.TestMoreRes %1%
 rem GK: not for now : no URL parsing
 rem %JAVA_HOME%\bin\java -classpath %CLASSPATH%;virtjdbc4ssl.jar;testsuite4.jar testsuite.TestDataSource %1%

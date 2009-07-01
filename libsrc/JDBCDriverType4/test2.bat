@@ -46,3 +46,4 @@ copy testsuite2.jar bloor.pdf
 %JAVA_HOME%\bin\java -classpath %CLASSPATH%;virtjdbc2.jar;testsuite2.jar testsuite.test2276 %1%
 %JAVA_HOME%\bin\java -classpath %CLASSPATH%;virtjdbc2.jar;testsuite2.jar testsuite.TestTimeUpdate %1%
 %JAVA_HOME%\bin\java -classpath %CLASSPATH%;virtjdbc2.jar;testsuite2.jar testsuite.SPRgetColumns %1%
+%JAVA_HOME%\bin\java -classpath %CLASSPATH%;virtjdbc2.jar;testsuite2.jar testsuite.TestMoreRes %1%

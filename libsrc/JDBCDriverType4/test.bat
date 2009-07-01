@@ -41,3 +41,4 @@ echo "............. Test the JDBC 1.2 driver"
 %JAVA_HOME%\bin\java -classpath %CLASSPATH%;..\classes\virtjdbc.jar;testsuite.jar testsuite.TestNumeric %1%
 %JAVA_HOME%\bin\java -classpath %CLASSPATH%;..\classes\virtjdbc.jar;testsuite.jar testsuite.test2276 %1%
 %JAVA_HOME%\bin\java -classpath %CLASSPATH%;..\classes\virtjdbc.jar;testsuite.jar testsuite.TestTimeUpdate %1%
+%JAVA_HOME%\bin\java -classpath %CLASSPATH%;..\classes\virtjdbc.jar;testsuite.jar testsuite.TestMoreRes %1%

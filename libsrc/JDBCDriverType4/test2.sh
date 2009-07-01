@@ -57,6 +57,7 @@ diff bloor.pdf out.pdf
 $JAVA -classpath $CLASSPATH:virtjdbc2.jar:testsuite2.jar testsuite.test2276 $1
 $JAVA -classpath $CLASSPATH:virtjdbc2.jar:testsuite2.jar testsuite.TestTimeUpdate $1
 $JAVA -classpath $CLASSPATH:virtjdbc2.jar:testsuite2.jar testsuite.SPRgetColumns $1
+$JAVA -classpath $CLASSPATH:virtjdbc2.jar:testsuite2.jar testsuite.TestMoreRes $1
 #echo "............. Test the JDBC 2.0 driver with SSL"
 #$JAVA -classpath $CLASSPATHSSL:virtjdbc2ssl.jar:testsuite2.jar testsuite.TestClean $2
 #$JAVA -classpath $CLASSPATHSSL:virtjdbc2ssl.jar:testsuite2.jar testsuite.TestURL $2
