@@ -300,8 +300,9 @@
           if (id <> -1)
           {
             update WA_USER_FAVORITES
-               set WUF_LABEL = trim (params [N+1]),
-                   WUF_URI = trim (get_keyword ('f_fld_2_'||suffix, params, ''))
+               set WUF_TYPE = trim (params [N+1]),
+                   WUF_LABEL = trim (get_keyword ('f_fld_2_'||suffix, params, '')),
+                   WUF_URI = trim (get_keyword ('f_fld_3_'||suffix, params, ''))
              where WUF_ID = id;
             IDf := vector_concat (IDf, vector (id));
           }
@@ -390,8 +391,8 @@
           id := cast (get_keyword ('f_fld_0_'||suffix, params, '-1') as integer);
           if (id = -1)
           {
-            insert into WA_USER_FAVORITES ( WUF_LABEL, WUF_URI, WUF_U_ID)
-              values (trim (params [N+1]), trim (get_keyword ('f_fld_2_'||suffix, params, '')), self.u_id);
+            insert into WA_USER_FAVORITES ( WUF_TYPE, WUF_LABEL, WUF_URI, WUF_U_ID)
+              values (trim (params [N+1]), trim (get_keyword ('f_fld_2_'||suffix, params, '')), trim (get_keyword ('f_fld_3_'||suffix, params, '')), self.u_id);
           }
         }
       }
@@ -1302,10 +1303,13 @@
               <td width="800px">
                 <table id="f_tbl" class="listing">
                   <tr class="listing_header_row">
-                    <th width="50%">
+                    <th width="10%">
+                      Type
+                    </th>
+                    <th width="45%">
                       Description
                     </th>
-                    <th width="50%">
+                    <th width="45%">
                       URI
                     </th>
                     <th width="80px">
@@ -1316,16 +1320,25 @@
                     declare N integer;
 
                     N := 0;
-                    for select WUF_ID, WUF_LABEL, WUF_URI from WA_USER_FAVORITES where WUF_U_ID = self.u_id do
+                    for select WUF_ID, WUF_TYPE, WUF_LABEL, WUF_URI from WA_USER_FAVORITES where WUF_U_ID = self.u_id do
                     {
                   ?>
                   <tr id="f_tr_<?V N ?>">
-                    <td id="f_th_<?V N ?>">
+                    <td id="f_td_<?V N ?>">
                       <input type="hidden" id="f_fld_0_<?V N ?>" name="f_fld_0_<?V N ?>" value="<?V WUF_ID ?>" />
-                      <input type="text" id="f_fld_1_<?V N ?>" name="f_fld_1_<?V N ?>" value="<?V WUF_LABEL ?>" style="width: 95%;" />
+                		  <![CDATA[
+                		    <script type="text/javascript">
+                		    <?vsp
+                          http (sprintf ('ODSInitArray.push ( function (){OAT.Loader.loadFeatures(["combolist"], function() {updateRowCombo5(\'f_td_%d\', \'f_fld_1_%d\', {mode: 5, value: \'%s\'});});})', N, N, WUF_TYPE));
+                		    ?>
+                		    </script>
+                		  ]]>
                     </td>
                     <td>
-                      <input type="text" id="f_fld_2_<?V N ?>" name="f_fld_2_<?V N ?>" value="<?V WUF_URI ?>" style="width: 95%;" />
+                      <input type="text" id="f_fld_2_<?V N ?>" name="f_fld_2_<?V N ?>" value="<?V WUF_LABEL ?>" style="width: 95%;" />
+                    </td>
+                    <td>
+                      <input type="text" id="f_fld_3_<?V N ?>" name="f_fld_3_<?V N ?>" value="<?V WUF_URI ?>" style="width: 95%;" />
                     </td>
                     <td>
                       <input type="button" value="Remove" onclick="javascript: updateRow('f', <?V N ?>);" />
@@ -1334,13 +1347,13 @@
                   <?vsp
                       N := N + 1;
                     }
-                    http (sprintf ('<tr id="f_tr_no" style="display: %s"><td colspan="3"><b>No Favorite Things</b></td></tr>', case when N = 0 then '' else 'none' end));
+                    http (sprintf ('<tr id="f_tr_no" style="display: %s"><td colspan="4"><b>No Favorite Things</b></td></tr>', case when N = 0 then '' else 'none' end));
                   ?>
                 </table>
                 <input type="hidden" id="f_no" name="f_no" value="<?V N ?>" />
               </td>
               <td valign="top" nowrap="1">
-                <input type="button" value="Add" onclick="javascript: updateRow('f', null, {fld_1: {}, fld_2: {}});" />
+                <input type="button" value="Add" onclick="javascript: updateRow('f', null, {fld_1: {mode: 5}, fld_2: {}, fld_3: {}});" />
                 <br />
                 <vm:u-prop-select name="sel_44" value="self.sav44" />
               </td>

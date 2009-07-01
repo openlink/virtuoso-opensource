@@ -866,17 +866,16 @@ CmdUtils.CreateCommand({
 CmdUtils.CreateCommand({
   name: "ods-create-user-wish",
   takes: {"wishName": noun_arb_text},
-  modifiers: {"type": noun_arb_text, "comment": noun_arb_text},
+  modifiers: {"comment": noun_arb_text},
   homepage: "http://myopenlink.net/ods/",
   icon: "http://www.openlinksw.com/favicon.ico",
   author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
-  help: "Type ods-create-user-wish &lt;wishName&gt; type &lt;Wants|Has&gt; comment &lt;wishComment&gt;",
+  help: "Type ods-create-user-wish &lt;wishName&gt; comment &lt;wishComment&gt;",
   execute: function (wishName, modifiers) {
     try {
       checkParameter(wishName.text, "wishName");
       var params = {wishName: wishName.text};
-      addParameter(modifiers, "type", params, "wishType", true);
       addParameter(modifiers, "comment", params, "wishComment");
       odsExecute("user.wish.new", params);
     } catch (ex) {
@@ -898,6 +897,49 @@ CmdUtils.CreateCommand({
       checkParameter(wishName.text, "wishName");
       var params = {wishName: wishName.text};
       odsExecute("user.wish.delete", params);
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-create-user-wish-property",
+  takes: {"wishName": noun_arb_text},
+  modifiers: {"property": noun_arb_text, "value": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-create-user-wish-property &lt;wishName&gt; property &lt;wishProperty&gt; value &lt;wishPropertyValue&gt;",
+  execute: function (wishName, modifiers) {
+    try {
+      checkParameter(wishName.text, "wishName");
+      var params = {wishName: wishName.text};
+      addParameter(modifiers, "property", params, "wishProperty", true);
+      addParameter(modifiers, "value", params, "wishPropertyValue");
+      odsExecute("user.wish.property.new", params);
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-user-wish-property",
+  takes: {"wishName": noun_arb_text},
+  modifiers: {"property": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-delete-user-wish-property &lt;wishName&gt; property &lt;wishProperty&gt;",
+  execute: function (wishName, modifiers) {
+    try {
+      checkParameter(wishName.text, "wishName");
+      var params = {wishName: wishName.text};
+      addParameter(modifiers, "property", params, "wishProperty", true);
+      odsExecute("user.wish.property.delete", params);
     } catch (ex) {
       odsDisplayMessage(ex);
     }

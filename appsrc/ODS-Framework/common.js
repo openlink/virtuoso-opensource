@@ -450,6 +450,10 @@ function updateCell (td, prefix, fldName, No, optionObject)
   {
 	  updateRowCombo4(td, fldName, optionObject);
   }
+  else if (optionObject.mode == 5)
+  {
+	  updateRowCombo5(td, fldName, optionObject);
+  }
   else
   {
 	  updateInput(td, fldName, optionObject);
@@ -608,6 +612,20 @@ function updateRowCombo4 (elm, fldName, fldOptions)
   updateRowComboOption2(cc, fldOptions.value, 'bio:Birth', 'bio:Birth');
   updateRowComboOption2(cc, fldOptions.value, 'bio:Death', 'bio:Death');
   updateRowComboOption2(cc, fldOptions.value, 'bio:Marriage', 'bio:Marriage');
+
+  var elm = $(elm);
+  elm.appendChild(cc);
+}
+
+function updateRowCombo5 (elm, fldName, fldOptions)
+{
+	var cc = OAT.Dom.create("select");
+  cc.name = fldName;
+  cc.id = fldName;
+  updateRowComboOption2(cc, fldOptions.value, 'Book', 'text/*');
+  updateRowComboOption2(cc, fldOptions.value, 'Image', 'image/*');
+  updateRowComboOption2(cc, fldOptions.value, 'Music', 'audio/*');
+  updateRowComboOption2(cc, fldOptions.value, 'Video', 'video/*');
 
   var elm = $(elm);
   elm.appendChild(cc);

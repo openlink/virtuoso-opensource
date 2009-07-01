@@ -1318,7 +1318,6 @@ create procedure ODS.ODS_API."user.offer.property.delete" (
 
 create procedure ODS.ODS_API."user.wish.new" (
   in wishName varchar,
-  in wishType varchar,
   in wishComment varchar := null) __soap_http 'text/xml'
 {
   declare uname varchar;
@@ -1332,18 +1331,9 @@ create procedure ODS.ODS_API."user.wish.new" (
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
 
-  if (wishType <> 'wl:%')
-  {
-    if (lcase (wishType) = 'has')
-      wishType := 'wl:has';
-    if (lcase (wishType) = 'wants')
-      wishType := 'wl:wants';
-  }
-  if (wishType not in ('wl:wants', 'wl:has'))
-		return ods_serialize_sql_error ('37000', 'Bad property type.');
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
-  insert into DB.DBA.WA_USER_WISHLIST (WUWL_U_ID, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTY)
-    values (_u_id, wishName, wishComment, wishType);
+  insert into DB.DBA.WA_USER_WISHLIST (WUWL_U_ID, WUWL_BARTER, WUWL_COMMENT)
+    values (_u_id, wishName, wishComment);
 
   rc := (select max (WUWL_ID) from DB.DBA.WA_USER_WISHLIST);
   return ods_serialize_int_res (rc);
@@ -1371,6 +1361,88 @@ create procedure ODS.ODS_API."user.wish.delete" (
      and WUWL_BARTER = wishName;
   rc := 1;
   return ods_serialize_int_res (rc);
+}
+;
+
+create procedure ODS.ODS_API."user.wish.property.new" (
+  in wishName varchar,
+  in wishProperty varchar,
+  in wishPropertyValue varchar) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc integer;
+  declare _u_id, notFound integer;
+  declare oldData, newData any;
+
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  if (not exists (select 1 from DB.DBA.WA_USER_WISHLIST where WUWL_U_ID = _u_id and WUWL_BARTER = wishName))
+		return ods_serialize_sql_error ('37000', 'The item is not found');
+
+  notFound := 1;
+  wishProperty := trim (wishProperty);
+  wishPropertyValue := coalesce (trim (wishPropertyValue), '');
+  newData := '';
+  oldData := (select WUWL_PROPERTIES from DB.DBA.WA_USER_WISHLIST where WUWL_U_ID = _u_id and WUWL_BARTER = wishName);
+  for (select property, label from DB.DBA.WA_USER_INTERESTS (txt) (property varchar, label varchar) P where txt = oldData) do
+  {
+    if (property = wishProperty)
+    {
+      notFound := 0;
+      newData := newData || wishProperty || ';' || wishPropertyValue || '\n';
+    } else {
+      newData := newData || property || ';' || label || '\n';
+    }
+  }
+  if (notFound)
+    newData := newData || wishProperty || ';' || wishPropertyValue || '\n';
+  update DB.DBA.WA_USER_WISHLIST
+     set WUWL_PROPERTIES = newData
+   where WUWL_U_ID = _u_id
+     and WUWL_BARTER = wishName;
+  return ods_serialize_int_res (1);
+}
+;
+
+create procedure ODS.ODS_API."user.wish.property.delete" (
+  in wishName varchar,
+  in wishProperty varchar) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc integer;
+  declare _u_id integer;
+  declare oldData, newData any;
+
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  if (not exists (select 1 from DB.DBA.WA_USER_WISHLIST where WUWL_U_ID = _u_id and WUWL_BARTER = wishName))
+		return ods_serialize_sql_error ('37000', 'The item is not found');
+
+  wishProperty := trim (wishProperty);
+  newData := '';
+  oldData := (select WUWL_PROPERTIES from DB.DBA.WA_USER_WISHLIST where WUWL_U_ID = _u_id and WUWL_BARTER = wishName);
+  for (select property, label from DB.DBA.WA_USER_INTERESTS (txt) (property varchar, label varchar) P where txt = oldData) do
+  {
+    if (property <> wishProperty)
+      newData := newData || property || ';' || label || '\n';
+  }
+  update DB.DBA.WA_USER_WISHLIST
+     set WUWL_PROPERTIES = newData
+   where WUWL_U_ID = _u_id
+     and WUWL_BARTER = wishName;
+  return ods_serialize_int_res (1);
 }
 ;
 
@@ -1427,6 +1499,7 @@ create procedure ODS.ODS_API.get_foaf_data_array (
 
   set_user_id ('dba');
   _identity := trim (foafIRI);
+  _loc_idn := trim (foafIRI);
   V := rfc1808_parse_uri (_identity);
   if (is_https_ctx () and cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal') = '1' and V[1] = registry_get ('URIQADefaultHost'))
     {
@@ -2157,6 +2230,8 @@ grant execute on ODS.ODS_API."user.offer.property.new" to ODS_API;
 grant execute on ODS.ODS_API."user.offer.property.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.wish.new" to ODS_API;
 grant execute on ODS.ODS_API."user.wish.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.wish.property.new" to ODS_API;
+grant execute on ODS.ODS_API."user.wish.property.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.getFOAFData" to ODS_API;
 grant execute on ODS.ODS_API."user.getFOAFSSLData" to ODS_API;
 
