@@ -1248,24 +1248,11 @@ create procedure sioc_user_bioevent (in graph_iri varchar, in user_iri varchar, 
     DB.DBA.RDF_QUAD_URI_L (graph_iri, bio_iri, bio_iri ('place'), bioPlace);
 };
 
-create procedure sioc_user_offerlist (in user_id integer, in ol_id integer, in ol_offer varchar, in ol_comment varchar, in ol_properties varchar)
+create procedure sioc_goodRelation_details (in graph_iri varchar, in forum_iri varchar, in user_iri varchar, in obj any)
 {
   declare N, M integer;
-  declare user_name any;
-  declare graph_iri, forum_iri, user_iri, iri, tmp, obj, products, product any;
-  declare exit handler for sqlstate '*'
-{
-    sioc_log_message (__SQL_MESSAGE);
-    return;
-  };
-  graph_iri := get_graph ();
-  user_iri := user_iri (user_id);
-  user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id);
-  forum_iri := offerlist_forum_iri (ol_offer, user_name);
-  sioc_forum (graph_iri, graph_iri, forum_iri, ol_offer, 'OfferList', ol_comment, null, user_name);
-  DB.DBA.RDF_QUAD_URI (graph_iri, forum_iri, rdf_iri ('type'), offer_iri ('BusinessEntity'));
+  declare tmp, product, products, iri any;
 
-  obj := deserialize (ol_properties);
   products := get_keyword ('products', obj);
   for (N := 0; N < length (products); N := N + 1)
   {
@@ -1344,6 +1331,28 @@ create procedure sioc_user_offerlist (in user_id integer, in ol_id integer, in o
   }
 };
 
+create procedure sioc_user_offerlist (in user_id integer, in ol_id integer, in ol_offer varchar, in ol_comment varchar, in ol_properties varchar)
+{
+  declare user_name any;
+  declare graph_iri, forum_iri, user_iri, iri, obj any;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  graph_iri := get_graph ();
+  user_iri := user_iri (user_id);
+  user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id);
+  forum_iri := offerlist_forum_iri (ol_offer, user_name);
+  if (DB.DBA.is_empty_or_null (trim (ol_comment)))
+    ol_comment := ol_offer;
+  sioc_forum (graph_iri, graph_iri, forum_iri, ol_offer, 'OfferList', ol_comment, null, user_name);
+  DB.DBA.RDF_QUAD_URI (graph_iri, forum_iri, rdf_iri ('type'), offer_iri ('BusinessEntity'));
+
+  obj := deserialize (ol_properties);
+  sioc_goodRelation_details (graph_iri, forum_iri, user_iri, obj);
+};
+
 create procedure sioc_user_offerlist_delete (in user_id integer, in ol_id integer, in ol_offer varchar, in ol_comment varchar, in ol_properties varchar)
 {
   declare N integer;
@@ -1368,10 +1377,10 @@ create procedure sioc_user_offerlist_delete (in user_id integer, in ol_id intege
   }
 };
 
-create procedure sioc_user_wishlist (in user_id integer, in wl_id integer, in wl_wishlist varchar, in wl_comment varchar, in wl_property varchar)
+create procedure sioc_user_wishlist (in user_id integer, in wl_id integer, in wl_wish varchar, in wl_comment varchar, in wl_properties varchar)
 {
   declare user_name any;
-  declare graph_iri, forum_iri, user_iri, iri any;
+  declare graph_iri, forum_iri, user_iri, iri, obj any;
   declare exit handler for sqlstate '*'
 {
     sioc_log_message (__SQL_MESSAGE);
@@ -1380,17 +1389,41 @@ create procedure sioc_user_wishlist (in user_id integer, in wl_id integer, in wl
   graph_iri := get_graph ();
   user_iri := user_iri (user_id);
   user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id);
-  forum_iri := wishlist_forum_iri (forum_name (user_name, 'WishList'), user_name);
+  forum_iri := wishlist_forum_iri (wl_wish, user_name);
+  if (DB.DBA.is_empty_or_null (trim (wl_comment)))
+    wl_comment := wl_wish;
+  sioc_forum (graph_iri, graph_iri, forum_iri, wl_wish, 'WishList', wl_comment, null, user_name);
+  DB.DBA.RDF_QUAD_URI (graph_iri, forum_iri, rdf_iri ('type'), offer_iri ('BusinessEntity'));
 
-  iri := wishlist_item_iri (forum_iri, wl_id);
-  delete_quad_s_or_o (graph_iri, iri, iri);
-
-  ods_sioc_post (graph_iri, iri, forum_iri, user_iri, wl_wishlist, null, null);
-  if (length (wl_comment))
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dc_iri ('description'), wl_comment);
+  obj := deserialize (wl_properties);
+  sioc_goodRelation_details (graph_iri, forum_iri, user_iri, obj);
 };
 
-create procedure sioc_user_favorite (in user_id integer, in f_id integer, in f_label varchar, in f_uri varchar)
+create procedure sioc_user_wishlist_delete (in user_id integer, in wl_id integer, in wl_wish varchar, in wl_comment varchar, in wl_properties varchar)
+{
+  declare N integer;
+  declare user_name any;
+  declare graph_iri, forum_iri, iri, obj, products any;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id);
+  graph_iri := get_graph ();
+  forum_iri := wishlist_forum_iri (wl_wish, user_name);
+  delete_quad_s_or_o (graph_iri, forum_iri, forum_iri);
+
+  obj := deserialize (wl_properties);
+  products := get_keyword ('products', obj);
+  for (N := 0; N < length (products); N := N + 1)
+  {
+    iri := wishlist_item_iri (forum_iri, N+1);
+    delete_quad_s_or_o (graph_iri, iri, iri);
+  }
+};
+
+create procedure sioc_user_favorite (in user_id integer, in f_id integer, in f_type varchar, in f_label varchar, in f_uri varchar)
 {
   declare user_name any;
   declare graph_iri, forum_iri, user_iri, iri any;
@@ -1408,6 +1441,8 @@ create procedure sioc_user_favorite (in user_id integer, in f_id integer, in f_l
   delete_quad_s_or_o (graph_iri, iri, iri);
 
   ods_sioc_post (graph_iri, iri, forum_iri, user_iri, f_label, null, null);
+  if (length (f_type))
+    DB.DBA.RDF_QUAD_URI (graph_iri, iri, dc_iri ('format'), f_type);
   if (length (f_uri))
     DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdfs_iri ('seeAlso'), f_uri);
 };
@@ -1651,7 +1686,7 @@ create procedure ods_sioc_post (
 		    do_ann := 1;
 		    creator := arr[0];
 		  }
-      else if (arr[1] not in ('socialnetwork', 'offerlist', 'wishlist'))
+      else if (arr[1] not in ('socialnetwork', 'offerlist', 'wishlist', 'favoritethings'))
 	    {
 		do_atom := 1;
 	    }
@@ -2149,21 +2184,12 @@ create procedure fill_ods_sioc (in doall int := 0)
 		    {
           sioc_user_offerlist (WUOL_U_ID, WUOL_ID, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES);
 		    }
-		  notCreated := 1;
-		  for select WUWL_U_ID, WUWL_ID, WUWL_BARTER, WUWL_PROPERTY, WUWL_COMMENT from DB.DBA.WA_USER_WISHLIST where WUWL_U_ID = U_ID do
-		    {
-		      -- create WishList Container
-		      if (notCreated)
+		  for select WUWL_U_ID, WUWL_ID, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTIES from DB.DBA.WA_USER_WISHLIST where WUWL_U_ID = U_ID do
 		      {
-            forum_name := forum_name (U_NAME, 'WishList');
-      	    forum_iri := wishlist_forum_iri (forum_name, U_NAME);
-		        sioc_forum (graph_iri, graph_iri, forum_iri, forum_name, 'WishList', null, null, U_NAME);
-		        notCreated := 0;
-		      }
-          sioc_user_wishlist (WUWL_U_ID, WUWL_ID, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTY);
+          sioc_user_wishlist (WUWL_U_ID, WUWL_ID, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTIES);
 		    }
 		  notCreated := 1;
-		  for select WUF_U_ID, WUF_ID, WUF_LABEL, WUF_URI from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = U_ID do
+		  for select WUF_U_ID, WUF_ID, WUF_TYPE, WUF_LABEL, WUF_URI from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = U_ID do
 		    {
 		      -- create FavoriteThings Container
 		      if (notCreated)
@@ -2173,7 +2199,7 @@ create procedure fill_ods_sioc (in doall int := 0)
 		        sioc_forum (graph_iri, graph_iri, forum_iri, forum_name, 'FavoriteThings', null, null, U_NAME);
 		        notCreated := 0;
 		      }
-          sioc_user_favorite (WUF_U_ID, WUF_ID, WUF_LABEL, WUF_URI);
+          sioc_user_favorite (WUF_U_ID, WUF_ID, WUF_TYPE, WUF_LABEL, WUF_URI);
 		    }
 		  if (length (WAUI_SKYPE))
 		    sioc_user_account (graph_iri, iri, WAUI_SKYPE, 'skype:'||WAUI_SKYPE||'?chat');
@@ -2932,23 +2958,12 @@ create trigger WA_USER_OFFERLIST_SIOC_D after delete on DB.DBA.WA_USER_OFFERLIST
 -- Wish List
 create trigger WA_USER_WISHLIST_SIOC_I after insert on DB.DBA.WA_USER_WISHLIST referencing new as N
 {
-  declare user_id integer;
-  declare user_name, forum_name, graph_iri, forum_iri any;
   declare exit handler for sqlstate '*'
   {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
-  user_id := N.WUWL_U_ID;
-  if ((select count (WUWL_ID) from DB.DBA.WA_USER_WISHLIST where WUWL_U_ID = user_id) = 1)
-  {
-  graph_iri := get_graph ();
-    user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id);
-    forum_name := forum_name (user_name, 'WishList');
-    forum_iri := wishlist_forum_iri (forum_name, user_name);
-    sioc_forum (graph_iri, graph_iri, forum_iri, forum_name, 'WishList', null, null, user_name);
-  }
-  sioc_user_wishlist (N.WUWL_U_ID, N.WUWL_ID, N.WUWL_BARTER, N.WUWL_COMMENT, N.WUWL_PROPERTY);
+  sioc_user_wishlist (N.WUWL_U_ID, N.WUWL_ID, N.WUWL_BARTER, N.WUWL_COMMENT, N.WUWL_PROPERTIES);
 };
 
 create trigger WA_USER_WISHLIST_SIOC_U after update on DB.DBA.WA_USER_WISHLIST referencing old as O, new as N
@@ -2958,26 +2973,18 @@ create trigger WA_USER_WISHLIST_SIOC_U after update on DB.DBA.WA_USER_WISHLIST r
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
-  sioc_user_wishlist (N.WUWL_U_ID, N.WUWL_ID, N.WUWL_BARTER, N.WUWL_COMMENT, N.WUWL_PROPERTY);
+  sioc_user_wishlist_delete (O.WUWL_U_ID, O.WUWL_ID, O.WUWL_BARTER, O.WUWL_COMMENT, O.WUWL_PROPERTIES);
+  sioc_user_wishlist (N.WUWL_U_ID, N.WUWL_ID, N.WUWL_BARTER, N.WUWL_COMMENT, N.WUWL_PROPERTIES);
 };
 
 create trigger WA_USER_WISHLIST_SIOC_D after delete on DB.DBA.WA_USER_WISHLIST referencing old as O
 {
-  declare user_id, user_name any;
-  declare graph_iri, forum_iri, iri any;
   declare exit handler for sqlstate '*'
   {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
-  user_id := O.WUWL_U_ID;
-  user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id);
-  graph_iri := get_graph ();
-  forum_iri := wishlist_forum_iri (forum_name (user_name, 'WishList'), user_name);
-  iri := offerlist_item_iri (forum_iri, O.WUWL_ID);
-  delete_quad_s_or_o (graph_iri, iri, iri);
-  if ((select count (WUWL_ID) from DB.DBA.WA_USER_WISHLIST where WUWL_U_ID = user_id) = 0)
-    SIOC..delete_quad_s_or_o (graph_iri, forum_iri, forum_iri);
+  sioc_user_wishlist_delete (O.WUWL_U_ID, O.WUWL_ID, O.WUWL_BARTER, O.WUWL_COMMENT, O.WUWL_PROPERTIES);
 };
 
 -- Favorite Things
@@ -2999,7 +3006,7 @@ create trigger WA_USER_FAVORITES_SIOC_I after insert on DB.DBA.WA_USER_FAVORITES
     forum_iri := favorite_forum_iri (forum_name, user_name);
     sioc_forum (graph_iri, graph_iri, forum_iri, forum_name, 'FavoriteThings', null, null, user_name);
   }
-  sioc_user_favorite (N.WUF_U_ID, N.WUF_ID, N.WUF_LABEL, N.WUF_URI);
+  sioc_user_favorite (N.WUF_U_ID, N.WUF_ID, N.WUF_TYPE, N.WUF_LABEL, N.WUF_URI);
 };
 
 create trigger WA_USER_FAVORITES_SIOC_U after update on DB.DBA.WA_USER_FAVORITES referencing old as O, new as N
@@ -3009,7 +3016,7 @@ create trigger WA_USER_FAVORITES_SIOC_U after update on DB.DBA.WA_USER_FAVORITES
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
-  sioc_user_favorite (N.WUF_U_ID, N.WUF_ID, N.WUF_LABEL, N.WUF_URI);
+  sioc_user_favorite (N.WUF_U_ID, N.WUF_ID, N.WUF_TYPE, N.WUF_LABEL, N.WUF_URI);
 };
 
 create trigger WA_USER_FAVORITES_SIOC_D after delete on DB.DBA.WA_USER_FAVORITES referencing old as O
@@ -4145,12 +4152,9 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 
   part := sprintf (
 	' CONSTRUCT {
-	    ?person gr:offers ?ol_iri .
-	    ?ol_iri ?ol_property ?ol_label .
-	    ?person wl:wants ?wl_iri .
-	    ?wl_iri ?wl_property ?wl_label .
-	    ?person wl:has ?wl2_iri .
-	    ?wl2_iri ?wl2_property ?wl2_label .
+	    ?person foaf:made ?container .
+	    ?container foaf:maker ?person .
+	    ?container rdfs:label ?label .
 	  }
 	  WHERE
 	  {
@@ -4158,12 +4162,20 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    {
 	      {
 	        ?person foaf:holdsAccount <%s/%s#this> .
-	        optional { ?person gr:offers ?ol_iri . ?ol_iri ?ol_property ?ol_label .} .
-	        optional { ?person wl:wants ?wl_iri . ?wl_iri ?wl_property ?wl_label .} .
-	        optional { ?person wl:has ?wl2_iri . ?wl2_iri ?wl2_property ?wl2_label .} .
+          ?container foaf:maker ?person. ?container a sioct:OfferList. ?container rdfs:label ?label.
+	      }
+        union  
+        {
+	        ?person foaf:holdsAccount <%s/%s#this> .
+          ?container foaf:maker ?person. ?container a sioct:WishList. ?container rdfs:label ?label.
+	    }
+        union  
+        {
+	        ?person foaf:holdsAccount <%s/%s#this> .
+          ?container foaf:maker ?person. ?container a sioct:FavoriteThings. ?container rdfs:label ?label.
 	      }
 	    }
-	  }', graph, graph, u_name);
+	  }', graph, graph, u_name, graph, u_name, graph, u_name);
 
   qry := decl || part;
   qrs [7] := qry;

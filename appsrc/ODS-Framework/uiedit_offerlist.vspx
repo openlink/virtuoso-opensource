@@ -28,22 +28,6 @@
         style="index.xsl"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
 	      doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-  <v:method name="addProperty" arglist="in obj any, in objProperty varchar, in paramsProperty varchar, in params any">
-    <![CDATA[
-      declare tmp ay;
-
-      tmp := trim (get_keyword (paramsProperty, params));
-      if (not is_empty_or_null (tmp))
-        obj := vector_concat (obj, vector (objProperty, tmp));
-      return obj;
-    ]]>
-  </v:method>
-  <v:method name="jsonObject" arglist="">
-    <![CDATA[
-      return subseq (soap_box_structure ('x', 1), 0, 2);
-    ]]>
-  </v:method>
-
   <v:on-init>
     if (isnull (self.ol_properties))
       self.ol_properties := self.jsonObject();
@@ -52,52 +36,6 @@
 	<v:variable name="delete_ol" type="integer" default="null" param-name="del" />
 	<v:variable name="ol_properties" type="any" default="null" />
 	<v:form type="simple" method="POST" xhtml_enctype="multipart/form-data" action="uiedit.vspx?page=6">
-    <script type="text/javascript">
-      <![CDATA[
-        function addProductLine(No, obj)
-        {
-          var tr = $('tr_X');
-          if (tr)
-          {
-            var S = tr.innerHTML;
-            if (!No)
-              No = parseInt($('no_X').value)+1;
-            S = S.replace('<b>Product</b>', '<b>Product #'+No+'</b>');
-            var suffix = '_'+No;
-            var tr = OAT.Dom.create('tr');
-            tr.id = 'tr' + suffix;
-            tr.innerHTML = S.replace(/_X/g, suffix);
-            $('tbl_X').appendChild(tr);
-            $('no_X').value = No;
-            if (No != 1)
-              OAT.Dom.show ('remove_X');
-            $('description'+suffix).value = '';
-            if (obj)
-            {
-              $('description'+suffix).value = obj.description;
-              $('offerURI'+suffix).value = obj.offerURI;
-              $('sell'+suffix).checked = obj.sell;
-              $('repair'+suffix).checked = obj.repair;
-              $('maintain'+suffix).checked = obj.maintain;
-              $('lease'+suffix).checked = obj.lease;
-              $('disposal'+suffix).checked = obj.disposal;
-              $('buy'+suffix).checked = obj.buy;
-              $('service'+suffix).checked = obj.service;
-            }
-          }
-        }
-        function removeProductLine()
-        {
-          var No = parseInt($('no_X').value);
-          var suffix = '_'+No;
-          OAT.Dom.unlink('tr'+suffix);
-          No -= 1;
-          if (No == 1)
-            OAT.Dom.hide ('remove_X');
-          $('no_X').value = No;
-        }
-      ]]>
-    </script>
     <h3>Offer Lists (GoodRelations Ontology)</h3>
 	  <table class="listing" rules="groups">
 	    <tr class="listing_header_row">
@@ -191,11 +129,11 @@
         				<legend><b>Product</b></legend>
         	      <fieldset>
         				  <legend><b>
-        				    Describe the type of products you are offering
+        				    Describe the type of products
         				  </b></legend>
         <table>
           <tr>
-          				    <th valign="top" width="150px">
+          				    <th valign="top" width="100px">
           		          Short description
                     </th>
           		        <td>
@@ -204,7 +142,7 @@
                     </tr>
           				  <tr>
           				    <th valign="top">
-          		          Web page for the offering
+          		          Web page
                     </th>
           		        <td>
                         <input name="offerURI_X" type="text" id="offerURI_X" size="40" value="http://"/>
@@ -322,29 +260,17 @@
     			  Eligible types of business partners: <b>check all that apply</b>
   	      </b></legend>
   	      <label>
-            <v:check-box name="endUsers" xhtml_id="endUsers" value="1">
-              <v:before-render>
-                control.ufl_selected := cast (get_keyword ('endUsers', self.ol_properties) as integer);
-              </v:before-render>
-            </v:check-box>
+  	        <?vsp self.checkBox ('endUsers', self.ol_properties); ?>
             End Users
   				</label>
   	      <br />
   	      <label>
-            <v:check-box name="public" xhtml_id="public" value="1">
-              <v:before-render>
-                control.ufl_selected := cast (get_keyword ('public', self.ol_properties) as integer);
-              </v:before-render>
-            </v:check-box>
+  	        <?vsp self.checkBox ('public', self.ol_properties); ?>
   				  Public institutions
   				</label>
   	      <br />
   	      <label>
-            <v:check-box name="reseller" xhtml_id="reseller" value="1">
-              <v:before-render>
-                control.ufl_selected := cast (get_keyword ('reseller', self.ol_properties) as integer);
-              </v:before-render>
-            </v:check-box>
+  	        <?vsp self.checkBox ('reseller', self.ol_properties); ?>
             Resellers
   				</label>
   	    </fieldset>
@@ -354,79 +280,43 @@
 	        Specify the payment options (optional)
 	      </b></legend>
 	      <label>
-          <v:check-box name="mastercard" xhtml_id="mastercard" value="1">
-            <v:before-render>
-              control.ufl_selected := cast (get_keyword ('mastercard', self.ol_properties) as integer);
-            </v:before-render>
-          </v:check-box>
+ 	        <?vsp self.checkBox ('mastercard', self.ol_properties); ?>
   				MasterCard
   			</label>
 	      <label>
-          <v:check-box name="visa" xhtml_id="visa" value="1">
-            <v:before-render>
-              control.ufl_selected := cast (get_keyword ('visa', self.ol_properties) as integer);
-            </v:before-render>
-          </v:check-box>
+ 	        <?vsp self.checkBox ('visa', self.ol_properties); ?>
   				VISA
   			</label>
 	      <label>
-          <v:check-box name="amex" xhtml_id="amex" value="1">
-            <v:before-render>
-              control.ufl_selected := cast (get_keyword ('amex', self.ol_properties) as integer);
-            </v:before-render>
-          </v:check-box>
+ 	        <?vsp self.checkBox ('amex', self.ol_properties); ?>
   				American Express
   			</label>
 	      <label>
-          <v:check-box name="diners" xhtml_id="diners" value="1">
-            <v:before-render>
-              control.ufl_selected := cast (get_keyword ('diners', self.ol_properties) as integer);
-            </v:before-render>
-          </v:check-box>
+ 	        <?vsp self.checkBox ('diners', self.ol_properties); ?>
   				Diner's Club
   			</label>
 	      <label>
-          <v:check-box name="discover2" xhtml_id="discover2" value="1">
-            <v:before-render>
-              control.ufl_selected := cast (get_keyword ('discover', self.ol_properties) as integer);
-            </v:before-render>
-          </v:check-box>
+ 	        <?vsp self.checkBox ('discover', self.ol_properties); ?>
   				Discover
 				</label>
 	      <br />
 	      <label>
-          <v:check-box name="openinvoice" xhtml_id="openinvoice" value="1">
-            <v:before-render>
-              control.ufl_selected := cast (get_keyword ('openinvoice', self.ol_properties) as integer);
-            </v:before-render>
-          </v:check-box>
+ 	        <?vsp self.checkBox ('openinvoice', self.ol_properties); ?>
   				Open invoice
 				</label>
 	      <br />
 	      <label>
-          <v:check-box name="cash" xhtml_id="cash" value="1">
-            <v:before-render>
-              control.ufl_selected := cast (get_keyword ('cash', self.ol_properties) as integer);
-            </v:before-render>
-          </v:check-box>
+ 	        <?vsp self.checkBox ('cash', self.ol_properties); ?>
   				Cash on delivery
 				</label>
 	      <br />
 	      <label>
-          <v:check-box name="check" xhtml_id="check" value="1">
-            <v:before-render>
-              control.ufl_selected := cast (get_keyword ('check', self.ol_properties) as integer);
-            </v:before-render>
-          </v:check-box>
+ 	        <?vsp self.checkBox ('check', self.ol_properties); ?>
   				Check in advance
 				</label>
 	      <br />
 				<label>
-          <v:check-box name="bank" xhtml_id="bank" value="1">
-            <v:before-render>
-              control.ufl_selected := cast (get_keyword ('bank', self.ol_properties) as integer);
-            </v:before-render>
-          </v:check-box>
+ 	        <?vsp self.checkBox ('bank', self.ol_properties); ?>
   				Bank transfer in advance
   		  </label>
 	    </fieldset>
@@ -435,47 +325,27 @@
 	        Specify the delivery options (optional)
 	      </b></legend>
 	      <label>
-          <v:check-box name="dhl" xhtml_id="dhl" value="1">
-            <v:before-render>
-              control.ufl_selected := cast (get_keyword ('dhl', self.ol_properties) as integer);
-            </v:before-render>
-          </v:check-box>
+ 	        <?vsp self.checkBox ('dhl', self.ol_properties); ?>
 			    DHL
 				</label>
 	      <br />
 				<label>
-          <v:check-box name="ups" xhtml_id="ups" value="1">
-            <v:before-render>
-              control.ufl_selected := cast (get_keyword ('ups', self.ol_properties) as integer);
-            </v:before-render>
-          </v:check-box>
+ 	        <?vsp self.checkBox ('ups', self.ol_properties); ?>
 				  UPS
 				</label>
 	      <br />
 				<label>
-          <v:check-box name="mailDelivery" xhtml_id="mailDelivery" value="1">
-            <v:before-render>
-              control.ufl_selected := cast (get_keyword ('mailDelivery', self.ol_properties) as integer);
-            </v:before-render>
-          </v:check-box>
+ 	        <?vsp self.checkBox ('mailDelivery', self.ol_properties); ?>
 				  Air or surface mail (postal services)
 		    </label>
 	      <br />
 				<label>
-          <v:check-box name="fedex" xhtml_id="fedex" value="1">
-            <v:before-render>
-              control.ufl_selected := cast (get_keyword ('fedex', self.ol_properties) as integer);
-            </v:before-render>
-          </v:check-box>
+ 	        <?vsp self.checkBox ('fedex', self.ol_properties); ?>
 				  FedEx
 				</label>
 	      <br />
 				<label>
-          <v:check-box name="download" xhtml_id="download" value="1">
-            <v:before-render>
-              control.ufl_selected := cast (get_keyword ('download', self.ol_properties) as integer);
-            </v:before-render>
-          </v:check-box>
+ 	        <?vsp self.checkBox ('download', self.ol_properties); ?>
 				  Direct download (e.g. for software)
 				</label>
 	    </fieldset>
@@ -547,7 +417,7 @@
               obj := self.addProperty (obj, 'visa', 'visa', params);
               obj := self.addProperty (obj, 'amex', 'amex', params);
               obj := self.addProperty (obj, 'diners', 'diners', params);
-              obj := self.addProperty (obj, 'discover', 'discover2', params);
+              obj := self.addProperty (obj, 'discover', 'discover', params);
               obj := self.addProperty (obj, 'openinvoice', 'openinvoice', params);
               obj := self.addProperty (obj, 'cash', 'cash', params);
               obj := self.addProperty (obj, 'check', 'check', params);

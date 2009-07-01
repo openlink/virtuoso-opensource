@@ -28,6 +28,31 @@
         style="index.xsl"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
         doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  <v:method name="addProperty" arglist="in obj any, in objProperty varchar, in paramsProperty varchar, in params any">
+    <![CDATA[
+      declare tmp ay;
+
+      tmp := trim (get_keyword (paramsProperty, params));
+      if (not is_empty_or_null (tmp))
+        obj := vector_concat (obj, vector (objProperty, tmp));
+      return obj;
+    ]]>
+  </v:method>
+  <v:method name="jsonObject" arglist="">
+    <![CDATA[
+      return subseq (soap_box_structure ('x', 1), 0, 2);
+    ]]>
+  </v:method>
+  <v:method name="checkBox" arglist="in checkField varchar, inout properties any">
+    <![CDATA[
+      declare S varchar;
+      
+      S := '';
+      if (get_keyword (checkField, properties, '0') <> '0')
+        S := 'checked="checked"';
+      http (sprintf ('<input type="checkbox" name="%s" id="%s" value="1" %s />', checkField, checkField, S));
+    ]]>
+  </v:method>
   <vm:page>
     <vm:header>
       <vm:title>Edit your personal data</vm:title>
@@ -144,6 +169,48 @@ function selectAllCheckboxes (form, btn)
     btn.value = 'Select All';
   btn.focus();
 }
+            function addProductLine(No, obj)
+            {
+              var tr = $('tr_X');
+              if (tr)
+              {
+                var S = tr.innerHTML;
+                if (!No)
+                  No = parseInt($('no_X').value)+1;
+                S = S.replace('<b>Product</b>', '<b>Product #'+No+'</b>');
+                var suffix = '_'+No;
+                var tr = OAT.Dom.create('tr');
+                tr.id = 'tr' + suffix;
+                tr.innerHTML = S.replace(/_X/g, suffix);
+                $('tbl_X').appendChild(tr);
+                $('no_X').value = No;
+                if (No != 1)
+                  OAT.Dom.show ('remove_X');
+                $('description'+suffix).value = '';
+                if (obj)
+                {
+                  $('description'+suffix).value = obj.description;
+                  $('offerURI'+suffix).value = obj.offerURI;
+                  $('sell'+suffix).checked = obj.sell;
+                  $('repair'+suffix).checked = obj.repair;
+                  $('maintain'+suffix).checked = obj.maintain;
+                  $('lease'+suffix).checked = obj.lease;
+                  $('disposal'+suffix).checked = obj.disposal;
+                  $('buy'+suffix).checked = obj.buy;
+                  $('service'+suffix).checked = obj.service;
+                }
+              }
+            }
+            function removeProductLine()
+            {
+              var No = parseInt($('no_X').value);
+              var suffix = '_'+No;
+              OAT.Dom.unlink('tr'+suffix);
+              No -= 1;
+              if (No == 1)
+                OAT.Dom.hide ('remove_X');
+              $('no_X').value = No;
+            }
           ]]>
         </script>
         <vm:login redirect="index.vspx"/>

@@ -28,18 +28,24 @@
         style="index.xsl"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
 	      doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  <v:on-init>
+    <![CDATA[
+      if (isnull (self.wl_properties))
+        self.wl_properties := self.jsonObject();
+    ]]>
+  </v:on-init>
 	<v:variable name="edit_wl" type="integer" default="null" param-name="edit" />
 	<v:variable name="delete_wl" type="integer" default="null" param-name="del" />
+	<v:variable name="wl_properties" type="any" default="null" />
 	<v:form type="simple" method="POST" xhtml_enctype="multipart/form-data" action="uiedit.vspx?page=7">
-    <h3>Wish Lists</h3>
+    <h3>Wish Lists (GoodRelations Ontology)</h3>
 	  <table class="listing" rules="groups">
 	    <tr class="listing_header_row">
-		    <th>Barter</th>
-		    <th>Property</th>
+		    <th>Wish</th>
 		    <th>Action</th>
 	    </tr>
 	    <v:data-set name="wishlist"
-	                sql="select WUWL_ID, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTY from WA_USER_WISHLIST where WUWL_U_ID = :self.u_id"
+	                sql="select WUWL_ID, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTIES from WA_USER_WISHLIST where WUWL_U_ID = :self.u_id"
 		              scrollable="1"
 		              editable="1"
 		              nrows="0">
@@ -52,9 +58,9 @@
 			      <v:after-data-bind>
               if (not e.ve_is_post and control.te_rowset[0] = self.edit_wl)
               {
-                self.wl_barter.ufl_value := control.te_rowset[1];
+                self.wl_offer.ufl_value := control.te_rowset[1];
                 self.wl_comment.ufl_value := control.te_rowset[2];
-                self.wl_property.ufl_value := control.te_rowset[3];
+                self.wl_properties := deserialize (control.te_rowset[3]);
               }
 	          </v:after-data-bind>
 			      <tr class="<?V case when self.edit_wl = control.te_rowset[0] then 'listing_row_selected' when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
@@ -67,14 +73,7 @@
 				               xhtml_alt="Edit"
 				        />
 			        </td>
-			        <td>
-				        <v:label name="predicate_wl"
-				                 value="--subseq ((control.vc_parent as vspx_row_template).te_rowset[3], 0, 200)"
-				                 format="%120.120s"
-				                 render-only="1"/>
-
-			        </td>
-			        <td>
+			        <td width="100px">
 				        <v:url name="delete_wl_url"
 				               value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
 				               format="%s"
@@ -88,7 +87,7 @@
 		    </v:template>
 		    <v:template name="footer_wl" type="simple">
 		      <tr>
-			      <td colspan="3" class="listing_col_action">
+			      <td colspan="2" class="listing_col_action">
 			        <vm:ds-navigation data-set="wishlist" type="set" />
 			      </td>
 		      </tr>
@@ -97,28 +96,271 @@
 	  </table>
 	  <div class="fm">
 	    <fieldset>
-		    <label for="wl_barter">Barter</label>
+				<legend><b>Wish</b></legend>
+				<table>
+				  <tr>
+				    <th width="100px">
+		          Wish name
+		        </th>
+		        <td>
+              <v:text name="wl_offer" value="" xhtml_id="wl_offer" xhtml_size="50" xhtml_class="_validate_" />
+            </td>
+          </tr>
+				  <tr>
+				    <th valign="top">
+		          Comment
+		        </th>
+		        <td>
+              <v:textarea name="wl_comment" value="" xhtml_id="wl_comment" xhtml_rows="5" xhtml_cols="50"/>
+            </td>
+          </tr>
+				</table>
+	    </fieldset>
+	    <fieldset>
+				<legend><b>Products</b></legend>
+        <input type="hidden" id="no_X" name="no_X" value="0"/>
+        <table id="tbl_X">
+          <tr>
+            <td>
+              <input type="button" value="Add" onclick="javascript: addProductLine(); return false;" /><input type="button" id="remove_X" value="Remove Last" onclick="javascript: removeProductLine(); return false;" style="display: none;"/>
+            </td>
+          </tr>
+          <tr id="tr_X" style="display: none;">
+            <td>
+      	      <fieldset>
+        				<legend><b>Product</b></legend>
+        	      <fieldset>
+        				  <legend><b>
+        				    Describe the type of products
+        				  </b></legend>
+          				<table>
+          				  <tr>
+          				    <th valign="top" width="100px">
+          		          Short description
+          		        </th>
+          		        <td>
+        					      <textarea name="description_X" id="description_X" rows="3" cols="40" class="_validate_">&amp;nbsp;</textarea>
+                      </td>
+                    </tr>
+          				  <tr>
+          				    <th valign="top">
+          		          Web page
+          		        </th>
+          		        <td>
+                        <input name="offerURI_X" type="text" id="offerURI_X" size="40" value="http://"/>
+                      </td>
+                    </tr>
+          				</table>
+        				</fieldset>
+        				<fieldset>
+        					<legend><b>
+        					  Check all types of transactions (sell, lease, repair, ...) that you wish on the range of products selected above
+        					</b></legend>
+          				<label>
+        						<input type="checkbox" name="sell_X" id="sell_X" value="1" />Used in the broad sense - no matter whether you sell the good from stock or develop, engineer, or produce it on custom demand.)
+          				</label>
 		    <br />
-        <v:text name="wl_barter" value="" xhtml_id="wl_barter" xhtml_size="50" xhtml_class="_validate_" />
+          				<label>
+        					  <input type="checkbox" name="repair_X" id="repair_X" value="1" />Repair (Actions that restore the originally intended function of a product that suffers from outage or malfunction.)
+          				</label>
 		    <br />
-		    <label for="wl_property">Type</label>
+          				<label>
+        						<input type="checkbox" name="maintain_X" id="maintain_X" value="1" />Maintenance (Actions that undo or compensate for wear or other deterioriation caused by regular usage, in order to restore the originally intended function of the product, or to prevent outage or malfunction.)
+          				</label>
 		    <br />
-        <v:select-list name="wl_property" xhtml_id="wl_property">
-          <v:item name="Wants" value="wl:wants"/>
-          <v:item name="Has" value="wl:has"/>
-        </v:select-list>
+          				<label>
+        						<input type="checkbox" name="lease_X" id="lease_X" value="1" />Rental / Lease Out
+          				</label>
 		    <br />
-		    <label for="wl_comment">Comment</label>
+          				<label>
+        						<input type="checkbox" name="disposal_X" id="disposal_X" value="1" />Disposal
+          				</label>
 		    <br />
-		    <v:textarea name="wl_comment" value="" xhtml_id="wl_comment" xhtml_rows="5" xhtml_cols="50"/>
-		    <br/><br/>
+          				<label>
+        						<input type="checkbox" name="buy_X" id="buy_X" value="1" />Buy (I.e., you are looking for offers of the range of products or services indicated above)
+          				</label>
+          	      <br />
+          				<label>
+        					  <input type="checkbox" name="service_X" id="service_X" value="1" />Other services related to the range indicated above
+          				</label>
+        				</fieldset>
+      				</fieldset>
+     				</td>
+   				</tr>
+          <script type="text/javascript">
+          <?vsp
+            declare N, M integer;
+            declare products any;
+
+            M := 0;
+            products := get_keyword ('products', self.wl_properties, vector ());
+            for (N := 0; N < length (products); N := N + 1)
+            {
+              M := 1;
+ 				      http (sprintf ('addProductLine (%d, %s);', N+1, ODS..obj2json (products[N])));
+ 				    }
+ 				    if (M = 0)
+ 				      http ('addProductLine (1);');
+ 				  ?>
+          </script>
+			  </table>
+			</fieldset>
+	    <fieldset>
+	      <legend><b>
+	        Specify the validity of your statement
+	      </b></legend>
+				<table>
+				  <tr>
+				    <th width="100px">
+		          Valid from
+		        </th>
+		        <td>
+      				<input type="text" id="date1" name="date1" value="<?V case when isnull (get_keyword ('datetime1', self.wl_properties)) then '' else left (datestring (get_keyword ('datetime1', self.wl_properties)), 10) end ?>" size="10" onclick="javascript: cPopup.select ($('date1'), 'date1_select', 'yyyy-MM-dd');" />
+              <a href="#" name="date1_select" id="date1_select" onclick="cPopup.select ($('date1'), 'date1_select', 'yyyy-MM-dd'); return false;"></a>
+      				<input type="text" id="time1" name="time1" value="<?V case when isnull (get_keyword ('datetime1', self.wl_properties)) then '' else subseq (datestring (get_keyword ('datetime1', self.wl_properties)), 11, 16) end ?>" style="width:35px;" />
+            </td>
+          </tr>
+				  <tr>
+				    <th>
+		          Valid to
+		        </th>
+		        <td>
+      				<input type="text" id="date2" name="date2" value="<?V case when isnull (get_keyword ('datetime2', self.wl_properties)) then '' else left (datestring (get_keyword ('datetime2', self.wl_properties)), 10) end ?>" size="10" onclick="javascript: cPopup.select ($('date2'), 'date2_select', 'yyyy-MM-dd');" />
+              <a href="#" name="date2_select" id="date2_select" onclick="javascript: cPopup.select ($('date2'), 'date2_select', 'yyyy-MM-dd'); return false;"></a>
+      				<input type="text" id="time2" name="time2" value="<?V case when isnull (get_keyword ('datetime2', self.wl_properties)) then '' else subseq (datestring (get_keyword ('datetime2', self.wl_properties)), 11, 16) end ?>" style="width:35px;" />
+            </td>
+          </tr>
+				  <tr>
+				    <th valign="top">
+		          Eligible countries
+		        </th>
+		        <td>
+      				<select name="eligCountry" id="eligCountry" size="6" multiple="multiple">
+      				  <?vsp
+      				    declare M integer;
+      				    declare S varchar;
+      				    declare tmp any;
+
+      				    tmp := get_keyword ('eligCountry', self.wl_properties, vector ());
+                  for (select WC_NAME from WA_COUNTRY) do
+                  {
+                    S := '';
+                    for (N := 0; N < length (tmp); N := N + 1)
+                    {
+                      if (WC_NAME = tmp[N])
+                        S := ' selected="selected"';
+                    }
+                    http (sprintf ('<option value="%s"%s>%s</option>', WC_NAME, S, WC_NAME));
+                  }
+                ?>
+      				</select>
+            </td>
+          </tr>
+        </table>
+	      <fieldset>
+  	      <legend><b>
+    			  Eligible types of business partners: <b>check all that apply</b>
+  	      </b></legend>
+  	      <label>
+  	        <?vsp self.checkBox ('endUsers', self.wl_properties); ?>
+            End Users
+  				</label>
+  	      <br />
+  	      <label>
+  	        <?vsp self.checkBox ('public', self.wl_properties); ?>
+  				  Public institutions
+  				</label>
+  	      <br />
+  	      <label>
+  	        <?vsp self.checkBox ('reseller', self.wl_properties); ?>
+            Resellers
+  				</label>
+  	    </fieldset>
+	    </fieldset>
+	    <fieldset>
+	      <legend><b>
+	        Specify the payment options (optional)
+	      </b></legend>
+	      <label>
+	        <?vsp self.checkBox ('mastercard', self.wl_properties); ?>
+  				MasterCard
+  			</label>
+	      <label>
+	        <?vsp self.checkBox ('visa', self.wl_properties); ?>
+  				VISA
+  			</label>
+	      <label>
+ 	        <?vsp self.checkBox ('amex', self.wl_properties); ?>
+  				American Express
+  			</label>
+	      <label>
+ 	        <?vsp self.checkBox ('diners', self.wl_properties); ?>
+  				Diner's Club
+  			</label>
+	      <label>
+	        <?vsp self.checkBox ('discover', self.wl_properties); ?>
+  				Discover
+				</label>
+	      <br />
+	      <label>
+	        <?vsp self.checkBox ('openinvoice', self.wl_properties); ?>
+  				Open invoice
+				</label>
+	      <br />
+	      <label>
+ 	        <?vsp self.checkBox ('cash', self.wl_properties); ?>
+  				Cash on delivery
+				</label>
+	      <br />
+	      <label>
+ 	        <?vsp self.checkBox ('check', self.wl_properties); ?>
+  				Check in advance
+				</label>
+	      <br />
+				<label>
+ 	        <?vsp self.checkBox ('bank', self.wl_properties); ?>
+  				Bank transfer in advance
+  		  </label>
+	    </fieldset>
+	    <fieldset>
+	      <legend><b>
+	        Specify the delivery options (optional)
+	      </b></legend>
+	      <label>
+ 	        <?vsp self.checkBox ('dhl', self.wl_properties); ?>
+			    DHL
+				</label>
+	      <br />
+				<label>
+ 	        <?vsp self.checkBox ('ups', self.wl_properties); ?>
+				  UPS
+				</label>
+	      <br />
+				<label>
+ 	        <?vsp self.checkBox ('mailDelivery', self.wl_properties); ?>
+				  Air or surface mail (postal services)
+		    </label>
+	      <br />
+				<label>
+ 	        <?vsp self.checkBox ('fedex', self.wl_properties); ?>
+				  FedEx
+				</label>
+	      <br />
+				<label>
+ 	        <?vsp self.checkBox ('download', self.wl_properties); ?>
+				  Direct download (e.g. for software)
+				</label>
+	    </fieldset>
+	    <fieldset>
+	      <legend><b>
+	        Action
+	      </b></legend>
 	      <span class="fm_ctl_btn">
 		      <v:button name="wl_cancel" value="Cancel" action="simple" enabled="--equ (isnull (self.edit_wl), 0)">
 		        <v:on-post>
-              self.wl_barter.ufl_value := null;
-              self.wl_property.ufl_value := null;
+              self.wl_offer.ufl_value := null;
               self.wl_comment.ufl_value := null;
-              self.wl_property.ufl_value := null;
+              self.wl_properties := self.jsonObject();
               self.edit_wl := null;
 
               self.wl_save.vc_data_bind (e);
@@ -127,26 +369,106 @@
 		      </v:button>
 		      <v:button name="wl_save" value="--case when self.edit_wl is null then 'Add' else 'Update' end" action="simple" xhtml_onclick="return validateInputs(this);">
 		        <v:on-post><![CDATA[
+              declare N, L integer;
+              declare suffix varchar;
+              declare dt datetime;
+              declare params, tmp, obj, products, product any;
+
+              params := e.ve_params;
+              obj := self.jsonObject();
+
+              dt := null;
+              tmp := trim (get_keyword ('date1', params, '') || ' ' || get_keyword ('time1', params, ''));
+              if (tmp <> '')
+              {
+                declare exit handler for sqlstate '*'
+                {
+                  self.vc_is_valid := 0;
+                  self.vc_error_message := sprintf ('An invalid date (%s) is specified', tmp);
+                  return;
+                };
+                dt := stringdate (tmp);
+              }
+              if (not isnull (dt))
+                obj := vector_concat (obj, vector ('datetime1', dt));
+              dt := null;
+              tmp := trim (get_keyword ('date2', params, '') || ' ' || get_keyword ('time2', params, ''));
+              if (tmp <> '')
+              {
+                declare exit handler for sqlstate '*'
+                {
+                  self.vc_is_valid := 0;
+                  self.vc_error_message := sprintf ('An invalid date (%s) is specified', tmp);
+                  return;
+                };
+                dt := stringdate (tmp);
+              }
+              if (not isnull (dt))
+                obj := vector_concat (obj, vector ('datetime2', dt));
+              tmp := vector ();
+              for (N := 0; N < length (params); N := N + 4)
+              {
+                if (params[N] = 'eligCountry')
+                  tmp := vector_concat (tmp, vector (params[N+1]));
+              }
+              obj := vector_concat (obj, vector ('eligCountry', tmp));
+              obj := self.addProperty (obj, 'endUsers', 'endUsers', params);
+              obj := self.addProperty (obj, 'public', 'public', params);
+              obj := self.addProperty (obj, 'reseller', 'reseller', params);
+              obj := self.addProperty (obj, 'mastercard', 'mastercard', params);
+              obj := self.addProperty (obj, 'visa', 'visa', params);
+              obj := self.addProperty (obj, 'amex', 'amex', params);
+              obj := self.addProperty (obj, 'diners', 'diners', params);
+              obj := self.addProperty (obj, 'discover', 'discover', params);
+              obj := self.addProperty (obj, 'openinvoice', 'openinvoice', params);
+              obj := self.addProperty (obj, 'cash', 'cash', params);
+              obj := self.addProperty (obj, 'check', 'check', params);
+              obj := self.addProperty (obj, 'bank', 'bank', params);
+              obj := self.addProperty (obj, 'dhl', 'dhl', params);
+              obj := self.addProperty (obj, 'ups', 'ups', params);
+              obj := self.addProperty (obj, 'mailDelivery', 'mailDelivery', params);
+              obj := self.addProperty (obj, 'fedex', 'fedex', params);
+              obj := self.addProperty (obj, 'download', 'download', params);
+              products := vector ();
+              L := cast (get_keyword ('no_X', params, 0) as integer);
+              for (N := 1; N <= L; N := N + 1)
+              {
+                suffix := '_' || cast (N as varchar);
+                product := self.jsonObject();;
+                product := self.addProperty (product, 'description', 'description'||suffix, params);
+                product := self.addProperty (product, 'offerURI', 'offerURI'||suffix, params);
+                product := self.addProperty (product, 'sell', 'sell'||suffix, params);
+                product := self.addProperty (product, 'repair', 'repair'||suffix, params);
+                product := self.addProperty (product, 'maintain', 'maintain'||suffix, params);
+                product := self.addProperty (product, 'lease', 'lease'||suffix, params);
+                product := self.addProperty (product, 'disposal', 'disposal'||suffix, params);
+                product := self.addProperty (product, 'buy', 'buy'||suffix, params);
+                product := self.addProperty (product, 'service', 'service'||suffix, params);
+                products := vector_concat (products, vector (product));
+              }
+              obj := vector_concat (obj, vector ('products', products));
+              self.wl_properties := obj;
+
               if (not self.vc_is_valid)
                 return;
 
               if (self.edit_wl is null)
               {
-                insert into WA_USER_WISHLIST (WUWL_U_ID, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTY)
-                  values (self.u_id, self.wl_barter.ufl_value, self.wl_comment.ufl_value, self.wl_property.ufl_value);
+                insert into WA_USER_WISHLIST (WUWL_U_ID, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTIES)
+                  values (self.u_id, self.wl_offer.ufl_value, self.wl_comment.ufl_value, serialize (self.wl_properties));
               }
               else
               {
                 update WA_USER_WISHLIST
-                   set WUWL_BARTER = self.wl_barter.ufl_value,
+                   set WUWL_BARTER = self.wl_offer.ufl_value,
                        WUWL_COMMENT = self.wl_comment.ufl_value,
-                       WUWL_PROPERTY = self.wl_property.ufl_value
+                       WUWL_PROPERTIES = serialize (self.wl_properties)
                  where WUWL_ID = self.edit_wl;
               }
 
-              self.wl_barter.ufl_value := null;
+              self.wl_offer.ufl_value := null;
               self.wl_comment.ufl_value := null;
-              self.wl_property.ufl_value := null;
+              self.wl_properties := self.jsonObject();
               self.edit_wl := null;
 
               control.vc_data_bind (e);

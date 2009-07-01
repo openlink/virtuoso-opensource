@@ -3430,7 +3430,7 @@ wa_exec_no_error_log(
       WUOL_U_ID int,
       WUOL_OFFER varchar,
       WUOL_COMMENT long varchar,
-      WUOL_PROPERTIES varchar,
+      WUOL_PROPERTIES long varchar,
 
       primary key (WUOL_ID)
      )'
@@ -3445,10 +3445,12 @@ wa_exec_no_error_log (
       WUWL_BARTER varchar,
       WUWL_PROPERTY varchar,
       WUWL_COMMENT long varchar,
+      WUWL_PROPERTIES long varchar,
 
       primary key (WUWL_ID)
      )'
 );
+wa_add_col ('DB.DBA.WA_USER_WISHLIST', 'WUWL_PROPERTIES', 'long varchar');
 wa_exec_no_error('create unique index WA_USER_WISHLIST_USER on WA_USER_WISHLIST (WUWL_U_ID, WUWL_BARTER)');
 
 wa_exec_no_error_log(
@@ -3468,12 +3470,14 @@ wa_exec_no_error_log(
     'CREATE TABLE WA_USER_FAVORITES (
       WUF_ID integer identity,
       WUF_U_ID integer,
+      WUF_TYPE varchar,
       WUF_LABEL varchar,
       WUF_URI varchar,
 
       primary key (WUF_ID)
      )'
 );
+wa_add_col ('DB.DBA.WA_USER_FAVORITES', 'WUF_TYPE', 'varchar');
 wa_exec_no_error('create index WA_USER_FAVORITES_USER on WA_USER_FAVORITES (WUF_U_ID)');
 
 create procedure wa_favorites_upgrade() {
