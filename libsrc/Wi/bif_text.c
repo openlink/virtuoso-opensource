@@ -2282,7 +2282,7 @@ static char *vt_free_text_proc_gen_text =
 "      sprintf (\n"
 "	\'  declare cr cursor for select \"%I\", \"%I\", %s %s from \"%I\".\"%I\".\"%I\" table option (no cluster) where \"%I\" > start %s order by \"%I\";\\\n\', _key_column, _data_column, _type_col, of_cols , name_part (_data_table, 0), name_part (_data_table, 1), name_part (_data_table, 2), _key_column, dav_cond, _key_column),\n"
 "      sprintf (\n"
-"	\'  if (start is null) { start := (select top 1 \"%I\" from \"%I\".\"%I\".\"%I\"); start := case when start is null then 0 when __tag (start) = 255 then composite (\'\'\'\') else 0 end; }\\\n\', _key_column, name_part (_data_table,0), name_part (_data_table,1), name_part (_data_table,2)),\n"
+"	\'  if (start is null) { start := (select top 1 \"%I\" from \"%I\".\"%I\".\"%I\" table option (no cluster)); start := case when start is null then 0 when __tag (start) = 255 then composite (\'\'\'\') else 0 end; }\\\n\', _key_column, name_part (_data_table,0), name_part (_data_table,1), name_part (_data_table,2)),\n"
 "	\'  whenever not found goto done;\n"
 "	    whenever sqlstate \\\'40001\\\' goto deadl;\n"
 "	   \n"
