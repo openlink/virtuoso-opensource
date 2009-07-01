@@ -49,7 +49,7 @@ $JAVA -classpath $CLASSPATH:virtjdbc4ssl.jar:testsuite4.jar testsuite.TestCallab
 $JAVA -classpath $CLASSPATH:virtjdbc4ssl.jar:testsuite4.jar testsuite.TestScroll $1
 $JAVA -classpath $CLASSPATH:virtjdbc4ssl.jar:testsuite4.jar testsuite.TestScrollManual $1
 $JAVA -classpath $CLASSPATH:virtjdbc4ssl.jar:testsuite4.jar testsuite.TestScrollPrepare $1
-$JAVA -classpath $CLASSPATH:virtjdbc4ssl.jar:testsuite4.jar testsuite.TestVarCommandsary $1
+$JAVA -classpath $CLASSPATH:virtjdbc4ssl.jar:testsuite4.jar testsuite.TestVarbinary $1
 $JAVA -classpath $CLASSPATH:virtjdbc4ssl.jar:testsuite4.jar testsuite.TestNumeric $1
 rm -f bloor.pdf
 cat testsuite3.jar testsuite3.jar testsuite3.jar > bloor.pdf
