@@ -39,6 +39,7 @@
     xmlns:sioc="&sioc;"
     xmlns:dcterms="&dcterms;"
     xmlns:gr="&gr;"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:ebay="urn:ebay:apis:eBLBaseComponents">
 
     <xsl:output method="xml" indent="yes" />

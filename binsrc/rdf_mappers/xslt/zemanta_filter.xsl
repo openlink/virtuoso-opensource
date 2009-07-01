@@ -79,7 +79,7 @@
 		<xsl:if test="position () &lt;= $max-results">
 		    <rdf:Description>
 			<opl:providedBy>
-			    <foaf:Organization rdf:about="http://www.crunchbase.com/company/zemanta">
+			    <foaf:Organization rdf:about="http://www.crunchbase.com/company/zemanta#this">
 				<foaf:name>Zemanta</foaf:name>
 				<foaf:homepage rdf:resource="http://www.zemanta.com/"/>
 			    </foaf:Organization>

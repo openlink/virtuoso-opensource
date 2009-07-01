@@ -392,7 +392,7 @@
 				</xsl:choose>
 			</xsl:for-each>
 			<xsl:if test="string(mbid)">
-				<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/artist/', mbid)}"/>
+				<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/artist/', mbid, '.html')}"/>
 			</xsl:if>
 		</mo:MusicArtist>
 
@@ -448,7 +448,7 @@
 				</lfm:playcount>
 			</xsl:if>
 			<xsl:if test="string(mbid)">
-				<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/release/', mbid)}"/>
+				<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/release/', mbid, '.html')}"/>
 			</xsl:if>
 		</rdf:Description>
 
@@ -512,7 +512,7 @@
 				</dc:description>
 			</xsl:if>
 			<xsl:if test="string(mbid)">
-				<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/track/', mbid)}"/>
+				<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/track/', mbid, '.html')}"/>
 			</xsl:if>
 		</rdf:Description>
 
@@ -522,7 +522,7 @@
 					<xsl:value-of select="name"/>
 				</foaf:name>
 				<xsl:if test="string(mbid)">
-					<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/artist/', mbid)}"/>
+					<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/artist/', mbid, '.html')}"/>
 				</xsl:if>
 			</mo:MusicArtist>
 		</xsl:for-each>
@@ -536,7 +536,7 @@
 					<foaf:depiction rdf:resource="{.}"/>
 				</xsl:for-each>
 				<xsl:if test="string(mbid)">
-					<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/release/', mbid)}"/>
+					<rdfs:seeAlso rdf:resource="{concat('http://musicbrainz.org/release/', mbid, '.html')}"/>
 				</xsl:if>
 			</mo:Record>
 		</xsl:for-each>

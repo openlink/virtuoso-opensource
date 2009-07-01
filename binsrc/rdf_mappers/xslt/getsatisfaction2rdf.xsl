@@ -31,7 +31,8 @@
 	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:dc="http://purl.org/dc/elements/1.1/"
 	xmlns:dcterms="http://purl.org/dc/terms/" xmlns:foaf="&foaf;" xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
 	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/" xmlns:v="http://www.w3.org/2006/vcard/ns#"
-	xmlns:opl-gs="http://www.openlinksw.com/schemas/getsatisfaction/" version="1.0">
+	xmlns:opl-gs="http://www.openlinksw.com/schemas/getsatisfaction/"
+	version="1.0">
 	<xsl:variable name="ns">http://getsatisfaction.com</xsl:variable>
 	<xsl:output method="xml" indent="yes" omit-xml-declaration="yes" />
 	<xsl:param name="baseUri" />
