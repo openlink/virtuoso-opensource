@@ -459,6 +459,7 @@ blank_block_subj
 		{ dk_set_push (&(ttlp_arg->ttlp_saved_uris), (void *)(ptrlong)ttlp_arg->ttlp_pred_is_reverse);
                   dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_subj_uri);
 		  dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_pred_uri);
+		  ttlp_arg->ttlp_pred_is_reverse = 0;
 		  ttlp_arg->ttlp_subj_uri = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL);
 		  ttlp_arg->ttlp_pred_uri = NULL; }
 	  blank_block_subj_tail { $$ = $2; }
@@ -480,25 +481,55 @@ blank_block_subj_tail
 	;
 
 blank_block_seq
-        :
-		{ caddr_t top_bnode = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL);
+	:	{	
                   dk_set_push (&(ttlp_arg->ttlp_saved_uris), (void *)(ptrlong)(ttlp_arg->ttlp_pred_is_reverse));
                   dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_subj_uri);
 		  dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_pred_uri);
-                  dk_set_push (&(ttlp_arg->ttlp_saved_uris), top_bnode); /* This is for retval */
-                  ttlp_arg->ttlp_subj_uri = box_copy (top_bnode); /* This is the last in the chain */
-		  ttlp_arg->ttlp_pred_uri = uname_rdf_ns_uri_first; }
-		items _RPAR
+		  ttlp_arg->ttlp_pred_is_reverse = 0;
+		  if (NULL == ttlp_arg->ttlp_unused_seq_bnodes)
+		    ttlp_arg->ttlp_subj_uri = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL);
+		  else
+		    ttlp_arg->ttlp_subj_uri = dk_set_pop (&(ttlp_arg->ttlp_unused_seq_bnodes));
+		  dk_set_push (&(ttlp_arg->ttlp_saved_uris), box_copy_tree (ttlp_arg->ttlp_subj_uri)); /* copy of first node */
+		  dk_set_push (&(ttlp_arg->ttlp_saved_uris), NULL); /* last incomplete node */
+		  ttlp_arg->ttlp_pred_uri = uname_rdf_ns_uri_first;
+		  $<box>$ = ttlp_arg->ttlp_subj_uri; }
+		items _RPAR {
+		  caddr_t first_node;
+		  dk_set_push (&(ttlp_arg->ttlp_unused_seq_bnodes), ttlp_arg->ttlp_subj_uri);
+		  if ($<box>1 == ttlp_arg->ttlp_subj_uri) /* empty list */
+		    {
+		      dk_set_pop (&(ttlp_arg->ttlp_saved_uris)); /* pop last incomplete node, it's NULL in this case */
+		      dk_free_tree (dk_set_pop (&(ttlp_arg->ttlp_saved_uris))); /* pop copy of first node and delete */
+		      first_node = uname_rdf_ns_uri_nil; }
+		  else
 		{
-		  dk_free_tree (ttlp_arg->ttlp_pred_uri);
+		      ttlp_arg->ttlp_subj_uri = dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
 		  ttlp_arg->ttlp_pred_uri = uname_rdf_ns_uri_rest;
                   ttlp_triple_and_inf (ttlp_arg, uname_rdf_ns_uri_nil);
-		  $$ = dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
-		  dk_free_tree (ttlp_arg->ttlp_pred_uri);
 		  dk_free_tree (ttlp_arg->ttlp_subj_uri);
+		      first_node = dk_set_pop (&(ttlp_arg->ttlp_saved_uris)); }
 		  ttlp_arg->ttlp_pred_uri = dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
 		  ttlp_arg->ttlp_subj_uri = dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
-                  ttlp_arg->ttlp_pred_is_reverse = (ptrlong)dk_set_pop (&(ttlp_arg->ttlp_saved_uris)); }
+		  ttlp_arg->ttlp_pred_is_reverse = (ptrlong)dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
+		  $$ = first_node; }
+	;
+
+items
+	: /*empty*/	{}
+	| items object {
+		  caddr_t last_node = ttlp_arg->ttlp_subj_uri;
+		  ttlp_arg->ttlp_pred_uri = uname_rdf_ns_uri_rest;
+		  ttlp_arg->ttlp_subj_uri = dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
+		  dk_set_push (&(ttlp_arg->ttlp_saved_uris), last_node);
+		  if (NULL != ttlp_arg->ttlp_subj_uri)
+		    ttlp_triple_and_inf (ttlp_arg, last_node);
+		  dk_free_tree (ttlp_arg->ttlp_subj_uri);
+		  if (NULL == ttlp_arg->ttlp_unused_seq_bnodes)
+		    ttlp_arg->ttlp_subj_uri = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL);
+		  else
+		    ttlp_arg->ttlp_subj_uri = dk_set_pop (&(ttlp_arg->ttlp_unused_seq_bnodes));
+		  ttlp_arg->ttlp_pred_uri = uname_rdf_ns_uri_first; }
 	;
 
 blank_block_formula
@@ -509,6 +540,7 @@ blank_block_formula
                   dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_subj_uri);
 		  dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_pred_uri);
 		  ttlp_arg->ttlp_formula_iid = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL);
+		  ttlp_arg->ttlp_pred_is_reverse = 0;
 		  ttlp_arg->ttlp_subj_uri = NULL;
 		  ttlp_arg->ttlp_pred_uri = NULL; }
 		inner_triple_clauses _RBRA
@@ -519,18 +551,6 @@ blank_block_formula
 		  ttlp_arg->ttlp_subj_uri = dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
                   ttlp_arg->ttlp_pred_is_reverse = (ptrlong)dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
 		  ttlp_arg->ttlp_formula_iid = dk_set_pop (&(ttlp_arg->ttlp_saved_uris)); }
-	;
-
-items
-	: /*empty*/	{}
-	| items object
-		{ caddr_t next_bnode = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL);
-                  caddr_t first_pred = ttlp_arg->ttlp_pred_uri;
-		  ttlp_arg->ttlp_pred_uri = uname_rdf_ns_uri_rest;
-                  ttlp_triple_and_inf (ttlp_arg, next_bnode);
-		  ttlp_arg->ttlp_pred_uri = first_pred;
-		  dk_free_tree (ttlp_arg->ttlp_subj_uri);
-                  ttlp_arg->ttlp_subj_uri = next_bnode; }
 	;
 
 q_complete

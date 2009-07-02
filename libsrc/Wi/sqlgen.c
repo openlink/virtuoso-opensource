@@ -1667,6 +1667,7 @@ sqlg_set_stmt (sqlo_t * so, df_elt_t * qexp, ST ** target_names)
   sel = left_qr->qr_select_node;
   if (!ST_P (tree, UNION_ST) && !ST_P (tree, UNION_ALL_ST))
     {
+      un->uni_sequential = 1;
       dk_set_push (&un->uni_successors, (void *) left_qr);
       dk_set_push (&un->uni_successors, (void *) right_qr);
     }

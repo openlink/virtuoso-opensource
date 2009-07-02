@@ -436,7 +436,8 @@ union_node_input (union_node_t * un, caddr_t * inst, caddr_t * state)
       if (un->src_gen.src_local_save)
 	qn_set_local_save ((data_source_t*)un, inst);
       qn_input (((query_t *) out_list->data)->qr_head_node, inst, inst);
-      if (!un->src_gen.src_query->qr_cl_run_started || CL_RUN_LOCAL == cl_run_local_only)
+      if (!un->src_gen.src_query->qr_cl_run_started || CL_RUN_LOCAL == cl_run_local_only
+	  || un->uni_sequential)
 	qr_resume_pending_nodes ((query_t*) out_list->data, inst); /* only if not multistate */
       state = NULL;
       /* now for multistate union, if at full batch - 1 and all nodes have their inputs and have not yet started, flush them all and have the containing subnq then continue */
