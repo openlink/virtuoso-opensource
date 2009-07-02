@@ -129,7 +129,7 @@
                 </v:before-render>
               </v:radio-button>
               <xsl:call-template name="nbsp" />
-              <b><label for="i_source_0">FOAF URL</label></b>
+              <b><label for="i_source_0">Personal URI (Web ID)</label></b>
             </td>
             <td>
               <v:text name="foaf_url" xhtml_id="foaf_url" value="" xhtml_onfocus="javascript: document.forms[0].i_source[0].checked=true;" xhtml_size="70"/>
