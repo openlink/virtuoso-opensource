@@ -1093,6 +1093,18 @@ input.openID {
  font-size: 8pt;
 }
 
+td.cpTodayText, td.cpTodayTextDisabled {
+  border-color:#C0C0C0;
+  border-style:solid;
+  border-width:1px 0 0;
+}
+
+td.cpCurrentDate {
+  background-color:#C0C0C0;
+  border:thin solid #800000;
+  color:white;
+}
+
 td.cpDayColumnHeader
 {
  border: solid thin #C0C0C0;

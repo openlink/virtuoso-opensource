@@ -156,11 +156,12 @@ create procedure fill_ods_briefcase_sioc (in graph_iri varchar, in site_iri varc
 
 create procedure ods_briefcase_sioc_tags (in path varchar, in res_id int, in owner int, in owner_name varchar, in tags any, in op varchar)
 {
-  declare pos int;
-  declare dir, iri, post_iri varchar;
+  declare iri, post_iri varchar;
+
   if (path like '/DAV/home/%/Public/%' and path like ODRIVE.WA.dav_home(owner_name) || 'Public/%')
     {
-      for select WAI_NAME, WAI_ID from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER
+    for select WAI_NAME, WAI_ID
+          from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER
 	where WAM_INST = WAI_NAME and WAM_USER = owner and WAM_IS_PUBLIC = 1 and WAM_APP_TYPE = 'oDrive' do
 	  {
 	    iri := briefcase_iri (WAI_NAME);
