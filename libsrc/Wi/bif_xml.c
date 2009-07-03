@@ -690,6 +690,7 @@ xp_free (xparse_ctx_t * xp)
   dk_free_box (xp->xp_boxed_name);
   if ((NULL != xp->xp_doc_cache) && (&(xp->xp_doc_cache) == xp->xp_doc_cache->xdc_owner))
     xml_doc_cache_free (xp->xp_doc_cache);
+  dk_free_box (xp->xp_top_excl_res_prefx);
   while (NULL != xp->xp_rdf_locals)
     xp_pop_rdf_locals (xp);
   xrl = xp->xp_rdf_free_list;
@@ -1529,7 +1530,7 @@ xml_make_mod_tree (query_instance_t * qi, caddr_t text, caddr_t *err_ret, long h
 {
   int dtp_of_text = box_tag (text);
   dk_set_t top;
-  caddr_t tree;
+  caddr_t *root_elt_head, tree;
   vxml_parser_config_t config;
   vxml_parser_t * parser;
   xparse_ctx_t context;
@@ -1675,7 +1676,14 @@ xml_make_mod_tree (query_instance_t * qi, caddr_t text, caddr_t *err_ret, long h
     }
   VXmlParserDestroy (parser);
   top = dk_set_nreverse (xn->xn_children);
-  dk_set_push (&top, (void*) list (1, uname__root));
+  if (NULL == context.xp_top_excl_res_prefx)
+    root_elt_head = (void*) list (1, uname__root);
+  else
+    {
+      root_elt_head = (void*) list (3, uname__root, uname__bang_exclude_result_prefixes, context.xp_top_excl_res_prefx);
+      context.xp_top_excl_res_prefx = NULL;
+    }
+  dk_set_push (&top, root_elt_head);
   tree = (caddr_t) list_to_array (top);
   xn->xn_children = NULL;
   xp_free (&context);
@@ -2060,6 +2068,84 @@ bx_out_dv (caddr_t * qst, dk_session_t * out, db_buf_t dv, wcharset_t *src_chars
     }
 }
 
+void
+bx_out_nsdecls_of_2dict (caddr_t * qst, dk_session_t * out, close_tag_t * ct, xml_ns_2dict_t *xd_ns_2dict, caddr_t excl_res_prefx)
+{
+  caddr_t token_buf = box_copy (excl_res_prefx);
+  char *tail = token_buf;
+  char *token_buf_end = token_buf + box_length (token_buf) - 1;
+  int ctr, dict_size = xd_ns_2dict->xn2_size;
+  int default_is_excluded = 0;
+  char *excluded_decls = dk_alloc (dict_size);
+  memset (excluded_decls, 0, dict_size);
+  while (tail < token_buf_end)
+    {
+      char *pfx;
+      while (((unsigned char)(' ') >= (unsigned char)(tail[0])) && (tail < token_buf_end)) tail++;
+      pfx = tail;
+      while (((unsigned char)(' ') < (unsigned char)(tail[0])) && (tail < token_buf_end)) tail++;
+      if (pfx == tail)
+        break;
+      tail[0] = '\0';
+      for (ctr = dict_size; ctr--; /* no step */)
+        {
+          if (!strcmp (pfx, xd_ns_2dict->xn2_prefix2uri[ctr].xna_key))
+            {
+              excluded_decls[ctr] = 1;
+              break;
+            }
+          if (!strcmp (pfx, "#default"))
+            {
+              default_is_excluded = 1;
+              break;
+            }
+        }
+    }
+  for (ctr = dict_size; ctr--; /* no step */)
+    {
+      s_node_t *ns_list;
+      caddr_t dict_ns, dict_pref;
+      if (excluded_decls[ctr])
+        continue;
+      dict_pref = xd_ns_2dict->xn2_prefix2uri[ctr].xna_key;
+      dict_ns = xd_ns_2dict->xn2_prefix2uri[ctr].xna_value;
+      for (ns_list = ct->ct_all_explicit_ns; NULL != ns_list; ns_list = ns_list->next->next)
+        {
+          caddr_t cached_ns = (caddr_t) ns_list->data;
+          caddr_t cached_pref = (caddr_t) ns_list->next->data;
+          if (strcmp (cached_ns, dict_ns))
+            {
+              if (strcmp (cached_pref, dict_pref))
+                continue; /* Cached has nothing common with dict, try next cached */
+/* Here we have different namespace for same prefix, seems to be impossible now, if happens then don't redeclare */
+#ifndef NDEBUG
+              GPF_T1("bx_" "out_nsdecls_of_2dict(): cached namespace differs from one in ns dict");
+#endif
+            }
+          else
+            {
+              if (!strcmp (cached_pref, dict_pref)) /* If the ns and prefix pair is cached already then no need to print */
+                goto skip_ns_decl; /* see below */
+/* Here we have different prefix for same namespace, seems to be impossible now, if happens then don't redeclare */
+#ifndef NDEBUG
+              GPF_T1("bx_" "out_nsdecls_of_2dict(): cached prefix differs from one in ns dict");
+#endif
+            }
+          goto skip_ns_decl; /* see below */
+
+        }
+      dk_set_push (&ct->ct_all_explicit_ns, box_copy (dict_pref));
+      dk_set_push (&ct->ct_all_explicit_ns, box_copy (dict_ns));
+      SES_PRINT (out, " xmlns:");
+      SES_PRINT (out, dict_pref);
+      SES_PRINT (out, "=\"");
+      bx_out_value (qst, out, (db_buf_t) dict_ns, QST_CHARSET(qst), CHARSET_UTF8, DKS_ESC_DQATTR);
+      SES_PRINT (out, "\"");
+skip_ns_decl: ;
+    }
+  dk_free_box (token_buf);
+  dk_free (excluded_decls, dict_size);
+}
 
 void
 bx_out_value (caddr_t * qst, dk_session_t * out, db_buf_t val, wcharset_t * tgt_charset, wcharset_t * src_charset, int dks_esc_mode)
@@ -2311,7 +2397,11 @@ bx_tree_start_tag  (xte_serialize_state_t *xsst, dk_session_t * ses, caddr_t * t
   for (inx = 1; inx < len; inx += 2)
     {
       if (' ' == tag[inx][0])
+        {
+          if (!strcmp (tag[inx], uname__bang_exclude_result_prefixes))
+            bx_out_nsdecls_of_2dict (xsst->xsst_qst, ses, xsst->xsst_ct, &(xsst->xsst_entity->xe_doc.xtd->xd_ns_2dict), tag[inx+1]);
 	continue;
+        }
       SES_PRINT (ses, " ");
       if (xsst->xsst_out_method == OUT_METHOD_HTML && tag[inx] && tag[inx+1] && DV_STRINGP (tag[inx + 1]) &&
 	  !stricmp (tag[inx], tag[inx + 1]))

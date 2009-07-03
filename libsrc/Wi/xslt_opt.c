@@ -128,7 +128,10 @@ xsl_need_ns_scope (char * name)
 {
   if (0 == strcmp (name, "attribute")
       || 0 == strcmp (name, "element"))
-    return 1;
+    return 0x1;
+  if (0 == strcmp (name, "stylesheet")
+      || 0 == strcmp (name, "transform"))
+    return 0x2;
   return 0;
 }
 
@@ -308,6 +311,7 @@ xn_xslt_attributes (xp_node_t * xn)
   caddr_t * head = xn->xn_attrs;
   int headlen = (int) BOX_ELEMENTS (head);
   int inx;
+  int is_xslt_start = 0;
   xp_debug_location_t *elem_xdl = NULL;
   if (!xn->xn_parent->xn_parent)
     {
@@ -353,7 +357,8 @@ xn_xslt_attributes (xp_node_t * xn)
 	  xn->xn_attrs = head = head2;
 	}
       colon = strrchr (head[0], ':');
-      if (!strcmp (colon + 1, "stylesheet") || !strcmp (colon + 1, "transform"))
+      is_xslt_start = (!strcmp (colon + 1, "stylesheet") || !strcmp (colon + 1, "transform"));
+      if (is_xslt_start)
 	xn->xn_xp->xp_xslt_start = (caddr_t) xn;
       for (inx = 1; inx < headlen; inx += 2)
 	{
@@ -424,6 +429,16 @@ xn_xslt_attributes (xp_node_t * xn)
 	      dk_free_box ((caddr_t) head);
 	      xn->xn_attrs = head = head2;
 	    }
+          if (is_xslt_start && !strcmp (head[inx], "exclude-result-prefixes"))
+            {
+              caddr_t val = head[inx + 1], ret = NULL;
+	      if (strchr (val, '{'))
+                ret = xslt_avt_parse_attribute_value_template (xn, val);
+	      if (ret && ret != val)
+                xn->xn_xp->xp_top_excl_res_prefx = ret;
+              else
+                xn->xn_xp->xp_top_excl_res_prefx = box_copy_tree (head[inx+1]);
+            }
 	}
       colon = strrchr (head[0], ':');
       if (colon && xsl_need_ns_scope (colon + 1))
@@ -994,6 +1009,7 @@ xslt_sheet_prepare (xslt_sheet_t *xsh, caddr_t * xstree, query_instance_t * qi,
 		    caddr_t * err_ret, xml_ns_2dict_t *ns_2dict)
 {
   char * indent;
+  caddr_t *root_elt_head;
   int inx, inx2, sheet_inx, is_simple = 0;
   dk_set_t imports = NULL;
   xsh->xsh_all_templates_byname = hash_table_allocate (61);
@@ -1006,6 +1022,14 @@ xslt_sheet_prepare (xslt_sheet_t *xsh, caddr_t * xstree, query_instance_t * qi,
     {
       *err_ret = srv_make_new_error ("22023", "XS030", "Bad style sheet in xslt_sheet");
       return;
+    }
+  root_elt_head = ((caddr_t ***)(xstree))[0];
+  for (inx = BOX_ELEMENTS (root_elt_head) - 2; inx > 0; inx -= 2)
+    {
+      if (strcmp (root_elt_head[inx], uname__bang_exclude_result_prefixes))
+        continue;
+      xsh->xsh_top_excl_res_prefx = box_copy_tree (root_elt_head[inx+1]);
+      break;
     }
 QR_RESET_CTX
   {
