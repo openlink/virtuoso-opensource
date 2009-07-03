@@ -29,6 +29,26 @@
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
         doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
+  <script type="text/javascript">
+    <![CDATA[
+      function selectAllCheckboxes (obj, prefix) 
+      {
+        var objForm = obj.form;
+        for (var i = 0; i < objForm.elements.length; i++) 
+        {
+          var o = objForm.elements[i];
+          if (o != null && o.type == "checkbox" && !o.disabled && o.name.indexOf (prefix) != -1) 
+            o.checked = (obj.value == 'Select All');
+        }
+        if (obj.value == 'Select All')
+          obj.value = 'Unselect All';
+        else
+          obj.value = 'Select All';
+        obj.focus();
+      }
+    ]]>
+  </script>
+
   <v:method name="ldap2_value" arglist="inout data any">
     <![CDATA[
       return case when isstring (data) then data else data[0] end;
@@ -105,6 +125,7 @@
   <v:variable name="iTopicInterests" type="varchar" default="null" />
   <v:variable name="iOnlineAccounts" type="varchar" default="null" />
   <v:variable name="iSameAs" type="varchar" default="null" />
+  <v:variable name="iTags" type="varchar" default="null" />
 
   <v:variable name="show_data" type="int" default="0" />
   <v:variable name="ab_domain" type="int" default="null" />
@@ -198,6 +219,7 @@
               self.iTopicInterests := get_keyword ('topic_interest', data);
               self.iOnlineAccounts := get_keyword ('onlineAccounts', data);
               self.iSameAs := get_keyword ('sameAs', data);
+              self.iTags := get_keyword ('tags', data);             
 
                 self.show_data := 1;
                 control.vc_data_bind (e);
@@ -256,6 +278,12 @@
                     self.iWorkplaceHomepage := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_B_WEB'));;
                     self.iHomepage := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_WEB'));;
                     self.iPhone := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_H_PHONE'));;
+                    self.iResume := null;
+                    self.iInterests := null;
+                    self.iTopicInterests := null;
+                    self.iOnlineAccounts := null;
+                    self.iSameAs := null;
+                    self.iTags := null;             
 
                     self.show_data := 2;
                     goto _exit2;
@@ -282,101 +310,132 @@
       </fieldset>
       <table class="listing">
         <tr class="listing_header_row">
+          <th width="1%"><input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" /></th>
           <th>Field</th>
-          <th>value</th>
+          <th>Value</th>
         </tr>
         <v:template name="iTemplate_01" type="simple" condition="length (self.iTitle)">
           <tr>
+            <td><input type="checkbox" name="cb_item_iTitle" id="cb_item_iTitle" value="1" /></td>
             <td>Title</td>
             <td><?V self.iTitle ?></td>
           </tr>
         </v:template>
         <v:template name="iTemplate_02"  type="simple" condition="length (self.iFirstName)">
           <tr>
+            <td><input type="checkbox" name="cb_item_iFirstName" id="cb_item_iFirstName" value="1" /></td>
             <td>First Name</td>
             <td><?V wa_utf8_to_wide (self.iFirstName) ?></td>
           </tr>
         </v:template>
         <v:template name="iTemplate_03" type="simple" condition="length (self.iFamily_name)">
           <tr>
+            <td><input type="checkbox" name="cb_item_iFamily_name" id="cb_item_iFamily_name" value="1" /></td>
             <td>Family Name</td>
             <td><?V wa_utf8_to_wide (self.iFamily_name) ?></td>
           </tr>
         </v:template>
+        <v:template name="iTemplate_030" type="simple" condition="length (self.iName)">
+          <tr>
+            <td><input type="checkbox" name="cb_item_iName" id="cb_item_iName" value="1" /></td>
+            <td>Full Name</td>
+            <td><?V wa_utf8_to_wide (self.iName) ?></td>
+          </tr>
+        </v:template>
         <v:template name="iTemplate_04" type="simple" condition="length (self.iMBox)">
           <tr>
+            <td><input type="checkbox" name="cb_item_iMBox" id="cb_item_iMBox" value="1" /></td>
             <td>E-mail</td>
             <td><?V self.iMBox ?></td>
           </tr>
         </v:template>
         <v:template name="iTemplate_05" type="simple" condition="length (self.iGender)">
           <tr>
+            <td><input type="checkbox" name="cb_item_iGender" id="cb_item_iGender" value="1" /></td>
             <td>Gender</td>
             <td><?V self.iGender ?></td>
           </tr>
         </v:template>
         <v:template name="iTemplate_06" type="simple" condition="length (self.iBirthday)">
           <tr>
+            <td><input type="checkbox" name="cb_item_iBirthday" id="cb_item_iBirthday" value="1" /></td>
             <td>Birthday</td>
             <td><?V self.iBirthday ?></td>
           </tr>
         </v:template>
         <v:template name="iTemplate_07" type="simple" condition="length (self.iLng)">
           <tr>
+            <td><input type="checkbox" name="cb_item_iLng" id="cb_item_iLng" value="1" /></td>
             <td>Geo position</td>
             <td><?V self.iLat ?>;<?V self.iLng ?></td>
           </tr>
         </v:template>
         <v:template name="iTemplate_08" type="simple" condition="length (self.iIcqChatID)">
           <tr>
+            <td><input type="checkbox" name="cb_item_iIcqChatID" id="cb_item_iIcqChatID" value="1" /></td>
             <td>ICQ</td>
             <td><?V wa_utf8_to_wide (self.iIcqChatID) ?></td>
           </tr>
         </v:template>
         <v:template name="iTemplate_09" type="simple" condition="length (self.iMsnChatID)">
           <tr>
+            <td><input type="checkbox" name="cb_item_iMsnChatID" id="cb_item_iMsnChatID" value="1" /></td>
             <td>MSN</td>
             <td><?V wa_utf8_to_wide (self.iMsnChatID) ?></td>
           </tr>
         </v:template>
         <v:template name="iTemplate_10" type="simple" condition="length (self.iAimChatID)">
           <tr>
+            <td><input type="checkbox" name="cb_item_iAimChatID" id="cb_item_iAimChatID" value="1" /></td>
             <td>AIM</td>
             <td><?V wa_utf8_to_wide (self.iAimChatID) ?></td>
           </tr>
         </v:template>
         <v:template name="iTemplate_11" type="simple" condition="length (self.iYahooChatID)">
           <tr>
+            <td><input type="checkbox" name="cb_item_iYahooChatID" id="cb_item_iYahooChatID" value="1" /></td>
             <td>Yahoo</td>
             <td><?V wa_utf8_to_wide (self.iYahooChatID) ?></td>
           </tr>
         </v:template>
         <v:template name="iTemplate_12" type="simple" condition="length (self.iWorkplaceHomepage)">
           <tr>
+            <td><input type="checkbox" name="cb_item_iWorkplaceHomepage" id="cb_item_iWorkplaceHomepage" value="1" /></td>
             <td>Workplace Homepage</td>
             <td><?V self.iWorkplaceHomepage ?></td>
           </tr>
         </v:template>
         <v:template name="iTemplate_13" type="simple" condition="length (self.iHomepage)">
           <tr>
+            <td><input type="checkbox" name="cb_item_iHomepage" id="cb_item_iHomepage" value="1" /></td>
             <td>Homepage</td>
             <td><?V self.iHomepage ?></td>
           </tr>
         </v:template>
         <v:template name="iTemplate_14" type="simple" condition="length (self.iPhone)">
           <tr>
+            <td><input type="checkbox" name="cb_item_iPhone" id="cb_item_iPhone" value="1" /></td>
             <td>Phone</td>
             <td><?V self.iPhone ?></td>
           </tr>
         </v:template>
         <v:template name="iTemplate_15" type="simple" condition="length (self.iResume)">
           <tr>
+            <td><input type="checkbox" name="cb_item_iResume" id="cb_item_iResume" value="1" /></td>
             <td>Resume</td>
             <td><?V self.iResume ?></td>
           </tr>
         </v:template>
-        <v:template name="iTemplate_16" type="simple" condition="length (self.iInterests)">
+        <v:template name="iTemplate_165" type="simple" condition="length (self.iTags)">
           <tr>
+            <td><input type="checkbox" name="cb_item_iTags" id="cb_item_iTags" value="1" /></td>
+            <td>Tags</td>
+            <td><?V self.iTags ?></td>
+          </tr>
+        </v:template>
+        <v:template name="iTemplate_17" type="simple" condition="length (self.iInterests)">
+          <tr>
+            <td><input type="checkbox" name="cb_item_iInterests" id="cb_item_iInterests" value="1" /></td>
             <td valign="top">Resource URI indicating thing of interest</td>
             <td>
               <?vsp
@@ -394,8 +453,9 @@
             </td>
           </tr>
         </v:template>
-        <v:template name="iTemplate_17" type="simple" condition="length (self.iTopicInterests)">
+        <v:template name="iTemplate_18" type="simple" condition="length (self.iTopicInterests)">
           <tr>
+            <td><input type="checkbox" name="cb_item_iTopicInterests" id="cb_item_iTopicInterests" value="1" /></td>
             <td valign="top">Web page URL indicating a topic of interest   </td>
             <td>
               <?vsp
@@ -413,8 +473,9 @@
             </td>
           </tr>
         </v:template>
-        <v:template name="iTemplate_18" type="simple" condition="length (self.iOnlineAccounts)">
+        <v:template name="iTemplate_19" type="simple" condition="length (self.iOnlineAccounts)">
           <tr>
+            <td><input type="checkbox" name="cb_item_iOnlineAccounts" id="cb_item_iOnlineAccounts" value="1" /></td>
             <td valign="top">Online Accounts</td>
             <td>
               <?vsp
@@ -432,8 +493,9 @@
             </td>
           </tr>
         </v:template>
-        <v:template name="iTemplate_19" type="simple" condition="length (self.iSameAs)">
+        <v:template name="iTemplate_20" type="simple" condition="length (self.iSameAs)">
           <tr>
+            <td><input type="checkbox" name="cb_item_iSameAs" id="cb_item_iSameAs" value="1" /></td>
             <td valign="top">Other Identity URIs (synonyms)</td>
             <td>
               <?vsp
@@ -453,31 +515,61 @@
       <v:button action="simple" name="bt_imp2" value="Save">
         <v:on-post>
           <![CDATA[
-            --WA_USER_EDIT (self.u_name, 'WAUI_BIRTHDAY', dt);
-            WA_USER_EDIT (self.u_name, 'WAUI_TITLE', self.iTitle);
-            WA_USER_EDIT (self.u_name, 'WAUI_FIRST_NAME', self.iFirstName);
-            WA_USER_EDIT (self.u_name, 'WAUI_LAST_NAME', self.iFamily_name);
-            WA_USER_EDIT (self.u_name, 'WAUI_FULL_NAME', self.iName);
-            WA_USER_EDIT (self.u_name, 'E_MAIL', self.iMBox);
-            WA_USER_EDIT (self.u_name, 'WAUI_GENDER', self.iGender);
-            WA_USER_EDIT (self.u_name, 'WAUI_WEBPAGE', self.iHomepage);
+            declare params any;
+            
+            params := e.ve_params;
 
-            WA_USER_EDIT (self.u_name, 'WAUI_ICQ', self.iIcqChatID);
-            WA_USER_EDIT (self.u_name, 'WAUI_AIM', self.iAimChatID);
-            WA_USER_EDIT (self.u_name, 'WAUI_YAHOO', self.iYahooChatID);
-            WA_USER_EDIT (self.u_name, 'WAUI_MSN', self.iMsnChatID);
-
-            WA_USER_EDIT (self.u_name, 'WAUI_BORG_HOMEPAGE', self.iworkplaceHomepage);
-            WA_USER_EDIT (self.u_name, 'WAUI_HPHONE', self.iPhone);
-            WA_USER_EDIT (self.u_name, 'WAUI_LAT', self.iLat);
-            WA_USER_EDIT (self.u_name, 'WAUI_LNG', self.iLng);
-
+            --DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_BIRTHDAY', dt);
+            if (get_keyword ('cb_item_iTitle', params, '0') = '1')
+              DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_TITLE', self.iTitle);
+            if (get_keyword ('cb_item_iFirstName', params, '0') = '1')
+              DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_FIRST_NAME', self.iFirstName);
+            if (get_keyword ('cb_item_iFamily_name', params, '0') = '1')
+              DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_LAST_NAME', self.iFamily_name);
+            if (get_keyword ('cb_item_iName', params, '0') = '1')
+              DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_FULL_NAME', self.iName);
+            if (get_keyword ('cb_item_iMBox', params, '0') = '1')
+              DB.DBA.WA_USER_EDIT (self.u_name, 'E_MAIL', self.iMBox);
+            if (get_keyword ('cb_item_iGender', params, '0') = '1')
+              DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_GENDER', self.iGender);
+            if (get_keyword ('cb_item_iHomepage', params, '0') = '1')
+              DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_WEBPAGE', self.iHomepage);
+  
+            if (get_keyword ('cb_item_iIcqChatID', params, '0') = '1')
+              DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_ICQ', self.iIcqChatID);
+            if (get_keyword ('cb_item_iAimChatID', params, '0') = '1')
+              DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_AIM', self.iAimChatID);
+            if (get_keyword ('cb_item_iYahooChatID', params, '0') = '1')
+              DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_YAHOO', self.iYahooChatID);
+            if (get_keyword ('cb_item_iMsnChatID', params, '0') = '1')
+              DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_MSN', self.iMsnChatID);
+  
+            if (get_keyword ('cb_item_iWorkplaceHomepage', params, '0') = '1')
+              DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_BORG_HOMEPAGE', self.iWorkplaceHomepage);
+            if (get_keyword ('cb_item_iPhone', params, '0') = '1')
+              DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_HPHONE', self.iPhone);
+            if (get_keyword ('cb_item_iLng', params, '0') = '1')
+              DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_LAT', self.iLat);
+            if (get_keyword ('cb_item_iLng', params, '0') = '1')
+              DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_LNG', self.iLng);
             if (self.show_data = 1)
             {
-              WA_USER_EDIT (self.u_name, 'WAUI_FOAF', self.iSameAs);
-              WA_USER_EDIT (self.u_name, 'WAUI_RESUME', self.iResume);
-              WA_USER_EDIT (self.u_name, 'WAUI_INTERESTS', self.iInterests);
-              WA_USER_EDIT (self.u_name, 'WAUI_INTEREST_TOPICS', self.iTopicInterests);
+              if (get_keyword ('cb_item_iTags', params, '0') = '1')
+                if (not isnull (self.iTags))
+                {
+                  self.iTags := DB.DBA.WA_TAG_PREPARE(self.iTags);
+                  if (DB.DBA.WA_VALIDATE_TAGS(self.iTags))
+                    WA_USER_TAG_SET(http_nobody_uid(), self.u_id, self.iTags);
+                }
+              if (get_keyword ('cb_item_iSameAs', params, '0') = '1')
+                DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_FOAF', self.iSameAs);
+              if (get_keyword ('cb_item_iResume', params, '0') = '1')
+                DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_RESUME', self.iResume);
+              if (get_keyword ('cb_item_iInterests', params, '0') = '1')
+                DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_INTERESTS', self.iInterests);
+              if (get_keyword ('cb_item_iTopicInterests', params, '0') = '1')
+                DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_INTEREST_TOPICS', self.iTopicInterests);
+              if (get_keyword ('cb_item_iOnlineAccounts', params, '0') = '1')
               if (length (self.iOnlineAccounts))
               {
                 delete from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_U_ID = self.u_id;
