@@ -1851,6 +1851,7 @@ qn_refd_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t *
     {
       hash_source_t * hs = (hash_source_t *) qn;
       ref_ssls (res, hs->hs_ref_slots);
+      ref_ssls (all_res, hs->hs_ref_slots);
       cv_refd_slots (sc, hs->hs_after_join_test, res, all_res, non_cl_local);
       DO_BOX (state_slot_t *, ssl, inx, hs->hs_out_slots)
 	{

@@ -9997,6 +9997,7 @@ shuric_cache_t *xpath_eval_cache;
 caddr_t xmltype_class_name = NULL;
 
 caddr_t uname__bang_cdata_section_elements;
+caddr_t uname__bang_exclude_result_prefixes;
 caddr_t uname__bang_file;
 caddr_t uname__bang_location;
 caddr_t uname__bang_name;
@@ -10085,6 +10086,7 @@ xml_tree_init (void)
   macro_char_func *rt;
 #define UNAME_IT(var,txt) var = box_dv_uname_string (txt); box_dv_uname_make_immortal (var)
   UNAME_IT(uname__bang_cdata_section_elements	, " !cdata-section-elements"	);
+  UNAME_IT(uname__bang_exclude_result_prefixes	, " !exclude_result_prefixes"	);
   UNAME_IT(uname__bang_file			, " !file"			);
   UNAME_IT(uname__bang_location			, " !location"			);
   UNAME_IT(uname__bang_name			, " !name"			);

@@ -101,6 +101,7 @@ extern int xte_is_xsl (caddr_t * xte);
 #define XSLT_ATTR_ANY_NS			2 /* not required */
 #define XSLT_ATTR_FIRST_SPECIAL			3 /* special, never used directly */
 
+#define XSLT_ATTR_GENERIC_XMLNS			(XSLT_ATTR_FIRST_SPECIAL + 0) /* not required */
 #define XSLT_ATTR_ATTRIBUTESET_NAME		(XSLT_ATTR_FIRST_SPECIAL + 0) /* required */
 #define XSLT_ATTR_ATTRIBUTESET_USEASETS		(XSLT_ATTR_FIRST_SPECIAL + 1) /* not required */
 #define XSLT_ATTR_DECIMALFORMAT_NAME		(XSLT_ATTR_FIRST_SPECIAL + 0) /* not required */
@@ -133,15 +134,16 @@ extern int xte_is_xsl (caddr_t * xte);
 #define XSLT_ATTR_SORT_LANG			(XSLT_ATTR_FIRST_SPECIAL + 3) /* not required */
 #define XSLT_ATTR_SORT_CASEORDER		(XSLT_ATTR_FIRST_SPECIAL + 4) /* not required */
 #define XSLT_ATTR_STRIPORPRESERVESPACE_ELEMENTS	(XSLT_ATTR_FIRST_SPECIAL + 0) /* required */
-#define XSLT_ATTR_STYLESHEET_VERSION		(XSLT_ATTR_FIRST_SPECIAL + 0) /* required */
-#define XSLT_ATTR_STYLESHEET_ID			(XSLT_ATTR_FIRST_SPECIAL + 1) /* not required */
-#define XSLT_ATTR_STYLESHEET_EXT_EL_PREFS	(XSLT_ATTR_FIRST_SPECIAL + 2) /* not required */
-#define XSLT_ATTR_STYLESHEET_EXC_RES_PREFS	(XSLT_ATTR_FIRST_SPECIAL + 3) /* not required */
+/* XSLT_ATTR_GENERIC_XMLNS is (XSLT_ATTR_FIRST_SPECIAL + 0) for xsl:stylesheet or xsl:transform */
+#define XSLT_ATTR_STYLESHEET_VERSION		(XSLT_ATTR_FIRST_SPECIAL + 1) /* required */
+#define XSLT_ATTR_STYLESHEET_ID			(XSLT_ATTR_FIRST_SPECIAL + 2) /* not required */
+#define XSLT_ATTR_STYLESHEET_EXT_EL_PREFS	(XSLT_ATTR_FIRST_SPECIAL + 3) /* not required */
+#define XSLT_ATTR_STYLESHEET_EXC_RES_PREFS	(XSLT_ATTR_FIRST_SPECIAL + 4) /* not required */
 #define XSLT_ATTR_APPLYTEMPLATES_SELECT		(XSLT_ATTR_FIRST_SPECIAL + 0) /* not required */
 #define XSLT_ATTR_APPLYTEMPLATES_MODE		(XSLT_ATTR_FIRST_SPECIAL + 1) /* not required */
 #define XSLT_ATTR_CALLTEMPLATE_NAME		(XSLT_ATTR_FIRST_SPECIAL + 0) /* required */
 #define XSLT_ATTR_FOREACH_SELECT		(XSLT_ATTR_FIRST_SPECIAL + 0) /* required */
-#define XSLT_ATTR_ATTRIBUTEORELEMENT_XMLNS	(XSLT_ATTR_FIRST_SPECIAL + 0) /* not required */
+/* XSLT_ATTR_GENERIC_XMLNS is (XSLT_ATTR_FIRST_SPECIAL + 0) for xsl:attribute or xsl:element */
 #define XSLT_ATTR_ATTRIBUTEORELEMENT_NAME	(XSLT_ATTR_FIRST_SPECIAL + 1) /* required */
 #define XSLT_ATTR_ATTRIBUTEORELEMENT_NAMESPACE	(XSLT_ATTR_FIRST_SPECIAL + 2) /* not required */
 #define XSLT_ATTR_ELEMENT_USEASETS		(XSLT_ATTR_FIRST_SPECIAL + 3) /* required */

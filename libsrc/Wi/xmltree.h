@@ -732,16 +732,17 @@ typedef struct xslt_sheet_s
   {
     shuric_t		xsh_shuric;
     struct xslt_sheet_s **	xsh_imported_sheets;
-    caddr_t *		xsh_raw_tree;		/* the stylesheet entity in its (almost) original form */
-    caddr_t *		xsh_compiled_tree;	/* the compiled version of stylesheet entity. To be removed soon! */
-    dk_set_t		xsh_new_templates;	/* temporary set of templates used by the XSLT optimizer to prevent memory leaks on abend. */
+    caddr_t *		xsh_raw_tree;		/*!< The stylesheet entity in its (almost) original form */
+    caddr_t *		xsh_compiled_tree;	/*!< The compiled version of stylesheet entity. To be removed soon! */
+    dk_set_t		xsh_new_templates;	/*!< Temporary set of templates used by the XSLT optimizer to prevent memory leaks on abend. */
     xslt_template_t **	xsh_all_templates;
     dk_hash_t *		xsh_all_templates_byname;
     xslt_sheet_mode_t	xsh_default_mode;
     dk_hash_t *		xsh_named_modes;
     xqi_binding_t *	xsh_globals;
     dk_set_t		xsh_formats;
-    xml_ns_2dict_t	xsh_ns_2dict;
+    xml_ns_2dict_t	xsh_ns_2dict;		/*!< Dictionary of namespace that are declared in the stylesheet (or imported) and will extend the xd_ns_2dict of the resulting tree */
+    caddr_t		xsh_top_excl_res_prefx;	/*!< String that is an attribute value expression (string with expressins in {...}) that is value of exclude-result-prefixes attr of xsl:stylesheet element */
     XOUT_MEMBERS
     xslt_sheet_stats_t	xsh_total_uses;
     xslt_sheet_stats_t	xsh_new_uses;
@@ -790,6 +791,7 @@ typedef struct xparse_ctx_s
   caddr_t		xp_boxed_name;
   id_hash_t *		xp_namespaces;
   int			xp_namespaces_are_valid;
+  caddr_t		xp_top_excl_res_prefx;
   xp_rdf_locals_t *	xp_rdf_locals;
   xp_rdf_locals_t *	xp_rdf_free_list;
   struct triple_feed_s *xp_tf;
@@ -928,6 +930,7 @@ extern caddr_t xml_get_ns_uri (client_connection_t *cli, caddr_t pref, ptrlong p
 
 extern caddr_t uname___empty;
 extern caddr_t uname__bang_cdata_section_elements;
+extern caddr_t uname__bang_exclude_result_prefixes;
 extern caddr_t uname__bang_file;
 extern caddr_t uname__bang_location;
 extern caddr_t uname__bang_name;

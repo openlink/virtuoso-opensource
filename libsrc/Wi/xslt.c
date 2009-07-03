@@ -1526,7 +1526,7 @@ xslt_attr_or_element_qname (xparse_ctx_t * xp, caddr_t * elt, int use_deflt)
   colon = strrchr (name, ':');
   if (colon)
     {
-      caddr_t * xmlns = (caddr_t *) xslt_arg_value (elt, XSLT_ATTR_ATTRIBUTEORELEMENT_XMLNS);
+      caddr_t * xmlns = (caddr_t *) xslt_arg_value (elt, XSLT_ATTR_GENERIC_XMLNS);
       int inx, len;
       local = colon + 1;
       local_boxlen = (int) (name + box_length (name) - (colon + 1));
@@ -1588,7 +1588,7 @@ xslt_attr_or_element_qname (xparse_ctx_t * xp, caddr_t * elt, int use_deflt)
 	goto ns_found;
       if (use_deflt)
 	{
-	  caddr_t * xmlns = (caddr_t *) xslt_arg_value (elt, XSLT_ATTR_ATTRIBUTEORELEMENT_XMLNS);
+	  caddr_t * xmlns = (caddr_t *) xslt_arg_value (elt, XSLT_ATTR_GENERIC_XMLNS);
 	  int inx, len;
 	  if (NULL == xmlns)
 	    {
@@ -2473,7 +2473,8 @@ xslt_globals (xparse_ctx_t * xp, caddr_t * params)
 caddr_t
 xslt_top (query_instance_t * qi, xml_entity_t * xe, xslt_sheet_t * xsh, caddr_t * params, caddr_t *err_ret)
 {
-  caddr_t tree;
+  caddr_t tree, *root_elt_head = NULL;
+  caddr_t excl_val = NULL;
   dk_set_t top;
   xparse_ctx_t context;
   volatile int rc;
@@ -2491,15 +2492,24 @@ xslt_top (query_instance_t * qi, xml_entity_t * xe, xslt_sheet_t * xsh, caddr_t 
 
   QR_RESET_CTX
     {
+      caddr_t sh_uri;
       XD_DOM_LOCK (xe->xe_doc.xd);
       xslt_globals (&context, params);
       xslt_traverse_1  (&context);
+      if (NULL != xsh->xsh_top_excl_res_prefx)
+        excl_val = xslt_attr_template (&context, xsh->xsh_top_excl_res_prefx);
+      sh_uri = box_dv_short_string(xsh->xsh_shuric.shuric_uri);
+      if (NULL != excl_val)
+        root_elt_head = list (5, uname__root, uname__xslt, sh_uri, uname__bang_exclude_result_prefixes, excl_val);
+      else
+        root_elt_head = list (3, uname__root, uname__xslt, sh_uri);
       XD_DOM_RELEASE (xe->xe_doc.xd);
     }
   QR_RESET_CODE
     {
       context.xp_error_msg = thr_get_error_code (qi->qi_thread);
       rc = 0;
+      dk_free_tree (root_elt_head);
       POP_QR_RESET;
       XD_DOM_RELEASE (xe->xe_doc.xd);
     }
@@ -2518,8 +2528,37 @@ xslt_top (query_instance_t * qi, xml_entity_t * xe, xslt_sheet_t * xsh, caddr_t 
       xp_free (&context);
       return NULL;
     }
+  if (NULL != excl_val)
+    {
+      DO_SET (caddr_t ***, chld, &(xn->xn_children))
+        {
+          if ((DV_ARRAY_OF_POINTER == DV_TYPE_OF ((void*)chld)) &&
+            (DV_ARRAY_OF_POINTER == DV_TYPE_OF ((void*)(chld[0]))) &&
+            (' ' != chld[0][0][0]) )
+            {
+              caddr_t *head = chld[0];
+              caddr_t *new_head;
+              int head_len = BOX_ELEMENTS (head);
+              int idx;
+              int local_excl_found = 0;
+              for (idx = head_len-2; idx > 0; idx -= 2)
+                {
+                  if (!strcmp (head[idx], uname__bang_exclude_result_prefixes))
+                    goto child_has_excl_attr; /* see below */
+                }
+              new_head = dk_alloc_box ((2+head_len) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+              memcpy (new_head, head, head_len * sizeof (caddr_t));
+              new_head [head_len] = uname__bang_exclude_result_prefixes;
+              new_head [head_len+1] = box_copy_tree (excl_val);
+              chld[0] = new_head;
+              dk_free_box (head);
+            }
+child_has_excl_attr: ;
+        }
+      END_DO_SET()
+    }
   top = dk_set_nreverse (xn->xn_children);
-  dk_set_push (&top, (void*) list (3, uname__root, uname__xslt, box_dv_short_string(xsh->xsh_shuric.shuric_uri)));
+  dk_set_push (&top, (void *)root_elt_head);
   tree = (caddr_t) list_to_array (top);
   xn->xn_children = NULL;
   xp_free (&context);
@@ -3986,7 +4025,7 @@ xslt_init (void)
 	xslt_arg_define (XSLTMA_QNAME	, 0, NULL, "mode"		, XSLT_ATTR_APPLYTEMPLATES_MODE		),
 	xslt_arg_eol);
   xslt_define ("attribute"		, XSLT_EL_ATTRIBUTE		, xslt_attribute		, XSLT_ELGRP_NONCHARINS | XSLT_ELGRP_ATTRIBUTE	, XSLT_ELGRP_CHARTMPL	,
-	xslt_arg_define (XSLTMA_ANY	, 0, NULL, " !xmlns"		, XSLT_ATTR_ATTRIBUTEORELEMENT_XMLNS	),
+	xslt_arg_define (XSLTMA_ANY	, 0, NULL, " !xmlns"		, XSLT_ATTR_GENERIC_XMLNS	),
 	xslt_arg_define (XSLTMA_ANY	, 1, NULL, "name"		, XSLT_ATTR_ATTRIBUTEORELEMENT_NAME	),
 	xslt_arg_define (XSLTMA_ANY	, 0, NULL, "namespace"		, XSLT_ATTR_ATTRIBUTEORELEMENT_NAMESPACE),
 	xslt_arg_eol);
@@ -4023,14 +4062,14 @@ xslt_init (void)
 	xslt_arg_define (XSLTMA_ANY	, 0, NULL, "pattern-separator"	, XSLT_ATTR_DECIMALFORMAT_PSEP		),
 	xslt_arg_eol);
   xslt_define ("element"		, XSLT_EL_ELEMENT		, xslt_element			, XSLT_ELGRP_NONCHARINS	, XSLT_ELGRP_TMPL	,
-	xslt_arg_define (XSLTMA_ANY	, 0, NULL, " !xmlns"		, XSLT_ATTR_ATTRIBUTEORELEMENT_XMLNS	),
+	xslt_arg_define (XSLTMA_ANY	, 0, NULL, " !xmlns"		, XSLT_ATTR_GENERIC_XMLNS	),
 	xslt_arg_define (XSLTMA_ANY	, 1, NULL, "name"		, XSLT_ATTR_ATTRIBUTEORELEMENT_NAME	),
 	xslt_arg_define (XSLTMA_ANY	, 0, NULL, "namespace"		, XSLT_ATTR_ATTRIBUTEORELEMENT_NAMESPACE),
 	xslt_arg_define (XSLTMA_ANY	, 0, NULL, " !use-attribute-sets"	, XSLT_ATTR_ELEMENT_USEASETS	),
 	xslt_arg_define (XSLTMA_ANY	, 0, NULL, "use-attribute-sets"	, XSLT_ATTR_UNUSED			),
 	xslt_arg_eol);
   xslt_define ("element-rdfqname"	, XSLT_EL_ELEMENT_RDFQNAME	, xslt_element_rdfqname		, XSLT_ELGRP_NONCHARINS	, XSLT_ELGRP_TMPL	,
-	xslt_arg_define (XSLTMA_ANY	, 0, NULL, " !xmlns"		, XSLT_ATTR_ATTRIBUTEORELEMENT_XMLNS	),
+	xslt_arg_define (XSLTMA_ANY	, 0, NULL, " !xmlns"		, XSLT_ATTR_GENERIC_XMLNS	),
 	xslt_arg_define (XSLTMA_ANY	, 1, NULL, "name"		, XSLT_ATTR_ATTRIBUTEORELEMENT_NAME	),
 /*	xslt_arg_define (XSLTMA_ANY	, 0, NULL, "namespace"		, XSLT_ATTR_ATTRIBUTEORELEMENT_NAMESPACE), */
 /*	xslt_arg_define (XSLTMA_ANY	, 0, NULL, " !use-attribute-sets"	, XSLT_ATTR_ELEMENT_USEASETS	), */
@@ -4109,6 +4148,7 @@ xslt_init (void)
 	xslt_arg_define (XSLTMA_ANY	, 1, NULL, "elements"		, XSLT_ATTR_STRIPORPRESERVESPACE_ELEMENTS	),
 	xslt_arg_eol);
   xslt_define ("stylesheet"		, XSLT_EL_STYLESHEET		, xslt_misplaced		, XSLT_ELGRP_ROOTLEVEL	, XSLT_ELGRP_TOPLEVEL	,
+	xslt_arg_define (XSLTMA_ANY	, 0, NULL, " !xmlns"		, XSLT_ATTR_GENERIC_XMLNS	),
 	xslt_arg_define (XSLTMA_ANY	, 0, NULL, "version"		, XSLT_ATTR_STYLESHEET_VERSION		),
 	xslt_arg_define (XSLTMA_ANY	, 0, NULL, "id"			, XSLT_ATTR_STYLESHEET_ID		),
 	xslt_arg_define (XSLTMA_ANY	, 0, NULL, "extension-element-prefixes"		, XSLT_ATTR_STYLESHEET_EXT_EL_PREFS	),
@@ -4121,6 +4161,7 @@ xslt_init (void)
 	xslt_arg_define (XSLTMA_QNAME	, 0, NULL, "mode"		, XSLT_ATTR_TEMPLATE_MODE		),
 	xslt_arg_eol);
   xslt_define ("transform"		, XSLT_EL_TRANSFORM		, xslt_misplaced		, XSLT_ELGRP_ROOTLEVEL	, XSLT_ELGRP_TOPLEVEL	,
+	xslt_arg_define (XSLTMA_ANY	, 0, NULL, " !xmlns"		, XSLT_ATTR_GENERIC_XMLNS	),
 	xslt_arg_define (XSLTMA_ANY	, 0, NULL, "version"		, XSLT_ATTR_STYLESHEET_VERSION		),
 	xslt_arg_define (XSLTMA_ANY	, 0, NULL, "id"			, XSLT_ATTR_STYLESHEET_ID		),
 	xslt_arg_define (XSLTMA_ANY	, 0, NULL, "extension-element-prefixes"		, XSLT_ATTR_STYLESHEET_EXT_EL_PREFS	),
