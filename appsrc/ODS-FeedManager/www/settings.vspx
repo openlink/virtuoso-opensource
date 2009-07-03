@@ -27,7 +27,8 @@
     <![CDATA[
 	    declare exit handler for not found { goto _end; };
 
-      if (isnull(get_keyword('f_rows', self.vc_page.vc_event.ve_params))) {
+      if (isnull(get_keyword ('f_rows', self.vc_page.vc_event.ve_params)))
+      {
         self.v_conversation := ENEWS.WA.settings(self.domain_id, -1);
   			return;
   		}
