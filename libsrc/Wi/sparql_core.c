@@ -1196,6 +1196,8 @@ spar_gp_add_filter (sparp_t *sparp, SPART *filt)
       if (NULL == triple_with_var_obj)
         spar_error (sparp, "The group does not contain triple pattern with '$%s' object before %s() predicate", var_name, ft_pred_name);
       triple_with_var_obj->_.triple.ft_type = ft_type;
+      if (argcount % 2)
+        spar_error (sparp, "%s() special predicate is used with wrong number of arguments", ft_pred_name);
       if (2 < argcount)
         for (argctr = 2; argctr < argcount; argctr += 2)
           {
@@ -1203,6 +1205,8 @@ spar_gp_add_filter (sparp_t *sparp, SPART *filt)
             SPART *opt_value;
             if (SPAR_VARIABLE != SPART_TYPE (arg_value))
               continue;
+            if (DV_LONG_INT != DV_TYPE_OF (args[argctr]))
+              spar_error (sparp, "Invalid argument #%d for %s() special predicate", argctr+1);
             spar_tree_is_var_with_forbidden_ft_name (sparp, arg_value, 1);
             opt_value = (SPART *)t_box_copy_tree ((caddr_t)arg_value);
             opt_value->_.var.tabid = triple_with_var_obj->_.triple.tabid;
