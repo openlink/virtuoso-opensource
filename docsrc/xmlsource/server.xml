@@ -874,7 +874,7 @@ JavaVMOption5  = -Ddt5=val5
 <para><emphasis>Simple example using OFFSET and LIMIT:</emphasis></para>
 <para>Virtuoso uses a zero index in the OFFSET. Thus in the example below, will be taken position at
 record 9000 in the result set, and will get the next 1000 rows starting from 9001 record. Note that the
-MaxSortedTopRows in parameters Virtuoso ini section needs to be encreased (default is 10000).</para>
+MaxSortedTopRows in parameters Virtuoso ini section needs to be increased (default is 10000).</para>
 <programlisting><![CDATA[
 select ?name
 ORDER BY ?name
@@ -933,7 +933,7 @@ LIMIT 1000
 	<listitem id="ini_Parameters_MaxMemPoolSize">
 	    <formalpara>
 		<title>MaxMemPoolSize</title>
-		<para>Specifies the limit of the memory to be used for compiling a SQL statement. If the query compilation requires more memory an error will be signalled. If this is a zero then no limit will be apllied. The default is 10Mb i.e. when no parameter is specified, also if negative number or less than 5000000 is given then it would be set to 5000000 bytes.
+		<para>Specifies the limit of the memory to be used for compiling a SQL statement. If the query compilation requires more memory an error will be signalled. If this is a zero then no limit will be applied. The default is 10Mb i.e. when no parameter is specified, also if negative number or less than 5000000 is given then it would be set to 5000000 bytes.
 		</para>
 	    </formalpara>
 	</listitem>
@@ -995,7 +995,7 @@ LIMIT 1000
 	<listitem id="ini_RdfFreeTextRulesSize ">
 	    <formalpara>
 		<title>RdfFreeTextRulesSize  = 10 or more </title>
-		<para>The size of hash to control rdf freee text index
+		<para>The size of hash to control rdf free text index
 		</para>
 	    </formalpara>
 	</listitem>
@@ -1426,7 +1426,7 @@ This section should stay commented out as long as URIQA is not in use.
 <listitem id="ini_URIQA_DynamicLocal">
     <formalpara>
 	<title>DynamicLocal = 1/0 default 0, allow dynamic hostname translation in the IRIs</title>
-	<para>If DynamicLocal is on and the host part of the IRI matches the Host header of the HTTP request in context or the DefaulltHost if outside of HTTP context, then this is replaced with local: before looking up the IRI ID.</para>
+	<para>If DynamicLocal is on and the host part of the IRI matches the Host header of the HTTP request in context or the DefaultHost if outside of HTTP context, then this is replaced with local: before looking up the IRI ID.</para>
     </formalpara>
 </listitem>
 			</itemizedlist>
@@ -1857,7 +1857,7 @@ reconnecting without reporting the error, which would be setting 1.</para>
 						the same thread. This is called burst mode.
 						Once this mode is active all requests on this connection
 						will be processed in the same thread. until there is a break
-						at delay more than  'PrpcBurstTimeoutMsecs' elapces
+						at delay more than  'PrpcBurstTimeoutMsecs' elapses
 						between ending the last and receiving the next in same
 						connection. This break in activity return the thread to
 						the thread pool. The burst mode optimization saves thread
@@ -2925,5 +2925,7 @@ The following functions are restricted by file Access Control Lists (ACL) in the
 </sect1>
 
 &adminui;
+
+&clusteroperation;
 
 </chapter>

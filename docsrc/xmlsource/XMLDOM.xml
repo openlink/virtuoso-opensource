@@ -110,7 +110,7 @@ into a single generic entity. It is important to remember that the XML document 
 If two consecutive arguments are strings then a single node that is a concatenation of these string is added.
 If the value of one argument is a string and the value of the next argument is a tree fragment that starts with a string
 then this pair of strings will also be replaced with a concatenation of these strings.
-When a function insers a text after some existing text node of the XML document, no new node is created and
+When a function inserts a text after some existing text node of the XML document, no new node is created and
 the existing text node is replaced with the text node that is the concatenation of old and new texts.
 </para>
 <para>

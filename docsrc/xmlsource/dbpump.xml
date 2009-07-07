@@ -317,7 +317,7 @@ dbpump component-name [ component-arg [ output-file-name ] ]
 		  'dump_path' remote path, the root path for all dump
 							</listitem>
 							<listitem>
-		  'dump_dir' remote path, the name of dump folder, if not ended with '.dbk', will be concated with it
+		  'dump_dir' remote path, the name of dump folder, if not ended with '.dbk', will be concatenated with it
 							</listitem>
 							<listitem>
 		  'choice_sav' - summarization of all 'choice_tables' from listbox with such name
@@ -391,7 +391,7 @@ dbpump component-name [ component-arg [ output-file-name ] ]
 		  'dump_path' remote path, the root path for all dump
 							</listitem>
 							<listitem>
-		  'dump_dir' remote path, the name of dump folder, if not ended with '.dbk', will be concated with it
+		  'dump_dir' remote path, the name of dump folder, if not ended with '.dbk', will be concatenated with it
 							</listitem>
 							<listitem>
 		  'choice_sav' - summarization of all 'choice_tables' from listbox with such name

@@ -46,7 +46,7 @@ shared objects, installers or settings.  </para>
 <para>
 The following is what the dba needs to know about VAD packages.</para>
 
-<para>A VAD packge is installed from a file with the db..vad_install SQL
+<para>A VAD package is installed from a file with the db..vad_install SQL
 function.  The first argument is the file path, which must be in a
 location that the server process can open, i.e. it is in the DirsAllowed list in the virtuoso.ini file.  The second argument is 0, meaning that we are installing from a file.</para>
 

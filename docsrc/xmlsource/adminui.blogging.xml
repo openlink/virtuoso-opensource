@@ -131,7 +131,7 @@
 	  This is one of the way of making the blogosphere aware of your blog posts.</para></formalpara>
 	  </listitem>
     <listitem><formalpara><title>Enable Contacts </title>
-      <para>This is how you add records to the Virtuoso Weblog susbsystem's 
+      <para>This is how you add records to the Virtuoso Weblog subsystem's 
 	  FOAF (Friend of A Friend) database.  The FOAF database like other weblog 
 	  gems is exposed to the web and blogosphere via a SQL-XML based RDF file. 
 	  FOAF is an application of the XML based RDF vocabulary for persisting and 
@@ -420,7 +420,7 @@
 	  This is one of the way of making the blogosphere aware of your blog posts.</para></formalpara>
 	  </listitem>
     <listitem><formalpara><title>Enable Contacts </title>
-      <para>This is how you add records to the Virtuoso Weblog susbsystem's 
+      <para>This is how you add records to the Virtuoso Weblog subsystem's 
 	  FOAF (Friend of A Friend) database.  The FOAF database like other weblog 
 	  gems is exposed to the web and blogosphere via a SQL-XML based RDF file. 
 	  FOAF is an application of the XML based RDF vocabulary for persisting and 

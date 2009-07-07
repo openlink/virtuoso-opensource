@@ -52,7 +52,7 @@
     <refsect2 id="xpf_collection_types"><title>Local DAV collections</title>
       <para> 
 	Local DAV collections can be accessed either by providing "http://local.virt/DAV/" or "http://localhost:PORT/" URI. The "http://local.virt/DAV/" can be used even if the local http server is not enabled.
- The "http://localhost:PORT" URI is less efficient and takes the data over HTTP, so "http://local.virt/DAV/" is prefered.
+ The "http://localhost:PORT" URI is less efficient and takes the data over HTTP, so "http://local.virt/DAV/" is preferred.
       </para>
       <note>
 	<title>Note:</title>

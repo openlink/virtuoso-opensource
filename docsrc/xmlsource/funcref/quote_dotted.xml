@@ -44,7 +44,7 @@
     <para>The <function>quote_dotted()</function> function will return the
     identifier (table name or column name) appropriately quoted for the remote
     data source.  This function will obtain the appropriate quote characters
-    from the remote data source.  This function can be used in conjuction with
+    from the remote data source.  This function can be used in conjunction with
     rexecute function.</para>
   </refsect1>
   <refsect1 id="params_quote_dotted">

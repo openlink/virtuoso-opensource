@@ -60,7 +60,7 @@
     <link linkend="fn_backup_context_clear"><function>backup_context_clear();</function></link> 
     procedure must be called first.  This procedure will clear the current backup 
     context and mark all pages in the checkpoint space as ready for backup.</para>
-    <para>A database checkpoint cannnot be performed while an online backup is 
+    <para>A database checkpoint cannot be performed while an online backup is 
     in progress.  Attempt to do a checkpoint will wait until the backup is complete.</para>
     <para>This is the preferred means of backing up databases and replaces any 
     other prior means.  As an alternative, copying database files while the 

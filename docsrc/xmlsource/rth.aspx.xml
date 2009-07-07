@@ -487,7 +487,7 @@ DataGrid1.DataBind()
 ]]></programlisting>
 
     <para>You will find that Visual Studio will offer some assistance in the
-    form of intellisence command-completion while you are typing.</para>
+    form of intellisense command-completion while you are typing.</para>
 
     <figure id="rthvs018"><title>Databound Examples using MS Visual Studio</title>
       <graphic fileref="rth/vs018.jpg" width="" depth=""/></figure>

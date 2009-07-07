@@ -414,7 +414,7 @@ create procedure call_FUNCRET (in data varchar, in DSN varchar) returns integer
              );
    rexecute (DSN, '{?=call FUNCRET(?)}',
             null, null,
-            params); -- params should be a PL variable, as it will hold the subsituted
+            params); -- params should be a PL variable, as it will hold the substituted
                      -- output values for the OUT and INOUT parameters upon return.
    -- retrieve the output value of the first parameter (i.e.
    -- the function return value) and return it:
