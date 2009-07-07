@@ -43,7 +43,7 @@
 	the top-level element of the document that is stored within the instance.
     If the given instance is a fragment then NULL will be returned because there 
 	may be no top-level elements or too many of them.</para>
-    <para>Note that inspite of this functions name this function actually 
+    <para>Note that in spite of this functions name this function actually 
 	returns the a top-level node rather than not a root node.   According to the 
 	W3C XPATH standards, the root element is an implicit node whose children are top-level
     elements, comments, processing instructions and maybe text nodes.  E.g. if 

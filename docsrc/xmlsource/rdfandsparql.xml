@@ -9,7 +9,7 @@ From version 5.0.7, Virtuoso can be used  as the RDF store/query processor of th
 
 <para>
 This chapter discusses Virtuoso's RDF triple storage and query capabilities. 
-This discusses storing RDF data as well as mapping existing relational data into RDF for SPARQL access. Numerous  SPARQL language extensions and standard compliance are coverd.
+This discusses storing RDF data as well as mapping existing relational data into RDF for SPARQL access. Numerous  SPARQL language extensions and standard compliance are covered.
 </para>
 </abstract>
 
@@ -185,28 +185,27 @@ select ... from .... option (QUIETCAST)
 
 <sect1 id="rdfsparql"><title>SPARQL</title>
 <sect2 id="rdfsparqlimplementationextent"><title>SPARQL Implementation Details</title>
-<para>Virtuoso's RDF support includes in-built support for the SPARQL query language. It also includes a number of powerful extensions that cover path traversal and business intelligence features. In addition, there is in-built security based on Virtuoso's support for Row Level policy based security, custom authentication, and Named Graphs.</para>
-<para>The current implementation does not support some SPARQL features.</para>
+<para>Virtuoso's RDF support includes in-built support for the SPARQL query language. It also includes a number of powerful extensions that cover path traversal and business intelligence features. In addition, there is in-built security based on Virtuoso's support for row level policy-based security, custom authentication, and named graphs.</para>
+<para>The current implementation does not support some SPARQL features:</para>
 <itemizedlist mark="bullet" spacing="compact">
 <listitem>Unicode characters in names are not supported.</listitem>
-<listitem>Comments inside SPARQL query are not supported when the query is inlined in SQL code.</listitem>
+<listitem>Comments inside SPARQL queries are not supported when the query is inlined in SQL code.</listitem>
 </itemizedlist>
 <para>On the other hand, Virtuoso implements some extensions to SPARQL:</para>
 <itemizedlist mark="bullet" spacing="compact">
-<listitem>SPARUL statements are supported, like <emphasis>insert</emphasis>, <emphasis>modify</emphasis>, <emphasis>load</emphasis> and so on.</listitem>
-<listitem>The SPARQL compiler can be configured using <emphasis>define ...</emphasis> clauses, e.g., <emphasis>define output:valmode "LONG"</emphasis>.</listitem>
-<listitem>Expressions are allowed in triple patterns both in <emphasis>where</emphasis> and in constructor patterns, that expressions are delimited by backquotes.</listitem>
-<listitem>Expressions are allowed in result lists of select statements.</listitem>
+<listitem>SPARUL statements, such as <emphasis>insert</emphasis>, <emphasis>modify</emphasis>, <emphasis>load</emphasis> etc, are supported.</listitem>
+<listitem>The SPARQL compiler can be configured using <emphasis>define ...</emphasis> clauses, e.g. <emphasis>define output:valmode "LONG"</emphasis>.</listitem>
+<listitem>Expressions are allowed in triple patterns, both in a <emphasis>where</emphasis> clause and in constructor patterns. Such expressions are delimited by backquotes.</listitem>
+<listitem>Expressions are allowed in select statement result lists.</listitem>
 <listitem>Parameters can be passed to the query from outside, using <emphasis>?:variablename</emphasis> syntax.</listitem>
 <listitem>Aggregate functions are supported.</listitem>
 <listitem>Subqueries may appear where group patterns are allowed.</listitem>
-<listitem>A set of operators is added in order to configure the mapping of relational data to RDF.</listitem>
+<listitem>A set of operators has been added to configure the mapping of relational data to RDF (aka RDF Views).</listitem>
 </itemizedlist>
-<para>The following dump is BNF grammar of SPARQL with all Virtuoso extensions, but without rules for syntax of lexems.
-Rule numbers in square brackets are from W3C normative SPARQL grammar,
-asterisk means that the rule differs from W3C grammar due to Virtuoso extensions,
-<emphasis>[Virt]</emphasis> means that the rule is Virtuoso-specific.
-<emphasis>[DML]</emphasis> stands for data manipulation language extensions from SPARUL.
+<para>The following listing shows the SPARQL grammar expressed in BNF, including all Virtuoso extensions but excluding rules for the syntax of each lexical element. 
+Rule numbers in square brackets are from W3C normative SPARQL grammar. An asterisk indicates that the rule differs from the W3C grammar due to Virtuoso extensions -
+<emphasis>[Virt]</emphasis> means that the rule is Virtuoso-specific, 
+<emphasis>[DML]</emphasis> indicates a data manipulation language extension from SPARUL.
 </para>
 <programlisting><![CDATA[
 [1]*	Query		 ::=  Prolog ( QueryBody | SparulAction* | ( QmStmt ('.' QmStmt)* '.'? ) )
@@ -225,7 +224,7 @@ asterisk means that the rule differs from W3C grammar due to Virtuoso extensions
 [11]*	NamedGraphClause	 ::=  'NAMED' SourceSelector SpongeOptionList?
 [Virt]	SpongeOptionList	 ::=  'OPTION' '(' ( SpongeOption ( ',' SpongeOption )* )? ')'
 [Virt]	SpongeOption	 ::=  QNAME PrecodeExpn
-[Virt]	PrecodeExpn	 ::=  Expn	(* Only global variables can occur in Expn, local can not *)
+[Virt]	PrecodeExpn	 ::=  Expn	(* Only global variables can occur in Expn, local cannot *)
 [13]	WhereClause	 ::=  'WHERE'? GroupGraphPattern
 [14]	SolutionModifier	 ::=  OrderClause?
 			((LimitClause OffsetClause?) | (OffsetClause LimitClause?))?
@@ -408,24 +407,29 @@ asterisk means that the rule differs from W3C grammar due to Virtuoso extensions
 [Virt]	QmSqlId		 ::=  PLAIN_ID | 'TEXT' | 'XML'
 [Virt]	QmIRIrefConst	 ::=  IRIref | ( 'IRI' '(' String ')' )
 ]]></programlisting>
-<para><emphasis>Example using OFFSET and LIMIT:</emphasis></para>
-<para>Virtuoso uses a zero index in the OFFSET. Thus in the example below, will be taken position at
-record 9000 in the result set, and will get the next 1000 rows starting from 9001 record. Note that the
-MaxSortedTopRows in parameters Virtuoso ini section needs to be increased (default is 10000).</para>
+<para><emphasis>Example: Using OFFSET and LIMIT</emphasis></para>
+<para>
+Virtuoso uses a zero-based index for OFFSET. Thus, in the example below, the query returns 
+1000 rows starting from, and including, record 9001 of the result set. Note that the
+default value of the MaxSortedTopRows parameter in the [Parameters] section of the virtuoso.ini configuration 
+file defaults to 10000, so in this example its value will need to have been increased beforehand.
+</para>
 <programlisting><![CDATA[
 select ?name
 ORDER BY ?name
 OFFSET 9000
 LIMIT 1000
 ]]></programlisting>
-<para>LIMIT applies solution resulting from the graph patterns in the WHERE
+<para>LIMIT applies to the solution resulting from the graph patterns specified in the WHERE
 CLAUSE. This implies that SELECT and CONSTRUCT/DESCRIBE queries will
-behave a little differently. In the case of SELECT you have a straight
+behave a little differently. In the case of a SELECT, there is a straight
 translation i.e. LIMIT 4 implies 4 records in the result set. In the
-case of CONSTRUCTs where the solution is a graph, implying that the
-existence of duplicates and/or unbound variables is common,  LIMIT is
+case of CONSTRUCTs where the solution is a graph (implying that the
+existence of duplicates and/or unbound variables is common) LIMIT is
 basically a maximum triples threshold of: [Solution Triples] x [LIMIT].
-An example is the following query:
+</para>
+<para>
+Example query:
 </para>
 <programlisting><![CDATA[
 prefix dct:<http://purl.org/dc/terms/>
@@ -475,15 +479,15 @@ xsd:double (in strg varchar) returns double precision
 xsd:float (in strg varchar) returns float
 xsd:integer (in strg varchar) returns integer
 </programlisting>
-<para>(assuming that the query contains declaration 'PREFIX xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;')</para>
+<para>(assuming that the query contains the declaration: 'PREFIX xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;')</para>
 </sect3>
 </sect2>
 <sect2 id="rdfpredicatessparql"><title>Query Constructs</title>
-  <para>Since version 5.0 Virtuoso supports declaring RDF objects triples by given predicate.</para>
+  <para>Starting from Version 5.0, Virtuoso supports filtering RDF objects triples by a given predicate.</para>
   <sect3 id="rdfpredicatessparqlexamples"><title>Examples</title>
-    <para>The boolean functions bif:contains and bif:xcontains are used for objects that come from RDF Views as well
-as for regular "physical" triples. Every function gets two arguments and returns a boolean value.
-The first argument is an local variable. The argument variable should be used as an object field in
+    <para>The boolean functions bif:contains, bif:xcontains, bif:xpath_contains and bif:xquery_contains can be used for objects that come from RDF Views as well
+as for regular "physical" triples. Each of these functions takes two arguments and returns a boolean value.
+The first argument is a local variable which should also be used as an object field in
 the group pattern where the filter condition is placed.
     </para>
     <para>In order to execute the examples below please run these commands:</para>
@@ -565,25 +569,25 @@ sxml2         p_all2    <Hello2>world</Hello2>
 (W3C Working Draft 25 January 2006) providing SPARQL query processing for RDF data available on the open internet.</para>
 <para>The query processor extends the standard protocol to provide support for multiple output formats.
 At present this uses additional query parameters.</para>
-<para>Supported features include</para>
+<para>Supported features include:</para>
 <itemizedlist mark="bullet" spacing="compact">
-<listitem>GET and POST requests;</listitem>
-<listitem>variety of transfer MIME-types, including RDF /XML and TURTLE;</listitem>
-<listitem>default-graph-uri environment parameter;</listitem>
-<listitem>all sorts of queries including CONSTRUCT and DESCRIBE.</listitem>
+<listitem>Support for GET and POST requests</listitem>
+<listitem>Support for a variety of transfer MIME-types, including RDF /XML and TURTLE</listitem>
+<listitem>Support for a <emphasis>default-graph-uri</emphasis> parameter</listitem>
+<listitem>Support for a variety of query types including CONSTRUCT and DESCRIBE</listitem>
 </itemizedlist>
 </sect3>
 
 <sect3 id="rdfsupportedprotocolendpointuri"><title>Service Endpoint</title>
 <para>Virtuoso uses the pre-assigned endpoints "/sparql" and "/SPARQL" as the
 defaults for exposing its REST based SPARQL Web Services.</para>
-<para>The port number associated with the SPARQL services virtual comes from  'ServerPort' key values
-in the '[HTTPServer]' section of the Virtuoso INI file.Thus, if the Virtuoso instance is configured
+<para>The port number associated with the SPARQL services is determined by the 'ServerPort' key value
+in the '[HTTPServer]' section of the virtuoso.ini file. Thus, if the Virtuoso instance is configured
 to listen at a none default port e.g. 8890, the SPARQL endpoints would be accessible
-at: http://example.com:8890/sparql/.</para>
+at http://example.com:8890/sparql/.</para>
 <para>The SPARQL endpoint supports both GET and POST requests. The client chooses between GET and POST
-automatically, using the length of query text as a criterion. If the SPARQL endpoint is accessed without
-any URL and requisite SPARQL Protocol parameters, an interactive HTML for capturing SPARQL input will
+automatically, using the length of query text as the criterion. If the SPARQL endpoint is accessed without
+any URL and requisite SPARQL protocol parameters, an interactive HTML page for capturing SPARQL input will
 be presented.</para>
 </sect3>
 
@@ -599,57 +603,48 @@ be presented.</para>
         <entry>Parameter</entry>
         <entry>Notes</entry>
         <entry>Required?</entry>
-        <entry>Occurrence</entry>
       </row>
     </thead>
     <tbody>
       <row>
         <entry>service</entry>
-        <entry>service URI such as 'http://example.com/sparql/'</entry>
+        <entry>Service URI such as 'http://example.com/sparql/'</entry>
         <entry>Yes</entry>
-        <entry></entry>
       </row>
       <row>
         <entry>query</entry>
-        <entry>text of the query</entry>
+        <entry>Text of the query</entry>
         <entry>Yes</entry>
-        <entry></entry>
       </row>
       <row>
         <entry>dflt_graph</entry>
-        <entry>default graph URI (string or NULL)</entry>
+        <entry>Default graph URI (string or NULL)</entry>
         <entry>No</entry>
-        <entry></entry>
       </row>
       <row>
         <entry>named_graphs</entry>
-        <entry>vector of named graphs (or NULL to not override what's specified in the query</entry>
+        <entry>Vector of named graphs (or NULL to prevent overriding named graphs specified in the query)</entry>
         <entry>Yes</entry>
-        <entry></entry>
       </row>
       <row>
         <entry>req_hdr</entry>
-        <entry>additional HTTP header lines that should be passed to the service; 'Host: ...' is most popular</entry>
+        <entry>Additional HTTP headers that should be passed to the service, e.g. 'Host: ...'</entry>
         <entry>No</entry>
-        <entry></entry>
       </row>
       <row>
         <entry>maxrows</entry>
-        <entry>limit on numbers of rows that should be returned (actual size of result set may differ)</entry>
+        <entry>Limit on the numbers of rows that should be returned (the actual size of the result set may differ)</entry>
         <entry>No</entry>
-        <entry></entry>
       </row>
       <row>
         <entry>bnode_dict</entry>
-        <entry>dictionary of known blank node names, or NULL for usual loading</entry>
+        <entry>Dictionary of known blank node names, or NULL for usual loading</entry>
         <entry>No</entry>
-        <entry></entry>
       </row>
       <row>
         <entry>xslt-uri</entry>
-        <entry>absolute URL of XSLT file to be applied to SPARQL Qery results</entry>
+        <entry>Absolute URL of any XSLT stylesheet file to be applied to the SPARQL query results</entry>
         <entry>No</entry>
-        <entry></entry>
       </row>
     </tbody>
   </tgroup>
@@ -657,18 +652,18 @@ be presented.</para>
 </sect4>
 
 <sect4 id="rdfresponsecodeofprotocol"><title>Response Codes</title>
-<para>If the query is a CONSTRUCT or DESCRIBE then the result set
-consists of a single row and a single column, the value inside is a
+<para>If the query is a CONSTRUCT or a DESCRIBE then the result set
+consists of a single row and a single column. The value inside is a
 dictionary of triples in 'long valmode'. Note that the dictionary
-object can not be sent to SQL client, say, via ODBC. The client can
-loose database connection trying to fetch a result set row that
-contain a dictionary object. This disconnect will be safe for server,
-so the client can re-connect to the server, but the disconnected
-transaction will be rolled back.</para>
+object cannot be sent to a SQL client, say, via ODBC. The client may 
+lose the database connection trying to fetch a result set row that
+contains a dictionary object. This disconnection does not disrupt the server,
+so the client may readily reconnect to the server, but the disconnected
+transaction will have been rolled back.</para>
 </sect4>
 
 <sect4 id="rdfsupportedmimesofprotocol"><title>Response Format</title>
-<para>All standard MIME types of SPARQL Protocol are supported:</para>
+<para>All the SPARQL protocol standard MIME types are supported:</para>
 <table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
     <title>Supported MIME Types list</title>
     <tgroup align="char" charoff="50" char="." cols="3">
@@ -676,7 +671,7 @@ transaction will be rolled back.</para>
     <thead>
       <row>
         <entry>Content-Type</entry>
-        <entry>Supported for result of Query</entry>
+        <entry>Supported for the result of a query of type</entry>
       </row>
     </thead>
     <tbody>
@@ -715,13 +710,13 @@ transaction will be rolled back.</para>
     </tbody>
   </tgroup>
 </table>
-<para>If the HTTP header returned by the remote server does not contain 'Content-Type' line, the MIME type may be guessed from the text of the returned body. </para>
-<para>The current implementation does not support results of SELECT returned in RDF /XML, TURTLE or 'sparql-results-2'.</para>
-<para>Error messages returned from the service are returned as XML documents, using the mime type application/xml. The documents consist of a single element containing an error message.</para>
+<para>If the HTTP header returned by the remote server does not contain a 'Content-Type' line, the MIME type may be guessed from the text of the returned body. </para>
+<para>The current implementation does not support returning the results of SELECT as RDF /XML, TURTLE or 'sparql-results-2'.</para>
+<para>Error messages returned from the service are returned as XML documents, using the MIME type application/xml. The documents consist of a single element containing an error message.</para>
 </sect4>
 
 <sect4 id="rdfsupportedmimesaddofprotocol"><title>Additional Response Formats -- SELECT</title>
-<para>Use the format parameter to select one of the following alternate output formats:</para>
+<para>Use the <emphasis>format</emphasis> parameter to select one of the following alternate output formats:</para>
 
 <table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
     <title>Additional Response formats list</title>
@@ -790,8 +785,8 @@ transaction will be rolled back.</para>
 </sect4>
 
 <sect4 id="rdfsupportedmimesaddofprotocol"><title>Virtuoso/PL APIs</title>
-<para>Virtuoso also provides SPARQL Protocol client APIs in PL, so you can communicate with SPARQL
-Query Services from within SQL stored-procedures. The APIs are as follows:
+<para>Virtuoso also provides SPARQL protocol client APIs in Virtuoso PL, so you can communicate with SPARQL
+Query Services from Virtuoso stored procedures. The APIs are as follows:
 </para>
 <table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
     <title>Virtuoso/PL APIs</title>
@@ -806,45 +801,45 @@ Query Services from within SQL stored-procedures. The APIs are as follows:
     <tbody>
       <row>
         <entry>DB.DBA.SPARQL_REXEC</entry>
-        <entry>behaves like DBA.SPARQL_EVAL, but executes the query on the specified server. The procedure
+        <entry>Behaves like DBA.SPARQL_EVAL, but executes the query on the specified server. The procedure
 does not return anything. Instead, it creates a result set.</entry>
       </row>
       <row>
         <entry>DB.DBA.SPARQL_REXEC_TO_ARRAY</entry>
-        <entry>behaves like DBA.SPARQL_EXEC_TO_ARRAY(), but executes the query on the specified server. The
-function return a vector of rows, where every row is represented by a vector of values of fields.</entry>
+        <entry>Behaves like DBA.SPARQL_EXEC_TO_ARRAY(), but executes the query on the specified server. The
+function returns a vector of rows, where every row is represented by a vector of field values.</entry>
       </row>
       <row>
         <entry>DB.DBA.SPARQL_REXEC_WITH_META</entry>
-        <entry>has no local SPARQL_EVAL analog. It produces not only an array of result rows but also array
-of metadata about result set in a format used by the exec() function.</entry>
+        <entry>Has no local SPARQL_EVAL analog. It produces not only an array of result rows together with an array
+of result set metadata in a format used by the exec() function.</entry>
       </row>
     </tbody>
   </tgroup>
 </table>
 </sect4>
-
 </sect3>
 
 <sect3 id="rdfsupportedprotocolendpointuri"><title>Service Endpoint Security</title>
-<para>Earlier releases of Virtuoso secured the SPARQL endpoint via privileges assigned to the service
-specific SQL user account: "SPARQL". This account was optionally granted "SPARQL_SELECT" or
-"SPARQL_UPDATE" roles. By default only the  "SPARQL_SELECT" role was assigned enabling all users
-to at least perform SELECT queries. The "SPARQL_UPDATE" role needs to be set for to allow updates
-to the QUAD store, which is a requirement for the Virtuoso sponger services to be functional i.e. to
-be able to update the Quad store. In the Virtuoso 5.0.7 release there is a new "SPARQL_SPONGE" role
-which can be assigned to specifically allow the sponger services to update the Quad Store but not the
-SPARQL user via the endpoint.</para>
-<para>Restricting a users access to specific graphs can be done using Virtuoso row-level security
-functionality. This can be done using the Virtuoso Data access methods ODBC, JDBC, ADO.Net or PL code.</para>
-<para>For example one could do something as is done for the OpenLink Data Space (ODS) application users:</para>
+<para>Earlier releases of Virtuoso secured the SPARQL endpoint via privileges assigned to the service-
+specific SQL user account "SPARQL". This account was optionally granted "SPARQL_SELECT" or
+"SPARQL_UPDATE" roles. By default only the  "SPARQL_SELECT" role was assigned, enabling all users
+to at least perform SELECT queries. The "SPARQL_UPDATE" role must be granted to allow updates
+to the Quad Store - a pre-requisite for the Virtuoso Sponger services to be functional i.e. to
+allow the Sponger to populate and update the Quad Store. In Virtuoso release 5.0.7, there is a new "SPARQL_SPONGE" role
+which can be assigned specifically to allow Sponger services to update the Quad Store but not 
+SPARQL users via the SPARQL endpoint.</para>
+<para>Restricting a user's access to specific graphs can be done using Virtuoso row-level security
+functionality, via one of the Virtuoso Data Access APIs: ODBC, JDBC, ADO.Net or PL code.</para>
+<para>For example, users of OpenLink Data Space (ODS) applications are restricted in the RDF graphs accessible to them as follows:</para>
 <programlisting><![CDATA[
 DB.DBA.TABLE_DROP_POLICY ('DB.DBA.RDF_QUAD', 'S');
 
 create procedure DB.DBA.RDF_POLICY (in tb varchar, in op varchar)
 {
  declare chost, ret varchar;
- chost := DB.DBA.WA_CNAME ();  ret := sprintf ('(ID_TO_IRI (G) NOT LIKE \'http://%s/dataspace/%%/private#\' ' ||
+ chost := DB.DBA.WA_CNAME ();  
+ ret := sprintf ('(ID_TO_IRI (G) NOT LIKE \'http://%s/dataspace/%%/private#\' ' ||
  'OR G = IRI_TO_ID (sprintf (\'http://%s/dataspace/%%U/private#\', USER)))', chost, chost);
  return ret;
 }
@@ -853,18 +848,18 @@ create procedure DB.DBA.RDF_POLICY (in tb varchar, in op varchar)
 grant execute on DB.DBA.RDF_POLICY to public;
 
 DB.DBA.TABLE_SET_POLICY ('DB.DBA.RDF_QUAD', 'DB.DBA.RDF_POLICY', 'S');
-
-where DB.DBA.WA_CNAME () is a function in ODS to return default host name.
-
 ]]></programlisting>
-<para>This would restrict the defined 'user' to the graph http://cname/dataspace/user/private#</para>
-<para>Virtuoso reserves the path '/sparql-auth/' for SPARQL service with authenticated SPARUL option.</para>
-<para>This endpoint allows specific SQL accounts to perform SPARUL over the SPARQL protocol.</para>
-<para>"SPARQL_UPDATE" is needed to be granted on a user to perform all operations on physical triples and
-the user to be able allowed to perform SQL/ODBC logins:</para>
+<para>
+where DB.DBA.WA_CNAME () is an ODS function returning the default host name.
+</para>
+<para>The effect of this policy is to restrict user 'user' to the graph http://cname/dataspace/user/private#</para>
+<para>Virtuoso reserves the path '/sparql-auth/' for a SPARQL service supporting authenticated SPARUL.
+This endpoint allows specific SQL accounts to perform SPARUL over the SPARQL protocol.
+To be allowed to login via SQL or ODBC and update physical triples, a user must be granted "SPARQL_UPDATE" privileges. To grant this role:
+</para>
 <itemizedlist>
-  <listitem>Go to the Virtuoso Administration Conductor i.e. http://host:port/conductor</listitem>
-  <listitem>Login as dba user</listitem>
+  <listitem>Go to the Virtuoso administration UI i.e. http://host:port/conductor</listitem>
+  <listitem>Login as user dba</listitem>
   <listitem>Go to System Admin->User Accounts->Users
     <figure id="rdf1" float="1">
       <title>Conductor UI</title>
@@ -872,98 +867,111 @@ the user to be able allowed to perform SQL/ODBC logins:</para>
     </figure>
   </listitem>
   <listitem>Click the link "Edit"</listitem>
-  <listitem>In the shown form check the "Allow SQL/ODBC Logins" check-box.</listitem>
+  <listitem>In the displayed form check the "Allow SQL/ODBC Logins" check-box.</listitem>
   <listitem>Select from the list of available Account Roles "SPARQL_UPDATE" role and
-click the ">>" button so to add it to the right-positioned list.</listitem>
+click the ">>" button so to add it to the right-hand list.</listitem>
     <figure id="rdf2" float="1">
       <title>Conductor UI</title>
       <graphic fileref="ui/usr2.png"/>
     </figure>
   <listitem>Click the "Save" button.</listitem>
 </itemizedlist>
-<para>Note that if there is a table used in a RDF view, and this table is not granted to SPARQL_SELECT
-( SPARQL_UPDATE inherits it ), then select on all graph will return access violation error as the user
-account has no permissions to read it. Thus the account need to have privileges on all tables included
-in any rdf view in order to be able to select on *all* graphs.</para>
-<sect4 id="sparqwebservicetbl"><title>Manage SPARQL Web Service Endpoint</title>
+<para>Note that if a table is used in an RDF view, and this table is not granted to SPARQL_SELECT permission
+(or SPARQL_UPDATE, which implicitly confers SPARQL_SELECT), then all SELECTs on a graph defined by an RDF view will return an access violation error as the user
+account has no permissions to read the table. The user must have appropriate privileges on all tables included
+in an RDF View in order to be able to select on <emphasis>all</emphasis> graphs.</para>
+<sect4 id="sparqwebservicetbl"><title>Managing a SPARQL Web Service Endpoint</title>
 <para>
-Web service endpoint may provide different default configurations for different host names mentioned in HTTP request.
-SPARQL Web Service Endpoints host names configurations can be manage via the table <emphasis>DB.DBA.SYS_SPARQL_HOST</emphasis>.
+Virtuoso web service endpoints may provide different default configurations for different host names mentioned in an HTTP request.
+Host name configuration for SPARQL web service endpoints can be managed via the table <emphasis>DB.DBA.SYS_SPARQL_HOST</emphasis>.
 </para>
 <programlisting>
 create table DB.DBA.SYS_SPARQL_HOST (
   SH_HOST	varchar not null primary key, -- host mask
-  SH_GRAPH_URI	varchar,      -- 'default default' graph uri
+  SH_GRAPH_URI	varchar,      -- default 'default graph' uri
   SH_USER_URI	varchar,      -- reserved for any use in applications
   SH_DEFINES	long varchar  -- additional defines for requests
 )
 </programlisting>
-<para>Detailed description of the table columns you can find <link linkend="rdfdefaultgraph">here</link></para>
-<para>Additionally, read <link linkend="rdfperfindexes">these notes</link> for managing public web service endpoints.</para>
+<para>You can find detailed descriptions of the table columns <link linkend="rdfdefaultgraph">here</link>.
+Also, please read <link linkend="rdfperfindexes">these notes</link> on managing public web service endpoints.</para>
 </sect4>
 <sect4 id="sparqloauthendpointauth"><title>Authentication</title>
-<para>Virtuoso 5.0.7 onwards,  introduced the addition of a new "SPARQL_SPONGE" role which can be assigned
-to specifically for controlling sponger middleware services which perform writes and graph creations within
-the the RDF Quad Store. These updates are only achievable via the activity of the sponger. All other updates
-require granting of the SPARQL_UPDATE role.</para>
-<para>Virtuoso 5.0.11 onwards,  introduced the addition of 3 new methods of securing SPARQL endpoints that
-include: SQL authentication, OAuth, and FOAF+SSL protocol based authentication. Each of these authentication
-methods is associated with a purpose specific default SPARQL endpoint along the following lines:
-http://&lt;cname&gt;/sparql-auth (SQL authentication) , http://&lt;cname&gt;/sparql-oauth (OAuth),
-https://&lt;cname&gt;/sparql and https://&lt;cname&gt;/sparql-ssl (FOAF+SSL).</para>
-<para>Virtuoso Authentication Server offers UI with options for managing:</para>
+<para>Virtuoso 5.0.7 introduced a new "SPARQL_SPONGE" role which can be assigned
+specifically for controlling Sponger middleware services which perform writes and graph creation in
+the RDF Quad Store. This role only allows updates through the Sponger. Quad Store updates via any other route 
+require granting the SPARQL_UPDATE role.</para>
+<para> 
+Virtuoso 5.0.11 onwards added three new methods for securing SPARQL endpoints that include:
+</para>
 <itemizedlist mark="bullet">
-  <listitem>Application keys and Protected SPARQL Endpoint: OAuth provides a secure data transmission
-level mechanism for your SPARQL endpoint. It enables you to securely interact with your RDF database
-from a variety of locations. It also allows you to provide controlled access to private data to select
-user profiles.</listitem>
-  <listitem>FOAF+SSL ACLs: FOAF+SSL is implementation of a conceptual authentication and authorization
+  <listitem>SQL authentication</listitem>
+  <listitem>OAuth</listitem>
+  <listitem>FOAF+SSL protocol based authentication</listitem>
+</itemizedlist>
+<para> 
+Each of these authentication methods is associated with a purpose specific default SPARQL endpoint along the following lines:
+</para> 
+<itemizedlist mark="bullet">
+  <listitem>http://&lt;cname&gt;/sparql-auth (SQL authentication)</listitem>
+  <listitem>http://&lt;cname&gt;/sparql-oauth (OAuth)</listitem>
+  <listitem>https://&lt;cname&gt;/sparql and https://&lt;cname&gt;/sparql-ssl (FOAF+SSL)</listitem>
+</itemizedlist>
+<para>The Virtuoso Authentication Server offers a UI with options for managing:</para>
+<itemizedlist mark="bullet">
+  <listitem>
+Application keys and protected SPARQL endpoints: OAuth provides a secure data transmission
+level mechanism for your SPARQL endpoint. It enables you to interact securely with your RDF database
+from a variety of locations. It also allows you to provide controlled access to private data to selected
+user profiles.
+  </listitem>
+  <listitem>FOAF+SSL ACLs: FOAF+SSL is an implementation of a conceptual authentication and authorization
 protocol that links a Web ID to a public key to create a global, decentralized/distributed, and open
 yet secure authentication system that functions with existing browsers.</listitem>
 </itemizedlist>
-<para>Virtuoso Authentication server can be installed by downloading and installing the
+<para>Virtuoso Authentication Server can be installed by downloading and installing the
 policy_manager_dav.vad package.</para>
 <para>The Authentication UI is accessible from the URL http://cname:port/policy_manager</para>
-<para>The Menu options are</para>
+<para>The menu options are:</para>
 <itemizedlist mark="bullet">
-  <listitem>Go to Application keys in order to create Consumer Key and Secret for the relevant ODS applications.</listitem>
-  <listitem>Go to FOAF+SSL ACLs in order to use URIs for setup DB level controls for SELECT, UPDATE, DELETE.
-<para>Note: Should be logged in as dba user.</para>
+  <listitem><emphasis>Go to Application Keys</emphasis> - in order to create Consumer Key and Secret for the relevant ODS applications.</listitem>
+  <listitem><emphasis>Go to FOAF+SSL ACLs</emphasis> - in order to use URIs for setup DB level controls for SELECT, UPDATE and DELETE.
+(This option requires you be logged in as user dba.)
 </listitem>
-  <listitem>Go to Protected SPARQL Endpoint in order to enter your application Consumer Key and perform security SPARQL query.</listitem>
+  <listitem><emphasis>Go to Protected SPARQL Endpoint</emphasis> - in order to enter your Application Consumer Key and perform secure SPARQL queries.</listitem>
 </itemizedlist>
    <figure id="sparqloauthendpoint4" float="1">
       <title>OAuth UI</title>
       <graphic fileref="ui/SparqlOAuth4.png"/>
     </figure>
-<para>The user must have SQL privileges in order to run secured SPARQL statements.</para>
+<para>Users must have SQL privileges in order to run secure SPARQL statements.</para>
 </sect4>
 <sect4 id="sparqloauthendpoint"><title>SPARQL OAuth Endpoint</title>
 <para>OAuth provides a secure data transmission level mechanism for your SPARQL endpoint.
-It enables you to securely interact with your RDF database from a variety of locations. It also
-allows you to provide controlled access to private data to select user profiles.</para>
-<para>Virtuoso OAuth server can be installed by installing the oauth_dav.vad package and
-the OAuth UI is accessible from the URL http://cname:port/oauth</para>
-<para>The user must have SQL privileges in order to run secured SPARQL statements.</para>
+It enables you to interact securely with your RDF database from a variety of locations. It also
+allows you to provide controlled access to private data to selected users.</para>
+<para>Virtuoso OAuth Server can be installed by downloading and installing the oauth_dav.vad package. 
+The OAuth UI is accessible from the URL http://cname:port/oauth</para>
+<para>A user must have SQL privileges in order to run secured SPARQL statements.</para>
 <para>Here is a sample scenario:</para>
 <orderedlist>
 <listitem>Install the conductor_dav.vad and policy_manager_dav.vad packages.</listitem>
-<listitem>From the Conductor UI create user test1 by setting SQL and DAV login enable. Also set SPARQL_UPDATE role to it:
+<listitem>From the Conductor UI, create user test1, allow both SQL/ODBC and DAV logins and assign the SPARQL_UPDATE role to this user:
 <orderedlist>
 <listitem>Go to http://cname:port/conductor</listitem>
-<listitem>Log in as dba user</listitem>
+<listitem>Log in as user dba</listitem>
 <listitem>Go to System Admin->User Account and click the "Create New Account" link
 <figure id="sparqloauthendpoint1" float="1">
       <title>Conductor UI</title>
       <graphic fileref="ui/SparqlOAuth1.png"/>
     </figure>
 </listitem>
-<listitem>In the shown form:
+<listitem>In the displayed form:
 <orderedlist>
-<listitem>Enter user name for ex. test1, password and confirm password </listitem>
+<listitem>Enter a user name, for example test1, a password and then confirm the password </listitem>
 <listitem>Check "Allow DAV Logins" </listitem>
 <listitem>Check "Allow SQL/ODBC Logins" </listitem>
-<listitem>Add Role "SPARQL_UPDATE" from the list of available Roles to the "Selected" box.
+<listitem>Add role "SPARQL_UPDATE" from the list of available roles to the "Selected" box.
 <figure id="sparqloauthendpoint2" float="1">
       <title>Conductor UI</title>
       <graphic fileref="ui/SparqlOAuth2.png"/>
@@ -972,7 +980,7 @@ the OAuth UI is accessible from the URL http://cname:port/oauth</para>
 </orderedlist>
 </listitem>
 <listitem>Click the "Save" button. </listitem>
-<listitem>As result the user test1 will be created.
+<listitem>User test1 will then be created.
 <figure id="sparqloauthendpoint3" float="1">
       <title>Conductor UI</title>
       <graphic fileref="ui/SparqlOAuth3.png"/>
@@ -993,14 +1001,14 @@ the OAuth UI is accessible from the URL http://cname:port/oauth</para>
       <graphic fileref="ui/SparqlOAuth5.png"/>
     </figure>
 </listitem>
-<listitem>As result will be shown the OAuth application registration form.
+<listitem>The OAuth application registration form will then be shown.
 <figure id="sparqloauthendpoint6" float="1">
       <title>OAuth UI</title>
       <graphic fileref="ui/SparqlOAuth6.png"/>
     </figure>
 </listitem>
-<listitem>Generate key for SPARQL by selecting it from the list of "Application name" and click the "Generate Keys" button.</listitem>
-<listitem>As result for SPARQL will be generated Consumer Key for ex.:
+<listitem>Generate a key for SPARQL by selecting it from the list of application names and clicking the "Generate Keys" button.</listitem>
+<listitem>A SPARQL consumer key will then be generated e.g.:
 <programlisting><![CDATA[
 cf92411e17f59960a4189451bfb5bf6b92c856e3
 ]]></programlisting>
@@ -1011,18 +1019,18 @@ cf92411e17f59960a4189451bfb5bf6b92c856e3
 </listitem>
 <listitem>Click the "Back to main menu" link.</listitem>
 <listitem>Click the "Protected SPARQL Endpoint" link.</listitem>
-<listitem>As result will be shown the OpenLink Virtuoso SPARQL Query form.
+<listitem>The OpenLink Virtuoso SPARQL Query form will be displayed.
 <figure id="sparqloauthendpoint8" float="1">
       <title>OAuth UI</title>
       <graphic fileref="ui/SparqlOAuth8.png"/>
     </figure>
 </listitem>
-<listitem>Enter for Default Graph URI this:
+<listitem>Enter the following URI for Default Graph URI:
 <programlisting><![CDATA[
 http://myopenlink.net/dataspace/person/kidehen#this
 ]]></programlisting>
 </listitem>
-<listitem>Enter for "OAuth token" field the value:
+<listitem>Enter for the value below for the "OAuth token":
 <programlisting><![CDATA[
 cf92411e17f59960a4189451bfb5bf6b92c856e3
 ]]></programlisting>
@@ -1032,19 +1040,19 @@ cf92411e17f59960a4189451bfb5bf6b92c856e3
     </figure>
 </listitem>
 <listitem>Click the "Run Query" button.</listitem>
-<listitem>In the shown OAuth Authorization Service form enter the password for user test1 and click the "Login" button.
+<listitem>In the OAuth Authorization Service form enter the password for user test1 and click the "Login" button.
 <figure id="sparqloauthendpoint10" float="1">
       <title>OAuth UI</title>
       <graphic fileref="ui/SparqlOAuth10.png"/>
     </figure>
 </listitem>
-<listitem>In the shown form click the "Authorize" button.
+<listitem>In the form depicted below, click the "Authorize" button.
 <figure id="sparqloauthendpoint11" float="1">
       <title>OAuth UI</title>
       <graphic fileref="ui/SparqlOAuth11.png"/>
     </figure>
 </listitem>
-<listitem>As results will be shown the found results:
+<listitem>Once authorized, the query results will be returned to the requesting client:
 <figure id="sparqloauthendpoint12" float="1">
       <title>OAuth UI</title>
       <graphic fileref="ui/SparqlOAuth12.png"/>
@@ -1053,25 +1061,23 @@ cf92411e17f59960a4189451bfb5bf6b92c856e3
 </orderedlist>
 </sect4>
 <sect4 id="sparqloauthendpointfoafssl"><title>FOAF+SSL ACLs</title>
-<para>FOAF+SSL is implementation of a conceptual authentication and authorization protocol that
-links a Web ID to a public key to create a global, decentralized/distributed, and open yet secure
+<para>FOAF+SSL is an implementation of a conceptual authentication and authorization protocol that
+links a Web ID to a public key, to create a global decentralized/distributed, and open yet secure
 authentication system that functions with existing browsers.</para>
-<para>The FOAF+SSL ACLs UI is accessible from the URL http://cname:port/policy_manager
-and then click the link FOAF+SSL ACLs.</para>
+<para>To use FOAF+SSL, download and install the policy_manager_dav.vad VAD package. Once installed, to access the FOAF+SSL ACLs UI, use the URL http://cname:port/policy_manager,
+then click the link FOAF+SSL ACLs.</para>
   <figure id="sparqloauthendpoint1" float="1">
     <title>FOAFSSL</title>
     <graphic fileref="ui/SparqlOAuth4.png"/>
   </figure>
-<para>Note: You need to log in as dba user</para>
-<para>In order to access the FOAF+SSL UI should be downloaded and installed the
-policy_manager_dav.vad package.</para>
-<para>The purpose of setting FOAF+SSL ACLs is with a proper FOAF+SSL Certificate and with proper set
-Web ID to view the results at the Virtuoso SPARQL-SSL endpoint and perform Secure SPARQL Queries.</para>
-<para>The SPARQL-SSL Endpoint is https://cname:port/sparql-ssl</para>
-<para>Here is a sample scenario:</para>
+<para>Note: You must log in as user dba</para>
+<para>
+Configuring FOAF+SSL ACLs is with a FOAF+SSL certificate and a Web ID allows secure SPARQL queries to be performed against a Virtuoso SPARQL-SSL endpoint and viewing of the query results.
+The SPARQL-SSL endpoint URL is of the form https://cname:port/sparql-ssl</para>
+<para>The steps required to configure a sample  FOAF+SSL ACL are outlined below:</para>
 <orderedlist>
 <listitem>Install the ods_framework_dav.vad, conductor_dav.vad and policy_manager_dav.vad packages.</listitem>
-<listitem>Using the ODS UI register ODS user for ex. demo.</listitem>
+<listitem>Using the ODS UI, register an ODS user, e.g. user <emphasis>demo</emphasis>.</listitem>
 <listitem>Go to http://cname:port/policy_manager/
 <figure id="sparqloauthendpoint4" float="1">
       <title>FOAFSSL UI</title>
@@ -1079,32 +1085,31 @@ Web ID to view the results at the Virtuoso SPARQL-SSL endpoint and perform Secur
     </figure>
 </listitem>
 <listitem>Click the "FOAF+ACLs" link</listitem>
-<listitem>Log in as dba user
+<listitem>Log in as user dba 
 <figure id="sparqloauthendpoint5" float="1">
       <title>FOAFSSL UI</title>
       <graphic fileref="ui/SparqlFOAFSSL1.png"/>
     </figure>
 </listitem>
-<listitem>As result will be shown the FOAF+SSL ACLs manage form.
+<listitem>The FOAF+SSL ACLs management form will be displayed.
 <figure id="sparqloauthendpoint6" float="1">
       <title>FOAFSSL UI</title>
       <graphic fileref="ui/SparqlFOAFSSL2.png"/>
     </figure>
 </listitem>
-<listitem>Enter for Web ID for ex.:
+<listitem>Enter a Web ID, for example:
 <programlisting><![CDATA[
 http://demo.openlinksw.com/dataspace/person/demo#this
 ]]></programlisting>
-<para>you can also click the "Browse" button and select user from the shown list.
-As result its Web ID will be automatically generated.</para></listitem>
-<listitem>Select "SPARQL Role" for ex. "Sponge".
+<para>You can also click the "Browse" button and select a user from the displayed list.
+A Web ID will be generated automatically for the selected user.</para></listitem>
+<listitem>Select a "SPARQL Role", e.g. "SPONGE".
 <figure id="sparqloauthendpoint7" float="1">
       <title>FOAFSSL UI</title>
       <graphic fileref="ui/SparqlFOAFSSL3.png"/>
     </figure>
 </listitem>
-<listitem>Click the "Register" button.</listitem>
-<listitem>As result the FOAF+SSL ACLs will be created.
+<listitem>Click the "Register" button to create a new FOAF+SSL ACL.
 <figure id="sparqloauthendpoint7" float="1">
       <title>FOAFSSL UI</title>
       <graphic fileref="ui/SparqlFOAFSSL4.png"/>
@@ -1117,7 +1122,7 @@ As result its Web ID will be automatically generated.</para></listitem>
       <graphic fileref="ui/SparqlFOAFSSL5.png"/>
     </figure>
 </listitem>
-<listitem>As result the SPARQL Query UI will be shown:
+<listitem>The SPARQL Query UI is displayed next:
 <figure id="sparqloauthendpoint9" float="1">
       <title>FOAFSSL UI</title>
       <graphic fileref="ui/SparqlFOAFSSL6.png"/>
@@ -1143,7 +1148,7 @@ As result its Web ID will be automatically generated.</para></listitem>
       <row>
         <entry>GET</entry>
         <entry>Yes</entry>
-        <entry>short queries are sent in GET mode</entry>
+        <entry>Short queries are sent in GET mode</entry>
       </row>
       <row>
         <entry>POST</entry>
@@ -1181,15 +1186,17 @@ As result its Web ID will be automatically generated.</para></listitem>
     <tbody>
       <row>
         <entry>DB.DBA.SPARQL_REXEC</entry>
-        <entry>behaves like DBA.SPARQL_EVAL, but executes the query on the specified server. The procedure does not return anything. Instead, it creates a result set. </entry>
+        <entry>Behaves like DBA.SPARQL_EVAL, but executes the query on the specified server. The procedure does not return anything. Instead, it creates a result set. </entry>
       </row>
       <row>
         <entry>DB.DBA.SPARQL_REXEC_TO_ARRAY</entry>
-        <entry>behaves like DBA.SPARQL_EXEC_TO_ARRAY (), but executes the query on the specified server. The function return a vector of rows, where every row is represented by a vector of values of fields.</entry>
+        <entry>Behaves like DBA.SPARQL_EXEC_TO_ARRAY (), but executes the query on the specified server. The function return a vector of rows, where every row is represented by a vector of field values.</entry>
       </row>
       <row>
         <entry>DB.DBA.SPARQL_REXEC_WITH_META</entry>
-        <entry>has no local 'SPARQL_EVAL' analog. It produces not only an array of result rows but also array of metadata about result set in a format used by the exec () function. This function can be used when the result should be passed later to exec_result_names () and exec_result () built-in functions. To process local query in similar style, an application can use plain SQL built-in function exec (): an SPARQL query (with 'SPARQL' keyword in front) can be passed to exec () instead of text of plain SQL SELECT statement.</entry>
+        <entry>Has no local 'SPARQL_EVAL' analog. It produces an array of result rows together with an array of result set metadata in the same format as produced by the exec () function. 
+	This function can be used when the result should be passed later to exec_result_names () and exec_result () built-in functions. 
+	To process a local query in similar style, an application can use the SQL built-in function exec () - a SPARQL query (with the 'SPARQL' keyword in front) can be passed to exec () instead of a plain SQL SELECT statement.</entry>
       </row>
     </tbody>
   </tgroup>
@@ -1218,13 +1225,15 @@ create procedure DB.DBA.SPARQL_REXEC_WITH_META (
 
 </sect3>
 
+
 <sect3 id="rdfsparqlendpointexamples"><title>Examples</title>
-<para>Virtuoso's SPARQL Implementation Demo offers a live demonstration of Virtuoso's implementation of
-<ulink url="http://www.w3.org/TR/rdf-dawg-uc/">DAWG's SPARQL test-suite</ulink>;
-a collection of SPARQL query language use-cases that enable interactive and simplified testing of a Triple Store's implementation.
-Can be found at 'http://example.com:8080/sparql_demo/' depending on the local Virtuoso Server Configuration, or live at <ulink url="http://demo.openlinksw.com/sparql_demo">Virtuoso Demo Server</ulink>.
+<para>Virtuoso's SPARQL demo offers a live demonstration of Virtuoso's implementation of the
+<ulink url="http://www.w3.org/TR/rdf-dawg-uc/">DAWG's SPARQL test-suite</ulink>,
+a collection of SPARQL query language use cases that enable interactive and simplified testing of a triple store implementation.
+If you have installed the SPARQL Demo VAD locally, it can be found at a URL similar to 'http://example.com:8080/sparql_demo/', the exact form will depend on your local configuration. Alternatively, a live 
+version of the documentation is available at <ulink url="http://demo.openlinksw.com/sparql_demo">Virtuoso Demo Server</ulink>.
 </para>
-<para><emphasis>curl example with SPARQL queries:</emphasis></para>
+<para><emphasis>Example SPARQL query issued via curl:</emphasis></para>
 <programlisting><![CDATA[
 curl -F "query=SELECT DISTINCT ?p FROM <http://demo.openlinksw.com/DAV/home/demo/rdf_sink/> WHERE {?s ?p ?o}" http://demo.openlinksw.com/sparql
 ]]></programlisting>
@@ -1260,7 +1269,7 @@ curl -F "query=SELECT DISTINCT ?p FROM <http://demo.openlinksw.com/DAV/home/demo
  </results>
 </sparql>
 ]]></programlisting>
-<para><emphasis>Other examples with curl and SPARQL queries:</emphasis></para>
+<para><emphasis>Further example SPARQL queries:</emphasis></para>
 <programlisting><![CDATA[
 curl -F "query=SELECT distinct ?Concept FROM <http://dbpedia.org> WHERE {?s a ?Concept} limit 10" http://dbpedia.org/sparql
 ]]></programlisting>
@@ -1712,14 +1721,14 @@ w9yJ2saU1vgHuFxWcughai5cZY%3D"
 ]]></programlisting>
 <para><emphasis>Simple example with CONSTRUCT:</emphasis></para>
 <para>Go to the sparql endpoint UI: i.e. go to http://host:port/sparql</para>
-<para>Enter for Default Graph URI: http://www.w3.org/2001/sw/DataAccess/proto-tests/data/construct/simple-data.rdf</para>
+<para>For the Default Graph URI enter: http://www.w3.org/2001/sw/DataAccess/proto-tests/data/construct/simple-data.rdf</para>
 <para>Select "Retrieve remote RDF data for all missing source graphs".</para>
-<para>Enter as Query:</para>
+<para>For the query text enter:</para>
 <programlisting>
 SELECT * WHERE {?s ?p ?o}
 </programlisting>
 <para>Click the "Run Query" button.</para>
-<para>As result will be shown the save in the graph http://www.w3.org/2001/sw/DataAccess/proto-tests/data/construct/simple-data.rdf retrieved triples</para>
+<para>The query results, shown below, are cached locally (sponged). The remote RDF data is saved in the local RDF quad store as  graph http://www.w3.org/2001/sw/DataAccess/proto-tests/data/construct/simple-data.rdf</para>
 <programlisting>
 s  	                                  p  	                                           o
 http://www.example/jose/foaf.rdf#jose 	  http://www.w3.org/1999/02/22-rdf-syntax-ns#type  http://xmlns.com/foaf/0.1/Person
@@ -1753,11 +1762,11 @@ WHERE
     && ! ( ?s = myfoaf:julia && ?p = rdf:type && ?o = foaf:Person))
   }
 ]]></programlisting>
-<para>Execute the GET command with the above query added as parameter with encoded value:</para>
+<para>From an HTTP client, issue the GET command with the above query added as a URL-encoded parameter value:</para>
 <programlisting><![CDATA[
 GET -e -s http://host:port/sparql/?query=PREFIX+rdf%3A+%3Chttp%3A%2F%2Fwww.w3.org%2F1999%2F02%2F22-rdf-syntax-ns%23%3E%0D%0APREFIX+foaf%3A+%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F0.1%2F%3E%0D%0APREFIX+myfoaf%3A+%3Chttp%3A%2F%2Fwww.example%2Fjose%2Ffoaf.rdf%23%3E%0D%0A%0D%0ACONSTRUCT+%7B+myfoaf%3Ajose+foaf%3Adepiction+%3Chttp%3A%2F%2Fwww.example%2Fjose%2Fjose.jpg%3E.%0D%0A++++++++++++myfoaf%3Ajose+foaf%3AschoolHomepage+%3Chttp%3A%2F%2Fwww.edu.example%2F%3E.%0D%0A++++++++++++%3Fs+%3Fp+%3Fo.%7D%0D%0AFROM+%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2Fsw%2FDataAccess%2Fproto-tests%2Fdata%2Fconstruct%2Fsimple-data.rdf%3E%0D%0AWHERE+%7B+%3Fs+%3Fp+%3Fo.+myfoaf%3Ajose+foaf%3Anick+%22Jo%22.%0D%0A+++++++FILTER+%28+%21+%28%3Fs+%3D+myfoaf%3Akendall+%26%26+%3Fp+%3D+foaf%3Aknows+%26%26+%3Fo+%3D+myfoaf%3Aedd+%29%0D%0A++++++++++++++%26%26+%21+%28+%3Fs+%3D+myfoaf%3Ajulia+%26%26+%3Fp+%3D+foaf%3Ambox+%26%26+%3Fo+%3D+%3Cmailto%3Ajulia%40mail.example%3E+%29%0D%0A++++++++++%26%26+%21+%28+%3Fs+%3D+myfoaf%3Ajulia+%26%26+%3Fp+%3D+rdf%3Atype+%26%26+%3Fo+%3D+foaf%3APerson%29%29%0D%0A%7D%0D%0A&format=application%2Frdf%2Bxml
 ]]></programlisting>
-<para>As result the response will be:</para>
+<para>The request response will be similar to:</para>
 <programlisting><![CDATA[
 200 OK
 Connection: close
@@ -1790,7 +1799,7 @@ Done
 <para>This service has been implemented using <ulink url="http://docs.openlinksw.com/virtuoso">Virtuoso Server</ulink>.</para>
 </sect3>
 
-<sect3 id="rdftables"><title>Virtuoso Semantic Bank end point</title>
+<sect3 id="rdftables"><title>Virtuoso 'Semantic Bank' End Point</title>
     <para>
 	<emphasis>What is Piggy Bank?</emphasis>
   </para>
@@ -1804,39 +1813,34 @@ Done
     <para>
 	Semantic Bank is the server companion of Piggy Bank that lets you persist, share and publish data collected by individuals, groups or communities. Here is a screen shot of one in action:
   </para>
-    <para></para>
-    <para></para>
     <para>
 	<emphasis>What can I do with this?</emphasis>
   </para>
     <para>
 	A Semantic Bank allows you to:
        </para>
-    <para></para>
-    <para>
-	persist your information remotely on a server. This is useful, for example, if you want to share data between two of your computers or to avoid losing it due to mistakes or failure.
-       </para>
-    <para></para>
-    <para>
-	share information with other people. The ability to tag resources creates a powerful serendipitous categorization (as proven by things like del.icio.us or Flickr).
-       </para>
-    <para></para>
-    <para>
-	lets you publish your information, both in the "pure" RDF form (for those who know how to make use of it) or to regular web pages, with the usual Longwell faceted browsing view of it
-       </para>
-    <para></para>
-    <para></para>
+    <itemizedlist mark="bullet" spacing="compact">
+    <listitem>
+      Persist your information remotely on a server - This is useful, for example, if you want to share data between two of your computers or to avoid losing it due to mistakes or failure.
+    </listitem>
+    <listitem>
+	Share information with other people - The ability to tag resources creates a powerful serendipitous categorization (as proven by things like del.icio.us or Flickr).
+    </listitem>
+    <listitem>
+	Lets you publish your information - Both in the "pure" RDF form (for those who know how to make use of it) or to regular web pages, with the usual Longwell faceted browsing view of it
+    </listitem>
+    </itemizedlist>
     <para>
 	<emphasis>How can I help?</emphasis>
        </para>
     <para>
-	Semantic Bank is an open source software and built around the spirit of open participation and collaboration.
+	Semantic Bank is Open Source software and built around the spirit of open participation and collaboration.
        </para>
     <para>
 	There are several ways you can help:
        </para>
     <itemizedlist mark="bullet" spacing="compact">
-      <listitem>Install a Semantic Bank and lets us know about it, so that we can update the list of available Semantic Banks.</listitem>
+      <listitem>Install a Semantic Bank and let us know about it, so that we can update the list of available Semantic Banks.</listitem>
       <listitem>Subscribe to our mailing lists to show your interest and give us feedback</listitem>
       <listitem>Report problems and ask for new features through our issue tracking system.</listitem>
       <listitem>Send us patches or fixes to the code</listitem>
@@ -1857,47 +1861,49 @@ Done
 	<ulink url="http://simile.mit.edu/dist/semantic-bank/">"http://simile.mit.edu/dist/semantic-bank/</ulink>
     </para>
     <para>
-	<emphasis>The Virtuoso Semantic Bank end point.</emphasis>
+	<emphasis>The Virtuoso Semantic Bank End Point</emphasis>
     </para>
     <para>
 	Before you can publish, you must register with one or more Semantic Banks:
     </para>
     <itemizedlist mark="bullet" spacing="compact">
-      <listitem>Invoke the menu command Tools » Piggy Bank » My Semantic Bank Accounts....</listitem>
+      <listitem>Invoke the menu command Tools &gt; Piggy Bank &gt; My Semantic Bank Accounts ...</listitem>
       <listitem>Click Add... in the Semantic Bank Accounts dialog box.</listitem>
       <listitem>In the popup dialog box, type in the URL to the Virtuoso Semantic Bank you want to register with. Example: http://server_name:server_port/bank</listitem>
-      <listitem>Enter an account a valid Virtuoso DAV user. (Note: currently we do not use encryption during authentication; do not use your precious password here.)</listitem>
-      <listitem>Click OK, wait for the account to get registered, and then dismiss the Semantic Bank Accounts dialog box.</listitem>
+      <listitem>Enter the account of a valid Virtuoso DAV user. (Note: currently we do not use encryption during authentication; do not use your precious password here.)</listitem>
+      <listitem>Click OK, wait for the account to be registered, and then dismiss the Semantic Bank Accounts dialog box.</listitem>
       <listitem>To publish an item, just click the corresponding Publish button (much like how you save the item). To publish all the items being viewed, click the Publish All button.</listitem>
     </itemizedlist>
     <para>
-	<emphasis>What is the Graph Name used by Virtuoso for the Triples from PiggyBank?</emphasis>
+	<emphasis>What is the graph name used by Virtuoso for the triples from PiggyBank?</emphasis>
     </para>
     <para>
 	http://simile.org/piggybank/&lt;piggybank-generated-name&gt;
     </para>
     <para>
-	The piggybank-generated-name is Virtuoso DAV user.
+	The piggybank-generated-name is a Virtuoso DAV user ID.
        </para>
 </sect3>
-<sect3 id="rdfsparqlexnpointnorthwindexample"><title>Making RDF View Dereferenceable -- Northwind example</title>
-<para>Consider an application that makes some relational data available for SPARQL requests, as described in <link linkend="rdfviewnorthwindexample1">first part of Northwind RDF View example</link>. This may be sufficient for some clients but IRIs of described subjects are not dereferenceable. This means that external SPARQL processors can not retrieve that data using Virtuoso Sponger or the like. This also means that if some external resource refer to IRI of some Northwind subject and a user browses that resource then he can not look at application's data by clicking on the subject link.</para>
-<para>To make RDF access complete, application can do the following:</para>
+<sect3 id="rdfsparqlexnpointnorthwindexample"><title>Making RDF Views Dereferenceable - Northwind Example</title>
+<para>Consider an application that makes some relational data available for SPARQL requests, as described in the <link linkend="rdfviewnorthwindexample1">first part of the Northwind RDF View example</link>. This may be sufficient for some clients but the IRIs of the described subjects are not dereferenceable. 
+This means that external SPARQL processors cannot retrieve that data using the Virtuoso Sponger or the like. It also means that if some external resources refer to the IRI of 
+some Northwind subject and a user browses that resource then he cannot look at the application's data by clicking on the subject link.</para>
+<para>To make RDF access complete, applications can do the following:</para>
 <itemizedlist mark="bullet" spacing="compact">
-<listitem>create a virtual directory;</listitem>
-<listitem>instruct the server how to prepare RDF resources on demand;</listitem>
-<listitem>configure rendering of RDF resources for non-RDF clients (including web search engines);</listitem>
-<listitem>make the used ontology available;</listitem>
-<listitem>provide an index or sitemap page to help users that try to browse published data but do not know proper URLs</listitem>
+<listitem>Create a virtual directory</listitem>
+<listitem>Instruct the server how to prepare RDF resources on demand</listitem>
+<listitem>Configure rendering of RDF resources for non-RDF clients (including Web search engines)</listitem>
+<listitem>Make the used ontology available</listitem>
+<listitem>Provide an index or sitemap page to help users who try to browse published data but do not know the proper URLs</listitem>
 </itemizedlist>
-<para>The following sequence of operations demonstrate how to implement the listed features without writing any special web pages.
+<para>The following sequence of operations demonstrates how to implement the listed features without writing any special web pages.
 All requests (except the application-specific index/sitemap) will be handled by existing web service endpoints.</para>
-<para>As a precaution, we erase url rewrite rule list that may be in the database after previous run of the script:</para>
+<para>As a precaution, we erase any URL rewriting rule lists created by this example that may be in the database following a previous run of the script.</para>
 <programlisting><![CDATA[
 DB.DBA.URLREWRITE_DROP_RULELIST ('demo_nw_rule_list1', 1)
 ;
 ]]></programlisting>
-<para>Same for individual rewrite rules:</para>
+<para>Do the same for individual rewrite rules:</para>
 <programlisting><![CDATA[
 DB.DBA.URLREWRITE_DROP_RULE ('demo_nw_rule1', 1)
 ;
@@ -1908,15 +1914,19 @@ DB.DBA.URLREWRITE_DROP_RULE ('demo_nw_rule3', 1)
 DB.DBA.URLREWRITE_DROP_RULE ('demo_nw_rule4', 1)
 ;
 ]]></programlisting>
-<para>As a sanity check we ensure that there are no more rules named like our rules</para>
+<para>As a sanity check we ensure that there are no other similarly named rules:</para>
 <programlisting><![CDATA[
 select signal ('WEIRD', sprintf ('Rewrite rule "%s" found', URR_RULE))
 from DB.DBA.URL_REWRITE_RULE where URR_RULE like 'demo_nw%'
 ;
 
 ]]></programlisting>
-<para>Now we create URI rewrite rules based on regular expressions by calling <link linkend="fn_urlrewrite_create_regex_rule"><function>DB.DBA.URLREWRITE_CREATE_REGEX_RULE</function></link>, so same path will be redirected to different places depending on MIME types the client can accept.</para>
-<para>This rule is to construct TURTLE or RDF/XML output of CONSTRUCT. Note dots in regexp for MIME type (<emphasis>rdf.n3</emphasis> and <emphasis>rdf.xml</emphasis> instead of fixed chars) because there exist SPARQL web clients published before the related W3C recommendation, they will produce slightly incorrect &quot;Accept:&quot; string.</para>
+<para>Next we create URI rewrite rules based on regular expressions by calling <link linkend="fn_urlrewrite_create_regex_rule"><function>DB.DBA.URLREWRITE_CREATE_REGEX_RULE</function></link>, so the same path will be redirected to different places depending on the MIME types the client can accept.</para>
+<para>
+For a given input path, that is a URI identifying a particular Linked Data entity, the rewrite rule below generates an N3 or RDF/XML representation of the entity using a CONSTRUCT
+query. (Note: In the regular expression identifying the Accept: MIME types this rule applies to, i.e. in rdf.n3 and rdf.xml, each period (.) replaces a literal character
+because some SPARQL web clients published before the relevant W3C recommendations produce slightly incorrect &quot;Accept:&quot; strings.)
+</para>
 <programlisting><![CDATA[
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     'demo_nw_rule2',
@@ -1932,8 +1942,11 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     null
     );
 ]]></programlisting>
-<note><para>The request URL for SPARQL web service looks terrible due to encoding, the sprintf format string for it is even worse. The easiest way of composing strings of that sort is to open the endpoint page, type desired CONSTRUCT or DESCRIBE statement in the form (using some sample IRI), execute, cut the URL of the page with results from the address line of browser window, paste it to the script and then replace the host name with <emphasis>^{URIQADefaultHost}^</emphasis>, every percent with double percent, some parts of sample IRI with <emphasis>%U</emphasis> and value after <emphasis>&amp;format=</emphasis> with <emphasis>%U</emphasis>; adjust the vector of replacement parameters so that its length is equal to the number of <emphasis>%U</emphasis> or other format specifiers in the template.</para></note>
-<para>Next rule is to redirect to the RDF browser that will show the subject description and let the user to explore related subjects.</para>
+<note><para>The request URL for the SPARQL web service looks terrible because it is URL-encoded; the sprintf format string for it is even worse! The easiest way of composing 
+encoded strings of this sort is to use the Conductor UI for configuring the rewrite rules. Alternatively open the SPARQL endpoint page (assuming it supports a UI for entering queries, if no query string is specified), type in the desired CONSTRUCT or DESCRIBE statement into the web form (using some sample URI), execute it, cut the URL of the page with results
+from the address line of the browser window, paste it into the script and then replace the host name with
+<emphasis>^{URIQADefaultHost}^</emphasis>, every percent with double percent, the parts of the sample IRI to be substituted with <emphasis>%U</emphasis>; finally adjust the vector of replacement parameters so that its length is equal to the number of <emphasis>%U</emphasis> or other format specifiers in the template.</para></note>
+<para>The next rule redirects to the RDF browser service to display a description of the subject URI and let the user explore related subjects.</para>
 <programlisting><![CDATA[
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     'demo_nw_rule1',
@@ -1949,7 +1962,8 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     303
     );
 ]]></programlisting>
-<para>This rule is to remove trailing slash from path. Note that <emphasis>\x24</emphasis> is <emphasis>$</emphasis> for end of line regex pattern, it is written escaped because dollar sign indicates the beginning of macro for ISQL.</para>
+<para>This next rule removes any trailing slash from the input path. Note that <emphasis>\x24</emphasis> is the hex character code for the 
+end-of-line pattern <emphasis>$</emphasis>. It is written escaped because the dollar sign indicates the beginning of macro in ISQL.</para>
 <programlisting><![CDATA[
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     'demo_nw_rule3',
@@ -1965,7 +1979,10 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     null
     );
 ]]></programlisting>
-<para>This allow the server to describe proper ontology even when the requested IRI contain wrong host name and even if the ontology for <emphasis>http://demo.openlinksw.com/schemas/northwind#</emphasis> is actually loaded in the database in graph with different IRI (<emphasis>http://demo.openlinksw.com/schemas/NorthwindOntology/1.0/</emphasis>) and the URI of downloadable ontology file differs from both (the file is <emphasis>/DAV/VAD/demo/sql/nw.owl</emphasis>) .</para>
+<para>To configure the server to furnish the ontology underpinning the example Northwind RDF view, the procedure LOAD_NW_ONTOLOGY_FROM_DAV, listed
+below, takes the ontology described in file /DAV/VAD/demo/sql/nw.owl and loads it into graph http://demo.openlinksw.com/schemas/NorthwindOntology/1.0/
+in the local quad store. A rewrite rule is then created to query this graph when the input path identifies entities from this ontology.
+</para>
 <programlisting><![CDATA[
 create procedure DB.DBA.LOAD_NW_ONTOLOGY_FROM_DAV()
 {
@@ -2000,7 +2017,9 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     null
     );
 ]]></programlisting>
-<para>Then we create the rulelist and define virtual directory <emphasis>/Northwind</emphasis>. Requests that match rewriting rules will be properly redirected and produce the requested data, access to the root will execute default page of the application, namely <emphasis>sfront.vspx</emphasis>.</para>
+<para>Next we define virtual directory <emphasis>/Northwind</emphasis> and associate with this a rulelist containing the URL rewriting rules defined 
+above. Requests matching the rewriting rules should then be properly redirected to produce the requested data. Attempts to access the virtual directory 
+root will execute the application's default VSP page, namely <emphasis>sfront.vspx</emphasis>.</para>
 <programlisting><![CDATA[
 DB.DBA.URLREWRITE_CREATE_RULELIST (
     'demo_nw_rule_list1',
@@ -2022,32 +2041,34 @@ DB.DBA.XML_SET_NS_DECL ('northwind', 'http://demo.openlinksw.com/schemas/northwi
 ]]></programlisting>
 </sect3>
 <sect3 id="rdfproxyservice"><title>Sponger Proxy URI Service</title>
-    <para>
-	In certain cases like for Ajax applications, it's prohibited to issue HTTP requests to another server that origin server.
-	In other cases it is needed to transform the content of target to an RDF format. To this purpose the Virtuoso Server provide a Sponger Proxy URI Service. This service takes as argument target URL and may return content as-is or will try to transform with SPARQL sponger and return RDF data representing the target. In case of transformation to RDF the serialization of the output can be forced by a URL parameter of by content negotiation.
-    </para>
-    <para>
-	When the rdf_mappers package is installed, Virtuoso reserves the path '/about/[rdf|html]/' for RDF
+<para>
+In certain cases, such as Ajax applications, it's prohibited to issue HTTP requests to a server other than the original server.
+In other cases it is necessary to transform the content of a target to an RDF format. To this end Virtuoso Server provides a Sponger Proxy URI Service. 
+This service takes as an argument a target URL and may return the target's content "as is" or the Sponger may try to transform the content and return 
+an RDF representation of the target. When transforming to RDF, the RDF format (RDF/XML, N3, TURTLE etc) of the output can be forced by a URL parameter 
+or by content negotiation.
+</para>
+<para>
+When the rdf_mappers package is installed, Virtuoso reserves the path '/about/[rdf|html]/' for the RDF
 proxy service. In the current implementation, Virtuoso defines virtual directories for HTTP requests that
 come to the port specified as 'ServerPort' in the '[HTTPServer]' section of Virtuoso configuration file
-and refer to the above path string. So if the Virtuoso installation on host example.com listens for HTTP
-requests on port 8080 then client applications should use the 'service endpoint' string equal to
+and refer to the above path string. So, if the Virtuoso installation on host example.com listens for HTTP
+requests on port 8080, client applications should use the 'service endpoint' string equal to
 'http://example.com:8080/about/[rdf|html]/'.
-    </para>
-    <para>
-	If the rdf_mappers package is not installed, then the path '/proxy/rdf/' is used for
-Sponger Proxy URI Service.
-    </para>
-    <para>
-	The old pattern '/proxy/' for Sponger Proxy URI Service is deprecated.
-    </para>
-    <para><emphasis>Note: </emphasis>In order the Sponger Proxy URI Service to work correctly, in case you do
-not have the rdf_mappers package installed, you need to enable SPARQL_UPDATE and grant RDF_SPONGE_UP
-for SPARQL user:
-    </para>
-    <para>
-       enable SPARQL_UPDATE using Conductor UI:
-    </para>
+</para>
+<para>
+If the rdf_mappers VAD package is not installed, then the path '/proxy/rdf/' is used for the Sponger Proxy URI Service.
+</para>
+<para>
+The old pattern for the Sponger Proxy URI Service, '/proxy/', is now deprecated.
+</para>
+<para>
+<emphasis>Note:</emphasis> If you do not have the rdf_mappers package installed, in order for the Sponger Proxy URI Service to work correctly, 
+you must grant the SPARQL_UPDATE role to user SPARQL and grant execute permission on procedure RDF_SPONGE_UP.
+</para>
+<para>
+To enable SPARQL_UPDATE using the Conductor UI:
+</para>
 <itemizedlist>
   <listitem>Go to the Virtuoso Administration Conductor i.e. http://host:port/conductor</listitem>
   <listitem>Login as dba user</listitem>
@@ -2065,41 +2086,41 @@ for SPARQL user:
   <listitem>Click the button "Update".</listitem>
 </itemizedlist>
     <para>
-       grant RDF_SPONGE_UP:
+       To grant execute permission on RDF_SPONGE_UP:
     </para>
 <programlisting><![CDATA[
 grant execute on DB.DBA.RDF_SPONGE_UP to "SPARQL";
 ]]></programlisting>
     <para>
-	The Sponger Proxy URI Service takes following URL parameters when using the style: http://host:port/proxy?..:
+	When invoked with a URL of the form http://host:port/proxy?..., the Sponger Proxy URI Service accepts the following query string parameters:
     </para>
     <itemizedlist mark="bullet" spacing="compact">
-	<listitem><emphasis>force</emphasis> if 'rdf' is specified will try to extract RDF data from target and return it</listitem>
-	<listitem><emphasis>header</emphasis> HTTP headers to be sent to the target</listitem>
-	<listitem><emphasis>output-format</emphasis> if 'force=rdf' is given, designate the output MIME type of the RDF data, the default is 'rdf+xml', can be also 'n3' or 'turtle' or 'ttl'.</listitem>
+	<listitem><emphasis>force</emphasis> - if 'rdf' is specified, the Sponger will try to extract RDF data from the target and return it</listitem>
+	<listitem><emphasis>header</emphasis> - HTTP headers to be sent to the target</listitem>
+	<listitem><emphasis>output-format</emphasis> - if 'force=rdf' is given, designates the desired output MIME type of the RDF data. The default is 'rdf+xml'. Other supported MIME types are 'n3', 'turtle' or 'ttl'.</listitem>
     </itemizedlist>
     <para>
-	When no 'output-format' is given and RDF data is asked, the result will be serialized with MIME type depending of 'Accept' header i.e. the proxy service will do content negotiation.
+	When RDF data is requested and 'output-format' is not specified, the result will be serialized with a MIME type determined by the request 'Accept' headers i.e. the proxy service will do content negotiation.
     </para>
-    <para>Example: rdf file with URL: http://www.w3.org/People/Berners-Lee/card</para>
+    <para>Example: RDF file with URL: http://www.w3.org/People/Berners-Lee/card</para>
 <programlisting><![CDATA[
--- Access the url in order to view the result in html format:
+-- Access the url in order to view the result in HTML format:
 http://host:port/about/html/http://www.w3.org/People/Berners-Lee/card
--- Access the url in order to view the result in rdf:
+-- Access the url in order to view the result in RDF:
 http://host:port/about/rdf/http://www.w3.org/People/Berners-Lee/card
--- or use the style:
+-- or use the following proxy invocation style:
 http://host:port/proxy/rdf/http://www.w3.org/People/Berners-Lee/card
--- or use the style:
+-- or this one:
 http://host:port/proxy?url=http://www.w3.org/People/Berners-Lee/card&force=rdf
 ]]></programlisting>
-	<para>Note: It is not allowed when using the style http://host:port/proxy/rdf to pass url parameters to the proxy. </para>
-<para>Now go to the sparql endpoint, i.e. http://host:port/sparql</para>
-<para>Enter for Default Graph URI the url of the rdf file:  http://www.w3.org/People/Berners-Lee/card</para>
-<para>Enter for Query:</para>
+	<para>Note: It is not permitted, when using the style http://host:port/proxy/rdf, to pass URL query string parameters to the proxy. </para>
+<para>Now go to the SPARQL endpoint, i.e. http://host:port/sparql</para>
+<para>For the 'Default Graph URI' enter the URL of the RDF file:  http://www.w3.org/People/Berners-Lee/card</para>
+<para>For 'Query' enter:</para>
 <programlisting><![CDATA[
 SELECT * WHERE {?s ?p ?o}
 ]]></programlisting>
-<para>As result will be shown the saved triples:</para>
+<para>Query result:</para>
 <programlisting><![CDATA[
 s  	                                        p  	                                           o
 http://www.w3.org/People/Berners-Lee/card 	http://www.w3.org/1999/02/22-rdf-syntax-ns#type    http://xmlns.com/foaf/0.1/PersonalProfileDocument
@@ -2109,10 +2130,10 @@ http://www.w3.org/People/Berners-Lee/card 	http://xmlns.com/foaf/0.1/maker 	    
 etc ...
 ]]></programlisting>
 </sect3>
-<sect3 id="sparqliniservice"><title>SPARQL ini service</title>
+<sect3 id="sparqliniservice"><title>SPARQL INI service</title>
     <para>
-	The SPARQL INI section values can be exposed in RDF form
-using the pattern via http://cname/sparql?ini
+	The [SPARQL] section of the virtuoso.ini configuration file sets parameters and limits for the SPARQL query web service. 
+	The values contained in the [SPARQL] section can be exposed in RDF form via the URL pattern http://cname/sparql?ini
     </para>
     <para>Example: http://demo.openlinksw.com/sparql?ini</para>
 <programlisting><![CDATA[
@@ -2129,23 +2150,23 @@ using the pattern via http://cname/sparql?ini
 </rdf:RDF>
 ]]></programlisting>
 </sect3>
-<sect3 id="sparqlexcel"><title>SPARQL Endpoint with Excel mime-type output option</title>
-<para>The SPARQL Endpoint offers an Excel mime-type output option.</para>
-<para>From http://cname:host/sparql select for "Display Results As:" Spreadsheet and click the "Run Query" button.</para>
+<sect3 id="sparqlexcel"><title>SPARQL Endpoint with Excel MIME Type Output Option</title>
+<para>The SPARQL endpoint offers an Excel MIME type output option.</para>
+<para>From http://cname:host/sparql, select "Spreadsheet" for the "Display Results As:" option and click the "Run Query" button.</para>
 <figure id="sparqlexcel1" float="1">
-      <title>SPARQL Endpoint with Excel mime-type output</title>
+      <title>SPARQL Endpoint with Excel MIME type output</title>
       <graphic fileref="ui/Excel1.png"/>
     </figure>
-<para>As result URL containing as parameter the format application/vnd.ms-excel
-for ex. <ulink url="http://demo.openlinksw.com/sparql?default-graph-uri=http%3A%2F%2Fdemo.openlinksw.com%2Fdataspace%2Fperson%2Fdemo&amp;should-sponge=&amp;query=select+*%0D%0Awhere+%7B%3Fs+%3Fp+%3Fo%7D%0D%0Alimit+10&amp;format=application%2Fvnd.ms-excel&amp;debug=on">this one</ulink> will be generated, and can be opened directly with Excel.</para>
+<para>The resulting query string contains a format parameter value of "application/vnd.ms-excel". For example,
+<ulink url="http://demo.openlinksw.com/sparql?default-graph-uri=http%3A%2F%2Fdemo.openlinksw.com%2Fdataspace%2Fperson%2Fdemo&amp;should-sponge=&amp;query=select+*%0D%0Awhere+%7B%3Fs+%3Fp+%3Fo%7D%0D%0Alimit+10&amp;format=application%2Fvnd.ms-excel&amp;debug=on">A URL such as this one</ulink> will be generated, and can be opened directly with Excel.</para>
 <figure id="sparqlexcel2" float="1">
-      <title>SPARQL Endpoint with Excel mime-type output</title>
+      <title>SPARQL Endpoint with Excel MIME type output</title>
       <graphic fileref="ui/Excel2.png"/>
     </figure>
 </sect3>
-<sect3 id="sparqljson"><title>SPARQL Endpoint with JSON+RDF</title>
-<para>The SPARQL Endpoint offers JSON+RDF output option.</para>
-<para>From http://cname:host/sparql select for "Display Results As:" JSON and click the "Run Query" button.</para>
+<sect3 id="sparqljson"><title>SPARQL Endpoint with JSON+RDF Output</title>
+<para>The SPARQL endpoint also offers a JSON+RDF output option.</para>
+<para>From http://cname:host/sparql select "JSON" for "Display Results As:"  and click the "Run Query" button.</para>
 <figure id="sparqljson1" float="1">
       <title>SPARQL Endpoint with JSON+RDF output</title>
       <graphic fileref="ui/JSON1.png"/>
@@ -2157,86 +2178,91 @@ for ex. <ulink url="http://demo.openlinksw.com/sparql?default-graph-uri=http%3A%
     </figure>
 </sect3>
 </sect2>
-<sect2 id="sparqldebug"><title>Troubleshooting SPARQL queries</title>
+<sect2 id="sparqldebug"><title>Troubleshooting SPARQL Queries</title>
 <para>A short SPARQL query can be compiled into a long SQL statement,
-especially if data comes from many quad map patterns. Middle-size
+especially if data comes from many quad map patterns. A moderately sized
 application with 50 tables and 10 columns per table may create
-thousand of quad map patterns for subjects of hundred different
+thousands of quad map patterns for subjects spanning hundreds of different
 types. An attempt to &quot;select everything&quot; from RDF view of
 that complexity may easily create 5000 lines of SQL code. Thus it is
-known in advance that some queries will be rejected even if same
-queries work fine on default storage of &quot;physical
-quads&quot;.</para>
+to be expected that some queries will be rejected even if the same
+queries would work fine if the RDF data were held as physical quads in default storage, rather than synthesized through an RDF view.
+</para>
 
-<para>In addition, an SQL compiler signals an error if table or column
+<para>In addition, the SQL compiler catches typos efficiently, signalling an error if a table or column
 name is unknown, efficiently catching typos. SPARQL uses IRIs that are
 long and sometimes unreadable, but there is no &quot;closed
-world&quot; schema of the data so a typo in an IRI is not an error, it
-is simply some other IRI. So typo in a IRI or in a namespace prefix
-cause missing bindings of some triple patterns of the query and
-incomplete result, but no errors are usually reported. Typo in graph
+world&quot; schema of the data so a typo in an IRI is not an error; it
+is simply some other IRI. So a typo in an IRI or in a namespace prefix
+causes missing bindings of some triple patterns of the query and an
+incomplete result, but usually no errors are reported. A typo in graph
 or predicate IRI may cause the SPARQL compiler to generate code that
-access default storage instead of relational source or to generate
+accesses default (quad) storage instead of a relational source or generate
 empty code that accesses nothing.</para>
 
 <para>The SQL compiler does not signal casting errors when it runs the
 statement generated from SPARQL, because the generated SQL code
 contains <emphasis>option (QUIETCAST)</emphasis>. This means that
 mismatches between expected and actual datatypes of values stay
-invisible and may cause rounding errors (say, integer division instead
+invisible and may cause rounding errors (e.g. integer division instead
 of floating-point) and even empty joins (due to join conditions that
-silently return NULL instead of return comparison error).</para>
+silently return NULL instead of returning a comparison error).</para>
 
-<para>In two words, SPARQL queries are so laconic that there is no
-room for details that let the compiler distinguish between intention
-and a bug. This masquerades query complexity, misuse of names and
-mismatches in types. One may make debugging easier by making queries
+<para>In other words, SPARQL queries are so laconic that there is no
+room for details that let the compiler distinguish between intent
+and a bug. This masks query complexity, misuse of names and
+type mismatches. One may make debugging easier by making queries
 longer.</para>
 
-<para>Two most helpful debugging tools are automatic void variable
+<para>Two very helpful debugging tools are automatic void variable
 recognition and plain old code inspection. &quot;Automatic&quot; means
 &quot;cheap&quot; so the very first step of debugging is to ensure
 that every triple pattern of the query may in principle return
 something.  This helps in finding typos when the query gets data from
-RDF views, this also helps when a query tries to join two disjoint
-sorts of subjects.  If <emphasis>define sql:signal-void-variables
-1</emphasis> directive is placed at the preambl e of the SPARQL query,
-compiler will signal an error if if finds any triple pattern that can
-not bind variables or any variable that is proved to be always
-unbound. This is especially useful when data are supposed to come from
+RDF views. It also helps when a query tries to join two disjoint
+sorts of subjects. If the <emphasis>define sql:signal-void-variables
+1</emphasis> directive is placed in the preamble of the SPARQL query,
+the compiler will signal an error if it finds any triple pattern that cannot 
+bind variables or any variable that is proved to be always
+unbound. This is especially useful when data are supposed to come from an
 <emphasis>option (exclusive)</emphasis> or <emphasis>option (soft
-exclusive)</emphasis> quad map. Without one of that options SPARQL
-compiler will usually bind variables using &quot;physical quad&quot;;
+exclusive)</emphasis> quad map. Without one of these options, the SPARQL
+compiler will usually bind variables using &quot;physical quads&quot;;
 the table of physical quads may contain any rows that match any given
 triple pattern; thus many errors will remain undiscovered. If the name
-of quad map pattern is known then it is possible to force the SPARQL
-compiler to use only that quad map for a whole query or for a
-part. This is possible by using the following syntax:</para>
+of a quad map pattern is known then it is possible to force the SPARQL
+compiler to use only that quad map for the whole query or a
+part of the query. This is possible by using the following syntax:</para>
 
 <programlisting><![CDATA[
 QUAD MAP quad-map-name { group-pattern }
 ]]></programlisting>
-<para>If some triple pattern inside <emphasis>group-pattern</emphasis> can not be bound using <emphasis>quad-map-name</emphasis> or one of its descendants then <emphasis>define sql:signal-void-variables 1</emphasis> will force the compiler to signal the error.</para>
+<para>If some triple pattern inside <emphasis>group-pattern</emphasis> cannot be bound using <emphasis>quad-map-name</emphasis> or one of its descendants then <emphasis>define sql:signal-void-variables 1</emphasis> will force the compiler to signal the error.</para>
 
-<note><para>It is technically possible to use <emphasis>QUAD
-MAP</emphasis> to improve the performance of query that tries to
-access redundant RDF Views but it is much better to achieve the same
+<note><para>Although it is technically possible to use <emphasis>QUAD
+MAP</emphasis> to improve the performance of a query that tries to
+access redundant RDF Views, it is much better to achieve the same
 effect by providing a more restrictive query or by changing/extending
-the RDF View. If an application needs this trick then interoperable SPARQL
-clients will experience problems -- they can not use Virtuoso-specific
+the RDF View. If an application relies on this trick then interoperable third-party SPARQL
+clients may experience problems because they cannot use Virtuoso-specific
 extensions.</para></note>
 
 <para>
-If the automated query checking gives nothing, function <function>sparql_to_sql_text</function> can be used in order to get the SQL text generated from the given query. Its only argument is the text of SPARQL query to compile, without leading SPARQL keyword and semicolon at the end; the returned value is the SQL text. The output may be long but that is the most authoritative source of diagnostic data.
+If the automated query checking gives nothing, function <function>sparql_to_sql_text</function> can be used in order to get the SQL text generated from the given query. 
+Its only argument is the text of the SPARQL query to compile (without any leading SPARQL keyword or semicolon at the end). The returned value is the SQL text. The output may be long but it is the most authoritative source of diagnostic data.
 </para>
 <para>
-When called from ISQL or other ODBC client, return value of <function>sparql_to_sql_text</function> may be transferred as a BLOB so ISQL needs &quot;set blobs on&quot; instruction to avoid data truncation. Even better, the SQL text can be saved into a file:
+When called from ISQL or an ODBC client, the return value of <function>sparql_to_sql_text</function> may be transferred as a BLOB so ISQL requires the &quot;set blobs on&quot; instruction to avoid data truncation. Even better, the SQL text can be saved to a file:
 </para>
 <programlisting><![CDATA[
 string_to_file ('debug.sql', sparql_to_sql_text ('select * where { graph ?g { ?s a ?type }}'), -2);
 ]]></programlisting>
-<para>(-2 is to overwrite the previous version of the file, as there will be probably many runs of the statement).</para>
-<note><para>It is inconvenient to edit query text in order to replace every single quote with two single quotes to make it string constant for <function>sparql_to_sql_text</function>. It is much more convenient to use double quotes in SPARQL queries and replace nothing.</para></note>
+<para>(The -2 is to overwrite the previous version of the file, as this function may be called many times).</para>
+<note><para>
+When passing the query text to sparql_to_sql_text, if the query contains single quotes, each embedded single quote must be doubled up.
+Use double quotes in SPARQL queries to avoid this inconvenience.
+</para>
+</note>
 <para>As an example, let's find out why the query</para>
 <programlisting><![CDATA[
 sparql
@@ -2248,7 +2274,7 @@ where {
     ?order2 northwind:has_salesrep ?emp ; northwind:shipCountry ?country2 .
     filter (?country1 != ?country2) }
 ]]></programlisting>
-<para>is much slower than similar SQL statement. The call of <function>sparql_to_sql_text</function> returns equivalent SQL statement:</para>
+<para>is much slower than a similar SQL statement. The call of <function>sparql_to_sql_text</function> returns the equivalent SQL statement:</para>
 <programlisting><![CDATA[
 SELECT DISTINCT sprintf_iri ( 'http://myhost.example.com/Northwind/Employee/%U%U%d#this' ,
     /*retval[*/ "s-6-1-t0"."b067b7d~FirstName~0" /* emp */ /*]retval*/ ,
@@ -2294,54 +2320,55 @@ WHERE /* two fields belong to same equiv */
         /*retval[*/  "s-6-1-t3"."e45a7f~ShipCountry" /* country2 */ /*]retval*/ )
 OPTION (QUIETCAST)
 ]]></programlisting>
-<para>The query is next to unreadable but some comments split it into meaningful expressions. Every triple (or list of similar triples) become a subquery that return fields needed to build values of bound variables. That fields are printed outside with comments like
+<para>The query is next to unreadable but some comments split it into meaningful expressions. Every triple (or list of similar triples) becomes a subquery that returns fields needed to build the values of bound variables. The fields are printed wrapped by comments like
 
 <emphasis>/*retval[*/ expression /* original variable name */
 /*]retval*/</emphasis>. Names like<emphasis>"s-6-1-t0"</emphasis>
-contain source line number where a group pattern begin (6) and serial
-number of triple (0). Comment <emphasis>/* inter-alias join cond
-*/</emphasis> means that the expression after that is the condition as
-it is written in the declaration of quad map pattern. Comment
-<emphasis>/* filter */</emphasis> is before expressions for FILTER
+contain the source line number where a group pattern begins (6) and the serial
+number of the triple (0). Comment <emphasis>/* inter-alias join cond
+*/</emphasis> means that the expression which follows is the condition as
+written in the declaration of the quad map pattern. Comment
+<emphasis>/* filter */</emphasis> precedes expressions for FILTER
 expressions in the source SPARQL. The word &quot;equiv&quot; means
-&quot;equivalence class&quot;, i.e. group of occurrences of variables
-in the source query that all occurrences are bound to same
-value. E.g. when name repeats in many triples of a group, all its
-occurrences form an equivalence class. In sone cases compiler can
-prove that two variables are always equal even if names differ -- that
-variables are also placed into one &quot;equiv&quot;.</para>
+&quot;equivalence class&quot;, i.e. a group of occurrences of variables
+in the source query such that all occurrences are bound to the same
+value. E.g. when a name repeats in many triples of a group, all its
+occurrences form an equivalence class. In some cases the compiler can
+prove that two variables are always equal even if the names differ - these
+variables are also placed into an &quot;equiv&quot;.</para>
 
-<para>Looking at this query, one may notice equality like
+<para>Looking at this query, you may notice equalities like
 <emphasis>sprintf_iri (...) = sprintf_iri (...)</emphasis>. That is
-bad because it means that no index will be used to optimize the join
-and that there will be one function call per row. When variable
-<emphasis>?emp</emphasis> appears in two different triples it means
-that the value of the variable is same in both triples. The query
-compares IRIs instead of comparing arguments of <link
+sub-optimal because it indicates that no index will be used to optimize the join
+and that there will be one function call per row. When the variable
+<emphasis>?emp</emphasis> appears in two different triples, it means
+that the value of the variable is the same in both triples. The query
+compares IRIs instead of comparing the arguments of <link
 linkend="fn_sprintf_iri"><function>sprintf_iri</function></link>
 because the format string is not proven to be a bijection. Indeed it
-can not be bijection for arbitrary strings, but the database is about
-real world. If it is known that real names of persons never start with
-digit so digits of <emphasis>%d%U</emphasis> fragment will always
-be distinguishable from name then the IRI class can be declared as a
-bijection even if it is not true for arbitrary strings; the script
-can include &quot;suspicious&quot; <emphasis>option (bijection)</emphasis> as
+cannot be a bijection for <emphasis>arbitrary</emphasis> strings, but the database must reflect the 
+real world. If it is assumed that the real names of persons never start with a
+digit, within the <emphasis>%d%U</emphasis> format fragment, the digits will always
+be distinguishable from the name; so the IRI class can be declared as a
+bijection even if it is not true for arbitrary strings. The script
+can then include &quot;suspicious&quot; <emphasis>option (bijection)</emphasis> as
 follows:</para>
 <programlisting><![CDATA[
 create iri class sample:Employee "http://example.com/Employee/%d%U#this"
   (in employee_id integer not null, in employee_lastname varchar not null)
   option (bijection) .
 ]]></programlisting>
-<para>Unfortunately, the attempt of making same trick with the declaration from Northwind example will fail:</para>
+<para>Unfortunately, attempts to use the same trick with the declaration from the Northwind example will fail:</para>
 <programlisting><![CDATA[
 create iri class northwind:Employee "http://^{URIQADefaultHost}^/Northwind/Employee/%U%U%d#this"
   (in employee_firstname varchar not null, in employee_lastname varchar not null, in employee_id integer not null)
   option (bijection) .
 ]]></programlisting>
-<para>Bijection will allow the parsing but it will never give proper result, because first <emphasis>%U</emphasis> will read the whole concatenation of <emphasis>%U%U%d</emphasis>, leave nothing before <emphasis>#this</emphasis> for second <emphasis>%U</emphasis> (that is wrong) and leave nothing for <emphasis>%d</emphasis> (that is explicit parse error, as integer notation can not be empty)</para>.
+<para>Bijection will allow the parsing, but it will never give the proper result, because the first <emphasis>%U</emphasis> will read the whole concatenation of <emphasis>%U%U%d</emphasis>, leaving nothing before the<emphasis>#this</emphasis> for the second <emphasis>%U</emphasis> (this is an error) and 
+leaving nothing for the <emphasis>%d</emphasis> (that is an explicit parse error, becauses the integer field cannot be empty).</para>.
 <para>The string parser will process the string from left to right so it will be unable to parse the string.
 The compiler might sometimes report an error if it can prove that the format string is not appropriate for bijection.</para>
-<para>The proper way of improving the Northwind example is to make true and reliable bijection by adding strong delimiters:</para>
+<para>The correct way of improving the Northwind example is to enable reliable bijection by adding strong delimiters:</para>
 <programlisting><![CDATA[
 create iri class northwind:Employee "http://^{URIQADefaultHost}^/Northwind/Employee/%U/%U/%d#this"
   (in employee_firstname varchar not null, in employee_lastname varchar not null, in employee_id integer not null)
@@ -2426,8 +2453,8 @@ a string or is not the object of an indexed triple, no match will be found.
 <para>The syntax for text patterns is identical to the syntax for the SQL contains predicate.
 </para>
 <para>The SPARQL/SQL optimizer determines whether the text pattern will be used to drive the query or whether it
-will filter results after other conditions are applied first. As opposed to <emphasis>bif:contains</emphasis>,
-regexp matching never drives the query or makes us of an index, thus regexps are in practice checked after other conditions.
+will filter results after other conditions are applied first. In contrast to <emphasis>bif:contains</emphasis>,
+regexp matching never drives the query or makes use of an index, thus in practice regexps are checked after other conditions.
 </para>
 <sect4 id="rdfsparqlrulespecifywhatindex"><title>Specifying What to Index</title>
 <para>Whether the object of a given triple is indexed in the text index depends on indexing rules. If at least one
@@ -2436,11 +2463,11 @@ a graph and a predicate. Either may be an IRI or NULL, in which case it matches 
 </para>
 <para>Rules also have a 'reason', which can be used to group rules into application-specific sets. A triple will stop
 being indexed only after all rules mandating its indexing are removed. When an application requires indexing a
-certain set of triples, rules are added to for the purpose. These rules are tagged with the name of the application
+certain set of triples, rules are added for that purpose. These rules are tagged with the name of the application
 as their reason. When an application no longer requires indexing, the rules belonging to this application can be
 removed. This will not turn off indexing if another application still needs certain triples to stay indexed.
 </para>
-<para>Indexing is enabled/disable for specific graph/predicate combinations with:
+<para>Indexing is enabled/disabled for specific graph/predicate combinations with:
 </para>
 <programlisting>
 create function DB.DBA.RDF_OBJ_FT_RULE_ADD
@@ -2450,36 +2477,36 @@ create function DB.DBA.RDF_OBJ_FT_RULE_ADD
 create function DB.DBA.RDF_OBJ_FT_RULE_DEL
   (in rule_g varchar, in rule_p varchar, in reason varchar) returns integer
 </programlisting>
-<para>The first function adds a rule. The two first arguments are the text representation of the IRI's for the graph
+<para>The first function adds a rule. The first two arguments are the text representation of the IRI's for the graph
 and predicate. If NULL is given then all graph's or predicates match. Specifying both as NULL means that all
 string valued objects will be added to a text index.
 </para>
-<para>The second function reverses the effect of the first. Only a rule that actually has been added can be deleted.
+<para>The second function reverses the effect of the first. Only a rule that has actually been added can be deleted.
 Thus one cannot say that all except a certain enumerated set should be indexed.
 </para>
 <para>The reason argument is an arbitrary string identifying the application that needs this rule.
 Two applications can add the same rule.
 Removing one of them will still keep the rule in effect.
-If an object is indexed due to more than one rule the index data remain free from duplicates, neither index size nor speed is affected.
+If an object is indexed by more than one rule, the index data remain free from duplicates, neither index size nor speed is affected.
 </para>
 <para>
-If <emphasis>DB.DBA.RDF_OBJ_FT_RULE_ADD</emphasis> detects that the <emphasis>DB.DBA.RDF_QUAD</emphasis> contains quads whose graphs and/or predicates match to the new rule but not indexed before due to other rules then these quads are indexed automatically.
+If <emphasis>DB.DBA.RDF_OBJ_FT_RULE_ADD</emphasis> detects that <emphasis>DB.DBA.RDF_QUAD</emphasis> contains quads whose graphs and/or predicates match to the new rule but which have not been indexed before then these quads are indexed automatically.
 However the function <emphasis>DB.DBA.RDF_OBJ_FT_RULE_DEL</emphasis> does not remove indexing data about related objects.
 Thus the presence of indexing data about an object does not imply that it is necessarily used in some quad that matches to some rule.
 </para>
-<para>Functions return one if the rule is added or deleted and zero if the call was redundant (the rule has been added before or there's no rule to delete).
+<para>The above functions return one if the rule is added or deleted and zero if the call was redundant (the rule has been added before or there's no rule to delete).
 </para>
 <programlisting><![CDATA[
 
--- We load Tim Berners-Lee's FOAF file into a graph called people.
+-- We load Tim Berners-Lee's FOAF file into a graph called 'people'.
 
 DB.DBA.RDF_LOAD_RDFXML (http_get ('http://www.w3.org/People/Berners-Lee/card#i'), 'no', 'http://www.w3.org/people#');
 
 -- We check how many triples we got.
 
-select count (*) from (sparql select * from <people> where {?s ?p ?o})f;
+select count (*) from (sparql select * from <people> where {?s ?p ?o});
 
--- We specify that all string objects in the graph people should be text indexed.
+-- We specify that all string objects in the graph 'people' should be text indexed.
 
 DB.DBA.RDF_OBJ_FT_RULE_ADD ('http://www.w3.org/people/rules/ftindex/people#', null, 'http://www.w3.org/people#');
 
@@ -2506,15 +2533,15 @@ http://dig.csail.mit.edu/breadcrumbs/blog/4  http://purl.org/dc/elements/1.1/tit
 7 Rows. -- 2 msec.
 ]]></programlisting>
 <para>
-The below query is identical with the above but uses a different syntax.
-The filter syntax is more flexible in that it allows passing extra options to the contains predicate. These may be useful in the future.
+The query below is identical with that above but uses a different syntax. 
+The filter syntax is more flexible in that it allows passing extra options to the <emphasis>contains</emphasis> predicate. These may be useful in the future.
 </para>
 <programlisting><![CDATA[
 sparql select * from <people> where { ?s ?p ?o . filter (bif:contains(?o,  '"TIM*"')) };
 ]]></programlisting>
-<note><title>Note:</title><para>It is better to upgrade to the latest version of Virtuoso before adding free-text rules for the first time.
-The upgrade is especially advised in case of big amounts of texts to be indexed.
-The reason is that the free-text index on RDF may be changed in future versions and automatic upgrade of an existing index data into new format may take much more time than indexing from scratch.</para></note>
+<note><title>Note:</title><para>It is advisable to upgrade to the latest version of Virtuoso before adding free-text rules for the first time.
+This is especially the case if large amounts of text are to be indexed. The reason is that the free-text index on RDF may be changed in future versions 
+and automatic upgrading of an existing index data into the new format may take much more time than indexing from scratch.</para></note>
 <para>The table <emphasis>DB.DBA.RDF_OBJ_FT_RULES</emphasis> stores list of free-text index configuration rules.
 </para>
 <programlisting><![CDATA[
@@ -2525,17 +2552,18 @@ create table DB.DBA.RDF_OBJ_FT_RULES (
   primary key (ROFR_G, ROFR_P, ROFR_REASON) );
 ]]></programlisting>
 <para>
-Applications may read from this table but they should not write directly.
-Numerous duplicates in rules does not affect speed of free-text index operations because the content of the table is cached in memory in a special way,
-Unlike the use of configuration functions, direct write to the table will not update that cache.
+Applications may read from this table but they should not write to it directly.
+Duplications in the rules do not affect the speed of free-text index operations because the content of the table is cached in memory in a special form.
+Unlike the use of configuration functions, directly writing to the table will not update the in-memory cache.
 </para>
 <para>
 The table is convenient to search for rules added by a given application.
-If a unique identification string is used during installation of an application when rules are added then it's easy to remove that rules by an uninstall.
+If a unique identification string is used during installation of an application when rules are added then it's easy to remove those rules 
+as part of any uninstall routine.
 </para>
 </sect4>
 <sect4 id="rdfsparqlruletimeindexing"><title>Time of Indexing</title>
-<para>The triple store's text index is by default in manual batch mode. This means that changes in triples are periodically
+<para>The triple store's text index is in manual batch mode by default. This means that changes in triples are periodically
 reflected in the text index but are not maintained in strict synchrony. This is much more efficient than keeping the
 indices in constant synchrony. This setting may be altered with the <emphasis>db.dba.vt_batch_update</emphasis> stored procedure.
 </para>
@@ -2557,19 +2585,18 @@ DB.DBA.VT_BATCH_UPDATE ('DB.DBA.RDF_OBJ', 'ON', 10);
 <para>To make the update always manual, specify NULL as the last argument above.
 </para>
 <para>
-Additional problem related to free-text index of <emphasis>DB.DBA.RDF_QUAD</emphasis> is that some applications (e.g. import of billions of triples) may set triggers off.
+One problem related to free-text indexing of <emphasis>DB.DBA.RDF_QUAD</emphasis> is that some applications (e.g. those that import billions of triples) may set off triggers.
 This will make free-text index data incomplete.
-Call of procedure <emphasis>DB.DBA.RDF_OBJ_FT_RECOVER ()</emphasis> will insert all missing free-text index items by drop and re-insert every existing free-text index rule.
+Calling procedure <emphasis>DB.DBA.RDF_OBJ_FT_RECOVER ()</emphasis> will insert all missing free-text index items by dropping and re-inserting every existing free-text index rule.
 </para>
 </sect4>
 <sect4 id="rdfviewsandfreetext"><title>Free-Text Indexes on RDF Views</title>
 <para>
-If an <emphasis>O</emphasis> field of a quad map pattern gets its value from a database column that have a free text index then this index can be used in SPARQL for efficient text search.
-As a variant, the free-text index of an additional table may be used.
+If an <emphasis>O</emphasis> field of a quad map pattern gets its value from a database column that has a free text index then this index can be used in SPARQL for efficient text searching. As a variation of this facility, the free-text index of another table may be used.
 </para>
 <para>
-If a statement of quad map pattern declaration starts with declaration of table aliases, declaration of table alias may include name of table column that should have a text index.
-Consider possible use of free-text index on content of DAV resources stored in DAV system tables of Virtuoso:
+If a statement of a quad map pattern declaration starts with a declaration of table aliases, the table alias declaration may include the name of a table column that should have a text index.
+For example, consider the possibility of using a free-text index on the content of DAV resources stored in the DAV system tables of Virtuoso:
 </para>
 <programlisting><![CDATA[
 prefix mydav: <...>
@@ -2586,20 +2613,20 @@ from WS.WS.SYS_DAV_RES as dav_resource text literal RES_CONTENT
   }
 ]]></programlisting>
 <para>
-The clause <emphasis>text literal RES_CONTENT</emphasis> grants the SPARQL compiler permission to use free-text index for objects that are literals composed from column <emphasis>dav_resource.RES_CONTENT</emphasis>; this clause also choose between <emphasis>text literal</emphasis> (supports <emphasis>contains()</emphasis> predicate only) and <emphasis>text xml literal</emphasis> (supports both <emphasis>contains()</emphasis> and <emphasis>xcontains()</emphasis>) text indexes.
-It is important to understand that free-text index will produce results using raw relational data.
+The clause <emphasis>text literal RES_CONTENT</emphasis> grants the SPARQL compiler permission to use a free-text index for objects that are literals composed from column <emphasis>dav_resource.RES_CONTENT</emphasis>. This clause also allows choosing between <emphasis>text literal</emphasis> (supports only the <emphasis>contains()</emphasis> predicate) and <emphasis>text xml literal</emphasis> (supports both <emphasis>contains()</emphasis> and <emphasis>xcontains()</emphasis>) text indexes.
+It is important to understand that the free-text index will produce results using raw relational data.
 If a literal class transformation changes the text stored in the column then these changes are ignored by free-text search.
-E.g., a transformation concatenates a word to the value of the column, but the free-text search will not find this word.
+e.g. if a transformation concatenates a word to the value of the column, but the free-text search will not find this word.
 </para>
 <para>
 The free-text index may be used in a more sophisticated way. Consider a built-in table <emphasis>DB.DBA.RDF_QUAD</emphasis> that does not have a free-text index.
-Moreover, the table does not contain full values of all objects; the <emphasis>O</emphasis> column contains &quot;short enough&quot; values inlined, but long and special values are represented by links to <emphasis>DB.DBA.RDF_OBJ</emphasis> table.
+Moreover, the table does not contain the full values of all objects; the <emphasis>O</emphasis> column contains &quot;short enough&quot; values inlined, but long and special values are represented by links to the <emphasis>DB.DBA.RDF_OBJ</emphasis> table.
 The RDF_OBJ table, however, has free-text index that can be used.
-The full declaration of built-in default mapping for default storage could be written this way:
+The full declaration of the built-in default mapping for default storage could be written this way:
 </para>
 <programlisting><![CDATA[
 -- Important! Do not try to execute on live system
--- without prior changing names of storage and quad map pattern!
+-- without first changing the quad storage and quad map pattern names!
 
 sparql
 create virtrdf:DefaultQuadMap as
@@ -2625,22 +2652,21 @@ where (^{physical_quad.}^.O = ^{physical_obj.}^.RO_DIGEST)
 The reference to the free-text index is extended by clause <emphasis> of (physical_quad.O)</emphasis>.
 This means that the free-text on <emphasis>DB.DBA.RDF_OBJ.RO_DIGEST</emphasis> will be used when the object value comes from <emphasis>physical_quad.O</emphasis> as if <emphasis>physical_quad.O</emphasis> were indexed itself.
 If a SPARQL query invokes <emphasis>virtrdf:DefaultQuadMap</emphasis> but contains no free-text criteria then only <emphasis>DB.DBA.RDF_QUAD</emphasis> appears in the final SQL statement and no join with <emphasis>DB.DBA.RDF_OBJ</emphasis> is made.
-Adding a free-text predicate will add <emphasis>DB.DBA.RDF_OBJ</emphasis> to the list of source tables and a join condition for <emphasis>DB.DBA.RDF_QUAD.O</emphasis> and <emphasis>DB.DBA.RDF_OBJ.RO_DIGEST</emphasis>; and it will add <emphasis>contains (RO_DIGEST, ...)</emphasis> predicate, not <emphasis>contains (O, ...)</emphasis>.
+Adding a free-text predicate will add <emphasis>DB.DBA.RDF_OBJ</emphasis> to the list of source tables and a join condition for <emphasis>DB.DBA.RDF_QUAD.O</emphasis> and <emphasis>DB.DBA.RDF_OBJ.RO_DIGEST</emphasis>; and it will add <emphasis>contains (RO_DIGEST, ...)</emphasis> predicate, rather than <emphasis>contains (O, ...)</emphasis>.
 As a result, &quot;you pay only for what you use&quot;: adding free-text index to the declaration does not add tables to the query unless the index is actually used.
 </para>
 <para>
 Boolean functions <function>bif:contains</function> and <function>bif:xcontains</function> are used for objects that come from RDF Views as well as for regular &quot;physical&quot; triples.
-Every function gets two arguments and returns a boolean value.
-The first argument is an local variable.
+Every function takes two arguments and returns a boolean value. The first argument is an local variable.
 The argument variable should be used as an object field in the group pattern where the filter condition is placed.
-Moreover, the occurrence of variable in object field should be placed <emphasis>before</emphasis> the filter.
-If there are many occurrences of the variable in object fields then the free-text search is associated with the rightmost occurrence that is still to the left from the filter.
-The triple pattern that contains the rightmost occurrence is called &quot;intake&quot; of free-text search.
-When SPARQL compiler chooses appropriate quad map patterns that may generate data matching intake triple pattern it skips quad map patterns that have no declared free-text indexes, because nothing can be found by free-text search in data that have no free-text index.
-Every quad map pattern that has free-text pattern will finally produce an invocation of SQL <link linkend="containspredicate">contains</link> or <link linkend="xcontainspredicate">xcontains</link> predicate, so the whole result of free-text search may be a union of free-text searches from different quad map patterns.
+Moreover, the occurrence of the variable in an object field should be placed <emphasis>before</emphasis> the filter.
+If there are many occurrences of the variable in object fields then the free-text search is associated with the rightmost occurrence that is still to the left of the filter.
+The triple pattern that contains the rightmost occurrence is called the &quot;intake&quot; of the free-text search.
+When the SPARQL compiler chooses the appropriate quad map patterns that may generate data matching the intake triple pattern, it skips quad map patterns that have no declared free-text indexes, because nothing can be found by free-text search in data that have no free-text index.
+Every quad map pattern that has a free-text pattern will ultimately produce an invocation of the SQL <link linkend="containspredicate">contains</link> or <link linkend="xcontainspredicate">xcontains</link> predicate, so the final result of a free-text search may be a union of free-text searches from different quad map patterns.
 </para>
 <para>
-The described logic is important only in really complicated cases whereas simple queries are self-evident:
+The described logic is important only in very complicated cases, whereas simple queries are self-evident:
 </para>
 <programlisting><![CDATA[
 select * from <my-dav-graph>
@@ -2650,7 +2676,7 @@ where {
     filter (bif:contains (?text, "hello and world")) }
 ]]></programlisting>
 <para>
-or, more compact,
+or, more succinctly,
 </para>
 <programlisting><![CDATA[
 select * from <my-dav-graph>
@@ -2663,35 +2689,35 @@ where {
 </sect3>
 <sect3 id="rdfsparul"><title>SPARUL -- an Update Language For RDF Graphs</title>
      <sect4 id="rdfsparulintro"><title>Introduction</title>
-       <para>Starting from version 5.0, Virtuoso supports
-<ulink url="http://jena.hpl.hp.com/~afs/SPARQL-Update.html">SPARQL/Update</ulink> extension of SPARQL.
-This is sufficient for most of routine data manipulation operations. If <emphasis>SPARQL_UPDATE</emphasis>
-role is granted to <emphasis>SPARQL</emphasis> user then data manipulation statements may be
-executed via SPARQL web service endpoint as well as data querying.
+       <para>Starting with version 5.0, Virtuoso supports the
+<ulink url="http://jena.hpl.hp.com/~afs/SPARQL-Update.html">SPARQL/Update</ulink> extension to SPARQL.
+This is sufficient for most of routine data manipulation operations. If the <emphasis>SPARQL_UPDATE</emphasis>
+role is granted to user <emphasis>SPARQL</emphasis> user then data manipulation statements may be
+executed via the SPARQL web service endpoint as well as by data querying.
        </para>
      </sect4>
      <sect4 id="rdfsparulfunc"><title>Manage RDF Storage</title>
        <para>Two functions allow the user to alter RDF storage by inserting or deleting all
-triples listed in some vector. Both functions receive an IRI of a graph that should be altered and
-a vector of triples that should be added or removed. The graph IRI can be either IRI ID or a string.
-The third optional argument of these functions control transactional behavior: the value of parameter is
-passed to <link linkend="fn_log_enable"><function>log_enable</function></link> function.
-The return values of functions are not defined and should not be used by applications.
+triples listed in some vector. Both functions receive the IRI of the graph that should be altered and
+a vector of triples that should be added or removed. The graph IRI can be either an IRI ID or a string.
+The third optional argument controls the transactional behavior - the parameter value is
+passed to the <link linkend="fn_log_enable"><function>log_enable</function></link> function.
+The return values of these functions are not defined and should not be used by applications.
        </para>
        <programlisting>
 create function DB.DBA.RDF_INSERT_TRIPLES (in graph_iri any, in triples any, in log_mode integer := null)
 create function DB.DBA.RDF_DELETE_TRIPLES (in graph_iri any, in triples any, in log_mode integer := null)
        </programlisting>
        <para>Simple operations may be faster if written as low-level SQL code instead of using SPARUL.
-E.g, the use of SPARQL DELETE is redundant when the application should delete from RDF_QUAD
-by using simple filters like:
+The use of SPARQL DELETE is unnecessary in cases where the better alternative is for the application to delete from RDF_QUAD
+using simple SQL filters like:
        </para>
        <programlisting>
 delete from DB.DBA.RDF_QUAD
 where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (
     'http://local.virt/DAV/sparql_demo/data/data-xml/source-simple2/source-data-01.rdf' );
        </programlisting>
-       <para>On the other hand, simple filters does not work when search criteria refer to triples
+       <para>On the other hand, simple filters does not work when the search criteria refer to triples
 that are affected by the modification. Consider a function that deletes all triples whose subjects
 are nodes of type 'http://xmlns.com/foaf/0.1/Person'. Type information is stored in triples that
 will be deleted, so the simplest function is something like this:
@@ -2715,7 +2741,7 @@ create procedure DELETE_PERSONAL_DATA (in foaf_graph varchar)
 DELETE_PERSONAL_DATA (
   'http://local.virt/DAV/sparql_demo/data/data-xml/source-simple2/source-data-01.rdf' );
 ]]></programlisting>
-       <para>Starting from Virtuoso 5.0, application may use SPARUL to do the same in a convenient way:
+       <para>From Virtuoso 5.0 onwards, applications can use SPARUL to do the same in a more convenient way:
        </para>
 <programlisting><![CDATA[
 create procedure DELETE_PERSONAL_DATA (in foaf_graph varchar)
@@ -2728,29 +2754,29 @@ create procedure DELETE_PERSONAL_DATA (in foaf_graph varchar)
 ]]></programlisting>
      </sect4>
      <sect4 id="rdfsparulexamples"><title>Examples</title>
-       <para>The graph where changes take place may be specified by an option in front of query, instead
-of being specified in 'insert into graph' clause.
+       <para>The graph to be changed may be specified by an option preceding of query, instead
+of being specified in the 'insert into graph' clause.
        </para>
 <programlisting><![CDATA[
 sparql define input:default-graph-uri <http://mygraph.com>
 insert into <http://mygraph.com> { <http://myopenlink.net/dataspace/Kingsley#this> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/ns#User> };
 ]]></programlisting>
        <para>The following two statements are equivalent but the latter may work faster, especially
-if there are many RDF views in the system or if some RDF views may contain triples for the graph
-in question. Note that neither of these two affect data that might come from RDF views.
+if there are many RDF views in the system or if the graph in question contains triples from RDF views. 
+Note that neither of these two statements affects data coming from RDF views.
        </para>
 <programlisting><![CDATA[
 sparql delete from graph <A-Named-Graph> { ?s ?p ?o } from <A-Named-Graph> where { ?s ?p ?o };
 sparql clear graph <A-Named-Graph>;
 ]]></programlisting>
-<para>The following statement deletes all records with db:London as subject:</para>
+<para>The following statement deletes all records with db:London as the subject:</para>
 <programlisting><![CDATA[
 sparql
 delete from graph <A-Named-Graph> { ?s ?p ?o }
 from <A-Named-Graph>
 where { ?s ?p ?o . filter ( ?s = db:London ) };
 ]]></programlisting>
-<para>Also the statement be written in this way:</para>
+<para>Alternatively, the statement can be written in this way:</para>
 <programlisting><![CDATA[
 sparql
 delete from graph <A-Named-Graph> { db:London ?p ?o ?p ?o }
@@ -2758,7 +2784,7 @@ from <A-Named-Graph>
 where { db:London ?p ?o };
 ]]></programlisting>
        <para>Keywords 'insert in' and 'insert into' are interchangeable in Virtuoso for backward
-compatibility but SPARUL spec lists only 'insert into':
+compatibility, but the SPARUL specification lists only 'insert into':
        </para>
 <programlisting><![CDATA[
 sparql insert into graph <A-Named-Graph> {  <http://myopenlink.net/dataspace/Kingsley#this>
@@ -2769,13 +2795,13 @@ sparql insert into graph <A-Named-Graph> {  <http://myopenlink.net/dataspace/Car
                                             <http://rdfs.org/sioc/ns#User> };
 ]]></programlisting>
        <para>It is possible to use various expressions to calculate fields of new triples. This is
- very convenient, even if not a part of the original spec.
+ very convenient, even if not a part of the original specification.
        </para>
 <programlisting><![CDATA[
 sparql insert into graph <A-Named-Graph> { ?s <http://rdfs.org/sioc/ns#id> `iri (bif:concat (str (?o), "Idehen"))` }
 where { ?s <http://rdfs.org/sioc/ns#id> ?o };
 ]]></programlisting>
-       <para>'Modify graph' may be used as a sort of 'update' operation.
+       <para>'Modify graph' may be used as a form of 'update' operation.
        </para>
 <programlisting><![CDATA[
 sparql modify graph <A-Named-Graph> delete { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o } insert { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type1> ?o } where { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o };
@@ -2786,7 +2812,7 @@ sparql delete from graph <A-Named-Graph> { <http://myopenlink.net/dataspace/Caro
 sparql load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/inputs/SparqlDawg/data-xml/Expr1/manifest.rdf")
    into graph <A-Named-Graph>;
 ]]></programlisting>
-       <para>Number of operations can be sent to a web service endpoint as a single statement and
+       <para>Several operations can be sent to a web service endpoint as a single statement and
 executed in sequence.
        </para>
 <programlisting><![CDATA[
@@ -2805,17 +2831,17 @@ sparql
 ;
 ]]></programlisting>
 
-<para>In case of huge RDF data ( for ex. 600 million triples ) loaded in the Virtuoso sever in a single graph,
+<para>When handling very large RDF data collections (e.g. 600 million triples ) loaded into Virtuoso server as a single graph,
 the fastest operation to drop the graph is:</para>
 <programlisting><![CDATA[
 sparql clear graph <graph-iri>;
 ]]></programlisting>
-<para>The operation may be accelerated using log_enable (0) or even log_enable (2),
-with log_enable(1) after the operation.
+<para>The operation can be speeded up by executing log_enable (0) or even log_enable (2) beforehand,
+and log_enable(1) after it completes.
 </para>
       </sect4>
    <sect4 id="rdfsparulexamples"><title>More Detailed Examples</title>
-<para>Adding triples to graph</para>
+<para>Adding triples to graph:</para>
 <programlisting><![CDATA[
 sparql
 INSERT INTO GRAPH <http://BookStore.com>
@@ -2826,7 +2852,7 @@ INSERT INTO GRAPH <http://BookStore.com>
   <http://www.w3.org/People/Connolly/#me> <http://purl.org/dc/elements/1.1/title> "Fundamentals of Compiler Design" .
   <http://www.w3.org/People/Connolly/#me> <http://purl.org/dc/elements/1.1/date> <2002-01-01T00:00:00>. };
 ]]></programlisting>
-<para>Adding triples to graph</para>
+<para>Adding triples to graph:</para>
 <programlisting><![CDATA[
 ]]></programlisting>
 <para>A SPARQL/Update request that contains a triple to be deleted and a triple to be added (used here to correct a book title).
@@ -2846,7 +2872,7 @@ Modify <http://BookStore.com>, delete 1 and insert 1 triples -- done
 
 1 Rows. -- 20 msec.
 ]]></programlisting>
-<para>The example below has a request to delete all records of old books (with date before year 2000)
+<para>The example below has a request to delete all records of old books (dated before year 2000)
 </para>
 <programlisting><![CDATA[
 sparql
@@ -2866,7 +2892,7 @@ Delete from <http://BookStore.com>, 6 triples -- done
 
 1 Rows. -- 10 msec.
 ]]></programlisting>
-<para>This snippet copies records from one named graph to another named graph based on a pattern:
+<para>The next snippet copies records from one named graph to another based on a pattern:
 </para>
 <programlisting><![CDATA[
 sparql
@@ -2888,7 +2914,7 @@ Insert into <http://NewBookStore.com>, 6 triples -- done
 
 1 Rows. -- 30 msec.
 ]]></programlisting>
-<para>An example to move records from one named graph to another named graph based on a pattern:
+<para>This example moves records from one named graph to another named graph based on a pattern:
 </para>
 <programlisting><![CDATA[
 sparql
@@ -2937,28 +2963,28 @@ These extensions allow a straightforward translation of arbitrary SQL queries to
 This extension is called  "SPARQL BI", because the primary objective is to match needs of Business Intelligence.
 The extended features apply equally to querying physical quads or relational tables mapped through RDF views.
 </para>
-<note><para>In this section, many examples use TPC-H namespace. You may test them on your local demo database.
-They use data from TPC-H dataset that is mapped into graph with IRI like
-http://example.com/tpch , but you should replace fake host name &quot;example.com&quot; with host name of your own installation,
-<strong>verbatim</strong>, that is specified as &quot;DefaultHost&quot; parameter in [URIQA] section of Virtuoso configuration file.</para></note>
+<note><para>In this section, many examples use the TPC-H namespace. You may test them on your local demo database.
+They use data from the TPC-H dataset that is mapped into a graph with an IRI of the form
+http://example.com/tpch. When testing, you should replace the fake host name &quot;example.com&quot; with the host name of your own installation
+verbatim, that is as specified in the &quot;DefaultHost&quot; parameter in the [URIQA] section of the Virtuoso configuration file.</para></note>
 <sect4 id="rdfsparqlaggregate"><title>Aggregates in SPARQL</title>
-<para>Virtuoso extends SPARQL with SQL like aggregate and group by functionality. This functionality is
-also available through embedding SPARQL text inside SQL but the SPARQL extension syntax has the benefit
-of working also over the SPARQL protocol and of looking more SPARQL-like.
+<para>Virtuoso extends SPARQL with SQL like aggregate and "group by" functionality. This functionality is
+also available by embedding SPARQL text inside SQL, but the SPARQL extension syntax has the benefit
+of also working over the SPARQL protocol and of looking more SPARQL-like.
 </para>
 <para>The supported aggregates are <emphasis>count</emphasis>, <emphasis>min</emphasis>, <emphasis>max</emphasis>,
 <emphasis>avg</emphasis> and <emphasis>sum</emphasis>. These can take an optional <emphasis>distinct</emphasis>
 keyword. These are permitted only in the selection part of a select query. If a selection list consists
 of a mix of variables and aggregates, the non-aggregate selected items are considered to be grouping
-columns and a group by over them is implicitly added at the end of the generated SQL query. There is
-no explicit syntax for group by or having in Virtuoso SPARQL.
+columns and a "group by" over them is implicitly added at the end of the generated SQL query. There is
+no explicit syntax for "group by" or "having" in Virtuoso SPARQL.
 </para>
 <para>If a selection consists of aggregates exclusively, the result set has one row with the values
-of the aggregates. If there are aggregates and variables in the selection, the result set as has many
-rows as there are distinct combinations of the variables and the aggregates are calculated over each
-such distinct combination, as if there were a SQL group by over all non-aggregates.
+of the aggregates. If there are aggregates and variables in the selection, the result set has as many
+rows as there are distinct combinations of the variables; the aggregates are then calculated over each
+such distinct combination, as if there were a SQL "group by" over all non-aggregates.
 </para>
-<para>With the count aggregate the argument may be either <emphasis>*</emphasis>, meaning counting all rows or a variable
+<para>With the count aggregate the argument may be either <emphasis>*</emphasis>, meaning counting all rows, or a variable
 name, meaning counting all the rows where this variable is bound. If there is no implicit <emphasis>group by</emphasis>,
 there can be an optional <emphasis>distinct</emphasis> keyword before the variable that is the argument of an aggregate.
 </para>
@@ -2967,17 +2993,17 @@ there can be an optional <emphasis>distinct</emphasis> keyword before the variab
 select count distinct ?v1 ... ?vn
   from ....
 ]]></programlisting>
-<para>User-defined aggregate functions are not supported in current version of SPARQL compiler.</para>
+<para>User-defined aggregate functions are not supported in current version of the SPARQL compiler.</para>
 <sect5 id="rdfsparqlaggregatepathexpressions"><title>Path Expressions</title>
 <para>Virtuoso has support for paths consisting of dereferencing properties in SPARQL. Virtuoso allows
 simple paths in expressions and has a separate feature for transitivity:</para>
 
 <itemizedlist mark="bullet">
   <listitem>S+&gt;P: for "one or many values of P of S"</listitem>
-  <listitem>S*&gt;P: for "zero or many values of P of S", so *&gt; may form a LEFT OUTER JOIN when +&gt; form an INNER JOIN.</listitem>
+  <listitem>S*&gt;P: for "zero or many values of P of S", so *&gt; may form a LEFT OUTER JOIN whereas +&gt; forms an INNER JOIN.</listitem>
   <listitem>S|&gt;P: is reserved for potential "single value of P of S or an error if there are many values"</listitem>
 </itemizedlist>
-<para>If this property is set (for ex. by an RDF View) then +&gt; should be used.</para>
+<para>If this property is set (for example by an RDF View) then +&gt; should be used.</para>
 
 <para><emphasis>Simple Example</emphasis></para>
 <programlisting><![CDATA[
@@ -3105,8 +3131,8 @@ where {
 
 -- Get counts and total prices of ordered items, grouped by item status.
 ]]></programlisting>
-   <para><emphasis>Example with dataset of people, some duplicated:</emphasis></para>
-   <para>Suppose there is a dataset with many people, some of them duplicated. To list execute the query:
+   <para><emphasis>Example: A dataset of people, some duplicated</emphasis></para>
+   <para>Suppose there is a dataset with many people, some of them sharing the same name. To list them we would, ideally, execute the query:
    </para>
 <programlisting><![CDATA[
 sparql
@@ -3118,11 +3144,9 @@ SELECT DISTINCT
    ?person foaf:mbox_sha1sum ?mail
  };
 ]]></programlisting>
-   <para>Note the newline after DISTINCT to read the query.</para>
-   <para>SELECT DISTINCT is as in plain SPARQL, return values are expression ?name and two variables
-?person and ?mail. Unfortunately, there's no such thing as DISTINCT for a part of the result set row.
-If there's a regular need in such feature and duplicates are seldom then we may introduce an aggregate
-called, say, SPECIMEN, that will return the very first of aggregated values, unchanged:
+   <para>Unfortunately, the facility to apply DISTINCT to a part of the result set row (i.e. to ?name) does not currently exist. 
+   (Although the above form is permitted, it's interpreted as being identical to 'SELECT DISTINCT ?name, ?person, ?mail WHERE ...') 
+   If there's demand for such a feature then we may introduce an aggregate called, say, SPECIMEN, that will return the very first of the aggregated values. e.g.:
    </para>
 <programlisting><![CDATA[
 sparql
@@ -3134,9 +3158,9 @@ WHERE
     ?person foaf:mbox_sha1sum ?mail
  };
 ]]></programlisting>
-   <para>If duplicates are seldom and there's no requirement that ?person should correspond to ?mail
-(so the result should contains some person node and some mail but they don't have to be connected by
-foaf:mbox_sha1sum), then MIN aggregate will work:
+   <para>As a workaround to this limitation, the MIN aggregate can be used, provided duplicates are few and there's no requirement 
+   that ?person should correspond to ?mail
+(i.e. the result should contain some person node and some mail node but they don't have to be connected by foaf:mbox_sha1sum):
    </para>
 <programlisting><![CDATA[
 sparql
@@ -3174,14 +3198,14 @@ SELECT
 ]]></programlisting>
 </sect5>
 <sect5 id="rdfsparqlaggregatenote"><title>Note on Aggregates and Inference</title>
-<para>Inference is added to a SPARQL query only for the variables whose value is actually used. Thus,
+<para>Inferencing is added to a SPARQL query only for those variables whose value is actually used. Thus,
 </para>
 <programlisting><![CDATA[
 select count (*)
  from <http://mygraph.com>
 where {?s ?p ?o}
 ]]></programlisting>
-<para>will not make inferred values since s, p, and o are actually not used. Instead,
+<para>will not return inferred values since s, p, and o are not actually used. In contrast,
 </para>
 <programlisting><![CDATA[
 sparql
@@ -3189,45 +3213,47 @@ select count (?s) count (?p) count (?o)
  from <http://mygraph.com>
 where {?s ?p ?o};
 ]]></programlisting>
-<para>will get all the inferred triples also.
+<para>will also return all the inferred triples.
 </para>
 <para>
-This may be confusing and will likely be corrected in the future.
+Note: This difference in behaviour may lead to confusion and will, therefore, likely be altered in the future.
 </para>
 </sect5>
 </sect4>
 <sect4 id="rdfsparqlarrowop"><title>Pointer Operator (<emphasis>+&gt;</emphasis> and <emphasis>*&gt;</emphasis>)</title>
 <para>
-When expressions occur in result sets, many variables are introduced only to pass a value from triple pattern to the result expression.
-This is inconvenient because many triple patterns are trivial. Big number of variable names masquerade &quot;interesting&quot; variables that are used more than one in pattern part of the query and establish logical relationships between parts of the query.
+When expressions occur in result sets, many variables are often introduced only for the purpose of passing a value from a triple pattern to the result expression.
+This is inconvenient because many triple patterns are trivial. The presence of large numbers of variable names masks &quot;interesting&quot; variables that are used in more than one in pattern and which establish logical relationships between different parts of the query.
 As a solution we introduce pointer operators.</para>
 <para>
-The <emphasis>+&gt;</emphasis> (pointer) operator allows referring to a property value without naming it as a variable and explicit writing triple pattern. We can shorten the example above as</para>
+The <emphasis>+&gt;</emphasis> (pointer) operator allows referring to a property value without naming it as a variable and explicitly writing a triple pattern. We can shorten the example above to:</para>
 <programlisting><![CDATA[sparql
 prefix tpch: <http://www.openlinksw.com/schemas/tpch#>
 select ?l+>tpch:linestatus count(*) sum(?l+>tpch:lineextendedprice)
 from <http://localhost.localdomain:8310/tpch>
 where { ?l a tpch:lineitem }]]></programlisting>
 <para>
-The <emphasis>?subject+&gt;propertyname</emphasis> notation is exactly equivalent to having a triple pattern <emphasis>?subject propertyname ?aux_var</emphasis> binding an auxiliary variable to the mentioned property of the subject within the group pattern enclosing the reference.
-For a SELECT, the enclosing group pattern is considered to be the top level pattern of the where clause or in the event of a union, the top level of each term of the union.
-Each distinct pointer adds exactly one triple pattern to the enclosing group pattern, thus multiple uses of <emphasis>+&gt;</emphasis> with same arguments do not each add a triple pattern.
-Having multiple copies of an identical pattern might lead to changes in cardinality if multiple input graphs were being considered.
-If a lineitem had multiple discounts or extended prices, then we would get the cartesian product of both.
+The <emphasis>?subject+&gt;propertyname</emphasis> notation is equivalent to having a triple pattern <emphasis>?subject propertyname ?aux_var</emphasis> binding an auxiliary variable to the mentioned property of the subject, within the group pattern enclosing the reference.
+For a SELECT, the enclosing group pattern is considered to be the top level pattern of the where clause or, in the event of a union, the top level of each term of the union.
+Each distinct pointer adds exactly one triple pattern to the enclosing group pattern. Multiple uses of <emphasis>+&gt;</emphasis> with the same arguments do not each add a triple pattern.
+(Having multiple copies of an identical pattern might lead to changes in cardinality if multiple input graphs were being considered.
+If a lineitem had multiple discounts or extended prices, then we would get the cartesian product of both.)
 </para>
 <para>
-If a property referenced via <emphasis>+&gt;</emphasis> is absent, the variable at left side of the operator is not bound in the enclosing group pattern because it should be bound in all triple patterns where it appears as a field, including implicitly added patterns.
-The <emphasis>?subject*&gt;propertyname</emphasis> notation is introduced in order to access optional property values. It adds an OPTIONAL group <emphasis>OPTIONAL { ?subject propertyname ?aux_var }</emphasis>, not plain triple pattern, so the binding of ?subject is not changed even if the object variable is not bound. If the property is set for all subjects in question then the results of <emphasis>*&gt;</emphasis> and <emphasis>+&gt;</emphasis> are the same. All other equal, <emphasis>+&gt;</emphasis> operator produces better SQL code than <emphasis>*&gt;</emphasis> so use <emphasis>*&gt;</emphasis> only when it is really needed.</para>
+If a property referenced via <emphasis>+&gt;</emphasis> is absent, the variable on the left side of the operator is not bound in the enclosing group pattern because it should be bound in all triple patterns where it appears as a field, including implicitly added patterns.
+</para>
+<para>
+The <emphasis>?subject*&gt;propertyname</emphasis> notation is introduced in order to access optional property values. It adds an OPTIONAL group <emphasis>OPTIONAL { ?subject propertyname ?aux_var }</emphasis>, not a plain triple pattern, so the binding of ?subject is not changed even if the object variable is not bound. If the property is set for all subjects in question then the results of <emphasis>*&gt;</emphasis> and <emphasis>+&gt;</emphasis> are the same. All other things being equal, the <emphasis>+&gt;</emphasis> operator produces better SQL code than <emphasis>*&gt;</emphasis> so use <emphasis>*&gt;</emphasis> only when it is really needed.</para>
 </sect4>
 <sect4 id="rdfsparqlnesting"><title>Subqueries in SPARQL</title>
 <para>
 Pure SPARQL does not allow binding a value that is not retrieved through a triple pattern.
 We lift this restriction by allowing expressions in the result set and providing names for result columns.
-We also let a sparql SELECT statement to appear in other sparql statement in any place where a group pattern may appear,
-so names of result columns become names of variables bound using values from returned rows.
+We also allow a SPARQL SELECT statement to appear in another SPARQL statement in any place where a group pattern may appear.
+The names of the result columns form the names of the variables bound, using values from the returned rows.
 This resembles derived tables in SQL.</para>
 <para>
-For instance, the following statement finds prices of 1000 order lines with biggest discounts.</para>
+For instance, the following statement finds the prices of the 1000 order lines with the biggest discounts:</para>
 
 <programlisting><![CDATA[sparql
 define sql:signal-void-variables 1
@@ -3242,8 +3268,8 @@ order by desc (?extendedprice * ?discount)
 limit 1000;]]></programlisting>
 
 <para>
-As soon as we ensure that the query works fine, we can use it in answering more complex question.
-Imagine that we want to find how big are customers who has got biggest discounts ever made by company.</para>
+After ensuring that this query works correctly, we can use it to answer more complex questions.
+Imagine that we want to find out how big the customers are who have received the biggest discounts.</para>
 
 <programlisting><![CDATA[sparql
 define sql:signal-void-variables 1
@@ -3271,22 +3297,19 @@ where
 order by (sum(?extendedprice2 * (1 - ?discount2)) / max (?bigdiscount));]]></programlisting>
 
 <para>
-Looking at the result we can see that customers in question are really big so even big 10% discounts on individual items looks like additional 0.5% to 1.5% discounts from sums of total purchases.</para>
+The inner select finds the 1000 biggest (in absolute value) discounts and their order lines. For each line we find orders of it, and the customer. For each customer found, we find all the orders he made and all the lines of each of the orders (variable ?line2).</para>
 <para>
-The inner select finds 1000 biggest (in absolute value) discounts and their order lines. For each line we find order of that line and the customer. For every found customers we find all orders he made and all lines of that orders (variable ?line2). The rest is trivial.</para>
+Note that the inner select does not contain FROM clauses. It is not required because the inner select inherits the access permissions of all the outer queries. It is also important to note that the internal variable bindings of the subquery are not visible in the outer query; only the result set variables are bound. Similarly, variables bound in the outer query are not accessible to the subquery.</para>
 <para>
-Note that the inner select does not contains FROM clauses. It is not required because inner select inherits access permissions of all outer queries. It is also important that internal variable bindings of subquery are not visible in outer query, only result set variables are bound, similarly, variables bound in outer query are not accessible inside.</para>
-<para>
-Note also the declaration <emphasis>define sql:signal-void-variables 1</emphasis> that forces SPARQL compiler to signal errors if some variables can not be bound due to typos in names or attempts of making joins of disjoint domains. This diagnostics is especially important when the query is long.</para>
+Note also the declaration <emphasis>define sql:signal-void-variables 1</emphasis> that forces the SPARQL compiler to signal errors if some variables cannot be bound due to misspelt names or attempts to make joins across disjoint domains. These diagnostics are especially important when the query is long.</para>
 </sect4>
 <sect4 id="rdfsparqlbackq"><title>Expressions in Triple Patterns</title>
-<para>In addition to expressions in filters and result sets, Virtuoso allows the use of expressions in triples of
-CONSTRUCT pattern or WHERE pattern: an expression can be used instead
-of constant or variable name for subject, predicate or object. In this
-case, an expression is surrounded by backquotes.</para>
+<para>In addition to expressions in filters and result sets, Virtuoso allows the use of expressions in triples of a
+CONSTRUCT pattern or WHERE pattern - an expression can be used instead of a constant or a variable name for a subject, predicate or object. 
+When used in this context, the expression is surrounded by backquotes.</para>
 
-<para><emphasis>Example with WHERE Clause:</emphasis></para>
-<para>The following return all distinct 'fragment' parts of all subjects in all graphs that have some predicate whose value is equal to 2+2.</para>
+<para><emphasis>Example: With a WHERE Clause:</emphasis></para>
+<para>The following example returns all the distinct 'fragment' parts of all subjects in all graphs that have some predicate whose value is equal to 2+2.</para>
 <programlisting><![CDATA[
 SQL>sparql select distinct (bif:subseq (?s, bif:strchr (?s, '#')))
    where {
@@ -3300,7 +3323,7 @@ VARCHAR
 ----------
 #four
 ]]></programlisting>
-<para>Inside WHERE part, every expression in a triple pattern is replaced with new variable, a filter expression is added to the enclosing group. The new filter is an equality of new variable and the expression. Hence the sample above is identical to</para>
+<para>Inside a WHERE part, every expression in a triple pattern is replaced with new variable and a filter expression is added to the enclosing group. The new filter is an equality of the new variable and the expression. Hence the sample above is identical to:</para>
 <programlisting><![CDATA[
 sparql
 select distinct (bif:subseq (?s, bif:strchr (?s, '#')))
@@ -3311,7 +3334,7 @@ select distinct (bif:subseq (?s, bif:strchr (?s, '#')))
        filter (?newvariable = (2+2)) .
      } };
 ]]></programlisting>
-<para><emphasis>Example with CONSTRUCT:</emphasis></para>
+<para><emphasis>Example: With CONSTRUCT</emphasis></para>
 <programlisting><![CDATA[
 CONSTRUCT {
   <http://bio2rdf.org/interpro:IPR000181>
@@ -3324,7 +3347,7 @@ where { ?s1 ?p1 ?o1 } limit 1
 <programlisting><![CDATA[
 <http://bio2rdf.org/interpro:IPR000181> <http://bio2rdf.org/ns/bio2rdf#hasLinkCount> "0"^^<http://www.w3.org/2001/XMLSchema#integer> .
 ]]></programlisting>
-<para><emphasis>Example create graph:</emphasis></para>
+<para><emphasis>Example: Inserting into a graph using an expression</emphasis></para>
 <programlisting><![CDATA[
 SQL>sparql insert into graph <http://MyNewGraph.com/> {
 <http://bio2rdf.org/interpro:IPR000181>
@@ -3371,16 +3394,15 @@ varchar
 ...
 </programlisting>
 <para>Note that names of variables returned from SPARQL are always case-sensitive and no case mode rules apply to them.
-Depending on CaseMode parameter in the virtuoso configuration file, double quotes should be used to refer to them in surrounding SQL code.
+Depending on the CaseMode parameter in the Virtuoso configuration file, double quotes should be used if necessary to refer to them in surrounding SQL code.
 </para>
 <para>
 It is possible to pass parameters to a SPARQL query via a Virtuoso-specific syntax extension.
-<emphasis>??</emphasis> or <emphasis>$?</emphasis> indicates a positional parameter similar to <emphasis>?</emphasis> in plain SQL. <emphasis>??</emphasis> can be used in graph patterns or anywhere in the place of a SPARQL variable.
+<emphasis>??</emphasis> or <emphasis>$?</emphasis> indicates a positional parameter similar to <emphasis>?</emphasis> in plain SQL. <emphasis>??</emphasis> can be used in graph patterns or anywhere in place of a SPARQL variable.
 The value of a parameter should be passed in SQL form, i.e. this should be a number or a untyped string.
-An IRI ID can be passed in all cases where an absolute IRI can, except the obvious case when the variable is an argument of a function that requires string.
-If the parameter is used in 'graph', 'subject' or 'object' position of the sparql pattern, the string parameter is converted into IRI automatically.
-In other cases, IRI string is indistinguishable from string literal, so there is a need in call of <emphasis>iri()</emphasis> built-in SPARQL function, like <emphasis>iri (??)</emphasis>.
-Using this notation, any dynamic SQL client, whether ODBC, JDBC or other can execute parametrized SPARQL queries, binding parameters just as with dynamic SQL.
+An IRI ID can be passed in all cases where an absolute IRI can, except the obvious case of when the variable is an argument of a function that requires string.
+If the parameter is used in the 'graph', 'subject' or 'object' position of the SPARQL pattern, the string parameter is converted into an IRI automatically. In other cases an IRI string is indistinguishable from a string literal, so it is necessary to call the built-in SPARQL function <emphasis>iri()</emphasis> , e.g. <emphasis>iri (??)</emphasis>.
+Using this notation, any dynamic SQL client (whether ODBC, JDBC or some other) can execute parameterized SPARQL queries, binding parameters just as with dynamic SQL.
 </para>
 <programlisting><![CDATA[
 SQL> create function param_passing_demo ()
@@ -3412,18 +3434,18 @@ http://www.w3.org/2001/sw/DataAccess/tests/data/Sorting/sort-0#four
 ]]></programlisting>
 <para>An inline SPARQL query can refer to SQL variables that are in scope in the SQL query or stored procedure containing it.
 Virtuoso extends the SPARQL syntax with a special notation to this effect. A reference to SQL variable X can be written as <emphasis>?:X</emphasis> or <emphasis>$:X</emphasis>.
-A reference to column <emphasis>C</emphasis> of table or sub-select with alias <emphasis>T</emphasis> can be written as <emphasis>?:T.C</emphasis> or <emphasis>$:T.C</emphasis>.
-Both notations can be used in any place where a variable name is allowed, except 'AS' clause described below.
+A reference to column <emphasis>C</emphasis> of a table or a sub-select with alias <emphasis>T</emphasis> can be written as <emphasis>?:T.C</emphasis> or <emphasis>$:T.C</emphasis>.
+Both notations can be used in any place where a variable name is allowed, except the 'AS' clause described below.
 </para>
 <para>A column of a result set of a SPARQL SELECT can be used in SQL code inside a for statement just like any column from a SQL select.
 </para>
 <para>SQL rules about double-quoted names are applicable to variables that are passed to a SPARQL query or selected from one.
 If a variable name contains unusual characters or should not be normalized according to SQL conventions then the
-name should use double quotes for escaping. E.g., the notation <emphasis>?:"OrderLine"</emphasis> will always refer to variable or column
+name should use double quotes for escaping. e.g., the notation <emphasis>?:"OrderLine"</emphasis> will always refer to variable or column
 titled <emphasis>OrderLine</emphasis> whereas <emphasis>?:OrderLine</emphasis> can be converted to <emphasis>ORDERLINE</emphasis> or <emphasis>orderline</emphasis>.
 </para>
 <para>It is safer to avoid using variable names that conflict with column names of RDF system tables, esp. <emphasis>G</emphasis>, <emphasis>S</emphasis>, <emphasis>P</emphasis> and <emphasis>O</emphasis>.
-These names are not reserved now but they may cause subtle bugs when an incorrect SPARQL subquery is compiled into SQL code that refers to table columns of same names.
+These names are not reserved now but they may cause subtle bugs when an incorrect SPARQL subquery is compiled into SQL code that refers to identically named table columns.
 Some of these names may be rejected as syntax errors by future Virtuoso versions.
 </para>
 <programlisting><![CDATA[
@@ -3451,7 +3473,7 @@ http://www.w3.org/2001/sw/DataAccess/tests/data/Sorting/sort-0#four
 This makes the code more readable and eliminates duplicate declarations of namespace prefixes when the procedure
 contains many SPARQL fragments that refer to a common set of namespaces.
 </para>
-<para>SPARQL ASK query can be used as an argument of the SQL EXISTS predicate.
+<para>A SPARQL ASK query can be used as an argument of the SQL EXISTS predicate.
 </para>
 <programlisting><![CDATA[
 create function sparql_ask_demo () returns varchar
@@ -3469,21 +3491,26 @@ YES
 ]]>
 </programlisting>
 <sect3 id="rdfcontrollingsparqloutputtypes"><title>Controlling SPARQL Output Data Types</title>
-<para>The compilation of a SPARQL query may depend on environment that is usually provided by the SPARQL protocol, including name of default graph URI. Environment settings that come from protocol may override settings in the text of SPARQL query. To let an application configure the environment for a query,
- SPARQL syntax is extended with the 'define' clause:</para>
+<para>The compilation of a SPARQL query may depend on an environment that is usually provided by the SPARQL protocol and which includes the default graph URI. Environment settings that come from the SPARQL protocol may override settings in the text of a SPARQL query. To let an application configure the environment for a query, SPARQL's syntax has been extended with the 'define' clause:</para>
 <programlisting>
 define parameter-qname parameter-value
 </programlisting>
 <para>Examples of supported parameters are <emphasis>output:valmode</emphasis> and <emphasis>output:format</emphasis></para>
-<para><emphasis>output:valmode</emphasis> sets the SQL representation used for values in the result set.
-In most cases applications need SQL values to be returned by SPARQL.
-By default the query returns a result set of values in SQL format and behaves as a typical SQL select.
-To compose triple vectors in Virtuoso/PL code application may need data in long format.
-If the query contains a</para>
+<para>
+<emphasis>output:valmode</emphasis> specifies which data types (i.e. representation) should be used for values in the result set. The default is "SQLVAL", 
+meaning that a query returns result set values in SQL format and behaves as a typical SQL select - IRIs and string literals
+are returned as strings, making the output compatible with ODBC and the standard SQL routines. To compose triple vectors in Virtuoso PL code, an 
+application may need data in long format. A valmode of "LONG" means that IRIs are returned as IRI_IDs and string literals may be returned as special "RDF boxes" 
+even if they are actually plain strings. This may cause problems if these new datatypes are not known to the data recipient or if IRIs come from RDF
+Views (in which case IRI_IDs are created on the fly and 'pollute' the database), but it can result in fewer data conversions and thus better speed if used
+properly. "AUTO" disables all types of conversion for the result set, so the latter can comprise a mix of values across "SQLVAL" and "LONG" value modes, as well as
+some internal representations. It is better to avoid using this mode in user applications because the output may change from version to version.
+</para>
+<para>If the query contains a</para>
 <programlisting>
 define output:valmode 'LONG'
 </programlisting>
-<para>clause then all returned values are in long format. E.g., the following query returns IRI_ID's instead of IRI strings.</para>
+<para>clause then all returned values are in long format. e.g., the following query returns IRI_ID's instead of IRI strings.</para>
 <programlisting>
 SQL>sparql define output:valmode 'LONG' select distinct ?p where { graph ?g { ?s ?p ?o } };
 p
@@ -3494,10 +3521,10 @@ p
 #i1000006
 ...
 </programlisting>
-<para><emphasis>output:format</emphasis> instruct SPARQL compiler that the result of the query should be serialized into an RDF document;
+<para><emphasis>output:format</emphasis> instructs the SPARQL compiler that the result of the query should be serialized into an RDF document - 
 that document will be returned as a single column of a single row result set.
-<emphasis>output:format</emphasis> is especially useful if SPARQL CONSTRUCT or SPARQL DESCRIBE query is executed directly via ODBC or JDBC database connection
-and the client can not receive the resulting dictionary of triples (there's no way to transfer such an object via ODBC).
+<emphasis>output:format</emphasis> is especially useful if a SPARQL CONSTRUCT or SPARQL DESCRIBE query is executed directly via an ODBC or JDBC database connection
+and the client cannot receive the resulting dictionary of triples (there's no way to transfer such an object via ODBC).
 Using this option, the client can receive the document that contains the whole result set of a SELECT or the dictionary of triples of a CONSTRUCT/DESCRIBE, and parse it locally.
 </para>
 <para>
@@ -3506,13 +3533,13 @@ If both <emphasis>output:valmode</emphasis> and <emphasis>output:format</emphasi
 raising an error if <emphasis>output:valmode</emphasis> is set to a value other than <emphasis>LONG</emphasis>.
 </para>
 <para>
-When a SPARQL query is compiled, the compiler checks whether the result set is sent to the remote ODBC/JDBC client or used in some other way.
+When a SPARQL query is compiled, the compiler checks whether the result set is to be sent to a remote ODBC/JDBC client or used in some other way.
 The compiler will automatically set <emphasis>output:format</emphasis> to <emphasis>TURTLE</emphasis> if compiling for execution by an SQL client.
 </para>
 <para>
 The example below demonstrates how different values of <emphasis>output:format</emphasis> affect the result of SPARQL SELECT.
-Note 10 rows and 4 columns in the first result, and single LONG VARCHAR in two others.
-Using the ISQL client, use 'set blobs on;' directive to fetch long texts without 'data truncated' warning.
+Note 10 rows and 4 columns in the first result, and single LONG VARCHAR in the others.
+When using the ISQL client, use the 'set blobs on;' directive if fetching long texts to avoid receiving a 'data truncated' warning.
 </para>
 <programlisting><![CDATA[
 SQL> sparql select * where {graph ?g { ?s ?p ?o }} limit 10;
@@ -3609,7 +3636,7 @@ _______________________________________________________________________________
 
 1 Rows. -- 00000 msec.
 ]]></programlisting>
-<para>SPARQL ASK returns a non-empty result set if the match is found for graph pattern, empty result-set otherwise. If <emphasis>output:format</emphasis> is specified then the query makes a 'boolean result' document instead:</para>
+<para>SPARQL ASK returns a non-empty result set if a match is found for the graph pattern, an empty result set otherwise. If <emphasis>output:format</emphasis> is specified then the query makes a 'boolean result' document instead:</para>
 <programlisting><![CDATA[
 SQL> sparql ask where {graph ?g { ?s ?p 4 }};
 __ask_retval
@@ -3660,7 +3687,7 @@ _______________________________________________________________________________
 <para>
 SPARQL can be used inline wherever SQL can be used.
 The only API functions that one needs to know are the ones for loading RDF data into the store.
-Dynamic SQL client applications can issue SPARQL queries against Virtuoso through the regular SQL client API, ODBC, JDBC or other, simply by prefixing the SPARQL query with the SPARQL keyword. Parameters work just as with dynamic SQL.
+Dynamic SQL client applications can issue SPARQL queries against Virtuoso through the regular SQL client API, ODBC, JDBC or any other supported API, simply by prefixing the SPARQL query with the SPARQL keyword. Parameters work just as with dynamic SQL.
 Stored procedures can have SPARQL expressions inline and can declare cursors over SPARQL result sets.
 </para>
 
@@ -3668,8 +3695,8 @@ Stored procedures can have SPARQL expressions inline and can declare cursors ove
 Value conversions between SQL and SPARQL are most often automatic and
 invisible. In some cases one needs to be aware of the different
 SPARQL value representations (valmodes). SPARQL offers declarations
-for determining if graphs to be returned are to be represented as XML
-or Turtle text serialization or whether these will be hash tables of
+for specifying whether returned graphs are to be serialized as XML
+or Turtle,  or whether these will be hash tables of
 triples. See <link linkend="fn_dict_new"><function>dict_new()</function></link> and related functions for a description of the hash table SQL data type.
 The use of dict's is convenient for further programmatic processing of graphs.
 </para>
@@ -3692,9 +3719,8 @@ and, moreover, the application that generates these descriptions always
 generates the same blank node id string for the same node. A reader of
 descriptions can correctly join described subgraphs into one big
 subgraph by filling in a dictionary that contains blank node id strings
-as keys and IRI_ID's assigned to that strings as dependent data. As
-soon as all readers of an application share the same dictionary of
-nodes created before, no blank node is created twice;</para>
+as keys and IRI_ID's assigned to those strings as dependent data. 
+The sharing of the same node dictionary by all readers of an application will ensure that no blank node is duplicated.</para>
 <sect3
 id="rdfapidataimport"><title>Data Import</title>
 <para>DB.DBA.TTLP() parses TTL (TURTLE or N3 resource) and places its triples into DB.DBA.RDF_QUAD.</para>
@@ -3705,11 +3731,11 @@ create procedure DB.DBA.TTLP (
     in graph varchar, -- target graph IRI, parsed triples will appear in that graph.
     in flags int)   -- bitmask of flags that permit some sorts of syntax errors in resource, use 0.
 </programlisting>
-<para>For loading a file of any greater length, it is most practical to use
+<para>For loading a file of any great length, it is more practical to use
 the file_to_string_output function.
 </para>
-<para>It is important the file to be accessible for the Virtuoso server. You need to have set properly the
-<emphasis>DirsAllowed</emphasis> parameter value in section [Parameters] of the Virtuoso database INI file.
+<para>It is important the file be accessible to the Virtuoso server. You need to have set properly set the
+<emphasis>DirsAllowed</emphasis> parameter value in the section [Parameters] of the Virtuoso database INI file.
 For example on Windows it could be:
 </para>
 <programlisting>
@@ -3719,15 +3745,15 @@ virtuoso.ini file:
 DirsAllowed =  .\tmp
 ...
 </programlisting>
-<para>So in the example the file you want to import from, should be in the tmp folder or in its subfolder.
+<para>So, in the example, the file you want to import from, should be in the tmp folder or in a subfolder.
 Note that this example folder is a subfolder of the Virtuoso Server working directory.
 </para>
 <programlisting>
 SQL> DB.DBA.TTLP (file_to_string_output ('.\tmp\data.ttl'), '', 'http://my_graph', 0);
 </programlisting>
 <para>The DB.DBA.TTLP_MT() procedure is like DB.DBA.TTLP() but loads the file on multiple threads,
-using parallel I/O and multiprocessing if available. The functions does not leave a transaction log.
-Hence, after successful load, one should execute the checkpoint statement to make sure that a
+using parallel I/O and multiprocessing if available. The function does not leave a transaction log.
+Hence, after a successful load, one should execute the checkpoint statement to make sure that a
 server restart does not wipe out the results.
 </para>
 <programlisting>
@@ -3745,7 +3771,7 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_MT (
     in base varchar,  -- base IRI to resolve relative IRIs to absolute
     in graph varchar) -- target graph IRI, parsed triples will appear in that graph.
 </programlisting>
-<para>The following example demonstrates importing data from the rdf resource with URI: http://www.w3.org/People/Berners-Lee/card</para>
+<para>The following example demonstrates importing data from the RDF resource with URI: http://www.w3.org/People/Berners-Lee/card</para>
 <programlisting><![CDATA[
 SQL>create procedure MY_LOAD_FILE (in full_uri varchar, in in_resultset integer := 0)
 {
@@ -3820,18 +3846,18 @@ http://www.w3.org/People/Berners-Lee/card#i   http://xmlns.com/foaf/0.1/knows   
 ..........
 
 ]]></programlisting>
-<para>The DB.DBA.RDF_TTL2HASH() does not load TTL content, instead it returns a dict of triples in 'long valmode'.</para>
+<para>The DB.DBA.RDF_TTL2HASH() does not load TTL content, instead it returns a dictionary of triples in 'long valmode'.</para>
 <programlisting>
 create function DB.DBA.RDF_TTL2HASH (
     in strg any,
     in base varchar,
     in graph varchar ) returns any
 </programlisting>
-<para>Parameter <emphasis>flags</emphasis> is useful when syntax of resource is TURTLE-like but not correct TURTLE.
+<para>Parameter <emphasis>flags</emphasis> is useful when the syntax of the resource is TURTLE-like, but not correct TURTLE.
 By default, use zero value.
 Add 1 to let string literals contain end-of-line characters.
 Add 2 to suppress error messages on blank node verbs.
-Add 4 to let variables instead of blank nodes.
+Add 4 to allow variables instead of blank nodes.
 Add 8 to silently skip triples with literal subjects.
 </para>
 <para>The DB.DBA.RDF_LOAD_RDFXML() procedure parses RDF/XML and places its triples into DB.DBA.RDF_QUAD.</para>
@@ -3843,12 +3869,12 @@ create procedure DB.DBA.RDF_LOAD_RDFXML (
 </programlisting>
 <para>To insert a single quad into DB.DBA.RDF_QUAD() table, use one of these procedures:</para>
 <programlisting>
--- Simple insertion of a quad where object is a node
+-- Simple insertion of a quad where the object is a node
 create procedure DB.DBA.RDF_QUAD_URI (
   in g_uri varchar, in s_uri varchar, in p_uri varchar,
   in o_uri varchar ) -- IRI string or IRI_ID
 
--- Simple insertion of a quad where object is a literal value in 'SQL valmode'
+-- Simple insertion of a quad where the object is a literal value in 'SQL valmode'
 create procedure DB.DBA.RDF_QUAD_URI_L (
   in g_uri varchar, in s_uri varchar, in p_uri varchar,
   in o_lit any ) -- string, number or datetime, NULL is not allowed
@@ -3863,8 +3889,8 @@ create procedure DB.DBA.RDF_QUAD_URI_L_TYPED (
 All string arguments should be in UTF-8 encoding, otherwise they will be stored but are not queryable via SPARQL.</para>
 </sect3>
 <sect3 id="rdfapidataexport"><title>Data Export</title>
-<para>These two procedures serializes vector of triples into a session, in TURTLE or RDF/XML syntax.
-In current version, every triple is printed in separate top-level record (say, in rdf:Description tag), without any pretty-print or nesting optimization.
+<para>These two procedures serialize a vector of triples into a session, in TURTLE or RDF/XML syntax.
+In their current versions, every triple is printed in a separate top-level record (say, in an rdf:Description tag), without any pretty-printing or nesting optimization.
 </para>
 <programlisting>
 create procedure DB.DBA.RDF_TRIPLES_TO_TTL (
@@ -3920,7 +3946,7 @@ create procedure DB.DBA.SPARQL_REXEC_WITH_META (
     out metadata any,  -- metadata like exec () returns.
     out resultset any) -- results as 'long valmode' value.
 </programlisting>
-<para>If the query is a CONSTRUCT or DESCRIBE then the result set consists of a single row and single column, the value inside is a dict of triples in 'long valmode'.</para>
+<para>If the query is a CONSTRUCT or DESCRIBE then the result set consists of a single row and column, the value inside is a dictionary of triples in 'long valmode'.</para>
 </sect3>
 </sect2>
 <sect2 id="rdfinternalfunctions"><title>Useful Internal Functions</title>
@@ -3950,14 +3976,14 @@ create function DB.DBA.RDF_LANGMATCHES (
 </sect3>
 </sect2>
 <sect2 id="rdfdefaultgraph"><title>Default and Named Graphs</title>
-<para>Sometimes the default graph IRI is not known when the SPARQL query is composed. It can be added at the very last moment by providing the IRI in 'define' clause as follows:</para>
+<para>Sometimes the default graph IRI is not known when the SPARQL query is composed. It can be added at the very last moment by providing the IRI in a 'define' clause as follows:</para>
 <programlisting>
 define input:default-graph-uri &lt;http://example.com&gt;
 </programlisting>
-<para>Such a definition overrides the default graph URI set in query by 'FROM ...' clause (if any).</para>
+<para>Such a definition overrides the default graph URI set in query by the 'FROM ...' clause (if any).</para>
 <para>The query may contain more than one <emphasis>define input:default-graph-uri</emphasis>.
-The set of values of <emphasis>input:default-graph-uri</emphasis> has the highest possible priority and can not be redefined in the rest of the text of the query by FROM clauses.</para>
-<para>FROM NAMED clauses can be used multiple in one query:</para>
+The set of values of <emphasis>input:default-graph-uri</emphasis> has the highest possible priority and cannot be redefined in the rest of the text of the query by FROM clauses.</para>
+<para>FROM NAMED clauses can be used multiple times in one query:</para>
 <programlisting><![CDATA[
 SELECT ?id
     FROM NAMED <http://example.com/user1.ttl>
@@ -3966,16 +3992,16 @@ SELECT ?id
     OPTION (get:soft "soft", get:method "GET")
     WHERE { GRAPH ?g { ?id a ?o } };
 ]]></programlisting>
-<para>Similarly, <emphasis>define input:named-graph-uri &lt;http://example.com&gt;</emphasis> is a replacement for FROM NAMED clause</para>
+<para>Similarly, <emphasis>define input:named-graph-uri &lt;http://example.com&gt;</emphasis> is a replacement for a FROM NAMED clause</para>
 <para>
-When Virtuoso receives a SPARQL request via HTTP, the value of default graph can be set in protocol as <emphasis>default-graph-uri</emphasis> HTTP parameter.
+When Virtuoso receives a SPARQL request via HTTP, the value of the default graph can be set in the protocol using a <emphasis>default-graph-uri</emphasis> HTTP parameter.
 Multiple occurrences of this parameter are allowed. This HTTP parameter is converted into <emphasis>define input:default-graph-uri</emphasis>.
 There's similar support for <emphasis>named-graph-uri</emphasis> HTTP parameter.
-For debugging purposes, graph names set in protocol are sent back in the reply header as <emphasis>X-SPARQL-default-graph: ...</emphasis> and <emphasis>X-SPARQL-named-graph: ...</emphasis> header lines, one line per graph.
+For debugging purposes, graph names set in the protocol are sent back in the reply header as <emphasis>X-SPARQL-default-graph: ...</emphasis> and <emphasis>X-SPARQL-named-graph: ...</emphasis> header lines, one line per graph.
 </para>
 <para>
-Web service endpoint may provide different default configurations for different host names mentioned in HTTP request.
-This is configured via table <emphasis>DB.DBA.SYS_SPARQL_HOST</emphasis>.
+A web service endpoint may provide different default configurations for different host names mentioned in HTTP requests.
+This facility is configured via table <emphasis>DB.DBA.SYS_SPARQL_HOST</emphasis>.
 </para>
 <programlisting>
 create table DB.DBA.SYS_SPARQL_HOST (
@@ -3988,33 +4014,32 @@ create table DB.DBA.SYS_SPARQL_HOST (
 <para>
 When the SPARQL web service endpoint receives a request it checks the <emphasis>Host</emphasis> HTTP header line.
 This line contains zero or more target host names, delimited by commas.
-For every host name in the line the service scans the <emphasis>DB.DBA.SYS_SPARQL_HOST</emphasis> in search of row such that host name is like <emphasis>SH_HOST</emphasis>.
-The <emphasis>SH_HOST</emphasis> acts as 'pattern' argument for SQL string operator LIKE. If the row is found then the text of SPARQL request is extended.
-If default graph is not explicitly set by HTTP parameters and <emphasis>SH_GRAPH_URI</emphasis> is not null then default graph is set to <emphasis>SH_GRAPH_URI</emphasis>.
-If <emphasis>SH_DEFINES</emphasis> is not null then it is added in front of query so this field is a good place for text for any <emphasis>define</emphasis> options.
+For every host name in the line, the service scans the <emphasis>DB.DBA.SYS_SPARQL_HOST</emphasis> table in search of a row containing a matching host name in <emphasis>SH_HOST</emphasis>.
+The <emphasis>SH_HOST</emphasis> field acts as 'pattern' argument for the SQL string operator LIKE. If a matching row is found, the text of SPARQL request is extended.
+If a default graph is not explicitly set by the HTTP parameters and <emphasis>SH_GRAPH_URI</emphasis> is not null then the default graph is set to <emphasis>SH_GRAPH_URI</emphasis>.
+If <emphasis>SH_DEFINES</emphasis> is not null then it is added in front of the query; so this field is a good place for the text for any <emphasis>define</emphasis> options.
 </para>
 <para>
-The search in <emphasis>DB.DBA.SYS_SPARQL_HOST</emphasis> stops at the first found row, other possible matches are silently ignored.
+The search of <emphasis>DB.DBA.SYS_SPARQL_HOST</emphasis> stops at the first found row, other possible matches are silently ignored.
 </para>
 </sect2>
 
 <sect2 id="rdfsqlfromsparql"><title>Calling SQL from SPARQL </title>
-<para>A SPARQL expression can contain calls of Virtuoso/PL functions
-and built-in SQL functions in both the WHERE clause and in
+<para>A SPARQL expression can contain calls to Virtuoso/PL functions and built-in SQL functions in both the WHERE clause and in the
 result set. Two namespace prefixes, <emphasis>bif</emphasis> and <emphasis>sql</emphasis> are reserved for
-these purposes. When a function name starts with <emphasis>bif:</emphasis> namespace
-prefix, the rest of name is treated as a name of SQL BIF (Built-In
-Function). When a function name starts with <emphasis>sql:</emphasis> namespace prefix,
-the rest of name is treated as a name of Virtuoso/PL function owned by
+these purposes. When a function name starts with the <emphasis>bif:</emphasis> namespace
+prefix, the rest of the name is treated as the name of a SQL BIF (Built-In
+Function). When a function name starts with the <emphasis>sql:</emphasis> namespace prefix,
+the rest of the name is treated as the name of a Virtuoso/PL function owned by
 DBA with database qualifier DB, e.g. <emphasis>sql:example(...)</emphasis> is
 converted into <emphasis>DB.DBA."example"(...)</emphasis>.</para>
 
 <para>In both cases,
 the function receives arguments in SQL format ('SQL valmode') and
-returns the result also in SQL format. The SPARQL compiler will
+also returns the result in SQL format. The SPARQL compiler will
 automatically add code for format conversion into the resulting SQL
 code so SQL functions can be used even if <emphasis>define output:valmode
-'LONG'</emphasis> forces the use of internal RDF representation in the
+'LONG'</emphasis> forces the use of RDF representation in the
 result set.</para>
 <para><emphasis>Example:</emphasis></para>
 <programlisting><![CDATA[
@@ -4054,13 +4079,13 @@ Timothy Berners-Lee TimBL
 ]]></programlisting>
 </sect2>
 <sect2 id="rdfsqlfromsparqldescribe"><title>SPARQL DESCRIBE</title>
-  <para>SPARQL spec does not define the precise output of DESCRIBE, so different
-applications may need different result for the same subject. Some
-applications needs quick generation of short and incomplete results
-whereas may need detailed reports composed from multiple sources.
+  <para>The SPARQL specification does not define the precise output of DESCRIBE, so different
+applications may need different results for the same subject. Some
+applications need quick generation of short and incomplete results
+whereas others may need detailed reports composed from multiple sources.
   </para>
   <para>If define <emphasis>sql:describe-mode "xxx"</emphasis> is specified then the generated SQL
-code will use procedures named:
+code will use the procedures named:
   </para>
 <programlisting><![CDATA[
 DB.DBA.SPARQL_DESC_DICT_xxx (in subj_dict any, in consts any, in graphs
@@ -4072,18 +4097,18 @@ any, in storage_name any, in options any)
 DB.DBA.SPARQL_DESC_DICT_xxx_PHYSICAL (in subj_dict any, in consts any,
 in graphs any, in storage_name any, in options any)
 ]]></programlisting>
-  <para>In the blank new database, only one pair of such procedures is created,
-<emphasis>DB.DBA.SPARQL_DESC_DICT_SPO</emphasis> and <emphasis>DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL</emphasis>, so
-only define <emphasis>sql:describe-mode "SPO"</emphasis> makes sense. This pair of procedures
-searches for all triples where input IRIs are used as subjects; it is a bit faster than the default
-routine that performs better search for related triples.
+  <para>In a new blank database, only one such pair of such procedures is created,
+<emphasis>DB.DBA.SPARQL_DESC_DICT_SPO</emphasis> and <emphasis>DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL</emphasis>; so
+only the define <emphasis>sql:describe-mode "SPO"</emphasis> makes sense. This pair of procedures
+searches for all triples where the input IRIs are used as subjects; they are faster than the default
+routine which searches for all triples where the input IRIs are used as subjects or objects.
   </para>
-  <para>Both procedures have same semantics but the second one is used if and
+  <para>Both procedures have the same semantics but the second one is used if and
 only if the SPARQL compiler can prove that all subjects to process are
-from physical storage <emphasis>(DB.DBA.RDF_QUAD)</emphasis>. Thus the second procedure may
-omit search for subject in RDF Views.
+from physical storage <emphasis>(DB.DBA.RDF_QUAD)</emphasis>. Thus the second procedure 
+will not search for subjects in RDF Views.
   </para>
-  <para>Both procedures should return dictionary with triples as keys and
+  <para>Both procedures should return a dictionary with triples as keys and
 integer 1 as values. So the dictionary is filled by calls like:
   </para>
 <programlisting><![CDATA[
@@ -4098,17 +4123,17 @@ dict_put (resulting_dict,
 other types, esp. RDF boxes. Keys are subjects to be described, so
 values other than IRI IDs should usually be ignored. Values should be
 ignored.</listitem>
-     <listitem><emphasis>consts</emphasis> - vector of IRI IDs and values of other types. Items of vector
-are subjects to be described, like keys of subj_dict.</listitem>
-     <listitem><emphasis>graphs</emphasis> - vector of IRI IDs of graphs that can be used for DESCRIBE. The
-vector may contain garbage, like in two previous cases. A NULL can be
-passed instead of vector indicating that source graphs are not specified
+     <listitem><emphasis>consts</emphasis> - a vector of IRI IDs and values of other types. The items contained in the vector
+are subjects to be described, as with the keys of subj_dict.</listitem>
+     <listitem><emphasis>graphs</emphasis> - a vector of IRI IDs of graphs that can be used for DESCRIBE. The
+vector may contain garbage, like in the two previous cases. A NULL can be
+passed instead of a vector indicating that the source graphs are not specified
 in the source query.</listitem>
      <listitem><emphasis>storage_name</emphasis> -  the value of "define input:storage" from the original
 SPARQL query, NULL if missing.</listitem>
-     <listitem><emphasis>options</emphasis> - reserved for future use, can be ignored.</listitem>
+     <listitem><emphasis>options</emphasis> - reserved for future use and can be ignored.</listitem>
    </itemizedlist>
-  <para>One should grant execute on both procedures to SPARQL_SELECT before referring to them in SPARQL.</para>
+  <para>One should grant execute permission on both procedures to SPARQL_SELECT before referring to them in SPARQL.</para>
   <para>Example:
   </para>
 <programlisting><![CDATA[
@@ -6776,7 +6801,7 @@ using PL, C or any external language supported by Virtuoso server.</para>
 <para>Once the mapper is developed it must be plugged into the SPARQL engine by adding a record
 in the table DB.DBA.SYS_RDF_MAPPERS.</para>
 <para>If a SPARQL query instructs the SPARQL processor to retrieve target graph into local storage,
-then the SPARQL sponger will be invoked. If the target graph IRI represents a deferencable URL
+then the SPARQL sponger will be invoked. If the target graph IRI represents a dereferenceable URL
 then content will be retrieved using content negotiation. The next step is the content type
 to be detected:</para>
 <itemizedlist>
@@ -7071,7 +7096,7 @@ http://demo.openlinksw.com/tutorial/rdf/rd_s_1/rd_s_1.vsp .
       </sect4>
       <sect4 id="virtuosospongercreatecustcartrxslt">
       <title>Meta-Cartridges</title>
-        <para>So far the discussion has centred on 'primary' cartridges. However,
+        <para>So far the discussion has centered on 'primary' cartridges. However,
 Virtuoso supports an alternative type of cartridge, a 'meta-cartridge'. The way a
 meta-cartridge operates is essentially the same as a primary cartridge, that is it
 has a cartridge hook function with the same signature and its inserts data into the
@@ -28568,7 +28593,7 @@ LOAD_FILE ()
     do
 	cat $f |  awk "BEGIN { i = 1 } { if (i==$line_no) { print \$0; exit; } i = i + 1 }"  >> bad.nt
 	line_no=`expr $line_no + 1`
-	echo "Retryng from line $line_no"
+	echo "Retrying from line $line_no"
 	echo "@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> ." > tmp.nt
 	cat $f |  awk "BEGIN { i = 1 } { if (i>=$line_no) print \$0; i = i + 1 }"  >> tmp.nt
 	mv tmp.nt $newf
@@ -28669,7 +28694,7 @@ while [ ! -z "$line_no" ]
 do
     cat $f |  awk "BEGIN { i = 0 } { if (i==$line_no) { print \$0; exit; } i = i + 1 }"  >> bad.nt
     line_no=`expr $line_no + 1`
-    echo "Retryng from line $line_no"
+    echo "Retrying from line $line_no"
     cat $f |  awk "BEGIN { i = 0 } { if (i>=$line_no) print \$0; i = i + 1 }"  > tmp.nt
     mv tmp.nt $newf
     f=$newf
