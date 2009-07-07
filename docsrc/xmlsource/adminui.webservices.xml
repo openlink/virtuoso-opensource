@@ -125,7 +125,7 @@ A confirmation will be supplied once the operation is complete.
       <title>Note:</title>
       <para>If is not checked the "External WebDAV Server URL" check-box, i.e. you are selecting the
 filesystem method, then you are restricted to Virtuoso targets. However WebDAV methods can be applied
-to any WebDAV server. WebDAV methods assume that the target is publically available for writing.
+to any WebDAV server. WebDAV methods assume that the target is publicly available for writing.
       </para>
     </note>
   </sect3>

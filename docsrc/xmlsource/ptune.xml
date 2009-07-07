@@ -799,7 +799,7 @@ select s_quantity from stock where s_i_id = 111 for update;
     count of threads that in principle could be on CPU. 
 
     <itemizedlist mark="bullet" spacing="compact">
-      <listitem>Count of threads waiting. This is the cound of threads
+      <listitem>Count of threads waiting. This is the count of threads
       that are</listitem>
     </itemizedlist>
     waiting for a lock. If this is a high percentage of the count

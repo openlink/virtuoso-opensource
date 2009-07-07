@@ -78,7 +78,7 @@
     </refsect2>
     <refsect2><title><parameter>target_params</parameter></title>
       <para>A vector of names of parameters that should be passed to the compose expression (target_compose) as $1, $2 and so on.</para>
-      <para>Special names can be used in addition to names from <parameter>nice_params</parameter>. That names start and end with asterick.
+      <para>Special names can be used in addition to names from <parameter>nice_params</parameter>. That names start and end with asterisk.
 Name '*accept*' is for required MIME type string, other names of the sort refer to values from HTTP request header lines.
 Note that '*Accept*' will return the whole &quot;Accept:&quot; line whereas '*accept*' is for the part that matches <parameter>accept_pattern</parameter>.</para>
     </refsect2>

@@ -290,7 +290,7 @@ _______________________________________________________________________________
    }
 ?>
 ?>]]></programlisting>
-<para>As result, after accessing this sample vsp, the following otuput will be printed:</para>
+<para>As result, after accessing this sample vsp, the following output will be printed:</para>
 <programlisting><![CDATA[
 {
 

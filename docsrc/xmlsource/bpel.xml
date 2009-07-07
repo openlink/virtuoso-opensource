@@ -1267,7 +1267,7 @@ The Virtuoso BPEL implementation supports WS Security and WS Reliable Messaging.
 	<title>Configuring the Partner link options</title>
 	<para>
 	    The partner link options can be configured vi BPEL UI (http://host:port/BPELGUI)
-	    or programatically using <link linkend="fn_plink_get_option"><function>plink_get_option()</function></link> and <link linkend="fn_plink_set_option"><function>plink_set_option()</function></link> functions. It is
+	    or programmatically using <link linkend="fn_plink_get_option"><function>plink_get_option()</function></link> and <link linkend="fn_plink_set_option"><function>plink_set_option()</function></link> functions. It is
 	    possible to update the partner link options with SQL update statement using
 	    the configuration (described above), but use
 	    of the BPEL UI or API functions is recommended.

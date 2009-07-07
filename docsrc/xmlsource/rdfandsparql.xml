@@ -9,7 +9,7 @@ From version 5.0.7, Virtuoso can be used  as the RDF store/query processor of th
 
 <para>
 This chapter discusses Virtuoso's RDF triple storage and query capabilities. 
-This discusses storing RDF data as well as mappping existing relational data into RDF for SPARQL access.  Numerous  SPARQL language extensions and standard compliance are coverd.
+This discusses storing RDF data as well as mapping existing relational data into RDF for SPARQL access. Numerous  SPARQL language extensions and standard compliance are coverd.
 </para>
 </abstract>
 
@@ -411,7 +411,7 @@ asterisk means that the rule differs from W3C grammar due to Virtuoso extensions
 <para><emphasis>Example using OFFSET and LIMIT:</emphasis></para>
 <para>Virtuoso uses a zero index in the OFFSET. Thus in the example below, will be taken position at
 record 9000 in the result set, and will get the next 1000 rows starting from 9001 record. Note that the
-MaxSortedTopRows in parameters Virtuoso ini section needs to be encreased (default is 10000).</para>
+MaxSortedTopRows in parameters Virtuoso ini section needs to be increased (default is 10000).</para>
 <programlisting><![CDATA[
 select ?name
 ORDER BY ?name
@@ -583,7 +583,7 @@ to listen at a none default port e.g. 8890, the SPARQL endpoints would be access
 at: http://example.com:8890/sparql/.</para>
 <para>The SPARQL endpoint supports both GET and POST requests. The client chooses between GET and POST
 automatically, using the length of query text as a criterion. If the SPARQL endpoint is accessed without
-any URL and requisite SPARQL Prrotocol parameters, an interactive HTML for capturing SPARQL input will
+any URL and requisite SPARQL Protocol parameters, an interactive HTML for capturing SPARQL input will
 be presented.</para>
 </sect3>
 
@@ -908,7 +908,7 @@ the the RDF Quad Store. These updates are only achievable via the activity of th
 require granting of the SPARQL_UPDATE role.</para>
 <para>Virtuoso 5.0.11 onwards,  introduced the addition of 3 new methods of securing SPARQL endpoints that
 include: SQL authentication, OAuth, and FOAF+SSL protocol based authentication. Each of these authentication
-methods is associated with a purpose specifc default SPARQL endpoint along the following lines:
+methods is associated with a purpose specific default SPARQL endpoint along the following lines:
 http://&lt;cname&gt;/sparql-auth (SQL authentication) , http://&lt;cname&gt;/sparql-oauth (OAuth),
 https://&lt;cname&gt;/sparql and https://&lt;cname&gt;/sparql-ssl (FOAF+SSL).</para>
 <para>Virtuoso Authentication Server offers UI with options for managing:</para>
@@ -939,7 +939,7 @@ policy_manager_dav.vad package.</para>
 <para>The user must have SQL privileges in order to run secured SPARQL statements.</para>
 </sect4>
 <sect4 id="sparqloauthendpoint"><title>SPARQL OAuth Endpoint</title>
-<para>OAuth provides a secure data transmmission level mechanism for your SPARQL endpoint.
+<para>OAuth provides a secure data transmission level mechanism for your SPARQL endpoint.
 It enables you to securely interact with your RDF database from a variety of locations. It also
 allows you to provide controlled access to private data to select user profiles.</para>
 <para>Virtuoso OAuth server can be installed by installing the oauth_dav.vad package and
@@ -1082,7 +1082,7 @@ Web ID to view the results at the Virtuoso SPARQL-SSL endpoint and perform Secur
 <listitem>Log in as dba user
 <figure id="sparqloauthendpoint5" float="1">
       <title>FOAFSSL UI</title>
-      <graphic fileref="ui/SparqlFOAFSSL1.png.png"/>
+      <graphic fileref="ui/SparqlFOAFSSL1.png"/>
     </figure>
 </listitem>
 <listitem>As result will be shown the FOAF+SSL ACLs manage form.
@@ -1795,7 +1795,7 @@ Done
 	<emphasis>What is Piggy Bank?</emphasis>
   </para>
     <para>
-	Piggy Bank is an extension to the Firefox Web browser that turns it into a Semantic Web browser, letting you make use of existing information on the Web in more useful and flexible ways not offered by the original Web sites.
+	Piggy Bank is an extension to the Firefox Web browser that turns it into a Semantic Web browser, letting you make use of existing information on the Web in more useful and flexible ways not offered by the original Web sites.
   </para>
     <para></para>
     <para>
@@ -1888,7 +1888,7 @@ Done
 <listitem>instruct the server how to prepare RDF resources on demand;</listitem>
 <listitem>configure rendering of RDF resources for non-RDF clients (including web search engines);</listitem>
 <listitem>make the used ontology available;</listitem>
-<listitem>provide an index or sitemap page to help users that try to browe published data but do not know proper URLs</listitem>
+<listitem>provide an index or sitemap page to help users that try to browse published data but do not know proper URLs</listitem>
 </itemizedlist>
 <para>The following sequence of operations demonstrate how to implement the listed features without writing any special web pages.
 All requests (except the application-specific index/sitemap) will be handled by existing web service endpoints.</para>
@@ -1965,7 +1965,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     null
     );
 ]]></programlisting>
-<para>This allow the server to describe proper ontology even when the requested IRI contain wrong host name and even if the ontology for <emphasis>http://demo.openlinksw.com/schemas/northwind#</emphasis> is actualy loaded in the database in graph with different IRI (<emphasis>http://demo.openlinksw.com/schemas/NorthwindOntology/1.0/</emphasis>) and the URI of downloadable ontology file differs from both (the file is <emphasis>/DAV/VAD/demo/sql/nw.owl</emphasis>) .</para>
+<para>This allow the server to describe proper ontology even when the requested IRI contain wrong host name and even if the ontology for <emphasis>http://demo.openlinksw.com/schemas/northwind#</emphasis> is actually loaded in the database in graph with different IRI (<emphasis>http://demo.openlinksw.com/schemas/NorthwindOntology/1.0/</emphasis>) and the URI of downloadable ontology file differs from both (the file is <emphasis>/DAV/VAD/demo/sql/nw.owl</emphasis>) .</para>
 <programlisting><![CDATA[
 create procedure DB.DBA.LOAD_NW_ONTOLOGY_FROM_DAV()
 {
@@ -2136,7 +2136,7 @@ using the pattern via http://cname/sparql?ini
       <title>SPARQL Endpoint with Excel mime-type output</title>
       <graphic fileref="ui/Excel1.png"/>
     </figure>
-<para>As result URL containg as parameter the format application/vnd.ms-excel
+<para>As result URL containing as parameter the format application/vnd.ms-excel
 for ex. <ulink url="http://demo.openlinksw.com/sparql?default-graph-uri=http%3A%2F%2Fdemo.openlinksw.com%2Fdataspace%2Fperson%2Fdemo&amp;should-sponge=&amp;query=select+*%0D%0Awhere+%7B%3Fs+%3Fp+%3Fo%7D%0D%0Alimit+10&amp;format=application%2Fvnd.ms-excel&amp;debug=on">this one</ulink> will be generated, and can be opened directly with Excel.</para>
 <figure id="sparqlexcel2" float="1">
       <title>SPARQL Endpoint with Excel mime-type output</title>
@@ -2150,7 +2150,7 @@ for ex. <ulink url="http://demo.openlinksw.com/sparql?default-graph-uri=http%3A%
       <title>SPARQL Endpoint with JSON+RDF output</title>
       <graphic fileref="ui/JSON1.png"/>
     </figure>
-<para>As result URL containg as parameter the format application/sparql-results+json will be generated and the content should look like:</para>
+<para>As result URL containing as parameter the format application/sparql-results+json will be generated and the content should look like:</para>
 <figure id="sparqljson2" float="1">
       <title>SPARQL Endpoint with JSON+RDF</title>
       <graphic fileref="ui/JSON2.png"/>
@@ -2159,7 +2159,7 @@ for ex. <ulink url="http://demo.openlinksw.com/sparql?default-graph-uri=http%3A%
 </sect2>
 <sect2 id="sparqldebug"><title>Troubleshooting SPARQL queries</title>
 <para>A short SPARQL query can be compiled into a long SQL statement,
-especially if data comes from many quad map petterns. Middle-size
+especially if data comes from many quad map patterns. Middle-size
 application with 50 tables and 10 columns per table may create
 thousand of quad map patterns for subjects of hundred different
 types. An attempt to &quot;select everything&quot; from RDF view of
@@ -2176,7 +2176,7 @@ is simply some other IRI. So typo in a IRI or in a namespace prefix
 cause missing bindings of some triple patterns of the query and
 incomplete result, but no errors are usually reported. Typo in graph
 or predicate IRI may cause the SPARQL compiler to generate code that
-access deafult storage instead of relational source or to generate
+access default storage instead of relational source or to generate
 empty code that accesses nothing.</para>
 
 <para>The SQL compiler does not signal casting errors when it runs the
@@ -2304,10 +2304,10 @@ number of triple (0). Comment <emphasis>/* inter-alias join cond
 it is written in the declaration of quad map pattern. Comment
 <emphasis>/* filter */</emphasis> is before expressions for FILTER
 expressions in the source SPARQL. The word &quot;equiv&quot; means
-&quot;equivalence class&quot;, i.e. group of occurencies of variables
-in the source query that all occurencies are bound to same
-value. E.g. when name repeates in many triples of a group, all its
-occurencies form an equivalence class. In sone cases compiler can
+&quot;equivalence class&quot;, i.e. group of occurrences of variables
+in the source query that all occurrences are bound to same
+value. E.g. when name repeats in many triples of a group, all its
+occurrences form an equivalence class. In sone cases compiler can
 prove that two variables are always equal even if names differ -- that
 variables are also placed into one &quot;equiv&quot;.</para>
 
@@ -2320,7 +2320,7 @@ that the value of the variable is same in both triples. The query
 compares IRIs instead of comparing arguments of <link
 linkend="fn_sprintf_iri"><function>sprintf_iri</function></link>
 because the format string is not proven to be a bijection. Indeed it
-can not be bjection for arbitrary strings, but the database is about
+can not be bijection for arbitrary strings, but the database is about
 real world. If it is known that real names of persons never start with
 digit so digits of <emphasis>%d%U</emphasis> fragment will always
 be distinguishable from name then the IRI class can be declared as a
@@ -3199,7 +3199,7 @@ This may be confusing and will likely be corrected in the future.
 <sect4 id="rdfsparqlarrowop"><title>Pointer Operator (<emphasis>+&gt;</emphasis> and <emphasis>*&gt;</emphasis>)</title>
 <para>
 When expressions occur in result sets, many variables are introduced only to pass a value from triple pattern to the result expression.
-This is inconvenient because many triple patterns are trivial. Big number of variable names masquerade &quot;interesting&quot; variables that are used more than one in pattern part of the query and establish logical relationshops between parts of the query.
+This is inconvenient because many triple patterns are trivial. Big number of variable names masquerade &quot;interesting&quot; variables that are used more than one in pattern part of the query and establish logical relationships between parts of the query.
 As a solution we introduce pointer operators.</para>
 <para>
 The <emphasis>+&gt;</emphasis> (pointer) operator allows referring to a property value without naming it as a variable and explicit writing triple pattern. We can shorten the example above as</para>
@@ -4547,7 +4547,7 @@ These steps may be largely automated (the "One-Click" Deployment below), or perf
 that exposes the Tables / Views for this exercise </listitem>
   <listitem>Enter the Base URL to which your URL rewrite rules will be bound
 (e.g. http://&lt;cname&gt;:8890/Demo)</listitem>
-  <listitem>Select specific Tables containing the data to be published (e.g. Shippers and Suppliers)</listitem>
+  <listitem>Select specific Tables containing the data to be published (e.g. Demo.demo.Shippers and Demo.demo.Suppliers)</listitem>
   <listitem>Click the "Generate &amp; Publish" button</listitem>
 </orderedlist>
     <figure id="rd2" float="1">
@@ -4555,8 +4555,10 @@ that exposes the Tables / Views for this exercise </listitem>
       <graphic fileref="ui/rd2.png"/>
     </figure>
   </listitem>
-  <listitem>Virtuoso will perform the entire process of ontology generation, instance data generation, and linked data deployment (re-write rules generation and application).</listitem>
-  <listitem>Error messages will be presented if the Wizard encounters problems. If there are no error messages, your RDF view declarations and Linked Data publishing activities will have completed successfully.
+  <listitem>Virtuoso will perform the entire process of ontology generation, instance data generation, and
+linked data deployment (re-write rules generation and application).</listitem>
+  <listitem>Error messages will be presented if the Wizard encounters problems. If there are no error
+messages, your RDF view declarations and Linked Data publishing activities will have completed successfully.
     <figure id="rd13" float="1">
       <title>RDF View declarations and Linked Data publishing activities</title>
       <graphic fileref="ui/rd13.png"/>
@@ -4572,7 +4574,8 @@ that exposes the Tables / Views for this exercise </listitem>
 </orderedlist>
 </sect2>
 <sect2 id="rdfrdfviewgnrwizzard"><title>Manual Linked Data Generation &amp; Deployment using the Conductor's HTML-based wizard</title>
-<para>The following step-by guide will lead you through manually publishing ODBC- or JDBC-accessible RDBMS data in RDF Linked Data form, using the Conductor's HTML-based wizard:
+<para>The following step-by guide will lead you through manually publishing ODBC- or JDBC-accessible RDBMS
+data in RDF Linked Data form, using the Conductor's HTML-based wizard:
 </para>
 <orderedlist>
   <listitem>Go to http://&lt;cname&gt;:port/conductor</listitem>
@@ -4588,7 +4591,7 @@ that exposes the Tables / Views for this exercise </listitem>
   <listitem>Select the Database Name Qualifier (e.g., "Demo")  that exposes the Tables / Views for this
 exercise</listitem>
       <listitem>Enter the Base URL to which your URL rewrite rules will be bound (e.g. http://&lt;cname&gt;:8890/Demo)</listitem>
-  <listitem>Select specific Tables containing the data to be published (e.g., Shippers and Suppliers)</listitem>
+      <listitem>Select specific Tables containing the data to be published (e.g., Demo.demo.Shippers and Demo.demo.Suppliers)</listitem>
   <listitem>Click the "Generate via Wizard" button
     <figure id="rd2" float="1">
       <title>Generate via Wizard</title>
@@ -4597,7 +4600,8 @@ exercise</listitem>
       </listitem>
     </orderedlist>
   </listitem>
-  <listitem>At this point, you are presented with the option to edit your column selection. Select the "Edit" link, for example, for table Demo.demo.Shippers.
+  <listitem>At this point, you are presented with the option to edit your column selection. Select the
+"Edit" link, for example, for table Demo.demo.Shippers.
     <figure id="rd3" float="1">
       <title>Column Selection</title>
       <graphic fileref="ui/rd3.png"/>
@@ -4618,6 +4622,7 @@ You can:
   </listitem>
   <listitem>After finishing with your changes click the Save button, or cancel the changes and go back by
 clicking the Cancel button.</listitem>
+  <listitem>Make sure you click the "Next" button.</listitem>
   <listitem>At this point, the RDF View Definition form will let you Select Generation Targets options:
     <orderedlist>
   <listitem>Data Source Ontology Mappings</listitem>
@@ -4641,7 +4646,7 @@ clicking the Cancel button.</listitem>
       <graphic fileref="ui/rd4.png"/>
     </figure>
   </listitem>
-  <listitem>Select the desired option(s) and click the "Next" button which unveils a generated
+  <listitem>Select the desired option(s) and click the "Prepare to Execute" button which unveils a generated
 Instance Data and/or Ontology form.
     <figure id="rd5" float="1">
       <title>Instance Data and/or Ontology</title>
@@ -5554,8 +5559,8 @@ by the source data server, then the "Sponger" will derive it's own invalidation 
 evaluating the 'date' header and 'last-modified' HTTP headers. Irrespective of path taken,
 local cache invalidation is driven by an assessment of current time relative to recorded expiration time.
 </para>
-<para>Designed with a pluggable architecture, the Sponger's core functionality is provided by Catridges.
-Each catridge includes Data Extractors which extract data from one or more data sources, and Ontology
+<para>Designed with a pluggable architecture, the Sponger's core functionality is provided by Cartridges.
+Each cartridge includes Data Extractors which extract data from one or more data sources, and Ontology
 Mappers which map the extracted data to one or more ontologies/schemas, and route to producing RDF
 Linked Data.
 </para>
@@ -6404,7 +6409,7 @@ http://&lt;hostName:port>/about/rdf/&lt;resourceURL>#this</para>
       <sect5 id="virtuosospongercreatecustcartrrgst">
         <title>Registering &amp; Configuring Cartridges</title>
         <para>Once you have developed a cartridge, you must register it in the Cartridge Registry
-to have the SPARQL processor recognise and use it. You should have compiled your cartridge hook
+to have the SPARQL processor recognize and use it. You should have compiled your cartridge hook
 function first by issuing a "create procedure DB.DBA.RDF_LOAD_xxx ..." command through one of
 Virtuoso's SQL interfaces. You can create the required Cartridge Registry entry either by adding
 a row to the SYS_REF_MAPPERS table directly using SQL, or by using the Conductor UI.</para>
@@ -6885,7 +6890,7 @@ get-login=<account name>
 </listitem>
 </itemizedlist>
 </sect6>
-<sect6 id="virtuosospongerrdfmappersregistry"><title>Regsitry</title>
+<sect6 id="virtuosospongerrdfmappersregistry"><title>Registry</title>
 <para>The table DB.DBA.SYS_RDF_MAPPERS is used as registry for registering RDF mappers.</para>
 <programlisting><![CDATA[
 create table DB.DBA.SYS_RDF_MAPPERS (
@@ -7078,7 +7083,7 @@ cartridges. They serve as general post-processors to add additional information 
 entities in an RDF graph. For instance, a particular meta-cartridge might be designed to search
 for entities of type 'umbel:Country' in a given graph, and then add additional statements about
 each country it finds, where the information contained in these statements is retrieved from the
-web service targetted by the meta-cartridge. One such example might be a 'World Bank' meta-cartridge
+web service targeted by the meta-cartridge. One such example might be a 'World Bank' meta-cartridge
 which adds information relating to a country's GDP, its exports of goods and services as a percentage
 of GDP etc; retrieved using the <ulink url="http://developer.worldbank.org/docs/">World Bank web service API</ulink>.
 In order to benefit from the World Bank meta-cartridge, any primary cartridge which might generate instance data relating to countries should
@@ -7975,7 +7980,7 @@ create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri va
    </sect3>
    <sect3 id="virtuosospongercartridgesextractorusecases"><title>RDF Cartridges Use Cases</title>
 <para>This section contains examples of Web resources which can be transformed by RDF Cartridges.
-It also states where additional setup for given cartrides is needed i.e. keys account names etc.
+It also states where additional setup for given cartridges is needed i.e. keys account names etc.
 </para>
 <para><emphasis>Service based:</emphasis></para>
 <itemizedlist>
@@ -9621,7 +9626,7 @@ DB.DBA.RDF_QUAD occasionally contains some quads with graph equal to
 <emphasis>http://www.example.com/DAV/home/JohnSmith/RDF/personal/</emphasis>
 then they can be ignored.</para>
 
-<para>Under this circumstances, the quad map pattern may have <emphasis>option (soft exclusive)</emphasis>. That grants a permission to the compiler to ignore rest of storage as soon as it is proven that the triple pattern can not access quads that does not match the pattern. So if that is proven then the pattern is exclusive and it makes the query faster; when unsure, the complier work like there is no option at all.</para>
+<para>Under this circumstances, the quad map pattern may have <emphasis>option (soft exclusive)</emphasis>. That grants a permission to the compiler to ignore rest of storage as soon as it is proven that the triple pattern can not access quads that does not match the pattern. So if that is proven then the pattern is exclusive and it makes the query faster; when unsure, the compiler work like there is no option at all.</para>
 
 
 <note><para>The <emphasis>option (exclusive)</emphasis> can be used as
@@ -9780,13 +9785,13 @@ Inverse functions should return NULL if the argument has an incorrect type or va
 It is possible to specify only composing function without any of inverse functions. However <emphasis>option (bijection)</emphasis> can not be used in that case, obviously.
 </para>
 </sect3>
-<sect3 id="rdfconnvarsiniriclasses"><title>Connection Variabes in IRI Classes</title>
+<sect3 id="rdfconnvarsiniriclasses"><title>Connection Variables in IRI Classes</title>
 <para>Writing function-based IRI class is overkill when the IRI can in principle be made by a <link linkend="fn_sprintf_iri"><function>sprintf_iri</function></link> but the format should contain some context-specific data, such as host name used for the <link linked="rdfdynamiclocal">dynamic renaming of local IRIs</link>.
 Format strings offer a special syntax for that cases.
 <emphasis>%{varname}U</emphasis> acts as <emphasis>%U</emphasis> but the function <link linkend="fn_sprintf"><function>sprintf</function></link> will take the value from client connection variable <emphasis>varname</emphasis>, not from list of arguments.
 Similarly, <link linkend="fn_sprintf_inverse"><function>sprintf_inverse</function></link> will not return fragment that match to <emphasis>%{varname}U</emphasis> in the vector of other fragments; instead it will get the value from connection environment and ensure that it matches the fragment of input; mismatch between printed and actual value of variable will means that the whole string do not match the format.</para>
-<para>SPARQL optimizer knows about this formatting feature and sometimes it makes more deductions from occurence of <emphasis>%{varname}U</emphasis> than from occurence of plain <emphasis>%U</emphasis>, so this notation may be used in <emphasis>option ( returns ...)</emphasis> when appropriate.
-Of course, the optimizer has no access to the actual value of conection variabe because it may vary from run to run or may change between the compilation and the run, but the value is supposed to be persistent during any single query run so <emphasis>%{myvariable}U</emphasis> in one place is equal to <emphasis>%{myvariable}U</emphasis> in other.</para>
+<para>SPARQL optimizer knows about this formatting feature and sometimes it makes more deductions from occurrence of <emphasis>%{varname}U</emphasis> than from occurrence of plain <emphasis>%U</emphasis>, so this notation may be used in <emphasis>option ( returns ...)</emphasis> when appropriate.
+Of course, the optimizer has no access to the actual value of connection variable because it may vary from run to run or may change between the compilation and the run, but the value is supposed to be persistent during any single query run so <emphasis>%{myvariable}U</emphasis> in one place is equal to <emphasis>%{myvariable}U</emphasis> in other.</para>
 <para>Connection variables are set by <link linkend="fn_connection_set"><function>connection_set</function></link> and some of them have default values that are used if not overridden by application:</para>
 <itemizedlist mark="bullet" spacing="compact">
 <listitem><emphasis>URIQADefaultHost</emphasis> is for default host as it is specified in Virtuoso configuration file.
@@ -9801,7 +9806,7 @@ The colon before port will be escaped.</listitem>
 different cases.  Two most common policies are different host names
 for default HTTP port of a publicly available service and different
 non-default ports for one or more host names of an intranet
-instalation; these two approaches are almost never used in a mix. So
+installation; these two approaches are almost never used in a mix. So
 declaration of IRI classes may use shorthand
 <emphasis>^{DynamicLocalFormat}^</emphasis> in format strings that is
 expanded either to <emphasis>http://%{WSHost}U</emphasis> or to
@@ -9896,7 +9901,7 @@ and restore the saved state later by using
     <link linkend="fn_rdf_restore_metadata"><function>DB.DBA.RDF_RESTORE_METADATA</function></link>.
 It is convenient to make a backup before any modification of quad storages, quad map patterns or IRI classes, especially during debugging new RDF Views.
    </para>
-<note><para>In SQL, adding a new view can not break anything. This is because SQL lacks the ability of querying &quot;everything&quot; so data sources are always specified. This is not true for SPARQL, so please treat <emphasis>any</emphasis> metadata manipulation as potentially destructive operation. If an RDF storage is supposed to be used by more than one application then these applications should be tested together, not one after other, and they should be installed/upgraded on live database in the very same order as they were installed/upgraded on istrumental machine during testing. Always remember that these applications share RDF tables so they may interfere.</para></note>
+<note><para>In SQL, adding a new view can not break anything. This is because SQL lacks the ability of querying &quot;everything&quot; so data sources are always specified. This is not true for SPARQL, so please treat <emphasis>any</emphasis> metadata manipulation as potentially destructive operation. If an RDF storage is supposed to be used by more than one application then these applications should be tested together, not one after other, and they should be installed/upgraded on live database in the very same order as they were installed/upgraded on instrumental machine during testing. Always remember that these applications share RDF tables so they may interfere.</para></note>
 </sect3>
 <sect3 id="splitrdfview"><title>Split RDF View</title>
 <para>RDF View can be created by two or more "sparql alter storage" statements. In each statement
@@ -11890,7 +11895,7 @@ create iri class mbz:mbz_artist_url_iri  "http://musicbrainz.org/artist/%s.html"
 ;
 ]]></programlisting>
 <para><emphasis>List of functions used to compute some IRI classes:</emphasis></para>
-<para>Note:These functions have been developed to handle some weird user cases of the Musicbrainz data model (like the Attritube column of the album table, etc).</para>
+<para>Note:These functions have been developed to handle some weird user cases of the Musicbrainz data model (like the Attribute column of the album table, etc).</para>
 <programlisting><![CDATA[
 create function ZITGIST.MO.TRACK_DURATION_INVERSE(in durationXSD varchar)
 {
@@ -12029,7 +12034,7 @@ create quad storage virtrdf:MBZROOT
 
 
 #
-# Defitions of the source tables from the mbz relational database and their joints.
+# Definition of the source tables from the mbz relational database and their joints.
 #########
 
 from ZITGIST.MO.track as track text literal name
@@ -16557,7 +16562,7 @@ from oplweb2.oplweb.archive_coverage_osdb as ac1
 	  opl:ComponentCategoryDescription component_category_tbl.component_category_description
 	    as virtrdf:OplComponentCategoryDescription ;
 	  opl:ComponentCategoryShortDescription component_category_tbl.short_description
-	    as virtrdf:OplComponentCateegoryShortDescription ;
+	    as virtrdf:OplComponentCategoryShortDescription ;
 	  dc:description opl:lit_to_string(component_category_tbl.component_category_long_description)
 	    as virtrdf:OplComponentCategoryLongDescription ;
       rdfs:isDefinedBy opl: ;
@@ -16686,7 +16691,7 @@ from oplweb2.oplweb.archive_coverage_osdb as ac1
 		where (
 				 ^{download_location_tbl.}^.component_archive_name = ^{component_archive_tbl.}^.component_archive_name
 		)
-      as virtrdf:OplDownloadLocationIsDowloadLocationOfComponentArchive .
+      as virtrdf:OplDownloadLocationIsDownloadLocationOfComponentArchive .
 
 
 #
@@ -23142,7 +23147,7 @@ opl:resume_collection a rdf:Property ;
 opl:projects_responsible_for_collection a rdf:Property ;
 	rdfs:domain opl:Employee ;
 	rdfs:range opl:Project ;
-	rdfs:label "reponsible for project" .
+	rdfs:label "responsible for project" .
 
 opl:activity_collection a rdf:Property ;
 	rdfs:domain opl:Employee ;
@@ -24858,7 +24863,7 @@ DB.DBA.XML_SET_NS_DECL ('tut', 'http://^{URIQADefaultHost}^/schemas/ingrestut/',
 ]]></programlisting>
     </sect4>
     <sect4 id="rdfviewsenterprs89">
-      <title>Progress (SQL-89) using demonstratino 'iSports' database</title>
+      <title>Progress (SQL-89) using demonstration 'iSports' database</title>
 <programlisting><![CDATA[
 ATTACH TABLE  "ISPORTS_RDF"."Customer" PRIMARY KEY ("Cust-Num")
 AS "isports_rdf"."pro91_isports_rdf"."Customer"
@@ -25222,7 +25227,7 @@ invoice:Total-Paid a rdf:Property ;
 invoice:Adjustment a rdf:Property ;
 	rdfs:domain invoice:Invoice ;
 	rdfs:range xsd:decimal ;
-	rdfs:label "Adjustmant" .
+	rdfs:label "Adjustment" .
 
 invoice:Order-Num a rdf:Property ;
 	rdfs:domain invoice:Invoice ;
@@ -25755,7 +25760,7 @@ DB.DBA.XML_SET_NS_DECL ('state',        'http://^{URIQADefaultHost}^/schemas/pro
 ]]></programlisting>
     </sect4>
     <sect4 id="rdfviewsenterprs92">
-      <title>Progress (SQL-92) using demonstratino 'iSports' database</title>
+      <title>Progress (SQL-92) using demonstration 'iSports' database</title>
 <programlisting><![CDATA[
 ATTACH TABLE  "PUB"."Customer"      PRIMARY KEY ("Cust-Num")              AS "isports_rdf"."prs10_isports_rdf"."Customer"      FROM 'prs10_isports_rdf';
 ATTACH TABLE  "PUB"."Invoice"       PRIMARY KEY ("Invoice-Num")           AS "isports_rdf"."prs10_isports_rdf"."Invoice"       FROM 'prs10_isports_rdf';
@@ -26095,7 +26100,7 @@ invoice:Total-Paid a rdf:Property ;
 invoice:Adjustment a rdf:Property ;
 	rdfs:domain invoice:Invoice ;
 	rdfs:range xsd:decimal ;
-	rdfs:label "Adjustmant" .
+	rdfs:label "Adjustment" .
 
 invoice:Order-Num a rdf:Property ;
 	rdfs:domain invoice:Invoice ;
@@ -26575,7 +26580,7 @@ DB.DBA.XML_SET_NS_DECL ('state',        'http://^{URIQADefaultHost}^/schemas/pro
     <sect4 id="rdfviewnorthwindexample1"><title>Simple Mapping Example -- Northwind RDF View</title>
 <para>Here is example of the basic Northwind RDF Views deployment. The sequence of operations is very common for adding SPARQL access to existing application.</para>
 <para>There exist few important questions to answer. Who should have access to data behind RDF View? Should someone have access to other sorts of RDF data but not to the new View? What are applications that should be interoperable with the new RDF data source? Are there any applications that produce similar data but that data sould be kept apart from data made by view? How to ensure that deployment the view will not cause problems for other applications?</para>
-<para>First of all, we decide whether the default web service endpoint should have access to the data in question. If it should then we have to grant SELECT priviledges to the account "SPARQL" that is used for the default endpoint; if it should not but some custom edpoint should then grant to the owner account of that account. Granting access is less trivial that it is usual. On one hand, those who can make SQL SELECT statements on application's tables can also make SPARQL queries on RDF View over that tables, because it makes SQL inside. On the other hand, those who do not intend to query that data at all may get unexpected &quot;permission denied&quot; errors on queries that worked fine before adding an RDF View. If SPARQL compiler can not prove that the query can not access data from the view then it will generate SQL code that will access tables behind the view. In some cases permission problems should be resolved by creating RDF View in a separate <link linkend="rdfviewconfiguringrdfstorages">RDF storage</link>. In this example, data are public:</para>
+<para>First of all, we decide whether the default web service endpoint should have access to the data in question. If it should then we have to grant SELECT privileges to the account "SPARQL" that is used for the default endpoint; if it should not but some custom edpoint should then grant to the owner account of that account. Granting access is less trivial that it is usual. On one hand, those who can make SQL SELECT statements on application's tables can also make SPARQL queries on RDF View over that tables, because it makes SQL inside. On the other hand, those who do not intend to query that data at all may get unexpected &quot;permission denied&quot; errors on queries that worked fine before adding an RDF View. If SPARQL compiler can not prove that the query can not access data from the view then it will generate SQL code that will access tables behind the view. In some cases permission problems should be resolved by creating RDF View in a separate <link linkend="rdfviewconfiguringrdfstorages">RDF storage</link>. In this example, data are public:</para>
 <programlisting><![CDATA[
 use DB;
 
@@ -26668,7 +26673,7 @@ create iri class northwind:EmployeePhoto "http://^{URIQADefaultHost}^/DAV/VAD/de
 create iri class northwind:CategoryPhoto "http://^{URIQADefaultHost}^/DAV/VAD/demo/sql/CAT%d#this" (in category_id varchar not null) .
 ;
 ]]></programlisting>
-<para>One IRI class per subject type; format strings begin with same host but different directory names so this will let the compiler to guess the type of subject by the text of IRI. Most of declarations are <link linkend="rdfviewbijandreturns">bijections</link> and may get  <emphasis>option (bijection)</emphasis> hint but these format strings are so simple that the compiler may understant it by itself.
+<para>One IRI class per subject type; format strings begin with same host but different directory names so this will let the compiler to guess the type of subject by the text of IRI. Most of declarations are <link linkend="rdfviewbijandreturns">bijections</link> and may get  <emphasis>option (bijection)</emphasis> hint but these format strings are so simple that the compiler may understand it by itself.
 (<emphasis>northwind:Employee</emphasis> is not a bijection because <link linkend="fn_sprintf_inverse"><function>sprintf_inverse</function></link> will be unable to split the tail of IRI string and find the boundary between first and last name.)</para>
 <para>The final operation is extending the default quad storage with new tree of quad map patterns.</para>
 <programlisting><![CDATA[
@@ -28344,7 +28349,7 @@ A rule base is a persistent entity that can be referenced by a SPARQL query or e
 with a given rule base work as if the triples asserted by this rule base were included in the graph or graphs accessed by the query.
 </para>
 <para>As of version 5.0, Virtuoso recognizes <emphasis>rdfs:subClassOf</emphasis> and <emphasis>rdfs:subPropertyOf</emphasis>.
-owl:sameAs is considered for arbitrary subjects and objects if specially enabled by a pragme in the query.
+owl:sameAs is considered for arbitrary subjects and objects if specially enabled by a pragma in the query.
 As of 5.00.3031, owl:sameAs, owl:equivalentClass and owl:equivalentProperty are also considered when determining subclass or subproperty relations.  If two  classes are equivalent, they share all instances, subclasses and superclasses directly or indirectly stated in the data for either class.
 Other RDF Schema or OWL information is not taken into account.
 </para>
@@ -28902,7 +28907,7 @@ http://dbpedia.org/resource/The_Lord_of_the_Rings
 ]]></programlisting>
 
 <para><emphasis>Equivalence between classes</emphasis></para>
-<para>The example below is based on <ulink url="http://umbel.org/documentation.html">UMBEL</ulink> and DBpedia integraion:</para>
+<para>The example below is based on <ulink url="http://umbel.org/documentation.html">UMBEL</ulink> and DBpedia integration:</para>
 <programlisting><![CDATA[
 -- Load UMBEL & DBpedia Instance Level Cross-Links (owl:sameAs) Triples
 select ttlp_mt (file_to_string_output ('umbel_dbpedia_linkage_v071.n3'), '', 'http://dbpedia.org');
@@ -29269,7 +29274,7 @@ by that application and define <emphasis>input:storage</emphasis> in appropriate
 It is possible that misleading data is produced.
 To see if the cardinality guesses are generally valid, look at the query plan with <link linkend="fn_explain"><function>explain</function> ()</link>.</para>
 <para>Below is a sample from the LUBM qualification data set in the Virtuoso distribution.
-After running <emphasis>make test</emphasis> in <emphasis>binsrc/tets/lubm</emphasis>, there is a loaded database with the data.
+After running <emphasis>make test</emphasis> in <emphasis>binsrc/test/lubm</emphasis>, there is a loaded database with the data.
 Start a server in the same directory to see the data.</para>
 
 <programlisting><![CDATA[
@@ -29359,7 +29364,7 @@ order but the <emphasis>sql:select-option "order"</emphasis> forces the optimize
 from left to right.</para>
 <para>It is very easy to end up with completely unworkable query plans in
 this manner but if the optimizer really is in error, then this is the
-only way of overriding its prefrences.  The effect of <emphasis>sql:select-option</emphasis> is pervasive, extending inside unions, optionals, subqueries etc within the statement.</para>
+only way of overriding its preferences. The effect of <emphasis>sql:select-option</emphasis> is pervasive, extending inside unions, optionals, subqueries etc within the statement.</para>
 <para>We note that if, in the above query, both the course taken by the
 student and the type of the student are given, the query compilation
 will be, at least for all non-cluster cases, an index intersection.
@@ -29526,7 +29531,7 @@ LOAD_FILE ()
 
     if [ $? != 0 ]
     then
-	echo "An error occured, please check $LOGF"
+	echo "An error occurred, please check $LOGF"
 	exit 1
     fi
 
@@ -29547,7 +29552,7 @@ LOAD_FILE ()
 
 	if [ $? != 0 ]
     then
-	    echo "An error occured, please check $LOGF"
+	    echo "An error occurred, please check $LOGF"
 	    exit 1
     fi
 	line_no=`grep Error $LOGF | awk '{ match ($0, /line [0-9]+/, x) ; match (x[0], /[0-9]+/, y); print y[0] }'`
@@ -29624,7 +29629,7 @@ isql $PORT dba $PASS verbose=on banner=off prompt=off echo=ON errors=stdout exec
 # If disconnect etc.
 if [ $? != 0 ]
 then
-    echo "An error occured, please check $0.log"
+    echo "An error occurred, please check $0.log"
     exit
 fi
 
@@ -29648,7 +29653,7 @@ do
 
     if [ $? != 0 ]
     then
-	echo "An error occured, please check $0.log"
+	echo "An error occurred, please check $0.log"
 	exit
     fi
    line_no=`grep Error $0.log | awk '{ match ($0, /line [0-9]+/, x) ; match (x[0], /[0-9]+/, y); print y[0] }'`
@@ -30744,7 +30749,7 @@ screwdrivers etc. for doing 'Do-It-Yourself' with RDF.
       </para>
     </sect3>
     <sect3 id="rdfnativestorageproviderssesamewhatisvirtuososesameprovider"><title>What is the Virtuoso Sesame Provider</title>
-    <para>The Virtuoso Sesame Provider is a fully oprerational Native Graph Model Storage Providers
+    <para>The Virtuoso Sesame Provider is a fully operational Native Graph Model Storage Providers
 for the Sesame Framework, allowing users of Virtuoso to leverage the Sesame framework for modifying,
 querying, and reasoning with the Virtuoso quad store using the Java language. The Sesame Repository
 API offers a central access point for connecting to the Virtuoso quad store. Its purpose is to
@@ -30957,7 +30962,7 @@ database, etc.
       <para>The repository that is created by the above code is volatile: its contents are lost
 when the object is garbage collected or when the program is shut down. This is fine for cases where,
 for example, the repository is used as a means for manipulating an RDF model in memory. Using the
-Virtuoso repository with RepositoryConnecton.
+Virtuoso repository with RepositoryConnection.
       </para>
       <para>Now that we have created a VirtuosoRepositoryRDF, we want to do something with it.
 This is achieved through the use of the VirtuosoRepositoryConnection, which can be created by
@@ -31349,7 +31354,7 @@ OpenLink Software and a diff for application to a Redland 1.0.8 tree can be obta
         <listitem><ulink url="ftp://download.openlinksw.com/support/vos/redland-vos.diff">Redland 1.0.8 Diff file of changes made for Virtuoso storage support</ulink></listitem>
       </itemizedlist>
       </sect4>
-      <sect4 id="rdfnativestorageprovidersredlandcmsmpr"><title>Compling Redland with Virtuoso storage support</title>
+      <sect4 id="rdfnativestorageprovidersredlandcmsmpr"><title>Compiling Redland with Virtuoso storage support</title>
         <itemizedlist mark="bullet">
           <listitem><ulink url="http://svn.librdf.org/">Download Redland</ulink>, extract and apply diff
 above or download the tar ball above with diff already applied and extract to a location of choice.</listitem>
@@ -31543,7 +31548,7 @@ such as via librdf hash_from_string and use librdf_new_storage_with_options to c
 rdfproc utility source code demonstrates this.
         </para>
         <para>The storage name parameter given to the storage constructor librdf new_storage is used
-inside the virtuoso store to allow multiple stores inside one Virtuoso database instance as parameterised
+inside the virtuoso store to allow multiple stores inside one Virtuoso database instance as parameterized
 with the above options.
         </para>
         <para>This store always provides contexts; the boolean storage option contexts is not checked.</para>

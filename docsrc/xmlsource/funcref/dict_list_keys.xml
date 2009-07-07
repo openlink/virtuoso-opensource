@@ -42,7 +42,7 @@
   <refsect1 id="desc_dict_list_keys">
     <title>Description</title>
     <para>The function returns an array of all keys stored in the given dictionary, ignoring dependent parts of key-value pairs.
-This is especially useful when dictionary is used to form a set of dictinct keys, when dependent parts are fake (typically zeroes).
+This is especially useful when dictionary is used to form a set of distinct keys, when dependent parts are fake (typically zeroes).
 If the <parameter>destructive</parameter> parameter is nonzero then the function may avoid copying of keys to the resulting array
 by moving them out from the dictionary. This is faster but the dictionary will become empty at the end of operation.
 The <parameter>destructive</parameter> parameter does not have any effect if the dictionary is used as a value of more than one variable.

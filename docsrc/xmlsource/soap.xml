@@ -1823,7 +1823,7 @@ document-centric style SOAP operations.</para>
 
 <programlisting><![CDATA[
 create procedure
-Compund2.echoEmployee (in x any __soap_type 'http://soapinterop.org/employee:x_Employee')
+Compound2.echoEmployee (in x any __soap_type 'http://soapinterop.org/employee:x_Employee')
       returns any __soap_doc 'http://soapinterop.org/employee:result_Employee'
 {
   return x;

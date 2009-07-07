@@ -1663,7 +1663,7 @@ and to register a notification request.</para>
 <formalpara><title>Cloud notification services</title>
 <para>
 The aggregators scan for changes in an interval, but in some situations we want to know when a channel has changed immediately. Notification makes it possible to always be in sync with bandwidth conservation and unneeded loops.
-This is possible to register an aggregator using a xmlStorageSystem.requestNotification function, also to make aggregator to know about such service it's parameters are exposed in &lt;cloud&gt; sub-element of &lt;channel&gt; of the RSS files. The notification works as follows: aggregator gets registered via xmlStorageSystem.requestNotification; Then if a registered link changes, the aggregator will be notified via specified protocol and method. The aggregator needs to register itself every 24 hour, otherwise the registration will expire. For full explaination of the cloud element of RSS file see reference at "http://backend.userland.com/rss#ltcloudgtSubelementOfLtchannelgt".
+This is possible to register an aggregator using a xmlStorageSystem.requestNotification function, also to make aggregator to know about such service it's parameters are exposed in &lt;cloud&gt; sub-element of &lt;channel&gt; of the RSS files. The notification works as follows: aggregator gets registered via xmlStorageSystem.requestNotification; Then if a registered link changes, the aggregator will be notified via specified protocol and method. The aggregator needs to register itself every 24 hour, otherwise the registration will expire. For full explanation of the cloud element of RSS file see reference at "http://backend.userland.com/rss#ltcloudgtSubelementOfLtchannelgt".
 </para>
 </formalpara>
 
@@ -2019,7 +2019,7 @@ uses the array of URLs returned to set it's local list of channels.
       <graphic fileref="moblog.gif" width="633px" depth="513px" /></figure>
 
     <para>The Moblog configuration page enables the details of the POP3 server from
-    which messages are to be retrieved from is located  as indicated in the diagrram below:</para>
+    which messages are to be retrieved from is located  as indicated in the diagram below:</para>
 
     <figure><title>Blog page</title>
       <graphic fileref="moblogconfig.gif" width="633px" depth="513px" /></figure>
@@ -2108,7 +2108,7 @@ uses the array of URLs returned to set it's local list of channels.
 	  Once visitor have subscribed, on every new post
 	  an email will be sent to he/she.
 
-	  If the mail tragte is deleted, the mailing list for blog update
+	  If the mail is deleted, the mailing list for blog update
 	  notification will be canceled.
       </para>
   </sect2>

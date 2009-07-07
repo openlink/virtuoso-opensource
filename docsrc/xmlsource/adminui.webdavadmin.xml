@@ -56,7 +56,7 @@ Add new types by typing the details into the fields provided and pressing the <e
     <sect3 id="contentmanagement"><title>Content Management</title>
   <para>The content management page gives you an interface to the WebDAV
   repository resources. From here you can navigate or create directories, 
-  commonly refered to as collections or folders in DAV, alter properties, 
+  commonly referred to as collections or folders in DAV, alter properties,
   upload or remove files, or edit documents.</para>
 
   <para>The Repository tab lists the current location within the tree and

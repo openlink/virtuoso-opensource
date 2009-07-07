@@ -382,7 +382,7 @@ the Virtuoso server running on the same computer on port 1111:</para>
 	  If the RDF literal object have language or datatype specified then <computeroutput>virtuoso.jdbc3.VirtuosoRdfBox</computeroutput> will be returned. The following methods could be used :
       </para>
       <programlisting>
-	  String toString () : returns string representation of the listeral
+	  String toString () : returns string representation of the literal
 	  String getType () : returns string containing the datatype  of the literal
 	  String getLang () : returns language code for the literal
       </programlisting>
