@@ -292,6 +292,8 @@ int sparp_gp_trav_wrap_vars_in_max (sparp_t *sparp, SPART *curr, sparp_trav_stat
   native = sparp_expn_native_valmode (sparp, curr);
   if (IS_BOX_POINTER (native) && native->qmfIsBijection)
     return SPAR_GPT_NODOWN;
+  if (curr->_.var.rvr.rvrRestrictions & SPART_VARR_FIXED)
+    return SPAR_GPT_NODOWN;
   sts_this->sts_curr_array[sts_this->sts_ofs_of_curr_in_array] =
     spartlist (sparp, 4, SPAR_ALIAS,
       spar_make_funcall (sparp, 1, t_box_dv_uname_string ("SPECIAL::bif:MAX"), (SPART **)t_list (1, curr)),
