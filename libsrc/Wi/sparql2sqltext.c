@@ -4086,6 +4086,8 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
           ssg_print_literal_as_sqlval (ssg, NULL, tree);
           ssg_puts (", 1)");
         }
+      else if (SSG_VALMODE_BOOL == needed)
+        ssg_puts (" 1");
     else
         ssg_print_tmpl (ssg, needed, needed->qmfShortOfUriTmpl, NULL, NULL, tree, asname);
       goto print_asname;
