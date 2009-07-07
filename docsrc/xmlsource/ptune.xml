@@ -992,7 +992,7 @@ select s_quantity from stock where s_i_id = 111 for update;
   messages. If the configuration is a single server, the two last are 0.
   </para>
   <para>The random and sequential lookup counts are incremented regardless of whether the row was found or not or whether it matched search conditions.</para>
-  <para>If the information is retrieved as an array, the array contains integer numbners representing these plus some more metrics.</para>
+  <para>If the information is retrieved as an array, the array contains integer numbers representing these plus some more metrics.</para>
   <para>Index  - Meaning</para>
   <itemizedlist>
   <listitem>0 - Random lookups</listitem>

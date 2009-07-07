@@ -823,7 +823,60 @@ of metadata about result set in a format used by the exec() function.</entry>
   </tgroup>
 </table>
 </sect4>
-
+   <sect4 id="anytimequeries">
+     <title>Anytime Queries</title>
+     <para>Starting with version 6, Virtuoso offers a partial query evaluation feature that guarantees
+answers to arbitrary queries within a fixed time. This is intended for use in  publicly available SPARQL
+or SQL end points on large databases. This enforces a finite duration to all queries and will strive to
+return meaningful partial results. Thus this provides the same security as a transaction timeout but will
+be more user friendly since results will generally be returned, also for aggregate queries. Outside of a
+public query service, this may also be handy when exploring a large data set with unknown properties.
+     </para>
+     <para>The feature is activated with the statement</para>
+<programlisting><![CDATA[
+set result_timeout == <expression>;
+]]></programlisting>
+     <para>The expression should be a count of milliseconds. The scope of the setting is the connection,
+thus it remains in effect past the return of the calling procedure. Setting the timeout to 0 returns to the
+default state of having no limit on query run time and always returning complete results. The initial value
+of the timeout is 0. On a web server thread, the timeout is reset to 0 at the start of processing each
+new request header.
+     </para>
+     <para>After a query or cursor has exceeded the running time, it is reset.
+In the event of the reset occurring inside an aggregation, the part
+of the query that produces rows for the aggregation is terminated, the
+timeout is reset and the query continues by using the aggregated
+results that were obtained before the first timeout. If there is
+again a timeout, the present aggregation is reset and the query gets
+another lease on life for processing the results accumulated so far.
+Thus, a query which has a select, a group by and an order by can
+consume at most three timeouts. One for producing the aggregated
+rows, another for sorting them and finally a third for returning them
+to a client or iterating over them in a stored procedure.
+     </para>
+     <para>If the timeout occurs outside an aggregation, the result set is simply truncated.</para>
+     <para>The fact of a query returning partial results is indicated by the
+result set ending with a S1TAT SQL state. If the result set is read
+to end without this state being signalled, the results are complete
+and the query was not interrupted. If the result set is not consumed
+to end, the client cannot be sure of its completeness.
+     </para>
+     <para>The error message associated with the S1TAT state contains the human
+readable version of the output of db_activity () for the query. If
+result_timeout is non-zero, the opening of a cursor or execution of a
+query on a client connection or with the exec () function will reset
+the client resource consumption counters automatically. This is done
+so as to have the resource consumption statistics for the error
+message scoped to the query. To get the exact counts, the application
+may call db_activity (1) in the same procedure. If this is called on
+a client server connection with the timeout on, the counts will be
+reset before db_activity () is called.
+     </para>
+     <para>The resolution of the timeout is fairly low, timeouts are checked every two seconds with default
+settings.</para>
+     <para>A query cannot set a timeout from inside itself. Only a stored procedure or a top level statement
+on a client connection can do this.</para>
+   </sect4>
 </sect3>
 
 <sect3 id="rdfsupportedprotocolendpointuri"><title>Service Endpoint Security</title>
@@ -8209,7 +8262,7 @@ VT_INC_INDEX_DB_DBA_RDF_OBJ ();
 ]]></programlisting>
 </listitem>
   <listitem>Run the following procedure using the Virtuoso <emphasis>isql</emphasis> program to
-populate label lookup tables periodically and acivate the <emphasis>Label</emphasis> text box of the
+populate label lookup tables periodically and activate the <emphasis>Label</emphasis> text box of the
 <emphasis>URI Lookup(by Label)</emphasis> tab:
 </listitem>
 <programlisting><![CDATA[
@@ -8479,7 +8532,7 @@ query element.</para>
 <programlisting><![CDATA[
 <class iri="iri" inference="ctx_name" />
 ]]></programlisting>
-<para>The S must be an instance of this class. If infertence is specified then option (input:inference
+<para>The S must be an instance of this class. If inference is specified then option (input:inference
 "ctx_name" is added and applies to this pattern alone.</para>
 <programlisting><![CDATA[
 <property iri="iri" same_as="yes" inference="ctx_name">]]></programlisting>
@@ -8603,7 +8656,7 @@ describe ?s ... offset o limit l
     <listitem>Controlling navigation, for example choosing what type of view is initially presented when opening a given property.</listitem>
     <listitem>Page layout, captions, help texts, etc.</listitem>
   </itemizedlist>
-  <para>The source code is deivided in two SQL files and a number of XSLT sheets. The file facet.sql has the code for the web service. The
+  <para>The source code is divided in two SQL files and a number of XSLT sheets. The file facet.sql has the code for the web service. The
 facet_view.sql file contains the procedures for the sample HTML interface.</para>
 </sect4>
 <sect4 id="virtuosospongerfacentexamples">
@@ -28976,16 +29029,16 @@ http://dbpedia.org/resource/BMW_R75
 4 Rows. -- 26 msec.
 ]]></programlisting>
 </sect2>
-
+<!-- Uncommented for Virtuoso 6 Release-->
   <sect2 id="rdfsparqlruleinversefunc"><title>Identity With Inverse Functional Properties </title>
-  <para>A graph used used with rdfs_rule_set may declare certain proprties to
+  <para>A graph used used with rdfs_rule_set may declare certain properties to
   be inversely functional. If one or more inverse functional properties (IFP's)
   are declared in the inference context used with the query, enabled
   with define input:inference = "context_name", then the following
-  samantics apply:</para>
+  semantics apply:</para>
   <orderedlist>
   <listitem>If a literal is compared with an IRI, then the literal is substituted by all the subject IRI's where this literal occurs as a value of an IFP.</listitem>
-  <listitem>If two IRI's are compared for equality, they will be considererd the same if there is an IFP P such that the same P has the same value on both subjects.</listitem>
+  <listitem>If two IRI's are compared for equality, they will be considered the same if there is an IFP P such that the same P has the same value on both subjects.</listitem>
   <listitem>If an IRI is processed for distinctness in either distinct or group by, the IRI is first translated to be the IRI with the lowest ID among all IRI's that share an IFP value with this IRI.</listitem>
   </orderedlist>
   <para>Thus, if two IRI's are compared for distinctness, they will count as one if there is an IFP P with the same value with both IRI's. Literal data types are not translated into IRI's even if these literals occurred as IFP values of some subject.</para>
@@ -29128,7 +29181,7 @@ http://dbpedia.org/resource/BMW_R75
   the transitive subquery. The graph where the sameAs triple was found
   is returned and used as the grouping column. In this way we see how
   many times each graph is used. Note that graphs are counted many
-  times since the graphs comtaining immediate sameAs statements are
+  times since the graphs containing immediate sameAs statements are
   counted for paths of length 1, then again as steps on paths that reach
   to their aliases and so on.</para>
   <programlisting><![CDATA[
