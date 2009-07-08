@@ -76,8 +76,13 @@
 <table>
     <v:method name="exec_all" arglist="inout control vspx_control"><![CDATA[
 	      declare stat, msg varchar;
-	      declare res, arr, data, meta, gr any;
+	      declare res, arr, data, meta, gr, path any;
 	      declare inx int;
+
+	      path := concat('/DAV/temp/', self.sid, '.sql');
+	      DB.DBA.YACUTIA_DAV_DELETE (path, 1, 0);
+	      DB.DBA.YACUTIA_DAV_COL_CREATE('/DAV/temp/', '110110000NN', 'dav', 'administrators');
+	      DB.DBA.YACUTIA_DAV_RES_UPLOAD (path, self.body_v, '', '110110000NN', 'dav', 'administrators', now(), now(), null);
 
 	      arr := sql_split_text (self.body_v);
 	      res := make_array (length (arr) + 1, 'any');
@@ -95,6 +100,10 @@
 		}
              if (self.owl)
                {	     
+	         path := concat('/DAV/temp/', self.sid, '.n3');
+	         DB.DBA.YACUTIA_DAV_DELETE (path, 1, 0);
+	         DB.DBA.YACUTIA_DAV_COL_CREATE('/DAV/temp/', '110110000NN', 'dav', 'administrators');
+	         DB.DBA.YACUTIA_DAV_RES_UPLOAD (path, self.body_o, '', '110110000NN', 'dav', 'administrators', now(), now(), null);
 		 gr := sprintf ('http://%s/schemas/%s#', cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), self.base_url);
 		 stat := '00000';
 		 msg := 'OK';
