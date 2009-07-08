@@ -1,6 +1,6 @@
 <?vsp
 --
---   $Id$
+--  $Id$
 --
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -26,23 +26,26 @@
    sid := {?'sid'};
    if (get_keyword ('pubkey', params) is not null)
      {
-       declare kname, cvalue varchar; 
-       declare cn, c, o, ou, mail, webid, uname varchar;  
-       whenever not found goto nf;  
-       select U_NAME, U_FULL_NAME, U_E_MAIL, WAUI_BORG, WAUI_BCOUNTRY 
+       declare kname, cvalue varchar;
+       declare cn, c, o, ou, mail, webid, pk, uname varchar;
+       whenever not found goto nf;
+       select U_NAME, U_FULL_NAME, U_E_MAIL, WAUI_BORG, WAUI_BCOUNTRY
 	into uname, cn, mail, o, c from
 	SYS_USERS, WA_USER_INFO, VSPX_SESSION where
 	VS_SID = sid and VS_REALM = 'wa' and VS_UID = U_NAME and U_ID = WAUI_U_ID;
        webid := sioc..person_iri (sioc..user_obj_iri (uname));
-       kname := xenc_SPKI_read (null, replace (get_keyword ('pubkey', params), '\r\n', ''));
-       xenc_x509_generate ('id_rsa', kname, sequence_next ('ca_id_rsa'), 365, 
+       pk := replace (get_keyword ('pubkey', params), '\r\n', '');
+       pk := replace (pk, '\n', '');
+       pk := replace (pk, '\r', '');
+       kname := xenc_SPKI_read (null, pk);
+       xenc_x509_generate ('id_rsa', kname, sequence_next ('ca_id_rsa'), 365,
 		vector (
 			'CN', cn,
 			'C',  c,
 			'O',  o,
 			'OU', ou,
 			'emailAddress', mail
-			), 
+			),
 		vector ('subjectAltName', 'URI:'||webid, 'nsComment', 'Virtuoso Generated Certificate'));
        cvalue := xenc_pem_export (kname);
        WA_USER_EDIT (uname, 'WAUI_CERT', cvalue);

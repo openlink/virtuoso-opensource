@@ -2379,6 +2379,14 @@ create procedure fill_ods_sioc (in doall int := 0)
 	do
 	{
 	  declare p_name varchar;
+
+	  p_name := sprintf ('sioc.DBA.fill_ods_%s_sioc2', suffix);
+	  if (__proc_exists (p_name))
+	    if (registry_get (sprintf('__ods_%s_sioc_init', suffix)) <> sioc_version)
+	    {
+		    call (p_name) ();
+		    registry_set (sprintf('__ods_%s_sioc_init', suffix), sioc_version);
+	    }
 	  p_name := sprintf ('sioc.DBA.fill_ods_%s_sioc', suffix);
 	  if (__proc_exists (p_name))
 	    if (registry_get (sprintf('__ods_%s_sioc_init', suffix)) <> sioc_version)
@@ -2408,11 +2416,13 @@ create procedure ods_sioc_version_reset (in ver any := '0')
   for select DB.DBA.wa_type_to_app (WAT_NAME) as suffix from DB.DBA.WA_TYPES do
     {
       declare p_name varchar;
+
       p_name := sprintf ('sioc.DBA.fill_ods_%s_sioc', suffix);
       if (__proc_exists (p_name))
-	{
 	  registry_set (sprintf('__ods_%s_sioc_init', suffix), ver);
-	}
+    p_name := sprintf ('sioc.DBA.fill_ods_%s_sioc2', suffix);
+    if (__proc_exists (p_name))
+   	  registry_set (sprintf('__ods_%s_sioc_init', suffix), ver);
     }
   if (__proc_exists ('sioc..fill_ods_nntp_sioc'))
     {
