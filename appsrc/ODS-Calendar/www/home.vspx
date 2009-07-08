@@ -89,7 +89,7 @@
         }
       }
 
-      tmp := get_keyword ('search', params, '');
+      tmp := get_keyword ('search', params, get_keyword ('q', params, ''));
       if (tmp <> '')
       {
         self.cScope := 'search';

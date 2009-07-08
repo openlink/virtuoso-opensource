@@ -163,7 +163,7 @@
         </div>
         <v:template type="simple" enabled="--either(gt(self.domain_id, 0), 1, 0)">
           <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
-              <v:text name="keywords" value="--case when (self.cScope = 'search') and (CAL.WA.xml_get ('mode', self.cSearch) <> 'advanced') then CAL.WA.xml_get ('keywords', self.cSearch, '') else '' end" xhtml_onkeypress="return submitEnter(event, \'F1\', \'command\', \'select\', \'search\', \'mode\', \'simple\');" />
+              <v:text name="keywords" value="--case when (self.cScope = 'search') and (CAL.WA.xml_get ('mode', self.cSearch) <> 'advanced') then CAL.WA.xml_get ('keywords', self.cSearch, '') else '' end" fmt-function="CAL.WA.utf2wide" xhtml_onkeypress="return submitEnter(event, \'F1\', \'command\', \'select\', \'search\', \'mode\', \'simple\');" />
             <xsl:call-template name="nbsp"/>
               <span onclick="javascript: vspxPost('command', 'select', 'search', 'mode', 'simple');" title="Simple Search" about="Simple Search" class="link">Search</span>
             |
