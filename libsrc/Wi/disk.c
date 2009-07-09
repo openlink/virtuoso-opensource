@@ -3205,19 +3205,20 @@ dbs_from_file (char * name, char * file, char type, volatile int * exists)
       if (DBS_TEMP == type)
 	{
 	  caddr_t sz = file_stat (dbs->dbs_file, 1);
+	  long real_sz = (sz ? strtol (sz, (char **)NULL, 10) : 0);
 
-	  if (sz && strtol (sz, (char **)NULL, 10) > temp_db_size * 1024L * 1024L)
+	  dk_free_box (sz);
+	  if (real_sz > temp_db_size * 1024L * 1024L)
 	    {
 	      if (unlink (dbs->dbs_file))
 		{
 		  log_error ("Can't unlink the temp db file %.1000s : %m", dbs->dbs_file);
 		}
 	      else
-		log_info ("Unlinked the temp db file %.1000s as it's size (%s)"
+		log_info ("Unlinked the temp db file %.1000s as its size (%ldMB)"
 		    " was greater than TempDBSize INI (%ldMB)",
-		    dbs->dbs_file, sz, temp_db_size);
+		    dbs->dbs_file, (real_sz/1024/1024), temp_db_size);
 	    }
-	  dk_free_box (sz);
 	}
       fd = fd_open (dbs->dbs_file, of);
       if (-1 == fd)

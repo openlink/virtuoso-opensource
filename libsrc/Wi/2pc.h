@@ -65,6 +65,8 @@
 #define TP_ABORT	3
 #define TP_ENLIST_END	4
 #define TP_JOIN		5
+#define TP_RESUME	6
+#define TP_SUSPEND	7
 
 #define SQL_TP_UNENLIST		((UWORD)0x000000F0L)
 #define SQL_XA_UNENLIST		((UWORD)0x00000F00L)
@@ -80,6 +82,8 @@
 #define SQL_XA_ENLIST_END	((UWORD)( TP_ENLIST_END | SQL_XA_UNENLIST ))
 #define SQL_XA_JOIN		((UWORD)( TP_JOIN | SQL_XA_UNENLIST))
 #define SQL_XA_WAIT		((UWORD)( SQL_XA_UNENLIST))
+#define SQL_XA_RESUME		((UWORD)( TP_RESUME | SQL_XA_UNENLIST))
+#define SQL_XA_SUSPEND		((UWORD)( TP_SUSPEND | SQL_XA_UNENLIST))
 
   /* types of TP */
 #define TP_VIRT_TYPE	1
@@ -377,7 +381,7 @@ typedef struct virt_xa_map_s
 extern virt_xa_map_t *global_xa_map;
 
 int virt_xa_set_client (void *xid, struct client_connection_s *cli);
-void virt_xa_set_lt (void *xid);
+void virt_xa_suspend_lt (void *xid, struct client_connection_s *cli);
 int virt_xa_client (void *xid_str, struct tp_data_s **tpd, int op);
 void virt_xa_remove_xid (void *xid);
 void *virt_xa_id (char *xid_str);

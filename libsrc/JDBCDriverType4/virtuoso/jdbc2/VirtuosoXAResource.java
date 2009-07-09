@@ -42,6 +42,8 @@ public class VirtuosoXAResource implements XAResource
     private final static int SQL_XA_ROLLBACK = 0x0f03;
     private final static int SQL_XA_END      = 0x0f04;
     private final static int SQL_XA_JOIN     = 0x0f05;
+    private final static int SQL_XA_RESUME   = 0x0f06;
+    private final static int SQL_XA_SUSPEND  = 0x0f07;
     private final static int SQL_XA_WAIT     = 0x0f00;
 
     private final String GET_ALL_XIDS = "_2PC.DBA.XA_GET_ALL_XIDS()";
@@ -153,8 +155,14 @@ public class VirtuosoXAResource implements XAResource
         } else if (param == XAResource.TMNOFLAGS) {
             transaction = manager.createTransaction(xid, XATransaction.ACTIVE);
             start_param = SQL_XA_ENLIST;
-        } else /*if (param == XAResource.TMRESUME)*/ {
-            throw new XAException("RMRESUME is not supported yet.");
+        } else if (param == XAResource.TMRESUME) {
+            transaction = manager.getTransaction(xid);
+            if (transaction.getStatus() != XATransaction.ACTIVE) {
+                throw new XAException(XAException.XAER_PROTO);
+            }
+            start_param = SQL_XA_RESUME;
+        } else {
+            throw new XAException("Unsupported mode");
         }
 
         VirtuosoConnection con = xaConnection.getVirtuosoConnection();
@@ -168,6 +176,7 @@ public class VirtuosoXAResource implements XAResource
     }
 
     public void end(Xid xid, int param) throws XAException {
+     int end_param;	
      if (VirtuosoFuture.rpc_log != null)
        {
 	 synchronized (VirtuosoFuture.rpc_log)
@@ -182,16 +191,24 @@ public class VirtuosoXAResource implements XAResource
         XATransaction ctx = manager.getTransaction(xid);
 
         if ((param & XAResource.TMSUSPEND) != 0)
-            throw new XAException("RMRESUME is not supported yet.");
-
-        if (param == XAResource.TMSUCCESS) {
-        } else if (param == XAResource.TMFAIL) {
-        } else {
+	{
+           end_param = SQL_XA_SUSPEND;  
+	}   
+	else if (param == XAResource.TMSUCCESS) 
+	{
+           end_param = SQL_XA_END;  
+        } 
+	else if (param == XAResource.TMFAIL) 
+	{
+           end_param = SQL_XA_END;  
+        } 
+	else
+       	{
             throw new XAException("Invalid flag.");
         }
 
         VirtuosoConnection con = xaConnection.getVirtuosoConnection();
-        rpc(con, SQL_XA_END, ctx.getXid().encode());
+        rpc(con, end_param, ctx.getXid().encode());
         leaveGlobalTransaction(con);
     }
 
