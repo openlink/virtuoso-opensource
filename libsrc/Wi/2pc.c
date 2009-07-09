@@ -1321,21 +1321,14 @@ virt_xa_set_client (void *xid, struct client_connection_s *cli)
 }
 
 void
-virt_xa_set_lt (void *xid)
+virt_xa_suspend_lt (void *xid, struct client_connection_s *cli)
 {
   xa_id_t **x;
-  client_connection_t *cli;
-
   mutex_enter (global_xa_map->xm_mtx);
   x = (xa_id_t **) id_hash_get (global_xa_map->xm_xids, (caddr_t) & xid);
   if (!x)
     GPF_T1 ("2PC: broken xids map");
-
-  cli = x[0]->xid_cli;
-  x[0]->xid_tp_data = cli->cli_tp_data;
-/*  cli->cli_tp_data->cli_tp_lt->lt_client = XA_CLIENT; */
-  /* cli->cli_tp_data = 0; */
-
+  x[0]->xid_cli = NULL;
   mutex_leave (global_xa_map->xm_mtx);
 }
 

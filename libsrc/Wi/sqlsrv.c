@@ -1998,8 +1998,6 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	    return;
 	  }
 
-	tpd = (tp_data_t*) dk_alloc (sizeof (tp_data_t));
-	memset(tpd,0,sizeof(tp_data_t));
 	tpd->cli_tp_enlisted = CONNECTION_PREPARED;
 	tpd->cli_tp_trx = xid;
 	tpd->tpd_trx_cookie = (caddr_t) xid;
@@ -2011,16 +2009,56 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	_2pc_printf (("xa enlist lt %x cli %x tpdata %p", cli->cli_trx, cli, cli->cli_tp_data));
 
       } break;
+    case SQL_XA_RESUME:
+      {
+	void * xid;
+	xa_id_t ** x;
+
+	xid = xid_bin_decode (xid_str);
+	if (!xid)
+	  {
+	    err = srv_make_new_error ("TP108", "XA02", "XID identifier can not be decoded");
+	    DKST_RPC_DONE (client);
+	    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
+	    dk_free_tree (err);
+	    return;
+	  }
+	mutex_enter (global_xa_map->xm_mtx);
+	x = (xa_id_t **) id_hash_get (global_xa_map->xm_xids, (caddr_t) & xid);
+	if (!x || !x[0]->xid_tp_data || x[0]->xid_cli)
+	  {
+	    mutex_leave (global_xa_map->xm_mtx);
+	    err = srv_make_new_error ("TP108", "XA02", "Unknown transaction");
+	    DKST_RPC_DONE (client);
+	    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
+	    dk_free_tree (err);
+	    return;
+	  }
+
+	IN_TXN;
+	lt_kill_other_trx (cli->cli_trx, NULL, NULL, LT_KILL_ROLLBACK);
+	cli->cli_tp_data = x[0]->xid_tp_data;
+	cli->cli_trx = x[0]->xid_tp_data->cli_tp_lt;
+	x[0]->xid_cli = cli;
+	LEAVE_TXN;
+	mutex_leave (global_xa_map->xm_mtx);
+
+      } break;
     case SQL_XA_ENLIST_END:
+    case SQL_XA_SUSPEND:
       {
 	void * xid = cli->cli_tp_data->cli_tp_trx;
-	_2pc_printf(("tp enlist end tpd %p\n",cli->cli_tp_data));
+	_2pc_printf(("tp enlist end tpd %p\n", cli->cli_tp_data));
 	if (!cli->cli_tp_data)
 	  GPF_T1 ("2PC: broken client vars");
 
-	virt_xa_set_lt (xid);
-
 	IN_TXN;
+	if (op == SQL_XA_SUSPEND)
+	  {
+	    virt_xa_suspend_lt (xid, cli);
+	    cli->cli_trx = NULL;
+	    cli->cli_tp_data = 0;
+	  }
 	cli_set_new_trx (cli);
 	LEAVE_TXN;
       } break;
