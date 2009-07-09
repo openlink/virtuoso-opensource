@@ -21,7 +21,9 @@
 
 TOP=@TOP@
 
+if WITH_CONDUCTOR_VAD
 nodist_vad_DATA = conductor_dav.vad
+endif
 
 noinst_SCRIPTS = mkvad.sh
 CLEANFILES =  \

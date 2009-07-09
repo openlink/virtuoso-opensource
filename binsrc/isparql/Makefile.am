@@ -21,7 +21,9 @@
 
 TOP=@TOP@
 
+if WITH_ISPARQL_VAD
 nodist_vad_DATA = isparql_dav.vad
+endif
 
 
 noinst_SCRIPTS = make_vad.sh

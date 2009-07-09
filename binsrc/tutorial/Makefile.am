@@ -23,7 +23,7 @@ TOP=@TOP@
 
 SUBDIRS = . apps hosting services web xml
 
-if WITH_BPEL_VAD
+if WITH_TUTORIAL_VAD
 nodist_vad_DATA = tutorial_dav.vad
 endif
 

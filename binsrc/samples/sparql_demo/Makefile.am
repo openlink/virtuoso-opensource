@@ -19,7 +19,9 @@
 #  
 #  
 
+if WITH_SPARQLDEMO_VAD
 nodist_vad_DATA = sparql_demo_dav.vad
+endif
 
 CLEANFILES = \
 	make_sparql_demo_vad.log \

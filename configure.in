@@ -30,7 +30,7 @@ AC_REVISION($Id$)
 ##########################################################################
 
 AC_INIT([Virtuoso Open Source Edition],
-	[5.0.12-rc2],
+	[5.0.12-rc3],
 	[vos.admin@openlinksw.com],
 	[virtuoso-opensource])
 AC_CONFIG_SRCDIR([libsrc/Dk.h])
@@ -1248,27 +1248,6 @@ AM_CONDITIONAL(HAVE_MONO, test "x$have_mono" = "xyes")
 
 ##########################################################################
 #                                                                        #
-# BPEL VAD                                                               #
-#                                                                        #
-##########################################################################
-AC_ARG_ENABLE(bpel-vad,
-AC_HELP_STRING([--enable-bpel-vad], [enable BPEL vad (default)])
-AC_HELP_STRING([--disable-bpel-vad], [disable BPEL vad])dnl
-], [
-     case "${enableval}" in
-       yes)	with_bpelvad="yes";;
-       no)	with_bpelvad="no";;
-       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-bpel-vad) ;;
-     esac
-  ],
-  [ with_bpelvad="yes" ]
-)
-
-AM_CONDITIONAL(WITH_BPEL_VAD, test "x$with_bpelvad" = "xyes")
-
-
-##########################################################################
-#                                                                        #
 # HSLookup								 #
 #                                                                        #
 ##########################################################################
@@ -2218,6 +2197,169 @@ AC_ARG_WITH(port, [dnl
 AC_HELP_STRING([--with-port(=NUMBER)], [SQL port (1111 default)])dnl
 ], [ PORT=${withval}])
 AC_SUBST(PORT)
+
+
+##########################################################################
+#                                                                        #
+# Control building of VAD packages                                       #
+#                                                                        #
+##########################################################################
+AC_ARG_ENABLE([],[
+VAD Packages:],[])
+
+AC_ARG_ENABLE(bpel-vad,
+AC_HELP_STRING([--enable-bpel-vad], [enable BPEL vad (default)])
+AC_HELP_STRING([--disable-bpel-vad], [disable BPEL vad])dnl
+], [
+     case "${enableval}" in
+       yes)	with_bpel_vad="yes";;
+       no)	with_bpel_vad="no";;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-bpel-vad) ;;
+     esac
+  ],
+  [ with_bpel_vad="yes" ]
+)
+
+AC_ARG_ENABLE(conductor-vad,
+AC_HELP_STRING([--enable-conductor-vad], [enable Conductor vad package (default)])
+AC_HELP_STRING([--disable-conductor-vad], [disable Conductor vad package])dnl
+], [
+     case "${enableval}" in
+       yes)	with_conductor_vad="yes";;
+       no)	with_conductor_vad="no";;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-conductor-vad) ;;
+     esac
+  ],
+  [ with_conductor_vad="yes" ]
+)
+
+AC_ARG_ENABLE(demo-vad,
+AC_HELP_STRING([--enable-demo-vad], [enable Demo vad package (default)])
+AC_HELP_STRING([--disable-demo-vad], [disable Demo vad package])dnl
+], [
+     case "${enableval}" in
+       yes)	with_demo_vad="yes";;
+       no)	with_demo_vad="no";;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-demo-vad) ;;
+     esac
+  ],
+  [ with_demo_vad="yes" ]
+)
+
+AC_ARG_ENABLE(isparql-vad,
+AC_HELP_STRING([--enable-isparql-vad], [enable iSPARQL vad package (default)])
+AC_HELP_STRING([--disable-isparql-vad], [disable iSPARQL vad package])dnl
+], [
+     case "${enableval}" in
+       yes)	with_isparql_vad="yes";;
+       no)	with_isparql_vad="no";;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-isparql-vad) ;;
+     esac
+  ],
+  [ with_isparql_vad="yes" ]
+)
+
+AC_ARG_ENABLE(ods-vad,
+AC_HELP_STRING([--enable-ods-vad], [enable ODS vad packages (default)])
+AC_HELP_STRING([--disable-ods-vad], [disable ODS vad packages])dnl
+], [
+     case "${enableval}" in
+       yes)	with_ods_vad="yes";;
+       no)	with_ods_vad="no";;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-ods-vad) ;;
+     esac
+  ],
+  [ with_ods_vad="yes" ]
+)
+
+AC_ARG_ENABLE(rdfmappers-vad,
+AC_HELP_STRING([--enable-rdfmappers-vad], [enable Sparql Demo vad package (default)])
+AC_HELP_STRING([--disable-rdfmappers-vad], [disable Sparql Demo vad package])dnl
+], [
+     case "${enableval}" in
+       yes)	with_rdfmappers_vad="yes";;
+       no)	with_rdfmappers_vad="no";;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-rdfmappers-vad) ;;
+     esac
+  ],
+  [ with_rdfmappers_vad="yes" ]
+)
+
+AC_ARG_ENABLE(sparqldemo-vad,
+AC_HELP_STRING([--enable-sparqldemo-vad], [enable Sparql Demo vad package (default)])
+AC_HELP_STRING([--disable-sparqldemo-vad], [disable Sparql Demo vad package])dnl
+], [
+     case "${enableval}" in
+       yes)	with_sparqldemo_vad="yes";;
+       no)	with_sparqldemo_vad="no";;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-sparqldemo-vad) ;;
+     esac
+  ],
+  [ with_sparqldemo_vad="yes" ]
+)
+
+AC_ARG_ENABLE(syncml-vad,
+AC_HELP_STRING([--enable-syncml-vad], [enable SyncML vad package (default)])
+AC_HELP_STRING([--disable-syncml-vad], [disable SyncML vad package])dnl
+], [
+     case "${enableval}" in
+       yes)	with_syncml_vad="yes";;
+       no)	with_syncml_vad="no";;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-syncml-vad) ;;
+     esac
+  ],
+  [ with_syncml_vad="yes" ]
+)
+
+AC_ARG_ENABLE(tutorial-vad,
+AC_HELP_STRING([--enable-tutorial-vad], [enable Tutorial vad package (default)])
+AC_HELP_STRING([--disable-tutorial-vad], [disable Tutorial vad package])dnl
+], [
+     case "${enableval}" in
+       yes)	with_tutorial_vad="yes";;
+       no)	with_tutorial_vad="no";;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-tutorial-vad) ;;
+     esac
+  ],
+  [ with_tutorial_vad="yes" ]
+)
+
+
+AC_ARG_ENABLE(all-vads,
+AC_HELP_STRING([--disable-all-vads], [disable building all vad packages])dnl
+], [
+     case "${enableval}" in
+       yes)	with_all_vad="yes";;
+       no)	with_all_vad="no";;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-all-vads) ;;
+     esac
+  ],
+  [ with_all_vad="yes" ]
+)
+
+if test "x$with_all_vad" = "xno"
+then
+    with_bpel_vad="no"
+    with_conductor_vad="no"
+    with_demo_vad="no"
+    with_isparql_vad="no"
+    with_ods_vad="no"
+    with_rdfmappers_vad="no"
+    with_sparqldemo_vad="no"
+    with_syncml_vad="no"
+    with_tutorial_vad="no"
+fi
+
+AM_CONDITIONAL(WITH_BPEL_VAD, test "x$with_bpel_vad" = "xyes")
+AM_CONDITIONAL(WITH_CONDUCTOR_VAD, test "x$with_conductor_vad" = "xyes")
+AM_CONDITIONAL(WITH_DEMO_VAD, test "x$with_demo_vad" = "xyes")
+AM_CONDITIONAL(WITH_ISPARQL_VAD, test "x$with_isparql_vad" = "xyes")
+AM_CONDITIONAL(WITH_ODS_VAD, test "x$with_ods_vad" = "xyes")
+AM_CONDITIONAL(WITH_RDFMAPPERS_VAD, test "x$with_rdfmappers_vad" = "xyes")
+AM_CONDITIONAL(WITH_SPARQLDEMO_VAD, test "x$with_sparqldemo_vad" = "xyes")
+AM_CONDITIONAL(WITH_SYNCML_VAD, test "x$with_syncml_vad" = "xyes")
+AM_CONDITIONAL(WITH_TUTORIAL_VAD, test "x$with_tutorial_vad" = "xyes")
+
 
 
 ##########################################################################
