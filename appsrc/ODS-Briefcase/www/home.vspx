@@ -1124,7 +1124,7 @@
       <v:template name="tform_1" type="simple" enabled="-- case when ((self.command = 0) and (self.command_mode = 2)) then 1 else 0 end">
         <div class="boxHeader" style="text-align: center;">
           <b>Search </b>
-          <v:text name="simple" value="--self.search_simple" xhtml_onkeypress="return submitEnter(event, \'F1\')" xhtml_class="textbox" xhtml_size="70%" />
+          <v:text name="simple" value="--self.search_simple" fmt-function="ODRIVE.WA.utf2wide" xhtml_onkeypress="return submitEnter(event, \'F1\')" xhtml_class="textbox" xhtml_size="70%" />
           <xsl:call-template name="nbsp" />
           |
           <v:url url="home.vspx?mode=advanced" xhtml_onclick="javascript: vspxPost(\'action\', \'_cmd\', \'search\', \'mode\', \'advanced\'); return false;" value="Advanced" xhtml_title="Advanced Search"/>

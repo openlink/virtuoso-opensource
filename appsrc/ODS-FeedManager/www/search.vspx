@@ -70,11 +70,15 @@
       params := self.vc_page.vc_event.ve_params;
 
       self.v_mode := get_keyword('mode', params, self.v_mode);
-      self.v_keywords := trim(get_keyword('a_keywords', params, get_keyword('s_keywords', params, get_keyword('keywords', params, ''))));
+      if (self.v_mode = 'opensearch')
+        self.v_step := 1;
+
+      self.v_keywords := trim(get_keyword('a_keywords', params, get_keyword('s_keywords', params, get_keyword('q', params, ''))));
       self.v_expression := trim(get_keyword('f_expression', params, get_keyword('type', params, self.v_expression)));
       self.v_conversation := self.f_conversation.ufl_selected;
       self.v_tags := trim(get_keyword('f_tags', params, get_keyword('tags', params, self.v_tags)));
-      if (get_keyword('tag', params, '') <> '') {
+      if (get_keyword('tag', params, '') <> '')
+      {
         if (is_empty_or_null(self.v_tags))
           self.v_tags := '';
         self.v_tags := concat(self.v_tags, ', ', get_keyword('tag', params));
@@ -125,7 +129,7 @@
       self.update_params();
 
       ENEWS.WA.test(self.v_keywords, vector('name', 'Keywords', 'class', 'free-text'));
-      if (self.v_mode <> 'simple')
+      if (self.v_mode not in ('simple', 'opensearch'))
       {
         if (self.v_type = 'text')
           ENEWS.WA.test(self.v_expression, vector('name', 'Expression', 'class', 'free-text-expression'));
@@ -138,7 +142,7 @@
       declare data varchar;
 
       ENEWS.WA.xml_set('keywords', data, self.v_keywords);
-      if (self.v_mode <> 'simple')
+      if (self.v_mode not in ('simple', 'opensearch'))
       {
         ENEWS.WA.xml_set('expression', data, self.v_expression);
         ENEWS.WA.xml_set('conversation', data, self.v_conversation);
@@ -153,7 +157,7 @@
       self.ds_tags := vector ();
       if (length(xpath_eval('//entry', data, 0)) = 0)
       {
-        if (e.ve_is_post or (self.v_mode = 'simple'))
+        if (e.ve_is_post or (self.v_mode in ('simple', 'opensearch')))
         {
           self.vc_error_message := 'Empty search criteria.';
           self.vc_is_valid := 0;
@@ -258,7 +262,7 @@
   </v:on-init>
   <v:after-data-bind>
     <![CDATA[
-      if (not e.ve_is_post or (get_keyword ('sortColumn', e.ve_params, '') <> '') or ((self.v_mode = 'simple') and isnull (e.ve_button)) or (get_keyword ('tag', e.ve_params, '') <> ''))
+      if (not e.ve_is_post or (get_keyword ('sortColumn', e.ve_params, '') <> '') or (self.v_mode in ('simple', 'opensearch') and isnull (e.ve_button)) or (get_keyword ('tag', e.ve_params, '') <> ''))
       {
         self.do_search (e);
       }
@@ -275,7 +279,7 @@
       <v:variable name="v_mode" type="varchar" default="'simple'"/>
       <v:variable name="v_step" param-name="step" type="integer" default="0"/>
 
-      <v:variable name="v_keywords" type="varchar" default="''" param-name="keywords"/>
+      <v:variable name="v_keywords" type="varchar" default="''" param-name="q"/>
       <v:variable name="v_expression" type="varchar" default="''"/>
       <v:variable name="v_conversation" type="integer" default="0"/>
       <v:variable name="v_tags" type="varchar" default="''"/>
@@ -329,12 +333,12 @@
       ?>
       <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
       <v:text name="step" xhtml_id="step" type="hidden" value="1"/>
-      <v:template type="simple" enabled="-- case when (self.v_step and self.vc_is_valid) then 1 else 0 end;">
+      <v:template name="st1" type="simple" enabled="-- case when (self.v_step and self.vc_is_valid) then 1 else 0 end;">
         <div class="new-form-header">
           <i><?V initcap(self.v_mode) ?> search found <?V length (self.ds_data) ?> feed(s) in last search</i>
         </div>
       </v:template>
-      <v:template type="simple">
+      <v:template name="st2" type="simple">
         <v:before-render>
           <![CDATA[
             control.vc_enabled := case when (length (self.ds_data) and self.vc_is_valid = 1) then 1 else 0 end;
@@ -343,21 +347,21 @@
         <div style="padding-bottom: 5px;">
           <?vsp
             self.update_params();
-    			  http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=rss%s" class="gems"><img src="image/rss-icon-16.gif" border="0" title="RSS 2.0" alt="RSS 2.0"/> RSS</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
+            http(sprintf('<a href="export.vspx?output=rss%s" class="gems"><img src="image/rss-icon-16.gif" border="0" title="RSS 2.0" alt="RSS 2.0"/> RSS</a>&nbsp;&nbsp;', self.do_url('export', '')));
             if (ENEWS.WA.settings_atomVersion (self.settings) = '1.0')
             {
-    			    http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=atom10%s" class="gems"><img src="image/blue-icon-16.gif" border="0" title="Atom 1.0" alt="Atom 1.0"/> Atom</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
+              http(sprintf('<a href="export.vspx?output=atom10%s" class="gems"><img src="image/blue-icon-16.gif" border="0" title="Atom 1.0" alt="Atom 1.0"/> Atom</a>&nbsp;&nbsp;', self.do_url('export', '')));
     			  } else {
-    			    http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=atom03%s" class="gems"><img src="image/blue-icon-16.gif" border="0" title="Atom 0.3" alt="Atom 0.3"/> Atom</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
+              http(sprintf('<a href="export.vspx?output=atom03%s" class="gems"><img src="image/blue-icon-16.gif" border="0" title="Atom 0.3" alt="Atom 0.3"/> Atom</a>&nbsp;&nbsp;', self.do_url('export', '')));
     			  }
-    			  http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=rdf%s" class="gems"><img src="image/rdf-icon-16.gif" border="0" title="RDF 1.0" alt="RDF 1.0"/> RDF</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
-    			  http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=xbel%s" class="gems"><img src="image/blue-icon-16.gif" border="0" title="XBEL" alt="XBEL"/> XBEL</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
+            http(sprintf('<a href="export.vspx?output=rdf%s" class="gems"><img src="image/rdf-icon-16.gif" border="0" title="RDF 1.0" alt="RDF 1.0"/> RDF</a>&nbsp;&nbsp;', self.do_url('export', '')));
+            http(sprintf('<a href="export.vspx?output=xbel%s" class="gems"><img src="image/blue-icon-16.gif" border="0" title="XBEL" alt="XBEL"/> XBEL</a>&nbsp;&nbsp;', self.do_url('export', '')));
     			?>
         </div>
       </v:template>
       <table cellspacing="0" cellpadding="0" width="100%" >
         <tr>
-          <v:template type="simple" enabled="-- case when (self.v_step and self.vc_is_valid) then 1 else 0 end;" >
+          <v:template name="st3" type="simple" enabled="-- case when (self.v_step and self.vc_is_valid) then 1 else 0 end;" >
             <td valign="top" style="border: solid #935000; border-width: 1px 1px 1px 1px;">
               <v:data-set name="ds" data="--self.ds_data" meta="--self.ds_meta" nrows="0" scrollable="1">
                 <v:before-data-bind>
@@ -519,7 +523,7 @@
         </tr>
       </table>
       <br />
-      <v:template type="simple" enabled="--either(equ(self.v_mode, 'simple'), 0, 1)">
+      <v:template type="simple" enabled="--case when self.v_mode in ('simple', 'opensearch') then 0 else 1 end">
         <div id="s" class="c1">
       		<div class="tabs">
             &nbsp;<vm:tabCaption tab="s" tabsCount="2" tabNo="0" caption="Criteria" />
@@ -546,7 +550,7 @@
                       <v:label for="" value="Space delimited keyword list" />
                     </th>
                     <td>
-                      <v:text name="a_keywords" value="--self.v_keywords" xhtml_class="textbox" xhtml_size="70%"/>
+                      <v:text name="a_keywords" value="--self.v_keywords" fmt-function="ENEWS.WA.utf2wide" xhtml_class="textbox" xhtml_size="70%"/>
                     </td>
                   </tr>
                 </v:template>
@@ -588,7 +592,7 @@
                         <br/>
                       </v:template>
                     </v:tab>
-            			  <v:textarea name="f_expression" value="--self.v_expression" xhtml_rows="2" xhtml_cols="70"/>
+                    <v:textarea name="f_expression" value="--self.v_expression" fmt-function="ENEWS.WA.utf2wide" xhtml_rows="2" xhtml_cols="70"/>
                   </td>
                 </tr>
                 <v:template type="simple" enabled="--case when ENEWS.WA.conversation_enable(self.domain_id) then 1 else 0 end">
@@ -608,7 +612,7 @@
                       <v:label for="f_tags" value="Tags" />
                   </th>
                   <td>
-                    <v:text name="f_tags" value="--self.v_tags" xhtml_class="textbox" xhtml_size="70%"/>
+                      <v:text name="f_tags" value="--self.v_tags" fmt-function="ENEWS.WA.utf2wide" xhtml_class="textbox" xhtml_size="70%"/>
                   </td>
                 </tr>
                 <tr>
@@ -741,13 +745,13 @@
           </v:button>
         </div>
       </v:template>
-      <v:template type="simple" enabled="--either(neq(self.v_mode, 'simple'), 0, 1)">
+      <v:template type="simple" enabled="--case when self.v_mode in ('simple', 'opensearch') then 1 else 0 end">
         <div class="new-form-body">
           <table cellspacing="0">
             <tr>
               <td align="center">
                 <b><v:label for="" value="Search" /></b>
-                <v:text name="s_keywords" value="--self.v_keywords" xhtml_onkeypress="return submitEnter(\'F1\', \'\', event)" xhtml_class="textbox" xhtml_size="70%"/>
+                <v:text name="s_keywords" value="--self.v_keywords" fmt-function="ENEWS.WA.utf2wide" xhtml_onkeypress="return submitEnter(\'F1\', \'\', event)" xhtml_class="textbox" xhtml_size="70%"/>
                 |
                 <v:button action="simple" style="url" value="Advanced" xhtml_class="form-button">
                   <v:on-post>

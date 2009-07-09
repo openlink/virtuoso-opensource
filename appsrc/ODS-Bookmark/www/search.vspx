@@ -508,7 +508,6 @@
                         <td valign="top">
                           <?vsp
                             if ((coalesce((control as vspx_row_template).te_rowset[10], -1) = -1) and length (self.sid))
-                            {
                               http (sprintf ('<a href="bookmarks.vspx?sid=%s&realm=%s&id=%d&fid=%d&gid=%d" title="%s %s">%s</a>',
                                            self.sid,
                                            self.realm,
@@ -583,7 +582,7 @@
                       <v:label for="" value="Space delimited keyword list" />
                     </th>
                     <td>
-                      <v:text name="a_keywords" value="--self.v_keywords" xhtml_class="textbox" xhtml_size="60"/>
+                    <v:text name="a_keywords" value="--self.v_keywords" fmt-function="BMK.WA.utf2wide" xhtml_class="textbox" xhtml_size="60" />
                     </td>
                   </tr>
                 <tr>
@@ -591,7 +590,7 @@
                     <v:label for="f_expression" value="--'or expression'" />
                   </th>
                   <td>
-            			  <v:textarea name="f_expression" value="--self.v_expression" xhtml_rows="2" xhtml_cols="50"/>
+                    <v:textarea name="f_expression" value="--self.v_expression" fmt-function="BMK.WA.utf2wide" xhtml_rows="2" xhtml_cols="50" />
                   </td>
                 </tr>
                 <tr>
@@ -599,7 +598,7 @@
                     <vm:label for="f_tags" value="Tags (comma-separated)" />
                   </th>
                   <td>
-                    <v:text name="f_tags" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60"/>
+                    <v:text name="f_tags" value="--self.v_tags" fmt-function="BMK.WA.utf2wide" xhtml_class="textbox" xhtml_size="60" />
                   </td>
                 </tr>
                 <tr>
@@ -743,7 +742,7 @@
             <tr>
               <td align="center">
                 <b><v:label for="" value="Search" /></b>
-                <v:text name="s_keywords" value="--self.v_keywords" xhtml_onkeypress="return submitEnter(\'F1\', \'\', event)" xhtml_class="textbox" xhtml_size="60"/>
+                <v:text name="s_keywords" value="--self.v_keywords" fmt-function="BMK.WA.utf2wide" xhtml_onkeypress="return submitEnter(\'F1\', \'\', event)" xhtml_class="textbox" xhtml_size="60" />
                 |
                 <v:url url="search.vspx?mode=advanced" value="Advanced" xhtml_title="Advanced Search"/>
                 |
