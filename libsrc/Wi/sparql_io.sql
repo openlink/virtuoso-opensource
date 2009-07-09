@@ -1252,7 +1252,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
 	}
       else if (strstr (accept, 'text/plain') is not null)
         {
-            ret_mime := 'text/plain';
+	  ret_mime := 'text/plain';
           DB.DBA.RDF_TRIPLES_TO_NT (triples, ses);
 	}
       else if (
@@ -2248,9 +2248,9 @@ host_found:
     {
       exec_time := msec_time () - start_time;
       exec_db_activity := db_activity ();
---  reply := xmlelement ("facets", xmlelement ("sparql", qr), xmlelement ("time", msec_time () - start_time),
---                       xmlelement ("complete", cplete),
---                       xmlelement ("db-activity", db_activity ()), res[0][0]);
+      --reply := xmlelement ("facets", xmlelement ("sparql", qr), xmlelement ("time", msec_time () - start_time),
+      --                 xmlelement ("complete", cplete),
+      --                 xmlelement ("db-activity", db_activity ()), res[0][0]);
     }
   else
     {

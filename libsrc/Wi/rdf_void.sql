@@ -88,7 +88,7 @@ create procedure RDF_VOID_ALL_GEN (in target_graph varchar, in details int := 0)
       hf := WS.WS.PARSE_URI (target_graph);
       host := hf[1];
     }
-   
+
   -- add dataset for all
   ns_ctr := 1;
   total := 0;
@@ -104,7 +104,7 @@ create procedure RDF_VOID_ALL_GEN (in target_graph varchar, in details int := 0)
     exists (select 1 from RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = RGG_IID) do
     {
        -- add subset for group to all here
-       declare gr_pref_ctr, grp_cnt int;	   
+       declare gr_pref_ctr, grp_cnt int;
        ns_ctr := ns_ctr + 1;
        grp_cnt := 0;
        RGG_IRI := rtrim (RGG_IRI, '/#') || '/';
@@ -118,7 +118,7 @@ create procedure RDF_VOID_ALL_GEN (in target_graph varchar, in details int := 0)
 	   ns_ctr := ns_ctr + 1;
 	   RDF_VOID_GEN_1 (id_to_iri (RGGM_MEMBER_IID), null, sprintf ('ns%d', ns_ctr),
 	       target_graph || rtrim (id_to_iri (RGGM_MEMBER_IID), '/#') || '/',
-	       ses, grp_cnt, 1, details); 
+	       ses, grp_cnt, 1, details);
 	   http (sprintf ('ns%d:Dataset void:subset ns%d:Dataset . \n', gr_pref_ctr, ns_ctr), ses);
          }
        http (sprintf ('ns%d:Dataset void:statItem ns%d:Stat . \n', gr_pref_ctr, gr_pref_ctr), ses);
@@ -165,7 +165,7 @@ create procedure RDF_VOID_DIST_O_SRV (in graph any)
   cnt := (select count(distinct O) from DB.DBA.RDF_QUAD table option (no cluster) where G = graph);
   return cnt;
 }
-; 
+;
 
 create procedure RDF_VOID_DIST_O (in graph varchar)
 {
@@ -218,7 +218,7 @@ create procedure RDF_VOID_GEN_1 (in graph varchar, in gr_name varchar := null,
   if (gr_name is not null)
     http (sprintf (' rdfs:label "%s" ; \n', gr_name), ses);
   if (ep)
-  http (sprintf (' void:sparqlEndpoint <http://%s/sparql> ; \n', host), ses);
+    http (sprintf (' void:sparqlEndpoint <http://%s/sparql> ; \n', host), ses);
   http (sprintf (' void:statItem %s:Stat ; \n', ns_pref), ses);
 
   http (sprintf (' void:statItem %s:DistinctSubjectsStat ; \n', ns_pref), ses);
@@ -233,7 +233,7 @@ create procedure RDF_VOID_GEN_1 (in graph varchar, in gr_name varchar := null,
      _cnt_subj := (select count(distinct S) from DB.DBA.RDF_QUAD where G = iri_to_id (graph));
      http (sprintf ('%s:DistinctSubjectsStat a scovo:Item ; \n rdf:value %d ; \n', ns_pref, _cnt_subj), ses);
      http (sprintf (' scovo:dimension void:numOfTriples . \n'), ses);
-    end1:; 
+    end1:;
   }
   if (details)
   {
