@@ -507,21 +507,17 @@
                         </td>
                         <td valign="top">
                           <?vsp
-                            declare S varchar;
-
-                            if (coalesce((control as vspx_row_template).te_rowset[10], -1) = -1)
+                            if ((coalesce((control as vspx_row_template).te_rowset[10], -1) = -1) and length (self.sid))
                             {
-                            S := 'edit';
                               http (sprintf ('<a href="bookmarks.vspx?sid=%s&realm=%s&id=%d&fid=%d&gid=%d" title="%s %s">%s</a>',
                                            self.sid,
                                            self.realm,
                                            (control as vspx_row_template).te_rowset[1],
                                            coalesce((control as vspx_row_template).te_rowset[8], -1),
                                              coalesce((control as vspx_row_template).te_rowset[10], -1),
-                                           initcap (S),
+                                             'Edit',
                                            BMK.WA.utf2wide ((control as vspx_row_template).te_rowset[3]),
-                                             'edit'));
-                            }
+                                             'Edit'));
                           ?>
                         </td>
                       </tr>

@@ -3624,7 +3624,7 @@ create procedure BMK.WA.dt_gmt2user(
     pUser := connection_get('owner_user');
   if (isnull(pUser))
     pUser := connection_get('vspx_user');
-  if (isnull(pUser))
+  if (is_empty_or_null (pUser))
     return pDate;
   return dateadd('minute', coalesce (USER_GET_OPTION(pUser, 'TIMEZONE'), 0) * 60, pDate);
 }

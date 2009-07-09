@@ -226,10 +226,9 @@
         <![CDATA[
           declare params, settings any;
 
-          params := self.vc_page.vc_event.ve_params;
-
+          params := e.ve_params;
           self.pChars := cast(get_keyword ('chars', self.settings, '60') as integer);
-          self.v_mode := get_keyword ('mode', self.vc_page.vc_event.ve_params, self.v_mode);
+          self.v_mode := get_keyword ('mode', params, self.v_mode);
 
           if (self.v_mode = 'opensearch')
             self.v_step := 1;

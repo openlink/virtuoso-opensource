@@ -1420,9 +1420,10 @@ _skip:
   if (not isnull (aEntity))
     pXml := XMLUpdate(pXml, sprintf ('/settings/entry[@ID = "%s"]', id), null);
 
-  if (not is_empty_or_null(value)) {
+  if (not is_empty_or_null(value))
+  {
     aEntity := xpath_eval('/settings', pXml);
-    XMLAppendChildren(aEntity, xtree_doc(sprintf ('<entry ID="%s">%s</entry>', id, CAL.WA.xml2string(value))));
+    XMLAppendChildren(aEntity, xtree_doc(sprintf ('<entry ID="%s">%s</entry>', id, CAL.WA.xml2string(CAL.WA.utf2wide(value)))));
   }
   return pXml;
 }
