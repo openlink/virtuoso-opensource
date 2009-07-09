@@ -38,7 +38,8 @@ create procedure ENEWS.WA.session_domain (
   options := http_map_get('options');
   if (not is_empty_or_null (options))
     domain_id := get_keyword ('domain', options);
-  if (is_empty_or_null (domain_id)) {
+  if (is_empty_or_null (domain_id))
+  {
     aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
     domain_id := cast(aPath[1] as integer);
   }
@@ -4729,7 +4730,7 @@ create procedure ENEWS.WA.export_opml_xml(
 {
   declare aXML any;
 
-  aXML := (select XMLELEMENT ('opml', XMLATTRIBUTES('1.0' as 'version'), XMLELEMENT ('head'), XMLELEMENT ('body', XMLAGG (XMLELEMENT ('outline', XMLATTRIBUTES(EFD_TITLE as 'title', EFD_TITLE as 'text', 'rss' as 'type', EF_HOME_URI as 'htmlUrl', EF_URI as 'xmlUrl')))))
+  aXML := (select XMLELEMENT ('opml', XMLATTRIBUTES('1.0' as 'version'), XMLELEMENT ('head'), XMLELEMENT ('body', XMLAGG (XMLELEMENT ('outline', XMLATTRIBUTES(ENEWS.WA.utf2wide (EFD_TITLE) as 'title', ENEWS.WA.utf2wide (EFD_TITLE) as 'text', 'rss' as 'type', EF_HOME_URI as 'htmlUrl', EF_URI as 'xmlUrl')))))
              from ENEWS.WA.FEED_DOMAIN,
                   ENEWS.WA.FEED
             where EFD_FEED_ID = EF_ID and EFD_DOMAIN_ID = domain_id);
@@ -4914,9 +4915,10 @@ _skip:
   if (not isnull(aEntity))
     pXml := XMLUpdate(pXml, sprintf('/settings/entry[@ID = "%s"]', id), null);
 
-  if (not is_empty_or_null(value)) {
+  if (not is_empty_or_null(value))
+  {
     aEntity := xpath_eval('/settings', pXml);
-    XMLAppendChildren(aEntity, xtree_doc(sprintf('<entry ID="%s">%s</entry>', id, ENEWS.WA.xml2string(value))));
+    XMLAppendChildren(aEntity, xtree_doc(sprintf('<entry ID="%s">%s</entry>', id, ENEWS.WA.xml2string(ENEWS.WA.utf2wide(value)))));
   }
   return pXml;
 }

@@ -149,22 +149,12 @@
                 <v:button name="searchHead" action="simple" style="url" value="Submit">
             	<v:on-post>
                     <![CDATA[
-                      declare S, keywords, params, cCommand any;
+                      declare S, q, params any;
 
                       params := e.ve_params;
-                      S := '';
-                      keywords := trim (get_keyword ('keywords', params, ''));
-                      if (keywords <> '')
-                        S := sprintf ('&keywords=%U&step=1', keywords);
-                      cCommand := get_keyword ('select', params, '');
-                      if (cCommand = 'simple')
-                      {
-                        self.vc_redirect ('search.vspx?mode=simple' || S);
-                      }
-                      else if (cCommand = 'advanced')
-                      {
-                        self.vc_redirect ('search.vspx?mode=advanced' || S);
-                      }
+                      q := trim (get_keyword ('q', params, ''));
+                      S := case when q <> ''then sprintf ('&q=%s&step=1', q) else '' end;
+                      self.vc_redirect (sprintf ('search.vspx?mode=%s%s', get_keyword ('select', params, 'advanced'), S));
                       self.vc_data_bind(e);
                      ]]>
             	</v:on-post>
@@ -173,7 +163,7 @@
               }
             ?>
             <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
-              <v:text name="keywords" value="" xhtml_onkeypress="javascript: if (checkNotEnter(event)) return true; vspxPost(\'searchHead\', \'select\', \'simple\'); return false;"/>
+              <v:text name="q" value="" fmt-function="ENEWS.WA.utf2wide" xhtml_onkeypress="javascript: if (checkNotEnter(event)) return true; vspxPost(\'searchHead\', \'select\', \'simple\'); return false;"/>
               <xsl:call-template name="nbsp"/>
               <v:url url="search.vspx?mode=simple" xhtml_onclick="javascript: vspxPost(\'searchHead\', \'select\', \'simple\'); return false;" value="Search" xhtml_title="simple Search" />
             |
