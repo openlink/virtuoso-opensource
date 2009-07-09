@@ -23,7 +23,9 @@
 
 TOP=@TOP@
 
+if WITH_FCT_VAD
 nodist_vad_DATA = fct_dav.vad
+endif
 
 CLEANFILES =  \
 	*.log \

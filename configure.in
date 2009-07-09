@@ -2220,6 +2220,19 @@ AC_HELP_STRING([--disable-demo-vad], [disable Demo vad package])dnl
   [ with_demo_vad="yes" ]
 )
 
+AC_ARG_ENABLE(fct-vad,
+AC_HELP_STRING([--enable-fct-vad], [enable Demo vad package (default)])
+AC_HELP_STRING([--disable-fct-vad], [disable Facet Browser vad package])dnl
+], [
+     case "${enableval}" in
+       yes)	with_fct_vad="yes";;
+       no)	with_fct_vad="no";;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-fct-vad) ;;
+     esac
+  ],
+  [ with_fct_vad="yes" ]
+)
+
 AC_ARG_ENABLE(isparql-vad,
 AC_HELP_STRING([--enable-isparql-vad], [enable iSPARQL vad package (default)])
 AC_HELP_STRING([--disable-isparql-vad], [disable iSPARQL vad package])dnl
@@ -2316,6 +2329,7 @@ then
     with_bpel_vad="no"
     with_conductor_vad="no"
     with_demo_vad="no"
+    with_fct_vad="no"
     with_isparql_vad="no"
     with_ods_vad="no"
     with_rdfmappers_vad="no"
@@ -2327,6 +2341,7 @@ fi
 AM_CONDITIONAL(WITH_BPEL_VAD, test "x$with_bpel_vad" = "xyes")
 AM_CONDITIONAL(WITH_CONDUCTOR_VAD, test "x$with_conductor_vad" = "xyes")
 AM_CONDITIONAL(WITH_DEMO_VAD, test "x$with_demo_vad" = "xyes")
+AM_CONDITIONAL(WITH_FCT_VAD, test "x$with_fct_vad" = "xyes")
 AM_CONDITIONAL(WITH_ISPARQL_VAD, test "x$with_isparql_vad" = "xyes")
 AM_CONDITIONAL(WITH_ODS_VAD, test "x$with_ods_vad" = "xyes")
 AM_CONDITIONAL(WITH_RDFMAPPERS_VAD, test "x$with_rdfmappers_vad" = "xyes")
