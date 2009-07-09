@@ -7255,7 +7255,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
         {
           ssg_puts ("SELECT "); ssg_puts (formatter); ssg_puts (" (");
           ssg_prin_id (ssg, top_selid);
-          ssg_puts (".__ask_retval)\nFROM (");
+          ssg_puts (".__ask_retval) AS \"fmtaggret-0\" LONG VARCHAR \nFROM (");
           ssg->ssg_indent += 1;
         }
       ssg_puts ("SELECT TOP 1 1 AS __ask_retval");

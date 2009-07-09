@@ -271,7 +271,7 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
   if (maxrows is not null)
     http (sprintf ('&maxrows=%d', maxrows), req_body);
   req_body := string_output_string (req_body);
-  local_req_hdr := 'Accept: application/sparql-results+xml, text/rdf+n3, text/rdf+ttl, application/turtle, application/x-turtle, application/rdf+xml, application/xml';
+  local_req_hdr := 'Accept: application/sparql-results+xml, text/rdf+n3, text/rdf+ttl, text/rdf+turtle, application/turtle, application/x-turtle, application/rdf+xml, application/xml';
   if (length (req_body) + length (service) >= 1900)
     {
       req_method := 'POST';
@@ -300,6 +300,7 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
       strstr (ret_content_type, 'application/rdf+xml') is null and
       strstr (ret_content_type, 'text/rdf+n3') is null and
       strstr (ret_content_type, 'text/rdf+ttl') is null and
+      strstr (ret_content_type, 'text/turtle') is null and
       strstr (ret_content_type, 'application/turtle' ) is null and
       strstr (ret_content_type, 'application/x-turtle' ) is null ) )
     {
@@ -481,6 +482,7 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
     }
   if (strstr (ret_content_type, 'text/rdf+n3') is not null or
     strstr (ret_content_type, 'text/rdf+ttl') is not null or
+    strstr (ret_content_type, 'text/turtle') is not null or
     strstr (ret_content_type, 'application/turtle') is not null or
     strstr (ret_content_type, 'application/x-turtle') is not null )
     {
@@ -1200,6 +1202,24 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
         }
       goto body_complete;
     }
+  if ('fmtaggret-0' = singlefield)
+    {
+      if (strstr (accept, 'application/sparql-results+json') is not null or strstr (accept, 'application/json') is not null)
+        {
+          if (strstr (accept, 'application/sparql-results+json') is not null)
+            ret_mime := 'application/sparql-results+json';
+          else
+            ret_mime := 'application/json';
+        }
+      else if (strstr (accept, 'application/sparql-results+xml'))
+        {
+          ret_mime := 'application/sparql-results+xml';
+        }
+      else
+        ret_mime := accept;
+      http (rset[0][0], ses);
+      goto body_complete;
+    }
   if ((1 = length (rset)) and
     (1 = length (rset[0])) and
     (214 = __tag (rset[0][0])) )
@@ -1209,6 +1229,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       if (
         strstr (accept, 'text/rdf+n3') is not null or
         strstr (accept, 'text/rdf+ttl') is not null or
+        strstr (accept, 'text/turtle') is not null or
         strstr (accept, 'application/turtle') is not null or
         strstr (accept, 'application/x-turtle') is not null or
         (accept = 'auto') )
@@ -1217,6 +1238,8 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
             ret_mime := 'text/rdf+n3';
           else if (strstr (accept, 'text/rdf+ttl') is not null)
             ret_mime := 'text/rdf+ttl';
+          else if (strstr (accept, 'text/turtle') is not null)
+            ret_mime := 'text/turtle';
           else if (strstr (accept, 'application/turtle') is not null)
             ret_mime := 'application/turtle';
           else if (strstr (accept, 'application/x-turtle') is not null)
@@ -1302,6 +1325,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       if (
         strstr (accept, 'text/rdf+n3') is not null or
         strstr (accept, 'text/rdf+ttl') is not null or
+        strstr (accept, 'text/turtle') is not null or
         strstr (accept, 'application/turtle') is not null or
         strstr (accept, 'application/x-turtle') is not null or
         (accept = 'auto') )
@@ -1310,6 +1334,8 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
             ret_mime := 'text/rdf+n3';
           else if (strstr (accept, 'text/rdf+ttl') is not null)
             ret_mime := 'text/rdf+ttl';
+          else if (strstr (accept, 'text/turtle') is not null)
+            ret_mime := 'text/turtle';
           else if (strstr (accept, 'application/turtle') is not null)
             ret_mime := 'application/turtle';
           else if (strstr (accept, 'application/x-turtle') is not null)
@@ -1374,6 +1400,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       if (
         strstr (accept, 'text/rdf+n3') is not null or
         strstr (accept, 'text/rdf+ttl') is not null or
+        strstr (accept, 'text/turtle') is not null or
         strstr (accept, 'application/turtle') is not null or
         strstr (accept, 'application/x-turtle') is not null or
         (accept = 'auto') )
@@ -1382,6 +1409,8 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
             ret_mime := 'text/rdf+n3';
           else if (strstr (accept, 'text/rdf+ttl') is not null)
             ret_mime := 'text/rdf+ttl';
+          else if (strstr (accept, 'text/turtle') is not null)
+            ret_mime := 'text/turtle';
           else if (strstr (accept, 'application/turtle') is not null)
             ret_mime := 'application/turtle';
           else if (strstr (accept, 'application/x-turtle') is not null)
@@ -1415,7 +1444,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
 
 body_complete:
   if (add_http_headers)
-    http_header ('Content-Type: ' || ret_mime || '; charset=UTF-8\r\n');
+    http_header (coalesce (http_header_get (), '') || 'Content-Type: ' || ret_mime || '; charset=UTF-8\r\n');
   return ret_mime;
 }
 ;
@@ -2156,7 +2185,7 @@ host_found:
   metas := null;
   rset := null;
 
-  if (client_supports_partial_res) -- partial results do not work with chunked encoding
+  if (not client_supports_partial_res) -- partial results do not work with chunked encoding
     {
     -- No need to choose accurately if there are no variants.
     -- Disabled due to empty results:
@@ -2167,27 +2196,30 @@ host_found:
     ----      else if (accept='application/rdf+xml')
     ----        full_query := 'define output:format "HTTP+RDF/XML application/rdf+xml" ' || full_query;
     --    }
+    --  else
     -- No need to choose accurately if there is the best variant.
     -- Disabled due to empty results:
     --    {
-    --      declare fmtxml, fmtttl varchar;
-    --      if (strstr (accept, 'application/sparql-results+xml') is not null)
-    --        fmtxml := '"HTTP+XML application/sparql-results+xml" ';
-    --      if (strstr (accept, 'text/rdf+n3') is not null)
-    --        fmtttl := '"HTTP+TTL text/rdf+n3" ';
-    --      else if (strstr (accept, 'text/rdf+ttl') is not null)
-    --        fmtttl := '"HTTP+TTL text/rdf+ttl" ';
-    --      else if (strstr (accept, 'application/turtle') is not null)
-    --        fmtttl := '"HTTP+TTL application/turtle" ';
-    --      else if (strstr (accept, 'application/x-turtle') is not null)
-    --        fmtttl := '"HTTP+TTL application/x-turtle" ';
-    --      if (isstring (fmtttl))
-    --        {
-    --          if (isstring (fmtxml))
-    --            full_query := 'define output:format ' || fmtxml || 'define output:dict-format ' || fmtttl || full_query;
-    --          else
-    --            full_query := 'define output:format ' || fmtttl || full_query;
-    --        }
+          declare fmtxml, fmtttl varchar;
+          if (strstr (accept, 'application/sparql-results+xml') is not null)
+            fmtxml := '"HTTP+XML application/sparql-results+xml" ';
+          if (strstr (accept, 'text/rdf+n3') is not null)
+            fmtttl := '"HTTP+TTL text/rdf+n3" ';
+          else if (strstr (accept, 'text/rdf+ttl') is not null)
+            fmtttl := '"HTTP+TTL text/rdf+ttl" ';
+          else if (strstr (accept, 'text/turtle') is not null)
+            fmtttl := '"HTTP+TTL text/turtle" ';
+          else if (strstr (accept, 'application/turtle') is not null)
+            fmtttl := '"HTTP+TTL application/turtle" ';
+          else if (strstr (accept, 'application/x-turtle') is not null)
+            fmtttl := '"HTTP+TTL application/x-turtle" ';
+          if (isstring (fmtttl))
+            {
+              if (isstring (fmtxml))
+                full_query := 'define output:format ' || fmtxml || 'define output:dict-format ' || fmtttl || full_query;
+              else
+                full_query := 'define output:format ' || fmtttl || full_query;
+            }
     --    }
     ;
     }
@@ -2197,7 +2229,8 @@ host_found:
   commit work;
   if (client_supports_partial_res and (timeout > 0))
     {
-      set RESULT_TIMEOUT = coalesce (timeout, hard_timeout);
+      set RESULT_TIMEOUT = timeout;
+      -- dbg_obj_princ ('anytime timeout is set to', timeout);
       set TRANSACTION_TIMEOUT=timeout + 10000;
     }
   else if (hard_timeout >= 1000)
@@ -2208,7 +2241,7 @@ host_found:
   start_time := msec_time();
   exec ( concat ('sparql ', full_query), state, msg, qry_params, vector ('max_rows', maxrows, 'use_cache', 1), metas, rset);
   commit work;
-  -- dbg_obj_princ ('exec metas=', metas);
+  -- dbg_obj_princ ('exec metas=', metas, ', state=', state, ', msg=', msg);
   if (state = '00000')
     goto write_results;
   if (state = 'S1TAT')
@@ -2237,7 +2270,9 @@ host_found:
       return;
     }
 write_results:
-  if ((1 <> length (metas[0])) or ('aggret-0' <> metas[0][0][0]))
+  if ((1 = length (metas[0])) and ('aggret-0' = metas[0][0][0]))
+    return;
+  else
     {
       declare status any;
       if (isinteger (msg))
@@ -2338,11 +2373,11 @@ create procedure DB.DBA.SPARQL_ROUTE_DICT_CONTENT_DAV (
             order by (str(?s)) (str(?p)) ) as sub );
       if ('application/rdf+xml' = mime)
         DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 1, out_ses);
-      else if ('text/rdf+n3' = mime)
+      else if (('text/rdf+n3' = mime) or ('text/rdf+ttl' = mime) or ('text/rdf+turtle' = mime))
         DB.DBA.RDF_TRIPLES_TO_TTL (triples, out_ses);
       else if ('text/plain' = mime)
         DB.DBA.RDF_TRIPLES_TO_NT (triples, out_ses);
-      else if ('application/json' = mime)
+      else if (('application/json' = mime) or ('application/rdf+json' = mime) or ('application/x-rdf+json' = mime))
         DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (triples, out_ses);
       rc := DB.DBA.DAV_RES_UPLOAD (split, out_ses, mime, old_perms, old_uid, old_gid, uid, pwd);
       if (isinteger (rc) and rc < 0)
@@ -2398,6 +2433,8 @@ DB.DBA.http_rq_file_handler (in content any, in params any, in lines any, inout 
       strcasestr (accept, 'application/json') is not null or
       strcasestr (accept, 'application/sparql-results+xml') is not null or
       strcasestr (accept, 'text/rdf+n3') is not null or
+      strcasestr (accept, 'text/rdf+ttl') is not null or
+      strcasestr (accept, 'text/rdf+turtle') is not null or
       strcasestr (accept, 'application/rdf+xml') is not null or
       strcasestr (accept, 'application/javascript') is not null or
       strcasestr (accept, 'application/soap+xml') is not null or
