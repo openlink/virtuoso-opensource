@@ -444,12 +444,12 @@ key_migrate_to (dbe_key_t * key)
   if (!next)
     return NULL;
   return sch_id_to_key (wi_inst.wi_schema, next);
-	    }
+}
 
 
 int
 key_is_recoverable (key_id_t key_id)
-	    {
+{
   dbe_key_t * migr, * key = sch_id_to_key (wi_inst.wi_schema, key_id);
   if (!key)
       return 0;
@@ -469,12 +469,12 @@ key_is_recoverable (key_id_t key_id)
     }
   END_DO_SET();
 	  return 0;
-	}
+}
 
 
 void
 row_log (it_cursor_t * itc, buffer_desc_t * buf, int map_pos, dbe_key_t * row_key, row_delta_t * rd)
-            {
+{
   dtp_t temp[4096];
   if (row_key->key_is_bitmap)
             {

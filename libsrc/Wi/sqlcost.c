@@ -2144,7 +2144,7 @@ dfe_top_discount (df_elt_t * dfe, float * u1, float * a1)
 	      else
 		*a1 = 1; /*for scalar subq */
 	    }
-	}
+}
 
 
 float 

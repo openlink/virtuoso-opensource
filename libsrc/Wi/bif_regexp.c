@@ -170,7 +170,7 @@ regexp_optchars_to_bits (const char *strg)
         case 'i': case 'I': res |= PCRE_CASELESS; break;
         case 'm': case 'M': res |= PCRE_MULTILINE; break;
         case 's': case 'S': res |= PCRE_DOTALL; break;
-        /*
+/*
 #define PCRE_EXTENDED           0x0008
 #define PCRE_ANCHORED           0x0010
 #define PCRE_DOLLAR_ENDONLY     0x0020

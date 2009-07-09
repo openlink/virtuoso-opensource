@@ -1467,7 +1467,7 @@ lt_nic_id_name (lock_trx_t * lt, name_id_cache_t * nic, boxint id)
       caddr_t name = nic_id_name (lt_nic, id);
       if (name)
 	return name;
-}
+    }
   return nic_id_name (nic, id);
 }
 
@@ -2604,7 +2604,7 @@ rdf_obj_ft_rule_iri_hkey_hash (caddr_t p_data)
   caddr_t p_box = ht->hkey_iri_p;
   id_hashed_key_t hash = (ht->hkey_g & ID_HASHED_KEY_MASK);
   if (p_box)
-{
+    {
       BYTE_BUFFER_HASH (hash, p_box, box_length_inline (p_box) - 1);
     }
   return hash & ID_HASHED_KEY_MASK;

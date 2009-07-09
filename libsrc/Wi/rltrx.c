@@ -1609,7 +1609,7 @@ key_hash_eq (buffer_desc_t * buf1, db_buf_t row1, db_buf_t row2, dbe_key_t * key
 	return 0;
     }
   return 1;
-}
+  }
 }
 
 

@@ -1764,7 +1764,7 @@ sparp_restr_of_union_eq_from_connected_subvalues (sparp_t *sparp, sparp_equiv_t 
 
 void
 sparp_restr_of_join_eq_from_connected_subvalue (sparp_t *sparp, sparp_equiv_t *eq, sparp_equiv_t *sub_eq)
-    {
+{
       SPART *sub_gp = sub_eq->e_gp;
       if (OPTIONAL_L == sub_gp->_.gp.subtype)
         {
@@ -1776,7 +1776,7 @@ sparp_restr_of_join_eq_from_connected_subvalue (sparp_t *sparp, sparp_equiv_t *e
       else
         if (SPARP_EQ_IS_ASSIGNED_LOCALLY (sub_eq))
           sparp_equiv_tighten (sparp, eq, &(sub_eq->e_rvr), ~0);
-    }
+}
 
 void
 sparp_restr_of_join_eq_from_connected_subvalues (sparp_t *sparp, sparp_equiv_t *eq)
@@ -3226,7 +3226,7 @@ just_remove_braces:
           memb_ctr += sub_count;
           sparp_gp_detach_member (sparp, parent_gp, memb_ctr, NULL);
         }
-    }
+}
 
 void
 sparp_set_triple_selid_and_tabid (sparp_t *sparp, SPART *triple, caddr_t new_selid, caddr_t new_tabid)

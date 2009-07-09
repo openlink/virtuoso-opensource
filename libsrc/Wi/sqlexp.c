@@ -1573,7 +1573,7 @@ ins_assigned (instruction_t * ins, dk_set_t * res)
 	      END_DO_BOX;
 	    }
 	}
-    }
+}
 
 dk_set_t
 cv_assigned_slots (code_vec_t cv)

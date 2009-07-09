@@ -2337,12 +2337,18 @@ create procedure DB.DBA.RDF_LONG_TO_TTL (inout obj any, inout ses any)
   else if (__tag of rdf_box = __tag (obj))
     {
       http ('"', ses);
-      if (__tag of varchar = rdf_box_data_tag (obj))
+      if (rdf_box_data_tag (obj) in (__tag of varchar, __tag of long varchar, __tag of nvarchar, __tag of long nvarchar, 185))
         http_escape (__rdf_sqlval_of_obj (obj, 1), 11, ses, 1, 1);
       else if (__tag of datetime = rdf_box_data_tag (obj))
         __rdf_long_to_ttl (obj, ses);
       else if (__tag of XML = rdf_box_data_tag (obj))
         http_escape (serialize_to_UTF8_xml (__rdf_sqlval_of_obj (obj, 1)), 11, ses, 1, 1);
+      else if (__tag of varbinary = rdf_box_data_tag (obj))
+        {
+          http ('"', ses);
+          http_escape (__rdf_sqlval_of_obj (obj, 1), 11, ses, 0, 0);
+          http ('" ', ses);
+        }
       else
         http_escape (cast (__rdf_sqlval_of_obj (obj, 1) as varchar), 11, ses, 1, 1);
       if (257 <> rdf_box_type (obj))
@@ -2376,6 +2382,12 @@ create procedure DB.DBA.RDF_LONG_TO_TTL (inout obj any, inout ses any)
           http_escape (obj, 11, ses, 1, 1);
           http ('" ', ses);
         }
+    }
+  else if (__tag (obj) in (__tag of long varchar, __tag of nvarchar, __tag of long nvarchar, 185))
+    {
+      http ('"', ses);
+      http_escape (obj, 11, ses, 1, 1);
+      http ('" ', ses);
     }
   else if (__tag of datetime = rdf_box_data_tag (obj))
     {

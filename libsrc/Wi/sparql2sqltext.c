@@ -904,7 +904,7 @@ void ssg_print_tmpl (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, ccaddr_t tm
           if ((NULL != tree->_.retval.triple) && (SPART_TRIPLE_FIELDS_COUNT > tree->_.retval.tr_idx))
             {
               quad_map_t *qm = tree->_.retval.triple->_.triple.tc_list[0]->tc_qm;
-              qm_val = SPARP_FIELD_QMV_OF_QM (qm,tree->_.retval.tr_idx);
+              qm_val = SPARP_FIELD_QMV_OF_QM (qm, tree->_.retval.tr_idx);
             }
         }
     }
@@ -4626,7 +4626,7 @@ Maybe the best thing is to prohibit seealso declarations in subqueries at all.
             ssg_print_where_or_and (ssg, "'any' variable is a literal");
             ssg_print_tmpl (ssg, field->qmvFormat, field->qmvFormat->qmfIslitOfShortTmpl, tabid, field, fld_if_outer, NULL_ASNAME);
           }
-        /*!!! TBD: checks for type, lang */
+/*!!! TBD: checks for type, lang */
 }
 
 void
@@ -4955,7 +4955,7 @@ write_assuffix:
 
 void
 ssg_print_nice_equality_for_var_and_eq_fixed_val (spar_sqlgen_t *ssg, rdf_val_range_t *rvr, SPART *var, SPART *var_triple)
-        {
+{
           ssg_valmode_t vmode;
           SPART_buf var_rv_buf/*, glob_rv_buf*/;
           SPART *var_rv/*, *glob_rv*/;
@@ -6835,7 +6835,7 @@ retval_list_complete:
       idx_of_last_optional_in_member = -1;
       for (itm_idx = itm_count; itm_idx--; /*no step*/)
         {
-          SPART *itm = member->_.gp.members [itm_idx];
+          SPART *itm = member->_.gp.members[itm_idx];
           if ((SPAR_GP == SPART_TYPE(itm)) && (OPTIONAL_L == itm->_.gp.subtype))
                 {
               idx_of_last_optional_in_member = itm_idx;

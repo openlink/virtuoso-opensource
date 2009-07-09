@@ -115,7 +115,7 @@ page_gap_length (db_buf_t page, row_size_t pos)
 	  return n;
     }
       if (n == prev_n) STRUCTURE_FAULT1 ("zero length gap on page");
-}
+    }
 }
 
 int
@@ -566,7 +566,7 @@ ins_leaves_check (buffer_desc_t * buf)
 void
 itc_insert_dv (it_cursor_t * it, buffer_desc_t ** buf_ret, row_delta_t * rd,
     int is_recursive, row_lock_t * new_rl)
-	{
+{
   rd->rd_key = it->itc_insert_key;
   rd->rd_leaf = 0;
   rd->rd_op = RD_INSERT;
@@ -821,7 +821,7 @@ itc_delete (it_cursor_t * itc, buffer_desc_t ** buf_ret, int maybe_blobs)
   if (maybe_blobs)
     {
       itc_delete_blobs (itc, buf);
-}
+    }
 }
 
 
@@ -849,7 +849,7 @@ itc_commit_delete (it_cursor_t * it, buffer_desc_t ** buf_ret, int pa_stay)
   if (it->itc_buf)
     *buf_ret = it->itc_buf;
   it->itc_buf = NULL;
-    }
+}
 
 
 typedef struct page_rel_s
@@ -876,7 +876,7 @@ typedef struct page_rel_s
 
 void
 pr_free (page_rel_t * pr, int pr_fill, int leave_bufs)
-	{
+{
   int inx;
   if (leave_bufs)
 	    {
@@ -885,7 +885,7 @@ pr_free (page_rel_t * pr, int pr_fill, int leave_bufs)
 	  page_leave_outside_map (pr[inx].pr_buf);
 	    }
 	}
-    }
+}
 
 
 extern long ac_pages_in;
@@ -895,7 +895,7 @@ extern long ac_n_busy;
 
 int
 itc_compact (it_cursor_t * itc, buffer_desc_t * parent, page_rel_t * pr, int pr_fill, int target_fill, int *pos_ret)
-    {
+{
   dp_addr_t prev_dp;
   index_tree_t *it = itc->itc_tree;
   int inx, n_leaves = 0, n_left;

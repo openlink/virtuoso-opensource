@@ -458,17 +458,17 @@ typedef struct uc_insert_s
 
 void
 rl_add_cpt_wait (row_lock_t * rl, it_cursor_t * wait)
-    {
+{
   it_cursor_t ** prev = &rl->pl_waiting;
   wait->itc_next_on_lock = NULL;
   while (*prev)
     prev = &(*prev)->itc_next_on_lock;
   *prev = wait;
-    }
+}
 
 void
 page_lock_to_row_locks (buffer_desc_t * buf)
-    {
+{
   /* each row gets its own lock owned by the pl excl owner.  Waits are divided.  An itc at end will wait for the first rl but be marked at end.  */
   it_cursor_t * waiting;
   page_lock_t * pl = buf->bd_pl;
@@ -497,7 +497,7 @@ page_lock_to_row_locks (buffer_desc_t * buf)
       waiting = next;
 		}
   pl->pl_waiting = NULL;
-	    }
+}
 
 
 row_lock_t *
@@ -570,7 +570,7 @@ cpt_ins_image (buffer_desc_t * buf, int map_pos)
       }
   dk_free ((caddr_t)rbe, sizeof (rb_entry_t));
   lt_rb_check (wi_inst.wi_cpt_lt);
-    }
+}
 
 
 void
@@ -644,7 +644,7 @@ lt_all_visited (lock_trx_t * lt, dk_hash_t * visited)
   END_DO_HT;
   LEAVE_LT_LOCKS (lt);
 	return 1;
-    }
+}
 
 
 void
@@ -668,7 +668,7 @@ pl_cpt_rollback_page (page_lock_t * pl, it_cursor_t * itc)
       TC (tc_release_pl_on_deleted_dp);
       ITC_LEAVE_MAPS (itc);
       return;
-}
+    }
 
   itc->itc_page = pl->pl_page;
   if (PL_IS_PAGE (pl))
@@ -700,7 +700,7 @@ pl_cpt_rollback_page (page_lock_t * pl, it_cursor_t * itc)
     buf_sort ((buffer_desc_t **) rds, BOX_ELEMENTS (rds), (sort_key_func_t) rd_pos_key);
   page_apply (itc, buf, BOX_ELEMENTS (rds), rds, PA_MODIFY);
   rd_list_free (rds);
-	}
+}
 
 
 dk_set_t
@@ -746,11 +746,11 @@ cpt_lt_rollback (lock_trx_t * lt)
       dk_set_free (locks);
     } while (!lt_all_visited (lt, visited));
   hash_table_free (visited);
-	}
+}
 
 void
 cpt_uncommitted ()
-	{
+{
   if (!wi_inst.wi_cpt_lt)
 	{
       wi_inst.wi_cpt_lt = lt_allocate ();
@@ -773,12 +773,12 @@ cpt_uncommitted ()
 	cpt_lt_rollback (lt);
 		}
   END_DO_SET();
-	    }
+}
 
 
 int
 it_all_locks_visited (index_tree_t * it, dk_hash_t * visited)
-	    {
+{
   int inx;
   for (inx = 0; inx < IT_N_MAPS; inx++)
     {
@@ -800,7 +800,7 @@ it_all_locks_visited (index_tree_t * it, dk_hash_t * visited)
 
 void
 cpt_restore_row (buffer_desc_t * buf, int pos, dk_set_t * rd_list)
-    {
+{
   key_ver_t kv;
   db_buf_t row;
   if (ITC_AT_END == pos)
@@ -826,12 +826,12 @@ cpt_restore_row (buffer_desc_t * buf, int pos, dk_set_t * rd_list)
 	  dk_set_push (rd_list, (void*) rd);
 	}
     }
-    }
+}
 
 
 void
 cpt_pl_restore (page_lock_t * pl, it_cursor_t * itc)
-    {
+{
   /* take the after image from the rb state of wi_cpt_lt to put the uncommitted state back */
   buffer_desc_t * buf;
   dk_set_t rd_list = NULL;
@@ -989,7 +989,7 @@ cpt_uncommitted_blobs (int clear)
 	  END_DO_HT;
     }
     }
-  END_DO_SET();
+  END_DO_SET ();
 }
 
 
@@ -999,7 +999,7 @@ dk_hash_t * cpt_remap_reverse;
 
 void
 buf_unremap (buffer_desc_t * buf)
-    {
+{
   extent_map_t * em = DBS_DP_TO_EM (cpt_dbs, buf->bd_physical_page);
   dp_addr_t phys_dp = buf->bd_physical_page;
   DBG_PT_PRINTF ((" cpt unremapped L=%d P=%d \n", buf->bd_page, buf->bd_physical_page));
@@ -1012,7 +1012,7 @@ buf_unremap (buffer_desc_t * buf)
 	{
       log_error ("Suspect to have page unremapped from %d to free page L=%d", phys_dp, buf->bd_page);
 	}
-    }
+}
 
 
 
@@ -1021,7 +1021,7 @@ cpt_unremap_ram (int target)
 {
   /* take buffers that already happen to be in memory and unremap them, stop if quota met */
   DO_SET (index_tree_t *, it, &cpt_dbs->dbs_trees)
-{
+    {
       int inx;
       for (inx = 0; inx < IT_N_MAPS; inx++)
 	{
@@ -1035,7 +1035,7 @@ cpt_unremap_ram (int target)
 		    {
 		      mutex_leave (&it->it_maps[inx].itm_mtx);
 		      return;
-}
+		    }
 		}
 	    }
 	  END_DO_HT;
@@ -1213,7 +1213,7 @@ cpt_neodisk_page (const void *key, void *value)
   if (!physical)
     GPF_T1 ("Zero phys page");
   if (physical == DP_DELETED)
-{
+    {
       dp_addr_t cp_remap =
 	  (dp_addr_t) (uptrlong) gethash (DP_ADDR2VOID (logical), cpt_dbs->dbs_cpt_remap);
       if (cp_remap)
@@ -1252,7 +1252,7 @@ cpt_neodisk_page (const void *key, void *value)
 	  em_free_dp (it_from_g->it_extent_map, cp_remap, 0);
     }
       sethash (DP_ADDR2VOID (logical), cpt_dbs->dbs_cpt_remap, DP_ADDR2VOID (physical));
-}
+    }
 
   if (after_image)
     {
@@ -1377,7 +1377,7 @@ dbs_cache_check (dbe_storage_t * dbs, int mode)
 
 void
 bp_flush_all ()
-		    {
+{
 		      int inx;
   DO_BOX (buffer_pool_t *, bp, inx, wi_inst.wi_bps)
 			    {
@@ -1386,12 +1386,12 @@ bp_flush_all ()
       LEAVE_BP (bp);
 			}
   END_DO_BOX;
-		    }
+}
 
 
 void
 dbs_recov_write_page_set (dbe_storage_t * dbs, buffer_desc_t * buf)
-		    {
+{
   while (buf)
     {
       if (buf->bd_next)

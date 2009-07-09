@@ -1103,7 +1103,7 @@ page_find_leaf (buffer_desc_t * buf, dp_addr_t lf)
 	  row_ver_t rv = IE_ROW_VERSION (row);
 	  if (lf == LONG_REF (row + key->key_key_leaf[rv]))
 	    return inx;
-}
+	}
       if (KV_LEFT_DUMMY == kv)
     {
 	  if (lf == LONG_REF (row + LD_LEAF))
