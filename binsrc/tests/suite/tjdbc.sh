@@ -45,7 +45,7 @@ START_SERVER $PORT 1000
 
 ECHO "STARTED: JDBC 2 Test suite"
 cd $JDBCDIR
-sh ./test2.sh "jdbc:virtuoso://localhost:$PORT" > jdbc.out 2>&1
+sh ./test2.sh "jdbc:virtuoso://localhost:$PORT/" > jdbc.out 2>&1
 cd $CURRDIR
 
 passed=`grep "PASSED" $JDBCDIR/jdbc.out`
@@ -85,7 +85,7 @@ START_SERVER $PORT 1000
 
 ECHO "STARTED: JDBC 3 Test suite"
 cd $JDBCDIR
-sh ./test3.sh "jdbc:virtuoso://localhost:$PORT" > jdbc3.out 2>&1
+sh ./test3.sh "jdbc:virtuoso://localhost:$PORT/" > jdbc3.out 2>&1
 cd $CURRDIR
 
 passed=`grep "PASSED" $JDBCDIR/jdbc3.out`

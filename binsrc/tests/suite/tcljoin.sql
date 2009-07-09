@@ -66,6 +66,14 @@ echo both $if $equ $last[2] 5 "PASSED" "***FAILED";
 echo both ": cl oj 2nd key 3-2\n";
 
 
+select count (a.fi2), count (b.fi2), count (b.string1)  from t1 a left join t1 b table option (index t1) on b.fi2 = a.fi2 + 5 where a.fi2 > 110 option (loop);
+echo both $if $equ $last[1] 10 "PASSED" "***FAILED";
+echo both ": cl oj flood key 1-1\n";
+echo both $if $equ $last[2] 5 "PASSED" "***FAILED";
+echo both ": cl oj flood join key 1-2\n";
+
+
+
 select a.fi2, b.fi2, b.string1  from t1 a left join t1 b table option (loop, index fi2) on b.fi2 in (a.fi2 + 5, a.fi2 + 6)  where a.fi2 > 110 option (loop);
 echo both $if $equ $rowcnt 13 "PASSED" "***FAILED";
 echo both ": cl oj 2nd key in pred 1: " $rowcnt " rows\n";
@@ -118,3 +126,5 @@ create procedure cl_oj ()
 	       }
 }
 
+-- a non join outer, the outer subq will go first since card known to be 0
+select a.row_no, b.row_no from t1 a left join (select distinct row_no, o  from t1, rdf_quad where fi2 = -1 and s = iri_to_id ('ff', 0)) b on 1=1 where a.fi2 < 30;

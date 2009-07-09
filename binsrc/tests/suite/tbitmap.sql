@@ -5,6 +5,14 @@ create table tb (id int primary key, k1 int, k2 int);
 
 create bitmap index k1 on tb (k1);
 
+
+create procedure bmck (in n int := 0)
+{
+  --return;
+  if ((select count (*) from tb table option (index tb)) <> (select count (*) from tb table option (index k1)))
+	signal  ('BMFUP', sprintf ('bm inx out of whack %d', n));
+}
+
 insert into tb values (10, 11, 0);
 insert into tb values (9, 11, 0);
 
@@ -45,16 +53,18 @@ insert into tb values (1000001, 14, 0);
 insert into tb values (3000000, 13, 0);
 
 
-
+bmck (0);
 
 bins (12, start => 30000, n => 600, step => 10);
 bins (12, start => 30001, n => 600, step => 10);
 insert into tb values (10000, 12, 0);
 
+bmck (1);
 
 bins (12, start => 60001, n => 100, step => 10);
 bins (12, start => 82000, n => 512, step => 1);
 
+bmck (2);
 
 select count (id) from tb table option (index k1) where k1 = 12;
 select count (id) from tb table option (index primary key) where k1 = 12;
@@ -66,6 +76,8 @@ select count (*) from tb a table option (index primary key) where exists (select
 
 select top 5 * from tb table option (index k1) where id < 15000 and k1 = 12 order by id desc;
 select top 5 * from tb table option (index k1) where id > 15000 and k1 = 12 order by id desc;
+
+bmck (3);
 
 select top 5 * from tb table option (index k1) where   id > 32900 and id < 82003 and k1 = 12 order by id desc;
 select top 5 * from tb table option (index k1) where   id > 32900 and id < 82003 and k1 = 12 order by id;
@@ -109,6 +121,8 @@ echo both $if $equ $rowcnt 704 "PASSED" "***FAILED";
 echo both ": bm select of next in  order with gt\n";
 
 
+bmck (4);
+
 select id, k1 from tb a table option (index primary  key) where   id + 1 <> (select b.id from tb b table option (index k1) where b.k1 = a.k1 and b.id >= a.id + 1 and b.id < a.id + 10  order by b.id);
 echo both $if $equ $rowcnt 599 "PASSED" "***FAILED";
 echo both ": bm select of next in  order with gte and range\n";
@@ -122,19 +136,24 @@ select top 10 id, k1 from tb a table option (index primary  key) where   id + 1 
 echo both $if $equ $last[1] 30061 "PASSED" "***FAILED";
 echo both ": last of select next in bm order.\n";
 
+bmck (5);
 
 
 set autocommit manual;
 delete from tb;
 rollback work;
 
+bmck (6);
+
 update tb set k1 = 20;
 select distinct k1 from tb table option (index k1);
 echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
 echo both ": distinct k1 after update.\n";
 
+bmck (7);
 rollback work;
 
+bmck (9);
 select distinct k1 from tb table option (index k1);
 
 --echo both $if $equ $rowcnt 4 "PASSED" "***FAILED";
@@ -192,9 +211,13 @@ bins (100,1024000 + 8000, 1, 2);
 echo both $if $equ $sqlstate OK "PASSED" "***FAILED";
 echo both ": ins at end of one less than full array 2\n";
 
+bmck (10);
+
 select count (*) from tb where k1 = 100;
 echo both $if $equ $last[1] 513 "PASSED" "***FAILED";
 echo both ": rows w k1 100\n";
+
+bmck (11);
 
 
 -- delete on bitmap index
@@ -211,4 +234,29 @@ delete from bmdel where id3 = 1;
 select * from bmdel;
 echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
 echo both " after delete on bitmap index table contains " $rowcnt " rows\n";
+
+
+bmck (12);
+
+update tb set k1 = (select min (id) from tb);
+
+bmck (13);
+
+set autocommit manual;
+update tb set k1 = id;
+bmck (14);
+rollback work;
+
+bmck (15);
+
+set autocommit manual;
+update tb set k1 = id;
+bmck (16);
+update tb set k1 = 9;
+bmck (17);
+rollback work;
+
+bmck (18);
+echo both $if $equ $sqlstate OK "PASSED" "***FAILED";
+echo both ": bm and pk consistency\n";
 

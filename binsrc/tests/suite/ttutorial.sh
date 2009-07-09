@@ -119,7 +119,7 @@ cp tmp.ini $CFGFILE
 rm tmp.ini
 
 START_SERVER $PORT 1000 
-sleep 5
+sleep 1
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT EXEC="'status()'"
 if test $STATUS -ne 0
 then

@@ -75,7 +75,7 @@ RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < obackup1.sql
 
 while test -f "$LOCKFILE" 
 do
-	sleep 5
+	sleep 0.2
 done
 
 rm -f $DBLOGFILE $DBFILE
@@ -93,7 +93,7 @@ RUN $ISQL $DSN '"EXEC=shutdown();"' ERRORS=STDOUT
 
 while test -f "$LOCKFILE" 
 do
-	sleep 5
+	sleep 0.2
 done
 
 rm -f $DBLOGFILE

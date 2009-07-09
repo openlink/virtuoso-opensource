@@ -212,3 +212,20 @@ echo both ": union all\n";
 -- echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
 -- echo both ": except \n";
 
+select fi2 from t1 a where a.fi2 in (select b.fi2 from t1 b where b.fi2 = a.fi2 group by b.fi2 having sum (b.fi2) > 80) option (do not loop exists);
+echo both $if $equ $rowcnt 40 "PASSED" "***FAILED";
+echo both ": having over group by agg in existence subq, the gb is done by the partitions, no looping of exists\n";
+
+select fi2 from t1 a where a.fi2 in (select b.row_no - 1 from t1 b where b.fi2 >= a.fi2 + 1 and b.fi2 < a.fi2 + 2 group by b.row_no - 1 having sum (b.row_no) > 80) option (do not loop exists);
+echo both $if $equ $rowcnt 39 "PASSED" "***FAILED";
+echo both ": having over group by agg in existence subq, the gb is summed on coordinator, no looping of exists\n";
+
+
+select c.fi2, sum (c.row_no) from t1 a, t1 b table option (hash), t1 c where b.fi2 = a.fi2 + 1 and c.fi2 = b.fi2  group by c.fi2 order by 2 desc option (order);
+echo both $if $equ $rowcnt 99 "PASSED" "***FAILED";
+echo both ": final partitioned gb oby, many batches, one set\n";
+
+
+select c.fi2, sum (c.row_no) from t1 a, t1 b table option (hash), t1 d, t1 c where b.fi2 = a.fi2 + 1 and d.fi2 = b.fi2 and c.fi2 = d.fi2 + 1 group by c.fi2 order by 2 desc option (order);
+echo both $if $equ $rowcnt 98 "PASSED" "***FAILED";
+echo both ": final dfg w partitioned gb oby, many batches, one set\n";

@@ -2598,7 +2598,7 @@ cp -f ../tvspxex.awk .
 MakeConfig 
 CHECK_PORT $TPORT
 START_SERVER $DSN 1000
-sleep 4
+sleep 1
 
 
 cd $TESTDIR

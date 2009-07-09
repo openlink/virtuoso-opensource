@@ -125,3 +125,18 @@ at_upd ();
 -- echo both ": Anytime  proc update\n";
 
 
+
+
+-- try with partitioned gb/oby
+
+cl_exec ('__dbf_set (''timeout_resolution_usec'', 200000)');
+cl_exec ('__dbf_set (''timeout_resolution_sec'', 0)');
+
+set result_timeout = 500;
+-- timeout between the ssa iters 
+select top 20 a.fi2, count (*) from t1 a, t1 b where b.fi2 > a.fi2 group by a.fi2 order by count (*) + delay (0.05 + count (*) - count (*)) desc;
+
+-- timeout before the 1st ssa iter 
+
+select top 20 a.fi2, count (*) from t1 a, t1 b where b.fi2 > a.fi2 group by a.fi2 order by count (*) + delay (0.05 + count (*) - count (*)) desc;
+

@@ -93,7 +93,8 @@ echo both "Done str2ck 9\n";
 
 load tcptrb3.sql;
 
-drop table t1;
+drop 
+table t1;
 drop table t2;
 shutdown;
 

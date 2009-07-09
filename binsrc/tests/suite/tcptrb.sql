@@ -54,6 +54,11 @@ update T2 set epyter = make_string (1000) where row_no between 55000 and 55500;
 update t2 set epyter = make_string (100000) where row_no = 56000;
 update t2 set epyter = make_string (200000) where row_no = 56000;
 
+echo both "cpt intermediate\n";
+checkpoint &
+wait_for_children;
+
+
 str2ck ();
 echo both "done str2ck 4\n";
 

@@ -106,11 +106,12 @@ SHUTDOWN_SERVER
 START_SERVER $PORT 3000
 LOG "Next we do a checkpoint third time and then kill database server with"
 LOG "raw_exit() after which we should get Lost Connection to Server -error."
-RUN $ISQL $DSN '"EXEC=checkpoint; raw_exit();"' ERRORS=STDOUT
+#RUN $ISQL $DSN '"EXEC=checkpoint; raw_exit();"' ERRORS=STDOUT
+CHECKPOINT_SERVER
+STOP_SERVER
 sleep 5
 
-sleep 10
-
+s
 ### schema recovery test
 
 rm -rf new.*

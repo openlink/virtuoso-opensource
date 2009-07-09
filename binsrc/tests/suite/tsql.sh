@@ -1,4 +1,5 @@
 #!/bin/sh
+#  tsql.sh
 #
 #  $Id$
 #
@@ -175,6 +176,14 @@ then
     exit 1
 fi
 
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tjoin2.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tjoin2.sql"
+    exit 1
+fi
+
+
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tiri.sql
 if test $STATUS -ne 0
 then
@@ -316,6 +325,19 @@ then
 fi
 
 
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tclparts.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tanytime.sql"
+    exit 1
+fi
+
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tclcast.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tanytime.sql"
+    exit 1
+fi
 
 
 RUN $ISQL $DS1 '"EXEC=drop table T1;"' ERRORS=STDOUT

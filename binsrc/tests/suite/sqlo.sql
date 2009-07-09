@@ -33,7 +33,7 @@ SET ARGV[1] 0;
 drop view T1_V;
 drop index FI3 T1;
 update T1 set FI3 = ROW_NO;
-create unique index FI3 on T1 (FI3) partition (F3 int);
+create unique index FI3 on T1 (FI3) partition (Fi3 int);
 
 
 select KEY_TABLE from SYS_KEYS;
@@ -126,6 +126,9 @@ ECHO BOTH $IF $EQU $LAST[2] 1111 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": where FI3 between 100 and 110  order by STRING1 desc last row FI2=" $LAST[2] "\n";
 
+select STRING1, FI2 from T1 where FI3 between 2000 and 2010  order by STRING1 desc;
+echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
+echo both ": not exists and partitioned sort\n";
 
 select top 2 FS1 from T1 order by 1 - ROW_NO;
 ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
@@ -163,30 +166,33 @@ ECHO BOTH $IF $EQU $LAST[1] 30 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": select from subquery select from a subquery with where last row ff=" $LAST[1] "\n";
 
+set maxrows 0;
+
 explain ('select * from (select ROW_NO, ROW_NO + 1 as x  from T1  union select ROW_NO, ROW_NO + 2 from T1) un where un.ROW_NO < 30');
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": explain select from union subq with where clause in the topmost select STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
-select * from (select ROW_NO, ROW_NO + 1 as x  from T1  union select ROW_NO, ROW_NO + 2 from t1) un where un.ROW_NO < 30;
+select * from (select ROW_NO, ROW_NO + 1 as x, 1 as setno  from T1  union select ROW_NO, ROW_NO + 2, 2 as setno  from t1) un where un.ROW_NO < 30 order by setno, 2;
 ECHO BOTH $IF $EQU $LAST[1] 29 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": select * from union subq with where clause in the topmost select last row ROW_NO=" $LAST[1] "\n";
-ECHO BOTH $IF $EQU $LAST[2] 30 "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $LAST[2] 31 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": select * from union subq with where clause in the topmost select last row x=" $LAST[2] "\n";
 
-select x from (select ROW_NO, ROW_NO + 1 as x  from T1  union select ROW_NO, ROW_NO + 2 from t1) un where un.ROW_NO < 30;
-ECHO BOTH $IF $EQU $LAST[1] 30 "PASSED" "***FAILED";
+select x from (select ROW_NO, ROW_NO + 1 as x  from T1  union select ROW_NO, ROW_NO + 2 from t1) un where un.ROW_NO < 30 order by 1;
+ECHO BOTH $IF $EQU $LAST[1] 31 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": select * from union subq with where clause in the topmost select last row x=" $LAST[1] "\n";
 
-select x from (select ROW_NO, ROW_NO + 1 as x  from T1  union corresponding by (x) select ROW_NO, ROW_NO + 2 from T1) un where un.ROW_NO < 30;
-ECHO BOTH $IF $EQU $LAST[1] 30 "PASSED" "***FAILED";
+
+select x from (select ROW_NO, ROW_NO + 1 as x  from T1  union corresponding by (x) select ROW_NO, ROW_NO + 2 from T1) un where un.ROW_NO < 30 order by x;
+ECHO BOTH $IF $EQU $LAST[1] 31 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": select * from union corresponding by (x) subq with where clause in the topmost select last row x=" $LAST[1] "\n";
 
-select x from (select ROW_NO, ROW_NO + 1 as x  from T1  union all  select ROW_NO, ROW_NO + 2 from T1) un where un.ROW_NO < 30;
-ECHO BOTH $IF $EQU $LAST[1] 30 "PASSED" "***FAILED";
+select x from (select ROW_NO, ROW_NO + 1 as x  from T1  union all  select ROW_NO, ROW_NO + 2 from T1) un where un.ROW_NO < 30 order by x;
+ECHO BOTH $IF $EQU $LAST[1] 31 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": select * from union all subq with where clause in the topmost select last row x=" $LAST[1] "\n";
 
@@ -194,6 +200,8 @@ select sum (ROW_NO) / count (*) from T1;
 ECHO BOTH $IF $EQU $LAST[1] 519 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": select sum (ROW_NO) / count (*) returned " $LAST[1] "\n";
+
+set maxrows 10;
 
 select count (*) from T1 where ROW_NO > (select avg (ROW_NO) from T1);
 ECHO BOTH $IF $EQU $LAST[1] 500 "PASSED" "***FAILED";

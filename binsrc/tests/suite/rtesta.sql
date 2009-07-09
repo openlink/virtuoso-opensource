@@ -160,4 +160,6 @@ select count (*)  from (select * from r1..t1 union   select * from r1..t1) f;
 ECHO BOTH $IF $EQU $LAST[1] 1000 "PASSED" "***FAILED";
 ECHO BOTH ": count " $LAST[1] " count union r1..t1, r1..t1\n";
 
-
+select top 10 a.row_no, b.row_no from r1..t1 a, (select top 1 row_no from r1..t1) b where b.row_no between f (a.row_no - 1) and f (a.row_no + 1) option (order, loop);
+echo both $if $equ $rowcnt 10 "PASSED" "***FAILED";
+echo both ": arrayed subq with top\n";

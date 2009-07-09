@@ -20,10 +20,9 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #
-
-. ./test_fn.sh
-
+# 
 DSN=$PORT
+. ./test_fn.sh
 
 #PARAMETERS FOR HTTP TEST
 USERS=6
@@ -642,7 +641,7 @@ waitAll ()
    clients=1
    while [ "$clients" -gt "0" ]
      do
-       sleep 10
+       sleep 0.2
        clients=`ps -e | grep urlsimu | grep -v grep | wc -l`
 #     echo -e "Running clients $clients\r" 
      done 
@@ -801,7 +800,7 @@ case $1 in
      LOG "ODS & Blog2 VAD packages are not built"
    fi
    START_SERVER $PORT 1000
-   sleep 4
+   sleep 1
    if [ $BLOG_TEST -eq 1 ]
    then
        DoCommand $DSN "registry_set ('__blog_api_tests__', '1');" 

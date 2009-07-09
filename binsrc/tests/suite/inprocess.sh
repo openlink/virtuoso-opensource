@@ -1,5 +1,7 @@
 #!/bin/sh
 #
+#  inprocess.sh
+#
 #  $Id$
 #
 #  inprocess client tests

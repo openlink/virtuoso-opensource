@@ -20,9 +20,10 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #
-
+#  
 isql 1111 < ./tpminit.sql >tpm.out 
 
+ 
 ../tpcc 1111 dba dba r 1000000 1 40 &
 ../tpcc 1111 dba dba r 1000000 2 40 &
 ../tpcc 1111 dba dba r 1000000 3 40 &

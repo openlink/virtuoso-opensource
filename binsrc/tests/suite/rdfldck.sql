@@ -163,3 +163,33 @@ create procedure str_ns (in s varchar)
 }
 
 cl_exec ('__sequence_set (''RDF_RO_ID'', __sequence_set (''__MAX__RDF_RO_ID'',  0, 2), 1)');
+
+
+create procedure dups ()
+{
+  declare g1, s1,p1,o1 any;
+  declare cr cursor for select g,s,p,o from rdf_quad table option (index rdf_quad_opgs);
+  declare di, pg, ps,pp,po, k any;
+  open cr;
+  for (;;)
+    {
+      fetch cr into g1, s1, p1, o1;
+      if (pg <> g1 or p1 <> pp or o1 <> po)
+	{ 
+	di := dict_new ();
+	pg := g1; ps := s1; pp := p1; po := o1;
+	}
+    k := vector (g1, s1, p1, o1);
+      if (dict_get (di, k))
+	{
+	  dbg_obj_print (k);
+	  return;
+	}
+      dict_put (di, k, 1);
+    }
+}
+
+create table berlin (ro_id bigint primary key);
+
+insert into berlin select ro_id from rdf_obj where ro_val like '**berlin' or blob_to_string (ro_long) like '**berlin';
+

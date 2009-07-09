@@ -24,6 +24,9 @@ DROP TABLE T_LOC;
 
 CREATE TABLE T_LOC (S_DATE DATE, S_STATUS VARCHAR, S_NO VARCHAR);
 
+
+echo both "Joins with remotes and proc views rpjoin.sql\n";
+
 INSERT INTO T_LOC SELECT FDATE, substring (FS4, 1, 1), concat ('0102-', STRING1) FROM R1..T1 WHERE ROW_NO > 100 AND ROW_NO < 121;
 
 

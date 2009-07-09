@@ -60,6 +60,16 @@ select A.ROW_NO, B.ROW_NO from T1 A inner join T1 B on A.ROW_NO + 19 = B.ROW_NO;
 ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
 ECHO BOTH ": Inner  join  " $ROWCNT " rows\n";
 
+select a.row_no, b.row_no, c.row_no from t1 a left join (t1 b join t1 c on c.row_no = b.row_no + 5) on b.row_no = a.row_no + 5;
+select a.row_no, b.row_no, c.row_no from t1 a left join (t1 b left join t1 c on c.row_no = b.row_no + 5) on b.row_no = a.row_no + 5;
+
+select count (a.row_no), count (b.row_no), count (c.row_no) from t1 a left join (t1 b  join t1 c on c.row_no = b.row_no + 5) on b.row_no = a.row_no + 5;
+echo both $if $equ $last[1] 20 "PASSED" "***FAILED";
+echo both ": a left (b join c)\n";
+echo both $if $equ $last[2] 10 "PASSED" "***FAILED";
+echo both ": a left (b join c) 2\n";
+
+
 --
 -- syntax errors
 --

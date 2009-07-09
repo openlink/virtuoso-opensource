@@ -32,6 +32,7 @@ echo BOTH "STARTED: SQLO Remote test (sqlovdb.sql) PORT=" $U{PORT} " LOCALPORT="
 SET ARGV[0] 0;
 SET ARGV[1] 0;
 
+update t1 set fi2 = 1111;
 delete from R1..T1;
 insert into R1..T1 select * from T1;
 
@@ -360,9 +361,9 @@ create procedure test_vdb_pars1(in n integer)
 };
 
 explain ('select * from R1..PUPD_TEST');
-ECHO BOTH $IF $EQU $ROWCNT 5 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": Select from remote pass-through\n";
+--ECHO BOTH $IF $EQU $ROWCNT 5 "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": Select from remote pass-through\n";
 
 explain ('update R1..PUPD_TEST set ID = ID + ? where DATA = ?');
 ECHO BOTH $IF $EQU $ROWCNT 5 "PASSED" "***FAILED";

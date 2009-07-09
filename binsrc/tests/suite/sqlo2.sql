@@ -1130,7 +1130,7 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": B7074-3 : workaround for B7074-2 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
-drop table B9393;
+drop table B9383;
 create table B9383 (ID int primary key, DATA varchar);
 
 insert into B9383 (ID, DATA) values (1, 'cat');

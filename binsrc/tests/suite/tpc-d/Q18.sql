@@ -65,3 +65,103 @@ ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ":  Result from Q18 \n";
 
+
+
+
+delete from OUT_Q18;
+
+insert into OUT_Q18 select
+	c_name,
+	c_custkey,
+	o_orderkey,
+	o_orderdate,
+	o_totalprice,
+	sum(l_quantity)
+from
+	lineitem,
+	orders,
+	customer
+where
+	o_orderkey in (
+			select
+				l_orderkey
+			from
+				lineitem
+			group by
+				l_orderkey
+			having
+				sum(l_quantity) > 250
+			)
+	and c_custkey = o_custkey
+	and o_orderkey = l_orderkey
+group by
+	c_name,
+	c_custkey,
+	o_orderkey,
+	o_orderdate,
+	o_totalprice
+order by
+	o_totalprice desc,
+	o_orderdate option (loop exists);
+
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": Q18\n";
+
+select cmp ('MS_OUT_Q18', 'OUT_Q18');
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ":  Result from Q18 loop exists \n";
+
+delete from OUT_Q18;
+
+insert into OUT_Q18 select
+	c_name,
+	c_custkey,
+	o_orderkey,
+	o_orderdate,
+	o_totalprice,
+	sum(l_quantity)
+from
+	lineitem,
+	orders,
+	customer
+where
+	o_orderkey in (
+			select
+				l_orderkey
+			from
+				lineitem
+			group by
+				l_orderkey
+			having
+				sum(l_quantity) > 250
+			)
+	and c_custkey = o_custkey
+	and o_orderkey = l_orderkey
+group by
+	c_name,
+	c_custkey,
+	o_orderkey,
+	o_orderdate,
+	o_totalprice
+order by
+	o_totalprice desc,
+	o_orderdate option (do not loop exists);
+
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": Q18\n";
+
+select cmp ('MS_OUT_Q18', 'OUT_Q18');
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ":  Result from Q18 do not loop exists \
+n";
+
+
+
+
+
+
+

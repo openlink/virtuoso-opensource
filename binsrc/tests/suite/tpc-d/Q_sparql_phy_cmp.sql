@@ -21,10 +21,11 @@
 --  
 --  
 
-sparql clear graph <http://example.com/phys-tpcd>;
-
 create procedure fill_phys_tpcd ()
 {
+--  sparql clear graph <http://example.com/phys-tpcd>;
+  if (exists (sparql ask from <http://example.com/phys-tpcd> where {?s ?p ?o}))
+    return;
   log_enable (2, 1);
   sparql insert in graph <http://example.com/phys-tpcd> {?s ?p ?o} from <http://example.com/tpcd> { ?s ?p ?o };
   log_enable (1, 1);
@@ -90,15 +91,15 @@ select
 from <http://example.com/phys-tpcd>
 where {
   ?ps a tpcd:partsupp; tpcd:has_supplier ?supp; tpcd:has_part ?part .
-  ?supp+>tpcd:has_nation+>tpcd:has_region tpcd:name 'EUROPE' .
+  ?supp+>tpcd:has_nation+>tpcd:has_region tpcd:name "EUROPE" .
   ?part tpcd:size 15 .
   ?ps tpcd:supplycost ?minsc .
   { select ?part min(?ps+>tpcd:supplycost) as ?minsc
     where {
         ?ps a tpcd:partsupp; tpcd:has_part ?part; tpcd:has_supplier ?ms .
-        ?ms+>tpcd:has_nation+>tpcd:has_region tpcd:name 'EUROPE' .
+        ?ms+>tpcd:has_nation+>tpcd:has_region tpcd:name "EUROPE" .
       } }
-    filter (?part+>tpcd:type like '%BRASS') }
+    filter (?part+>tpcd:type like "%BRASS") }
 order by
   desc (?supp+>tpcd:acctbal)
   ?supp+>tpcd:has_nation+>tpcd:name
@@ -299,6 +300,7 @@ ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ":  Result from Q7 \n";
 
+disabled {
 delete from OUT_Q8;
 
 insert into OUT_Q8 select * from (
@@ -331,8 +333,7 @@ where {
                   (?ord+>tpcd:orderdate <= "1996-12-31"^^xsd:date) ) } } } } }
 order by
   ?o_year
-) as subq
-;
+) as subq;
 
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
@@ -342,7 +343,9 @@ select cmp ('MS_OUT_Q8', 'OUT_Q8');
 ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ":  Result from Q8 \n";
+};
 
+disabled {
 delete from OUT_Q9;
 
 insert into OUT_Q9 select * from (
@@ -369,8 +372,7 @@ where {
 order by
   ?nation
   desc (?o_year)
-) as subq
-;
+) as subq;
 
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
@@ -380,6 +382,7 @@ select cmp ('MS_OUT_Q9', 'OUT_Q9');
 ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ":  Result from Q9 \n";
+};
 
 disabled {
 delete from OUT_Q10;
@@ -854,6 +857,7 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ":  Result from Q20 \n";
 };
 
+disabled {
 delete from OUT_Q21;
 
 insert into OUT_Q21 select * from (
@@ -889,8 +893,7 @@ where
 order by
     desc (count(1))
     ?supp+>tpcd:name
-) as subq
-;
+) as subq;
 
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
@@ -900,6 +903,7 @@ select cmp ('MS_OUT_Q21', 'OUT_Q21');
 ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ":  Result from Q21 \n";
+};
 
 delete from OUT_Q22;
 

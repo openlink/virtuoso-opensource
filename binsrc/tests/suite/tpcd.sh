@@ -1,5 +1,7 @@
 #!/bin/sh
 #
+#  tpcd.sh
+#
 #  $Id$
 #
 #  TPC-D tests
@@ -81,8 +83,6 @@ then
     exit 1
 fi
 
-if [ ! -f ../../../autogen.sh ] # non-VOS
-then
 LOG
 LOG "Starting the server on $DS2"
 LOG
@@ -112,11 +112,6 @@ then
     LOG "***ABORTED: tpcd.sh: tpc-d/Q.sql"
     exit 1
 fi
-fi # END non-VOS
-
-if test -n "$TEST_SPARQL"
-then
-LOG "SPARQL test of mapped TPCD tables"
 RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpc-d/sql_rdf.sql
 if test $STATUS -ne 0
 then
@@ -141,22 +136,22 @@ then
     LOG "***ABORTED: tpcd.sh test -- tpc-d/Q_sparql_map_cmp.sql"
     exit 1
 fi
+RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpc-d/Q_sparql_map_translations.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tpcd.sh test -- tpc-d/Q_sparql_map_translations.sql"
+    exit 1
+fi
 RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpc-d/Q_sparql_map_endpoint.sql
 if test $STATUS -ne 0
 then
-    LOG "***ABORTED: tpcd.sh test -- tpc-d/Q_sparql_map_cmp.sql"
+    LOG "***ABORTED: tpcd.sh test -- tpc-d/Q_sparql_map_endpoint.sql"
     exit 1
 fi
 RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpc-d/Q_sparql_phy_cmp.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tpcd.sh test -- tpc-d/Q_sparql_phy_cmp.sql"
-    exit 1
-fi
-RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpc-d/Q_sparql_map_translations.sql
-if test $STATUS -ne 0
-then
-    LOG "***ABORTED: tpcd.sh test -- tpc-d/Q_sparql_map_translations.sql"
     exit 1
 fi
 
@@ -198,8 +193,6 @@ RUN $ISQL $DS2 '"EXEC=shutdown;"' ERRORS=STDOUT
 #  Cleanup
 #
 # rm -rf repl1 repl2
-cat $LOGFILE | grep -v 'ECHO BOTH \*\*\*FAILED;' > tmp.tmp
-mv tmp.tmp $LOGFILE
 
 CHECK_LOG
 BANNER "COMPLETED SERIES OF TPC-D TESTS (tpc-d.sh)"
