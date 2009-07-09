@@ -23,7 +23,7 @@ TOP=@TOP@
 
 SUBDIRS = . apps hosting services web xml
 
-if WITH_BPEL_VAD
+if WITH_TUTORIAL_VAD
 nodist_vad_DATA = tutorial_dav.vad
 endif
 
@@ -98,7 +98,8 @@ EXTRA_DIST= \
 	rdfview/*.xml \
 	rdfview/rd_v_1/*.sql \
 	rdfview/rd_v_1/*.xml \
-	rdfview/rd_v_1/rd_v_1.isparql \
+	rdfview/rd_v_1/*.owl \
+	rdfview/rd_v_1/*.isparql \
 	repl/*.css \
 	repl/*.xml \
 	repl/re_ds_1/*.sql \

@@ -23,8 +23,9 @@ TOP=@TOP@
 
 SUBDIRS = plugin
 
-
+if WITH_ODS_VAD
 nodist_vad_DATA = ods_wiki_dav.vad
+endif
 
 CLEANFILES = \
 	*.vad \

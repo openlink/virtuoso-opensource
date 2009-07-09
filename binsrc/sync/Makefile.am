@@ -21,7 +21,9 @@
 
 TOP=@TOP@
 
+if WITH_SYNCML_VAD
 nodist_vad_DATA	= syncml_dav.vad
+endif
 noinst_SCRIPTS	= make_vad.sh
 
 syncml_dav.vad: $(EXTRA_DIST)

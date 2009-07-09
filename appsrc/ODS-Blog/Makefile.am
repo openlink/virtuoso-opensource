@@ -21,7 +21,9 @@
 
 TOP=@TOP@
 
+if WITH_ODS_VAD
 nodist_vad_DATA = ods_blog_dav.vad
+endif
 
 CLEANFILES = \
 	*.vad \

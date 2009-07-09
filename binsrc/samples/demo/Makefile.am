@@ -20,8 +20,9 @@
 #  
 TOP=@TOP@
 
-#noinst_DATA = demo.db
+if WITH_DEMO_VAD
 nodist_vad_DATA = doc_dav.vad demo_dav.vad
+endif
 
 if WITH_HTMLDOC
 #dist_htmldoc_DATA = $(top_srcdir)/docsrc/html_virt/*.html

@@ -319,7 +319,6 @@ END_CFG
     fi
 fi
 
-
 STOP_SERVER
 START_SERVER
 
@@ -347,13 +346,13 @@ $LN $HOME/binsrc/samples/sparql_demo/sparql_demo_dav.vad .
 $LN $HOME/binsrc/tutorial/tutorial_dav.vad .
 $LN $HOME/binsrc/yacutia/conductor_dav.vad .
 
-DO_COMMAND "vad_install ('conductor_dav.vad')" dba dba
-DO_COMMAND "vad_install ('doc_dav.vad')" dba dba
-DO_COMMAND "vad_install ('rdf_mappers_dav.vad')" dba dba
-DO_COMMAND "vad_install ('isparql_dav.vad')" dba dba
-DO_COMMAND "vad_install ('bpel_dav.vad')" dba dba
-DO_COMMAND "vad_install ('sparql_demo_dav.vad')" dba dba
-DO_COMMAND "vad_install ('fct_dav.vad')" dba dba
+[ -f conductor_dav.vad ] && DO_COMMAND "vad_install ('conductor_dav.vad')" dba dba
+[ -f fct_dav.vad ] && DO_COMMAND "vad_install ('fct_dav.vad')" dba dba
+[ -f doc_dav.vad ] && DO_COMMAND "vad_install ('doc_dav.vad')" dba dba
+[ -f rdf_mappers_dav.vad ] && DO_COMMAND "vad_install ('rdf_mappers_dav.vad')" dba dba
+[ -f isparql_dav.vad ] && DO_COMMAND "vad_install ('isparql_dav.vad')" dba dba
+[ -f bpel_dav.vad ] && DO_COMMAND "vad_install ('bpel_dav.vad')" dba dba
+[ -f sparql_demo_dav.vad ] && DO_COMMAND "vad_install ('sparql_demo_dav.vad')" dba dba
 
 
 #
@@ -365,23 +364,23 @@ then
     do
 	$LN $f .
     done
-    DO_COMMAND "vad_install ('ods_framework_dav.vad')" dba dba
-    DO_COMMAND "vad_install ('ods_addressbook_dav.vad')" dba dba
-    DO_COMMAND "vad_install ('ods_blog_dav.vad')" dba dba
-    DO_COMMAND "vad_install ('ods_bookmark_dav.vad')" dba dba
-    DO_COMMAND "vad_install ('ods_briefcase_dav.vad')" dba dba
-    DO_COMMAND "vad_install ('ods_calendar_dav.vad')" dba dba
-    DO_COMMAND "vad_install ('ods_community_dav.vad')" dba dba
-    DO_COMMAND "vad_install ('ods_discussion_dav.vad')" dba dba
-    DO_COMMAND "vad_install ('ods_feedmanager_dav.vad')" dba dba
-    DO_COMMAND "vad_install ('ods_gallery_dav.vad')" dba dba
-    DO_COMMAND "vad_install ('ods_polls_dav.vad')" dba dba
-    DO_COMMAND "vad_install ('ods_webmail_dav.vad')" dba dba
-    DO_COMMAND "vad_install ('ods_wiki_dav.vad')" dba dba
+    [ -f ods_framework_dav.vad ] && DO_COMMAND "vad_install ('ods_framework_dav.vad')" dba dba
+    [ -f ods_addressbook_dav.vad ] && DO_COMMAND "vad_install ('ods_addressbook_dav.vad')" dba dba
+    [ -f ods_blog_dav.vad ] && DO_COMMAND "vad_install ('ods_blog_dav.vad')" dba dba
+    [ -f ods_bookmark_dav.vad ] && DO_COMMAND "vad_install ('ods_bookmark_dav.vad')" dba dba
+    [ -f ods_briefcase_dav.vad ] && DO_COMMAND "vad_install ('ods_briefcase_dav.vad')" dba dba
+    [ -f ods_calendar_dav.vad ] && DO_COMMAND "vad_install ('ods_calendar_dav.vad')" dba dba
+    [ -f ods_community_dav.vad ] && DO_COMMAND "vad_install ('ods_community_dav.vad')" dba dba
+    [ -f ods_discussion_dav.vad ] && DO_COMMAND "vad_install ('ods_discussion_dav.vad')" dba dba
+    [ -f ods_feedmanager_dav.vad ] && DO_COMMAND "vad_install ('ods_feedmanager_dav.vad')" dba dba
+    [ -f ods_gallery_dav.vad ] && DO_COMMAND "vad_install ('ods_gallery_dav.vad')" dba dba
+    [ -f ods_polls_dav.vad ] && DO_COMMAND "vad_install ('ods_polls_dav.vad')" dba dba
+    [ -f ods_webmail_dav.vad ] && DO_COMMAND "vad_install ('ods_webmail_dav.vad')" dba dba
+    [ -f ods_wiki_dav.vad ] && DO_COMMAND "vad_install ('ods_wiki_dav.vad')" dba dba
 fi
 
-DO_COMMAND "vad_install ('demo_dav.vad')" dba dba
-DO_COMMAND "vad_install ('tutorial_dav.vad')" dba dba
+[ -f demo_dav.vad ] && DO_COMMAND "vad_install ('demo_dav.vad')" dba dba
+[ -f tutorial_dav.vad ] && DO_COMMAND "vad_install ('tutorial_dav.vad')" dba dba
 
 DO_COMMAND "delete from wa_domains where WD_DOMAIN = 'localhost'" dba dba
 

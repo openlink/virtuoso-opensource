@@ -21,7 +21,9 @@
 
 TOP=@TOP@
 
+if WITH_RDFMAPPERS_VAD
 nodist_vad_DATA = rdf_mappers_dav.vad
+endif
 
 noinst_SCRIPTS = make_vad.sh
 
