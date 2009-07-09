@@ -117,7 +117,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &file_delete; &file_dirlist; &file_mkdir; &file_mkpath; &file_stat;
 &file_to_string; &file_to_string_output; &file_unlink;
 &fk_check_input_values; &floor;
-&ftp_get; &ftp_ls; &ftp_put;
+&ftp_get; &ftp_ls; &ftp_put; &gz_file_open;
 
 &get_certificate_info; &get_keyword; &get_keyword_ucase; &get_timestamp;
 &getdate; &gz_compress; &gz_uncompress;

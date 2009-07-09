@@ -198,7 +198,7 @@ Similarly,
 </para>
 <para>
 The XQuery specification states that when sequence of atomic values is converted into content of an element constructor,
-whitespace character is insertedbetween adjacent values.
+whitespace character is inserted between adjacent values.
 </para>
 <para>
 Unlike previous versions of Virtuoso, current XQuery syntax allows you to use &quot;pure XML notation&quot; inside element
