@@ -2531,12 +2531,18 @@ create procedure DB.DBA.RDF_LONG_TO_TTL (inout obj any, inout ses any)
   else if (__tag of rdf_box = __tag (obj))
     {
       http ('"', ses);
-      if (__tag of varchar = rdf_box_data_tag (obj))
+      if (rdf_box_data_tag (obj) in (__tag of varchar, __tag of long varchar, __tag of nvarchar, __tag of long nvarchar, 185))
         http_escape (__rdf_sqlval_of_obj (obj, 1), 11, ses, 1, 1);
       else if (__tag of datetime = rdf_box_data_tag (obj))
         __rdf_long_to_ttl (obj, ses);
       else if (__tag of XML = rdf_box_data_tag (obj))
         http_escape (serialize_to_UTF8_xml (__rdf_sqlval_of_obj (obj, 1)), 11, ses, 1, 1);
+      else if (__tag of varbinary = rdf_box_data_tag (obj))
+        {
+          http ('"', ses);
+          http_escape (__rdf_sqlval_of_obj (obj, 1), 11, ses, 0, 0);
+          http ('" ', ses);
+        }
       else
         http_escape (cast (__rdf_sqlval_of_obj (obj, 1) as varchar), 11, ses, 1, 1);
       if (257 <> rdf_box_type (obj))
@@ -2570,6 +2576,12 @@ create procedure DB.DBA.RDF_LONG_TO_TTL (inout obj any, inout ses any)
           http_escape (obj, 11, ses, 1, 1);
           http ('" ', ses);
         }
+    }
+  else if (__tag (obj) in (__tag of long varchar, __tag of nvarchar, __tag of long nvarchar, 185))
+    {
+      http ('"', ses);
+      http_escape (obj, 11, ses, 1, 1);
+      http ('" ', ses);
     }
   else if (__tag of datetime = rdf_box_data_tag (obj))
     {
@@ -7791,10 +7803,10 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_W (
 {
   -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_W (', g_iid, s_uri, p_uri, o_uri, env, ')');
   declare log_mode integer;
+  declare s_iid, p_iid, o_iid IRI_ID;
   log_mode := env[0];
   if (log_mode = 1)
     {
-      declare s_iid, p_iid, o_iid IRI_ID;
       whenever sqlstate '40001' goto deadlock_10;
 again_10:
       s_iid := iri_to_id (s_uri);
@@ -7814,8 +7826,11 @@ again_11:
       whenever sqlstate '40001' goto deadlock_0;
 again_0:
       log_enable (0, 1);
-      insert soft DB.DBA.RDF_QUAD (G,S,P,O)
-      values (g_iid, iri_to_id (s_uri), iri_to_id (p_uri), iri_to_id (o_uri));
+      s_iid := iri_to_id (s_uri);
+      p_iid := iri_to_id (p_uri);
+      o_iid := iri_to_id (o_uri);
+      commit work;
+      insert soft DB.DBA.RDF_QUAD (G,S,P,O) values (g_iid, s_iid, p_iid, o_iid);
       commit work;
       -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_W (', g_iid, s_uri, p_uri, o_uri, env, ') done /0');
       return;
@@ -7823,8 +7838,11 @@ again_0:
   whenever sqlstate '40001' goto deadlock_2;
 again_2:
   log_enable (1, 1);
-  insert soft DB.DBA.RDF_QUAD (G,S,P,O)
-  values (g_iid, iri_to_id (s_uri), iri_to_id (p_uri), iri_to_id (o_uri));
+  s_iid := iri_to_id (s_uri);
+  p_iid := iri_to_id (p_uri);
+  o_iid := iri_to_id (o_uri);
+  commit work;
+  insert soft DB.DBA.RDF_QUAD (G,S,P,O) values (g_iid, s_iid, p_iid, o_iid);
   commit work;
   -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_W (', g_iid, s_uri, p_uri, o_uri, env, ') done /2');
   return;
