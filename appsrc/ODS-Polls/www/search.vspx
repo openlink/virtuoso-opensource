@@ -425,7 +425,7 @@
                     <v:label for="" value="Space delimited keyword list" />
                   </th>
                   <td>
-                    <v:text name="a_keywords" value="--self.v_keywords" xhtml_class="textbox" xhtml_size="60"/>
+                    <v:text name="a_keywords" value="--self.v_keywords" fmt-function="POLLS.WA.utf2wide" xhtml_class="textbox" xhtml_size="60"/>
                   </td>
                 </tr>
                 <tr>
@@ -433,7 +433,7 @@
                     <v:label for="f_expression" value="--'or expression'" />
                   </th>
                   <td>
-                    <v:textarea name="f_expression" value="--self.v_expression" xhtml_rows="2" xhtml_cols="50"/>
+                    <v:textarea name="f_expression" value="--self.v_expression" fmt-function="POLLS.WA.utf2wide" xhtml_rows="2" xhtml_cols="50"/>
                   </td>
                 </tr>
                 <tr>
@@ -441,7 +441,7 @@
                     <vm:label for="f_tags" value="Tags (comma-separated)" />
                   </th>
                   <td>
-                    <v:text name="f_tags" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60"/>
+                    <v:text name="f_tags" value="--self.v_tags" fmt-function="POLLS.WA.utf2wide" xhtml_class="textbox" xhtml_size="60"/>
                   </td>
                 </tr>
                 <vm:if test="(self.account_role <> 'public') and (self.account_role <> 'shared')">
@@ -530,7 +530,7 @@
             <tr>
               <td align="center">
                 <b><v:label for="" value="Search" /></b>
-                <v:text name="s_keywords" value="--self.v_keywords" xhtml_onkeypress="return submitEnter(\'F1\', \'\', event)" xhtml_class="textbox" xhtml_size="60"/>
+                <v:text name="s_keywords" value="--self.v_keywords" fmt-function="POLLS.WA.utf2wide" xhtml_onkeypress="return submitEnter(\'F1\', \'\', event)" xhtml_class="textbox" xhtml_size="60"/>
                 |
                 <v:button action="simple" style="url" value="Advanced" xhtml_class="form-button">
                   <v:on-post>

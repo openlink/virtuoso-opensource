@@ -155,22 +155,12 @@
                 <v:button name="searchHead" action="simple" style="url" value="Submit">
                   <v:on-post>
                     <![CDATA[
-                      declare S, q, params, cCommand any;
+                      declare S, q, params any;
 
                       params := e.ve_params;
-                      S := '';
                       q := trim (get_keyword ('q', params, ''));
-                      if (q <> '')
-                        S := sprintf ('&q=%U&step=1', q);
-                      cCommand := get_keyword ('mode', params, '');
-                      if (cCommand = 'simple')
-                      {
-                        self.vc_redirect ('search.vspx?mode=simple' || S);
-                      }
-                      else if (cCommand = 'advanced')
-                      {
-                        self.vc_redirect ('search.vspx?mode=advanced' || S);
-                      }
+                      S := case when q <> ''then sprintf ('&q=%s&step=1', q) else '' end;
+                      self.vc_redirect (sprintf ('search.vspx?mode=%s%s', get_keyword ('mode', params, 'advanced'), S));
                       self.vc_data_bind(e);
                      ]]>
                    </v:on-post>

@@ -51,7 +51,7 @@ create procedure ODRIVE.WA.dc_set_base (
   in id varchar,
   in value varchar)
 {
-  return ODRIVE.WA.dc_set(search, 'base', id, sprintf('<entry ID="%s">%V</entry>', id, cast(coalesce(value, '') as varchar)));
+  return ODRIVE.WA.dc_set(search, 'base', id, sprintf('<entry ID="%s">%V</entry>', id, ODRIVE.WA.utf2wide (cast(coalesce(value, '') as varchar))));
 }
 ;
 
