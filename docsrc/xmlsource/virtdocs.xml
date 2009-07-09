@@ -143,6 +143,7 @@
 <!ENTITY file_stat				SYSTEM "funcref/file_stat.xml">
 <!ENTITY file_to_string				SYSTEM "funcref/file_to_string.xml">
 <!ENTITY file_to_string_output			SYSTEM "funcref/file_to_string_output.xml">
+<!ENTITY gz_file_open			        SYSTEM	"funcref/gz_file_open.xml">
 <!ENTITY file_unlink				SYSTEM "funcref/file_unlink.xml">
 <!ENTITY file_mkdir 				SYSTEM "funcref/file_mkdir.xml">
 <!ENTITY file_mkpath				SYSTEM "funcref/file_mkpath.xml">
