@@ -1073,6 +1073,8 @@ sqlo_replace_col_refs_prefixes (sqlo_t *so, ST *tree, caddr_t old_prefix,
     ST **selection, int remove_as_decls)
 {
   dtp_t dtp = DV_TYPE_OF (tree);
+  if (ST_P (tree, ORDER_BY))
+    remove_as_decls = 2;
 
   if (dtp == DV_ARRAY_OF_POINTER)
     {
@@ -1102,6 +1104,8 @@ found:
 		  if (remove_as_decls)
 		    while (ST_P (real_col, BOP_AS))
 		      real_col = real_col->_.as_exp.left;
+		  if (2 == remove_as_decls && DV_LONG_INT == DV_TYPE_OF (real_col))
+		    real_col = listst (5, BOP_PLUS, real_col, 0, 0, 0);
 		  ((ST **)tree)[inx] = (ST *) t_box_copy_tree ((caddr_t) real_col);
 		}
 	    }
@@ -1168,6 +1172,10 @@ sqlo_join_exp_inlineable (ST * exp)
   /* any join exp that does not have a full oj */
   if (ST_P (exp, JOINED_TABLE)
       && OJ_FULL == exp->_.join.type)
+    return 0;
+  if (ST_P (exp, UNION_ST) || ST_P (exp, UNION_ALL_ST)
+      || ST_P (exp, INTERSECT_ST) || ST_P (exp, INTERSECT_ALL_ST)
+      ||ST_P (exp, EXCEPT_ST) || ST_P (exp, EXCEPT_ALL_ST))
     return 0;
   if (ST_P (exp, SELECT_STMT))
     return 1;
