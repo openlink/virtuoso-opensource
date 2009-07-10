@@ -1443,7 +1443,7 @@ spar_sparul_load	/* [DML]*	LoadAction	 ::=  'LOAD' PrecodeExpn */
 	: LOAD_L spar_precode_expn {
 		$$ = spar_make_sparul_load (sparp_arg, $2, $2); }
 	| LOAD_L spar_precode_expn spar_in_or_into spar_graph_identified_by_opt spar_precode_expn {
-		$$ = spar_make_sparul_load (sparp_arg, $3, $2 /* yes, $2 after $3 */); }
+		$$ = spar_make_sparul_load (sparp_arg, $5, $2 /* yes, $2 after $3 */); }
 	;
 
 spar_sparul_create	/* [DML]*	CreateAction	 ::=  'CREATE' 'SILENT'? 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn	*/
