@@ -7282,7 +7282,7 @@ caddr_t * all_host_names = NULL;
 * if input is *sslini* copy https_port and return it
 ***********************************************************/
 caddr_t
-http_host_normalize (caddr_t host, int to_ip)
+http_host_normalize_1 (caddr_t host, int to_ip, int def_port)
 {
   char * sep;
   caddr_t host1, host2;
@@ -7302,8 +7302,10 @@ http_host_normalize (caddr_t host, int to_ip)
   sep = strchr (host2, ':');
   if (!sep && !alldigits (host2))
     {
-      host1 = dk_alloc_box (strlen (host2) + 4, DV_SHORT_STRING);
-      snprintf (host1, box_length (host1), "%s:80", host2);
+      char buf [6];
+      snprintf (buf, sizeof (buf), "%d", def_port);
+      host1 = dk_alloc_box (strlen (host2) + strlen (buf) + 2, DV_SHORT_STRING);
+      snprintf (host1, box_length (host1), "%s:%s", host2, buf);
     }
   else if (!sep && alldigits (host2))
     {
@@ -7315,6 +7317,16 @@ http_host_normalize (caddr_t host, int to_ip)
   return host1;
 }
 
+caddr_t
+http_host_normalize (caddr_t host, int to_ip)
+{
+  return http_host_normalize_1 (host, to_ip, 80);
+}
+
+/*
+   Internally all hosts should be represented as cname:nnn where nnn is port number.
+   This function must be called with cname and listen interface e.g. 'localhost' and '0.0.0.0:8890'
+*/
 caddr_t
 http_virtual_host_normalize (caddr_t _host, caddr_t lhost)
 {
@@ -8089,6 +8101,10 @@ ws_set_phy_path (ws_connection_t * ws, int dir, char * vsp_path)
   struct sockaddr_in sa;
   char nif[100]; /* network interface address */
   int s;
+  int is_https = 0;
+#ifdef _SSL
+  SSL *ssl = NULL;
+#endif
   socklen_t len = sizeof (sa);
 
   if (!ws)
@@ -8103,9 +8119,14 @@ ws_set_phy_path (ws_connection_t * ws, int dir, char * vsp_path)
   else
     nif[0] = 0;
 
+#ifdef _SSL
+  ssl = (SSL *) tcpses_get_ssl (ws->ws_session->dks_session);
+  is_https = (NULL != ssl);
+#endif
+
   tcpses_addr_info (ws->ws_session->dks_session, listen_host, sizeof (listen_host), 80, 1);
   host_hf = ws_get_packed_hf (ws, "Host:", listen_host);
-  host = http_host_normalize (host_hf, 0);
+  host = http_host_normalize_1 (host_hf, 0, (is_https ? 443 : 80));
   http_trace (("host hf: %s, host nfo:, %s nif: %s\n", host, listen_host, nif));
 
   if (!vsp_path)
@@ -8147,6 +8168,10 @@ ws_get_http_map (ws_connection_t * ws, int dir, caddr_t lpath, int set_map)
   struct sockaddr_in sa;
   char nif[100] = {0}; /* network interface address */
   int s;
+  int is_https = 0;
+#ifdef _SSL
+  SSL *ssl = NULL;
+#endif
   socklen_t len = sizeof (sa);
   ws_http_map_t * pmap = NULL;
   ws_http_map_t ** map = set_map ? &(ws->ws_map) : &pmap;
@@ -8163,7 +8188,11 @@ ws_get_http_map (ws_connection_t * ws, int dir, caddr_t lpath, int set_map)
 
   tcpses_addr_info (ws->ws_session->dks_session, listen_host, sizeof (listen_host), 80, 1);
   host_hf = ws_get_packed_hf (ws, "Host:", listen_host);
-  host = http_host_normalize (host_hf, 0);
+#ifdef _SSL
+  ssl = (SSL *) tcpses_get_ssl (ws->ws_session->dks_session);
+  is_https = (NULL != ssl);
+#endif
+  host = http_host_normalize_1 (host_hf, 0, (is_https ? 443 : 80));
 
   if (0 != nif[0])
     ppath = get_http_map (map, lpath, dir, host, nif); /* trying vhost & ip */
