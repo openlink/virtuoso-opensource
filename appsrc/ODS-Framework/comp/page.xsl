@@ -344,6 +344,7 @@
   <head>
     <base href="<?V http_s()||self.st_host ?>/ods/"/><![CDATA[<!--[if IE]></base><![endif]-->]]>
     <link rel="commands" href="ods_ubiquity.js" name="describe-resource"/>
+    <link rel="search" type="application/opensearchdescription+xml" title="ODS OpenSearch Description" href="/ods/search.vspx?o=opensearch" />
     <?vsp
       {
         declare style varchar;

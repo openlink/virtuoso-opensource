@@ -1648,7 +1648,7 @@ if (self.on_type = 'discussion' or self.on_type = 'nntpf')
     {
       declare qry varchar;
 
-
+      self.q_sel := coalesce (self.q_sel, 'people,apps,dav,weblog,feeds,wiki,mail,bookmark,polls,addressbook,calendar,discussion');
       if (self.page = 2)
   qry :=
    WA_SEARCH_ADD_APATH (
@@ -1659,12 +1659,13 @@ if (self.on_type = 'discussion' or self.on_type = 'nntpf')
    WA_SEARCH_ADD_APATH (
     WA_SEARCH_ADD_SID_IF_AVAILABLE (
      sprintf ('search.vspx?q={searchTerms}&r={count}&apps=%s&o=xml', self.q_sel), self.u_id, '&'));
+      if (qry not like 'http://%')
+        qry := 'http://' || WA_GET_HOST() || '/ods/' || qry;
       http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
       http_rewrite ();
       http ('<?xml version="1.0" ?>');  ]]>
-?&gt;&lt;OpenSearchDescription xmlns="http://a9.com/-/spec/opensearchdescription/1.0/"&gt;
-  <Url><?V qry ?></Url>
-  <Format>http://a9.com/-/spec/opensearchrss/1.0/</Format>
+?&gt;&lt;OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"&gt;
+  <Url type="text/html" template="<?V qry ?>" />
   <ShortName>ODS Search</ShortName>
   <LongName>ODS Search in <?V self.q_sel ?></LongName>
   <Description>Searches <?V self.q_sel ?> in the Dataspace</Description>
@@ -1672,7 +1673,7 @@ if (self.on_type = 'discussion' or self.on_type = 'nntpf')
     when 2 then coalesce (self.us_tags.ufl_value, '')
                 else coalesce (self.qry_tags, self.q_tags_expr.ufl_value)
                 end) ?></Tags>
-  <Image><?V WA_SEARCH_ADD_APATH ('images/wa_thin400_2.gif') ?></Image>
+  <Image height="16" width="16" type="image/png">http://<?V WA_GET_HOST() ?>/ods/images/odslogosml_new.png</Image>
   <SampleSearch><?V trim(case self.page
     when 2 then coalesce (self.us_keywords.ufl_value, '')
                 else coalesce (self.qry, self.expr.ufl_value)
