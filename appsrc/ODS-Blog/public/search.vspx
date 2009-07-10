@@ -1344,14 +1344,15 @@
     self.kwds := self.pkwd;
   http_rewrite ();
   http ('<?xml version="1.0" ?>');  ]]>
-?&gt;&lt;OpenSearchDescription xmlns="http://a9.com/-/spec/opensearchdescription/1.0/"&gt;
-  <Url>http://<?V host ?>/weblog/public/search.vspx?blogid=<?V bid ?><?V sprintf ('&q={searchTerms}&cnt={count}&page={startPage}&type=%s&output=xml&OpenSearch=1', self.qt.ufl_value) ?></Url>
-  <Format>http://a9.com/-/spec/opensearchrss/1.0/</Format>
+?&gt;&lt;OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"&gt;
+  <Url type="text/html" template="http://<?V host ?>/weblog/public/search.vspx?blogid=<?V bid ?><?V sprintf ('&q={searchTerms}&cnt={count}&page={startPage}&type=%s', self.qt.ufl_value) ?>" />
+  <Url type="application/rss+xml" template="http://<?V host ?>/weblog/public/search.vspx?blogid=<?V bid ?><?V sprintf ('&q={searchTerms}&cnt={count}&page={startPage}&type=%s&output=xml', self.qt.ufl_value) ?>" />
   <ShortName><?V sho ?></ShortName>
   <LongName><?V BLOG..blog_utf2wide (self.title) ?></LongName>
   <Description>About: <?V trim(self.kwds, ''' "') ?></Description>
   <Tags><?V trim(self.kwds, ''' "') ?></Tags>
-  <Image>http://<?V host ?>/weblog/public/images/vbloglogo1.gif</Image>
+  <Image height="16" width="16" type="image/png">http://<?V host ?>/ods/images/icons/ods_weblog_16.png</Image>
+  <Image height="64" width="64" type="image/gif">http://<?V host ?>/weblog/public/images/vbloglogo1.gif</Image>
   <SampleSearch><?V self.kwds ?></SampleSearch>
   <Developer><?V BLOG..blog_utf2wide (self.author) ?></Developer>
   <Contact><?V self.email ?></Contact>
