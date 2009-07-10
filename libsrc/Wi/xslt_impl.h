@@ -240,7 +240,7 @@ extern caddr_t xslt_attr_value (caddr_t * xsltree, const char * name, int reqd);
 
 extern void
 xslt_sheet_prepare (xslt_sheet_t *xsh, caddr_t * xstree, query_instance_t * qi,
-		    caddr_t * err_ret, xml_ns_2dict_t *ns_2dict);
+		    caddr_t * err_ret, xml_ns_2dict_t *ns_2dict );
 
 extern shuric_vtable_t xslt_shuric_vtable;
 

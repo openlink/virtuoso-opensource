@@ -1989,7 +1989,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	    return;
 	  }
 
-	tpd = (tp_data_t*)dk_alloc(sizeof(tp_data_t));
+	tpd = (tp_data_t*)dk_alloc (sizeof (tp_data_t));
 	memset (tpd, 0, sizeof (tp_data_t));
 	cli->cli_tp_data = tpd;
 
@@ -2058,7 +2058,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
     case SQL_XA_SUSPEND:
       {
 	void * xid = cli->cli_tp_data->cli_tp_trx;
-	_2pc_printf(("tp enlist end tpd %p\n",cli->cli_tp_data));
+	_2pc_printf(("tp enlist end tpd %p\n", cli->cli_tp_data));
 	if (!cli->cli_tp_data)
 	  GPF_T1 ("2PC: broken client vars");
 
