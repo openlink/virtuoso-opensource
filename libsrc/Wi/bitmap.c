@@ -745,6 +745,7 @@ itc_bm_insert_in_row (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd)
       if (buf->bd_writer != THREAD_CURRENT_THREAD)
 	GPF_T1 ("cur thread supposed to be the writer in ins bm row");
 #endif
+      itc_invalidate_bm_crs (itc, buf, 0, NULL);
       upd_refit_row (itc, &buf, &upd_rd, RD_UPDATE_LOCAL);
       rd_free (&upd_rd);
       return;
