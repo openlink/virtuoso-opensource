@@ -426,7 +426,6 @@
     }
     else
     connection_set ('WA_SEARCH_PATH', '');
-      --dbg_printf ('%s', query);
     exec (query, NULL, NULL, vector (), 0, meta, res);
 
     if (WA_IS_REGULAR_FEED ())
