@@ -74,11 +74,11 @@ select DMLTYPE, VT_GZ_WORDUMP from VTLOG_DB_DBA_$U{table};
 ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "*** FAILED";
 ECHO BOTH ": freetext update log VTLOG_DB_DBA_" $U{table} " empty\n";
 
-select VT_WORD from $U{table}_DATA_WORDS;
+select distinct VT_WORD from $U{table}_DATA_WORDS;
 ECHO BOTH $IF $EQU $ROWCNT 171 "PASSED" "*** FAILED";
 ECHO BOTH ": " $ROWCNT " rows in " $U{table} "_DATA_WORDS table\n";
 
-select VT_WORD from $U{table}_DATA_WORDS where length(VT_WORD) > 1;
+select distinct VT_WORD from $U{table}_DATA_WORDS where length(VT_WORD) > 1;
 ECHO BOTH $IF $EQU $ROWCNT 169 "PASSED" "*** FAILED";
 ECHO BOTH ": " $ROWCNT " words that are longer than 1 char in " $U{table} "_DATA_WORDS table\n";
 

@@ -525,3 +525,8 @@ ECHO BOTH $IF $EQU $ROWCNT 101 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": null in blob hash temp col : " $ROWCNT " rows\n";
 
+update t1 set fi2 = row_no;
+select case when b.fi2 in (100,110,111) then 1 else 0 end from t1 a, t1 b where case when b.fi2 in (100,110,111) then 1 else 0 end = 1 and a.row_no = b.row_no option (hash, order);
+echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
+echo both ": cond exp shared between filter of hash filler and result set\n";
+
