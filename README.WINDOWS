@@ -135,11 +135,11 @@ Building Virtuoso Open Source with Microsoft Visual Studio 2003
 Building optional components
 ----------------------------
 
-PHP4 library notes
+PHP5 library notes
 ------------------
 
 The following directories with the header files from the PHP4 source tree need
-to be placed under /win32/php4/ :
+to be placed under /win32/php5/ :
 
   * ext/
   * main/
@@ -148,11 +148,6 @@ to be placed under /win32/php4/ :
   * win32/
   * Zend/
 
-In the same directory (/win32/php4) you should also copy the following:
-
-  * php4ts.dll
-  * php4ts.lib
-  * php_version.h
 
 Building the Virtuoso Open-Source Java hosting binary under Visual Studio 2003
 ------------------------------------------------------------------------------

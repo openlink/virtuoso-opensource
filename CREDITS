@@ -184,8 +184,8 @@ Ruby
 PHP
 <http://www.php.net/>
 
-    Virtuoso may be linked against libphp4.so or libphp5.so to provide a
-    PHP hosting environment.
+    Virtuoso may be linked against libphp5.so to provide a PHP hosting
+    environment.
 
     PHP is distributed under the terms of the PHP License:
     <http://php.net/license/>
