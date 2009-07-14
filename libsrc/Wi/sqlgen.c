@@ -995,25 +995,24 @@ hs_make_signature (setp_node_t * setp, dbe_table_t * tb)
 
 
 void
-sqlg_unplace_ssl (sqlo_t * so, ST * tree)
+sqlg_unplace_pred_body_ssl (sqlo_t * so, df_elt_t ** body)
 {
-  /* if the tree is placed and has ssls for subexps, set the ssl refs to zero so that the exp will be generated again.
-  * If a hash filler has an exp and the same exp occurs later, the ssl set by the hash filler must not be refd.  The exp must be re evaluated. */
-  df_elt_t * dfe;
   int inx;
-  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
+  if (!body)
     return;
-  if (ST_P(tree, COL_DOTTED))
-    return;
-  dfe = sqlo_df_elt (so, tree);
-  if (dfe && dfe->dfe_ssl)
-	dfe->dfe_ssl = NULL;
-  DO_BOX (ST *, exp, inx, (caddr_t*)tree)
+  switch ((ptrlong)body[0])
     {
-      sqlg_unplace_ssl (so, exp);
+    case BOP_AND:
+    case BOP_OR:
+      for (inx = 1; inx < BOX_ELEMENTS (body); inx++)
+	sqlg_unplace_pred_body_ssl (so, (df_elt_t**)body[inx]);
+      break;
+    case DFE_PRED_BODY:
+      for (inx = 1; inx < BOX_ELEMENTS (body); inx++)
+	sqlg_unplace_ssl (so, body[inx]->dfe_tree);
     }
-  END_DO_BOX;
 }
+
 
 data_source_t *
 sqlg_hash_filler (sqlo_t * so, df_elt_t * tb_dfe, data_source_t * ts_src)
@@ -1051,6 +1050,7 @@ sqlg_hash_filler (sqlo_t * so, df_elt_t * tb_dfe, data_source_t * ts_src)
     }
   END_DO_SET();
   ts_src->src_after_code = code_to_cv (so->so_sc, fill_code);
+  sqlg_unplace_pred_body_ssl (so, tb_dfe->_.table.join_test);
   DO_SET (df_elt_t *, out_dfe, &tb_dfe->_.table.out_cols)
     {
       state_slot_t * ssl = sqlg_dfe_ssl (so, out_dfe);

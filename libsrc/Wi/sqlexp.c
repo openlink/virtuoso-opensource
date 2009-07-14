@@ -381,6 +381,43 @@ sqlc_new_temp (sql_comp_t * sc, const char *name, dtp_t dtp)
 
 
 
+void
+sqlg_unplace_ssl (sqlo_t * so, ST * tree)
+{
+  /* if the tree is placed and has ssls for subexps, set the ssl refs to zero so that the exp will be generated again.
+  * If a hash filler has an exp and the same exp occurs later, the ssl set by the hash filler must not be refd.  The exp must be re evaluated. */
+  sql_comp_t * sc = so->so_sc;
+  df_elt_t * dfe;
+  int inx;
+  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
+    return;
+  if (ST_P(tree, COL_DOTTED))
+    return;
+  dfe = sqlo_df_elt (so, tree);
+  if (dfe && dfe->dfe_ssl)
+	dfe->dfe_ssl = NULL;
+  if (ST_P (tree, COMMA_EXP) || ST_P (tree, SEARCHED_CASE) || ST_P (tree, SIMPLE_CASE))
+    {
+      DEF_PRIVATE_ELTS;
+      DO_BOX (ST*, exp, inx, tree->_.comma_exp.exps)
+	{
+	  SET_PRIVATE_ELTS (sc, dfe, inx);
+	  sqlg_unplace_ssl (so, exp);
+	  RESTORE_PRIVATE_ELTS (sc, dfe);
+	}
+      END_DO_BOX;
+    }
+  else
+    {
+      DO_BOX (ST *, exp, inx, (caddr_t*)tree)
+	{
+	  sqlg_unplace_ssl (so, exp);
+	}
+      END_DO_BOX;
+    }
+}
+
+
 state_slot_t *
 sqlc_comma_exp (sql_comp_t * sc, ST * tree, dk_set_t * code)
 {

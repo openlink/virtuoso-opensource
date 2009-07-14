@@ -742,5 +742,7 @@ int sqlo_is_unq_preserving (caddr_t name);
 	(DV_STRINGP (x) || DV_TYPE_OF (x) == DV_SYMBOL)
 
 int box_is_subtree (caddr_t box, caddr_t subtree);
+void sqlg_unplace_ssl (sqlo_t * so, ST * tree);
+
 
 #endif /* _SQLO_H */
