@@ -21,18 +21,10 @@
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #
 
-JAVA_HOME=$JDK3
-CLASSPATH=$JAVA_HOME/lib/jre/rt.jar
-CLASSPATHSSL=$JAVA_HOME/lib/jre/rt.jar
-export JAVA_HOME CLASSPATH CLASSPATHSSL
-
-MACOSX=`grep Darwin ../../Makeconfig`
-if [ z != "z$MACOSX" ]
-then
-    JAVA=$JAVA_HOME/Commands/java
-else
-    JAVA=$JAVA_HOME/bin/java
-fi
+CLASSPATH=.
+CLASSPATHSSL=.
+JAVA=$JDK3/java
+export JAVA CLASSPATH CLASSPATHSSL
 
 echo "............. Test the JDBC 3.0 driver without SSL"
 $JAVA -classpath $CLASSPATH:virtjdbc3ssl.jar:testsuite3.jar testsuite.TestClean $1

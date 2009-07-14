@@ -20,14 +20,14 @@
 #  
 
 
-if JDK3
+if WITH_JDK3
 TARGETS		= virt_sesame.jar
 JDK		= @ac_jdk3_path@
-JDK_FLAGS	= -Xlint -O -g:none
-JAVAC		= $(JDK)/bin/javac
-JAVAH		= $(JDK)/bin/javah
-JAVADOC		= $(JDK)/bin/javadoc
-JAR		= $(JDK)/bin/jar
+JDK_FLAGS	= -O -g:none
+JAVAC		= $(JDK)/javac
+JAVAH		= $(JDK)/javah
+JAVADOC		= $(JDK)/javadoc
+JAR		= $(JDK)/jar
 endif
 
 

@@ -30,7 +30,7 @@ AC_REVISION($Id$)
 ##########################################################################
 
 AC_INIT([Virtuoso Open Source Edition],
-	[5.0.12-rc3],
+	[5.0.12-rc4],
 	[vos.admin@openlinksw.com],
 	[virtuoso-opensource])
 AC_CONFIG_SRCDIR([libsrc/Dk.h])
@@ -1972,18 +1972,19 @@ ac_cv_prog_java_works=no
 #echo macro called with ac_jw_jdk="$ac_jw_jdk" ac_jw_min_minor="$ac_jw_min_minor" ac_jw_max_minor="$ac_jw_max_minor"
 if test "x$ac_jw_jdk" != "xnone" ; then
   AC_MSG_CHECKING([for working Java 1.$ac_jw_min_minor.x-1.$ac_jw_max_minor.x in $ac_jw_jdk])
-  #echo ac_jw_jdk/bin/java="$ac_jw_jdk/bin/java"
-  ac_java_version=`$ac_jw_jdk/bin/java -version 2>&1 | grep 'java version' | cut -f 2 -d '"'`
-  #echo ac_java_version="$ac_java_version"
+  if test -x "$ac_jw_jdk/Commands/java"; then
+    ac_jw_jdk="$ac_jw_jdk/Commands" 
+  else
+    ac_jw_jdk="$ac_jw_jdk/bin" 
+  fi
+  JAVAC=$ac_jw_jdk/javac
+  JAVA=$ac_jw_jdk/java
+  ac_java_version=`$JAVA -version 2>&1 | grep 'java version' | cut -f 2 -d '"'`
   ac_java_ver_major=`echo $ac_java_version | cut -f 1 -d .`
   ac_java_ver_minor=`echo $ac_java_version | cut -f 2 -d .`
-  #echo ac_java_ver_major="$ac_java_ver_major"
-  #echo ac_java_ver_minor="$ac_java_ver_minor"
   if test "x$ac_java_ver_major" != "x1" -o "0$ac_java_ver_minor" -lt "0$ac_jw_min_minor" -o "0$ac_java_ver_minor" -gt "0$ac_jw_max_minor" ; then
       AC_MSG_ERROR([wrong version ($ac_java_ver_major.$ac_java_ver_minor)])
   fi
-  JAVAC=$ac_jw_jdk/bin/javac
-  JAVA=$ac_jw_jdk/bin/java
   JAVA_TEST=Test.java
   CLASS_TEST=Test.class
   TEST=Test
@@ -2017,31 +2018,35 @@ fi
 
 AC_PROG_JAVA_WORKS($ac_jdk1_path, 1, 1)
 ac_jdk1_works="$ac_cv_prog_java_works"
-AM_CONDITIONAL(JDK1, test "x$ac_jdk1_works" = "xyes")
+ac_jdk1_path="$ac_jw_path"
+AM_CONDITIONAL(WITH_JDK1, test "x$ac_jdk1_works" = "xyes")
 AC_SUBST(ac_jdk1_path)
 
 AC_PROG_JAVA_WORKS($ac_jdk2_path, 2, 3)
 ac_jdk2_works="$ac_cv_prog_java_works"
-AM_CONDITIONAL(JDK2, test "x$ac_jdk2_works" = "xyes")
+ac_jdk2_path="$ac_jw_jdk"
+AM_CONDITIONAL(WITH_JDK2, test "x$ac_jdk2_works" = "xyes")
 AC_SUBST(ac_jdk2_path)
 
 AC_PROG_JAVA_WORKS($ac_jdk3_path, 4, 5)
 ac_jdk3_works="$ac_cv_prog_java_works"
-AM_CONDITIONAL(JDK3, test "x$ac_jdk3_works" = "xyes")
+ac_jdk3_path="$ac_jw_jdk"
+AM_CONDITIONAL(WITH_JDK3, test "x$ac_jdk3_works" = "xyes")
 AC_SUBST(ac_jdk3_path)
 
 AC_PROG_JAVA_WORKS($ac_jdk4_path, 6, 6)
 ac_jdk4_works="$ac_cv_prog_java_works"
-AM_CONDITIONAL(JDK4, test "x$ac_jdk4_works" = "xyes")
+ac_jdk4_path="$ac_jw_jdk"
+AM_CONDITIONAL(WITH_JDK4, test "x$ac_jdk4_works" = "xyes")
 AC_SUBST(ac_jdk4_path)
 
 ac_integ_jdk=""
 if test "x$ac_jdk4_works" = "xyes" ; then
-  ac_integ_jdk="$ac_jdk4_path"
+  ac_integ_jdk="$ac_jdk4_path/.."
 elif test "x$ac_jdk3_works" = "xyes" ; then
-  ac_integ_jdk="$ac_jdk3_path"
+  ac_integ_jdk="$ac_jdk3_path/.."
 elif test "x$ac_jdk2_works" = "xyes"; then
-  ac_integ_jdk="ac_jdk2_path"
+  ac_integ_jdk="ac_jdk2_path/.."
 fi
 
 if test "x$ac_integ_jdk" != "x" ; then
@@ -2050,6 +2055,16 @@ if test "x$ac_integ_jdk" != "x" ; then
     ac_save_CPPFLAGS="$CPPFLAGS"
     #supported jvm hosting platforms : add more here
     case $host in
+	x64_64-*-linux*)
+                CPPFLAGS="$CPPFLAGS -I$ac_integ_jdk/include -I$ac_integ_jdk/include/linux"
+        	AC_CHECK_HEADERS(jni.h,
+			[ java_CPPFLAGS="-I$ac_integ_jdk/include -I$ac_integ_jdk/include/linux" ],
+			[ ac_integ_jdk="" ])
+		AC_CHECK_LIB(jvm, JNI_GetDefaultJavaVMInitArgs,
+			[ java_LDFLAGS="-L$ac_integ_jdk/jre/lib/amd64/server -ljvm" ],
+			[ ac_integ_jdk="" ],
+			[ "-L$ac_integ_jdk/jre/lib/amd64/server"])
+		;;
 	i?86-*-linux*)
                 CPPFLAGS="$CPPFLAGS -I$ac_integ_jdk/include -I$ac_integ_jdk/include/linux"
         	AC_CHECK_HEADERS(jni.h,

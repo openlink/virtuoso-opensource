@@ -21,29 +21,29 @@
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #
 
-JAVA_HOME=$JDK1
-CLASSPATH=$JAVA_HOME/lib/classes.zip:./security/jnet.jar:./security/jsse.jar:./security/jcert.jar
-export JAVA_HOME CLASSPATH
+CLASSPATH=./security/jnet.jar:./security/jsse.jar:./security/jcert.jar
+JAVA=$JDK1/java
+export JAVA CLASSPATH
 
 echo "............. Test the JDBC 1.2 driver"
-$JAVA_HOME/bin/java -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestClean
-$JAVA_HOME/bin/java -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestURL $1
-$JAVA_HOME/bin/java -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestDatabaseMetaData $1
-$JAVA_HOME/bin/java -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestSimpleExecute $1
-$JAVA_HOME/bin/java -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestExecuteFetch $1
-$JAVA_HOME/bin/java -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestExecuteBlob termcap $1
-$JAVA_HOME/bin/java -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestSimpleExecuteBatch $1
-$JAVA_HOME/bin/java -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestPrepareExecute $1
-$JAVA_HOME/bin/java -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestPrepareBatch $1
-$JAVA_HOME/bin/java -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestCallableExecute $1
-$JAVA_HOME/bin/java -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestScroll $1
-$JAVA_HOME/bin/java -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestScrollManual $1
-$JAVA_HOME/bin/java -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestScrollPrepare $1
-$JAVA_HOME/bin/java -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestVarbinary $1
-$JAVA_HOME/bin/java -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestNumeric $1
+$JAVA -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestClean
+$JAVA -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestURL $1
+$JAVA -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestDatabaseMetaData $1
+$JAVA -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestSimpleExecute $1
+$JAVA -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestExecuteFetch $1
+$JAVA -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestExecuteBlob termcap $1
+$JAVA -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestSimpleExecuteBatch $1
+$JAVA -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestPrepareExecute $1
+$JAVA -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestPrepareBatch $1
+$JAVA -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestCallableExecute $1
+$JAVA -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestScroll $1
+$JAVA -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestScrollManual $1
+$JAVA -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestScrollPrepare $1
+$JAVA -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestVarbinary $1
+$JAVA -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestNumeric $1
 rm -f bloor.pdf
 cat testsuite2.jar testsuite2.jar testsuite2.jar > bloor.pdf
-$JAVA_HOME/bin/java -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestBlob edsj
-$JAVA_HOME/bin/java -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.test2276 $1
-$JAVA_HOME/bin/java -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestTimeUpdate $1
-$JAVA_HOME/bin/java -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestMoreRes $1
+$JAVA -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestBlob edsj
+$JAVA -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.test2276 $1
+$JAVA -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestTimeUpdate $1
+$JAVA -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestMoreRes $1
