@@ -19,11 +19,11 @@
 #  
 #  
 
-if JDK3
+if WITH_JDK3
+TARGET		= testsuite3.jar
 JDK3 		= @ac_jdk3_path@
 JAVA_FLAGS	= -O -g:none -d .
-JAVA_CLASS	= -classpath $(CLASSPATH3):../virtjdbc3.jar
-TARGET		= testsuite3.jar
+JAVA_CLASS	= -classpath .:../virtjdbc3.jar
 endif
 
 all: $(TARGET)
@@ -31,8 +31,8 @@ all: $(TARGET)
 
 testsuite3.jar: *.java
 	@echo ts3 javac $(JAVA_FLAGS)
-	@$(JDK3)/bin/javac $(JAVA_FLAGS) $(JAVA_CLASS) *.java
-	@$(JDK3)/bin/jar cf testsuite3.jar ./testsuite/*.class
+	@$(JDK3)/javac $(JAVA_FLAGS) $(JAVA_CLASS) *.java
+	@$(JDK3)/jar cf testsuite3.jar ./testsuite/*.class
 	@rm -f ../testsuite3.jar
 	@cp testsuite3.jar ../testsuite3.jar
 	@echo "............. Test suite jar package built"

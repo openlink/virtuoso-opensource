@@ -1602,16 +1602,25 @@
                   <v:select-list name="tvf_status" xhtml_id="tvf_status" xhtml_onchange="javascript: this.form.submit();">
                     <v:on-init>
                       <![CDATA[
-                        declare x any;
+                              declare x, y any;
 
-                        x := make_array (6, 'any');
+                              x := make_array (7, 'any');
                         x[0] := 'All';
-                        x[1] := 'Not Started';
-                        x[2] := 'In Progress';
-                        x[3] := 'Completed';
-                        x[4] := 'Waiting.';
-                        x[5] := 'Deferred';
-                        control.vsl_item_values := x;
+                              x[1] := 'Completed';
+                              x[2] := 'Not Completed';
+                              x[3] := '~ Not Started';
+                              x[4] := '~ In Progress';
+                              x[5] := '~ Waiting';
+                              x[6] := '~ Deferred';
+                              y := make_array (7, 'any');
+                              y[0] := 'All';
+                              y[1] := 'Completed';
+                              y[2] := 'Not Completed';
+                              y[3] := 'Not Started';
+                              y[4] := 'In Progress';
+                              y[5] := 'Waiting';
+                              y[6] := 'Deferred';
+                              control.vsl_item_values := y;
                         control.vsl_items := x;
                         control.ufl_value := '';
                       ]]>
@@ -1894,7 +1903,14 @@
                                                        self.cPrivacy
                                                       );
                             if (self.tv_status <> 'All')
+                            {
+                              if (self.tv_status = 'Not Completed')     
+                              {
+                                control.ds_sql := control.ds_sql || ' and a.E_STATUS <> \'Completed\'';
+                              } else {
                               control.ds_sql := control.ds_sql || sprintf (' and a.E_STATUS = ''%s''', self.tv_status);
+                              }  
+                            }
 
                             self.sortChange (get_keyword ('t_sortColumn', e.ve_params), 'ts_order', 'ts_direction', self.ds);
                             control.ds_sql := sprintf ('%s order by %s %s', control.ds_sql, self.ts_order, self.ts_direction);
@@ -3014,7 +3030,7 @@
                             <?vsp
                               }
                               M := 4;
-                              http (sprintf ('<tr id="s_tr_no" style="display: %s"><td colspan="%d"><b>No Sharings</b></td></tr>', case when L = 0 then '' else 'none' end, M));
+                              http (sprintf ('<tr id="s_tr_no" style="display: %s";><td colspan="%d"><b>No Sharings</b></td></tr>', case when L = 0 then 'run-in' else 'none' end, M));
                             ?>
                           </table>
                           <input type="hidden" id="s_no" name="s_no" value="<?V L+1 ?>" />
@@ -3306,8 +3322,8 @@
                 <v:label for="t_eventEndDate" value="Start Date"/>
               </th>
               <td>
-                      <v:text name="t_eventStartDate" xhtml_id="t_eventStartDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat)" xhtml_onclick="--sprintf ('cPopup.select(document.forms[0].t_eventStartDate, \'t_eventStartDate_select\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
-                          <a href="#" id="t_eventStartDate_select" onclick="cPopup.select(document.forms[0].t_eventStartDate, 't_eventStartDate_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
+                          <v:text name="t_eventStartDate" xhtml_id="t_eventStartDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat)" xhtml_onclick="javascript: calendarPopup(\'t_eventStartDate\');" xhtml_class="textbox" xhtml_size="10" />
+                          <a href="#" id="t_eventStartDate_select" onclick="calendarPopup('t_eventStartDate'); return false;" class="noapp">
                   <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                 </a>
               </td>
@@ -3317,8 +3333,8 @@
                 <v:label for="t_eventEndDate" value="Due Date"/>
               </th>
               <td>
-                      <v:text name="t_eventEndDate" xhtml_id="t_eventEndDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventEnd, self.cDateFormat)" xhtml_onclick="--sprintf ('cPopup.select(document.forms[0].t_eventEndDate, \'t_eventEndDate_select\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
-                          <a href="#" id="t_eventEndDate_select" onclick="cPopup.select(document.forms[0].t_eventEndDate, 't_eventEndDate_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
+                          <v:text name="t_eventEndDate" xhtml_id="t_eventEndDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventEnd, self.cDateFormat)" xhtml_onclick="javascript: calendarPopup(\'t_eventEndDate\', \'t_eventStartDate\', \'t_eventStartDate\');" xhtml_class="textbox" xhtml_size="10" />
+                          <a href="#" id="t_eventEndDate_select" onclick="calendarPopup('t_eventEndDate', 't_eventStartDate', 't_eventStartDate'); return false;" class="noapp">
                   <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                 </a>
               </td>
@@ -3328,8 +3344,8 @@
                     <v:label for="t_completed" value="Completed" />
                   </th>
                   <td>
-                      <v:text name="t_completed" xhtml_id="t_completed" null-value="--''" value="--CAL.WA.dt_datestring (self.v_completed, self.cDateFormat)" xhtml_onclick="--sprintf ('cPopup.select(document.forms[0].t_completed, \'t_completed_select\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
-                          <a href="#" id="t_completed_select" onclick="cPopup.select(document.forms[0].t_completed, 't_completed_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
+                          <v:text name="t_completed" xhtml_id="t_completed" null-value="--''" value="--CAL.WA.dt_datestring (self.v_completed, self.cDateFormat)" xhtml_onclick="javascript: calendarPopup(\'t_completed\', \'t_eventEndDate\', \'t_eventStartDate\'); changeComplete(this);" xhtml_class="textbox" xhtml_size="10" xhtml_onchange="javascript: changeComplete(this);"/>
+                          <a href="#" id="t_completed_select" onclick="calendarPopup('t_completed', 't_eventEndDate', 't_eventStartDate'); changeComplete('t_completed'); return false;" class="noapp">
                         <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" />
                       </a>
                   </td>
@@ -3372,7 +3388,7 @@
                 <v:label for="t_status" value="Status"/>
               </th>
               <td>
-                      <v:select-list name="t_status" xhtml_id="t_status" xhtml_onchange="javascript: changeComplete(); ">
+                          <v:select-list name="t_status" xhtml_id="t_status" xhtml_onchange="javascript: changeComplete(this);">
                   <v:on-init>
                     <![CDATA[
                       declare x any;
@@ -3381,7 +3397,7 @@
                       x[0] := 'Not Started';
                       x[1] := 'In Progress';
                       x[2] := 'Completed';
-                      x[3] := 'Waiting.';
+                                x[3] := 'Waiting';
                       x[4] := 'Deferred';
                       control.vsl_item_values := x;
                       control.vsl_items := x;
@@ -3398,10 +3414,10 @@
             </tr>
             <tr>
               <th>
-                <v:label for="t_complete" value="% Complete"/>
+                          <v:label for="t_complete" value="Complete (%)" />
               </th>
               <td>
-                      <v:select-list name="t_complete" xhtml_id="t_complete" xhtml_onchange="javascript: changeComplete(); ">>
+                          <v:select-list name="t_complete" xhtml_id="t_complete" xhtml_onchange="javascript: changeComplete(this);">
                   <v:on-init>
                     <![CDATA[
                       declare x any;
@@ -3596,7 +3612,7 @@
                             <?vsp
                               }
                               M := 4;
-                              http (sprintf ('<tr id="s_tr_no" style="display: %s"><td colspan="%d"><b>No Sharings</b></td></tr>', case when L = 0 then '' else 'none' end, M));
+                              http (sprintf ('<tr id="s_tr_no" style="display: %s"><td colspan="%d"><b>No Sharings</b></td></tr>', case when L = 0 then 'run-in' else 'none' end, M));
                             ?>
                           </table>
                           <input type="hidden" id="s_no" name="s_no" value="<?V L+1 ?>" />
@@ -3836,10 +3852,10 @@
                     <th>
                       Source name
                   </th>
-                    <td id="imp_td_0" style="display: <?V case when self.icSource < 1 then '' else 'none' end ?>;">
+                    <td id="imp_td_0" style="display: <?V case when self.icSource < 1 then 'run-in' else 'none' end ?>;">
                       <input type="file" name="f_file" size="60" />
                   </td>
-                    <td id="imp_td_1" style="display: <?V case when self.icSource = 1 then '' else 'none' end ?>;">
+                    <td id="imp_td_1" style="display: <?V case when self.icSource = 1 then 'run-in' else 'none' end ?>;">
                       <v:text name="f_dav" xhtml_id="f_dav" value="--''" xhtml_size="60" /><v:button action="browse" name="browse" value="Browse...">
                    	  <v:after-data-bind>
                    		  <![CDATA[
@@ -3848,11 +3864,11 @@
               			  </v:after-data-bind>
               		  </v:button>
                   </td>
-                    <td id="imp_td_2" style="display: <?V case when self.icSource = 2 then '' else 'none' end ?>;">
+                    <td id="imp_td_2" style="display: <?V case when self.icSource = 2 then 'run-in' else 'none' end ?>;">
                       <v:text name="f_uri" value="--''" xhtml_size="60" />
                     </td>
                 </tr>
-                  <tr id="imp_tr_31" style="display: <?V case when self.icSource < 1 then 'none' else '' end ?>;">
+                  <tr id="imp_tr_31" style="display: <?V case when self.icSource < 1 then 'none' else 'run-in' end ?>;">
                     <th>
                       User
                   </th>
@@ -3860,7 +3876,7 @@
                       <v:text name="i_user" value="--self.icUser" xhtml_class="" />
                     </td>
                   </tr>
-                  <tr id="imp_tr_32" style="display: <?V case when self.icSource < 1 then 'none' else '' end ?>;">
+                  <tr id="imp_tr_32" style="display: <?V case when self.icSource < 1 then 'none' else 'run-in' end ?>;">
                     <th>
                       Password
                     </th>
@@ -4049,7 +4065,7 @@
                       </v:button>
                     </td>
                   </tr>
-                  <tr id="ex_tr_0" style="display: <?V case when self.exType < 1 then 'none' else '' end ?>;">
+                  <tr id="ex_tr_0" style="display: <?V case when self.exType < 1 then 'none' else 'run-in' end ?>;">
                     <th>
                       User
                     </th>
@@ -4057,7 +4073,7 @@
                       <v:text name="ex_user" value="--self.exUser" xhtml_class="" />
                     </td>
                   </tr>
-                  <tr id="ex_tr_1" style="display: <?V case when self.exType < 1 then 'none' else '' end ?>;">
+                  <tr id="ex_tr_1" style="display: <?V case when self.exType < 1 then 'none' else 'run-in' end ?>;">
                     <th>
                       Password
                     </th>

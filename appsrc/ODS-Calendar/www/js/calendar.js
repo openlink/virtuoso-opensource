@@ -46,7 +46,6 @@ function vspxPost(fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value)
 }
 
 // ---------------------------------------------------------------------------
-//
 function submitEnter(e, fForm, fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value)
 {
   var keyCode;
@@ -252,7 +251,6 @@ function showTag(tag)
 }
 
 // ---------------------------------------------------------------------------
-//
 // sortSelect(select_object)
 //   Pass this function a SELECT object and the options will be sorted
 //   by their text (display) values
@@ -279,7 +277,6 @@ function sortSelect(box)
 }
 
 // ---------------------------------------------------------------------------
-//
 function showTab(tabs, tabsCount, tabNo)
 {
   if ($(tabs))
@@ -309,7 +306,6 @@ function showTab(tabs, tabsCount, tabNo)
 }
 
 // ---------------------------------------------------------------------------
-//
 function windowShow(sPage, width, height)
 {
   if (width == null)
@@ -322,7 +318,6 @@ function windowShow(sPage, width, height)
 }
 
 // ---------------------------------------------------------------------------
-//
 function calendarsShow(sPage, width, height)
 {
   if ($('ss_type_0').checked)
@@ -333,7 +328,6 @@ function calendarsShow(sPage, width, height)
 }
 
 // ---------------------------------------------------------------------------
-//
 function calendarsHelp(mode)
 {
   var T = '';
@@ -351,7 +345,29 @@ function calendarsHelp(mode)
 }
 
 // ---------------------------------------------------------------------------
-//
+function calendarPopup(fld, startValueFld, disableToFld)
+{
+  if (cPopup)
+  {
+    var startValue;
+    if (startValueFld)
+      startValue = ($v(fld)=='')?$v(startValueFld):null;
+    cPopup.disabledDatesExpression = '';
+    if (disableToFld && $v(disableToFld) != '')
+    {
+      var disableToDate = getDateFromFormat($v(disableToFld), CAL.dateFormat);
+      if (disableToDate != 0)
+      {
+        disableToDate = new Date(disableToDate);
+        disableToDate.setDate(disableToDate.getDate()-1);
+        cPopup.addDisabledDates(null, formatDate(disableToDate, 'yyyy-MM-dd'));  
+      }
+    }  
+    cPopup.select($(fld), fld+'_select', CAL.dateFormat, startValue);
+  }  
+}
+
+// ---------------------------------------------------------------------------
 function rowSelect(obj)
 {
   var submitMode = false;
@@ -407,7 +423,6 @@ function rowSelect(obj)
 }
 
 // ---------------------------------------------------------------------------
-//
 function rowSelectValue(dstField, srcField, singleMode)
 {
   if (singleMode)
@@ -430,7 +445,6 @@ function rowSelectValue(dstField, srcField, singleMode)
 }
 
 // ---------------------------------------------------------------------------
-//
 // Menu functions
 //
 // ---------------------------------------------------------------------------
@@ -449,7 +463,6 @@ function menuMouseIn(a, b)
 }
 
 // ---------------------------------------------------------------------------
-//
 function menuMouseOut(event)
 {
   var current, related;
@@ -468,7 +481,6 @@ function menuMouseOut(event)
 }
 
 // ---------------------------------------------------------------------------
-//
 function menuPopup(button, menuID)
 {
   if (document.getElementsByTagName && !document.all)
@@ -507,18 +519,15 @@ function menuPopup(button, menuID)
 }
 
 // ---------------------------------------------------------------------------
-//
 // Hiddens functions
 //
 // ---------------------------------------------------------------------------
-//
 function createHidden(frm_name, fld_name, fld_value)
 {
   createHidden2(document, frm_name, fld_name, fld_value);
 }
 
 // ---------------------------------------------------------------------------
-//
 function createHidden2(doc, frm_name, fld_name, fld_value)
 {
   var hidden;
@@ -539,7 +548,6 @@ function createHidden2(doc, frm_name, fld_name, fld_value)
 }
 
 // ---------------------------------------------------------------------------
-//
 function changeExportName(fld_name, from, to)
 {
   var obj = document.forms['F1'].elements[fld_name];
@@ -548,7 +556,6 @@ function changeExportName(fld_name, from, to)
 }
 
 // ---------------------------------------------------------------------------
-//
 function updateChecked (obj, objName)
 {
   var objForm = obj.form;
@@ -577,7 +584,6 @@ function updateChecked (obj, objName)
 }
 
 // ---------------------------------------------------------------------------
-//
 function addChecked (form, txt, selectionMsq)
 {
   if (!anySelected (form, txt, selectionMsq, 'confirm'))
@@ -626,7 +632,6 @@ function addChecked (form, txt, selectionMsq)
 }
 
 // ---------------------------------------------------------------------------
-//
 function addTag(tag, objName)
 {
   var obj = document.F1.elements[objName];
@@ -649,7 +654,6 @@ function addTag(tag, objName)
 }
 
 // ---------------------------------------------------------------------------
-//
 function addCheckedTags (openerName, checkName)
 {
   if (window.opener.document.F1.elements[document.F1.elements[openerName].value])
@@ -883,9 +887,26 @@ function davBrowse (fld)
 }
 
 // ---------------------------------------------------------------------------
-function changeComplete ()
+function changeComplete (obj)
 {
-  return;
+  obj = $(obj);
+  if (obj.name == 't_completed' && CAL.trim(obj.value) != '')
+  {
+    $('t_status').value = 'Completed';
+    $('t_complete').value = '100';
+  }
+  else if (obj.name == 't_status' && obj.value == 'Completed')
+  {
+    if (CAL.trim($('t_completed').value) == '')
+      $('t_completed').value = $('t_eventEndDate').value;
+    $('t_complete').value = '100';
+  }
+  else if (obj.name == 't_complete' && obj.value == '100')
+  {
+    if (CAL.trim($('t_completed').value) == '')
+      $('t_completed').value = $('t_eventEndDate').value;
+    $('t_status').value = 'Completed';
+  }
 }
 
 // ---------------------------------------------------------------------------

@@ -513,7 +513,16 @@ create procedure ods_sioc_forum_type (in app varchar)
   return sioc_iri (pclazz);
 };
 
+create procedure ods_init_ft ()
+{
+  if (1 = sys_stat ('cl_run_local_only'))
+    {
 DB.DBA.RDF_OBJ_FT_RULE_ADD (get_graph (), null, 'ODS RDF Data');
+    }
+}
+;
+
+ods_init_ft ();
 
 create procedure ods_graph_init ()
 {
@@ -783,14 +792,6 @@ create procedure sioc_user_info (
   if (iri is null)
     return;
   is_person := 1;
-
---  delete_quad_sp (graph_iri, iri, sioc_iri ('first_name'));
---  delete_quad_sp (graph_iri, iri, sioc_iri ('last_name'));
-
---  if (length (waui_first_name) and wa_user_pub_info (flags, 1))
---    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('first_name'), waui_first_name);
---  if (length (waui_last_name) and wa_user_pub_info (flags, 2))
---    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('last_name'), waui_last_name);
 
   iri := person_iri (in_iri, '');
   org_iri := iri || '#org';
@@ -1954,6 +1955,15 @@ create procedure ods_current_ver ()
   return '25';
 };
 
+create procedure ods_sioc_atomic (in f int)
+{
+  if (1 = sys_stat ('cl_run_local_only'))
+    {
+      __atomic (f);
+    }
+}
+;
+
 create procedure ods_sioc_init ()
 {
   registry_set ('__ods_sioc_version', ods_current_ver ());
@@ -1962,15 +1972,15 @@ create procedure ods_sioc_init ()
     return;
   declare exit handler for sqlstate '*'
     {
-      __atomic (0);
+      ods_sioc_atomic (0);
       resignal;
     };
-  __atomic (1);
+  ods_sioc_atomic (1);
   DB.DBA.TTLP (sioct_n3 (), '', get_graph() || '/inf');
   DB.DBA.RDFS_RULE_SET (get_graph (), get_graph() || '/inf');
   fill_ods_sioc (1);
   registry_set ('__ods_sioc_init', registry_get ('__ods_sioc_version'));
-  __atomic (0);
+  ods_sioc_atomic (0);
   return;
 };
 

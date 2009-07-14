@@ -19,20 +19,20 @@
 #  
 #  
 
-if JDK1
+if WITH_JDK1
+TARGET		= testsuite.jar
 JDK1 		= @ac_jdk1_path@
 JAVA_FLAGS	= -O -d .
-TARGET		= testsuite.jar
+JAVA_CLASS	= -classpath .:../virtjdbc.jar 
 endif
 
-JAVA_CLASS	:= -classpath $(CLASSPATH1):../virtjdbc.jar 
 
 all: $(TARGET)
 
 testsuite.jar: *.java
 	@echo ts1 javac $(JAVA_FLAGS) 
-	@$(JDK1)/bin/javac $(JAVA_FLAGS) $(JAVA_CLASS) *.java
-	@$(JDK1)/bin/jar cf testsuite.jar ./testsuite/*.class
+	@$(JDK1)/javac $(JAVA_FLAGS) $(JAVA_CLASS) *.java
+	@$(JDK1)/jar cf testsuite.jar ./testsuite/*.class
 	@rm -f ../testsuite.jar
 	@cp testsuite.jar ../testsuite.jar
 	@echo "............. Test suite jar package built"

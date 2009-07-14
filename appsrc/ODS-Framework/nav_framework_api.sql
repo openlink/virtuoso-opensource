@@ -382,7 +382,6 @@ usersGetInfo (in sid varchar := '',
      state := '00000';
      msg := '';
      qry := usersinfo_sql(usersStr,fieldsStr);
---     dbg_obj_print(qry);
      exec (qry, state, msg, vector(), maxrows, metas, rset);
      if (state = '00000' and length(rset)>0)
      {
@@ -729,10 +728,7 @@ create procedure applicationsGet (in sid varchar := '',
 
   q_str:=sprintf('%s order by  WAM_APP_TYPE,WAM_INST ',q_str);
 
-
---  dbg_obj_print(q_str);
   declare INST_URL,INST_NAME,INST_OWNER, INST_WATYPE varchar;
-
 
   rc := exec (q_str, null, null, vector (), 0, null, null, h);
   while (0 = exec_next (h, null, null, dta))

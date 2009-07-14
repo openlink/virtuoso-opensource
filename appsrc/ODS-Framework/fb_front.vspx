@@ -153,7 +153,6 @@
                )
               )
             {
---              _fb_user := self._fb.require_login(1);
               self._fb_usernotcorrespond:=1;
             }
 
@@ -332,17 +331,10 @@
                  if(length(syncdata_jsarrstr))
                   self._dhtml:=vector_concat(self._dhtml,vector('syncdata_jsarrstr',syncdata_jsarrstr));
               }
-
---                 sync_fbf_odsab(self._fb,_user_id,_fb_user,1);
-
               contatcst_import_res:=sync_fbf_odsab(self._fb,_user_id,_fb_user,0,1);
               self.syncdata_arr:=vector_concat(vector(_fb_user),contatcst_import_res);
-
             }
-
-
             _html:='';
-
 
             if(_user_id is null or _fb_user is null or _fb_user=0)
             {

@@ -20,16 +20,16 @@
 #  
 
 
-if JDK3
+if WITH_JDK3
 TARGETS		= virt_jena.jar
 JDK		= @ac_jdk3_path@
 JDK_FLAGS	= -Xlint -O -g:none
 
-JAVA		= $(JDK)/bin/java
-JAVAC		= $(JDK)/bin/javac
-JAVAH		= $(JDK)/bin/javah
-JAVADOC		= $(JDK)/bin/javadoc
-JAR		= $(JDK)/bin/jar
+JAVA		= $(JDK)/java
+JAVAC		= $(JDK)/javac
+JAVAH		= $(JDK)/javah
+JAVADOC		= $(JDK)/javadoc
+JAR		= $(JDK)/jar
 endif
 
 
@@ -50,6 +50,7 @@ TESTSUITE_SRC= \
 	testsuite/VirtuosoTestGraph.java
 
 JENA_CLASSPATH=lib/arq.jar:lib/iri.jar:lib/jena.jar:lib/jenatest.jar:lib/junit.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc3.jar
+
 
 all-am:	lib virt_jena.jar
 
@@ -75,9 +76,9 @@ doc:
 		$(JENA_SRC)
 	
 #
-#  Run testsuite if JDK was found
+#  Run testsuite if WITH_JDK was found
 #
-if JDK3
+if WITH_JDK3
 run-tests: virt_jena.jar
 	$(JAVAC) $(JDK_FLAGS) \
 		-classpath "$(JENA_CLASSPATH):./virt_jena.jar" \

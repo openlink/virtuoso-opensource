@@ -20,15 +20,15 @@
 #  
 
 
-if JDK3
+if WITH_JDK3
 TARGETS		= virt_sesame3.jar
 JDK		= @ac_jdk3_path@
 JDK_FLAGS	= -Xlint -O -g:none
-JAVA		= $(JDK)/bin/java
-JAVAC		= $(JDK)/bin/javac
-JAVAH		= $(JDK)/bin/javah
-JAVADOC		= $(JDK)/bin/javadoc
-JAR		= $(JDK)/bin/jar
+JAVA		= $(JDK)/java
+JAVAC		= $(JDK)/javac
+JAVAH		= $(JDK)/javah
+JAVADOC		= $(JDK)/javadoc
+JAR		= $(JDK)/jar
 endif
 
 
@@ -57,7 +57,7 @@ lib:
 	@echo "Please refer to README file for missing .jar files"
 
 
-virt_sesame3.jar: $(SESAME_SRC) Makefile.am
+virt_sesame3.jar: $(SESAME_SRC)
 	-rm -rf out.driver
 	-mkdir out.driver
 	$(JAVAC) $(JDK_FLAGS) -d out.driver \
@@ -72,7 +72,7 @@ doc:
 		$(SESAME_SRC)
 
 
-if JDK3
+if WITH_JDK3
 run-tests: virt_sesame3.jar
 	-rm -rf out.examples
 	-mkdir out.examples

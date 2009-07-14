@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
-  -  $Id$
+ -  $Id$
  -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
@@ -325,11 +325,11 @@
             http ('</tr>');
           ?>
           <tr id="c_footer" class="C_heading">
-            <td colspan="2" />
+            <td colspan="2"></td>
             <td class="C_onmonth C_today" colspan="3">
               <span id="c_today_0" onmousedown="cSelect(this)" style="font-weight: bold;">today</span>
             </td>
-            <td colspan="2" />
+            <td colspan="2"></td>
           </tr>
         </tbody>
       </table>

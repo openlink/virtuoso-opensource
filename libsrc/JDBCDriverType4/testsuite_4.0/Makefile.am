@@ -19,20 +19,20 @@
 #  
 #  
 
-if JDK4
+if WITH_JDK4
+TARGET		= testsuite4.jar
 JDK4 		= @ac_jdk4_path@
 JAVA_FLAGS	= -O -g:none -d .
-JAVA_CLASS	= -classpath $(CLASSPATH4):../virtjdbc4.jar
-TARGET		= testsuite4.jar
+JAVA_CLASS	= -classpath .:../virtjdbc4.jar
 endif
+
 
 all: $(TARGET)
 
-
 testsuite4.jar: *.java
 	@echo ts4 javac $(JAVA_FLAGS)
-	@$(JDK4)/bin/javac $(JAVA_FLAGS) $(JAVA_CLASS) *.java
-	@$(JDK4)/bin/jar cf testsuite4.jar ./testsuite/*.class
+	@$(JDK4)/javac $(JAVA_FLAGS) $(JAVA_CLASS) *.java
+	@$(JDK4)/jar cf testsuite4.jar ./testsuite/*.class
 	@rm -f ../testsuite4.jar
 	@cp testsuite4.jar ../testsuite4.jar
 	@echo "............. Test suite jar package built"

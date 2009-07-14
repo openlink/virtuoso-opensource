@@ -19,22 +19,22 @@
 #  
 #  
 
-if JDK1
+if WITH_JDK1
 JDK1_TARGETS = jdk1-target
 JDK1_TEST = jdk1-test
 endif
 
-if JDK2
+if WITH_JDK2
 JDK2_TARGETS = jdk2-target
 JDK2_TEST = jdk2-test
 endif
 
-if JDK3
+if WITH_JDK3
 JDK3_TARGETS = jdk3-target
 JDK3_TEST = jdk3-test
 endif
 
-if JDK4
+if WITH_JDK4
 JDK4_TARGETS = jdk4-target
 JDK4_TEST = jdk4-test
 endif
