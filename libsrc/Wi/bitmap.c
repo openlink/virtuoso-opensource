@@ -1513,6 +1513,7 @@ pl_set_at_bit (placeholder_t * pl, db_buf_t bm, short bm_len, bitno_t bm_start, 
 	  if (value < ce_start)
 	    {
 	      pl_ce_set (pl, ce, ce_len, bm_start, BITNO_MIN, 1);
+	      pl->itc_bp.bp_at_end = 0;
 	      return;
 	    }
 	  prev_ce = ce;
