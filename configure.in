@@ -1555,8 +1555,8 @@ AC_HELP_STRING([--without-external-zlib], [use internal zlib support (default)])
 
 if test "x$with_zlib" != "xno"
 then
-    AC_CHECK_HEADER (zlib.h)
-    AC_CHECK_LIB (z, main, [with_zlib=yes], [with_zlib=internal])
+    AC_CHECK_HEADER(zlib.h)
+    AC_CHECK_LIB(z, main, [with_zlib=yes], [with_zlib=internal])
 fi
 AM_CONDITIONAL(WITH_ZLIB, test "x$with_zlib" = "xinternal")
 
