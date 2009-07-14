@@ -116,7 +116,6 @@ Optional components
   * virtodbc - Virtuoso ODBC Driver
   * virtuoso_clr_t - .NET CLR-hosting server (requires .NET Framework SDK v1.1)
   * virtuoso_javavm_t - Java hosting server (requires Java SDK)
-  * virtuoso_php_t - PHP4 hosting server (requires PHP4 library)
   * virtuoso_sample_t - sample of the Virtuoso server with extensions
   * hosting_perl - Perl hosting plugin (requires Active Perl)
   * hosting_python - Python hosting plugin (requires Active Python)
@@ -138,7 +137,7 @@ Building optional components
 PHP5 library notes
 ------------------
 
-The following directories with the header files from the PHP4 source tree need
+The following directories with the header files from the PHP5 source tree need
 to be placed under /win32/php5/ :
 
   * ext/
