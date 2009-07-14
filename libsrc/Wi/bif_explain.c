@@ -742,12 +742,12 @@ node_print (data_source_t * node)
 	{
 	  stmt_printf (("\nAfter join test:\n"));
 	  code_vec_print (rts->rts_after_join_test);
+	}
 	  if (rts->rts_save_env)
 	    {
 	      stmt_printf ((" save env: "));
 	      ssl_array_print (rts->rts_save_env);
 	    }
-	}
       stmt_printf (("\n"));
     }
   else if (in == (qn_input_fn) subq_node_input)

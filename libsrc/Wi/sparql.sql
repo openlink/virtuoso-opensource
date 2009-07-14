@@ -7622,10 +7622,10 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_W (
 {
   -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_W (', g_iid, s_uri, p_uri, o_uri, env, ')');
   declare log_mode integer;
+  declare s_iid, p_iid, o_iid IRI_ID;
   log_mode := env[0];
   if (log_mode = 1)
     {
-      declare s_iid, p_iid, o_iid IRI_ID;
       whenever sqlstate '40001' goto deadlock_1;
 again_1:
       s_iid := iri_to_id (s_uri);
@@ -7643,8 +7643,11 @@ again_1:
       whenever sqlstate '40001' goto deadlock_0;
 again_0:
       log_enable (0, 1);
-      insert soft DB.DBA.RDF_QUAD (G,S,P,O)
-      values (g_iid, iri_to_id (s_uri), iri_to_id (p_uri), iri_to_id (o_uri));
+      s_iid := iri_to_id (s_uri);
+      p_iid := iri_to_id (p_uri);
+      o_iid := iri_to_id (o_uri);
+      commit work;
+      insert soft DB.DBA.RDF_QUAD (G,S,P,O) values (g_iid, s_iid, p_iid, o_iid);
       commit work;
       -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_W (', g_iid, s_uri, p_uri, o_uri, env, ') done /0');
       return;
@@ -7652,8 +7655,11 @@ again_0:
   whenever sqlstate '40001' goto deadlock_2;
 again_2:
   log_enable (1, 1);
-  insert soft DB.DBA.RDF_QUAD (G,S,P,O)
-  values (g_iid, iri_to_id (s_uri), iri_to_id (p_uri), iri_to_id (o_uri));
+  s_iid := iri_to_id (s_uri);
+  p_iid := iri_to_id (p_uri);
+  o_iid := iri_to_id (o_uri);
+  commit work;
+  insert soft DB.DBA.RDF_QUAD (G,S,P,O) values (g_iid, s_iid, p_iid, o_iid);
   commit work;
   -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_W (', g_iid, s_uri, p_uri, o_uri, env, ') done /2');
   return;

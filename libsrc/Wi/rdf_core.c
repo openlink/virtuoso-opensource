@@ -1504,7 +1504,7 @@ boxint
 rdf_new_iri_id (lock_trx_t * lt, char ** value_seq_ret, int nth, query_instance_t * qi)
 {
   int rc;
-  caddr_t log_array, *old_repl;
+  caddr_t log_array, * old_repl;
   static caddr_t iri_seq[N_IRI_SEQS];
   static caddr_t iri_seq_max[N_IRI_SEQS];
   static caddr_t range_seq;

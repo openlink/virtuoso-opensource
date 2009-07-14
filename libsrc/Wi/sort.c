@@ -343,6 +343,11 @@ setp_temp_clear (setp_node_t * setp, hash_area_t * ha, caddr_t * qst)
     qst_set (qst, setp->setp_sorted, NULL);
   if (setp->setp_row_ctr)
     qst_set (qst, setp->setp_row_ctr, NULL);
+  if (setp->setp_ssa.ssa_array)
+    {
+      qst_set_long (qst, setp->setp_ssa.ssa_current_set, 0);
+      qst_set (qst, setp->setp_ssa.ssa_array, NULL);
+    }
 }
 
 

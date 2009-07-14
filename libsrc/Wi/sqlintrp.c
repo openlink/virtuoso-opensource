@@ -676,6 +676,10 @@ void
 qn_init (table_source_t * ts, caddr_t * inst)
 {
   /* Reset a single state query node in a qr */
+#if 0 /* if needed, it is reset by itself */
+  if (subq->qr_remote_mode != QR_LOCAL)
+    remote_subq_close (subq, inst);
+#endif
 
   if ((ts->src_gen.src_input == (qn_input_fn) table_source_input ||
        ts->src_gen.src_input == (qn_input_fn) table_source_input_unique)

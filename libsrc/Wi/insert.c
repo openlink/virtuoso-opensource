@@ -348,6 +348,22 @@ pg_check_map_1 (buffer_desc_t * buf)
   if (buf->bd_is_write && buf->bd_writer != THREAD_CURRENT_THREAD)
     GPF_T1 ("Must have write on buffer to check it");
 #endif
+  {
+    short mx = 0;
+    page_map_t * pm = buf->bd_content_map;
+    int inx, ent;
+    for (inx = 0; inx < pm->pm_count; inx++)
+      {
+	ent = pm->pm_entries[inx];
+	if (ent > mx)
+	  mx = ent;
+      }
+    if (mx)
+      {
+	int row_len = row_length (buf->bd_buffer + mx, buf->bd_tree->it_key);
+	if (mx + row_len > pm->pm_filled_to) GPF_T1 ("pm_filled to not properly updated");
+      }
+  }
   pg_make_map (buf);
   if (org_free != buf->bd_content_map->pm_bytes_free)
     GPF_T1 ("map bytes free out of sync");
