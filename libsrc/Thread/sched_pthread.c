@@ -243,6 +243,9 @@ thread_initial (unsigned long stack_size)
   stack_size *= 2;
 #endif
 
+
+  stack_size = ((stack_size / 1024) + 1) * 1024;
+
   thr->thr_stack_size = stack_size;
   thr->thr_status = RUNNING;
   thr->thr_cv = _alloc_cv ();
@@ -339,7 +342,7 @@ thread_create (
   stack_size += 8 * 8192;
 #endif
 
-  stack_size = (stack_size / 1024 + 1) * 1024;
+  stack_size = ((stack_size / 1024) + 1) * 1024;
 
 #if defined (PTHREAD_STACK_MIN)
   if (stack_size < PTHREAD_STACK_MIN)
@@ -383,7 +386,7 @@ thread_create (
 
 
 #ifndef OLD_PTHREADS
-# if  !defined (linux) && !defined (__APPLE__) /* not in redhat 5 */
+# if  defined(HAVE_PTHREAD_ATTR_SETSTACKSIZE)
       rc = pthread_attr_setstacksize (&_thread_attr, stack_size);
       if (rc)
 	{
@@ -391,7 +394,7 @@ thread_create (
 	}
 # endif
 
-#if !defined (SOLARIS)
+#if defined(HAVE_PTHREAD_ATTR_GETSTACKSIZE)
       if (0 == pthread_attr_getstacksize (&_thread_attr, &os_stack_size))
 	{
 	  if (os_stack_size > 4 * 8192)
@@ -418,7 +421,7 @@ thread_create (
       /* rc = pthread_detach (*(pthread_t *) thr->thr_handle); */
       /* CKRET (rc); */
 
-#else
+#else /* OLD_PTHREAD */
       rc = pthread_attr_setstacksize (&_thread_attr, stack_size);
       CKRET (rc);
 
