@@ -318,7 +318,7 @@ int32 c_http_max_keep_alives = 0;
 int32 c_http_keep_alive_timeout = 0;
 int32 c_http_max_cached_proxy_connections = 0;
 int32 c_http_proxy_connection_cache_timeout = 0;
-int32 c_http_thread_sz = 140000;
+int32 c_http_thread_sz = 280000;
 int32 c_http_keep_hosting = 0;
 extern long http_keep_hosting; /* from http.c */
 char *c_ucm_load_path = 0;
@@ -1164,9 +1164,9 @@ cfg_setup (void)
     c_http_proxy_connection_cache_timeout = 0;
 
   if (cfg_getlong (pconfig, section, "HTTPThreadSize", &c_http_thread_sz) == -1)
-    c_http_thread_sz = 140000;
-  if (c_http_thread_sz < 140000)
-    c_http_thread_sz = 140000;
+    c_http_thread_sz = 280000;
+  if (c_http_thread_sz < 280000)
+    c_http_thread_sz = 280000;
   if (c_http_thread_sz < c_future_thread_sz)
     c_http_thread_sz = c_future_thread_sz;
   if (c_http_thread_sz > c_future_thread_sz)
