@@ -1540,20 +1540,20 @@ AC_SUBST(RUBY_LDFLAGS)
 ##									##
 ##########################################################################
 with_zlib="no"
-AC_ARG_WITH(external-zlib, [dnl
-AC_HELP_STRING([--with-external-zlib], [use  external zlib library])
-AC_HELP_STRING([--without-external-zlib], [use internal zlib support (default)])dnl
+AC_ARG_WITH(internal-zlib, [dnl
+AC_HELP_STRING([--with-internal-zlib], [use internal zlib library (default)])
+AC_HELP_STRING([--without-internal-zlib], [use external zlib support])dnl
 ], [
      case "${withval}" in
-       yes)	with_zlib="yes";;
-       no)	with_zlib="internal";;
+       yes)	with_zlib="internal";;
+       no)	with_zlib="external";;
        *)	AC_MSG_ERROR(bad value ${withval} for --enable-zlib) ;;
      esac
   ],
   [ with_zlib="internal" ]
 )
 
-if test "x$with_zlib" != "xno"
+if test "x$with_zlib" != "xinternal"
 then
     AC_CHECK_HEADER(zlib.h)
     AC_CHECK_LIB(z, main, [with_zlib=yes], [with_zlib=internal])
