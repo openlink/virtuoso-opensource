@@ -1324,7 +1324,8 @@ span.toolbarLabel
   position: relative;
   width: 100%;
 }
-.chip * {
+.chip * 
+{
   -moz-user-select:none;
 }
 

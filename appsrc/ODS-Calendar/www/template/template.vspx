@@ -75,6 +75,7 @@
             cPopup = OAT.Browser.isWebKit? new CalendarPopup(): new CalendarPopup('cDiv');
             cPopup.weekStartDay = <?V case when self.cWeekStarts = 's' then 0 else 1 end ?>;
           }
+          CAL.dateFormat = '<?V self.cDateFormat ?>';
 
           OAT.Preferences.imagePath = '/ods/images/oat/';
           OAT.Preferences.stylePath = '/ods/oat/styles/';
