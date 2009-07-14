@@ -1,6 +1,4 @@
 --
---  repl.sql
---
 --  $Id$
 --
 --  TRX replication support

@@ -748,7 +748,7 @@ resp_received:
 	      where
 	      HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
       commit work;
-    signal ('RDFXX', sprintf ('Unable to retrieve RDF data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]));
+      signal ('RDFXX', sprintf ('Unable to retrieve RDF data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]));
     }
   --!!!TBD: proper character set handling in response
   new_download_size := length (ret_body);
@@ -1012,14 +1012,14 @@ create procedure DB.DBA.RDF_SW_PING (in endp varchar, in url varchar)
   xt := null;
   if (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'RestPingService') = '1')
     {
-      rc := http_get (endp||sprintf ('?url=%U', url)); 
+      rc := http_get (endp||sprintf ('?url=%U', url));
       xt := xtree_doc (rc);
     }
   else
     {
       rc := DB.DBA.XMLRPC_CALL (endp, 'weblogUpdates.ping', vector ('', url));
       if (isarray (rc))
-      xt := xml_tree_doc (rc);
+	xt := xml_tree_doc (rc);
     }
   if (xt is not null)
     {
@@ -1174,8 +1174,8 @@ load_grddl:;
 	      if (aq is not null)
 		{
 		  declare uri varchar;
-  		    uri := new_origin_uri;
-		  if (uri not like 'http://%/about/rdf/%') 
+		  uri := new_origin_uri;
+		  if (uri not like 'http://%/about/rdf/%')
 		    uri := 'http://' || registry_get ('URIQADefaultHost') || '/about/rdf/' || new_origin_uri;
 		  aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, uri));
 		}

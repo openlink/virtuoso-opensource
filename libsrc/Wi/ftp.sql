@@ -20,7 +20,6 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 --
--- $Id$
 
 -- Note the FTP_POP_WRITE debugging function.
 -- To debug, replace all 'pop_write<whitespace>(' with 'FTP_POP_WRITE<whitespace>('.

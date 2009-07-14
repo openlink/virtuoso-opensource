@@ -1,6 +1,4 @@
 --
---  vt_text.sql
---
 --  $Id$
 --
 --  Text triggers support.

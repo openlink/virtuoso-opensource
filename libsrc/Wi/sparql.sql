@@ -2784,7 +2784,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_NT (inout triples any, inout ses any)
     {
       http_ttl_triple (env, triples[tctr][0], triples[tctr][1], triples[tctr][2], ses);
       http (' .\n', ses);
-      env[1] := 0; 
+      env[1] := 0;
     }
 }
 ;
@@ -3095,7 +3095,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (inout triples any, inout ses 
   env := vector (0, 0);
 -- No error handler heres because failed sorting by predicate or subject would result in poorly structured output.
   rowvector_subj_sort (triples, 1, 1);
-    rowvector_subj_sort (triples, 0, 1);
+  rowvector_subj_sort (triples, 0, 1);
   http ('{\n  ', ses);
   status := 0;
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
@@ -4118,7 +4118,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in go
   uid := get_keyword ('uid', options, http_nobody_uid());
   gs_app_callback := get_keyword ('gs-app-callback', options);
   if (gs_app_callback is not null)
-    gs_app_uid := get_keyword ('gs-app-uid', options);    
+    gs_app_uid := get_keyword ('gs-app-uid', options);
   rdf_type_iid := iri_to_id (UNAME'http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
   res := dict_new ();
   if (isinteger (consts))
@@ -4139,12 +4139,12 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in go
     {
       vectorbld_init (sorted_good_graphs);
       foreach (any g in good_graphs) do
-    {
+        {
           if (isiri_id (g) and g < min_bnode_iri_id () and
             DB.DBA.RDF_GRAPH_USER_PERMS_ACK (g, uid, 1) and
             (gs_app_callback is null or bit_and (1, call (gs_app_callback) (g, gs_app_uid))) )
             vectorbld_acc (sorted_good_graphs, g);
-    }
+        }
       vectorbld_final (sorted_good_graphs);
       good_g_count := length (sorted_good_graphs);
       if (0 = good_g_count)
@@ -4266,8 +4266,8 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in go
         }
       else
         {
-      -- dbg_obj_princ ('call (''DB.DBA.', fname, ''')(', s, res, ')');
-      call ('DB.DBA.' || fname)(s, res);
+          -- dbg_obj_princ ('call (''DB.DBA.', fname, ''')(', s, res, ')');
+          call ('DB.DBA.' || fname)(s, res);
         }
 end_of_s: ;
     }
@@ -4284,7 +4284,7 @@ describe_physical_subjects:
       gvector_sort (sorted_good_graphs, 1, 0, 0);
       -- dbg_obj_princ ('sorted_good_graphs = ', sorted_good_graphs);
       for (g_ctr := good_g_count - 1; g_ctr >= 0; g_ctr := g_ctr - 1)
-    {
+        {
           declare graph any;
           graph := sorted_good_graphs [g_ctr];
           for (s_ctr := phys_s_count - 1; s_ctr >= 0; s_ctr := s_ctr - 1)
@@ -4307,18 +4307,18 @@ describe_physical_subjects:
         }
       return res;
     }
-      g_dict := dict_new ();
-      for (s_ctr := phys_s_count - 1; s_ctr >= 0; s_ctr := s_ctr - 1)
-        {
-          declare subj, graph any;
-          subj := phys_subjects [s_ctr];
+  g_dict := dict_new ();
+  for (s_ctr := phys_s_count - 1; s_ctr >= 0; s_ctr := s_ctr - 1)
+    {
+      declare subj, graph any;
+      subj := phys_subjects [s_ctr];
       graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where O = subj and
-        0 = position (G, sorted_bad_graphs) and 
+        0 = position (G, sorted_bad_graphs) and
         DB.DBA.RDF_GRAPH_USER_PERMS_ACK (G, uid, 1) and
         (gs_app_callback is null or bit_and (1, call (gs_app_callback) (G, gs_app_uid))) ) );
-          if (graph is not null)
-            dict_put (g_dict, graph, 0);
-        }
+      if (graph is not null)
+        dict_put (g_dict, graph, 0);
+    }
   sorted_good_graphs := dict_list_keys (g_dict, 1);
   if (0 = length (sorted_good_graphs))
     {
@@ -4385,7 +4385,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO (in subj_dict any, in consts any, i
   uid := get_keyword ('uid', options, http_nobody_uid());
   gs_app_callback := get_keyword ('gs-app-callback', options);
   if (gs_app_callback is not null)
-    gs_app_uid := get_keyword ('gs-app-uid', options);    
+    gs_app_uid := get_keyword ('gs-app-uid', options);
   rdf_type_iid := iri_to_id (UNAME'http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
   res := dict_new ();
   if (isinteger (consts))
@@ -4407,7 +4407,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO (in subj_dict any, in consts any, i
       vectorbld_init (sorted_good_graphs);
       foreach (any g in good_graphs) do
         {
-          if (isiri_id (g) and g < min_bnode_iri_id () and 
+          if (isiri_id (g) and g < min_bnode_iri_id () and
             DB.DBA.RDF_GRAPH_USER_PERMS_ACK (g, uid, 1) and
             (gs_app_callback is null or bit_and (1, call (gs_app_callback) (g, gs_app_uid))) )
             vectorbld_acc (sorted_good_graphs, g);
@@ -4567,20 +4567,20 @@ describe_physical_subjects:
         }
       return res;
     }
-      for (s_ctr := phys_s_count - 1; s_ctr >= 0; s_ctr := s_ctr - 1)
-        {
-          declare subj any;
-          subj := phys_subjects [s_ctr];
+  for (s_ctr := phys_s_count - 1; s_ctr >= 0; s_ctr := s_ctr - 1)
+    {
+      declare subj any;
+      subj := phys_subjects [s_ctr];
       for (select P as p1, O as obj1 from DB.DBA.RDF_QUAD where
         0 = position (G, sorted_bad_graphs) and
-        S = subj and 
+        S = subj and
         DB.DBA.RDF_GRAPH_USER_PERMS_ACK (G, uid, 1) and
         (gs_app_callback is null or bit_and (1, call (gs_app_callback) (G, gs_app_uid))) ) do
-            {
-              -- dbg_obj_princ ('found4 ', subj, p1);
-              dict_put (res, vector (subj, p1, __rdf_long_of_obj (obj1)), 0);
-            }
+        {
+          -- dbg_obj_princ ('found4 ', subj, p1);
+          dict_put (res, vector (subj, p1, __rdf_long_of_obj (obj1)), 0);
         }
+    }
   return res;
 }
 ;
@@ -4594,7 +4594,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL (in subj_dict any, in cons
   uid := get_keyword ('uid', options, http_nobody_uid());
   gs_app_callback := get_keyword ('gs-app-callback', options);
   if (gs_app_callback is not null)
-    gs_app_uid := get_keyword ('gs-app-uid', options);    
+    gs_app_uid := get_keyword ('gs-app-uid', options);
   rdf_type_iid := iri_to_id (UNAME'http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
   res := dict_new ();
   if (isinteger (consts))
@@ -4683,7 +4683,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL (in subj_dict any, in cons
           declare subj, graph any;
           subj := phys_subjects [s_ctr];
           graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where O = subj and
-              0 = position (G, sorted_bad_graphs) and 
+              0 = position (G, sorted_bad_graphs) and
               DB.DBA.RDF_GRAPH_USER_PERMS_ACK (G, uid, 1) and
               (gs_app_callback is null or bit_and (1, call (gs_app_callback) (G, gs_app_uid))) ) );
           if (graph is not null)
@@ -6159,7 +6159,7 @@ create function DB.DBA.RDF_QM_DROP_MAPPING (in storage varchar, in mapname any) 
         prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
         select (1) where {
             graph ?:graphiri {
-                `iri(?:qmid)` a ?t } } ) ) ) 
+                `iri(?:qmid)` a ?t } } ) ) )
         return vector (vector ('00000', 'Quad map <' || qmid || '> does not exist, the DROP statement is ignored due to SILENT option'));
     }
   DB.DBA.RDF_QM_ASSERT_JSO_TYPE (qmid, 'http://www.openlinksw.com/schemas/virtrdf#QuadMap');
@@ -6862,7 +6862,7 @@ create function DB.DBA.RDF_QM_DROP_CLASS (in classiri varchar, in silent integer
     prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
     select (1) where {
         graph ?:graphiri {
-            `iri(?:classiri)` a ?t } } ) ) ) 
+            `iri(?:classiri)` a ?t } } ) ) )
     return vector (vector ('00000', 'Class <' || classiri || '> does not exist, the DROP statement is ignored due to SILENT option'));
   if (DB.DBA.RDF_QM_ASSERT_JSO_TYPE (classiri, 'http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat', 1))
     {
@@ -6883,7 +6883,7 @@ create function DB.DBA.RDF_QM_DROP_QUAD_STORAGE (in storage varchar, in silent i
     prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
     select (1) where {
         graph ?:graphiri {
-            `iri(?:storage)` a ?t } } ) ) ) 
+            `iri(?:storage)` a ?t } } ) ) )
     return vector (vector ('00000', 'Quad storage <' || storage || '> does not exist, the DROP statement is ignored due to SILENT option'));
   DB.DBA.RDF_QM_ASSERT_STORAGE_FLAG (storage, 0);
   DB.DBA.RDF_QM_GC_SUBTREE (storage);
@@ -8775,7 +8775,7 @@ create function DB.DBA.RDF_GRAPH_USER_PERMS_ACK (in graph_iri any, in uid any, i
     {
       perms := call (app_cbk)(graph_iid, app_uid);
       if (bit_and (perms, req_perms) <> req_perms)
-  return 0;
+        return 0;
     }
   return 1;
 }
@@ -8838,7 +8838,7 @@ create function DB.DBA.RDF_GRAPH_USER_PERMS_ASSERT (in graph_iri varchar, in uid
           DB.DBA.RDF_GRAPH_USER_PERM_TITLE (bit_and (bit_not (perms), req_perms)),
           graph_iri ) );
     }
-    return graph_iri;
+  return graph_iri;
 }
 ;
 

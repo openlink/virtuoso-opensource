@@ -603,7 +603,7 @@ create procedure SYS_CREATE_TABLE_AS (
 ;
 
 --!AWK PUBLIC
-create procedure 
+create procedure
 encode_b32_num (in i integer) returns varchar
 {
   declare s varchar;
@@ -627,12 +627,12 @@ encode_b32_num (in i integer) returns varchar
 ;
 
 --!AWK PUBLIC
-create procedure 
+create procedure
 decode_b32_num (in s varchar) returns integer
 {
   declare x integer; x := 0;
   declare y integer;
-  
+
   declare b32_s varchar;
   b32_s := 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 
@@ -647,7 +647,7 @@ decode_b32_num (in s varchar) returns integer
 	    x := (x * 32) + y - 1;
       else
         signal ('42000', 'Invalid character in decode_b32_num');
-      
+
       i := i + 1;
 	}
   return x;

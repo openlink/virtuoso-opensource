@@ -1,6 +1,4 @@
 --
---  replddk.sql
---
 --  $Id$
 --
 --  TRX replication support tables definition

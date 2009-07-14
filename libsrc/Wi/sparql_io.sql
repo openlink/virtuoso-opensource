@@ -2172,7 +2172,7 @@ host_found:
     }
 write_results:
   if ((1 <> length (metas[0])) or ('aggret-0' <> metas[0][0][0]))
-  DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, add_http_headers);
+    DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, add_http_headers);
 }
 ;
 

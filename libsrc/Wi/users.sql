@@ -1,6 +1,4 @@
 --
---  users.sql
---
 --  $Id$
 --
 --  Unified user model

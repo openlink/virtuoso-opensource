@@ -20,6 +20,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 --
+
 create procedure WS.WS.GET_CGI_VARS_VECTOR (inout lines any) returns ANY
 {
   declare options any;

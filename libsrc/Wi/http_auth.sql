@@ -20,6 +20,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 --
+
 -- Authenticate against names and passwords in SYS_USERS, using HP_SECURITY for level
 create procedure
 DB.DBA.HP_AUTH_SQL_USER (in realm varchar)

@@ -1,6 +1,4 @@
 --
---  mail_cli.sql
---
 --  $Id$
 --
 --  Virtuoso mail client function support.

@@ -1,6 +1,4 @@
 --
---  xml_view.sql
---
 --  $Id$
 --
 --  Publishing xml views as WebDAV resources.

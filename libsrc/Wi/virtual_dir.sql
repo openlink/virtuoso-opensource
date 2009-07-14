@@ -1,6 +1,4 @@
 --
---  virtual_dir.sql
---
 --  $Id$
 --
 --  Virtual Web directories support.
@@ -1074,7 +1072,7 @@ end_loop:;
 	  pref := 'http://'||host||http_map_get ('domain')||'/rdf/';
 	  if (url like pref || '%')
 	    {
-	    url := subseq (url, length (pref));
+	      url := subseq (url, length (pref));
 	      if (url like 'http/%')
 	        url := 'http:/' || subseq (url, 4);
               else if (url like 'https/%')
