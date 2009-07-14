@@ -663,7 +663,8 @@ transaction will have been rolled back.</para>
 </sect4>
 
 <sect4 id="rdfsupportedmimesofprotocol"><title>Response Format</title>
-<para>All the SPARQL protocol standard MIME types are supported:</para>
+<para>All the SPARQL protocol standard MIME types are supported by a SPARQL web service client.
+Moreover, SPARQL web service endpont supports additional MIME types and in some cases additional query types for standard MIME types.</para>
 <table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
     <title>Supported MIME Types list</title>
     <tgroup align="char" charoff="50" char="." cols="3">
@@ -671,119 +672,93 @@ transaction will have been rolled back.</para>
     <thead>
       <row>
         <entry>Content-Type</entry>
-        <entry>Supported for the result of a query of type</entry>
+        <entry>SPARQL query type</entry>
+        <entry>Support in Virtuoso</entry>
       </row>
     </thead>
     <tbody>
       <row>
         <entry>'application/sparql-results+xml'</entry>
+        <entry>SELECT, ASK</entry>
+        <entry>both client and endpoint</entry>
+      </row>
+      <row>
+        <entry>'application/rdf+xml'</entry>
+        <entry>CONSTRUCT, DESCRIBE</entry>
+        <entry>both client and endpoint</entry>
+      </row>
+      <row>
+        <entry>'application/rdf+xml'</entry>
         <entry>SELECT</entry>
-      </row>
-      <row>
-        <entry>'application/sparql-results+xml'</entry>
-        <entry>ASK</entry>
-      </row>
-      <row>
-        <entry>'application/rdf+xml'</entry>
-        <entry>CONSTRUCT</entry>
+        <entry>endpoint only</entry>
       </row>
       <row>
         <entry>'application/rdf+json'</entry>
-        <entry>CONSTRUCT</entry>
-      </row>
-      <row>
-        <entry>'application/rdf+json'</entry>
-        <entry>DESCRIBE</entry>
-      </row>
-      <row>
-        <entry>'application/rdf+xml'</entry>
-        <entry>DESCRIBE</entry>
+        <entry>CONSTRUCT, DESCRIBE</entry>
+        <entry>endpoint only</entry>
       </row>
       <row>
         <entry>'text/rdf+n3'</entry>
-        <entry>CONSTRUCT</entry>
+        <entry>CONSTRUCT, DESCRIBE</entry>
+        <entry>both client and endpoint</entry>
       </row>
       <row>
         <entry>'text/rdf+n3'</entry>
-        <entry>DESCRIBE</entry>
+        <entry>SELECT, ASK</entry>
+        <entry>endpoint only</entry>
+      </row>
+      <row>
+        <entry>'text/html'</entry>
+        <entry>SELECT</entry>
+        <entry>endpoint only</entry>
+      </row>
+      <row>
+        <entry>'application/javascript'</entry>
+        <entry>SELECT</entry>
+        <entry>endpoint only</entry>
+      </row>
+      <row>
+        <entry>'application/sparql-results+json'</entry>
+        <entry>SELECT, ASK</entry>
+        <entry>endpoint only</entry>
+      </row>
+      <row>
+        <entry>'application/vnd.ms-excel'</entry>
+        <entry>SELECT</entry>
+        <entry>endpoint only</entry>
+      </row>
+      <row>
+        <entry>'application/soap+xml' and 'application/soap+xml;11'</entry>
+        <entry>SELECT</entry>
+        <entry>endpoint only</entry>
       </row>
     </tbody>
   </tgroup>
 </table>
-<para>If the HTTP header returned by the remote server does not contain a 'Content-Type' line, the MIME type may be guessed from the text of the returned body. </para>
-<para>The current implementation does not support returning the results of SELECT as RDF /XML, TURTLE or 'sparql-results-2'.</para>
+<para>The current implementation does not support returning the results of SELECT as RDF/XML or 'sparql-results-2'.</para>
+<para>If the HTTP header returned by the remote server does not contain a 'Content-Type' line, the client may guess MIME type from the text of the returned body.</para>
 <para>Error messages returned from the service are returned as XML documents, using the MIME type application/xml. The documents consist of a single element containing an error message.</para>
+<para>For 'text/html' MIME type, the result is a HTML document containing query summary and tabular results.
+The format is human-readable but not intended for using by applications because it makes strings undistinguishable from IRIs and loses other details such as exact datatypes of returned values.</para>
+<para>Javascript serialization of results generates an HTML table with the CSS class sparql.
+The table contains a column indicating row number and additional columns for each query variable.
+Each query solution contributes one row of the table.
+Unbound variables are indicated with a non-breaking space in the appropriate table cells.</para>
+<para>Two separate MIME types exist for for JSON.
+JSON serialization of results is 'application/sparql-results+json' and conforms to the draft specification "Serializing SPARQL Query Results in JSON".
+JSON serialization of triples is 'application/rdf+json' and interoperable with Talis.
+Sometimes a client needs a JSON but it does not know the type of query it sends to Virtuoso web service endpoint.
+In this case the client can specify either one MIME-type 'application/json' or both
+'application/sparql-results+json' and 'application/rdf+json' in the "Accept" header line and Virtuoso will chose the appropriate one automatically.
+Similar trick works for other sorts of result types: Virtuoso inspects the whole "Accept" header line to find out the most appropriate return type for the given query.
+</para>
+<para>
+For interoperability with clients that were developed before current versions of SPARQL protocol and format specs are issued, Virtuoso supports some obsolete variants of standard MIME types.
+'text/rdf+n3', 'text/rdf+ttl', 'application/turtle' and 'application/x-turtle' are understood for TURTLE output,
+'application/x-rdf+json' and 'application/rdf+json' are for "Serializing SPARQL Query Results in JSON".
+When a client specifies obsolete MIME type but not its standard variant, an obsolete variant is returned for interoperability.
+</para>
 </sect4>
-
-<sect4 id="rdfsupportedmimesaddofprotocol"><title>Additional Response Formats -- SELECT</title>
-<para>Use the <emphasis>format</emphasis> parameter to select one of the following alternate output formats:</para>
-
-<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
-    <title>Additional Response formats list</title>
-    <tgroup align="char" charoff="50" char="." cols="3">
-    <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
-    <thead>
-      <row>
-        <entry>Format Value</entry>
-        <entry>Description</entry>
-        <entry>Content-Type</entry>
-      </row>
-    </thead>
-    <tbody>
-      <row>
-        <entry>HTML</entry>
-        <entry>HTML document containing query summary and tabular results</entry>
-        <entry>text/html</entry>
-      </row>
-      <row>
-        <entry>JSON</entry>
-        <entry>JSON serialization of results. Conforms to the draft specification Serializing SPARQL Query Results in JSON</entry>
-        <entry>application/sparql-results+json</entry>
-      </row>
-      <row>
-        <entry>Javascript</entry>
-        <entry>Javascript serialization of results. Generates an HTML table with the CSS class sparql. The table contains a column indicating row number and additional columns for each query variable. Each query solution contributes one row of the table. Unbound variables are indicated with a non-breaking space in the appropriate table cells.</entry>
-        <entry>application/javascript</entry>
-      </row>
-      <row>
-        <entry>XML</entry>
-        <entry></entry>
-        <entry>application/sparql-results+xml</entry>
-      </row>
-      <row>
-        <entry>TURTLE</entry>
-        <entry></entry>
-        <entry>text/rdf+n3</entry>
-      </row>
-    </tbody>
-  </tgroup>
-</table>
-</sect4>
-
-<sect4 id="rdfsupportedmimesaddofprotocol"><title>Additional HTTP Response Formats -- DESCRIBE &amp; CONSTRUCT</title>
-
-<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
-    <title>Additional HTTP Response Formats -- DESCRIBE &amp; CONSTRUCT</title>
-    <tgroup align="char" charoff="50" char="." cols="3">
-    <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
-    <thead>
-      <row>
-        <entry>Format Value</entry>
-        <entry>Description</entry>
-        <entry>Content-Type</entry>
-      </row>
-    </thead>
-    <tbody>
-      <row>
-        <entry>JSON</entry>
-        <entry></entry>
-        <entry>application/rdf+json</entry>
-      </row>
-    </tbody>
-  </tgroup>
-</table>
-</sect4>
-
 <sect4 id="rdfsupportedmimesaddofprotocol"><title>Virtuoso/PL APIs</title>
 <para>Virtuoso also provides SPARQL protocol client APIs in Virtuoso PL, so you can communicate with SPARQL
 Query Services from Virtuoso stored procedures. The APIs are as follows:
@@ -1794,7 +1769,51 @@ Client-Response-Num: 1
 </rdf:RDF>
 Done
 ]]></programlisting>
+<para><emphasis>Simple example how to extract a part of a literal as a variable for use in a numeric comparison using SPARQL</emphasis></para>
+<para>Suppose there are the following triples inserted:</para>
+<programlisting><![CDATA[
+SQL>sparql insert into graph <http://mygraph.com> {  <:a>
+                                                     <:p>
+                                                     "123 abc" };
+callret-0
+VARCHAR
+_______________________________________________________________________________
+
+Insert into <http://mygraph.com>, 1 triples -- done
+
+1 Rows. -- 30 msec.
+SQL>sparql insert into graph <http://mygraph.com> {  <:a>
+                                                     <:p>
+                                                     "234 abc" };
+callret-0
+VARCHAR
+_______________________________________________________________________________
+
+Insert into <http://mygraph.com>, 1 triples -- done
+
+1 Rows. -- 0 msec.
+]]></programlisting>
+<para>In order to extract the numeric part, and then do a numeric (&lt;.&gt;,=), you can use
+atoi (), atol or atof in the filter:</para>
+<programlisting><![CDATA[
+SQL>sparql
+select *
+from <http://mygraph.com>
+where
+  {
+    ?s ?p ?o . filter (bif:atoi (?o) > 130)
+  };
+s        p         o
+VARCHAR  VARCHAR   VARCHAR
+___________________________________
+
+:a       :p        234 abc
+
+1 Rows. -- 10 msec.
+]]></programlisting>
+
 </sect3>
+
 <sect3 id="rdfsparqlendpointimplnotes"><title>Implementation Notes</title>
 <para>This service has been implemented using <ulink url="http://docs.openlinksw.com/virtuoso">Virtuoso Server</ulink>.</para>
 </sect3>
