@@ -815,7 +815,7 @@ ks_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
 }
 
 static int
-ks_search_param_update (it_cursor_t * itc, search_spec_t * ks_spec, caddr_t itc_val, caddr_t val)
+ks_search_param_update (it_cursor_t * itc, search_spec_t * ks_spec, caddr_t itc_val, caddr_t val, int par_inx)
 {
   short sav_par_fill = itc->itc_search_par_fill;
   short inx, sav_own_par_fill = -1;
@@ -846,7 +846,7 @@ ks_search_param_update (it_cursor_t * itc, search_spec_t * ks_spec, caddr_t itc_
 	  itc->itc_owned_search_par_fill = inx;
 	}
     }
-  itc->itc_search_par_fill = ks_spec->sp_min;
+  itc->itc_search_par_fill = par_inx;
   res = ks_search_param_cast (itc, ks_spec, val);
 
   /*fprintf (stderr, "itc_val != val rc=%d owned_fill=%d old_own_fill=%d fill=%d old_fill=%d\n",
@@ -872,13 +872,13 @@ ks_check_params_changed (it_cursor_t * itc, key_source_t * ks, caddr_t * state)
 	{
 	  itc_val = itc->itc_search_params[ks_spec->sp_min];
 	  val = QST_GET (state, ks_spec->sp_min_ssl);
-	  ks_search_param_update (itc, ks_spec, itc_val, val);
+	  ks_search_param_update (itc, ks_spec, itc_val, val, ks_spec->sp_min);
 	}
       if (ks_spec->sp_max_ssl)
 	{
 	  itc_val = itc->itc_search_params[ks_spec->sp_max];
 	  val = QST_GET (state, ks_spec->sp_max_ssl);
-	  ks_search_param_update (itc, ks_spec, itc_val, val);
+	  ks_search_param_update (itc, ks_spec, itc_val, val, ks_spec->sp_max);
 	}
       ks_spec = ks_spec->sp_next;
     }
