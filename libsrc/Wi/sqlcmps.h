@@ -207,6 +207,7 @@ typedef struct sql_comp_s
     state_slot_t *	sc_grouping;
     ST **		sc_groupby_set;
     int		sc_is_update;
+    char	sc_is_union;
     update_node_t * 	sc_update_keyset;
     id_hash_t *	sc_sample_cache;
   } sql_comp_t;

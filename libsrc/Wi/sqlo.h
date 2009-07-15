@@ -634,7 +634,7 @@ df_elt_t ** sqlo_in_list (df_elt_t * pred, df_elt_t *tb_dfe, caddr_t name);
 dbe_column_t *  cp_left_col (df_elt_t * cp);
 df_elt_t ** sqlo_pred_body (sqlo_t * so, locus_t * loc, df_elt_t * tb_dfe, df_elt_t * pred);
 void qn_ins_before (sql_comp_t * sc, data_source_t ** head, data_source_t * ins_before, data_source_t * new_qn);
-
+void sqlg_unplace_ssl (sqlo_t * so, ST * tree);
 
 /* cost model constants */
 

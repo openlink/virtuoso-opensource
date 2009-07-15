@@ -982,25 +982,24 @@ hs_make_signature (setp_node_t * setp, dbe_table_t * tb)
 
 
 void
-sqlg_unplace_ssl (sqlo_t * so, ST * tree)
+sqlg_unplace_pred_body_ssl (sqlo_t * so, df_elt_t ** body)
 {
-  /* if the tree is placed and has ssls for subexps, set the ssl refs to zero so that the exp will be generated again.
-  * If a hash filler has an exp and the same exp occurs later, the ssl set by the hash filler must not be refd.  The exp must be re evaluated. */
-  df_elt_t * dfe;
   int inx;
-  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
+  if (!body)
     return;
-  if (ST_P(tree, COL_DOTTED))
-    return;
-  dfe = sqlo_df_elt (so, tree);
-  if (dfe && dfe->dfe_ssl)
-	dfe->dfe_ssl = NULL;
-  DO_BOX (ST *, exp, inx, (caddr_t*)tree)
+  switch ((ptrlong)body[0])
     {
-      sqlg_unplace_ssl (so, exp);
+    case BOP_AND:
+    case BOP_OR:
+      for (inx = 1; inx < BOX_ELEMENTS (body); inx++)
+	sqlg_unplace_pred_body_ssl (so, (df_elt_t**)body[inx]);
+      break;
+    case DFE_PRED_BODY:
+      for (inx = 1; inx < BOX_ELEMENTS (body); inx++)
+	sqlg_unplace_ssl (so, body[inx]->dfe_tree);
     }
-  END_DO_BOX;
 }
+
 
 data_source_t *
 sqlg_hash_filler (sqlo_t * so, df_elt_t * tb_dfe, data_source_t * ts_src)
@@ -1037,6 +1036,7 @@ sqlg_hash_filler (sqlo_t * so, df_elt_t * tb_dfe, data_source_t * ts_src)
     }
   END_DO_SET();
   ts_src->src_after_code = code_to_cv (so->so_sc, fill_code);
+  sqlg_unplace_pred_body_ssl (so, tb_dfe->_.table.join_test);
   DO_SET (df_elt_t *, out_dfe, &tb_dfe->_.table.out_cols)
     {
       state_slot_t * ssl = sqlg_dfe_ssl (so, out_dfe);
@@ -1455,6 +1455,7 @@ sqlg_set_stmt (sqlo_t * so, df_elt_t * qexp, ST ** target_names)
   comp_context_t *cc = sc->sc_cc;
   SQL_NODE_INIT (union_node_t, un, union_node_input, union_node_free);
 
+  sc->sc_is_union = 1;
   if (BOX_ELEMENTS (tree) > 4)
     is_best = (char) tree->_.set_exp.is_best;
 
@@ -2992,23 +2993,25 @@ sqlg_dtp_coerce (sql_type_t *res_sqt, sql_type_t *arg_sqt)
 }
 
 
+int enable_dt_alias = 0;
+
 state_slot_t *
 sqlg_alias_or_assign (sqlo_t * so, state_slot_t * ext, state_slot_t * source, dk_set_t * code)
 {
   /* all slots referencing the inside position become aliased to reference the outside position.
    * in this way an arbitrary depth of subqs get referred to the desired output.  If not possible,
    * due to constants or ref params, then an assignment is generated */
-  /* this will always copy the ssls instead of aliasing them because of some UNIONS with constant
-     columns in their select list. That may be fine-tuned later  */
-  if (0
+  /* if no union above, aliasing can be used */
+  if (!so->so_sc->sc_is_union && enable_dt_alias 
       && !ssl_is_special (ext)
       && !ssl_is_special (source))
     {
+      int src_index = source->ssl_index;
+      ext->ssl_sqt = source->ssl_sqt;
       DO_SET (state_slot_t *, any_ssl,  &so->so_sc->sc_cc->cc_super_cc->cc_query->qr_state_map)
 	{
-	  if (any_ssl->ssl_index == source->ssl_index)
+	  if (any_ssl->ssl_index == src_index)
 	    {
-	      ext->ssl_sqt = source->ssl_sqt;
 	      any_ssl->ssl_index = ext->ssl_index;
 	      any_ssl->ssl_is_alias = (ext != any_ssl);
 	      if (any_ssl->ssl_is_alias)
