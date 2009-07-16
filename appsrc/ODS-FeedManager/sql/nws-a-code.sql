@@ -4508,7 +4508,7 @@ create procedure ENEWS.WA.export_rss_sqlx_int(
   http('    XMLELEMENT(\'link\', EFI_LINK), \n', retValue);
   http('    XMLELEMENT(\'pubDate\', ENEWS.WA.dt_rfc1123 (EFI_PUBLISH_DATE)),\n', retValue);
   http ('    (select XMLAGG (XMLELEMENT (\'category\', EFTV_TAG)) from ENEWS..TAGS_VIEW where domain_id = <DOMAIN_ID> and account_id = <USER_ID> and item_id = EFI_ID), \n', retValue);
-  http('    XMLELEMENT(\'http://www.openlinksw.com/weblog/:modified\', ENEWS.WA.dt_iso8601 (EFI_PUBLISH_DATE)),\n', retValue);
+  http ('    XMLELEMENT(\'http://www.openlinksw.com/ods/:modified\', ENEWS.WA.dt_iso8601 (EFI_PUBLISH_DATE)),\n', retValue);
   http('    ENEWS.WA.enclosure_render_sqlx (EFI_DATA)))\n', retValue);
   http('from (select top 15  \n', retValue);
   http ('        EFI_ID, \n', retValue);

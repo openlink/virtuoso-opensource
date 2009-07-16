@@ -46,7 +46,8 @@
 
       if (self.v_output = 'about')
       {
-        http ('<rss version="2.0" xmlns:vi="http://www.openlinksw.com/weblog/">\n');
+        http ('<?xml version="1.0" encoding="UTF-8"?>\n');
+        http ('<rss version="2.0">\n');
         http ('<channel>\n');
         for (select U_NAME, U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = self.account_id) do
         {
@@ -107,9 +108,9 @@
             http ('<pubDate>');
               http_value (ODRIVE.WA.dt_rfc1123 (RES_MOD_TIME));
             http ('</pubDate>\n');
-            http ('<vi:modified>');
+            http ('<ods:modified xmlns:ods="http://www.openlinksw.com/ods/">');
               http_value (ODRIVE.WA.dt_iso8601 (RES_MOD_TIME));
-            http ('</vi:modified>\n');
+            http ('</ods:modified>\n');
           http ('</item>\n');
         }
         http ('</channel>\n');

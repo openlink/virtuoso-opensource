@@ -413,7 +413,7 @@ create procedure POLLS.WA.export_rss_sqlx_int(
   http ('    XMLELEMENT(\'link\', POLLS.WA.poll_url (<DOMAIN_ID>, P_ID)), \n', retValue);
   http ('    XMLELEMENT(\'pubDate\', POLLS.WA.dt_rfc1123 (P_UPDATED)), \n', retValue);
   http ('    (select XMLAGG (XMLELEMENT (\'category\', TV_TAG)) from POLLS..TAGS_VIEW where tags = P_TAGS), \n', retValue);
-  http ('    XMLELEMENT(\'http://www.openlinksw.com/weblog/:modified\', POLLS.WA.dt_iso8601 (P_UPDATED)))) \n', retValue);
+  http ('    XMLELEMENT(\'http://www.openlinksw.com/ods/:modified\', POLLS.WA.dt_iso8601 (P_UPDATED)))) \n', retValue);
   http ('from (select top 15  \n', retValue);
   http ('        P_NAME, \n', retValue);
   http ('        P_DESCRIPTION, \n', retValue);
