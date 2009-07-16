@@ -244,7 +244,7 @@ thread_initial (unsigned long stack_size)
 #endif
 
 
-  stack_size = ((stack_size / 1024) + 1) * 1024;
+  stack_size = ((stack_size / 8192) + 1) * 8192;
 
   thr->thr_stack_size = stack_size;
   thr->thr_status = RUNNING;
@@ -342,7 +342,7 @@ thread_create (
   stack_size += 8 * 8192;
 #endif
 
-  stack_size = ((stack_size / 1024) + 1) * 1024;
+  stack_size = ((stack_size / 8192) + 1) * 8192;
 
 #if defined (PTHREAD_STACK_MIN)
   if (stack_size < PTHREAD_STACK_MIN)
