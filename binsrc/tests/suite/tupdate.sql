@@ -187,15 +187,17 @@ ECHO BOTH  $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
 ECHO BOTH ": " $LAST[1] " words where word2 <> word\n";
 
 checkpoint;
-
+set autocommit manual;
 update words set len = 'qqqq' where word = 'a';
 ECHO BOTH $IF $EQU $STATE 22005 "PASSED" "***FAILED";
 ECHO BOTH ": update type error " $STATE $MESSAGE "\n";
-
+rollback work;
 update words set word = 'qqqq', len = 'qqqq' where word = 'a';
 ECHO BOTH $IF $EQU $STATE 22005 "PASSED" "***FAILED";
 ECHO BOTH ": update type error " $STATE $MESSAGE "\n";
 
+rollback work;
+set autocommit off;
 
 insert into T1 (ROW_NO, FI2, FREAL, FDOUBLE) values (1, 1, 2, 3);
 select FI2, FREAL, FDOUBLE from T1 where ROW_NO = 1;

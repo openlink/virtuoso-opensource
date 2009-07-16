@@ -152,11 +152,14 @@ delete from words table option (index primary key) where len > 7 option (index l
 echo both $if $equ $state 42000 "PASSED" "***FAILED";
 echo both ": error with different inx for single key del and the search\n";
 
-set autocommit manual;
-delete from words table option (index len) where len > 7 option (index len);
 
-select count (*) from words table option (index len);
-echo both $if $equ $last[1] 25106 "PASSED" "***FAILED";
+set autocommit manual;
+
+delete from words table option (index len, no cluster) where len > 7 option (index len);
+echo both $if $equ $sqlstate OK "PASSED" "***FAILED";
+echo both ": del single key\n";
+select (select count (*) from words table option (index primary key)) - (select count (*) from words table option (index len));
+echo both $if $neq $last[1] 0 "PASSED" "***FAILED";
 echo both ": count after single key del\n";
 
 
