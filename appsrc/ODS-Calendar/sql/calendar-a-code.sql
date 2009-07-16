@@ -382,9 +382,9 @@ create procedure CAL.WA.export_rss_sqlx_int (
   http ('    XMLELEMENT(\'description\', CAL.WA.utf2wide (E_DESCRIPTION)), \n', retValue);
   http ('    XMLELEMENT(\'guid\', E_ID), \n', retValue);
   http ('    XMLELEMENT(\'link\', CAL.WA.event_url (<DOMAIN_ID>, E_ID)), \n', retValue);
-  http ('    XMLELEMENT(\'pubDate\', CAL.WA.dt_rfc1123 (E_UPDATED)), \n', retValue);
+  http ('    XMLELEMENT(\'pubDate\', CAL.WA.dt_rfc1123 (E_CREATED)), \n', retValue);
   http ('    (select XMLAGG (XMLELEMENT (\'category\', TV_TAG)) from CAL..TAGS_VIEW where tags = E_TAGS), \n', retValue);
-  http ('    XMLELEMENT(\'http://www.openlinksw.com/weblog/:modified\', CAL.WA.dt_iso8601 (E_UPDATED)))) \n', retValue);
+  http ('    XMLELEMENT(\'http://www.openlinksw.com/ods/:modified\', CAL.WA.dt_iso8601 (E_UPDATED)))) \n', retValue);
   http ('from (select top 15  \n', retValue);
   http ('        E_SUBJECT, \n', retValue);
   http ('        E_DESCRIPTION, \n', retValue);
@@ -2361,6 +2361,9 @@ create procedure CAL.WA.dt_timestring (
   in pTime integer,
   in pFormat varchar := 'e')
 {
+  declare exit handler for SQLSTATE '*' {
+    return '';
+  };
   declare h, m integer;
 
   CAL.WA.dt_timeDecode (pTime, h, m);
@@ -2419,6 +2422,9 @@ create procedure CAL.WA.dt_timeFloor (
   in pTime datetime,
   in pRound integer := 0)
 {
+  declare exit handler for SQLSTATE '*' {
+    return pTime;
+  };
   declare h, m integer;
 
   if (pRound = 0)
@@ -2434,6 +2440,9 @@ create procedure CAL.WA.dt_timeCeiling (
   in pTime datetime,
   in pRound integer := 0)
 {
+  declare exit handler for SQLSTATE '*' {
+    return pTime;
+  };
   return CAL.WA.dt_timeFloor (dateadd ('minute', pRound, pTime), pRound);
 }
 ;

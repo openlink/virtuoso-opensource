@@ -986,7 +986,7 @@ create procedure CAL.WA.export_rss_sqlx_for_det (
      XMLELEMENT('link', CAL.WA.event_url (domain_id, E_ID)), 
      XMLELEMENT('pubDate', CAL.WA.dt_rfc1123 (E_UPDATED)), 
      (select XMLAGG (XMLELEMENT ('category', TV_TAG)) from CAL..TAGS_VIEW where tags = E_TAGS), 
-     XMLELEMENT('http://www.openlinksw.com/weblog/:modified', CAL.WA.dt_iso8601 (E_UPDATED)))) 
+     XMLELEMENT('http://www.openlinksw.com/ods/:modified', CAL.WA.dt_iso8601 (E_UPDATED)))) 
  from (select top 15  
          E_SUBJECT, 
          E_DESCRIPTION, 
