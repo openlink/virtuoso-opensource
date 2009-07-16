@@ -2661,7 +2661,7 @@ create procedure BMK.WA.export_rss_sqlx_int(
   http('    XMLELEMENT(\'link\', B_URI), \n', retValue);
   http ('    XMLELEMENT(\'pubDate\', BMK.WA.dt_rfc1123 (BD_UPDATED)), \n', retValue);
   http ('    (select XMLAGG (XMLELEMENT (\'category\', BTV_TAG)) from BMK..TAGS_VIEW where domain_id = <DOMAIN_ID> and account_id = <USER_ID> and item_id = B_ID), \n', retValue);
-  http ('    XMLELEMENT(\'http://www.openlinksw.com/weblog/:modified\', BMK.WA.dt_iso8601 (BD_UPDATED)))) \n', retValue);
+  http ('    XMLELEMENT(\'http://www.openlinksw.com/ods/:modified\', BMK.WA.dt_iso8601 (BD_UPDATED)))) \n', retValue);
   http('from (select top 15  \n', retValue);
   http('        BD_NAME, \n', retValue);
   http('        BD_DESCRIPTION, \n', retValue);

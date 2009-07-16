@@ -29,7 +29,7 @@
   xmlns:slash="http://purl.org/rss/1.0/modules/slash/"
   xmlns:atom="http://www.w3.org/2005/Atom"
   xmlns="http://www.w3.org/2005/Atom"
-  xmlns:vi="http://www.openlinksw.com/weblog/"
+  xmlns:ods="http://www.openlinksw.com/ods/"
   xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/"
   xmlns:itunes="http://www.itunes.com/DTDs/Podcast-1.0.dtd"
   version="1.0">
@@ -53,7 +53,7 @@
 <xsl:template match="link">
     <link href="{.}" type="text/html" rel="alternate"/>
     <xsl:if test="parent::channel">
-	<link href="{vi:getHttpUrl()}" type="application/atom+xml" rel="self"/>
+	<link href="{ods:getHttpUrl()}" type="application/atom+xml" rel="self"/>
     </xsl:if>
 </xsl:template>
 
@@ -114,7 +114,7 @@
     <published><xsl:call-template name="date"/></published>
 </xsl:template>
 
-<xsl:template match="item/vi:modified">
+<xsl:template match="item/ods:modified">
     <updated><xsl:apply-templates /></updated>
 </xsl:template>
 
