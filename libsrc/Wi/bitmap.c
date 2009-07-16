@@ -445,13 +445,14 @@ upd_truncate_row (it_cursor_t * itc, buffer_desc_t * buf, int nl)
   int bytes_left;
   int ol;
   db_buf_t page, row;
+  page_map_t * pm = buf->bd_content_map;
   if (!buf->bd_is_write || ! buf->bd_is_dirty)
     GPF_T1 ("update w/o write access");
   if (ITC_IS_LTRX (itc)
       && (itc->itc_ltrx && (buf->bd_page != itc->itc_page || itc->itc_page != itc->itc_pl->pl_page)))
     GPF_T1 ("inconsistent pl_page, bd_page and itc_page in upd_refit_row");
   page = buf->bd_buffer;
-  row = page + buf->bd_content_map->pm_entries[itc->itc_map_pos];
+  row = page + pm->pm_entries[itc->itc_map_pos];
   ol = row_length (row, itc->itc_row_key);
   if (ROW_ALIGN (nl) > ROW_ALIGN (ol))
     GPF_T1 ("row is not supposed to get longer in upd_truncate_row");
@@ -459,7 +460,9 @@ upd_truncate_row (it_cursor_t * itc, buffer_desc_t * buf, int nl)
   if (bytes_left)
     {
       page_write_gap (row + ROW_ALIGN (nl), bytes_left);
-      buf->bd_content_map->pm_bytes_free += bytes_left;
+      pm->pm_bytes_free += bytes_left;
+      if (pm->pm_entries[itc->itc_map_pos] + ROW_ALIGN (ol) == pm->pm_filled_to)
+	pm->pm_filled_to -= bytes_left;
     }
 }
 
