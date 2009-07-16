@@ -573,6 +573,7 @@ struct it_cursor_s
     dp_addr_t		itc_keep_together_dp;  /* pos. of a pre-image row being replaced by a longer after-update image. */
     /* dp_addr_t		itc_parent_page; */
     int			itc_n_pages_on_hold; /* if inserting, amount provisionally reserved for deltas made by tree split */
+    int			itc_n_lock_escalations; /* no of times row locks escalated to page locks on this read.  Used for claiming page lock as first choice after history of escalating */
 
     it_map_t *		itc_itm1;  /* points to the iot_map_t if this itc holds the it_map_t's itm_mtx */
     it_map_t *		itc_itm2;
@@ -610,7 +611,6 @@ struct it_cursor_s
     int			itc_nth_seq_page; /* in sequential read, nth consecutive page entered.  Use for starting read ahead.  */
 
     placeholder_t *	itc_bm_split_right_side;
-    int			itc_n_lock_escalations; /* no of times row locks escalated to page locks on this read.  Used for claiming page lock as first choice after history of escalating */
     int			itc_root_image_version;
     dp_addr_t		itc_ra_root[RA_MAX_ROOTS];
     buffer_desc_t *	itc_buf_entered; /* this is set to the entered buf when another thread enters this itc into a buf as a reult of of page_leave_inner on that other thread */
