@@ -50,7 +50,8 @@
 int
 sqlo_inx_int_eq_distinct_cols (dbe_key_t * key, int n_eqs, dk_set_t * eq_cols)
 {
-  /* when doing inx int on keys of a single table, make sure the leading eq's are on distinct cols. */
+  /* when doing inx int on keys of a single table, make sure the leading eq's are on distinct cols.
+   * Do not consider keys with an eq on all significant part, i.e. unique. */
   int nth = 0;
   DO_SET (dbe_column_t *, col, &key->key_parts)
     {
@@ -60,6 +61,8 @@ sqlo_inx_int_eq_distinct_cols (dbe_key_t * key, int n_eqs, dk_set_t * eq_cols)
 	break;
     }
   END_DO_SET();
+  if (nth == key->key_n_significant)
+    return 0;
   nth = 0;
   DO_SET (dbe_column_t *, col, &key->key_parts)
     {
@@ -156,7 +159,7 @@ sqlo_find_inx_intersect (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t col_preds, flo
 	{
 	  dk_set_t group = NULL, eq_cols = NULL;;
 	  n_eqs = sqlo_leading_eqs (k1, col_preds);
-	  if (!n_eqs)
+	  if (!n_eqs || n_eqs == k1->key_n_significant)
 	    goto next;
 	  sqlo_inx_int_eq_distinct_cols (k1, n_eqs, &eq_cols);
 	  DO_SET (dbe_key_t *, k2, &tb->tb_keys)
