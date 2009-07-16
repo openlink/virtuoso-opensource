@@ -8402,7 +8402,7 @@ http_vhosts_init (void)
       if (!has_it && !tried)
 	{
 	  caddr_t * ssl_opts = NULL;
-	  if (sec && 0 == stricmp (sec, "SSL") && opts && box_length (opts))
+	  if (DV_STRINGP (sec) && 0 == stricmp (sec, "SSL") && ARRAYP (opts) && box_length (opts))
 	    ssl_opts = opts;
 	  listening = http_listen (host, ssl_opts);
 	  if (listening)
