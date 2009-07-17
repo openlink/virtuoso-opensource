@@ -969,6 +969,18 @@ CAL.trim = function (sString, sChar)
   return sString;
 }
 
+CAL.colorRef = function(fldName)
+{
+	var callback = function(color)
+	{
+	  $(fldName).value = color;
+	  $(fldName+"_div").style.backgroundColor = color;
+	}
+  var c = new OAT.Color();
+	var coords = OAT.Dom.position(fldName+"_div");
+	c.pick(coords[0],coords[1],callback);
+}
+                        		
 CAL.updateClaim = function (claimNo)
 {
   if (claimNo == 'xxx')

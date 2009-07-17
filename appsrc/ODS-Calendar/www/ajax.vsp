@@ -130,11 +130,11 @@
     http (sprintf ('     %s', registry_get('calendar_build')));
     http (         '    </td>');
     http (         '  </tr>');
-    http (         '  <tr><td align="center" colspan="2"><hr /><td></tr>');
+    http (         '  <tr><td align="center" colspan="2"><hr /></td></tr>');
     http (         '  <tr>');
     http (         '    <td align="center" colspan="2">');
     http (         '      <input type="button" value="OK" onclick="javascript: aboutDialog.hide(); return false;" />');
-    http (         '    <td>');
+    http (         '    </td>');
     http (         '  </tr>');
     http (         '</table>');
     http (         '</div>');

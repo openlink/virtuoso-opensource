@@ -182,7 +182,7 @@
         </v:template>
             <span onclick="javascript: CAL.aboutDialog(); return false;" title="About" class="link">About</span>
       </div>
-          <p style="clear: both; line-height: 0.1em" />
+          <p style="clear: both; line-height: 0.1em">&nbsp;</p>
         </div>
       <v:include url="calendar_login.vspx"/>
               <xsl:apply-templates select="vm:pagebody" />
@@ -325,11 +325,11 @@
             http ('</tr>');
           ?>
           <tr id="c_footer" class="C_heading">
-            <td colspan="2"></td>
+            <td colspan="2">&nbsp;</td>
             <td class="C_onmonth C_today" colspan="3">
               <span id="c_today_0" onmousedown="cSelect(this)" style="font-weight: bold;">today</span>
             </td>
-            <td colspan="2"></td>
+            <td colspan="2">&nbsp;</td>
           </tr>
         </tbody>
       </table>

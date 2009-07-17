@@ -1390,10 +1390,10 @@ td.cpDayColumnHeader
 }
 
 .ss_color {
+  float: left;   
 	width: 60px;
 	height: 14px;
 	border: 1px solid #000;
-	cursor: pointer;
 }
 
 /* ComboList */
