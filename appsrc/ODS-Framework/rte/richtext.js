@@ -55,7 +55,7 @@ function initRTE(imgPath, incPath, css, enclosureFld) {
   cssFile = css;
   enclosure = enclosureFld;
 
-  if (isRichText)
+  if (isRichText && cssFile)
     {
       document.writeln('<style type="text/css">@import "' + cssFile + '";</style>');
     }
