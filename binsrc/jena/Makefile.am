@@ -59,7 +59,7 @@ install-data-local:
 
 lib:
 	@test -d lib || touch virt_jena.jar
-	@echo "Please refer to README file for missing .jar files"
+	@echo "Please refer to ~/README.jena file for missing .jar files"
 
 virt_jena.jar: $(JENA_SRC)
 	-rm -rf out.driver
@@ -98,7 +98,6 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	README \
 	virtuoso_driver/*.java \
 	virt_jena.jar \
 	testsuite/*.java \

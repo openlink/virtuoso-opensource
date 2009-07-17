@@ -1,10 +1,12 @@
 How to build Virtuoso Jena Provider
 ===================================
 
+* cd binsrc/jena
+
 * Create a lib directory 
 
-* Put the following .jar files from the openrdf project at 
-  http://jena.sourceforge.net/ in here:
+* Download the following .jar files from the openrdf project at
+  http://jena.sourceforge.net/ and copy them into this lib directory:
 
 	arq.jar
 	commons-logging-1.1.1.jar
@@ -15,5 +17,5 @@ How to build Virtuoso Jena Provider
 	junit.jar
 	xercesImpl.jar
 
-
 * Run the make command
+
