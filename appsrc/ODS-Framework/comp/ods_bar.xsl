@@ -1125,7 +1125,7 @@ if ((self.odsbar_app_type is NULL) and locate('myhome.vspx',http_path ()))
       <li><v:url name="odsbar_userinfoedit_link" url="--self.odsbar_ods_gpath||'uiedit.vspx?l=1'" render-only="1" value="Edit My Profile" is-local="1"/></li>
       <li><v:url name="odsbar_myapplications_link" url="--self.odsbar_ods_gpath||'services.vspx?l=1'" render-only="1" value="My Applications" is-local="1"/></li>
 <?vsp
-      if(_get_ods_fb_settings(vector()))
+      if(_get_ods_fb_settings(vector(),self.odsbar_u_id))
       {
 ?>
       <li><v:url name="odsbar_myfacebook_link" url="--self.odsbar_ods_gpath||'fb_front.vspx?'" render-only="1" value="My Facebook" is-local="1"/></li>

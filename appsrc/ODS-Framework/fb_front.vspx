@@ -109,7 +109,7 @@
           declare _fb_user integer;
           declare fb_dba_options any;
 
-          if(_get_ods_fb_settings(fb_dba_options)) --fb_dba_options is array of type (facebook_api_key,facebook_api_secret)
+          if (_get_ods_fb_settings(fb_dba_options, _user_id)) --fb_dba_options is array of type (facebook_api_key,facebook_api_secret)
           {
              self._fb_isset:=1;
              self._fb:= new Facebook(fb_dba_options[0], fb_dba_options[1], params,lines);
