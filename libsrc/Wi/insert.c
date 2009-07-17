@@ -336,7 +336,7 @@ void
 pg_check_map_1 (buffer_desc_t * buf)
 {
   page_map_t org_map;
-  int org_free = buf->bd_content_map->pm_bytes_free;
+  int org_free = buf->bd_content_map->pm_bytes_free, org_fill;
 #if 0
   int pos, ctr = 0;
 #endif
@@ -370,10 +370,12 @@ pg_check_map_1 (buffer_desc_t * buf)
   org_map.pm_size = buf->bd_content_map->pm_size;
   if (org_map.pm_filled_to < buf->bd_content_map->pm_filled_to)
     GPF_T1 ("filled to of map is too low");
+  org_fill = org_map.pm_filled_to;
   org_map.pm_filled_to = buf->bd_content_map->pm_filled_to;
   if (memcmp (&org_map, buf->bd_content_map, ((ptrlong)(&((page_map_t*)0)->pm_entries))
 	      /* + 2 * buf->bd_content_map->pm_count */ ))
     GPF_T1 ("map not in sync with buf");
+  org_map.pm_filled_to = org_fill;
   memcpy (buf->bd_content_map, &org_map, ((ptrlong)(&((page_map_t*)0)->pm_entries)) + 2 * org_map.pm_count);
 
 #if 0
