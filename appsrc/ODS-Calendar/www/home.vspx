@@ -211,9 +211,9 @@
       R := self.showEventSubjectTmp (_id, e_event, e_subject, e_repeat, e_reminder, e_attendees);
       if (e_event = 1)
       {
-        T := sprintf ('<div id="e_%d_%s" class="EV" %s onclick="eEdit(this)" about="%U">%s%s%s%s</div>', _id, S, color, SIOC..calendar_event_iri (domain_id, _id), e_continue, showDelete, showAnnotate, R);
+        T := sprintf ('<div id="e_%d_%s" class="EV vevent" %s onclick="eEdit(this)" about="%U">%s%s%s%s</div>', _id, S, color, SIOC..calendar_event_iri (domain_id, _id), e_continue, showDelete, showAnnotate, R);
       } else {
-        T := sprintf ('<div id="e_%d_%s" class="EV" %s onclick="eEdit(this)" about="%U">%s%s%s<span class="EV_time">%s-%s</span>%s</div>', _id, S, color, SIOC..calendar_event_iri (domain_id, _id), e_continue, showDelete, showAnnotate, CAL.WA.dt_timestring (e_start), CAL.WA.dt_timestring (e_end), R);
+        T := sprintf ('<div id="e_%d_%s" class="EV vevent" %s onclick="eEdit(this)" about="%U">%s%s%s<span class="EV_time">%s-%s</span>%s</div>', _id, S, color, SIOC..calendar_event_iri (domain_id, _id), e_continue, showDelete, showAnnotate, CAL.WA.dt_timestring (e_start), CAL.WA.dt_timestring (e_end), R);
       }
       return T;
     ]]>
@@ -290,7 +290,7 @@
       declare domain_id integer;
       
       domain_id := (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = _id);  
-      return sprintf ('<a id="e_%d" href="%s" onclick="javascript: eEdit(\'e_%d\'); return false;" class="EVL EVL_subject app" about="%U"> %s%s%s%V</a>', _id, SIOC..calendar_event_iri(domain_id, _id), _id, SIOC..calendar_event_iri(domain_id, _id), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), self.attendeesImage (e_attendees), CAL.WA.show_subject (e_subject));
+      return sprintf ('<a id="e_%d" href="%s" onclick="javascript: eEdit(\'e_%d\'); return false;" class="EVL EVL_subject app" about="%U"> %s%s%s<span class="summary">%V</span></a>', _id, SIOC..calendar_event_iri(domain_id, _id), _id, SIOC..calendar_event_iri(domain_id, _id), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), self.attendeesImage (e_attendees), CAL.WA.show_subject (e_subject));
     ]]>
   </v:method>
 
@@ -749,7 +749,7 @@
       self.v_attendees := '';
       self.v_attendees_count := 0;
       self.v_tags := '';
-      self.v_eventStart := null;
+      self.v_eventStart := self.cDay;
       self.v_eventEnd := self.cDay;
       self.v_priority := 3;
       self.v_status := '';
@@ -928,6 +928,22 @@
   <v:method name="windowOpen" arglist="in p_url varchar, in p_name varchar, in p_title varchar">
     <![CDATA[
       return  sprintf ('<span onclick="javascript: window.open (\'%s\', \'calendar_%s_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=700\'); return false;" title="%s %s" class="link">%s</span>', CAL.WA.url_fix (sprintf ('%s%s', CAL.WA.calendar_url (self.domain_id), p_url), self.sid, self.realm), p_name, p_name, p_title, p_name);
+    ]]>
+  </v:method>
+
+  <v:method name="showColorRef" arglist="in statusName varchar">
+    <![CDATA[
+      declare fieldName varchar;
+      
+      fieldName := self.colorFieldName (statusName);
+      http (sprintf ('<input type="hidden" id="%s" name="%s" value="%s" />', fieldName, fieldName, get_keyword (fieldName, self.settings, '#000')));
+      http (sprintf ('<div id="%s_div" class="ss_color" style="cursor: pointer; background-color: %s;"></div><div style="float: left;">&nbsp;- %s</div>', fieldName, get_keyword (fieldName, self.settings, '#000'), statusName));
+    ]]>
+  </v:method>
+
+  <v:method name="colorFieldName" arglist="in statusName varchar">
+    <![CDATA[
+      return 'color_' || replace (ucase (statusName), ' ', '_');
     ]]>
   </v:method>
 
@@ -2025,8 +2041,6 @@
                 <v:template name="ds_repeat" type="repeat" name-to-remove="" set-to-remove="">
 
                   <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
-                    <table>
-                      <tr>
                               <?vsp
                                 declare e_id, e_event, e_subject, e_kind any;
                                 declare rowset vspx_row_template;
@@ -2054,6 +2068,10 @@
                                 e_event := rowset[4];
                                 e_subject := rowset[3];
                                 e_kind := rowset[2];
+                              ?>
+                          <table>
+                            <tr class="<?V case when e_kind then 'vtodo' else 'vevent' end ?>">
+                              <?vsp
                                 if (self.access_role not in ('public', 'guest'))
                                 {
                                   http (sprintf ('<td align="center" valign="top" %s>', self.showEventColor (e_id)));
@@ -2118,7 +2136,7 @@
                         </vm:if>
                         <vm:if test="self.columnEnabled ('task_E_STATUS', 1)">
                         <td nowrap="nowrap">
-                                    <v:label value="--rowset[12]" />
+                                    <span style="color: <?V get_keyword (self.colorFieldName (rowset[12]), self.settings, '#000') ?>;"><v:label value="--rowset[12]" /></span>
                         </td>
                         </vm:if>
                         <vm:if test="self.columnEnabled ('task_E_PRIORITY', 1)">
@@ -3030,7 +3048,7 @@
                             <?vsp
                               }
                               M := 4;
-                              http (sprintf ('<tr id="s_tr_no" style="display: %s";><td colspan="%d"><b>No Sharings</b></td></tr>', case when L = 0 then 'run-in' else 'none' end, M));
+                              http (sprintf ('<tr id="s_tr_no" %s><td colspan="%d"><b>No Sharings</b></td></tr>', case when L = 0 then '' else 'style="display: none;"' end, M));
                             ?>
                           </table>
                           <input type="hidden" id="s_no" name="s_no" value="<?V L+1 ?>" />
@@ -3341,17 +3359,6 @@
             </tr>
             <tr>
               <th>
-                    <v:label for="t_completed" value="Completed" />
-                  </th>
-                  <td>
-                          <v:text name="t_completed" xhtml_id="t_completed" null-value="--''" value="--CAL.WA.dt_datestring (self.v_completed, self.cDateFormat)" xhtml_onclick="javascript: calendarPopup(\'t_completed\', \'t_eventEndDate\', \'t_eventStartDate\'); changeComplete(this);" xhtml_class="textbox" xhtml_size="10" xhtml_onchange="javascript: changeComplete(this);"/>
-                          <a href="#" id="t_completed_select" onclick="calendarPopup('t_completed', 't_eventEndDate', 't_eventStartDate'); changeComplete('t_completed'); return false;" class="noapp">
-                        <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" />
-                      </a>
-                  </td>
-                </tr>
-                <tr>
-                  <th>
                 <v:label for="t_priority" value="Priority"/>
               </th>
               <td>
@@ -3414,6 +3421,17 @@
             </tr>
             <tr>
               <th>
+                          <v:label for="t_completed" value="Completed" />
+                        </th>
+                        <td>
+                          <v:text name="t_completed" xhtml_id="t_completed" null-value="--''" value="--CAL.WA.dt_datestring (self.v_completed, self.cDateFormat)" xhtml_onclick="javascript: calendarPopup(\'t_completed\', \'t_eventEndDate\', \'t_eventStartDate\'); changeComplete(this);" xhtml_class="textbox" xhtml_size="10" xhtml_onchange="javascript: changeComplete(this);"/>
+                          <a href="#" id="t_completed_select" onclick="calendarPopup('t_completed', 't_eventEndDate', 't_eventStartDate'); changeComplete('t_completed'); return false;" class="noapp">
+                            <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" />
+                          </a>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
                           <v:label for="t_complete" value="Complete (%)" />
               </th>
               <td>
@@ -3612,7 +3630,7 @@
                             <?vsp
                               }
                               M := 4;
-                              http (sprintf ('<tr id="s_tr_no" style="display: %s"><td colspan="%d"><b>No Sharings</b></td></tr>', case when L = 0 then 'run-in' else 'none' end, M));
+                              http (sprintf ('<tr id="s_tr_no" %s><td colspan="%d"><b>No Sharings</b></td></tr>', case when L = 0 then '' else 'style="display: none;"' end, M));
                             ?>
                           </table>
                           <input type="hidden" id="s_no" name="s_no" value="<?V L+1 ?>" />
@@ -3730,31 +3748,31 @@
             </tr>
             <tr>
               <th>
-                Completed
+                      Priority
               </th>
               <td>
-                <?vsp self.viewField (self.v_completed); ?>
+                      <?vsp self.viewField (self.priorityLabel (self.v_priority)); ?>
               </td>
             </tr>
             <tr>
               <th>
-                Priority
+                      Status
               </th>
               <td>
-                <?vsp self.viewField (self.priorityLabel (self.v_priority)); ?>
+                      <?vsp self.viewField (self.v_status); ?>
               </td>
             </tr>
             <tr>
               <th>
-                Status
+                      Completed
               </th>
               <td>
-                <?vsp self.viewField (self.v_status); ?>
+                      <?vsp self.viewField (self.v_completed); ?>
               </td>
             </tr>
             <tr>
               <th>
-                Complete
+                      Complete (%)
               </th>
               <td>
                 <?vsp self.viewField (self.v_complete); ?>
@@ -5288,7 +5306,48 @@
                               <vm:label for="s_t_column_4" value="Created"/>
                             </td>
                           </tr>
+                          <tr>
+                            <th>
+                              Colorize Tasks (Status Based)
+                            </th>
+                            <td>
+                              <?vsp self.showColorRef ('Not Started'); ?>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th />
+                            <td>
+                              <?vsp self.showColorRef ('In Progress'); ?>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th />
+                            <td>
+                              <?vsp self.showColorRef ('Completed'); ?>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th />
+                            <td>
+                              <?vsp self.showColorRef ('Waiting'); ?>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th />
+                            <td>
+                              <?vsp self.showColorRef ('Deferred'); ?>
+                            </td>
+                          </tr>
                         </table>
+                        <script type="text/javascript">
+                          <![CDATA[
+                        		OAT.Dom.attach("color_NOT_STARTED_div", "click", function (){CAL.colorRef('color_NOT_STARTED');});
+                        		OAT.Dom.attach("color_IN_PROGRESS_div", "click", function (){CAL.colorRef('color_IN_PROGRESS');});
+                        		OAT.Dom.attach("color_COMPLETED_div", "click", function (){CAL.colorRef('color_COMPLETED');});
+                        		OAT.Dom.attach("color_WAITING_div", "click", function (){CAL.colorRef('color_WAITING');});
+                        		OAT.Dom.attach("color_DEFERRED_div", "click", function (){CAL.colorRef('color_DEFERRED');});
+                          ]]>
+                        </script>
                       </div>
                       <div id="s_content_2" class="tabContent" style="display: none;">
                         <table class="form-body" cellspacing="0">
@@ -5510,6 +5569,15 @@
                           self.settings := CAL.WA.set_keyword ('task_E_COMPLETED', self.settings, self.s_t_column_2.ufl_selected);
                           self.settings := CAL.WA.set_keyword ('task_E_UPDATED',   self.settings, self.s_t_column_3.ufl_selected);
                           self.settings := CAL.WA.set_keyword ('task_E_CREATED',   self.settings, self.s_t_column_4.ufl_selected);
+
+                          declare statusNames, fieldName any;
+                          
+                          statusNames := vector ('Not Started', 'In Progress', 'Completed', 'Waiting', 'Deferred');
+                          foreach (varchar statusName in statusNames) do
+                          {
+                            fieldName := self.colorFieldName (statusName);
+                            self.settings := CAL.WA.set_keyword (fieldName, self.settings, get_keyword (fieldName, params, '#000'));
+                          }  
 
                           insert replacing CAL.WA.SETTINGS (S_DOMAIN_ID, S_DATA, S_ACCOUNT_ID)
                             values(self.domain_id, serialize (self.settings), self.account_id);
@@ -6289,25 +6357,13 @@
                         </th>
                         <td>
                           <input type="hidden" id="ss_color" name="ss_color" value="<?V self.vs_color ?>" />
-                          <div id="ss_color_div" class="ss_color"></div>
+                          <div id="ss_color_div" class="ss_color" style="cursor: pointer; background-color: <?V self.vs_color ?>;"></div>
                         </td>
                       </tr>
                     </table>
                     <script type="text/javascript">
                       <![CDATA[
-                    		var c = new OAT.Color();
-                    		var colorRef = function(event)
-                    		{
-                    			var callback = function(color)
-                    			{
-                    			  $("ss_color").value = color;
-                    			  $("ss_color_div").style.backgroundColor = color;
-                    			}
-                    			var coords = OAT.Dom.position("ss_color_div");
-                    			c.pick(coords[0],coords[1],callback);
-                    		}
-                			  $("ss_color_div").style.backgroundColor = "<?V self.vs_color ?>";
-                    		OAT.Dom.attach("ss_color_div", "click", colorRef);
+                     		OAT.Dom.attach("ss_color_div", "click", function (){CAL.colorRef('ss_color');});
                       ]]>
                     </script>
                   </div>
@@ -6415,7 +6471,7 @@
       </vm:if>
       
               <vm:if test="(self.cAction in ('create', 'edit', 'view', 'export'))">
-                <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;"></div>
+                <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;">&nbsp;</div>
       </vm:if>
       
       <div id="reminderDiv" style="display: none;">

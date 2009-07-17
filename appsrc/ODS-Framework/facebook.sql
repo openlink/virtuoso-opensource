@@ -1204,28 +1204,19 @@ _get_cookie_vec (in lines any)
 }
 ;
 
-create procedure
-_get_ods_fb_settings (out fb_settings any)
+create procedure _get_ods_fb_settings (out fb_settings any, in fb_user_id integer := null)
 {
-   fb_settings := null;
-
    declare dba_options,fb_dba_options any;
-
-   dba_options:='';
    declare exit handler for sqlstate '*' {return 0;};
 
-   dba_options:= (select US_KEY from WA_USER_SVC where US_U_ID =0 and US_SVC='FBKey');
---   select deserialize (blob_to_string(U_OPTS)) into dba_options from SYS_USERS where U_NAME = 'dba';
-
-
-
+   fb_settings := null;
+   dba_options := (select US_KEY from WA_USER_SVC where US_U_ID = fb_user_id and US_SVC = 'FBKey');
    if(length(dba_options) >0)
    {
      fb_dba_options:=replace(dba_options,'\r\n','&');
      fb_dba_options:=replace(fb_dba_options,'\n','&');
      fb_dba_options:=split_and_decode(fb_dba_options);
-   };
-
+   }
    if(length(trim(get_keyword('key',fb_dba_options)))> 4 and length(trim(get_keyword('secret',fb_dba_options)))> 4)
    {
       fb_settings:=vector(trim(get_keyword('key',fb_dba_options)),trim(get_keyword('secret',fb_dba_options)));
