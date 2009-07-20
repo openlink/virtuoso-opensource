@@ -342,6 +342,12 @@ static void Style2Rule(Lexer *lexer, Node *node)
 
     if (styleattr)
     {
+	if (!styleattr->value)
+        {
+	    RemoveAttribute(node, styleattr);
+	    return;
+        }
+
         classname = FindStyle(lexer, node->element, styleattr->value);
         classattr = GetAttrByName(node, "class");
 
@@ -354,10 +360,14 @@ static void Style2Rule(Lexer *lexer, Node *node)
             int len = wstrlen(classattr->value) +
                                 wstrlen(classname) + 2;
             char *s = (char *)malloc(len *sizeof(char));
-            wstrcpy(s, classattr->value);
-            wstrcat(s, " ");
+ 	    if (classattr->value) 
+ 	    {
+                wstrcpy(s, classattr->value);
+                wstrcat(s, " ");
+	    }
             wstrcat(s, classname);
-            MemFree(classattr->value);
+            if (classattr->value)
+                MemFree(classattr->value);
             classattr->value = s;
             RemoveAttribute(node, styleattr);
         }
