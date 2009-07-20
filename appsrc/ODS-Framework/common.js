@@ -652,9 +652,9 @@ function validateMail(fld)
 
 function validateURL(fld)
 {
-  var regex = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
+  var regex = /(ftp|http|https|skype):(\/\/)?(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
   if (!regex.test(fld.value))
-    return validateError(fld, 'Invalid URL address');
+    return validateError(fld, 'Invalid URL address : ' + fld.value);
 
   return true;
 }
