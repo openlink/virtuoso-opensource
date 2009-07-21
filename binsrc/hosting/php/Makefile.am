@@ -45,6 +45,5 @@ hosting_php_la_LDFLAGS += -export-symbols hosting_php.exp
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	README \
 	hosting_php.def \
 	hosting_php.exp

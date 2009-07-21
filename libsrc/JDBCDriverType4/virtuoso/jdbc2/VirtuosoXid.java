@@ -167,7 +167,7 @@ public class VirtuosoXid implements Xid {
 
     private static int decode(String data, int offset) {
 	byte[] bytes = decode(data, offset, 4);
-	int n = ((int) bytes[0] << 24) | ((int) bytes[1] << 16) | ((int) bytes[2] << 8) | ((int) bytes[3]);
+	int n = (((int) bytes[0] & 0xFF) << 24) | (((int) bytes[1] & 0xFF) << 16) | (((int) bytes[2] & 0xFF) << 8) | ((int) bytes[3] & 0xFF);
         return n;
     }
 

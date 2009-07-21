@@ -54,7 +54,7 @@ install-data-local:
 
 lib:
 	@test -d lib || touch virt_sesame2.jar
-	@echo "Please refer to README file for missing .jar files"
+	@echo "Please refer to ~/README.sesame2 file for missing .jar files"
 
 
 virt_sesame2.jar: $(SESAME_SRC)
@@ -98,7 +98,6 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	README \
 	virtuoso_driver/*.java \
 	virtuoso_driver/data.nt \
 	virt_sesame2.jar
