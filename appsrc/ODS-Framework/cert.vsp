@@ -22,7 +22,7 @@
 --
 
    declare sid varchar;
-   dbg_obj_print (params);
+   --dbg_obj_print (params);
    sid := {?'sid'};
    if (get_keyword ('pubkey', params) is not null)
      {
