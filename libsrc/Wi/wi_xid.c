@@ -137,9 +137,9 @@ xid_bin_encode (void* _xid)
   unsigned char* encoded_str = str_ptr = (unsigned char *) dk_alloc_box (sizeof(virtXID)*2 + 1 ,DV_STRING);
   virtXID * xid = (virtXID *) _xid;
   int length;
-  long tmp_l;
+  int32 tmp_l;
 
-  /* log_info (">> %d %d %d", xid->formatID, xid->gtrid_length, xid->bqual_length); */
+  /*log_debug (">> %d %d %d", xid->formatID, xid->gtrid_length, xid->bqual_length); */
 
   LONG_SET_NA (&tmp_l, xid->formatID);
   length = encode_ptr ((unsigned char *) &tmp_l, sizeof (tmp_l), encoded_str);
@@ -154,7 +154,7 @@ xid_bin_encode (void* _xid)
 
   encoded_str[length] = 0;
 
-  /* log_info (">> %s", encoded_str); */
+  /*log_debug (">> %s", encoded_str);*/
   return (char *) encoded_str;
 }
 
@@ -164,7 +164,7 @@ xid_bin_decode (const char* xid_str)
   int length = 0;
   virtXID * xid;
   caddr_t xid_ptr;
-  long tmp;
+  int32 tmp;
   if (strlen(xid_str) != (sizeof(virtXID)*2))
     return 0;
 
@@ -181,7 +181,7 @@ xid_bin_decode (const char* xid_str)
 
   decode_ptr ((unsigned char*) (xid_str + length), (int) (strlen (xid_str) - length), (unsigned char*) xid->data);
 
-  /* log_info ("%s << %d %d %d", xid_str, xid->formatID, xid->gtrid_length, xid->bqual_length); */
+  /*log_debug ("%s << %d %d %d", xid_str, xid->formatID, xid->gtrid_length, xid->bqual_length);*/
 
   return xid;
 

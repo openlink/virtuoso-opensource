@@ -852,12 +852,6 @@ lt_rollback_other (lock_trx_t * lt)
 }
 
 
-#define LT_IS_RUNNING(lt) \
-	(lt->lt_threads > 0 \
-	  && !lt->lt_vdb_threads \
-	  && !lt->lt_lw_threads \
-	  && !lt->lt_close_ack_threads)
-
 #define LT_NO_THREADS(lt) (!(lt)->lt_threads)
 
 

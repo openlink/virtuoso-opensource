@@ -2022,7 +2022,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
     case SQL_XA_RESUME:
       {
 	void * xid;
-	xa_id_t ** x;
+	tp_data_t * tpd;
 
 	xid = xid_bin_decode (xid_str);
 	if (!xid)
@@ -2033,26 +2033,14 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	    dk_free_tree (err);
 	    return;
 	  }
-	mutex_enter (global_xa_map->xm_mtx);
-	x = (xa_id_t **) id_hash_get (global_xa_map->xm_xids, (caddr_t) & xid);
-	if (!x || !x[0]->xid_tp_data || x[0]->xid_cli)
+	if (virt_xa_client (xid, cli, &tpd, SQL_XA_RESUME) == -1)
 	  {
-	    mutex_leave (global_xa_map->xm_mtx);
-	    err = srv_make_new_error ("TP108", "XA02", "Unknown transaction");
+	    err = srv_make_new_error ("TP109", "XA02", "XID identifier can not be decoded");
 	    DKST_RPC_DONE (client);
 	    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
 	    dk_free_tree (err);
 	    return;
 	  }
-
-	IN_TXN;
-	lt_kill_other_trx (cli->cli_trx, NULL, NULL, LT_KILL_ROLLBACK);
-	cli->cli_tp_data = x[0]->xid_tp_data;
-	cli->cli_trx = x[0]->xid_tp_data->cli_tp_lt;
-	x[0]->xid_cli = cli;
-	LEAVE_TXN;
-	mutex_leave (global_xa_map->xm_mtx);
-
       } break;
     case SQL_XA_ENLIST_END:
     case SQL_XA_SUSPEND:
@@ -2063,7 +2051,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	  GPF_T1 ("2PC: broken client vars");
 
 	IN_TXN;
-	if (op == SQL_XA_SUSPEND)
+	if (1 || op == SQL_XA_SUSPEND)
 	  {
 	    virt_xa_suspend_lt (xid, cli);
 	    cli->cli_trx = NULL;
@@ -2078,7 +2066,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	struct tp_data_s * tpd;
 	void * xid = virt_xa_id (xid_str);
 	_2pc_printf(("tp pre/comm 0 =%x cli %p\n",op,cli));
-	if (virt_xa_client (xid, &tpd, op) == -1)
+	if (virt_xa_client (xid, cli, &tpd, op) == -1)
 	  {
 	    caddr_t trx = virt_xa_xid_in_log (xid);
 	    if (trx)
@@ -2189,7 +2177,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
       {
 	void * xid = virt_xa_id (xid_str);
 	struct tp_data_s * tpd;
-	if (virt_xa_client (xid, &tpd, op) != -1)
+	if (virt_xa_client (xid, cli, &tpd, op) != -1)
 	  {
 	    NEW_VAR(tp_future_t,future);
 	    tp_message_t* msg;
@@ -2206,7 +2194,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
       {
 	void * xid = xid_bin_decode (xid_str);
 	tp_data_t * tpd;
-	if (virt_xa_client (xid, &tpd, SQL_XA_WAIT) == -1)
+	if (virt_xa_client (xid, cli, &tpd, SQL_XA_WAIT) == -1)
 	  {
 	    err = srv_make_new_error ("TP109", "XA02", "XID identifier can not be decoded");
 	    DKST_RPC_DONE (client);

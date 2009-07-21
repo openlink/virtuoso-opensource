@@ -478,7 +478,7 @@ fragment instead of searching for the the fragment actually needed. */
 #define ITC_MARK_LANDED(itc) \
 { \
   if (itc->itc_insert_key) itc->itc_insert_key->key_n_landings++; \
-  if (itc->itc_ltrx) itc->itc_ltrx->lt_client->cli_activity.da_random_rows++; \
+  if (itc->itc_ltrx && itc->itc_ltrx->lt_client) itc->itc_ltrx->lt_client->cli_activity.da_random_rows++; \
 }
 
 #define ITC_MARK_DIRTY(itc) \

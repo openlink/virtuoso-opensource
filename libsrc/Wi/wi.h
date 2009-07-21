@@ -1465,9 +1465,9 @@ extern int32 bdf_is_avail_mask; /* all bits on except read aside flag which does
   if (lt) \
     { \
       client_connection_t * cli = lt->lt_client; \
-      char __term = cli->cli_terminate_requested;			\
+      char __term = cli ? cli->cli_terminate_requested : 0;			\
       if (__term) cli_terminate_in_itc_fail (cli, itc, buf); \
-      if (cli->cli_session && cli->cli_session->dks_to_close)	\
+      if (cli && cli->cli_session && cli->cli_session->dks_to_close)	\
    { \
        LT_ERROR_DETAIL_SET (lt, \
 	   box_dv_short_string ("Client session disconnected")); \
