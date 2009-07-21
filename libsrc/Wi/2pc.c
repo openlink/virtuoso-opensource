@@ -516,6 +516,9 @@ cli_2pc_transact (lock_trx_t * lt, int operation)
   if (operation == SQL_ROLLBACK)
     lt->lt_status = LT_BLOWN_OFF;
 
+  if (lt->lt_status == LT_COMMITTED && !LT_IS_RUNNING (lt))
+    lt_2pc_commit (lt);
+  else
   lt_kill_other_trx (lt, NULL, NULL, LT_KILL_ROLLBACK);
 
   if (lt->lt_error != LTE_OK)
@@ -1273,6 +1276,42 @@ global_xa_init ()
 }
 
 int
+virt_xa_add_trx (void *xid, lock_trx_t * lt)
+{
+  xa_id_t **x;
+  int rc = 0;
+  mutex_enter (global_xa_map->xm_mtx);
+
+  x = (xa_id_t **) id_hash_get (global_xa_map->xm_xids, (caddr_t) & xid);
+  if (x == 0)
+    {
+      xa_id_t *xx = (xa_id_t *) dk_alloc (sizeof (xa_id_t));
+      tp_data_t * tpd = (tp_data_t*)dk_alloc (sizeof (tp_data_t));;
+      memcpy (&xx->xid, xid, sizeof (virtXID));
+      xid = (void *) &xx->xid;
+      xx->xid_sem = 0;
+      xx->xid_cli = NULL;
+      memset (tpd, 0, sizeof (tp_data_t));
+      tpd->cli_tp_enlisted = CONNECTION_PREPARED;
+      tpd->cli_tp_sem2 = semaphore_allocate (0);
+      tpd->cli_tp_trx = xid;
+      tpd->tpd_trx_cookie = (caddr_t) xid;
+      tpd->cli_tp_lt = lt;
+      tpd->cli_trx_type = lt->lt_2pc._2pc_type = TP_XA_TYPE;
+      xx->xid_tp_data = tpd;
+      xx->xid_op = SQL_XA_ENLIST;
+      id_hash_set (global_xa_map->xm_xids, (caddr_t) & xid, (caddr_t) & xx);
+      rc = 0;
+    }
+  else
+    {
+      rc = 1;
+    }
+  mutex_leave (global_xa_map->xm_mtx);
+  return rc;
+}
+
+int
 virt_xa_set_client (void *xid, struct client_connection_s *cli)
 {
   xa_id_t **x;
@@ -1334,7 +1373,7 @@ virt_xa_suspend_lt (void *xid, struct client_connection_s *cli)
 
 
 int
-virt_xa_client (void *xid, struct tp_data_s **tpd, int op)
+virt_xa_client (void *xid, client_connection_t * cli, struct tp_data_s **tpd, int op)
 {
   xa_id_t **xx;
 
@@ -1346,7 +1385,7 @@ virt_xa_client (void *xid, struct tp_data_s **tpd, int op)
 
   if (!xx)
     {
-      if ((op == SQL_XA_COMMIT) || (op == SQL_XA_WAIT))
+      if ((op == SQL_XA_COMMIT) || (op == SQL_XA_WAIT) || (op == SQL_XA_RESUME))
 	{
 	  mutex_leave (global_xa_map->xm_mtx);
 	  return -1;
@@ -1375,6 +1414,15 @@ virt_xa_client (void *xid, struct tp_data_s **tpd, int op)
 
   tpd[0] = xx[0]->xid_tp_data;
   mutex_leave (global_xa_map->xm_mtx);
+
+  IN_TXN;
+  if (cli->cli_trx != xx[0]->xid_tp_data->cli_tp_lt)
+    lt_kill_other_trx (cli->cli_trx, NULL, NULL, LT_KILL_ROLLBACK);
+  cli->cli_tp_data = xx[0]->xid_tp_data;
+  cli->cli_trx = xx[0]->xid_tp_data->cli_tp_lt;
+  xx[0]->xid_tp_data->cli_tp_lt->lt_client = cli;
+  xx[0]->xid_cli = cli;
+  LEAVE_TXN;
   return 0;
 }
 
@@ -1673,7 +1721,7 @@ txa_write_info (int fd, caddr_t * info)
   }
   FAILED
   {
-    log_error ("Could write XA transaction file");
+    log_error ("Could not write XA transaction file");
   }
   END_WRITE_FAIL (file_out);
   PrpcSessionFree (file_out);
@@ -1763,8 +1811,7 @@ txa_remove_entry (void *xid, int check)
 caddr_t *
 txa_serialize (txa_entry_t ** ppe)
 {
-  caddr_t *i =
-      (caddr_t *) dk_alloc_box (box_length (ppe), DV_ARRAY_OF_POINTER);
+  caddr_t *i = (caddr_t *) dk_alloc_box (box_length (ppe), DV_ARRAY_OF_POINTER);
   int inx;
   DO_BOX (txa_entry_t *, e, inx, ppe)
   {

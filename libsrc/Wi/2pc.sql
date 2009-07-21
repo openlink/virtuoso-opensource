@@ -161,10 +161,10 @@ create procedure _2PC.DBA.XA_GET_ALL_XIDS ()
       while (idx < length (xids))
 	{
  	  declare st varchar;
-	  st := aref (aref (xids, idx), 3);
+	  st := xids[idx][3]; --aref (aref (xids, idx), 3);
 	  if (substring (st, 1, 3) = 'PRP')
 	    {
-		result (txa_bin_encode (aref (aref (xids, idx), 3)));
+	      result (txa_bin_encode (xids[idx][0])); --aref (aref (xids, idx), 3)));
 	    }
 	  idx := idx + 1;
 	}

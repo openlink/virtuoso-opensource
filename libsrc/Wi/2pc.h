@@ -382,12 +382,12 @@ extern virt_xa_map_t *global_xa_map;
 
 int virt_xa_set_client (void *xid, struct client_connection_s *cli);
 void virt_xa_suspend_lt (void *xid, struct client_connection_s *cli);
-int virt_xa_client (void *xid_str, struct tp_data_s **tpd, int op);
+int virt_xa_client (void *xid_str, struct client_connection_s *cli, struct tp_data_s **tpd, int op);
 void virt_xa_remove_xid (void *xid);
 void *virt_xa_id (char *xid_str);
 caddr_t virt_xa_xid_in_log (void *xid);
-int virt_xa_replay_trx (void *xid, caddr_t trx,
-    struct client_connection_s *cli);
+int virt_xa_replay_trx (void *xid, caddr_t trx, struct client_connection_s *cli);
+int virt_xa_add_trx (void *xid, struct lock_trx_s * lt);
 
 int xa_wait_commit (struct tp_data_s *tpd);
 /* #endif _MTX_ */

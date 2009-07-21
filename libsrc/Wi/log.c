@@ -1341,6 +1341,7 @@ log_replay_trx (dk_session_t * in, client_connection_t * cli,
   caddr_t err;
   dtp_t op;
   lock_trx_t *lt;
+  int is_xa = 0, lock_escalation_pct_save = lock_escalation_pct;
 
 try_again:
 
@@ -1384,11 +1385,14 @@ try_again:
 	}
       else if (LOG_XA_2PC_PREPARE == st_2pc)
 	{
+	  /* XA transaction */
 	  caddr_t xid = (caddr_t) read_object (in);
-	  caddr_t transact = dk_alloc_box (in->dks_in_fill - in->dks_in_read, DV_BIN);
+	  /*caddr_t transact = dk_alloc_box (in->dks_in_fill - in->dks_in_read, DV_BIN);*/
 	  _2pc_printf (("log: found xid [%s]\n", xid_bin_encode (xid)));
-	  session_buffered_read(in,transact,in->dks_in_fill - in->dks_in_read);
-	  id_hash_set (global_xa_map->xm_log_xids, (caddr_t) & xid, (caddr_t) & transact);
+	  /*session_buffered_read(in,transact,in->dks_in_fill - in->dks_in_read);
+	  id_hash_set (global_xa_map->xm_log_xids, (caddr_t) & xid, (caddr_t) & transact);*/
+	  virt_xa_add_trx (xid, lt);
+	  is_xa = 1;
 	  _xa_log_ctr++;
 	}
       else if (LOG_2PC_DISABLED != st_2pc)
@@ -1404,6 +1408,9 @@ try_again:
   else
     {
       lt->lt_replica_of = box_copy_tree (org);
+      /* if XA set lock_escalation_pct to 200 */
+      if (is_xa)
+	lock_escalation_pct = 2000;
       CATCH_READ_FAIL (in)
 	{
 	  while (1)
@@ -1415,6 +1422,8 @@ try_again:
 	      err = log_replay_entry (lt, op, in, is_pushback);
 	      if (err == SQL_SUCCESS)
 		continue;
+	      if (is_xa)
+		lock_escalation_pct = lock_escalation_pct_save;
 
               if (err != (caddr_t) SQL_NO_DATA_FOUND)
                 {
@@ -1450,14 +1459,27 @@ try_again:
 	  lt_leave (lt);
 	  LEAVE_TXN;
 	  log_error ("Bad log record encountered during replay");
+	  if (is_xa)
+	    lock_escalation_pct = lock_escalation_pct_save;
 	  return LTE_SQL_ERROR;
 	}
     }
   IN_TXN;
   if (!is_pushback)
     logh_set_level (lt, (caddr_t *) repl_header);
+  /* if XA do not commit, clear cli trx and start new transaction for cli */
+  if (is_xa)
+    lock_escalation_pct = lock_escalation_pct_save;
+  else
   rc = lt_commit (lt, TRX_CONT);
   lt_leave (lt);
+  if (is_xa)
+    {
+      cli->cli_trx = NULL;
+      lt->lt_client = NULL;
+      cli_set_new_trx (cli);
+      rc = LTE_OK;
+    }
   LEAVE_TXN;
   if (LTE_LOG_FAILED == rc)
     {

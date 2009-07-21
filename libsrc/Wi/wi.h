@@ -1332,7 +1332,7 @@ typedef struct ra_req_s
   if (lt) \
     { \
       client_connection_t * cli = lt->lt_client; \
-      if (cli->cli_session && cli->cli_session->dks_to_close) \
+      if (cli && cli->cli_session && cli->cli_session->dks_to_close) \
    { \
        LT_ERROR_DETAIL_SET (lt, \
 	   box_dv_short_string ("Client session disconnected")); \

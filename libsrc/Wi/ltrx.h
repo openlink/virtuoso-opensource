@@ -742,6 +742,12 @@ extern resource_t * rb_page_rc;
 #define rdbg_printf(a)
 #endif
 
+#define LT_IS_RUNNING(lt) \
+	(lt->lt_threads > 0 \
+	  && !lt->lt_vdb_threads \
+	  && !lt->lt_lw_threads \
+	  && !lt->lt_close_ack_threads)
+
 
 #define LW_CALL(it)  rdbg_printf (("    LW call it %p %s:%d\n", it, __FILE__, __LINE__));
 
