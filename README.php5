@@ -18,7 +18,7 @@ Building php
   In the php source directory, execute something similar to:
 
 	./configure \
-		--prefix=/opt/software/php-5.2.10 \
+		--prefix=/usr/local/php-5.2.10 \
 		--enable-maintainer-zts \
 		--enable-embed=shared \
 		--with-config-file-path=. \
@@ -78,11 +78,11 @@ Building php
 
   In the Virtuoso Open Source directory, execute the following command:
 
-	./configure .... --enable-php5=/opt/software/php-5.2.10 ...... 
+	./configure .... --enable-php5=/usr/local/php-5.2.10 ...... 
 
   or if you configured Virtuoso before in this directory:
 
-	./config.nice --enable-php5=/opt/software/php-5.2.10
+	./config.nice --enable-php5=/usr/local/php-5.2.10
 
   so the build process knows where to find the necessary PHP header files.
 
