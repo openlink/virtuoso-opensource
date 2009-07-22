@@ -146,13 +146,13 @@ The virtuoso.local_dsn is by default set to "Local Virtuoso" which
 is the DSN in your odbc.ini file normally associated with your local
 virtuoso database.
 
-The virtuoso.allow_dba rejects the use of the dba uid when using
-__virt_internal_connect.
+The virtuoso.allow_dba option rejects the use of the dba uid when using
+__virt_internal_dsn().
 
 Functions
 ---------
 
-  __virt_internal_connect([optional dsn])
+  __virt_internal_dsn([optional dsn])
 
 Normally when programming a PHP application you have to store datasource,
 username and password credentials for making ODBC connections back into
@@ -160,7 +160,7 @@ the database. This can be a security risk and requires the administrator
 to fix scripts manually when he wants to run a hosted application under
 its own sql account.
 
-The __virtuoso_internal_connect function returns an ODBC connect string
+The __virt_internal_dsn() function returns an ODBC connect string
 based on the VSP user that owns the Virtual Directory.
 
 It starts by verifying that the Virtual Directory has been properly setup
