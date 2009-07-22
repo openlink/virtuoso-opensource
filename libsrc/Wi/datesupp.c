@@ -771,7 +771,7 @@ extern void
 iso8601_or_odbc_string_to_dt_impl (const char *str, char *dt, int dtflags, int dt_type, caddr_t *err_msg_ret);
 
 void
-iso8601_or_odbc_string_to_dt (const char *str, char *dt, int dtflags, int dt_type, caddr_t *err_msg_ret)
+iso8601_or_odbc_string_to_dt_1 (const char *str, char *dt, int dtflags, int dt_type, caddr_t *err_msg_ret)
 {
   FILE *f = fopen ("iso8601_or_odbc_string_to_dt.log", "at");
   iso8601_or_odbc_string_to_dt_impl (str, dt, dtflags, dt_type, err_msg_ret);
@@ -795,7 +795,7 @@ void
 iso8601_or_odbc_string_to_dt_impl (const char *str, char *dt, int dtflags, int dt_type, caddr_t *err_msg_ret)
 #else
 void
-iso8601_or_odbc_string_to_dt (const char *str, char *dt, int dtflags, int dt_type, caddr_t *err_msg_ret)
+iso8601_or_odbc_string_to_dt_1 (const char *str, char *dt, int dtflags, int dt_type, caddr_t *err_msg_ret)
 #endif
 {
   int tzsign = 0, res_flags = 0, tzmin = dt_local_tz;
@@ -1067,6 +1067,20 @@ field_delim_checked:
   return;
 }
 
+void
+iso8601_or_odbc_string_to_dt (const char *str, char *dt, int dtflags, int dt_type, caddr_t *err_msg_ret)
+{
+  caddr_t copy = box_string (str);
+  char *start, *end;
+  start = copy;
+  end = copy + box_length (copy) - 2;
+  while (isspace (*start))
+   start++;
+  while (end && end >= start && isspace (*end))
+    *(end--) = 0;
+  iso8601_or_odbc_string_to_dt_1 (start, dt, dtflags, dt_type, err_msg_ret);
+  dk_free_box (copy);
+}
 
 int
 http_date_to_dt (const char *http_date, char *dt)
