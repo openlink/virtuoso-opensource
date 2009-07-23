@@ -619,16 +619,18 @@ function updateRowCombo4 (elm, fldName, fldOptions)
 
 function updateRowCombo5 (elm, fldName, fldOptions)
 {
-	var cc = OAT.Dom.create("select");
-  cc.name = fldName;
-  cc.id = fldName;
-  updateRowComboOption2(cc, fldOptions.value, 'Book', 'text/*');
-  updateRowComboOption2(cc, fldOptions.value, 'Image', 'image/*');
-  updateRowComboOption2(cc, fldOptions.value, 'Music', 'audio/*');
-  updateRowComboOption2(cc, fldOptions.value, 'Video', 'video/*');
+  var cc = new OAT.Combolist([], fldOptions.value, {name: fldName, onchange: setServiceUrl});
+
+  cc.input.name = fldName;
+  cc.input.id = fldName;
+  cc.input.style.width = "90%";
+  cc.addOption('Book');
+  cc.addOption('Image');
+  cc.addOption('Music');
+  cc.addOption('Video');
 
   var elm = $(elm);
-  elm.appendChild(cc);
+  elm.appendChild(cc.div);
 }
 
 function validateError(fld, msg)

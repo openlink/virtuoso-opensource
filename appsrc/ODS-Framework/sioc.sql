@@ -99,6 +99,11 @@ create procedure sioc_iri (in s varchar)
   return concat ('http://rdfs.org/sioc/ns#', s);
 };
 
+create procedure sioct_iri (in s varchar)
+{
+  return concat ('http://rdfs.org/sioc/types#', s);
+};
+
 create procedure services_iri (in s varchar)
 {
   return concat ('http://rdfs.org/sioc/services#', s);
@@ -1442,6 +1447,7 @@ create procedure sioc_user_favorite (in user_id integer, in f_id integer, in f_t
   delete_quad_s_or_o (graph_iri, iri, iri);
 
   ods_sioc_post (graph_iri, iri, forum_iri, user_iri, f_label, null, null);
+  DB.DBA.RDF_QUAD_URI (graph_iri, user_iri, sioct_iri ('likes'), iri);
   if (length (f_type))
     DB.DBA.RDF_QUAD_URI (graph_iri, iri, dc_iri ('format'), f_type);
   if (length (f_uri))
