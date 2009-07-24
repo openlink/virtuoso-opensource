@@ -1490,7 +1490,7 @@ badtype:
 }
 ;
 
-create function DB.DBA.RDF_LONG_OF_SQLVAL (in v any) returns any
+create function DB.DBA.RDF_LONG_OF_SQLVAL (in v varchar) returns any
 {
   declare t int;
   t := __tag (v);

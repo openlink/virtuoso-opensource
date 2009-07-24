@@ -3031,7 +3031,7 @@ request_do_again:
   ws->ws_ignore_disconnect = 0;
   CHUNKED_STATE_CLEAR (ws);
 
-  if (NULL != www_maintenance_page && cpt_is_global_lock ())
+  if (NULL != www_maintenance_page && wi_inst.wi_is_checkpoint_pending)
     {
       int print_slash;
       size_t alen;

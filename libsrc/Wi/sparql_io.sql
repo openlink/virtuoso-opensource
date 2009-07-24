@@ -141,9 +141,11 @@ end_of_binding: ;
 create function DB.DBA.SPARQL_RSET_XML_HTTP_PRE (in colnames any, in accept varchar)
 {
   declare ses integer;
-  http_header ('Content-Type: ' || subseq (accept, strchr (accept, ' ')+1) || '; charset=UTF-8\r\n');
-  http_flush (1);
   ses := 0;
+  if (strchr (accept, ' ') is not null)
+    accept := subseq (accept, strchr (accept, ' ')+1);
+  http_header ('Content-Type: ' || accept || '; charset=UTF-8\r\n');
+  http_flush (1);
   DB.DBA.SPARQL_RSET_XML_WRITE_NS (ses);
   DB.DBA.SPARQL_RSET_XML_WRITE_HEAD (ses, colnames);
   http ('\n <results>');
