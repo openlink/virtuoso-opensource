@@ -258,7 +258,10 @@ public class Driver implements java.sql.Driver
       val  = "";
     }
     if (attr != null && attr.length() > 0) {
-      props.put(attr.toLowerCase(), val);
+      if (isFirst)
+        props.put("_vhost", attr);
+      else
+        props.put(attr.toLowerCase(), val);
     }
 
     val = props.getProperty("kpath");
