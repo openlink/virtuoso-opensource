@@ -128,13 +128,11 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
       // Put the output parameter
       param_type[parameterIndex - 1] = sqlType;
       param_scale[parameterIndex - 1] = scale;
+/******
       switch(sqlType)
       {
          case Types.ARRAY:
-            /*objparams.setElementAt(new VirtuosoArray(),parameterIndex-1);*/
-            return;
          case Types.STRUCT:
-            /*objparams.setElementAt(new VirtuosoStruct(),parameterIndex-1);*/
             return;
          case Types.BIGINT:
             objparams.setElementAt(new Long(Long.MAX_VALUE),parameterIndex - 1);
@@ -142,16 +140,12 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
          case Types.LONGVARBINARY:
          case Types.VARBINARY:
          case Types.BINARY:
-            /*objparams.setElementAt(new VirtuosoBinary(),parameterIndex-1);*/
             return;
          case Types.BIT:
             objparams.setElementAt(new Boolean(false),parameterIndex - 1);
             return;
          case Types.BLOB:
-            /*objparams.setElementAt(new VirtuosoBlob(),parameterIndex-1);*/
-            return;
          case Types.CLOB:
-            /*objparams.setElementAt(new VirtuosoClob(),parameterIndex-1);*/
             return;
          case Types.LONGVARCHAR:
          case Types.VARCHAR:
@@ -194,6 +188,7 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
             return;
       }
       ;
+**********/
    }
 
    /**
@@ -609,33 +604,15 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
                 obj = new Long(((Number)obj).longValue()); break;
 
               case Types.DATE:
-                if (! (obj instanceof java.sql.Date))
-                  {
-		    if (obj instanceof java.util.Date)
-		      obj = java.sql.Date.valueOf (new java.sql.Date(((java.util.Date)obj).getTime()).toString());
-		    else
-		      obj = java.sql.Date.valueOf ((String) obj);
-		  }
+		obj = java.sql.Date.valueOf (obj.toString());
                 break;
 
               case Types.TIME:
-                if (! (obj instanceof java.sql.Time))
-                  {
-		    if (obj instanceof java.util.Date)
-		      obj = java.sql.Time.valueOf (new java.sql.Time(((java.util.Date)obj).getTime()).toString());
-		    else
-		      obj = java.sql.Time.valueOf ((String) obj);
-		  }
+		obj = java.sql.Time.valueOf (obj.toString());
                 break;
 
               case Types.TIMESTAMP:
-                if (! (obj instanceof java.sql.Timestamp))
-                  {
-		    if (obj instanceof java.util.Date)
-		      obj = java.sql.Timestamp.valueOf (new java.sql.Timestamp(((java.util.Date)obj).getTime()).toString());
-		    else
-		      obj = java.sql.Timestamp.valueOf ((String) obj);
-		  }
+		obj = java.sql.Timestamp.valueOf (obj.toString());
                 break;
 
              }
