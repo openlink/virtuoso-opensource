@@ -265,6 +265,15 @@ public class VirtuosoResultSetMetaData implements ResultSetMetaData
       return ((VirtuosoColumn)(columnsMetaData.elementAt(column - 1))).getColumnName();
    }
 
+   public void setColumnName(int column, String name) throws VirtuosoException
+   {
+      // Get and check parameter
+      if(column < 1 || column > columnsMetaData.size())
+         throw new VirtuosoException("Bad column number : " + column + " not in 1<n<" + columnsMetaData.size(),VirtuosoException.BADPARAM);
+      // Treat the method
+      ((VirtuosoColumn)(columnsMetaData.elementAt(column - 1))).setColumnName(name);
+   }
+
    /**
     * Gets a column's number of decimal digits.
     *

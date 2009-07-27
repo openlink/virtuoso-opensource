@@ -1762,7 +1762,13 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
       ps.setInt(5, connection.getCase());
       ps.setInt(6, 1);
 
-      ResultSet rs = ps.executeQuery();
+      VirtuosoResultSet rs = (VirtuosoResultSet)ps.executeQuery();
+
+      rs.metaData.setColumnName(8, "PRECISION");
+      rs.metaData.setColumnName(9, "LENGTH");
+      rs.metaData.setColumnName(10, "SCALE");
+      rs.metaData.setColumnName(11, "RADIX");
+
       return rs;
    }
 

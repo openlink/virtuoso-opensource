@@ -364,7 +364,6 @@ public class VirtuosoResultSet implements ResultSet
 		    {
 		      pstmt.vresultSet.getMoreResults();
 		    }
-//---		  while(pstmt.vresultSet.more_result());
 		  while(!pstmt.vresultSet.isLastRow && isLastResult);
 		  rowIsDeleted = (pstmt.vresultSet.getUpdateCount() > 0);
 		  break;
@@ -379,7 +378,7 @@ public class VirtuosoResultSet implements ResultSet
 		      pstmt.vresultSet.is_complete = pstmt.vresultSet.more_result = false;
 		      pstmt.vresultSet.process_result();
 		    }
-		  while(pstmt.vresultSet.more_result());
+		  while(!pstmt.vresultSet.isLastRow && isLastResult);
 		  rowIsUpdated = (pstmt.vresultSet.getUpdateCount() > 0);
 		  break;
 	      case VirtuosoTypes.SQL_ADD:
@@ -387,7 +386,6 @@ public class VirtuosoResultSet implements ResultSet
 		    {
 		      pstmt.vresultSet.getMoreResults();
 		    }
-//---		  while(pstmt.vresultSet.more_result());
 		  while(!pstmt.vresultSet.isLastRow && isLastResult);
 		  rowIsInserted = (pstmt.vresultSet.getUpdateCount() > 0);
 		  break;
@@ -465,7 +463,7 @@ public class VirtuosoResultSet implements ResultSet
 		    stmt_co_last_in_batch = true;
                case VirtuosoTypes.QA_ROW:
                   //System.out.println("---> QA_ROW");
-                  isLastRow = true;
+                  isLastRow = false;
                   result.removeElementAt(0);
                   // Get each row
                   if(currentRow == 0)

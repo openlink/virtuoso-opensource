@@ -214,12 +214,10 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
     */
    public boolean execute() throws VirtuosoException
    {
-     synchronized (connection)
-       {
-	 sendQuery();
-	 // Test the kind of operation
-	 return vresultSet.more_result();
-       }
+      exec_type = VirtuosoTypes.QT_UNKNOWN;
+      sendQuery();
+      // Test the kind of operation
+      return (vresultSet.kindop() != VirtuosoTypes.QT_UPDATE);
    }
 
    /**
@@ -236,11 +234,9 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
     */
    public int executeUpdate() throws VirtuosoException
    {
-     synchronized (connection)
-       {
-	 sendQuery();
-	 return vresultSet.getUpdateCount();
-       }
+      exec_type = VirtuosoTypes.QT_UPDATE;
+      sendQuery();
+      return vresultSet.getUpdateCount();
    }
 
    public int[] executeBatchUpdate() throws BatchUpdateException
@@ -291,11 +287,9 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
     */
    public ResultSet executeQuery() throws VirtuosoException
    {
-     synchronized (connection)
-       {
-	 sendQuery();
-	 return vresultSet;
-       }
+      exec_type = VirtuosoTypes.QT_SELECT;
+      sendQuery();
+      return vresultSet;
    }
 
    /**
@@ -782,7 +776,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
        {
 	  case Types.CHAR:
 	  case Types.VARCHAR:
-	      if (x instanceof java.util.Date || x instanceof java.lang.Number || x instanceof java.lang.String)
+	      if (x instanceof java.util.Date || x instanceof java.lang.String)
 		return x;
 	      else
 		return x.toString();
@@ -823,7 +817,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
               if (x instanceof java.math.BigDecimal || x instanceof java.lang.String)
                 return x;
               else if (x instanceof java.lang.Number)
-                return new java.math.BigDecimal (x.toString());
+                return new java.math.BigDecimal (((Number)x).longValue());
 	      break;
 
           case Types.FLOAT:

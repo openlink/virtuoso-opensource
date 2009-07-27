@@ -891,6 +891,14 @@ class VirtuosoRow
 	   {
 	       obj = createDOMT (obj);
 	   }
+	 else if(obj instanceof java.sql.Date)
+	   {
+	     obj = java.sql.Date.valueOf (((java.sql.Date)obj).toString());
+	   }
+         else if(obj instanceof java.sql.Time)
+           {
+             obj = java.sql.Time.valueOf (((java.sql.Time)obj).toString());
+           }
          return obj;
       }
       resultSet.wasNull(true);

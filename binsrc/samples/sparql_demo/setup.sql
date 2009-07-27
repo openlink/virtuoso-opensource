@@ -226,14 +226,7 @@ create function DB.DBA.RDF_DF_GRANTEE_ID_URI_INVERSE (in id_iri varchar)
 grant execute on DB.DBA.RDF_DF_GRANTEE_ID_URI_INVERSE to SPARQL_SELECT
 ;
 
-DB.DBA.SPARQL_QM_RUN ('
-drop quad map graph iri("http://^{URIQADefaultHost}^/sys") .
-create quad storage virtrdf:sys
-  {
-  } .
-drop quad storage virtrdf:sys .
-'
-);
+DB.DBA.SPARQL_QM_RUN ('drop silent quad map  virtrdf:SysUsers . ');
 
 DB.DBA.RDF_QM_END_ALTER_QUAD_STORAGE ( UNAME'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadStorage' )
 ;

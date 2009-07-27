@@ -62,7 +62,7 @@ public class Driver implements java.sql.Driver
    // The major and minor version number
    protected static final int major = 3;
 
-   protected static final int minor = 31;
+   protected static final int minor = 32;
 
    // Some variables
    private String host = "localhost";
@@ -258,7 +258,10 @@ public class Driver implements java.sql.Driver
       val  = "";
     }
     if (attr != null && attr.length() > 0) {
-      props.put(attr.toLowerCase(), val);
+      if (isFirst)
+        props.put("_vhost", attr);
+      else
+        props.put(attr.toLowerCase(), val);
     }
 
     val = props.getProperty("kpath");
