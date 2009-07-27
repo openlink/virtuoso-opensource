@@ -1545,6 +1545,12 @@ void
 sqlc_ins_keys (comp_context_t * cc, insert_node_t * ins)
 {
   dk_set_t keys = NULL;
+  if (!ins->ins_key_only && dk_set_length (ins->ins_table->tb_primary_key->key_parts) == ins->ins_table->tb_primary_key->key_n_significant)
+    {
+      ins->ins_no_deps = 1;
+      if (INS_REPLACING == ins->ins_mode)
+	ins->ins_mode = INS_SOFT; /* if it's pk parts only, no difference between replace and soft */
+    }
   if (ins->ins_key_only)
     {
       DO_SET (dbe_key_t *, key, &ins->ins_table->tb_keys)

@@ -851,7 +851,8 @@ typedef struct insert_node_s
     dbe_table_t *	ins_table;
     oid_t *		ins_col_ids;
     dk_set_t		ins_values;
-    int			ins_mode;
+    char		ins_mode;
+    char		ins_no_deps; /* true if all cols of tb are in pk */
     state_slot_t **	ins_trigger_args;
     ins_key_t **	ins_keys;
     query_t *		ins_policy_qr;
@@ -863,7 +864,7 @@ typedef struct insert_node_s
 #define INS_NORMAL	0
 #define INS_SOFT	1 /* do not insert if prime key exists */
 #define INS_REPLACING	2 /* replace row if prime key exists. */
-
+#define INS_SOFT_QUIET 3 /* like soft but return end of set and not row if duplicate on cluster */
 
 #define UPD_MAX_COLS 200
 #define UPD_MAX_QUICK_COLS 30
