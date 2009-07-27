@@ -141,7 +141,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
     * the query; never null.
     * @exception virtuoso.jdbc2.VirtuosoException  If a database access error occurs.
     */
-   private VirtuosoResultSet sendQuery() throws VirtuosoException
+   private void sendQuery() throws VirtuosoException
    {
      synchronized (connection)
        {
@@ -160,7 +160,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	     // Put the options array in the args array
 	     args[5] = getStmtOpts();
 	     future = connection.getFuture(VirtuosoFuture.exec,args, this.rpc_timeout);
-	     return new VirtuosoResultSet(this,metaData);
+	     vresultSet.getMoreResults();
 	   }
 	 catch(IOException e)
 	   {
@@ -215,7 +215,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
    public boolean execute() throws VirtuosoException
    {
       exec_type = VirtuosoTypes.QT_UNKNOWN;
-      vresultSet = sendQuery();
+      sendQuery();
       // Test the kind of operation
       return (vresultSet.kindop() != VirtuosoTypes.QT_UPDATE);
    }
@@ -235,7 +235,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
    public int executeUpdate() throws VirtuosoException
    {
       exec_type = VirtuosoTypes.QT_UPDATE;
-      vresultSet = sendQuery();
+      sendQuery();
       return vresultSet.getUpdateCount();
    }
 
@@ -288,7 +288,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
    public ResultSet executeQuery() throws VirtuosoException
    {
       exec_type = VirtuosoTypes.QT_SELECT;
-      vresultSet = sendQuery();
+      sendQuery();
       return vresultSet;
    }
 
@@ -816,10 +816,8 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
           case Types.BIGINT:
               if (x instanceof java.math.BigDecimal || x instanceof java.lang.String)
                 return x;
-              else if (x instanceof java.lang.Double)
-                return new java.math.BigDecimal (((Double)x).doubleValue());
               else if (x instanceof java.lang.Number)
-                return new java.math.BigDecimal (x.toString());
+                return new java.math.BigDecimal (((Number)x).longValue());
 	      break;
 
           case Types.FLOAT:
