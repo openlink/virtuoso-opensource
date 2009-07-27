@@ -141,7 +141,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
     * the query; never null.
     * @exception virtuoso.jdbc2.VirtuosoException  If a database access error occurs.
     */
-   private void sendQuery() throws VirtuosoException
+   private VirtuosoResultSet sendQuery() throws VirtuosoException
    {
      synchronized (connection)
        {
@@ -160,7 +160,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	     // Put the options array in the args array
 	     args[5] = getStmtOpts();
 	     future = connection.getFuture(VirtuosoFuture.exec,args, this.rpc_timeout);
-	     vresultSet.getMoreResults();
+	     return new VirtuosoResultSet(this,metaData);
 	   }
 	 catch(IOException e)
 	   {
@@ -214,12 +214,10 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
     */
    public boolean execute() throws VirtuosoException
    {
-     synchronized (connection)
-       {
-	 sendQuery();
-	 // Test the kind of operation
-	 return vresultSet.more_result();
-       }
+      exec_type = VirtuosoTypes.QT_UNKNOWN;
+      vresultSet = sendQuery();
+      // Test the kind of operation
+      return (vresultSet.kindop() != VirtuosoTypes.QT_UPDATE);
    }
 
    /**
@@ -236,11 +234,9 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
     */
    public int executeUpdate() throws VirtuosoException
    {
-     synchronized (connection)
-       {
-	 sendQuery();
-	 return vresultSet.getUpdateCount();
-       }
+      exec_type = VirtuosoTypes.QT_UPDATE;
+      vresultSet = sendQuery();
+      return vresultSet.getUpdateCount();
    }
 
    public int[] executeBatchUpdate() throws BatchUpdateException
@@ -291,11 +287,9 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
     */
    public ResultSet executeQuery() throws VirtuosoException
    {
-     synchronized (connection)
-       {
-	 sendQuery();
-	 return vresultSet;
-       }
+      exec_type = VirtuosoTypes.QT_SELECT;
+      vresultSet = sendQuery();
+      return vresultSet;
    }
 
    /**
@@ -782,7 +776,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
        {
 	  case Types.CHAR:
 	  case Types.VARCHAR:
-	      if (x instanceof java.util.Date || x instanceof java.lang.Number || x instanceof java.lang.String)
+	      if (x instanceof java.util.Date || x instanceof java.lang.String)
 		return x;
 	      else
 		return x.toString();
@@ -822,6 +816,8 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
           case Types.BIGINT:
               if (x instanceof java.math.BigDecimal || x instanceof java.lang.String)
                 return x;
+              else if (x instanceof java.lang.Double)
+                return new java.math.BigDecimal (((Double)x).doubleValue());
               else if (x instanceof java.lang.Number)
                 return new java.math.BigDecimal (x.toString());
 	      break;

@@ -232,6 +232,11 @@ class VirtuosoColumn
       return name;
    }
 
+   protected void setColumnName(String s)
+   {
+      name = s;
+   }
+
    /**
     * Indicates the column's normal max width in chars.
     *
