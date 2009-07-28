@@ -22,7 +22,7 @@
 --  
 repl_server ('pub', 'localhost:1111', null);
 repl_subscribe ('pub', 'tpcc', null, null, 'dba', 'dba');
-replay ('../tpccdb.log');
+repl_init_copy ('pub', 'tpcc', 1);
 checkpoint;
 sync_repl ();
 repl_sched_init ();
