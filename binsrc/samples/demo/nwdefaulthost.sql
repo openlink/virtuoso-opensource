@@ -443,7 +443,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     '(/[^#]*)',
     vector('path'),
     1,
-    '/about/html/http://^{URIQADefaultHost}^%s%%23this',
+    '/about/html/http/^{URIQADefaultHost}^%s%%23this',
     vector('path'),
     null,
     '(text/html)|(\\*/\\*)',
