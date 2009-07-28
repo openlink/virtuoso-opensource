@@ -55,6 +55,22 @@ public class TestCallableExecute
             System.out.println("    FAILED");
             System.exit(-1);
          }
+         try {
+           stmt.executeUpdate("DROP PROCEDURE VJDBC_BENCHMARK");
+         } catch (Exception e) {}
+         try {
+           stmt.executeUpdate("DROP TABLE ex..history");
+         } catch (Exception e) {}
+         try {
+           stmt.executeUpdate("DROP TABLE ex..accounts");
+         } catch (Exception e) {}
+         try {
+           stmt.executeUpdate("DROP TABLE ex..tellers");
+         } catch (Exception e) {}
+         try {
+           stmt.executeUpdate("DROP TABLE ex..branches");
+         } catch (Exception e) {}
+
          System.out.print("Execute CREATE TABLE");
          if(stmt.executeUpdate("CREATE TABLE ex..branches (Bid integer,Bbalance integer,filler character(92),primary key (Bid))") == 0)
             if(stmt.executeUpdate("CREATE TABLE ex..tellers (Tid integer,Bid integer,Tbalance integer,filler character(88),primary key (Tid),foreign key (Bid) references ex..branches)") == 0)
