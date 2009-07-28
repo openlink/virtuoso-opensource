@@ -271,14 +271,14 @@ public class VirtuosoConnection implements Connection
       if(password == null)
          password = "";
       if(prop.get("timeout") != null)
-		   timeout = ((Number)prop.get("timeout")).intValue();
+		   timeout = Integer.parseInt(prop.getProperty("timeout"));
       pwdclear = (String)prop.get("pwdclear");
       if(prop.get("sendbs") != null)
-		   sendbs = ((Number)prop.get("sendbs")).intValue();
+		   sendbs = Integer.parseInt(prop.getProperty("sendbs"));
       if(prop.get("recvbs") != null)
-		   recvbs = ((Number)prop.get("recvbs")).intValue();
+		   recvbs = Integer.parseInt(prop.getProperty("recvbs"));
       if(prop.get("fbs") != null)
-		   fbs = ((Number)prop.get("fbs")).intValue();
+		   fbs = Integer.parseInt(prop.getProperty("fbs"));
       //System.err.println ("3PwdClear is " + pwdclear);
 #ifdef SSL
       keystore_cert = (String)prop.get("certificate");
@@ -307,7 +307,7 @@ public class VirtuosoConnection implements Connection
         useRoundRobin = false;
       
       // Connect to the database
-      connect(host,port,(String)prop.get("database"), sendbs, recvbs, (prop.get("log_enable") != null ? ((Number)prop.get("log_enable")).intValue() : -1));
+      connect(host,port,(String)prop.get("database"), sendbs, recvbs, (prop.get("log_enable") != null ? (Integer.parseInt(prop.getProperty("log_enable"))) : -1));
    }
 
    protected int getIntAttr(java.util.Properties info, String key, int def) 
