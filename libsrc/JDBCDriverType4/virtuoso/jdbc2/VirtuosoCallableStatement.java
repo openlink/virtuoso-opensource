@@ -128,21 +128,23 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
       // Put the output parameter
       param_type[parameterIndex - 1] = sqlType;
       param_scale[parameterIndex - 1] = scale;
-/******
+
       switch(sqlType)
       {
          case Types.ARRAY:
          case Types.STRUCT:
             return;
          case Types.BIGINT:
-            objparams.setElementAt(new Long(Long.MAX_VALUE),parameterIndex - 1);
+            if (objparams.elementAt(parameterIndex - 1) == null)
+              objparams.setElementAt(new Long(Long.MAX_VALUE),parameterIndex - 1);
             return;
          case Types.LONGVARBINARY:
          case Types.VARBINARY:
          case Types.BINARY:
             return;
          case Types.BIT:
-            objparams.setElementAt(new Boolean(false),parameterIndex - 1);
+            if (objparams.elementAt(parameterIndex - 1) == null)
+              objparams.setElementAt(new Boolean(false),parameterIndex - 1);
             return;
          case Types.BLOB:
          case Types.CLOB:
@@ -150,45 +152,55 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
          case Types.LONGVARCHAR:
          case Types.VARCHAR:
          case Types.CHAR:
-            objparams.setElementAt(new String(),parameterIndex - 1);
+            if (objparams.elementAt(parameterIndex - 1) == null)
+              objparams.setElementAt(new String(),parameterIndex - 1);
             return;
          case Types.DATE:
-            objparams.setElementAt(new java.sql.Date(0),parameterIndex - 1);
+            if (objparams.elementAt(parameterIndex - 1) == null)
+              objparams.setElementAt(new java.sql.Date(0),parameterIndex - 1);
             return;
          case Types.TIME:
-            objparams.setElementAt(new java.sql.Time(0),parameterIndex - 1);
+            if (objparams.elementAt(parameterIndex - 1) == null)
+              objparams.setElementAt(new java.sql.Time(0),parameterIndex - 1);
             return;
          case Types.TIMESTAMP:
-            objparams.setElementAt(new java.sql.Timestamp(0),parameterIndex - 1);
+            if (objparams.elementAt(parameterIndex - 1) == null)
+              objparams.setElementAt(new java.sql.Timestamp(0),parameterIndex - 1);
             return;
          case Types.NUMERIC:
          case Types.DECIMAL:
-            objparams.setElementAt(new BigDecimal(0.0d).setScale(scale),parameterIndex - 1);
+            if (objparams.elementAt(parameterIndex - 1) == null)
+              objparams.setElementAt(new BigDecimal(0.0d).setScale(scale),parameterIndex - 1);
             return;
          case Types.FLOAT:
          case Types.DOUBLE:
-            objparams.setElementAt(new Double(Double.MAX_VALUE),parameterIndex - 1);
+            if (objparams.elementAt(parameterIndex - 1) == null)
+              objparams.setElementAt(new Double(Double.MAX_VALUE),parameterIndex - 1);
             return;
          case Types.OTHER:
          case Types.JAVA_OBJECT:
-            objparams.setElementAt(new Object(),parameterIndex - 1);
+            if (objparams.elementAt(parameterIndex - 1) == null)
+              objparams.setElementAt(new Object(),parameterIndex - 1);
             return;
          case Types.NULL:
-            objparams.setElementAt(new VirtuosoNullParameter(sqlType, true),parameterIndex - 1);
+            if (objparams.elementAt(parameterIndex - 1) == null)
+              objparams.setElementAt(new VirtuosoNullParameter(sqlType, true),parameterIndex - 1);
             return;
          case Types.REAL:
-            objparams.setElementAt(new Float(Float.MAX_VALUE),parameterIndex - 1);
+            if (objparams.elementAt(parameterIndex - 1) == null)
+              objparams.setElementAt(new Float(Float.MAX_VALUE),parameterIndex - 1);
             return;
          case Types.SMALLINT:
-            objparams.setElementAt(new Short(Short.MAX_VALUE),parameterIndex - 1);
+            if (objparams.elementAt(parameterIndex - 1) == null)
+              objparams.setElementAt(new Short(Short.MAX_VALUE),parameterIndex - 1);
             return;
          case Types.INTEGER:
          case Types.TINYINT:
-            objparams.setElementAt(new Integer(Integer.MAX_VALUE),parameterIndex - 1);
+            if (objparams.elementAt(parameterIndex - 1) == null)
+              objparams.setElementAt(new Integer(Integer.MAX_VALUE),parameterIndex - 1);
             return;
       }
       ;
-**********/
    }
 
    /**
