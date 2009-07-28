@@ -1922,7 +1922,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
   _2pc_printf(("sf_sql_tp_transact %x\n",op));
   if (((SQL_TP_ABORT == op) || (SQL_TP_COMMIT == op)) && !cli->cli_tp_data)
     {
-      err = srv_make_new_error ("TP105", "XA02", "Unexpected operation in tp transact code: %d", op);
+      err = srv_make_new_error ("TP105", "XA001", "Unexpected operation in tp transact code: %d", op);
       DKST_RPC_DONE (client);
       PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
       dk_free_tree (err);
@@ -1967,7 +1967,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
       } break;
     case SQL_XA_JOIN:
       {
-	err = srv_make_new_error ("TP107", "XA02", "XA join is not supported");
+	err = srv_make_new_error ("TP107", "XA002", "XA join is not supported");
 	    DKST_RPC_DONE (client);
 	PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
 	dk_free_tree (err);
@@ -1982,7 +1982,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	xid = xid_bin_decode (xid_str);
 	if (!xid)
 	  {
-	    err = srv_make_new_error ("TP108", "XA02", "XID identifier can not be decoded");
+	    err = srv_make_new_error ("TP108", "XA003", "XID identifier can not be decoded");
 	    DKST_RPC_DONE (client);
 	    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
 	    dk_free_tree (err);
@@ -1999,7 +1999,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	  goto again;
 	if (rc == VXA_ERROR)
 	   {
-	    err = srv_make_new_error ("TP102", "XA02", "Duplicate global transaction identifier");
+	    err = srv_make_new_error ("TP102", "XA004", "Duplicate global transaction identifier");
 	    DKST_RPC_DONE (client);
 	    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
 	    dk_free_tree (err);
@@ -2027,7 +2027,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	xid = xid_bin_decode (xid_str);
 	if (!xid)
 	  {
-	    err = srv_make_new_error ("TP108", "XA02", "XID identifier can not be decoded");
+	    err = srv_make_new_error ("TP108", "XA005", "XID identifier can not be decoded");
 	    DKST_RPC_DONE (client);
 	    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
 	    dk_free_tree (err);
@@ -2035,7 +2035,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	  }
 	if (virt_xa_client (xid, cli, &tpd, SQL_XA_RESUME) == -1)
 	  {
-	    err = srv_make_new_error ("TP109", "XA02", "XID identifier can not be decoded");
+	    err = srv_make_new_error ("TP109", "XA006", "XID identifier can not be decoded");
 	    DKST_RPC_DONE (client);
 	    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
 	    dk_free_tree (err);
@@ -2045,10 +2045,17 @@ void sf_sql_tp_transact(short op, char* xid_str)
     case SQL_XA_ENLIST_END:
     case SQL_XA_SUSPEND:
       {
-	void * xid = cli->cli_tp_data->cli_tp_trx;
-	_2pc_printf(("tp enlist end tpd %p\n", cli->cli_tp_data));
-	if (!cli->cli_tp_data)
-	  GPF_T1 ("2PC: broken client vars");
+	struct tp_data_s * tpd;
+	void * xid = virt_xa_id (xid_str);
+
+	if (virt_xa_client (xid, cli, &tpd, op) == -1)
+	  {
+	    err = srv_make_new_error ("TP109", "XA007", "XID identifier can not be decoded");
+	    DKST_RPC_DONE (client);
+	    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1,1);
+	    dk_free_tree (err);
+	    return;
+	  }
 
 	IN_TXN;
 	if (1 || op == SQL_XA_SUSPEND)
@@ -2069,12 +2076,12 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	if (virt_xa_client (xid, cli, &tpd, op) == -1)
 	  {
 	    caddr_t trx = virt_xa_xid_in_log (xid);
-	    if (trx)
+	    if (0 && trx)
 	      {
 		_2pc_printf(("tp pre/comm 1 =%x cli %p\n",op,cli));
 		if (virt_xa_replay_trx (xid, trx, cli) != LTE_OK)
 		  {
-		    err = srv_make_new_error ("TP104", "XA03",
+		    err = srv_make_new_error ("TP104", "XA008",
 			"Could not commit transaction [%s] at recovery stage",
 			xid_str);
 		    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
@@ -2086,7 +2093,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	      }
 	    else
 	       {
-		err = srv_make_new_error ("TP101", "XA01",
+		err = srv_make_new_error ("TP101", "XA009",
 			"Unknown global transaction identifier [%s]", xid_str);
 		PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
 		dk_free_tree (err);
@@ -2097,9 +2104,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	    NEW_VAR(tp_future_t,future);
 	    tp_message_t * msg;
 	    lock_trx_t * curr_lt;
-	    /*
-	      tp_data_t * tpd = cli->cli_tp_data;
-	    */
+
 	    if (!tpd)
 	      GPF_T;
 	    curr_lt = tpd->cli_tp_lt;
@@ -2111,7 +2116,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 		IN_TXN;
 		lt_rollback (cli->cli_trx, TRX_FREE);
 		LEAVE_TXN;
-		err = srv_make_new_error ("TP110", "XA01", "Wrong sequence [%s]", xid_str);
+		err = srv_make_new_error ("TP110", "XA010", "Wrong sequence [%s]", xid_str);
 		DKST_RPC_DONE (client);
 		PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
 		dk_free_tree (err);
@@ -2196,7 +2201,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	tp_data_t * tpd;
 	if (virt_xa_client (xid, cli, &tpd, SQL_XA_WAIT) == -1)
 	  {
-	    err = srv_make_new_error ("TP109", "XA02", "XID identifier can not be decoded");
+	    err = srv_make_new_error ("TP109", "XA011", "XID identifier can not be decoded");
 	    DKST_RPC_DONE (client);
 	    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1,1);
 	    dk_free_tree (err);
