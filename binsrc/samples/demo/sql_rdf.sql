@@ -468,7 +468,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     '(/[^#]*)',
     vector('path'),
     1,
-    '/about/html/http://^{URIQADefaultHost}^%s',
+    '/about/html/http/^{URIQADefaultHost}^%s',
     vector('path'),
     null,
     '(text/html)|(\\*/\\*)',

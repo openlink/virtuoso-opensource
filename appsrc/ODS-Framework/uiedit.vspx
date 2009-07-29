@@ -74,7 +74,7 @@
             var cPopup = new CalendarPopup('cDiv');
             cPopup.isShowYearNavigation = true;
 
-		        OAT.Loader.loadFeatures(["ws", "combolist"], function(){});
+		        OAT.Loader.loadFeatures(["json", "ws", "combolist"], function(){});
 function getFileName(form, from, to)
 {
   var S = from.value;

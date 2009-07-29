@@ -201,9 +201,15 @@ create procedure ods_auth_failed ()
 }
 ;
 
+create procedure jsonObject ()
+{
+  return subseq (soap_box_structure ('x', 1), 0, 2);
+}
+;
+
 create procedure obj2json (
   in o any,
-  in d integer := 2)
+  in d integer := 5)
 {
   declare N, M integer;
   declare R, T any;
@@ -273,6 +279,355 @@ create procedure params2json (in o any)
 	retValue := retValue || '}';
 
 	return retValue;
+}
+;
+
+-- Ontology Info
+create procedure ODS.ODS_API."ontology.classes" (
+  in ontology varchar) __soap_http 'application/json'
+{
+  declare S, data any;
+  declare tmp, classes, retValue any;
+
+  set_user_id ('dba');
+  -- load ontology
+  ODS.ODS_API."ontology.load" (ontology);
+
+  -- select classes ontology
+  classes := vector ();
+  S := sprintf(
+         '\n SPARQL ' ||
+         '\n PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>' ||
+         '\n PREFIX owl: <http://www.w3.org/2002/07/owl#>' ||
+         '\n SELECT ?c' ||
+         '\n   FROM <%s>' ||
+         '\n  WHERE {' ||
+         '\n          ?c rdf:type owl:Class .' ||
+         '\n          filter (str(?c) like "%s%%").' ||
+         '\n        }' ||
+         '\n  ORDER BY ?c',
+         ontology,
+         ontology);
+  data := ODS.ODS_API."ontology.sparql" (S);
+  foreach (any item in data) do
+  {
+    tmp := vector_concat (jsonObject (), vector ('name', ODS.ODS_API."ontology.normalize" (item[0])));
+    classes := vector_concat (classes, vector (tmp));
+  }
+  retValue := vector_concat (jsonObject (), vector ('name', ontology, 'classes', classes));
+  return obj2json (retValue, 10);
+}
+;
+
+create procedure ODS.ODS_API."ontology.classProperties" (
+  in ontologyClass varchar) __soap_http 'application/json'
+{
+  declare N integer;
+  declare S, data any;
+  declare prefix, ontology, tmp, property, properties any;
+
+  -- select class properties ontology
+  prefix := ODS.ODS_API."ontology.prefix" (ontologyClass);
+  ontology := ODS.ODS_API."ontology.byPrefix" (prefix);
+  properties := vector ();
+  S := sprintf(
+         '\n SPARQL' ||
+         '\n PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>' ||
+         '\n PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>' ||
+         '\n PREFIX owl: <http://www.w3.org/2002/07/owl#>' ||
+         '\n PREFIX %s: <%s>' ||
+         '\n SELECT ?p ?r1 ?r2' ||
+         '\n   FROM <%s>' ||
+         '\n  WHERE {' ||
+         '\n          {' ||
+         '\n            ?p rdf:type owl:ObjectProperty .' ||
+         '\n            ?p rdfs:range ?r1 .' ||
+         '\n            {' ||
+         '\n              ?p rdfs:domain %s .' ||
+         '\n            }' ||
+         '\n            union' ||
+         '\n            {' ||
+         '\n              ?p rdfs:domain ?_b0 .'   ||
+         '\n              ?_b0 owl:unionOf ?_b1 .' ||
+         '\n              ?_b1 rdf:first %s . '    ||
+         '\n            }' ||
+         '\n            union' ||
+         '\n            {' ||
+         '\n              ?p rdfs:domain ?_b0 .'   ||
+         '\n              ?_b0 owl:unionOf ?_b1 .' ||
+         '\n              ?_b1 rdf:rest ?_b2 . '   ||
+         '\n              ?_b2 rdf:first %s . '    ||
+         '\n            }' ||
+         '\n          }' ||
+         '\n          union' ||
+         '\n          {' ||
+         '\n            ?p rdf:type owl:DatatypeProperty .' ||
+         '\n            ?p rdfs:domain %s .' ||
+         '\n            ?p rdfs:range ?r2 .' ||
+         '\n          }' ||
+         '\n        }' ||
+         '\n  ORDER BY ?p ?r1 ?r2',
+         prefix,
+         ontology,
+         ontology,
+         ontologyClass,
+         ontologyClass,
+         ontologyClass,
+         ontologyClass);
+  data := ODS.ODS_API."ontology.sparql" (S);
+  property := vector ('', vector (), vector ());
+  foreach (any item in data) do
+  {
+    if (property[0] <> item[0])
+    {
+      if (property[0] <> '')
+        properties := vector_concat (properties, vector (ODS.ODS_API."ontology.objectProperty" (property)));
+      property := vector (item[0], vector (), vector ());
+    }
+    if (not isnull (item[1]))
+    {
+      tmp := ODS.ODS_API."ontology.normalize"(item[1]);
+      if (tmp not like 'nodeID:%')
+      {
+        property[1] := vector_concat (property[1], vector (tmp));
+      } else {
+        property[1] := vector_concat (property[1], ODS.ODS_API."ontology.collection" (ontology, tmp));
+      }
+    }
+    if (not isnull (item[2]))
+      property[2] := vector_concat (property[2], vector (ODS.ODS_API."ontology.normalize"(item[2])));
+  }
+  if (property[0] <> '')
+    properties := vector_concat (properties, vector (ODS.ODS_API."ontology.objectProperty" (property)));
+  if (prefix <> 'dc')
+  {
+    property := vector ('dc:title', vector(), vector('rdfs:string'));
+    properties := vector_concat (properties, vector (ODS.ODS_API."ontology.objectProperty" (property)));
+    property := vector ('dc:description', vector(), vector('rdfs:string'));
+    properties := vector_concat (properties, vector (ODS.ODS_API."ontology.objectProperty" (property)));
+  }
+  return obj2json (properties, 10);
+}
+;
+
+create procedure ODS.ODS_API."ontology.objects" (
+  in ontology varchar) __soap_http 'application/json'
+{
+  declare S, data any;
+  declare tmp, objects any;
+
+  -- select classes ontology
+  objects := vector ();
+  S := sprintf(
+         '\n SPARQL ' ||
+         '\n PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>' ||
+         '\n PREFIX owl: <http://www.w3.org/2002/07/owl#>' ||
+         '\n SELECT ?o ?c' ||
+         '\n   FROM <%s>' ||
+         '\n  WHERE {' ||
+         '\n          ?o a ?c .' ||
+         '\n          ?c rdf:type owl:Class.' ||
+         '\n        }' ||
+         '\n  ORDER BY ?c',
+         ontology,
+         ontology);
+  data := ODS.ODS_API."ontology.sparql" (S);
+  foreach (any item in data) do
+  {
+    tmp := vector_concat (jsonObject (), vector ('id', ODS.ODS_API."ontology.normalize" (item[0]), 'class', ODS.ODS_API."ontology.normalize" (item[1])));
+    objects := vector_concat (objects , vector (tmp));
+  }
+  return obj2json (objects , 10);
+}
+;
+
+create procedure ODS.ODS_API."ontology.sparql" (
+  in S varchar)
+{
+  declare st, msg, data, meta any;
+
+  set_user_id ('dba');
+  commit work;
+  st := '00000';
+  exec (S, st, msg, vector (), 0, meta, data);
+  if (st = '00000')
+    return data;
+  return vector ();
+}
+;
+
+create procedure ODS.ODS_API."ontology.load" (
+  in ontology varchar,
+  in needCheck integer := 1)
+{
+  declare S, data any;
+
+  -- check graph ontology
+  if (needCheck)
+  {
+    S := sprintf('SPARQL select count (*) from <%s> {?s ?p ?o}', ontology);
+    data := ODS.ODS_API."ontology.sparql" (S);
+    if (length(data) and (data[0][0] > 0))
+      return;
+  }
+
+  -- clear graph ontology
+  S := sprintf('SPARQL clear graph <%s>', ontology);
+  ODS.ODS_API."ontology.sparql" (S);
+
+  -- load ontology
+  S := sprintf('SPARQL load <%s> into graph <%s>', ontology, ontology);
+  ODS.ODS_API."ontology.sparql" (S);
+}
+;
+
+create procedure ODS.ODS_API."ontology.objectProperty" (
+  in property any)
+{
+  declare retValue any;
+
+  retValue := vector_concat (jsonObject (), vector ('name', ODS.ODS_API."ontology.normalize"(property[0])));
+  if (length (property[1]))
+    retValue := vector_concat (retValue, vector ('objectProperties', property[1]));
+  if (length (property[2]))
+    retValue := vector_concat (retValue, vector ('datatypeProperties', property[2]));
+
+  return retValue;
+}
+;
+
+create procedure ODS.ODS_API."ontology.array" ()
+{
+  return vector (
+                 'gr',   'http://purl.org/goodrelations/v1#',
+                 'rdf',  'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+                 'xsd',  'http://www.w3.org/2001/XMLSchema#',
+                 'rdfs', 'http://www.w3.org/2000/01/rdf-schema#',
+                 'owl',  'http://www.w3.org/2002/07/owl#',
+                 'dc',   'http://purl.org/dc/elements/1.1/',
+                 'foaf', 'http://xmlns.com/foaf/0.1/',
+                 'sioc', 'http://rdfs.org/sioc/ns#',
+                 'sioct','http://rdfs.org/sioc/types#'
+                );
+}
+;
+
+create procedure ODS.ODS_API."ontology.prefix" (
+  in inValue varchar)
+{
+  declare pos any;
+
+  pos := strrchr (inValue, ':');
+  if (pos is not null)
+    return subseq (inValue, 0, pos);
+  return null;
+}
+;
+
+create procedure ODS.ODS_API."ontology.byPrefix" (
+  in prefix varchar)
+{
+  declare N, ontologies any;
+
+  ontologies := ODS.ODS_API."ontology.array" ();
+  for (N := 0; N < length (ontologies); N := N + 2)
+  {
+    if (prefix = ontologies[N])
+      return ontologies[N+1];
+  }
+  return null;
+}
+;
+
+create procedure ODS.ODS_API."ontology.normalize" (
+  in inValue varchar)
+{
+  if (not isnull (inValue))
+  {
+    declare N, ontologies any;
+
+    ontologies := ODS.ODS_API."ontology.array" ();
+    for (N := 0; N < length (ontologies); N := N + 2)
+    {
+      if (inValue like (ontologies[N+1] || '%'))
+        return ontologies[N] || ':' || subseq (inValue, length (ontologies[N+1]));
+    }
+  }
+  return inValue;
+}
+;
+
+create procedure ODS.ODS_API."ontology.denormalize" (
+  in inValue varchar)
+{
+  if (not isnull (inValue))
+  {
+    declare N, pos, tmp, ontologies any;
+
+    ontologies := ODS.ODS_API."ontology.array" ();
+    pos := strrchr (inValue, ':');
+    if (pos is not null)
+    {
+      tmp := subseq (inValue, 0, pos);
+      for (N := 0; N < length (ontologies); N := N + 2)
+      {
+        if (tmp = ontologies[N])
+          return ontologies[N+1] || subseq (inValue, length (tmp)+1);
+      }
+    }
+  }
+  return inValue;
+}
+;
+
+create procedure ODS.ODS_API."ontology.collection" (
+  in ontology varchar,
+  in inValue varchar)
+{
+  declare N integer;
+  declare node, steps, tmp, tmp2, S varchar;
+  declare data, collection any;
+
+  N := 0;
+  node := 'b%d';
+  steps := '?_%s rdf:first ?r . ?_%s rdf:rest ?_rest';
+  collection := vector ();
+
+_again:
+  tmp := sprintf (node, N);
+  steps := sprintf (steps, tmp, tmp);
+  S := sprintf(
+         '\n SPARQL' ||
+         '\n PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>' ||
+         '\n PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>' ||
+         '\n PREFIX owl: <http://www.w3.org/2002/07/owl#>' ||
+         '\n SELECT ?r ?_rest' ||
+         '\n   FROM <%s>' ||
+         '\n  WHERE {' ||
+         '\n          <%s> owl:unionOf ?_%s .' ||
+         '\n          %s.'                         ||
+         '\n        }',
+         ontology,
+         inValue,
+         tmp,
+         steps);
+  data := ODS.ODS_API."ontology.sparql" (S);
+  foreach (any item in data) do
+  {
+    tmp2 := ODS.ODS_API."ontology.normalize" (item[0]);
+    if (not isnull (tmp2) and (tmp2 not like 'nodeID:%'))
+    {
+      collection := vector_concat (collection, vector (tmp2));
+      tmp2 := ODS.ODS_API."ontology.normalize" (item[1]);
+      if (tmp2 like 'nodeID:%')
+      {
+        N := N + 1;
+        steps := replace ('?_%s rdf:rest ?_<XXX>. ', '<XXX>', tmp) || steps;
+        goto _again;
+      }
+    }
+  }
+  return collection;
 }
 ;
 
@@ -2193,6 +2548,10 @@ DB.DBA.VHOST_REMOVE (lpath=>'/ods/api');
 DB.DBA.VHOST_DEFINE (lpath=>'/ods/api', ppath=>'/SOAP/Http', soap_user=>'ODS_API', opts=>vector ('500_page', 'error_handler'));
 
 grant execute on ODS.ODS_API.error_handler to ODS_API;
+
+grant execute on ODS.ODS_API."ontology.classes" to ODS_API;
+grant execute on ODS.ODS_API."ontology.classProperties" to ODS_API;
+grant execute on ODS.ODS_API."ontology.objects" to ODS_API;
 
 grant execute on ODS.ODS_API."server.getInfo" to ODS_API;
 
