@@ -1256,86 +1256,33 @@ create procedure sioc_user_bioevent (in graph_iri varchar, in user_iri varchar, 
 
 create procedure sioc_goodRelation_details (in graph_iri varchar, in forum_iri varchar, in user_iri varchar, in obj any)
 {
-  declare N, M integer;
-  declare tmp, product, products, iri any;
+  declare N integer;
+  declare tmp, products, properties, iri any;
 
   products := get_keyword ('products', obj);
-  for (N := 0; N < length (products); N := N + 1)
+  foreach (any product in products) do
   {
-    product := products[N];
-    iri := offerlist_item_iri (forum_iri, N+1);
+    iri := offerlist_item_iri (forum_iri, get_keyword ('id', product));
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdf_iri ('type'), ODS.ODS_API."ontology.denormalize" (get_keyword ('class', product)));
 
-    -- step 2a
-    ods_sioc_post (graph_iri, iri, forum_iri, user_iri, get_keyword ('description', product), null, null, get_keyword ('offerURI', product));
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdf_iri ('type'), offer_iri ('Offering'));
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, forum_iri, offer_iri ('offers'), iri);
+    properties := get_keyword ('id', properties);
+    foreach (any property in properties) do
+    {
+      declare propertyType, propertyName, propertyValue any;
 
-    -- step 2b
-    if (not DB.DBA.is_empty_or_null (get_keyword ('sell', product)))
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('hasBusinessFunction'), offer_iri ('Sell'));
-    if (not DB.DBA.is_empty_or_null (get_keyword ('repair', product)))
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('hasBusinessFunction'), offer_iri ('Repair'));
-    if (not DB.DBA.is_empty_or_null (get_keyword ('maintain', product)))
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('hasBusinessFunction'), offer_iri ('Maintain'));
-    if (not DB.DBA.is_empty_or_null (get_keyword ('lease', product)))
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('hasBusinessFunction'), offer_iri ('LeaseOut'));
-    if (not DB.DBA.is_empty_or_null (get_keyword ('disposal', product)))
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('hasBusinessFunction'), offer_iri ('Dispose'));
-    if (not DB.DBA.is_empty_or_null (get_keyword ('buy', product)))
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('hasBusinessFunction'), offer_iri ('Buy'));
-    if (not DB.DBA.is_empty_or_null (get_keyword ('service', product)))
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('hasBusinessFunction'), offer_iri ('ProvideService'));
-
-    -- step 3
-    tmp := get_keyword ('eligCountry', obj, vector ());
-    for (M := 0; M < length (tmp); M := M + 1)
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, offer_iri ('eligibleRegions'), tmp[M]);
-
-    if (not DB.DBA.is_empty_or_null (get_keyword ('endUsers', obj)))
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('eligibleCustomerTypes'), offer_iri ('Enduser'));
-    if (not DB.DBA.is_empty_or_null (get_keyword ('public', obj)))
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('eligibleCustomerTypes'), offer_iri ('Public'));
-    if (not DB.DBA.is_empty_or_null (get_keyword ('reseller', obj)))
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('eligibleCustomerTypes'), offer_iri ('Reseller'));
-
-    if (not DB.DBA.is_empty_or_null (get_keyword ('datetime1', obj)))
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, offer_iri ('validFrom'), sioc_date (get_keyword ('datetime1', obj)));
-    if (not DB.DBA.is_empty_or_null (get_keyword ('datetime2', obj)))
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, offer_iri ('validThrough'), sioc_date (get_keyword ('datetime2', obj)));
-
-    -- step 4
-    if (not DB.DBA.is_empty_or_null (get_keyword ('mastercard', obj)))
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('acceptedPaymentMethods'), offer_iri ('MasterCard'));
-    if (not DB.DBA.is_empty_or_null (get_keyword ('visa', obj)))
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('acceptedPaymentMethods'), offer_iri ('VISA'));
-    if (not DB.DBA.is_empty_or_null (get_keyword ('amex', obj)))
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('acceptedPaymentMethods'), offer_iri ('AmericanExpress'));
-    if (not DB.DBA.is_empty_or_null (get_keyword ('diners', obj)))
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('acceptedPaymentMethods'), offer_iri ('DinersClub'));
-    if (not DB.DBA.is_empty_or_null (get_keyword ('discover', obj)))
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('acceptedPaymentMethods'), offer_iri ('Discover'));
-    if (not DB.DBA.is_empty_or_null (get_keyword ('openinvoice', obj)))
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('acceptedPaymentMethods'), offer_iri ('ByInvoice'));
-    if (not DB.DBA.is_empty_or_null (get_keyword ('cash', obj)))
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('acceptedPaymentMethods'), offer_iri ('Cash'));
-    if (not DB.DBA.is_empty_or_null (get_keyword ('check', obj)))
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('acceptedPaymentMethods'), offer_iri ('CheckInAdvance'));
-    if (not DB.DBA.is_empty_or_null (get_keyword ('bank', obj)))
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('acceptedPaymentMethods'), offer_iri ('ByBankTransferInAdvance'));
-
-     -- step 5
-    if (not DB.DBA.is_empty_or_null (get_keyword ('dhl', obj)))
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('availableDeliveryMethods'), offer_iri ('DHL'));
-    if (not DB.DBA.is_empty_or_null (get_keyword ('ups', obj)))
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('availableDeliveryMethods'), offer_iri ('UPS'));
-    if (not DB.DBA.is_empty_or_null (get_keyword ('mailDelivery', obj)))
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('availableDeliveryMethods'), offer_iri ('DeliveryModeMail'));
-    if (not DB.DBA.is_empty_or_null (get_keyword ('fedex', obj)))
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('availableDeliveryMethods'), offer_iri ('FederalExpress'));
-    if (not DB.DBA.is_empty_or_null (get_keyword ('download', obj)))
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, offer_iri ('availableDeliveryMethods'), offer_iri ('DeliveryModeDirectDownload'));
+      propertyType := get_keyword ('type', property);
+      propertyValue := get_keyword ('value', property);
+      propertyName := ODS.ODS_API."ontology.denormalize" (get_keyword ('name', property));
+      if (propertyType = 'data')
+        DB.DBA.RDF_QUAD_URI (graph_iri, iri, propertyName, propertyValue);
+      if (propertyType = 'object')
+      {
+        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, propertyName, ODS.ODS_API."ontology.denormalize" (propertyValue));
   }
-};
+    }
+  }
+}
+;
 
 create procedure sioc_user_offerlist (in user_id integer, in ol_id integer, in ol_offer varchar, in ol_comment varchar, in ol_properties varchar)
 {
@@ -1424,7 +1371,7 @@ create procedure sioc_user_wishlist_delete (in user_id integer, in wl_id integer
   products := get_keyword ('products', obj);
   for (N := 0; N < length (products); N := N + 1)
   {
-    iri := wishlist_item_iri (forum_iri, N+1);
+    iri := wishlist_item_iri (forum_iri, get_keyword ('id', products[N]));
     delete_quad_s_or_o (graph_iri, iri, iri);
   }
 };

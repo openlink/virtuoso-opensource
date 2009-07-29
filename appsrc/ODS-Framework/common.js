@@ -44,7 +44,7 @@ function setSelectLists (val, form, pref)
   for (i = 0; i < form.elements.length; i++)
     {
       var contr = form.elements[i];
-      if (contr != null && contr.type == "select-one" && contr.name.indexOf (pref) != -1)
+      if (contr != null && contr.type == 'select-one' && contr.name.indexOf (pref) != -1)
         {
           contr.value = val;
         }
@@ -175,7 +175,7 @@ function checkSelected (form, txt, selectionMsq) {
   if ((form != null) && (txt != null)) {
     for (var i = 0; i < form.elements.length; i++) {
       var obj = form.elements[i];
-      if (obj != null && obj.type == "checkbox" && obj.name.indexOf (txt) != -1 && obj.checked)
+      if (obj != null && obj.type == 'checkbox' && obj.name.indexOf (txt) != -1 && obj.checked)
         return true;
     }
     if (selectionMsq != null)
@@ -300,13 +300,13 @@ function updateState(countryName, stateName, stateValue)
   var span = $('span_'+stateName);
   span.innerHTML = "";
 
-  var cc = new OAT.Combolist([], "");
-  cc.input.name = stateName;
-  cc.input.id = stateName;
-  cc.input.style.width = "216px";
-  cc.addOption("");
+  var fld = new OAT.Combolist([], "");
+  fld.input.name = stateName;
+  fld.input.id = stateName;
+  fld.input.style.width = "216px";
+  fld.addOption("");
 
-  span.appendChild(cc.div);
+  span.appendChild(fld.div);
 
   if ($v(countryName) != '')
   {
@@ -322,13 +322,13 @@ function updateState(countryName, stateName, stateValue)
     	}
     }
   	var x = function(xml) {
-  	  listCallback(xml, cc, stateValue);
+  	  listCallback(xml, fld, stateValue);
   	}
   	OAT.WS.invoke(wsdl, serviceName, x, inputObject);
   }
 }
 
-function listCallback (result, cc, objValue)
+function listCallback (result, fld, objValue)
 {
   var xml = OAT.Xml.createXmlDoc(result.ODS_USER_LISTResponse.CallReturn);
 	var root = xml.documentElement;
@@ -340,7 +340,7 @@ function listCallback (result, cc, objValue)
   	{
   		for (var i=1; i<=items.length; i++)
   		{
-        cc.addOption(OAT.Xml.textValue(items[i-1]));
+        fld.addOption(OAT.Xml.textValue(items[i-1]));
   		}
   	}
 	}
@@ -384,6 +384,7 @@ function updateRow (prefix, No, optionObject)
   if (No != null)
   {
     OAT.Dom.unlink(prefix+'_tr_'+No);
+    OAT.Dom.unlink(prefix+'_tr_'+No+'_properties');
     var No = parseInt($(prefix+'_no').value);
     for (var N = 0; N < No; N++)
     {
@@ -394,12 +395,15 @@ function updateRow (prefix, No, optionObject)
   }
   else
   {
-    var No = parseInt($v(prefix+'_no'));
     var tbl = $(prefix+'_tbl');
     if (tbl)
     {
-      options = {};
+      options = {btn_1: {mode: 1}};
       for (var p in optionObject) {options[p] = optionObject[p]; }
+
+      No = optionObject.No;
+      if (!No) {No = $v(prefix+'_no');}
+      No = parseInt(No)
 
       OAT.Dom.hide (prefix+'_tr_no');
 
@@ -407,25 +411,32 @@ function updateRow (prefix, No, optionObject)
       tr.id = prefix+'_tr_' + No;
       tbl.appendChild(tr);
 
-      for (fld in options)
+      // fields
+      for (var fld in options)
       {
         if (fld.indexOf('fld') == 0)
       {
           var fldOptions = options[fld];
         var td = OAT.Dom.create('td');
+          td.id = prefix+'_td_'+ No+'_'+fld.replace(/fld_/, '');
         tr.appendChild(td);
           updateCell (td, prefix, fld, No, fldOptions)
       }
       }
 
+      // actions
       var td = OAT.Dom.create('td');
+      td.id = prefix+'_td_'+ No+'_btn';
+      td.style.whiteSpace = 'nowrap';
       tr.appendChild(td);
- 		  var fld = OAT.Dom.create("input");
- 		  fld.type = 'button';
- 		  fld.value = 'Remove';
-      fld.onclick = function (){updateRow(prefix, No);};
-      td.appendChild(fld);
-
+      for (var btn in options)
+      {
+        if (btn.indexOf('btn') == 0)
+        {
+          var btnOptions = options[btn];
+          updateButton(td, prefix, btn, No, btnOptions)
+        }
+      }
       $(prefix+'_no').value = No + 1;
     }
   }
@@ -434,6 +445,8 @@ function updateRow (prefix, No, optionObject)
 function updateCell (td, prefix, fldName, No, optionObject)
 {
   fldName = prefix + '_' + fldName + '_' + No;
+  if (optionObject.tdCssText)
+    td.style.cssText = optionObject.tdCssText;
   if (optionObject.mode == 1)
   {
 	  updateRowCombo(td, fldName, optionObject);
@@ -454,6 +467,30 @@ function updateCell (td, prefix, fldName, No, optionObject)
   {
 	  updateRowCombo5(td, fldName, optionObject);
   }
+  else if (optionObject.mode == 6)
+  {
+	  updateField6(td, fldName, prefix, No, optionObject);
+  }
+  else if (optionObject.mode == 7)
+  {
+	  updateField7(td, fldName, optionObject);
+  }
+  else if (optionObject.mode == 8)
+  {
+	  updateField8(td, fldName, optionObject);
+  }
+  else if (optionObject.mode == 9)
+  {
+	  updateField9(td, fldName, optionObject);
+  }
+  else if (optionObject.mode == 10)
+  {
+	  updateField10(td, fldName, optionObject);
+  }
+  else if (optionObject.mode == 11)
+  {
+	  updateField11(td, fldName, optionObject);
+  }
   else
   {
 	  updateInput(td, fldName, optionObject);
@@ -462,7 +499,7 @@ function updateCell (td, prefix, fldName, No, optionObject)
 
 function updateInput (elm, fldName, fldOptions)
 {
-  var fld = OAT.Dom.create("input");
+  var fld = OAT.Dom.create('input');
   fld.type = 'text';
   fld.id = fldName;
   fld.name = fld.id;
@@ -541,13 +578,13 @@ var serviceList = [
   ["zooomr.jpg", "http://www.zooomr.com/", "Zooomr"]
 ]
 
-var setServiceUrl = function(cc)
+var setServiceUrl = function(fld)
   {
     for (N = 0; N < serviceList.length; N = N + 1)
     {
-      if (cc.value == serviceList[N][2])
+      if (fld.value == serviceList[N][2])
       {
-      var urlName = cc.input.name.replace(/fld_1_/, 'fld_2_');
+        var urlName = fld.input.name.replace(/fld_1_/, 'fld_2_');
         $(urlName).value = serviceList[N][1];
       }
     }
@@ -555,21 +592,21 @@ var setServiceUrl = function(cc)
 
 function updateRowCombo (elm, fldName, fldOptions)
 {
-  var cc = new OAT.Combolist([], fldOptions.value, {name: fldName, onchange: setServiceUrl});
+  var fld = new OAT.Combolist([], fldOptions.value, {name: fldName, onchange: setServiceUrl});
 
-  cc.input.name = fldName;
-  cc.input.id = fldName;
-  cc.input.style.width = "90%";
+  fld.input.name = fldName;
+  fld.input.id = fldName;
+  fld.input.style.width = "90%";
   for (N = 0; N < serviceList.length; N = N + 1)
-    updateRowComboOption(cc, serviceList[N][0], serviceList[N][2]);
+    updateRowComboOption(fld, serviceList[N][0], serviceList[N][2]);
 
   var elm = $(elm);
-  elm.appendChild(cc.div);
+  elm.appendChild(fld.div);
 }
 
-function updateRowComboOption (cc, optionImage, optionName)
+function updateRowComboOption (fld, optionImage, optionName)
 {
-  cc.addOption('<img src="/ods/images/services/'+optionImage+'"/> '+optionName, optionName);
+  fld.addOption('<img src="/ods/images/services/'+optionImage+'"/> '+optionName, optionName);
 }
 
 function updateRowComboOption2 (elm, elmValue, optionName, optionValue)
@@ -581,56 +618,290 @@ function updateRowComboOption2 (elm, elmValue, optionName, optionValue)
 
 function updateRowCombo2 (elm, fldName, fldOptions)
 {
-	var cc = OAT.Dom.create("select");
-  cc.name = fldName;
-  cc.id = fldName;
-	updateRowComboOption2(cc, fldOptions.value, "Person URI", "URI");
-  updateRowComboOption2(cc, fldOptions.value, "Relationship Property", "Property");
-	// updateRowComboOption2(cc, fldOptions.value, "SPARQL", "SPARQL  Expression");
+	var fld = OAT.Dom.create('select');
+  fld.name = fldName;
+  fld.id = fldName;
+	updateRowComboOption2(fld, fldOptions.value, "Person URI", "URI");
+  updateRowComboOption2(fld, fldOptions.value, "Relationship Property", "Property");
+	// updateRowComboOption2(fld, fldOptions.value, "SPARQL", "SPARQL  Expression");
 
   var elm = $(elm);
-  elm.appendChild(cc);
+  elm.appendChild(fld);
 }
 
 function updateRowCombo3 (elm, fldName, fldOptions)
 {
-	var cc = OAT.Dom.create("select");
-  cc.name = fldName;
-  cc.id = fldName;
-	updateRowComboOption2 (cc, fldOptions.value, "Grant", "G");
-	updateRowComboOption2 (cc, fldOptions.value, "Revoke", "R");
+	var fld = OAT.Dom.create("select");
+  fld.name = fldName;
+  fld.id = fldName;
+	updateRowComboOption2(fld, fldOptions.value, "Grant", "G");
+	updateRowComboOption2(fld, fldOptions.value, "Revoke", "R");
 
   var elm = $(elm);
-  elm.appendChild(cc);
+  elm.appendChild(fld);
 }
 
 function updateRowCombo4 (elm, fldName, fldOptions)
 {
-	var cc = OAT.Dom.create("select");
-  cc.name = fldName;
-  cc.id = fldName;
-  updateRowComboOption2(cc, fldOptions.value, 'bio:Birth', 'bio:Birth');
-  updateRowComboOption2(cc, fldOptions.value, 'bio:Death', 'bio:Death');
-  updateRowComboOption2(cc, fldOptions.value, 'bio:Marriage', 'bio:Marriage');
+	var fld = OAT.Dom.create("select");
+  fld.name = fldName;
+  fld.id = fldName;
+  updateRowComboOption2(fld, fldOptions.value, 'bio:Birth', 'bio:Birth');
+  updateRowComboOption2(fld, fldOptions.value, 'bio:Death', 'bio:Death');
+  updateRowComboOption2(fld, fldOptions.value, 'bio:Marriage', 'bio:Marriage');
 
   var elm = $(elm);
-  elm.appendChild(cc);
+  elm.appendChild(fld);
 }
 
 function updateRowCombo5 (elm, fldName, fldOptions)
 {
-  var cc = new OAT.Combolist([], fldOptions.value, {name: fldName, onchange: setServiceUrl});
+  var fld = new OAT.Combolist([], fldOptions.value, {name: fldName, onchange: setServiceUrl});
 
-  cc.input.name = fldName;
-  cc.input.id = fldName;
-  cc.input.style.width = "90%";
-  cc.addOption('Book');
-  cc.addOption('Image');
-  cc.addOption('Music');
-  cc.addOption('Video');
+  fld.input.name = fldName;
+  fld.input.id = fldName;
+  fld.input.style.width = "90%";
+  fld.addOption('Book');
+  fld.addOption('Image');
+  fld.addOption('Music');
+  fld.addOption('Video');
 
   var elm = $(elm);
-  elm.appendChild(cc.div);
+  elm.appendChild(fld.div);
+}
+
+function updateField6 (elm, fldName, prefix, No, fldOptions)
+{
+  var fld = OAT.Dom.image("images/icons/orderdown_16.png");
+  fld.id = fldName;
+  fld.mode = 'show';
+  fld.title = 'Show Properties';
+  fld.onclick = function (){GR.showProperties(this, prefix, No);};
+  if (fldOptions.cssText)
+    fld.style.cssText = fldOptions.cssText;
+
+  var elm = $(elm);
+  elm.appendChild(fld);
+}
+
+function updateField7 (elm, fldName, fldOptions)
+{
+	var fld = OAT.Dom.text(fldOptions.value);
+
+  var elm = $(elm);
+  elm.appendChild(fld);
+}
+
+function updateField8 (elm, fldName, fldOptions)
+{
+	var fld = OAT.Dom.create("select");
+  fld.name = fldName;
+  fld.id = fldName;
+  var ontology = GR.ontologies['gr'];
+  if (ontology && ontology.classes)
+  {
+    for (i = 0; i < ontology.classes.length; i++)
+      updateRowComboOption2(fld, fldOptions.value, ontology.classes[i].name, ontology.classes[i].name);
+  }
+
+  var elm = $(elm);
+  elm.appendChild(fld);
+}
+
+function updateField9 (elm, fldName, fldOptions)
+{
+	var fld = OAT.Dom.create("input");
+  fld.type = 'hidden';
+  fld.name = fldName;
+  fld.id = fldName;
+  fld.value = fldOptions.value;
+
+  var elm = $(elm);
+  elm.appendChild(fld);
+
+	var fld = OAT.Dom.text(fldOptions.value);
+  var elm = $(elm);
+  elm.appendChild(fld);
+}
+
+function updateField10 (elm, fldName, fldOptions)
+{
+	var fld = OAT.Dom.create("select");
+  fld.name = fldName;
+  fld.id = fldName;
+  fld.style.width = '95%';
+  fld.product = fldOptions.product;
+  var ontologyClass = GR.getOntologyClass(fld.product.prefix, fld.product.class);
+  if (ontologyClass && ontologyClass.properties)
+  {
+    var P = ontologyClass.properties;
+    var V;
+    if (fldOptions.value)
+      V = fldOptions.value.name;
+    updateRowComboOption2(fld, V, '', '');
+    for (i = 0; i < P.length; i++)
+      updateRowComboOption2(fld, V, P[i].name, P[i].name);
+  }
+  fld.onchange = function (){GR.changePropertyValue(fld);};
+
+  var elm = $(elm);
+  elm.appendChild(fld);
+}
+
+function updateField11 (elm, fldName, fldOptions)
+{
+  if (!elm) {return;}
+  // clear
+  elm.innerHTML = '';
+
+  // get product
+  var product = fldOptions.product;
+  if (!product) {return;}
+
+  // get property
+  var property = fldOptions.value;
+  if (!property) {return;}
+
+  // get property data
+  var ontologyClassProperty = GR.getOntologyClassProperty(product.prefix, product.class, property.name);
+  var propertyType;
+  if (ontologyClassProperty.objectProperties)
+  {
+  	var fld = OAT.Dom.create('select');
+    fld.id = fldName;
+    fld.name = fld.id;
+    fld.style.width = '95%';
+    updateRowComboOption2(fld, property.value, '', '');
+    for (var i = 0; i < GR.products.length; i++)
+    {
+      for (var j = 0; j < ontologyClassProperty.objectProperties.length; j++)
+      {
+        if (GR.products[i].class == ontologyClassProperty.objectProperties[j])
+	        updateRowComboOption2(fld, property.value, 'Element #'+GR.products[i].id, GR.products[i].id);
+	    }
+    }
+    var grObjects = GR.objects[product.prefix];
+    if (grObjects)
+    {
+      for (var i = 0; i < grObjects.length; i++)
+      {
+        for (var j = 0; j < ontologyClassProperty.objectProperties.length; j++)
+        {
+          if (grObjects[i].class == ontologyClassProperty.objectProperties[j])
+  	        updateRowComboOption2(fld, property.value, grObjects[i].id, grObjects[i].id);
+  	    }
+      }
+    }
+    elm.appendChild(fld);
+    propertyType = 'object';
+  }
+  if (ontologyClassProperty.datatypeProperties)
+  {
+    var fld = OAT.Dom.create('input');
+    fld.type = 'text';
+    fld.id = fldName;
+    fld.name = fld.id;
+    if (property.value)
+      fld.value = property.value;
+    fld.style.width = '95%';
+    elm.appendChild(fld);
+    propertyType = 'data';
+  }
+  var fld = OAT.Dom.create('input');
+  fld.type = 'hidden';
+  fld.id = fldName.replace(/fld_2/, 'fld_3');
+  fld.name = fld.id;
+  fld.value = propertyType;
+  elm.appendChild(fld);
+}
+
+function updateButton (td, prefix, fldName, No, optionObject)
+{
+  fldName = prefix + '_' + fldName + '_' + No;
+  if (optionObject.tdCssText)
+    td.style.cssText = optionObject.tdCssText;
+  var btn;
+  if (optionObject.mode == 1)
+  {
+	  btn = updateButton1(td, prefix, No, fldName, optionObject);
+	}
+  else if (optionObject.mode == 2)
+  {
+	  btn = updateButton2(td, prefix, No, fldName, optionObject);
+  }
+  else if (optionObject.mode == 3)
+  {
+	  btn = updateButton3(td, prefix, No, fldName, optionObject);
+  }
+  else if (optionObject.mode == 4)
+  {
+	  btn = updateButton4(td, prefix, No, fldName, optionObject);
+  }
+  if (btn)
+  {
+    if (optionObject.cssText)
+      btn.style.cssText = optionObject.cssText;
+  }
+}
+
+function updateButton1 (elm, prefix, No, btnName, btnOptions)
+{
+  var btn = OAT.Dom.create("input");
+  btn.id = btnName;
+  btn.type = 'button';
+  btn.value = 'Remove';
+  btn.onclick = function (){updateRow(prefix, No);};
+
+  elm.appendChild(btn);
+  return btn;
+}
+
+function updateButton2 (elm, prefix, No, btnName, btnOptions)
+{
+  var btn = OAT.Dom.image("images/icons/close_16.png");
+  btn.id = btnName;
+  btn.style.cssText = 'margin-left: 2px; margin-right: 2px;';
+  btn.onclick = function (){
+    var product = GR.getProduct(No);
+    if (GR.checkProductInSelects(product))
+    {
+      GR.removeProductInSelects(product);
+      for (var i = 0; i < GR.products.length; i++)
+      {
+        if (GR.products[i].id == product.id)
+        {
+          delete GR.products[i];
+          break;
+        }
+      }
+      updateRow(prefix, No);
+    }
+  };
+
+  elm.appendChild(btn);
+  return btn;
+}
+
+function updateButton3 (elm, prefix, No, btnName, btnOptions)
+{
+  var btn = OAT.Dom.image("images/icons/add_16.png");
+  btn.id = btnName;
+  btn.style.cssText = 'margin-left: 2px; margin-right: 2px;';
+  btn.onclick = function (){GR.addProduct(prefix, No);};
+
+  elm.appendChild(btn);
+  return btn;
+}
+
+function updateButton4 (elm, prefix, No, btnName, btnOptions)
+{
+  var btn = OAT.Dom.image("images/icons/close_16.png");
+  btn.id = btnName;
+  btn.style.cssText = 'margin-left: 2px; margin-right: 2px;';
+  btn.onclick = function (){updateRow(prefix, No);};
+
+  elm.appendChild(btn);
+  return btn;
 }
 
 function validateError(fld, msg)
@@ -689,4 +960,378 @@ function validateInputs(fld)
     }
   }
   return retValue;
+}
+
+// Good Relations
+// ---------------------------------------------------------------------------
+var GR = new Object();
+GR.ontologies = new Object();
+GR.objects = new Object();
+GR.products = new Array();
+
+GR.loadOntology = function (prefix, ontology)
+{
+  // load classes
+  var S = '/ods/api/ontology.classes?ontology='+encodeURIComponent(ontology);
+  var x = function(data) {
+    var o = null;
+    try {
+      o = OAT.JSON.parse(data);
+    } catch (e) {o = null;}
+    GR.ontologies[prefix] = o;
+  }
+  OAT.AJAX.GET(S, '', x, {});
+
+  // load objects (individuals)
+  var S = '/ods/api/ontology.objects?ontology='+encodeURIComponent(ontology);
+  var x = function(data) {
+    var o = null;
+    try {
+      o = OAT.JSON.parse(data);
+    } catch (e) {o = null;}
+    GR.objects[prefix] = o;
+  }
+  OAT.AJAX.GET(S, '', x, {});
+}
+
+GR.getOntology = function (prefix)
+{
+  return GR.ontologies[prefix];
+}
+
+GR.getOntologyClass = function (prefix, className)
+{
+  var ontology = GR.getOntology(prefix);
+  if (ontology)
+  {
+    var classes = ontology.classes;
+    for (var i = 0; i < classes.length; i++)
+    {
+      if (classes[i].name == className)
+        return classes[i];
+    }
+  }
+  return null;
+}
+
+GR.getOntologyClassProperty = function (prefix, className, propertyName)
+{
+  var ontologyClass = GR.getOntologyClass(prefix, className);
+  if (ontologyClass)
+  {
+    var properties = ontologyClass.properties;
+    for (var i = 0; i < properties.length; i++)
+    {
+      if (properties[i].name == propertyName)
+        return properties[i];
+    }
+  }
+  return null;
+}
+
+GR.getProduct = function (No)
+{
+  for (var i = 0; i < GR.products.length; i++)
+  {
+    if (GR.products[i].id == No)
+      return GR.products[i];
+  }
+  return null;
+}
+
+GR.loadClassProperties = function (ontologyClass, cbFunction)
+{
+  if (!ontologyClass.properties)
+  {
+    var S = '/ods/api/ontology.classProperties?ontologyClass='+encodeURIComponent(ontologyClass.name);
+    var x = function(data) {
+      var o = null;
+      try {
+        o = OAT.JSON.parse(data);
+      } catch (e) { o = null; }
+      ontologyClass.properties = o;
+      cbFunction();
+    }
+    OAT.AJAX.GET(S, '', x, {});
+  } else {
+    cbFunction();
+  }
+}
+
+GR.emptyRowID = function (prefix)
+{
+  return prefix + '_tr_no';
+}
+
+GR.clearTable = function (prefix)
+{
+  var tbody = $(prefix+'_tbody');
+  if (!tbody)
+    return;
+  var noTR = GR.emptyRowID(prefix);
+  var TRs = tbody.childNodes;
+  for (i = TRs.length; i >= 0; i--)
+  {
+    var tr = TRs[i];
+    if (tr && tr.tagName == 'tr' && tr.id != noTR)
+      OAT.Dom.unlink(tr);
+  }
+  OAT.Dom.show(noTR);
+}
+
+GR.showProducts = function ()
+{
+  var prefix = GR.tablePrefix;
+  var tbody = $(prefix+'_tbody');
+  if (!tbody)
+    return;
+
+  // load ontology http://purl.org/goodrelations/v1#
+  GR.loadOntology('gr', 'http://purl.org/goodrelations/v1#');
+
+  // clear table first
+  GR.clearTable(prefix);
+
+  var noTR = GR.emptyRowID(prefix);
+  if (GR.products && GR.products.length)
+  {
+    OAT.Dom.hide(noTR);
+    for (i = 0; i < GR.products.length; i++)
+    {
+      GR.showProduct(GR.products[i]);
+    }
+  } else {
+    OAT.Dom.show(noTR);
+  }
+}
+
+GR.showProduct = function (product)
+{
+  var prefix = GR.tablePrefix;
+  var tbody = $(prefix+'_tbody');
+  if (!tbody)
+    return;
+  updateRow(prefix, null, {No: product.id, fld_1: {mode: 6, cssText: ''}, fld_2: {mode: 7, value: 'Element #'+product.id}, fld_3: {mode: 9, value: product.class}, btn_1: {mode: 2, cssText: 'margin-left: 2px; margin-right: 2px;'}});
+}
+
+GR.addProduct = function (prefix, No)
+{
+  var tr = $(prefix+'_tr_'+No);
+  if (!tr) {return;}
+
+  OAT.Dom.show(prefix+'_fld_1_'+No);
+  var td = $(prefix+'_td_'+No+'_2');
+  if (td)
+  	td.innerHTML = 'Element #'+No;
+
+  var td = $(prefix+'_td_'+No+'_3');
+  if (td)
+  {
+    var fld = $(prefix+'_fld_3_' + No);
+    if (fld)
+    {
+      // create new product object
+      var product = new Object();
+      product.prefix = 'gr';
+      product.class = fld.value;
+      product.id = No;
+
+      // add product
+      GR.products[GR.products.length] = product;
+
+      // hide combo
+	    OAT.Dom.hide(fld);
+
+      // show combo value as text
+	    var fld = OAT.Dom.text(fld.value);
+      td.appendChild(fld);
+      GR.addProductToSelects(product);
+  	}
+  }
+	OAT.Dom.hide(prefix+'_btn_2_'+No);
+}
+
+GR.addProductToSelects = function (product)
+{
+  var tbl = $(GR.tablePrefix+'_tbl');
+  if (!tbl) {return;}
+
+  var selects = tbl.getElementsByTagName('select');
+  if (!selects) {return;}
+  for (var i = 0; i < selects.length; i++)
+  {
+    var obj = selects[i];
+    if ((obj.id.indexOf('prop_') == 0) && (obj.id.indexOf('_fld_1_') != -1) && (obj.value != ''))
+    {
+      var ontologyClassProperty = GR.getOntologyClassProperty(obj.product.prefix, obj.product.class, obj.value);
+      if (ontologyClassProperty.objectProperties)
+      {
+        for (var j = 0; j < ontologyClassProperty.objectProperties.length; j++)
+        {
+          if (product.class == ontologyClassProperty.objectProperties[j])
+          {
+      	    var fld = $(obj.id.replace(/_fld_1_/, '_fld_2_'));
+            if (fld)
+    	        updateRowComboOption2(fld, fld.value, 'Element #'+product.id, product.id);
+    	    }
+        }
+      }
+    }
+  }
+}
+
+GR.checkProductInSelects = function (product)
+{
+  return GR.productInSelects (product, 'check');
+}
+
+GR.removeProductInSelects = function (product)
+{
+  return GR.productInSelects (product, 'remove');
+}
+
+GR.productInSelects = function (product, mode)
+{
+  var tbl = $(GR.tablePrefix+'_tbl');
+  if (!tbl) {return;}
+
+  var selects = tbl.getElementsByTagName('select');
+  if (!selects) {return;}
+  for (var i = 0; i < selects.length; i++)
+  {
+    var obj = selects[i];
+    if ((obj.id.indexOf('prop_') == 0) && (obj.id.indexOf('_fld_1_') != -1) && (obj.value != ''))
+    {
+      var ontologyClassProperty = GR.getOntologyClassProperty(obj.product.prefix, obj.product.class, obj.value);
+      if (ontologyClassProperty.objectProperties)
+      {
+        for (var i = 0; i < ontologyClassProperty.objectProperties.length; i++)
+        {
+          if (product.class == ontologyClassProperty.objectProperties[i])
+          {
+      	    var fld = $(obj.id.replace(/_fld_1_/, '_fld_2_'));
+            if (fld)
+            {
+              for (var j = fld.options.length-1; j >= 0; j--)
+              {
+                if (fld.options[j].value == product.id)
+                {
+                  if ((mode == 'check') && fld.options[j].selected)
+                    return confirm ('The selected object is used. Delete?');
+                  if (mode == 'remove')
+    	              fld.remove(j);
+    	          }
+    	        }
+    	      }
+    	    }
+        }
+      }
+    }
+  }
+  return true;
+}
+
+GR.showProperties = function (obj, prefix, No)
+{
+  var product = GR.getProduct(No);
+  if (!product)
+    return;
+  var ontologyClass = GR.getOntologyClass(product.prefix, product.class);
+  if (!ontologyClass)
+    return;
+  var tr = $(prefix+'_tr_' + No);
+  if (!tr)
+    return;
+  var trProperties = $(prefix+'_tr_' + No + '_properties');
+  if (obj.mode == 'show')
+  {
+    obj.mode = 'hide';
+    obj.title = 'Hide Properties';
+    obj.src = 'images/icons/orderup_16.png';
+    if (!trProperties)
+    {
+      //
+      trProperties = OAT.Dom.create('tr');
+      trProperties.id = prefix + '_tr_' + No + '_properties';
+      trProperties.style.cssText = 'background-color: #F5F5EE;';
+      //
+      var tdProperties1 = OAT.Dom.create('td');
+      tdProperties1.style.cssText = 'background-color: #FFF;';
+      trProperties.appendChild(tdProperties1);
+      //
+      var tdProperties2 = OAT.Dom.create('td');
+      tdProperties2.style.cssText = 'vertical-align: top;';
+      tdProperties2.appendChild(OAT.Dom.text("~ properties"));
+      trProperties.appendChild(tdProperties2);
+      //
+      var tdProperties3 = OAT.Dom.create('td');
+      trProperties.appendChild(tdProperties3);
+      GR.loadClassProperties(ontologyClass, function(){GR.showPropertiesTable(product);});
+      //
+      var tdProperties4 = OAT.Dom.create('td');
+      tdProperties4.style.cssText = 'vertical-align: top;';
+      trProperties.appendChild(tdProperties4);
+
+      // insertBefore(trProperties, tr);
+      var trParent = tr.parentNode;
+  	  if(tr.nextSibling)
+  	  {
+  		  trParent.insertBefore(trProperties, tr.nextSibling);
+  	  } else {
+  		  trParent.appendChild(trProperties);
+  	  }
+    } else {
+      OAT.Dom.show(trProperties);
+    }
+  } else {
+    obj.mode = 'show';
+    obj.title = 'Show Properties';
+    obj.src = 'images/icons/orderdown_16.png';
+    OAT.Dom.hide(trProperties);
+  }
+}
+
+GR.showPropertiesTable = function (product)
+{
+  var ontologyClass = GR.getOntologyClass(product.prefix, product.class);
+  if (!ontologyClass)
+    return;
+  var prefix = GR.tablePrefix;
+  var No = product.id;
+  var tr = $(prefix + '_tr_' + No + '_properties');
+  if (tr)
+  {
+    var TDs = tr.getElementsByTagName('td');
+    if (ontologyClass.properties.length)
+    {
+      var prefixProp = 'prop_'+No;
+
+      var btn = OAT.Dom.image("images/icons/add_16.png");
+      btn.style.cssText = 'margin-left: 2px; margin-right: 2px;';
+      btn.onclick = function (){updateRow(prefixProp, null, {fld_1: {mode: 10, product: product}, fld_2: {mode: 11}, btn_1: {mode: 4}});};
+      TDs[3].appendChild(btn);
+
+      var S = '<table id="prop_tbl" class="listing" style="background-color: #F5F5EE;"><thead><tr class="listing_header_row"><th width="50%">Property</th><th width="50%">Value</th><th width="80px">Action</th></tr></thead><tbody id="prop_tbody"><tr id="prop_tr_no"><td colspan="3">No Properties</td></tr></tbody></table><input type="hidden" id="prop_no" name="prop_no" value="0" />';
+      TDs[2].innerHTML = S.replace(/prop_/g, prefixProp+'_');
+
+      var properties = product.properties;
+      if (properties)
+      {
+        for (var i = 0; i < properties.length; i++)
+          updateRow(prefixProp, null, {fld_1: {mode: 10, product: product, value: properties[i]}, fld_2: {mode: 11, product: product, value: properties[i]}, btn_1: {mode: 4}});
+      }
+    } else {
+      TDs[2].innerHTML = '<b><i>class has not properties</i></b>';
+    }
+  }
+}
+
+GR.changePropertyValue = function (obj)
+{
+  var fld;
+  var S = obj.id;
+  var fldName = S.replace(/fld_1/, 'fld_2');
+  var S = obj.parentNode.id;
+  var td = $(S.substr(0,S.lastIndexOf('_')+1)+'2');
+  updateField11(td, fldName, {product: obj.product, value: {name: obj.value}});
 }

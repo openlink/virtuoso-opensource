@@ -3423,6 +3423,85 @@ wa_exec_no_error_log(
 wa_add_col ('DB.DBA.WA_USER_RELATED_RES', 'WUR_P_IRI', 'varchar default \'http://www.w3.org/2000/01/rdf-schema#seeAlso\'');
 wa_exec_no_error_log('create unique index WA_USER_RELATED_RES_IX1 on DB.DBA.WA_USER_RELATED_RES (WUR_ID)');
 
+
+create procedure grUpdate_siocDate (in d any)
+{
+  declare str any;
+  if (__tag (d) <> 211)
+    d := now ();
+  str := DB.DBA.date_iso8601 (dt_set_tz (d, 0));
+  return substring (str, 1, 19) || 'Z';
+};
+
+create procedure grUpdate_detailProperty (
+  inout product any,
+  in productName varchar,
+  inout properties any,
+  in propertyOntologyName varchar,
+  in propertyValue varchar,
+  in propertyValueType varchar := 'object')
+{
+  if (not DB.DBA.is_empty_or_null (get_keyword (productName, product)))
+    properties := vector_concat (properties, vector (vector_concat (subseq (soap_box_structure ('x', 1), 0, 2), vector ('name', propertyOntologyName, 'value', propertyValue, 'type', propertyValueType))));
+}
+;
+
+create procedure grUpdate (in obj any)
+{
+  declare N integer;
+  declare products, newProducts, newProduct, newProperties, newProperty any;
+
+  N := 0;
+  newProducts := vector ();
+  products := get_keyword ('products', obj);
+  foreach (any product in products) do
+  {
+    N := N + 1;
+    newProduct := vector_concat (subseq (soap_box_structure ('x', 1), 0, 2), vector ('id', cast (N as varchar), 'prefix', 'gr', 'class', 'gr:Offering'));
+
+    newProperties := vector();
+    -- step 2b
+    grUpdate_detailProperty (product, 'sell', newProperties, 'gr:hasBusinessFunction', 'gr:Sell');
+    grUpdate_detailProperty (product, 'repair', newProperties, 'gr:hasBusinessFunction', 'gr:Repair');
+    grUpdate_detailProperty (product, 'maintain', newProperties, 'gr:hasBusinessFunction', 'gr:Maintain');
+    grUpdate_detailProperty (product, 'lease', newProperties, 'gr:hasBusinessFunction', 'gr:LeaseOut');
+    grUpdate_detailProperty (product, 'disposal', newProperties, 'gr:hasBusinessFunction', 'gr:Dispose');
+    grUpdate_detailProperty (product, 'buy', newProperties, 'gr:hasBusinessFunction', 'gr:Buy');
+    grUpdate_detailProperty (product, 'service', newProperties, 'gr:hasBusinessFunction', 'gr:ProvideService');
+
+    -- step 3
+    grUpdate_detailProperty (product, 'endUsers', newProperties, 'gr:eligibleCustomerTypes', 'gr:Enduser');
+    grUpdate_detailProperty (product, 'public', newProperties, 'gr:eligibleCustomerTypes', 'gr:Public');
+    grUpdate_detailProperty (product, 'reseller', newProperties, 'gr:eligibleCustomerTypes', 'gr:Reseller');
+
+    grUpdate_detailProperty (obj, 'datetime1', newProperties, 'gr:validFrom', grUpdate_siocDate (get_keyword ('datetime1', obj)), 'data');
+    grUpdate_detailProperty (obj, 'datetime2', newProperties, 'gr:validThrough', grUpdate_siocDate (get_keyword ('datetime2', obj)), 'data');
+
+    -- step 4
+    grUpdate_detailProperty (obj, 'mastercard', newProperties, 'gr:acceptedPaymentMethods', 'gr:MasterCard');
+    grUpdate_detailProperty (obj, 'visa', newProperties, 'gr:acceptedPaymentMethods', 'gr:VISA');
+    grUpdate_detailProperty (obj, 'amex', newProperties, 'gr:acceptedPaymentMethods', 'gr:AmericanExpress');
+    grUpdate_detailProperty (obj, 'diners', newProperties, 'gr:acceptedPaymentMethods', 'gr:DinersClub');
+    grUpdate_detailProperty (obj, 'discover', newProperties, 'gr:acceptedPaymentMethods', 'gr:Discover');
+    grUpdate_detailProperty (obj, 'openinvoice', newProperties, 'gr:acceptedPaymentMethods', 'gr:ByInvoice');
+    grUpdate_detailProperty (obj, 'cash', newProperties, 'gr:acceptedPaymentMethods', 'gr:Cash');
+    grUpdate_detailProperty (obj, 'check', newProperties, 'gr:acceptedPaymentMethods', 'gr:CheckInAdvance');
+    grUpdate_detailProperty (obj, 'bank', newProperties, 'gr:acceptedPaymentMethods', 'gr:ByBankTransferInAdvance');
+
+     -- step 5
+    grUpdate_detailProperty (obj, 'dhl', newProperties, 'gr:availableDeliveryMethods', 'gr:DHL');
+    grUpdate_detailProperty (obj, 'ups', newProperties, 'gr:availableDeliveryMethods', 'gr:UPS');
+    grUpdate_detailProperty (obj, 'mailDelivery', newProperties, 'gr:availableDeliveryMethods', 'gr:DeliveryModeMail');
+    grUpdate_detailProperty (obj, 'fedex', newProperties, 'gr:availableDeliveryMethods', 'gr:FederalExpress');
+    grUpdate_detailProperty (obj, 'download', newProperties, 'gr:availableDeliveryMethods', 'gr:DeliveryModeDirectDownload');
+
+    if (length (newProperties))
+      newProduct := vector_concat (newProduct, vector ('properties', newProperties));
+    newProducts := vector_concat (newProducts, vector (newProduct));
+  }
+  return newProducts;
+};
+
 wa_exec_no_error_log(
     'CREATE TABLE WA_USER_OFFERLIST
      (
@@ -3436,6 +3515,27 @@ wa_exec_no_error_log(
      )'
 );
 wa_exec_no_error('create unique index WA_USER_OFFERLIST_USER on WA_USER_OFFERLIST (WUOL_U_ID, WUOL_OFFER)');
+
+create procedure wa_offerlist_upgrade()
+{
+  declare id integer;
+  declare obj any;
+
+  if (registry_get ('__wa_offerlist_upgrade') = 'done')
+    return;
+  registry_set ('__wa_offerlist_upgrade', 'done');
+
+  for (select WUOL_ID, WUOL_PROPERTIES from DB.DBA.WA_USER_OFFERLIST) do
+  {
+    id := WUOL_ID;
+    obj := deserialize (WUOL_PROPERTIES);
+    obj := grUpdate (obj);
+    obj := vector_concat (subseq (soap_box_structure ('x', 1), 0, 2), vector ('version', '1.0', 'products', obj));
+    update DB.DBA.WA_USER_OFFERLIST set WUOL_PROPERTIES = serialize (obj) where WUOL_ID = id;
+  }
+}
+;
+wa_offerlist_upgrade();
 
 wa_exec_no_error_log (
     'CREATE TABLE WA_USER_WISHLIST
@@ -3452,6 +3552,27 @@ wa_exec_no_error_log (
 );
 wa_add_col ('DB.DBA.WA_USER_WISHLIST', 'WUWL_PROPERTIES', 'long varchar');
 wa_exec_no_error('create unique index WA_USER_WISHLIST_USER on WA_USER_WISHLIST (WUWL_U_ID, WUWL_BARTER)');
+
+create procedure wa_wishlist_upgrade()
+{
+  declare id integer;
+  declare obj any;
+
+  if (registry_get ('__wa_wishlist_upgrade') = 'done')
+    return;
+  registry_set ('__wa_wishlist_upgrade', 'done');
+
+  for (select WUWL_ID, WUWL_PROPERTIES from DB.DBA.WA_USER_WISHLIST) do
+  {
+    id := WUWL_ID;
+    obj := deserialize (WUWL_PROPERTIES);
+    obj := grUpdate (obj);
+    obj := vector_concat (subseq (soap_box_structure ('x', 1), 0, 2), vector ('version', '1.0', 'products', obj));
+    update DB.DBA.WA_USER_WISHLIST set WUWL_PROPERTIES = serialize (obj) where WUWL_ID = id;
+  }
+}
+;
+wa_wishlist_upgrade();
 
 wa_exec_no_error_log(
     'CREATE TABLE WA_USER_BIOEVENTS (
