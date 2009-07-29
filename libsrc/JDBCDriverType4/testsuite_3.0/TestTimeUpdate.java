@@ -114,13 +114,27 @@ public class TestTimeUpdate
 	   System.out.println("    FAILED");
 	 rs.close();
 
-         System.out.print("Sending a 1972-07-29 15:30:45.100 timestamp");
+         System.out.print("Sending a 1972-07-29 15:30:45.000012 timestamp");
 	 ps = c.prepareStatement ("select cast (? as varchar)");
-	 ps.setTimestamp (1, new java.sql.Timestamp(72, 6, 29, 15, 30, 45, 100000000));
+	 ps.setTimestamp (1, new java.sql.Timestamp(72, 6, 29, 15, 30, 45, 12));
 	 rs = ps.executeQuery();
 	 rs.next();
-	 System.out.print(" (recv as " + rs.getString(1) + " trim=[" + rs.getString(1).substring(0, 23) + "])");
-	 if (rs.getString(1).substring(0, 23).equals ("1972-07-29 15:30:45.100"))
+	 String q = rs.getString(1);
+	 System.out.print(" (recv as " + rs.getString(1) + " trim=[" + rs.getString(1).substring(0, 26) + "])");
+	 if (rs.getString(1).substring(0, 26).equals ("1972-07-29 15:30:45.000012"))
+	   System.out.println("    PASSED");
+	 else
+	   System.out.println("    FAILED");
+	 rs.close();
+
+         System.out.print("Sending a 1972-07-29 15:30:45.123456 timestamp");
+	 ps = c.prepareStatement ("select cast (? as varchar)");
+	 ps.setTimestamp (1, new java.sql.Timestamp(72, 6, 29, 15, 30, 45, 123456));
+	 rs = ps.executeQuery();
+	 rs.next();
+	 q = rs.getString(1);
+	 System.out.print(" (recv as " + rs.getString(1) + " trim=[" + rs.getString(1).substring(0, 26) + "])");
+	 if (rs.getString(1).substring(0, 26).equals ("1972-07-29 15:30:45.123456"))
 	   System.out.println("    PASSED");
 	 else
 	   System.out.println("    FAILED");
