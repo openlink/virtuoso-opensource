@@ -1674,9 +1674,9 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
 	    connection.prepareStatement ((connection.getCase() == 2) ?
 		getProceduresCaseMode2 :
 		getProceduresCaseMode0);
-      ps.setString (1, connection.escapeSQLString (catalog));
-      ps.setString (2, connection.escapeSQLString (schemaPattern));
-      ps.setString (3, connection.escapeSQLString (procedureNamePattern));
+      ps.setString (1, connection.escapeSQLString (catalog).toParamString());
+      ps.setString (2, connection.escapeSQLString (schemaPattern).toParamString());
+      ps.setString (3, connection.escapeSQLString (procedureNamePattern).toParamString());
       ResultSet rs = ps.executeQuery();
       return rs;
    }
@@ -1755,10 +1755,10 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
 	      connection.prepareStatement("DB.DBA.SQL_PROCEDURE_COLUMNSW (?, ?, ?, ?, ?, ?)") :
 	      connection.prepareStatement("DB.DBA.SQL_PROCEDURE_COLUMNS (?, ?, ?, ?, ?, ?)"));
 
-      ps.setString (1, connection.escapeSQLString(catalog));
-      ps.setString (2, connection.escapeSQLString(schemaPattern));
-      ps.setString (3, connection.escapeSQLString(procedureNamePattern));
-      ps.setString (4, connection.escapeSQLString(columnNamePattern));
+      ps.setString (1, connection.escapeSQLString(catalog).toParamString());
+      ps.setString (2, connection.escapeSQLString(schemaPattern).toParamString());
+      ps.setString (3, connection.escapeSQLString(procedureNamePattern).toParamString());
+      ps.setString (4, connection.escapeSQLString(columnNamePattern).toParamString());
       ps.setInt(5, connection.getCase());
       ps.setInt(6, 1);
 
@@ -1915,19 +1915,19 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
 	  schemaPattern == null && tableNamePattern == null)
 	return getTableTypes();
 
-      String typ = "";
+      StringBuffer typ = new StringBuffer();
       if(types != null)
          for(int i = 0;i < types.length;i++)
 	 {
 	   if (types[i].equals("TABLE"))
-	     typ.concat("GTABLE");
+	     typ.append("GTABLE");
 	   else if (types[i].equals("VIEW"))
-	     typ.concat("GVIEW");
+	     typ.append("GVIEW");
 	   else if (types[i].equals("SYSTEM TABLE"))
-	     typ.concat("GSYSTEM TABLE");
+	     typ.append("GSYSTEM TABLE");
 	 }
       if (typ.length() == 0)
-	typ = "GTABLEGVIEWGSYSTEM TABLE";
+	typ.append("GTABLEGVIEWGSYSTEM TABLE");
 
       if (catalog == null)
 	catalog = "%";
@@ -1947,10 +1947,10 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
 	    (connection.getCase() == 2) ?
 	    getTablesCaseMode2 :
 	    getTablesCaseMode0);
-      ps.setString(1,connection.escapeSQLString(catalog));
-      ps.setString(2,connection.escapeSQLString(schemaPattern));
-      ps.setString(3,connection.escapeSQLString (tableNamePattern));
-      ps.setString(4,connection.escapeSQLString(typ));
+      ps.setString(1,connection.escapeSQLString(catalog).toParamString());
+      ps.setString(2,connection.escapeSQLString(schemaPattern).toParamString());
+      ps.setString(3,connection.escapeSQLString (tableNamePattern).toParamString());
+      ps.setString(4,connection.escapeSQLString(typ.toString()).toParamString());
       ResultSet rs = ps.executeQuery();
       return rs;
    }
@@ -2291,10 +2291,10 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
       else
 	ps = (VirtuosoPreparedStatement)connection.prepareStatement(
 	    (connection.getCase() == 2) ? getColumsText_case2 : getColumsText_case0);
-      ps.setString(1,connection.escapeSQLString (catalog));
-      ps.setString(2,connection.escapeSQLString (schemaPattern));
-      ps.setString(3,connection.escapeSQLString (tableNamePattern));
-      ps.setString(4,connection.escapeSQLString (columnNamePattern));
+      ps.setString(1,connection.escapeSQLString (catalog).toParamString());
+      ps.setString(2,connection.escapeSQLString (schemaPattern).toParamString());
+      ps.setString(3,connection.escapeSQLString (tableNamePattern).toParamString());
+      ps.setString(4,connection.escapeSQLString (columnNamePattern).toParamString());
       ResultSet rs = ps.executeQuery();
       return rs;
    }
@@ -2344,10 +2344,10 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
 	      connection.prepareStatement("DB.DBA.column_privileges_utf8(?,?,?,?)") :
 	      connection.prepareStatement("DB.DBA.column_privileges(?,?,?,?)"));
 
-      ps.setString (1, connection.escapeSQLString(catalog));
-      ps.setString (2, connection.escapeSQLString(schema));
-      ps.setString (3, connection.escapeSQLString(table));
-      ps.setString (4, connection.escapeSQLString(columnNamePattern));
+      ps.setString (1, connection.escapeSQLString(catalog).toParamString());
+      ps.setString (2, connection.escapeSQLString(schema).toParamString());
+      ps.setString (3, connection.escapeSQLString(table).toParamString());
+      ps.setString (4, connection.escapeSQLString(columnNamePattern).toParamString());
 
       return ps.executeQuery();
    }
@@ -2398,9 +2398,9 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
       VirtuosoPreparedStatement ps = (VirtuosoPreparedStatement)
 	  connection.prepareStatement("DB.DBA.table_privileges(?,?,?)");
 
-      ps.setString (1, connection.escapeSQLString(catalog));
-      ps.setString (2, connection.escapeSQLString(schemaPattern));
-      ps.setString (3, connection.escapeSQLString(tableNamePattern));
+      ps.setString (1, connection.escapeSQLString(catalog).toParamString());
+      ps.setString (2, connection.escapeSQLString(schemaPattern).toParamString());
+      ps.setString (3, connection.escapeSQLString(tableNamePattern).toParamString());
 
       return ps.executeQuery();
    }
@@ -2557,9 +2557,9 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
       else
 	ps = (VirtuosoPreparedStatement)connection.prepareStatement(
 	    (connection.getCase() == 2) ? getBestRowIdText_case2 : getBestRowIdText_case0);
-      ps.setString(1,connection.escapeSQLString (catalog));
-      ps.setString(2,connection.escapeSQLString (schema));
-      ps.setString(3,connection.escapeSQLString (table));
+      ps.setString(1,connection.escapeSQLString (catalog).toParamString());
+      ps.setString(2,connection.escapeSQLString (schema).toParamString());
+      ps.setString(3,connection.escapeSQLString (table).toParamString());
       ResultSet rs = ps.executeQuery();
       return rs;
    }
@@ -2682,9 +2682,9 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
       else
 	ps = (VirtuosoPreparedStatement)connection.prepareStatement(
 	    (connection.getCase() == 2) ? getBestVersionColsText_case2 : getBestVersionColsText_case0);
-      ps.setString(1,connection.escapeSQLString (catalog));
-      ps.setString(2,connection.escapeSQLString (schema));
-      ps.setString(3,connection.escapeSQLString (table));
+      ps.setString(1,connection.escapeSQLString (catalog).toParamString());
+      ps.setString(2,connection.escapeSQLString (schema).toParamString());
+      ps.setString(3,connection.escapeSQLString (table).toParamString());
       ResultSet rs = ps.executeQuery();
       return rs;
    }
@@ -2840,9 +2840,9 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
       else
 	ps = (VirtuosoPreparedStatement)
 	    connection.prepareStatement((connection.getCase() == 2) ? get_pk_case2 : get_pk_case0);
-      ps.setString(1, connection.escapeSQLString (catalog));
-      ps.setString(2, connection.escapeSQLString (schema));
-      ps.setString(3, connection.escapeSQLString (table));
+      ps.setString(1, connection.escapeSQLString (catalog).toParamString());
+      ps.setString(2, connection.escapeSQLString (schema).toParamString());
+      ps.setString(3, connection.escapeSQLString (table).toParamString());
       ResultSet rs = ps.executeQuery();
       return rs;
    }
@@ -3029,9 +3029,9 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
       else
 	ps = (VirtuosoPreparedStatement)
 	    connection.prepareStatement((connection.getCase() == 2) ? imp_keys_case2 : imp_keys_case0);
-      ps.setString(1, connection.escapeSQLString (catalog));
-      ps.setString(2, connection.escapeSQLString (schema));
-      ps.setString(3, connection.escapeSQLString (table));
+      ps.setString(1, connection.escapeSQLString (catalog).toParamString());
+      ps.setString(2, connection.escapeSQLString (schema).toParamString());
+      ps.setString(3, connection.escapeSQLString (table).toParamString());
       ResultSet rs = ps.executeQuery();
       return rs;
    }
@@ -3213,9 +3213,9 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
       else
 	ps = (VirtuosoPreparedStatement)
 	    connection.prepareStatement((connection.getCase() == 2) ? exp_keys_mode2 : exp_keys_mode0);
-      ps.setString(1, connection.escapeSQLString (catalog));
-      ps.setString(2, connection.escapeSQLString (schema));
-      ps.setString(3, connection.escapeSQLString (table));
+      ps.setString(1, connection.escapeSQLString (catalog).toParamString());
+      ps.setString(2, connection.escapeSQLString (schema).toParamString());
+      ps.setString(3, connection.escapeSQLString (table).toParamString());
       ResultSet rs = ps.executeQuery();
       return rs;
    }
@@ -3425,12 +3425,12 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
       else
 	ps = (VirtuosoPreparedStatement)
 	    connection.prepareStatement((connection.getCase() == 2) ? fk_text_casemode_2 : fk_text_casemode_0);
-      ps.setString(1, connection.escapeSQLString (primaryCatalog));
-      ps.setString(2, connection.escapeSQLString (primarySchema));
-      ps.setString(3, connection.escapeSQLString (primaryTable));
-      ps.setString(4, connection.escapeSQLString (foreignCatalog));
-      ps.setString(5, connection.escapeSQLString (foreignSchema));
-      ps.setString(6, connection.escapeSQLString (foreignTable));
+      ps.setString(1, connection.escapeSQLString (primaryCatalog).toParamString());
+      ps.setString(2, connection.escapeSQLString (primarySchema).toParamString());
+      ps.setString(3, connection.escapeSQLString (primaryTable).toParamString());
+      ps.setString(4, connection.escapeSQLString (foreignCatalog).toParamString());
+      ps.setString(5, connection.escapeSQLString (foreignSchema).toParamString());
+      ps.setString(6, connection.escapeSQLString (foreignTable).toParamString());
       ResultSet rs = ps.executeQuery();
       return rs;
    }
@@ -3681,9 +3681,9 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
       else
 	ps = (VirtuosoPreparedStatement)
 	    connection.prepareStatement((connection.getCase() == 2) ? sql_statistics_text_casemode_2 : sql_statistics_text_casemode_0);
-      ps.setString(1, connection.escapeSQLString (catalog));
-      ps.setString(2, connection.escapeSQLString (schema));
-      ps.setString(3, connection.escapeSQLString (table));
+      ps.setString(1, connection.escapeSQLString (catalog).toParamString());
+      ps.setString(2, connection.escapeSQLString (schema).toParamString());
+      ps.setString(3, connection.escapeSQLString (table).toParamString());
       ps.setInt(4, unique ? 0 /* SQL_INDEX_UNIQUE */ : 1 /* SQL_INDEX_ALL */);
       ResultSet rs = ps.executeQuery();
       return rs;
@@ -4472,8 +4472,8 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
 	    (connection.getCase() == 2) ?
 	    getSchemasCaseMode2 :
 	    getSchemasCaseMode0);
-      ps.setString(1,connection.escapeSQLString(catalog));
-      ps.setString(2,connection.escapeSQLString(schemaPattern));
+      ps.setString(1,connection.escapeSQLString(catalog).toParamString());
+      ps.setString(2,connection.escapeSQLString(schemaPattern).toParamString());
       ResultSet rs = ps.executeQuery();
       return rs;
   }
