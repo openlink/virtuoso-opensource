@@ -330,6 +330,11 @@ class VirtuosoOutputStream extends BufferedOutputStream
 		 writeint(((Number)obj).longValue());
 		 return;
 	       }
+	 case VirtuosoTypes.DV_INT64:
+	       {
+		 writelong(((Number)obj).longValue());
+		 return;
+	       }
 	 case VirtuosoTypes.DV_DATETIME:
 	 case VirtuosoTypes.DV_TIMESTAMP_OBJ:
 	 case VirtuosoTypes.DV_TIMESTAMP:
@@ -475,7 +480,7 @@ class VirtuosoOutputStream extends BufferedOutputStream
     */
    private void writerawdouble(double m) throws IOException
    {
-      writelong(Double.doubleToLongBits(m));
+      writerawlong(Double.doubleToLongBits(m));
    }
 
    /**
@@ -539,6 +544,12 @@ class VirtuosoOutputStream extends BufferedOutputStream
 
 
    protected void writelong(long data) throws IOException
+   {
+     write(VirtuosoTypes.DV_INT64);
+     writerawlong(data);
+   }
+
+   protected void writerawlong(long data) throws IOException
    {
      tmp[0] = ((byte) ((data >> 56) & 0xFF));
      tmp[1] = ((byte) ((data >> 48) & 0xFF));
@@ -653,7 +664,7 @@ class VirtuosoOutputStream extends BufferedOutputStream
       {
 	if (rb.rb_ro_id > 0xffffffffL)
 	{
-	  writelong(rb.rb_ro_id);
+	  writerawlong(rb.rb_ro_id);
 	}
 	else
 	{
@@ -922,10 +933,10 @@ class VirtuosoOutputStream extends BufferedOutputStream
          Long o = (Long)obj;
          if (o.longValue () >= -128 && o.longValue() < 128)
            return VirtuosoTypes.DV_SHORT_INT;
-         else if (o.longValue () >= (long) Integer.MIN_VALUE && o.longValue() < (long) Integer.MAX_VALUE)
+         else if (o.longValue () >= (long) Integer.MIN_VALUE && o.longValue() <= (long) Integer.MAX_VALUE)
 	   return VirtuosoTypes.DV_LONG_INT;
          else
-           return VirtuosoTypes.DV_NUMERIC;
+           return VirtuosoTypes.DV_INT64;
       }
       // Treat Integer object
       if(obj instanceof Integer)

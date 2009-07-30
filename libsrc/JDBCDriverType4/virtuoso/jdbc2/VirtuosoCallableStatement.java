@@ -201,7 +201,6 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
             return;
       }
       ;
-**********/
    }
 
    /**

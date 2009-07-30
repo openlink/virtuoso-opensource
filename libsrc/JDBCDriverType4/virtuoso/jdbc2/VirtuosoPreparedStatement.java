@@ -815,9 +815,9 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 
           case Types.BIGINT:
               if (x instanceof java.math.BigDecimal || x instanceof java.lang.String)
-                return x;
+                return new Long(x.toString());
               else if (x instanceof java.lang.Number)
-                return new java.math.BigDecimal (((Number)x).longValue());
+                return new Long(((Number)x).longValue());
 	      break;
 
           case Types.FLOAT:

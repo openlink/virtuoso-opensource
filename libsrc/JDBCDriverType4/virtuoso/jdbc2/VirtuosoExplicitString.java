@@ -274,6 +274,11 @@ public class VirtuosoExplicitString
 	}
     }
 
+  public String toParamString ()
+    {
+      return toString().trim();
+    }
+
   public boolean equals (Object obj)
     {
       if (obj != null && (obj instanceof VirtuosoExplicitString))
