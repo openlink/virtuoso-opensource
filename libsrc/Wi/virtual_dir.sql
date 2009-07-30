@@ -997,7 +997,7 @@ ext_http_proxy (in url varchar := null,
   declare stat, msg, metas, accept, rset, triples, ses, arr any;
   declare local_qry integer; local_qry := 0;
 
-  declare params any;
+  declare params, ids any;
   params := http_param ();
 
   if (exec is not null)
@@ -1069,7 +1069,10 @@ end_loop:;
 	  else
 	    login := '';
 	  host := http_request_header(http_request_header(), 'Host', null, null);
-	  pref := 'http://'||host||http_map_get ('domain')||'/rdf/';
+	  ids := vector ('rdf', 'id');
+	  foreach (varchar idn in ids) do
+	    {
+	      pref := 'http://' || host || http_map_get ('domain') || '/' || idn || '/';
 	  if (url like pref || '%')
 	    {
 	      url := subseq (url, length (pref));
@@ -1079,6 +1082,7 @@ end_loop:;
 	        url := 'https:/' || subseq (url, 5);
               else if (url like 'nodeID/%')
 	        url := 'nodeID:/' || subseq (url, 6);
+	    }
 	    }
 	  -- escape chars which are not allowed
 	  url := replace (url, '''', '%27');
