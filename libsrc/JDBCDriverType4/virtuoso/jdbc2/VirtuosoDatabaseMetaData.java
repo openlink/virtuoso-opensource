@@ -1955,6 +1955,7 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
       return rs;
    }
 
+/****** create problem for DbVisualizer, bug in DbVisualizer, it doesn't support new JDBC specification
    private static final String getSchemasText =
 	"select distinct" +
 	" name_part(KEY_TABLE, 1) AS \\TABLE_SCHEM VARCHAR(128)" +
@@ -1967,6 +1968,21 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
 	" charset_recode (name_part(KEY_TABLE, 1), 'UTF-8', '_WIDE_') AS \\TABLE_SCHEM NVARCHAR(128)" +
 #if JDK_VER >= 14
 	", charset_recode (name_part(KEY_TABLE, 0), 'UTF-8', '_WIDE_') AS \\TABLE_CAT NVARCHAR(128)" +
+#endif
+	"from DB.DBA.SYS_KEYS";
+***********/
+   private static final String getSchemasText =
+	"select distinct" +
+	" name_part(KEY_TABLE, 1) AS \\TABLE_SCHEM VARCHAR(128)" +
+#if JDK_VER >= 14
+	", null AS \\TABLE_CAT VARCHAR(128)" +
+#endif
+	"from DB.DBA.SYS_KEYS";
+   private static final String getWideSchemasText =
+	"select distinct" +
+	" charset_recode (name_part(KEY_TABLE, 1), 'UTF-8', '_WIDE_') AS \\TABLE_SCHEM NVARCHAR(128)" +
+#if JDK_VER >= 14
+	", null AS \\TABLE_CAT NVARCHAR(128)" +
 #endif
 	"from DB.DBA.SYS_KEYS";
    /**
