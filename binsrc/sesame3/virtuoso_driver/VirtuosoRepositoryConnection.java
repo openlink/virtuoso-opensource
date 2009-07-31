@@ -40,6 +40,7 @@ import java.io.BufferedInputStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import java.util.Set;
 
 import java.net.URL;
 import java.sql.Connection;
@@ -72,6 +73,7 @@ import org.openrdf.model.Value;
 import org.openrdf.model.ValueFactory;
 import org.openrdf.model.impl.StatementImpl;
 import org.openrdf.model.impl.NamespaceImpl;
+import org.openrdf.query.Dataset;
 import org.openrdf.query.BindingSet;
 import org.openrdf.query.BooleanQuery;
 import org.openrdf.query.GraphQuery;
@@ -539,7 +541,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		TupleQuery q = new VirtuosoTupleQuery() {
 			public TupleResult evaluate() throws StoreException
 			{
-				return executeSPARQLForTupleResult(query);
+				return executeSPARQLForTupleResult(query, getDataset());
 			}
 		};
 		return q;
@@ -592,7 +594,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	{
 		GraphQuery q = new VirtuosoGraphQuery() {
 			public GraphResult evaluate() throws StoreException {
-				return executeSPARQLForGraphResult(query);
+				return executeSPARQLForGraphResult(query, getDataset());
 			}
 		};
 		return q;
@@ -645,7 +647,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	{
 		BooleanQuery q = new VirtuosoBooleanQuery() {
 			public boolean ask() throws StoreException {
-				return executeSPARQLForBooleanResult(query);
+				return executeSPARQLForBooleanResult(query, getDataset());
 			}
 		};
 		return q;
@@ -2221,7 +2223,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-	protected TupleResult executeSPARQLForTupleResult(String query) throws StoreException
+	protected TupleResult executeSPARQLForTupleResult(String query, Dataset dataset) throws StoreException
 	{
 		List<String> names = new LinkedList<String>();
 		try {
@@ -2229,7 +2231,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			sendDelayAdd();
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
 			stmt.setFetchSize(prefetchSize);
-			ResultSet rs = stmt.executeQuery(fixQuery(query));
+			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset));
 
 			ResultSetMetaData rsmd = rs.getMetaData();
 
@@ -2246,14 +2248,14 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 	
-	protected GraphResult executeSPARQLForGraphResult(String query) throws StoreException
+	protected GraphResult executeSPARQLForGraphResult(String query, Dataset dataset) throws StoreException
 	{
 		try {
 			verifyIsOpen();
 			sendDelayAdd();
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
 			stmt.setFetchSize(prefetchSize);
-			ResultSet rs = stmt.executeQuery(fixQuery(query));
+			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset));
 			return new GraphResultImpl(new HashMap<String,String>(), new CursorGraphResult(rs));
 		}
 		catch (Exception e) {
@@ -2262,14 +2264,14 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		
 	}
 
-	protected boolean executeSPARQLForBooleanResult(String query) throws StoreException
+	protected boolean executeSPARQLForBooleanResult(String query, Dataset dataset) throws StoreException
 	{
 		boolean result = false;
 		try {
 			verifyIsOpen();
 			sendDelayAdd();
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			ResultSet rs = stmt.executeQuery(fixQuery(query));
+			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset));
 
 			while(rs.next())
 			{
@@ -2337,14 +2339,41 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		this.quadStoreConnection = quadStoreConnection;
 	}
 
-	private String fixQuery(String query) 
+	private String fixQuery(String query, Dataset dataset) 
 	{
 		StringTokenizer tok = new StringTokenizer(query);
 		String s = tok.nextToken().toLowerCase();
+		StringBuffer ret = new StringBuffer();
 		if (s.equals("describe") || s.equals("construct") || s.equals("ask")) 
-			return "sparql\n define output:format '_JAVA_'\n " + query;
+			ret.append("sparql\n define output:format '_JAVA_'\n ");
 		else 
-			return "sparql\n " + query;
+			ret.append("sparql\n ");
+
+		if (dataset != null)
+		{
+		   Set<URI> list = dataset.getDefaultGraphs();
+		   if (list != null)
+		   {
+		     Iterator<URI> it = list.iterator();
+		     while(it.hasNext())
+		     {
+		       URI v = it.next();
+		       ret.append(" define input:default-graph-uri <" + v.stringValue() + "> \n");
+		     }
+		   }
+
+		   list = dataset.getNamedGraphs();
+		   if (list != null)
+		   {
+		     Iterator<URI> it = list.iterator();
+		     while(it.hasNext())
+		     {
+		       URI v = it.next();
+		       ret.append(" define input:named-graph-uri <" + v.stringValue() + "> \n");
+		     }
+		   }
+		}
+		return ret.toString();
 	}
 
 

@@ -50,6 +50,7 @@ import java.util.Vector;
 import java.util.NoSuchElementException;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.Set;
 
 import org.openrdf.OpenRDFUtil;
 import org.openrdf.model.BNode;
@@ -65,6 +66,7 @@ import org.openrdf.model.impl.ContextStatementImpl;
 import org.openrdf.model.impl.GraphImpl;
 import org.openrdf.model.impl.NamespaceImpl;
 import org.openrdf.model.impl.ValueFactoryImpl;
+import org.openrdf.query.Dataset;
 import org.openrdf.query.BindingSet;
 import org.openrdf.query.BooleanQuery;
 import org.openrdf.query.GraphQuery;
@@ -338,11 +340,11 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	public TupleQuery prepareTupleQuery(QueryLanguage langauge, final String query, String baseeURI) throws RepositoryException, MalformedQueryException {
 		TupleQuery q = new VirtuosoTupleQuery() {
 			public TupleQueryResult evaluate() throws QueryEvaluationException {
-				return executeSPARQLForTupleResult(query);
+				return executeSPARQLForTupleResult(query, getDataset());
 			}
 
 			public void evaluate(TupleQueryResultHandler handler) throws QueryEvaluationException, TupleQueryResultHandlerException {
-				executeSPARQLForHandler(handler, query);
+				executeSPARQLForHandler(handler, query, getDataset());
 			}
 		};
 		return q;
@@ -390,11 +392,11 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	public GraphQuery prepareGraphQuery(QueryLanguage language, final String query, String baseURI) throws RepositoryException, MalformedQueryException {
 		GraphQuery q = new VirtuosoGraphQuery() {
 			public GraphQueryResult evaluate() throws QueryEvaluationException {
-				return executeSPARQLForGraphResult(query);
+				return executeSPARQLForGraphResult(query, getDataset());
 			}
 
 			public void evaluate(RDFHandler handler) throws QueryEvaluationException, RDFHandlerException {
-				executeSPARQLForHandler(handler, query);
+				executeSPARQLForHandler(handler, query, getDataset());
 			}
 		};
 		return q;
@@ -442,7 +444,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	public BooleanQuery prepareBooleanQuery(QueryLanguage language, final String query, String baseURI) throws RepositoryException, MalformedQueryException {
 		BooleanQuery q = new VirtuosoBooleanQuery() {
 			public boolean evaluate() throws QueryEvaluationException {
-				return executeSPARQLForBooleanResult(query);
+				return executeSPARQLForBooleanResult(query, getDataset());
 			}
 		};
 		return q;
@@ -1582,7 +1584,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-	protected TupleQueryResult executeSPARQLForTupleResult(String query) {
+	protected TupleQueryResult executeSPARQLForTupleResult(String query, Dataset dataset) {
 
 		Vector<String> names = new Vector<String>();
 		try {
@@ -1590,7 +1592,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			sendDelayAdd();
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
 			stmt.setFetchSize(prefetchSize);
-			ResultSet rs = stmt.executeQuery(fixQuery(query));
+			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset));
 
 			ResultSetMetaData rsmd = rs.getMetaData();
 
@@ -1608,7 +1610,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 	
-	protected GraphQueryResult executeSPARQLForGraphResult(String query) {
+	protected GraphQueryResult executeSPARQLForGraphResult(String query, Dataset dataset) {
 
 		HashMap<String,Integer> names = new HashMap<String,Integer>();
 
@@ -1617,7 +1619,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			sendDelayAdd();
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
 			stmt.setFetchSize(prefetchSize);
-			ResultSet rs = stmt.executeQuery(fixQuery(query));
+			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset));
 
 			ResultSetMetaData rsmd = rs.getMetaData();
 
@@ -1632,7 +1634,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		
 	}
 
-	protected boolean executeSPARQLForBooleanResult(String query) {
+	protected boolean executeSPARQLForBooleanResult(String query, Dataset dataset) {
 		Vector<String> names = new Vector<String>();
 		Vector<BindingSet> bindings = new Vector<BindingSet>();
 		boolean result = false;
@@ -1640,7 +1642,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			verifyIsOpen();
 			sendDelayAdd();
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			ResultSet rs = stmt.executeQuery(fixQuery(query));
+			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset));
 
 			while(rs.next())
 			{
@@ -1657,14 +1659,14 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-	protected void executeSPARQLForHandler(TupleQueryResultHandler tqrh, String query) {
+	protected void executeSPARQLForHandler(TupleQueryResultHandler tqrh, String query, Dataset dataset) {
 		LinkedList<String> names = new LinkedList<String>();
 		try {
 			verifyIsOpen();
 			sendDelayAdd();
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
 			stmt.setFetchSize(prefetchSize);
-			ResultSet rs = stmt.executeQuery(fixQuery(query));
+			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset));
 
 			ResultSetMetaData rsmd = rs.getMetaData();
 			// begin at onset one
@@ -1693,13 +1695,13 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-	protected void executeSPARQLForHandler(RDFHandler tqrh, String query) {
+	protected void executeSPARQLForHandler(RDFHandler tqrh, String query, Dataset dataset) {
 		try {
 			verifyIsOpen();
 			sendDelayAdd();
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
 			stmt.setFetchSize(prefetchSize);
-			ResultSet rs = stmt.executeQuery(fixQuery(query));
+			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset));
 			ResultSetMetaData rsmd = rs.getMetaData();
 	                int col_g = -1;
         	        int col_s = -1;
@@ -1793,13 +1795,40 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		this.quadStoreConnection = quadStoreConnection;
 	}
 
-	private String fixQuery(String query) {
+	private String fixQuery(String query, Dataset dataset) {
 		StringTokenizer tok = new StringTokenizer(query);
 		String s = tok.nextToken().toLowerCase();
+		StringBuffer ret = new StringBuffer();
 		if (s.equals("describe") || s.equals("construct") || s.equals("ask")) 
-			return "sparql\n define output:format '_JAVA_'\n " + query;
+			ret.append("sparql\n define output:format '_JAVA_'\n ");
 		else 
-			return "sparql\n " + query;
+			ret.append("sparql\n ");
+
+		if (dataset != null)
+		{
+		   Set<URI> list = dataset.getDefaultGraphs();
+		   if (list != null)
+		   {
+		     Iterator<URI> it = list.iterator();
+		     while(it.hasNext())
+		     {
+		       URI v = it.next();
+		       ret.append(" define input:default-graph-uri <" + v.stringValue() + "> \n");
+		     }
+		   }
+
+		   list = dataset.getNamedGraphs();
+		   if (list != null)
+		   {
+		     Iterator<URI> it = list.iterator();
+		     while(it.hasNext())
+		     {
+		       URI v = it.next();
+		       ret.append(" define input:named-graph-uri <" + v.stringValue() + "> \n");
+		     }
+		   }
+		}
+		return ret.toString();
 	}
 
 
