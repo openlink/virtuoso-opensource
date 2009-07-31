@@ -2236,7 +2236,7 @@ spar_default_sparul_target (sparp_t *sparp, const char *clause_type)
     spar_error (sparp, "No %.200s and no default graph specified in the preamble", clause_type);
   if ((NULL != dflt_graphs->next) && (((SPART *)(dflt_graphs->next->data))->_.graph.subtype < SPART_GRAPH_MIN_NEGATION))
     spar_error (sparp, "No %.200s and more than one default graph specified in the preamble", clause_type);
-  if (SPART_GRAPH_GROUP != ((SPART *)(dflt_graphs->data))->_.graph.subtype)
+  if (SPART_GRAPH_GROUP == ((SPART *)(dflt_graphs->data))->_.graph.subtype)
     spar_error (sparp, "No %.200s and the IRI in preamble refers to default graph group, not a single default graph", clause_type);
   return sparp_tree_full_copy (sparp, (SPART *)(dflt_graphs->data), NULL);
 }
