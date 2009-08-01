@@ -135,7 +135,9 @@ if test -r "$DBLOGFILE"
 then
     if test -s "$DBLOGFILE"
     then
-	LOG "***FAILED: The file $DBLOGFILE is longer than zero bytes after checkpoint"
+	#LOG "***FAILED: The file $DBLOGFILE is longer than zero bytes after checkpoint"
+	ECHO "The file $DBLOGFILE is longer than zero bytes after checkpoint"
+	ls -la $DBLOGFILE | tee -a $LOGFILE
     else
 	LOG "PASSED: The file $DBLOGFILE is empty after checkpoint"
     fi
@@ -243,6 +245,8 @@ then
   echo Removing $LOCKFILE >> $LOGFILE
   rm $LOCKFILE
 fi
+ls -la $DBLOGFILE
+rm -f $DBLOGFILE
 RUN $SERVER $FOREGROUND_OPTION $CRASH_DUMP_OPTION
 if test $STATUS -eq 0
 then

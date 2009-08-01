@@ -89,6 +89,7 @@ log_set_compatibility_check (int in_txn, char *strg)
   dbe_storage_t * dbs = wi_inst.wi_master;
   caddr_t trx_string;
 
+  dbs->dbs_log_session->dks_bytes_sent = 0;
   cbox = (caddr_t *) dk_alloc_box (sizeof (caddr_t) * LOG_HEADER_LENGTH,
 				   DV_ARRAY_OF_POINTER);
   ses = strses_allocate();
@@ -113,6 +114,8 @@ log_set_compatibility_check (int in_txn, char *strg)
       dk_free_box (trx_string);
       strses_free (ses);
       dk_free_tree ((caddr_t) cbox);
+      session_flush_1 (dbs->dbs_log_session);
+      dbs->dbs_log_length += dbs->dbs_log_session->dks_bytes_sent;
     }
   END_WRITE_FAIL (dbs->dbs_log_session);
 }
@@ -261,15 +264,14 @@ log_commit (lock_trx_t * lt)
 				   DV_ARRAY_OF_POINTER);
   memset (cbox, 0, sizeof (caddr_t) * LOG_HEADER_LENGTH);
   cbox[LOGH_TIME] = 0;
-  if (lt->lt_client->cli_user)
+  if (lt->lt_client && lt->lt_client->cli_user)
     cbox[LOGH_USER] = box_string (lt->lt_client->cli_user->usr_name);
   else
     cbox[LOGH_USER] = box_string ("");
 
 
 #ifdef VIRTTP
-  if ((LT_PREPARE_PENDING == lt->lt_status) &&
-      lt->lt_2pc._2pc_log)
+  if ((LT_PREPARE_PENDING == lt->lt_status) && lt->lt_2pc._2pc_log)
     {
       log_2pc_count++;
       if (lt->lt_2pc._2pc_type == TP_VIRT_TYPE)
@@ -282,11 +284,12 @@ log_commit (lock_trx_t * lt)
 	GPF_T1 ("unknown type of distributed transaction");
       cbox[LOGH_BYTES] = box_num (bytes + box_length(lt->lt_2pc._2pc_log)+2);
       /* log_info ("box.l=%d", box_length (lt->lt_2pc._2pc_log)); */
-    } else
-      {
-	cbox[LOGH_2PC] = box_num(LOG_2PC_DISABLED);
-	cbox[LOGH_BYTES] = box_num (bytes);
-      }
+    } 
+  else
+    {
+      cbox[LOGH_2PC] = box_num(LOG_2PC_DISABLED);
+      cbox[LOGH_BYTES] = box_num (bytes);
+    }
 #else
     cbox[LOGH_BYTES] = box_num (bytes);
 #endif
@@ -1769,9 +1772,12 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 	{
 	  LSEEK (tcpses_get_fd (dbs->dbs_log_session->dks_session), 0, SEEK_SET);
 	  FTRUNCATE (tcpses_get_fd (dbs->dbs_log_session->dks_session), (OFF_T) (0));
-	  log_set_byte_order_check (1);
+	  dbs->dbs_log_length = 0;
           if (CPT_SHUTDOWN != shutdown)
-	    log_set_server_version_check (1);
+	    {
+	      log_set_byte_order_check (1);
+	      log_set_server_version_check (1);
+	    }
 	  log_info ("Checkpoint made, log reused");
 	}
       else
@@ -1803,12 +1809,14 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 	  dbs->dbs_log_name = box_string (new_log);
 	}
       cfg_replace_log (new_log);
-      log_set_byte_order_check (1);
+      dbs->dbs_log_length = 0;
       if (CPT_SHUTDOWN != shutdown)
-        log_set_server_version_check (1);
+	{
+	  log_set_byte_order_check (1);
+	  log_set_server_version_check (1);
+	}
       log_info ("Checkpoint made, new log is %s", new_log);
     }
-  dbs->dbs_log_length = 0;
 }
 
 int in_log_replay = 0;
