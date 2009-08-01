@@ -139,6 +139,10 @@ lt_free (lock_trx_t * lt)
   dk_mutex_destroy (&lt->lt_rb_mtx);
   hash_table_destroy (&lt->lt_lock);
   hash_table_free (lt->lt_rb_hash);
+#ifdef VIRTTP  
+  dk_free_tree (lt->lt_2pc._2pc_xid);
+  dk_free_tree (lt->lt_2pc._2pc_log);
+#endif
   dk_free ((caddr_t) lt, sizeof (lock_trx_t));
 }
 
@@ -173,6 +177,10 @@ lt_clear (lock_trx_t * lt)
   LT_ERROR_DETAIL_SET (lt, NULL);
   if (lt->lt_wait_end)
     GPF_T1 ("lt going clear but somebody still waiting for its end");
+#ifdef VIRTTP  
+  dk_free_tree (lt->lt_2pc._2pc_xid);
+  dk_free_tree (lt->lt_2pc._2pc_log);
+#endif
   memset (&lt->LT_DATA_AREA_FIRST, 0, sizeof (lock_trx_t) - (size_t) &((lock_trx_t*) 0)->LT_DATA_AREA_FIRST);
   LT_ENTER_SAVE (lt);
 #ifdef PAGE_TRACE
@@ -544,9 +552,10 @@ lt_rollback_1 (lock_trx_t * lt, int free_trx)
   if (LT_PREPARE_PENDING == lt->lt_status)
     {
       if (LTE_OK == lt_2pc_prepare(lt))
-      {
-	lt->lt_status = LT_PREPARED;
-      } else
+	{
+	  lt->lt_status = LT_PREPARED;
+	} 
+      else
 	lt->lt_status = LT_BLOWN_OFF;
       ASSERT_IN_TXN;
       lt->lt_lw_threads = 0;
@@ -796,6 +805,7 @@ lt_kill_other_trx (lock_trx_t * lt, it_cursor_t * itc, buffer_desc_t * buf, int 
     }
   switch (lt->lt_status)
     {
+/* former xa 2pc      
     case LT_COMMITTED:
 	if (lt->lt_threads > 0
 	    && !lt->lt_vdb_threads
@@ -810,6 +820,7 @@ lt_kill_other_trx (lock_trx_t * lt, it_cursor_t * itc, buffer_desc_t * buf, int 
 	    lt_2pc_commit (lt);
 	  }
 	break;
+*/	
     case LT_CLOSING:
     case LT_FINAL_COMMIT_PENDING:
       {
@@ -821,6 +832,7 @@ lt_kill_other_trx (lock_trx_t * lt, it_cursor_t * itc, buffer_desc_t * buf, int 
       {
 	GPF_T1 ("Not supposed to kill rolled back transactions in lt_kill_other_trx");
       }
+    case LT_COMMITTED:
     case LT_PENDING:
     case LT_BLOWN_OFF:
       ASSERT_IN_TXN;

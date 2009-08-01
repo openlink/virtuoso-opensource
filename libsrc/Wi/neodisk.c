@@ -29,6 +29,9 @@
 #include "sqlfn.h"
 #include "srvstat.h"
 #include "recovery.h"
+#ifdef VIRTTP
+#include "2pc.h"
+#endif
 
 #ifdef MAP_DEBUG
 # define dbg_map_printf(a) printf a
@@ -120,6 +123,10 @@ cpt_rollback (int may_freeze)
 	case LT_CLOSING:
 	case LT_COMMITTED:
 	  rdbg_printf (("trx %lx killed by checkpoint while closing\n", lt));
+#ifdef VIRTTP	  
+	  if (stat == LT_COMMITTED && lt->lt_2pc._2pc_wait_commit)
+	    break;
+#endif	  
 	  lt_kill_other_trx (lt, NULL, NULL, LT_KILL_ROLLBACK);
 	  goto next;
 	case LT_FREEZE:
@@ -149,7 +156,15 @@ cpt_rollback (int may_freeze)
 	  lt->lt_error = LTE_CHECKPOINT;
 	  lt_kill_other_trx (lt, NULL, NULL, may_freeze);
 	  goto  next;
-
+#ifdef VIRTTP	  
+	case LT_PREPARE_PENDING:
+	  if (LT_KILL_FREEZE != may_freeze)
+	    {
+	      lt_wait_until_dead (lt);
+	      goto next;
+	    }
+	  break;
+#endif	  
 	default:  GPF_T1 ("Unexpected lt_status in cpt_rollback");
 	}
     }
