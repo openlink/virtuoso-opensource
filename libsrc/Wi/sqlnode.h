@@ -507,8 +507,8 @@ typedef struct key_source_s
     char		ks_is_last;	/* if last ks in join and no select or
 					   postprocess follows.
 					   True if fun ref query */
+    bitf_t		ks_is_loc_of_txs:1; /* if dummy cluster location ks for a txs then ks_ts is the text_source_t */
     ssl_index_t		ks_count;
-    struct text_search_s * ks_text;
     state_slot_t *	ks_proc_set_ctr;
 /*    char 			ks_local_op; */
     struct setp_node_s *	ks_setp;

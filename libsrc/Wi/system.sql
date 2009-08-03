@@ -5262,7 +5262,7 @@ create procedure cl_reset_seqs ()
     name := cast (seqs[inx] as varchar);
       if (name not like '__MAX__%' and name not like '__NEXT__%')
 	{
-	  __sequence_set (sprintf ('__MAX__%s', name), 0, 1);
+	  __sequence_set (sprintf ('__MAX__%s', name), 0, 0);
 	}
     }
 }

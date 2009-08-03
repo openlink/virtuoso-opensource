@@ -1570,6 +1570,9 @@ bh_from_dv (dtp_t * col, it_cursor_t * itc)
     bh->bh_it = key->key_fragments[0]->kf_it;
   else if (itc)
     bh->bh_it = itc->itc_tree;
+  if (CL_RUN_LOCAL != cl_run_local_only && key && KI_TEMP != key->key_id)
+    bh->bh_frag_no = local_cll.cll_this_host;
+  else
   bh->bh_frag_no = frag_no;
   return bh;
 }

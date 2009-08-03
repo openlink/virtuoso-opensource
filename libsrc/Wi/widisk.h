@@ -63,7 +63,7 @@ typedef unsigned char * db_buf_t;
 #define MAX_ROW_BYTES		(((PAGE_DATA_SZ / 2) / 4) * 4) /* Must be < half of PAGE_DATA_SZ */
 #define ROW_MAX_DATA  (MAX_ROW_BYTES - IE_FIRST_KEY)
 #define ROW_MAX_COL_BYTES 	(ROW_MAX_DATA - 10) /*GK: 10 is arbitrary, should be reconsidered */
-
+#define MAX_HASH_TEMP_ROW_BYTES (PAGE_DATA_SZ - 20)
 
 /*
  *  Disk Page layout

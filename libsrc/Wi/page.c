@@ -113,7 +113,11 @@ row_length (db_buf_t  row, dbe_key_t * key)
       if (len <= 0)
 	len = COL_VAR_LEN_MASK & SHORT_REF (row - len);
     }
-  if (len < 0 || len > MAX_ROW_BYTES) STRUCTURE_FAULT1 ("row length out of range");
+  if (len < 0 || len > MAX_ROW_BYTES) 
+    {
+      if (key->key_id != KI_TEMP || len > MAX_HASH_TEMP_ROW_BYTES || len < 0)
+	STRUCTURE_FAULT1 ("row length out of range");
+    }
   return len;
 }
 

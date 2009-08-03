@@ -888,7 +888,7 @@ itc_ha_disk_row (it_cursor_t * itc, buffer_desc_t * buf, hash_area_t * ha, caddr
     }
   rf.rf_fill = key->key_row_var_start[0];
   row_len = ROW_ALIGN (row_len);
-  if (row_len > (PAGE_DATA_SZ - 20))
+  if (row_len > MAX_HASH_TEMP_ROW_BYTES)
     sqlr_new_error ("22023", "SR319", "Max length of a temp row (%d)  exceeded", row_len);
 
   if (qi->qi_no_cast_error && HA_DISTINCT == ha->ha_op && row_len > MAX_ROW_BYTES)
