@@ -56,9 +56,27 @@
    arr [5] := '';
    _G := DB.DBA.vspx_uri_compose (arr);
 
+   if (arr[1] = host and arr[2] like '/about/id/%')
+     {
+       declare pa, sch, nhost, len, tmp, npath any;
+       pa := split_and_decode (arr[2], 0, '\0\0/'); 
+       if (length (pa) > 4 and pa[3] <> '' and pa [4] <> '')
+         {
+	    sch := pa[3];
+	    nhost := pa [4];
+	    tmp := '/about/id/' || sch || '/' || nhost;
+	    npath := subseq (arr[2], length (tmp));    
+	    arr[0] := sch;
+	    arr[1] := nhost;
+	    arr[2] := npath;
+	    _G := DB.DBA.vspx_uri_compose (arr);
+	    do_sponge := 0;
+         }
+     }
+
    if (_S not like 'nodeID://%' and do_sponge)
      {
-       DB.DBA.EXEC_AS (sprintf ('sparql define get:soft "soft" SELECT * from <%S> where { ?x ?y ?z . }', _G), 'SPARQL');
+       DB.DBA.EXEC_AS (sprintf ('sparql define input:storage "" define get:soft "soft" SELECT * from <%S> where { ?x ?y ?z . }', _G), 'SPARQL');
        DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
        commit work;
      }

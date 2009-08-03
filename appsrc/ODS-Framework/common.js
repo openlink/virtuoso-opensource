@@ -609,9 +609,15 @@ function updateRowComboOption (fld, optionImage, optionName)
   fld.addOption('<img src="/ods/images/services/'+optionImage+'"/> '+optionName, optionName);
 }
 
-function updateRowComboOption2 (elm, elmValue, optionName, optionValue)
+function updateRowComboOption2 (fld, elmValue, optionName, optionValue)
 {
-	var o = OAT.Dom.option(optionName, optionValue, elm);
+  for (var i = 0; i < fld.options.length-1; i++)
+  {
+    if ((fld.options[i].value == optionValue) && (fld.options[i].text == optionName))
+      return;
+  }
+
+	var o = OAT.Dom.option(optionName, optionValue, fld);
 	if (elmValue == optionValue)
 	  o.selected = true;
 }
@@ -731,21 +737,27 @@ function updateField10 (elm, fldName, fldOptions)
   fld.id = fldName;
   fld.style.width = '95%';
   fld.product = fldOptions.product;
-  var ontologyClass = GR.getOntologyClass(fld.product.prefix, fld.product.class);
-  if (ontologyClass && ontologyClass.properties)
-  {
-    var P = ontologyClass.properties;
-    var V;
+  var fldValue;
     if (fldOptions.value)
-      V = fldOptions.value.name;
-    updateRowComboOption2(fld, V, '', '');
-    for (i = 0; i < P.length; i++)
-      updateRowComboOption2(fld, V, P[i].name, P[i].name);
-  }
+    fldValue = fldOptions.value.name;
+  updateRowComboOption2(fld, fldValue, '', '');
+  updateField10Options (fld, fldValue, fld.product.class);
   fld.onchange = function (){GR.changePropertyValue(fld);};
 
   var elm = $(elm);
   elm.appendChild(fld);
+}
+
+function updateField10Options (fld, fldValue, ontologyClassName)
+{
+  var ontologyClass = GR.getOntologyClass(ontologyClassName);
+  if (ontologyClass && ontologyClass.properties)
+  {
+    var P = ontologyClass.properties;
+    for (i = 0; i < P.length; i++)
+      updateRowComboOption2(fld, fldValue, P[i].name, P[i].name);
+    updateField10Options (fld, fldValue, ontologyClass.subClassOf);
+  }
 }
 
 function updateField11 (elm, fldName, fldOptions)
@@ -763,7 +775,7 @@ function updateField11 (elm, fldName, fldOptions)
   if (!property) {return;}
 
   // get property data
-  var ontologyClassProperty = GR.getOntologyClassProperty(product.prefix, product.class, property.name);
+  var ontologyClassProperty = GR.getOntologyClassProperty(product.class, property.name);
   var propertyType;
   if (ontologyClassProperty.objectProperties)
   {
@@ -776,7 +788,7 @@ function updateField11 (elm, fldName, fldOptions)
     {
       for (var j = 0; j < ontologyClassProperty.objectProperties.length; j++)
       {
-        if (GR.products[i].class == ontologyClassProperty.objectProperties[j])
+        if (GR.isKindOfClass(GR.products[i].class,ontologyClassProperty.objectProperties[j]))
 	        updateRowComboOption2(fld, property.value, 'Element #'+GR.products[i].id, GR.products[i].id);
 	    }
     }
@@ -787,7 +799,7 @@ function updateField11 (elm, fldName, fldOptions)
       {
         for (var j = 0; j < ontologyClassProperty.objectProperties.length; j++)
         {
-          if (grObjects[i].class == ontologyClassProperty.objectProperties[j])
+          if (GR.isKindOfClass(grObjects[i].class, ontologyClassProperty.objectProperties[j]))
   	        updateRowComboOption2(fld, property.value, grObjects[i].id, grObjects[i].id);
   	    }
       }
@@ -999,7 +1011,10 @@ GR.getOntology = function (prefix)
   return GR.ontologies[prefix];
 }
 
-GR.getOntologyClass = function (prefix, className)
+GR.getOntologyClass = function (className)
+{
+  var prefix = GR.getPrefix(className);
+  if (prefix)
 {
   var ontology = GR.getOntology(prefix);
   if (ontology)
@@ -1011,12 +1026,13 @@ GR.getOntologyClass = function (prefix, className)
         return classes[i];
     }
   }
+  }
   return null;
 }
 
-GR.getOntologyClassProperty = function (prefix, className, propertyName)
+GR.getOntologyClassProperty = function (className, propertyName)
 {
-  var ontologyClass = GR.getOntologyClass(prefix, className);
+  var ontologyClass = GR.getOntologyClass(className);
   if (ontologyClass)
   {
     var properties = ontologyClass.properties;
@@ -1025,6 +1041,8 @@ GR.getOntologyClassProperty = function (prefix, className, propertyName)
       if (properties[i].name == propertyName)
         return properties[i];
     }
+    if (ontologyClass.subClassOf)
+      return GR.getOntologyClassProperty(ontologyClass.subClassOf, propertyName)
   }
   return null;
 }
@@ -1039,10 +1057,33 @@ GR.getProduct = function (No)
   return null;
 }
 
+GR.getPrefix = function (ontologyClassName)
+{
+  if (!ontologyClassName)
+    return null;
+  var N = ontologyClassName.indexOf(':');
+  if (N == -1)
+    return null;
+  return ontologyClassName.substring(0, N);
+}
+
+GR.isKindOfClass = function (objectClassName, propertyClassName)
+{
+  if (objectClassName == propertyClassName)
+    return true;
+  var ontologyClass = GR.getOntologyClass(objectClassName);
+  if (ontologyClass && ontologyClass.subClassOf)
+    return GR.isKindOfClass (ontologyClass.subClassOf, propertyClassName);
+  return false;
+}
+
 GR.loadClassProperties = function (ontologyClass, cbFunction)
 {
-  if (!ontologyClass.properties)
+  if (ontologyClass.properties)
   {
+    cbFunction();
+    return;
+  }
     var S = '/ods/api/ontology.classProperties?ontologyClass='+encodeURIComponent(ontologyClass.name);
     var x = function(data) {
       var o = null;
@@ -1050,12 +1091,15 @@ GR.loadClassProperties = function (ontologyClass, cbFunction)
         o = OAT.JSON.parse(data);
       } catch (e) { o = null; }
       ontologyClass.properties = o;
-      cbFunction();
+    var ontologySubClass = GR.getOntologyClass(ontologyClass.subClassOf);
+    if (ontologySubClass)
+    {
+      GR.loadClassProperties(ontologySubClass, cbFunction)
+      return;
     }
-    OAT.AJAX.GET(S, '', x, {});
-  } else {
     cbFunction();
   }
+  OAT.AJAX.GET(S, '', x, {});
 }
 
 GR.emptyRowID = function (prefix)
@@ -1163,7 +1207,7 @@ GR.addProductToSelects = function (product)
     var obj = selects[i];
     if ((obj.id.indexOf('prop_') == 0) && (obj.id.indexOf('_fld_1_') != -1) && (obj.value != ''))
     {
-      var ontologyClassProperty = GR.getOntologyClassProperty(obj.product.prefix, obj.product.class, obj.value);
+      var ontologyClassProperty = GR.getOntologyClassProperty(obj.product.class, obj.value);
       if (ontologyClassProperty.objectProperties)
       {
         for (var j = 0; j < ontologyClassProperty.objectProperties.length; j++)
@@ -1202,7 +1246,7 @@ GR.productInSelects = function (product, mode)
     var obj = selects[i];
     if ((obj.id.indexOf('prop_') == 0) && (obj.id.indexOf('_fld_1_') != -1) && (obj.value != ''))
     {
-      var ontologyClassProperty = GR.getOntologyClassProperty(obj.product.prefix, obj.product.class, obj.value);
+      var ontologyClassProperty = GR.getOntologyClassProperty(obj.product.class, obj.value);
       if (ontologyClassProperty.objectProperties)
       {
         for (var i = 0; i < ontologyClassProperty.objectProperties.length; i++)
@@ -1236,7 +1280,7 @@ GR.showProperties = function (obj, prefix, No)
   var product = GR.getProduct(No);
   if (!product)
     return;
-  var ontologyClass = GR.getOntologyClass(product.prefix, product.class);
+  var ontologyClass = GR.getOntologyClass(product.class);
   if (!ontologyClass)
     return;
   var tr = $(prefix+'_tr_' + No);
@@ -1293,7 +1337,7 @@ GR.showProperties = function (obj, prefix, No)
 
 GR.showPropertiesTable = function (product)
 {
-  var ontologyClass = GR.getOntologyClass(product.prefix, product.class);
+  var ontologyClass = GR.getOntologyClass(product.class);
   if (!ontologyClass)
     return;
   var prefix = GR.tablePrefix;

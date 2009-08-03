@@ -5,6 +5,7 @@ TTLP ('@prefix foaf: <http://xmlns.com/foaf/0.1/> .
 @prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#> .
 @prefix fbase: <http://rdf.freebase.com/ns/type.object.> .
 @prefix skos: <http://www.w3.org/2008/05/skos#> .
+@prefix bibo: <http://purl.org/ontology/bibo/> .
 rdfs:label rdfs:subPropertyOf virtrdf:label .
 dc:title rdfs:subPropertyOf virtrdf:label .
 fbase:name rdfs:subPropertyOf virtrdf:label .
@@ -16,6 +17,7 @@ skos:prefLabel rdfs:subPropertyOf virtrdf:label .
 <http://www.geonames.org/ontology#name> rdfs:subPropertyOf virtrdf:label .
 <http://purl.org/dc/terms/title> rdfs:subPropertyOf virtrdf:label .
 foaf:accountName rdfs:subPropertyOf virtrdf:label .
+bibo:shortTitle rdfs:subPropertyOf virtrdf:label .
 ', '', 'virtrdf-label');
 
 rdfs_rule_set ('virtrdf-label', 'virtrdf-label');
