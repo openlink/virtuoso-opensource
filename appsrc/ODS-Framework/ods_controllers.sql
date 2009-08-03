@@ -220,7 +220,11 @@ create procedure obj2json (
 
   T := vector ('\b', '\\b', '\t', '\\t', '\n', '\\n', '\f', '\\f',	'\r', '\\r', '"', '\\"', '\\', '\\\\');
 	retValue := '';
-	if (isnumeric (o))
+  if (isnull (o))
+  {
+    retValue := 'null';
+  }
+  else if (isnumeric (o))
 	{
 		retValue := cast (o as varchar);
 	}
@@ -298,11 +302,13 @@ create procedure ODS.ODS_API."ontology.classes" (
   S := sprintf(
          '\n SPARQL ' ||
          '\n PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>' ||
+         '\n PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>' ||
          '\n PREFIX owl: <http://www.w3.org/2002/07/owl#>' ||
-         '\n SELECT ?c' ||
+         '\n SELECT ?c ?sc' ||
          '\n   FROM <%s>' ||
          '\n  WHERE {' ||
          '\n          ?c rdf:type owl:Class .' ||
+         '\n          OPTIONAL {?c rdfs:subClassOf ?sc }.' ||
          '\n          filter (str(?c) like "%s%%").' ||
          '\n        }' ||
          '\n  ORDER BY ?c',
@@ -311,7 +317,7 @@ create procedure ODS.ODS_API."ontology.classes" (
   data := ODS.ODS_API."ontology.sparql" (S);
   foreach (any item in data) do
   {
-    tmp := vector_concat (jsonObject (), vector ('name', ODS.ODS_API."ontology.normalize" (item[0])));
+    tmp := vector_concat (jsonObject (), vector ('name', ODS.ODS_API."ontology.normalize" (item[0]), 'subClassOf', ODS.ODS_API."ontology.normalize" (item[1])));
     classes := vector_concat (classes, vector (tmp));
   }
   retValue := vector_concat (jsonObject (), vector ('name', ontology, 'classes', classes));
@@ -442,7 +448,8 @@ create procedure ODS.ODS_API."ontology.objects" (
 ;
 
 create procedure ODS.ODS_API."ontology.sparql" (
-  in S varchar)
+  in S varchar,
+  in debug integer := 0)
 {
   declare st, msg, data, meta any;
 
@@ -450,6 +457,8 @@ create procedure ODS.ODS_API."ontology.sparql" (
   commit work;
   st := '00000';
   exec (S, st, msg, vector (), 0, meta, data);
+  if (debug)
+    dbg_obj_princ (S, st, msg);
   if (st = '00000')
     return data;
   return vector ();
