@@ -735,6 +735,8 @@ lt_short_name (lock_trx_t * lt)
   const char * name;
   const char * last;
 
+  if (!lt->lt_client)
+    return "NO_CLIENT";
   if (lt->lt_client->cli_ws)
     return "VSP";
   name = LT_NAME (lt);
