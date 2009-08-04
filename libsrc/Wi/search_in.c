@@ -370,7 +370,7 @@ dk_set_t cfd_list = NULL;
 
 
 void
-ksp_cmp_func (key_spec_t * ksp)
+ksp_cmp_func (key_spec_t * ksp, dbe_key_t * key)
 {
   search_spec_t * sp = ksp->ksp_spec_array;
   int all_eq = 1;
@@ -381,6 +381,7 @@ ksp_cmp_func (key_spec_t * ksp)
       cmp_desc_t * desc = cfd->cfd_compares;
       for (pinx = 0; desc[pinx].cmd_min_op != NOMORE; pinx++)
 	{
+	  int nth_fixed = 0, nth_var = 0;
 	  if (!sps || sps->sp_is_reverse || sps->sp_collation)
 	    goto next_func;
 	  if (CMP_EQ != sps->sp_min_op)
@@ -390,6 +391,19 @@ ksp_cmp_func (key_spec_t * ksp)
 	      || desc[pinx].cmd_dtp != sps->sp_cl.cl_sqt.sqt_dtp
 	      || desc[pinx].cmd_non_null != sps->sp_cl.cl_sqt.sqt_non_null)
 	    goto next_func;
+	  /* the cols are not in key order but in order of dtp.  So can't use the inlined func if the key's col order is not the key order since the funcs assume an offset on the row */
+	  if (dtp_is_fixed (sps->sp_cl.cl_sqt.sqt_dtp))
+	    {
+	      if (sps->sp_cl.cl_pos != nth_fixed)
+		goto not_found;
+	      nth_fixed+= sqt_fixed_length (&sps->sp_cl.cl_sqt);
+	    }
+	  else
+	    {
+	      if (key && key->key_key_var[nth_var].cl_col_id != sps->sp_cl.cl_col_id)
+		goto not_found;
+	      nth_var++;
+	    }
 	  sps = sps->sp_next;
 
 	}
@@ -401,6 +415,7 @@ ksp_cmp_func (key_spec_t * ksp)
     next_func: ;
     }
   END_DO_SET();
+ not_found:
   ksp->ksp_key_cmp = NULL;
 }
 

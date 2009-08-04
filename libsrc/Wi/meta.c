@@ -2466,7 +2466,7 @@ dbe_key_insert_spec (dbe_key_t * key)
 	}
       inx++;
     }
-  ksp_cmp_func (&key->key_insert_spec);
+  ksp_cmp_func (&key->key_insert_spec, key);
   return (key->key_insert_spec.ksp_spec_array);
 }
 

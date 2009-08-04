@@ -378,7 +378,7 @@ next_part:
     }
   END_DO_SET ();
   sqlg_ks_out_cols (so, tb_dfe, ks);
-  ksp_cmp_func (&ks->ks_spec);
+  ksp_cmp_func (&ks->ks_spec, ks->ks_key);
   return ks;
 }
 
@@ -452,7 +452,7 @@ sqlg_ks_make_main_spec (sqlo_t * so, df_elt_t * tb_dfe, key_source_t * ks,
     part_no++;
   }
   END_DO_SET ();
-  ksp_cmp_func (&ks->ks_spec);
+  ksp_cmp_func (&ks->ks_spec, ks->ks_key);
 }
 
 void
@@ -2038,7 +2038,7 @@ setp_key_insert_spec (setp_node_t * setp)
 	}
       inx++;
     }
-  ksp_cmp_func (&setp->setp_insert_spec);
+  ksp_cmp_func (&setp->setp_insert_spec, key);
 }
 
 

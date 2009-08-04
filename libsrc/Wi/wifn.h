@@ -45,7 +45,7 @@ int dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation);
 int dv_compare_box (db_buf_t dv1, caddr_t box, collation_t *collation);
 int pg_key_compare (buffer_desc_t * buf, int pos, it_cursor_t * it);
 int pg_insert_key_compare (buffer_desc_t * buf, int pos, it_cursor_t * it);
-void ksp_cmp_func (key_spec_t * ksp);
+void ksp_cmp_func (key_spec_t * ksp, dbe_key_t * key);
 void search_inline_init (void);
 int itc_col_check_1 (it_cursor_t * itc, search_spec_t * spec, int param_inx);
 #define itc_col_check(itc, spec, param_inx) \

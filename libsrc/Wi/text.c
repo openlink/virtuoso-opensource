@@ -955,7 +955,7 @@ wst_get_specs (dbe_key_t *key)
 
 #define WST_KSP(name) \
   res->wst_ks_##name .ksp_spec_array = &res->wst_##name##_spec[0]; \
-  ksp_cmp_func (&res->wst_ks_##name);
+  ksp_cmp_func (&res->wst_ks_##name, NULL);
 
   WST_KSP (init);
   WST_KSP (seek);

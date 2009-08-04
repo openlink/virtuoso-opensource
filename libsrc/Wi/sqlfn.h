@@ -854,6 +854,7 @@ dbe_table_t *qi_name_to_table (query_instance_t * qi, const char *name);
 void qi_read_table_schema (query_instance_t * qi, char *read_tb);
 extern id_hash_t *global_collations;
 long unbox_or_null (caddr_t box);
+int dtp_is_fixed (dtp_t dtp);
 int sqt_fixed_length (sql_type_t * sqt);
 void wi_free_schemas (void);
 void wi_free_old_qrs (void);

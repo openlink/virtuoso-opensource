@@ -380,8 +380,8 @@ key_make_bm_specs (dbe_key_t * key)
       }
       sp = sp->sp_next;
     }
-  ksp_cmp_func (&key->key_bm_ins_spec);
-  ksp_cmp_func (&key->key_bm_ins_leading);
+  ksp_cmp_func (&key->key_bm_ins_spec, key);
+  ksp_cmp_func (&key->key_bm_ins_leading, key);
 }
 
 
