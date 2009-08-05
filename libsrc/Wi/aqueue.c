@@ -298,10 +298,9 @@ aq_wait_all (async_queue_t * aq, caddr_t * err_ret)
 
 
 async_queue_t *
-aq_allocate (int n_threads)
+aq_allocate (client_connection_t * cli, int n_threads)
 {
   async_queue_t *aq = (async_queue_t *) dk_alloc_box_zero (sizeof (async_queue_t), DV_ASYNC_QUEUE);
-  client_connection_t *cli = GET_IMMEDIATE_CLIENT_OR_NULL;
   aq->aq_ref_count = 1;
   aq->aq_requests = hash_table_allocate (101);
   aq->aq_mtx = mutex_allocate ();
@@ -384,8 +383,9 @@ bif_aq_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 caddr_t
 bif_async_queue (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  query_instance_t *qi = (query_instance_t *) qst;
   long n = bif_long_arg (qst, args, 0, "async_queue");
-  async_queue_t *aq = aq_allocate (n);
+  async_queue_t *aq = aq_allocate (qi->qi_client, n);
   return (caddr_t) aq;
 }
 
@@ -541,10 +541,11 @@ bif_aq_wait_all (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t val = NULL;
   caddr_t err = NULL;
   async_queue_t *aq = bif_aq_arg (qst, args, 0, "aq_wait");
+  long allow_locks = BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "aq_wait") : 0;
   query_instance_t *qi = (query_instance_t *) qst;
   if (0 != server_lock.sl_count)
     sqlr_new_error ("22023", "SR569", "Function aq_wait_all() can not be used inside atomic section");
-  if (lt_has_locks (qi->qi_trx))
+  if (!allow_locks && lt_has_locks (qi->qi_trx))
     sqlr_new_error ("40010", "AQ003", "Not allowed to wait for AQ while holding locks");
   IO_SECT (qst);
   val = aq_wait_all (aq, &err);
