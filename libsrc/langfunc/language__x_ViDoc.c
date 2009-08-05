@@ -57,10 +57,10 @@ static int unichar_getprops_point__xViDoc(const unichar *ptr)
 (('.' == buf[pos]) ? \
   (((pos > 0) && (pos+1 < bufsize)) ? unichar_getprops_point__xViDoc(buf+pos) : UCP_PUNCT) : \
   (('_' == buf[pos]) ? UCP_ALPHA : unichar_getprops (buf[pos])) )
-#define DBG_PRINTF_NOISE_WORD(word_start,word_length) dbg_printf (("Noise word in x-ViDoc text, start %d, length %d\n", word_start, word_length))
-#define DBG_PRINTF_PATCH_FAILED(word_start,word_length) dbg_printf (("Patch of word failed in x-ViDoc text, start %d, length %d\n", word_start, word_length))
-#define DBG_PRINTF_NOISE_IDEO(word_start,word_length) dbg_printf (("Noise ideograph in x-ViDoc text, start %d, length %d\n", word_start, word_length))
-#define DBG_PRINTF_IDEO_PATCH_FAILED(word_start,word_length) dbg_printf (("Patch of ideograph failed in x-ViDoc text, start %d, length %d\n", word_start, word_length))
+#define DBG_PRINTF_NOISE_WORD(word_start,word_length) dbg_printf (("Noise word in x-ViDoc text, start %ld, length %ld\n", (long)word_start, (long)word_length))
+#define DBG_PRINTF_PATCH_FAILED(word_start,word_length) dbg_printf (("Patch of word failed in x-ViDoc text, start %ld, length %ld\n", (long)word_start, (long)word_length))
+#define DBG_PRINTF_NOISE_IDEO(word_start,word_length) dbg_printf (("Noise ideograph in x-ViDoc text, start %ld, length %ld\n", (long)word_start, (long)word_length))
+#define DBG_PRINTF_IDEO_PATCH_FAILED(word_start,word_length) dbg_printf (("Patch of ideograph failed in x-ViDoc text, start %ld, length %ld\n", (long)word_start, (long)word_length))
 #include "langfunc_templ.c"
 #undef LH_COUNT_WORDS_NAME
 #undef LH_ITERATE_WORDS_NAME
@@ -97,10 +97,10 @@ static int unichar_getprops_point__xftqxViDoc(const unichar *ptr)
   (((pos > 0) && (pos+1 < bufsize)) ? unichar_getprops_point__xftqxViDoc(buf+pos) : UCP_PUNCT) : \
   (('*' == buf[pos]) ? UCP_ALPHA : \
   (('_' == buf[pos]) ? UCP_ALPHA : unichar_getprops (buf[pos])) ))
-#define DBG_PRINTF_NOISE_WORD(word_start,word_length) dbg_printf (("Noise word in x-ViDoc query, start %d, length %d\n", word_start, word_length))
-#define DBG_PRINTF_PATCH_FAILED(word_start,word_length) dbg_printf (("Patch of word failed in x-ViDoc query, start %d, length %d\n", word_start, word_length))
-#define DBG_PRINTF_NOISE_IDEO(word_start,word_length) dbg_printf (("Noise ideograph in x-ViDoc query, start %d, length %d\n", word_start, word_length))
-#define DBG_PRINTF_IDEO_PATCH_FAILED(word_start,word_length) dbg_printf (("Patch of ideograph failed in x-ViDoc query, start %d, length %d\n", word_start, word_length))
+#define DBG_PRINTF_NOISE_WORD(word_start,word_length) dbg_printf (("Noise word in x-ViDoc query, start %ld, length %ld\n", (long)word_start, (long)word_length))
+#define DBG_PRINTF_PATCH_FAILED(word_start,word_length) dbg_printf (("Patch of word failed in x-ViDoc query, start %ld, length %ld\n", (long)word_start, (long)word_length))
+#define DBG_PRINTF_NOISE_IDEO(word_start,word_length) dbg_printf (("Noise ideograph in x-ViDoc query, start %ld, length %ld\n", (long)word_start, (long)word_length))
+#define DBG_PRINTF_IDEO_PATCH_FAILED(word_start,word_length) dbg_printf (("Patch of ideograph failed in x-ViDoc query, start %ld, length %ld\n", (long)word_start, (long)word_length))
 #include "langfunc_templ.c"
 #undef LH_COUNT_WORDS_NAME
 #undef LH_ITERATE_WORDS_NAME
