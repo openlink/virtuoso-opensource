@@ -181,6 +181,7 @@ create procedure WV.DBA.ATOM_ENTRY (
    ss := string_output ();
 
   http ('<entry xmlns="http://www.w3.org/2005/Atom" xmlns:wv="http://www.openlinksw.com/Virtuoso/WikiV/">', ss);
+  http ('<wv:version>2.0</wv:version>', ss);
    http (sprintf ('<title type="text">%s</title>', _title), ss);
    http (sprintf ('<id>%s</id>', _id ), ss);
    http (sprintf ('<updated>%s</updated>', WV.WIKI.DATEFORMAT (_updated, 'iso8601')), ss);
