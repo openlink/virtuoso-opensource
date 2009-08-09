@@ -1619,94 +1619,73 @@
       </div>
       <div class="w_pane content_pane">
         <v:template name="my_user_details" type="simple" enabled="1">
-          <table cellspacing="0" cellpadding="0">
+          <table class="vcard" cellspacing="0" cellpadding="0">
             <tr>
               <td>
-<?vsp
-  if (length (self.arr[37])) {
-    self.photopath_size2 := subseq(self.arr[37],
-                                   0,
-                                   REGEXP_INSTR (self.arr[37],
-                                                 '\..{3}\$')-1) || '_size2' ||
-                                                 subseq (self.arr[37], REGEXP_INSTR (self.arr[37], '\..{3}\$')-1);
-?>
-                <img src="&lt;?V self.photopath_size2 ?&gt;" width="115" border="1"/>
+              <?vsp if (length (self.arr[37])) { ?>
+                <img class="photo" src="<?V self.arr[37] ?>" width="64" border="0" />
 <?vsp } ?>
               </td>
               <td>
-                <table class="user_profile_data" cellspacing="0" cellpadding="0">
+                <table class="user_profile_data n" cellspacing="0" cellpadding="0">
                   <tr>
                     <td></td>
-                    <th><v:label name="1user" value="User:"/></th>
-                    <td><v:label name="1user1" value="--coalesce(self.fname,'')"/></td>
+                    <th><v:label value="User:"/></th>
+                    <td><span class="nickname"><v:label value="--coalesce(self.fname,'')"/></span></td>
                   </tr>
                   <tr>
                     <td></td>
-                    <th><v:label name="1title"
-                                 value="Title:"
-                                 enabled="--case when coalesce(self.arr[0],'') &lt;&gt; '' then 1 else 0 end"/></th>
-                    <td><v:label name="1title1" value="--coalesce(self.arr[0],'')"/></td>
+                    <th><v:label value="Title:" enabled="--case when coalesce(self.arr[0],'') &lt;&gt; '' then 1 else 0 end"/></th>
+                    <td><span class="honorific-prefix"><v:label value="--coalesce(self.arr[0],'')"/></span></td>
                   </tr>
                   <tr>
                     <td></td>
-                    <th><v:label name="1fname"
-                                 value="First Name:"
-                                 enabled="--case when coalesce(self.arr[1],'') &lt;&gt; '' then 1 else 0 end"/></th>
-                    <td><v:label name="1fname1" value="--wa_wide_to_utf8 (coalesce(self.arr[1],''))" format="%s"/></td>
+                    <th><v:label value="First Name:" enabled="--case when coalesce(self.arr[1],'') &lt;&gt; '' then 1 else 0 end"/></th>
+                    <td><span class="given-name"><v:label value="--wa_wide_to_utf8 (coalesce(self.arr[1],''))" format="%s"/></span></td>
                   </tr>
                   <tr>
                     <td></td>
-                    <th><v:label name="1lname"
-                                 value="Last Name:"
-                                 enabled="--case when coalesce(self.arr[2],'') &lt;&gt; '' then 1 else 0 end"/></th>
-                    <td><v:label name="1lname1" value="--wa_wide_to_utf8 (coalesce(self.arr[2],''))" format="%s"/></td>
+                    <th><v:label value="Last Name:" enabled="--case when coalesce(self.arr[2],'') &lt;&gt; '' then 1 else 0 end"/></th>
+                    <td><span class="family-name"><v:label value="--wa_wide_to_utf8 (coalesce(self.arr[2],''))" format="%s"/></span></td>
                   </tr>
                   <tr>
                     <td></td>
-                    <th><v:label name="1ffname"
-                                 value="Full Name:"
-                                 enabled="--case when coalesce(self.arr[3],'') &lt;&gt; '' then 1 else 0 end"/></th>
-                    <td><v:label name="lffname1" value="--wa_wide_to_utf8 (coalesce(self.arr[3],''))" format="%s"/></td>
+                    <th><v:label value="Full Name:" enabled="--case when coalesce(self.arr[3],'') &lt;&gt; '' then 1 else 0 end"/></th>
+                    <td><span class="fn"><v:label value="--wa_wide_to_utf8 (coalesce(self.arr[3],''))" format="%s"/></span></td>
                   </tr>
-<?vsp
-            if (length (self.arr[4]))
-              {
-?>
+                  <?vsp if (length (self.arr[4])) { ?>
                   <tr>
                     <td></td>
                     <th><v:label name="1email" value="E-mail:" /></th>
-                    <td><v:url name="lemail1"
+                    <td>
+                      <span class="email">
+                        <v:url name="lemail1"
                                value="--coalesce(self.arr[4],'')"
-                               url="--concat ('mailto:', self.arr[4])" /></td>
+                               url="--concat ('mailto:', self.arr[4])"/>
+                      </span>
+                    </td>
                   </tr>
          <?vsp } ?>
                   <tr>
                     <td></td>
-                    <th><v:label name="1gender"
-                                 value="Gender:"
-                                 enabled="--case when coalesce(self.arr[5],'') &lt;&gt; '' then 1 else 0 end"/></th>
-                    <td><v:label name="lgender1" value="--coalesce(self.arr[5],'')"/></td>
+                    <th><v:label value="Gender:" enabled="--case when coalesce(self.arr[5],'') &lt;&gt; '' then 1 else 0 end"/></th>
+                    <td><v:label value="--coalesce(self.arr[5],'')"/></td>
                   </tr>
                   <tr>
                     <td></td>
-                    <th><v:label name="1bdate"
-                                 value="Birthday:"
-                                 enabled="--case when coalesce(self.arr[6],'') &lt;&gt; '' then 1 else 0 end"/></th>
-                    <td><v:label name="lbdate1"
-                                 value="--coalesce(self.arr[6],'')"/></td>
+                    <th><v:label value="Birthday:" enabled="--case when coalesce(self.arr[6],'') &lt;&gt; '' then 1 else 0 end"/></th>
+                    <td><span class="bday"><v:label value="--coalesce(self.arr[6],'')"/></span></td>
                   </tr>
-         <?vsp
-            if (length (self.arr[7]))
-              {
-         ?>
+                  <?vsp if (length (self.arr[7])) { ?>
                   <tr>
                     <td></td>
-                    <th><v:label name="1wpage"
-                                 value="Personal Webpage:" /></th>
+                    <th><v:label value="Personal Webpage:" /></th>
                     <td><v:url name="lwpage1"
                                value="--coalesce(self.arr[7],'')"
                                url="--self.arr[7]"
-                               xhtml_target="_blank" /></td>
+                               xhtml_target="_blank"
+                               xhtml_class="url" />
+                    </td>
                   </tr>
           <?vsp } ?>
                 </table>
