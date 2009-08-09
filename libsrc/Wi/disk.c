@@ -3747,8 +3747,18 @@ sch_save_roots (dbe_schema_t * sc)
   void * k;
   dk_hash_iterator_t hit;
   dk_hash_iterator (&hit, sc->sc_id_to_key);
+  /* first mark the dropped as 0, then all non dropped.  Note that a dropped + recreate of same name may get confused otherwise with the drop overwriting the new root */
   while (dk_hit_next (&hit, (void**) &k, (void **) &key))
-    dbe_key_save_roots (key);
+    {
+      if (0 == key->key_fragments[0]->kf_it->it_root)
+	dbe_key_save_roots (key);
+    }
+  dk_hash_iterator (&hit, sc->sc_id_to_key);
+  while (dk_hit_next (&hit, (void**) &k, (void **) &key))
+    {
+      if (key->key_fragments[0]->kf_it->it_root)
+	dbe_key_save_roots (key);
+    }
 }
 
 void
