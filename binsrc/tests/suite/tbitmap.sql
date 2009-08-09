@@ -260,3 +260,14 @@ bmck (18);
 echo both $if $equ $sqlstate OK "PASSED" "***FAILED";
 echo both ": bm and pk consistency\n";
 
+
+
+-- Now for deletes at end of page 
+delete from tb;
+bins (10, 100, 100, 1);
+bins (11, 100, 102, 1);
+bins (12, 100, 102, 1);
+insert into tb (id, k1) values (5000, 10);
+delete from  tb where id = 5000;
+insert into tb (id, k1) values (10000, 10);
+delete from  tb where id = 10000;

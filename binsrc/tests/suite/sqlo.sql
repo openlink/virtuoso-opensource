@@ -1053,5 +1053,9 @@ ECHO BOTH $IF $EQU $LAST[1] 1000 "PASSED" "*** FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 echo both ": count of dt with inported true const preds\n";
 
+select a.row_no, b.row_no from t1 a, (select top 4 row_no from t1) b where a.row_no = b.row_no option (order) ;
+echo both $if $equ $rowcnt 4 "PASSED" "***FAILED";
+echo both ": dt with top does not import preds\n";
 
 ECHO BOTH "COMPLETED: SQL Optimizer tests (sqlo.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
+

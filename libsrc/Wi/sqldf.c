@@ -2073,6 +2073,16 @@ sqlo_import_preds (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * dt_dfe, dk_set_t p
 }
 
 
+int
+sel_has_top (ST * sel)
+{
+  ST * top = SEL_TOP (sel);
+  if (!top)
+    return 0;
+  return top->_.top.exp != NULL;
+}
+
+
 df_elt_t *
 sqlo_place_dt_leaf (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * dt_dfe, dk_set_t preds)
 {
@@ -2130,7 +2140,8 @@ next_pred:;
       copy->_.sub.after_join_test = sqlo_and_list_body (so, tb_dfe->dfe_locus, tb_dfe, proc_col_preds);
       return copy;
     }
-  if (!IS_BOX_POINTER (tb_dfe->dfe_super->dfe_locus))
+  if (!IS_BOX_POINTER (tb_dfe->dfe_super->dfe_locus)
+      && !(ST_P (ot->ot_dt, SELECT_STMT) && sel_has_top (ot->ot_dt)))
     {
       dk_set_t imp_preds = sqlo_import_preds (so, tb_dfe, dt_dfe, preds);
       ot->ot_imported_preds = t_set_copy (imp_preds);
@@ -2155,6 +2166,11 @@ next_pred:;
       copy->dfe_super = tb_dfe;
       ot->ot_work_dfe = copy;
       copy->_.sub.dt_preds = preds;	/* the org ones, for vdb printout if needed */
+      if (!IS_BOX_POINTER (tb_dfe->dfe_super->dfe_locus))
+	{
+	  tb_dfe->_.sub.generated_dfe = copy;
+	  copy->_.sub.after_join_test = sqlo_and_list_body (so, tb_dfe->dfe_locus, tb_dfe, preds);
+	}
       return copy;
     }
 }

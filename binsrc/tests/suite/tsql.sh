@@ -283,6 +283,14 @@ then
     exit 1
 fi
 
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tclins.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tclins.sql"
+    exit 1
+fi
+
+
 RUN $ISQL $DSN '"EXEC=drop table T1;"' ERRORS=STDOUT
 RUN $INS $DSN 100 20
 
@@ -328,14 +336,14 @@ fi
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tclparts.sql
 if test $STATUS -ne 0
 then
-    LOG "***ABORTED: tanytime.sql"
+    LOG "***ABORTED: tclparts.sql"
     exit 1
 fi
 
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tclcast.sql
 if test $STATUS -ne 0
 then
-    LOG "***ABORTED: tanytime.sql"
+    LOG "***ABORTED: tclcast.sql"
     exit 1
 fi
 
