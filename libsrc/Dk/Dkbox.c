@@ -754,6 +754,48 @@ dk_check_tree (box_t box)
   hash_table_free (known);
 }
 
+void
+dk_check_tree_heads_iter (box_t box, box_t parent, dk_hash_t * known, int count_of_sample_children)
+{
+  uint32 count;
+  dtp_t tag;
+  if (!IS_BOX_POINTER (box))
+    return;
+  dk_alloc_box_assert (box);
+  tag = box_tag (box);
+  if ((DV_UNAME == tag) || (DV_REFERENCE == tag))
+    return;
+#ifndef NDEBUG
+  if (TAG_FREE == tag)
+    GPF_T1 ("Tree contains a pointer to a freed box");
+  if (TAG_BAD == tag)
+    GPF_T1 ("Tree contains a pointer to a box marked bad");
+#endif
+  if (!box_can_appear_twice_in_tree[tag])
+    {
+      box_t other_parent = gethash (box, known);
+      if (NULL != other_parent)
+	GPF_T;
+      sethash (box, known, parent);
+    }
+  if (IS_NONLEAF_DTP (tag))
+    {
+      box_t *obj = (box_t *) box;
+      count = box_length (box) / sizeof (box_t);
+      if (count > count_of_sample_children)
+        count = count_of_sample_children;
+      for (/* no init*/; count; count--)
+	dk_check_tree_heads_iter (*obj++, box, known, count_of_sample_children);
+    }
+  return;
+}
+
+void dk_check_tree_heads (box_t box, int count_of_sample_children)
+{
+  dk_hash_t *known = hash_table_allocate (4096);
+  dk_check_tree_heads_iter (box, BADBEEF_BOX, known, count_of_sample_children);
+  hash_table_free (known);
+}
 
 void
 dk_check_domain_of_connectivity_iter (box_t box, box_t parent, dk_hash_t * known)

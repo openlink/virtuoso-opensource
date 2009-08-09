@@ -69,7 +69,8 @@
 
     if (length (self.suser) = 0)
       {
-        select WAUI_TEMPLATE, VS_UID into template, uname from WA_USER_INFO, VSPX_SESSION, SYS_USERS
+      select WAUI_TEMPLATE, VS_UID into template, uname
+        from WA_USER_INFO, VSPX_SESSION, SYS_USERS
 	where VS_SID = self.ssid and VS_REALM = self.srealm and VS_UID = U_NAME and U_ID = WAUI_U_ID;
       }
     else

@@ -63,10 +63,10 @@
 	      };
 	      nf_user:
 	      select U_NAME, U_ID into tmp_uid, self.ufid
-	        from SYS_USERS, WA_USER_INFO where WAUI_U_ID = U_ID and WAUI_NICK = self.fname;
+              from SYS_USERS, WA_USER_INFO
+             where WAUI_U_ID = U_ID and WAUI_NICK = self.fname;
 	      self.fname := tmp_uid;
 	    }
-
 	  if (not exists (select 1 from WA_USER_INFO where WAUI_U_ID = self.ufid))
 	    {
 	      insert into WA_USER_INFO (WAUI_U_ID) values (self.ufid);
@@ -89,8 +89,8 @@
             id := self.u_name;
           else
             id := self.fname;
-          self.friends_name := (select coalesce (u_full_name, u_name) from sys_users where u_name = id);
 
+          self.friends_name := (select coalesce (u_full_name, u_name) from sys_users where u_name = id);
           if (not length (self.friends_name))
             self.friends_name := id;
 
@@ -102,7 +102,7 @@
 
   <xsl:template match="vm:user-dashboard">
     <v:template name="userdashboard" type="simple" condition="self.isowner">
-      <tr><th><v:label name="uown" value="--self.friends_name"/>'s Dashboard</th></tr>
+      <tr><th><v:label value="--self.friends_name" />'s Dashboard</th></tr>
       <tr>
 	<td id="mainarea">
 	  <table width="100%"  border="0" cellpadding="0" cellspacing="0" id="infoarea1">
@@ -127,33 +127,41 @@
   </xsl:template>
 
   <xsl:template match="vm:friends-name">
-    <v:label name="uown" value="--self.friends_name" render-only="1" format="%s" />
+    <v:label value="--self.friends_name" render-only="1" format="%s" />
   </xsl:template>
 
   <!-- url="-#-sprintf ('ufoaf.xml?:sne=%d', self.sne_id)" -->
   <xsl:template match="vm:foaf-link">
-      <v:url name="u2" value='<img src="images/foaf.gif" border="0" alt="FOAF" />' format="%s"
+    <v:url name="u2"
+           value='<img src="images/foaf.gif" border="0" alt="FOAF" />'
+           format="%s"
 	url="--WA_LINK (1, sprintf ('/dataspace/%s/%s/foaf.rdf', wa_identity_dstype(case when self.isowner then self.u_name else self.fname end), case when self.isowner then self.u_name else self.fname end))"
 	/>
   </xsl:template>
 
   <xsl:template match="vm:vcard-link">
-      <v:url name="u1" value='<img src="images/vcard.gif" border="0" alt="vCard" />' format="%s"
-      url="--sprintf ('sn_user_export.vspx?ufid=%d&amp;ufname=%s',
-      		self.ufid, self.fname)" />
+    <v:url name="u1"
+           value='<img src="images/vcard.gif" border="0" alt="vCard" />'
+           format="%s"
+           url="--sprintf ('sn_user_export.vspx?ufid=%d&amp;ufname=%s', self.ufid, self.fname)"
+    />
   </xsl:template>
 
   <xsl:template match="vm:sioc-link">
-      <v:url name="u1" value='<img src="images/sioc_button.png" border="0" alt="SIOC" />' format="%s"
-	  url="--WA_LINK (1, sprintf ('/dataspace/%s/sioc.rdf', self.fname))" xhtml_target="_blank"/>
+    <v:url name="u1"
+           value='<img src="images/sioc_button.png" border="0" alt="SIOC" />'
+           format="%s"
+           url="--WA_LINK (1, sprintf ('/dataspace/%s/sioc.rdf', self.fname))" xhtml_target="_blank"
+    />
   </xsl:template>
 
   <xsl:template match="vm:geo-link">
-    <?vsp
-    if ( 1=0 and self.e_lat is not null and self.e_lng is not null) {
-    ?>
-      <v:url name="u1" value='<img src="http://i.geourl.org/80x15/simple.png" border="0" alt="GeoURL" />' format="%s"
-	  url="--sprintf ('http://geourl.org/near?p=%U', WA_LINK (1, sprintf ('/dataspace/%s', self.fname)))" xhtml_target="_blank"/>
+    <?vsp if (1=0 and self.e_lat is not null and self.e_lng is not null) { ?>
+      <v:url name="u1"
+             value='<img src="http://i.geourl.org/80x15/simple.png" border="0" alt="GeoURL" />'
+             format="%s"
+             url="--sprintf ('http://geourl.org/near?p=%U', WA_LINK (1, sprintf ('/dataspace/%s', self.fname)))" xhtml_target="_blank"
+      />
     <?vsp } ?>
   </xsl:template>
 
@@ -167,14 +175,15 @@
                               where FROM_U_NAME = self.fname and
                                     TO_U_NAME = self.u_name)) {
       ?>
-	<v:label name="laddtof" value="Do you know this person?" render-only="1"/>
+      <v:label value="Do you know this person?" render-only="1" />
 	&amp;nbsp;
-	<v:url name="addtof" value="--'Add to friends.'" format="%s"
-	  url="--sprintf('sn_make_inv.vspx?fmail=%s',coalesce(self.arr[4],''))" xhtml_class="profile_tab"/>
+      <v:url name="addtof"
+             value="--'Add to friends.'" format="%s"
+             url="--sprintf('sn_make_inv.vspx?fmail=%s',coalesce(self.arr[4],''))"
+             xhtml_class="profile_tab"
+      />
       <?vsp
-        }
-      else
-       {
+      } else {
       ?>
        You are already connected to <?V self.fname ?>
       <?vsp
@@ -195,170 +204,101 @@
       declare pg any;
       pg := atoi(get_keyword('page', control.vc_page.vc_event.ve_params, '1'));
 ?>
-            <table cellpadding='10' cellspacing='0' border='0' width='100%' id="user_details" class="tab_deck">
-              <tr>
-                <td class="tab_deck">
-                  <table cellpadding="0" cellspacing="0" border="0" class="navtab_tabs_ctr">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
-                    <tr class="navtab_row">
-                      <td class="<?V case when pg = 1 then 'navtab_sel' else 'navtab' end ?>">
-                        <v:url name="b_url21" value="--case when self.is_org then 'Organization' else 'Personal' end"
-                               format="%s"
-                               url="--sprintf('uhome.vspx?page=1&ufname=%s#uinavtab',self.fname)"
-                               xhtml_class="tab"/>
-                      </td>
-                      <td class="<?V case when pg = 2 then 'navtab_sel' else 'navtab' end ?>">
-                        <v:url name="b_url12"
-                               value="Contact"
-                               format="%s"
-                               url="--sprintf('uhome.vspx?page=2&ufname=%s#uinavtab',self.fname)"
-                               xhtml_class="tab"/>
-                      </td>
-                      <td class="<?V case when pg = 3 then 'navtab_sel' else 'navtab' end ?>">
-                        <v:url name="b_url13"
-                               value="Home"
-                               format="%s"
-                               url="--sprintf('uhome.vspx?page=3&ufname=%s#uinavtab',self.fname)"
-			       xhtml_class="tab"
-			       enabled="--equ (self.is_org, 0)"/>
-                      </td>
-                      <td class="<?V case when pg = 4 then 'navtab_sel' else 'navtab' end ?>">
-                        <v:url name="b_url14"
-                               value="Business"
-                               format="%s"
-                               url="--sprintf('uhome.vspx?page=4&ufname=%s#uinavtab',self.fname)"
-                               xhtml_class="tab"/>
-                        </td>
-                      <td class="<?V case when pg = 5 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
-                        <v:url name="b_url15"
-                               value="Data Explorer"
-                               format="%s"
-                               url="--sprintf('uhome.vspx?page=5&ufname=%s#uinavtab',self.fname)"
-                               xhtml_class="tab"/>
-                        </td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%">
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                    </tr>
-                  </table>
-                  <table class="tab_page">
-                    <tr>
-                      <td valign="top" class="tab_page">
-                        <v:template name="template1" type="simple" condition="pg = 1">
+            <div id="p" class="c1 vcard" style="margin: 7px;">
+              <div class="tabs">
+                <div onclick="javascript: showTab('p', 5, 0);" class="tab activeTab" id="p_tab_0"><?V case when self.is_org then 'Organization' else 'Personal' end ?></div>
+                <div onclick="javascript: showTab('p', 5, 1);" class="tab" id="p_tab_1">Contact</div>
+                <div onclick="javascript: showTab('p', 5, 2);" class="tab" id="p_tab_2">Home</div>
+                <div onclick="javascript: showTab('p', 5, 3);" class="tab" id="p_tab_3">Business</div>
+                <div onclick="javascript: showTab('p', 5, 4);" class="tab" id="p_tab_4">Data Explorer</div>
+              </div>
+              <div class="contents">
+                <div id="p_content_0" class="tabContent">
                           <table>
                             <tr>
-                              <th><v:label name="1user" value="Account:"/></th>
-                              <td><v:label name="1user1" value="--coalesce(self.fname,'')"/></td>
+                      <th><v:label value="Account:" /></th>
+                      <td><span class="nickname"><v:label value="--coalesce(self.fname,'')" /></span></td>
                             </tr>
 			    <?vsp if (length (self.arr[37])) { ?>
                             <tr>
-                              <th><v:label name="photo_l1" value="Photo:"/></th>
-			      <td>
-				  <img src="<?V self.arr[37] ?>" width="64" border="0"/>
-			      </td>
+                      <th><v:label value="Photo:" /></th>
+                      <td><img class="photo" src="<?V self.arr[37] ?>" width="64" border="0" /></td>
 			    </tr>
 			    <?vsp } ?>
                             <tr>
-                              <th><v:label name="1title" value="Title:" enabled="--case when coalesce(self.arr[0],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="1title1" value="--coalesce(self.arr[0],'')"/></td>
+                      <th><v:label value="Title:" enabled="--case when coalesce(self.arr[0],'') <> '' then 1 else 0 end" /></th>
+                      <td><span class="honorific-prefix"><v:label value="--coalesce(self.arr[0],'')" /></span></td>
                             </tr>
                             <tr>
-                              <th><v:label name="1fname" value="First Name:" enabled="--case when coalesce(self.arr[1],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="1fname1" value="--coalesce(self.arr[1],'')"/></td>
+                      <th><v:label value="First Name:" enabled="--case when coalesce(self.arr[1],'') <> '' then 1 else 0 end" /></th>
+                      <td><span class="given-name"><v:label value="--coalesce(self.arr[1],'')" /></span></td>
                             </tr>
                             <tr>
-                              <th><v:label name="1lname" value="Last Name:" enabled="--case when coalesce(self.arr[2],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="1lname1" value="--coalesce(self.arr[2],'')"/></td>
+                      <th><v:label value="Last Name:" enabled="--case when coalesce(self.arr[2],'') <> '' then 1 else 0 end" /></th>
+                      <td><span class="family-name"><v:label value="--coalesce(self.arr[2],'')" /></span></td>
                             </tr>
                             <tr>
-                              <th><v:label name="1ffname" value="Full Name:" enabled="--case when coalesce(self.arr[3],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="lffname1" value="--coalesce(self.arr[3],'')"/></td>
+                      <th><v:label value="Full Name:" enabled="--case when coalesce(self.arr[3],'') <> '' then 1 else 0 end" /></th>
+                      <td><span class="fn"><v:label value="--coalesce(self.arr[3],'')" /></span></td>
                             </tr>
-			    <?vsp
-			      if (length (self.arr[4]))
-			        {
-			    ?>
+                    <?vsp if (length (self.arr[4])) { ?>
                             <tr>
-                              <th><v:label name="1email" value="E-mail:" /></th>
-			      <td><v:url name="lemail1" value="--coalesce(self.arr[4],'')"
-				      url="--concat ('mailto:', self.arr[4])" /></td>
+                      <th><v:label value="E-mail:" /></th>
+                      <td><span class="email"><v:url name="lemail1" value="--coalesce(self.arr[4],'')" url="--concat ('mailto:', self.arr[4])" /></span></td>
 			    </tr>
 			    <?vsp } ?>
                             <tr>
-                              <th><v:label name="1gender" value="Gender:" enabled="--case when coalesce(self.arr[5],'') <> '' and equ (self.is_org, 0) then 1 else 0 end"/></th>
-                              <td><v:label name="lgender1" value="--coalesce(self.arr[5],'')"/></td>
+                      <th><v:label value="Gender:" enabled="--case when coalesce(self.arr[5],'') <> '' and equ (self.is_org, 0) then 1 else 0 end" /></th>
+                      <td><v:label value="--coalesce(self.arr[5],'')" /></td>
                             </tr>
                             <tr>
-                              <th><v:label name="1bdate" value="Birthday:" enabled="--case when coalesce(self.arr[6],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="lbdate1" value="--coalesce(self.arr[6],'')"/></td>
+                      <th><v:label value="Birthday:" enabled="--case when coalesce(self.arr[6],'') <> '' then 1 else 0 end" /></th>
+                      <td><span class="bday"><v:label value="--coalesce(self.arr[6],'')" /></span></td>
                             </tr>
 			    <?vsp
-			      if (length (self.arr[7]))
-			        {
+                      if (length (self.arr[7])) {
 			    ?>
                             <tr>
-                              <th><v:label name="1wpage" value="Personal Webpage:" /></th>
-			      <td><v:url name="lwpage1" value="--coalesce(self.arr[7],'')"
-				      url="--self.arr[7]"
-				      xhtml_target="_blank"
-				      /></td>
+                      <th><v:label value="Personal Webpage:" /></th>
+                      <td><v:url name="lwpage1" value="--coalesce(self.arr[7],'')" url="--self.arr[7]" xhtml_target="_blank" xhtml_class="url"/></td>
                             </tr>
-			    <?vsp }
+                    <?vsp
+                      }
 			    if (length (self.arr[8])) {
 			    ?>
                             <tr>
-                              <th><v:label name="1foaf" value="Other Identity URIs (synonyms):" /></th>
+                      <th><v:label value="Other Identity URIs (synonyms):" /></th>
 			      <td>
 				  <?vsp
-				    {
-				    for select Y from DB.DBA.ODS_USER_IDENTIY_URLS (uname) (Y varchar) sub
-				    	where uname = self.fname
-				    	do
+                        for select Y from DB.DBA.ODS_USER_IDENTIY_URLS (uname) (Y varchar) sub where uname = self.fname do
 				      {
 					  ?>
 					  <a href="<?V Y ?>" target="_blank"><?V Y ?></a>
 					  <?vsp
 				       }
-				    }
 				  ?>
 			      </td>
                             </tr>
 			    <?vsp } ?>
                             <v:template name="umsign" type="simple" enabled="--case when coalesce(self.arr[9],'') <> '' then 1 else 0 end">
                             <tr>
-                              <th><v:label name="1msing" value="Mail Signature:"/></th>
-                              <td><pre><v:label name="lmsign1" value="--coalesce(self.arr[9],'')"/></pre></td>
+                        <th><v:label value="Mail Signature:" /></th>
+                        <td><pre><v:label value="--coalesce(self.arr[9],'')" /></pre></td>
                             </tr>
                             </v:template>
                             <v:template name="usummary" type="simple" enabled="--case when coalesce(self.arr[33],'') <> '' then 1 else 0 end">
-                            <?vsp
-
-                            ?>
                             <tr>
-                              <th>  <v:label name="1sum" value="Summary:"/></th>
-                              <td><pre><v:label name="lsum1" value="--coalesce(self.arr[33],'')"/></pre></td>
+                        <th><v:label value="Summary:" /></th>
+                        <td><pre><v:label value="--coalesce(self.arr[33],'')" /></pre></td>
                             </tr>
                             </v:template>
-
 			    <?vsp
 			      if (coalesce(self.arr[44],'') <> '')
 			        {
 		 	    ?>
-
                             <tr>
-                              <th><v:label name="fav1" value=""/>Favorite Books:</th>
-                              <td><v:label name="lfav1" value="--coalesce(self.arr[44],'')"/></td>
+                        <th><v:label value="" />Favorite Books:</th>
+                        <td><v:label value="--coalesce(self.arr[44],'')" /></td>
                             </tr>
 			    <?vsp
 			        }
@@ -366,8 +306,8 @@
 			        {
 		 	    ?>
                             <tr>
-                              <th><v:label name="fav2" value=""/>Favorite Music:</th>
-                              <td><v:label name="lfav2" value="--coalesce(self.arr[45],'')"/></td>
+                        <th><v:label value="" />Favorite Music:</th>
+                        <td><v:label value="--coalesce(self.arr[45],'')" /></td>
                             </tr>
 			    <?vsp
 			        }
@@ -375,22 +315,17 @@
 			        {
 		 	    ?>
                             <tr>
-                              <th><v:label name="fav3" value=""/>Favorite Movies:</th>
-                              <td><v:label name="lfav3" value="--coalesce(self.arr[46],'')"/></td>
+                        <th><v:label value="" />Favorite Movies:</th>
+                        <td><v:label value="--coalesce(self.arr[46],'')" /></td>
                             </tr>
-
 			    <?vsp
 			        }
 			      if (coalesce(self.arr[43],'') <> '')
 			        {
 			    ?>
 			    <tr>
-				<th>
-				    Audio:
-				</th>
-				<td>
-			    <a href="<?V self.arr[43] ?>"><img border="0" alt="Owner audio" src="images/icons/audio_16.gif" /></a>
-				</td>
+                      <th>Audio:</th>
+                      <td><a href="<?V self.arr[43] ?>"><img border="0" alt="Owner audio" src="images/icons/audio_16.gif" /></a></td>
 			    </tr>
 			    <?vsp
 			        }
@@ -399,12 +334,12 @@
                             <v:form name="upl" type="simple" method="POST" action="uhome.vspx">
                             <v:template name="UserAssignedTags" type="simple" enabled="--case when (self.isowner = 1 or isnull(self.u_id)) then 0 else 1 end">
                               <tr>
-				<th><v:label name="uatag1" value="Tags:" enabled="--case when coalesce(WA_USER_TAG_GET(self.fname),'') <> '' then 1 else 0 end"/>
-				</th>
-                                <td><v:label name="uotag2" value="--coalesce(WA_USER_TAG_GET(self.fname),'')"/></td>
+                          <th><v:label value="Tags:" enabled="--case when coalesce(WA_USER_TAG_GET(self.fname),'') <> '' then 1 else 0 end" /></th>
+                          <td><span class="tags"><v:label value="--coalesce(WA_USER_TAG_GET(self.fname),'')" /></span></td>
                               </tr>
                               <tr>
-				  <th nowrap="nowrap"><v:label name="uatag3" value="--sprintf('My tags for %s', self.fname)"/>
+                          <th nowrap="nowrap">
+                            <v:label value="--sprintf('My tags for %s', self.fname)" />
 				      <span class="explain"> (comma separated list of keywords)</span>
 				</th>
                                 <td>
@@ -449,8 +384,8 @@
                             </v:form>
                             <v:template name="UserOwnTags" type="simple" enabled="--case when self.isowner = 1 then 1 else 0 end">
                               <tr>
-                                <th><v:label name="uotag" value="Tags:" enabled="--case when coalesce(WA_USER_TAG_GET(self.u_name),'') <> '' then 1 else 0 end"/></th>
-                                <td><v:label name="uotag1" value="--coalesce(WA_USER_TAG_GET(self.u_name),'')"/></td>
+                        <th><v:label value="Tags:" enabled="--case when coalesce(WA_USER_TAG_GET(self.u_name),'') <> '' then 1 else 0 end" /></th>
+                        <td><v:label value="--coalesce(WA_USER_TAG_GET(self.u_name),'')" /></td>
                               </tr>
                             </v:template>
 			         <?vsp
@@ -465,7 +400,7 @@
 				  {
 				  ?>
                             <tr>
-                              <th valign="top"><v:label name="1friends" value="--concat(coalesce(self.fname,''),'''s friends')"/></th>
+                      <th valign="top"><v:label value="--concat(coalesce(self.fname,''),'''s friends')" /></th>
                               <td>
 				<table cellpadding="0" cellspacing="0">
 				  <?vsp
@@ -476,8 +411,7 @@
 				    select top 6 sne_name, U_FULL_NAME from sn_related, sn_entity, SYS_USERS where snr_to = sne_id and snr_from = sneid and U_NAME = sne_name
 				    union all
 				    select top 6 sne_name, U_FULL_NAME from sn_related, sn_entity, SYS_USERS where snr_from = sne_id and snr_to = sneid and U_NAME = sne_name
-				  ) sub
-				  do
+                            ) sub do
 				    {
 					   if (i >= 5)
 					     goto next;
@@ -510,181 +444,181 @@
 				  }
 				  ?>
                           </table>
-                        </v:template>
-                        <v:template name="template2" type="simple" condition="pg = 2">
+                </div>
+                <div id="p_content_1" class="tabContent" style="display: none;">
                           <table>
                            <tr>
-                              <th><v:label name="1icq" value="ICQ Number:" enabled="--case when coalesce(self.arr[10],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="1icq1" value="--coalesce(self.arr[10],'')"/></td>
+                      <th><v:label value="ICQ Number:" enabled="--case when coalesce(self.arr[10],'') <> '' then 1 else 0 end" /></th>
+                      <td><v:label value="--coalesce(self.arr[10],'')" /></td>
                             </tr>
 			    <?vsp if (length (self.arr[11])) { ?>
                             <tr>
-                              <th><v:label name="1skype" value="Skype ID:" /></th>
-			      <td><v:url name="1skype1" value="--coalesce(self.arr[11],'')"
-				      url="--concat ('callto:', self.arr[11])" />
-			      </td>
+                      <th><v:label value="Skype ID:" /></th>
+                      <td><v:url name="1skype1" value="--coalesce(self.arr[11],'')" url="--concat ('callto:', self.arr[11])" /></td>
                             </tr>
 			    <?vsp } ?>
                             <tr>
-                              <th><v:label name="1aim" value="AIM Name:" enabled="--case when coalesce(self.arr[12],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="1aim1" value="--coalesce(self.arr[12],'')"/></td>
+                      <th><v:label value="AIM Name:" enabled="--case when coalesce(self.arr[12],'') <> '' then 1 else 0 end" /></th>
+                      <td><v:label value="--coalesce(self.arr[12],'')" /></td>
                             </tr>
                             <tr>
-                              <th><v:label name="1yahoo" value="Yahoo! ID:" enabled="--case when coalesce(self.arr[13],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="1yahoo1" value="--coalesce(self.arr[13],'')"/></td>
+                      <th><v:label value="Yahoo! ID:" enabled="--case when coalesce(self.arr[13],'') <> '' then 1 else 0 end" /></th>
+                      <td><v:label value="--coalesce(self.arr[13],'')" /></td>
                             </tr>
                             <tr>
-                              <th><v:label name="1msn" value="MSN Messenger:" enabled="--case when coalesce(self.arr[14],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="1msn1" value="--coalesce(self.arr[14],'')"/></td>
+                      <th><v:label value="MSN Messenger:" enabled="--case when coalesce(self.arr[14],'') <> '' then 1 else 0 end" /></th>
+                      <td><v:label value="--coalesce(self.arr[14],'')" /></td>
                             </tr>
                           </table>
-                        </v:template>
-                        <v:template name="template3" type="simple" condition="pg = 3">
+                </div>
+                <div id="p_content_2" class="tabContent adr" style="display: none;">
+                  <span class="type" style="display: none;">home</span>
                           <table>
                             <tr>
-                              <th><v:label name="lhcountry" value="Country:" enabled="--case when coalesce(self.arr[16][2],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="lhcountry1" value="--coalesce(self.arr[16][2],'')"/></td>
+                      <th><v:label value="Country:" enabled="--case when coalesce(self.arr[16][2],'') <> '' then 1 else 0 end" /></th>
+                      <td><span class="country-name"><v:label value="--coalesce(self.arr[16][2],'')" /></span></td>
                             </tr>
                             <tr>
-                              <th><v:label name="lhstate" value="State/Province:" enabled="--case when coalesce(self.arr[16][1],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="lhstate1" value="--coalesce(self.arr[16][1],'')"/></td>
+                      <th><v:label value="State/Province:" enabled="--case when coalesce(self.arr[16][1],'') <> '' then 1 else 0 end" /></th>
+                      <td><span class="region"><v:label value="--coalesce(self.arr[16][1],'')" /></span></td>
                             </tr>
                             <tr>
-                              <th><v:label name="lhcity" value="City/Town:" enabled="--case when coalesce(self.arr[16][0],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="lhcity1" value="--coalesce(self.arr[16][0],'')"/></td>
+                      <th><v:label value="City/Town:" enabled="--case when coalesce(self.arr[16][0],'') <> '' then 1 else 0 end" /></th>
+                      <td><span class="locality"><v:label value="--coalesce(self.arr[16][0],'')" /></span></td>
                             </tr>
                             <tr>
-                              <th><v:label name="lhcode" value="Zip/Postal Code:" enabled="--case when coalesce(self.arr[15][2],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="lhcode1" value="--coalesce(self.arr[15][2],'')"/></td>
+                      <th><v:label value="Zip/Postal Code:" enabled="--case when coalesce(self.arr[15][2],'') <> '' then 1 else 0 end" /></th>
+                      <td><span class="postal-code"><v:label value="--coalesce(self.arr[15][2],'')" /></span></td>
                             </tr>
                             <tr>
-                              <th><v:label name="1hadd1" value="Address1:" enabled="--case when coalesce(self.arr[15][0],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="1hadd11" value="--coalesce(self.arr[15][0],'')"/></td>
+                      <th><v:label value="Address1:" enabled="--case when coalesce(self.arr[15][0],'') <> '' then 1 else 0 end" /></th>
+                      <td><span class="street-address"><v:label value="--coalesce(self.arr[15][0],'')" /></span></td>
                             </tr>
                             <tr>
-                              <th><v:label name="1hadd2" value="Address2:" enabled="--case when coalesce(self.arr[15][1],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="1hadd21" value="--coalesce(self.arr[15][1],'')"/></td>
+                      <th><v:label value="Address2:" enabled="--case when coalesce(self.arr[15][1],'') <> '' then 1 else 0 end" /></th>
+                      <td><span class="extended-address"><v:label value="--coalesce(self.arr[15][1],'')" /></span></td>
                             </tr>
                             <tr>
-                              <th><v:label name="lhtzone" value="Time-Zone:" enabled="--case when coalesce(self.arr[17],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="lhtzone1" value="--coalesce(self.arr[17],'')"/></td>
+                      <th><v:label value="Time-Zone:" enabled="--case when coalesce(self.arr[17],'') <> '' then 1 else 0 end" /></th>
+                      <td><span class="tz"><v:label value="--coalesce(self.arr[17],'')" /></span></td>
 			    </tr>
-			    <?vsp
-			      if (self.arr[39] is not null) {
-			    ?>
+                    <?vsp if (self.arr[39] is not null) { ?>
                             <tr>
-                              <th><v:label name="lhtloc" value="Location:" /></th>
+                      <th><v:label value="Location:" /></th>
 			      <td>
 				<v:url name="wa_map"
-				     value="--sprintf('latitude: %.6f, longitude: %.6f', coalesce(self.arr[39],0), coalesce(self.arr[40],0))" format="%s"
+                               value="--sprintf('latitude: %.6f, longitude: %.6f', coalesce(self.arr[39],0), coalesce(self.arr[40],0))"
+                               format="%s"
 			         url="--sprintf ('wa_maps.vspx?ufname=%U', self.fname)" />
 			      </td>
 			    </tr>
-			    <?vsp
-			    }
-			    ?>
+                    <?vsp } ?>
                             <tr>
-                              <th><v:label name="lhphone" value="Phone:" enabled="--case when coalesce(self.arr[18][0],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="lhphone1" value="--coalesce(self.arr[18][0],'')"/></td>
+                      <th><v:label value="Phone:" enabled="--case when coalesce(self.arr[18][0],'') <> '' then 1 else 0 end" /></th>
+                      <td><span class="tel"><v:label value="--coalesce(self.arr[18][0],'')" /></span></td>
                             </tr>
                             <tr>
-                              <th><v:label name="lhmobile" value="Mobile:" enabled="--case when coalesce(self.arr[18][1],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="lhmobile1" value="--coalesce(self.arr[18][1],'')"/></td>
+                      <th><v:label value="Mobile:" enabled="--case when coalesce(self.arr[18][1],'') <> '' then 1 else 0 end" /></th>
+                      <td><span class="tel"><span class="type" style="display: none;">CELL</span><v:label value="--coalesce(self.arr[18][1],'')" /></span></td>
                             </tr>
                           </table>
-                        </v:template>
-                        <v:template name="template4" type="simple" condition="pg = 4">
+                </div>
+                <div id="p_content_3" class="tabContent adr" style="display: none;">
+                  <span class="type" style="display: none;">WORK</span>
                           <table>
                             <tr>
-                              <th><v:label name="1ind" value="Industry:" enabled="--case when coalesce(self.arr[19],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="1ind1" value="--coalesce(self.arr[19],'')"/></td>
+                      <th><v:label value="Industry:" enabled="--case when coalesce(self.arr[19],'') <> '' then 1 else 0 end" /></th>
+                      <td><v:label value="--coalesce(self.arr[19],'')" /></td>
                             </tr>
                             <tr>
-                              <th><v:label name="1org" value="Organization:" enabled="--case when coalesce(self.arr[20],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="1org1" value="--coalesce(self.arr[20],'')"/></td>
+                      <th><v:label value="Organization:" enabled="--case when coalesce(self.arr[20],'') <> '' then 1 else 0 end" /></th>
+                      <td><span class="org"><v:label value="--coalesce(self.arr[20],'')" /></span></td>
                             </tr>
                             <tr>
-                              <th><v:label name="1job" value="Job Title:" enabled="--case when coalesce(self.arr[21],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="1job1" value="--coalesce(self.arr[21],'')"/></td>
+                      <th><v:label value="Job Title:" enabled="--case when coalesce(self.arr[21],'') <> '' then 1 else 0 end" /></th>
+                      <td><v:label value="--coalesce(self.arr[21],'')" /></td>
                             </tr>
                             <tr>
-                              <th><v:label name="lbcountry" value="Country:" enabled="--case when coalesce(self.arr[23][2],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="lbcountry1" value="--coalesce(self.arr[23][2],'')"/></td>
+                      <th><v:label value="Country:" enabled="--case when coalesce(self.arr[23][2],'') <> '' then 1 else 0 end" /></th>
+                      <td><span class="country-name"><v:label value="--coalesce(self.arr[23][2],'')" /></span></td>
                             </tr>
                             <tr>
-                              <th><v:label name="lbstate" value="State/Province:" enabled="--case when coalesce(self.arr[23][1],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="lbstate1" value="--coalesce(self.arr[23][1],'')"/></td>
+                      <th><v:label value="State/Province:" enabled="--case when coalesce(self.arr[23][1],'') <> '' then 1 else 0 end" /></th>
+                      <td><span class="region"><v:label value="--coalesce(self.arr[23][1],'')" /></span></td>
                             </tr>
                             <tr>
-                              <th><v:label name="lbcity" value="City/Town:" enabled="--case when coalesce(self.arr[23][0],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="lbcity1" value="--coalesce(self.arr[23][0],'')"/></td>
+                      <th><v:label value="City/Town:" enabled="--case when coalesce(self.arr[23][0],'') <> '' then 1 else 0 end" /></th>
+                      <td><span class="locality"><v:label value="--coalesce(self.arr[23][0],'')" /></span></td>
                             </tr>
                             <tr>
-                              <th><v:label name="lbcode" value="Zip/Postal Code:" enabled="--case when coalesce(self.arr[22][2],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="lbcode1" value="--coalesce(self.arr[22][2],'')"/></td>
+                      <th><v:label value="Zip/Postal Code:" enabled="--case when coalesce(self.arr[22][2],'') <> '' then 1 else 0 end" /></th>
+                      <td><span class="postal-code"><v:label value="--coalesce(self.arr[22][2],'')" /></span></td>
                             </tr>
                             <tr>
-                              <th><v:label name="1badd1" value="Address1:" enabled="--case when coalesce(self.arr[22][0],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="1badd11" value="--coalesce(self.arr[22][0],'')"/></td>
+                      <th><v:label value="Address1:" enabled="--case when coalesce(self.arr[22][0],'') <> '' then 1 else 0 end" /></th>
+                      <td><span class="street-address"><v:label value="--coalesce(self.arr[22][0],'')" /></span></td>
                             </tr>
                             <tr>
-                              <th><v:label name="1badd2" value="Address2:" enabled="--case when coalesce(self.arr[22][1],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="1badd21" value="--coalesce(self.arr[22][1],'')"/></td>
+                      <th><v:label value="Address2:" enabled="--case when coalesce(self.arr[22][1],'') <> '' then 1 else 0 end" /></th>
+                      <td><span class="extended-address"><v:label value="--coalesce(self.arr[22][1],'')" /></span></td>
                             </tr>
                             <tr>
-                              <th><v:label name="lbtzone" value="Time-Zone:" enabled="--case when coalesce(self.arr[24],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="lbtzone1" value="--coalesce(self.arr[24],'')"/></td>
+                      <th><v:label value="Time-Zone:" enabled="--case when coalesce(self.arr[24],'') <> '' then 1 else 0 end" /></th>
+                      <td><v:label value="--coalesce(self.arr[24],'')" /></td>
                             </tr>
                             <tr>
-                              <th><v:label name="lbphone" value="Phone:" enabled="--case when coalesce(self.arr[25][0],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="lbphone1" value="--coalesce(self.arr[25][0],'')"/></td>
+                      <th><v:label value="Phone:" enabled="--case when coalesce(self.arr[25][0],'') <> '' then 1 else 0 end" /></th>
+                      <td><span class="tel"><span class="type" style="display: none;">WORK</span><v:label value="--coalesce(self.arr[25][0],'')" /></span></td>
                             </tr>
                             <tr>
-                              <th><v:label name="lbmobile" value="Mobile:" enabled="--case when coalesce(self.arr[25][1],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="lbmobile1" value="--coalesce(self.arr[25][1],'')"/></td>
+                      <th><v:label value="Mobile:" enabled="--case when coalesce(self.arr[25][1],'') <> '' then 1 else 0 end" /></th>
+                      <td><span class="tel"><span class="type" style="display: none;">WORK</span><span class="type" style="display: none;">CELL</span><v:label value="--coalesce(self.arr[25][1],'')" /></span></td>
                             </tr>
                             <tr>
-                              <th><v:label name="lbregno" value="VAT Reg number (EU only) or Tax ID:" enabled="--case when coalesce(self.arr[26],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="lbregno1" value="--coalesce(self.arr[26],'')"/></td>
+                      <th><v:label value="VAT Reg number (EU only) or Tax ID:" enabled="--case when coalesce(self.arr[26],'') <> '' then 1 else 0 end" /></th>
+                      <td><v:label value="--coalesce(self.arr[26],'')" /></td>
                             </tr>
                             <tr>
-                              <th><v:label name="lbcareer" value="Career / Organization Status:" enabled="--case when coalesce(self.arr[27],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="lbcareer1" value="--coalesce(self.arr[27],'')"/></td>
+                      <th><v:label value="Career / Organization Status:" enabled="--case when coalesce(self.arr[27],'') <> '' then 1 else 0 end" /></th>
+                      <td><v:label value="--coalesce(self.arr[27],'')" /></td>
                             </tr>
                             <tr>
-                              <th><v:label name="lemp" value="No. of Employees:" enabled="--case when coalesce(self.arr[28],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="lemp1" value="--coalesce(self.arr[28],'')"/></td>
+                      <th><v:label value="No. of Employees:" enabled="--case when coalesce(self.arr[28],'') <> '' then 1 else 0 end" /></th>
+                      <td><v:label value="--coalesce(self.arr[28],'')" /></td>
                             </tr>
                             <tr>
-                              <th><v:label name="lvendor" value="Are you a technology vendor:" enabled="--case when coalesce(self.arr[29],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="lvendor1" value="--coalesce(self.arr[29],'')"/></td>
+                      <th><v:label value="Are you a technology vendor:" enabled="--case when coalesce(self.arr[29],'') <> '' then 1 else 0 end" /></th>
+                      <td><v:label value="--coalesce(self.arr[29],'')" /></td>
                             </tr>
                             <tr>
-                              <th><v:label name="lprovider" value="If so, what technology service do you provide:" enabled="--case when coalesce(self.arr[30],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="lprovider1" value="--coalesce(self.arr[30],'')"/></td>
+                      <th><v:label value="If so, what technology service do you provide:" enabled="--case when coalesce(self.arr[30],'') <> '' then 1 else 0 end" /></th>
+                      <td><v:label value="--coalesce(self.arr[30],'')" /></td>
                             </tr>
                             <tr>
-                              <th><v:label name="lother" value="Other Technology service:" enabled="--case when coalesce(self.arr[31],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="lother1" value="--coalesce(self.arr[31],'')"/></td>
+                      <th><v:label value="Other Technology service:" enabled="--case when coalesce(self.arr[31],'') <> '' then 1 else 0 end" /></th>
+                      <td><v:label value="--coalesce(self.arr[31],'')" /></td>
                             </tr>
                             <tr>
-                              <th><v:label name="lnetwork" value="Importance of OpenLink Network for you:" enabled="--case when coalesce(self.arr[32],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="lnetwork1" value="--coalesce(self.arr[32],'')"/></td>
+                      <th><v:label value="Importance of OpenLink Network for you:" enabled="--case when coalesce(self.arr[32],'') <> '' then 1 else 0 end" /></th>
+                      <td><v:label value="--coalesce(self.arr[32],'')" /></td>
                             </tr>
                             <tr>
-                              <th><v:label name="lresume" value="Resume:" enabled="--case when coalesce(self.arr[34],'') <> '' then 1 else 0 end"/></th>
-			      <td><pre><v:label name="lresume1" value="--coalesce(self.arr[34],'')" render-only="1"/></pre></td>
+                      <th><v:label value="Resume:" enabled="--case when coalesce(self.arr[34],'') <> '' then 1 else 0 end" /></th>
+                      <td><pre><v:label value="--coalesce(self.arr[34],'')" render-only="1" /></pre></td>
                             </tr>
                           </table>
-                        </v:template>
-			<v:template name="template4" type="simple" condition="pg = 5">
-			    <![CDATA[<script type="text/javascript" src="rdfm.js"></script>]]>
-			    <script type="text/javascript"><![CDATA[
+                </div>
+                <div id="p_content_4" class="tabContent" style="display: none;">
+                  <![CDATA[
+                    <script type="text/javascript" src="rdfm.js"></script>
+                  ]]>
+                  <script type="text/javascript">
+                    <![CDATA[
 				var graphIRI = "<?V wa_link (1, '/dataspace/'|| self.utype ||self.fname) ?>";
-				var fList =
-				   ["rdfmini","dimmer","grid","graphsvg","map","ymaps","timeline","tagcloud","anchor","dock"];
+                      var fList = ["rdfmini","dimmer","grid","graphsvg","map","ymaps","timeline","tagcloud","anchor","dock"];
 				ODSInitArray.push ( function () { OAT.Loader.loadFeatures(fList, RDFMInit); } );
-				]]></script>
+                    ]]>
+                  </script>
 			    <table>
 				<tr>
 				    <td>
@@ -693,16 +627,10 @@
 				    </td>
 				</tr>
 			    </table>
-			</v:template>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-   <?vsp
-    }
-   ?>
+                </div>
+              </div>
+            </div>
+      <?vsp } ?>
     </v:template>
   </xsl:template>
 
@@ -742,13 +670,8 @@
 
   <xsl:template match="vm:addressbook-link">
     <?vsp
-      declare addressbook_id integer;
-
-      addressbook_id :=
-        (select top 1 WAI_ID from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER where WAI_TYPE_NAME = 'AddressBook' and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = self.u_id);
-      if (not isnull (addressbook_id)){
-        http (sprintf ('<li><img src="images/icons/ods_ab_16.png" alt="Your AddressBook" /><a href="%s?sid=%s&realm=%s"> %V</a></li>', SIOC..addressbook_iri (AB.WA.domain_name (addressbook_id)), self.sid, self.realm, 'Your AddressBook'));
-      }
+      for (select top 1 WAI_ID from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER where WAI_TYPE_NAME = 'AddressBook' and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = self.u_id) do
+        http (sprintf ('<li><img src="images/icons/ods_ab_16.png" alt="Your AddressBook" /><a href="%s?sid=%s&realm=%s"> %V</a></li>', SIOC..addressbook_iri (AB.WA.domain_name (WAI_ID)), self.sid, self.realm, 'Your AddressBook'));
     ?>
   </xsl:template>
 
@@ -800,8 +723,7 @@
 	    union all
 	    select sne_name, U_FULL_NAME, WAUI_PHOTO_URL, WAUI_HCOUNTRY, WAUI_HSTATE, WAUI_HCITY
 	    from sn_related, sn_entity, SYS_USERS, WA_USER_INFO where snr_to = sneid and snr_from = sne_id and U_NAME = sne_name and U_ID = WAUI_U_ID option (order)
-	  ) sub
-	  do
+            ) sub do
 	    {
 	      declare addr any;
 	      addr := '';
@@ -819,7 +741,8 @@
 	  <li>
 	      <a href="&lt;?V wa_expand_url('/dataspace/'||wa_identity_dstype(sne_name)||'/'|| sne_name ||'#this', self.login_pars)?&gt;"><?vsp if (length (WAUI_PHOTO_URL)) {  ?>
 	      <img src="<?V WAUI_PHOTO_URL ?>" border="0" alt="Photo" width="32" hspace="3"/>
-	      <?vsp } ?><?V wa_utf8_to_wide (coalesce (U_FULL_NAME, sne_name)) ?></a>
+            <?vsp } ?><?V wa_utf8_to_wide (coalesce (U_FULL_NAME, sne_name)) ?>
+          </a>
 	      <span class="home_addr"><?V wa_utf8_to_wide (addr) ?></span>
 	</li>
 	  <?vsp

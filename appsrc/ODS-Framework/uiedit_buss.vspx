@@ -39,6 +39,7 @@
       if (self.vc_is_valid = 0)
         return;
 
+      self.bstate := get_keyword ('b_state', params);
       blat := null;
       blng := null;
       if (length (self.b_lat.ufl_value) and length (self.b_lng.ufl_value))
@@ -65,7 +66,7 @@
       WA_USER_EDIT (self.u_name, 'WAUI_BADDRESS2', self.b_address2.ufl_value);
       WA_USER_EDIT (self.u_name, 'WAUI_BCODE', self.b_code.ufl_value);
       WA_USER_EDIT (self.u_name, 'WAUI_BCITY', self.b_city.ufl_value);
-      WA_USER_EDIT (self.u_name, 'WAUI_BSTATE', get_keyword ('b_state', params));
+      WA_USER_EDIT (self.u_name, 'WAUI_BSTATE', self.bstate);
       WA_USER_EDIT (self.u_name, 'WAUI_BCOUNTRY', self.b_country.ufl_value);
       WA_USER_EDIT (self.u_name, 'WAUI_BTZONE', self.b_tzone.ufl_value);
       WA_USER_EDIT (self.u_name, 'WAUI_BLAT', blat);
@@ -365,15 +366,6 @@
                 </td>
               </tr>
               <tr>
-              <th><label for="b_mobile">Mobile</label></th>
-              <td class="listing_col" nowrap="1">
-                <v:text name="b_mobile"
-                        value="--self.bmobile"
-                        xhtml_style="width:216px"
-                        xhtml_tabindex="12"/>
-              </td>
-            </tr>
-            <tr>
               <th><label for="b_regno">VAT Reg number (EU only) or Tax ID</label></th>
               <td class="listing_col" nowrap="1">
                 <v:text name="b_regno"
@@ -676,6 +668,15 @@
                   <vm:u-prop-select name="sel_25" value="self.sav25" />
                 </td>
               </tr>
+            <tr>
+              <th><label for="b_mobile">Mobile</label></th>
+              <td class="listing_col" nowrap="1">
+                <v:text name="b_mobile"
+                        value="--self.bmobile"
+                        xhtml_style="width:216px"
+                        xhtml_tabindex="12"/>
+              </td>
+            </tr>
           </table>
         </div>
         <div id="b_content_2" class="tabContent" style="display: none;">

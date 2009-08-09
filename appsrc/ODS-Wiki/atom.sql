@@ -198,7 +198,7 @@ create procedure WV.WIKI.gdata (
   declare _topic_id, _uid, _unauthorized integer;
   declare _user, _password, _role, _uid varchar;
   declare _http_path, _path, _action, _version varchar;
-  declare _auth, _session, _method, _content_type, _options, _status, _content, _vCalendar, xt any;
+  declare _atomVersion, _auth, _session, _method, _content_type, _options, _status, _content, _vCalendar, xt any;
 
   declare h, _cluster varchar;
 
@@ -380,7 +380,12 @@ create procedure WV.WIKI.gdata (
         xml_tree_doc_encoding (xt, 'utf-8');
     }      
     }
-    if (_method in ('PUT', 'POST', 'DELETE'))
+    _atomVersion := cast (xpath_eval ('[ xmlns:wv="http://www.openlinksw.com/Virtuoso/WikiV/" ] /entry/wv:version', xt) as varchar);
+    if (isnull (_atomVersion) or (_atomVersion <> '2.0'))
+    {
+      _status := 'HTTP/1.1 412 Precondition Failed';
+    }
+    else if (_method in ('PUT', 'POST', 'DELETE'))
     {
           _newtopic := WV.WIKI.TOPICINFO();
 	  _newtopic.ti_default_cluster := coalesce (_cluster, 'Main');
@@ -401,7 +406,9 @@ create procedure WV.WIKI.gdata (
         if ((_method = 'PUT') and (_newtopic.ti_id = 0))
     {
           _status := 'HTTP/1.1 404 Not Found';
-        } else {
+        }
+        else
+        {
       content := cast (xpath_eval ('/entry/content/text()', xt) as varchar);
       WV.WIKI.UPLOADPAGE (_newtopic.ti_col_id, _newtopic.ti_local_name || '.txt', content, _user);
           if (_method = 'POST')

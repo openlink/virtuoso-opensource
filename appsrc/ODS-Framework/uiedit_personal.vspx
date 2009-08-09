@@ -36,6 +36,7 @@
       declare params, _arr any;
 
       params := self.vc_page.vc_event.ve_params;
+      self.hstate := get_keyword ('h_state', params);
       if (exists (select 1 from WA_USER_INFO where WAUI_U_ID <> self.u_id and WAUI_NICK = self.nickn.ufl_value))
       {
         self.nick := WA_MAKE_NICK (self.nickn.ufl_value);
@@ -211,7 +212,7 @@
       WA_USER_EDIT (self.u_name, 'WAUI_HADDRESS2', self.h_address2.ufl_value);
       WA_USER_EDIT (self.u_name, 'WAUI_HCODE', self.h_code.ufl_value);
       WA_USER_EDIT (self.u_name, 'WAUI_HCITY', self.h_city.ufl_value);
-      WA_USER_EDIT (self.u_name, 'WAUI_HSTATE', get_keyword ('h_state', params));
+      WA_USER_EDIT (self.u_name, 'WAUI_HSTATE', self.hstate);
       WA_USER_EDIT (self.u_name, 'WAUI_HCOUNTRY', self.h_country.ufl_value);
       WA_USER_EDIT (self.u_name, 'WAUI_HTZONE', self.h_tzone.ufl_value);
       WA_USER_EDIT (self.u_name, 'WAUI_HPHONE', self.h_phone.ufl_value);
