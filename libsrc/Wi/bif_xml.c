@@ -5795,6 +5795,7 @@ bif_xml_init (void)
 
   bif_define_typed ("xmlelement", bif_xmlelement, &bt_any);
   bif_define_typed ("xmlattributes", bif_xmlattributes, &bt_any);
+  bif_define_typed ("xmlattributes_2", bif_xmlattributes, &bt_any);
   bif_define_typed ("xmlforest", bif_xmlforest, &bt_any);
   bif_define_typed ("xmlconcat", bif_xmlconcat, &bt_any);
   bif_define_typed ("serialize_to_UTF8_xml", bif_serialize_to_UTF8_xml, &bt_varchar);
