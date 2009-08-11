@@ -1274,5 +1274,7 @@ void ssi_free (ssa_iter_node_t * ssi);
 
 caddr_t box_append_1 (caddr_t box, caddr_t elt);
 
+query_t * sch_ua_func_ua (caddr_t name);
+
 
 #endif /* _SQLFN_H */

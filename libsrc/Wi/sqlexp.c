@@ -1557,6 +1557,9 @@ cv_is_local_1 (code_vec_t cv, int is_cluster)
 	    if (is_cluster && sqlo_proc_cl_locatable (ins->_.call.proc, 0, &qr))
 	      {
 		ins->_.call.pn = proc_name_ref (qr->qr_pn); /* name resolved for known proc here, so no need to send current qualifier etc to cluster */
+		if (is_cluster != CV_IS_LOCAL_AGG 
+		    && !sch_ua_func_ua (qr->qr_proc_name))
+		  return 0;
 		break;
 	      }
 	    return 0;
