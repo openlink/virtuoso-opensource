@@ -695,14 +695,14 @@ self.vc_data_bind (e);
 			    control.ufl_selected := 1;
 			</v:before-render>
 		      </v:radio-button>
-		                    URI<span class="redstar">*</span>
+		                    Resource URL<span class="redstar">*</span>
 		                </td>
                     <td>
                       <input type="text" name="t_rdf_url" size="100"></input>
                     </td>
                   </tr>
                   <tr id="rd2">
-                    <td>RDF IRI<span class="redstar">*</span></td>
+                    <td>Named Graph IRI<span class="redstar">*</span></td>
                     <td>
 		      <v:text name="rdf_graph_name" value="" default_value="-- 'http://' || cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost') || '/' || self.curpath" xhtml_size="100"/>
                     </td>

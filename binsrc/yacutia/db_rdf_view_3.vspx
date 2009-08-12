@@ -60,7 +60,7 @@
     {
       var lf = document.forms ['admin_login'];
       var f = document.forms['account_form'];
-      var w = window.open (f.fsave.value+'&sid='+lf.sid.value,
+      window.open (f.fsave.value+'&sid='+lf.sid.value,
       'file_save', 'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=600');
       return false;
     }
@@ -68,7 +68,7 @@
     {
       var lf = document.forms ['admin_login'];
       var f = document.forms['account_form'];
-      var w = window.open (f.osave.value+'&sid='+lf.sid.value,
+      window.open (f.osave.value+'&sid='+lf.sid.value,
       'file_save', 'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=600');
       return false;
     }
@@ -325,6 +325,23 @@
 	      path := concat('/DAV/temp/', self.sid, '.n3');
 	      DB.DBA.YACUTIA_DAV_DELETE (path, 1, 0);
 	      self.vc_redirect ('db_rdf_objects.vspx');
+	      ]]></v:on-post>
+      </v:button>
+	  <v:button action="simple" name="apply" value="Apply Changes">
+	  <v:on-post><![CDATA[
+	      declare path any;
+              
+	      path := concat('/DAV/temp/', self.sid, '.sql');
+	      DB.DBA.YACUTIA_DAV_DELETE (path, 1, 0);
+	      DB.DBA.YACUTIA_DAV_COL_CREATE('/DAV/temp/', '110110000NN', 'dav', 'administrators');
+	      DB.DBA.YACUTIA_DAV_RES_UPLOAD (path, self.body_v, '', '110110000NN', 'dav', 'administrators', now(), now(), null);
+             if (self.owl)
+               {	     
+	         path := concat('/DAV/temp/', self.sid, '.n3');
+	         DB.DBA.YACUTIA_DAV_DELETE (path, 1, 0);
+	         DB.DBA.YACUTIA_DAV_COL_CREATE('/DAV/temp/', '110110000NN', 'dav', 'administrators');
+		 DB.DBA.YACUTIA_DAV_RES_UPLOAD (path, self.body_o, '', '110110000NN', 'dav', 'administrators', now(), now(), null);
+	       }
 	      ]]></v:on-post>
       </v:button>
       <v:button action="simple" name="exec" value="Execute">
