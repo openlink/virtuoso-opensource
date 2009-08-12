@@ -226,7 +226,7 @@
   		      <v:button name="wl_save" value="--case when self.wl_mode = 'WL/add' then 'Add' else 'Update' end" action="simple" xhtml_onclick="return validateInputs(this);">
 		        <v:on-post><![CDATA[
                 declare N, M integer;
-                declare id, id2, tmp, params, products, product, properties, property any;
+                declare id, isOpened, id2, tmp, params, oldProducts, products, product, properties, property any;
 
               params := e.ve_params;
 
@@ -238,7 +238,10 @@
                     id := replace (params [N], 'wl_fld_3_', '');
                     product := self.jsonObject();
                     product := vector_concat (product, vector ('id', id, 'prefix', 'gr', 'class', trim (params [N+1])));
+                    isOpened := cast (get_keyword ('wl_fld_2_'||id, params, 0) as integer);
                     properties := vector();
+                    if (isOpened)
+                    {
                     for (M := 0; M < length (params); M := M + 4)
               {
                       if ((params [M] like 'prop_'||id||'_fld_1_%') and (trim (params [M+1]) <> ''))
@@ -252,6 +255,18 @@
                           properties := vector_concat (properties, vector (property));
               }
                       }
+                    }
+                    } else {
+                      oldProducts := get_keyword ('products', self.wl_properties);
+                      foreach (any oldProduct in oldProducts) do
+                      {
+                        if (get_keyword ('id', oldProduct) = id)
+                        {
+                          properties := get_keyword ('properties', oldProduct);
+                          goto _exit;
+                        }
+                      }
+                    _exit:;
                     }
                     if (length (properties))
                       product := vector_concat (product, vector ('properties', properties));
