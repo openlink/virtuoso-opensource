@@ -64,7 +64,7 @@ dbe_key_count (dbe_key_t * key)
   /*  if (!strcmp (tb->tb_name, "DB.DBA.RDF_QUAD"))
       printf ("snaap\n"); */
   if (key->key_table->tb_count != DBE_NO_STAT_DATA)
-    return MAX (key->key_table->tb_count, 1);
+    return MAX (key->key_table->tb_count, 10);
   else if (tb->tb_count_estimate == DBE_NO_STAT_DATA
 	   || ABS (tb->tb_count_delta / key_n_partitions (tb->tb_primary_key)) > tb->tb_count_estimate / 5)
     {
@@ -72,10 +72,10 @@ dbe_key_count (dbe_key_t * key)
 	return 10000; /* if you know nothing, assume a remote table is 10K rows */
       tb->tb_count_estimate = key_count_estimate (tb->tb_primary_key, 3, 1);
       tb->tb_count_delta = 0;
-      return MAX (1, tb->tb_count_estimate);
+      return MAX (10, tb->tb_count_estimate);
     }
   else
-    return MAX (1, ((long)(tb->tb_count_estimate + tb->tb_count_delta)));
+    return MAX (10, ((long)(tb->tb_count_estimate + tb->tb_count_delta)));
 }
 
 

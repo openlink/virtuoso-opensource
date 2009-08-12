@@ -3671,6 +3671,7 @@ query_t *
 sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query,
 	       ST ** target_names, state_slot_t ***sel_out_ret)
 {
+  end_node_t * inv_cond = NULL;
   dk_set_t generated_loci = NULL;
   data_source_t * qn = NULL, *last_qn = NULL;
   dk_set_t pre_code = NULL;
@@ -3707,6 +3708,7 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query,
 	{
 	  SQL_NODE_INIT (end_node_t, en, end_node_input, NULL);
 	  en->src_gen.src_after_test = sqlg_pred_body (so, dt_dfe->_.sub.invariant_test);
+	  inv_cond = en;
 	  sql_node_append (&head, (data_source_t*) en);
 	}
       if (0 && IS_BOX_POINTER (dt_dfe->dfe_locus))
@@ -3832,6 +3834,16 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query,
 	      group_dfe = dfe;
 	      last_qn = sqlg_group_node (so, &head, dfe, dt_dfe, pre_code);
 	      pre_code = NULL;
+	      if (inv_cond)
+		{
+		  /* when there is aggregate and data independent condition, put the first precode as the precode of the data independent condition because the aggregate that is evaluated anyhow also for false cond may ref data independent things assigned there. */
+		  data_source_t * nxt = qn_next (inv_cond);
+		  if (nxt)
+		    {
+		      inv_cond->src_gen.src_pre_code = nxt->src_pre_code;
+		      nxt->src_pre_code = NULL;
+		    }
+		}
 	      break;
 	    case DFE_ORDER:
 	      order_dfe = dfe;
