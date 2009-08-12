@@ -269,7 +269,7 @@ __integer_from_string (caddr_t *n, const char *str, int do_what)
   l = (int) strlen (p);
   if (NULL == s_int [2 * do_what + s])
     sqlr_new_error ("42001", "XPQ??", "Sign of argument '%.100s' does not match expected type %s", str, s_int_name[do_what]);
-  if ((l > l_int[do_what - 1]) || ((l == l_int[do_what - 1]) && strcmp (s_int[2 * do_what + s], p) < 0))
+  if ((l > l_int[do_what]) || ((l == l_int[do_what]) && strcmp (s_int[2 * do_what + s], p) < 0))
     sqlr_new_error ("42001", "XPQ??", "Magnitude is too big (%.100s) to be packed into %s", str, s_int_name[do_what]);
   switch (do_what) {
     case XQ_INT8:
