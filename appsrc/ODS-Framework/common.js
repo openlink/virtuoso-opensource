@@ -692,9 +692,16 @@ function updateField6 (elm, fldName, prefix, No, fldOptions)
 
 function updateField7 (elm, fldName, fldOptions)
 {
-	var fld = OAT.Dom.text(fldOptions.value);
-
   var elm = $(elm);
+
+	var fld = OAT.Dom.create("input");
+  fld.type = 'hidden';
+  fld.name = fldName;
+  fld.id = fldName;
+  fld.value = '0';
+  elm.appendChild(fld);
+
+	var fld = OAT.Dom.text(fldOptions.value);
   elm.appendChild(fld);
 }
 
@@ -1286,6 +1293,9 @@ GR.showProperties = function (obj, prefix, No)
   var tr = $(prefix+'_tr_' + No);
   if (!tr)
     return;
+  var fld = $(prefix+'_fld_2_' + No);
+  if (fld)
+    fld.value = '1';
   var trProperties = $(prefix+'_tr_' + No + '_properties');
   if (obj.mode == 'show')
   {

@@ -1263,9 +1263,13 @@ create procedure sioc_goodRelation_details (in graph_iri varchar, in forum_iri v
   foreach (any product in products) do
   {
     iri := offerlist_item_iri (forum_iri, get_keyword ('id', product));
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdf_iri ('type'), ODS.ODS_API."ontology.denormalize" (get_keyword ('class', product)));
+	  --dbg_obj_princ (iri, sioc_iri ('has_container'), forum_iri);
+	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), forum_iri);
+	  DB.DBA.RDF_QUAD_URI (graph_iri, forum_iri, sioc_iri ('container_of'), iri);
+    DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ODS.ODS_API."ontology.denormalize" (get_keyword ('class', product)));
+    --dbg_obj_princ (iri, rdf_iri ('type'), ODS.ODS_API."ontology.denormalize" (get_keyword ('class', product)));
 
-    properties := get_keyword ('id', properties);
+    properties := get_keyword ('properties', product);
     foreach (any property in properties) do
     {
       declare propertyType, propertyName, propertyValue any;
@@ -1274,10 +1278,14 @@ create procedure sioc_goodRelation_details (in graph_iri varchar, in forum_iri v
       propertyValue := get_keyword ('value', property);
       propertyName := ODS.ODS_API."ontology.denormalize" (get_keyword ('name', property));
       if (propertyType = 'data')
-        DB.DBA.RDF_QUAD_URI (graph_iri, iri, propertyName, propertyValue);
-      if (propertyType = 'object')
       {
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, propertyName, ODS.ODS_API."ontology.denormalize" (propertyValue));
+        --dbg_obj_princ ('data: ', iri, propertyName, propertyValue);
+        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, propertyName, propertyValue);
+      }
+      else if (propertyType = 'object')
+      {
+        --dbg_obj_princ ('obj: ', iri, propertyName, ODS.ODS_API."ontology.denormalize" (propertyValue));
+        DB.DBA.RDF_QUAD_URI (graph_iri, iri, propertyName, ODS.ODS_API."ontology.denormalize" (propertyValue));
   }
     }
   }
@@ -1300,7 +1308,6 @@ create procedure sioc_user_offerlist (in user_id integer, in ol_id integer, in o
   if (DB.DBA.is_empty_or_null (trim (ol_comment)))
     ol_comment := ol_offer;
   sioc_forum (graph_iri, graph_iri, forum_iri, ol_offer, 'OfferList', ol_comment, null, user_name);
-  DB.DBA.RDF_QUAD_URI (graph_iri, forum_iri, rdf_iri ('type'), offer_iri ('BusinessEntity'));
 
   obj := deserialize (ol_properties);
   sioc_goodRelation_details (graph_iri, forum_iri, user_iri, obj);
@@ -1346,7 +1353,6 @@ create procedure sioc_user_wishlist (in user_id integer, in wl_id integer, in wl
   if (DB.DBA.is_empty_or_null (trim (wl_comment)))
     wl_comment := wl_wish;
   sioc_forum (graph_iri, graph_iri, forum_iri, wl_wish, 'WishList', wl_comment, null, user_name);
-  DB.DBA.RDF_QUAD_URI (graph_iri, forum_iri, rdf_iri ('type'), offer_iri ('BusinessEntity'));
 
   obj := deserialize (wl_properties);
   sioc_goodRelation_details (graph_iri, forum_iri, user_iri, obj);
@@ -3879,7 +3885,6 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
   declare ss, sa_dict, lim, offs any;
   declare pers_iri, http_hdr varchar;
 
-  -- dbg_obj_print (u_name,wai_name,inst_type,postid);
   set http_charset='utf-8';
   graph := 'local:/dataspace'; --get_graph ();
   ses := string_output ();
@@ -3892,7 +3897,8 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
   dociri := person_iri (user_obj_iri(u_name), '');
 
   hf := rfc1808_parse_uri (dociri);
-  hf[0] := 'local'; hf[1] := '';
+  hf[0] := 'local';
+  hf[1] := '';
   dociri := DB.DBA.vspx_uri_compose (hf);
 
   pers_iri := person_iri (user_obj_iri(u_name));
@@ -4128,27 +4134,41 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?person foaf:made ?container .
 	    ?container foaf:maker ?person .
 	    ?container rdfs:label ?label .
+      ?container sioc:container_of ?grSubject.
+      ?grSubject ?grProperty ?grObject.
 	  }
 	  WHERE
 	  {
 	    graph <%s>
 	    {
-	      {
 	        ?person foaf:holdsAccount <%s/%s#this> .
-          ?container foaf:maker ?person. ?container a sioct:OfferList. ?container rdfs:label ?label.
+        {
+          {
+            ?container foaf:maker ?person;
+              a sioct:OfferList;
+              rdfs:label ?label.
+            OPTIONAL {?container sioc:container_of ?grSubject.
+                      ?grSubject ?grProperty ?grObject.
+                     }.
 	      }
         union  
         {
-	        ?person foaf:holdsAccount <%s/%s#this> .
-          ?container foaf:maker ?person. ?container a sioct:WishList. ?container rdfs:label ?label.
+            ?container foaf:maker ?person;
+              a sioct:WishList;
+              rdfs:label ?label.
+            OPTIONAL {?container sioc:container_of ?grSubject.
+                      ?grSubject ?grProperty ?grObject.
+                     }.
 	    }
         union  
         {
-	        ?person foaf:holdsAccount <%s/%s#this> .
-          ?container foaf:maker ?person. ?container a sioct:FavoriteThings. ?container rdfs:label ?label.
+            ?container foaf:maker ?person;
+              a sioct:FavoriteThings;
+              rdfs:label ?label.
+  	      }
 	      }
 	    }
-	  }', graph, graph, u_name, graph, u_name, graph, u_name);
+	  }', graph, graph, u_name);
 
   qry := decl || part;
   qrs [7] := qry;
@@ -4264,7 +4284,6 @@ execute_qr:
 	{
 --	  dbg_printf ('%s', q);
 	  exec (q, state, msg, vector(), maxrows, metas, rset);
---	  dbg_obj_print (msg);
 	  if (state <> '00000')
 	    signal (state, msg);
 	  if (fmt = 'rdf')
