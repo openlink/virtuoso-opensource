@@ -118,10 +118,10 @@ function eTarget (e)
 {
     if (!e)
 	var e = window.event;
-
-    var el = (e.target) ? e.target : e.srcElement;
-
-    return el;
+  var t = (e.target) ? e.target : e.srcElement;
+	if (t.nodeType == 3) // defeat Safari bug
+		t = targ.parentNode;
+  return t;
 }
 
 function onEnterDown (e)
@@ -1261,6 +1261,8 @@ ODS.Nav = function (navOptions)
 			      function (e)
 					  {
 				var t = eTarget (e);
+          if (t.tagName == 'IMG')
+            t = t.parentNode;
 				self.show_app_throbber (t.parentNode);
 				  self.createApplication (t.packageName, self.appCreate);
 			  }
@@ -1276,6 +1278,8 @@ ODS.Nav = function (navOptions)
 					      function(e)
 					      {
 						  var t = eTarget (e);
+          if (t.tagName == 'IMG')
+            t = t.parentNode;
 						  if (t.defaultUrl)
 				    {
 				      self.show_app_throbber (t.parentNode);

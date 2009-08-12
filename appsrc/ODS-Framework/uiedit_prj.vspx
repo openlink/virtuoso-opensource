@@ -31,6 +31,7 @@
 	<v:variable name="edit_prj" type="int" default="null" param-name="edit" />
 	<v:variable name="del_prj" type="int" default="null" param-name="del" />
 	<v:form type="simple" method="POST" xhtml_enctype="multipart/form-data" action="uiedit.vspx?page=5">
+    <br />
 	  <table class="listing" rules="groups">
 	      <tr class="listing_header_row">
 		  <th>Made</th>

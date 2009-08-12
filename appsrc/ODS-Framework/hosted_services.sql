@@ -3448,11 +3448,14 @@ create procedure grUpdate_detailProperty (
 
 create procedure grUpdate (in obj any)
 {
+  declare exit handler for sqlstate '*'{return vector ();};
+
   declare N integer;
   declare products, newProducts, newProduct, newProperties, newProperty any;
 
   N := 0;
   newProducts := vector ();
+  obj := deserialize (obj);
   products := get_keyword ('products', obj);
   foreach (any product in products) do
   {
@@ -3528,8 +3531,7 @@ create procedure wa_offerlist_upgrade()
   for (select WUOL_ID, WUOL_PROPERTIES from DB.DBA.WA_USER_OFFERLIST) do
   {
     id := WUOL_ID;
-    obj := deserialize (WUOL_PROPERTIES);
-    obj := grUpdate (obj);
+    obj := grUpdate (WUOL_PROPERTIES);
     obj := vector_concat (subseq (soap_box_structure ('x', 1), 0, 2), vector ('version', '1.0', 'products', obj));
     update DB.DBA.WA_USER_OFFERLIST set WUOL_PROPERTIES = serialize (obj) where WUOL_ID = id;
   }
@@ -3565,8 +3567,7 @@ create procedure wa_wishlist_upgrade()
   for (select WUWL_ID, WUWL_PROPERTIES from DB.DBA.WA_USER_WISHLIST) do
   {
     id := WUWL_ID;
-    obj := deserialize (WUWL_PROPERTIES);
-    obj := grUpdate (obj);
+    obj := grUpdate (WUWL_PROPERTIES);
     obj := vector_concat (subseq (soap_box_structure ('x', 1), 0, 2), vector ('version', '1.0', 'products', obj));
     update DB.DBA.WA_USER_WISHLIST set WUWL_PROPERTIES = serialize (obj) where WUWL_ID = id;
   }

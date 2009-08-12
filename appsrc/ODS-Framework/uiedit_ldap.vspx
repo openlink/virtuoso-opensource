@@ -61,7 +61,8 @@
 
       http (sprintf ('<select name="sel_%s" onchange="checkRest (this.form, this)">', name));
       http ('<option value="skip">--</option>');
-      for (N := 0; N < length (self.v_fields); N := N + 2) {
+      for (N := 0; N < length (self.v_fields); N := N + 2)
+      {
         S := '';
         if (self.v_fields[N] = T)
           S := ' selected="selected"';
@@ -117,6 +118,7 @@
   <v:variable persist="0" name="v_maps" type="any" default="null"/>
   <v:variable persist="0" name="v_data" type="any" default="null"/>
 
+  <h3>LDAP Servers Addministration</h3>
   <vm:if test="self.v_mode = 'LDAP/browse'">
     <v:data-source name="dsrc" expression-type="sql" nrows="10" initial-offset="0">
       <v:before-data-bind>
@@ -308,7 +310,7 @@
       <table id="lfoaf" class="listing" cellspacing="0">
         <tr class="listing_header_row">
           <th width="1%">
-            <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this.form, this)" />
+            <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
           </th>
           <th>Login Name</th>
           <th>Description</th>
@@ -359,17 +361,24 @@
 
             foafNames := LDAP..foaf_fields ();
             params := e.ve_params;
-            for (N := 0; N < length (params); N := N + 4) {
-              if (params[N] = 'cb_item') {
+            for (N := 0; N < length (params); N := N + 4)
+            {
+              if (params[N] = 'cb_item')
+              {
                 isFounded := 0;
                 data := self.v_data [cast (params[N+1] as integer)];
     	          loginData := self.ldap_data (data, loginPattern);
-    	          if (loginData <> '') {
+    	          if (loginData <> '')
+    	          {
                   http (sprintf ('  <foaf:Person rdf:about="%s">\n', loginData), sStream);
-                  for (M := 0; M < length (data); M := M + 2) {
-                    if (data[M] <> loginPattern) {
-                      for (L := 0; L < length (self.v_maps); L := L + 2) {
-                        if (self.v_maps [L] = data[M]) {
+                  for (M := 0; M < length (data); M := M + 2)
+                  {
+                    if (data[M] <> loginPattern)
+                    {
+                      for (L := 0; L < length (self.v_maps); L := L + 2)
+                      {
+                        if (self.v_maps [L] = data[M])
+                        {
                           foafName := get_keyword (self.v_maps[L+1], foafNames);
                           if (not isnull (foafName))
                             http (sprintf ('    <foaf:%s>%V</foaf:%s>\n', foafName, self.ldap_value (data[M+1]), foafName), sStream);
@@ -539,10 +548,13 @@
           declare data any;
 
           self.v_fields := LDAP..contact_fields ();
-          for (N := 0; N < length (self.v_data); N := N + 2) {
-    	      if (self.v_data [N] = 'entry') {
+          for (N := 0; N < length (self.v_data); N := N + 2)
+          {
+    	      if (self.v_data [N] = 'entry')
+    	      {
     	        data := self.v_data [N+1];
-    	        for (M := 0; M < length (data); M := M + 2) {
+    	        for (M := 0; M < length (data); M := M + 2)
+    	        {
     	  ?>
     	  <tr>
     	    <td>
@@ -576,8 +588,10 @@
             params := e.ve_params;
             self.v_maps := vector ();
             for (N := 0; N < length (params); N := N + 2)
-              if (params[N] like 'sel_%') {
-                if (params[N+1] <> 'skip') {
+              if (params[N] like 'sel_%')
+              {
+                if (params[N+1] <> 'skip')
+                {
                   self.v_maps := vector_concat (self.v_maps, vector (substring (params[N], 5, length (params[N])), params[N+1]));
                 } else {
                   self.v_maps := vector_concat (self.v_maps, vector (substring (params[N], 5, length (params[N])), ''));

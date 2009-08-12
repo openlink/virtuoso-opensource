@@ -149,25 +149,20 @@ function checkRest (form, sel)
 	}
     }
 }
-function selectAllCheckboxes (form, btn)
-{
-              for (var i = 0; i < form.elements.length; i = i + 1)
+            function selectAllCheckboxes (obj, prefix)
               {
-    var contr = form.elements[i];
-                if (contr != null && contr.type == "checkbox")
+              var objForm = obj.form;
+              for (var i = 0; i < objForm.elements.length; i++)
                 {
-      contr.focus();
-      if (btn.value == 'Select All')
-        contr.checked = true;
-      else
-        contr.checked = false;
-    }
+                var o = objForm.elements[i];
+                if (o != null && o.type == "checkbox" && !o.disabled && (!prefix || o.name.indexOf (prefix) != -1))
+                  o.checked = (obj.value == 'Select All');
   }
-  if (btn.value == 'Select All')
-    btn.value = 'Unselect All';
+              if (obj.value == 'Select All')
+                obj.value = 'Unselect All';
   else
-    btn.value = 'Select All';
-  btn.focus();
+                obj.value = 'Select All';
+              obj.focus();
 }
             function addProductLine(No, obj)
             {
@@ -210,6 +205,21 @@ function selectAllCheckboxes (form, btn)
               if (No == 1)
                 OAT.Dom.hide ('remove_X');
               $('no_X').value = No;
+            }
+            function importActivate(mode)
+            {
+              if (mode)
+              {
+                OAT.Dom.show('user_i_personal');
+                OAT.Dom.hide('user_s_personal');
+                OAT.Dom.hide('user_sn_personal');
+                OAT.Dom.hide('used_access_personal');
+              } else {
+                OAT.Dom.hide('user_i_personal');
+                OAT.Dom.show('user_s_personal');
+                OAT.Dom.show('user_sn_personal');
+                OAT.Dom.show('used_access_personal');
+              }
             }
           ]]>
         </script>
@@ -316,17 +326,10 @@ function selectAllCheckboxes (form, btn)
                                  xhtml_class="tab"/>
                         </td>
                         <td class="<?V case when pg = 10 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
-                          <v:url name="b_url10"
-                                 value="Import"
-                                 format="%s"
-                                 url="--sprintf('uiedit.vspx?page=10')"
-                                 xhtml_class="tab"/>
-                        </td>
-                        <td class="<?V case when pg = 11 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
                           <v:url name="b_url11"
                                  value="LDAP Servers"
                                  format="%s"
-                                 url="--sprintf('uiedit.vspx?page=11')"
+                                 url="--sprintf('uiedit.vspx?page=10')"
                                  xhtml_class="tab"/>
                         </td>
                   <td class="page_tab_empty" align="center" width="100%">
@@ -393,11 +396,6 @@ function selectAllCheckboxes (form, btn)
                           <v:template name="template10"
                                       type="simple"
                                       enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '10')">
-                            <v:include url="uiedit_import.vspx"/>
-                          </v:template>
-                          <v:template name="template11"
-                                      type="simple"
-                                      enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '11')">
                           <v:include url="uiedit_ldap.vspx"/>
                         </v:template>
                       </td>
