@@ -125,20 +125,95 @@
 	  ]]>
 	</v:method>
 
-  <v:method name="viewField" arglist="inout fValue any">
+  <v:method name="prepareTimeZone" arglist="inout x any, inout y any">
     <![CDATA[
-       if (self.abAction = 'view')
+      declare i,j int;
+
+      x := make_array (25, 'any');
+      y := make_array (25, 'any');
+      i := -12;
+      j := 0;
+      while (i <= 12)
+      {
+        x[j] := cast (i as varchar);
+        y[j] := self.viewTimeZone (i);
+        i := i + 1;
+        j := j + 1;
+      }
+
+    ]]>
+  </v:method>
+
+  <v:method name="prepareField" arglist="inout fValue any, in fProperty varchar, in fShowValue any">
+    <![CDATA[
+      declare N integer;
+      declare fPropertyType, V, F, FT, FS, T, P varchar;
+
+      -- value
          if (is_empty_or_null (fValue))
+        return ' ';
+
+      V := split_and_decode (fProperty, 0, '\0\0:');
+      fProperty := case when length(V)>=1 then V[0] else fProperty end;
+      fPropertyType := case when length(V)=2 then V[1] else null end;
+
+      -- value
+      if (fProperty = 'description')
          {
-           http ('&nbsp;');
-         } else {
-           if (internal_type (fValue) = 211)
+        F := '<pre>' || AB.WA.utf2wide (cast (fValue as varchar)) || '</pre>';
+      }
+      else if (internal_type (fValue) = 211)
            {
-             http (left (cast (fValue as varchar), 10));
-           } else {
-             http (fValue);
+        F := left (cast (fValue as varchar), 10);
            }
+      else
+      {
+        F := cast (fValue as varchar);
+      }
+      if (is_empty_or_null (fProperty))
+        return F;
+
+      FT := '';
+      if (not isnull (fPropertyType))
+      {
+        V := split_and_decode (fPropertyType, 0, '\0\0,');
+        for (N := 0; N < length (V); N := N + 1)
+          FT := sprintf ('%s<span class="type" style="display: none;">%s</span>', FT, V[N]);
          }
+
+      FS := fShowValue;
+      if (isnull (FS))
+        FS := F;
+      if (not isnull (fPropertyType))
+        FS := sprintf ('<span class="value">%s</span>', FS);
+
+      P := '';
+      -- vcard class
+      if (not is_empty_or_null (fProperty))
+        P := P || sprintf (' class="%s"', fProperty);
+
+      -- vcard special values
+      if (fProperty in ('dtstart', 'dtend', 'completed', 'created', 'last-modified'))
+        P := P || sprintf (' title="%s"', substring (cast (fValue as varchar), 1, 10));
+
+      -- dc properties
+      if (fProperty = 'summary')
+        P := P || ' property="dc:title"';
+
+      -- tag
+      T := 'span';
+      if (fProperty = 'dtstart')
+        T := 'abbr';
+      if (fProperty = 'dtend')
+        T := 'abbr';
+      return sprintf ('<%s%s>%s%s</%s>', T, P, FT, FS, T);
+    ]]>
+  </v:method>
+
+  <v:method name="viewField" arglist="inout fValue any, in fProperty varchar, in fShowValue any">
+    <![CDATA[
+      if (self.abAction = 'view')
+        http (self.prepareField(fValue, fProperty, fShowValue));
 	  ]]>
 	</v:method>
 
@@ -149,7 +224,7 @@
          {
            http ('&nbsp;');
          } else {
-           http (sprintf ('<img src="%s"/>', fValue));
+           http (sprintf ('<img class="photo" src="%s"/>', fValue));
          }
     ]]>
   </v:method>
@@ -1076,10 +1151,10 @@
                           ?>
                         </td>
                       </v:template>
-                      <td valign="top">
+                          <td class="vcard" valign="top">
                         <?vsp
                           declare N, id, did integer;
-                              declare tmp, title, permissions, actions, tags any;
+                              declare tmp, title, title2, permissions, actions, tags any;
 
                             if ((self.abScope = 'MySharedContacts') and (AB.WA.node_type(self.abNode) = 'u') and (AB.WA.node_id(self.abNode) = -1))
                             {
@@ -1092,8 +1167,9 @@
                           title := (control as vspx_row_template).te_column_value('P_NAME');
                           tags := (control as vspx_row_template).te_column_value('P_TAGS');
                               permissions := AB.WA.person_permissions (id, self.domain_id, self.account_role);
+                              title2 := self.prepareField (AB.WA.stringCut(title, self.abChars), 'nickname', null);
 
-                              http (sprintf ('<div style="float: left; font-weight: bold;"><a id="ab_%d" href="%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'view\', \'pt_value\', \'%d\'); return false;" title="View \'%s\'" class="app link">%s</a></div>', id, SIOC..addressbook_contact_iri (self.domain_id, id), id, initcap ('view'), title, AB.WA.stringCut(title, self.abChars)));
+                              http (sprintf ('<div style="float: left; font-weight: bold;"><a id="ab_%d" href="%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'view\', \'pt_value\', \'%d\'); return false;" title="View \'%s\'" class="app link">%s</a></div>', id, SIOC..addressbook_contact_iri (self.domain_id, id), id, title, title2));
                           
                           actions := '';
                               if (permissions = 'W')
@@ -1462,16 +1538,16 @@
                     &nbsp;<vm:tabCaption tab="a" tabsCount="6" tabNo="5" caption="Access" />
                   </vm:if>
               </div>
-              <div class="contents">
+                <div class="contents vcard">
                 <div id="a_content_0" class="tabContent" style="display: none;">
-                  <table class="form-body" cellspacing="0">
+                    <table class="form-body n" cellspacing="0">
                       <vm:if test="(self.abAction = 'view') or (self.abAction = 'edit')">
                     <tr>
                         <th>
                           <v:label for="ab_foaf" value="Contact URI" />
                         </th>
                         <td>
-                          <?V SIOC..addressbook_contact_iri (self.domain_id, self.v_id) ?>
+                          <?vsp self.viewField (SIOC..addressbook_contact_iri (self.domain_id, self.v_id), 'uid', null); ?>
                         </td>
                       </tr>
                       </vm:if>
@@ -1485,7 +1561,7 @@
                             <input type="button" value="Import" onclick="javascript: AB.getFOAFData($v('ab_foaf')); return false;" class="button" />
                             <img id="ab_import_image" alt="Import FOAF Data" src="/ods/images/oat/Ajax_throbber.gif" style="display: none" />
                           </vm:if>
-                          <?vsp self.viewField (self.v_foaf); ?>
+                          <?vsp self.viewField (self.v_foaf, '', null); ?>
                         </td>
                       </tr>
                       <tr>
@@ -1496,7 +1572,7 @@
                           <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_iri" xhtml_id="ab_iri" value="--self.v_iri" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                           </vm:if>
-                          <?vsp self.viewField (self.v_iri); ?>
+                          <?vsp self.viewField (self.v_iri, '', null); ?>
                         </td>
                       </tr>
                       <tr>
@@ -1507,7 +1583,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_name" value="--self.v_name" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_name); ?>
+                          <?vsp self.viewField (self.v_name, 'nickname', null); ?>
                       </td>
                     </tr>
                     <tr class="contactType">
@@ -1531,7 +1607,7 @@
                           </v:before-data-bind>
                         </v:select-list>
                         </vm:if>
-                        <?vsp self.viewField (self.v_title); ?>
+                          <?vsp self.viewField (self.v_title, 'honorific-prefix', null); ?>
                       </td>
                     </tr>
                     <tr class="contactType">
@@ -1542,7 +1618,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_fName" value="--self.v_fName" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_fName); ?>
+                          <?vsp self.viewField (self.v_fName, 'given-name', null); ?>
                       </td>
                     </tr>
                     <tr class="contactType">
@@ -1553,7 +1629,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_mName" value="--self.v_mName" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_mName); ?>
+                          <?vsp self.viewField (self.v_mName, 'additional-name', null); ?>
                       </td>
                     </tr>
                     <tr class="contactType">
@@ -1564,7 +1640,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_lName" value="--self.v_lName" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_lName); ?>
+                          <?vsp self.viewField (self.v_lName, 'family-name', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -1575,7 +1651,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_fullName" value="--self.v_fullName" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_fullName); ?>
+                          <?vsp self.viewField (self.v_fullName, 'fn', null); ?>
                       </td>
                     </tr>
                     <tr class="contactType">
@@ -1596,7 +1672,7 @@
                           </v:before-data-bind>
                         </v:select-list>
                         </vm:if>
-                        <?vsp self.viewField (self.v_gender); ?>
+                          <?vsp self.viewField (self.v_gender, '', null); ?>
                       </td>
                     </tr>
                     <tr class="contactType">
@@ -1610,7 +1686,7 @@
                             <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" />
                           </a>
                         </vm:if>
-                        <?vsp self.viewField (self.v_birthday); ?>
+                          <?vsp self.viewField (self.v_birthday, 'bday', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -1649,13 +1725,13 @@
                                       <vm:if test="self.abAction <> 'view'">
                                         <input type="text" id="a_fld_1_<?V N ?>" name="a_fld_1_<?V N ?>" value="<?V interest ?>" style="width: 95%;" class="_validate_ _url_ _canEmpty_" onblur="javascript: AB.validateField(this);" />
                                       </vm:if>
-                                      <?vsp self.viewField (interest); ?>
+                                      <?vsp self.viewField (interest, '', null); ?>
                                     </td>
                                     <td>
                                       <vm:if test="self.abAction <> 'view'">
                                         <input type="text" id="a_fld_2_<?V N ?>" name="a_fld_2_<?V N ?>" value="<?V label ?>" style="width: 95%;" />
                                       </vm:if>
-                                      <?vsp self.viewField (label); ?>
+                                      <?vsp self.viewField (label, '', null); ?>
                                     </td>
                                     <vm:if test="self.abAction <> 'view'">
                                       <td>
@@ -1669,7 +1745,7 @@
                                     M := 3;
                                     if (self.abAction <> 'view')
                                       M := M - 1;
-                                    http (sprintf ('<tr id="a_tr_no" style="display: %s"><td colspan="%d"><b>No Interests</b></td></tr>', case when N = 0 then '' else 'none' end, M));
+                                    http (sprintf ('<tr id="a_tr_no" %s><td colspan="%d"><b>No Interests</b></td></tr>', case when N = 0 then '' else 'style="display: none;"' end, M));
                                   ?>
                                 </table>
                                 <input type="hidden" id="a_no" name="a_no" value="<?V N ?>" />
@@ -1842,7 +1918,7 @@
                                </script>
                             ]]>
                           </vm:if>
-                          <?vsp self.viewField (self.v_category_name); ?>
+                          <?vsp self.viewField (self.v_category_name, 'category', null); ?>
                         </td>
                       </tr>
                       <tr>
@@ -1879,7 +1955,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_mail" value="--self.v_mail" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_mail); ?>
+                          <?vsp self.viewField (self.v_mail, 'email:internet, pref', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -1890,7 +1966,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_web" value="--self.v_web" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_web); ?>
+                          <?vsp self.viewField (self.v_web, 'url:pref', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -1901,7 +1977,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_icq" value="--self.v_icq" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_icq); ?>
+                          <?vsp self.viewField (self.v_icq, '', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -1912,7 +1988,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_skype" value="--self.v_skype" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_skype); ?>
+                          <?vsp self.viewField (self.v_skype, '', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -1923,7 +1999,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_aim" value="--self.v_aim" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_aim); ?>
+                          <?vsp self.viewField (self.v_aim, '', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -1934,7 +2010,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_yahoo" value="--self.v_yahoo" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_yahoo); ?>
+                          <?vsp self.viewField (self.v_yahoo, '', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -1945,12 +2021,13 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_msn" value="--self.v_msn" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_msn); ?>
+                          <?vsp self.viewField (self.v_msn, '', null); ?>
                       </td>
                     </tr>
                   </table>
                 </div>
-                <div id="a_content_2" class="tabContent" style="display: none;">
+                  <div id="a_content_2" class="tabContent adr" style="display: none;">
+                    <span class="type" style="display: none;">HOME</span>
                   <table class="form-body" cellspacing="0">
                     <tr>
                       <th width="25%">
@@ -1960,7 +2037,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:data-list name="ab_hCountry" xhtml_id="ab_hCountry" value="--self.v_hCountry" sql="select '' as WC_NAME from WA_COUNTRY union select WC_NAME from WA_COUNTRY" key-column="WC_NAME" value-column="WC_NAME" xhtml_onchange="javascript: updateState(\'ab_hCountry\', \'ab_hState\');" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_hCountry); ?>
+                          <?vsp self.viewField (self.v_hCountry, 'country-name', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -1992,7 +2069,7 @@
                               ]]>
                             </span>
                         </vm:if>
-                        <?vsp self.viewField (self.v_hState); ?>
+                          <?vsp self.viewField (self.v_hState, 'region', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -2003,7 +2080,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_hCity" value="--self.v_hCity" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_hCity); ?>
+                          <?vsp self.viewField (self.v_hCity, 'locality', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -2014,7 +2091,7 @@
                         <vm:if test="self.abAction <> 'view'">
                         <v:text name="ab_hCode" value="--self.v_hCode" xhtml_size="20" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_hCode); ?>
+                          <?vsp self.viewField (self.v_hCode, 'postal-code', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -2025,7 +2102,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_hAddress1" value="--self.v_hAddress1" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_hAddress1); ?>
+                          <?vsp self.viewField (self.v_hAddress1, 'street-address', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -2036,7 +2113,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_hAddress2" value="--self.v_hAddress2" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_hAddress2); ?>
+                          <?vsp self.viewField (self.v_hAddress2, 'extended-address', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -2048,19 +2125,9 @@
                         <v:select-list name="ab_hTzone">
                           <v:on-init>
                             <![CDATA[
-                              declare i,j int;
                               declare x,y any;
 
-                              x := make_array (25, 'any');
-                              y := make_array (25, 'any');
-                              i := -12;
-                              j := 0;
-                              while (i <= 12) {
-                                x[j] := cast (i as varchar);
-                                  y[j] := self.viewTimeZone (i);
-                                i := i + 1;
-                                j := j + 1;
-                              }
+                                  self.prepareTimeZone (x, y);
                               control.vsl_item_values := x;
                               control.vsl_items := y;
                               control.ufl_value := '0';
@@ -2071,7 +2138,7 @@
                           </v:before-data-bind>
                         </v:select-list>
                         </vm:if>
-                        <?vsp self.viewField (self.viewTimeZone (self.v_hTzone)); ?>
+                          <?vsp self.viewField (self.viewTimeZone (self.v_hTzone), 'tz', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -2104,7 +2171,7 @@
            		            </v:on-post>
 			                  </v:button>
                         </vm:if>
-                        <?vsp self.viewField (cast (self.v_hLat as varchar)); ?>
+                          <?vsp self.viewField (cast (self.v_hLat as varchar), '', null); ?>
 		                  </td>
 		                </tr>
 		                <tr>
@@ -2115,7 +2182,7 @@
                         <vm:if test="self.abAction <> 'view'">
 			                  <v:text name="ab_hLng" value="--case when self.v_hLng is not null then sprintf ('%.6f', coalesce (self.v_hLng, 0.00)) else '' end" xhtml_size="20" />
                         </vm:if>
-                        <?vsp self.viewField (cast (self.v_hLng as varchar)); ?>
+                          <?vsp self.viewField (cast (self.v_hLng as varchar), '', null); ?>
 		                  </td>
 		                </tr>
                     <tr>
@@ -2126,7 +2193,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_hWeb" value="--self.v_hWeb" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_hWeb); ?>
+                          <?vsp self.viewField (self.v_hWeb, 'url:home', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -2137,7 +2204,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_hMail" value="--self.v_hMail" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_hMail); ?>
+                          <?vsp self.viewField (self.v_hMail, 'email:internet', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -2148,7 +2215,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_hPhone" value="--self.v_hPhone" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_hPhone); ?>
+                          <?vsp self.viewField (self.v_hPhone, 'tel:home', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -2159,7 +2226,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_hMobile" value="--self.v_hMobile" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_hMobile); ?>
+                          <?vsp self.viewField (self.v_hMobile, 'tel:home,cell', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -2170,12 +2237,13 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_hFax" value="--self.v_hFax" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_hFax); ?>
+                          <?vsp self.viewField (self.v_hFax, '', null); ?>
                       </td>
                     </tr>
                   </table>
                 </div>
-                <div id="a_content_3" class="tabContent" style="display: none;">
+                  <div id="a_content_3" class="tabContent adr" style="display: none;">
+                    <span class="type" style="display: none;">WORK</span>
                   <table class="form-body" cellspacing="0">
                     <tr>
                       <th width="25%">
@@ -2185,7 +2253,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:data-list name="ab_bCountry" xhtml_id="ab_bCountry" value="--self.v_bCountry" sql="select '' as WC_NAME from WA_COUNTRY union select WC_NAME from WA_COUNTRY" key-column="WC_NAME" value-column="WC_NAME" xhtml_onchange="javascript: updateState(\'ab_bCountry\', \'ab_bState\');" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_bCountry); ?>
+                          <?vsp self.viewField (self.v_bCountry, 'country-name', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -2217,7 +2285,7 @@
                               ]]>
                             </span>
                         </vm:if>
-                        <?vsp self.viewField (self.v_bState); ?>
+                          <?vsp self.viewField (self.v_bState, 'region', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -2228,7 +2296,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_bCity" value="--self.v_bCity" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_bCity); ?>
+                          <?vsp self.viewField (self.v_bCity, 'locality', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -2239,7 +2307,7 @@
                         <vm:if test="self.abAction <> 'view'">
                         <v:text name="ab_bCode" value="--self.v_bCode" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_bCode); ?>
+                          <?vsp self.viewField (self.v_bCode, 'postal-code', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -2250,7 +2318,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_bAddress1" value="--self.v_bAddress1" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_bAddress1); ?>
+                          <?vsp self.viewField (self.v_bAddress1, 'street-address', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -2261,7 +2329,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_bAddress2" value="--self.v_bAddress2" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_bAddress2); ?>
+                          <?vsp self.viewField (self.v_bAddress2, 'extended-address', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -2273,20 +2341,9 @@
                         <v:select-list name="ab_bTzone">
                           <v:on-init>
                             <![CDATA[
-                              declare i,j int;
                               declare x,y any;
 
-                              x := make_array (25, 'any');
-                              y := make_array (25, 'any');
-                              i := -12;
-                              j := 0;
-                                  while (i <= 12)
-                                  {
-                                x[j] := cast (i as varchar);
-                                  y[j] := self.viewTimeZone (i);
-                                i := i + 1;
-                                j := j + 1;
-                              }
+                                  self.prepareTimeZone (x, y);
                               control.vsl_item_values := x;
                               control.vsl_items := y;
                               control.ufl_value := '0';
@@ -2297,7 +2354,7 @@
                           </v:before-data-bind>
                         </v:select-list>
                         </vm:if>
-                        <?vsp self.viewField (self.viewTimeZone (self.v_bTzone)); ?>
+                          <?vsp self.viewField (self.viewTimeZone (self.v_bTzone), 'tz', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -2332,7 +2389,7 @@
            		            </v:on-post>
 			                  </v:button>
                         </vm:if>
-                        <?vsp self.viewField (cast (self.v_bLat as varchar)); ?>
+                          <?vsp self.viewField (cast (self.v_bLat as varchar), '', null); ?>
 		                  </td>
 		                </tr>
 		                <tr>
@@ -2343,7 +2400,7 @@
                         <vm:if test="self.abAction <> 'view'">
 			                  <v:text name="ab_bLng" value="--case when self.v_bLng is not null then sprintf ('%.6f', coalesce (self.v_bLng, 0.00)) else '' end" xhtml_size="20" />
                         </vm:if>
-                        <?vsp self.viewField (cast (self.v_bLng as varchar)); ?>
+                          <?vsp self.viewField (cast (self.v_bLng as varchar), '', null); ?>
 		                  </td>
 		                </tr>
                     <tr>
@@ -2358,7 +2415,7 @@
 		                      </v:before-data-bind>
 		                    </v:data-list>
                         </vm:if>
-                        <?vsp self.viewField (self.v_bIndustry); ?>
+                          <?vsp self.viewField (self.v_bIndustry, '', null); ?>
                       </td>
                     </tr>
                     <tr class="contactType">
@@ -2369,7 +2426,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_bOrganization" value="--self.v_bOrganization" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_bOrganization); ?>
+                          <?vsp self.viewField (self.v_bOrganization, 'org', null); ?>
                       </td>
                     </tr>
                     <tr class="contactType">
@@ -2380,7 +2437,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_bDepartment" value="--self.v_bDepartment" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_bDepartment); ?>
+                          <?vsp self.viewField (self.v_bDepartment, '', null); ?>
                       </td>
                     </tr>
                     <tr class="contactType">
@@ -2391,7 +2448,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_bJob" value="--self.v_bJob" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_bJob); ?>
+                          <?vsp self.viewField (self.v_bJob, 'title', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -2402,7 +2459,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_bWeb" value="--self.v_bWeb" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_bWeb); ?>
+                          <?vsp self.viewField (self.v_bWeb, 'url:work', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -2413,7 +2470,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_bMail" value="--self.v_bMail" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_bMail); ?>
+                          <?vsp self.viewField (self.v_bMail, 'email:internet', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -2424,7 +2481,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_bPhone" value="--self.v_bPhone" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_bPhone); ?>
+                          <?vsp self.viewField (self.v_bPhone, 'tel:work', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -2435,7 +2492,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_bMobile" value="--self.v_bMobile" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_bMobile); ?>
+                          <?vsp self.viewField (self.v_bMobile, 'tel:work,cell', null); ?>
                       </td>
                     </tr>
                     <tr>
@@ -2446,7 +2503,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_bFax" value="--self.v_bFax" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_bFax); ?>
+                          <?vsp self.viewField (self.v_bFax, '', null); ?>
                       </td>
                     </tr>
                   </table>
@@ -2484,7 +2541,7 @@
                             		    </script>
                             		  ]]>
                                 </vm:if>
-                                <?vsp self.viewField (relationship); ?>
+                                <?vsp self.viewField (relationship, '', null); ?>
                               </td>
                               <vm:if test="self.abAction <> 'view'">
                                 <td>
@@ -2498,7 +2555,7 @@
                               M := 2;
                               if (self.abAction <> 'view')
                                 M := M - 1;
-                              http (sprintf ('<tr id="b_tr_no" style="display: %s"><td colspan="%d"><b>No Relationships</b></td></tr>', case when N = 0 then '' else 'none' end, M));
+                              http (sprintf ('<tr id="b_tr_no" %s><td colspan="%d"><b>No Relationships</b></td></tr>', case when N = 0 then '' else 'style="display: none;"' end, M));
                             ?>
                           </table>
                           <input type="hidden" id="b_no" name="b_no" value="<?V N ?>" />
@@ -2595,7 +2652,7 @@
                             <?vsp
                               }
                               M := 4;
-                              http (sprintf ('<tr id="s_tr_no" style="display: %s"><td colspan="%d"><b>No Sharings</b></td></tr>', case when L = 0 then '' else 'none' end, M));
+                              http (sprintf ('<tr id="s_tr_no" %s><td colspan="%d"><b>No Sharings</b></td></tr>', case when L = 0 then '' else 'style="display: none;"' end, M));
                             ?>
                           </table>
                           <input type="hidden" id="s_no" name="s_no" value="<?V L+1 ?>" />
@@ -3086,7 +3143,8 @@
                   <v:button action="simple" name="i2_next" value="Next" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
-	                    if (self.i_type_0.ufl_selected) {
+                        if (self.i_type_0.ufl_selected)
+                        {
 	                      self.i_type := 0;
                         }
                         else if (self.i_type_1.ufl_selected)
@@ -3346,9 +3404,12 @@
 	                <v:on-post>
 	                  <![CDATA[
                         declare tmp, host varchar;
+                        declare params any;
 
-                      declare exit handler for SQLSTATE '*' {
-                        if (__SQL_STATE = 'TEST') {
+                        declare exit handler for SQLSTATE '*'
+                        {
+                          if (__SQL_STATE = 'TEST')
+                          {
                           self.vc_error_message := AB.WA.test_clear(__SQL_MESSAGE);
                           self.vc_is_valid := 0;
                           return;
@@ -3356,9 +3417,10 @@
                         resignal;
                       };
 
+                        params := e.ve_params;
                         if (self.i_source = 0)
                         {
-	                      self.i_data := trim(get_keyword ('f_file', self.vc_page.vc_event.ve_params, ''));
+                          self.i_data := trim(get_keyword ('f_file', params, ''));
                           if (is_empty_or_null (self.i_data))
                           {
 	                        self.vc_error_message := 'Please select file from your local file system!';
@@ -3649,7 +3711,8 @@
                         if (self.i_data [N] = 'entry')
                         {
               	        data := self.i_data [N+1];
-                          if (isnull (self.i_lMaps)) {
+                            if (isnull (self.i_lMaps))
+                            {
                             for (M := 0; M < length (data); M := M + 2)
                             {
               	  ?>
@@ -3861,9 +3924,8 @@
                       	    <td width="1%">
                       	      <?vsp
                                 declare S varchar;
-                                S := '';
-                                if (get_keyword(fields[N], data, '') <> '')
-                                  S := 'checked="checked"';
+
+                                  S := case when (get_keyword(fields[N], data, '') <> '') then 'checked="checked"' else '' end;
                                 http (sprintf ('<input type="checkbox" %s name="cb_item" value="%s"', S, fields[N]));
                               ?>
                       		  </td>
@@ -3924,7 +3986,13 @@
 
 			                -- vCard
                       if (self.i_type = 0)
+                          if (self.i_source = 2)
+                          {
+                            AB.WA.import_vcard2 (self.domain_id, self.i_data, vector ('tags', self.v_tags), self.i_validation, 2);
+                          } else {
                           AB.WA.import_vcard (self.domain_id, self.i_data, vector ('tags', self.v_tags), self.i_validation);
+                          }
+
 
 			                -- FOAF
                       if (self.i_type = 1)

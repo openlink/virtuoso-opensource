@@ -445,7 +445,7 @@ create procedure AB.WA.export_rss_sqlx_int (
   http ('    XMLELEMENT(\'link\', AB.WA.contact_url (<DOMAIN_ID>, P_ID)), \n', retValue);
   http ('    XMLELEMENT(\'pubDate\', AB.WA.dt_rfc1123 (P_UPDATED)), \n', retValue);
   http ('    (select XMLAGG (XMLELEMENT (\'category\', TV_TAG)) from AB..TAGS_VIEW where tags = P_TAGS), \n', retValue);
-  http ('    XMLELEMENT(\'http://www.openlinksw.com/weblog/:modified\', AB.WA.dt_iso8601 (P_UPDATED)))) \n', retValue);
+  http ('    XMLELEMENT(\'http://www.openlinksw.com/ods/:modified\', AB.WA.dt_iso8601 (P_UPDATED)))) \n', retValue);
   http ('from (select top 15  \n', retValue);
   http ('        P_NAME, \n', retValue);
   http ('        P_FULL_NAME, \n', retValue);
@@ -1457,9 +1457,10 @@ _skip:
   if (not isnull (aEntity))
     pXml := XMLUpdate(pXml, sprintf ('/settings/entry[@ID = "%s"]', id), null);
 
-  if (not is_empty_or_null(value)) {
+  if (not is_empty_or_null(value))
+  {
     aEntity := xpath_eval('/settings', pXml);
-    XMLAppendChildren(aEntity, xtree_doc(sprintf ('<entry ID="%s">%s</entry>', id, AB.WA.xml2string(value))));
+    XMLAppendChildren(aEntity, xtree_doc(sprintf ('<entry ID="%s">%s</entry>', id, AB.WA.xml2string(AB.WA.utf2wide(value)))));
   }
   return pXml;
 }
@@ -2148,7 +2149,7 @@ create procedure AB.WA.dt_gmt2user(
     pUser := connection_get('owner_user');
   if (isnull (pUser))
     pUser := connection_get('vspx_user');
-  if (isnull (pUser))
+  if (is_empty_or_null (pUser))
     return pDate;
   tz := cast (coalesce(USER_GET_OPTION(pUser, 'TIMEZONE'), timezone(now())/60) as integer) * 60;
   return dateadd('minute', tz, pDate);
@@ -2713,12 +2714,15 @@ create procedure AB.WA.validate_tags (
 -------------------------------------------------------------------------------
 --
 create procedure AB.WA.ab_sparql (
-  in S varchar)
+  in S varchar,
+  in debug any := null)
 {
   declare st, msg, meta, rows any;
 
   st := '00000';
   exec (S, st, msg, vector (), 0, meta, rows);
+  if (not isnull (debug) and ('00000' <> st))
+    dbg_obj_print ('', S, st, msg);
   if ('00000' = st)
     return rows;
   return vector ();
@@ -3455,13 +3459,7 @@ create procedure AB.WA.import_vcard (
   declare vcardImported any;
 
   vcardImported := vector ();
-
-  -- options
-  oTags := '';
-  if (not isnull (options))
-  {
-    oTags := get_keyword ('tags', options, '');
-  }
+  oTags := case when isnull (options) then '' else get_keyword ('tags', options, '') end;
 
   Meta := vector
     (
@@ -3489,11 +3487,9 @@ create procedure AB.WA.import_vcard (
 
   -- using DAV parser
   if (not isstring (content))
-  {
-    xmlData := DB.DBA.IMC_TO_XML (cast (content as varchar));
-  } else {
+    content := cast (content as varchar);
     xmlData := DB.DBA.IMC_TO_XML (content);
-  }
+
   xmlData := xml_tree_doc (xmlData);
   xmlItems := xpath_eval ('/*', xmlData, 0);
   foreach (any xmlItem in xmlItems) do
@@ -3599,6 +3595,156 @@ create procedure AB.WA.import_vcard (
 
 -------------------------------------------------------------------------------
 --
+create procedure AB.WA.import_vcard2 (
+  in domain_id integer,
+  in content any,
+  in options any := null,
+  in validation any := null,
+  in contentType any := 0,
+  in contentIRI varchar := null)
+{
+  declare N, M, L, mLength, iLength, id integer;
+  declare tmp, tmp2, tmpTags, data, pFields, pValues any;
+  declare Tags, Meta, Persons, Person, Items any;
+  declare S, T, name, fullName varchar;
+
+  Tags := case when isnull (options) then '' else get_keyword ('tags', options, '') end;
+  if (isnull (contentIRI))
+    contentIRI := AB.WA.ab_graph_create ();
+
+  declare exit handler for sqlstate '*'
+  {
+    dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
+    AB.WA.ab_graph_delete (contentIRI);
+    signal ('TEST', 'Bad import source!<>');
+  };
+
+  Meta := vector
+    (
+      'P_NAME',
+      'P_FIRST_NAME',
+      'P_LAST_NAME',
+      'P_BIRTHDAY',
+      'P_TITLE',
+      'P_TAGS'
+    );
+  mLength := length (Meta);
+
+  if (contentType = 0)
+  {
+    DB.DBA.RDF_LOAD_RDFXML (content, contentIRI, contentIRI);
+  } else {
+    declare st, msg, meta any;
+
+    -- S := sprintf ('SPARQL load <%s> into graph <%s>', content, contentIRI);
+    S := sprintf ('SPARQL\ndefine get:soft "soft"\n  define get:uri "%s"\nSELECT *\n  FROM <%s>\n WHERE { ?s ?p ?o }', content, contentIRI);
+    st := '00000';
+    exec (S, st, msg, vector (), 0, meta, Items);
+    if ('00000' <> st)
+      signal (st, msg);
+  }
+  S := ' SPARQL '                                                    ||
+       ' define input:storage "" '                                   ||
+       ' prefix vcard: <http://www.w3.org/2001/vcard-rdf/3.0#> '     ||
+       ' select ?P_ID'                                               ||
+       '   from <%s> '                                               ||
+       '  where { ?P_ID a vcard:vCard . }';
+  Items := AB.WA.ab_sparql (sprintf (S, contentIRI));
+  for (L := 0; L < length (Items); L := L + 1)
+  {
+    AB.WA.ab_sparql (sprintf ('SPARQL\ndefine get:soft "soft"\n  define get:uri "%s"\nSELECT *\n  FROM <%s>\n WHERE { ?s ?p ?o }', Items[L][0], contentIRI));
+    S := ' SPARQL ' ||
+         ' define input:storage "" ' ||
+         ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
+         ' prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> '      ||
+         ' prefix foaf: <http://xmlns.com/foaf/0.1/> '                 ||
+         ' prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> '    ||
+         ' prefix vcard: <http://www.w3.org/2001/vcard-rdf/3.0#> '     ||
+         ' prefix bio: <http://vocab.org/bio/0.1/> '                   ||
+         ' select ?P_NAME ?P_FIRST_NAME ?P_LAST_NAME ?P_BIRTHDAY ?P_TITLE ?P_TAGS' ||
+         '   from <%s> '                                          ||
+         '  where { '                                             ||
+         '         <%s> a vcard:vCard . '                         ||
+         '         optional { ?P_ID vcard:NICKNAME ?P_NAME. }. '  ||
+         '         optional { ?P_ID vcard:N ?N. '                 ||
+         '                    ?N vcard:Given ?P_FIRST_NAME. '     ||
+         '                    ?N vcard:Family ?P_LAST_NAME. '     ||
+         '                    ?N vcard:Prefix ?P_TITLE. '         ||
+         '                  }.'                                   ||
+         '         optional { ?P_ID vcard:BDAY ?P_BIRTHDAY} . '   ||
+         '         optional { ?P_ID vcard:CATEGORIES ?P_TAGS} . ' ||
+         '       }';
+    Person := AB.WA.ab_sparql (sprintf (S, Items[L][0], contentIRI));
+    if (length (Person) = 1)
+    {
+      Person := Persons[0];
+      name := Person[1];
+      if (not is_empty_or_null (name))
+      {
+        pFields := vector ('P_NAME');
+        pValues := vector (name);
+        if (content like 'http://%')
+        {
+          pFields := vector_concat (pFields, vector ('P_FOAF'));
+          pValues := vector_concat (pValues, vector (content));
+        }
+        for (M := 2; M < mLength; M := M + 1)
+        {
+          tmp := Meta[M];
+          tmp2 := Person[M];
+          tmpTags := tags;
+          if (tmp = 'P_BIRTHDAY')
+          {
+            {
+              declare continue handler for sqlstate '*'
+              {
+                tmp := '';
+              };
+              tmp2 := AB.WA.dt_reformat (tmp2, 'Y-M-D');
+            }
+          }
+          if (tmp = 'P_KIND')
+          {
+            tmp2 := case when (tmp2 = 'http://xmlns.com/foaf/0.1/Organization') then 1 else 0 end;
+          }
+          if (tmp = 'P_MAIL')
+          {
+            tmp2 := replace (tmp2, 'mailto:', '');
+          }
+          if (tmp = 'P_PHONE')
+          {
+            tmp2 := replace (tmp2, 'tel:', '');
+          }
+          if (tmp = 'P_TITLE')
+          {
+            tmp2 := AB.WA.import_title (tmp2);
+          }
+          if (tmp = 'P_TAGS')
+          {
+            tmpTags := AB.WA.tags_join (tmpTags, tmp2);
+            tmp := '';
+          }
+          if (tmp <> '')
+          {
+            pFields := vector_concat (pFields, vector (tmp));
+            pValues := vector_concat (pValues, vector (tmp2));
+          }
+        }
+        commit work;
+        connection_set ('__addressbook_import', '1');
+        AB.WA.contact_update4 (-1, domain_id, pFields, pValues, tmpTags, validation);
+        connection_set ('__addressbook_import', '0');
+      }
+    }
+  }
+
+_delete:;
+  AB.WA.ab_graph_delete (contentIRI);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure AB.WA.import_title (
   in title varchar)
 {
@@ -3675,16 +3821,10 @@ create procedure AB.WA.import_foaf (
   if (contentType = 0)
   {
     DB.DBA.RDF_LOAD_RDFXML (content, contentIRI, contentIRI);
-  }
-  if (contentType = 1)
-  {
+  } else {
     declare st, msg, meta any;
   
-    T := '';
-    if (contentDepth)
-    {
-      T := sprintf ('  define input:grab-depth %d\n  define input:grab-limit %d\n  define input:grab-seealso <%s>\n  define input:grab-destination <%s>\n', contentDepth, contentLimit, contentFollow, contentIRI);
-    }
+    T := case when contentDepth then sprintf ('  define input:grab-depth %d\n  define input:grab-limit %d\n  define input:grab-seealso <%s>\n  define input:grab-destination <%s>\n', contentDepth, contentLimit, contentFollow, contentIRI) else '' end;
     S := sprintf ('SPARQL\n%s  define get:soft "soft"\n  define get:uri "%s"\nSELECT *\n  FROM <%s>\n WHERE { ?s ?p ?o }', T, content, contentIRI);
     st := '00000';
     exec (S, st, msg, vector (), 0, meta, Items);

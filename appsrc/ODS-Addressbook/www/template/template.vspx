@@ -170,6 +170,14 @@
           self.owner_id := AB.WA.domain_owner_id (self.domain_id);
           self.ownerName := AB.WA.domain_owner_name (self.domain_id);
           self.settings := vector_concat (vector ('app', DB.DBA.WA_USER_APP_ENABLE (self.account_id)), AB.WA.settings (self.domain_id));
+
+          self.vc_add_attribute ('xmlns:foaf', 'http://xmlns.com/foaf/0.1/');
+          self.vc_add_attribute ('xmlns:dc', 'http://purl.org/dc/elements/1.1/');
+          self.vc_add_attribute ('xmlns:dct', 'http://purl.org/dc/terms/');
+          self.vc_add_attribute ('xmlns:rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
+          self.vc_add_attribute ('xmlns:rdfs', 'http://www.w3.org/2000/01/rdf-schema#');
+          self.vc_add_attribute ('xmlns:sioct', 'http://rdfs.org/sioc/types#');
+          self.vc_add_attribute ('xmlns:sioc', 'http://rdfs.org/sioc/ns#');
         ]]>
       </v:on-init>
 

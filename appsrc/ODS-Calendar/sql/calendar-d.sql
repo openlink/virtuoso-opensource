@@ -104,8 +104,33 @@ CAL.WA.drop_procedures();
 CAL.WA.exec_no_error('DROP procedure CAL.WA.drop_procedures');
 
 -- dropping SIOC procs
+CAL.WA.exec_no_error ('DROP procedure SIOC.DBA.calendar_event_iri_internal');
+CAL.WA.exec_no_error ('DROP procedure SIOC.DBA.calendar_event_iri');
+CAL.WA.exec_no_error ('DROP procedure SIOC.DBA.calendar_comment_iri');
+CAL.WA.exec_no_error ('DROP procedure SIOC.DBA.calendar_annotation_iri');
 CAL.WA.exec_no_error('DROP procedure SIOC.DBA.fill_ods_calendar_sioc');
+CAL.WA.exec_no_error ('DROP procedure SIOC.DBA.event_insert');
+CAL.WA.exec_no_error ('DROP procedure SIOC.DBA.event_delete');
+CAL.WA.exec_no_error ('DROP procedure SIOC.DBA.calendar_comment_insert');
+CAL.WA.exec_no_error ('DROP procedure SIOC.DBA.calendar_comment_delete');
+CAL.WA.exec_no_error ('DROP procedure SIOC.DBA.cal_annotation_insert');
+CAL.WA.exec_no_error ('DROP procedure SIOC.DBA.cal_annotation_delete');
+CAL.WA.exec_no_error ('DROP procedure SIOC.DBA.cal_claims_insert');
+CAL.WA.exec_no_error ('DROP procedure SIOC.DBA.cal_claims_delete');
 CAL.WA.exec_no_error('DROP procedure SIOC.DBA.ods_calendar_sioc_init');
+
+-- RDF Views - procs & views
+CAL.WA.exec_no_error ('DROP procedure SIOC.DBA.rdf_calendar_view_str');
+CAL.WA.exec_no_error ('DROP procedure SIOC.DBA.rdf_calendar_view_str_tables');
+CAL.WA.exec_no_error ('DROP procedure SIOC.DBA.rdf_calendar_view_str_maps');
+
+CAL.WA.exec_no_error ('DROP procedure DB.DBA.ODS_CALENDAR_TAGS');
+CAL.WA.exec_no_error ('DROP view DB.DBA.ODS_CALENDAR_EVENTS');
+CAL.WA.exec_no_error ('DROP view DB.DBA.ODS_CALENDAR_TASKS');
+CAL.WA.exec_no_error ('DROP view DB.DBA.ODS_CALENDAR_TAGS');
+
+-- reinit
+ODS_RDF_VIEW_INIT ();
 
 -- dropping API procs
 CAL.WA.exec_no_error ('DROP procedure ODS.ODS_API."setting_set"');
