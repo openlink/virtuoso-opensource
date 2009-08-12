@@ -211,9 +211,9 @@
       R := self.showEventSubjectTmp (_id, e_event, e_subject, e_repeat, e_reminder, e_attendees);
       if (e_event = 1)
       {
-        T := sprintf ('<div id="e_%d_%s" class="EV vevent" %s onclick="eEdit(this)" about="%U">%s%s%s%s</div>', _id, S, color, SIOC..calendar_event_iri (domain_id, _id), e_continue, showDelete, showAnnotate, R);
+        T := sprintf ('<div id="e_%d_%s" class="EV vevent" typeof="sioct:EventCalendar" %s onclick="eEdit(this)" about="%V">%s%s%s<span style="display:none;">%s</span>%s</div>', _id, S, color, SIOC..calendar_event_iri (domain_id, _id), e_continue, showDelete, showAnnotate, self.prepareField (e_start, 'dtstart', null), R);
       } else {
-        T := sprintf ('<div id="e_%d_%s" class="EV vevent" %s onclick="eEdit(this)" about="%U">%s%s%s<span class="EV_time">%s-%s</span>%s</div>', _id, S, color, SIOC..calendar_event_iri (domain_id, _id), e_continue, showDelete, showAnnotate, CAL.WA.dt_timestring (e_start), CAL.WA.dt_timestring (e_end), R);
+        T := sprintf ('<div id="e_%d_%s" class="EV vevent" typeof="sioct:EventCalendar" %s onclick="eEdit(this)" about="%V">%s%s%s<span class="EV_time">%s-%s</span>%s</div>', _id, S, color, SIOC..calendar_event_iri (domain_id, _id), e_continue, showDelete, showAnnotate, self.prepareField (e_start, 'dtstart', CAL.WA.dt_timestring (e_start)), self.prepareField (e_end, 'dtend', CAL.WA.dt_timestring (e_end)), R);
       }
       return T;
     ]]>
@@ -230,57 +230,78 @@
     ]]>
   </v:method>
 
-  <v:method name="showEventStart" arglist="in e_event integer, in e_time datetime">
+  <v:method name="showEventDate" arglist="in eTime datetime, in eTimeProperty varchar, in eMode varchar, in eReversed varchar">
     <![CDATA[
-      if (not isnull (e_time))
-      {
-        e_time := CAL.WA.event_gmt2user (e_time, self.cTimezone);
-        if (e_event = 1)
-        {
-        http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s</span>', CAL.WA.dt_datestring (e_time, 'Y.M.D'), CAL.WA.dt_datestring (e_time, self.cDateFormat)));
-      } else {
-        http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s <span class="EVL_time">%s</span></span>', CAL.WA.dt_datestring (e_time, 'Y.M.D'), CAL.WA.dt_datestring (e_time, self.cDateFormat), CAL.WA.dt_timestring (e_time, self.cTimeFormat)));
-      }
-      }
+      if (eMode = 'date')
+        return self.prepareField (eTime, eTimeProperty, null);
+      if (eMode = 'time')
+        return self.prepareField (eTime, eTimeProperty, sprintf ('<span class="EVL_time">%s</span>', CAL.WA.dt_timestring (eTime, self.cTimeFormat)));
+      if ((eMode = 'dateTime') and not eReversed)
+        return self.prepareField (eTime, eTimeProperty, sprintf ('%s <span class="EVL_time">%s</span>', CAL.WA.dt_datestring (eTime, self.cDateFormat), CAL.WA.dt_timestring (eTime, self.cTimeFormat)));
+      if ((eMode = 'dateTime') and eReversed)
+        return self.prepareField (eTime, eTimeProperty, sprintf ('<span class="EVL_time">%s</span> %s', CAL.WA.dt_timestring (eTime, self.cTimeFormat), CAL.WA.dt_datestring (eTime, self.cDateFormat)));
+      return '';
     ]]>
   </v:method>
 
-  <v:method name="showEventEnd" arglist="in e_event integer, in e_time datetime">
+  <v:method name="showTagEventDate" arglist="in eTime datetime, in eTimeString varchar">
     <![CDATA[
-      if (not isnull (e_time))
-      {
+      return sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s</span>', CAL.WA.dt_datestring (eTime, 'Y.M.D'), eTimeString);
+    ]]>
+  </v:method>
+
+  <v:method name="showEventStart" arglist="in e_event integer, in e_time datetime, in e_timeProperty varchar">
+    <![CDATA[
+      if (isnull (e_time))
+        return;
+
         e_time := CAL.WA.event_gmt2user (e_time, self.cTimezone);
-        if (e_event = 1)
-        {
-        http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s</span>', CAL.WA.dt_datestring (e_time, 'Y.M.D'), CAL.WA.dt_datestring (e_time, self.cDateFormat)));
-      } else {
-        http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration"><span class="EVL_time">%s</span> %s</span>', CAL.WA.dt_datestring (e_time, 'Y.M.D'), CAL.WA.dt_timestring (e_time, self.cTimeFormat), CAL.WA.dt_datestring (e_time, self.cDateFormat)));
-      }
-      }
+      http (self.showTagEventDate (e_time, self.showEventDate (e_time, e_timeProperty, case when e_event = 1 then 'date' else 'dateTime' end, 0)));
+    ]]>
+  </v:method>
+
+  <v:method name="showEventEnd" arglist="in e_event integer, in e_time datetime, in e_timeProperty varchar">
+    <![CDATA[
+      if (isnull (e_time))
+        return;
+
+        e_time := CAL.WA.event_gmt2user (e_time, self.cTimezone);
+      http (self.showTagEventDate (e_time, self.showEventDate (e_time, e_timeProperty, case when e_event = 1 then 'date' else 'dateTime' end, 1)));
     ]]>
   </v:method>
 
   <v:method name="showEventDuration" arglist="in e_event integer, in e_start datetime, in e_end datetime">
     <![CDATA[
+      declare S varchar;
+
       if (isnull (e_start))
-        return self.showEventEnd (e_event, e_end);
+        return self.showEventEnd (e_event, e_end, 'dtend');
+
       e_start := CAL.WA.event_gmt2user (e_start, self.cTimezone);
       e_end := CAL.WA.event_gmt2user (e_end, self.cTimezone);
       if (CAL.WA.dt_compare (e_start, e_end))
       {
         if (e_event = 1)
         {
-          http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s</span>', CAL.WA.dt_datestring (e_start, 'Y.M.D'), CAL.WA.dt_datestring (e_start, self.cDateFormat)));
+          S := self.showEventDate (e_start, 'dtstart', 'date', 0);
         } else {
-          http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s <span class="EVL_time">%s</span> - <span class="EVL_time">%s</span></span>', CAL.WA.dt_datestring (e_start, 'Y.M.D'), CAL.WA.dt_datestring (e_start, self.cDateFormat), CAL.WA.dt_timestring (e_start, self.cTimeFormat), CAL.WA.dt_timestring (e_end, self.cTimeFormat)));
+          S := self.showEventDate (e_start, 'dtstart', 'dateTime', 0);
+          if (not isnull (e_end))
+            S := sprintf ('%s - %s', S, self.showEventDate (e_end, 'dtend', 'time', 0));
         }
+        http (self.showTagEventDate (e_start, S));
       } else {
         if (e_event = 1)
         {
-          http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s </span> - <span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s </span>', CAL.WA.dt_datestring (e_start, 'Y.M.D'), CAL.WA.dt_datestring (e_start, self.cDateFormat), CAL.WA.dt_datestring (e_end, 'Y.M.D'), CAL.WA.dt_datestring (e_end, self.cDateFormat)));
+          S := self.showTagEventDate (e_start, self.showEventDate (e_start, 'dtstart', 'date', 0));
+          if (not isnull (e_end))
+            S := sprintf ('%s - %s', S, self.showTagEventDate (e_end, self.showEventDate (e_end, 'dtend', 'date', 0)));
         } else {
-          http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s <span class="EVL_time">%s</span></span> - <span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s <span class="EVL_time">%s</span></span>', CAL.WA.dt_datestring (e_start, 'Y.M.D'), CAL.WA.dt_datestring (e_start, self.cDateFormat), CAL.WA.dt_timestring (e_start, self.cTimeFormat), CAL.WA.dt_datestring (e_end, 'Y.M.D'), CAL.WA.dt_datestring (e_end, self.cDateFormat), CAL.WA.dt_timestring (e_end, self.cTimeFormat)));
+          S := self.showTagEventDate (e_start, self.showEventDate (e_start, 'dtstart', 'dateTime', 0));
+          if (not isnull (e_end))
+            S := sprintf ('%s - %s', S, self.showTagEventDate (e_end, self.showEventDate (e_end, 'dtend', 'dateTime', 0)));
         }
+        http (S);
       }
     ]]>
   </v:method>
@@ -290,7 +311,7 @@
       declare domain_id integer;
       
       domain_id := (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = _id);  
-      return sprintf ('<a id="e_%d" href="%s" onclick="javascript: eEdit(\'e_%d\'); return false;" class="EVL EVL_subject app" about="%U"> %s%s%s<span class="summary">%V</span></a>', _id, SIOC..calendar_event_iri(domain_id, _id), _id, SIOC..calendar_event_iri(domain_id, _id), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), self.attendeesImage (e_attendees), CAL.WA.show_subject (e_subject));
+      return sprintf ('<a id="e_%d" href="%s" onclick="javascript: eEdit(\'e_%d\'); return false;" class="EVL EVL_subject app" about="%V"> %s%s%s%s</a>', _id, SIOC..calendar_event_iri(domain_id, _id), _id, SIOC..calendar_event_iri(domain_id, _id), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), self.attendeesImage (e_attendees), self.prepareField (CAL.WA.show_subject (e_subject), 'summary', null));
     ]]>
   </v:method>
 
@@ -435,26 +456,65 @@
     ]]>
   </v:method>
 
-  <v:method name="viewField" arglist="inout fValue any">
+  <v:method name="prepareField" arglist="inout fValue any, in fProperty varchar, in fShowValue any">
     <![CDATA[
-      if (self.cAction = 'view')
+      declare F, FS, T, P varchar;
+
+      -- value
          if (is_empty_or_null (fValue))
          {
-           http ('&nbsp;');
-         } else {
-          if (internal_type (fValue) = 211)
+        F := ' ';
+      }
+      else if (fProperty = 'description')
           {
-             http (CAL.WA.dt_datestring (fValue, self.cDateFormat));
-           } else {
-         http (cast (fValue as varchar));
+        F := '<pre>' || CAL.WA.utf2wide (cast (fValue as varchar)) || '</pre>';
+      }
+      else if (internal_type (fValue) = 211)
+      {
+        F := CAL.WA.dt_datestring (fValue, self.cDateFormat);
            }
+      else
+      {
+        F := cast (fValue as varchar);
          }
+      if (is_empty_or_null (fProperty))
+        return F;
+
+      FS := fShowValue;
+      if (isnull (FS))
+        FS := F;
+
+      P := '';
+      -- vcalendar class
+      if (not is_empty_or_null (fProperty))
+        P := P || sprintf (' class="%s"', fProperty);
+
+      -- vcalendar special values
+      if (fProperty in ('dtstart', 'dtend', 'completed', 'created', 'last-modified'))
+        P := P || sprintf (' title="%s"', substring (cast (fValue as varchar), 1, 10));
+
+      -- dc properties
+      if (fProperty = 'summary')
+        P := P || ' property="dc:title"';
+
+      -- tag
+      T := 'span';
+      if (fProperty = 'dtstart')
+        T := 'abbr';
+      if (fProperty = 'dtend')
+        T := 'abbr';
+      return sprintf ('<%s%s>%s</%s>', T, P, FS, T);
+    ]]>
+  </v:method>
+
+  <v:method name="viewField" arglist="inout fValue any, in fProperty varchar, in fShowValue any">
+    <![CDATA[
+      http (self.prepareField(fValue, fProperty, fShowValue));
     ]]>
   </v:method>
 
   <v:method name="viewTags" arglist="inout fValue any">
     <![CDATA[
-      if (self.cAction = 'view')
         if (is_empty_or_null (fValue))
         {
           http ('&nbsp;');
@@ -473,24 +533,6 @@
             delimiter := ', ';
           }
         }
-    ]]>
-  </v:method>
-
-  <v:method name="viewDescription" arglist="inout fValue any">
-    <![CDATA[
-      if (self.cAction <> 'view')
-        return;
-         if (is_empty_or_null (fValue))
-         {
-           http ('&nbsp;');
-         } else {
-           if (internal_type (fValue) = 211)
-           {
-             http (CAL.WA.dt_datestring (fValue, self.cDateFormat));
-           } else {
-          http ('<pre>' || CAL.WA.utf2wide (cast (fValue as varchar)) || '</pre>');
-           }
-         }
     ]]>
   </v:method>
 
@@ -634,7 +676,7 @@
       declare pTime time;
 
       self.v_event := cast (get_keyword ('e_event', params, '0') as integer);
-      pDate := CAL.WA.test (trim (self.e_eventStartDate.ufl_value), vector('name', 'Event start date', 'class', 'date-'||self.cDateFormat));
+      pDate := CAL.WA.test (trim (self.e_eventStartDate.ufl_value), vector('name', 'Event start date', 'class', 'date-'||self.cDateFormat, 'canEmpty', 0));
       if (self.v_event = 0)
       {
         pTime := CAL.WA.dt_stringtime (self.e_eventStartTime.ufl_value);
@@ -642,7 +684,7 @@
         pTime := CAL.WA.dt_timeEncode (12, 0);
       }
       self.v_eventStart := CAL.WA.dt_join (pDate, pTime);
-      pDate := CAL.WA.test (trim (self.e_eventEndDate.ufl_value), vector('name', 'Event end date', 'class', 'date-'||self.cDateFormat));
+      pDate := CAL.WA.test (trim (self.e_eventEndDate.ufl_value), vector('name', 'Event end date', 'class', 'date-'||self.cDateFormat, 'canEmpty', 0));
       if (self.v_event = 0)
       {
         pTime := CAL.WA.dt_stringtime (self.e_eventEndTime.ufl_value);
@@ -1084,7 +1126,7 @@
             </vm:if>
           </td>
           <!-- Navigation right column -->
-          <td id="RC">
+          <td id="RC" typeof="sioct:Calendar" about="<?V CAL.WA.domain_iri (self.domain_id) ?>">
             <v:template type="simple" name="template_error" condition="not self.vc_is_valid">
               <div class="error">
                 <p><v:error-summary/></p>
@@ -2070,7 +2112,7 @@
                                 e_kind := rowset[2];
                               ?>
                           <table>
-                            <tr class="<?V case when e_kind then 'vtodo' else 'vevent' end ?>">
+                            <tr class="vevent" typeof="sioct:EventCalendar">
                               <?vsp
                                 if (self.access_role not in ('public', 'guest'))
                                 {
@@ -2082,56 +2124,44 @@
                               ?>
                               <vm:if test="self.cScope = 'events'">
                         <td nowrap="nowrap">
-                          <?vsp
-                                    self.showEventDuration (e_event, rowset[5], rowset[6]);
-                          ?>
+                                  <?vsp self.showEventDuration (e_event, rowset[5], rowset[6]); ?>
                         </td>
                         <td>
-                          <?vsp
-                                    self.showEventSubject (e_id, e_event, e_subject, rowset[7], rowset[8], rowset[10]);
-                          ?>
+                                  <?vsp self.showEventSubject (e_id, e_event, e_subject, rowset[7], rowset[8], rowset[10]); ?>
                         </td>
                         <vm:if test="self.columnEnabled ('event_E_LOCATION', 0)">
                           <td nowrap="nowrap">
-                                    <v:label value="--rowset[9]" />
+                                    <?vsp self.viewField (rowset[9], 'location', null); ?>
                           </td>
                         </vm:if>
                         <vm:if test="self.columnEnabled ('event_E_UPDATED', 1)">
                         <td nowrap="nowrap">
-                                    <v:label value="--CAL.WA.dt_datestring (rowset[15], self.cDateFormat)" />
+                                    <?vsp self.viewField (rowset[15], 'last-modified', null); ?>
                         </td>
                         </vm:if>
                         <vm:if test="self.columnEnabled ('event_E_CREATED', 0)">
                           <td nowrap="nowrap">
-                                    <v:label value="--CAL.WA.dt_datestring (rowset[14], self.cDateFormat)" />
+                                    <?vsp self.viewField (rowset[14], 'created', null); ?>
                           </td>
                         </vm:if>
                         </vm:if>
             <vm:if test="self.cScope = 'tasks'">
                         <td>
-                          <?vsp
-                                    self.showEventSubject (e_id, e_event, e_subject, rowset[7], rowset[8], rowset[10]);
-                          ?>
+                                  <?vsp self.showEventSubject (e_id, e_event, e_subject, rowset[7], rowset[8], rowset[10]); ?>
                         </td>
                         <vm:if test="self.columnEnabled ('task_E_START', 0)">
                         <td nowrap="nowrap">
-                          <?vsp
-                                      self.showEventStart (e_event, rowset[5]);
-                          ?>
+                                    <?vsp self.showEventStart (e_event, rowset[5], 'dtstart'); ?>
                         </td>
                         </vm:if>
                         <vm:if test="self.columnEnabled ('task_E_END', 1)">
                         <td nowrap="nowrap">
-                          <?vsp
-                                      self.showEventEnd (e_event, rowset[6]);
-                          ?>
+                                    <?vsp self.showEventEnd (e_event, rowset[6], 'dtend'); ?>
                         </td>
                         </vm:if>
                         <vm:if test="self.columnEnabled ('task_E_COMPLETED', 0)">
                         <td nowrap="nowrap">
-                          <?vsp
-                                      self.showEventEnd (e_event, rowset[11]);
-                          ?>
+                                    <?vsp self.showEventEnd (e_event, rowset[11], 'completed'); ?>
                         </td>
                         </vm:if>
                         <vm:if test="self.columnEnabled ('task_E_STATUS', 1)">
@@ -2141,17 +2171,17 @@
                         </vm:if>
                         <vm:if test="self.columnEnabled ('task_E_PRIORITY', 1)">
                           <td nowrap="nowrap">
-                                    <v:label value="--self.priorityLabel (rowset[13])" />
+                                    <?vsp self.viewField (self.priorityLabel(rowset[13]), 'priority', null); ?>
                           </td>
                         </vm:if>
                         <vm:if test="self.columnEnabled ('task_E_UPDATED', 0)">
                         <td nowrap="nowrap">
-                                    <v:label value="--CAL.WA.dt_datestring (rowset[15], self.cDateFormat)" />
+                                    <?vsp self.viewField (rowset[15], 'last-modified', null); ?>
                         </td>
                         </vm:if>
                         <vm:if test="self.columnEnabled ('task_E_CREATED', 0)">
                           <td nowrap="nowrap">
-                                    <v:label value="--CAL.WA.dt_datestring (rowset[14], self.cDateFormat)" />
+                                    <?vsp self.viewField (rowset[14], 'created', null); ?>
                           </td>
                         </vm:if>
             </vm:if>
@@ -2174,7 +2204,7 @@
                           ?>
                         </td>
                         <td nowrap="nowrap" style="padding: 0 2px 0 2px;">
-                                  <v:label value="--CAL.WA.dt_datestring (rowset[15], self.cDateFormat)" />
+                                  <?vsp self.viewField (rowset[15], 'last-modified', null); ?>
                         </td>
                               </vm:if>
                               <?vsp
@@ -2329,8 +2359,8 @@
                             From
                     </td>
                     <td>
-                            <v:text name="e_eventStartDate" xhtml_id="e_eventStartDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat)" xhtml_onclick="--sprintf ('cPopup.select(document.forms[0].e_eventStartDate, \'e_eventStartDate_select\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
-                                <a href="#" id="e_eventStartDate_select" onclick="cPopup.select(document.forms[0].e_eventStartDate, 'e_eventStartDate_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
+                                <v:text name="e_eventStartDate" xhtml_id="e_eventStartDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat)" xhtml_onclick="javascript: calendarPopup(\'e_eventStartDate\');" xhtml_class="textbox" xhtml_size="10" />
+                                <a href="#" id="e_eventStartDate_select" onclick="calendarPopup('e_eventStartDate'); return false;" class="noapp">
                         <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                       </a>
                                 <v:select-list name="e_eventStartTime" xhtml_id="e_eventStartTime">
@@ -2372,8 +2402,8 @@
                             To
                     </td>
                     <td>
-                            <v:text name="e_eventEndDate" xhtml_id="e_eventEndDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventEnd, self.cDateFormat)" xhtml_onclick="--sprintf ('cPopup.select(document.forms[0].e_eventEndDate, \'e_eventEndDate_select\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
-                                <a href="#" id="e_eventEndDate_select" onclick="cPopup.select(document.forms[0].e_eventEndDate, 'e_eventEndDate_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
+                                <v:text name="e_eventEndDate" xhtml_id="e_eventEndDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventEnd, self.cDateFormat)" xhtml_onclick="javascript: calendarPopup(\'e_eventEndDate\', \'e_eventStartDate\', \'e_eventStartDate\');" xhtml_class="textbox" xhtml_size="10" />
+                                <a href="#" id="e_eventEndDate_select" onclick="calendarPopup('e_eventEndDate', 'e_eventStartDate', 'e_eventStartDate'); return false;" class="noapp">
                         <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                       </a>
                                 <v:select-list name="e_eventEndTime" xhtml_id="e_eventEndTime">
@@ -3152,14 +3182,14 @@
         <div class="new-form-header">
                 <v:label format="%s" value="--self.eventHeader (self.v_id, 'event')" />
         </div>
-        <div class="new-form-body">
+              <div class="new-form-body vevent" typeof="sioct:EventCalendar" about="<?V SIOC..calendar_event_iri (self.domain_id, self.v_id) ?>">
           <table cellspacing="0">
             <tr>
               <th width="25%">
                 Name
               </th>
               <td>
-                <?vsp self.viewField (self.v_subject); ?>
+                      <?vsp self.viewField (self.v_subject, 'summary', null); ?>
               </td>
             </tr>
             <tr>
@@ -3167,13 +3197,7 @@
                 Duration
               </th>
               <td>
-                <?vsp
-                    if (self.v_event = 0) {
-                      self.viewField (sprintf ('%s - %s', CAL.WA.dt_datetimestring (self.v_eventStart, self.cDateFormat, self.cTimeFormat), CAL.WA.dt_datetimestring (self.v_eventEnd, self.cDateFormat, self.cTimeFormat)));
-                    } else {
-                      self.viewField (sprintf ('%s - %s', CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat), CAL.WA.dt_datestring (self.v_eventEnd, self.cDateFormat)));
-                    }
-                ?>
+                      <?vsp self.showEventDuration (self.v_event, self.v_eventStart, self.v_eventEnd); ?>
               </td>
             </tr>
             <tr>
@@ -3181,7 +3205,7 @@
                 Description
               </th>
               <td>
-                <?vsp self.viewDescription (self.v_description); ?>
+                      <?vsp self.viewField (self.v_description, 'description', null); ?>
               </td>
             </tr>
             <tr>
@@ -3189,7 +3213,7 @@
                 Location
               </th>
               <td>
-                <?vsp self.viewField (self.v_location); ?>
+                      <?vsp self.viewField (self.v_location, 'location', null); ?>
               </td>
             </tr>
             <tr>
@@ -3203,7 +3227,7 @@
 
                   self.arrays4Reminder (x, y);
                   N := CAL.WA.vector_indexOf (y, cast (self.v_reminder as varchar), 0);
-                  self.viewField (x [N]);
+                        self.viewField (x [N], '', null);
                 ?>
               </td>
             </tr>
@@ -3226,7 +3250,9 @@
                                                               self.v_RepeatParam2,
                                                               self.v_RepeatParam3,
                                                               self.v_repeatUntil
-                                                             )
+                                                                   ),
+                                        '',
+                                        null
                                  );
                 ?>
               </td>
@@ -3236,9 +3262,7 @@
                 Repeats range
               </th>
               <td>
-                <?vsp
-                  self.viewField (self.v_repeatUntil);
-                ?>
+                      <?vsp self.viewField (self.v_repeatUntil, '', null); ?>
               </td>
             </tr>
             <tr>
@@ -3246,16 +3270,15 @@
                 Notes
               </th>
               <td>
-                <?vsp self.viewField (self.v_notes); ?>
+                      <?vsp self.viewField (self.v_notes, '', null); ?>
               </td>
             </tr>
           </table>
         </div>
         <div class="new-form-footer">
-                <v:button action="simple" name="ev_cancel" value="Cancel" xhtml_class="form-button">
+                <v:button action="simple" name="ev_cancel" value="Back" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                      commit work;
                 self.cAction := 'browse';
                 self.vc_data_bind(e);
               ]]>
@@ -3720,14 +3743,14 @@
         <div class="new-form-header">
                 <v:label format="%s" value="--self.eventHeader (self.v_id, 'task')" />
         </div>
-        <div class="new-form-body">
-          <table class="form-body" cellspacing="0">
+              <div class="new-form-body vevent" typeof="sioct:EventCalendar" about="<?V SIOC..calendar_event_iri (self.domain_id, self.v_id) ?>">
+                <table cellspacing="0">
             <tr>
               <th width="25%">
                 Name
               </th>
               <td>
-                <?vsp self.viewField (self.v_subject); ?>
+                      <?vsp self.viewField (self.v_subject, 'summary', null); ?>
               </td>
             </tr>
             <tr>
@@ -3735,7 +3758,7 @@
                 Start Date
               </th>
               <td>
-                <?vsp self.viewField (self.v_eventStart); ?>
+                      <?vsp self.viewField (self.v_eventStart, 'dtstart', null); ?>
               </td>
             </tr>
             <tr>
@@ -3743,7 +3766,7 @@
                 Due Date
               </th>
               <td>
-                <?vsp self.viewField (self.v_eventEnd); ?>
+                      <?vsp self.viewField (self.v_eventEnd, 'dtend', null); ?>
               </td>
             </tr>
             <tr>
@@ -3751,7 +3774,7 @@
                       Priority
               </th>
               <td>
-                      <?vsp self.viewField (self.priorityLabel (self.v_priority)); ?>
+                      <?vsp self.viewField (self.priorityLabel (self.v_priority), '', null); ?>
               </td>
             </tr>
             <tr>
@@ -3759,7 +3782,7 @@
                       Status
               </th>
               <td>
-                      <?vsp self.viewField (self.v_status); ?>
+                      <?vsp self.viewField (self.v_status, '', null); ?>
               </td>
             </tr>
             <tr>
@@ -3767,7 +3790,7 @@
                       Completed
               </th>
               <td>
-                      <?vsp self.viewField (self.v_completed); ?>
+                      <?vsp self.viewField (self.v_completed, 'completed', null); ?>
               </td>
             </tr>
             <tr>
@@ -3775,7 +3798,7 @@
                       Complete (%)
               </th>
               <td>
-                <?vsp self.viewField (self.v_complete); ?>
+                      <?vsp self.viewField (self.v_complete, '', null); ?>
               </td>
             </tr>
             <tr>
@@ -3783,7 +3806,7 @@
                 Description
               </th>
               <td>
-                <?vsp self.viewDescription (self.v_description); ?>
+                      <?vsp self.viewField (self.v_description, 'description', null); ?>
               </td>
             </tr>
             <tr>
@@ -3799,16 +3822,15 @@
                 Notes
               </th>
               <td>
-                <?vsp self.viewField (self.v_notes); ?>
+                      <?vsp self.viewField (self.v_notes, '', null); ?>
               </td>
             </tr>
           </table>
         </div>
         <div class="new-form-footer">
-                <v:button action="simple" name="tv_cancel" value="Cancel" xhtml_class="form-button">
+                <v:button action="simple" name="tv_cancel" value="Back" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                      commit work;
                 self.cAction := 'browse';
                 self.vc_data_bind(e);
               ]]>

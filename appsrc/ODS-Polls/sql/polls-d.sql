@@ -35,10 +35,10 @@ POLLS.WA.uninstall ()
 VHOST_REMOVE (lpath => '/polls');
 
 -- NNTP
-DB.DBA.wa_exec_no_error('DROP procedure DB.DBA.POLLS_NEWS_MSG_I');
-DB.DBA.wa_exec_no_error('DROP procedure DB.DBA.POLLS_NEWS_MSG_U');
-DB.DBA.wa_exec_no_error('DROP procedure DB.DBA.POLLS_NEWS_MSG_D');
-DB.DBA.wa_exec_no_error('DB.DBA.NNTP_NEWS_MSG_DEL (\'POLLS\')');
+POLLS.WA.exec_no_error ('DROP procedure DB.DBA.POLLS_NEWS_MSG_I');
+POLLS.WA.exec_no_error ('DROP procedure DB.DBA.POLLS_NEWS_MSG_U');
+POLLS.WA.exec_no_error ('DROP procedure DB.DBA.POLLS_NEWS_MSG_D');
+POLLS.WA.exec_no_error ('DB.DBA.NNTP_NEWS_MSG_DEL (\'POLLS\')');
 
 -- Tables
 POLLS.WA.exec_no_error('DROP TABLE POLLS.WA.ANSWER');
@@ -52,17 +52,17 @@ POLLS.WA.exec_no_error('DROP TABLE POLLS.WA.SETTINGS');
 
 -- Types
 POLLS.WA.exec_no_error('delete from WA_TYPES where WAT_NAME = \'Polls\'');
-POLLS.WA.exec_no_error('drop type wa_polls');
+POLLS.WA.exec_no_error ('DROP type wa_polls');
 
 -- Views
-POLLS.WA.exec_no_error('drop view POLLS..TAGS_VIEW');
+POLLS.WA.exec_no_error ('DROP view POLLS..TAGS_VIEW');
 
 -- Procedures
 create procedure POLLS.WA.drop_procedures()
 {
   for (select P_NAME from DB.DBA.SYS_PROCEDURES where P_NAME like 'POLLS.WA.%') do {
     if (P_NAME not in ('POLLS.WA.exec_no_error', 'POLLS.WA.drop_procedures'))
-      POLLS.WA.exec_no_error(sprintf('drop procedure %s', P_NAME));
+      POLLS.WA.exec_no_error (sprintf('DROP procedure %s', P_NAME));
   }
 }
 ;
@@ -71,13 +71,28 @@ create procedure POLLS.WA.drop_procedures()
 POLLS.WA.drop_procedures();
 POLLS.WA.exec_no_error('DROP procedure POLLS.WA.drop_procedures');
 
--- dropping SIOC procs
+-- SIOC - dropping procs
 POLLS.WA.exec_no_error('DROP procedure SIOC.DBA.poll_post_iri');
+POLLS.WA.exec_no_error ('DROP procedure SIOC.DBA.poll_comment_iri');
+POLLS.WA.exec_no_error ('DROP procedure SIOC.DBA.poll_tag_iri');
 POLLS.WA.exec_no_error('DROP procedure SIOC.DBA.fill_ods_polls_sioc');
 POLLS.WA.exec_no_error('DROP procedure SIOC.DBA.polls_insert');
 POLLS.WA.exec_no_error('DROP procedure SIOC.DBA.polls_delete');
 POLLS.WA.exec_no_error('DROP procedure SIOC.DBA.ods_polls_sioc_init');
+POLLS.WA.exec_no_error ('DROP procedure SIOC.DBA.polls_comment_insert');
+POLLS.WA.exec_no_error ('DROP procedure SIOC.DBA.polls_comment_delete');
 
+-- RDF Views - procs & views
+POLLS.WA.exec_no_error ('DROP procedure SIOC.DBA.rdf_polls_view_str');
+POLLS.WA.exec_no_error ('DROP procedure SIOC.DBA.rdf_polls_view_str_tables');
+POLLS.WA.exec_no_error ('DROP procedure SIOC.DBA.rdf_polls_view_str_maps');
+
+POLLS.WA.exec_no_error ('DROP procedure DB.DBA.ODS_POLLS_TAGS');
+POLLS.WA.exec_no_error ('DROP view DB.DBA.ODS_POLLS_POSTS');
+POLLS.WA.exec_no_error ('DROP view DB.DBA.ODS_POLLS_TAGS');
+
+-- reinit
+ODS_RDF_VIEW_INIT ();
 
 POLLS.WA.exec_no_error ('DROP procedure ODS.ODS_API."poll.get"');
 POLLS.WA.exec_no_error ('DROP procedure ODS.ODS_API."poll.new"');

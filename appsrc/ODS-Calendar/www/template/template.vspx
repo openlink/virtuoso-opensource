@@ -217,6 +217,14 @@
           self.cTimeZone := CAL.WA.settings_timeZone (self.settings);
           self.cTimeFormat := CAL.WA.settings_timeFormat (self.settings);
           self.cDateFormat := CAL.WA.settings_dateFormat (self.settings);
+
+          self.vc_add_attribute ('xmlns:foaf', 'http://xmlns.com/foaf/0.1/');
+          self.vc_add_attribute ('xmlns:dc', 'http://purl.org/dc/elements/1.1/');
+          self.vc_add_attribute ('xmlns:dct', 'http://purl.org/dc/terms/');
+          self.vc_add_attribute ('xmlns:rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
+          self.vc_add_attribute ('xmlns:rdfs', 'http://www.w3.org/2000/01/rdf-schema#');
+          self.vc_add_attribute ('xmlns:sioct', 'http://rdfs.org/sioc/types#');
+          self.vc_add_attribute ('xmlns:sioc', 'http://rdfs.org/sioc/ns#');
         ]]>
       </v:on-init>
 

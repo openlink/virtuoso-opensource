@@ -3306,13 +3306,9 @@ create procedure CAL.WA.settings_usedTimeZone (
       account_id := CAL.WA.domain_owner_id (domain_id);
     tmp := (select WAUI_HTZONE from DB.DBA.WA_USER_INFO where WAUI_U_ID = account_id);
     if (isnull (tmp))
-    {
       tmp := (select WAUI_BTZONE from DB.DBA.WA_USER_INFO where WAUI_U_ID = account_id);
-    }
     if (isnull (tmp))
-    {
       tmp := 0;
-    }
     tmp := cast (tmp as integer) * 60;
   }
   return tmp;

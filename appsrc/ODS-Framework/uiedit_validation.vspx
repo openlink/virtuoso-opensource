@@ -34,7 +34,7 @@
     <table id="lvalidation" class="listing" cellspacing="0">
       <tr class="listing_header_row">
         <td width="1%">
-          <input type="checkbox" name="cb_name_all" value="Select All" onclick="selectAllCheckboxes(this.form, this)" />
+          <input type="checkbox" name="cb_name_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
         </td>
         <th>Field</th>
       </tr>

@@ -62,12 +62,33 @@ ODRIVE.WA.exec_no_error('DROP procedure ODRIVE.WA.drop_procedures');
 drop trigger WS.WS.SYS_DAV_RES_BRIEFCASE_SIOC_I;
 drop trigger WS.WS.SYS_DAV_RES_BRIEFCASE_SIOC_U;
 drop trigger WS.WS.SYS_DAV_RES_BRIEFCASE_SIOC_D;
+drop trigger WS.WS.SYS_DAV_PROP_BRIEFCASE_SIOC_I;
+drop trigger WS.WS.SYS_DAV_PROP_BRIEFCASE_SIOC_U;
+drop trigger WS.WS.SYS_DAV_PROP_BRIEFCASE_SIOC_D;
 
+-- dropping SIOC procs
 ODRIVE.WA.exec_no_error('DROP procedure SIOC.DBA.briefcase_links_to');
+ODRIVE.WA.exec_no_error ('DROP procedure SIOC.DBA.briefcase_person_iri');
+ODRIVE.WA.exec_no_error ('DROP procedure SIOC.DBA.briefcase_event_iri');
+ODRIVE.WA.exec_no_error ('DROP procedure SIOC.DBA.briefcase_sparql');
 ODRIVE.WA.exec_no_error('DROP procedure SIOC.DBA.fill_ods_briefcase_sioc');
+ODRIVE.WA.exec_no_error ('DROP procedure SIOC.DBA.ods_briefcase_sioc_tags');
 ODRIVE.WA.exec_no_error('DROP procedure SIOC.DBA.briefcase_sioc_insert');
+ODRIVE.WA.exec_no_error ('DROP procedure SIOC.DBA.briefcase_sioc_insert_ex');
 ODRIVE.WA.exec_no_error('DROP procedure SIOC.DBA.briefcase_sioc_delete');
 ODRIVE.WA.exec_no_error('DROP procedure SIOC.DBA.ods_briefcase_sioc_init');
+
+-- RDF Views - procs & views
+ODRIVE.WA.exec_no_error ('DROP procedure SIOC.DBA.rdf_briefcase_view_str');
+ODRIVE.WA.exec_no_error ('DROP procedure SIOC.DBA.rdf_briefcase_view_str_tables');
+ODRIVE.WA.exec_no_error ('DROP procedure SIOC.DBA.rdf_briefcase_view_str_maps');
+
+ODRIVE.WA.exec_no_error ('DROP procedure DB.DBA.ODS_ODRIVE_TAGS');
+ODRIVE.WA.exec_no_error ('DROP view DB.DBA.ODS_ODRIVE_POSTS');
+ODRIVE.WA.exec_no_error ('DROP view DB.DBA.ODS_ODRIVE_TAGS');
+
+-- reinit
+ODS_RDF_VIEW_INIT ();
 
 -- SOAP procs
 ODRIVE.WA.exec_no_error('DROP procedure DBA.SOAPODRIVE.Browse');

@@ -29,6 +29,11 @@ body
   font-size: 9pt;
 }
 
+abbr
+{
+  border: none;
+}
+
 a
 {
   text-decoration: none;

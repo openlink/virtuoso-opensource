@@ -126,11 +126,16 @@ DB.DBA.NNTP_NEWS_MSG_DEL ('OFM');
 ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feed_mgr_iri');
 ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feed_iri');
 ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feed_item_iri');
-ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feed_comment_iri');
+ENEWS.WA.exec_no_error ('DROP procedure SIOC.DBA.feed_item_iri2');
 ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feed_item_url');
+ENEWS.WA.exec_no_error ('DROP procedure SIOC.DBA.feed_comment_iri');
+ENEWS.WA.exec_no_error ('DROP procedure SIOC.DBA.feed_comment_iri2');
+ENEWS.WA.exec_no_error ('DROP procedure SIOC.DBA.feed_annotation_iri');
 ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.author_iri');
 ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feeds_foaf_maker');
 ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feed_links_to');
+ENEWS.WA.exec_no_error ('DROP procedure SIOC.DBA.feeds_tag_iri');
+ENEWS.WA.exec_no_error ('DROP procedure SIOC.DBA.fill_ods_subscriptions_sioc');
 ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.fill_ods_feeds_sioc');
 ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feeds_item_insert');
 ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feeds_item_delete');
@@ -138,7 +143,28 @@ ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feeds_tags_insert');
 ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feeds_tags_delete');
 ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feeds_comment_insert');
 ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feeds_comment_delete');
+ENEWS.WA.exec_no_error ('DROP procedure SIOC.DBA.feeds_annotation_insert');
+ENEWS.WA.exec_no_error ('DROP procedure SIOC.DBA.feeds_annotation_delete');
+ENEWS.WA.exec_no_error ('DROP procedure SIOC.DBA.feeds_claims_insert');
+ENEWS.WA.exec_no_error ('DROP procedure SIOC.DBA.feeds_claims_delete');
 ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.ods_feeds_sioc_init');
+
+-- RDF Views - procs & views
+ENEWS.WA.exec_no_error ('DROP procedure SIOC.DBA.rdf_subscriptions_view_str');
+ENEWS.WA.exec_no_error ('DROP procedure SIOC.DBA.rdf_feeds_view_str');
+ENEWS.WA.exec_no_error ('DROP procedure SIOC.DBA.rdf_subscriptions_view_str_tables');
+ENEWS.WA.exec_no_error ('DROP procedure SIOC.DBA.rdf_subscriptions_view_str_maps');
+
+ENEWS.WA.exec_no_error ('DROP procedure DB.DBA.ODS_FEED_TAGS');
+ENEWS.WA.exec_no_error ('DROP view DB.DBA.ODS_FEED_TAGS');
+ENEWS.WA.exec_no_error ('DROP view DB.DBA.ODS_FEED_FEED_DOMAIN');
+ENEWS.WA.exec_no_error ('DROP view DB.DBA.ODS_FEED_POSTS');
+ENEWS.WA.exec_no_error ('DROP view DB.DBA.ODS_FEED_COMMENTS');
+ENEWS.WA.exec_no_error ('DROP view DB.DBA.ODS_FEED_LINKS');
+ENEWS.WA.exec_no_error ('DROP view DB.DBA.ODS_FEED_ATTS');
+
+-- reinit
+ODS_RDF_VIEW_INIT ();
 
 -- dropping ODS procs
 ENEWS.WA.exec_no_error('DROP procedure DB.DBA.WA_SEARCH_ENEWS_GET_EXCERPT_HTML');
