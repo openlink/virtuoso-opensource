@@ -103,13 +103,37 @@ BMK.WA.exec_no_error('DROP procedure BMK.WA.drop_procedures');
 
 -- dropping SIOC procs
 BMK.WA.exec_no_error('DROP procedure SIOC.DBA.bmk_post_iri');
+BMK.WA.exec_no_error('DROP procedure SIOC.DBA.bmk_comment_iri');
+BMK.WA.exec_no_error('DROP procedure SIOC.DBA.bmk_annotation_iri');
 BMK.WA.exec_no_error('DROP procedure SIOC.DBA.bmk_links_to');
-BMK.WA.exec_no_error('DROP procedure SIOC.DBA.fill_ods_bookmark_sioc');
+BMK.WA.exec_no_error('DROP procedure SIOC.DBA.bmk_tag_iri');
+BMK.WA.exec_no_error('DROP procedure SIOC.DBA.fill_ods_bookmark_sioc2');
+BMK.WA.exec_no_error('DROP procedure SIOC.DBA.clean_ods_bookmark_sioc2');
 BMK.WA.exec_no_error('DROP procedure SIOC.DBA.bookmark_domain_insert');
 BMK.WA.exec_no_error('DROP procedure SIOC.DBA.bookmark_domain_delete');
-BMK.WA.exec_no_error('DROP procedure SIOC.DBA.bookmark_tags_insert');
-BMK.WA.exec_no_error('DROP procedure SIOC.DBA.bookmark_tags_delete');
+BMK.WA.exec_no_error('DROP procedure SIOC.DBA.bookmark_comments_insert');
+BMK.WA.exec_no_error('DROP procedure SIOC.DBA.bookmark_comments_delete');
+BMK.WA.exec_no_error('DROP procedure SIOC.DBA.bmk_comment_insert');
+BMK.WA.exec_no_error('DROP procedure SIOC.DBA.bmk_comment_delete');
+BMK.WA.exec_no_error('DROP procedure SIOC.DBA.bookmark_annotations_insert');
+BMK.WA.exec_no_error('DROP procedure SIOC.DBA.bookmark_annotations_delete');
+BMK.WA.exec_no_error('DROP procedure SIOC.DBA.bmk_annotation_insert');
+BMK.WA.exec_no_error('DROP procedure SIOC.DBA.bmk_annotation_delete');
+BMK.WA.exec_no_error('DROP procedure SIOC.DBA.bmk_claims_insert');
+BMK.WA.exec_no_error('DROP procedure SIOC.DBA.bmk_claims_delete');
 BMK.WA.exec_no_error('DROP procedure SIOC.DBA.ods_bookmark_sioc_init');
+
+-- RDF Views - procs & views
+BMK.WA.exec_no_error ('DROP procedure SIOC.DBA.rdf_bookmark_view_str');
+BMK.WA.exec_no_error ('DROP procedure SIOC.DBA.rdf_bookmark_view_str_tables');
+BMK.WA.exec_no_error ('DROP procedure SIOC.DBA.rdf_bookmark_view_str_maps');
+
+BMK.WA.exec_no_error ('DROP procedure DB.DBA.ODS_BMK_TAGS');
+BMK.WA.exec_no_error ('DROP view DB.DBA.ODS_BMK_POSTS');
+BMK.WA.exec_no_error ('DROP view DB.DBA.ODS_BMK_TAGS');
+
+-- reinit
+ODS_RDF_VIEW_INIT ();
 
 -- dropping ODS procs
 BMK.WA.exec_no_error('DROP procedure DB.DBA.wa_search_bmk_get_excerpt_html');

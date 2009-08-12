@@ -96,6 +96,19 @@ create procedure feed_comment_iri (
 
 -------------------------------------------------------------------------------
 --
+create procedure feed_comment_iri2 (
+  inout owner varchar,
+  inout instance varchar,
+  inout domain_id integer,
+  inout item_id integer,
+  inout comment_id integer)
+{
+  return sprintf ('http://%s%s/%U/subscriptions/%U/%d/%d', get_cname(), get_base_path (), owner, instance, item_id, comment_id);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure feed_annotation_iri (
   in domain_id varchar,
   in item_id integer,
@@ -228,6 +241,8 @@ create procedure fill_ods_subscriptions_sioc (in graph_iri varchar, in site_iri 
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar, in _wai_name varchar := null)
 {
   declare iri, m_iri, f_iri, t_iri, u_iri, c_iri varchar;
@@ -828,20 +843,7 @@ create procedure ods_feeds_sioc_init ()
   return;
 }
 ;
-
 --ENEWS.WA.exec_no_error('ods_feeds_sioc_init ()');
-
-create procedure feed_comment_iri_1 (
-  inout owner varchar,
-  inout instance varchar,
-  inout domain_id integer,
-  inout item_id integer,
-  inout comment_id integer)
-{
-  return sprintf ('http://%s%s/%U/subscriptions/%U/%d/%d', get_cname(), get_base_path (), owner, instance, item_id, comment_id);
-}
-;
-
 
 use DB;
 -- FEEDS
@@ -885,7 +887,7 @@ create view ODS_FEED_COMMENTS as select
 	EFIC_U_NAME,
 	EFIC_U_MAIL,
 	EFIC_U_URL,
-	sioc..feed_comment_iri_1 (U_NAME, WAI_NAME, EFIC_DOMAIN_ID, cast(EFIC_ITEM_ID as integer), EFIC_ID) || '/sioc.rdf' as SEE_ALSO,
+	sioc..feed_comment_iri2 (U_NAME, WAI_NAME, EFIC_DOMAIN_ID, cast(EFIC_ITEM_ID as integer), EFIC_ID) || '/sioc.rdf' as SEE_ALSO,
 	sioc..sioc_date (EFIC_LAST_UPDATE) as LAST_UPDATE,
 	sioc..feed_item_url (EFIC_DOMAIN_ID, cast(EFIC_ITEM_ID as integer)) as LINK
 	from ENEWS.WA.FEED_ITEM_COMMENT, ENEWS.WA.FEED_ITEM, DB.DBA.SYS_USERS, DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE
@@ -959,9 +961,7 @@ create procedure sioc.DBA.rdf_feeds_view_str ()
 
 	# Post tags
         sioc:feed_item_iri (DB.DBA.ODS_FEED_TAGS.EFI_FEED_ID, DB.DBA.ODS_FEED_TAGS.EFID_ITEM_ID)
-	sioc:topic
-	sioc:tag_iri (U_NAME, EFID_TAG) .
-
+	  sioc:topic sioc:tag_iri (U_NAME, EFID_TAG) .
 	sioc:tag_iri (DB.DBA.ODS_FEED_TAGS.U_NAME, DB.DBA.ODS_FEED_TAGS.EFID_TAG) a skos:Concept ;
 	skos:prefLabel EFID_TAG ;
 	skos:isSubjectOf sioc:feed_item_iri (EFI_FEED_ID, EFID_ITEM_ID) .
@@ -976,13 +976,11 @@ create procedure sioc.DBA.rdf_feeds_view_str ()
 	sioc:link sioc:proxy_iri (LINK) ;
 	sioc:has_container sioc:feed_iri (EFI_FEED_ID) ;
 	sioc:reply_of sioc:feed_item_iri (EFI_FEED_ID, EFIC_ITEM_ID) ;
-	foaf:maker sioc:proxy_iri (EFIC_U_URL)
-        .
+	  foaf:maker sioc:proxy_iri (EFIC_U_URL).
 
 	sioc:proxy_iri (DB.DBA.ODS_FEED_COMMENTS.EFIC_U_URL) a foaf:Person ;
 	foaf:name EFIC_U_NAME;
-	foaf:mbox sioc:proxy_iri (EFIC_U_MAIL)
-        .
+	  foaf:mbox sioc:proxy_iri (EFIC_U_MAIL).
 
 	sioc:feed_iri (DB.DBA.ODS_FEED_COMMENTS.EFI_FEED_ID)
 	sioc:container_of
@@ -994,12 +992,10 @@ create procedure sioc.DBA.rdf_feeds_view_str ()
 
 	# Feed Post links_to
 	sioc:feed_item_iri (DB.DBA.ODS_FEED_LINKS.EFI_FEED_ID, DB.DBA.ODS_FEED_LINKS.EFI_ID)
-	sioc:links_to
-	sioc:proxy_iri (EFIL_LINK) .
+	  sioc:links_to sioc:proxy_iri (EFIL_LINK) .
 
 	sioc:feed_item_iri (DB.DBA.ODS_FEED_ATTS.EFI_FEED_ID, DB.DBA.ODS_FEED_ATTS.EFI_ID)
-	sioc:attachment
-	sioc:proxy_iri (EFIE_URL) .
+	  sioc:attachment sioc:proxy_iri (EFIE_URL) .
 
 	sioc:feed_item_iri (DB.DBA.ODS_FEED_POSTS.EFI_FEED_ID, DB.DBA.ODS_FEED_POSTS.EFI_ID) a atom:Entry ;
         atom:title EFI_TITLE ;
@@ -1008,17 +1004,15 @@ create procedure sioc.DBA.rdf_feeds_view_str ()
 	atom:updated PUBLISH_DATE ;
 	atom:content sioc:feed_item_text_iri (EFI_FEED_ID, EFI_ID) .
 
-        sioc:feed_item_text_iri (DB.DBA.ODS_FEED_POSTS.EFI_FEED_ID, DB.DBA.ODS_FEED_POSTS.EFI_ID)
-	a atom:Content ;
+  sioc:feed_item_text_iri (DB.DBA.ODS_FEED_POSTS.EFI_FEED_ID, DB.DBA.ODS_FEED_POSTS.EFI_ID) a atom:Content ;
 	atom:type "text/xhtml" ;
 	atom:lang "en-US" ;
 	atom:body EFI_DESCRIPTION .
 
 	sioc:feed_iri (DB.DBA.ODS_FEED_POSTS.EFI_FEED_ID)
-	atom:contains
-	sioc:feed_item_iri (EFI_FEED_ID, EFI_ID) .
-
-      ';
+	  atom:contains sioc:feed_item_iri (EFI_FEED_ID, EFI_ID) .
+  '
+  ;
 };
 
 create procedure sioc.DBA.rdf_subscriptions_view_str_tables ()
@@ -1128,7 +1122,7 @@ grant select on ODS_FEED_COMMENTS to SPARQL_SELECT;
 grant select on ODS_FEED_TAGS to SPARQL_SELECT;
 grant select on ODS_FEED_LINKS to SPARQL_SELECT;
 grant select on ODS_FEED_ATTS to SPARQL_SELECT;
-grant execute on sioc.DBA.feed_comment_iri_1 to SPARQL_SELECT;
+grant execute on sioc.DBA.feed_comment_iri2 to SPARQL_SELECT;
 grant execute on sioc.DBA.feed_item_url to SPARQL_SELECT;
 grant execute on DB.DBA.ODS_FEED_TAGS to SPARQL_SELECT;
 grant execute on ENEWS.WA.make_post_rfc_msg to SPARQL_SELECT;

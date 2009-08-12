@@ -493,8 +493,6 @@ create procedure ODS_POLLS_TAGS ()
 }
 ;
 
-grant execute on DB.DBA.ODS_POLLS_TAGS to SPARQL_SELECT;
-
 wa_exec_no_error ('drop view ODS_POLLS_TAGS');
 create procedure view ODS_POLLS_TAGS as DB.DBA.ODS_POLLS_TAGS () (WAM_INST varchar, U_NAME varchar, P_ID int, P_TAG varchar);
 
