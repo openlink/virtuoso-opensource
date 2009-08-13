@@ -1828,6 +1828,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		     }
 		   }
 		}
+		ret.append(query);
 		return ret.toString();
 	}
 
