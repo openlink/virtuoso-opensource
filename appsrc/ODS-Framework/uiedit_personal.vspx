@@ -85,6 +85,33 @@
 	  ]]>
 	</v:method>
 
+  <v:method name="favorites2json" arglist="">
+    <![CDATA[
+      declare fID, fType, fItems any;
+      declare favorites vector;
+
+      favorites := vector ();
+      fID := 0;
+      fType := '';
+      fItems := vector ();
+      for (select WUF_ID, WUF_TYPE, WUF_LABEL, WUF_URI from WA_USER_FAVORITES where WUF_U_ID = self.u_id order by WUF_TYPE) do
+      {
+        if (fType <> WUF_TYPE)
+        {
+          if (fType <> '')
+            favorites := vector_concat (favorites, vector (vector_concat (self.jsonObject(), vector ('id', cast (fID as varchar), 'class', fType, 'items', fItems))));
+          fID := fID + 1;
+          fType := WUF_TYPE;
+          fItems := vector ();
+        }
+        fItems := vector_concat (fItems, vector (vector_concat (self.jsonObject(), vector ('id', cast (WUF_ID as varchar), 'label', WUF_LABEL, 'uri', WUF_URI))));
+      }
+      if (length (fItems))
+        favorites := vector_concat (favorites, vector (vector_concat (self.jsonObject(), vector ('id', cast (fID as varchar), 'class', fType, 'items', fItems))));
+      return favorites;
+	  ]]>
+	</v:method>
+
   <v:method name="savePersonal" arglist="">
     <![CDATA[
       declare lat, lng any;
@@ -299,8 +326,8 @@
       WA_USER_EDIT (self.u_name, 'WAUI_SHOWACTIVE', self.show_active.ufl_selected);
 
       declare N, id integer;
-      declare suffix, tmp_a, tmp_b, tmp_e, tmp_m, tmp_f varchar;
-      declare IDc, IDd, IDf, V any;
+      declare suffix, suffix2, tmp, tmp_a, tmp_b, tmp_e, tmp_m, tmp_f varchar;
+      declare IDc, IDd, IDf, V, parts any;
 
       tmp_a := '';
       tmp_b := '';
@@ -350,16 +377,19 @@
             IDd := vector_concat (IDd, vector (id));
                             }
         }
-        else if ((params [N] like 'f_fld_1_%') and (trim (params [N+1]) <> ''))
+        else if (regexp_like(params[N], 'f_prop_([0-9]+)_fld_1_([0-9]+)') and (trim (params[N+1]) <> ''))
         {
-          suffix := replace (params [N], 'f_fld_1_', '');
-          id := cast (get_keyword ('f_fld_0_'||suffix, params, '-1') as integer);
+          parts := regexp_parse('f_prop_([0-9]+)_fld_1_([0-9]+)', params [N], 0);
+          suffix := subseq (params[N], parts[2], parts[3]);
+          suffix2 := subseq (params[N], parts[4], parts[5]);
+          id := cast (get_keyword ('f_prop_'||suffix||'_fld_3_'||suffix2, params, '-1') as integer);
           if (id <> -1)
           {
+            tmp := get_keyword ('f_fld_3_'||suffix, params);
             update WA_USER_FAVORITES
-               set WUF_TYPE = get_keyword_ucase (trim (params [N+1]), V, trim (params [N+1])),
-                   WUF_LABEL = trim (get_keyword ('f_fld_2_'||suffix, params, '')),
-                   WUF_URI = trim (get_keyword ('f_fld_3_'||suffix, params, ''))
+                set WUF_TYPE = get_keyword_ucase (tmp, V, tmp),
+                    WUF_LABEL = trim (params[N+1]),
+                    WUF_URI = trim (get_keyword ('f_prop_'||suffix||'_fld_2_'||suffix2, params, ''))
              where WUF_ID = id;
             IDf := vector_concat (IDf, vector (id));
           }
@@ -442,14 +472,17 @@
       }
       for (N := 0; N < length (params); N := N + 4)
       {
-        if ((params [N] like 'f_fld_1_%') and (trim (params [N+1]) <> ''))
+        if (regexp_like(params[N], 'f_prop_([0-9]+)_fld_1_([0-9]+)') and (trim (params[N+1]) <> ''))
         {
-          suffix := replace (params [N], 'f_fld_1_', '');
-          id := cast (get_keyword ('f_fld_0_'||suffix, params, '-1') as integer);
+          parts := regexp_parse('f_prop_([0-9]+)_fld_1_([0-9]+)', params [N], 0);
+          suffix := subseq (params[N], parts[2], parts[3]);
+          suffix2 := subseq (params[N], parts[4], parts[5]);
+          id := cast (get_keyword ('f_prop_'||suffix||'_fld_3_'||suffix2, params, '-1') as integer);
           if (id = -1)
           {
+            tmp := get_keyword ('f_fld_3_'||suffix, params);
             insert into WA_USER_FAVORITES ( WUF_TYPE, WUF_LABEL, WUF_URI, WUF_U_ID)
-              values (get_keyword_ucase (trim (params [N+1]), V, trim (params [N+1])), trim (get_keyword ('f_fld_2_'||suffix, params, '')), trim (get_keyword ('f_fld_3_'||suffix, params, '')), self.u_id);
+              values (get_keyword_ucase (tmp, V, tmp), trim (params[N+1]), trim (get_keyword ('f_prop_'||suffix||'_fld_2_'||suffix2, params, '')), self.u_id);
           }
         }
       }
@@ -1644,65 +1677,43 @@
             <tr>
               <td width="800px">
                 <table id="f_tbl" class="listing">
+                  <thead>
                   <tr class="listing_header_row">
-                    <th width="25%">
-                      Type
+                      <th>
+                        <div style="width: 16px;">&nbsp;</div>
                     </th>
-                    <th width="35%">
-                      Description
-                    </th>
-                    <th width="30%">
-                      URI
+                      <th width="100%" colspan="2">
+                        Favorite Type
                     </th>
                     <th width="80px">
                       Action
                     </th>
                   </tr>
-                  <?vsp
-                    declare N integer;
-                    declare S, V any;
-
-                    V := vector ('text/*', 'Book', 'image/*', 'Image', 'audio/*', 'Music', 'video/*', 'Video');
-                    N := 0;
-                    for select WUF_ID, WUF_TYPE, WUF_LABEL, WUF_URI from WA_USER_FAVORITES where WUF_U_ID = self.u_id do
-                    {
-                  ?>
-                  <tr id="f_tr_<?V N ?>">
-                    <td id="f_td_<?V N ?>" nowrap="nowrap">
-                      <input type="hidden" id="f_fld_0_<?V N ?>" name="f_fld_0_<?V N ?>" value="<?V WUF_ID ?>" />
-                		  <![CDATA[
-                		    <script type="text/javascript">
-                		    <?vsp
-                          http (sprintf ('ODSInitArray.push ( function (){OAT.Loader.loadFeatures(["combolist"], function() {updateRowCombo5(\'f_td_%d\', \'f_fld_1_%d\', {mode: 5, value: \'%s\'});});})', N, N, get_keyword_ucase (WUF_TYPE, V, WUF_TYPE)));
-                		    ?>
-                		    </script>
-                		  ]]>
-                    </td>
-                    <td>
-                      <input type="text" id="f_fld_2_<?V N ?>" name="f_fld_2_<?V N ?>" value="<?V WUF_LABEL ?>" style="width: 95%;" />
-                    </td>
-                    <td>
-                      <input type="text" id="f_fld_3_<?V N ?>" name="f_fld_3_<?V N ?>" value="<?V WUF_URI ?>" style="width: 95%;" />
-                    </td>
-                    <td>
-                      <input type="button" value="Remove" onclick="javascript: updateRow('f', <?V N ?>);" />
+                  </thead>
+                  <tbody id="f_tbody">
+                    <tr id="f_tr_no">
+                      <td colspan="4">
+                        <b>No Elements</b>
                     </td>
                   </tr>
-                  <?vsp
-                      N := N + 1;
-                    }
-                    http (sprintf ('<tr id="f_tr_no" style="display: %s"><td colspan="4"><b>No Favorite Things</b></td></tr>', case when N = 0 then '' else 'none' end));
-                  ?>
+                  </tbody>
                 </table>
-                <input type="hidden" id="f_no" name="f_no" value="<?V N ?>" />
+                <input type="hidden" id="f_no" name="f_no" value="1" />
               </td>
               <td valign="top" nowrap="nowrap">
-                <input type="button" value="Add" onclick="javascript: updateRow('f', null, {fld_1: {mode: 5, tdCssText: 'white-space: nowrap;'}, fld_2: {}, fld_3: {}});" />
+                <input type="button" value="Add" onclick="javascript: updateRow('f', null, {fld_1: {mode: 12, cssText: 'display: none;'}, fld_2: {mode: 7, value: 'New Type'}, fld_3: {mode: 5, cssText: 'width: 95%;'}, btn_1: {mode: 5, cssText: 'margin-left: 2px; margin-right: 2px;'}, btn_2: {mode: 6, cssText: 'margin-left: 2px; margin-right: 2px;'}});" />
                 <br />
                 <vm:u-prop-select name="sel_44" value="self.sav44" />
               </td>
             </tr>
           </table>
+          <script type="text/javascript">
+            <![CDATA[
+              FT.prefix = 'f';
+              FT.items = <?vsp http (ODS..obj2json (self.favorites2json ())); ?>;
+              FT.showItems();
+            ]]>
+          </script>
         </div>
         <div id="p_content_4" class="tabContent" style="display: none;">
           <table class="ctl_grp">

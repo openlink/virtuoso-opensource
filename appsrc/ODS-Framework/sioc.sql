@@ -274,11 +274,11 @@ create procedure user_site_iri (in _u_name varchar)
   return user_obj_iri (_u_name) || '#site';
 };
 
-create procedure user_iri (in _u_id int)
+create procedure user_iri (in _u_id int, in _check_disabled integer := 1)
 {
   declare _u_name varchar;
   declare exit handler for not found { return null; };
-  select u_name into _u_name from DB.DBA.SYS_USERS where U_ID = _u_id and U_IS_ROLE = 0 and U_ACCOUNT_DISABLED = 0;
+  select u_name into _u_name from DB.DBA.SYS_USERS where U_ID = _u_id and U_IS_ROLE = 0 and (_check_disabled is null or (U_ACCOUNT_DISABLED = 0));
   return user_obj_iri (_u_name);
 };
 
