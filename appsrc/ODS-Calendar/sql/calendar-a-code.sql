@@ -895,7 +895,7 @@ create procedure CAL.WA.account_sioc_url (
 {
   declare S varchar;
 
-  S := SIOC..person_iri (SIOC..user_iri (CAL.WA.domain_owner_id (domain_id)));
+  S := SIOC..person_iri (SIOC..user_iri (CAL.WA.domain_owner_id (domain_id), null));
   return CAL.WA.url_fix (S, sid, realm);
 }
 ;

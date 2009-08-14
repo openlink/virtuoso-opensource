@@ -491,6 +491,10 @@ function updateCell (td, prefix, fldName, No, optionObject)
   {
 	  updateField11(td, fldName, optionObject);
   }
+  else if (optionObject.mode == 12)
+  {
+	  updateField12(td, fldName, prefix, No, optionObject);
+  }
   else
   {
 	  updateInput(td, fldName, optionObject);
@@ -500,7 +504,7 @@ function updateCell (td, prefix, fldName, No, optionObject)
 function updateInput (elm, fldName, fldOptions)
 {
   var fld = OAT.Dom.create('input');
-  fld.type = 'text';
+  fld.type = (fldOptions.type)? (fldOptions.type): 'text';
   fld.id = fldName;
   fld.name = fld.id;
   if (fldOptions.value)
@@ -667,10 +671,8 @@ function updateRowCombo5 (elm, fldName, fldOptions)
   fld.input.name = fldName;
   fld.input.id = fldName;
   fld.input.style.width = "90%";
-  fld.addOption('Book');
-  fld.addOption('Image');
-  fld.addOption('Music');
-  fld.addOption('Video');
+  for (var i = 0; i < FT.types.length; i = i+2)
+    fld.addOption(FT.types[i]);
 
   var elm = $(elm);
   elm.appendChild(fld.div);
@@ -732,7 +734,9 @@ function updateField9 (elm, fldName, fldOptions)
   var elm = $(elm);
   elm.appendChild(fld);
 
-	var fld = OAT.Dom.text(fldOptions.value);
+  if (!fldOptions.showValue)
+    fldOptions.showValue = fldOptions.value;
+	var fld = OAT.Dom.text(fldOptions.showValue);
   var elm = $(elm);
   elm.appendChild(fld);
 }
@@ -834,6 +838,20 @@ function updateField11 (elm, fldName, fldOptions)
   elm.appendChild(fld);
 }
 
+function updateField12 (elm, fldName, prefix, No, fldOptions)
+{
+  var fld = OAT.Dom.image("images/icons/orderdown_16.png");
+  fld.id = fldName;
+  fld.mode = 'show';
+  fld.title = 'Show Favorites';
+  fld.onclick = function (){FT.showProperties(this, prefix, No);};
+  if (fldOptions.cssText)
+    fld.style.cssText = fldOptions.cssText;
+
+  var elm = $(elm);
+  elm.appendChild(fld);
+}
+
 function updateButton (td, prefix, fldName, No, optionObject)
 {
   fldName = prefix + '_' + fldName + '_' + No;
@@ -855,6 +873,14 @@ function updateButton (td, prefix, fldName, No, optionObject)
   else if (optionObject.mode == 4)
   {
 	  btn = updateButton4(td, prefix, No, fldName, optionObject);
+  }
+  else if (optionObject.mode == 5)
+  {
+	  btn = updateButton5(td, prefix, No, fldName, optionObject);
+  }
+  else if (optionObject.mode == 6)
+  {
+	  btn = updateButton6(td, prefix, No, fldName, optionObject);
   }
   if (btn)
   {
@@ -882,6 +908,8 @@ function updateButton2 (elm, prefix, No, btnName, btnOptions)
   btn.style.cssText = 'margin-left: 2px; margin-right: 2px;';
   btn.onclick = function (){
     var product = GR.getProduct(No);
+    if (product)
+    {
     if (GR.checkProductInSelects(product))
     {
       GR.removeProductInSelects(product);
@@ -889,10 +917,13 @@ function updateButton2 (elm, prefix, No, btnName, btnOptions)
       {
         if (GR.products[i].id == product.id)
         {
-          delete GR.products[i];
+            GR.products.splice(i, 1);
           break;
         }
       }
+      updateRow(prefix, No);
+    }
+    } else {
       updateRow(prefix, No);
     }
   };
@@ -918,6 +949,42 @@ function updateButton4 (elm, prefix, No, btnName, btnOptions)
   btn.id = btnName;
   btn.style.cssText = 'margin-left: 2px; margin-right: 2px;';
   btn.onclick = function (){updateRow(prefix, No);};
+
+  elm.appendChild(btn);
+  return btn;
+}
+
+function updateButton5 (elm, prefix, No, btnName, btnOptions)
+{
+  var btn = OAT.Dom.image("images/icons/close_16.png");
+  btn.id = btnName;
+  btn.style.cssText = 'margin-left: 2px; margin-right: 2px;';
+  btn.onclick = function (){
+    var item = FT.getItem(No);
+    if (item)
+    {
+      for (var i = 0; i < FT.items.length; i++)
+      {
+        if (FT.items[i].id == item.id)
+        {
+          FT.items.splice(i, 1);
+          break;
+        }
+      }
+    }
+    updateRow(prefix, No);
+  };
+
+  elm.appendChild(btn);
+  return btn;
+}
+
+function updateButton6 (elm, prefix, No, btnName, btnOptions)
+{
+  var btn = OAT.Dom.image("images/icons/add_16.png");
+  btn.id = btnName;
+  btn.style.cssText = 'margin-left: 2px; margin-right: 2px;';
+  btn.onclick = function (){FT.addItem(prefix, No);};
 
   elm.appendChild(btn);
   return btn;
@@ -979,6 +1046,221 @@ function validateInputs(fld)
     }
   }
   return retValue;
+}
+
+// Favorites
+// ---------------------------------------------------------------------------
+var FT = new Object();
+FT.items = new Array();
+FT.types = ['Books', 'text/*', 'Images', 'image/*', 'Musics', 'audio/*', 'Videos', 'video/*'];
+FT.prefix = 'f';
+FT.items2 = [{id:"1", class:"text/*", items:[{id:4, label:"dfsd", uri:"safasdfa"}]}];
+
+FT.mimeType = function (favoriteType)
+{
+  for (var i = 0; i < this.types.length; i=i+2)
+    if (this.types[i] == favoriteType)
+      return this.types[i+1]
+}
+
+FT.favoriteType = function (mimeType)
+{
+  for (var i = 0; i < this.types.length; i=i+2)
+    if (this.types[i+1] == mimeType)
+      return this.types[i]
+}
+
+FT.clearTable = function ()
+{
+  var tbody = $(this.prefix+'_tbody');
+  if (!tbody)
+    return;
+  var noTR = this.emptyRowID();
+  var TRs = tbody.childNodes;
+  for (i = TRs.length; i >= 0; i--)
+  {
+    var tr = TRs[i];
+    if (tr && tr.tagName == 'tr' && tr.id != noTR)
+      OAT.Dom.unlink(tr);
+  }
+  OAT.Dom.show(noTR);
+}
+
+FT.emptyRowID = function ()
+{
+  return this.prefix + '_tr_no';
+}
+
+FT.showItems = function ()
+{
+  var tbody = $(this.prefix+'_tbody');
+  if (!tbody)
+    return;
+
+  // clear table first
+  this.clearTable();
+
+  var noTR = FT.emptyRowID();
+  if (this.items && this.items.length)
+  {
+    OAT.Dom.hide(noTR);
+    // show types
+    for (i = 0; i < this.items.length; i++)
+      this.showItem(this.items[i]);
+    // show type items
+    for (i = 0; i < this.items.length; i++)
+    {
+      var fld = $(this.prefix+'_fld_1_'+this.items[i].id);
+      this.showProperties(fld, this.prefix, this.items[i].id);
+    }
+  } else {
+    OAT.Dom.show(noTR);
+  }
+}
+
+FT.getItem = function (No)
+{
+  for (var i = 0; i < this.items.length; i++)
+  {
+    if (this.items[i].id == No)
+      return this.items[i];
+  }
+  return null;
+}
+
+FT.showItem = function (item)
+{
+  var tbody = $(this.prefix+'_tbody');
+  if (!tbody)
+    return;
+  updateRow(this.prefix, null, {No: item.id, fld_1: {mode: 12, cssText: ''}, fld_2: {mode: 7, value: 'Type'}, fld_3: {mode: 9, value: item.class, showValue: FT.favoriteType(item.class)+' ('+item.class+')'}, btn_1: {mode: 5, cssText: 'margin-left: 2px; margin-right: 2px;'}});
+}
+
+FT.addItem = function (prefix, No)
+{
+  var tr = $(prefix+'_tr_'+No);
+  if (!tr) {return;}
+  var fld = $(prefix+'_fld_3_' + No);
+  if (!fld) {return;}
+  var fValue = fld.value.trim();
+  if (fValue == '')
+    return alert ('Please enter value!');
+  fValue = this.mimeType(fValue);
+  for (var i = 0; i < this.items.length; i++)
+    if (this.items[i].class == fValue)
+      return alert ('This favorite type already exists. Please enter another value!');
+
+  OAT.Dom.show(prefix+'_fld_1_'+No);
+  var td = $(prefix+'_td_'+No+'_2');
+  if (td)
+  	td.innerHTML = 'Type';
+
+  var td = $(prefix+'_td_'+No+'_3');
+  if (td)
+  {
+    // create new item object
+    var item = new Object();
+    item.prefix = this.prefix;
+    item.class = fld.value;
+    item.id = No;
+
+    // add item
+    this.items[this.items.length] = item;
+
+    // hide hilds
+    var childs = td.childNodes;
+    for (var i = 0; i < childs.length; i++)
+      OAT.Dom.hide(childs[i]);
+
+    // show combo value as text
+    var fld2 = OAT.Dom.text(fld.value+' ('+this.mimeType(fld.value)+')');
+    fld.value = this.mimeType(fld.value);
+    td.appendChild(fld2);
+  }
+	OAT.Dom.hide(prefix+'_btn_2_'+No);
+}
+
+FT.showProperties = function (obj, prefix, No)
+{
+  var item = this.getItem(No);
+  if (!item) {return;}
+  var tr = $(prefix+'_tr_' + No);
+  if (!tr) {return;}
+  var fld = $(prefix+'_fld_2_' + No);
+  if (fld)
+    fld.value = '1';
+  var trProperties = $(prefix+'_tr_' + No + '_properties');
+  if (obj.mode == 'show')
+  {
+    obj.mode = 'hide';
+    obj.title = 'Hide Properties';
+    obj.src = 'images/icons/orderup_16.png';
+    if (!trProperties)
+    {
+      //
+      trProperties = OAT.Dom.create('tr');
+      trProperties.id = prefix + '_tr_' + No + '_properties';
+      trProperties.style.cssText = 'background-color: #F5F5EE;';
+      //
+      var tdProperties1 = OAT.Dom.create('td');
+      tdProperties1.style.cssText = 'background-color: #FFF;';
+      trProperties.appendChild(tdProperties1);
+      //
+      var tdProperties2 = OAT.Dom.create('td');
+      tdProperties2.style.cssText = 'vertical-align: top;';
+      tdProperties2.appendChild(OAT.Dom.text("~ items"));
+      trProperties.appendChild(tdProperties2);
+      //
+      var tdProperties3 = OAT.Dom.create('td');
+      trProperties.appendChild(tdProperties3);
+      //
+      var tdProperties4 = OAT.Dom.create('td');
+      tdProperties4.style.cssText = 'vertical-align: top;';
+      trProperties.appendChild(tdProperties4);
+
+      // insertBefore(trProperties, tr);
+      var trParent = tr.parentNode;
+  	  if(tr.nextSibling)
+  	  {
+  		  trParent.insertBefore(trProperties, tr.nextSibling);
+  	  } else {
+  		  trParent.appendChild(trProperties);
+  	  }
+      this.showPropertiesTable(item);
+    } else {
+      OAT.Dom.show(trProperties);
+    }
+  } else {
+    obj.mode = 'show';
+    obj.title = 'Show Properties';
+    obj.src = 'images/icons/orderdown_16.png';
+    OAT.Dom.hide(trProperties);
+  }
+}
+
+FT.showPropertiesTable = function (item)
+{
+  var No = item.id;
+  var tr = $(this.prefix + '_tr_' + No + '_properties');
+  if (!tr) {return;}
+
+  var TDs = tr.getElementsByTagName('td');
+  var prefixProp = this.prefix+'_prop_'+No;
+
+  var btn = OAT.Dom.image("images/icons/add_16.png");
+  btn.style.cssText = 'margin-left: 2px; margin-right: 2px;';
+  btn.onclick = function (){updateRow(prefixProp, null, {fld_1: {}, fld_2: {}, fld_3: {value: '-1', type: 'hidden'}, btn_1: {mode: 4}});};
+  TDs[3].appendChild(btn);
+
+  var S = '<table id="prop_tbl" class="listing" style="background-color: #F5F5EE;"><thead><tr class="listing_header_row"><th width="50%">Label</th><th width="50%" colspan="2">Url</th><th width="80px">Action</th></tr></thead><tbody id="prop_tbody"><tr id="prop_tr_no"><td colspan="4">No Favorites</td></tr></tbody></table><input type="hidden" id="prop_no" name="prop_no" value="0" />';
+  TDs[2].innerHTML = S.replace(/prop_/g, prefixProp+'_');
+
+  var items = item.items;
+  if (items)
+  {
+    for (var i = 0; i < items.length; i++)
+      updateRow(prefixProp, null, {No: items[i].id, fld_1: {value: items[i].label}, fld_2: {value: items[i].uri}, fld_3: {value: items[i].id, type: 'hidden'}, btn_1: {mode: 4}});
+  }
 }
 
 // Good Relations

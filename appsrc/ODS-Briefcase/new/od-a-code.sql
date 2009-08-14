@@ -1481,7 +1481,7 @@ create procedure ODRIVE.WA.account_sioc_url (
 {
   declare S varchar;
 
-  S := SIOC..person_iri (SIOC..user_iri (ODRIVE.WA.domain_owner_id (domain_id)));
+  S := SIOC..person_iri (SIOC..user_iri (ODRIVE.WA.domain_owner_id (domain_id), null));
   return ODRIVE.WA.url_fix (S, sid, realm);
 }
 ;

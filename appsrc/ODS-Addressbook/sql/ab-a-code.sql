@@ -707,7 +707,7 @@ create procedure AB.WA.domain_update (
 -------------------------------------------------------------------------------
 --
 create procedure AB.WA.domain_owner_id (
-  inout domain_id integer)
+  in domain_id integer)
 {
   return (select A.WAM_USER from WA_MEMBER A, WA_INSTANCE B where A.WAM_MEMBER_TYPE = 1 and A.WAM_INST = B.WAI_NAME and B.WAI_ID = domain_id);
 }
@@ -843,10 +843,7 @@ create procedure AB.WA.domain_sioc_url (
   in sid varchar := null,
   in realm varchar := null)
 {
-  declare S varchar;
-
-  S := sprintf ('http://%s/dataspace/%U/addressbook/%U', DB.DBA.wa_cname (), AB.WA.domain_owner_name (domain_id), AB.WA.domain_name (domain_id));
-  return AB.WA.url_fix (S, sid, realm);
+  return AB.WA.url_fix (AB.WA.domain_iri (domain_id), sid, realm);
 }
 ;
 
@@ -959,7 +956,7 @@ create procedure AB.WA.account_sioc_url (
 {
   declare S varchar;
 
-  S := SIOC..person_iri (SIOC..user_iri (AB.WA.domain_owner_id (domain_id)));
+  S := SIOC..person_iri (SIOC..user_iri (AB.WA.domain_owner_id (domain_id), null));
   return AB.WA.url_fix (S, sid, realm);
 }
 ;
