@@ -538,76 +538,59 @@ traversed 1 time per select, but still on large database files that may take som
 </sect4>
 
 	</sect3>
-<sect3 id="TRANSACTION_ISOLATION_LEVELS"><title>Transaction Metrics, Diagnostics and Optimization</title><ulink url="">Transaction-Isolation
-    Levels in Virtuoso</ulink>
 
-    <bridgehead class="h1"><ulink url="">Metrics, Diagnostics
-    and Optimization of Transactions</ulink></bridgehead>
+<sect3 id="TRANSACTION_ISOLATION_LEVELS"><title>Transaction Metrics, Diagnostics and Optimization</title>
+
 
     <para>Bad design and implementation of transactions affects
-    applications in two ways:</para>
+    applications in the following ways:</para>
 
     <itemizedlist mark="bullet" spacing="compact">
       <listitem>Performance is lost by having to needlessly retry
-      transactions that are</listitem>
-    </itemizedlist>
-    aborted by deadlock. 
+      transactions that are aborted by deadlock.</listitem>
 
-    <itemizedlist mark="bullet" spacing="compact">
       <listitem>Concurrency is lost by having rows stay locked for too
-      long</listitem>
+      long.</listitem>
 
       <listitem>Memory is transiently consumed, adversely affecting
-      working set, by</listitem>
+      working set, by keeping data structures for too many simultaneous locks,
+      rollback records and uncommitted roll forward logs.</listitem>
     </itemizedlist>
-    keeping data structures for too many simultaneous locks,
-    rollback records and uncommitted roll forward logs. 
+
 
     <para>The following rules should be observed when writing
     transactions:</para>
 
     <itemizedlist mark="bullet" spacing="compact">
       <listitem>Do not lock needlessly. For example, any report
-      transaction that reads</listitem>
-    </itemizedlist>
-    the data once can always be done as read committed instead of
+      transaction that reads the data once can always be done as read committed instead of
     repeatable read without affecting semantics. Even if some data
     is read multiple times, the repeatable read semantic is
-    typically not relevant for reports. 
+    typically not relevant for reports.</listitem>
 
-    <itemizedlist mark="bullet" spacing="compact">
       <listitem>Lock for what is needed. If you mean to update later, do
-      the initial</listitem>
-    </itemizedlist>
-    read with exclusive locks. See the for update clause in select,
-    for example. 
+      the initial read with exclusive locks. See the for update clause in select,
+    for example.</listitem>
 
-    <itemizedlist mark="bullet" spacing="compact">
       <listitem>Lock in constant order. If you must lock different
-      resources in one</listitem>
-    </itemizedlist>
+      resources in one
     transaction, lock them always in the same order. When updating
     stock for an order, update the quantity on hand in increasing
     order of item number, for instance. 
+	  </listitem>
 
-    <itemizedlist mark="bullet" spacing="compact">
       <listitem>Lock the item with the least contention first. For
-      example, update the</listitem>
-    </itemizedlist>
+      example, update the
     detail before updating the summary. Update the quantity in
     stock for the ordered items before updating the orders count of
     the whole warehouse. 
+	  </listitem>
 
-    <itemizedlist mark="bullet" spacing="compact">
       <listitem>Keep transactions short. Use stored procedures. Use the
-      explicit</listitem>
-    </itemizedlist>
-    commit work statement. 
+      explicit commit work statement.</listitem>
 
-    <itemizedlist mark="bullet" spacing="compact">
       <listitem>For each transaction in a stored procedure, make sure
-      that if it is</listitem>
-    </itemizedlist>
+      that if it is
     deadlocked, the deadlocked transaction gets retried. For
     example, have a "declare exit handler for sqlstate 40001" for
     every transaction context. Make sure that a deadlocking
@@ -617,11 +600,10 @@ traversed 1 time per select, but still on large database files that may take som
     count of retries and a random delay before restarting. The
     restart delay should be between 0 and the expected duration of
     the transaction. 
+	  </listitem>
 
-    <itemizedlist mark="bullet" spacing="compact">
       <listitem>Always break batch updates into multiple transactions.
-      Update a few</listitem>
-    </itemizedlist>
+      Update a few
     thousand or tens of thousands of rows per transaction, never
     more than that. Failing to do this makes for prohibitive cost
     of retry with deadlocks and can cause swapping by keeping tens
@@ -630,13 +612,15 @@ traversed 1 time per select, but still on large database files that may take som
     updates, deletes several million rows in a single transaction.
     If this is really needed and concurrency is no issue, use the
     atomic mode, effectively making the server single user for the
-    transaction, thus having no locking or rollback. See __atomic
-    (). 
+    transaction, thus having no locking or rollback. See
+	<link linkend="fn___atomic"><function>__atomic()</function></link>.
+	  </listitem>
+    </itemizedlist>
 
-    <bridgehead class="h2"><ulink url="">Programming</ulink></bridgehead>
+    <sect4 id="ptuneprogvirtpl"><title>Programming Virtuoso/PL</title>
 
-    <bridgehead class="h3"><ulink url="">Virtuoso/PL</ulink></bridgehead>
-    The isolation level is set in Virtuoso/PL with the 
+    <para>The isolation level is set in Virtuoso/PL with the</para>
+
 <programlisting>
 set isolation := level;
 </programlisting>
@@ -647,12 +631,17 @@ set isolation := level;
 set isolation = 'serializable';
 </programlisting>
 
-    <para>The standard SQL syntax is also supported :</para>
+    <para>
+	The standard SQL syntax is also supported :</para>
+
 <programlisting>
-SET TRANSACTION ISOLATION LEVEL &lt;isolation_level>
+SET TRANSACTION ISOLATION LEVEL &lt;isolation_level&gt;
 isolation level : READ UNCOMMITTED | READ COMMITTED | REPEATABLE READ | SERIALIZABLE
 </programlisting>
-    Example : 
+
+ <para>
+ Example :</para>
+
 <programlisting>
 SET TRANSACTION ISOLATION LEVEL READ COMMITTED
 </programlisting>
@@ -662,9 +651,13 @@ SET TRANSACTION ISOLATION LEVEL READ COMMITTED
     procedure having executed the set isolation statement
     returns.</para>
 
-    <bridgehead class="h3"><ulink url="">Sample Deadlock Handler</ulink></bridgehead>
+	</sect4>
+	
+	<sect4 id="ptunesampledeadlockhandler"><title>Sample Deadlock Handler</title>
+
 
     <para>The text for a deadlock handler is</para>
+
 <programlisting>
   declare retry_count int;
   retry_count := 0;
@@ -694,14 +687,16 @@ the transaction.
 select s_quantity from stock where s_i_id = 111 for update;
 </programlisting>
 
-    <bridgehead class="h3"><ulink url=""/> ODBC</bridgehead>
+	</sect4>
+
+	<sect4 id="ptuneodbciso"><title>ODBC</title>
 
     <para>For the Virtuoso ODBC driver the isolation
     is set by :</para>
 
     <itemizedlist mark="bullet" spacing="compact">
-      <listitem>connection option (in either <ulink url="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/odbc/htm/odbcsqlsetconnectattr.asp">SQLSetConnectAttr ()</ulink> or <ulink url="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/odbc/htm/odbcsqlsetconnectoption.asp">SQLSetConnectOption ()</ulink>)</listitem>
-    </itemizedlist>
+      <listitem>connection option (in either <ulink url="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/odbc/htm/odbcsqlsetconnectattr.asp">SQLSetConnectAttr ()</ulink> or <ulink url="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/odbc/htm/odbcsqlsetconnectoption.asp">SQLSetConnectOption ()</ulink>)
+
 <programlisting>
    rc = SQLSetConnectOption (hdbc, SQL_TXN_ISOLATION, SQL_TXN_READ_COMMITTED);
 </programlisting>
@@ -714,18 +709,17 @@ select s_quantity from stock where s_i_id = 111 for update;
     SQL_TXN_READ_COMMITTED, SQL_TXN_REPEATABLE_READ,
     SQL_TXN_SERIALIZABLE</para>
 
-    <itemizedlist mark="bullet" spacing="compact">
+	</listitem>
+
       <listitem>ODBC setup dialog
       option : In Windows there is a drop-down combo box to set the
       default transaction isolation level for a connection.</listitem>
-    </itemizedlist>
 
-    <itemizedlist mark="bullet" spacing="compact">
-      <listitem>connection string element : You may specify the default
+	  <listitem><para>connection string element : You may specify the default
       transaction isolation level for a given connection in it's
       connect string (passed to the <ulink url="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/odbc/htm/odbcsqldriverconnect.asp">SQLDriverConnect ()</ulink> ODBC API). Example
-      :</listitem>
-    </itemizedlist>
+      :</para>
+
 <programlisting>
    SQLDriverConnect (hdbc, hwnd, 
        "DSN=MyDSN;IsolationLevel=Repeatable Read;UID=dba;PWD=dbapwd", SQL_NTS, 
@@ -733,30 +727,45 @@ select s_quantity from stock where s_i_id = 111 for update;
        NULL,
        SQL_DRIVER_NOPROMPT).
 </programlisting>
-    The possible options for the connection string are : "Read
+
+	<para>The possible options for the connection string are : "Read
     Uncommitted", "Read Committed", "Repeatable Read" and
-    "Serializable" 
+    "Serializable"</para>
+  </listitem>
+</itemizedlist>
 
-    <bridgehead class="h3"><ulink url=""/> JDBC</bridgehead>
+  </sect4>
 
-    <para>In the Virtuoso JDBC driver the isolation is set by the <ulink url="http://java.sun.com/j2se/1.5.0/docs/api/java/sql/Connection.html#setTransactionIsolation(int)">java.sql.Connection.setTransactionIsolation()</ulink>
+  <sect4 id="ptunejdbciso"><title>JDBC</title>
+
+    <para>In the Virtuoso JDBC driver the isolation is set by
+	the <ulink url="http://java.sun.com/j2se/1.5.0/docs/api/java/sql/Connection.html#setTransactionIsolation(int)">java.sql.Connection.setTransactionIsolation()</ulink>
     JDBC API.</para>
+	
 <programlisting>
   conn.setTransactionIsolation (java.sql.Connection.TRANSACTION_SERIALIZABLE)
 </programlisting>
-    The constants are described <ulink url="http://java.sun.com/j2se/1.5.0/docs/api/java/sql/Connection.html#field_summary">here</ulink> 
 
-    <bridgehead class="h3"><ulink url=""/> NET</bridgehead>
+	<para>The constants are described in the <ulink url="http://java.sun.com/j2se/1.5.0/docs/api/java/sql/Connection.html#field_summary">Java Docs</ulink></para>
 
-    <para>In the VirtuosoClient.NET provider the isolation is set by the <ulink url="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfsystemdataidbconnectionclassbegintransactiontopic2.asp">System.Data.IDbConnection.BeginTransaction
+	</sect4>
+
+  <sect4 id="ptunedotnetiso"><title>.Net</title>
+
+    <para>In the VirtuosoClient.NET provider the isolation is set by the
+	  <ulink url="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfsystemdataidbconnectionclassbegintransactiontopic2.asp">System.Data.IDbConnection.BeginTransaction
     Method (IsolationLevel)</ulink> function.</para>
+	
 <programlisting>
   System.Data.IDBTransaction trx = conn.BeginTransaction (System.Data.IsolationLevel.ReadCommitted)
 </programlisting>
 
     <para>The constants are described <ulink url="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfsystemdataisolationlevelclasstopic.asp">here</ulink></para>
 
-    <bridgehead class="h2"><ulink url="">Metrics and Diagnostics</ulink></bridgehead>
+	</sect4>
+	</sect3>
+
+	<sect3 id="ptunemetricsdiag"><title>Metrics and Diagnostics</title>
 
     <para>Metrics are presented at the server and the table level.</para>
 
@@ -767,97 +776,83 @@ select s_quantity from stock where s_i_id = 111 for update;
 
     <itemizedlist mark="bullet" spacing="compact">
       <listitem>Count of deadlocks since server startup. There is a total
-      number of</listitem>
-    </itemizedlist>
+      number of 
     deadlocks and the number of 2r1w deadlocks. The latter is a
     special case where two transactions both hold a shared lock on
     a resource and one tries to convert the lock to exclusive. This
     situation can kill the transaction attempting to write. Such
     deadlocks are essentially always needless. These are avoided by
     reading for update when first reading the resource. 
+	</listitem>
 
-    <itemizedlist mark="bullet" spacing="compact">
       <listitem>Count of waits since server startup. This is incremented
-      every time</listitem>
-    </itemizedlist>
+      every time
     some operation waits for a lock, except if this wait leads into
     a deadlock. If the number of deadlocks is high, let's say over
     5% of the number of waits, transactions are likely badly
     designed and deadlock too often, either because of not locking
     for write at the get go (2r1w) or because of locking resources
     in varying order. 
+	  </listitem>
 
-    <itemizedlist mark="bullet" spacing="compact">
       <listitem>Count of threads running. This is the count of all
-      threads that are</listitem>
-    </itemizedlist>
+      threads that are
     somehow occupied, whether running or waiting. This count minus
     the count of waiting minus the count of threads in vdb is the
     count of threads that in principle could be on CPU. 
+	  </listitem>
 
-    <itemizedlist mark="bullet" spacing="compact">
       <listitem>Count of threads waiting. This is the count of threads
-      that are</listitem>
-    </itemizedlist>
+      that are
     waiting for a lock. If this is a high percentage of the count
     of threads running, say over 30%, resources are likely locked
     inefficiently, keeping too many locked. 
+	  </listitem>
 
-    <itemizedlist mark="bullet" spacing="compact">
       <listitem>Count of threads in vdb. This is the count of threads that
-      are at the</listitem>
-    </itemizedlist>
-    time waiting for I/O either from a remote database or any sort
+      are at the time waiting for I/O either from a remote database or any sort
     of network operation, including access to web services on other
     serbers, access to web pages on other hosts etc. 
+	  </listitem>
+	  </itemizedlist>
 
     <para>The system view db.dba.sys_l_stat is used for locating
     bottlenecks.</para>
 
     <para>The columns are:</para>
 
-    <para>* Table - The table in question</para>
-
     <itemizedlist mark="bullet" spacing="compact">
-      <listitem>index The index being locked. Note that when reading on
-      non-primary</listitem>
-    </itemizedlist>
+      <listitem>index - The index being locked. Note that when reading on
+      non-primary
     key, the lock is set on the index first, only then on the pk,
     that is if the pk is accessed at all. For all updates however,
     the pk will always be accessed. *locks - The count of times a
     lock was set on this index. 
+	  </listitem>
 
-    <itemizedlist mark="bullet" spacing="compact">
       <listitem>waits - The number of times there was a wait on this
-      index. There can</listitem>
-    </itemizedlist>
+      index. There can
     be more waits than locks because a read committed cursor can
     wait but will not lock, thus all waits do not result in locks. 
+	  </listitem>
 
-    <itemizedlist mark="bullet" spacing="compact">
       <listitem>wait_pct - The percentage of times setting a lock waited.
-      (100 *</listitem>
-    </itemizedlist>
-    waits) / locks 
+      (100 *  waits) / locks
+	  </listitem>
 
-    <itemizedlist mark="bullet" spacing="compact">
       <listitem>deadlocks - The number of times a deadlock was signalled
-      when</listitem>
-    </itemizedlist>
-    attempting to wait for a lock on this index. 
+      when attempting to wait for a lock on this index.
+	  </listitem>
 
-    <itemizedlist mark="bullet" spacing="compact">
       <listitem>lock_esc - The number of times a set of row locks was
-      converted into a</listitem>
-    </itemizedlist>
-    page lock on this index. 
+      converted into a page lock on this index.
+	  </listitem>
 
-    <itemizedlist mark="bullet" spacing="compact">
       <listitem>wait_msecs - The total amount of real time spent by some
-      thread waiting</listitem>
-    </itemizedlist>
-    for a lock on this index. This may be greater than elapsed time
+      thread waiting for a lock on this index. This may be greater than elapsed time
     because many threads can wait at the same time. 
+	  </listitem>
+	</itemizedlist>
 
     <para>All counts and times are cumulative from server startup.</para>
 
@@ -893,7 +888,7 @@ select s_quantity from stock where s_i_id = 111 for update;
     <para>to get a quick view of where time is spent. You can also
     sort by waits desc or locks desc.</para>
 
-    <bridgehead class="h2"><ulink url=""/> SQL Issues</bridgehead>
+    <sect4 id="ptunemetricdiagsqlissues"><title>SQL Issues</title>
 
     <para>It is possible to get bad locking behavior if the SQL
     compiler decides to make linear scans of tables or indices and
@@ -911,7 +906,9 @@ select s_quantity from stock where s_i_id = 111 for update;
     explain () function. To change how a query is compiled, one can
     use the table option or option SQL clauses.</para>
 
-    <bridgehead class="h2"><ulink url="">Observation of Dynamics</ulink></bridgehead>
+	</sect4>
+	
+    <sect4 id="ptunemetricdiagdynmicsobs"><title>Observation of Dynamics</title>
 
     <para>Deadlocks and contention do not occur uniformly across time.
     The occurrences will sharply increase after a certain
@@ -927,7 +924,9 @@ select s_quantity from stock where s_i_id = 111 for update;
     <para>Looking at how counts change, specially if they change in
     bursts is useful.</para>
 
-    <bridgehead class="h2"><ulink url="">Tracing and Debugging</ulink></bridgehead>
+	</sect4>
+
+    <sect4 id="ptunemetricdiagsqlissues"><title>Tracing and Debugging</title>
 
     <para>The most detailed picture of a system's behavior, including
     deadlocks nd other exceptions cn be obtained with profiling. If
@@ -935,11 +934,11 @@ select s_quantity from stock where s_i_id = 111 for update;
     one can use the language's test coverage facility to see
     execution counts for various branches of the code.</para>
 
-    <para>For client applications, using the Virtuoso trace ()
+    <para>For client applications, using the Virtuoso <link linkend="fn_trace"><function>trace()</function></link>
     function can be useful for seeing which statements signal
-    errors. Also the profiling report produced by prof_enable ()
+    errors. Also the profiling report produced by <link linkend="fn_prof_enable"><function>prof_enable ()</function></link>
     can give useful hints on execution times and error frequencies.
-    See Profiling and prof_enable ().</para>
+    See Profiling and <link linkend="fn_prof_enable"><function>prof_enable ()</function></link>.</para>
 
     <para>For PL applications, Virtuoso provides a profiler and test
     coverage facility. This is activated by setting PLDebug = 2 in

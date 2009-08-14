@@ -646,6 +646,12 @@ be presented.</para>
         <entry>Absolute URL of any XSLT stylesheet file to be applied to the SPARQL query results</entry>
         <entry>No</entry>
       </row>
+      <row>
+        <entry>timeout</entry>
+        <entry>Timeout for &quot;anytime&quot; query execution, in milliseconds, values less than 1000 are ignored; see
+<link linkend="anytimequeries">Anytime Queries</link> for more details</entry>
+        <entry>No</entry>
+      </row>
     </tbody>
   </tgroup>
 </table>
@@ -2068,12 +2074,12 @@ an RDF representation of the target. When transforming to RDF, the RDF format (R
 or by content negotiation.
 </para>
 <para>
-When the rdf_mappers package is installed, Virtuoso reserves the path '/about/[rdf|html]/' for the RDF
+When the rdf_mappers package is installed, Virtuoso reserves the path '/about/[id|html|data|rdf]/http/' for the RDF
 proxy service. In the current implementation, Virtuoso defines virtual directories for HTTP requests that
 come to the port specified as 'ServerPort' in the '[HTTPServer]' section of Virtuoso configuration file
 and refer to the above path string. So, if the Virtuoso installation on host example.com listens for HTTP
 requests on port 8080, client applications should use the 'service endpoint' string equal to
-'http://example.com:8080/about/[rdf|html]/'.
+'http://example.com:8080/about/[id|html|data|rdf]/http/'.
 </para>
 <para>
 If the rdf_mappers VAD package is not installed, then the path '/proxy/rdf/' is used for the Sponger Proxy URI Service.
@@ -2124,7 +2130,7 @@ grant execute on DB.DBA.RDF_SPONGE_UP to "SPARQL";
     <para>Example: RDF file with URL: http://www.w3.org/People/Berners-Lee/card</para>
 <programlisting><![CDATA[
 -- Access the url in order to view the result in HTML format:
-http://host:port/about/html/http://www.w3.org/People/Berners-Lee/card
+http://host:port/about/html/http/www.w3.org/People/Berners-Lee/card
 -- Access the url in order to view the result in RDF:
 http://host:port/about/rdf/http://www.w3.org/People/Berners-Lee/card
 -- or use the following proxy invocation style:
@@ -5493,6 +5499,16 @@ account "SPARQL", i.e., to the owner account of /sparql web service endpoint.
 This should normally be the case. If not, you must manually grant this
 permission. As with most Virtuoso DBA tasks, the Conductor provides the simplest means of
 doing this.</para>
+  <tip><title>See Also:</title>
+    <itemizedlist mark="bullet">
+      <listitem>The <link linkend="fn_rdf_load_rdfxml">DB.DBA.RDF_LOAD_RDFXML</link> function to
+parse the content of RDF/XML text.</listitem>
+      <listitem>The <link linkend="fn_ttlp_mt">DB.DBA.TTLP_MT</link> function to
+parse TTL (TURTLE or N3 resource).</listitem>
+      <listitem>The <link linkend="fn_gz_file_open">gz_file_open</link> function to
+retrieve content of a gzipped file and example for loading gzipped N3 and Turtle files.</listitem>
+    </itemizedlist>
+  </tip>
     </sect2>
     <sect2 id="rdfinsertmethodsimilerdfbankapi">
       <title>Using SIMILE RDF Bank API</title>
@@ -5629,12 +5645,11 @@ structured data by mapping them to a suitable ontology. A cartridge is invoked t
 hook, a Virtuoso/PL procedure entry point and binding to the cartridge's entity extractor and
 ontology mapper.</para>
 </sect4>
-<sect4 id="virtuosospongercartridges"><title>Virtuoso Cartridge-Supported Data Sources</title>
-<itemizedlist>
-<listitem>RDF that doesn't contain Linked Data URIs</listitem>
-<listitem>Non-RDF Data Sources
+<sect4 id="virtuosospongercartridges"><title>Supported Non RDF Data Sources</title>
   <itemizedlist>
-    <listitem>Open Standard data spaces
+    <listitem>Standard Formats
+<para>These Cartridges handle open formats: typically community-developed,
+openly-documented, and freely-licensed data structures.</para>
 <table>
 <tgroup cols="4">
 <thead>
@@ -5643,34 +5658,110 @@ ontology mapper.</para>
   </row>
 </thead>
 <tbody>
-<row><entry>APML  	</entry><entry>   <ulink url="https://apml.engagd.com/apml/danielabarbosa.myopenid.com.apml">Example   	 </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/https://apml.engagd.com/apml/danielabarbosa.myopenid.com.apml">Description of URI</ulink> </entry><entry> <ulink url="http://linkeddata.uriburner.com/ode/?uri=https://apml.engagd.com/apml/danielabarbosa.myopenid.com.apml">Linked Data from URI</ulink> </entry></row>
-<row><entry>ATOM 	</entry><entry>   <ulink url="http://www.openlinksw.com/weblog/oerling/gems/atom.xml">example 	 </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://www.openlinksw.com/weblog/oerling/gems/atom.xml">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.openlinksw.com/weblog/oerling/gems/atom.xml">Linked Data from URI</ulink> </entry></row>
-<row><entry>eRDF 	</entry><entry>   <ulink url="http://www.w3.org/2001/sw/grddl-wg/doc29/hotel-data.html">sample eRDF test </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://www.w3.org/2001/sw/grddl-wg/doc29/hotel-data.html">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.w3.org/2001/sw/grddl-wg/doc29/hotel-data.html">Linked Data from URI</ulink> </entry></row>
-<row><entry>GRDDL 	</entry><entry>   <ulink url="http://www.w3.org/2001/sw/grddl-wg/doc29/hotel-data.html">sample GRDDL test</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://www.w3.org/2001/sw/grddl-wg/doc29/hotel-data.html">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.w3.org/2001/sw/grddl-wg/doc29/hotel-data.html">Linked Data from URI</ulink> </entry></row>
-<row><entry>hAudio 	</entry><entry>   <ulink url="http://openmediaweb.org/index.php/2008/01/13/publishing-my-workout-music-in-haudio/">Example 	 </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://openmediaweb.org/index.php/2008/01/13/publishing-my-workout-music-in-haudio/">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://openmediaweb.org/index.php/2008/01/13/publishing-my-workout-music-in-haudio/">Linked Data from URI</ulink> </entry></row>
-<row><entry>hCalendar   </entry><entry>   <ulink url="http://www.maine.gov/portal/government/calendar.shtml">hCalendar 	 </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://www.maine.gov/portal/government/calendar.shtml">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.maine.gov/portal/government/calendar.shtml">Linked Data from URI</ulink> </entry></row>
-<row><entry>hCard 	</entry><entry>   <ulink url="http://www.lawyer-directory.net/lawyer/Grand-Rapids-Bar-Association-Grand-Rapids-law434032.htm">hcard-example    </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://www.lawyer-directory.net/lawyer/Grand-Rapids-Bar-Association-Grand-Rapids-law434032.htm">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.lawyer-directory.net/lawyer/Grand-Rapids-Bar-Association-Grand-Rapids-law434032.htm">Linked Data from URI</ulink> </entry></row>
-<row><entry>hReview     </entry><entry>   <ulink url="http://www.concertbuzz.net/genres/classic-rock/jethro-tull.html">sample hreview   </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://www.concertbuzz.net/genres/classic-rock/jethro-tull.html">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.concertbuzz.net/genres/classic-rock/jethro-tull.html">Linked Data from URI</ulink> </entry></row>
-<row><entry>iCalendar   </entry><entry>   <ulink url="http://kidehen.idehen.net/DAV/home/kidehen/Public/LDP-Spring2008.ics">iCal 	         </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://kidehen.idehen.net/DAV/home/kidehen/Public/LDP-Spring2008.ics">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://kidehen.idehen.net/DAV/home/kidehen/Public/LDP-Spring2008.ics">Linked Data from URI</ulink> </entry></row>
-<row><entry>Images 	</entry><entry>   <ulink url="http://farm4.static.flickr.com/3067/2590298570_304a594899_t.jpg">JPG example 	 </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://farm4.static.flickr.com/3067/2590298570_304a594899_t.jpg">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://farm4.static.flickr.com/3067/2590298570_304a594899_t.jpg">Linked Data from URI</ulink> </entry></row>
-<row><entry>OPML 	</entry><entry>   <ulink url="http://news.bbc.co.uk/rss/feeds.opml">example 	 </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://news.bbc.co.uk/rss/feeds.opml">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://news.bbc.co.uk/rss/feeds.opml">Linked Data from URI</ulink> </entry></row>
-<row><entry>RDFa 	</entry><entry>   <ulink url="http://virtuoso.openlinksw.com/presentations/Creating_Deploying_Exploiting_Linked_Data2/Creating_Deploying_Exploiting_Linked_Data2_TimBL_v3.html">example 	 </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://virtuoso.openlinksw.com/presentations/Creating_Deploying_Exploiting_Linked_Data2/Creating_Deploying_Exploiting_Linked_Data2_TimBL_v3.html">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://virtuoso.openlinksw.com/presentations/Creating_Deploying_Exploiting_Linked_Data2/Creating_Deploying_Exploiting_Linked_Data2_TimBL_v3.html">Linked Data from URI</ulink> </entry></row>
-<row><entry>RSS 	</entry><entry>   <ulink url="http://microformats.org/feed/">example 	 </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://microformats.org/feed/">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://microformats.org/feed/">Linked Data from URI</ulink> </entry></row>
-<row><entry>Slidy 	</entry><entry>   <ulink url="http://slideshow.rubyforge.org/microformats.html">example 	 </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://slideshow.rubyforge.org/microformats.html">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://slideshow.rubyforge.org/microformats.html">Linked Data from URI</ulink> </entry></row>
-<row><entry>vCalendar   </entry><entry>   <ulink url="http://upcoming.org/event/130719/">event 	         </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://upcoming.org/event/130719/">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://upcoming.org/event/130719/">Linked Data from URI</ulink> </entry></row>
-<row><entry>vCard 	</entry><entry>   <ulink url="http://tech.yahoo.com/pr/apple-ipod-video-30gb-black-mp3-player/1992981873">ipod example 	 </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://tech.yahoo.com/pr/apple-ipod-video-30gb-black-mp3-player/1992981873">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://tech.yahoo.com/pr/apple-ipod-video-30gb-black-mp3-player/1992981873">Linked Data from URI</ulink> </entry></row>
-<row><entry>XBEL 	</entry><entry>   <ulink url="http://xbel.sourceforge.net/bookmarks/xbel.xbel">example 	 </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://xbel.sourceforge.net/bookmarks/xbel.xbel">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://xbel.sourceforge.net/bookmarks/xbel.xbel">Linked Data from URI</ulink> </entry></row>
-<row><entry>XBRL 	</entry><entry>   <ulink url="http://www.sec.gov/Archives/edgar/data/51143/000110465908059468/ibm-20080429.xml">example 	 </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://www.sec.gov/Archives/edgar/data/51143/000110465908059468/ibm-20080429.xml">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.sec.gov/Archives/edgar/data/51143/000110465908059468/ibm-20080429.xml">Linked Data from URI</ulink> </entry></row>
-<row><entry>XFN 	</entry><entry>   <ulink url="http://www.molly.com/people.php">example 	 </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://www.molly.com/people.php">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.molly.com/people.php">Linked Data from URI</ulink> </entry></row>
-<row><entry>XHTML 	</entry><entry>   <ulink url="http://www.lespetitescases.net/semantique-et-xhtml">xhtml cases 	 </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://www.lespetitescases.net/semantique-et-xhtml">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.lespetitescases.net/semantique-et-xhtml">Linked Data from URI</ulink> </entry></row>
-<row><entry>XR-XML 	</entry><entry>   <ulink url="http://ns.hr-xml.org/2_5/HR-XML-2_5/SEP/ResumeExample.xml">Example 	 </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://ns.hr-xml.org/2_5/HR-XML-2_5/SEP/ResumeExample.xml">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://ns.hr-xml.org/2_5/HR-XML-2_5/SEP/ResumeExample.xml">Linked Data from URI</ulink> </entry></row>
-<row><entry>xslt 	</entry><entry>   <ulink url="http://www.w3.org/2003/12/rdf-in-xhtml-xslts/complete-example.html">example 	 </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://www.w3.org/2003/12/rdf-in-xhtml-xslts/complete-example.html">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.w3.org/2003/12/rdf-in-xhtml-xslts/complete-example.html">Linked Data from URI</ulink> </entry></row>
+<row><entry>AB Meta  	</entry><entry>   <ulink url="http://abmeta.org/album2.html">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/abmeta.org/album2.html">HTML Representation</ulink> </entry><entry> <ulink url="http://linkeddata.uriburner.com/ode/?uri=http://abmeta.org/album2.html">Data Explorer View</ulink> </entry></row>
+<row><entry>APML  	</entry><entry>   <ulink url="https://apml.engagd.com/apml/danielabarbosa.myopenid.com.apml">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/https://apml.engagd.com/apml/danielabarbosa.myopenid.com.apml">HTML Representation</ulink> </entry><entry> <ulink url="http://linkeddata.uriburner.com/ode/?uri=https://apml.engagd.com/apml/danielabarbosa.myopenid.com.apml">Data Explorer View</ulink> </entry></row>
+<row><entry>ATOM 	</entry><entry>   <ulink url="http://www.openlinksw.com/blog/~kidehen/gems/atom.xml">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.openlinksw.com/blog/~kidehen/gems/atom.xml">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.openlinksw.com/blog/~kidehen/gems/atom.xml">Data Explorer View</ulink> </entry></row>
+<row><entry>DC       	</entry><entry>   <ulink url="http://dublincore.org/2008/01/14/dcterms.rdf">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/dublincore.org/2008/01/14/dcterms.rdf">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://dublincore.org/2008/01/14/dcterms.rdf">Data Explorer View</ulink> </entry></row>
+<row><entry>eRDF 	</entry><entry>   <ulink url="http://www.w3.org/2001/sw/grddl-wg/doc29/hotel-data.html">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.w3.org/2001/sw/grddl-wg/doc29/hotel-data.html">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.w3.org/2001/sw/grddl-wg/doc29/hotel-data.html">Data Explorer View</ulink> </entry></row>
+<row><entry>GRDDL 	</entry><entry>   <ulink url="http://www.w3.org/2001/sw/grddl-wg/doc29/hotel-data.html">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.w3.org/2001/sw/grddl-wg/doc29/hotel-data.html">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.w3.org/2001/sw/grddl-wg/doc29/hotel-data.html">Data Explorer View</ulink> </entry></row>
+<row><entry>hAudio 	</entry><entry>   <ulink url="http://openmediaweb.org/index.php/2008/01/13/publishing-my-workout-music-in-haudio/">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/openmediaweb.org/index.php/2008/01/13/publishing-my-workout-music-in-haudio/">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://openmediaweb.org/index.php/2008/01/13/publishing-my-workout-music-in-haudio/">Data Explorer View</ulink> </entry></row>
+<row><entry>hCalendar   </entry><entry>   <ulink url="http://www.maine.gov/portal/government/calendar.shtml">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.maine.gov/portal/government/calendar.shtml">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.maine.gov/portal/government/calendar.shtml">Data Explorer View</ulink> </entry></row>
+<row><entry>hCard 	</entry><entry>   <ulink url="http://www.lawyer-directory.net/lawyer/Grand-Rapids-Bar-Association-Grand-Rapids-law434032.htm">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.lawyer-directory.net/lawyer/Grand-Rapids-Bar-Association-Grand-Rapids-law434032.htm">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.lawyer-directory.net/lawyer/Grand-Rapids-Bar-Association-Grand-Rapids-law434032.htm">Data Explorer View</ulink> </entry></row>
+<row><entry>hListing 	</entry><entry>   <ulink url="http://sfbay.craigslist.org/nby/apa/1280124800.html">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/sfbay.craigslist.org/nby/apa/1280124800.html">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://sfbay.craigslist.org/nby/apa/1280124800.html">Data Explorer View</ulink> </entry></row>
+<row><entry>hProduct 	</entry><entry>   <ulink url="http://www.bestbuy.com/shop/cartman">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.bestbuy.com/shop/cartman">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.bestbuy.com/shop/cartman">Data Explorer View</ulink> </entry></row>
+<row><entry>HR-XML 	</entry><entry>   <ulink url="http://ns.hr-xml.org/2_5/HR-XML-2_5/SEP/ResumeExample.xml">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/ns.hr-xml.org/2_5/HR-XML-2_5/SEP/ResumeExample.xml">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://ns.hr-xml.org/2_5/HR-XML-2_5/SEP/ResumeExample.xml">Data Explorer View</ulink> </entry></row>
+<row><entry>hResume 	</entry><entry>   <ulink url="http://brad.hawidu.com/">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/brad.hawidu.com/">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://brad.hawidu.com/">Data Explorer View</ulink> </entry></row>
+<row><entry>hReview     </entry><entry>   <ulink url="http://www.concertbuzz.net/genres/classic-rock/jethro-tull.html">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.concertbuzz.net/genres/classic-rock/jethro-tull.html">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.concertbuzz.net/genres/classic-rock/jethro-tull.html">Data Explorer View</ulink> </entry></row>
+<row><entry>iCalendar   </entry><entry>   <ulink url="http://kidehen.idehen.net/DAV/home/kidehen/Public/LDP-Spring2008.ics">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/kidehen.idehen.net/DAV/home/kidehen/Public/LDP-Spring2008.ics">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://kidehen.idehen.net/DAV/home/kidehen/Public/LDP-Spring2008.ics">Data Explorer View</ulink> </entry></row>
+<row><entry>Images 	</entry><entry>   <ulink url="http://farm4.static.flickr.com/3067/2590298570_304a594899_t.jpg">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/farm4.static.flickr.com/3067/2590298570_304a594899_t.jpg">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://farm4.static.flickr.com/3067/2590298570_304a594899_t.jpg">Data Explorer View</ulink> </entry></row>
+<row><entry>OO document </entry><entry>   <ulink url="http://www.pitonyak.org/AndrewMacro.odt">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.pitonyak.org/AndrewMacro.odt">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.pitonyak.org/AndrewMacro.odt">Data Explorer View</ulink> </entry></row>
+<row><entry>OPML 	</entry><entry>   <ulink url="http://news.bbc.co.uk/rss/feeds.opml">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/news.bbc.co.uk/rss/feeds.opml">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://news.bbc.co.uk/rss/feeds.opml">Data Explorer View</ulink> </entry></row>
+<row><entry>PPTX 	</entry><entry>   <ulink url="http://download.microsoft.com/download/4/D/E/4DE0D83D-7845-4FD1-9A8E-12F532EC81BC/Keynote.pptx">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/download.microsoft.com/download/4/D/E/4DE0D83D-7845-4FD1-9A8E-12F532EC81BC/Keynote.pptx">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://download.microsoft.com/download/4/D/E/4DE0D83D-7845-4FD1-9A8E-12F532EC81BC/Keynote.pptx">Data Explorer View</ulink> </entry></row>
+<row><entry>RDFa 	</entry><entry>   <ulink url="http://virtuoso.openlinksw.com/presentations/Creating_Deploying_Exploiting_Linked_Data2/Creating_Deploying_Exploiting_Linked_Data2_TimBL_v3.html">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/virtuoso.openlinksw.com/presentations/Creating_Deploying_Exploiting_Linked_Data2/Creating_Deploying_Exploiting_Linked_Data2_TimBL_v3.html">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://virtuoso.openlinksw.com/presentations/Creating_Deploying_Exploiting_Linked_Data2/Creating_Deploying_Exploiting_Linked_Data2_TimBL_v3.html">Data Explorer View</ulink> </entry></row>
+<row><entry>RSS 	</entry><entry>   <ulink url="http://microformats.org/feed/">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/microformats.org/feed/">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://microformats.org/feed/">Data Explorer View</ulink> </entry></row>
+<row><entry>Slidy 	</entry><entry>   <ulink url="http://slideshow.rubyforge.org/microformats.html">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/slideshow.rubyforge.org/microformats.html">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://slideshow.rubyforge.org/microformats.html">Data Explorer View</ulink> </entry></row>
+<row><entry>vCalendar   </entry><entry>   <ulink url="http://upcoming.org/event/130719/">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/upcoming.org/event/130719/">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://upcoming.org/event/130719/">Data Explorer View</ulink> </entry></row>
+<row><entry>vCard 	</entry><entry>   <ulink url="http://tech.yahoo.com/pr/apple-ipod-video-30gb-black-mp3-player/1992981873">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/tech.yahoo.com/pr/apple-ipod-video-30gb-black-mp3-player/1992981873">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://tech.yahoo.com/pr/apple-ipod-video-30gb-black-mp3-player/1992981873">Data Explorer View</ulink> </entry></row>
+<row><entry>XBEL 	</entry><entry>   <ulink url="http://xbel.sourceforge.net/bookmarks/xbel.xbel">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/xbel.sourceforge.net/bookmarks/xbel.xbel">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://xbel.sourceforge.net/bookmarks/xbel.xbel">Data Explorer View</ulink> </entry></row>
+<row><entry>XBRL 	</entry><entry>   <ulink url="http://www.sec.gov/Archives/edgar/data/51143/000110465908059468/ibm-20080429.xml">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.sec.gov/Archives/edgar/data/51143/000110465908059468/ibm-20080429.xml">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.sec.gov/Archives/edgar/data/51143/000110465908059468/ibm-20080429.xml">Data Explorer View</ulink> </entry></row>
+<row><entry>XFN 	</entry><entry>   <ulink url="http://www.molly.com/people.php">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.molly.com/people.php">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.molly.com/people.php">Data Explorer View</ulink> </entry></row>
+<row><entry>XHTML 	</entry><entry>   <ulink url="http://www.lespetitescases.net/semantique-et-xhtml">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.lespetitescases.net/semantique-et-xhtml">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.lespetitescases.net/semantique-et-xhtml">Data Explorer View</ulink> </entry></row>
+<row><entry>XSLT 	</entry><entry>   <ulink url="http://www.w3.org/2003/12/rdf-in-xhtml-xslts/complete-example.html">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.w3.org/2003/12/rdf-in-xhtml-xslts/complete-example.html">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.w3.org/2003/12/rdf-in-xhtml-xslts/complete-example.html">Data Explorer View</ulink> </entry></row>
 </tbody>
 </tgroup>
 </table>
     </listitem>
-    <listitem>Vendor-specific data spaces
+    <listitem>Vendor-specific Web Services
+<para>These Cartridges handle closed formats: typically proprietary, sometimes undocumented, possibly
+licensed to no-one except the format originator. Sometimes data may not be parsed as desired or expected,
+as many of these Cartridges have required reverse-engineering of the data format in question.</para>
+<table>
+<tgroup cols="4">
+<thead>
+  <row>
+    <entry>Cartridge</entry><entry>Sample URI</entry><entry>Resource Description</entry><entry>Linked Data Graph</entry>
+  </row>
+</thead>
+<tbody>
+<row><entry>Amazon  	            </entry><entry>   <ulink url="http://www.amazon.com/gp/product/0553383043">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.amazon.com/gp/product/0553383043">HTML Representation</ulink> </entry><entry> <ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.amazon.com/gp/product/0553383043">Data Explorer View</ulink> </entry></row>
+<row><entry>Apple 	            </entry><entry>   <ulink url="http://www.apple.com/iphone/iphone-3gs/">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.apple.com/iphone/iphone-3gs/">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.apple.com/iphone/iphone-3gs/">Data Explorer View</ulink> </entry></row>
+<row><entry>Bing     	            </entry><entry>   <ulink url="http://www.bing.com/community/members/livesearch/default.aspx">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.bing.com/community/members/livesearch/default.aspx">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.bing.com/community/members/livesearch/default.aspx">Data Explorer View</ulink> </entry></row>
+<row><entry>Bugzillas 	            </entry><entry>   <ulink url="https://bugzilla.mozilla.org/show_bug.cgi?id=251714">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/https://bugzilla.mozilla.org/show_bug.cgi?id=251714">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=https://bugzilla.mozilla.org/show_bug.cgi?id=251714">Data Explorer View</ulink> </entry></row>
+<row><entry>CrunchBase 	            </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/rdf/http://www.crunchbase.com/company/google%23video_embeds-370">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/linkeddata.uriburner.com/about/rdf/http://www.crunchbase.com/company/google%23video_embeds-370">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://linkeddata.uriburner.com/about/rdf/http://www.crunchbase.com/company/google%23video_embeds-370">Data Explorer View</ulink> </entry></row>
+<row><entry>Delicious   	    </entry><entry>   <ulink url="http://delicious.com/popular/blog">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/delicious.com/popular/blog">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://delicious.com/popular/blog">Data Explorer View</ulink> </entry></row>
+<row><entry>Digg 	            </entry><entry>   <ulink url="http://digg.com/general_sciences/at_last-stem_cells_without_side_effects_">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/digg.com/general_sciences/at_last-stem_cells_without_side_effects_">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://digg.com/general_sciences/at_last-stem_cells_without_side_effects_">Data Explorer View</ulink> </entry></row>
+<row><entry>Discogs 	            </entry><entry>   <ulink url="http://www.discogs.com/release/634302">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.discogs.com/release/634302">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.discogs.com/release/634302">Data Explorer View</ulink> </entry></row>
+<row><entry>Disqus 	            </entry><entry>   <ulink url="http://blog.disqus.net/2008/08/25/reblog-comments-can-be-blog-posts/">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/blog.disqus.net/2008/08/25/reblog-comments-can-be-blog-posts/">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://blog.disqus.net/2008/08/25/reblog-comments-can-be-blog-posts/">Data Explorer View</ulink> </entry></row>
+<row><entry>DOI   	            </entry><entry>   <ulink url="http://doi.ieeecomputersociety.org/10.1109/MIC.2008.16">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/doi.ieeecomputersociety.org/10.1109/MIC.2008.16">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://doi.ieeecomputersociety.org/10.1109/MIC.2008.16">Data Explorer View</ulink> </entry></row>
+<row><entry>FaceBook 	            </entry><entry>   <ulink url="http://www.facebook.com/profile.php?id=841100003">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.facebook.com/profile.php?id=841100003">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.facebook.com/profile.php?id=841100003">Data Explorer View</ulink> </entry></row>
+<row><entry>Flickr 	            </entry><entry>   <ulink url="http://farm1.static.flickr.com/212/496684670_7122c831ed.jpg">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/farm1.static.flickr.com/212/496684670_7122c831ed.jpg">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://farm1.static.flickr.com/212/496684670_7122c831ed.jpg">Data Explorer View</ulink> </entry></row>
+<row><entry>Freebase 	            </entry><entry>   <ulink url="http://www.freebase.com/view/en/abraham_lincoln">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.freebase.com/view/en/abraham_lincoln">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.freebase.com/view/en/abraham_lincoln">Data Explorer View</ulink> </entry></row>
+<row><entry>Geonames 	            </entry><entry>   <ulink url="http://ws.geonames.org/search?q=london&amp;maxRows=10&amp;type=rdf">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/ws.geonames.org/search?q=london&amp;maxRows=10&amp;type=rdf">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://ws.geonames.org/search?q=london&amp;maxRows=10&amp;type=rdf">Data Explorer View</ulink> </entry></row>
+<row><entry>geoURL 	            </entry><entry>   <ulink url="http://geourl.org/near?p=wiki.worldflicks.org/saanen.html">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/geourl.org/near?p=wiki.worldflicks.org/saanen.html">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://geourl.org/near?p=wiki.worldflicks.org/saanen.html">Data Explorer View</ulink> </entry></row>
+<row><entry>Get Satisfaction        </entry><entry>   <ulink url="http://getsatisfaction.com/mozilla/topics/ubiquity_mostly_fails_on_mac_ppc">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/getsatisfaction.com/mozilla/topics/ubiquity_mostly_fails_on_mac_ppc">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://getsatisfaction.com/mozilla/topics/ubiquity_mostly_fails_on_mac_ppc">Data Explorer View</ulink> </entry></row>
+<row><entry>Google Social Graph     </entry><entry>   <ulink url="http://socialgraph.apis.google.com/lookup?q=http://example.com/">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/socialgraph.apis.google.com/lookup?q=http://example.com/">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://socialgraph.apis.google.com/lookup?q=http://example.com/">Data Explorer View</ulink> </entry></row>
+<row><entry>GoogleBase 	            </entry><entry>   <ulink url="http://www.google.com/base/feeds/snippets?bq=%20%5bemployer:%20Hewlett-Packard%5d%20%20%5bjob%20type:full-time%5d">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.google.com/base/feeds/snippets?bq=%20%5bemployer:%20Hewlett-Packard%5d%20%20%5bjob%20type:full-time%5d">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.google.com/base/feeds/snippets?bq=%20%5bemployer:%20Hewlett-Packard%5d%20%20%5bjob%20type:full-time%5d">Data Explorer View</ulink> </entry></row>
+<row><entry>Hoovers 	            </entry><entry>   <ulink url="http://www.hoovers.com/openlink/--ID__104304--/free-co-factsheet.xhtml">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.hoovers.com/openlink/--ID__104304--/free-co-factsheet.xhtml">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.hoovers.com/openlink/--ID__104304--/free-co-factsheet.xhtml">Data Explorer View</ulink> </entry></row>
+<row><entry>ISBN  	            </entry><entry>   <ulink url="http://isbndb.com/d/person/berners_lee_tim.html">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/isbndb.com/d/person/berners_lee_tim.html">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://isbndb.com/d/person/berners_lee_tim.html">Data Explorer View</ulink> </entry></row>
+<row><entry>LastFM   	            </entry><entry>   <ulink url="http://www.last.fm/music/+noredirect/Teddy+Pendegrass">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.last.fm/music/+noredirect/Teddy+Pendegrass">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.last.fm/music/+noredirect/Teddy+Pendegrass">Data Explorer View</ulink> </entry></row>
+<row><entry>LibraryThing 	    </entry><entry>   <ulink url="http://www.librarything.com/work/1060">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.librarything.com/work/1060">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.librarything.com/work/1060">Data Explorer View</ulink> </entry></row>
+<row><entry>LSID 	            </entry><entry>   <ulink url="http://lsid.tdwg.org/urn:lsid:ubio.org:namebank:11815">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/lsid.tdwg.org/urn:lsid:ubio.org:namebank:11815">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://lsid.tdwg.org/urn:lsid:ubio.org:namebank:11815">Data Explorer View</ulink> </entry></row>
+<row><entry>Magnolia 	            </entry><entry>   <ulink url="http://www.magnoliaav.com/Products/Category/tabid/238/categoryId/117/Default.aspx">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.magnoliaav.com/Products/Category/tabid/238/categoryId/117/Default.aspx">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.magnoliaav.com/Products/Category/tabid/238/categoryId/117/Default.aspx">Data Explorer View</ulink> </entry></row>
+<row><entry>Meetup 	            </entry><entry>   <ulink url="http://www.meetup.com/The-Cambridge-Semantic-Web-Meetup-Group/%23this">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.meetup.com/The-Cambridge-Semantic-Web-Meetup-Group/%23this">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.meetup.com/The-Cambridge-Semantic-Web-Meetup-Group/%23this">Data Explorer View</ulink> </entry></row>
+<row><entry>MusicBrainz 	    </entry><entry>   <ulink url="http://musicbrainz.org/release/37e955d4-a53c-45aa-a812-1b23b88dbc13.html">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/musicbrainz.org/release/37e955d4-a53c-45aa-a812-1b23b88dbc13.html">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://musicbrainz.org/release/37e955d4-a53c-45aa-a812-1b23b88dbc13.html">Data Explorer View</ulink> </entry></row>
+<row><entry>Ning 	            </entry><entry>   <ulink url="http://www.ning.com/main/popular?trend=professional">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.ning.com/main/popular?trend=professional">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.ning.com/main/popular?trend=professional">Data Explorer View</ulink> </entry></row>
+<row><entry>OAI 	            </entry><entry>   <ulink url="http://news.cnet.com/IBM%2C-screensaver-to-tackle-smallpox/2100-1008_3-983374.html">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/news.cnet.com/IBM%2C-screensaver-to-tackle-smallpox/2100-1008_3-983374.html">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://news.cnet.com/IBM%2C-screensaver-to-tackle-smallpox/2100-1008_3-983374.html">Data Explorer View</ulink> </entry></row>
+<row><entry>Open Social 	    </entry><entry>   <ulink url="http://socialgraph.apis.google.com/otherme?pretty=1&amp;q=www.openlinksw.com/blog/~kidehen/">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/socialgraph.apis.google.com/otherme?pretty=1&amp;q=www.openlinksw.com/blog/~kidehen/">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://socialgraph.apis.google.com/otherme?pretty=1&amp;q=www.openlinksw.com/blog/~kidehen/">Data Explorer View</ulink> </entry></row>
+<row><entry>OpenLibrary 	    </entry><entry>   <ulink url="http://openlibrary.org/b/OL7983950M">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/openlibrary.org/b/OL7983950M">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://openlibrary.org/b/OL7983950M">Data Explorer View</ulink> </entry></row>
+<row><entry>OpenStreetMap 	    </entry><entry>   <ulink url="http://openstreetmap.org/?lat=57.6569&amp;lon=11.8886&amp;zoom=14&amp;layers=B000FTF">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/openstreetmap.org/?lat=57.6569&amp;lon=11.8886&amp;zoom=14&amp;layers=B000FTF">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://openstreetmap.org/?lat=57.6569&amp;lon=11.8886&amp;zoom=14&amp;layers=B000FTF">Data Explorer View</ulink> </entry></row>
+<row><entry>oReilly 	            </entry><entry>   <ulink url="http://oreilly.com/catalog/9780596523206/">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/oreilly.com/catalog/9780596523206/">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://oreilly.com/catalog/9780596523206/">Data Explorer View</ulink> </entry></row>
+<row><entry>Picasa 	            </entry><entry>   <ulink url="http://picasaweb.google.com/quitetall/ZurichAtDawn#5339484766701840338">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/picasaweb.google.com/quitetall/ZurichAtDawn#5339484766701840338">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://picasaweb.google.com/quitetall/ZurichAtDawn#5339484766701840338">Data Explorer View</ulink> </entry></row>
+<row><entry>PowerPoint 	            </entry><entry>   <ulink url="http://virtuoso.openlinksw.com/presentations/Solving_Real_Problems_Using_Linked_Data/Solving_Real_Problems_Using_Linked_Data.ppt">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/virtuoso.openlinksw.com/presentations/Solving_Real_Problems_Using_Linked_Data/Solving_Real_Problems_Using_Linked_Data.ppt">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://virtuoso.openlinksw.com/presentations/Solving_Real_Problems_Using_Linked_Data/Solving_Real_Problems_Using_Linked_Data.ppt">Data Explorer View</ulink> </entry></row>
+<row><entry>Radio Pop 	            </entry><entry>   <ulink url="http://www.radiopop.co.uk/users/tristanf/friends.xml">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.radiopop.co.uk/users/tristanf/friends.xml">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.radiopop.co.uk/users/tristanf/friends.xml">Data Explorer View</ulink> </entry></row>
+<row><entry>Rhapsody 	            </entry><entry>   <ulink url="http://mp3.rhapsody.com/playlistdetail?playlistId=ply.25288413">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/mp3.rhapsody.com/playlistdetail?playlistId=ply.25288413">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://mp3.rhapsody.com/playlistdetail?playlistId=ply.25288413">Data Explorer View</ulink> </entry></row>
+<row><entry>SalesForce.com 	    </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/rdf/https://na6.salesforce.com/0038000000ViF6k#this">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/linkeddata.uriburner.com/about/rdf/https://na6.salesforce.com/0038000000ViF6k#this">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://linkeddata.uriburner.com/about/rdf/https://na6.salesforce.com/0038000000ViF6k#this">Data Explorer View</ulink> </entry></row>
+<row><entry>SlideShare 	            </entry><entry>   <ulink url="http://www.slideshare.net/rumito/rdf-views-of-sql-data-power-point-presentation-1-173180/">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.slideshare.net/rumito/rdf-views-of-sql-data-power-point-presentation-1-173180/">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.slideshare.net/rumito/rdf-views-of-sql-data-power-point-presentation-1-173180/">Data Explorer View</ulink> </entry></row>
+<row><entry>SVG 	            </entry><entry>   <ulink url="http://www.schepers.cc/semweb/rdf-diagram.svg">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.schepers.cc/semweb/rdf-diagram.svg">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.schepers.cc/semweb/rdf-diagram.svg">Data Explorer View</ulink> </entry></row>
+<row><entry>TWFY They Work For You  </entry><entry>   <ulink url="http://www.theyworkforyou.com/mp/diane_abbott/hackney_north_and_stoke_newington">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.theyworkforyou.com/mp/diane_abbott/hackney_north_and_stoke_newington">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.theyworkforyou.com/mp/diane_abbott/hackney_north_and_stoke_newington">Data Explorer View</ulink> </entry></row>
+<row><entry>Web Resource CC (Licenses) 	</entry><entry>   <ulink url="http://creativecommons.org/licenses/by-nc-nd/2.5/">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/creativecommons.org/licenses/by-nc-nd/2.5/">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://creativecommons.org/licenses/by-nc-nd/2.5/">Data Explorer View</ulink> </entry></row>
+<row><entry>XBRL based SEC Filings  </entry><entry>   <ulink url="http://www.sec.gov/Archives/edgar/data/789019/000119312507259490/msft-20070930.xml">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.sec.gov/Archives/edgar/data/789019/000119312507259490/msft-20070930.xml">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.sec.gov/Archives/edgar/data/789019/000119312507259490/msft-20070930.xml">Data Explorer View</ulink> </entry></row>
+<row><entry>xFolk 	            </entry><entry>   <ulink url="http://blogmarks.net/blog/?2005/06/07/33-blogsync-reloaded">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/blogmarks.net/blog/?2005/06/07/33-blogsync-reloaded">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://blogmarks.net/blog/?2005/06/07/33-blogsync-reloaded">Data Explorer View</ulink> </entry></row>
+<row><entry>Yahoo! Finance 	    </entry><entry>   <ulink url="http://finance.yahoo.com/q?s=AAPL">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/finance.yahoo.com/q?s=AAPL">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://finance.yahoo.com/q?s=AAPL">Data Explorer View</ulink> </entry></row>
+<row><entry>Yahoo! SearchMonkey     </entry><entry>   <ulink url="http://tech.groups.yahoo.com/group/ysearchboss/message/1983">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/tech.groups.yahoo.com/group/ysearchboss/message/1983">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://tech.groups.yahoo.com/group/ysearchboss/message/1983">Data Explorer View</ulink> </entry></row>
+<row><entry>Yahoo! Traffic Data     </entry><entry>   <ulink url="http://local.yahooapis.com/MapsService/V1/trafficData?appid=Jz0wAU7V34Ff7gCzblxD.86qjGTEn._H3KA3PEajNE3xBMIbQtEZqIqHRh0G&amp;street=701+First+Street&amp;city=Sunnyvale&amp;state=CA">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/local.yahooapis.com/MapsService/V1/trafficData?appid=Jz0wAU7V34Ff7gCzblxD.86qjGTEn._H3KA3PEajNE3xBMIbQtEZqIqHRh0G&amp;street=701+First+Street&amp;city=Sunnyvale&amp;state=CA">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://local.yahooapis.com/MapsService/V1/trafficData?appid=Jz0wAU7V34Ff7gCzblxD.86qjGTEn._H3KA3PEajNE3xBMIbQtEZqIqHRh0G&amp;street=701+First+Street&amp;city=Sunnyvale&amp;state=CA">Data Explorer View</ulink> </entry></row>
+<row><entry>Yahoo! Weather 	    </entry><entry>   <ulink url="http://weather.yahooapis.com/forecastrss?p=94089">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/weather.yahooapis.com/forecastrss?p=94089">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://weather.yahooapis.com/forecastrss?p=94089">Data Explorer View</ulink> </entry></row>
+<row><entry>Yelp 	            </entry><entry>   <ulink url="http://api.yelp.com/business_review_search?term=cream%20puffs&amp;location=650%20Mission%20St%2ASan%20Francisco%2A%20CA&amp;ywsid=XXXXXXXXXXXXXXXX">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/api.yelp.com/business_review_search?term=cream%20puffs&amp;location=650%20Mission%20St%2ASan%20Francisco%2A%20CA&amp;ywsid=XXXXXXXXXXXXXXXX">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://api.yelp.com/business_review_search?term=cream%20puffs&amp;location=650%20Mission%20St%2ASan%20Francisco%2A%20CA&amp;ywsid=XXXXXXXXXXXXXXXX">Data Explorer View</ulink> </entry></row>
+<row><entry>Youtube                 </entry><entry>   <ulink url="http://www.youtube.com/watch?v=6eGcsGPgUTw">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.youtube.com/watch?v=6eGcsGPgUTw">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.youtube.com/watch?v=6eGcsGPgUTw">Data Explorer View</ulink> </entry></row>
 
+</tbody>
+</tgroup>
+</table>
+    </listitem>
+    <listitem>Meta Cartridges (delivering Lookups &amp; Joins against other Linked Data Spaces)
+<para>These Cartridges submit the Resource identified by the URI to third-party Web Services for processing.
+Returned RDF supplements the RDF generated by other Cartridges, such as those in the preceding tables.
+Locally generated RDF may also be submitted to the third-party services, instead of or in addition to
+the original Resource itself.</para>
 <table>
 <tgroup cols="4">
 <thead>
@@ -5679,44 +5770,27 @@ ontology mapper.</para>
   </row>
 </thead>
 <tbody>
-<row><entry>Amazon  	            </entry><entry>   <ulink url="http://www.amazon.co.uk/Owl-Representing-Information-Ontology-Language/dp/1412034485/ref=sr_1_1/203-3289794-0348766?ie=UTF8&amp;s=books&amp;qid=1177155160&amp;sr=1-1">Amazon book entry                </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://www.amazon.co.uk/Owl-Representing-Information-Ontology-Language/dp/1412034485/ref=sr_1_1/203-3289794-0348766?ie=UTF8&amp;s=books&amp;qid=1177155160&amp;sr=1-1">Description of URI</ulink> </entry><entry> <ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.amazon.co.uk/Owl-Representing-Information-Ontology-Language/dp/1412034485/ref=sr_1_1/203-3289794-0348766?ie=UTF8&amp;s=books&amp;qid=1177155160&amp;sr=1-1">Linked Data from URI</ulink> </entry></row>
-<row><entry>Apple 	            </entry><entry>   <ulink url="http://www.apple.com/">Apple Website 	             </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://www.apple.com/">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.apple.com/">Linked Data from URI</ulink> </entry></row>
-<row><entry>Bugzilla 	            </entry><entry>   <ulink url="https://bugzilla.mozilla.org/show_bug.cgi?id=251714">Bugzilla entry from Mozilla      </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/https://bugzilla.mozilla.org/show_bug.cgi?id=251714">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=https://bugzilla.mozilla.org/show_bug.cgi?id=251714">Linked Data from URI</ulink> </entry></row>
-<row><entry>CrunchBase 	            </entry><entry>   <ulink url="http://www.crunchbase.com/person/sergey-brin">Sergey Brin on CrunchBase 	     </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://www.crunchbase.com/person/sergey-brin">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.crunchbase.com/person/sergey-brin">Linked Data from URI</ulink> </entry></row>
-<row><entry>Del.icio.us 	    </entry><entry>   <ulink url="http://delicious.com/popular/blog">Popular blog Bookmarks 	     </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://delicious.com/popular/blog">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://delicious.com/popular/blog">Linked Data from URI</ulink> </entry></row>
-<row><entry>Digg 	            </entry><entry>   <ulink url="http://digg.com/general_sciences/at_last-stem_cells_without_side_effects_">Example 	                     </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://digg.com/general_sciences/at_last-stem_cells_without_side_effects_">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://digg.com/general_sciences/at_last-stem_cells_without_side_effects_">Linked Data from URI</ulink> </entry></row>
-<row><entry>Discogs 	            </entry><entry>   <ulink url="http://www.discogs.com/release/634302">album page 	                     </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://www.discogs.com/release/634302">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.discogs.com/release/634302">Linked Data from URI</ulink> </entry></row>
-<row><entry>Disqus 	            </entry><entry>   <ulink url="http://blog.disqus.net/2008/08/25/reblog-comments-can-be-blog-posts/">Blog Comments can be Blog Posts  </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://blog.disqus.net/2008/08/25/reblog-comments-can-be-blog-posts/">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://blog.disqus.net/2008/08/25/reblog-comments-can-be-blog-posts/">Linked Data from URI</ulink> </entry></row>
-<row><entry>eBay 	            </entry><entry>   <ulink url="http://cgi.ebay.com/Eclipse-by-Stephenie-Meyer-2007_W0QQitemZ250283828939QQcmdZViewItem?hash=item250283828939&amp;_trkparms=240%3A1318&amp;_trksid=p4295">eBay Auction Item 	             </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://cgi.ebay.com/Eclipse-by-Stephenie-Meyer-2007_W0QQitemZ250283828939QQcmdZViewItem?hash=item250283828939&amp;_trkparms=240%3A1318&amp;_trksid=p4295">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://cgi.ebay.com/Eclipse-by-Stephenie-Meyer-2007_W0QQitemZ250283828939QQcmdZViewItem?hash=item250283828939&amp;_trkparms=240%3A1318&amp;_trksid=p4295">Linked Data from URI</ulink> </entry></row>
-<row><entry>Flickr 	            </entry><entry>   <ulink url="http://farm1.static.flickr.com/212/496684670_7122c831ed.jpg">Flickr Image 	             </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://farm1.static.flickr.com/212/496684670_7122c831ed.jpg">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://farm1.static.flickr.com/212/496684670_7122c831ed.jpg">Linked Data from URI</ulink> </entry></row>
-<row><entry>Freebase 	            </entry><entry>   <ulink url="http://www.freebase.com/view/en/abraham_lincoln">Abraham Lincoln on Freebase      </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://www.freebase.com/view/en/abraham_lincoln">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.freebase.com/view/en/abraham_lincoln">Linked Data from URI</ulink> </entry></row>
-<row><entry>FriendFeed 	            </entry><entry>   <ulink url="http://friendfeed.com/search?q=linked+data">Linked Data on FriendFeed 	     </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://friendfeed.com/search?q=linked+data">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://friendfeed.com/search?q=linked+data">Linked Data from URI</ulink> </entry></row>
-<row><entry>Get Satisfaction        </entry><entry>   <ulink url="http://getsatisfaction.com/mozilla/topics/ubiquity_mostly_fails_on_mac_ppc">Get Satisfaction issue thread    </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://getsatisfaction.com/mozilla/topics/ubiquity_mostly_fails_on_mac_ppc">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://getsatisfaction.com/mozilla/topics/ubiquity_mostly_fails_on_mac_ppc">Linked Data from URI</ulink> </entry></row>
-<row><entry>GoogleBase 	            </entry><entry>   <ulink url="http://www.google.com/base/feeds/snippets?bq=%20%5bemployer:%20Hewlett-Packard%5d%20%20%5bjob%20type:full-time%5d">GoogleBase snippet 	             </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://www.google.com/base/feeds/snippets?bq=%20%5bemployer:%20Hewlett-Packard%5d%20%20%5bjob%20type:full-time%5d">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.google.com/base/feeds/snippets?bq=%20%5bemployer:%20Hewlett-Packard%5d%20%20%5bjob%20type:full-time%5d">Linked Data from URI</ulink> </entry></row>
-<row><entry>ISBN DB 	            </entry><entry>   <ulink url="http://isbndb.com/d/person/berners_lee_tim.html">ISBN author entry 	             </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://isbndb.com/d/person/berners_lee_tim.html">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://isbndb.com/d/person/berners_lee_tim.html">Linked Data from URI</ulink> </entry></row>
-<row><entry>LSID 	            </entry><entry>   <ulink url="urn:lsid:ubio.org:namebank:12292">LSID entry 	                     </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/urn:lsid:ubio.org:namebank:12292">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=urn:lsid:ubio.org:namebank:12292">Linked Data from URI</ulink> </entry></row>
-<row><entry>Magnolia 	            </entry><entry>   <ulink url="http://ma.gnolia.com/people/apartness">example 	                     </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://ma.gnolia.com/people/apartness">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://ma.gnolia.com/people/apartness">Linked Data from URI</ulink> </entry></row>
-<row><entry>MusicBrainz 	    </entry><entry>   <ulink url="http://musicbrainz.org/release/37e955d4-a53c-45aa-a812-1b23b88dbc13.html">MusicBrainz album entry 	     </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://musicbrainz.org/release/37e955d4-a53c-45aa-a812-1b23b88dbc13.html">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://musicbrainz.org/release/37e955d4-a53c-45aa-a812-1b23b88dbc13.html">Linked Data from URI</ulink> </entry></row>
-<row><entry>OAI 	            </entry><entry>   <ulink url="oai:dcmi.ischool.washington.edu:article/8">OAI paper entry 	             </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/oai:dcmi.ischool.washington.edu:article/8">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=oai:dcmi.ischool.washington.edu:article/8">Linked Data from URI</ulink> </entry></row>
-<row><entry>Open Library 	    </entry><entry>   <ulink url="http://openlibrary.org/b/OL7983950M">OpenLibrary book entry 	     </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://openlibrary.org/b/OL7983950M">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://openlibrary.org/b/OL7983950M">Linked Data from URI</ulink> </entry></row>
-<row><entry>Open Social 	    </entry><entry>   <ulink url="http://socialgraph.apis.google.com/otherme?pretty=1&amp;q=www.openlinksw.com/blog/~kidehen/">SocialGraph person page 	     </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://socialgraph.apis.google.com/otherme?pretty=1&amp;q=www.openlinksw.com/blog/~kidehen/">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://socialgraph.apis.google.com/otherme?pretty=1&amp;q=www.openlinksw.com/blog/~kidehen/">Linked Data from URI</ulink> </entry></row>
-<row><entry>SVG 	            </entry><entry>   <ulink url="http://upload.wikimedia.org/wikipedia/commons/b/b0/Hydroxide_lone_pairs-2D.svg">SVG picture of a molecule 	     </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://upload.wikimedia.org/wikipedia/commons/b/b0/Hydroxide_lone_pairs-2D.svg">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://upload.wikimedia.org/wikipedia/commons/b/b0/Hydroxide_lone_pairs-2D.svg">Linked Data from URI</ulink> </entry></row>
-<row><entry>They Work For You       </entry><entry>   <ulink url="http://www.theyworkforyou.com/mp/diane_abbott/hackney_north_and_stoke_newington">TheyWorkForYou page 	     </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://www.theyworkforyou.com/mp/diane_abbott/hackney_north_and_stoke_newington">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.theyworkforyou.com/mp/diane_abbott/hackney_north_and_stoke_newington">Linked Data from URI</ulink> </entry></row>
-<row><entry>Twine 	            </entry><entry>   <ulink url="http://www.twine.com/twine/1p2dqhdx-1jg/nova-spivack-my-public-twine">my public twine 	             </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://www.twine.com/twine/1p2dqhdx-1jg/nova-spivack-my-public-twine">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.twine.com/twine/1p2dqhdx-1jg/nova-spivack-my-public-twine">Linked Data from URI</ulink> </entry></row>
-<row><entry>Twitter 	            </entry><entry>   <ulink url="http://twitter.com/statuses/user_timeline/633273.rss">example 	                     </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://twitter.com/statuses/user_timeline/633273.rss">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://twitter.com/statuses/user_timeline/633273.rss">Linked Data from URI</ulink> </entry></row>
-<row><entry>XBRL based SEC Filings  </entry><entry>   <ulink url="http://www.sec.gov/Archives/edgar/data/789019/000119312507259490/msft-20070930.xml">msft-20070930 	             </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://www.sec.gov/Archives/edgar/data/789019/000119312507259490/msft-20070930.xml">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.sec.gov/Archives/edgar/data/789019/000119312507259490/msft-20070930.xml">Linked Data from URI</ulink> </entry></row>
-<row><entry>Wikipedia 	            </entry><entry>   <ulink url="http://en.wikipedia.org/wiki/London">Wikipedia page on London 	     </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://en.wikipedia.org/wiki/London">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://en.wikipedia.org/wiki/London">Linked Data from URI</ulink> </entry></row>
-<row><entry>Yahoo! Finance 	    </entry><entry>   <ulink url="http://finance.yahoo.com/q?s=AAPL">Yahoo! Finance on AAPL (Apple)   </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://finance.yahoo.com/q?s=AAPL">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://finance.yahoo.com/q?s=AAPL">Linked Data from URI</ulink> </entry></row>
-<row><entry>Yahoo! Maps 	    </entry><entry>   <ulink url="http://local.yahooapis.com/MapsService/V1/trafficData?appid=Jz0wAU7V34Ff7gCzblxD.86qjGTEn._H3KA3PEajNE3xBMIbQtEZqIqHRh0G&amp;street=701+First+Street&amp;city=Sunnyvale&amp;state=CA">Yahoo! Traffic map 	             </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://local.yahooapis.com/MapsService/V1/trafficData?appid=Jz0wAU7V34Ff7gCzblxD.86qjGTEn._H3KA3PEajNE3xBMIbQtEZqIqHRh0G&amp;street=701+First+Street&amp;city=Sunnyvale&amp;state=CA">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://local.yahooapis.com/MapsService/V1/trafficData?appid=Jz0wAU7V34Ff7gCzblxD.86qjGTEn._H3KA3PEajNE3xBMIbQtEZqIqHRh0G&amp;street=701+First+Street&amp;city=Sunnyvale&amp;state=CA">Linked Data from URI</ulink> </entry></row>
-<row><entry>Yahoo! Weather 	    </entry><entry>   <ulink url="http://xml.weather.yahoo.com/forecastrss?p=USCA1116&amp;u=f">Yahoo! Weather forecast          </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://xml.weather.yahoo.com/forecastrss?p=USCA1116&amp;u=f">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://xml.weather.yahoo.com/forecastrss?p=USCA1116&amp;u=f">Linked Data from URI</ulink> </entry></row>
-<row><entry>Youtube                 </entry><entry>   <ulink url="http://www.youtube.com/watch?v=6eGcsGPgUTw">example                          </ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://www.youtube.com/watch?v=6eGcsGPgUTw">Description of URI</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.youtube.com/watch?v=6eGcsGPgUTw">Linked Data from URI</ulink> </entry></row>
+
+<row><entry>BBC  	</entry><entry> <ulink url="http://news.bbc.co.uk/1/hi/uk/7615539.stm">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http://www.hinducurrents.com/publisher/249/BBC+NEWS/">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.hinducurrents.com/publisher/249/BBC+NEWS/">Data Explorer View</ulink> </entry></row>
+<row><entry>CNET 	</entry><entry>   <ulink url="http://shopper.cnet.com/multifunction-devices/canon-pixma-mp240/4014-3181_9-33200106.html">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.xomreviews.com/shopper.cnet.com">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.xomreviews.com/shopper.cnet.com">Data Explorer View</ulink> </entry></row>
+<row><entry>DBpedia 	</entry><entry>   <ulink url="http://dbpedia.org/page/TweetDeck">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.programmableweb.com/api/dbpedia">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.programmableweb.com/api/dbpedia">Data Explorer View</ulink> </entry></row>
+<row><entry>eBay 	</entry><entry>   <ulink url="http://shop.ebay.com/stores/__W0QQLHQ5fSellerWithStoreZ1QQ_nkwZtoys?_rdc=1">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/wordpress.xdroop.com/space/HotWheels/Buying+Hotwheels+On+eBay">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://wordpress.xdroop.com/space/HotWheels/Buying+Hotwheels+On+eBay">Data Explorer View</ulink> </entry></row>
+<row><entry>FriendFeed 	</entry><entry>   <ulink url="http://friendfeed.com/informationweek/0f212311/web-link-shrinkage-powers-spam-surge">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.informationweek.com/news/security/vulnerabilities/showArticle.jhtml?articleID=218401098">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.informationweek.com/news/security/vulnerabilities/showArticle.jhtml?articleID=218401098">Data Explorer View</ulink> </entry></row>
+<row><entry>Get Glue 	</entry><entry>   <ulink url="http://getglue.com/smartlinks">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.readwriteweb.com/archives/get_glue_on_your_iphone.php">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.readwriteweb.com/archives/get_glue_on_your_iphone.php">Data Explorer View</ulink> </entry></row>
+<row><entry>LOD 	</entry><entry>   <ulink url="http://lod.openlinksw.com/b3s/search.vsp?q=1">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/lod.openlinksw.com/b3s/search.vsp?q=1">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://lod.openlinksw.com/b3s/search.vsp?q=1">Data Explorer View</ulink> </entry></row>
+<row><entry>New York Times  	 	</entry><entry>   <ulink url="http://www.nytimes.com/2005/03/17/technology/circuits/17stat.html?ex=1268715600&amp;en=6840507aca561cf8&amp;ei=5090&amp;partner=rssuserland">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/download.cnet.com/New-York-Times-Crosswords-Monthly-Subscription/3000-2111_4-10918973.html">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://download.cnet.com/New-York-Times-Crosswords-Monthly-Subscription/3000-2111_4-10918973.html">Data Explorer View</ulink> </entry></row>
+<row><entry>OpenCalais  </entry><entry>   <ulink url="http://d.opencalais.com/er/company/ralg-tr1r/7cf71bb9-2969-35d3-8fa1-3723bdb5958c">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/news.cnet.com/8301-13505_3-9805771-16.html">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://news.cnet.com/8301-13505_3-9805771-16.html">Data Explorer View</ulink> </entry></row>
+<row><entry>Technorati  </entry><entry>   <ulink url="http://support.technorati.com/support/siteguide/tags">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/download.cnet.com/Technorati-Tag/3000-12565_4-10658084.html">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://download.cnet.com/Technorati-Tag/3000-12565_4-10658084.html">Data Explorer View</ulink> </entry></row>
+<row><entry>Twine 	</entry><entry>   <ulink url="http://www.twine.com/item/11yg1gn9s-1cj/sweoig-taskforces-communityprojects-linkingopendata-esw-wiki">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/esw.w3.org/topic/SweoIG/TaskForces/CommunityProjects/LinkingOpenData/">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://esw.w3.org/topic/SweoIG/TaskForces/CommunityProjects/LinkingOpenData/">Data Explorer View</ulink> </entry></row>
+<row><entry>Twitter 	</entry><entry>   <ulink url="http://twitter.com/Techmeme/">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.techmeme.com/081001/p43">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.techmeme.com/081001/p43">Data Explorer View</ulink> </entry></row>
+<row><entry>World Bank 	</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/web.worldbank.org/WBSITE/EXTERNAL/TOPICS/EXTEDUCATION/0,,contentMDK:20263110~menuPK:531742~pagePK:210058~piPK:210062~theSitePK:282386,00.html">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.lib.berkeley.edu/doemoff/govinfo/intl/gov_ibrd.html">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.lib.berkeley.edu/doemoff/govinfo/intl/gov_ibrd.html">Data Explorer View</ulink> </entry></row>
+<row><entry>Zemanta 	</entry><entry>   <ulink url="http://developer.zemanta.com/wiki/helloworld/ruby">example</ulink> </entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/kobesearch.cpan.org/htdocs/Net-Zemanta/Net/Zemanta/Suggest.pm.html">HTML Representation</ulink> </entry><entry>	<ulink url="http://linkeddata.uriburner.com/ode/?uri=http://kobesearch.cpan.org/htdocs/Net-Zemanta/Net/Zemanta/Suggest.pm.html">Data Explorer View</ulink> </entry></row>
 </tbody>
 </tgroup>
 </table>
-    </listitem>
-  </itemizedlist>
+
 </listitem>
-</itemizedlist>
+  </itemizedlist>
 </sect4>
 <sect4 id="virtuosospongercartridgetypes"><title>Types of Cartridges</title>
 <para><emphasis>Basic</emphasis></para>
@@ -5791,10 +5865,10 @@ RDF mapper functionality when dereferencing web or file resources which don't na
     <para>The Sponger's functionality is also exposed via an in-built REST style Web service. This web
 service takes a target URL and either returns the content "as is" or tries to transform (by sponging)
 to RDF. Thus, the proxy service can be used as a 'pipe' for RDF browsers to browse non-RDF sources.</para>
-    <para>When the rdf_mappers package is installed, Virtuoso reserves the path '/about/[rdf|html]/' for
+    <para>When the rdf_mappers package is installed, Virtuoso reserves the path '/about/[id|data|rdf|html]/http/' for
 Sponger Proxy URI Service. For example, if a Virtuoso installation on host example.com listens for HTTP
 requests on port 8080 then client applications should use a 'service endpoint' string equal to
-'http://example.com:8080/about/[rdf|html]/'. If the rdf_mappers package is not installed, then
+'http://example.com:8080/about/[id|data|rdf|html]/http/'. If the rdf_mappers package is not installed, then
 the service uses the path '/proxy/rdf/'.</para>
     <para>Note: The old Sponger Proxy URI Service pattern '/proxy/' is now deprecated.</para>
     <para><emphasis>Example:</emphasis></para>
@@ -5803,7 +5877,7 @@ music metadatabase, rendered as RDF or HTML respectively. (The sponged data is a
 rendering through the foaf:primaryTopic property.)</para>
     <itemizedlist mark="bullet">
       <listitem>http://demo.openlinksw.com/about/rdf/http://musicbrainz.org/artist/72c090b6-a68e-4cb9-b330-85278681a714.html</listitem>
-      <listitem>http://demo.openlinksw.com/about/html/http://musicbrainz.org/artist/72c090b6-a68e-4cb9-b330-85278681a714.html</listitem>
+      <listitem>http://demo.openlinksw.com/about/html/http/musicbrainz.org/artist/72c090b6-a68e-4cb9-b330-85278681a714.html</listitem>
     </itemizedlist>
   </sect3>
   <sect3 id="virtuosospongerprguide">
@@ -6448,7 +6522,7 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:proxyIRI', 'DB.DBA.RDF_
 ]]></programlisting>
         <para>which maps to the Virtuoso/PL procedure DB.DBA.RDF_SPONGE_PROXY_IRI. This procedure in
 turn generates a resource description URI which typically takes the form:
-http://&lt;hostName:port>/about/rdf/&lt;resourceURL>#this</para>
+http://&lt;hostName:port&gt;/about/html/http/&lt;resourceURL&gt;#this</para>
       </sect5>
       <sect5 id="virtuosospongercreatecustcartrrgst">
         <title>Registering &amp; Configuring Cartridges</title>
@@ -7245,15 +7319,15 @@ http://api.nytimes.com/svc/elections/us/v2/president/2008/finances/candidates/ob
 RDF data using the Freebase cartridge. Click the 'down arrow' adjacent to the 'Barack Obama' link to
 explore the retrieved data.</para>
         <para>Assuming your Virtuoso instance is running on port 8890 on localhost, the list of data caches displayed
-by ODE should include: http://localhost:8890/about/rdf/http://www.freebase.com/view/en/barack_obama#this</para>
-        <para>The information displayed in the rest of the page relates to the entity instance identified by this URI. The prefix http://localhost:8890/about/rdf prepended to the
+by ODE should include: http://localhost:8890/about/html/http/www.freebase.com/view/en/barack_obama#this</para>
+        <para>The information displayed in the rest of the page relates to the entity instance identified by this URI. The prefix http://localhost:8890/about/html/http/ prepended to the
 original URI indicates that the Sponger Proxy Service has been invoked. The Sponger creates an associated
 entity instance (identified by the above URI with the #this suffix) which holds sponged information
 about the original entity.</para>
         <para><emphasis>Using the Command Line</emphasis></para>
         <para>As an alternative to ODE, you can sponge from the command line with the command:</para>
 <programlisting><![CDATA[
-curl -H "Accept: text/xml" "http://localhost:8890/about/rdf/http://www.freebase.com/view/en/barack_obama"
+curl -H "Accept: text/xml" "http://localhost:8890/about/html/http/www.freebase.com/view/en/barack_obama"
 ]]></programlisting>
         <para>To view the results, you can use Conductor's browser-based SPARQL interface (e.g.
 http://localhost:8890/sparql) to query the resulting graph generated by the Sponger,
@@ -7283,10 +7357,19 @@ above shows an invalid key. Replace it with your own key before executing the pr
         <para>The meta-cartridge function definitions are listed below. They can be executed by
 pasting them into Conductor's iSQL interface.</para>
 <programlisting><![CDATA[
---no_c_escapes-
+-- New York Times: Campaign Finance Web Service
+-- See http://developer.nytimes.com/docs/campaign_finance_api
+
+-- DB.DBA.RDF_NYTCF_LOOKUP is in effect a lightweight lookup cartridge that is used
+-- to conditionally add triples to graphs generated by the Wikipedia and
+-- Freebase cartridges. These cartridges call on RDF_NYTCF_LOOKUP when
+-- handling an entity of rdf:type yago:Congressman109955781. The NYTCF lookup
+-- cartridge (aka a metacartridge) is used to return campaign finance data
+-- for the candidate in question retrieved from the New York Times Campaign
+-- Finance web service.
 create procedure DB.DBA.RDF_NYTCF_LOOKUP(
   in candidate_id any,  -- id of candidate
-  in graph_iri varchar, -- graph into which the campaign finance triples should be loaded
+  in graph_iri varchar,		-- graph into which the additional campaign finance triples should be loaded
   in api_key varchar	-- NYT finance API key
 )
 {
@@ -7299,13 +7382,17 @@ create procedure DB.DBA.RDF_NYTCF_LOOKUP(
   campaign_type := 'president';
   year := '2008';
 
+  -- Candidate summaries
+  -- nyt_url := sprintf('http://api.nytimes.com/svc/elections/us/%s/%s/%s/finances/totals.xml?api-key=%s',
+  --	version, campaign_type, year, api_key);
+
   -- Candidate details
-  nyt_url := sprintf(
-    'http://api.nytimes.com/svc/elections/us/%s/%s/%s/finances/candidates/%s.xml?api-key=%s',
+  nyt_url := sprintf('http://api.nytimes.com/svc/elections/us/%s/%s/%s/finances/candidates/%s.xml?api-key=%s',
      version, campaign_type, year, candidate_id, api_key);
-  tmp := http_get (nyt_url, hdr);
+
+  tmp := http_client_ext (nyt_url, headers=>hdr, proxy=>connection_get ('sparql-get:proxy'));
   if (hdr[0] not like 'HTTP/1._ 200 %')
-    signal ('22023', trim(hdr[0], '\r\n'), 'RDF_LOAD_NYTCF_LOOKUP');
+    signal ('22023', trim(hdr[0], '\r\n'), 'DB.DBA.RDF_LOAD_NYTCF_LOOKUP');
   xd := xtree_doc (tmp);
 
   -- baseUri specifies what the generated RDF description is about
@@ -7313,27 +7400,41 @@ create procedure DB.DBA.RDF_NYTCF_LOOKUP(
   -- Example baseUri's:
   -- http://localhost:8890/about/rdf/http://www.freebase.com/view/en/barack_obama#this
   -- http://localhost:8890/about/rdf/http://www.freebase.com/view/en/hillary_rodham_clinton#this
+  declare path any;
+  declare lang, k, base_uri varchar;
+
+  if (graph_iri like 'http://rdf.freebase.com/ns/%.%')
+    base_uri := graph_iri;
+  else
+    {
+      path := split_and_decode (graph_iri, 0, '%\0/');
+      k := path [length(path) - 1];
+      lang := path [length(path) - 2];
+
+      base_uri := sprintf ('http://rdf.freebase.com/ns/%U.%U', lang, k);
+    }
+
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/nytcf2rdf.xsl', xd,
-      	vector ('baseUri', graph_iri));
+      	vector ('baseUri', base_uri));
   xd := serialize_to_UTF8_xml (xt);
   DB.DBA.RDF_LOAD_RDFXML (xd, '', graph_iri);
-};
+}
+;
 
 create procedure DB.DBA.RDF_MQL_RESOURCE_IS_SENATOR (
   in fb_graph_uri varchar	-- URI of graph containing Freebase resource
 )
 {
-  -- Check if the resource described by Freebase is a U.S. senator.
-  -- Only then does it make sense to query for campaign finance data from the NYT data space.
-  -- To test for senators, we start by looking for two statements in the Freebase cartridge
-  -- output, similar to:
-  -- <rdf:Description
-  -- rdf:about="http://.../about/rdf/http://www.freebase.com/view/en/hillary_rodham_clinton#this">
+  -- Check if the resource described by Freebase is a U.S. senator. Only then does it make sense to query for campaign finance
+  -- data from the NYT data space.
+  --
+  -- To test for senators, we start by looking for two statements in the Freebase cartridge output, similar to:
+  --
+  -- <rdf:Description rdf:about="http://localhost:8890/about/rdf/http://www.freebase.com/view/en/hillary_rodham_clinton#this">
   --   <rdf:type rdf:resource="http://xmlns.com/foaf/0.1/Person"/>
   --   <rdfs:seeAlso rdf:resource="http://en.wikipedia.org/wiki/Hillary_Rodham_Clinton"/>
   --   ...
-  -- where the graph generated by the Sponger will be
-  -- <http://www.freebase.com/view/en/hillary_rodham_clinton>
+  -- where the graph generated by the Sponger will be <http://www.freebase.com/view/en/hillary_rodham_clinton>
   --
   -- To test whether a resource is a senator:
   -- 1) Check whether the Freebase resource is of rdf:type foaf:Person
@@ -7341,99 +7442,76 @@ create procedure DB.DBA.RDF_MQL_RESOURCE_IS_SENATOR (
   -- 3) Use the extracted person_name to build a URI to DBpedia's description of the person.
   -- 4) Query the DBpedia description to see if the person is of rdf:type yago:Senator110578471
   declare xp, xt, tmp any;
-  declare sparql_ep varchar; 		-- SPARQL endpoint
   declare qry varchar;			-- SPARQL query
   declare qry_uri varchar;		-- query URI
   declare qry_res varchar;		-- query result
-  declare default_host varchar;	-- host executing this procedure
   declare dbp_resource_name varchar;	-- Equivalent resource name in DBpedia
   declare fb_resource_uri varchar; 	-- Freebase resource URI
+  declare path any;
+  declare lang, k varchar;
+
   declare exit handler for sqlstate '*' {
-    dbg_printf ('%s', __SQL_MESSAGE);
     return 0;
   };
 
-  default_host := cfg_item_value (virtuoso_ini_path(), 'URIQA', 'DefaultHost');
-  if (default_host is null)
+  if (fb_graph_uri like 'http://rdf.freebase.com/ns/%.%')
+    fb_resource_uri := fb_graph_uri;
+  else
   {
-    default_host := sys_stat ('st_host_name');
-    if (server_http_port () <> '80')
-      default_host := default_host ||':'|| server_http_port ();
+      path := split_and_decode (fb_graph_uri, 0, '%\0/');
+      if (length (path) < 2)
+	return 0;
+
+      k := path [length(path) - 1];
+      lang := path [length(path) - 2];
+
+      fb_resource_uri := sprintf ('http://rdf.freebase.com/ns/%U.%U', lang, k);
   }
 
-  fb_resource_uri := sprintf('http://%s/about/rdf/%s#this', default_host, fb_graph_uri);
-
-  -- 1) Check whether the Freebase resource is of rdf:type foaf:Person
-  sparql_ep := 'http://' || default_host || '/sparql';
+  -- 1) Check whether the Freebase resource is a politician from united_states
   {
     declare stat, msg varchar;
     declare mdata, rset any;
 
-    qry := sprintf (
-    		'sparql ask from <%s> where { <%s> rdf:type <http://xmlns.com/foaf/0.1/Person> }',
-		 fb_graph_uri, fb_resource_uri);
+    qry := sprintf ('sparql ask from <%s> where { <%s> <http://rdf.freebase.com/ns/people.person.profession> <http://rdf.freebase.com/ns/en.politician> ; <http://rdf.freebase.com/ns/people.person.nationality> <http://rdf.freebase.com/ns/en.united_states> . }', fb_graph_uri, fb_resource_uri);
     exec (qry, stat, msg, vector(), 1, mdata, rset);
     if (length(rset) = 0 or rset[0][0] <> 1)
       return 0;
   }
 
-  -- 2) Extract the person_name from the Wikipedia URI referenced by rdfs:seeAlso
-  {
-    declare stat, msg varchar;
-    declare mdata, rset any;
-
-    qry := 'sparql prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n';
-    qry := qry || sprintf ('select ?o from <%s> where { <%s> rdfs:seeAlso ?o }',
-    			   fb_graph_uri, fb_resource_uri);
-    exec (qry, stat, msg, vector(), 1, mdata, rset);
-    if (length (rset) = 0)
-      return 0;
-    tmp := cast (rset[0][0] as varchar);
-    tmp := sprintf_inverse (tmp, 'http://en.wikipedia.org/wiki/%s', 0);
-  }
-
-  if (length (tmp) <> 1)
-    return 0;
-  dbp_resource_name := tmp[0];
-
-  -- 3) Use the extracted person_name to build a URI to DBpedia's description of the person.
-  -- 4) Query the DBpedia description to see if the person is of rdf:type &lt;http://dbpedia.org/class/yago/Artist109812338&gt;
-  qry := 'prefix yago: <http://dbpedia.org/class/yago/> \n';
-  qry := qry || 'prefix dbp: <http://dbpedia.org/resource/> \n';
-  qry := qry || sprintf ('ask from <http://dbpedia.org> where {dbp:%s a <http://dbpedia.org/class/yago/Artist109812338>}',
- 			    dbp_resource_name);
-  qry_res := http_client (url=>sprintf('%s?query=%U', 'http://dbpedia.org/sparql', qry),
- 			    timeout=>30);
-  xt := xtree_doc (qry_res);
-  xp := cast (xpath_eval('/sparql/boolean/text()', xt) as varchar);
-  if (xp = 'false')
-    return 0;
   return 1;
-};
+}
+;
 
-create procedure DB.DBA.RDF_LOAD_NYTCF (
-  in graph_iri varchar, in new_origin_uri varchar, in dest varchar,
-  inout _ret_body any, inout aq any, inout ps any, inout api_key any, inout opts any )
+create procedure DB.DBA.RDF_LOAD_NYTCF_META (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare candidate_id, candidate_name any;
+  declare api_key any;
   declare indx, tmp any;
+  declare ord int;
+
   declare exit handler for sqlstate '*'
   {
-    --dbg_printf('%s', __SQL_MESSAGE);
     return 0;
   };
 
   if (not DB.DBA.RDF_MQL_RESOURCE_IS_SENATOR (new_origin_uri))
     return 0;
 
+  -- TO DO: hardcoded for now
+  -- Need a mechanism to specify API key for meta-cartridges
+  -- Could retrieve from virtuoso.ini?
+  api_key := _key;
+
   -- NYT API supports a candidate_id in one of two forms:
   -- candidate_id ::= {candidate_ID} | {last_name [,first_name]}
   -- first_name is optional. If included, there should be no space after the comma.
   --
-  -- Because this meta cartridge supplies additional triples for the Freebase
-  -- cartridges, only the second form of candidate_id is supported.
-  -- i.e. We extract the candidate name, rather than a numeric
-  -- candidate_ID (FEC committee ID) from the Freebase URL.
+  -- However, because this meta cartridge supplies additional triples for the
+  -- Wikipedia or Freebase cartridges, only the second form of candidate_id is
+  -- supported. i.e. We extract the candidate name, rather than a numeric
+  -- candidate_ID (FEC committee ID) from the Wikipedia or Freebase URL.
   --
   -- It's assumed that the source URI includes the candidate's first name.
   -- If it is omitted, the NYT API will return information about *all* candidates
@@ -7450,7 +7528,24 @@ create procedure DB.DBA.RDF_LOAD_NYTCF (
   }
   else
   {
+    indx := strstr(graph_iri, 'wikipedia.org/wiki/');
+    if (indx is not null)
+    {
+      -- extract candidate_id from Wikipedia URI
+      tmp := sprintf_inverse(subseq(graph_iri, indx), 'wikipedia.org/%s', 0);
+      if (length(tmp) <> 1)
     return 0;
+      candidate_name := tmp[0];
+    }
+    else
+      {
+	tmp := sprintf_inverse(graph_iri, 'http://%s.freebase.com/ns/%s/%s', 0);
+	if (length (tmp) <> 3)
+	  tmp := sprintf_inverse(graph_iri, 'http://%s.freebase.com/ns/%s.%s', 0);
+	if (length (tmp) <> 3)
+	  return 0;
+	candidate_name := tmp[2];
+      }
   }
 
 
@@ -7488,6 +7583,7 @@ done:
   DB.DBA.RDF_NYTCF_LOOKUP(candidate_id, coalesce (dest, graph_iri), api_key);
   return 0;
 }
+;
 ]]></programlisting>
         <para><emphasis>NYTCF Meta-Cartridge Stylesheet</emphasis></para>
         <para>The XSLT stylesheet, nyctf2rdf.xsl, used by the meta-cartridge to transform the base
@@ -9794,7 +9890,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     '([^#]*)',
     vector('path'),
     1,
-    '/about/html/http://^{URIQADefaultHost}^%s%%23this',
+    '/about/html/http/^{URIQADefaultHost}^%s%%23this',
     vector('path'),
     null,
     '(text/html)|(\\*/\\*)',
@@ -19008,7 +19104,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     '(/[^#]*)',
     vector('path'),
     1,
-    '/about/html/http://^{URIQADefaultHost}^%s',
+    '/about/html/http/^{URIQADefaultHost}^%s',
     vector('path'),
     null,
     '(text/html)|(\\*/\\*)',
@@ -19060,7 +19156,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     '(/[^#]*)',
     vector('path'),
     1,
-    '/about/html/http://^{URIQADefaultHost}^%s',
+    '/about/html/http/^{URIQADefaultHost}^%s',
     vector('path'),
     null,
     '(text/html)|(\\*/\\*)',
@@ -20570,7 +20666,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     '(/[^#]*)',
     vector('path'),
     1,
-    '/about/html/http://^{URIQADefaultHost}^%s',
+    '/about/html/http/^{URIQADefaultHost}^%s',
     vector('path'),
     null,
     '(text/html)|(\\*/\\*)',
@@ -21082,7 +21178,7 @@ DB.DBA.XML_SET_NS_DECL ('northwind', 'http://demo.openlinksw.com/schemas/northwi
 <para><emphasis>Live links to a sample instance</emphasis></para>
 <itemizedlist mark="bullet">
 <listitem><ulink url="http://demo.openlinksw.com/sparql?default-graph-uri=&amp;should-sponge=&amp;query=%20prefix%20hr%3A%20%3Chttp%3A%2F%2Fdemo.openlinksw.com%2Fschemas%2Foraclehr%2F%3E%20select%20*%20from%20%3Chttp%3A%2F%2Fdemo.openlinksw.com%2Foraclehr%3E%20WHERE%20%7B%3Fs%20a%20hr%3Aemployees%7D&amp;format=text%2Fhtml&amp;debug=on">list all employee URIs</ulink></listitem>
-<listitem><ulink url="http://demo.openlinksw.com/about/html/http://demo.openlinksw.com/oraclehr/employees/105">description of employee 105</ulink></listitem>
+<listitem><ulink url="http://demo.openlinksw.com/about/html/http/demo.openlinksw.com/oraclehr/employees/105">description of employee 105</ulink></listitem>
 </itemizedlist>
 <para><emphasis>Script to set up your own instance</emphasis></para>
 <programlisting><![CDATA[
@@ -21470,7 +21566,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     '(/[^#]*)',
     vector('path'),
     1,
-    '/about/html/http://^{URIQADefaultHost}^%s',
+    '/about/html/http/^{URIQADefaultHost}^%s',
     vector('path'),
     null,
     '(text/html)|(\\*/\\*)',
@@ -21522,7 +21618,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     '(/[^#]*)',
     vector('path'),
     1,
-    '/about/html/http://^{URIQADefaultHost}^%s',
+    '/about/html/http/^{URIQADefaultHost}^%s',
     vector('path'),
     null,
     '(text/html)|(\\*/\\*)',
@@ -21572,7 +21668,7 @@ DB.DBA.XML_SET_NS_DECL ('hr', 'http://^{URIQADefaultHost}^/schemas/oraclehr/', 2
 <para><emphasis>Live links to a sample instance</emphasis></para>
 <itemizedlist mark="bullet">
 <listitem><ulink url="http://demo.openlinksw.com/sparql?default-graph-uri=&amp;should-sponge=&amp;query=%20prefix%20hr%3A%20%3Chttp%3A%2F%2Fdemo.openlinksw.com%2Fschemas%2Foraclehr%2F%3E%20select%20*%20from%20%3Chttp%3A%2F%2Fdemo.openlinksw.com%2Foraclehr%3E%20WHERE%20%7B%3Fs%20a%20hr%3Aemployees%7D&amp;format=text%2Fhtml&amp;debug=on">list all employee URIs</ulink></listitem>
-<listitem><ulink url="http://demo.openlinksw.com/about/html/http://demo.openlinksw.com/oraclehr/employees/105">description of employee 105</ulink></listitem>
+<listitem><ulink url="http://demo.openlinksw.com/about/html/http/demo.openlinksw.com/oraclehr/employees/105">description of employee 105</ulink></listitem>
 </itemizedlist>
 <para><emphasis>Script to set up your own instance</emphasis></para>
 <programlisting><![CDATA[
@@ -21960,7 +22056,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     '(/[^#]*)',
     vector('path'),
     1,
-    '/about/html/http://^{URIQADefaultHost}^%s',
+    '/about/html/http/^{URIQADefaultHost}^%s',
     vector('path'),
     null,
     '(text/html)|(\\*/\\*)',
@@ -22012,7 +22108,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     '(/[^#]*)',
     vector('path'),
     1,
-    '/about/html/http://^{URIQADefaultHost}^%s',
+    '/about/html/http/^{URIQADefaultHost}^%s',
     vector('path'),
     null,
     '(text/html)|(\\*/\\*)',
@@ -22892,7 +22988,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     '(/[^#]*)',
     vector('path'),
     1,
-    '/about/html/http://localhost:8890%s',
+    '/about/html/http/localhost:8890%s',
     vector('path'),
     null,
     '(text/html)|(\\*/\\*)',
@@ -22944,7 +23040,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     '(/[^#]*)',
     vector('path'),
     1,
-    '/about/html/http://localhost:8890%U',
+    '/about/html/http/localhost:8890%U',
     vector('path'),
     null,
     '(text/html)|(\\*/\\*)',
@@ -23608,7 +23704,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     '(/[^#]*)',
     vector('path'),
     1,
-    '/about/html/http://^{URIQADefaultHost}^%s',
+    '/about/html/http/^{URIQADefaultHost}^%s',
     vector('path'),
     null,
     '(text/html)|(\\*/\\*)',
@@ -23660,7 +23756,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     '(/[^#]*)',
     vector('path'),
     1,
-    '/about/html/http://^{URIQADefaultHost}^%s',
+    '/about/html/http/^{URIQADefaultHost}^%s',
     vector('path'),
     null,
     '(text/html)|(\\*/\\*)',
@@ -24027,7 +24123,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     '(/[^#]*)',
     vector('path'),
     1,
-    '/about/html/http://^{URIQADefaultHost}^%s',
+    '/about/html/http/^{URIQADefaultHost}^%s',
     vector('path'),
     null,
     '(text/html)|(\\*/\\*)',
@@ -24079,7 +24175,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     '(/[^#]*)',
     vector('path'),
     1,
-    '/about/html/http://^{URIQADefaultHost}^%s',
+    '/about/html/http/^{URIQADefaultHost}^%s',
     vector('path'),
     null,
     '(text/html)|(\\*/\\*)',
@@ -24916,7 +25012,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     '(/[^#]*)',
     vector('path'),
     1,
-    '/about/html/http://^{URIQADefaultHost}^%s',
+    '/about/html/http/^{URIQADefaultHost}^%s',
     vector('path'),
     null,
     '(text/html)|(\\*/\\*)',
@@ -24968,7 +25064,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     '(/[^#]*)',
     vector('path'),
     1,
-    '/about/html/http://^{URIQADefaultHost}^%s',
+    '/about/html/http/^{URIQADefaultHost}^%s',
     vector('path'),
     null,
     '(text/html)|(\\*/\\*)',
@@ -25730,7 +25826,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     '(/[^#]*)',
     vector('path'),
     1,
-    '/about/html/http://^{URIQADefaultHost}^%s',
+    '/about/html/http/^{URIQADefaultHost}^%s',
     vector('path'),
     null,
     '(text/html)|(\\*/\\*)',
@@ -25786,7 +25882,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     '(/[^#]*)',
     vector('path'),
     1,
-    '/about/html/http://^{URIQADefaultHost}^%s',
+    '/about/html/http/^{URIQADefaultHost}^%s',
     vector('path'),
     null,
     '(text/html)|(\\*/\\*)',
@@ -28460,6 +28556,426 @@ for all cores.</para>
 <para>Having substantially more threads than processors or disks is not particularly useful.</para>
 <para>There exist multithreaded load functions which will load one file on multiple threads.  Experience shows that loading multiple files on one thread per file is better.</para>
 <para>For loading Turtle, some platforms may have a non-reentrant Turtle parser.  This means that only one load may run at a time.  One can try this by calling <link linkend="rdfapidataimport"><function>ttlp ()</function></link> from two sessions at the same time. If these do not execute concurrently, then the best way may be to try <link linkend="rdfapidataimport"><function>ttlp_mt</function></link> and see if this runs faster than a single threaded ttlp call.</para>
+
+       <sect3 id="rdfperfloadinglod"><title>Loading LOD RDF data</title>
+<para>To load the rdf data to LOD instance, perform the following steps:
+</para>
+<itemizedlist mark="bullet">
+  <listitem>Configure &amp; start cluster</listitem>
+  <listitem>Execute the file:
+<programlisting><![CDATA[
+--
+--  $Id$
+--
+--  Alternate RDF index scheme for cases where G unspecified
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2009 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
+
+drop index RDF_QUAD_OGPS;
+checkpoint;
+create table R2 (G iri_id_8, S iri_id_8, P iri_id_8, O any, primary key (S, P, O, G))
+alter index R2 on R2 partition (S int (0hexffff00));
+
+log_enable (2);
+insert into R2 (G, S, P, O) select G, S, P, O from rdf_quad;
+
+drop table RDF_QUAD;
+alter table r2 rename RDF_QUAD;
+checkpoint;
+create bitmap index RDF_QUAD_OPGS on RDF_QUAD (O, P, G, S) partition (O varchar (-1, 0hexffff));
+create bitmap index RDF_QUAD_POGS on RDF_QUAD (P, O, G, S) partition (O varchar (-1, 0hexffff));
+create bitmap index RDF_QUAD_GPOS on RDF_QUAD (G, P, O, S) partition (O varchar (-1, 0hexffff));
+
+checkpoint;
+]]></programlisting>
+</listitem>
+  <listitem>Execute the file:
+<programlisting><![CDATA[
+
+
+create table load_list (
+  ll_file varchar,
+  ll_graph varchar,
+  ll_state int default 0, -- 0 not started, 1 going, 2 done
+  ll_started datetime,
+  ll_done datetime,
+  ll_host int,
+  ll_work_time integer,
+  ll_error varchar,
+  primary key (ll_file))
+alter index load_list on load_list partition (ll_file varchar)
+;
+
+create index ll_state on load_list (ll_state, ll_file, ll_graph) partition (ll_state int)
+;
+
+
+create table ldlock (id int primary key)
+  alter index ldlock on ldlock partition (id int)
+;
+
+insert into ldlock values (0);
+
+
+create procedure
+ld_dir (in path varchar, in mask varchar, in graph varchar)
+{
+  declare ls any;
+  declare inx int;
+  ls := sys_dirlist (path, 1);
+  for (inx := 0; inx < length (ls); inx := inx + 1)
+    {
+      if (ls[inx] like mask)
+	{
+	  set isolation = 'serializable';
+
+	  if (not (exists (select 1 from DB.DBA.LOAD_LIST where LL_FILE = path || '/' || ls[inx] for update)))
+	    {
+	      declare gfile, cgfile, ngraph varchar;
+	      gfile := path || '/' || replace (ls[inx], '.gz', '') || '.graph';
+	      cgfile := path || '/' || regexp_replace (replace (ls[inx], '.gz', ''), '\\-[0-9]+\\.n', '.n') || '.graph';
+	      if (file_stat (gfile) <> 0)
+		ngraph := trim (file_to_string (gfile), ' \r\n');
+              else if (file_stat (cgfile) <> 0)
+		ngraph := trim (file_to_string (cgfile), ' \r\n');
+	      else if (file_stat (path || '/' || 'global.graph') <> 0)
+		ngraph := trim (file_to_string (path || '/' || 'global.graph'), ' \r\n');
+	      else
+	        ngraph := graph;
+              if (ngraph is not null)
+                {
+		  insert into DB.DBA.LOAD_LIST (ll_file, ll_graph) values (path || '/' || ls[inx], ngraph);
+		}
+	    }
+
+	  commit work;
+	}
+    }
+}
+;
+
+create procedure
+ld_dir_all (in path varchar, in mask varchar, in graph varchar)
+{
+  declare ls any;
+  declare inx int;
+  ls := sys_dirlist (path, 0);
+  ld_dir (path, mask, graph);
+  for (inx := 0; inx < length (ls); inx := inx + 1)
+    {
+      if (ls[inx] <> '.' and ls[inx] <> '..')
+	{
+	  ld_dir_all (path||'/'||ls[inx], mask, graph);
+	}
+    }
+}
+;
+
+create procedure
+ld_add (in _fname varchar, in _graph varchar)
+{
+  --log_message (sprintf ('ld_add: %s, %s', _fname, _graph));
+
+  set isolation = 'serializable';
+
+  if (not (exists (select 1 from DB.DBA.LOAD_LIST where LL_FILE = _fname for update)))
+    {
+      insert into DB.DBA.LOAD_LIST (LL_FILE, LL_GRAPH) values (_fname, _graph);
+    }
+  commit work;
+}
+;
+
+create procedure ld_ttlp_flags (in fname varchar)
+{
+  if (fname like '%/btc-2009%' or fname like '%.nq%')
+    return 255 + 512;
+  return 255;
+}
+
+create procedure
+ld_file (in f varchar, in graph varchar)
+{
+  declare gzip_name varchar;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    update DB.DBA.LOAD_LIST
+      set LL_STATE = 2,
+          LL_DONE = curdatetime (),
+          LL_ERROR = __sql_state || ' ' || __sql_message
+      where LL_FILE = f;
+    commit work;
+
+    log_message (sprintf (' File %s error %s %s', f, __sql_state, __sql_message));
+    return;
+  };
+
+  if (f like '%.grdf' or f like '%.grdf.gz')
+    {
+      load_grdf (f);
+    }
+  else if (f like '%.gz')
+    {
+      gzip_name := regexp_replace (f, '\.gz\x24', '');
+      if (gzip_name like '%.xml' or gzip_name like '%.owl' or gzip_name like '%.rdf')
+	DB.DBA.RDF_LOAD_RDFXML (gz_file_open (f), graph, graph);
+      else if  (gzip_name like '%.n4')
+	TTLP (gz_file_open (f), graph, graph, 512 + 255);
+      else
+	TTLP (gz_file_open (f), graph, graph, ld_ttlp_flags (f));
+    }
+  else
+    {
+      if (f like '%.xml' or f like '%.owl' or f like '%.rdf')
+	DB.DBA.RDF_LOAD_RDFXML (file_open (f), graph, graph);
+      else if  (f like '%.n4')
+	TTLP (file_open (f), graph, graph, 512 + 255);
+      else
+	TTLP (file_open (f), graph, graph, ld_ttlp_flags (f));
+    }
+
+  --log_message (sprintf ('loaded %s', f));
+}
+;
+
+create procedure
+rdf_load_dir (in path varchar,
+              in mask varchar := '%.nt',
+              in graph varchar := 'http://dbpedia.org')
+{
+
+  delete from DB.DBA.LOAD_LIST where LL_FILE = '##stop';
+  commit work;
+
+  ld_dir (path, mask, graph);
+
+  rdf_loader_run ();
+}
+;
+
+
+create procedure ld_array ()
+{
+  declare first, last, arr, len, local any;
+  declare cr cursor for
+      select top 100 LL_FILE, LL_GRAPH
+        from DB.DBA.LOAD_LIST table option (index ll_state)
+        where LL_STATE = 0
+	for update;
+  declare fill int;
+  declare f, g varchar;
+  declare r any;
+  whenever not found goto done;
+  first := 0;
+  last := 0;
+ arr := make_array (100, 'any');
+  fill := 0;
+  open cr;
+  len := 0;
+  for (;;)
+    {
+      fetch cr into f, g;
+      if (0 = first) first := f;
+      last := f;
+      arr[fill] := vector (f, g);
+    len := len + cast (file_stat (f, 1) as int);
+      fill := fill + 1;
+      if (len > 2000000)
+	goto done;
+    }
+ done:
+  if (0 = first)
+    return 0;
+  if (1 <> sys_stat ('cl_run_local_only'))
+    local := sys_stat ('cl_this_host');
+  update load_list set ll_state = 1, ll_started = curdatetime (), LL_HOST = local
+    where ll_file >= first and ll_file <= last;
+  return arr;
+}
+;
+
+create procedure
+rdf_loader_run (in max_files integer := null, in log_enable int := 2)
+{
+  declare sec_delay float;
+  declare _f, _graph varchar;
+  declare arr any;
+  declare xx, inx, tx_mode, ld_mode int;
+  ld_mode := log_enable;
+  if (0 = sys_stat ('cl_run_local_only'))
+    {
+      if (log_enable = 2 and cl_this_host () = 1)
+	{
+	  cl_exec ('checkpoint_interval (0)');
+	  cl_exec ('__dbf_set (''cl_non_logged_write_mode'', 1)');
+	}
+      if (cl_this_host () = 1)
+	cl_exec('__dbf_set(''cl_max_keep_alives_missed'',3000)');
+    }
+  tx_mode := bit_and (1, log_enable);
+  log_message ('Loader started');
+
+  delete from DB.DBA.LOAD_LIST where LL_FILE = '##stop';
+  commit work;
+
+  while (1)
+    {
+      set isolation = 'repeatable';
+      declare exit handler for sqlstate '40001' {
+	rollback work;
+        sec_delay := rnd(1000)*0.001;
+	log_message(sprintf('deadlock in loader, waiting %d milliseconds', cast (sec_delay * 1000 as integer)));
+	delay(sec_delay);
+	goto again;
+      };
+
+     again:;
+
+      if (exists (select 1 from DB.DBA.LOAD_LIST where LL_FILE = '##stop'))
+	{
+	  log_message ('File load stopped by rdf_load_stop.');
+	  return;
+	}
+
+      log_enable (tx_mode, 1);
+
+      if (max_files is not null and max_files <= 0)
+        {
+	  commit work;
+	  log_message ('Max_files reached. Finishing.');
+          return;
+	}
+
+      whenever not found goto looks_empty;
+
+      --      log_message ('Getting next file.');
+      set isolation = 'serializable';
+      select id into xx from ldlock where id = 0 for update;
+      arr := ld_array ();
+      commit work;
+      if (0 = arr)
+	goto looks_empty;
+      log_enable (ld_mode, 1);
+
+      for (inx := 0; inx < 100; inx := inx + 1)
+	{
+	  if (0 = arr[inx])
+	    goto arr_done;
+	  ld_file (arr[inx][0], arr[inx][1]);
+	  update DB.DBA.LOAD_LIST set LL_STATE = 2, LL_DONE = curdatetime () where LL_FILE = arr[inx][0];
+	}
+    arr_done:
+      log_enable (tx_mode, 1);
+
+
+      if (max_files is not null) max_files := max_files - 100;
+
+      commit work;
+    }
+
+ looks_empty:
+  commit work;
+  log_message ('No more files to load. Loader has finished,');
+  return;
+
+}
+;
+
+create procedure rdf_load_stop (in force int := 0)
+{
+  insert into DB.DBA.LOAD_LIST (LL_FILE) values ('##stop');
+  commit work;
+  if (force)
+    cl_exec ('txn_killall (1)');
+}
+;
+
+
+create procedure RDF_LOADER_RUN_1 (in x int, in y int)
+{
+  rdf_loader_run (x, y);
+}
+;
+
+create procedure rdf_ld_srv (in log_enable int)
+{
+  declare aq any;
+  aq := async_queue (1);
+  aq_request (aq, 'DB.DBA.RDF_LOADER_RUN_1', vector (null, log_enable));
+  aq_wait_all (aq);
+}
+;
+
+
+create procedure load_grdf (in f varchar)
+{
+  declare line any;
+  declare inx int;
+  declare ses any;
+  declare gr varchar;
+
+  if (f like '%.gz')
+    ses := gz_file_open (f);
+  else
+    ses := file_open (f);
+  inx := 0;
+  line := '';
+  while (line <> 0)
+    {
+      gr := ses_read_line (ses, 0, 0, 1);
+      if (gr = 0) return;
+      line := ses_read_line (ses, 0, 0, 1);
+      if (line = 0) return;
+      DB.DBA.RDF_LOAD_RDFXML (line, gr, gr);
+      inx := inx + 1;
+    }
+}
+;
+
+
+
+-- cl_exec ('set lock_escalation_pct = 110');
+-- cl_exec ('DB.DBA.RDF_LD_SRV (1)') &
+-- cl_exec ('DB.DBA.RDF_LD_SRV (2)') &
+]]></programlisting>
+</listitem>
+  <listitem>Execute:
+<programlisting><![CDATA[
+SQL>cl_exec ('checkpoint);
+]]></programlisting>
+</listitem>
+  <listitem>Execute ld_dir ('directory' , 'mask' , 'graph'), for ex:
+<programlisting><![CDATA[
+SQL>ld_dir ('/dbs/data', '*.gz', 'http://dbpedia.org');
+]]></programlisting>
+</listitem>
+  <listitem>Execute on every node with separate client:
+<programlisting><![CDATA[
+SQL>rdf_loader_run();
+]]></programlisting>
+</listitem>
+</itemizedlist>
+</sect3>
+
+
        <sect3 id="rdfperfloadingunitpro"><title>Loading UniProt RDF data</title>
 <para>To load the uniprot data, create a function for example such as:</para>
 <programlisting><![CDATA[
