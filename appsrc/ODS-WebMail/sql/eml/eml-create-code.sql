@@ -1487,7 +1487,7 @@ create procedure OMAIL.WA.account_sioc_url (
 {
   declare S varchar;
 
-  S := SIOC..person_iri (SIOC..user_iri (OMAIL.WA.domain_owner_id (domain_id)));
+  S := SIOC..person_iri (SIOC..user_iri (OMAIL.WA.domain_owner_id (domain_id), null));
   return OMAIL.WA.url_fix (S, sid, realm);
 }
 ;
@@ -2918,15 +2918,16 @@ create procedure OMAIL.WA.omail_get_mime_handlers(
 
   _rs := '';
   OMAIL.WA.utl_decode_qp(_data,OMAIL.WA.omail_get_encoding(_params,''));
-
-  for (select PNAME from OMAIL.WA.MIME_HANDLERS where TYPE_ID = _type_id) do {
+  for (select PNAME from OMAIL.WA.MIME_HANDLERS where TYPE_ID = _type_id) do
+  {
     call (PNAME)(_data, _out);
     _rs := sprintf('%s%s', _rs, _out);
-  };
-  if (length(_rs) > 0) {
+  }
+  if (length (_rs) > 0)
+  {
     _rs := sprintf('<handlers>%s</handlers>',_rs);
     return 1;
-  };
+  }
   return 0;
 
 }
@@ -2943,39 +2944,40 @@ create procedure OMAIL.WA.omail_get_mime_parts(
   inout _part_id    integer,
   inout _source     any,
   inout _mime_parts any,
-  in    _level      integer)
+  in    _level       integer,
+  in    _certificate any := null)
 {
   declare N,_body_beg,_body_end,_type_id,_pdefault,_dsize,_content_id,_att_fname,_freetext_id integer;
   declare _aparams,_encoding,_mime_type,_body,_dispos,_att_name varchar;
 
   for (N := 0; N < length (_mime_parts); N := N + 1)
   {
-    if (isarray(aref(aref(_mime_parts,N), 0)))
+    if (isarray (aref(_mime_parts[N], 0)))
     {
-      if (isarray(aref(aref(_mime_parts,N), 2)))
+      if (isarray (aref (_mime_parts[N], 2)))
       {
-        OMAIL.WA.omail_get_mime_parts(_domain_id,_user_id,_msg_id,_parent_id,_folder_id,_part_id,_source,aref(aref(_mime_parts,N),2),_level + 1);
+        OMAIL.WA.omail_get_mime_parts (_domain_id, _user_id, _msg_id, _parent_id, _folder_id, _part_id, _source, aref(_mime_parts[N],2), _level + 1, _certificate);
       }
-      else if (isarray(aref(aref(aref(_mime_parts,N),1),2)))
+      else if (isarray(aref(aref(_mime_parts[N],1),2)))
       {
-        _body_beg    := aref(aref(aref(_mime_parts,N),1),0);
-        _body_end    := aref(aref(aref(_mime_parts,N),1),1);
+        _body_beg    := aref(aref(_mime_parts[N],1),0);
+        _body_end    := aref(aref(_mime_parts[N],1),1);
         _body        := subseq (blob_to_string (_source), _body_beg, _body_end + 1);
         OMAIL.WA.omail_receive_message(_domain_id,_user_id,_msg_id,_body,null,null,_folder_id);
       }
       else
       {
         _freetext_id := sequence_next ('OMAIL.WA.omail_seq_eml_freetext_id');
-        _aparams     := OMAIL.WA.array2xml(aref(aref(_mime_parts,N),0));
-        _encoding    := get_keyword_ucase('Content-Transfer-Encoding',aref(aref(_mime_parts,N),0),'');
-        _dispos      := get_keyword_ucase('Content-Disposition',aref(aref(_mime_parts,N),0),'');
-        _mime_type   := get_keyword_ucase('Content-Type',aref(aref(_mime_parts,N),0),'');
-        _body_beg    := aref(aref(aref(_mime_parts,N),1),0);
-        _body_end    := aref(aref(aref(_mime_parts,N),1),1);
+        _aparams     := OMAIL.WA.array2xml(aref(_mime_parts[N],0));
+        _encoding    := get_keyword_ucase('Content-Transfer-Encoding',aref(_mime_parts[N],0),'');
+        _dispos      := get_keyword_ucase('Content-Disposition',aref(_mime_parts[N],0),'');
+        _mime_type   := get_keyword_ucase('Content-Type',aref(_mime_parts[N],0),'');
+        _body_beg    := aref(aref(_mime_parts[N],1),0);
+        _body_end    := aref(aref(_mime_parts[N],1),1);
         _body        := subseq (blob_to_string (_source), _body_beg, _body_end + 1);
-        _content_id  := get_keyword_ucase('Content-ID',aref(aref(_mime_parts,N),0),'');
-        _att_fname   := get_keyword_ucase('name',aref(aref(_mime_parts,N),0),'');
-        _att_name    := get_keyword_ucase('filename',aref(aref(_mime_parts,N),0),'');
+        _content_id  := get_keyword_ucase('Content-ID',aref(_mime_parts[N],0),'');
+        _att_fname   := get_keyword_ucase('name',aref(_mime_parts[N],0),'');
+        _att_name    := get_keyword_ucase('filename',aref(_mime_parts[N],0),'');
         _att_fname   := either(length(_att_fname),_att_fname,_att_name);
         _att_fname   := substring(_att_fname,1,100);
 
@@ -2999,6 +3001,50 @@ create procedure OMAIL.WA.omail_get_mime_parts(
       }
     }
   }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.omail_get_certificate (
+  inout _source      any,
+  inout _mime_parts  any)
+{
+  declare N,_body_beg,_body_end integer;
+  declare _encoding, _mime_type, _body, _dispos varchar;
+  declare _mime_part any;
+
+  _body := null;
+  for (N := 0; N < length (_mime_parts); N := N + 1)
+  {
+    _mime_part := _mime_parts[N];
+    if (isarray (_mime_part[0]))
+    {
+      if (isarray (_mime_part[2]))
+        goto _continue;
+
+      if (isarray (_mime_part[1][2]))
+        goto _continue;
+
+      _mime_type   := get_keyword_ucase('Content-Type',_mime_part[0],'');
+      if (_mime_type = 'application/x-pkcs7-signature')
+      {
+        dbg_obj_print (_mime_part[0]);
+        _encoding := get_keyword_ucase('Content-Transfer-Encoding', _mime_part[0], '');
+        _dispos   := get_keyword_ucase('Content-Disposition', _mime_part[0], '');
+        _body_beg := _mime_part[1][0];
+        _body_end := _mime_part[1][1];
+        _body     := subseq (blob_to_string (_source), _body_beg, _body_end + 1);
+        if (_encoding = 'base64')
+          _body   := decode_base64(_body);
+        dbg_obj_print ('', length (_body));
+        string_to_file ('source.eml', _source, 0);
+        string_to_file ('cert.der', _body, 0);
+      }
+    }
+  _continue:;
+  }
+  return _body;
 }
 ;
 
@@ -4776,7 +4822,7 @@ create procedure OMAIL.WA.omail_receive_message(
   in    _msg_source  integer, -- ( '-1' ->SMTP; '0' ->inside; '>0' - from POP3 account)
   in    _folder_id   integer)
 {
-  declare _subject, _tags, _from, _returnPath, _to, _cc, _bcc,_srv_msg_id,_ref_id,_address,_address_info,_mstatus,_attached,_mheader,_att_fname varchar;
+  declare _subject, _tags, _from, _returnPath, _to, _cc, _bcc, _srv_msg_id, _ref_id, _mime_type, _protocol, _certificate, _address, _address_info, _mstatus, _attached, _mheader, _att_fname varchar;
   declare _body, _bodys, _parts, _attrs,_snd_date,_rcv_date,_body_parts,_message,_usern, _settings any;
   declare _body_beg, _body_end,_msg_id,_priority,_dsize,N,_freetext_id integer;
 
@@ -4794,6 +4840,9 @@ create procedure OMAIL.WA.omail_receive_message(
   if (not(isarray(_attrs)))
     return 0;
 
+  --dbg_obj_print ('_attrs', _attrs);
+  --dbg_obj_print ('_bodys', _bodys);
+  --dbg_obj_print ('_parts', _parts);
   _msg_id        := sequence_next ('OMAIL.WA.omail_seq_eml_msg_id');
   _freetext_id   := sequence_next ('OMAIL.WA.omail_seq_eml_freetext_id');
   _subject       := get_keyword_ucase('Subject',_attrs,'');
@@ -4806,10 +4855,44 @@ create procedure OMAIL.WA.omail_receive_message(
   _ref_id        := get_keyword_ucase('References',_attrs,'');
   _snd_date      := get_keyword_ucase('Date',_attrs,'');
   _address_info  := OMAIL.WA.omail_address2xml('from',_from,1);
+  _mime_type     := get_keyword_ucase('Content-Type', _attrs, '');
+  if (_mime_type = '')
+    _mime_type := 'text/plain';
+
   _mstatus       := 0;
   _attached      := 0;
   _tags          := '';
   _settings      := OMAIL.WA.omail_get_settings (_domain_id, _user_id, 'base_settings');
+
+  -- signature
+  --
+  _certificate   := null;
+  --dbg_obj_print ('_mime_type', _mime_type);
+  if (_mime_type = 'multipart/signed')
+  {
+    if (get_keyword_ucase ('protocol', _attrs, '') = 'application/x-pkcs7-signature')
+      _certificate := OMAIL.WA.omail_get_certificate (_source, _parts);
+  }
+  dbg_obj_print (now());
+  dbg_obj_print ('_certificate', _certificate);
+  string_to_file (uuid () || '.eml', _source, 0);
+  if (not isnull (_certificate))
+  {
+    declare x any;
+
+    x := file_to_string ('smime/X.eml');
+    dbg_obj_print ('verify0: ', smime_verify (x, vector (file_to_string ('ca-bundle.crt'))));
+    dbg_obj_print ('verify1: ', smime_verify (_source, vector (file_to_string ('ca-bundle.crt'))));
+    -- dbg_obj_print (get_certificate_info (1, _certificate, 1, null, null));
+    -- dbg_obj_print (get_certificate_info (2, _certificate, 1, null, null));
+    -- dbg_obj_print (get_certificate_info (3, _certificate, 1, null, null));
+    -- dbg_obj_print (get_certificate_info (4, _certificate, 1, null, null));
+    -- dbg_obj_print (get_certificate_info (5, _certificate, 1, null, null));
+    -- dbg_obj_print (get_certificate_info (6, _certificate, 1, null, null));
+    -- dbg_obj_print (get_certificate_info (7, _certificate, 1, null, null));
+    -- dbg_obj_print (get_certificate_info (8, _certificate, 1, null, null));
+    -- dbg_obj_print (get_certificate_info (9, _certificate, 1, null, null));
+  }
 
   -- spam sender?
   if (cast(get_keyword ('spam', _settings, '0') as integer) > 0)
@@ -4850,17 +4933,13 @@ create procedure OMAIL.WA.omail_receive_message(
   }
 
   if (_folder_id = 125)
+    {
     if (cast (get_keyword ('spam_msg_action', _settings, '0') as integer) = 2)
-    {
       return 0;
-    }
 
-  if (_folder_id = 125)
     if (cast (get_keyword ('spam_msg_state', _settings, '0') as integer) <> 0)
-    {
       _mstatus := 1;
     }
-
   if (get_keyword_ucase('X-MSMail-Priority',_attrs,'') <> '')
   {
     OMAIL.WA.omail_get_mm_priority(get_keyword_ucase('X-MSMail-Priority',_attrs,''),_priority);
@@ -4894,7 +4973,7 @@ create procedure OMAIL.WA.omail_receive_message(
   -- PARTS -------------------------------------------------------------------
   ----------------------------------------------------------------------------
   declare _mime_parts,_aparams any;
-  declare _encoding,_mime_type,_fname varchar;
+  declare _encoding, _fname varchar;
   declare _part_id,_type_id,_pdefault integer;
   _part_id := 1;
   _fname   := '';
@@ -4902,7 +4981,7 @@ create procedure OMAIL.WA.omail_receive_message(
   if (isarray(_parts))
   {
     -- mime body
-    OMAIL.WA.omail_get_mime_parts(_domain_id,_user_id,_msg_id,_parent_id,_folder_id,_part_id,_source,_parts,0);
+    OMAIL.WA.omail_get_mime_parts (_domain_id, _user_id, _msg_id, _parent_id, _folder_id, _part_id, _source, _parts, 0, _certificate);
   }
   else
   {
@@ -4911,10 +4990,6 @@ create procedure OMAIL.WA.omail_receive_message(
     _body_end  := aref(_bodys,1);
     _body      := subseq (blob_to_string (_source), _body_beg, _body_end + 1);
     _dsize     := length(_body);
-    _mime_type := get_keyword_ucase('Content-Type',_attrs, '');
-    if (_mime_type = '')
-      _mime_type := 'text/plain';
-
     _type_id   := OMAIL.WA.res_get_mimetype_id(_mime_type);
     _pdefault  := 1;
     if (_type_id not in (10100, 10110))
