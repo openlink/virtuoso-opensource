@@ -568,7 +568,13 @@ extern caddr_t spar_boxed_exec_uid (sparp_t *sparp);
 extern caddr_t spar_immortal_exec_uname (sparp_t *sparp);
 extern SPART *spar_exec_uid_and_gs_cbk (sparp_t *sparp);
 
-extern int spar_graph_static_perms (sparp_t *sparp, caddr_t graph_iri);
+/*!< Returns statically known permissions on \c graph_iri.
+We assume that if permissions on the graph are "interesting" for some reason then the change in these permission may require query re-compilation.
+So if some factor may change some bits set in \c req_perms bitmask then a depencency from the factor is established for 
+sparp->sparp_sparqre->sparqre_super_sc->sc_cc->cc_super_cc->cc_query
+If sparp->sparp_gs_app_callback is set then the "nobody" user is used, because the callback may cut permissions down to that level but we don't know that statically */
+extern int spar_graph_static_perms (sparp_t *sparp, caddr_t graph_iri, int req_perms);
+/*!< Returns if security testing is needed */
 extern int spar_graph_needs_security_testing (sparp_t *sparp, SPART *g_expn, int req_perms);
 
 

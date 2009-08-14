@@ -700,7 +700,8 @@ spar_optimize_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top)
   fname = ((INSERT_L == top->_.req_top.subtype) ? "sql:SPARQL_INSERT_CTOR" : "sql:SPARQL_DELETE_CTOR");
   good_ctor_call = spar_make_funcall (sparp, 1, fname,
     (SPART **)t_list (5,
-      spar_make_funcall (sparp, 0, "sql:RDF_GRAPH_USER_PERMS_ASSERT",
+      spar_make_funcall (sparp, 0,
+        ((NULL == sparp->sparp_gs_app_callback) ? "SPECIAL::bif:__rgs_assert" :  "SPECIAL::bif:__rgs_assert_cbk"),
         (SPART **)t_list (4, graph_expn, uid_expn, (ptrlong)3,
           t_box_dv_short_string ((INSERT_L == top->_.req_top.subtype) ? "SPARUL INSERT" : "SPARUL DELETE") ) ),
       spar_make_funcall (sparp, 0, "bif:vector",
@@ -838,7 +839,8 @@ ins_is_bad: ;
     return;
   good_ctor_call = spar_make_funcall (sparp, 1, "sql:SPARQL_MODIFY_CTOR",
     (SPART **)t_list (6,
-      spar_make_funcall (sparp, 0, "sql:RDF_GRAPH_USER_PERMS_ASSERT",
+      spar_make_funcall (sparp, 0,
+        ((NULL == sparp->sparp_gs_app_callback) ? "bif:__rgs_assert" :  "bif:__rgs_assert_cbk"),
         (SPART **)t_list (4, graph_expn, uid_expn, (ptrlong)3,
           t_box_dv_short_string ("SPARUL MODIFY") ) ),
       spar_make_funcall (sparp, 0, "bif:vector",

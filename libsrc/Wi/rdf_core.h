@@ -237,13 +237,22 @@ extern caddr_t uriqa_get_default_for_connvar (query_instance_t *qi, const char *
 #define RDF_GRAPH_PERM_WRITE 0x02
 #define RDF_GRAPH_PERM_SPONGE 0x04
 #define RDF_GRAPH_PERM_LIST 0x08
+#define RDF_GRAPH_PERM_DEFAULT (RDF_GRAPH_PERM_READ | RDF_GRAPH_PERM_WRITE | RDF_GRAPH_PERM_SPONGE | RDF_GRAPH_PERM_LIST)
 
 extern id_hash_t *rdf_graph_group_dict_htable;			/*!< Dictionary of graph group members: group IID is key, vector of member IIDs is value */
 extern id_hash_iterator_t *rdf_graph_group_dict_hit;	/*!< Hash iterator for \c rdf_graph_group_dict_htable */
 extern id_hash_t *rdf_graph_public_perms_dict_htable;		/*!< Dictionary of public permissions for graphs: graph/group IID is key, copy of DB.DBA.RDF_GRAPH_USER.RGU_PERMISSIONS is a value */
 extern id_hash_iterator_t *rdf_graph_public_perms_dict_hit;	/*!< Hash iterator for \c rdf_graph_group_dict_htable */
-extern id_hash_t *rdf_graph_default_perms_of_user_dict_htable;		/*!< Dictionary of default permissions for users: user ID is key, copy of DB.DBA.RDF_GRAPH_USER.RGU_PERMISSIONS is a value */
-extern id_hash_iterator_t *rdf_graph_default_perms_of_user_dict_hit;	/*!< Hash iterator for \c rdf_graph_default_perms_of_user_dict_htable */
+extern id_hash_t *rdf_graph_group_of_privates_dict_htable;		/*!< Dictionary of private graphs, to accelerate the access to content of virtrdf:PrivateGraphs */
+extern id_hash_iterator_t *rdf_graph__of_privates_dict_hit;	/*!< Hash iterator for \c rdf_graph_group_of_privates_dict_htable */
+extern id_hash_t *rdf_graph_default_world_perms_of_user_dict_htable;		/*!< Dictionary of default permissions for users: user ID is key, copy of DB.DBA.RDF_GRAPH_USER.RGU_PERMISSIONS for #0 is a value */
+extern id_hash_iterator_t *rdf_graph_default_world_perms_of_user_dict_hit;	/*!< Hash iterator for \c rdf_graph_default_world_perms_of_user_dict_htable */
+extern id_hash_t *rdf_graph_default_private_perms_of_user_dict_htable;		/*!< Dictionary of default permissions for users: user ID is key, copy of DB.DBA.RDF_GRAPH_USER.RGU_PERMISSIONS for #0 is a value */
+extern id_hash_iterator_t *rdf_graph_default_private_perms_of_user_dict_hit;	/*!< Hash iterator for \c rdf_graph_default_private_perms_of_user_dict_htable */
+extern id_hash_t *rdf_graph_default_private_perms_of_user_dict_htable;		/*!< Dictionary of default permissions for users: user ID is key, copy of DB.DBA.RDF_GRAPH_USER.RGU_PERMISSIONS for #0 is a value */
+extern id_hash_iterator_t *rdf_graph_default_private_perms_of_user_dict_hit;	/*!< Hash iterator for \c rdf_graph_default_private_perms_of_user_dict_htable */
 
-
+extern caddr_t boxed_zero_iid;
+extern caddr_t boxed_8k_iid;
+extern caddr_t boxed_nobody_uid;
 #endif

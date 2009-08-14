@@ -725,7 +725,8 @@ bif_file_to_string_session_impl (caddr_t * qst, caddr_t * err_ret,
     from = 0;
   if (to_is_set)
     {
-      if (to > st.st_size || to < from)
+      /* to == -1 means read until EOF */
+      if (to != -1 && (to > st.st_size || to < from))
 	{
 	  err = srv_make_new_error ("42000", "FA114",
 	      "Invalid ending offset passed to %s('%.1000s',"
@@ -761,14 +762,21 @@ bif_file_to_string_session_impl (caddr_t * qst, caddr_t * err_ret,
 	  fname_cvt, (OFF_T_PRINTF_DTP)from, eno, strerror (eno) );
       goto signal_error;
     }
+  if (to == -1)
+    need = -1;
+  else
   need = to - from;
   for (;;)
     {
+      if (need == -1) {
+	next = sizeof (buffer);
+      } else {
       next = need - total;
       if (sizeof (buffer) < next)
 	next = sizeof (buffer);
       if (next <= 0)
 	break;
+      }
       readed = read (fd, buffer, (unsigned) next);
       if (readed <= 0)
 	break;
@@ -780,7 +788,7 @@ bif_file_to_string_session_impl (caddr_t * qst, caddr_t * err_ret,
           close (fd);
 	  qi_signal_if_trx_error ((query_instance_t *)qst);
 	}
-      if (total >= need)
+      if (need != -1 && total >= need)
 	break;
     }
   if (readed == -1)
@@ -791,7 +799,7 @@ bif_file_to_string_session_impl (caddr_t * qst, caddr_t * err_ret,
 	  saved_errno, strerror (saved_errno) );
       goto signal_error;
     }
-  if (total != need)
+  if (need != -1 && total != need)
     {
       strses_free (res);
       err = srv_make_new_error ("39000", "FA115",

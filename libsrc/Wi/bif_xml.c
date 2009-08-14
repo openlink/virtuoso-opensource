@@ -59,6 +59,8 @@ extern "C" {
 #include "sqltype.h" /* for XMLTYPE_TO_ENTITY */
 #include "shuric.h"
 
+#define XMLATTRIBUTE_FLAG (caddr_t)(SMALLEST_POSSIBLE_POINTER - 20)
+
 #define xn_source_is_dead(xn) \
   ((NULL != (xn)->xn_xp->xp_parser) && \
    (DEAD_HTML & ((xn)->xn_xp->xp_parser->cfg.input_is_html)) )
@@ -2888,6 +2890,25 @@ xml_uri_resolve_like_get (query_instance_t * qi, caddr_t *err_ret, ccaddr_t base
 	  return NULL;
 	}
     }
+  if (DV_STRINGP (base_uri) && DV_STRINGP (rel_uri))
+    {
+      caddr_t err = NULL;
+      caddr_t res =  rfc1808_expand_uri ((caddr_t*)qi, base_uri, rel_uri,
+					 output_charset, 0,
+					 NULL, /* Encoding used for base_uri IFF it is a narrow string, neither DV_UNAME nor WIDE */
+					 NULL, /* Encoding used for rel_uri IFF it is a narrow string, neither DV_UNAME nor WIDE */
+					 &err);
+      if (err)
+	{
+	  if (err_ret)
+	    *err_ret = err;
+	  else 
+	    dk_free_tree (err);
+	  return NULL;
+	}
+      return res;
+    }
+
   CHECK_URI_TYPES(base_uri,rel_uri);
   err = qr_rec_exec (qr, qi->qi_client, &lc, qi, NULL, 3,
       ":0", box_copy (base_uri), QRP_RAW,
@@ -4156,9 +4177,31 @@ bif_xte_nodebld_final_impl (caddr_t * qst, state_slot_t ** args, int plain_retur
   for (idx = filled_size / sizeof (caddr_t); --idx > 0; /* no step*/ )
     {
       caddr_t **item = ((caddr_t **)(acc[idx]));
-      if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (item) &&
-        (DV_UNAME != DV_TYPE_OF (XTE_HEAD_NAME (XTE_HEAD (item)))) )
+      if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (item))
+        {
+          caddr_t *head = XTE_HEAD (item);
+          if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (head))
+            {
+              if (DV_UNAME != DV_TYPE_OF (XTE_HEAD_NAME (head)))
         xte_replace_strings_with_unames (item);
+    }
+          else if ((XMLATTRIBUTE_FLAG == unbox (head)) && (3 == BOX_ELEMENTS (item)))
+            {
+              dk_free_tree ((caddr_t)acc);
+              sqlr_new_error ("22003", "SR621", "Attribute can not appear directly in an XML entity aggregate, it should be part of an XML element");
+            }
+/*
+            {
+              if (DV_STRING == DV_TYPE_OF (item[1]))
+                item[1] = (void *)box_dv_uname_string ((caddr_t)(item[1]));
+            }
+*/
+          else
+            {
+              dk_free_tree ((caddr_t)acc);
+              sqlr_new_error ("22003", "SR620", "Inappropriate value is found in XML entity aggregate (neither vector of XML data nor a literal)");
+            }
+        }
     }
 
   if (2 <= arg_ctr)
@@ -5049,8 +5092,6 @@ bif_to_xml_array_push_new_attr (dk_set_t *head_set, caddr_t attr_name,
   return 1;
 }
 
-#define XMLATTRIBUTE_FLAG (caddr_t)(SMALLEST_POSSIBLE_POINTER - 20)
-
 void
 bif_to_xml_array_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func,
     dk_set_t *ret_set, dk_set_t *head_set)
@@ -5776,7 +5817,9 @@ bif_xml_init (void)
 
   bif_define_typed ("xmlelement", bif_xmlelement, &bt_any);
   bif_define_typed ("xmlattributes", bif_xmlattributes, &bt_any);
+  bif_define_typed ("xmlattributes_2", bif_xmlattributes, &bt_any);
   bif_define_typed ("xmlforest", bif_xmlforest, &bt_any);
+  bif_define_typed ("xmlforest_2", bif_xmlforest, &bt_any);
   bif_define_typed ("xmlconcat", bif_xmlconcat, &bt_any);
   bif_define_typed ("serialize_to_UTF8_xml", bif_serialize_to_UTF8_xml, &bt_varchar);
   bif_define_typed ("xte_expand_xmlns", bif_xte_expand_xmlns, &bt_any);

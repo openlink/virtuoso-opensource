@@ -91,7 +91,7 @@ void sec_log_login_failed (char *name, dk_session_t * ses, int mode);
 void failed_login_remove (dk_session_t *ses);
 void failed_login_purge (void);
 void failed_login_from (dk_session_t *ses);
-void sec_set_user (query_instance_t * qi, char *name, char *pass, int is_update);
+extern user_t *sec_set_user (query_instance_t * qi, char *name, char *pass, int is_update);
 void sec_set_user_cert (caddr_t u_name, caddr_t u_cert);
 void sec_user_remove_cert (caddr_t u_name, caddr_t u_cert);
 int failed_login_to_disconnect (dk_session_t *ses);
@@ -100,6 +100,16 @@ int sec_set_user_os_struct (caddr_t u_name, caddr_t u_sys_name, caddr_t u_sys_pw
 caddr_t sec_get_user_by_cert (caddr_t u_cert);
 void sec_user_disable (caddr_t u_name, int flag);
 int set_user_id (client_connection_t * cli, caddr_t name, caddr_t preserve_qual);
+
+#define USER_SHOULD_EXIST 0x1
+#define USER_SHOULD_BE_SQL_ENABLED 0x2
+#define USER_SHOULD_BE_DAV_ENABLED 0x4
+#define USER_NOBODY_IS_PERMITTED 0x8
+#define USER_SPARQL_IS_PERMITTED 0x10
+extern caddr_t bif_user_id_or_name_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func);
+extern user_t *bif_user_t_arg_int (caddr_t uid_or_uname, int nth, const char *func, int flags, int error_level);
+extern user_t *bif_user_t_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int flags, int error_level);
+
 
 #ifdef WIN32
 #ifndef IGNORE_SERVER_IMP_TOKEN

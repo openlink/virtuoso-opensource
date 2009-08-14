@@ -958,6 +958,7 @@ typedef struct user_s
     id_hash_t *		usr_xenc_certificates;
     dk_set_t 		usr_xenc_temp_keys;
     dk_set_t 		usr_certs;
+    dk_hash_64_t *	usr_rdf_graph_perms;
 #ifdef WIN32
     caddr_t		usr_sys_name;
     caddr_t		usr_sys_pass;

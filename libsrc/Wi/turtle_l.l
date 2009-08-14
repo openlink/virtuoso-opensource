@@ -174,7 +174,7 @@ SPAR_NCCHAR	([A-Za-z0-9_\x7f-\xfe-])
 SPAR_NCCHAR_X	([A-Za-z0-9_#%?&=*\x7f-\xfe-])
 SPAR_NCNAME_PREFIX	({SPAR_NCCHAR1p}([A-Za-z0-9_.\x7f-\xfe-]*{SPAR_NCCHAR})?)
 SPAR_NCNAME		({SPAR_NCCHAR1}([A-Za-z0-9_.\x7f-\xfe-]*{SPAR_NCCHAR})?)
-SPAR_NCNAME_X		([A-Za-z0-9_./#%+?&=@*\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*\x7f-\xfe-]+)
+SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xfe-]+)|([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[./#%+?&=@*:][A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[.]))
 
 %%
 
@@ -591,7 +591,7 @@ rdf_load_turtle (
   yyscan_t scanner;
   triple_feed_t *tf;
   if (arg1_is_filename)
-    sec_check_dba (qi, "<reading TURTLE from local file>");
+    sec_check_dba (qi, "<creading TURTLE from local file>");
   if (DV_BLOB_XPER_HANDLE == dtp_of_text)
     sqlr_new_error ("42000", "SP036", "Unable to parse TURTLE from persistent XML object");
   ttlp = ttlp_alloc ();
