@@ -360,6 +360,15 @@ create procedure DB.DBA.RDF_GLOBAL_RESET (in hard integer := 0)
   delete from sys_rdf_schema;
   delete from DB.DBA.RDF_QUAD;
   delete from DB.DBA.RDF_OBJ_FT_RULES;
+  delete from DB.DBA.RDF_GRAPH_GROUP;
+  delete from DB.DBA.RDF_GRAPH_GROUP_MEMBER;
+  delete from DB.DBA.RDF_GRAPH_USER;
+  dict_list_keys (__rdf_graph_group_dict(), 2);
+  dict_list_keys (__rdf_graph_group_of_privates_dict(), 2);
+  dict_list_keys (__rdf_graph_default_perms_of_user_dict(0), 2);
+  dict_list_keys (__rdf_graph_default_perms_of_user_dict(1), 2);
+  dict_list_keys (__rdf_graph_public_perms_dict(), 2);
+  commit work;
   if (hard)
     {
       --delete from DB.DBA.RDF_URL;
@@ -3397,7 +3406,7 @@ create function DB.DBA.SPARQL_DELETE_CTOR_ACC (inout _env any, in graph_iri any,
   if (not (isarray (_env)))
     _env := vector (iri_to_id (graph_iri), 0, 0);
   if (not _env[1])
-    DB.DBA.RDF_GRAPH_USER_PERMS_ASSERT (graph_iri, uid, 2, 'SPARUL DELETE');
+    __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL DELETE');
   DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (_env, graph_iri, opcodes, vars, log_mode, 1);
 }
 ;
@@ -3405,10 +3414,11 @@ create function DB.DBA.SPARQL_DELETE_CTOR_ACC (inout _env any, in graph_iri any,
 --!AWK PUBLIC
 create procedure DB.DBA.SPARQL_INSERT_CTOR_ACC (inout _env any, in graph_iri any, in opcodes any, in vars any, in uid integer, in log_mode integer)
 {
+  -- dbg_obj_princ ('DB.DBA.SPARQL_INSERT_CTOR_ACC (', _env, graph_iri, opcodes, vars, uid, log_mode);
   if (not (isarray (_env)))
     _env := vector (iri_to_id (graph_iri), 0, 0);
   if (not _env[2])
-    DB.DBA.RDF_GRAPH_USER_PERMS_ASSERT (graph_iri, uid, 2, 'SPARUL INSERT');
+    __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL INSERT');
   DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (_env, graph_iri, opcodes, vars, log_mode, 2);
 }
 ;
@@ -3419,7 +3429,7 @@ create procedure DB.DBA.SPARQL_MODIFY_CTOR_ACC (inout _env any, in graph_iri any
   if (not (isarray (_env)))
     _env := vector (iri_to_id (graph_iri), 0, 0);
   if (not _env[1] and not _env[2])
-    DB.DBA.RDF_GRAPH_USER_PERMS_ASSERT (graph_iri, uid, 2, 'SPARUL MODIFY');
+    __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL MODIFY');
   DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (_env, graph_iri, del_opcodes, vars, log_mode, 1);
   DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (_env, graph_iri, ins_opcodes, vars, log_mode, 2);
 }
@@ -3458,7 +3468,7 @@ create function DB.DBA.SPARQL_INSERT_DICT_CONTENT (in graph_iri any, in triples_
       ins_count := graph_iri[2]; -- 2, not 1
       graph_iri := graph_iri[0]; -- the last op.
     }
-  DB.DBA.RDF_GRAPH_USER_PERMS_ASSERT (graph_iri, uid, 2, 'SPARUL INSERT');
+  __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL INSERT');
   ins_count := ins_count + length (triples);
   DB.DBA.RDF_INSERT_TRIPLES (graph_iri, triples, log_mode);
   if (isiri_id (graph_iri))
@@ -3481,7 +3491,7 @@ create function DB.DBA.SPARQL_DELETE_DICT_CONTENT (in graph_iri any, in triples_
       del_count := graph_iri[1];
       graph_iri := graph_iri[0]; -- the last op.
     }
-  DB.DBA.RDF_GRAPH_USER_PERMS_ASSERT (graph_iri, uid, 2, 'SPARUL DELETE');
+  __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL DELETE');
   del_count := del_count + length (triples);
   DB.DBA.RDF_DELETE_TRIPLES (graph_iri, triples, log_mode);
   if (isiri_id (graph_iri))
@@ -3504,7 +3514,7 @@ create function DB.DBA.SPARQL_MODIFY_BY_DICT_CONTENTS (in graph_iri any, in del_
       ins_count := graph_iri[2];
       graph_iri := graph_iri[0]; -- the last op.
     }
-  DB.DBA.RDF_GRAPH_USER_PERMS_ASSERT (graph_iri, uid, 2, 'SPARUL MODIFY');
+  __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL MODIFY');
   if (del_triples_dict is not null)
     {
       del_count := del_count + dict_size (del_triples_dict);
@@ -3530,7 +3540,7 @@ create function DB.DBA.SPARQL_MODIFY_BY_DICT_CONTENTS (in graph_iri any, in del_
 create function DB.DBA.SPARUL_CLEAR (in graph_iri any, in uid integer, in inside_sponge integer := 0, in compose_report integer := 0) returns any
 {
   commit work;
-  DB.DBA.RDF_GRAPH_USER_PERMS_ASSERT (graph_iri, uid, 2, 'SPARUL CLEAR GRAPH');
+  __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL CLEAR GRAPH');
   delete from DB.DBA.RDF_QUAD
   where G = iri_to_id (graph_iri) and
   case (gt (__trx_disk_log_length (0, S, O), 1000000))
@@ -3561,7 +3571,7 @@ create function DB.DBA.SPARUL_LOAD (in graph_iri any, in uid integer, in resourc
   declare grab_params any;
   declare grabbed any;
   declare res integer;
-  DB.DBA.RDF_GRAPH_USER_PERMS_ASSERT (graph_iri, uid, 2, 'SPARUL LOAD');
+  __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL LOAD');
   grabbed := dict_new();
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
@@ -3594,7 +3604,7 @@ create function DB.DBA.SPARUL_LOAD (in graph_iri any, in uid integer, in resourc
 
 create function DB.DBA.SPARUL_CREATE (in graph_iri any, in uid integer, in silent integer := 0, in compose_report integer := 0) returns any
 {
-  DB.DBA.RDF_GRAPH_USER_PERMS_ASSERT (graph_iri, uid, 2, 'SPARUL CREATE GRAPH');
+  __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL CREATE GRAPH');
   if (exists (select top 1 1 from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = iri_to_id (graph_iri)))
     {
       if (silent)
@@ -3633,7 +3643,7 @@ create function DB.DBA.SPARUL_CREATE (in graph_iri any, in uid integer, in silen
 
 create function DB.DBA.SPARUL_DROP (in graph_iri any, in uid any, in silent integer := 0, in compose_report integer := 0) returns any
 {
-  DB.DBA.RDF_GRAPH_USER_PERMS_ASSERT (graph_iri, uid, 2, 'SPARUL DROP GRAPH');
+  __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL DROP GRAPH');
   if (not exists (select top 1 1 from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = iri_to_id (graph_iri)))
     {
       if (silent)
@@ -3949,7 +3959,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in go
       foreach (any g in good_graphs) do
         {
           if (isiri_id (g) and g < min_bnode_iri_id () and
-            DB.DBA.RDF_GRAPH_USER_PERMS_ACK (g, uid, 1) and
+            __rgs_ack_cbk (g, uid, 1) and
             (gs_app_callback is null or bit_and (1, call (gs_app_callback) (g, gs_app_uid))) )
             vectorbld_acc (sorted_good_graphs, g);
         }
@@ -4122,7 +4132,7 @@ describe_physical_subjects:
       subj := phys_subjects [s_ctr];
       graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where O = subj and
         0 = position (G, sorted_bad_graphs) and
-        DB.DBA.RDF_GRAPH_USER_PERMS_ACK (G, uid, 1) and
+        __rgs_ack_cbk (G, uid, 1) and
         (gs_app_callback is null or bit_and (1, call (gs_app_callback) (G, gs_app_uid))) ) );
       if (graph is not null)
         dict_put (g_dict, graph, 0);
@@ -4137,7 +4147,7 @@ describe_physical_subjects:
           subj := phys_subjects [s_ctr];
           graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where S = subj and P = rdf_type_iid and
             0 = position (G, sorted_bad_graphs) and
-            DB.DBA.RDF_GRAPH_USER_PERMS_ACK (G, uid, 1) and
+            __rgs_ack_cbk (G, uid, 1) and
             (gs_app_callback is null or bit_and (1, call (gs_app_callback) (G, gs_app_uid))) ) );
           if (graph is not null)
             dict_put (g_dict, graph, 0);
@@ -4216,7 +4226,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO (in subj_dict any, in consts any, i
       foreach (any g in good_graphs) do
         {
           if (isiri_id (g) and g < min_bnode_iri_id () and
-            DB.DBA.RDF_GRAPH_USER_PERMS_ACK (g, uid, 1) and
+            __rgs_ack_cbk (g, uid, 1) and
             (gs_app_callback is null or bit_and (1, call (gs_app_callback) (g, gs_app_uid))) )
             vectorbld_acc (sorted_good_graphs, g);
         }
@@ -4382,7 +4392,7 @@ describe_physical_subjects:
       for (select P as p1, O as obj1 from DB.DBA.RDF_QUAD where
         0 = position (G, sorted_bad_graphs) and
         S = subj and
-        DB.DBA.RDF_GRAPH_USER_PERMS_ACK (G, uid, 1) and
+        __rgs_ack_cbk (G, uid, 1) and
         (gs_app_callback is null or bit_and (1, call (gs_app_callback) (G, gs_app_uid))) ) do
         {
           -- dbg_obj_princ ('found4 ', subj, p1);
@@ -4425,7 +4435,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL (in subj_dict any, in cons
       foreach (any g in good_graphs) do
         {
           if (isiri_id (g) and g < min_bnode_iri_id () and
-            DB.DBA.RDF_GRAPH_USER_PERMS_ACK (g, uid, 1) and
+            __rgs_ack_cbk (g, uid, 1) and
             (gs_app_callback is null or bit_and (1, call (gs_app_callback) (g, gs_app_uid))) )
             vectorbld_acc (sorted_good_graphs, g);
         }
@@ -4492,7 +4502,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL (in subj_dict any, in cons
           subj := phys_subjects [s_ctr];
           graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where O = subj and
               0 = position (G, sorted_bad_graphs) and
-              DB.DBA.RDF_GRAPH_USER_PERMS_ACK (G, uid, 1) and
+              __rgs_ack_cbk (G, uid, 1) and
               (gs_app_callback is null or bit_and (1, call (gs_app_callback) (G, gs_app_uid))) ) );
           if (graph is not null)
             dict_put (g_dict, graph, 0);
@@ -4507,7 +4517,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL (in subj_dict any, in cons
           subj := phys_subjects [s_ctr];
           graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where S = subj and P = rdf_type_iid and
               0 = position (G, sorted_bad_graphs) and
-              DB.DBA.RDF_GRAPH_USER_PERMS_ACK (G, uid, 1) and
+              __rgs_ack_cbk (G, uid, 1) and
               (gs_app_callback is null or bit_and (1, call (gs_app_callback) (G, gs_app_uid))) ) );
           if (graph is not null)
             dict_put (g_dict, graph, 0);
@@ -8517,6 +8527,7 @@ alter index RDF_GRAPH_USER on DB.DBA.RDF_GRAPH_USER partition cluster replicated
 create procedure DB.DBA.RDF_GRAPH_GROUP_CREATE (in group_iri varchar, in quiet integer, in member_pattern varchar := null, in comment varchar := null)
 {
   declare group_iid IRI_ID;
+  group_iri := cast (group_iri as varchar);
   group_iid := iri_to_id (group_iri);
   if (exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP where RGG_IRI = group_iri))
     {
@@ -8529,22 +8540,85 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_CREATE (in group_iri varchar, in quiet i
     }
   insert into DB.DBA.RDF_GRAPH_GROUP (
     RGG_IID, RGG_IRI, RGG_MEMBER_PATTERN, RGG_COMMENT )
-  values (iri_to_id (group_iri), group_iri, member_pattern, comment);
+  values (group_iid, group_iri, member_pattern, comment);
   dict_put (__rdf_graph_group_dict(), group_iid, vector ());
   commit work;
   jso_mark_affected (group_iri);
 }
 ;
 
+create procedure DB.DBA.RDF_GRAPH_GROUP_DROP (in group_iri varchar, in quiet integer)
+{
+  declare group_iid IRI_ID;
+  group_iri := cast (group_iri as varchar);
+  group_iid := iri_to_id (group_iri);
+  if (not exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP where RGG_IRI = group_iri))
+    {
+      if (exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP where RGG_IRI = group_iri and RGG_IID = group_iid))
+        signal ('RDF99', sprintf ('Integrity violation in DB.DBA.RDF_GRAPH_GROUP table, IRI=<%s>', group_iri));
+      if (quiet)
+        return;
+      signal ('RDF99', sprintf ('The graph group <%s> does not exist (%s)', group_iri, coalesce (
+          (select top 1 RGG_COMMENT from DB.DBA.RDF_GRAPH_GROUP where RGG_IRI = group_iri), 'group has no comment' ) ) );
+    }
+  if (group_iri = 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')
+    signal ('RDF99', sprintf ('The graph group <%s> is a special one and used to control security, can not drop it' ) );
+  delete from DB.DBA.RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = group_iid;
+  delete from DB.DBA.RDF_GRAPH_GROUP where RGG_IID = group_iid;
+  commit work;
+  dict_remove (__rdf_graph_group_dict(), group_iid);
+  jso_mark_affected (group_iri);
+  if (group_iri = 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')
+    {
+      declare privates any;
+      privates := dict_list_keys (__rdf_graph_group_of_privates_dict(), 2);
+      foreach (IRI_ID iid in privates) do
+        jso_mark_affected (id_to_iri (iid));
+    }
+}
+;
+
+create procedure DB.DBA.RDF_GRAPH_CHECK_VISIBILITY_CHANGE (in memb_iri varchar, in special_iid IRI_ID)
+{
+  declare memb_iid IRI_ID;
+  memb_iid := iri_to_id (memb_iri);
+  declare new_default_perms integer;
+  new_default_perms := (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = special_iid and RGU_USER_ID = http_nobody_uid());
+  for (select g.RGU_PERMISSIONS as g_perms, s.RGU_PERMISSIONS as s_perms, g.RGU_USER_ID as uid
+    from DB.DBA.RDF_GRAPH_USER as g left outer join DB.DBA.RDF_GRAPH_USER as s on (g.RGU_USER_ID = s.RGU_USER_ID and s.RGU_GRAPH_IID = special_iid)
+    where g.RGU_GRAPH_IID = memb_iid ) do
+    {
+      if (s_perms is not null and bit_and (s_perms, bit_not (g_perms)))
+        signal ('RDF99', sprintf ('Default %s permissions of user "%s" (UID %d) on RDF store can not be broader than permissions on specific graph <%s> so the graph can not be %s now',
+          case (equ (special_iid, #i8192)) when 0 then '"world"' else '"private area"' end,
+          (select U_NAME from DB.DBA.SYS_USERS where U_ID = uid),
+          uid,
+          memb_iri,
+          case (equ (special_iid, #i8192)) when 0 then 'removed from the "private area"' else 'added to the "private area"' end ) );
+      if (new_default_perms is not null and bit_and (new_default_perms, bit_not (g_perms)))
+        signal ('RDF99', sprintf ('Default %s permissions of unauthenticated user on RDF store can not be broader than permissions of user "%s" (UID %d)  on specific graph <%s> so the graph can not be %s now',
+          case (equ (special_iid, #i8192)) when 0 then '"world"' else '"private area"' end,
+          (select U_NAME from DB.DBA.SYS_USERS where U_ID = uid),
+          uid,
+          memb_iri,
+          case (equ (special_iid, #i8192)) when 0 then 'removed from the "private area"' else 'added to the "private area"' end ) );
+    }
+}
+;
+
 create procedure DB.DBA.RDF_GRAPH_GROUP_INS (in group_iri varchar, in memb_iri varchar)
 {
   declare group_iid, memb_iid IRI_ID;
+  group_iri := cast (group_iri as varchar);
+  memb_iri := cast (memb_iri as varchar);
   group_iid := iri_to_id (group_iri);
   memb_iid := iri_to_id (memb_iri);
   set isolation = 'serializable';
   commit work;
   if (not exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP where RGG_IRI = group_iri))
     signal ('RDF99', sprintf ('Graph group <%s> does not exist', group_iri));
+  if (group_iri = 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')
+    DB.DBA.RDF_GRAPH_CHECK_VISIBILITY_CHANGE (memb_iri, #i8192);
   insert soft DB.DBA.RDF_GRAPH_GROUP_MEMBER (RGGM_GROUP_IID, RGGM_MEMBER_IID)
   values (group_iid, memb_iid);
   dict_put (__rdf_graph_group_dict(), group_iid,
@@ -8553,18 +8627,27 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_INS (in group_iri varchar, in memb_iri v
      order by RGGM_MEMBER_IID ) );
   commit work;
   jso_mark_affected (group_iri);
+  if (group_iri = 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')
+    {
+      dict_put (__rdf_graph_group_of_privates_dict(), memb_iid, 1);
+      jso_mark_affected (memb_iri);
+    }
 }
 ;
 
 create procedure DB.DBA.RDF_GRAPH_GROUP_DEL (in group_iri varchar, in memb_iri varchar)
 {
   declare group_iid, memb_iid IRI_ID;
+  group_iri := cast (group_iri as varchar);
+  memb_iri := cast (memb_iri as varchar);
   group_iid := iri_to_id (group_iri);
   memb_iid := iri_to_id (memb_iri);
   set isolation = 'serializable';
   commit work;
   if (not exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP where RGG_IRI = group_iri))
     signal ('RDF99', sprintf ('Graph group <%s> does not exist', group_iri));
+  if (group_iri = 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')
+    DB.DBA.RDF_GRAPH_CHECK_VISIBILITY_CHANGE (memb_iri, #i0);
   delete from DB.DBA.RDF_GRAPH_GROUP_MEMBER
   where RGGM_GROUP_IID = group_iid and RGGM_MEMBER_IID = memb_iid;
   dict_put (__rdf_graph_group_dict(), group_iid,
@@ -8572,7 +8655,11 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_DEL (in group_iri varchar, in memb_iri v
      where RGGM_GROUP_IID = group_iid
      order by RGGM_MEMBER_IID ) );
   commit work;
-  jso_mark_affected (group_iri);
+  if (group_iri = 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')
+    {
+      dict_remove (__rdf_graph_group_of_privates_dict(), memb_iid);
+      jso_mark_affected (memb_iri);
+    }
 }
 ;
 
@@ -8589,10 +8676,7 @@ create function DB.DBA.RDF_GRAPH_USER_PERMS_GET (in graph_iri varchar, in uid an
     return 1023;
   res := coalesce (
     (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = graph_iid and RGU_USER_ID = uid),
-    (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = graph_iid and RGU_USER_ID = http_nobody_uid()),
-    (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i0 and RGU_USER_ID = uid),
-    (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i0 and RGU_USER_ID = http_nobody_uid()),
-    15 );
+    __rdf_graph_approx_perms (graph_iid, uid) );
   return res;
 }
 ;
@@ -8617,14 +8701,13 @@ create function DB.DBA.RDF_GRAPH_USER_PERMS_ACK (in graph_iri any, in uid any, i
   if (uid is null)
     perms := 0;
   else if (uid = 0)
-    perms := 255;
+    perms := 1023;
   else
-    perms := coalesce (
-      (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = graph_iid and RGU_USER_ID = uid),
-      (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = graph_iid and RGU_USER_ID = http_nobody_uid()),
-      (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i0 and RGU_USER_ID = uid),
-      (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i0 and RGU_USER_ID = http_nobody_uid()),
-      15 );
+    {
+      perms := __rdf_graph_approx_perms (graph_iid, uid);
+      if (bit_and (perms, req_perms) <> req_perms)
+        perms := coalesce ((select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = graph_iid and RGU_USER_ID = uid), perms);
+    }
   if (bit_and (perms, req_perms) <> req_perms)
     return 0;
   if (app_cbk is not null)
@@ -8658,6 +8741,7 @@ create function DB.DBA.RDF_GRAPH_USER_PERMS_ASSERT (in graph_iri varchar, in uid
   declare graph_iid IRI_ID;
   declare perms integer;
   -- dbg_obj_princ ('DB.DBA.RDF_GRAPH_USER_PERMS_ASSERT (', graph_iri, uid, req_perms, opname, ')');
+  return __rgs_assert_cbk (graph_iri, uid, req_perms, opname);
   graph_iid := iri_to_id (graph_iri);
   if (__tag (uid) = __tag of vector)
     {
@@ -8672,7 +8756,7 @@ create function DB.DBA.RDF_GRAPH_USER_PERMS_ASSERT (in graph_iri varchar, in uid
   if (uid is null)
     perms := 0;
   else if (uid = 0)
-    perms := 255;
+    perms := 1023;
   else
     perms := coalesce (
       (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = graph_iid and RGU_USER_ID = uid),
@@ -8698,36 +8782,65 @@ create function DB.DBA.RDF_GRAPH_USER_PERMS_ASSERT (in graph_iri varchar, in uid
 }
 ;
 
-create procedure DB.DBA.RDF_DEFAULT_USER_PERMS_SET (in uname varchar, in perms integer)
+create procedure DB.DBA.RDF_DEFAULT_USER_PERMS_SET (in uname varchar, in perms integer, in set_private integer := 0)
 {
   declare uid integer;
+  declare special_iid IRI_ID;
+  -- dbg_obj_princ ('gs_hist.sql'); string_to_file ('gs_hist.sql', sprintf ('-- DB.DBA.RDF_DEFAULT_USER_PERMS_SET (''%s'', %d, %d);\n', uname, perms, set_private), -1);
   uid := ((select U_ID from DB.DBA.SYS_USERS where U_NAME = uname and (U_NAME='nobody' or (U_SQL_ENABLE and not U_ACCOUNT_DISABLED))));
   set isolation = 'serializable';
   commit work;
   if (uid is null)
     signal ('RDF99', sprintf ('No active SQL user "%s" found, can not set its default permissions on RDF quad storage', uname));
+  if (set_private)
+    {
+      special_iid := #i8192;
   for (select RGU_GRAPH_IID, RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER
-    where RGU_GRAPH_IID <> #i0 and RGU_USER_ID = uid and bit_and (bit_not (RGU_PERMISSIONS), perms) <> 0 ) do
-    signal ('RDF99', sprintf ('Default permissions of user "%s" on RDF quad store can not become broader than permissions on specific graph <%s>',
+        where RGU_GRAPH_IID <> #i0 and RGU_GRAPH_IID <> #i8192 and
+          RGU_USER_ID = uid and bit_and (bit_not (RGU_PERMISSIONS), perms) <> 0 and
+          exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP_MEMBER where
+              RGGM_GROUP_IID = iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs') and
+              RGGM_MEMBER_IID = RGU_GRAPH_IID ) ) do
+        signal ('RDF99', sprintf ('Default "private area" permissions of user "%s" on RDF quad store can not become broader than permissions on specific "private" graph <%s>',
         uname, id_to_iri (RGU_GRAPH_IID) ) );
+    }
+  else
+    {
+      special_iid := #i0;
+      for (select RGU_GRAPH_IID, RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER
+        where RGU_GRAPH_IID <> #i0 and RGU_GRAPH_IID <> #i8192 and
+          RGU_USER_ID = uid and bit_and (bit_not (RGU_PERMISSIONS), perms) <> 0 and
+          not exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP_MEMBER where
+              RGGM_GROUP_IID = iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs') and
+              RGGM_MEMBER_IID = RGU_GRAPH_IID ) ) do
+        signal ('RDF99', sprintf ('Default "world" permissions of user "%s" on RDF quad store can not become broader than permissions on specific "world" graph <%s>',
+            uname, id_to_iri (RGU_GRAPH_IID) ) );
+    }
   if (uname='nobody')
     {
       for (select RGU_USER_ID, RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER
-        where RGU_USER_ID <> uid and RGU_GRAPH_IID = #i0 and bit_and (bit_not (RGU_PERMISSIONS), perms) <> 0 ) do
-          signal ('RDF99', sprintf ('Default permissions of unauthenticated user ("nobody") on RDF quad store can not become broader than default permissions of user %s (UID %d)',
+        where RGU_USER_ID <> uid and RGU_GRAPH_IID = special_iid and bit_and (bit_not (RGU_PERMISSIONS), perms) <> 0 ) do
+          signal ('RDF99', sprintf ('Default %s permissions of unauthenticated user ("nobody") on RDF quad store can not become broader than permissions of user %s (UID %d)',
+            (case (set_private) when 0 then '"world"' else '"private area"' end),
             (select top 1 U_NAME from Db.DBA.SYS_USERS where U_ID = RGU_USER_ID), RGU_USER_ID) );
 -- This is not required:
 --      for (select RGU_GRAPH_IID, RGU_USER_ID, RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_USER_ID <> uid and RGU_GRAPH_IID <> #i0 and bit_and (bit_not (RGU_PERMISSIONS), perms) <> 0)
 --        signal ('RDF99', sprintf ('Default permissions of unauthenticated user ("nobody") on RDF quad store can not become broader than permissions of user %s (UID %d) on specific graph <%s>',
 --          (select top 1 U_NAME from Db.DBA.SYS_USER where U_ID = RGU_USER_ID), RGU_USER_ID, id_to_iri (RGU_GRAPH_IID) ) );
     }
-  if ((uname <> 'dba') and not (exists (select top 1 1 from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i0 and RGU_USER_ID = 0)))
+  if (uname <> 'dba')
+    {
+      if (not (exists (select top 1 1 from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i0 and RGU_USER_ID = 0)))
     DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('dba', 1023);
+      if (not (exists (select top 1 1 from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i8192 and RGU_USER_ID = 0)))
+        DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('dba', 1023, 1);
+    }
   insert replacing DB.DBA.RDF_GRAPH_USER (RGU_GRAPH_IID, RGU_USER_ID, RGU_PERMISSIONS)
-  values (#i0, uid, perms);
-  dict_put (__rdf_graph_default_perms_of_user_dict(), uid, perms);
+  values (special_iid, uid, perms);
+  -- dbg_obj_princ ('gs_hist.sql'); string_to_file ('gs_hist.sql', sprintf ('insert replacing DB.DBA.RDF_GRAPH_USER (RGU_GRAPH_IID, RGU_USER_ID, RGU_PERMISSIONS) values (%s, %d, %d);\n', cast (special_iid as varchar), uid, perms), -1);
+  dict_put (__rdf_graph_default_perms_of_user_dict(set_private), uid, perms);
   if (uid = http_nobody_uid())
-    dict_put (__rdf_graph_public_perms_dict(), #i0, perms);
+    dict_put (__rdf_graph_public_perms_dict(), special_iid, perms);
   commit work;
   if (uname = 'nobody')
     {
@@ -8746,16 +8859,25 @@ create procedure DB.DBA.RDF_DEFAULT_USER_PERMS_SET (in uname varchar, in perms i
 create procedure DB.DBA.RDF_GRAPH_USER_PERMS_SET (in graph_iri varchar, in uname varchar, in perms integer)
 {
   declare graph_iid IRI_ID;
-  declare uid, common_perms integer;
+  declare uid, graph_is_private, common_perms integer;
+  declare special_iid IRI_ID;
+  -- dbg_obj_princ ('gs_hist.sql'); string_to_file ('gs_hist.sql', sprintf ('-- DB.DBA.RDF_GRAPH_USER_PERMS_SET (''%s'', ''%s'', %d);\n', graph_iri, uname, perms), -1);
   graph_iid := iri_to_id (graph_iri);
   uid := ((select U_ID from DB.DBA.SYS_USERS where U_NAME = uname and (U_NAME='nobody' or (U_SQL_ENABLE and not U_ACCOUNT_DISABLED))));
   set isolation = 'serializable';
   commit work;
   if (uid is null)
     signal ('RDF99', sprintf ('No active SQL user "%s" found, can not set its permissions on graph <%s>', uname, graph_iri));
+  graph_is_private := (select count (1) from DB.DBA.RDF_GRAPH_GROUP_MEMBER where
+    RGGM_GROUP_IID = iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs') and
+    RGGM_MEMBER_IID = graph_iid );
+  if (graph_is_private)
+    special_iid := #i8192;
+  else
+    special_iid := #i0;
   common_perms := coalesce (
-    (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i0 and RGU_USER_ID = uid),
-    (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i0 and RGU_USER_ID = http_nobody_uid()),
+    (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = special_iid and RGU_USER_ID = uid),
+    (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = special_iid and RGU_USER_ID = http_nobody_uid()),
     15 );
   if (bit_and (bit_not (perms), common_perms))
     signal ('RDF99', sprintf ('Default permissions of user "%s" on RDF quad store are broader than new permissions on specific graph <%s>', uname, graph_iri));
@@ -8765,17 +8887,24 @@ create procedure DB.DBA.RDF_GRAPH_USER_PERMS_SET (in graph_iri varchar, in uname
     {
       common_perms := coalesce (
         (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = graph_iid and RGU_USER_ID = http_nobody_uid()),
-        (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i0 and RGU_USER_ID = http_nobody_uid()),
+        (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = special_iid and RGU_USER_ID = http_nobody_uid()),
         15 );
       if (bit_and (bit_not (perms), common_perms))
         signal ('RDF99', sprintf ('Permissions of unauthenticated user are broader than new permissions of user "%s" on specific graph <%s>', uname, graph_iri));
     }
   if (not (exists (select top 1 1 from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i0 and RGU_USER_ID = 0)))
     DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('dba', 1023);
+  if (not (exists (select top 1 1 from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i8192 and RGU_USER_ID = 0)))
+    DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('dba', 1023, 1);
   insert replacing DB.DBA.RDF_GRAPH_USER (RGU_GRAPH_IID, RGU_USER_ID, RGU_PERMISSIONS)
   values (graph_iid, uid, perms);
+  -- dbg_obj_princ ('gs_hist.sql'); string_to_file ('gs_hist.sql', sprintf ('insert replacing DB.DBA.RDF_GRAPH_USER (RGU_GRAPH_IID, RGU_USER_ID, RGU_PERMISSIONS) values (%s, %d, %d);\n', cast (graph_iid as varchar), uid, perms), -1);
   if (uid = http_nobody_uid())
     dict_put (__rdf_graph_public_perms_dict(), graph_iid, perms);
+  else
+    __rdf_graph_specific_perms_of_user (graph_iid, uid, perms);
+  commit work;
+  jso_mark_affected (id_to_iri (graph_iid));
   commit work;
 }
 ;
@@ -8783,19 +8912,29 @@ create procedure DB.DBA.RDF_GRAPH_USER_PERMS_SET (in graph_iri varchar, in uname
 create function DB.DBA.RDF_GRAPH_GROUP_LIST_GET (in group_iri any, in extra_graphs any, in uid any, in gs_app_cbk varchar, in gs_app_uid varchar, in req_perms integer) returns any
 {
   declare group_iid IRI_ID;
-  declare common_perms, perms integer;
-  declare full_list, filtered_list any;
+  declare world_perms, private_perms, common_perms, perms integer;
+  declare perms_dict, full_list, filtered_list any;
   -- dbg_obj_princ ('DB.DBA.RDF_GRAPH_GROUP_LIST_GET (', group_iri, extra_graphs, uid, req_perms, ')');
   if (isstring (uid))
     uid := ((select U_ID from DB.DBA.SYS_USERS where U_NAME = uid and (U_NAME='nobody' or (U_SQL_ENABLE and not U_ACCOUNT_DISABLED))));
   if (uid is null)
     return vector ();
-  common_perms := coalesce (
-    dict_get (__rdf_graph_default_perms_of_user_dict(), uid, NULL),
-    dict_get (__rdf_graph_default_perms_of_user_dict(), 0, NULL),
+  perms_dict := __rdf_graph_default_perms_of_user_dict(0);
+  world_perms := coalesce (
+    dict_get (perms_dict, uid, NULL),
+    dict_get (perms_dict, 0, NULL),
+    15 );
+  perms_dict := __rdf_graph_default_perms_of_user_dict(1);
+  private_perms := coalesce (
+    dict_get (perms_dict, uid, NULL),
+    dict_get (perms_dict, 0, NULL),
     15 );
   if (gs_app_cbk is not null)
-    common_perms := bit_and (common_perms, call (gs_app_cbk)(#i0, gs_app_uid));
+    {
+      world_perms := bit_and (world_perms, call (gs_app_cbk)(#i0, gs_app_uid));
+      private_perms := bit_and (private_perms, call (gs_app_cbk)(#i8192, gs_app_uid));
+    }
+  common_perms := bit_and (world_perms, private_perms);
   -- dbg_obj_princ ('DB.DBA.RDF_GRAPH_GROUP_LIST_GET: common_perms = ', common_perms);
   if (__tag (group_iri) = __tag of vector)
     {
@@ -8805,11 +8944,12 @@ create function DB.DBA.RDF_GRAPH_GROUP_LIST_GET (in group_iri any, in extra_grap
           group_iid := iri_to_id (g_iri);
           if (not bit_and (common_perms, 8))
             {
+              perms := __rdf_graph_approx_perms (group_iid, uid);
+              if (not bit_and (perms, 8))
               perms := coalesce (
                 (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = group_iid and RGU_USER_ID = uid),
-                dict_get (__rdf_graph_public_perms_dict(), group_iid, NULL),
-                common_perms );
-              if (bit_and (perms, 8) and gs_app_cbk is not null)
+                  perms );
+              if (gs_app_cbk is not null and bit_and (perms, 8))
                 perms := bit_and (perms, call (gs_app_cbk)(group_iid, gs_app_uid));
               -- dbg_obj_princ ('DB.DBA.RDF_GRAPH_GROUP_LIST_GET: perms for list = ', perms);
             }
@@ -8825,11 +8965,12 @@ create function DB.DBA.RDF_GRAPH_GROUP_LIST_GET (in group_iri any, in extra_grap
       group_iid := iri_to_id (group_iri);
       if (not bit_and (common_perms, 8))
         {
+          perms := __rdf_graph_approx_perms (group_iid, uid);
+          if (not bit_and (perms, 8))
           perms := coalesce (
             (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = group_iid and RGU_USER_ID = uid),
-            dict_get (__rdf_graph_public_perms_dict(), group_iid, NULL),
-            common_perms );
-          if (bit_and (perms, 8) and gs_app_cbk is not null)
+              perms );
+          if (gs_app_cbk is not null and bit_and (perms, 8))
             perms := bit_and (perms, call (gs_app_cbk)(group_iid, gs_app_uid));
           -- dbg_obj_princ ('DB.DBA.RDF_GRAPH_GROUP_LIST_GET: perms for list = ', perms);
         }
@@ -8857,10 +8998,12 @@ create function DB.DBA.RDF_GRAPH_GROUP_LIST_GET (in group_iri any, in extra_grap
   vectorbld_init (filtered_list);
   foreach (IRI_ID member_iid in full_list) do
     {
+      perms := __rdf_graph_approx_perms (member_iid, uid);
+      if (bit_and (perms, req_perms) <> req_perms)
       perms := coalesce (
         (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = member_iid and RGU_USER_ID = uid),
         dict_get (__rdf_graph_public_perms_dict(), member_iid, NULL),
-        common_perms );
+          perms );
       if (gs_app_cbk is not null and bit_and (perms, req_perms) = req_perms)
         perms := bit_and (perms, call (gs_app_cbk)(member_iid, gs_app_uid));
       -- dbg_obj_princ ('DB.DBA.RDF_GRAPH_GROUP_LIST_GET: perms for ', member_iid, ' = ', perms);
@@ -9090,8 +9233,8 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_FORGET_HTTP_RESPONSE to SPARQL_UPDATE',
     'grant execute on DB.DBA.TTLP_EV_COMMIT to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_PROC_COLS to "SPARQL"',
-    'grant execute on DB.DBA.RDF_GRAPH_USER_PERMS_ACK to "SPARQL_SELECT"',
-    'grant execute on DB.DBA.RDF_GRAPH_USER_PERMS_ASSERT to "SPARQL_SELECT"',
+    'grant execute on DB.DBA.RDF_GRAPH_USER_PERMS_ACK to "SPARQL_SELECT"', -- DEPRECATED
+    'grant execute on DB.DBA.RDF_GRAPH_USER_PERMS_ASSERT to "SPARQL_SELECT"', -- DEPRECATED
     'grant execute on DB.DBA.RDF_GRAPH_GROUP_LIST_GET to "SPARQL_SELECT"' );
   foreach (varchar cmd in cmds) do
     {
@@ -9184,10 +9327,16 @@ create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
       (select DB.DBA.VECTOR_AGG (RGGM_MEMBER_IID) from DB.DBA.RDF_GRAPH_GROUP_MEMBER as gm
          where gm.RGGM_GROUP_IID = g.RGG_IID order by gm.RGGM_MEMBER_IID ) ) )
     from DB.DBA.RDF_GRAPH_GROUP as g );
-  fake := (select count (dict_put (__rdf_graph_default_perms_of_user_dict(), RGU_USER_ID, RGU_PERMISSIONS))
+  fake := (select count (dict_put (__rdf_graph_group_of_privates_dict(), RGGM_MEMBER_IID, 1))
+    from DB.DBA.RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = iri_to_id('PrivateGraphs'));
+  fake := (select count (dict_put (__rdf_graph_default_perms_of_user_dict(0), RGU_USER_ID, RGU_PERMISSIONS))
     from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i0 );
+  fake := (select count (dict_put (__rdf_graph_default_perms_of_user_dict(1), RGU_USER_ID, RGU_PERMISSIONS))
+    from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i8192 );
   fake := (select count (dict_put (__rdf_graph_public_perms_dict(), RGU_GRAPH_IID, RGU_PERMISSIONS))
     from DB.DBA.RDF_GRAPH_USER where RGU_USER_ID = http_nobody_uid () );
+  fake := (select count (__rdf_graph_specific_perms_of_user (RGU_GRAPH_IID, RGU_USER_ID, RGU_PERMISSIONS))
+    from DB.DBA.RDF_GRAPH_USER where RGU_USER_ID <> http_nobody_uid () and not (RGU_GRAPH_IID in (#i0, #i8192)) );    
   if (0 = sys_stat ('cl_run_local_only'))
     return;
   if (244 = coalesce ((select COL_DTP from SYS_COLS where "TABLE" = 'DB.DBA.RDF_QUAD' and "COLUMN"='G'), 0))

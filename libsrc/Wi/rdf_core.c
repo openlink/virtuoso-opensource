@@ -563,6 +563,8 @@ ttlp_free (ttlp_t *ttlp)
     dk_free_tree ((box_t) dk_set_pop (&(ttlp->ttlp_namespaces)));
   while (NULL != ttlp->ttlp_saved_uris)
     dk_free_tree ((box_t) dk_set_pop (&(ttlp->ttlp_saved_uris)));
+  while (NULL != ttlp->ttlp_unused_seq_bnodes)
+    dk_free_tree ((box_t) dk_set_pop (&(ttlp->ttlp_unused_seq_bnodes)));
   dk_free_tree (ttlp->ttlp_last_complete_uri);
   dk_free_tree (ttlp->ttlp_subj_uri);
   dk_free_tree (ttlp->ttlp_pred_uri);

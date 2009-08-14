@@ -28,6 +28,7 @@
 #include "rdf_core.h"
 #include "http.h" /* For DKS_ESC_XXX constants */
 #include "date.h" /* For DT_TYPE_DATE and the like */
+#include "security.h" /* For sec_check_dba() */
 
 void
 rb_complete (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance_t * */ caller_qi_v)
@@ -1861,7 +1862,6 @@ iri_cast_talis_json_qname (query_instance_t *qi, caddr_t iri_or_id, caddr_t *iri
       return 1;
     case DV_IRI_ID: case DV_IRI_ID_8:
       {
-        int res;
         iri_id_t iid = unbox_iri_id (iri_or_id);
         if (0L == iid)
           return 0;
@@ -2327,26 +2327,381 @@ id_hash_t *rdf_graph_group_dict_htable;
 id_hash_iterator_t *rdf_graph_public_perms_dict_hit;
 id_hash_t *rdf_graph_public_perms_dict_htable;
 
-id_hash_iterator_t *rdf_graph_default_perms_of_user_dict_hit;
-id_hash_t *rdf_graph_default_perms_of_user_dict_htable;
+id_hash_iterator_t *rdf_graph_group_of_privates_dict_hit;
+id_hash_t *rdf_graph_group_of_privates_dict_htable;
+
+id_hash_iterator_t *rdf_graph_default_world_perms_of_user_dict_hit;
+id_hash_t *rdf_graph_default_world_perms_of_user_dict_htable;
+
+id_hash_iterator_t *rdf_graph_default_private_perms_of_user_dict_hit;
+id_hash_t *rdf_graph_default_private_perms_of_user_dict_htable;
 
 caddr_t
 bif_rdf_graph_group_dict (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  sec_check_dba ((query_instance_t *)qst, "__rdf_graph_group_dict");
   return box_copy (rdf_graph_group_dict_hit);
 }
 
 caddr_t
 bif_rdf_graph_public_perms_dict (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  sec_check_dba ((query_instance_t *)qst, "__rdf_graph_public_perms_dict");
   return box_copy (rdf_graph_public_perms_dict_hit);
+}
+
+caddr_t
+bif_rdf_graph_group_of_privates_dict (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  sec_check_dba ((query_instance_t *)qst, "__rdf_graph_group_of_privates_dict");
+  return box_copy (rdf_graph_group_of_privates_dict_hit);
 }
 
 caddr_t
 bif_rdf_graph_default_perms_of_user_dict (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  return box_copy (rdf_graph_default_perms_of_user_dict_hit);
+  sec_check_dba ((query_instance_t *)qst, "__rdf_graph_default_perms_of_user_dict");
+  if (bif_long_arg (qst, args, 0, "__rdf_graph_default_perms_of_user_dict"))
+    return box_copy (rdf_graph_default_private_perms_of_user_dict_hit);
+  return box_copy (rdf_graph_default_world_perms_of_user_dict_hit);
 }
+
+int
+rdf_graph_specific_perms_of_user (user_t *u, iri_id_t g_iid)
+{
+  boxint res;
+  /*int old_buckets;*/
+  if (NULL == u)
+    return 0;
+  if (NULL == u->usr_rdf_graph_perms)
+    return 0;
+  mutex_enter (u->usr_rdf_graph_perms->ht_mutex);
+  gethash_64 (res, (boxint)g_iid, u->usr_rdf_graph_perms);
+  mutex_leave (u->usr_rdf_graph_perms->ht_mutex);
+  return res;
+}
+
+int
+rdf_graph_configured_perms (query_instance_t *qst, caddr_t graph_boxed_iid, user_t *u, int check_usr_rdf_graph_perms, int req_perms)
+{
+  int perms = 0;
+  oid_t u_id;
+  int graph_is_private;
+  id_hash_t *dict;
+  caddr_t *hit;
+  if (NULL == u)
+    return ((0 == req_perms) ? 0x8000 : 0);
+  u_id = u->usr_id;
+  do {
+      if (U_ID_DBA == u_id)
+        {
+          perms = 0x8000 | 0x3FF;
+          break;
+        }
+      hit = (caddr_t *)id_hash_get (rdf_graph_public_perms_dict_htable, (caddr_t)(&graph_boxed_iid));
+      if (NULL != hit)
+        {
+          perms = 0x8000 | unbox (hit[0]);
+          if (!(req_perms & ~perms))
+            break;
+        }
+      graph_is_private = (NULL != id_hash_get (rdf_graph_group_of_privates_dict_htable, (caddr_t)(&graph_boxed_iid)));
+      dict = graph_is_private ? rdf_graph_default_private_perms_of_user_dict_htable : rdf_graph_default_world_perms_of_user_dict_htable;
+      hit = (caddr_t *)id_hash_get (dict, (caddr_t)(&u_id));
+      if (NULL != hit)
+        {
+          perms |= 0x8000 | unbox (hit[0]);
+          if (!(req_perms & ~perms))
+            break;
+        }
+      else if (u_id != U_ID_NOBODY)
+        { /* No need to check default perms of nobody if defauld perms of the user are checked already, because user's are surely not more restrictive */
+          hit = (caddr_t *)id_hash_get (dict, (caddr_t)(&boxed_nobody_uid));
+          if (NULL != hit)
+            {
+              perms |= 0x8000 | unbox (hit[0]);
+              if (!(req_perms & ~perms))
+                break;
+            }
+        }
+      if (check_usr_rdf_graph_perms && (NULL != u->usr_rdf_graph_perms))
+        {
+          int p;
+          gethash_64 (p, unbox_iri_int64(graph_boxed_iid), u->usr_rdf_graph_perms);
+          perms |= p; /* No need in "0x8000 | p" because zero can not be stored here under any circumstances */
+          if (!(req_perms & ~perms))
+            break;
+        }
+      if (0 == perms) /* there were no related perms at all */
+        perms = RDF_GRAPH_PERM_DEFAULT;
+      break;
+    } while (0);
+  return perms;
+}
+
+int
+rdf_graph_app_cbk_perms (query_instance_t *qst, caddr_t graph_boxed_iid, user_t *u, caddr_t app_cbk, caddr_t app_uid, caddr_t *err_ret)
+{
+  static query_t *app_cbk_qr = NULL;
+  local_cursor_t * lc = NULL;
+  client_connection_t *cli = qst->qi_client;
+  if (NULL == app_cbk_qr)
+    app_cbk_qr = sql_compile_static ("call (?)(?, ?)", bootstrap_cli, err_ret, SQLC_DEFAULT);
+  err_ret[0] = qr_quick_exec (app_cbk_qr, cli, NULL, &lc, 3,
+      ":0", app_cbk, QRP_STR,
+      ":1", box_copy_tree (graph_boxed_iid), QRP_RAW,
+      ":2", app_uid, QRP_STR );
+  if (lc && DV_ARRAY_OF_POINTER == DV_TYPE_OF (lc->lc_proc_ret)
+      && BOX_ELEMENTS ((caddr_t *)lc->lc_proc_ret) > 1)
+    return unbox (((caddr_t *)lc->lc_proc_ret)[1]);
+  return 0;
+}
+
+caddr_t
+bif_rdf_graph_specific_perms_of_user (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *)qst;
+  oid_t u_id;
+  user_t *u;
+  boxint perms;
+  iri_id_t g_iid = bif_iri_id_arg (qst, args, 0, "__rdf_graph_specific_perms_of_user");
+  switch (BOX_ELEMENTS (args))
+    {
+    case 1:
+      u = sec_id_to_user (qi->qi_u_id);
+      return box_num (rdf_graph_specific_perms_of_user (u, g_iid));
+    case 2:
+      sec_check_dba (qi, "__rdf_graph_specific_perms_of_user");
+      u_id = bif_long_arg (qst, args, 1, "__rdf_graph_specific_perms_of_user");
+      u = sec_id_to_user (u_id);
+      return box_num (rdf_graph_specific_perms_of_user (u, g_iid));
+    default:
+      sec_check_dba (qi, "__rdf_graph_specific_perms_of_user");
+      u_id = bif_long_arg (qst, args, 1, "__rdf_graph_specific_perms_of_user");
+      perms = bif_long_arg (qst, args, 2, "__rdf_graph_specific_perms_of_user");
+      u = sec_id_to_user (u_id);
+      if (NULL == u)
+        sqlr_new_error ("42000", "SR608", "__rdf_graph_specific_perms_of_user() has got an invalid user ID");
+      if (0 > perms)
+        {
+          if (NULL != u->usr_rdf_graph_perms)
+            {
+              mutex_enter (u->usr_rdf_graph_perms->ht_mutex);
+              remhash_64 (g_iid, u->usr_rdf_graph_perms);
+              mutex_leave (u->usr_rdf_graph_perms->ht_mutex);
+            }
+        }
+      else
+        {
+          if (NULL == u->usr_rdf_graph_perms)
+            {
+              dk_hash_64_t *ht = hash_table_allocate_64 (97);
+              ht->ht_mutex = mutex_allocate ();
+              u->usr_rdf_graph_perms = ht;
+            }
+          mutex_enter (u->usr_rdf_graph_perms->ht_mutex);
+          sethash_64 (g_iid, u->usr_rdf_graph_perms, perms);
+          mutex_leave (u->usr_rdf_graph_perms->ht_mutex);
+        }
+      return 0;
+    }
+}
+
+caddr_t
+bif_rdf_graph_approx_perms (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *)qst;
+  caddr_t graph_boxed_iid, u_id;
+  int graph_is_private;
+  id_hash_t *dict;
+  caddr_t *hit;
+  sec_check_dba (qi, "__rdf_graph_approx_perms");
+  graph_boxed_iid = bif_arg (qst, args, 0, "__rdf_graph_approx_perms");
+  u_id = bif_arg (qst, args, 1, "__rdf_graph_approx_perms");
+  hit = (caddr_t *)id_hash_get (rdf_graph_public_perms_dict_htable, (caddr_t)(&graph_boxed_iid));
+  if (NULL != hit)
+    return box_copy_tree (hit[0]);
+  graph_is_private = (NULL != id_hash_get (rdf_graph_group_of_privates_dict_htable, (caddr_t)(&graph_boxed_iid)));
+  dict = graph_is_private ? rdf_graph_default_private_perms_of_user_dict_htable : rdf_graph_default_world_perms_of_user_dict_htable;
+  hit = (caddr_t *)id_hash_get (dict, (caddr_t)(&u_id));
+  if (NULL != hit)
+    return box_copy_tree (hit[0]);
+  hit = (caddr_t *)id_hash_get (dict, (caddr_t)(&boxed_nobody_uid));
+  if (NULL != hit)
+    return box_copy_tree (hit[0]);
+  return box_num (RDF_GRAPH_PERM_DEFAULT);
+}
+
+const char *
+rdf_graph_user_perm_title (int perm)
+{
+  if (perm & 0x1) return "read";
+  if (perm & 0x2) return "write";
+  if (perm & 0x4) return "sponge";
+  if (perm & 0x8) return "get-group-list";
+  return "gs-special";
+}
+
+#define RGU_GET 0
+#define RGU_ACK 1
+#define RGU_ASSERT 2
+
+caddr_t
+bif_rgs_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char *fname, int mode, int bif_uses_index)
+{
+  query_instance_t *qi = (query_instance_t *)qst;
+  user_t *u = NULL;
+  caddr_t app_cbk = NULL;
+  caddr_t app_uid = NULL;
+  oid_t uid;
+  int perms, failed_perms;
+  caddr_t graph = bif_arg (qst, args, 0, "rgs_assert");
+  caddr_t graph_boxed_iid = NULL;
+  caddr_t graph_iri = NULL;
+  int req_perms = bif_long_arg (qst, args, 2, "rgs_assert");
+  const char *opname = (3 < BOX_ELEMENTS (args)) ? bif_string_arg (qst, args, 3, "rgs_assert") : "SPARQL query";
+  const char *user_type = "database";
+  if (DV_IRI_ID == DV_TYPE_OF (graph))
+    graph_boxed_iid = graph;
+  else if (bif_uses_index && (((DV_STRING == DV_TYPE_OF (graph)) /*&& (BF_IRI & box_flags(graph))*/) || (DV_UNAME == DV_TYPE_OF (graph))))
+    {
+      caddr_t err = NULL;
+      graph_boxed_iid = iri_to_id (qst, graph, IRI_TO_ID_WITH_CREATE, &err);
+      if (NULL == graph_boxed_iid)
+        {
+          dk_free_tree (err);
+          return NEW_DB_NULL;
+        }
+    }
+  else
+    return NEW_DB_NULL;
+/* Now we know that the graph is OK so it's time to get user */
+  if (bif_uses_index)
+    {
+      caddr_t *user_and_cbk = (caddr_t *)bif_arg (qst, args, 1, fname);
+      if ((DV_STRING == DV_TYPE_OF (user_and_cbk)) || (DV_LONG_INT == DV_TYPE_OF (user_and_cbk)))
+        u = bif_user_t_arg (qst, args, 1, fname, (USER_SHOULD_EXIST | USER_SHOULD_BE_SQL_ENABLED | USER_NOBODY_IS_PERMITTED), 1);
+      else
+        {
+          caddr_t uid_or_uname;
+          if ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (user_and_cbk)) ||
+            (3 != BOX_ELEMENTS (user_and_cbk)) ||
+            ((DV_LONG_INT != DV_TYPE_OF (user_and_cbk[0])) && (DV_STRING != DV_TYPE_OF (user_and_cbk[0]))) ||
+            (DV_STRING != DV_TYPE_OF (user_and_cbk[1])) )
+            sqlr_new_error ("22023", "SR616",
+              "The second argument of %s() should be a string (user name), an integer (user ID) or an array of special format", fname );
+          uid_or_uname = user_and_cbk[0];
+          app_cbk = user_and_cbk[1];
+          app_uid = user_and_cbk[2];
+          u = bif_user_t_arg_int (uid_or_uname, 1, fname, (USER_SHOULD_EXIST | USER_SHOULD_BE_SQL_ENABLED | USER_NOBODY_IS_PERMITTED), 1);
+        }
+    }
+  else
+    u = bif_user_t_arg (qst, args, 1, fname, (USER_SHOULD_EXIST | USER_SHOULD_BE_SQL_ENABLED | USER_NOBODY_IS_PERMITTED), 1);
+/* At this point, u is set for sure, app_cbk and app_uid can be set if bif_uses_index */
+  if (NULL == u)
+    {
+      if (graph_boxed_iid != graph)
+        dk_free_tree (graph_boxed_iid);
+      return (caddr_t)((ptrlong)((0 == req_perms) ? 1 : 0));
+    }
+  uid = u->usr_id;
+  perms = rdf_graph_configured_perms (qi, graph_boxed_iid, u, 1, req_perms);
+  failed_perms = req_perms & ~perms;
+  if (failed_perms && (RGU_ASSERT == mode))
+    goto assertion_failed; /* see below */
+  if (NULL != app_cbk)
+    {
+      caddr_t err = NULL;
+      int perms_of_cbk = rdf_graph_app_cbk_perms (qi, graph_boxed_iid, u, app_cbk, app_uid, &err);
+      perms &= perms_of_cbk;
+      failed_perms = req_perms & ~perms;
+      if (failed_perms && (RGU_ASSERT == mode))
+        {
+          user_type = "application";
+          goto assertion_failed; /* see below */
+        }
+    }
+  if (graph_boxed_iid != graph)
+    dk_free_tree (graph_boxed_iid);
+  switch (mode)
+    {
+    case RGU_ACK:
+      return (caddr_t)((ptrlong)((req_perms & ~perms) ? 0 : 1));
+    case RGU_ASSERT:
+      return box_copy (graph);
+    default:
+      return box_num (perms);
+    }
+
+assertion_failed:
+    {
+      caddr_t err;
+      iri_id_t graph_iid = unbox_iri_id (graph_boxed_iid);
+      if ((min_bnode_iri_id () <= graph_iid) && (min_named_bnode_iri_id () > graph_iid))
+        graph_iri = BNODE_IID_TO_LABEL(graph_iid);
+      else if (bif_uses_index)
+        graph_iri = key_id_to_iri (qi, graph_iid);
+      else
+        {
+          char tmp[40];
+          if (graph_iid >= MIN_64BIT_BNODE_IRI_ID)
+            snprintf (tmp, sizeof (tmp), "#ib" BOXINT_FMT, (boxint)(graph_iid-MIN_64BIT_BNODE_IRI_ID));
+          else
+            snprintf (tmp, sizeof (tmp), "#i" BOXINT_FMT, (boxint)(graph_iid));
+          graph_iri = box_dv_short_string (tmp);
+        }
+      err = srv_make_new_error ("RDF02", "SR619", "%.50s access denied: %.20s user %d (%.200s) has no %.50s permission on graph %.500s",
+        opname, user_type, (int)uid, u->usr_name,
+        rdf_graph_user_perm_title (failed_perms), 
+        (graph_iri ? graph_iri : "???") );
+      dk_free_box (graph_iri);
+      if (graph_boxed_iid != graph)
+        dk_free_tree (graph_boxed_iid);
+      sqlr_resignal (err);
+    }
+  return box_num (perms);
+}
+
+caddr_t
+bif_rgs_assert (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  const char *fname = "__rgs_assert";
+  return bif_rgs_impl (qst, err_ret, args, fname, RGU_ASSERT, 0);
+}
+
+caddr_t
+bif_rgs_assert_cbk (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  const char *fname = "__rgs_assert_cbk";
+  return bif_rgs_impl (qst, err_ret, args, fname, RGU_ASSERT, 1);
+}
+
+caddr_t
+bif_rgs_ack (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  const char *fname = "__rgs_ack";
+  return bif_rgs_impl (qst, err_ret, args, fname, RGU_ACK, 0);
+}
+
+caddr_t
+bif_rgs_ack_cbk (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  const char *fname = "__rgs_ack_cbk";
+  return bif_rgs_impl (qst, err_ret, args, fname, RGU_ACK, 1);
+}
+
+caddr_t boxed_zero_iid = NULL;
+caddr_t boxed_8k_iid = NULL;
+caddr_t boxed_nobody_uid = NULL;
+
+#define MAKE_RDF_GRAPH_DICT(name) do { \
+  name##_htable = (id_hash_t *)box_dv_dict_hashtable (31); \
+  name##_htable->ht_rehash_threshold = 120; \
+  name##_htable->ht_dict_refctr = ID_HASH_LOCK_REFCOUNT; \
+  name##_hit = (id_hash_iterator_t *)box_dv_dict_iterator ((caddr_t)name##_htable); \
+  } while (0)
+
 
 caddr_t
 rb_tmp_copy (mem_pool_t * mp, rdf_box_t * rb)
@@ -2369,18 +2724,14 @@ rdf_box_init ()
   box_tmp_copier[DV_RDF] = (box_tmp_copy_f) rb_tmp_copy;
   PrpcSetWriter (DV_RDF, (ses_write_func) rb_serialize);
   dk_dtp_register_hash (DV_RDF, rdf_box_hash, rdf_box_hash_cmp);
-    rdf_graph_group_dict_htable = (id_hash_t *)box_dv_dict_hashtable (31);
-  rdf_graph_group_dict_htable->ht_rehash_threshold = 120;
-  rdf_graph_group_dict_htable->ht_dict_refctr = ID_HASH_LOCK_REFCOUNT;
-  rdf_graph_group_dict_hit = (id_hash_iterator_t *)box_dv_dict_iterator ((caddr_t)rdf_graph_group_dict_htable);
-  rdf_graph_public_perms_dict_htable = (id_hash_t *)box_dv_dict_hashtable (31);
-  rdf_graph_public_perms_dict_htable->ht_rehash_threshold = 120;
-  rdf_graph_public_perms_dict_htable->ht_dict_refctr = ID_HASH_LOCK_REFCOUNT;
-  rdf_graph_public_perms_dict_hit = (id_hash_iterator_t *)box_dv_dict_iterator ((caddr_t)rdf_graph_public_perms_dict_htable);
-  rdf_graph_default_perms_of_user_dict_htable = (id_hash_t *)box_dv_dict_hashtable (31);
-  rdf_graph_default_perms_of_user_dict_htable->ht_rehash_threshold = 120;
-  rdf_graph_default_perms_of_user_dict_htable->ht_dict_refctr = ID_HASH_LOCK_REFCOUNT;
-  rdf_graph_default_perms_of_user_dict_hit = (id_hash_iterator_t *)box_dv_dict_iterator ((caddr_t)rdf_graph_default_perms_of_user_dict_htable);
+  boxed_zero_iid = box_iri_id (0);
+  boxed_8k_iid = box_iri_id (8192);
+  boxed_nobody_uid = box_num (U_ID_NOBODY);
+  MAKE_RDF_GRAPH_DICT(rdf_graph_group_dict);
+  MAKE_RDF_GRAPH_DICT(rdf_graph_public_perms_dict);
+  MAKE_RDF_GRAPH_DICT(rdf_graph_group_of_privates_dict);
+  MAKE_RDF_GRAPH_DICT(rdf_graph_default_world_perms_of_user_dict);
+  MAKE_RDF_GRAPH_DICT(rdf_graph_default_private_perms_of_user_dict);
 bif_define ("rdf_box", bif_rdf_box);
   bif_define ("ro_digest_from_parts", bif_ro_digest_from_parts);
   bif_define_typed ("is_rdf_box", bif_is_rdf_box, &bt_integer);
@@ -2430,5 +2781,14 @@ bif_define ("rdf_box", bif_rdf_box);
   bif_define_typed ("__ro2sq", bif_rdf_sqlval_of_obj, &bt_any);
   bif_define ("__rdf_graph_group_dict", bif_rdf_graph_group_dict);
   bif_define ("__rdf_graph_public_perms_dict", bif_rdf_graph_public_perms_dict);
+  bif_define ("__rdf_graph_group_of_privates_dict", bif_rdf_graph_group_of_privates_dict);
   bif_define ("__rdf_graph_default_perms_of_user_dict", bif_rdf_graph_default_perms_of_user_dict);
+  bif_define ("__rdf_graph_approx_perms", bif_rdf_graph_approx_perms);
+  bif_define ("__rdf_graph_specific_perms_of_user", bif_rdf_graph_specific_perms_of_user);
+  bif_define ("__rgs_assert", bif_rgs_assert);
+  bif_define ("__rgs_assert_cbk", bif_rgs_assert_cbk);
+  bif_set_uses_index (bif_rgs_assert_cbk );
+  bif_define ("__rgs_ack", bif_rgs_ack);
+  bif_define ("__rgs_ack_cbk", bif_rgs_ack_cbk);
+  bif_set_uses_index (bif_rgs_ack_cbk );
 }

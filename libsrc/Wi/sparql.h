@@ -317,13 +317,13 @@ extern void sparyyerror_impl_1 (sparp_t *xpp, char *raw_text, int yystate, short
 
 /* These values should be greater than any SQL opcode AND greater than 0x7F to not conflict with codepoints of "syntactically important" chars AND less than 0xFF to not conflict with YACC IDs for keywords. */
 #define SPART_GRAPH_FROM		0x100
-#define SPART_GRAPH_GROUP_BIT		0x1
+#define SPART_GRAPH_GROUP_BIT		0x001
 #define SPART_GRAPH_GROUP		0x101	/*!< == SPART_GRAPH_FROM | SPART_GRAPH_GROUP_BIT */
 #define SPART_GRAPH_NAMED		0x110
 #define SPART_GRAPH_MIN_NEGATION	0x17F
 #define SPART_GRAPH_NOT_FROM		0x180
 #define SPART_GRAPH_NOT_GROUP		0x181	/*!< == SPART_GRAPH_NOT_FROM | SPART_GRAPH_GROUP_BIT */
-#define SPART_GRAPH_NOT_NAMED		0x130
+#define SPART_GRAPH_NOT_NAMED		0x190
 
 #define SPARP_EQUIV(sparp,idx) ((sparp)->sparp_equivs[(idx)])
 
@@ -568,7 +568,13 @@ extern caddr_t spar_boxed_exec_uid (sparp_t *sparp);
 extern caddr_t spar_immortal_exec_uname (sparp_t *sparp);
 extern SPART *spar_exec_uid_and_gs_cbk (sparp_t *sparp);
 
-extern int spar_graph_static_perms (sparp_t *sparp, caddr_t graph_iri);
+/*!< Returns statically known permissions on \c graph_iri.
+We assume that if permissions on the graph are "interesting" for some reason then the change in these permission may require query re-compilation.
+So if some factor may change some bits set in \c req_perms bitmask then a depencency from the factor is established for 
+sparp->sparp_sparqre->sparqre_super_sc->sc_cc->cc_super_cc->cc_query
+If sparp->sparp_gs_app_callback is set then the "nobody" user is used, because the callback may cut permissions down to that level but we don't know that statically */
+extern int spar_graph_static_perms (sparp_t *sparp, caddr_t graph_iri, int req_perms);
+/*!< Returns if security testing is needed */
 extern int spar_graph_needs_security_testing (sparp_t *sparp, SPART *g_expn, int req_perms);
 
 

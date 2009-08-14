@@ -591,7 +591,7 @@ rdf_load_turtle (
   yyscan_t scanner;
   triple_feed_t *tf;
   if (arg1_is_filename)
-    sec_check_dba (qi, "<reading TURTLE from local file>");
+    sec_check_dba (qi, "<creading TURTLE from local file>");
   if (DV_BLOB_XPER_HANDLE == dtp_of_text)
     sqlr_new_error ("42000", "SP036", "Unable to parse TURTLE from persistent XML object");
   ttlp = ttlp_alloc ();

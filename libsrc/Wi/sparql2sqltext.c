@@ -3450,6 +3450,12 @@ sparp_rettype_of_function (sparp_t *sparp, caddr_t name)
         return SSG_VALMODE_LONG;
       if (!strcmp (name, "SPECIAL::bif:iri_to_id"))
         return SSG_VALMODE_LONG;
+      if (
+        !strcmp (name, "SPECIAL::bif:__rgs_assert_cbk") ||
+        !strcmp (name, "SPECIAL::bif:__rgs_assert") ||
+        !strcmp (name, "SPECIAL::bif:__rgs_ack_cbk") ||
+        !strcmp (name, "SPECIAL::bif:__rgs_ack") )
+        return SSG_VALMODE_SQLVAL;
       spar_internal_error (sparp, "sparp_" "rettype_of_function(): unsupported SPECIAL");
     }
   if (!strcmp (name, uname_xmlschema_ns_uri_hash_string))
@@ -3480,6 +3486,12 @@ sparp_argtype_of_function (sparp_t *sparp, caddr_t name, int arg_idx)
         return SSG_VALMODE_LONG;
       if (!strcmp (name, "SPECIAL::bif:iri_to_id"))
         return SSG_VALMODE_SQLVAL;
+      if (
+        !strcmp (name, "SPECIAL::bif:__rgs_assert_cbk") ||
+        !strcmp (name, "SPECIAL::bif:__rgs_assert") ||
+        !strcmp (name, "SPECIAL::bif:__rgs_ack_cbk") ||
+        !strcmp (name, "SPECIAL::bif:__rgs_ack") )
+        return ((0 < arg_idx) ? SSG_VALMODE_SQLVAL : SSG_VALMODE_SHORT_OR_LONG);
       spar_internal_error (sparp, "sparp_" "argtype_of_function(): unsupported SPECIAL");
     }
   return res;
@@ -4074,7 +4086,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
         {
           ssg_puts (" NULL");
         }
-      else if (SSG_VALMODE_LONG == needed)
+      else if ((SSG_VALMODE_LONG == needed) || (SSG_VALMODE_SHORT_OR_LONG == needed))
         ssg_print_literal_as_long (ssg, tree);
       else if (SSG_VALMODE_SQLVAL == needed)
         {

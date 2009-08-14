@@ -201,7 +201,7 @@ DB.DBA.RDF_GRAB (
   in const_iris any, in sa_graphs any, in sa_preds any, in depth integer, in doc_limit integer,
   in base_iri varchar, in destination varchar, in group_destination varchar, in resolver varchar, in loader varchar,
   in refresh_free_text integer, in plain_ret integer, in flags integer,
-  in uid integer )
+  in uid any )
 {
   declare rctr, rcount, colcount, iter_ctr integer;
   declare stat, msg varchar;
@@ -221,7 +221,7 @@ DB.DBA.RDF_GRAB (
   foreach (any val in const_iris) do
     {
       -- dbg_obj_princ ('DB.DBA.RDF_GRAB: const IRI', val);
-      if (val is not null and DB.DBA.RDF_GRAPH_USER_PERMS_ACK (val, uid, 4))
+      if (val is not null and __rgs_ack_cbk (val, uid, 4))
         {
           -- dbg_obj_princ ('DB.DBA.RDF_GRAB () aq_request ', vector (val, '...', grab_params, doc_limit));
           --DB.DBA.RDF_GRAB_SINGLE_ASYNC (val, grabbed, grab_params, doc_limit);
@@ -252,7 +252,7 @@ DB.DBA.RDF_GRAB (
               declare val any;
               declare dest varchar;
               val := rset[rctr][colctr];
-              if (isiri_id (val) and DB.DBA.RDF_GRAPH_USER_PERMS_ACK (val, uid, 4))
+              if (isiri_id (val) and __rgs_ack_cbk (val, uid, 4))
                 {
                   -- dbg_obj_princ ('DB.DBA.RDF_GRAB (): dynamic IRI aq_request ', vector (val, '...', grab_params, doc_limit));
                   --DB.DBA.RDF_GRAB_SINGLE_ASYNC (val, grabbed, grab_params, doc_limit);

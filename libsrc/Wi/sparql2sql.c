@@ -4977,7 +4977,7 @@ sparp_gp_trav_add_graph_perm_read_filters (sparp_t *sparp, SPART *curr, sparp_tr
       if (SPAR_TRIPLE != memb->type)
         continue;
       g_expn = memb->_.triple.tr_graph;
-      if (!spar_graph_needs_security_testing (sparp, g_expn, RDF_GRAPH_PERM_READ) && (NULL == sparp->sparp_gs_app_callback))
+      if (!spar_graph_needs_security_testing (sparp, g_expn, RDF_GRAPH_PERM_READ))
         continue;
       if (spar_plain_const_value_of_tree (g_expn, &fixed_g))
         {
@@ -5026,7 +5026,8 @@ sparp_gp_trav_add_graph_perm_read_filters (sparp_t *sparp, SPART *curr, sparp_tr
           g_copy->_.var.tabid = NULL;
           g_copy->_.var.equiv_idx = SPART_BAD_EQUIV_IDX;
         }
-      filter = spar_make_funcall (sparp, 0, "sql:RDF_GRAPH_USER_PERMS_ACK",
+      filter = spar_make_funcall (sparp, 0,
+        ((NULL != sparp->sparp_gs_app_callback) ? "SPECIAL::bif:__rgs_ack_cbk" : "SPECIAL::bif:__rgs_ack"),
         (SPART **)t_list (3, g_copy, spar_exec_uid_and_gs_cbk (sparp), RDF_GRAPH_PERM_READ) );
       sparp_gp_attach_filter (sparp, curr, filter, 0, NULL);
       if (!g_norm_is_var ||
@@ -5351,7 +5352,7 @@ retry_after_reducing_optionals:
     NULL, NULL,
     NULL, NULL, sparp_gp_trav_rewrite_qm_postopt,
     NULL );
-  security_cbk = ((spar_graph_static_perms (sparp, NULL) & RDF_GRAPH_PERM_READ) ? NULL :
+  security_cbk = ((spar_graph_static_perms (sparp, NULL, RDF_GRAPH_PERM_READ) & RDF_GRAPH_PERM_READ) ? NULL :
     sparp_gp_trav_add_graph_perm_read_filters );
   sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
     sparp_gp_trav_restore_filters_for_weird_subq, security_cbk,

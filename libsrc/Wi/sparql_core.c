@@ -1232,12 +1232,12 @@ spar_gp_add_filters_for_graph (sparp_t *sparp, SPART *graph_expn, int graph_is_n
 {
   sparp_env_t *env = sparp->sparp_env;
   dk_set_t sources = (graph_is_named ? env->spare_named_graphs : env->spare_default_graphs);
-  caddr_t varname;
+  caddr_t varname = NULL;
   SPART *good_list_expn, *bad_list_expn, *filter;
   if (NULL == sources)
     return;
-  if (!SPAR_IS_BLANK_OR_VAR (graph_expn))
-    return;
+  if (SPAR_IS_BLANK_OR_VAR (graph_expn))
+    {
   varname = graph_expn->_.var.vname;
   if (suppress_filters_for_good_names)
     {
@@ -1245,15 +1245,18 @@ spar_gp_add_filters_for_graph (sparp_t *sparp, SPART *graph_expn, int graph_is_n
       if (0 <= dk_set_position_of_string (good_varnames, varname))
         return;
     }
+    }
   if ((NULL != sources) && (NULL == sources->next))
     {
       SPART *src = (SPART *)(sources->data);
       if (!(src->_.graph.subtype & SPART_GRAPH_GROUP_BIT))
         {
           SPART *graph_expn_copy = (
-            (SPAR_VARIABLE == SPART_TYPE (graph_expn)) ?
+            (NULL != varname) ?
+            ((SPAR_VARIABLE == SPART_TYPE (graph_expn)) ?
             spar_make_variable (sparp, varname) :
-            spar_make_blank_node (sparp, varname, 0) );
+              spar_make_blank_node (sparp, varname, 0)) :
+            t_box_copy (graph_expn) );
           filter = spartlist (sparp, 3,
             ((SPART_GRAPH_MIN_NEGATION < src->_.graph.subtype) ? BOP_NEQ : BOP_EQ),
             graph_expn_copy, src->_.graph.expn );
@@ -1858,7 +1861,7 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
           break;
         }
       if ((NULL != dflts) && (SPART_GRAPH_FROM == ((SPART *)(dflts->data))->_.graph.subtype) &&
-         ((NULL == dflts->next) || (SPART_GRAPH_FROM != ((SPART *)(dflts->next->data))->_.graph.subtype)) )
+         ((NULL == dflts->next) || (SPART_GRAPH_MIN_NEGATION <= ((SPART *)(dflts->next->data))->_.graph.subtype)) )
         { /* If there's only one default graph then we can cheat and optimize the query a little bit by adding a restriction to the variable */
           SPART *single_dflt = (SPART *)(dflts->data);
           if (!SPAR_IS_LIT_OR_QNAME (single_dflt->_.graph.expn))	 /* FROM iriref OPTION (...) case */
@@ -1870,12 +1873,13 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
               spar_gp_add_filter (sparp, eq);
               graph->_.var.rvr.rvrRestrictions |= SPART_VARR_FIXED | SPART_VARR_IS_REF | SPART_VARR_NOT_NULL;
               graph->_.var.rvr.rvrFixedValue = t_box_copy (iri_arg);
-              break;
             }
-	/* Single FROM iriref without sponge options */
+          else /* Single FROM iriref without sponge options */
           graph = sparp_tree_full_copy (sparp, single_dflt->_.graph.expn, NULL);
+          if (NULL == dflts->next) /* There's only one source and it is reflected in the value of graph */
           break;
 	}
+      else
       graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_::default"), 1);
       spar_gp_add_filters_for_graph (sparp, graph, 0, 0);
       break;
@@ -2236,7 +2240,7 @@ spar_default_sparul_target (sparp_t *sparp, const char *clause_type)
     spar_error (sparp, "No %.200s and no default graph specified in the preamble", clause_type);
   if ((NULL != dflt_graphs->next) && (((SPART *)(dflt_graphs->next->data))->_.graph.subtype < SPART_GRAPH_MIN_NEGATION))
     spar_error (sparp, "No %.200s and more than one default graph specified in the preamble", clause_type);
-  if (SPART_GRAPH_GROUP != ((SPART *)(dflt_graphs->data))->_.graph.subtype)
+  if (SPART_GRAPH_GROUP == ((SPART *)(dflt_graphs->data))->_.graph.subtype)
     spar_error (sparp, "No %.200s and the IRI in preamble refers to default graph group, not a single default graph", clause_type);
   return sparp_tree_full_copy (sparp, (SPART *)(dflt_graphs->data), NULL);
 }
@@ -2615,46 +2619,95 @@ spar_exec_uid_and_gs_cbk (sparp_t *sparp)
 }
 
 int
-spar_graph_static_perms (sparp_t *sparp, caddr_t graph_iri)
+spar_graph_static_perms (sparp_t *sparp, caddr_t graph_iri, int req_perms)
 {
   caddr_t boxed_uid;
-  caddr_t *hit;
+  id_hash_t *dflt_perms_of_user = rdf_graph_default_world_perms_of_user_dict_htable;
+  id_hash_t *dflt_other_perms_of_user = rdf_graph_default_private_perms_of_user_dict_htable;
+  caddr_t *hit, *potential_hit;
+  int res, potential_res, potential_res_is_user_specific = 0;
+  int graph_is_private = 0;
+  query_t *query_with_deps = NULL;
 static caddr_t boxed_zero_iid = NULL;
-  if (NULL != graph_iri)
-    {
-      caddr_t boxed_graph_iid = sparp_iri_to_id_nosignal (sparp, graph_iri);
-/*!!! TBD: add retrieval of permissions of specific user on specific graph AND move assignment of boxed_uid to some place ABOVE this point */
-      hit = (caddr_t *)id_hash_get (rdf_graph_public_perms_dict_htable, (caddr_t)(&(boxed_graph_iid)));
-      if (NULL != hit)
-        {
-          if (NULL != sparp->sparp_sparqre->sparqre_super_sc)
-            {
-              caddr_t graph_uname = box_dv_uname_nchars (graph_iri, box_length (graph_iri) - 1);
-              qr_uses_jso (sparp->sparp_sparqre->sparqre_super_sc->sc_cc->cc_super_cc->cc_query, graph_uname);
-            }
-          return unbox (hit[0]);
-        }
-    }
+static caddr_t boxed_8192_iid = NULL;
+  if (NULL == boxed_zero_iid)
+    boxed_zero_iid = box_iri_id (0);
+  if (NULL == boxed_8192_iid)
+    boxed_8192_iid = box_iri_id (8192);
   if (NULL == sparp->sparp_gs_app_callback)
     boxed_uid = spar_boxed_exec_uid (sparp);
   else
     boxed_uid = t_box_num (U_ID_NOBODY);
-  hit = (caddr_t *)id_hash_get (rdf_graph_default_perms_of_user_dict_htable, (caddr_t)(&(boxed_uid)));
+  if (NULL != sparp->sparp_sparqre->sparqre_super_sc)
+    query_with_deps = sparp->sparp_sparqre->sparqre_super_sc->sc_cc->cc_super_cc->cc_query;
+  if (NULL != graph_iri)
+    {
+      caddr_t boxed_graph_iid = sparp_iri_to_id_nosignal (sparp, graph_iri);
+      if (NULL != id_hash_get (rdf_graph_group_of_privates_dict_htable, (caddr_t)(&(boxed_graph_iid))))
+        {
+          graph_is_private = 1;
+          dflt_perms_of_user = rdf_graph_default_private_perms_of_user_dict_htable;
+          dflt_other_perms_of_user = rdf_graph_default_world_perms_of_user_dict_htable;
+        }
+/*!!! TBD: add retrieval of permissions of specific user on specific graph */
+      hit = (caddr_t *)id_hash_get (dflt_perms_of_user, (caddr_t)(&(boxed_graph_iid)));
+      if (NULL != hit)
+        {
+          if (NULL != query_with_deps)
+            {
+              caddr_t graph_uname = box_dv_uname_nchars (graph_iri, box_length (graph_iri) - 1);
+              qr_uses_jso (query_with_deps, graph_uname);
+            }
+          return unbox (hit[0]);
+        }
+    }
+  hit = (caddr_t *)id_hash_get (dflt_perms_of_user, (caddr_t)(&(boxed_uid)));
+  if ((NULL != query_with_deps) || (NULL == graph_iri))
+    {
+      potential_hit = (caddr_t *)id_hash_get (dflt_other_perms_of_user, (caddr_t)(&(boxed_uid)));
+      if (NULL == potential_hit)
+        potential_hit = (caddr_t *)id_hash_get (rdf_graph_public_perms_dict_htable, (caddr_t)(graph_is_private ? &boxed_zero_iid : &boxed_8192_iid));
+  else
+        potential_res_is_user_specific = 1;
+      potential_res = (NULL != potential_hit) ? unbox(potential_hit[0]) : RDF_GRAPH_PERM_DEFAULT;
+    }
   if (NULL != hit)
     {
-      if (NULL != sparp->sparp_sparqre->sparqre_super_sc)
+      res = unbox (hit[0]);
+      if (NULL != query_with_deps)
         {
           caddr_t uname = spar_immortal_exec_uname (sparp);
-          qr_uses_jso (sparp->sparp_sparqre->sparqre_super_sc->sc_cc->cc_super_cc->cc_query, uname);
+          qr_uses_jso (query_with_deps, uname);
+          if ((0 != ((res & req_perms) & ~(potential_res & req_perms)))) /* If world and private perms differ significally and in unsafe direction... */
+            {
+              caddr_t dep_graph_uname = (NULL != graph_iri) ? box_dv_uname_string (graph_iri) : uname_virtrdf_ns_uri_PrivateGraphs;
+              qr_uses_jso (query_with_deps, dep_graph_uname); /* ...then adding dep on graph is required, so changing graph from world to provate or back will trigger re-compilation */
         }
-      return unbox (hit[0]);
     }
-  if (NULL == boxed_zero_iid)
-    boxed_zero_iid = box_iri_id (0);
-  hit = (caddr_t *)id_hash_get (rdf_graph_public_perms_dict_htable, (caddr_t)(&(boxed_zero_iid)));
+      if (NULL != graph_iri)
+        return res;
+      return res & potential_res;
+    }
+  hit = (caddr_t *)id_hash_get (rdf_graph_public_perms_dict_htable, (caddr_t)(graph_is_private ? &boxed_8192_iid : &boxed_zero_iid));
   if (NULL != hit)
-    return unbox (hit[0]);
-  return (RDF_GRAPH_PERM_READ | RDF_GRAPH_PERM_WRITE | RDF_GRAPH_PERM_SPONGE | RDF_GRAPH_PERM_LIST);
+    res = unbox (hit[0]);
+  else res = RDF_GRAPH_PERM_DEFAULT;
+  if (NULL != query_with_deps)
+    {
+      if ((0 != ((res & req_perms) & ~(potential_res & req_perms)))) /* If world and private perms differ significally and in unsafe direction... */
+        {
+          if (potential_res_is_user_specific)
+            {
+              caddr_t uname = spar_immortal_exec_uname (sparp);
+              qr_uses_jso (query_with_deps, uname);
+            }
+          caddr_t dep_graph_uname = (NULL != graph_iri) ? box_dv_uname_string (graph_iri) : uname_virtrdf_ns_uri_PrivateGraphs;
+          qr_uses_jso (query_with_deps, dep_graph_uname); /* ...then adding dep on graph is required, so changing graph from world to provate or back will trigger re-compilation */
+        }
+    }
+  if (NULL != graph_iri)
+    return res;
+  return res & potential_res;
 }
 
 int
@@ -2673,11 +2726,9 @@ spar_graph_needs_security_testing (sparp_t *sparp, SPART *g_expn, int req_perms)
     default: fixed_g = NULL; break;
     }
   if (NULL != fixed_g)
-    {
-      default_perms = spar_graph_static_perms (sparp, fixed_g);
-      return (req_perms & ~default_perms);
-    }
-  default_perms = spar_graph_static_perms (sparp, NULL);
+    default_perms = spar_graph_static_perms (sparp, fixed_g, req_perms);
+  else
+    default_perms = spar_graph_static_perms (sparp, NULL, req_perms);
   return (req_perms & ~default_perms);
 }
 

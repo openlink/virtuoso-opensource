@@ -50,10 +50,16 @@
 #include "sqltype.h"
 #include "virtpwd.h"
 
-
+extern caddr_t bif_arg (caddr_t * qst, state_slot_t ** args, int nth, const char * func);
 
 id_hash_t *sec_users;
 dk_hash_t *sec_user_by_id;
+
+user_t *user_t_dba;
+user_t *user_t_nobody;
+user_t *user_t_ws;
+user_t *user_t_public;
+
 
 user_t *
 sec_id_to_user (oid_t id)
@@ -61,6 +67,105 @@ sec_id_to_user (oid_t id)
   return ((user_t *) gethash ((void *) (ptrlong) id, sec_user_by_id));
 }
 
+caddr_t
+bif_user_id_or_name_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
+{
+  caddr_t arg = bif_arg (qst, args, nth, func);
+  dtp_t dtp = DV_TYPE_OF (arg);
+  boxint uid;
+  if (DV_STRING == dtp)
+    return arg;
+  if (dtp != DV_SHORT_INT && dtp != DV_LONG_INT)
+    {
+      sqlr_new_error ("22023", "SR609",
+      "Function %s needs a string (user name) or an integer (user ID) as argument %d, "
+      "not an arg of type %s (%d)",
+      func, nth + 1, dv_type_title (dtp), dtp);
+    }
+  uid = unbox (arg);
+  if ((0 > uid) || (uid > INT32_MAX))
+    {
+      sqlr_new_error ("22023", "SR610",
+      "Function %s needs a string (user name) or a positive small integer (user ID) as argument %d, "
+      "the passed value " BOXINT_FMT " is not valid",
+      func, nth + 1, uid);
+    }
+  return arg;
+}
+
+user_t *
+bif_user_t_arg_int (caddr_t uid_or_uname, int nth, const char *func, int flags, int error_level)
+{
+  oid_t uid;
+  user_t *u;
+  if (DV_STRING == DV_TYPE_OF (uid_or_uname))
+    u = sec_name_to_user (uid_or_uname);
+  else
+    u = sec_id_to_user ((oid_t) unbox(uid_or_uname));
+  if (0 == (flags & (USER_SHOULD_EXIST | USER_SHOULD_BE_SQL_ENABLED | USER_SHOULD_BE_DAV_ENABLED)))
+    return u;
+  if (NULL == u)
+    {
+      switch (error_level) { case 0: goto ret_null; }
+      if (DV_STRING == DV_TYPE_OF (uid_or_uname))
+        {
+          sqlr_new_error ("22023", "SR617",
+              "Function %s needs a valid user ID in argument %d, "
+              "the passed value \"%.200s\" is not valid username or the user is not enabled",
+              func, nth + 1, uid_or_uname);
+        }
+      sqlr_new_error ("22023", "SR618",
+          "Function %s needs a valid user ID in argument %d, "
+          "the passed value %ld is not valid or user is not enabled",
+          func, nth + 1, (long)unbox(uid_or_uname));
+    }
+  uid = u->usr_id;
+  if (u->usr_is_role)
+    {
+      switch (error_level) { case 0: goto ret_null; case 1: goto generic_error; }
+      sqlr_new_error ("22023", "SR613",
+          "Function %s needs a valid user ID in argument %d, "
+          "but the passed UID %ld (\"%.200s\") belongs to a group, not a user",
+      func, nth + 1, (long)uid, u->usr_name);
+    }
+  if ((USER_NOBODY_IS_PERMITTED & flags) && (U_ID_NOBODY == uid))
+    return u;
+  if (u->usr_disabled)
+    {
+     if ((USER_SPARQL_IS_PERMITTED & flags) && !strcmp (u->usr_name, "SPARQL"));
+       return u;
+      switch (error_level) { case 0: goto ret_null; case 1: goto generic_error; }
+      sqlr_new_error ("22023", "SR614",
+          "Function %s needs a valid user ID in argument %d, "
+          "but the passed UID %ld (\"%.200s\") belongs to a disabled user",
+      func, nth + 1, (long)uid, u->usr_name);
+    }
+  if ((USER_SHOULD_BE_SQL_ENABLED & flags) && !(u->usr_is_sql))
+    {
+      switch (error_level) { case 0: goto ret_null; case 1: goto generic_error; }
+      sqlr_new_error ("22023", "SR615",
+          "Function %s needs a valid SQL user ID in argument %d, "
+          "but the passed UID %ld (\"%.200s\") belongs to a DAV-only user",
+      func, nth + 1, (long)uid, u->usr_name);
+    }
+  return u;
+
+generic_error:
+  sqlr_new_error ("22023", "SR611",
+      "Function %s needs a valid user ID in argument %d, "
+      "the passed UID %ld (\"%.200s\") is not valid or user is not enabled",
+      func, nth + 1, (long)uid, u->usr_name);
+  
+ret_null:
+  return NULL;
+}
+
+user_t *
+bif_user_t_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int flags, int error_level)
+{
+  caddr_t uid_or_uname = bif_user_id_or_name_arg (qst, args, nth, func);
+  return bif_user_t_arg_int (uid_or_uname, nth, func, flags, error_level);
+}
 
 int
 sec_tb_is_owner (dbe_table_t * tb, query_instance_t * qi, char * tb_name, oid_t g_id, oid_t u_id)
@@ -937,6 +1042,8 @@ sec_new_user (query_instance_t * qi, char *name, char *pass)
     user->usr_id = U_ID_WS;
   else if (0 == strcmp (name, "public"))
     user->usr_id = U_ID_PUBLIC;
+  else if (0 == strcmp (name, "nobody"))
+    user->usr_id = U_ID_NOBODY;
   else
     user->usr_id = sec_new_u_id (qi);
   user->usr_g_id = user->usr_id;
@@ -979,7 +1086,7 @@ sec_make_dd_user (char *name, char *pass, oid_t g_id, oid_t u_id, int disabled, 
 	}
 
 
-void
+user_t *
 sec_set_user (query_instance_t * qi, char *name, char *pass, int is_update)
 {
   client_connection_t *cli;
@@ -1038,6 +1145,7 @@ sec_set_user (query_instance_t * qi, char *name, char *pass, int is_update)
 	  );
       PRINT_ERR(err);
     }
+  return user;
 }
 
 
@@ -1803,45 +1911,41 @@ sec_read_users (void)
     }
   lc_free (lc);
 
-  {
-    user_t *dba = sec_name_to_user ("dba");
-    user_t *ws_user = sec_name_to_user ("WS");
-    user_t *public_user = sec_name_to_user ("public");
-    if (!dba)
-      {
-	sec_set_user (NULL, "dba", "dba", 0);
-      }
-    else
-      {
+  user_t_dba = sec_name_to_user ("dba");
+  user_t_nobody = sec_name_to_user ("nobody");
+  user_t_ws = sec_name_to_user ("WS");
+  user_t_public = sec_name_to_user ("public");
+  if (!user_t_dba)
+    user_t_dba = sec_set_user (NULL, "dba", "dba", 0);
 	/* make sure that dba always has id and group 0, even
 	   if accidentally set to something else */
-	dba->usr_id = 0;
-	dba->usr_g_id = 0;
-
-	dba->usr_disabled = 0;
-	dba->usr_is_role = 0;
-	dba->usr_is_sql = 1;
-
-	if (dba->usr_g_ids)
-	  {
-	    dk_free_box ((box_t) dba->usr_g_ids);
-	    dba->usr_g_ids = NULL;
-	  }
-      }
-    if (!ws_user)
-      { /* this is a trick to have WS.WS. views compiled */
-        ws_user = sec_new_user (NULL, box_string ("WS"), box_string ("WS"));
-	ws_user->usr_disabled = 1; /* make it disabled */
-	ws_user->usr_g_id = 0;         /* from DBA group*/
-      }
-    if (!public_user)
-      { /* this is a trick to have public as a role */
-        public_user = sec_new_user (NULL, box_string ("public"), box_string ("public"));
-	public_user->usr_disabled = 1;
-	public_user->usr_is_role = 1;
-	public_user->usr_g_id = U_ID_PUBLIC;
-      }
-  }
+  user_t_dba->usr_id = 0;
+  user_t_dba->usr_g_id = 0;
+  user_t_dba->usr_disabled = 0;
+  user_t_dba->usr_is_role = 0;
+  user_t_dba->usr_is_sql = 1;
+  
+  if (user_t_dba->usr_g_ids)
+    {
+      dk_free_box ((box_t) user_t_dba->usr_g_ids);
+      user_t_dba->usr_g_ids = NULL;
+    }
+  if (!user_t_nobody)
+    user_t_nobody = sec_set_user (NULL, "nobody", "\001\r\001\n\001", 0);
+  user_t_nobody->usr_id = U_ID_NOBODY;
+  user_t_nobody->usr_g_id = U_ID_NOGROUP;
+  user_t_nobody->usr_disabled = 1;
+  user_t_nobody->usr_is_role = 0;
+  user_t_nobody->usr_is_sql = 1;
+  if (!user_t_ws) /* this is a trick to have WS.WS. views compiled */
+    user_t_ws = sec_new_user (NULL, box_string ("WS"), box_string ("WS"));
+  user_t_ws->usr_disabled = 1; /* make it disabled */
+  user_t_ws->usr_g_id = 0;         /* from DBA group*/
+  if (!user_t_public) /* this is a trick to have public as a role */
+    user_t_public = sec_new_user (NULL, box_string ("public"), box_string ("public"));
+  user_t_public->usr_disabled = 1;
+  user_t_public->usr_is_role = 1;
+  user_t_public->usr_g_id = U_ID_PUBLIC;
   sec_initialized = 1;
   local_commit (bootstrap_cli);
 #ifdef UPDATE_SYS_USERS_TO_ENCRYPTED
