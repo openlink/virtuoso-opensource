@@ -6306,7 +6306,7 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
   else /* arglist is 1 item long */
     {
       basetype := lower (arglist[0][2]);
-      if (not (basetype in ('integer', 'varchar', 'date', 'datetime', 'doubleprecision', 'numeric')))
+      if (not (basetype in ('integer', 'varchar', 'date', 'datetime', 'doubleprecision', 'numeric', 'nvarchar')))
         signal ('22023', 'The datatype "' || basetype || '" is not supported in CREATE IRI CLASS <' || classiri || '>' );
       basetype := 'sql-' || basetype || '-uri';
       if (not (coalesce (arglist[0][3], 0)))
@@ -6482,7 +6482,7 @@ fheaders is, say,
   else
     {
       basetype := lower (arglist[0][2]);
-      if (not (basetype in ('integer', 'varchar', /* 'date', 'doubleprecision', */ 'numeric')))
+      if (not (basetype in ('integer', 'varchar', /* 'date', 'doubleprecision', */ 'numeric', 'nvarchar')))
         signal ('22023', 'The datatype "' || basetype || '" is not supported in CREATE IRI CLASS <' || classiri || '> USING FUNCTION' );
       basetype := 'sql-' || basetype || '-uri-fn';
       if (coalesce (arglist[0][3], 0))
@@ -6634,7 +6634,7 @@ fheaders is identical to DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FUNCTIONS
   else
     {
       basetype := lower (arglist[0][2]);
-      if (not (basetype in ('integer', 'varchar' /*, 'date', 'doubleprecision'*/)))
+      if (not (basetype in ('integer', 'varchar' /*, 'date', 'doubleprecision'*/, 'nvarchar')))
         signal ('22023', 'The datatype "' || basetype || '" is not supported in CREATE IRI CLASS <' || classiri || '> USING FUNCTION' );
       basetype := 'sql-' || basetype || '-literal-fn';
       if (not (coalesce (arglist[0][3], 0)))
@@ -6820,17 +6820,25 @@ create procedure DB.DBA.RDF_QM_CHECK_CLASS_FUNCTION_HEADERS (inout fheaders any,
     }
   else if (1 = argcount)
     {
-      if (fheaders[1][0] <> uriprintname || '_INVERSE')
-        signal ('22023', 'Name of ' || invdesc || ' function should be "' || uriprintname || '_INVERSE", not "' || fheaders[1][0] || '", other variants are not supported by the current version' );
+      declare uriparsename varchar;
+      if (uriprintname like '%"')
+        uriparsename := subseq (uriprintname, 0, length (uriprintname)-1) || '_INVERSE"';
+      else
+        uriparsename := uriprintname || '_INVERSE';
+      if (fheaders[1][0] <> uriparsename)
+        signal ('22023', 'Name of ' || invdesc || ' function should be ' || uriparsename || ', not ' || fheaders[1][0] || ', other variants are not supported by the current version' );
     }
   else
     {
       for (argctr := 0; argctr < argcount; argctr := argctr + 1)
         {
           declare uriparsename varchar;
+          if (uriprintname like '%"')
+            uriparsename := sprintf ('%s_INV_%d"', subseq (uriprintname, 0, length (uriprintname)-1), argctr+1);
+          else
           uriparsename := sprintf ('%s_INV_%d', uriprintname, argctr+1);
           if (fheaders[argctr + 1][0] <> uriparsename)
-            signal ('22023', 'Name of inverse function should be "' || uriparsename || '", not "' || fheaders[argctr + 1][0] || '", other variants are not supported by the current version' );
+            signal ('22023', 'Name of inverse function should be ' || uriparsename || ', not ' || fheaders[argctr + 1][0] || ', other variants are not supported by the current version' );
         }
     }
   for (argctr := 0; argctr < argcount; argctr := argctr + 1)
@@ -9182,7 +9190,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
   if (not exists (sparql define input:storage "" ask where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
               <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-                virtrdf:version '2009-03-16 0001'
+                virtrdf:version '2009-08-15 0001'
             } } ) )
     {
       declare txt1, txt2 varchar;
