@@ -1256,7 +1256,7 @@ spar_gp_add_filters_for_graph (sparp_t *sparp, SPART *graph_expn, int graph_is_n
             ((SPAR_VARIABLE == SPART_TYPE (graph_expn)) ?
     spar_make_variable (sparp, varname) :
               spar_make_blank_node (sparp, varname, 0)) :
-            t_box_copy (graph_expn) );
+            (SPART *) t_box_copy ((caddr_t) graph_expn) );
       filter = spartlist (sparp, 3,
             ((SPART_GRAPH_MIN_NEGATION < src->_.graph.subtype) ? BOP_NEQ : BOP_EQ),
         graph_expn_copy, src->_.graph.expn );
@@ -2696,12 +2696,13 @@ static caddr_t boxed_8192_iid = NULL;
     {
       if ((0 != ((res & req_perms) & ~(potential_res & req_perms)))) /* If world and private perms differ significally and in unsafe direction... */
         {
+          caddr_t dep_graph_uname;
           if (potential_res_is_user_specific)
             {
               caddr_t uname = spar_immortal_exec_uname (sparp);
               qr_uses_jso (query_with_deps, uname);
             }
-          caddr_t dep_graph_uname = (NULL != graph_iri) ? box_dv_uname_string (graph_iri) : uname_virtrdf_ns_uri_PrivateGraphs;
+          dep_graph_uname = (NULL != graph_iri) ? box_dv_uname_string (graph_iri) : uname_virtrdf_ns_uri_PrivateGraphs;
           qr_uses_jso (query_with_deps, dep_graph_uname); /* ...then adding dep on graph is required, so changing graph from world to provate or back will trigger re-compilation */
         }
     }
