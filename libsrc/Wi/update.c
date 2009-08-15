@@ -331,7 +331,9 @@ upd_insert_2nd_key (dbe_key_t * key, it_cursor_t * ins_itc,
   END_DO_CL;
   rd.rd_n_values = nth;
 
-  itc_from (ins_itc, key);
+  /* keep the owned params cause these can be casts owned by the itc when it made pk in ins replacing.  In update node, the casts are owned by another itc */
+  itc_from_keep_params (ins_itc, key);
+  ins_itc->itc_search_par_fill = 0;
   for (inx = 0; inx < key->key_n_significant; inx++)
     ITC_SEARCH_PARAM (ins_itc, rd.rd_values[key->key_part_in_layout_order[inx]]);
 

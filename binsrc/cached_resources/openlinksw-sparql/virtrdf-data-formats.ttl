@@ -20,7 +20,7 @@ bif:xquery_contains virtrdf:isSpecialPredicate bif:xquery_contains .
 
 # Don't forget to change version, both here and in DB.DBA.SPARQL_RELOAD_QM_GRAPH, to force reload.
 <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-  virtrdf:version '2009-03-16 0001v6' ;
+  virtrdf:version '2009-08-15 0001v6' ;
   virtrdf:item
     rdfdf:default-iid ,				rdfdf:default-iid-nullable ,
     rdfdf:default-iid-nonblank ,		rdfdf:default-iid-nonblank-nullable ,
@@ -28,17 +28,18 @@ bif:xquery_contains virtrdf:isSpecialPredicate bif:xquery_contains .
     rdfdf:sql-varchar ,				rdfdf:sql-varchar-nullable ,
     rdfdf:sql-varchar-dt ,			rdfdf:sql-varchar-dt-nullable ,
     rdfdf:sql-varchar-lang ,			rdfdf:sql-varchar-lang-nullable ,
+    rdfdf:sql-varchar-uri ,			rdfdf:sql-varchar-uri-nullable ,
     rdfdf:sql-longvarchar ,			rdfdf:sql-longvarchar-nullable ,
     rdfdf:sql-longvarchar-dt ,			rdfdf:sql-longvarchar-dt-nullable ,
     rdfdf:sql-longvarchar-lang ,		rdfdf:sql-longvarchar-lang-nullable ,
     rdfdf:sql-nvarchar ,			rdfdf:sql-nvarchar-nullable ,
     rdfdf:sql-nvarchar-dt ,			rdfdf:sql-nvarchar-dt-nullable ,
     rdfdf:sql-nvarchar-lang ,			rdfdf:sql-nvarchar-lang-nullable ,
+    rdfdf:sql-nvarchar-uri ,			rdfdf:sql-nvarchar-uri-nullable ,
     rdfdf:sql-longnvarchar ,			rdfdf:sql-longnvarchar-nullable ,
     rdfdf:sql-longnvarchar-dt ,			rdfdf:sql-longnvarchar-dt-nullable ,
     rdfdf:sql-longnvarchar-lang ,		rdfdf:sql-longnvarchar-lang-nullable ,
     rdfdf:sql-longvarbinary ,			rdfdf:sql-longvarbinary-nullable ,
-    rdfdf:sql-varchar-uri ,			rdfdf:sql-varchar-uri-nullable ,
     rdfdf:sql-integer ,				rdfdf:sql-integer-nullable ,
     rdfdf:sql-integer-uri ,			rdfdf:sql-integer-uri-nullable ,
     rdfdf:sql-numeric ,				rdfdf:sql-numeric-nullable ,
@@ -54,9 +55,11 @@ bif:xquery_contains virtrdf:isSpecialPredicate bif:xquery_contains .
     rdfdf:zeropart-uri-fn-nullable ,
     rdfdf:zeropart-literal-fn-nullable ,
     rdfdf:sql-varchar-uri-fn ,			rdfdf:sql-varchar-uri-fn-nullable ,
+    rdfdf:sql-nvarchar-uri-fn ,			rdfdf:sql-nvarchar-uri-fn-nullable ,
     rdfdf:sql-integer-uri-fn ,			rdfdf:sql-integer-uri-fn-nullable ,
     rdfdf:sql-numeric-uri-fn ,			rdfdf:sql-numeric-uri-fn-nullable ,
     rdfdf:sql-varchar-literal-fn ,		rdfdf:sql-varchar-literal-fn-nullable ,
+    rdfdf:sql-nvarchar-literal-fn ,		rdfdf:sql-nvarchar-literal-fn-nullable ,
     rdfdf:sql-integer-literal-fn ,		rdfdf:sql-integer-literal-fn-nullable ,
     rdfdf:sql-numeric-literal-fn ,		rdfdf:sql-numeric-literal-fn-nullable ,
     virtrdf:DefaultQuadStorage ,		virtrdf:DefaultQuadStorage-UserMaps ,
@@ -116,7 +119,7 @@ rdfdf:default-iid-SuperFormats
       rdf:type virtrdf:array-of-QuadMapFormat;
       rdf:_1 rdfdf:default-iid-nullable;
       rdf:_2 rdfdf:default;
-      rdf:_3 rdfdf:default-nullable;
+  rdf:_3 rdfdf:default-nullable
 .
 
 rdfdf:default-iid-nullable
@@ -131,7 +134,7 @@ rdfdf:default-iid-nullable
 
 rdfdf:default-iid-nullable-SuperFormats
       rdf:type virtrdf:array-of-QuadMapFormat;
-      rdf:_1 rdfdf:default-nullable;
+  rdf:_1 rdfdf:default-nullable
 .
 
 rdfdf:default-iid-nonblank
@@ -150,7 +153,7 @@ rdfdf:default-iid-nonblank-SuperFormats
       rdf:_2 rdfdf:default-iid;
       rdf:_3 rdfdf:default-iid-nullable;
       rdf:_4 rdfdf:default;
-      rdf:_5 rdfdf:default-nullable;
+  rdf:_5 rdfdf:default-nullable
 .
 
 rdfdf:default-iid-nonblank-nullable
@@ -166,7 +169,7 @@ rdfdf:default-iid-nonblank-nullable
 rdfdf:default-iid-nonblank-nullable-SuperFormats
       rdf:type virtrdf:array-of-QuadMapFormat;
       rdf:_1 rdfdf:default-iid-nullable;
-      rdf:_2 rdfdf:default-nullable;
+  rdf:_2 rdfdf:default-nullable
 .
 
 rdfdf:default
@@ -223,7 +226,7 @@ rdfdf:default
 
 rdfdf:default-SuperFormats
       rdf:type virtrdf:array-of-QuadMapFormat;
-      rdf:_1 rdfdf:default-nullable;
+  rdf:_1 rdfdf:default-nullable
 .
 
 rdfdf:default-nullable
@@ -237,7 +240,7 @@ rdfdf:default-nullable
 .
 
 rdfdf:default-nullable-SuperFormats
-      rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:sql-varchar
@@ -288,7 +291,7 @@ rdfdf:sql-varchar
 
 rdfdf:sql-varchar-SuperFormats
       rdf:type virtrdf:array-of-QuadMapFormat;
-      rdf:_1 rdfdf:sql-varchar-nullable;
+  rdf:_1 rdfdf:sql-varchar-nullable
 .
 
 rdfdf:sql-varchar-nullable
@@ -302,7 +305,7 @@ rdfdf:sql-varchar-nullable
 .
 
 rdfdf:sql-varchar-nullable-SuperFormats
-      rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:sql-varchar-dt
@@ -352,7 +355,7 @@ rdfdf:sql-varchar-dt
 
 rdfdf:sql-varchar-dt-SuperFormats
   rdf:type virtrdf:array-of-QuadMapFormat;
-  rdf:_1 rdfdf:sql-varchar-dt-nullable;
+  rdf:_1 rdfdf:sql-varchar-dt-nullable
 .
 
 rdfdf:sql-varchar-dt-nullable
@@ -366,7 +369,7 @@ rdfdf:sql-varchar-dt-nullable
 .
 
 rdfdf:sql-varchar-dt-nullable-SuperFormats
-  rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:sql-varchar-lang
@@ -418,7 +421,7 @@ rdfdf:sql-varchar-lang
 
 rdfdf:sql-varchar-lang-SuperFormats
   rdf:type virtrdf:array-of-QuadMapFormat;
-  rdf:_1 rdfdf:sql-varchar-lang-nullable;
+  rdf:_1 rdfdf:sql-varchar-lang-nullable
 .
 
 rdfdf:sql-varchar-lang-nullable
@@ -432,7 +435,7 @@ rdfdf:sql-varchar-lang-nullable
 .
 
 rdfdf:sql-varchar-lang-nullable-SuperFormats
-  rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:sql-longvarchar
@@ -444,7 +447,7 @@ rdfdf:sql-longvarchar
 
 rdfdf:sql-longvarchar-SuperFormats
       rdf:type virtrdf:array-of-QuadMapFormat;
-      rdf:_1 rdfdf:sql-longvarchar-nullable;
+  rdf:_1 rdfdf:sql-longvarchar-nullable
 .
 
 rdfdf:sql-longvarchar-nullable
@@ -458,7 +461,7 @@ rdfdf:sql-longvarchar-nullable
 .
 
 rdfdf:sql-longvarchar-nullable-SuperFormats
-  rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:sql-longvarchar-dt
@@ -470,7 +473,7 @@ rdfdf:sql-longvarchar-dt
 
 rdfdf:sql-longvarchar-dt-SuperFormats
   rdf:type virtrdf:array-of-QuadMapFormat;
-  rdf:_1 rdfdf:sql-longvarchar-dt-nullable;
+  rdf:_1 rdfdf:sql-longvarchar-dt-nullable
 .
 
 rdfdf:sql-longvarchar-dt-nullable
@@ -484,7 +487,7 @@ rdfdf:sql-longvarchar-dt-nullable
 .
 
 rdfdf:sql-longvarchar-dt-nullable-SuperFormats
-  rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:sql-longvarchar-lang
@@ -496,7 +499,7 @@ rdfdf:sql-longvarchar-lang
 
 rdfdf:sql-longvarchar-lang-SuperFormats
   rdf:type virtrdf:array-of-QuadMapFormat;
-  rdf:_1 rdfdf:sql-longvarchar-lang-nullable;
+  rdf:_1 rdfdf:sql-longvarchar-lang-nullable
 .
 
 rdfdf:sql-longvarchar-lang-nullable
@@ -510,7 +513,7 @@ rdfdf:sql-longvarchar-lang-nullable
 .
 
 rdfdf:sql-longvarchar-lang-nullable-SuperFormats
-  rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:sql-nvarchar
@@ -561,7 +564,7 @@ rdfdf:sql-nvarchar
 
 rdfdf:sql-nvarchar-SuperFormats
   rdf:type virtrdf:array-of-QuadMapFormat;
-  rdf:_1 rdfdf:sql-nvarchar-nullable;
+  rdf:_1 rdfdf:sql-nvarchar-nullable
 .
 
 rdfdf:sql-nvarchar-nullable
@@ -575,7 +578,7 @@ rdfdf:sql-nvarchar-nullable
 .
 
 rdfdf:sql-nvarchar-nullable-SuperFormats
-  rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:sql-nvarchar-dt
@@ -625,7 +628,7 @@ rdfdf:sql-nvarchar-dt
 
 rdfdf:sql-nvarchar-dt-SuperFormats
   rdf:type virtrdf:array-of-QuadMapFormat;
-  rdf:_1 rdfdf:sql-nvarchar-dt-nullable;
+  rdf:_1 rdfdf:sql-nvarchar-dt-nullable
 .
 
 rdfdf:sql-nvarchar-dt-nullable
@@ -639,7 +642,7 @@ rdfdf:sql-nvarchar-dt-nullable
 .
 
 rdfdf:sql-nvarchar-dt-nullable-SuperFormats
-  rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:sql-nvarchar-lang
@@ -691,7 +694,7 @@ rdfdf:sql-nvarchar-lang
 
 rdfdf:sql-nvarchar-lang-SuperFormats
   rdf:type virtrdf:array-of-QuadMapFormat;
-  rdf:_1 rdfdf:sql-nvarchar-lang-nullable;
+  rdf:_1 rdfdf:sql-nvarchar-lang-nullable
 .
 
 rdfdf:sql-nvarchar-lang-nullable
@@ -705,7 +708,7 @@ rdfdf:sql-nvarchar-lang-nullable
 .
 
 rdfdf:sql-nvarchar-lang-nullable-SuperFormats
-  rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:sql-longnvarchar
@@ -717,7 +720,7 @@ rdfdf:sql-longnvarchar
 
 rdfdf:sql-longnvarchar-SuperFormats
   rdf:type virtrdf:array-of-QuadMapFormat;
-  rdf:_1 rdfdf:sql-longnvarchar-nullable;
+  rdf:_1 rdfdf:sql-longnvarchar-nullable
 .
 
 rdfdf:sql-longnvarchar-nullable
@@ -731,7 +734,7 @@ rdfdf:sql-longnvarchar-nullable
 .
 
 rdfdf:sql-longnvarchar-nullable-SuperFormats
-  rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:sql-longnvarchar-dt
@@ -743,7 +746,7 @@ rdfdf:sql-longnvarchar-dt
 
 rdfdf:sql-longnvarchar-dt-SuperFormats
   rdf:type virtrdf:array-of-QuadMapFormat;
-  rdf:_1 rdfdf:sql-longnvarchar-dt-nullable;
+  rdf:_1 rdfdf:sql-longnvarchar-dt-nullable
 .
 
 rdfdf:sql-longnvarchar-dt-nullable
@@ -757,7 +760,7 @@ rdfdf:sql-longnvarchar-dt-nullable
 .
 
 rdfdf:sql-longnvarchar-dt-nullable-SuperFormats
-  rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:sql-longnvarchar-lang
@@ -769,7 +772,7 @@ rdfdf:sql-longnvarchar-lang
 
 rdfdf:sql-longnvarchar-lang-SuperFormats
   rdf:type virtrdf:array-of-QuadMapFormat;
-  rdf:_1 rdfdf:sql-longnvarchar-lang-nullable;
+  rdf:_1 rdfdf:sql-longnvarchar-lang-nullable
 .
 
 rdfdf:sql-longnvarchar-lang-nullable
@@ -783,7 +786,7 @@ rdfdf:sql-longnvarchar-lang-nullable
 .
 
 rdfdf:sql-longnvarchar-lang-nullable-SuperFormats
-  rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:sql-longvarbinary
@@ -832,7 +835,7 @@ rdfdf:sql-longvarbinary
 
 rdfdf:sql-longvarbinary-SuperFormats
       rdf:type virtrdf:array-of-QuadMapFormat;
-      rdf:_1 rdfdf:sql-longvarbinary-nullable;
+  rdf:_1 rdfdf:sql-longvarbinary-nullable
 .
 
 rdfdf:sql-longvarbinary-nullable
@@ -846,7 +849,7 @@ rdfdf:sql-longvarbinary-nullable
 .
 
 rdfdf:sql-longvarbinary-nullable-SuperFormats
-      rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:sql-varchar-uri
@@ -896,7 +899,7 @@ rdfdf:sql-varchar-uri
 
 rdfdf:sql-varchar-uri-SuperFormats
       rdf:type virtrdf:array-of-QuadMapFormat;
-      rdf:_1 rdfdf:sql-varchar-uri-nullable;
+  rdf:_1 rdfdf:sql-varchar-uri-nullable
 .
 
 rdfdf:sql-varchar-uri-nullable
@@ -917,7 +920,30 @@ rdfdf:sql-varchar-uri-nullable
 .
 
 rdfdf:sql-varchar-uri-nullable-SuperFormats
+  rdf:type virtrdf:array-of-QuadMapFormat
+.
+
+rdfdf:sql-nvarchar-uri
+  rdf:type virtrdf:QuadMapFormat;
+  virtrdf:inheritFrom rdfdf:sql-varchar-uri;
+  virtrdf:qmfName "sql-nvarchar-uri";
+  virtrdf:qmfSuperFormats rdfdf:sql-nvarchar-uri-SuperFormats
+.
+
+rdfdf:sql-nvarchar-uri-SuperFormats
       rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:_1 rdfdf:sql-nvarchar-uri-nullable
+.
+
+rdfdf:sql-nvarchar-uri-nullable
+  rdf:type virtrdf:QuadMapFormat;
+  virtrdf:inheritFrom rdfdf:sql-varchar-uri-nullable;
+  virtrdf:qmfName "sql-nvarchar-uri-nullable";
+  virtrdf:qmfSuperFormats rdfdf:sql-nvarchar-uri-nullable-SuperFormats
+.
+
+rdfdf:sql-nvarchar-uri-nullable-SuperFormats
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:sql-integer
@@ -969,7 +995,7 @@ rdfdf:sql-integer-SuperFormats
       rdf:type virtrdf:array-of-QuadMapFormat;
       rdf:_1 rdfdf:sql-integer-nullable;
       rdf:_2 rdfdf:default-nullable;
-      rdf:_3 rdfdf:default;
+  rdf:_3 rdfdf:default
 .
 
 rdfdf:sql-integer-nullable
@@ -985,7 +1011,7 @@ rdfdf:sql-integer-nullable
 
 rdfdf:sql-integer-nullable-SuperFormats
       rdf:type virtrdf:array-of-QuadMapFormat;
-      rdf:_1 rdfdf:default-nullable;
+  rdf:_1 rdfdf:default-nullable
 .
 
 rdfdf:sql-integer-uri
@@ -1007,7 +1033,7 @@ rdfdf:sql-integer-uri
 
 rdfdf:sql-integer-uri-SuperFormats
       rdf:type virtrdf:array-of-QuadMapFormat;
-  rdf:_1 rdfdf:sql-integer-uri-nullable;
+  rdf:_1 rdfdf:sql-integer-uri-nullable
 .
 
 rdfdf:sql-integer-uri-nullable
@@ -1028,7 +1054,7 @@ rdfdf:sql-integer-uri-nullable
 .
 
 rdfdf:sql-integer-uri-nullable-SuperFormats
-      rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:sql-doubleprecision
@@ -1080,7 +1106,7 @@ rdfdf:sql-doubleprecision-SuperFormats
       rdf:type virtrdf:array-of-QuadMapFormat;
       rdf:_1 rdfdf:sql-doubleprecision-nullable;
       rdf:_2 rdfdf:default-nullable;
-      rdf:_3 rdfdf:default;
+  rdf:_3 rdfdf:default
 .
 
 rdfdf:sql-doubleprecision-nullable
@@ -1095,7 +1121,7 @@ rdfdf:sql-doubleprecision-nullable
 
 rdfdf:sql-doubleprecision-nullable-SuperFormats
       rdf:type virtrdf:array-of-QuadMapFormat;
-      rdf:_1 rdfdf:default-nullable;
+  rdf:_1 rdfdf:default-nullable
 .
 
 rdfdf:sql-numeric
@@ -1147,7 +1173,7 @@ rdfdf:sql-numeric-SuperFormats
   rdf:type virtrdf:array-of-QuadMapFormat;
   rdf:_1 rdfdf:sql-numeric-nullable;
   rdf:_2 rdfdf:default-nullable;
-  rdf:_3 rdfdf:default;
+  rdf:_3 rdfdf:default
 .
 
 rdfdf:sql-numeric-nullable
@@ -1163,7 +1189,7 @@ rdfdf:sql-numeric-nullable
 
 rdfdf:sql-numeric-nullable-SuperFormats
   rdf:type virtrdf:array-of-QuadMapFormat;
-  rdf:_1 rdfdf:default-nullable;
+  rdf:_1 rdfdf:default-nullable
 .
 
 rdfdf:sql-numeric-uri
@@ -1185,7 +1211,7 @@ rdfdf:sql-numeric-uri
 
 rdfdf:sql-numeric-uri-SuperFormats
   rdf:type virtrdf:array-of-QuadMapFormat;
-  rdf:_1 rdfdf:sql-numeric-uri-nullable;
+  rdf:_1 rdfdf:sql-numeric-uri-nullable
 .
 
 rdfdf:sql-numeric-uri-nullable
@@ -1206,7 +1232,7 @@ rdfdf:sql-numeric-uri-nullable
 .
 
 rdfdf:sql-numeric-uri-nullable-SuperFormats
-  rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:sql-date
@@ -1260,7 +1286,7 @@ rdfdf:sql-date-SuperFormats
   rdf:_2 rdfdf:sql-datetime;
   rdf:_3 rdfdf:sql-datetime-nullable;
   rdf:_4 rdfdf:default-nullable;
-  rdf:_5 rdfdf:default;
+  rdf:_5 rdfdf:default
 .
 
 rdfdf:sql-date-nullable
@@ -1277,7 +1303,7 @@ rdfdf:sql-date-nullable
 rdfdf:sql-date-nullable-SuperFormats
   rdf:type virtrdf:array-of-QuadMapFormat;
   rdf:_1 rdfdf:sql-datetime-nullable;
-  rdf:_2 rdfdf:default-nullable;
+  rdf:_2 rdfdf:default-nullable
 .
 
 rdfdf:sql-time
@@ -1329,7 +1355,7 @@ rdfdf:sql-time-SuperFormats
   rdf:type virtrdf:array-of-QuadMapFormat;
   rdf:_1 rdfdf:sql-time-nullable;
   rdf:_2 rdfdf:default-nullable;
-  rdf:_3 rdfdf:default;
+  rdf:_3 rdfdf:default
 .
 
 rdfdf:sql-time-nullable
@@ -1345,7 +1371,7 @@ rdfdf:sql-time-nullable
 
 rdfdf:sql-time-nullable-SuperFormats
   rdf:type virtrdf:array-of-QuadMapFormat;
-  rdf:_1 rdfdf:default-nullable;
+  rdf:_1 rdfdf:default-nullable
 .
 
 rdfdf:sql-datetime
@@ -1397,7 +1423,7 @@ rdfdf:sql-datetime-SuperFormats
   rdf:type virtrdf:array-of-QuadMapFormat;
   rdf:_1 rdfdf:sql-datetime-nullable;
   rdf:_2 rdfdf:default-nullable;
-  rdf:_3 rdfdf:default;
+  rdf:_3 rdfdf:default
 .
 
 rdfdf:sql-datetime-nullable
@@ -1412,7 +1438,7 @@ rdfdf:sql-datetime-nullable
 
 rdfdf:sql-datetime-nullable-SuperFormats
       rdf:type virtrdf:array-of-QuadMapFormat;
-      rdf:_1 rdfdf:default-nullable;
+  rdf:_1 rdfdf:default-nullable
 .
 
 rdfdf:multipart-uri
@@ -1461,7 +1487,7 @@ rdfdf:multipart-uri
 
 rdfdf:multipart-uri-SuperFormats
       rdf:type virtrdf:array-of-QuadMapFormat;
-      rdf:_1 rdfdf:multipart-uri-nullable;
+  rdf:_1 rdfdf:multipart-uri-nullable
 .
 
 rdfdf:multipart-uri-nullable
@@ -1482,7 +1508,7 @@ rdfdf:multipart-uri-nullable
 .
 
 rdfdf:multipart-uri-nullable-SuperFormats
-      rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:multipart-uri-fn-nullable
@@ -1530,7 +1556,7 @@ rdfdf:multipart-uri-fn-nullable
 .
 
 rdfdf:multipart-uri-fn-nullable-SuperFormats
-  rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:multipart-literal-fn-nullable
@@ -1578,7 +1604,7 @@ rdfdf:multipart-literal-fn-nullable
 .
 
 rdfdf:multipart-literal-fn-nullable-SuperFormats
-  rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:zeropart-uri
@@ -1627,7 +1653,7 @@ rdfdf:zeropart-uri
 
 rdfdf:zeropart-uri-SuperFormats
   rdf:type virtrdf:array-of-QuadMapFormat;
-  rdf:_1 rdfdf:zeropart-uri-nullable;
+  rdf:_1 rdfdf:zeropart-uri-nullable
 .
 
 rdfdf:zeropart-uri-nullable
@@ -1648,7 +1674,7 @@ rdfdf:zeropart-uri-nullable
 .
 
 rdfdf:zeropart-uri-nullable-SuperFormats
-  rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:zeropart-uri-fn-nullable
@@ -1696,7 +1722,7 @@ rdfdf:zeropart-uri-fn-nullable
 .
 
 rdfdf:zeropart-uri-fn-nullable-SuperFormats
-  rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:zeropart-literal-fn-nullable
@@ -1744,7 +1770,7 @@ rdfdf:zeropart-literal-fn-nullable
 .
 
 rdfdf:zeropart-literal-fn-nullable-SuperFormats
-  rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:sql-varchar-uri-fn
@@ -1794,7 +1820,7 @@ rdfdf:sql-varchar-uri-fn
 
 rdfdf:sql-varchar-uri-fn-SuperFormats
       rdf:type virtrdf:array-of-QuadMapFormat;
-      rdf:_1 rdfdf:sql-varchar-uri-fn-nullable;
+  rdf:_1 rdfdf:sql-varchar-uri-fn-nullable
 .
 
 rdfdf:sql-varchar-uri-fn-nullable
@@ -1808,7 +1834,30 @@ rdfdf:sql-varchar-uri-fn-nullable
 .
 
 rdfdf:sql-varchar-uri-fn-nullable-SuperFormats
+  rdf:type virtrdf:array-of-QuadMapFormat
+.
+
+rdfdf:sql-nvarchar-uri-fn
+  rdf:type virtrdf:QuadMapFormat;
+  virtrdf:inheritFrom rdfdf:sql-varchar-uri-fn;
+  virtrdf:qmfName "sql-nvarchar-uri-fn";
+  virtrdf:qmfSuperFormats rdfdf:sql-nvarchar-uri-fn-SuperFormats
+.
+
+rdfdf:sql-nvarchar-uri-fn-SuperFormats
       rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:_1 rdfdf:sql-nvarchar-uri-fn-nullable
+.
+
+rdfdf:sql-nvarchar-uri-fn-nullable
+  rdf:type virtrdf:QuadMapFormat;
+  virtrdf:inheritFrom rdfdf:sql-varchar-uri-fn-nullable;
+  virtrdf:qmfName "sql-nvarchar-uri-fn-nullable";
+  virtrdf:qmfSuperFormats rdfdf:sql-nvarchar-uri-fn-nullable-SuperFormats
+.
+
+rdfdf:sql-nvarchar-uri-fn-nullable-SuperFormats
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:sql-integer-uri-fn
@@ -1830,7 +1879,7 @@ rdfdf:sql-integer-uri-fn
 
 rdfdf:sql-integer-uri-fn-SuperFormats
       rdf:type virtrdf:array-of-QuadMapFormat;
-      rdf:_1 rdfdf:sql-integer-uri-fn-nullable;
+  rdf:_1 rdfdf:sql-integer-uri-fn-nullable
 .
 
 rdfdf:sql-integer-uri-fn-nullable
@@ -1844,7 +1893,7 @@ rdfdf:sql-integer-uri-fn-nullable
 .
 
 rdfdf:sql-integer-uri-fn-nullable-SuperFormats
-      rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:sql-numeric-uri-fn
@@ -1866,7 +1915,7 @@ rdfdf:sql-numeric-uri-fn
 
 rdfdf:sql-numeric-uri-fn-SuperFormats
   rdf:type virtrdf:array-of-QuadMapFormat;
-  rdf:_1 rdfdf:sql-numeric-uri-fn-nullable;
+  rdf:_1 rdfdf:sql-numeric-uri-fn-nullable
 .
 
 rdfdf:sql-numeric-uri-fn-nullable
@@ -1880,7 +1929,7 @@ rdfdf:sql-numeric-uri-fn-nullable
 .
 
 rdfdf:sql-numeric-uri-fn-nullable-SuperFormats
-  rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:sql-varchar-literal-fn
@@ -1929,7 +1978,7 @@ rdfdf:sql-varchar-literal-fn
 .
 
 rdfdf:sql-varchar-literal-fn-SuperFormats
-  rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:sql-varchar-literal-fn-nullable
@@ -1943,11 +1992,30 @@ rdfdf:sql-varchar-literal-fn-nullable
 .
 
 rdfdf:sql-varchar-literal-fn-nullable-SuperFormats
-  rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
-rdfdf:sql-varchar-literal-fn-nullable-SuperFormats
+rdfdf:sql-nvarchar-literal-fn
+  rdf:type virtrdf:QuadMapFormat;
+  virtrdf:inheritFrom rdfdf:sql-varchar-literal-fn;
+  virtrdf:qmfName "sql-nvarchar-literal-fn";
+  virtrdf:qmfSuperFormats rdfdf:sql-nvarchar-literal-fn-SuperFormats
+.
+
+rdfdf:sql-nvarchar-literal-fn-SuperFormats
   rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:_1 rdfdf:sql-nvarchar-literal-fn-nullable
+.
+
+rdfdf:sql-nvarchar-literal-fn-nullable
+  rdf:type virtrdf:QuadMapFormat;
+  virtrdf:inheritFrom rdfdf:sql-varchar-literal-fn-nullable;
+  virtrdf:qmfName "sql-nvarchar-literal-fn-nullable";
+  virtrdf:qmfSuperFormats rdfdf:sql-nvarchar-literal-fn-nullable-SuperFormats
+.
+
+rdfdf:sql-nvarchar-literal-fn-nullable-SuperFormats
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:sql-integer-literal-fn
@@ -1968,7 +2036,7 @@ rdfdf:sql-integer-literal-fn
 .
 
 rdfdf:sql-integer-literal-fn-SuperFormats
-  rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:sql-integer-literal-fn-nullable
@@ -1989,7 +2057,7 @@ rdfdf:sql-integer-literal-fn-nullable
 .
 
 rdfdf:sql-integer-literal-fn-nullable-SuperFormats
-  rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:sql-numeric-literal-fn
@@ -2010,7 +2078,7 @@ rdfdf:sql-numeric-literal-fn
 .
 
 rdfdf:sql-numeric-literal-fn-SuperFormats
-  rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 rdfdf:sql-numeric-literal-fn-nullable
@@ -2031,7 +2099,7 @@ rdfdf:sql-numeric-literal-fn-nullable
 .
 
 rdfdf:sql-numeric-literal-fn-nullable-SuperFormats
-  rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:type virtrdf:array-of-QuadMapFormat
 .
 
 virtrdf:DefaultQuadMap
@@ -2041,7 +2109,7 @@ virtrdf:DefaultQuadMap
   virtrdf:qmPredicateMap virtrdf:DefaultQuadMap-P;
   virtrdf:qmObjectMap virtrdf:DefaultQuadMap-O;
   virtrdf:qmTableName "DB.DBA.RDF_QUAD";
-  virtrdf:qmMatchingFlags virtrdf:SPART_QM_OK_FOR_ANY_QUAD;
+  virtrdf:qmMatchingFlags virtrdf:SPART_QM_OK_FOR_ANY_QUAD
 .
 
 virtrdf:DefaultQuadMap-G
@@ -2050,18 +2118,18 @@ virtrdf:DefaultQuadMap-G
   virtrdf:qmvATables virtrdf:DefaultQuadMap-atables;
   virtrdf:qmvColumns virtrdf:DefaultQuadMap-G-cols;
   virtrdf:qmvFormat rdfdf:default-iid-nonblank;
-  virtrdf:qmvColumnsFormKey 0;
+  virtrdf:qmvColumnsFormKey 0
 .
 
 virtrdf:DefaultQuadMap-G-cols
           rdf:type virtrdf:array-of-QuadMapColumn;
-  rdf:_1 virtrdf:DefaultQuadMap-G-col-G;
+  rdf:_1 virtrdf:DefaultQuadMap-G-col-G
 .
 
 virtrdf:DefaultQuadMap-G-col-G
               rdf:type virtrdf:QuadMapColumn;
   virtrdf:qmvcAlias "!pquad";
-              virtrdf:qmvcColumnName "G";
+  virtrdf:qmvcColumnName "G"
 .
 
 virtrdf:DefaultQuadMap-S
@@ -2070,18 +2138,18 @@ virtrdf:DefaultQuadMap-S
   virtrdf:qmvATables virtrdf:DefaultQuadMap-atables;
   virtrdf:qmvColumns virtrdf:DefaultQuadMap-S-cols;
   virtrdf:qmvFormat rdfdf:default-iid;
-  virtrdf:qmvColumnsFormKey 0;
+  virtrdf:qmvColumnsFormKey 0
 .
 
 virtrdf:DefaultQuadMap-S-cols
           rdf:type virtrdf:array-of-QuadMapColumn;
-  rdf:_1 virtrdf:DefaultQuadMap-S-col-S;
+  rdf:_1 virtrdf:DefaultQuadMap-S-col-S
 .
 
 virtrdf:DefaultQuadMap-S-col-S
               rdf:type virtrdf:QuadMapColumn;
   virtrdf:qmvcAlias "!pquad";
-              virtrdf:qmvcColumnName "S";
+  virtrdf:qmvcColumnName "S"
 .
 
 virtrdf:DefaultQuadMap-P
@@ -2090,18 +2158,18 @@ virtrdf:DefaultQuadMap-P
   virtrdf:qmvATables virtrdf:DefaultQuadMap-atables;
   virtrdf:qmvColumns virtrdf:DefaultQuadMap-P-cols;
   virtrdf:qmvFormat rdfdf:default-iid-nonblank;
-  virtrdf:qmvColumnsFormKey 0;
+  virtrdf:qmvColumnsFormKey 0
 .
 
 virtrdf:DefaultQuadMap-P-cols
           rdf:type virtrdf:array-of-QuadMapColumn;
-  rdf:_1 virtrdf:DefaultQuadMap-P-col-P;
+  rdf:_1 virtrdf:DefaultQuadMap-P-col-P
 .
 
 virtrdf:DefaultQuadMap-P-col-P
               rdf:type virtrdf:QuadMapColumn;
   virtrdf:qmvcAlias "!pquad";
-              virtrdf:qmvcColumnName "P";
+  virtrdf:qmvcColumnName "P"
 .
 
 virtrdf:DefaultQuadMap-O
@@ -2111,29 +2179,29 @@ virtrdf:DefaultQuadMap-O
   virtrdf:qmvColumns virtrdf:DefaultQuadMap-O-cols;
   virtrdf:qmvFText virtrdf:DefaultQuadMap-ft;
   virtrdf:qmvFormat rdfdf:default;
-  virtrdf:qmvColumnsFormKey 0;
+  virtrdf:qmvColumnsFormKey 0
 .
 
 virtrdf:DefaultQuadMap-O-cols
           rdf:type virtrdf:array-of-QuadMapColumn;
-  rdf:_1 virtrdf:DefaultQuadMap-O-col-O;
+  rdf:_1 virtrdf:DefaultQuadMap-O-col-O
 .
 
 virtrdf:DefaultQuadMap-O-col-O
               rdf:type virtrdf:QuadMapColumn;
   virtrdf:qmvcAlias "!pquad";
-              virtrdf:qmvcColumnName "O";
+  virtrdf:qmvcColumnName "O"
 .
 
 virtrdf:DefaultQuadMap-atables
   rdf:type virtrdf:array-of-QuadMapATable;
-  rdf:_1 virtrdf:DefaultQuadMap-pquad;
+  rdf:_1 virtrdf:DefaultQuadMap-pquad
 .
 
 virtrdf:DefaultQuadMap-pquad
   rdf:type virtrdf:QuadMapATable;
   virtrdf:qmvaAlias "!pquad";
-  virtrdf:qmvaTableName "DB.DBA.RDF_QUAD";
+  virtrdf:qmvaTableName "DB.DBA.RDF_QUAD"
 .
 
 virtrdf:DefaultQuadMap-ft
@@ -2144,12 +2212,12 @@ virtrdf:DefaultQuadMap-ft
   virtrdf:qmvftConds virtrdf:DefaultQuadMap-ft-conds;
   virtrdf:qmvftTableName "DB.DBA.RDF_OBJ";
   virtrdf:qmvftAuxTableName "DB.DBA.RDF_FT";
-  virtrdf:qmvftXmlIndex 1;
+  virtrdf:qmvftXmlIndex 1
 .
 
 virtrdf:DefaultQuadMap-ft-conds
   rdf:type virtrdf:array-of-string;
   rdf:_1 "^{pobj.}^.RO_ID = ^{pobjft.}^.RF_ID";
-  rdf:_2 "^{!pquad.}^.O = ^{pobjft.}^.RF_O";
+  rdf:_2 "^{!pquad.}^.O = ^{pobjft.}^.RF_O"
 .
 
