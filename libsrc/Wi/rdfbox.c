@@ -2197,7 +2197,7 @@ bif_sparql_rset_xml_write_row (caddr_t * qst, caddr_t * err_ret, state_slot_t **
                     if (NULL == iri)
                       {
                         char buf[50];
-                        sprintf (buf, "bad://" BOXINT_FMT, (boxint)iri);
+                        snprintf (buf, sizeof (buf), "bad://" BOXINT_FMT, (boxint)(ptrlong)iri);
                         SES_PRINT (ses, buf);
                       }
                     else
@@ -2218,7 +2218,7 @@ bif_sparql_rset_xml_write_row (caddr_t * qst, caddr_t * err_ret, state_slot_t **
                 if (NULL == iri)
                   {
                     char buf[50];
-                    sprintf (buf, "bad://" BOXINT_FMT, (boxint)iri);
+                    snprintf (buf, sizeof (buf), "bad://" BOXINT_FMT, (boxint)(ptrlong)iri);
                     SES_PRINT (ses, buf);
                   }
                 else

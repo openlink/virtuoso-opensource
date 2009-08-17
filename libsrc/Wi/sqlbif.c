@@ -5844,6 +5844,34 @@ bif_or (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
+bif_transparent_or (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int argctr, argcount = BOX_ELEMENTS (args);
+  int good_arg_idx = -1;
+  for (argctr = 0; argctr < argcount; argctr++)
+    {
+      caddr_t arg = bif_arg_nochecks(qst,args,argctr);
+      dtp_t dtp = DV_TYPE_OF (arg);
+      switch (dtp)
+        {
+        case DV_DB_NULL: return NEW_DB_NULL;
+        case DV_SHORT_INT:
+        case DV_LONG_INT:
+        case DV_CHARACTER:
+        case DV_C_SHORT:    /* These are  */
+        case DV_C_INT:    /*  not needed? */
+          if (0 == unbox (arg))
+            continue;
+        /* no break */
+        default: good_arg_idx = argctr;
+        }
+    }
+  if (0 <= good_arg_idx)
+    return box_copy_tree (bif_arg_nochecks(qst,args,good_arg_idx));
+  return (caddr_t)0;
+}
+
+caddr_t
 bif_not (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t arg1 = bif_arg (qst, args, 0, "not");
@@ -8467,7 +8495,11 @@ do_long_string:
 	  case DV_STRING:
 	      return (box_copy (data));
 	  case DV_UNAME:
-	      return box_dv_short_nchars (data, box_length (data)-1);
+              {
+                caddr_t res = box_dv_short_nchars (data, box_length (data)-1);
+                box_flags (res) |= BF_UTF8;
+                return res;
+              }
 	  case DV_C_STRING:
 	      return (box_dv_short_string (data));
 	  case DV_LONG_CONT_STRING:
@@ -8906,6 +8938,31 @@ do_wide:
 		    sqlr_resignal (err);
 		  return ret;
 		}
+	  case DV_UNAME:
+            {
+              unsigned char *utf8 = (unsigned char *) data;
+              unsigned char *utf8work;
+              size_t utf8_len = box_length (data) - 1;
+              size_t wide_len;
+              virt_mbstate_t state;
+              utf8work = utf8;
+              memset (&state, 0, sizeof (virt_mbstate_t));
+              wide_len = virt_mbsnrtowcs (NULL, &utf8work, utf8_len, 0, &state);
+              if (((long) wide_len) < 0)
+	        sqlr_new_error ("22005", "IN015",
+	          "Invalid data supplied in UNAME -> NVARCHAR conversion");
+              ret = dk_alloc_box ((int) (wide_len  + 1) * sizeof (wchar_t), DV_WIDE);
+              utf8work = utf8;
+              memset (&state, 0, sizeof (virt_mbstate_t));
+              if (wide_len != virt_mbsnrtowcs ((wchar_t *) ret, &utf8work, utf8_len, wide_len, &state))
+                {
+                  dk_free_box (ret);
+	          sqlr_new_error ("22005", "IN015",
+	            "Inconsistent UTF-8 data supplied in UNAME -> NVARCHAR conversion");
+                }
+              ((wchar_t *)ret)[wide_len] = L'\0';
+              return ret;
+            }
 	  case DV_DATETIME:
 	  case DV_DATE:
 	  case DV_TIME:
@@ -13889,6 +13946,7 @@ sql_bif_init (void)
   bif_define_typed ("ifnull", bif_ifnull, &bt_any);
   bif_define_typed ("__and", bif_and, &bt_integer);
   bif_define_typed ("__or", bif_or, &bt_integer);
+  bif_define_typed ("__transparent_or", bif_transparent_or, &bt_any);
   bif_define_typed ("__not", bif_not, &bt_integer);
 
 /* Comparison functions */

@@ -1066,11 +1066,56 @@ bif_sys_mkpath (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 int
 str_compare (const void *s1, const void *s2)
 {
-  caddr_t sc1 = (caddr_t) * (caddr_t *) s1;
-  caddr_t sc2 = (caddr_t) * (caddr_t *) s2;
-  if (!IS_STRING_DTP (DV_TYPE_OF (sc1)) || !IS_STRING_DTP (DV_TYPE_OF (sc2)))
-    GPF_T;
+  ccaddr_t sc1 = (caddr_t) * (caddr_t *) s1;
+  ccaddr_t sc2 = (caddr_t) * (caddr_t *) s2;
+  dtp_t sc1_dtp = DV_TYPE_OF (sc1);
+  dtp_t sc2_dtp = DV_TYPE_OF (sc2);
+  int sign;
+  if (IS_STRING_DTP (sc1_dtp) && IS_STRING_DTP (sc2_dtp))
   return strcmp (sc1, sc2);
+  if ((DV_WIDE == sc1_dtp) && (DV_WIDE == sc2_dtp))
+    {
+      int len1 = box_length (sc1);
+      int len2 = box_length (sc2);
+      int cmplen = (len1 < len2) ? len1 : len2;
+      int res = memcmp (sc1, sc2, cmplen);
+      if ((0 != res) || (len1 == len2))
+        return res;
+      return (len1 > len2) ? 1 : -1;
+    }
+  sign = 1;
+  if (IS_STRING_DTP (sc1_dtp) && (DV_WIDE == sc2_dtp))
+    {
+      ccaddr_t swap_sc;
+      dtp_t swap_sc_dtp;
+      sign = -1;
+      swap_sc = sc1; sc1 = sc2; sc2 = swap_sc;
+      swap_sc_dtp = sc1_dtp; sc1_dtp = sc2_dtp; sc2_dtp = swap_sc_dtp;
+    }
+  if ((DV_WIDE == sc1_dtp) && IS_STRING_DTP (sc2_dtp))
+    {
+      const wchar_t *sc1_tail = (const wchar_t *)sc1;
+      const wchar_t *sc1_end = sc1_tail +  ((box_length (sc1) / sizeof (wchar_t)) - 1);
+      const char *sc2_tail = sc2;
+      const char *sc2_end = sc2_tail + (box_length (sc2) - 1);
+      int sc2_is_utf8 = ((DV_UNAME == sc2_dtp) || (BF_UTF8 == box_flags (sc2)));
+      while ((sc1_tail < sc1_end) && (sc2_tail < sc2_end))
+        {
+          int c1 = (sc1_tail++)[0];
+          int c2 = sc2_tail[0];
+          if (sc2_is_utf8 && (c2 & ~0x7f))
+            c2 = eh_decode_char__UTF8 (&sc2_tail, sc2_end);
+          else
+            sc2_tail++;
+          if (c1 > c2) return sign;
+          if (c1 < c2) return -sign;
+        }
+      if (sc1_tail < sc1_end) return sign;
+      if (sc2_tail < sc2_end) return -sign;
+      return 0;
+    }
+  GPF_T;
+  return 0;
 }
 
 

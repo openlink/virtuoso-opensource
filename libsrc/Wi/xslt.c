@@ -2500,9 +2500,9 @@ xslt_top (query_instance_t * qi, xml_entity_t * xe, xslt_sheet_t * xsh, caddr_t 
         excl_val = xslt_attr_template (&context, xsh->xsh_top_excl_res_prefx);
       sh_uri = box_dv_short_string(xsh->xsh_shuric.shuric_uri);
       if (NULL != excl_val)
-        root_elt_head = list (5, uname__root, uname__xslt, sh_uri, uname__bang_exclude_result_prefixes, excl_val);
+        root_elt_head = (caddr_t *) list (5, uname__root, uname__xslt, sh_uri, uname__bang_exclude_result_prefixes, excl_val);
       else
-        root_elt_head = list (3, uname__root, uname__xslt, sh_uri);
+        root_elt_head = (caddr_t *) list (3, uname__root, uname__xslt, sh_uri);
       XD_DOM_RELEASE (xe->xe_doc.xd);
     }
   QR_RESET_CODE

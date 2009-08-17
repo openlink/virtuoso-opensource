@@ -5127,7 +5127,12 @@ enable_wr_in_l_exp:
 int
 xp_wordstack_from_string (char * str, encoding_handler_t *eh, lang_handler_t *lh, dk_set_t *wordstack_ptr)
 {
-  int ret = lh_iterate_patched_words(
+  int ret;
+  if ((&eh__UTF8 == eh) || (&eh__UTF8_QR == eh))
+    ASSERT_NCHARS_UTF8 (str, strlen (str));
+  else
+    ASSERT_NCHARS_8BIT (str, strlen (str));
+  ret = lh_iterate_patched_words(
     eh, lh->lh_ftq_language,
     str, strlen(str),
     lh->lh_ftq_language->lh_is_vtb_word, lh->lh_ftq_language->lh_normalize_word,
@@ -5151,6 +5156,7 @@ xp_word_or_phrase_from_wordstack (xpp_t *xpp, dk_set_t words, int allow_xp_error
     }
   if (!words->next)
     {
+      ASSERT_BOX_UTF8 (words->data);
       res = (caddr_t *) list (3, SRC_WORD, (ptrlong)SRC_RANGE_DUMMY, words->data);
       dk_set_free (words);
     }
@@ -5161,7 +5167,10 @@ xp_word_or_phrase_from_wordstack (xpp_t *xpp, dk_set_t words, int allow_xp_error
       dk_set_push (&words, (void*)((ptrlong)SRC_WORD_CHAIN));	/* Push opcode, will be item with index 0 */
       res = (caddr_t*) list_to_array (words);
       for (inx = 2; inx < (int) BOX_ELEMENTS (res); inx++)
+        {
+          ASSERT_BOX_UTF8 (res[inx]);
 	res[inx] = list (3, SRC_WORD, (ptrlong)SRC_RANGE_DUMMY, res[inx]);
+    }
     }
   return res;
 }

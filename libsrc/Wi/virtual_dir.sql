@@ -1244,9 +1244,10 @@ DB.DBA.VHOST_DUMP_SQL (in lpath varchar, in vhost varchar := '*ini*', in lhost v
 -- /* get a header field based on max of quality value */
 create procedure DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (in accept varchar)
 {
-  declare format, itm, q varchar;
+  declare format, itm varchar;
   declare arr any;
-  declare best_q, i, l int;
+  declare i, l int;
+  declare best_q, q double precision;
 
   arr := split_and_decode (accept, 0, '\0\0,;');
   best_q := 0;
@@ -1325,31 +1326,32 @@ create procedure DB.DBA.HTTP_RDF_ACCEPT (in path varchar, in virtual_dir varchar
 }
 ;
 
-create procedure WS.WS.DIR_INDEX_MAKE_XML (inout _sheet varchar)
+create procedure WS.WS.DIR_INDEX_MAKE_XML (inout _sheet varchar, in curdir varchar := null, in start_from varchar := null)
 {
-   declare dirarr, filearr, fsize, ret_xml any;
-   declare curdir, dirname, root, start_from, modt varchar;
+   declare dirarr, filearr, fsize, xte_path, xte_list, xte_entry any;
+   declare dirname, root, modt varchar;
    declare ix, len, flen, rflen, mult integer;
    fsize := vector ('b','K','M','G','T');
+   if (curdir is null)
    curdir := concat (http_root (), http_physical_path ());
+   if (start_from is null)
    start_from := http_path ();
    root := http_root ();
-   ret_xml := string_output ();
    dirarr := sys_dirlist (curdir, 0, null, 1);
    filearr := sys_dirlist (curdir, 1, null, 1);
    if (curdir <> '\\' and aref (curdir, length (curdir) - 1) <> ascii ('/'))
      curdir := concat (curdir, '/');
    if (start_from <> '/' and aref (start_from, length (start_from) - 1) <> ascii ('/'))
      start_from := concat (start_from, '/');
-   http ('<?xml version="1.0" ?>', ret_xml);
-   http (sprintf ('<PATH dir_name="%V">', start_from), ret_xml);
+   xte_nodebld_init (xte_path);
+   xte_nodebld_acc (xte_path, xte_node (xte_head ('PATH', 'dir_name', start_from)));
    if (aref (root, length (root) - 1) <> ascii ('/'))
      root := concat (root, '/');
    if (aref (curdir, length (curdir) - 1) <> ascii ('/'))
      curdir := concat (curdir, '/');
    len := length (dirarr);
    ix := 0;
-   http ('<DIRS>', ret_xml);
+   xte_nodebld_init (xte_list);
    while (ix < len)
      {
        declare fst varchar;
@@ -1360,11 +1362,13 @@ create procedure WS.WS.DIR_INDEX_MAKE_XML (inout _sheet varchar)
        else
          modt := now();
        if (dirname <> '.')
-	 http (sprintf ('<SUBDIR modify="%s" name="%s" />\n',
-	       soap_print_box (modt, '', 2), dirname), ret_xml);
+         xte_nodebld_acc (xte_list, xte_node (xte_head ('SUBDIR', 'name', dirname,
+               'modify', soap_print_box (modt, '', 2) ) ) );
        ix := ix + 1;
      }
-   http ('</DIRS><FILES>', ret_xml);
+   xte_nodebld_final (xte_list, xte_head ('DIRS'));
+   xte_nodebld_acc (xte_path, xte_list);
+   xte_nodebld_init (xte_list);
    len := length (filearr);
    ix := 0;
    while (ix < len)
@@ -1382,39 +1386,41 @@ create procedure WS.WS.DIR_INDEX_MAKE_XML (inout _sheet varchar)
 	   mult := mult + 1;
 	   flen := flen / 1000;
 	 }
-       http (sprintf ('<FILE modify="%s" rs="%s" hs="%d %s" name="%s" />\n',
-	     soap_print_box (modt, '', 2), rflen, flen, aref (fsize, mult), dirname), ret_xml);
+       xte_nodebld_acc (xte_list, xte_node (xte_head ('FILE', 'name', dirname,
+             'modify', soap_print_box (modt, '', 2), 'rs', rflen,
+             'hs', sprintf ('%d %s', flen, aref (fsize, mult)) ) ) );
        ix := ix + 1;
      }
-     http ('</FILES></PATH>', ret_xml);
-
-     return string_output_string (ret_xml);
+   xte_nodebld_final (xte_list, xte_head ('FILES'));
+   xte_nodebld_acc (xte_path, xte_list);
+   xte_nodebld_final (xte_path, xte_head ('PATH'));
+   return xml_tree_doc (xte_path);
 }
 ;
 
 
 xslt_sheet ('http://local.virt/dir_output', xml_tree_doc ('
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
-    <xsl:output method="text" />
+    <xsl:output method="text" encoding="UTF-8" />
 
     <xsl:template match="PATH">
 	<xsl:variable name="path"><xsl:value-of select="@dir_name"/></xsl:variable>
 	&lt;!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN"&gt;
 	&lt;HTML&gt;
-	&lt;TITLE&gt;Directory listing of <xsl:value-of select="$path"/>&lt;/TITLE&gt;
+	&lt;TITLE&gt;Directory listing of <xsl:value-of select="\044path"/>&lt;/TITLE&gt;
 	&lt;BODY bgcolor="#FFFFFF" fgcolor="#000000"&gt;
-	&lt;H4&gt;Index of <xsl:value-of select="$path"/>&lt;/H4&gt;
+	&lt;H4&gt;Index of <xsl:value-of select="\044path"/>&lt;/H4&gt;
 	  &lt;TABLE&gt;
 	    &lt;tr&gt;&lt;td colspan=2 align="center"&gt;Name&lt;/td&gt;
 	    &lt;td align="center"&gt;Last modified&lt;/td&gt;&lt;td align="center"&gt;Size&lt;/td&gt;&lt;/tr&gt;
 	    &lt;tr&gt;&lt;td colspan=5&gt;&lt;HR /&gt;&lt;/td&gt;&lt;/tr&gt;
 
 	<xsl:apply-templates select="DIRS">
-	  <xsl:with-param name="f_path" select="$path"/>
+	  <xsl:with-param name="f_path" select="\044path"/>
 	</xsl:apply-templates>
 
 	<xsl:apply-templates select="FILES">
-	  <xsl:with-param name="f_path" select="$path"/>
+	  <xsl:with-param name="f_path" select="\044path"/>
 	</xsl:apply-templates>
 
 	     &lt;tr&gt;&lt;td colspan=5&gt;&lt;HR /&gt;&lt;/td&gt;&lt;/tr&gt;
@@ -1427,7 +1433,7 @@ xslt_sheet ('http://local.virt/dir_output', xml_tree_doc ('
 	 <xsl:param name="f_path" />
     	&lt;tr&gt;
 	   &lt;td&gt;&lt;img src="/conductor/images/dav_browser/foldr_16.png" alt="folder"&gt;&lt;/td&gt;
-	   &lt;td&gt;&lt;a href="<xsl:value-of select="$f_path"/><xsl:value-of select="@name"/>/"&gt;<xsl:value-of select="@name"/>&lt;/a&gt;&lt;/td&gt;
+	   &lt;td&gt;&lt;a href="<xsl:value-of select="\044f_path"/><xsl:value-of select="@name"/>/"&gt;<xsl:value-of select="@name"/>&lt;/a&gt;&lt;/td&gt;
 	   &lt;td&gt;<xsl:value-of select="@modify"/>&lt;/td&gt;&lt;td align="right"&gt;-&lt;/td&gt;
 	&lt;/tr&gt;
     </xsl:template>
@@ -1436,7 +1442,7 @@ xslt_sheet ('http://local.virt/dir_output', xml_tree_doc ('
 	 <xsl:param name="f_path" />
     	&lt;tr&gt;
 	   &lt;td&gt;&lt;img src="/conductor/images/dav_browser/file_gen_16.png" alt="file"&gt;&lt;/td&gt;
-	   &lt;td&gt;&lt;a href="<xsl:value-of select="$f_path"/><xsl:value-of select="@name"/>"&gt;<xsl:value-of select="@name"/>&lt;/a&gt;&lt;/td&gt;
+	   &lt;td&gt;&lt;a href="<xsl:value-of select="\044f_path"/><xsl:value-of select="@name"/>"&gt;<xsl:value-of select="@name"/>&lt;/a&gt;&lt;/td&gt;
 	   &lt;td&gt;<xsl:value-of select="@modify"/>&lt;/td&gt;&lt;td align="right"&gt;<xsl:value-of select="@hs"/>&lt;/td&gt;
 	&lt;/tr&gt;
     </xsl:template>
@@ -1449,6 +1455,7 @@ create procedure WS.WS.DIR_INDEX_XML (in path any, in params any, in lines any)
 {
   declare _html, _xml, _sheet varchar;
   declare _b_opt any;
+  declare ssheet_name, ssheet_text varchar;
 
   _b_opt := NULL;
 
@@ -1458,26 +1465,27 @@ create procedure WS.WS.DIR_INDEX_XML (in path any, in params any, in lines any)
 	where HP_LPATH = http_map_get ('domain') and HP_PPATH = http_map_get ('mounted');
 
   _sheet := '';
-  _xml := xml_tree_doc (WS.WS.DIR_INDEX_MAKE_XML (_sheet));
+  _xml := WS.WS.DIR_INDEX_MAKE_XML (_sheet);
 
   if (_b_opt is not NULL)
     _b_opt := get_keyword ('browse_sheet', _b_opt, '');
 
   if (_sheet <> '')
     {
-       xslt_sheet ('http://local.virt/custom_dir_output', xml_tree_doc (file_to_string (_sheet)));
-       _html := cast (xslt ('http://local.virt/custom_dir_output', _xml) as varchar);
+      ssheet_name := 'http://local.virt/custom_dir_output/' || _sheet;
+      ssheet_text := file_to_string (_sheet);
     }
   else if (_b_opt <> '')
     {
        _b_opt := concat (http_root(), '/', _b_opt);
-       xslt_sheet ('http://local.virt/custom_dir_output', xml_tree_doc (file_to_string (_b_opt)));
-       _html := cast (xslt ('http://local.virt/custom_dir_output', _xml) as varchar);
+      ssheet_name := 'http://local.virt/custom_dir_output/' ||  _b_opt;
+      ssheet_text := file_to_string (_b_opt);
     }
+  if (isstring (ssheet_name))
+    xslt_sheet (ssheet_name, xtree_doc (ssheet_text));
   else
-    _html := cast (xslt ('http://local.virt/dir_output', _xml) as varchar);
-
-  return http (_html);
+    ssheet_name := 'http://local.virt/dir_output';
+  return http_value (xslt (ssheet_name, _xml));
 }
 ;
 

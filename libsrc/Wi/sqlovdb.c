@@ -131,6 +131,7 @@ int
 loc_supports_top_op (locus_t * loc, ST * tree)
 {
   NO_VDB;
+  return 0;
 }
 
 
@@ -152,6 +153,7 @@ int
 sqlo_remote_hash_filler (sqlo_t * so, df_elt_t * filler, df_elt_t * tb_dfe)
 {
   NO_VDB;
+  return 1;
 }
 
 
@@ -183,6 +185,7 @@ data_source_t *
 sqlg_locus_rts (sqlo_t * so, df_elt_t * first_dfe, dk_set_t pre_code)
 {
   NO_VDB;
+  return NULL;
 }
 
 
