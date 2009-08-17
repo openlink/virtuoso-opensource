@@ -95,12 +95,14 @@ caddr_t box_wide_string (const wchar_t *wstr);
 caddr_t box_wide_nchars (const wchar_t *wstr, size_t len);
 
 #ifdef UTF8_DEBUG
+#define ASSERT_BOX_ENC_MATCHES_BF(box,expected_bf_if_zero) assert_box_enc_matches_bf (__FILE__, __LINE__, (box), (expected_bf_if_zero))
 #define ASSERT_BOX_UTF8(box) assert_box_utf8 (__FILE__, __LINE__, (box))
 #define ASSERT_BOX_8BIT(box) assert_box_8bit (__FILE__, __LINE__, (box))
 #define ASSERT_BOX_WCHAR(box) assert_box_wchar (__FILE__, __LINE__, (box))
 #define ASSERT_NCHARS_UTF8(buf,len) assert_nchars_utf8 (__FILE__, __LINE__, (buf), (len))
 #define ASSERT_NCHARS_8BIT(buf,len) assert_nchars_8bit (__FILE__, __LINE__, (buf), (len))
 #define ASSERT_NCHARS_WCHAR(buf,len) assert_nchars_wchar (__FILE__, __LINE__, (buf), (len))
+extern void assert_box_enc_matches_bf (const char *file, int line, ccaddr_t box, int expected_bf_if_zero);
 extern void assert_box_utf8 (const char *file, int line, caddr_t box);
 extern void assert_box_8bit (const char *file, int line, caddr_t box);
 extern void assert_box_wchar (const char *file, int line, caddr_t box);
@@ -108,6 +110,7 @@ extern void assert_nchars_utf8 (const char *file, int line, const char *buf, siz
 extern void assert_nchars_8bit (const char *file, int line, const char *buf, size_t len);
 extern void assert_nchars_wchar (const char *file, int line, const char *buf, size_t len);
 #else
+#define ASSERT_BOX_ENC_MATCHES_BF(box,expected_bf_if_zero)
 #define ASSERT_BOX_UTF8(box)
 #define ASSERT_BOX_8BIT(box)
 #define ASSERT_BOX_WCHAR(box)

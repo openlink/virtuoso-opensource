@@ -28,13 +28,13 @@
 #if !defined (__APPLE__)
 #include <wchar.h>
 #endif
+#include <limits.h>
 #include "wi.h"
 #include "libutil.h"
 #include "sqlnode.h"
 #include "eqlcomp.h"
 #include "sqlfn.h"
 #include "sqlbif.h"
-#include <limits.h>
 #include "multibyte.h"
 #include "srvmultibyte.h"
 #include "xml.h"
@@ -43,7 +43,7 @@ extern "C" {
 #endif
 #include "xmlparser.h"
 /*#include "xmlparser_impl.h"*/
-#include <langfunc.h>
+#include "langfunc.h"
 #ifdef __cplusplus
 }
 #endif
@@ -301,10 +301,8 @@ caddr_t
 charset_recode_from_named_to_named (caddr_t narrow, const char *cs1_uppercase, const char *cs2_uppercase, int *res_is_new_ret, caddr_t *err_ret)
 {
   wcharset_t *cs1, *cs2;
-  int inx, to_free = 0, offset = 0;
+  int bom_skip_offset = 0;
   encoding_handler_t *eh_cs1 = NULL;
-  caddr_t ret = NULL;
-  dtp_t dtp = DV_TYPE_OF (narrow);
   res_is_new_ret[0] = 0;
 
   cs1 = (cs1_uppercase && box_length (cs1_uppercase) > 1 ? sch_name_to_charset (cs1_uppercase) : (wcharset_t *)NULL);
@@ -324,13 +322,13 @@ charset_recode_from_named_to_named (caddr_t narrow, const char *cs1_uppercase, c
       if (!stricmp (cs1_uppercase, "UTF-16") && box_length (narrow) > 2
 	  && (unsigned char)(narrow[0]) == 0xFF && (unsigned char)(narrow[1]) == 0xFE)
 	{
-          offset = 2;
+          bom_skip_offset = 2;
 	  eh_cs1 = eh_get_handler ("UTF-16LE");
 	}
       else if (!stricmp (cs1_uppercase, "UTF-16") && box_length (narrow) > 2
 	  && (unsigned char)(narrow[0]) == 0xFE && (unsigned char)(narrow[1]) == 0xFF)
 	{
-	  offset = 2;
+	  bom_skip_offset = 2;
 	  eh_cs1 = eh_get_handler ("UTF-16BE");
 	}
       else if (!stricmp (cs1_uppercase, "UTF-16"))
@@ -348,16 +346,25 @@ charset_recode_from_named_to_named (caddr_t narrow, const char *cs1_uppercase, c
     cs1 = default_charset;
   if (!cs2)
     cs2 = default_charset;
+  return charset_recode_from_cs_or_eh_to_cs (narrow, bom_skip_offset, eh_cs1, cs1, cs2, res_is_new_ret, err_ret);
+}
+
+caddr_t
+charset_recode_from_cs_or_eh_to_cs (caddr_t narrow, int bom_skip_offset, encoding_handler_t *eh_cs1, wcharset_t *cs1, wcharset_t *cs2, int *res_is_new_ret, caddr_t *err_ret)
+{
+  int inx, to_free = 0;
+  caddr_t ret = NULL;
+  dtp_t dtp = DV_TYPE_OF (narrow);
   if ((DV_UNAME == dtp) && (cs1 != CHARSET_UTF8))
     { err_ret[0] = srv_make_new_error ("2C000", "IN016", "Function got a UNAME argument and the source encoding is not UTF-8; this is illegal because UNAMEs are always UTF-8"); return NULL; }
   if (IS_WIDE_STRING_DTP (dtp) && cs1 != CHARSET_WIDE)
     { err_ret[0] = srv_make_new_error ("2C000", "IN012", "Narrow source charset specified, but the supplied string is wide"); return NULL; }
   if (IS_STRING_DTP (dtp) && cs1 == CHARSET_WIDE)
     { err_ret[0] = srv_make_new_error ("2C000", "IN013", "Wide source charset specified, but the supplied string not wide"); return NULL; }
-
+  ASSERT_BOX_ENC_MATCHES_BF (narrow, ((CHARSET_UTF8 == cs1) ? BF_UTF8 : ((default_charset == cs1) ? BF_DEFAULT_SERVER_ENC : 0)));
   if (eh_cs1)
     {
-      narrow = literal_as_utf8 (eh_cs1, narrow+offset, box_length (narrow) - (1+offset)); /* this alloc a box */
+      narrow = literal_as_utf8 (eh_cs1, narrow + bom_skip_offset, box_length (narrow) - (1 + bom_skip_offset)); /* this alloc a box */
       to_free = 1;
       dtp = DV_TYPE_OF (narrow);
       cs1 = CHARSET_UTF8;
@@ -424,6 +431,81 @@ bif_charset_recode (caddr_t *qst, caddr_t *err_ret, state_slot_t ** args)
   cs2_uname = cs2_name ? sqlp_box_upcase (cs2_name) : NULL;
   res = charset_recode_from_named_to_named (narrow, cs1_uname, cs2_uname, &res_is_new, &err);
   dk_free_box (cs1_uname); dk_free_box (cs2_uname);
+  if (NULL != err)
+    {
+      if (res_is_new)
+        dk_free_box (res);
+      sqlr_resignal (err);
+    }
+  if (res_is_new)
+    return res;
+  return box_copy (res);
+}
+
+wcharset_t *
+charset_native_for_box (ccaddr_t box, int expected_bf_if_zero)
+{
+  ASSERT_BOX_ENC_MATCHES_BF (box, expected_bf_if_zero);
+  switch (DV_TYPE_OF (box))
+    {
+    case DV_UNAME: return CHARSET_UTF8;
+    case DV_WIDE: return CHARSET_WIDE;
+    case DV_STRING:
+      {
+        int bf = box_flags (box);
+        if (0 == (bf & (BF_IRI | BF_UTF8 | BF_DEFAULT_SERVER_ENC)))
+          bf = expected_bf_if_zero;
+        if (bf & (BF_IRI | BF_UTF8))
+          return CHARSET_UTF8;
+        return default_charset;
+      }
+    }
+  return NULL;
+}
+
+caddr_t
+bif_bf_text_to_UTF8 (caddr_t *qst, caddr_t *err_ret, state_slot_t ** args)
+{
+  wcharset_t *cs;
+  int expected_bf_if_zero;
+  caddr_t narrow = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, "bf_text_to_UTF8");
+  caddr_t cs_name = bif_string_or_null_arg (qst, args, 1, "bf_text_to_UTF8");
+  caddr_t res;
+  int res_is_new = 0;
+  caddr_t err = NULL;
+  if (!narrow)
+    return NEW_DB_NULL;
+  expected_bf_if_zero = ((NULL == cs_name) ? ((CHARSET_UTF8 == default_charset) ? BF_UTF8 : 0) : (!strcasecmp (cs_name, "UTF-8") ? BF_UTF8 : 0));
+  cs = charset_native_for_box (narrow, expected_bf_if_zero);
+  res = charset_recode_from_cs_or_eh_to_cs (narrow, 0, NULL, cs, CHARSET_UTF8, &res_is_new, &err);
+  if (NULL != err)
+    {
+      if (res_is_new)
+        dk_free_box (res);
+      sqlr_resignal (err);
+    }
+  if (res_is_new)
+    return res;
+  return box_copy (res);
+}
+
+caddr_t
+bif_bf_text_to_UTF8_or_wide (caddr_t *qst, caddr_t *err_ret, state_slot_t ** args)
+{
+  wcharset_t *cs;
+  int expected_bf_if_zero;
+  caddr_t narrow = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, "bf_text_to_UTF8_or_wide");
+  caddr_t cs_name = bif_string_or_null_arg (qst, args, 1, "bf_text_to_UTF8_or_wide");
+  caddr_t res;
+  int res_is_new = 0;
+  caddr_t err = NULL;
+  if (!narrow)
+    return NEW_DB_NULL;
+  expected_bf_if_zero = ((NULL == cs_name) ? ((CHARSET_UTF8 == default_charset) ? BF_UTF8 : 0) : (!strcasecmp (cs_name, "UTF-8") ? BF_UTF8 : 0));
+  cs = charset_native_for_box (narrow, expected_bf_if_zero);
+  if (CHARSET_WIDE == cs)
+    return box_copy (narrow);
+  res = charset_recode_from_cs_or_eh_to_cs (narrow, 0, NULL, cs, CHARSET_UTF8, &res_is_new, &err);
   if (NULL != err)
     {
       if (res_is_new)
@@ -969,6 +1051,8 @@ bif_intl_init (void)
   bif_define_typed ("collation_order_string", bif_collation_order_string, &bt_varchar);
   bif_define_typed ("current_charset", bif_current_charset, &bt_varchar);
   bif_define_typed ("charset_recode", bif_charset_recode, &bt_varchar);
+  bif_define_typed ("bf_text_to_UTF8", bif_bf_text_to_UTF8, &bt_varchar);
+  bif_define_typed ("bf_text_to_UTF8_or_wide", bif_bf_text_to_UTF8_or_wide, &bt_varchar);
   bif_define ("uname", bif_uname);
   bif_define ("charsets_list", bif_charsets_list);
   bif_define_typed ("unicode_toupper", bif_unicode_toupper, &bt_integer);

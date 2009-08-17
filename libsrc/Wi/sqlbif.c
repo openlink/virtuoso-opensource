@@ -8424,7 +8424,11 @@ do_long_string:
 	  case DV_STRING:
 	      return (box_copy (data));
 	  case DV_UNAME:
-	      return box_dv_short_nchars (data, box_length (data)-1);
+              {
+                caddr_t res = box_dv_short_nchars (data, box_length (data)-1);
+                box_flags (res) |= BF_UTF8;
+                return res;
+              }
 	  case DV_C_STRING:
 	      return (box_dv_short_string (data));
 	  case DV_LONG_CONT_STRING:
@@ -8863,6 +8867,31 @@ do_wide:
 		    sqlr_resignal (err);
 		  return ret;
 		}
+	  case DV_UNAME:
+            {
+              unsigned char *utf8 = (unsigned char *) data;
+              unsigned char *utf8work;
+              size_t utf8_len = box_length (data) - 1;
+              size_t wide_len;
+              virt_mbstate_t state;
+              utf8work = utf8;
+              memset (&state, 0, sizeof (virt_mbstate_t));
+              wide_len = virt_mbsnrtowcs (NULL, &utf8work, utf8_len, 0, &state);
+              if (((long) wide_len) < 0)
+	        sqlr_new_error ("22005", "IN015",
+	          "Invalid data supplied in UNAME -> NVARCHAR conversion");
+              ret = dk_alloc_box ((int) (wide_len  + 1) * sizeof (wchar_t), DV_WIDE);
+              utf8work = utf8;
+              memset (&state, 0, sizeof (virt_mbstate_t));
+              if (wide_len != virt_mbsnrtowcs ((wchar_t *) ret, &utf8work, utf8_len, wide_len, &state))
+                {
+                  dk_free_box (ret);
+	          sqlr_new_error ("22005", "IN015",
+	            "Inconsistent UTF-8 data supplied in UNAME -> NVARCHAR conversion");
+                }
+              ((wchar_t *)ret)[wide_len] = L'\0';
+              return ret;
+            }
 	  case DV_DATETIME:
 	  case DV_DATE:
 	  case DV_TIME:
