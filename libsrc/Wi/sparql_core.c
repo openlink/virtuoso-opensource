@@ -454,6 +454,7 @@ sparp_expand_q_iri_ref (sparp_t *sparp, caddr_t ref)
     return ref;
 }
 
+#if 0
 caddr_t
 sparp_exec_Narg (sparp_t *sparp, const char *pl_call_text, query_t **cached_qr_ptr, caddr_t *err_ret, int argctr, ccaddr_t arg1)
 {
@@ -504,6 +505,93 @@ sparp_exec_Narg (sparp_t *sparp, const char *pl_call_text, query_t **cached_qr_p
     }
   return NULL;
 }
+
+#else
+caddr_t
+sparp_exec_Narg (sparp_t *sparp, const char *pl_call_text, query_t **cached_qr_ptr, caddr_t *err_ret, int argctr, ccaddr_t arg1)
+{
+  client_connection_t *cli = sqlc_client ();
+  lock_trx_t *lt = cli->cli_trx;
+  int entered = 0;
+  caddr_t res;
+  local_cursor_t *lc = NULL;
+  caddr_t err = NULL;
+  user_t *saved_user = cli->cli_user;
+#if 0 /* v6 */
+  int saved_anytime_started = cli->cli_anytime_started;
+  if (cli->cli_clt) /* Branch of cluster transaction, can't initiate partitioned operations */
+    return NULL;
+#endif
+  if (!lt->lt_threads)
+    {
+      int rc = lt_enter (lt);
+      if (LTE_OK != rc)
+        return NULL;
+      entered = 1;      
+    }
+/* v6
+  cli->cli_anytime_started = 0;
+*/
+  cli->cli_user = sec_name_to_user ("dba");
+  if (NULL == cached_qr_ptr[0])
+    {
+      if (NULL == cli) /* This means that the call is made inside the SQL compiler, can't re-enter. */
+        spar_internal_error (sparp, "sparp_exec_Narg () tries to compile static inside the SQL compiler");
+      cached_qr_ptr[0] = sql_compile_static (pl_call_text, cli, &err, SQLC_DEFAULT);
+      if (SQL_SUCCESS != err)
+	{
+	  cached_qr_ptr[0] = NULL;
+	  if (err_ret)
+	    *err_ret = err;
+	  res = NULL;
+          goto leave_and_ret; /* see below */
+	}
+    }
+  err = qr_rec_exec (cached_qr_ptr[0], cli, &lc, CALLER_LOCAL, NULL, 1,
+      ":0", box_copy_tree (arg1), QRP_RAW );
+  if (SQL_SUCCESS != err)
+    {
+      LC_FREE(lc);
+      if (err_ret)
+	*err_ret = err;
+      res = NULL;
+      goto leave_and_ret; /* see below */
+    }
+  if (lc)
+    {
+#if 1
+      while (lc_next (lc));
+      if (SQL_SUCCESS != lc->lc_error)
+	{
+	  if (err_ret)
+	    *err_ret = lc->lc_error;
+	  lc_free (lc);
+          res = NULL;
+          goto leave_and_ret; /* see below */
+	}
+      res = t_full_box_copy_tree (((caddr_t *) lc->lc_proc_ret) [1]);
+#else
+      ret = t_full_box_copy_tree(lc_nth_col (lc, 0));
+#endif
+      lc_free (lc);
+      goto leave_and_ret; /* see below */
+    }
+  res = NULL;
+
+leave_and_ret:
+  cli->cli_user = saved_user;
+/* v6
+  cli->cli_anytime_started = saved_anytime_started;
+*/
+  if (entered)
+    {
+      IN_TXN;
+      lt_leave (lt);
+      LEAVE_TXN;
+    }
+  return res;
+}
+#endif
 
 
 static query_t *iri_to_id_nosignal_cached_qr = NULL;
