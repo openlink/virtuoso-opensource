@@ -1112,6 +1112,7 @@ str_compare (const void *s1, const void *s2)
       return 0;
     }
   GPF_T;
+  return 0;
 }
 
 

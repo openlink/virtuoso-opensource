@@ -6605,7 +6605,7 @@ fld_restrictions_may_vary:
   ssg_prin_id (ssg, first_mcase->_.gp.selid);
 }
 
-caddr_t
+ccaddr_t
 ssg_print_union_member_item (spar_sqlgen_t *ssg, SPART *member, int *itm_idx_ptr, int itm_count, dk_set_t prev_itm_aliases, int print_glued_filters)
 {
   SPART *itm = member->_.gp.members [itm_idx_ptr[0]];
@@ -6859,8 +6859,8 @@ retval_list_complete:
             }
       for (itm_idx = 0; itm_idx < itm_count; itm_idx++)
                         {
-          caddr_t this_alias = ssg_print_union_member_item (ssg, member, &itm_idx, itm_count, prev_itm_aliases, (itm_idx == idx_of_last_optional_in_member));
-          t_set_push (&prev_itm_aliases, this_alias);
+          ccaddr_t this_alias = ssg_print_union_member_item (ssg, member, &itm_idx, itm_count, prev_itm_aliases, (itm_idx == idx_of_last_optional_in_member));
+          t_set_push (&prev_itm_aliases, (caddr_t) this_alias);
         }
 
 end_of_table_list: ;
