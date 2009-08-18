@@ -846,6 +846,10 @@ namespace OpenLink.Data.Virtuoso
                     			return ((IConvertData)column.data).ConvertData(type);
                 		else if (column.data is IConvertible)
                     			return Convert.ChangeType(column.data, type);
+                        	else if (column.data is SqlExtendedString)
+                                	return column.data;
+                        	else if (column.data is SqlRdfBox)
+                                	return column.data;
                 		else
                     			return column.data.ToString();
             		}
