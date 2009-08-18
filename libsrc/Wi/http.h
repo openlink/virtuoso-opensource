@@ -394,4 +394,8 @@ typedef struct https_ctx_info_s
 extern char * http_cli_proxy_server;
 int http_cli_target_is_proxy_exception (char *);
 
+#define WS_CE_NONE 1
+#define WS_CE_CHUNKED 2
+#define WS_CE_GZIP 3
+
 #endif /* _HTTP_H */

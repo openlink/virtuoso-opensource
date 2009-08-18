@@ -1185,146 +1185,11 @@ etag_err:
 }
 ;
 
--- /* HEAD METHOD */
+-- /* HEAD METHOD, same as GET except body is not sent */
 create procedure WS.WS.HEAD (in path varchar, inout params varchar, in lines varchar)
 {
-  declare path_len, id integer;
-  declare msg_len integer;
-  declare cont_type varchar;
-  declare st, name varchar;
-  declare _name varchar;
-  declare rc integer;
-  declare etag, uname, upwd, _perms varchar;
-  declare u_id, g_id integer;
-
   -- dbg_obj_princ ('WS.WS.HEAD (', path, params, lines, ')');
-
-  set isolation='committed';
-
-  path := WS.WS.FIXPATH (path);
-
-  id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path, vector('')), 'C'));
-  if (id is not null)
-    st := 'C';
-  else
-    {
-      st := 'R';
-      id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path), 'R'));
-    }
-  if (id is null)
-    {
-      declare procname, full_path varchar;
-      declare clen any;
-
-      full_path := http_physical_path ();
-      procname := sprintf ('%s.%s.%s', http_map_get ('vsp_qual'), http_map_get ('vsp_proc_owner'), full_path);
-
-      if (__proc_exists (procname) is not null and
-	  (cast (registry_get (full_path) as varchar) = 'no_vsp_recompile') and
-	  http_map_get ('noinherit') = 1)
-	{
-	  commit work;
-	  __set_user_id (http_map_get ('vsp_uid'));
-	  call (procname)(path, params, lines);
-	  __pop_user_id ();
-	  clen := length (http_get_string_output (http_strses_memory_size ()));
-	  http_header (http_header_get () || sprintf ('Content-Length: %d\r\n\r\n', clen));
-	  return;
-	}
-      http_request_status ('HTTP/1.1 404 Not Found');
-      return;
-    }
-  u_id := null;
-  g_id := null;
-  rc := DAV_AUTHENTICATE_HTTP (id, st, '1__', 1, lines, uname, upwd, u_id, g_id, _perms);
-  if ((rc < 0) and (rc <> -1))
-    {
-      if (-24 = rc)
-	return 0;
-      http_rewrite (0);
-      http_request_status ('HTTP/1.1 403 Prohibited');
-      http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
-	    '<HTML><HEAD>',
-	    '<TITLE>403 Prohibited</TITLE>',
-	    '</HEAD><BODY>', '<H1>Prohibited</H1> ',
-	    'You are not permitted to view the content of this location: ',
-	    sprintf ('%V', http_path ()), '.</BODY></HTML>'));
-      return 0;
-    }
-  if ('R' = st)
-    {
-      if (isarray (id))
-        {
-          declare dirsingle any;
-	  dirsingle := call (cast (id[0] as varchar) || '_DAV_DIR_SINGLE') (id, 'R', DAV_CONCAT_PATH ('', path), u_id);
-          msg_len := dirsingle[2];
-	  cont_type := dirsingle[9];
-	  etag := sprintf ('%s-%s-%d-%s', cast (id[1] as varchar), replace (cast (dirsingle[3] as varchar), ' ', 'T'), dirsingle[2], md5(DAV_SEARCH_PATH (id, 'R')));
-	}
-      else
-	{
-	  declare resource_owner, exec_safety_level, is_admin_owned_res, rc, is_exist integer;
-	  declare dot, fext, full_path varchar;
-	  declare content any;
-
-	  is_admin_owned_res := 0;
-
-	  rc := DAV_AUTHENTICATE_HTTP (id, st, '1_1', 0, lines, uname, upwd, u_id, g_id, _perms);
-	  if (rc >= 0)
-	    exec_safety_level := 1;
-
-	  select RES_NAME, length (RES_CONTENT), RES_TYPE, RES_OWNER, RES_FULL_PATH, RES_CONTENT
-	      into name, msg_len, cont_type, resource_owner, full_path, content
-	      from WS.WS.SYS_DAV_RES where RES_ID = id;
-
-	  if (resource_owner = http_dav_uid ())
-	    is_admin_owned_res := 1;
-
-	  if (http_map_get ('executable') or (exec_safety_level and is_admin_owned_res))
-	    exec_safety_level := 2;
-
-	  dot := strrchr (name, '.');
-	  if (dot is not null)
-	    {
-	      fext := concat ('__http_handler_head_', substring (name, dot + 2, length (name)));
-	      if (__proc_exists (fext, 2))
-		is_exist := 1;
-	      else
-		  {
-		    fext := concat ('WS.WS.', fext);
-		    if (__proc_exists (fext, 1))
-		      is_exist := 1;
-		  }
-
-	      if (is_exist and exec_safety_level > 0)
-		{
-		  declare stream_params, hdl_mode any;
-		  __set_user_id (http_map_get ('vsp_uid'));
-		  stream_params := __http_stream_params ();
-		  hdl_mode := concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:', full_path);
-		  http (call (fext) (blob_to_string (content), stream_params, lines, hdl_mode));
-		  if (isarray (hdl_mode) and length (hdl_mode) > 1)
-		    {
-		      if (hdl_mode[0] <> '' and isstring (hdl_mode[0]))
-			http_request_status (hdl_mode[0]);
-		      if (hdl_mode[1] <> '' and isstring (hdl_mode[1]))
-			http_header (hdl_mode[1]);
-		    }
-		  return;
-		}
-	    }
-
-	  if ((exec_safety_level > 1) and (name like '%.vsp' or name like '%.vspx'))
-	    {
-	      return;
-	    }
-          etag := WS.WS.ETAG (name, DAV_SEARCH_ID (vector_concat (vector(''), path), 'P'));
-	}
-      if (not isstring (cont_type))
-	cont_type := 'application/octet-stream';
-      http_header (concat ('Content-Length: ', cast (msg_len as varchar),
-	    '\r\nETag: "', etag ,'"\r\nContent-Type: ', cont_type, '\r\n\r\n'));
-    }
+  WS.WS.GET (path, params, lines);
   return;
 }
 ;
@@ -2201,7 +2066,7 @@ end_xml:
 		     _ses := http_flush (2);
 
 		     declare exit handler for sqlstate '*' { rollback work; return; };
-		     ses_write ('\r\n', _ses);
+		     --ses_write ('\r\n', _ses);
 		     while (_left > 0)
 		       {
 			 _to_get := _left;
