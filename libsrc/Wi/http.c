@@ -1295,7 +1295,7 @@ ws_path_and_params (ws_connection_t * ws)
   ws_set_path_string (ws, is_dir);
 #ifdef VIRTUAL_DIR
   if (0 != strnicmp (ws->ws_path_string, "http://", 7))
-  ws_set_phy_path (ws, is_dir, NULL);
+    ws_set_phy_path (ws, is_dir, NULL);
   else /* raw proxy request */
     ws->ws_p_path_string = box_copy (ws->ws_path_string);
 #endif
@@ -1384,7 +1384,7 @@ ws_path_and_params (ws_connection_t * ws)
 #endif
   if (!path1)
     path1 = "";
-  if (IS_DAV_DOMAIN(ws, path1))
+  if (IS_DAV_DOMAIN(ws, path1) && ws->ws_method != WM_HEAD)
     ws->ws_method = WM_UNKNOWN;
 #if 1
   else if (ws->ws_method == WM_UNKNOWN)
@@ -1526,7 +1526,7 @@ ws_split_ac_header (const caddr_t header)
 	}
       tok = strtok_r (NULL, ",", &tok_s);
     }
-  dk_free_box (string); 
+  dk_free_box (string);
   return (caddr_t *)list_to_array (dk_set_nreverse (set));
 }
 
@@ -1559,7 +1559,7 @@ ws_header_line_to_array (caddr_t string)
 static const char *
 ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check_only, OFF_T clen, const char * charset)
 {
-  static char *fmt = 
+  static char *fmt =
       "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n"
       "<html><head>\n"
       "<title>406 Not Acceptable</title>\n"
@@ -1583,13 +1583,13 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
   /*			    0123456789012*/
   if (ignore || 0 !=  strncmp (code, "HTTP/1.1 200", 12))
     return check_only ? NULL : code;
-  accept = ws_mime_header_field (ws->ws_lines, "Accept", NULL, 1); 
+  accept = ws_mime_header_field (ws->ws_lines, "Accept", NULL, 1);
   if (!accept) /* consider it is everything, so we just skip the whole logic */
     return check_only ? NULL : code;
 
   if (!mime && ws->ws_header)
     {
-      caddr_t * headers = ws_header_line_to_array (ws->ws_header); 
+      caddr_t * headers = ws_header_line_to_array (ws->ws_header);
       mime = ctype = ws_mime_header_field (headers, "Content-Type", NULL, 0);
       cenc = ws_mime_header_field (headers, "Content-Type", "charset", 0);
       if (NULL != cenc)
@@ -1601,7 +1601,7 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
   asked = ws_split_ac_header (accept);
   DO_BOX (caddr_t, p, inx, asked)
     {
-      if (DVC_MATCH == cmp_like (mime, p, NULL, 0, LIKE_ARG_CHAR, LIKE_ARG_CHAR)) 
+      if (DVC_MATCH == cmp_like (mime, p, NULL, 0, LIKE_ARG_CHAR, LIKE_ARG_CHAR))
 	{
 	  match = p;
 	  break;
@@ -1615,7 +1615,7 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
 
       code = "HTTP/1.1 406 Unacceptable";
       dk_free_tree (ws->ws_header);
-      snprintf (buf, sizeof (buf), "Alternates: {\"%s\" 1 {type %s} {charset %s} {length " OFF_T_PRINTF_FMT "}}\r\n", 
+      snprintf (buf, sizeof (buf), "Alternates: {\"%s\" 1 {type %s} {charset %s} {length " OFF_T_PRINTF_FMT "}}\r\n",
 	  cname, mime, charset, clen);
       ws->ws_header = box_dv_short_string (buf);
       strses_flush (ws->ws_strses);
@@ -1642,6 +1642,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
   const char * acode;
   caddr_t volatile accept_gz = NULL;
   volatile long len = strses_length (ws->ws_strses);
+  int cnt_enc = WS_CE_NONE;
 #ifdef BIF_XML
   caddr_t media_type = NULL, xsl_encoding = NULL;
   wcharset_t * volatile charset = ws->ws_charset;
@@ -1744,19 +1745,28 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
       len = strses_length (ws->ws_strses);
       code = acode;
     }
+
+  accept_gz = ws_get_packed_hf (ws, "Accept-Encoding:", "");
+  if (IS_CHUNKED_OUTPUT (ws))
+    cnt_enc = WS_CE_CHUNKED;
+  else if (enable_gzip && accept_gz && strstr (accept_gz, "gzip") && ws->ws_proto_no == 11)
+    {
+      cnt_enc = WS_CE_GZIP;
+      ws->ws_try_pipeline = 0; /* browsers based on webkit workaround */
+    }
+
   if (0 != strncmp (code, "HTTP/1.1 2", 10) && 0 != strncmp (code, "HTTP/1.1 3", 10) && ws->ws_proto_no < 11)
     ws->ws_try_pipeline = 0;
-  snprintf (tmp, sizeof (tmp), "%.1000s\r\nServer: %.1000s\r\n%s",
+  snprintf (tmp, sizeof (tmp), "%.1000s\r\nServer: %.1000s\r\nConnection: %s\r\n",
 	   code,
 	   http_server_id_string,
-	   ws->ws_try_pipeline ?
-	     "Connection: Keep-Alive\r\n" : "Connection: close\r\n");
+	   ws->ws_try_pipeline ? "Keep-Alive" : "close");
 
   CATCH_WRITE_FAIL (ws->ws_session)
     {
-      SES_PRINT (ws->ws_session, tmp);
+      SES_PRINT (ws->ws_session, tmp); /* server signature */
 /*      fprintf (stdout, "\nREPLY-----\n%s", tmp); */
-
+      /* mime type */
       if (!ws->ws_header || (NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Type:")))
 	{
 #ifdef BIF_XML
@@ -1774,15 +1784,14 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 		  SES_PRINT (ws->ws_session, "; charset=");
 		  SES_PRINT (ws->ws_session, CHARSET_NAME (charset, "ISO-8859-1"));
 		}
-	      SES_PRINT (ws->ws_session, "\r\n");
 	    }
 	  else
 #endif
 	    {
 	      SES_PRINT (ws->ws_session, "Content-Type: text/html; charset=");
 	      SES_PRINT (ws->ws_session, CHARSET_NAME (charset, "ISO-8859-1"));
-	      SES_PRINT (ws->ws_session, "\r\n");
 	    }
+	  SES_PRINT (ws->ws_session, "\r\n");
 	}
 
 #ifdef BIF_XML
@@ -1790,6 +1799,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
       dk_free_tree (xsl_encoding);
 #endif
 
+      /* timestamp */
       if (!ws->ws_header || NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Date:"))
 	{
 	  char dt [DT_LENGTH];
@@ -1803,51 +1813,33 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	}
 
       SES_PRINT (ws->ws_session, "Accept-Ranges: bytes\r\n");
-      if (ws->ws_header)
+
+      if (ws->ws_header) /* user-defined headers */
 	{
-	  if (IS_CHUNKED_OUTPUT (ws))
-	    {
-	      SES_PRINT (ws->ws_session, "Transfer-Encoding: chunked\r\n");
-	    }
 	  SES_PRINT (ws->ws_session, ws->ws_header);
-	  if ((NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Length:")))
-	    {
-	      if (!IS_CHUNKED_OUTPUT (ws) &&
-		  (NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Transfer-Encoding:")))
-		{
-		  snprintf (tmp, sizeof (tmp), "Content-Length: %ld\r\n", len);
-		  SES_PRINT (ws->ws_session, tmp);
-		}
-	      SES_PRINT (ws->ws_session, "\r\n");
-	      if (ws->ws_method != WM_HEAD)
-		{
-		  if (IS_CHUNKED_OUTPUT (ws))
-		    {
-		      if (len > 0)
-			{
-			  snprintf (tmp, sizeof (tmp), "%lx\r\n", len);
-			  SES_PRINT (ws->ws_session, tmp);
-			  strses_write_out (ws->ws_strses, ws->ws_session);
-			  SES_PRINT (ws->ws_session, "\r\n");
-			  strses_flush (ws->ws_strses);
-			}
-		    }
-		  else
-		    strses_write_out (ws->ws_strses, ws->ws_session);
-		}
-	    }
-	  else if (ws->ws_method != WM_HEAD) /* not HEAD and have Content-Length, hence not chunked */
-	    {
-	      SES_PRINT (ws->ws_session, "\r\n");
-	      strses_write_out (ws->ws_strses, ws->ws_session);
-	    }
 	}
-      else if (ws->ws_method != WM_HEAD)
+      if (cnt_enc == WS_CE_CHUNKED) /* chunked output */
 	{
-	  accept_gz = ws_get_packed_hf (ws, "Accept-Encoding:", "");
-	  if (IS_CHUNKED_OUTPUT (ws))
+	  SES_PRINT (ws->ws_session, "Transfer-Encoding: chunked\r\n");
+	}
+      else if (cnt_enc == WS_CE_GZIP) /* gzip encoding */
+	{
+	  snprintf (tmp, sizeof (tmp), "Transfer-Encoding: chunked\r\nContent-Encoding: gzip\r\n");
+	  SES_PRINT (ws->ws_session, tmp);
+	}
+      else if (!ws->ws_header || (NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Length:"))) /* plain body */
+	{
+	  snprintf (tmp, sizeof (tmp), "Content-Length: %ld\r\n", len);
+	  SES_PRINT (ws->ws_session, tmp);
+	}
+
+      SES_PRINT (ws->ws_session, "\r\n"); /* empty line */
+
+      /* write body */
+      if (ws->ws_method != WM_HEAD)
+	{
+	  if (cnt_enc == WS_CE_CHUNKED)
 	    {
-	      SES_PRINT (ws->ws_session, "Transfer-Encoding: chunked\r\n\r\n");
 	      if (len > 0)
 		{
 		  snprintf (tmp, sizeof (tmp), "%lx\r\n", len);
@@ -1857,25 +1849,15 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 		  strses_flush (ws->ws_strses);
 		}
 	    }
-	  else if (enable_gzip && accept_gz && strstr (accept_gz, "gzip") && ws->ws_proto_no == 11)
+	  else if (cnt_enc == WS_CE_GZIP)
 	    {
-	      snprintf (tmp, sizeof (tmp), "Transfer-Encoding: chunked\r\nContent-Encoding: gzip\r\n\r\n");
-	      SES_PRINT (ws->ws_session, tmp);
 	      strses_write_out_gz (ws->ws_strses, ws->ws_session);
 	    }
-	  else
+	  else if (!ws->ws_header || (NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Length:")))
 	    {
-	      snprintf (tmp, sizeof (tmp), "Content-Length: %ld\r\n\r\n", len);
-	      SES_PRINT (ws->ws_session, tmp);
 	      strses_write_out (ws->ws_strses, ws->ws_session);
 	    }
 	}
-      else if (ws->ws_method == WM_HEAD && !ws->ws_header)
-	{
-	  snprintf (tmp, sizeof (tmp), "Content-Length: %ld\r\n\r\n", len);
-	  SES_PRINT (ws->ws_session, tmp);
-	}
-
       session_flush_1 (ws->ws_session);
     }
   FAILED
@@ -6809,7 +6791,7 @@ bif_http_flush (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       PrpcDisconnect (ws->ws_session);
     }
 
-  if (go_direct)
+  if (go_direct && WM_HEAD != ws->ws_method)
     {
       caddr_t *res = (caddr_t *) dk_alloc_box (2 * sizeof (caddr_t), DV_CONNECTION);
       res[0] = (caddr_t) ws->ws_session;
@@ -7755,7 +7737,7 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
 	}
     }
   if (https_set_certificate (ssl_ctx, cert, skey) <= 0)
-      goto err_exit;
+    goto err_exit;
 
   if (https_client_verify > 0)
     {

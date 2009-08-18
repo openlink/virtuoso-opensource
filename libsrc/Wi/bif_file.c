@@ -4504,6 +4504,7 @@ gzwrite_ses (gzFile file, dk_session_t * ses_out, const voidp buf,
 	  session_buffered_write (ses_out, temp, strlen (temp));
 	  session_buffered_write (ses_out, (const char *) s->outbuf, len_buff);
 	  session_buffered_write (ses_out, "\r\n", 2);
+	  session_flush_1 (ses_out);
 	  s->stream.avail_out = Z_BUFSIZE;
 	}
       s->z_err = deflate (&(s->stream), Z_NO_FLUSH);
