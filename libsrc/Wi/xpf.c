@@ -5638,7 +5638,7 @@ void xpf_init(void)
   xpf_define_builtin ("format-number"		, xpf_format_number		/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   xpf_define_builtin ("function-available"	, xpf_function_available	/* XPath 1.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   xpf_define_builtin ("generate-id"		, xpf_generate_id		/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("id"			, xpf_id			/* XPath 1.0 */	, XPDV_NODESET	, 1	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0))	, NULL);
+  xpf_define_builtin ("id"			, xpf_id			/* XPath 1.0 */	, XPDV_NODESET	, 1	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0))	, NULL	);
   xpf_define_builtin ("if"			, xpf_if			/* Virt 3.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   xpf_define_builtin ("is-after"		, xpf_is_after			/* Virt 3.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   xpf_define_builtin ("is-before"		, xpf_is_before			/* Virt 3.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
