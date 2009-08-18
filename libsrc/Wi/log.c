@@ -284,7 +284,7 @@ log_commit (lock_trx_t * lt)
 	GPF_T1 ("unknown type of distributed transaction");
       cbox[LOGH_BYTES] = box_num (bytes + box_length(lt->lt_2pc._2pc_log)+2);
       /* log_info ("box.l=%d", box_length (lt->lt_2pc._2pc_log)); */
-    } 
+    }
   else
     {
       cbox[LOGH_2PC] = box_num(LOG_2PC_DISABLED);
@@ -1843,7 +1843,7 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 	}
     }
   END_DO_SET ();
-#endif  
+#endif
 }
 
 int in_log_replay = 0;

@@ -139,7 +139,7 @@ lt_free (lock_trx_t * lt)
   dk_mutex_destroy (&lt->lt_rb_mtx);
   hash_table_destroy (&lt->lt_lock);
   hash_table_free (lt->lt_rb_hash);
-#ifdef VIRTTP  
+#ifdef VIRTTP
   dk_free_tree (lt->lt_2pc._2pc_xid);
   dk_free_tree (lt->lt_2pc._2pc_log);
 #endif
@@ -177,7 +177,7 @@ lt_clear (lock_trx_t * lt)
   LT_ERROR_DETAIL_SET (lt, NULL);
   if (lt->lt_wait_end)
     GPF_T1 ("lt going clear but somebody still waiting for its end");
-#ifdef VIRTTP  
+#ifdef VIRTTP
   dk_free_tree (lt->lt_2pc._2pc_xid);
   dk_free_tree (lt->lt_2pc._2pc_log);
 #endif
@@ -554,7 +554,7 @@ lt_rollback_1 (lock_trx_t * lt, int free_trx)
       if (LTE_OK == lt_2pc_prepare(lt))
 	{
 	  lt->lt_status = LT_PREPARED;
-	} 
+	}
       else
 	lt->lt_status = LT_BLOWN_OFF;
       ASSERT_IN_TXN;
@@ -805,7 +805,7 @@ lt_kill_other_trx (lock_trx_t * lt, it_cursor_t * itc, buffer_desc_t * buf, int 
     }
   switch (lt->lt_status)
     {
-/* former xa 2pc      
+/* former xa 2pc
     case LT_COMMITTED:
 	if (lt->lt_threads > 0
 	    && !lt->lt_vdb_threads

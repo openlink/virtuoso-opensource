@@ -4129,7 +4129,7 @@ again:
 	{
 	  if (strlen (text) > 60)
 	    text[59] = 0;
-	  if (NULL == strstr (((caddr_t*)err)[QC_ERROR_STRING], "RDFNI")) 
+	  if (NULL == strstr (((caddr_t*)err)[QC_ERROR_STRING], "RDFNI"))
 	  log_error ("Error compiling definition of %s '%s': %s: %s\n%s",
 	      (text_is_reload ? "mapping schema" : "view"), name,
 	      ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING],

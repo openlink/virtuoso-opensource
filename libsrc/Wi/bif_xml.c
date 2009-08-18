@@ -2902,7 +2902,7 @@ xml_uri_resolve_like_get (query_instance_t * qi, caddr_t *err_ret, ccaddr_t base
 	{
 	  if (err_ret)
 	    *err_ret = err;
-	  else 
+	  else
 	    dk_free_tree (err);
 	  return NULL;
 	}

@@ -6357,7 +6357,7 @@ bif_xenc_pubkey_pem_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
   if (k->type == EVP_PKEY_RSA)
     {
       RSA * x = k->pkey.rsa;
-      PEM_write_bio_RSAPublicKey (b, x); 
+      PEM_write_bio_RSAPublicKey (b, x);
     }
 #endif		
 #ifdef EVP_PKEY_DSA		

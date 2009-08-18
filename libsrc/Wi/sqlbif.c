@@ -12550,10 +12550,10 @@ test_xid_encode_decode (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   fprintf (stderr, "xid encoding = %s\n", res);
 
   test_xid_2 = (virtXID *) xid_bin_decode (res);
-  fprintf (stderr, "decoded xid = %ld %ld %ld %s\n", 
-	(long) test_xid_2->formatID, 
-	(long) test_xid_2->gtrid_length, 
-	(long) test_xid_2->bqual_length, 
+  fprintf (stderr, "decoded xid = %ld %ld %ld %s\n",
+	(long) test_xid_2->formatID,
+	(long) test_xid_2->gtrid_length,
+	(long) test_xid_2->bqual_length,
 	test_xid_2->data);
 
   dk_free_box (res);
@@ -12567,10 +12567,10 @@ test_xid_encode_decode (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
   test_xid_2 = (virtXID *) xid_bin_decode("00000000000000110a302918bc631a40200000002100000000000000100000c100000000c830020bc00700000831020b0000000041000000000000002e0000b6687474703a2f2f7777772e77332e6f72672f313939392f58534c2f5472616e73666f726d3a76616c75652d6f66000000000000003100000000000000170000b6687474703a2f2f6c6f63616c");
-  fprintf (stderr, "decoded xid = %ld %ld %ld %s\n", 
-	(long) test_xid_2->formatID, 
-	(long) test_xid_2->gtrid_length, 
-	(long) test_xid_2->bqual_length, 
+  fprintf (stderr, "decoded xid = %ld %ld %ld %s\n",
+	(long) test_xid_2->formatID,
+	(long) test_xid_2->gtrid_length,
+	(long) test_xid_2->bqual_length,
 	test_xid_2->data);
 
   fflush (stderr);

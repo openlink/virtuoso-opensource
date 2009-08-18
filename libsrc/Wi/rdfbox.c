@@ -1727,7 +1727,7 @@ http_talis_json_write_obj (dk_session_t *ses, query_instance_t *qi, caddr_t obj,
     {
       obj_box_value = obj;
       obj_box_value_dtp = obj_dtp;
-    }      
+    }
                              /* 0           1           2           3   */
                              /* 01.23456.7890.12345678.901.234567.89012 */
   session_buffered_write (ses, "{ \'type\' : \'literal\', \'value\' : ", 32);
@@ -2466,7 +2466,7 @@ assertion_failed:
         graph_iri = key_id_to_iri (qi, graph_iid);
       err = srv_make_new_error ("RDF02", "SR619", "%.50s access denied: %.20s user %d (%.200s) has no %.50s permission on graph %.500s",
         opname, user_type, (int)uid, u->usr_name,
-        rdf_graph_user_perm_title (failed_perms), 
+        rdf_graph_user_perm_title (failed_perms),
         (graph_iri ? graph_iri : "???") );
       dk_free_box (graph_iri);
       if (graph_boxed_iid != graph)

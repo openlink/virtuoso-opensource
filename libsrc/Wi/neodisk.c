@@ -123,10 +123,10 @@ cpt_rollback (int may_freeze)
 	case LT_CLOSING:
 	case LT_COMMITTED:
 	  rdbg_printf (("trx %lx killed by checkpoint while closing\n", lt));
-#ifdef VIRTTP	  
+#ifdef VIRTTP	
 	  if (stat == LT_COMMITTED && lt->lt_2pc._2pc_wait_commit)
 	    break;
-#endif	  
+#endif	
 	  lt_kill_other_trx (lt, NULL, NULL, LT_KILL_ROLLBACK);
 	  goto next;
 	case LT_FREEZE:
@@ -156,7 +156,7 @@ cpt_rollback (int may_freeze)
 	  lt->lt_error = LTE_CHECKPOINT;
 	  lt_kill_other_trx (lt, NULL, NULL, may_freeze);
 	  goto  next;
-#ifdef VIRTTP	  
+#ifdef VIRTTP	
 	case LT_PREPARE_PENDING:
 	  if (LT_KILL_FREEZE != may_freeze)
 	    {
@@ -164,7 +164,7 @@ cpt_rollback (int may_freeze)
 	      goto next;
 	    }
 	  break;
-#endif	  
+#endif	
 	default:  GPF_T1 ("Unexpected lt_status in cpt_rollback");
 	}
     }

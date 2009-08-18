@@ -155,7 +155,7 @@ generic_error:
       "Function %s needs a valid user ID in argument %d, "
       "the passed UID %ld (\"%.200s\") is not valid or user is not enabled",
       func, nth + 1, (long)uid, u->usr_name);
-  
+
 ret_null:
   return NULL;
 }
@@ -1924,7 +1924,7 @@ sec_read_users (void)
   user_t_dba->usr_disabled = 0;
   user_t_dba->usr_is_role = 0;
   user_t_dba->usr_is_sql = 1;
-  
+
   if (user_t_dba->usr_g_ids)
     {
       dk_free_box ((box_t) user_t_dba->usr_g_ids);

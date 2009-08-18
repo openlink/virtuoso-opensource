@@ -89,7 +89,7 @@ virtodbc__SQLAllocEnv (
   static int firsttime = 1;
   cli_dbg_printf (("SQLAllocEnv called.\n"));
 
-  if (firsttime) 
+  if (firsttime)
     {
       srand ((unsigned int) time(NULL));
       firsttime = 0;
@@ -866,14 +866,14 @@ internal_sql_connect (
           if (!DKSESSTAT_ISSET (ses, SST_OK))
             {
               hostIndex++;
-              if (useRoundRobin) 
+              if (useRoundRobin)
                 {
                   if (index_count == hostIndex)
                     hostIndex = 0;
                   if (hostIndex == startIndex)
                     break; /* FAIL */
-                } 
-              else if (index_count == hostIndex) 
+                }
+              else if (index_count == hostIndex)
                 {
                   break; /*FAIL*/
                 }

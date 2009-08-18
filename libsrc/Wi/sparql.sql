@@ -9484,7 +9484,7 @@ create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
   fake := (select count (dict_put (__rdf_graph_public_perms_dict(), RGU_GRAPH_IID, RGU_PERMISSIONS))
     from DB.DBA.RDF_GRAPH_USER where RGU_USER_ID = http_nobody_uid () );
   fake := (select count (__rdf_graph_specific_perms_of_user (RGU_GRAPH_IID, RGU_USER_ID, RGU_PERMISSIONS))
-    from DB.DBA.RDF_GRAPH_USER where RGU_USER_ID <> http_nobody_uid () and not (RGU_GRAPH_IID in (#i0, #i8192)) );    
+    from DB.DBA.RDF_GRAPH_USER where RGU_USER_ID <> http_nobody_uid () and not (RGU_GRAPH_IID in (#i0, #i8192)) );
 
   if (244 = coalesce ((select COL_DTP from SYS_COLS where "TABLE" = 'DB.DBA.RDF_QUAD' and "COLUMN"='G'), 0))
     {

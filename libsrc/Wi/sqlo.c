@@ -1190,7 +1190,7 @@ sqlo_join_exp_inlineable (ST * exp)
       END_DO_BOX;
       return 1;
     }
-  else 
+  else
     return 1;
 }
 
@@ -1323,7 +1323,7 @@ sqlo_inline_jt (sqlo_t * so, ST * tree, ST * exp, op_table_t * ot)
 	}
       else if (ST_P (exp->_.join.left, TABLE_REF) && ST_P (exp->_.join.left->_.table_ref.table, JOINED_TABLE))
 	any += sqlo_inline_jt (so, tree, exp->_.join.left->_.table_ref.table, ot);
-      if (OJ_LEFT == exp->_.join.type 
+      if (OJ_LEFT == exp->_.join.type
 	  && sqlo_dt_inlineable (so, tree, exp->_.join.right, ot, 1))
 	{
 	  /* left oj with single table dt to the right. */
@@ -1374,7 +1374,7 @@ sqlo_expand_dt_1 (sqlo_t * so, ST * tree, op_table_t * ot)
 	  t_set_push (&new_froms, (void*)from);
 	  has_dt_expanded += is_exp;
 	}
-      else 
+      else
 	t_set_push (&new_froms, (void*)from);
     }
   END_DO_BOX;

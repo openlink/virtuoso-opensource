@@ -3002,7 +3002,7 @@ sqlg_alias_or_assign (sqlo_t * so, state_slot_t * ext, state_slot_t * source, dk
    * in this way an arbitrary depth of subqs get referred to the desired output.  If not possible,
    * due to constants or ref params, then an assignment is generated */
   /* if no union above, aliasing can be used */
-  if (!so->so_sc->sc_is_union && enable_dt_alias 
+  if (!so->so_sc->sc_is_union && enable_dt_alias
       && !ssl_is_special (ext)
       && !ssl_is_special (source))
     {
