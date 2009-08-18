@@ -2540,7 +2540,6 @@ xslt_top (query_instance_t * qi, xml_entity_t * xe, xslt_sheet_t * xsh, caddr_t 
               caddr_t *new_head;
               int head_len = BOX_ELEMENTS (head);
               int idx;
-              int local_excl_found = 0;
               for (idx = head_len-2; idx > 0; idx -= 2)
                 {
                   if (!strcmp (head[idx], uname__bang_exclude_result_prefixes))

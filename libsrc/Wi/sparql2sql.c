@@ -1794,14 +1794,14 @@ sparp_restr_of_join_eq_from_connected_subvalues (sparp_t *sparp, sparp_equiv_t *
 void
 sparp_find_best_join_eq_for_optional (sparp_t *sparp, SPART *parent, int pos_of_curr_memb, sparp_equiv_t *eq, sparp_equiv_t **ret_parent_eq, SPART **ret_tree_in_parent)
 {
-  SPART *curr, *prev;
+  SPART *curr = NULL, *prev = NULL;
   int varname_ctr, ctr;
   int pos_of_prev_memb;
-  int good_is_gp;
+  int good_is_gp = 0;
   caddr_t good_varname = NULL;
   SPART *good_prev_var = NULL;
-  sparp_equiv_t *good_parent_eq;
-  sparp_equiv_t *good_prev_eq;
+  sparp_equiv_t *good_parent_eq = NULL;
+  sparp_equiv_t *good_prev_eq = NULL;
 #ifndef NDEBUG
   if ((SPAR_GP != SPART_TYPE (parent)) || (BOX_ELEMENTS (parent->_.gp.members) <= pos_of_curr_memb))
     spar_internal_error (sparp, "sparp_" "find_best_join_eq_for_optional(): bad call");
