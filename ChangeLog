@@ -1,3 +1,1122 @@
+2009-08-18 17:49  source
+
+	* Fixed whitespace at end of line
+
+2009-08-18 17:32  source
+
+	* Fixed problem with http HEAD method with dynamic content
+
+2009-08-18 13:52  source
+
+	* Fixed type information from SqlExtendedString and SqlRdfBox
+
+2009-08-17 23:34  source
+
+	* Fixed wrong pointer
+
+2009-08-17 22:36  source
+
+	* Fixed compiler warnings
+
+2009-08-17 22:34  source
+
+	* Added i18N debugging macros and support for dir lists with non-LATIN-1
+	  names
+
+2009-08-17 22:33  source
+
+	* Fixed removed table option
+
+2009-08-17 22:31  source
+
+	* Added new sparp_exec_Narg to avoid GPF in converting IRI to/from IRI_ID
+	  in SPARQL compiler
+
+2009-08-15 17:29  source
+
+	* Fixed compiler warnings
+
+2009-08-15 10:40  source
+
+	* Fixed variable declaration and compiler warning
+
+2009-08-15 08:40  source
+
+	* Added support for 'CREATE IRI CLASS' for nvarchar
+
+2009-08-14 12:53  source
+
+	* Fixed disabled user
+
+2009-08-14 12:52  source
+
+	* Fixed user's login
+	* Fixed UI profile
+
+2009-08-14 12:45  source
+
+	* Updated documentation
+
+2009-08-14 09:19  source
+
+	* Added SPARQL graph-level security
+
+2009-08-14 09:19  source
+
+	* Fixed print XML data as escaped string in HTML outputs of SPARQL
+
+2009-08-13 07:54  source
+
+	* Regenerated drivers
+
+2009-08-13 07:54  source
+
+	* Fixed missing line from previous patch
+
+2009-08-12 23:04  source
+
+	* Updated version to 5.0.12-rc5
+
+2009-08-12 23:03  source
+
+	* Fixed offerlist rdf data
+
+2009-08-12 22:57  source
+
+	* Fixed when an aggregate has a false data independent condition it must
+	  still init data independent, as they can be refd in the select that
+	  gets done even if no rows selected
+
+2009-08-12 22:55  source
+
+	* Fixed set default card on empty table to 10 instead of 1 so that it
+	  will still prefer index lookup to full scan
+
+2009-08-12 12:37  source
+
+	* Fixed parsing of xsd:int('30000')
+
+2009-08-12 11:57  source
+
+	* Fixed labels
+
+2009-08-12 11:47  source
+
+	* Updated UI profile
+	* Fixed ODS navigation bug
+	* Fixed ODS install problem
+
+2009-08-12 11:45  source
+
+	* Fixed uninstall
+
+2009-08-12 11:44  source
+
+	* Added microformats
+	* Fixed uninstall
+
+2009-08-09 14:59  source
+
+	* Fixed when saving tree roots in cpt, first set the deleted tree
+	  roots to 0 then set the rest.
+
+2009-08-09 00:05  source
+
+	* Added versions un upstreaming
+
+2009-08-09 00:04  source
+
+	* Added hCard microformat
+
+2009-08-09 00:04  source
+
+	* Updated some commands to version 0.5
+
+2009-08-08 23:57  source
+
+	* Added check for no import of preds into top dt
+
+2009-08-08 23:57  source
+
+	* Added debugging functions to check beginnings of lists, not whole
+	  vectors of boxes
+
+2009-08-08 11:48  source
+
+	* Fixed do not import conds from enclosing where into dt with a top
+	  clause
+
+2009-08-05 14:32  source
+
+	* Fixed use right user acct for aqueue
+
+2009-08-05 09:14  source
+
+	* Fixed refuse to run without proper cli_client
+
+2009-08-05 07:27  source
+
+	* Fixed compiler warnings
+
+2009-08-04 18:08  source
+
+	* Added extra key arg to ksp_cmp_func as fixed keyu cols are not in key
+	  part order but in dtp dependent order. However inlined cmp funcs only
+	  work if cols are laid out in key order
+
+2009-08-03 12:25  source
+
+	* * Added Ontology subclasses for Offerlist and Wishlist
+
+2009-08-03 12:12  source
+
+	* Fixed gpf if no client info available
+
+2009-08-01 10:55  source
+
+	* Updated engine version to 3040
+
+2009-08-01 10:50  source
+
+	* Fixed XA to replay prepared xa branches and to keep log entry
+	  consistently during checkpoints and killing the server
+
+2009-08-01 10:23  source
+
+	* Fixed improper setting of dbs_log_length set by log_checkpoint
+
+2009-07-31 09:10  source
+
+	* Fixed condition
+
+2009-07-31 09:05  source
+
+	* Rebuild driver
+
+2009-07-31 09:01  source
+
+	* Added support for VirtuosoTupleQuery setDataset method
+
+2009-07-30 19:25  source
+
+	* Fixed do not sponge when local proxy is used
+
+2009-07-30 19:25  source
+
+	* Fixed new proxy IRIs
+
+2009-07-30 19:20  source
+
+	* Added optimization for new proxy iri scheme
+
+2009-07-30 08:46  source
+
+	* Regenerated drivers
+
+2009-07-30 08:29  source
+
+	* Updated version number of jdbc driver
+
+2009-07-30 08:29  source
+
+	* Fixed problem with DBVisualizer
+
+2009-07-30 08:10  source
+
+	* Fixed handling of BIGINT data
+
+2009-07-30 08:09  source
+
+	* Fixed parameter handling in metadata calls
+
+2009-07-29 20:28  source
+
+	* Added Ontology base editing - Offerlist and Wishlist
+
+2009-07-29 11:40  source
+
+	* Added new timestamp fraction tests
+
+2009-07-29 11:39  source
+
+	* Fixed handling of timestamp fraction
+
+2009-07-28 13:07  source
+
+	* Fixed gpf when tm reconnects to rm errors with distinct sub code
+
+2009-07-28 08:53  source
+
+	* Fixed reference to php5 dll
+
+2009-07-28 08:52  source
+
+	* Fixed replication check
+
+2009-07-28 08:51  source
+
+	* Fixed about/html
+
+2009-07-28 08:49  source
+
+	* Fixed loading static http maintenance page on checkpoint and atomic
+
+2009-07-28 08:27  source
+
+	* Regenerated drivers
+
+2009-07-28 08:06  source
+
+	* Fixed parsing integer connect options
+
+2009-07-28 08:04  source
+
+	* Fixed parameter binding
+
+2009-07-28 08:04  source
+
+	* Fixed cleanup tables from prev run
+
+2009-07-27 15:55  source
+
+	* Fixed checking for last row in result set
+
+2009-07-27 15:54  source
+
+	* Fixed use of sendQuery in VirtuosoPreparedStatement
+
+2009-07-27 15:53  source
+
+	* Fixed parsing connecting string
+
+2009-07-27 08:08  source
+
+	* Updated version
+
+2009-07-27 08:08  source
+
+	* Fixed SUN JDBC testsuite issues
+
+2009-07-24 14:37  source
+
+	* Fixed utf8 via jdbc
+
+2009-07-24 11:58  source
+
+	* Fixed error dropping quad map
+
+2009-07-23 07:29  source
+
+	* Fixed updating favorite things
+
+2009-07-22 21:29  source
+
+	* Fixed remove leading and trailing spaces before parsing date
+
+2009-07-22 21:27  source
+
+	* Fixed typos
+
+2009-07-21 19:40  source
+
+	* Removed debugging info
+
+2009-07-21 15:50  source
+
+	* Fixed xa_resume in Virtuoso RM
+	* Fixed wrong offsets
+	* Fixed wrong datatype for int deserialization
+	* Fixed wrong lt taken
+	* Fixed no need to keep trx string in memory, just replay and keep lt
+	  detached
+
+2009-07-21 15:12  source
+
+	* Updated documentation
+
+2009-07-20 15:34  source
+
+	* Added skype: as scheme
+
+2009-07-20 15:27  source
+
+	* Added documentation on building and using PHP5
+
+2009-07-20 10:37  source
+
+	* Fixed problem with bad style attribute
+
+2009-07-20 08:34  source
+
+	* Fixed serialization on http connection cache mtx
+
+2009-07-17 14:45  source
+
+	* Updated Facebook support
+
+2009-07-17 14:44  source
+
+	* Fixed Atom Gems
+
+2009-07-17 14:44  source
+
+	* Fixed Calendar filter
+	* Fixed html and css bugs
+
+2009-07-17 14:09  source
+
+	* Added alternative way to execute sponger
+
+2009-07-17 11:04  source
+
+	* Fixed decode of Xid using proper bit mask
+
+2009-07-17 10:34  source
+
+	* Moved README files to top directory
+
+2009-07-17 09:11  source
+
+	* Fixed CSS loading
+
+2009-07-16 15:34  source
+
+	* Fixed when considering inx int, do not consider keys where there
+	  is a full match of all parts, i.e. a unique combination is already
+	  given. If you do, the inx int will be generated incorrect because
+	  tailing parts of the equality of the pk parts of the keys involved
+	  will not be generated
+
+2009-07-16 15:31  source
+
+	* Fixed roundup stacksize to multiple of 8k as some systems require
+	  it to be multiple of pagesize
+
+2009-07-16 15:06  source
+
+	* Fixed checking values
+
+2009-07-16 13:51  source
+
+	* Fixed initialize n_lock_escalations to 0 or random page lock can
+	  occur
+
+2009-07-16 06:12  source
+
+	* Fixed Atom Gems
+	* Fixed task sorting
+
+2009-07-16 06:11  source
+
+	* Fixed Atom Gems
+
+2009-07-15 07:45  source
+
+	* Fixed update casting changes to parameters of open cursors
+
+2009-07-15 04:43  source
+
+	* When making a hash filler with a predicate filtering the hash,
+	  unplace all the ssls set during this so that if the same expression
+	  repeats again outside of the hash filler filter it will get generated
+	  again and will not ref to the ssl's value that is inapplicable.
+	  With cond exps, note the private df elts
+
+2009-07-14 22:12  source
+
+	* Fixed weird case in bm inx order
+
+2009-07-14 20:05  source
+
+	* Fixed check for internal or external libz
+
+2009-07-14 19:57  source
+
+	* Fixed configuring JDK on Mac OS X and other platforms
+
+2009-07-14 19:44  source
+
+	* Fixed typo
+
+2009-07-14 19:33  source
+
+	* Removed old references to php4
+
+2009-07-14 19:19  source
+
+	* Fixed show unfinished tasks
+
+2009-07-14 19:08  source
+
+	* Updated documentation
+
+2009-07-14 19:04  source
+
+	* Fixed indentation and whitespace
+
+2009-07-14 18:49  source
+
+	* Fixed round up thread stack size to next multiple of 1024
+	* Fixed use pthread_attr_{get|set}stacksize where possible
+
+2009-07-14 18:48  source
+
+	* Fixed set min http thread stack size to 280000
+
+2009-07-13 14:54  source
+
+	* Removed old debugging code
+
+2009-07-13 14:54  source
+
+	* Fixed use of atomic mode on cluster
+
+2009-07-10 13:36  source
+
+	* Fixed problem with sparql load
+
+2009-07-10 13:35  source
+
+	* Fixed when replacing cols in inlining dts, if the col is an int
+	  constant, make it + 0 when putting it in an oby clause else it
+	  takes it for a col index
+
+2009-07-10 13:34  source
+
+	* Fixed setup https listener via UI
+
+2009-07-09 21:43  source
+
+	* Fixed unsupported conversion from string session and the like in
+	  RDF_LONG_TO_TTL
+
+2009-07-09 18:14  source
+
+	* Added OpenSearch support
+
+2009-07-09 18:13  source
+
+	* Fixed search character encoding
+
+2009-07-09 13:00  source
+
+	* Added configure flags to disable building certain vad packages
+
+2009-07-09 11:24  source
+
+	* Updated documentation
+
+2009-07-09 11:21  source
+
+	* Added initial support for XA RM  suspend and resume
+
+2009-07-08 20:16  source
+
+	* Added OpenSearch
+
+2009-07-08 20:15  source
+
+	* Fixed access to public search
+
+2009-07-08 19:54  source
+
+	* Fixed saving generated rdfview data
+
+2009-07-08 09:26  source
+
+	* Fixed spki when using opera 10
+	* Fixed RDF update procedure
+
+2009-07-07 20:02  source
+
+	* Fixed check for count and type of arguments of free-text special
+	  predicates
+
+2009-07-07 20:01  source
+
+	* Fixed printing IRI as SGG_VALMODE_BOOL
+
+2009-07-07 12:08  source
+
+	* Updated documentation
+
+2009-07-06 10:42  source
+
+	* Removed debug code
+
+2009-07-03 11:25  source
+
+	* Fixed whitespace
+
+2009-07-03 11:24  source
+
+	* Added selection for UI import data
+
+2009-07-03 11:23  source
+
+	* Fixed PopUp Calendar style
+
+2009-07-03 10:53  source
+
+	* Added support for exclude-result-prefixes and writing namespace
+	  prefixes before use
+
+2009-07-02 22:19  source
+
+	* Fixed typo
+
+2009-07-02 09:32  source
+
+	* Fixed log message
+
+2009-07-01 22:38  source
+
+	* Fixed loading LISP-style lists (sequences) in TURTLE files
+
+2009-07-01 22:38  source
+
+	* Fixed issue when a contains() disappears because the filter is
+	  localized into UNION_L member group and stays unused
+
+2009-07-01 19:26  source
+
+	* Updated version
+
+2009-07-01 19:26  source
+
+	* Fixed Favorites, Offerlist and Wishlist in UI Profile
+
+2009-07-01 19:21  source
+
+	* Added inlining dts traverse trees of explicit join expressions.
+	  Full ojs are left as is.  Do not expand things right of left oj
+
+2009-07-01 15:32  source
+
+	* Added new dbpedia extraction
+	* Fixed social graph
+	* Fixed minor issues
+
+2009-07-01 15:25  source
+
+	* Minor fixes
+
+2009-07-01 13:46  source
+
+	* Added book ontology
+
+2009-07-01 13:25  source
+
+	* Added bibo doc
+
+2009-07-01 13:18  source
+
+	* Added nw iri scheme part-1
+	* Fixed labels
+	* Removed thirdparty browsers
+
+2009-07-01 11:42  source
+
+	* Updated version to 5.0.12-rc2
+
+2009-07-01 08:37  source
+
+	* Fixed typo in testname
+
+2009-07-01 08:37  source
+
+	* Added tests for long nvarchar
+
+2009-07-01 08:11  source
+
+	* Regenerated driver
+
+2009-07-01 08:07  source
+
+	* Fixed problem fetching blobs
+
+2009-07-01 08:06  source
+
+	* Added tests for getMoreResults
+
+2009-07-01 07:56  source
+
+	* Fixed problem with testing connection to non-standard port
+
+2009-06-30 09:25  source
+
+	* Added 'Related' section in posts
+
+2009-06-30 09:07  source
+
+	* Fixed parsing \<newline> in N3
+
+2009-06-29 13:32  source
+
+	* Regenerated drivers
+
+2009-06-29 13:29  source
+
+	* Updated version
+
+2009-06-29 13:29  source
+
+	* Fixed batch query handling
+	* Fixed deadlock exception and null pointer exception handling
+
+2009-06-29 13:24  source
+
+	* Fixed SQL compiler so it accepts joins without making dt s all the time
+	  which is slowing down execution
+
+2009-06-29 13:23  source
+
+	* Added support for bigint cols in rdf views
+
+2009-06-29 13:20  source
+
+	* Fixed GPF on flattening of sub-GP that contains a potential nullable
+	  non-exported variable
+
+2009-06-29 13:15  source
+
+	* Fixed use %p for address in debug line
+
+2009-06-26 16:01  source
+
+	* Updated documentation
+
+2009-06-26 16:01  source
+
+	* Added support for primary key selection in rdfview generation
+
+2009-06-26 15:55  source
+
+	* Fixed HTML output of XML entities is now complete
+	* Fixed NOT FROM NAMED
+
+2009-06-26 15:53  source
+
+	* Fixed duplicates in FROM
+	* Fixed generation for tablenames with space
+
+2009-06-26 12:51  source
+
+	* Regenerated drivers
+
+2009-06-26 10:07  source
+
+	* Updated version
+
+2009-06-26 10:05  source
+
+	* Fixed bug in handling of MoreResults
+
+2009-06-25 17:48  source
+
+	* Fixed splitting the views onto smaller parts
+
+2009-06-25 11:53  source
+
+	* Fixed layout and sizing of the inspector window and content
+	* Fixed inspector now shows a text explaining its function when
+	  nothing is selected
+	* Fixed adjustment of other sizes, margins etc
+
+2009-06-25 11:47  source
+
+	* Added missing file from distrib
+
+2009-06-25 11:41  source
+
+	* Fixed missing files from distrib
+
+2009-06-25 10:03  source
+
+	* Updated version to 5.0.12-rc1
+
+2009-06-25 09:54  source
+
+	* Fixed SPARQL part of TPC-D test
+
+2009-06-25 09:51  source
+
+	* Added new optimizations for codegen for OPTIONAL
+
+2009-06-24 13:27  source
+
+	* Fixed layout issues in sponger and query options
+	* Fixed use a space with default-graph-uri to disable setting graph
+
+2009-06-23 12:58  source
+
+	* Fixed bug in Adobe Flash platform which caused HTTP POST file uploads
+	  to fail
+
+2009-06-23 11:56  source
+
+	* Added Glue meta-cartridge
+
+2009-06-23 11:52  source
+
+	* Fixed wrong length calculation
+
+2009-06-23 11:07  source
+
+	* Fixed rule for (re)generating cached_resources.c
+
+2009-06-23 09:49  source
+
+	* Added support for OpenSearch
+
+2009-06-23 09:32  source
+
+	* Regenerated driver
+
+2009-06-23 09:16  source
+
+	* Fixed exception when using concurrent JDBC connections
+
+2009-06-22 14:18  source
+
+	* Fixed problems with SIOC and CSS
+
+2009-06-22 14:17  source
+
+	* Fixed small bugs
+
+2009-06-22 14:16  source
+
+	* Fixed event creation bug after introducing new time creation routines
+
+2009-06-22 07:28  source
+
+	* Fixed turtle and nquads validation
+	* Fixed memory leaks on errors
+	* Fixed error recovery
+
+2009-06-22 07:27  source
+
+	* Fixed running out of threads
+
+2009-06-22 07:26  source
+
+	* Fixed S3 DET delete action
+
+2009-06-18 20:08  source
+
+	* Fixed setting sequence from registry at startup since V6 has stored
+	  procedure with same name
+
+2009-06-18 20:07  source
+
+	* Updated documentation
+
+2009-06-18 14:27  source
+
+	* Added support for --enable-aio
+
+2009-06-18 12:20  source
+
+	* Fixed minor issues
+
+2009-06-18 12:19  source
+
+	* Fixed indentation
+
+2009-06-17 19:22  source
+
+	* Added suppport to crawl with multiple threads
+
+2009-06-17 19:20  source
+
+	* Added Geonames cartridges
+
+2009-06-17 10:56  source
+
+	* Fixed problem with Int64
+
+2009-06-17 07:47  source
+
+	* Fixed several issues using SPARQL LOAD
+
+2009-06-16 19:43  source
+
+	* Updated version to 5.0.12-pre4
+
+2009-06-16 19:43  source
+
+	* Added sync check box after import
+
+2009-06-16 16:30  source
+
+	* Fixed XA support
+
+2009-06-16 16:25  source
+
+	* Added goodrelations
+	* Fixed removed empty items
+
+2009-06-15 20:57  source
+
+	* Fixed typos
+
+2009-06-15 20:55  source
+
+	* Fixed Tags JS error
+
+2009-06-15 20:54  source
+
+	* Fixed 'Tag' Command
+
+2009-06-15 20:46  source
+
+	* Fixed use value
+
+2009-06-15 14:04  source
+
+	* Fixed stack check margin
+
+2009-06-15 13:16  source
+
+	* Added Best Buy cartridge
+
+2009-06-15 13:11  source
+
+	* Fixed links
+
+2009-06-15 11:22  source
+
+	* Added support for Int64
+
+2009-06-15 09:42  source
+
+	* Fixed move srand to SQLAllocEnv to make sure it is only called once
+
+2009-06-15 09:37  source
+
+	* Fixed setup dialog so the server box can hold more characters than can
+	  be displayed on the screen
+
+2009-06-15 09:35  source
+
+	* Fixed problem with smallint and bigint
+
+2009-06-15 09:35  source
+
+	* Fixed rnd so it is initialized only once
+
+2009-06-13 17:25  source
+
+	* Fixed whitespace
+
+2009-06-13 17:21  source
+
+	* Added callback for deciding whether to signal on extended blocking on
+	  write
+
+2009-06-13 10:11  source
+
+	* Fixed delete dialog
+
+2009-06-13 08:36  source
+
+	* Added Version Control to WebDAV UI
+
+2009-06-12 15:47  source
+
+	* Fixed bookmarklet
+	* Fixed setting ?query= now switches to Advanced view
+
+2009-06-12 11:35  source
+
+	* Fixed valgrind warnings about ref to uninit data
+
+2009-06-12 10:16  source
+
+	* Fixed allocate error struct, never use SQL_ERROR as it causes deref -1
+
+2009-06-12 10:13  source
+
+	* Refactored code
+
+2009-06-11 19:43  source
+
+	* Fixed problem with xa on 64bit machines
+
+2009-06-11 19:42  source
+
+	* Fixed return error if star in place of a col in an exp
+
+2009-06-10 20:18  source
+
+	* Updated version to 5.0.12-pre3
+
+2009-06-10 20:16  source
+
+	* Fixed minor issues
+
+2009-06-10 20:14  source
+
+	* Fixed query re airports with lat,long and four optional runways
+
+2009-06-10 19:41  source
+
+	* ADded Ubiquity commands for iSPARQL
+	* Fixed cosmetics in layout and code
+
+2009-06-10 14:23  source
+
+	* Updated documentation
+
+2009-06-10 14:21  source
+
+	* Added more buttons
+
+2009-06-10 14:19  source
+
+	* Added amazon meta cartridge
+
+2009-06-10 07:29  source
+
+	* Fixed protect schema for longer period
+
+2009-06-10 07:27  source
+
+	* Fixed check for vcard:latitude and vcard:longitude
+
+2009-06-10 07:26  source
+
+	* Fixed problem with empty literals
+
+2009-06-10 07:26  source
+
+	* Added support for ebay meta cartridge
+
+2009-06-09 19:24  source
+
+	* Fixed CC image
+
+2009-06-09 19:05  source
+
+	* Fixed openid issues
+
+2009-06-09 11:20  source
+
+	* Fixed new IRI scheme
+
+2009-06-09 11:17  source
+
+	* Fixed missing grant
+
+2009-06-08 22:53  source
+
+	* Fixed use of columns for tables and view; we cannot use sys_cols here
+	  because there are under tables as well as migrated tables
+	* Fixed redirect
+
+2009-06-08 22:50  source
+
+	* Fixed fake ns prefix
+	* Fixed long varbinary to be an obj ref, unless setup for other type
+	* Fixed use of columns for tables and view; we cannot use sys_cols here
+	  because there are under tables as well as migrated tables
+
+2009-06-08 22:48  source
+
+	* Fixed compilation of query with equality for T_IN variable and a constant
+	  and without a ny other use of T_IN variable outside the transitive part.
+
+2009-06-08 13:51  source
+
+	* Removed deprecated images from list
+
+2009-06-08 13:48  source
+
+	* Fixed use plain rm instead of myrm
+
+2009-06-08 13:18  source
+
+	* Fixed transaction boundaries
+
+2009-06-08 13:17  source
+
+	* Fixed transaction boundaries
+	* Fixed bad test for /rdf/about uri
+
+2009-06-08 13:16  source
+
+	* Fixed ttl serialization
+
+2009-06-08 13:15  source
+
+	* Fixed do not create locks when compiling sparql inline
+
+2009-06-08 08:10  source
+
+	* Fixed image file rename
+
+2009-06-08 07:23  source
+
+	* Updated documentation
+
+2009-06-07 10:30  source
+
+	* Fixed TTL serialization of IRIs with local parts beginning with '-'
+	* Fixed TTL serialization for redundant namespace decls
+
+2009-06-05 19:59  source
+
+	* Added classes and props edition
+	* Fixed group for schemas should be created
+
+2009-06-05 19:54  source
+
+	* Fixed minor issue
+
+2009-06-05 19:52  source
+
+	* Fixed codegen of function call when native rettype of function is
+	  SSG_VALMODE_LONG and needed is SSG_VALMODE_SHORT_OR_LONG
+
+2009-06-05 19:50  source
+
+	* Fixed editing properties
+	* Fixed use prefs not virtrdf
+	* Fixed pkcols
+
+2009-06-05 19:50  source
+
+	* Fixed recover form syntax error on badly formed bnode IDs in TURTLE
+
+2009-06-05 19:00  source
+
+	* Fixed failover support
+
+2009-06-04 19:31  source
+
+	* Regenerated drivers
+
+2009-06-04 12:33  source
+
+	* Added additional information
+
+2009-06-04 12:33  source
+
+	* Fixed minor issues
+
+2009-06-04 12:32  source
+
+	* Fixed whitespace
+
+2009-06-04 12:31  source
+
+	* Fixed use proxy iri for pinging
+
+2009-06-04 12:31  source
+
+	* Fixed allow clients to run during online backup
+
 2009-06-03 23:30  source
 
 	* Updated version to 5.0.12-pre2
