@@ -1822,9 +1822,9 @@ sparp_find_best_join_eq_for_optional (sparp_t *sparp, SPART *parent, int pos_of_
           parent_eq = sparp_equiv_get_ro (sparp->sparp_equivs, sparp->sparp_equiv_count, parent, (SPART *)varname, SPARP_EQUIV_GET_NAMESAKES);
           if (NULL == parent_eq)
             continue;
+          prev_eq = sparp_equiv_get_ro (sparp->sparp_equivs, sparp->sparp_equiv_count, prev, (SPART *)varname, SPARP_EQUIV_GET_NAMESAKES);
           if (NULL == prev_eq)
             continue;
-          prev_eq = sparp_equiv_get_ro (sparp->sparp_equivs, sparp->sparp_equiv_count, prev, (SPART *)varname, SPARP_EQUIV_GET_NAMESAKES);
           good_varname = varname;
           good_parent_eq = parent_eq;
               good_prev_var = NULL;
