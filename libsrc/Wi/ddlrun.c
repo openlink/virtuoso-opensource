@@ -4890,7 +4890,7 @@ client_connection_t * recomp_cli;
 du_thread_t * recomp_thread;
 
 
-void 
+void
 qr_recompile_enter (int * is_entered)
 {
   if (THREAD_CURRENT_THREAD == recomp_thread)
@@ -4901,7 +4901,7 @@ qr_recompile_enter (int * is_entered)
 }
 
 
-void 
+void
 qr_recompile_leave (int * is_entered)
 {
   if (*is_entered)

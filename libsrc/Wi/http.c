@@ -1530,7 +1530,7 @@ ws_split_ac_header (const caddr_t header)
 	}
       tok = strtok_r (NULL, ",", &tok_s);
     }
-  dk_free_box (string); 
+  dk_free_box (string);
   return (caddr_t *)list_to_array (dk_set_nreverse (set));
 }
 
@@ -1564,7 +1564,7 @@ ws_header_line_to_array (caddr_t string)
 static const char *
 ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check_only, OFF_T clen, const char * charset)
 {
-  static char *fmt = 
+  static char *fmt =
       "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n"
       "<html><head>\n"
       "<title>406 Not Acceptable</title>\n"
@@ -1588,13 +1588,13 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
   /*			    0123456789012*/
   if (ignore || 0 !=  strncmp (code, "HTTP/1.1 200", 12))
     return check_only ? NULL : code;
-  accept = ws_mime_header_field (ws->ws_lines, "Accept", NULL, 1); 
+  accept = ws_mime_header_field (ws->ws_lines, "Accept", NULL, 1);
   if (!accept) /* consider it is everything, so we just skip the whole logic */
     return check_only ? NULL : code;
 
   if (!mime && ws->ws_header)
     {
-      caddr_t * headers = ws_header_line_to_array (ws->ws_header); 
+      caddr_t * headers = ws_header_line_to_array (ws->ws_header);
       mime = ctype = ws_mime_header_field (headers, "Content-Type", NULL, 0);
       cenc = ws_mime_header_field (headers, "Content-Type", "charset", 0);
       if (NULL != cenc)
@@ -1606,7 +1606,7 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
   asked = ws_split_ac_header (accept);
   DO_BOX (caddr_t, p, inx, asked)
     {
-      if (DVC_MATCH == cmp_like (mime, p, NULL, 0, LIKE_ARG_CHAR, LIKE_ARG_CHAR)) 
+      if (DVC_MATCH == cmp_like (mime, p, NULL, 0, LIKE_ARG_CHAR, LIKE_ARG_CHAR))
 	{
 	  match = p;
 	  break;
@@ -1620,7 +1620,7 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
 
       code = "HTTP/1.1 406 Unacceptable";
       dk_free_tree (ws->ws_header);
-      snprintf (buf, sizeof (buf), "Alternates: {\"%s\" 1 {type %s} {charset %s} {length " OFF_T_PRINTF_FMT "}}\r\n", 
+      snprintf (buf, sizeof (buf), "Alternates: {\"%s\" 1 {type %s} {charset %s} {length " OFF_T_PRINTF_FMT "}}\r\n",
 	  cname, mime, charset, clen);
       ws->ws_header = box_dv_short_string (buf);
       strses_flush (ws->ws_strses);

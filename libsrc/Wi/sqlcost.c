@@ -2147,7 +2147,7 @@ dfe_top_discount (df_elt_t * dfe, float * u1, float * a1)
 }
 
 
-float 
+float
 dfe_exp_card (sqlo_t * so, df_elt_t * dfe)
 {
   if (!dfe)
@@ -2176,7 +2176,7 @@ dfe_exp_card (sqlo_t * so, df_elt_t * dfe)
 }
 
 
-float 
+float
 dfe_group_by_card (df_elt_t * dfe)
 {
   sqlo_t * so = dfe->dfe_sqlo;
@@ -2258,7 +2258,7 @@ dfe_unit_cost (df_elt_t * dfe, float input_arity, float * u1, float * a1, float 
 	  *u1 = (float) (dk_set_length (dfe->_.setp.fun_refs) * 0.03);
 	  *a1 = 1 / input_arity;
 	}
-      else 
+      else
 	{
 	  if (dfe->_.setp.is_linear)
 	*u1 = 1;

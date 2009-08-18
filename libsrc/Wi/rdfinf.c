@@ -1811,7 +1811,7 @@ qn_ensure_prev (sql_comp_t * sc, data_source_t ** head , data_source_t * qn)
     return prev;
   {
     SQL_NODE_INIT (end_node_t, en, end_node_input, NULL);
-    dk_set_push (&en->src_gen.src_continuations, (void*)*head); 
+    dk_set_push (&en->src_gen.src_continuations, (void*)*head);
     *head = en;
     return (data_source_t*)en;
   }

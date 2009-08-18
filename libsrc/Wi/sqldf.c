@@ -265,7 +265,7 @@ sqlo_df_from (sqlo_t * so, df_elt_t * tb_dfe, ST ** from)
 	  ot->ot_join_preds = top_ot->ot_preds;
 	  top_ot->ot_preds = saved_preds;
 	    }
-	  else 
+	  else
 	    {
 	      so->so_is_top_and = 1;
 	      sqlo_df (so, ot->ot_join_cond);
@@ -1290,7 +1290,7 @@ dfe_super_or_prev (df_elt_t * dfe)
   return NULL;
 }
 
-int 
+int
 dfe_is_super (df_elt_t *super, df_elt_t * sub)
 {
   for (sub = sub; sub; sub = dfe_super_or_prev (sub))

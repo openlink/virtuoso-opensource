@@ -525,7 +525,7 @@ sparp_exec_Narg (sparp_t *sparp, const char *pl_call_text, query_t **cached_qr_p
       int rc = lt_enter (lt);
       if (LTE_OK != rc)
         return NULL;
-      entered = 1;      
+      entered = 1;
     }
   cli->cli_anytime_started = 0;
   cli->cli_user = sec_name_to_user ("dba");
@@ -2252,7 +2252,7 @@ sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtype, SPART *ir
     spar_error (sparp, "FROM <%.200s> clause refers to a graph group so it can not have any options", iri);
   precode = sparp_make_graph_precode (sparp, subtype, iri_expn, options);
   if ((NULL != dupe_found) && (dupe_found->_.graph.subtype == subtype) &&
-    (SPAR_QNAME == SPART_TYPE (dupe_found->_.graph.expn)) && 
+    (SPAR_QNAME == SPART_TYPE (dupe_found->_.graph.expn)) &&
     (SPAR_QNAME == SPART_TYPE (precode->_.graph.expn)) )
     return;
   if (SPART_GRAPH_MIN_NEGATION < subtype)

@@ -3371,7 +3371,7 @@ bif_dict_list_keys (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       if (ht->ht_mutex)
 	mutex_leave (ht->ht_mutex);
-      sqlr_new_error ("22023", "SR...", "The result vector is too large"); 
+      sqlr_new_error ("22023", "SR...", "The result vector is too large");
     }
   res = (caddr_t *)dk_alloc_box ((ht->ht_inserts - ht->ht_deletes) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
   tail = res;

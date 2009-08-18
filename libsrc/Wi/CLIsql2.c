@@ -2052,7 +2052,7 @@ virtodbc__SQLGetInfo (
       break;
 
 #if 0
-    /* 
+    /*
      * The next three are implemented by the Driver Manager alone.
      */
     case SQL_DRIVER_HDBC:

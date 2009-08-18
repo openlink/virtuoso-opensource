@@ -192,7 +192,7 @@ typedef struct setp_save_s
 } setp_save_t;
 
 
-typedef struct ssa_iter_node_s 
+typedef struct ssa_iter_node_s
 {
   data_source_t 	src_gen;
   int		ssi_state;
@@ -474,7 +474,7 @@ typedef struct hash_area_s
 #define HA_PROC_FILL 5
 
 
-typedef struct clo_comp_s 
+typedef struct clo_comp_s
 {
   short			nth;
   char			is_desc; /* in merging asc/desc mixed sorts , must know the order col by col */
@@ -1140,7 +1140,7 @@ typedef struct fun_ref_node_s
 
 /* fnr_partitioned */
 #define FNR_PARTITIONED 1
-#define FNR_REDUNDANT 2 
+#define FNR_REDUNDANT 2
 
 
 #define IS_FREF(qn) ((qn_input_fn)fun_ref_node_input == ((data_source_t*)qn)->src_input)

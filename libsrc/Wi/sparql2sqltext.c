@@ -4715,7 +4715,7 @@ ssg_print_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *fi
         ptrlong tree_restr = fld_tree->_.var.rvr.rvrRestrictions;
         if (SPARP_ASSIGNED_EXTERNALLY (tree_restr))
           return; /* Because this means that equiv has equality on the field that is to be printed later; so there's nothing to do right here */
-        if (SPART_VARR_CONFLICT & tree_restr) 
+        if (SPART_VARR_CONFLICT & tree_restr)
           {
             ssg_print_where_or_and (ssg, t_box_sprintf (100, "conflict on ?%.50s! The query remained not entirely optimized", fld_tree->_.var.vname));
             ssg_puts (" 0");
@@ -5034,7 +5034,7 @@ ssg_print_equivalences (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, dk_set
   int good_eq_is_printed = 0;
   if (!print_equs_to_globals)
     goto print_cross_equs; /* see below */;
-  if ((SPART_VARR_FIXED & eq->e_rvr.rvrRestrictions) && 
+  if ((SPART_VARR_FIXED & eq->e_rvr.rvrRestrictions) &&
     (SPART_VARR_FIXED & eq->e_replaces_filter) &&
     (0 == eq->e_gspo_uses) && (0 < BOX_ELEMENTS_0 (eq->e_subvalue_idxs)) )
     {

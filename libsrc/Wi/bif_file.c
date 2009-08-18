@@ -768,11 +768,11 @@ bif_file_to_string_session_impl (caddr_t * qst, caddr_t * err_ret,
   need = to - from;
   for (;;)
     {
-      if (need == -1) 
+      if (need == -1)
 	{
 	  next = sizeof (buffer);
-	} 
-      else 
+	}
+      else
 	{
       next = need - total;
       if (sizeof (buffer) < next)

@@ -1349,7 +1349,7 @@ bp_make_buffer_list (int n)
     {
       buf = &bp->bp_bufs[c];
 #ifdef MALLOC_BUFS
-      if (c_use_o_direct) 
+      if (c_use_o_direct)
 	GPF_T1 ("An exec ompiled with malloc_bufs defd is not compatible with the use O_DIRECT setting");
       buf->bd_buffer = malloc (BUF_ALLOC_SZ);
       BUF_SET_END_MARK (buf);
