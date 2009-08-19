@@ -1473,18 +1473,18 @@ sqlo_try_inf_filter (df_elt_t * tb_dfe, index_choice_t * ic)
   if (IC_AS_IS == ic->ic_op || ic->ic_n_lookups < 2)
     return;
   DO_SET (df_elt_t *, cp, &tb_dfe->_.table.col_preds)
-		{
+    {
       if (DFE_BOP_PRED == cp->dfe_type && ic->ic_inf_dfe == cp->_.bin.right)
 	{
 	  ST * tst = (ST*)t_list (4, BOP_EQ, (caddr_t)(ptrlong)1, t_list (3, CALL_STMT, t_sqlp_box_id_upcase ("rdf_is_sub"),
 									  t_list (4, ric->ric_name, cp->_.bin.left->dfe_tree, ic->ic_inf_dfe->dfe_tree, (caddr_t)(ptrlong)ic->ic_inf_type)), NULL);
 	  tst_dfe = sqlo_df (so, tst);
 	  t_set_push (&inf_after_test, (void*)tst_dfe);
-		}
+	}
       else
 	t_set_push (&no_inf_cp, (void*)cp);
-	    }
-	  END_DO_SET();
+    }
+  END_DO_SET();
   memset (&filter_ic, 0, sizeof (filter_ic));
   filter_ic.ic_op = IC_AS_IS;
   tb_dfe->_.table.col_preds = no_inf_cp;
@@ -2113,37 +2113,37 @@ dfe_top_discount (df_elt_t * dfe, float * u1, float * a1)
 {
   /* applied to dts with top, value subqs, existences after they are laid out.  Not applied during layout selection so as not to minimize sizes of intermediate results */
   if (dfe_ot (dfe) && ST_P (dfe_ot (dfe)->ot_dt, SELECT_STMT))
-	    {
+    {
       int is_sort = sqlo_is_postprocess (dfe->dfe_sqlo, dfe, NULL);
-	      int is_distinct = SEL_IS_DISTINCT (dfe_ot (dfe)->ot_dt);
-	      ST *top_exp = SEL_TOP (dfe_ot (dfe)->ot_dt);
-	      ptrlong top_cnt = sqlo_select_top_cnt (dfe->dfe_sqlo, top_exp);
-	      if (top_cnt && top_cnt < *a1)
-		{
+      int is_distinct = SEL_IS_DISTINCT (dfe_ot (dfe)->ot_dt);
+      ST *top_exp = SEL_TOP (dfe_ot (dfe)->ot_dt);
+      ptrlong top_cnt = sqlo_select_top_cnt (dfe->dfe_sqlo, top_exp);
+      if (top_cnt && top_cnt < *a1)
+	{
 	  if (!is_sort)
-		  *u1 /= *a1 / top_cnt;
+	    *u1 /= *a1 / top_cnt;
 	  *a1 = top_cnt;
-		}
-	      if (is_distinct)
-		{
-		  /* assume 10% are dropped, 1.2 * hash ref cost per incoming */
-		  *u1 += *a1 * HASH_LOOKUP_COST * 1.3;
-		  *a1 *= 0.9;
-		}
-	    }
-	  if (dfe->dfe_type == DFE_EXISTS || dfe->dfe_type == DFE_VALUE_SUBQ)
-	    { /* accesses never more than 1 */
-	      if (*a1 > 1)
-		*u1 /= *a1;
-	      if (dfe->dfe_type == DFE_EXISTS)
-		{
-		  /* an exists never has arity > 1.  If 1, guess 0.5.  If over 1, scale between 0.5 and 1 */
-		  *a1 = *a1 < 1 ? *a1 / 2
-		    : 0.99 - (1 / (2 * *a1));
-		}
-	      else
-		*a1 = 1; /*for scalar subq */
-	    }
+	}
+      if (is_distinct)
+	{
+	  /* assume 10% are dropped, 1.2 * hash ref cost per incoming */
+	  *u1 += *a1 * HASH_LOOKUP_COST * 1.3;
+	  *a1 *= 0.9;
+	}
+    }
+  if (dfe->dfe_type == DFE_EXISTS || dfe->dfe_type == DFE_VALUE_SUBQ)
+    { /* accesses never more than 1 */
+      if (*a1 > 1)
+	*u1 /= *a1;
+      if (dfe->dfe_type == DFE_EXISTS)
+	{
+	  /* an exists never has arity > 1.  If 1, guess 0.5.  If over 1, scale between 0.5 and 1 */
+	  *a1 = *a1 < 1 ? *a1 / 2
+	    : 0.99 - (1 / (2 * *a1));
+	}
+      else
+	*a1 = 1; /*for scalar subq */
+    }
 }
 
 

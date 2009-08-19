@@ -502,16 +502,16 @@ ts_print (table_source_t * ts)
       if (!ts->ts_order_ks->ks_from_temp_tree && ts->ts_order_ks->ks_key)
 	{
 	  char idstr[20];
-          char card[30];
-          snprintf (card, sizeof (card), "%9.2g rows", ts->ts_cardinality);
+      char card[30];
+      snprintf (card, sizeof (card), "%9.2g rows", ts->ts_cardinality);
 	  if (ts->clb.clb_fill)
 	    sprintf (idstr, "fill=%d", ts->clb.clb_fill);
 	  else
 	    idstr[0] = 0;
 	  stmt_printf (("from %s by %s %s %s %s %s %s\n",
-		      ts->ts_order_ks->ks_key->key_table->tb_name,
-		      ts->ts_order_ks->ks_key->key_name,
-		      ts->ts_is_outer ? "OUTER" : "",
+			ts->ts_order_ks->ks_key->key_table->tb_name,
+			ts->ts_order_ks->ks_key->key_name,
+			ts->ts_is_outer ? "OUTER" : "",
 			ts->ts_is_unique ? "Unique" : card,
 			ts->clb.clb_fill ? (ts->ts_order_ks->ks_cl_order ? "cluster" : "cluster  unordered") : "", idstr, max_rows));
 	}
@@ -743,11 +743,11 @@ node_print (data_source_t * node)
 	  stmt_printf (("\nAfter join test:\n"));
 	  code_vec_print (rts->rts_after_join_test);
 	}
-	  if (rts->rts_save_env)
-	    {
-	      stmt_printf ((" save env: "));
-	      ssl_array_print (rts->rts_save_env);
-	    }
+      if (rts->rts_save_env)
+	{
+	  stmt_printf ((" save env: "));
+	  ssl_array_print (rts->rts_save_env);
+	}
       stmt_printf (("\n"));
     }
   else if (in == (qn_input_fn) subq_node_input)

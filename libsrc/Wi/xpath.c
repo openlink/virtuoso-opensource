@@ -5169,8 +5169,8 @@ xp_word_or_phrase_from_wordstack (xpp_t *xpp, dk_set_t words, int allow_xp_error
       for (inx = 2; inx < (int) BOX_ELEMENTS (res); inx++)
         {
           ASSERT_BOX_UTF8 (res[inx]);
-	res[inx] = list (3, SRC_WORD, (ptrlong)SRC_RANGE_DUMMY, res[inx]);
-    }
+	  res[inx] = list (3, SRC_WORD, (ptrlong)SRC_RANGE_DUMMY, res[inx]);
+        }
     }
   return res;
 }

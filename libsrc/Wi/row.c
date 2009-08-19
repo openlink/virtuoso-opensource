@@ -1752,16 +1752,16 @@ row_insert_cast (row_delta_t * rd, dbe_col_loc_t * cl, caddr_t data,
       lv = num_check_prec (lv, cl->cl_sqt.sqt_precision, __get_column_name (cl->cl_col_id, key), err_ret);
       if (err_ret && *err_ret)
 	return;
-	  if (DV_LONG_INT == DV_TYPE_OF (data))
-	    {
-	      ITC_SEARCH_PARAM (ins_itc, data);
-	    }
-	  else
-	    {
-	      caddr_t box = box_num (lv);
-	      ITC_SEARCH_PARAM (ins_itc, box);
+      if (DV_LONG_INT == DV_TYPE_OF (data))
+	{
+	  ITC_SEARCH_PARAM (ins_itc, data);
+	}
+      else
+	{
+	  caddr_t box = box_num (lv);
+	  ITC_SEARCH_PARAM (ins_itc, box);
 	      ITC_OWNS_PARAM (ins_itc, box);
-	    }
+	}
       break;
     case DV_INT64:
       lv = box_to_boxint (data, dtp, cl->cl_col_id, err_ret, key, DV_INT64);
@@ -1770,16 +1770,16 @@ row_insert_cast (row_delta_t * rd, dbe_col_loc_t * cl, caddr_t data,
       lv = num_check_prec (lv, cl->cl_sqt.sqt_precision, __get_column_name (cl->cl_col_id, key), err_ret);
       if (err_ret && *err_ret)
 	return;
-	  if (DV_LONG_INT == DV_TYPE_OF (data))
-	    {
-	      ITC_SEARCH_PARAM (ins_itc, data);
-	    }
-	  else
-	    {
-	      caddr_t box = box_num (lv);
-	      ITC_SEARCH_PARAM (ins_itc, box);
-	      ITC_OWNS_PARAM (ins_itc, box);
-	    }
+      if (DV_LONG_INT == DV_TYPE_OF (data))
+	{
+	  ITC_SEARCH_PARAM (ins_itc, data);
+	}
+      else
+	{
+	  caddr_t box = box_num (lv);
+	  ITC_SEARCH_PARAM (ins_itc, box);
+	  ITC_OWNS_PARAM (ins_itc, box);
+	}
       break;
 
     case DV_SHORT_INT:

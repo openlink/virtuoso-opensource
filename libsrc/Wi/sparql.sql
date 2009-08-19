@@ -6655,7 +6655,7 @@ create procedure DB.DBA.RDF_QM_CHECK_CLASS_FUNCTION_HEADERS (inout fheaders any,
           if (uriprintname like '%"')
             uriparsename := sprintf ('%s_INV_%d"', subseq (uriprintname, 0, length (uriprintname)-1), argctr+1);
           else
-          uriparsename := sprintf ('%s_INV_%d', uriprintname, argctr+1);
+            uriparsename := sprintf ('%s_INV_%d', uriprintname, argctr+1);
           if (fheaders[argctr + 1][0] <> uriparsename)
             signal ('22023', 'Name of inverse function should be ' || uriparsename || ', not ' || fheaders[argctr + 1][0] || ', other variants are not supported by the current version' );
         }
@@ -8803,14 +8803,14 @@ create procedure DB.DBA.RDF_DEFAULT_USER_PERMS_SET (in uname varchar, in perms i
   if (set_private)
     {
       special_iid := #i8192;
-  for (select RGU_GRAPH_IID, RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER
+      for (select RGU_GRAPH_IID, RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER
         where RGU_GRAPH_IID <> #i0 and RGU_GRAPH_IID <> #i8192 and
           RGU_USER_ID = uid and bit_and (bit_not (RGU_PERMISSIONS), perms) <> 0 and
           exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP_MEMBER where
               RGGM_GROUP_IID = iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs') and
               RGGM_MEMBER_IID = RGU_GRAPH_IID ) ) do
         signal ('RDF99', sprintf ('Default "private area" permissions of user "%s" on RDF quad store can not become broader than permissions on specific "private" graph <%s>',
-        uname, id_to_iri (RGU_GRAPH_IID) ) );
+            uname, id_to_iri (RGU_GRAPH_IID) ) );
     }
   else
     {
@@ -8839,7 +8839,7 @@ create procedure DB.DBA.RDF_DEFAULT_USER_PERMS_SET (in uname varchar, in perms i
   if (uname <> 'dba')
     {
       if (not (exists (select top 1 1 from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i0 and RGU_USER_ID = 0)))
-    DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('dba', 1023);
+        DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('dba', 1023);
       if (not (exists (select top 1 1 from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i8192 and RGU_USER_ID = 0)))
         DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('dba', 1023, 1);
     }
@@ -8954,8 +8954,8 @@ create function DB.DBA.RDF_GRAPH_GROUP_LIST_GET (in group_iri any, in extra_grap
             {
               perms := __rdf_graph_approx_perms (group_iid, uid);
               if (not bit_and (perms, 8))
-              perms := coalesce (
-                (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = group_iid and RGU_USER_ID = uid),
+                perms := coalesce (
+                  (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = group_iid and RGU_USER_ID = uid),
                   perms );
               if (gs_app_cbk is not null and bit_and (perms, 8))
                 perms := bit_and (perms, call (gs_app_cbk)(group_iid, gs_app_uid));
@@ -8975,8 +8975,8 @@ create function DB.DBA.RDF_GRAPH_GROUP_LIST_GET (in group_iri any, in extra_grap
         {
           perms := __rdf_graph_approx_perms (group_iid, uid);
           if (not bit_and (perms, 8))
-          perms := coalesce (
-            (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = group_iid and RGU_USER_ID = uid),
+            perms := coalesce (
+              (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = group_iid and RGU_USER_ID = uid),
               perms );
           if (gs_app_cbk is not null and bit_and (perms, 8))
             perms := bit_and (perms, call (gs_app_cbk)(group_iid, gs_app_uid));
@@ -9008,9 +9008,9 @@ create function DB.DBA.RDF_GRAPH_GROUP_LIST_GET (in group_iri any, in extra_grap
     {
       perms := __rdf_graph_approx_perms (member_iid, uid);
       if (bit_and (perms, req_perms) <> req_perms)
-      perms := coalesce (
-        (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = member_iid and RGU_USER_ID = uid),
-        dict_get (__rdf_graph_public_perms_dict(), member_iid, NULL),
+        perms := coalesce (
+          (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = member_iid and RGU_USER_ID = uid),
+          dict_get (__rdf_graph_public_perms_dict(), member_iid, NULL),
           perms );
       if (gs_app_cbk is not null and bit_and (perms, req_perms) = req_perms)
         perms := bit_and (perms, call (gs_app_cbk)(member_iid, gs_app_uid));

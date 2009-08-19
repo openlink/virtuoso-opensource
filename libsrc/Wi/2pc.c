@@ -519,7 +519,7 @@ cli_2pc_transact (lock_trx_t * lt, int operation)
   if (lt->lt_status == LT_COMMITTED && !LT_IS_RUNNING (lt))
     lt_2pc_commit (lt);
   else
-  lt_kill_other_trx (lt, NULL, NULL, LT_KILL_ROLLBACK);
+    lt_kill_other_trx (lt, NULL, NULL, LT_KILL_ROLLBACK);
 
   if (lt->lt_error != LTE_OK)
     lt_log_debug (("cli_2pc_transact op=%d result=%d lt=%p cli=%p", operation,
@@ -1418,7 +1418,7 @@ virt_xa_client (void *xid, client_connection_t * cli, struct tp_data_s **tpd, in
   IN_TXN;
   if (cli->cli_trx != xx[0]->xid_tp_data->cli_tp_lt)
     {
-    lt_kill_other_trx (cli->cli_trx, NULL, NULL, LT_KILL_ROLLBACK);
+      lt_kill_other_trx (cli->cli_trx, NULL, NULL, LT_KILL_ROLLBACK);
       cli->cli_trx = NULL;
       cli_set_trx (cli, xx[0]->xid_tp_data->cli_tp_lt);
     }

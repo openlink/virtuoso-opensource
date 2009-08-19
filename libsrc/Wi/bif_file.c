@@ -288,7 +288,7 @@ init_file_acl (void)
   if (sys_files) /* during backup restore, db is not open, therefore we skip this part */
     {
       id_hash_iterator (&it, sys_files);
-      while (hit_next (&it, (char **) &sys_name, (char **) &sys_file))
+      while (hit_next (&it, (char**) &sys_name, (char**) &sys_file))
 	{
 	  dk_set_push (&d_db_files, box_dv_short_string (*sys_name));
 	}
@@ -765,7 +765,7 @@ bif_file_to_string_session_impl (caddr_t * qst, caddr_t * err_ret,
   if (to == -1)
     need = -1;
   else
-  need = to - from;
+    need = to - from;
   for (;;)
     {
       if (need == -1)
@@ -774,11 +774,11 @@ bif_file_to_string_session_impl (caddr_t * qst, caddr_t * err_ret,
 	}
       else
 	{
-      next = need - total;
-      if (sizeof (buffer) < next)
-	next = sizeof (buffer);
-      if (next <= 0)
-	break;
+	  next = need - total;
+	  if (sizeof (buffer) < next)
+	    next = sizeof (buffer);
+	  if (next <= 0)
+	    break;
 	}
       readed = read (fd, buffer, (unsigned) next);
       if (readed <= 0)
@@ -788,7 +788,7 @@ bif_file_to_string_session_impl (caddr_t * qst, caddr_t * err_ret,
       if (DK_ALLOC_ON_RESERVE)
 	{
 	  strses_free (res);
-          close (fd);
+	  close (fd);
 	  qi_signal_if_trx_error ((query_instance_t *)qst);
 	}
       if (need != -1 && total >= need)
@@ -1072,7 +1072,7 @@ str_compare (const void *s1, const void *s2)
   dtp_t sc2_dtp = DV_TYPE_OF (sc2);
   int sign;
   if (IS_STRING_DTP (sc1_dtp) && IS_STRING_DTP (sc2_dtp))
-  return strcmp (sc1, sc2);
+    return strcmp (sc1, sc2);
   if ((DV_WIDE == sc1_dtp) && (DV_WIDE == sc2_dtp))
     {
       int len1 = box_length (sc1);

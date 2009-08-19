@@ -9462,7 +9462,7 @@ bif_sequence_next_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
   if (sec_check)
     check_sequence_grants (qi, name);
   if (cl_run_local_only)
-  res = sequence_next_inc_1 (name, OUTSIDE_MAP, inc_by, err_ret);
+    res = sequence_next_inc_1 (name, OUTSIDE_MAP, inc_by, err_ret);
   else
     {
       GPF_T;

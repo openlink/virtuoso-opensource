@@ -1011,18 +1011,18 @@ st_collect_ps_info (dk_set_t * arr)
 	      caddr_t *text;
 	      if (mutex_try_enter (cli->cli_mtx))
 		{
-	      id_hash_iterator (&it, cli->cli_statements);
-	      while (hit_next (&it, (char **) & text, (char **) & stmt))
-		{
-		  caddr_t * inst = (caddr_t *) (*stmt)->sst_inst;
-		  if ((*stmt)->sst_start_msec && inst && (*stmt)->sst_query)
+		  id_hash_iterator (&it, cli->cli_statements);
+		  while (hit_next (&it, (char **) & text, (char **) & stmt))
 		    {
-		      dk_set_push (arr, box_string ((*stmt)->sst_query->qr_text));
-		      dk_set_push (arr, box_num (time_now - (*stmt)->sst_start_msec));
+		      caddr_t * inst = (caddr_t *) (*stmt)->sst_inst;
+		      if ((*stmt)->sst_start_msec && inst && (*stmt)->sst_query)
+			{
+			  dk_set_push (arr, box_string ((*stmt)->sst_query->qr_text));
+			  dk_set_push (arr, box_num (time_now - (*stmt)->sst_start_msec));
+			}
 		    }
+		  LEAVE_CLIENT (cli);
 		}
-	      LEAVE_CLIENT (cli);
-	    }
 	      else
 		{
 		  dk_set_push (arr, box_string (" client not available, pending compile, time shown is since last exec"));
@@ -1094,8 +1094,8 @@ status_report (const char * mode, query_instance_t * qi)
   if (gen_info)
     {
       rep_printf ("Started on: %04d/%02d/%02d %02d:%02d GMT%+03d\n",
-      st_started_since_year, st_started_since_month, st_started_since_day,
-      st_started_since_hour, st_started_since_minute, dt_local_tz);
+		  st_started_since_year, st_started_since_month, st_started_since_day,
+		  st_started_since_hour, st_started_since_minute, dt_local_tz);
     }
   if (!gen_info)
     return;

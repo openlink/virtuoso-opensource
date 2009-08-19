@@ -2158,51 +2158,51 @@ bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, ch
   ctx = http_cli_std_init (url, qst);
   ctx->hcctx_method = HC_METHOD_GET;
 
-      if (uid && pwd)
-	http_cli_init_std_auth (ctx, uid, pwd);
+  if (uid && pwd)
+    http_cli_init_std_auth (ctx, uid, pwd);
 
-      if (method)
+  if (method)
+    {
+      int inx;
+      for (inx = 1; inx < HC_MAX_METHOD; inx ++)
 	{
-	  int inx;
-	  for (inx = 1; inx < HC_MAX_METHOD; inx ++)
+	  if (!stricmp (method, http_cli_meth[inx]))
 	    {
-	      if (!stricmp (method, http_cli_meth[inx]))
-		{
-		  meth = inx;
-		  http_cli_set_method (ctx, inx);
-		  break;
-		}
+	      meth = inx;
+	      http_cli_set_method (ctx, inx);
+	      break;
 	    }
 	}
+    }
 
-      if (http_hdr)
-	{
-	  if (NULL != nc_strstr ((unsigned char *) http_hdr, (unsigned char *) "User-Agent:")) /* we already have ua id in headers */
-	    ua_id = NULL;
-          http_cli_add_req_hdr (ctx, http_hdr);
-	}
+  if (http_hdr)
+    {
+      if (NULL != nc_strstr ((unsigned char *) http_hdr, (unsigned char *) "User-Agent:")) /* we already have ua id in headers */
+	ua_id = NULL;
+      http_cli_add_req_hdr (ctx, http_hdr);
+    }
 
   http_cli_set_ua_id (ctx, ua_id);
-      dtp = DV_TYPE_OF (body);
-      if (body && dtp != DV_DB_NULL)
+  dtp = DV_TYPE_OF (body);
+  if (body && dtp != DV_DB_NULL)
+    {
+      if (dtp == DV_SHORT_STRING || dtp == DV_LONG_STRING || dtp == DV_C_STRING)
 	{
-	  if (dtp == DV_SHORT_STRING || dtp == DV_LONG_STRING || dtp == DV_C_STRING)
-	    {
-	      session_buffered_write (ctx->hcctx_req_body, body, box_length (body) - 1);
-	    }
-	  else if (DV_STRING_SESSION == dtp)
-	    {
-	      strses_write_out ((dk_session_t *) body, ctx->hcctx_req_body);
-	    }
-	  else
-	    {
-	      sqlr_new_error ("22023", "SR005", "Function %s needs a string or NULL as argument %d, "
-		  "not an arg of type %s (%d)", me, 6, dv_type_title (dtp), dtp);
-	    }
-	  if (meth == HC_METHOD_POST && (!http_hdr ||
-              !nc_strstr ((unsigned char *) http_hdr, (unsigned char *) "Content-Type:")))
-	    http_cli_set_req_content_type (ctx, (caddr_t)"application/x-www-form-urlencoded");
+	  session_buffered_write (ctx->hcctx_req_body, body, box_length (body) - 1);
 	}
+      else if (DV_STRING_SESSION == dtp)
+	{
+	  strses_write_out ((dk_session_t *) body, ctx->hcctx_req_body);
+	}
+      else
+	{
+	  sqlr_new_error ("22023", "SR005", "Function %s needs a string or NULL as argument %d, "
+	      "not an arg of type %s (%d)", me, 6, dv_type_title (dtp), dtp);
+	}
+      if (meth == HC_METHOD_POST && (!http_hdr ||
+	    !nc_strstr ((unsigned char *) http_hdr, (unsigned char *) "Content-Type:")))
+	http_cli_set_req_content_type (ctx, (caddr_t)"application/x-www-form-urlencoded");
+    }
 #ifdef _SSL
   if (NULL != cert)
     {

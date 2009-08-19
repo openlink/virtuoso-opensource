@@ -250,37 +250,37 @@ vt_noise_word_init (char *file, id_hash_t ** noise_ht)
     return;
   while (fgets (nw, sizeof (nw), noise))
     {
-      tail = nw+strlen(nw);
-      if (!memcmp(nw,"Language:",strlen("Language:")))
+      tail = nw + strlen (nw);
+      if (!memcmp (nw, "Language:", strlen ("Language:")))
 	{
-	  name = nw+strlen("Language:");
+	  name = nw + strlen ("Language:");
 	  while ((tail > nw) && ((unsigned char) (tail[-1]) <= 32))
 	    (--tail)[0] = '\0';
 	  while ((name <= tail) && ((unsigned char) (name[0]) <= 32))
 	    name++;
-	  lh = lh_get_handler(name);
+	  lh = lh_get_handler (name);
 	  continue;
 	}
-      if (!memcmp(nw,"Encoding:",strlen("Encoding:")))
+      if (!memcmp (nw, "Encoding:", strlen ("Encoding:")))
 	{
-	  name = nw+strlen("Encoding:");
+	  name = nw + strlen ("Encoding:");
 	  while ((tail > nw) && ((unsigned char) (tail[-1]) <= 32))
 	    (--tail)[0] = '\0';
 	  while ((name <= tail) && ((unsigned char) (name[0]) <= 32))
 	    name++;
-	  eh = eh_get_handler(name);
+	  eh = eh_get_handler (name);
 	  if (NULL == eh)
-	    log_error("Unsupported encoding \"%s\" used in noise.txt file, some strings may be ignored", name);
+	    log_error ("Unsupported encoding \"%s\" used in noise.txt file, some strings may be ignored", name);
 	  continue;
 	}
       if (NULL == eh)
-        continue;
-      res = lh_iterate_patched_words(eh, lh, nw, tail-nw, lh->lh_is_vtb_word, NULL, noise_word_init_callback, (void *)(future_noise_words));
-      res |= lh_iterate_patched_words(eh, lh, nw, tail-nw, lh->lh_is_vtb_word, lh->lh_tocapital_word, noise_word_init_callback, (void *)(future_noise_words));
-      res |= lh_iterate_patched_words(eh, lh, nw, tail-nw, lh->lh_is_vtb_word, lh->lh_toupper_word, noise_word_init_callback, (void *)(future_noise_words));
-      res |= lh_iterate_patched_words(eh, lh, nw, tail-nw, lh->lh_is_vtb_word, lh->lh_tolower_word, noise_word_init_callback, (void *)(future_noise_words));
+	continue;
+      res = lh_iterate_patched_words (eh, lh, nw, tail - nw, lh->lh_is_vtb_word, NULL, noise_word_init_callback, (void *) (future_noise_words));
+      res |= lh_iterate_patched_words (eh, lh, nw, tail - nw, lh->lh_is_vtb_word, lh->lh_tocapital_word, noise_word_init_callback, (void *) (future_noise_words));
+      res |= lh_iterate_patched_words (eh, lh, nw, tail - nw, lh->lh_is_vtb_word, lh->lh_toupper_word, noise_word_init_callback, (void *) (future_noise_words));
+      res |= lh_iterate_patched_words (eh, lh, nw, tail - nw, lh->lh_is_vtb_word, lh->lh_tolower_word, noise_word_init_callback, (void *) (future_noise_words));
       if (res)
-	log_error("Broken text in noise.txt file, (encoding \"%s\"): %s", eh->eh_names[0], nw);
+	log_error ("Broken text in noise.txt file, (encoding \"%s\"): %s", eh->eh_names[0], nw);
     }
   fclose (noise);
   id_hash_free (*noise_ht);
@@ -318,13 +318,13 @@ box_n_chars_reuse2 (char * str, int n, caddr_t replace1, caddr_t replace2)
 
 /* depends of get_existing we either initialize explicitly or only when not initialized */
 id_hash_t *
-vt_load_stop_words (char *file, int get_existing)
+vt_load_stop_words  (char * file, int get_existing)
 {
-  id_hash_t *ht, **place;
+  id_hash_t * ht, **place;
   caddr_t copy;
 
   mutex_enter (stop_words_mtx);
-  place = (id_hash_t **) id_hash_get (vt_stop_words, (caddr_t) & file);
+  place = (id_hash_t **) id_hash_get (vt_stop_words, (caddr_t) &file);
   if (get_existing && place)
     {
       ht = *place;
@@ -339,7 +339,7 @@ vt_load_stop_words (char *file, int get_existing)
   else
     {
       copy = box_copy (file);
-      id_hash_set (vt_stop_words, (caddr_t) & copy, (caddr_t) & ht);
+      id_hash_set (vt_stop_words, (caddr_t) &copy, (caddr_t) &ht);
     }
 ret:
   mutex_leave (stop_words_mtx);
@@ -367,25 +367,24 @@ is_vtb_word__xany (const unichar * buf, size_t bufsize)
   return 0;
 }
 
-
 caddr_t
-bif_vt_is_noise  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+bif_vt_is_noise (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t word = bif_string_arg (qst, args, 0, "vt_is_noise");
   caddr_t enc_name = bif_string_arg (qst, args, 1, "vt_is_noise");
   caddr_t lang_name = bif_string_arg (qst, args, 2, "vt_is_noise");
-  encoding_handler_t *eh = eh_get_handler(enc_name);
-#if 0	/* Stub variant */
+  encoding_handler_t *eh = eh_get_handler (enc_name);
+#if 0				/* Stub variant */
   lenmem_t lm;
   lm.lm_length = strlen (word);
   lm.lm_memblock = word;
   return box_num (NULL != id_hash_get (lh_noise_words, &lm));
-#else	/* Variant which may be reliably used for any language with any sort of word normalization */
-  lang_handler_t *lh = lh_get_handler(lang_name);
+#else /* Variant which may be reliably used for any language with any sort of word normalization */
+  lang_handler_t *lh = lh_get_handler (lang_name);
   int cnt;
   if (NULL == eh)
-    sqlr_new_error("22023", "FT006",  "Unknown encoding name '%s'", enc_name);
-  cnt = lh_count_words (eh, lh, word, strlen(word), NULL);
+    sqlr_new_error ("22023", "FT006", "Unknown encoding name '%s'", enc_name);
+  cnt = lh_count_words (eh, lh, word, strlen (word), NULL);
   if (1 != cnt)
     return (box_num (0));
   if (BOX_ELEMENTS (args) > 3)
@@ -401,7 +400,7 @@ bif_vt_is_noise  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   else
     {
-  cnt = lh_count_words (eh, lh, word, strlen(word), lh_get_handler(lang_name)->lh_is_vtb_word);
+      cnt = lh_count_words (eh, lh, word, strlen (word), lh_get_handler (lang_name)->lh_is_vtb_word);
     }
   if (1 != cnt)
     return (box_num (1));
@@ -1368,11 +1367,11 @@ process_as_text:
         ASSERT_BOX_WCHAR (str);
       else
         ASSERT_BOX_8BIT (str);
-    lh_iterate_patched_words (
+      lh_iterate_patched_words (
          eh, lh,
-       str, box_length(str),
-       lh->lh_is_vtb_word, lh->lh_normalize_word,
-       cbk, vtb );
+         str, box_length(str),
+         lh->lh_is_vtb_word, lh->lh_normalize_word,
+         cbk, vtb );
     }
   goto done;
 

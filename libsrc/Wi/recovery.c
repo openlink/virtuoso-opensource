@@ -452,23 +452,23 @@ key_is_recoverable (key_id_t key_id)
 {
   dbe_key_t * migr, * key = sch_id_to_key (wi_inst.wi_schema, key_id);
   if (!key)
-      return 0;
+    return 0;
   if (!recoverable_keys)
-  return 1;
+    return 1;
   if (gethash ((void*)(ptrlong)key_id, recoverable_keys))
     return 1;
   for (migr = key_migrate_to (key); migr; migr = key_migrate_to (migr))
-              {
+    {
       if (key_is_recoverable (migr->key_id))
-                return 1;
-              }
+	return 1;
+    }
   DO_SET (dbe_key_t *, super, &key->key_supers)
     {
       if (key_is_recoverable (super->key_id))
-      return 1;
+	return 1;
     }
   END_DO_SET();
-	  return 0;
+  return 0;
 }
 
 
@@ -477,7 +477,7 @@ row_log (it_cursor_t * itc, buffer_desc_t * buf, int map_pos, dbe_key_t * row_ke
 {
   dtp_t temp[4096];
   if (row_key->key_is_bitmap)
-            {
+    {
       db_buf_t bm;
       int off;
       short bm_len;
@@ -552,29 +552,29 @@ log_page (it_cursor_t * it, buffer_desc_t * buf, void* dummy)
 	  if (KV_LEFT_DUMMY == kv)
 	    goto next;
 	  if (!pg_row_check (buf, map_pos, 0))
-		{
+	    {
 	      log_error ("Row failed row check on L=%d", buf->bd_page);
-		  n_rows++;
-		  n_bad_rows++;
-		  goto next;
-		}
+	      n_rows++;
+	      n_bad_rows++;
+	      goto next;
+	    }
 	  if (KV_LEAF_PTR == kv)
 	    goto next;
 	  row_key = page_key->key_versions[kv];
 	  l = row_length (row, row_key);
 	  if ((row - buf->bd_buffer) + l > PAGE_SZ)
-		{
-		  n_rows++;
-		  n_bad_rows++;
-		  goto next;
-		}
-	      if (bkp_check_and_recover_blobs)
-		{
+	    {
+	      n_rows++;
+	      n_bad_rows++;
+	      goto next;
+	    }
+	  if (bkp_check_and_recover_blobs)
+	    {
 	      if (bkp_check_and_recover_blob_cols (it, row))
-		    buf_set_dirty (buf);
-		}
+		buf_set_dirty (buf);
+	    }
 	  row_log (it, buf, map_pos, row_key, &rd);
-	      any++;
+	  any++;
 	  n_bad_rows = 0;
 	  n_rows++;
 	}

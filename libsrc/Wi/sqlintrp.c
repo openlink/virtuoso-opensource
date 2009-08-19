@@ -691,10 +691,10 @@ qn_init (table_source_t * ts, caddr_t * inst)
       if (ts->ts_order_cursor)
 	{
 	  order_itc = TS_ORDER_ITC (ts, inst);
-      TS_ORDER_ITC (ts, inst) = NULL;
-      if (order_itc)
-	itc_free (order_itc);
-    }
+	  TS_ORDER_ITC (ts, inst) = NULL;
+	  if (order_itc)
+	    itc_free (order_itc);
+	}
     }
 
 
@@ -741,7 +741,7 @@ subq_init (query_t * subq, caddr_t * inst)
 	  QNCAST (subq_source_t, sqs, ts);
 	  subq_init (sqs->sqs_query, inst);
 	}
-      else if ((ts->src_gen.src_input == (qn_input_fn) table_source_input ||
+	   else if ((ts->src_gen.src_input == (qn_input_fn) table_source_input ||
 	  ts->src_gen.src_input == (qn_input_fn) table_source_input_unique)
 	  && ts->ts_order_ks  /* not set if inx op */
 	  && ts->ts_order_ks->ks_key->key_id == KI_TEMP

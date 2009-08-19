@@ -846,27 +846,27 @@ internal_sql_connect (
             strncpy (addr, index[hostIndex], (sizeof (addr) - 1));
 
 #if defined(WIN32)
-  if (alldigits (addr))
-    {
-      strcpy_ck (addr, "localhost:");
-      strcat_ck (addr, dsn);
-    }
-  else
+          if (alldigits (addr))
+            {
+              strcpy_ck (addr, "localhost:");
+              strcat_ck (addr, dsn);
+            }
+          else
 #endif
-  if (!alldigits (addr) && !strchr (dsn, ' ') && !strchr (dsn, ':'))
-    {
-      strncpy (addr, dsn, sizeof (addr) - 6);
+          if (!alldigits (addr) && !strchr (dsn, ' ') && !strchr (dsn, ':'))
+            {
+              strncpy (addr, dsn, sizeof (addr) - 6);
 #ifdef _SSL
-      strcat_ck (addr, con->con_encrypt ? ":2111" : ":1111");
+              strcat_ck (addr, con->con_encrypt ? ":2111" : ":1111");
 #else
-      strcat_ck (addr, ":1111");
+              strcat_ck (addr, ":1111");
 #endif
-    }
+            }
 
           ses = PrpcConnect1 (addr, SESCLASS_TCPIP, con->con_encrypt, szPasswd, con->con_ca_list);
 
           if (!DKSESSTAT_ISSET (ses, SST_OK))
-  {
+            {
               hostIndex++;
               if (useRoundRobin)
                 {
@@ -874,7 +874,7 @@ internal_sql_connect (
                     hostIndex = 0;
                   if (hostIndex == startIndex)
                     break; /* FAIL */
-  }
+                }
               else if (index_count == hostIndex)
                 {
                   break; /*FAIL*/

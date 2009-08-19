@@ -146,7 +146,7 @@ sqlo_df_elt (sqlo_t * so, ST * tree)
   id_hashed_key_t hash = sql_tree_hash ((caddr_t) &tree);
   if (so->so_df_private_elts)
     {
-    place = (df_elt_t **) id_hash_get_with_hash_number (so->so_df_private_elts, (caddr_t) &tree, hash);
+      place = (df_elt_t **) id_hash_get_with_hash_number (so->so_df_private_elts, (caddr_t) &tree, hash);
       /* if this is not a leaf like col, literal or param, then do not use the global one even if there is one.  Except when there is an aggregate, they must be shared over the whole tree */
       if (! (ST_P (tree, COL_DOTTED) || DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree) || sqlo_has_node (tree, FUN_REF)))
 	return place ? *place : NULL;
@@ -258,12 +258,12 @@ sqlo_df_from (sqlo_t * so, df_elt_t * tb_dfe, ST ** from)
 	{
 	  if (ot->ot_is_outer || ot->ot_is_proc_view)
 	    {
-	  dk_set_t saved_preds = top_ot->ot_preds;
-	  so->so_is_top_and = 1;
-	  top_ot->ot_preds = NULL;
-	  sqlo_df (so, ot->ot_join_cond);
-	  ot->ot_join_preds = top_ot->ot_preds;
-	  top_ot->ot_preds = saved_preds;
+	      dk_set_t saved_preds = top_ot->ot_preds;
+	      so->so_is_top_and = 1;
+	      top_ot->ot_preds = NULL;
+	      sqlo_df (so, ot->ot_join_cond);
+	      ot->ot_join_preds = top_ot->ot_preds;
+	      top_ot->ot_preds = saved_preds;
 	    }
 	  else
 	    {
@@ -5468,10 +5468,10 @@ sqlo_layout_sort_tables (sqlo_t *so, op_table_t * ot, dk_set_t from_dfes, dk_set
     t_set_push (&res, (void*) all_leaves);
   if (!res && any_trans)
     {
-    if (!so->so_best)
-      sqlc_new_error (so->so_sc->sc_cc, "37000", "TR...", "Query contains a transitive derived table but neither end of it is bound by equality to other columns or parameters");
-    else
-      return SQLO_BACKTRACK;
+      if (!so->so_best)
+	sqlc_new_error (so->so_sc->sc_cc, "37000", "TR...", "Query contains a transitive derived table but neither end of it is bound by equality to other columns or parameters");
+      else
+	return SQLO_BACKTRACK;
     }
   if (!res || !res->next)
     return res;

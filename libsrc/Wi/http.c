@@ -1549,10 +1549,10 @@ ws_header_line_to_array (caddr_t string)
     {
       for (;;)
 	{
-      len = dks_read_line (ses, buf, sizeof (buf));
-      if (0 != len)
-	dk_set_push (&lines, box_line (buf, len));
-    }
+	  len = dks_read_line (ses, buf, sizeof (buf));
+	  if (0 != len)
+	    dk_set_push (&lines, box_line (buf, len));
+	}
 
     }
   END_READ_FAIL (ses);
@@ -1824,19 +1824,19 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	  SES_PRINT (ws->ws_session, ws->ws_header);
 	}
       if (cnt_enc == WS_CE_CHUNKED) /* chunked output */
-	    {
-	      SES_PRINT (ws->ws_session, "Transfer-Encoding: chunked\r\n");
-	    }
+	{
+	  SES_PRINT (ws->ws_session, "Transfer-Encoding: chunked\r\n");
+	}
       else if (cnt_enc == WS_CE_GZIP) /* gzip encoding */
-	    {
+	{
 	  snprintf (tmp, sizeof (tmp), "Transfer-Encoding: chunked\r\nContent-Encoding: gzip\r\n");
-		  SES_PRINT (ws->ws_session, tmp);
-		}
+	  SES_PRINT (ws->ws_session, tmp);
+	}
       else if (!ws->ws_header || (NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Length:"))) /* plain body */
-		    {
+	{
 	  snprintf (tmp, sizeof (tmp), "Content-Length: %ld\r\n", len);
-			  SES_PRINT (ws->ws_session, tmp);
-		    }
+	  SES_PRINT (ws->ws_session, tmp);
+	}
 
       SES_PRINT (ws->ws_session, "\r\n"); /* empty line */
 

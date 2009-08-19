@@ -1146,21 +1146,21 @@ check_optionals:
         {
           if (((0 == opt_ctr) && (1 < all_ctr)) || /* Add extra GP to guarantee proper left side of the left outer join */
             (0 < opt_ctr) )/* Add extra GP to guarantee proper support of {... OPTIONAL { ... ?x ... } ... OPTIONAL { ... ?x ... } } */
-    {
+            {
               dk_set_t left = NULL;
               int left_ctr;
-      SPART *left_group;
+              SPART *left_group;
               for (left_ctr = 0; left_ctr < all_ctr; left_ctr++)
                 t_set_push (&left, t_set_pop (&membs));
-      spar_gp_init (sparp, 0);
+              spar_gp_init (sparp, 0);
               spar_gp_replace_selid (sparp, left, orig_selid, env->spare_selids->data);
               env->spare_acc_triples->data = left;
-      left_group = spar_gp_finalize (sparp, NULL);
+              left_group = spar_gp_finalize (sparp, NULL);
               t_set_push (&membs, left_group);
               goto check_optionals; /* see above */
             }
           opt_ctr++;
-    }
+        }
       all_ctr++;
     }
   END_DO_SET()
@@ -1320,13 +1320,13 @@ spar_gp_add_filters_for_graph (sparp_t *sparp, SPART *graph_expn, int graph_is_n
     return;
   if (SPAR_IS_BLANK_OR_VAR (graph_expn))
     {
-  varname = graph_expn->_.var.vname;
-  if (suppress_filters_for_good_names)
-    {
-      dk_set_t good_varnames = env->spare_good_graph_varnames;
-      if (0 <= dk_set_position_of_string (good_varnames, varname))
-        return;
-    }
+      varname = graph_expn->_.var.vname;
+      if (suppress_filters_for_good_names)
+        {
+          dk_set_t good_varnames = env->spare_good_graph_varnames;
+          if (0 <= dk_set_position_of_string (good_varnames, varname))
+            return;
+        }
     }
   if ((NULL != sources) && (NULL == sources->next))
     {
@@ -1336,7 +1336,7 @@ spar_gp_add_filters_for_graph (sparp_t *sparp, SPART *graph_expn, int graph_is_n
           SPART *graph_expn_copy = (
             (NULL != varname) ?
             ((SPAR_VARIABLE == SPART_TYPE (graph_expn)) ?
-            spar_make_variable (sparp, varname) :
+              spar_make_variable (sparp, varname) :
               spar_make_blank_node (sparp, varname, 0)) :
             (SPART *) t_box_copy ((caddr_t) graph_expn) );
           filter = spartlist (sparp, 3,
@@ -1957,12 +1957,12 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
               graph->_.var.rvr.rvrFixedValue = t_box_copy (iri_arg);
             }
           else /* Single FROM iriref without sponge options */
-          graph = sparp_tree_full_copy (sparp, single_dflt->_.graph.expn, NULL);
+            graph = sparp_tree_full_copy (sparp, single_dflt->_.graph.expn, NULL);
           if (NULL == dflts->next) /* There's only one source and it is reflected in the value of graph */
-          break;
-	}
+            break;
+        }
       else
-      graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_::default"), 1);
+        graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_::default"), 1);
       spar_gp_add_filters_for_graph (sparp, graph, 0, 0);
       break;
     }
@@ -2213,8 +2213,8 @@ sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtype, SPART *ir
       else
         {
           dupe_found = c;
-      break;
-    }
+          break;
+        }
     }
   END_DO_SET()
   if ((NULL == dupe_found) && (subtype < SPART_GRAPH_MIN_NEGATION) && is_locked_ptr && is_locked_ptr[0])
@@ -2749,7 +2749,7 @@ static caddr_t boxed_8192_iid = NULL;
       potential_hit = (caddr_t *)id_hash_get (dflt_other_perms_of_user, (caddr_t)(&(boxed_uid)));
       if (NULL == potential_hit)
         potential_hit = (caddr_t *)id_hash_get (rdf_graph_public_perms_dict_htable, (caddr_t)(graph_is_private ? &boxed_zero_iid : &boxed_8192_iid));
-  else
+      else
         potential_res_is_user_specific = 1;
       potential_res = (NULL != potential_hit) ? unbox(potential_hit[0]) : RDF_GRAPH_PERM_DEFAULT;
     }
@@ -2764,8 +2764,8 @@ static caddr_t boxed_8192_iid = NULL;
             {
               caddr_t dep_graph_uname = (NULL != graph_iri) ? box_dv_uname_string (graph_iri) : uname_virtrdf_ns_uri_PrivateGraphs;
               qr_uses_jso (query_with_deps, dep_graph_uname); /* ...then adding dep on graph is required, so changing graph from world to provate or back will trigger re-compilation */
+            }
         }
-    }
       if (NULL != graph_iri)
         return res;
       return res & potential_res;

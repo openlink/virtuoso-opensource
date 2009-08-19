@@ -1099,13 +1099,13 @@ page_find_leaf (buffer_desc_t * buf, dp_addr_t lf)
       db_buf_t row = page + pm->pm_entries[inx];
       key_ver_t kv = IE_KEY_VERSION (row);
       if (KV_LEAF_PTR == kv)
-	    {
+	{
 	  row_ver_t rv = IE_ROW_VERSION (row);
 	  if (lf == LONG_REF (row + key->key_key_leaf[rv]))
 	    return inx;
 	}
       if (KV_LEFT_DUMMY == kv)
-    {
+	{
 	  if (lf == LONG_REF (row + LD_LEAF))
 	    return inx;
 	}
@@ -1834,8 +1834,8 @@ itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
 	  res = DVC_MATCH;
 	}
       else if (it->itc_key_spec.ksp_key_cmp != pg_key_compare
-	  && it->itc_key_spec.ksp_key_cmp != pg_insert_key_compare
-	  && it->itc_key_spec.ksp_key_cmp)
+	       && it->itc_key_spec.ksp_key_cmp != pg_insert_key_compare
+	       && it->itc_key_spec.ksp_key_cmp)
 	{
 	  res = it->itc_key_spec.ksp_key_cmp (*buf_ret, it->itc_map_pos, it);
 	  if (DVC_GREATER == res)
@@ -1882,37 +1882,37 @@ itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
 	    goto next_row;
 	}
       else if (IE_ISSET (row, IEF_DELETE))
-	goto next_row;
-      *leaf_ret = leaf;
+	  goto next_row;
+	  *leaf_ret = leaf;
       /* if go to the leaf even if the compare was less because the leaf can still hold stuff if in desc order.  In asc order the compare never gives dvc_less if the index is not out of order */
       if (leaf)
 	return DVC_MATCH;
       if (DVC_MATCH == res)
-	{
-	  row_check = itc_row_check (it, *buf_ret);
-	  if (DVC_GREATER == row_check)
-	    return DVC_GREATER;
-	  if (DVC_MATCH == row_check)
 	    {
-		  if (it->itc_ks && it->itc_ks->ks_is_last && !it->itc_cl_batch_done
-		  && (PS_OWNED == txn_clear
-		    || (ISO_COMMITTED == it->itc_isolation  && PL_EXCLUSIVE != it->itc_lock_mode)
-		    || ISO_SERIALIZABLE == it->itc_isolation))
+	      row_check = itc_row_check (it, *buf_ret);
+	      if (DVC_GREATER == row_check)
+		return DVC_GREATER;
+	      if (DVC_MATCH == row_check)
 		{
+		  if (it->itc_ks && it->itc_ks->ks_is_last && !it->itc_cl_batch_done
+		      && (PS_OWNED == txn_clear
+		      || (ISO_COMMITTED == it->itc_isolation  && PL_EXCLUSIVE != it->itc_lock_mode)
+			  || ISO_SERIALIZABLE == it->itc_isolation))
+		    {
 		  /* A RR or *exckl RC cursor that does not own the page must return to itc_search for the locks.  */
-		  goto next_row;
-		}
+		      goto next_row;
+		    }
 		  if (it->itc_cl_results
 		      && !itc_lock_after_match (it))
 		    {
 		      /* A RR or *exckl RC cursor that does not own the page must return to itc_search for the locks.  */
 		      goto next_row;
 		    }
-	      return DVC_MATCH;
+		  return DVC_MATCH;
+		}
+	      else
+		goto next_row;
 	    }
-	  else
-	    goto next_row;
-	}
       else if (res == DVC_LESS && !leaf && it->itc_desc_order)
 	{
 	  return DVC_GREATER;	/* end of search */

@@ -1585,34 +1585,34 @@ void
 ins_assigned (instruction_t * ins, dk_set_t * res)
 {
   state_slot_t ** out;
-      switch (ins->ins_type)
-	{
-	case INS_CALL:
-	case INS_CALL_IND:
-	case INS_CALL_BIF:
+  switch (ins->ins_type)
+    {
+    case INS_CALL:
+    case INS_CALL_IND:
+    case INS_CALL_BIF:
       if (ins->_.call.ret && IS_REAL_SSL (ins->_.call.ret))
 	dk_set_push (res, (void*) ins->_.call.ret);
-	  break;
-	case IN_ARTM_FPTR:
-	case IN_ARTM_IDENTITY:
-	case IN_ARTM_PLUS: case IN_ARTM_MINUS:
-	case IN_ARTM_TIMES: case IN_ARTM_DIV:
-	  if (ins->_.artm.result)
+      break;
+    case IN_ARTM_FPTR:
+    case IN_ARTM_IDENTITY:
+    case IN_ARTM_PLUS: case IN_ARTM_MINUS:
+    case IN_ARTM_TIMES: case IN_ARTM_DIV:
+      if (ins->_.artm.result)
 	dk_set_push (res, (void*) ins->_.artm.result);
-	  break;
-	case INS_SUBQ:
-	  if (ins->_.subq.query && ins->_.subq.query->qr_select_node
-	      && ((out = ins->_.subq.query->qr_select_node->sel_out_slots)))
+      break;
+    case INS_SUBQ:
+      if (ins->_.subq.query && ins->_.subq.query->qr_select_node
+	  && ((out = ins->_.subq.query->qr_select_node->sel_out_slots)))
+	{
+	  int inx;
+	  DO_BOX (state_slot_t *, ssl, inx, out)
 	    {
-	      int inx;
-	      DO_BOX (state_slot_t *, ssl, inx, out)
-		{
-		  if (ssl->ssl_type == SSL_VARIABLE || ssl->ssl_type == SSL_COLUMN)
-		    dk_set_push (res,  (void*) ssl);
-		}
-	      END_DO_BOX;
+	      if (ssl->ssl_type == SSL_VARIABLE || ssl->ssl_type == SSL_COLUMN)
+		dk_set_push (res,  (void*) ssl);
 	    }
+	  END_DO_BOX;
 	}
+    }
 }
 
 dk_set_t
@@ -1874,11 +1874,11 @@ qn_refd_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t *
     {
       QNCAST (subq_source_t, sqs, qn);
       DO_BOX (state_slot_t *, out, inx, sqs->sqs_out_slots)
-	    {
-	      ASG_SSL (res, all_res, out);
-	    }
-	  END_DO_BOX;
-	  ASG_SSL (res, all_res, sqs->sqs_set_no);
+	{
+	  ASG_SSL (res, all_res, out);
+	}
+      END_DO_BOX;
+      ASG_SSL (res, all_res, sqs->sqs_set_no);
     }
   else if ((qn_input_fn) select_node_input == qn->src_input
 	   || (qn_input_fn) select_node_input_subq == qn->src_input)

@@ -571,11 +571,11 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
         else
 #endif
           {
-        DO_BOX_FAST (SPART *, sub, ctr, tree->_.gp.members)
-          {
-            ssg_sdprint_tree (ssg, sub);
-          }
-        END_DO_BOX_FAST;
+            DO_BOX_FAST (SPART *, sub, ctr, tree->_.gp.members)
+              {
+                ssg_sdprint_tree (ssg, sub);
+              }
+            END_DO_BOX_FAST;
           }
         if (ssg->ssg_sd_forgotten_dot)
           {

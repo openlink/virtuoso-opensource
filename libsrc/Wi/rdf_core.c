@@ -666,7 +666,7 @@ caddr_t ttlp_strliteral (ttlp_t *ttlp_arg, const char *strg, int mode, char deli
                 while (('\n' == nextchr[0]) || ('\r' == nextchr[0]))
                   nextchr++;
               }
-	    else
+            else
 	      {
 		unichar acc = 0;
 		for (src_tail += 2; src_tail < nextchr; src_tail++)
@@ -1541,7 +1541,7 @@ rdf_new_iri_id (lock_trx_t * lt, char ** value_seq_ret, int nth, query_instance_
       *value_seq_ret = iri_seq[nth];
       return id;
     }
-  id = sequence_next_inc (range_seq, INSIDE_MAP, IRI_RANGE_SZ);
+    id = sequence_next_inc (range_seq, INSIDE_MAP, IRI_RANGE_SZ);
   if (!id)
     sequence_set (range_seq, IRI_RANGE_SZ, SET_ALWAYS, INSIDE_MAP);
   sequence_set (iri_seq[nth], id + 1, SET_ALWAYS, INSIDE_MAP);
@@ -1679,7 +1679,7 @@ tb_name_to_id (lock_trx_t * lt, char * tb_name, caddr_t name, char * value_seq_n
   ITC_FAIL (itc)
     {
 re_search:
-  buf = itc_reset (itc);
+      buf = itc_reset (itc);
       res = itc_search (itc, &buf);
       if (DVC_MATCH == res)
 	{
@@ -1713,7 +1713,7 @@ re_search:
       {
 	itc_free (itc);
 	if (!lt)
-	return NULL;
+	  return NULL;
       }
   END_FAIL (itc);
   itc_free (itc);
@@ -2046,19 +2046,19 @@ again:
   switch (cl_run_local_only)
     {
     case CL_RUN_LOCAL:
-  switch (mode)
-    {
-    case IRI_TO_ID_IF_KNOWN:
-      res = key_name_to_iri_id (qi->qi_trx, name, 0); break;
-    case IRI_TO_ID_WITH_CREATE:
+      switch (mode)
+        {
+        case IRI_TO_ID_IF_KNOWN:
+          res = key_name_to_iri_id (qi->qi_trx, name, 0); break;
+        case IRI_TO_ID_WITH_CREATE:
           res = key_name_to_iri_id (qi->qi_trx, name, 1);
 #ifdef DEBUG
 	  if (!res) bing ();
 #endif
 	  break;
-    case IRI_TO_ID_IF_CACHED:
-      res = key_name_to_existing_cached_iri_id (qi->qi_trx, name); break;
-    }
+        case IRI_TO_ID_IF_CACHED:
+          res = key_name_to_existing_cached_iri_id (qi->qi_trx, name); break;
+        }
       break;
     default: err_ret[0] = srv_make_new_error ("RDFXX", ".....",
               "iri_to_id () refers to partitioned tables and can not be used before cluster is up");
@@ -2175,7 +2175,7 @@ tb_id_to_name (lock_trx_t * lt, char * tb_name, caddr_t id)
       {
 	itc_free (itc);
 	if (!lt)
-	return NULL;
+	  return NULL;
       }
   END_FAIL (itc);
   itc_free (itc);
@@ -2208,7 +2208,7 @@ key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no)
       if (lt->lt_lock.ht_count)
 	lt_nic_set (lt, iri_name_cache, local, iri_id_no);
       else
-      nic_set (iri_name_cache, local, iri_id_no);
+	nic_set (iri_name_cache, local, iri_id_no);
     }
   pref_id = LONG_REF_NA (local);
   prefix = nic_id_name (iri_prefix_cache, pref_id);
@@ -2223,19 +2223,19 @@ key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no)
 	}
       else
 	{
-      caddr_t pref_id_box = box_num (pref_id);
-      prefix = tb_id_to_name (qi->qi_trx, "DB.DBA.RDF_PREFIX", pref_id_box);
-      dk_free_box (pref_id_box);
-      if (!prefix)
-        {
-          dk_free_box (local);
-	  return NULL;
-        }
+	  caddr_t pref_id_box = box_num (pref_id);
+	  prefix = tb_id_to_name (qi->qi_trx, "DB.DBA.RDF_PREFIX", pref_id_box);
+	  dk_free_box (pref_id_box);
+	  if (!prefix)
+	    {
+	      dk_free_box (local);
+	      return NULL;
+	    }
 	  if (lt->lt_lock.ht_count)
 	    lt_nic_set (lt, iri_prefix_cache, prefix, pref_id);
 	  else
-      nic_set (iri_prefix_cache, prefix, pref_id);
-    }
+	    nic_set (iri_prefix_cache, prefix, pref_id);
+	}
     }
   name = dk_alloc_box (box_length (local) + box_length (prefix) - 5, DV_STRING);
   /* subtract 4 for the prefix id in the local and 1 for one of the terminating nulls */
@@ -2310,10 +2310,10 @@ key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, caddr_t *subj
 	}
       else
 	{
-      caddr_t pref_id_box = box_num (pref_id);
-      prefix = tb_id_to_name (qi->qi_trx, "DB.DBA.RDF_PREFIX", pref_id_box);
-      dk_free_box (pref_id_box);
-      if (!prefix)
+	  caddr_t pref_id_box = box_num (pref_id);
+	  prefix = tb_id_to_name (qi->qi_trx, "DB.DBA.RDF_PREFIX", pref_id_box);
+	  dk_free_box (pref_id_box);
+	  if (!prefix)
         {
           dk_free_box (local);
 	  return 0;
@@ -2335,7 +2335,7 @@ key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, caddr_t *subj
           int prefix_box_len = box_length (prefix);
           int host_strlen = strlen (host);
           caddr_t expanded_prefix = dk_alloc_box (prefix_box_len - 6 + (proto_strlen + host_strlen), DV_STRING);
-	    memcpy (expanded_prefix, proto, proto_strlen);
+          memcpy (expanded_prefix, proto, proto_strlen);
           memcpy (expanded_prefix + proto_strlen, host, host_strlen);
           memcpy (expanded_prefix + proto_strlen + host_strlen, prefix + 6, prefix_box_len - 6);
           dk_free_box (prefix);
@@ -2488,7 +2488,7 @@ caddr_t DBG_NAME (tf_bnode_iid) (DBG_PARAMS triple_feed_t *tf, caddr_t txt)
   if (NULL == cbk_qr)
     {
       dk_free_box (txt);
-    return box_iri_id (min_bnode_iri_id());
+      return box_iri_id (min_bnode_iri_id());
     }
   if (NULL != txt)
     {
@@ -2509,7 +2509,7 @@ caddr_t DBG_NAME (tf_bnode_iid) (DBG_PARAMS triple_feed_t *tf, caddr_t txt)
   if (NULL != err)
     {
       dk_free_box (txt);
-    sqlr_resignal (err);
+      sqlr_resignal (err);
     }
   if (NULL == txt)
     return res;
@@ -2810,17 +2810,17 @@ bif_rdf_obj_ft_rule_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
       iid_hkey.hkey_g = g_id;
       iid_hkey.hkey_iid_p = 0;
       if (NULL != id_hash_get (rdf_obj_ft_rules_by_iids, (caddr_t)(&iid_hkey)))
-    goto hit; /* see_below */
+        goto hit; /* see_below */
       iid_hkey.hkey_g = 0;
       iid_hkey.hkey_iid_p = p_id;
       if (NULL != id_hash_get (rdf_obj_ft_rules_by_iids, (caddr_t)(&iid_hkey)))
-    goto hit; /* see_below */
+        goto hit; /* see_below */
       iid_hkey.hkey_g = g_id;
       iid_hkey.hkey_iid_p = p_id;
       if (NULL != id_hash_get (rdf_obj_ft_rules_by_iids, (caddr_t)(&iid_hkey)))
-    goto hit; /* see_below */
-  mutex_leave (rdf_obj_ft_rules_mtx);
-  return box_num (0);
+        goto hit; /* see_below */
+      mutex_leave (rdf_obj_ft_rules_mtx);
+      return box_num (0);
    }
   else
     {

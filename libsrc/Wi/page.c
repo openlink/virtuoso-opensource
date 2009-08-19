@@ -2433,7 +2433,7 @@ page_apply_parent (buffer_desc_t * buf, page_fill_t * pf, char first_affected, c
       LONG_SET (pf->pf_current->bd_buffer + DP_PARENT, root->bd_page);
       rdbg_printf (("Set parent of L=%d to new root L=%d\n", pf->pf_current->bd_page, root->bd_page));
       pg_check_map (pf->pf_current);
-      page_leave_outside_map_chg (pf->pf_current, RWG_WAIT_SPLIT);
+            page_leave_outside_map_chg (pf->pf_current, RWG_WAIT_SPLIT);
       rd_list_free (leaves);
       return;
     }

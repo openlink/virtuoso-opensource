@@ -201,31 +201,31 @@ upd_recompose_row (caddr_t * state, update_node_t * upd,
 	  new_rd->rd_values[nth] = old_found ? old_val : col->col_default;
 	  if  (dtp_is_var (cl->cl_sqt.sqt_dtp))
 	    new_rd->rd_non_comp_len += box_col_len (new_rd->rd_values[nth]);
-	    }
-	  else
-	    {
-	caddr_t new_val_of_col = upd_nth_value (upd, state, nth_val);
+	}
+      else
+	{
+	  caddr_t new_val_of_col = upd_nth_value (upd, state, nth_val);
 	  db_buf_t old_blob = (IS_BLOB_DTP (cl->cl_sqt.sqt_dtp)  && old_found && DV_DB_NULL != DV_TYPE_OF (old_val) && IS_BLOB_DTP (((db_buf_t)old_val)[0]))
 	    ? (db_buf_t)old_val : dummy_blob;
 	  row_insert_cast (new_rd, cl, new_val_of_col, err_ret, old_blob);
-	if (*err_ret)
+	  if (*err_ret)
 	    goto col_error;
 	  new_val_of_col = new_rd->rd_itc->itc_search_params[new_rd->rd_itc->itc_search_par_fill - 1];
 	  if (old_found)
-	  {
+	    {
 	      if (box_equal (new_val_of_col, old_val))
 		new_rd->rd_values[nth] = old_val;
 	      else
-	  {
-	    upd_mark_change (tb, col->col_id, &changed_keys);
+		{
+		  upd_mark_change (tb, col->col_id, &changed_keys);
 		  new_rd->rd_values[nth] = new_val_of_col;
 		}
 	    }
 	  else
 	    {
 	      new_rd->rd_values[nth] = new_val_of_col;
-	  }
-      }
+	    }
+	}
       nth++;
       if (nth <= new_tb->tb_primary_key->key_n_significant &&
 	  (new_rd->rd_non_comp_len - new_tb->tb_primary_key->key_row_var_start[0] + new_tb->tb_primary_key->key_key_var_start[0]) >

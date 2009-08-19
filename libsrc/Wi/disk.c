@@ -3721,8 +3721,8 @@ sch_save_roots (dbe_schema_t * sc)
   while (dk_hit_next (&hit, (void**) &k, (void **) &key))
     {
       if (key->key_fragments[0]->kf_it->it_root)
-    dbe_key_save_roots (key);
-}
+	dbe_key_save_roots (key);
+    }
 }
 
 void

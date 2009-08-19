@@ -482,8 +482,8 @@ blank_block_subj_tail
 
 blank_block_seq
 	:	{
-                  dk_set_push (&(ttlp_arg->ttlp_saved_uris), (void *)(ptrlong)(ttlp_arg->ttlp_pred_is_reverse));
-                  dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_subj_uri);
+		  dk_set_push (&(ttlp_arg->ttlp_saved_uris), (void *)(ptrlong)(ttlp_arg->ttlp_pred_is_reverse));
+		  dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_subj_uri);
 		  dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_pred_uri);
 		  ttlp_arg->ttlp_pred_is_reverse = 0;
 		  if (NULL == ttlp_arg->ttlp_unused_seq_bnodes)
@@ -503,11 +503,11 @@ blank_block_seq
 		      dk_free_tree (dk_set_pop (&(ttlp_arg->ttlp_saved_uris))); /* pop copy of first node and delete */
 		      first_node = uname_rdf_ns_uri_nil; }
 		  else
-		{
+		    {
 		      ttlp_arg->ttlp_subj_uri = dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
-		  ttlp_arg->ttlp_pred_uri = uname_rdf_ns_uri_rest;
-                  ttlp_triple_and_inf (ttlp_arg, uname_rdf_ns_uri_nil);
-		  dk_free_tree (ttlp_arg->ttlp_subj_uri);
+		      ttlp_arg->ttlp_pred_uri = uname_rdf_ns_uri_rest;
+		      ttlp_triple_and_inf (ttlp_arg, uname_rdf_ns_uri_nil);
+		      dk_free_tree (ttlp_arg->ttlp_subj_uri);
 		      first_node = dk_set_pop (&(ttlp_arg->ttlp_saved_uris)); }
 		  ttlp_arg->ttlp_pred_uri = dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
 		  ttlp_arg->ttlp_subj_uri = dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
@@ -535,9 +535,9 @@ items
 blank_block_formula
 	:
 		{
-                  dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_formula_iid);
-                  dk_set_push (&(ttlp_arg->ttlp_saved_uris), (void *)(ptrlong)ttlp_arg->ttlp_pred_is_reverse);
-                  dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_subj_uri);
+		  dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_formula_iid);
+		  dk_set_push (&(ttlp_arg->ttlp_saved_uris), (void *)(ptrlong)ttlp_arg->ttlp_pred_is_reverse);
+		  dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_subj_uri);
 		  dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_pred_uri);
 		  ttlp_arg->ttlp_formula_iid = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL);
 		  ttlp_arg->ttlp_pred_is_reverse = 0;
@@ -549,7 +549,7 @@ blank_block_formula
 		  dk_free_tree (ttlp_arg->ttlp_pred_uri);
 		  ttlp_arg->ttlp_pred_uri = dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
 		  ttlp_arg->ttlp_subj_uri = dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
-                  ttlp_arg->ttlp_pred_is_reverse = (ptrlong)dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
+		  ttlp_arg->ttlp_pred_is_reverse = (ptrlong)dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
 		  ttlp_arg->ttlp_formula_iid = dk_set_pop (&(ttlp_arg->ttlp_saved_uris)); }
 	;
 

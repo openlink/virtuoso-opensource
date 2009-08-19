@@ -369,51 +369,51 @@ lt_restart (lock_trx_t * lt, int leave_flag)
   lt->lt_w_id = 0;
   LEAVE_TXN;
   {
-  int excl = lt->lt_is_excl;
-  client_connection_t * cli = lt->lt_client;
+    int excl = lt->lt_is_excl;
+    client_connection_t * cli = lt->lt_client;
 #ifdef CHECK_LT_THREADS
-  const char *file_save = lt->lt_enter_file;
-  int line_save = lt->lt_enter_line;
-  const char *	lt_last_increase_file[2];
-  int		lt_last_increase_line[2];
+    const char *file_save = lt->lt_enter_file;
+    int line_save = lt->lt_enter_line;
+    const char *	lt_last_increase_file[2];
+    int		lt_last_increase_line[2];
 #endif
     caddr_t repl = (excl || cli->cli_row_autocommit) ? box_copy_tree ((box_t) lt->lt_replicate) : NULL;
     /* we we'll save the state of replication flag
-								    when  we're in atomic mode */
+       when  we're in atomic mode */
 #ifdef VIRTTP
-  caddr_t validness = lt->lt_2pc._2pc_prepared;
+    caddr_t validness = lt->lt_2pc._2pc_prepared;
 #endif
 
 #ifdef CHECK_LT_THREADS
-  memcpy (lt_last_increase_file, lt->lt_last_increase_file, sizeof (lt->lt_last_increase_file));
-  memcpy (lt_last_increase_line, lt->lt_last_increase_line, sizeof (lt->lt_last_increase_line));
+    memcpy (lt_last_increase_file, lt->lt_last_increase_file, sizeof (lt->lt_last_increase_file));
+    memcpy (lt_last_increase_line, lt->lt_last_increase_line, sizeof (lt->lt_last_increase_line));
 #endif
-  lt_clear (lt);
+    lt_clear (lt);
 
-  lt->lt_started = approx_msec_real_time ();
-  if (excl || cli->cli_row_autocommit) /* therefore we'll set the saved one */
-    lt->lt_replicate = (caddr_t*) repl;
-  else
-    lt->lt_replicate = (caddr_t*) box_copy_tree ((caddr_t) cli->cli_replicate);
+    lt->lt_started = approx_msec_real_time ();
+    if (excl || cli->cli_row_autocommit) /* therefore we'll set the saved one */
+      lt->lt_replicate = (caddr_t*) repl;
+    else
+      lt->lt_replicate = (caddr_t*) box_copy_tree ((caddr_t) cli->cli_replicate);
 
-  LT_THREADS_REPORT(lt, "LT_RESTART");
+    LT_THREADS_REPORT(lt, "LT_RESTART");
 #ifdef CHECK_LT_THREADS
-  lt->lt_enter_file = file_save;
-  lt->lt_enter_line = line_save;
-  memcpy (lt->lt_last_increase_file, lt_last_increase_file, sizeof (lt->lt_last_increase_file));
-  memcpy (lt->lt_last_increase_line, lt_last_increase_line, sizeof (lt->lt_last_increase_line));
+    lt->lt_enter_file = file_save;
+    lt->lt_enter_line = line_save;
+    memcpy (lt->lt_last_increase_file, lt_last_increase_file, sizeof (lt->lt_last_increase_file));
+    memcpy (lt->lt_last_increase_line, lt_last_increase_line, sizeof (lt->lt_last_increase_line));
 #endif
 #ifdef VIRTTP
-  lt->lt_2pc._2pc_logged = 0;
-  lt->lt_2pc._2pc_info = 0;
-  lt->lt_2pc._2pc_type = 0;
-  lt->lt_2pc._2pc_prepared = validness;
+    lt->lt_2pc._2pc_logged = 0;
+    lt->lt_2pc._2pc_info = 0;
+    lt->lt_2pc._2pc_type = 0;
+    lt->lt_2pc._2pc_prepared = validness;
 #endif
-   if (DO_LOG(LOG_TRANSACT))
-     {
-       LOG_GET;
-       log_info ("LTRS_2 %s %s %s Restart transact %p", user, from, peer, lt);
-     }
+    if (DO_LOG(LOG_TRANSACT))
+      {
+	LOG_GET;
+	log_info ("LTRS_2 %s %s %s Restart transact %p", user, from, peer, lt);
+      }
   }
   IN_TXN;
   if (TRX_CONT == leave_flag || TRX_CONT_LT_LEAVE == leave_flag)
@@ -1764,7 +1764,7 @@ pl_release (page_lock_t * pl, lock_trx_t * lt, buffer_desc_t * buf)
       mutex_enter (pl_ref_count_mtx);
       pl->pl_finish_ref_count--;
       if (0 == pl->pl_finish_ref_count)
-      pl_free (pl);
+	pl_free (pl);
       else
 	printf (" hold before free of pl L=%d with finish ref count\n", pl->pl_page);
       mutex_leave (pl_ref_count_mtx);
@@ -1902,22 +1902,22 @@ the_grim_lock_reaper (void)
   the_grim_swap_guard ();
  kill_next_txn:
   IN_TXN;
-      DO_SET (lock_trx_t *, lt, &all_trxs)
-      {
+  DO_SET (lock_trx_t *, lt, &all_trxs)
+    {
       client_connection_t * cli = lt->lt_client;
-	CHECK_DK_MEM_RESERVE (lt);
-	if (lt->lt_started &&
-	    lt->lt_timeout &&
-	    now - lt->lt_started > lt->lt_timeout &&
-	    lt->lt_status == LT_PENDING)
-	  {
-	    lt->lt_error = LTE_TIMEOUT;
-	    dbg_printf (("  Trx %s timed out after %ld msec.\n",
-		    LT_NAME (lt), now - lt->lt_started));
+      CHECK_DK_MEM_RESERVE (lt);
+      if (lt->lt_started &&
+	  lt->lt_timeout &&
+	  now - lt->lt_started > lt->lt_timeout &&
+	  lt->lt_status == LT_PENDING)
+	{
+	  lt->lt_error = LTE_TIMEOUT;
+	  dbg_printf (("  Trx %s timed out after %ld msec.\n",
+		       LT_NAME (lt), now - lt->lt_started));
 	  lt_kill_other_trx (lt, NULL, NULL, LT_KILL_ROLLBACK);
 	  LEAVE_TXN;
-	    goto kill_next_txn;
-	  }
+	  goto kill_next_txn;
+	}
       if (lt->lt_threads && cli && cli->cli_anytime_timeout && cli->cli_anytime_started
 	  && now - cli->cli_anytime_started > cli->cli_anytime_timeout
 	  && !cli->cli_terminate_requested)
@@ -1941,7 +1941,7 @@ the_grim_lock_reaper (void)
     {
       wi_free_old_qrs ();
       srv_run_background_tasks();
-  wi_free_schemas ();
+      wi_free_schemas ();
     }
   LEAVE_TXN;
   if (now - last_exec_time > AUTO_FLUSH_DELAY &&

@@ -1721,7 +1721,7 @@ try_again:
   if (is_xa)
     lock_escalation_pct = lock_escalation_pct_save;
   else
-  rc = lt_commit (lt, TRX_CONT);
+    rc = lt_commit (lt, TRX_CONT);
   lt_leave (lt);
   if (is_xa)
     {
@@ -2170,7 +2170,7 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
       if (CPT_SHUTDOWN != shutdown)
 	{
 	  log_set_byte_order_check (1);
-          log_set_server_version_check (1);
+	  log_set_server_version_check (1);
 	}
       log_info ("Checkpoint made, new log is %s", new_log);
     }

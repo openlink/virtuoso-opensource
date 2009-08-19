@@ -881,7 +881,7 @@ mt_write_dirty (buffer_pool_t * bp, int age_limit, int phys_eq_log)
       if (age_limit && ( (bp->bp_ts - buf->bd_timestamp)) < age_limit)
 	{
 	  mtw_cpt_ck (buf, __LINE__);
-	continue;
+	  continue;
 	}
       if (bp_buf_enter (buf, &buf_itm))
 	{

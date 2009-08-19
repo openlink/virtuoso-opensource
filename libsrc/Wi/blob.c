@@ -1573,7 +1573,7 @@ bh_from_dv (dtp_t * col, it_cursor_t * itc)
   if (CL_RUN_LOCAL != cl_run_local_only && key && KI_TEMP != key->key_id)
     bh->bh_frag_no = local_cll.cll_this_host;
   else
-  bh->bh_frag_no = frag_no;
+    bh->bh_frag_no = frag_no;
   return bh;
 }
 
@@ -3528,38 +3528,38 @@ rd_outline (query_instance_t * qi, row_delta_t * rd, caddr_t * err_ret)
   for (;;)
     {
       int gain = 0, reserve = 0;
-  dbe_col_loc_t * best_cl = NULL;
+      dbe_col_loc_t * best_cl = NULL;
       int best_gain = 0;
       reserve = 0;
       DO_CL (cl, key->key_row_var)
-    {
-	  if (IS_INLINEABLE_DTP (cl->cl_sqt.sqt_dtp))
 	{
+	  if (IS_INLINEABLE_DTP (cl->cl_sqt.sqt_dtp))
+	    {
 	      db_buf_t val = (db_buf_t)rd->rd_values[cl->cl_nth];
 	      dtp_t dtp = DV_TYPE_OF (val);
 	      if (DV_DB_NULL == dtp)
-	    {
+		{
 		  reserve += DV_BLOB_LEN;
 		  continue;
-	    }
+		}
 	      if (IS_STRING_DTP (val[0]))
-	    {
+		{
 		  int len = box_col_len ((caddr_t)val);
 		  if (len > DV_BLOB_LEN )
 		    gain += (len - DV_BLOB_LEN);
 		  else
 		    reserve +=DV_BLOB_LEN - len;
 		  if (len - DV_BLOB_LEN > best_gain)
-		{
-		  best_cl = cl;
+		    {
+		      best_cl = cl;
 		      best_gain = len - DV_BLOB_LEN;
+		    }
 		}
 	    }
 	}
-    }
       END_DO_CL;
       if (rd->rd_non_comp_len + reserve - gain > MAX_ROW_BYTES)
-    {
+	{
 	  *err_ret = srv_make_new_error ("42000", "BL...", "Row too long in %s", key->key_name);
 	  return;
 	}

@@ -158,7 +158,7 @@ pg_move_lock (it_cursor_t * itc, row_lock_t ** locks, int n_locks, int from, int
 	    {
 	      if (ITC_AT_END == to)
 		log_info ("Mildly suspect to shift a deleted rl to the rihgt side of a split");
-	    rl_add_pl_to_owners (itc, rl, pl_to);
+	      rl_add_pl_to_owners (itc, rl, pl_to);
 	    }
 	  return;
 	}
@@ -226,7 +226,7 @@ itc_split_lock_waits (it_cursor_t * itc, buffer_desc_t * left, buffer_desc_t * e
   if (!left_pl)
     {
       ITC_LEAVE_MAPS (itc);
-    return;
+      return;
     }
   extend_pl = IT_DP_PL (itc->itc_tree, extend->bd_page);
   {
@@ -651,7 +651,7 @@ itc_set_lock_on_row (it_cursor_t * itc, buffer_desc_t ** buf_ret)
   row = BUF_ROW ((*buf_ret), itc->itc_map_pos);
   kv = IE_KEY_VERSION (row);
   if (IE_IS_LEAF (row, kv))
-      return NO_WAIT;
+    return NO_WAIT;
   if (pl)
     {
       if (pl->pl_page != itc->itc_page)
@@ -1085,7 +1085,7 @@ itc_rollback_row (it_cursor_t * itc, buffer_desc_t ** buf_ret, int pos, row_lock
     {
       rb_entry_t *rbe = lt_rb_entry (lt, buf, row, NULL, NULL, 1);
       if (!rbe)
-	  return PAGE_NOT_CHANGED;
+	return PAGE_NOT_CHANGED;
 #ifdef MTX_DEBUG
       rbe->rbe_used = 1;
 #endif
@@ -1445,7 +1445,7 @@ lt_transact (lock_trx_t * lt, int op)
   if (LT_DELTA_ROLLED_BACK == lt->lt_status)
     {
       lt->lt_close_ack_threads = 0;
-    return;
+      return;
     }
   if (LT_CLOSING == lt->lt_status)
     {
@@ -1580,7 +1580,7 @@ key_hash_cols (buffer_desc_t * buf, db_buf_t row, dbe_key_t * key, dbe_col_loc_t
       v = page_copy_col (buf, row, &cl[inx], &rd);
       code = (code << 1 | code >> 31)^ box_hash (v);
       RD_V_DONE (rd, v);
-	}
+    }
   return code & 0x7fffffff; /* non-neg int 32.  Else get bad sign ext */
 }
 
@@ -1595,8 +1595,8 @@ key_hash_eq (buffer_desc_t * buf1, db_buf_t row1, db_buf_t row2, dbe_key_t * key
   TMP_V_RD (rd1);
   {
     TMP_V_RD (rd2);
-  for (inx = 0; cl1[inx].cl_col_id; inx++)
-    {
+    for (inx = 0; cl1[inx].cl_col_id; inx++)
+      {
 	RD_V_PRE (rd1);
 	RD_V_PRE (rd2);
 	v1 = page_copy_col (buf1, row1, &cl1[inx], &rd1);
@@ -1606,9 +1606,9 @@ key_hash_eq (buffer_desc_t * buf1, db_buf_t row1, db_buf_t row2, dbe_key_t * key
 	RD_V_DONE (rd1, v1);
 	RD_V_DONE (rd2, v2);
 	if (!rc)
-	return 0;
-    }
-  return 1;
+	  return 0;
+      }
+    return 1;
   }
 }
 

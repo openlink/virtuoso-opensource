@@ -147,7 +147,7 @@ do { \
   log_debug_dummy ("%s:%d : lt_threads %s to %d for lt %p on thread %p",	\
 	__FILE__, __LINE__, action, \
 	lt->lt_threads, \
-	lt, THREAD_CURRENT_THREAD)
+		 lt, THREAD_CURRENT_THREAD)
 #define lt_log_debug(x)
 #else
 #define LT_ENTER_SAVE(lt)

@@ -498,7 +498,7 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
     }
   atomic_dive = 0;
 
-  max_dirty = (int) (ptrlong) cfg_get_parm (wholefile, "\nmax_dirty_buffers:", 0);
+    max_dirty = (int) (ptrlong) cfg_get_parm (wholefile, "\nmax_dirty_buffers:", 0);
   wi_inst.wi_max_dirty = max_dirty;
   if (cfg_get_parm (wholefile, "\nautocorrect_links:", 0))
     correct_parent_links = 1;

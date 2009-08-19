@@ -1962,16 +1962,16 @@ void sf_sql_tp_transact(short op, char* xid_str)
       } return;
     case SQL_TP_ABORT:
       {
-	 tp_message_t* msg = mq_create_message (TP_ABORT,0,cli);
-	 mq_add_message(tp_main_queue,msg);
+	tp_message_t* msg = mq_create_message (TP_ABORT,0,cli);
+	mq_add_message(tp_main_queue,msg);
       } break;
     case SQL_XA_JOIN:
       {
 	err = srv_make_new_error ("TP107", "XA002", "XA join is not supported");
-	    DKST_RPC_DONE (client);
+	DKST_RPC_DONE (client);
 	PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
 	dk_free_tree (err);
-	    return;
+	return;
       }
     case SQL_XA_ENLIST:
       {
@@ -1998,7 +1998,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	if (rc == VXA_AGAIN)
 	  goto again;
 	if (rc == VXA_ERROR)
-	   {
+	  {
 	    err = srv_make_new_error ("TP102", "XA004", "Duplicate global transaction identifier");
 	    DKST_RPC_DONE (client);
 	    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
@@ -2037,7 +2037,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	  {
 	    err = srv_make_new_error ("TP109", "XA006", "XID identifier can not be decoded");
 	    DKST_RPC_DONE (client);
-	    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
+	    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1,1);
 	    dk_free_tree (err);
 	    return;
 	  }
@@ -2098,8 +2098,8 @@ void sf_sql_tp_transact(short op, char* xid_str)
 		PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
 		dk_free_tree (err);
 	       }
-	   }
-	 else
+	  }
+	else
 	  {
 	    NEW_VAR(tp_future_t,future);
 	    tp_message_t * msg;

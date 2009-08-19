@@ -703,7 +703,7 @@ rb_serialize (caddr_t x, dk_session_t * ses)
 	  if (!rb->rb_box)
 	    print_int (0, ses);  /* a zero int with should be printed with int tag for partitioning etc */
 	  else
-          print_object (rb->rb_box, ses, NULL, NULL);
+	    print_object (rb->rb_box, ses, NULL, NULL);
         }
       if (rb->rb_ro_id)
 	{
@@ -2732,7 +2732,7 @@ rdf_box_init ()
   MAKE_RDF_GRAPH_DICT(rdf_graph_group_of_privates_dict);
   MAKE_RDF_GRAPH_DICT(rdf_graph_default_world_perms_of_user_dict);
   MAKE_RDF_GRAPH_DICT(rdf_graph_default_private_perms_of_user_dict);
-bif_define ("rdf_box", bif_rdf_box);
+  bif_define ("rdf_box", bif_rdf_box);
   bif_define ("ro_digest_from_parts", bif_ro_digest_from_parts);
   bif_define_typed ("is_rdf_box", bif_is_rdf_box, &bt_integer);
   bif_define_typed ("rdf_box_set_data", bif_rdf_box_set_data, &bt_any);

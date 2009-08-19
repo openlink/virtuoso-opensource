@@ -146,7 +146,7 @@ d_id_set (d_id_t * to, d_id_t * from)
       D_ID_NUM_SET (&to->id[0], D_ID_NUM_REF (&from->id[0]));
 #else
       if (D_ID_64 == ((dtp_t*)from)[0])
-      memcpy (to, from, sizeof (int64) + 1);
+	memcpy (to, from, sizeof (int64) + 1);
       else
 	memcpy (to, from, 4);
 #endif

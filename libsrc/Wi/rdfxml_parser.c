@@ -486,8 +486,8 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
 	    }
           else
             {
-            xmlparser_logprintf (xp->xp_parser, XCFG_WARNING, 200,
-              "Unsupported 'rdf:...' attribute" );
+              xmlparser_logprintf (xp->xp_parser, XCFG_WARNING, 200,
+                "Unsupported 'rdf:...' attribute" );
                 goto push_inner_attr_prop; /* see below */
             }
           continue;

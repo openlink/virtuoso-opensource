@@ -47,20 +47,20 @@ function strip_comments(text, pl_stats, arr)
      if (in_if && endif_comment > 0)
        {
 	 in_if = 0
-       }
+       }	
 
      if (if_comment > 0)
        {
 	 match (curline, /[0-9]+/, arr)
 	 ver = arr[0] + 0
 	 if (ver == srv_ver)
-       {
-	 inx = inx + 1
-	 continue
-       }
+	   {
+	      inx = inx + 1
+	      continue
+	   }
 	 else
 	   in_if = 1
-       }
+       }	
 
      if (in_if)
        {
@@ -189,10 +189,10 @@ BEGIN   {
           while (getline < "sqlver.h" > 0)
 	  {
 	     if(match ($0, /^#define DBMS_SRV_VER_ONLY/))
-	       {
+	       {	
 	         res = match ($0, /[0-9]+/, arr)
 		 srv_ver = arr[0] + 0
-                 break
+                 break	
 	       }
 	  }
 	  close ("sqlver.h")

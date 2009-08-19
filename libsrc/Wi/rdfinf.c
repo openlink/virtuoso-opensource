@@ -1412,13 +1412,13 @@ sqlg_leading_subclass_inf (sqlo_t * so, data_source_t ** q_head, data_source_t *
       if ((qn_input_fn) trans_node_input == sas_o->src_gen.src_input)
 	ri->ri_o = ((trans_node_t*)sas_o)->tn_output[0];
       else
-    ri->ri_o = sas_o->ri_output;
+	ri->ri_o = sas_o->ri_output;
     }
   else
     {
-  if (o_iri)
-    ri->ri_given = box_copy_tree (o_iri);
-  ri->ri_o = o_dfe->dfe_ssl;
+      if (o_iri)
+	ri->ri_given = box_copy_tree (o_iri);
+      ri->ri_o = o_dfe->dfe_ssl;
     }
   if (!p_const)
     {
@@ -1481,7 +1481,7 @@ sqlg_leading_subproperty_inf (sqlo_t * so, data_source_t ** q_head, data_source_
       if ((qn_input_fn) trans_node_input == sas_p->src_gen.src_input)
 	ri->ri_p = ((trans_node_t*)sas_p)->tn_output[0];
       else
-    ri->ri_p = sas_p->ri_output;
+	ri->ri_p = sas_p->ri_output;
     }
   else if (p_const)
     ri->ri_given = box_copy_tree (p_const);
@@ -1496,10 +1496,10 @@ sqlg_leading_subproperty_inf (sqlo_t * so, data_source_t ** q_head, data_source_
       if ((qn_input_fn) trans_node_input == sas_p->src_gen.src_input)
 	ri->ri_p = ((trans_node_t*)sas_p)->tn_output[0];
       else
-    ri->ri_p = sas_p->ri_output;
+	ri->ri_p = sas_p->ri_output;
     }
   else
-  ri->ri_p = p_dfe->dfe_ssl;
+    ri->ri_p = p_dfe->dfe_ssl;
   sqlg_rdf_ts_replace_ssl ((table_source_t*) ts, ri->ri_p, ri->ri_output, 0, inxop_inx);
   ri->ri_ctx = ctx;
 }

@@ -104,7 +104,7 @@ page_gap_length (db_buf_t page, row_size_t pos)
 	STRUCTURE_FAULT1 ("odd pos in looking for gap");
       kv = page[n + pos];
       switch (kv)
-    {
+	{
 	case KV_GAP:
 	  n += page[pos + n + 1];
 	  break;
@@ -113,7 +113,7 @@ page_gap_length (db_buf_t page, row_size_t pos)
 	  break;
 	default:
 	  return n;
-    }
+	}
       if (n == prev_n) STRUCTURE_FAULT1 ("zero length gap on page");
     }
 }
@@ -796,9 +796,9 @@ itc_delete_blobs (it_cursor_t * itc, buffer_desc_t * buf)
 						bl,
 						BL_DELETE_AT_COMMIT );
 		  /* do not log the del'd blob if it was written by this trx. */
-    }
-    }
-    }
+		}
+	    }
+	}
       END_DO_CL;
     }
 }
@@ -897,12 +897,12 @@ pr_free (page_rel_t * pr, int pr_fill, int leave_bufs)
 {
   int inx;
   if (leave_bufs)
-	    {
+    {
       for (inx = 0; inx < pr_fill; inx++)
-	    {
+	{
 	  page_leave_outside_map (pr[inx].pr_buf);
-	    }
 	}
+    }
 }
 
 
@@ -930,7 +930,7 @@ itc_compact (it_cursor_t * itc, buffer_desc_t * parent, page_rel_t * pr, int pr_
   pf.pf_hash = resource_get (pfh_rc);
   pfh_init (pf.pf_hash, pf.pf_current);
   for (inx = 0; inx < pr_fill; inx++)
-	{
+    {
       buffer_desc_t * source = pr[inx].pr_buf;
       int map_pos;
       for (map_pos = 0; map_pos < source->bd_content_map->pm_count; map_pos++)
@@ -963,7 +963,7 @@ itc_compact (it_cursor_t * itc, buffer_desc_t * parent, page_rel_t * pr, int pr_
   lp_box = (row_delta_t **) dk_alloc_box (pr_fill * sizeof (caddr_t), DV_BIN);
   inx = 0;
   DO_SET (buffer_desc_t *, buf, &pf.pf_left)
-      {
+    {
       page_map_t * pm = pr[inx].pr_buf->bd_content_map;
       int copy_len = MIN (PAGE_DATA_SZ, buf->bd_content_map->pm_filled_to + MAX_KV_GAP_BYTES - DP_DATA);
       /* copy 3 extra for the gap marker, but no more than page, since can reach to end w/o gap marker */
@@ -989,7 +989,7 @@ itc_compact (it_cursor_t * itc, buffer_desc_t * parent, page_rel_t * pr, int pr_
       ITC_LEAVE_MAP_NC (itc);
       buffer_free (buf);
       inx++;
-      }
+    }
   END_DO_SET();
   dk_set_free (pf.pf_left);
   n_left = inx;
@@ -1007,8 +1007,8 @@ itc_compact (it_cursor_t * itc, buffer_desc_t * parent, page_rel_t * pr, int pr_
       itc->itc_page = buf->bd_page;
       ITC_IN_OWN_MAP (itc);
       itc_delta_this_buffer (itc, buf, DELTA_STAY_INSIDE);
-	  rdbg_printf_2 (("D=%d ", pr[inx].pr_buf->bd_page));
-	  it_free_page (it, pr[inx].pr_buf);
+      rdbg_printf_2 (("D=%d ", pr[inx].pr_buf->bd_page));
+      it_free_page (it, pr[inx].pr_buf);
       ITC_LEAVE_MAP_NC (itc);
     }
 
@@ -1077,7 +1077,7 @@ it_try_compact (index_tree_t *it, buffer_desc_t * parent, page_rel_t * pr, int p
 	  db_buf_t row = source->bd_buffer + source->bd_content_map->pm_entries[map_pos];
 	  if (KV_LEAF_PTR == IE_KEY_VERSION (row))
 	    return CP_NOP; /* no compact of non-leaf pages, would have to reloc parents link of children */
-    }
+	}
     }
 
   itc = &itc_auto;
@@ -1278,7 +1278,7 @@ it_check_compact (index_tree_t * it, int age_limit)
 	}
       else
 	{
-	mutex_leave (&parent_itm->itm_mtx);
+	  mutex_leave (&parent_itm->itm_mtx);
 	  dp_may_compact (it->it_storage, parent_dp);
 	}
     }
