@@ -18,7 +18,7 @@ Building php
   In the php source directory, execute something similar to:
 
 	./configure \
-		--prefix=/opt/software/php-5.2.10 \
+		--prefix=/usr/local/php-5.2.10 \
 		--enable-maintainer-zts \
 		--enable-embed=shared \
 		--with-config-file-path=. \
@@ -78,11 +78,11 @@ Building php
 
   In the Virtuoso Open Source directory, execute the following command:
 
-	./configure .... --enable-php5=/opt/software/php-5.2.10 ...... 
+	./configure .... --enable-php5=/usr/local/php-5.2.10 ...... 
 
   or if you configured Virtuoso before in this directory:
 
-	./config.nice --enable-php5=/opt/software/php-5.2.10
+	./config.nice --enable-php5=/usr/local/php-5.2.10
 
   so the build process knows where to find the necessary PHP header files.
 
@@ -146,13 +146,13 @@ The virtuoso.local_dsn is by default set to "Local Virtuoso" which
 is the DSN in your odbc.ini file normally associated with your local
 virtuoso database.
 
-The virtuoso.allow_dba rejects the use of the dba uid when using
-__virt_internal_connect.
+The virtuoso.allow_dba option rejects the use of the dba uid when using
+__virt_internal_dsn().
 
 Functions
 ---------
 
-  __virt_internal_connect([optional dsn])
+  __virt_internal_dsn([optional dsn])
 
 Normally when programming a PHP application you have to store datasource,
 username and password credentials for making ODBC connections back into
@@ -160,7 +160,7 @@ the database. This can be a security risk and requires the administrator
 to fix scripts manually when he wants to run a hosted application under
 its own sql account.
 
-The __virtuoso_internal_connect function returns an ODBC connect string
+The __virt_internal_dsn() function returns an ODBC connect string
 based on the VSP user that owns the Virtual Directory.
 
 It starts by verifying that the Virtual Directory has been properly setup
