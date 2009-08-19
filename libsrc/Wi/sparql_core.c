@@ -2707,7 +2707,7 @@ spar_graph_static_perms (sparp_t *sparp, caddr_t graph_iri, int req_perms)
   id_hash_t *dflt_perms_of_user = rdf_graph_default_world_perms_of_user_dict_htable;
   id_hash_t *dflt_other_perms_of_user = rdf_graph_default_private_perms_of_user_dict_htable;
   caddr_t *hit, *potential_hit;
-  int res, potential_res, potential_res_is_user_specific = 0;
+  int res = 0, potential_res = 0, potential_res_is_user_specific = 0;
   int graph_is_private = 0;
   query_t *query_with_deps = NULL;
 static caddr_t boxed_zero_iid = NULL;
