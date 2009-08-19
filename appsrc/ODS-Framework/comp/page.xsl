@@ -343,7 +343,18 @@
 <xsl:template match="vm:header">
   <head>
     <base href="<?V http_s()||self.st_host ?>/ods/"/><![CDATA[<!--[if IE]></base><![endif]-->]]>
+    <?vsp
+      declare aPath any;
+
+      aPath := http_path ();
+      aPath := split_and_decode (aPath, 0, '\0\0/');
+      if ('myhome.vspx' = aPath [length (aPath) - 1])
+      {
+    ?>
     <link rel="commands" href="ods_ubiquity.js" name="describe-resource"/>
+    <?vsp
+      }
+    ?>
     <link rel="search" type="application/opensearchdescription+xml" title="ODS OpenSearch Description" href="/ods/search.vspx?o=opensearch" />
     <?vsp
       {

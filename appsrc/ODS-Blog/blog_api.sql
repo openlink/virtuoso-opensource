@@ -337,7 +337,8 @@ ret:
 }
 ;
 
-create procedure ODS.ODS_API."weblog.options.set" (in inst_id int, in options any) __soap_http 'text/xml'
+create procedure ODS.ODS_API."weblog.options.set" (
+  in inst_id int, in options any) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc int;
@@ -349,6 +350,10 @@ create procedure ODS.ODS_API."weblog.options.set" (in inst_id int, in options an
   };
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'WEBLOG2'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
+
   msg := '';
 
   -- TODO: not implemented
@@ -357,7 +362,8 @@ ret:
 }
 ;
 
-create procedure ODS.ODS_API."weblog.options.get" (in inst_id int) __soap_http 'text/xml'
+create procedure ODS.ODS_API."weblog.options.get" (
+  in inst_id int) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc int;
@@ -368,6 +374,9 @@ create procedure ODS.ODS_API."weblog.options.get" (in inst_id int) __soap_http '
   };
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'WEBLOG2'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
 
   -- TODO: not implemented
 ret:
@@ -388,8 +397,7 @@ create procedure ODS.ODS_API."weblog.upstreaming.set" (
     in keep_remote smallint := 1,
     in max_retries int := -1,
     in max_retransmits int := 5,
-    in initialize_log int := 0
-    ) __soap_http 'text/xml'
+  in initialize_log int := 0) __soap_http 'text/xml'
 {
   declare uname, blog_id varchar;
   declare rc int;
@@ -487,8 +495,7 @@ ret:
 
 
 create procedure ODS.ODS_API."weblog.upstreaming.remove" (
-    in job_id int
-    ) __soap_http 'text/xml'
+  in job_id int) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc int;

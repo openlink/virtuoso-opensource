@@ -152,14 +152,19 @@ function odsDisplayMessage(ex)
   }
 }
 
-function odsPreview(previewBlock, cmdName, cmdParams, cmdApplication, previewMode)
+function odsPreview(previewBlock, cmd, cmdName, cmdParams, cmdApplication, previewMode)
 {
   var res = odsExecute(cmdName, cmdParams, cmdApplication, "preview");
+  if (!res)
+  {
+    previewBlock.innerHTML = (cmd.description)? cmd.description: cmd.help;
+  } else {
   if (previewMode == 'image')
   {
     previewBlock.innerHTML = '<img src="' + res + '" />';
   } else {
   previewBlock.innerHTML = "<pre>" + xml_encode(res) + "</pre>";
+}
 }
 }
 
@@ -258,38 +263,38 @@ function odsExecute (cmdName, cmdParams, cmdApplication, showMode, authMode)
       async: false
       }).responseText;
   }
-  if (showMode)
-  {
-    if (res && (res.indexOf("<failed>") == 0)) {res = '';}
-    if (!res) {res = '';}
-  }
-  if (!showMode)
-    displayMessage(res);
   if (logMode)
   {
     CmdUtils.log(res);
     CmdUtils.log(cmdName + " - end");
   }
+  if (showMode)
+  {
+    if (res && (res.indexOf("<failed>") == 0)) {res = null;}
+  } else {
+    displayMessage(res);
+  }
   return res;
 }
 
-function checkParameter(parameter, parameterName)
+function checkParameter(parameter, parameterLabel)
 {
   if (!parameter || parameter.length < 1)
   {
-    if (parameterName) {throw "Please, enter " + parameterName;}
+    if (parameterLabel) {throw "Please, enter a value for '" + parameterLabel + "'";}
     throw "Bad parameter";
   }
 }
 
-function addParameter(args, argName, parameters, parameterName, argCheck)
+function addParameter(args, argName, argLabel, parameters, parameterName, argCheck)
 {
+  var arg = args[argName];
   if (argCheck)
   {
-    if (!args[argName]) {throw "Please, enter " + argName;}
-      checkParameter(args[argName].text, argName);
+    if (!arg) {throw "Please, enter a value for '" + (argLabel)?argLabel:argName + "'";}
+    checkParameter(arg.text, (argLabel)?argLabel:argName);
   }
-  if (args[argName] && args[argName].text)
+  if (arg && arg.text)
   {
     var S = args[argName].text.toString();
     if (S.length > 0)
@@ -351,7 +356,7 @@ CmdUtils.CreateCommand({
   help: "Type ods-host http://myopenlink.net/ods",
   execute: function(args) {
     try {
-      checkParameter(args.object.text, args.object.label);
+      checkParameter(args.object.text, 'ODS Host URL');
       ODS.setServer(args.object.text);
     displayMessage("Your ODS host URL has been set to " + ODS.getServer());
     } catch (ex) {
@@ -371,7 +376,7 @@ CmdUtils.CreateCommand({
   help: "Type ods-api-host http://myopenlink.net/OAuth",
   execute: function(args) {
     try {
-      checkParameter(args.object.text, args.object.label);
+      checkParameter(args.object.text, 'ODS OAuth Host URL');
       ODS.setOAuthServer(args.object.text);
     displayMessage("Your ODS OAuth host has been set to " + ODS.getOAuthServer());
     } catch (ex) {
@@ -391,7 +396,7 @@ CmdUtils.CreateCommand({
   help: "Type ods-set-mode <sid|oauth&gt;",
   execute: function(args) {
     try {
-      checkParameter(args.object.text, args.object.label);
+      checkParameter(args.object.text, 'ODS API Mode');
       ODS.setMode(args.object.text);
       displayMessage("Your ODS API Mode has been set to " + ODS.getMode());
     } catch (ex) {
@@ -411,7 +416,7 @@ CmdUtils.CreateCommand({
   help: "Type ods-set-sid <sid value&gt;",
   execute: function(args) {
     try {
-      checkParameter(args.object.text, args.object.label);
+      checkParameter(args.object.text, "ODS API sid");
       ODS.setSid(args.object.text);
       displayMessage("Your ODS new SID has been set to " + ODS.getSid());
     } catch (ex) {
@@ -434,8 +439,8 @@ CmdUtils.CreateCommand({
   execute: function(args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "user_name", true);
-      addParameter(args, "instrument", params, "password_hash", true);
+      addParameter(args, "object", "user's name", params, "user_name", true);
+      addParameter(args, "instrument", "user's password", params, "password_hash", true);
       params["password_hash"] = Utils.computeCryptoHash ('SHA1', params["user_name"] + params["password_hash"]);
       var sid = odsExecute("user.authenticate", params, "", false, true);
     ODS.setSid(sid);
@@ -473,13 +478,13 @@ CmdUtils.CreateCommand({
 ////////////////////////////////////
 CmdUtils.CreateCommand({
   names: ["ods-set-oauth"],
-  arguments: [{role: "object", label: "oauth", nountype: noun_arb_text}],
+  arguments: [{role: "object", label: "OAuth", nountype: noun_arb_text}],
   homepage: "http://myopenlink.net/ods/",
   icon: "http://www.openlinksw.com/favicon.ico",
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
-  description: "Set your ODS OAuth. Get your oauth at " + ODS.getServer() + "/oauth_sid.vsp",
-  help: "Type ods-set-oauth &lt;oauth&gt;. Get your oauth at " + ODS.getServer() + "/oauth_sid.vsp",
+  description: "Set your ODS OAuth. Get your OAuth at " + ODS.getServer() + "/oauth_sid.vsp",
+  help: "Type ods-set-oauth &lt;OAuth&gt;. Get your oauth at " + ODS.getServer() + "/oauth_sid.vsp",
   execute: function(args) {
     try {
       checkParameter(args.object.text, "ODS OAuth");
@@ -527,8 +532,8 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "name", true);
-      odsPreview (previewBlock, "user.get", params);
+      addParameter(args, "object", "user's name", params, "name", true);
+      odsPreview(previewBlock, this, "user.get", params);
     } catch (ex) {
     }
   },
@@ -546,9 +551,9 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "name", true);
-      addParameter(args, "password", params, "password", true);
-      addParameter(args, "email", params, "email", true);
+      addParameter(args, "object", null, params, "name", true);
+      addParameter(args, "password", null, params, "password", true);
+      addParameter(args, "email", null, params, "email", true);
       odsExecute("user.register", params, "", false, true);
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -567,7 +572,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "name", true);
+      addParameter(args, "object", "user's name", params, "name", true);
     odsExecute ("user.delete", params)
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -586,7 +591,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "name", true);
+      addParameter(args, "object", "user's name", params, "name", true);
       odsExecute("user.enable", params);
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -605,7 +610,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "name", true);
+      addParameter(args, "object", "user's name", params, "name", true);
       odsExecute("user.disable", params);
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -625,8 +630,8 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "topicURI", true);
-      addParameter(args, "label", params, "topicLabel");
+      addParameter(args, "object", null, params, "topicURI", true);
+      addParameter(args, "label", null, params, "topicLabel");
       odsExecute("user.topicOfInterest.new", params);
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -645,7 +650,7 @@ CmdUtils.CreateCommand({
     execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "topicURI", true);
+      addParameter(args, "object", null, params, "topicURI", true);
       odsExecute("user.topicOfInterest.delete", params);
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -665,8 +670,8 @@ CmdUtils.CreateCommand({
     execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "thingURI", true);
-      addParameter(args, "label", params, "thingLabel");
+      addParameter(args, "object", null, params, "thingURI", true);
+      addParameter(args, "label", null, params, "thingLabel");
       odsExecute("user.thingOfInterest.new", params);
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -685,7 +690,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "thingURI", true);
+      addParameter(args, "object", null, params, "thingURI", true);
       odsExecute("user.thingOfInterest.delete", params);
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -705,9 +710,9 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "iri", true);
-      addParameter(args, "has", params, "claimRelation", true);
-      addParameter(args, "with", params, "claimValue", true);
+      addParameter(args, "object", null, params, "iri", true);
+      addParameter(args, "has", null, params, "claimRelation", true);
+      addParameter(args, "with", null, params, "claimValue", true);
       odsExecute("user.annotation.new", params);
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -727,9 +732,9 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "iri", true);
-      addParameter(args, "has", params, "claimRelation", true);
-      addParameter(args, "with", params, "claimValue", true);
+      addParameter(args, "object", null, params, "iri", true);
+      addParameter(args, "has", null, params, "claimRelation", true);
+      addParameter(args, "with", null, params, "claimValue", true);
       odsExecute("user.annotation.delete", params);
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -749,9 +754,9 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "bioEvent", true);
-      addParameter(args, "on", params, "bioDate", true);
-      addParameter(args, "in", params, "bioPlace");
+      addParameter(args, "object", null, params, "bioEvent", true);
+      addParameter(args, "on", null, params, "bioDate", true);
+      addParameter(args, "in", null, params, "bioPlace");
       odsExecute("user.bioevent.new", params);
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -771,9 +776,9 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "bioEvent", true);
-      addParameter(args, "on", params, "bioDate");
-      addParameter(args, "in", params, "bioPlace");
+      addParameter(args, "object", null, params, "bioEvent", true);
+      addParameter(args, "on", null, params, "bioDate");
+      addParameter(args, "in", null, params, "bioPlace");
       odsExecute("user.bioevent.delete", params);
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -793,8 +798,8 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "offerName", true);
-      addParameter(args, "comment", params, "offerComment");
+      addParameter(args, "object", null, params, "offerName", true);
+      addParameter(args, "comment", null, params, "offerComment");
       odsExecute("user.offer.new", params);
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -813,7 +818,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "offerName", true);
+      addParameter(args, "object", null, params, "offerName", true);
       odsExecute("user.offer.delete", params);
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -833,9 +838,9 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "offerName", true);
-      addParameter(args, "property", params, "offerProperty", true);
-      addParameter(args, "value", params, "offerPropertyValue");
+      addParameter(args, "object", null, params, "offerName", true);
+      addParameter(args, "property", null, params, "offerProperty", true);
+      addParameter(args, "value", null, params, "offerPropertyValue");
       odsExecute("user.offer.property.new", params);
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -855,8 +860,8 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "offerName", true);
-      addParameter(args, "property", params, "offerProperty", true);
+      addParameter(args, "object", null, params, "offerName", true);
+      addParameter(args, "property", null, params, "offerProperty", true);
       odsExecute("user.offer.property.delete", params);
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -876,8 +881,8 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "wishName", true);
-      addParameter(args, "comment", params, "wishComment");
+      addParameter(args, "object", null, params, "wishName", true);
+      addParameter(args, "comment", null, params, "wishComment");
       odsExecute("user.wish.new", params);
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -896,7 +901,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "wishName", true);
+      addParameter(args, "object", null, params, "wishName", true);
       odsExecute("user.wish.delete", params);
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -916,9 +921,9 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "wishName", true);
-      addParameter(args, "property", params, "wishProperty", true);
-      addParameter(args, "value", params, "wishPropertyValue");
+      addParameter(args, "object", null, params, "wishName", true);
+      addParameter(args, "property", null, params, "wishProperty", true);
+      addParameter(args, "value", null, params, "wishPropertyValue");
       odsExecute("user.wish.property.new", params);
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -938,8 +943,8 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "wishName", true);
-      addParameter(args, "property", params, "wishProperty", true);
+      addParameter(args, "object", null, params, "wishName", true);
+      addParameter(args, "property", null, params, "wishProperty", true);
       odsExecute("user.wish.property.delete", params);
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -961,7 +966,7 @@ CmdUtils.CreateCommand({
     execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "instanceName", true);
+      addParameter(args, "object", "instance name", params, "instanceName", true);
       odsExecute("instance.get.id", params);
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -980,7 +985,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
+      addParameter(args, "object", null, params, "inst_id", true);
       odsExecute("instance.freeze", params);
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -999,7 +1004,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
+      addParameter(args, "object", "instance ID", params, "inst_id", true);
       odsExecute("instance.unfreeze", params);
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1021,7 +1026,7 @@ CmdUtils.CreateCommand({
   help: "Type ods-set-briefcase-oauth &lt;oauth&gt;. Get your oauth at " + ODS.getServer() + "/oauth_sid.vsp",
   execute: function(args) {
     try {
-      checkParameter(args.object.text, "briefcase instance OAuth");
+      checkParameter(args.object.text, "Briefcase Instance OAuth");
       ODS.setOAuth("briefcase", args.object.text);
     displayMessage("Your ODS briefcase instance OAuth has been set.");
     } catch (ex) {
@@ -1042,8 +1047,8 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "path", true);
-      odsPreview (previewBlock, "briefcase.resource.get", params, "briefcase");
+      addParameter(args, "object", "Resource Path", params, "path", true);
+      odsPreview(previewBlock, this, "briefcase.resource.get", params, "briefcase");
     } catch (ex) {
     }
   },
@@ -1051,19 +1056,21 @@ CmdUtils.CreateCommand({
 
 CmdUtils.CreateCommand({
   names: ["ods-store-briefcase-resource"],
-  arguments: [{role: "object", label: "path", nountype: noun_arb_text}],
-  modifiers: {"content": noun_arb_text},
+  arguments: [
+              {role: "object", label: "path", nountype: noun_arb_text},
+              {role: "instrument", label: "content", nountype: noun_arb_text}
+             ],
   homepage: "http://myopenlink.net/ods/",
   icon: "http://www.openlinksw.com/favicon.ico",
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
   description: "Store content on resource path",
-  help: "Type ods-store-briefcase-resource &lt;path&gt; content &lt;content&gt;",
+  help: "Type ods-store-briefcase-resource &lt;path&gt; with &lt;content&gt;",
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "path", true);
-      addParameter(args, "content", params, "content", true);
+      addParameter(args, "object", "Resource Path", params, "path", true);
+      addParameter(args, "instrument", "Content", params, "content");
       odsExecute("briefcase.resource.store", params, "briefcase");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1083,7 +1090,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "path", true);
+      addParameter(args, "object", "Resource Path", params, "path", true);
       odsExecute("briefcase.resource.delete", params, "briefcase");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1103,7 +1110,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "path", true);
+      addParameter(args, "object", "Collection Path", params, "path", true);
       odsExecute("briefcase.collection.create", params, "briefcase");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1123,7 +1130,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "path", true);
+      addParameter(args, "object", "Collection Path", params, "path", true);
       odsExecute("briefcase.collection.delete", params, "briefcase");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1133,20 +1140,23 @@ CmdUtils.CreateCommand({
 
 CmdUtils.CreateCommand({
   names: ["ods-copy-briefcase"],
-  arguments: [{role: "object", label: "path", nountype: noun_arb_text}],
-  modifiers: {"to": noun_arb_text, overwrite: noun_type_integer},
+  arguments: [
+              {role: "object", label: "path", nountype: noun_arb_text},
+              {role: "goal", label: "toPath", nountype: noun_arb_text},
+              {role: "instrument", label: "overwrite", nountype: noun_type_integer}
+             ],
   homepage: "http://myopenlink.net/ods/",
   icon: "http://www.openlinksw.com/favicon.ico",
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
   description: "Copy existing ODS Briefcase collection (folder)",
-  help: "Type ods-copy-briefcase &lt;fromPath&gt; to &lt;toPath&gt; [overwrite &lt;0|1&gt;]",
+  help: "Type ods-copy-briefcase &lt;fromPath&gt; to &lt;toPath&gt; [with &lt;overwrite flag&gt;]",
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "from_path", true);
-      addParameter(args, "to", params, "to_path", true);
-      addParameter(args, "overwrite", params, "overwrite");
+      addParameter(args, "object", "Source Path", params, "from_path", true);
+      addParameter(args, "goal", "Destination Path", params, "to_path", true);
+      addParameter(args, "instrument", "Overwride Flag", params, "overwrite");
       odsExecute("briefcase.copy", params, "briefcase");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1156,8 +1166,10 @@ CmdUtils.CreateCommand({
 
 CmdUtils.CreateCommand({
   names: ["ods-move-briefcase"],
-  arguments: [{role: "object", label: "path", nountype: noun_arb_text}],
-  modifiers: {"to": noun_arb_text},
+  arguments: [
+              {role: "object", label: "path", nountype: noun_arb_text},
+              {role: "goal", label: "toPath", nountype: noun_arb_text}
+             ],
   homepage: "http://myopenlink.net/ods/",
   icon: "http://www.openlinksw.com/favicon.ico",
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
@@ -1167,8 +1179,8 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "from_path", true);
-      addParameter(args, "to", params, "to_path", true);
+      addParameter(args, "object", "Source Path", params, "from_path", true);
+      addParameter(args, "goal", "Destination Path", params, "to_path", true);
       odsExecute("briefcase.move", params, "briefcase");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1189,9 +1201,9 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "path", true);
-      addParameter(args, "property", params, "property", true);
-      addParameter(args, "with", params, "value", true);
+      addParameter(args, "object", null, params, "path", true);
+      addParameter(args, "property", null, params, "property", true);
+      addParameter(args, "with", null, params, "value", true);
       odsExecute("briefcase.property.set", params, "briefcase");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1212,9 +1224,9 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "path", true);
-      addParameter(args, "property", params, "property", true);
-      odsPreview (previewBlock, "briefcase.property.get", params, "briefcase");
+      addParameter(args, "object", null, params, "path", true);
+      addParameter(args, "property", null, params, "property", true);
+      odsPreview(previewBlock, this, "briefcase.property.get", params, "briefcase");
     } catch (ex) {
     }
   }
@@ -1233,11 +1245,54 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "path", true);
-      addParameter(args, "property", params, "property", true);
+      addParameter(args, "object", null, params, "path", true);
+      addParameter(args, "property", null, params, "property", true);
       odsExecute("briefcase.property.remove", params, "briefcase");
     } catch (ex) {
       odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  names: ["ods-set-briefcase-options"],
+  arguments: [
+              {role: "object", label: "instance_id", nountype: noun_type_id},
+              {role: "instrument", label: "options", nountype: noun_arb_text}
+             ],
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  description: "Update instance options/parameteres",
+  help: "Type ods-set-briefcase-options &lt;instance_id&gt; with &lt;options&gt;",
+  execute: function (args) {
+    try {
+      var params = {};
+      addParameter(args, "object", "Instcane ID", params, "inst_id", true);
+      addParameter(args, "instrument", "Options", params, "options");
+      odsExecute("briefcase.options.set", params, "briefcase");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  names: ["ods-get-briefcase-options"],
+  arguments: [{role: "object", label: "instance_id", nountype: noun_type_id}],
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  description: "Show instance options/parameteres",
+  help: "Type ods-get-briefcase-options &lt;instance_id&gt;",
+  preview: function (previewBlock, args) {
+    try {
+      var params = {};
+      addParameter(args, "object", "Instance ID", params, "inst_id", true);
+      odsPreview(previewBlock, this, "briefcase.options.get", params, "briefcase");
+    } catch (ex) {
     }
   }
 });
@@ -1276,8 +1331,8 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "bookmark_id", true);
-      odsPreview (previewBlock, "bookmark.get", params, "bookmark");
+      addParameter(args, "object", "Bookmark ID", params, "bookmark_id", true);
+      odsPreview(previewBlock, this, "bookmark.get", params, "bookmark");
     } catch (ex) {
     }
   }
@@ -1295,11 +1350,11 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "title", params, "name", true);
-      addParameter(args, "url", params, "uri", true);
-      addParameter(args, "description", params, "description");
-      addParameter(args, "tags", params, "tags");
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "title", null, params, "name", true);
+      addParameter(args, "url", null, params, "uri", true);
+      addParameter(args, "description", null, params, "description");
+      addParameter(args, "tags", null, params, "tags");
       odsExecute("bookmark.new", params, "bookmark");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1319,11 +1374,11 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "bookmark_id", true);
-      addParameter(args, "title", params, "name", true);
-      addParameter(args, "url", params, "uri", true);
-      addParameter(args, "description", params, "description");
-      addParameter(args, "tags", params, "tags");
+      addParameter(args, "object", null, params, "bookmark_id", true);
+      addParameter(args, "title", null, params, "name", true);
+      addParameter(args, "url", null, params, "uri", true);
+      addParameter(args, "description", null, params, "description");
+      addParameter(args, "tags", null, params, "tags");
       odsExecute("bookmark.edit", params, "bookmark");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1342,7 +1397,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "bookmark_id", true);
+      addParameter(args, "object", "Bookmark ID", params, "bookmark_id", true);
       odsExecute("bookmark.delete", params, "bookmark");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1362,8 +1417,8 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "path", params, "path", true);
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "path", null, params, "path", true);
       odsExecute("bookmark.folder.new", params, "bookmark");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1383,8 +1438,8 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "path", params, "path", true);
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "path", null, params, "path", true);
       odsExecute("bookmark.folder.delete", params, "bookmark");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1404,9 +1459,9 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "exportType", params, "contentType");
-      odsPreview (previewBlock, "bookmark.export", params, "bookmark");
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "exportType", null, params, "contentType");
+      odsPreview(previewBlock, this, "bookmark.export", params, "bookmark");
     } catch (ex) {
     }
         },
@@ -1424,9 +1479,9 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "source", params, "source", true);
-      addParameter(args, "sourceType", params, "sourceType", true);
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "source", null, params, "source", true);
+      addParameter(args, "sourceType", null, params, "sourceType", true);
       odsExecute("bookmark.import", params, "bookmark");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1445,8 +1500,8 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "annotation_id", true);
-      odsPreview (previewBlock, "bookmark.annotation.get", params, "bookmark");
+      addParameter(args, "object", "Annotation ID", params, "annotation_id", true);
+      odsPreview(previewBlock, this, "bookmark.annotation.get", params, "bookmark");
     } catch (ex) {
     }
   }
@@ -1464,9 +1519,9 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "bookmark_id", true);
-      addParameter(args, "author", params, "author", true);
-      addParameter(args, "body", params, "body", true);
+      addParameter(args, "object", null, params, "bookmark_id", true);
+      addParameter(args, "author", null, params, "author", true);
+      addParameter(args, "body", null, params, "body", true);
       odsExecute("bookmark.annotation.new", params, "bookmark");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1486,10 +1541,10 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "annotation_id", true);
-      addParameter(args, "iri", params, "claimIri", true);
-      addParameter(args, "relation", params, "claimRelation", true);
-      addParameter(args, "value", params, "claimValue", true);
+      addParameter(args, "object", null, params, "annotation_id", true);
+      addParameter(args, "iri", null, params, "claimIri", true);
+      addParameter(args, "relation", null, params, "claimRelation", true);
+      addParameter(args, "value", null, params, "claimValue", true);
       odsExecute("bookmark.annotation.claim", params, "bookmark");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1508,7 +1563,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "annotation_id", true);
+      addParameter(args, "object", "Annotation ID", params, "annotation_id", true);
       odsExecute("bookmark.annotation.delete", params, "bookmark");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1527,8 +1582,8 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "comment_id", true);
-      odsPreview (previewBlock, "bookmark.comment.get", params, "bookmark");
+      addParameter(args, "object", "Comment ID", params, "comment_id", true);
+      odsPreview(previewBlock, this, "bookmark.comment.get", params, "bookmark");
     } catch (ex) {
     }
   }
@@ -1546,12 +1601,12 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "bookmark_id", true);
-      addParameter(args, "title", params, "title", true);
-      addParameter(args, "body", params, "text", true);
-      addParameter(args, "author", params, "name", true);
-      addParameter(args, "authorMail", params, "email", true);
-      addParameter(args, "authorUrl", params, "url");
+      addParameter(args, "object", null, params, "bookmark_id", true);
+      addParameter(args, "title", null, params, "title", true);
+      addParameter(args, "body", null, params, "text", true);
+      addParameter(args, "author", null, params, "name", true);
+      addParameter(args, "authorMail", null, params, "email", true);
+      addParameter(args, "authorUrl", null, params, "url");
       odsExecute("bookmark.comment.new", params, "bookmark");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1570,7 +1625,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "comment_id", true);
+      addParameter(args, "object", "Comment ID", params, "comment_id", true);
       odsExecute("bookmark.comment.delete", params, "bookmark");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1590,18 +1645,18 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "name", params, "name", true);
-      addParameter(args, "updateType", params, "updateType");
-      addParameter(args, "updatePeriod", params, "updatePeriod");
-      addParameter(args, "updateFreq", params, "updateFreq");
-      addParameter(args, "destinationType", params, "destinationType");
-      addParameter(args, "destination", params, "destination", true);
-      addParameter(args, "userName", params, "userName");
-      addParameter(args, "userPassword", params, "userPassword");
-      addParameter(args, "folderPath", params, "folderPath");
-      addParameter(args, "tagsInclude", params, "tagsInclude");
-      addParameter(args, "tagsExclude", params, "tagsExclude");
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "name", null, params, "name", true);
+      addParameter(args, "updateType", null, params, "updateType");
+      addParameter(args, "updatePeriod", null, params, "updatePeriod");
+      addParameter(args, "updateFreq", null, params, "updateFreq");
+      addParameter(args, "destinationType", null, params, "destinationType");
+      addParameter(args, "destination", null, params, "destination", true);
+      addParameter(args, "userName", null, params, "userName");
+      addParameter(args, "userPassword", null, params, "userPassword");
+      addParameter(args, "folderPath", null, params, "folderPath");
+      addParameter(args, "tagsInclude", null, params, "tagsInclude");
+      addParameter(args, "tagsExclude", null, params, "tagsExclude");
       odsExecute("bookmark.publication.new", params, "bookmark");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1621,18 +1676,18 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "publication_id", true);
-      addParameter(args, "name", params, "name", true);
-      addParameter(args, "updateType", params, "updateType");
-      addParameter(args, "updatePeriod", params, "updatePeriod");
-      addParameter(args, "updateFreq", params, "updateFreq");
-      addParameter(args, "destinationType", params, "destinationType");
-      addParameter(args, "destination", params, "destination", true);
-      addParameter(args, "userName", params, "userName");
-      addParameter(args, "userPassword", params, "userPassword");
-      addParameter(args, "folderPath", params, "folderPath");
-      addParameter(args, "tagsInclude", params, "tagsInclude");
-      addParameter(args, "tagsExclude", params, "tagsExclude");
+      addParameter(args, "object", null, params, "publication_id", true);
+      addParameter(args, "name", null, params, "name", true);
+      addParameter(args, "updateType", null, params, "updateType");
+      addParameter(args, "updatePeriod", null, params, "updatePeriod");
+      addParameter(args, "updateFreq", null, params, "updateFreq");
+      addParameter(args, "destinationType", null, params, "destinationType");
+      addParameter(args, "destination", null, params, "destination", true);
+      addParameter(args, "userName", null, params, "userName");
+      addParameter(args, "userPassword", null, params, "userPassword");
+      addParameter(args, "folderPath", null, params, "folderPath");
+      addParameter(args, "tagsInclude", null, params, "tagsInclude");
+      addParameter(args, "tagsExclude", null, params, "tagsExclude");
       odsExecute("bookmark.publication.edit", params, "bookmark");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1651,8 +1706,8 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "publication_id", true);
-      odsPreview(previewBlock, "bookmark.publication.get", params, "bookmark");
+      addParameter(args, "object", null, params, "publication_id", true);
+      odsPreview(previewBlock, this, "bookmark.publication.get", params, "bookmark");
     } catch (ex) {
     }
   }
@@ -1669,7 +1724,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "publication_id", true);
+      addParameter(args, "object", null, params, "publication_id", true);
       odsExecute("bookmark.publication.sync", params, "bookmark");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1688,7 +1743,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "publication_id", true);
+      addParameter(args, "object", null, params, "publication_id", true);
       odsExecute("bookmark.publication.delete", params, "bookmark");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1708,17 +1763,17 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "name", params, "name", true);
-      addParameter(args, "updateType", params, "updateType");
-      addParameter(args, "updatePeriod", params, "updatePeriod");
-      addParameter(args, "updateFreq", params, "updateFreq");
-      addParameter(args, "sourceType", params, "sourceType");
-      addParameter(args, "source", params, "source", true);
-      addParameter(args, "userName", params, "userName");
-      addParameter(args, "userPassword", params, "userPassword");
-      addParameter(args, "folderPath", params, "folderPath");
-      addParameter(args, "tags", params, "tags");
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "name", null, params, "name", true);
+      addParameter(args, "updateType", null, params, "updateType");
+      addParameter(args, "updatePeriod", null, params, "updatePeriod");
+      addParameter(args, "updateFreq", null, params, "updateFreq");
+      addParameter(args, "sourceType", null, params, "sourceType");
+      addParameter(args, "source", null, params, "source", true);
+      addParameter(args, "userName", null, params, "userName");
+      addParameter(args, "userPassword", null, params, "userPassword");
+      addParameter(args, "folderPath", null, params, "folderPath");
+      addParameter(args, "tags", null, params, "tags");
       odsExecute("bookmark.subscription.new", params, "bookmark");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1738,17 +1793,17 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "subscription_id", true);
-      addParameter(args, "name", params, "name", true);
-      addParameter(args, "updateType", params, "updateType");
-      addParameter(args, "updatePeriod", params, "updatePeriod");
-      addParameter(args, "updateFreq", params, "updateFreq");
-      addParameter(args, "sourceType", params, "sourceType");
-      addParameter(args, "source", params, "source", true);
-      addParameter(args, "userName", params, "userName");
-      addParameter(args, "userPassword", params, "userPassword");
-      addParameter(args, "folderPath", params, "folderPath");
-      addParameter(args, "tags", params, "tags");
+      addParameter(args, "object", null, params, "subscription_id", true);
+      addParameter(args, "name", null, params, "name", true);
+      addParameter(args, "updateType", null, params, "updateType");
+      addParameter(args, "updatePeriod", null, params, "updatePeriod");
+      addParameter(args, "updateFreq", null, params, "updateFreq");
+      addParameter(args, "sourceType", null, params, "sourceType");
+      addParameter(args, "source", null, params, "source", true);
+      addParameter(args, "userName", null, params, "userName");
+      addParameter(args, "userPassword", null, params, "userPassword");
+      addParameter(args, "folderPath", null, params, "folderPath");
+      addParameter(args, "tags", null, params, "tags");
       odsExecute("bookmark.subscription.edit", params, "bookmark");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1767,8 +1822,8 @@ CmdUtils.CreateCommand({
   preview: function (previewBlockargs) {
     try {
       var params = {};
-      addParameter(args, "object", params, "subscription_id", true);
-      odsPreview(previewBlock, "bookmark.subscription.get", params, "bookmark");
+      addParameter(args, "object", null, params, "subscription_id", true);
+      odsPreview(previewBlock, this, "bookmark.subscription.get", params, "bookmark");
     } catch (ex) {
     }
   }
@@ -1785,7 +1840,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "subscription_id", true);
+      addParameter(args, "object", null, params, "subscription_id", true);
       odsExecute("bookmark.subscription.sync", params, "bookmark");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1804,7 +1859,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "subscription_id", true);
+      addParameter(args, "object", null, params, "subscription_id", true);
       odsExecute("bookmark.subscription.delete", params, "bookmark");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1814,18 +1869,21 @@ CmdUtils.CreateCommand({
 
 CmdUtils.CreateCommand({
   names: ["ods-set-bookmarks-options"],
-  arguments: [{role: "object", label: "instance_id", nountype: noun_type_id}],
-  modifiers: {"options": noun_arb_text},
+  arguments: [
+              {role: "object", label: "instance_id", nountype: noun_type_id},
+              {role: "instrument", label: "options", nountype: noun_arb_text}
+             ],
   homepage: "http://myopenlink.net/ods/",
   icon: "http://www.openlinksw.com/favicon.ico",
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
-  help: "Type ods-set-bookmarks-options &lt;instance_id&gt; options &lt;options&gt;",
+  description: "Update instance options/parameteres",
+  help: "Type ods-set-bookmarks-options &lt;instance_id&gt; with &lt;options&gt;",
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "options", params, "options");
+      addParameter(args, "object", "Instcane ID", params, "inst_id", true);
+      addParameter(args, "instrument", "Options", params, "options");
       odsExecute("bookmark.options.set", params, "bookmark");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1840,13 +1898,13 @@ CmdUtils.CreateCommand({
   icon: "http://www.openlinksw.com/favicon.ico",
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
+  description: "Show instance options/parameteres",
   help: "Type ods-get-bookmarks-options &lt;instance_id&gt;",
-
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      odsPreview (previewBlock, "bookmark.options.get", params, "bookmark");
+      addParameter(args, "object", "Instance ID", params, "inst_id", true);
+      odsPreview(previewBlock, this, "bookmark.options.get", params, "bookmark");
     } catch (ex) {
     }
   }
@@ -1886,8 +1944,8 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "event_id", true);
-      odsPreview (previewBlock, "calendar.get", params, "calendar");
+      addParameter(args, "object", null, params, "event_id", true);
+      odsPreview(previewBlock, this, "calendar.get", params, "calendar");
     } catch (ex) {
     }
   }
@@ -1905,23 +1963,23 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "subject", params, "subject", true);
-      addParameter(args, "description", params, "description");
-      addParameter(args, "location", params, "location");
-      addParameter(args, "attendees", params, "attendees");
-      addParameter(args, "privacy", params, "privacy");
-      addParameter(args, "tags", params, "tags");
-      addParameter(args, "event", params, "event");
-      addParameter(args, "eventStart", params, "eventStart", true);
-      addParameter(args, "eventEnd", params, "eventEnd", true);
-      addParameter(args, "eRepeat", params, "eRepeat");
-      addParameter(args, "eRepeatParam1", params, "eRepeatParam1");
-      addParameter(args, "eRepeatParam2", params, "eRepeatParam2");
-      addParameter(args, "eRepeatParam3", params, "eRepeatParam3");
-      addParameter(args, "eRepeatUntil ", params, "eRepeatUntil ");
-      addParameter(args, "eReminder", params, "eReminder");
-      addParameter(args, "notes", params, "notes");
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "subject", null, params, "subject", true);
+      addParameter(args, "description", null, params, "description");
+      addParameter(args, "location", null, params, "location");
+      addParameter(args, "attendees", null, params, "attendees");
+      addParameter(args, "privacy", null, params, "privacy");
+      addParameter(args, "tags", null, params, "tags");
+      addParameter(args, "event", null, params, "event");
+      addParameter(args, "eventStart", null, params, "eventStart", true);
+      addParameter(args, "eventEnd", null, params, "eventEnd", true);
+      addParameter(args, "eRepeat", null, params, "eRepeat");
+      addParameter(args, "eRepeatParam1", null, params, "eRepeatParam1");
+      addParameter(args, "eRepeatParam2", null, params, "eRepeatParam2");
+      addParameter(args, "eRepeatParam3", null, params, "eRepeatParam3");
+      addParameter(args, "eRepeatUntil ", null, params, "eRepeatUntil ");
+      addParameter(args, "eReminder", null, params, "eReminder");
+      addParameter(args, "notes", null, params, "notes");
       odsExecute("calendar.event.new", params, "calendar");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1941,23 +1999,23 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "event_id", true);
-      addParameter(args, "subject", params, "subject", true);
-      addParameter(args, "description", params, "description");
-      addParameter(args, "location", params, "location");
-      addParameter(args, "attendees", params, "attendees");
-      addParameter(args, "privacy", params, "privacy");
-      addParameter(args, "tags", params, "tags");
-      addParameter(args, "event", params, "event");
-      addParameter(args, "eventStart", params, "eventStart", true);
-      addParameter(args, "eventEnd", params, "eventEnd", true);
-      addParameter(args, "eRepeat", params, "eRepeat");
-      addParameter(args, "eRepeatParam1", params, "eRepeatParam1");
-      addParameter(args, "eRepeatParam2", params, "eRepeatParam2");
-      addParameter(args, "eRepeatParam3", params, "eRepeatParam3");
-      addParameter(args, "eRepeatUntil ", params, "eRepeatUntil ");
-      addParameter(args, "eReminder", params, "eReminder");
-      addParameter(args, "notes", params, "notes");
+      addParameter(args, "object", null, params, "event_id", true);
+      addParameter(args, "subject", null, params, "subject", true);
+      addParameter(args, "description", null, params, "description");
+      addParameter(args, "location", null, params, "location");
+      addParameter(args, "attendees", null, params, "attendees");
+      addParameter(args, "privacy", null, params, "privacy");
+      addParameter(args, "tags", null, params, "tags");
+      addParameter(args, "event", null, params, "event");
+      addParameter(args, "eventStart", null, params, "eventStart", true);
+      addParameter(args, "eventEnd", null, params, "eventEnd", true);
+      addParameter(args, "eRepeat", null, params, "eRepeat");
+      addParameter(args, "eRepeatParam1", null, params, "eRepeatParam1");
+      addParameter(args, "eRepeatParam2", null, params, "eRepeatParam2");
+      addParameter(args, "eRepeatParam3", null, params, "eRepeatParam3");
+      addParameter(args, "eRepeatUntil ", null, params, "eRepeatUntil ");
+      addParameter(args, "eReminder", null, params, "eReminder");
+      addParameter(args, "notes", null, params, "notes");
       odsExecute("calendar.event.edit", params, "calendar");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -1977,19 +2035,19 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "subject", params, "subject", true);
-      addParameter(args, "description", params, "description");
-      addParameter(args, "attendees", params, "attendees");
-      addParameter(args, "privacy", params, "privacy");
-      addParameter(args, "tags", params, "tags");
-      addParameter(args, "eventStart", params, "eventStart", true);
-      addParameter(args, "eventEnd", params, "eventEnd", true);
-      addParameter(args, "priority", params, "priority");
-      addParameter(args, "status", params, "status");
-      addParameter(args, "complete", params, "complete");
-      addParameter(args, "completedDate", params, "completed");
-      addParameter(args, "notes", params, "notes");
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "subject", null, params, "subject", true);
+      addParameter(args, "description", null, params, "description");
+      addParameter(args, "attendees", null, params, "attendees");
+      addParameter(args, "privacy", null, params, "privacy");
+      addParameter(args, "tags", null, params, "tags");
+      addParameter(args, "eventStart", null, params, "eventStart", true);
+      addParameter(args, "eventEnd", null, params, "eventEnd", true);
+      addParameter(args, "priority", null, params, "priority");
+      addParameter(args, "status", null, params, "status");
+      addParameter(args, "complete", null, params, "complete");
+      addParameter(args, "completedDate", null, params, "completed");
+      addParameter(args, "notes", null, params, "notes");
       odsExecute("calendar.task.new", params, "calendar");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -2009,19 +2067,19 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "event_id", true);
-      addParameter(args, "subject", params, "subject", true);
-      addParameter(args, "description", params, "description");
-      addParameter(args, "attendees", params, "attendees");
-      addParameter(args, "privacy", params, "privacy");
-      addParameter(args, "tags", params, "tags");
-      addParameter(args, "eventStart", params, "eventStart", true);
-      addParameter(args, "eventEnd", params, "eventEnd", true);
-      addParameter(args, "priority", params, "priority");
-      addParameter(args, "status", params, "status");
-      addParameter(args, "complete", params, "complete");
-      addParameter(args, "completedDate", params, "completed");
-      addParameter(args, "notes", params, "notes");
+      addParameter(args, "object", null, params, "event_id", true);
+      addParameter(args, "subject", null, params, "subject", true);
+      addParameter(args, "description", null, params, "description");
+      addParameter(args, "attendees", null, params, "attendees");
+      addParameter(args, "privacy", null, params, "privacy");
+      addParameter(args, "tags", null, params, "tags");
+      addParameter(args, "eventStart", null, params, "eventStart", true);
+      addParameter(args, "eventEnd", null, params, "eventEnd", true);
+      addParameter(args, "priority", null, params, "priority");
+      addParameter(args, "status", null, params, "status");
+      addParameter(args, "complete", null, params, "complete");
+      addParameter(args, "completedDate", null, params, "completed");
+      addParameter(args, "notes", null, params, "notes");
       odsExecute("calendar.task.edit", params, "calendar");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -2040,7 +2098,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "event_id", true);
+      addParameter(args, "object", null, params, "event_id", true);
       odsExecute("calendar.delete", params, "calendar");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -2060,14 +2118,14 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "events", params, "events");
-      addParameter(args, "tasks", params, "tasks");
-      addParameter(args, "periodFrom", params, "periodFrom");
-      addParameter(args, "periodTo", params, "periodTo");
-      addParameter(args, "tagsInclude", params, "tagsInclude");
-      addParameter(args, "tagsExclude", params, "tagsExclude");
-      odsPreview (previewBlock, "calendar.export", params, "calendar");
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "events", null, params, "events");
+      addParameter(args, "tasks", null, params, "tasks");
+      addParameter(args, "periodFrom", null, params, "periodFrom");
+      addParameter(args, "periodTo", null, params, "periodTo");
+      addParameter(args, "tagsInclude", null, params, "tagsInclude");
+      addParameter(args, "tagsExclude", null, params, "tagsExclude");
+      odsPreview(previewBlock, this, "calendar.export", params, "calendar");
     } catch (ex) {
     }
         },
@@ -2085,14 +2143,14 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "source", params, "source", true);
-      addParameter(args, "sourceType", params, "sourceType", true);
-      addParameter(args, "userName", params, "userName");
-      addParameter(args, "userPassword", params, "userPassword");
-      addParameter(args, "events", params, "events");
-      addParameter(args, "tasks", params, "tasks");
-      addParameter(args, "tags", params, "tags");
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "source", null, params, "source", true);
+      addParameter(args, "sourceType", null, params, "sourceType", true);
+      addParameter(args, "userName", null, params, "userName");
+      addParameter(args, "userPassword", null, params, "userPassword");
+      addParameter(args, "events", null, params, "events");
+      addParameter(args, "tasks", null, params, "tasks");
+      addParameter(args, "tags", null, params, "tags");
       odsExecute("calendar.import", params, "calendar");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -2112,8 +2170,8 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "annotation_id", true);
-      odsPreview (previewBlock, "calendar.annotation.get", params, "calendar");
+      addParameter(args, "object", "Annotation ID", params, "annotation_id", true);
+      odsPreview(previewBlock, this, "calendar.annotation.get", params, "calendar");
     } catch (ex) {
     }
   }
@@ -2131,9 +2189,9 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "event_id", true);
-      addParameter(args, "author", params, "author", true);
-      addParameter(args, "body", params, "body", true);
+      addParameter(args, "object", null, params, "event_id", true);
+      addParameter(args, "author", null, params, "author", true);
+      addParameter(args, "body", null, params, "body", true);
       odsExecute("calendar.annotation.new", params, "calendar");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -2153,10 +2211,10 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "annotation_id", true);
-      addParameter(args, "iri", params, "claimIri", true);
-      addParameter(args, "relation", params, "claimRelation", true);
-      addParameter(args, "value", params, "claimValue", true);
+      addParameter(args, "object", null, params, "annotation_id", true);
+      addParameter(args, "iri", null, params, "claimIri", true);
+      addParameter(args, "relation", null, params, "claimRelation", true);
+      addParameter(args, "value", null, params, "claimValue", true);
       odsExecute("calendar.annotation.claim", params, "calendar");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -2175,7 +2233,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "annotation_id", true);
+      addParameter(args, "object", "Annotation ID", params, "annotation_id", true);
       odsExecute("calendar.annotation.delete", params, "calendar");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -2195,8 +2253,8 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "comment_id", true);
-      odsPreview (previewBlock, "calendar.comment.get", params, "calendar");
+      addParameter(args, "object", "Comment ID", params, "comment_id", true);
+      odsPreview(previewBlock, this, "calendar.comment.get", params, "calendar");
     } catch (ex) {
     }
   }
@@ -2214,12 +2272,12 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "event_id", true);
-      addParameter(args, "title", params, "title", true);
-      addParameter(args, "body", params, "text", true);
-      addParameter(args, "author", params, "name", true);
-      addParameter(args, "authorMail", params, "email", true);
-      addParameter(args, "authorUrl", params, "url");
+      addParameter(args, "object", null, params, "event_id", true);
+      addParameter(args, "title", null, params, "title", true);
+      addParameter(args, "body", null, params, "text", true);
+      addParameter(args, "author", null, params, "name", true);
+      addParameter(args, "authorMail", null, params, "email", true);
+      addParameter(args, "authorUrl", null, params, "url");
       odsExecute("calendar.comment.new", params, "calendar");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -2238,7 +2296,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "comment_id", true);
+      addParameter(args, "object", "Comment ID", params, "comment_id", true);
       odsExecute("calendar.comment.delete", params, "calendar");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -2258,17 +2316,17 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "name", params, "name", true);
-      addParameter(args, "updateType", params, "updateType");
-      addParameter(args, "updatePeriod", params, "updatePeriod");
-      addParameter(args, "updateFreq", params, "updateFreq");
-      addParameter(args, "destinationType", params, "destinationType");
-      addParameter(args, "destination", params, "destination", true);
-      addParameter(args, "userName", params, "userName");
-      addParameter(args, "userPassword", params, "userPassword");
-      addParameter(args, "events", params, "events");
-      addParameter(args, "tasks", params, "tasks");
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "name", null, params, "name", true);
+      addParameter(args, "updateType", null, params, "updateType");
+      addParameter(args, "updatePeriod", null, params, "updatePeriod");
+      addParameter(args, "updateFreq", null, params, "updateFreq");
+      addParameter(args, "destinationType", null, params, "destinationType");
+      addParameter(args, "destination", null, params, "destination", true);
+      addParameter(args, "userName", null, params, "userName");
+      addParameter(args, "userPassword", null, params, "userPassword");
+      addParameter(args, "events", null, params, "events");
+      addParameter(args, "tasks", null, params, "tasks");
       odsExecute("calendar.publication.new", params, "calendar");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -2289,17 +2347,17 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "publication_id", true);
-      addParameter(args, "name", params, "name", true);
-      addParameter(args, "updateType", params, "updateType");
-      addParameter(args, "updatePeriod", params, "updatePeriod");
-      addParameter(args, "updateFreq", params, "updateFreq");
-      addParameter(args, "destinationType", params, "destinationType");
-      addParameter(args, "destination", params, "destination", true);
-      addParameter(args, "userName", params, "userName");
-      addParameter(args, "userPassword", params, "userPassword");
-      addParameter(args, "events", params, "events");
-      addParameter(args, "tasks", params, "tasks");
+      addParameter(args, "object", null, params, "publication_id", true);
+      addParameter(args, "name", null, params, "name", true);
+      addParameter(args, "updateType", null, params, "updateType");
+      addParameter(args, "updatePeriod", null, params, "updatePeriod");
+      addParameter(args, "updateFreq", null, params, "updateFreq");
+      addParameter(args, "destinationType", null, params, "destinationType");
+      addParameter(args, "destination", null, params, "destination", true);
+      addParameter(args, "userName", null, params, "userName");
+      addParameter(args, "userPassword", null, params, "userPassword");
+      addParameter(args, "events", null, params, "events");
+      addParameter(args, "tasks", null, params, "tasks");
       odsExecute("calendar.publication.edit", params, "calendar");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -2318,8 +2376,8 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "publication_id", true);
-      odsPreview(previewBlock, "calendar.publication.get", params, "calendar");
+      addParameter(args, "object", null, params, "publication_id", true);
+      odsPreview(previewBlock, this, "calendar.publication.get", params, "calendar");
     } catch (ex) {
     }
   }
@@ -2336,7 +2394,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "publication_id", true);
+      addParameter(args, "object", null, params, "publication_id", true);
       odsExecute("calendar.publication.sync", params, "calendar");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -2355,7 +2413,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "publication_id", true);
+      addParameter(args, "object", null, params, "publication_id", true);
       odsExecute("calendar.publication.delete", params, "calendar");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -2375,17 +2433,17 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "name", params, "name", true);
-      addParameter(args, "updateType", params, "updateType");
-      addParameter(args, "updatePeriod", params, "updatePeriod");
-      addParameter(args, "updateFreq", params, "updateFreq");
-      addParameter(args, "sourceType", params, "sourceType");
-      addParameter(args, "source", params, "source", true);
-      addParameter(args, "userName", params, "userName");
-      addParameter(args, "userPassword", params, "userPassword");
-      addParameter(args, "events", params, "events");
-      addParameter(args, "tasks", params, "tasks");
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "name", null, params, "name", true);
+      addParameter(args, "updateType", null, params, "updateType");
+      addParameter(args, "updatePeriod", null, params, "updatePeriod");
+      addParameter(args, "updateFreq", null, params, "updateFreq");
+      addParameter(args, "sourceType", null, params, "sourceType");
+      addParameter(args, "source", null, params, "source", true);
+      addParameter(args, "userName", null, params, "userName");
+      addParameter(args, "userPassword", null, params, "userPassword");
+      addParameter(args, "events", null, params, "events");
+      addParameter(args, "tasks", null, params, "tasks");
       odsExecute("calendar.subscription.new", params, "calendar");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -2405,17 +2463,17 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "subscription_id", true);
-      addParameter(args, "name", params, "name", true);
-      addParameter(args, "updateType", params, "updateType");
-      addParameter(args, "updatePeriod", params, "updatePeriod");
-      addParameter(args, "updateFreq", params, "updateFreq");
-      addParameter(args, "sourceType", params, "sourceType");
-      addParameter(args, "source", params, "source", true);
-      addParameter(args, "userName", params, "userName");
-      addParameter(args, "userPassword", params, "userPassword");
-      addParameter(args, "events", params, "events");
-      addParameter(args, "tasks", params, "tasks");
+      addParameter(args, "object", null, params, "subscription_id", true);
+      addParameter(args, "name", null, params, "name", true);
+      addParameter(args, "updateType", null, params, "updateType");
+      addParameter(args, "updatePeriod", null, params, "updatePeriod");
+      addParameter(args, "updateFreq", null, params, "updateFreq");
+      addParameter(args, "sourceType", null, params, "sourceType");
+      addParameter(args, "source", null, params, "source", true);
+      addParameter(args, "userName", null, params, "userName");
+      addParameter(args, "userPassword", null, params, "userPassword");
+      addParameter(args, "events", null, params, "events");
+      addParameter(args, "tasks", null, params, "tasks");
       odsExecute("calendar.subscription.edit", params, "calendar");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -2434,8 +2492,8 @@ CmdUtils.CreateCommand({
   preview: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "subscription_id", true);
-      odsPreview(previewBlock, "calendar.subscription.get", params, "calendar");
+      addParameter(args, "object", null, params, "subscription_id", true);
+      odsPreview(previewBlock, this, "calendar.subscription.get", params, "calendar");
     } catch (ex) {
     }
   }
@@ -2452,7 +2510,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "subscription_id", true);
+      addParameter(args, "object", null, params, "subscription_id", true);
       odsExecute("calendar.subscription.sync", params, "calendar");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -2471,7 +2529,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "subscription_id", true);
+      addParameter(args, "object", null, params, "subscription_id", true);
       odsExecute("calendar.subscription.delete", params, "calendar");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -2491,13 +2549,13 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "name", params, "name", true);
-      addParameter(args, "source", params, "source", true);
-      addParameter(args, "userName", params, "userName", true);
-      addParameter(args, "userPassword", params, "userPassword", true);
-      addParameter(args, "tagsInclude", params, "tagsInclude");
-      addParameter(args, "tagsExclude", params, "tagsExclude");
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "name", null, params, "name", true);
+      addParameter(args, "source", null, params, "source", true);
+      addParameter(args, "userName", null, params, "userName", true);
+      addParameter(args, "userPassword", null, params, "userPassword", true);
+      addParameter(args, "tagsInclude", null, params, "tagsInclude");
+      addParameter(args, "tagsExclude", null, params, "tagsExclude");
       odsExecute("calendar.upstream.new", params, "calendar");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -2517,13 +2575,13 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "upstream_id", true);
-      addParameter(args, "name", params, "name", true);
-      addParameter(args, "source", params, "source", true);
-      addParameter(args, "userName", params, "userName", true);
-      addParameter(args, "userPassword", params, "userPassword", true);
-      addParameter(args, "tagsInclude", params, "tagsInclude");
-      addParameter(args, "tagsExclude", params, "tagsExclude");
+      addParameter(args, "object", null, params, "upstream_id", true);
+      addParameter(args, "name", null, params, "name", true);
+      addParameter(args, "source", null, params, "source", true);
+      addParameter(args, "userName", null, params, "userName", true);
+      addParameter(args, "userPassword", null, params, "userPassword", true);
+      addParameter(args, "tagsInclude", null, params, "tagsInclude");
+      addParameter(args, "tagsExclude", null, params, "tagsExclude");
       odsExecute("calendar.upstream.edit", params, "calendar");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -2542,7 +2600,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "upstream_id", true);
+      addParameter(args, "object", null, params, "upstream_id", true);
       odsExecute("calendar.upstream.delete", params, "calendar");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -2552,18 +2610,21 @@ CmdUtils.CreateCommand({
 
 CmdUtils.CreateCommand({
   names: ["ods-set-calendar-options"],
-  arguments: [{role: "object", label: "instance_id", nountype: noun_type_id}],
-  modifiers: {"options": noun_arb_text},
+  arguments: [
+              {role: "object", label: "instance_id", nountype: noun_type_id},
+              {role: "instrument", label: "options", nountype: noun_arb_text}
+             ],
   homepage: "http://myopenlink.net/ods/",
   icon: "http://www.openlinksw.com/favicon.ico",
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
-  help: "Type ods-set-calendar-options &lt;instance_id&gt; options &lt;options&gt;",
+  description: "Update instance options/parameteres",
+  help: "Type ods-set-calendar-options &lt;instance_id&gt; with &lt;options&gt;",
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "options", params, "options");
+      addParameter(args, "object", "Instcane ID", params, "inst_id", true);
+      addParameter(args, "instrument", "Options", params, "options");
       odsExecute("calendar.options.set", params, "calendar");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -2578,13 +2639,14 @@ CmdUtils.CreateCommand({
   icon: "http://www.openlinksw.com/favicon.ico",
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
+  description: "Show instance options/parameteres",
   help: "Type ods-get-calendar-options &lt;instance_id&gt;",
 
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      odsPreview (previewBlock, "calendar.options.get", params, "calendar");
+      addParameter(args, "object", "Instance ID", params, "inst_id", true);
+      odsPreview(previewBlock, this, "calendar.options.get", params, "calendar");
     } catch (ex) {
     }
   }
@@ -2627,12 +2689,12 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "keywords", params, "keywords");
-      addParameter(args, "tags", params, "tags");
-      addParameter(args, "category", params, "category");
-      addParameter(args, "maxResults", params, "maxResults");
-      odsPreview(previewBlock, "addressbook.search", params, "addressbook");
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "keywords", null, params, "keywords");
+      addParameter(args, "tags", null, params, "tags");
+      addParameter(args, "category", null, params, "category");
+      addParameter(args, "maxResults", null, params, "maxResults");
+      odsPreview(previewBlock, this, "addressbook.search", params, "addressbook");
     } catch (ex) {
     }
   }
@@ -2650,8 +2712,8 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "contact_id", true);
-      odsPreview (previewBlock, "addressbook.get", params, "addressbook");
+      addParameter(args, "object", null, params, "contact_id", true);
+      odsPreview(previewBlock, this, "addressbook.get", params, "addressbook");
     } catch (ex) {
     }
   }
@@ -2669,9 +2731,9 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "name", params, "name", true);
-      addParameter(args, "name", params, "name", true);
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "name", null, params, "name", true);
+      addParameter(args, "name", null, params, "name", true);
       addParameter(args,"title", params,"title");
       addParameter(args,"fName", params,"fName");
       addParameter(args,"mName", params,"mName");
@@ -2740,8 +2802,8 @@ CmdUtils.CreateCommand({
 execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "contact_id", true);
-      addParameter(args, "name", params, "name", true);
+      addParameter(args, "object", null, params, "contact_id", true);
+      addParameter(args, "name", null, params, "name", true);
       addParameter(args,"title", params,"title");
       addParameter(args,"fName", params,"fName");
       addParameter(args,"mName", params,"mName");
@@ -2809,7 +2871,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "contact_id", true);
+      addParameter(args, "object", null, params, "contact_id", true);
       odsExecute("addressbook.delete", params, "addressbook");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -2829,8 +2891,8 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "relationship", true);
-      addParameter(args, "with", params, "contact", true);
+      addParameter(args, "object", null, params, "relationship", true);
+      addParameter(args, "with", null, params, "contact", true);
       odsExecute("addressbook.relationship.new", params, "addressbook");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -2850,8 +2912,8 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "relationship", true);
-      addParameter(args, "with", params, "contact", true);
+      addParameter(args, "object", null, params, "relationship", true);
+      addParameter(args, "with", null, params, "contact", true);
       odsExecute("addressbook.relationship.delete", params, "addressbook");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -2872,9 +2934,9 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "contentType", params, "contentType");
-      odsPreview (previewBlock, "addressbook.export", params, "addressbook");
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "contentType", null, params, "contentType");
+      odsPreview(previewBlock, this, "addressbook.export", params, "addressbook");
     } catch (ex) {
     }
   },
@@ -2892,11 +2954,11 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "source", params, "source", true);
-      addParameter(args, "sourceType", params, "sourceType");
-      addParameter(args, "contentType", params, "contentType");
-      addParameter(args, "tags", params, "tags");
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "source", null, params, "source", true);
+      addParameter(args, "sourceType", null, params, "sourceType");
+      addParameter(args, "contentType", null, params, "contentType");
+      addParameter(args, "tags", null, params, "tags");
       odsExecute("addressbook.import", params, "addressbook");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -2916,8 +2978,8 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "annotation_id", true);
-      odsPreview (previewBlock, "addressbook.annotation.get", params, "addressbook");
+      addParameter(args, "object", "Annotation ID", params, "annotation_id", true);
+      odsPreview(previewBlock, this, "addressbook.annotation.get", params, "addressbook");
     } catch (ex) {
     }
   }
@@ -2935,9 +2997,9 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "contact_id", true);
-      addParameter(args, "author", params, "author", true);
-      addParameter(args, "body", params, "body", true);
+      addParameter(args, "object", null, params, "contact_id", true);
+      addParameter(args, "author", null, params, "author", true);
+      addParameter(args, "body", null, params, "body", true);
       odsExecute("addressbook.annotation.new", params, "addressbook");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -2957,10 +3019,10 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "annotation_id", true);
-      addParameter(args, "iri", params, "claimIri", true);
-      addParameter(args, "relation", params, "claimRelation", true);
-      addParameter(args, "value", params, "claimValue", true);
+      addParameter(args, "object", null, params, "annotation_id", true);
+      addParameter(args, "iri", null, params, "claimIri", true);
+      addParameter(args, "relation", null, params, "claimRelation", true);
+      addParameter(args, "value", null, params, "claimValue", true);
       odsExecute("addressbook.annotation.claim", params, "addressbook");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -2979,7 +3041,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "annotation_id", true);
+      addParameter(args, "object", "Annotation ID", params, "annotation_id", true);
       odsExecute("addressbook.annotation.delete", params, "addressbook");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -2999,8 +3061,8 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "comment_id", true);
-      odsPreview (previewBlock, "addressbook.comment.get", params, "addressbook");
+      addParameter(args, "object", "Comment ID", params, "comment_id", true);
+      odsPreview(previewBlock, this, "addressbook.comment.get", params, "addressbook");
     } catch (ex) {
     }
   }
@@ -3018,12 +3080,12 @@ CmdUtils.CreateCommand({
 execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "contact_id", true);
-      addParameter(args, "title", params, "title", true);
-      addParameter(args, "body", params, "text", true);
-      addParameter(args, "author", params, "name", true);
-      addParameter(args, "authorMail", params, "email", true);
-      addParameter(args, "authorUrl", params, "url");
+      addParameter(args, "object", null, params, "contact_id", true);
+      addParameter(args, "title", null, params, "title", true);
+      addParameter(args, "body", null, params, "text", true);
+      addParameter(args, "author", null, params, "name", true);
+      addParameter(args, "authorMail", null, params, "email", true);
+      addParameter(args, "authorUrl", null, params, "url");
       odsExecute("addressbook.comment.new", params, "addressbook");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3042,7 +3104,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "comment_id", true);
+      addParameter(args, "object", "Comment ID", params, "comment_id", true);
       odsExecute("addressbook.comment.delete", params, "addressbook");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3062,17 +3124,17 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "name", params, "name", true);
-      addParameter(args, "updateType", params, "updateType");
-      addParameter(args, "updatePeriod", params, "updatePeriod");
-      addParameter(args, "updateFreq", params, "updateFreq");
-      addParameter(args, "destinationType", params, "destinationType");
-      addParameter(args, "destination", params, "destination", true);
-      addParameter(args, "userName", params, "userName");
-      addParameter(args, "userPassword", params, "userPassword");
-      addParameter(args, "tagsInclude", params, "tagsInclude");
-      addParameter(args, "tagsExclude", params, "tagsExclude");
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "name", null, params, "name", true);
+      addParameter(args, "updateType", null, params, "updateType");
+      addParameter(args, "updatePeriod", null, params, "updatePeriod");
+      addParameter(args, "updateFreq", null, params, "updateFreq");
+      addParameter(args, "destinationType", null, params, "destinationType");
+      addParameter(args, "destination", null, params, "destination", true);
+      addParameter(args, "userName", null, params, "userName");
+      addParameter(args, "userPassword", null, params, "userPassword");
+      addParameter(args, "tagsInclude", null, params, "tagsInclude");
+      addParameter(args, "tagsExclude", null, params, "tagsExclude");
       odsExecute("addressbook.publication.new", params, "addressbook");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3093,17 +3155,17 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "publication_id", true);
-      addParameter(args, "name", params, "name", true);
-      addParameter(args, "updateType", params, "updateType");
-      addParameter(args, "updatePeriod", params, "updatePeriod");
-      addParameter(args, "updateFreq", params, "updateFreq");
-      addParameter(args, "destinationType", params, "destinationType");
-      addParameter(args, "destination", params, "destination", true);
-      addParameter(args, "userName", params, "userName");
-      addParameter(args, "userPassword", params, "userPassword");
-      addParameter(args, "tagsInclude", params, "tagsInclude");
-      addParameter(args, "tagsExclude", params, "tagsExclude");
+      addParameter(args, "object", null, params, "publication_id", true);
+      addParameter(args, "name", null, params, "name", true);
+      addParameter(args, "updateType", null, params, "updateType");
+      addParameter(args, "updatePeriod", null, params, "updatePeriod");
+      addParameter(args, "updateFreq", null, params, "updateFreq");
+      addParameter(args, "destinationType", null, params, "destinationType");
+      addParameter(args, "destination", null, params, "destination", true);
+      addParameter(args, "userName", null, params, "userName");
+      addParameter(args, "userPassword", null, params, "userPassword");
+      addParameter(args, "tagsInclude", null, params, "tagsInclude");
+      addParameter(args, "tagsExclude", null, params, "tagsExclude");
       odsExecute("addressbook.publication.edit", params, "addressbook");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3122,8 +3184,8 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "publication_id", true);
-      odsPreview(previewBlock, "addressbook.publication.get", params, "addressbook");
+      addParameter(args, "object", null, params, "publication_id", true);
+      odsPreview(previewBlock, this, "addressbook.publication.get", params, "addressbook");
     } catch (ex) {
     }
   }
@@ -3140,7 +3202,7 @@ CmdUtils.CreateCommand({
   execute: function (publication_id) {
     try {
       var params = {};
-      addParameter(args, "object", params, "publication_id", true);
+      addParameter(args, "object", "Publication ID", params, "publication_id", true);
       odsExecute("addressbook.publication.sync", params, "addressbook");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3159,7 +3221,7 @@ CmdUtils.CreateCommand({
   execute: function (publication_id) {
     try {
       var params = {};
-      addParameter(args, "object", params, "publication_id", true);
+      addParameter(args, "object", "Publication ID", params, "publication_id", true);
       odsExecute("addressbook.publication.delete", params, "addressbook");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3179,17 +3241,17 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "name", params, "name", true);
-      addParameter(args, "updateType", params, "updateType");
-      addParameter(args, "updatePeriod", params, "updatePeriod");
-      addParameter(args, "updateFreq", params, "updateFreq");
-      addParameter(args, "sourceType", params, "sourceType");
-      addParameter(args, "source", params, "source", true);
-      addParameter(args, "userName", params, "userName");
-      addParameter(args, "userPassword", params, "userPassword");
-      addParameter(args, "tagsInclude", params, "tagsInclude");
-      addParameter(args, "tagsExclude", params, "tagsExclude");
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "name", null, params, "name", true);
+      addParameter(args, "updateType", null, params, "updateType");
+      addParameter(args, "updatePeriod", null, params, "updatePeriod");
+      addParameter(args, "updateFreq", null, params, "updateFreq");
+      addParameter(args, "sourceType", null, params, "sourceType");
+      addParameter(args, "source", null, params, "source", true);
+      addParameter(args, "userName", null, params, "userName");
+      addParameter(args, "userPassword", null, params, "userPassword");
+      addParameter(args, "tagsInclude", null, params, "tagsInclude");
+      addParameter(args, "tagsExclude", null, params, "tagsExclude");
       odsExecute("addressbook.subscription.new", params, "addressbook");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3209,17 +3271,17 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "subscription_id", true);
-      addParameter(args, "name", params, "name", true);
-      addParameter(args, "updateType", params, "updateType");
-      addParameter(args, "updatePeriod", params, "updatePeriod");
-      addParameter(args, "updateFreq", params, "updateFreq");
-      addParameter(args, "sourceType", params, "sourceType");
-      addParameter(args, "source", params, "source", true);
-      addParameter(args, "userName", params, "userName");
-      addParameter(args, "userPassword", params, "userPassword");
-      addParameter(args, "tagsInclude", params, "tagsInclude");
-      addParameter(args, "tagsExclude", params, "tagsExclude");
+      addParameter(args, "object", null, params, "subscription_id", true);
+      addParameter(args, "name", null, params, "name", true);
+      addParameter(args, "updateType", null, params, "updateType");
+      addParameter(args, "updatePeriod", null, params, "updatePeriod");
+      addParameter(args, "updateFreq", null, params, "updateFreq");
+      addParameter(args, "sourceType", null, params, "sourceType");
+      addParameter(args, "source", null, params, "source", true);
+      addParameter(args, "userName", null, params, "userName");
+      addParameter(args, "userPassword", null, params, "userPassword");
+      addParameter(args, "tagsInclude", null, params, "tagsInclude");
+      addParameter(args, "tagsExclude", null, params, "tagsExclude");
       odsExecute("addressbook.subscription.edit", params, "addressbook");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3239,8 +3301,8 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "subscription_id", true);
-      odsPreview(previewBlock, "addressbook.subscription.get", params, "addressbook");
+      addParameter(args, "object", "Subscription ID", params, "subscription_id", true);
+      odsPreview(previewBlock, this, "addressbook.subscription.get", params, "addressbook");
     } catch (ex) {
     }
   }
@@ -3258,7 +3320,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "subscription_id", true);
+      addParameter(args, "object", "Subscription ID", params, "subscription_id", true);
       odsExecute("addressbook.subscription.sync", params, "addressbook");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3278,7 +3340,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "subscription_id", true);
+      addParameter(args, "object", null, params, "subscription_id", true);
       odsExecute("addressbook.subscription.delete", params, "addressbook");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3288,18 +3350,21 @@ CmdUtils.CreateCommand({
 
 CmdUtils.CreateCommand({
   names: ["ods-set-addressbook-options"],
-  arguments: [{role: "object", label: "instance_id", nountype: noun_type_id}],
-  modifiers: {"options": noun_arb_text},
+  arguments: [
+              {role: "object", label: "instance_id", nountype: noun_type_id},
+              {role: "instrument", label: "options", nountype: noun_arb_text}
+             ],
   homepage: "http://myopenlink.net/ods/",
   icon: "http://www.openlinksw.com/favicon.ico",
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
-  help: "Type ods-set-addressbook-options &lt;instance_id&gt; options &lt;options&gt;",
+  description: "Update instance options/parameteres",
+  help: "Type ods-set-addressbook-options &lt;instance_id&gt; with &lt;options&gt;",
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "options", params, "options");
+      addParameter(args, "object", "Instcane ID", params, "inst_id", true);
+      addParameter(args, "instrument", "Options", params, "options");
       odsExecute("addressbook.options.set", params, "addressbook");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3314,13 +3379,13 @@ CmdUtils.CreateCommand({
   icon: "http://www.openlinksw.com/favicon.ico",
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
+  description: "Show instance options/parameteres",
   help: "Type ods-get-addressbook-options &lt;instance_id&gt;",
-
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      odsPreview (previewBlock, "addressbook.options.get", params, "addressbook");
+      addParameter(args, "object", "Instance ID", params, "inst_id", true);
+      odsPreview(previewBlock, this, "addressbook.options.get", params, "addressbook");
     } catch (ex) {
     }
   }
@@ -3341,7 +3406,7 @@ CmdUtils.CreateCommand({
   help: "Type ods-set-poll-oauth &lt;oauth&gt;. Get your oauth at " + ODS.getServer() + "/oauth_sid.vsp",
   execute: function (args) {
     try {
-      checkParameter(args.object.text, "poll instance OAuth");
+      checkParameter(args.object.text, "Poll Instance OAuth");
       ODS.setOAuth("poll", args.object.text);
     displayMessage("Your ODS poll instance OAuth has been set.");
     } catch (ex) {
@@ -3362,8 +3427,8 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "poll_id", true);
-      odsPreview (previewBlock, "poll.get", params, "poll");
+      addParameter(args, "object", "Poll ID", params, "poll_id", true);
+      odsPreview(previewBlock, this, "poll.get", params, "poll");
     } catch (ex) {
     }
   }
@@ -3381,17 +3446,17 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "name", params, "name", true);
-      addParameter(args, "description", params, "description");
-      addParameter(args, "tags", params, "tags");
-      addParameter(args, "multi_vote", params, "multi_vote");
-      addParameter(args, "vote_result", params, "vote_result");
-      addParameter(args, "vote_result_before", params, "vote_result_before");
-      addParameter(args, "vote_result_opened", params, "vote_result_opened");
-      addParameter(args, "dateStart", params, "date_start");
-      addParameter(args, "dateEnd", params, "date_end");
-      addParameter(args, "mode", params, "mode");
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "name", null, params, "name", true);
+      addParameter(args, "description", null, params, "description");
+      addParameter(args, "tags", null, params, "tags");
+      addParameter(args, "multi_vote", null, params, "multi_vote");
+      addParameter(args, "vote_result", null, params, "vote_result");
+      addParameter(args, "vote_result_before", null, params, "vote_result_before");
+      addParameter(args, "vote_result_opened", null, params, "vote_result_opened");
+      addParameter(args, "dateStart", null, params, "date_start");
+      addParameter(args, "dateEnd", null, params, "date_end");
+      addParameter(args, "mode", null, params, "mode");
       odsExecute("poll.new", params, "poll");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3411,17 +3476,17 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "poll_id", true);
-      addParameter(args, "name", params, "name", true);
-      addParameter(args, "description", params, "description");
-      addParameter(args, "tags", params, "tags");
-      addParameter(args, "multi_vote", params, "multi_vote");
-      addParameter(args, "vote_result", params, "vote_result");
-      addParameter(args, "vote_result_before", params, "vote_result_before");
-      addParameter(args, "vote_result_opened", params, "vote_result_opened");
-      addParameter(args, "dateStart", params, "date_start");
-      addParameter(args, "dateEnd", params, "date_end");
-      addParameter(args, "mode", params, "mode");
+      addParameter(args, "object", null, params, "poll_id", true);
+      addParameter(args, "name", null, params, "name", true);
+      addParameter(args, "description", null, params, "description");
+      addParameter(args, "tags", null, params, "tags");
+      addParameter(args, "multi_vote", null, params, "multi_vote");
+      addParameter(args, "vote_result", null, params, "vote_result");
+      addParameter(args, "vote_result_before", null, params, "vote_result_before");
+      addParameter(args, "vote_result_opened", null, params, "vote_result_opened");
+      addParameter(args, "dateStart", null, params, "date_start");
+      addParameter(args, "dateEnd", null, params, "date_end");
+      addParameter(args, "mode", null, params, "mode");
       odsExecute("poll.edit", params, "poll");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3440,7 +3505,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "poll_id", true);
+      addParameter(args, "object", "Poll ID", params, "poll_id", true);
       odsExecute("poll.delete", params, "poll");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3460,13 +3525,13 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "poll_id", true);
-      addParameter(args, "questionNo", params, "questionNo", true);
-      addParameter(args, "text", params, "text", true);
-      addParameter(args, "description", params, "description");
-      addParameter(args, "required", params, "required");
-      addParameter(args, "type", params, "type");
-      addParameter(args, "answer", params, "answer", true);
+      addParameter(args, "object", null, params, "poll_id", true);
+      addParameter(args, "questionNo", null, params, "questionNo", true);
+      addParameter(args, "text", null, params, "text", true);
+      addParameter(args, "description", null, params, "description");
+      addParameter(args, "required", null, params, "required");
+      addParameter(args, "type", null, params, "type");
+      addParameter(args, "answer", null, params, "answer", true);
       odsExecute("poll.question.new", params, "poll");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3486,8 +3551,8 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "poll_id", true);
-      addParameter(args, "questionNo", params, "questionNo", true);
+      addParameter(args, "object", null, params, "poll_id", true);
+      addParameter(args, "questionNo", null, params, "questionNo", true);
       odsExecute("poll.question.delete", params, "poll");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3506,7 +3571,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "poll_id", true);
+      addParameter(args, "object", "Poll ID", params, "poll_id", true);
       odsExecute("poll.activate", params, "poll");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3525,7 +3590,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "poll_id", true);
+      addParameter(args, "object", "Poll ID", params, "poll_id", true);
       odsExecute("poll.close", params, "poll");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3544,7 +3609,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "poll_id", true);
+      addParameter(args, "object", "Poll ID", params, "poll_id", true);
       odsExecute("poll.clear", params, "poll");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3563,7 +3628,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "poll_id", true);
+      addParameter(args, "object", "Poll ID", params, "poll_id", true);
       odsExecute("poll.vote", params, "poll");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3583,10 +3648,10 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "vote_id", true);
-      addParameter(args, "questionNo", params, "questionNo", true);
-      addParameter(args, "answerNo", params, "answerNo", true);
-      addParameter(args, "value", params, "value", true);
+      addParameter(args, "object", null, params, "vote_id", true);
+      addParameter(args, "questionNo", null, params, "questionNo", true);
+      addParameter(args, "answerNo", null, params, "answerNo", true);
+      addParameter(args, "value", null, params, "value", true);
       odsExecute("poll.vote.answer", params, "poll");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3605,8 +3670,8 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "poll_id", true);
-      odsPreview (previewBlock, "poll.result", params, "poll");
+      addParameter(args, "object", "Poll ID", params, "poll_id", true);
+      odsPreview(previewBlock, this, "poll.result", params, "poll");
     } catch (ex) {
     }
   }
@@ -3624,8 +3689,8 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "comment_id", true);
-      odsPreview (previewBlock, "poll.comment.get", params, "poll");
+      addParameter(args, "object", "Comment ID", params, "comment_id", true);
+      odsPreview(previewBlock, this, "poll.comment.get", params, "poll");
     } catch (ex) {
     }
   }
@@ -3643,12 +3708,12 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "poll_id", true);
-      addParameter(args, "title", params, "title", true);
-      addParameter(args, "body", params, "text", true);
-      addParameter(args, "author", params, "name", true);
-      addParameter(args, "authorMail", params, "email", true);
-      addParameter(args, "authorUrl", params, "url");
+      addParameter(args, "object", null, params, "poll_id", true);
+      addParameter(args, "title", null, params, "title", true);
+      addParameter(args, "body", null, params, "text", true);
+      addParameter(args, "author", null, params, "name", true);
+      addParameter(args, "authorMail", null, params, "email", true);
+      addParameter(args, "authorUrl", null, params, "url");
       odsExecute("poll.comment.new", params, "poll");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3667,7 +3732,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "comment_id", true);
+      addParameter(args, "object", "Comment ID", params, "comment_id", true);
       odsExecute("poll.comment.delete", params, "poll");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3677,18 +3742,21 @@ CmdUtils.CreateCommand({
 
 CmdUtils.CreateCommand({
   names: ["ods-set-polls-options"],
-  arguments: [{role: "object", label: "instance_id", nountype: noun_type_id}],
-  modifiers: {"options": noun_arb_text},
+  arguments: [
+              {role: "object", label: "instance_id", nountype: noun_type_id},
+              {role: "instrument", label: "options", nountype: noun_arb_text}
+             ],
   homepage: "http://myopenlink.net/ods/",
   icon: "http://www.openlinksw.com/favicon.ico",
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
-  help: "Type ods-set-polls-options &lt;instance_id&gt; options &lt;options&gt;",
+  description: "Update instance options/parameteres",
+  help: "Type ods-set-polls-options &lt;instance_id&gt; with &lt;options&gt;",
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "options", params, "options");
+      addParameter(args, "object", "Instcane ID", params, "inst_id", true);
+      addParameter(args, "instrument", "Options", params, "options");
       odsExecute("poll.options.set", params, "poll");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3703,12 +3771,13 @@ CmdUtils.CreateCommand({
   icon: "http://www.openlinksw.com/favicon.ico",
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
+  description: "Show instance options/parameteres",
   help: "Type ods-get-polls-options &lt;instance_id&gt;",
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      odsPreview (previewBlock, "poll.options.get", params, "poll");
+      addParameter(args, "object", "Instance ID", params, "inst_id", true);
+      odsPreview(previewBlock, this, "poll.options.get", params, "poll");
     } catch (ex) {
     }
   }
@@ -3728,7 +3797,7 @@ CmdUtils.CreateCommand({
   help: "Type ods-set-weblog-oauth &lt;oauth&gt;. Get your oauth at " + ODS.getServer() + "/oauth_sid.vsp",
   execute: function (args) {
     try {
-      checkParameter(args.object.text, "weblog instance OAuth");
+      checkParameter(args.object.text, "Weblog Instance OAuth");
       ODS.setOAuth("weblog", args.object.text);
     displayMessage("Your ODS Weblog instance OAuth has been set.");
     } catch (ex) {
@@ -3748,8 +3817,8 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      odsPreview (previewBlock, "weblog.get", params, "weblog");
+      addParameter(args, "object", "Instance ID", params, "inst_id", true);
+      odsPreview(previewBlock, this, "weblog.get", params, "weblog");
     } catch (ex) {
     }
   }
@@ -3766,8 +3835,8 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "post_id", true);
-      odsPreview (previewBlock, "weblog.post.get", params, "weblog");
+      addParameter(args, "object", null, params, "post_id", true);
+      odsPreview(previewBlock, this, "weblog.post.get", params, "weblog");
     } catch (ex) {
     }
   }
@@ -3785,23 +3854,23 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "title", params, "title", true);
-      addParameter(args, "description", params, "description", true);
-      addParameter(args, "categories", params, "categories");
-      addParameter(args, "dateCreated", params, "date_created");
-      addParameter(args, "enclosure", params, "enclosure");
-      addParameter(args, "source", params, "source");
-      addParameter(args, "link", params, "link");
-      addParameter(args, "comments", params, "comments");
-      addParameter(args, "allowComments", params, "allow_comments");
-      addParameter(args, "allowPings", params, "allow_pings");
-      addParameter(args, "convertBreaks", params, "convert_breaks");
-      addParameter(args, "excerpt", params, "excerpt");
-      addParameter(args, "pingUrls", params, "tb_ping_urls");
-      addParameter(args, "textMore", params, "text_more");
-      addParameter(args, "keywords", params, "keywords");
-      addParameter(args, "publish", params, "publish");
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "title", null, params, "title", true);
+      addParameter(args, "description", null, params, "description", true);
+      addParameter(args, "categories", null, params, "categories");
+      addParameter(args, "dateCreated", null, params, "date_created");
+      addParameter(args, "enclosure", null, params, "enclosure");
+      addParameter(args, "source", null, params, "source");
+      addParameter(args, "link", null, params, "link");
+      addParameter(args, "comments", null, params, "comments");
+      addParameter(args, "allowComments", null, params, "allow_comments");
+      addParameter(args, "allowPings", null, params, "allow_pings");
+      addParameter(args, "convertBreaks", null, params, "convert_breaks");
+      addParameter(args, "excerpt", null, params, "excerpt");
+      addParameter(args, "pingUrls", null, params, "tb_ping_urls");
+      addParameter(args, "textMore", null, params, "text_more");
+      addParameter(args, "keywords", null, params, "keywords");
+      addParameter(args, "publish", null, params, "publish");
       odsExecute("weblog.post.new", params, "weblog");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3821,23 +3890,23 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "post_id", true);
-      addParameter(args, "title", params, "title", true);
-      addParameter(args, "description", params, "description", true);
-      addParameter(args, "categories", params, "categories");
-      addParameter(args, "dateCreated", params, "date_created");
-      addParameter(args, "enclosure", params, "enclosure");
-      addParameter(args, "source", params, "source");
-      addParameter(args, "link", params, "link");
-      addParameter(args, "comments", params, "comments");
-      addParameter(args, "allowComments", params, "allow_comments");
-      addParameter(args, "allowPings", params, "allow_pings");
-      addParameter(args, "convertBreaks", params, "convert_breaks");
-      addParameter(args, "excerpt", params, "excerpt");
-      addParameter(args, "pingUrls", params, "tb_ping_urls");
-      addParameter(args, "textMore", params, "text_more");
-      addParameter(args, "keywords", params, "keywords");
-      addParameter(args, "publish", params, "publish");
+      addParameter(args, "object", null, params, "post_id", true);
+      addParameter(args, "title", null, params, "title", true);
+      addParameter(args, "description", null, params, "description", true);
+      addParameter(args, "categories", null, params, "categories");
+      addParameter(args, "dateCreated", null, params, "date_created");
+      addParameter(args, "enclosure", null, params, "enclosure");
+      addParameter(args, "source", null, params, "source");
+      addParameter(args, "link", null, params, "link");
+      addParameter(args, "comments", null, params, "comments");
+      addParameter(args, "allowComments", null, params, "allow_comments");
+      addParameter(args, "allowPings", null, params, "allow_pings");
+      addParameter(args, "convertBreaks", null, params, "convert_breaks");
+      addParameter(args, "excerpt", null, params, "excerpt");
+      addParameter(args, "pingUrls", null, params, "tb_ping_urls");
+      addParameter(args, "textMore", null, params, "text_more");
+      addParameter(args, "keywords", null, params, "keywords");
+      addParameter(args, "publish", null, params, "publish");
       odsExecute("weblog.post.edit", params, "weblog");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3856,7 +3925,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "post_id", true);
+      addParameter(args, "object", null, params, "post_id", true);
       odsExecute("weblog.post.delete", params, "weblog");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3877,9 +3946,9 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "post_id", true);
-      addParameter(args, "comment_id", params, "comment_id", true);
-      odsPreview (previewBlock, "weblog.comment.get", params, "weblog");
+      addParameter(args, "object", null, params, "post_id", true);
+      addParameter(args, "comment_id", null, params, "comment_id", true);
+      odsPreview(previewBlock, this, "weblog.comment.get", params, "weblog");
     } catch (ex) {
     }
   }
@@ -3897,12 +3966,12 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "post_id", true);
-      addParameter(args, "name", params, "name", true);
-      addParameter(args, "text", params, "text", true);
-      addParameter(args, "author", params, "title", true);
-      addParameter(args, "authorMail", params, "email", true);
-      addParameter(args, "authorUrl", params, "url", true);
+      addParameter(args, "object", null, params, "post_id", true);
+      addParameter(args, "name", null, params, "name", true);
+      addParameter(args, "text", null, params, "text", true);
+      addParameter(args, "author", null, params, "title", true);
+      addParameter(args, "authorMail", null, params, "email", true);
+      addParameter(args, "authorUrl", null, params, "url", true);
       odsExecute("weblog.comment.new", params, "weblog");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3922,9 +3991,9 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "post_id", true);
-      addParameter(args, "comment_id", params, "comment_id", true);
-      addParameter(args, "flag", params, "flag", true);
+      addParameter(args, "object", null, params, "post_id", true);
+      addParameter(args, "comment_id", null, params, "comment_id", true);
+      addParameter(args, "flag", null, params, "flag", true);
       odsExecute("weblog.comment.approve", params, "weblog");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3944,8 +4013,8 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "post_id", true);
-      addParameter(args, "comment_id", params, "comment_id", true);
+      addParameter(args, "object", null, params, "post_id", true);
+      addParameter(args, "comment_id", null, params, "comment_id", true);
       odsExecute("weblog.comment.delete", params, "weblog");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3955,18 +4024,21 @@ CmdUtils.CreateCommand({
 
 CmdUtils.CreateCommand({
   names: ["ods-set-weblog-options"],
-  arguments: [{role: "object", label: "instance_id", nountype: noun_type_id}],
-  modifiers: {"options": noun_arb_text},
+  arguments: [
+              {role: "object", label: "instance_id", nountype: noun_type_id},
+              {role: "instrument", label: "options", nountype: noun_arb_text}
+             ],
   homepage: "http://myopenlink.net/ods/",
   icon: "http://www.openlinksw.com/favicon.ico",
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
-  help: "Type ods-set-weblog-options &lt;instance_id&gt; options &lt;options&gt;",
+  description: "Update instance options/parameteres",
+  help: "Type ods-set-weblog-options &lt;instance_id&gt; with &lt;options&gt;",
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "options", params, "options");
+      addParameter(args, "object", "Instcane ID", params, "inst_id", true);
+      addParameter(args, "instrument", "Options", params, "options");
       odsExecute("weblog.options.set", params, "weblog");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -3981,12 +4053,13 @@ CmdUtils.CreateCommand({
   icon: "http://www.openlinksw.com/favicon.ico",
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
+  description: "Show instance options/parameteres",
   help: "Type ods-get-weblog-options &lt;instance_id&gt;",
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      odsPreview (previewBlock, "weblog.options.get", params, "weblog");
+      addParameter(args, "object", "Instance ID", params, "inst_id", true);
+      odsPreview(previewBlock, this, "weblog.options.get", params, "weblog");
     } catch (ex) {
     }
   }
@@ -4004,19 +4077,19 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "targetRpcUrl", params, "target_rpc_url", true);
-      addParameter(args, "targetBlogId", params, "target_blog_id", true);
-      addParameter(args, "targetProtocolId", params, "target_protocol_id", true);
-      addParameter(args, "targetUserName", params, "target_uname", true);
-      addParameter(args, "targetPassword", params, "target_password", true);
-      addParameter(args, "aclAllow", params, "acl_allow");
-      addParameter(args, "aclDeny", params, "acl_deny");
-      addParameter(args, "syncInterval", params, "sync_interval");
-      addParameter(args, "keepRemote", params, "keep_remote");
-      addParameter(args, "maxRetries", params, "max_retries");
-      addParameter(args, "maxRetransmits", params, "max_retransmits");
-      addParameter(args, "initializeLog", params, "initialize_log");
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "targetRpcUrl", null, params, "target_rpc_url", true);
+      addParameter(args, "targetBlogId", null, params, "target_blog_id", true);
+      addParameter(args, "targetProtocolId", null, params, "target_protocol_id", true);
+      addParameter(args, "targetUserName", null, params, "target_uname", true);
+      addParameter(args, "targetPassword", null, params, "target_password", true);
+      addParameter(args, "aclAllow", null, params, "acl_allow");
+      addParameter(args, "aclDeny", null, params, "acl_deny");
+      addParameter(args, "syncInterval", null, params, "sync_interval");
+      addParameter(args, "keepRemote", null, params, "keep_remote");
+      addParameter(args, "maxRetries", null, params, "max_retries");
+      addParameter(args, "maxRetransmits", null, params, "max_retransmits");
+      addParameter(args, "initializeLog", null, params, "initialize_log");
       odsExecute("weblog.upstreaming.set", params, "weblog");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4035,7 +4108,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "job_id", true);
+      addParameter(args, "object", null, params, "job_id", true);
       odsExecute("weblog.upstreaming.get", params, "weblog");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4054,7 +4127,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "job_id", true);
+      addParameter(args, "object", null, params, "job_id", true);
       odsExecute("weblog.upstreaming.remove", params, "weblog");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4074,8 +4147,8 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "flag", params, "flag", true);
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "flag", null, params, "flag", true);
       odsExecute("weblog.tagging.set", params, "weblog");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4095,8 +4168,8 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "keepExistingTags", params, "keep_existing_tags", true);
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "keepExistingTags", null, params, "keep_existing_tags", true);
       odsExecute("weblog.tagging.retag", params, "weblog");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4118,7 +4191,7 @@ CmdUtils.CreateCommand({
   help: "Type ods-set-discussion-oauth &lt;oauth&gt;. Get your oauth at " + ODS.getServer() + "/oauth_sid.vsp",
   execute: function (args) {
     try {
-      checkParameter(args.object.text, "discussion instance OAuth");
+      checkParameter(args.object.text, "Discussion Instance OAuth");
       ODS.setOAuth("discussion", args.object.text);
     displayMessage("Your ODS Discussion instance OAuth has been set.");
     } catch (ex) {
@@ -4136,7 +4209,7 @@ CmdUtils.CreateCommand({
   help: "Type ods-get-discussion-groups",
   preview: function (previewBlock) {
     var params = {};
-    odsPreview (previewBlock, "discussion.groups.get", params, "discussion");
+    odsPreview(previewBlock, this, "discussion.groups.get", params, "discussion");
   }
 });
 
@@ -4151,8 +4224,8 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "group_id", true);
-      odsPreview (previewBlock, "discussion.group.get", params, "discussion");
+      addParameter(args, "object", null, params, "group_id", true);
+      odsPreview(previewBlock, this, "discussion.group.get", params, "discussion");
     } catch (ex) {
     }
   }
@@ -4170,8 +4243,8 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "name", true);
-      addParameter(args, "description", params, "description", true);
+      addParameter(args, "object", null, params, "name", true);
+      addParameter(args, "description", null, params, "description", true);
       odsExecute("discussion.group.new", params, "discussion");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4190,7 +4263,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "group_id", true);
+      addParameter(args, "object", null, params, "group_id", true);
       odsExecute("discussion.group.remove", params, "discussion");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4210,8 +4283,8 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "group_id", true);
-      addParameter(args, "name", params, "name", true);
+      addParameter(args, "object", null, params, "group_id", true);
+      addParameter(args, "name", null, params, "name", true);
       odsExecute("discussion.feed.new", params, "discussion");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4230,7 +4303,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "feed_id", true);
+      addParameter(args, "object", null, params, "feed_id", true);
       odsExecute("discussion.feed.remove", params, "discussion");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4249,8 +4322,8 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "message_id", true);
-      odsPreview (previewBlock, "discussion.message.get", params, "discussion");
+      addParameter(args, "object", "Message ID", params, "message_id", true);
+      odsPreview(previewBlock, this, "discussion.message.get", params, "discussion");
     } catch (ex) {
     }
   }
@@ -4268,9 +4341,9 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "group_id", true);
-      addParameter(args, "subject", params, "subject", true);
-      addParameter(args, "body", params, "body", true);
+      addParameter(args, "object", null, params, "group_id", true);
+      addParameter(args, "subject", null, params, "subject", true);
+      addParameter(args, "body", null, params, "body", true);
       odsExecute("discussion.message.new", params, "discussion");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4289,8 +4362,8 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "comment_id", true);
-      odsPreview (previewBlock, "discussion.comment.get", params, "discussion");
+      addParameter(args, "object", "Comment ID", params, "comment_id", true);
+      odsPreview(previewBlock, this, "discussion.comment.get", params, "discussion");
     } catch (ex) {
     }
   }
@@ -4308,9 +4381,9 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "parent_id", true);
-      addParameter(args, "subject", params, "subject", true);
-      addParameter(args, "body", params, "body", true);
+      addParameter(args, "object", null, params, "parent_id", true);
+      addParameter(args, "subject", null, params, "subject", true);
+      addParameter(args, "body", null, params, "body", true);
       odsExecute("discussion.comment.new", params, "discussion");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4352,8 +4425,8 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "feed_id", true);
-      odsPreview(previewBlock, "feeds.get", params, "feeds");
+      addParameter(args, "object", "Feed ID", params, "feed_id", true);
+      odsPreview(previewBlock, this, "feeds.get", params, "feeds");
     } catch (ex) {
     }
   }
@@ -4371,12 +4444,12 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "uri", params, "uri", true);
-      addParameter(args, "name", params, "name");
-      addParameter(args, "homeUri", params, "homeUri");
-      addParameter(args, "tags", params, "tags");
-      addParameter(args, "folder_id", params, "folder_id");
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "uri", null, params, "uri", true);
+      addParameter(args, "name", null, params, "name");
+      addParameter(args, "homeUri", null, params, "homeUri");
+      addParameter(args, "tags", null, params, "tags");
+      addParameter(args, "folder_id", null, params, "folder_id");
       odsExecute("feeds.subscribe", params, "feeds");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4414,7 +4487,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "feed_id", true);
+      addParameter(args, "object", "Feed ID", params, "feed_id", true);
       odsExecute("feeds.refresh", params, "feeds");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4434,14 +4507,14 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "name", params, "name", true);
-      addParameter(args, "api", params, "api");
-      addParameter(args, "uri", params, "uri", true);
-      addParameter(args, "port", params, "port");
-      addParameter(args, "endpoint", params, "endpoint");
-      addParameter(args, "user", params, "user", true);
-      addParameter(args, "password", params, "password", true);
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "name", null, params, "name", true);
+      addParameter(args, "api", null, params, "api");
+      addParameter(args, "uri", null, params, "uri", true);
+      addParameter(args, "port", null, params, "port");
+      addParameter(args, "endpoint", null, params, "endpoint");
+      addParameter(args, "user", null, params, "user", true);
+      addParameter(args, "password", null, params, "password", true);
       odsExecute("feeds.blog.subscribe", params, "feeds");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4460,7 +4533,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "blog_id", true);
+      addParameter(args, "object", "Blog ID", params, "blog_id", true);
       odsExecute("feeds.blog.unsubscribe", params, "feeds");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4479,7 +4552,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "blog_id", true);
+      addParameter(args, "object", "Blog ID", params, "blog_id", true);
       odsExecute("feeds.blog.refresh", params, "feeds");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4499,8 +4572,8 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "path", params, "path", true);
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "path", null, params, "path", true);
       odsExecute("feeds.folder.new", params, "feeds");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4520,8 +4593,8 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "path", params, "path", true);
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "path", null, params, "path", true);
       odsExecute("feeds.folder.delete", params, "feeds");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4540,8 +4613,8 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "annotation_id", true);
-      odsPreview(previewBlock, "feeds.annotation.get", params, "feeds");
+      addParameter(args, "object", "Annotation ID", params, "annotation_id", true);
+      odsPreview(previewBlock, this, "feeds.annotation.get", params, "feeds");
     } catch (ex) {
     }
   }
@@ -4559,10 +4632,10 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "item_id", params, "item_id", true);
-      addParameter(args, "author", params, "author", true);
-      addParameter(args, "body", params, "body", true);
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "item_id", null, params, "item_id", true);
+      addParameter(args, "author", null, params, "author", true);
+      addParameter(args, "body", null, params, "body", true);
       odsExecute("feeds.annotation.new", params, "feeds");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4582,10 +4655,10 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "annotation_id", true);
-      addParameter(args, "iri", params, "claimIri", true);
-      addParameter(args, "relation", params, "claimRelation", true);
-      addParameter(args, "value", params, "claimValue", true);
+      addParameter(args, "object", null, params, "annotation_id", true);
+      addParameter(args, "iri", null, params, "claimIri", true);
+      addParameter(args, "relation", null, params, "claimRelation", true);
+      addParameter(args, "value", null, params, "claimValue", true);
       odsExecute("feeds.annotation.claim", params, "feeds");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4604,7 +4677,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "annotation_id", true);
+      addParameter(args, "object", "Annotation ID", params, "annotation_id", true);
       odsExecute("feeds.annotation.delete", params, "feeds");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4623,8 +4696,8 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "comment_id", true);
-      odsPreview(previewBlock, "feeds.comment.get", params, "feeds");
+      addParameter(args, "object", "Comment ID", params, "comment_id", true);
+      odsPreview(previewBlock, this, "feeds.comment.get", params, "feeds");
     } catch (ex) {
     }
   }
@@ -4642,13 +4715,13 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "item_id", params, "item_id", true);
-      addParameter(args, "title", params, "title", true);
-      addParameter(args, "body", params, "text", true);
-      addParameter(args, "author", params, "name", true);
-      addParameter(args, "authorMail", params, "email", true);
-      addParameter(args, "authorUrl", params, "url");
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "item_id", null, params, "item_id", true);
+      addParameter(args, "title", null, params, "title", true);
+      addParameter(args, "body", null, params, "text", true);
+      addParameter(args, "author", null, params, "name", true);
+      addParameter(args, "authorMail", null, params, "email", true);
+      addParameter(args, "authorUrl", null, params, "url");
       odsExecute("feeds.comment.new", params, "feeds");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4667,7 +4740,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "comment_id", true);
+      addParameter(args, "object", "Comment ID", params, "comment_id", true);
       odsExecute("feeds.comment.delete", params, "feeds");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4677,18 +4750,21 @@ CmdUtils.CreateCommand({
 
 CmdUtils.CreateCommand({
   names: ["ods-set-feeds-options"],
-  arguments: [{role: "object", label: "instance_id", nountype: noun_type_id}],
-  modifiers: {"options": noun_arb_text},
+  arguments: [
+              {role: "object", label: "instance_id", nountype: noun_type_id},
+              {role: "instrument", label: "options", nountype: noun_arb_text}
+             ],
   homepage: "http://myopenlink.net/ods/",
   icon: "http://www.openlinksw.com/favicon.ico",
   author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
-  help: "Type ods-set-feeds-options &lt;instance_id&gt; options &lt;options&gt;",
+  description: "Update instance options/parameteres",
+  help: "Type ods-set-feeds-options &lt;instance_id&gt; with &lt;options&gt;",
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "options", params, "options");
+      addParameter(args, "object", "Instcane ID", params, "inst_id", true);
+      addParameter(args, "instrument", "Options", params, "options");
       odsExecute("feeds.options.set", params, "feeds");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4703,12 +4779,13 @@ CmdUtils.CreateCommand({
   icon: "http://www.openlinksw.com/favicon.ico",
   author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
+  description: "Show instance options/parameteres",
   help: "Type ods-get-feeds-options &lt;instance_id&gt;",
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      odsPreview(previewBlock, "feeds.options.get", params, "feeds");
+      addParameter(args, "object", "Instance ID", params, "inst_id", true);
+      odsPreview(previewBlock, this, "feeds.options.get", params, "feeds");
     } catch (ex) {
     }
   }
@@ -4749,13 +4826,13 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "name", params, "name", true);
-      addParameter(args, "description", params, "description");
-      addParameter(args, "startDate", params, "startDate");
-      addParameter(args, "endDate", params, "endDate");
-      addParameter(args, "visibility", params, "visibility");
-      addParameter(args, "geoLocation", params, "geoLocation");
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "name", null, params, "name", true);
+      addParameter(args, "description", null, params, "description");
+      addParameter(args, "startDate", null, params, "startDate");
+      addParameter(args, "endDate", null, params, "endDate");
+      addParameter(args, "visibility", null, params, "visibility");
+      addParameter(args, "geoLocation", null, params, "geoLocation");
       odsExecute("photo.album.new", params, "photo");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4775,15 +4852,15 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "name", params, "name", true);
-      addParameter(args, "new_name", params, "new_name");
-      addParameter(args, "description", params, "description");
-      addParameter(args, "startDate", params, "startDate");
-      addParameter(args, "endDate", params, "endDate");
-      addParameter(args, "visibility", params, "visibility");
-      addParameter(args, "geoLocation", params, "geoLocation");
-      addParameter(args, "obsolete", params, "obsolete");
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "name", null, params, "name", true);
+      addParameter(args, "new_name", null, params, "new_name");
+      addParameter(args, "description", null, params, "description");
+      addParameter(args, "startDate", null, params, "startDate");
+      addParameter(args, "endDate", null, params, "endDate");
+      addParameter(args, "visibility", null, params, "visibility");
+      addParameter(args, "geoLocation", null, params, "geoLocation");
+      addParameter(args, "obsolete", null, params, "obsolete");
       odsExecute("photo.album.update", params, "photo");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4803,8 +4880,8 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "name", params, "name", true);
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "name", null, params, "name", true);
       odsExecute("photo.album.delete", params, "photo");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4824,12 +4901,12 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "album", params, "album", true);
-      addParameter(args, "name", params, "name", true);
-      addParameter(args, "description", params, "description");
-      addParameter(args, "visibility", params, "visibility");
-      addParameter(args, "sourceUrl", params, "sourceUrl", true);
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "album", null, params, "album", true);
+      addParameter(args, "name", null, params, "name", true);
+      addParameter(args, "description", null, params, "description");
+      addParameter(args, "visibility", null, params, "visibility");
+      addParameter(args, "sourceUrl", null, params, "sourceUrl", true);
       odsExecute("photo.image.newUrl", params, "photo");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4849,11 +4926,11 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "album", params, "album", true);
-      addParameter(args, "name", params, "name", true);
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "album", null, params, "album", true);
+      addParameter(args, "name", null, params, "name", true);
       params["outputFormat"] = "base64";
-      odsPreview(previewBlock, "photo.image.get", params, "photo", "image");
+      odsPreview(previewBlock, this, "photo.image.get", params, "photo", "image");
     } catch (ex) {
     }
   }
@@ -4871,12 +4948,12 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "album", params, "album", true);
-      addParameter(args, "name", params, "name", true);
-      addParameter(args, "new_name", params, "new_name");
-      addParameter(args, "description", params, "description");
-      addParameter(args, "visibility", params, "visibility");
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "album", null, params, "album", true);
+      addParameter(args, "name", null, params, "name", true);
+      addParameter(args, "new_name", null, params, "new_name");
+      addParameter(args, "description", null, params, "description");
+      addParameter(args, "visibility", null, params, "visibility");
       odsExecute("photo.image.update", params, "photo");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4896,9 +4973,9 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "album", params, "album", true);
-      addParameter(args, "name", params, "name", true);
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "album", null, params, "album", true);
+      addParameter(args, "name", null, params, "name", true);
       odsExecute("photo.image.delete", params, "photo");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4917,8 +4994,8 @@ CmdUtils.CreateCommand({
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "comment_id", true);
-      odsPreview(previewBlock, "photo.comment.get", params, "photo");
+      addParameter(args, "object", "Comment ID", params, "comment_id", true);
+      odsPreview(previewBlock, this, "photo.comment.get", params, "photo");
     } catch (ex) {
     }
   }
@@ -4936,10 +5013,10 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "album", params, "album", true);
-      addParameter(args, "image", params, "image", true);
-      addParameter(args, "text", params, "text", true);
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "album", null, params, "album", true);
+      addParameter(args, "image", null, params, "image", true);
+      addParameter(args, "text", null, params, "text", true);
       odsExecute("photo.comment.new", params, "photo");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4958,7 +5035,7 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "comment_id", true);
+      addParameter(args, "object", "Comment ID", params, "comment_id", true);
       odsExecute("photo.comment.delete", params, "photo");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4974,16 +5051,17 @@ CmdUtils.CreateCommand({
   icon: "http://www.openlinksw.com/favicon.ico",
   author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
+  description: "Update instance options/parameteres",
   help: "Type ods-set-photo-options &lt;instance_id&gt; [show_map &lt;show_map&gt;] [show_timeline &lt;show_timeline&gt;] [discussion_enable &lt;discussion_enable&gt;] [discussion_init &lt;discussion_init&gt;] [albums_per_page &lt;albums_per_page&gt;]",
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      addParameter(args, "show_map", params, "show_map");
-      addParameter(args, "show_timeline", params, "show_timeline");
-      addParameter(args, "discussion_enable", params, "discussion_enable");
-      addParameter(args, "discussion_init", params, "discussion_init");
-      addParameter(args, "albums_per_page", params, "albums_per_page");
+      addParameter(args, "object", null, params, "inst_id", true);
+      addParameter(args, "show_map", null, params, "show_map");
+      addParameter(args, "show_timeline", null, params, "show_timeline");
+      addParameter(args, "discussion_enable", null, params, "discussion_enable");
+      addParameter(args, "discussion_init", null, params, "discussion_init");
+      addParameter(args, "albums_per_page", null, params, "albums_per_page");
       odsExecute("photo.options.set", params, "photo");
     } catch (ex) {
       odsDisplayMessage(ex);
@@ -4998,13 +5076,13 @@ CmdUtils.CreateCommand({
   icon: "http://www.openlinksw.com/favicon.ico",
   author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
+  description: "Show instance options/parameteres",
   help: "Type ods-get-photo-options &lt;instance_id&gt;",
-
   preview: function (previewBlock, args) {
     try {
       var params = {};
-      addParameter(args, "object", params, "inst_id", true);
-      odsPreview(previewBlock, "photo.options.get", params, "photo");
+      addParameter(args, "object", "Instance ID", params, "inst_id", true);
+      odsPreview(previewBlock, this, "photo.options.get", params, "photo");
     } catch (ex) {
     }
   }

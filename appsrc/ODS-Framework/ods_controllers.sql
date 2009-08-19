@@ -2823,7 +2823,7 @@ create procedure ODS.ODS_API."briefcase.collection.delete" (
 create procedure ODS.ODS_API."briefcase.copy" (
   in from_path varchar,
   in to_path varchar,
-  in overwrite int := 0,
+  in overwrite integer := 0,
   in permissions varchar := '110100000RR') __soap_http 'text/xml'
 {
   declare uname varchar;
@@ -2959,6 +2959,126 @@ create procedure ODS.ODS_API."briefcase.property.get" (
 }
 ;
 
+create procedure ODS.ODS_API."briefcase.options.set" (
+	in inst_id int, in options any) __soap_http 'text/xml'
+{
+	declare exit handler for sqlstate '*'
+	{
+		rollback work;
+		return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+	};
+
+	declare rc, account_id integer;
+  declare conv, f_conv, f_conv_init any;
+	declare uname varchar;
+	declare optionsParams, settings any;
+  declare st, msg any;
+
+	if (not ods_check_auth (uname, inst_id, 'author'))
+		return ods_auth_failed ();
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'oDrive'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
+
+	account_id := (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = uname);
+	optionsParams := split_and_decode (options, 0, '%\0,='); -- XXX: FIXME
+
+	settings := ODRIVE.WA.settings (account_id);
+	ODRIVE.WA.settings_init (settings);
+  conv := cast (get_keyword ('conv', settings, '0') as integer);
+
+  ODS.ODS_API.briefcase_setting_set (settings, optionsParams, 'chars');
+  ODS.ODS_API.briefcase_setting_set (settings, optionsParams, 'rows');
+  ODS.ODS_API.briefcase_setting_set (settings, optionsParams, 'tbLabels');
+  ODS.ODS_API.briefcase_setting_set (settings, optionsParams, 'hiddens');
+  ODS.ODS_API.briefcase_setting_set (settings, optionsParams, 'atomVersion');
+  set_user_id ('dba');
+  exec ('insert replacing ODRIVE.WA.SETTINGS (USER_ID, USER_SETTINGS) values(?, serialize (?))', st, msg, vector (account_id, settings));
+
+	return ods_serialize_int_res (1);
+}
+;
+
+create procedure ODS.ODS_API."briefcase.options.get" (
+	in inst_id integer := null) __soap_http 'text/xml'
+{
+	declare exit handler for sqlstate '*'
+	{
+		rollback work;
+		return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+	};
+
+	declare rc, account_id integer;
+	declare uname varchar;
+	declare settings any;
+
+	if (not ods_check_auth (uname, inst_id, 'author'))
+		return ods_auth_failed ();
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'oDrive'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
+
+	account_id := (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = uname);
+	settings := ODRIVE.WA.settings (account_id);
+	ODRIVE.WA.settings_init (settings);
+
+	http ('<settings>');
+  http (ODS.ODS_API.briefcase_setting_xml (settings, 'chars'));
+  http (ODS.ODS_API.briefcase_setting_xml (settings, 'rows'));
+  http (ODS.ODS_API.briefcase_setting_xml (settings, 'tbLabels'));
+  http (ODS.ODS_API.briefcase_setting_xml (settings, 'hiddens'));
+  http (ODS.ODS_API.briefcase_setting_xml (settings, 'atomVersion'));
+	http ('</settings>');
+
+	return '';
+}
+;
+
+create procedure ODS.ODS_API.set_keyword (
+  in    name   varchar,
+  inout params any,
+  in    value  any)
+{
+  declare N integer;
+
+  for (N := 0; N < length(params); N := N + 2)
+  {
+    if (params[N] = name)
+    {
+      params[N+1] := value;
+      goto _end;
+    }
+  }
+  params := vector_concat (params, vector(name, value));
+_end:
+  return params;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API.briefcase_setting_set (
+  inout settings any,
+  inout options any,
+  in settingName varchar)
+{
+	declare aValue any;
+
+  aValue := get_keyword (settingName, options, get_keyword (settingName, settings));
+  ODS.ODS_API.set_keyword (settingName, settings, aValue);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API.briefcase_setting_xml (
+  in settings any,
+  in settingName varchar)
+{
+  return sprintf ('<%s>%s</%s>', settingName, cast (get_keyword (settingName, settings) as varchar), settingName);
+}
+;
+
 db.dba.wa_exec_no_error ('grant SPARQL_SELECT to ODS_API');
 grant execute on DB.DBA.XML_URI_GET_STRING_OR_ENT to ODS_API;
 grant execute on DB.DBA.RDF_SPONGE_UP to ODS_API;
@@ -2974,6 +3094,8 @@ grant execute on ODS.ODS_API."briefcase.move" to ODS_API;
 grant execute on ODS.ODS_API."briefcase.property.set" to ODS_API;
 grant execute on ODS.ODS_API."briefcase.property.remove" to ODS_API;
 grant execute on ODS.ODS_API."briefcase.property.get" to ODS_API;
+grant execute on ODS.ODS_API."briefcase.options.set" to ODS_API;
+grant execute on ODS.ODS_API."briefcase.options.get" to ODS_API;
 
 use OAUTH;
 
