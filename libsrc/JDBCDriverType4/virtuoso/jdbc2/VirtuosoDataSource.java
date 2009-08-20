@@ -1,29 +1,25 @@
 /*
- *  
+ *  $Id$
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
- *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
+ *  Copyright (C) 1998-2009 OpenLink Software
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
-//
-// $Id$
-//
-
+ *
+ */
 
 package virtuoso.jdbc2;
 
@@ -81,7 +77,7 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     final static String n_charSet = "charSet";
     final static String n_loginTimeout = "loginTimeout";
     final static String n_pwdclear = "pwdclear";
-  
+
 #ifdef SSL
     final static String n_certificate = "certificate";
     final static String n_keystorepass = "keystorepass";
@@ -98,8 +94,8 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     final static String n_usepstmtpool = "usepstmtpool";
     final static String n_pstmtpoolsize = "pstmtpoolsize";
 #endif
-  
-  
+
+
   public VirtuosoDataSource ()
   {
   }
@@ -167,7 +163,7 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
 
   }
 
-  
+
   // Referenceable members
   public Reference getReference()
                        throws NamingException
@@ -183,7 +179,7 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     Properties prop = new Properties();
 
     String vhost = serverName;
-    if (serverName.indexOf(':') == -1 && 
+    if (serverName.indexOf(':') == -1 &&
         serverName.indexOf(',') == -1 && portNumber != "1111")
       vhost += ":" + portNumber;
 
@@ -219,7 +215,7 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     return prop;
   }
 
-  
+
   protected String create_url_key(String base_conn_url, Properties info) {
     String key;
 
@@ -234,10 +230,10 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     }
     return  connKeyBuf.toString();
   }
-  
+
   protected String create_url() {
     String url = "jdbc:virtuoso://" + serverName;
-     if (serverName.indexOf(':') == -1 && 
+     if (serverName.indexOf(':') == -1 &&
          serverName.indexOf(',') == -1 && portNumber != "1111")
        url += ":" + portNumber;
     return url;
@@ -306,7 +302,7 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     dataSourceName = parm;
   }
 
-  
+
   public void setDescription (String description)
   {
     this.description = description;
@@ -491,18 +487,18 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     /**
      * Returns an object that implements the given interface to allow access to
      * non-standard methods, or standard methods not exposed by the proxy.
-     * 
-     * If the receiver implements the interface then the result is the receiver 
+     *
+     * If the receiver implements the interface then the result is the receiver
      * or a proxy for the receiver. If the receiver is a wrapper
      * and the wrapped object implements the interface then the result is the
      * wrapped object or a proxy for the wrapped object. Otherwise return the
-     * the result of calling <code>unwrap</code> recursively on the wrapped object 
+     * the result of calling <code>unwrap</code> recursively on the wrapped object
      * or a proxy for that result. If the receiver is not a
      * wrapper and does not implement the interface, then an <code>SQLException</code> is thrown.
      *
      * @param iface A Class defining an interface that the result must implement.
      * @return an object that implements the interface. May be a proxy for the actual implementing object.
-     * @throws java.sql.SQLException If no object found that implements the interface 
+     * @throws java.sql.SQLException If no object found that implements the interface
      * @since 1.6
      */
   public <T> T unwrap(java.lang.Class<T> iface) throws java.sql.SQLException

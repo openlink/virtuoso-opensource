@@ -1,26 +1,26 @@
 /*
- *  
+ *  $Id$
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
- *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
+ *  Copyright (C) 1998-2009 OpenLink Software
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
-/* VirtuosoBlob.java */
+ *
+ */
+
 package virtuoso.jdbc2;
 
 import java.sql.*;
@@ -824,7 +824,7 @@ public class VirtuosoBlob
 
 
     /**
-     * Returns an <code>InputStream</code> object that contains a partial <code>Blob</code> value, 
+     * Returns an <code>InputStream</code> object that contains a partial <code>Blob</code> value,
      * starting  with the byte specified by pos, which is length bytes in length.
      *
      * @param pos the offset to the first byte of the partial value to be retrieved.
@@ -832,29 +832,29 @@ public class VirtuosoBlob
      * @param length the length in bytes of the partial value to be retrieved
      * @return <code>InputStream</code> through which the partial <code>Blob</code> value can be read.
      * @throws SQLException if pos is less than 1 or if pos is greater than the number of bytes
-     * in the <code>Blob</code> or if pos + length is greater than the number of bytes 
+     * in the <code>Blob</code> or if pos + length is greater than the number of bytes
      * in the <code>Blob</code>
      *
      * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
      * this method
      * @since 1.6
      */
-   public InputStream getBinaryStream(long pos, long len) throws SQLException 
+   public InputStream getBinaryStream(long pos, long len) throws SQLException
    {
        throw new VirtuosoException ("Not implemented function", VirtuosoException.NOTIMPLEMENTED);
    }
 
     /**
-     * This method frees the <code>Blob</code> object and releases the resources that 
+     * This method frees the <code>Blob</code> object and releases the resources that
      * it holds. The object is invalid once the <code>free</code>
      * method is called.
      *<p>
      * After <code>free</code> has been called, any attempt to invoke a
-     * method other than <code>free</code> will result in a <code>SQLException</code> 
+     * method other than <code>free</code> will result in a <code>SQLException</code>
      * being thrown.  If <code>free</code> is called multiple times, the subsequent
      * calls to <code>free</code> are treated as a no-op.
      *<p>
-     * 
+     *
      * @throws SQLException if an error occurs releasing
      * the Blob's resources
      * @exception SQLFeatureNotSupportedException if the JDBC driver does not support

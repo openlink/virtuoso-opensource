@@ -1,20 +1,24 @@
 /*
- *  ParameterMetaDataWrapper.java
- *
  *  $Id$
  *
- *  Wrapper for JDBC ParameterMetaData class
+ *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ *  project.
  *
- *  (C)Copyright 2004 OpenLink Software.
- *  All Rights Reserved.
+ *  Copyright (C) 1998-2009 OpenLink Software
  *
- *  The copyright above and this notice must be preserved in all
- *  copies of this source code.  The copyright above does not
- *  evidence any actual or intended publication of this source code.
+ *  This project is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the
+ *  Free Software Foundation; only version 2 of the License, dated June 1991.
  *
- *  This is unpublished proprietary trade secret of OpenLink Software.
- *  This source code may not be copied, disclosed, distributed, demonstrated
- *  or licensed except as authorized by OpenLink Software.
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *
  */
 
 package virtuoso.jdbc2;

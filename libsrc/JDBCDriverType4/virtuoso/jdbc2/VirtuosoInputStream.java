@@ -1,26 +1,26 @@
 /*
- *  
+ *  $Id$
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
- *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
+ *  Copyright (C) 1998-2009 OpenLink Software
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
-/* VirtuosoInputStream.java */
+ *
+ */
+
 package virtuoso.jdbc2;
 
 import java.io.*;
@@ -565,7 +565,7 @@ class VirtuosoInputStream extends BufferedInputStream
                      res = new Long(readlong());
                      return res;
                    }
-	     case VirtuosoTypes.DV_RDF:		   
+	     case VirtuosoTypes.DV_RDF:
 		   {
 		     res = readRdfBox ();
                      return res;
@@ -600,7 +600,7 @@ class VirtuosoInputStream extends BufferedInputStream
         int ch_count=0;
 
         while (count < utflen) {
-            c = (int) data[count] & 0xff;      
+            c = (int) data[count] & 0xff;
             if (c > 127) break;
             count++;
             c_arr[ch_count++]=(char)c;
@@ -623,8 +623,8 @@ class VirtuosoInputStream extends BufferedInputStream
                     c2 = (int) data[count-1];
                     if ((c2 & 0xC0) != 0x80)
                         throw new UTFDataFormatException(
-                            "malformed input around byte " + count); 
-                    c_arr[ch_count++]=(char)(((c & 0x1F) << 6) | (c2 & 0x3F));  
+                            "malformed input around byte " + count);
+                    c_arr[ch_count++]=(char)(((c & 0x1F) << 6) | (c2 & 0x3F));
                     break;
                 case 14:
                     /* 1110 xxxx  10xx xxxx  10xx xxxx */
@@ -650,18 +650,18 @@ class VirtuosoInputStream extends BufferedInputStream
         return new String(c_arr, 0, ch_count);
     }
 
-   
+
    private final String convByte2Ascii(byte[] data) throws IOException {
         int len = data.length;
         char[] c_arr = new char[len];
- 
+
         for(int i=0; i < len; i++)
           c_arr[i] = (char)(data[i] & 0xff);
 
         return new String(c_arr, 0, len);
     }
 
-   
+
    /**
     * Method to read an int value depending DV_xxx_INT type.
     *
@@ -847,16 +847,16 @@ class VirtuosoInputStream extends BufferedInputStream
       }
 
       if (0 != (flags & VirtuosoRdfBox.RBS_COMPLETE))
-	is_complete = true; 
+	is_complete = true;
 
       if (0 != (flags & VirtuosoRdfBox.RBS_HAS_TYPE))
 	type = readshort ();
-      else 
+      else
 	type = VirtuosoRdfBox.RDF_BOX_DEFAULT_TYPE;
 
       if (0 != (flags & VirtuosoRdfBox.RBS_HAS_LANG))
 	lang = readshort ();
-      else 
+      else
 	lang = VirtuosoRdfBox.RDF_BOX_DEFAULT_LANG;
       rb = new VirtuosoRdfBox (this.connection, box, is_complete, type, lang, ro_id);
       return rb;

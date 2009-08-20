@@ -1,29 +1,25 @@
 /*
- *  
+ *  $Id$
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
- *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
+ *  Copyright (C) 1998-2009 OpenLink Software
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
-//
-// $Id$
-//
-
+ *
+ */
 
 package virtuoso.jdbc2;
 
@@ -41,7 +37,7 @@ public class VirtuosoXAConnection implements XAConnection {
     private VirtuosoPooledConnection pconn;
     private VirtuosoXAResource resource;
 
-    protected VirtuosoXAConnection(VirtuosoPooledConnection connection, String server, int port) 
+    protected VirtuosoXAConnection(VirtuosoPooledConnection connection, String server, int port)
     {
         pconn = connection;
         pconn.getVirtuosoConnection().xa_connection = this;
@@ -65,7 +61,7 @@ public class VirtuosoXAConnection implements XAConnection {
    * @return the <code>XAResource</code> object
    * @exception SQLException if a database access error occurs
    */
-    public XAResource getXAResource() throws SQLException 
+    public XAResource getXAResource() throws SQLException
     {
       return (XAResource) getVirtuosoXAResource();
     }
@@ -157,12 +153,12 @@ public class VirtuosoXAConnection implements XAConnection {
 
 #if JDK_VER >= 16
 	/**
-	 * Registers a <code>StatementEventListener</code> with this <code>PooledConnection</code> object.  Components that 
+	 * Registers a <code>StatementEventListener</code> with this <code>PooledConnection</code> object.  Components that
 	 * wish to be notified when  <code>PreparedStatement</code>s created by the
-         * connection are closed or are detected to be invalid may use this method 
+         * connection are closed or are detected to be invalid may use this method
          * to register a <code>StatementEventListener</code> with this <code>PooledConnection</code> object.
 	 * <p>
-	 * @param listener	an component which implements the <code>StatementEventListener</code> 
+	 * @param listener	an component which implements the <code>StatementEventListener</code>
 	 *		interface that is to be registered with this <code>PooledConnection</code> object
 	 * <p>
 	 * @since 1.6
@@ -171,14 +167,14 @@ public class VirtuosoXAConnection implements XAConnection {
   {
 //??TODO    throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Method_XX_not_yet_implemented, "addStatementEventListener(listener)");
   }
-	
+
 	/**
-	 * Removes the specified <code>StatementEventListener</code> from the list of 
-	 * components that will be notified when the driver detects that a 
+	 * Removes the specified <code>StatementEventListener</code> from the list of
+	 * components that will be notified when the driver detects that a
 	 * <code>PreparedStatement</code> has been closed or is invalid.
-	 * <p> 
+	 * <p>
 	 * @param listener	the component which implements the
-	 *	<code>StatementEventListener</code> interface that was previously 
+	 *	<code>StatementEventListener</code> interface that was previously
 	 *	registered with this <code>PooledConnection</code> object
 	 * <p>
 	 * @since 1.6

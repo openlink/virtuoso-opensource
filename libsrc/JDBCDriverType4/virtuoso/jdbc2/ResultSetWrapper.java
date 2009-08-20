@@ -1,21 +1,26 @@
 /*
- *  ResultSetWrapper.java
- *
  *  $Id$
  *
- *  Wrapper for the JDBC ResultSet class
+ *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ *  project.
  *
- *  (C)Copyright 2002 OpenLink Software.
- *  All Rights Reserved.
+ *  Copyright (C) 1998-2009 OpenLink Software
  *
- *  The copyright above and this notice must be preserved in all
- *  copies of this source code.  The copyright above does not
- *  evidence any actual or intended publication of this source code.
+ *  This project is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the
+ *  Free Software Foundation; only version 2 of the License, dated June 1991.
  *
- *  This is unpublished proprietary trade secret of OpenLink Software.
- *  This source code may not be copied, disclosed, distributed, demonstrated
- *  or licensed except as authorized by OpenLink Software.
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *
  */
+
 package virtuoso.jdbc2;
 
 import java.io.InputStream;
@@ -1214,7 +1219,7 @@ public class ResultSetWrapper implements ResultSet, Closeable {
 #else
   public Object getObject(int i, Map map)
 #endif
-     throws SQLException 
+     throws SQLException
   {
     check_close();
     try {
@@ -1270,7 +1275,7 @@ public class ResultSetWrapper implements ResultSet, Closeable {
 #else
   public Object getObject(String colName, Map map)
 #endif
-    throws SQLException 
+    throws SQLException
   {
     check_close();
     try {
@@ -1500,7 +1505,7 @@ public class ResultSetWrapper implements ResultSet, Closeable {
       throw ex;
     }
   }
-    
+
   public RowId getRowId(String columnLabel) throws SQLException
   {
     check_close();
@@ -1511,7 +1516,7 @@ public class ResultSetWrapper implements ResultSet, Closeable {
       throw ex;
     }
   }
-    
+
   public void updateRowId(int columnIndex, RowId x) throws SQLException
   {
     check_close();
@@ -1522,7 +1527,7 @@ public class ResultSetWrapper implements ResultSet, Closeable {
       throw ex;
     }
   }
-    
+
   public void updateRowId(String columnLabel, RowId x) throws SQLException
   {
     check_close();
@@ -1599,7 +1604,7 @@ public class ResultSetWrapper implements ResultSet, Closeable {
       throw ex;
     }
   }
-   
+
   public NClob getNClob(int columnIndex) throws SQLException
   {
     check_close();
@@ -1610,7 +1615,7 @@ public class ResultSetWrapper implements ResultSet, Closeable {
       throw ex;
     }
   }
-    
+
   public NClob getNClob(String columnLabel) throws SQLException
   {
     check_close();
@@ -1665,7 +1670,7 @@ public class ResultSetWrapper implements ResultSet, Closeable {
       throw ex;
     }
   }
-    
+
   public String getNString(int columnIndex) throws SQLException
   {
     check_close();
@@ -1676,7 +1681,7 @@ public class ResultSetWrapper implements ResultSet, Closeable {
       throw ex;
     }
   }
-    
+
   public String getNString(String columnLabel) throws SQLException
   {
     check_close();
@@ -1687,7 +1692,7 @@ public class ResultSetWrapper implements ResultSet, Closeable {
       throw ex;
     }
   }
-    
+
   public java.io.Reader getNCharacterStream(int columnIndex) throws SQLException
   {
     check_close();
@@ -1720,7 +1725,7 @@ public class ResultSetWrapper implements ResultSet, Closeable {
       throw ex;
     }
   }
-    
+
   public void updateNCharacterStream(String columnLabel, java.io.Reader reader, long length) throws SQLException
   {
     check_close();
@@ -1863,7 +1868,7 @@ public class ResultSetWrapper implements ResultSet, Closeable {
       throw ex;
     }
   }
-    
+
   public void updateNCharacterStream(int columnIndex, java.io.Reader x) throws SQLException
   {
     check_close();
@@ -1874,7 +1879,7 @@ public class ResultSetWrapper implements ResultSet, Closeable {
       throw ex;
     }
   }
-      
+
   public void updateNCharacterStream(String columnLabel, java.io.Reader reader) throws SQLException
   {
     check_close();

@@ -1,3 +1,26 @@
+/*
+ *  $Id$
+ *
+ *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ *  project.
+ *
+ *  Copyright (C) 1998-2009 OpenLink Software
+ *
+ *  This project is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the
+ *  Free Software Foundation; only version 2 of the License, dated June 1991.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *
+ */
+
 package virtuoso.jdbc2;
 
 import java.lang.*;
@@ -22,7 +45,7 @@ public class VirtuosoRdfBox implements RdfBox
     public static final int RDF_BOX_DEFAULT_TYPE = 257;
     public static final int RDF_BOX_DEFAULT_LANG = 257;
 
-    // bit position in flags 
+    // bit position in flags
     public static final int RBS_OUTLINED = 0x01;
     public static final int RBS_COMPLETE = 0x02;
     public static final int RBS_HAS_LANG = 0x04;
@@ -31,7 +54,7 @@ public class VirtuosoRdfBox implements RdfBox
     public static final int RBS_64   	  = 0x20;
 
     private VirtuosoConnection connection = null;
- 
+
     public VirtuosoRdfBox (VirtuosoConnection connection, Object box, boolean is_complete,  short type, short lang, long ro_id)
     {
 	this.connection = connection;
@@ -61,18 +84,18 @@ public class VirtuosoRdfBox implements RdfBox
     private long rdfMakeObj (Object box, String type, String lang)
     {
 	long ro_id = 0;
-	try 
+	try
 	{
-	    VirtuosoPreparedStatement ps = (VirtuosoPreparedStatement) this.connection.prepareStatement 
+	    VirtuosoPreparedStatement ps = (VirtuosoPreparedStatement) this.connection.prepareStatement
 		("DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (?, ?, ?)");
 	    ps.setObject (1, box);
 	    ps.setString (2, type);
 	    ps.setString (3, lang);
 
-	    VirtuosoPreparedStatement ro  = (VirtuosoPreparedStatement) this.connection.prepareStatement 
+	    VirtuosoPreparedStatement ro  = (VirtuosoPreparedStatement) this.connection.prepareStatement
 		("select rdf_box_ro_id (?)");
 	    ro.setObject (1, box);
-	    try 
+	    try
 	    {
 		ps.executeQuery();
 		ResultSet rs = ro.executeQuery();
@@ -81,7 +104,7 @@ public class VirtuosoRdfBox implements RdfBox
 		    long rc = rs.getLong (1);
 		    ro_id = rc;
 		}
-	        ps.close (); 	
+	        ps.close ();
 		this.connection.rdf_lang_hash.clear ();
 		this.connection.rdf_type_hash.clear ();
 		this.connection.rdf_lang_rev.clear ();
@@ -99,7 +122,7 @@ public class VirtuosoRdfBox implements RdfBox
 
     public short getLangKey (String lang)
     {
-      Integer k;  	
+      Integer k;
       if (lang == null)
 	return (short) RDF_BOX_DEFAULT_LANG;
       ensureLangHash ();
@@ -108,8 +131,8 @@ public class VirtuosoRdfBox implements RdfBox
     }
 
     public short getTypeKey (String type)
-    { 
-      Integer k; 	
+    {
+      Integer k;
       if (type == null)
 	return (short) RDF_BOX_DEFAULT_TYPE;
       ensureTypeHash ();
@@ -117,12 +140,12 @@ public class VirtuosoRdfBox implements RdfBox
       return (k != null ? k.shortValue () : (short) RDF_BOX_DEFAULT_TYPE);
     }
 
-    private void fillHashFromSQL (Hashtable ht, Hashtable rev, String sql) 
+    private void fillHashFromSQL (Hashtable ht, Hashtable rev, String sql)
     {
-	try 
+	try
 	{
 	    Statement stmt = this.connection.createStatement ();
-	    try 
+	    try
 	    {
 	      stmt.execute (sql);
 
@@ -166,7 +189,7 @@ public class VirtuosoRdfBox implements RdfBox
       String r;
       ensureTypeHash ();
       r = (String) this.connection.rdf_type_hash.get (new Integer (this.rb_type));
-      return r;	
+      return r;
     }
 
     public String getLang ()

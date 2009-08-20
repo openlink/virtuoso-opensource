@@ -1,22 +1,25 @@
 /*
- *  VirtuosoPooledConnection.java
- *
  *  $Id$
  *
- *  Implementation of the JDBC PooledConnection class
+ *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ *  project.
  *
- *  (C)Copyright 2001 OpenLink Software.
- *  All Rights Reserved.
+ *  Copyright (C) 1998-2009 OpenLink Software
  *
- *  The copyright above and this notice must be preserved in all
- *  copies of this source code.  The copyright above does not
- *  evidence any actual or intended publication of this source code.
+ *  This project is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the
+ *  Free Software Foundation; only version 2 of the License, dated June 1991.
  *
- *  This is unpublished proprietary trade secret of OpenLink Software.
- *  This source code may not be copied, disclosed, distributed, demonstrated
- *  or licensed except as authorized by OpenLink Software.
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *
  */
-
 
 package virtuoso.jdbc2;
 
@@ -58,7 +61,7 @@ public class VirtuosoPooledConnection implements PooledConnection, Cloneable {
   protected int hashConnURL;
   protected long tmClosed;
 
-  protected VirtuosoPooledConnection(VirtuosoConnection _conn, String _connURL) 
+  protected VirtuosoPooledConnection(VirtuosoConnection _conn, String _connURL)
   {
     conn = _conn;
     conn.pooled_connection = this;
@@ -74,7 +77,7 @@ public class VirtuosoPooledConnection implements PooledConnection, Cloneable {
 
   protected void init(VirtuosoConnectionPoolDataSource listener) {
 #if JDK_VER >= 16
-    listeners = new LinkedList<Object>(); 
+    listeners = new LinkedList<Object>();
 #else
     listeners = new LinkedList();
 #endif
@@ -243,19 +246,19 @@ public class VirtuosoPooledConnection implements PooledConnection, Cloneable {
   }
 
 
-  public VirtuosoConnection getVirtuosoConnection() 
+  public VirtuosoConnection getVirtuosoConnection()
   {
     return conn;
   }
 
 #if JDK_VER >= 16
 	/**
-	 * Registers a <code>StatementEventListener</code> with this <code>PooledConnection</code> object.  Components that 
+	 * Registers a <code>StatementEventListener</code> with this <code>PooledConnection</code> object.  Components that
 	 * wish to be notified when  <code>PreparedStatement</code>s created by the
-         * connection are closed or are detected to be invalid may use this method 
+         * connection are closed or are detected to be invalid may use this method
          * to register a <code>StatementEventListener</code> with this <code>PooledConnection</code> object.
 	 * <p>
-	 * @param listener	an component which implements the <code>StatementEventListener</code> 
+	 * @param listener	an component which implements the <code>StatementEventListener</code>
 	 *		interface that is to be registered with this <code>PooledConnection</code> object
 	 * <p>
 	 * @since 1.6
@@ -264,14 +267,14 @@ public class VirtuosoPooledConnection implements PooledConnection, Cloneable {
   {
 //??TODO    errx_Method_XX_not_yet_implemented, "addStatementEventListener(listener)");
   }
-	
+
 	/**
-	 * Removes the specified <code>StatementEventListener</code> from the list of 
-	 * components that will be notified when the driver detects that a 
+	 * Removes the specified <code>StatementEventListener</code> from the list of
+	 * components that will be notified when the driver detects that a
 	 * <code>PreparedStatement</code> has been closed or is invalid.
-	 * <p> 
+	 * <p>
 	 * @param listener	the component which implements the
-	 *	<code>StatementEventListener</code> interface that was previously 
+	 *	<code>StatementEventListener</code> interface that was previously
 	 *	registered with this <code>PooledConnection</code> object
 	 * <p>
 	 * @since 1.6
@@ -281,8 +284,8 @@ public class VirtuosoPooledConnection implements PooledConnection, Cloneable {
 //??TODO    errx_Method_XX_not_yet_implemented, "removeStatementEventListener(listener)");
   }
 #endif
-  
-  
+
+
   protected boolean isClosed() {
     return conn == null;
   }

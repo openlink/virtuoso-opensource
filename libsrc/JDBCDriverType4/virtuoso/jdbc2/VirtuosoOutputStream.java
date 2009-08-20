@@ -1,26 +1,26 @@
 /*
- *  
+ *  $Id$
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
- *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
+ *  Copyright (C) 1998-2009 OpenLink Software
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
-/* VirtuosoOutputStream.java */
+ *
+ */
+
 package virtuoso.jdbc2;
 
 import java.io.*;
@@ -513,7 +513,7 @@ class VirtuosoOutputStream extends BufferedOutputStream
     */
    protected void writelongint(long data) throws IOException
    {
-     tmp[0] = ((byte) ((data >> 24) & 0xFF)); 
+     tmp[0] = ((byte) ((data >> 24) & 0xFF));
      tmp[1] = ((byte) ((data >> 16) & 0xFF));
      tmp[2] = ((byte) ((data >> 8) & 0xFF));
      tmp[3] = ((byte) (data & 0xFF));
@@ -562,7 +562,7 @@ class VirtuosoOutputStream extends BufferedOutputStream
      write(tmp, 0, 8);
    }
 
-   
+
    /**
     * Method to send a numeric value depending DV_NUMERIC type.
     *
@@ -660,7 +660,7 @@ class VirtuosoOutputStream extends BufferedOutputStream
 
       write (flags);
       write_object (rb.rb_box);
-      if (rb.rb_ro_id != 0) 
+      if (rb.rb_ro_id != 0)
       {
 	if (rb.rb_ro_id > 0xffffffffL)
 	{
@@ -991,9 +991,9 @@ class VirtuosoOutputStream extends BufferedOutputStream
 	  return ((VirtuosoExplicitString)obj).getDtp();
 	}
       if (obj instanceof VirtuosoExtendedString)
-	return VirtuosoTypes.DV_BOX_FLAGS;  
+	return VirtuosoTypes.DV_BOX_FLAGS;
       if (obj instanceof VirtuosoRdfBox)
-	return VirtuosoTypes.DV_RDF;  
+	return VirtuosoTypes.DV_RDF;
       return 0;
    }
 
