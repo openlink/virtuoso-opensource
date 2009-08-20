@@ -1198,8 +1198,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
             ret_mime := 'text/rdf+n3';
           DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
 	}
-      if (
-        strstr (accept, 'text/plain') is not null)
+      else if ( strstr (accept, 'text/plain') is not null)
         {
             ret_mime := 'text/plain';
           DB.DBA.RDF_TRIPLES_TO_NT (triples, ses);
