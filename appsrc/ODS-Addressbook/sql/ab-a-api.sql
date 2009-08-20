@@ -1326,6 +1326,9 @@ create procedure ODS.ODS_API."addressbook.options.set" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'AddressBook'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
+
   account_id := (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = uname);
   optionsParams := split_and_decode (options, 0, '%\0,='); -- XXX: FIXME
 
@@ -1375,6 +1378,9 @@ create procedure ODS.ODS_API."addressbook.options.get" (
 
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'AddressBook'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
 
   settings := AB.WA.settings (inst_id);
   AB.WA.settings_init (settings);

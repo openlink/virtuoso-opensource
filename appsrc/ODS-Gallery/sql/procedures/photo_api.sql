@@ -480,6 +480,9 @@ create procedure ODS.ODS_API."photo.options.set" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'oGallery'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
+
   declare exit handler for not found
   {
     return ods_serialize_int_res (-1, 'The home folder does not exists');
@@ -526,6 +529,9 @@ create procedure ODS.ODS_API."photo.options.get" (
 
 	if (not ods_check_auth (uname, inst_id, 'author'))
 		return ods_auth_failed ();
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'oGallery'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
 
   sid := get_ses (uname);
   settings := PHOTO.WA.load_settings (sid, inst_id);
