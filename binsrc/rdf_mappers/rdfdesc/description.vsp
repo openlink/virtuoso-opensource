@@ -70,7 +70,7 @@
 	    arr[1] := nhost;
 	    arr[2] := npath;
 	    _G := DB.DBA.vspx_uri_compose (arr);
-	    do_sponge := 0;
+	    --do_sponge := 0;
          }
      }
 
@@ -87,6 +87,13 @@
 	  null, null, vector (), 0, meta, data);
         if (length (data))
 	  _G := data[0][0];
+        else
+          {
+	    exec (sprintf ('sparql define input:storage "" select ?g where { graph ?g { ?s ?p <%S> . }} limit 1', _S), 
+	      null, null, vector (), 0, meta, data);
+	    if (length (data))
+	      _G := data[0][0];
+	  }	  
      }
 
    exec (sprintf ('sparql ask where { graph <%S> { <%S> ?p ?o }}', _G, _S), null, null, vector (), 0, meta, data);
