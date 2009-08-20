@@ -61,11 +61,6 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
    // Connection associated with
    private VirtuosoConnection connection;
 
-#if JDK_VER >= 14
-   // The client connection in case of connection pooling.
-   private VirtuosoConnectionHandle connectionHandle;
-#endif
-
    /**
     * Constructs a new database meta data.
     *
@@ -76,11 +71,6 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
       this.connection = connection;
    }
 
-#if JDK_VER >= 14
-   void setConnectionHandle(VirtuosoConnectionHandle connectionHandle) {
-       this.connectionHandle = connectionHandle;
-   }
-#endif
 
    // --------------------------- JDBC 1.0 ------------------------------
    /**
@@ -3713,14 +3703,7 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
     * @exception virtuoso.jdbc2.VirtuosoException if a database access error occurs
     */
    public Connection getConnection() throws VirtuosoException {
-#if JDK_VER >= 14
-       return (
-           connectionHandle != null
-               ? (Connection) connectionHandle
-               : (Connection) connection);
-#else
 	return connection;
-#endif
    }
 
    /**

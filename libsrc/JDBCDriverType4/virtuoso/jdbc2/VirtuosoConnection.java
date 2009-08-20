@@ -131,6 +131,7 @@ public class VirtuosoConnection implements Connection
    // set if the connection is managed through VirtuosoPooledConnection;
 #if JDK_VER >= 14
    protected VirtuosoPooledConnection pooled_connection = null;
+   protected VirtuosoXAConnection xa_connection = null;
 #endif
 
    protected String charset;
@@ -711,7 +712,7 @@ public class VirtuosoConnection implements Connection
                 new VirtuosoException(
                     "Connection failed: " + ex.getMessage(),
                     VirtuosoException.IOERROR);
-            pooled_connection.notify_error(vex);
+            pooled_connection.sendErrorEvent(vex);
             throw vex;
         } else {
             throw ex;
@@ -721,7 +722,7 @@ public class VirtuosoConnection implements Connection
             int code = ex.getErrorCode();
             if (code == VirtuosoException.DISCONNECTED
                 || code == VirtuosoException.IOERROR) {
-                pooled_connection.notify_error(ex);
+            	pooled_connection.sendErrorEvent(ex);
             }
         }
         throw ex;
@@ -745,7 +746,7 @@ public class VirtuosoConnection implements Connection
                 new VirtuosoException(
                     "Connection failed: " + ex.getMessage(),
                     VirtuosoException.IOERROR);
-            pooled_connection.notify_error(vex);
+            pooled_connection.sendErrorEvent(vex);
             throw vex;
         } else {
             throw ex;
@@ -819,7 +820,7 @@ public class VirtuosoConnection implements Connection
                 new VirtuosoException(
                     "Connection failed: " + ex.getMessage(),
                     VirtuosoException.IOERROR);
-            pooled_connection.notify_error(vex);
+            pooled_connection.sendErrorEvent(vex);
             throw vex;
         } else {
             throw ex;
@@ -829,7 +830,7 @@ public class VirtuosoConnection implements Connection
             int code = ex.getErrorCode();
             if (code == VirtuosoException.DISCONNECTED
                 || code == VirtuosoException.IOERROR) {
-                pooled_connection.notify_error(ex);
+                pooled_connection.sendErrorEvent(ex);
             }
         }
         throw ex;
@@ -1004,6 +1005,8 @@ public class VirtuosoConnection implements Connection
          // Clear some variables
          user = url = password = null;
          futures = null;
+         pooled_connection = null;
+         xa_connection = null;
       }
       catch(IOException e)
       {
@@ -2192,7 +2195,7 @@ public class VirtuosoConnection implements Connection
 #if JDK_VER >= 14
         if (pooled_connection != null)
 	{
-            pooled_connection.notify_error(vex);
+            pooled_connection.sendErrorEvent(vex);
 	}
 #endif
 	return vex;

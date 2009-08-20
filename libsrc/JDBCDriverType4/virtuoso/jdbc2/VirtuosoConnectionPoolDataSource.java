@@ -24,25 +24,849 @@
 // $Id$
 //
 
+
 package virtuoso.jdbc2;
 
+import java.lang.reflect.*;
+import java.io.PrintWriter;
 import java.sql.SQLException;
-import javax.sql.ConnectionPoolDataSource;
-import javax.sql.PooledConnection;
+import java.sql.Connection;
+import java.io.Serializable;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.NoSuchElementException;
+import java.util.Properties;
+import java.util.Iterator;
+import java.util.ListIterator;
+import java.util.List;
+import java.util.TreeSet;
+import javax.sql.*;
+import javax.naming.*;
 
 public class VirtuosoConnectionPoolDataSource
     extends VirtuosoDataSource
-    implements ConnectionPoolDataSource {
+    implements ConnectionPoolDataSource, ConnectionEventListener {
 
-    public PooledConnection getPooledConnection() throws SQLException {
-        VirtuosoConnection connection = (VirtuosoConnection) super.getConnection();
-        return new VirtuosoPooledConnection(this, connection);
+    protected final static String n_minPoolSize = "minPoolSize";
+    protected final static String n_maxPoolSize = "maxPoolSize";
+    protected final static String n_initialPoolSize = "initialPoolSize";
+    protected final static String n_maxIdleTime = "maxIdleTime";
+    protected final static String n_propertyCycle = "propertyCycle";
+    protected final static String n_maxStatements = "maxStatements";
+
+    private int minPoolSize = 0;
+    private int maxPoolSize = 0;
+    private int initialPoolSize = 0;
+    private int maxIdleTime = 0;
+    private int propertyCycle = 0;
+    private int maxStatements = 0;
+
+    private ConnCache connPool;
+    private boolean isInitialized = false;
+    private boolean isClosed = false;
+    private Object  initLock ;
+#if JDK_VER >= 16
+    private TreeSet<Object> propQueue; 
+#else
+    private TreeSet propQueue;
+#endif
+    private long  propEnforceTime = 0;
+
+
+  public synchronized void finalize () throws Throwable {
+    close ();
+  }
+
+
+  public VirtuosoConnectionPoolDataSource() {
+    dataSourceName = "VirtuosoConnectionPoolDataSourceName";
+    initLock = new Object();
+    connPool = new ConnCache(this);
+#if JDK_VER >= 16
+    propQueue = new TreeSet<Object>( new Comparator<Object>() {
+#else
+    propQueue = new TreeSet( new Comparator() {
+#endif
+          public int compare(Object a, Object b) {
+            long a_time = ((NewProperty)a).enforceTime;
+            long b_time = ((NewProperty)b).enforceTime;
+            if (a_time == b_time)
+              return 0;
+            else if (a_time > b_time)
+              return +1;
+            else
+              return -1;
+          }
+        });
+  }
+
+
+  protected void checkPool() {
+    if (isClosed)
+       return;
+
+    connPool.checkPool();
+  }
+
+
+  protected void checkPropQueue() {
+    if (isClosed || propEnforceTime == 0)
+       return;
+
+    long curTime = System.currentTimeMillis();
+    NewProperty prop;
+    synchronized(propQueue) {
+      while(propEnforceTime != 0 && propEnforceTime < curTime) {
+        try {
+          prop = (NewProperty)(propQueue.first());
+        } catch (NoSuchElementException e) {
+          propEnforceTime = 0;
+          break;
+        }
+        propQueue.remove(prop);
+        try {
+          prop.fld.setInt(this, prop.arg);
+        } catch (Exception e) {
+          //?? System.out.println(e);
+        }
+        try {
+          prop = (NewProperty)(propQueue.first());
+          propEnforceTime = prop.enforceTime;
+        } catch (NoSuchElementException e) {
+          propEnforceTime = 0;
+          break;
+        }
+      }
+    }
+  }
+    
+    
+  /**
+   * Physically close all the pooled connections in the cache and free all
+   * the resources
+   *
+   * @exception  java.sql.SQLException
+   *             if a database-access error occurs
+   *
+  **/
+  public void close() throws SQLException {
+    if (isClosed)
+      return;
+
+    isClosed = true;
+    connPool.clear();
+    initLock = null;
+    propQueue.clear();
+  }
+
+    
+//==================== interface ConnectionEventListener
+  /**
+   * Invoked when the application calls close() on its representation of
+   * the connection.
+   *
+   * @param event an event object describing the source of the event
+  **/
+  public void connectionClosed(ConnectionEvent event) {
+    try {
+      Object source = event.getSource();
+      if (source instanceof VirtuosoPooledConnection)
+        connPool.reusePooledConnection((VirtuosoPooledConnection)event.getSource());
+    } catch(SQLException e) { }
+  }
+
+
+  /**
+   * Invoked when a fatal connection error occurs, just before an SQLException
+   * is thrown to the application.
+   *
+   * @param event an event object describing the source of the event
+  **/
+  public void connectionErrorOccurred(ConnectionEvent event) {
+    try {
+      Object source = event.getSource();
+      if (source instanceof VirtuosoPooledConnection)
+        connPool.closePooledConnection((VirtuosoPooledConnection)event.getSource());
+    } catch(SQLException e) { }
+  }
+
+
+//==================== interface Referenceable
+  protected void  addProperties(Reference ref) {
+    super.addProperties(ref);
+
+    //Pool Specific
+    ref.add(new StringRefAddr(VirtuosoConnectionPoolDataSource.n_minPoolSize, String.valueOf(minPoolSize)));
+    ref.add(new StringRefAddr(VirtuosoConnectionPoolDataSource.n_maxPoolSize, String.valueOf(maxPoolSize)));
+    ref.add(new StringRefAddr(VirtuosoConnectionPoolDataSource.n_initialPoolSize, String.valueOf(initialPoolSize)));
+    ref.add(new StringRefAddr(VirtuosoConnectionPoolDataSource.n_maxIdleTime, String.valueOf(maxIdleTime)));
+    ref.add(new StringRefAddr(VirtuosoConnectionPoolDataSource.n_propertyCycle, String.valueOf(propertyCycle)));
+    ref.add(new StringRefAddr(VirtuosoConnectionPoolDataSource.n_maxStatements, String.valueOf(maxStatements)));
+  }
+
+
+  public Reference getReference() throws NamingException {
+     Reference ref = new Reference(getClass().getName(), "virtuoso.jdbc4.VirtuosoDataSourceFactory", null);
+     addProperties(ref);
+     return ref;
+  }
+
+
+  /**
+   * Fills the cache with PooledConnections for later use.
+   * Ignored if the MinPoolSize is 0.
+   * It is usually called when the OPLConnectionPoolDataSource is created
+   * via JNDI calls.
+   *
+   * @exception  java.sql.SQLException
+   *             if a error occurs
+  **/
+  public void fill() throws java.sql.SQLException {
+    check_close();
+    Properties info = createConnProperties();
+    String connKey = create_url_key(create_url(), info);
+
+    synchronized(initLock) {
+      if (!isInitialized) {
+        isInitialized = true;
+        if (initialPoolSize != 0) {
+          OpenHelper initThread = new OpenHelper(initialPoolSize, info);
+          initThread.start();
+          try {
+            initThread.join();
+          }
+          catch (InterruptedException e) {}
+        }
+        VirtuosoPoolManager.getInstance().addPool(this);
+      }
+
+    }
+  }
+
+  /**
+   * Attempt to get a database connection from the pool or
+   * to establish a database connection .
+   *
+   * @return   a Connection to the database
+   *
+   * @exception  java.sql.SQLException
+   *             if a database-access error occurs
+  **/
+  public Connection getConnection() throws java.sql.SQLException {
+    return getPooledConnection().getConnection();
+  }
+
+
+  /**
+   * Attempt to get a database connection from the pool or
+   * to establish a database connection .
+   *
+   * @param   user       the database user on whose behalf the Connection is being made
+   * @param   password   the user's password
+   *
+   * @return   a Connection to the database
+   *
+   * @exception  java.sql.SQLException
+   *             if a database-access error occurs
+  **/
+  public Connection getConnection(String user, String password) throws java.sql.SQLException {
+    return getPooledConnection(user, password).getConnection();
+  }
+
+  /**
+   * Attempt to establish a database connection.
+   *
+   * @return   a PooledConnection to the database
+   *
+   * @exception  java.sql.SQLException
+   *             if a database-access error occurs
+  **/
+  public PooledConnection getPooledConnection() throws java.sql.SQLException {
+    return getPooledConnection(null, null);
+  }
+
+
+  /**
+   * Attempts to establish a physical database connection that can
+   * be used as a pooled connection.
+   *
+   * @param   user       the database user on whose behalf the Connection is being made
+   * @param   password   the user's password
+   *
+   * @return   a PooledConnection to the database
+   *
+   * @exception  java.sql.SQLException
+   *             if a database-access error occurs
+  **/
+  public PooledConnection getPooledConnection(String _user, String _password)
+      throws java.sql.SQLException
+  {
+    check_close();
+    String conn_url = create_url();
+    Properties info = createConnProperties();
+
+    if (_user != null)
+        info.setProperty("user", _user);
+    if (_password != null)
+        info.setProperty("password", _password);
+
+    String connKey = create_url_key(conn_url, info);
+    Connection conn;
+
+    synchronized(initLock) {
+      if (!isInitialized) {
+        isInitialized = true;
+        if (initialPoolSize != 0) {
+          OpenHelper initThread = new OpenHelper(initialPoolSize, info);
+          initThread.start();
+          try {
+             initThread.join();
+          } catch(InterruptedException e) {}
+        }
+        VirtuosoPoolManager.getInstance().addPool(this);
+      }
     }
 
-    public PooledConnection getPooledConnection(String user, String password)
-        throws SQLException {
-        VirtuosoConnection connection =
-            (VirtuosoConnection) super.getConnection(user, password);
-        return new VirtuosoPooledConnection(this, connection);
+    return connPool.getPooledConnection(info, connKey, conn_url);
+
+  }
+
+
+  // get & set methods
+  // PooledSpecific
+  /**
+   * Get the minimum number of physical connections
+   * the pool will keep available at all times. Zero ( 0 ) indicates that
+   * connections will be created as needed.
+   *
+   * @return   the minimum number of physical connections
+   *
+  **/
+  public int getMinPoolSize() {
+    return minPoolSize;
+  }
+
+  /**
+   * Set the number of physical connections the pool should keep available
+   * at all times. Zero ( 0 ) indicates that connections should be created
+   * as needed
+   * The default value is 0 .
+   *
+   * @param   parm a minimum number of physical connections
+   *
+   * @exception  java.sql.SQLException if an error occurs
+   *
+  **/
+  public void setMinPoolSize(int parm) throws SQLException
+  {
+    try {
+      Field fld = getClass().getDeclaredField(this.n_minPoolSize);
+      setField(fld, parm);
+    } catch (Exception e) {
+      throw new VirtuosoException("Error: "+e.toString(), VirtuosoException.OK);
     }
+  }
+
+
+
+  /**
+   * Get the maximum number of physical connections
+   * the pool will be able contain. Zero ( 0 ) indicates no maximum size.
+   *
+   * @return   the maximum number of physical connections
+   *
+  **/
+  public int getMaxPoolSize() {
+    return maxPoolSize;
+  }
+
+  /**
+   * Set the maximum number of physical conections that the pool should contain.
+   * Zero ( 0 ) indicates no maximum size.
+   * The default value is 0 .
+   *
+   * @param   parm a maximum number of physical connections
+   *
+   * @exception  java.sql.SQLException if an error occurs
+   *
+  **/
+  public void setMaxPoolSize(int parm) throws SQLException
+  {
+    try {
+      Field fld = getClass().getDeclaredField(this.n_maxPoolSize);
+      setField(fld, parm);
+    } catch (Exception e) {
+      throw new VirtuosoException("Error: "+e.toString(), VirtuosoException.OK);
+    }
+  }
+
+
+  /**
+   * Get the number of physical connections the pool
+   * will contain when it is created
+   *
+   * @return   the number of physical connections
+   *
+  **/
+  public int getInitialPoolSize() {
+    return initialPoolSize;
+  }
+
+  /**
+   * Set the number of physical connections the pool
+   * should contain when it is created
+   *
+   * @param   parm a number of physical connections
+   *
+   * @exception  java.sql.SQLException if an error occurs
+   *
+  **/
+  public void setInitialPoolSize(int parm) throws SQLException
+  {
+    try {
+      Field fld = getClass().getDeclaredField(this.n_initialPoolSize);
+      setField(fld, parm);
+    } catch (Exception e) {
+      throw new VirtuosoException("Error: "+e.toString(), VirtuosoException.OK);
+    }
+  }
+
+
+  /**
+   * Get the number of seconds that a physical connection
+   * will remain unused in the pool before the
+   * connection is closed. Zero ( 0 ) indicates no limit.
+   *
+   * @return   the number of seconds
+  **/
+  public int getMaxIdleTime() {
+    return maxIdleTime;
+  }
+
+  /**
+   * Set the number of seconds that a physical connection
+   * should remain unused in the pool before the
+   * connection is closed. Zero ( 0 ) indicates no limit.
+   *
+   * @param  parm a number of seconds
+   *
+   * @exception  java.sql.SQLException if an error occurs
+   *
+  **/
+  public void setMaxIdleTime(int parm) throws SQLException
+  {
+    try {
+      Field fld = getClass().getDeclaredField(this.n_maxIdleTime);
+      setField(fld, parm);
+    } catch (Exception e) {
+      throw new VirtuosoException("Error: "+e.toString(), VirtuosoException.OK);
+    }
+  }
+
+  /**
+   * Get the interval, in seconds, that the pool will wait
+   * before enforcing the current policy defined by the
+   * values of the above connection pool properties
+   *
+   * @return  the interval (in seconds)
+  **/
+  public int getPropertyCycle() {
+    return propertyCycle;
+  }
+
+  /**
+   * Set the interval, in seconds, that the pool should wait
+   * before enforcing the current policy defined by the
+   * values of the above connection pool properties
+   *
+   * @param  parm an interval (in seconds)
+  **/
+  public void setPropertyCycle(int parm) {
+    propertyCycle = parm;
+  }
+
+
+  /**
+   * Get the total number of statements that the pool will
+   * keep open. Zero ( 0 ) indicates that caching of
+   * statements is disabled.
+   *
+   * @return  the total number of statements
+  **/
+  public int getMaxStatements() {
+    return maxStatements;
+  }
+
+  /**
+   * Set the total number of statements that the pool should
+   * keep open. Zero ( 0 ) indicates that caching of
+   * statements is disabled.
+   *
+   * @param  parm a total number of statements
+   *
+   * @exception  java.sql.SQLException if an error occurs
+   *
+  **/
+  public void setMaxStatements(int parm) throws SQLException
+  {
+    try {
+      Field fld = getClass().getDeclaredField(this.n_maxStatements);
+      setField(fld, parm);
+    } catch (Exception e) {
+      throw new VirtuosoException("Error: "+e.toString(), VirtuosoException.OK);
+    }
+  }
+
+
+  private void setField(Field fld, int parm) throws Exception {
+    if (propertyCycle == 0)
+      fld.setInt(this, parm);
+    else
+      synchronized(propQueue) {
+        propQueue.add(new NewProperty(fld, parm));
+        propEnforceTime = ((NewProperty)propQueue.first()).enforceTime;
+      }
+  }
+
+  private void check_close()  throws SQLException
+  {
+    if (isClosed)
+      throw new VirtuosoException("ConnectionPoolDataSource is closed", VirtuosoException.OK);
+  }
+
+
+  ///////////////// Inner classes //////////////////////
+  private class NewProperty {
+    protected long enforceTime;
+    protected Field fld;
+    protected int arg;
+
+    protected NewProperty(Field _fld, int _arg) {
+      fld = _fld;
+      arg = _arg;
+      enforceTime = System.currentTimeMillis() + propertyCycle * 1000L;
+    }
+  }
+
+
+  private class OpenHelper extends Thread {
+
+    private String conn_url;
+    private Properties info;
+    private String connKey;
+    private int count;
+
+    protected OpenHelper(int _count, Properties _info) {
+      count = _count;
+      info = _info;
+
+      conn_url = create_url();
+      connKey = create_url_key(conn_url, info);
+      setName("Virtuoso OpenHelper");
+    }
+
+    public void run() {
+      if (connPool.cacheSize >= count || (maxPoolSize != 0 && connPool.cacheSize > maxPoolSize))
+        return;
+
+      for(int i = 0; i < count; i++)
+        try {
+
+          VirtuosoConnection conn = new VirtuosoConnection (conn_url, "localhost", 1111, info);
+          connPool.addPooledConnection(new VirtuosoPooledConnection(conn, connKey));
+          if (connPool.cacheSize >= count || (maxPoolSize != 0 && connPool.cacheSize > maxPoolSize))
+            return;
+        } catch (Exception e) {
+        }
+    }
+
+  }
+
+
+  private class CloseHelper extends Thread {
+
+    private ArrayList connList;
+    private PooledConnection pconn;
+
+    private CloseHelper() {
+      setName("Virtuoso CloseHelper");
+    }
+
+    protected CloseHelper(ArrayList _connList) {
+      this();
+      connList = _connList;
+    }
+
+    protected CloseHelper(PooledConnection _pconn) {
+      this();
+      pconn = _pconn;
+    }
+
+    public void run() {
+      if (connList != null) {
+        for(Iterator i = connList.iterator(); i.hasNext(); )
+          try {
+            ((VirtuosoPooledConnection)i.next()).close();
+          } catch (Exception e) { }
+        connList.clear();
+      } else {
+        try {
+          pconn.close();
+        } catch (Exception e) {
+        }
+      }
+    }
+
+  }
+    
+    
+  private class ConnCache {
+
+#if JDK_VER >= 16
+    private LinkedList<Object>  unUsed = new LinkedList<Object>();
+    private HashMap<Object,Object> in_Use = new HashMap<Object,Object>(32);
+#else
+    private LinkedList  unUsed = new LinkedList();
+    private HashMap in_Use = new HashMap(32);
+#endif
+    private int cacheSize = 0;
+
+    private VirtuosoConnectionPoolDataSource cpds;
+
+    private ConnCache(VirtuosoConnectionPoolDataSource _cpds) {
+      cpds = _cpds;
+    }
+
+    //add a new connection to pool
+    private void addPooledConnection(VirtuosoPooledConnection pconn) {
+      synchronized(this) {
+        connPool.unUsed.addLast(pconn);
+        connPool.cacheSize++;
+        notifyAll();
+      }
+    }
+
+    //close all connections & clear the pool
+    private void clear() throws SQLException {
+      VirtuosoPooledConnection pconn;
+
+      synchronized (this) {
+        for(Iterator iterator = in_Use.keySet().iterator(); iterator.hasNext(); ) {
+          pconn = (VirtuosoPooledConnection)iterator.next();
+          pconn.removeConnectionEventListener(cpds);
+          cacheSize--;
+          try {
+            pconn.close();
+          } catch (Exception e) {}
+        }
+        in_Use.clear();
+
+        for(Iterator iterator = unUsed.iterator(); iterator.hasNext(); ) {
+          pconn = (VirtuosoPooledConnection)iterator.next();
+          cacheSize--;
+          try {
+            pconn.close();
+          } catch (Exception e) {}
+        }
+        unUsed.clear();
+      }
+    }
+
+
+    private void reusePooledConnection(VirtuosoPooledConnection pconn) throws SQLException {
+
+      if (pconn == null)
+        return;
+
+      //reuse Connection
+      boolean reUsed = true;
+      pconn.removeConnectionEventListener(cpds);
+
+      synchronized(this) {
+        VirtuosoPooledConnection pooledConn = null;
+        if ((pooledConn = (VirtuosoPooledConnection)in_Use.remove(pconn)) == null) {
+          throw new VirtuosoException("Unexpected state of cache", VirtuosoException.OK);
+        }
+
+        if (maxPoolSize != 0  &&  cacheSize > maxPoolSize) {
+          // close connection
+          cacheSize--;
+          reUsed = false;
+        } else {
+          // reUse connection & put connection to the unUsed pool
+          pooledConn = pconn.reuse();
+          unUsed.addFirst(pooledConn);
+          notifyAll();
+        }
+      }
+
+      if ( !reUsed) {
+//      System.out.println("close pconn....");
+        CloseHelper helpThread = new CloseHelper(pconn);
+        helpThread.start();
+      }
+    }
+
+
+    private void closePooledConnection(VirtuosoPooledConnection pconn) throws SQLException {
+//    System.out.println("Calling closePooledConnection");
+      pconn.removeConnectionEventListener(cpds);
+
+      synchronized(this) {
+        VirtuosoPooledConnection pooledConn;
+        if ((pooledConn = (VirtuosoPooledConnection)in_Use.remove(pconn)) == null)
+          throw new VirtuosoException("Unexpected state of cache", VirtuosoException.OK);
+        cacheSize--;
+      }
+
+      pconn.close();
+    }
+
+    private VirtuosoPooledConnection lookup(String _Key) {
+      VirtuosoPooledConnection pooledConn;
+      int _hashKey = _Key.hashCode();
+
+      for(Iterator iterator = unUsed.iterator(); iterator.hasNext(); ) {
+        pooledConn = (VirtuosoPooledConnection)iterator.next();
+        if (pooledConn.hashConnURL == _hashKey && pooledConn.connURL.equals(_Key)) {
+            iterator.remove();
+            return pooledConn;
+        }
+      }
+      return null;
+    }
+
+
+    // get connection from cache or create a new connection
+    private PooledConnection getPooledConnection(Properties info,
+                                                 String connKey,
+                                                 String conn_url)
+        throws java.sql.SQLException
+    {
+      VirtuosoPooledConnection pconn = null;
+      VirtuosoConnection conn;
+
+    //try to find an unused Connection
+      synchronized(this) {
+        if (!unUsed.isEmpty() && (pconn = lookup(connKey)) != null) {
+          pconn.init(cpds);
+          in_Use.put(pconn, pconn);
+          return pconn;
+        }
+      }
+    // if couldn't found an unused Connection
+      if (maxPoolSize == 0 || cacheSize < maxPoolSize) {
+       // establish a new Connection
+        synchronized(this) {
+          conn = new VirtuosoConnection (conn_url, "localhost", 1111, info);
+          cacheSize++;
+          pconn = new VirtuosoPooledConnection(conn, connKey, cpds);
+          in_Use.put(pconn, pconn);
+        }
+        return pconn;
+
+      } else {
+      // wait a free Connection
+        long start = System.currentTimeMillis();
+        long _timeout = loginTimeout * 1000L;
+        Thread thr = Thread.currentThread();
+        while (pconn == null) {
+//      System.out.println("Thread "+thr+" begin a waiting...");
+          synchronized(this) {
+            if (!unUsed.isEmpty() && (pconn = lookup(connKey)) != null) {
+//            System.out.println("Thread "+thr+" has found a free connection");
+              pconn.init(cpds);
+              in_Use.put(pconn, pconn);
+              return pconn;
+            }
+
+            try {
+              if (loginTimeout > 0) {
+                wait(_timeout);
+                _timeout -= (System.currentTimeMillis() - start);
+                if (_timeout < 0) {
+//                System.out.println("Thread "+thr+" : loginTimeout has expired");
+                  throw new VirtuosoException("Connection failed loginTimeout has expired", VirtuosoException.TIMEOUT);
+                }
+              } else {
+                wait();
+              }
+//            System.out.println("Thread "+thr+" has woken ");
+            } catch (InterruptedException e) {
+            }
+          }
+        }
+      }
+      return null;
+    }
+
+
+    private void checkPool() {
+      VirtuosoPooledConnection pooledConn;
+#if JDK_VER >= 16
+      ArrayList<Object> closeTmp = null;
+#else
+      ArrayList closeTmp = null;
+#endif
+      ListIterator l_iter;
+
+      if (maxIdleTime != 0) {
+       // remove a long time unused connections
+        long minTime = System.currentTimeMillis() - maxIdleTime * 1000L;
+
+        synchronized(this) {
+          int count = unUsed.size();
+#if JDK_VER >= 16
+          closeTmp = new ArrayList<Object>(count);
+#else
+          closeTmp = new ArrayList(count);
+#endif
+          for(l_iter = unUsed.listIterator(); l_iter.hasPrevious(); ) {
+            pooledConn = (VirtuosoPooledConnection)l_iter.previous();
+            if (pooledConn.tmClosed < minTime) {
+               closeTmp.add(pooledConn);
+               l_iter.remove();
+               cacheSize--;
+            }
+          }
+        }
+      }
+
+      if (maxPoolSize != 0 && cacheSize > maxPoolSize) {
+       //remove connections
+        synchronized(this) {
+          int count = cacheSize - maxPoolSize;
+#if JDK_VER >= 16
+          closeTmp = new ArrayList<Object>(count);
+#else
+          closeTmp = new ArrayList(count);
+#endif
+          for(l_iter = unUsed.listIterator(); l_iter.hasPrevious() && count > 0; count--) {
+            closeTmp.add(l_iter.previous());
+            l_iter.remove();
+            cacheSize--;
+          }
+        }
+      }
+
+      if (closeTmp != null && closeTmp.size() > 0) {
+       // close connections
+        CloseHelper helpThread = new CloseHelper(closeTmp);
+        helpThread.start();
+      }
+
+      if (minPoolSize != 0 && cacheSize < minPoolSize) {
+       //add connections
+        Properties info = createConnProperties();
+        int count = minPoolSize - cacheSize;
+        OpenHelper helpThread = new OpenHelper(count, info);
+        helpThread.start();
+      }
+    }
+
+  }
+    
 }

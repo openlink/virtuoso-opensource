@@ -65,11 +65,6 @@ public class VirtuosoStatement implements Statement
    // The Connection that owns this Statement
    protected VirtuosoConnection connection;
 
-#if JDK_VER >= 14
-   // The client connection in case of connection pooling.
-   private VirtuosoConnectionHandle connectionHandle;
-#endif
-
    // The maximum field size for data of certain SQL types
    private int maxFieldSize;
 
@@ -153,11 +148,6 @@ public class VirtuosoStatement implements Statement
       this.prefetch = connection.fbs;
    }
 
-#if JDK_VER >= 14
-   void setConnectionHandle(VirtuosoConnectionHandle connectionHandle) {
-       this.connectionHandle = connectionHandle;
-   }
-#endif
 
    protected VectorOfLong getStmtOpts () throws VirtuosoException
      {
@@ -172,7 +162,7 @@ public class VirtuosoStatement implements Statement
        arrLong[2] = new Long(maxRows);
 #if JDK_VER >= 14
        if (connection.getGlobalTransaction()) {
-           VirtuosoXAConnection xac = (VirtuosoXAConnection) connection.pooled_connection;
+           VirtuosoXAConnection xac = (VirtuosoXAConnection) connection.xa_connection;
 	   if (VirtuosoFuture.rpc_log != null)
 	   {
 	       synchronized (VirtuosoFuture.rpc_log)
@@ -643,14 +633,7 @@ public class VirtuosoStatement implements Statement
     * @see java.sql.Statement#getConnection
     */
     public Connection getConnection() throws VirtuosoException {
-#if JDK_VER >= 14
-        return (
-            connectionHandle != null
-                ? (Connection) connectionHandle
-                : (Connection) connection);
-#else
 	return connection;
-#endif
     }
 
    /**
@@ -977,16 +960,6 @@ public class VirtuosoStatement implements Statement
    protected void notify_error (Throwable e) throws VirtuosoException
    {
        VirtuosoConnection c = connection;
-#if JDK_VER >= 14
-       try
-       {
-	   if (c == null && connectionHandle != null && !connectionHandle.isClosed())
-	       c = connectionHandle.getVirtuosoConnection ();
-       }
-       catch (SQLException se)
-       {
-       }
-#endif
 
        if (c != null)
 	   throw c.notify_error (e);

@@ -68,9 +68,14 @@ in3files= \
 VirtuosoParameterMetaData.java \
 VirtuosoDataSource.java \
 VirtuosoConnectionPoolDataSource.java VirtuosoPooledConnection.java \
-VirtuosoConnectionHandle.java \
 VirtuosoXADataSource.java VirtuosoXAConnection.java VirtuosoXAResource.java \
-VirtuosoXid.java XAResourceManager.java XATransaction.java
+VirtuosoXid.java XAResourceManager.java XATransaction.java \
+CallableStatementWrapper.java Closeable.java ConnectionWrapper.java \
+DatabaseMetaDataWrapper.java ParameterMetaDataWrapper.java \
+PreparedStatementWrapper.java ResultSetMetaDataWrapper.java \
+ResultSetWrapper.java SavepointWrapper.java StatementWrapper.java \
+VirtuosoPoolManager.java
+
 
 in1files= \
 VirtuosoClob.java BatchUpdateException.java \

@@ -96,8 +96,10 @@ public class Driver implements java.sql.Driver
 	     "JDBC_LOG"
 #elif JDK_VER < 14
 	     "JDBC2_LOG"
-#else
+#elif JDK_VER < 16
 	     "JDBC3_LOG"
+#else
+	     "JDBC4_LOG"
 #endif
 	     );
 	 //log_file="/home/O12/logs/log." + System.currentTimeMillis () + "." + new java.util.Random ().nextInt() + ".log";

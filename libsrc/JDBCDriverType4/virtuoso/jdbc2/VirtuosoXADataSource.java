@@ -29,14 +29,16 @@ package virtuoso.jdbc2;
 import java.sql.SQLException;
 import javax.sql.XAConnection;
 import javax.sql.XADataSource;
+import javax.naming.*;
 
 public class VirtuosoXADataSource
     extends VirtuosoConnectionPoolDataSource
     implements XADataSource {
 
-    public XAConnection getXAConnection() throws SQLException {
-        VirtuosoConnection connection = (VirtuosoConnection) super.getConnection();
-     if (VirtuosoFuture.rpc_log != null)
+    public VirtuosoXADataSource()
+    {
+      dataSourceName = "VirtuosoXADataSource";
+      if (VirtuosoFuture.rpc_log != null)
        {
 	 synchronized (VirtuosoFuture.rpc_log)
 	   {
@@ -44,12 +46,35 @@ public class VirtuosoXADataSource
 	     VirtuosoFuture.rpc_log.flush();
 	   }
        }
-        return new VirtuosoXAConnection(this, connection);
+    }
+
+
+//==================== interface Referenceable
+    public Reference getReference() throws NamingException 
+    {
+      Reference ref = new Reference(getClass().getName(), "virtuoso.jdbc4.VirtuosoDataSourceFactory", null);
+      addProperties(ref);
+      return ref;
+    }
+
+
+    public XAConnection getXAConnection() throws SQLException 
+    {
+      if (VirtuosoFuture.rpc_log != null)
+       {
+	 synchronized (VirtuosoFuture.rpc_log)
+	   {
+	     VirtuosoFuture.rpc_log.println ("VirtuosoXADataSource.getXAConnection () :" + hashCode());
+	     VirtuosoFuture.rpc_log.flush();
+	   }
+       }
+      return getXAConnection(null, null);
     }
 
     public XAConnection getXAConnection(String user, String password)
-        throws SQLException {
-     if (VirtuosoFuture.rpc_log != null)
+        throws SQLException 
+    {
+      if (VirtuosoFuture.rpc_log != null)
        {
 	 synchronized (VirtuosoFuture.rpc_log)
 	   {
@@ -57,8 +82,6 @@ public class VirtuosoXADataSource
 	     VirtuosoFuture.rpc_log.flush();
 	   }
        }
-        VirtuosoConnection connection =
-            (VirtuosoConnection) super.getConnection(user, password);
-        return new VirtuosoXAConnection(this, connection);
+      return new VirtuosoXAConnection((VirtuosoPooledConnection)getPooledConnection(user, password), getServerName(), getPortNumber());
     }
 }
