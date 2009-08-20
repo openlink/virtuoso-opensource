@@ -152,8 +152,15 @@
       </div> <!-- hd_l -->
       <div id="hd_r">
         <a href="<?=rdf_link?>" title="RDF data"><img src="statics/sw-cube.png" alt="[RDF Data]" /></a>
+        <br/>
+        <a href="/ode/?uri=<?vsp http_url (page_resource_uri); ?>">Explore Linked Data</a>&nbsp;using
+	<a href="http://ode.openlinksw.com/" title="OpenLink Data Explorer">ODE</a>&nbsp;&nbsp;&nbsp;&nbsp;
+	Raw Linked Data formats:
+        <a href="<?=rdf_link || '&output=n3'?>">N3</a> |
+        <a href="<?=rdf_link || '&output=rdf'?>">RDF/XML</a>
       </div> <!-- hd_r -->
     </div> <!-- header -->
+    <div id="content_wrapper">
     <div id="content">
 
       <p><?vsp http (sprintf ('%s', _subject)); ?></p>
@@ -213,16 +220,35 @@ skip_rev:
 ?>
       </table>
     </div> <!--  #content -->
+    <div id="sidebar">
+      <h1>What Is This?</h1>
+      <p>This is a HTML-based presentation of <b><i>Metadata</i></b> that describes this entity in property list form.</p>
+      <h1>Why Is This Important?</h1>
+      <p>The property (attributes and values pairs) links on this page unveil a different kind of link, one which enables the following on HTTP networks such as the Web:</p>
+      <ol>
+        <li><i>Unambiguous identity</i> for entities (aka. strong identifiers)</li>
+        <li>Implicit binding of an entity and its metadata via <i>strong identifiers</i></li>
+        <li><i>Multiple metadata representations</i> that enable a variety of presentations</li>
+        <li><i>High precision Search and Find queries</i> that simply use the metadata documents as the query's Data Source Name</li>
+      </ol>
+      <h1>How Do I Discover Alternative Metadata Representations?</h1>
+      <p>
+      This document exposes metadata in the following formats: (X)HTML+RDFa, Turtle, N3, JSON+RDF,  or RDF/XML. In the most basic form,  you can simply view the (X)HTML source markup of this page, and go directly to the &lt;HEAD/&gt; section which contains a &lt;LINK/&gt; tag with relationship and type properties for each format.
+     </p>
+     <p>
+     In addition, you can also explicitly request a desired metadata representation for a given resource via HTTP GET requests that use the entity's strong identifier as the call target.
+     </p>
+     <h1>How Is This Related To The Linked Data Meme?</h1>
+     <p>
+     As stated above, the links in this page expose strong identifiers for its primary topic, secondary topics, attributes, and some values. These links, via  implicit association, act as conduits to their metadata-bearing documents, in a variety formats.
+    </p>
+    <p class="opl_badge">
+    <a href="http://www.openlinksw.com/"><img src="statics/openlink150.gif" alt="OpenLink" height="33" width="100"></a>
+    </p>
+    </div><!-- #sidebar -->
+    </div> <!--  #content_wrapper -->
 <!-- footer -->
     <div id="footer">
-      <div id="ft_t">
-        Explore Linked Data using:
-        <a href="/ode/?uri=<?vsp http_url (page_resource_uri); ?>">OpenLink Data Explorer</a>
-        &nbsp; &nbsp; Raw Linked Data formats:
-        <a href="<?=rdf_link || '&output=n3'?>">N3</a> |
-        <a href="<?=rdf_link || '&output=rdf'?>">RDF/XML</a>
-        &nbsp; &nbsp;<a href="http://ode.openlinksw.com/">About</a>&nbsp; &nbsp;
-      </div> <!-- #ft_t -->
       <div id="ft_b">
         <a href="http://virtuoso.openlinksw.com" title="OpenLink Virtuoso"><img class="powered_by" src="statics/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso" /></a>
         <a href="http://linkeddata.org/"><img alt="This material is Open Knowledge" src="statics/LoDLogo.gif" style="border-width:0"  /></a> &nbsp;
