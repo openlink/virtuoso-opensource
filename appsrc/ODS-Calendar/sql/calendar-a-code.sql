@@ -3574,6 +3574,7 @@ create procedure CAL.WA.event_delete (
          set E_REPEAT_EXCEPTIONS = eExceptions || ' ' || onOffset
        where E_ID = id;
   }
+  return row_count ();
 }
 ;
 

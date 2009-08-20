@@ -304,7 +304,7 @@ create procedure ODS.ODS_API."poll.activate" (
     return ods_serialize_sql_error ('37000', 'The item is not found');
 
   if (POLLS.WA.poll_is_activated (poll_id))
-    signal ('POLLS', 'The poll is activated yet');
+    signal ('POLLS', 'The Poll is already activated');
   if (not POLLS.WA.poll_enable_activate (poll_id))
     signal ('POLLS', 'The activation is not allowed');
 
@@ -335,7 +335,7 @@ create procedure ODS.ODS_API."poll.close" (
   if (not exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
     return ods_serialize_sql_error ('37000', 'The item is not found');
   if (POLLS.WA.poll_is_closed (poll_id))
-    signal ('POLLS', 'The poll is closed yet');
+    signal ('POLLS', 'The poll is already closed');
   if (not POLLS.WA.poll_enable_close (poll_id))
     signal ('POLLS', 'The close is not allowed');
   POLLS.WA.poll_close (poll_id);
@@ -634,6 +634,9 @@ create procedure ODS.ODS_API."poll.options.set" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'Polls'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
+
   account_id := (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = uname);
   optionsParams := split_and_decode (options, 0, '%\0,='); -- XXX: FIXME
 
@@ -683,6 +686,9 @@ create procedure ODS.ODS_API."poll.options.get" (
 
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'Polls'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
 
   settings := POLLS.WA.settings (inst_id);
   POLLS.WA.settings_init (settings);

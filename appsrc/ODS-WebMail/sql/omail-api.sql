@@ -384,6 +384,9 @@ create procedure ODS.ODS_API."mail.options.set" (
   if (not ods_check_auth (uname, inst_id, 'owner'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'oMail'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
+
   domain_id := 1;
   account_id := (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = uname);
   optionsParams := split_and_decode (options, 0, '%\0,='); -- XXX: FIXME
@@ -448,6 +451,9 @@ create procedure ODS.ODS_API."mail.options.get" (
 
   if (not ods_check_auth (uname, inst_id, 'owner'))
     return ods_auth_failed ();
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'oMail'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
 
   domain_id := 1;
   account_id := (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = uname);

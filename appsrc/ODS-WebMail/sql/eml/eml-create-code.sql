@@ -3029,7 +3029,7 @@ create procedure OMAIL.WA.omail_get_certificate (
       _mime_type   := get_keyword_ucase('Content-Type',_mime_part[0],'');
       if (_mime_type = 'application/x-pkcs7-signature')
       {
-        dbg_obj_print (_mime_part[0]);
+        -- dbg_obj_print (_mime_part[0]);
         _encoding := get_keyword_ucase('Content-Transfer-Encoding', _mime_part[0], '');
         _dispos   := get_keyword_ucase('Content-Disposition', _mime_part[0], '');
         _body_beg := _mime_part[1][0];
@@ -3037,9 +3037,9 @@ create procedure OMAIL.WA.omail_get_certificate (
         _body     := subseq (blob_to_string (_source), _body_beg, _body_end + 1);
         if (_encoding = 'base64')
           _body   := decode_base64(_body);
-        dbg_obj_print ('', length (_body));
-        string_to_file ('source.eml', _source, 0);
-        string_to_file ('cert.der', _body, 0);
+        --dbg_obj_print ('', length (_body));
+        --string_to_file ('source.eml', _source, 0);
+        --string_to_file ('cert.der', _body, 0);
       }
     }
   _continue:;
@@ -4873,16 +4873,16 @@ create procedure OMAIL.WA.omail_receive_message(
     if (get_keyword_ucase ('protocol', _attrs, '') = 'application/x-pkcs7-signature')
       _certificate := OMAIL.WA.omail_get_certificate (_source, _parts);
   }
-  dbg_obj_print (now());
-  dbg_obj_print ('_certificate', _certificate);
-  string_to_file (uuid () || '.eml', _source, 0);
+  --dbg_obj_print (now());
+  --dbg_obj_print ('_certificate', _certificate);
+  --string_to_file (uuid () || '.eml', _source, 0);
   if (not isnull (_certificate))
   {
     declare x any;
 
     x := file_to_string ('smime/X.eml');
-    dbg_obj_print ('verify0: ', smime_verify (x, vector (file_to_string ('ca-bundle.crt'))));
-    dbg_obj_print ('verify1: ', smime_verify (_source, vector (file_to_string ('ca-bundle.crt'))));
+    -- dbg_obj_print ('verify0: ', smime_verify (x, vector (file_to_string ('ca-bundle.crt'))));
+    -- dbg_obj_print ('verify1: ', smime_verify (_source, vector (file_to_string ('ca-bundle.crt'))));
     -- dbg_obj_print (get_certificate_info (1, _certificate, 1, null, null));
     -- dbg_obj_print (get_certificate_info (2, _certificate, 1, null, null));
     -- dbg_obj_print (get_certificate_info (3, _certificate, 1, null, null));

@@ -509,7 +509,9 @@ function updateInput (elm, fldName, fldOptions)
   fld.name = fld.id;
   if (fldOptions.value)
     fld.value = fldOptions.value;
+  if (fldOptions.className)
   fld.className = fldOptions.className;
+  if (fldOptions.onblur)
   fld.onblur = fldOptions.onblur;
   fld.style.width = '95%';
   if (fldOptions.cssText)
@@ -752,7 +754,7 @@ function updateField10 (elm, fldName, fldOptions)
     if (fldOptions.value)
     fldValue = fldOptions.value.name;
   updateRowComboOption2(fld, fldValue, '', '');
-  updateField10Options (fld, fldValue, fld.product.class);
+  updateField10Options (fld, fldValue, fld.product.objectClass);
   fld.onchange = function (){GR.changePropertyValue(fld);};
 
   var elm = $(elm);
@@ -786,7 +788,7 @@ function updateField11 (elm, fldName, fldOptions)
   if (!property) {return;}
 
   // get property data
-  var ontologyClassProperty = GR.getOntologyClassProperty(product.class, property.name);
+  var ontologyClassProperty = GR.getOntologyClassProperty(product.objectClass, property.name);
   var propertyType;
   if (ontologyClassProperty.objectProperties)
   {
@@ -799,7 +801,7 @@ function updateField11 (elm, fldName, fldOptions)
     {
       for (var j = 0; j < ontologyClassProperty.objectProperties.length; j++)
       {
-        if (GR.isKindOfClass(GR.products[i].class,ontologyClassProperty.objectProperties[j]))
+        if (GR.isKindOfClass(GR.products[i].objectClass,ontologyClassProperty.objectProperties[j]))
 	        updateRowComboOption2(fld, property.value, 'Element #'+GR.products[i].id, GR.products[i].id);
 	    }
     }
@@ -810,7 +812,7 @@ function updateField11 (elm, fldName, fldOptions)
       {
         for (var j = 0; j < ontologyClassProperty.objectProperties.length; j++)
         {
-          if (GR.isKindOfClass(grObjects[i].class, ontologyClassProperty.objectProperties[j]))
+          if (GR.isKindOfClass(grObjects[i].objectClass, ontologyClassProperty.objectProperties[j]))
   	        updateRowComboOption2(fld, property.value, grObjects[i].id, grObjects[i].id);
   	    }
       }
@@ -1054,7 +1056,7 @@ var FT = new Object();
 FT.items = new Array();
 FT.types = ['Books', 'text/*', 'Images', 'image/*', 'Musics', 'audio/*', 'Videos', 'video/*'];
 FT.prefix = 'f';
-FT.items2 = [{id:"1", class:"text/*", items:[{id:4, label:"dfsd", uri:"safasdfa"}]}];
+FT.items2 = [{id:"1", objectClass:"text/*", items:[{id:4, label:"dfsd", uri:"safasdfa"}]}];
 
 FT.mimeType = function (favoriteType)
 {
@@ -1133,7 +1135,7 @@ FT.showItem = function (item)
   var tbody = $(this.prefix+'_tbody');
   if (!tbody)
     return;
-  updateRow(this.prefix, null, {No: item.id, fld_1: {mode: 12, cssText: ''}, fld_2: {mode: 7, value: 'Type'}, fld_3: {mode: 9, value: item.class, showValue: FT.favoriteType(item.class)+' ('+item.class+')'}, btn_1: {mode: 5, cssText: 'margin-left: 2px; margin-right: 2px;'}});
+  updateRow(this.prefix, null, {No: item.id, fld_1: {mode: 12, cssText: ''}, fld_2: {mode: 7, value: 'Type'}, fld_3: {mode: 9, value: item.objectClass, showValue: FT.favoriteType(item.objectClass)+' ('+item.objectClass+')'}, btn_1: {mode: 5, cssText: 'margin-left: 2px; margin-right: 2px;'}});
 }
 
 FT.addItem = function (prefix, No)
@@ -1147,7 +1149,7 @@ FT.addItem = function (prefix, No)
     return alert ('Please enter value!');
   fValue = this.mimeType(fValue);
   for (var i = 0; i < this.items.length; i++)
-    if (this.items[i].class == fValue)
+    if (this.items[i].objectClass == fValue)
       return alert ('This favorite type already exists. Please enter another value!');
 
   OAT.Dom.show(prefix+'_fld_1_'+No);
@@ -1161,7 +1163,7 @@ FT.addItem = function (prefix, No)
     // create new item object
     var item = new Object();
     item.prefix = this.prefix;
-    item.class = fld.value;
+    item.objectClass = fld.value;
     item.id = No;
 
     // add item
@@ -1259,8 +1261,10 @@ FT.showPropertiesTable = function (item)
   if (items)
   {
     for (var i = 0; i < items.length; i++)
+    {
       updateRow(prefixProp, null, {No: items[i].id, fld_1: {value: items[i].label}, fld_2: {value: items[i].uri}, fld_3: {value: items[i].id, type: 'hidden'}, btn_1: {mode: 4}});
   }
+}
 }
 
 // Good Relations
@@ -1444,7 +1448,7 @@ GR.showProduct = function (product)
   var tbody = $(prefix+'_tbody');
   if (!tbody)
     return;
-  updateRow(prefix, null, {No: product.id, fld_1: {mode: 6, cssText: ''}, fld_2: {mode: 7, value: 'Element #'+product.id}, fld_3: {mode: 9, value: product.class}, btn_1: {mode: 2, cssText: 'margin-left: 2px; margin-right: 2px;'}});
+  updateRow(prefix, null, {No: product.id, fld_1: {mode: 6, cssText: ''}, fld_2: {mode: 7, value: 'Element #'+product.id}, fld_3: {mode: 9, value: product.objectClass}, btn_1: {mode: 2, cssText: 'margin-left: 2px; margin-right: 2px;'}});
 }
 
 GR.addProduct = function (prefix, No)
@@ -1466,7 +1470,7 @@ GR.addProduct = function (prefix, No)
       // create new product object
       var product = new Object();
       product.prefix = 'gr';
-      product.class = fld.value;
+      product.objectClass = fld.value;
       product.id = No;
 
       // add product
@@ -1496,12 +1500,12 @@ GR.addProductToSelects = function (product)
     var obj = selects[i];
     if ((obj.id.indexOf('prop_') == 0) && (obj.id.indexOf('_fld_1_') != -1) && (obj.value != ''))
     {
-      var ontologyClassProperty = GR.getOntologyClassProperty(obj.product.class, obj.value);
+      var ontologyClassProperty = GR.getOntologyClassProperty(obj.product.objectClass, obj.value);
       if (ontologyClassProperty.objectProperties)
       {
         for (var j = 0; j < ontologyClassProperty.objectProperties.length; j++)
         {
-          if (product.class == ontologyClassProperty.objectProperties[j])
+          if (product.objectClass == ontologyClassProperty.objectProperties[j])
           {
       	    var fld = $(obj.id.replace(/_fld_1_/, '_fld_2_'));
             if (fld)
@@ -1535,12 +1539,12 @@ GR.productInSelects = function (product, mode)
     var obj = selects[i];
     if ((obj.id.indexOf('prop_') == 0) && (obj.id.indexOf('_fld_1_') != -1) && (obj.value != ''))
     {
-      var ontologyClassProperty = GR.getOntologyClassProperty(obj.product.class, obj.value);
+      var ontologyClassProperty = GR.getOntologyClassProperty(obj.product.objectClass, obj.value);
       if (ontologyClassProperty.objectProperties)
       {
         for (var i = 0; i < ontologyClassProperty.objectProperties.length; i++)
         {
-          if (product.class == ontologyClassProperty.objectProperties[i])
+          if (product.objectClass == ontologyClassProperty.objectProperties[i])
           {
       	    var fld = $(obj.id.replace(/_fld_1_/, '_fld_2_'));
             if (fld)
@@ -1569,7 +1573,7 @@ GR.showProperties = function (obj, prefix, No)
   var product = GR.getProduct(No);
   if (!product)
     return;
-  var ontologyClass = GR.getOntologyClass(product.class);
+  var ontologyClass = GR.getOntologyClass(product.objectClass);
   if (!ontologyClass)
     return;
   var tr = $(prefix+'_tr_' + No);
@@ -1629,7 +1633,7 @@ GR.showProperties = function (obj, prefix, No)
 
 GR.showPropertiesTable = function (product)
 {
-  var ontologyClass = GR.getOntologyClass(product.class);
+  var ontologyClass = GR.getOntologyClass(product.objectClass);
   if (!ontologyClass)
     return;
   var prefix = GR.tablePrefix;

@@ -131,13 +131,8 @@
 		      </v:template>
 		    </v:template>
 
-		    <v:template name="ol_ds_footer" type="simple" set-to-remove="top">
+		    <v:template name="ol_ds_footer" type="simple" name-to-remove="table" set-to-remove="top">
           <table>
-            <tr align="center">
-              <td colspan="2">
-                <vm:ds-navigation data-set="ol_ds"/>
-			      </td>
-		      </tr>
           </table>
 		    </v:template>
 	    </v:data-set>
@@ -176,7 +171,7 @@
                   <thead>
                     <tr class="listing_header_row">
                       <th>
-                        <div style="width: 16px;">&nbsp;</div>
+                        <div style="width: 16px;"><![CDATA[&nbsp;]]></div>
                     </th>
                       <th width="20%">
                         Type
@@ -206,9 +201,13 @@
         </table>
           <script type="text/javascript">
             <![CDATA[
+              ODSInitArray.push ( function () {
+                OAT.Loader.loadFeatures(["ajax2", "json", "ws", "combolist"], function(){
               GR.tablePrefix = 'ol';
-              GR.products = <?vsp http (ODS..obj2json (get_keyword ('products', self.ol_properties, vector ()), 10)); ?>;
+                  GR.products = <?vsp http (replace (ODS..obj2json (get_keyword ('products', self.ol_properties, vector ()), 10), 'class:', 'objectClass:')); ?>;
               GR.showProducts();
+                });
+              });
             ]]>
           </script>
 	    </fieldset>
