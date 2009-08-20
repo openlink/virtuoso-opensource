@@ -614,19 +614,14 @@
                   ]]>
                   <script type="text/javascript">
                     <![CDATA[
-				var graphIRI = "<?V wa_link (1, '/dataspace/'|| self.utype ||self.fname) ?>";
+                      var graphIRI = "<?V WA_LINK (1, WA_USER_DATASPACE(self.fname)) ?>";
                       var fList = ["rdfmini","dimmer","grid","graphsvg","map","ymaps","timeline","tagcloud","anchor","dock"];
 				ODSInitArray.push ( function () { OAT.Loader.loadFeatures(fList, RDFMInit); } );
                     ]]>
                   </script>
-			    <table>
-				<tr>
-				    <td>
 					<div id="dock_content">
+                    &nbsp;
 					</div>
-				    </td>
-				</tr>
-			    </table>
                 </div>
               </div>
             </div>
