@@ -1,26 +1,26 @@
 /*
- *  
+ *  $Id$
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
- *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
+ *  Copyright (C) 1998-2009 OpenLink Software
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
-/* VirtuosoStatement.java */
+ *
+ */
+
 package virtuoso.jdbc2;
 
 import java.sql.*;
@@ -64,11 +64,6 @@ public class VirtuosoStatement implements Statement
 
    // The Connection that owns this Statement
    protected VirtuosoConnection connection;
-
-#if JDK_VER >= 14
-   // The client connection in case of connection pooling.
-   private VirtuosoConnectionHandle connectionHandle;
-#endif
 
    // The maximum field size for data of certain SQL types
    private int maxFieldSize;
@@ -153,11 +148,6 @@ public class VirtuosoStatement implements Statement
       this.prefetch = connection.fbs;
    }
 
-#if JDK_VER >= 14
-   void setConnectionHandle(VirtuosoConnectionHandle connectionHandle) {
-       this.connectionHandle = connectionHandle;
-   }
-#endif
 
    protected VectorOfLong getStmtOpts () throws VirtuosoException
      {
@@ -172,7 +162,7 @@ public class VirtuosoStatement implements Statement
        arrLong[2] = new Long(maxRows);
 #if JDK_VER >= 14
        if (connection.getGlobalTransaction()) {
-           VirtuosoXAConnection xac = (VirtuosoXAConnection) connection.pooled_connection;
+           VirtuosoXAConnection xac = (VirtuosoXAConnection) connection.xa_connection;
 	   if (VirtuosoFuture.rpc_log != null)
 	   {
 	       synchronized (VirtuosoFuture.rpc_log)
@@ -643,14 +633,7 @@ public class VirtuosoStatement implements Statement
     * @see java.sql.Statement#getConnection
     */
     public Connection getConnection() throws VirtuosoException {
-#if JDK_VER >= 14
-        return (
-            connectionHandle != null
-                ? (Connection) connectionHandle
-                : (Connection) connection);
-#else
 	return connection;
-#endif
     }
 
    /**
@@ -977,16 +960,6 @@ public class VirtuosoStatement implements Statement
    protected void notify_error (Throwable e) throws VirtuosoException
    {
        VirtuosoConnection c = connection;
-#if JDK_VER >= 14
-       try
-       {
-	   if (c == null && connectionHandle != null && !connectionHandle.isClosed())
-	       c = connectionHandle.getVirtuosoConnection ();
-       }
-       catch (SQLException se)
-       {
-       }
-#endif
 
        if (c != null)
 	   throw c.notify_error (e);
@@ -1004,23 +977,23 @@ public class VirtuosoStatement implements Statement
     //------------------------- JDBC 4.0 -----------------------------------
   private boolean isPoolable = true;
     /**
-     * Requests that a <code>Statement</code> be pooled or not pooled.  The value 
-     * specified is a hint to the statement pool implementation indicating 
-     * whether the applicaiton wants the statement to be pooled.  It is up to 
+     * Requests that a <code>Statement</code> be pooled or not pooled.  The value
+     * specified is a hint to the statement pool implementation indicating
+     * whether the applicaiton wants the statement to be pooled.  It is up to
      * the statement pool manager as to whether the hint is used.
      * <p>
-     * The poolable value of a statement is applicable to both internal 
-     * statement caches implemented by the driver and external statement caches 
+     * The poolable value of a statement is applicable to both internal
+     * statement caches implemented by the driver and external statement caches
      * implemented by application servers and other applications.
      * <p>
-     * By default, a <code>Statement</code> is not poolable when created, and 
-     * a <code>PreparedStatement</code> and <code>CallableStatement</code> 
+     * By default, a <code>Statement</code> is not poolable when created, and
+     * a <code>PreparedStatement</code> and <code>CallableStatement</code>
      * are poolable when created.
      * <p>
      * @param poolable	requests that the statement be pooled if true and
-     * 			that the statement not be pooled if false 
+     * 			that the statement not be pooled if false
      * <p>
-     * @throws SQLException if this method is called on a closed 
+     * @throws SQLException if this method is called on a closed
      * <code>Statement</code>
      * <p>
      * @since 1.6
@@ -1029,15 +1002,15 @@ public class VirtuosoStatement implements Statement
   {
     isPoolable = poolable;
   }
-	
+
     /**
      * Returns a  value indicating whether the <code>Statement</code>
      * is poolable or not.
      * <p>
-     * @return	<code>true</code> if the <code>Statement</code> 
+     * @return	<code>true</code> if the <code>Statement</code>
      * is poolable; <code>false</code> otherwise
      * <p>
-     * @throws SQLException if this method is called on a closed 
+     * @throws SQLException if this method is called on a closed
      * <code>Statement</code>
      * <p>
      * @since 1.6
@@ -1052,18 +1025,18 @@ public class VirtuosoStatement implements Statement
     /**
      * Returns an object that implements the given interface to allow access to
      * non-standard methods, or standard methods not exposed by the proxy.
-     * 
-     * If the receiver implements the interface then the result is the receiver 
+     *
+     * If the receiver implements the interface then the result is the receiver
      * or a proxy for the receiver. If the receiver is a wrapper
      * and the wrapped object implements the interface then the result is the
      * wrapped object or a proxy for the wrapped object. Otherwise return the
-     * the result of calling <code>unwrap</code> recursively on the wrapped object 
+     * the result of calling <code>unwrap</code> recursively on the wrapped object
      * or a proxy for that result. If the receiver is not a
      * wrapper and does not implement the interface, then an <code>SQLException</code> is thrown.
      *
      * @param iface A Class defining an interface that the result must implement.
      * @return an object that implements the interface. May be a proxy for the actual implementing object.
-     * @throws java.sql.SQLException If no object found that implements the interface 
+     * @throws java.sql.SQLException If no object found that implements the interface
      * @since 1.6
      */
   public <T> T unwrap(java.lang.Class<T> iface) throws java.sql.SQLException

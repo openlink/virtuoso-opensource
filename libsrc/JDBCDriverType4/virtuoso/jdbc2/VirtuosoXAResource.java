@@ -1,28 +1,25 @@
 /*
- *  
+ *  $Id$
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
- *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
+ *  Copyright (C) 1998-2009 OpenLink Software
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
-//
-// $Id$
-//
+ *
+ */
 
 package virtuoso.jdbc2;
 
@@ -48,28 +45,49 @@ public class VirtuosoXAResource implements XAResource
 
     private final String GET_ALL_XIDS = "_2PC.DBA.XA_GET_ALL_XIDS()";
 
-    private VirtuosoXAConnection xaConnection;
+    private VirtuosoPooledConnection vConnection;
     private XAResourceManager manager;
     private XATransaction currentTransaction;
     int txn_timeout = 0;
 
     private boolean stored_auto_commit;
 
-    VirtuosoXAResource(VirtuosoXAConnection xaConnection) {
-        this.xaConnection = xaConnection;
-        this.manager =
-            XAResourceManager.getManager(
-                xaConnection.getVirtuosoDataSource().getServerName(),
-                xaConnection.getVirtuosoDataSource().getPortNumber());
+    private Xid     r_currentXid = null;
+
+    VirtuosoXAResource(VirtuosoPooledConnection vConnection, String server, int port) {
+        this.vConnection = vConnection;
+        this.manager = XAResourceManager.getManager(server, port);
      if (VirtuosoFuture.rpc_log != null)
        {
 	 synchronized (VirtuosoFuture.rpc_log)
 	   {
-	     VirtuosoFuture.rpc_log.println ("new VirtuosoXAResource (+ con=" + xaConnection.hashCode() + ") :" + hashCode() + ")");
+	     VirtuosoFuture.rpc_log.println ("new VirtuosoXAResource (+ con=" + vConnection.hashCode() + ") :" + hashCode() + ")");
 	     VirtuosoFuture.rpc_log.flush();
 	   }
        }
     }
+
+
+    void reset_XA()
+    {
+     if (VirtuosoFuture.rpc_log != null)
+       {
+	 synchronized (VirtuosoFuture.rpc_log)
+	   {
+	     VirtuosoFuture.rpc_log.println ("VirtuosoXAResource.reset_XA () :" + hashCode());
+	     VirtuosoFuture.rpc_log.flush();
+	   }
+       }
+      if (vConnection == null)
+        return;
+
+      if (r_currentXid != null)
+        try {
+          end(r_currentXid, XAResource.TMFAIL);
+        }
+        catch (Exception e) {}
+    }
+
 
     public int getTransactionTimeout() throws XAException {
      if (VirtuosoFuture.rpc_log != null)
@@ -82,6 +100,7 @@ public class VirtuosoXAResource implements XAResource
        }
         return txn_timeout;
     }
+
 
     public boolean setTransactionTimeout(int seconds) throws XAException {
      if (VirtuosoFuture.rpc_log != null)
@@ -97,12 +116,13 @@ public class VirtuosoXAResource implements XAResource
 	    xaex.errorCode = XAException.XAER_INVAL;
 	    throw xaex;
         } else if (seconds == 0) {
-            txn_timeout = xaConnection.getVirtuosoConnection().getTimeout();
+            txn_timeout = vConnection.getVirtuosoConnection().getTimeout();
         } else {
             txn_timeout = seconds;
         }
         return true;
     }
+
 
     public boolean isSameRM(XAResource xaResource) throws XAException {
 	boolean ret;
@@ -125,6 +145,7 @@ public class VirtuosoXAResource implements XAResource
 	}
 	return ret;
     }
+
 
     public void start(Xid xid, int param) throws XAException {
      if (VirtuosoFuture.rpc_log != null)
@@ -165,7 +186,7 @@ public class VirtuosoXAResource implements XAResource
             throw new XAException("Unsupported mode");
         }
 
-        VirtuosoConnection con = xaConnection.getVirtuosoConnection();
+        VirtuosoConnection con = vConnection.getVirtuosoConnection();
         enterGlobalTransaction(con);
         try {
             rpc(con, start_param, transaction.getXid().encode());
@@ -173,10 +194,12 @@ public class VirtuosoXAResource implements XAResource
             leaveGlobalTransaction(con);
             throw ex;
         }
+        r_currentXid = xid;
     }
 
+
     public void end(Xid xid, int param) throws XAException {
-     int end_param;	
+     int end_param;
      if (VirtuosoFuture.rpc_log != null)
        {
 	 synchronized (VirtuosoFuture.rpc_log)
@@ -192,25 +215,26 @@ public class VirtuosoXAResource implements XAResource
 
         if ((param & XAResource.TMSUSPEND) != 0)
 	{
-           end_param = SQL_XA_SUSPEND;  
-	}   
-	else if (param == XAResource.TMSUCCESS) 
+           end_param = SQL_XA_SUSPEND;
+	}
+	else if (param == XAResource.TMSUCCESS)
 	{
-           end_param = SQL_XA_END;  
-        } 
-	else if (param == XAResource.TMFAIL) 
+           end_param = SQL_XA_END;
+        }
+	else if (param == XAResource.TMFAIL)
 	{
-           end_param = SQL_XA_END;  
-        } 
+           end_param = SQL_XA_END;
+        }
 	else
        	{
             throw new XAException("Invalid flag.");
         }
 
-        VirtuosoConnection con = xaConnection.getVirtuosoConnection();
+        VirtuosoConnection con = vConnection.getVirtuosoConnection();
         rpc(con, end_param, ctx.getXid().encode());
         leaveGlobalTransaction(con);
     }
+
 
     public int prepare(Xid xid) throws XAException {
      if (VirtuosoFuture.rpc_log != null)
@@ -226,11 +250,12 @@ public class VirtuosoXAResource implements XAResource
 
         XATransaction ctx = manager.getTransaction(xid);
 
-	VirtuosoConnection con = xaConnection.getVirtuosoConnection();
+	VirtuosoConnection con = vConnection.getVirtuosoConnection();
         rpc(con, SQL_XA_PREPARE, ctx.getXid().encode());
         ctx.setStatus(XATransaction.PREPARED);
         return XAResource.XA_OK;
     }
+
 
     public void commit(Xid xid, boolean onePhase) throws XAException {
      if (VirtuosoFuture.rpc_log != null)
@@ -251,6 +276,7 @@ public class VirtuosoXAResource implements XAResource
         transact(ctx, SQL_XA_COMMIT);
     }
 
+
     public void rollback(Xid xid) throws XAException {
      if (VirtuosoFuture.rpc_log != null)
        {
@@ -267,6 +293,7 @@ public class VirtuosoXAResource implements XAResource
         transact(ctx, SQL_XA_ROLLBACK);
     }
 
+
     public Xid[] recover(int param) throws XAException {
      if (VirtuosoFuture.rpc_log != null)
        {
@@ -282,7 +309,7 @@ public class VirtuosoXAResource implements XAResource
         Vector xidv = new Vector ();
 
         try {
-            VirtuosoConnection con = xaConnection.getVirtuosoConnection();
+            VirtuosoConnection con = vConnection.getVirtuosoConnection();
             Statement stmt = con.createStatement();
             ResultSet rs = stmt.executeQuery (GET_ALL_XIDS);
             while (rs.next ()) {
@@ -299,6 +326,7 @@ public class VirtuosoXAResource implements XAResource
         return xids;
     }
 
+
     public void forget(Xid xid) throws XAException {
      if (VirtuosoFuture.rpc_log != null)
        {
@@ -311,6 +339,7 @@ public class VirtuosoXAResource implements XAResource
         if (xid == null)
             throw new XAException(XAException.XAER_INVAL);
     }
+
 
     private void enterGlobalTransaction(VirtuosoConnection connection) {
      if (VirtuosoFuture.rpc_log != null)
@@ -331,6 +360,7 @@ public class VirtuosoXAResource implements XAResource
         connection.setGlobalTransaction(true);
     }
 
+
     private void leaveGlobalTransaction(VirtuosoConnection connection) {
      if (VirtuosoFuture.rpc_log != null)
        {
@@ -347,14 +377,17 @@ public class VirtuosoXAResource implements XAResource
             connection.setAutoCommit(stored_auto_commit);
         } catch (Exception e) {
         }
+        r_currentXid = null;
     }
+
 
     private void transact(XATransaction ctx, int action) throws XAException {
         Object encodedXid = ctx.getXid().encode();
-        VirtuosoConnection con = xaConnection.getVirtuosoConnection();
+        VirtuosoConnection con = vConnection.getVirtuosoConnection();
 	rpc(con, action, encodedXid);
 	rpc(con, SQL_XA_WAIT, encodedXid);
     }
+
 
     private void rpc(VirtuosoConnection connection, int action, Object encodedXid)
         throws XAException {

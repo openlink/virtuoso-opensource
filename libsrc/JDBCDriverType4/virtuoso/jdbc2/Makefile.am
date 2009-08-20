@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2009 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -68,9 +68,14 @@ in3files= \
 VirtuosoParameterMetaData.java \
 VirtuosoDataSource.java \
 VirtuosoConnectionPoolDataSource.java VirtuosoPooledConnection.java \
-VirtuosoConnectionHandle.java \
 VirtuosoXADataSource.java VirtuosoXAConnection.java VirtuosoXAResource.java \
-VirtuosoXid.java XAResourceManager.java XATransaction.java
+VirtuosoXid.java XAResourceManager.java XATransaction.java \
+CallableStatementWrapper.java Closeable.java ConnectionWrapper.java \
+DatabaseMetaDataWrapper.java ParameterMetaDataWrapper.java \
+PreparedStatementWrapper.java ResultSetMetaDataWrapper.java \
+ResultSetWrapper.java SavepointWrapper.java StatementWrapper.java \
+VirtuosoPoolManager.java
+
 
 in1files= \
 VirtuosoClob.java BatchUpdateException.java \

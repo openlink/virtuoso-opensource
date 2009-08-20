@@ -23,24 +23,43 @@
 
 package virtuoso.jdbc2;
 
-import java.io.*;
+import java.sql.Savepoint;
+import java.sql.SQLException;
 
-/**
- * The VirtuosoAsciiInputStream class is designed to have an ASCII stream.
- *
- * @version 1.0 (JDBC API 2.0 implementation)
- */
-class VirtuosoAsciiInputStream extends FilterInputStream
-{
-   /**
-    * Constructs a new VirtuosoAsciiInputStream from a byte array.
-    *
-    * @param data The byte array.
-    */
-   VirtuosoAsciiInputStream(byte[] data)
-   {
-      super(new ByteArrayInputStream(data));
-   }
+public class SavepointWrapper implements Savepoint {
+
+  private Savepoint wsp;
+  private ConnectionWrapper wconn;
+
+  protected SavepointWrapper(Savepoint _sp, ConnectionWrapper _wconn) {
+    wsp = _sp;
+    wconn = _wconn;
+  }
+
+
+  private void exceptionOccurred(SQLException sqlEx) {
+    if (wconn != null)
+      wconn.exceptionOccurred(sqlEx);
+  }
+
+
+  public int getSavepointId() throws java.sql.SQLException {
+    try {
+      return wsp.getSavepointId();
+    } catch (SQLException ex) {
+      exceptionOccurred(ex);
+      throw ex;
+    }
+  }
+
+
+  public String getSavepointName() throws java.sql.SQLException {
+    try {
+      return wsp.getSavepointName();
+    } catch (SQLException ex) {
+      exceptionOccurred(ex);
+      throw ex;
+    }
+  }
 
 }
-

@@ -1,26 +1,26 @@
 /*
- *  
+ *  $Id$
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
- *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
+ *  Copyright (C) 1998-2009 OpenLink Software
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
-/* Driver.java */
+ *
+ */
+
 package virtuoso.jdbc2;
 
 import java.sql.*;
@@ -62,7 +62,7 @@ public class Driver implements java.sql.Driver
    // The major and minor version number
    protected static final int major = 3;
 
-   protected static final int minor = 34;
+   protected static final int minor = 35;
 
    // Some variables
    private String host = "localhost";
@@ -96,8 +96,10 @@ public class Driver implements java.sql.Driver
 	     "JDBC_LOG"
 #elif JDK_VER < 14
 	     "JDBC2_LOG"
-#else
+#elif JDK_VER < 16
 	     "JDBC3_LOG"
+#else
+	     "JDBC4_LOG"
 #endif
 	     );
 	 //log_file="/home/O12/logs/log." + System.currentTimeMillis () + "." + new java.util.Random ().nextInt() + ".log";
@@ -280,33 +282,33 @@ public class Driver implements java.sql.Driver
     }
 
     val = props.getProperty("pwdtype");
-    if (val != null) 
+    if (val != null)
       props.setProperty("pwdclear", val);
-  
+
     val = props.getProperty("uid");
-    if (val != null) 
+    if (val != null)
       props.setProperty("user", val);
-  
+
     val = props.getProperty("pwd");
-    if (val != null) 
+    if (val != null)
       props.setProperty("password", val);
-  
+
     val = props.getProperty("cert");
-    if (val != null) 
+    if (val != null)
       props.setProperty("certificate", val);
-  
+
     val = props.getProperty("pass");
-    if (val != null) 
+    if (val != null)
       props.setProperty("keystorepass", val);
-  
+
     val = props.getProperty("kpath");
-    if (val != null) 
+    if (val != null)
       props.setProperty("keystorepath", val);
-  
+
     return props;
    }
 
-   
+
    /**
     * Gets information about the possible properties for this driver.
     * <p>The getPropertyInfo method is intended to allow a generic GUI tool to

@@ -1,30 +1,25 @@
 /*
- *  BaseRowSet.java
- *
  *  $Id$
  *
- *
- *  
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
- *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
+ *  Copyright (C) 1998-2009 OpenLink Software
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ *
+ */
 
 package virtuoso.javax;
 
@@ -67,7 +62,7 @@ public abstract class BaseRowSet implements RowSet, Serializable {
     private int fetchSize = 0;
 
 #if JDK_VER >= 16
-    protected java.util.Map<String,Class<?>> map = null; 
+    protected java.util.Map<String,Class<?>> map = null;
     private LinkedList<RowSetListener> listeners;
     private ArrayList<Parameter> params;
 #else
@@ -684,7 +679,7 @@ public abstract class BaseRowSet implements RowSet, Serializable {
   {
     throw OPLMessage_x.makeFExceptionV(OPLMessage_x.errx_Method_XX_not_yet_implemented, "setClob(parameterName, reader)");
   }
- 
+
     /**
       * Sets the designated parameter to the given <code>java.sql.SQLXML</code> object. The driver converts this to an
       * SQL <code>XML</code> value when it sends it to the database.
@@ -695,8 +690,8 @@ public abstract class BaseRowSet implements RowSet, Serializable {
       * the <code>java.xml.transform.Result</code>,
       *  <code>Writer</code> or <code>OutputStream</code> has not been closed
       * for the <code>SQLXML</code> object  or
-      *  if there is an error processing the XML value.  The <code>getCause</code> method 
-      *  of the exception may provide a more detailed exception, for example, if the 
+      *  if there is an error processing the XML value.  The <code>getCause</code> method
+      *  of the exception may provide a more detailed exception, for example, if the
       *  stream does not contain valid XML.
       * @since 1.6
       */
@@ -715,8 +710,8 @@ public abstract class BaseRowSet implements RowSet, Serializable {
      * the <code>java.xml.transform.Result</code>,
      *  <code>Writer</code> or <code>OutputStream</code> has not been closed
      * for the <code>SQLXML</code> object  or
-     *  if there is an error processing the XML value.  The <code>getCause</code> method 
-     *  of the exception may provide a more detailed exception, for example, if the 
+     *  if there is an error processing the XML value.  The <code>getCause</code> method
+     *  of the exception may provide a more detailed exception, for example, if the
      *  stream does not contain valid XML.
      * @since 1.6
      */
@@ -976,7 +971,7 @@ public abstract class BaseRowSet implements RowSet, Serializable {
     param.value = value;
     param.jType = Parameter.jObject;
   }
-    
+
     /**
      * Sets the designated parameter to a <code>Reader</code> object.
      * This method differs from the <code>setCharacterStream (int, Reader)</code> method
@@ -1083,7 +1078,7 @@ public abstract class BaseRowSet implements RowSet, Serializable {
 #if JDK_VER >= 16
 
   /**
-   * Sets the designated parameter in this <code>RowSet</code> object's command 
+   * Sets the designated parameter in this <code>RowSet</code> object's command
    * to the given input stream.
    * When a very large ASCII value is input to a <code>LONGVARCHAR</code>
    * parameter, it may be more practical to send it via a
@@ -1140,7 +1135,7 @@ public abstract class BaseRowSet implements RowSet, Serializable {
   }
 
   /**
-   * Sets the designated parameter in this <code>RowSet</code> object's command 
+   * Sets the designated parameter in this <code>RowSet</code> object's command
    * to the given input stream.
    * When a very large binary value is input to a <code>LONGVARBINARY</code>
    * parameter, it may be more practical to send it via a
@@ -1809,7 +1804,7 @@ public abstract class BaseRowSet implements RowSet, Serializable {
   {
     throw OPLMessage_x.makeFExceptionV(OPLMessage_x.errx_Method_XX_not_yet_implemented, "setByte(parameterName, x)");
   }
- 
+
   /**
      * Sets the designated parameter to the given Java <code>short</code> value.
      * The driver converts this
@@ -1904,7 +1899,7 @@ public abstract class BaseRowSet implements RowSet, Serializable {
   {
     throw OPLMessage_x.makeFExceptionV(OPLMessage_x.errx_Method_XX_not_yet_implemented, "setDouble(parameterName, x)");
   }
- 
+
   /**
      * Sets the designated parameter to the given
      * <code>java.math.BigDecimal</code> value.
@@ -2014,7 +2009,7 @@ public abstract class BaseRowSet implements RowSet, Serializable {
   {
     throw OPLMessage_x.makeFExceptionV(OPLMessage_x.errx_Method_XX_not_yet_implemented, "setAsciiStream(parameterName, x, length)");
   }
- 
+
   /**
      * Sets the designated parameter to the given input stream, which will have
      * the specified number of bytes.
@@ -2068,7 +2063,7 @@ public abstract class BaseRowSet implements RowSet, Serializable {
   {
     throw OPLMessage_x.makeFExceptionV(OPLMessage_x.errx_Method_XX_not_yet_implemented, "setCharacterStream(parameterName, reader, length)");
   }
- 
+
   /**
      * Sets the value of the designated parameter with the given object. The second
      * argument must be an object type; for integral values, the
@@ -2181,7 +2176,7 @@ public abstract class BaseRowSet implements RowSet, Serializable {
   {
     throw OPLMessage_x.makeFExceptionV(OPLMessage_x.errx_Method_XX_not_yet_implemented, "setObject(parameterName, x)");
   }
- 
+
   /**
      * Sets the designated parameter to the given <code>java.sql.Date</code> value
      * using the default time zone of the virtual machine that is running

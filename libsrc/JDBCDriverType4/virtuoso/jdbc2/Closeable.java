@@ -23,24 +23,7 @@
 
 package virtuoso.jdbc2;
 
-import java.io.*;
+public interface Closeable {
 
-/**
- * The VirtuosoAsciiInputStream class is designed to have an ASCII stream.
- *
- * @version 1.0 (JDBC API 2.0 implementation)
- */
-class VirtuosoAsciiInputStream extends FilterInputStream
-{
-   /**
-    * Constructs a new VirtuosoAsciiInputStream from a byte array.
-    *
-    * @param data The byte array.
-    */
-   VirtuosoAsciiInputStream(byte[] data)
-   {
-      super(new ByteArrayInputStream(data));
-   }
-
+  public abstract void close() throws java.sql.SQLException;
 }
-
