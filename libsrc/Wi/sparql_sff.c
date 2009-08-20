@@ -92,7 +92,7 @@ sprintff_is_proven_bijection (const char *f)
               return 0;
             continue;
           case 'U':
-            if (NULL == strchr ("/?=#", next))
+            if (isplainURIchar (next) || (next & ~ 0x7F))
               return 0;
             continue;
         }
@@ -875,7 +875,7 @@ f2_v_is_D:
   GPF_T; /* never reached */
 
 f2_v_is_U:
-  if (isplainURIchar (f2_tail[0]) || ('%' == f2_tail[0]))
+  if (isplainURIchar (f2_tail[0]) || (f2_tail[0] & ~0x7F) || ('%' == f2_tail[0]))
     goto generic_tails; /* see below */
   /* The unambiguous '%U' in f2 may match any %U-like chars */
   s1_tail = s1;
@@ -886,7 +886,17 @@ f2_v_is_U:
           s1_tail++;
           continue;
         }
-      if (('%' == s1_tail[0]) && isxdigit (s1_tail[1]) && isxdigit (s1_tail[2]))
+      if (s1_tail[0] & ~0x7F)
+        {
+          const char *ctail = s1_tail;
+          unichar uc = eh_decode_char__UTF8 (&ctail, ctail + strlen (ctail));
+          if (uc > 0)
+            {
+              s1_tail = ctail;
+              continue;
+            }
+        }
+      else if (('%' == s1_tail[0]) && isxdigit (s1_tail[1]) && isxdigit (s1_tail[2]))
         {
           s1_tail += 3;
           continue;

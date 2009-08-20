@@ -804,7 +804,12 @@ extern void sparp_jso_validate_format (sparp_t *sparp, ssg_valmode_t fmt);
 /*! Prints an SQL identifier. 'prin' instead of 'print' because it does not print whitespace or delim before the text */
 extern void ssg_prin_id (spar_sqlgen_t *ssg, const char *name);
 extern void ssg_prin_id_with_suffix (spar_sqlgen_t *ssg, const char *name, const char *suffix);
-extern void ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int allow_uname);
+#define SQL_ATOM_ASCII_ONLY     10
+#define SQL_ATOM_NARROW_ONLY	11
+#define SQL_ATOM_UTF8_ONLY	12
+#define SQL_ATOM_NARROW_OR_WIDE	13
+#define SQL_ATOM_UNAME_ALLOWED	14
+extern void ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode);
 extern void ssg_print_literal_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit);
 extern void ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit);
 extern void ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit);

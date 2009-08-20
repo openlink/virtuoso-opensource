@@ -2464,6 +2464,15 @@ assertion_failed:
         graph_iri = BNODE_IID_TO_LABEL(graph_iid);
       else if (bif_uses_index)
         graph_iri = key_id_to_iri (qi, graph_iid);
+      else
+        {
+          char tmp[40];
+          if (graph_iid >= MIN_64BIT_BNODE_IRI_ID)
+            snprintf (tmp, sizeof (tmp), "#ib" BOXINT_FMT, (boxint)(graph_iid-MIN_64BIT_BNODE_IRI_ID));
+          else
+            snprintf (tmp, sizeof (tmp), "#i" BOXINT_FMT, (boxint)(graph_iid));
+          graph_iri = box_dv_short_string (tmp);
+        }
       err = srv_make_new_error ("RDF02", "SR619", "%.50s access denied: %.20s user %d (%.200s) has no %.50s permission on graph %.500s",
         opname, user_type, (int)uid, u->usr_name,
         rdf_graph_user_perm_title (failed_perms),

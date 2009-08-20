@@ -91,7 +91,7 @@ void ssg_sdprin_literal (spar_sqlgen_t *ssg, SPART *tree)
         return;
       }
     default:
-      ssg_print_box_as_sql_atom (ssg, (caddr_t)tree, 0);
+      ssg_print_box_as_sql_atom (ssg, (caddr_t)tree, SQL_ATOM_UTF8_ONLY);
       return;
     }
 }

@@ -23,6 +23,8 @@
 #include "Dk.h"
 #include "multibyte.h"
 #include "http.h"
+#include "langfunc.h"
+
 
 unsigned char dks_esc_char_props[0x100] = {
 /* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
@@ -259,9 +261,25 @@ out_lattice:
 
 out_percent:
   {
+    if (wc & ~0x7F)
+      {
+        char utf8_buf[MAX_UTF8_CHAR];
+        char *utf8_head = utf8_buf;
+        char *utf8_tail = eh_encode_char__UTF8 (wc, utf8_buf, utf8_buf + MAX_UTF8_CHAR);
+        while (utf8_head < utf8_tail)
+          {
+            out_buf[out_buf_idx++] = '%';
+            out_buf[out_buf_idx++] = "0123456789ABCDEF"[((utf8_head[0])&0xF0)>>4];
+            out_buf[out_buf_idx++] = "0123456789ABCDEF"[(utf8_head[0])&0x0F];
+            utf8_head++;
+          }
+      }
+    else
+      {
     out_buf[out_buf_idx++] = '%';
     out_buf[out_buf_idx++] = "0123456789ABCDEF"[(wc&0xF0)>>4];
     out_buf[out_buf_idx++] = "0123456789ABCDEF"[wc&0x0F];
+      }
     goto char_done;
   }
 
