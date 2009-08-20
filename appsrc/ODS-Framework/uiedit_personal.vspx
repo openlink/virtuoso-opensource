@@ -775,7 +775,7 @@
                       ]]>
                     </v:before-render>
                   </v:radio-button>
-                  <xsl:call-template name="nbsp" />
+                  <![CDATA[&nbsp;]]>
                   <b><label for="i_source_0">Personal URI (Web ID)</label></b>
                 </td>
                 <td>
@@ -791,7 +791,7 @@
                       ]]>
                     </v:before-render>
                   </v:radio-button>
-                  <xsl:call-template name="nbsp" />
+                  <![CDATA[&nbsp;]]>
                   <b><label for="i_source_1">LDAP Server</label></b>
                 </td>
                 <td>
@@ -1034,7 +1034,7 @@
               </td>
             </tr>
             <tr>
-              <th />
+              <th> </th>
               <td class="listing_col" nowrap="1">
                 <label>
                   <v:check-box name="cb_org" value="1" xhtml_id="cb_org" xhtml_onclick="javascript:swOrg(this);" xhtml_tabindex="2">
@@ -1042,7 +1042,8 @@
                       if (not e.ve_is_post)
                         control.ufl_selected := self.is_org;
                     </v:after-data-bind>
-                  </v:check-box><![CDATA[&nbsp;]]>
+                  </v:check-box>
+                  <![CDATA[&nbsp;]]>
                   <b>Organization</b>
                 </label>
               </td>
@@ -1447,7 +1448,7 @@
                </td>
              </tr>
              <tr>
-               <td />
+               <td> </td>
                <td>
                  <label>
                    <v:check-box name="in_search" value="1" xhtml_id="in_search" >
@@ -1461,7 +1462,7 @@
                </td>
              </tr>
              <tr>
-               <td />
+               <td> </td>
                <td>
                  <label>
                    <v:check-box name="show_active" value="--self.showactive" xhtml_id="show_active" >
@@ -1680,7 +1681,7 @@
                   <thead>
                   <tr class="listing_header_row">
                       <th>
-                        <div style="width: 16px;">&nbsp;</div>
+                        <div style="width: 16px;"><![CDATA[&nbsp;]]></div>
                     </th>
                       <th width="100%" colspan="2">
                         Favorite Type
@@ -1709,9 +1710,13 @@
           </table>
           <script type="text/javascript">
             <![CDATA[
+              ODSInitArray.push ( function () {
+                OAT.Loader.loadFeatures(["ajax2", "json", "ws"], function(){
               FT.prefix = 'f';
-              FT.items = <?vsp http (ODS..obj2json (self.favorites2json ())); ?>;
+                  FT.items = <?vsp http (replace (ODS..obj2json (self.favorites2json ()), 'class:', 'objectClass:')); ?>;
               FT.showItems();
+                });
+              });
             ]]>
           </script>
         </div>

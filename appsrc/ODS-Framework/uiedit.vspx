@@ -74,7 +74,6 @@
             var cPopup = new CalendarPopup('cDiv');
             cPopup.isShowYearNavigation = true;
 
-		        OAT.Loader.loadFeatures(["json", "ws", "combolist"], function(){});
 function getFileName(form, from, to)
 {
   var S = from.value;
@@ -93,14 +92,8 @@ function swPersHide ()
               if (lb)
     lb.innerHTML = 'Organization Webpage';
   for (i = 1; i <= 20; i++)
-    {
-                var elm = $('pers_'+i);
-                if (elm)
-        elm.style.display = "none";
-    }
-              var elm = $('p_tab_1');
-              if (elm)
-                elm.style.display = "none";
+                OAT.Dom.hide('pers_'+i);
+              OAT.Dom.hide('p_tab_2');
 }
 function swPersShow ()
 {
@@ -108,14 +101,8 @@ function swPersShow ()
               if (lb)
     lb.innerHTML = 'Personal Webpage';
   for (i = 1; i <= 20; i++)
-    {
-                var elm = $('pers_'+i);
-                if (elm)
-        elm.style.display = "";
-    }
-              var elm = $('p_tab_1');
-              if (elm)
-                elm.style.display = "";
+                OAT.Dom.show('pers_'+i);
+              OAT.Dom.show('p_tab_2');
 }
 function swOrg (cb)
 {
@@ -124,16 +111,6 @@ function swOrg (cb)
   else
     swPersShow ();
 }
-
-window.onload = function swOrgInit ()
-{
-  if (<?V self.is_org ?>)
-    swPersHide ();
-  else
-    swPersShow ();
-}
-
-
 function checkRest (form, sel)
 {
   var i;
@@ -221,6 +198,12 @@ function checkRest (form, sel)
                 OAT.Dom.show('used_access_personal');
               }
             }
+            ODSInitArray.push ( function () {
+              OAT.Loader.loadFeatures(["json", "ws", "combolist"], function(){});
+            });
+            ODSInitArray.push ( function () {
+              (<?V self.is_org ?>)? swPersHide(): swPersShow();
+            });
           ]]>
         </script>
         <vm:login redirect="index.vspx"/>
