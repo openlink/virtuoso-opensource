@@ -122,6 +122,8 @@ void  bif_kerberos_init (void);
 id_hash_t *name_to_bif;
 id_hash_t *name_to_bif_type;
 
+#define bif_arg_nochecks(qst,args,nth) QST_GET ((qst), (args)[(nth)])
+
 caddr_t
 bif_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
@@ -3375,10 +3377,10 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 	  arg = bif_string_or_uname_or_wide_or_null_arg (qst, args, arg_inx, szMe);
 	  narrow_arg = NULL;
-
+/*
 	  if (DV_WIDESTRINGP (arg))
 	    arg = narrow_arg = box_wide_string_as_narrow (arg, NULL, 0, NULL);
-	  else if (!arg)
+	  else*/ if (!arg)
 	    arg = narrow_arg = box_dv_short_string ("(NULL)");
 
 	  http_value_esc (qst, ses, arg, NULL, DKS_ESC_URI);
@@ -3522,8 +3524,9 @@ bif_sprintf_inverse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t str = bif_arg (qst, args, 0, "sprintf_inverse");
   caddr_t fmt = bif_string_arg (qst, args, 1, "sprintf_inverse");
   long hide_errors = bif_long_arg (qst, args, 2, "sprintf_inverse");
+  caddr_t expected_dtp_strg = ((3 < BOX_ELEMENTS (args)) ? bif_string_or_null_arg (qst, args, 3, "sprintf_inverse") : NULL);
   caddr_t err = NULL;
-  caddr_t res = sprintf_inverse (qst, &err, str, fmt, hide_errors);
+  caddr_t res = sprintf_inverse_ex (qst, &err, str, fmt, hide_errors, expected_dtp_strg);
   if (NULL != err)
     sqlr_resignal (err);
   return res;
@@ -3531,6 +3534,12 @@ bif_sprintf_inverse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 caddr_t
 sprintf_inverse (caddr_t *qst, caddr_t *err_ret, ccaddr_t str, ccaddr_t fmt, long hide_errors)
+{
+  return sprintf_inverse_ex (qst, err_ret, str, fmt, hide_errors, NULL);
+}
+
+caddr_t
+sprintf_inverse_ex (caddr_t *qst, caddr_t *err_ret, ccaddr_t str, ccaddr_t fmt, long hide_errors, unsigned char *expected_dtp_strg)
 {
   dtp_t str_dtp = DV_TYPE_OF (str);
   dk_set_t res = NULL;
@@ -3542,6 +3551,7 @@ sprintf_inverse (caddr_t *qst, caddr_t *err_ret, ccaddr_t str, ccaddr_t fmt, lon
   char field_fmt_buf[100];
   char *field_fmt_tail;
   int field_ctr = 0;
+  int expected_dtp_len = ((NULL == expected_dtp_strg) ? 0 : box_length (expected_dtp_strg) - 1);
   caddr_t val;
 
 retry_unrdf:
@@ -4009,15 +4019,17 @@ retry_unrdf:
 	  caddr_t buf = box_dv_short_nchars (val_start, val_end - val_start);
 	  char *out = buf;
 	  char *in;
+          int buf_contains_pct_8bit = 0;
 	  for (in = buf; '\0' != in[0]; in++)
 	    {
+              int chr;
 	      if ('%' == in[0])
 		{
 		  if (isxdigit (in[1]) && isxdigit (in[2]))
 		    {
 		      int hi = HEXDIGITVAL (in[1]);
 		      int lo = HEXDIGITVAL (in[2]);
-		      (out++)[0] = ((hi << 4) | lo);
+                      chr = ((hi << 4) | lo);
 		      in += 2;
 		    }
 		  else
@@ -4027,17 +4039,34 @@ retry_unrdf:
 		    }
 		}
 	      else if ('+' == in[0])
-		(out++)[0] = ' ';
+		chr = ' ';
 	      else
-		(out++)[0] = in[0];
+		chr = in[0];
+              if (chr & ~0x7F)
+                buf_contains_pct_8bit = 1;
+              (out++)[0] = chr;
 	    }
-
+          if (buf_contains_pct_8bit && expected_dtp_len)
+            {
+              int fmt_idx = dk_set_length (res);
+              if ((fmt_idx < expected_dtp_len) && ((DV_WIDE & 0x7F) == (expected_dtp_strg[fmt_idx] & 0x7F)))
+                {
+                  val = box_utf8_as_wide_char (buf, NULL, out-buf, 0, DV_WIDE);
+                  if (NULL == val)
+                    {
+		      dk_free_box (buf);
+		      goto POP_format_mismatch_mid_field;
+                    }
+                  dk_free_box (buf);
+                  dk_set_push (&res, val);
+                  break;
+                }
+            }
 	  val = box_dv_short_nchars (buf, out - buf);
 	  dk_free_box (buf);
 	  dk_set_push (&res, val);
+          break;
 	}
-	break;
-
 
       case 'D':
 	{

@@ -6094,6 +6094,8 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
   declare bij, deref integer;
   declare sffs, res any;
   declare argctr, arglist_len, isnotnull, sff_ctr, sff_count, bij_sff_count integer;
+  declare needs_arg_dtps integer;
+  declare arg_dtps varchar;
   graphiri := DB.DBA.JSO_SYS_GRAPH ();
   bij := get_keyword_ucase ('BIJECTION', options, 0);
   deref := get_keyword_ucase ('DEREF', options, 0);
@@ -6110,8 +6112,12 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
       signal ('22023', 'Only "in" parameters are now supported in argument lists of class formats, "' || arg[0] || '" is not supported in CREATE IRI CLASS <' || classiri || '>' );
   arglist_len := length (arglist);
   isnotnull := 1;
+  needs_arg_dtps := 0;
+  arg_dtps := '';
   if (arglist_len <> 1)
     {
+      declare type_name varchar;
+      declare dtp integer;
       if (arglist_len = 0)
         basetype := 'zeropart-uri';
       else
@@ -6120,6 +6126,19 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
         {
           if (not (coalesce (arglist[argctr][3], 0)))
             isnotnull := 0;
+          type_name := lower (arglist[argctr][2]);
+          dtp := case (type_name)
+            when 'integer' then __tag of integer
+            when 'varchar' then __tag of varchar
+            when 'date' then __tag of date
+            when 'datetime' then __tag of datetime
+            when 'doubleprecision' then __tag of double precision
+            when 'numeric' then __tag of numeric
+            when 'nvarchar' then __tag of nvarchar
+            else 255 end;
+          if (type_name = 'nvarchar')
+            needs_arg_dtps := 1;
+          arg_dtps := arg_dtps || chr (bit_and (127, dtp));
         }
     }
   else /* arglist is 1 item long */
@@ -6130,6 +6149,11 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
       basetype := 'sql-' || basetype || '-uri';
       if (not (coalesce (arglist[0][3], 0)))
         isnotnull := 0;
+      if (basetype = 'nvarchar')
+        {
+          needs_arg_dtps := 1;
+          arg_dtps := chr (bit_and (127, __tag of nvarchar));
+        }
     }
   if (not isnotnull)
     basetype := basetype || '-nullable';
@@ -6208,6 +6232,8 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
     }
   if ((not bij) and (bij_sff_count = sff_count) and (bij_sff_count > 0))
     bij := 1;
+  if (not needs_arg_dtps)
+    arg_dtps := NULL;
   sparql define input:storage ""
   prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
   delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
@@ -6228,11 +6254,12 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
         virtrdf:noInherit virtrdf:qmfName ;
         virtrdf:noInherit virtrdf:qmfCustomString1 ;
         virtrdf:qmfName `bif:concat (?:basetype, '-user-', ?:origclassiri)` ;
-        virtrdf:qmfCustomString1 `?:iritmpl` ;
+        virtrdf:qmfCustomString1 ?:iritmpl ;
         virtrdf:qmfColumnCount ?:arglist_len ;
         virtrdf:qmfSuperFormats `iri(?:superformatsid)` ;
         virtrdf:qmfIsBijection ?:bij ;
         virtrdf:qmfDerefFlags ?:deref ;
+        virtrdf:qmfArgDtps ?:arg_dtps ;
         virtrdf:qmfValRange-rvrRestrictions
           virtrdf:SPART_VARR_IS_REF ,
           virtrdf:SPART_VARR_IS_IRI ,
@@ -9047,7 +9074,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
   if (not exists (sparql define input:storage "" ask where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
               <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-                virtrdf:version '2009-08-15 0001v6'
+                virtrdf:version '2009-08-19 0001v6'
             } } ) )
     {
       declare txt1, txt2 varchar;

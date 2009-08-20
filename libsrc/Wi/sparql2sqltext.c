@@ -854,7 +854,7 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
         {
           if (NULL == qm_fmt)
             spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{custom-string-1}^ if qm_fmt is NULL", asname_printed);
-          ssg_print_box_as_sql_atom (ssg, qm_fmt->qmfCustomString1, 0);
+          ssg_print_box_as_sql_atom (ssg, qm_fmt->qmfCustomString1, SQL_ATOM_UTF8_ONLY);
         }
 /*                         0         1         2 */
 /*                         012345678901234567890 */
@@ -863,6 +863,18 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
           if (NULL == qm_fmt)
             spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{custom-verbatim-1}^ if qm_fmt is NULL", asname_printed);
           ssg_puts (qm_fmt->qmfCustomString1);
+        }
+/*                         0         1         2 */
+/*                         012345678901234567890 */
+      else if (CMD_EQUAL ("opt-comma-arg-dtps", 18))
+        {
+          if (NULL == qm_fmt)
+            spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{opt-comma-arg-dtps}^ if qm_fmt is NULL", asname_printed);
+          if (NULL != qm_fmt->qmfArgDtps)
+            {
+              ssg_puts (", ");
+              ssg_print_box_as_sql_atom (ssg, qm_fmt->qmfArgDtps, SQL_ATOM_ASCII_ONLY);
+            }
         }
 /*                         0         1         2 */
 /*                         012345678901234567890 */
@@ -1735,7 +1747,7 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
     (40 < box_length (arg)) ) )
 
 void
-ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int allow_uname)
+ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
 {
   char smallbuf[MAX_QUAL_NAME_LEN + 100 + BOX_AUTO_OVERHEAD];
   size_t buflen;
@@ -1754,22 +1766,53 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int allow_uname)
       strcpy (tmpbuf, "NULL"); buffill = 4;
       break;
     case DV_STRING:
-      sqlc_string_virtuoso_literal (tmpbuf, buflen, &buffill, box);
-      break;
     case DV_UNAME:
-      if (allow_uname)
+      switch (mode)
         {
-          ssg_puts ("UNAME");
+        case SQL_ATOM_ASCII_ONLY:
+          {
+            int ctr;
+            for (ctr = box_length (box)-1; ctr--; /* no step */)
+              if (box[ctr] & ~0x7F)
+                spar_error (ssg->ssg_sparp, "An ASCII (7-bit) literal is expected, not '%.200s'.", box);
+            sqlc_string_virtuoso_literal (tmpbuf, buflen, &buffill, box);
+          }
+          break;
+        case SQL_ATOM_NARROW_OR_WIDE:
+          {
+            int ctr;
+            for (ctr = box_length (box)-1; ctr--; /* no step */)
+              if (box[ctr] & ~0x7F)
+                {
+                  ssg_puts (" charset_recode (");
+                  sqlc_string_virtuoso_literal (tmpbuf, buflen, &buffill, box);
+                  ssg_puts (", 'UTF-8', '_WIDE_')");
+                  goto tmpbuf_filled; /* see below */
+                }
+          }
+          /* no break */
+        case SQL_ATOM_NARROW_ONLY:
+          {
+            caddr_t strg = box_utf8_string_as_narrow (box, NULL, 0, default_charset);
+#ifndef NDEBUG
+            if (('?' == strg[0]) && ('?' == strg[1]) && ('?' == strg[2]) && ('?' == strg[3]))
+              spar_error (ssg->ssg_sparp, "Suspicious result of printing '%.200s' as narrow SQL atom", box);
+#endif
+            if (strg)
+              sqlc_string_virtuoso_literal (tmpbuf, buflen, &buffill, strg);
+            else
+              spar_error (ssg->ssg_sparp, "A literal contains bad UTF-8 sequence.");
+            dk_free_box (strg);
+            break;
+          }
+        case SQL_ATOM_UNAME_ALLOWED:
+          if (DV_UNAME == dtp)
+            ssg_puts ("UNAME");
+          /* no break */
+        case SQL_ATOM_UTF8_ONLY:
           sqlc_string_virtuoso_literal (tmpbuf, buflen, &buffill, box);
-        }
-      else
-        {
-          caddr_t strg = box_utf8_string_as_narrow (box, NULL, 0, default_charset);
-	  if (strg)
-	    sqlc_string_virtuoso_literal (tmpbuf, buflen, &buffill, strg);
-	  else
-	    spar_error (ssg->ssg_sparp, "A literal contains bad UTF-8 sequence.");
-          dk_free_box (strg);
+          break;
+        default: spar_internal_error (ssg->ssg_sparp, "ssg_" "print_box_as_sql_atom (): bad mode");
         }
       break;
     case DV_WIDE:
@@ -1842,6 +1885,8 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int allow_uname)
     default:
       spar_error (ssg->ssg_sparp, "Current implementation of SPARQL does not supports literals of type %s", dv_type_title (dtp));
       }
+
+tmpbuf_filled:
   session_buffered_write (ssg->ssg_out, tmpbuf, buffill);
   BOX_DONE (tmpbuf, smallbuf);
 }
@@ -1868,7 +1913,7 @@ ssg_print_literal_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
 #else
           ssg_puts (" /* QNAME as sql atom */ __box_flags_tweak (");
 #endif
-          ssg_print_box_as_sql_atom (ssg, value, 0);
+          ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_UTF8_ONLY);
           ssg_puts (", 1)");
           return;
         }
@@ -1890,7 +1935,7 @@ ssg_print_literal_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
         ssg_puts (" 0");
       return;
     }
-  ssg_print_box_as_sql_atom (ssg, value, 0);
+  ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
 }
 
 void
@@ -1916,7 +1961,7 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
 #else
           ssg_puts (" /* QName as sqlval */ __box_flags_tweak (");
 #endif
-          ssg_print_box_as_sql_atom (ssg, value, 0);
+          ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_UTF8_ONLY);
           ssg_puts (", 1)");
           return;
         }
@@ -1933,7 +1978,7 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
 #else
       ssg_puts (" /* UNAME as sqlval */ __box_flags_tweak (");
 #endif
-      ssg_print_box_as_sql_atom (ssg, (ccaddr_t)(lit), 0);
+      ssg_print_box_as_sql_atom (ssg, (ccaddr_t)(lit), SQL_ATOM_UTF8_ONLY);
       ssg_puts (", 1)");
       return;
     }
@@ -1959,7 +2004,7 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
           ((uname_xmlschema_ns_uri_hash_double == type) && (DV_DOUBLE_FLOAT == DV_TYPE_OF (value))) ) ) ||
         ((NULL != lang) && (NULL == type) && (DV_STRING == DV_TYPE_OF (value))) )
         {
-          ssg_print_box_as_sql_atom (ssg, value, 0);
+          ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
           return;
         }
 #ifdef NDEBUG
@@ -1967,22 +2012,22 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
 #else
       ssg_puts (" /* sqlval of typed literal */ __rdf_sqlval_of_obj (DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (");
 #endif
-      ssg_print_box_as_sql_atom (ssg, value, 0);
+      ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
       ssg_putchar (',');
       if (NULL != type)
-        ssg_print_box_as_sql_atom (ssg, type, 1);
+        ssg_print_box_as_sql_atom (ssg, type, SQL_ATOM_UNAME_ALLOWED);
       else
         ssg_puts (" NULL");
       ssg_putchar (',');
       if (NULL != lang)
-        ssg_print_box_as_sql_atom (ssg, lang, 0);
+        ssg_print_box_as_sql_atom (ssg, lang, SQL_ATOM_ASCII_ONLY);
       else
         ssg_puts (" NULL");
       ssg_puts ("))");
       return;
     }
 #endif
-  ssg_print_box_as_sql_atom (ssg, value, 0);
+  ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
 }
 
 void
@@ -2003,7 +2048,7 @@ ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit)
       else if ((SPAR_QNAME == lit->type)/* || (SPAR_QNAME_NS == lit->type)*/)
         {
           ssg_puts (" __i2id (");
-          ssg_print_box_as_sql_atom (ssg, lit->_.lit.val, 1);
+          ssg_print_box_as_sql_atom (ssg, lit->_.lit.val, SQL_ATOM_UNAME_ALLOWED);
           ssg_putchar (')');
           return;
         }
@@ -2016,15 +2061,15 @@ ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit)
   if ((NULL != datatype) || (NULL != language))
     {
       ssg_puts (" DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (");
-      ssg_print_box_as_sql_atom (ssg, value, 0);
+      ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
       ssg_putchar (',');
       if (NULL != datatype)
-        ssg_print_box_as_sql_atom (ssg, datatype, 1);
+        ssg_print_box_as_sql_atom (ssg, datatype, SQL_ATOM_UNAME_ALLOWED);
       else
         ssg_puts (" NULL");
       ssg_putchar (',');
       if (NULL != language)
-        ssg_print_box_as_sql_atom (ssg, language, 0);
+        ssg_print_box_as_sql_atom (ssg, language, SQL_ATOM_ASCII_ONLY);
       else
         ssg_puts (" NULL");
       ssg_putchar (')');
@@ -2039,7 +2084,7 @@ ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit)
       ssg_putchar (')');
       return;
     }
-  ssg_print_box_as_sql_atom (ssg, value, 0);
+  ssg_print_box_as_sql_atom (ssg, value, 0 /* intentionally bad mode to get an error on any cast to string */);
 }
 
 void
@@ -2477,7 +2522,7 @@ ssg_find_nullable_superformat (ssg_valmode_t fmt)
 caddr_t *
 ssg_const_is_good_for_split_into_short (spar_sqlgen_t *ssg, SPART *tree, int tree_is_qname, ssg_valmode_t fmt)
 {
-  ccaddr_t tmpl, sff, strg;
+  ccaddr_t tmpl, sff, val_dtp_strg, strg;
   caddr_t err = NULL;
   caddr_t split, split_copy;
   int tree_type = tree_is_qname ? SPAR_QNAME : SPART_TYPE (tree);
@@ -2503,10 +2548,11 @@ ssg_const_is_good_for_split_into_short (spar_sqlgen_t *ssg, SPART *tree, int tre
   if (strcmp (tmpl, SSG_MAGIC_SPLIT_MULTIPART) && strcmp (tmpl, SSG_MAGIC_SPLIT_SINGLEPART))
     return NULL;
   sff = fmt->qmfCustomString1;
+  val_dtp_strg = fmt->qmfArgDtps;
   if (NULL != strstr (sff, "%{")) /* Macro expansion may vary between compilation time and execution time(s), no ho magic can be made once. */
     return NULL;
   strg = SPAR_LIT_OR_QNAME_VAL (tree);
-  split = sprintf_inverse (NULL, &err, strg, sff, 1);
+  split = sprintf_inverse_ex (NULL, &err, strg, sff, 1, val_dtp_strg);
   if (NULL != err)
     {
       dk_free_tree (err);
@@ -2740,7 +2786,7 @@ vmodes_found:
     }
   else if (SSG_VALMODE_DATATYPE == needed)
     {
-      ssg_print_box_as_sql_atom (ssg, uname_xmlschema_ns_uri_hash_boolean, 1);
+      ssg_print_box_as_sql_atom (ssg, uname_xmlschema_ns_uri_hash_boolean, SQL_ATOM_UNAME_ALLOWED);
     }
   else if (SSG_VALMODE_LANGUAGE == needed)
     {
@@ -3859,7 +3905,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
           }
         else if (SSG_VALMODE_DATATYPE == needed)
           {
-            ssg_print_box_as_sql_atom (ssg, uname_xmlschema_ns_uri_hash_boolean, 1);
+            ssg_print_box_as_sql_atom (ssg, uname_xmlschema_ns_uri_hash_boolean, SQL_ATOM_UNAME_ALLOWED);
           }
         else if (SSG_VALMODE_LANGUAGE == needed)
           {
@@ -4011,7 +4057,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
             else if ((SSG_VALMODE_LONG == needed) || (SSG_VALMODE_SHORT_OR_LONG == needed))
               {
                 ssg_puts (" iri_to_id (");
-                ssg_print_box_as_sql_atom (ssg, (caddr_t)tree, 1);
+                ssg_print_box_as_sql_atom (ssg, (caddr_t)tree, SQL_ATOM_UNAME_ALLOWED);
                 ssg_puts (")");
               }
             else if (SSG_VALMODE_SQLVAL == needed)
@@ -4045,7 +4091,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
                 ssg_puts (")");
               }
             else if (NULL != tree->_.lit.datatype)
-              ssg_print_box_as_sql_atom (ssg, tree->_.lit.datatype, 1);
+              ssg_print_box_as_sql_atom (ssg, tree->_.lit.datatype, SQL_ATOM_UNAME_ALLOWED);
             else
               ssg_puts (" NULL");
             goto print_asname;
@@ -4055,7 +4101,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
             if (DV_ARRAY_OF_POINTER != tree_dtp)
               ssg_puts (" NULL");
             else if (NULL != tree->_.lit.language)
-              ssg_print_box_as_sql_atom (ssg, tree->_.lit.language, 0);
+              ssg_print_box_as_sql_atom (ssg, tree->_.lit.language, SQL_ATOM_ASCII_ONLY);
             else
               ssg_puts (" NULL");
             goto print_asname;
@@ -4511,6 +4557,7 @@ ssg_print_fld_uri_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t
     {
       int col_ctr, col_count;
       caddr_t *split;
+      caddr_t arg_dtps = field->qmvFormat->qmfArgDtps;
       col_count = BOX_ELEMENTS (field->qmvColumns);
       split = ssg_const_is_good_for_split_into_short (ssg, (SPART *)uri, 1, field->qmvFormat);
       for (col_ctr = 0; col_ctr < col_count; col_ctr++)
@@ -4525,7 +4572,10 @@ ssg_print_fld_uri_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t
           if (NULL == split)
             ssg_print_tmpl (ssg, field->qmvFormat, field->qmvFormat->qmfShortOfUriTmpl, tabid, field, (SPART *)uri, eq_asname);
           else
-            ssg_print_box_as_sql_atom (ssg, split[col_ctr], 0);
+            {
+              int is_wide = (NULL == arg_dtps) ? 0 : ((col_ctr >= box_length (arg_dtps)) ? 0 : ((arg_dtps[col_ctr] & 0x7F) == (DV_WIDE & 0x7F)));
+              ssg_print_box_as_sql_atom (ssg, split[col_ctr], is_wide ? SQL_ATOM_NARROW_OR_WIDE : SQL_ATOM_NARROW_ONLY);
+            }
         }
       if (0 != col_count)
         return;
@@ -4540,7 +4590,7 @@ ssg_print_fld_uri_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t
       else
         ssg_print_tr_field_expn (ssg, field, tabid, SSG_VALMODE_LONG, NULL_ASNAME);
       ssg_puts (" = iri_to_id (");
-      ssg_print_box_as_sql_atom (ssg, uri, 1);
+      ssg_print_box_as_sql_atom (ssg, uri, SQL_ATOM_UNAME_ALLOWED);
       ssg_puts (")");
     }
   else
@@ -4551,7 +4601,7 @@ ssg_print_fld_uri_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t
       else
         ssg_print_tr_field_expn (ssg, field, tabid, SSG_VALMODE_SQLVAL, NULL_ASNAME);
       ssg_puts (" = ");
-      ssg_print_box_as_sql_atom (ssg, uri, 1);
+      ssg_print_box_as_sql_atom (ssg, uri, SQL_ATOM_UNAME_ALLOWED);
     }
 }
 
@@ -5729,7 +5779,7 @@ void ssg_print_retval_cols (spar_sqlgen_t *ssg, SPART *tree, SPART **retvals, cc
             }
         }
       else
-        ssg_print_box_as_sql_atom (ssg, asname, 0);
+        ssg_print_box_as_sql_atom (ssg, asname, SQL_ATOM_NARROW_ONLY /*???*/);
     }
   END_DO_BOX_FAST;
 }
@@ -7403,9 +7453,9 @@ ssg_print_qm_sql (spar_sqlgen_t *ssg, SPART *tree)
           return;
         }
       if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (tree))
-        ssg_print_box_as_sql_atom (ssg, tree->_.lit.val, 1);
+        ssg_print_box_as_sql_atom (ssg, tree->_.lit.val, SQL_ATOM_UNAME_ALLOWED);
       else
-        ssg_print_box_as_sql_atom (ssg, (caddr_t)tree, 1);
+        ssg_print_box_as_sql_atom (ssg, (caddr_t)tree, SQL_ATOM_UNAME_ALLOWED);
       break;
     default:
       ssg_print_scalar_expn (ssg, tree, SSG_VALMODE_SQLVAL, NULL_ASNAME);

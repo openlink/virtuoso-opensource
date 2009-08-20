@@ -238,6 +238,7 @@ int regexp_split_parse (const char* pattern, const char* str, int* offvect, int 
 EXE_EXPORT (int, uudecode_base64, (char * , char * ));
 
 EXE_EXPORT (caddr_t, sprintf_inverse, (caddr_t *qst, caddr_t *err_ret, ccaddr_t str, ccaddr_t fmt, long hide_errors));
+EXE_EXPORT (caddr_t, sprintf_inverse_ex, (caddr_t *qst, caddr_t *err_ret, ccaddr_t str, ccaddr_t fmt, long hide_errors, unsigned char *expected_dtp_strg));
 
 /* another 32 bit seed used in blobs */
 extern int32 rnd_seed_b;

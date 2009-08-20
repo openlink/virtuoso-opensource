@@ -742,7 +742,7 @@ sqlc_string_literal (char *text, size_t tlen, int *fill, const char *exp)
 void
 sqlc_wide_string_literal (char *text, size_t tlen, int *fill, wchar_t * exp)
 {
-  int inx, len = (box_length (exp) / sizeof (wchar_t *)) - 1;
+  int inx, len = (box_length (exp) / sizeof (wchar_t)) - 1;
   sprintf_more (text, tlen, fill, "\'");
   for (inx = 0; inx < len; inx++)
     {
