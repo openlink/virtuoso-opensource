@@ -1,0 +1,353 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+
+<sect1 id="vfoafssl"><title>FOAF+SSL Support</title>
+  <para>FOAF+SSL is an authentication and authorization protocol that links a "Web ID" or
+"<ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/GetAPersonalURIIn5MinutesOrLess">Personal URI</ulink>"
+to a public key to create a global, decentralized, distributed, and secure authentication system that
+functions with existing browsers.</para>
+  <para>FOAF+SSL uses PKI standards - usually thought of as hierarchical trust management tools -
+<ulink url="http://blogs.sun.com/bblfish/entry/foaf_ssl_pki_and_the">in a decentralized web-of-trust way</ulink>.
+The web of trust is built using semantic web vocabularies (particularly <ulink url="http://www.foaf-project.org/">FOAF</ulink>) published in RESTful manner to
+form Linked Data.</para>
+  <para>Based on well known existing standards, FOAF+SSL is currently in development, and is being discussed
+on the <ulink url="http://lists.foaf-project.org/mailman/listinfo/foaf-protocols">FOAF protocols mailing list</ulink>.</para>
+  <para>For the most recent description of the protocol, read the one-page
+"<ulink url="http://blogs.sun.com/bblfish/entry/foaf_ssl_adding_security_to">FOAF+SSL: Adding Security to
+Open Distributed Social Networks</ulink>". For a more detailed explanation of how the authentication works,
+see "<ulink url="http://blogs.sun.com/bblfish/entry/more_on_authorization_in_foaf">FOAF+SSL: Creating a Web of Trust without Key Signing Parties</ulink>".</para>
+  <para>Automatic discovery of interpersonal trust relationships enables automatic application of appropriate
+permissions.</para>
+  <para>In other words, data owners can set fuzzy permissions like "only let my friends see this" or "only
+let my family edit this." Applications can discover the relationships between the data owner and the data
+requester/user, and permit (or disallow) any attempted actions, without needing the data owner to explicitly
+set permissions for each potential user.</para>
+  <para>One example might be a parent setting permissions on a photo gallery, to permit viewing only by
+"immediate family". The parent need not list each and every such relative specifically for this
+application - and need not add new permissions for a new family member (whether by marriage, birth, or
+otherwise), though they do need to be added to the owner's FOAF. When a new user comes and asks to see
+the pictures, the gallery application would check the relationships declared by each person (the owner
+and the visitor), and if they matched up (in other words, the visitor could not get in simply by claiming
+a family relationship; the relationship must be confirmed by the owner's FOAF data), the pictures would
+be shown.</para>
+  <sect2 id="vfoafsslx509"><title>x.509 certificate</title>
+  <para>The FOAF+SSL consumer needs an x509 certificate with v3 extension "Subject Alternate Name". This
+attribute is used for the owner's Web ID. For testing purposes we used OpenSSL demo CA to generate such
+certificates. If you are not using the OpenSSL demo CA, you must first setup a self-signed CA; read
+OpenSSL documents on how to do this.</para>
+<orderedlist>
+  <listitem>Add the following line to the [usr_cert] section of the openssl.cnf file:
+<programlisting><![CDATA[
+subjectAltName=$ENV::ALTNAME
+]]></programlisting>
+</listitem>
+  <listitem>Set the environment variable ALTNAME to the owner's Web ID, e.g.,
+<programlisting><![CDATA[
+export ALTNAME=URI:http://localhost/dataspace/person/myname#this
+]]></programlisting>
+</listitem>
+  <listitem>Make a self-signed certificate, e.g.,
+<programlisting><![CDATA[
+$ CA.pl -newreq (follow the dialog)
+$ CA.pl -sign
+]]></programlisting>
+</listitem>
+  <listitem>When asked to commit the certificate, make sure you see several lines above, like:
+<programlisting><![CDATA[
+ X509v3 Subject Alternative Name:
+                URI:http://localhost/dataspace/person/myname#this
+]]></programlisting>
+</listitem>
+  <listitem>If your browser wants a PKCS#12 bundle, you must make one:
+<programlisting><![CDATA[
+$ openssl pkcs12 -export -in newcert.pem -inkey newkey.pem -out mycert.p12
+]]></programlisting>
+</listitem>
+  <listitem>Rename newcert.pem and newkey.pem, to mycert.pem and mykey.pem for example.
+The PEM format of the certificate will be needed below.</listitem>
+</orderedlist>
+  </sect2>
+  <sect2 id="vfoafsslsethttps"><title>Setting up Virtuoso HTTPS</title>
+  <para>To enable the HTTPS listener, you will need another certificate. Existing certificates may not
+have Subject Alternate Name, so you may want to generate one as in the previous section.</para>
+<orderedlist>
+  <listitem>The next step is to move newcert.pem, newkey.pem, and cacert.pem into the server's
+working directory. In our test case, we put the keys in a 'keys' sub-directory, and added the following
+lines to the [HTTPServer] section of the Virtuoso INI file, virtuoso.ini:
+<programlisting><![CDATA[
+SSLPort                     = 4443
+SSLCertificate              = ./keys/localhost.cert.pem
+SSLPrivateKey               = ./keys/localhost.key.pem
+X509ClientVerifyCAFile      = ./keys/localhost.ca.pem
+X509ClientVerify            = 1
+X509ClientVerifyDepth       = 15
+]]></programlisting>
+</listitem>
+  <listitem>Also in the Virtuoso INI file, in the [URIQA] section, DefaultHost (localhost:8890 below)
+must be edited to correspond to the DNS-resolvable host name ("CNAME") of the Virtuoso host, combined
+with the ServerPort as set in the [HTTPServer] section of the same INI file.
+<programlisting><![CDATA[
+[URIQA]
+DynamicLocal = 1
+DefaultHost  = localhost:8890
+]]></programlisting>
+  <para>For instance, if the CNAME of the host is virtuoso.example.com, and the ServerPort is 4321,
+the DefaultHost should be set to virtuoso.example.com:4321</para>
+<programlisting><![CDATA[
+[URIQA]
+DynamicLocal = 1
+DefaultHost  = virtuoso.example.com:4321
+]]></programlisting>
+</listitem>
+  <listitem>Start the Virtuoso server, and look at the log file. Once HTTPS is up, you should see
+something like:
+<programlisting><![CDATA[
+HTTPS Using X509 Client CA ....
+HTTPS/X509 server online at 4443
+]]></programlisting>
+</listitem>
+</orderedlist>
+  </sect2>
+  <sect2 id="vfoafsslff"><title>Setting Up Firefox</title>
+<orderedlist>
+   <listitem>
+     <figure id="foafssl1" float="1">
+       <title>Setting Up Firefox</title>
+       <graphic fileref="ui/foafssl1.png"/>
+     </figure>
+</listitem>
+   <listitem>Click the "Add exception" button and enter the address of the HTTPS server you've just
+configured, i.e., https://virtuoso.example.com:4443/</listitem>
+   <listitem>Click OK, and confirm the exception.
+     <figure id="foafssl2" float="1">
+       <title>Setting Up Firefox</title>
+       <graphic fileref="ui/foafssl2.png"/>
+     </figure>
+</listitem>
+   <listitem>Click to the "Your Certificates" tab, and import mycert.p12.</listitem>
+</orderedlist>
+  </sect2>
+  <sect2 id="vfoafsslconf"><title>Configuring ODS Account to use FOAF+SSL</title>
+<orderedlist>
+  <listitem>Log in to your ODS account, and edit your profile. </listitem>
+  <listitem>Click to the Security Tab, and scroll to the bottom, where you will
+find the X.509 certificate entry area. </listitem>
+  <listitem>Copy and paste the PEM format of the certificate (i.e., the content of mykey.pem,
+from earlier). </listitem>
+  <listitem>Press "Save Certificate" button, and you are set.</listitem>
+</orderedlist>
+  </sect2>
+  <sect2 id="vfoafssltst"><title>Testing the setup</title>
+    <para>To test, we recommend <ulink url="http://www.mozilla.com/firefox/">Firefox</ulink> v3 with the
+<ulink url="https://addons.mozilla.org/en-US/firefox/addon/5596">Tabulator extension</ulink>. Firefox must
+be set to ask for RDF, as instructed in the <ulink url="http://dig.csail.mit.edu/2007/tab/">Tabulator documentation</ulink>.
+    </para>
+<orderedlist>
+   <listitem>Enter an ODS user's URI in the address bar.</listitem>
+   <listitem>You should see a protected document's URI. Note that there is no specific "address" data seen:
+     <figure id="foafssl3" float="1">
+       <title>Testing the setup</title>
+       <graphic fileref="ui/foafssl3.png"/>
+     </figure>
+</listitem>
+   <listitem>When clicked, the browser will ask the user to select a certificate (note: certificate details
+are erased in the picture below).
+     <figure id="foafssl4" float="1">
+       <title>Testing the setup</title>
+       <graphic fileref="ui/foafssl4.png"/>
+     </figure>
+</listitem>
+   <listitem>Now the protected document includes the private address data alongside the previously visible
+public data!
+     <figure id="foafssl5" float="1">
+       <title>Testing the setup</title>
+       <graphic fileref="ui/foafssl5.png"/>
+     </figure>
+</listitem>
+</orderedlist>
+  </sect2>
+  <sect2 id="vfoafsslacl"><title>FOAF+SSL ACLs</title>
+  <para>You can <link linkend="sparqloauthendpointfoafssl">set FOAF+SSL ACLs</link> from the Virtuoso Authentication Server UI. </para>
+  </sect2>
+  <sect2 id="vfoafsslcacondt"><title>CA Keys Import using Conductor</title>
+  <para>The Virtuoso Conductor allows easy import of user-level CA (Certificate Authority) Keys through
+System Admin -&gt; User Accounts -&gt; Edit.</para>
+  <para>The dba user (typically) or other users may need CA keys to execute different services.</para>
+  <para>For ODS, the dba user must import a certificate with primary key and with name id_rsa. The process
+takes the following steps:</para>
+<orderedlist>
+  <listitem>A signing authority (e.g., RSA Labs) generates a site certificate.</listitem>
+  <listitem>The site certificate is used to generate certificates for ODS users.</listitem>
+  <listitem>The site certificate is imported with name id_rsa for user dba using the Conductor.
+     <figure id="foafssl27" float="1">
+       <title>Conductor CA Keys Import</title>
+       <graphic fileref="ui/foafssl27.png"/>
+     </figure>
+</listitem>
+  <listitem>As a result, the ODS user certificates can be authenticated against the site certificate.</listitem>
+</orderedlist>
+  <para>If there is a service that requires a different key, the Conductor can be used to import another
+certificate for the relevant user.</para>
+  <para>You can use a Key from a global signing authority or produce a self-signed key using the <ulink url="http://download.openlinksw.com/packages/5.0/virtuoso/identity_manager_dav.vad">ODS Identity Manager</ulink>.</para>
+  <para>Details and more information how to generate the key see in the next section.</para>
+  </sect2>
+  <sect2 id="vfoafsslst509issuer"><title>Set Up X.509 certificate issuer, HTTPS listener and generate ODS user's certificates</title>
+  <para>The following Step-by-Step guide walks you through set up of an X.509 certificate issuer and HTTPS listener, and generation of ODS user certificates.</para>
+<orderedlist>
+   <listitem>Install <ulink url="http://download.openlinksw.com/packages/5.0/virtuoso/ods_framework_dav.vad">ODS</ulink> and <ulink url="http://download.openlinksw.com/packages/5.0/virtuoso/identity_manager_dav.vad">Identity manager</ulink> VAD packages.
+     <figure id="foafssl6" float="1">
+       <title>Setting-Up issuer CA</title>
+       <graphic fileref="ui/foafssl6.png"/>
+     </figure>
+</listitem>
+   <listitem>Go to the http://cname:port/identity_manager URL, enter the DBA user credentials in the dialog presented.
+     <figure id="foafssl7" float="1">
+       <title>Setting-Up issuer CA</title>
+       <graphic fileref="ui/foafssl7.png"/>
+     </figure>
+</listitem>
+   <listitem>Enter the Issuer details and click generate.
+     <figure id="foafssl8" float="1">
+       <title>Setting-Up issuer CA</title>
+       <graphic fileref="ui/foafssl8.png"/>
+     </figure>
+</listitem>
+   <listitem>Go to Conductor -&gt; Web Application Server -&gt; Virtual Domains &amp; Directories,
+and add a new listener.
+     <figure id="foafssl9" float="1">
+       <title>Setting-Up issuer CA</title>
+       <graphic fileref="ui/foafssl9.png"/>
+     </figure>
+</listitem>
+   <listitem>Edit the new listener, and generate new key.
+     <figure id="foafssl10" float="1">
+       <title>Setting-Up issuer CA</title>
+       <graphic fileref="ui/foafssl10.png"/>
+     </figure>
+</listitem>
+   <listitem>Go to Packages list and select Configure for ODS Framework.
+     <figure id="foafssl11" float="1">
+       <title>Setting-Up issuer CA</title>
+       <graphic fileref="ui/foafssl11.png"/>
+     </figure>
+</listitem>
+   <listitem>Select Create New Endpoint.
+     <figure id="foafssl12" float="1">
+       <title>Setting-Up issuer CA</title>
+       <graphic fileref="ui/foafssl12.png"/>
+     </figure>
+</listitem>
+   <listitem>Enter the home path for ODS, and save.
+     <figure id="foafssl13" float="1">
+       <title>Setting-Up issuer CA</title>
+       <graphic fileref="ui/foafssl13.png"/>
+     </figure>
+</listitem>
+   <listitem>The new endpoint should now appear in the endpoint list.
+     <figure id="foafssl14" float="1">
+       <title>Setting-Up issuer CA</title>
+       <graphic fileref="ui/foafssl14.png"/>
+     </figure>
+</listitem>
+   <listitem>Go to the HTTPS site, e.g., https://cname:port/ods; in our example, https://localhost:4433/ods/.
+If Firefox is used, it will complain that the certificate is not valid, so we must register the site's
+certificate.
+     <figure id="foafssl15" float="1">
+       <title>Setting-Up issuer CA</title>
+       <graphic fileref="ui/foafssl15.png"/>
+     </figure>
+</listitem>
+   <listitem>In Firefox certificate manager, in Site's certificates, add an exception.
+     <figure id="foafssl16" float="1">
+       <title>Setting-Up issuer CA</title>
+       <graphic fileref="ui/foafssl16.png"/>
+     </figure>
+</listitem>
+   <listitem>Confirm exception.
+     <figure id="foafssl17" float="1">
+       <title>Setting-Up issuer CA</title>
+       <graphic fileref="ui/foafssl17.png"/>
+     </figure>
+</listitem>
+   <listitem>Return to ODS site, and register new user.
+     <figure id="foafssl18" float="1">
+       <title>Setting-Up issuer CA</title>
+       <graphic fileref="ui/foafssl18.png"/>
+     </figure>
+</listitem>
+   <listitem>Edit the user's profile and enter his/her name(s). If this step is skipped, the certificate
+will not have a human readable name.
+     <figure id="foafssl19" float="1">
+       <title>Setting-Up issuer CA</title>
+       <graphic fileref="ui/foafssl19.png"/>
+     </figure>
+</listitem>
+   <listitem>Open the Security tab in the Profile Editor, and generate the client key.
+     <figure id="foafssl20" float="1">
+       <title>Setting-Up issuer CA</title>
+       <graphic fileref="ui/foafssl20.png"/>
+     </figure>
+</listitem>
+   <listitem>If all is set up correctly, you should see this message. It means Firefox has the private key,
+and has obtained a new certificate from the server.
+     <figure id="foafssl21" float="1">
+       <title>Setting-Up issuer CA</title>
+       <graphic fileref="ui/foafssl21.png"/>
+     </figure>
+</listitem>
+   <listitem>Refresh the Security tab by clicking on same tab.
+     <figure id="foafssl22" float="1">
+       <title>Setting-Up issuer CA</title>
+       <graphic fileref="ui/foafssl22.png"/>
+     </figure>
+</listitem>
+   <listitem>Select automatic login option, and save.
+     <figure id="foafssl23" float="1">
+       <title>Setting-Up issuer CA</title>
+       <graphic fileref="ui/foafssl23.png"/>
+     </figure>
+</listitem>
+   <listitem>Log out from ODS and refresh browser to simulate opening the ODS site. The browser will
+ask for a certificate; select the one generated in the steps above.
+     <figure id="foafssl24" float="1">
+       <title>Setting-Up issuer CA</title>
+       <graphic fileref="ui/foafssl24.png"/>
+     </figure>
+</listitem>
+   <listitem>ODS presents your card, and asks to login with certificate. Confirm it.
+     <figure id="foafssl25" float="1">
+       <title>Setting-Up issuer CA</title>
+       <graphic fileref="ui/foafssl25.png"/>
+     </figure>
+</listitem>
+   <listitem>You should now be logged in to ODS via FOAF+SSL.
+     <figure id="foafssl26" float="1">
+       <title>Setting-Up issuer CA</title>
+       <graphic fileref="ui/foafssl26.png"/>
+     </figure>
+</listitem>
+</orderedlist>
+  </sect2>
+
+</sect1>

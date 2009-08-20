@@ -835,7 +835,10 @@ ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\<!ENTITY \1 		SYSTEM "xmlref\/
 <!ENTITY isql 					SYSTEM "isql.xml">
 <!ENTITY perfdiag               		SYSTEM "perfdiag.xml">
 <!ENTITY ptune 					SYSTEM "ptune.xml">
+	<!ENTITY clusteroperation 	SYSTEM "clusteroperation.xml">
+	<!ENTITY fault 	                SYSTEM "fault.xml">
 <!ENTITY sqlreference 				SYSTEM "sqlreference.xml">
+        <!ENTITY clusterprogramming 	SYSTEM "clusterprogramming.xml">
 <!ENTITY functions 				SYSTEM "functions.xml">
 <!ENTITY sqlprocedures 				SYSTEM "sqlprocedures.xml">
 <!ENTITY hooks	 				SYSTEM "hooks.xml">
@@ -900,6 +903,8 @@ ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\<!ENTITY \1 		SYSTEM "xmlref\/
 <!ENTITY vspx    				SYSTEM "vspx.xml">
 <!ENTITY webdav    				SYSTEM "webdav.xml">
 <!ENTITY uriqa    				SYSTEM "uriqa.xml">
+  <!ENTITY vfoafssl    SYSTEM "vfoafssl.xml">
+  <!ENTITY voauth    SYSTEM "voauth.xml">
 <!ENTITY ws-security    			SYSTEM "ws-security.xml">
 <!ENTITY ws-routing    				SYSTEM "ws-routing.xml">
 <!ENTITY ws-rm    				SYSTEM "ws-rm.xml">

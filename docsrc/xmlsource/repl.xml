@@ -1023,7 +1023,7 @@ Even though replication can carry schema changes, it is in no way a means of kee
 
 </sect2>
 
-<sect2>
+<sect2 id="errorsinreplication">
 <title>Errors in Replication</title>
 <para>
 A statement received for replication from a publisher may encounter an
