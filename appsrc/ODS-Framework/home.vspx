@@ -58,7 +58,7 @@
       </vm:page-hd>
     </div> <!-- HD -->
     <div id="MD">
-      <div id="LT">
+      <div id="LT" style="width: 600px;">
         <vm:notification />
         <vm:user-details />
         <vm:user-friends />
