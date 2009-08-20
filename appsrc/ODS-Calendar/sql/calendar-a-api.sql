@@ -365,8 +365,7 @@ create procedure ODS.ODS_API."calendar.delete" (
 
   if (not exists (select 1 from CAL.WA.EVENTS where E_ID = event_id))
     return ods_serialize_sql_error ('37000', 'The item is not found');
-  CAL.WA.event_delete (event_id);
-  rc := row_count ();
+  rc := CAL.WA.event_delete (event_id);
 
   return ods_serialize_int_res (rc);
 }
@@ -1252,6 +1251,9 @@ create procedure ODS.ODS_API."calendar.options.set" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'Calendar'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
+
   account_id := (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = uname);
   optionsParams := split_and_decode (options, 0, '%\0,='); -- XXX: FIXME
 
@@ -1320,6 +1322,9 @@ create procedure ODS.ODS_API."calendar.options.get" (
 
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'Calendar'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
 
   settings := CAL.WA.settings (inst_id);
   CAL.WA.settings_init (settings);
