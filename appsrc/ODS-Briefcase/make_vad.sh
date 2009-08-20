@@ -278,7 +278,7 @@ sticker_init() {
   echo "  <sql purpose=\"pre-install\">if (lt (sys_stat ('st_dbms_ver'), '$NEED_VERSION')) { result ('ERROR', 'The conductor package requires server version $NEED_VERSION or greater'); signal ('FATAL', 'The Briefcase package requires server version $NEED_VERSION or greater'); } </sql>" >> $STICKER
   echo "  <sql purpose=\"post-install\">" >> $STICKER
   echo "    <![CDATA[" >> $STICKER
-  echo "      if (not exists (select 1 from WS.WS.SYS_DAV_USER where U_NAME='nobody')) signal ('42VAD', 'This version of Briefcase requires newer version of OpenLink Virtuoso server (at least 4.0 release)');" >> $STICKER
+  echo "      if (not exists (select 1 from DB.DBA.SYS_USERS where U_NAME='nobody')) signal ('42VAD', 'This version of Briefcase requires newer version of OpenLink Virtuoso server (at least 4.0 release)');" >> $STICKER
   echo "      registry_set('_oDrive_path_', '"$BASE_PATH_CODE"/oDrive/');" >> $STICKER
   echo "      registry_set('_oDrive_version_', '$VERSION');" >> $STICKER
   echo "      registry_set('_oDrive_build_', '$PACKDATE');" >> $STICKER
