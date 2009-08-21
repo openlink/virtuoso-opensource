@@ -1060,7 +1060,9 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
       if(parameters == null)
          return;
       if(batch == null)
-#if JDK_VER >= 12
+#if JDK_VER >= 16
+         batch = new LinkedList<Object>();
+#elif JDK_VER >= 12
          batch = new LinkedList();
 #else
          batch = new openlink.util.Vector(10,10);

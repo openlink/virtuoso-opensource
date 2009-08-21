@@ -44,7 +44,9 @@ public class VirtuosoStatement implements Statement
    // Parameters for a prepared statement
    protected openlink.util.Vector parameters, objparams;
 
-#if JDK_VER >= 12
+#if JDK_VER >= 16
+   protected LinkedList<Object> batch;
+#elif JDK_VER >= 12
    protected LinkedList batch;
 #else
    protected openlink.util.Vector batch;
@@ -762,7 +764,11 @@ public class VirtuosoStatement implements Statement
       if(sql == null)
          return;
       if(batch == null)
-#if JDK_VER >= 12
+#if JDK_VER >= 16
+         batch = new LinkedList<Object>();
+      // Add the sql request at the end
+      batch.add(sql);
+#elif JDK_VER >= 12
          batch = new LinkedList();
       // Add the sql request at the end
       batch.add(sql);

@@ -100,6 +100,7 @@ in3files = \
 	StatementWrapper.java \
 	VirtuosoConnectionPoolDataSource.java \
 	VirtuosoDataSource.java \
+	VirtuosoDataSourceFactory.java \
 	VirtuosoParameterMetaData.java \
 	VirtuosoPooledConnection.java \
 	VirtuosoPoolManager.java \

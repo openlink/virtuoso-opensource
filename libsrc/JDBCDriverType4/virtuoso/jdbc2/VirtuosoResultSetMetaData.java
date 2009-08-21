@@ -42,7 +42,11 @@ import openlink.util.*;
 public class VirtuosoResultSetMetaData implements ResultSetMetaData
 {
    // Hash table to sort columns by their names
+#if JDK_VER >= 16
+   protected Hashtable<VirtuosoColumn,Integer> hcolumns;
+#else
    protected Hashtable hcolumns;
+#endif
 
    // Description of columns
    private openlink.util.Vector columnsMetaData = new openlink.util.Vector(10,20);
@@ -56,7 +60,11 @@ public class VirtuosoResultSetMetaData implements ResultSetMetaData
    protected VirtuosoResultSetMetaData (VirtuosoConnection conn, String [] columns, int [] dtps)
    {
       // Create the hash table
+#if JDK_VER >= 16
+      hcolumns = new Hashtable<VirtuosoColumn,Integer>();
+#else
       hcolumns = new Hashtable();
+#endif
       // Process args in DV format
       for(int i = 0;i < columns.length;i++)
       {
@@ -79,7 +87,11 @@ public class VirtuosoResultSetMetaData implements ResultSetMetaData
       else
          return;
       // Create the hash table
+#if JDK_VER >= 16
+      hcolumns = new Hashtable<VirtuosoColumn,Integer>();
+#else
       hcolumns = new Hashtable();
+#endif
       // Process args in DV format
       for(int i = 0;i < vect.size();i++)
       {
