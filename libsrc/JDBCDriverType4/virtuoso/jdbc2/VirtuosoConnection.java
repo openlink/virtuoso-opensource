@@ -77,7 +77,11 @@ public class VirtuosoConnection implements Connection
    private VirtuosoOutputStream out;
 
    // Hash table from future id to the VirtuosoFuture instance
+#if JDK_VER >= 16
+   private Hashtable<Integer,VirtuosoFuture> futures;
+#else
    private Hashtable futures;
+#endif
 
    // Serial number of last issued future, 0 is first
    private int req_no, con_no;
@@ -89,7 +93,11 @@ public class VirtuosoConnection implements Connection
    private int _case;
    protected openlink.util.Vector client_defaults;
    protected openlink.util.Vector client_charset;
+#if JDK_VER >= 16
+   protected Hashtable<Character,Byte> client_charset_hash;
+#else
    protected Hashtable client_charset_hash;
+#endif
    protected SQLWarning warning = null;
 
    // String sent by server as answer to "caller_identification" RPC
@@ -137,18 +145,26 @@ public class VirtuosoConnection implements Connection
    protected String charset;
    protected boolean charset_utf8 = false;
 
+
+   
+#if JDK_VER >= 16
+   protected Hashtable<Integer,String> rdf_type_hash = null;
+   protected Hashtable<Integer,String> rdf_lang_hash = null;
+   protected Hashtable<String,Integer> rdf_type_rev = null;
+   protected Hashtable<String,Integer> rdf_lang_rev = null;
+
+  private LRUCache<String,VirtuosoPreparedStatement> pStatementCache;
+  private boolean  useCachePrepStatements = false;
+  private Vector<VhostRec> hostList = new Vector<VhostRec>();
+#else
    protected Hashtable rdf_type_hash = null;
    protected Hashtable rdf_lang_hash = null;
    protected Hashtable rdf_type_rev = null;
    protected Hashtable rdf_lang_rev = null;
 
-
-#if JDK_VER >= 16
-  private LRUCache<String,VirtuosoPreparedStatement> pStatementCache;
-  private boolean  useCachePrepStatements = false;
+  private Vector hostList = new Vector();
 #endif
 
-  private Vector hostList = new Vector();
   private boolean useRoundRobin;
 
 
@@ -175,9 +191,15 @@ public class VirtuosoConnection implements Connection
    }
 
 
+#if JDK_VER >= 16
+   protected Vector<VhostRec> parse_vhost(String vhost, String _host, int _port) throws VirtuosoException
+   {
+     Vector<VhostRec> hostlist =  new Vector<VhostRec>();
+#else
    protected Vector parse_vhost(String vhost, String _host, int _port) throws VirtuosoException
    {
      Vector hostlist =  new Vector();
+#endif
 
      String port = Integer.toString(_port);
      String attr = null;
@@ -291,12 +313,22 @@ public class VirtuosoConnection implements Connection
          pwdclear = "0";
       //System.err.println ("4PwdClear is " + pwdclear);
       // Create the hash table
+#if JDK_VER >= 16
+      futures = new Hashtable<Integer,VirtuosoFuture>();
+      // RDF box type & lang
+      rdf_type_hash = new Hashtable<Integer,String> ();
+      rdf_lang_hash = new Hashtable<Integer,String> ();
+      rdf_type_rev = new Hashtable<String,Integer> ();
+      rdf_lang_rev = new Hashtable<String,Integer> ();
+#else
       futures = new Hashtable();
       // RDF box type & lang
       rdf_type_hash = new Hashtable ();
       rdf_lang_hash = new Hashtable ();
       rdf_type_rev = new Hashtable ();
       rdf_lang_rev = new Hashtable ();
+#endif
+
 #if JDK_VER >= 16
       useCachePrepStatements = getBoolAttr(prop, "usepstmtpool", false);
       int poolSize = getIntAttr(prop, "pstmtpoolsize", 25);
@@ -566,7 +598,11 @@ public class VirtuosoConnection implements Connection
 			   {
 			     client_charset = (openlink.util.Vector)obj;
 			     String table = (String)client_charset.elementAt (1);
+#if JDK_VER >= 16
+			     client_charset_hash = new Hashtable<Character,Byte> (256);
+#else
 			     client_charset_hash = new Hashtable (256);
+#endif
 			     for (int i = 0; i < 255; i++)
 			       {
 				 if (i < table.length())

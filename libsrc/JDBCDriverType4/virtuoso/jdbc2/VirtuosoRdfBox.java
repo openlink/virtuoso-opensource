@@ -140,7 +140,11 @@ public class VirtuosoRdfBox implements RdfBox
       return (k != null ? k.shortValue () : (short) RDF_BOX_DEFAULT_TYPE);
     }
 
-    private void fillHashFromSQL (Hashtable ht, Hashtable rev, String sql)
+#if JDK_VER >= 16
+    private void fillHashFromSQL (Hashtable<Integer,String> ht, Hashtable<String,Integer> rev, String sql) 
+#else
+    private void fillHashFromSQL (Hashtable ht, Hashtable rev, String sql) 
+#endif
     {
 	try
 	{

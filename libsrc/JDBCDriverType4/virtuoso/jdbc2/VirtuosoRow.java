@@ -819,7 +819,11 @@ class VirtuosoRow
        // calls javax.xml.parsers.DocumentBuilderFactory.newInstance ()
        try
          {
+#if JDK_VER >= 16
+	   Class<?> dbfact_cls = Class.forName ("javax.xml.parsers.DocumentBuilderFactory");
+#else
 	   Class dbfact_cls = Class.forName ("javax.xml.parsers.DocumentBuilderFactory");
+#endif
 	   Object dbfact;
 	   Method newInstMtd, newDbMtd;
 	   newInstMtd = dbfact_cls.getDeclaredMethod ("newInstance", new Class [0]);
@@ -830,10 +834,16 @@ class VirtuosoRow
 	   // db = dbfact.newDocumentBuilder ();
 	   db = newDbMtd.invoke (dbfact, new Object [0]);
 
+#if JDK_VER >= 16
+	   Class<?> db_cls = Class.forName ("javax.xml.parsers.DocumentBuilder");
+	   Class<?> parse_args = Class.forName ("java.io.InputStream");
+	   parse_mtd = db_cls.getDeclaredMethod ("parse", parse_args);
+#else
 	   Class db_cls = Class.forName ("javax.xml.parsers.DocumentBuilder");
 	   Class [] parse_args = { Class.forName ("java.io.InputStream") };
 	   //System.out.println ("xml=[" + ((String)data) + "]");
 	   parse_mtd = db_cls.getDeclaredMethod ("parse", parse_args);
+#endif
          }
        catch (Throwable t)
          {
