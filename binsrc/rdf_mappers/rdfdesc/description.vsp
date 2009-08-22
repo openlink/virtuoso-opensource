@@ -151,6 +151,9 @@
         </div>
       </div> <!-- hd_l -->
       <div id="hd_r">
+        <a href="http://www.openlinksw.com/" title="OpenLink Software"><img src="statics/openlinklogo_wstrap_2008.png" height="64" alt="OpenLink Software" /></a>
+      </div> <!-- header -->
+      <!--div id="hd_r">
         <a href="<?=rdf_link?>" title="RDF data"><img src="statics/sw-cube.png" alt="[RDF Data]" /></a>
         <br/>
         <a href="/ode/?uri=<?vsp http_url (page_resource_uri); ?>">Explore Linked Data</a>&nbsp;using
@@ -158,7 +161,7 @@
 	Raw Linked Data formats:
         <a href="<?=rdf_link || '&output=n3'?>">N3</a> |
         <a href="<?=rdf_link || '&output=rdf'?>">RDF/XML</a>
-      </div> <!-- hd_r -->
+      </div--> <!-- hd_r -->
     </div> <!-- header -->
     <div id="content_wrapper">
     <div id="content">
@@ -249,6 +252,14 @@ skip_rev:
     </div> <!--  #content_wrapper -->
 <!-- footer -->
     <div id="footer">
+	<div id="ft_t">
+	    Explore Linked Data using:
+	    <a href="/ode/?uri=<?vsp http_url (page_resource_uri); ?>">OpenLink Data Explorer</a> 
+	    &nbsp; &nbsp; Raw Linked Data formats:
+	    <a href="<?=rdf_link || '&output=n3'?>">N3</a> |
+	    <a href="<?=rdf_link || '&output=rdf'?>">RDF/XML</a>
+	    &nbsp; &nbsp;<a href="http://ode.openlinksw.com/">About</a>&nbsp; &nbsp;
+      </div> <!-- #ft_t -->
       <div id="ft_b">
         <a href="http://virtuoso.openlinksw.com" title="OpenLink Virtuoso"><img class="powered_by" src="statics/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso" /></a>
         <a href="http://linkeddata.org/"><img alt="This material is Open Knowledge" src="statics/LoDLogo.gif" style="border-width:0"  /></a> &nbsp;
