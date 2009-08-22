@@ -115,7 +115,6 @@ in4files = \
 	LRUCache.java \
 	VirtuosoFNSException.java
 
-
 utilfiles = \
 	MD5.java \
 	Vector.java \
@@ -194,7 +193,7 @@ std2javafiles = \
 .PHONY: std2
 std2: ../../virtjdbc2.jar
 
-../../virtjdbc2.jar: outstd2 $(std2javafiles) $(stdclassfiles)
+../../virtjdbc2.jar: outstd2 $(std2javafiles)
 	@echo jdbc2 javac $(JDK2_FLAGS)
 	@cd outstd2 ; $(JDK2)/javac $(JDK2_FLAGS) -classpath .  virtuoso/jdbc2/*.java openlink/util/*.java virtuoso/sql/*.java
 	@cd outstd2 ; $(JDK2)/jar cf ../../../virtjdbc2.jar virtuoso/jdbc2/*.class openlink/util/*.class virtuoso/sql/*.class
@@ -222,15 +221,16 @@ outstd2/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
 # JDBC 2.x (SSL)
 ########################################### 
 ssl2javafiles = \
-	$(infiles:%.java=outssl/virtuoso/jdbc2/%.java) \
-	$(utilfiles:%.java=outssl/openlink/util/%.java)
+	$(infiles:%.java=outssl2/virtuoso/jdbc2/%.java) \
+        $(sqlfiles:%.java=outssl2/virtuoso/sql/%.java) \
+	$(utilfiles:%.java=outssl2/openlink/util/%.java)
 
 jssljars = ../../../security/jdk1.2/jcert.jar:../../../security/jdk1.2/jnet.jar:../../../security/jdk1.2/jsse.jar
 
 .PHONY: ssl2
 ssl2: ../../virtjdbc2ssl.jar
 
-../../virtjdbc2ssl.jar: outssl2 $(ssljavafiles) $(sslclassfiles)
+../../virtjdbc2ssl.jar: outssl2 $(ssljavafiles)
 	@echo jdbc2 javac $(JDK2_FLAGS)
 	@cd outssl2 ; $(JDK2)/javac -classpath ".:$(jssljars)" $(JDK2_FLAGS) virtuoso/jdbc2/*.java openlink/util/*.java virtuoso/sql/*.java
 	@cd outssl2 ; $(JDK2)/jar cf ../../../virtjdbc2ssl.jar virtuoso/jdbc2/*.class openlink/util/*.class virtuoso/sql/*.class
@@ -398,7 +398,7 @@ ssl4javafiles = \
 .PHONY: ssl4
 ssl4: ../../virtjdbc4ssl.jar
 
-../../virtjdbc4ssl.jar: outssl4 $(ssl4javafiles) #$(ssl4classfiles)
+../../virtjdbc4ssl.jar: outssl4 $(ssl4javafiles)
 	@echo jdbc4 ssl javac $(JDK4_FLAGS)
 	@cd outssl4 ; $(JDK4)/javac $(JDK4_FLAGS) -classpath . virtuoso/jdbc4/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
 	@cd outssl4 ; $(JDK4)/jar cf ../../../virtjdbc4ssl.jar virtuoso/jdbc4/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class
@@ -432,7 +432,7 @@ outssl4/virtuoso/javax/%.java: ../../virtuoso/javax/%.java
 clean-local:
 	-$(RM) -f *.class version.h
 	-$(RM) -rf outstd outssl 
-	-$(RM) -rf outstd1
+	-$(RM) -rf outstd1 outssl1
 	-$(RM) -rf outstd2 outssl2 
 	-$(RM) -rf outstd3 outssl3 
 	-$(RM) -rf outstd4 outssl4 
