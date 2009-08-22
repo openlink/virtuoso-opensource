@@ -859,6 +859,9 @@ create function DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (in origin_uri varchar, in 
         return 'application/rdf+xml';
       if (
         strstr (ret_content_type, 'text/rdf+n3') is not null or
+        strstr (ret_content_type, 'text/rdf+ttl') is not null or
+        strstr (ret_content_type, 'text/rdf+turtle') is not null or
+        strstr (ret_content_type, 'text/turtle') is not null or
         strstr (ret_content_type, 'application/x-turtle') is not null or
         strstr (ret_content_type, 'application/turtle') is not null )
         return 'text/rdf+n3';
@@ -1094,10 +1097,14 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
       return 1;
     }
   else if (
-       strstr (ret_content_type, 'text/rdf+n3') is not null or strstr (ret_content_type, 'text/rdf+ttl') is not null or
-       strstr (ret_content_type, 'application/rdf+n3') is not null or strstr (ret_content_type, 'application/rdf+turtle') is not null or
-       strstr (ret_content_type, 'application/turtle') is not null or strstr (ret_content_type, 'application/x-turtle') is not null
-     )
+       strstr (ret_content_type, 'text/rdf+n3') is not null or
+       strstr (ret_content_type, 'text/rdf+ttl') is not null or
+       strstr (ret_content_type, 'text/rdf+turtle') is not null or
+       strstr (ret_content_type, 'text/turtle') is not null or
+       strstr (ret_content_type, 'application/rdf+n3') is not null or
+       strstr (ret_content_type, 'application/rdf+turtle') is not null or
+       strstr (ret_content_type, 'application/turtle') is not null or
+       strstr (ret_content_type, 'application/x-turtle') is not null )
     {
       whenever sqlstate '*' goto load_grddl;
       log_enable (2, 1);

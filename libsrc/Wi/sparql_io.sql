@@ -273,7 +273,7 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
   if (maxrows is not null)
     http (sprintf ('&maxrows=%d', maxrows), req_body);
   req_body := string_output_string (req_body);
-  local_req_hdr := 'Accept: application/sparql-results+xml, text/rdf+n3, text/rdf+ttl, text/rdf+turtle, application/turtle, application/x-turtle, application/rdf+xml, application/xml';
+  local_req_hdr := 'Accept: application/sparql-results+xml, text/rdf+n3, text/rdf+ttl, text/rdf+turtle, text/turtle, application/turtle, application/x-turtle, application/rdf+xml, application/xml';
   if (length (req_body) + length (service) >= 1900)
     {
       req_method := 'POST';
@@ -302,6 +302,7 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
       strstr (ret_content_type, 'application/rdf+xml') is null and
       strstr (ret_content_type, 'text/rdf+n3') is null and
       strstr (ret_content_type, 'text/rdf+ttl') is null and
+      strstr (ret_content_type, 'text/rdf+turtle') is null and
       strstr (ret_content_type, 'text/turtle') is null and
       strstr (ret_content_type, 'application/turtle' ) is null and
       strstr (ret_content_type, 'application/x-turtle' ) is null ) )
@@ -484,6 +485,7 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
     }
   if (strstr (ret_content_type, 'text/rdf+n3') is not null or
     strstr (ret_content_type, 'text/rdf+ttl') is not null or
+    strstr (ret_content_type, 'text/rdf+turtle') is not null or
     strstr (ret_content_type, 'text/turtle') is not null or
     strstr (ret_content_type, 'application/turtle') is not null or
     strstr (ret_content_type, 'application/x-turtle') is not null )
@@ -1231,6 +1233,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       if (
         strstr (accept, 'text/rdf+n3') is not null or
         strstr (accept, 'text/rdf+ttl') is not null or
+        strstr (accept, 'text/rdf+turtle') is not null or
         strstr (accept, 'text/turtle') is not null or
         strstr (accept, 'application/turtle') is not null or
         strstr (accept, 'application/x-turtle') is not null or
@@ -1240,6 +1243,8 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
             ret_mime := 'text/rdf+n3';
           else if (strstr (accept, 'text/rdf+ttl') is not null)
             ret_mime := 'text/rdf+ttl';
+          else if (strstr (accept, 'text/rdf+turtle') is not null)
+            ret_mime := 'text/rdf+turtle';
           else if (strstr (accept, 'text/turtle') is not null)
             ret_mime := 'text/turtle';
           else if (strstr (accept, 'application/turtle') is not null)
@@ -1327,6 +1332,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       if (
         strstr (accept, 'text/rdf+n3') is not null or
         strstr (accept, 'text/rdf+ttl') is not null or
+        strstr (accept, 'text/rdf+turtle') is not null or
         strstr (accept, 'text/turtle') is not null or
         strstr (accept, 'application/turtle') is not null or
         strstr (accept, 'application/x-turtle') is not null or
@@ -1336,6 +1342,8 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
             ret_mime := 'text/rdf+n3';
           else if (strstr (accept, 'text/rdf+ttl') is not null)
             ret_mime := 'text/rdf+ttl';
+          else if (strstr (accept, 'text/rdf+turtle') is not null)
+            ret_mime := 'text/rdf+turtle';
           else if (strstr (accept, 'text/turtle') is not null)
             ret_mime := 'text/turtle';
           else if (strstr (accept, 'application/turtle') is not null)
@@ -1402,6 +1410,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       if (
         strstr (accept, 'text/rdf+n3') is not null or
         strstr (accept, 'text/rdf+ttl') is not null or
+        strstr (accept, 'text/rdf+turtle') is not null or
         strstr (accept, 'text/turtle') is not null or
         strstr (accept, 'application/turtle') is not null or
         strstr (accept, 'application/x-turtle') is not null or
@@ -1411,6 +1420,8 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
             ret_mime := 'text/rdf+n3';
           else if (strstr (accept, 'text/rdf+ttl') is not null)
             ret_mime := 'text/rdf+ttl';
+          else if (strstr (accept, 'text/rdf+turtle') is not null)
+            ret_mime := 'text/rdf+turtle';
           else if (strstr (accept, 'text/turtle') is not null)
             ret_mime := 'text/turtle';
           else if (strstr (accept, 'application/turtle') is not null)
@@ -2209,6 +2220,8 @@ host_found:
             fmtttl := '"HTTP+TTL text/rdf+n3" ';
           else if (strstr (accept, 'text/rdf+ttl') is not null)
             fmtttl := '"HTTP+TTL text/rdf+ttl" ';
+          else if (strstr (accept, 'text/rdf+turtle') is not null)
+            fmtttl := '"HTTP+TTL text/rdf+turtle" ';
           else if (strstr (accept, 'text/turtle') is not null)
             fmtttl := '"HTTP+TTL text/turtle" ';
           else if (strstr (accept, 'application/turtle') is not null)
@@ -2437,6 +2450,7 @@ DB.DBA.http_rq_file_handler (in content any, in params any, in lines any, inout 
       strcasestr (accept, 'text/rdf+n3') is not null or
       strcasestr (accept, 'text/rdf+ttl') is not null or
       strcasestr (accept, 'text/rdf+turtle') is not null or
+      strcasestr (accept, 'text/turtle') is not null or
       strcasestr (accept, 'application/rdf+xml') is not null or
       strcasestr (accept, 'application/javascript') is not null or
       strcasestr (accept, 'application/soap+xml') is not null or
