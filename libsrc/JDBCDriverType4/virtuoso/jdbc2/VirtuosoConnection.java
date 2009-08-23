@@ -1041,8 +1041,10 @@ public class VirtuosoConnection implements Connection
          // Clear some variables
          user = url = password = null;
          futures = null;
+#if JDK_VER >= 14
          pooled_connection = null;
          xa_connection = null;
+#endif
       }
       catch(IOException e)
       {
