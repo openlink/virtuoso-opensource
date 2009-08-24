@@ -245,9 +245,9 @@ skip_rev:
      <p>
      As stated above, the links in this page expose strong identifiers for its primary topic, secondary topics, attributes, and some values. These links, via  implicit association, act as conduits to their metadata-bearing documents, in a variety formats.
     </p>
-    <p class="opl_badge">
+    <!--p class="opl_badge">
     <a href="http://www.openlinksw.com/"><img src="statics/openlink150.gif" alt="OpenLink" height="33" width="100"></a>
-    </p>
+    </p-->
     </div><!-- #sidebar -->
     </div> <!--  #content_wrapper -->
 <!-- footer -->
