@@ -6,7 +6,7 @@
    declare project_home_page any;
    declare page_resource_uri, proxy_iri, proxy_iri2, rdf_link, label, true_label, _subject any;
    declare arr, data, meta, h1, h2, inx, gr, host, pars any;
-   declare _graph, _sub varchar;
+   declare iri_type varchar;
    declare do_sponge, proxy_iri_fn int;
 
    connection_set ('ns_ctr', 1); /* for unknown xmlns to print in RDFa */
@@ -70,7 +70,7 @@
 	    arr[1] := nhost;
 	    arr[2] := npath;
 	    _G := DB.DBA.vspx_uri_compose (arr);
-	    do_sponge := 0;
+	    --do_sponge := 0;
          }
      }
 
@@ -87,6 +87,13 @@
 	  null, null, vector (), 0, meta, data);
         if (length (data))
 	  _G := data[0][0];
+        else
+          {
+	    exec (sprintf ('sparql define input:storage "" select ?g where { graph ?g { ?s ?p <%S> . }} limit 1', _S), 
+	      null, null, vector (), 0, meta, data);
+	    if (length (data))
+	      _G := data[0][0];
+	  }	  
      }
 
    exec (sprintf ('sparql ask where { graph <%S> { <%S> ?p ?o }}', _G, _S), null, null, vector (), 0, meta, data);
@@ -110,6 +117,7 @@
    label := rdfdesc_label (_S, _G, lines);
    label := cast (label as varchar);
    true_label := label;
+   iri_type := rdfdesc_type (_G, _S);
 
    exec (sprintf ('sparql prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/>
 	select ?o where { graph <%S> { <%S> rdfs:comment ?o } }', _G, _S), null, null, vector (), 0, meta, data);
@@ -128,15 +136,62 @@
     <base href="http://<?V http_request_header (lines, 'Host') ?><?V http_map_get ('domain') ?>/" />
     <title>About: <?vsp http (sprintf ('%s', label)); ?></title>
     <link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>" title="RDF" />
+    <link rel="stylesheet" type="text/css" href="statics/slidebar.css" />
     <link rel="stylesheet" type="text/css" href="statics/style_w.css" />
     <link href="statics/highlighter.css" type="text/css" rel="stylesheet" charset="utf-8" />
     <meta http-equiv="Content-type" content="text/html;charset=utf-8" />
     <script type="text/javascript" src="statics/script.js"></script>
+    <script type="text/javascript" src="/DAV/JS/oat/loader.js"></script>
 </head>
+<!--
 <body onload="init();" about="<?V page_resource_uri ?>">
+-->
+<body about="<?V page_resource_uri ?>">
+
+    <div id="slb">
+    <div id="sidebar">
+      <h1>What Is This?</h1>
+      <p>This is an HTML+RDFa representation of <b><i>metadata</i></b> describing this Web-addressable resource.</p>
+      <h1>Why Is This Important?</h1>
+      <p>The property (attributes and values pairs) links on this page unveil a different kind of link, one which enables the following on HTTP networks such as the Web:</p>
+      <ol>
+        <li><i>Unambiguous identity</i> for entities (aka. strong identifiers)</li>
+        <li>Implicit binding of an entity and its metadata via <i>strong identifiers</i></li>
+        <li><i>Multiple metadata representations</i> that enable a variety of presentations</li>
+        <li><i>High precision Search and Find queries</i> that simply use the metadata documents (by referencing entity URIs) as the query's Data Source Name</li>
+      </ol>
+      <h1>How Do I Discover Alternative Metadata Representations?</h1>
+      <p>
+      This document exposes metadata in the following formats: (X)HTML+RDFa, Turtle, N3, JSON+RDF,  or RDF/XML. In the most basic form,  you can simply view the (X)HTML source markup of this page, and go directly to the &lt;head/&gt; section which contains a &lt;link/&gt; tag with relationship and type properties for each format.
+     </p>
+     <p>
+     In addition, you can also explicitly request a desired metadata representation for a given resource via HTTP GET requests that use the entity's strong identifier as the call target.
+     </p>
+     <h1>How Can I Expose My Web Resources In This Manner?</h1>
+     <p>
+     Simply include the following in the &lt;head/&gt; section of your (static or dynamically generated) (X)HTML page:<br/><br/>
+     &lt;link rel="alternate" title="My Data in RDF Linked Data form"<br/>
+     type="application/rdf+xml"<br/>
+     href="http://linkeddata.uriburner.com/about/id/&lt;this-page-URL&gt;/&gt;"
+     </p>
+     <h1>How Is This Related To The Linked Data Meme?</h1>
+     <p>
+     As stated above, the links in this page expose strong identifiers for its <b>primary topic, secondary topics, attributes, and some values</b>. These links, via  implicit association, act as conduits to their metadata-bearing documents, in a variety formats.
+    </p>
+    <hr/>
+    <div id="ft_t">
+        <a href="/ode/?uri=<?vsp http_url (page_resource_uri); ?>">Explore Linked Data</a>&nbsp;using
+	<a href="http://ode.openlinksw.com/" title="OpenLink Data Explorer">ODE</a>&nbsp;&nbsp;&nbsp;&nbsp;
+	Raw Linked Data formats:
+        <a href="<?=rdf_link || '&output=n3'?>">N3</a> |
+        <a href="<?=rdf_link || '&output=rdf'?>">RDF/XML</a>
+    </div>
+    </div><!-- #sidebar -->
+    </div> <!-- slb -->
+
     <div id="header">
       <div id="hd_l">
-	  <h1 id="title">About: <a href="<?= case when page_resource_uri like 'nodeID://%' then rdfdesc_http_url (page_resource_uri) else proxy_iri2 end ?>"><?vsp http (sprintf ('%s', label)); ?></a></h1>
+	  <h1 id="title">About: <a href="<?= case when page_resource_uri like 'nodeID://%' then rdfdesc_http_url (page_resource_uri) else proxy_iri2 end ?>"><?vsp http (sprintf ('%s', label)); ?><small><?V iri_type ?></small></a></h1>
         <div id="homelink">
         </div>
         <div class="page-resource-uri">
@@ -144,9 +199,10 @@
         </div>
       </div> <!-- hd_l -->
       <div id="hd_r">
-        <a href="<?=rdf_link?>" title="RDF data"><img src="statics/sw-cube.png" alt="[RDF Data]" /></a>
+        <a href="http://www.openlinksw.com" title="OpenLink Software"><img src="statics/openlinklogo_wstrap_2008.png" alt="[OpenLink Software]" height="80" width="191" /></a>
       </div> <!-- hd_r -->
     </div> <!-- header -->
+    <div id="content_wrapper">
     <div id="content">
 
       <p><?vsp http (sprintf ('%s', _subject)); ?></p>
@@ -206,18 +262,11 @@ skip_rev:
 ?>
       </table>
     </div> <!--  #content -->
+    </div> <!--  #content_wrapper -->
+
 <!-- footer -->
     <div id="footer">
-      <div id="ft_t">
-        Explore Linked Data using:
-        <a href="/ode/?uri=<?vsp http_url (page_resource_uri); ?>">OpenLink Data Explorer</a>
-        &nbsp; &nbsp; Raw Linked Data formats:
-        <a href="<?=rdf_link || '&output=n3'?>">N3</a> |
-        <a href="<?=rdf_link || '&output=rdf'?>">RDF/XML</a>
-        &nbsp; &nbsp;<a href="http://ode.openlinksw.com/">About</a>&nbsp; &nbsp;
-      </div> <!-- #ft_t -->
       <div id="ft_b">
-        <a href="http://virtuoso.openlinksw.com" title="OpenLink Virtuoso"><img class="powered_by" src="statics/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso" /></a>
         <a href="http://linkeddata.org/"><img alt="This material is Open Knowledge" src="statics/LoDLogo.gif" style="border-width:0"  /></a> &nbsp;
         <a href="http://dbpedia.org/sparql"><img alt="W3C Semantic Web Technology" src="statics/sw-sparql-blue.png" style="border-width:0" /></a> &nbsp;  &nbsp;
         <a href="http://www.opendefinition.org/"><img alt="This material is Open Knowledge" src="statics/od_80x15_red_green.png" style="border-width:0" /></a>

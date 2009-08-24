@@ -1,4 +1,7 @@
+var featureList = ["slidebar"];
+
 function init() {
+  var slb = new OAT.Slidebar ("slb", {imgPrefix: "statics/", autoClose: false, width: 500});
 	init_long_list ();
 	init_long_literals();
 }

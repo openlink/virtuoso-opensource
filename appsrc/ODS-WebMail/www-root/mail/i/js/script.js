@@ -58,7 +58,7 @@ function getParent (obj, tag)
 }
 
 // ---------------------------------------------------------------------------
-function selectCheck (obj, prefix)
+function selectCheck (obj)
 {
   coloriseRow(getParent(obj, 'tr'), obj.checked);
 }

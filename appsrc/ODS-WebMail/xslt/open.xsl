@@ -64,7 +64,6 @@
         <xsl:call-template name="msg_tools_advance"/>
       </xsl:if>
       <!-- /goliamata burkotia -->
-      <xsl:call-template name="js_check_all"/>
       <xsl:apply-templates select="eparams"/>
     </form>
   </xsl:template>
@@ -582,8 +581,15 @@
         <xsl:when test="/page/message/parent_id = 0">
           <tr>
             <th class="left">
-              <label for="move_to_folder">Move to folder</label>
+              <label for="fid">Move to folder</label>
               <xsl:apply-templates select="folders" mode="combo"/>
+              <xsl:call-template name="make_href">
+                <xsl:with-param name="url">javascript: formSubmit('fa_move.x', '1'); </xsl:with-param>
+                <xsl:with-param name="title">Move</xsl:with-param>
+                <xsl:with-param name="img">/oMail/i/move_16.png</xsl:with-param>
+                <xsl:with-param name="img_label"> Move</xsl:with-param>
+                <xsl:with-param name="class">button</xsl:with-param>
+              </xsl:call-template>
             </th>
           </tr>
         </xsl:when>
@@ -630,33 +636,6 @@
         </xsl:choose>
       </tr>
     </table>
-  </xsl:template>
-
-  <!-- ====================================================================================== -->
-  <xsl:template match="folders" mode="combo">
-    <select name="fid" id="move_to_folder">
-      <xsl:apply-templates select="folder"/>
-    </select>
-    <xsl:call-template name="make_href">
-      <xsl:with-param name="url">javascript: formSubmit('fa_move.x', '1'); </xsl:with-param>
-      <xsl:with-param name="title">Move</xsl:with-param>
-      <xsl:with-param name="img">/oMail/i/move_16.png</xsl:with-param>
-      <xsl:with-param name="img_label"> Move</xsl:with-param>
-      <xsl:with-param name="class">button</xsl:with-param>
-    </xsl:call-template>
-  </xsl:template>
-
-  <!-- ====================================================================================== -->
-  <xsl:template match="folder[@smartFlag='N']">
-    <option>
-      <xsl:attribute name="value"><xsl:value-of select="@id" /></xsl:attribute>
-      <xsl:if test="@id = /page/message/folder_id">
-        <xsl:attribute name="selected">1</xsl:attribute>
-      </xsl:if>
-      <xsl:value-of select="level/@str"/>
-      <xsl:value-of select="name"/>
-    </option>
-    <xsl:apply-templates select="folders/folder"/>
   </xsl:template>
 
   <!-- ====================================================================================== -->

@@ -117,11 +117,11 @@
           </table>
         </xsl:otherwise>
       </xsl:choose>
-      <xsl:apply-templates select="folders" mode="combo"/>
+      <xsl:call-template name="footer" />
       <xsl:call-template name="advance_search"/>
     </form>
-    <xsl:call-template name="js_check_all"/>
   </xsl:template>
+
   <!-- ====================================================================================== -->
   <xsl:template match="ctag">
     <a href="#">
@@ -132,25 +132,7 @@
       </span>
     </a>
   </xsl:template>
-  <!-- ====================================================================================== -->
-  <xsl:template match="folders" mode="search">
-    <select name="q_fid" style="width:150px" id="folders">
-      <option value="0"> All folders </option>
-      <xsl:apply-templates select="folder"/>
-    </select>
-  </xsl:template>
-  <!-- ====================================================================================== -->
-  <xsl:template match="folder[@smartFlag='N']">
-    <option>
-      <xsl:if test="/page/query/q_fid = @id">
-        <xsl:attribute name="selected"/>
-      </xsl:if>
-      <xsl:attribute name="value"><xsl:value-of select="@id"/></xsl:attribute>
-      <xsl:value-of select="level/@str"/>
-      <xsl:value-of select="name"/>
-    </option>
-    <xsl:apply-templates select="folders/folder"/>
-  </xsl:template>
+
   <!-- ====================================================================================== -->
   <xsl:template name="advance_search">
     <xsl:choose>
@@ -244,7 +226,11 @@
                     <label for="q_fid">In folder(s)</label>
                   </th>
                   <td>
-                    <xsl:apply-templates select="folders" mode="search"/>
+                    <xsl:apply-templates select="folders" mode="combo">
+                      <xsl:with-param name="ID" select="'q_fid'" />
+                      <xsl:with-param name="startOption" select="' All folders'" />
+                      <xsl:with-param name="selectID" select="/page/query/q_fid" />
+                    </xsl:apply-templates>
                   </td>
                 </tr>
                 <tr>

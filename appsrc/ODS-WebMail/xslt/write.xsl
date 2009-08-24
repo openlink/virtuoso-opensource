@@ -98,8 +98,8 @@
       <input type="hidden" name="wp">
         <xsl:attribute name="value"><xsl:value-of select="wp"/></xsl:attribute>
       </input>
-      <input type="hidden" name="rmid">
-        <xsl:attribute name="value"><xsl:value-of select="/page/message/ref_msg_id"/></xsl:attribute>
+      <input type="hidden" name="ref_id">
+        <xsl:attribute name="value"><xsl:value-of select="/page/message/ref_id"/></xsl:attribute>
       </input>
       <input type="hidden" name="ch_scopy">
         <xsl:attribute name="value"><xsl:value-of select="string(//save_copy)"/></xsl:attribute>

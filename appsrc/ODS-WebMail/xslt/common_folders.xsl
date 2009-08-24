@@ -191,4 +191,65 @@
       </xsl:otherwise>
     </xsl:choose>
   </xsl:template>
+
+  <!-- ====================================================================================== -->
+  <xsl:template match="folders" mode="combo">
+    <xsl:param name="ID" select="'fid'" />
+    <xsl:param name="path" />
+    <xsl:param name="showPath" select="0" />
+    <xsl:param name="startOption" select="''" />
+    <xsl:param name="scope" select="'N'" />
+    <xsl:param name="selectID" select="-1" />
+    <xsl:param name="skipID" select="-1" />
+    <select>
+      <xsl:attribute name="name"><xsl:value-of select="$ID"/></xsl:attribute>
+      <xsl:attribute name="id"><xsl:value-of select="$ID"/></xsl:attribute>
+      <xsl:if test="$startOption != ''">
+        <option value="0"><xsl:value-of select="$startOption"/></option>
+      </xsl:if>
+      <xsl:apply-templates select="folder" mode="combo">
+        <xsl:with-param name="path" select="$path" />
+        <xsl:with-param name="showPath" select="$showPath" />
+        <xsl:with-param name="scope" select="$scope" />
+        <xsl:with-param name="selectID" select="$selectID" />
+        <xsl:with-param name="skipID" select="$skipID" />
+      </xsl:apply-templates>
+    </select>
+  </xsl:template>
+
+  <!-- ====================================================================================== -->
+  <xsl:template match="folder" mode="combo">
+    <xsl:param name="path" select="''" />
+    <xsl:param name="showPath" select="0" />
+    <xsl:param name="scope" select="'N'" />
+    <xsl:param name="selectID" select="-1" />
+    <xsl:param name="skipID" select="-1" />
+    <xsl:if test="($scope='*' or @smartFlag='N') and $skipID != @id">
+      <option>
+        <xsl:attribute name="value"><xsl:value-of select="@id"/></xsl:attribute>
+        <xsl:if test="@id = $selectID">
+          <xsl:attribute name="selected">1</xsl:attribute>
+        </xsl:if>
+        <xsl:choose>
+          <xsl:when test="$showPath=0">
+            <xsl:value-of select="level/@str"/>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:value-of select="$path"/>
+          </xsl:otherwise>
+        </xsl:choose>
+        <xsl:value-of select="name"/>
+      </option>
+      <xsl:apply-templates select="folders/folder" mode="combo">
+        <xsl:with-param name="path">
+          <xsl:value-of select="$path"/>
+          <xsl:value-of select="name"/> / </xsl:with-param>
+        <xsl:with-param name="showPath" select="$showPath" />
+        <xsl:with-param name="scope" select="$scope" />
+        <xsl:with-param name="selectID" select="$selectID" />
+        <xsl:with-param name="skipID" select="$skipID" />
+      </xsl:apply-templates>
+    </xsl:if>
+  </xsl:template>
+
 </xsl:stylesheet>

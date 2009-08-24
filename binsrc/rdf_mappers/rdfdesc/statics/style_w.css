@@ -21,8 +21,8 @@ body {
   margin: 0 0 1.2em; 
   padding: 0 0 0.3em; }
 
-#hd_l { width: 80%; float: left;}
-#hd_r {float: right; clear: right;}
+#hd_l { width: 64%; float: left;}
+#hd_r { width: 33%; float: right; clear: right; text-align: right; }
 
 #footer { border-top: 2px solid #696; color: #666; margin: 1.2em 0 0; padding: 0.3em 0 0; }
 
@@ -31,8 +31,12 @@ body {
 #homelink a { font-weight: bold; text-decoration: none; }
 #homelink a:hover { color: red; text-decoration: underline; }
 
+h1, h2 { color: #224; }
 h1 { display: inline; font-weight: bold; font-size: 200%; margin: 0; text-align: left; }
 h2 { font-weight: normal; font-size: 124%; margin: 1.2em 0 0.2em; }
+
+#sidebar h1 {color: #696; font-size: 110%; }
+.opl_badge { text-align: center; }
 
 .page-resource-uri { font-size: 124%; margin: 0.2em 0; font-style: italic; }
 .page-resource-uri a { color: blue; text-decoration: underline; }
@@ -56,7 +60,6 @@ a.uri:hover { text-decoration: underline }
 table.description a small { font-size: 100% }
 table.description small { font-size: 100%; }
 table.description .property { white-space: nowrap; }
-h1, h2 { color: #224; }
 table.description .odd td { }
 table.description .even td { }
 .image { background: white; float: left; margin: 0 1.5em 1.5em 0; padding: 2px; }
@@ -65,12 +68,33 @@ a.rdf_source { text-decoration: none; color: #666;}
 a.rdf_source img { vertical-align: middle;margin-right: 5px;}
 #rdficon:hover { background-color: #eef; border: 1px solid #666;}
 
-#content {width: 100%; float: left; clear: left;}
+#content_wrapper {
+width: 100%; float: left; clear: left;
+}
+
+#content {
+  /* Needed for static help sidebar, but not for help slidebar
+  width: 64%;
+   */
+  width: 80%;
+  float:left;
+  margin: 0;
+}
+#sidebar {
+  /* Needed for static help sidebar, but not for help slidebar
+  width: 33%;
+  float: right;
+  margin: 0;
+  border-left: 1px solid #696;
+  */
+  padding: 5px 10px 5px 10px;
+  color: #666;
+}
 
 #footer { 
   width: 100%;
   float: left; 
-  clear: left;
+  clear: both;
   border-top: 2px solid #696; 
   margin: 1.2em 0 0; 
   padding: 0.3em; 

@@ -350,33 +350,45 @@ OMAIL.WA.exec_no_error (
      if ((N.DOMAIN_ID <> 1) and (N.PART_ID = 1))
      {
        declare id integer;
-       declare rfc_id, rfc_header, rfc_references, subject, address, addresses varchar;
+       declare msg_id, msg_references, msg_subject, msg_address, rfc_id, rfc_header, rfc_references varchar;
        declare ts datetime;
        declare nInstance any;
 
        nInstance := OMAIL.WA.domain_nntp_name(N.DOMAIN_ID);
-       select M_RFC_ID, M_RFC_HEADER, M_RFC_REFERENCES, SUBJECT, RCV_DATE, ADDRESS
-         into rfc_id, rfc_header, rfc_references, subject, ts, address
+       select SRV_MSG_ID, REF_ID, M_RFC_ID, M_RFC_HEADER, M_RFC_REFERENCES, SUBJECT, RCV_DATE, ADDRESS
+         into msg_id, msg_references, rfc_id, rfc_header, rfc_references, msg_subject, ts, msg_address
          from OMAIL.WA.MESSAGES
         where DOMAIN_ID = N.DOMAIN_ID
           and USER_ID   = N.USER_ID
           and MSG_ID    = N.MSG_ID;
 
-       if (isnull(rfc_id))
+       if (is_empty_or_null (rfc_id))
+       {
+         rfc_id := msg_id;
+         if (is_empty_or_null(rfc_id))
          rfc_id := OMAIL.WA.make_rfc_id (N.MSG_ID);
+       }
 
-       if (isnull(rfc_references)) {
-         addresses := OMAIL.WA.str2vector (OMAIL.WA.omail_address2str (''to'', address, 2));
-         foreach (any address in addresses) do {
+       if (is_empty_or_null (rfc_references))
+       {
+         rfc_references := msg_references;
+         if (is_empty_or_null (rfc_references))
+         {
+           declare addresses varchar;
+
+           addresses := OMAIL.WA.str2vector (OMAIL.WA.omail_address2str (''to'', msg_address, 2));
+           foreach (any address in addresses) do
+           {
            rfc_references := (select C_RFC_ID from OMAIL.WA.CONVERSATION where C_ADDRESS = trim(address));
-           if (not isnull(rfc_references))
+             if (not is_empty_or_null (rfc_references))
              goto _exit;
+         }
          }
        _exit:;
        }
 
-       if (isnull(rfc_header))
-         rfc_header := OMAIL.WA.make_post_rfc_header (rfc_id, rfc_references, nInstance, subject, ts, nInstance);
+       if (is_empty_or_null (rfc_header))
+         rfc_header := OMAIL.WA.make_post_rfc_header (rfc_id, rfc_references, nInstance, msg_subject, ts, nInstance);
 
        set triggers off;
        update OMAIL.WA.MESSAGES
@@ -610,7 +622,8 @@ create procedure OMAIL.WA.MSG_PARTS_TDATA_HOOK (inout vtb any, inout d_id any, i
   if (not is_empty_or_null(_tags))
   {
     _tags := split_and_decode (_tags, 0, '\0\0,');
-    foreach (any tag in _tags) do {
+    foreach (any tag in _tags) do
+    {
       tag := concat('^T', trim(tag));
       tag := replace (tag, ' ', '_');
       vt_batch_feed (vtb, tag, mode);

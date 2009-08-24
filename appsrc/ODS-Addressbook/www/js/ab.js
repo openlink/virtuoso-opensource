@@ -1029,8 +1029,10 @@ AB.updateInput = function (elm, fldName, fldOptions)
   fld.name = fld.id;
   if (fldOptions.value)
     fld.value = fldOptions.value;
+  if (fldOptions.className)
   fld.className = fldOptions.className;
-  fld.onblur = fldOptions.onBlur;
+  if (fldOptions.onblur)
+    fld.onblur = fldOptions.onblur;
   fld.style.width = '95%';
   var elm = $(elm);
   elm.appendChild(fld);

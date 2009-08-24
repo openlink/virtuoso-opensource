@@ -24,6 +24,7 @@
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
   <xsl:include href="common.xsl"/>
+  <xsl:include href="common_folders.xsl"/>
 
   <!-- ====================================================================================== -->
   <xsl:template match="page">
@@ -75,7 +76,10 @@
     <div style="width: 99.5%; background-color: #B0CDE4; padding: 3px;">
       <b>Run selected filter(s) on:</b>
       &nbsp;
-      <select name="folder_id"><xsl:apply-templates select="../folders/folder"/></select>
+      <xsl:apply-templates select="../folders" mode="combo">
+        <xsl:with-param name="ID" select="'folder_id'" />
+        <xsl:with-param name="scope" select="'*'" />
+      </xsl:apply-templates>
       &nbsp;
       <xsl:call-template name="make_submit">
         <xsl:with-param name="name">fa_run</xsl:with-param>
@@ -87,7 +91,7 @@
 
   <!-- ====================================================================================== -->
   <xsl:template match="filter[@type='list']">
-    <tr>
+    <tr class="msgRow">
       <td width="1%">
         <input type="checkbox" onclick="selectCheck(this, 'cb_item')" name="cb_item">
           <xsl:attribute name="value"><xsl:value-of select="id"/></xsl:attribute>
@@ -246,16 +250,6 @@
         </tr>
       </tfoot>
     </table>
-  </xsl:template>
-
-  <!-- ====================================================================================== -->
-  <xsl:template match="folder">
-    <option>
-      <xsl:attribute name="value"><xsl:value-of select="folder_id"/></xsl:attribute>
-      <xsl:value-of select="level/@str"/>
-      <xsl:value-of select="name"/>
-    </option>
-    <xsl:apply-templates select="folders/folder"/>
   </xsl:template>
 
 </xsl:stylesheet>

@@ -1342,18 +1342,6 @@ create procedure OMAIL.WA.omail_delete_attachment(
 
 -------------------------------------------------------------------------------
 --
-create procedure OMAIL.WA.omail_delete_domain_data(
-  in _domain_id integer)
-{
-  delete from OMAIL.WA.MSG_PARTS        where DOMAIN_ID = _domain_id;
-  delete from OMAIL.WA.MESSAGES         where DOMAIN_ID = _domain_id;
-  delete from OMAIL.WA.EXTERNAL_POP_ACC where DOMAIN_ID = _domain_id;
-  delete from OMAIL.WA.FOLDERS          where DOMAIN_ID = _domain_id;
-}
-;
-
--------------------------------------------------------------------------------
---
 create procedure OMAIL.WA.domain_id(
   in _domain_name varchar)
 {
@@ -1563,7 +1551,7 @@ create procedure OMAIL.WA.omail_delete_user_data(
   delete from OMAIL.WA.MESSAGES         where DOMAIN_ID = _domain_id and USER_ID = _user_id;
   delete from OMAIL.WA.EXTERNAL_POP_ACC where DOMAIN_ID = _domain_id and USER_ID = _user_id;
   for (select FOLDER_ID from OMAIL.WA.FOLDERS where DOMAIN_ID = _domain_id and USER_ID = _user_id and PARENT_ID = 0) do
-    OMAIL.WA.omail_del_folder(_domain_id,_user_id,FOLDER_ID,0);
+    OMAIL.WA.omail_del_folder (_domain_id, _user_id, FOLDER_ID, 1);
   delete from OMAIL.WA.SETTINGS         where DOMAIN_ID = _domain_id and USER_ID = _user_id;
   if (_domain_id <> 1)
     OMAIL.WA.nntp_update (_domain_id, 1, 0);
@@ -3446,7 +3434,7 @@ create procedure OMAIL.WA.omail_get_xslt()
 
   sHost := cast(registry_get('_oMail_path_') as varchar);
   if (sHost = '0')
-    return 'file://apps/oMail/xslt/';
+    return 'file://apps/WebMail/xslt/';
   if (isnull(strstr(sHost, '/DAV/VAD')))
     return sprintf('file://%sxslt/', sHost);
   return sprintf('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:%sxslt/', sHost);
@@ -4260,9 +4248,8 @@ create procedure OMAIL.WA.omail_open_message(
       -- get FROM, TO, CC and BCC field
       _address := OMAIL.WA.omail_replyAddress(_user_id, get_keyword('address', _fields, ''));
     }
-
     _rs := sprintf('%s<re_mode>%d</re_mode>\n' , _rs, OMAIL.WA.omail_getp('re_mode',_params));
-    _rs := sprintf('%s<ref_msg_id>%s</ref_msg_id>\n' ,_rs,OMAIL.WA.omail_getp('srv_msg_id',_fields));
+    _rs := sprintf ('%s<ref_id>%s</ref_id>\n', _rs, trim (OMAIL.WA.omail_getp ('ref_id', _fields) || ' ' || OMAIL.WA.omail_getp ('srv_msg_id', _fields)));
     _rs := sprintf('%s<address>\n', _rs);
     _rs := sprintf('%s<addres_list>%s</addres_list>\n' , _rs, _address);
     _rs := sprintf('%s</address>\n', _rs);
@@ -5064,7 +5051,7 @@ create procedure OMAIL.WA.omail_save_msg(
   _folder_id  := cast(get_keyword('folder_id',_params, '130') as integer);
   _priority   := cast(get_keyword('priority', _params, '3') as integer);
   _subject    := trim(get_keyword('subject',  _params, ''));
-  _ref_id     := get_keyword('rmid',_params,'');
+  _ref_id     := get_keyword ('ref_id',_params,'');
   _mheader    := '';
   _rcv_date   := now();
   _snd_date   := now();
@@ -5133,8 +5120,8 @@ create procedure OMAIL.WA.omail_save_msg(
     _msg_id      := sequence_next ('OMAIL.WA.omail_seq_eml_msg_id');
     _freetext_id := sequence_next ('OMAIL.WA.omail_seq_eml_freetext_id');
 
-    insert into OMAIL.WA.MESSAGES(DOMAIN_ID,MSG_ID,USER_ID,ADDRES_INFO,FOLDER_ID,MSTATUS,ATTACHED,ADDRESS,RCV_DATE,SND_DATE,MHEADER,DSIZE,PRIORITY,SUBJECT,REF_ID,FREETEXT_ID,MSG_SOURCE, M_RFC_ID, M_RFC_REFERENCES)
-      values (_domain_id,_msg_id,_user_id,_address_info,_folder_id,_mstatus,_attached,_address,_rcv_date,_snd_date,_mheader,_dsize,_priority,_subject,_ref_id,_freetext_id,_msg_source, _rfc_id, _rfc_references);
+    insert into OMAIL.WA.MESSAGES (DOMAIN_ID,MSG_ID,USER_ID,ADDRES_INFO,FOLDER_ID,MSTATUS,ATTACHED,ADDRESS,RCV_DATE,SND_DATE,MHEADER,DSIZE,PRIORITY,SUBJECT,SRV_MSG_ID,REF_ID,FREETEXT_ID,MSG_SOURCE, M_RFC_ID, M_RFC_REFERENCES)
+      values (_domain_id,_msg_id,_user_id,_address_info,_folder_id,_mstatus,_attached,_address,_rcv_date,_snd_date,_mheader,_dsize,_priority,_subject,OMAIL.WA.rfc_id(),_ref_id,_freetext_id,_msg_source, _rfc_id, _rfc_references);
 
     insert into OMAIL.WA.MSG_PARTS(DOMAIN_ID,MSG_ID,USER_ID,PART_ID,TYPE_ID,TDATA,TAGS,DSIZE,APARAMS,PDEFAULT,FREETEXT_ID)
       values (_domain_id,_msg_id,_user_id,_part_id,_type_id,_pdata,_tags,_dsize,_aparams,_pdefault,_freetext_id);
@@ -6943,7 +6930,7 @@ Delivery-date: Sat, 15 May 2004 23:58:27 +0300
 Received: from [213.91.206.121] (helo=leon)
   by mail2.openlinksw.com with asmtp (Exim 4.30)
   id 1BP6Ec-0000JW-6d; Sat, 15 May 2004 16:58:18 -0400
-Message-ID: <000801c43abf5992e4600100a8c0@leon>
+Message-ID: ', OMAIL.WA.rfc_id (), '
 From: "',_sender_name,'" <',_sender_mail,'>
 To: "',_recipient_name,'" <',_recipient_mail,'>
 Subject: Welcome to your mail box
@@ -8685,6 +8672,7 @@ DB.DBA.NNTP_NEWS_MSG_ADD (
  from OMAIL.WA.MESSAGES a
         join OMAIL.WA.MSG_PARTS b ON b.DOMAIN_ID = a.DOMAIN_ID and b.USER_ID = a.USER_ID and b.MSG_ID = a.MSG_ID and b.PART_ID = 1
           join OMAIL.WA.CONVERSATION c ON c.C_DOMAIN_ID = a.DOMAIN_ID and c.C_USER_ID = a.USER_ID
+ where a.DOMAIN_ID <> 1
 '
 )
 ;

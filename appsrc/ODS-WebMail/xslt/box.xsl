@@ -43,16 +43,16 @@
       </div>
       <xsl:call-template name="message_table"/>
       <xsl:if test="not(@mode)">
-        <xsl:apply-templates select="folders" mode="combo"/>
+        <xsl:call-template name="footer" />
       </xsl:if>
     </form>
-    <xsl:call-template name="js_check_all"/>
     <xsl:apply-templates select="eparams"/>
     <xsl:call-template name="external_action"/>
   </xsl:template>
+
   <!-- ====================================================================================== -->
   <xsl:template name="message_table">
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" id="mgrid">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" class="content">
       <colgroup>
         <xsl:if test="not(/page/@mode)">
           <col class="ct1"/>
@@ -107,11 +107,11 @@
         <xsl:variable name="page_url">box</xsl:variable>
       </xsl:otherwise>
     </xsl:choose>
-    <thead>
+    <thead class="msgTHead">
       <tr>
         <xsl:if test="not(/page/@mode)">
           <th class="center">
-            <input type="checkbox" name="ch_all" value="1" onClick="sel_all();"/>
+            <input type="checkbox" onclick="selectAllCheckboxes(this, 'ch_msg')" value="Select All" name="ch_all"/>
           </th>
         </xsl:if>
         <th class="center">
@@ -215,14 +215,13 @@
         </xsl:variable>
       </xsl:otherwise>
     </xsl:choose>
-    <tr>
-      <xsl:call-template name="LH"/>
+    <tr class="msgRow">
       <xsl:if test="mstatus = 0">
         <xsl:attribute name="class">mark</xsl:attribute>
       </xsl:if>
       <xsl:if test="not(/page/@mode)">
         <td align="center">
-          <input type="checkbox" name="ch_msg" onClick="CCA(this);">
+          <input type="checkbox" name="ch_msg" onclick="selectCheck(this, 'ch_msg')">
             <xsl:attribute name="value"><xsl:value-of select="msg_id"/></xsl:attribute>
           </input>
         </td>
@@ -301,16 +300,14 @@
   </xsl:template>
 
   <!-- ====================================================================================== -->
-  <xsl:template match="folders" mode="combo">
+  <xsl:template name="footer">
     <xsl:if test="count(//messages/message) != 0">
       <table cellpadding="0" cellspacing="0" width="100%" class="content">
         <tfoot>
           <tr>
             <td>
               <xsl:call-template name="nbsp"/>Move selected to
-  	 	        <select name="fid">
-                <xsl:apply-templates select="folder"/>
-              </select>
+              <xsl:apply-templates select="folders" mode="combo" />
               <xsl:call-template name="make_href">
                 <xsl:with-param name="url">javascript: if (anySelected(document.f1, 'ch_msg', 'No messages were selected to be moved.')) formSubmit('fa_move.x', '1'); </xsl:with-param>
                 <xsl:with-param name="title">Move</xsl:with-param>
@@ -344,15 +341,6 @@
     </xsl:if>
   </xsl:template>
 
-  <!-- ====================================================================================== -->
-  <xsl:template match="folder[@smartFlag='N']">
-    <option>
-      <xsl:attribute name="value"><xsl:value-of select="@id"/></xsl:attribute>
-      <xsl:value-of select="level/@str"/>
-      <xsl:value-of select="name"/>
-    </option>
-    <xsl:apply-templates select="folders/folder"/>
-  </xsl:template>
   <!-- ====================================================================================== -->
   <xsl:template name="skiped">
     <table cellpadding="0" cellspacing="0" width="100%" id="paging">

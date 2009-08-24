@@ -93,11 +93,11 @@ create procedure rdfdesc_label (in _S any, in _G varchar, in lines any := null)
 }
 ;
 
-create procedure rdfdesc_rel_print (in val any, in rel any, in flag int := 0)
+create procedure rdfdesc_rel_print (in val any, in rel any, in obj any, in flag int := 0)
 {
   declare delim, delim1, delim2, delim3 integer;
   declare inx int;
-  declare nss, loc, nspref varchar;
+  declare nss, loc, res, nspref varchar;
 
   delim1 := coalesce (strrchr (val, '/'), -1);
   delim2 := coalesce (strrchr (val, '#'), -1);
@@ -108,6 +108,7 @@ create procedure rdfdesc_rel_print (in val any, in rel any, in flag int := 0)
   if (delim < 0) return loc;
   nss := subseq (val, 0, delim + 1);
   loc := subseq (val, delim + 1);
+  res := '';
 
   nspref := __xml_get_ns_prefix (nss, 2);
   if (nspref is null)
@@ -125,7 +126,9 @@ create procedure rdfdesc_rel_print (in val any, in rel any, in flag int := 0)
     loc := sprintf ('rel="%s:%s"', nspref, loc);
   else
     loc := sprintf ('rev="%s:%s"', nspref, loc);
-  return concat (loc, ' ', nss);
+  if (obj is not null)
+    res := sprintf (' resource="%V" ', obj);  
+  return concat (loc, ' ', res, ' ', nss);
 }
 ;
 
@@ -194,17 +197,17 @@ create procedure rdfdesc_http_url (in url varchar)
   return url;
 };
 
-create procedure rdfdesc_http_print_l (in p_text any, inout odd_position int, in r int := 0)
+create procedure rdfdesc_http_print_l (in prop_iri any, inout odd_position int, in r int := 0)
 {
    declare short_p, p_prefix, int_redirect, url any;
 
    odd_position :=  odd_position + 1;
-   p_prefix := rdfdesc_uri_curie (p_text);
-   url := rdfdesc_http_url (p_text);
+   p_prefix := rdfdesc_uri_curie (prop_iri);
+   url := rdfdesc_http_url (prop_iri);
 
    http (sprintf ('<tr class="%s"><td class="property">', either(mod (odd_position, 2), 'odd', 'even')));
    if (r) http ('is ');
-   http (sprintf ('<a class="uri" href="%s" title="%s">%s</a>\n', url, p_prefix, p_prefix));
+   http (sprintf ('<a class="uri" href="%s" title="%s">%s</a>\n', url, p_prefix, rdfdesc_prop_label (prop_iri)));
    if (r) http (' of');
 
    http ('</td><td><ul class="obj">');
@@ -231,7 +234,7 @@ create procedure rdfdesc_http_print_r (in _object any, in prop any, in label any
        rdfs_type := DB.DBA.RDF_DATATYPE_OF_OBJ (_object);
        endg:;
      }
-   rdfa := rdfdesc_rel_print (prop, rel, 1);
+   rdfa := rdfdesc_rel_print (prop, rel, null, 1);
    http ('\t<li><span class="literal">');
 again:
    if (__tag (_object) = 246)
@@ -255,7 +258,7 @@ again:
        else
 	 _label := null;
 
-       rdfa := rdfdesc_rel_print (prop, rel, 0);
+       rdfa := rdfdesc_rel_print (prop, rel, _url, 0);
        if (http_mime_type (_url) like 'image/%')
 	 http (sprintf ('<a class="uri" %s href="%s"><img src="%s" height="160" border="0"/></a>', rdfa, rdfdesc_http_url (_url), _url));
        else
@@ -368,6 +371,34 @@ create procedure rdfdesc_page_get_short (in val any)
     }
 
    return ret;
+}
+;
+
+create procedure rdfdesc_prop_label (in uri any)
+{
+  declare ll varchar;
+  ll := (select __ro2sq (O) from DB.DBA.RDF_QUAD where G in 
+  	(DB.DBA.RDF_GRAPH_GROUP_LIST_GET ('http://www.openlinksw.com/schemas/virtrdf#schemas', NULL,  0,  NULL,  NULL,  1)) 
+	and S = __i2idn (uri)
+	and P = __i2idn ('http://www.w3.org/2000/01/rdf-schema#label') OPTION (QUIETCAST));
+  if (length (ll) = 0)
+    ll := rdfdesc_uri_curie (uri);
+  return ll;  
+}
+;
+
+create procedure rdfdesc_type (in gr varchar, in subj varchar)
+{
+  declare meta, data, ll any;
+  ll := '';
+  if (length (gr))
+    {
+      exec (sprintf ('sparql select ?l from <%S> from virtrdf:schemas { <%S> a ?tp . ?tp rdfs:label ?l }', gr, subj), 
+	  null, null, vector (), 0, meta, data);
+      if (length (data))
+	ll := ' (' || data[0][0] || ')';
+    }
+  return ll;
 }
 ;
 
