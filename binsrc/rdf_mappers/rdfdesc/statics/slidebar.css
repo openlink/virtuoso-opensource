@@ -1,0 +1,45 @@
+/* Slidebar */
+
+#slb {
+  background: white; 
+  height: 100%;
+  right: 0px;
+  top: 0px;
+  width: 10px;
+  position: absolute;
+  overflow: hidden;
+  /*
+  background-image: url(slidebar_c_bkg.png);
+  background-repeat: repeat-y;
+  */
+}
+
+/*		
+.slb {
+  position: absolute;
+  overflow: hidden;
+  right: 0px;
+  top: 0px;
+  width: 10px;
+}
+*/
+		
+.slb_handle {
+  width: 10px;
+  height: 100%;
+  background-color: #575;
+  background-image: url(slidebar_h_bkg.png);
+  background-repeat: repeat-y;
+  position: absolute;
+}
+  
+.slb_handle_img {position: absolute} 
+  
+.slb_content {
+  color: #334;
+  position: absolute;
+  height: 100%;
+  /* border: 1px solid yellow; */
+  top: 0px; left: 10px;
+}
+
