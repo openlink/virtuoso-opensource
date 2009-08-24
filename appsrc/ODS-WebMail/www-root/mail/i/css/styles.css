@@ -341,6 +341,70 @@ colgroup col.w80p
   padding: 2px 2px 2px 2px;
 }
 
+.content colgroup col.ct1
+{
+  width: 24px;
+}
+
+.content colgroup col.received
+{
+  width: 130px;
+}
+
+.content colgroup col.size
+{
+  width: 70px;
+  text-align: right;
+}
+
+.content .msgTHead th
+{
+  border-style: solid;
+  border-width: 0px 1px 1px 0px;
+  border-color: #FFEEC6;
+  font-weight: bold;
+  background-color:#B0CDE4;
+  padding: 1px 1px 1px 5px;
+  text-align: left;
+}
+
+.content thead th.center
+{
+  padding: 1px 1px 1px 1px;
+  text-align: center;
+}
+
+.content thead .sortcol
+{
+  background-color: #C7D3E0;
+}
+
+.content thead .sortcolc
+{
+  background-color: #C7D3E0;
+  text-align: center;
+}
+
+.content thead .sortimg
+{
+  float:right;
+  margin:4px 4px 0 0;
+  border-style: solid;
+  border-width: 1px 1px 1px 1px;
+  border-color: #B0CDE4;
+  padding: 3px;
+}
+
+.content tbody .msgRow:hover
+{
+ 	background-color: #eec;
+}
+
+.tr_select
+{
+  background-color: #FFFFCC;
+}
+
 /* -- Info Box  ---------------------------------------------------------- */
 #info
 {
@@ -733,81 +797,6 @@ a.tab.activeTab {
   border-style: solid;
   border-width: 0px;
   border-color: #000;
-}
-
-#mgrid colgroup col.ct1
-{
-  width: 24px;
-}
-
-#mgrid colgroup col.received
-{
-  width: 130px;
-}
-
-#mgrid colgroup col.size
-{
-  width: 70px;
-  text-align: right;
-}
-
-#mgrid caption
-{
-  font-size: 12px;
-  text-align: left;
-  background-color: #B0CDE4;
-  padding: 5px;
-}
-
-#mgrid thead th
-{
-  border-style: solid;
-  border-width: 0px 1px 1px 0px;
-  border-color: #FFEEC6;
-  font-weight: bold;
-  background-color:#B0CDE4;
-  padding: 1px 1px 1px 5px;
-  text-align: left;
-}
-
-#mgrid thead th.center
-{
-  padding: 1px 1px 1px 1px;
-  text-align: center;
-}
-
-#mgrid thead .sortcol
-{
-  background-color: #C7D3E0;
-}
-
-#mgrid thead .sortcolc
-{
-  background-color: #C7D3E0;
-  text-align: center;
-}
-
-#mgrid thead .sortimg
-{
-  float:right;
-  margin:4px 4px 0 0;
-  border-style: solid;
-  border-width: 1px 1px 1px 1px;
-  border-color: #B0CDE4;
-  padding: 3px;
-}
-
-#mgrid tbody td
-{
-  border-style: solid;
-  border-width: 0px 0px 1px 0px;
-  border-color: #e5e5e5;
-  padding: 2px;
-}
-
-#mgrid tr.mark
-{
-  background-color:#F3F3F3;
 }
 
 /* -- paging ------------------------------------------------------- */

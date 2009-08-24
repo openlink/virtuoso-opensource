@@ -246,7 +246,6 @@
 
   <!-- ========================================================================== -->
   <xsl:template name="javaScript">
-    <script type="text/javascript" src="/oMail/i/js/jslib.js"></script>
     <script type="text/javascript" src="/oMail/i/js/script.js"></script>
     <script type="text/javascript" src="/oMail/i/js/CalendarPopup.js"></script>
     <script type="text/javascript">
@@ -473,19 +472,6 @@
   </xsl:template>
 
   <!-- ========================================================================== -->
-  <xsl:template name="js_check_all">
-    <script language="JavaScript">
-      <![CDATA[
-  		  function sel_all() {
-          for (var i=0; i < document.f1.elements.length; i++) {
-  		      var e = document.f1.elements[i];
-            if ((e != null) && (e.type == "checkbox") && (e.name == 'ch_msg'))
-        		  e.checked = document.f1.ch_all.checked;
-  		    }
-  		  }
-     ]]>
-		</script>
-  </xsl:template>
   <xsl:decimal-format name="sizes" decimal-separator="." grouping-separator=","/>
 
   <!-- ========================================================================== -->
@@ -515,12 +501,6 @@
 
   <!-- ========================================================================== -->
   <xsl:template name="disclaimer">
-  </xsl:template>
-
-  <!-- ====================================================================================== -->
-  <xsl:template name="LH">
-    <xsl:attribute name="OnMouseOver">LHi(this)</xsl:attribute>
-    <xsl:attribute name="OnMouseOut">LHo(this)</xsl:attribute>
   </xsl:template>
 
   <!-- ====================================================================================== -->

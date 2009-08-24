@@ -24,6 +24,8 @@
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
   <xsl:include href="common.xsl"/>
+  <xsl:include href="common_folders.xsl"/>
+
   <!-- ====================================================================================== -->
   <xsl:template match="page">
     <xsl:choose>
@@ -75,9 +77,11 @@
                     <xsl:value-of select="//folders/folder[@id = $tmp]/name"/>
                   </xsl:when>
                   <xsl:otherwise>
-                    <select name="parent_id" id="parent_id">
-                      <xsl:apply-templates select="folders/folder"/>
-                    </select>
+                    <xsl:apply-templates select="folders" mode="combo">
+                      <xsl:with-param name="ID" select="'parent_id'" />
+                      <xsl:with-param name="selectID" select="//object/parent_id" />
+                      <xsl:with-param name="skipID" select="//object/@id" />
+                    </xsl:apply-templates>
                   </xsl:otherwise>
                 </xsl:choose>
               </td>
@@ -138,7 +142,12 @@
                   <label for="q_fid">In folder(s)</label>
                 </th>
                 <td>
-                  <xsl:call-template name="searchFolders" />
+                  <xsl:apply-templates select="folders" mode="combo">
+                    <xsl:with-param name="ID" select="'q_fid'" />
+                    <xsl:with-param name="startOption" select="' All folders'" />
+                    <xsl:with-param name="selectID" select="//object/query/q_fid" />
+                    <xsl:with-param name="skipID" select="//object/@id" />
+                  </xsl:apply-templates>
                 </td>
               </tr>
               <tr>
@@ -243,7 +252,6 @@
   <xsl:template match="folders" mode="list">
     <xsl:for-each select="folder">
       <tr>
-        <xsl:call-template name="LH"/>
         <td>
           <xsl:apply-templates select="ftree/fnode"/>
           <xsl:call-template name="make_href">
@@ -328,71 +336,7 @@
       </xsl:otherwise>
     </xsl:choose>
   </xsl:template>
-  <!-- ====================================================================================== -->
-  <xsl:template match="folders" mode="combo">
-    <table class="content" cellpadding="0" cellspacing="0" width="100%">
-      <thead>
-        <tr>
-          <th>Create new folder</th>
-        </tr>
-      </thead>
-      <tr>
-        <td>
-          <label>
-	        Name:
-	        <input type="text" name="fname"/>
-          </label>
-          <xsl:call-template name="nbsp"/> in  <xsl:call-template name="nbsp"/>
-          <select name="pid">
-            <xsl:apply-templates select="folder"/>
-          </select>
-          <xsl:call-template name="nbsp"/>
-          <xsl:call-template name="make_href">
-            <xsl:with-param name="url">javascript: document.f1.submit();</xsl:with-param>
-            <xsl:with-param name="label">Create Folder</xsl:with-param>
-            <xsl:with-param name="img">/oMail/i/add_16.png</xsl:with-param>
-            <xsl:with-param name="img_label"> Create</xsl:with-param>
-            <xsl:with-param name="class">button2</xsl:with-param>
-          </xsl:call-template>
-        </td>
-      </tr>
-    </table>
-  </xsl:template>
-  <!-- ====================================================================================== -->
-  <xsl:template match="folder[@smartFlag='N']">
-    <xsl:if test="@id != //object/@id">
-    <option>
-        <xsl:attribute name="value"><xsl:value-of select="@id"/></xsl:attribute>
-        <xsl:if test="@id = //object/parent_id">
-          <xsl:attribute name="selected">1</xsl:attribute>
-        </xsl:if>
-      <xsl:value-of select="level/@str"/>
-      <xsl:value-of select="name"/>
-    </option>
-    <xsl:apply-templates select="folders/folder"/>
-    </xsl:if>
-  </xsl:template>
-  <!-- ====================================================================================== -->
-  <xsl:template match="folder[@smartFlag='N']" mode="search">
-    <xsl:if test="@id != //object/@id">
-      <option>
-        <xsl:attribute name="value"><xsl:value-of select="@id"/></xsl:attribute>
-        <xsl:if test="@id = //object/query/q_fid">
-          <xsl:attribute name="selected">1</xsl:attribute>
-        </xsl:if>
-        <xsl:value-of select="level/@str"/>
-        <xsl:value-of select="name"/>
-      </option>
-      <xsl:apply-templates select="folders/folder" mode="search" />
-    </xsl:if>
-  </xsl:template>
-  <!-- ====================================================================================== -->
-  <xsl:template name="searchFolders">
-    <select name="q_fid" style="width:150px" id="folders" mode="search">
-      <option value="0"> All folders </option>
-      <xsl:apply-templates select="folders/folder" mode="search" />
-    </select>
-  </xsl:template>
+
   <!-- ====================================================================================== -->
   <xsl:template name="calc_size">
     <tfoot>

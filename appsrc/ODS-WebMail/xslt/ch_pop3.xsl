@@ -24,6 +24,8 @@
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
   <xsl:include href="common.xsl"/>
+  <xsl:include href="common_folders.xsl"/>
+
   <!-- ====================================================================================== -->
   <xsl:template match="page">
     <form action="ch_pop3.vsp" method="post" name="dacc">
@@ -60,9 +62,10 @@
             </xsl:call-template>
     </table>
   </xsl:template>
+
   <!-- ====================================================================================== -->
   <xsl:template match="acc">
-    <tr>
+    <tr class="msgRow">
       <td>
         <b><xsl:value-of select="acc_name"/></b>
       </td>
@@ -187,16 +190,17 @@
       </tfoot>
     </table>
   </xsl:template>
+
   <!-- ====================================================================================== -->
   <xsl:template match="acc_edit">
-    <input type="hidden" name="acc_id">
-      <xsl:attribute name="value"><xsl:value-of select="acc_id"/></xsl:attribute>
-    </input>
     <tr>
       <th>
         <label for="acc">Account Name</label>
       </th>
       <td>
+        <input type="hidden" name="acc_id">
+          <xsl:attribute name="value"><xsl:value-of select="acc_id"/></xsl:attribute>
+        </input>
         <input type="text" name="acc_name" id="acc">
           <xsl:attribute name="value"><xsl:value-of select="acc_name"/></xsl:attribute>
         </input>
@@ -256,10 +260,14 @@
     </tr>
     <tr>
       <th>
-        <label for="folders">Store In</label>
+        <label for="fid">Store In</label>
       </th>
       <td colspan="2">
-        <xsl:apply-templates select="folders" mode="combo"/> / <input type="text" name="fname"/>
+        <xsl:apply-templates select="folders" mode="combo">
+          <xsl:with-param name="ID" select="'fid'" />
+          <xsl:with-param name="showPath" select="1" />
+          <xsl:with-param name="selectID" select="/page/account/acc_edit/folder_id" />
+        </xsl:apply-templates> / <input type="text" name="fname"/>
       </td>
     </tr>
     <tr>
@@ -301,30 +309,6 @@
 	    </td>
     </tr>
   </xsl:template>
-  <!-- ====================================================================================== -->
-  <xsl:template match="folders" mode="combo">
-    <select name="fid" id="folders">
-      <xsl:apply-templates select="folder">
-        <xsl:with-param name="path"/>
-      </xsl:apply-templates>
-    </select>
-  </xsl:template>
-  <!-- ====================================================================================== -->
-  <xsl:template match="folder[@smartFlag='N']">
-    <xsl:param name="path"/>
-    <option>
-      <xsl:attribute name="value"><xsl:value-of select="@id"/></xsl:attribute>
-      <xsl:if test="@id = /page/account/acc_edit/folder_id">
-        <xsl:attribute name="selected">selected</xsl:attribute>
-      </xsl:if>
-      <xsl:value-of select="$path"/>
-      <xsl:value-of select="name"/>
-    </option>
-    <xsl:apply-templates select="folders">
-      <xsl:with-param name="path">
-        <xsl:value-of select="$path"/>
-        <xsl:value-of select="name"/> / </xsl:with-param>
-    </xsl:apply-templates>
-  </xsl:template>
+
   <!-- ====================================================================================== -->
 </xsl:stylesheet>
