@@ -1127,7 +1127,7 @@ end_loop:;
 	    if (HS_EXPIRATION is not null)
 	      http_header (http_header_get () || sprintf ('Expires: %s\r\n', date_rfc1123 (HS_EXPIRATION)));
 	  }
-	  http_header (http_header_get () || sprintf ('Content-Location: %s\r\n', url));
+	  -- not true: http_header (http_header_get () || sprintf ('Content-Location: %s\r\n', url));
 	  http (ses);
           return '';
 	}

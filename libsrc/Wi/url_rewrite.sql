@@ -1064,18 +1064,25 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
   if (algo = '*')
     vlist := trans := do_cn := 1;
 
---  dbg_obj_print (algo, mime);
   best_q := 0;
   best_ct := null;
   list := '';
   list_body := '';
   best_id := 0;
   for select VM_ID, VM_URI, VM_VARIANT_URI, VM_QS, VM_TYPE, VM_LANG, VM_ENC, VM_DESCRIPTION, VM_ALGO, VM_CONTENT_LOCATION_HOOK
-  from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = rulelist_uri and regexp_match (VM_URI, rel_uri) is not null do
+  from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = rulelist_uri do
     {
-       declare alang, aenc, variant varchar;
+       declare alang, aenc, variant, path_str varchar;
 
-       variant := DB.DBA.HTTP_URLREWRITE_APPLY_PATTERN (VM_URI, rel_uri, VM_VARIANT_URI);
+       if (VM_URI like '/%')
+	 path_str := path;
+       else
+         path_str := rel_uri;	 
+
+       if (regexp_match (VM_URI, path_str) is null)
+         goto next_variant;
+
+       variant := DB.DBA.HTTP_URLREWRITE_APPLY_PATTERN (VM_URI, path_str, VM_VARIANT_URI);
        if (variant is null)
 	 goto next_variant;
 
