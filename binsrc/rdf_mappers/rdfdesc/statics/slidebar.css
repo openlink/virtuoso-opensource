@@ -1,11 +1,11 @@
 /* Slidebar */
 
 #slb {
-  background: white; 
+  background: #efefef;
   height: 100%;
   right: 0px;
   top: 0px;
-  width: 10px;
+  width: 15px;
   position: absolute;
   overflow: hidden;
   /*
@@ -25,15 +25,24 @@
 */
 		
 .slb_handle {
-  width: 10px;
+  width: 15px;
   height: 100%;
+  /*
   background-color: #575;
   background-image: url(slidebar_h_bkg.png);
-  background-repeat: repeat-y;
+  background-repeat: repeat;
+  */
+  background-color: #ffffff;
   position: absolute;
+  border-right: 2px solid #575;
 }
   
-.slb_handle_img {position: absolute} 
+.slb_handle_img {
+position: absolute;
+border-top: 2px solid #575;
+border-bottom: 2px solid #575;
+border-left: 2px solid #575;
+} 
   
 .slb_content {
   color: #334;

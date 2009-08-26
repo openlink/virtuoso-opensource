@@ -206,9 +206,9 @@ create procedure rdfdesc_http_print_l (in prop_iri any, inout odd_position int, 
    url := rdfdesc_http_url (prop_iri);
 
    http (sprintf ('<tr class="%s"><td class="property">', either(mod (odd_position, 2), 'odd', 'even')));
-   if (r) http ('is ');
+   if (r) http ('</td><td class="property">');
    http (sprintf ('<a class="uri" href="%s" title="%s">%s</a>\n', url, p_prefix, rdfdesc_prop_label (prop_iri)));
-   if (r) http (' of');
+   if (not r) http ('</td><td class="property">');
 
    http ('</td><td><ul class="obj">');
 }
@@ -505,12 +505,13 @@ create procedure virt_proxy_init_about ()
 
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_new_data', 1,
       '/about/id/(http|https|nodeID)/(.*)', vector ('sch', 'g'), 2,
-      '/about/data/__%U%%3A%%2F%%2F%U', vector ('sch', 'g'), null, '(application/rdf.xml)|(text/rdf.n3)|(application/x-turtle)', 2, 303, null);
+      '/about/data/%s/%s', vector ('sch', 'g'), null, '(application/rdf.xml)|(text/rdf.n3)|(application/x-turtle)|(text/n3)', 2, 303, null);
 
   delete from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = 'ext_ahp_rule_list_new';
-  DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '__(.*)', '\x241.xml', 'application/rdf+xml', 0.95, location_hook=>null);
-  DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '__(.*)', '\x241.n3',  'text/rdf+n3', 0.80, location_hook=>null);
-  DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '__(.*)', '\x241.ttl',  'application/x-turtle', 0.70, location_hook=>null);
+  DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '/about/data/(.*)', '/about/data/xml/\x241', 'application/rdf+xml', 0.95, location_hook=>null);
+  DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '/about/data/(.*)', '/about/data/nt/\x241', 'text/n3', 0.80, location_hook=>null);
+  DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '/about/data/(.*)', '/about/data/n3/\x241', 'text/rdf+n3', 0.80, location_hook=>null);
+  DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '/about/data/(.*)', '/about/data/ttl/\x241', 'application/x-turtle', 0.80, location_hook=>null);
 
   DB.DBA.URLREWRITE_CREATE_RULELIST ( 'ext_ahp_rule_list_new', 1, vector ('ext_ahp_rule_new_page', 'ext_ahp_rule_new_data'));
 
@@ -519,8 +520,8 @@ create procedure virt_proxy_init_about ()
 
   --# the rdf
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_data_1', 1,
-      '/about/data/(.*)\\.(xml|n3|ttl)\0x24', vector ('url', 'fmt'), 2,
-      '/about?url=%s&force=rdf&output-format=%U', vector ('url', 'fmt'), null, null, 2);
+      '/about/data/(xml|n3|nt|ttl|text)/(http|https|nodeID)/(.*)\0x24', vector ('fmt', 'sch', 'url'), 3,
+      '/about?url=%s://%s&force=rdf&output-format=%U', vector ('sch', 'url', 'fmt'), null, null, 2);
 
   DB.DBA.URLREWRITE_CREATE_RULELIST ( 'ext_ahp_rule_list_data', 1, vector ('ext_ahp_rule_data_1'));
 

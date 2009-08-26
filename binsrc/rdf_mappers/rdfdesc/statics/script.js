@@ -1,7 +1,7 @@
 var featureList = ["slidebar"];
 
 function init() {
-  var slb = new OAT.Slidebar ("slb", {imgPrefix: "statics/", autoClose: false, width: 500});
+  var slb = new OAT.Slidebar ("slb", {imgPrefix: "statics/", autoClose: false, width: 500, handleWidth: 15, handleOpenImg: "whats_this_open_hndl_15w.png", handleCloseImg: "whats_this_close_hndl_15w.png"});
 	init_long_list ();
 	init_long_literals();
 }
