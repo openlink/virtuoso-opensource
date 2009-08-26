@@ -1198,8 +1198,11 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
             ret_mime := 'text/rdf+n3';
           DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
 	}
-      else if ( strstr (accept, 'text/plain') is not null)
+      else if ( strstr (accept, 'text/plain') is not null or strstr (accept, 'text/n3') is not null)
         {
+	  if (strstr (accept, 'text/n3') is not null)
+	    ret_mime := 'text/n3';
+	  else
             ret_mime := 'text/plain';
           DB.DBA.RDF_TRIPLES_TO_NT (triples, ses);
 	}
@@ -2266,7 +2269,7 @@ create procedure DB.DBA.SPARQL_ROUTE_DICT_CONTENT_DAV (
         DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 1, out_ses);
       else if ('text/rdf+n3' = mime)
         DB.DBA.RDF_TRIPLES_TO_TTL (triples, out_ses);
-      else if ('text/plain' = mime)
+      else if ('text/plain' = mime or 'text/n3' = mime)
         DB.DBA.RDF_TRIPLES_TO_NT (triples, out_ses);
       else if ('application/json' = mime)
         DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (triples, out_ses);

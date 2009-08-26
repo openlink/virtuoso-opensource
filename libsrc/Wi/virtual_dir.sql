@@ -1060,6 +1060,8 @@ end_loop:;
 		accept := 'application/rdf+xml';
 	      else if ("output-format" = 'ttl' or "output-format" = 'turtle' or "output-format" = 'n3')
 		accept := 'text/rdf+n3';
+              else if ("output-format" = 'nt' or "output-format" = 'txt')
+                accept := 'text/n3';
 	    }
           stat := '00000';
 	  if (get not in ('soft', 'replacing'))
