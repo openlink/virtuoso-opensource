@@ -178,14 +178,6 @@
      <p>
      As stated above, the links in this page expose strong identifiers for its <b>primary topic, secondary topics, attributes, and some values</b>. These links, via  implicit association, act as conduits to their metadata-bearing documents, in a variety formats.
     </p>
-    <hr/>
-    <div id="ft_t">
-        <a href="/ode/?uri=<?vsp http_url (page_resource_uri); ?>">Explore Linked Data</a>&nbsp;using
-	<a href="http://ode.openlinksw.com/" title="OpenLink Data Explorer">ODE</a>&nbsp;&nbsp;&nbsp;&nbsp;
-	Raw Linked Data formats:
-        <a href="<?=rdf_link || '&output=n3'?>">N3</a> |
-        <a href="<?=rdf_link || '&output=rdf'?>">RDF/XML</a>
-    </div>
     </div><!-- #sidebar -->
     </div> <!-- slb -->
 
@@ -208,7 +200,12 @@
       <p><?vsp http (sprintf ('%s', _subject)); ?></p>
 
 <!-- proptable -->
-      <table class="description"><tr><th class="property">Property</th><th class="value">Value</th></tr>
+      <table class="description">
+        <tr>
+          <th class="property">Has Attribute</th>
+	  <th class="referenced_by">Referenced By Attribute</th>
+          <th><span class="value">Value</span></th>
+	</tr>
 
 <?vsp
       exec (sprintf ('select "p" as PRED from (sparql select distinct ?p where { graph <%S> { <%S> ?p ?o } }) sp order by 1', _G, _S),
@@ -266,6 +263,13 @@ skip_rev:
 
 <!-- footer -->
     <div id="footer">
+      <div id="ft_t">
+       <a href="/ode/?uri=<?vsp http_url (page_resource_uri); ?>">Explore Linked Data</a>&nbsp;using 
+       <a href="http://ode.openlinksw.com/" title="OpenLink Data Explorer">ODE</a>&nbsp; &nbsp;
+       &nbsp; &nbsp; Raw Linked Data formats:
+       <a href="<?=rdf_link || '&output=n3'?>">N3</a> |
+       <a href="<?=rdf_link || '&output=rdf'?>">RDF/XML</a>
+      </div> <!-- #ft_t -->
       <div id="ft_b">
         <a href="http://linkeddata.org/"><img alt="This material is Open Knowledge" src="statics/LoDLogo.gif" style="border-width:0"  /></a> &nbsp;
         <a href="http://dbpedia.org/sparql"><img alt="W3C Semantic Web Technology" src="statics/sw-sparql-blue.png" style="border-width:0" /></a> &nbsp;  &nbsp;

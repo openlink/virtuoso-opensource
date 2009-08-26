@@ -59,7 +59,9 @@ a.uri:hover { text-decoration: underline }
 .unbound { color: #888; }
 table.description a small { font-size: 100% }
 table.description small { font-size: 100%; }
-table.description .property { white-space: nowrap; }
+table.description .property { white-space: nowrap; color: black; }
+table.description .value { color: black; }
+table.description .referenced_by { color: black; }
 table.description .odd td { }
 table.description .even td { }
 .image { background: white; float: left; margin: 0 1.5em 1.5em 0; padding: 2px; }
