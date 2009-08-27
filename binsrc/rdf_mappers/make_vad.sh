@@ -108,7 +108,7 @@ version_init()
       for i in `find . -name 'Entries' | grep -v "vad/"`; do
 	  cat $i | grep "^[^D].*" | cut -f 3 -d "/" | sed -e "s/1\.//g" >> version.tmp
       done
-      VERSION=`cat version.tmp | awk ' BEGIN { cnt=9 } { cnt = cnt + $1 } END { printf "1.%02.02f", cnt/100 }'`
+      VERSION=`cat version.tmp | awk ' BEGIN { cnt=583 } { cnt = cnt + $1 } END { printf "1.%02.02f", cnt/100 }'`
       rm -f version.tmp
       echo "$VERSION" > vad_version
   fi
@@ -176,8 +176,11 @@ directory_init() {
   mkdir vad/vsp
   mkdir vad/vsp/rdf_mappers
   mkdir vad/vsp/rdf_mappers/xslt/
+  mkdir vad/vsp/rdf_mappers/xslt/main/
+  mkdir vad/vsp/rdf_mappers/xslt/meta/
   mkdir vad/vsp/rdf_mappers/ontologies/
   mkdir vad/vsp/rdf_mappers/ontologies/xbrl/
+  mkdir vad/vsp/rdf_mappers/ontologies/owl/
 
   mkdir vad/vsp/rdf_mappers/rdfdesc
   mkdir vad/vsp/rdf_mappers/rdfdesc/images
@@ -191,8 +194,10 @@ directory_init() {
 
   cp *.sql vad/code/rdf_mappers
   cp rdfdesc/*.sql vad/code/rdf_mappers
-  cp xslt/*.xsl vad/vsp/rdf_mappers/xslt/
+  cp xslt/main/*.xsl vad/vsp/rdf_mappers/xslt/main/
+  cp xslt/meta/*.xsl vad/vsp/rdf_mappers/xslt/meta/
   cp ontologies/xbrl/*.owl vad/vsp/rdf_mappers/ontologies/xbrl/
+  cp ontologies/owl/*.owl vad/vsp/rdf_mappers/ontologies/owl/
 
 }
 
@@ -322,12 +327,17 @@ fi
   echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/rdf_mappers_drop.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/description.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
 
-  for file in `find xslt -type f -print | grep -v CVS | sort`
+  for file in `find xslt/main -type f -print | grep -v CVS | sort`
   do
       echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"$VAD_NAME/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   done
 
   for file in `find ontologies/xbrl -type f -print | grep -v CVS | sort`
+  do
+      echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"$VAD_NAME/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+  done
+
+  for file in `find ontologies/owl -type f -print | grep -v CVS | sort`
   do
       echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"$VAD_NAME/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   done
