@@ -186,6 +186,11 @@ directory_init() {
   mkdir vad/vsp/rdf_mappers/rdfdesc/statics
   mkdir vad/vsp/rdf_mappers/rdfdesc/style
 
+  mkdir vad/vsp/rdf_mappers/rdfdesc/oat
+  mkdir vad/vsp/rdf_mappers/rdfdesc/oat/images
+  mkdir vad/vsp/rdf_mappers/rdfdesc/oat/styles
+  mkdir vad/vsp/rdf_mappers/rdfdesc/oat/xslt
+
   for f in `find rdfdesc -type f | grep -v "/CVS/" | grep -v "\.sql"`
   do
      cp $f vad/vsp/rdf_mappers/$f  
@@ -197,6 +202,17 @@ directory_init() {
   cp ontologies/xbrl/*.owl vad/vsp/rdf_mappers/ontologies/xbrl/
   cp ontologies/owl/*.owl vad/vsp/rdf_mappers/ontologies/owl/
 
+  #
+  #  Install minimal OAT toolkit
+  #
+  for i in 'loader.js bootstrap.js animation.js slidebar.js'
+  do
+      cp $HOME/binsrc/oat/toolkit/$i vad/vsp/rdf_mappers/rdfdesc/oat/
+  done
+  cp $HOME/binsrc/oat/images/*.png vad/vsp/rdf_mappers/rdfdesc/oat/images/
+  cp $HOME/binsrc/oat/images/*.gif vad/vsp/rdf_mappers/rdfdesc/oat/images/
+  cp $HOME/binsrc/oat/styles/*.css vad/vsp/rdf_mappers/rdfdesc/oat/styles/
+  cp $HOME/binsrc/oat/xslt/*.xsl vad/vsp/rdf_mappers/rdfdesc/oat/xslt/
 }
 
 virtuoso_start() {
@@ -343,6 +359,12 @@ fi
   for file in `find rdfdesc -type f -print | grep -v CVS | grep -v ".sql" | sort`
   do
       echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"$VAD_NAME/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+  done
+
+  for file in `find vad/vsp/rdf_mappers/rdfdesc/oat -type f -print | grep -v CVS | sort`
+  do
+      name=`echo $file | cut -b21-`
+      echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"$VAD_NAME/$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   done
 
   echo "</resources>" >> $STICKER

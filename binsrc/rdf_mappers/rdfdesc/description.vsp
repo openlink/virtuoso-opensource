@@ -141,7 +141,7 @@
     <link href="statics/highlighter.css" type="text/css" rel="stylesheet" charset="utf-8" />
     <meta http-equiv="Content-type" content="text/html;charset=utf-8" />
     <script type="text/javascript" src="statics/script.js"></script>
-    <script type="text/javascript" src="/DAV/JS/oat/loader.js"></script>
+    <script type="text/javascript" src="oat/loader.js"></script>
 </head>
 <!--
 <body onload="init();" about="<?V page_resource_uri ?>">
