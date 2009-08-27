@@ -1,0 +1,1345 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF
+    xmlns="http://purl.org/goodrelations/v1#"
+    xmlns:gr="http://purl.org/goodrelations/v1#"
+    xmlns:dcterms="http://purl.org/dc/terms/"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+  xml:base="http://purl.org/goodrelations/v1">
+  <owl:Ontology rdf:about="">
+    <rdfs:label xml:lang="en">GoodRelations Ontology</rdfs:label>
+    <dc:subject xml:lang="en">E-Commerce, E-Business, GoodRelations, Ontology, eCl@ss, eClassOWL, UNSPSC, Recommender Systems, SearchMonkey</dc:subject>
+    <owl:versionInfo xml:lang="en">V 1.0, Release 2009-07-18</owl:versionInfo>
+    <dc:creator xml:lang="en">Martin Hepp</dc:creator>
+    <dcterms:license rdf:resource="http://creativecommons.org/licenses/by/3.0/"/>
+    <rdfs:comment xml:lang="en">The GoodRelations ontology provides the vocabulary for annotating e-commerce offerings (1) to sell, lease, repair, dispose, or maintain commodity products and (2) to provide commodity services.
+
+GoodRelations allows describing the relationship between (1) Web resources, (2) offerings made by those Web resources, (3) legal entities, (4) prices, (5) terms and conditions, and the aforementioned ontologies for products and services (6).
+ 
+For more information, see http://purl.org/goodrelations/
+Note: The base URI of GoodRelations has changed to http://purl.org/goodrelations/v1. Please make sure you are only using element identifiers in this namespace, e.g. http://purl.org/goodrelations/v1#BusinessEntity. There may be copies of the ontology file on the Web which can be retrieved from other locations, BUT THOSE LOCATIONS MUST NOT BE USED AS REFERENCES.
+
+If you use GoodRelations for scientific purposes, please cite our paper:
+
+Hepp, Martin: GoodRelations: An Ontology for Describing Products and Services Offers on the Web, Proceedings of the 16th International Conference on Knowledge Engineering and Knowledge Management (EKAW2008), September 29 - October 3, 2008, Acitrezza, Italy, Springer LNCS, Vol. 5268, pp. 332-347.
+
+PDF at http://www.heppnetz.de/publications/</rdfs:comment>
+    <dc:rights xml:lang="en">The GoodRelations ontology is available under the Creative Commons Attribution 3.0 Unported license; see http://creativecommons.org/licenses/by/3.0/. In a nutshell, you are free to copy, distribute and transmit the work; to remix/adapt the work (e.g. to import the ontology and create specializations of its elements), as long as you attribute the work in the manner specified by the author or licensor (but not in any way that suggests that they endorse you or your use of the work). Proper Attribution: Simply include the statement "This work is based on the GoodRelations ontology, developed by Martin Hepp" and link back to http://purl.org/goodrelations/</dc:rights>
+    <rdfs:seeAlso rdf:resource="http://purl.org/goodrelations/"/>
+    <dc:title xml:lang="en">The GoodRelations Ontology for Semantic Web-based E-Commerce</dc:title>
+    <dc:contributor xml:lang="en">Work on the GoodRelations ontology has been partly supported by the Austrian BMVIT/FFG under the FIT-IT Semantic Systems project myOntology (grant no. 812515/9284), by a Young Researcher's Grant (Nachwuchsfoerderung 2005-2006) from the Leopold-Franzens-Universitaet Innsbruck, and by the European Commission under the project SUPER (FP6-026850).</dc:contributor>
+  </owl:Ontology>
+  <owl:Class rdf:ID="ProductOrServicesSomeInstancesPlaceholder">
+    <rdfs:label xml:lang="en">ProductOrServicesSomeInstancesPlaceholder</rdfs:label>
+    <rdfs:comment xml:lang="en">A placeholder instance for unknown instances of a mass-produced commodity. This is used as a computationally cheap work-around for such instances that are not individually exposed on the Web but just stated to exist (i.e., which are existentially quantified).
+
+Example: An instance of this class can represent an anonymous set of green Siemens1234 phones. It is different from the ProductOrServiceModel Siemens1234, since this refers to the make and model, and it is different from a particular instance of this make and model (e.g. my individual phone) since the latter can be sold only once.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="#ProductOrService"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:Class>
+  <owl:Class rdf:ID="QualitativeValue">
+    <rdfs:label xml:lang="en">QualitativeValue</rdfs:label>
+    <rdfs:comment xml:lang="en">A Qualitative Value is an entity that represents the state of a certain qualitative Product or Service Property. Qualitative Values are either Literal Values or Enumerative Values. Literal values are represented just as literals with respective datatype properties. For all other enumerative values, instances of this class are being created.
+
+An instance of this class represents a qualitative value for an object property.
+
+Examples: the color "green", the power cord plug type "US".
+
+Note: Currently, neither value sets nor ordinal relations between values are supported. This can be implemented when needed by importing and refining GoodRelations.</rdfs:comment>
+    <owl:disjointWith rdf:resource="#QuantitativeValue"/>
+    <owl:disjointWith rdf:resource="#N-Ary-Relations"/>
+    <owl:disjointWith rdf:resource="#PriceSpecification"/>
+    <owl:disjointWith rdf:resource="#BusinessEntityType"/>
+    <owl:disjointWith rdf:resource="#DayOfWeek"/>
+    <owl:disjointWith rdf:resource="#Offering"/>
+    <owl:disjointWith rdf:resource="#BusinessEntity"/>
+    <owl:disjointWith rdf:resource="#PaymentMethod"/>
+    <owl:disjointWith rdf:resource="#ProductOrService"/>
+    <owl:disjointWith rdf:resource="#LocationOfSalesOrServiceProvisioning"/>
+    <owl:disjointWith rdf:resource="#BusinessFunction"/>
+    <owl:disjointWith rdf:resource="#DeliveryMethod"/>
+    <owl:disjointWith rdf:resource="#WarrantyScope"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:Class>
+  <owl:Class rdf:ID="DeliveryChargeSpecification">
+    <rdfs:label xml:lang="en">DeliveryChargeSpecification</rdfs:label>
+    <rdfs:comment xml:lang="en">A Delivery Charge Specification is a conceptual entity that specifies the additional costs asked for the delivery of a given Offering using a particular Delivery Method by the respective Business Entity. A Delivery Charge Specification is characterized by (1) a monetary amount per order specified as a literal value of type float in combination with a Currency, (2) the Delivery Method, (3) the target Country or Region, and (4)  whether this charge includes local sales taxes, namely VAT.
+An Offering may be linked to multiple Delivery Charge Specifications that specify alternative charges for disjoint combinations of target Countries or Regions, and Delivery Methods.
+
+Examples: Delivery by direct download is free of charge worldwide, delivery by UPS to Germany is 10 Euros per order, delivery by Mail within the US is 5 Euros per order.
+
+The total amount of this charge is specified as a float value of the hasCurrencyValue property. The currency is specified via the hasCurrency datatype property. Whether the price includes VAT or not is indicated by the valueAddedTaxIncluded datatype property. The Delivery Method to which this charge applies is specified using the appliesToDeliveryMethod object property. The region or regions to which this charge applies is specified using the eligibleRegions datatype property, which uses ISO 3166-1 and ISO 3166-2 codes.
+
+If the price can only be given as a range, use hasMaxCurrencyValue and hasMinCurrencyValue for the upper and lower bounds.
+
+Important: When querying for the price, always use hasMaxCurrencyValue and hasMinCurrencyValue.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="#PriceSpecification"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:Class>
+  <owl:Class rdf:ID="ActualProductOrServiceInstance">
+    <rdfs:label xml:lang="en">ActualProductOrServiceInstance</rdfs:label>
+    <rdfs:comment xml:lang="en">An Actual Product or Service Instance is a single identifiable object or action that creates some increase in utility (in the economic sense) for the individual possessing or using this very object (Product) or for the individual in whose favor this very action is being taken (Service). Products or Services are types of goods in the economic sense. For an overview of goods and commodities in economics, see Milgate (1987).
+
+Examples: MyThinkpad T60, the pint of beer standing in front of me, my Volkswagen Golf, the haircut that I received or will be receiving at a given date and time.
+
+Note: In many cases, product or service instances are not explicitly exposed on the Web but only claimed to exist (i.e. existentially quantified). For a detailed discussion and practical solutions, see section 3.3.3 of the GoodRelations Technical Report.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="#ProductOrService"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:Class>
+  <owl:Class rdf:ID="DeliveryMethod">
+    <rdfs:label xml:lang="en">DeliveryMethod</rdfs:label>
+    <rdfs:comment xml:lang="en">A Delivery Method is a standardized procedure for transferring the Product or Service Instance to the destination of fulfilment chosen by the customer. Delivery Methods are characterized by the means of transportation used, and by the organization or group that is the contracting party for the sending Business Entity (this is important, since the contracted party may subcontract the fulfilment to smaller, regional businesses).
+
+Examples: Delivery by Mail, Delivery by Direct Download, Delivery by UPS</rdfs:comment>
+    <owl:disjointWith rdf:resource="#BusinessFunction"/>
+    <owl:disjointWith rdf:resource="#DayOfWeek"/>
+    <owl:disjointWith rdf:resource="#QuantitativeValue"/>
+    <owl:disjointWith rdf:resource="#N-Ary-Relations"/>
+    <owl:disjointWith rdf:resource="#LocationOfSalesOrServiceProvisioning"/>
+    <owl:disjointWith rdf:resource="#ProductOrService"/>
+    <owl:disjointWith rdf:resource="#BusinessEntity"/>
+    <owl:disjointWith rdf:resource="#Offering"/>
+    <owl:disjointWith rdf:resource="#WarrantyScope"/>
+    <owl:disjointWith rdf:resource="#PriceSpecification"/>
+    <owl:disjointWith rdf:resource="#PaymentMethod"/>
+    <owl:disjointWith rdf:resource="#QualitativeValue"/>
+    <owl:disjointWith rdf:resource="#BusinessEntityType"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:Class>
+  <owl:Class rdf:ID="BusinessEntity">
+    <rdfs:label xml:lang="en">BusinessEntity</rdfs:label>
+    <rdfs:comment xml:lang="en">An instance of this class represents the legal agent making a particular offering. This can be a legal body or a person. A Business Entity has at least a primary mailing address and contact details. For this, typical address standards (vCard) and location data can be attached. The location may be important for finding a supplier within a given distance from our own location.
+
+Example: Siemens Austria AG, Volkswagen Ltd., Peter Miller's Cell phone Shop
+
+Note:  Typical address standards (vcard) and location data should be attached to a business entity. Since there already exist established vocabularies for this, the GoodRelations ontology does not provide respective attributes. Instead, the use of respective vocabularies is recommended. However, the hasGlobalLocationNumber and hasDUNS properties are provided for linking to respective identifiers for business locations.</rdfs:comment>
+    <owl:disjointWith rdf:resource="#WarrantyScope"/>
+    <owl:disjointWith rdf:resource="#BusinessFunction"/>
+    <owl:disjointWith rdf:resource="#DeliveryMethod"/>
+    <owl:disjointWith rdf:resource="#QuantitativeValue"/>
+    <owl:disjointWith rdf:resource="#BusinessEntityType"/>
+    <owl:disjointWith rdf:resource="#PaymentMethod"/>
+    <owl:disjointWith rdf:resource="#N-Ary-Relations"/>
+    <owl:disjointWith rdf:resource="#QualitativeValue"/>
+    <owl:disjointWith rdf:resource="#DayOfWeek"/>
+    <owl:disjointWith rdf:resource="#Offering"/>
+    <owl:disjointWith rdf:resource="#PriceSpecification"/>
+    <owl:disjointWith rdf:resource="#LocationOfSalesOrServiceProvisioning"/>
+    <owl:disjointWith rdf:resource="#ProductOrService"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:Class>
+  <owl:Class rdf:ID="QuantitativeValueInteger">
+    <rdfs:label xml:lang="en">QuantitativeValueInteger</rdfs:label>
+    <rdfs:comment xml:lang="en">An instance of this class is an actual integer value for a quantitative property of a product. This instance is usually characterized by a minimal value, a maximal value, and a unit of measurement. This class is a work-around caused by the fact that OWL does only support binary relations, and that datatype ranges cannot be easily handled in OWL.
+
+Example: A seating capacity between 1 and 8 persons.
+
+Note: Users must keep in mind that ranges in here mean that ALL possible values in this interval are covered. (Sometimes, the actual commitment may be less than that: "We sell cars from 2 - 12 seats" does often not really mean that they have cars with 2,3,4,...12 seats.). Someone renting out two types of rowing boats, one that fits for 1 or 2 people, and another that must be operated by 4 people cannot claim to rent boats with a seating capacity between 1 and 4 people. He or she is offering two boat types for 1-2 and 4 persons.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="#QuantitativeValue"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:Class>
+  <owl:Class rdf:ID="DeliveryModeParcelService">
+    <rdfs:label xml:lang="en">DeliveryModeParcelService</rdfs:label>
+    <rdfs:comment xml:lang="en">A private parcel service as the delivery mode available for a certain offering.
+
+Examples: UPS, DHL</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="#DeliveryMethod"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:Class>
+  <owl:Class rdf:ID="PriceSpecification">
+    <rdfs:label xml:lang="en">PriceSpecification</rdfs:label>
+    <rdfs:comment xml:lang="en">The superclass of all price specifications.</rdfs:comment>
+    <owl:disjointWith rdf:resource="#DayOfWeek"/>
+    <owl:disjointWith rdf:resource="#PaymentMethod"/>
+    <owl:disjointWith rdf:resource="#BusinessEntity"/>
+    <owl:disjointWith rdf:resource="#ProductOrService"/>
+    <owl:disjointWith rdf:resource="#BusinessFunction"/>
+    <owl:disjointWith rdf:resource="#BusinessEntityType"/>
+    <owl:disjointWith rdf:resource="#DeliveryMethod"/>
+    <owl:disjointWith rdf:resource="#QualitativeValue"/>
+    <owl:disjointWith rdf:resource="#QuantitativeValue"/>
+    <owl:disjointWith rdf:resource="#N-Ary-Relations"/>
+    <owl:disjointWith rdf:resource="#WarrantyScope"/>
+    <owl:disjointWith rdf:resource="#LocationOfSalesOrServiceProvisioning"/>
+    <owl:disjointWith rdf:resource="#Offering"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:Class>
+  <owl:Class rdf:ID="PaymentChargeSpecification">
+    <rdfs:label xml:lang="en">PaymentChargeSpecification</rdfs:label>
+    <rdfs:comment xml:lang="en">A Payment Charge Specification is a conceptual entity that specifies the additional costs asked for settling the payment after accepting a given Offering using a particular Payment Method. A Payment Charge Specification is characterized by (1) a monetary amount per order specified as a literal value of type float in combination with a Currency, (2) the Payment Method, and (3) a whether this charge includes local sales taxes, namely VAT.
+An Offering may be linked to multiple Payment Charge Specifications that specify alternative charges for various Payment Methods.
+
+Examples: Payment by VISA or Mastercard costs a fee of 3 Euros including VAT, payment by bank transfer in advance is free of charge.
+
+The total amount of this surcharge is specified as a float value of the hasCurrencyValue property. The currency is specified via the hasCurrency datatype property. Whether the price includes VAT or not is indicated by the valueAddedTaxIncluded datatype property. The Payment Method to which this charge applies is specified using the appliesToPaymentMethod object property.
+
+If the price can only be given as a range, use hasMaxCurrencyValue and hasMinCurrencyValue for the upper and lower bounds.
+
+Important: When querying for the price, always use hasMaxCurrencyValue and hasMinCurrencyValue.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="#PriceSpecification"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:Class>
+  <owl:Class rdf:ID="WarrantyScope">
+    <rdfs:label xml:lang="en">WarrantyScope</rdfs:label>
+    <rdfs:comment xml:lang="en">The Warranty Scope represents types of services that will be provided free of charge by the vendor or manufacturer in the case of a defect (e.g. labor and parts, just parts), as part of the warranty included in an Offering. The actual services may be provided by the Business Entity making the Offering, by the manufacturer of the Product, or by a third party. 
+
+Examples: Parts and Labor, Parts</rdfs:comment>
+    <owl:disjointWith rdf:resource="#N-Ary-Relations"/>
+    <owl:disjointWith rdf:resource="#DeliveryMethod"/>
+    <owl:disjointWith rdf:resource="#BusinessEntityType"/>
+    <owl:disjointWith rdf:resource="#PaymentMethod"/>
+    <owl:disjointWith rdf:resource="#QualitativeValue"/>
+    <owl:disjointWith rdf:resource="#LocationOfSalesOrServiceProvisioning"/>
+    <owl:disjointWith rdf:resource="#BusinessFunction"/>
+    <owl:disjointWith rdf:resource="#BusinessEntity"/>
+    <owl:disjointWith rdf:resource="#PriceSpecification"/>
+    <owl:disjointWith rdf:resource="#QuantitativeValue"/>
+    <owl:disjointWith rdf:resource="#ProductOrService"/>
+    <owl:disjointWith rdf:resource="#DayOfWeek"/>
+    <owl:disjointWith rdf:resource="#Offering"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:Class>
+  <owl:Class rdf:ID="BusinessEntityType">
+    <rdfs:label xml:lang="en">BusinessEntityType</rdfs:label>
+    <rdfs:comment xml:lang="en">A Business Entity Type is a conceptual entity representing the legal form, the size, the main line of business, the position in the value chain, or any combination thereof, of a Business Entity. From the ontological point of view, Business Entity Types are mostly roles that a Business Entity has in the market. Business Entity Types are important for specifying eligible customers, since Offerings are often meant only for Business Entities of a certain size, legal structure, or role in the value chain. 
+
+Examples: Consumers, Retailers, Wholesalers, or Public Institutions</rdfs:comment>
+    <owl:disjointWith rdf:resource="#BusinessFunction"/>
+    <owl:disjointWith rdf:resource="#LocationOfSalesOrServiceProvisioning"/>
+    <owl:disjointWith rdf:resource="#PriceSpecification"/>
+    <owl:disjointWith rdf:resource="#N-Ary-Relations"/>
+    <owl:disjointWith rdf:resource="#WarrantyScope"/>
+    <owl:disjointWith rdf:resource="#DeliveryMethod"/>
+    <owl:disjointWith rdf:resource="#BusinessEntity"/>
+    <owl:disjointWith rdf:resource="#Offering"/>
+    <owl:disjointWith rdf:resource="#PaymentMethod"/>
+    <owl:disjointWith rdf:resource="#QuantitativeValue"/>
+    <owl:disjointWith rdf:resource="#QualitativeValue"/>
+    <owl:disjointWith rdf:resource="#DayOfWeek"/>
+    <owl:disjointWith rdf:resource="#ProductOrService"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:Class>
+  <owl:Class rdf:ID="UnitPriceSpecification">
+    <rdfs:label xml:lang="en">UnitPriceSpecification</rdfs:label>
+    <rdfs:comment xml:lang="en">A Unit Price Specification is a conceptual entity that specifies the price asked for a given Offering by the respective Business Entity. An Offering may be linked to multiple Unit Price Specifications that specify alternative prices for non-overlapping sets of conditions (e.g. quantities or sales regions). 
+
+A Unit Price Specification is characterized by (1) the lower and upper limits and the Unit of Measurement of the eligible quantity, (2) by a monetary amount per unit of the Product or Service Instance in the given Unit of Measurement specified as a literal value of type float in combination with a Currency, and (3)  whether this prices includes local sales taxes, namely VAT.
+
+Example: The price, including VAT, for 1 kg of a given material is 5 Euros per kg for 0 - 5 kg and 4 Euros for quantities above 5 kg.
+
+The eligible quantity interval for a given price is specified using the object property hasEligibleQuantity, which points to an instance of Quantitative Value. The currency is specified using the hasCurrency datatype property, which points to an ISO 4217 currency code. The unit of measurement for the eligible quantity is specified using the hasUnitOfMeasurement datatype property, which points to an UN/CEFACT Common Code (3 characters).
+
+In most cases, the appropriate unit of measurement is the UN/CEFACT Common Code "C62" for "Unit or piece", since an Offering is defined by the quantity and unit of measurement of all items included (e.g. "1 kg of bananas plus a 2 kg of apples"). As long at the Offering consists of only one item, it is also possible to use an unit of measurement  of choice for specifying the price per unit. For bundles, however, only  "C62" for "Unit or piece" is a valid unit of measurement .
+
+Whether VAT and sales taxes are included in this price is specified using the datatype property valueAddedTaxIncluded (boolean).
+
+The price per unit of measurement is specified as a float value of the hasCurrencyValue property. The currency is specified via the hasCurrency datatype property. Whether the price includes VAT or not is indicated by the valueAddedTaxIncluded datatype property.
+
+The property priceType can be used to indicate that the price is a retail price recommendation only (i.e. a list price). 
+
+If the price can only be given as a range, use hasMaxCurrencyValue and hasMinCurrencyValue for the upper and lower bounds.
+
+Important: When querying for the price, always use hasMaxCurrencyValue and hasMinCurrencyValue.
+
+Note: Due to the complexity of pricing scenarios in various industries, it may be necessary to create extensions of this fundamental model of Price Specifications. Such can be done easily by importing and refining the GoodRelations ontology.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="#PriceSpecification"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:Class>
+  <owl:Class rdf:ID="PaymentMethodCreditCard">
+    <rdfs:label xml:lang="en">PaymentMethodCreditCard</rdfs:label>
+    <rdfs:comment xml:lang="en">The subclass of Payment Method represents all variants and brands of credit or debit cards as a standardized procedure for transferring the monetary amount for a purchase. It is mostly used for specifying the types of payment accepted by a Business Entity.
+
+Examples: VISA, MasterCard, American Express.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="#PaymentMethod"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:Class>
+  <owl:Class rdf:ID="QuantitativeValue">
+    <rdfs:label xml:lang="en">QuantitativeValue</rdfs:label>
+    <rdfs:comment xml:lang="en">A Quantitative Value is a numerical interval that represents the range of a certain quantitative Product or Service Property in terms of the lower and upper bounds for one particular Product Or Service. It is to be interpreted in combination with the respective Unit Of Measurement. Most quantitative values are intervals even if they are in practice often treated as a single point.
+
+An instance of this class is an actual value for a quantitative property of a product. This instance is usually characterized by a minimal value, a maximal value, and a unit of measurement. This class is a work-around caused by the fact that OWL does only support binary relations, and that datatype ranges cannot be easily handled in OWL.
+
+Example: a weight between 10 and 25 kilogramms, a length between 10 and 15 milimeters.</rdfs:comment>
+    <owl:disjointWith rdf:resource="#DeliveryMethod"/>
+    <owl:disjointWith rdf:resource="#BusinessEntity"/>
+    <owl:disjointWith rdf:resource="#PriceSpecification"/>
+    <owl:disjointWith rdf:resource="#BusinessEntityType"/>
+    <owl:disjointWith rdf:resource="#PaymentMethod"/>
+    <owl:disjointWith rdf:resource="#Offering"/>
+    <owl:disjointWith rdf:resource="#QualitativeValue"/>
+    <owl:disjointWith rdf:resource="#N-Ary-Relations"/>
+    <owl:disjointWith rdf:resource="#ProductOrService"/>
+    <owl:disjointWith rdf:resource="#LocationOfSalesOrServiceProvisioning"/>
+    <owl:disjointWith rdf:resource="#BusinessFunction"/>
+    <owl:disjointWith rdf:resource="#DayOfWeek"/>
+    <owl:disjointWith rdf:resource="#WarrantyScope"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:Class>
+  <owl:Class rdf:ID="LocationOfSalesOrServiceProvisioning">
+    <rdfs:label xml:lang="en">LocationOfSalesOrServiceProvisioning</rdfs:label>
+    <rdfs:comment xml:lang="en">A Location of Sales or Service Provisioning is a location from which the specified Business Function on the particular Product or Service Instance is being offered by the Business Entity. Large enterprises often maintain multiple branches from which the delivery or fulfilment can be provided. In this case, the location of the main office of the Business Entity does not state from where a customer can actually get the Offering. In the case of a chain store, it may be all of the actual shops. For mail order companies, the location will usually be the headquarter of the Business Entity.
+
+Locations of Sales or Service Provisioning are characterized by an address or geographical position and a set of opening hour specifications for various days of the week.
+
+Example: A rental car company may offer the Business Function Lease Out of cars from two locations, one in Fort Myers, Florida, and one in Boston, Massachussetts. Both stations are open 7:00 - 23:00 Mondays through Saturdays.
+
+Note:  Typical address standards (vcard) and location data should be attached to a Location of Sales or Service Provisioning. Since there already exist established vocabularies for this, the GoodRelations ontology does not provide respective attributes. Instead, the use of respective vocabularies is recommended. However, the hasGlobalLocationNumber property is  provided for linking to respective identifiers for business locations.</rdfs:comment>
+    <owl:disjointWith rdf:resource="#BusinessFunction"/>
+    <owl:disjointWith rdf:resource="#PriceSpecification"/>
+    <owl:disjointWith rdf:resource="#N-Ary-Relations"/>
+    <owl:disjointWith rdf:resource="#QuantitativeValue"/>
+    <owl:disjointWith rdf:resource="#QualitativeValue"/>
+    <owl:disjointWith rdf:resource="#PaymentMethod"/>
+    <owl:disjointWith rdf:resource="#ProductOrService"/>
+    <owl:disjointWith rdf:resource="#Offering"/>
+    <owl:disjointWith rdf:resource="#DeliveryMethod"/>
+    <owl:disjointWith rdf:resource="#DayOfWeek"/>
+    <owl:disjointWith rdf:resource="#BusinessEntityType"/>
+    <owl:disjointWith rdf:resource="#WarrantyScope"/>
+    <owl:disjointWith rdf:resource="#BusinessEntity"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:Class>
+  <owl:Class rdf:ID="PaymentMethod">
+    <rdfs:label xml:lang="en">PaymentMethod</rdfs:label>
+    <rdfs:comment xml:lang="en">A Payment Method is a standardized procedure for transferring the monetary amount for a purchase. Payment Methods are characterized by the legal and technical structures used, and by the organization or group carrying out the transaction. This element is mostly used for specifying the types of payment accepted by a Business Entity.
+
+Examples: Visa, Mastercard, Diners, Cash, Bank transfer in advance.</rdfs:comment>
+    <owl:disjointWith rdf:resource="#LocationOfSalesOrServiceProvisioning"/>
+    <owl:disjointWith rdf:resource="#BusinessEntityType"/>
+    <owl:disjointWith rdf:resource="#WarrantyScope"/>
+    <owl:disjointWith rdf:resource="#BusinessEntity"/>
+    <owl:disjointWith rdf:resource="#QualitativeValue"/>
+    <owl:disjointWith rdf:resource="#DayOfWeek"/>
+    <owl:disjointWith rdf:resource="#ProductOrService"/>
+    <owl:disjointWith rdf:resource="#N-Ary-Relations"/>
+    <owl:disjointWith rdf:resource="#BusinessFunction"/>
+    <owl:disjointWith rdf:resource="#QuantitativeValue"/>
+    <owl:disjointWith rdf:resource="#DeliveryMethod"/>
+    <owl:disjointWith rdf:resource="#Offering"/>
+    <owl:disjointWith rdf:resource="#PriceSpecification"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:Class>
+  <owl:Class rdf:ID="BusinessFunction">
+    <rdfs:label xml:lang="en">BusinessFunction</rdfs:label>
+    <rdfs:comment xml:lang="en">The Business Function specifies the type of activity or access offered by the Business Entity on the Product or Services though the Offering. The idea of standardizing business functions was first put to practice by the UNSPSC Business Functions Identifiers (UNSPSC BFI). We take their basic types of business functions as a starting point. Typical are sell, rental or lease, maintenance or repair, manufacture / produce, recycle / dispose, engineering / construction, or installation.
+
+Examples: A particular offering made by Miller Rentals Ltd. says that they (1) sell Volkswagen Golf convertibles, (2) lease out a particular Ford pick-up truck, and (3) dispose car wrecks of any make and model.</rdfs:comment>
+    <owl:disjointWith rdf:resource="#PaymentMethod"/>
+    <owl:disjointWith rdf:resource="#PriceSpecification"/>
+    <owl:disjointWith rdf:resource="#BusinessEntityType"/>
+    <owl:disjointWith rdf:resource="#ProductOrService"/>
+    <owl:disjointWith rdf:resource="#Offering"/>
+    <owl:disjointWith rdf:resource="#LocationOfSalesOrServiceProvisioning"/>
+    <owl:disjointWith rdf:resource="#WarrantyScope"/>
+    <owl:disjointWith rdf:resource="#QualitativeValue"/>
+    <owl:disjointWith rdf:resource="#N-Ary-Relations"/>
+    <owl:disjointWith rdf:resource="#QuantitativeValue"/>
+    <owl:disjointWith rdf:resource="#BusinessEntity"/>
+    <owl:disjointWith rdf:resource="#DayOfWeek"/>
+    <owl:disjointWith rdf:resource="#DeliveryMethod"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:Class>
+  <owl:Class rdf:ID="ProductOrService">
+    <rdfs:label xml:lang="en">ProductOrService</rdfs:label>
+    <rdfs:comment xml:lang="en">The superclass of all classes describing products or services types, either by nature or purpose. Examples for such subclasses are "TV set", "vacuum cleaner", etc.
+An instance of this class can be either an actual product or service or a placeholder instance for unknown instances of a mass-produced commodity.
+Since eClassOWL and other large products and services ontologies are used for both describing product and services instances and product and service makes and models, this top-level concept is the union of (1) Actual Product or Service Instances, (2) Product or Service Models, and (3) ProductOrServiceSomeInstances Placeholders. The latter are "dummy" instances representing anonymous products or services instances (i.e., such that are said to exist but not actually being exposed on the Web).
+
+See the GoodRelations Technical Report for more details on this.
+
+Examples: 
+a) MyCellphone123, i.e. my personal, tangible cell phone
+b) Siemens1234, i.e. the Siemens cell phone make and model 1234
+c) dummyCellPhone123 as a placeholder for actual instances of a certain kind of cell phones.</rdfs:comment>
+    <owl:disjointWith rdf:resource="#N-Ary-Relations"/>
+    <owl:disjointWith rdf:resource="#BusinessEntity"/>
+    <owl:disjointWith rdf:resource="#QuantitativeValue"/>
+    <owl:disjointWith rdf:resource="#DeliveryMethod"/>
+    <owl:disjointWith rdf:resource="#QualitativeValue"/>
+    <owl:disjointWith rdf:resource="#Offering"/>
+    <owl:disjointWith rdf:resource="#DayOfWeek"/>
+    <owl:disjointWith rdf:resource="#WarrantyScope"/>
+    <owl:disjointWith rdf:resource="#PriceSpecification"/>
+    <owl:disjointWith rdf:resource="#PaymentMethod"/>
+    <owl:disjointWith rdf:resource="#BusinessFunction"/>
+    <owl:disjointWith rdf:resource="#BusinessEntityType"/>
+    <owl:disjointWith rdf:resource="#LocationOfSalesOrServiceProvisioning"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:Class>
+  <owl:Class rdf:ID="TypeAndQuantityNode">
+    <rdfs:label xml:lang="en">TypeAndQuantityNode</rdfs:label>
+    <rdfs:comment xml:lang="en">This is a conceptual entity that holds together all aspects of the quaternary relation includesTypeOfGood, namely the Quantity, the Unit of Measurement, the Product or Service, and the Offering to which this belongs.
+
+Note: The link between Offering and TypeAndQuantityNode is represented by the object property includesObject. The Unit of Measurement is attached using the hasUnitOfMeasurement datatype property. The quantity is specified using the datatype property amountOfThisGood (float). The specification of the item included is represented by the object property typeOfGood. 
+
+Example: An offering may consist of 100g Butter and 1 kg of potatoes, or 1 cell phone and 2 headsets.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="#N-Ary-Relations"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:Class>
+  <owl:Class rdf:ID="OpeningHoursSpecification">
+    <rdfs:label xml:lang="en">OpeningHoursSpecification</rdfs:label>
+    <rdfs:comment xml:lang="en">This is a conceptual entity that holds together all aspects of the n-ary relation OpeningHoursSpecification, which defines the opening hours for a given DayOfWeek for a given LocationOfSalesOrServiceProvisioning.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="#N-Ary-Relations"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:Class>
+  <owl:Class rdf:ID="Offering">
+    <rdfs:label xml:lang="en">Offering</rdfs:label>
+    <rdfs:comment xml:lang="en">An Offering represents the public, not necessarily binding, not necessarily exclusive, announcement by a Business Entity to provide a certain Business Function for a certain Product or Service Instance to a specified target audience. An Offering is specified by the type of product or service or bundle it refers to, what Business Function is being offered (sales, rental, ...), and a set of commercial properties. It can either refer to a clearly specified instance (Actual Product Or Service Instance) or to a set of anonymous instances of a given type (Product Or Services Some Instances Placeholder, see also section 3.3.3 of the GoodRelations Technical Report). An offering may be constrained in terms of the eligible type of business partner, countries, quantities, and other commercial properties. The definition of the commercial properties, the type of product offered, and the business function are explained in other parts of this ontology in more detail.
+
+Example: Peter Miller offers to repair TV sets made by Siemens, Volkswagen Innsbruck sells a particular instance of a Volkswagen Golf at $10,000.</rdfs:comment>
+    <owl:disjointWith rdf:resource="#QuantitativeValue"/>
+    <owl:disjointWith rdf:resource="#BusinessFunction"/>
+    <owl:disjointWith rdf:resource="#LocationOfSalesOrServiceProvisioning"/>
+    <owl:disjointWith rdf:resource="#N-Ary-Relations"/>
+    <owl:disjointWith rdf:resource="#BusinessEntityType"/>
+    <owl:disjointWith rdf:resource="#PriceSpecification"/>
+    <owl:disjointWith rdf:resource="#DayOfWeek"/>
+    <owl:disjointWith rdf:resource="#BusinessEntity"/>
+    <owl:disjointWith rdf:resource="#DeliveryMethod"/>
+    <owl:disjointWith rdf:resource="#PaymentMethod"/>
+    <owl:disjointWith rdf:resource="#QualitativeValue"/>
+    <owl:disjointWith rdf:resource="#ProductOrService"/>
+    <owl:disjointWith rdf:resource="#WarrantyScope"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:Class>
+  <owl:Class rdf:ID="ProductOrServiceModel">
+    <rdfs:label xml:lang="en">ProductOrServiceModel</rdfs:label>
+    <rdfs:comment xml:lang="en">From the ontological perspective, a Product or Service Model is an intangible entity that specifies some characteristics of a group of similar, usually mass-produced Products. In case of mass-produced Products, there exists a relation hasMakeAndModel between the Products and Services Instance and the Product or Service Model. 
+
+Since eClassOWL and other products and services ontologies don't support this important disctinction, Product or Service Models are a subclass of Product or Service in GoodRelations. This allows using the same properties for (e.g. "hasWeight") for product models and actual products.
+
+Examples: Ford T, Volkswagen Golf, Sony Ericsson W123 cell phone
+
+Note: An Actual Product or Service Instance of which is known via a relation hasMakeAndModel that it is of a certain Product Or Service Model should by default share the features of this model (e.g. the weight). However, this requires non-standard reasoning. See the GoodRelations Wiki at http://www.ebusiness-unibw.org/wiki/GoodRelations for respective rule sets.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="#ProductOrService"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:Class>
+  <owl:Class rdf:ID="DayOfWeek">
+    <rdfs:label xml:lang="en">DayOfWeek</rdfs:label>
+    <rdfs:comment xml:lang="en">The day of the week, used to specify  to which day the opening hours of an Opening Hours Specification refer.
+
+Examples: Monday, Tuesday, Wednesday,...</rdfs:comment>
+    <owl:disjointWith rdf:resource="#PaymentMethod"/>
+    <owl:disjointWith rdf:resource="#Offering"/>
+    <owl:disjointWith rdf:resource="#LocationOfSalesOrServiceProvisioning"/>
+    <owl:disjointWith rdf:resource="#PriceSpecification"/>
+    <owl:disjointWith rdf:resource="#DeliveryMethod"/>
+    <owl:disjointWith rdf:resource="#N-Ary-Relations"/>
+    <owl:disjointWith rdf:resource="#WarrantyScope"/>
+    <owl:disjointWith rdf:resource="#ProductOrService"/>
+    <owl:disjointWith rdf:resource="#QualitativeValue"/>
+    <owl:disjointWith rdf:resource="#BusinessEntityType"/>
+    <owl:disjointWith rdf:resource="#BusinessFunction"/>
+    <owl:disjointWith rdf:resource="#BusinessEntity"/>
+    <owl:disjointWith rdf:resource="#QuantitativeValue"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:Class>
+  <owl:Class rdf:ID="QuantitativeValueFloat">
+    <rdfs:label xml:lang="en">QuantitativeValueFloat</rdfs:label>
+    <rdfs:comment xml:lang="en">An instance of this class is an actual float value for a quantitative property of a product. This instance is usually characterized by a minimal value, a maximal value, and a unit of measurement. This class is a work-around caused by the fact that OWL does only support binary relations, and that datatype ranges cannot be easily handled in OWL.
+
+Examples: The intervals "between 10.0  and 25.4 kilogramms" or "10.2 and 15.5 milimeters".</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="#QuantitativeValue"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:Class>
+  <owl:Class rdf:ID="WarrantyPromise">
+    <rdfs:label xml:lang="en">WarrantyPromise</rdfs:label>
+    <rdfs:comment xml:lang="en">This is a conceptual entity that holds together all aspects of the n-ary relation hasWarrantyPromise.
+
+A Warranty Promise is an entity representing the duration and scope of services that will be provided to a customer free of charge in case of a defect or malfunction of the Product or Service Instance. A Warranty Promise is characterized by its temporal duration (usually starting with the date of purchase) and its Warranty Scope. The Warranty Scope represents the types of services provided (e.g. labor and parts, just parts) of the warranty included in an Offering. The actual services may be provided by the Business Entity making the Offering, by the manufacturer of the Product, or by a third party. There may be multiple Warranty Promises associated with a particular Offering, which differ in duration and scope (e.g. pick-up service during the first 12 months, just parts and labor for 36 months).
+
+Examples: 12 months parts and labor, 36 months parts</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="#N-Ary-Relations"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:Class>
+  <owl:Class rdf:ID="N-Ary-Relations">
+    <rdfs:label xml:lang="en">N-Ary-Relations</rdfs:label>
+    <rdfs:comment xml:lang="en">This is the superclass for all classes that are placeholders for n-ary relations, which OWL cannot represent.</rdfs:comment>
+    <owl:disjointWith rdf:resource="#PriceSpecification"/>
+    <owl:disjointWith rdf:resource="#QualitativeValue"/>
+    <owl:disjointWith rdf:resource="#BusinessEntityType"/>
+    <owl:disjointWith rdf:resource="#BusinessFunction"/>
+    <owl:disjointWith rdf:resource="#DayOfWeek"/>
+    <owl:disjointWith rdf:resource="#DeliveryMethod"/>
+    <owl:disjointWith rdf:resource="#ProductOrService"/>
+    <owl:disjointWith rdf:resource="#Offering"/>
+    <owl:disjointWith rdf:resource="#LocationOfSalesOrServiceProvisioning"/>
+    <owl:disjointWith rdf:resource="#BusinessEntity"/>
+    <owl:disjointWith rdf:resource="#QuantitativeValue"/>
+    <owl:disjointWith rdf:resource="#WarrantyScope"/>
+    <owl:disjointWith rdf:resource="#PaymentMethod"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:Class>
+  <owl:ObjectProperty rdf:ID="includes">
+    <rdfs:label xml:lang="en">includes (0..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">This object property is a shortcut for the original gr:includesObject property for the common case of having exactly one single gr:ProductOrService instance included in an Offering. It is equivalent to using a gr:TypeAndQuantity node with gr:hasUnitOfMeasurement="C62"^^xsd:string and gr:amountOfThisGood="1.0"^^xsd:float.</rdfs:comment>
+    <rdfs:domain rdf:resource="#Offering"/>
+    <rdfs:range>
+      <owl:Class>
+        <owl:unionOf rdf:parseType="Collection">
+          <owl:Class rdf:about="#ActualProductOrServiceInstance"/>
+          <owl:Class rdf:about="#ProductOrServicesSomeInstancesPlaceholder"/>
+        </owl:unionOf>
+      </owl:Class>
+    </rdfs:range>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="isAccessoryOrSparePartFor">
+    <rdfs:label xml:lang="en">isAccessoryOrSparePartFor (0..*)</rdfs:label>
+    <rdfs:comment xml:lang="en">This states that a particular Product Or Service is an accessory or spare part for another Product Or Service.</rdfs:comment>
+    <rdfs:domain rdf:resource="#ProductOrService"/>
+    <rdfs:range rdf:resource="#ProductOrService"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="hasBusinessFunction">
+    <rdfs:label xml:lang="en">hasBusinessFunction (1..*)</rdfs:label>
+    <rdfs:comment xml:lang="en">This specifies the Business Function of the Offering, i.e. whether the Business Entity is offering to sell, to lease, or to repair the particular type of product.
+
+Note: While it is possible that an entity is offering multiple types of business functions, this should usually not be stated by attaching multiple business functions to the same Offering, since the Unit Price Specification for the varying Business Functions will usually be very different.</rdfs:comment>
+    <rdfs:domain rdf:resource="#Offering"/>
+    <rdfs:range rdf:resource="#BusinessFunction"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="availableDeliveryMethods">
+    <rdfs:label xml:lang="en">availableDeliveryMethods (0..*)</rdfs:label>
+    <rdfs:comment xml:lang="en">This specifies the Delivery Methods available for a given Offering.</rdfs:comment>
+    <rdfs:domain rdf:resource="#Offering"/>
+    <rdfs:range rdf:resource="#DeliveryMethod"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="eligibleCustomerTypes">
+    <rdfs:label xml:lang="en">eligibleCustomerTypes (0..*)</rdfs:label>
+    <rdfs:comment xml:lang="en">The types of customers (CustomerType) for which the given Offering is valid.</rdfs:comment>
+    <rdfs:domain rdf:resource="#Offering"/>
+    <rdfs:range rdf:resource="#BusinessEntityType"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="hasOpeningHoursSpecification">
+    <rdfs:label xml:lang="en">hasOpeningHoursSpecification (0..*)</rdfs:label>
+    <rdfs:comment xml:lang="en">This property links a Location Of Sales Or Services Provisioning with an Opening Hours Specification.</rdfs:comment>
+    <rdfs:domain rdf:resource="#LocationOfSalesOrServiceProvisioning"/>
+    <rdfs:range rdf:resource="#OpeningHoursSpecification"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="hasWarrantyScope">
+    <rdfs:label xml:lang="en">hasWarrantyScope (0..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">This states the Warranty Scope of a given Warranty Promise.</rdfs:comment>
+    <rdfs:domain rdf:resource="#WarrantyPromise"/>
+    <rdfs:range rdf:resource="#WarrantyScope"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="appliesToDeliveryMethod">
+    <rdfs:label xml:lang="en">appliesToDeliveryMethod (0..*)</rdfs:label>
+    <rdfs:comment xml:lang="en">This property specifies the Delivery Method to which the Delivery Charge Specification applies.</rdfs:comment>
+    <rdfs:domain rdf:resource="#DeliveryChargeSpecification"/>
+    <rdfs:range rdf:resource="#DeliveryMethod"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="qualitativeProductOrServiceProperty">
+    <rdfs:label xml:lang="en">qualitativeProductOrServiceProperty (0..*)</rdfs:label>
+    <rdfs:comment xml:lang="en">This is the super property of all qualitative properties for products and services. All properties in product or service ontologies for which Qualitative Value instances are specified are subproperties of this property.</rdfs:comment>
+    <rdfs:domain rdf:resource="#ProductOrService"/>
+    <rdfs:range rdf:resource="#QualitativeValue"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="includesObject">
+    <rdfs:label xml:lang="en">includesObject (1..*)</rdfs:label>
+    <rdfs:comment xml:lang="en">This object property links an Offering to one or multiple Type And Quantity Nodes that specify the components that are included in the respective offer.</rdfs:comment>
+    <rdfs:domain rdf:resource="#Offering"/>
+    <rdfs:range rdf:resource="#TypeAndQuantityNode"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="hasMakeAndModel">
+    <rdfs:label xml:lang="en">hasMakeAndModel (0..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">This states that  an actual product instance (Actual Product Or Service Instance) or a placeholder instance for multiple, unidentified such instances (represented by an instance of Product Or Services Some Instances Placeholder) is one occurence of a particular Product or Service Model.
+
+Example: myFordT hasMakeAndModel FordT.</rdfs:comment>
+    <rdfs:domain>
+      <owl:Class>
+        <owl:unionOf rdf:parseType="Collection">
+          <owl:Class rdf:about="#ActualProductOrServiceInstance"/>
+          <owl:Class rdf:about="#ProductOrServicesSomeInstancesPlaceholder"/>
+        </owl:unionOf>
+      </owl:Class>
+    </rdfs:domain>
+    <rdfs:range rdf:resource="#ProductOrServiceModel"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="availableAtOrFrom">
+    <rdfs:label xml:lang="en">availableAtOrFrom (0..*)</rdfs:label>
+    <rdfs:comment xml:lang="en">This states that a particular Offering is available at or from the given Location Of Sales Or Service Provisioning (e.g. shop or branch).</rdfs:comment>
+    <rdfs:domain rdf:resource="#Offering"/>
+    <rdfs:range rdf:resource="#LocationOfSalesOrServiceProvisioning"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="isSimilarTo">
+    <rdfs:label xml:lang="en">isSimilarTo (0..*)</rdfs:label>
+    <rdfs:comment xml:lang="en">This states that a given Product Or Service is similar to another Product Or Service. Of course, this is a subjective statement; when interpreting it, the trust in the origin of the statement should be taken into account.</rdfs:comment>
+    <rdfs:domain rdf:resource="#ProductOrService"/>
+    <rdfs:range rdf:resource="#ProductOrService"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="hasEligibleQuantity">
+    <rdfs:label xml:lang="en">hasEligibleQuantity (0..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">This specifies the interval and unit of measurement of ordering quantities for which the Price Specification is valid. This allows e.g. specifying that a certain freight charge is valid only for a certain quantity.
+Note that if an offering is a bundle, i.e. it consists of more than one unit of a single type of good, or if the unit of measurement for the good is different from unit (Common Code C62), then hasEligibleQuantity refers to units of this bundle. In other words, "C62" for "Units or pieces" is usually the appropriate Unit Of Measurement.</rdfs:comment>
+    <rdfs:domain rdf:resource="#PriceSpecification"/>
+    <rdfs:range rdf:resource="#QuantitativeValue"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="isConsumableFor">
+    <rdfs:label xml:lang="en">isConsumableFor (0..*)</rdfs:label>
+    <rdfs:comment xml:lang="en">This states that a particular Product Or Service is a consumable for another Product Or Service.</rdfs:comment>
+    <rdfs:domain rdf:resource="#ProductOrService"/>
+    <rdfs:range rdf:resource="#ProductOrService"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="hasPriceSpecification">
+    <rdfs:label xml:lang="en">hasPriceSpecification (0..*)</rdfs:label>
+    <rdfs:comment xml:lang="en">This links an Offering to one or more Price Specifications. There can be Unit Price Specifications, Payment Charge Specifications, and Delivery Charge Specifications. For each type
+multiple specifications for the same Offering are possible, e.g. for different quantity ranges or for different currencies, or for different combinations of Delivery Method and target destination.
+
+Recommended retail prices etc. can be marked by the priceType property of the Unit Price Specification to "true".</rdfs:comment>
+    <rdfs:domain rdf:resource="#Offering"/>
+    <rdfs:range rdf:resource="#PriceSpecification"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="appliesToPaymentMethod">
+    <rdfs:label xml:lang="en">appliesToPaymentMethod (1..*)</rdfs:label>
+    <rdfs:comment xml:lang="en">This property specifies the Payment Method to which the Payment Charge Specification applies.</rdfs:comment>
+    <rdfs:domain rdf:resource="#PaymentChargeSpecification"/>
+    <rdfs:range rdf:resource="#PaymentMethod"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="offers">
+    <rdfs:label xml:lang="en">offers (0..*)</rdfs:label>
+    <rdfs:comment xml:lang="en">This links a Business Entity to the Offerings it is offering (i.e., the sales side). If you want to express interest in receiving offers, use gr:seeks instead.</rdfs:comment>
+    <rdfs:domain rdf:resource="#BusinessEntity"/>
+    <rdfs:range rdf:resource="#Offering"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="isVariantOf">
+    <rdfs:label xml:lang="en">isVariantOf (0..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">This states that a particular Product Or Service Model instance is a variant of another Product Or Service Model. It is pretty safe to infer that the variant inherits all quantitativeProductOrServiceProperties, qualitativeProductOrServiceProperties, and datatypeProductOrServiceProperties that are defined for the first Product Or Service Model.
+
+Example:
+foo:Red_Ford_T_Model gr:isVariantOf foo:Ford_T_Model</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="hasPOS">
+    <rdfs:label xml:lang="en">hasPOS (0..*)</rdfs:label>
+    <rdfs:comment xml:lang="en">This property states that the respective Location Of Sales Or Service Provisioning is a point of sale for the respective Business Entity. It allows linking those two types of entities without the need for a particular Offering.</rdfs:comment>
+    <rdfs:domain rdf:resource="#BusinessEntity"/>
+    <rdfs:range rdf:resource="#LocationOfSalesOrServiceProvisioning"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="hasWarrantyPromise">
+    <rdfs:label xml:lang="en">hasWarrantyPromise (0..*)</rdfs:label>
+    <rdfs:comment xml:lang="en">This specifies the Warranty Promise made by the Business Entity for the given Offering.</rdfs:comment>
+    <rdfs:domain rdf:resource="#Offering"/>
+    <rdfs:range rdf:resource="#WarrantyPromise"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="quantitativeProductOrServiceProperty">
+    <rdfs:label xml:lang="en">quantitativeProductOrServiceProperty (0..*)</rdfs:label>
+    <rdfs:comment xml:lang="en">This is the super property of all quantitative  properties for products and services. All properties in product or service ontologies that specify quantitative characteristics, for which an interval is at least theoretically an appropriate value, are subproperties of this property.</rdfs:comment>
+    <rdfs:domain rdf:resource="#ProductOrService"/>
+    <rdfs:range rdf:resource="#QuantitativeValue"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="hasManufacturer">
+    <rdfs:label xml:lang="en">hasManufacturer (0..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">This object property links a Product Or Service to the Business Entity that produces it. Mostly used with gr:ProductOrServiceModel.</rdfs:comment>
+    <rdfs:domain rdf:resource="#ProductOrService"/>
+    <rdfs:range rdf:resource="#BusinessEntity"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="hasInventoryLevel">
+    <rdfs:label xml:lang="en">hasInventoryLevel (0..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">This property specifies the current approximate inventory level of the Product Or Service Some Instance Placeholder. The unit of measurement and the point value or interval are indicated using the attached gr:QuantitativeValueFloat instance.</rdfs:comment>
+    <rdfs:domain rdf:resource="#ProductOrServicesSomeInstancesPlaceholder"/>
+    <rdfs:range rdf:resource="#QuantitativeValueFloat"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="hasOpeningHoursDayOfWeek">
+    <rdfs:label xml:lang="en">hasOpeningHoursDayOfWeek (1..*)</rdfs:label>
+    <rdfs:comment xml:lang="en">This specifies the Day Of Week to which the Opening Hours Specification is related.
+
+Note: Use multiple instances of Opening Hours Specification for specifying the opening hours for multiple days if the opening hours differ.</rdfs:comment>
+    <rdfs:domain rdf:resource="#OpeningHoursSpecification"/>
+    <rdfs:range rdf:resource="#DayOfWeek"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="acceptedPaymentMethods">
+    <rdfs:label xml:lang="en">acceptedPaymentMethods (0..*)</rdfs:label>
+    <rdfs:comment xml:lang="en">The Payment Methods accepted by the Business Entity for the given Offering.</rdfs:comment>
+    <rdfs:domain rdf:resource="#Offering"/>
+    <rdfs:range rdf:resource="#PaymentMethod"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="seeks">
+    <rdfs:label xml:lang="en">seeks (0..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">This links a Business Entity to the Offerings that describe what the Business Entity is interested in (i.e., the buy side). If you want to express interest in actually offering something, use gr:offers instead. Note that this substitutes the former Business Function gr:Buy, which is now deprecated.</rdfs:comment>
+    <rdfs:domain rdf:resource="#BusinessEntity"/>
+    <rdfs:range rdf:resource="#Offering"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="typeOfGood">
+    <rdfs:label xml:lang="en">typeOfGood (1..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">This specifies the type of Product or Service the Type And Quantity Node is referring to.</rdfs:comment>
+    <rdfs:domain rdf:resource="#TypeAndQuantityNode"/>
+    <rdfs:range>
+      <owl:Class>
+        <owl:unionOf rdf:parseType="Collection">
+          <owl:Class rdf:about="#ActualProductOrServiceInstance"/>
+          <owl:Class rdf:about="#ProductOrServicesSomeInstancesPlaceholder"/>
+        </owl:unionOf>
+      </owl:Class>
+    </rdfs:range>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:ObjectProperty>
+  <owl:DatatypeProperty rdf:ID="hasEAN_UCC-13">
+    <rdfs:label xml:lang="en">hasEAN_UCC-13 (0..*)</rdfs:label>
+    <rdfs:comment xml:lang="en">The EAN·UCC-13 code of the given Product Or Service or Offering. This code is now officially called GTIN-13 (Global Trade Identifier Number) or EAN·UCC-13. Former 12-digit UPC codes can be converted into EAN·UCC-13 code by simply adding a preceeding zero.
+
+Note 1: When using this property for searching by 12-digit UPC codes, you must add a preceeding zero digit.
+Note 2: As of January 1, 2007, the former ISBN numbers for books etc. have been integrated into the EAN·UCC-13 code. For each old ISBN-10 code, there exists a proper translation into EAN·UCC-13 by adding "978" or "979" as prefix. Since the old ISBN-10 is now deprecated, GoodRelations does not provide a property for ISBNs.</rdfs:comment>
+    <rdfs:domain>
+      <owl:Class>
+        <owl:unionOf rdf:parseType="Collection">
+          <owl:Class rdf:about="#ProductOrService"/>
+          <owl:Class rdf:about="#Offering"/>
+        </owl:unionOf>
+      </owl:Class>
+    </rdfs:domain>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="durationOfWarrantyInMonths">
+    <rdfs:label xml:lang="en">durationOfWarrantyInMonths (0..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">This property specifies the duration of the Warranty Promise in months.</rdfs:comment>
+    <rdfs:domain rdf:resource="#WarrantyPromise"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#int"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="hasMinValue">
+    <rdfs:label xml:lang="en">hasMinValue (0..0)</rdfs:label>
+    <rdfs:comment xml:lang="en">This property captures the lower limit of a Quantitative Value instance.
+
+Important: Use hasMinValueFloat or hasMinValueInteger when specifying values. This superproperty is just a shortcut for querying data.</rdfs:comment>
+    <rdfs:domain rdf:resource="#QuantitativeValue"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="datatypeProductOrServiceProperty">
+    <rdfs:label xml:lang="en">datatypeProductOrServiceProperty (0..*)</rdfs:label>
+    <rdfs:comment xml:lang="en">This property is the super property for all pure datatype properties that can be used to describe a product and services instance, or via the instances placeholders, of a set of instances of mass-produced commodities.
+
+In products and services ontologies, only such properties that are no quantitative properties and that have no predefined Qualitative Value instances are subproperties of this property. In practice, this refers to a few integer properties for which the integer value represents qualitative aspects, for string datatypes (as long as no predefined values exist), for boolean datatype properties, and for dates and times.</rdfs:comment>
+    <rdfs:domain rdf:resource="#ProductOrService"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="amountOfThisGood">
+    <rdfs:label xml:lang="en">amountOfThisGood (1..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">This property specifies the quantity of the goods included in the Offering via this Type And Quantity Node. The quantity is given in the Unit Of Measurement attached to the Type And Quantity Node.</rdfs:comment>
+    <rdfs:domain rdf:resource="#TypeAndQuantityNode"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="hasValueInteger">
+    <rdfs:label xml:lang="en">hasValueInteger (0..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">This subproperty specifies that the upper and lower limit of the given Quantitative Value Integer are identical and have the respective integer value. It is a shortcut for such cases where a quantitative property is (at least practically) a single point value and not an interval.</rdfs:comment>
+    <rdfs:domain rdf:resource="#QuantitativeValueInteger"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#int"/>
+    <rdfs:subPropertyOf rdf:resource="#hasMinValueInteger"/>
+    <rdfs:subPropertyOf rdf:resource="#hasMaxValueInteger"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="hasCurrencyValue">
+    <rdfs:label xml:lang="en">hasCurrencyValue (0..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">This property specifies the amount of money for a price per unit, shipping charges, or payment charges. The currency and other relevant details are attached to the respective Price Specification etc.
+
+For a Unit Price Specification, this is the price for one unit or bundle (as specified in the unit of measurement of the Unit Price Specification) of the respective Product Or Service. For a Delivery Charge Specification or a Payment Charge Specification, it is the price per delivery or payment.
+
+GoodRelations also supports giving price information as intervals only. If this is needed, use hasMaxCurrencyValue for the upper bound and hasMinCurrencyValue for the lower bound. 
+
+Using hasCurrencyValue sets the upper and lower bounds to the same given value, i.e., x hasCurrencyValue y implies x hasMinCurrencyValue y, x hasMaxCurrencyValue y.</rdfs:comment>
+    <rdfs:domain rdf:resource="#PriceSpecification"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+    <rdfs:subPropertyOf rdf:resource="#hasMinCurrencyValue"/>
+    <rdfs:subPropertyOf rdf:resource="#hasMaxCurrencyValue"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="hasMaxValue">
+    <rdfs:label xml:lang="en">hasMaxValue (0..0)</rdfs:label>
+    <rdfs:comment xml:lang="en">This property captures the upper limit of a Quantitative Value instance.
+
+Important: Use hasMaxValueFloat or hasMaxValueInteger when specifying values. This superproperty is just a shortcut for querying data.</rdfs:comment>
+    <rdfs:domain rdf:resource="#QuantitativeValue"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="hasGTIN-14">
+    <rdfs:label xml:lang="en">hasGTIN-14 (0..*)</rdfs:label>
+    <rdfs:comment xml:lang="en">The Global Trade Item Number (GTIN-14) of the given Product Or Service or Offering.</rdfs:comment>
+    <rdfs:domain>
+      <owl:Class>
+        <owl:unionOf rdf:parseType="Collection">
+          <owl:Class rdf:about="#ProductOrService"/>
+          <owl:Class rdf:about="#Offering"/>
+        </owl:unionOf>
+      </owl:Class>
+    </rdfs:domain>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="priceType">
+    <rdfs:label xml:lang="en">priceType (0..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">This attribute can be used to distinguish multiple different Price Specifications for the same Product or Service. It supersedes the former isListPrice property. The following values are recommended:
+
+The absence of this property marks the actual sales price.
+
+SRP: "suggested retail price" - applicable for all sorts of a non-binding retail price recommendations, e.g. such published by the manufacturer or the distributor. This value replaces the former gr:isListPrice property.
+
+INVOICE: The invoice price, mostly used in the car industry - this is the price a dealer pays to the manufacturer, excluding rebates and charges.</rdfs:comment>
+    <rdfs:domain rdf:resource="#UnitPriceSpecification"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="eligibleRegions">
+    <rdfs:label xml:lang="en">eligibleRegions (0..*)</rdfs:label>
+    <rdfs:comment xml:lang="en">This property specifies the geo-political region or regions for which the offer is valid using the two-character version of ISO 3166-1 (ISO 3166-1 alpha-2)  for regions or ISO 3166-2 , which breaks down the countries from ISO 3166-1 into administrative subdivisions.
+
+Important: Do NOT use 3-letter ISO 3166-1 codes!</rdfs:comment>
+    <rdfs:domain>
+      <owl:Class>
+        <owl:unionOf rdf:parseType="Collection">
+          <owl:Class rdf:about="#Offering"/>
+          <owl:Class rdf:about="#DeliveryChargeSpecification"/>
+        </owl:unionOf>
+      </owl:Class>
+    </rdfs:domain>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="validThrough">
+    <rdfs:label xml:lang="en">validThrough (1..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">This property specifies the end of the validity of the Offering.
+A time-zone should be specified. For a time in GMT/UTC, simply add a "Z" following the time:
+
+2008-05-30T09:30:10Z.
+
+Alternatively, you can specify an offset from the UTC time by adding a positive or negative time following the time:
+
+2008-05-30T09:30:10-09:00
+
+or
+
+2008-05-30T09:30:10+09:00.</rdfs:comment>
+    <rdfs:domain>
+      <owl:Class>
+        <owl:unionOf rdf:parseType="Collection">
+          <owl:Class rdf:about="#Offering"/>
+          <owl:Class rdf:about="#UnitPriceSpecification"/>
+        </owl:unionOf>
+      </owl:Class>
+    </rdfs:domain>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#dateTime"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="hasMinValueFloat">
+    <rdfs:label xml:lang="en">hasMinValueFloat (1..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">This property captures the lower limit of a Quantitative Value Float instance.</rdfs:comment>
+    <rdfs:domain rdf:resource="#QuantitativeValueFloat"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+    <rdfs:subPropertyOf rdf:resource="#hasMinValue"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="hasISICv4">
+    <rdfs:label xml:lang="en">hasISICv4 (0..*)</rdfs:label>
+    <rdfs:comment xml:lang="en">The International Standard of Industrial Classification of All Economic Activities (ISIC), Revision 4 code  for a particular Business Entity. See http://unstats.un.org/unsd/cr/registry/isic-4.asp for more information.
+
+Note: While ISIC codes are sometimes misused for classifying products or services, they are designed and suited only for classifying business establishments.</rdfs:comment>
+    <rdfs:domain rdf:resource="#BusinessEntity"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#int"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="opens">
+    <rdfs:label xml:lang="en">opens (1..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">The opening hour of the Location Of Sales Or Service Provisioning on the given Day Of Week.
+If no time-zone suffix is included, the time is given in the local time valid at the Location.
+
+For a time in GMT/UTC, simply add a "Z" following the time:
+
+09:30:10Z.
+
+Alternatively, you can specify an offset from the UTC time by adding a positive or negative time following the time:
+
+09:30:10-09:00
+
+or
+
+09:30:10+09:00.
+
+Note: If the shop re-opens on the same day of the week or set of days of the week, you must create a second instance of Opening Hours Specification.</rdfs:comment>
+    <rdfs:domain rdf:resource="#OpeningHoursSpecification"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#time"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="hasValueFloat">
+    <rdfs:label xml:lang="en">hasValueFloat (0..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">This subproperty specifies that the upper and lower limit of the given Quantitative Value Float are identical and have the respective float value. It is a shortcut for such cases where a quantitative property is (at least practically) a single point value and not an interval.</rdfs:comment>
+    <rdfs:domain rdf:resource="#QuantitativeValueFloat"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+    <rdfs:subPropertyOf rdf:resource="#hasMinValueFloat"/>
+    <rdfs:subPropertyOf rdf:resource="#hasMaxValueFloat"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="hasStockKeepingUnit">
+    <rdfs:label xml:lang="en">hasStockKeepingUnit (0..*)</rdfs:label>
+    <rdfs:comment xml:lang="en">The Stock Keeping Unit, or SKU is a unique identifier for a product, service, or bundle from the perspective of a particular supplier, i.e. SKUs are mostly assigned and serialized at the merchant level. 
+Examples of SKUs are the ordering or parts numbers used by a particular Web shop or catalog.
+
+Consequently, the domain of hasStockKeepingUnit is the union of the classes Offering and Product Or Service. 
+If attached to an Offering, the SKU will usually reflect a merchant-specific identifier, i.e. one valid only for that particular retailer or shop. 
+If attached to a Product Or Service Model, the SKU should reflect the identifier / part number used by the official manufacturer of that part.
+
+Important: Be careful when assuming two Products or Services instances or Offering instances to be identical based on the SKU. Since SKUs are unique only for the same Business Entity, this can be assumed only when you are sure that the two SKU values refer to the same Business Entity. Such can be done by taking into account the provenance of the data. As long as instances of Offering are concerned, you can also check that the offerings are being offered by the same Business Entity.
+
+Usually, the properties hasEAN_UCC-13 and hasGTIN-14 are much more reliable identifiers, because they are globally unique.
+
+See also http://en.wikipedia.org/wiki/Stock_Keeping_Unit.</rdfs:comment>
+    <rdfs:domain>
+      <owl:Class>
+        <owl:unionOf rdf:parseType="Collection">
+          <owl:Class rdf:about="#Offering"/>
+          <owl:Class rdf:about="#ProductOrService"/>
+        </owl:unionOf>
+      </owl:Class>
+    </rdfs:domain>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="hasMaxValueFloat">
+    <rdfs:label xml:lang="en">hasMaxValueFloat (1..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">This property captures the upper limit of a Quantitative Value Float instance.</rdfs:comment>
+    <rdfs:domain rdf:resource="#QuantitativeValueFloat"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+    <rdfs:subPropertyOf rdf:resource="#hasMaxValue"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="hasNAICS">
+    <rdfs:label xml:lang="en">hasNAICS (0..*)</rdfs:label>
+    <rdfs:comment xml:lang="en">The North American Industry Classification System (NAICS) code for a particular Business Entity.
+See http://www.census.gov/eos/www/naics/ for more details.
+
+Note: While NAICS codes are sometimes misused for classifying products or services, they are designed and suited only for classifying business establishments.</rdfs:comment>
+    <rdfs:domain rdf:resource="#BusinessEntity"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#int"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="hasUnitOfMeasurement">
+    <rdfs:label xml:lang="en">hasUnitOfMeasurement (1..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">The unit of measurement for a Quantitative Value, a Unit Price Specification, or a Type And Quantity Node given using the UN/CEFACT Common Code (3 characters).</rdfs:comment>
+    <rdfs:domain>
+      <owl:Class>
+        <owl:unionOf rdf:parseType="Collection">
+          <owl:Class rdf:about="#QuantitativeValue"/>
+          <owl:Class rdf:about="#UnitPriceSpecification"/>
+          <owl:Class rdf:about="#TypeAndQuantityNode"/>
+        </owl:unionOf>
+      </owl:Class>
+    </rdfs:domain>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="hasGlobalLocationNumber">
+    <rdfs:label xml:lang="en">hasGlobalLocationNumber (0..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">The Global Location Number (GLN, sometimes also referred to as International Location Number or ILN) of the respective Business Entity or  Location Of Sales Or Service Provisioning.
+The Global Location Number is a thirteen-digit number used to identify parties and physical locations.</rdfs:comment>
+    <rdfs:domain>
+      <owl:Class>
+        <owl:unionOf rdf:parseType="Collection">
+          <owl:Class rdf:about="#BusinessEntity"/>
+          <owl:Class rdf:about="#LocationOfSalesOrServiceProvisioning"/>
+        </owl:unionOf>
+      </owl:Class>
+    </rdfs:domain>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="hasMinValueInteger">
+    <rdfs:label xml:lang="en">hasMinValueInteger (1..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">This property captures the lower limit of a Quantitative Value Integer instance.</rdfs:comment>
+    <rdfs:domain rdf:resource="#QuantitativeValueInteger"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#int"/>
+    <rdfs:subPropertyOf rdf:resource="#hasMinValue"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="validFrom">
+    <rdfs:label xml:lang="en">validFrom (1..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">This property specifies the beginning of the validity of the Offering.
+A time-zone should be specified. For a time in GMT/UTC, simply add a "Z" following the time:
+
+2008-05-30T09:30:10Z.
+
+Alternatively, you can specify an offset from the UTC time by adding a positive or negative time following the time:
+
+2008-05-30T09:30:10-09:00
+
+or
+
+2008-05-30T09:30:10+09:00.</rdfs:comment>
+    <rdfs:domain>
+      <owl:Class>
+        <owl:unionOf rdf:parseType="Collection">
+          <owl:Class rdf:about="#Offering"/>
+          <owl:Class rdf:about="#UnitPriceSpecification"/>
+        </owl:unionOf>
+      </owl:Class>
+    </rdfs:domain>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#dateTime"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="hasMinCurrencyValue">
+    <rdfs:label xml:lang="en">hasMinCurrencyValue (1..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">This property specifies the LOWER BOUND of the amount of money for a price RANGE per unit, shipping charges, or payment charges. The currency and other relevant details are attached to the respective Price Specification etc.
+For a Unit Price Specification, this is the LOWER BOUND for the price for one unit or bundle (as specified in the unit of measurement of the Unit Price Specification) of the respective Product Or Service. For a Delivery Charge Specification or a Payment Charge Specification, it is the LOWER BOUND of the price per delivery or payment.
+
+Using hasCurrencyValue sets the upper and lower bounds to the same given value, i.e., x hasCurrencyValue y implies x hasMinCurrencyValue y, x hasMaxCurrencyValue y.</rdfs:comment>
+    <rdfs:domain rdf:resource="#PriceSpecification"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="hasMaxValueInteger">
+    <rdfs:label xml:lang="en">hasMaxValueInteger (1..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">This property captures the upper limit of a Quantitative Value Integer instance.</rdfs:comment>
+    <rdfs:domain rdf:resource="#QuantitativeValueInteger"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#int"/>
+    <rdfs:subPropertyOf rdf:resource="#hasMaxValue"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="hasDUNS">
+    <rdfs:label xml:lang="en">hasDUNS (0..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">The Dan &amp; Bradstreet DUNS number for identifying Business Entities. The Dun &amp; Bradstreet DUNS is a ten-digit number used to identify legal entities (but usually not branches or locations of logistical importance only).</rdfs:comment>
+    <rdfs:domain rdf:resource="#BusinessEntity"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="hasCurrency">
+    <rdfs:label xml:lang="en">hasCurrency (1..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">The currency for all prices in the Price Specification given using the ISO 4217 standard (3 characters).</rdfs:comment>
+    <rdfs:domain rdf:resource="#PriceSpecification"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="legalName">
+    <rdfs:label xml:lang="en">legalName (0..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">The legal name of the business entity.</rdfs:comment>
+    <rdfs:domain rdf:resource="#BusinessEntity"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="closes">
+    <rdfs:label xml:lang="en">closes (1..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">The closing  hour of the Location Of Sales Or Service Provisioning on the given Day Of Week.
+If no time-zone suffix is included, the time is given in the local time valid at the Location.
+
+For a time in GMT/UTC, simply add a "Z" following the time:
+
+09:30:10Z.
+
+Alternatively, you can specify an offset from the UTC time by adding a positive or negative time following the time:
+
+09:30:10-09:00
+
+or
+
+09:30:10+09:00.
+
+Note: If the shop re-opens on the same day of the week or set of days of the week, you must create a second instance of Opening Hours Specification.</rdfs:comment>
+    <rdfs:domain rdf:resource="#OpeningHoursSpecification"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#time"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="valueAddedTaxIncluded">
+    <rdfs:label xml:lang="en">valueAddedTaxIncluded (0..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">This property specifies whether the applicable value-added tax (VAT)  is included in the price of the Price Specification or not. It is used to determine this feature for all variants of Price Specifications, i.e. Unit Price Specifications, Delivery Charge Specifications, and Payment Charge Specifications.
+
+Note: This is a simple representation which may not properly reflect all details of local taxation.</rdfs:comment>
+    <rdfs:domain rdf:resource="#PriceSpecification"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="hasMaxCurrencyValue">
+    <rdfs:label xml:lang="en">hasMaxCurrencyValue (1..1)</rdfs:label>
+    <rdfs:comment xml:lang="en">This property specifies the UPPER BOUND of the amount of money for a price RANGE per unit, shipping charges, or payment charges. The currency and other relevant details are attached to the respective Price Specification etc.
+For a Unit Price Specification, this is the UPPER BOUND for the price for one unit or bundle (as specified in the unit of measurement of the Unit Price Specification) of the respective Product Or Service. For a Delivery Charge Specification or a Payment Charge Specification, it is the UPPER BOUND of the price per delivery or payment.
+
+Using hasCurrencyValue sets the upper and lower bounds to the same given value, i.e., x hasCurrencyValue y implies x hasMinCurrencyValue y, x hasMaxCurrencyValue y.</rdfs:comment>
+    <rdfs:domain rdf:resource="#PriceSpecification"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <gr:BusinessFunction rdf:ID="Buy">
+    <rdfs:label xml:lang="en">Buy (BusinessFunction, DEPRECATED)</rdfs:label>
+    <rdfs:comment xml:lang="en">This Business Function indicates that the Business Entity is in general interested in purchasing the specified Product or Service.
+DEPRECATED. Use gr:seeks instead.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:BusinessFunction>
+  <owl:DatatypeProperty rdf:ID="isListPrice">
+    <rdfs:label xml:lang="en">isListPrice (DEPRECATED)</rdfs:label>
+    <rdfs:comment xml:lang="en">This boolean attribute indicates whether a Unit Price Specification is a list price (usually a vendor recommendation) or not. "true"  indicates it is a list price, "false" indicates it is not. It is safe to assume by default that a Unit Price Specification that lacks this attributes is not list price.
+DEPRECATED. Use the gr:priceType property instead.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#DeprecatedProperty"/>
+    <rdfs:domain rdf:resource="#UnitPriceSpecification"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+  <gr:DayOfWeek rdf:ID="Monday">
+    <rdfs:label xml:lang="en">Monday (DayOfWeek)</rdfs:label>
+    <rdfs:comment xml:lang="en">Monday as a day of the week.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:DayOfWeek>
+  <owl:AnnotationProperty rdf:ID="relatedWebService">
+    <rdfs:label xml:lang="en">relatedWebService (0..*)</rdfs:label>
+    <rdfs:comment xml:lang="en">The URI of a SOAP or REST Web service from which additional information about the BusinessEntity, Offering, PriceSpecification, or ProductOrService instance can be gained. The recommended domain is Offering, PriceSpecification, or ProductOrService. The recommended range is rdf:resource, i.e., the URI of a SOAP or REST Web service.
+
+In principle, any existing or upcoming vocabulary for Web Services can be used in combination with GoodRelations, because the association between (a) the service description and (b) the GoodRelations description can be found via the Web Service URI value used with the gr:relatedWebService property.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:AnnotationProperty>
+  <gr:BusinessEntityType rdf:ID="Reseller">
+    <rdfs:label xml:lang="en">Reseller (BusinessEntityType)</rdfs:label>
+    <rdfs:comment xml:lang="en">The Business Entity Type representing such agents that are purchasing the scope of products included in the Offering for resale on the market. Resellers are also businesses, i.e., they are officially registered with the public administration and strive for profits by their activities.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:BusinessEntityType>
+  <gr:BusinessFunction rdf:ID="ConstructionInstallation">
+    <rdfs:label xml:lang="en">ConstructionInstallation (BusinessFunction)</rdfs:label>
+    <rdfs:comment xml:lang="en">This Business Function indicates that the Business Entity offers (or seeks) the construction and/or installation of the specified Product at the customer's location.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:BusinessFunction>
+  <gr:PaymentMethodCreditCard rdf:ID="DinersClub">
+    <rdfs:label xml:lang="en">DinersClub (PaymentMethod)</rdfs:label>
+    <rdfs:comment xml:lang="en">Payment by credit or debit cards issued by the Diner's Club network.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:PaymentMethodCreditCard>
+  <gr:DayOfWeek rdf:ID="Thursday">
+    <rdfs:label xml:lang="en">Thursday (DayOfWeek)</rdfs:label>
+    <rdfs:comment xml:lang="en">Thursday as a day of the week.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:DayOfWeek>
+  <owl:AnnotationProperty rdf:about="http://purl.org/dc/elements/1.1/rights"/>
+  <gr:BusinessEntityType rdf:ID="Business">
+    <rdfs:label xml:lang="en">Business (BusinessEntityType)</rdfs:label>
+    <rdfs:comment xml:lang="en">The Business Entity Type representing such agents that are themselves offering commercial services or products on the market. Usually, businesses are characterized by the fact that they are officially registered with the public administration and strive for profits by their activities.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:BusinessEntityType>
+  <gr:DeliveryMethod rdf:ID="DeliveryModeOwnFleet">
+    <rdfs:label xml:lang="en">DeliveryModeOwnFleet (DeliveryMode)</rdfs:label>
+    <rdfs:comment xml:lang="en">Delivery of the goods by using a fleet of vehicles either owned and operated or subcontracted by the Business Entity.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:DeliveryMethod>
+  <gr:PaymentMethodCreditCard rdf:ID="Discover">
+    <rdfs:label xml:lang="en">Discover (PaymentMethod)</rdfs:label>
+    <rdfs:comment xml:lang="en">Payment by credit or debit cards issued by the Discover network.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:PaymentMethodCreditCard>
+  <gr:DayOfWeek rdf:ID="Tuesday">
+    <rdfs:label xml:lang="en">Tuesday (DayOfWeek)</rdfs:label>
+    <rdfs:comment xml:lang="en">Tuesday as a day of the week.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:DayOfWeek>
+  <gr:WarrantyScope rdf:ID="PartsAndLabor-PickUp">
+    <rdfs:label xml:lang="en">PartsAndLabor-PickUp (WarrantyScope)</rdfs:label>
+    <rdfs:comment xml:lang="en">In case of a defect or malfunction, the buying party has the right to request from the selling Business Entity to pick-up the good from its current location to a suitable service location, where the functionality of the good will be restored. All transportation, labor, parts, and materials needed to fix the problem will be covered by the selling Business Entity or one of its partnering Business Entities.
+    
+Note: This is just a rough classification for filtering offers. It is up to the buying party to check the exact scope and terms and conditions of the Warranty Promise.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:WarrantyScope>
+  <gr:PaymentMethod rdf:ID="DirectDebit">
+    <rdfs:label xml:lang="en">DirectDebit (PaymentMethod)</rdfs:label>
+    <rdfs:comment xml:lang="en">Payment by direct debit, i.e., the buying party will inform the offering Business Entity about its bank account details and authorizes the Business Entity to collect the agreed amount directly from that account.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:PaymentMethod>
+  <owl:AnnotationProperty rdf:about="http://purl.org/dc/terms/license"/>
+  <gr:BusinessFunction rdf:ID="Sell">
+    <rdfs:label xml:lang="en">Sell (BusinessFunction)</rdfs:label>
+    <rdfs:comment xml:lang="en">This Business Function indicates that the Business Entity offers to permanently transfer all property rights on the specified Product.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:BusinessFunction>
+  <gr:BusinessFunction rdf:ID="LeaseOut">
+    <rdfs:label xml:lang="en">LeaseOut (BusinessFunction)</rdfs:label>
+    <rdfs:comment xml:lang="en">This Business Function indicates that the Business Entity offers (or seeks) the temporary right to use the specified Product.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:BusinessFunction>
+  <gr:BusinessFunction rdf:ID="Repair">
+    <rdfs:label xml:lang="en">Repair (BusinessFunction)</rdfs:label>
+    <rdfs:comment xml:lang="en">This Business Function indicates that the Business Entity offers (or seeks) the evaluation of the chances for repairing, and, if positive, repair of the specified Product. Repairing means actions that restore the originally intended function of a product that suffers from outage or malfunction.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:BusinessFunction>
+  <owl:AnnotationProperty rdf:about="http://purl.org/dc/elements/1.1/title"/>
+  <gr:DayOfWeek rdf:ID="PublicHolidays">
+    <rdfs:label xml:lang="en">PublicHolidays (DayOfWeek)</rdfs:label>
+    <rdfs:comment xml:lang="en">A placeholder for all official public holidays at the Location Of Sales Or Service Provisioning. This allows specifying the opening hours on public holidays. If a given day is a public holiday, this specification supersedes the opening hours for the respective day of the week.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:DayOfWeek>
+  <gr:DayOfWeek rdf:ID="Friday">
+    <rdfs:label xml:lang="en">Friday (DayOfWeek)</rdfs:label>
+    <rdfs:comment xml:lang="en">Friday as a day of the week.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:DayOfWeek>
+  <gr:DeliveryModeParcelService rdf:ID="FederalExpress">
+    <rdfs:label xml:lang="en">FederalExpress (DeliveryMode)</rdfs:label>
+    <rdfs:comment xml:lang="en">Delivery via the parcel service Federal Express.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:DeliveryModeParcelService>
+  <gr:DeliveryMethod rdf:ID="DeliveryModeDirectDownload">
+    <rdfs:label xml:lang="en">DeliveryModeDirectDownload (DeliveryMethod)</rdfs:label>
+    <rdfs:comment xml:lang="en">Delivery of the goods via direct download from the Internet, i.e., the offering Business Entity provides the buying party with details on how to retrieve the goods online. Connection fees and other costs of using the infrastructure are to be carried by the buying party.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:DeliveryMethod>
+  <gr:DeliveryMethod rdf:ID="DeliveryModeMail">
+    <rdfs:label xml:lang="en">DeliveryModeMail (DeliveryMethod)</rdfs:label>
+    <rdfs:comment xml:lang="en">Delivery via regular mail service (private or public postal services).</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:DeliveryMethod>
+  <gr:DeliveryModeParcelService rdf:ID="UPS">
+    <rdfs:label xml:lang="en">UPS (DeliveryMode)</rdfs:label>
+    <rdfs:comment xml:lang="en">Delivery via the parcel service UPS.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:DeliveryModeParcelService>
+  <gr:WarrantyScope rdf:ID="PartsAndLabor-BringIn">
+    <rdfs:label xml:lang="en">PartsAndLabor-BringIn (WarrantyScope)</rdfs:label>
+    <rdfs:comment xml:lang="en">In case of a defect or malfunction, the buying party has the right to transport the good to a service location determined by the the selling Business Entity and will not be be charged for labor, parts, and materials needed to fix the problem. All those costs will be covered by the selling Business Entity or one of its partnering Business Entities.
+
+Note: This is just a rough classification for filtering offers. It is up to the buying party to check the exact scope and terms and conditions of the Warranty Promise.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:WarrantyScope>
+  <gr:PaymentMethodCreditCard rdf:ID="VISA">
+    <rdfs:label xml:lang="en">VISA (PaymentMethod)</rdfs:label>
+    <rdfs:comment xml:lang="en">Payment by credit or debit cards issued by the VISA network.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:PaymentMethodCreditCard>
+  <gr:WarrantyScope rdf:ID="Labor-BringIn">
+    <rdfs:label xml:lang="en">Labor-BringIn (WarrantyScope)</rdfs:label>
+    <rdfs:comment xml:lang="en">In case of a defect or malfunction, the buying party has the right to transport the good to a service location determined by the the selling Business Entity and will be charged only for parts and materials needed to fix the problem. Labor will be covered by the selling Business Entity or one of its partnering Business Entities.
+
+Note: This is just a rough classification for filtering offers. It is up to the buying party to check the exact scope and terms and conditions of the Warranty Promise.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:WarrantyScope>
+  <gr:PaymentMethod rdf:ID="ByBankTransferInAdvance">
+    <rdfs:label xml:lang="en">ByBankTransferInAdvance (PaymentMethod)</rdfs:label>
+    <rdfs:comment xml:lang="en">Payment by bank transfer in advance, i.e., the offering Business Entity will inform the buying party about  their bank account details and will deliver the goods upon receipt of the due amount.
+This is equivalent to payment by wire transfer.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:PaymentMethod>
+  <gr:BusinessFunction rdf:ID="Maintain">
+    <rdfs:label xml:lang="en">Maintain (BusinessFunction)</rdfs:label>
+    <rdfs:comment xml:lang="en">This Business Function indicates that the Business Entity offers (or seeks) typical maintenance tasks for the specified Product. Maintenance tasks are actions that undo or compensate for wear or other deterioriation caused by regular usage, in order to restore the originally intended function of the product, or to prevent outage or malfunction.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:BusinessFunction>
+  <gr:DeliveryModeParcelService rdf:ID="DHL">
+    <rdfs:label xml:lang="en">DHL (DeliveryMode)</rdfs:label>
+    <rdfs:comment xml:lang="en">Delivery via the parcel service DHL.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:DeliveryModeParcelService>
+  <gr:DayOfWeek rdf:ID="Sunday">
+    <rdfs:label xml:lang="en">Sunday (DayOfWeek)</rdfs:label>
+    <rdfs:comment xml:lang="en">Sunday as a day of the week.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:DayOfWeek>
+  <gr:PaymentMethod rdf:ID="COD">
+    <rdfs:label xml:lang="en">COD (PaymentMethod)</rdfs:label>
+    <rdfs:comment xml:lang="en">Collect on delivery / Cash on delivery - A payment method where the recipient of goods pays at the time of delivery. Usually, the amount of money is collected by the transportation company handling the goods.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:PaymentMethod>
+  <gr:BusinessFunction rdf:ID="Dispose">
+    <rdfs:label xml:lang="en">Dispose (BusinessFunction)</rdfs:label>
+    <rdfs:comment xml:lang="en">This Business Function indicates that the Business Entity offers (or seeks) the acceptance of the specified Product for proper disposal, recycling, or any other kind of allowed usages, freeing the current owner from all rights and obligations of ownership.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:BusinessFunction>
+  <gr:PaymentMethodCreditCard rdf:ID="AmericanExpress">
+    <rdfs:label xml:lang="en">AmericanExpress (PaymentMethod)</rdfs:label>
+    <rdfs:comment xml:lang="en">Payment by credit or debit cards issued by the American Express network.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:PaymentMethodCreditCard>
+  <gr:DeliveryMethod rdf:ID="DeliveryModeFreight">
+    <rdfs:label xml:lang="en">DeliveryModeFreight (DeliveryMethod)</rdfs:label>
+    <rdfs:comment xml:lang="en">Delivery by an unspecified air, sea, or ground freight carrier or cargo company.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:DeliveryMethod>
+  <gr:PaymentMethod rdf:ID="PayPal">
+    <rdfs:label xml:lang="en">PayPal (PaymentMethod)</rdfs:label>
+    <rdfs:comment xml:lang="en">Payment via the PayPal payment service.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:PaymentMethod>
+  <gr:DeliveryMethod rdf:ID="DeliveryModePickUp">
+    <rdfs:label xml:lang="en">DeliveryModePickUp (DeliveryMode)</rdfs:label>
+    <rdfs:comment xml:lang="en">Delivery of the goods by picking them up at one of the Locations Of Sales Or Service Provisioning during the opening hours as specified by respective Opening Hours Specifications.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:DeliveryMethod>
+  <gr:BusinessEntityType rdf:ID="PublicInstitution">
+    <rdfs:label xml:lang="en">PublicInstitution (BusinessEntityType)</rdfs:label>
+    <rdfs:comment xml:lang="en">The Business Entity Type representing such agents that are part of the adminstration or owned by the public.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:BusinessEntityType>
+  <gr:PaymentMethodCreditCard rdf:ID="MasterCard">
+    <rdfs:label xml:lang="en">MasterCard (PaymentMethod)</rdfs:label>
+    <rdfs:comment xml:lang="en">Payment by credit or debit cards issued by the MasterCard network.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:PaymentMethodCreditCard>
+  <owl:AnnotationProperty rdf:about="http://purl.org/dc/elements/1.1/contributor"/>
+  <owl:AnnotationProperty rdf:about="http://purl.org/dc/elements/1.1/creator"/>
+  <gr:DayOfWeek rdf:ID="Wednesday">
+    <rdfs:label xml:lang="en">Wednesday (DayOfWeek)</rdfs:label>
+    <rdfs:comment xml:lang="en">Wednesday as a day of the week.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:DayOfWeek>
+  <gr:DayOfWeek rdf:ID="Saturday">
+    <rdfs:label xml:lang="en">Saturday (DayOfWeek)</rdfs:label>
+    <rdfs:comment xml:lang="en">Saturday as a day of the week.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:DayOfWeek>
+  <gr:BusinessFunction rdf:ID="ProvideService">
+    <rdfs:label xml:lang="en">ProvideService (BusinessFunction)</rdfs:label>
+    <rdfs:comment xml:lang="en">This Business Function indicates that the Business Entity offers (or seeks) the respective type of Service.
+
+Note: Maintain and Repair are also types of Services. However, products and services ontologies often provide classes for tangible products as well as for types of services. The business function Provide Service is to be used with such goods that are Services, while Maintain and Repair can be used with goods for which only the class of product exists in the ontology, but not the respective type of service.
+
+Example: Car maintenance could be expressed both as "Provide Service Car Maintenance" or "Maintain Cars". Since existing ontologies for goods often tangle products and services, it seems beneficial to include Provide Service as a business function.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:BusinessFunction>
+  <gr:BusinessEntityType rdf:ID="Enduser">
+    <rdfs:label xml:lang="en">Enduser (BusinessEntityType)</rdfs:label>
+    <rdfs:comment xml:lang="en">The Business Entity Type representing such agents that are purchasing the good or service for private consumption, in particular not for resale or for usage within an industrial enterprise. By default, a Business Entity is an Enduser.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:BusinessEntityType>
+  <gr:PaymentMethod rdf:ID="CheckInAdvance">
+    <rdfs:label xml:lang="en">CheckInAdvance (PaymentMethod)</rdfs:label>
+    <rdfs:comment xml:lang="en">Payment by sending a check in advance, i.e., the offering Business Entity will deliver the goods upon receipt of a check over the due amount. There are variations in handling payment by check - sometimes, shipment will be upon receipt of the check as a document, sometimes the shipment will take place only upon successful crediting of the check.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:PaymentMethod>
+  <gr:PaymentMethod rdf:ID="Cash">
+    <rdfs:label xml:lang="en">Cash (PaymentMethod)</rdfs:label>
+    <rdfs:comment xml:lang="en">Payment by cash upon delivery or pickup.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:PaymentMethod>
+  <gr:PaymentMethod rdf:ID="ByInvoice">
+    <rdfs:label xml:lang="en">ByInvoice (PaymentMethod)</rdfs:label>
+    <rdfs:comment xml:lang="en">Payment by bank transfer after delivery, i.e., the offering Business Entity will deliver first, inform the buying party about the due amount and their bank account details, and expect payment shortly after delivery.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </gr:PaymentMethod>
+  <owl:AnnotationProperty rdf:about="http://purl.org/dc/elements/1.1/subject"/>
+  <owl:DatatypeProperty rdf:ID="description">
+    <rdfs:label xml:lang="en">description (DEPRECATED)</rdfs:label>
+    <rdfs:comment xml:lang="en">A short textual description of the product or service. This can be easily extracted by search engines and other applications.
+DEPRECATED. Use rdfs:comment instead.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#DeprecatedProperty"/>
+    <rdfs:domain rdf:resource="#ProductOrService"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:isDefinedBy rdf:resource=""/>
+  </owl:DatatypeProperty>
+</rdf:RDF>
+
+<!-- Created with Protege (with OWL Plugin 3.4.1, Build 536)  http://protege.stanford.edu -->
