@@ -6231,3 +6231,35 @@ create procedure yac_get_pk (in tb varchar)
     pkn := vector_concat (pkn, vector (x[0]));  
 }
 ;
+
+create procedure DB.DBA.BACKUP_MAKE_CL (in prefix varchar, in max_pages integer, in is_full integer) 
+{
+  declare patha any;
+
+  if (sys_stat ('cl_run_local_only') = 1)
+    {
+      return DB.DBA.BACKUP_MAKE (prefix, max_pages, is_full);
+    }
+
+  if (is_full) 
+    cl_exec ('backup_context_clear()');
+  patha := null;
+  for select bd_dir from DB.DBA.SYS_BACKUP_DIRS order by bd_id do 
+    {	    
+      if (patha is null)
+	patha := vector (bd_dir);
+      else
+	patha := vector_concat (patha, vector (bd_dir));
+    }
+  
+  if (patha is null)
+    cl_exec ('backup_online (?,?)', vector (prefix, max_pages));
+  else
+    cl_exec ('backup_online (?, ?, ?, ?)', vector (prefix, max_pages, 0, patha));
+
+  if (__proc_exists ('DB.DBA.BACKUP_COMPLETED') is not null)
+    DB.DBA.BACKUP_COMPLETED ();
+  update DB.DBA.SYS_SCHEDULED_EVENT set SE_SQL = sprintf ('DB.DBA.BACKUP_MAKE_CL (\'%s\', %d, 0)', prefix, max_pages)
+   where SE_NAME = DB.DBA.BACKUP_SCHED_NAME ();
+}
+;

@@ -33,6 +33,7 @@
     </vm:menu>
     <vm:variables>
       <v:variable name="prefix" type="varchar" default="null" param-name="pref" />
+      <v:variable name="cl_op" type="int" default="0" persist="1" />
     </vm:variables>
     <vm:header caption="Database Backup" />
     <vm:pagebody>
@@ -69,8 +70,16 @@
 		    if (patha is null)
 		      patha := vector ('.');
 
-		    backup_context_clear(0);
-		    backup_dirs_clear(prefix, patha);
+		      if (self.cl_op and sys_stat ('cl_run_local_only') <> 1)
+		        {
+		           cl_exec ('backup_context_clear(0)');
+			   cl_exec ('backup_dirs_clear (?, ?)', vector (prefix, patha));
+		        }
+		      else
+	                {
+			  backup_context_clear(0);
+			  backup_dirs_clear (prefix, patha);
+	                }		
 		    commit work;
 		    self.vc_redirect ('db_backup.vspx');
                     ]]>
