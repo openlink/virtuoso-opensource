@@ -1,23 +1,23 @@
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2006 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 -- $Id$
 
 /* Aggregate concat */
@@ -1262,10 +1262,10 @@ next:
     {
       while (idx < pkeys_len)
       {
-  pkey_curr := aref (pkeys, idx);
-  pkey_col := aref (pkey_curr, 3);
-  my_pkeys := vector_concat (my_pkeys, vector(pkey_col));
-  idx := idx +1;
+	  pkey_curr := aref (pkeys, idx);
+	  pkey_col := aref (pkey_curr, 3);
+	  my_pkeys := vector_concat (my_pkeys, vector(pkey_col));
+	  idx := idx +1;
       }
     }
   else
@@ -1286,26 +1286,26 @@ next:
       pkeys_len := length (pkeys);
 
       if (0 <> pkeys_len)
-  {
-    while (idx < pkeys_len)
-    {
-      pkey_curr := aref (pkeys, idx);
+        {
+	  while (idx < pkeys_len)
+	    {
+	       pkey_curr := aref (pkeys, idx);
 	       if (inx_name is null)
 	         inx_name := pkey_curr[5];
 	       if (inx_name <> pkey_curr[5])
 	         goto pk_end;
-      pkey_col := aref (pkey_curr, 8);
-            if (pkey_col is not null)
-        my_pkeys := vector_concat (my_pkeys, vector(pkey_col));
-      idx := idx +1;
-    }
+	       pkey_col := aref (pkey_curr, 8);
+	       if (pkey_col is not null)
+	         my_pkeys := vector_concat (my_pkeys, vector(pkey_col));
+	       idx := idx +1;
+	    }
 	  pk_end:;
-  }
+	}
       else
-  {
-    pkeys := NULL;
-    pkeys_len := 0;
-  }
+	{
+	  pkeys := NULL;
+	  pkeys_len := 0;
+	}
     }
   return my_pkeys;
 }
@@ -1382,14 +1382,14 @@ vdb_link_tables (in pref any,
 
       if (n_qual = '' or n_user = '' or n_name = '')
         {
-    errs := vector_concat (errs, vector (vector (rname, '22023', 'Catalog, Schema and Name fields should not be empty.')));
+          errs := vector_concat (errs, vector (vector (rname, '22023', 'Catalog, Schema and Name fields should not be empty.')));
           goto error;
         }
 
       lname := make_full_name (n_qual, n_user, n_name);
       if (exists (select RT_NAME from DB.DBA.SYS_REMOTE_TABLE where RT_NAME = lname))
         {
-    errs := vector_concat (errs, vector (vector (rname, '22023', 'Table is already linked.')));
+	  errs := vector_concat (errs, vector (vector (rname, '22023', 'Table is already linked.')));
           goto error;
         }
 
@@ -2319,7 +2319,7 @@ db.dba.dav_br_map_icon (in type varchar)
     return ('music_16.png');
   if ('video' = "LEFT" (type, 5))
     return ('video_16.png');
-  return ('mime_16.png');
+  return ('gen_file_16.png');
 }
 ;
 
@@ -2453,9 +2453,9 @@ db.dba.dav_browse_proc1 (in path varchar,
                          in filter varchar := '',
                          in search_type integer := -1,
                          in search_word varchar := '',
-			 in ord varchar := '',
-			 in ordseq varchar := 'asc'
-			 ) returns any
+                  			 in ord varchar := '',
+                  			 in ordseq varchar := 'asc'
+                  			 ) returns any
 {
   declare i, j, len, len1 integer;
   declare dirlist, retval any;
@@ -2608,19 +2608,19 @@ db.dba.dav_browse_proc1 (in path varchar,
                           if (show_details = 0)
                             {
                               if (dirlist[i][7] is not null)
-				user_name := dirlist[i][7];
+				                        user_name := dirlist[i][7];
                               else
                                 user_name := 'none';
 
                               if (dirlist[i][6] is not null)
-				group_name := dirlist[i][6];
+				                        group_name := dirlist[i][6];
                               else
                                 group_name := 'none';
 
-	              	      perms_tmp := dirlist[i][5];
+	              	            perms_tmp := dirlist[i][5];
                       	      if (length (perms_tmp) = 9)
-                        	perms_tmp := perms_tmp || 'N';
-			      perms := DAV_PERM_D2U (perms_tmp);
+                        	      perms_tmp := perms_tmp || 'N';
+			                        perms := DAV_PERM_D2U (perms_tmp);
 
                               if (search_type = 0)
                                 retval :=
@@ -3644,7 +3644,7 @@ db.dba.vview_browse_proc (in path varchar,
 create procedure DB.DBA.MSG_NEWS_DOWNLOAD_MESSAGES(in _ns_id integer, in _ng_id integer, in _mode varchar)
 {
   if (isstring (_ng_id))
-      new_news (atoi (_ng_id));
+    new_news (atoi (_ng_id));
   return '';
 }
 ;
@@ -5062,8 +5062,8 @@ create procedure www_tree (in path any)
 	     port := cfg_item_value (virtuoso_ini_path (), 'HTTPServer', 'ServerPort');
 	   else if (intf = '*sslini*')
 	     port := cfg_item_value (virtuoso_ini_path (), 'HTTPServer', 'SSLPort');
-       intf := '0.0.0.0';
-   }
+          intf := '0.0.0.0';
+       }
    }
 
 
@@ -5095,9 +5095,9 @@ create procedure www_tree (in path any)
         tp := 'FS';
 
         if (tp = 'SOAP' and length (HP_RUN_SOAP_AS))
-    usr := HP_RUN_SOAP_AS;
-          else if (length (HP_RUN_VSP_AS))
-    usr := HP_RUN_VSP_AS;
+	  usr := HP_RUN_SOAP_AS;
+        else if (length (HP_RUN_VSP_AS))
+	  usr := HP_RUN_VSP_AS;
         else
           usr := '*disabled*';
 
@@ -5105,11 +5105,11 @@ create procedure www_tree (in path any)
         {
 	  http (sprintf ('\t<node lpath="%s" type="%s" user="%s" sec="%s" url_rew="%s"/>\n',
 		HP_LPATH, tp, usr, coalesce (HP_SECURITY, ''), url_rew), ss);
-    i := i + 1;
+	  i := i + 1;
         }
    }
        if (not i)
-   http (sprintf ('\t<node />\n'), ss);
+	 http (sprintf ('\t<node />\n'), ss);
        http ('</node>\n', ss);
      }
   http ('</www>', ss);
@@ -5419,7 +5419,7 @@ create procedure y_cli_status_proc ()
 	    }
 	}
       else if (st = 1)
-	{
+       {
          tmp1 := sprintf_inverse (line, 'PID: %d, OS: %s, Application: %s, IP#: %s', 0);
 	 pid := null; os := null; app := null; ip := null;
 	 if (length (tmp1) > 3)
@@ -5662,7 +5662,7 @@ create procedure y_sprintf_to_reg (in fmt varchar, in in_list any, in o_list any
       _right := substring (cp_fmt, _to+1, length (cp_fmt));
 
       if (inx < length (o_list))
-      pos := position (o_list[inx], in_list);
+        pos := position (o_list[inx], in_list);
       else
         pos := 0;
 
@@ -5709,7 +5709,7 @@ create procedure y_reg_to_sprintf (in fmt varchar, out in_list any, out o_list a
       else
 	{
 	  pos := atoi (ltrim (pc, '\x24sdU'));
-      o_list := vector_concat (o_list, vector (sprintf ('par_%d', pos)));
+	  o_list := vector_concat (o_list, vector (sprintf ('par_%d', pos)));
         }
 
       if (length (in_list) < pos)
@@ -5852,10 +5852,10 @@ create procedure YAC_VAD_LIST (in dir varchar := null, in fs_type int := 0)
 	   if (pcols = 7)
 	     rc := VAD.DBA.VAD_TEST_READ (vaddir||f, pname, pver, pfull, pdate, fs_type, 1);
 	   else
-	   rc := VAD.DBA.VAD_TEST_READ (vaddir||f, pname, pver, pfull, pdate, fs_type);
+	     rc := VAD.DBA.VAD_TEST_READ (vaddir||f, pname, pver, pfull, pdate, fs_type);
 	   next_pkg:;
            if (pname is not null)
-           nlist := vector_concat (nlist, vector (pname, vector (pver, pdate, f)));
+	     nlist := vector_concat (nlist, vector (pname, vector (pver, pdate, f)));
 	 }
     }
   merge:
@@ -5964,7 +5964,7 @@ create procedure yac_list_keys (in username varchar)
     return;
   arr := USER_GET_OPTION (username, 'KEYS');
   for (declare i, l int, i := 0, l := length (arr); i < l; i := i + 2)
-    if (length (arr[i])) 
+    if (length (arr[i]))
       result (arr[i]);
 }
 ;
@@ -6228,11 +6228,11 @@ create procedure yac_get_pk (in tb varchar)
   pka := rdf_view_get_primary_key (tb);
   pkn := vector ();
   foreach (any x in pka) do
-    pkn := vector_concat (pkn, vector (x[0]));  
+    pkn := vector_concat (pkn, vector (x[0]));
 }
 ;
 
-create procedure DB.DBA.BACKUP_MAKE_CL (in prefix varchar, in max_pages integer, in is_full integer) 
+create procedure DB.DBA.BACKUP_MAKE_CL (in prefix varchar, in max_pages integer, in is_full integer)
 {
   declare patha any;
 
@@ -6241,17 +6241,17 @@ create procedure DB.DBA.BACKUP_MAKE_CL (in prefix varchar, in max_pages integer,
       return DB.DBA.BACKUP_MAKE (prefix, max_pages, is_full);
     }
 
-  if (is_full) 
+  if (is_full)
     cl_exec ('backup_context_clear()');
   patha := null;
-  for select bd_dir from DB.DBA.SYS_BACKUP_DIRS order by bd_id do 
-    {	    
+  for select bd_dir from DB.DBA.SYS_BACKUP_DIRS order by bd_id do
+    {
       if (patha is null)
 	patha := vector (bd_dir);
       else
 	patha := vector_concat (patha, vector (bd_dir));
     }
-  
+
   if (patha is null)
     cl_exec ('backup_online (?,?)', vector (prefix, max_pages));
   else

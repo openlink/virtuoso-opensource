@@ -1,28 +1,28 @@
 <?xml version="1.0" encoding="ISO-8859-1" ?>
 <!-- <!DOCTYPE html  PUBLIC "" "ent.dtd"> -->
 <!--
- -  
+ -
  -  $Id$
  -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
- -  
+ -
  -  Copyright (C) 1998-2006 OpenLink Software
- -  
+ -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
  -  Free Software Foundation; only version 2 of the License, dated June 1991.
- -  
+ -
  -  This program is distributed in the hope that it will be useful, but
  -  WITHOUT ANY WARRANTY; without even the implied warranty of
  -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  -  General Public License for more details.
- -  
+ -
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -  
- -  
+ -
+ -
 -->
 <!--
   Virtuoso Conductor XSL style-sheet for page macros
@@ -477,8 +477,8 @@
       </v:template>
       <v:template name="vm_pagebody_no_vdb_template" type="simple" enabled="--equ(sys_stat('st_has_vdb'),0)">
         <div class="attention_box">
-          <p>This Virtual Database feature is available only in the commercial release of Virtuoso Universal Server.   
-          For more information on the commercial release of the Virtuoso Universal Server, 
+          <p>This Virtual Database feature is available only in the commercial release of Virtuoso Universal Server.
+          For more information on the commercial release of the Virtuoso Universal Server,
           click on the following links to learn more:</p>
           <a href="http://virtuoso.openlinksw.com/">Virtual Database Home Page</a><br/>
           <a href="http://demo.openlinksw.com/tutorial">Virtual Database Tutorials</a><br/>
@@ -1008,7 +1008,7 @@ http(sprintf('<xsl:for-each select="text">
   <?vsp if (isnull (self.pname) or bits[2] = ascii ('1')) { ?>
     <tr>
 	<?vsp
-	  if (isnull (self.pname)) 
+	  if (isnull (self.pname))
 	    http (sprintf ('<td><input type="checkbox" name="%s" value="2" %s /></td>', self.tp, y_check_if_bit (bits, 2)));
 	?>
       <td colspan="2" class="stat_col">
@@ -1167,22 +1167,22 @@ http(sprintf('<xsl:for-each select="text">
             try {
               xmlhttp = new ActiveXObject("Msxml2.XMLHTTP");
             } catch (e) { }
-          
+
             if (xmlhttp == null) {
               try {
                 xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
               } catch (e) { }
             } // if
-          
+
             // Gecko / Mozilla / Firefox
             if (xmlhttp == null)
               xmlhttp = new XMLHttpRequest();
-          
+
           	xmlhttp.open("GET", 'dashboard_item_show.vspx?sid=<?V self.sid ?>&amp;realm=<?V self.realm ?>&amp;tp=<?V self.tp ?>&amp;bits=<?V substring(self.bits,1,11) || '1' ?>',false);
           	xmlhttp.setRequestHeader("Pragma", "no-cache");
           	xmlhttp.send("");
           	cnt.innerHTML = xmlhttp.responseText;
-        		
+
         		timer<?V self.pname ?> = setTimeout("UpdateItem<?V self.pname ?>()",<?V self.bits[11] * 1000 ?>);
           }
         </script>

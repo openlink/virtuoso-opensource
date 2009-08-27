@@ -1,27 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
- -  
+ -
  -  $Id$
- -  
+ -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
- -  
+ -
  -  Copyright (C) 1998-2006 OpenLink Software
- -  
+ -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
  -  Free Software Foundation; only version 2 of the License, dated June 1991.
- -  
+ -
  -  This program is distributed in the hope that it will be useful, but
  -  WITHOUT ANY WARRANTY; without even the implied warranty of
  -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  -  General Public License for more details.
- -  
+ -
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -  
- -  
+ -
+ -
 -->
 <v:page name="robot_edit_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
   <vm:pagetitle>WebDAV Content Management</vm:pagetitle>
@@ -98,7 +98,7 @@
               self._root := concat('/DAV/', self._root);
               self._newd := subseq(datestring(self._newd), 0, 19);
               self._old_url := self._url;
-              self.target_url := 'http://';
+	      self.target_url := 'http://';
 	      if (self._udata is null)
 	        self._udata := vector ();
 	      if (length (self._auth))
@@ -231,7 +231,7 @@
                   if (self.mode <> 'edit')
                   {
                 ?>
-                <v:check-box name="opage" value="1" initial-checked="--case when self._opage = 'checked' then 1 else 0 end" xhtml_id="opage"/>
+                  <v:check-box name="opage" value="1" initial-checked="--case when self._opage = 'checked' then 1 else 0 end" xhtml_id="opage"/>
                 <?vsp
                   } else {
                 ?>
@@ -342,7 +342,7 @@
             <tr>
               <td/>
 	      <td colspan="2">
-		<div  id="meta_opts" style="display: <?V case when self._get_rdf = 0 then 'none' else 'block' end ?>;">
+		  <div  id="meta_opts" style="display: <?V case when self._get_rdf = 0 then 'none' else 'block' end ?>;">
 		      <table class="listing">
 			  <tr class="listing_header_row">
 			      <th><input type="checkbox" name="select_all" value="Select All"
@@ -552,10 +552,10 @@
                           insert into WS.WS.VFS_SITE(
                             VS_DESCR, VS_HOST, VS_URL, VS_INX, VS_OWN,
                             VS_ROOT, VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW,
-			    VS_SRC, VS_METHOD, VS_OTHER, VS_OPTIONS, VS_OPAGE, VS_REDIRECT, VS_STORE, VS_DLOAD_META, VS_UDATA, 
+			    VS_SRC, VS_METHOD, VS_OTHER, VS_OPTIONS, VS_OPAGE, VS_REDIRECT, VS_STORE, VS_DLOAD_META, VS_UDATA,
 			    VS_STORE_FN, VS_EXTRACT_FN)
                             values(self._descr, self._host, self._url, _idx, (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = self._own),
-			    self._root, stringdate(self._newd), self._del, self._flow, self._dflow, self._img, self._dav, _oth, self._auth, 
+			    self._root, stringdate(self._newd), self._del, self._flow, self._dflow, self._img, self._dav, _oth, self._auth,
 			    self._opage, self._redir, self._store, self._get_rdf, serialize (self._udata), self._store_fn, self._ext_fn);
                           insert into WS.WS.VFS_QUEUE(VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT) values(self._host, self._url, now(), 'waiting', self._root);
                         }
@@ -582,7 +582,7 @@
                   </v:on-post>
                 </v:button>
               </td>
-            </tr>
+	    </tr>
 	    <tr>
 	      <td colspan="2">
 		<span>* The "Target URL" will be used as a graph IRI. If no RDF cartridge is enabled only RDF formats will be imported.</span>

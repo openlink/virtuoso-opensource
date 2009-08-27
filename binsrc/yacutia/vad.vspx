@@ -1,27 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
- -  
+ -
  -  $Id$
- -  
+ -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
- -  
+ -
  -  Copyright (C) 1998-2006 OpenLink Software
- -  
+ -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
  -  Free Software Foundation; only version 2 of the License, dated June 1991.
- -  
+ -
  -  This program is distributed in the hope that it will be useful, but
  -  WITHOUT ANY WARRANTY; without even the implied warranty of
  -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  -  General Public License for more details.
- -  
+ -
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -  
- -  
+ -
+ -
 -->
 <v:page name="vad_main_page"
   decor="yacutia_decor.vspx"
@@ -144,7 +144,7 @@
             </v:template>
             <v:template name="template41" type="browse" >
               <tr class="<?V case when mod (control.te_ctr, 2) = 0 then 'listing_row_even' else 'listing_row_odd' end ?>">
-                  <td class="listing_col">
+		  <td class="listing_col">
 		      <input type="checkbox" value="<?U control.te_ctr ?>" name="cb<?V case when (control as vspx_row_template).te_rowset[5] is not null and (control as vspx_row_template).te_rowset[2] is not null and gt (control.te_rowset[5], control.te_rowset[2]) then '2' else '1' end ?>"/>
 		      <?vsp if (control.te_rowset[7] is not null) { ?>
 		      <input type="hidden" name="f_<?V control.te_ctr ?>" value="<?V control.te_rowset[7] ?>" />
@@ -162,7 +162,7 @@
                           http ('fs');
 		      ?>
                   </td>
-                  <td class="listing_col">
+		  <td class="listing_col">
 		    <?vsp if ((control as vspx_row_template).te_rowset[2] is null) {
 		            http ('Not Installed');
 		       }
@@ -276,7 +276,7 @@
                 </td>
               </tr>
           </v:template>
-        </v:data-set>
+	</v:data-set>
       </table><br/>
       <script type="text/javascript"><![CDATA[
 	function select_all ()
@@ -471,7 +471,7 @@
                   <![CDATA[
                     declare mode, path, tmp_name varchar;
                     declare _file any;
-                    declare ret integer;
+		    declare ret integer;
 
 		    if (self.vc_is_valid = 0)
 		      return;
@@ -481,10 +481,10 @@
                     if (mode = 0)
                     {
 		      if (self.upl_file is not null)
-                      {
+		        {
 		          path := self.upl_file;
 			  commit work;
-                      }
+			}
 		      else
 		        {
 			  rollback work;

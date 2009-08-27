@@ -1,24 +1,24 @@
 /*
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
+ *
+ *
 */
 // -*- java -*- Emacs majick!
 //
@@ -33,7 +33,7 @@ function vm_help_toggle ()
   for (i = 0; i < elems.length; i++)
     {
       elems.item(i).style.display = elems.item(i).style.display ? '' : 'none';
-    } 
+    }
     elems = document.getElementsByName('help_toggle');
 
     var i;
@@ -43,7 +43,7 @@ function vm_help_toggle ()
 	  elems.item(i).value = 'Hide help';
 	else
 	  elems.item(i).value = 'Help';
-      } 
+      }
 }
 
 function blah2 ()
@@ -54,7 +54,7 @@ function blah2 ()
 function vm_help_toggle_popup (title)
 {
   var i, h_win, vp_list, vp_copy;
-    
+
 // if (!yacutia_help_popup)
 //	  {
 // 	    yacutia_help_popup.close;
@@ -64,8 +64,8 @@ function vm_help_toggle_popup (title)
 // Write initial document
 //
 
-  h_win = window.open ("", 
-                       'yacutia_help_popup', 
+  h_win = window.open ("",
+                       'yacutia_help_popup',
                        'scrollbars,resizable,width=640,height=400');
   h_win.document.write ('<?xml version="1.0" encoding="utf-8"?>\n');
   h_win.document.write ('<!doctype html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"');

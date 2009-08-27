@@ -1,34 +1,34 @@
 /*
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
+ *
+ *
 */
 /*
-Cookies: 
+Cookies:
   dav_show_scr_adv (exp 7 days) controls initial display of blocks vp_1/vp_2 and status of checkbox wg_vs_adv
 */
 
 var pr_name_cl = {};
 var pr_inx = 1;
 
-function init_properties_mod() 
+function init_properties_mod()
 {
   var tab = new OAT.Tab ("tab_viewport");
   tab.add ("tab_props","props");
@@ -65,7 +65,7 @@ function init_properties_mod()
 
 }
 
-function init_prop_edit() 
+function init_prop_edit()
 {
   var mt_cl = new OAT.Combolist([],cur_mime_type,{name:"mime_type1",imagePath:"images/"});
   $("mime_cl").appendChild(mt_cl.div);
@@ -75,7 +75,7 @@ function init_prop_edit()
   }
 }
 
-function init_upload() 
+function init_upload()
 {
   var mt_cl = new OAT.Combolist([],cur_mime_type,{name:"mime_type",imagePath:"images/"});
   $("mime_cl").appendChild(mt_cl.div);
@@ -89,20 +89,20 @@ function directive_add(){
   var pr_instr = $("pr_instr")[$("pr_instr").selectedIndex];
   var pr_name = pr_name_cl.value; //$("pr_name").value;
   var pr_value = $("pr_value").value;
-  
-  var tbody = $("pr_dirs"); 
-  
+
+  var tbody = $("pr_dirs");
+
   if (!pr_name && pr_instr.value != 'ra') {
     alert('Property name can not be empty!');
     return false;
   }
-  if (pr_instr.value == 'r') 
+  if (pr_instr.value == 'r')
     pr_value = '';
   if (pr_instr.value == 'ra') {
     pr_name = '';
     pr_value = '';
   }
-  
+
   if (tbody && tbody.insertRow) {
     var row = tbody.insertRow(tbody.rows.length);
     row.onclick = select_row_click;
@@ -114,14 +114,14 @@ function directive_add(){
     cell_2.innerHTML = '<input type="hidden" name="pr_value_'+pr_inx+'" value="'+pr_value+'"/>' + pr_value;
     pr_inx++;
   }
-  
+
   table_rows_decor(tbody);
   return true;
 }
 
 
 function directive_rm_all(){
-  var tbody = $("pr_dirs"); 
+  var tbody = $("pr_dirs");
   if (tbody && tbody.deleteRow) {
     for (var i = tbody.rows.length; i >= 0; i--)
     {
@@ -131,7 +131,7 @@ function directive_rm_all(){
 }
 
 function directive_rm_sel(){
-  var tbody = $("pr_dirs"); 
+  var tbody = $("pr_dirs");
   if (tbody && tbody.deleteRow) {
     for (var i = tbody.rows.length; i > 0; i--)
     {
@@ -158,7 +158,7 @@ function cb_toggle (_id, _elm1, _elm2) {
     block_hide (_elm1);
     block_show (_elm2);
     create_cookie ('dav_show_scr_adv', 'false', 7);
-  }    
+  }
   else
   {
     block_hide (_elm2);
@@ -219,7 +219,7 @@ function select_row_click(e){
   var tr = targ;
   while (tr.tagName.toLowerCase() != "tr")
   tr = tr.parentNode;
-		
+
   select_row(tr);
 }
 
@@ -229,7 +229,7 @@ function select_row(tr){
     tr.className = '';
   else
     tr.className = 'selected_row';
-  
+
   table_rows_decor(tr.parentNode);
 }
 

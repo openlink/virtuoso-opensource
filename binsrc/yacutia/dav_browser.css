@@ -23,8 +23,8 @@
 
 html {}
 
-body { 
-  font-size: 9pt; 
+body {
+  font-size: 9pt;
   font-family: sans-serif;
   background-color: #ddd;
 }
@@ -36,8 +36,8 @@ h4 { font-size: 10pt}
 
 table {}
 
-caption { 
-  font-size: 12pt 
+caption {
+  font-size: 12pt
 }
 
 th { text-align: left; }
@@ -48,14 +48,14 @@ button { cursor: pointer; }
 /* (rather) painless tableless forms */
 
 div.frm label {
-  float: left; 
-  display: block; 
+  float: left;
+  display: block;
   width: 120px;
   cursor: pointer
 }
- 
+
 div.frm div.wg_combo { float: left }
-div.frm input { 
+div.frm input {
   float: left;
   margin-bottom: 4px; }
 div.frm button { margin-bottom: 6px }
@@ -72,7 +72,7 @@ div.wg_complete_combo input { }
 
 label { margin-right: 10px; }
 
-a.inline_hlp { 
+a.inline_hlp {
   color: #55e !important; text-decoration: none; margin-left: 3px; vertical-align: super; cursor: help; color: #00f }
 
 table.wg_perms {
@@ -141,15 +141,15 @@ div.wg_tab_deck {
   background-color: #ddd;
 }
 
-ul.wg_tab_row { 
-  list-style-type: none; 
+ul.wg_tab_row {
+  list-style-type: none;
   padding: 0;
   margin: 0;
   background-color: #ddd;
 }
 
 ul.wg_tab_row li {
-  cursor: pointer; 
+  cursor: pointer;
   display: inline;
   border: 1px solid black;
   margin: 0;
@@ -157,16 +157,16 @@ ul.wg_tab_row li {
   background-color: #ddd;
 }
 
-ul.wg_tab_row li.sel { 
+ul.wg_tab_row li.sel {
   border-bottom: 0;
   margin: 0;
   background-color: white;
 }
 
-div.wg_tab_vport { 
+div.wg_tab_vport {
   margin-top: 0;
   padding: 4px;
-  display: none; 
+  display: none;
   background-color: white;
   border-left: 1px solid black;
   border-bottom: 2px solid black;
@@ -184,7 +184,7 @@ table.wg_grid { width: 99%; background-color: white }
 table.wg_grid tr.header { background-color: #ddd; }
 table.wg_grid tr.even { background-color: #eef; }
 
-div.objects_selector { 
+div.objects_selector {
   border: 1px solid black;
   border-right: 2px solid black;
   border-bottom: 2px solid black;

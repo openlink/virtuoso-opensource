@@ -44,7 +44,7 @@
   <vm:pagebody>
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
         <tr valign='top'>
-          <td>
+	    <td>
 		<!-- tab -->
             <table cellpadding='10' cellspacing='0' border='0' width='100%'>
               <tr>
@@ -393,7 +393,7 @@ self.maps.vc_data_bind (e);
   </v:form>
                 </td>
               </tr>
-            </table>
+	  </table>
 	  <!-- end tab  -->
       </td>
   </tr>

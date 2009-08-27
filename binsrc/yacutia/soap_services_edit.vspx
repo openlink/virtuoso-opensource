@@ -1,27 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
- -  
+ -
  -  $Id$
- -  
+ -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
- -  
+ -
  -  Copyright (C) 1998-2006 OpenLink Software
- -  
+ -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
  -  Free Software Foundation; only version 2 of the License, dated June 1991.
- -  
+ -
  -  This program is distributed in the hope that it will be useful, but
  -  WITHOUT ANY WARRANTY; without even the implied warranty of
  -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  -  General Public License for more details.
- -  
+ -
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -  
- -  
+ -
+ -
 -->
 <v:page name="soap_services_edit_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <script type="text/javascript">
@@ -67,9 +67,9 @@
         var contr = form.elements[i];
         if (contr != null && contr.type == "checkbox")
         {
-          if (filter && contr.name != filter) 
+          if (filter && contr.name != filter)
             ;
-          else 
+          else
           {
             contr.focus();
             if (btn.value == 'Select All')
@@ -384,9 +384,9 @@
 	      self._wss_template.ufl_value := self.wss_template;
 	    }
 
-      if (self.vc_event.ve_button is not null and 
-          (self.vc_event.ve_button.vc_name = 'next' or 
-           self.vc_event.ve_button.vc_name = 'back' or 
+      if (self.vc_event.ve_button is not null and
+          (self.vc_event.ve_button.vc_name = 'next' or
+           self.vc_event.ve_button.vc_name = 'back' or
            self.vc_event.ve_button.vc_name = 'finish'))
       {
         -- Get all tabs
@@ -404,7 +404,7 @@
           pos := pos - 2;
         if (self.vc_event.ve_button.vc_name = 'finish')
           pos := length(tabs) - 1;
-        
+
         declare new_tab_switch_button vspx_button;
         new_tab_switch_button := self.frm_edit_path.vc_find_control ('tab1_switch_' || tabs[pos]);
         new_tab_switch_button.vc_focus := 1;
@@ -462,7 +462,7 @@
                       if( self.referer <> '' )
                         http_header (sprintf('Location: %s', self.referer));
                       else
-                      http_header (sprintf('Location: soap_services_list.vspx?sid=%s&realm=%s&_host=%s&_port=%s&_httphost=%s\r\n',self.sid ,self.realm, self.edit_host,self.edit_port,self.edit_httphost));
+                        http_header (sprintf('Location: soap_services_list.vspx?sid=%s&realm=%s&_host=%s&_port=%s&_httphost=%s\r\n',self.sid ,self.realm, self.edit_host,self.edit_port,self.edit_httphost));
                       ]]>
                     </v:script>
                   </v:on-post>
@@ -1004,7 +1004,7 @@
               <col/>
               <col/>
             </colgroup>
-                    <tr>
+            <tr>
     		      <td class="<?V case when self.subtab = 1 then 'page_tab_selected' else 'page_tab_sub' end ?>" align="center">
     			      <v:button name="sub_tab1" action="simple" value="Procedures" style="url" xhtml_style="uddi">
     			        <v:on-post>
@@ -1037,7 +1037,7 @@
     			        </v:on-post>
           			</v:button>
               </td>
-                    </tr>
+            </tr>
           </table>
 
 
@@ -1052,38 +1052,38 @@
                   Catalog
                 </td>
                 <td>
-            <v:select-list name="sl_catalog2" xhtml_style="width:200" xhtml_onchange="javascript:doPost(\'frm_edit_path\', \'reload10\');">
-                                <v:after-data-bind>
-                                  <v:script><![CDATA[
-                                    -- select distinct name_part (key_table, 0) as  Q_NAME from sys_keys
-                                    declare indx integer;
-                                    indx :=0;
-                                    (control as vspx_select_list).vsl_items:= vector();
-                                    (control as vspx_select_list).vsl_item_values:= vector();
-                                    (control as vspx_select_list).vsl_selected_inx :=0;
-                  for select distinct (name_part (p_name, 0)) as  Q_NAME  from sys_procedures where p_type is null order by 1
-                                    do {
-                    if( Q_NAME = self.browse_cat )
-                                        (control as vspx_select_list).vsl_selected_inx :=indx;
-                                      (control as vspx_select_list).vsl_items :=
-                                        vector_concat ((control as vspx_select_list).vsl_items, vector(Q_NAME));
-                                      (control as vspx_select_list).vsl_item_values :=
-                                        vector_concat ((control as vspx_select_list).vsl_item_values, vector(Q_NAME));
-                                      indx := indx +1;
-                                    }
-                                  ]]></v:script>
-                                </v:after-data-bind>
-                              </v:select-list>
+                  <v:select-list name="sl_catalog2" xhtml_style="width:200" xhtml_onchange="javascript:doPost(\'frm_edit_path\', \'reload10\');">
+                    <v:after-data-bind>
+                      <v:script><![CDATA[
+                        -- select distinct name_part (key_table, 0) as  Q_NAME from sys_keys
+                        declare indx integer;
+                        indx :=0;
+                        (control as vspx_select_list).vsl_items:= vector();
+                        (control as vspx_select_list).vsl_item_values:= vector();
+                        (control as vspx_select_list).vsl_selected_inx :=0;
+                        for select distinct (name_part (p_name, 0)) as  Q_NAME  from sys_procedures where p_type is null order by 1
+                        do {
+                          if( Q_NAME = self.browse_cat )
+                            (control as vspx_select_list).vsl_selected_inx :=indx;
+                          (control as vspx_select_list).vsl_items :=
+                            vector_concat ((control as vspx_select_list).vsl_items, vector(Q_NAME));
+                          (control as vspx_select_list).vsl_item_values :=
+                            vector_concat ((control as vspx_select_list).vsl_item_values, vector(Q_NAME));
+                          indx := indx +1;
+                        }
+                      ]]></v:script>
+                    </v:after-data-bind>
+                  </v:select-list>
               </td>
               <td align="right">
                   <v:button action="simple" name="reload10" value="Update Display">
-                                <v:on-post>
-                                  <![CDATA[
-                  self.browse_cat :=  get_keyword('sl_catalog2', params, self.browse_cat);
-                  self.ds_add_procedures.vc_data_bind(e);
-                                  ]]>
-                                </v:on-post>
-                              </v:button>
+                    <v:on-post>
+                      <![CDATA[
+                        self.browse_cat :=  get_keyword('sl_catalog2', params, self.browse_cat);
+                        self.ds_add_procedures.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
               </td>
             </tr>
           </table>
@@ -1093,7 +1093,7 @@
               <v:column name="P_NAME"/>
               <v:column name="STATE"/>
               <v:before-data-bind>
-                if (isnull(self.browse_cat) or self.browse_cat = '' or 
+                if (isnull(self.browse_cat) or self.browse_cat = '' or
                     not exists(select 1 from DB.DBA.SYS_PROCEDURES where P_TYPE is null and name_part (p_name, 0) = self.browse_cat) ) {
 			            self.browse_cat := (select top 1 name_part (p_name, 0) from DB.DBA.SYS_PROCEDURES where P_TYPE is null);
 			          }
@@ -1110,9 +1110,9 @@
                        <th style="width:60px;" nowrap="1">State</th>
                        <th>Procedure</th>
                        <th>Description</th>
-                          </tr>
+                    </tr>
                   </thead>
-                        </table>
+                </table>
               </v:template>
               <v:template name="temp_ds_add_procedures_repeat" type="repeat" name-to-remove="" set-to-remove="">
                 <v:template name="temp_ds_add_procedures_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
@@ -1122,7 +1122,7 @@
                     </tr>
                   </table>
                 </v:template>
-  
+
                 <v:template name="temp_ds_add_procedures_browse" type="browse" name-to-remove="table" set-to-remove="both">
                   <table> <!-- dummy -->
   		              <tr class="<?V case when mod (control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
@@ -1156,18 +1156,18 @@
                 </v:template>
               </v:template>
               <v:template name="temp_ds_add_procedures_footer" type="simple" name-to-remove="table" set-to-remove="top">
-                        <table>
-                          <tr>
+                <table>
+                  <tr>
                     <td colspan="4"  class="listing_col_action">
               		    <vm:ds-navigation data-set="ds_add_procedures"/>
-                            </td>
+                    </td>
                     <td/>
-                          </tr>
+                  </tr>
                 </table>
   	      <?vsp http ('</div>'); ?>
                 <div class="listing_bot_ctl_grp">
             			<v:button name="bt_add_proc2" value="Publish Selected" action="simple">
-                                <v:on-post>
+            			  <v:on-post>
             			    <![CDATA[
                       declare inx integer;
                       declare item varchar;
@@ -1188,10 +1188,10 @@
             			    self.sp_add := 0;
             			    self.opt_tab10.vc_data_bind (e);
             			    ]]>
-                                </v:on-post>
-                              </v:button>
+            			  </v:on-post>
+            			</v:button>
             			<v:button name="bt_revoke_proc" value="Un-Publish Selected" action="simple">
-			  <v:on-post>
+            			  <v:on-post>
             			    <![CDATA[
                       declare inx integer;
                       declare item varchar;
@@ -1213,8 +1213,8 @@
             			    self.sp_add := 0;
             			    self.opt_tab10.vc_data_bind (e);
             			    ]]>
-			  </v:on-post>
-			</v:button>
+            			  </v:on-post>
+            			</v:button>
             			<v:button name="bt_desc_def10" value="Edit Descriptions" action="simple">
             			  <v:on-post>
             			    self.sp_desc := 1;
@@ -1222,33 +1222,33 @@
             			  </v:on-post>
             			</v:button>
                 </div>
-		</v:template>
+              </v:template>
             </v:data-set>
   	      </v:template>
 
         	<v:template type="simple" name="desc_procs2" enabled="--case when (self.sp_desc and self.subtab = 1) then 1 else 0 end">
-                  <table class="SubData" width="100%">
-                    <tr>
-		      <th colspan="2">Descriptions for Published Stored Procedures</th>
-		    </tr>
-		    <?vsp
-		      declare sps, descr, body any;
-		      sps := self.roles_grant_list;
-		      foreach (any sp in sps) do
-		        {
-		          body := (select coalesce (P_TEXT, blob_to_string (P_MORE)) from SYS_PROCEDURES where P_NAME = sp);
-			  descr := regexp_match ('--##.*', body);
-			  if (descr is not null)
-			    descr := substring (descr, 5, length (descr));
-			  else
-			    descr := '';
-		    ?>
-		    <tr><td><?V sp ?></td><td width="80%"><input type="text" name="desc_<?V sp ?>" size="70" value="<?V descr ?>" /></td></tr>
-		    <?vsp
-		         }
+            <table class="SubData" width="100%">
+              <tr>
+		            <th colspan="2">Descriptions for Published Stored Procedures</th>
+		          </tr>
+      		    <?vsp
+      		      declare sps, descr, body any;
+      		      sps := self.roles_grant_list;
+      		      foreach (any sp in sps) do
+      		        {
+      		          body := (select coalesce (P_TEXT, blob_to_string (P_MORE)) from SYS_PROCEDURES where P_NAME = sp);
+            			  descr := regexp_match ('--##.*', body);
+            			  if (descr is not null)
+            			    descr := substring (descr, 5, length (descr));
+            			  else
+            			    descr := '';
+      		    ?>
+		            <tr><td><?V sp ?></td><td width="80%"><input type="text" name="desc_<?V sp ?>" size="70" value="<?V descr ?>" /></td></tr>
+      		    <?vsp
+      		         }
 	            ?>
-		    <tr>
-		      <td colspan="2">
+		          <tr>
+		            <td colspan="2">
             			<v:button name="bt_desc_def42" value="Cancel" action="simple">
             			  <v:on-post><![CDATA[
             			    self.sp_desc := 0;
@@ -1256,38 +1256,38 @@
             			    ]]></v:on-post>
             			</v:button>
             			<v:button name="bt_desc_def41" value="Save Descriptions" action="simple">
-			  <v:on-post><![CDATA[
-			    declare sps, descr, body, tmp, stat, msg, ex_grants, ptxt, pmore any;
-			    sps := self.roles_grant_list;
-			    foreach (any sp in sps) do
-			      {
-			        descr := get_keyword ('desc_'||sp, e.ve_params);
-				if (length (descr))
-				  {
-				    whenever not found goto nfp;
-				    select P_TEXT, P_MORE into ptxt, pmore
-				    from SYS_PROCEDURES where P_NAME = sp;
+            			  <v:on-post><![CDATA[
+            			    declare sps, descr, body, tmp, stat, msg, ex_grants, ptxt, pmore any;
+            			    sps := self.roles_grant_list;
+            			    foreach (any sp in sps) do
+          			      {
+          			        descr := get_keyword ('desc_'||sp, e.ve_params);
+                				if (length (descr))
+              				  {
+              				    whenever not found goto nfp;
+              				    select P_TEXT, P_MORE into ptxt, pmore
+              				    from SYS_PROCEDURES where P_NAME = sp;
 
-				    body := coalesce (ptxt, blob_to_string (pmore));
-				    tmp := sql_split_text (body);
-				    body := tmp[0];
-				    tmp := concat ('--##', descr,'\r\n', body);
-				    if (ptxt)
-				      update SYS_PROCEDURES set P_TEXT = tmp where P_NAME = sp;
-				    else
-				      update SYS_PROCEDURES set P_MORE = tmp where P_NAME = sp;
-				    __proc_changed (sp);
-				    nfp:;
-				  }
-			      }
-			    self.sp_desc := 0;
+              				    body := coalesce (ptxt, blob_to_string (pmore));
+              				    tmp := sql_split_text (body);
+              				    body := tmp[0];
+              				    tmp := concat ('--##', descr,'\r\n', body);
+              				    if (ptxt)
+              				      update SYS_PROCEDURES set P_TEXT = tmp where P_NAME = sp;
+              				    else
+              				      update SYS_PROCEDURES set P_MORE = tmp where P_NAME = sp;
+              				    __proc_changed (sp);
+              				    nfp:;
+              				  }
+          			      }
+            			    self.sp_desc := 0;
             			    self.opt_tab10.vc_data_bind (e);
-			    ]]></v:on-post>
-			</v:button>
-		      </td>
-		    </tr>
-		  </table>
-		  </v:template>
+          			    ]]></v:on-post>
+            			</v:button>
+		            </td>
+		          </tr>
+		        </table>
+		      </v:template>
 
       		<v:template type="simple" name="pub_mod2" enabled="--case when (self.sp_add <> 1 and self.sp_desc <> 1 and self.subtab = 2) then 1 else 0 end">
   	        <h3>Publish PL Modules for user <v:label name="l_add_mod_user" value="--self.soapuser" format="%s"/></h3>
@@ -1300,38 +1300,38 @@
                   Catalog
                 </td>
                 <td>
-            <v:select-list name="sl_catalog20" xhtml_style="width:200" xhtml_onchange="javascript:doPost(\'frm_edit_path\', \'reload20\');">
-                                <v:after-data-bind>
-                                  <v:script><![CDATA[
-                  -- select distinct name_part (key_table, 0) as  Q_NAME from sys_keys
-                                    declare indx integer;
-                  indx :=0;
-                  (control as vspx_select_list).vsl_items:= vector();
-                  (control as vspx_select_list).vsl_item_values:= vector();
-                  (control as vspx_select_list).vsl_selected_inx :=0;
-      				    for select distinct (name_part (p_name, 0)) as Q_NAME from sys_procedures where P_TYPE = 3 order by 1
-                                    do {
-                    if( Q_NAME = self.browse_cat )
-                      (control as vspx_select_list).vsl_selected_inx :=indx;
-                    (control as vspx_select_list).vsl_items :=
-                      vector_concat ((control as vspx_select_list).vsl_items, vector(Q_NAME));
-                    (control as vspx_select_list).vsl_item_values :=
-                      vector_concat ((control as vspx_select_list).vsl_item_values, vector(Q_NAME));
-                                         indx := indx +1;
-                                       }
-                                  ]]></v:script>
-                                </v:after-data-bind>
-                              </v:select-list>
+                  <v:select-list name="sl_catalog20" xhtml_style="width:200" xhtml_onchange="javascript:doPost(\'frm_edit_path\', \'reload20\');">
+                    <v:after-data-bind>
+                      <v:script><![CDATA[
+                        -- select distinct name_part (key_table, 0) as  Q_NAME from sys_keys
+                        declare indx integer;
+                        indx :=0;
+                        (control as vspx_select_list).vsl_items:= vector();
+                        (control as vspx_select_list).vsl_item_values:= vector();
+                        (control as vspx_select_list).vsl_selected_inx :=0;
+            				    for select distinct (name_part (p_name, 0)) as Q_NAME from sys_procedures where P_TYPE = 3 order by 1
+                        do {
+                          if( Q_NAME = self.browse_cat )
+                            (control as vspx_select_list).vsl_selected_inx :=indx;
+                          (control as vspx_select_list).vsl_items :=
+                            vector_concat ((control as vspx_select_list).vsl_items, vector(Q_NAME));
+                          (control as vspx_select_list).vsl_item_values :=
+                            vector_concat ((control as vspx_select_list).vsl_item_values, vector(Q_NAME));
+                          indx := indx +1;
+                        }
+                      ]]></v:script>
+                    </v:after-data-bind>
+                  </v:select-list>
                 </td>
                 <td align="right">
                   <v:button action="simple" name="reload20" value="Update Display">
-                                <v:on-post>
-                                  <![CDATA[
-                  self.browse_cat :=  get_keyword('sl_catalog20', params, self.browse_cat);
-                  self.ds_add_modules.vc_data_bind(e);
-                                  ]]>
-                                </v:on-post>
-                              </v:button>
+                    <v:on-post>
+                      <![CDATA[
+                        self.browse_cat :=  get_keyword('sl_catalog20', params, self.browse_cat);
+                        self.ds_add_modules.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
                 </td>
               </tr>
             </table>
@@ -1341,7 +1341,7 @@
               <v:column name="P_NAME"/>
               <v:column name="STATE"/>
               <v:before-data-bind>
-                if (isnull(self.browse_cat) or self.browse_cat = '' or 
+                if (isnull(self.browse_cat) or self.browse_cat = '' or
                     not exists(select 1 from DB.DBA.SYS_PROCEDURES where P_TYPE = 3 and name_part (p_name, 0) = self.browse_cat) ) {
 			            self.browse_cat := (select top 1 name_part (p_name, 0) from DB.DBA.SYS_PROCEDURES where P_TYPE = 3);
 			          }
@@ -1370,13 +1370,13 @@
                     </tr>
                   </table>
                 </v:template>
-  
+
                 <v:template name="temp_ds_add_modules_browse" type="browse" name-to-remove="table" set-to-remove="both">
                   <table> <!-- dummy -->
   		              <tr class="<?V case when mod (control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
                       <td class="listing_col">
                         <input type="checkbox" name="cb_add_mod" value="<?V (control as vspx_row_template).te_rowset[0] ?>"/>
-                            </td>
+                      </td>
                       <td class="listing_col">
                         <v:label name="l_add_mod" value="--case when (control.vc_parent as vspx_row_template).te_rowset[1]
                                                                then 'Published' else '' end" format="%s"/>
@@ -1393,8 +1393,8 @@
                 </v:template>
               </v:template>
               <v:template name="temp_ds_add_modules_footer" type="simple" name-to-remove="table" set-to-remove="top">
-                        <table>
-                          <tr>
+                <table>
+                  <tr>
                     <td colspan="4"  class="listing_col_action">
               		    <vm:ds-navigation data-set="ds_add_modules"/>
                     </td>
@@ -1404,8 +1404,8 @@
   	      <?vsp http ('</div>'); ?>
                 <div class="listing_bot_ctl_grp">
             			<v:button name="bt_add_mod2" value="Publish Selected" action="simple">
-                                <v:on-post>
-                                  <![CDATA[
+            			  <v:on-post>
+            			    <![CDATA[
                       declare inx integer;
                       declare item varchar;
                       declare _params any;
@@ -1419,17 +1419,17 @@
                             self.ensure_soapuser();
 			                      exec(sprintf('GRANT EXECUTE ON %s TO %s',_params[inx + 1], self.soapuser));
                           }
-                                    }
+                        }
                         inx := inx + 2;
                       }
             			    self.sp_add := 0;
             			    self.opt_tab10.vc_data_bind (e);
-                                  ]]>
-                                </v:on-post>
-                              </v:button>
+            			    ]]>
+            			  </v:on-post>
+            			</v:button>
             			<v:button name="bt_revoke_mod" value="Un-Publish Selected" action="simple">
-                                <v:on-post>
-                                  <![CDATA[
+            			  <v:on-post>
+            			    <![CDATA[
                       declare inx integer;
                       declare item varchar;
                       declare _params any;
@@ -1449,14 +1449,14 @@
                       }
             			    self.sp_add := 0;
             			    self.opt_tab10.vc_data_bind (e);
-                                  ]]>
-                                </v:on-post>
-                              </v:button>
+            			    ]]>
+            			  </v:on-post>
+            			</v:button>
                 </div>
               </v:template>
             </v:data-set>
   	      </v:template>
-      		
+
       		<v:template type="simple" name="pub_udt2" enabled="--case when (self.sp_add <> 1 and self.sp_desc <> 1 and self.subtab = 3) then 1 else 0 end">
   	        <h3>Publish User Defined Types for user <v:label name="l_add_udt_user" value="--self.soapuser" format="%s"/></h3>
             <table class="ctl_grp">
@@ -1468,38 +1468,38 @@
                   Catalog
                 </td>
                 <td>
-            <v:select-list name="sl_catalog30" xhtml_style="width:200" xhtml_onchange="javascript:doPost(\'frm_edit_path\', \'reload30\');">
-              <v:after-data-bind>
-                <v:script><![CDATA[
-                  -- select distinct name_part (key_table, 0) as  Q_NAME from sys_keys
-                  declare indx integer;
-                  indx :=0;
-                  (control as vspx_select_list).vsl_items:= vector();
-                  (control as vspx_select_list).vsl_item_values:= vector();
-                  (control as vspx_select_list).vsl_selected_inx :=0;
-				          for select distinct (name_part (UT_NAME, 0)) as Q_NAME from SYS_USER_TYPES order by 1
-                  do {
-                    if( Q_NAME = self.browse_cat )
-                      (control as vspx_select_list).vsl_selected_inx :=indx;
-                    (control as vspx_select_list).vsl_items :=
-                      vector_concat ((control as vspx_select_list).vsl_items, vector(Q_NAME));
-                    (control as vspx_select_list).vsl_item_values :=
-                      vector_concat ((control as vspx_select_list).vsl_item_values, vector(Q_NAME));
-                    indx := indx +1;
-                  }
-                ]]></v:script>
-              </v:after-data-bind>
-            </v:select-list>
+                  <v:select-list name="sl_catalog30" xhtml_style="width:200" xhtml_onchange="javascript:doPost(\'frm_edit_path\', \'reload30\');">
+                    <v:after-data-bind>
+                      <v:script><![CDATA[
+                        -- select distinct name_part (key_table, 0) as  Q_NAME from sys_keys
+                        declare indx integer;
+                        indx :=0;
+                        (control as vspx_select_list).vsl_items:= vector();
+                        (control as vspx_select_list).vsl_item_values:= vector();
+                        (control as vspx_select_list).vsl_selected_inx :=0;
+      				          for select distinct (name_part (UT_NAME, 0)) as Q_NAME from SYS_USER_TYPES order by 1
+                        do {
+                          if( Q_NAME = self.browse_cat )
+                            (control as vspx_select_list).vsl_selected_inx :=indx;
+                          (control as vspx_select_list).vsl_items :=
+                            vector_concat ((control as vspx_select_list).vsl_items, vector(Q_NAME));
+                          (control as vspx_select_list).vsl_item_values :=
+                            vector_concat ((control as vspx_select_list).vsl_item_values, vector(Q_NAME));
+                          indx := indx +1;
+                        }
+                      ]]></v:script>
+                    </v:after-data-bind>
+                  </v:select-list>
                 </td>
                 <td align="right">
                   <v:button action="simple" name="reload30" value="Update Display">
-              <v:on-post>
-                <![CDATA[
-                  self.browse_cat :=  get_keyword('sl_catalog30', params, self.browse_cat);
-                  self.ds_add_udt.vc_data_bind(e);
-                ]]>
-              </v:on-post>
-            </v:button>
+                    <v:on-post>
+                      <![CDATA[
+                        self.browse_cat :=  get_keyword('sl_catalog30', params, self.browse_cat);
+                        self.ds_add_udt.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
                 </td>
               </tr>
             </table>
@@ -1509,7 +1509,7 @@
               <v:column name="UT_NAME"/>
               <v:column name="STATE"/>
               <v:before-data-bind>
-                if (isnull(self.browse_cat) or self.browse_cat = '' or 
+                if (isnull(self.browse_cat) or self.browse_cat = '' or
                     not exists(select 1 from SYS_USER_TYPES where name_part (UT_NAME, 0) = self.browse_cat) ) {
 			            self.browse_cat := (select top 1 name_part (UT_NAME, 0) from SYS_USER_TYPES order by 1);
 			          }
@@ -1535,10 +1535,10 @@
                   <table> <!-- dummy -->
                     <tr>
                       <td colspan="4" class="Attention">No user defined type</td>
-                          </tr>
-                        </table>
+                    </tr>
+                  </table>
                 </v:template>
-  
+
                 <v:template name="temp_ds_add_udt_browse" type="browse" name-to-remove="table" set-to-remove="both">
                   <table> <!-- dummy -->
   		              <tr class="<?V case when mod (control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
@@ -1557,23 +1557,23 @@
                         N/A
                       </td>
                     </tr>
-		  </table>
-		</v:template>
+                  </table>
+                </v:template>
               </v:template>
               <v:template name="temp_ds_add_udt_footer" type="simple" name-to-remove="table" set-to-remove="top">
                 <table>
-                    <tr>
+                  <tr>
                     <td colspan="4"  class="listing_col_action">
               		    <vm:ds-navigation data-set="ds_add_udt"/>
                     </td>
-                      <td/>
-                    </tr>
+                    <td/>
+                  </tr>
                 </table>
   	      <?vsp http ('</div>'); ?>
                 <div class="listing_bot_ctl_grp">
             			<v:button name="bt_add_udt2" value="Publish Selected" action="simple">
-                                <v:on-post>
-                                  <![CDATA[
+            			  <v:on-post>
+            			    <![CDATA[
                       declare inx integer;
                       declare item varchar;
                       declare _params any;
@@ -1590,11 +1590,11 @@
                 			      vho := self._httphost;
                 			      lho := self._host;
                 		        lp := self.lpath;
-                			      
+
                 			      if (not exists (select 1 from DB.DBA.SYS_SOAP_UDT_PUB where
                 				          SUP_CLASS = _params[inx + 1] and
                 				          SUP_HOST = vho and SUP_LHOST = lho and SUP_END_POINT = lp)
-                				        and 
+                				        and
                 				        exists (select 1 from DB.DBA.HTTP_PATH
 	                                where HP_LISTEN_HOST = lho and HP_HOST = vho and HP_LPATH = lp)
                 				      )
@@ -1603,17 +1603,17 @@
                 				        values (_params[inx + 1], vho, lho, lp);
                 				      }
                           }
-                                    }
+                        }
                         inx := inx + 2;
                       }
             			    self.sp_add := 0;
             			    self.opt_tab10.vc_data_bind (e);
-                                  ]]>
-                                </v:on-post>
-                              </v:button>
+            			    ]]>
+            			  </v:on-post>
+            			</v:button>
             			<v:button name="bt_revoke_udt" value="Un-Publish Selected" action="simple">
-                                <v:on-post>
-                                  <![CDATA[
+            			  <v:on-post>
+            			    <![CDATA[
                       declare inx integer;
                       declare item varchar;
                       declare _params any;
@@ -1633,9 +1633,9 @@
                       }
             			    self.sp_add := 0;
             			    self.opt_tab10.vc_data_bind (e);
-                                  ]]>
-                                </v:on-post>
-                              </v:button>
+            			    ]]>
+            			  </v:on-post>
+            			</v:button>
                 </div>
               </v:template>
             </v:data-set>
@@ -1672,7 +1672,7 @@
                     </tr>
                   </table>
                 </v:template>
-  
+
                 <v:template name="temp_ds_add_xml_browse" type="browse" name-to-remove="table" set-to-remove="both">
                   <table> <!-- dummy -->
   		              <tr class="<?V case when mod (control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
@@ -1698,9 +1698,9 @@
                   			    control.ufl_value := descr;
               			      </v:after-data-bind>
               			    </v:label>
-                            </td>
-                          </tr>
-                        </table>
+                      </td>
+                    </tr>
+                  </table>
                 </v:template>
               </v:template>
               <v:template name="temp_ds_add_xml_footer" type="simple" name-to-remove="table" set-to-remove="top">
@@ -1708,14 +1708,14 @@
                   <tr>
                     <td colspan="4"  class="listing_col_action">
               		    <vm:ds-navigation data-set="ds_add_xml"/>
-                      </td>
+                    </td>
                     <td/>
                   </tr>
                 </table>
   	      <?vsp http ('</div>'); ?>
                 <div class="listing_bot_ctl_grp">
             			<v:button name="bt_add_xml2" value="Publish Selected" action="simple">
-			  <v:on-post>
+            			  <v:on-post>
             			    <![CDATA[
                       declare inx integer;
                       declare item varchar;
@@ -1736,8 +1736,8 @@
             			    self.sp_add := 0;
             			    self.opt_tab10.vc_data_bind (e);
             			    ]]>
-			  </v:on-post>
-			</v:button>
+            			  </v:on-post>
+            			</v:button>
             			<v:button name="bt_revoke_xml" value="Un-Publish Selected" action="simple">
             			  <v:on-post>
             			    <![CDATA[
@@ -1754,9 +1754,9 @@
                           if (indx)
                           {
                             self.xml_grant_list := vector_concat(subseq(self.xml_grant_list,0,indx - 1),subseq(self.xml_grant_list,indx,length(self.xml_grant_list)));
-                            select blob_to_string (PROP_VALUE) into obj 
+                            select blob_to_string (PROP_VALUE) into obj
                               from WS.WS.SYS_DAV_PROP, WS.WS.SYS_DAV_RES
-                              where PROP_TYPE = 'R' and PROP_NAME = 'xml-soap-method' and RES_ID = PROP_PARENT_ID 
+                              where PROP_TYPE = 'R' and PROP_NAME = 'xml-soap-method' and RES_ID = PROP_PARENT_ID
                               and RES_FULL_PATH = _params[inx + 1];
                 			      exec(sprintf('REVOKE EXECUTE ON %s FROM %s',obj, self.soapuser));
                           }
@@ -1778,29 +1778,29 @@
                 </div>
               </v:template>
             </v:data-set>
-		</v:template>
+  	      </v:template>
 
         	<v:template type="simple" name="desc_xml2" enabled="--case when (self.sp_desc and self.subtab = 4) then 1 else 0 end">
-                  <table class="SubData" width="100%">
-                    <tr>
-		      <th colspan="2">Descriptions for Published XML Templates</th>
-		    </tr>
-		    <?vsp
-		      declare sps, descr, body, dav_pwd any;
-		      sps := self.xml_grant_list;
-		      dav_pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from SYS_USERS where U_ID = http_dav_uid ());
-		      foreach (any sp in sps) do
-		        {
-		           descr := coalesce (DAV_PROP_GET (sp, 'xml-sql-description', 'dav', dav_pwd), '');
+            <table class="SubData" width="100%">
+              <tr>
+		            <th colspan="2">Descriptions for Published XML Templates</th>
+		          </tr>
+      		    <?vsp
+      		      declare sps, descr, body, dav_pwd any;
+      		      sps := self.xml_grant_list;
+      		      dav_pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from SYS_USERS where U_ID = http_dav_uid ());
+      		      foreach (any sp in sps) do
+      		        {
+      		           descr := coalesce (DAV_PROP_GET (sp, 'xml-sql-description', 'dav', dav_pwd), '');
       		           if (not(isstring(descr)))
       		             descr := '';
-		    ?>
-		    <tr><td><?V sp ?></td><td width="80%"><input type="text" name="xdesc_<?V sp ?>" size="70" value="<?V descr ?>" /></td></tr>
-		    <?vsp
-		         }
+      		    ?>
+        		    <tr><td><?V sp ?></td><td width="80%"><input type="text" name="xdesc_<?V sp ?>" size="70" value="<?V descr ?>" /></td></tr>
+      		    <?vsp
+      		         }
 	            ?>
-		    <tr>
-		      <td colspan="2">
+		          <tr>
+		            <td colspan="2">
             			<v:button name="bt_desc_def12" value="Cancel" action="simple">
             			  <v:on-post><![CDATA[
             			    self.sp_desc := 0;
@@ -1808,46 +1808,46 @@
             			    ]]></v:on-post>
             			</v:button>
             			<v:button name="bt_desc_def11" value="Save Descriptions" action="simple">
-			  <v:on-post><![CDATA[
-			    declare sps, descr, body, tmp, stat, msg, ex_grants, ptxt, pmore, dav_pwd, exis any;
-			    sps := self.xml_grant_list;
-			    dav_pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from SYS_USERS where U_ID = http_dav_uid ());
-			    foreach (any sp in sps) do
-			      {
-			        descr := get_keyword ('xdesc_'||sp, e.ve_params);
-				if (length (descr))
-				  {
+            			  <v:on-post><![CDATA[
+            			    declare sps, descr, body, tmp, stat, msg, ex_grants, ptxt, pmore, dav_pwd, exis any;
+            			    sps := self.xml_grant_list;
+            			    dav_pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from SYS_USERS where U_ID = http_dav_uid ());
+            			    foreach (any sp in sps) do
+            			      {
+            			        descr := get_keyword ('xdesc_'||sp, e.ve_params);
+            				if (length (descr))
+            				  {
             				    DAV_PROP_REMOVE (sp, 'xml-sql-description', 'dav', dav_pwd);
-		                    exis := coalesce (DAV_PROP_GET (sp, 'xml-soap-method', 'dav', dav_pwd), '');
-				    if (isstring (exis) and __proc_exists (exis) is not null)
-				      {
-					whenever not found goto nfp;
-					select P_TEXT, P_MORE into ptxt, pmore
-					from SYS_PROCEDURES where P_NAME = exis;
+            		                    exis := coalesce (DAV_PROP_GET (sp, 'xml-soap-method', 'dav', dav_pwd), '');
+            				    if (isstring (exis) and __proc_exists (exis) is not null)
+            				      {
+            					whenever not found goto nfp;
+            					select P_TEXT, P_MORE into ptxt, pmore
+            					from SYS_PROCEDURES where P_NAME = exis;
 
-					body := coalesce (ptxt, blob_to_string (pmore));
-					tmp := sql_split_text (body);
-					body := tmp[0];
-					tmp := concat ('--##', descr,'\r\n', body);
-					if (ptxt)
-					  update SYS_PROCEDURES set P_TEXT = tmp where P_NAME = exis;
-					else
-					  update SYS_PROCEDURES set P_MORE = tmp where P_NAME = exis;
-					__proc_changed (exis);
-					nfp:;
-				      }
-				  }
-			      }
+            					body := coalesce (ptxt, blob_to_string (pmore));
+            					tmp := sql_split_text (body);
+            					body := tmp[0];
+            					tmp := concat ('--##', descr,'\r\n', body);
+            					if (ptxt)
+            					  update SYS_PROCEDURES set P_TEXT = tmp where P_NAME = exis;
+            					else
+            					  update SYS_PROCEDURES set P_MORE = tmp where P_NAME = exis;
+            					__proc_changed (exis);
+            					nfp:;
+            				      }
+            				  }
+            			      }
             			    self.sp_desc := 0;
             			    self.opt_tab10.vc_data_bind (e);
-			    ]]></v:on-post>
-			</v:button>
-		      </td>
-		    </tr>
-		  </table>
-		</v:template>
+          			    ]]></v:on-post>
+            			</v:button>
+		            </td>
+		          </tr>
+		        </table>
+		      </v:template>
 
-		</v:template>
+	      </v:template>
 
 	      </v:tab>
 		  <table>
@@ -1926,7 +1926,7 @@
 
                         if (self.vspuser = ' __none' or self.vspuser = '')
                           self.vspuser := NULL;
-                        
+
                         self.ensure_soapuser();
 
 			 self.security := self.s_authmethod.ufl_value;

@@ -1,27 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
- -  
+ -
  -  $Id$
- -  
+ -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
- -  
+ -
  -  Copyright (C) 1998-2006 OpenLink Software
- -  
+ -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
  -  Free Software Foundation; only version 2 of the License, dated June 1991.
- -  
+ -
  -  This program is distributed in the hope that it will be useful, but
  -  WITHOUT ANY WARRANTY; without even the implied warranty of
  -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  -  General Public License for more details.
- -  
+ -
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -  
- -  
+ -
+ -
 -->
 <v:page name="databases" decor="yacutia_decor.vspx"
         style="yacutia_style.xsl"
@@ -286,15 +286,14 @@ while (obj < objects)
         l_objects  := aref (linked_objects, obj + 1); -- tables
         n := length (l_objects);
         i := 0;
-
         while (i < n)
           {
-            _param := get_keyword (sprintf ('cbt_%s_%d',ds_name, i), params, '');
+	    _param := get_keyword (sprintf ('cbt_%s_%d',ds_name, i), params, '');
 
             if (_param <> '')
               {
                 _data := decode_base64(_param);
-                ul_tables := vector_concat (ul_tables, vector (_data, aref (l_objects, i + 1)));
+		ul_tables := vector_concat (ul_tables, vector (_data, aref (l_objects, i + 1)));
 		all_tbs := vector_concat (all_tbs, vector (_data));
 		tb_cnt := tb_cnt + 1;
               }
@@ -313,7 +312,7 @@ while (obj < objects)
             if (_param <> '')
             {
               _data := decode_base64 (_param);
-              ul_views := vector_concat (ul_views, vector (_data, aref (l_objects, i + 1)));
+	      ul_views := vector_concat (ul_views, vector (_data, aref (l_objects, i + 1)));
 	      v_cnt := v_cnt + 1;
             }
             i := i + 2;
@@ -330,7 +329,7 @@ while (obj < objects)
             if (_param <> '')
               {
                 _data := decode_base64 (_param);
-                ul_procs := vector_concat (ul_procs, vector (_data, aref (l_objects, i + 1)));
+		ul_procs := vector_concat (ul_procs, vector (_data, aref (l_objects, i + 1)));
 		p_cnt := p_cnt + 1;
               }
             i := i + 2;
