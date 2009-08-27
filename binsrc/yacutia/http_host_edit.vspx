@@ -1,27 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
- -  
+ -
  -  $Id$
- -  
+ -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
- -  
+ -
  -  Copyright (C) 1998-2006 OpenLink Software
- -  
+ -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
  -  Free Software Foundation; only version 2 of the License, dated June 1991.
- -  
+ -
  -  This program is distributed in the hope that it will be useful, but
  -  WITHOUT ANY WARRANTY; without even the implied warranty of
  -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  -  General Public License for more details.
- -  
+ -
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -  
- -  
+ -
+ -
 -->
 <v:page name="http_edit_path_page"
         decor="yacutia_decor.vspx"
@@ -65,8 +65,8 @@
 		  self.verify1 := cast (get_keyword ('https_verify', opts, 0) as varchar);
 	        }
 	    }
-	  if (self.stopit and 1 = http_listen_host (self.lhost, 2)) 
-	    http_listen_host (self.lhost, 1);  
+	  if (self.stopit and 1 = http_listen_host (self.lhost, 2))
+	    http_listen_host (self.lhost, 1);
 	  if (self.lhost = '*ini*')
             {
 	      self.lhost := server_http_port ();
@@ -255,10 +255,10 @@
 	        declare opts any;
       	        st := '00000';
 	        msg := '';
-	        VHOST_REMOVE (vhost_o, lhost_o, HP_LPATH, 0);
-		    opts := deserialize (HP_AUTH_OPTIONS);
-		    yac_set_ssl_key (self.key_list.ufl_value, self.verify.ufl_value, opts);
-		    HP_AUTH_OPTIONS := serialize (opts);
+		VHOST_REMOVE (vhost_o, lhost_o, HP_LPATH, 0);
+		opts := deserialize (HP_AUTH_OPTIONS);
+		yac_set_ssl_key (self.key_list.ufl_value, self.verify.ufl_value, opts);
+		HP_AUTH_OPTIONS := serialize (opts);
 		if (self.key_list.ufl_value <> 'none')
 		  {
 		    HP_SECURITY := 'SSL';
@@ -283,8 +283,8 @@
 		    return;
                   }
 	     }
-	    http_listen_host (lhost, 0, ssl_opts);  
-	    self.stopit := 0; 
+	    http_listen_host (lhost, 0, ssl_opts);
+	    self.stopit := 0;
 	    commit work;
 	    same_host:
             self.vc_redirect (sprintf ('http_serv_mgmt.vspx'));

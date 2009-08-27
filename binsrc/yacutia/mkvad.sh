@@ -5,26 +5,26 @@
 #  $Id$
 #
 #  Creates a vad package for Virtuoso Conductor
-#  
+#
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
-#  
+#
 #  Copyright (C) 1998-2006 OpenLink Software
-#  
+#
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
 #  Free Software Foundation; only version 2 of the License, dated June 1991.
-#  
+#
 #  This program is distributed in the hope that it will be useful, but
 #  WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 #  General Public License for more details.
-#  
+#
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-#  
-#  
+#
+#
 
 # ----------------------------------------------------------------------
 #  Fix issues with LOCALE
@@ -77,7 +77,7 @@ then
     VOS=1
 fi
 
-if [ "z$SERVER" = "z" ]  
+if [ "z$SERVER" = "z" ]
 then
     if [ "x$HOST_OS" != "x" ]
     then
@@ -151,7 +151,7 @@ START_SERVER()
   timeout=120
 
   ECHO "Starting Virtuoso server ..."
-  if [ "z$HOST_OS" != "z" ] 
+  if [ "z$HOST_OS" != "z" ]
   then
       "$SERVER" +foreground &
       else
@@ -266,10 +266,10 @@ VERSION_INIT()
       then
 	  VERSION=`cat vad_version`
       else
-        LOG "The vad_version does not exist, please verify your checkout"	 
+        LOG "The vad_version does not exist, please verify your checkout"
 	exit 1
       fi
-  else  
+  else
   rm -f version.tmp
       for i in `find . -name 'Entries' | grep -v toolkit`; do
         cat "$i" | grep "^[^D].*" | cut -f 3 -d "/" | sed -e "s/1\.//g" >> version.tmp
@@ -379,12 +379,12 @@ rm -f vad.db vad.trx vad.log virtuoso.ini virtuoso.tdb
 
 BANNER "CREATING VAD PACKAGE FOR VIRTUOSO CONDUCTOR (mkvad.sh)"
 
-$ISQL -? 2>/dev/null 1>/dev/null 
+$ISQL -? 2>/dev/null 1>/dev/null
 if [ $? -eq 127 ] ; then
     LOG "***ABORTED: CONDUCTOR PACKAGING, isql is not available"
     exit 1
 fi
-$SERVER -? 2>/dev/null 1>/dev/null 
+$SERVER -? 2>/dev/null 1>/dev/null
 if [ $? -eq 127 ] ; then
     LOG "***ABORTED: CONDUCTOR PACKAGING, server is not available"
     exit 1

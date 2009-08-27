@@ -54,12 +54,12 @@
 	      <td><?V url ?></td>
 	      <td><v:url name="u1" value="Delete" url="--sprintf ('rdf_schemas.vspx?del=%U', url)" render-only="1"/></td>
 	  </tr>
-	  <?vsp  
+	  <?vsp
 	     }
 	  ?>
          </table>
          <br/>
-	 Schema IRI: <v:text name="imp" value="" xhtml_size="100" /> 
+	 Schema IRI: <v:text name="imp" value="" xhtml_size="100" />
 	 <br/>
 	 <v:button action="simple" name="imp_bt" value="Import">
 	     <v:on-post><![CDATA[
@@ -81,7 +81,7 @@
 		 }
 		 RDF_GRAPH_GROUP_INS ('http://www.openlinksw.com/schemas/virtrdf#schemas', self.imp.ufl_value);
 		 ]]></v:on-post>
-	 </v:button> 
+	 </v:button>
       </v:form>
   <table style="display:none"><tr><td>$Id$</td></tr></table>
   </vm:pagebody>

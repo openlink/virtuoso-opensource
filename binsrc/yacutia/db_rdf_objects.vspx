@@ -64,21 +64,21 @@
 	      <td>Select Qualifier</td>
 	      <td>
 		  <v:data-list name="qual" sql="select distinct name_part (KEY_TABLE, 0) as qual from SYS_KEYS where KEY_IS_MAIN = 1 and KEY_MIGRATE_TO is NULL" key-column="qual" value-column="qual" defvalue="--self.browse_cat" auto-submit="1">
-		  <v:on-post>
+		      <v:on-post>
 			  if (e.ve_initiator is not null and e.ve_initiator.vc_name = control.vc_name)
-			   {
+			    {
 			       self.browse_cat := control.ufl_value;
   			       self.ds_tables.vc_data_bind (e);
-			   }
-		  </v:on-post>
+			    }
+		      </v:on-post>
 		  </v:data-list>
-	  </td>
+	      </td>
       </tr>
-	  <tr>
+      <tr>
 	      <td>Base URL</td>
 	      <td><?vsp http ('http://' || cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost') || '/'); ?>
 		  <input type="text" name="base_start" value="<?V self.base_start ?>"/></td>
-	  </tr>
+      </tr>
       <!--tr>
 	      <td>Generate Statistics</td>
 	      <td>
@@ -135,9 +135,9 @@
             </v:template>
 	  </v:data-set>
       </table>
-	</div>
-        </td>
-      </tr>
+      </div>
+  </td>
+  </tr>
       <tr>
 	  <td class="listing_col_action" colspan="2">
 	      <!--v:button action="simple" value="Generate Mappings" name="create_basic">
@@ -302,7 +302,7 @@
 
 	      </v:button>
 
-	</td>
+	  </td>
       </tr>
     </table>
    </v:form>

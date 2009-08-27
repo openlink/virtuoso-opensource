@@ -1,27 +1,27 @@
 <?xml version="1.0"?>
 <!--
- -  
+ -
  -  $Id$
- -  
+ -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
- -  
+ -
  -  Copyright (C) 1998-2006 OpenLink Software
- -  
+ -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
  -  Free Software Foundation; only version 2 of the License, dated June 1991.
- -  
+ -
  -  This program is distributed in the hope that it will be useful, but
  -  WITHOUT ANY WARRANTY; without even the implied warranty of
  -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  -  General Public License for more details.
- -  
+ -
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -  
- -  
+ -
+ -
 -->
 <v:page name="db_backup_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl"
    fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
@@ -63,6 +63,7 @@
     <v:variable name="sched_full" persist="0" type="integer" default="NULL" />
     <v:variable name="sched_prefix" persist="0" type="varchar" default="''" />
     <v:variable name="sched_npages" persist="0" type="integer" default="10000" />
+    <v:variable name="cl_op" persist="1" type="integer" default="0" />
     <v:variable name="row_count" persist="temp" type="integer" default="1" />
 
     <vm:menu>
@@ -84,9 +85,8 @@
 
           declare patha any;
           patha := null;
-          for select bd_dir from DB.DBA.SYS_BACKUP_DIRS
-            order by bd_id
-          do {
+	  for select bd_dir from DB.DBA.SYS_BACKUP_DIRS order by bd_id do
+	  {
             if (patha is null)
               patha := vector (bd_dir);
             else
@@ -130,14 +130,15 @@
             }
           else
             {
+              declare regexp, sql_str varchar;
               self.sched_start := aref (sched_info, 0);
               self.sched_interval := aref (sched_info, 1);
               self.sched_last := aref (sched_info, 2);
-              declare regexp varchar;
-              regexp := 'BACKUP_MAKE *\\(\'(.*)\',(.*),(.*)\\)';
-              self.sched_prefix := regexp_substr(regexp,aref (sched_info, 3), 1);
-              self.sched_npages := cast(regexp_substr(regexp,aref (sched_info, 3), 2) as integer);
-              self.sched_full   := cast(regexp_substr(regexp,aref (sched_info, 3), 3) as integer);
+	      regexp := 'BACKUP_MAKE(_CL)? *\\(\'(.*)\',(.*),(.*)\\)';
+	      sql_str := sched_info[3];
+              self.sched_prefix := regexp_substr(regexp,sql_str, 2);
+              self.sched_npages := cast(regexp_substr(regexp, sql_str, 3) as integer);
+              self.sched_full   := cast(regexp_substr(regexp, sql_str, 4) as integer);
 
               self.prefix := self.sched_prefix;
             }
@@ -174,9 +175,21 @@
             }
           ?>
           <v:form name="form3" type="simple" method="POST" action="db_backup.vspx">
+	      <v:on-post><![CDATA[
+		  if (e.ve_is_post and e.ve_initiator = self.cl_bkp)
+		    {
+		      self.cl_op := self.cl_bkp.ufl_selected;
+		    }
+		  ]]></v:on-post>
             <table>
               <tr valign="top">
                 <td>
+		    <div>
+			<?vsp if (sys_stat ('cl_run_local_only') <> 1) { ?>
+			<v:check-box name="cl_bkp" value="1" initial-checked="-- case when sys_stat ('cl_run_local_only') <> 1 and cl_this_host () = 1 then 1 else 0 end" auto-submit="1"/>
+			&#160; Cluster Operation
+			<?vsp } ?>
+		    </div>
                   <table class="ctl_grp" border="0" cellspacing="0" cellpadding="3">
                     <tr class="ctl_grp_title">
                       <th colspan="2">Current Backup Info</th>
@@ -314,6 +327,18 @@
 			declare dir1 any;
 			if (not self.vc_is_valid)
 			  return;
+			-- clsuter operation
+			if (self.cl_op and sys_stat ('cl_run_local_only') <> 1)
+                          {
+			     declare exit handler for sqlstate '22023' {
+			        self.vc_error_message :=
+			     	   sprintf ('The directory %s does not exists on all cluster nodes, please select correct path.', self.t_dir.ufl_value);
+				self.vc_is_valid := 0;
+				return;
+			     };
+			     cl_exec ('select case when file_stat (?) = 0 then signal (\'22023\', \'No such directory\') else \'\' end',
+			     	vector (self.t_dir.ufl_value));
+			  }
 			if (not isstring (file_stat (self.t_dir.ufl_value)))
 			  {
 			    self.vc_error_message := 'Non-existing directory, please select correct path.';
@@ -411,17 +436,26 @@
                         http_flush();
                         self.p_mode := '1';
 
-                        self.npages := backup_online( prefix, npages, 0, self.backup_patha );
+			if (self.cl_op)
+			  {
+			    cl_exec ('backup_online (?, ?, ?, ?)', vector ( prefix, npages, 0, self.backup_patha ));
+			    self.npages := npages;
+			  }
+			else
+			  self.npages := backup_online( prefix, npages, 0, self.backup_patha );
                         self.vc_data_bind(e);
                       ]]></v:script>
                     </v:on-post>
                   </v:button>
                   <v:button name="sched_set" action="simple" value="Set Schedule">
                     <v:on-post><v:script><![CDATA[
+                        declare _sql, pname varchar;
 			if (not self.vc_is_valid)
 			  return;
-                        declare _sql varchar;
-                        _sql := sprintf ('DB.DBA.BACKUP_MAKE (''%s'', %d, %d)', self.t_backup_prefix.ufl_value, cast(self.t_npages.ufl_value as integer),0);
+                        pname := 'DB.DBA.BACKUP_MAKE';
+			if (self.cl_op)
+			  pname := 'DB.DBA.BACKUP_MAKE_CL';
+                        _sql := sprintf ('%s (''%s'', %d, %d)', pname, self.t_backup_prefix.ufl_value, cast(self.t_npages.ufl_value as integer),0);
 
                         INSERT REPLACING DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME,SE_START,SE_INTERVAL,SE_SQL)
                           VALUES (DB.DBA.BACKUP_SCHED_NAME(),self.t_sched_start.ufl_value,cast(self.t_sched_interval.ufl_value as integer) * 60,_sql);
@@ -432,7 +466,7 @@
                   <v:button name="dirs_clear" action="simple" value="Clear Backup">
                     <v:on-post>
                       <v:script><![CDATA[
-		        self.vc_redirect (sprintf ('db_backup_clear.vspx?pref=%U', self.prefix));
+		        self.vc_redirect (sprintf ('db_backup_clear.vspx?pref=%U&cl_op=%d', self.prefix, self.cl_op));
                       ]]></v:script>
                     </v:on-post>
                   </v:button>

@@ -68,7 +68,7 @@
                if (self.db_object_to_process is null)
 	         self.db_object_to_process := vector (get_keyword('name', self.vc_event.ve_params));
                else
-	       self.db_object_to_process := deserialize(decode_base64(self.db_object_to_process));
+	         self.db_object_to_process := deserialize(decode_base64(self.db_object_to_process));
 	    }
 
 	  _base_url := get_keyword('host', self.vc_event.ve_params, NULL);
@@ -121,7 +121,7 @@
 	      ?>
 	      <tr><td><?V _row[0] ?></td><td><?V _row[1] ?></td></tr>
 	      <?vsp
-	    }
+	             }
 	           }
 	        }
 	      ?>
@@ -177,7 +177,7 @@
 	      self.exec.vc_enabled := 1;
 	     self.b_loc_save.vc_enabled := self.exec.vc_enabled;
 	    ]]></v:on-post>
-      </v:button>
+    </v:button>
 </td>
   </tr>
      <?vsp if (self.text_e = 0) { ?>
@@ -225,7 +225,7 @@
     </tr>
 
    <?vsp } ?>
-      </v:form>
+   </v:form>
 
         <v:template type="simple" name="sc_1" enabled="0">
           <tr>

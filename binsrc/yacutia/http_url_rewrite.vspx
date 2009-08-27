@@ -346,8 +346,8 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_item)
 			      self.tab_idx := 1;
 			    }
 			  ]]></v:after-data-bind>
-		  <label for="dest1">Destination Path format</label>
-		  <v:text name="dest1" xhtml_id="dest1" error-glyph="*" value="" xhtml_size="110" default_value="--concat (rtrim (self.lpath, '/'), '/$1')"/>
+		      <label for="dest1">Destination Path format</label>
+		      <v:text name="dest1" xhtml_id="dest1" error-glyph="*" value="" xhtml_size="110" default_value="--concat (rtrim (self.lpath, '/'), '/$1')"/>
 		      <v:button action="simple" name="raw_bt" value="SPARQL">
 			  <v:on-post><![CDATA[
 			      self.set_spq ();
@@ -499,8 +499,8 @@ if (self.edit_item is null)
     {
       declare dummy int;
       whenever not found goto finish_r_cnt;
-  nrule := nrule + 1;
-  rule_name := sprintf ('http_rule_%d', nrule);
+      nrule := nrule + 1;
+      rule_name := sprintf ('http_rule_%d', nrule);
       select 1 into dummy from URL_REWRITE_RULE where URR_RULE = rule_name;
     }
   finish_r_cnt:;

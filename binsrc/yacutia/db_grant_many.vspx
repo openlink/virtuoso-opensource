@@ -1,27 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
- -  
+ -
  -  $Id$
- -  
+ -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
- -  
+ -
  -  Copyright (C) 1998-2006 OpenLink Software
- -  
+ -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
  -  Free Software Foundation; only version 2 of the License, dated June 1991.
- -  
+ -
  -  This program is distributed in the hope that it will be useful, but
  -  WITHOUT ANY WARRANTY; without even the implied warranty of
  -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  -  General Public License for more details.
- -  
+ -
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -  
- -  
+ -
+ -
 -->
 <v:page name="db_grant_many"
   decor="yacutia_decor.vspx"
@@ -45,7 +45,7 @@
       <v:after-data-bind><v:script><![CDATA[
         if (self.db_object_to_grant[0] in ('table','view'))
           self.type := 1;
-        else 
+        else
           self.type := 0;
       ]]></v:script></v:after-data-bind>
         <script type="text/javascript">
@@ -105,15 +105,15 @@
               </v:button>
 	      <v:button action="simple" name="exec" value="Execute">
 		<v:on-post><![CDATA[
-		
+
         declare priv_grant, priv_revoke varchar;
         declare name varchar;
         declare _uid integer;
-        
+
         name := self.dl_user.ufl_value;
-        
+
         _uid := (SELECT U_ID FROM DB.DBA.SYS_USERS WHERE U_NAME = name);
-        
+
     	  declare i, l int;
     		declare t, stat, msg, errs, dgc any;
     		declare _sql varchar;
@@ -121,9 +121,9 @@
     		t := self.db_object_to_grant[0];
     		l := length (self.db_object_to_grant);
     		errs := vector ();
-    		
+
     		declare gdg, gdr char(5);
-    		
+
     		gdg := gdr := '00000';
 
         if (get_keyword( 'cb_perm_select_g', params, '0') = '1') gdg[0] := 1;
@@ -131,35 +131,35 @@
         if (get_keyword( 'cb_perm_update_g', params, '0') = '1') gdg[2] := 1;
         if (get_keyword( 'cb_perm_delete_g', params, '0') = '1') gdg[3] := 1;
         if (get_keyword( 'cb_perm_execute_g', params, '0') = '1') gdg[4] := 1;
-  
+
         if (get_keyword( 'cb_perm_select_r', params, '0') = '1') gdr[0] := 1;
         if (get_keyword( 'cb_perm_insert_r', params, '0') = '1') gdr[1] := 1;
         if (get_keyword( 'cb_perm_update_r', params, '0') = '1') gdr[2] := 1;
         if (get_keyword( 'cb_perm_delete_r', params, '0') = '1') gdr[3] := 1;
         if (get_keyword( 'cb_perm_execute_r', params, '0') = '1') gdr[4] := 1;
-	      
+
 	      for (i := 1; i < l; i := i + 1)
 		    {
           priv_grant := ''; priv_revoke := '';
-          
+
           dgc := direct_grants(self.db_object_to_grant[i],_uid);
-    
+
           if( not(1 = bit_and(1, dgc)) and gdg[0] = 1 ) priv_grant := concat( priv_grant, 'SELECT,');
           if(     1 = bit_and(1, dgc)  and gdr[0] = 1 ) priv_revoke := concat( priv_revoke, 'SELECT,');
-            
+
           if( not(4 = bit_and(4, dgc)) and gdg[1] = 1 ) priv_grant := concat( priv_grant, 'INSERT,');
           if(     4 = bit_and(4, dgc)  and gdr[1] = 1 ) priv_revoke := concat( priv_revoke, 'INSERT,');
-            
+
           if( not(2 = bit_and(2, dgc)) and gdg[2] = 1 ) priv_grant := concat( priv_grant, 'UPDATE,');
           if(     2 = bit_and(2, dgc)  and gdr[2] = 1 ) priv_revoke := concat( priv_revoke, 'UPDATE,');
-            
+
           if( not(8 = bit_and(8, dgc)) and gdg[3] = 1 ) priv_grant := concat( priv_grant, 'DELETE,');
           if(     8 = bit_and(8, dgc)  and gdr[3] = 1 ) priv_revoke := concat( priv_revoke, 'DELETE,');
-            
+
           if(not(32 = bit_and(32, dgc)) and gdg[4] = 1 ) priv_grant := concat( priv_grant, 'EXECUTE,');
           if(    32 = bit_and(32, dgc)  and gdr[4] = 1 ) priv_revoke := concat( priv_revoke, 'EXECUTE,');
 
-          if( length(priv_revoke) > 0 ) 
+          if( length(priv_revoke) > 0 )
           {
   		      stat := '00000';
             _sql := 'REVOKE ' || rtrim(priv_revoke,',') || ' ON ' || self.db_object_to_grant[i] || ' FROM "' || name || '"';
@@ -167,7 +167,7 @@
   		      if (stat <> '00000')
   		        errs := vector_concat (errs, vector (vector (_sql, stat, msg)));
           }
-          
+
           if( length(priv_grant) > 0 ) {
   		      stat := '00000';
   		      _sql := 'GRANT ' || rtrim(priv_grant,',') || ' ON ' || self.db_object_to_grant[i] || ' TO "' || name || '"';

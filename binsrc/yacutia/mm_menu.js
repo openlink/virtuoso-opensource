@@ -11,7 +11,7 @@
  * software provided that this copyright notice appears on all copies.
  * This software is provided "AS IS," without a warranty of any kind.
  */
-function Menu(label, mw, mh, fnt, fs, fclr, fhclr, bg, bgh, halgn, valgn, pad, space, to, sx, sy, srel, opq, vert, idt, aw, ah) 
+function Menu(label, mw, mh, fnt, fs, fclr, fhclr, bg, bgh, halgn, valgn, pad, space, to, sx, sy, srel, opq, vert, idt, aw, ah)
 {
 	this.version = "020320 [Menu; mm_menu.js]";
 	this.type = "Menu";
@@ -87,11 +87,11 @@ function writeMenus(container) {
 	}
 
 	window.mmHideMenuTimer = null;
-	if (!container) return;	
-	window.triedToWriteMenus = true; 
+	if (!container) return;
+	window.triedToWriteMenus = true;
 	container.isContainer = true;
 	container.menus = new Array();
-	for (var i=0; i<window.menus.length; i++) 
+	for (var i=0; i<window.menus.length; i++)
 		container.menus[i] = window.menus[i];
 	window.menus.length = 0;
 	var countMenus = 0;
@@ -137,7 +137,7 @@ function writeMenus(container) {
 			if( menu.fontFamily != '' ) itemProps += 'font-family:' + menu.fontFamily +';';
 			itemProps += 'font-weight:' + menu.fontWeight + ';fontSize:' + menu.fontSize + 'px;';
 			if (menu.fontStyle) itemProps += 'font-style:' + menu.fontStyle + ';';
-			if (document.all || window.mmIsOpera) 
+			if (document.all || window.mmIsOpera)
 				itemProps += 'font-size:' + menu.fontSize + 'px;" onmouseover="onMenuItemOver(null,this);" onclick="onMenuItemAction(null,this);';
 			else if (!document.layers) {
 				itemProps += 'font-size:' + menu.fontSize + 'px;';
@@ -171,7 +171,7 @@ function writeMenus(container) {
 				dTag = "";
 				dClose = "";
 			}
-			
+
 			if(document.all && !window.mmIsOpera) {
 				item = '<div align="' + menu.menuItemHAlign + '">' + item + '</div>';
 			} else if (lrs) {
@@ -181,28 +181,28 @@ function writeMenus(container) {
 				if( menu.menuItemHAlign != 'left' ) {
 					if(window.mmIsOpera) {
 						var operaWidth = menu.menuItemHAlign == 'center' ? -(menu.menuWidth-2*menu.menuItemPadding) : (menu.menuWidth-6*menu.menuItemPadding);
-						hitem = '<div id="menuItemHilite' + countItems + 'Shim" style="position:absolute;top:1px;left:' + menu.menuItemPadding + 'px;width:' + operaWidth + 'px;text-align:' 
+						hitem = '<div id="menuItemHilite' + countItems + 'Shim" style="position:absolute;top:1px;left:' + menu.menuItemPadding + 'px;width:' + operaWidth + 'px;text-align:'
 							+ menu.menuItemHAlign + ';visibility:visible;">' + item + '</div>';
-						item = '<div id="menuItemText' + countItems + 'Shim" style="position:absolute;top:1px;left:' + menu.menuItemPadding + 'px;width:' + operaWidth + 'px;text-align:' 
+						item = '<div id="menuItemText' + countItems + 'Shim" style="position:absolute;top:1px;left:' + menu.menuItemPadding + 'px;width:' + operaWidth + 'px;text-align:'
 							+ menu.menuItemHAlign + ';visibility:visible;">' + item + '</div>';
 					} else {
-						hitem = '<div id="menuItemHilite' + countItems + 'Shim" style="position:absolute;top:1px;left:1px;right:-' + (left+menu.menuWidth-3*menu.menuItemPadding) + 'px;text-align:' 
+						hitem = '<div id="menuItemHilite' + countItems + 'Shim" style="position:absolute;top:1px;left:1px;right:-' + (left+menu.menuWidth-3*menu.menuItemPadding) + 'px;text-align:'
 							+ menu.menuItemHAlign + ';visibility:visible;">' + item + '</div>';
-						item = '<div id="menuItemText' + countItems + 'Shim" style="position:absolute;top:1px;left:1px;right:-' + (left+menu.menuWidth-3*menu.menuItemPadding) + 'px;text-align:' 
+						item = '<div id="menuItemText' + countItems + 'Shim" style="position:absolute;top:1px;left:1px;right:-' + (left+menu.menuWidth-3*menu.menuItemPadding) + 'px;text-align:'
 							+ menu.menuItemHAlign + ';visibility:visible;">' + item + '</div>';
 					}
 				} else hitem = null;
 			}
 			if(document.all && !window.mmIsOpera) item = '<div id="menuItemShim' + countItems + '" style="position:absolute;left:0px;top:0px;">' + item + '</div>';
 			var dText	= '<div id="menuItemText'+ countItems +'" style="' + textProps + 'color:'+ menu.fontColor +';">'+ item +'&nbsp</div>\n'
-						+ '<div id="menuItemHilite'+ countItems +'" style="' + textProps + 'color:'+ menu.fontColorHilite +';visibility:hidden;">' 
+						+ '<div id="menuItemHilite'+ countItems +'" style="' + textProps + 'color:'+ menu.fontColorHilite +';visibility:hidden;">'
 						+ (hitem||item) +'&nbsp</div>';
 			if (childMenu) content += ( dTag + dText + '<div id="childMenu'+ countItems +'" style="position:absolute;left:0px;top:3px;"><img src="'+ menu.childMenuIcon +'"></div>\n' + dClose);
 			else content += ( dTag + dText + dClose);
 			if (lrs) {
 				l.document.open("text/html");
 				l.document.writeln(content);
-				l.document.close();	
+				l.document.close();
 				content = '';
 				theStat += "-";
 				tsc++;
@@ -212,21 +212,21 @@ function writeMenus(container) {
 				}
 				status = theStat;
 			}
-			countItems++;  
+			countItems++;
 		}
 		if (lrs) {
 			var focusItem = new Layer(100, body);
 			focusItem.visiblity="hidden";
 			focusItem.document.open("text/html");
 			focusItem.document.writeln("&nbsp;");
-			focusItem.document.close();	
+			focusItem.document.close();
 		} else {
 		  content += '	  <div id="focusItem'+ countMenus +'" style="position:absolute;left:0px;top:0px;visibility:hide;" onclick="onMenuItemAction(null,this);">&nbsp;</div>\n';
 		  content += '   </div>\n  </div>\n</div>\n';
 		}
 		i=x;
 	}
-	if (document.layers) {		
+	if (document.layers) {
 		container.clip.width = window.innerWidth;
 		container.clip.height = window.innerHeight;
 		container.onmouseout = mouseoutMenu;
@@ -296,7 +296,7 @@ function writeMenus(container) {
 		} else {
 			container.document.open("text/html");
 			container.document.writeln(content);
-			container.document.close();	
+			container.document.close();
 		}
 		if (!FIND("menuLayer0")) return;
 		var menuCount = 0;
@@ -341,7 +341,7 @@ function writeMenus(container) {
 						l.hiliteShim.style.pixelWidth = menu.menuItemWidth - 2*menu.menuItemPadding - menu.menuItemIndent;
 						l.hiliteShim.style.width = l.hiliteShim.style.pixelWidth;
 						l.textShim.style.pixelWidth = menu.menuItemWidth - 2*menu.menuItemPadding - menu.menuItemIndent;
-						l.textShim.style.width = l.textShim.style.pixelWidth;	
+						l.textShim.style.width = l.textShim.style.pixelWidth;
 					}
 				} else {
 					l.style.pixelWidth = menu.menuItemWidth;
@@ -460,7 +460,7 @@ function onMenuItemOver(e, l) {
 			if (a.hilite) a.hilite.style.visibility = "hidden";
 			if (a.hiliteShim) a.hiliteShim.style.visibility = "inherit";
 			if (a.Menu.bgImageUp) a.style.background = "url(" + a.Menu.bgImageUp +")";;
-		} 
+		}
 		l.style.backgroundColor = l.menuHiliteBgColor;
 		l.zIndex = 1;
 		if (l.Menu.bgImageOver) l.style.background = "url(" + l.Menu.bgImageOver +")";
@@ -521,8 +521,8 @@ function MM_showMenu(menu, x, y, child, imgname) {
             x = -40;
             y = 200;
             child = null;
-	    imgname = 'image1'; 
-	  } 
+	    imgname = 'image1';
+	  }
 	MM_clearTimeout();
 	if (menu) {
 		var obj = FIND(imgname) || document.images[imgname] || document.links[imgname] || document.anchors[imgname];
@@ -540,7 +540,7 @@ function MM_showMenu(menu, x, y, child, imgname) {
 			var l = child;
 		}
 		if (!l) return;
-		for (var i=0; i<l.layers.length; i++) { 			   
+		for (var i=0; i<l.layers.length; i++) {
 			if (!l.layers[i].isHilite) l.layers[i].visibility = "inherit";
 			if (l.layers[i].document.layers.length > 0) MM_showMenu(null, "relative", "relative", l.layers[i]);
 		}
@@ -559,7 +559,7 @@ function MM_showMenu(menu, x, y, child, imgname) {
 		l.visibility = "inherit";
 		if (l.Menu) l.Menu.container.visibility = "inherit";
 	} else if (FIND("menuItem0")) {
-		var l = menu.menuLayer || menu;	
+		var l = menu.menuLayer || menu;
 		hideActiveMenus();
 		if (typeof(l) == "string") l = FIND(l);
 		window.ActiveMenu = l;
@@ -602,7 +602,7 @@ function getExplorerVersion() {
 	var i = tempVers.indexOf( 'MSIE ' );
 	if( i >= 0 ) {
 		tempVers = tempVers.substring( i+5 );
-		ieVers = parseFloat( tempVers ); 
+		ieVers = parseFloat( tempVers );
 	}
 	return ieVers;
 }
@@ -672,7 +672,7 @@ function hideChildMenu(hcmLayer) {
 				if( l.Menu.submenuRelativeToItem ) childMenu.top += l.top + l.parentLayer.top;
 				childMenu.left = l.parentLayer.left + l.parentLayer.clip.width - (2*l.Menu.menuBorder) + l.Menu.menuLayer.left + l.Menu.submenuXOffset;
 			} else {
-				childMenu.top += l.top + l.parentLayer.top;	
+				childMenu.top += l.top + l.parentLayer.top;
 				if( l.Menu.submenuRelativeToItem ) childMenu.left = l.Menu.menuLayer.left + l.left + l.clip.width + (2*l.Menu.menuBorder) + l.Menu.submenuXOffset;
 				else childMenu.left = l.parentLayer.left + l.parentLayer.clip.width - (2*l.Menu.menuBorder) + l.Menu.menuLayer.left + l.Menu.submenuXOffset;
 			}
@@ -739,7 +739,7 @@ function hideActiveMenus() {
 	window.activeMenus.length = 0;
 }
 
-function moveXbySlicePos (x, img) { 
+function moveXbySlicePos (x, img) {
 	if (!document.layers) {
 		var onWindows = navigator.platform ? navigator.platform == "Win32" : false;
 		var macIE45 = document.all && !onWindows && getExplorerVersion() == 4.5;
@@ -766,7 +766,7 @@ function moveYbySlicePos (y, img) {
 			if( (par.offsetTop != lastOffset) && par.offsetTop ) y += parseInt(par.offsetTop);
 			if( par.offsetTop != 0 ) lastOffset = par.offsetTop;
 			par = macIE45 ? par.parentElement : par.offsetParent;
-		}		
+		}
 	} else if (img.y >= 0) y += img.y;
 	return y;
 }

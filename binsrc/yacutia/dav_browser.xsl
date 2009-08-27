@@ -1,27 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
- -  
+ -
  -  $Id$
  -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
- -  
+ -
  -  Copyright (C) 1998-2006 OpenLink Software
- -  
+ -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
  -  Free Software Foundation; only version 2 of the License, dated June 1991.
- -  
+ -
  -  This program is distributed in the hope that it will be useful, but
  -  WITHOUT ANY WARRANTY; without even the implied warranty of
  -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  -  General Public License for more details.
- -  
+ -
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -  
- -  
+ -
+ -
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 version="1.0"
@@ -42,7 +42,7 @@
                          browser-options="ses_type={@ses_type}&amp;list_type={@list_type}&amp;flt={@flt}&amp;flt_pat={@flt_pat}&amp;path={@path}&amp;browse_type={@browse_type}&amp;style_css={@style_css}&amp;w_title={@w_title}&amp;title={@title}&amp;advisory={@advisory}&amp;lang={@lang}&amp;view={@view}"/>
       </xsl:when>
       <xsl:when test="not @browse_type='standalone' and @render='popup' and @return_box">
-    <v:browse-button value="Browse..."
+        <v:browse-button value="Browse..."
                          selector="popup_browser.vspx"
                          child-window-options="scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800 " browser-options="ses_type={@ses_type}&amp;list_type={@list_type}&amp;flt={@flt}&amp;flt_pat={@flt_pat}&amp;path={@path}&amp;browse_type={@browse_type}&amp;style_css={@style_css}&amp;w_title={@w_title}&amp;title={@title}&amp;advisory={@advisory}&amp;lang={@lang}&amp;retname={@return_box}&amp;view={@view}">
           <v:field name="{@return_box}" />
@@ -50,75 +50,75 @@
       </xsl:when>
       <xsl:otherwise>
         <v:template name="select_template" type="simple" enabled="-- neq(self.retname, '')">
-      <script type="text/javascript">
+          <script type="text/javascript">
             function selectRow (frm_name, ret_mode)
             {
-        var varVal, varVal1;
+              var varVal, varVal1;
               if (opener == null)
                 return;
               this.<?V self.retname ?> = opener.<?V self.retname ?>;
 
-        if (<?V self.retname ?> != null &amp;&amp; frm_name != '')
-          {
-      varVal = document.forms[frm_name].item_name.value;
-      if (ret_mode == 'file-only')
-        {
-          var pos = varVal.lastIndexOf ('/');
-          if (pos != -1)
-            varVal = varVal.substr (pos+1, varVal.length);
-        }
-                  <?V self.retname ?>.value = varVal;
-    }
+              if (<?V self.retname ?> != null &amp;&amp; frm_name != '')
+              {
+                varVal = document.forms[frm_name].item_name.value;
+                if (ret_mode == 'file-only')
+                {
+                  var pos = varVal.lastIndexOf ('/');
+                  if (pos != -1)
+                    varVal = varVal.substr (pos+1, varVal.length);
+                }
+                <?V self.retname ?>.value = varVal;
+              }
               opener.focus ();
               close ();
             };
           </script>
         </v:template>
-  <script type="text/javascript">
-  function selectAllCheckboxes (form, btn)
-    {
+        <script type="text/javascript">
+          function selectAllCheckboxes (form, btn)
+          {
             for (var i = 0;i &lt; form.elements.length;i++)
-        {
-          var contr = form.elements[i];
-          if (contr != null &amp;&amp; contr.type == "checkbox")
             {
-              contr.focus();
-              if (btn.value == 'Select All')
-                contr.checked = true;
-              else
-                contr.checked = false;
+              var contr = form.elements[i];
+              if (contr != null &amp;&amp; contr.type == "checkbox")
+              {
+                contr.focus();
+                if (btn.value == 'Select All')
+                  contr.checked = true;
+                else
+                  contr.checked = false;
+              }
             }
-        }
-      if (btn.value == 'Select All')
-        btn.value = 'Unselect All';
-      else
-        btn.value = 'Select All';
-      btn.focus();
-    };
+            if (btn.value == 'Select All')
+              btn.value = 'Unselect All';
+            else
+              btn.value = 'Select All';
+            btn.focus();
+          };
 
-  function getFileName()
-    {
-      var S = document.form1.t_newfolder.value;
-      var N;
-      var fname;
+          function getFileName()
+          {
+            var S = document.form1.t_newfolder.value;
+            var N;
+            var fname;
 
-      if (S.lastIndexOf('\\') > 0)
-        N = S.lastIndexOf('\\') + 1;
-      else
-        N = S.lastIndexOf('/') + 1;
+            if (S.lastIndexOf('\\') > 0)
+              N = S.lastIndexOf('\\') + 1;
+            else
+              N = S.lastIndexOf('/') + 1;
 
-      fname = S.substr(N, S.length);
-      document.form1.resname.value = fname;
-      document.form1.perm2.checked = false;
-      if (fname.lastIndexOf ('.xsl') == (fname.length - 4))
-        document.form1.perm2.checked = true;
+            fname = S.substr(N, S.length);
+            document.form1.resname.value = fname;
+            document.form1.perm2.checked = false;
+            if (fname.lastIndexOf ('.xsl') == (fname.length - 4))
+              document.form1.perm2.checked = true;
           }
 
-  function chkbx(bx1, bx2)
-    {
-      if (bx1.checked == true &amp;&amp; bx2.checked == true)
-        bx2.checked = false;
-    }
+          function chkbx(bx1, bx2)
+          {
+            if (bx1.checked == true &amp;&amp; bx2.checked == true)
+              bx2.checked = false;
+          }
         </script>
         <v:login name="admin_login_isql_browser"
                  realm="virtuoso_admin"
@@ -169,12 +169,12 @@
           <v:variable name="megavec" persist="0" type="any" default="null" />
           <v:variable name="r_path" persist="0" type="any" default="null" />
           <v:variable name="r_name" persist="0" type="any" default="null" />
-    <v:variable name="r_perms" persist="0" type="any" default="null" />
-    <v:variable name="r_uid" persist="0" type="any" default="null" />
-    <v:variable name="r_grp" persist="0" type="any" default="null" />
-    <v:variable name="ret_mode" persist="0" type="varchar" default="'full'" />
-    <v:variable name="dav_list_ord" persist="0" type="varchar" default="''" />
-    <v:variable name="dav_list_ord_seq" persist="0" type="varchar" default="'asc'" />
+          <v:variable name="r_perms" persist="0" type="any" default="null" />
+          <v:variable name="r_uid" persist="0" type="any" default="null" />
+          <v:variable name="r_grp" persist="0" type="any" default="null" />
+          <v:variable name="ret_mode" persist="0" type="varchar" default="'full'" />
+          <v:variable name="dav_list_ord" persist="0" type="varchar" default="''" />
+          <v:variable name="dav_list_ord_seq" persist="0" type="varchar" default="'asc'" />
           <v:on-init>
             <v:script>
               <![CDATA[
@@ -283,19 +283,19 @@
           </v:before-data-bind>
     <v:method name="set_ord" arglist="in x any, inout e vspx_event, inout ds vspx_control">
       <![CDATA[
-    if (self.dav_list_ord = x)
-      {
-        if (self.dav_list_ord_seq = 'asc')
-          self.dav_list_ord_seq := 'desc';
+        if (self.dav_list_ord = x)
+        {
+          if (self.dav_list_ord_seq = 'asc')
+            self.dav_list_ord_seq := 'desc';
+          else
+            self.dav_list_ord_seq := 'asc';
+        }
         else
-          self.dav_list_ord_seq := 'asc';
-      }
-    else
-      {
-        self.dav_list_ord := x;
-        self.dav_list_ord_seq := 'asc';
-      }
-    ds.vc_data_bind (e);
+          {
+            self.dav_list_ord := x;
+            self.dav_list_ord_seq := 'asc';
+          }
+        ds.vc_data_bind (e);
       ]]>
     </v:method>
     <v:method name="option_prepare" arglist="in value any, in name any, in selectedValue any">
@@ -305,19 +305,19 @@
     </v:method>
 
     <div id="dav_browser_style">
-          <v:template name="title_template"
-                      type="simple"
-                      enabled="--case when (aref (self.vc_page.vc_event.ve_path, length (self.vc_page.vc_event.ve_path) - 1) <> 'cont_page.vspx') then 1 else 0 end">
+      <v:template name="title_template"
+                  type="simple"
+                  enabled="--case when (aref (self.vc_page.vc_event.ve_path, length (self.vc_page.vc_event.ve_path) - 1) <> 'cont_page.vspx') then 1 else 0 end">
         <div id="dav_br_popup_banner_ico">
 		      <a href="#" style="text-decoration:none;" onclick="javascript: if (opener != null) opener.focus(); window.close()"><img src="images/dav_browser/close_16.png" border="0" hspace="2" alt="Close"/>Close</a>
         </div>
-            <div id="dav_br_popup_banner">
-              <h3>
-                  <v:label name="title_label" value="--self.title" format="%s"/>
-              </h3>
-            </div>
-          </v:template>
-    <v:form name="form1" type="simple" method="POST" action="" xhtml_enctype="multipart/form-data">
+        <div id="dav_br_popup_banner">
+          <h3>
+              <v:label name="title_label" value="--self.title" format="%s"/>
+          </h3>
+        </div>
+      </v:template>
+      <v:form name="form1" type="simple" method="POST" action="" xhtml_enctype="multipart/form-data">
             <div id="dav_br_middle_ctr">
               <v:template name="search_temp"
                           type="simple"
@@ -325,13 +325,13 @@
               <table border="0" cellspacing="0" cellpadding="3">
                 <tr>
                   <th colspan="10">
-          <vm:help id="dav_browser_search" sect=""/>
-           Current WebDAV folder: "<v:label name="lsdav1" value="--self.curpath"/>"
+                    <vm:help id="dav_browser_search" sect=""/>
+                    Current WebDAV folder: "<v:label name="lsdav1" value="--self.curpath"/>"
                   </th>
                 </tr>
                 <tr>
                   <th colspan="10">
-          Search by name or free text search by content.
+                    Search by name or free text search by content.
                   </th>
                 </tr>
                 <tr>
@@ -344,13 +344,13 @@
                             (control as vspx_select_list).vsl_item_values := vector();
                             (control as vspx_select_list).vsl_selected_inx := self.search_type;
                             (control as vspx_select_list).vsl_items := vector_concat ((control as vspx_select_list).vsl_items,
-                                                          vector ('By resource name'));
+                                                                                      vector ('By resource name'));
                             (control as vspx_select_list).vsl_item_values := vector_concat ((control as vspx_select_list).vsl_item_values,
-                                                                vector ('0'));
+                                                                                            vector ('0'));
                             (control as vspx_select_list).vsl_items := vector_concat ((control as vspx_select_list).vsl_items,
-                                                           vector ('By content'));
+                                                                                       vector ('By content'));
                             (control as vspx_select_list).vsl_item_values := vector_concat ((control as vspx_select_list).vsl_item_values,
-                                                                vector ('1'));
+                                                                                            vector ('1'));
                           ]]>
                         </v:script>
                       </v:after-data-bind>
@@ -414,48 +414,48 @@ self.vc_data_bind (e);
                       <tr class="vdir_listheader" border="1">
                         <th><input type="checkbox" name="selectall" value="Select All" onClick="selectAllCheckboxes(this.form, this)"/></th>
                         <th/>
-        <th>
-            <v:button action="simple" name="name_ord1" value="Name" style="url">
-          <v:on-post><![CDATA[
-              self.set_ord ('name', e, self.ds_items1);
-              ]]></v:on-post>
-            </v:button>
-        </th>
-        <th>
-            <v:button action="simple" name="size_ord1" value="Size" style="url">
-          <v:on-post><![CDATA[
-              self.set_ord ('size', e, self.ds_items1);
-              ]]></v:on-post>
-            </v:button>
-        </th>
-        <th>
-            <v:button action="simple" name="mod_ord1" value="Modified" style="url">
-          <v:on-post><![CDATA[
-              self.set_ord ('modified', e, self.ds_items1);
-              ]]></v:on-post>
-            </v:button>
-        </th>
-        <th>
-            <v:button action="simple" name="type_ord1" value="Type" style="url">
-          <v:on-post><![CDATA[
-              self.set_ord ('type', e, self.ds_items1);
-              ]]></v:on-post>
-            </v:button>
-        </th>
-        <th>
-            <v:button action="simple" name="own_ord1" value="Owner" style="url">
-          <v:on-post><![CDATA[
-              self.set_ord ('owner', e, self.ds_items1);
-              ]]></v:on-post>
-            </v:button>
-        </th>
-        <th>
-            <v:button action="simple" name="grp_ord1" value="Group" style="url">
-          <v:on-post><![CDATA[
-              self.set_ord ('group', e, self.ds_items1);
-              ]]></v:on-post>
-            </v:button>
-        </th>
+                        <th>
+                          <v:button action="simple" name="name_ord1" value="Name" style="url">
+                            <v:on-post><![CDATA[
+                              self.set_ord ('name', e, self.ds_items1);
+                            ]]></v:on-post>
+                          </v:button>
+                        </th>
+                        <th>
+                          <v:button action="simple" name="size_ord1" value="Size" style="url">
+                            <v:on-post><![CDATA[
+                              self.set_ord ('size', e, self.ds_items1);
+                            ]]></v:on-post>
+                          </v:button>
+                        </th>
+                        <th>
+                          <v:button action="simple" name="mod_ord1" value="Modified" style="url">
+                            <v:on-post><![CDATA[
+                              self.set_ord ('modified', e, self.ds_items1);
+                            ]]></v:on-post>
+                          </v:button>
+                        </th>
+                        <th>
+                          <v:button action="simple" name="type_ord1" value="Type" style="url">
+                            <v:on-post><![CDATA[
+                              self.set_ord ('type', e, self.ds_items1);
+                            ]]></v:on-post>
+                          </v:button>
+                        </th>
+                        <th>
+                          <v:button action="simple" name="own_ord1" value="Owner" style="url">
+                            <v:on-post><![CDATA[
+                              self.set_ord ('owner', e, self.ds_items1);
+                            ]]></v:on-post>
+                          </v:button>
+                        </th>
+                        <th>
+                          <v:button action="simple" name="grp_ord1" value="Group" style="url">
+                            <v:on-post><![CDATA[
+                              self.set_ord ('group', e, self.ds_items1);
+                            ]]></v:on-post>
+                          </v:button>
+                        </th>
                         <th>Perms</th>
                       </tr>
                     </table>
@@ -481,18 +481,18 @@ self.vc_data_bind (e);
 
                           rowset := (control as vspx_row_template).te_rowset;
                           if (length(rowset) > 2 and not isnull(rowset[2]))
-  imgname := rowset[2];
+                            imgname := rowset[2];
                           else
-  if (rowset[0] <> 0)
-    {
-      imgname := 'images/dav_browser/foldr_16.png';
-      http(sprintf('<td><input type="checkbox" name="CBC_%s"/></td>', rowset[1]));
-    }
-  else
-    {
-      imgname := 'images/dav_browser/file_gen_16.png';
-      http(sprintf('<td><input type="checkbox" name="CBR_%s"/></td>', rowset[1]));
-    }
+                            if (rowset[0] <> 0)
+                            {
+                              imgname := 'images/dav_browser/foldr_16.png';
+                              http(sprintf('<td><input type="checkbox" name="CBC_%s"/></td>', rowset[1]));
+                            }
+                            else
+                            {
+                              imgname := 'images/dav_browser/file_gen_16.png';
+                              http(sprintf('<td><input type="checkbox" name="CBR_%s"/></td>', rowset[1]));
+                            }
                         ?>
                         <td>
                           <img src="<?V imgname ?>"/>
@@ -508,20 +508,20 @@ self.vc_data_bind (e);
                                     value="--(control.vc_parent as vspx_row_template).te_rowset[1]"
                                     format="%s">
                             <v:on-post>
-                                <![CDATA[
-                                  declare before_path varchar;
-                                  if ((control.vc_parent as vspx_row_template).te_rowset[0] <> 0)
-                                  {
-                                    self.curpath := trim((control.vc_parent as vspx_row_template).te_rowset[1], '/');
-                                    if (self.dir_select <> 0)
-                                      self.sel_items := concat(self.curpath, '/');
-                                    self.crfolder_mode := 0;
-                                    self.search_result := vector();
-                                  }
-                                  else if (self.dir_select = 0 or self.dir_select = 2)
-                                    self.sel_items := concat(self.curpath, '/', (control.vc_parent as vspx_row_template).te_rowset[1]);
-                                  self.vc_data_bind(e);
-                                ]]>
+                              <![CDATA[
+                                declare before_path varchar;
+                                if ((control.vc_parent as vspx_row_template).te_rowset[0] <> 0)
+                                {
+                                  self.curpath := trim((control.vc_parent as vspx_row_template).te_rowset[1], '/');
+                                  if (self.dir_select <> 0)
+                                    self.sel_items := concat(self.curpath, '/');
+                                  self.crfolder_mode := 0;
+                                  self.search_result := vector();
+                                }
+                                else if (self.dir_select = 0 or self.dir_select = 2)
+                                  self.sel_items := concat(self.curpath, '/', (control.vc_parent as vspx_row_template).te_rowset[1]);
+                                self.vc_data_bind(e);
+                              ]]>
                             </v:on-post>
                           </v:button>
                           <?vsp
@@ -554,10 +554,10 @@ self.vc_data_bind (e);
                                         xhtml_title="View"
                                         xhtml_alt="View">
                                 <v:on-post>
-                                    <![CDATA[
-                                      http_request_status ('HTTP/1.1 302 Found');
-                                      http_header (sprintf('Location: view_file.vsp?sid=%s&realm=%s&path=&file=%s&title=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[1], self.title));
-                                    ]]>
+                                  <![CDATA[
+                                    http_request_status ('HTTP/1.1 302 Found');
+                                    http_header (sprintf('Location: view_file.vsp?sid=%s&realm=%s&path=&file=%s&title=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[1], self.title));
+                                  ]]>
                                 </v:on-post>
                               </v:button>
                             </xsl:when>
@@ -572,7 +572,7 @@ self.vc_data_bind (e);
                               or (control as vspx_row_template).te_rowset[1] like '%.htm'
                               or (control as vspx_row_template).te_rowset[1] like '%.sql'
                               or (control as vspx_row_template).te_rowset[1] like '%.log'
-            or (length ((control as vspx_row_template).te_rowset) > 5 and (control as vspx_row_template).te_rowset[5] like 'text/%'))
+                              or (length ((control as vspx_row_template).te_rowset) > 5 and (control as vspx_row_template).te_rowset[5] like 'text/%'))
                             {
                           ?>
                           <v:button name="b_item_edit2"
@@ -582,12 +582,12 @@ self.vc_data_bind (e);
                                     xhtml_alt="Edit"
                                     xhtml_title="Edit">
                             <v:on-post>
-                                <![CDATA[
-                                  self.source_dir := (control.vc_parent as vspx_row_template).te_rowset[1];
-                                  self.command := 11;
-                                  self.ds_items.vc_data_bind(e);
-                                  self.vc_data_bind(e);
-                                ]]>
+                              <![CDATA[
+                                self.source_dir := (control.vc_parent as vspx_row_template).te_rowset[1];
+                                self.command := 11;
+                                self.ds_items.vc_data_bind(e);
+                                self.vc_data_bind(e);
+                              ]]>
                             </v:on-post>
                           </v:button>
                           <?vsp
@@ -595,12 +595,12 @@ self.vc_data_bind (e);
                           ?>
                           <v:button name="b_search_item_prop_edit" style = "url" action="simple" value="--'properties'" format="%s">
                            <v:on-post>
-                                <![CDATA[
-                                  self.source_dir := (control.vc_parent as vspx_row_template).te_rowset[1];
-                                  self.command := 12;
-                                  self.ds_items.vc_data_bind(e);
-                                  self.vc_data_bind(e);
-                                ]]>
+                              <![CDATA[
+                                self.source_dir := (control.vc_parent as vspx_row_template).te_rowset[1];
+                                self.command := 12;
+                                self.ds_items.vc_data_bind(e);
+                                self.vc_data_bind(e);
+                              ]]>
                             </v:on-post>
                           </v:button>
                         </td>
@@ -625,9 +625,9 @@ self.vc_data_bind (e);
                 </v:data-set>
               </v:template>
             </v:template>
-              <v:template name="temp_crfold"
-                          type="simple"
-                          enabled="-- case when (self.crfolder_mode = 1 or self.crfolder_mode = 2 or self.crfolder_mode = 5) then 1 else 0 end">
+            <v:template name="temp_crfold"
+                        type="simple"
+                        enabled="-- case when (self.crfolder_mode = 1 or self.crfolder_mode = 2 or self.crfolder_mode = 5) then 1 else 0 end">
               <v:template name="temp_crfold12"
                           type="simple"
                           enabled="-- case when (self.crfolder_mode = 1 or self.crfolder_mode = 2) then 1 else 0 end">
@@ -659,28 +659,28 @@ self.vc_data_bind (e);
                   <script type="text/javascript" src="dav_browser_props.js"><xsl:text> </xsl:text></script>
                   <script type="text/javascript">
                     function init() {
-                      init_upload();
+            		      init_upload();
                     }
-                  </script>
-                  <tr>
-		    <td>Destination</td>
-		    <td>
-		      <v:select-list name="dst_sel" value="" default_value="dav" auto-submit="1">
-			<v:item name="WebDAV" value="dav"/>
-			<v:item name="RDF Store" value="rdf"/>
-		      </v:select-list>
-		    </td>
-		  </tr>
-		  <v:template type="simple" name="sw1" condition="self.dst_sel.ufl_value = 'rdf'">
+            		  </script>
+            		  <tr>
+            		    <td>Destination</td>
+            		    <td>
+            		      <v:select-list name="dst_sel" value="" default_value="dav" auto-submit="1">
+                  			<v:item name="WebDAV" value="dav"/>
+                  			<v:item name="RDF Store" value="rdf"/>
+            		      </v:select-list>
+            		    </td>
+            		  </tr>
+            		  <v:template type="simple" name="sw1" condition="self.dst_sel.ufl_value = 'rdf'">
                   <tr id="rd1">
             		    <td>
             		      <v:radio-button name="rb1" group-name="rb" value="fs">
-			<v:before-render>
-			  if (get_keyword ('rb', self.vc_event.ve_params) = 'fs'
-			  or get_keyword ('rb', self.vc_event.ve_params) is null)
-			    control.ufl_selected := 1;
-			</v:before-render>
-		      </v:radio-button>
+                  			<v:before-render>
+                  			  if (get_keyword ('rb', self.vc_event.ve_params) = 'fs'
+                  			  or get_keyword ('rb', self.vc_event.ve_params) is null)
+                  			    control.ufl_selected := 1;
+                  			</v:before-render>
+            		      </v:radio-button>
             			    File<span class="redstar">*</span>
             			  </td>
                     <td>
@@ -690,11 +690,11 @@ self.vc_data_bind (e);
                   <tr id="rd1">
 		                <td>
 		                  <v:radio-button name="rb2" group-name="rb" value="ur">
-			<v:before-render>
-			  if (get_keyword ('rb', self.vc_event.ve_params) = 'ur')
-			    control.ufl_selected := 1;
-			</v:before-render>
-		      </v:radio-button>
+                  			<v:before-render>
+                  			  if (get_keyword ('rb', self.vc_event.ve_params) = 'ur')
+                  			    control.ufl_selected := 1;
+                  			</v:before-render>
+              		      </v:radio-button>
 		                    Resource URL<span class="redstar">*</span>
 		                </td>
                     <td>
@@ -704,12 +704,11 @@ self.vc_data_bind (e);
                   <tr id="rd2">
                     <td>Named Graph IRI<span class="redstar">*</span></td>
                     <td>
-		      <v:text name="rdf_graph_name" value="" default_value="-- 'http://' || cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost') || '/' || self.curpath" xhtml_size="100"/>
+		                  <v:text name="rdf_graph_name" value="" default_value="-- 'http://' || cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost') || '/' || self.curpath" xhtml_size="100"/>
                     </td>
                   </tr>
-
-		  </v:template>
-		  <v:template type="simple" name="sw2" condition="self.dst_sel.ufl_value <> 'rdf' or self.dst_sel.ufl_value is null">
+		              </v:template>
+		              <v:template type="simple" name="sw2" condition="self.dst_sel.ufl_value <> 'rdf' or self.dst_sel.ufl_value is null">
                   <tr id="fi1">
                     <td>Path to File<span class="redstar">*</span></td>
                     <td>
@@ -731,7 +730,7 @@ self.vc_data_bind (e);
                         <?vsp
                           for(select distinct T_TYPE from WS.WS.SYS_DAV_RES_TYPES order by T_TYPE)do
                             http(sprintf('mime_types.push("%s");',T_TYPE));
-                          
+
                           http(sprintf('var cur_mime_type = "%s"',get_keyword('mime_type', self.vc_page.vc_event.ve_params, '')));
                         ?>
                       </script>
@@ -740,9 +739,9 @@ self.vc_data_bind (e);
                       -->
                     </td>
                   </tr>
+		              </v:template>
                 </v:template>
-                </v:template>
-		  <v:template type="simple" name="sw3" condition="self.dst_sel.ufl_value <> 'rdf' or self.dst_sel.ufl_value is null">
+		            <v:template type="simple" name="sw3" condition="self.dst_sel.ufl_value <> 'rdf' or self.dst_sel.ufl_value is null">
                 <tr id="fi4">
                   <td>Owner</td>
                   <td>
@@ -778,9 +777,9 @@ self.vc_data_bind (e);
                             cur_user := connection_get('vspx_user');
                             if (cur_user is null)
                               return;
-          whenever not found goto nf;
-          select U_GROUP into gid from DB.DBA.SYS_USERS where U_NAME = cur_user;
-          nf:
+                            whenever not found goto nf;
+                            select U_GROUP into gid from DB.DBA.SYS_USERS where U_NAME = cur_user;
+                          nf:
                             if (gid = 0)
                               gid := 3; -- administrators;
                             control.ufl_value := atoi(get_keyword('t_folder_grp', self.vc_page.vc_event.ve_params, '-1'));
@@ -880,30 +879,30 @@ self.vc_data_bind (e);
                       ?>
                     </select>
                   </td>
-                </tr>
-		<?vsp if (self.crfolder_mode = 1) { ?>
+	              </tr>
+		            <?vsp if (self.crfolder_mode = 1) { ?>
                 <tr>
                   <th>Permissions Inheritance</th>
                   <td>
                     <select name="inh">
                       <?vsp
-		      {
-                        declare _fidx any;
-                        declare _idx varchar;
-                        declare i integer;
+		                    {
+                          declare _fidx any;
+                          declare _idx varchar;
+                          declare i integer;
 
-                        _idx := get_keyword('inh', self.vc_page.vc_event.ve_params, 'N');
-                        _fidx := vector ('N', 'Off', 'T', 'Direct members', 'R', 'Recursively');
+                          _idx := get_keyword('inh', self.vc_page.vc_event.ve_params, 'N');
+                          _fidx := vector ('N', 'Off', 'T', 'Direct members', 'R', 'Recursively');
                           for (i := 0; i < length (_fidx); i := i + 2)
-                        {
+                          {
                             http (sprintf ('<option value="%s" %s>%s</option>', _fidx[i], select_if (_idx, _fidx[i]), _fidx[i+1]));
-                        }
-	               }
+                          }
+	                      }
                       ?>
                     </select>
                   </td>
                 </tr>
-		<?vsp } ?>
+		            <?vsp } ?>
                 <v:template name="dav_template003" type="simple" enabled="-- equ(isstring (vad_check_version ('SyncML')), 1)">
                   <tr id="fi8">
                     <td>SyncML version</td>
@@ -942,7 +941,7 @@ self.vc_data_bind (e);
                     </td>
                   </tr>
                 </v:template>
-		</v:template>
+		            </v:template>
                 <tr align="center">
                   <td colspan="2">
                     <v:button action="simple" name="create_folder" value="Create">
@@ -961,61 +960,60 @@ self.vc_data_bind (e);
                           declare usr, grp vspx_select_list;
                           declare i, _uid, ownern, groupn integer;
                           declare cname, _perms, _p, _idx, mimetype, owner_name, group_name, _inh varchar;
-			  declare _file, _graph, is_ttl, is_xml any;
+                  			  declare _file, _graph, is_ttl, is_xml any;
 
-			  if (self.dst_sel.ufl_value = 'rdf')
-			    {
-			      _file := get_keyword ('t_rdf_file', e.ve_params);
-			      _graph := trim (self.rdf_graph_name.ufl_value);
-		              if (not length (_graph))
-	                        {
-				  self.vc_is_valid := 0;
-				  self.vc_error_message := 'The graph IRI must be non-empty string.';
-				  return;
-	                        }
+                  			  if (self.dst_sel.ufl_value = 'rdf')
+                  			  {
+                  			    _file := get_keyword ('t_rdf_file', e.ve_params);
+                  			    _graph := trim (self.rdf_graph_name.ufl_value);
+                  		      if (not length (_graph))
+                  	        {
+                    				  self.vc_is_valid := 0;
+                    				  self.vc_error_message := 'The graph IRI must be non-empty string.';
+                    				  return;
+   	                        }
 
-			      if (not length (_file))
-			        {
-				  declare uri any;
-				  declare exit handler for sqlstate '*'
-				  {
-				    self.vc_is_valid := 0;
-				    self.vc_error_message := regexp_match ('[^\r\n]*', __SQL_MESSAGE);
-				    return;
-				  };
-				  uri := get_keyword ('t_rdf_url', e.ve_params);
+                			      if (not length (_file))
+               			        {
+                    				  declare uri any;
+                    				  declare exit handler for sqlstate '*'
+                    				  {
+                    				    self.vc_is_valid := 0;
+                    				    self.vc_error_message := regexp_match ('[^\r\n]*', __SQL_MESSAGE);
+                    				    return;
+                    				  };
+                    				  uri := get_keyword ('t_rdf_url', e.ve_params);
                     				  exec (sprintf ('sparql define get:soft "soft" define get:uri "%s" select * from <%s> where { ?s ?p ?o }', uri, _graph));
-		                  goto end_post;
-				}
+                  		        goto end_post;
+                  				  }
 
-			      is_ttl := 1;
-			      {
-			         declare continue handler for SQLSTATE '*'
-				 {
-				   is_ttl := 0;
-				 };
-				 DB.DBA.TTLP (_file, '', _graph);
-		              }
-			      is_xml := 0;
-			      if (not is_ttl)
-			      {
-				 is_xml := 1;
-			         declare continue handler for SQLSTATE '*'
-				 {
-				   is_xml := 0;
-				 };
-				 DB.DBA.RDF_LOAD_RDFXML (_file, '', _graph);
-		              }
-                              if ((is_ttl + is_xml) = 0)
-			        {
-				  self.vc_is_valid := 0;
-				  self.vc_error_message := 'You have attempted to upload invalid data. You can only upload RDF, Turtle, N3 serializations of RDF Data to the RDF Data Store.';
-				  return;
-				}
+                  			    is_ttl := 1;
+                  			    {
+                  			      declare continue handler for SQLSTATE '*'
+                  				    {
+                  				      is_ttl := 0;
+                  				    };
+                  				    DB.DBA.TTLP (_file, '', _graph);
+                  		      }
+                  			    is_xml := 0;
+                  			    if (not is_ttl)
+                  			    {
+                  				    is_xml := 1;
+                  			      declare continue handler for SQLSTATE '*'
+                  				    {
+                  				      is_xml := 0;
+                  				    };
+                  				    DB.DBA.RDF_LOAD_RDFXML (_file, '', _graph);
+                  		      }
+                            if ((is_ttl + is_xml) = 0)
+                  			    {
+                  				    self.vc_is_valid := 0;
+                  				    self.vc_error_message := 'You have attempted to upload invalid data. You can only upload RDF, Turtle, N3 serializations of RDF Data to the RDF Data Store.';
+                  				    return;
+                  				  }
 
-			      goto end_post;
-			    }
-
+                  			    goto end_post;
+                  			  }
                           if (self.crfolder_mode = 1)
                             cname := get_keyword('t_newfolder', self.vc_page.vc_event.ve_params, '');
                           if (self.crfolder_mode = 2)
@@ -1028,7 +1026,7 @@ self.vc_data_bind (e);
                           grp := self.t_folder_grp;
                           ownern := atoi(aref(usr.vsl_item_values, usr.vsl_selected_inx));
                           groupn := atoi(aref(grp.vsl_item_values, grp.vsl_selected_inx));
-        whenever not found goto nfu;
+                          whenever not found goto nfu;
                           if (ownern < 0)
                             owner_name := '';
                           else
@@ -1036,8 +1034,8 @@ self.vc_data_bind (e);
                           if (groupn < 0)
                             group_name := '';
                           else
-          select G_NAME into group_name from WS.WS.SYS_DAV_GROUP where G_ID=groupn;
-        nfu:
+                            select G_NAME into group_name from WS.WS.SYS_DAV_GROUP where G_ID=groupn;
+                          nfu:
                           if (cname = '' or cname is null)
                           {
                             self.vc_error_message := 'Please, enter the folder/resource name';
@@ -1065,7 +1063,7 @@ self.vc_data_bind (e);
                           if (_perms = '000000000')
                             _perms := (select U_DEF_PERMS from WS.WS.SYS_DAV_USER where U_ID = _uid);
                           _idx := get_keyword('idx', self.vc_page.vc_event.ve_params, 'N');
-			  _inh := get_keyword('inh', self.vc_page.vc_event.ve_params, 'N');
+                          _inh := get_keyword('inh', self.vc_page.vc_event.ve_params, 'N');
                           _perms := concat(_perms, _idx);
                           declare ret int;
                           declare full_path varchar;
@@ -1089,16 +1087,16 @@ self.vc_data_bind (e);
                                 self.vc_is_valid := 0;
                                 return;
                               }
-			      if (__proc_exists ('DB.DBA.SYNC_MAKE_DAV_DIR'))
-			        {
-				   declare sync_ver any;
-				   sync_ver := get_keyword ('s_v', self.vc_page.vc_event.ve_params, 'N');
-				   call ('DB.DBA.SYNC_MAKE_DAV_DIR') (get_keyword ('s_t', self.vc_page.vc_event.ve_params, 'N'),
-				   ret, cname, full_path, sync_ver);
-				}
-		              set triggers off;
+                  			      if (__proc_exists ('DB.DBA.SYNC_MAKE_DAV_DIR'))
+                  			      {
+                    				    declare sync_ver any;
+                    				    sync_ver := get_keyword ('s_v', self.vc_page.vc_event.ve_params, 'N');
+                    				    call ('DB.DBA.SYNC_MAKE_DAV_DIR') (get_keyword ('s_t', self.vc_page.vc_event.ve_params, 'N'),
+                    				    ret, cname, full_path, sync_ver);
+                      				}
+                  		        set triggers off;
                               update WS.WS.SYS_DAV_COL set COL_INHERIT = _inh where COL_ID = ret;
-			      set triggers on;
+			                        set triggers on;
                             }
                           }
                           if (self.crfolder_mode = 2)
@@ -1126,7 +1124,7 @@ self.vc_data_bind (e);
                               }
                             }
                           }
-			  end_post:
+			                  end_post:
                           self.crfolder_mode := 0;
                           self.vc_data_bind(e);
                           self.ds_items.vc_data_bind(e);
@@ -1156,10 +1154,10 @@ self.vc_data_bind (e);
                   mimetype := aref(self.megavec, 2);
                   _perms := aref(self.megavec, 3);
                   owner_name := aref(self.megavec, 4);
-      group_name := aref(self.megavec, 5);
+                  group_name := aref(self.megavec, 5);
                   if (group_name = '')
                     group_name := 'none';
-      whenever not found goto nfr;
+                  whenever not found goto nfr;
                   select res_mod_time, length(res_content), res_type, res_owner, res_group, res_perms into mod_date, size1, res_type1, res_owner1, res_group1, res_perms1 from WS.WS.SYS_DAV_RES where res_full_path = resname;
                   if (res_owner1 is not null)
                     res_owner2 := (select U_NAME from DB.DBA.SYS_USERS where U_ID = res_owner1);
@@ -1170,8 +1168,7 @@ self.vc_data_bind (e);
                   else
                     res_group2 := 'none';
                   res_perms2 := DAV_PERM_D2U (res_perms1);
-
-      nfr:;
+                nfr:;
                 ?>
                 <table>
                   <tr>
@@ -1268,30 +1265,31 @@ self.vc_data_bind (e);
                 </table>
               </v:template>
             </v:template>
-      <v:template name="prop_edit_template" type="simple" enabled="-- equ(self.command, 12)">
-    <v:before-data-bind>
-        self.r_path := self.source_dir;
-        whenever not found goto nferr;
-        if (right(self.source_dir, 1) = '/')
-        {
-      select COL_NAME, COL_PERMS, COL_OWNER, COL_GROUP
-      into self.r_name, self.r_perms, self.r_uid, self.r_grp
-      from WS.WS.SYS_DAV_COL where WS.WS.COL_PATH(COL_ID) = self.r_path;
-        }
-        else
-        {
-      select RES_NAME, RES_PERMS, RES_OWNER, RES_GROUP
-      into self.r_name, self.r_perms, self.r_uid, self.r_grp
-      from WS.WS.SYS_DAV_RES where RES_FULL_PATH = self.r_path;
-        }
-        nferr:;
-    </v:before-data-bind>
-                <script type="text/javascript" src="dav_browser_props.js"><xsl:text> </xsl:text></script>
+            <v:template name="prop_edit_template" type="simple" enabled="-- equ(self.command, 12)">
+              <v:before-data-bind>
+                self.r_path := self.source_dir;
+                whenever not found goto nferr;
+                if (right(self.source_dir, 1) = '/')
+                {
+                  select COL_NAME, COL_PERMS, COL_OWNER, COL_GROUP
+                    into self.r_name, self.r_perms, self.r_uid, self.r_grp
+                    from WS.WS.SYS_DAV_COL where WS.WS.COL_PATH(COL_ID) = self.r_path;
+                }
+                else
+                {
+                  select RES_NAME, RES_PERMS, RES_OWNER, RES_GROUP
+                    into self.r_name, self.r_perms, self.r_uid, self.r_grp
+                    from WS.WS.SYS_DAV_RES where RES_FULL_PATH = self.r_path;
+                }
+                nferr:;
+              </v:before-data-bind>
+              <script type="text/javascript" src="dav_browser_props.js"><xsl:text> </xsl:text></script>
               <table>
                 <?vsp
                   declare _name, perms, cur_user, _res_type, _inh varchar;
-                  declare _res_id, own_id, own_grp, uid, gid, is_dir integer;
-		  _inh := null;
+            		  declare _res_id, own_id, own_grp, uid, gid, is_dir integer;
+
+            		  _inh := null;
                   if (right(self.source_dir, 1) = '/')
                   {
                     is_dir := 1;
@@ -1304,12 +1302,12 @@ self.vc_data_bind (e);
                   }
                   if (_res_id >= 0)
                   {
-        whenever not found goto nf1;
+                    whenever not found goto nf1;
                     if (is_dir = 1)
                       select COL_NAME, COL_OWNER, COL_GROUP, COL_PERMS, COL_INHERIT into _name, own_id, own_grp, perms, _inh from WS.WS.SYS_DAV_COL where COL_ID = _res_id;
                     else
-          select RES_NAME, RES_OWNER, RES_GROUP, RES_PERMS, RES_TYPE into _name, own_id, own_grp, perms, _res_type from WS.WS.SYS_DAV_RES where RES_ID = _res_id;
-        nf1:;
+                      select RES_NAME, RES_OWNER, RES_GROUP, RES_PERMS, RES_TYPE into _name, own_id, own_grp, perms, _res_type from WS.WS.SYS_DAV_RES where RES_ID = _res_id;
+                  nf1:;
                 ?>
                 <tr>
                   <th>Full Path in DAV</th>
@@ -1336,7 +1334,7 @@ self.vc_data_bind (e);
                       <?vsp
                         for(select distinct T_TYPE from WS.WS.SYS_DAV_RES_TYPES order by T_TYPE)do
                           http(sprintf('mime_types.push("%s");',T_TYPE));
-                        
+
                         http(sprintf('var cur_mime_type = "%s"',_res_type));
                       ?>
                     </script>
@@ -1452,30 +1450,30 @@ self.vc_data_bind (e);
                       ?>
                     </select>
                   </td>
-                </tr>
+	              </tr>
                 <?vsp if (is_dir = 1) { ?>
                 <tr>
                   <th>Permissions Inheritance</th>
                   <td>
                     <select name="inh">
                       <?vsp
-		      {
-                        declare _fidx any;
-                        declare _idx varchar;
-                        declare i integer;
+		                    {
+                          declare _fidx any;
+                          declare _idx varchar;
+                          declare i integer;
 
-                        _idx := _inh;
-                        _fidx := vector ('N', 'Off', 'T', 'Direct members', 'R', 'Recursively');
+                          _idx := _inh;
+                          _fidx := vector ('N', 'Off', 'T', 'Direct members', 'R', 'Recursively');
                           for (i := 0; i < length (_fidx); i := i + 2)
-                        {
+                          {
                             http (sprintf ('<option value="%s" %s>%s</option>', _fidx[i], select_if (_idx, _fidx[i]), _fidx[i+1]));
-                        }
-	               }
+                          }
+	                      }
                       ?>
                     </select>
                   </td>
                 </tr>
-		<?vsp } ?>
+		            <?vsp } ?>
                 <v:template name="dav_template011" type="simple" enabled="-- equ(yac_syncml_detect (self.source_dir), 1)">
                   <tr>
                     <th>SyncML version</th>
@@ -1545,26 +1543,26 @@ self.vc_data_bind (e);
                                   <v:before-data-bind>
                                     <v:script>
                                       <![CDATA[
-  declare prop_arr any;
-  declare _len, _ix integer;
+                                        declare prop_arr any;
+                                        declare _len, _ix integer;
 
-  (control as vspx_select_list).vsl_items:= vector ();
-  (control as vspx_select_list).vsl_item_values:= vector ();
-  (control as vspx_select_list).vsl_selected_inx := 0;
-  prop_arr := vector ('xml-sql', 0,
-                      'xml-sql-root', 0,
-                      'xml-sql-dtd', 0,
-                      'xml-sql-schema', 0,
-                      'xml-stylesheet', 0,
-                      'xper', 0);
-  _len := length (prop_arr);
+                                        (control as vspx_select_list).vsl_items:= vector ();
+                                        (control as vspx_select_list).vsl_item_values:= vector ();
+                                        (control as vspx_select_list).vsl_selected_inx := 0;
+                                        prop_arr := vector ('xml-sql', 0,
+                                                            'xml-sql-root', 0,
+                                                            'xml-sql-dtd', 0,
+                                                            'xml-sql-schema', 0,
+                                                            'xml-stylesheet', 0,
+                                                            'xper', 0);
+                                        _len := length (prop_arr);
                                         for (_ix := 0; _ix < _len; _ix := _ix + 2)
-    {
-      (control as vspx_select_list).vsl_items :=
-        vector_concat ((control as vspx_select_list).vsl_items, vector (aref (prop_arr, _ix)));
-      (control as vspx_select_list).vsl_item_values :=
-        vector_concat ((control as vspx_select_list).vsl_item_values, vector (aref (prop_arr, _ix)));
-    }
+                                        {
+                                          (control as vspx_select_list).vsl_items :=
+                                            vector_concat ((control as vspx_select_list).vsl_items, vector (aref (prop_arr, _ix)));
+                                          (control as vspx_select_list).vsl_item_values :=
+                                            vector_concat ((control as vspx_select_list).vsl_item_values, vector (aref (prop_arr, _ix)));
+                                        }
                                       ]]>
                                     </v:script>
                                   </v:before-data-bind>
@@ -1595,65 +1593,63 @@ self.vc_data_bind (e);
                             			    if (e.ve_initiator <> control)
                             			      return;
 
-  declare cust_name, pname, pvalue, tp varchar;
-  declare _res_id, is_dir integer;
+                                      declare cust_name, pname, pvalue, tp varchar;
+                                      declare _res_id, is_dir integer;
 
-  declare exit handler for sqlstate '*'
-  {
-    rollback work;
-    self.vc_is_valid := 0;
-    self.vc_error_message := __SQL_MESSAGE;
-    return;
-  };
+                                      declare exit handler for sqlstate '*'
+                                      {
+                                        rollback work;
+                                        self.vc_is_valid := 0;
+                                        self.vc_error_message := __SQL_MESSAGE;
+                                        return;
+                                      };
 
-  if (right(self.source_dir, 1) = '/')
-    {
-      is_dir := 1;
-      _res_id := DAV_SEARCH_ID(self.source_dir, 'C');
-    }
-  else
-    {
-      is_dir := 0;
-      _res_id := DAV_SEARCH_ID(self.source_dir, 'R');
-    }
+                                      if (right(self.source_dir, 1) = '/')
+                                      {
+                                        is_dir := 1;
+                                        _res_id := DAV_SEARCH_ID(self.source_dir, 'C');
+                                      }
+                                      else
+                                      {
+                                        is_dir := 0;
+                                        _res_id := DAV_SEARCH_ID(self.source_dir, 'R');
+                                      }
+                                      pname := get_keyword('xml_name', self.vc_page.vc_event.ve_params, '');
+                                      pvalue := get_keyword('xml_value', self.vc_page.vc_event.ve_params, '');
+                                      cust_name := trim(get_keyword('cust_name', params, ''));
 
-  pname := get_keyword('xml_name', self.vc_page.vc_event.ve_params, '');
-  pvalue := get_keyword('xml_value', self.vc_page.vc_event.ve_params, '');
-  cust_name := trim(get_keyword('cust_name', params, ''));
+                                      if (cust_name is not null and cust_name <> '')
+                                        pname := cust_name;
 
-  if (cust_name is not null and cust_name <> '')
-    pname := cust_name;
+                                      declare idx integer;
 
-  declare idx integer;
+                                      idx := 0;
+                                      if (is_dir = 1)
+                                        tp := 'C';
+                                      else
+                                        tp := 'R';
 
-  idx := 0;
+                                      if (pname = '')
+                                      {
+                                        self.vc_error_message := 'Property name should be supplied';
+                                        self.vc_is_valid := 0;
+                                        return;
+                                      }
 
-  if (is_dir = 1)
-    tp := 'C';
-  else
-    tp := 'R';
+                                      if (exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_NAME = pname and PROP_PARENT_ID = _res_id and PROP_TYPE = tp))
+                                      {
+                                        self.vc_error_message := sprintf('The property "%s" of "%s" already exists.\nYou can remove or update existing', pname, self.source_dir);
+                                        self.vc_is_valid := 0;
+                                        return;
+                                      }
+                                      {
+                                        declare exit handler for sqlstate '*' { goto endser; };
 
-  if (pname = '')
-    {
-      self.vc_error_message := 'Property name should be supplied';
-      self.vc_is_valid := 0;
-      return;
-    }
-
-  if (exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_NAME = pname and PROP_PARENT_ID = _res_id and PROP_TYPE = tp))
-    {
-      self.vc_error_message := sprintf('The property "%s" of "%s" already exists.\nYou can remove or update existing', pname, self.source_dir);
-      self.vc_is_valid := 0;
-      return;
-    }
-  {
-    declare exit handler for sqlstate '*' { goto endser; };
-
-    if (isarray (xml_tree (pvalue, 0)))
-      pvalue := serialize(xml_tree(pvalue, 0));
-     endser:;
-  }
-  YAC_DAV_PROP_SET (self.source_dir, pname, pvalue, connection_get ('vspx_user'));
+                                        if (isarray (xml_tree (pvalue, 0)))
+                                          pvalue := serialize(xml_tree(pvalue, 0));
+                                         endser:;
+                                      }
+                                      YAC_DAV_PROP_SET (self.source_dir, pname, pvalue, connection_get ('vspx_user'));
                                     ]]>
                                   </v:on-post>
                                 </v:button>
@@ -1676,40 +1672,37 @@ self.vc_data_bind (e);
                                     <td>Name</td>
                                     <td>Value</td>
                                   </tr>
-                                    <?vsp
-  declare inx, len, isf, id, tp integer;
-  declare pvalue varchar;
+                                  <?vsp
+                                    declare inx, len, isf, id, tp integer;
+                                    declare pvalue varchar;
 
-  isf := 1;
+                                    isf := 1;
+                                    id := _res_id;
+                                    if (is_dir = 1)
+                                      tp := 'C';
+                                    else
+                                      tp := 'R';
 
-  id := _res_id;
+                                    for select PROP_NAME, PROP_ID, blob_to_string (PROP_VALUE) as PROP_VALUE
+                                          from WS.WS.SYS_DAV_PROP
+                                         where PROP_PARENT_ID = id and
+                                               PROP_TYPE = tp do
+                                    {
+                                      isf := 0;
+                                      pvalue := deserialize (PROP_VALUE);
 
-  if (is_dir = 1)
-    tp := 'C';
-  else
-    tp := 'R';
-
-  for select PROP_NAME, PROP_ID, blob_to_string (PROP_VALUE) as PROP_VALUE
-        from WS.WS.SYS_DAV_PROP
-        where PROP_PARENT_ID = id and
-        PROP_TYPE = tp do
-    {
-      isf := 0;
-      pvalue := deserialize (PROP_VALUE);
-
-      if (isarray (pvalue))
-        {
-          declare ses any;
-          ses := string_output ();
-          http_value (xml_tree_doc (pvalue), null, ses);
-          pvalue := string_output_string (ses);
-        }
-
-      else if (isstring (PROP_VALUE))
-        pvalue := PROP_VALUE;
-      else
-        pvalue := '';
-                                    ?>
+                                      if (isarray (pvalue))
+                                      {
+                                        declare ses any;
+                                        ses := string_output ();
+                                        http_value (xml_tree_doc (pvalue), null, ses);
+                                        pvalue := string_output_string (ses);
+                                      }
+                                      else if (isstring (PROP_VALUE))
+                                        pvalue := PROP_VALUE;
+                                      else
+                                        pvalue := '';
+                                  ?>
                                   <tr>
                                     <td>
                                       <input type="checkbox" name="CB_<?V PROP_NAME ?>"/>
@@ -1718,16 +1711,16 @@ self.vc_data_bind (e);
                                     <td><?V pvalue ?></td>
                                   </tr>
                                   <?vsp
-    }
-  if (isf)
-    http ('<tr><td colspan=4>No properties found</td></tr>');
+                                    }
+                                    if (isf)
+                                      http ('<tr><td colspan=4>No properties found</td></tr>');
                                   ?>
                                 </table>
                               </td>
                             </tr>
                             <?vsp
-  if (isf = 0)
-    {
+                              if (isf = 0)
+                              {
                             ?>
                             <tr>
                               <td align="right">
@@ -1737,42 +1730,40 @@ self.vc_data_bind (e);
                             			    if (e.ve_initiator <> control)
                             			      return;
 
-  declare _res_id, is_dir, idx integer;
-  declare pname, tp varchar;
+                                      declare _res_id, is_dir, idx integer;
+                                      declare pname, tp varchar;
 
-  declare exit handler for sqlstate '*'
-  {
-    rollback work;
-    self.vc_is_valid := 0;
-    self.vc_error_message := __SQL_MESSAGE;
-    return;
-  };
-
-  if (right(self.source_dir, 1) = '/')
-    {
-      is_dir := 1;
-      _res_id := DAV_SEARCH_ID (self.source_dir, 'C');
-      tp := 'C';
-    }
-  else
-    {
-      is_dir := 0;
-      _res_id := DAV_SEARCH_ID (self.source_dir, 'R');
-      tp := 'R';
-    }
-  idx := 0;
-
-  while (pname := adm_next_checkbox ('CB_', self.vc_page.vc_event.ve_params, idx))
-    {
-      YAC_DAV_PROP_REMOVE (self.source_dir, pname, connection_get ('vspx_user'));
-    }
+                                      declare exit handler for sqlstate '*'
+                                      {
+                                        rollback work;
+                                        self.vc_is_valid := 0;
+                                        self.vc_error_message := __SQL_MESSAGE;
+                                        return;
+                                      };
+                                      if (right(self.source_dir, 1) = '/')
+                                      {
+                                        is_dir := 1;
+                                        _res_id := DAV_SEARCH_ID (self.source_dir, 'C');
+                                        tp := 'C';
+                                      }
+                                      else
+                                      {
+                                        is_dir := 0;
+                                        _res_id := DAV_SEARCH_ID (self.source_dir, 'R');
+                                        tp := 'R';
+                                      }
+                                      idx := 0;
+                                      while (pname := adm_next_checkbox ('CB_', self.vc_page.vc_event.ve_params, idx))
+                                      {
+                                        YAC_DAV_PROP_REMOVE (self.source_dir, pname, connection_get ('vspx_user'));
+                                      }
                                     ]]>
                                   </v:on-post>
                                 </v:button>
                               </td>
                             </tr>
                             <?vsp
-    }
+                              }
                             ?>
                           </table>
                         </td>
@@ -2133,235 +2124,221 @@ self.vc_data_bind (e);
                 <?vsp
                   }
                 ?>
-                      <tr align="center">
-                        <td colspan="2">
-                          <v:button action="simple" name="b_prop_cancel" value="Cancel" >
-                            <v:on-post>
-                              <![CDATA[
+                <tr align="center">
+                  <td colspan="2">
+                    <v:button action="simple" name="b_prop_cancel" value="Cancel" >
+                      <v:on-post>
+                        <![CDATA[
                 			    if (e.ve_initiator <> control)
                 			      return;
 
-  self.command := 0;
-  self.source_dir := '';
-  self.vc_data_bind(e);
-                              ]]>
-                            </v:on-post>
-                          </v:button>
-                          <v:button action="simple" name="b_prop_update" value="Update" >
-                            <v:on-post>
-                              <![CDATA[
+                          self.command := 0;
+                          self.source_dir := '';
+                          self.vc_data_bind(e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                    <v:button action="simple" name="b_prop_update" value="Update" >
+                      <v:on-post>
+                        <![CDATA[
                 			    if (e.ve_initiator <> control)
                 			      return;
 
-  declare i, own_id, own_grp integer;
-  declare mimetype, _recurse, _res_name varchar;
-  declare _fidx, _file any;
-  declare _perms, _p, _idx varchar;
-  declare _res_id, is_dir, _inh integer;
+                          declare i, own_id, own_grp integer;
+                          declare mimetype, _recurse, _res_name varchar;
+                          declare _fidx, _file any;
+                          declare _perms, _p, _idx varchar;
+                          declare _res_id, is_dir, _inh integer;
+                          declare cur_usr varchar;
 
-  declare cur_usr varchar;
+                          cur_usr := connection_get ('vspx_user');
+                          if (cur_usr not in ('dba', 'dav'))
+                          {
+                            self.vc_is_valid := 0;
+                            self.vc_error_message := 'Access denied.';
+                            return;
+                          }
+                          if (right(self.source_dir, 1) = '/')
+                          {
+                            is_dir := 1;
+                            _res_id := DAV_SEARCH_ID(self.source_dir, 'C');
+                          }
+                          else
+                          {
+                            is_dir := 0;
+                            _res_id := DAV_SEARCH_ID(self.source_dir, 'R');
+                          }
+                          if (_res_id <= 0)
+                          {
+                            self.vc_error_message := 'Resource could not be found';
+                            self.vc_is_valid := 0;
+                            return;
+                          }
+                          _res_name := trim (get_keyword ('res_name', self.vc_page.vc_event.ve_params, ''));
+                          if (_res_name is null  or _res_name = '')
+                          {
+                            self.vc_error_message := 'Resource name can be empty';
+                            self.vc_is_valid := 0;
+                            return;
+                          }
+                          own_id := atoi (get_keyword ('res_own', self.vc_page.vc_event.ve_params, ''));
+                          own_grp := atoi (get_keyword ('res_grp', self.vc_page.vc_event.ve_params, ''));
+                          if (is_dir = 0)
+                            mimetype := get_keyword ('mime_type1', self.vc_page.vc_event.ve_params, '');
 
-  cur_usr := connection_get ('vspx_user');
+                          if (own_id < 0)
+                            own_id := NULL;
 
-  if (cur_usr not in ('dba', 'dav'))
-    {
-      self.vc_is_valid := 0;
-      self.vc_error_message := 'Access denied.';
-      return;
-    }
+                          if (own_grp < 0)
+                            own_grp := NULL;
 
+                          if (__proc_exists ('DB.DBA.SYNC_MAKE_DAV_DIR'))
+                          {
+                             declare sync_ver, sync_type any;
+                             sync_ver := get_keyword ('s_v', self.vc_page.vc_event.ve_params, 'N');
+                             sync_type := get_keyword ('s_t', self.vc_page.vc_event.ve_params, 'N');
 
-  if (right(self.source_dir, 1) = '/')
-    {
-      is_dir := 1;
-      _res_id := DAV_SEARCH_ID(self.source_dir, 'C');
-    }
-  else
-    {
-      is_dir := 0;
-      _res_id := DAV_SEARCH_ID(self.source_dir, 'R');
-    }
+                             yac_syncml_update_type (sync_ver, sync_type, self.source_dir);
+                          }
 
-  if (_res_id <= 0)
-    {
-      self.vc_error_message := 'Resource could not be found';
-      self.vc_is_valid := 0;
-      return;
-    }
-
-  _res_name := trim (get_keyword ('res_name', self.vc_page.vc_event.ve_params, ''));
-
-  if (_res_name is null  or _res_name = '')
-    {
-      self.vc_error_message := 'Resource name can be empty';
-      self.vc_is_valid := 0;
-      return;
-    }
-  own_id := atoi (get_keyword ('res_own', self.vc_page.vc_event.ve_params, ''));
-  own_grp := atoi (get_keyword ('res_grp', self.vc_page.vc_event.ve_params, ''));
-
-  if (is_dir = 0)
-    mimetype := get_keyword ('mime_type1', self.vc_page.vc_event.ve_params, '');
-
-  if (own_id < 0)
-    own_id := NULL;
-
-  if (own_grp < 0)
-    own_grp := NULL;
-
-  if (__proc_exists ('DB.DBA.SYNC_MAKE_DAV_DIR'))
-    {
-       declare sync_ver, sync_type any;
-       sync_ver := get_keyword ('s_v', self.vc_page.vc_event.ve_params, 'N');
-       sync_type := get_keyword ('s_t', self.vc_page.vc_event.ve_params, 'N');
-
-       yac_syncml_update_type (sync_ver, sync_type, self.source_dir);
-    }
-
-  _perms := '';
-  _fidx := vector ('N', 'Off', 'T', 'Direct members', 'R', 'Recursively');
-  _idx := get_keyword ('idx', self.vc_page.vc_event.ve_params, _fidx[0]);
-  _inh := get_keyword ('inh', self.vc_page.vc_event.ve_params, _fidx[0]);
+                          _perms := '';
+                          _fidx := vector ('N', 'Off', 'T', 'Direct members', 'R', 'Recursively');
+                          _idx := get_keyword ('idx', self.vc_page.vc_event.ve_params, _fidx[0]);
+                          _inh := get_keyword ('inh', self.vc_page.vc_event.ve_params, _fidx[0]);
 
                           for (i := 0; i < 9; i := i + 1)
-    {
-      _p := get_keyword(sprintf('perm%i', i), self.vc_page.vc_event.ve_params, '');
-      if (_p <> '')
-        _perms := concat(_perms, '1');
-      else
-        _perms := concat(_perms, '0');
-    }
+                          {
+                            _p := get_keyword(sprintf('perm%i', i), self.vc_page.vc_event.ve_params, '');
+                            if (_p <> '')
+                              _perms := concat(_perms, '1');
+                            else
+                              _perms := concat(_perms, '0');
+                          }
 
-  if ('' <> get_keyword ('recurse', params, ''))
-    _recurse := 1;
-  else
-    _recurse := 0;
+                          if ('' <> get_keyword ('recurse', params, ''))
+                            _recurse := 1;
+                          else
+                            _recurse := 0;
 
-  if (_perms = '000000000')
-    _perms := (select U_DEF_PERMS from WS.WS.SYS_DAV_USER where U_ID = own_id);
+                          if (_perms = '000000000')
+                            _perms := (select U_DEF_PERMS from WS.WS.SYS_DAV_USER where U_ID = own_id);
 
-  _perms := concat(_perms, _idx);
+                          _perms := concat(_perms, _idx);
 
-  declare item, state, msg, m_dta, res varchar;
-  state := '00000';
+                          declare item, state, msg, m_dta, res varchar;
+                          state := '00000';
 
-  if (is_dir = 1)
-    {
-      exec ('update WS.WS.SYS_DAV_COL set COL_NAME = ?, COL_PERMS = ?, COL_OWNER = ?, COL_GROUP = ?, COL_INHERIT = ? where  COL_ID = ?',
-            state, msg, vector (_res_name, _perms, own_id, own_grp, _inh, _res_id), m_dta, res);
+                          if (is_dir = 1)
+                          {
+                            exec ('update WS.WS.SYS_DAV_COL set COL_NAME = ?, COL_PERMS = ?, COL_OWNER = ?, COL_GROUP = ?, COL_INHERIT = ? where  COL_ID = ?',
+                                  state, msg, vector (_res_name, _perms, own_id, own_grp, _inh, _res_id), m_dta, res);
 
-      if (_recurse)
-        {
-          declare _target_col varchar;
-          _target_col := WS.WS.COL_PATH (_res_id);
+                            if (_recurse)
+                            {
+                              declare _target_col varchar;
+                              _target_col := WS.WS.COL_PATH (_res_id);
 
-          declare cur_type, cur_perms varchar;
+                              declare cur_type, cur_perms varchar;
                               declare res_cur cursor for select RES_PERMS, RES_TYPE
                                                            from WS.WS.SYS_DAV_RES
-              where substring (RES_FULL_PATH, 1, length (_target_col)) = _target_col;
+                                                          where substring (RES_FULL_PATH, 1, length (_target_col)) = _target_col;
 
-          whenever not found goto next_one;
-          open res_cur (prefetch 1, exclusive);
+                              whenever not found goto next_one;
+                              open res_cur (prefetch 1, exclusive);
 
-          while (1)
-            {
-              fetch res_cur into cur_type, cur_perms;
-              update WS.WS.SYS_DAV_RES set RES_OWNER = own_id, RES_GROUP = own_grp where current of res_cur;
-              if (cur_perms <> _perms)
-                update WS.WS.SYS_DAV_RES set RES_PERMS = _perms where current of res_cur;
-              commit work;
-            }
-           next_one:
-            close res_cur;
+                              while (1)
+                              {
+                                fetch res_cur into cur_type, cur_perms;
+                                update WS.WS.SYS_DAV_RES set RES_OWNER = own_id, RES_GROUP = own_grp where current of res_cur;
+                                if (cur_perms <> _perms)
+                                  update WS.WS.SYS_DAV_RES set RES_PERMS = _perms where current of res_cur;
+                                commit work;
+                              }
+                            next_one:
+                              close res_cur;
 
-          update WS.WS.SYS_DAV_COL
-            set COL_PERMS = _perms,
-                COL_OWNER = own_id,
-                COL_GROUP = own_grp
-            where  COL_ID <> _res_id and
-                   substring (WS.WS.COL_PATH (COL_ID), 1, length (_target_col)) = _target_col;
-        }
+                              update WS.WS.SYS_DAV_COL
+                                 set COL_PERMS = _perms,
+                                     COL_OWNER = own_id,
+                                     COL_GROUP = own_grp
+                               where COL_ID <> _res_id and
+                                     substring (WS.WS.COL_PATH (COL_ID), 1, length (_target_col)) = _target_col;
+                            }
+                            commit work;
+                          }
+                          if (is_dir = 0)
+                          {
+                            declare _operm, full_path, _res_type varchar;
+                            declare _own, _grp integer;
 
-      commit work;
-    }
+                            full_path := concat (left (self.source_dir, strrchr (self.source_dir, '/') + 1), _res_name);
 
-  if (is_dir = 0)
-    {
+                            if (isstring (mimetype) and (mimetype like '%/%' or mimetype like 'link:%'))
+                              _res_type := mimetype;
+                            else
+                              _res_type := http_mime_type(full_path);
 
-      declare _operm, full_path, _res_type varchar;
-      declare _own, _grp integer;
+                            if (exists (select 1 from WS.WS.SYS_DAV_RES where RES_ID = _res_id))
+                            {
+                              _operm := '000000000N';
 
-      full_path := concat (left (self.source_dir, strrchr (self.source_dir, '/') + 1), _res_name);
+                              select RES_PERMS, RES_OWNER, RES_GROUP into _operm, _own, _grp
+                                from WS.WS.SYS_DAV_RES
+                                where RES_ID = _res_id;
 
-      if (isstring (mimetype) and (mimetype like '%/%' or mimetype like 'link:%'))
-        _res_type := mimetype;
-      else
-        _res_type := http_mime_type(full_path);
+                              declare cur_type1, cur_perms1 varchar;
 
-      if (exists (select 1 from WS.WS.SYS_DAV_RES where RES_ID = _res_id))
-        {
-          _operm := '000000000N';
+                              declare res_cur1 cursor for
+                                select RES_PERMS, RES_TYPE
+                                  from WS.WS.SYS_DAV_RES
+                                 where RES_ID = _res_id;
 
-          select RES_PERMS, RES_OWNER, RES_GROUP into _operm, _own, _grp
-            from WS.WS.SYS_DAV_RES
-            where RES_ID = _res_id;
+                              whenever not found goto next_one1;
+                              open res_cur1 (prefetch 1, exclusive);
 
-          declare cur_type1, cur_perms1 varchar;
+                              while (1)
+                              {
+                                fetch res_cur1 into cur_perms1, cur_type1;
 
-          declare res_cur1 cursor for
-            select RES_PERMS, RES_TYPE
-              from WS.WS.SYS_DAV_RES
-              where RES_ID = _res_id;
+                                update WS.WS.SYS_DAV_RES
+                                   set RES_OWNER = own_id,
+                                       RES_GROUP = own_grp
+                                 where current of res_cur1;
 
-          whenever not found goto next_one1;
+                                if (cur_perms1 <> _perms)
+                                  update WS.WS.SYS_DAV_RES set RES_PERMS = _perms where current of res_cur1;
 
-          open res_cur1 (prefetch 1, exclusive);
+                                if (mimetype <> '' and cur_type1 <> mimetype)
+                                  {
+                                    update WS.WS.SYS_DAV_RES set RES_TYPE = _res_type where current of res_cur1;
+                                  }
 
-          while (1)
-            {
-              fetch res_cur1 into cur_perms1, cur_type1;
-
-              update WS.WS.SYS_DAV_RES
-                set RES_OWNER = own_id,
-                    RES_GROUP = own_grp
-                where current of res_cur1;
-
-              if (cur_perms1 <> _perms)
-                update WS.WS.SYS_DAV_RES set RES_PERMS = _perms where current of res_cur1;
-
-              if (mimetype <> '' and cur_type1 <> mimetype)
-                {
-                  update WS.WS.SYS_DAV_RES set RES_TYPE = _res_type where current of res_cur1;
-                }
-
-              commit work;
-            }
-         next_one1:
-
-          close res_cur1;
-          YACUTIA_DAV_MOVE (self.source_dir, full_path, 1);
-
-        }
-      else
-        {
-          self.vc_error_message := 'There are no resource with such name';
-          self.vc_is_valid := 0;
-          return;
-        }
-    }
-  self.command := 0;
-  self.ds_items.vc_data_bind(e);
-  if (self.ds_items1 is not null)
-    self.ds_items1.vc_data_bind(e);
-  self.vc_data_bind(e);
-                              ]]>
-                            </v:on-post>
-                          </v:button>
-                        </td>
-                      </tr>
-                    </table>
+                                commit work;
+                              }
+                            next_one1:
+                              close res_cur1;
+                              YACUTIA_DAV_MOVE (self.source_dir, full_path, 1);
+                            }
+                            else
+                            {
+                              self.vc_error_message := 'There are no resource with such name';
+                              self.vc_is_valid := 0;
+                              return;
+                            }
+                          }
+                          self.command := 0;
+                          self.ds_items.vc_data_bind(e);
+                          if (self.ds_items1 is not null)
+                            self.ds_items1.vc_data_bind(e);
+                          self.vc_data_bind(e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                  </td>
+                </tr>
+              </table>
             </v:template>
-              <v:template name="edit_text_template" type="simple" enabled="-- equ(self.command, 11)">
+            <v:template name="edit_text_template" type="simple" enabled="-- equ(self.command, 11)">
               <table>
                 <?vsp
   declare _content, perms, cur_user varchar;
@@ -2461,16 +2438,16 @@ self.vc_data_bind (e);
                 </tr>
               </table>
             </v:template>
-              <v:template name="copy_move_template"
-                          type="simple"
-                          enabled="-- case when ((self.command = 5 or
-                                                  self.command = 6 or
-                                                  self.command = 7 or
-                                                  self.command = 4 or
-                                                  self.command = 9 or
-                                                  self.command = 10) and
-                                                 self.crfolder_mode = 0) then 1 else 0 end">
-              <div class="wg_grid objects_selector">  
+            <v:template name="copy_move_template"
+                        type="simple"
+                        enabled="-- case when ((self.command = 5 or
+                                                self.command = 6 or
+                                                self.command = 7 or
+                                                self.command = 4 or
+                                                self.command = 9 or
+                                                self.command = 10) and
+                                               self.crfolder_mode = 0) then 1 else 0 end">
+              <div class="wg_grid objects_selector">
                 <h3>
                     <?vsp
                       if (self.command = 5)
@@ -2492,188 +2469,188 @@ self.vc_data_bind (e);
                   <table class="wg_grid" rowspacing="0" cellspacing="0">
                     <thead>
                       <tr class="header">
-                  <th/>
-                  <th>Name</th>
-                  <th>Size</th>
-                  <th>Modified</th>
-                  <th>Type</th>
-                  <th>Owner</th>
-                  <th>Group</th>
-                  <th>Perms</th>
-                  <th/>
-                </tr>
+                        <th/>
+                        <th>Name</th>
+                        <th>Size</th>
+                        <th>Modified</th>
+                        <th>Type</th>
+                        <th>Owner</th>
+                        <th>Group</th>
+                        <th>Perms</th>
+                        <th/>
+                      </tr>
                     </thead>
                     <tbody>
-                <?vsp
+                    <?vsp
                       declare i, len, len1, j, colid, ownern, groupn, ressize, row integer;
-  declare ownername, groupname, modtime, _perms, perms, full_path, restype varchar;
+                      declare ownername, groupname, modtime, _perms, perms, full_path, restype varchar;
 
                       row := 1;
-  i := 0;
-  len := length (self.col_array);
+                      i := 0;
+                      len := length (self.col_array);
 
-  while (i < len)
-    {
-      full_path := aref (self.col_array, i);
-      colid := DAV_SEARCH_ID (full_path, 'c');
+                      while (i < len)
+                      {
+                        full_path := aref (self.col_array, i);
+                        colid := DAV_SEARCH_ID (full_path, 'c');
                         ownern := null;
                         groupn := null;
                         modtime := now ();
                         _perms := '100100000N';
-      whenever not found goto nf2;
-      if (isinteger (colid))
-        {
-    select COL_OWNER, COL_GROUP, COL_MOD_TIME, COL_PERMS
-         into ownern, groupn, modtime, _perms
-         from WS.WS.SYS_DAV_COL
-         where COL_ID = colid;
-   }
-      nf2:;
+                        whenever not found goto nf2;
+                        if (isinteger (colid))
+                        {
+                          select COL_OWNER, COL_GROUP, COL_MOD_TIME, COL_PERMS
+                            into ownern, groupn, modtime, _perms
+                            from WS.WS.SYS_DAV_COL
+                           where COL_ID = colid;
+                        }
+                        nf2:;
 
                         modtime := DB.DBA.Y_UI_DATE (modtime);
-      whenever not found goto nf3;
-      if (ownern is not null)
-        select U_NAME into ownername from DB.DBA.SYS_USERS where U_ID=ownern;
-      else
-        ownername := 'none';
-      if (groupn is not null)
-        select U_NAME into groupname from DB.DBA.SYS_USERS where U_ID=groupn;
-      else
-        groupname := 'none';
-      nf3:;
-                    len1 := length(_perms);
-                    j := 0;
-                    perms := '';
-                    while (j < len1)
-                    {
-                      if ((j = 0 or j = 3 or j = 6))
-                      {
-                        if (aref(_perms, j) = 49)
-                          perms := concat(perms, 'r');
+                        whenever not found goto nf3;
+                        if (ownern is not null)
+                          select U_NAME into ownername from DB.DBA.SYS_USERS where U_ID=ownern;
                         else
-                          perms := concat(perms, '-');
-                      }
-                      if ((j = 1 or j = 4 or j = 7))
-                      {
-                        if (aref(_perms, j) = 49)
-                          perms := concat(perms, 'w');
+                          ownername := 'none';
+                        if (groupn is not null)
+                          select U_NAME into groupname from DB.DBA.SYS_USERS where U_ID=groupn;
                         else
-                          perms := concat(perms, '-');
-                      }
-                      if ((j = 2 or j = 5 or j = 8))
-                      {
-                        if (aref(_perms, j) = 49)
-                          perms := concat(perms, 'x');
-                        else
-                          perms := concat(perms, '-');
-                      }
-                      j := j + 1;
-                    }
-                ?>
-                    <tr class="<?V case when mod (row, 2) = 0 then 'even' end ?>">
-                  <td><img src="images/dav_browser/foldr_16.png"/></td>
-                  <td><?V full_path ?></td>
-                  <td>N/A</td>
-                      <td><?vsp http (modtime); ?></td>
-                  <td>folder</td>
-                  <td><?V ownername ?></td>
-                  <td><?V groupname ?></td>
-                  <td><?V perms ?></td>
-                  <td>
-                    <?vsp
-                      if (aref(self.col_array, i + 1) is not null and aref(self.col_array, i + 1) <> '')
-                        http(aref(self.col_array, i + 1));
+                          groupname := 'none';
+                        nf3:;
+                        len1 := length(_perms);
+                        j := 0;
+                        perms := '';
+                        while (j < len1)
+                        {
+                          if ((j = 0 or j = 3 or j = 6))
+                          {
+                            if (aref(_perms, j) = 49)
+                              perms := concat(perms, 'r');
+                            else
+                              perms := concat(perms, '-');
+                          }
+                          if ((j = 1 or j = 4 or j = 7))
+                          {
+                            if (aref(_perms, j) = 49)
+                              perms := concat(perms, 'w');
+                            else
+                              perms := concat(perms, '-');
+                          }
+                          if ((j = 2 or j = 5 or j = 8))
+                          {
+                            if (aref(_perms, j) = 49)
+                              perms := concat(perms, 'x');
+                            else
+                              perms := concat(perms, '-');
+                          }
+                          j := j + 1;
+                        }
                     ?>
-                  </td>
-                </tr>
-                <?vsp
-                    i := i + 2;
+                    <tr class="<?V case when mod (row, 2) = 0 then 'even' end ?>">
+                      <td><img src="images/dav_browser/foldr_16.png"/></td>
+                      <td><?V full_path ?></td>
+                      <td>N/A</td>
+                      <td><?vsp http (modtime); ?></td>
+                      <td>folder</td>
+                      <td><?V ownername ?></td>
+                      <td><?V groupname ?></td>
+                      <td><?V perms ?></td>
+                      <td>
+                        <?vsp
+                          if (aref(self.col_array, i + 1) is not null and aref(self.col_array, i + 1) <> '')
+                            http(aref(self.col_array, i + 1));
+                        ?>
+                      </td>
+                    </tr>
+                    <?vsp
+                        i := i + 2;
                         row := row + 1;
-                  }
-                  i := 0;
-                  len := length(self.res_array);
-                  while (i < len)
-                  {
-                    full_path := aref(self.res_array, i);
-        colid := DAV_SEARCH_ID(full_path, 'r');
+                      }
+                      i := 0;
+                      len := length(self.res_array);
+                      while (i < len)
+                      {
+                        full_path := aref(self.res_array, i);
+                        colid := DAV_SEARCH_ID(full_path, 'r');
 
-        whenever not found goto nf4;
+                        whenever not found goto nf4;
                         ownern := null;
                         groupn := null;
                         modtime := now ();
                         _perms := '100100000N';
                         restype := 'N/A';
                         ressize := 0;
-        if (isinteger (colid))
-          {
-           select RES_OWNER, RES_GROUP, RES_MOD_TIME, RES_PERMS, RES_TYPE, length(RES_CONTENT)
-           into ownern, groupn, modtime, _perms, restype, ressize from WS.WS.SYS_DAV_RES where RES_ID=colid;
-          }
-        nf4:
+                        if (isinteger (colid))
+                        {
+                         select RES_OWNER, RES_GROUP, RES_MOD_TIME, RES_PERMS, RES_TYPE, length(RES_CONTENT)
+                         into ownern, groupn, modtime, _perms, restype, ressize from WS.WS.SYS_DAV_RES where RES_ID=colid;
+                        }
+                        nf4:
 
                         modtime := DB.DBA.Y_UI_DATE (modtime);
                         ressize := DB.DBA.Y_UI_SIZE (ressize);
-                    if (ownern is not null)
-                      ownername := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID=ownern), 'none');
-                    else
-                      ownername := 'none';
-                    if (groupn is not null)
-                      groupname := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID=groupn), 'none');
-                    else
-                      groupname := 'none';
-                    perms := '';
+                        if (ownern is not null)
+                          ownername := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID=ownern), 'none');
+                        else
+                          ownername := 'none';
+                        if (groupn is not null)
+                          groupname := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID=groupn), 'none');
+                        else
+                          groupname := 'none';
+                        perms := '';
                         for (j := 0; j < length(_perms); j := j + 1)
-                    {
-                      if ((j = 0 or j = 3 or j = 6))
-                      {
-                        if (aref(_perms, j) = 49)
-                          perms := concat(perms, 'r');
-                        else
-                          perms := concat(perms, '-');
-                      }
-                      if ((j = 1 or j = 4 or j = 7))
-                      {
-                        if (aref(_perms, j) = 49)
-                          perms := concat(perms, 'w');
-                        else
-                          perms := concat(perms, '-');
-                      }
-                      if ((j = 2 or j = 5 or j = 8))
-                      {
-                        if (aref(_perms, j) = 49)
-                          perms := concat(perms, 'x');
-                        else
-                          perms := concat(perms, '-');
-                      }
-                    }
+                        {
+                          if ((j = 0 or j = 3 or j = 6))
+                          {
+                            if (aref(_perms, j) = 49)
+                              perms := concat(perms, 'r');
+                            else
+                              perms := concat(perms, '-');
+                          }
+                          if ((j = 1 or j = 4 or j = 7))
+                          {
+                            if (aref(_perms, j) = 49)
+                              perms := concat(perms, 'w');
+                            else
+                              perms := concat(perms, '-');
+                          }
+                          if ((j = 2 or j = 5 or j = 8))
+                          {
+                            if (aref(_perms, j) = 49)
+                              perms := concat(perms, 'x');
+                            else
+                              perms := concat(perms, '-');
+                          }
+                        }
 
-                ?>
+                    ?>
                     <tr class="<?V case when mod (row, 2) = 0 then 'even' end ?>">
                       <td><img src="images/dav_browser/file_gen_16.png"/></td>
-                  <td><?V full_path ?></td>
+                      <td><?V full_path ?></td>
                       <td><?vsp http (ressize); ?></td>
                       <td><?vsp http (modtime); ?></td>
-                  <td><?V restype ?></td>
-                  <td><?V ownername ?></td>
-                  <td><?V groupname ?></td>
-                  <td><?V perms ?></td>
-                  <td>
+                      <td><?V restype ?></td>
+                      <td><?V ownername ?></td>
+                      <td><?V groupname ?></td>
+                      <td><?V perms ?></td>
+                      <td>
+                        <?vsp
+                          if (aref(self.res_array, i + 1) is not null and aref(self.res_array, i + 1) <> '')
+                            http(aref(self.res_array, i + 1));
+                        ?>
+                      </td>
+                    </tr>
                     <?vsp
-                      if (aref(self.res_array, i + 1) is not null and aref(self.res_array, i + 1) <> '')
-                        http(aref(self.res_array, i + 1));
-                    ?>
-                  </td>
-                </tr>
-                <?vsp
-                    i := i + 2;
+                        i := i + 2;
                         row := row + 1;
-                  }
-                ?>
+                      }
+                    ?>
                   </tbody></table>
                 </div>
               </div> <!-- objects_selector -->
 
-                <v:template name="properties_mod" type="simple" enabled="-- case when ((length(self.col_array) > 0 or length(self.res_array) > 0) and self.command = 4) then 1 else 0 end">
+              <v:template name="properties_mod" type="simple" enabled="-- case when ((length(self.col_array) > 0 or length(self.res_array) > 0) and self.command = 4) then 1 else 0 end">
                 <!--<script type="text/javascript">
                   var toolkitPath="toolkit"; var featureList=["tab","combolist"];
                 </script>
@@ -2834,7 +2811,7 @@ self.vc_data_bind (e);
                             </table>
                           </div><!-- wg_grid_vport -->
                           <div class="wg_cmd_button_row">
-                            <button type="button" onclick="directive_add()"><img src="images/icons/add_16.png" alt="Add directive"/>&nbsp;Add Directive</button> 
+                            <button type="button" onclick="directive_add()"><img src="images/icons/add_16.png" alt="Add directive"/>&nbsp;Add Directive</button>
                             Selected:
                             <button type="button" onclick="directive_rm_sel()"><img src="images/icons/trash_16.png" alt="Delete instructions"/>&nbsp;Delete Directive</button>
                             <button type="button" onclick="directive_rm_all()"><img src="images/icons/trash_16.png" alt="Delete All"/>&nbsp;Delete All</button>
@@ -2850,7 +2827,7 @@ self.vc_data_bind (e);
                         <option value="N">Off</option>
                         <option value="T">Direct members</option>
                         <option value="R">Recurcively</option>
-                        </select>
+                      </select>
                       <!--<a href="#" class="inline_hlp" onclick="inline_hlp(3)">?</a>-->
                       <br/>
                       <input type="checkbox" name="ckb_xper" id="ckb_xper"/>
@@ -2860,7 +2837,7 @@ self.vc_data_bind (e);
                   </div> <!-- t_tabs -->
                   <div class="wg_cmd_button_row">
                     <br/>
-                        <input type="checkbox" name="recurse" id="recurse"/>
+                    <input type="checkbox" name="recurse" id="recurse"/>
                     <label for="recurse">Include all subfolders and objects</label>
                     <!--<button><img src="images/icons/apps_16.png" alt="Apply"/>&nbsp;Apply</button>
                     <button><img src="images/icons/cancl_16.png" alt="Cancel"/>&nbsp;Cancel</button>-->
@@ -2895,7 +2872,7 @@ self.vc_data_bind (e);
                               _rperm := '000000000N';
                               _set_user := 0;
                               _set_group := 0;
-                              
+
                               if ('' <> get_keyword('recurse', control.vc_page.vc_event.ve_params, ''))
                                 _recurse := 1;
                               else
@@ -2920,8 +2897,8 @@ self.vc_data_bind (e);
                               if (get_keyword('rperm_ox', control.vc_page.vc_event.ve_params, '') = 'on') { aset (_rperm, 8, one); _pc := _pc + 1; }
                               if (get_keyword('ckb_set_ft_idx', control.vc_page.vc_event.ve_params, '') = 'on')
                               {
-                              _ind := get_keyword ('idx', params, '');
-                              _tp := substring (get_keyword ('idx', params, '*'), 1, 1);
+                                _ind := get_keyword ('idx', params, '');
+                                _tp := substring (get_keyword ('idx', params, '*'), 1, 1);
                               } else {
                                 _ind := '*';
                                 _tp := '*';
@@ -2931,7 +2908,7 @@ self.vc_data_bind (e);
                               if (get_keyword('cm_owner', control.vc_page.vc_event.ve_params, '') = 'on')
                               {
                                 usr := self.own_name;
-                              _user := atoi(aref (usr.vsl_item_values, usr.vsl_selected_inx));
+                                _user := atoi(aref (usr.vsl_item_values, usr.vsl_selected_inx));
                                 _set_user := 1;
                               } else {
                                 _user := -2;
@@ -2941,7 +2918,7 @@ self.vc_data_bind (e);
                               if (get_keyword('cm_group', control.vc_page.vc_event.ve_params, '') = 'on')
                               {
                                 grp := self.grp_name;
-                              _group := atoi(aref (grp.vsl_item_values, grp.vsl_selected_inx));
+                                _group := atoi(aref (grp.vsl_item_values, grp.vsl_selected_inx));
                                 _set_group := 1;
                               } else {
                                 _group := -2;
@@ -2951,9 +2928,9 @@ self.vc_data_bind (e);
                               _i := 0;
                               _props := vector();
                               declare _prop_set any;
-                              while (_i < length(params)) 
+                              while (_i < length(params))
                               {
-                                if (params[_i] = 'pr_set') 
+                                if (params[_i] = 'pr_set')
                                 {
                                   _prop_set := params[_i + 1];
                                   _props := vector_concat(_props,vector(vector(get_keyword('pr_instr_' || _prop_set,params,''),
@@ -2965,16 +2942,16 @@ self.vc_data_bind (e);
                               }
                               if (get_keyword('ckb_xper', control.vc_page.vc_event.ve_params, '') = 'on')
                                 _props := vector_concat(_props,vector(vector('s','xper','')));
-                              
+
                               _i := 0;
-                              while (_i < length(_props)) 
+                              while (_i < length(_props))
                               {
-                              {
-                                declare exit handler for sqlstate '*' { goto parser_error; };
+                                {
+                                  declare exit handler for sqlstate '*' { goto parser_error; };
                                   if (isarray (xml_tree (_props[_i][2], 0)))
                                     _props[_i][2] := serialize (xml_tree (_props[_i][2]));
-                              }
-                              parser_error:
+                                }
+                                parser_error:
                                 _i := _i + 1;
                               }
                               _iix := 0;
@@ -2983,7 +2960,7 @@ self.vc_data_bind (e);
                               {
                                 _resname := aref(self.col_array, _iix);
                                 _operm := '000000000N';
-        _col := DAV_SEARCH_ID (_resname, 'C');
+                                _col := DAV_SEARCH_ID (_resname, 'C');
                                 select COL_PERMS, COL_OWNER, COL_GROUP into _operm, _own, _grp from WS.WS.SYS_DAV_COL where COL_ID = _col;
                                 _cmp_perm := _operm;
                                 if (_set_group = 0)
@@ -3001,18 +2978,18 @@ self.vc_data_bind (e);
                                 }
                                 if (_tp <> '*')
                                   aset (_operm, 9, ascii (_tp));
-        update WS.WS.SYS_DAV_COL set COL_PERMS = _operm, COL_OWNER = _user, COL_GROUP = _group
-          where COL_ID = _col;
+                                update WS.WS.SYS_DAV_COL set COL_PERMS = _operm, COL_OWNER = _user, COL_GROUP = _group
+                                  where COL_ID = _col;
                                 foreach (any _prop in _props) do
                                 {
                                   if (_prop[0] = 's')
-                                    insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_VALUE, PROP_PARENT_ID, PROP_TYPE) 
+                                    insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_VALUE, PROP_PARENT_ID, PROP_TYPE)
                                       values (WS.WS.GETID ('P'), _prop[1], _prop[2], _col, 'C');
                                   else if (_prop[0] = 'r')
-                                    delete from WS.WS.SYS_DAV_PROP 
+                                    delete from WS.WS.SYS_DAV_PROP
                                      where PROP_NAME = _prop[1] and PROP_PARENT_ID = _col and PROP_TYPE = 'C';
                                   else if (_prop[0] = 'ra')
-                                    delete from WS.WS.SYS_DAV_PROP 
+                                    delete from WS.WS.SYS_DAV_PROP
                                      where PROP_PARENT_ID = _col and PROP_TYPE = 'C';
                                 }
 
@@ -3051,13 +3028,13 @@ self.vc_data_bind (e);
                                     foreach (any _prop in _props) do
                                     {
                                       if (_prop[0] = 's')
-                                        insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_VALUE, PROP_PARENT_ID, PROP_TYPE) 
+                                        insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_VALUE, PROP_PARENT_ID, PROP_TYPE)
                                           values (WS.WS.GETID ('P'), _prop[1], _prop[2], cur_res_id, 'R');
                                       else if (_prop[0] = 'r')
-                                        delete from WS.WS.SYS_DAV_PROP 
+                                        delete from WS.WS.SYS_DAV_PROP
                                          where PROP_NAME = _prop[1] and PROP_PARENT_ID = cur_res_id and PROP_TYPE = 'R';
                                       else if (_prop[0] = 'ra')
-                                        delete from WS.WS.SYS_DAV_PROP 
+                                        delete from WS.WS.SYS_DAV_PROP
                                          where PROP_PARENT_ID = cur_res_id and PROP_TYPE = 'R';
                                     }
                                     commit work;
@@ -3075,7 +3052,7 @@ self.vc_data_bind (e);
                                     _operm := cur_col_perms;
                                     _ix := 0;
                                     while (_ix < 10)
-                                  {
+                                    {
                                       if (aref (_sperm, _ix) = one)
                                         aset (_operm, _ix, one);
                                       if (aref (_rperm, _ix) = one)
@@ -3093,13 +3070,13 @@ self.vc_data_bind (e);
                                     foreach (any _prop in _props) do
                                     {
                                       if (_prop[0] = 's')
-                                        insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_VALUE, PROP_PARENT_ID, PROP_TYPE) 
+                                        insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_VALUE, PROP_PARENT_ID, PROP_TYPE)
                                           values (WS.WS.GETID ('P'), _prop[1], _prop[2], cur_col_id, 'C');
                                       else if (_prop[0] = 'r')
-                                        delete from WS.WS.SYS_DAV_PROP 
+                                        delete from WS.WS.SYS_DAV_PROP
                                          where PROP_NAME = _prop[1] and PROP_PARENT_ID = cur_col_id and PROP_TYPE = 'C';
                                       else if (_prop[0] = 'ra')
-                                        delete from WS.WS.SYS_DAV_PROP 
+                                        delete from WS.WS.SYS_DAV_PROP
                                          where PROP_PARENT_ID = cur_col_id and PROP_TYPE = 'C';
                                     }
                                     commit work;
@@ -3159,13 +3136,13 @@ self.vc_data_bind (e);
                                 foreach (any _prop in _props) do
                                 {
                                   if (_prop[0] = 's')
-                                    insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_VALUE, PROP_PARENT_ID, PROP_TYPE) 
+                                    insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_VALUE, PROP_PARENT_ID, PROP_TYPE)
                                       values (WS.WS.GETID ('P'), _prop[1], _prop[2], _res_id, 'R');
                                   else if (_prop[0] = 'r')
-                                    delete from WS.WS.SYS_DAV_PROP 
+                                    delete from WS.WS.SYS_DAV_PROP
                                      where PROP_NAME = _prop[1] and PROP_PARENT_ID = _res_id and PROP_TYPE = 'R';
                                   else if (_prop[0] = 'ra')
-                                    delete from WS.WS.SYS_DAV_PROP 
+                                    delete from WS.WS.SYS_DAV_PROP
                                      where PROP_PARENT_ID = _res_id and PROP_TYPE = 'R';
                                 }
                               }
@@ -3326,7 +3303,7 @@ self.vc_data_bind (e);
                       Choose destination:
                   </h3>
                 </v:template>
-            </v:template>
+        </v:template>
               <v:template name="browse_template"
                           type="simple"
                           enabled="-- case when (self.crfolder_mode = 0 and
@@ -3418,11 +3395,11 @@ self.vc_data_bind (e);
                         </v:script>
                       </v:on-post>
                 </v:button>
-                <v:button name="b_create" 
-                          style="image" 
-                          value="images/dav_browser/foldr_new_16.png" 
-                          xhtml_alt="New folder" 
-                          xhtml_title="New folder" 
+                <v:button name="b_create"
+                          style="image"
+                          value="images/dav_browser/foldr_new_16.png"
+                          xhtml_alt="New folder"
+                          xhtml_title="New folder"
                           action="simple">
                   <v:on-post>
                     <v:script>
@@ -3441,21 +3418,21 @@ self.vc_data_bind (e);
                         (control as vspx_select_list).vsl_items := vector();
                         (control as vspx_select_list).vsl_item_values := vector();
                         (control as vspx_select_list).vsl_selected_inx := self.show_details;
-                        (control as vspx_select_list).vsl_items := vector_concat((control as vspx_select_list).vsl_items, 
+                        (control as vspx_select_list).vsl_items := vector_concat((control as vspx_select_list).vsl_items,
                                                                                  vector('Details'));
-                        (control as vspx_select_list).vsl_item_values := vector_concat((control as vspx_select_list).vsl_item_values, 
+                        (control as vspx_select_list).vsl_item_values := vector_concat((control as vspx_select_list).vsl_item_values,
                                                                                        vector('0'));
-                        (control as vspx_select_list).vsl_items := vector_concat((control as vspx_select_list).vsl_items, 
+                        (control as vspx_select_list).vsl_items := vector_concat((control as vspx_select_list).vsl_items,
                                                                                  vector('List'));
-                        (control as vspx_select_list).vsl_item_values := vector_concat((control as vspx_select_list).vsl_item_values, 
+                        (control as vspx_select_list).vsl_item_values := vector_concat((control as vspx_select_list).vsl_item_values,
                                                                                        vector('1'));
                       ]]>
                     </v:script>
                   </v:after-data-bind>
                 </v:select-list>
-                <v:button name="b_search" 
-                          value="Search" 
-                          xhtml_alt="Search" 
+                <v:button name="b_search"
+                          value="Search"
+                          xhtml_alt="Search"
                           action="simple">
                   <v:on-post>
                     <v:script>
@@ -3465,8 +3442,8 @@ self.vc_data_bind (e);
                         self.col_array := vector();
                         self.res_array := vector();
                         self.command := 0;
-      self.dir_select := 0;
-      self.search_temp.vc_enabled := 1;
+                        self.dir_select := 0;
+                        self.search_temp.vc_enabled := 1;
                         self.vc_data_bind(e);
                       ]]>
                     </v:script>
@@ -3489,223 +3466,222 @@ self.vc_data_bind (e);
                     <table id="dav_br_list_table" class="vdir_listtable" border="0" cellspacing="0" cellpadding="2">
                       <?vsp
                         if (self.show_details = 0)
-                          {
+                        {
                       ?>
-          <tr class="vdir_listheader" border="1">
-        <th/>
-        <th/>
-        <th>
-            <v:button action="simple" name="name_ord" value="Name" style="url">
-          <v:on-post><![CDATA[
-              self.set_ord ('name', e, self.ds_items);
-              ]]></v:on-post>
-            </v:button>
-        </th>
-        <th>
-            <v:button action="simple" name="size_ord" value="Size" style="url">
-          <v:on-post><![CDATA[
-              self.set_ord ('size', e, self.ds_items);
-              ]]></v:on-post>
-            </v:button>
-        </th>
-        <th>
-            <v:button action="simple" name="mod_ord" value="Modified" style="url">
-          <v:on-post><![CDATA[
-              self.set_ord ('modified', e, self.ds_items);
-              ]]></v:on-post>
-            </v:button>
-        </th>
-        <th>
-            <v:button action="simple" name="type_ord" value="Type" style="url">
-          <v:on-post><![CDATA[
-              self.set_ord ('type', e, self.ds_items);
-              ]]></v:on-post>
-            </v:button>
-        </th>
-        <th>
-            <v:button action="simple" name="own_ord" value="Owner" style="url">
-          <v:on-post><![CDATA[
-              self.set_ord ('owner', e, self.ds_items);
-              ]]></v:on-post>
-            </v:button>
-        </th>
-        <th>
-            <v:button action="simple" name="grp_ord" value="Group" style="url">
-          <v:on-post><![CDATA[
-              self.set_ord ('group', e, self.ds_items);
-              ]]></v:on-post>
-            </v:button>
-        </th>
-        <th>Perms</th>
-                            </tr>
-                      <?vsp
-                          }
-                        if (length(self.curpath) > 0)
-                          {
-                    ?>
-                    <tr class="vdir_listrow">
-                      <td>
-                        <input type="checkbox"
-                               name="selectall"
-                               value="Select All"
-                               onClick="selectAllCheckboxes(this.form, this)"/>
-                      </td>
-                      <td>
-                        <v:button name="b_up2"
-                                  style="image"
-                                  value="images/dav_browser/up_16.png"
-                                  xhtml_alt="Up one level"
-                                  action="simple">
-                            <v:on-post>
-                              <v:script>
-                                <![CDATA[
-                                  declare pos integer;
-                                  declare before_path varchar;
-                                  pos := strrchr (self.curpath, '/');
-                                  if (isnull (pos))
-                                    pos := 0;
-                                  before_path := self.curpath;
-                                  self.curpath := left (self.curpath, pos);
-                                  if (self.dir_select <> 0)
-                                    self.sel_items := concat (self.curpath, '/');
-                                  self.ds_items.vc_data_bind (e);
-                                  self.vc_data_bind (e);
-                                ]]>
-                              </v:script>
-                            </v:on-post>
+                      <tr class="vdir_listheader" border="1">
+                        <th/>
+                        <th/>
+                        <th>
+                          <v:button action="simple" name="name_ord" value="Name" style="url">
+                            <v:on-post><![CDATA[
+                              self.set_ord ('name', e, self.ds_items);
+                            ]]></v:on-post>
                           </v:button>
-                        </td>
-                        <td>
-                          <v:button name="b_up3"
-                                    style="url"
-                                    value="Up..."
-                                    action="simple">
-                            <v:on-post>
-                              <v:script>
-                                <![CDATA[
-                                  declare pos integer;
-                                  declare before_path varchar;
-                                  pos := strrchr (self.curpath, '/');
-                                  if (isnull (pos))
-                                    pos := 0;
-                                  before_path := self.curpath;
-                                  self.curpath := left (self.curpath, pos);
-                                  if (self.dir_select <> 0)
-                                    self.sel_items := concat (self.curpath, '/');
-                                  self.ds_items.vc_data_bind (e);
-                                  self.vc_data_bind (e);
-                                ]]>
-                              </v:script>
-                            </v:on-post>
+                        </th>
+                        <th>
+                          <v:button action="simple" name="size_ord" value="Size" style="url">
+                            <v:on-post><![CDATA[
+                              self.set_ord ('size', e, self.ds_items);
+                            ]]></v:on-post>
                           </v:button>
-                        </td>
-                        <?vsp
-                          if (self.show_details = 0)
-                          {
-                        ?>
-                        <td colspan="6"/>
-                        <?vsp
-                          }
-                        ?>
+                        </th>
+                        <th>
+                          <v:button action="simple" name="mod_ord" value="Modified" style="url">
+                            <v:on-post><![CDATA[
+                              self.set_ord ('modified', e, self.ds_items);
+                            ]]></v:on-post>
+                          </v:button>
+                        </th>
+                        <th>
+                          <v:button action="simple" name="type_ord" value="Type" style="url">
+                            <v:on-post><![CDATA[
+                              self.set_ord ('type', e, self.ds_items);
+                            ]]></v:on-post>
+                          </v:button>
+                        </th>
+                        <th>
+                          <v:button action="simple" name="own_ord" value="Owner" style="url">
+                            <v:on-post><![CDATA[
+                              self.set_ord ('owner', e, self.ds_items);
+                            ]]></v:on-post>
+                          </v:button>
+                        </th>
+                        <th>
+                          <v:button action="simple" name="grp_ord" value="Group" style="url">
+                            <v:on-post><![CDATA[
+                              self.set_ord ('group', e, self.ds_items);
+                            ]]></v:on-post>
+                          </v:button>
+                        </th>
+                        <th>Perms</th>
                       </tr>
                       <?vsp
                         }
+                        if (length(self.curpath) > 0)
+                        {
                       ?>
-                    </table>
-                  </v:template>
-                  <v:template name="rows" type="repeat">
-                    <v:template name="template4" type="browse" name-to-remove="table" set-to-remove="both">
-                      <table>
-                        <?vsp
-                          self.r_count1 := self.r_count1 + 1;
-                          http (sprintf ('<tr class="%s">', 
-                                         case when mod (self.r_count1, 2) then 'listing_row_odd' else 'listing_row_even' end));
-                          declare imgname varchar;
-                          declare rowset any;
-                          rowset := (control as vspx_row_template).te_rowset;
-                          if (length(rowset) > 2 and not isnull(rowset[2]))
-                            imgname := rowset[2];
-                          else if (rowset[0] <> 0)
-                          {
-                            declare check_hidden integer;
-                            if (self.curpath = '' and (control as vspx_row_template).te_rowset[1] = 'DAV')
-                              check_hidden := 1;
-                            else
-                              check_hidden := 0;
-                            if (self.command <> 5 and self.command <> 6 and check_hidden = 0)
-                              http(sprintf('<td><input type="checkbox" name="CBC_%s"/></td>', 
-                                   concat('/', self.curpath, '/', (control as vspx_row_template).te_rowset[1], '/')));
-                            else
-                              http('<td/>');
-                            imgname := 'images/dav_browser/foldr_16.png';
-                          }
-                          else
-                          {
-                            if (self.command <> 5 and self.command <> 6)
-                              http(sprintf('<td><input type="checkbox" name="CBR_%s"/></td>', 
-                                   concat('/', self.curpath, '/', (control as vspx_row_template).te_rowset[1])));
-                            imgname := 'images/dav_browser/file_gen_16.png';
-                          }
-                        ?>
+                      <tr class="vdir_listrow">
                         <td>
-                          <img src="<?V imgname ?>"/>
+                          <input type="checkbox"
+                                 name="selectall"
+                                 value="Select All"
+                                 onClick="selectAllCheckboxes(this.form, this)"/>
                         </td>
-                        <td nowrap="nowrap">
+                        <td>
+                          <v:button name="b_up2"
+                                    style="image"
+                                    value="images/dav_browser/up_16.png"
+                                    xhtml_alt="Up one level"
+                                    action="simple">
+                              <v:on-post>
+                                <v:script>
+                                  <![CDATA[
+                                    declare pos integer;
+                                    declare before_path varchar;
+                                    pos := strrchr (self.curpath, '/');
+                                    if (isnull (pos))
+                                      pos := 0;
+                                    before_path := self.curpath;
+                                    self.curpath := left (self.curpath, pos);
+                                    if (self.dir_select <> 0)
+                                      self.sel_items := concat (self.curpath, '/');
+                                    self.ds_items.vc_data_bind (e);
+                                    self.vc_data_bind (e);
+                                  ]]>
+                                </v:script>
+                              </v:on-post>
+                            </v:button>
+                          </td>
+                          <td>
+                            <v:button name="b_up3"
+                                      style="url"
+                                      value="Up..."
+                                      action="simple">
+                              <v:on-post>
+                                <v:script>
+                                  <![CDATA[
+                                    declare pos integer;
+                                    declare before_path varchar;
+                                    pos := strrchr (self.curpath, '/');
+                                    if (isnull (pos))
+                                      pos := 0;
+                                    before_path := self.curpath;
+                                    self.curpath := left (self.curpath, pos);
+                                    if (self.dir_select <> 0)
+                                      self.sel_items := concat (self.curpath, '/');
+                                    self.ds_items.vc_data_bind (e);
+                                    self.vc_data_bind (e);
+                                  ]]>
+                                </v:script>
+                              </v:on-post>
+                            </v:button>
+                          </td>
                           <?vsp
-                            if (self.dir_select = 0 or self.dir_select = 2 OR rowset[0] <> 0)
+                            if (self.show_details = 0)
                             {
                           ?>
-			  <v:button name="b_item" style="url" action="simple" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s">
-			      <v:before-render><![CDATA[
-				  if ((control.vc_parent as vspx_row_template).te_rowset[0] = 0 and
-					(self.dir_select = 0 or self.dir_select = 2) and
-					self.browse_type = 2)
-			            {
-				      declare file any;
-				      file := concat('/',
-                                       self.curpath,
-                                       '/',
-				       (control.vc_parent as vspx_row_template).te_rowset[1]);
+                          <td colspan="6"/>
+                          <?vsp
+                            }
+                          ?>
+                        </tr>
+                        <?vsp
+                          }
+                        ?>
+                      </table>
+                    </v:template>
+                    <v:template name="rows" type="repeat">
+                      <v:template name="template4" type="browse" name-to-remove="table" set-to-remove="both">
+                        <table>
+                          <?vsp
+                            self.r_count1 := self.r_count1 + 1;
+                            http (sprintf ('<tr class="%s">',
+                                           case when mod (self.r_count1, 2) then 'listing_row_odd' else 'listing_row_even' end));
+                            declare imgname varchar;
+                            declare rowset any;
+                            rowset := (control as vspx_row_template).te_rowset;
+                            if (length(rowset) > 2 and not isnull(rowset[2]))
+                              imgname := rowset[2];
+                            else if (rowset[0] <> 0)
+                            {
+                              declare check_hidden integer;
+                              if (self.curpath = '' and (control as vspx_row_template).te_rowset[1] = 'DAV')
+                                check_hidden := 1;
+                              else
+                                check_hidden := 0;
+                              if (self.command <> 5 and self.command <> 6 and check_hidden = 0)
+                                http(sprintf('<td><input type="checkbox" name="CBC_%s"/></td>',
+                                     concat('/', self.curpath, '/', (control as vspx_row_template).te_rowset[1], '/')));
+                              else
+                                http('<td/>');
+                              imgname := 'images/dav_browser/foldr_16.png';
+                            }
+                            else
+                            {
+                              if (self.command <> 5 and self.command <> 6)
+                                http(sprintf('<td><input type="checkbox" name="CBR_%s"/></td>',
+                                     concat('/', self.curpath, '/', (control as vspx_row_template).te_rowset[1])));
+                              imgname := 'images/dav_browser/file_gen_16.png';
+                            }
+                          ?>
+                          <td>
+                            <img src="<?V imgname ?>"/>
+                          </td>
+                          <td nowrap="nowrap">
+                            <?vsp
+                              if (self.dir_select = 0 or self.dir_select = 2 OR rowset[0] <> 0)
+                              {
+                            ?>
+                  			    <v:button name="b_item" style="url" action="simple" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s">
+                  			      <v:before-render><![CDATA[
+                      				  if ((control.vc_parent as vspx_row_template).te_rowset[0] = 0 and
+                      					    (self.dir_select = 0 or self.dir_select = 2) and
+                      					    self.browse_type = 2)
+			                          {
+                    				      declare file any;
+                    				      file := concat('/',
+                                                 self.curpath,
+                                                 '/',
+                                                 (control.vc_parent as vspx_row_template).te_rowset[1]);
 				                          control.bt_url := sprintf ('view_dav_res.vsp?file=%U&sid=%s&realm=%s', file, self.sid, self.realm);
-		                    }
-				  ]]></v:before-render>
+		                            }
+				                      ]]></v:before-render>
                             <v:on-post>
-                                <![CDATA[
-  declare before_path varchar;
-  if ((control.vc_parent as vspx_row_template).te_rowset[0] <> 0)
-    {
-      if (length (self.curpath) > 0)
-        self.curpath := concat (self.curpath, '/');
-      before_path := self.curpath;
+                              <![CDATA[
+                                declare before_path varchar;
 
-      self.curpath := concat (self.curpath, (control.vc_parent as vspx_row_template).te_rowset[1]);
+                                if ((control.vc_parent as vspx_row_template).te_rowset[0] <> 0)
+                                {
+                                  if (length (self.curpath) > 0)
+                                    self.curpath := concat (self.curpath, '/');
+                                  before_path := self.curpath;
 
-      if (self.dir_select <> 0)
-        self.sel_items := concat(self.curpath, '/');
+                                  self.curpath := concat (self.curpath, (control.vc_parent as vspx_row_template).te_rowset[1]);
 
-      self.ds_items.vc_data_bind (e);
-    }
+                                  if (self.dir_select <> 0)
+                                    self.sel_items := concat(self.curpath, '/');
 
-
-  if ((control.vc_parent as vspx_row_template).te_rowset[0] = 0 and (self.dir_select = 0 or self.dir_select = 2))
-    {
-      if (self.browse_type = 2)
-        {
-          http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf ('Content-type: %s\t\nLocation: %s\r\n',
-                                (control.vc_parent as vspx_row_template).te_rowset[5],
-                                concat('/',
-                                       self.curpath,
-                                       '/',
-                                       (control.vc_parent as vspx_row_template).te_rowset[1])));
-        }
-      else
-        {
-          self.sel_items := concat(self.curpath, '/', (control.vc_parent as vspx_row_template).te_rowset[1]);
-        }
-    }
-  self.vc_data_bind(e);
-                                ]]>
+                                  self.ds_items.vc_data_bind (e);
+                                }
+                                if ((control.vc_parent as vspx_row_template).te_rowset[0] = 0 and (self.dir_select = 0 or self.dir_select = 2))
+                                {
+                                  if (self.browse_type = 2)
+                                  {
+                                    http_request_status ('HTTP/1.1 302 Found');
+                                    http_header (sprintf ('Content-type: %s\t\nLocation: %s\r\n',
+                                                          (control.vc_parent as vspx_row_template).te_rowset[5],
+                                                          concat('/',
+                                                                 self.curpath,
+                                                                 '/',
+                                                                 (control.vc_parent as vspx_row_template).te_rowset[1])));
+                                  }
+                                  else
+                                  {
+                                    self.sel_items := concat(self.curpath, '/', (control.vc_parent as vspx_row_template).te_rowset[1]);
+                                  }
+                                }
+                                self.vc_data_bind(e);
+                              ]]>
                             </v:on-post>
                           </v:button>
                           <?vsp
@@ -3886,8 +3862,8 @@ self.vc_data_bind (e);
                             }
                             else
                             {
-			      self.vc_is_valid := 0;
-			      self.vc_error_message := 'There are no resources selected to perform operation.';
+                  			      self.vc_is_valid := 0;
+                  			      self.vc_error_message := 'There are no resources selected to perform operation.';
                               if (self.browse_type = 1)
                                 self.dir_select := 1;
                               else
@@ -3927,8 +3903,8 @@ self.vc_data_bind (e);
                             }
                             else
                             {
-			      self.vc_is_valid := 0;
-			      self.vc_error_message := 'There are no resources selected to perform operation.';
+                  			      self.vc_is_valid := 0;
+                  			      self.vc_error_message := 'There are no resources selected to perform operation.';
                               if (self.browse_type = 1)
                                 self.dir_select := 1;
                               else
@@ -3947,7 +3923,7 @@ self.vc_data_bind (e);
                           <![CDATA[
                             declare _resname, _single varchar;
                             declare i integer;
-                            
+
                             self.source_dir := self.curpath;
                             self.col_array := vector();
                             self.res_array := vector();
@@ -3965,22 +3941,22 @@ self.vc_data_bind (e);
                             }
                             if (length(self.res_array) > 0 or length(self.col_array) > 0)
                             {
-                              if (length(self.res_array) + length(self.col_array) <= 2) 
+                              if (length(self.res_array) + length(self.col_array) <= 2)
                               {
                                 self.command := 12;
-                                self.source_dir := _single; 
-                              } 
-                              else 
+                                self.source_dir := _single;
+                              }
+                              else
                               {
                                 self.command := 4;
                                 self.crfolder_mode := 0;
                               }
                             }
-			    else
-			    {
-			      self.vc_is_valid := 0;
-			      self.vc_error_message := 'There are no resources selected to perform operation.';
-			    }
+                  			    else
+                  			    {
+                  			      self.vc_is_valid := 0;
+                  			      self.vc_error_message := 'There are no resources selected to perform operation.';
+                  			    }
                             self.ds_items.vc_data_bind(e);
                             self.vc_data_bind(e);
                           ]]>

@@ -146,7 +146,7 @@
 					       {
 					         goto nextxt;
 					       };
-					     xt := xtree_doc (RES_CONTENT);
+					       xt := xtree_doc (RES_CONTENT);
 					     }
 
 					     if (xpath_eval ('[ xmlns:sql="urn:schemas-openlink-com:xml-sql" ]//sql:sparql', xt)

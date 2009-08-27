@@ -104,7 +104,7 @@
 				      }
 				  }
 
-				avail := vector ();  
+				avail := vector ();
 				for select "COLUMN" from SYS_COLS where "TABLE" = self.tbl and not position ("COLUMN", self.pkeys) order by COL_ID do
 				   {
                                      avail := vector_concat (avail, vector ("COLUMN"));

@@ -1,26 +1,26 @@
-<?vsp 
---  
+<?vsp
+--
 --  $Id$
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2006 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 ?>
 <html>
 <head>
@@ -62,7 +62,7 @@
     var isNN4=isNN && !isDOM
     var isNC4=isNN && !isDOM
     var isMozilla=isNN6=isNN && isDOM
-    
+
     var tables = new Array();
     var selected_tables = new Array();
     var filtered_tables = new Array();
@@ -77,11 +77,11 @@
     var func = null;
     var proc = null;
     var table_filter = '';
-    
+
     var last_range;
-    
+
     function init_data() {
-    
+
   /* This part should be generated */
   <?vsp
     declare prows, trows, crows, i, j, k, ccount integer;
@@ -131,13 +131,13 @@
     j := 0;
     while(j < trows) {
       http('var t = new Object();\n', stream);
-      http(sprintf('t.name = \'"%I"."%I"."%I"\';\n', 
+      http(sprintf('t.name = \'"%I"."%I"."%I"\';\n',
               cast(aref(aref(tresult,j),0) as varchar),
               cast(aref(aref(tresult,j),1) as varchar),
               cast(aref(aref(tresult,j),2) as varchar)), stream);
       cparams := vector(concat(cast(aref(aref(tresult,j),0) as varchar), '.',
                                cast(aref(aref(tresult,j),1) as varchar), '.',
-                               cast(aref(aref(tresult,j),2) as varchar)), 
+                               cast(aref(aref(tresult,j),2) as varchar)),
                         cast(aref(aref(tresult,j),2) as varchar)
                        );
       http('t.columns = new Array();\n', stream);
@@ -168,7 +168,7 @@
       }
       j := j + 1;
     }
-tables_done:    
+tables_done:
     categories := vector('date', 'number', 'string', 'time', 'type');
     ccount := length(categories);
     k := 0;
@@ -205,7 +205,7 @@ tables_done:
       }
       k := k + 1;
     }
-func_done:    
+func_done:
 --    goto done;
     getprocedures := 'select P_NAME from SYS_PROCEDURES';
     state := '00000';
@@ -225,21 +225,21 @@ done:
   ?>
   /* End of generated part */
   }
-  
+
   function on_body_load() {
     init_data();
     div_table_selector_fill_tables_list();
     div_table_selector_fill_selected_tables_list();
     tables_selector_enter();
   }
-  
+
   function layerStyle(layerObject) {
     if(layerObject["style"]) {
       return layerObject["style"];
     }
     return layerObject;
   }
-  
+
   function remember() {
     if(isMSIE) {
       if(document.selection) {
@@ -247,7 +247,7 @@ done:
       }
     }
   }
-  
+
   function sql_expression_replace_selected(newval) {
     if(isMozilla) {
       var from = document.form_final.sql_expression.selectionStart;
@@ -267,7 +267,7 @@ done:
     }
     alert('This feature is not supported by your web browser.');
   }
-  
+
   function table_left() {
     var newval = filtered_tables[document.form_final.final_tables_list.selectedIndex].name;
     sql_expression_replace_selected(newval);
@@ -301,13 +301,13 @@ done:
     alert("Your browser doesn't support layers.");
     return null;
   }
-  
+
   function format_column(column) {
     if (column != null)
       return "" + column.name + " (" + column.type + ") ";
     return null;
   }
-  
+
   function div_column_selector_fill_columns_list() {
     while(document.form_column_selector.columns_list.length > 0) {
       document.form_column_selector.columns_list.options[0] = null;
@@ -323,7 +323,7 @@ done:
       }
     }
   }
-  
+
    function div_final_fill_columns_list() {
      while(document.form_final.final_columns_list.length > 0) {
        document.form_final.final_columns_list.options[0] = null;
@@ -335,7 +335,7 @@ done:
           {
          name = format_column(columns[idx]);
          document.form_final.final_columns_list.options[document.form_final.final_columns_list.length] = new Option(name, name, false, false);
-          } 
+          }
        }
      }
      document.form_final.final_columns_list.selectedIndex = 0;
@@ -351,7 +351,7 @@ done:
       sql += " from " + from_expression;
       document.form_final.sql_expression.value = sql;
     }
-  
+
     function div_final_fill_procedures_list() {
     while(document.form_final.procedures_list.length > 0) {
       document.form_final.procedures_list.options[0] = null;
@@ -403,7 +403,7 @@ done:
     }
     return formated_name;
   }
-  
+
   function format_recursively_join_expression(obj) {
     var left = "";
     var j = obj.thejoin;
@@ -420,11 +420,11 @@ done:
     else {
       right = j.right_column.table.name;
     }
-    return "( " + left + " " + j.kind + " " + right + 
-      " on " + j.left_column.table.name + "." + j.left_column.name + 
+    return "( " + left + " " + j.kind + " " + right +
+      " on " + j.left_column.table.name + "." + j.left_column.name +
       " = " + j.right_column.table.name + "." + j.right_column.name + " )";
   }
-  
+
   function retrieve_obj_contained_table(j, t1, t2) {
     if(j.left_join) {
       var retval = retrieve_obj_contained_table(j.left_join.thejoin, t1, t2);
@@ -446,7 +446,7 @@ done:
     }
     return null;
   }
-  
+
   function get_join_contained_table(top, t1, t2) {
     for(i = 0; i < top.length; i++) {
       obj = top[i];
@@ -457,7 +457,7 @@ done:
     }
     return null;
   }
-  
+
   function format_from_expression() {
     var from_objects = new Array();
     for(var i = 0; i < selected_tables.length; i++) {
@@ -521,7 +521,7 @@ done:
     }
     document.form_join_selector.from_expression.value = "... from "  + from_expression + " ... ";
   }
-  
+
   function div_join_selector_fill_joins_list() {
     while(document.form_join_selector.joins_list.length > 0) {
       document.form_join_selector.joins_list.options[0] = null;
@@ -533,7 +533,7 @@ done:
       document.form_join_selector.joins_list.options[document.form_join_selector.joins_list.length] = opt;
     }
   }
-  
+
   function div_join_selector_left() {
     var idx = document.form_join_selector.joins_list.selectedIndex;
     if(idx > -1) {
@@ -542,7 +542,7 @@ done:
       format_from_expression();
     }
   }
-  
+
   function div_join_selector_right() {
     var left_columns = selected_tables[document.form_join_selector.left_tables_list.selectedIndex].columns;
     var left_column = left_columns[document.form_join_selector.left_columns_list.selectedIndex];
@@ -563,7 +563,7 @@ done:
     div_join_selector_fill_joins_list();
     format_from_expression();
   }
-  
+
   function div_join_selector_fill_left_columns_list() {
     while(document.form_join_selector.left_columns_list.length > 0) {
       document.form_join_selector.left_columns_list.options[0] = null;
@@ -578,7 +578,7 @@ done:
     }
     document.form_join_selector.left_columns_list.selectedIndex = 0;
   }
-  
+
   function div_join_selector_fill_right_columns_list() {
     while(document.form_join_selector.right_columns_list.length > 0) {
       document.form_join_selector.right_columns_list.options[0] = null;
@@ -593,7 +593,7 @@ done:
     }
     document.form_join_selector.right_columns_list.selectedIndex = 0;
   }
-  
+
   function div_column_selector_fill_selected_columns_list() {
     while(document.form_column_selector.selected_columns_list.length > 0) {
       document.form_column_selector.selected_columns_list.options[0] = null;
@@ -606,7 +606,7 @@ done:
           }
     }
   }
-  
+
   function div_table_selector_fill_tables_list() {
     while(document.form_table_selector.tables_list.length > 0) {
       document.form_table_selector.tables_list.options[0] = null;
@@ -626,7 +626,7 @@ done:
       }
     }
   }
-  
+
    function div_final_fill_tables_list() {
      while(document.form_final.final_tables_list.length > 0) {
        document.form_final.final_tables_list.options[0] = null;
@@ -647,7 +647,7 @@ done:
       document.form_table_selector.selected_tables_list.options[document.form_table_selector.selected_tables_list.length] = new Option(name, name, false, false);
     }
   }
-  
+
   function remove_table_selected_columns(tname) {
     tmp = new Array();
     for(i = 0; i < selected_columns.length; i++) {
@@ -657,7 +657,7 @@ done:
     }
     selected_columns = tmp;
   }
-  
+
   function div_join_selector_fill_left_tables_list() {
     while(document.form_join_selector.left_tables_list.length > 0) {
       document.form_join_selector.left_tables_list.options[0] = null;
@@ -669,7 +669,7 @@ done:
     document.form_join_selector.left_tables_list.selectedIndex = 0;
     div_join_selector_fill_left_columns_list();
   }
-  
+
   function div_join_selector_fill_right_tables_list() {
     while(document.form_join_selector.right_tables_list.length > 0) {
       document.form_join_selector.right_tables_list.options[0] = null;
@@ -681,7 +681,7 @@ done:
     document.form_join_selector.right_tables_list.selectedIndex = 1;
     div_join_selector_fill_right_columns_list();
   }
-  
+
   function div_columns_selector_fill_tables_list() {
     while(document.form_column_selector.tables_list.length > 0) {
       document.form_column_selector.tables_list.options[0] = null;
@@ -692,7 +692,7 @@ done:
     }
     document.form_column_selector.tables_list.selectedIndex = 0;
   }
-  
+
   function div_columns_selector_right() {
     var opts = document.form_column_selector.columns_list.options;
     var columns = selected_tables[document.form_column_selector.tables_list.selectedIndex].columns;
@@ -709,14 +709,14 @@ done:
       div_column_selector_fill_selected_columns_list();
     }
   }
-  
+
   function div_columns_selector_left() {
     if(document.form_column_selector.selected_columns_list.selectedIndex >= 0 ) {
       selected_columns = deleteFromArray(selected_columns, document.form_column_selector.selected_columns_list.selectedIndex);
       div_column_selector_fill_selected_columns_list();
     }
   }
-  
+
   function div_table_selector_right() {
     var opts = document.form_table_selector.tables_list.options;
     var i = 0;
@@ -732,7 +732,7 @@ done:
       div_table_selector_fill_selected_tables_list();
     }
   }
-  
+
   function div_table_selector_left() {
     if(document.form_table_selector.selected_tables_list.selectedIndex >= 0 ) {
       var tname = selected_tables[document.form_table_selector.selected_tables_list.selectedIndex].name;
@@ -741,12 +741,12 @@ done:
       remove_table_selected_columns(tname);
     }
   }
-  
+
   function div_table_selector_filter() {
     table_filter = document.form_table_selector.text_tables_filter.value;
     div_table_selector_fill_tables_list();
   }
-  
+
   function deleteFromArray(array_var, idx) {
     var new_array = new Array();
     for(i=0; i<array_var.length; i++) {
@@ -757,7 +757,7 @@ done:
     array_var = new_array;
     return new_array;
   }
-  
+
   function swapInArray(array_var, idx1, idx2) {
     if(array_var.length < idx1 + 1) return array_var;
     if(array_var.length < idx2 + 1) return array_var;
@@ -766,7 +766,7 @@ done:
     array_var[idx2] = temp;
     return array_var;
   }
-  
+
   function div_columns_selector_up() {
     if(document.form_column_selector.selected_columns_list.length > 1 ) {
       var idx = document.form_column_selector.selected_columns_list.selectedIndex;
@@ -777,7 +777,7 @@ done:
       }
     }
   }
-  
+
   function div_columns_selector_down() {
     if(document.form_column_selector.selected_columns_list.length > 1 ) {
       var idx = document.form_column_selector.selected_columns_list.selectedIndex;
@@ -788,14 +788,14 @@ done:
       }
     }
   }
-  
+
   function tables_selector_enter() {
     layerStyle(layer("div_table_selector")).visibility=isNN4?"show":"visible";
     layerStyle(layer("div_columns_selector")).visibility=isNN4?"hide":"hidden";
     layerStyle(layer("div_join_selector")).visibility=isNN4?"hide":"hidden";
     layerStyle(layer("div_final")).visibility=isNN4?"hide":"hidden";
   }
-  
+
   function columns_selector_enter() {
     if(selected_tables.length == 0) {
       alert('At least one table should be selected.\n\nPlease, try again.');
@@ -844,7 +844,7 @@ done:
     div_final_fill_procedures_list();
     div_final_fill_sql();
   }
-  
+
   // -->
   </script>
 </head>
@@ -859,7 +859,7 @@ done:
       <table border="0" width="100%">
         <tr>
           <th>
-            Enter filter for tables: 
+            Enter filter for tables:
             <input name="text_tables_filter" type="text"/>
             <input style="width:80px" name="btn_tables_filter" value="Filter" type="button" onclick="javascript: div_table_selector_filter(); return false;" />
           </th>
@@ -957,7 +957,7 @@ done:
       <table border="0" width="100%">
         <tr>
           <th>
-            Enter join rule for tables: 
+            Enter join rule for tables:
           </th>
           <th>
             &nbsp;
@@ -1065,7 +1065,7 @@ done:
       <table border="0" width="100%">
         <tr>
           <th width="50%">
-            Use following for SQL customization: 
+            Use following for SQL customization:
           </th>
           <th width="50%">
             Resulting SQL expression (you can change it manually or by using left screen side tools).
