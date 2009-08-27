@@ -1027,8 +1027,7 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
   declare vlist, trans, guess, do_cn, best_id int;
   declare ct, cl any;
 
-  if (path like '%/') -- a directory
-    return 0;
+
   hf := rfc1808_parse_uri (path);
   tmp := hf[2];
 
@@ -1073,6 +1072,9 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
   from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = rulelist_uri do
     {
        declare alang, aenc, variant, path_str varchar;
+
+       if (VM_URI not like '/%' and path like '%/') -- directory and non-absolute variant pattern
+	 goto next_variant;
 
        if (VM_URI like '/%')
 	 path_str := path;
