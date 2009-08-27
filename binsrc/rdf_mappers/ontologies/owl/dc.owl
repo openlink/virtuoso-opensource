@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE rdf:RDF [
+    <!ENTITY rdfns 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'>
+    <!ENTITY rdfsns 'http://www.w3.org/2000/01/rdf-schema#'>
+    <!ENTITY dcns 'http://purl.org/dc/elements/1.1/'>
+    <!ENTITY dctermsns 'http://purl.org/dc/terms/'>
+    <!ENTITY dctypens 'http://purl.org/dc/dcmitype/'>
+    <!ENTITY dcamns 'http://purl.org/dc/dcam/'>
+    <!ENTITY skosns 'http://www.w3.org/2004/02/skos/core#'>
+]>
+<rdf:RDF xmlns:skos="http://www.w3.org/2004/02/skos/core#" xmlns:dcam="http://purl.org/dc/dcam/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xml:base="http://purl.org/dc/elements/1.1/">
+<rdf:Description rdf:about="http://purl.org/dc/elements/1.1/">
+<dcterms:title xml:lang="en-US">DCMI Namespace for the Dublin Core Metadata Element Set, Version 1.1</dcterms:title>
+<rdfs:comment>To comment on this schema, please contact dcmifb@dublincore.org.</rdfs:comment>
+<dcterms:publisher xml:lang="en-US">The Dublin Core Metadata Initiative</dcterms:publisher>
+<dcterms:modified>2008-01-14</dcterms:modified>
+</rdf:Description>
+<rdf:Property rdf:about="http://purl.org/dc/elements/1.1/title">
+<rdfs:label xml:lang="en-US">Title</rdfs:label>
+<rdfs:comment xml:lang="en-US">A name given to the resource.</rdfs:comment>
+<rdfs:isDefinedBy rdf:resource="http://purl.org/dc/elements/1.1/"/>
+<dcterms:issued>1999-07-02</dcterms:issued>
+<dcterms:modified>2008-01-14</dcterms:modified>
+<rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+<dcterms:hasVersion rdf:resource="http://dublincore.org/usage/terms/history/#title-006"/>
+<skos:note xml:lang="en-US">A second property with the same name as this property has been declared in the dcterms: namespace (http://purl.org/dc/terms/).  See the Introduction to the document "DCMI Metadata Terms" (http://dublincore.org/documents/dcmi-terms/) for an explanation.</skos:note>
+</rdf:Property>
+<rdf:Property rdf:about="http://purl.org/dc/elements/1.1/creator">
+<rdfs:label xml:lang="en-US">Creator</rdfs:label>
+<rdfs:comment xml:lang="en-US">An entity primarily responsible for making the resource.</rdfs:comment>
+<dcterms:description xml:lang="en-US">Examples of a Creator include a person, an organization, or a service. Typically, the name of a Creator should be used to indicate the entity.</dcterms:description>
+<rdfs:isDefinedBy rdf:resource="http://purl.org/dc/elements/1.1/"/>
+<dcterms:issued>1999-07-02</dcterms:issued>
+<dcterms:modified>2008-01-14</dcterms:modified>
+<rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+<dcterms:hasVersion rdf:resource="http://dublincore.org/usage/terms/history/#creator-006"/>
+<skos:note xml:lang="en-US">A second property with the same name as this property has been declared in the dcterms: namespace (http://purl.org/dc/terms/).  See the Introduction to the document "DCMI Metadata Terms" (http://dublincore.org/documents/dcmi-terms/) for an explanation.</skos:note>
+</rdf:Property>
+<rdf:Property rdf:about="http://purl.org/dc/elements/1.1/subject">
+<rdfs:label xml:lang="en-US">Subject</rdfs:label>
+<rdfs:comment xml:lang="en-US">The topic of the resource.</rdfs:comment>
+<dcterms:description xml:lang="en-US">Typically, the subject will be represented using keywords, key phrases, or classification codes. Recommended best practice is to use a controlled vocabulary. To describe the spatial or temporal topic of the resource, use the Coverage element.</dcterms:description>
+<rdfs:isDefinedBy rdf:resource="http://purl.org/dc/elements/1.1/"/>
+<dcterms:issued>1999-07-02</dcterms:issued>
+<dcterms:modified>2008-01-14</dcterms:modified>
+<rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+<dcterms:hasVersion rdf:resource="http://dublincore.org/usage/terms/history/#subject-006"/>
+<skos:note xml:lang="en-US">A second property with the same name as this property has been declared in the dcterms: namespace (http://purl.org/dc/terms/).  See the Introduction to the document "DCMI Metadata Terms" (http://dublincore.org/documents/dcmi-terms/) for an explanation.</skos:note>
+</rdf:Property>
+<rdf:Property rdf:about="http://purl.org/dc/elements/1.1/description">
+<rdfs:label xml:lang="en-US">Description</rdfs:label>
+<rdfs:comment xml:lang="en-US">An account of the resource.</rdfs:comment>
+<dcterms:description xml:lang="en-US">Description may include but is not limited to: an abstract, a table of contents, a graphical representation, or a free-text account of the resource.</dcterms:description>
+<rdfs:isDefinedBy rdf:resource="http://purl.org/dc/elements/1.1/"/>
+<dcterms:issued>1999-07-02</dcterms:issued>
+<dcterms:modified>2008-01-14</dcterms:modified>
+<rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+<dcterms:hasVersion rdf:resource="http://dublincore.org/usage/terms/history/#description-006"/>
+<skos:note xml:lang="en-US">A second property with the same name as this property has been declared in the dcterms: namespace (http://purl.org/dc/terms/).  See the Introduction to the document "DCMI Metadata Terms" (http://dublincore.org/documents/dcmi-terms/) for an explanation.</skos:note>
+</rdf:Property>
+<rdf:Property rdf:about="http://purl.org/dc/elements/1.1/publisher">
+<rdfs:label xml:lang="en-US">Publisher</rdfs:label>
+<rdfs:comment xml:lang="en-US">An entity responsible for making the resource available.</rdfs:comment>
+<dcterms:description xml:lang="en-US">Examples of a Publisher include a person, an organization, or a service. Typically, the name of a Publisher should be used to indicate the entity.</dcterms:description>
+<rdfs:isDefinedBy rdf:resource="http://purl.org/dc/elements/1.1/"/>
+<dcterms:issued>1999-07-02</dcterms:issued>
+<dcterms:modified>2008-01-14</dcterms:modified>
+<rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+<dcterms:hasVersion rdf:resource="http://dublincore.org/usage/terms/history/#publisher-006"/>
+<skos:note xml:lang="en-US">A second property with the same name as this property has been declared in the dcterms: namespace (http://purl.org/dc/terms/).  See the Introduction to the document "DCMI Metadata Terms" (http://dublincore.org/documents/dcmi-terms/) for an explanation.</skos:note>
+</rdf:Property>
+<rdf:Property rdf:about="http://purl.org/dc/elements/1.1/contributor">
+<rdfs:label xml:lang="en-US">Contributor</rdfs:label>
+<rdfs:comment xml:lang="en-US">An entity responsible for making contributions to the resource.</rdfs:comment>
+<dcterms:description xml:lang="en-US">Examples of a Contributor include a person, an organization, or a service. Typically, the name of a Contributor should be used to indicate the entity.</dcterms:description>
+<rdfs:isDefinedBy rdf:resource="http://purl.org/dc/elements/1.1/"/>
+<dcterms:issued>1999-07-02</dcterms:issued>
+<dcterms:modified>2008-01-14</dcterms:modified>
+<rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+<dcterms:hasVersion rdf:resource="http://dublincore.org/usage/terms/history/#contributor-006"/>
+<skos:note xml:lang="en-US">A second property with the same name as this property has been declared in the dcterms: namespace (http://purl.org/dc/terms/).  See the Introduction to the document "DCMI Metadata Terms" (http://dublincore.org/documents/dcmi-terms/) for an explanation.</skos:note>
+</rdf:Property>
+<rdf:Property rdf:about="http://purl.org/dc/elements/1.1/date">
+<rdfs:label xml:lang="en-US">Date</rdfs:label>
+<rdfs:comment xml:lang="en-US">A point or period of time associated with an event in the lifecycle of the resource.</rdfs:comment>
+<dcterms:description xml:lang="en-US">Date may be used to express temporal information at any level of granularity.  Recommended best practice is to use an encoding scheme, such as the W3CDTF profile of ISO 8601 [W3CDTF].</dcterms:description>
+<rdfs:isDefinedBy rdf:resource="http://purl.org/dc/elements/1.1/"/>
+<dcterms:issued>1999-07-02</dcterms:issued>
+<dcterms:modified>2008-01-14</dcterms:modified>
+<rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+<dcterms:hasVersion rdf:resource="http://dublincore.org/usage/terms/history/#date-006"/>
+<skos:note xml:lang="en-US">A second property with the same name as this property has been declared in the dcterms: namespace (http://purl.org/dc/terms/).  See the Introduction to the document "DCMI Metadata Terms" (http://dublincore.org/documents/dcmi-terms/) for an explanation.</skos:note>
+</rdf:Property>
+<rdf:Property rdf:about="http://purl.org/dc/elements/1.1/type">
+<rdfs:label xml:lang="en-US">Type</rdfs:label>
+<rdfs:comment xml:lang="en-US">The nature or genre of the resource.</rdfs:comment>
+<dcterms:description xml:lang="en-US">Recommended best practice is to use a controlled vocabulary such as the DCMI Type Vocabulary [DCMITYPE]. To describe the file format, physical medium, or dimensions of the resource, use the Format element.</dcterms:description>
+<rdfs:isDefinedBy rdf:resource="http://purl.org/dc/elements/1.1/"/>
+<dcterms:issued>1999-07-02</dcterms:issued>
+<dcterms:modified>2008-01-14</dcterms:modified>
+<rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+<dcterms:hasVersion rdf:resource="http://dublincore.org/usage/terms/history/#type-006"/>
+<skos:note xml:lang="en-US">A second property with the same name as this property has been declared in the dcterms: namespace (http://purl.org/dc/terms/).  See the Introduction to the document "DCMI Metadata Terms" (http://dublincore.org/documents/dcmi-terms/) for an explanation.</skos:note>
+</rdf:Property>
+<rdf:Property rdf:about="http://purl.org/dc/elements/1.1/format">
+<rdfs:label xml:lang="en-US">Format</rdfs:label>
+<rdfs:comment xml:lang="en-US">The file format, physical medium, or dimensions of the resource.</rdfs:comment>
+<dcterms:description xml:lang="en-US">Examples of dimensions include size and duration. Recommended best practice is to use a controlled vocabulary such as the list of Internet Media Types [MIME].</dcterms:description>
+<rdfs:isDefinedBy rdf:resource="http://purl.org/dc/elements/1.1/"/>
+<dcterms:issued>1999-07-02</dcterms:issued>
+<dcterms:modified>2008-01-14</dcterms:modified>
+<rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+<dcterms:hasVersion rdf:resource="http://dublincore.org/usage/terms/history/#format-007"/>
+<skos:note xml:lang="en-US">A second property with the same name as this property has been declared in the dcterms: namespace (http://purl.org/dc/terms/).  See the Introduction to the document "DCMI Metadata Terms" (http://dublincore.org/documents/dcmi-terms/) for an explanation.</skos:note>
+</rdf:Property>
+<rdf:Property rdf:about="http://purl.org/dc/elements/1.1/identifier">
+<rdfs:label xml:lang="en-US">Identifier</rdfs:label>
+<rdfs:comment xml:lang="en-US">An unambiguous reference to the resource within a given context.</rdfs:comment>
+<dcterms:description xml:lang="en-US">Recommended best practice is to identify the resource by means of a string conforming to a formal identification system. </dcterms:description>
+<rdfs:isDefinedBy rdf:resource="http://purl.org/dc/elements/1.1/"/>
+<dcterms:issued>1999-07-02</dcterms:issued>
+<dcterms:modified>2008-01-14</dcterms:modified>
+<rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+<dcterms:hasVersion rdf:resource="http://dublincore.org/usage/terms/history/#identifier-006"/>
+<skos:note xml:lang="en-US">A second property with the same name as this property has been declared in the dcterms: namespace (http://purl.org/dc/terms/).  See the Introduction to the document "DCMI Metadata Terms" (http://dublincore.org/documents/dcmi-terms/) for an explanation.</skos:note>
+</rdf:Property>
+<rdf:Property rdf:about="http://purl.org/dc/elements/1.1/source">
+<rdfs:label xml:lang="en-US">Source</rdfs:label>
+<rdfs:comment xml:lang="en-US">A related resource from which the described resource is derived.</rdfs:comment>
+<dcterms:description xml:lang="en-US">The described resource may be derived from the related resource in whole or in part. Recommended best practice is to identify the related resource by means of a string conforming to a formal identification system.</dcterms:description>
+<rdfs:isDefinedBy rdf:resource="http://purl.org/dc/elements/1.1/"/>
+<dcterms:issued>1999-07-02</dcterms:issued>
+<dcterms:modified>2008-01-14</dcterms:modified>
+<rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+<dcterms:hasVersion rdf:resource="http://dublincore.org/usage/terms/history/#source-006"/>
+<skos:note xml:lang="en-US">A second property with the same name as this property has been declared in the dcterms: namespace (http://purl.org/dc/terms/).  See the Introduction to the document "DCMI Metadata Terms" (http://dublincore.org/documents/dcmi-terms/) for an explanation.</skos:note>
+</rdf:Property>
+<rdf:Property rdf:about="http://purl.org/dc/elements/1.1/language">
+<rdfs:label xml:lang="en-US">Language</rdfs:label>
+<rdfs:comment xml:lang="en-US">A language of the resource.</rdfs:comment>
+<dcterms:description xml:lang="en-US">Recommended best practice is to use a controlled vocabulary such as RFC 4646 [RFC4646].</dcterms:description>
+<rdfs:isDefinedBy rdf:resource="http://purl.org/dc/elements/1.1/"/>
+<dcterms:issued>1999-07-02</dcterms:issued>
+<dcterms:modified>2008-01-14</dcterms:modified>
+<rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+<dcterms:hasVersion rdf:resource="http://dublincore.org/usage/terms/history/#language-007"/>
+<rdfs:seeAlso rdf:resource="http://www.ietf.org/rfc/rfc4646.txt"/>
+<skos:note xml:lang="en-US">A second property with the same name as this property has been declared in the dcterms: namespace (http://purl.org/dc/terms/).  See the Introduction to the document "DCMI Metadata Terms" (http://dublincore.org/documents/dcmi-terms/) for an explanation.</skos:note>
+</rdf:Property>
+<rdf:Property rdf:about="http://purl.org/dc/elements/1.1/relation">
+<rdfs:label xml:lang="en-US">Relation</rdfs:label>
+<rdfs:comment xml:lang="en-US">A related resource.</rdfs:comment>
+<dcterms:description xml:lang="en-US">Recommended best practice is to identify the related resource by means of a string conforming to a formal identification system. </dcterms:description>
+<rdfs:isDefinedBy rdf:resource="http://purl.org/dc/elements/1.1/"/>
+<dcterms:issued>1999-07-02</dcterms:issued>
+<dcterms:modified>2008-01-14</dcterms:modified>
+<rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+<dcterms:hasVersion rdf:resource="http://dublincore.org/usage/terms/history/#relation-006"/>
+<skos:note xml:lang="en-US">A second property with the same name as this property has been declared in the dcterms: namespace (http://purl.org/dc/terms/).  See the Introduction to the document "DCMI Metadata Terms" (http://dublincore.org/documents/dcmi-terms/) for an explanation.</skos:note>
+</rdf:Property>
+<rdf:Property rdf:about="http://purl.org/dc/elements/1.1/coverage">
+<rdfs:label xml:lang="en-US">Coverage</rdfs:label>
+<rdfs:comment xml:lang="en-US">The spatial or temporal topic of the resource, the spatial applicability of the resource, or the jurisdiction under which the resource is relevant.</rdfs:comment>
+<dcterms:description xml:lang="en-US">Spatial topic and spatial applicability may be a named place or a location specified by its geographic coordinates. Temporal topic may be a named period, date, or date range. A jurisdiction may be a named administrative entity or a geographic place to which the resource applies. Recommended best practice is to use a controlled vocabulary such as the Thesaurus of Geographic Names [TGN]. Where appropriate, named places or time periods can be used in preference to numeric identifiers such as sets of coordinates or date ranges.</dcterms:description>
+<rdfs:isDefinedBy rdf:resource="http://purl.org/dc/elements/1.1/"/>
+<dcterms:issued>1999-07-02</dcterms:issued>
+<dcterms:modified>2008-01-14</dcterms:modified>
+<rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+<dcterms:hasVersion rdf:resource="http://dublincore.org/usage/terms/history/#coverage-006"/>
+<skos:note xml:lang="en-US">A second property with the same name as this property has been declared in the dcterms: namespace (http://purl.org/dc/terms/).  See the Introduction to the document "DCMI Metadata Terms" (http://dublincore.org/documents/dcmi-terms/) for an explanation.</skos:note>
+</rdf:Property>
+<rdf:Property rdf:about="http://purl.org/dc/elements/1.1/rights">
+<rdfs:label xml:lang="en-US">Rights</rdfs:label>
+<rdfs:comment xml:lang="en-US">Information about rights held in and over the resource.</rdfs:comment>
+<dcterms:description xml:lang="en-US">Typically, rights information includes a statement about various property rights associated with the resource, including intellectual property rights.</dcterms:description>
+<rdfs:isDefinedBy rdf:resource="http://purl.org/dc/elements/1.1/"/>
+<dcterms:issued>1999-07-02</dcterms:issued>
+<dcterms:modified>2008-01-14</dcterms:modified>
+<rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+<dcterms:hasVersion rdf:resource="http://dublincore.org/usage/terms/history/#rights-006"/>
+<skos:note xml:lang="en-US">A second property with the same name as this property has been declared in the dcterms: namespace (http://purl.org/dc/terms/).  See the Introduction to the document "DCMI Metadata Terms" (http://dublincore.org/documents/dcmi-terms/) for an explanation.</skos:note>
+</rdf:Property>
+</rdf:RDF>

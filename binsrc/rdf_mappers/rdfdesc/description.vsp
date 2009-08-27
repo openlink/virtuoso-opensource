@@ -6,7 +6,7 @@
    declare project_home_page any;
    declare page_resource_uri, proxy_iri, proxy_iri2, rdf_link, label, true_label, _subject any;
    declare arr, data, meta, h1, h2, inx, gr, host, pars any;
-   declare iri_type varchar;
+   declare iri_type, iri_uri varchar;
    declare do_sponge, proxy_iri_fn int;
 
    connection_set ('ns_ctr', 1); /* for unknown xmlns to print in RDFa */
@@ -117,7 +117,7 @@
    label := rdfdesc_label (_S, _G, lines);
    label := cast (label as varchar);
    true_label := label;
-   iri_type := rdfdesc_type (_G, _S);
+   iri_type := rdfdesc_type (_G, _S, iri_uri);
 
    exec (sprintf ('sparql prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/>
 	select ?o where { graph <%S> { <%S> rdfs:comment ?o } }', _G, _S), null, null, vector (), 0, meta, data);
@@ -183,11 +183,11 @@
 
     <div id="header">
       <div id="hd_l">
-	  <h1 id="title">About: <a href="<?= case when page_resource_uri like 'nodeID://%' then rdfdesc_http_url (page_resource_uri) else proxy_iri2 end ?>"><?vsp http (sprintf ('%s', label)); ?><small><?V iri_type ?></small></a></h1>
+	  <h1 id="title">About: <a href="<?= case when page_resource_uri like 'nodeID://%' then rdfdesc_http_url (page_resource_uri) else proxy_iri2 end ?>"><?vsp http (sprintf ('%s', label)); ?></a></h1>
         <div id="homelink">
         </div>
         <div class="page-resource-uri">
-	   An Entity in Data Space: <a href="http://<?V host ?>"><?V host ?></a>
+	    An Entity of Type: <a href="<?V iri_uri ?>"><?V iri_type ?></a>, in Data Space: <a href="http://<?V host ?>"><?V host ?></a>
         </div>
       </div> <!-- hd_l -->
       <div id="hd_r">
@@ -200,12 +200,7 @@
       <p><?vsp http (sprintf ('%s', _subject)); ?></p>
 
 <!-- proptable -->
-      <table class="description">
-        <tr>
-          <th class="property">Has Attribute</th>
-	  <th class="referenced_by">Referenced By Attribute</th>
-          <th><span class="value">Value</span></th>
-	</tr>
+      <table class="description"><tr><th class="property">Property</th><th class="value">Value</th></tr>
 
 <?vsp
       exec (sprintf ('select "p" as PRED from (sparql select distinct ?p where { graph <%S> { <%S> ?p ?o } }) sp order by 1', _G, _S),

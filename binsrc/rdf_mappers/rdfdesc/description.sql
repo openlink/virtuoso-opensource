@@ -206,9 +206,9 @@ create procedure rdfdesc_http_print_l (in prop_iri any, inout odd_position int, 
    url := rdfdesc_http_url (prop_iri);
 
    http (sprintf ('<tr class="%s"><td class="property">', either(mod (odd_position, 2), 'odd', 'even')));
-   if (r) http ('</td><td class="property">');
+   if (r) http ('is ');
    http (sprintf ('<a class="uri" href="%s" title="%s">%s</a>\n', url, p_prefix, rdfdesc_prop_label (prop_iri)));
-   if (not r) http ('</td><td class="property">');
+   if (r) http (' of');
 
    http ('</td><td><ul class="obj">');
 }
@@ -387,16 +387,20 @@ create procedure rdfdesc_prop_label (in uri any)
 }
 ;
 
-create procedure rdfdesc_type (in gr varchar, in subj varchar)
+create procedure rdfdesc_type (in gr varchar, in subj varchar, out url varchar)
 {
   declare meta, data, ll any;
-  ll := '';
+  ll := 'unknown';
+  url := 'javascript:void()';
   if (length (gr))
     {
-      exec (sprintf ('sparql select ?l from <%S> from virtrdf:schemas { <%S> a ?tp . ?tp rdfs:label ?l }', gr, subj), 
+      exec (sprintf ('sparql select ?l ?tp from <%S> from virtrdf:schemas { <%S> a ?tp . ?tp rdfs:label ?l }', gr, subj), 
 	  null, null, vector (), 0, meta, data);
       if (length (data))
-	ll := ' (' || data[0][0] || ')';
+	{
+	  ll := data[0][0];
+	  url := rdfdesc_http_url (data[0][1]);
+	}
     }
   return ll;
 }

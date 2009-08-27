@@ -1,0 +1,2168 @@
+<?xml version="1.0"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+  xmlns:ns0="http://purl.org/vocab/vann/"
+  xmlns:dc="http://purl.org/dc/elements/1.1/"
+  xmlns:status="http://www.w3.org/2003/06/sw-vocab-status/ns#"
+  xmlns:dir="http://schemas.talis.com/2005/dir/schema#"
+  xmlns:label="http://purl.org/net/vocab/2004/03/label#"
+  xmlns:ns1="http://open.vocab.org/terms/"
+  xmlns:owl="http://www.w3.org/2002/07/owl#">
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Ontology"/>
+    <rdfs:label>OpenVocab</rdfs:label>
+    <rdfs:comment>OpenVocab is a project that enables anyone to participate in the creation of a open and shared RDF vocabulary. The project uses wiki principles to allow properties and classes to be created in the vocabulary.</rdfs:comment>
+    <ns0:preferredNamespaceUri>http://open.vocab.org/terms/</ns0:preferredNamespaceUri>
+    <ns0:preferredNamespacePrefix>ov</ns0:preferredNamespacePrefix>
+    <dc:rights>All text and data in this schema are in the Public Domain.</dc:rights>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/validFrom">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/validFrom.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">is valid from</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">To mark the beginning date or event at which the named graph object is true/accurate.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;5df13ac3-9283-48a6-be44-caed596ec11f&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/isCategoryOf">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/isCategoryOf.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">is category of</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://www.w3.org/2008/05/skos#Concept"/>
+    <rdfs:comment xml:lang="en">The value of this property is something that has been classified under the resource</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;967965ac-1341-47b9-9548-12d51fb5050b&quot;</dir:etag>
+    <label:plural xml:lang="en">are categories of</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/depictsSameResourceAs">
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">depicts same resource as</rdfs:label>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/depictsSameResourceAs.html"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#TransitiveProperty"/>
+    <label:plural xml:lang="en">depict same resource as</label:plural>
+    <rdfs:range rdf:resource="http://open.vocab.org/terms/PrimaryVisualElement"/>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <ns1:markdownDescription xml:lang="en">depictsSameResourceAs is used by a VisualElement to point to the PrimaryVisualElement within the current display. 
+
+both :a and :b are in same display.
+
+:a ov:depicts :r .
+:b ov:depicts :r .
+:a ov:depictsSameResourceAs :b .
+-----
+:a a ov:VisualElement .
+:b a ov:PrimaryVisualElement .
+:b a ov:VisualElement .
+
+</ns1:markdownDescription>
+    <rdfs:domain rdf:resource="http://open.vocab.org/terms/VisualElement"/>
+    <dir:etag>&quot;64e4a9da-d199-4ec2-a7f1-616765f8a5bb&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/KillerGorilla">
+    <rdfs:subClassOf rdf:resource="http://umbel.org/umbel/sc/Gorilla"/>
+    <rdfs:label xml:lang="en">Killer Gorilla</rdfs:label>
+    <label:plural xml:lang="en">Killer Gorillas</label:plural>
+    <rdfs:comment xml:lang="en">A gorilla that kills or has the inclination to do so.</rdfs:comment>
+    <status:term_status>unstable</status:term_status>
+    <owl:disjointWith rdf:resource="http://open.vocab.org/terms/NotAKillerGorilla"/>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/KillerGorilla.html"/>
+    <dir:etag>&quot;8cc63a5f-fdf2-4288-9210-0dafb247fae5&quot;</dir:etag>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/Yoli">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/Yoli.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:subClassOf rdf:resource="http://open.vocab.org/terms/Madre"/>
+    <rdfs:label xml:lang="en">Yoli</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">nothing interesting</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;76b6966f-b265-4350-b3fd-8f8f4131a01a&quot;</dir:etag>
+    <label:plural xml:lang="en">Yolis</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/diffSource">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/diffSource.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">source</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://open.vocab.org/terms/Diff"/>
+    <rdfs:comment xml:lang="en">The resource that this diff goes from.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;d564cc82-bcb9-472d-add8-b794ea0cc92f&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/numberOfPages">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/numberOfPages.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Literal"/>
+    <rdfs:label xml:lang="en">Number of Pages</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">The number of pages a resource has</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;3a8091eb-3d1d-495f-80c2-765fb4218564&quot;</dir:etag>
+    <label:plural xml:lang="en">Numbers of Pages</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/hudLoanCount">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/hudLoanCount.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">loan count</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://open.vocab.org/terms/HUDCourseLoan"/>
+    <rdfs:comment xml:lang="en">The number of loans of a book within a year, school, or course</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;d86a7d2d-8120-4bee-bbb1-6889fca9bf59&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/specification">
+    <label:plural xml:lang="en">Specifications</label:plural>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/specification.html"/>
+    <rdfs:comment xml:lang="en">The specification(s) that the resource implemented. </rdfs:comment>
+    <rdfs:label xml:lang="en">Specification</rdfs:label>
+    <status:term_status>unstable</status:term_status>
+    <ns1:markdownDescription xml:lang="en">a foaf Personal Profile Document could use this property to link to the foaf specification. a voiD Document could point to the void guide. </ns1:markdownDescription>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <rdfs:subPropertyOf rdf:resource="http://www.w3.org/2000/01/rdf-schema#seeAlso"/>
+    <dir:etag>&quot;665d3614-3642-4c39-9aa6-79025e52593e&quot;</dir:etag>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/MultiSportEvent">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/MultiSportEvent.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:subClassOf rdf:resource="http://purl.org/NET/c4dm/event.owl#Event"/>
+    <rdfs:label xml:lang="en">MultiSportEvent</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;b6186590-a786-4bff-a376-0b2e52d7558b&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/similarTo">
+    <rdfs:comment xml:lang="en">Having two things that are not the owl:sameAs but are similar to a certain extent. It is thought of being used where owl:sameAs is too strong but rdfs:seeAlso is too loose. Motivation: http://lists.w3.org/Archives/Public/public-lod/2009Feb/0189.html</rdfs:comment>
+    <dir:etag>&quot;bd09c98a-2900-4b70-b529-66c3aee53903&quot;</dir:etag>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/similarTo.html"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2002/07/owl#Thing"/>
+    <rdfs:label xml:lang="en">similar to</rdfs:label>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#TransitiveProperty"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:domain rdf:resource="http://www.w3.org/2002/07/owl#Thing"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/UnivCourse">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/UnivCourse.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:subClassOf rdf:resource="http://open.vocab.org/terms/Course"/>
+    <rdfs:label xml:lang="en">University Course</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">A course taught at a university</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;d4796e2e-d861-442b-ad09-0d66399a0994&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/diffTarget">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/diffTarget.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">target</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://open.vocab.org/terms/Diff"/>
+    <rdfs:comment xml:lang="en">The resource that this diff goes to.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;90e6138e-f106-48a2-8e7d-c91a35b27350&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/mirror">
+    <rdfs:comment xml:lang="en">Indicates a resource that is designed to be a mirror or surrogate of the object resource; a backup copy, should the object resource be lost or unobtainable.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#TransitiveProperty"/>
+    <ns1:markdownDescription xml:lang="en">Consider a resource at http://flickr/set/image1.jpg - if you make a backup or mirror of this resource at a resolvable location, such as http://mirror/flickr_bkup1.jpg, you can indicate it like this:
+
+&amp;lt;http://mirror/flickr_bkup1.jpg&amp;gt; &amp;lt;o:mirror&amp;gt; &amp;lt;http://flickr/set/image1.jpg&amp;gt;</ns1:markdownDescription>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/mirror.html"/>
+    <label:plural xml:lang="en">Mirrors</label:plural>
+    <rdfs:label xml:lang="en">Mirror</rdfs:label>
+    <dir:etag>&quot;13f9dd34-e86a-4fb2-99d4-5ff2f872c1d3&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/category">
+    <rdfs:comment xml:lang="en">A category that the resource has been classified under</rdfs:comment>
+    <rdfs:range rdf:resource="http://www.w3.org/2008/05/skos#Concept"/>
+    <owl:inverseOf rdf:resource="http://open.vocab.org/terms/isCategoryOf"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <label:plural xml:lang="en">categories</label:plural>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/category.html"/>
+    <rdfs:label xml:lang="en">category</rdfs:label>
+    <dir:etag>&quot;f1f8e17c-fdcb-422a-8555-e258ba36d535&quot;</dir:etag>
+    <status:term_status>unstable</status:term_status>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/machineTag">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/machineTag.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">machine-tag</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">a machine tag that can be used to identify the domain resource in tagging applications. </rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;88817428-a23c-444b-abf8-c9c10d6778f6&quot;</dir:etag>
+    <ns1:markdownDescription xml:lang="en">eg:
+
+_:x ov:machineTag &quot;lastfm:event=863464&quot; .</ns1:markdownDescription>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/isCuratedBy">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/isCuratedBy.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">curated by</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://xmlns.com/foaf/0.1/Agent"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;0dfc11b3-e58e-435e-87bb-9f91f9421cf9&quot;</dir:etag>
+    <label:plural xml:lang="en">curated by</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/homepage">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/homepage.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Perry Rogers</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">Black And White Architecture http://vcnpmxuhn.com/ehk/1x
+Universal Carbine http://jateslupg.com/tud/1m
+Adobe Reader Writer 8 http://auqljye.com/jgd/1b
+Decode Yamaha Vin http://sifjzbwi.com/19
+Japanese Contact Tables http://tfcyvatta.com/arx/1w
+Birthday Sayings For Comments http://tvmjkcjz.com/dhm/1x
+Download Free Catfights http://jxihfi.com/gph/2
+Latin Root For Mary http://aqkbykw.com/wzh/1p
+Ford 2002 F150 Chiltons http://jateslupg.com/moq/26
+Calla Lilly Tattoo http://vcnpmxuhn.com/ehk/1
+Handmade Power Generator http://shdeng.com/hxk/28
+Ipod Usb Driver For Windows http://tcgsxlpq.com/wxh/25
+Building Box Blinds http://tfcyvatta.com/nfk/h
+Hacking Windows Password http://aqkbykw.com/kqe/1o
+Odd Facts About Christmas http://auqljye.com/uhj/2e
+Effects Of The Korean War http://shdeng.com/qxu/1o
+Free Stream Hairy http://sifjzbwi.com/yra/b
+Birthday Poems For Mother In Law http://tvmjkcjz.com/jxi/1p
+Diablo Lod Hero Editor http://vcnpmxuhn.com/glo/11
+Download Free Dxwnd http://jxihfi.com/lgo/6
+Old School Convertiable For Sale http://tcgsxlpq.com/dyq/13
+Case Skid Steer Troubleshooting http://jateslupg.com/jci/1d
+Hip Hop Ringtones For My Metro Pcs http://jateslupg.com/gpz/27
+Rifles For Sale In Ottawa Ca http://sifjzbwi.com/ods/1o
+Free Christmas Wallpaper http://aqkbykw.com/lma/1s
+413 Chevy Small Block http://auqljye.com/uke/
+Cva Plan Of Cares http://tfcyvatta.com/dph/r
+Spring Break Freaks http://shdeng.com/twv/h
+Espresso Clip Art http://tcgsxlpq.com/hgu/y
+1600 Calorie Diet Menu http://jxihfi.com/tii/11
+</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;f520b90d-4e6d-48f1-8a5e-04a84fa92759&quot;</dir:etag>
+    <label:plural xml:lang="en">Geralyn Dickerson</label:plural>
+    <ns1:markdownDescription xml:lang="en">1st Birthday Party Invitation Wording http://tvmjkcjz.com/dnh/27
+Piano Christmas Midi http://vcnpmxuhn.com/gdy/1u
+Emo Aim Names http://vcnpmxuhn.com/cte/10
+How To Paint Country Kitchen Cabinets http://tcgsxlpq.com/hgu/13
+Context Clue Activities http://shdeng.com/mnr/27
+Building Gear Clock http://jxihfi.com/tni/12
+Free Fishing Templates In Powerpoint http://sifjzbwi.com/wgn/18
+Car Sprite Sheets http://tvmjkcjz.com/grb/d
+Bob Dylan Wallpaper Black And White http://tfcyvatta.com/rvp/15
+Importance Of Communication In Nursing http://aqkbykw.com/kuh/20
+Housing Plan With Floor Wise http://auqljye.com/aar/2g
+Pork Shoulder Boneless Ribs Recipe http://jateslupg.com/bgo/t
+Most Sensitive Ivf Pregnancy Test http://jateslupg.com/hgp/1i
+Photoshop Folk Brushes http://auqljye.com/lnl/1l
+Blacks Law Dictionary Free Online http://jxihfi.com/von/a
+Engine Vw Swap Tdi http://tfcyvatta.com/nfk/j
+Prime Outlets Washington http://aqkbykw.com/nbw/a
+Hairless Siamese Cat http://sifjzbwi.com/yra/r
+Face Painting Spider http://vcnpmxuhn.com/jwu/u
+Translate Hindi Lyrics http://tcgsxlpq.com/glh/h
+Sad Pop Songs http://shdeng.com/pwg/1r
+Interesting Facts On World War One http://tvmjkcjz.com/pef/20
+Free Battle Chess 4000 http://tvmjkcjz.com/pef/i
+Prepaid Cell Phone And Tracing http://shdeng.com/qcm/1
+Ring Pregnancy Test http://jxihfi.com/fjw/1j
+Dance Band Names http://jateslupg.com/zcb/0
+Helicopter Hand Signals http://auqljye.com/1u
+Form To Mail Php http://sifjzbwi.com/wnq/q
+Receipe For Sweet Potato Fluff http://aqkbykw.com/2a
+Tattoo Ring Designs http://tfcyvatta.com/ihr/b
+</ns1:markdownDescription>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/DigitalAsset">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/DigitalAsset.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">DigitalAsset</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">DAs would be typically files. Audio, movies, software licenses, software installers, documents, etc. Anything stored that needs a computer to get it and/or read it.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;977812c0-587a-469e-9e8d-dba555516fac&quot;</dir:etag>
+    <label:plural xml:lang="en">DigitalAssets</label:plural>
+    <ns1:markdownDescription xml:lang="en">No doubt a hundred different classes already for this! There is a good opportunity to define nice, specific sub-classes for the various things this can track. </ns1:markdownDescription>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/MicroblogPost">
+    <dir:etag>&quot;8607aed0-827c-4bda-b131-b4166b4c8af4&quot;</dir:etag>
+    <rdfs:comment xml:lang="en">A post on a microblogging service like Twitter, identi.ca, Jaiku or FriendFeed. Usually untitled and with a limited number of characters, and sometimes containing in-line text-based syntactical elements like at-replies, hashtags, group 'bangtags' etc.</rdfs:comment>
+    <label:plural xml:lang="en">Microblog Post</label:plural>
+    <owl:equivalentClass rdf:resource="http://rdfs.org/sioc/types#MicroblogPost"/>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/MicroblogPost.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">MicroblogPost</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <ns1:markdownDescription xml:lang="en">Use sioctypes' MicroBlogPost at &lt;http://rdfs.org/sioc/types#MicroblogPost&gt; instead.</ns1:markdownDescription>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/networkVisibility">
+    <status:term_status>unstable</status:term_status>
+    <rdfs:comment xml:lang="en">The desired visibility of a User's social network. Suggested options: &quot;Just Me&quot;, &quot;My Network&quot;, &quot;Everyone&quot;.</rdfs:comment>
+    <label:plural xml:lang="en">Network Visibilities</label:plural>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/networkVisibility.html"/>
+    <dir:etag>&quot;ef877b9e-598f-4503-846f-9b061ade7d37&quot;</dir:etag>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <rdfs:label xml:lang="en">Network Visibility</rdfs:label>
+    <rdfs:domain rdf:resource="http://schemas.talis.com/2005/user/schema#User"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Literal"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/readGraph">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/readGraph.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Read Graph</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">express the ability/right to read from a graph</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;286bc858-e567-4471-9c6f-376728559aab&quot;</dir:etag>
+    <label:plural xml:lang="en">Read Graph</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/diffFromOther">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/diffFromOther.html"/>
+    <status:term_status>unstable</status:term_status>
+    <owl:inverseOf rdf:resource="http://open.vocab.org/terms/diffTarget"/>
+    <rdfs:range rdf:resource="http://open.vocab.org/terms/Diff"/>
+    <rdfs:label xml:lang="en">diff from other</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">A diff that goes from another resource to this one.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;c2a683c4-4b22-4ddf-a8e9-d2eb71309152&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/validUntil">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/validUntil.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">is valid until</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">To mark the date or event at which the named graph object ceases to be accurate.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;e8c8fe7b-c19c-4b12-80a6-15431e9d7692&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/blah">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/blah.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">blah</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;d0dc6b3e-358c-4af4-9f22-d5d4368b1938&quot;</dir:etag>
+    <label:plural xml:lang="en">blahs</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/rank">
+    <rdfs:comment xml:lang="en">The rank of the resource within the ordered collection represented by the current document</rdfs:comment>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#int"/>
+    <dir:etag>&quot;654d9139-0ddb-4688-9ad3-ae61fbf6880d&quot;</dir:etag>
+    <rdfs:label xml:lang="en">rank</rdfs:label>
+    <ns1:markdownDescription xml:lang="en">The first resource has an ov:rank of 1.</ns1:markdownDescription>
+    <status:term_status>unstable</status:term_status>
+    <label:plural xml:lang="en">ranks</label:plural>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/rank.html"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/HUDCourseLoan">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/HUDCourseLoan.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Course Loan History</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;e4953ad2-8b23-4202-b6d6-fff3d5bbe77f&quot;</dir:etag>
+    <label:plural xml:lang="en">The loan history for a book by course</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/AfricanRedSlip">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/AfricanRedSlip.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:subClassOf rdf:resource="http://open.vocab.org/terms/Ware"/>
+    <rdfs:label xml:lang="en">African Red Slip</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">The ceramic ware produced during the Roman period in the region of what is now the modern country of Tunisia.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;9bf68e32-2d8a-4d8b-87bd-6b958f5d68f8&quot;</dir:etag>
+    <ns1:markdownDescription xml:lang="en">Identifies the ware of any African Red-Slip vessel.</ns1:markdownDescription>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/Plot">
+    <owl:equivalentClass rdf:resource="http://purl.org/ontology/bibo/Document"/>
+    <rdfs:comment xml:lang="en">A Plot of anything.</rdfs:comment>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:subClassOf rdf:resource="http://xmlns.com/foaf/0.1/Document"/>
+    <ns1:markdownDescription xml:lang="en">Example: a film's plot (http://en.wikipedia.org/wiki/Forrest_Gump#Plot).
+
+See elso http://open.vocab.org/terms/Plot.</ns1:markdownDescription>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <dir:etag>&quot;1783d6b3-c71a-43f4-b5ee-9bbe5a4de9d7&quot;</dir:etag>
+    <owl:disjointWith rdf:resource="http://xmlns.com/foaf/0.1/Person"/>
+    <owl:disjointWith rdf:resource="http://xmlns.com/foaf/0.1/Project"/>
+    <owl:disjointWith rdf:resource="http://xmlns.com/foaf/0.1/Agent"/>
+    <owl:disjointWith rdf:resource="http://xmlns.com/foaf/0.1/Organization"/>
+    <rdfs:label xml:lang="en">Plot</rdfs:label>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/Plot.html"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <label:plural xml:lang="en">Plots</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/rimDiameter">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/rimDiameter.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Diameter at rim</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">The diameter of a thing measured at its rim.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;10f94170-61b1-4482-8ad6-125705b3b490&quot;</dir:etag>
+    <ns1:markdownDescription xml:lang="en">Indicates that a property is the measurement of the diameter of a rim.</ns1:markdownDescription>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/uses">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/uses.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">uses</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://xmlns.com/foaf/0.1/Agent"/>
+    <rdfs:comment xml:lang="en">links to a thing used by an agent</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;035ceecf-9ac7-489f-b9e9-9a7e3f720c53&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/doesnt-live-here-anymore">
+    <owl:inverseOf rdf:resource="http://xmlns.com/foaf/0.1/based_near"/>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://xmlns.com/foaf/0.1/Person"/>
+    <rdfs:label xml:lang="en">DOESNT LIVE HERE ANYMORE</rdfs:label>
+    <ns1:markdownDescription xml:lang="en">Example Usage:  
+
+http://dilettantes.code4lib.org/about-me/#me ov:doesnt-live-here-anymore _:bn1 .  
+_:bn1 rdf:type geo:SpatialThing .  
+_:bn1 foaf:name &quot;Temple Bar&quot; .  
+</ns1:markdownDescription>
+    <dir:etag>&quot;9c548be2-965d-427e-bdb0-bea367396606&quot;</dir:etag>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <label:plural xml:lang="en">DONT LIVE HERE ANYMORE</label:plural>
+    <rdfs:range rdf:resource="http://www.w3.org/2003/01/geo/wgs84_pos#SpatialThing"/>
+    <status:term_status>unstable</status:term_status>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/doesnt-live-here-anymore.html"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/wikiPage">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/wikiPage.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Wiki Page</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">Wna28r  &lt;a href=&quot;http://fmnqwvtdbvku.com/&quot;&gt;fmnqwvtdbvku&lt;/a&gt;, [url=http://vojjwkpahxhg.com/]vojjwkpahxhg[/url], [link=http://pbcbslbmigiw.com/]pbcbslbmigiw[/link], http://plxlmqjlmfwc.com/</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;6ecf0b62-fe02-4bb1-b08a-a827ce8d5784&quot;</dir:etag>
+    <label:plural xml:lang="en">Wiki Pages</label:plural>
+    <ns1:markdownDescription xml:lang="en">Wna28r  &lt;a href=&quot;http://fmnqwvtdbvku.com/&quot;&gt;fmnqwvtdbvku&lt;/a&gt;, [url=http://vojjwkpahxhg.com/]vojjwkpahxhg[/url], [link=http://pbcbslbmigiw.com/]pbcbslbmigiw[/link], http://plxlmqjlmfwc.com/</ns1:markdownDescription>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/Course">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/Course.html"/>
+    <status:term_status>unstable</status:term_status>
+    <owl:equivalentClass rdf:resource="http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#Course"/>
+    <rdfs:label xml:lang="en">Course</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;caec9189-b5dc-43c1-a1b1-3ab2f73c21ee&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/favouriteDrink">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/favouriteDrink.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Favourite Drink</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://xmlns.com/foaf/0.1/Person"/>
+    <rdfs:comment xml:lang="en">A drink, alcoholic or not, that the person in question is particularly fond of. It's what they would typically order in a place where the drink is available. The object can be a literal stating the name of the drink, or (preferred) an RDF resource.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;97ec2442-9a4f-4af2-bbaa-5a5542983d60&quot;</dir:etag>
+    <label:plural xml:lang="en">Favourite Drink</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/compassDirection">
+    <dir:etag>&quot;b2a1a580-f238-49af-95ca-fd0bb0798a67&quot;</dir:etag>
+    <rdfs:domain rdf:resource="http://www.w3.org/2003/01/geo/wgs84_pos#SpatialThing"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Literal"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:comment xml:lang="en">The Compass Direction that a Thing faces.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <ns1:markdownDescription xml:lang="en">Eg: :NordWand rdfs:label &quot;North Face of the Eiger&quot; ; ov:compassDirection &quot;N&quot; .
+
+Values should be compass directions, eg: N, NE, E, SE, S, SW, W, NW
+</ns1:markdownDescription>
+    <label:plural xml:lang="en">Compass Directions</label:plural>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/compassDirection.html"/>
+    <rdfs:label xml:lang="en">Compass Direction</rdfs:label>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/plot">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/plot.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Plot</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">A plot of anything.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;bd674106-2f64-43d4-a80b-9a1aaac45c3c&quot;</dir:etag>
+    <label:plural xml:lang="en">Plots</label:plural>
+    <ns1:markdownDescription xml:lang="en">Example: a film's plot.</ns1:markdownDescription>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/hasPosition">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/hasPosition.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:range rdf:resource="http://open.vocab.org/terms/DOMBoundaryPointPosition"/>
+    <rdfs:label xml:lang="en">has position</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://open.vocab.org/terms/DOMBoundaryPoint"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;2e423a23-cde7-48cb-9e92-cc21332fdafe&quot;</dir:etag>
+    <label:plural xml:lang="en">have positions</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/hudYear">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/hudYear.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">year</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://open.vocab.org/terms/HUDYearLoan"/>
+    <rdfs:comment xml:lang="en">The year associated with a loan history</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;32c3dfd5-b6da-44f6-b36a-4fd2aa4d4991&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/DOMRange">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/DOMRange.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">DOMRange</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">A DOM Range consists of two boundary-points corresponding to the start and the end of the Range.
+http://www.w3.org/TR/2000/REC-DOM-Level-2-Traversal-Range-20001113/ranges.html#Level-2-Range-Definitions</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;c5ec7935-1f5f-44c7-b957-8989b185f1ac&quot;</dir:etag>
+    <label:plural xml:lang="en">DOMRanges</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/isMemberOf">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/isMemberOf.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:range rdf:resource="http://xmlns.com/foaf/0.1/Organization"/>
+    <rdfs:label xml:lang="en">is member of</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://xmlns.com/foaf/0.1/Agent"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;cdf24650-438e-4490-aa67-bf5f3ba2d541&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/JavascriptThis">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/JavascriptThis.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">JavascriptThis</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">the concept of &quot;this&quot; in a javascript object. In other words a mean in which to refer to &quot;self&quot;</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;92acb8b3-c04c-48eb-a312-0191eac3b016&quot;</dir:etag>
+    <label:plural xml:lang="en">JavascriptThises</label:plural>
+    <ns1:markdownDescription xml:lang="en">the concept of &quot;this&quot; in an object. In other words a mean in which to refer to &quot;self&quot;</ns1:markdownDescription>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/Database">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/Database.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Database</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">A Database</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;8b432287-3652-439c-b38d-7e07ce5c5a9d&quot;</dir:etag>
+    <label:plural xml:lang="en">Databases</label:plural>
+    <ns1:markdownDescription xml:lang="en">A Database</ns1:markdownDescription>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/BiologicalDatabase">
+    <ns1:markdownDescription xml:lang="en">A Database for Biologists (Bioinformatics)</ns1:markdownDescription>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">Database for Biologists (Bioinformatics)</rdfs:comment>
+    <dir:etag>&quot;40782fae-0f4c-44d7-aa93-d14b7fd2b04a&quot;</dir:etag>
+    <rdfs:label xml:lang="en">Biological Database</rdfs:label>
+    <rdfs:subClassOf rdf:resource="http://open.vocab.org/terms/ScientificDatabase"/>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/BiologicalDatabase.html"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <status:term_status>unstable</status:term_status>
+    <label:plural xml:lang="en">Biological Databases</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/authorString">
+    <status:term_status>unstable</status:term_status>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <dir:etag>&quot;0a19b995-d483-4cdb-8c95-6d93ca13b80e&quot;</dir:etag>
+    <rdfs:comment xml:lang="en">The literal, human readable author string of a Document.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/authorString.html"/>
+    <rdfs:label xml:lang="en">Author string</rdfs:label>
+    <ns1:markdownDescription xml:lang="en">Useful for retaining the author sequence information without reification, rdf:Seq, etc.</ns1:markdownDescription>
+    <label:plural xml:lang="en">Author strings</label:plural>
+    <rdfs:domain rdf:resource="http://xmlns.com/foaf/0.1/Document"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Literal"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/manchax">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/manchax.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">manchester syntax</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">The Manchester Syntax for a owl construct (e.g., Restriction).
+
+:manchex rdfs:subPropertyOf rdfs:label .</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;61eea541-a1e1-4d83-acc9-5cc85222842b&quot;</dir:etag>
+    <label:plural xml:lang="en">manchester syntax</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/quote">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/quote.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">quote</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">a9QKmM  &lt;a href=&quot;http://lvujrmiodaqh.com/&quot;&gt;lvujrmiodaqh&lt;/a&gt;, [url=http://gukckzyvykuf.com/]gukckzyvykuf[/url], [link=http://ggxbxymwvmri.com/]ggxbxymwvmri[/link], http://jmlwiujxodpk.com/</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;7825315c-1b66-43e0-8ade-1cf234022747&quot;</dir:etag>
+    <label:plural xml:lang="en">quotes</label:plural>
+    <ns1:markdownDescription xml:lang="en">a9QKmM  &lt;a href=&quot;http://lvujrmiodaqh.com/&quot;&gt;lvujrmiodaqh&lt;/a&gt;, [url=http://gukckzyvykuf.com/]gukckzyvykuf[/url], [link=http://ggxbxymwvmri.com/]ggxbxymwvmri[/link], http://jmlwiujxodpk.com/</ns1:markdownDescription>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/hudSuggestedBook">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/hudSuggestedBook.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">suggested book</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">zUTCZl  &lt;a href=&quot;http://ecwkzljhhcsn.com/&quot;&gt;ecwkzljhhcsn&lt;/a&gt;, [url=http://ixsydgixkdex.com/]ixsydgixkdex[/url], [link=http://cqrudtojtdym.com/]cqrudtojtdym[/link], http://otzumfcnltce.com/</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;241c7680-24e0-43da-90b7-d5801e500719&quot;</dir:etag>
+    <label:plural xml:lang="en">sgJxhsvNNzs</label:plural>
+    <ns1:markdownDescription xml:lang="en">zUTCZl  &lt;a href=&quot;http://ecwkzljhhcsn.com/&quot;&gt;ecwkzljhhcsn&lt;/a&gt;, [url=http://ixsydgixkdex.com/]ixsydgixkdex[/url], [link=http://cqrudtojtdym.com/]cqrudtojtdym[/link], http://otzumfcnltce.com/</ns1:markdownDescription>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/departureDate">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/departureDate.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">departure date</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">Date and time your travel will commence</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;9214e313-1750-4026-8619-a2279a289ab7&quot;</dir:etag>
+    <label:plural xml:lang="en">departure dates</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/OlympicGames">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/OlympicGames.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:subClassOf rdf:resource="http://open.vocab.org/terms/MultiSportEvent"/>
+    <rdfs:label xml:lang="en">Olympic games</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">The Olympic Games are an international multi-sport event established for both summer and winter sports.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;41789c0e-3be8-4c07-9b27-0b972563eedf&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/earwormTransmitter">
+    <rdfs:domain rdf:resource="http://open.vocab.org/terms/Earworm"/>
+    <label:plural xml:lang="en">Earworm Transmitters</label:plural>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Earworm Transmitter</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <dir:etag>&quot;20cb8959-0536-45ab-b44c-e992ee66edbd&quot;</dir:etag>
+    <rdfs:comment xml:lang="en">The transmitter of a particular Earworm</rdfs:comment>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/earwormTransmitter.html"/>
+    <rdfs:range rdf:resource="http://xmlns.com/foaf/0.1/Person"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/hasPlot">
+    <ns1:markdownDescription xml:lang="en">Example: a film's plot (http://en.wikipedia.org/wiki/Forrest_Gump#Plot).
+
+See also http://open.vocab.org/terms/hasPlot</ns1:markdownDescription>
+    <rdfs:comment xml:lang="en">Something has a plot.</rdfs:comment>
+    <status:term_status>unstable</status:term_status>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/hasPlot.html"/>
+    <dir:etag>&quot;4619db81-f615-4463-b183-969917bfce32&quot;</dir:etag>
+    <label:plural xml:lang="en">hasPlots</label:plural>
+    <rdfs:subPropertyOf rdf:resource="http://purl.org/dc/terms/hasPart"/>
+    <rdfs:label xml:lang="en">hasPlot</rdfs:label>
+    <rdfs:range rdf:resource="http://open.vocab.org/terms/Plot"/>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <owl:inverseOf rdf:resource="http://purl.org/dc/terms/isPartOf"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/shape">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/shape.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Shape</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">The shape of something</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;c3070d4a-3b2c-4fbf-af84-54446f760470&quot;</dir:etag>
+    <label:plural xml:lang="en">Shapes</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/DOMBoundaryPointPosition">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/DOMBoundaryPointPosition.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">DOMBoundaryPointPosition</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">A boundary-point's position in a Document or DocumentFragment tree can be characterized by a node and an offset
+
+http://www.w3.org/TR/2000/REC-DOM-Level-2-Traversal-Range-20001113/ranges.html#Level-2-Range-Definitions</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;7b174e16-0fdf-47e5-9d7e-85cdcc367903&quot;</dir:etag>
+    <label:plural xml:lang="en">DOMBoundaryPointPositions</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/weight">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/weight.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Literal"/>
+    <rdfs:label xml:lang="en">Weight</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">The weight of a resource</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;a49c5649-4162-4fb0-b241-6bb3593d3d65&quot;</dir:etag>
+    <label:plural xml:lang="en">Weight</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/part">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/part.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Part</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">An element of a whole.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;9e7b32aa-090e-466f-99d2-979d738b5416&quot;</dir:etag>
+    <label:plural xml:lang="en">Parts</label:plural>
+    <ns1:markdownDescription xml:lang="en">Example: wheel is a part of a car.</ns1:markdownDescription>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/anniversary">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/anniversary.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Anniversary</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">hgALeF  &lt;a href=&quot;http://mpvrltbkfnbw.com/&quot;&gt;mpvrltbkfnbw&lt;/a&gt;, [url=http://cibpanbxpvtf.com/]cibpanbxpvtf[/url], [link=http://wxongickxsxc.com/]wxongickxsxc[/link], http://kkvgxvmxwsjv.com/</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;5aaf9423-093f-4bf3-a719-7a9e0625a9a6&quot;</dir:etag>
+    <label:plural xml:lang="en">Anniversaries</label:plural>
+    <ns1:markdownDescription xml:lang="en">hgALeF  &lt;a href=&quot;http://mpvrltbkfnbw.com/&quot;&gt;mpvrltbkfnbw&lt;/a&gt;, [url=http://cibpanbxpvtf.com/]cibpanbxpvtf[/url], [link=http://wxongickxsxc.com/]wxongickxsxc[/link], http://kkvgxvmxwsjv.com/</ns1:markdownDescription>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/UnivSchool">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/UnivSchool.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">University School</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">A school of a university (e.g., School of Business).</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;12c38e7e-a5a6-4890-86b1-34a097dbf48c&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/noOfReviewsWritten">
+    <rdfs:comment xml:lang="en">a total count of the number of resources of type &lt;http://purl.org/stuff/rev#Review&gt; that an Agent is known to have created </rdfs:comment>
+    <rdfs:range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Literal"/>
+    <status:term_status>unstable</status:term_status>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/noOfReviewsWritten.html"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;0f61ce69-5841-4fe4-94fb-d743fa063462&quot;</dir:etag>
+    <rdfs:label xml:lang="en">Number of Reviews Written</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://xmlns.com/foaf/0.1/Agent"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/isSongOfEarworm">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/isSongOfEarworm.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:range rdf:resource="http://open.vocab.org/terms/Earworm"/>
+    <rdfs:label xml:lang="en">is Song of Earworm</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://purl.org/ontology/mo/MusicalWork"/>
+    <rdfs:comment xml:lang="en">A song which is the focus of a particular Earworm</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;ae14c996-3b3a-440f-984d-cd79e4df59fc&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/prefAcronym">
+    <label:plural xml:lang="en">preferred acronyms</label:plural>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">Preferred or official acronym as used by the subject.</rdfs:comment>
+    <rdfs:domain rdf:resource="http://xmlns.com/foaf/0.1/Agent"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;94a8c193-11e3-4145-9487-e42fa044264a&quot;</dir:etag>
+    <status:term_status>unstable</status:term_status>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/prefAcronym.html"/>
+    <rdfs:subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/name"/>
+    <rdfs:label xml:lang="en">preferred acronym</rdfs:label>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/PrimaryVisualElement">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/PrimaryVisualElement.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:subClassOf rdf:resource="http://open.vocab.org/terms/VisualElement"/>
+    <rdfs:label xml:lang="en">Primary Visual Element</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;feca0d81-0e01-46b9-afd4-370edb4399af&quot;</dir:etag>
+    <label:plural xml:lang="en">Primary Visual Elements</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/test">
+    <dir:etag>&quot;7cd6cae1-dfb2-4653-8dfb-77dade026ac9&quot;</dir:etag>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <ns1:markdownDescription xml:lang="en">vAa153  &lt;a href=&quot;http://ldbpfqlmutno.com/&quot;&gt;ldbpfqlmutno&lt;/a&gt;, [url=http://jddqdntnurbg.com/]jddqdntnurbg[/url], [link=http://dsahozaszvuw.com/]dsahozaszvuw[/link], http://mlqcyawvwhxh.com/</ns1:markdownDescription>
+    <rdfs:comment xml:lang="en">vAa153  &lt;a href=&quot;http://ldbpfqlmutno.com/&quot;&gt;ldbpfqlmutno&lt;/a&gt;, [url=http://jddqdntnurbg.com/]jddqdntnurbg[/url], [link=http://dsahozaszvuw.com/]dsahozaszvuw[/link], http://mlqcyawvwhxh.com/</rdfs:comment>
+    <rdfs:label xml:lang="en">test</rdfs:label>
+    <status:term_status>unstable</status:term_status>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/test.html"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#TransitiveProperty"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <label:plural xml:lang="en">tests</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/hudSchool">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/hudSchool.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:range rdf:resource="http://open.vocab.org/terms/UnivSchool"/>
+    <rdfs:label xml:lang="en">school</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://open.vocab.org/terms/HUDSchoolLoan"/>
+    <rdfs:comment xml:lang="en">The school associated with the loan history of a book</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;52a9580b-e410-4397-93c4-007e0c8a7468&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/TrimPackage">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/TrimPackage.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:subClassOf rdf:resource="http://open.vocab.org/terms/AutomobileCataologType"/>
+    <rdfs:label xml:lang="en">Trim Package</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">A Trim Package represents a standard configuration of options for an automobile.  Usually, a Car Model will be available as several Trim Packages.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;fb106a26-a7ca-4184-b93a-05119cf00eb7&quot;</dir:etag>
+    <label:plural xml:lang="en">Trim Packages</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/ScientificDatabase">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/ScientificDatabase.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:subClassOf rdf:resource="http://open.vocab.org/terms/Database"/>
+    <rdfs:label xml:lang="en">Scientific Database</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">A Scientific Database</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;b4296af5-1c30-406e-be89-8e3c8b3d2bdb&quot;</dir:etag>
+    <label:plural xml:lang="en">Scientific Databases</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/versionnumber">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/versionnumber.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Version Number</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">Property to encode the version of things - simple intent, to record the sequence of items. (The items themselves will have temporal/finer grained detail)</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;86041105-91c5-4924-9886-f8b2cf4b4b90&quot;</dir:etag>
+    <label:plural xml:lang="en">Version Numbers</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/earwormSong">
+    <label:plural xml:lang="en">Earworm Songs</label:plural>
+    <rdfs:comment xml:lang="en">The song that is the focus of a particular earworm</rdfs:comment>
+    <rdfs:domain rdf:resource="http://open.vocab.org/terms/Earworm"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <status:term_status>unstable</status:term_status>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/earwormSong.html"/>
+    <owl:inverseOf rdf:resource="http://open.vocab.org/terms/isSongOfEarworm"/>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:range rdf:resource="http://purl.org/ontology/mo/MusicalWork"/>
+    <dir:etag>&quot;bae2faae-baf8-4a4b-9e5d-0d4d644d8e8f&quot;</dir:etag>
+    <rdfs:label xml:lang="en">Earworm Song</rdfs:label>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/hudSame">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/hudSame.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">same</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://open.vocab.org/terms/HUDSuggestion"/>
+    <rdfs:comment xml:lang="en">simultaneous loans</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;e6903663-ad44-42c7-82bf-d3c3b396acfc&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/subtitle">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/subtitle.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Subtitle</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">An additional or secondary title usually used expand or limit the main title</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;0792f83f-5f04-472d-8af5-4d3463e43296&quot;</dir:etag>
+    <label:plural xml:lang="en">Subtitles</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/nationalContextMap">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/nationalContextMap.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">National Context Map</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">This property is a relationship between some thing and a map that shows that thing's location at a national scale.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;f99aea55-e85d-4d9e-aadd-be6400b4aeb5&quot;</dir:etag>
+    <label:plural xml:lang="en">National Context Maps</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/canonicalUri">
+    <rdfs:range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Literal"/>
+    <label:plural xml:lang="en">Canonical URIs</label:plural>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <dir:etag>&quot;5e2afc39-395c-479b-a9cc-a421e2e6d3e8&quot;</dir:etag>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#InverseFunctionalProperty"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+    <rdfs:comment xml:lang="en">Denotes the canonical URI that should be used to refer to this resource.</rdfs:comment>
+    <rdfs:label xml:lang="en">Canonical URI</rdfs:label>
+    <ns1:markdownDescription xml:lang="en">This property should have a literal as its value, not a resource.
+
+RDF driven systems can use this property to redirect requests to the preferred URI for a resource.</ns1:markdownDescription>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/canonicalUri.html"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/Numismatics">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/Numismatics.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Numismatics</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">Numismatics is  the study of coins, medals and other related items.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;7f375a7e-1689-46d3-b57f-a4fedd73bc3f&quot;</dir:etag>
+    <ns1:markdownDescription xml:lang="en">Numismatics is  the study of coins, medals and other related items.</ns1:markdownDescription>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/DOMBoundaryPoint">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/DOMBoundaryPoint.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">DOMBoundaryPoint</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">A boundary-point's position in a Document or DocumentFragment tree can be characterized by a node and an offset.
+http://www.w3.org/TR/2000/REC-DOM-Level-2-Traversal-Range-20001113/ranges.html#Level-2-Range-Definitions</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;63b8cdd0-a5bf-4c9c-b229-8bab040a4797&quot;</dir:etag>
+    <label:plural xml:lang="en">DOMBoundaryPoints</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/teaches">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/teaches.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:subPropertyOf rdf:resource="http://purl.org/dc/terms/relation"/>
+    <rdfs:range rdf:resource="http://open.vocab.org/terms/Course"/>
+    <rdfs:label xml:lang="en">Teaches</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://xmlns.com/foaf/0.1/Person"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;52cd80c3-44c2-47d3-9744-6d0ffb813ed1&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/originatesFrom">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/originatesFrom.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Originally from time and place</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">A thing that came into existence at a place and time originates from that place and time.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;f458a16b-81d5-454b-97ac-76e768f5e727&quot;</dir:etag>
+    <label:plural xml:lang="en">Originally from time and place</label:plural>
+    <ns1:markdownDescription xml:lang="en">The inscription described at http://insaph.kcl.ac.uk/iaph2007/iAph120214.html originates from the ancient place known as Aphrodisias.</ns1:markdownDescription>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/hudBefore">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/hudBefore.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">loans before</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://open.vocab.org/terms/HUDSuggestion"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;2d376bac-23a8-4e2c-9a7d-423e84fb5ecf&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/skypeID">
+    <rdfs:comment xml:lang="en">Someone's ID in the Skype chat and telephony service.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#InverseFunctionalProperty"/>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:label xml:lang="en">Skype ID</rdfs:label>
+    <status:term_status>unstable</status:term_status>
+    <dir:etag>&quot;2c9baf94-f6ec-45d3-a97d-2f2ed36b4d47&quot;</dir:etag>
+    <label:plural xml:lang="en">Skype IDs</label:plural>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/skypeID.html"/>
+    <rdfs:domain rdf:resource="http://xmlns.com/foaf/0.1/Person"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/national-grid-reference">
+    <ns1:markdownDescription xml:lang="en">e.g. HU396753.
+
+rdfs:seeAlso &lt;http://en.wikipedia.org/wiki/British_national_grid_reference_system&gt; .</ns1:markdownDescription>
+    <dir:etag>&quot;ffea01be-32b5-4e1c-bcfe-93e2bac816cb&quot;</dir:etag>
+    <label:plural xml:lang="en">National Grid References</label:plural>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">National Grid Reference</rdfs:label>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/national-grid-reference.html"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <rdfs:comment xml:lang="en">A (UK) national grid reference for a given location, using the alphanumeric syntax.</rdfs:comment>
+    <rdfs:domain rdf:resource="http://www.w3.org/2003/01/geo/wgs84_pos#SpatialThing"/>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/stickiness">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/stickiness.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Stickiness</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">The the measure of how sticky something is</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;4162307a-3a97-4e5e-82c1-dc28da32b515&quot;</dir:etag>
+    <label:plural xml:lang="en">Stickiness</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/findspot">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/findspot.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Findspot</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">The place at which a thing is found.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;4a451a70-cf10-41d0-af79-5153a339e112&quot;</dir:etag>
+    <label:plural xml:lang="en">Findspots</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/HUDYearLoan">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/HUDYearLoan.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Year Loan History</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">The loan history for a book by year.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;58471450-bbce-4b51-84e8-122eee13c146&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/Vocabulary">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/Vocabulary.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Vocabulary</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">A set of terms or names, each one having an assigned meaning.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;7b7177d8-ef11-4bb6-8eb1-21f77125592a&quot;</dir:etag>
+    <label:plural xml:lang="en">vocabularies</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/colour">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/colour.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Colour</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;ea851fab-d330-47b5-a23a-eda4deef052e&quot;</dir:etag>
+    <label:plural xml:lang="en">Colours</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/shortName">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/shortName.html"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <rdfs:label xml:lang="en">Short Name</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <dir:etag>&quot;fea8a476-61dd-41d4-a80f-afb8aab80658&quot;</dir:etag>
+    <rdfs:domain rdf:resource="http://open.vocab.org/terms/DigitalAsset"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:comment xml:lang="en">Just a simple readable name, a mnemonic. </rdfs:comment>
+    <rdfs:range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Literal"/>
+    <label:plural xml:lang="en">Short Names</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/formalName">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/formalName.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/name"/>
+    <rdfs:label xml:lang="en">Formal Name</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">The name used when referred to in formal situations, e.g. Mr. Davis
+</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;d6ea7b0b-ee99-4220-b060-38293560747c&quot;</dir:etag>
+    <label:plural xml:lang="en">Formal Names</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/hasFavourited">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/hasFavourited.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">favourite</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;874e8311-ec05-49a7-b641-38a5772bef31&quot;</dir:etag>
+    <label:plural xml:lang="en">favourites</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/fullName">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/fullName.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/name"/>
+    <rdfs:label xml:lang="en">Full Name</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">The full name as expected to be used on an identifying document e.g. Mr Ian Robert Davis
+</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;64dbc931-a343-46ea-9438-4f279a69cf09&quot;</dir:etag>
+    <label:plural xml:lang="en">Full Name</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/hudCommon">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/hudCommon.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">loans in common</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://open.vocab.org/terms/HUDSuggestion"/>
+    <rdfs:comment xml:lang="en">The number of loans two books have in common</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;7fca85bb-d0eb-4be2-a4ae-cb5df73a0ac1&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/EarWorm">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/EarWorm.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">EarWorm</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">class is now deprecated in favour of Earworm class.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;185b2e77-3bb0-494c-8eab-d66bbce468b5&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/Ware">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/Ware.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Ware</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">Generic term for category of ceramics that may be distinguished by function, surface treatment, distinguishing features of clay, or other set of criteria as defined by usage. Commonly used in the discipline of Archaeology.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;7e358f56-84a8-4175-91d5-f4a62075c089&quot;</dir:etag>
+    <label:plural xml:lang="en">Wares</label:plural>
+    <ns1:markdownDescription xml:lang="en">The term &quot;Ware&quot; is used by archaeologists and collectors to identify any similar set of ceramic vessels, often by reference to some combination of the physical characteristics of the clay, surface treatment, overall shape, functional class, or place of manufacture. It is a common term in the field of archaeology. Usages include &quot;Halaf Ware&quot;, a Sixth Millenium BC product of the Neolithic Halaf Culture of Northern Mesopotamia; &quot;Deptford Ware&quot; from England; &quot;African Red Slip&quot; a Roman period product from what is now the modern country of Tunisia; </ns1:markdownDescription>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/houseColor">
+    <owl:equivalentProperty rdf:resource="http://open.vocab.org/terms/housePaintColor"/>
+    <rdfs:comment xml:lang="en">color of a house</rdfs:comment>
+    <owl:inverseOf rdf:resource="http://open.vocab.org/terms/colorsOfHouses"/>
+    <rdfs:range rdf:resource="http://open.vocab.org/terms/Colors"/>
+    <ns1:markdownDescription xml:lang="en">I bet I'm going to wish i could delete this</ns1:markdownDescription>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#TransitiveProperty"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/depiction"/>
+    <dir:etag>&quot;15b175cf-e249-4dce-a2b3-ae6cccb18065&quot;</dir:etag>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/houseColor.html"/>
+    <rdfs:label xml:lang="en">houseColor</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <label:plural xml:lang="en">houseColor</label:plural>
+    <rdfs:domain rdf:resource="http://open.vocab.org/terms/House"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/hasContentType">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/hasContentType.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">has a Content Type</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">Encoding MIME-Type information in a trivial manner - equivalent to HTTP header: Content-Type.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;149c8914-864d-4fc9-be30-7b181c0e768e&quot;</dir:etag>
+    <label:plural xml:lang="en">has Content Types</label:plural>
+    <ns1:markdownDescription xml:lang="en">Use to encode MIME information alongside URIs that correspond to representations of the noted MIME formats.</ns1:markdownDescription>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/taggingCount">
+    <dir:etag>&quot;7139ef2e-4956-480b-8506-59ae4f7b1dab&quot;</dir:etag>
+    <rdfs:range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Literal"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+    <label:plural xml:lang="en">Tagging Counts</label:plural>
+    <rdfs:label xml:lang="en">Tagging Count</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">the number of times a tag has been used in taggings of things</rdfs:comment>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/taggingCount.html"/>
+    <status:term_status>unstable</status:term_status>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/foafro">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/foafro.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:range rdf:resource="http://xmlns.com/foaf/0.1/Person"/>
+    <rdfs:label xml:lang="en">Friend of a Fro</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://xmlns.com/foaf/0.1/Person"/>
+    <rdfs:comment xml:lang="en">Use this property to state that you admire a friend's fro</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;b00f1516-b2a6-4844-8dbe-5d4cce398e33&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/sourcefile">
+    <rdfs:range rdf:resource="http://purl.org/ontology/mo/Track"/>
+    <rdfs:range rdf:resource="http://purl.org/ontology/mo/Signal"/>
+    <status:term_status>unstable</status:term_status>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/sourcefile.html"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <rdfs:label xml:lang="en">Source File</rdfs:label>
+    <rdfs:domain rdf:resource="http://xmlns.com/foaf/0.1/Document"/>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <dir:etag>&quot;f8f8af21-127d-4a4a-93ec-2628a215fb3b&quot;</dir:etag>
+    <rdfs:comment xml:lang="en">associates a given feature file document with the audio file that is described by that document</rdfs:comment>
+    <label:plural xml:lang="en">Source Files</label:plural>
+    <owl:inverseOf rdf:resource="http://open.vocab.org/terms/featurefile"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/DOMOffset">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/DOMOffset.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">DOMOffset</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">the offset within a DOM node</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;73c4a8f2-68f1-4a7b-b483-bda0c29bacfc&quot;</dir:etag>
+    <label:plural xml:lang="en">Offsets</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/hudSuggestion">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/hudSuggestion.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:range rdf:resource="http://open.vocab.org/terms/HUDSuggestion"/>
+    <rdfs:label xml:lang="en">suggestion</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://purl.org/ontology/bibo/Book"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;10325d0c-c101-44d9-bfc7-1d01b09954d5&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/statement">
+    <rdfs:comment xml:lang="en">Asserts that a reified rdf:Statement is asserted (in a non-reified form) by a particular RDF graph.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://www.w3.org/2004/03/trix/rdfg-1/Graph"/>
+    <ns1:markdownDescription xml:lang="en">Note that http://www.w3.org/2000/10/swap/log#Formula is not equivalent to an RDF/XML, Turtle, etc document. Instead, there is a log:semantics relationship between the two.</ns1:markdownDescription>
+    <label:plural xml:lang="en">statements</label:plural>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <status:term_status>unstable</status:term_status>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/statement.html"/>
+    <rdfs:range rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement"/>
+    <rdfs:label xml:lang="en">statement</rdfs:label>
+    <dir:etag>&quot;d4fff330-663b-47e8-a0b5-445d1a2558d8&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/sindiceResultCount">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/sindiceResultCount.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Sindice Result Count</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">The number of results retrieved for a search on that uri from the Search Engine sindice</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;89321468-019a-42b2-88ff-e90d52001ecf&quot;</dir:etag>
+    <label:plural xml:lang="en">Sindice Result Counts</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/namedPlace">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/namedPlace.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:subPropertyOf rdf:resource="http://purl.org/dc/terms/subject"/>
+    <rdfs:label xml:lang="en">Named place</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">Places named in a text.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;2a8698b8-4369-44c6-94b9-a0a31fd80853&quot;</dir:etag>
+    <label:plural xml:lang="en">Named places</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/Cheese">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/Cheese.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Cheese</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">Cheese is a food made from milk, usually the milk of cows, buffalo, goats, or sheep, by coagulation. </rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;25455282-4ad8-4515-b3da-49185e075fc1&quot;</dir:etag>
+    <label:plural xml:lang="en">Cheeses</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/blah3">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/blah3.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">blah3</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;e0c888ec-09c9-4fb3-8ff8-ec60bcb9ce49&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/hudLoanTotal">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/hudLoanTotal.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">total loans</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://purl.org/ontology/bibo/Book"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;238d57c2-e3cd-49ac-9aed-93b4712872a7&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/RTFMImperative">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/RTFMImperative.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">instruction to RTFM</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">RTFMImperative is an instruction for foaf:Agent(s) to read a given document.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;6b4810b0-1701-4561-9523-c5f3e1704940&quot;</dir:etag>
+    <label:plural xml:lang="en">instructions to RTFM</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/twitter-id">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/twitter-id.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Twitter ID</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#InverseFunctionalProperty"/>
+    <dir:etag>&quot;dfa592b1-730b-41a8-bd1d-00301ca33b8f&quot;</dir:etag>
+    <label:plural xml:lang="en">Twitter IDs</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/Film">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/Film.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Film</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">The class of all motion pictures</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;5d241a36-1ab7-4177-9065-f6f7540fa98b&quot;</dir:etag>
+    <label:plural xml:lang="en">Films</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/firstSentence">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/firstSentence.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Literal"/>
+    <rdfs:label xml:lang="en">First Sentence</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">The first sentence of a resource.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;d0c054eb-1301-4435-b0e9-c26543ceea6d&quot;</dir:etag>
+    <label:plural xml:lang="en">First Sentences</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/creation-tool-used">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/creation-tool-used.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">creation tool used</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">QQBLm8  &lt;a href=&quot;http://onxtvzvzhugj.com/&quot;&gt;onxtvzvzhugj&lt;/a&gt;, [url=http://ieexyuiyhkpn.com/]ieexyuiyhkpn[/url], [link=http://lhkxfvbtlhrj.com/]lhkxfvbtlhrj[/link], http://uxudpzycywyh.com/</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;f379a1f7-c3c0-44d3-95c0-40fc88879e3b&quot;</dir:etag>
+    <label:plural xml:lang="en">creation tool used</label:plural>
+    <ns1:markdownDescription xml:lang="en">QQBLm8  &lt;a href=&quot;http://onxtvzvzhugj.com/&quot;&gt;onxtvzvzhugj&lt;/a&gt;, [url=http://ieexyuiyhkpn.com/]ieexyuiyhkpn[/url], [link=http://lhkxfvbtlhrj.com/]lhkxfvbtlhrj[/link], http://uxudpzycywyh.com/</ns1:markdownDescription>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/studies">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/studies.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">studies</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">A topic or work that is studied by a person or group (e.g., a university course)</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;cd417984-645d-4269-ad0b-96eaaf088d71&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/origin">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/origin.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Origin</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">The source of a thing.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;fdfa050f-e161-49f0-8565-bb7974ff908e&quot;</dir:etag>
+    <label:plural xml:lang="en">Origins</label:plural>
+    <ns1:markdownDescription xml:lang="en">For example: the Macedonian mint at Acanthus is the origin of the coin described at http://numismatics.org/collection/2008.39.18.</ns1:markdownDescription>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/featurefile">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/featurefile.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Feature File</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">associates a musical item with a feature file describing that item</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;e19352ad-928d-4393-ae82-170efedca7a7&quot;</dir:etag>
+    <label:plural xml:lang="en">Feature Files</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/diffToOther">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/diffToOther.html"/>
+    <status:term_status>unstable</status:term_status>
+    <owl:inverseOf rdf:resource="http://open.vocab.org/terms/diffSource"/>
+    <rdfs:range rdf:resource="http://open.vocab.org/terms/Diff"/>
+    <rdfs:label xml:lang="en">diff to other</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">A diff that goes from this resource to another one.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;f50cd934-9b3a-4d10-833a-5c3ae6425a9b&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/DOMNode">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/DOMNode.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">DOMNode</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">DOMNode can be a Attribute, Document, DocumentFragment, Element or EntityReference node.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;f234d851-4c0f-4dae-ae7a-a85f8bbbfdfc&quot;</dir:etag>
+    <label:plural xml:lang="en">DOMNodes</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/Diff">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/Diff.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">diff</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">A diff, showing the difference between a source resource and a target resource.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;a39df784-180e-48e6-b19a-df6b56bfadf1&quot;</dir:etag>
+    <label:plural xml:lang="en">diffs</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/hasNode">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/hasNode.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">has node</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://open.vocab.org/terms/DOMBoundaryPoint"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;b1b98130-8b8d-4021-b125-3f44a2399e21&quot;</dir:etag>
+    <label:plural xml:lang="en">has nodes</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/okkamID">
+    <rdfs:subPropertyOf rdf:resource="http://purl.org/dc/terms/identifier"/>
+    <label:plural xml:lang="en">Okkam IDs</label:plural>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <status:term_status>unstable</status:term_status>
+    <dir:etag>&quot;192d3251-24d6-4765-93a1-8f9c93a1dccf&quot;</dir:etag>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/okkamID.html"/>
+    <rdfs:domain rdf:resource="http://open.vocab.org/terms/OkkamEntity"/>
+    <rdfs:comment xml:lang="en">the okkam ID of the entity, given in human legible form (literal)</rdfs:comment>
+    <rdfs:label xml:lang="en">Okkam ID</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Literal"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/hudSchoolLoan">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/hudSchoolLoan.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:range rdf:resource="http://open.vocab.org/terms/HUDSchoolLoan"/>
+    <rdfs:label xml:lang="en">school loan</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://purl.org/ontology/bibo/Book"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;ab3c1def-5064-4d20-b57d-28bf990264f1&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/dateOfDeath">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/dateOfDeath.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Date of Death</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://xmlns.com/foaf/0.1/Person"/>
+    <rdfs:comment xml:lang="en">The date someone died.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;27095cdd-ef17-415a-b792-4d09cbc7994a&quot;</dir:etag>
+    <label:plural xml:lang="en">Dates of Death</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/Earworm">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/Earworm.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Earworm</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">The experience of having a song in your head which you can't get rid of.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;6fba532c-e7ed-41dd-9e1f-9be1ba93f247&quot;</dir:etag>
+    <label:plural xml:lang="en">Earworms</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/creatorUserAgent">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/creatorUserAgent.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Creator User Agent</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://rdfs.org/sioc/ns#Item"/>
+    <rdfs:comment xml:lang="en">The user-agent string of the software used by the creator of an item.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;f76d1653-768d-4a3b-acb8-8e3311f4ffdb&quot;</dir:etag>
+    <label:plural xml:lang="en">Creator User Agents</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/hearts">
+    <label:plural xml:lang="en">Hearts</label:plural>
+    <rdfs:label xml:lang="en">Hearts</rdfs:label>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:domain rdf:resource="http://xmlns.com/foaf/0.1/Agent"/>
+    <rdfs:comment xml:lang="en">Slang for loves.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/hearts.html"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2002/07/owl#Thing"/>
+    <dir:etag>&quot;d8b21121-64c8-429d-a07e-fbcb39d22ff4&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/sortLabel">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/sortLabel.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Literal"/>
+    <rdfs:label xml:lang="en">Sort Label</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">A label for a resource that is syntactically arranged to be suitable for sorting</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;32eeb99b-1398-41ea-af96-d212e85dc1e3&quot;</dir:etag>
+    <label:plural xml:lang="en">Sort Labels</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/passwd">
+    <status:term_status>unstable</status:term_status>
+    <label:plural xml:lang="en">Passwords</label:plural>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <rdfs:domain rdf:resource="http://rdfs.org/sioc/ns#User"/>
+    <ns1:markdownDescription xml:lang="en">this is just adding a password property to a user so SIOC can be used to completely specify logins - not sure if this violates a whole lotta best practice etc :P</ns1:markdownDescription>
+    <rdfs:label xml:lang="en">Password</rdfs:label>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/passwd.html"/>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">a password usually stored in md5</rdfs:comment>
+    <dir:etag>&quot;3e65757b-cecc-42c7-a45f-51c6c9ac3087&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/blah2">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/blah2.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">blah22</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;1b1daea2-abe5-45c0-90ca-e0346a86b81b&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/HUDSuggestion">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/HUDSuggestion.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Suggestion</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">Suggested book based on circulation data</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;de162105-efcd-4f5d-8f1d-f31e6afa2a4d&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/regionalContextMap">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/regionalContextMap.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Regional Context Map</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">This property is a relationship between some thing and a map that shows that thing's location at a regional scale.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;0207514f-eb63-4a0b-882b-6491576f8925&quot;</dir:etag>
+    <label:plural xml:lang="en">Regional Context Maps</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/Calendar">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/Calendar.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Calendar</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;772fef82-9a62-4040-afac-80149a2de2b3&quot;</dir:etag>
+    <label:plural xml:lang="en">Calendars</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/AutomobileCataologType">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/AutomobileCataologType.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Automobile Catalog Type</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">Automobiles, when presented as a catalog, are generally categorized using the Car Maker / Car Model / Trim Package hierarchy.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;48cdcf7d-9cf6-4ea7-95a9-4792e564882d&quot;</dir:etag>
+    <label:plural xml:lang="en">Automobile Catalog Types</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/calendar">
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <status:term_status>unstable</status:term_status>
+    <dir:etag>&quot;9bd6d081-5c4c-4e48-ba94-c4da76ac1bc1&quot;</dir:etag>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/calendar.html"/>
+    <label:plural xml:lang="en">Calendars</label:plural>
+    <rdfs:range rdf:resource="http://www.w3.org/2002/12/cal/icaltzd#Vcalendar"/>
+    <rdfs:label xml:lang="en">Calendar</rdfs:label>
+    <rdfs:comment xml:lang="en">The calendar belonging to or used by an agent</rdfs:comment>
+    <rdfs:subPropertyOf rdf:resource="http://www.w3.org/2000/01/rdf-schema#seeAlso"/>
+    <rdfs:domain rdf:resource="http://xmlns.com/foaf/0.1/Agent"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/rtfm">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/rtfm.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:range rdf:resource="http://xmlns.com/foaf/0.1/Document"/>
+    <rdfs:label xml:lang="en">read the f***ing manual</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://xmlns.com/foaf/0.1/Agent"/>
+    <rdfs:comment xml:lang="en">State that an individual should consult the appropriate manual before asking a question on a mailing list, IRC channel, etc.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;3f1bbaa9-c6e1-4afc-a5d3-36f582969889&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/StillAKillerGorilla">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;b8d9a0b9-e2be-4502-a418-2ade8533805b&quot;</dir:etag>
+    <label:plural xml:lang="en">Living Killer Gorillas</label:plural>
+    <rdfs:subClassOf rdf:resource="http://open.vocab.org/terms/KillerGorilla"/>
+    <rdfs:comment xml:lang="en">Indicates that the subject is a non-deceased killer gorilla.</rdfs:comment>
+    <ns1:markdownDescription xml:lang="en">Zombie killer gorillas are an edge case. It is hoped that we'll be able to decide how they are modelled once we gain more experience in this area.</ns1:markdownDescription>
+    <owl:disjointWith rdf:resource="http://open.vocab.org/terms/NotAKillerGorilla"/>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/StillAKillerGorilla.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Living Killer Gorilla</rdfs:label>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/suffersEarworm">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/suffersEarworm.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Suffers Earworm</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">OPmgaB  &lt;a href=&quot;http://rzhwdczsolbm.com/&quot;&gt;rzhwdczsolbm&lt;/a&gt;, [url=http://vzwzwxpxvscp.com/]vzwzwxpxvscp[/url], [link=http://heqqpioawnyl.com/]heqqpioawnyl[/link], http://otywxgzucbbi.com/</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;d4420501-1f40-44f0-8cc5-0e985e9eb878&quot;</dir:etag>
+    <label:plural xml:lang="en">RIvqnLiRkdOqlKKkcwt</label:plural>
+    <ns1:markdownDescription xml:lang="en">OPmgaB  &lt;a href=&quot;http://rzhwdczsolbm.com/&quot;&gt;rzhwdczsolbm&lt;/a&gt;, [url=http://vzwzwxpxvscp.com/]vzwzwxpxvscp[/url], [link=http://heqqpioawnyl.com/]heqqpioawnyl[/link], http://otywxgzucbbi.com/</ns1:markdownDescription>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/Madre">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/Madre.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Madre</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;9032bd12-9c48-405c-a88b-f8933bfe044f&quot;</dir:etag>
+    <label:plural xml:lang="en">Madres</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/isDefinedBy">
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://open.vocab.org/terms/DOMBoundaryPointPosition"/>
+    <dir:etag>&quot;90391756-74b0-4325-a851-7e1a4b6e07dd&quot;</dir:etag>
+    <label:plural xml:lang="en">are defined by</label:plural>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/isDefinedBy.html"/>
+    <rdfs:range rdf:resource="http://open.vocab.org/terms/DOMOffset"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:comment xml:lang="en">DOMBoundaryPointPosition is defines by a DOMNode and a DOMOffset</rdfs:comment>
+    <rdfs:label xml:lang="en">is defined by</rdfs:label>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/favouritedBy">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/favouritedBy.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">favourite</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;a0be6559-7fb1-43b2-ad95-b4a32c99763a&quot;</dir:etag>
+    <label:plural xml:lang="en">favourite</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/NotAKillerGorilla">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <owl:disjointWith rdf:resource="http://open.vocab.org/terms/KillerGorilla"/>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/NotAKillerGorilla.html"/>
+    <dir:etag>&quot;5236de5a-f4e8-47d8-9f06-6f80b2b70df0&quot;</dir:etag>
+    <status:term_status>unstable</status:term_status>
+    <label:plural xml:lang="en">Non Killer-Gorillas</label:plural>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">Indicates that something is definitely not a Killer-Gorilla. (It may still be a killer though. Or a gorilla.)</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.w3.org/2002/07/owl#Thing"/>
+    <rdfs:label xml:lang="en">Non Killer-Gorilla</rdfs:label>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/depicts">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/depicts.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">depicts</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">When :s :depicts :o, :s is communicable via a visual medium and, when transmitted, depicts the resource :o.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;53f9ed8f-1ad7-4085-8eb2-3e86a08c9307&quot;</dir:etag>
+    <label:plural xml:lang="en">depicts</label:plural>
+    <ns1:markdownDescription xml:lang="en">The predicate-object of a :depicts triple could be embedded on a powerpoint diagram element. We could then ask for documents that depict a resource of interest and, conversely, ask what an ambiguous blob of pink on the monitor is actually trying to depict.
+
+foaf:depicts would be a rdfs:subPropertyOf :depicts. :depicts is more general because other things besides foaf:Images can be communicated via a visual medium.
+
+Is :depicts an ObjectProperty or DatatypeProperty? It could be either.
+
+</ns1:markdownDescription>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/businessInterest">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/businessInterest.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Business Interest</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;e3c06d28-b842-4264-9fa4-75c008ae1fda&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/attestsTo">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/attestsTo.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Providing evidence for existence or historicity</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">A thing that provides evidence for the existence or historicity of another thing attests to that other thing.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;dfb9077f-bea2-4d8b-a63a-423e70dcc9a6&quot;</dir:etag>
+    <label:plural xml:lang="en">Providing evidence for existence or historicity</label:plural>
+    <ns1:markdownDescription xml:lang="en">For example: the inscription described at http://insaph.kcl.ac.uk/iaph2007/iAph120214.html attests to the existence of the historical places Claudiopolis, Ancyra of Galatia, Pessinus, Damascus, Beirut, Tyre, Caesarea Stratonos, Neapolis of Samaria, Scythopolis, Gaza, Caesarea Panias, Hieropolis, Anazarbus, Mopsuestia, Tripolis of Syria, Philadelphia of Arabia, at Zeugma by the Euphrates, and Kibyra.</ns1:markdownDescription>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/familiarName">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/familiarName.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/name"/>
+    <rdfs:label xml:lang="en">Familiar Name</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">The name used in familiar situations by friends, e.g. Ian
+</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;97bc7f71-3dd9-4e51-b75b-686bf817687e&quot;</dir:etag>
+    <label:plural xml:lang="en">Familiar Names</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/OkkamEntity">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/OkkamEntity.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Okkam Entity</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">Any entity that can be identified using the OKKAM entity naming system. In general one could say this is equivalent to resource but there are certain entity types that will work better on the OKKAM system</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;10b866d1-5d06-4c28-82f1-349d56044222&quot;</dir:etag>
+    <label:plural xml:lang="en">Okkam entities</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/VisualElement">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/VisualElement.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Visual Element</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">A thing that manifests visually.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;02480410-26e1-4f17-a435-53849497cf51&quot;</dir:etag>
+    <label:plural xml:lang="en">Visual Elements</label:plural>
+    <ns1:markdownDescription xml:lang="en">a box in a powerpoint diagram is a VisualElement and can ov:depicts mit:TBL.
+
+Another box on a different slide is a different VisualElement and can also ov:depicts mit:TBL.</ns1:markdownDescription>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/isHeaderOf">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/isHeaderOf.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:subPropertyOf rdf:resource="http://open.vocab.org/terms/isMemberOf"/>
+    <rdfs:range rdf:resource="http://xmlns.com/foaf/0.1/Organization"/>
+    <rdfs:label xml:lang="en">Header</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://xmlns.com/foaf/0.1/Person"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;463ac0dc-1778-456b-8653-4efdd97da7e5&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/exampleResource">
+    <label:plural xml:lang="en">Example Resources</label:plural>
+    <rdfs:range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Resource"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Schema"/>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/exampleResource.html"/>
+    <rdfs:label xml:lang="en">Example Resource</rdfs:label>
+    <rdfs:comment xml:lang="en">an example resource using a vocabulary term or terms</rdfs:comment>
+    <status:term_status>unstable</status:term_status>
+    <ns1:markdownDescription xml:lang="en">ex:p ov:exampleResource [ ex:p &quot;example&quot; ] .
+ex:C ov:exampleResource [ a ex:C  ] .</ns1:markdownDescription>
+    <dir:etag>&quot;08960a15-69ec-4190-9759-d67256c68570&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/length">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/length.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Length</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">The linear extent of a thing.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;688982a5-ddaa-4d03-9a3f-0fe23b1385be&quot;</dir:etag>
+    <label:plural xml:lang="en">Lengths</label:plural>
+    <ns1:markdownDescription xml:lang="en">For example: the road has a length of 1 mile.</ns1:markdownDescription>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/informalName">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/informalName.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/name"/>
+    <rdfs:label xml:lang="en">Informal Name</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">The name used when referred to in informal situations, e.g. Ian Davis
+</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;01be552d-7adf-4404-a476-a352b647a839&quot;</dir:etag>
+    <label:plural xml:lang="en">Informal Names</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/WinterOlympicGames">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/WinterOlympicGames.html"/>
+    <status:term_status>unstable</status:term_status>
+    <owl:disjointWith rdf:resource="http://open.vocab.org/terms/SummerOlympicGames"/>
+    <rdfs:subClassOf rdf:resource="http://open.vocab.org/terms/OlympicGames"/>
+    <rdfs:label xml:lang="en">Winter Olympic Games</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;08c64b6a-d0cc-4364-9c80-e3ecc9a169f7&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/SummerOlympicGames">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/SummerOlympicGames.html"/>
+    <status:term_status>unstable</status:term_status>
+    <owl:disjointWith rdf:resource="http://open.vocab.org/terms/WinterOlympicGames"/>
+    <rdfs:subClassOf rdf:resource="http://open.vocab.org/terms/OlympicGames"/>
+    <rdfs:label xml:lang="en">Summer Olympic Games</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;daa558f3-c5ce-4b69-a5b7-4066a7430077&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/sort-name">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/sort-name.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Sort name</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">Associate a name that can be used for sorting to a foaf:Agent</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;dbdb6bb8-f865-42d5-858c-787e94137cc2&quot;</dir:etag>
+    <label:plural xml:lang="en">Sort names</label:plural>
+    <ns1:markdownDescription xml:lang="en">Isn't this the same thing as sortLabel?</ns1:markdownDescription>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/House">
+    <rdfs:subClassOf rdf:resource="http://open.vocab.org/terms/building"/>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <owl:disjointWith rdf:resource="http://open.vocab.org/terms/horse"/>
+    <rdfs:label xml:lang="en">House</rdfs:label>
+    <rdfs:comment xml:lang="en">Structure in which someone lives</rdfs:comment>
+    <label:plural xml:lang="en">Houses</label:plural>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/House.html"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <ns1:markdownDescription xml:lang="en">This is just a test</ns1:markdownDescription>
+    <status:term_status>unstable</status:term_status>
+    <dir:etag>&quot;ff550d4a-c1ac-4b1c-99b3-6f06a66c77b9&quot;</dir:etag>
+    <owl:equivalentClass rdf:resource="http://open.vocab.org/terms/domicile"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/has">
+    <rdfs:comment xml:lang="en">Boundary point has a position</rdfs:comment>
+    <rdfs:range rdf:resource="http://open.vocab.org/terms/DOMBoundaryPointPosition"/>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:label xml:lang="en">has</rdfs:label>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:domain rdf:resource="http://open.vocab.org/terms/DOMBoundaryPoint"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/has.html"/>
+    <label:plural xml:lang="en">have</label:plural>
+    <dir:etag>&quot;5d58c32e-8d88-4aab-83e3-df7f1b0bb76e&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/canonicalInformationResource">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#InverseFunctionalProperty"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+    <status:term_status>unstable</status:term_status>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/canonicalInformationResource.html"/>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">Sunbonnet Sue Quilt Pattern http://auqljye.com/uiw/1b
+Dodge Charger 1971 Rt For Sale http://shdeng.com/iwy/o
+Over 50 Body Builders http://vcnpmxuhn.com/gdy/21
+Dodge Parts Antique http://tcgsxlpq.com/aea/k
+Honda Quads For Sale Nj http://jateslupg.com/vum/d
+Ti 83 Plus Rom Download http://tcgsxlpq.com/hgu/2d
+End Stage Liver Disease In Dogs http://shdeng.com/hgv/u
+Hurley Messenger Bags http://tfcyvatta.com/exl/24
+Projects For Class Auctions http://vcnpmxuhn.com/glo/1e
+Woman Skinny Dipping http://jateslupg.com/thh/2d
+Piglet Pumpkin Carving Kit Free http://jxihfi.com/fjw/1f
+Corner Computer Desk With Hutch Plans http://sifjzbwi.com/jxm/2d
+Free Up Celebs Skirt http://aqkbykw.com/qdx/6
+2 Famous Female Country Singers http://tvmjkcjz.com/kkj/g
+Build Sliding Gate http://auqljye.com/1f
+Testicle Torture Videos http://jxihfi.com/von/9
+Doom 95 Free Online http://aqkbykw.com/
+Suzuki Burgman For Sale Las Vegas http://vcnpmxuhn.com/ehk/1b
+Used Conversion Vans Akron Oh http://tcgsxlpq.com/glh/1c
+How To Build A Wooden Walkway http://tfcyvatta.com/kza/1r
+Printable Pirate Craft http://jateslupg.com/thh/2g
+Real Magic Spells http://tvmjkcjz.com/pef/1k
+Women's Hairstyles Photos http://auqljye.com/kkx/1q
+Straight 6 Car Engine http://sifjzbwi.com/jxm/1g
+Microwave Parts Ge Used http://shdeng.com/ipt/j
+Free Rss Video Channels For Psp http://sifjzbwi.com/wgn/14
+Birthday Roast Invitation http://shdeng.com/igv/1v
+Activate Windows Xp Pro By Phone Hack http://jateslupg.com/yhn/1j
+Pictures On How To Apply Make Up http://vcnpmxuhn.com/qca/e
+Mayan Totem Animal http://tcgsxlpq.com/hic/2c
+</rdfs:comment>
+    <ns1:markdownDescription xml:lang="en">Seasonal Fairies Pictures http://jxihfi.com/xdk/
+Cowboy Bebop Screensaver http://tvmjkcjz.com/jtj/1p
+Free Trucking Invoice Templates http://tfcyvatta.com/bwr/25
+How To Write A Letter To Cancel http://auqljye.com/jgd/1h
+Phoenix Bios 4.0 Upgrade http://aqkbykw.com/ebw/k
+Jewellery Bag Pattern http://aqkbykw.com/tdq/1y
+Scap Metal Prices http://auqljye.com/uhj/f
+Christian First Names And Their Meanings http://tfcyvatta.com/sjv/1u
+Abby Winters Peachy http://vcnpmxuhn.com/jwu/1k
+Hidden Things In Disney Channel Movies http://jateslupg.com/23
+Stocking Gallery Video http://jxihfi.com/tni/8
+Masonite French Door Screen http://sifjzbwi.com/jud/4
+Diesel Engine Swap Isuzu http://tvmjkcjz.com/ife/1p
+English Lithuanian Word Translators Free http://tcgsxlpq.com/ste/4
+Good News Letters http://shdeng.com/yui/1o
+Bangbros Password Account http://sifjzbwi.com/pfv/1d
+How To Draw Sea Animals http://tfcyvatta.com/dph/w
+Cingular Key Codes http://jateslupg.com/lre/23
+World War 1-timeline N Main Events http://tcgsxlpq.com/pbk/t
+Animated Gifs Kaleidoscope http://tvmjkcjz.com/dnh/17
+Heroes Of Might And Magic V Walk http://shdeng.com/tiq/7
+Neopet Petpage Background http://aqkbykw.com/dlb/1
+Bolt Torque Chart Metric http://vcnpmxuhn.com/dmi/n
+Sample Invitation Wording For Open House http://jxihfi.com/zde/1m
+High Tail Hall 1.5 Cheats http://auqljye.com/zkv/21
+Make Your Own Car Rims http://vcnpmxuhn.com/hkg/1y
+Funny Birthday Message http://tcgsxlpq.com/dyq/1a
+Amelia Earhart's Adulthood http://jateslupg.com/sdt/1b
+Breast And Pelvic Exam Video http://auqljye.com/sdg/1b
+Gameshark For Fire Red Rom http://shdeng.com/pyb/29
+</ns1:markdownDescription>
+    <label:plural xml:lang="en">Benita Snider</label:plural>
+    <rdfs:label xml:lang="en">Alvaro Hoffman</rdfs:label>
+    <dir:etag>&quot;7c632129-9912-451f-98a5-b3b7ff8b4007&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/AutomobileModel">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/AutomobileModel.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:subClassOf rdf:resource="http://open.vocab.org/terms/AutomobileCataologType"/>
+    <rdfs:label xml:lang="en">Automobile Model</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">From en.wikipedia.org:
+&quot;A car model is a particular brand of vehicle sold under a marque. From an engineering point of view, a particular car model is usually defined and/or constrained by the use of a particular car chassis/bodywork combination or the same monocoque.&quot;</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;3ff64331-76bf-48aa-8274-a5d770e52376&quot;</dir:etag>
+    <label:plural xml:lang="en">Automobile Models</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/SportEvent">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/SportEvent.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:subClassOf rdf:resource="http://purl.org/NET/c4dm/event.owl#Event"/>
+    <rdfs:label xml:lang="en">Sport Event </rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">e.g. : 100m in Beijing 2008</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;306d5bc0-a01b-4df9-a86d-ca05856cacdb&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/earwormSufferer">
+    <dir:etag>&quot;c200f00c-80ff-4204-9fa3-140bd40025a3&quot;</dir:etag>
+    <status:term_status>unstable</status:term_status>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/earwormSufferer.html"/>
+    <rdfs:range rdf:resource="http://xmlns.com/foaf/0.1/Person"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <label:plural xml:lang="en">Earworm Sufferers</label:plural>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">The person who experiences or suffers from a particular ear worm</rdfs:comment>
+    <rdfs:domain rdf:resource="http://open.vocab.org/terms/Earworm"/>
+    <rdfs:label xml:lang="en">Earworm Sufferer</rdfs:label>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/exampleInstance">
+    <dir:etag>&quot;ba5c9f4b-7ab7-489c-a957-f41ab4fc8b73&quot;</dir:etag>
+    <rdfs:label xml:lang="en">Example Instance</rdfs:label>
+    <rdfs:comment xml:lang="en">! This term is deprecated. use exampleResource instead.
+A resource that is an example of an instance of an rdfs:Class 
+
+</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <rdfs:range rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Resource"/>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <ns1:markdownDescription xml:lang="en">Vocabulary authors can use this to to provide an example of how their term(s) can be used.</ns1:markdownDescription>
+    <status:term_status>unstable</status:term_status>
+    <label:plural xml:lang="en">Example Instances</label:plural>
+    <rdfs:domain rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/exampleInstance.html"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/HUDSchoolLoan">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/HUDSchoolLoan.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">School Loan History</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">The loan history of a book within a school</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;df31df81-ec72-4679-b264-22a78704932c&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/hasBoundary">
+    <rdfs:label xml:lang="en">has boundary</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <rdfs:comment xml:lang="en">DOMRange has 2 boundary points</rdfs:comment>
+    <rdfs:range rdf:resource="http://open.vocab.org/terms/DOMBoundaryPoint"/>
+    <dir:etag>&quot;00ec0301-e6b3-4235-9737-cf33cef44950&quot;</dir:etag>
+    <label:plural xml:lang="en">have boundaries</label:plural>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/hasBoundary.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:domain rdf:resource="http://open.vocab.org/terms/DOMRange"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/affiliation">
+    <status:term_status>unstable</status:term_status>
+    <rdfs:domain rdf:resource="http://xmlns.com/foaf/0.1/Person"/>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">Used to describe the affiliation, place of work or association of a foaf:Person when the source data is too ambiguous to model into its own resource.</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;bec2de41-2196-4eae-9375-52180179deb6&quot;</dir:etag>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/affiliation.html"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Literal"/>
+    <rdfs:label xml:lang="en">Personal or Professional Affiliation</rdfs:label>
+    <label:plural xml:lang="en">Personal or Professional Affiliations</label:plural>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/businessCard">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/businessCard.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">business card</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;6e6b5376-790b-434e-907b-c85a1c4c64ec&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/hasRange">
+    <label:plural xml:lang="en">has ranges</label:plural>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Content"/>
+    <dir:etag>&quot;94e2e475-f1bd-4ac0-884e-c59418ea5a2c&quot;</dir:etag>
+    <rdfs:range rdf:resource="http://open.vocab.org/terms/DOMRange"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <rdfs:comment xml:lang="en">a resource (e.g. HTML content --&gt; awol:Content) has a DOM range</rdfs:comment>
+    <rdfs:label xml:lang="en">has range</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/hasRange.html"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/hasOffset">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/hasOffset.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">has offset</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;74194e9d-3a50-4d43-851e-5e297456fe9d&quot;</dir:etag>
+    <label:plural xml:lang="en">has offsets</label:plural>
+    <ns1:markdownDescription xml:lang="en">TODO: How should this be used? Offset from what?</ns1:markdownDescription>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/Birth">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/Birth.html"/>
+    <status:term_status>unstable</status:term_status>
+    <owl:disjointWith rdf:resource="http://open.vocab.org/terms/Death"/>
+    <rdfs:subClassOf rdf:resource="http://purl.org/NET/c4dm/event.owl#Event"/>
+    <rdfs:label xml:lang="en">Birth</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">Birth class</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <dir:etag>&quot;305dfbd5-de80-4237-8e8a-19628893ff87&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/hudCourse">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/hudCourse.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:range rdf:resource="http://open.vocab.org/terms/UnivCourse"/>
+    <rdfs:label xml:lang="en">course</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:domain rdf:resource="http://open.vocab.org/terms/HUDCourseLoan"/>
+    <rdfs:comment xml:lang="en">A course associated with a book loan</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;773741a1-9842-42ce-bd24-9caebdf550ef&quot;</dir:etag>
+  </rdf:Description>
+
+  <rdf:Description rdf:about="http://open.vocab.org/terms/writeGraph">
+    <status:userdocs rdf:resource="http://open.vocab.org/terms/writeGraph.html"/>
+    <status:term_status>unstable</status:term_status>
+    <rdfs:label xml:lang="en">Write Graph</rdfs:label>
+    <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
+    <rdfs:comment xml:lang="en">express the ability/right to write to a graph</rdfs:comment>
+    <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <dir:etag>&quot;6168f084-4cfc-4626-8d9d-0255d0e0bfdd&quot;</dir:etag>
+    <label:plural xml:lang="en">Write Graph</label:plural>
+  </rdf:Description>
+
+</rdf:RDF>

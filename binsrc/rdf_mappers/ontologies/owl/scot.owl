@@ -1,0 +1,438 @@
+<?xml version="1.0"?>
+<rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:foaf="http://xmlns.com/foaf/0.1/" xmlns:owl="http://www.w3.org/2002/07/owl#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:tags="http://www.holygoat.co.uk/owl/redwood/0.1/tags/" xmlns:scot="http://scot-project.org/scot/ns#" xmlns:sioc="http://rdfs.org/sioc/ns#" xmlns:skos="http://www.w3.org/2004/02/skos/core#" xmlns:vs="http://www.w3.org/2003/06/sw-vocab-status/ns#">
+	<!--
+	This is the SCOT Core Vocabulary for describing the structure and the semantics
+	of a collection of tags on in an online community.
+
+	See the SCOT homepage for links to current documentation and status information:
+
+	http://scot-project.org/
+
+	This is an evolving RDF vocabulary - all modifications are reported to 
+	the SCOT Changelog:
+	
+	http://scot-project.org/scot/archives/changelog.html
+
+	Email comments and suggestions on this vocabulary to: 
+	
+	scot-dev@googlegroups.com
+-->
+
+<!-- SCOT Core Ontology -->
+
+<owl:Ontology rdf:about="http://scot-project.org/scot/ns#">
+  <dc:title xml:lang="en">SCOT Ontology Namespace</dc:title>
+  <owl:versionInfo>Revision: 2008-06-25</owl:versionInfo>
+  <dc:description xml:lang="en">SCOT (Social Semantic Cloud of Tags) is an ontology for describing the structure and the semantics for tagging data across heterogenous users, sources, and applications.
+  </dc:description>  
+  <dc:creator>Hak-Lae Kim</dc:creator>
+  <dc:creator>John G. Breslin</dc:creator>
+  <dcterms:issued>2007-03-23</dcterms:issued>
+  <dcterms:modified>2008-06-25</dcterms:modified>
+  <rdfs:seeAlso rdf:resource="http://scot-project.org/scot/spec" rdfs:label="SCOT Ontology Specification"/>
+
+</owl:Ontology>
+
+<!--  Classes  -->
+
+<rdfs:Class rdf:about="http://scot-project.org/scot/ns#TagCloud">
+	<rdfs:label xml:lang="en">Tagcloud</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+	<rdfs:comment xml:lang="en">Tagcloud consists of metadata related to tagging activities, connecting the basic components such as users, tags, and resources. </rdfs:comment>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<owl:disjointWith rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<owl:disjointWith rdf:resource="http://scot-project.org/scot/ns#Cooccurrence"/>
+	<vs:term_status>testing</vs:term_status>
+</rdfs:Class>
+
+<rdfs:Class rdf:about="http://scot-project.org/scot/ns#Tag">
+	<rdfs:label>Tag</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+	<rdfs:comment xml:lang="en">A free-text keyword which is used to annotate a resource </rdfs:comment>
+	<rdfs:subClassOf rdf:resource="http://www.holygoat.co.uk/owl/redwood/0.1/tags/Tag"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<owl:disjointWith rdf:resource="http://scot-project.org/scot/ns#TagCloud"/>
+	<owl:disjointWith rdf:resource="http://scot-project.org/scot/ns#Cooccurrence"/>
+	<vs:term_status>testing</vs:term_status>
+</rdfs:Class>
+
+<rdfs:Class rdf:about="http://scot-project.org/scot/ns#Cooccurrence">
+	<rdfs:label>Cooccurrence</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+	<rdfs:comment>Two or more tags are assigned to one resource. This class defines cooccurring tags and the cooccurring frequency between the tags</rdfs:comment>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<owl:disjointWith rdf:resource="http://scot-project.org/scot/ns#TagCloud"/>
+	<owl:disjointWith rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<vs:term_status>testing</vs:term_status>
+</rdfs:Class>
+
+<!--  Properties  	-->
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#createdBy">
+	<rdfs:label xml:lang="en">created by</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+	<rdfs:subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/maker"/> 
+	<rdfs:comment xml:lang="en">Indicates the agent, as a type of foaf:Agent, who generates a TagCloud.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#TagCloud"/>
+	<rdfs:range rdf:resource="http://xmlns.com/foaf/0.1/Agent"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#tagSpace">
+	<rdfs:label xml:lang="en">tag space</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+	<rdfs:comment xml:lang="en">The environment where the tagging occurs.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#TagCloud"/>
+	<rdfs:range rdf:resource="http://rdfs.org/sioc/ns#Space"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#taggingActivity">
+	<rdfs:label xml:lang="en">tagging activity</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+	<rdfs:comment xml:lang="en">The relationship between a tagcloud and a tagging activity. Note that a tagcloud can contain one or more tagging instances.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#TagCloud"/>
+	<rdfs:range rdf:resource="http://www.holygoat.co.uk/owl/redwood/0.1/tags/Tagging"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#taggingAccount">
+	<rdfs:label xml:lang="en">tagging account</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+	<rdfs:comment xml:lang="en">The relationship between tagging activity and the account used when tagging.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://www.holygoat.co.uk/owl/redwood/0.1/tags/Tagging"/>
+	<rdfs:range rdf:resource="http://xmlns.com/foaf/0.1/OnlineAccount"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#contains">
+	<rdfs:label xml:lang="en">contains</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+	<rdfs:comment xml:lang="en">The relationship between a tagcloud and a tag. The object is a tag which is aggregated from a tagging instance.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#TagCloud"/>
+	<rdfs:range rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#usedBy">
+	<rdfs:label xml:lang="en">used by</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+	<rdfs:subPropertyOf rdf:resource="http://rdfs.org/sioc/ns#has_creator"/> 
+	<rdfs:comment xml:lang="en">Refers to the sioc:User who uses or creates a tag.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:range rdf:resource="http://rdfs.org/sioc/ns#User"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#tagOf">
+	<rdfs:label xml:lang="en">tag of</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+	<rdfs:subPropertyOf rdf:resource="http://www.holygoat.co.uk/owl/redwood/0.1/tags/isTagOf"/> 
+	<owl:inverseOf rdf:resource="http://scot-project.org/scot/ns#hasTag"/>
+	<rdfs:comment xml:lang="en">Indicates that a tag is assigned to the sioc:Item.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:range rdf:resource="http://rdfs.org/sioc/ns#Item"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#hasTag">
+	<rdfs:label xml:lang="en">has tag</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+	<rdfs:subPropertyOf rdf:resource="http://rdfs.org/sioc/ns#topic"/> 
+	<owl:inverseOf rdf:resource="http://scot-project.org/scot/ns#tagOf"/>
+	<rdfs:comment xml:lang="en">An item has one and more tags.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://rdfs.org/sioc/ns#Item"/>
+	<rdfs:range rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#aggregatedTag">
+	<rdfs:label xml:lang="en">aggregated tag</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+	<rdfs:comment xml:lang="en">Similiar but distinct tags from different tags:Tagging are aggregated to a common tag representation in a TagCloud.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:range rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#cooccursIn">
+	<rdfs:label xml:lang="en">cooccurs in</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+	<owl:inverseOf rdf:resource="http://scot-project.org/scot/ns#cooccuredWith"/>
+	<rdfs:comment xml:lang="en">This property is used to represent relations among two or more tags.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:range rdf:resource="http://scot-project.org/scot/ns#Cooccurrence"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#cooccursWith">
+	<rdfs:label xml:lang="en">cooccurs with</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+	<owl:inverseOf rdf:resource="http://scot-project.org/scot/ns#cooccursIn"/>
+	<rdfs:comment xml:lang="en">This property is used to represent cooccurrence relations among two or more tags.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Cooccurrence"/>
+	<rdfs:range rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#hasUsergroup">
+	<rdfs:label xml:lang="en">has usergroup</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+	<rdfs:comment xml:lang="en">The Usergroup that this Tagcloud is associated with.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#TagCloud"/>
+	<rdfs:range rdf:resource="http://rdfs.org/sioc/ns#Usergroup"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#composedOf">
+	<rdfs:label xml:lang="en">composed of</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+	<rdfs:comment xml:lang="en">A SCOT TagCloud that is part of this Tag Cloud (e.g. one user's TagCloud in a group SCOT Tagcloud).</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#TagCloud"/>
+	<rdfs:range rdf:resource="http://scot-project.org/scot/ns#TagCloud"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#spellingVariant">
+	<rdfs:label xml:lang="en">spelling variant</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+	<rdfs:comment xml:lang="en">A variation in the way in which a word is spelt.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:range rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#acronym">
+	<rdfs:label xml:lang="en">acronym</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+	<rdfs:subPropertyOf rdf:resource="http://scot-project.org/scot/ns#spellingVariant"/> 
+	<rdfs:comment xml:lang="en">An abbreviation formed by the first letters of the compound word.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:range rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#plural">
+	<rdfs:label xml:lang="en">plural</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+	<rdfs:subPropertyOf rdf:resource="http://scot-project.org/scot/ns#spellingVariant"/> 
+	<rdfs:comment xml:lang="en">A tag name refers to more than one thing.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:range rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#singular">
+	<rdfs:label xml:lang="en">singular</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+	<rdfs:subPropertyOf rdf:resource="http://scot-project.org/scot/ns#spellingVariant"/> 
+	<rdfs:comment xml:lang="en">A tag name refers to one thing.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:range rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#synonym">
+	<rdfs:label xml:lang="en">synonym</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+	<rdfs:subPropertyOf rdf:resource="http://www.holygoat.co.uk/owl/redwood/0.1/tags/equivalentTag"/> 
+	<rdfs:comment xml:lang="en">A word which means the same as another word.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:range rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#delimited">
+	<rdfs:label xml:lang="en">delimited</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+	<rdfs:subPropertyOf rdf:resource="http://scot-project.org/scot/ns#spellingVariant"/> 
+	<rdfs:comment xml:lang="en">A multiple-word tag name where each word is separated by a certain character.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:range rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#hypenated">
+	<rdfs:label xml:lang="en">hypenated</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+	<rdfs:subPropertyOf rdf:resource="http://scot-project.org/scot/ns#delimited"/> 
+	<rdfs:comment xml:lang="en">A multiple-word tag name where each word is separated by a hyphen.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:range rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#underscored">
+	<rdfs:label xml:lang="en">underscored</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+	<rdfs:subPropertyOf rdf:resource="http://scot-project.org/scot/ns#delimited"/> 
+	<rdfs:comment xml:lang="en">A multiple-word tag name where each word is separated by an underscore.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:range rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#slashed">
+	<rdfs:label xml:lang="en">slashed</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+	<rdfs:subPropertyOf rdf:resource="http://scot-project.org/scot/ns#delimited"/> 
+	<rdfs:comment xml:lang="en">A multiple-word tag name whereeach word is separated by a slash.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:range rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#spaced">
+	<rdfs:label xml:lang="en">spaced</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+	<rdfs:subPropertyOf rdf:resource="http://scot-project.org/scot/ns#delimited"/> 
+	<rdfs:comment xml:lang="en">A multiple-word tag name where each piece of word is separated by a space.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:range rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#totalTags">
+	<rdfs:label xml:lang="en">total tags</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#DatatypeProperty"/>
+	<rdfs:comment xml:lang="en">The total number of Tags in a Tagcloud.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#TagCloud"/>
+	<rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#totalTagFrequency">
+	<rdfs:label xml:lang="en">total tag frequency</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#DatatypeProperty"/>
+	<rdfs:comment xml:lang="en">A number of total frequency for all Tags in a Tagcloud.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#TagCloud"/>
+	<rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#totalItems">
+	<rdfs:label xml:lang="en">total items</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#DatatypeProperty"/>
+	<rdfs:comment xml:lang="en">A number of posted items with an associated Tagcloud.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#TagCloud"/>
+	<rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#totalCooccurringTags">
+	<rdfs:label xml:lang="en">total cooccur tags</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#DatatypeProperty"/>
+	<rdfs:comment xml:lang="en">The total number of cooccuring tags in a Tagcloud.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#TagCloud"/>
+	<rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#totalCooccurringFrequency">
+	<rdfs:label xml:lang="en">total cooccur frequency</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#DatatypeProperty"/>
+	<rdfs:comment xml:lang="en">The total frequency for all cooccurring tag sets in a Tagcloud</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#TagCloud"/>
+	<rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#ownAFrequency">
+	<rdfs:label xml:lang="en">own absolute frequency</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#DatatypeProperty"/>
+	<rdfs:comment xml:lang="en">An absolute frequency of a particular tag in a Tagcloud.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#ownRFrequency">
+	<rdfs:label xml:lang="en">own relative frequency</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#DatatypeProperty"/>
+	<rdfs:comment xml:lang="en">A percentage frequency of a tag for a particular Tagcloud relative to the total of all Tag frequencies in that TagCloud.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#cooccurrenceAFrequency">
+	<rdfs:label xml:lang="en">cooccur absolute frequency</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#DatatypeProperty"/>
+	<rdfs:comment xml:lang="en">An absolute frequency of a particular cooccurring set of tags.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Cooccurrence"/>
+	<rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#cooccurrenceRFrequency">
+	<rdfs:label xml:lang="en">cooccur relative frequency</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#DatatypeProperty"/>
+	<rdfs:comment xml:lang="en">A percentage frequency of cooccurring set of tags relative to the sum of frequencies of cooccurrence.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Cooccurrence"/>
+	<rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#updated">
+	<rdfs:label xml:lang="en">updated date</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#DatatypeProperty"/>
+	<rdfs:comment xml:lang="en">Date on which a Tagcloud was last updated.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#TagCloud"/>
+	<rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#dateTime"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#lastUsed">
+	<rdfs:label xml:lang="en">last used</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#DatatypeProperty"/>
+	<rdfs:comment xml:lang="en">The last date on which a particular tag was used .</rdfs:comment>
+	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Tag"/>
+	<rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#dateTime"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+<rdf:Property rdf:about="http://scot-project.org/scot/ns#associatedBy">
+	<rdfs:label xml:lang="en">associated by</rdfs:label>
+	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#DatatypeProperty"/>
+	<rdfs:comment xml:lang="en">An agent who makes a synonym relationship between  tags.</rdfs:comment>
+	<rdfs:domain rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement"/>
+	<rdfs:range rdf:resource="http://xmlns.com/foaf/0.1/Agent"/>
+	<rdfs:isDefinedBy rdf:resource="http://scot-project.org/scot/ns#"/>
+	<vs:term_status>testing</vs:term_status>
+</rdf:Property>
+
+</rdf:RDF>
