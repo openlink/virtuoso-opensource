@@ -48,7 +48,7 @@ VAD_NAME_RELEASE="$VAD_PKG_NAME"_dav.vad
 NEED_VERSION=06.00.3117
 DSN="$HOST:$PORT"
 SQLDEPS="ns.sql facet.sql complete_ddl.sql"
-EXCEPT="b3sq.sql facet_test.sql fct_inx.sql srank.sql srank_1.sql"
+EXCEPT="b3sq.sql facet_test.sql fct_inx.sql srank.sql srank_1.sql complete_cl.sql complete_single.sql"
 
 HOST_OS=`uname -s | grep WIN`
 if [ "x$HOST_OS" != "x" ]
@@ -338,6 +338,13 @@ fi
 	 echo "    DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/$f', 0, 'report', $ISDAV);" >> $STICKER
      fi
   done
+
+  echo "    if (sys_stat ('cl_run_local_only') = 1) " >> $STICKER
+
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/complete_single.sql', 0, 'report', $ISDAV); " >> $STICKER
+  echo "    else { " >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/complete_cl.sql', 0, 'report', $ISDAV); " >> $STICKER
+  echo "    }    " >> $STICKER
 
   echo "    if (exists (select 1 from DB.DBA.SYS_KEYS where upper (KEY_NAME) = 'RDF_QUAD_OPGS')) " >> $STICKER
 

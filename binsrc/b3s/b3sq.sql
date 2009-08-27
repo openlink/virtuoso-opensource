@@ -20,6 +20,12 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
+
+
+sparql select ?c count (*) where {?s a ?c} group by ?c order by desc 2 limit 400;
+sparql select ?p count (*) where {?s ?p ?o} group by ?p order by desc 2 limit 1000;
+
+
 --  Text Search - default is semantic web.
 
 sparql
@@ -624,7 +630,7 @@ select ?s ?lbl count(*)
 where
   {
     ?s  ?p2 ?o2 .
-    ?o2 <http://b3s-demo.openlinksw.com/label> ?lbl .
+    ?o2 <http://b3s.openlinksw.com/label> ?lbl .
     ?s  foaf:nick ?o .
     filter (bif:contains (?o, "plaid_skirt"))
   }

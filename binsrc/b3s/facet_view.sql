@@ -1215,9 +1215,9 @@ fct_vsp ()
   if ('' = c_term) c_term := 'class';
   connection_set ('c_term', c_term);
 
---  insert into fct_log (fl_sid, fl_cli_ip, fl_where, fl_state, fl_cmd)
---         values (sid, http_client_ip(), 'DISPATCH', tree, cmd);
---  commit work;
+  insert into fct_log (fl_sid, fl_cli_ip, fl_where, fl_state, fl_cmd)
+         values (sid, http_client_ip(), 'DISPATCH', tree, cmd);
+  commit work;
 
   start_time := msec_time ();
 
@@ -1295,9 +1295,9 @@ fct_vsp ()
 
   select fct_state into _state from fct_state where fct_sid = sid;
 
---  insert into fct_log (fl_sid, fl_cli_ip, fl_where, fl_state, fl_cmd, fl_msec)
---         values (sid, http_client_ip(), 'RETURN', _state, cmd, msec_time () - start_time);
---  commit work;
+  insert into fct_log (fl_sid, fl_cli_ip, fl_where, fl_state, fl_cmd, fl_msec)
+         values (sid, http_client_ip(), 'RETURN', _state, cmd, msec_time () - start_time);
+  commit work;
 
   return;
 
