@@ -54,6 +54,7 @@ clean-local:
 EXTRA_DIST = \
 	*.sql \
 	make_vad.sh \
+	ontologies/owl/*.owl \
 	ontologies/xbrl/*.owl \
 	rdfdesc/*.sql \
 	rdfdesc/*.vsp \
@@ -63,8 +64,7 @@ EXTRA_DIST = \
 	rdfdesc/statics/*.gif \
 	rdfdesc/statics/*.js \
 	rdfdesc/statics/*.png \
-	rdfdesc/statics/rdf_w3c.svg \
-	rdfdesc/statics/sw-vert-v.svg \
+	rdfdesc/statics/*.svg \
 	rdfdesc/style/*.css \
 	vad_version \
-	xslt/*.xsl
+	xslt/main/*.xsl
