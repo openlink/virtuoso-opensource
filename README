@@ -99,11 +99,15 @@ If you have an older version than automake version 1.9 you can edit
 the configure.in script around line 47 using the examples provided for
 each version.
 
-Note that uptodate operating systems (particularly Debian GNU/Linux
-and Ubuntu) split some of these packages into runtime and development
-packages, so users of these platforms may need to run
+Note that uptodate operating systems (particularly all Linux distibutions)
+split some of these packages into runtime and development
+packages, so users of these platforms may need to run e.g.:
 
     apt-get install libssl-dev
+
+or
+
+    yum install openssl-devel 
 
 to get development headers & libraries for OpenSSL.
 
