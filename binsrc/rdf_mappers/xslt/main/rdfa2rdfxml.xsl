@@ -84,10 +84,10 @@
 
 	<xsl:template match="*[@rel]" priority="1">
 		<xsl:choose>
-		    <xsl:when test="not (@rev) and not (@property) and not (@about) and not (@content) 
-			and not (@href) and not (@typeof) and not (@resource) and not (@id)">
+		    <xsl:when test="not (@rev) and not (@property) and not (@about) and not (@content)
+			and not (@href) and not (@typeof) and not (@resource) and not (@id) and *[@typeof and not @about]">
 			<xsl:choose>
-			    <xsl:when test="*[@typeof]">
+			    <xsl:when test="*[@typeof and not @about]">
 				<xsl:variable name="elem-name" select="substring-after (@rel, ':')" />
 				<xsl:variable name="elem-nss">
 				    <xsl:call-template name="nss-uri">
@@ -104,9 +104,15 @@
 			</xsl:choose>
 		    </xsl:when>
 		    <xsl:otherwise>
-		<xsl:call-template name="a-rel" />
+			<xsl:call-template name="a-rel" />
 		    </xsl:otherwise>
 		</xsl:choose>
+	</xsl:template>
+
+	<xsl:template name="a-prop-child">
+	    <xsl:for-each select="*">
+		<xsl:call-template name="a-prop"/>
+	    </xsl:for-each>	
 	</xsl:template>
 
 	<xsl:template name="a-prop">
@@ -116,8 +122,14 @@
 		</xsl:variable>
 		<xsl:if test="$elem-nss != ''">
 		    <xsl:element name="{$elem-name}" namespace="{$elem-nss}">
-			<xsl:copy-of select="ancestor-or-self::*/@xml:lang" />
-			<xsl:call-template name="dt-attr" />
+			<xsl:choose>
+			    <xsl:when test="@datatype and @datatype != ''">
+				<xsl:call-template name="dt-attr" />
+			    </xsl:when>
+			    <xsl:otherwise>
+				<xsl:copy-of select="ancestor-or-self::*/@xml:lang" />
+			    </xsl:otherwise>
+			</xsl:choose>
 			<xsl:choose>
 			    <xsl:when test="@content">
 				<xsl:value-of select="@content" />
@@ -135,6 +147,7 @@
 	    <xsl:param name="about"/>
 	    <xsl:param name="obj"/>
 	    <xsl:param name="types"/>
+	    <xsl:param name="prop-value"/>
 	    <xsl:choose>
 		<xsl:when test="substring-after ($rel, ':') != ''">
 		    <xsl:variable name="elem-name" select="substring-after ($rel, ':')" />
@@ -169,9 +182,16 @@
 		    <xsl:message terminate="no"><xsl:value-of select="xpath-debug-xslline()"/></xsl:message>
 		</xsl:if-->
 		<xsl:element name="{$elem-name}" namespace="{$elem-nss}">
-		    <xsl:attribute name="rdf:resource">
-			<xsl:value-of select="$obj" />
-		    </xsl:attribute>
+		    <xsl:if test="$obj != ''">
+			<xsl:attribute name="rdf:resource">
+			    <xsl:value-of select="$obj" />
+			</xsl:attribute>
+		    </xsl:if>
+		    <xsl:if test="$obj = '' and $prop-value">
+			<rdf:Description>
+			    <xsl:copy-of select="$prop-value"/>
+			</rdf:Description>
+		    </xsl:if>
 		</xsl:element>
 	    </rdf:Description>
 	</xsl:template>
@@ -258,14 +278,29 @@
 	    </xsl:if>
 	</xsl:template>
 
-	<xsl:template name="a-rel">
-	    <xsl:variable name="rels" select="vi:split-and-decode(@rel, 0, ' ')"/>
-	    <xsl:variable name="about">
-		<xsl:call-template name="about-ancestor-or-self" />
-	    </xsl:variable>
-	    <xsl:variable name="types" select="@typeof"/>
+	<xsl:template match="text()" mode="find-obj"/>
+
+	<xsl:template match="*" mode="find-obj">
 	    <xsl:variable name="obj">
+		<xsl:call-template name="current-obj" />
+	    </xsl:variable>
+	    <xsl:if test="$obj = ''">
+		<xsl:apply-templates mode="find-obj"/>
+	    </xsl:if>
+	    <xsl:if test="$obj != ''">
+		<xsl:value-of select="$obj"/>
+	    </xsl:if>
+	</xsl:template>
+
+	<xsl:template name="current-obj">
 		<xsl:choose>
+		    <xsl:when test="@src">
+			<xsl:call-template name="uri-or-curie">
+			    <xsl:with-param name="uri">
+				<xsl:value-of select="@src" />
+			    </xsl:with-param>
+			</xsl:call-template>
+		    </xsl:when>
 		    <xsl:when test="@href">
 			<xsl:call-template name="uri-or-curie">
 			    <xsl:with-param name="uri">
@@ -289,30 +324,48 @@
 			</xsl:call-template>
 		    </xsl:when>
 		</xsl:choose>
+	</xsl:template>
+
+	<xsl:template name="a-rel">
+	    <xsl:variable name="rels" select="vi:split-and-decode(@rel, 0, ' ')"/>
+	    <xsl:variable name="about">
+		<xsl:call-template name="about-ancestor-or-self" />
 	    </xsl:variable>
-	    <!--xsl:if test=" @resource and $obj = ''">
+	    <xsl:variable name="types" select="@typeof"/>
+	    <xsl:variable name="obj">
+		<xsl:apply-templates mode="find-obj" select="."/>
+	    </xsl:variable>
+	    <xsl:variable name="a-prop-value">
+		<xsl:call-template name="a-prop"/>
+	    </xsl:variable>
+	    <xsl:variable name="a-prop-value-child">
+		<xsl:call-template name="a-prop-child"/>
+	    </xsl:variable>
+
+	    <!--xsl:if test="$obj = ''">
 		<xsl:message terminate="no"><xsl:value-of select="@rel"/>:<xsl:value-of select="xpath-debug-xslline()"/></xsl:message>
 	    </xsl:if-->
+
 	    <xsl:for-each select="$rels/results/result">
 		<xsl:call-template name="a-rel-single">
 		    <xsl:with-param name="rel"><xsl:value-of select="."/></xsl:with-param>
 		    <xsl:with-param name="obj"><xsl:value-of select="$obj"/></xsl:with-param>
 		    <xsl:with-param name="about"><xsl:value-of select="$about"/></xsl:with-param>
 		    <xsl:with-param name="types"><xsl:value-of select="$types"/></xsl:with-param>
+		    <xsl:with-param name="prop-value"><xsl:copy-of select="$a-prop-value-child"/></xsl:with-param>
 		</xsl:call-template>
 	    </xsl:for-each>
 
-	    <xsl:variable name="a-prop-value">
-		<xsl:call-template name="a-prop"/>
-	    </xsl:variable>
-	    <xsl:if test="$a-prop-value">
-		<rdf:Description rdf:about="{$about}">
-		    <!-- property -->
-		    <xsl:copy-of select="$a-prop-value"/>
-		</rdf:Description>
+	    <xsl:if test="$obj != ''">
+		<xsl:if test="$a-prop-value">
+		    <rdf:Description rdf:about="{$about}">
+			<!-- property -->
+			<xsl:copy-of select="$a-prop-value"/>
+		    </rdf:Description>
+		</xsl:if>
+	    <xsl:apply-templates />
 	    </xsl:if>
 
-	    <xsl:apply-templates />
 	    <!-- reverse properties -->
 	    <xsl:if test="@rev">
 		<xsl:variable name="revs" select="vi:split-and-decode(@rev, 0, ' ')"/>
@@ -349,16 +402,20 @@
 	</xsl:template>
 
 	<xsl:template match="*[@property and not (@href)]">
-		<xsl:variable name="elem-name" select="substring-after (@property, ':')" />
-		<xsl:variable name="elem-nss">
-			<xsl:call-template name="nss-uri">
-			    <xsl:with-param name="qname"><xsl:value-of select="@property"/></xsl:with-param>
-			</xsl:call-template>
-		</xsl:variable>
+	    <!--xsl:message terminate="no"><xsl:value-of select="@property"/> : <xsl:value-of select="xpath-debug-xslline()"/></xsl:message-->
 		<xsl:variable name="about">
 			<xsl:call-template name="about-ancestor-or-self" />
 		</xsl:variable>
 		<xsl:variable name="typeof" select="vi:split-and-decode(@typeof, 0, ' ')"/>
+		<xsl:variable name="props" select="vi:split-and-decode(@property, 0, ' ')"/>
+		<xsl:variable name="elem-name" select="substring-after (@property, ':')" />
+		<xsl:variable name="elem-nss">
+		    <xsl:call-template name="nss-uri">
+			<xsl:with-param name="qname"><xsl:value-of select="@property"/></xsl:with-param>
+		    </xsl:call-template>
+		</xsl:variable>
+
+
 		<xsl:if test="$elem-nss != ''">
 			    <rdf:Description rdf:about="{$about}">
 				<xsl:for-each select="$typeof/results/result">
@@ -370,18 +427,46 @@
 					</xsl:attribute>
 				    </rdf:type>
 				</xsl:for-each>
-				<xsl:element name="{$elem-name}" namespace="{$elem-nss}">
-				    <xsl:copy-of select="ancestor-or-self::*/@xml:lang" />
-				    <xsl:call-template name="dt-attr" />
-				    <xsl:choose>
-					<xsl:when test="@content">
-					    <xsl:value-of select="@content" />
-					</xsl:when>
-					<xsl:otherwise>
-					    <xsl:call-template name="elem-cont" />
-					</xsl:otherwise>
-				    </xsl:choose>
-				</xsl:element>
+				<xsl:variable name="attrs">
+				    <stub>
+					<xsl:choose>
+					    <xsl:when test="@datatype and @datatype != ''">
+						<xsl:call-template name="dt-attr" />
+					    </xsl:when>
+					    <xsl:otherwise>
+						<xsl:copy-of select="ancestor-or-self::*/@xml:lang" />
+					    </xsl:otherwise>
+					</xsl:choose>
+				    </stub>
+				</xsl:variable>
+
+				<xsl:variable name="cont">
+				    <stub>
+					<xsl:choose>
+					    <xsl:when test="@content">
+						<xsl:value-of select="@content" />
+					    </xsl:when>
+					    <xsl:otherwise>
+						<xsl:call-template name="elem-cont" />
+					    </xsl:otherwise>
+					</xsl:choose>
+				    </stub>
+				</xsl:variable>
+
+				<xsl:for-each select="$props/results/result">
+				    <xsl:variable name="elem-name" select="substring-after (., ':')" />
+				    <xsl:variable name="elem-nss">
+					<xsl:call-template name="nss-uri">
+					    <xsl:with-param name="qname"><xsl:value-of select="."/></xsl:with-param>
+					</xsl:call-template>
+				    </xsl:variable>
+
+				    <xsl:element name="{$elem-name}" namespace="{$elem-nss}">
+					<xsl:copy-of select="$attrs/stub/@*"/>
+					<xsl:copy-of select="$cont/stub/*|$cont/stub/text()"/>
+				    </xsl:element>
+				</xsl:for-each>
+
 			    </rdf:Description>
 		</xsl:if>
 		<xsl:apply-templates />

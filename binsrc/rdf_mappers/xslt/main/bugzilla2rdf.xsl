@@ -68,7 +68,6 @@
 		</rdf:Description>
 		<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
 			<rdf:type rdf:resource="&sioc;Thread"/>
-			<rdf:type rdf:resource="&sioct;Discussion"/>
 			<rdf:type rdf:resource="&wf;Task"/>
 			<dcterms:created rdf:datatype="&xsd;dateTime">
 				<xsl:value-of select="creation_ts"/>
@@ -84,7 +83,6 @@
 		<xsl:for-each select="long_desc">
 			<rdf:Description rdf:about="{vi:proxyIRI($baseUri,'', replace(issue_when, ' ', '_'))}">
 				<rdf:type rdf:resource="&sioct;Comment"/>
-				<rdf:type rdf:resource="&sioc;Post"/>
 				<dc:date>
 					<xsl:value-of select="issue_when"/>
 				</dc:date>
@@ -104,13 +102,12 @@
 		</xsl:for-each>
     </xsl:template>
     <xsl:template match="bugzilla/bug">
-		<rdf:Description rdf:about="{$baseUri}">
+    	<rdf:Description rdf:about="{$baseUri}">
 			<rdf:type rdf:resource="&bibo;Document"/>
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
 		</rdf:Description>
 		<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">    	
 			<rdf:type rdf:resource="&sioc;Thread"/>
-			<rdf:type rdf:resource="&sioct;Discussion"/>
 			<rdf:type rdf:resource="&wf;Task"/>
 			<dc:title>
 				<xsl:value-of select="short_desc"/>
@@ -126,7 +123,6 @@
 		<xsl:for-each select="long_desc">
 			<rdf:Description rdf:about="{vi:proxyIRI($baseUri,'',replace(bug_when, ' ', '_'))}">
 				<rdf:type rdf:resource="&sioct;Comment"/>
-				<rdf:type rdf:resource="&sioc;Post"/>
 				<dc:date>
 					<xsl:value-of select="bug_when"/>
 				</dc:date>

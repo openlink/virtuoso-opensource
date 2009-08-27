@@ -54,14 +54,14 @@
 			<bibo:uri rdf:resource="{$baseUri}" />
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
 			<xsl:if test="Meta/Query">
-			<bibo:identifier>
-				<xsl:value-of select="Meta/Query" />
-			</bibo:identifier>
+				<bibo:identifier>
+					<xsl:value-of select="Meta/Query" />
+				</bibo:identifier>
 			</xsl:if>
 			<xsl:if test="Meta/Query">
-			<dcterms:title>
-				<xsl:value-of select="Meta/Query" />
-			</dcterms:title>
+				<dcterms:title>
+					<xsl:value-of select="Meta/Query" />
+				</dcterms:title>
 			</xsl:if>
 			<xsl:for-each select="Slideshow">
 				<xsl:choose>
@@ -98,7 +98,7 @@
 		</xsl:choose>
 	  
 	  
-		<rdf:Description rdf:about="{$baseUri}">
+	  <rdf:Description rdf:about="{$baseUri}">
  		<rdf:type rdf:resource="&bibo;Document"/>
  		<sioc:container_of rdf:resource="{vi:proxyIRI($res)}"/>
  		<foaf:topic rdf:resource="{vi:proxyIRI($res)}"/>

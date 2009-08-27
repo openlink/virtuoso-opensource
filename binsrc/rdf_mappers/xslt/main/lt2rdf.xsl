@@ -28,6 +28,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY geo "http://www.w3.org/2003/01/geo/wgs84_pos#">
+<!ENTITY gr "http://purl.org/goodrelations/v1#">
 ]>
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -40,6 +41,7 @@
   xmlns:wf="http://www.w3.org/2005/01/wf/flow#"
   xmlns:dcterms="http://purl.org/dc/terms/"
   xmlns:foaf="&foaf;"
+  xmlns:gr="&gr;"
   xmlns:sioc="&sioc;"
   xmlns:bibo="&bibo;"
   version="1.0">
@@ -81,6 +83,7 @@
 			<xsl:for-each select="commonknowledge/fieldList/field[@type='1']/versionList/version/factList/fact">
 				<dcterms:publisher rdf:parseType="Resource">
 					<rdf:type rdf:resource="&foaf;Organization"/>
+		      			<rdf:type rdf:resource="&gr;BusinessEntity"/>
 					<foaf:name>
 						<xsl:value-of select="."/>
 					</foaf:name>
@@ -101,7 +104,6 @@
 			<dcterms:subject rdf:resource="{$resourceURL}"/>
 		</rdf:Description>
 		<rdf:Description rdf:about="{$resourceURL}">
-			<rdf:type rdf:resource="&sioc;Item"/>
 			<rdf:type rdf:resource="&foaf;Person"/>
 			<foaf:name>
 				<xsl:value-of select="/response[@stat='ok']/ltml/item/author/name"/>

@@ -40,14 +40,15 @@
     xmlns:dcterms="&dcterms;"
     xmlns:gr="&gr;"
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
-    xmlns:ebay="urn:ebay:apis:eBLBaseComponents">
+    xmlns:ebay="urn:ebay:apis:eBLBaseComponents"
+    xmlns:dc="http://purl.org/dc/elements/1.1/">
 
     <xsl:output method="xml" indent="yes" />
 
     <xsl:param name="baseUri"/>
 
     <xsl:variable name="resourceURL">
-	<xsl:value-of select="$baseUri"/>
+		<xsl:value-of select="$baseUri"/>
     </xsl:variable>
 
     <xsl:variable name="ns">urn:ebay:apis:eBLBaseComponents</xsl:variable>
@@ -59,20 +60,19 @@
     </xsl:template>
 
     <xsl:template match="/">
-	<rdf:RDF>
-	    <rdf:Description rdf:about="{$resourceURL}">
-		<rdf:type rdf:resource="&bibo;Document"/>
-		<sioc:container_of rdf:resource="{vi:proxyIRI ($resourceURL)}"/>
-		<foaf:primaryTopic rdf:resource="{vi:proxyIRI ($resourceURL)}"/>
-		<dcterms:subject rdf:resource="{vi:proxyIRI ($resourceURL)}"/>
-	    </rdf:Description>
-	    <rdf:Description rdf:about="{vi:proxyIRI ($resourceURL)}">
-		<rdf:type rdf:resource="&sioc;Item"/>
+		<rdf:RDF>
+			<rdf:Description rdf:about="{$resourceURL}">
+				<rdf:type rdf:resource="&bibo;Document"/>
+				<sioc:container_of rdf:resource="{vi:proxyIRI ($resourceURL)}"/>
+				<foaf:primaryTopic rdf:resource="{vi:proxyIRI ($resourceURL)}"/>
+				<dcterms:subject rdf:resource="{vi:proxyIRI ($resourceURL)}"/>
+			</rdf:Description>
+			<rdf:Description rdf:about="{vi:proxyIRI ($resourceURL)}">
 				<rdf:type rdf:resource="&gr;ProductOrService"/>
-		<sioc:has_container rdf:resource="{$resourceURL}"/>
-		<xsl:apply-templates/>
-	    </rdf:Description>
-	</rdf:RDF>
+				<sioc:has_container rdf:resource="{$resourceURL}"/>
+				<xsl:apply-templates/>
+			</rdf:Description>
+		</rdf:RDF>
     </xsl:template>
 
     <xsl:template match="*[starts-with(.,'http://') or starts-with(.,'urn:')]">
@@ -84,11 +84,20 @@
 	</xsl:element>
 	</xsl:if>
     </xsl:template>
-
+    
     <xsl:template match="Title">
 		<rdfs:label>
 			<xsl:value-of select="."/>
 		</rdfs:label>
+		<dc:title>
+			<xsl:value-of select="."/>
+		</dc:title>
+    </xsl:template>
+    
+    <xsl:template match="Description">
+		<dc:description>
+			<xsl:value-of select="string(.)"/>
+		</dc:description>
     </xsl:template>
     
     <xsl:template match="Location">
@@ -96,10 +105,11 @@
 			<xsl:value-of select="."/>
 		</gr:availableAtOrFrom>
     </xsl:template>
-
+    
     <xsl:template match="ConvertedCurrentPrice">
 		<gr:hasPriceSpecification>
-		  <gr:UnitPriceSpecification>
+		  <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'price')}">
+	    <rdfs:label><xsl:value-of select="concat('List Price of ', ., ' ', @currencyID)"/></rdfs:label>
             <gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasCurrencyValue>
             <gr:hasCurrency rdf:datatype="&xsd;string"><xsl:value-of select="@currencyID"/></gr:hasCurrency>
 			<gr:valueAddedTaxIncluded rdf:datatype="&xsd;boolean">true</gr:valueAddedTaxIncluded>

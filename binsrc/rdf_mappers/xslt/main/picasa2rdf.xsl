@@ -22,10 +22,20 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 -->
 <!DOCTYPE xsl:stylesheet [
-<!ENTITY nfo "http://www.semanticdesktop.org/ontologies/nfo/#">
-<!ENTITY video "http://purl.org/media/video#">
+<!ENTITY owl "http://www.w3.org/2002/07/owl#">
+<!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#">
+<!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY sioct "http://rdfs.org/sioc/types#">
+<!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
+<!ENTITY rss "http://purl.org/rss/1.0/">
+<!ENTITY dc "http://purl.org/dc/elements/1.1/">
+<!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY atomowl "http://atomowl.org/ontologies/atomrdf#">
+<!ENTITY content "http://purl.org/rss/1.0/modules/content/">
+<!ENTITY ff "http://api.friendfeed.com/2008/03">
 ]>
-
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -45,15 +55,12 @@
   xmlns:g="http://base.google.com/ns/1.0"
   xmlns:gd="http://schemas.google.com/g/2005"
   xmlns:gb="http://www.openlinksw.com/schemas/google-base#"
-  xmlns:nfo="&nfo;"
   xmlns:media="http://search.yahoo.com/mrss/"
-  xmlns:yt="http://gdata.youtube.com/schemas/2007"
-  xmlns:video="&video;"
+  xmlns:ff="&ff;"
   version="1.0">
 
 <xsl:output indent="yes" cdata-section-elements="content:encoded" />
 
-<xsl:param name="baseUri" />
 
 <xsl:template match="/">
   <rdf:RDF>
@@ -66,6 +73,29 @@
 <xsl:template match="text()">
   <xsl:value-of select="normalize-space(.)" />
 </xsl:template>
+
+<xsl:template match="a:feed">
+    <channel rdf:about="{a:link[@rel='self']/@href}">
+		<xsl:apply-templates/>
+		<items>
+			<rdf:Seq>
+				<xsl:apply-templates select="a:entry" mode="li" />
+			</rdf:Seq>
+		</items>
+    </channel>
+	<rdf:Description rdf:about="{a:link[@rel='self']/@href}">
+		<rdf:type rdf:resource="&sioc;Thread"/>
+		<dc:description>
+			<xsl:value-of select="a:entry[a:link/@rel='topic_at_sfn']/content"/>
+		</dc:description>
+		<xsl:for-each select="a:entry/a:link[@rel='reply']">
+				<sioc:container_of rdf:resource="{@href}" />
+				<sioc:has_reply rdf:resource="{@href}" />
+		</xsl:for-each>
+    </rdf:Description>
+    <xsl:apply-templates select="a:entry" mode="rdfitem" />
+</xsl:template>
+
 
 <xsl:template match="a:title">
   <title><xsl:value-of select="." /></title>
@@ -84,56 +114,58 @@
 </xsl:template>
 
 <xsl:template match="a:link[@href]">
-    <sioc:link_to rdf:resource="{@href}" />
+  <dc:source><xsl:value-of select="@href" /></dc:source>
 </xsl:template>
 
 <xsl:template match="a:author">
     <dc:creator><xsl:value-of select="a:name" /> &lt;<xsl:value-of select="a:email" />&gt;</dc:creator>
 </xsl:template>
 
-<xsl:template match="a:entry">
-	<xsl:apply-templates select="media:*|yt:*"/>
+<xsl:template match="a:entry" mode="li">
+  <xsl:choose>
+    <xsl:when test="a:link">
+	<rdf:li rdf:resource="{a:link[@rel='alternate']/@href}" />
+    </xsl:when>
+    <xsl:otherwise>
+      <rdf:li rdf:parseType="Resource">
+        <xsl:apply-templates />
+      </rdf:li>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<xsl:template match="a:entry" mode="rdfitem">
+	<xsl:if test="a:link[@rel='reply']">
+		<rdf:Description rdf:about="{a:link[@rel='reply']/@href}">
+			<xsl:apply-templates/>
+			<sioc:has_container rdf:resource="{/a:feed/a:link[@rel='self']/@href}"/>
+			<sioc:reply_of rdf:resource="{/a:feed/a:link[@rel='self']/@href}"/>
+			<rdf:type rdf:resource="&sioct;Comment"/>
+		</rdf:Description>
+    </xsl:if>
     <item rdf:about="{a:link[@href]/@href}">
-	<xsl:apply-templates/>
-	<xsl:if test="a:category[@term]">
-	    <xsl:for-each select="a:category[@term]">
-		<sioc:topic>
-		    <skos:Concept rdf:about="{concat (/a:feed/a:link[@rel='self']/@href, '#', @term)}">
-						<skos:prefLabel>
-							<xsl:value-of select="@term"/>
-						</skos:prefLabel>
-		    </skos:Concept>
-		</sioc:topic>
-	    </xsl:for-each>
-	</xsl:if>
-	<xsl:apply-templates select="g:*|gd:*"/>
+		<xsl:apply-templates/>
+		<xsl:if test="a:category[@term]">
+			<xsl:for-each select="a:category[@term]">
+			<sioc:topic>
+				<skos:Concept rdf:about="{concat (/a:feed/a:link[@rel='self']/@href, '#', @term)}">
+				<skos:prefLabel><xsl:value-of select="@term"/></skos:prefLabel>
+				</skos:Concept>
+			</sioc:topic>
+			</xsl:for-each>
+		</xsl:if>
+		<xsl:apply-templates select="g:*|gd:*|ff:*|media:*" mode="rdfitem"/>
     </item>
 </xsl:template>
 
-<xsl:template match="yt:statistics">
-	<rdf:Description rdf:about="{$baseUri}">
-		<rdf:type rdf:resource="&nfo;Video"/>
-		<rdf:type rdf:resource="&video;Movie"/>
-		<nfo:frameCount>
-			<xsl:value-of select="./@viewCount"/>
-		</nfo:frameCount>
-	</rdf:Description>
-</xsl:template>
-
-<xsl:template match="media:group">
-	<rdf:Description rdf:about="{$baseUri}">
-		<rdf:type rdf:resource="&nfo;Video"/>
-		<rdf:type rdf:resource="&video;Movie"/>
-		<nfo:duration>
-			<xsl:value-of select="yt:duration/@seconds"/>
-		</nfo:duration>
-	</rdf:Description>
-</xsl:template>
-
-<xsl:template match="g:*|gd:*">
+<xsl:template match="g:*|gd:*" mode="rdfitem">
     <xsl:element name="{local-name(.)}" namespace="http://www.openlinksw.com/schemas/google-base#">
 	<xsl:value-of select="."/>
     </xsl:element>
+</xsl:template>
+
+<xsl:template match="ff:*|media:*" mode="rdfitem">
+	<xsl:copy-of select="." />
 </xsl:template>
 
 <xsl:template name="removeTags">

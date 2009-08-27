@@ -60,7 +60,7 @@
 	xmlns:media="&media;"
 	xmlns:gml="&gml;"
 	xmlns:georss="&georss;"
-        xmlns:owl="&owl;"
+    xmlns:owl="&owl;"
 	version="1.0">
 	<xsl:output indent="yes" />
 	<xsl:param name="base" />
@@ -74,6 +74,7 @@
 			</xsl:if>
 		</rdf:RDF>
 	</xsl:template>
+
 	<xsl:template match="rss:channel">
 		<rdf:Description rdf:about="{$base}">
 			<xsl:choose>
@@ -85,7 +86,7 @@
 				</xsl:otherwise>
 			</xsl:choose>
 			<sioc:link rdf:resource="{@rdf:about}" />
-                        <owl:sameAs  rdf:resource="{@rdf:about}" />
+                        <owl:sameAs  rdf:resource="{vi:sasIRI (@rdf:about)}" />
 			<xsl:apply-templates />
 			<xsl:copy-of select="geo:*" />
 			<xsl:copy-of select="openSearch:*" />
@@ -121,7 +122,6 @@
 				</xsl:when>
 				<xsl:otherwise>
 					<rdf:type rdf:resource="&sioc;Post" />
-					<rdf:type rdf:resource="&sioc;Item" />
 				</xsl:otherwise>
 			</xsl:choose>
 			<sioc:has_container rdf:resource="{$base}" />

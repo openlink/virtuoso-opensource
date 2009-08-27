@@ -59,7 +59,8 @@
 				<xsl:when test="$what = 'thread2'">
 					<rdf:Description rdf:about="{a:feed/a:link[@rel='alternate']/@href}">
 						<rdf:type rdf:resource="&bibo;Document"/>
-						<rdf:type rdf:resource="&sioct;Thread"/>
+						<rdf:type rdf:resource="&sioc;Thread"/>
+						<rdf:type rdf:resource="&sioct;Microblog"/>
 						<dc:title>
 							<xsl:value-of select="a:feed/a:title"/>
 						</dc:title>
@@ -73,8 +74,7 @@
 					</rdf:Description>
 					<xsl:for-each select="a:feed/a:entry">
 						<rdf:Description rdf:about="{vi:proxyIRI(a:link[@rel='alternate']/@href)}">
-							<rdf:type rdf:resource="&sioct;BoardPost"/>
-							<rdf:type rdf:resource="&sioc;Comment"/>
+							<rdf:type rdf:resource="&sioct;MicroblogPost"/>
 							<sioc:has_container rdf:resource="{//a:feed/a:link[@rel='alternate']/@href}"/>
 							<sioc:reply_of rdf:resource="{//a:feed/a:link[@rel='alternate']/@href}"/>
 							<dcterms:created rdf:datatype="&xsd;dateTime">
@@ -100,6 +100,7 @@
 				<xsl:when test="$what = 'thread1'">
 					<rdf:Description rdf:about="{$baseUri}">
 						<rdf:type rdf:resource="&bibo;Document"/>
+						<rdf:type rdf:resource="&sioc;Thread"/>
 						<dc:title>
 							<xsl:value-of select="a:feed/a:title"/>
 						</dc:title>
@@ -112,7 +113,7 @@
 					</rdf:Description>
 					<xsl:for-each select="a:feed/a:entry">
 						<rdf:Description rdf:about="{vi:proxyIRI(a:link[@rel='alternate']/@href)}">
-							<rdf:type rdf:resource="&sioct;BoardPost"/>
+							<rdf:type rdf:resource="&sioct;MicroblogPost"/>
 							<sioc:has_container rdf:resource="{$baseUri}"/>
 							<dcterms:created rdf:datatype="&xsd;dateTime">
 								<xsl:value-of select="vi:string2date2(a:published)"/>
@@ -215,7 +216,7 @@
 	</xsl:template>
 
 	<xsl:template name="status_int">
-		<rdf:type rdf:resource="&sioct;BoardPost"/>
+		<rdf:type rdf:resource="&sioct;MicroblogPost"/>
 		<sioc:has_container rdf:resource="{$baseUri}"/>
 		<dcterms:created rdf:datatype="&xsd;dateTime">
 			<xsl:value-of select="vi:string2date(created_at)"/>
@@ -247,12 +248,12 @@
 		<rdf:Description rdf:about="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name, '/status/', id))}">
 			<xsl:call-template name="status_int"/>
 		</rdf:Description>
-		
+
 		<foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name))}">
 			<foaf:made rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name, '/status/', id))}"/>
 			<foaf:made rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name, '/statuses/', id))}"/>
 		</foaf:Person>
-		
+
 		<xsl:if test="in_reply_to_status_id != ''">
 			<rdf:Description rdf:about="{vi:proxyIRI(concat('http://twitter.com/', in_reply_to_screen_name, '/status/', in_reply_to_status_id))}">
 				<sioc:has_reply rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name, '/status/', id))}"/>

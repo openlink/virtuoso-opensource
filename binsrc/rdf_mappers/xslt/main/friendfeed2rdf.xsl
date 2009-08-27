@@ -225,7 +225,7 @@
 		<foaf:maker rdf:resource="{ff:user/ff:profileUrl}"/>
 		<sioc:has_container rdf:resource="{../../@rdf:about}"/>
 		<sioc:reply_of rdf:resource="{../../@rdf:about}"/>
-		<rdf:type rdf:resource="&sioc;Comment"/>
+		<rdf:type rdf:resource="&sioct;Comment"/>
 	</rdf:Description>
 </xsl:template>
 

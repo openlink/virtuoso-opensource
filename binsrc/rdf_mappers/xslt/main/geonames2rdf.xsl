@@ -30,6 +30,9 @@
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
 <!ENTITY nyt "http://www.nytimes.com/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY inktomi "http://www.inktomi.com/">
+<!ENTITY aapi "http://rdf.alchemyapi.com/rdf/v1/s/aapi-schema#">
+<!ENTITY geonames "http://www.geonames.org/ontology#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -42,52 +45,31 @@
     xmlns:bibo="&bibo;"
     xmlns:dc="&dc;"
     xmlns:nyt="&nyt;"
+    xmlns:geonames="&geonames;"
     xmlns:sioc="&sioc;"
+    xmlns:aapi="http://rdf.alchemyapi.com/rdf/v1/s/aapi-schema#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
     >
-
+    
     <xsl:param name="baseUri" />
 
     <xsl:output method="xml" indent="yes" />
 
-    <xsl:template match="/results">
-		<rdf:Description rdf:about="{$baseUri}">
-			<xsl:for-each select="results">
-				<xsl:variable name="pos" select="concat('nytimes_', position())" />
-				<rdfs:seeAlso rdf:resource="{concat($baseUri,'#', $pos)}"/>
-			</xsl:for-each>
-		</rdf:Description>
-		<xsl:for-each select="results">
-			<xsl:variable name="pos" select="concat('nytimes_', position())" />
-			<rdf:Description rdf:about="{concat($baseUri,'#', $pos)}">
-				<opl:providedBy>
-					<foaf:Organization rdf:about="http://www.nytimes.com#this">
-						<foaf:name>The New York Times</foaf:name>
-						<foaf:homepage rdf:resource="http://www.nytimes.com"/>
-					</foaf:Organization>
-				</opl:providedBy>
+    <xsl:template match="/rdf:RDF/geonames:Feature">
+		<rdf:RDF>
+			<rdf:Description rdf:about="{$baseUri}">
 				<rdf:type rdf:resource="&bibo;Document"/>
-				<dc:title>
-					<xsl:value-of select="title" />
-				</dc:title>
-				<xsl:if test="byline and byline != ''">
-				<dcterms:contributor rdf:parseType="Resource">
-					<rdf:type rdf:resource="&foaf;Person"/>
-						<foaf:name>
-							<xsl:value-of select="byline"/>
-						</foaf:name>
-					<bibo:role rdf:resource="&bibo;author"/>
-				</dcterms:contributor>
-				</xsl:if>
-				<dc:date>
-					<xsl:value-of select="date"/>
-				</dc:date>
-				<dc:description>
-					<xsl:value-of select="body"/>
-				</dc:description>
-				<bibo:uri rdf:resource="{url}" />
-				<sioc:link rdf:resource="{url}" />
+				<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri)}"/>
+				<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
+				<dcterms:subject rdf:resource="{vi:proxyIRI($baseUri)}"/>
+				<rdfs:seeAlso rdf:resource="{@rdf:about}"/>
+				<owl:sameAs rdf:resource="{@rdf:about}"/>
 			</rdf:Description>
-		</xsl:for-each>
+			<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
+				<rdf:type rdf:resource="&geonames;Feature"/>
+				<xsl:copy-of select="*"/>
+			</rdf:Description>
+		</rdf:RDF>
     </xsl:template>
 
     <xsl:template match="text()|@*"/>

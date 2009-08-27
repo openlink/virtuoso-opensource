@@ -68,47 +68,49 @@
 	</rdf:RDF>
     </xsl:template>
     <xsl:template match="owner">
-	<rdf:Description rdf:nodeID="person">
-	    <rdf:type rdf:resource="http://xmlns.com/foaf/0.1/#Person" />
-	    <xsl:if test="@realname != ''">
-		<foaf:name><xsl:value-of select="@realname"/></foaf:name>
-	    </xsl:if>
-	    <foaf:nick><xsl:value-of select="@username"/></foaf:nick>
-	</rdf:Description>
+		<rdf:Description rdf:nodeID="person">
+			<rdf:type rdf:resource="http://xmlns.com/foaf/0.1/#Person" />
+			<xsl:if test="@realname != ''">
+			<foaf:name><xsl:value-of select="@realname"/></foaf:name>
+			</xsl:if>
+			<foaf:nick><xsl:value-of select="@username"/></foaf:nick>
+		</rdf:Description>
     </xsl:template>
     <xsl:template match="photo">
-	<rdf:Description rdf:about="{$baseUri}">
-		<rdf:type rdf:resource="&bibo;Document"/>
-		<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri)}"/>
-		<foaf:topic rdf:resource="{vi:proxyIRI($baseUri)}"/>
-		<dcterms:subject rdf:resource="{vi:proxyIRI($baseUri)}"/>
-	</rdf:Description>
-	<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
-	    <rdf:type rdf:resource="http://www.w3.org/2003/12/exif/ns/IFD"/>
-	    <xsl:variable name="lic" select="@license"/>
-	    <dc:creator rdf:nodeID="person" />
-	    <xsl:choose>
-		<xsl:when test="$doc/licenses/license[@id=$lic and @url!='']">
-		    <dc:rights rdf:resource="{vi:proxyIRI($doc/licenses/license[@id=$lic and @url!='']/@url)}" />
-		</xsl:when>
-		<xsl:when test="$doc/licenses/license[@id=$lic]">
-		    <dc:rights><xsl:value-of select="$doc/licenses/license[@id=$lic]/@name"/></dc:rights>
-		</xsl:when>
-	    </xsl:choose>
-	    <rdfs:seeAlso rdf:resource="{vi:proxyIRI(urls/url[@type='photopage'])}"/>
-	    <xsl:apply-templates select="*[local-name() != 'owner']"/>
-	    <xsl:for-each select="$exif/rsp/photo/exif[(@tagspace = 'TIFF' or @tagspace = 'EXIF') and not (@label like 'Tag::%')]">
+		<rdf:Description rdf:about="{$baseUri}">
+			<rdf:type rdf:resource="&bibo;Document"/>
+			<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri)}"/>
+			<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
+			<dcterms:subject rdf:resource="{vi:proxyIRI($baseUri)}"/>
+		</rdf:Description>
+		<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
+			<rdf:type rdf:resource="http://www.w3.org/2003/12/exif/ns/IFD"/>
+			<xsl:variable name="image_url" select="concat('http://farm', @farm,'.static.flickr.com/', @server, '/', @id, '_', @secret, '.', @originalformat)"/>
+			<foaf:img rdf:resource="{$image_url}"/>
+			<xsl:variable name="lic" select="@license"/>
+			<dc:creator rdf:nodeID="person" />
+			<xsl:choose>
+			<xsl:when test="$doc/licenses/license[@id=$lic and @url!='']">
+				<dc:rights rdf:resource="{vi:proxyIRI($doc/licenses/license[@id=$lic and @url!='']/@url)}" />
+			</xsl:when>
+			<xsl:when test="$doc/licenses/license[@id=$lic]">
+				<dc:rights><xsl:value-of select="$doc/licenses/license[@id=$lic]/@name"/></dc:rights>
+			</xsl:when>
+			</xsl:choose>
+			<rdfs:seeAlso rdf:resource="{vi:proxyIRI(urls/url[@type='photopage'])}"/>
+			<xsl:apply-templates select="*[local-name() != 'owner']"/>
+			<xsl:for-each select="$exif/rsp/photo/exif[(@tagspace = 'TIFF' or @tagspace = 'EXIF') and not (@label like 'Tag::%')]">
 
-		<xsl:variable name="tmp" select="concat (translate (@label, '-()', ' '), ' ')"/>
-		<xsl:variable name="first_w" select="translate (substring-before ($tmp, ' '), $uc, $lc)"/>
-		<xsl:variable name="next_w" select="substring-after ($tmp, ' ')"/>
-		<xsl:variable name="exif_elt" select="translate (concat ($first_w, $next_w), ' ', '')"/>
+			<xsl:variable name="tmp" select="concat (translate (@label, '-()', ' '), ' ')"/>
+			<xsl:variable name="first_w" select="translate (substring-before ($tmp, ' '), $uc, $lc)"/>
+			<xsl:variable name="next_w" select="substring-after ($tmp, ' ')"/>
+			<xsl:variable name="exif_elt" select="translate (concat ($first_w, $next_w), ' ', '')"/>
 
-		<xsl:element name="{$exif_elt}" namespace="http://www.w3.org/2003/12/exif/ns/">
-		    <xsl:value-of select="raw"/>
-		</xsl:element>
-	    </xsl:for-each>
-	</rdf:Description>
+			<xsl:element name="{$exif_elt}" namespace="http://www.w3.org/2003/12/exif/ns/">
+				<xsl:value-of select="raw"/>
+			</xsl:element>
+			</xsl:for-each>
+		</rdf:Description>
     </xsl:template>
     <xsl:template match="title">
 	<dc:title><xsl:value-of select="."/></dc:title>
@@ -127,6 +129,17 @@
     </xsl:template>
     <xsl:template match="tag[@machine_tag='0']">
 	<dc:subject><xsl:value-of select="."/></dc:subject>
+    </xsl:template>
+    <xsl:template match="tag[@machine_tag='1']">
+		<xsl:variable name="raw" select="@raw" />
+		<xsl:if test="contains($raw, 'wikipedia:en=')">
+			<xsl:variable name="dbped" select="substring-after ($raw, 'wikipedia:en=')" />
+			<owl:sameAs rdf:resource="{concat('http://dbpedia.org/page/', $dbped)}"/>
+		</xsl:if>
+		<xsl:if test="contains($raw, 'musicbrainz:artist=')">
+			<xsl:variable name="mbz" select="substring-after ($raw, 'musicbrainz:artist=')" />
+			<owl:sameAs rdf:resource="{concat('http://musicbrainz.org/artist/', $mbz, '.html')}"/>
+		</xsl:if>
     </xsl:template>
     <xsl:template match="tags">
 	<xsl:apply-templates select="tag"/>

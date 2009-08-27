@@ -49,7 +49,7 @@
     xmlns:foaf="&foaf;"
     xmlns:mo="&mo;"
     xmlns:mmd="&mmd;"
-    xmlns:bibo="&bibo;"    
+    xmlns:bibo="&bibo;"
     xmlns:atom="&atom;"
     xmlns:dc="&dc;"
 	xmlns:sioc="&sioc;"
@@ -705,7 +705,7 @@
 			<xsl:for-each select="image">
 				<foaf:depiction rdf:resource="{.}"/>
 			</xsl:for-each>
-			
+
 		</rdf:Description>
 
     </xsl:template>

@@ -27,6 +27,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
+<!ENTITY gr "http://purl.org/goodrelations/v1#">
 <!ENTITY book "http://purl.org/NET/book/vocab#">
 ]>
 <xsl:stylesheet
@@ -39,6 +40,7 @@
   xmlns:foaf="&foaf;"
   xmlns:bibo="&bibo;"
   xmlns:owl="&owl;"
+  xmlns:gr="&gr;"
   xmlns:book="&book;"
   xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
   xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
@@ -72,6 +74,7 @@
 	  <rdf:Description rdf:about="{vi:proxyIRI($base)}">
 		<rdf:type rdf:resource="&bibo;Book"/>
 		<rdf:type rdf:resource="&book;Book"/>
+		<rdf:type rdf:resource="&gr;ProductOrService"/>
 		<xsl:apply-templates select="meta"/>
       </rdf:Description>
   </xsl:template>
@@ -80,11 +83,15 @@
       <po:subtitle>
 		<xsl:value-of select="@content"/>
       </po:subtitle>
+	  <gr:legalName rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+		<xsl:value-of select="@content"/>
+	  </gr:legalName>      
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='object.type']">
 	<xsl:if test="@content='book'">
 		<rdf:type rdf:resource="&bibo;Book"/>
+		<rdf:type rdf:resource="&gr;ProductOrService"/>
 	</xsl:if>
   </xsl:template>
 
@@ -92,6 +99,9 @@
       <dc:title>
 	  <xsl:value-of select="@content"/>
       </dc:title>
+      <gr:legalName rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+		<xsl:value-of select="@content"/>
+	  </gr:legalName>
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='book.author']">
@@ -114,6 +124,9 @@
       <dc:date>
 	  <xsl:value-of select="@content"/>
       </dc:date>
+      <gr:validFrom rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">
+		<xsl:value-of select="@content"/>
+	  </gr:validFrom>
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='book.link']">
@@ -152,6 +165,9 @@
       <bibo:eanucc13>
 	  <xsl:value-of select="@content"/>
       </bibo:eanucc13>
+      <gr:hasEAN_UCC-13>
+		<xsl:value-of select="@content"/>
+      </gr:hasEAN_UCC-13>
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='graphic']">
@@ -186,6 +202,9 @@
       <dc:description>
 	  <xsl:value-of select="@content"/>
       </dc:description>
+      <gr:description>
+	  <xsl:value-of select="@content"/>
+      </gr:description>
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='date']">

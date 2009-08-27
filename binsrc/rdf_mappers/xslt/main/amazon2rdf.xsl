@@ -28,6 +28,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY gr "http://purl.org/goodrelations/v1#">
 <!ENTITY book "http://purl.org/NET/book/vocab#">
 ]>
 <xsl:stylesheet version="1.0"
@@ -39,6 +40,7 @@
     xmlns:foaf="&foaf;"
     xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
+    xmlns:gr="&gr;"
     xmlns:book="&book;"
     xmlns:dcterms="&dcterms;">
 
@@ -47,7 +49,7 @@
     <xsl:param name="baseUri" />
     <xsl:param name="asin" />
     <xsl:variable name="resourceURL">
-	<xsl:value-of select="vi:proxyIRI (concat ('http://www.amazon.com/exec/obidos/ASIN/', $asin))"/>
+		<xsl:value-of select="vi:proxyIRI (concat ('http://www.amazon.com/exec/obidos/ASIN/', $asin))"/>
     </xsl:variable>
 
     <xsl:variable name="ns">http://soap.amazon.com/</xsl:variable>
@@ -67,7 +69,7 @@
 		<dcterms:subject rdf:resource="{$resourceURL}"/>
 	    </rdf:Description>
 	    <rdf:Description rdf:about="{$resourceURL}">
-		<rdf:type rdf:resource="&sioc;Item"/>
+		<rdf:type rdf:resource="&gr;ProductOrService"/>
 		<rdfs:label><xsl:value-of select="//ItemAttributes/Title"/></rdfs:label>
 		<xsl:choose>
 		    <xsl:when test="//ProductGroup[ . = 'Book']">
@@ -81,6 +83,8 @@
 			<xsl:apply-templates/>
 		    </xsl:otherwise>
 		</xsl:choose>
+			<xsl:apply-templates select="//OfferSummary/*" mode="gr"/>
+			<xsl:apply-templates select="//Offers/*" mode="gr"/>
 	    </rdf:Description>
 	</rdf:RDF>
     </xsl:template>
@@ -105,6 +109,7 @@
     <xsl:template match="Manufacturer" mode="bibo">
     <dcterms:publisher rdf:parseType="Resource">
 	    <rdf:type rdf:resource="&foaf;Organization"/>
+	    <rdf:type rdf:resource="&gr;BusinessEntity"/>
 	    <foaf:name><xsl:value-of select="."/></foaf:name>
 		<xsl:variable name="sas-iri" select="vi:dbpIRI ('', translate (., ' ', '_'))"/>
 		<xsl:if test="not starts-with ($sas-iri, '#')">
@@ -114,7 +119,31 @@
     </dcterms:publisher>
     </xsl:template>
 
+    <xsl:template match="LowestUsedPrice" mode="gr">
+		<gr:hasPriceSpecification>
+		  <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI (concat ('http://www.amazon.com/exec/obidos/ASIN/', $asin), '', 'price')}">
+	    <rdfs:label><xsl:value-of select="concat('List Price of ', Amount div 100, ' ', CurrencyCode)"/></rdfs:label>	
+            <gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="Amount div 100"/></gr:hasCurrencyValue>
+            <gr:hasCurrency rdf:datatype="&xsd;string"><xsl:value-of select="CurrencyCode"/></gr:hasCurrency>
+			<gr:valueAddedTaxIncluded rdf:datatype="&xsd;boolean">true</gr:valueAddedTaxIncluded>
+          </gr:UnitPriceSpecification>
+		</gr:hasPriceSpecification>
+    </xsl:template>
+    
+    <xsl:template match="Manufacturer" mode="gr">
+		<gr:hasManufacturer>
+		  <gr:BusinessEntity rdf:about="{vi:proxyIRI (concat ('http://www.amazon.com/exec/obidos/ASIN/', $asin), '', 'manufacturer')}">
+	    <rdfs:label><xsl:value-of select="concat('Manufacturer ', .)"/></rdfs:label>
+            <gr:legalName><xsl:value-of select="."/></gr:legalName>
+          </gr:BusinessEntity>
+		</gr:hasManufacturer>
+    </xsl:template>
+    
     <xsl:template match="*" mode="bibo">
+	<xsl:apply-templates select="self::*"/>
+    </xsl:template>
+    
+    <xsl:template match="*" mode="gr">
 	<xsl:apply-templates select="self::*"/>
     </xsl:template>
     
@@ -134,7 +163,7 @@
 	    <xsl:apply-templates select="@*|node()"/>
 	</xsl:element>
     </xsl:template>
-
+    
     <xsl:template match="*">
     <xsl:if test="string-length(.) &gt; 0">
 	<xsl:element namespace="{$ns}" name="{name()}">

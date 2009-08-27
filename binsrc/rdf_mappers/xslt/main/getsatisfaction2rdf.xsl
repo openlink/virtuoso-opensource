@@ -26,12 +26,14 @@
 <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <!ENTITY xml 'http://www.w3.org/XML/1998/namespace#'>
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY gr "http://purl.org/goodrelations/v1#">
 ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:dc="http://purl.org/dc/elements/1.1/"
 	xmlns:dcterms="http://purl.org/dc/terms/" xmlns:foaf="&foaf;" xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
 	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/" xmlns:v="http://www.w3.org/2006/vcard/ns#"
-	xmlns:opl-gs="http://www.openlinksw.com/schemas/getsatisfaction/"
+	xmlns:opl-gs="http://www.openlinksw.com/schemas/getsatisfaction/" 
+	xmlns:gr="&gr;"
 	version="1.0">
 	<xsl:variable name="ns">http://getsatisfaction.com</xsl:variable>
 	<xsl:output method="xml" indent="yes" omit-xml-declaration="yes" />
@@ -85,6 +87,12 @@
 				<rdfs:seeAlso rdf:resource="{concat($ns, '/', name, '/products')}" />
 				<rdfs:seeAlso rdf:resource="{concat($ns, '/', name, '/tags')}" />
 			</foaf:Organization>
+			<rdf:Description rdf:about="{$baseUri}">
+				<gr:legalName>
+					<xsl:value-of select="name"/>
+				</gr:legalName>
+				<rdf:type rdf:resource="&gr;BusinessEntity"/>
+			</rdf:Description>
 		</xsl:if>
 		<xsl:if test="$what = 'people'">
 			<xsl:for-each select="data">

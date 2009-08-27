@@ -137,6 +137,7 @@
 	  <foaf:Image rdf:about="{@src}"/>
       </foaf:depiction>
   </xsl:template>
+
   <xsl:template match="a[@href]">
       <xsl:variable name="url" select="resolve-uri ($base, @href)"/>
       <xsl:choose>
@@ -159,5 +160,7 @@
 	  </xsl:otherwise>
       </xsl:choose>
   </xsl:template>
+
   <xsl:template match="*|text()"/>
+
 </xsl:stylesheet>
