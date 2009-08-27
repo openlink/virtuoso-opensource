@@ -177,7 +177,6 @@ directory_init() {
   mkdir vad/vsp/rdf_mappers
   mkdir vad/vsp/rdf_mappers/xslt/
   mkdir vad/vsp/rdf_mappers/xslt/main/
-  mkdir vad/vsp/rdf_mappers/xslt/meta/
   mkdir vad/vsp/rdf_mappers/ontologies/
   mkdir vad/vsp/rdf_mappers/ontologies/xbrl/
   mkdir vad/vsp/rdf_mappers/ontologies/owl/
@@ -195,7 +194,6 @@ directory_init() {
   cp *.sql vad/code/rdf_mappers
   cp rdfdesc/*.sql vad/code/rdf_mappers
   cp xslt/main/*.xsl vad/vsp/rdf_mappers/xslt/main/
-  cp xslt/meta/*.xsl vad/vsp/rdf_mappers/xslt/meta/
   cp ontologies/xbrl/*.owl vad/vsp/rdf_mappers/ontologies/xbrl/
   cp ontologies/owl/*.owl vad/vsp/rdf_mappers/ontologies/owl/
 
