@@ -206,9 +206,9 @@ create procedure rdfdesc_http_print_l (in prop_iri any, inout odd_position int, 
    url := rdfdesc_http_url (prop_iri);
 
    http (sprintf ('<tr class="%s"><td class="property">', either(mod (odd_position, 2), 'odd', 'even')));
-   if (r) http ('</td><td class="property">');
+   if (r) http ('is ');
    http (sprintf ('<a class="uri" href="%s" title="%s">%s</a>\n', url, p_prefix, rdfdesc_prop_label (prop_iri)));
-   if (not r) http ('</td><td class="property">');
+   if (r) http (' of');
 
    http ('</td><td><ul class="obj">');
 }

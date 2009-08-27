@@ -200,12 +200,7 @@
       <p><?vsp http (sprintf ('%s', _subject)); ?></p>
 
 <!-- proptable -->
-      <table class="description">
-        <tr>
-          <th class="property">Has Attribute</th>
-	  <th class="referenced_by">Referenced By Attribute</th>
-          <th><span class="value">Value</span></th>
-	</tr>
+      <table class="description"><tr><th class="property">Property</th><th class="value">Value</th></tr>
 
 <?vsp
       exec (sprintf ('select "p" as PRED from (sparql select distinct ?p where { graph <%S> { <%S> ?p ?o } }) sp order by 1', _G, _S),
