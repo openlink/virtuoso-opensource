@@ -165,6 +165,22 @@ create procedure rdfdesc_uri_curie (in uri varchar, in label varchar := null)
 }
 ;
 
+--! used to return local part of an iri
+create procedure rdfdesc_uri_local_part (in uri varchar)
+{
+  declare delim integer;
+  declare uriSearch varchar;
+  delim := -1;
+  uriSearch := uri;
+  delim := coalesce (strrchr (uriSearch, '/'), 0);
+  delim := __max (delim, coalesce (strrchr (uriSearch, '#'), 0));
+  delim := __max (delim, coalesce (strrchr (uriSearch, ':'), 0));
+  if (delim > 0)
+    uriSearch := subseq (uri, delim + 1);
+  return uriSearch;
+}
+;
+
 
 create procedure rdfdesc_http_url (in url varchar)
 {
@@ -399,7 +415,7 @@ create procedure rdfdesc_type (in gr varchar, in subj varchar, out url varchar)
 	  if (data[0][0] is not null)
 	  ll := data[0][0];
 	  else  
-	    ll := rdfdesc_uri_curie (data[0][1]);
+	    ll := rdfdesc_uri_local_part (data[0][1]);
 	  url := rdfdesc_http_url (data[0][1]);
 	}
     }
