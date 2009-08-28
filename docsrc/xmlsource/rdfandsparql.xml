@@ -5825,7 +5825,7 @@ hook, a Virtuoso/PL procedure entry point and binding to the cartridge's entity 
 ontology mapper.</para>
 </sect4>
 <sect4 id="virtuosospongercartridges"><title>Supported Non RDF Data Sources</title>
-<itemizedlist>
+  <itemizedlist>
     <listitem>Standard Formats
 <para>These Cartridges handle open formats: typically community-developed,
 openly-documented, and freely-licensed data structures.</para>
@@ -5969,7 +5969,7 @@ the original Resource itself.</para>
 </table>
 
 </listitem>
-</itemizedlist>
+  </itemizedlist>
 </sect4>
 <sect4 id="virtuosospongercartridgetypes"><title>Types of Cartridges</title>
 <para><emphasis>Basic</emphasis></para>
@@ -7750,7 +7750,7 @@ create procedure DB.DBA.RDF_LOAD_NYTCF_META (in graph_iri varchar, in new_origin
       -- extract candidate_id from Wikipedia URI
       tmp := sprintf_inverse(subseq(graph_iri, indx), 'wikipedia.org/%s', 0);
       if (length(tmp) <> 1)
-        return 0;
+    return 0;
       candidate_name := tmp[0];
     }
     else
@@ -7759,7 +7759,7 @@ create procedure DB.DBA.RDF_LOAD_NYTCF_META (in graph_iri varchar, in new_origin
 	if (length (tmp) <> 3)
 	  tmp := sprintf_inverse(graph_iri, 'http://%s.freebase.com/ns/%s.%s', 0);
 	if (length (tmp) <> 3)
-    return 0;
+	  return 0;
 	candidate_name := tmp[2];
       }
   }
