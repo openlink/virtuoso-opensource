@@ -69,7 +69,7 @@ create procedure DB.DBA.SPARQL_RSET_XML_HTTP_INIT (inout env any)
 --!AWK PUBLIC
 create function DB.DBA.SPARQL_RSET_XML_HTTP_FINAL (inout env any)
 {
-  http ('\n    </results>');
+  http ('\n </results>');
   http ('\n</sparql>');
 }
 ;
@@ -905,13 +905,13 @@ create procedure SPARQL_RESULTS_NT_WRITE_HEAD (inout ses any, in mdta any)
       _type := mdta[i][1];
       if (length (mdta[i]) > 4)
         nill := mdta[i][4];
-          else
+      else
         nill := 0;
       http ('_:_ <http://www.w3.org/2005/sparql-results#resultVariable> "', ses);
-          http_escape (_name, 11, ses, 0, 1);
+      http_escape (_name, 11, ses, 0, 1);
       http ('" .\n', ses);
       i := i + 1;
-        }
+    }
 }
 ;
 
@@ -1215,9 +1215,9 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
           DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
 	}
       else if (ret_format = 'NT')
-          DB.DBA.RDF_TRIPLES_TO_NT (triples, ses);
+        DB.DBA.RDF_TRIPLES_TO_NT (triples, ses);
       else if (ret_format in ('JSON', 'JSON;TALIS'))
-          DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (triples, ses);
+        DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (triples, ses);
       else if (ret_format = 'JSON;RES')
         DB.DBA.RDF_TRIPLES_TO_JSON (triples, ses);
       else if (ret_format = 'SOAP')
@@ -1314,12 +1314,12 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
   if (ret_format = 'TTL')
     {
       if (ret_format is null)
-            ret_mime := 'text/rdf+n3';
-          SPARQL_RESULTS_TTL_WRITE_NS (ses);
-          SPARQL_RESULTS_TTL_WRITE_HEAD (ses, metas);
-          SPARQL_RESULTS_TTL_WRITE_RES (ses, metas, rset);
-          goto body_complete;
-        }
+        ret_mime := 'text/rdf+n3';
+      SPARQL_RESULTS_TTL_WRITE_NS (ses);
+      SPARQL_RESULTS_TTL_WRITE_HEAD (ses, metas);
+      SPARQL_RESULTS_TTL_WRITE_RES (ses, metas, rset);
+      goto body_complete;
+    }
   if (ret_format = 'NT')
     {
       SPARQL_RESULTS_NT_WRITE_NS (ses);
@@ -1328,15 +1328,15 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       goto body_complete;
     }
   if (ret_format = 'RDFXML')
-        {
-          ret_mime := 'application/rdf+xml';
-          SPARQL_RESULTS_RDFXML_WRITE_NS (ses);
-          SPARQL_RESULTS_RDFXML_WRITE_HEAD (ses, metas);
-          SPARQL_RESULTS_RDFXML_WRITE_RES (ses, metas, rset);
-          http ('\n  </rdf:Description>', ses);
-          http ('\n</rdf:RDF>', ses);
-          goto body_complete;
-        }
+    {
+      ret_mime := 'application/rdf+xml';
+      SPARQL_RESULTS_RDFXML_WRITE_NS (ses);
+      SPARQL_RESULTS_RDFXML_WRITE_HEAD (ses, metas);
+      SPARQL_RESULTS_RDFXML_WRITE_RES (ses, metas, rset);
+      http ('\n  </rdf:Description>', ses);
+      http ('\n</rdf:RDF>', ses);
+      goto body_complete;
+    }
   ret_mime := 'application/sparql-results+xml';
   SPARQL_RSET_XML_WRITE_NS (ses);
   SPARQL_RESULTS_XML_WRITE_HEAD (ses, metas);
@@ -2145,7 +2145,7 @@ write_results:
     {
       if (isstring (jsonp_callback))
         http (jsonp_callback || '(\n');
-    DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, add_http_headers);
+      DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, add_http_headers);
       if (isstring (jsonp_callback))
         http (')');
     }
