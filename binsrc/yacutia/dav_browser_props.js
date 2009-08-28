@@ -18,12 +18,13 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
- *
-*/
+ */
+
 /*
-Cookies:
-  dav_show_scr_adv (exp 7 days) controls initial display of blocks vp_1/vp_2 and status of checkbox wg_vs_adv
-*/
+ *  Cookies:
+ *  dav_show_scr_adv (exp 7 days) controls initial display of blocks vp_1/vp_2 and status of
+ *  checkbox wg_vs_adv
+ */
 
 var pr_name_cl = {};
 var pr_inx = 1;

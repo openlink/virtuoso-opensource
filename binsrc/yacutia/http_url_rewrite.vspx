@@ -152,7 +152,6 @@ if (not e.ve_is_post and self.del_item is not null)
 	  update DB.DBA.HTTP_PATH set HP_OPTIONS = serialize (h_opts) where HP_LPATH = self.lpath and HP_HOST = self.vhost and HP_LISTEN_HOST = self.lhost;
 	  DB.DBA.VHOST_MAP_RELOAD (self.vhost, self.lhost, self.lpath);
         }
-
     }
   else
     {
@@ -612,11 +611,6 @@ self.maps.vc_data_bind (e);
           </td>
         </tr>
       </table>
-   <table style="display:none">
-    <tr>
-     <td>$Id$</td>
-    </tr>
-   </table>
   </vm:pagebody>
  </vm:pagewrapper>
 </v:page>
