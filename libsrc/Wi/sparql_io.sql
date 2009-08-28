@@ -1342,7 +1342,6 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
   SPARQL_RESULTS_XML_WRITE_HEAD (ses, metas);
   SPARQL_RESULTS_XML_WRITE_RES (ses, metas, rset);
   http ('\n</sparql>', ses);
-  goto body_complete;
 
 body_complete:
   if (add_http_headers)
@@ -2112,9 +2111,9 @@ host_found:
         }
     }
   --http ('<!-- Query:\n' || query || '\n-->\n', 0);
-  dbg_obj_princ ('accept = ', accept);
-  dbg_obj_princ ('full_query = ', full_query);
-  dbg_obj_princ ('qry_params = ', qry_params);
+  -- dbg_obj_princ ('accept = ', accept);
+  -- dbg_obj_princ ('full_query = ', full_query);
+  -- dbg_obj_princ ('qry_params = ', qry_params);
   commit work;
   if (timeout >= 1000)
     {
