@@ -203,16 +203,29 @@ directory_init() {
   cp ontologies/owl/*.owl vad/vsp/rdf_mappers/ontologies/owl/
 
   #
+  #  GZip the ontologies sources to save space
+  #
+  gzip -V 2>/dev/null 1>/dev/null
+  if test $? -eq 0
+  then
+      gzip vad/vsp/rdf_mappers/ontologies/xbrl/*.owl
+      gzip vad/vsp/rdf_mappers/ontologies/owl/*.owl
+  else
+      echo "GZip must be installed" 
+      exit 1
+  fi
+
+  #
   #  Install minimal OAT toolkit
   #
-  for i in 'loader.js bootstrap.js animation.js slidebar.js'
+  for i in loader.js bootstrap.js animation.js slidebar.js
   do
-      cp $HOME/binsrc/oat/toolkit/$i vad/vsp/rdf_mappers/rdfdesc/oat/
+      cp ../oat/toolkit/$i vad/vsp/rdf_mappers/rdfdesc/oat/
   done
-  cp $HOME/binsrc/oat/images/*.png vad/vsp/rdf_mappers/rdfdesc/oat/images/
-  cp $HOME/binsrc/oat/images/*.gif vad/vsp/rdf_mappers/rdfdesc/oat/images/
-  cp $HOME/binsrc/oat/styles/*.css vad/vsp/rdf_mappers/rdfdesc/oat/styles/
-  cp $HOME/binsrc/oat/xslt/*.xsl vad/vsp/rdf_mappers/rdfdesc/oat/xslt/
+  cp ../oat/images/*.png vad/vsp/rdf_mappers/rdfdesc/oat/images/
+  cp ../oat/images/*.gif vad/vsp/rdf_mappers/rdfdesc/oat/images/
+  cp ../oat/styles/*.css vad/vsp/rdf_mappers/rdfdesc/oat/styles/
+  cp ../oat/xslt/*.xsl vad/vsp/rdf_mappers/rdfdesc/oat/xslt/
 }
 
 virtuoso_start() {
