@@ -80,7 +80,7 @@ void rdf_ds_load_all (void)
   qmf->qmfName = box_dv_short_string ("default-iid-nonblank");
   qmf->qmfShortTmpl = box_dv_short_string (" ^{alias-dot}^^{column}^");
   qmf->qmfLongTmpl = box_dv_short_string (" /* LONG: */ ^{alias-dot}^^{column}^");
-  qmf->qmfSqlvalTmpl = box_dv_short_string (" id_to_iri (^{alias-dot}^^{column}^)");
+  qmf->qmfSqlvalTmpl = box_dv_short_string (" __id2i (^{alias-dot}^^{column}^)");
   qmf->qmfBoolTmpl = box_dv_short_string (" NULL");
   qmf->qmfIsrefOfShortTmpl = box_dv_short_string (" 1");
   qmf->qmfIsuriOfShortTmpl = box_dv_short_string (" (^{tree}^ < min_bnode_iri_id ())");
@@ -94,8 +94,8 @@ void rdf_ds_load_all (void)
   qmf->qmfSqlvalOfShortTmpl = box_dv_short_string (" id_to_iri (^{tree}^)");
   qmf->qmfBoolOfShortTmpl = box_dv_short_string (" NULL");
   qmf->qmfIidOfShortTmpl = box_dv_short_string (" ^{tree}^");
-  qmf->qmfUriOfShortTmpl = box_dv_short_string (" id_to_iri (^{tree}^)");
-  qmf->qmfStrsqlvalOfShortTmpl = box_dv_short_string (" id_to_iri (^{tree}^)");
+  qmf->qmfUriOfShortTmpl = box_dv_short_string (" __id2i (^{tree}^)");
+  qmf->qmfStrsqlvalOfShortTmpl = box_dv_short_string (" __bft (__id2i (^{tree}^), 2)");
   qmf->qmfShortOfTypedsqlvalTmpl = box_dv_short_string (" NULL");
   qmf->qmfShortOfSqlvalTmpl = box_dv_short_string (" __i2idn (^{tree}^)");
   qmf->qmfShortOfLongTmpl = box_dv_short_string (" /* SHORT of LONG: */ ^{tree}^");
@@ -236,46 +236,60 @@ ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subtype,
     return;
   if (!strncmp (name, "HTTP+", 5))
     {
-/*                     0123456789 */
-  if (!strncmp (name, "HTTP+XML ", 9))
-    switch (subtype)
-      {
-      case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_RSET_XML_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_RSET_XML_HTTP_PRE"; return;
-      case CONSTRUCT_L: case DESCRIBE_L: goto bad_descr; /* see below */
-      case ASK_L: goto bad_ask; /* see below */
-      default: return;
-      }
+/*                         0123456789 */
+      if (!strncmp (name, "HTTP+XML ", 9))
+        switch (subtype)
+          {
+          case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_RSET_XML_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_RSET_XML_HTTP_PRE"; return;
+          case CONSTRUCT_L: case DESCRIBE_L:  ret_agg_formatter[0] = "DB.DBA.SPARQL_DICT_XML_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_DICT_XML_HTTP_PRE"; return;
+          case ASK_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_XML"; return;
+          default: return;
+          }
 #if 0
-/*                     0         1   */
-/*                     0123456789012 */
-  if (!strncmp (name, "HTTP+RDF/XML ", 12))
-    switch (subtype)
-      {
-      case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_RSET_RDFXML_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_RSET_RDFXML_HTTP_PRE"; return;
+/*                         0         1   */
+/*                         0123456789012 */
+      if (!strncmp (name, "HTTP+RDF/XML ", 12))
+        switch (subtype)
+          {
+          case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_RSET_RDFXML_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_RSET_RDFXML_HTTP_PRE"; return;
 #if 0
-      case CONSTRUCT_L: case DESCRIBE_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_DICT_RDFXML_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_DICT_RDFXML_HTTP_PRE"; return;
-      case ASK_L: goto bad_ask; /* see below */
+          case CONSTRUCT_L: case DESCRIBE_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_DICT_RDFXML_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_DICT_RDFXML_HTTP_PRE"; return;
+          case ASK_L: goto bad_ask; /* see below */
 #else
-      case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDF_XML"; return;
-      case ASK_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_RDF_XML"; return;
+          case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDF_XML"; return;
+          case ASK_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_RDF_XML"; return;
 #endif
-      default: return;
-      }
+          default: return;
+          }
 #endif
-/*                     0123456789 */
-  if (!strncmp (name, "HTTP+TTL ", 9))
-    switch (subtype)
-      {
-      case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_RSET_TTL_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_RSET_TTL_HTTP_PRE"; return;
+/*                         0123456789 */
+      if (!strncmp (name, "HTTP+TTL ", 9))
+        switch (subtype)
+          {
+          case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_RSET_TTL_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_RSET_TTL_HTTP_PRE"; return;
 #if 0
-      case CONSTRUCT_L: case DESCRIBE_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_DICT_TTL_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_DICT_TTL_HTTP_PRE"; return;
-      case ASK_L: goto bad_ask; /* see below */
+          case CONSTRUCT_L: case DESCRIBE_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_DICT_TTL_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_DICT_TTL_HTTP_PRE"; return;
+          case ASK_L: goto bad_ask; /* see below */
 #else
-      case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL"; return;
-      case ASK_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL"; return;
+          case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL"; return;
+          case ASK_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL"; return;
 #endif
-      default: return;
-      }
+          default: return;
+          }
+/*                         012345678 */
+      if (!strncmp (name, "HTTP+NT ", 8))
+        switch (subtype)
+          {
+          case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_RSET_NT_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_RSET_NT_HTTP_PRE"; return;
+#if 0
+          case CONSTRUCT_L: case DESCRIBE_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_DICT_N3_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_DICT_N3_HTTP_PRE"; return;
+          case ASK_L: goto bad_ask; /* see below */
+#else
+          case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_NT"; return;
+          case ASK_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_NT"; return;
+#endif
+          default: return;
+          }
     }
   if (!strcmp (name, "RDF/XML"))
     switch (subtype)
@@ -307,7 +321,7 @@ ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subtype,
       case ASK_L: ret_formatter[0] = "COUNT"; return;
       default: return;
       }
-  spar_error (NULL, "Unsupported format name '%.40s', only 'RDF/XML', 'TURTLE' and '_JAVA_' are supported", name);
+  spar_error (NULL, "Unsupported format name '%.40s'", name);
 bad_ask:
   spar_error (NULL, "Format name '%.30s' is not supported for boolean results made by SPARQL %s", name, spart_dump_opname (subtype, 0));
 bad_descr:
@@ -3321,10 +3335,8 @@ IN_op_fnt_found:
             const char *tmpl = NULL;
             if (IS_BOX_POINTER (arg1_native))
               tmpl = arg1_native->qmfStrsqlvalOfShortTmpl;
-            else if (SSG_VALMODE_LONG == arg1_native)
+            else if ((SSG_VALMODE_LONG == arg1_native) || (SSG_VALMODE_SQLVAL == arg1_native))
               tmpl = " __rdf_strsqlval (^{tree}^)";
-            else if (SSG_VALMODE_SQLVAL == arg1_native)
-              tmpl = " DB.DBA.RDF_STRSQLVAL_OF_SQLVAL (^{tree}^)";
             else
               spar_sqlprint_error ("ssg_" "print_builtin_expn(): bad native type for IRI()");
             ssg_print_tmpl (ssg, arg1_native, tmpl, NULL, NULL, arg1, NULL_ASNAME);
@@ -3355,10 +3367,8 @@ IN_op_fnt_found:
             const char *tmpl = NULL;
             if (IS_BOX_POINTER (arg1_native))
               tmpl = arg1_native->qmfStrsqlvalOfShortTmpl;
-            else if (SSG_VALMODE_LONG == arg1_native)
+            else if ((SSG_VALMODE_LONG == arg1_native) || (SSG_VALMODE_SQLVAL == arg1_native))
               tmpl = " __rdf_strsqlval (^{tree}^)";
-            else if (SSG_VALMODE_SQLVAL == arg1_native)
-              tmpl = " DB.DBA.RDF_STRSQLVAL_OF_SQLVAL (^{tree}^)";
             else if (SSG_VALMODE_BOOL == arg1_native)
               tmpl = " case (^{tree}^) when 0 then 'false' else 'true' end";
             else

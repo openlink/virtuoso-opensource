@@ -2232,6 +2232,53 @@ bif_http_sys_parse_ranges_header (caddr_t * qst, caddr_t * err_ret, state_slot_t
   return ranges ? ranges : NEW_DB_NULL;
 }
 
+caddr_t
+http_sys_find_best_accept_impl (caddr_t * qst, state_slot_t *ret_val_ssl, caddr_t accept_strg, caddr_t *supp, const char *szMe)
+{
+  if (NULL != accept_strg)
+    {
+      int supp_ctr, supp_count;
+      supp_count = BOX_ELEMENTS (supp) / 2;
+      for (supp_ctr = 0; supp_ctr < supp_count; supp_ctr++)
+        {
+          caddr_t mime, val;
+          mime = supp [supp_ctr*2];
+          val = supp [supp_ctr*2 + 1];
+          if (DV_STRING != DV_TYPE_OF (mime))
+            continue;
+          if (NULL == strstr (accept_strg, mime))
+            continue;
+          if (NULL != ret_val_ssl)
+            qst_set (qst, ret_val_ssl, box_copy_tree (val));
+          return box_copy_tree (mime);
+        }
+    }
+  if (NULL != ret_val_ssl)
+    qst_set (qst, ret_val_ssl, NEW_DB_NULL);
+  return NEW_DB_NULL;
+}
+
+
+static caddr_t
+bif_http_sys_find_best_accept (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  const char *szMe = "http_sys_find_best_accept";
+  caddr_t accept_strg = bif_string_or_null_arg (qst, args, 0, szMe);
+  caddr_t *supp = (caddr_t *)bif_array_arg (qst, args, 1, szMe);
+  dtp_t supp_dtp = DV_TYPE_OF (supp);
+  state_slot_t *ret_val_ssl = NULL;
+  if (DV_ARRAY_OF_POINTER != supp_dtp)
+    sqlr_new_error ("22023", "SR622",
+      "Function %s needs an array as second argument, in a get_keyword() style, not an arg of type %s (%d)",
+      szMe, dv_type_title (supp_dtp), supp_dtp );
+  if (BOX_ELEMENTS(args) > 2)
+    {
+      ret_val_ssl = args[2];
+      if (SSL_CONSTANT == ret_val_ssl->ssl_type)
+        ret_val_ssl = NULL;
+    }
+  return http_sys_find_best_accept_impl (qst, ret_val_ssl, accept_strg, supp, szMe);
+}
 
 void
 ws_file (ws_connection_t * ws)
@@ -9680,6 +9727,7 @@ http_init_part_one ()
   bif_define ("http_strses_memory_size", bif_http_strses_memory_size);
   bif_define ("http_string_date", bif_http_string_date); /* HTTP rfc date to datetime */
   bif_define ("http_sys_parse_ranges_header", bif_http_sys_parse_ranges_header);
+  bif_define ("http_sys_find_best_accept", bif_http_sys_find_best_accept);
 #ifdef _IMSG
   bif_define ("__ftp_log", bif_ftp_log);
 #endif

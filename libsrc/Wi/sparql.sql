@@ -1519,7 +1519,7 @@ create function DB.DBA.RDF_LONG_OF_SQLVAL (in v varchar) returns any
 -- Conversions for SQL values
 
 --!AWK PUBLIC
-create function DB.DBA.RDF_STRSQLVAL_OF_SQLVAL (in sqlval any)
+create function DB.DBA.RDF_STRSQLVAL_OF_SQLVAL (in sqlval any) -- DEPRECATED
 {
   declare t, len integer;
   if (__tag of rdf_box = __tag (sqlval))
@@ -2594,12 +2594,10 @@ create procedure DB.DBA.RDF_TRIPLES_TO_NT (inout triples any, inout ses any)
       http ('# Empty NT\n', ses);
       return;
     }
-  env := vector (dict_new (1), 0, '', '', '', 10000, 10000, 0, 0);
+  env := vector (0, 0, 0);
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
     {
-      http_ttl_triple (env, triples[tctr][0], triples[tctr][1], triples[tctr][2], ses);
-      http (' .\n', ses);
-      env[1] := 0;
+      http_nt_triple (env, triples[tctr][0], triples[tctr][1], triples[tctr][2], ses);
     }
 }
 ;
@@ -2907,7 +2905,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (inout triples any, inout ses 
       http ('{ }\n', ses);
       return;
     }
-  env := vector (0, 0);
+  env := vector (0, 0, 0, null);
 -- No error handler heres because failed sorting by predicate or subject would result in poorly structured output.
   rowvector_subj_sort (triples, 1, 1);
   rowvector_subj_sort (triples, 0, 1);
@@ -2921,6 +2919,26 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (inout triples any, inout ses 
   if (status)
     http (' } }\n', ses);
   http ('}\n', ses);
+}
+;
+
+create procedure DB.DBA.RDF_TRIPLES_TO_JSON (inout triples any, inout ses any)
+{
+  declare tcount, tctr, env integer;
+  tcount := length (triples);
+  http ('\n{ "head": { "link": [], "vars": [ "s", "p", "o" ] },\n  "results": { "distinct": false, "ordered": true, "bindings": [', ses);
+  tcount := length (triples);
+  env := vector (0, 0, vector ('s', 'p', 'o'), null);
+  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
+    {
+      declare triple any;
+      if (tctr > 0)
+        http(',', ses);
+      triple := aref_set_0 (triples, tctr);
+      sparql_rset_json_write_row (ses, env, triple);
+      aset_zap_arg (triples, tctr, triple);
+    }
+  http (' ] } }', ses);
 }
 ;
 
@@ -2996,6 +3014,49 @@ create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_FIN (inout _env any) returns
 
 create aggregate DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL (in colvalues any, in colnames any) returns long varchar
 from DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_INIT, DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_ACC, DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_FIN
+;
+
+
+create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_INIT (inout _env any)
+{
+  _env := string_output();
+  http ('@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rs: <http://www.w3.org/2005/sparql-results#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+_:_ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2005/sparql-results#results> .\n', _env);
+}
+;
+
+create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_ACC (inout _env any, inout colvalues any, inout colnames any)
+{
+  declare col_ctr, col_count integer;
+  declare rowid varchar;
+  declare blank_ids any;
+  if (__tag of vector <> __tag(_env))
+    {
+      declare col_buf any;
+      col_count := length (colnames);
+      if (185 <> __tag(_env))
+        DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_INIT (_env);
+      col_buf := make_array (col_count * 7, 'any');
+      for (col_ctr := 0; col_ctr < col_count; col_ctr := col_ctr + 1)
+        col_buf [col_ctr * 7] := colnames[col_ctr];
+      _env := vector (0, col_buf, _env);
+    }
+  sparql_rset_nt_write_row (0, _env, colvalues);
+}
+;
+
+create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_FIN (inout _env any) returns long varchar
+{
+  if (185 <> __tag(_env))
+    DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_INIT (_env);
+  return string_output_string (_env);
+}
+;
+
+create aggregate DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT (in colvalues any, in colnames any) returns long varchar
+from DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_INIT, DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_ACC, DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_FIN
 ;
 
 create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_INIT (inout _env any)
@@ -3153,6 +3214,42 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TALIS_JSON (inout triples_dict 
 ;
 
 --!AWK PUBLIC
+create procedure DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_XML_INIT (inout _env any)
+{
+  _env := 0;
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_XML_ACC (inout _env any, inout one any)
+{
+  _env := 1;
+}
+;
+
+--!AWK PUBLIC
+create function DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_XML_FIN (inout _env any) returns long varchar
+{
+  declare ses any;
+  declare ans varchar;
+  ses := string_output ();
+  if (isinteger (_env) and _env)
+    ans := 'true';
+  else
+    ans := 'false';
+  http ('<sparql xmlns="http://www.w3.org/2005/sparql-results#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2001/sw/DataAccess/rf1/result2.xsd">
+ <head></head>
+ <boolean>' || ans || '</boolean>
+</sparql>', ses);
+  return ses;
+}
+;
+
+create aggregate DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_XML (inout one any) returns long varchar
+from DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_XML_INIT, DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_XML_ACC, DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_XML_FIN
+;
+
+--!AWK PUBLIC
 create procedure DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_RDF_XML_INIT (inout _env any)
 {
   _env := 0;
@@ -3216,7 +3313,7 @@ create function DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_FIN (inout _env any) return
     ans := 'FALSE';
   http ('@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rs: <http://www.w3.org/2005/sparql-results#> .\n', ses);
-  http (sprintf ('[ rdf:type rs:results ; rs:boolean %s ]', ans), ses);
+  http (sprintf ('[] rdf:type rs:results ; rs:boolean %s .', ans), ses);
   return ses;
 }
 ;
@@ -3224,6 +3321,26 @@ create function DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_FIN (inout _env any) return
 create aggregate DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL (inout one any) returns long varchar
 from DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_INIT, DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_ACC, DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_FIN
 ;
+
+--!AWK PUBLIC
+create function DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_NT_FIN (inout _env any) returns long varchar
+{
+  declare ses any;
+  declare ans varchar;
+  ses := string_output ();
+  if (isinteger (_env) and _env)
+    ans := 'true';
+  else
+    ans := 'false';
+  http (sprintf ('_:_ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2005/sparql-results#results> .\n_:_ <http://www.w3.org/2005/sparql-results#boolean> "%s"^^<http://www.w3.org/2001/XMLSchema#boolean> .\n', ans), ses);
+  return ses;
+}
+;
+
+create aggregate DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_NT (inout one any) returns long varchar
+from DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_NT_INIT, DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_NT_ACC, DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_NT_FIN
+;
+
 
 -----
 -- Insert, delete, modify operations for lists of triples
@@ -9074,7 +9191,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
   if (not exists (sparql define input:storage "" ask where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
               <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-                virtrdf:version '2009-08-19 0001v6'
+                virtrdf:version '2009-08-27 0001v6'
             } } ) )
     {
       declare txt1, txt2 varchar;
@@ -9225,6 +9342,9 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_INIT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_ACC to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_FIN to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_INIT to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_ACC to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_FIN to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_INIT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_ACC to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_FIN to SPARQL_SELECT',
