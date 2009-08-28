@@ -29,5 +29,4 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml"
   xmlns:vm="http://www.openlinksw.com/vspx/macro">
 	<vm:dav_browser />
-  <table style="display:none"><tr><td>$Id$</td></tr></table>
 </v:page>

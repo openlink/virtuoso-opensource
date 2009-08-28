@@ -110,5 +110,4 @@
       ?>
     </vm:pagebody>
   </vm:pagewrapper>
-  <table style="display:none"><tr><td>$Id$</td></tr></table>
 </v:page>

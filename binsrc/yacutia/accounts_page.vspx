@@ -151,7 +151,6 @@
           </td>
         </tr>
       </table>
-      <table style="display:none"><tr><td>$Id$</td></tr></table>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

@@ -36,5 +36,4 @@
     </pre>
     <pre><?vsp if (length (self.rule_list)) http_value (URLREWRITE_DUMP_RULELIST_SQL (self.rule_list)); ?>
     </pre>
-<table style="display:none"><tr><td>$Id$</td></tr></table>
 </v:page>

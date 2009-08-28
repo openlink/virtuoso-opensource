@@ -155,7 +155,6 @@
           http(sprintf('<table class="warning"><tr><td>%s</td></tr></table>', self.error_str198));
         self.error_str198 := '';
       ?>
-      <table style="display:none"><tr><td>$Id$</td></tr></table>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

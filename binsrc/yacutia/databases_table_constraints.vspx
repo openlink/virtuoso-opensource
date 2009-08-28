@@ -273,7 +273,6 @@
             ]]></v:script></v:on-post>
           </v:button>
         </v:form>
-<table style="display:none"><tr><td>$Id$</td></tr></table>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

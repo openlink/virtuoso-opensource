@@ -220,7 +220,6 @@
       <span class="error_summary">
           <v:error-summary />
       </span>
-<table style="display:none"><tr><td>$Id$</td></tr></table>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>
