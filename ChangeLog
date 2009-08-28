@@ -1,3 +1,261 @@
+2009-08-28 13:24  source
+
+	* Updated documentation
+
+2009-08-28 12:50  source
+
+	* Updated version to 5.0.12-rc8
+
+2009-08-28 12:44  source
+
+	* Fixed use curie when label is not available
+	* Added tabbed interface to description.vsp for separating properties and
+	  inverse properties (i.e. predicates from and predicates to the entity
+	  being described)
+
+2009-08-28 12:44  source
+
+	* Fixed gzipped file names in DAV
+
+2009-08-28 12:36  source
+
+	* Fixed use gzip to compress large ontology sources
+
+2009-08-28 12:23  source
+
+	* Fixed whitespace
+
+2009-08-28 12:22  source
+
+	* Removed debugging output
+
+2009-08-28 12:09  source
+
+	* Fixed headers
+
+2009-08-28 11:15  source
+
+	* Minor cleanups
+
+2009-08-28 11:08  source
+
+	* Fixed serialization of resulting columns of ((str(something))
+
+2009-08-28 10:38  source
+
+	* Fixed/enhanced multiple issues in SPARQL endpoint and serializations
+	  (including NTriples, JSON, callbacks for JSON, MIME types,
+	  dict as result-set etc)
+
+2009-08-27 22:48  source
+
+	* Fixed bug with absolute oriented pattern for directory
+
+2009-08-27 22:36  source
+
+	* Fixed whitespace/indentation
+
+2009-08-27 22:23  source
+
+	* Added initial support for online backup on cluster
+
+2009-08-27 22:07  source
+
+	* Added example for yum for Centos/RedHat etc
+
+2009-08-27 18:28  source
+
+	* Added minimal installation of OAT toolkit for slidebar
+
+2009-08-27 15:18  source
+
+	* Fixed typo
+
+2009-08-27 15:03  source
+
+	* Updated version
+
+2009-08-27 15:02  source
+
+	* Added common ontologies to cache
+	* Fixed directory structure
+
+2009-08-27 15:02  source
+
+	* Added CNET, YELP, TESCO, ZILLOW cartridges
+	* Fixed dbpedia extraction
+	* Fixed aperture support
+	* Fixed directory structure
+
+2009-08-27 14:52  source
+
+	* Fixed dependency list
+
+2009-08-27 14:52  source
+
+	* Added common ontologies to cache
+
+2009-08-27 14:51  source
+
+	* Fixed directory structure
+
+2009-08-27 14:27  source
+
+	* Fixed lookup labels
+
+2009-08-26 18:46  source
+
+	* Fixed labels
+
+2009-08-26 13:14  source
+
+	* Alternate RDF formats and ODE links moved from slidebar back to footer.
+	* Inverse attributes (where subject of description.vsp is the target of
+	  the attribute) moved to their own column in property/value table.
+	* Fixed use text/n3 instead of text/plain
+
+2009-08-26 13:09  source
+
+	* Added support for text/n3 mime type
+
+2009-08-25 18:29  source
+
+	* Fixed TCN rules
+
+2009-08-24 19:51  source
+
+	* Fixed HTML bugs
+	* Fixed CSS
+	* Fixed DCC Conversations
+	* Fixed delete instance
+
+2009-08-24 19:44  source
+
+	* Added sidebar
+	* Added labels for properties
+	* Fixed type of doc in heading
+	* Fixed check for empty
+
+2009-08-24 19:40  source
+
+	* Removed extra graphic
+
+2009-08-22 10:09  source
+
+	* Fixed problem building jdbc2 driver
+
+2009-08-22 08:43  source
+
+	* Fixed minor build issues
+
+2009-08-22 07:54  source
+
+	* Fixed UI
+
+2009-08-21 09:36  source
+
+	* Regenerated driver
+
+2009-08-21 09:26  source
+
+	* Added new VirtuosoDataSourceFactory class
+	* Fixed compiler warnings
+
+2009-08-20 22:37  source
+
+	* Updated version to 5.0.12-rc7
+
+2009-08-20 22:36  source
+
+	* Fixed Safari and IE bugs
+
+2009-08-20 22:36  source
+
+	* Fixed check instance
+	* Removed debugging info
+
+2009-08-20 22:34  source
+
+	* Fixed check instance
+	* Fixed API message after delete item
+
+2009-08-20 22:33  source
+
+	* Fixed vad dependency check
+
+2009-08-20 22:32  source
+
+	* Fixed check instance
+
+2009-08-20 21:42  source
+
+	* Fixed build rules
+	* Cleanups
+
+2009-08-20 20:18  source
+
+	* Rebuild drivers
+
+2009-08-20 19:59  source
+
+	* Fixed whitespace and comments
+
+2009-08-20 19:52  source
+
+	* Code refactoring and cleanups
+	* Fixed support for connection pools
+
+2009-08-20 17:47  source
+
+	* Added support for NVARCHAR in sparql
+
+2009-08-20 11:28  source
+
+	* Added info sidebar
+	* Moved links for alternate RDF serialization formats from footer
+	  to header
+
+2009-08-20 11:27  source
+
+	* Fixed rdfa support
+
+2009-08-20 11:16  source
+
+	* Fixed missing 'else'
+
+2009-08-20 09:10  source
+
+	* Fixed problem with sponging
+
+2009-08-20 08:50  source
+
+	* Fixed UI profile page
+
+2009-08-19 07:03  source
+
+	* Added new API and Ubiquity commands
+	* Fixed API Commands - check instance
+
+2009-08-19 00:00  source
+
+	* Updated version to 5.0.12-rc6
+
+2009-08-18 23:59  source
+
+	* Fixed compiler warnings
+
+2009-08-18 23:58  source
+
+	* Fixed uninitialized variable
+
+2009-08-18 23:47  source
+
+	* Fixed indentation
+
+2009-08-18 23:45  source
+
+	* Fixed whitespace
+
 2009-08-18 17:49  source
 
 	* Fixed whitespace at end of line
