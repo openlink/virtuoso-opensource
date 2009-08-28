@@ -46,98 +46,6 @@ create procedure DB.DBA.SPARQL_RSET_XML_WRITE_HEAD (inout ses any, in colnames a
 ;
 
 --!AWK PUBLIC
-create procedure DB.DBA.SPARQL_RSET_XML_WRITE_ROW_OLD (inout ses any, inout colnames any, inout row any)
-{
-  declare i, col_count integer;
-  -- dbg_obj_princ ('DB.DBA.SPARQL_RSET_XML_WRITE_ROW (..., ',colnames, row, ')');
-  --http ('<result/>', ses);
-  --return;
-  http ('\n <result>', ses);
-  i := 0; col_count := length (colnames);
-  for (i := 0; i < col_count; i := i + 1)
-    {
-      declare _name varchar;
-      declare _val any;
-      _val := aref_set_0 (row, i);
-      if (_val is null)
-        goto end_of_binding;
-      if (isiri_id (_val))
-        {
-          if (_val >= min_bnode_iri_id ())
-            http (sprintf ('\n   <binding name="%s"><bnode>%s</bnode></binding>', colnames[i], id_to_iri (_val)), ses);
-	  else
-	    {
-              declare res varchar;
-              res := id_to_iri (_val);
---              res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = _val));
-              if (res is null)
-                res := sprintf ('bad://%d', iri_id_num (_val));
-              http (sprintf ('\n   <binding name="%s"><uri>', colnames[i]), ses);
-              http_value (res, 0, ses);
-              http ('</uri></binding>', ses);
-	    }
-	}
-      else if (isstring (_val) and (1 = __box_flags (_val)))
-        {
-          if (_val like 'nodeID://%')
-            http (sprintf ('\n   <binding name="%s"><bnode>%s</bnode></binding>', colnames[i], _val), ses);
-          else
-            http (sprintf ('\n   <binding name="%s"><uri>%V</uri></binding>', colnames[i], _val), ses);
-        }
-      else
-        {
-	  declare lang, dt varchar;
-	  declare is_xml_lit int;
-	  declare sql_val any;
-	  if (__tag (_val) in (185, 230)) -- string output or an XML entity
-	    {
-              http (sprintf ('\n   <binding name="%s"><literal>', colnames[i]), ses);
-	      http_value (_val, 0, ses);
-              http ('</literal></binding>', ses);
-              goto end_of_binding;
-	    }
-	  lang := DB.DBA.RDF_LANGUAGE_OF_LONG (_val, null);
-	  dt := DB.DBA.RDF_DATATYPE_IRI_OF_LONG (_val, null);
-	  if (dt = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral')
-	    is_xml_lit := 1;
-	  else
-            is_xml_lit := 0;
-	  if (lang is not null)
-	    {
-	      if (dt is not null)
-                http (sprintf ('\n   <binding name="%s"><literal xml:lang="%V" datatype="%V">',
-		    colnames[i], cast (lang as varchar), cast (dt as varchar)), ses);
-	      else
-                http (sprintf ('\n   <binding name="%s"><literal xml:lang="%V">',
-		    colnames[i], cast (lang as varchar)), ses);
-	    }
-	  else
-	    {
-	      if (dt is not null)
-                http (sprintf ('\n   <binding name="%s"><literal datatype="%V">',
-		    colnames[i], cast (dt as varchar)), ses);
-	      else
-                http (sprintf ('\n   <binding name="%s"><literal>', colnames[i]), ses);
-	    }
-	  sql_val := __rdf_sqlval_of_obj (_val, 1);
-	  if (isentity (sql_val))
-	    is_xml_lit := 1;
-	  if (__tag (sql_val) = __tag of varchar) -- UTF-8 value kept in a DV_STRING box
-	    sql_val := charset_recode (sql_val, 'UTF-8', '_WIDE_');
-	  if (is_xml_lit) http ('<![CDATA[', ses);
-	  http_value (sql_val, 0, ses);
-	  if (is_xml_lit) http (']]>', ses);
-          http ('</literal></binding>', ses);
-        }
-end_of_binding: ;
-      aset_zap_arg (row, i, _val);
-    }
-
-  http ('\n  </result>', ses);
-}
-;
-
---!AWK PUBLIC
 create function DB.DBA.SPARQL_RSET_XML_HTTP_PRE (in colnames any, in accept varchar)
 {
   declare ses integer;
@@ -146,7 +54,7 @@ create function DB.DBA.SPARQL_RSET_XML_HTTP_PRE (in colnames any, in accept varc
   ses := 0;
   DB.DBA.SPARQL_RSET_XML_WRITE_NS (ses);
   DB.DBA.SPARQL_RSET_XML_WRITE_HEAD (ses, colnames);
-  http ('\n <results>');
+  http ('\n <results distinct="false" ordered="true">');
   return colnames;
 }
 ;
@@ -162,17 +70,38 @@ create procedure DB.DBA.SPARQL_RSET_XML_HTTP_INIT (inout env any)
 create function DB.DBA.SPARQL_RSET_XML_HTTP_FINAL (inout env any)
 {
   http ('\n    </results>');
-  http ('\n  </sparql>');
+  http ('\n</sparql>');
 }
 ;
 
 --!AWK PUBLIC
 create aggregate DB.DBA.SPARQL_RSET_XML_HTTP (inout colnames any, inout row any) from
   DB.DBA.SPARQL_RSET_XML_HTTP_INIT,
-  sparql_rset_xml_write_row, -- DB.DBA.SPARQL_RSET_XML_WRITE_ROW_OLD,
+  sparql_rset_xml_write_row,
   DB.DBA.SPARQL_RSET_XML_HTTP_FINAL
 ;
 
+
+--!AWK PUBLIC
+create function DB.DBA.SPARQL_DICT_XML_HTTP_PRE (in colnames any, in accept varchar)
+{
+  declare ses integer;
+  http_header ('Content-Type: ' || accept || '; charset=UTF-8\r\n');
+  http_flush (1);
+  ses := 0;
+  DB.DBA.SPARQL_RSET_XML_WRITE_NS (ses);
+  http ('\n <head><variable name="S"/><variable name="P"/><variable name="O"/></head>');
+  http ('\n <results distinct="false" ordered="true">');
+  return colnames;
+}
+;
+
+--!AWK PUBLIC
+create aggregate DB.DBA.SPARQL_DICT_XML_HTTP (inout colnames any, inout row any) from
+  DB.DBA.SPARQL_RSET_XML_HTTP_INIT,
+  sparql_dict_xml_write_row,
+  DB.DBA.SPARQL_RSET_XML_HTTP_FINAL
+;
 
 
 --!AWK PUBLIC
@@ -180,22 +109,28 @@ create procedure SPARQL_RSET_TTL_WRITE_NS (inout ses any)
 {
   http ('@prefix res: <http://www.w3.org/2005/sparql-results#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-_:_ rdf:type res:ResultSet .\n', ses);
+_:_ a res:ResultSet .\n', ses);
 }
 ;
 
+--!AWK PUBLIC
 create procedure DB.DBA.SPARQL_RSET_TTL_WRITE_HEAD (inout ses any, in colnames any)
 {
   declare i, col_count integer;
   col_count := length (colnames);
+  if (0 = col_count)
+    return;
+  http ('_:_ res:resultVariable "', ses);
   for (i := 0; i < col_count; i := i + 1)
     {
-      http ('_:_ res:resultVariable "', ses);
+      if (i > 0)
+        http ('" , "', ses);
       http_escape (colnames[i], 11, ses, 0, 1);
-      http ('" .\n', ses);
     }
+  http ('" .\n', ses);
 }
 ;
+
 --!AWK PUBLIC
 create function DB.DBA.SPARQL_RSET_TTL_HTTP_PRE (in colnames any, in accept varchar)
 {
@@ -238,6 +173,54 @@ create aggregate DB.DBA.SPARQL_RSET_TTL_HTTP (inout colnames any, inout row any)
   DB.DBA.SPARQL_RSET_TTL_HTTP_FINAL
 ;
 
+--!AWK PUBLIC
+create procedure SPARQL_RSET_NT_WRITE_NS (inout ses any)
+{
+  http ('_:_ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#ResultSet> .\n', ses);
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.SPARQL_RSET_NT_WRITE_HEAD (inout ses any, in colnames any)
+{
+  declare i, col_count integer;
+  col_count := length (colnames);
+  for (i := 0; i < col_count; i := i + 1)
+    {
+      http ('_:_ <http://www.w3.org/2005/sparql-results#resultVariable> "', ses);
+      http_escape (colnames[i], 11, ses, 0, 1);
+      http ('" .\n', ses);
+    }
+}
+;
+
+--!AWK PUBLIC
+create function DB.DBA.SPARQL_RSET_NT_HTTP_PRE (in colnames any, in accept varchar)
+{
+  declare ses, colctr, colcount integer;
+  declare res any;
+  -- dbg_obj_princ ('DB.DBA.SPARQL_RSET_NT_HTTP_PRE (', colnames, accept, ')');
+  http_header ('Content-Type: ' || accept || '; charset=UTF-8\r\n');
+  http_flush (1);
+  ses := 0;
+  DB.DBA.SPARQL_RSET_NT_WRITE_HEAD (ses, colnames);
+  colcount := length (colnames);
+  res := make_array (colcount * 7, 'any');
+  for (colctr := 0; colctr < colcount; colctr := colctr + 1)
+    {
+      res [colctr * 7] := colnames [colctr];
+    }
+  return vector (0, res, 0);
+}
+;
+
+--!AWK PUBLIC
+create aggregate DB.DBA.SPARQL_RSET_NT_HTTP (inout colnames any, inout row any) from
+  DB.DBA.SPARQL_RSET_TTL_HTTP_INIT,
+  sparql_rset_nt_write_row,
+  DB.DBA.SPARQL_RSET_TTL_HTTP_FINAL
+;
+
 -----
 -- SPARQL protocol client, i.e., procedures to execute remote SPARQL statements.
 
@@ -254,7 +237,7 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
   )
 {
   declare req_uri, req_method, req_body, local_req_hdr, ret_body, ret_hdr any;
-  declare ret_content_type varchar;
+  declare ret_content_type, ret_known_content_type, ret_format varchar;
   req_body := string_output();
   http ('query=', req_body);
   http_url (query, 0, req_body);
@@ -271,7 +254,7 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
   if (maxrows is not null)
     http (sprintf ('&maxrows=%d', maxrows), req_body);
   req_body := string_output_string (req_body);
-  local_req_hdr := 'Accept: application/sparql-results+xml, text/rdf+n3, text/rdf+ttl, application/turtle, application/x-turtle, application/rdf+xml, application/xml';
+  local_req_hdr := 'Accept: application/sparql-results+xml, text/rdf+n3, text/rdf+ttl, text/rdf+turtle, text/turtle, application/turtle, application/x-turtle, application/rdf+xml, application/xml';
   if (length (req_body) + length (service) >= 1900)
     {
       req_method := 'POST';
@@ -295,13 +278,8 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
   -- dbg_obj_princ ('Returned header: ', ret_hdr);
   -- dbg_obj_princ ('Returned body: ', ret_body);
   ret_content_type := http_request_header (ret_hdr, 'Content-Type', null, null);
-  if (ret_content_type is null or
-    (strstr (ret_content_type, 'application/sparql-results+xml') is null and
-      strstr (ret_content_type, 'application/rdf+xml') is null and
-      strstr (ret_content_type, 'text/rdf+n3') is null and
-      strstr (ret_content_type, 'text/rdf+ttl') is null and
-      strstr (ret_content_type, 'application/turtle' ) is null and
-      strstr (ret_content_type, 'application/x-turtle' ) is null ) )
+  ret_known_content_type := http_sys_find_best_sparql_accept (ret_content_type, 0, ret_format);
+  if (ret_format is null or not (ret_format in ('XML', 'RDFXML', 'TTL')))
     {
       declare ret_begin, ret_html any;
       ret_begin := "LEFT" (ret_body, 1024);
@@ -321,7 +299,7 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
           ret_content_type := 'text/plain';
         }
     }
-  if (strstr (ret_content_type, 'application/sparql-results+xml') is not null)
+  if (ret_format = 'XML')
     {
       declare ret_xml, var_list, var_metas, ret_row, out_nulls any;
       declare var_ctr, var_count integer;
@@ -465,7 +443,7 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
           return vect_acc;
         }
     }
-  if (strstr (ret_content_type, 'application/rdf+xml') is not null)
+  if (ret_format = 'RDFXML')
     {
       declare res_dict any;
       res_dict := DB.DBA.RDF_RDFXML_TO_DICT (ret_body,'http://local.virt/tmp','http://local.virt/tmp');
@@ -479,10 +457,7 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
       else if (1 = res_mode)
         return vector (vector (res_dict));
     }
-  if (strstr (ret_content_type, 'text/rdf+n3') is not null or
-    strstr (ret_content_type, 'text/rdf+ttl') is not null or
-    strstr (ret_content_type, 'application/turtle') is not null or
-    strstr (ret_content_type, 'application/x-turtle') is not null )
+  if (ret_format = 'TTL')
     {
       declare res_dict any;
       res_dict := DB.DBA.RDF_TTL2HASH (ret_body, '');
@@ -855,11 +830,69 @@ create procedure SPARQL_RESULTS_TTL_WRITE_NS (inout ses any)
 {
   http ('@prefix res: <http://www.w3.org/2005/sparql-results#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-[] rdf:type res:ResultSet ;', ses);
+_:_ a res:ResultSet .\n', ses);
 }
 ;
 
 create procedure SPARQL_RESULTS_TTL_WRITE_HEAD (inout ses any, in mdta any)
+{
+  declare i, col_count integer;
+  mdta := mdta[0];
+  i := 0; col_count := length (mdta);
+  if (0 = col_count)
+    return;
+  http ('_:_ res:resultVariable "', ses);
+  while (i < col_count)
+    {
+      declare _name varchar;
+      declare _type, _type_name, nill int;
+      _name := mdta[i][0];
+      _type := mdta[i][1];
+      if (length (mdta[i]) > 4)
+        nill := mdta[i][4];
+      else
+        nill := 0;
+      http_escape (_name, 11, ses, 0, 1);
+      i := i + 1;
+      if (i < col_count)
+        http ('" , "', ses);
+    }
+  http ('" .\n', ses);
+}
+;
+
+create procedure SPARQL_RESULTS_TTL_WRITE_RES (inout ses any, in mdta any, inout dta any)
+{
+  declare colctr, colcount, rowctr, len, fake_agg_ctx integer;
+  declare cols, colbuf, env any;
+  cols := mdta[0];
+  colcount := length (cols);
+  colbuf := make_array (colcount * 7, 'any');
+  len := length (dta);
+  for (colctr := 0; colctr < colcount; colctr := colctr + 1)
+    {
+      colbuf [colctr * 7] := cols[colctr][0];
+    }
+  env := vector (dict_new (__min (len * 3, 16000)), 0, '', '', '', 0, 0, colbuf, ses);
+  rowctr := 0;
+  while (rowctr < len)
+    {
+      declare r any;
+      r := aref_set_0 (dta, rowctr);
+      sparql_rset_ttl_write_row (fake_agg_ctx, env, r);
+      aset_zap_arg (dta, rowctr, r);
+      rowctr := rowctr + 1;
+    }
+}
+;
+
+create procedure SPARQL_RESULTS_NT_WRITE_NS (inout ses any)
+{
+  http ('_:_ rdf:type <http://www.w3.org/1999/02/22-rdf-syntax-ns#res:ResultSet> .\n', ses);
+}
+;
+
+create procedure SPARQL_RESULTS_NT_WRITE_HEAD (inout ses any, in mdta any)
 {
   declare i, col_count integer;
   mdta := mdta[0];
@@ -872,57 +905,37 @@ create procedure SPARQL_RESULTS_TTL_WRITE_HEAD (inout ses any, in mdta any)
       _type := mdta[i][1];
       if (length (mdta[i]) > 4)
         nill := mdta[i][4];
-      else
-        nill := 0;
-      http ('\n  res:resultVariable "', ses);
-      http_escape (_name, 11, ses, 0, 1);
-      http ('"', ses);
-      i := i + 1;
-      if (i < col_count)
-        http (' ;', ses);
-    }
-}
-;
-
-create procedure SPARQL_RESULTS_TTL_WRITE_RES (inout ses any, in mdta any, inout dta any)
-{
-  declare ctr, len integer;
-  ctr := 0; len := length (dta);
-  while (ctr < len)
-    {
-      http ('\n  res:solution [', ses);
-      SPARQL_RESULTS_TTL_WRITE_ROW (ses, mdta, dta, ctr);
-      http (' ]', ses);
-      ctr := ctr + 1;
-      if (ctr < len)
-        http (' ;', ses);
-    }
-}
-;
-
-create procedure SPARQL_RESULTS_TTL_WRITE_ROW (inout ses any, in mdta any, inout dta any, in rowno integer)
-{
-  declare need_semicolon integer;
-  mdta := mdta[0];
-  need_semicolon := 0;
-  for (declare x any, x := 0; x < length (mdta); x := x + 1)
-    {
-      declare _name varchar;
-      declare _val any;
-      _name := mdta[x][0];
-      _val := dta[rowno][x];
-      if (_val is not null)
-        {
-          if (need_semicolon)
-            http (' ;', ses);
           else
-            need_semicolon := 1;
-          http ('\n      res:binding [ res:variable "', ses);
+        nill := 0;
+      http ('_:_ <http://www.w3.org/2005/sparql-results#resultVariable> "', ses);
           http_escape (_name, 11, ses, 0, 1);
-          http ('" ; res:value ', ses);
-          DB.DBA.RDF_LONG_TO_TTL (_val, ses);
-          http (' ]', ses);
+      http ('" .\n', ses);
+      i := i + 1;
         }
+}
+;
+
+create procedure SPARQL_RESULTS_NT_WRITE_RES (inout ses any, in mdta any, inout dta any)
+{
+  declare colctr, colcount, rowctr, len, fake_agg_ctx integer;
+  declare cols, colbuf, env any;
+  cols := mdta[0];
+  colcount := length (cols);
+  colbuf := make_array (colcount * 7, 'any');
+  len := length (dta);
+  for (colctr := 0; colctr < colcount; colctr := colctr + 1)
+    {
+      colbuf [colctr * 7] := cols[colctr][0];
+    }
+  env := vector (0, colbuf, ses);
+  rowctr := 0;
+  while (rowctr < len)
+    {
+      declare r any;
+      r := aref_set_0 (dta, rowctr);
+      sparql_rset_nt_write_row (fake_agg_ctx, env, r);
+      aset_zap_arg (dta, rowctr, r);
+      rowctr := rowctr + 1;
     }
 }
 ;
@@ -930,8 +943,16 @@ create procedure SPARQL_RESULTS_TTL_WRITE_ROW (inout ses any, in mdta any, inout
 create procedure SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, inout metas any, inout rset any, in is_js integer := 0, in esc_mode integer := 1)
 {
   declare varctr, varcount, resctr, rescount integer;
+  declare trnewline, newline varchar;
   varcount := length (metas[0]);
   rescount := length (rset);
+  if (esc_mode = 13)
+    {
+      newline := '';
+      trnewline := ''');\ndocument.writeln(''';      
+    }
+  else
+    newline := trnewline := '\n';
   if (is_js)
     {
       http ('document.writeln(''', ses);
@@ -940,18 +961,18 @@ create procedure SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, inout meta
       return;
    }
   http ('<table class="sparql" border="1">', ses);
-  http ('\n  <tr>', ses);
+  http (trnewline || '  <tr>', ses);
   --http ('\n    <th>Row</th>', ses);
   for (varctr := 0; varctr < varcount; varctr := varctr + 1)
     {
-      http('\n    <th>', ses);
+      http(newline || '    <th>', ses);
       http_escape (metas[0][varctr][0], esc_mode, ses, 0, 1);
       http('</th>', ses);
     }
-  http ('\n  </tr>', ses);
+  http (newline || '  </tr>', ses);
   for (resctr := 0; resctr < rescount; resctr := resctr + 1)
     {
-      http('\n  <tr>', ses);
+      http(trnewline || '  <tr>', ses);
       --http('\n    <td>', ses);
       --http(cast((resctr + 1) as varchar), ses);
       --http('</td>', ses);
@@ -961,10 +982,10 @@ create procedure SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, inout meta
           val := rset[resctr][varctr];
           if (val is null)
             {
-              http('\n    <td></td>', ses);
+              http(newline || '    <td></td>', ses);
               goto end_of_val_print; -- see below
             }
-          http('\n    <td>', ses);
+          http(newline || '    <td>', ses);
           if (isiri_id (val))
             http_escape (id_to_iri (val), esc_mode, ses, 1, 1);
           else if (isstring (val) and (1 = __box_flags (val)))
@@ -996,9 +1017,9 @@ create procedure SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, inout meta
           http ('</td>', ses);
 end_of_val_print: ;
         }
-      http('\n  </tr>', ses);
+      http(newline || '</tr>', ses);
     }
-  http ('\n</table>', ses);
+  http (trnewline || '</table>', ses);
 }
 ;
 
@@ -1139,7 +1160,7 @@ end_of_val_print: ;
 create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, inout rset any, in accept varchar, in add_http_headers integer) returns varchar
 {
   declare singlefield varchar;
-  declare ret_mime varchar;
+  declare ret_mime, ret_format varchar;
   if ((1 >= length (rset)) and (1 = length (metas[0])))
     singlefield := metas[0][0][0];
   else
@@ -1147,12 +1168,9 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
   -- dbg_obj_princ ('DB.DBA.SPARQL_RESULTS_WRITE: length(rset) = ', length(rset), ' metas=', metas, ' singlefield=', singlefield);
   if ('__ask_retval' = singlefield)
     {
-      if (strstr (accept, 'application/sparql-results+json') is not null or strstr (accept, 'application/json') is not null)
+      ret_mime := http_sys_find_best_sparql_accept (accept, 0, ret_format);
+      if (ret_format in ('JSON', 'JSON;RES'))
         {
-          if (strstr (accept, 'application/sparql-results+json') is not null)
-            ret_mime := 'application/sparql-results+json';
-          else
-            ret_mime := 'application/json';
           http (
             concat (
               '{  "head": { "link": [] }, "boolean": ',
@@ -1160,9 +1178,8 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
               '}'),
             ses );
         }
-      else
+      else if (ret_format = 'XML')
         {
-          ret_mime := 'application/sparql-results+xml';
           SPARQL_RSET_XML_WRITE_NS (ses);
           http (
             concat (
@@ -1170,6 +1187,17 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
               case (length (rset)) when 0 then 'false' else 'true' end,
               '</boolean>\n</sparql>'),
             ses );
+        }
+      else if (ret_format = 'TTL')
+        {
+          http ('@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+          @prefix rs: <http://www.w3.org/2005/sparql-results#> .\n', ses);
+          http (sprintf ('[] rdf:type rs:results ; rs:boolean %s .', case (length (rset)) when 0 then 'false' else 'true' end), ses);
+        }
+      else
+        {
+          ret_mime := 'text/html';
+          http (case (length (rset)) when 0 then 'false' else 'true' end, ses); --- stub
         }
       goto body_complete;
     }
@@ -1179,47 +1207,20 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
     {
       declare triples any;
       triples := dict_list_keys (rset[0][0], 1);
-      if (
-        strstr (accept, 'text/rdf+n3') is not null or
-        strstr (accept, 'text/rdf+ttl') is not null or
-        strstr (accept, 'application/turtle') is not null or
-        strstr (accept, 'application/x-turtle') is not null or
-        (accept = 'auto') )
+      ret_mime := http_sys_find_best_sparql_accept (accept, 1, ret_format);
+      if ((ret_format is null) or (ret_format = 'TTL'))
         {
-          if (strstr (accept, 'text/rdf+n3') is not null)
-            ret_mime := 'text/rdf+n3';
-          else if (strstr (accept, 'text/rdf+ttl') is not null)
-            ret_mime := 'text/rdf+ttl';
-          else if (strstr (accept, 'application/turtle') is not null)
-            ret_mime := 'application/turtle';
-          else if (strstr (accept, 'application/x-turtle') is not null)
-            ret_mime := 'application/x-turtle';
-          else
+          if (ret_format is null)
             ret_mime := 'text/rdf+n3';
           DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
 	}
-      else if ( strstr (accept, 'text/plain') is not null or strstr (accept, 'text/n3') is not null)
-        {
-	  if (strstr (accept, 'text/n3') is not null)
-	    ret_mime := 'text/n3';
-	  else
-            ret_mime := 'text/plain';
+      else if (ret_format = 'NT')
           DB.DBA.RDF_TRIPLES_TO_NT (triples, ses);
-	}
-      else if (
-        strstr (accept, 'application/json') is not null or
-        strstr (accept, 'application/rdf+json') is not null or
-        strstr (accept, 'application/x-rdf+json') is not null )
-        {
-          if (strstr (accept, 'application/json') is not null)
-            ret_mime := 'application/json';
-          else if (strstr (accept, 'application/rdf+json') is not null)
-            ret_mime := 'application/rdf+json';
-          else if (strstr (accept, 'application/x-rdf+json') is not null)
-            ret_mime := 'application/x-rdf+json';
+      else if (ret_format in ('JSON', 'JSON;TALIS'))
           DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (triples, ses);
-	}
-      else if (strstr (accept, 'application/soap+xml') is not null)
+      else if (ret_format = 'JSON;RES')
+        DB.DBA.RDF_TRIPLES_TO_JSON (triples, ses);
+      else if (ret_format = 'SOAP')
 	{
 	  declare soap_ns, spt_ns varchar;
 	  declare soap_ver int;
@@ -1240,7 +1241,6 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
           DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 0, ses);
 	  http ('</rdf:RDF>', ses);
 	  http ('</query-result></soapenv:Body></soapenv:Envelope>', ses);
-	  goto body_complete;
 	}
       else
         {
@@ -1249,12 +1249,9 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
         }
       goto body_complete;
     }
-  if (strstr (accept, 'application/sparql-results+json') is not null or strstr (accept, 'application/json') is not null)
+  ret_mime := http_sys_find_best_sparql_accept (accept, 0, ret_format);
+  if (ret_format in ('JSON', 'JSON;RES'))
     {
-      if (strstr (accept, 'application/sparql-results+json') is not null)
-        ret_mime := 'application/sparql-results+json';
-      else
-        ret_mime := 'application/json';
       if (('callretRDF/XML-0' = singlefield) or ('callretTURTLE-0' = singlefield) or ('callretTTL-0' = singlefield))
         {
           http('"', ses);
@@ -1273,46 +1270,25 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
     }
   if (('callretTURTLE-0' = singlefield) or ('callretTTL-0' = singlefield))
     {
-      if (
-        strstr (accept, 'text/rdf+n3') is not null or
-        strstr (accept, 'text/rdf+ttl') is not null or
-        strstr (accept, 'application/turtle') is not null or
-        strstr (accept, 'application/x-turtle') is not null or
-        (accept = 'auto') )
+      if ((ret_format = 'TTL') or (ret_format is null))
         {
-          if (strstr (accept, 'text/rdf+n3') is not null)
-            ret_mime := 'text/rdf+n3';
-          else if (strstr (accept, 'text/rdf+ttl') is not null)
-            ret_mime := 'text/rdf+ttl';
-          else if (strstr (accept, 'application/turtle') is not null)
-            ret_mime := 'application/turtle';
-          else if (strstr (accept, 'application/x-turtle') is not null)
-            ret_mime := 'application/x-turtle';
-          else
+          if (ret_format is null)
             ret_mime := 'text/rdf+n3';
         }
       http (rset[0][0], ses);
       goto body_complete;
     }
-  if (strstr (accept, 'text/html') is not null)
+  if (ret_format = 'HTML')
     {
-      ret_mime := 'text/html';
       SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE(ses, metas, rset, 0);
       goto body_complete;
     }
-  if (strstr (accept, 'application/vnd.ms-excel') is not null)
+  if (ret_format = 'JS')
     {
-      ret_mime := 'application/vnd.ms-excel';
-      SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE(ses, metas, rset, 0);
-      goto body_complete;
-    }
-  if (strstr (accept, 'application/javascript') is not null)
-    {
-      ret_mime := 'application/javascript';
       SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE(ses, metas, rset, 1);
       goto body_complete;
     }
-  if (strstr (accept, 'application/soap+xml') is not null)
+  if (ret_format = 'SOAP')
     {
       declare soap_ns, spt_ns varchar;
       declare soap_ver int;
@@ -1335,34 +1311,23 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       http ('</query-result></soapenv:Body></soapenv:Envelope>', ses);
       goto body_complete;
     }
-  if (strstr (accept, 'application/sparql-results+xml') is null)
+  if (ret_format = 'TTL')
     {
-      if (
-        strstr (accept, 'text/rdf+n3') is not null or
-        strstr (accept, 'text/rdf+ttl') is not null or
-        strstr (accept, 'application/turtle') is not null or
-        strstr (accept, 'application/x-turtle') is not null or
-        (accept = 'auto') )
-        {
-          if (strstr (accept, 'text/rdf+n3') is not null)
-            ret_mime := 'text/rdf+n3';
-          else if (strstr (accept, 'text/rdf+ttl') is not null)
-            ret_mime := 'text/rdf+ttl';
-          else if (strstr (accept, 'application/turtle') is not null)
-            ret_mime := 'application/turtle';
-          else if (strstr (accept, 'application/x-turtle') is not null)
-            ret_mime := 'application/x-turtle';
-          else
+      if (ret_format is null)
             ret_mime := 'text/rdf+n3';
           SPARQL_RESULTS_TTL_WRITE_NS (ses);
           SPARQL_RESULTS_TTL_WRITE_HEAD (ses, metas);
-          if (length (rset) > 0)
-            http (' ;', ses);
           SPARQL_RESULTS_TTL_WRITE_RES (ses, metas, rset);
-          http (' .', ses);
           goto body_complete;
         }
-      if (strstr (accept, 'application/rdf+xml') is not null)
+  if (ret_format = 'NT')
+    {
+      SPARQL_RESULTS_NT_WRITE_NS (ses);
+      SPARQL_RESULTS_NT_WRITE_HEAD (ses, metas);
+      SPARQL_RESULTS_NT_WRITE_RES (ses, metas, rset);
+      goto body_complete;
+    }
+  if (ret_format = 'RDFXML')
         {
           ret_mime := 'application/rdf+xml';
           SPARQL_RESULTS_RDFXML_WRITE_NS (ses);
@@ -1372,16 +1337,16 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
           http ('\n</rdf:RDF>', ses);
           goto body_complete;
         }
-    }
   ret_mime := 'application/sparql-results+xml';
   SPARQL_RSET_XML_WRITE_NS (ses);
   SPARQL_RESULTS_XML_WRITE_HEAD (ses, metas);
   SPARQL_RESULTS_XML_WRITE_RES (ses, metas, rset);
   http ('\n</sparql>', ses);
+  goto body_complete;
 
 body_complete:
   if (add_http_headers)
-    http_header ('Content-Type: ' || ret_mime || '; charset=UTF-8\r\n');
+    http_header (coalesce (http_header_get (), '') || 'Content-Type: ' || ret_mime || '; charset=UTF-8\r\n');
   return ret_mime;
 }
 ;
@@ -1590,7 +1555,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   declare paramctr, paramcount, qry_params, maxrows, can_sponge integer;
   declare ses, content any;
   declare def_max, add_http_headers, timeout, sp_ini, soap_ver int;
-  declare http_meth, content_type, ini_dflt_graph, get_user varchar;
+  declare http_meth, content_type, ini_dflt_graph, get_user, jsonp_callback varchar;
   declare state, msg varchar;
   declare metas, rset any;
   declare accept, soap_action, user_id varchar;
@@ -1712,7 +1677,7 @@ http('      format.options[i] = null;');
 http('    format.options[1] = new Option(\'N3/Turtle\',\'text/rdf+n3\');\n');
 http('    format.options[2] = new Option(\'JSON\',\'application/rdf+json\');\n');
 http('    format.options[3] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
-http('    format.options[4] = new Option(\'N-Triples\',\'text/plain\');\n');
+http('    format.options[4] = new Option(\'NTriples\',\'text/plain\');\n');
 http('    format.selectedIndex = 1;\n');
 http('    last_format = 2;\n');
 http('  }\n');
@@ -1725,6 +1690,9 @@ http('    format.options[2] = new Option(\'Spreadsheet\',\'application/vnd.ms-ex
 http('    format.options[3] = new Option(\'XML\',\'application/sparql-results+xml\');\n');
 http('    format.options[4] = new Option(\'JSON\',\'application/sparql-results+json\');\n');
 http('    format.options[5] = new Option(\'Javascript\',\'application/javascript\');\n');
+http('    format.options[6] = new Option(\'N3/Turtle\',\'text/rdf+n3\');\n');
+http('    format.options[7] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
+http('    format.options[8] = new Option(\'NTriples\',\'text/plain\');\n');
 http('    format.selectedIndex = 1;\n');
 http('    last_format = 1;\n');
 http('  }\n');
@@ -1824,6 +1792,8 @@ http('			    <option value="application/vnd.ms-excel">Spreadsheet</option>\n');
 http('			    <option value="application/sparql-results+xml">XML</option>\n');
 http('			    <option value="application/sparql-results+json">JSON</option>\n');
 http('			    <option value="application/javascript">Javascript</option>\n');
+http('			    <option value="text/plain">NTriples</option>\n');
+http('			    <option value="application/rdf+xml">RDF/XML</option>\n');
 http('			  </select>\n');
 http('&nbsp;&nbsp;&nbsp;\n');
 http('<input name="debug" type="checkbox"' || case (debug) when '' then '' else ' checked' end || '/>\n');
@@ -1948,6 +1918,10 @@ http('</html>\n');
 	{
 	  get_user := pvalue;
 	}
+      else if ('callback' = pname)
+        {
+          jsonp_callback := pvalue;
+        }
       else if (pname[0] = '?'[0])
         {
           dict_put (qry_params, subseq (pname, 1), pvalue);
@@ -2123,17 +2097,12 @@ host_found:
     }
 -- No need to choose accurately if there is the best variant.
     {
-      declare fmtxml, fmtttl varchar;
+      declare fmtxml, fmtttl, best_ttl_mime, best_ttl_mode varchar;
+      best_ttl_mime := http_sys_find_best_sparql_accept (accept, 1, best_ttl_mode);
       if (strstr (accept, 'application/sparql-results+xml') is not null)
         fmtxml := '"HTTP+XML application/sparql-results+xml" ';
-      if (strstr (accept, 'text/rdf+n3') is not null)
-        fmtttl := '"HTTP+TTL text/rdf+n3" ';
-      else if (strstr (accept, 'text/rdf+ttl') is not null)
-        fmtttl := '"HTTP+TTL text/rdf+ttl" ';
-      else if (strstr (accept, 'application/turtle') is not null)
-        fmtttl := '"HTTP+TTL application/turtle" ';
-      else if (strstr (accept, 'application/x-turtle') is not null)
-        fmtttl := '"HTTP+TTL application/x-turtle" ';
+      if (best_ttl_mode in ('TTL', 'NT'))
+        fmtttl := '"HTTP+' || best_ttl_mode || ' ' || best_ttl_mime;
       if (isstring (fmtttl))
         {
           if (isstring (fmtxml))
@@ -2142,10 +2111,10 @@ host_found:
             full_query := 'define output:format ' || fmtttl || full_query;
         }
     }
-  -- http ('<!-- Query:\n' || query || '\n-->\n', 0);
-  -- dbg_obj_princ ('accept = ', accept);
-  -- dbg_obj_princ ('full_query = ', full_query);
-  -- dbg_obj_princ ('qry_params = ', qry_params);
+  --http ('<!-- Query:\n' || query || '\n-->\n', 0);
+  dbg_obj_princ ('accept = ', accept);
+  dbg_obj_princ ('full_query = ', full_query);
+  dbg_obj_princ ('qry_params = ', qry_params);
   commit work;
   if (timeout >= 1000)
     {
@@ -2174,7 +2143,13 @@ host_found:
     }
 write_results:
   if ((1 <> length (metas[0])) or ('aggret-0' <> metas[0][0][0]))
+    {
+      if (isstring (jsonp_callback))
+        http (jsonp_callback || '(\n');
     DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, add_http_headers);
+      if (isstring (jsonp_callback))
+        http (')');
+    }
 }
 ;
 
@@ -2205,13 +2180,13 @@ create procedure DB.DBA.SPARQL_ROUTE_DICT_CONTENT_DAV (
   in del_dict any,
   in ins_dict any,
   in env any,
-  in uid integer,
+  in uid varchar,
   in log_mode integer,
   in compose_report integer )
 {
   declare split, in_mime, mime, perr, fake_content varchar;
   declare final_res, triples, out_ses, rc any;
-  declare old_perms, uid, pwd varchar;
+   declare old_perms, pwd varchar;
   declare old_gid, old_uid any;
   declare dir any;
   split := DB.DBA.SPARQL_ROUTE_IF_DAV (graph_iri, output_format_name);
@@ -2267,11 +2242,11 @@ create procedure DB.DBA.SPARQL_ROUTE_DICT_CONTENT_DAV (
             order by (str(?s)) (str(?p)) ) as sub );
       if ('application/rdf+xml' = mime)
         DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 1, out_ses);
-      else if ('text/rdf+n3' = mime)
+      else if (('text/rdf+n3' = mime) or ('text/rdf+ttl' = mime) or ('text/rdf+turtle' = mime) or ('text/turtle' = mime) or ('text/n3' = mime))
         DB.DBA.RDF_TRIPLES_TO_TTL (triples, out_ses);
-      else if ('text/plain' = mime or 'text/n3' = mime)
+      else if ('text/plain' = mime)
         DB.DBA.RDF_TRIPLES_TO_NT (triples, out_ses);
-      else if ('application/json' = mime)
+      else if (('application/json' = mime) or ('application/rdf+json' = mime) or ('application/x-rdf+json' = mime))
         DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (triples, out_ses);
       rc := DB.DBA.DAV_RES_UPLOAD (split, out_ses, mime, old_perms, old_uid, old_gid, uid, pwd);
       if (isinteger (rc) and rc < 0)
@@ -2327,6 +2302,9 @@ DB.DBA.http_rq_file_handler (in content any, in params any, in lines any, inout 
       strcasestr (accept, 'application/json') is not null or
       strcasestr (accept, 'application/sparql-results+xml') is not null or
       strcasestr (accept, 'text/rdf+n3') is not null or
+      strcasestr (accept, 'text/rdf+ttl') is not null or
+      strcasestr (accept, 'text/rdf+turtle') is not null or
+      strcasestr (accept, 'text/turtle') is not null or
       strcasestr (accept, 'application/rdf+xml') is not null or
       strcasestr (accept, 'application/javascript') is not null or
       strcasestr (accept, 'application/soap+xml') is not null or

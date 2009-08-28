@@ -376,6 +376,9 @@ caddr_t http_client_cache_get (query_instance_t * qi, caddr_t url, caddr_t heade
 void http_client_cache_register (query_instance_t * qi, caddr_t url, caddr_t header, caddr_t req_body, caddr_t * head, caddr_t body);
 void zlib_box_gzip_uncompress (caddr_t src, dk_session_t * out, caddr_t * err_ret);
 
+extern caddr_t http_sys_find_best_accept_impl (caddr_t * qst, state_slot_t *ret_val_ssl, caddr_t accept_strg, caddr_t *supp, const char *fname);
+
+
 #ifdef _SSL
 typedef enum {
   	HTTPS_VERIFY_NONE = 0,

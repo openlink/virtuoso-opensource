@@ -239,6 +239,27 @@ bif_strses_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
   return arg;
 }
 
+dk_session_t *
+bif_strses_or_http_ses_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
+{
+  caddr_t arg = bif_arg (qst, args, nth, func);
+  dtp_t dtp = DV_TYPE_OF (arg);
+  if (DV_LONG_INT == dtp)
+    {
+      dk_session_t *http_ses = ((query_instance_t *)qst)->qi_client->cli_http_ses; /*(dk_session_t *)((ptrlong)(unbox ((caddr_t)ses)));*/
+      if (!http_ses)
+	sqlr_new_error ("22023", "HT081",
+	    "Function %.200s() outside of HTTP context and no stream specified", func );
+      return http_ses;
+    }
+  if (DV_STRING_SESSION == dtp)
+    return arg;
+  sqlr_new_error ("22023", "SR002",
+    "Function %s needs a string output (or an integer for HTTP output) as argument %d, not an arg of type %s (%d)",
+    func, nth + 1, dv_type_title (dtp), dtp);
+  return NULL; /* never reached */
+}
+
 
 #ifdef BIF_XML
 struct xml_entity_s *
