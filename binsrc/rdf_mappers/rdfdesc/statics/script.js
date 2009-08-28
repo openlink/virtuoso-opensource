@@ -76,3 +76,60 @@ function expand(i) {
     span.removeChild(span.firstChild);
     span.insertBefore(long_literal_texts[i], span.firstChild);
 }
+
+/* -- Tabbed interface support -- */
+
+function Show(objid)
+{
+  var obj = document.getElementById(objid);
+  obj.style.display="";
+  obj.visible = true;
+}
+
+function Hide(objid)
+{
+  var obj = document.getElementById(objid);
+  obj.style.display="none";
+  obj.visible = false;
+}
+
+function toggle_tab(div_id) 
+{
+  var obj = document.getElementById('tab_'+div_id);
+  var ul_obj = document.getElementById('navlist');
+  var nodeList = returnListOfNodes(ul_obj.childNodes);
+  for(var i=0; i < nodeList.length;i++) 
+  {
+    returnListOfNodes(nodeList[i].childNodes)[0].className = "";
+  };
+  obj.className = "current";
+  
+  var ContentDivs = Array(
+    document.getElementById('attributes'),
+    document.getElementById('attributeof'));
+
+  for (var i = 0; i < ContentDivs.length; i++) 
+  {
+    if (ContentDivs[i].id == div_id && ContentDivs[i].style.display == 'none')
+      Show(ContentDivs[i].id);
+    else if (ContentDivs[i].id != div_id && ContentDivs[i].style.display != 'none')
+      Hide(ContentDivs[i].id);
+  };
+}
+
+function returnListOfNodes(nodeList)
+{
+  var list = new Object();
+  var x = 0;
+  for (var i = 0; i < nodeList.length; i++)
+  {
+    if(nodeList[i].nodeType == 1)
+    {
+      list[x++] = nodeList[i];
+    }
+  }
+  list.length = x--;
+  return list;
+}
+
+/* -- End: Tabbed interface support -- */

@@ -199,8 +199,21 @@
 
       <p><?vsp http (sprintf ('%s', _subject)); ?></p>
 
+     <div id="navarea">
+       <div id="navbar">
+         <ul id="navlist">
+          <li>
+            <a href="#" id="tab_attributes" onclick="toggle_tab('attributes'); return false;" class="current">Has Attributes</a>
+          </li>
+          <li>
+            <a href="#" id="tab_attributeof" onclick="toggle_tab('attributeof'); return false;">Is Attribute Of</a>
+          </li>
+         </ul>
+      </div> <!-- #navbar -->
+
+      <div id="attributes">
 <!-- proptable -->
-      <table class="description"><tr><th class="property">Property</th><th class="value">Value</th></tr>
+      <table class="description"><tr><th class="property">Attribute</th><th class="value">Value</th></tr>
 
 <?vsp
       exec (sprintf ('select "p" as PRED from (sparql select distinct ?p where { graph <%S> { <%S> ?p ?o } }) sp order by 1', _G, _S),
@@ -223,7 +236,19 @@
 	   http ('</ul></td></tr>');
 	}
       exec_close (h1);
-      --goto skip_rev;
+      if  (odd_position = 0)
+      {
+        http ('<tr><td colspan="2"><p>No further information is available.</p></td></tr>');
+      }
+?>
+      </table>
+      </div> <!-- #attributes -->
+
+      <div id="attributeof" style="display: none;">
+      <!-- inverseproptable -->
+      <table class="description"><tr><th class="property">Referenced By Attribute</th><th class="value">Value</th></tr>
+
+<?vsp
       exec (sprintf ('select "p" as PRED from (sparql select distinct ?p where { graph <%S> { ?o ?p <%S> } }) sp order by 1', _G, _S),
 		null, null, vector (), 0, null, null, h1);
       inx := 0;	
@@ -246,13 +271,14 @@
 	   http ('</ul></td></tr>');
 	}
       exec_close (h1);
-skip_rev:
        if  (odd_position = 0)
 	 {
 	    http ('<tr><td colspan="2"><p>No further information is available.</p></td></tr>');
 	 }
 ?>
       </table>
+      </div> <!-- #attributeof -->
+     </div> <!-- #navarea -->
     </div> <!--  #content -->
     </div> <!--  #content_wrapper -->
 
