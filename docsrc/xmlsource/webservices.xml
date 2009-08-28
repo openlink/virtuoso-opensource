@@ -71,6 +71,10 @@
 
 &wsdl;
 
+&vfoafssl;
+
+&voauth;
+
 &ws-security;
 
 &ws-routing;

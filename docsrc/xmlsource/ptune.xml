@@ -963,6 +963,7 @@ select s_quantity from stock where s_i_id = 111 for update;
 
     <para>Single stepping is not generally useful for debugging
     locking since locking issues are timing sensitive.</para>
-
+  </sect4>
   </sect3>
+
   </sect2>

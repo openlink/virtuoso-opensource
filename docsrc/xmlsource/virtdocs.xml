@@ -896,6 +896,8 @@ ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\<!ENTITY \1 		SYSTEM "xmlref\/
 <!ENTITY vspx    				SYSTEM "vspx.xml">
 <!ENTITY webdav    				SYSTEM "webdav.xml">
 <!ENTITY uriqa    				SYSTEM "uriqa.xml">
+  <!ENTITY vfoafssl    SYSTEM "vfoafssl.xml">
+  <!ENTITY voauth    SYSTEM "voauth.xml">
 <!ENTITY ws-security    			SYSTEM "ws-security.xml">
 <!ENTITY ws-routing    				SYSTEM "ws-routing.xml">
 <!ENTITY ws-rm    				SYSTEM "ws-rm.xml">

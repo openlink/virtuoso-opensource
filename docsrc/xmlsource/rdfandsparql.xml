@@ -758,6 +758,101 @@ In this case the client can specify either one MIME-type 'application/json' or b
 'application/sparql-results+json' and 'application/rdf+json' in the "Accept" header line and Virtuoso will chose the appropriate one automatically.
 Similar trick works for other sorts of result types: Virtuoso inspects the whole "Accept" header line to find out the most appropriate return type for the given query.
 </para>
+<para><emphasis>Example output of DESCRIBE in rdf+json serialization format</emphasis></para>
+<orderedlist>
+  <listitem>Go to the sparql endpoint at http://host:port/sparql, for ex. at http://dbpedia.org/sparql</listitem>
+  <listitem>Enter query in the "Query text" area, for ex.:
+<programlisting><![CDATA[
+DESCRIBE <http://dbpedia.org/resource/%22S%22_Bridge_II>
+]]></programlisting>
+</listitem>
+ <listitem>Select for "Display Results As": JSON</listitem>
+  <listitem>Click "Run Query" button.</listitem>
+  <listitem>As result should be produced the following output:
+<programlisting><![CDATA[
+{
+  { 'http://dbpedia.org/resource/%22S%22_Bridge_II' : { 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' : { 'type' : 'uri', 'value' : 'http://dbpedia.org/ontology/Place' } ,
+      { 'type' : 'uri', 'value' : 'http://dbpedia.org/ontology/Resource' } ,
+      { 'type' : 'uri', 'value' : 'http://dbpedia.org/ontology/HistoricPlace' } } ,
+    { 'http://dbpedia.org/ontology/added' : { 'type' : 'literal', 'value' : '1973-04-23' , 'datatype' : 'http://www.w3.org/2001/XMLSchema#date' } } ,
+    { 'http://www.w3.org/2003/01/geo/wgs84_pos#lat' : { 'type' : 'literal', 'value' : 39.99305725097656 , 'datatype' : 'http://www.w3.org/2001/XMLSchema#float' } } ,
+    { 'http://www.w3.org/2003/01/geo/wgs84_pos#long' : { 'type' : 'literal', 'value' : -81.74666595458984 , 'datatype' : 'http://www.w3.org/2001/XMLSchema#float' } } ,
+    { 'http://dbpedia.org/property/wikiPageUsesTemplate' : { 'type' : 'uri', 'value' : 'http://dbpedia.org/resource/Template:infobox_nrhp' } } ,
+    { 'http://dbpedia.org/property/name' : { 'type' : 'literal', 'value' : '"S" Bridge II' , 'lang' : 'en' } } ,
+    { 'http://dbpedia.org/property/nearestCity' : { 'type' : 'uri', 'value' : 'http://dbpedia.org/resource/New_Concord%2C_Ohio' } ,
+      { 'type' : 'uri', 'value' : 'http://dbpedia.org/resource/Ohio' } } ,
+    { 'http://dbpedia.org/property/latDirection' : { 'type' : 'literal', 'value' : 'N' , 'lang' : 'en' } } ,
+    { 'http://dbpedia.org/property/governingBody' : { 'type' : 'literal', 'value' : 'State' , 'lang' : 'en' } } ,
+    { 'http://www.georss.org/georss/point' : { 'type' : 'literal', 'value' : '39.99305556 -81.74666667' } ,
+      { 'type' : 'literal', 'value' : '39.9930555556 -81.7466666667' } } ,
+    { 'http://xmlns.com/foaf/0.1/name' : { 'type' : 'literal', 'value' : '"S" Bridge II' } } ,
+    { 'http://dbpedia.org/property/latDegrees' : { 'type' : 'literal', 'value' : 39 , 'datatype' : 'http://www.w3.org/2001/XMLSchema#integer' } } ,
+    { 'http://dbpedia.org/property/latMinutes' : { 'type' : 'literal', 'value' : 59 , 'datatype' : 'http://www.w3.org/2001/XMLSchema#integer' } } ,
+    { 'http://dbpedia.org/property/latSeconds' : { 'type' : 'literal', 'value' : 35 , 'datatype' : 'http://www.w3.org/2001/XMLSchema#integer' } } ,
+    { 'http://dbpedia.org/property/longDirection' : { 'type' : 'literal', 'value' : 'W' , 'lang' : 'en' } } ,
+    { 'http://dbpedia.org/property/architect' : { 'type' : 'uri', 'value' : 'http://dbpedia.org/resource/Benjamin_Latrobe' } } ,
+    { 'http://dbpedia.org/property/added' : { 'type' : 'literal', 'value' : '1973-04-23' , 'datatype' : 'http://www.w3.org/2001/XMLSchema#date' } } ,
+    { 'http://www.w3.org/2000/01/rdf-schema#label' : { 'type' : 'literal', 'value' : '"S" Bridge II (Muskingum County, Ohio)' , 'lang' : 'nl' } ,
+      { 'type' : 'literal', 'value' : '"S" Bridge II' , 'lang' : 'en' } } ,
+    { 'http://dbpedia.org/ontology/architect' : { 'type' : 'uri', 'value' : 'http://dbpedia.org/resource/Benjamin_Latrobe' } } ,
+    { 'http://xmlns.com/foaf/0.1/img' : { 'type' : 'uri', 'value' : 'http://upload.wikimedia.org/wikipedia/commons/d/d4/FoxRunS-Bridge_NewConcordOH.jpg' } } ,
+    { 'http://dbpedia.org/property/locmapin' : { 'type' : 'literal', 'value' : 'Ohio' , 'lang' : 'en' } } ,
+    { 'http://dbpedia.org/property/refnum' : { 'type' : 'literal', 'value' : 73001513 , 'datatype' : 'http://www.w3.org/2001/XMLSchema#integer' } } ,
+    { 'http://dbpedia.org/property/abstract' : { 'type' : 'literal', 'value' : '"S" Bridge II is a historic S bridge near New Concord, Ohio, United States. A part of the National Road, the first federally-financed highway in the United States, it was built in 1828. Its peculiar shape, typical for an S bridge, is designed to minimize the span and allow easy access. In 1973, it was listed on the National Register of Historic Places.' , 'lang' : 'en' } ,
+      { 'type' : 'literal', 'value' : '"S" Bridge II bij New Concord, Ohio, is een deel van de National Road, een van de eerste highways die door de federale overheid vanaf 1811 werden aangelegd. De vorm, die de brug als een S Brug kenmerkt, is bedoeld om de overspanning zo klein mogelijk te houden en toch gemakkelijk toegang tot de brug te verlenen. De brug staat sinds 1973 op de lijst van het National Register of Historic Places als monument vermeld.' , 'lang' : 'nl' } } ,
+    { 'http://www.w3.org/2004/02/skos/core#subject' : { 'type' : 'uri', 'value' : 'http://dbpedia.org/resource/Category:National_Register_of_Historic_Places_in_Ohio' } ,
+      { 'type' : 'uri', 'value' : 'http://dbpedia.org/resource/Category:Bridges_on_the_National_Register_of_Historic_Places' } } ,
+    { 'http://dbpedia.org/ontology/nearestCity' : { 'type' : 'uri', 'value' : 'http://dbpedia.org/resource/Ohio' } ,
+      { 'type' : 'uri', 'value' : 'http://dbpedia.org/resource/New_Concord%2C_Ohio' } } ,
+    { 'http://xmlns.com/foaf/0.1/depiction' : { 'type' : 'uri', 'value' : 'http://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/FoxRunS-Bridge_NewConcordOH.jpg/200px-FoxRunS-Bridge_NewConcordOH.jpg' } } ,
+    { 'http://dbpedia.org/property/caption' : { 'type' : 'literal', 'value' : 'The bridge in the fall' , 'lang' : 'en' } } ,
+    { 'http://dbpedia.org/property/longDegrees' : { 'type' : 'literal', 'value' : 81 , 'datatype' : 'http://www.w3.org/2001/XMLSchema#integer' } } ,
+    { 'http://dbpedia.org/property/longMinutes' : { 'type' : 'literal', 'value' : 44 , 'datatype' : 'http://www.w3.org/2001/XMLSchema#integer' } } ,
+    { 'http://dbpedia.org/property/longSeconds' : { 'type' : 'literal', 'value' : 48 , 'datatype' : 'http://www.w3.org/2001/XMLSchema#integer' } } ,
+    { 'http://www.w3.org/2000/01/rdf-schema#comment' : { 'type' : 'literal', 'value' : '"S" Bridge II is a historic S bridge near New Concord, Ohio, United States.' , 'lang' : 'en' } ,
+      { 'type' : 'literal', 'value' : '"S" Bridge II bij New Concord, Ohio, is een deel van de National Road, een van de eerste highways die door de federale overheid vanaf 1811 werden aangelegd.' , 'lang' : 'nl' } } ,
+    { 'http://xmlns.com/foaf/0.1/page' : { 'type' : 'uri', 'value' : 'http://en.wikipedia.org/wiki/%22S%22_Bridge_II' } } } ,
+  { 'http://dbpedia.org/resource/%22S%22_Bridge_II_%28Muskingum_County%2C_Ohio%29' : { 'http://dbpedia.org/property/redirect' : { 'type' : 'uri', 'value' : 'http://dbpedia.org/resource/%22S%22_Bridge_II' } } }
+}
+
+]]></programlisting>
+</listitem>
+</orderedlist>
+<para><emphasis>Example output of CONSTRUCT in rdf+json serialization format</emphasis></para>
+<orderedlist>
+  <listitem>Go to the sparql endpoint at http://host:port/sparql, for ex. at http://dbpedia.org/sparql</listitem>
+  <listitem>Enter query in the "Query text" area, for ex.:
+<programlisting><![CDATA[
+CONSTRUCT
+{
+ ?s a ?Concept .
+}
+where
+{
+ ?s a ?Concept .
+}
+LIMIT 10
+]]></programlisting>
+</listitem>
+ <listitem>Select for "Display Results As": JSON</listitem>
+  <listitem>Click "Run Query" button.</listitem>
+  <listitem>As result should be produced the following output:
+<programlisting><![CDATA[
+{
+  { 'http://dbpedia.org/ontology/Place' : { 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' : { 'type' : 'uri', 'value' : 'http://www.w3.org/2002/07/owl#Class' } } } ,
+  { 'http://dbpedia.org/ontology/Area' : { 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' : { 'type' : 'uri', 'value' : 'http://www.w3.org/2002/07/owl#Class' } } } ,
+  { 'http://dbpedia.org/ontology/City' : { 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' : { 'type' : 'uri', 'value' : 'http://www.w3.org/2002/07/owl#Class' } } } ,
+  { 'http://dbpedia.org/ontology/River' : { 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' : { 'type' : 'uri', 'value' : 'http://www.w3.org/2002/07/owl#Class' } } } ,
+  { 'http://dbpedia.org/ontology/Road' : { 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' : { 'type' : 'uri', 'value' : 'http://www.w3.org/2002/07/owl#Class' } } } ,
+  { 'http://dbpedia.org/ontology/Lake' : { 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' : { 'type' : 'uri', 'value' : 'http://www.w3.org/2002/07/owl#Class' } } } ,
+  { 'http://dbpedia.org/ontology/LunarCrater' : { 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' : { 'type' : 'uri', 'value' : 'http://www.w3.org/2002/07/owl#Class' } } } ,
+  { 'http://dbpedia.org/ontology/ShoppingMall' : { 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' : { 'type' : 'uri', 'value' : 'http://www.w3.org/2002/07/owl#Class' } } } ,
+  { 'http://dbpedia.org/ontology/Park' : { 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' : { 'type' : 'uri', 'value' : 'http://www.w3.org/2002/07/owl#Class' } } } ,
+  { 'http://dbpedia.org/ontology/SiteOfSpecialScientificInterest' : { 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' : { 'type' : 'uri', 'value' : 'http://www.w3.org/2002/07/owl#Class' } } }
+}
+]]></programlisting>
+</listitem>
+</orderedlist>
 <para>
 For interoperability with clients that were developed before current versions of SPARQL protocol and format specs are issued, Virtuoso supports some obsolete variants of standard MIME types.
 'text/rdf+n3', 'text/rdf+ttl', 'application/turtle' and 'application/x-turtle' are understood for TURTLE output,
@@ -2525,44 +2620,64 @@ Thus the presence of indexing data about an object does not imply that it is nec
 
 -- We load Tim Berners-Lee's FOAF file into a graph called 'people'.
 
-DB.DBA.RDF_LOAD_RDFXML (http_get ('http://www.w3.org/People/Berners-Lee/card#i'), 'no', 'http://www.w3.org/people#');
+SQL>DB.DBA.RDF_LOAD_RDFXML (http_get ('http://www.w3.org/People/Berners-Lee/card#i'), 'no', 'http://www.w3.org/people#');
+Done. -- 172 msec.
 
 -- We check how many triples we got.
 
-select count (*) from (sparql select * from <people> where {?s ?p ?o});
+SQL>sparql select count (*) from <http://www.w3.org/people#> where {?s ?p ?o};
+callret-0
+INTEGER
+ 266
+No. of rows in result: 1
+
+-- We check the GRAPH: <http://www.w3.org/people#> for objects like "Tim":
+
+SQL>sparql select * from <http://www.w3.org/people#> where {?s ?p ?o . filter (?o like '%Tim%')};
+s                                               p                                           o
+VARCHAR                                         VARCHAR                                     VARCHAR
+_______________________________________________________________________________
+
+http://www.w3.org/People/Berners-Lee/card#i     http://xmlns.com/foaf/0.1/name              Timothy Berners-Lee
+http://www.w3.org/People/Berners-Lee/card#i     http://xmlns.com/foaf/0.1/nick              TimBL
+http://www.w3.org/People/Berners-Lee/card#i     http://www.w3.org/2002/07/owl#sameAs        http://www4.wiwiss.fu-berlin.de/bookmashup/persons/Tim+Berners-Lee
+http://www.w3.org/People/Berners-Lee/card#i     http://xmlns.com/foaf/0.1/knows             http://dbpedia.org/resource/Tim_Bray
+http://www.w3.org/People/Berners-Lee/card#i     http://www.w3.org/2000/01/rdf-schema#label  Tim Berners-Lee
+http://www.w3.org/People/Berners-Lee/card#i     http://xmlns.com/foaf/0.1/givenname         Timothy
+http://dbpedia.org/resource/Tim_Bray            http://xmlns.com/foaf/0.1/name              Tim Bray
+no                                              http://purl.org/dc/elements/1.1/title       Tim Berners-Lee's FOAF file
+
+8 Rows. -- 230 msec.
+
 
 -- We specify that all string objects in the graph 'people' should be text indexed.
 
-DB.DBA.RDF_OBJ_FT_RULE_ADD ('http://www.w3.org/people/rules/ftindex/people#', null, 'http://www.w3.org/people#');
+SQL>DB.DBA.RDF_OBJ_FT_RULE_ADD('http://www.w3.org/people#', null, 'people');
+Done. -- 130 msec.
 
 -- We update the text index.
 
-DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
+SQL>DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
+Done. -- 140 msec.
 
 -- See impact of the index  by querying the subjects and predicates of all triples in the GRAPH: <http://www.w3.org/people#>,  where the object is a string which contains a word beginning with "TIM".
 
-sparql select * from <http://www.w3.org/people#> where { ?s ?p ?o . ?o bif:contains '"TIM*"' .};
-
+SQL>sparql select * from <http://www.w3.org/people#> where { ?s ?p ?o . ?o bif:contains '"Timo*"'};
 s                                             p                                      o
 VARCHAR                                                 VARCHAR    VARCHAR
 _______________________________________________________________________________
 
-http://no        http://purl.org/dc/elements/1.1/title  Tim Berners-Lee's FOAF file
 http://www.w3.org/People/Berners-Lee/card#i  http://xmlns.com/foaf/0.1/name  Timothy Berners-Lee
-http://www.w3.org/People/Berners-Lee/card#i  http://www.w3.org/2000/01/rdf-schema#label  Tim Berners-Lee
 http://www.w3.org/People/Berners-Lee/card#i  http://xmlns.com/foaf/0.1/givenname  Timothy
-http://www.w3.org/People/Berners-Lee/card#i  http://xmlns.com/foaf/0.1/nick  TimBL
-http://www.w3.org/People/Berners-Lee/card#i  http://xmlns.com/foaf/0.1/nick  timbl
-http://dig.csail.mit.edu/breadcrumbs/blog/4  http://purl.org/dc/elements/1.1/title  timbl's blog
 
-7 Rows. -- 2 msec.
+2 Rows. -- 2 msec.
 ]]></programlisting>
 <para>
 The query below is identical with that above but uses a different syntax. 
 The filter syntax is more flexible in that it allows passing extra options to the <emphasis>contains</emphasis> predicate. These may be useful in the future.
 </para>
 <programlisting><![CDATA[
-sparql select * from <people> where { ?s ?p ?o . filter (bif:contains(?o,  '"TIM*"')) };
+sparql select * from <people> where { ?s ?p ?o . filter (bif:contains(?o,  '"Timo*"')) };
 ]]></programlisting>
 <note><title>Note:</title><para>It is advisable to upgrade to the latest version of Virtuoso before adding free-text rules for the first time.
 This is especially the case if large amounts of text are to be indexed. The reason is that the free-text index on RDF may be changed in future versions 
@@ -7157,29 +7272,66 @@ install the RDF mappers package. If the package is already installed, then to ac
 you can just re-install the VAD.</para>
 <para><emphasis>Setting-up Virtuoso with Java hosting to run Aperture framework</emphasis></para>
 <itemizedlist>
-<listitem>Install Virtuoso with Java hosting</listitem>
-<listitem>Download the Aperture framework from http://aperture.sourceforge.net</listitem>
-<listitem>unpack in the Virtuoso working directory e.q. where database file is, make a symbolic link 'lib' to it</listitem>
-<listitem>configure in the INI Parametres section:
+<listitem>Install a Virtuoso binary which includes built-in Java hosting support (The executable name will
+indicate whether the required hosting support is built in - a suitably enabled executable will include
+javavm in the name, for example virtuoso-javavm-t, rather than virtuoso-t).</listitem>
+<listitem>Download the Aperture framework from http://aperture.sourceforge.net.</listitem>
+<listitem>Unpack the contents of the framework's lib directory into an 'aperture' subdirectory of the
+Virtuoso working directory, i.e. of the directory containing the database and virtuoso.ini files.</listitem>
+<listitem>Ensure the Virtuoso working directory includes a 'lib' subdirectory containing the file
+MetaExtractor.class. (At the current time MetaExtractor.class in not included in the rdf_mappers VAD.
+Please contact OpenLink Technical Support to obtain a copy.)</listitem>
+<listitem>In the [Parameters] section of the virtuoso.ini configuration file:
+<itemizedlist>
+  <listitem>Add the line (linebreaks have been inserted for clarity):
 <programlisting><![CDATA[
-JavaClasspath = lib/sesame-2.0-alpha-3.jar:lib/openrdf-util-crazy-debug.jar:lib/htmlparser-1.6.jar:lib/activation-1.0.2-upd2.jar:lib/bcmail-jdk14-132.jar:lib/poi-scratchpad-3.0-alpha2-20060616.jar:lib/openrdf-model-2.0-alpha-3.jar:lib/jacob-1.10-pre4.jar:lib/bcprov-jdk14-132.jar:lib/demork-2.0.jar:lib/commons-codec.jar:lib/fontbox-0.1.0-dev.jar:lib/pdfbox-0.7.3.jar:lib/applewrapper-0.1.jar:lib/junit-3.8.1.jar:lib/winlaf-0.5.1.jar:lib/aperture-test-2006.1-alpha-3.jar:lib/openrdf-util-fixed-locking.jar:lib/commons-logging-1.1.jar:lib/mail-1.4.jar:lib/aperture-2006.1-alpha-3.jar:lib/poi-3.0-alpha2-20060616.jar:lib/ical4j-cvs20061019.jar:lib/openrdf-util-2.0-alpha-3.jar:lib/rio-2.0-alpha-3.jar:lib/poi-contrib-3.0-alpha2-20060616.jar:lib/aperture-examples-2006.1-alpha-3.jar:.
+JavaClasspath = lib:aperture/DFKIUtils2.jar:aperture/JempBox-0.2.0.jar:aperture/activation-1.0.2-upd2.jar:aperture/aduna-commons-xml-2.0.jar:
+aperture/ant-compression-utils-1.7.1.jar:aperture/aperture-1.2.0.jar:aperture/aperture-examples-1.2.0.jar:aperture/aperture-test-1.2.0.jar:
+aperture/applewrapper-0.2.jar:aperture/bcmail-jdk14-132.jar:aperture/bcprov-jdk14-132.jar:aperture/commons-codec-1.3.jar:aperture/commons-httpclient-3.1.jar:
+aperture/commons-lang-2.3.jar:aperture/demork-2.1.jar:aperture/flickrapi-1.0.jar:aperture/fontbox-0.2.0-dev.jar:aperture/htmlparser-1.6.jar:
+aperture/ical4j-1.0-beta4.jar:aperture/infsail-0.1.jar:aperture/jacob-1.10.jar:aperture/jai_codec-1.1.3.jar:aperture/jai_core-1.1.3.jar:aperture/jaudiotagger-1.0.8.jar:
+aperture/jcl104-over-slf4j-1.5.0.jar:aperture/jpim-0.1-aperture-1.jar:aperture/junit-3.8.1.jar:aperture/jutf7-0.9.0.jar:aperture/mail-1.4.jar:
+aperture/metadata-extractor-2.4.0-beta-1.jar:aperture/mstor-0.9.11.jar:aperture/nrlvalidator-0.1.jar:aperture/openrdf-sesame-2.2.1-onejar-osgi.jar:
+aperture/osgi.core-4.0.jar:aperture/pdfbox-0.7.4-dev-20071030.jar:aperture/poi-3.0.2-FINAL-20080204.jar:aperture/poi-scratchpad-3.0.2-FINAL-20080204.jar:
+aperture/rdf2go.api-4.6.2.jar:aperture/rdf2go.impl.base-4.6.2.jar:aperture/rdf2go.impl.sesame20-4.6.2.jar:aperture/rdf2go.impl.util-4.6.2.jar:
+aperture/slf4j-api-1.5.0.jar:aperture/slf4j-jdk14-1.5.0.jar:aperture/unionsail-0.1.jar:aperture/winlaf-0.5.1.jar
 ]]></programlisting>
 </listitem>
-<listitem>Make sure MetaExtractor.class is in the Virtuoso working directory</listitem>
+  <listitem>Ensure DirsAllowed includes directories /tmp, (or the temporary directory for the host
+operating system), lib and aperture.</listitem>
+</itemizedlist>
+</listitem>
 <listitem>Start the Virtuoso server with java hosting support</listitem>
-<listitem>connect with ISQL tool and check if installation is complete:
+<listitem>Configure the cartridge either by installing the rdf_mappers VAD or, if the VAD is already
+installed, by executing procedure DB.DBA.RDF_APERTURE_INIT.</listitem>
+<listitem>During the VAD installation process, RDF_APERTURE_INIT() configures the Aperture cartridge. If
+you look in the list of available cartridges under the RDF &gt; Sponger tab in Conductor, you should see
+an entry for 'Binary Files'.</listitem>
+</itemizedlist>
+<para>To check the cartridge has been configured, connect with Virtuoso's ISQL tool:</para>
+<itemizedlist>
+<listitem>Issue the command:
 <programlisting><![CDATA[
-SQL> DB.DBA.import_jar (NULL, 'MetaExtractor', 1);
+SQL > select udt_is_available('APERTURE.DBA.MetaExtractor');
+]]></programlisting>
+</listitem>
+<listitem>Copy a test PDF document to the Virtuoso working directory, then execute:
+<programlisting><![CDATA[
+SQL> select APERTURE.DBA."MetaExtractor"().getMetaFromFile ('some_pdf_in_server_working_dir.pdf', 0);
 
-Done. -- 466 msec.
-SQL> select "MetaExtractor"().getMetaFromFile ('some_pdf_in_server_working_dir.pdf', 5);
-... some RDF must be returned ...
+... some RDF data should be returned ...
 ]]></programlisting>
 </listitem>
 </itemizedlist>
-<para>Important: the above is verified to work with aperture-2006.1-alpha-3 on Linux system.
-For different version of Aperture of operation system this may need some adjustments e.g. to
-re-build MetaExtractor.class &amp; changes to CLASSPATH etc.</para>
+<para>You should now be able to sponge all document types supported by the Aperture framework, (using
+one of the standard Sponger invocation mechanisms, for instance with a URL of the form
+http://localhost:8890/about/rdf/http://targethost/targetfile.pdf), subject to the MIME type pattern
+filters configured for the cartridge in the Conductor UI. By default the Aperture cartridge is
+registered to match MIME types (application/octet-stream)|(application/pdf)|(application/mspowerpoint).
+To sponge all the MIME types Aperture is capable of handling, changed the MIME type pattern to
+'application/.*'.</para>
+<para>Important: The installation guidelines presented above have been verified on Mac OS X with
+Aperture 1.2.0. Some adjustment may be needed for different operating systems or versions of Aperture.</para>
 <para><emphasis>Examples &amp; tutorials</emphasis></para>
 <para>How to write own RDF mapper? Look at Virtuoso tutorial on this subject
 http://demo.openlinksw.com/tutorial/rdf/rd_s_1/rd_s_1.vsp .

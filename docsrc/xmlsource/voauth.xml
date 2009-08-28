@@ -1,0 +1,825 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+
+<sect1 id="voauth"><title>OAuth Support</title>
+  <para>The OAuth protocol enables websites or applications (Consumers) to access Protected Resources from
+Web services (Service Providers) via an API, without requiring Users to disclose their Service Provider
+credentials to those Consumers. More generally, OAuth creates a freely-implementable and generic methodology
+for API-oriented authentication.</para>
+  <para>For Consumer developers, OAuth is a method to publish and interact with protected data.</para>
+  <para>For Service Provider developers, OAuth gives users access to their data while protecting their
+account credentials.</para>
+  <para>One use case would be allowing a printing service, printer.example.com (the Consumer), to access
+private photos stored on photos.example.net (the Service Provider), without requiring Users to reveal their
+photos.example.net credentials to printer.example.com.</para>
+  <para>OAuth allows the user to selectively grant access to their private resources housed on one site
+(called the Service Provider), to another site (called the Consumer). In other words, OAuth enables you
+to grant access to some of your information without sharing all of your identity.</para>
+  <para>OAuth does not require a specific user interface or interaction pattern, nor does it specify how
+Service Providers authenticate Users, making the protocol ideally suited for cases where authentication
+credentials are unavailable to the Consumer, such as with OpenID.</para>
+  <para>OAuth aims to unify the experience and implementation of delegated web service authentication with
+a single, community-driven protocol. OAuth builds on existing protocols and best practices that have been
+independently implemented by various websites. An open standard, supported by large and small providers
+alike, promotes a consistent and trusted experience for both application developers and the users of those
+applications.</para>
+  <para>What is publicly known as "OAuth" is really the "OAuth Core 1.0" specification. The "Core"
+designation is used to stress that this is the skeleton upon which other extensions and protocols may be
+built. OAuth Core 1.0 does NOT by itself provide many desired features such as automated discovery of
+endpoints, language support, support for XML-RPC and SOAP, standard definition of resource access,
+OpenID integration, a full range of signing algorithms, or any number of other great ideas posted to
+the OAuth group.</para>
+  <para>This was intentional and is viewed by the authors as a benefit. As the name implies, Core
+deals only with the most fundamental aspects of the protocol:</para>
+<itemizedlist mark="bullet">
+  <listitem>Establish a mechanism for exchanging a username and password for a token with defined rights</listitem>
+  <listitem>Provide tools to protect these tokens</listitem>
+</itemizedlist>
+  <para>More details can be found <ulink url="http://oauth.net/documentation/getting-started">here</ulink>.</para>
+  <sect2 id="voauthtokens"><title>OAuth Access Tokens</title>
+    <para>Credentials bearing tokens enable a user to provide their credentials in tokenized form in cases
+where HTTP redirection to a browser plus human interaction is unavailable or unsuitable. For example,
+intermediary intelligent agents, mobile phones, or set-top devices.</para>
+    <sect3 id="voauthtokensreqauth"><title>Request Authentication</title>
+      <para>To request an Access Token in this model, the Consumer makes an HTTP request to the Service
+Provider's Access Token URL. The authentication request contains [nine] parameters contained in the HTTP
+Authorization header or as URL parameters. Parameter names and values must be "percent-encoded" to handle
+characters in different character sets. The request should be performed using TLS, and should use HTTP
+POST.</para>
+    </sect3>
+    <sect3 id="voauthtokensrecauth"><title>Receive Authentication</title>
+      <para>Before granting an access token, the Service Provider must ensure that the request signature
+has been successfully verified as per OAuth, that a request with the supplied timestamp and nonce has
+never been received before, and that the supplied username and password match a User's credentials. If
+successful, the Service Provider generates an Access Token and Token Secret using a 200 Ok response and
+returns them in the HTTP response body.</para>
+    </sect3>
+    <sect3 id="voauthtokensacpr"><title>Access Protected Resources</title>
+      <para>After successfully receiving the Access Token and Token Secret, the Consumer is able to access
+the Protected Resources on behalf of the User as per section 7 of the OAuth core specification. In other
+words, the Access Token obtained here is no different in capability to the Access Token specified by OAuth.
+Once authenticated using the above process, the Consumer will sign all subsequent requests for the User's
+Protected Resources using the returned Token Secret.</para>
+    </sect3>
+  </sect2>
+  <sect2 id="voauthserver"><title>Virtuoso OAuth server</title>
+    <para>Virtuoso implements the OAuth Core 1.0 specification, and exposes the following API endpoints:</para>
+    <sect3 id="voauthserverreqtok"><title>Request token</title>
+      <para>Endpoint:</para>
+<programlisting><![CDATA[
+http://server-cname/OAuth/request_token
+]]></programlisting>
+      <para>Parameters:</para>
+<itemizedlist mark="bullet">
+  <listitem><emphasis>oauth_consumer_key</emphasis>: The Consumer Key.</listitem>
+  <listitem><emphasis>oauth_signature_method</emphasis>: The signature method the Consumer used to sign the request.</listitem>
+  <listitem><emphasis>oauth_signature</emphasis>. The signature as defined in Signing Requests (Signing Requests).</listitem>
+  <listitem><emphasis>oauth_timestamp</emphasis>: As defined in Nonce and Timestamp (Nonce and Timestamp).</listitem>
+  <listitem><emphasis>oauth_nonce</emphasis>: As defined in Nonce and Timestamp (Nonce and Timestamp).</listitem>
+  <listitem><emphasis>oauth_version</emphasis>: OPTIONAL. If present, value MUST be 1.0 .</listitem>
+</itemizedlist>
+      <sect4 id="voauthserverreqtokexample"><title>Example</title>
+        <para>Request:</para>
+<programlisting><![CDATA[
+http://localhost:8890/OAuth/request_token?oauth_version=1.0&oauth_nonce
+=dad4cb071e2169cbcaa051d404ac61a3&oauth_timestamp=1201873644&oauth_cons
+umer_key=f756023be5ff1f20881cf8fe398069f3976b2304&oauth_signature_metho
+d=HMAC-SHA1&oauth_signature=z76k5fQ0msFsQzCmhO%2FJZ329ZUE%3D
+]]></programlisting>
+        <para>Note: all long lines in example texts are split, i.e., the GET request is single line.</para>
+        <para>Response:</para>
+<programlisting><![CDATA[
+oauth_token=b4e22daa117b0bebf60ab6ba6e401edc7addd78c&oauth_token_secret
+=4de6e3ab17553a0a385ebf6a3b4dd30f
+]]></programlisting>
+      </sect4>
+    </sect3>
+    <sect3 id="voauthserverauth"><title>Authorization</title>
+      <para>Endpoint:</para>
+<programlisting><![CDATA[
+http://server-cname/OAuth/authorize
+]]></programlisting>
+      <para>Parameters:</para>
+<itemizedlist mark="bullet">
+  <listitem><emphasis>oauth_token</emphasis>: The Request Token obtained in the previous step. The current
+implementation of the Service Provider declare this parameter as REQUIRED.</listitem>
+  <listitem><emphasis>oauth_callback</emphasis>: OPTIONAL. The Consumer MAY specify a URL the Service
+Provider will use to redirect the User back to the Consumer when Obtaining User Authorization
+(Obtaining User Authorization) is complete.</listitem>
+</itemizedlist>
+      <sect4 id="voauthserverauthexample"><title>Example</title>
+        <para>Request:</para>
+<programlisting><![CDATA[
+http://localhost:8890/OAuth/authorize?oauth_token=b4e22daa117b0bebf60ab
+6ba6e401edc7addd78c&oauth_callback=http%3A%2F%2Flocalhost%3A8890%2Foaut
+h%2Fexample%2Fclient.php%3Fkey%3Df756023be5ff1f20881cf8fe398069f3976b23
+04%26secret%3Dcc249bfb732039d8ecba9e4f94fdead7%26token%3Db4e22daa117b0b
+ebf60ab6ba6e401edc7addd78c%26token_secret%3D4de6e3ab17553a0a385ebf6a3b4
+dd30f%26endpoint%3Dhttp%253A%252F%252Flocalhost%253A8890%252FOAuth%252F
+authorize
+]]></programlisting>
+        <para>The User will be asked via web page to accept or decline the token.</para>
+      </sect4>
+    </sect3>
+    <sect3 id="voauthserveract"><title>Access token</title>
+      <para>Endpoint:</para>
+<programlisting><![CDATA[
+http://server-cname/OAuth/access_token
+]]></programlisting>
+      <para>Parameters:</para>
+<itemizedlist mark="bullet">
+  <listitem><emphasis>oauth_consumer_key</emphasis>: The Consumer Key.</listitem>
+  <listitem><emphasis>oauth_token</emphasis>: The Request Token obtained previously.</listitem>
+  <listitem><emphasis>oauth_signature_method</emphasis>: The signature method the Consumer used to
+sign the request.</listitem>
+  <listitem><emphasis>oauth_signature</emphasis>: The signature as defined in Signing Requests
+(Signing Requests).</listitem>
+  <listitem><emphasis>oauth_timestamp</emphasis>: As defined in Nonce and Timestamp (Nonce and Timestamp).</listitem>
+  <listitem><emphasis>oauth_nonce</emphasis>: As defined in Nonce and Timestamp (Nonce and Timestamp).</listitem>
+  <listitem><emphasis>oauth_version</emphasis>: OPTIONAL. If present, value MUST be 1.0 .</listitem>
+</itemizedlist>
+      <sect4 id="voauthserveractexample"><title>Example</title>
+        <para>Request:</para>
+<programlisting><![CDATA[
+http://localhost:8890/OAuth/access_token?oauth_version=1.0&oauth_nonce=
+8ad75091a66bdd741472be42149c828e&oauth_timestamp=1201873800&oauth_consu
+mer_key=f756023be5ff1f20881cf8fe398069f3976b2304&oauth_token=b4e22daa11
+7b0bebf60ab6ba6e401edc7addd78c&oauth_signature_method=HMAC-SHA1&oauth_s
+ignature=tCxy0Lod4%2Bp%2FCBPV7Ph7RrsHXe4%3D
+]]></programlisting>
+        <para>Response:</para>
+<programlisting><![CDATA[
+oauth_token=8c03b3da93480ca4728cc1194d6d03962f3bb5bb&oauth_token_secret
+=854fd29c00adcedff4fbeaeb96584911
+]]></programlisting>
+        <para>In addtion to the endpoints it define a API for PL applications to check authentication:</para>
+      </sect4>
+    </sect3>
+    <sect3 id="voauthserverav"><title>Authentication verification</title>
+<programlisting><![CDATA[
+OAUTH.DBA.check_authentication (in params any, in lines any)
+]]></programlisting>
+      <para>Parameters:</para>
+<itemizedlist mark="bullet">
+  <listitem><emphasis>params</emphasis>: an array of strings representing the HTTP parameters</listitem>
+  <listitem><emphasis>lines </emphasis>: an array of HTTP request headers</listitem>
+</itemizedlist>
+      <para>Result:</para>
+<itemizedlist mark="bullet">
+  <listitem>on success it returns integer 1,</listitem>
+  <listitem>on failure it signal an SQL error.</listitem>
+</itemizedlist>
+      <sect4 id="voauthserveravsc"><title>Sample code:</title>
+        <para>A sample service (oauth.vsp):</para>
+<programlisting><![CDATA[
+<html>
+<body>
+<?vsp
+  OAUTH..check_authentication (params, lines);
+?>
+An OAuth testing page
+</body>
+</html>
+]]></programlisting>
+      </sect4>
+      <sect4 id="voauthserveravsr"><title>Sample request:</title>
+<programlisting><![CDATA[
+http://localhost:8890/admin/oauth.vsp?oauth_version=1.0&oauth_nonce=d57
+640869b994b2d51bf9800229c4997&oauth_timestamp=1201873935&oauth_consumer
+_key=f756023be5ff1f20881cf8fe398069f3976b2304&oauth_token=8c03b3da93480
+ca4728cc1194d6d03962f3bb5bb&oauth_signature_method=HMAC-SHA1&oauth_sign
+ature=X3K4lr9bJVz5YLnnyJDkykQZivY%3D
+]]></programlisting>
+      </sect4>
+      <sect4 id="voauthserveravsr"><title>Sample request:</title>
+<programlisting><![CDATA[
+http://localhost:8890/admin/oauth.vsp?oauth_version=1.0&oauth_nonce=d57
+640869b994b2d51bf9800229c4997&oauth_timestamp=1201873935&oauth_consumer
+_key=f756023be5ff1f20881cf8fe398069f3976b2304&oauth_token=8c03b3da93480
+ca4728cc1194d6d03962f3bb5bb&oauth_signature_method=HMAC-SHA1&oauth_sign
+ature=X3K4lr9bJVz5YLnnyJDkykQZivY%3D
+]]></programlisting>
+      </sect4>
+      <sect4 id="voauthserveravsr"><title>Sample response:</title>
+<programlisting><![CDATA[
+<html>
+<body>
+An OAuth testing page
+</body>
+</html>
+]]></programlisting>
+      </sect4>
+    </sect3>
+  </sect2>
+  <sect2 id="voauthimplods"><title>OAuth Implementation in OpenLink Data Spaces</title>
+    <para>OAuth tokens must be generated for each user account, for each ODS application, via ODS -&gt;
+Settings -&gt; OAuth Keys. This UI provides a list of all applications to which the logged-in user has access,
+i.e., of which the user is a member or owner. To enable access with OAuth, the user simply selects the
+desired application instance from the list, and clicks the 'generate keys' button. The generated Consumer
+Key and Secret will be associated with the given ODS user account &amp; application instance.</para>
+    <para>Once a consumer token is available, the sequence below must be executed in order to establish an
+authorized session:</para>
+<orderedlist>
+  <listitem>client uses request_token to get a token/secret pair for establishing session using consumer
+token</listitem>
+  <listitem>client asks OAuth server to authorize the token from step 1. </listitem>
+  <listitem>using authorized token from step 1 client asks OAuth server for authentication token.</listitem>
+  <listitem>with authentication token from step 3, clients can access instance data associated with
+the consumer token from step 1.</listitem>
+</orderedlist>
+    <sect3 id="voauthimplodssoc"><title>Sample OAuth Client</title>
+      <para>To demonstrate the Virtuoso implementation of OAuth, we have written this sample client,
+in Virtuoso/PL.</para>
+<programlisting><![CDATA[
+<html>
+<?vsp
+    declare consumer_key, consumer_secret, oauth_token, oauth_secret, signature, timest, nonce varchar;
+    declare srv, res, signature_base, ret_url, url, tmp, sid varchar;
+    declare meth, pars any;
+    consumer_key := {?'key'};
+    srv := sprintf ('http://localhost:%s/OAuth/', server_http_port ());
+    sid := null;
+    res := '';
+
+    sid :=  {?'sid'};
+    if (sid = '')
+      sid := null;
+    else
+      {
+        -- if selected token is not same as one from the session we need to get new authentication token
+        if (consumer_key <> OAUTH..get_consumer_key (sid))
+      {
+        OAUTH..session_terminate (sid);
+            sid := null;
+      }
+      }
+
+    meth := get_keyword ('meth', params, 'weblog.post.new');;
+    pars := get_keyword ('pars', params, 'inst_id=15&title=testing&description=Some test post');;
+
+    if ({?'rt'} is not null and sid is null) -- request new token for the session
+      {
+    url := srv||'request_token';
+    url := OAUTH..sign_request ('GET', url, '', consumer_key, sid);
+        res := http_get (url);
+    sid := OAUTH..parse_response (sid, consumer_key, res);
+    OAUTH..set_session_data (sid, params);
+    ret_url := sprintf ('http://localhost:%s/oauth/oauth_client.vsp?ready=%U', server_http_port (), sid);
+    -- call authorize
+        url := sprintf ('%sauthorize?oauth_token=%U&oauth_callback=%U', srv, OAUTH..get_auth_token (sid), ret_url);
+    http_status_set (301);
+        http_header (sprintf ('Location: %s\r\n', url));
+        return;
+      }
+    else if ({?'ready'} is not null) -- get access token
+      {
+    -- we go here when token above is authorized
+        sid := {?'ready'};
+    url := srv||'access_token';
+    consumer_key := OAUTH..get_consumer_key (sid);
+    url := OAUTH..sign_request ('GET', url, '', consumer_key, sid);
+        res := http_get (url);
+    sid := OAUTH..parse_response (sid, consumer_key, res);
+
+      }
+    if (sid is not null) -- access token is ready, and we can call API
+      {
+        -- here we are ready to call service
+    if ({?'rt'} is null)
+          {
+            tmp := OAUTH..get_session_data (sid);
+            pars := get_keyword ('pars', tmp, pars);
+        meth := get_keyword ('meth', tmp, meth);
+      }
+    url := sprintf ('http://localhost:%s/ods/api/%s', server_http_port (), meth);
+    tmp := split_and_decode (pars);
+    params := '';
+    for (declare i,l int, l:=length (tmp); i < l; i := i + 2)
+       {
+         params := params || sprintf ('%U=%U&', tmp[i], tmp[i+1]);
+       }
+    --params := sprintf ('inst_id=%d&description=%U&title=%U', 15, 'Some test post', 'testing');
+    consumer_key := OAUTH..get_consumer_key (sid);
+    url := OAUTH..sign_request ('GET', url, params, consumer_key, sid);
+        res := http_get (url);
+        --dbg_obj_print (res);
+      }
+?>
+    <head><title>OAuth Client</title></head>
+    <body>
+    <h1>OAuth client for ODS Controllers</h1>
+    <form method="POST" action="oauth_client.vsp">
+    <input type="hidden" name="sid" value="<?V sid ?>"/>
+    APPLICATION : <br /> <select name="key">
+    <?vsp for select a_name, a_key from OAUTH..APP_REG do { ?>
+        <option value="<?V a_key ?>" <?vsp if (consumer_key = a_key) http ('selected'); ?>><?V a_name ?></option>
+    <?vsp } ?>
+        </select>
+    <?vsp
+    if (sid is not null) http (sprintf (' TOKEN: %s', OAUTH..get_auth_token (sid)));
+    ?>
+    <br />
+    ODS API: <br /><input type="text" name="meth" value="<?V meth ?>" size=50/> <br />
+    PARAMETERS: <br /> <textarea name="pars" rows="5" cols="50"><?V pars ?></textarea> <br />
+        <input type="submit" value="Execute" name="rt"/><br />
+    </form>
+    RESULT:
+    <hr/>
+    <pre><?V res ?></pre>
+    </body>
+</html>
+]]></programlisting>
+    </sect3>
+    <sect3 id="voauthimplodssos"><title>Sample OAuth Session</title>
+      <para>The following shows a sample session, using the above Virtuoso/PL OAuth client.</para>
+<programlisting><![CDATA[
+GET /OAuth/request_token?oauth_consumer_key=50082d0fb861b0e6e67d5d986b8
+333607edc5f36&oauth_nonce=b8f1089077cbce6e&oauth_signature_method=HMAC-
+SHA1&oauth_timestamp=1211212829&oauth_version=1.0&oauth_signature=V1zmk
+757LBHcmqVJ6obMhNX5hKA%3D HTTP/1.1
+Host: localhost:6666
+
+HTTP/1.1 200 Ok
+Content-Length: NNN
+<CR/LF>
+oauth_token=86da75079d3aee0fab57a36fcffbf900768e4de3&oauth_token_secret
+=M...
+]]></programlisting>
+<programlisting><![CDATA[
+GET /OAuth/authorize?oauth_token=86da75079d3aee0fab57a36fcffbf900768e4d
+e3&oauth_callback=http%3A//localhost%3A6666/oauth/oauth_client.vsp%3Fre
+ady%3D00c874b2fab2f6424008b5064fe83e88 HTTP/1.1
+Host: localhost:6666
+
+HTTP/1.1 301 Moved
+Location: /ods/oauth_authorize.vspx?....
+]]></programlisting>
+<programlisting><![CDATA[
+GET /OAuth/access_token?oauth_consumer_key=50082d0fb861b0e6e67d5d986b83
+33607edc5f36&oauth_nonce=242cc4875a0059f6&oauth_signature_method=HMAC-S
+HA1&oauth_timestamp=1211212831&oauth_token=86da75079d3aee0fab57a36fcffb
+f900768e4de3&oauth_version=1.0&oauth_signature=sqs/8nmNNnNJiZ/eBa688uNe
+g9o%3D HTTP/1.1
+Host: localhost:6666
+
+HTTP/1.1 200 Ok
+Content-Length: NNN
+<CR/LF>
+oauth_token=N..&oauth_token_secret=M...
+]]></programlisting>
+<programlisting><![CDATA[
+GET /ods/api/weblog.post.new?description=Some%20test%20post&inst_id=15&
+oauth_consumer_key=50082d0fb861b0e6e67d5d986b8333607edc5f36&oauth_nonce
+=2f4765d20664e696&oauth_signature_method=HMAC-SHA1&oauth_timestamp=1211
+213321&oauth_token=db83a37d74faf53edc8ed56d418ded3a70fcc0bc&oauth_versi
+on=1.0&title=testing&oauth_signature=oocIyr6kgoEQkC3WVwzvl6w62W4%3D HTT
+P/1.1
+Host: localhost:6666
+
+HTTP/1.1 200 Ok
+Content-Length: NNN
+<CR/LF>
+<result><code>1&lt/code></result>
+]]></programlisting>
+    </sect3>
+  </sect2>
+  <sect2 id="voauthcontrollers"><title>OAuth Generate Keys for ODS Controllers (Web Services)</title>
+    <para>The following steps describe how to Setup Application OAuth keys in ODS:</para>
+<orderedlist>
+  <listitem>Login as user at ODS Data Space.</listitem>
+  <listitem>Go to Settings -> OAuth keys
+     <figure id="keys1" float="1">
+       <title>OAuth Generate Keys</title>
+       <graphic fileref="ui/keys1.png"/>
+     </figure>
+</listitem>
+  <listitem>Select Application name from the drop-down list and click the "Generate Keys" button.</listitem>
+  <listitem>The generated Token and Secret values for the selected application will be shown as a result.
+     <figure id="keys2" float="1">
+       <title>OAuth Generate Keys</title>
+       <graphic fileref="ui/keys2.png"/>
+     </figure>
+</listitem>
+</orderedlist>
+  </sect2>
+  <sect2 id="voauthubc"><title>ODS Ubiquity Commands</title>
+    <para>ODS provides Ubiquity commands to manipulate user accounts as well as instances and instance
+specific data using the ODS Controllers API. This command set is available only for the Firefox browser
+with the Ubiquity extension installed.</para>
+    <sect3 id="voauthubinstall"><title>Installation</title>
+      <para>First, the Ubiquity Firefox extension must be installed. Then, ODS Ubiquity commands can be
+installed by accessing http://host:port/ods/ods_ubiquity.html page. Ubiquity commands are accessed by the
+ctrl-space key combination.</para>
+    </sect3>
+    <sect3 id="voauthubcommands"><title>Basic Session Setup Commands</title>
+      <sect4 id="voauthubcommandsei"><title>ODS OAuth Endpoint Identification</title>
+      <para>Assuming the OAuth endpoint: http://myopenlink.net/OAuth, in order to change it use the command:</para>
+<programlisting><![CDATA[
+Syntax: ods-oauth-host <host_url>
+Example: ods-oauth-host http://demo.openlinksw.com/OAuth
+]]></programlisting>
+    </sect4>
+    <sect4 id="voauthubcommandscm"><title>ODS Command Mode</title>
+      <para>There are two command modes available to ubiquity commands when working against an ODS instance:
+oauth or sid.</para>
+      <para>In OAuth mode, for every ODS application instance, an OAuth key must be obtained and then
+initialized via the following steps: </para>
+<itemizedlist mark="bullet">
+  <listitem>obtain an ODS based OAuth session-key via the ODS example endpoint: http://host:port/ods/oauth_sid.vsp
+<programlisting><![CDATA[
+http://myopenlink.net/ods/oauth_sid.vsp
+]]></programlisting>
+</listitem>
+  <listitem>bind session key to command session via the command: *ods-set-oauth &lt;oauth-key&gt;* or use
+*ods-set-[class name]-oauth &lt;oauth-key&gt;* when oauth-key was generated for particular application
+instance.</listitem>
+</itemizedlist>
+   <para>If you choose the SID mode of interaction with ODS you have to perform the following steps:</para>
+<itemizedlist mark="bullet">
+  <listitem>set mode via command: ods-set-mode sid or ods-set-mode oauth</listitem>
+  <listitem>set sid via command: ods-set-sid sid</listitem>
+</itemizedlist>
+   <para>Note: The sid is a session ID applicable to all ODS commands for a given bound instance and
+user combination. It's obtained from an ODS session.</para>
+    </sect4>
+    <sect4 id="voauthubcommandsexample"><title>Example</title>
+      <para>The following example demonstrates oauth authentication getting the OAuth SID value for ex.
+for existing Bookmark instance "mybookmarks" with owner user demo at the OpenLink Demo server.</para>
+        <para>In order to execute correctly the example, you need to have OAuth Generate Key for the Bookmark
+"mybookmarks" instance at OpenLink Demo server. More information and simple scenario how to be done you can
+find <link linkend="voauthcontrollers">here.</link></para>
+<orderedlist>
+   <listitem>Execute the command:
+<programlisting><![CDATA[
+ods-oauth-host <host_url>
+-- for ex.:
+ods-oauth-host http://demo.openlinksw.com/OAuth
+]]></programlisting>
+     <figure id="keys3" float="1">
+       <title>OAuth Authentication</title>
+       <graphic fileref="ui/keys3.png"/>
+     </figure>
+</listitem>
+   <listitem>Execute the command:
+<programlisting><![CDATA[
+ods-set-mode oauth
+]]></programlisting>
+     <figure id="keys4" float="1">
+       <title>OAuth Authentication</title>
+       <graphic fileref="ui/keys4.png"/>
+     </figure>
+</listitem>
+   <listitem>Obtain the OAuth Generated Key:
+<orderedlist>
+  <listitem>Go to http://cname:port/ods/oauth_sid.vsp . For ex. http://demo.openlinksw.com/ods/oauth_sid.vsp
+     <figure id="keys5" float="1">
+       <title>OAuth Authentication</title>
+       <graphic fileref="ui/keys5.png"/>
+     </figure>
+</listitem>
+  <listitem>In the shown form enter user demo and choose the application "mybookmarks". Click the "Execute" button.
+     <figure id="keys6" float="1">
+       <title>OAuth Authentication</title>
+       <graphic fileref="ui/keys6.png"/>
+     </figure>
+</listitem>
+  <listitem></listitem>
+</orderedlist>
+
+</listitem>
+   <listitem>As result will be shown a form where you need to enter the user password.</listitem>
+   <listitem>Enter for user demo its password and click the "Login" button.
+     <figure id="keys7" float="1">
+       <title>OAuth Authentication</title>
+       <graphic fileref="ui/keys7.png"/>
+     </figure>
+</listitem>
+   <listitem>Click the "Authorize" button.
+     <figure id="keys8" float="1">
+       <title>OAuth Authentication</title>
+       <graphic fileref="ui/keys8.png"/>
+     </figure>
+</listitem>
+   <listitem>Copy the obtains OAuth SID value for ex.: 7ef4dcf23869488823b771b09b952cc9
+     <figure id="keys9" float="1">
+       <title>OAuth Authentication</title>
+       <graphic fileref="ui/keys9.png"/>
+     </figure>
+</listitem>
+   <listitem>Execute the following command:
+<programlisting><![CDATA[
+ods-set-sid 7ef4dcf23869488823b771b09b952cc9
+
+or
+
+ods-set-addressbook-oauth 7ef4dcf23869488823b771b09b952cc9
+]]></programlisting>
+     <figure id="keys10" float="1">
+       <title>OAuth Authentication</title>
+       <graphic fileref="ui/keys10.png"/>
+     </figure>
+</listitem>
+</orderedlist>
+   <listitem>You can also execute the command(s) depending on the application type:
+<programlisting><![CDATA[
+ods-set-briefcase-oauth <the obtained oauth session-key>
+-- or
+ods-set-bookmark-oauth <the obtained oauth session-key>
+-- or
+ods-set-feeds-oauth <the obtained oauth session-key>
+-- or
+ods-set-calendar-oauth <the obtained oauth session-key>
+-- or
+ods-set-addressbook-oauth <the obtained oauth session-key>
+-- or
+ods-set-poll-oauth <the obtained oauth session-key>
+-- or
+ods-set-weblog-oauth <the obtained oauth session-key>
+-- or
+ods-set-discussion-oauth <the obtained oauth session-key>
+
+]]></programlisting>
+</listitem>
+    <tip><title>See Also:</title>
+    <para>the <link linkend="sparqloauthendpoint">Virtuoso SPARQL OAuth Tutorial</link> and the full
+list of <ulink url="http://ods.openlinksw.com/wiki/ODS/VirtOAuthExamples">ODS Application Authentication
+Examples using OAuth</ulink></para>
+    </tip>
+    </sect4>
+    </sect3>
+    <tip><title>See Also:</title>
+    <para>the full list of <ulink url="http://ods.openlinksw.com/dataspace/dav/wiki/ODS/VirtuosoOdsUbiquity">ODS Ubiquity Commands</ulink> and
+the full list of <ulink url="http://ods.openlinksw.com/wiki/ODS/VirtuosoOdsUbiquityTutorialsOAuth">OpenLink
+Data Spaces (ODS) Ubiquity Commands Tutorials</ulink></para>
+    </tip>
+  </sect2>
+  <sect2 id="voauthtool"><title>OAuth Test Tool for ODS Controllers</title>
+    <para>The ODS OAuth Test Tool creates examples to show users the correct format for constructing HTTP
+requests signed according to OAuth specifications. The users use this format in their applications to make
+successful requests to the ODS REST APIs.</para>
+    <para>The ODS users generate a Consumer Key and a Consumer Secret for their application instances by
+ODS application UI (Setings -&gt; OAuth Keys). You can find more information and sample scenario
+<link linkend="voauthcontrollers">here.</link></para>
+    <para>To reach a specific ODS resource via the ODS REST API, a user must also specify a API method
+and associated API parameters.</para>
+    <para>ODS OAuth standards validate the credentials of an external user by means of the digital signature.
+If the user signs the request, and the ODS server validates the digital signature, the developer is granted
+access to the requested resource.</para>
+    <para>To tool is accessible via http:/host:port/ods/oauth_test.vsp</para>
+    <sect3 id="voauthtoolexample"><title>Example</title>
+      <para>The following example demonstrates creating and getting contact info by the ODS REST APIs
+weblog.post.new and weblog.post.get using the OAuth Test Tool.</para>
+<orderedlist>
+   <listitem></listitem>
+   <listitem>Go to http://demo.openlinksw.com/ods</listitem>
+   <listitem>Log in as user demo with password demo</listitem>
+   <listitem>Go to Settings->OAuth Keys
+     <figure id="keys11" float="1">
+       <title>Weblog OAuth</title>
+       <graphic fileref="ui/keys11.png"/>
+     </figure>
+</listitem>
+   <listitem>Copy the Token value for an Weblog instance or create such in not existing. For ex.:
+<programlisting><![CDATA[
+150fd483a3219e09847676deebae6c725d5a0a03
+]]></programlisting>
+</listitem>
+   <listitem>Go to http://demo.openlinksw.com/ods/oauth_test.vsp</listitem>
+   <listitem>In the shown form enter for:
+
+<orderedlist>
+   <listitem>Server: http://demo.openlinksw.com/ods/api</listitem>
+   <listitem>Consumer Key: 150fd483a3219e09847676deebae6c725d5a0a03</listitem>
+   <listitem>API method: weblog.post.new</listitem>
+   <listitem>API parameters:
+<programlisting><![CDATA[
+inst_id=44&description=my test&title=my first post
+]]></programlisting>
+    <itemizedlist mark="bullet">
+      <listitem>An easy way to get the instance id is using the ODS ubiquity commands sequence:
+<programlisting><![CDATA[
+ods-host http://demo.openlinksw.com/ods
+ods-set-mode sid
+ods-authenticate-user demo password demo
+ods-get-instance-id demo's Weblog
+]]></programlisting>
+</listitem>
+    </itemizedlist>
+</listitem>
+   <listitem>Select for Query options: "Generate URI and Submit".
+     <figure id="keys12" float="1">
+       <title>Weblog OAuth</title>
+       <graphic fileref="ui/keys12.png"/>
+     </figure>
+</listitem>
+   <listitem>Click the "Execute" button.</listitem>
+   <listitem>In the shown authorization form click the "Authorize" button.
+     <figure id="keys13" float="1">
+       <title>Weblog OAuth</title>
+       <graphic fileref="ui/keys13.png"/>
+     </figure>
+</listitem>
+      <listitem>As result will be shown the generated URI and the output message of executing the ODS
+REST API. In our case, the id of the new created post will be: 37
+     <figure id="keys14" float="1">
+       <title>Weblog OAuth</title>
+       <graphic fileref="ui/keys14.png"/>
+     </figure>
+</listitem>
+        <listitem>Now let's get the data for the created post. In the form enter:
+    <orderedlist>
+      <listitem>API method: weblog.get</listitem>
+      <listitem>API parameters: post_id=37</listitem>
+      <listitem>Select for Query options: "Generate URI and Submit".</listitem>
+    </orderedlist>
+</listitem>
+    <listitem>Click the "Execute" button.</listitem>
+    <listitem>As result in the "Response Body" text-area will be shown the
+retrieved details for the posts with the given above id.
+    <figure id="keys15" float="1">
+       <title>Weblog OAuth</title>
+       <graphic fileref="ui/keys15.png"/>
+     </figure>
+</listitem>
+</orderedlist>
+</listitem>
+</orderedlist>
+    </sect3>
+  </sect2>
+  <sect2 id="voauthqa"><title>OAuth QA</title>
+    <sect3 id="voauthqamyspace"><title>MySpace Tools</title>
+      <para>In order to use the <ulink url="http://developer.myspace.com/community/myspace/oauthintro.aspx">MySpace OAuth Testing Tool</ulink>:</para>
+<orderedlist>
+  <listitem>Need to have registered myspace account.</listitem>
+  <listitem>Need to apply to build apps on the MySpace Developer Platform.</listitem>
+</orderedlist>
+    </sect3>
+    <sect3 id="voauthqagoogle"><title>Google Tools</title>
+      <para><ulink url="http://code.google.com/apis/gdata/articles/oauth.html#OAuthPlayground">Google's
+OAuth playground tool</ulink> can be tried <ulink url="http://googlecodesamples.com/oauth_playground/">here</ulink>.</para>
+      <sect4 id="voauthqagooglereg"><title>Register your domain in Google</title>
+      <para>In order to use the tool, you need to register the web application as domain:</para>
+<orderedlist>
+  <listitem>Login at your gmail account</listitem>
+  <listitem>Go to https://www.google.com/accounts/ManageDomains</listitem>
+  <listitem>Enter in the field for ex. the QA server ec2-67-202-42-146.compute-1.amazonaws.com and click the "Add Domain" button.
+<para>Note: for now registered domains cannot be deleted (not supported from the Google UI)</para>
+</listitem>
+  <listitem>As result the domain will be created and the manage domain page will be opened. Here you need to
+verify you have admin privileges by choosing verification method </listitem>
+  <listitem>Choose "Upload an HTML file" and follow further the instructions.</listitem>
+  <listitem>Once the file is put in the correct server root, you should get the confirmation page:
+    <figure id="keys16" float="1">
+       <title>Google OAuth</title>
+       <graphic fileref="ui/keys16.png"/>
+     </figure>
+</listitem>
+  <listitem>Click the "Agree .." buttons.</listitem>
+  <listitem>As result will be additional setting page you need to change. Type in for "Target URL path
+prefix:": http://ec2-67-202-42-146.compute-1.amazonaws.com/ods
+    <figure id="keys17" float="1">
+       <title>Google OAuth</title>
+       <graphic fileref="ui/keys17.png"/>
+     </figure>
+</listitem>
+  <listitem>Click the "Save" button.</listitem>
+  <listitem>As result will be shown the generated OAuth Consumer Secret for
+the OAuth Consumer Key: ec2-67-202-42-146.compute-1.amazonaws.com:
+<programlisting><![CDATA[
+OAuth Consumer Key:  	 ec2-67-202-42-146.compute-1.amazonaws.com
+OAuth Consumer Secret: 	uEkfBvpMhTTT/VyFItEnEYt4
+]]></programlisting>
+</listitem>
+  <listitem>Also will be shown "test" link "Test your AuthSub registration here". Click it.</listitem>
+  <listitem>As result will be opened new window with OAuth request</listitem>
+  <listitem>Click the "Grant Access" button.
+    <figure id="keys18" float="1">
+       <title>Google OAuth</title>
+       <graphic fileref="ui/keys18.png"/>
+     </figure>
+</listitem>
+  <listitem>As result will be redirected to http://ec2-67-202-42-146.compute-1.amazonaws.com/ods/</listitem>
+  <listitem>Now lets return to our initial window and click there the button "Save".</listitem>
+  <listitem>Note that already is shown for the domain that is "Active":
+    <figure id="keys19" float="1">
+       <title>Google OAuth</title>
+       <graphic fileref="ui/keys19.png"/>
+     </figure>
+</listitem>
+</orderedlist>
+      </sect4>
+      <sect4 id="voauthqagoogleplay"><title>The Playground Tool qa steps</title>
+        <para>Let's try the playground tool:</para>
+<orderedlist>
+  <listitem>Go to http://googlecodesamples.com/oauth_playground/</listitem>
+  <listitem>Select Scope, for ex. check the check-box for "Blogger".</listitem>
+  <listitem>Change oauth signature_method to HMAC-SHA1</listitem>
+  <listitem>Enter for "oauth consumer_key": ec2-67-202-42-146.compute-1.amazonaws.com</listitem>
+  <listitem>Enter for "consumer secret" the value generated from above.</listitem>
+  <listitem>Click the "Request token" button.</listitem>
+  <listitem>As result will get Response with Status Ok
+    <figure id="keys20" float="1">
+       <title>Google OAuth</title>
+       <graphic fileref="ui/keys20.png"/>
+     </figure>
+<itemizedlist mark="bullet">
+  <listitem>the Signature base string:
+<programlisting><![CDATA[
+GET&https%3A%2F%2Fwww.google.com%2Faccounts%2FOAuthGetRequestToken&oauth_consumer_key
+%3Dec2-67-202-42-146.compute-.amazonaws.com%26oauth_nonce%3D60f50c8800b2f52807732ca1ae3855ef
+%26oauth_signature_method%3DHMACSHA1%26oauth_timestamp%3D1224191856%26oauth_version%3D1.0
+%26scope%3Dhttp%253A%252F%252Fwww.blogger.com%252Ffeeds%252F
+]]></programlisting>
+</listitem>
+  <listitem>the Authorization header:
+<programlisting><![CDATA[
+Authorization: OAuth oauth_version="1.0",
+oauth_nonce="60f50c8800b2f52807732ca1ae3855ef",
+oauth_timestamp="1224191856",
+oauth_consumer_key="ec2-67-202-42-146.compute-1.amazonaws.com",
+oauth_signature_method="HMAC-SHA1",
+oauth_signature="nohPMCw%2BMrO8%2FwslS4oEm2wfuhg%3D"
+]]></programlisting>
+</listitem>
+  <listitem>the Response body:
+<programlisting><![CDATA[
+HTTP/1.1 200 OK
+Content-Type: text/plain; charset=UTF-8
+Date: Thu, 16 Oct 2008 21:17:37 GMT
+X-Content-Type-Options: nosniff
+Expires: Thu, 16 Oct 2008 21:17:37 GMT
+Cache-Control: private, max-age=0
+Content-Length: 76
+Server: GFE/1.3
+ oauth_token=COW3iN_7HxCXqfuzAQ&oauth_token_secret=ulsD7N5SuY16qC%2FvY2Sdk3AS
+]]></programlisting>
+</listitem>
+</itemizedlist>
+</listitem>
+  <listitem>And also in the "Get the Token" section now will be active the "Authorize" button. Click it.
+    <figure id="keys21" float="1">
+       <title>Google OAuth</title>
+       <graphic fileref="ui/keys21.png"/>
+     </figure>
+</listitem>
+  <listitem>As result will be shown the authentication page where you need to click the "Grant Access" button:
+    <figure id="keys22" float="1">
+       <title>Google OAuth</title>
+       <graphic fileref="ui/keys22.png"/>
+     </figure>
+</listitem>
+  <listitem>As result now in the "Get the Token" section will be active the "Access token" button. Click it.
+    <figure id="keys23" float="1">
+       <title>Google OAuth</title>
+       <graphic fileref="ui/keys23.png"/>
+     </figure>
+</listitem>
+  <listitem>As result the access_token will be obtained:
+    <figure id="keys24" float="1">
+       <title>Google OAuth</title>
+       <graphic fileref="ui/keys24.png"/>
+     </figure>
+</listitem>
+  <listitem>Click the "available feeds" button marked as 6.</listitem>
+  <listitem>As result in the "Response" body section will be shown:
+<programlisting><![CDATA[
+Blogger
+http://www.blogger.com/feeds/default/blogs
+http://www.blogger.com/feeds/<blogID>/posts/default
+http://www.blogger.com/feeds/<blogID>/[<postID>]/comments/default
+]]></programlisting>
+</listitem>
+  <listitem>Copy the 1st URL and paste in the field after the method GET.</listitem>
+  <listitem>Click "execute".</listitem>
+  <listitem>As result will find your blogs, post, info at Blogger:
+    <figure id="keys25" float="1">
+       <title>Google OAuth</title>
+       <graphic fileref="ui/keys25.png"/>
+     </figure>
+</listitem>
+</orderedlist>
+      </sect4>
+    </sect3>
+  </sect2>
+</sect1>

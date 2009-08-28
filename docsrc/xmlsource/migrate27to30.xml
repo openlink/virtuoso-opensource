@@ -22,6 +22,7 @@
  -  
 -->
 <sect1 id="migrxx">
+	<title>Database Migration Guides</title>
 <sect2 id="migrate27to30"><title>Migration of Virtuoso from Version 2.7 to Version 3.0</title>
 
   <para>The Virtuoso 3.0 database file format is not compatible with 
