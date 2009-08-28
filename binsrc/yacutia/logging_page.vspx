@@ -228,7 +228,6 @@
           </td>
         </tr>
       </table>
-      <table style="display:none"><tr><td>$Id$</td></tr></table>
       </v:form>
     </vm:pagebody>
   </vm:pagewrapper>

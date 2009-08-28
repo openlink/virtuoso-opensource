@@ -5555,11 +5555,10 @@ create procedure DB.DBA.LOAD_RDF_MAPPER_XBRL_ONTOLOGIES()
 {
   if (registry_get ('RDF_MAPPER_XBRL_ONTOLOGIES') = '1')
     return;
-  for select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/VAD/rdf_mappers/ontologies/xbrl/%.owl' do
+  for select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/VAD/rdf_mappers/ontologies/xbrl/%.owl.gz' do
   {
 	declare str_out any;
-	str_out := string_output();
-	http(RES_CONTENT, str_out);
+      str_out := gzip_uncompress (cast (RES_CONTENT as varchar));
     DB.DBA.RDF_LOAD_RDFXML (str_out, 'http://www.openlinksw.com/schemas/xbrl/', 'http://www.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/');
   }
   registry_set ('RDF_MAPPER_XBRL_ONTOLOGIES','1');
@@ -5574,12 +5573,11 @@ create procedure DB.DBA.RM_LOAD_ONTOLOGIES ()
 {
   if (registry_get ('RM_LOAD_ONTOLOGIES') = '1')
     return;
-  for select RES_CONTENT, RES_NAME from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/VAD/rdf_mappers/ontologies/owl/%.owl' do
+  for select RES_CONTENT, RES_NAME from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/VAD/rdf_mappers/ontologies/owl/%.owl.gz' do
     {
       declare str_out, xt, owl_iri, base_iri, graph_iri any;
 
-      str_out := string_output();
-      http (RES_CONTENT, str_out);
+      str_out := gzip_uncompress (cast (RES_CONTENT as varchar));
       xt := xtree_doc (str_out);
       owl_iri := cast (xpath_eval ('/RDF/Ontology/@about', xt) as varchar);
       if (owl_iri is null)

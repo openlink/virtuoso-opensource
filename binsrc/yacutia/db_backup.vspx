@@ -476,7 +476,6 @@
 	  </v:form>
           </v:form>
         </v:template>
-        <table style="display:none"><tr><td>$Id$</td></tr></table>
       </v:template>
     </vm:pagebody>
   </vm:pagewrapper>

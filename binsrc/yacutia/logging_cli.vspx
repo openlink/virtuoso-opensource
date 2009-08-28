@@ -28,7 +28,6 @@
   fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
   xmlns:xhtml="http://www.w3.org/1999/xhtml"
   xmlns:vm="http://www.openlinksw.com/vspx/macro">
-  <table style="display:none"><tr><td>$Id$</td></tr></table>
   <div class="scroll_area">
     <div id="monitor_tab">
   <v:data-set name="data_set20" sql="select name, bin, bout, threads, locks, trx_status, cli_id, pid, os, app, ip from CLI_STATUS_REPORT" nrows="0" scrollable="0" cursor-type="static" edit="0">

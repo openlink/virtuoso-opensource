@@ -1914,11 +1914,6 @@ will be removed permanently.
           </tr>
         </table>
       </v:template>
-      <table style="display:none">
-        <tr>
-          <td>$Id$</td>
-        </tr>
-      </table>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

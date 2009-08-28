@@ -330,5 +330,4 @@
           self.res1 := '';
         ?>
       </v:template>
-<table style="display:none"><tr><td>$Id$</td></tr></table>
 </v:page>

@@ -113,7 +113,6 @@
           </div>
         </v:form>
       </v:template>
-<div class="cvs_id">$Id$</div>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

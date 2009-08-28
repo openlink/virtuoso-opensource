@@ -887,11 +887,6 @@ ORDER BY sch_name"
         http ('</script>\n');
       }
     ?>
-      <table style="display:none">
-        <tr>
-          <td>$Id$</td>
-        </tr>
-      </table>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

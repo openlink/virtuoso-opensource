@@ -588,7 +588,6 @@
         </tr>
       </table>
     </v:form>
-      <div class="cvs_id">$Id$</div>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

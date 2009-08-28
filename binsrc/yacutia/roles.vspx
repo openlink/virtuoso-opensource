@@ -33,5 +33,4 @@
     <v:variable name="roles_read_flag" type="integer" default="0"/>
     <v:variable name="roles_grant_list" type="any" default="null"/>
     <v:include url="roles_inc.vspx"/>
-  <table style="display:none"><tr><td>$Id$</td></tr></table>
 </v:page>

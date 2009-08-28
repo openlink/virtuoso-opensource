@@ -78,7 +78,7 @@ width: 100%; float: left; clear: left;
   /* Needed for static help sidebar, but not for help slidebar
   width: 64%;
    */
-  width: 80%;
+  width: 95%;
   float:left;
   margin: 0;
 }
@@ -112,3 +112,66 @@ width: 100%; float: left; clear: left;
   color: rgb(20,100,10);
   font-size: 0.9em;
 }
+
+/* area controlled by navigation tabs */
+
+#navarea {
+	background-color: white;
+	width: 100%;
+	margin: 0;
+	padding: 0;
+}
+
+#navarea li {
+	font-size: 80%;
+	font-family: Verdana, Arial, Helvetica, sans-serif; 
+	line-height: 175%;
+}
+
+/* navigation tabs */
+
+#navlist
+{
+padding: 3px;
+margin-left: 0;
+padding-bottom: 3px;
+border-bottom: 1px solid #778;
+}
+
+#navlist li
+{
+list-style: none;
+margin: 0;
+display: inline;
+line-height: 120%;
+}
+
+#navlist li a
+{
+padding: 3px 0.5em;
+margin-left: 3px;
+border: 1px solid #778;
+border-bottom: none;
+background: #DDE;
+text-decoration: none;
+line-height: 120%;
+}
+
+#navlist li a:link { color: #448; }
+#navlist li a:visited { color: #667; }
+
+#navlist li a:hover
+{
+color: #000;
+background: #AAE;
+border-color: #227;
+border-bottom: none;
+}
+
+#navlist li a.current
+{
+background: white;
+border-bottom: 1px solid #EAEAEE;
+line-height: 120%;
+}
+

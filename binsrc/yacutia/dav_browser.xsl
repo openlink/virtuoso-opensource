@@ -460,6 +460,7 @@ self.vc_data_bind (e);
                       </tr>
                     </table>
                   </v:template>
+
                   <v:template name="rows1" type="repeat">
                     <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="ds_items1_if_not_exists_template">
                       <table>
@@ -1149,6 +1150,7 @@ self.vc_data_bind (e);
                   declare res_owner1, res_group1 integer;
                   declare _file any;
                   declare size1 integer;
+
                   resname := aref(self.megavec, 0);
                   _file := aref(self.megavec, 1);
                   mimetype := aref(self.megavec, 2);

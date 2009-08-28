@@ -392,11 +392,6 @@ function callSparql (graph_id, qry_id, res_id)
           </td>
         </tr>
       </table>
-   <table style="display:none">
-    <tr>
-     <td>$Id$</td>
-    </tr>
-   </table>
   </vm:pagebody>
  </vm:pagewrapper>
 </v:page>
