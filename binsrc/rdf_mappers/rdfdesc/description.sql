@@ -273,7 +273,7 @@ again:
 	 _label := null;
 
        rdfa := rdfdesc_rel_print (prop, rel, _url, 0);
-       if (http_mime_type (_url) like 'image/%')
+       if (http_mime_type (_url) like 'image/%' and _url not like 'http://%/about/id/%')
 	 http (sprintf ('<a class="uri" %s href="%s"><img src="%s" height="160" border="0"/></a>', rdfa, rdfdesc_http_url (_url), _url));
        else
 	 http (sprintf ('<a class="uri" %s href="%s">%s</a>', rdfa, rdfdesc_http_url (_url), rdfdesc_uri_curie(_url, _label)));
