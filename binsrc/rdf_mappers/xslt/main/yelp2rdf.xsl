@@ -38,7 +38,8 @@
     xmlns:bibo="&bibo;"
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:sioc="&sioc;"
-    xmlns:sioct="&sioct;">
+    xmlns:sioct="&sioct;"
+    xmlns:dcterms="http://purl.org/dc/terms/">
 
     <xsl:output method="xml" indent="yes" />
 
@@ -71,7 +72,7 @@
 						<xsl:value-of select="description" />
 					</dc:description>
 					<dcterms:created rdf:datatype="&xsd;dateTime">
-						<xsl:value-of select="pubDate"/>
+						<xsl:value-of select="vi:http_string_date (pubDate)"/>
 					</dcterms:created>
 				</rdf:Description>
 			</xsl:for-each>
