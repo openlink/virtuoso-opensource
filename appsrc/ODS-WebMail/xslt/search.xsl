@@ -37,8 +37,8 @@
         <xsl:attribute name="value"><xsl:value-of select="mode"/></xsl:attribute>
       </input>
       <div id="mgrid_info">
+        <div style="float: left;">
         <xsl:variable name="cf" select="folders//folder[@id = $fid]"/>
-        <span>
           <b>Search: </b>
             <xsl:choose>
               <xsl:when test="string(mode) != 'advanced'">Simple</xsl:when>
@@ -46,8 +46,18 @@
             </xsl:choose>,<xsl:call-template name="nbsp"/>
           <b>Page:</b><xsl:call-template name="nbsp"/><xsl:value-of select="round((messages/skiped + messages/show_res - 1) div messages/show_res)"/> of <xsl:value-of select="floor((messages/all_res + messages/show_res - 1) div messages/show_res)"/>, <xsl:call-template name="nbsp"/>
           <b>Messages:</b><xsl:call-template name="nbsp"/><xsl:value-of select="messages/skiped + 1"/> - <xsl:value-of select="messages/skiped + messages/show_res"/> of <xsl:value-of select="messages/all_res"/>
-        </span>
       </div>
+        <div style="float: right;">
+          <b>Group By </b>
+          <xsl:call-template name="make_select">
+            <xsl:with-param name="name">groupBy</xsl:with-param>
+            <xsl:with-param name="selected"><xsl:value-of select="./groupBy" /></xsl:with-param>
+            <xsl:with-param name="list">0:;1:Status;2:Priority;3:Address;4:Subject;5:Date;6:Size;7:Attachment;</xsl:with-param>
+            <xsl:with-param name="onchange">javascript: groupSubmit(this); </xsl:with-param>
+          </xsl:call-template>
+        </div>
+      </div>
+      <br style="clear: both;"/>
       <xsl:if test="(number(messages/all_res) != 0)">
         <div style="margin: 2px;">
           <xsl:call-template name="make_href">

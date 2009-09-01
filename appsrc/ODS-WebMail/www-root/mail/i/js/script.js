@@ -226,15 +226,24 @@ function submitEnter(myForm, myButton, e) {
 }
 
 // ---------------------------------------------------------------------------
-function boxSubmit(value) {
+function boxSubmit(value)
+{
   createHidden (document, 'bp', value);
   createHidden (document, 'sort.x', '1');
   document.f1.submit ();
 }
 
 // ---------------------------------------------------------------------------
-function attachSubmit(value) {
+function attachSubmit(value)
+{
   createHidden (document, 'fa_attach.x', '1');
+  document.f1.submit ();
+}
+
+// ---------------------------------------------------------------------------
+function groupSubmit (obj)
+{
+  createHidden (document, 'fa_group.x', obj.value);
   document.f1.submit ();
 }
 
