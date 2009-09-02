@@ -38,6 +38,7 @@
     xmlns:sioc="&sioc;"
     xmlns:bibo="&bibo;"
     xmlns:dcterms = "http://purl.org/dc/terms/"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:y="urn:yahoo:maps">
 
     <xsl:output method="xml" indent="yes" />
@@ -81,6 +82,10 @@
 		<xsl:apply-templates select="@*|node()"/>
 	    </rdf:Description>
 	</xsl:element>
+    </xsl:template>
+
+    <xsl:template match="y:Title" priority="1">
+	<dc:title><xsl:value-of select="."/></dc:title>
     </xsl:template>
 
     <xsl:template match="y:Latitude|y:Longitude">

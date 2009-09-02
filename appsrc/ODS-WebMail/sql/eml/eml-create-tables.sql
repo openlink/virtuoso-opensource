@@ -597,7 +597,7 @@ OMAIL.WA.exec_no_error(
 )
 ;
 
-OMAIL.WA.vt_index_OMAIL_WA_MESSAGES ()
+OMAIL.WA.VT_INDEX_OMAIL_WA_MESSAGES ()
 ;
 DB.DBA.vt_batch_update ('OMAIL.WA.MESSAGES', 'off', null)
 ;

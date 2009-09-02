@@ -26,11 +26,14 @@
 		xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 		xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
 		xmlns:h="http://www.w3.org/1999/xhtml"
+		xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
+		xmlns:foaf="http://xmlns.com/foaf/0.1/"
                 version="1.0">
 
 <xsl:output method="xml" encoding="utf-8" indent="yes"/>
 
 <xsl:preserve-space elements="*"/>
+<xsl:param name="baseUri" />
 
 <xsl:template match="/">
   <rdf:RDF>
@@ -46,7 +49,10 @@
   </xsl:variable>
 
   <xsl:if test="$vcard != 0">
-    <v:VCard>
+    <rdf:Description rdf:about="{$baseUri}">
+      <foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'hcard')}"/>
+    </rdf:Description>  
+    <v:VCard rdf:about="{vi:proxyIRI ($baseUri, '', 'hcard')}">
       <xsl:apply-templates mode="extract-vcard"/>
     </v:VCard>
   </xsl:if>
@@ -410,13 +416,19 @@
 <xsl:template match="*" mode="extract-tel">
   <xsl:variable name="type" select=".//h:*[@class='type']"/>
   <xsl:variable name="value" select=".//h:*[@class='value']"/>
-  <xsl:variable name="lv" select=".//h:*[@class]"/>
+  <xsl:variable name="lv" select=".//h:*[@class and @class != 'type' ]"/>
 
   <xsl:choose>
     <xsl:when test="$type and $value">
       <xsl:call-template name="tel">
 	<xsl:with-param name="type" select="string($type)"/>
 	<xsl:with-param name="value" select="string($value)"/>
+      </xsl:call-template>
+    </xsl:when>
+    <xsl:when test="$type and $lv">
+      <xsl:call-template name="tel">
+	<xsl:with-param name="type" select="string($type)"/>
+	<xsl:with-param name="value" select="string($lv)"/>
       </xsl:call-template>
     </xsl:when>
     <xsl:when test="$lv">

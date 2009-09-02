@@ -34,13 +34,23 @@
         <xsl:attribute name="value"><xsl:value-of select="bp"/></xsl:attribute>
       </input>
       <div id="mgrid_info">
+        <div style="float: left;">
         <xsl:variable name="cf" select="folders//folder[@id = $fid]"/>
-        <span>
           <b>Folder:</b><xsl:call-template name="nbsp"/><xsl:value-of select="$cf/name"/>,<xsl:call-template name="nbsp"/>
           <b>Page:</b><xsl:call-template name="nbsp"/><xsl:value-of select="round((messages/skiped + messages/show_res - 1) div messages/show_res)"/> of <xsl:value-of select="floor((messages/all_res + messages/show_res - 1) div messages/show_res)"/>, <xsl:call-template name="nbsp"/>
           <b>Messages:</b><xsl:call-template name="nbsp"/><xsl:value-of select="messages/skiped"/> - <xsl:value-of select="messages/skiped + messages/show_res"/> of <xsl:value-of select="messages/all_res"/> (<xsl:value-of select="$cf/new_cnt"/> new)
-        </span>
       </div>
+        <div style="float: right;">
+          <b>Group By </b>
+          <xsl:call-template name="make_select">
+            <xsl:with-param name="name">groupBy</xsl:with-param>
+            <xsl:with-param name="selected"><xsl:value-of select="./groupBy" /></xsl:with-param>
+            <xsl:with-param name="list">0:;1:Status;2:Priority;3:Address;4:Subject;5:Date;6:Size;7:Attachment;</xsl:with-param>
+            <xsl:with-param name="onchange">javascript: groupSubmit(this); </xsl:with-param>
+          </xsl:call-template>
+        </div>
+      </div>
+      <br style="clear: both;" />
       <xsl:call-template name="message_table"/>
       <xsl:if test="not(@mode)">
         <xsl:call-template name="footer" />
@@ -66,7 +76,7 @@
         <col class="size"/>
       </colgroup>
       <xsl:call-template name="messages_header"/>
-      <xsl:apply-templates select="messages/message"/>
+      <xsl:apply-templates select="messages" />
       <xsl:call-template name="message_empty">
         <xsl:with-param name="count" select="count(messages/message)"/>
       </xsl:call-template>
@@ -200,8 +210,104 @@
       </tr>
     </thead>
   </xsl:template>
+
   <!-- ====================================================================================== -->
-  <xsl:template match="messages/message">
+  <xsl:template match="messages">
+	  <xsl:variable name="groupBy" select="''" />
+  	<xsl:for-each select="message">
+      <xsl:if test="/page/groupBy != 0 and $groupBy != ./group_by">
+        <tr class="msgRow">
+          <td colspan="8">
+            <b><i><xsl:value-of select="./group_by" /></i></b>
+          </td>
+        </tr>
+      </xsl:if>
+      <xsl:choose>
+        <xsl:when test="/page/@mode = 'popup'">
+          <xsl:variable name="open_url">javascript:Go(<xsl:value-of select="msg_id" />,'<xsl:value-of select="subject" />')</xsl:variable>
+        </xsl:when>
+        <xsl:when test="/page/folder_id = 130">
+          <xsl:variable name="open_url">write.vsp?sid=<xsl:value-of select="$sid" />&amp;realm=<xsl:value-of select="$realm" />&amp;wp=<xsl:value-of select="msg_id" />
+          </xsl:variable>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:variable name="open_url">open.vsp?sid=<xsl:value-of select="$sid" />&amp;realm=<xsl:value-of select="$realm" />&amp;op=<xsl:value-of select="msg_id" />,<xsl:value-of select="position" />
+          </xsl:variable>
+        </xsl:otherwise>
+      </xsl:choose>
+      <tr class="msgRow">
+        <xsl:if test="mstatus = 0">
+          <xsl:attribute name="class">mark</xsl:attribute>
+        </xsl:if>
+        <xsl:if test="not(/page/@mode)">
+          <td align="center">
+            <input type="checkbox" name="ch_msg" onclick="selectCheck(this, 'ch_msg')">
+              <xsl:attribute name="value"><xsl:value-of select="msg_id" /></xsl:attribute>
+            </input>
+          </td>
+        </xsl:if>
+        <td align="center">
+          <img>
+            <xsl:attribute name="SRC">/oMail/i/m_<xsl:value-of select="mstatus" />.gif</xsl:attribute>
+          </img>
+        </td>
+        <td align="center">
+          <img>
+            <xsl:attribute name="SRC">/oMail/i/pr_<xsl:value-of select="priority" />.gif</xsl:attribute>
+          </img>
+        </td>
+        <td align="center">
+          <xsl:choose>
+            <xsl:when test="attached > 0">
+              <img src="/oMail/i/at.gif">
+                <xsl:attribute name="alt">This message have <xsl:value-of select="attached" /> attached file(s)</xsl:attribute>
+              </img>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:call-template name="nbsp" />
+            </xsl:otherwise>
+          </xsl:choose>
+        </td>
+        <td>
+          <a>
+            <xsl:attribute name="id"><xsl:value-of select="concat('name_', msg_id)" /></xsl:attribute>
+            <xsl:attribute name="href"><xsl:value-of select="$open_url" /></xsl:attribute>
+            <xsl:attribute name="title"><xsl:call-template name="show_name_alt" /></xsl:attribute>
+            <xsl:call-template name="show_name" />
+          </a>
+        </td>
+        <td>
+          <a>
+            <xsl:attribute name="id"><xsl:value-of select="concat('subject_', msg_id)" /></xsl:attribute>
+            <xsl:attribute name="href"><xsl:value-of select="$open_url" /></xsl:attribute>
+            <xsl:attribute name="title"><xsl:value-of select="subject" /></xsl:attribute>
+            <xsl:call-template name="show_subject" />
+          </a>
+        </td>
+        <td>
+          <xsl:call-template name="format_date">
+            <xsl:with-param name="date" select="rcv_date" />
+            <xsl:with-param name="format" select="'%d.%m.%Y'" />
+          </xsl:call-template>
+          <font size="1">
+            <xsl:call-template name="format_date">
+              <xsl:with-param name="date" select="rcv_date" />
+              <xsl:with-param name="format" select="' %H:%M'" />
+            </xsl:call-template>
+          </font>
+        </td>
+        <td align="right">
+          <xsl:call-template name="size2str">
+            <xsl:with-param name="size" select="dsize" />
+          </xsl:call-template>
+        </td>
+      </tr>
+	    <xsl:variable name="groupBy" select="./group_by" />
+  	</xsl:for-each>
+  </xsl:template>
+
+  <!-- ====================================================================================== -->
+  <xsl:template match="message">
     <xsl:choose>
       <xsl:when test="/page/@mode = 'popup'">
         <xsl:variable name="open_url">javascript:Go(<xsl:value-of select="msg_id"/>,'<xsl:value-of select="subject"/>')</xsl:variable>

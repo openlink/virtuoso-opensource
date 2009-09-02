@@ -203,10 +203,10 @@
        <div id="navbar">
          <ul id="navlist">
           <li>
-            <a href="#" id="tab_attributes" onclick="toggle_tab('attributes'); return false;" class="current">Has Attributes</a>
+            <a href="#" id="tab_attributes" onclick="toggle_tab('attributes'); return false;" class="current">Has Attributes &amp; Values</a>
           </li>
           <li>
-            <a href="#" id="tab_attributeof" onclick="toggle_tab('attributeof'); return false;">Is Attribute Of</a>
+            <a href="#" id="tab_attributeof" onclick="toggle_tab('attributeof'); return false;">Is Attribute Value Of</a>
           </li>
          </ul>
       </div> <!-- #navbar -->
@@ -246,7 +246,7 @@
 
       <div id="attributeof" style="display: none;">
       <!-- inverseproptable -->
-      <table class="description"><tr><th class="property">Referenced By Attribute</th><th class="value">Value</th></tr>
+      <table class="description"><tr><th class="property">Attribute</th><th class="value">Entity</th></tr>
 
 <?vsp
       exec (sprintf ('select "p" as PRED from (sparql select distinct ?p where { graph <%S> { ?o ?p <%S> } }) sp order by 1', _G, _S),
@@ -285,7 +285,7 @@
 <!-- footer -->
     <div id="footer">
       <div id="ft_t">
-       <a href="/ode/?uri=<?vsp http_url (page_resource_uri); ?>">Explore Linked Data</a>&nbsp;using 
+       <a href="/ode/?uri=<?vsp http_url (page_resource_uri); ?>">Explore alternative Linked Data Views &amp; Meshups</a>&nbsp;using 
        <a href="http://ode.openlinksw.com/" title="OpenLink Data Explorer">ODE</a>&nbsp; &nbsp;
        &nbsp; &nbsp; Raw Linked Data formats:
        <a href="<?=rdf_link || '&output=n3'?>">N3</a> |

@@ -59,12 +59,8 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     values ('(application/atom.xml)|(text/xml)|(application/xml)|(application/rss.xml)',
     'MIME', 'DB.DBA.RDF_LOAD_FEED_RESPONSE', null, 'Feeds', null);
 
-insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-    values ('(http://farm[0-9]*.static.flickr.com/.*)|'||
-		'(http://www.flickr.com/photos/.*)',
-    'URL', 'DB.DBA.RDF_LOAD_FLICKR_IMG', null, 'Flickr Images');
 
-insert replacing DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://farm[0-9]*.static.flickr.com/.*)|'||
 			'(http://www.flickr.com/photos/.*)',
     'URL', 'DB.DBA.RDF_LOAD_FLICKR_IMG', null, 'Flickr Images');
@@ -377,11 +373,6 @@ create procedure RM_MAPPERS_SET_CONSEQ (in proc_1 varchar, in proc_2 varchar)
 }
 ;
 
---
--- The GRDDL filters
--- This keeps all microformat filters
--- Every of these is called inside XHTML mapper
---
 EXEC_STMT(
 'create table DB.DBA.OAI_SERVERS (
     OS_ID     integer identity,
@@ -393,6 +384,11 @@ EXEC_STMT(
 alter index OAI_SERVERS on DB.DBA.OAI_SERVERS partition cluster replicated', 0)
 ;
 
+--
+-- The GRDDL filters
+-- This keeps all microformat filters
+-- Every of these is called inside XHTML mapper
+--
 EXEC_STMT(
 'create table DB.DBA.SYS_GRDDL_MAPPING (
     GM_NAME varchar,
@@ -605,6 +601,28 @@ create procedure DB.DBA.XSLT_STRING2ISO_DATE (in val varchar)
 		return ret;
   }
   return null;
+}
+;
+
+create procedure DB.DBA.XSLT_HTTP_STRING_DATE (in val varchar)
+{
+  declare ret, tmp any;
+  if (val is null)
+    return null;
+  declare exit handler for sqlstate '*'
+    {
+      return val;
+    };
+  tmp := sprintf_inverse (val, '%s, %s %s %s %s %s', 0);
+  if (length(tmp) > 5)
+    {
+      ret := http_string_date (val);
+      ret := dt_set_tz (ret, 0);
+      ret := date_iso8601 (ret);
+      if (ret is not null)
+	return ret;
+    }
+  return val;
 }
 ;
 
@@ -1000,6 +1018,7 @@ grant execute on DB.DBA.XSLT_SPLIT_AND_DECODE to public;
 grant execute on DB.DBA.XSLT_UNIX2ISO_DATE to public;
 grant execute on DB.DBA.XSLT_SHA1_HEX to public;
 grant execute on DB.DBA.XSLT_STR2DATE to public;
+grant execute on DB.DBA.XSLT_HTTP_STRING_DATE to public;
 grant execute on DB.DBA.XSLT_STRING2ISO_DATE to public;
 grant execute on DB.DBA.XSLT_STRING2ISO_DATE2 to public;
 grant execute on DB.DBA.RDF_SPONGE_PROXY_IRI to public;
@@ -1035,6 +1054,7 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:dbpIRI', 'DB.DBA.RDF_SP
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:umbelGet', 'DB.DBA.RM_UMBEL_GET');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:mql-image-by-name', fix_identifier_case ('DB.DBA.RDF_MQL_RESOLVE_IMAGE'));
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:sasIRI', 'DB.DBA.RM_SAMEAS_IRI');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:http_string_date', 'DB.DBA.XSLT_HTTP_STRING_DATE');
 
 create procedure DB.DBA.RDF_MAPPER_XSLT (in xslt varchar, inout xt any, in params any := null)
 {
@@ -4211,7 +4231,7 @@ create procedure DB.DBA.RDF_LOAD_FLICKR_IMG (in graph_iri varchar, in new_origin
 	api_key := _key;
 	if (not isstring (api_key))
 		return 0;
-	if (new_origin_uri like 'http://farm%s.static.flickr.com/%/%')
+	if (new_origin_uri like 'http://farm%.static.flickr.com/%/%')
 	{
   tmp := sprintf_inverse (new_origin_uri, 'http://farm%s.static.flickr.com/%s/%s_%s.%s', 0);
 		if (tmp is null or length (tmp) <> 5)
@@ -6043,6 +6063,7 @@ create procedure DB.DBA.RM_LOAD_PREFIXES ()
   XML_REMOVE_NS_BY_PREFIX ('geonames', 2);
   XML_REMOVE_NS_BY_PREFIX ('proxy', 2);
   XML_REMOVE_NS_BY_PREFIX ('http-voc', 2);
+  XML_REMOVE_NS_BY_PREFIX ('cnet', 2);
   for select RES_CONTENT, RES_NAME from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/VAD/rdf_mappers/xslt/%.xsl' do
     {
       nss := xmlnss_get (xtree_doc (RES_CONTENT));
@@ -6077,6 +6098,7 @@ create procedure DB.DBA.RM_LOAD_PREFIXES ()
   if (isstring (registry_get ('URIQADefaultHost')))
     XML_SET_NS_DECL ('proxy', sprintf ('http://%s/about/id/', registry_get ('URIQADefaultHost')), 2);
   XML_SET_NS_DECL ('http-voc', 'http://www.w3.org/2006/http#', 2);
+  XML_SET_NS_DECL ('cnet', 'http://api.cnet.com/rest/v1.0/', 2);
 };
 
 DB.DBA.RM_LOAD_PREFIXES ();

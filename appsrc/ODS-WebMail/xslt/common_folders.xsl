@@ -39,6 +39,8 @@
               <td>
                 <xsl:apply-templates select="ftree/fnode"/>
                 <xsl:call-template name="nbsp"/>
+          <xsl:choose>
+            <xsl:when test="@id != 115">
                 <xsl:call-template name="make_href">
                   <xsl:with-param name="url">box.vsp</xsl:with-param>
             <xsl:with-param name="label"><xsl:value-of select="substring(name,1,15)"/><xsl:if test="string-length(name) > 15">...</xsl:if></xsl:with-param>
@@ -47,6 +49,12 @@
               <xsl:if test="@id = /page/folder_id">bc</xsl:if>
                   </xsl:with-param>
                 </xsl:call-template>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:call-template name="nbsp"/>
+              <xsl:value-of select="substring(name,1,15)"/><xsl:if test="string-length(name) > 15">...</xsl:if>
+            </xsl:otherwise>
+          </xsl:choose>
                 <xsl:if test="new_cnt + all_cnt != 0">
                   <font class="n"> (<xsl:value-of select="new_cnt"/>/<xsl:value-of select="all_cnt"/>)</font>
                 </xsl:if>
