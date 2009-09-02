@@ -24,8 +24,6 @@ body {
 #hd_l { width: 64%; float: left;}
 #hd_r { width: 33%; float: right; clear: right; text-align: right; }
 
-#footer { border-top: 2px solid #696; color: #666; margin: 1.2em 0 0; padding: 0.3em 0 0; }
-
 #homelink { display: inline; }
 #homelink, #homelink a { color: #666; }
 #homelink a { font-weight: bold; text-decoration: none; }
@@ -35,7 +33,7 @@ h1, h2 { color: #224; }
 h1 { display: inline; font-weight: bold; font-size: 200%; margin: 0; text-align: left; }
 h2 { font-weight: normal; font-size: 124%; margin: 1.2em 0 0.2em; }
 
-#sidebar h1 {color: #696; font-size: 110%; }
+#sidebar h1 {color: #3c9bbc; font-size: 110%; }
 .opl_badge { text-align: center; }
 
 .page-resource-uri { font-size: 124%; margin: 0.2em 0; font-style: italic; }
@@ -90,13 +88,14 @@ width: 100%; float: left; clear: left;
   border-left: 1px solid #696;
   */
   padding: 5px 10px 5px 10px;
-  color: #666;
+  color: #4e4e4e;
 }
 
 #footer { 
   width: 100%;
   float: left; 
   clear: both;
+  color: #666;
   border-top: 2px solid #696; 
   margin: 1.2em 0 0; 
   padding: 0.3em; 
