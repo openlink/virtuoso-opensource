@@ -359,6 +359,9 @@ again:
 
    if (length (lang))
      {
+       if (strstr (lang, 'xsd:') = 0)
+         http (sprintf (' (<a href="http://www.w3.org/2001/XMLSchema#%s">%s</a>)', subseq(lang, 4), lang));
+       else
        http (sprintf ('(%s)', lang));
      }
 
