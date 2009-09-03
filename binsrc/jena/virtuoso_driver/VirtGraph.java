@@ -82,12 +82,6 @@ public class VirtGraph extends GraphBase
 	super();
 
 	this.url_hostlist = _url_hostlist.trim();
-	if (url_hostlist.indexOf(utf8) == -1) {
-	   if (url_hostlist.charAt(url_hostlist.length()-1) != '/') 
-	     url_hostlist = url_hostlist + "/" + utf8;
-	   else
-	     url_hostlist = url_hostlist + utf8;
-	}
 
 	this.graphName = graphName;
 	this.user = user;
@@ -99,8 +93,16 @@ public class VirtGraph extends GraphBase
 	try {
 	    if (connection == null) {
 	        if (url_hostlist.startsWith("jdbc:virtuoso://")) {
+
+	            String url = url_hostlist;
+                    if (url.indexOf(utf8) == -1) {
+	  	        if (url.charAt(url.length()-1) != '/') 
+	                    url = url + "/" + utf8;
+	                else
+	                    url = url + utf8;
+	            }
 		    Class.forName("virtuoso.jdbc3.Driver");
-		    connection = DriverManager.getConnection(url_hostlist, user, password);
+		    connection = DriverManager.getConnection(url, user, password);
 	        } else {
 		    pds.setServerName(url_hostlist);
 		    pds.setUser(user);
