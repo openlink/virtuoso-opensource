@@ -999,6 +999,7 @@ ext_http_proxy (in url varchar := null,
 
   declare params, ids any;
   params := http_param ();
+  http_header ('');
 
   if (exec is not null)
     {

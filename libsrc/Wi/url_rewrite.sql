@@ -1037,6 +1037,8 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
   if (length (rel_uri))
     rel_uri := aref (split_and_decode (rel_uri), 0);
   mime := http_request_header_full (lines, 'Accept', '*/*'); -- /* the accept header */
+  if (registry_get ('__debug_url_rewrite') in ('1', '2'))
+    dbg_printf ('Accept: [%s]', mime);
   lang := http_request_header_full (lines, 'Accept-Language', '*');
   --enc  := http_request_header_full (lines, 'Accept-Encoding', '*');
   cset := http_request_header_full (lines, 'Accept-Charset', '*');
