@@ -6285,48 +6285,53 @@ create procedure DB.DBA.sys_save_http_history(in vdir any, in vres any)
 {
   declare _ext, result, name, content, pwd, cnt any;
   -- do nor record itself
-  if(registry_get('__block_http_history') = http_path()) {
+  if (registry_get ('__block_http_history') = http_path ()) 
+    {
     return;
   }
-  vres := trim(vres);
+  vres := trim (vres);
   -- do not record some registered extensions
-  _ext := subseq(vres, strrchr(vres, '.') + 1);
-  select count(*) into cnt from WS.WS.HTTP_SES_TRAP_DISABLE where lcase(EXT) = lcase(_ext);
-  if(cnt > 0) {
+  _ext := subseq (vres, strrchr (vres, '.') + 1);
+  if (exists (select 1 from WS.WS.HTTP_SES_TRAP_DISABLE where lcase (EXT) = lcase (_ext)))
     return;
-  }
   -- record all others
   -- cut off parameters from resource name
-  if(length(vres) > 0) {
+  if (length (vres) > 0) 
+    {
     declare p any;
-    p := strstr(vres, '?');
-    if(p) {
+      p := strstr (vres, '?');
+      if (p) 
+	{
       vres := subseq(vres, 0, p);
     }
   }
-  name := sprintf('%06d%s', sequence_next('sys_http_recording'), vres);
-  name := replace(name, '-', '_');
-  name := replace(name, ' ', '_');
-  name := replace(name, ':', '_');
-  name := replace(name, '/', '_');
-  name := replace(name, '.', '_');
-  name := concat('/DAV/sys_http_recording/', name);
-  select pwd_magic_calc('dav', U_PASSWORD, 1) into pwd from DB.DBA.SYS_USERS where U_NAME='dav' and U_IS_ROLE=0;
+  name := sprintf ('%06d%s', sequence_next ('sys_http_recording'), vres);
+  name := replace (name, '-', '_');
+  name := replace (name, ' ', '_');
+  name := replace (name, ':', '_');
+  name := replace (name, '/', '_');
+  name := replace (name, '.', '_');
+  name := concat ('/DAV/sys_http_recording/', name);
   -- collect HTTP header block
-  content := http_full_request(0);
+  content := http_full_request (0);
   -- check if necessary DAV path exists
-  result := cast(DB.DBA.DAV_SEARCH_ID('/DAV/sys_http_recording/', 'c') as integer);
-  if(result < 0) {
+  result := cast (DB.DBA.DAV_SEARCH_ID ('/DAV/sys_http_recording/', 'c') as integer);
+  if (result < 0) 
+    {
     -- create DAV collection
-    result := cast(DB.DBA.DAV_COL_CREATE('/DAV/sys_http_recording/', '110100000NN', 'dav', 'dav', 'dav', pwd) as integer);
-    if(result < 0) {
-      signal('VSPX9', 'Can not create /DAV/sys_http_recording/ directory');
+      result := cast (DB.DBA.DAV_COL_CREATE_INT ('/DAV/sys_http_recording/', '110100000NN', 'dav', 'dav', 'dav', null, 
+      0, 0, 0, http_dav_uid (), http_admin_gid ()) as integer);
+      if(result < 0) 
+	{
+	  signal ('VSPX9', 'Can not create /DAV/sys_http_recording/ directory');
       return;
     }
   }
-  result := cast(DB.DBA.DAV_RES_UPLOAD(name, content,'text/html','110100000NN','dav','dav','dav', pwd) as INTEGER);
-  if(result < 0) {
-    signal('VSPX9', 'Can not upload resource into /DAV/sys_http_recording/ directory');
+  result := cast (DB.DBA.DAV_RES_UPLOAD_STRSES_INT (name, content,'text/html','110100000NN','dav','dav', 'dav', null, 
+    0, now (), now (), null, http_dav_uid (), http_admin_gid (), 0) as integer);
+  if (result < 0) 
+    {
+      signal ('VSPX9', 'Can not upload resource into /DAV/sys_http_recording/ directory');
   }
 }
 ;
