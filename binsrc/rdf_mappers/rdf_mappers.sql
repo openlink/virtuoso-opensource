@@ -658,6 +658,8 @@ create procedure DB.DBA.XSLT_STR2DATE (in val varchar)
 }
 ;
 
+registry_set ('__rdf_cartridges_original_doc_uri__', '1');
+
 create procedure DB.DBA.RDF_SPONGE_DOC_IRI (in url varchar, in dest varchar := null)
 {
   declare res varchar;
@@ -4055,21 +4057,28 @@ create procedure DB.DBA.RDF_LOAD_BESTBUY (in graph_iri varchar, in new_origin_ur
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare xd, xt, url, tmp, api_key, asin, hdr, exif any;
+  declare pos, is_sku integer;
+
   asin := null;
-  declare pos integer;
+  is_sku := 0;
   declare exit handler for sqlstate '*'
     {
       return 0;
     };
-
-  if (new_origin_uri like 'http://www.bestbuy.com/site/olspage.jsp?%&id=%')
+  if (new_origin_uri like 'http://www.bestbuy.com/site/olspage.jsp?%')
     {
-      tmp := sprintf_inverse (new_origin_uri, 'http://www.bestbuy.com/site/olspage.jsp?%s&id=%s', 0);
-      asin := rtrim (tmp[1], '/&');
-      pos := strchr(asin, '&');
-		if (pos is not null)
+      declare arr any;
+      arr := WS.WS.PARSE_URI (new_origin_uri);
+      arr := arr[4];
+      if (arr = '')
+	return 0;
+      arr := split_and_decode (arr);
+      if (length (arr) and mod (length (arr), 2) = 0)
+	asin := get_keyword ('id', arr);
+      if (asin not like '[0-9]+')
 		{
-			asin := left(asin, pos);
+          asin := get_keyword ('skuId', arr);	
+	  is_sku := 1;
 		}
     }
   else
@@ -4079,6 +4088,9 @@ create procedure DB.DBA.RDF_LOAD_BESTBUY (in graph_iri varchar, in new_origin_ur
   api_key := _key;
   if (asin is null or not isstring (api_key))
     return 0;
+  if (is_sku)
+    url := sprintf ('http://api.remix.bestbuy.com/v1/products(sku=%s)?apiKey=%s&format=xml&show=all', asin, api_key);
+  else
   url := sprintf ('http://api.remix.bestbuy.com/v1/products(productId=%s)?apiKey=%s&format=xml&show=all', asin, api_key);
   tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
   if (hdr[0] not like 'HTTP/1._ 200 %')
