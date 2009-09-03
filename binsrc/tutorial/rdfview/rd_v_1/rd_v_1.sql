@@ -726,7 +726,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('owl_rule_2', 1, '/ontology/(.*)\x24', vect
   vector ('par_1'), NULL, 'application/x-turtle', 2, 303, '');
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('owl_rule_3', 1, '/ontology/(.*)\x24', vector ('par_1'), 1,
-'/about/html/http://^{URIQADefaultHost}^/tutorial/Northwind/ontology/%s', vector ('par_1'), NULL, '(text/html)', 2, 303, '');
+'/about/html/http/^{URIQADefaultHost}^/tutorial/Northwind/ontology/%s', vector ('par_1'), NULL, '(text/html)', 2, 303, '');
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('resource_rule_1', 1, '/resource/([^.]*)', vector ('par_1'), 1,
     '/tutorial/Northwind/page/%s', vector ('par_1'), NULL, NULL, 2, 303, NULL);
@@ -753,7 +753,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'data_rule_3', 1, '/data/(.*)\\.(n3|rdf)',
 vector ('par_1', 'f'), NULL, NULL, 2, 303, '');
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'page_rule_1', 1, '/page/([^.]*)', vector ('par_1'), 1,
-'/about/html/http://^{URIQADefaultHost}^/tutorial/Northwind/resource/%s', vector ('par_1'), NULL, '(text/html)', 2, 303);
+'/about/html/http/^{URIQADefaultHost}^/tutorial/Northwind/resource/%s', vector ('par_1'), NULL, '(text/html)', 2, 303);
 
 -- Load Northwind ontology into quad store
 
