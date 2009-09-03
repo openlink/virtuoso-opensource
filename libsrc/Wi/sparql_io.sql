@@ -2101,7 +2101,7 @@ host_found:
       if (strstr (accept, 'application/sparql-results+xml') is not null)
         fmtxml := '"HTTP+XML application/sparql-results+xml" ';
       if (best_ttl_mode in ('TTL', 'NT'))
-        fmtttl := '"HTTP+' || best_ttl_mode || ' ' || best_ttl_mime;
+        fmtttl := '"HTTP+' || best_ttl_mode || ' ' || best_ttl_mime ||'" ';
       if (isstring (fmtttl))
         {
           if (isstring (fmtxml))
