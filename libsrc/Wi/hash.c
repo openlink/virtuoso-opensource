@@ -214,7 +214,8 @@ hi_allocate (unsigned int32 sz, int use_memcache, hash_area_t * ha)
   if (!sz)
     sz = HI_INIT_SIZE;
   hi->hi_size = sz;
-  if (HA_DISTINCT == ha->ha_op || (use_memcache && sz < hi_end_memcache_size))
+  if (HA_DISTINCT == ha->ha_op || (use_memcache && sz < hi_end_memcache_size)
+      || ha->ha_memcache_only)
     {
       if (HA_FILL == ha->ha_op)
 	{
