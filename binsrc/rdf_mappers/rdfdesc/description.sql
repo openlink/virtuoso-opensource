@@ -6,8 +6,8 @@ TTLP ('@prefix foaf: <http://xmlns.com/foaf/0.1/> .
 @prefix fbase: <http://rdf.freebase.com/ns/type.object.> .
 @prefix skos: <http://www.w3.org/2008/05/skos#> .
 @prefix bibo: <http://purl.org/ontology/bibo/> .
-rdfs:label rdfs:subPropertyOf virtrdf:label .
 dc:title rdfs:subPropertyOf virtrdf:label .
+rdfs:label rdfs:subPropertyOf virtrdf:label .
 fbase:name rdfs:subPropertyOf virtrdf:label .
 foaf:name rdfs:subPropertyOf virtrdf:label .
 <http://s.opencalais.com/1/pred/name> rdfs:subPropertyOf virtrdf:label .
