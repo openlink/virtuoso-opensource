@@ -6,8 +6,8 @@ TTLP ('@prefix foaf: <http://xmlns.com/foaf/0.1/> .
 @prefix fbase: <http://rdf.freebase.com/ns/type.object.> .
 @prefix skos: <http://www.w3.org/2008/05/skos#> .
 @prefix bibo: <http://purl.org/ontology/bibo/> .
-rdfs:label rdfs:subPropertyOf virtrdf:label .
 dc:title rdfs:subPropertyOf virtrdf:label .
+rdfs:label rdfs:subPropertyOf virtrdf:label .
 fbase:name rdfs:subPropertyOf virtrdf:label .
 foaf:name rdfs:subPropertyOf virtrdf:label .
 <http://s.opencalais.com/1/pred/name> rdfs:subPropertyOf virtrdf:label .
@@ -359,7 +359,10 @@ again:
 
    if (length (lang))
      {
-       http (sprintf ('(%s)', lang));
+       if (strstr (lang, 'xsd:') = 0)
+         http (sprintf (' (<a href="http://www.w3.org/2001/XMLSchema#%s">%s</a>)', subseq(lang, 4), lang));
+       else
+         http (sprintf (' (%s)', lang));
      }
 
    http ('</span></li>\n');
@@ -520,31 +523,60 @@ create procedure virt_proxy_init_about ()
   DB.DBA.VHOST_DEFINE (lpath=>'/services/rdf/object.binary', ppath=>'/SOAP/Http/RDF_VIEW_GET_BINARY', soap_user=>'PROXY');
 
   --# the new iris
-  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_new_page', 1,
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_new_restrict', 1,
       '/about/id/(http|https|nodeID)/(.*)', vector ('sch', 'g'), 2,
-      '/about/html/%s/%s', vector ('sch', 'g'), null, null, 2, 303, null);
+      '/about/html/%s/%s', vector ('sch', 'g'), null, null, 2, 406, null);
+
+  --DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_new_page', 1,
+  --    '/about/id/(http|https|nodeID)/(.*)', vector ('sch', 'g'), 2,
+  --    '/about/html/%s/%s', vector ('sch', 'g'), null, '(text/html)|(application/xhtml.xml)|(\\*/\\*)', 2, 303, null);
 
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_new_data', 1,
       '/about/id/(http|https|nodeID)/(.*)', vector ('sch', 'g'), 2,
-      '/about/data/%s/%s', vector ('sch', 'g'), null, '(application/rdf.xml)|(text/rdf.n3)|(application/x-turtle)|(text/n3)', 2, 303, null);
+      '/about/data/%s/%s', vector ('sch', 'g'), null, 
+      '(application/rdf.xml)|(text/rdf.n3)|(application/x-turtle)|(text/n3)|(text/turtle)|(application/rdf.json)|(text/html)|(text/plain)|(\\*/\\*)', 
+      2, 303, null);
 
   delete from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = 'ext_ahp_rule_list_new';
   DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '/about/data/(.*)', '/about/data/xml/\x241', 'application/rdf+xml', 0.95, location_hook=>null);
   DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '/about/data/(.*)', '/about/data/nt/\x241', 'text/n3', 0.80, location_hook=>null);
   DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '/about/data/(.*)', '/about/data/n3/\x241', 'text/rdf+n3', 0.80, location_hook=>null);
   DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '/about/data/(.*)', '/about/data/ttl/\x241', 'application/x-turtle', 0.80, location_hook=>null);
+  DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '/about/data/(.*)', '/about/data/turtle/\x241', 'text/turtle', 0.80, location_hook=>null);
+  DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '/about/data/(.*)', '/about/data/json/\x241',    'application/rdf+json', 0.70, location_hook=>null);
+  DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '/about/data/(.*)', '/about/html/\x241', 	     'text/html', 0.80, location_hook=>null);
+  DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '/about/data/(.*)', '/about/data/text/\x241',    'text/plain', 0.20, location_hook=>null);
 
-  DB.DBA.URLREWRITE_CREATE_RULELIST ( 'ext_ahp_rule_list_new', 1, vector ('ext_ahp_rule_new_page', 'ext_ahp_rule_new_data'));
+  DB.DBA.URLREWRITE_CREATE_RULELIST ( 'ext_ahp_rule_list_new', 1, 
+      		vector (
+		  	'ext_ahp_rule_new_restrict', 
+		  	--'ext_ahp_rule_new_page', 
+		  	'ext_ahp_rule_new_data')
+	);
 
   DB.DBA.VHOST_REMOVE (lpath=>'/about/id');
   DB.DBA.VHOST_DEFINE (lpath=>'/about/id', ppath=>'/', is_dav=>0, def_page=>'', opts=>vector('url_rewrite', 'ext_ahp_rule_list_new'));
 
   --# the rdf
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_data_1', 1,
-      '/about/data/(xml|n3|nt|ttl|text)/(http|https|nodeID)/(.*)\0x24', vector ('fmt', 'sch', 'url'), 3,
+      '/about/data/(xml|n3|nt|ttl|text|turtle|json)/(http|https|nodeID)/(.*)\0x24', vector ('fmt', 'sch', 'url'), 3,
       '/about?url=%s://%s&force=rdf&output-format=%U', vector ('sch', 'url', 'fmt'), null, null, 2);
 
-  DB.DBA.URLREWRITE_CREATE_RULELIST ( 'ext_ahp_rule_list_data', 1, vector ('ext_ahp_rule_data_1'));
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_data_2', 1,
+      '/about/data/turtle/(http|https|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
+      '/about?url=%s://%s&force=rdf&output-format=text%%2Fturtle', vector ('sch', 'url'), null, null, 2, null, 'Content-Type: text/turtle');
+
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_data_3', 1,
+      '/about/data/ttl/(http|https|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
+      '/about?url=%s://%s&force=rdf&output-format=application%%2Fx-turtle', vector ('sch', 'url'), null, null, 2, null, 'Content-Type: application/x-turtle');
+
+  DB.DBA.URLREWRITE_CREATE_RULELIST ( 'ext_ahp_rule_list_data', 1, 
+      	vector (
+	  'ext_ahp_rule_data_1',
+	  'ext_ahp_rule_data_2',
+	  'ext_ahp_rule_data_3'
+	  )
+	);
 
   DB.DBA.VHOST_REMOVE (lpath=>'/about/data');
   DB.DBA.VHOST_DEFINE (lpath=>'/about/data', ppath=>'/', is_dav=>0, def_page=>'', opts=>vector('url_rewrite', 'ext_ahp_rule_list_data'));

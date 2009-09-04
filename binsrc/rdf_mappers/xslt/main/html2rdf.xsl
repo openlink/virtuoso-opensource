@@ -43,7 +43,7 @@
   xmlns:content="http://purl.org/rss/1.0/modules/content/"
   version="1.0">
   <xsl:output method="xml" indent="yes"/>
-  <xsl:param name="base" />
+  <xsl:param name="baseUri" />
   <xsl:variable name="uc">ABCDEFGHIJKLMNOPQRSTUVWXYZ</xsl:variable>
   <xsl:variable name="lc">abcdefghijklmnopqrstuvwxyz</xsl:variable>
 
@@ -55,7 +55,7 @@
   </xsl:template>
 
   <xsl:template match="html/head">
-      <rdf:Description rdf:about="{$base}">
+      <rdf:Description rdf:about="{$baseUri}">
 		<rdf:type rdf:resource="&bibo;Document"/>
 		<xsl:apply-templates select="title|meta"/>
 		<xsl:apply-templates select="//img[@src]"/>
@@ -139,7 +139,7 @@
   </xsl:template>
 
   <xsl:template match="a[@href]">
-      <xsl:variable name="url" select="resolve-uri ($base, @href)"/>
+      <xsl:variable name="url" select="resolve-uri ($baseUri, @href)"/>
       <xsl:choose>
 	  <xsl:when test="$url like 'http://www.amazon.com/gp/product/%' or $url like 'http://www.amazon.%/o/ASIN/%'">
 	      <xsl:variable name="tmp"

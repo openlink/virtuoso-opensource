@@ -169,7 +169,13 @@ void FatalError(char *msg)
 
 void *MemRealloc(void *mem, uint newsize)
 {
-    return MemAlloc(newsize);
+  void * new = MemAlloc(newsize);
+  if (NULL != mem)
+    {
+      size_t to_copy = box_length ((box_t) mem);
+      memcpy (new, mem, to_copy);
+    }
+  return new;
 }
 
 #else

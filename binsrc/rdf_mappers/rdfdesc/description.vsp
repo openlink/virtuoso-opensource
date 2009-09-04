@@ -135,7 +135,9 @@
 <head profile="http://www.w3.org/1999/xhtml/vocab">
     <base href="http://<?V http_request_header (lines, 'Host') ?><?V http_map_get ('domain') ?>/" />
     <title>About: <?vsp http (sprintf ('%s', label)); ?></title>
-    <link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>" title="RDF" />
+    <link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>&output=rdf" title="Metadata in RDF/XML format" />
+    <link rel="alternate" type="text/n3" href="<?=rdf_link?>&output=n3" title="Metadata in N3/Turtle format" />
+    <link rel="alternate" type="application/json+rdf" href="<?=rdf_link?>&output=application%2Frdf%2Bjson" title="Metadata in JSON+RDF format" />
     <link rel="stylesheet" type="text/css" href="statics/slidebar.css" />
     <link rel="stylesheet" type="text/css" href="statics/style_w.css" />
     <link href="statics/highlighter.css" type="text/css" rel="stylesheet" charset="utf-8" />
@@ -183,7 +185,7 @@
 
     <div id="header">
       <div id="hd_l">
-	  <h1 id="title">About: <a href="<?= case when page_resource_uri like 'nodeID://%' then rdfdesc_http_url (page_resource_uri) else proxy_iri2 end ?>"><?vsp http (sprintf ('%s', label)); ?></a></h1>
+	  <h1 id="title">About: <a href="<?= case when page_resource_uri like 'nodeID://%' then rdfdesc_http_url (page_resource_uri) else proxy_iri2 end ?>"><?vsp http (sprintf ('%s', label)); ?></a> <?V case when trim (iri_type) = 'Document' then 'page' else '' end ?></h1>
         <div id="homelink">
         </div>
         <div class="page-resource-uri">
@@ -285,10 +287,11 @@
 <!-- footer -->
     <div id="footer">
       <div id="ft_t">
-       <a href="/ode/?uri=<?vsp http_url (page_resource_uri); ?>">Explore alternative Linked Data Views &amp; Meshups</a>&nbsp;using 
-       <a href="http://ode.openlinksw.com/" title="OpenLink Data Explorer">ODE</a>&nbsp; &nbsp;
+       Explore alternative Linked Data Views via this <a title="OpenLink Data Explorer" href="/ode/?uri=<?vsp http_url (page_resource_uri); ?>">OpenLink Data Explorer</a> link 
+       &nbsp; &nbsp;
        &nbsp; &nbsp; Raw Linked Data formats:
-       <a href="<?=rdf_link || '&output=n3'?>">N3</a> |
+       <a href="<?=rdf_link || '&output=n3'?>">N3/Turtle</a> |
+       <a href="<?=rdf_link || '&output=application%2Frdf%2Bjson'?>">JSON+RDF</a> |
        <a href="<?=rdf_link || '&output=rdf'?>">RDF/XML</a>
       </div> <!-- #ft_t -->
       <div id="ft_b">

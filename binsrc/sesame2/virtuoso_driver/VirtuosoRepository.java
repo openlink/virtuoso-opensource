@@ -96,13 +96,6 @@ public class VirtuosoRepository implements Repository {
 
 	        super();
 		this.url_hostlist = url_hostlist.trim();
-		if (this.url_hostlist.indexOf(utf8) == -1) {
-	   		if (this.url_hostlist.charAt(this.url_hostlist.length()-1) != '/')
-	     			this.url_hostlist = this.url_hostlist + "/" + utf8;
-	   		else
-	     			this.url_hostlist = this.url_hostlist + utf8;
-		}
-		
 		this.user = user;
 		this.password = password;
 		this.defGraph = defGraph;
@@ -211,7 +204,15 @@ public class VirtuosoRepository implements Repository {
 		if (url_hostlist.startsWith("jdbc:virtuoso://")) {
 			try {
 				Class.forName("virtuoso.jdbc3.Driver");
-				java.sql.Connection connection = DriverManager.getConnection(url_hostlist, user, password);
+				String url = url_hostlist;
+				if (url.indexOf(utf8) == -1) {
+	   				if (url.charAt(url.length()-1) != '/')
+	     					url = url + "/" + utf8;
+	   				else
+	     					url = url + utf8;
+				}
+		
+				java.sql.Connection connection = DriverManager.getConnection(url, user, password);
 				return new VirtuosoRepositoryConnection(this, connection);
 			}
 			catch (Exception e) {

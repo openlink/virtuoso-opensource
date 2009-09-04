@@ -56,6 +56,7 @@
   xmlns:gd="http://schemas.google.com/g/2005"
   xmlns:gb="http://www.openlinksw.com/schemas/google-base#"
   xmlns:media="http://search.yahoo.com/mrss/"
+  xmlns:sioc="http://rdfs.org/sioc/ns#"
   xmlns:ff="&ff;"
   version="1.0">
 
@@ -165,7 +166,16 @@
 </xsl:template>
 
 <xsl:template match="ff:*|media:*" mode="rdfitem">
+    <xsl:choose>
+	<xsl:when test="not *">
 	<xsl:copy-of select="." />
+	</xsl:when>
+	<xsl:otherwise>
+	    <sioc:Container>
+		<xsl:copy-of select="." />
+	    </sioc:Container>
+	</xsl:otherwise>
+    </xsl:choose>
 </xsl:template>
 
 <xsl:template name="removeTags">

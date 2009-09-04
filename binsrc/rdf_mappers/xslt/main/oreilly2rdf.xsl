@@ -51,7 +51,7 @@
 
   <xsl:output method="xml" indent="yes"/>
 
-  <xsl:param name="base" />
+  <xsl:param name="baseUri" />
 
   <xsl:variable name="uc">ABCDEFGHIJKLMNOPQRSTUVWXYZ</xsl:variable>
   <xsl:variable name="lc">abcdefghijklmnopqrstuvwxyz</xsl:variable>
@@ -64,14 +64,14 @@
   </xsl:template>
 
   <xsl:template match="html/head">
-      <rdf:Description rdf:about="{$base}">
+      <rdf:Description rdf:about="{$baseUri}">
 		<rdf:type rdf:resource="&bibo;Document"/>
-		<sioc:container_of rdf:resource="{vi:proxyIRI($base)}"/>
-		<foaf:topic rdf:resource="{vi:proxyIRI($base)}"/>
-		<dcterms:subject rdf:resource="{vi:proxyIRI($base)}"/>
-		<foaf:primaryTopic rdf:resource="{vi:proxyIRI($base)}"/>
+		<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri)}"/>
+		<foaf:topic rdf:resource="{vi:proxyIRI($baseUri)}"/>
+		<dcterms:subject rdf:resource="{vi:proxyIRI($baseUri)}"/>
+		<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
 	  </rdf:Description>
-	  <rdf:Description rdf:about="{vi:proxyIRI($base)}">
+	  <rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
 		<rdf:type rdf:resource="&bibo;Book"/>
 		<rdf:type rdf:resource="&book;Book"/>
 		<rdf:type rdf:resource="&gr;ProductOrService"/>
@@ -130,7 +130,7 @@
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='book.link']">
-      <bibo:uri rdf:resource="{vi:proxyIRI($base)}" />
+      <bibo:uri rdf:resource="{vi:proxyIRI($baseUri)}" />
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='book.tags']">
