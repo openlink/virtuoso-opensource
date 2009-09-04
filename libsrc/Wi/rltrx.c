@@ -344,6 +344,7 @@ itc_insert_rl (it_cursor_t * itc, buffer_desc_t * buf, int pos, row_lock_t * rl,
   int not_own = 0;
   int new_pl = 0;
   page_lock_t *pl = itc->itc_pl;
+  cl_enlist_ck (itc);
   if (itc->itc_ltrx->lt_is_excl
       || INS_DOUBLE_LP == rl)
     return;
@@ -639,6 +640,7 @@ itc_set_lock_on_row (it_cursor_t * itc, buffer_desc_t ** buf_ret)
   db_buf_t row;
   key_ver_t kv;
   page_lock_t *pl = itc->itc_pl;
+  cl_enlist_ck (itc);
 #ifdef MTX_DEBUG
   if ((*buf_ret)->bd_writer != THREAD_CURRENT_THREAD)
     GPF_T1 ("the thread setting a lock is not the writer of the buffer");

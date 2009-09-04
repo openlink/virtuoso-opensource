@@ -94,6 +94,7 @@ typedef struct ws_connection_s
     caddr_t *		ws_path;
     caddr_t *		ws_params;
     caddr_t *		ws_stream_params;
+    dk_session_t *	ws_req_body;
     int 		ws_req_len;
     int			ws_method;
     char		ws_method_name[20];

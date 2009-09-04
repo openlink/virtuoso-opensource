@@ -643,6 +643,7 @@ cli_terminate_in_itc_fail (client_connection_t * cli, it_cursor_t * itc, buffer_
 	{
 	  if (buf)
 	    itc_page_leave (itc, *buf);
+	  itc_unregister (itc); /* could be automatic itc, will have ref to stack in registered if not done here, since this does not go via itc_bust_this_trx */
 	  cli->cli_terminate_requested = 0;
 	  at_printf (("host %d itc reset for anytime, dp %d inx %s %s\n", local_cll.cll_this_host, itc->itc_page, itc->itc_insert_key->key_name, cl_thr_stat ()));
 	  longjmp_splice (itc->itc_fail_context, 1);

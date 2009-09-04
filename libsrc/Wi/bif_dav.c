@@ -286,20 +286,13 @@ ws_dav (ws_connection_t * ws, query_t * http_call)
 {
   int n_deadlocks = 0;
   caddr_t err = NULL;
-#ifdef NO_STRSES_BLOBS
-  caddr_t content = NULL;
-#endif
   dk_session_t * ses = NULL;
   dk_set_t parts = NULL;
-  char buff [4096];
   char *pmethod = NULL;
   size_t method_len = 0;
   char p_name [PATH_ELT_MAX_CHARS + 20];
   char method_name[100];
-  int readed = 0;
   int inx = 0;
-  volatile int to_read = 0;
-  volatile int to_read_len = 0;
   char *szContentType = ws_header_field (ws->ws_lines, "Content-type:", "application/octet-stream");
 
   if (!strcmp (ws->ws_method_name, "PUT"))
@@ -347,52 +340,16 @@ ws_dav (ws_connection_t * ws, query_t * http_call)
       if (ts1)
 	dk_free_box (ts1);
     }
-#ifndef NO_STRSES_BLOBS
-  ses = strses_allocate ();
-#endif
-  if (ws->ws_req_len > 0 && strcmp (p_name, "WS.WS.POST") && strcmp (p_name, "WS.WS.MPUT") && strcmp (p_name, "WS.WS.MDELETE"))
+  if (ws->ws_req_body && strcmp (p_name, "WS.WS.POST") && strcmp (p_name, "WS.WS.MPUT") && strcmp (p_name, "WS.WS.MDELETE"))
     {
-#ifndef NO_STRSES_BLOBS
-      to_read = ws->ws_req_len;
-      to_read_len = sizeof (buff);
-      do
-	{
-
-	  if (to_read < to_read_len)
-	    to_read_len = to_read;
-          CATCH_READ_FAIL (ws->ws_session)
-	    {
-	      readed =
-		  session_buffered_read (ws->ws_session, buff, to_read_len);
-	    }
-	  FAILED
-	    {
-	      err = srv_make_new_error ("08006", "DA008", "Cannot read from client");
-	      strses_flush (ses);
-	      dk_free_box ((box_t) ses);
-	      return err;
-	    }
-          END_READ_FAIL (ws->ws_session);
-
-          to_read -= readed;
-	  if (readed > 0)
-	    session_buffered_write (ses, buff, readed);
-	}
-      while (to_read > 0);
-#else
-      content = dk_alloc_box (ws->ws_req_len + 1, DV_SHORT_STRING);
-      readed =
-	  session_buffered_read (ws->ws_session, content, ws->ws_req_len);
-      content[readed] = 0;
-#endif
-      ws->ws_req_len = 0;
+      ses = ws->ws_req_body;
+      ws->ws_req_body = NULL;
     }
+  else
+    ses = strses_allocate ();
+
   dk_set_push (&parts, box_dv_short_string ("Content"));
-#ifndef NO_STRSES_BLOBS
   dk_set_push (&parts, ses);
-#else
-  dk_set_push (&parts, content);
-#endif
 
   while (*szContentType && *szContentType <= '\x20')
     szContentType++;
@@ -438,15 +395,14 @@ ws_dav (ws_connection_t * ws, query_t * http_call)
 
   do
     {
-#ifndef NO_STRSES_BLOBS
       caddr_t * newpars;
       dk_session_t * ses1 = NULL;
+
       ws->ws_params [1] = NULL;
       newpars = (caddr_t *) box_copy_tree ((box_t) ws->ws_params);
       ses1 = strses_allocate ();
       strses_write_out (ses, ses1);
       newpars [1] = (caddr_t) ses1;
-#endif
       err = qr_quick_exec (http_call, ws->ws_cli, NULL, NULL, 4,
 	  ":0", p_name, QRP_STR,
 #ifndef VIRTUAL_DIR
@@ -454,21 +410,9 @@ ws_dav (ws_connection_t * ws, query_t * http_call)
 #else
 	  ":1", box_copy_tree ((box_t) ws->ws_p_path), QRP_RAW,
 #endif
-#ifndef NO_STRSES_BLOBS
 	  ":2", newpars, QRP_RAW,
-#else
-	  ":2", box_copy_tree (ws->ws_params), QRP_RAW,
-#endif
 	  ":3", box_copy_tree ((box_t) ws->ws_lines), QRP_RAW);
-/*
-#else
-      err = qr_quick_exec (http_call, ws->ws_cli, NULL, NULL, 4,
-	  ":0", p_name, STR,
-	  ":1", box_copy_tree (ws->ws_path), QRP_RAW,
-	  ":2", box_copy_tree (ws->ws_params), QRP_RAW,
-	  ":3", box_copy_tree (ws->ws_lines), QRP_RAW);
-#endif
-*/
+
      if (!IS_BOX_POINTER (err) || 0 != strcmp (ERR_STATE (err), "40001"))
 	break;
      if (IS_BOX_POINTER (err) && 0 == strcmp (ERR_STATE (err), "40001"))
@@ -498,10 +442,8 @@ ws_dav (ws_connection_t * ws, query_t * http_call)
   dk_free_tree ((box_t) ws->ws_path);
   dk_free_tree ((box_t) ws->ws_params);
  /*XXX: freed in ws_request dk_free_tree (ws->ws_lines);*/
-#ifndef NO_STRSES_BLOBS
   strses_flush (ses);
   dk_free_box ((box_t) ses);
-#endif
   ws->ws_path = NULL;
 /*XXX: freed in ws_request ws->ws_lines = NULL;*/
   ws->ws_params = NULL;

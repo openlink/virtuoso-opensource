@@ -1257,6 +1257,7 @@ lock_wait (gen_lock_t * pl, it_cursor_t * it, buffer_desc_t * buf,
   long time;
   lock_trx_t * lt = it->itc_ltrx;
   ITC_LEAVE_MAPS (it);
+  cl_enlist_ck (it);
   it->itc_acquire_lock = acquire;
   it->itc_thread = THREAD_CURRENT_THREAD;
   IN_TXN;

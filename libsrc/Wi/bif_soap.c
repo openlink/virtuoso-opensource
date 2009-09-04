@@ -3890,26 +3890,16 @@ ws_soap (ws_connection_t * ws, int soap_version, caddr_t method_fld)
 /*  if (!err && (!type_fld || stricmp (type_fld, "text/xml")))
     err = ws_soap_error (ws, "300", "37000", "Incorrect type for a SOAP request", soap_version, uddi_action);
 */
-  req_xml = dk_alloc_box (req_len + 1, DV_SHORT_STRING);
-  req_xml[req_len] = '\0';
-  CATCH_READ_FAIL (ws->ws_session)
+  if (ws->ws_req_body)
     {
-      session_buffered_read (ws->ws_session, req_xml, req_len);
+      req_xml = strses_string (ws->ws_req_body);
+      ws->ws_req_body = NULL;
     }
-  FAILED
+  else if (!ws->ws_params)
     {
       err = ws_soap_error (ws->ws_strses, "300", "SOAPS", "Can\'t read the SOAP request",
 	  soap_version, uddi_action, &http_resp_code, NULL);
-    }
-  END_READ_FAIL (ws->ws_session);
-  ws->ws_req_len = 0;
-  if (err)
-    {
       goto end;
-    }
-  else
-    {
-      req_xml[req_len] = 0;
     }
 
   if (type_fld)

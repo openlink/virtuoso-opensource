@@ -618,42 +618,48 @@ ws_read_post_1 (ws_connection_t *ws, int max, dk_session_t * str)
 }
 
 void
-ws_read_entity_body (ws_connection_t * ws)
+ws_http_body_read (ws_connection_t * ws, dk_session_t **out)
 {
-  volatile int to_read = 0;
-  volatile int to_read_len = 0;
-  dk_session_t * ses;
-  int readed = 0;
-  char buff [4096];
+  char buff[4096];
+  int volatile to_read;
+  int volatile to_read_len;
+  int volatile readed;
+  dk_session_t *ses;
 
-  if (!ws || !ws->ws_req_len)
+  if (!ws->ws_req_len)
     return;
 
-  ws->ws_stream_params = (caddr_t *) strses_allocate ();
-  ses = (dk_session_t *) ws->ws_stream_params;
   to_read = ws->ws_req_len;
   to_read_len = sizeof (buff);
-  do
+  ses = strses_allocate ();
+  strses_enable_paging (ses, http_ses_size);
+
+  while (to_read > 0)
     {
       if (to_read < to_read_len)
 	to_read_len = to_read;
-      readed = session_buffered_read (ws->ws_session, buff, to_read_len);
-#ifdef DEBUG
-      fprintf (stdout, "POST - %s\n", buff);
-#endif
+      CATCH_READ_FAIL (ws->ws_session)
+	{
+	  readed = session_buffered_read (ws->ws_session, buff, to_read_len);
+	}
+      FAILED
+	{
+	  strses_flush (ses);
+	  dk_free_box ((box_t) ses);
+	  ses = NULL;
+	}
+      END_READ_FAIL (ws->ws_session);
+
       to_read -= readed;
       if (readed > 0)
-        {
+	{
 	  session_buffered_write (ses, buff, readed);
-          if(http_ses_trap)
-            {
-              if (ws->ws_ses_trap)
-                session_buffered_write (ws->ws_req_log, buff, readed);
-            }
+	  if (http_ses_trap && ws->ws_ses_trap)
+	    session_buffered_write (ws->ws_req_log, buff, readed);
 	}
     }
-  while (to_read > 0);
   ws->ws_req_len = 0;
+  *out = ses;
 }
 
 caddr_t
@@ -1372,8 +1378,7 @@ ws_path_and_params (ws_connection_t * ws)
 	}
     }
   if (is_proxy_request && body_like_post)
-    ws_read_entity_body (ws);
-
+    ws_http_body_read (ws, (dk_session_t **)(&ws->ws_stream_params));
 
   if (!ws->ws_params)
     ws->ws_params = (caddr_t*) list (0);
@@ -1390,6 +1395,8 @@ ws_path_and_params (ws_connection_t * ws)
   else if (ws->ws_method == WM_UNKNOWN)
     ws->ws_method = WM_ERROR;
 #endif
+  if (strcmp (ws->ws_method_name, "PUT"))
+    ws_http_body_read (ws, &ws->ws_req_body);
 }
 
 
@@ -1458,6 +1465,11 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
 
   ws->ws_charset = ws_default_charset;
   ws->ws_req_len = 0;
+  if (ws->ws_req_body)
+    {
+      dk_free_tree (ws->ws_req_body);
+      ws->ws_req_body = NULL;
+    }
   ws->ws_map = NULL;
   ws->ws_ignore_disconnect = 0;
   dk_free_tree (ws->ws_store_in_cache);
@@ -3160,10 +3172,10 @@ request_do_again:
 	  }
         qr_free(stmt);
       }
-      else
-        dk_free_box (vdir);
+    else
+      dk_free_box (vdir);
 end_hack_block:
-    if(err)
+    if (err && err != (caddr_t) SQL_NO_DATA_FOUND)
       {
         log_warning("Error [%s] : %s", ERR_STATE(err), ERR_MESSAGE(err));
         dk_free_tree(err);
@@ -8576,41 +8588,18 @@ bif_http_body_read (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 {
   query_instance_t *qi = (query_instance_t *)qst;
   ws_connection_t *ws = NULL;
-  char buff[4096];
-  int volatile to_read;
-  int volatile to_read_len;
-  int volatile readed;
   dk_session_t *ses;
 
   if (!qi->qi_client->cli_ws)
     sqlr_new_error ("42000", "HT053", "Function http_body_read not allowed outside http context");
   ws = qi->qi_client->cli_ws;
-
-  to_read = ws->ws_req_len;
-  to_read_len = sizeof (buff);
-  ses = strses_allocate ();
-
-  while (to_read > 0)
+  if (ws->ws_req_body)
     {
-      if (to_read < to_read_len)
-	to_read_len = to_read;
-      CATCH_READ_FAIL (ws->ws_session)
-	{
-	  readed = session_buffered_read (ws->ws_session, buff, to_read_len);
-	}
-      FAILED
-	{
-	  strses_flush (ses);
-	  dk_free_box ((box_t) ses);
-	  sqlr_new_error ("08006", "HT054", "Error reading the content in http_body_read");
-	}
-      END_READ_FAIL (ws->ws_session);
-
-      to_read -= readed;
-      if (readed > 0)
-	session_buffered_write (ses, buff, readed);
+      ses = ws->ws_req_body;
+      ws->ws_req_body = NULL;
     }
-  ws->ws_req_len = 0;
+  else
+    ses = strses_allocate ();
   return (caddr_t) ses;
 }
 
@@ -10420,18 +10409,21 @@ soap_mime_tree (ws_connection_t * ws, dk_set_t * set, caddr_t * err, int soap_ve
 	    type = box_copy (temp[inx2+1]);
 	}
       END_DO_BOX;
-	  if (0 == strcmp ((char *)unbox_ptrlong(id), start_b))
-	    dk_set_push (set, (void *) list (4, id, box_string (SOAP_URI(soap_version)), data, NULL));
-	  else
-	    {
-	      caddr_t resid;
-	      char buf[4096];
-	      char * beg = id + 1;
-	      id [strlen(id)-1] = 0;
-	      snprintf (buf, sizeof (buf), "cid:%s", beg);
-	      resid = dk_alloc_box (box_length (id) + 5, DV_SHORT_STRING);
-	      memcpy (resid, id+1, box_length (id)-2);
-	      dk_set_push (set, (void *) list (4, box_string (buf), type, data, NULL));
-	    }
+      if (0 == strcmp ((char *)unbox_ptrlong(id), start_b))
+	dk_set_push (set, (void *) list (4, id, box_string (SOAP_URI(soap_version)), data, NULL));
+      else
+	{
+	  caddr_t resid;
+	  char buf[4096];
+	  char * beg = id + 1;
+	  id [strlen(id)-1] = 0;
+	  snprintf (buf, sizeof (buf), "cid:%s", beg);
+	  resid = dk_alloc_box (box_length (id) + 5, DV_SHORT_STRING);
+	  memcpy (resid, id+1, box_length (id)-2);
+	  dk_set_push (set, (void *) list (4, box_string (buf), type, data, NULL));
+	}
     }
 }
+
+
+

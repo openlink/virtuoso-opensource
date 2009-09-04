@@ -413,6 +413,8 @@ int buf_set_dirty_inside (buffer_desc_t * buf);
 #define buf_set_dirty_inside(b)  ((b)->bd_is_dirty = 1)
 #endif
 
+#define cl_enlist_ck(it)
+
 void wi_new_dirty (buffer_desc_t * buf);
 
 
@@ -618,6 +620,7 @@ void sqlp_upcase (char *str);
 caddr_t sqlp_box_upcase (const char *str);
 
 extern int default_txn_isolation;
+extern int min_iso_that_waits;
 extern int null_unspecified_params;
 extern int32 do_os_calls;
 extern long max_static_cursor_rows;

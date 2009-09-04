@@ -2036,6 +2036,8 @@ itc_bm_land_lock (it_cursor_t * itc, buffer_desc_t ** buf_ret)
   /* the idea is that the itc can land on a bm row that is locked amd while waiting the row can split.  If so, the itc has to restart the search cause it can't know which side it wants unless it is already landed
    * the itc_to_reset is set by itc_keep_together when inserting the right hand half of the split. */
   itc->itc_to_reset = RWG_NO_WAIT;
+  if (itc->itc_isolation < min_iso_that_waits && PL_EXCLUSIVE != itc->itc_lock_mode)
+    return RWG_NO_WAIT;
   if (ITC_IS_LTRX (itc))
     itc_landed_lock_check (itc, buf_ret);
   return itc->itc_to_reset;

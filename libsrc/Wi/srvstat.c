@@ -1519,6 +1519,7 @@ stat_desc_t dbf_descs [] =
     {"timeout_resolution_sec", &atomic_timeout.to_sec, SD_INT32},
     {"timeout_resolution_usec", &atomic_timeout.to_usec, SD_INT32},
     {"c_use_aio", &c_use_aio, SD_INT32},
+    {"callstack_on_exception", &callstack_on_exception},
     {NULL, NULL, NULL}
   };
 
