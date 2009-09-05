@@ -400,6 +400,8 @@ create procedure rdfdesc_prop_label (in uri any)
 	and P = __i2idn ('http://www.w3.org/2000/01/rdf-schema#label') OPTION (QUIETCAST));
   if (length (ll) = 0)
     ll := rdfdesc_uri_curie (uri);
+  if (isstring (ll) and ll like 'opl%:isDescribedUsing')
+    ll := 'is Described Using';  
   return ll;  
 }
 ;

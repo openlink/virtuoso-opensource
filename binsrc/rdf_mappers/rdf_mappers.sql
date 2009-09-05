@@ -496,6 +496,24 @@ insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
     values ('xFolk', '', registry_get ('_rdf_mappers_path_') || 'xslt/main/xfolk2rdf.xsl')
 ;
 
+create procedure DB.DBA.RM_RDF_SPONGE_ERROR (in pname varchar, in graph_iri varchar, in dest varchar, in sql_message varchar)
+{
+  declare gr, errs_iri, err_iri, nam any;
+  dbg_obj_print (pname, graph_iri, dest, sql_message);
+  if (0 = length (sql_message) or pname is null)
+    return;
+  pname := cast (pname as varchar);
+  gr := coalesce (dest, graph_iri);
+  nam := lower (name_part (pname, 2));
+  err_iri := gr ||'#'||nam;
+  errs_iri := gr||'#errors';
+  DB.DBA.RDF_QUAD_URI (gr, gr, 'http://www.openlinksw.com/schema/attribution#hasErrors', errs_iri);
+  DB.DBA.RDF_QUAD_URI (gr, errs_iri, 'http://www.openlinksw.com/schema/attribution#hasError', err_iri);
+  DB.DBA.RDF_QUAD_URI_L (gr, err_iri, 'http://www.openlinksw.com/schema/attribution#errorText', sql_message);
+  return;
+}
+;
+
 -- helper procedures
 create procedure DB.DBA.RM_RDF_LOAD_RDFXML (in strg varchar, in base varchar, in graph varchar)
 {
@@ -1025,6 +1043,12 @@ create procedure DB.DBA.GET_XBRL_CANONICAL_DATATYPE(in elem varchar) returns var
     return datatype;
 };
 
+create procedure RDF_SPONGE_URI_HASH (in u varchar)
+{
+  return tridgell32 (u, 1);
+}
+;
+
 grant execute on DB.DBA.RDF_MQL_RESOLVE_IMAGE to public;
 grant execute on DB.DBA.RM_UMBEL_GET to public;
 grant execute on DB.DBA.XSLT_REGEXP_MATCH to public;
@@ -1046,6 +1070,7 @@ grant execute on DB.DBA.GET_XBRL_CANONICAL_NAME to public;
 grant execute on DB.DBA.GET_XBRL_CANONICAL_LABEL_NAME to public;
 grant execute on DB.DBA.GET_XBRL_NAME_BY_CIK to public;
 grant execute on DB.DBA.GET_XBRL_CANONICAL_DATATYPE to public;
+grant execute on DB.DBA.RDF_SPONGE_URI_HASH to public;
 
 xpf_extension_remove ('http://www.openlinksw.com/virtuoso/xslt:getNameByCIK');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_datatype', fix_identifier_case ('DB.DBA.GET_XBRL_CANONICAL_DATATYPE'));
@@ -1069,6 +1094,7 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:umbelGet', 'DB.DBA.RM_U
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:mql-image-by-name', fix_identifier_case ('DB.DBA.RDF_MQL_RESOLVE_IMAGE'));
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:sasIRI', 'DB.DBA.RM_SAMEAS_IRI');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:http_string_date', 'DB.DBA.XSLT_HTTP_STRING_DATE');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:uri_hash', 'DB.DBA.RDF_SPONGE_URI_HASH');
 
 create procedure DB.DBA.RDF_MAPPER_XSLT (in xslt varchar, inout xt any, in params any := null)
 {
@@ -1108,6 +1134,7 @@ create procedure DB.DBA.RDF_APERTURE_INIT ()
     {
       if (length (tmp))
         file_delete (tmp, 1);
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
       return 0;
     };
   tmp := tmp_file_name (\'rdfm\', \'bin\');
@@ -1371,6 +1398,7 @@ create procedure DB.DBA.RDF_LOAD_SALESFORCE(in graph_iri varchar, in new_origin_
 	hdr := null;
 	declare exit handler for sqlstate '*'
 	{
+	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
 		return 0;
 	};
     username_ := get_keyword ('username', opts);
@@ -1687,6 +1715,7 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 	declare pos, page, res_count integer;
 	declare exit handler for sqlstate '*'
 	{
+	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
 		return 0;
 	};
 	what_ := '';
@@ -1860,7 +1889,7 @@ create procedure DB.DBA.RDF_LOAD_GETSATISFATION(in graph_iri varchar, in new_ori
 	hdr := null;
 	declare exit handler for sqlstate '*'
 	{
-
+	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
 		return 0;
 	};
 	if (new_origin_uri like 'http://getsatisfaction.com/%')
@@ -1992,6 +2021,7 @@ create procedure DB.DBA.RDF_LOAD_CRUNCHBASE(in graph_iri varchar, in new_origin_
   hdr := null;
   declare exit handler for sqlstate '*'
     {
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
       return 0;
     };
 
@@ -2095,7 +2125,7 @@ create procedure DB.DBA.RM_FREEBASE_DOC_LINK (in graph varchar, in doc varchar, 
   -- we classify source as document and set primary topic
   http (sprintf ('<%s> a foaf:Document .\n', doc), ses);
   --http (sprintf ('<%s> foaf:primaryTopic <%s> .\n', doc, iri), ses);
-  http (sprintf ('<%s> owl:sameAs <%s> .\n', iri, sa), ses);
+  http (sprintf ('<%s> foaf:primaryTopic <%s> .\n', sa, iri), ses);
   state := '00000';
   -- if object is a person we also classify him as foaf:Person
   exec (sprintf ('sparql ask from <%s> where { <%s> a <http://rdf.freebase.com/ns/people.person> }', graph, iri),
@@ -2120,6 +2150,7 @@ create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri va
   sa := '';
   declare exit handler for sqlstate '*'
     {
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
       return 0;
     };
 
@@ -2229,6 +2260,7 @@ create procedure DB.DBA.RDF_LOAD_FQL (in graph_iri varchar, in new_origin_uri va
   declare url, sig, pars, q, own, pid, aid, acc varchar;
   declare exit handler for sqlstate '*'
     {
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
       return 0;
     };
 
@@ -2350,6 +2382,7 @@ create procedure DB.DBA.RDF_LOAD_ZILLOW (in graph_iri varchar, in new_origin_uri
     declare xd, xt, url, tmp, api_key, address, citystatezip, hdr, exif any;
 	declare exit handler for sqlstate '*'
 	{
+	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
 		return 0;
 	};
 	api_key := _key;
@@ -2394,6 +2427,7 @@ create procedure DB.DBA.RDF_LOAD_FRIENDFEED (in graph_iri varchar, in new_origin
 	asin := null;
 	declare exit handler for sqlstate '*'
 	{
+	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
 		return 0;
 	};
 	if (new_origin_uri like 'http://friendfeed.com/search?q=%')
@@ -2433,6 +2467,7 @@ create procedure DB.DBA.RDF_LOAD_TWFY (in graph_iri varchar, in new_origin_uri v
 	asin := null;
 	declare exit handler for sqlstate '*'
 	{
+	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
 		return 0;
 	};
 	api_key := _key;
@@ -2506,6 +2541,7 @@ create procedure DB.DBA.RDF_LOAD_SLIDESHARE (in graph_iri varchar, in new_origin
 	  return 0;
 	declare exit handler for sqlstate '*'
 	{
+	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
 		return 0;
 	};
 	ts :=  cast(datediff ('second', stringdate ('1970-1-1'), now ()) as varchar);
@@ -2590,6 +2626,7 @@ create procedure DB.DBA.RDF_LOAD_DISQUS (in graph_iri varchar, in new_origin_uri
 	hdr := null;
 	declare exit handler for sqlstate '*'
 	{
+	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
 		return 0;
 	};
 	if (new_origin_uri like 'http://disqus.com/people/%')
@@ -2664,6 +2701,7 @@ create procedure DB.DBA.RDF_LOAD_RHAPSODY (in graph_iri varchar, in new_origin_u
     declare pos int;
 	declare exit handler for sqlstate '*'
 	{
+	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
 		return 0;
 	};
 	if (new_origin_uri like 'http://www.rhapsody.com/goto?%&variant=data')
@@ -2710,6 +2748,7 @@ create procedure DB.DBA.RDF_LOAD_TESCO (in graph_iri varchar, in new_origin_uri 
     declare email_, password_, developer_key_, application_key_ varchar;
 	declare exit handler for sqlstate '*'
 	{
+	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
 		return 0;
 	};
     email_ := get_keyword ('email', opts);
@@ -2762,6 +2801,7 @@ create procedure DB.DBA.RDF_LOAD_RADIOPOP (in graph_iri varchar, in new_origin_u
     declare pos int;
 	declare exit handler for sqlstate '*'
 	{
+	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
 		return 0;
 	};
 	if (new_origin_uri like 'http://www.radiopop.co.uk/users/%')
@@ -2823,6 +2863,7 @@ create procedure DB.DBA.RDF_LOAD_DISCOGS (in graph_iri varchar, in new_origin_ur
 	asin := null;
 	declare exit handler for sqlstate '*'
 	{
+	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
 		return 0;
 	};
 	api_key := _key;
@@ -2887,6 +2928,7 @@ create procedure DB.DBA.RDF_LOAD_LIBRARYTHING (in graph_iri varchar, in new_orig
 	id := null;
 	declare exit handler for sqlstate '*'
 	{
+	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
 		return 0;
 	};
 	api_key := _key;
@@ -2932,6 +2974,7 @@ create procedure DB.DBA.RDF_LOAD_ISBN (in graph_iri varchar, in new_origin_uri v
 	is_book := 0;
 	declare exit handler for sqlstate '*'
 	{
+	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
 		return 0;
 	};
 	api_key := _key;
@@ -3055,6 +3098,7 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
   declare xsl2, what_, base varchar;
   declare exit handler for sqlstate '*'
     {
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
       return 0;
     };
   api_key := _key;
@@ -3297,6 +3341,7 @@ create procedure DB.DBA.RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri
 	id4 := '';
 	declare exit handler for sqlstate '*'
 	{
+	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
 		return 0;
 	};
 	api_key := _key;
@@ -3489,6 +3534,7 @@ create procedure DB.DBA.RDF_LOAD_PICASA (in graph_iri varchar, in new_origin_uri
 	
 	declare exit handler for sqlstate '*'
 	{
+	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
 		return 0;
 	};
 	if (new_origin_uri like 'http://picasaweb.google.com/%/%#%')
@@ -3544,6 +3590,7 @@ create procedure DB.DBA.RDF_LOAD_GEONAMES (in graph_iri varchar, in new_origin_u
 	declare pos int;
 	declare exit handler for sqlstate '*'
 	{
+	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
 		return 0;
 	};
 	if (new_origin_uri like 'http://%.geonames.org/%')
@@ -3572,6 +3619,7 @@ create procedure DB.DBA.RDF_LOAD_YOUTUBE (in graph_iri varchar, in new_origin_ur
   declare xsl2 varchar;
   declare exit handler for sqlstate '*'
     {
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
       return 0;
     };
 
@@ -3614,6 +3662,7 @@ create procedure DB.DBA.RDF_LOAD_DIGG (in graph_iri varchar, in new_origin_uri v
   appkey := 'http://www.openlinksw.com/virtuoso';
   declare exit handler for sqlstate '*'
     {
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
       return 0;
     };
   if (new_origin_uri like 'http://digg.com/search?%')
@@ -3685,6 +3734,7 @@ create procedure DB.DBA.RDF_LOAD_DELICIOUS (in graph_iri varchar, in new_origin_
 	declare what varchar;
 	declare exit handler for sqlstate '*'
 	{
+	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
 		return 0;
 	};
 	if (new_origin_uri like 'http://delicious.com/tags/%' or new_origin_uri like 'http://feeds.delicious.com/v2/rss/tags/%')
@@ -3761,6 +3811,7 @@ create procedure DB.DBA.RDF_LOAD_OREILLY (in graph_iri varchar, in new_origin_ur
   declare book_id varchar;
   declare exit handler for sqlstate '*'
     {
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
       return 0;
     };
     if (new_origin_uri like 'http://www.oreilly.com/catalog/%')
@@ -3802,6 +3853,7 @@ create procedure DB.DBA.RDF_LOAD_CNET (in graph_iri varchar, in new_origin_uri v
   declare soft_id varchar;
   declare exit handler for sqlstate '*'
     {
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
       return 0;
     };
     if (new_origin_uri like 'http://www.download.com/%/%.html%')
@@ -3878,6 +3930,7 @@ create procedure DB.DBA.RDF_LOAD_YELP (in graph_iri varchar, in new_origin_uri v
 	declare link varchar;
 	declare exit handler for sqlstate '*'
 	{
+	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
 		return 0;
 	};
 	if (new_origin_uri like 'http://%.yelp.com/%')
@@ -3906,6 +3959,7 @@ create procedure DB.DBA.RDF_LOAD_BUGZILLA (in graph_iri varchar, in new_origin_u
   declare xd, host_part, xt, url, tmp, api_key, img_id, hdr, exif any;
   declare exit handler for sqlstate '*'
     {
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
       return 0;
     };
   tmp := sprintf_inverse (new_origin_uri, '%s://%s/show_bug.cgi?id=%s', 0);
@@ -3936,6 +3990,7 @@ create procedure DB.DBA.RDF_LOAD_OPENLIBRARY (in graph_iri varchar, in new_origi
   declare pos integer;
   declare exit handler for sqlstate '*'
     {
+	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
       return 0;
     };
   tmp := sprintf_inverse (new_origin_uri, 'http://openlibrary.org/b/%s', 0);
@@ -3967,6 +4022,7 @@ create procedure DB.DBA.RDF_LOAD_SOCIALGRAPH (in graph_iri varchar, in new_origi
   hdr := null;
   declare exit handler for sqlstate '*'
     {
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
       return 0;
     };
   url := new_origin_uri;
@@ -3985,6 +4041,7 @@ create procedure DB.DBA.RDF_LOAD_SVG (in graph_iri varchar, in new_origin_uri va
   declare xd, xt, url, tmp, api_key, img_id, hdr, exif any;
   declare exit handler for sqlstate '*'
     {
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
       return 0;
     };
   xd := xtree_doc (_ret_body);
@@ -4025,6 +4082,7 @@ create procedure DB.DBA.RDF_LOAD_YAHOO_TRAFFIC_DATA (in graph_iri varchar, in ne
 
   declare exit handler for sqlstate '*'
     {
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
       return 0;
     };
   xt := xtree_doc (_ret_body);
@@ -4043,6 +4101,7 @@ create procedure DB.DBA.RDF_LOAD_ICAL (in graph_iri varchar, in new_origin_uri v
 
   declare exit handler for sqlstate '*'
     {
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
       return 0;
     };
   xt := xml_tree_doc (DB.DBA.IMC_TO_XML (_ret_body));
@@ -4063,6 +4122,7 @@ create procedure DB.DBA.RDF_LOAD_BESTBUY (in graph_iri varchar, in new_origin_ur
   is_sku := 0;
   declare exit handler for sqlstate '*'
     {
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
       return 0;
     };
   if (new_origin_uri like 'http://www.bestbuy.com/site/olspage.jsp?%')
@@ -4111,6 +4171,7 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
   asin := null;
   declare exit handler for sqlstate '*'
 	{
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
       return 0;
     };
   if (new_origin_uri like 'http://%amazon.%/gp/product/%')
@@ -4199,6 +4260,7 @@ create procedure DB.DBA.RDF_LOAD_OPENSTREETMAP (in graph_iri varchar, in new_ori
 	
 	declare exit handler for sqlstate '*'
 	{
+	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
 		return 0;
 	};
 	if (new_origin_uri like 'http://%openstreetmap.org/%?lat=%&lon=%')
@@ -4250,6 +4312,7 @@ create procedure DB.DBA.RDF_LOAD_FLICKR_IMG (in graph_iri varchar, in new_origin
   declare xd, xt, url, tmp, api_key, img_id, hdr, exif any;
   declare exit handler for sqlstate '*'
     {
+	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
       return 0;
     };
 	api_key := _key;
@@ -4303,6 +4366,7 @@ create procedure DB.DBA.RDF_LOAD_EBAY_ARTICLE (in graph_iri varchar, in new_orig
   declare xd, xt, url, tmp, api_key, item_id, hdr, karr, use_sandbox, user_id any;
   declare exit handler for sqlstate '*'
     {
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
       return 0;
     };
 
@@ -4455,6 +4519,7 @@ create procedure DB.DBA.RDF_LOAD_OPENSOCIAL_PERSON (in graph_iri varchar, in new
   pwd := get_keyword ('password', opts, null);
   declare exit handler for sqlstate '*'
     {
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
       return 0;
     };
   auth_header := null;
@@ -4497,6 +4562,7 @@ create procedure DB.DBA.RDF_LOAD_WIKIPEDIA_ARTICLE
       {
 	declare exit handler for sqlstate '*'
 	  {
+	    DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
 	    return 0;
 	  };
 	body := sprintf('<?xml version=\"1.0\" encoding=\"utf-8\"?>
@@ -5200,7 +5266,7 @@ create procedure DB.DBA.RDF_LOAD_FEED_SIOC (in content any, in iri varchar, in g
       goto no_sioc;
     };
   xt := xtree_doc (content);
-  xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/feed2sioc.xsl', xt, vector ('base', graph_iri, 'isDiscussion', is_disc));
+  xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/feed2sioc.xsl', xt, vector ('baseUri', graph_iri, 'isDiscussion', is_disc));
   xd := serialize_to_UTF8_xml (xd);
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, iri, graph_iri);
   return 1;
@@ -5256,6 +5322,7 @@ create procedure DB.DBA.RDF_LOAD_YAHOO_STOCK_DATA (in graph_iri varchar, in new_
 
   declare exit handler for sqlstate '*'
     {
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
       return 0;
     };
   arr := sprintf_inverse (new_origin_uri, 'http://finance.yahoo.com/q?s=%s', 0);
@@ -5711,6 +5778,7 @@ inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
 
   declare exit handler for sqlstate '*'
   {
+    DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
     return 0;
   };
 
@@ -6032,6 +6100,7 @@ create procedure DB.DBA.RDF_LOAD_MBZ (in graph_iri varchar, in new_origin_uri va
   tmp := regexp_parse ('http://musicbrainz.org/([^/]*)/([^\.]+)', new_origin_uri, 0);
   declare exit handler for sqlstate '*'
     {
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
       return 0;
     };
   if (length (tmp) < 6)
@@ -6137,7 +6206,7 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
   dummy := null;
   for select MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_OPTIONS from DB.DBA.RDF_META_CARTRIDGES where MC_ENABLED = 1 order by MC_SEQ do
     {
-      declare val_match any;
+      declare val_match, st any;
 
       if (MC_TYPE = 'MIME')
 	{
@@ -6165,10 +6234,11 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
 	    dbg_obj_prin1 ('Match PP ', MC_HOOK);
 	  new_opts := vector_concat (options, MC_OPTIONS, vector ('content-type', ret_content_type));
 	  commit work;
+	  st := msec_time ();
 	  rc := call (MC_HOOK) (graph_iri, new_origin_uri, dest, ret_body, dummy, dummy, MC_KEY, new_opts);
           if (registry_get ('__sparql_mappers_debug') = '1')
 	    {
-	      dbg_obj_prin1 ('Return PP rc=', rc, ' ', MC_HOOK);
+	      dbg_obj_prin1 ('Return PP rc=', rc, ' ', MC_HOOK, ' time=', (msec_time () - st)/1000.0);
 	      if (rc < 0 or rc > 0)
 	        dbg_obj_prin1 ('END of PP mappings');
 	    }

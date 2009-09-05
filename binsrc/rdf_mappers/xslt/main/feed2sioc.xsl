@@ -63,8 +63,9 @@
     xmlns:owl="&owl;"
 	version="1.0">
 	<xsl:output indent="yes" />
-	<xsl:param name="base" />
+	<xsl:param name="baseUri" />
 	<xsl:param name="isDiscussion" />
+	<xsl:variable name="hash" select="vi:uri_hash (/rdf:RDF/rss:channel/rss:link)"/>
 	<xsl:template match="/">
 		<rdf:RDF>
 			<xsl:apply-templates />
@@ -76,7 +77,7 @@
 	</xsl:template>
 
 	<xsl:template match="rss:channel">
-		<rdf:Description rdf:about="{$base}">
+		<rdf:Description rdf:about="{$baseUri}">
 			<xsl:choose>
 				<xsl:when test="$isDiscussion = '1'">
 					<rdf:type rdf:resource="&sioct;MessageBoard" />
@@ -101,18 +102,21 @@
 		<xsl:for-each select="/rdf:RDF/rss:channel/rss:items/rdf:Seq/rdf:li">
 			<xsl:if test="@rdf:resource = $this">
 				<xsl:variable name="pos" select="position()" />
+				<!--xsl:message terminate="no"><xsl:value-of select="$this"/>:<xsl:value-of select="$pos"/></xsl:message-->
 			</xsl:if>
 		</xsl:for-each>
-		<sioc:container_of rdf:resource="{$base}#{$pos}" /> <!--xsl:comment><xsl:value-of select="$this"/></xsl:comment-->
+		<sioc:container_of rdf:resource="{concat($baseUri,'#',$hash,'(',$pos,')')}" /> <!--xsl:comment><xsl:value-of select="$this"/></xsl:comment-->
+ 	        <foaf:topic rdf:resource="{concat($baseUri,'#',$hash,'(',$pos,')')}" /> <!--xsl:comment><xsl:value-of select="$this"/></xsl:comment-->
 	</xsl:template>
 	<xsl:template match="rss:item">
 		<xsl:variable name="this" select="@rdf:about" />
 		<xsl:for-each select="/rdf:RDF/rss:channel/rss:items/rdf:Seq/rdf:li">
 			<xsl:if test="@rdf:resource = $this">
 				<xsl:variable name="pos" select="position()" />
+				<!--xsl:message terminate="no"><xsl:value-of select="$this"/>:<xsl:value-of select="$pos"/></xsl:message-->
 			</xsl:if>
 		</xsl:for-each>
-		<rdf:Description rdf:about="{$base}#{$pos}">
+		<rdf:Description rdf:about="{concat($baseUri,'#',$hash,'(',$pos,')')}">
 			<xsl:choose>
 				<xsl:when test="$isDiscussion = '1'">
 					<rdf:type rdf:resource="&sioct;BoardPost" />
@@ -124,7 +128,7 @@
 					<rdf:type rdf:resource="&sioc;Post" />
 				</xsl:otherwise>
 			</xsl:choose>
-			<sioc:has_container rdf:resource="{$base}" />
+			<sioc:has_container rdf:resource="{$baseUri}" />
 			<xsl:apply-templates />
 			<xsl:copy-of select="rss:*" />
 			<xsl:copy-of select="sioc:*" />
@@ -166,17 +170,17 @@
 		<sioc:content>
 			<xsl:apply-templates />
 		</sioc:content>
-		<xsl:variable name="doc" select="document-literal (.,$base,2)" />
+		<xsl:variable name="doc" select="document-literal (.,$baseUri,2)" />
 		<xsl:for-each select="$doc//a[@href]">
 			<sioc:links_to rdf:resource="{@href}" />
 		</xsl:for-each>
 	</xsl:template>
 	<xsl:template match="dc:creator">
-		<foaf:maker rdf:resource="{$base}#{urlify (.)}" />
+		<foaf:maker rdf:resource="{$baseUri}#{urlify (.)}" />
 	</xsl:template>
 	<xsl:template match="dc:creator" mode="user">
 				<xsl:variable name="uname" select="string(.)" />
-				<foaf:Person rdf:about="{$base}#{urlify (.)}">
+				<foaf:Person rdf:about="{$baseUri}#{urlify (.)}">
 					<foaf:name>
 						<xsl:apply-templates />
 					</foaf:name>
@@ -187,7 +191,7 @@
 								<xsl:variable name="pos" select="position()" />
 							</xsl:if>
 						</xsl:for-each>
-						<foaf:made rdf:resource="{$base}#{$pos}" />
+						<foaf:made rdf:resource="{concat($baseUri,'#',$hash,'(',$pos,')')}" />
 					</xsl:for-each>
 				</foaf:Person>
 	</xsl:template>

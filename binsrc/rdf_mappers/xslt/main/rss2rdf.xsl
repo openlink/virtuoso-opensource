@@ -40,6 +40,7 @@
   xmlns:georss="http://www.georss.org/georss"
   xmlns:sioc="http://rdfs.org/sioc/ns#"
   xmlns:skos="http://www.w3.org/2004/02/skos/core#"
+  xmlns:vifunc="http://www.openlinksw.com/virtuoso/xslt/"
   version="1.0">
 
 <xsl:output indent="yes" cdata-section-elements="content:encoded" />
@@ -132,7 +133,7 @@
 </xsl:template>
 
 <xsl:template match="lastBuildDate|pubdate|r:lastBuildDate|r:pubdate">
-  <dc:date><xsl:call-template name="date" /></dc:date>
+  <dc:date><xsl:value-of select="vifunc:http_string_date(.)" /></dc:date>
 </xsl:template>
 
 <xsl:template match="managingEditor|r:managingEditor">
@@ -158,7 +159,7 @@
 
 <xsl:template match="channel/category|item/category">
     <sioc:topic>
-		<skos:Concept rdf:about="{concat (/rss/channel/link, '#', .)}">
+		<skos:Concept rdf:about="{concat (/rss/channel/link, '#', urlify (normalize-space (.)))}">
 			<skos:prefLabel>
 				<xsl:value-of select="."/>
 			</skos:prefLabel>
@@ -189,7 +190,7 @@
 </xsl:template>
 
 <xsl:template match="pubDate|r:pubDate">
-  <dc:date><xsl:call-template name="date" /></dc:date>
+  <dc:date><xsl:value-of select="vifunc:http_string_date(.)" /></dc:date>
 </xsl:template>
 
 <xsl:template match="source|r:source">
