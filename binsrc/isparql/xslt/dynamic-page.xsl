@@ -27,7 +27,7 @@
 				<xsl:if test="//i:should_sponge">
 				p.sponge = "<xsl:value-of select="//i:should_sponge" />";
 				</xsl:if>
-				
+
 				p.endpoint = "<xsl:value-of select="//i:endpoint" />";
 				<xsl:if test="//i:endpoint">
 				p.endpoint = "<xsl:value-of select="//i:endpoint" />";
@@ -36,7 +36,7 @@
 				p.defaultGraph = "<xsl:value-of select="//i:graph" />";
 				p.query = OAT.Xml.unescape($("p").innerHTML);
 				p.file = window.location.href;
-				
+
 				var tmp = "";
 				for (var prop in p) {
 					tmp += prop+"="+encodeURIComponent(p[prop])+"&amp;";
@@ -49,6 +49,6 @@
 	<body><pre style="visibility:hidden;" id="p"><xsl:value-of select="//i:query"/></pre>
 	</body>
 	</html>
-	
+
 	</xsl:template>
 </xsl:stylesheet>
