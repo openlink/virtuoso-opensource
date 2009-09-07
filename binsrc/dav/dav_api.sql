@@ -1549,6 +1549,11 @@ DAV_AUTHENTICATE (in id any, in what char(1), in req varchar, in a_uname varchar
       if (a_uid = http_dav_uid())
         return a_uid;
       oid := a_uid;
+      if (a_uid = http_nobody_uid ())
+	{
+	  ogid := http_nogroup_gid ();
+	}
+      else
       select U_GROUP into ogid from WS.WS.SYS_DAV_USER where U_ID = a_uid;
     }
   if (isarray (id))
