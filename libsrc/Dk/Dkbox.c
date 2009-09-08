@@ -1066,6 +1066,13 @@ DBG_NAME (box_copy) (DBG_PARAMS cbox_t box)
 	unames[blk->unb_hdr[UNB_HDR_HASH] % UNAME_TABLE_SIZE].unc_refcount++;
 #endif
 	mutex_enter (uname_mutex);
+	if (UNAME_LOCK_REFCOUNT <= blk->unb_hdr[UNB_HDR_REFCTR])
+	  {
+	    /* See if it is already immortal inside the mtx.  Else two threads can decide to make it immortal one after the other and the second gpfs cause the uname is no longer in the refcounted list */
+	    mutex_leave (uname_mutex);
+	    return (box_t) box;
+	  }
+
 	if (UNAME_LOCK_REFCOUNT > (++(blk->unb_hdr[UNB_HDR_REFCTR])))
 	  {
 	    box_dv_uname_audit_one (blk->unb_hdr[UNB_HDR_HASH]);
