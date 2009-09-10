@@ -507,6 +507,23 @@ bif_iri_id_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, const char
   return (unbox_iri_id (arg));
 }
 
+caddr_t
+bif_string_or_uname_or_iri_id_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
+{
+  caddr_t arg = bif_arg (qst, args, nth, func);
+  dtp_t dtp = DV_TYPE_OF (arg);
+  switch (dtp)
+    {
+    case DV_IRI_ID: case DV_STRING: case DV_UNAME:
+      return arg;
+    }
+  sqlr_new_error ("22023", "SR008",
+		    "Function %s needs a string or UNAME or IRI_ID as argument %d, "
+		    "not an arg of type %s (%d)",
+		    func, nth + 1, dv_type_title (dtp), dtp);
+  return NULL; /* never reached */
+}
+
 ptrlong
 bif_long_range_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func, ptrlong low, ptrlong hi)
 {

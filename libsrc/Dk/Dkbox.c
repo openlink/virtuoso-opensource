@@ -1381,6 +1381,18 @@ DBG_NAME (box_dv_short_concat) (DBG_PARAMS ccaddr_t box1, ccaddr_t box2)
 }
 
 
+box_t
+DBG_NAME (box_dv_short_strconcat) (DBG_PARAMS const char *str1, const char *str2)
+{
+  int len1 = strlen (str1);	/* Excluding trailing '\0' */
+  int len2 = strlen (str2) + 1;	/* Including trailing '\0' */
+  char *res = DBG_NAME (dk_alloc_box) (DBG_ARGS len1 + len2, DV_SHORT_STRING);
+  memcpy (res, str1, len1);
+  memcpy (res + len1, str2, len2);
+  return res;
+}
+
+
 caddr_t
 DBG_NAME (box_vsprintf) (DBG_PARAMS size_t buflen_eval, const char *format, va_list tail)
 {
@@ -2303,6 +2315,14 @@ box_t
 box_dv_short_concat (ccaddr_t box1, ccaddr_t box2)
 {
   return dbg_box_dv_short_concat (__FILE__, __LINE__, box1, box2);
+}
+
+
+#undef box_dv_short_strconcat
+box_t
+box_dv_short_strconcat (const char *str1, const char *str2)
+{
+  return dbg_box_dv_short_strconcat (__FILE__, __LINE__, str1, str2);
 }
 
 

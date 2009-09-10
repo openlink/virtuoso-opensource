@@ -424,11 +424,11 @@ bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t graph_uri;
   ccaddr_t *cbk_names;
   caddr_t app_env;
-  int omit_top_rdf = 0;
+  int mode_bits = 0;
   int n_args = BOX_ELEMENTS (args);
   /*wcharset_t * volatile charset = QST_CHARSET (qst) ? QST_CHARSET (qst) : default_charset;*/
   text_arg = bif_arg (qst, args, 0, "rdf_load_rdfxml");
-  omit_top_rdf = bif_long_arg (qst, args, 1, "rdf_load_rdfxml");
+  mode_bits = bif_long_arg (qst, args, 1, "rdf_load_rdfxml");
   graph_uri = bif_string_or_wide_or_uname_arg (qst, args, 2, "rdf_load_rdfxml");
   cbk_names = (ccaddr_t *)bif_strict_type_array_arg (DV_STRING, qst, args, 3, "rdf_load_rdfxml");
   app_env = bif_arg (qst, args, 4, "rdf_load_rdfxml");
@@ -533,7 +533,7 @@ bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     case 1:
 	  ;
     }
-  rdfxml_parse ((query_instance_t *) qst, text_arg, (caddr_t *)&err, omit_top_rdf,
+  rdfxml_parse ((query_instance_t *) qst, text_arg, (caddr_t *)&err, mode_bits,
     NULL /* source name is unknown */, base_uri, graph_uri, cbk_names, app_env, enc, lh
     /*, caddr_t dtd_config, dtd_t **ret_dtd, id_hash_t **ret_id_cache, &ns2dict*/ );
   if (NULL != err)
@@ -812,7 +812,7 @@ ttlp_uri_resolve (ttlp_t *ttlp_arg, caddr_t qname)
 {
   query_instance_t *qi = ttlp_arg[0].ttlp_tf->tf_qi;
   caddr_t res, err = NULL;
-  res = rfc1808_expand_uri ((caddr_t *)qi, ttlp_arg[0].ttlp_tf->tf_base_uri, qname, "UTF-8", 1 /* ??? */, "UTF-8", "UTF-8", &err);
+  res = rfc1808_expand_uri (/*qi,*/ ttlp_arg[0].ttlp_tf->tf_base_uri, qname, "UTF-8", 1 /* ??? */, "UTF-8", "UTF-8", &err);
   if (res != qname)
     dk_free_box (qname);
   if (NULL != err)
@@ -2542,7 +2542,7 @@ rdf_core_init (void)
 {
   jso_init ();
   rdf_mapping_jso_init ();
-  bif_define_typed ("rdf_load_rdfxml", bif_rdf_load_rdfxml, &bt_xml_entity);
+  bif_define_typed ("rdf_load_rdfxml", bif_rdf_load_rdfxml, &bt_integer);
   bif_set_uses_index (bif_rdf_load_rdfxml);
   bif_define ("rdf_load_turtle", bif_rdf_load_turtle);
   bif_set_uses_index (bif_rdf_load_turtle);

@@ -39,8 +39,6 @@ typedef struct
     long		bt_scale;
   } bif_type_t;
 
-#define NEW_DB_NULL dk_alloc_box (0, DV_DB_NULL)
-
 #define is_some_sort_of_an_integer(T)\
  ((DV_SHORT_INT == (T)) || (DV_LONG_INT == (T)) ||\
   (DV_CHARACTER == (T)) || (DV_C_SHORT == (T)) || (DV_C_INT == (T)))
@@ -57,6 +55,7 @@ EXE_EXPORT (bif_t, bif_find, (const char *name));
 bif_type_t * bif_type (const char * name);
 void bif_type_set (bif_type_t *bt, state_slot_t *ret, state_slot_t **params);
 
+#define bif_arg_nochecks(qst,args,nth) QST_GET ((qst), (args)[(nth)])
 EXE_EXPORT (caddr_t, bif_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char * func));
 EXE_EXPORT (caddr_t, bif_arg_unrdf, (caddr_t * qst, state_slot_t ** args, int nth, const char *func));
 EXE_EXPORT (caddr_t, bif_string_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char * func));
@@ -68,6 +67,7 @@ EXE_EXPORT (struct xml_entity_s *, bif_entity_arg, (caddr_t * qst, state_slot_t 
 EXE_EXPORT (struct xml_tree_ent_s *, bif_tree_ent_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char * func));
 EXE_EXPORT (caddr_t, bif_bin_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func));
 EXE_EXPORT (caddr_t, bif_string_or_null_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char * func));
+EXE_EXPORT (caddr_t, bif_string_or_uname_or_iri_id_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func));
 EXE_EXPORT (caddr_t, bif_string_or_wide_or_null_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char * func));
 EXE_EXPORT (caddr_t, bif_string_or_uname_or_wide_or_null_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char * func));
 EXE_EXPORT (caddr_t, bif_string_or_wide_or_null_or_strses_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char * func));

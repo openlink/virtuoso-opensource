@@ -53,6 +53,11 @@ extern "C" {
 #define VIRTRDF_NS_URI		"http://www.openlinksw.com/schemas/virtrdf#"
 #define VIRTRDF_NS_URI_LEN	42
 
+/*				 0         1         2         3      */
+/*				 012345678901234567890123456789012345 */
+#define XHV_NS_URI		"http://www.w3.org/1999/xhtml/vocab#"
+#define XHV_NS_URI_LEN		35
+
 
 #define MAX_XML_LNAME_LENGTH 500				/* for local names, namespace prefixes and namespace URIs */
 #define MAX_XML_QNAME_LENGTH (2*MAX_XML_LNAME_LENGTH + 1)	/* for qualified names (that have semicolons) */
@@ -653,8 +658,10 @@ typedef struct xp_node_s
 /*! Stack part of RDF/XML-specific context of XML parser.
 These are fields of quad to be created.
 "Inheritable" fields are propagated from the parent. Pointers are copied, strings are not copied. */
-typedef struct xp_rdf_locals_s
+typedef struct xp_rdfxml_locals_s
 {
+  struct xp_rdfxml_locals_s *xrl_parent;	/*!< Pointer to parent context */
+  xp_node_t *	xrl_xn;			/*!< Node whose not-yet-closed element corresponds to the given context */
   caddr_t	xrl_subject;		/*!< Subject (IRI of named node or blank node IRI_ID); subject is used for nested predicates */
   caddr_t	xrl_predicate;		/*!< Predicate (IRI of named node or blank node IRI_ID) */
   caddr_t	xrl_base;		/*!< Base to resolve relative URIs, inheritable */
@@ -663,12 +670,88 @@ typedef struct xp_rdf_locals_s
   caddr_t	xrl_reification_id;	/*!< ID used to reify a statement as four quads for S,P,O and rdf:type rdfs:Statement. */
   int		xrl_li_count;		/*!< Counter of used LI, not inheritable */
   dk_set_t	xrl_seq_items;		/*!< Backstack of "Sequence" parseType subjects */
-  xp_node_t *	xrl_xn;			/*!< Node whose not-yet-closed element corresponds to the given context */
-  struct xp_rdf_locals_s *xrl_parent;	/*!< Pointer to parent context */
   int		xrl_parsetype:8;	/*!< Parse type (one of XRL_DATATYPE_NNN), not inheritable */
   char		xrl_base_set:8;
   char		xrl_language_set:8;
-} xp_rdf_locals_t;
+} xp_rdfxml_locals_t;
+
+#define RDFA_ICT_PRED_REL_OR_TYPEOF	200	/*!< Forward with ref object */
+#define RDFA_ICT_PRED_REV		201	/*!< Reverse predicate */
+#define RDFA_ICT_PRED_PROPERTY		202	/*!< Forward predicate with literal object */
+
+/*! [I]n[C]omplete [T]riple.
+We should keep subject instead of use of innermost xrdfal_subj.
+This is for incomplete triples inside HEAD, they may wait for BASE definition and contain different "about" attributes. */
+typedef struct rdfa_ict_s
+{
+  ptrlong ict_pred_type;	/*!< Predicate type, one of RDFA_ICT_PRED_xxx values */
+  caddr_t ict_left;		/*!< Subject by default and object if \c ict_pred_type == RDFA_ICT_PRED_REV */
+  caddr_t ict_pred;		/*!< Predicate */
+  caddr_t ict_right;		/*!< Object by default and subject if \c ict_pred_type == RDFA_ICT_PRED_REV */
+  caddr_t ict_datatype;		/*!< Datatype of a literal object */
+  caddr_t ict_language;		/*!< Language of a literal object */
+  ptrlong ict_used_as_template;	/*!< The ICT itself was used as a template for cases like <X rel="p"><Y typeof="t" /></X> (even if was not completed) */
+} rdfa_ict_t;
+
+#define RDFA_IN_HTML		0x01	/*!< The current tag is XHTML top (or nested), respect <HEAD> and <BODY> if found inside */
+#define RDFA_IN_HEAD		0x02	/*!< The current tag is HEAD in XHTML (or nested), the doc is now default subject, do not feed triples immediately to handle <BASE> */
+#define RDFA_IN_BASE		0x04	/*!< The current tag is BASE in HEAD in XHTML (or nested), the content will go to all \c xrdfal_base throughout the stack. */
+#define RDFA_IN_BODY		0x08	/*!< The current tag is BODY in XHTML (or nested), the doc is now default subject, do feed triples as soon as they're complete */
+#define RDFA_IN_LITERAL		0x10	/*!< The parser runs inside an XML literal or a string literal or an unused subtree, because there was a "property" attribute */
+#define RDFA_IN_UNUSED		0x20	/*!< The parser runs inside an element with "content" attribute. The attribute is used as a string literal already so there's nothing to do in a subtree. Similarly, it is used for internals of <base href="...">...</base> */
+#define RDFA_IN_STRLITERAL	0x40	/*!< The parser runs inside an element with explicit datatype other than rdf:XMLLiteral, so all non-text items should be ignored, only texts are important. */
+#define RDFA_IN_XMLLITERAL	0x80	/*!< The parser runs inside an element with explicit rdf:XMLLiteral datatype or datatype is not present but non-text nodes were found. */
+
+/*! Stack part of RDFa-specific context of XML parser.
+Unlike RDF/XML, not every opened tag gets its own stack item, because many of them lacks RDFa-specific data at all.
+RDFa locals are popped only when an XML element to close corresponds to xrdfal_xn of the innermost local context */
+
+typedef struct xp_rdfa_locals_s
+{
+  struct xp_rdfa_locals_s *xrdfal_parent;	/*!< Pointer to parent context */
+  xp_node_t *	xrdfal_xn;		/*!< Node whose not-yet-closed element corresponds to the given context */
+  int		xrdfal_place_bits;	/*!< A combination of RDFA_IN_... bits */
+  caddr_t	xrdfal_base;		/*!< Base to resolve relative links as set by <BASE> now in XSLT+RDFa and may be set by xml:base in other XML docs */
+  caddr_t	xrdfal_subj;		/*!< A [new subject] as set at the end of parsing the opening tag. It can be NULL, look up */
+  caddr_t	xrdfal_obj_res;		/*!< A [current object resource] as set at the end of parsing the opening tag or created as bnode after that */
+  caddr_t	xrdfal_datatype;	/*!< Datatype IRI */
+  caddr_t	xrdfal_language;	/*!< Language label */
+  rdfa_ict_t *	xrdfal_ict_buffer;	/*!< Storage for incomplete triples, may contain NULLs at the end */
+  int		xrdfal_ict_count;	/*!< Count of stored incomplete triples */
+  int		xrdfal_boring_opened_elts;	/*!< Number of opend but not yet closed elements inside RDFA_IN_STRLITERAL or RDFA_IN_UNUSED or "uninteresting" elements between \c xrdfal_xn and next nested \c xp_rdfa_locals_t in chain */
+} xp_rdfa_locals_t;
+
+#define RDFA_ATTR_ABOUT		101
+#define RDFA_ATTR_CONTENT	102
+#define RDFA_ATTR_DATATYPE	103
+#define RDFA_ATTR_HREF		104
+#define RDFA_ATTR_PROPERTY	105
+#define RDFA_ATTR_REL		106
+#define RDFA_ATTR_RESOURCE	107
+#define RDFA_ATTR_REV		108
+#define RDFA_ATTR_SRC		109
+#define RDFA_ATTR_TYPEOF	110
+#define RDFA_ATTR_XML_BASE	111
+#define RDFA_ATTR_XML_LANG	112
+
+/*! This structure is kept in RDFa parser as a DV_ARRAY_OF_POINTER and freed in case of error, to avoid memleaks.
+It is allocated once and only partially cleaned by callback calls. */
+typedef struct xp_tmp_s
+{
+/* RDFa part: */
+  caddr_t xpt_base;		/*!< Readed but not saved xml:base */
+  caddr_t xpt_lang;		/*!< Readed but not saved xml:lang */
+  caddr_t xpt_dt;		/*!< Readed, not expanded and not saved datatype */
+  caddr_t xpt_src;		/*!< Readed, not expanded and not saved subj (obj for reverse preds) */
+  caddr_t xpt_href;		/*!< Readed, not expanded and not saved obj (subj for reverse preds or triple from element w/o "rel" or "rev") */
+  caddr_t *xpt_rel_preds;	/*!< Readed, not expanded and not saved "rel" predicates */
+  caddr_t *xpt_rev_preds;	/*!< Readed, not expanded and not saved "rev" predicates */
+  caddr_t *xpt_prop_preds;	/*!< Readed, not expanded and not saved "property" predicates */
+  caddr_t *xpt_typeofs;		/*!< Readed, not expanded and not saved "typeof" types */
+  caddr_t xpt_obj_res;		/*!< Readed, not expanded and not saved object resource OR composed and not saved bnode object */
+  caddr_t xpt_obj_content;	/*!< Readed but not saved content of literal object */
+} xp_tmp_t;
+
 
 typedef struct xslt_template_uses_s
 {
@@ -754,14 +837,15 @@ typedef struct xslt_sheet_s
 
 extern xslt_number_format_t *xsnf_default;
 
+/*! Context of an XML parsers (XML, XSLT, RDF/XML, RDFa) */
 typedef struct xparse_ctx_s
 {
-  struct xparse_ctx_s *	xp_parent;
-  xp_node_t *		xp_top;
-  xp_node_t *		xp_current;
-  xp_node_t *		xp_free_list;
+  struct xparse_ctx_s *	xp_parent;	/*!< Context of parent parser (not-NULL when a parser reads GE (generic entity) nested in other document) */
+  xp_node_t *		xp_top;		/*!< Topmost node of the (curently incomplete) tree */
+  xp_node_t *		xp_current;	/*!< Current node (innermost not-yet-closed tag) */
+  xp_node_t *		xp_free_list;	/*!< Free-list, to avoid costly dk_alloc() overhead for every node */
   long			xp_bytes;
-  query_instance_t *	 xp_qi;
+  query_instance_t *	 xp_qi;		/*!< Query that lauched the parser */
   dk_session_t *	xp_strses;
   caddr_t		xp_id;
   caddr_t		xp_id_limit;
@@ -774,7 +858,7 @@ typedef struct xparse_ctx_s
 #endif
   xslt_sheet_t *	xp_sheet;
   dk_set_t 		xp_checked_functions;
-  struct vxml_parser_s *	xp_parser;
+  struct vxml_parser_s *	xp_parser;	/*!< The XML parser itself */
   xslt_template_t *	xp_template;
   struct xml_doc_cache_s *	xp_doc_cache;
   xqi_binding_t *	xp_globals;
@@ -791,14 +875,17 @@ typedef struct xparse_ctx_s
   caddr_t		xp_boxed_name;
   id_hash_t *		xp_namespaces;
   int			xp_namespaces_are_valid;
-  caddr_t		xp_top_excl_res_prefx;
-  xp_rdf_locals_t *	xp_rdf_locals;
-  xp_rdf_locals_t *	xp_rdf_free_list;
-  struct triple_feed_s *xp_tf;
+  caddr_t		xp_top_excl_res_prefx;	/*!< The value of exclude-result-prefixes XSLT attribute */
+  struct triple_feed_s *xp_tf;			/*!< Triple feeder (for both RDF/XML and RDFa) */
+  xp_rdfxml_locals_t *	xp_rdfxml_locals;
+  xp_rdfxml_locals_t *	xp_rdfxml_free_list;
+  xp_rdfa_locals_t *	xp_rdfa_locals;
+  xp_rdfa_locals_t *	xp_rdfa_free_list;
+  xp_tmp_t *		xp_tmp;
 } xparse_ctx_t;
 
 extern void xp_pop_rdf_locals (xparse_ctx_t *xp);
-extern xp_rdf_locals_t *xp_push_rdf_locals (xparse_ctx_t *xp);
+extern xp_rdfxml_locals_t *xp_push_rdf_locals (xparse_ctx_t *xp);
 
 extern void xp_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata);
 extern void xp_element_end (void *userdata, const char * name);
@@ -957,6 +1044,7 @@ extern caddr_t uname_rdf_ns_uri_ID;
 extern caddr_t uname_rdf_ns_uri_RDF;
 extern caddr_t uname_rdf_ns_uri_Seq;
 extern caddr_t uname_rdf_ns_uri_Statement;
+extern caddr_t uname_rdf_ns_uri_XMLLiteral;
 extern caddr_t uname_rdf_ns_uri_about;
 extern caddr_t uname_rdf_ns_uri_first;
 extern caddr_t uname_rdf_ns_uri_li;
@@ -986,6 +1074,30 @@ extern caddr_t uname_virtrdf_ns_uri_bitmask;
 extern caddr_t uname_virtrdf_ns_uri_isSpecialPredicate;
 extern caddr_t uname_virtrdf_ns_uri_isSubclassOf;
 extern caddr_t uname_virtrdf_ns_uri_loadAs;
+extern caddr_t uname_xhv_ns_uri_alternate;
+extern caddr_t uname_xhv_ns_uri_appendix;
+extern caddr_t uname_xhv_ns_uri_bookmark;
+extern caddr_t uname_xhv_ns_uri_cite;
+extern caddr_t uname_xhv_ns_uri_chapter;
+extern caddr_t uname_xhv_ns_uri_contents;
+extern caddr_t uname_xhv_ns_uri_copyright;
+extern caddr_t uname_xhv_ns_uri_first;
+extern caddr_t uname_xhv_ns_uri_glossary;
+extern caddr_t uname_xhv_ns_uri_help;
+extern caddr_t uname_xhv_ns_uri_icon;
+extern caddr_t uname_xhv_ns_uri_index;
+extern caddr_t uname_xhv_ns_uri_last;
+extern caddr_t uname_xhv_ns_uri_license;
+extern caddr_t uname_xhv_ns_uri_meta;
+extern caddr_t uname_xhv_ns_uri_next;
+extern caddr_t uname_xhv_ns_uri_p3pv1;
+extern caddr_t uname_xhv_ns_uri_prev;
+extern caddr_t uname_xhv_ns_uri_role;
+extern caddr_t uname_xhv_ns_uri_section;
+extern caddr_t uname_xhv_ns_uri_stylesheet;
+extern caddr_t uname_xhv_ns_uri_subsection;
+extern caddr_t uname_xhv_ns_uri_start;
+extern caddr_t uname_xhv_ns_uri_up;
 extern caddr_t uname_xml;
 extern caddr_t uname_xmlns;
 extern caddr_t uname_xml_colon_base;

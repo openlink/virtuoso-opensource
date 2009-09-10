@@ -1017,7 +1017,7 @@ create procedure SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, inout meta
           http ('</td>', ses);
 end_of_val_print: ;
         }
-      http(newline || '</tr>', ses);
+      http(newline || '  </tr>', ses);
     }
   http (trnewline || '</table>', ses);
 }

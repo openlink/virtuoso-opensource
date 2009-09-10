@@ -615,7 +615,8 @@ xp_free (xparse_ctx_t * xp)
 {
   dk_hash_iterator_t hit;
   caddr_t it, k;
-  xp_rdf_locals_t *xrl;
+  xp_rdfxml_locals_t *xrl;
+  xp_rdfa_locals_t *xrdfal;
   xp_node_t * xn;
   dk_free_box (xp->xp_id);
   dk_free_box (xp->xp_error_msg);
@@ -693,15 +694,26 @@ xp_free (xparse_ctx_t * xp)
   if ((NULL != xp->xp_doc_cache) && (&(xp->xp_doc_cache) == xp->xp_doc_cache->xdc_owner))
     xml_doc_cache_free (xp->xp_doc_cache);
   dk_free_box (xp->xp_top_excl_res_prefx);
-  while (NULL != xp->xp_rdf_locals)
+  while (NULL != xp->xp_rdfxml_locals)
     xp_pop_rdf_locals (xp);
-  xrl = xp->xp_rdf_free_list;
+  while (NULL != xp->xp_rdfa_locals)
+    xp_pop_rdfa_locals (xp);
+  xrl = xp->xp_rdfxml_free_list;
   while (NULL != xrl)
     {
-      xp_rdf_locals_t *next_xrl = xrl->xrl_parent;
-      dk_free (xrl, sizeof (xp_rdf_locals_t));
+      xp_rdfxml_locals_t *next_xrl = xrl->xrl_parent;
+      dk_free (xrl, sizeof (xp_rdfxml_locals_t));
       xrl = next_xrl;
     }
+  xrdfal = xp->xp_rdfa_free_list;
+  while (NULL != xrdfal)
+    {
+      xp_rdfa_locals_t *next_xrdfal = xrdfal->xrdfal_parent;
+      dk_free_tree (xrdfal->xrdfal_ict_buffer);
+      dk_free (xrdfal, sizeof (xp_rdfa_locals_t));
+      xrdfal = next_xrdfal;
+    }
+  dk_free_tree (xp->xp_tmp);
   /* Note that xp_xf is intentionally left untouched. */
 }
 
@@ -2893,7 +2905,7 @@ xml_uri_resolve_like_get (query_instance_t * qi, caddr_t *err_ret, ccaddr_t base
   if (DV_STRINGP (base_uri) && DV_STRINGP (rel_uri))
     {
       caddr_t err = NULL;
-      caddr_t res =  rfc1808_expand_uri ((caddr_t*)qi, base_uri, rel_uri,
+      caddr_t res =  rfc1808_expand_uri (/*qi,*/ base_uri, rel_uri,
 					 output_charset, 0,
 					 NULL, /* Encoding used for base_uri IFF it is a narrow string, neither DV_UNAME nor WIDE */
 					 NULL, /* Encoding used for rel_uri IFF it is a narrow string, neither DV_UNAME nor WIDE */

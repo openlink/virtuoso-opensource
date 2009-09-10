@@ -2352,6 +2352,53 @@ create procedure DB.DBA.RDF_RDFXML_TO_DICT (in strg varchar, in base varchar, in
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_RDFA (in strg varchar, in base varchar, in graph varchar := null)
+{
+  declare app_env any;
+  if (graph = '')
+    signal ('22023', 'Empty string is not a valid graph IRI in DB.DBA.RDF_LOAD_RDFA()');
+  else if (graph is null)
+    {
+      graph := base;
+      if ((graph is null) or (graph = ''))
+        signal ('22023', 'DB.DBA.RDF_LOAD_RDFA() requires a valid IRI as a base argument if graph is not specified');
+    }
+  app_env := vector (null, null, __max (length (strg) / 100, 100000));
+  rdf_load_rdfxml (strg, 2,
+    graph,
+    vector (
+      'DB.DBA.TTLP_EV_NEW_GRAPH',
+      'DB.DBA.TTLP_EV_NEW_BLANK',
+      'DB.DBA.TTLP_EV_GET_IID',
+      'DB.DBA.TTLP_EV_TRIPLE',
+      'DB.DBA.TTLP_EV_TRIPLE_L',
+      'DB.DBA.TTLP_EV_COMMIT',
+      'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
+    app_env,
+    base );
+  return graph;
+}
+;
+
+create procedure DB.DBA.RDF_RDFA_TO_DICT (in strg varchar, in base varchar, in graph varchar := null)
+{
+  declare res any;
+  res := dict_new (length (strg) / 100);
+  rdf_load_rdfxml (strg, 2,
+    graph,
+    vector (
+      'DB.DBA.RDF_TTL2HASH_EXEC_NEW_GRAPH',
+      'DB.DBA.RDF_TTL2HASH_EXEC_NEW_BLANK',
+      'DB.DBA.RDF_TTL2HASH_EXEC_GET_IID',
+      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE',
+      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L',
+      '',
+      'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
+    res,
+    base );
+  return res;
+}
+;
 
 -----
 -- Fast rewriting from serialization to serialization without storing
