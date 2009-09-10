@@ -70,7 +70,7 @@ create procedure WS.WS.GET_CGI_VARS_VECTOR (inout lines any) returns ANY
    ,'CONTENT_LENGTH',		http_request_header_full (lines, 'Content-Length', '0')
   );
   if (is_https_ctx ())
-    options := vector_concat (options, vector ('HTTPS', '1'));
+    options := vector_concat (options, vector ('HTTPS', 'on'));
 
   declare inx integer;
   inx := 1;
