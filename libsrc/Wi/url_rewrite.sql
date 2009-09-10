@@ -953,7 +953,9 @@ create procedure DB.DBA.HTTP_URLREWRITE_APPLY_PATTERN (in pattern varchar, in st
    declare arr, pars, ret, tmp any;
    declare inx, len, i int;
    declare pos int;
+   declare host varchar;
 
+   host := registry_get ('URIQADefaultHost');
    arr := regexp_parse (pattern, str, 0);
    if (arr is null)
      return NULL;
@@ -982,6 +984,17 @@ create procedure DB.DBA.HTTP_URLREWRITE_APPLY_PATTERN (in pattern varchar, in st
      }
    if (pos > 0 and pos < length (format))
      ret := ret || subseq (format, pos);
+  if (isstring (host))
+    {
+      ret := replace (ret, '^{URIQADefaultHost}^', host);
+      if (strstr (ret, '^{DynamicLocalFormat}^') is not null)
+        {
+          if (strchr (host, ':') is not null)
+            ret := replace (ret, '^{DynamicLocalFormat}^', sprintf ('http://%{WSHostName}U:%{WSHostPort}U'));
+          else
+            ret := replace (ret, '^{DynamicLocalFormat}^', sprintf ('http://%{WSHost}U'));
+        }
+    }
    return ret;
 }
 ;
