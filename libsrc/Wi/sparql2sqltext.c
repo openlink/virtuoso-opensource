@@ -3367,8 +3367,8 @@ IN_op_fnt_found:
             const char *tmpl = NULL;
             if (IS_BOX_POINTER (arg1_native))
               tmpl = arg1_native->qmfStrsqlvalOfShortTmpl;
-            else if ((SSG_VALMODE_LONG == arg1_native) || (SSG_VALMODE_SQLVAL == arg1_native))
-              tmpl = " __rdf_strsqlval (^{tree}^)";
+            else if ((SSG_VALMODE_LONG == arg1_native) || (SSG_VALMODE_SQLVAL == arg1_native) || (SSG_VALMODE_AUTO == arg1_native))
+              tmpl = " __rdf_strsqlval (^{tree}^)"; /* SSG_VALMODE_AUTO is here as a fallback for a query optimized down to an empty select */
             else if (SSG_VALMODE_BOOL == arg1_native)
               tmpl = " case (^{tree}^) when 0 then 'false' else 'true' end";
             else
@@ -6028,7 +6028,7 @@ ssg_print_fake_self_join_subexp (spar_sqlgen_t *ssg, SPART *gp, SPART ***tree_se
       if (NULL != tree->_.triple.options)
         {
           int optctr;
-          for (optctr = BOX_ELEMENTS (tree->_.triple.options); optctr >= 0; optctr -= 2)
+          for (optctr = BOX_ELEMENTS (tree->_.triple.options) - 2; optctr >= 0; optctr -= 2)
             {
               SPART *val = tree->_.triple.options[optctr+1];
               switch ((ptrlong)(tree->_.triple.options[optctr]))
