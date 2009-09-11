@@ -10,7 +10,9 @@
   See LICENSE file for details.
 
 -->
-<xsl:stylesheet version="1.0" xmlns:xsl='http://www.w3.org/1999/XSL/Transform' xmlns:i="urn:schemas-openlink-com:isparql">
+<xsl:stylesheet version="1.0"
+  xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+  xmlns:i="urn:schemas-openlink-com:isparql">
     <xsl:output method="html"/>
 
 	<xsl:template match = "/*">
@@ -23,12 +25,15 @@
 				var target = "/isparql/execute.html";
 
 				var p = {};
-				p.sponge = "<xsl:value-of select="//i:should_sponge" />";
+
+<!--				p.sponge = "<xsl:value-of select="//should_sponge" />"; -->
+
 				<xsl:if test="//i:should_sponge">
 				p.sponge = "<xsl:value-of select="//i:should_sponge" />";
 				</xsl:if>
 
-				p.endpoint = "<xsl:value-of select="//i:endpoint" />";
+<!--				p.endpoint = "<xsl:value-of select="//i:endpoint" />"; -->
+
 				<xsl:if test="//i:endpoint">
 				p.endpoint = "<xsl:value-of select="//i:endpoint" />";
 				</xsl:if>
@@ -38,9 +43,11 @@
 				p.file = window.location.href;
 
 				var tmp = "";
+
 				for (var prop in p) {
 					tmp += prop+"="+encodeURIComponent(p[prop])+"&amp;";
 				}
+
 				window.location.href = target+"?"+tmp;
 			}
 		</script>

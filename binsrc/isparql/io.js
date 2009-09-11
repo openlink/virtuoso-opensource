@@ -31,15 +31,19 @@ iSPARQL.IO = {
 	var str = "";
 
 	/* serialize pragmas, inserted as sparql comments */
-	for (var i=0;i<dataObj.pragmas.length;i++) {
-	    var pragma = dataObj.pragmas[i];
-	    var name = pragma[0];
-	    var values = pragma[1];
-	    for(var j=0;j<values.length;j++) { str += '# {pragma} {'+name+'} = {'+values[j]+'}\n'; }
-	}
+	if (dataObj.endpointOpts.pragmas)
+	    for (var i=0;i<dataObj.endpointOpts.pragmas.length;i++) {
+		var pragma = dataObj.endpointOpts.pragmas[i];
+		var name = pragma[0];
+		var values = pragma[1];
+		for(var j=0;j<values.length;j++) { str += '# {pragma} {'+name+'} = {'+values[j]+'}\n'; }
+	    }
 
 	/* endpoint */
-	if (dataObj.endpointOpts.endpoinPath) {	str += '# {endpoint} {'+dataObj.endpointOpts.endpointPath+'}\n';	}
+
+	if (dataObj.endpointOpts.endpointPath) {
+	    str += '# {endpoint} {'+dataObj.endpointOpts.endpointPath+'}\n';
+	}
 
 	/* graph */
 	if (dataObj.defaultGraph) { str += '# {graph} {'+dataObj.defaultGraph+'}\n'; }
@@ -55,9 +59,10 @@ iSPARQL.IO = {
 
     serializeLdr:function(dataObj) {
 	var xslt = iSPARQL.Preferences.xslt + 'dynamic-page.xsl';
+	var iNS = "urn:schemas-openlink-com:isparql";
 	var xmlTemplate = '<?xml version="1.0" encoding="UTF-8"?>\n'+
 	'<?xml-stylesheet type="text/xsl" href="' + xslt + '"?>\n'+
-	'<iSPARQL xmlns="urn:schemas-openlink-com:isparql"\n'+
+	'<iSPARQL xmlns="' + iNS + '"\n' +
 	'         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"\n'+
 	'         xmlns:dc="http://purl.org/dc/elements/1.1/"\n'+
 	'         xmlns:ex="http://example.org/stuff/1.0/">\n'+
@@ -76,53 +81,64 @@ iSPARQL.IO = {
 	var creator = xml.getElementsByTagName("dc:creator")[0];
 	var description = xml.getElementsByTagName("dc:description")[0];
 
-	var addNode = function(p,name,text) {
-	    var node = xml.createElement(name);
+	var addNode = function(p,ns,name,text,nenc) {
+	    var node = xml.createElementNS(ns,name);
 	    var t = text || "";
-	    node.textContent = OAT.Dom.toSafeXML(t);
+	    if (nenc) {
+		node.textContent = t;
+            }
+            else {
+		node.textContent = OAT.Dom.toSafeXML(t);
+            }
 	    p.appendChild(node);
 	    return node;
 	}
 
-	if (dataObj.defaultGraph) { addNode(page,"graph",dataObj.defaultGraph); }
-	if (dataObj.useProxy) { addNode(page,"proxy",dataObj.useProxy); }
-	if (dataObj.query) { addNode(page,"query",dataObj.query); }
+	if (dataObj.defaultGraph) { addNode(page,iNS,"graph",dataObj.defaultGraph); }
+	if (dataObj.useProxy) { addNode(page,iNS,"proxy",dataObj.useProxy); }
+
+	if (dataObj.query) { addNode(page,iNS,"query",dataObj.query,true); }
 
 	if (dataObj.prefixes) {
-	    var schemas = addNode(page,"schemas");
+	    var schemas = addNode(page, iNS, "schemas");
 	    for(var i=0;i<dataObj.prefixes.length;i++) {
 		var schemaNode = dataObj.prefixes[i];
-		addNode(schemas,"schema",schemaNode);
+		addNode(schemas,iNS,"schema",schemaNode);
 	    }
 	}
 
 	if(dataObj.namedGraphs) {
-	    var namedgraphs = addNode(page,"namedgraphs");
+	    var namedgraphs = addNode(page,iNS,"namedgraphs");
 	    for(var i=0;i<dataObj.namedGraphs.length;i++) {
 		var graphNode = dataObj.namedGraphs[i];
-		addNode(namedgraphs,"namedgraph",graphNode);
+		addNode(namedgraphs,iNS,"namedgraph",graphNode);
 	    }
 	}
 
-	if(dataObj.pragmas) {
-	    var pragmas = addNode(isparql,"pragmas");
-	    for(var i=0;i<dataObj.pragmas.length;i++) {
-		var pragma = dataObj.pragmas[i];
+	if(dataObj.endpointOpts.pragmas) {
+	    var pragmas = addNode(isparql,iNS,"pragmas");
+	    for(var i=0;i<dataObj.endpointOpts.pragmas.length;i++) {
+		var pragma = dataObj.endpointOpts.pragmas[i];
 		var name = pragma[0];
 		var values = pragma[1];
-		var pragmaNode = addNode(pragmas,"pragma");
-		addNode(pragmaNode,"name",name);
-		for(var j=0;j<values.length;j++) { addNode(pragmaNode,"value",values[j]); }
+		var pragmaNode = addNode(pragmas,iNS,"pragma");
+		addNode(pragmaNode,iNS,"name",name);
+		for(var j=0;j<values.length;j++) {
+		    addNode(pragmaNode,iNS,"value",values[j]);
+		}
 	    }
 	}
 
-	if (dataObj.endpointOpts.endpointPath) { addNode(isparql,"endpoint",dataObj.endpointOpts.endpointPath); }
-	if (dataObj.canvas) { addNode(isparql,"canvas",dataObj.canvas); }
+	if (dataObj.endpointOpts.endpointPath) {
+	    addNode(isparql,iNS,"endpoint",dataObj.endpointOpts.endpointPath);
+	}
+
+	if (dataObj.canvas) { addNode(isparql,iNS,"canvas",dataObj.canvas); }
 
 	if (dataObj.metaDataOpts) {
-	    title.textContent = dataObj.metaDataOpts.title;
-	    creator.textContent = dataObj.metaDataOpts.creator;
-	    description.textContent = dataObj.metaDataOpts.description;
+	    title.textContent = OAT.Dom.toSafeXML(dataObj.metaDataOpts.title);
+	    creator.textContent = OAT.Dom.toSafeXML(dataObj.metaDataOpts.creator);
+	    description.textContent = OAT.Dom.toSafeXML(dataObj.metaDataOpts.description);
 	}
 
 	return OAT.Xml.serializeXmlDoc(xml);

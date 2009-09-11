@@ -399,7 +399,6 @@ iSPARQL.QBE = function (def_obj) {
 	    canvas:false,
 	    defaultGraph:false,
 	    prefixes:[],
-	    pragmas:[],
 	    metaDataOpts:{},
 	    namedGraphs:[]
 	};
@@ -407,9 +406,10 @@ iSPARQL.QBE = function (def_obj) {
 	dataObj.query = self.QueryGenerate();
 	dataObj.endpointOpts.endpointPath = iSPARQL.endpointOpts.endpointPath;
 	dataObj.endpointOpts.useProxy = iSPARQL.endpointOpts.useProxy;
+	dataObj.endpointOpts.pragmas = iSPARQL.endpointOpts.pragmas;
 	dataObj.canvas = self.svgsparql.toXML();
 	dataObj.defaultGraph = $v('qbe_graph');
-	dataObj.metaDataOpts = iSPARQL.mdOpts // XXX check IO.Save
+	dataObj.metaDataOpts = iSPARQL.mdOpts; // XXX check IO.Save
 
 	if(qe.cacheIndex == -1) {
 	    var cache = qe.cache[qe.cacheIndex];

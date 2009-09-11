@@ -284,7 +284,31 @@ iSPARQL.Advanced = function () {
     }
 
     this.save = function() {
-	iSPARQL.IO.save(iSPARQL.dataObj);
+	var data = self.getSaveData();
+	iSPARQL.IO.save(data);
+    }
+
+    /* return data to save */
+
+    this.getSaveData = function() {
+	var dataObj = {
+	    query:"",
+	    endpointOpts: {},
+	    canvas:false,
+	    defaultGraph:false,
+	    prefixes:[],
+	    metaDataOpts:{},
+	    namedGraphs:[]
+	};
+
+	dataObj.query = iSPARQL.dataObj.query;
+	dataObj.endpointOpts.endpointPath = iSPARQL.endpointOpts.endpointPath;
+	dataObj.endpointOpts.useProxy = iSPARQL.endpointOpts.useProxy;
+	dataObj.endpointOpts.pragmas = iSPARQL.endpointOpts.pragmas;
+	dataObj.defaultGraph = $v('default-graph-uri');
+	dataObj.metaDataOpts = iSPARQL.mdOpts; // XXX check IO.Save
+
+	return(dataObj);
     }
 
     var t = new OAT.Toolbar("toolbar");
@@ -425,7 +449,7 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
 	self.opts.setGetOpt (self, $v(getOptElm.target.options[getOptElm.target.selectedIndex]));
 	// Disable sponge opts if sponger is disabled as well
 
-	if (getOptElm.target.selectedIndex == 2)
+	if (getOptElm.target.selectedIndex == 0)
 	    {
 		self.disableSpongerOptions ();
 		iSPARQL.endpointOpts.resetPragmas();
@@ -1072,7 +1096,6 @@ iSPARQL.AuthUI = function (connection) {
     this.resetIndicator = function () {
 	if (self.connection.connected) {
 	    self.loginIndicatorB.innerHTML = "Logged in as " + self.connection.authObj.user;
-
 	} else {
 	    self.loginIndicatorB.innerHTML = "Login";
 	}
@@ -1153,7 +1176,7 @@ iSPARQL.ServerConnection = function (uri, authObj) {
 
 	if (self.connected) {
 	    self.saveAuth ();
-	    OAT.WebDav.init({imageExt:"png", silentStart:true, user:self.authObj.user,pass:self.authObj.pass, isDav:true});
+	    OAT.WebDav.init({imageExt:"png", imagePath:toolkitImagesPath, silentStart:true, user:self.authObj.user,pass:self.authObj.pass, isDav:true});
 	}
 
 	self.detectServerProperties ();
@@ -1599,6 +1622,7 @@ iSPARQL.Common = {
 	OAT.Dom.attach("menu_b_prefs", "click", iSPARQL.dialogs.prefs.show);
 
 	OAT.Observer.add (iSPARQL.serverConn.observers, this, this.serverConnectObserver);
+	if (iSPARQL.serverConn.connected) this.enableFileOps();
     },
 
     log:function(msg) {
