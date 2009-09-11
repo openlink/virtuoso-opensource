@@ -1019,11 +1019,14 @@ next_token:
           while (('\0' != tail[0]) && (']' != tail[0]) && !isspace(tail[0])) tail++;
         }
       else
-        { /* A CURIE without colon should be silently skipped */
+        { /* A CURIE without colon should be silently skipped, with two exceptions */
           if (curie_is_safe && (']' == tail[0]))
             {
+              if (tail != token_start)
+                {
               tail++;
               goto next_token; /* see above */
+            }
             }
           else if (!curie_is_safe && !(RDFA_ATTRSYNTAX_REL_REV_RESERVED & allowed_syntax) && (('\0' == tail[0]) || isspace(tail[0])))
             goto next_token; /* see above */
@@ -1090,6 +1093,10 @@ next_token:
       token_end[0] = '\0';
       if (('_' == token_start[0]) && (curie_colon == token_start + 1))
         expanded_token = tf_bnode_iid (xp->xp_tf, box_dv_short_nchars (token_start+2, token_end-(token_start+2)));
+      else if (curie_colon == token_start)
+        { /* Note that the default prefix mapping may differ from usage to usage, it is xhtml vocab namespace only for RDFa */
+          expanded_token = box_dv_short_strconcat (uname_xhv_ns_uri, curie_colon+1);
+        }
       else
         expanded_token = xp_rdfa_expand_name (xn, token_start, curie_colon, 1/*, base*/);
       token_end[0] = saved_token_delim;
@@ -1105,8 +1112,18 @@ next_token:
       expanded_token = rdfa_rel_rev_value_is_reserved (token_start);
       token_end[0] = saved_token_delim;
       if (NULL == expanded_token)
+#if 1
+        goto next_token; /* see above */
+#else
         expanded_token = box_dv_short_nchars (token_start, token_end-token_start);
-      
+#endif
+    }
+  else if (curie_is_safe && (token_end == token_start))
+    {
+      xp_rdfa_locals_t *ancestor = xp->xp_rdfa_locals;
+      while ((NULL != ancestor) && (NULL == ancestor->xrdfal_subj))
+        ancestor = ancestor->xrdfal_parent;
+      expanded_token = box_copy ((NULL != ancestor->xrdfal_subj) ? ancestor->xrdfal_subj : uname___empty);
     }
   else 
     expanded_token = box_dv_short_nchars (token_start, token_end-token_start);
@@ -1117,7 +1134,7 @@ next_token:
       expanded_token_not_saved = 0;
     }
   values_count++;
-  goto next_token; /* see ablove */  
+  goto next_token; /* see above */  
 }
 
 void
@@ -1236,7 +1253,7 @@ rdfa_ict_feed_or_leave (xparse_ctx_t *xp, xp_rdfa_locals_t *xrdfal, int ctr)
       if (NULL == stub_null)
         stub_null = NEW_DB_NULL;
       tf_triple_l (xp->xp_tf, ict->ict_left, ict->ict_pred, ict->ict_right,
-        ((NULL != ict->ict_datatype) ? ict->ict_datatype : stub_null),
+        (((NULL != ict->ict_datatype) && (uname___empty != ict->ict_datatype)) ? ict->ict_datatype : stub_null),
         ((NULL != ict->ict_language) ? ict->ict_language : stub_null) );
       break;
 #ifndef NDEBUG
@@ -1266,7 +1283,10 @@ rdfa_feed_or_make_ict (xparse_ctx_t *xp, xp_rdfa_locals_t *xrdfal, caddr_t left,
       xp_expand_relative_uri (xrdfal->xrdfal_base, &left);
       xp_expand_relative_uri (xrdfal->xrdfal_base, &pred);
       if (RDFA_ICT_PRED_PROPERTY == pred_type)
+        {
+          if (uname___empty != dt)
         xp_expand_relative_uri (xrdfal->xrdfal_base, &dt);
+        }
       else
         xp_expand_relative_uri (xrdfal->xrdfal_base, &right);
     }
@@ -1320,7 +1340,7 @@ rdfa_feed_or_make_ict (xparse_ctx_t *xp, xp_rdfa_locals_t *xrdfal, caddr_t left,
           if (NULL == stub_null)
             stub_null = NEW_DB_NULL;
           tf_triple_l (xp->xp_tf, left, pred, right,
-            ((NULL != dt) ? dt : stub_null),
+            (((NULL != dt) && (uname___empty != dt)) ? dt : stub_null),
             ((NULL != lang) ? lang : stub_null) );
           break;
 #ifndef NDEBUG
@@ -1346,7 +1366,7 @@ xp_rdfa_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
   xp_node_t *xn = xp->xp_current;
   int inx, fill, n_attrs, n_ns, xn_is_allocated = 0;
   char *local_name;
-  int rel_pred_count = 0, rev_pred_count = 0, prop_pred_count = 0, typeof_count = 0;
+  int rel_rev_attrcount = 0, rel_pred_count = 0, rev_pred_count = 0, prop_pred_count = 0, typeof_count = 0;
   int src_prio = 0xff; /* 1 for "about", 2 for "src" */
   int href_prio = 0xff; /* 3 for "resource", 4 for "href" */
   int outer_place_bits = outer->xrdfal_place_bits;
@@ -1403,101 +1423,17 @@ xp_rdfa_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
           save_ns[fill++] = box_dv_uname_string (attrdata->local_nsdecls[inx].nsd_uri);
         }
     }
-  n_attrs = attrdata->local_attrs_count;
-  for (inx = 0; inx < n_attrs; inx ++)
-    {
-      char *raw_aname = attrdata->local_attrs[inx].ta_raw_name.lm_memblock;
-      caddr_t avalue;
-      int acode = rdfa_attribute_code (raw_aname);
-      if (!acode)
-        continue;
-      need_rdfa_local = 1;
-      avalue = attrdata->local_attrs[inx].ta_value;
-      switch (acode)
-        {
-        case RDFA_ATTR_ABOUT:
-          if (1 <= src_prio)
-            dk_free_tree (xpt->xpt_src);
-          xpt->xpt_src = xp_rdfa_parse_attr_value (xp, xn, raw_aname, avalue, RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_SAFECURIE | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE, NULL, NULL);
-          src_prio = 1;
-          break;
-        case RDFA_ATTR_CONTENT:
-          xpt->xpt_obj_content = box_dv_short_string (avalue);
-          break;
-        case RDFA_ATTR_DATATYPE:
-          xpt->xpt_dt = xp_rdfa_parse_attr_value (xp, xn, raw_aname, avalue, RDFA_ATTRSYNTAX_CURIE | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE, NULL, NULL);
-          break;
-        case RDFA_ATTR_HREF:	
-          if (4 <= href_prio)
-            {
-              dk_free_tree (xpt->xpt_href);
-              xpt->xpt_href = xp_rdfa_parse_attr_value (xp, xn, raw_aname, avalue, RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE, NULL, NULL);
-              href_prio = 4;
-            }
-          break;
-        case RDFA_ATTR_PROPERTY:
-          xp_rdfa_parse_attr_value (xp, xn, raw_aname, avalue, RDFA_ATTRSYNTAX_CURIE | RDFA_ATTRSYNTAX_WS_LIST, &(xpt->xpt_prop_preds), &prop_pred_count);
-          break;
-        case RDFA_ATTR_REL:
-          xp_rdfa_parse_attr_value (xp, xn, raw_aname, avalue, RDFA_ATTRSYNTAX_CURIE | RDFA_ATTRSYNTAX_REL_REV_RESERVED | RDFA_ATTRSYNTAX_WS_LIST, &(xpt->xpt_rel_preds), &rel_pred_count);
-          break;
-        case RDFA_ATTR_RESOURCE:
-          if (3 <= href_prio)
-            {
-              dk_free_tree (xpt->xpt_href);
-              xpt->xpt_href = xp_rdfa_parse_attr_value (xp, xn, raw_aname, avalue, RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_SAFECURIE | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE, NULL, NULL);
-              href_prio = 3;
-            }
-          break;
-        case RDFA_ATTR_REV:	
-          xp_rdfa_parse_attr_value (xp, xn, raw_aname, avalue, RDFA_ATTRSYNTAX_CURIE | RDFA_ATTRSYNTAX_REL_REV_RESERVED | RDFA_ATTRSYNTAX_WS_LIST, &(xpt->xpt_rev_preds), &rev_pred_count);
-          break;
-        case RDFA_ATTR_SRC:	
-          if (2 <= src_prio)
-            {
-              dk_free_tree (xpt->xpt_src);
-              xpt->xpt_src = xp_rdfa_parse_attr_value (xp, xn, raw_aname, avalue, RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE, NULL, NULL);
-              src_prio = 2;
-            }
-          break;
-        case RDFA_ATTR_TYPEOF:
-          xp_rdfa_parse_attr_value (xp, xn, raw_aname, avalue, RDFA_ATTRSYNTAX_CURIE | RDFA_ATTRSYNTAX_WS_LIST, &(xpt->xpt_typeofs), &typeof_count);
-          break;
-        case RDFA_ATTR_XML_BASE:
-          if (NULL != xpt->xpt_base)
-            dk_free_tree (xpt->xpt_base);
-          xpt->xpt_base = box_dv_short_string (avalue);
-          break;
-        case RDFA_ATTR_XML_LANG:	
-          if (NULL != xpt->xpt_lang)
-            dk_free_tree (xpt->xpt_lang);
-          xpt->xpt_lang = box_dv_short_string (avalue);
-          break;
-#ifndef NDEBUG
-        default: GPF_T;
-#endif
-        }
-    }
-/* At this point, all attributes are retrieved. The rest is straightforward implementation of "Processing model" */
-/* Setting the [new subject] */
+/* Setting place bits */
   local_name = strchr (name, ':');
   if (NULL == local_name)
     local_name = name;
-/* Setting place bits */
   if (RDFA_IN_HEAD & outer_place_bits)
     {
       if (!strcmp (local_name, "base"))
         {
           if (RDFA_IN_BASE & outer_place_bits)
             xmlparser_logprintf (xp->xp_parser, XCFG_ERROR, 100, "Element \"base\" can not appear inside other \"base\" elelent");
-          if (xpt->xpt_href)
-            {
-              xp_rdfa_set_base (xp, outer, xpt->xpt_href);
-              xpt->xpt_href = NULL;
-              inner_place_bits |= (RDFA_IN_BASE | RDFA_IN_UNUSED);
-            }
-          else
-            inner_place_bits |= RDFA_IN_BASE;
+          inner_place_bits |= RDFA_IN_BASE;
           need_rdfa_local = 1;
         }
     }
@@ -1528,12 +1464,128 @@ xp_rdfa_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
         inner_place_bits |= RDFA_IN_HTML;
       need_rdfa_local = 1;
     }
+  n_attrs = attrdata->local_attrs_count;
+  for (inx = 0; inx < n_attrs; inx ++)
+    {
+      char *raw_aname = attrdata->local_attrs[inx].ta_raw_name.lm_memblock;
+      caddr_t avalue;
+      int acode = rdfa_attribute_code (raw_aname);
+      if (!acode)
+        continue;
+      need_rdfa_local = 1;
+      avalue = attrdata->local_attrs[inx].ta_value;
+      switch (acode)
+        {
+        case RDFA_ATTR_ABOUT:
+          if (1 <= src_prio)
+            {
+            dk_free_tree (xpt->xpt_src);
+              xpt->xpt_src = NULL; /* to avoid second delete of freed value in case of error inside xp_rdfa_parse_attr_value() */
+              xpt->xpt_src = xp_rdfa_parse_attr_value (xp, xn, raw_aname, avalue,
+                RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_SAFECURIE | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE,
+                NULL, NULL );
+          src_prio = 1;
+            }
+          break;
+        case RDFA_ATTR_CONTENT:
+          xpt->xpt_obj_content = box_dv_short_string (avalue);
+          break;
+        case RDFA_ATTR_DATATYPE:
+          xpt->xpt_dt = xp_rdfa_parse_attr_value (xp, xn, raw_aname, avalue,
+            RDFA_ATTRSYNTAX_CURIE | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE,
+            NULL, NULL );
+          break;
+        case RDFA_ATTR_HREF:	
+          if (RDFA_IN_BASE & inner_place_bits)
+            {
+              dk_free_tree (xpt->xpt_href);
+              xpt->xpt_href = NULL; /* to avoid second delete of freed value in case of error inside xp_rdfa_parse_attr_value() */
+              xpt->xpt_href = xp_rdfa_parse_attr_value (xp, xn, raw_aname, avalue,
+                RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE,
+                NULL, NULL );
+              xp_rdfa_set_base (xp, outer, xpt->xpt_href);
+              xpt->xpt_href = NULL;
+              inner_place_bits |= RDFA_IN_UNUSED;
+            }
+          else if (4 <= href_prio)
+            {
+              dk_free_tree (xpt->xpt_href);
+              xpt->xpt_href = NULL; /* to avoid second delete of freed value in case of error inside xp_rdfa_parse_attr_value() */
+              xpt->xpt_href = xp_rdfa_parse_attr_value (xp, xn, raw_aname, avalue,
+                RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE,
+                NULL, NULL );
+              href_prio = 4;
+            }
+          break;
+        case RDFA_ATTR_PROPERTY:
+          xp_rdfa_parse_attr_value (xp, xn, raw_aname, avalue,
+            RDFA_ATTRSYNTAX_CURIE | RDFA_ATTRSYNTAX_WS_LIST,
+            &(xpt->xpt_prop_preds), &prop_pred_count );
+          break;
+        case RDFA_ATTR_REL:
+          xp_rdfa_parse_attr_value (xp, xn, raw_aname, avalue,
+            RDFA_ATTRSYNTAX_CURIE | RDFA_ATTRSYNTAX_REL_REV_RESERVED | RDFA_ATTRSYNTAX_WS_LIST,
+            &(xpt->xpt_rel_preds), &rel_pred_count );
+          rel_rev_attrcount++;
+          break;
+        case RDFA_ATTR_RESOURCE:
+          if (3 <= href_prio)
+            {
+              dk_free_tree (xpt->xpt_href);
+              xpt->xpt_href = NULL; /* to avoid second delete of freed value in case of error inside xp_rdfa_parse_attr_value() */
+              xpt->xpt_href = xp_rdfa_parse_attr_value (xp, xn, raw_aname, avalue,
+                RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_SAFECURIE | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE,
+                NULL, NULL );
+              href_prio = 3;
+            }
+          break;
+        case RDFA_ATTR_REV:	
+          xp_rdfa_parse_attr_value (xp, xn, raw_aname, avalue,
+            RDFA_ATTRSYNTAX_CURIE | RDFA_ATTRSYNTAX_REL_REV_RESERVED | RDFA_ATTRSYNTAX_WS_LIST,
+            &(xpt->xpt_rev_preds), &rev_pred_count );
+          rel_rev_attrcount++;
+          break;
+        case RDFA_ATTR_SRC:	
+          if (2 <= src_prio)
+            {
+              dk_free_tree (xpt->xpt_src);
+              xpt->xpt_src = NULL; /* to avoid second delete of freed value in case of error inside xp_rdfa_parse_attr_value() */
+              xpt->xpt_src = xp_rdfa_parse_attr_value (xp, xn, raw_aname, avalue,
+                RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE,
+                NULL, NULL );
+              src_prio = 2;
+            }
+          break;
+        case RDFA_ATTR_TYPEOF:
+          xp_rdfa_parse_attr_value (xp, xn, raw_aname, avalue,
+            RDFA_ATTRSYNTAX_CURIE | RDFA_ATTRSYNTAX_WS_LIST,
+            &(xpt->xpt_typeofs), &typeof_count );
+          break;
+        case RDFA_ATTR_XML_BASE:
+          if (RDFA_IN_HTML & inner_place_bits)
+            break;
+          if (NULL != xpt->xpt_base)
+            dk_free_tree (xpt->xpt_base);
+          xpt->xpt_base = box_dv_short_string (avalue);
+          break;
+        case RDFA_ATTR_XML_LANG:	
+          if (NULL != xpt->xpt_lang)
+            dk_free_tree (xpt->xpt_lang);
+          xpt->xpt_lang = box_dv_short_string (avalue);
+          break;
+#ifndef NDEBUG
+        default: GPF_T;
+#endif
+        }
+    }
+/* At this point, all attributes are retrieved. The rest is straightforward implementation of "Processing model" */
+/* Setting the [new subject] */
   for (;;)
     {
       subj = xpt->xpt_src;
       if (NULL != subj)
         break;
-      if (!rel_pred_count && !rev_pred_count)
+      if (!rel_rev_attrcount)
         {
           subj = xpt->xpt_href;
           if (NULL != subj)
@@ -1597,7 +1649,7 @@ xp_rdfa_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
         xpt->xpt_src = NULL;
       else if (subj == xpt->xpt_href)
         {
-          if (rel_pred_count || rev_pred_count)
+          if (rel_rev_attrcount)
             xpt->xpt_href = box_copy (xpt->xpt_href);
           else
             xpt->xpt_href = NULL;
@@ -1605,14 +1657,14 @@ xp_rdfa_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
     }
   else if ((NULL != outer) && (NULL != outer->xrdfal_obj_res))
     inner->xrdfal_subj = outer->xrdfal_obj_res;
-  else if (rel_pred_count || rev_pred_count || prop_pred_count)
+  else if (rel_rev_attrcount || prop_pred_count)
     {
       inner->xrdfal_subj = tf_bnode_iid (xp->xp_tf, NULL);
       parent_obj_should_be_set = 1;
     }
   else
     inner->xrdfal_subj = NULL;
-  if (rel_pred_count || rev_pred_count)
+  if (rel_rev_attrcount)
     {
       inner->xrdfal_obj_res = xpt->xpt_href;
       xpt->xpt_href = NULL;
@@ -1703,7 +1755,7 @@ xp_rdfa_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
       dk_free_box (xpt->xpt_obj_content); xpt->xpt_obj_content = NULL;
       dk_free_box (inner->xrdfal_datatype); inner->xrdfal_datatype = NULL;
     }
-  if ((NULL == inner->xrdfal_obj_res) && !(rev_pred_count || rel_pred_count))
+  if ((NULL == inner->xrdfal_obj_res) && !rel_rev_attrcount)
     inner->xrdfal_obj_res = inner->xrdfal_subj;
 }
 
@@ -1826,7 +1878,10 @@ xp_rdfa_element_end (void *userdata, const char * name)
           xp_expand_relative_uri (inner->xrdfal_base, &(ict->ict_left));
           xp_expand_relative_uri (inner->xrdfal_base, &(ict->ict_pred));
           if (RDFA_ICT_PRED_PROPERTY == ict->ict_pred_type)
+            {
+              if (uname___empty != ict->ict_datatype)
             xp_expand_relative_uri (inner->xrdfal_base, &(ict->ict_datatype));
+            }
           else
             xp_expand_relative_uri (inner->xrdfal_base, &(ict->ict_right));
           if (RDFA_ICT_NO_OBJ == rdfa_ict_feed_or_leave (xp, inner, ctr))

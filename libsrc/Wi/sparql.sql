@@ -2933,6 +2933,9 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
       subj := triples[tctr][0];
       pred := triples[tctr][1];
       obj := triples[tctr][2];
+      -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT: subj:', subj, __tag(subj), __box_flags (subj));
+      -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT: pred:', pred, __tag(pred), __box_flags (pred));
+      -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT: obj:', obj, __tag(obj), __box_flags (obj));
       http ('\n<rdf:Description', ses);
       if (not isiri_id (subj))
         {
@@ -2940,7 +2943,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
             {
               if (subj like 'nodeID://%')
                 {
-                  http (' rdf:nodeID="', ses); http_value (subj, 0, ses); http ('"/>', ses);
+                  http (' rdf:nodeID="b', ses); http_value (subseq (subj, 9), 0, ses); http ('">', ses);
                 }
               else
                 {
@@ -3075,7 +3078,7 @@ res_for_pred:
             {
               if (obj like 'nodeID://%')
                 {
-                  http (' rdf:nodeID="', ses); http_value (obj, 0, ses); http ('"/>', ses);
+                  http (' rdf:nodeID="b', ses); http_value (subseq (obj, 9), 0, ses); http ('"/>', ses);
                 }
               else
                 {
@@ -3093,6 +3096,12 @@ res_for_pred:
       else if (__tag of varbinary = __tag (obj))
         {
           http ('>', ses);
+          http_value (obj, 0, ses);
+          http ('</', ses); http (pred_tagname, ses); http ('>', ses);
+        }
+      else if (__tag of XML = __tag (obj))
+        {
+          http (' rdf:parseType="Literal">', ses);
           http_value (obj, 0, ses);
           http ('</', ses); http (pred_tagname, ses); http ('>', ses);
         }
@@ -3335,7 +3344,7 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_ACC (inout _env any, in
         {
           if (_val >= min_bnode_iri_id ())
 	    {
-	      http (sprintf (' rdf:nodeID="%d"/></rs:binding>', iri_id_num (_val)), _env);
+	      http (sprintf (' rdf:nodeID="b%d"/></rs:binding>', iri_id_num (_val)), _env);
 	    }
 	  else
 	    {

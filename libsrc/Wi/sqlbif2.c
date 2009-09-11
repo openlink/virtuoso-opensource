@@ -1134,7 +1134,8 @@ rfc1808_expand_uri (/*query_instance_t *qi,*/ ccaddr_t base_uri, ccaddr_t rel_ur
       rel_uri_is_temp = 0;
       goto buffer_ready; /* see below */
     }
-  if ((NULL == rel_uri) || ('\0' == rel_uri[0]))
+  if ((NULL == rel_uri) ||
+    (('\0' == rel_uri[0]) && (NULL == strchr (base_uri, '#')) && (NULL == strchr (base_uri, '?'))) )
     {
       buffer = (caddr_t) base_uri;
       buffer_is_temp = base_uri_is_temp;

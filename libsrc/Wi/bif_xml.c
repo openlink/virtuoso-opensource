@@ -1842,7 +1842,10 @@ tree_complete:
       return ((caddr_t) xte);
     }
   else
+    {
+      xml_ns_2dict_clean (&ns_2dict);
     return tree;
+    }
 }
 
 

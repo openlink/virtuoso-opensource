@@ -756,7 +756,7 @@ create procedure SPARQL_RESULTS_RDFXML_WRITE_ROW (inout ses any, in mdta any, in
         {
           if (_val >= min_bnode_iri_id ())
 	    {
-	      http (sprintf (' rdf:nodeID="%s"/></res:binding>', id_to_iri (_val)), ses);
+	      http (sprintf (' rdf:nodeID="b%s"/></res:binding>', id_to_iri (_val)), ses);
 	    }
 	  else
 	    {
@@ -771,7 +771,7 @@ create procedure SPARQL_RESULTS_RDFXML_WRITE_ROW (inout ses any, in mdta any, in
       else if (isstring (_val) and (1 = __box_flags (_val)))
         {
           if (_val like 'nodeID://%')
-            http (sprintf (' rdf:nodeID="%s"/></res:binding>', _val), ses);
+            http (sprintf (' rdf:nodeID="b%s"/></res:binding>', subseq(_val, 9)), ses);
           else
             http (sprintf (' rdf:resource="%V"/></res:binding>', _val), ses);
         }

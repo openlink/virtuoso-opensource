@@ -9986,6 +9986,7 @@ caddr_t uname_virtrdf_ns_uri_bitmask;
 caddr_t uname_virtrdf_ns_uri_isSpecialPredicate;
 caddr_t uname_virtrdf_ns_uri_isSubclassOf;
 caddr_t uname_virtrdf_ns_uri_loadAs;
+caddr_t uname_xhv_ns_uri;
 caddr_t uname_xhv_ns_uri_alternate;
 caddr_t uname_xhv_ns_uri_appendix;
 caddr_t uname_xhv_ns_uri_bookmark;
@@ -10100,6 +10101,7 @@ xml_tree_init (void)
   UNAME_IT(uname_virtrdf_ns_uri_isSpecialPredicate	, VIRTRDF_NS_URI "isSpecialPredicate"	);
   UNAME_IT(uname_virtrdf_ns_uri_isSubclassOf	, VIRTRDF_NS_URI "isSubclassOf"	);
   UNAME_IT(uname_virtrdf_ns_uri_loadAs		, VIRTRDF_NS_URI "loadAs"	);
+  UNAME_IT(uname_xhv_ns_uri			, XHV_NS_URI			);
   UNAME_IT(uname_xhv_ns_uri_alternate		, XHV_NS_URI "alternate"	);
   UNAME_IT(uname_xhv_ns_uri_appendix		, XHV_NS_URI "appendix"		);
   UNAME_IT(uname_xhv_ns_uri_bookmark		, XHV_NS_URI "bookmark"		);
