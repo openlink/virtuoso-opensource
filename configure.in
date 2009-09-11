@@ -35,6 +35,7 @@ AC_INIT([Virtuoso Open Source Edition],
 	[virtuoso-opensource])
 AC_CONFIG_SRCDIR([libsrc/Dk.h])
 AC_CONFIG_AUX_DIR([binsrc/config])
+AC_CONFIG_MACRO_DIR([binsrc/config])
 AM_CONFIG_HEADER([libsrc/Dk/config.h])
 
 dnl
