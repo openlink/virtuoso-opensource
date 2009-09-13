@@ -235,12 +235,12 @@ sqlo_df_from (sqlo_t * so, df_elt_t * tb_dfe, ST ** from)
 	{
 	  if (ot->ot_is_outer || ot->ot_is_proc_view)
 	    {
-	  dk_set_t saved_preds = top_ot->ot_preds;
-	  so->so_is_top_and = 1;
-	  top_ot->ot_preds = NULL;
-	  sqlo_df (so, ot->ot_join_cond);
-	  ot->ot_join_preds = top_ot->ot_preds;
-	  top_ot->ot_preds = saved_preds;
+	      dk_set_t saved_preds = top_ot->ot_preds;
+	      so->so_is_top_and = 1;
+	      top_ot->ot_preds = NULL;
+	      sqlo_df (so, ot->ot_join_cond);
+	      ot->ot_join_preds = top_ot->ot_preds;
+	      top_ot->ot_preds = saved_preds;
 	    }
 	  else
 	    {
@@ -1423,12 +1423,35 @@ dfe_col_def_dfe (sqlo_t * so, df_elt_t * col_dfe)
   return NULL;
 }
 
+int
+dfe_inx_op_defines_ot (df_inx_op_t * dio, op_table_t * ot, df_elt_t * except)
+{
+  /* True if iop contains the table of the ot */
+  if (dio->dio_table == except)
+    return 0;
+  if (dio->dio_table && dio->dio_table->_.table.ot == ot)
+    return 1;
+  DO_SET  (df_inx_op_t *, term, &dio->dio_terms)
+    {
+      if (dfe_inx_op_defines_ot  (term, ot, except))
+	return 1;
+    }
+  END_DO_SET();
+  return 0;
+}
+
 
 int
 dfe_defines_ot (df_elt_t * defining, op_table_t * ot)
 {
-  if (DFE_TABLE == defining->dfe_type && ot == defining->_.table.ot)
-    return 1;
+  if (DFE_TABLE == defining->dfe_type)
+    {
+      if(ot == defining->_.table.ot)
+	return 1;
+      if (defining->_.table.inx_op && dfe_inx_op_defines_ot (defining->_.table.inx_op, ot, defining))
+	return 1;
+      return 0;
+    }
   if (DFE_DT == defining->dfe_type && ot == defining->_.sub.ot)
     return 1;
   if (DFE_GROUP == defining->dfe_type && ot == defining->_.setp.ot)
