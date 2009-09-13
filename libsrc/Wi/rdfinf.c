@@ -852,9 +852,9 @@ sqlg_leading_subclass_inf (sqlo_t * so, data_source_t ** q_head, data_source_t *
     ri->ri_o = sas_o->ri_output;
   else
     {
-  if (o_iri)
-    ri->ri_given = box_copy_tree (o_iri);
-  ri->ri_o = o_dfe->dfe_ssl;
+      if (o_iri)
+	ri->ri_given = box_copy_tree (o_iri);
+      ri->ri_o = o_dfe->dfe_ssl;
     }
   if (!p_const)
     {
@@ -922,7 +922,7 @@ sqlg_leading_subproperty_inf (sqlo_t * so, data_source_t ** q_head, data_source_
   if (sas_p)
     ri->ri_p = sas_p->ri_output;
   else
-  ri->ri_p = p_dfe->dfe_ssl;
+    ri->ri_p = p_dfe->dfe_ssl;
   sqlg_rdf_ts_replace_ssl ((table_source_t*) ts, ri->ri_p, ri->ri_output, 0, inxop_inx);
   ri->ri_list_slot = cc_new_instance_slot (tb_dfe->dfe_sqlo->so_sc->sc_cc);
   ri->ri_ctx = ctx;
@@ -991,7 +991,7 @@ sqlg_rdf_inf_same_as_opt (df_elt_t * tb_dfe)
 void
 sqlg_leading_same_as (sqlo_t * so, data_source_t ** q_head, data_source_t * ts,
     df_elt_t * g_dfe, df_elt_t * s_dfe, df_elt_t * p_dfe,  df_elt_t * o_dfe, int mode,
-		      rdf_inf_ctx_t * ctx, df_elt_t * tb_dfe, int inxop_inx, rdf_inf_pre_node_t ** ri_ret)
+    rdf_inf_ctx_t * ctx, df_elt_t * tb_dfe, int inxop_inx, rdf_inf_pre_node_t ** ri_ret)
 {
   df_elt_t ** in_list;
   rdf_inf_pre_node_t * ri;

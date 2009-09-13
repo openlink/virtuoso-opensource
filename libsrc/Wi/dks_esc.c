@@ -276,9 +276,9 @@ out_percent:
       }
     else
       {
-    out_buf[out_buf_idx++] = '%';
-    out_buf[out_buf_idx++] = "0123456789ABCDEF"[(wc&0xF0)>>4];
-    out_buf[out_buf_idx++] = "0123456789ABCDEF"[wc&0x0F];
+        out_buf[out_buf_idx++] = '%';
+        out_buf[out_buf_idx++] = "0123456789ABCDEF"[(wc&0xF0)>>4];
+        out_buf[out_buf_idx++] = "0123456789ABCDEF"[wc&0x0F];
       }
     goto char_done;
   }

@@ -1069,7 +1069,7 @@ str_compare (const void *s1, const void *s2)
   dtp_t sc2_dtp = DV_TYPE_OF (sc2);
   int sign;
   if (IS_STRING_DTP (sc1_dtp) && IS_STRING_DTP (sc2_dtp))
-  return strcmp (sc1, sc2);
+    return strcmp (sc1, sc2);
   if ((DV_WIDE == sc1_dtp) && (DV_WIDE == sc2_dtp))
     {
       int len1 = box_length (sc1);

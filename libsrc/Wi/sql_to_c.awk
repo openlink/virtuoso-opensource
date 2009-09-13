@@ -48,7 +48,7 @@ function strip_comments(text, pl_stats, arr)
        {
 	 inx = inx + 1
 	 continue
-       }
+       }	
      if (special_comment > 0)
        {
 	 res_line = substr (curline, special_comment + 3) "@"

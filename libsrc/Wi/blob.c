@@ -1294,7 +1294,7 @@ blob_chain_delete (it_cursor_t * itc, blob_layout_t * bl)
   if (!bl->bl_page_dir_complete)
     blob_read_dir (itc, &bl->bl_pages, &bl->bl_page_dir_complete, bl->bl_dir_start);
   if (bl->bl_page_dir_complete) /* see if no error in reading page dir */
-  blob_delete_via_dir (itc, bl);
+    blob_delete_via_dir (itc, bl);
   blob_layout_free (bl);
 }
 
@@ -2872,7 +2872,7 @@ blob_read_dir (it_cursor_t * tmp_itc, dp_addr_t ** pages, int * is_complete, dp_
       if (!page_wait_blob_access (tmp_itc, start, &buf, PA_READ, NULL, 1))
 	{
 	  error = 1;
-	break;
+	  break;
 	}
       items_on_page = (LONG_REF (buf->bd_buffer + DP_BLOB_LEN)) / sizeof (dp_addr_t);
       if (items_on_page)
@@ -3034,7 +3034,7 @@ bl_check (blob_layout_t * bl)
 #ifdef MTX_DEBUG
       GPF_T1 ("Failed bl_check");
 #endif
-    return BLOB_FREE;
+      return BLOB_FREE;
     }
   return BLOB_OK;
 }

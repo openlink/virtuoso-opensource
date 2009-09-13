@@ -757,7 +757,7 @@ guess_nchars_enc (const unsigned char *buf, size_t buflen)
             scores [GUESS_WCHAR_OF_8BIT] += (16 * sizeof (wchar_t) - (7+7));
           if ((0 == prev_wc) && (0 == wc))
             scores [GUESS_WCHAR_OF_WCHAR] += (16 * sizeof (wchar_t));
-            scores [GUESS_WCHAR] += (8 * sizeof (wchar_t) - 11);
+          scores [GUESS_WCHAR] += (8 * sizeof (wchar_t) - 11);
           tail += (sizeof (wchar_t) - 1);
         }
       tail++;
@@ -824,7 +824,7 @@ assert_box_enc_matches_bf (const char *file, int line, ccaddr_t box, int expecte
       enc = guess_nchars_enc ((const unsigned char *)box, box_length (box) - 1);
       if (0 != bf)
         PRINTF_BAD_BF_INT (bf, enc, "DV_UNAME", box, box_length (box) - 1);
-  if ((GUESS_UTF8 != enc) && (GUESS_ENC_UNKNOWN != enc))
+      if ((GUESS_UTF8 != enc) && (GUESS_ENC_UNKNOWN != enc))
         PRINTF_BAD_ENC_INT (enc, "UTF-8", "DV_UNAME", box, box_length (box) - 1);
       break;
     case DV_WIDE:
@@ -841,7 +841,7 @@ assert_box_enc_matches_bf (const char *file, int line, ccaddr_t box, int expecte
           if ((GUESS_UTF8 != enc) && (GUESS_8BIT != enc) && (GUESS_ENC_UNKNOWN != enc))
             PRINTF_BAD_ENC_INT (enc, "8-bit or UTF-8", "DV_STRING", box, box_length (box) - 1);
           if (expected_bf_if_zero & (BF_IRI | BF_UTF8))
-    {
+            {
               if ((GUESS_UTF8 != enc) && (GUESS_ENC_UNKNOWN != enc))
                 PRINTF_BAD_ENC_INT (enc, "presumably UTF-8", "DV_STRING", box, box_length (box) - 1);
             }

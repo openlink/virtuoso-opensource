@@ -4014,16 +4014,16 @@ retry_unrdf:
                     {
 		      dk_free_box (buf);
 		      goto POP_format_mismatch_mid_field;
-	    }
-	  dk_free_box (buf);
-	  dk_set_push (&res, val);
+                    }
+                  dk_free_box (buf);
+                  dk_set_push (&res, val);
                   break;
-	}
+                }
             }
 	  val = box_dv_short_nchars (buf, out - buf);
 	  dk_free_box (buf);
 	  dk_set_push (&res, val);
-	break;
+          break;
 	}
 
       case 'D':
@@ -4432,7 +4432,7 @@ bif_like_min (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	}
     }
   else
-  ctr = strpbrk (str, "%_*[]");
+    ctr = strpbrk (str, "%_*[]");
   if (!ctr)
     {
       res = box_dv_short_string (str);
@@ -4473,7 +4473,7 @@ bif_like_max (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	}
     }
   else
-  ctr = strpbrk (str, "%_*[]");
+    ctr = strpbrk (str, "%_*[]");
   if (!ctr)
     {
       res = box_dv_short_string (str);
@@ -7837,27 +7837,27 @@ bif_one_of_these (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       for (nth = 0; nth < n_values; nth++)
 	{
 	  value = is_array ? ((caddr_t*)values)[nth] : values;
-      val_dtp = DV_TYPE_OF (value);
-      if (IS_WIDE_STRING_DTP (item_dtp) && IS_STRING_DTP (val_dtp))
-	{
-	  caddr_t wide = box_narrow_string_as_wide ((unsigned char *) value, NULL, 0, QST_CHARSET (qst), err_ret, 1);
-	  if (*err_ret)
-	    return NULL;
-	  they_match = boxes_match (item, wide);
-	  dk_free_box (wide);
-	}
-      else if (IS_STRING_DTP (item_dtp) && IS_WIDE_STRING_DTP (val_dtp))
-	{
-	  caddr_t wide = box_narrow_string_as_wide ((unsigned char *) item, NULL, 0, QST_CHARSET (qst), err_ret, 1);
-	  if (*err_ret)
-	    return NULL;
-	  they_match = boxes_match (wide, value);
-	  dk_free_box (wide);
-	}
-      else if (item_dtp != val_dtp && item_dtp != DV_DB_NULL && val_dtp != DV_DB_NULL)
-	{
-	  caddr_t tmp_val = box_cast_to (qst, value, val_dtp, item_dtp, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, err_ret);
-	  if (*err_ret)
+	  val_dtp = DV_TYPE_OF (value);
+	  if (IS_WIDE_STRING_DTP (item_dtp) && IS_STRING_DTP (val_dtp))
+	    {
+	      caddr_t wide = box_narrow_string_as_wide ((unsigned char *) value, NULL, 0, QST_CHARSET (qst), err_ret, 1);
+	      if (*err_ret)
+		return NULL;
+	      they_match = boxes_match (item, wide);
+	      dk_free_box (wide);
+	    }
+	  else if (IS_STRING_DTP (item_dtp) && IS_WIDE_STRING_DTP (val_dtp))
+	    {
+	      caddr_t wide = box_narrow_string_as_wide ((unsigned char *) item, NULL, 0, QST_CHARSET (qst), err_ret, 1);
+	      if (*err_ret)
+		return NULL;
+	      they_match = boxes_match (wide, value);
+	      dk_free_box (wide);
+	    }
+	  else if (item_dtp != val_dtp && item_dtp != DV_DB_NULL && val_dtp != DV_DB_NULL)
+	    {
+	      caddr_t tmp_val = box_cast_to (qst, value, val_dtp, item_dtp, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, err_ret);
+	      if (*err_ret)
 		{
 		  if (qi->qi_no_cast_error)
 		    {
@@ -7865,17 +7865,17 @@ bif_one_of_these (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		      *err_ret = NULL;
 		      continue;
 		    }
-	    return NULL;
+		  return NULL;
 		}
+	      else
+		they_match = boxes_match (item, tmp_val);
+	      dk_free_tree (tmp_val);
+	    }
 	  else
-	    they_match = boxes_match (item, tmp_val);
-	  dk_free_tree (tmp_val);
+	    they_match = boxes_match (item, value);
+	  if (they_match)
+	    return (box_num (inx));
 	}
-      else
-	they_match = boxes_match (item, value);
-      if (they_match)
-	return (box_num (inx));
-    }
     }
   return (box_num (0));
 }
@@ -11473,8 +11473,8 @@ bif_exec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   PROC_SAVE_PARENT;
   warnings = sql_warnings_save (NULL);
-      if (n_args > 4)
-	{
+  if (n_args > 4)
+    {
       dtp_t options_dtp;
       options = (caddr_t *)bif_arg(qst, args, 4, "exec");
       options_dtp = DV_TYPE_OF (options);
@@ -11485,7 +11485,7 @@ bif_exec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
               max_rows = unbox ((caddr_t)options);
               max_rows_is_set = 1;
               options = NULL;
-	}
+            }
           else if (DV_DB_NULL == options_dtp)
             options = NULL;
           else
@@ -11705,7 +11705,7 @@ done:
   if (NULL != shc)
     shcompo_release (shc);
   else
-  qr_free (qr);
+    qr_free (qr);
   return res ? res : box_num (0);
 }
 
@@ -12519,8 +12519,8 @@ bif_bit_shift (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int64 x2 = (int64) bif_long_arg (qst, args, 1, "bit_shift");
   if (x2 >= 0)
     return box_num (x1 << x2);
-      else
-        return box_num (x1 >> (-x2));
+  else
+    return box_num (x1 >> (-x2));
 }
 
 caddr_t

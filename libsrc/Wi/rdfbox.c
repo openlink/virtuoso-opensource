@@ -1919,7 +1919,7 @@ bif_http_nt_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ttl_iriref_items_t tii;
   memset (&tii,0, sizeof (ttl_iriref_items_t));
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF ((caddr_t)env) ||
-    (sizeof (nt_env_t) != box_length ((caddr_t)env)) )	
+    (sizeof (nt_env_t) != box_length ((caddr_t)env)) )
     sqlr_new_error ("22023", "SR601", "Argument 1 of http_nt_triple() should be an array of special format");
   if (!iri_cast_nt_absname (qi, subj, &tii.s.loc, &tii.s.is_bnode))
     goto fail; /* see below */
@@ -2295,7 +2295,7 @@ bif_sparql_rset_nt_write_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
   char rowid_label[20], colid_label[30];
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF ((caddr_t)env) ||
     (sizeof (nt_env_t) != box_length ((caddr_t)env)) ||
-    (DV_LONG_INT != DV_TYPE_OF (env->ne_rowctr)) ||	
+    (DV_LONG_INT != DV_TYPE_OF (env->ne_rowctr)) ||
     ((DV_LONG_INT != DV_TYPE_OF (env->ne_out_ses)) && (DV_STRING_SESSION != DV_TYPE_OF (env->ne_out_ses)) && (DV_DB_NULL != DV_TYPE_OF (env->ne_out_ses))) ||
     (DV_ARRAY_OF_POINTER != DV_TYPE_OF ((caddr_t)(env->ne_cols))) ||
     (box_length ((caddr_t)(env->ne_cols)) % sizeof (ttl_iriref_t)) )

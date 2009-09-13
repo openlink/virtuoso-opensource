@@ -601,7 +601,7 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
   allowed_dirs = cfg_get_parm (wholefile, "\ndirs_allowed:", 1);
   denied_dirs = cfg_get_parm (wholefile, "\ndirs_denied:", 1);
   if (!recover_file_prefix) /* when recovering backup_dirs is from command line */
-  backup_dirs = cfg_get_parm (wholefile, "\nbackup_dirs:", 1);
+    backup_dirs = cfg_get_parm (wholefile, "\nbackup_dirs:", 1);
   safe_execs = cfg_get_parm (wholefile, "\nsafe_executables:", 1);
   dba_execs = cfg_get_parm (wholefile, "\ndba_executables:", 1);
   default_charset_name = cfg_get_parm (wholefile, "\ncharset:", 1);

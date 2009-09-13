@@ -347,7 +347,7 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
         BEGIN TURTLE_BAD_SQ;
       }
     else
-        tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "End-of-line in a short single-quoted string");
+      tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "End-of-line in a short single-quoted string");
     ttlp_arg[0].ttlp_lexlineno++; yymore(); }
 <TURTLE_DQ>{S_NL}	{
     if (!(TTLP_STRING_MAY_CONTAIN_CRLF & ttlp_arg[0].ttlp_flags))
@@ -356,7 +356,7 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
         BEGIN TURTLE_BAD_DQ;
       }
     else
-        tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "End-of-line in a short double-quoted string");
+      tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "End-of-line in a short double-quoted string");
     ttlp_arg[0].ttlp_lexlineno++; yymore(); }
 <TURTLE_SQ>[\\]{S_NL}	{
     if (!(TTLP_STRING_MAY_CONTAIN_CRLF & ttlp_arg[0].ttlp_flags))
@@ -707,7 +707,7 @@ iter_is_set:
       if (flags & TTLP_ALLOW_NQUAD)
         nqyyparse (ttlp, scanner);
       else
-      ttlyyparse (ttlp, scanner);
+        ttlyyparse (ttlp, scanner);
       /* ttlyydebug = 0; */
       tf_commit (tf);
     }

@@ -367,20 +367,19 @@ is_vtb_word__xany (const unichar * buf, size_t bufsize)
   return 0;
 }
 
-
 caddr_t
-bif_vt_is_noise  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+bif_vt_is_noise (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t word = bif_string_arg (qst, args, 0, "vt_is_noise");
   caddr_t enc_name = bif_string_arg (qst, args, 1, "vt_is_noise");
   caddr_t lang_name = bif_string_arg (qst, args, 2, "vt_is_noise");
   encoding_handler_t *eh = eh_get_handler (enc_name);
-#if 0	/* Stub variant */
+#if 0				/* Stub variant */
   lenmem_t lm;
   lm.lm_length = strlen (word);
   lm.lm_memblock = word;
   return box_num (NULL != id_hash_get (lh_noise_words, &lm));
-#else	/* Variant which may be reliably used for any language with any sort of word normalization */
+#else /* Variant which may be reliably used for any language with any sort of word normalization */
   lang_handler_t *lh = lh_get_handler (lang_name);
   int cnt;
   if (NULL == eh)
@@ -1367,11 +1366,11 @@ process_as_text:
         ASSERT_BOX_WCHAR (str);
       else
         ASSERT_BOX_8BIT (str);
-    lh_iterate_patched_words (
+      lh_iterate_patched_words (
          eh, lh,
-       str, box_length(str),
-       lh->lh_is_vtb_word, lh->lh_normalize_word,
-       cbk, vtb );
+         str, box_length(str),
+         lh->lh_is_vtb_word, lh->lh_normalize_word,
+         cbk, vtb );
     }
   goto done;
 

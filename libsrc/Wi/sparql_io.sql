@@ -949,7 +949,7 @@ create procedure SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, inout meta
   if (esc_mode = 13)
     {
       newline := '';
-      trnewline := ''');\ndocument.writeln(''';      
+      trnewline := ''');\ndocument.writeln(''';
     }
   else
     newline := trnewline := '\n';

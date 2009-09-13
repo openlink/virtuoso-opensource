@@ -1094,7 +1094,7 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
        if (VM_URI like '/%')
 	 path_str := path;
        else
-         path_str := rel_uri;	 
+         path_str := rel_uri;
 
        if (regexp_match (VM_URI, path_str) is null)
          goto next_variant;
@@ -1117,12 +1117,12 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
 	   best_ct := VM_TYPE;
 	   if (VM_URI like '/%')
 	     best_variant := variant;
-	   else  
+	   else
 	     {
-	   s := string_output ();
-	   http_dav_url (variant, null, s);
-	   s := string_output_string (s);
-	   best_variant := s;
+	       s := string_output ();
+	       http_dav_url (variant, null, s);
+	       s := string_output_string (s);
+	       best_variant := s;
 	     }
 	   best_id := VM_ID;
 	   hook := VM_CONTENT_LOCATION_HOOK;

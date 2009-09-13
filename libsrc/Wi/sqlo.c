@@ -903,7 +903,7 @@ sqlo_add_table_ref (sqlo_t * so, ST ** tree_ret, dk_set_t *res)
 		ot->ot_left_sel = sqlp_union_tree_select (view);
 		if (ST_P (view, PROC_TABLE))
 		  {
-		  sqlo_proc_table_cols (so, ot);
+		    sqlo_proc_table_cols (so, ot);
 		    ot->ot_is_proc_view = 1;
 		  }
 		sco_add_table (so->so_scope, ot);
@@ -1251,27 +1251,27 @@ sqlo_expand_dt (sqlo_t *so, ST *tree, ST ** from_ret, op_table_t *ot, int is_in_
   ST *dtexp = from->_.table_ref.table;
   op_table_t *dot = sqlo_find_dt (so, dtexp);
 
-      sqlo_replace_col_refs_prefixes (so, (ST *) tree->_.select_stmt.selection, dot->ot_new_prefix,
-	  (ST **) dtexp->_.select_stmt.selection, 0);
-      sqlo_replace_col_refs_prefixes (so, tree->_.select_stmt.table_exp, dot->ot_new_prefix,
-	  (ST **) dtexp->_.select_stmt.selection, 1);
-      sqlo_replace_fun_refs_prefixes (tree, dot->ot_new_prefix, ot->ot_new_prefix);
-      if (dtexp->_.select_stmt.table_exp->_.table_exp.where)
-	t_st_and (dot->ot_fun_refs ?
-	    &texp->_.table_exp.having :
-	    &texp->_.table_exp.where, dtexp->_.select_stmt.table_exp->_.table_exp.where);
-      t_set_delete (&so->so_tables, dot);
-      t_set_delete (&ot->ot_from_ots, dot);
-      ot->ot_from_ots = dk_set_conc (ot->ot_from_ots, dot->ot_from_ots);
-      DO_SET (ST *, fn_ref, &dot->ot_fun_refs)
-	{
-	  if (!strcmp (fn_ref->_.fn_ref.fn_name, dot->ot_new_prefix))
-	    fn_ref->_.fn_ref.fn_name = ot->ot_new_prefix;
-	}
-      END_DO_SET ();
-      ot->ot_fun_refs = dk_set_conc (ot->ot_fun_refs, dot->ot_fun_refs);
-      if (dot->ot_join_cond)
-	t_st_and (&ot->ot_join_cond, dot->ot_join_cond);
+  sqlo_replace_col_refs_prefixes (so, (ST *) tree->_.select_stmt.selection, dot->ot_new_prefix,
+				  (ST **) dtexp->_.select_stmt.selection, 0);
+  sqlo_replace_col_refs_prefixes (so, tree->_.select_stmt.table_exp, dot->ot_new_prefix,
+				  (ST **) dtexp->_.select_stmt.selection, 1);
+  sqlo_replace_fun_refs_prefixes (tree, dot->ot_new_prefix, ot->ot_new_prefix);
+  if (dtexp->_.select_stmt.table_exp->_.table_exp.where)
+    t_st_and (dot->ot_fun_refs ?
+	      &texp->_.table_exp.having :
+	      &texp->_.table_exp.where, dtexp->_.select_stmt.table_exp->_.table_exp.where);
+  t_set_delete (&so->so_tables, dot);
+  t_set_delete (&ot->ot_from_ots, dot);
+  ot->ot_from_ots = dk_set_conc (ot->ot_from_ots, dot->ot_from_ots);
+  DO_SET (ST *, fn_ref, &dot->ot_fun_refs)
+    {
+      if (!strcmp (fn_ref->_.fn_ref.fn_name, dot->ot_new_prefix))
+	fn_ref->_.fn_ref.fn_name = ot->ot_new_prefix;
+    }
+  END_DO_SET ();
+  ot->ot_fun_refs = dk_set_conc (ot->ot_fun_refs, dot->ot_fun_refs);
+  if (dot->ot_join_cond)
+    t_st_and (&ot->ot_join_cond, dot->ot_join_cond);
 
   if (is_in_jt)
     {
@@ -1315,7 +1315,7 @@ sqlo_inline_jt (sqlo_t * so, ST * tree, ST * exp, op_table_t * ot)
   if (ST_P (exp, JOINED_TABLE))
     {
       if (OJ_FULL == exp->_.join.type)
-    return 0;
+	return 0;
       if (sqlo_dt_inlineable (so, tree, exp->_.join.left, ot, 0))
 	{
 	  sqlo_expand_dt (so, tree, &exp->_.join.left, ot, 1, NULL);
@@ -1887,9 +1887,9 @@ sqlo_expand_jts (sqlo_t *so, ST **ptree, ST *select_stmt, int was_top)
       if (0 == res && (J_INNER == tree->_.join.type || J_CROSS == tree->_.join.type))
 	return res;
       if (OJ_LEFT != tree->_.join.type)
-      res += sqlo_jt_dt_wrap (so, &tree->_.join.left, select_stmt, was_top, 1);
+	res += sqlo_jt_dt_wrap (so, &tree->_.join.left, select_stmt, was_top, 1);
       if (OJ_RIGHT != tree->_.join.type)
-      res += sqlo_jt_dt_wrap (so, &tree->_.join.right, select_stmt, was_top, 1);
+	res += sqlo_jt_dt_wrap (so, &tree->_.join.right, select_stmt, was_top, 1);
 
       if (tree->_.join.type == OJ_FULL)
 	{

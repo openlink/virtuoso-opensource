@@ -611,7 +611,7 @@ dt_fraction_part_ck (char *str, long factor, int *err)
 {
   long acc = 0;
   if (NULL == str)
-	  return 0;
+    return 0;
   if (!isdigit (str[0]))
     {
       *err |= 1;
@@ -661,21 +661,21 @@ dt_to_string (const char *dt, char *str, int len)
   switch (dt_type)
     {
       case DT_TYPE_DATE:
-	  snprintf (str, len, "%04d-%02d-%02d",
-	      ts.year, ts.month, ts.day);
+        snprintf (str, len, "%04d-%02d-%02d",
+          ts.year, ts.month, ts.day);
         return;
       case DT_TYPE_TIME:		/*  012345678 */
         if (len_before_fra < 8)		/* "hh:mm:ss" */
           goto short_buf; /* see below */
         tail += snprintf (str, len_before_fra, "%02d:%02d:%02d",
           ts.hour, ts.minute, ts.second );
-	  break;
-      default:				/* 01234567890123456789 */
+	break;
+      default:				/*  01234567890123456789 */
         if (len_before_fra < 19)	/* "yyyy-mm-dd hh:mm:ss" */
           goto short_buf; /* see below */
 	tail += snprintf (str, len_before_fra, "%04d-%02d-%02d %02d:%02d:%02d",
 	  ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second );
-	  break;
+	break;
     }
   if (ts.fraction)
     {
@@ -706,29 +706,29 @@ dt_to_iso8601_string (const char *dt, char *str, int len)
   switch (dt_type)
     {
       case DT_TYPE_DATE:
-	  snprintf (str, len, "%04d-%02d-%02d",
-	      ts.year, ts.month, ts.day);
+        snprintf (str, len, "%04d-%02d-%02d",
+          ts.year, ts.month, ts.day);
         return;
       case DT_TYPE_TIME:		/*  012345678 */
         if (len_before_fra < 8)		/* "hh:mm:ss" */
           goto short_buf; /* see below */
         tail += snprintf (str, len_before_fra, "%02d:%02d:%02d",
           ts.hour, ts.minute, ts.second );
-	  break;
+	break;
       default:				/* 01234567890123456789 */
         if (len_before_fra < 19)	/* yyyy-mm-ddThh:mm:ss */
           goto short_buf; /* see below */
 	tail += snprintf (str, len_before_fra, "%04d-%02d-%02dT%02d:%02d:%02d",
 	  ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second );
-	  break;
+	break;
     }
-		  if (ts.fraction)
+  if (ts.fraction)
     {
       if (ts.fraction % 1000)
 	tail += snprintf (tail, (str + len) - tail, ".%09d", (int)ts.fraction);
       else if (ts.fraction % 1000000)
 	tail += snprintf (tail, (str + len) - tail, ".%06d", (int)(ts.fraction / 1000));
-		  else
+      else
 	tail += snprintf (tail, (str + len) - tail, ".%03d", (int)(ts.fraction / 1000000));
     }
   if (tz)
@@ -776,19 +776,19 @@ iso8601_or_odbc_string_to_dt_1 (const char *str, char *dt, int dtflags, int dt_t
   FILE *f = fopen ("iso8601_or_odbc_string_to_dt.log", "at");
   iso8601_or_odbc_string_to_dt_impl (str, dt, dtflags, dt_type, err_msg_ret);
   if (NULL != f)
-	{
+    {
       if (NULL != err_msg_ret[0])
-	    {
+        {
           fprintf (f, "%s\n\t%s\n", str, err_msg_ret[0]);
-	    }
-	  else
-	    {
+        }
+      else
+        {
           char tmp[100];
           dt_to_iso8601_string (dt, tmp, sizeof (tmp));
           fprintf (f, "%s\t--> %s\n", str, tmp);
-	    }
+        }
       fclose (f);
-	    }
+    }
 }
 
 void
@@ -832,30 +832,30 @@ iso8601_or_odbc_string_to_dt_1 (const char *str, char *dt, int dtflags, int dt_t
           tail += 2;
           new_dt_type = DT_TYPE_TIME;
           new_dtflags = DTFLAG_TIME | DTFLAG_TIMEZONE;
-	}
+        }
       else
-	{
+        {
           err_msg_ret[0] = box_dv_short_string ("Invalid ODBC literal type after '{', only 'd', 't', and 'ts' are supported");
           return;
-    }
+        }
       if (DTFLAG_FORMAT_SETS_FLAGS & dtflags)
-    {
+        {
           dtflags = (dtflags & ~(DTFLAG_DATE | DTFLAG_TIME | DTFLAG_TIMEZONE)) | new_dtflags;
           if (-1 != dt_type)
             dt_type = new_dt_type;
-    }
+        }
       else if ((dtflags & (DTFLAG_DATE | DTFLAG_TIME)) != (new_dtflags & (DTFLAG_DATE | DTFLAG_TIME)))
-    {
+        {
           err_msg_ret[0] = box_dv_short_string ("ODBC literal type does not match the expected one");
           return;
-    }
+        }
       while (' ' == tail[0]) tail++;
       if ('\'' != tail[0])
-	{
+        {
           err_msg_ret[0] = box_dv_short_string ("Syntax error in ODBC literal (single-quoted constant expected after literal type");
           return;
-	}
-	}
+        }
+    }
   for (fld_idx = 0; fld_idx < 9; fld_idx++)
     {
       int fld_flag = (1 << fld_idx);
@@ -868,40 +868,40 @@ iso8601_or_odbc_string_to_dt_1 (const char *str, char *dt, int dtflags, int dt_t
           tail++;
           while (' ' == tail[0]) tail++;
           if ('}' != tail[0])
-	{
+            {
               err_msg_ret[0] = box_dv_short_string ("Syntax error in ODBC literal (missing '}' after closing quote)");
               return;
-	}
+            }
           tail++;
           break;
-    }
+        }
       if (0 == (dtflags & fld_flag))
         continue;
       if ((DTFLAG_YY == fld_flag) && !(DTFLAG_ALLOW_ODBC_SYNTAX & dtflags))
         while ('0' == tail[0]) tail++;
       if (DTFLAG_ZH == fld_flag)
-	{
+        {
           if ('-' == tail[-1])
             tzsign = 1;
-	}
+        }
       for (group_end = tail; isdigit (group_end[0]); group_end++) /*no body*/;
       fldlen = group_end - tail;
       fld_maxlen = fld_max_lengths[fld_idx];
       if (('/' == group_end[0]) || (('.' == group_end[0]) && (DTFLAG_MM >= fld_flag)))
-	{
+        {
           if (!(DTFLAG_ALLOW_ODBC_SYNTAX & dtflags))
-    {
+            {
               err_msg_ret[0] = box_dv_short_string ("mm/dd/yyyy format is not allowed, needs yyyy-mm-dd");
               return;
-    }
+            }
           if (DTFLAG_YY == fld_flag)
             us_mdy_format = group_end[0];
           else if ((us_mdy_format != group_end[0]) || (DTFLAG_MM != fld_flag))
-    {
+            {
               err_msg_ret[0] = box_sprintf (50, "Syntax error in ODBC literal (misplaced '%c')", group_end[0]);
               return;
             }
-    }
+        }
 /*Check for field length and parse special cases like missing delimiters in year-month-day or hour:minute */
       if (fldlen == fld_maxlen)
         goto field_length_checked; /* see below */
@@ -910,26 +910,26 @@ iso8601_or_odbc_string_to_dt_1 (const char *str, char *dt, int dtflags, int dt_t
           if (fldlen < fld_maxlen)
             goto field_length_checked; /* see below */
           if (8 == fldlen)
-    {
+            {
               fld_values[0] = ((((((tail[0]-'0') * 10) + (tail[1]-'0')) * 10) + (tail[2]-'0')) * 10) + (tail[3]-'0');
               fld_values[1] = ((tail[4]-'0') * 10) + (tail[5]-'0');
               tail += 6;
               fld_idx++;
               res_flags |= DTFLAG_YY | DTFLAG_MM;
               continue;
-    }
+            }
         }
       if (DTFLAG_ALLOW_ODBC_SYNTAX & dtflags)
-    {
+        {
           if ((DTFLAG_MM <= fld_flag) && (DTFLAG_SS >= fld_flag) && (fldlen > 0) && (fldlen <= 2))
             goto field_length_checked; /* see below */
           if ((us_mdy_format) && (DTFLAG_DD == fld_flag) && (fldlen > 0) && (fldlen <= 4))
             goto field_length_checked; /* see below */
-    }
+        }
       if ((DTFLAG_SF == fld_flag) && (fldlen > 0))
         goto field_length_checked; /* see below */
       if ((DTFLAG_HH == fld_flag) && (4 == fldlen) && (tail > str) && (('T' == tail[-1]) || (('X' == tail[-1]) && ('T' == tail[-2]))))
-    {
+        {
           fld_values[3] = ((tail[0]-'0') * 10) + (tail[1]-'0');
           fld_values[4] = ((tail[2]-'0') * 10) + (tail[3]-'0');
           fld_values[5] = 0;
@@ -937,11 +937,11 @@ iso8601_or_odbc_string_to_dt_1 (const char *str, char *dt, int dtflags, int dt_t
           tail += 4;
           res_flags |= DTFLAG_HH | DTFLAG_MIN | DTFLAG_SS;
           if (('Z' == group_end[0]) && ('\0' == group_end[1]))
-	{
+            {
               tzmin = 0;
               group_end++;
               break;
-	}
+            }
           continue;
         }
       err_msg_ret[0] = box_sprintf (500, "Incorrect %s field length", names[fld_idx]);
@@ -949,16 +949,16 @@ iso8601_or_odbc_string_to_dt_1 (const char *str, char *dt, int dtflags, int dt_t
 
 field_length_checked:
       if (DTFLAG_SF == fld_flag)
-	{
+        {
           int mult = 1000000000;
           int cctr;
           fld_value = 0;
           for (cctr = 0; ((cctr < 9) && (cctr < fldlen)); cctr++)
-	    {
+            {
               mult /= 10;
               fld_value += (tail[cctr] - '0') * mult;
-	    }
-	}
+            }
+        }
       else
         fld_value = atoi (tail);
       fld_values[fld_idx] = fld_value;
@@ -973,13 +973,13 @@ field_length_checked:
         {
           tzmin = 0; /* Default timezone is dropped because an explicit one is in place */
           if ('Z' == group_end[0])
-	{
+            {
               if ('\0' != group_end[1])
                 {
                   err_msg_ret[0] = box_dv_short_string ("Invalid timezone (extra characters after 'Z')");
                   return;
-	}
-    }
+                }
+            }
           if (DTFLAG_SS == fld_flag)
             fld_idx++;
           else if ((DTFLAG_DD == fld_flag) && (!(dtflags & (DTFLAG_HH | DTFLAG_MIN | DTFLAG_SS | DTFLAG_SF))))
@@ -998,7 +998,7 @@ field_length_checked:
             goto field_delim_checked; /* see below */
           if ((DTFLAG_SS == fld_flag) && (' ' == group_end[0]))
             goto field_delim_checked; /* see below */
-    }
+        }
       err_msg_ret[0] = box_sprintf (500, "Incorrect %s delimiter", names[fld_idx]);
       return;
 
@@ -1014,7 +1014,7 @@ field_delim_checked:
       tail++;
     }
   if ('\0' != tail[0])
-		{
+    {
       err_msg_ret[0] = box_sprintf (500, "Extra symbols (%.200s) after the end of data", group_end);
       return;
     }
@@ -1024,12 +1024,12 @@ field_delim_checked:
       int d = fld_values[1];
       int y = fld_values[2];
       if ((m <= 12) && (y >= 1000))
-	{
+        {
           fld_values[0] = y; fld_values[1] = m; fld_values[2] = d; /* ... and dig in ISO one */
-	}
+        }
     }
   for (fld_idx = 0; fld_idx < 9; fld_idx++)
-	{
+    {
       int fld_flag = (1 << fld_idx);
       int fld_value = fld_values[fld_idx];
       if (0 == (res_flags & fld_flag))
@@ -1038,7 +1038,7 @@ field_delim_checked:
         {
           err_msg_ret[0] = box_sprintf (500, "Incorrect %s value", names[fld_idx]);
           return;
-	}
+        }
       if (DTFLAG_DD == fld_flag)
         {
           int month = fld_values[1];
@@ -1049,7 +1049,7 @@ field_delim_checked:
             {
               err_msg_ret[0] = box_sprintf (500, "Too many days (%d, the month has only %d)", fld_value, days_in_this_month);
               return;
-    }
+            }
         }
     }
   tzmin += (60 * fld_values[7]) + fld_values[8];

@@ -416,7 +416,7 @@ ksp_cmp_func (key_spec_t * ksp, dbe_key_t * key)
     }
   END_DO_SET();
  not_found:
-  ksp->ksp_key_cmp = NULL;
+    ksp->ksp_key_cmp = NULL;
 }
 
 

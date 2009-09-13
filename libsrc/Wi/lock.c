@@ -820,7 +820,7 @@ lt_kill_other_trx (lock_trx_t * lt, it_cursor_t * itc, buffer_desc_t * buf, int 
 	    lt_2pc_commit (lt);
 	  }
 	break;
-*/	
+*/
     case LT_CLOSING:
     case LT_FINAL_COMMIT_PENDING:
       {

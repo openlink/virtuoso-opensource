@@ -1844,7 +1844,7 @@ tree_complete:
   else
     {
       xml_ns_2dict_clean (&ns_2dict);
-    return tree;
+      return tree;
     }
 }
 
@@ -2403,7 +2403,7 @@ bx_tree_serialize (caddr_t * tree, dk_session_t * out, close_tag_t ** ct_ret)
  */
 
 void
-bx_tree_start_tag  (xte_serialize_state_t *xsst, dk_session_t * ses, caddr_t * tag,
+bx_tree_start_tag (xte_serialize_state_t *xsst, dk_session_t * ses, caddr_t * tag,
   int child_num, html_tag_descr_t *tag_descr, int is_xsl)
 {
   int inx, len = BOX_ELEMENTS (tag);
@@ -2417,7 +2417,7 @@ bx_tree_start_tag  (xte_serialize_state_t *xsst, dk_session_t * ses, caddr_t * t
         {
           if (!strcmp (tag[inx], uname__bang_exclude_result_prefixes))
             bx_out_nsdecls_of_2dict (xsst->xsst_qst, ses, xsst->xsst_ct, &(xsst->xsst_entity->xe_doc.xtd->xd_ns_2dict), tag[inx+1]);
-	continue;
+	  continue;
         }
       SES_PRINT (ses, " ");
       if (xsst->xsst_out_method == OUT_METHOD_HTML && tag[inx] && tag[inx+1] && DV_STRINGP (tag[inx + 1]) &&
@@ -4198,8 +4198,8 @@ bif_xte_nodebld_final_impl (caddr_t * qst, state_slot_t ** args, int plain_retur
           if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (head))
             {
               if (DV_UNAME != DV_TYPE_OF (XTE_HEAD_NAME (head)))
-        xte_replace_strings_with_unames (item);
-    }
+                xte_replace_strings_with_unames (item);
+            }
           else if ((XMLATTRIBUTE_FLAG == unbox (head)) && (3 == BOX_ELEMENTS (item)))
             {
               dk_free_tree ((caddr_t)acc);

@@ -1917,8 +1917,8 @@ sec_read_users (void)
   user_t_public = sec_name_to_user ("public");
   if (!user_t_dba)
     user_t_dba = sec_set_user (NULL, "dba", "dba", 0);
-	/* make sure that dba always has id and group 0, even
-	   if accidentally set to something else */
+  /* make sure that dba always has id and group 0, even
+     if accidentally set to something else */
   user_t_dba->usr_id = 0;
   user_t_dba->usr_g_id = 0;
   user_t_dba->usr_disabled = 0;

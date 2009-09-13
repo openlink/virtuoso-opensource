@@ -100,7 +100,7 @@ dt_print_to_buffer (char *buf, caddr_t arg, int mode)
     buf[res++] = ((DT_PRINT_MODE_XML & mode) ? 'T' : ' ');
   if (DT_PRINT_MODE_HMS & mode)
     {
-    res += sprintf (buf + res, "%02d:%02d:%02d", ts.hour, ts.minute, ts.second);
+      res += sprintf (buf + res, "%02d:%02d:%02d", ts.hour, ts.minute, ts.second);
       if (ts.fraction)
         {
           if (ts.fraction % 1000)

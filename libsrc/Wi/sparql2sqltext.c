@@ -236,46 +236,46 @@ ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subtype,
     return;
   if (!strncmp (name, "HTTP+", 5))
     {
-/*                     0123456789 */
-  if (!strncmp (name, "HTTP+XML ", 9))
-    switch (subtype)
-      {
-      case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_RSET_XML_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_RSET_XML_HTTP_PRE"; return;
+/*                         0123456789 */
+      if (!strncmp (name, "HTTP+XML ", 9))
+        switch (subtype)
+          {
+          case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_RSET_XML_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_RSET_XML_HTTP_PRE"; return;
           case CONSTRUCT_L: case DESCRIBE_L:  ret_agg_formatter[0] = "DB.DBA.SPARQL_DICT_XML_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_DICT_XML_HTTP_PRE"; return;
           case ASK_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_XML"; return;
-      default: return;
-      }
+          default: return;
+          }
 #if 0
-/*                     0         1   */
-/*                     0123456789012 */
-  if (!strncmp (name, "HTTP+RDF/XML ", 12))
-    switch (subtype)
-      {
-      case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_RSET_RDFXML_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_RSET_RDFXML_HTTP_PRE"; return;
+/*                         0         1   */
+/*                         0123456789012 */
+      if (!strncmp (name, "HTTP+RDF/XML ", 12))
+        switch (subtype)
+          {
+          case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_RSET_RDFXML_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_RSET_RDFXML_HTTP_PRE"; return;
 #if 0
-      case CONSTRUCT_L: case DESCRIBE_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_DICT_RDFXML_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_DICT_RDFXML_HTTP_PRE"; return;
-      case ASK_L: goto bad_ask; /* see below */
+          case CONSTRUCT_L: case DESCRIBE_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_DICT_RDFXML_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_DICT_RDFXML_HTTP_PRE"; return;
+          case ASK_L: goto bad_ask; /* see below */
 #else
-      case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDF_XML"; return;
-      case ASK_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_RDF_XML"; return;
+          case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDF_XML"; return;
+          case ASK_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_RDF_XML"; return;
 #endif
-      default: return;
-      }
+          default: return;
+          }
 #endif
-/*                     0123456789 */
-  if (!strncmp (name, "HTTP+TTL ", 9))
-    switch (subtype)
-      {
-      case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_RSET_TTL_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_RSET_TTL_HTTP_PRE"; return;
+/*                         0123456789 */
+      if (!strncmp (name, "HTTP+TTL ", 9))
+        switch (subtype)
+          {
+          case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_RSET_TTL_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_RSET_TTL_HTTP_PRE"; return;
 #if 0
-      case CONSTRUCT_L: case DESCRIBE_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_DICT_TTL_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_DICT_TTL_HTTP_PRE"; return;
-      case ASK_L: goto bad_ask; /* see below */
+          case CONSTRUCT_L: case DESCRIBE_L: ret_agg_formatter[0] = "DB.DBA.SPARQL_DICT_TTL_HTTP"; ret_agg_mdata[0] = "DB.DBA.SPARQL_DICT_TTL_HTTP_PRE"; return;
+          case ASK_L: goto bad_ask; /* see below */
 #else
-      case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL"; return;
-      case ASK_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL"; return;
+          case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL"; return;
+          case ASK_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL"; return;
 #endif
-      default: return;
-      }
+          default: return;
+          }
 /*                         012345678 */
       if (!strncmp (name, "HTTP+NT ", 8))
         switch (subtype)
@@ -1789,34 +1789,34 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
             for (ctr = box_length (box)-1; ctr--; /* no step */)
               if (box[ctr] & ~0x7F)
                 spar_error (ssg->ssg_sparp, "An ASCII (7-bit) literal is expected, not '%.200s'.", box);
-      sqlc_string_virtuoso_literal (tmpbuf, buflen, &buffill, box);
+            sqlc_string_virtuoso_literal (tmpbuf, buflen, &buffill, box);
           }
-      break;
+          break;
         case SQL_ATOM_NARROW_OR_WIDE:
-        {
+          {
             int ctr;
             for (ctr = box_length (box)-1; ctr--; /* no step */)
               if (box[ctr] & ~0x7F)
                 {
                   ssg_puts (" charset_recode (");
-          sqlc_string_virtuoso_literal (tmpbuf, buflen, &buffill, box);
+                  sqlc_string_virtuoso_literal (tmpbuf, buflen, &buffill, box);
                   ssg_puts (", 'UTF-8', '_WIDE_')");
                   goto tmpbuf_filled; /* see below */
-        }
+                }
           }
           /* no break */
         case SQL_ATOM_NARROW_ONLY:
-        {
-          caddr_t strg = box_utf8_string_as_narrow (box, NULL, 0, default_charset);
+          {
+            caddr_t strg = box_utf8_string_as_narrow (box, NULL, 0, default_charset);
 #ifndef NDEBUG
             if (('?' == strg[0]) && ('?' == strg[1]) && ('?' == strg[2]) && ('?' == strg[3]))
               spar_error (ssg->ssg_sparp, "Suspicious result of printing '%.200s' as narrow SQL atom", box);
 #endif
-	  if (strg)
-	    sqlc_string_virtuoso_literal (tmpbuf, buflen, &buffill, strg);
-	  else
-	    spar_error (ssg->ssg_sparp, "A literal contains bad UTF-8 sequence.");
-          dk_free_box (strg);
+            if (strg)
+              sqlc_string_virtuoso_literal (tmpbuf, buflen, &buffill, strg);
+            else
+              spar_error (ssg->ssg_sparp, "A literal contains bad UTF-8 sequence.");
+            dk_free_box (strg);
             break;
           }
         case SQL_ATOM_UNAME_ALLOWED:
@@ -4156,7 +4156,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
         }
       else if (SSG_VALMODE_BOOL == needed)
         ssg_puts (" 1");
-    else
+      else
         ssg_print_tmpl (ssg, needed, needed->qmfShortOfUriTmpl, NULL, NULL, tree, asname);
       goto print_asname;
     case SPAR_RETVAL:
@@ -4619,85 +4619,85 @@ void
 ssg_print_fld_var_restrictions_ex (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *field, caddr_t tabid, SPART *fld_tree, SPART *triple, SPART *fld_if_outer, rdf_val_range_t *rvr)
 {
   sparp_env_t *env = ssg->ssg_sparp->sparp_env;
-        ptrlong field_restr = field->qmvFormat->qmfValRange.rvrRestrictions;
+  ptrlong field_restr = field->qmvFormat->qmfValRange.rvrRestrictions;
   ptrlong tree_restr = rvr->rvrRestrictions;
-        if ((SPART_VARR_NOT_NULL & tree_restr) && (!(SPART_VARR_NOT_NULL & field_restr)))
-          {
-            ssg_print_where_or_and (ssg, "nullable variable is not null");
-            if (0 == field->qmvFormat->qmfColumnCount)
-              ssg_print_tmpl (ssg, field->qmvFormat, "(^{tree}^ is not null)", tabid, field, NULL, NULL_ASNAME);
+  if ((SPART_VARR_NOT_NULL & tree_restr) && (!(SPART_VARR_NOT_NULL & field_restr)))
+    {
+      ssg_print_where_or_and (ssg, "nullable variable is not null");
+      if (0 == field->qmvFormat->qmfColumnCount)
+        ssg_print_tmpl (ssg, field->qmvFormat, "(^{tree}^ is not null)", tabid, field, NULL, NULL_ASNAME);
       else if (NULL != fld_if_outer)
-              ssg_print_tmpl (ssg, field->qmvFormat, "(^{tree-0}^ is not null)", tabid, field, fld_tree, NULL_ASNAME);
-            else
-              ssg_print_tmpl (ssg, field->qmvFormat, "(^{alias-0}^.^{column-0}^ is not null)", tabid, field, NULL, NULL_ASNAME);
-          }
+        ssg_print_tmpl (ssg, field->qmvFormat, "(^{tree-0}^ is not null)", tabid, field, fld_tree, NULL_ASNAME);
+      else
+        ssg_print_tmpl (ssg, field->qmvFormat, "(^{alias-0}^.^{column-0}^ is not null)", tabid, field, NULL, NULL_ASNAME);
+    }
 /* SPONGE_SEEALSO () as a fake filter for a variable */
   if ((SPAR_VARIABLE == SPART_TYPE (fld_tree)) &&
-          !(SPART_VARR_IS_LIT & tree_restr) &&
-          !(SPART_VARR_EXTERNAL & tree_restr) &&
-          (NULL != env->spare_grab.rgc_sa_preds) &&
-          ((0 <= dk_set_position_of_string (env->spare_grab.rgc_sa_vars, fld_tree->_.var.vname)) ||
-            (0 <= dk_set_position_of_string (env->spare_grab.rgc_vars, fld_tree->_.var.vname)) ) )
-          {
+    !(SPART_VARR_IS_LIT & tree_restr) &&
+    !(SPART_VARR_EXTERNAL & tree_restr) &&
+    (NULL != env->spare_grab.rgc_sa_preds) &&
+    ((0 <= dk_set_position_of_string (env->spare_grab.rgc_sa_vars, fld_tree->_.var.vname)) ||
+      (0 <= dk_set_position_of_string (env->spare_grab.rgc_vars, fld_tree->_.var.vname)) ) )
+    {
 /* External variable should be checked by this fake predicate at place of origin, hence no check here.
 It's an open issue what to do if seealso is enabled only in scalar subquery.
 Maybe the best thing is to prohibit seealso declarations in subqueries at all.
 !!!TBD. */
-            SPART *graph_tree = triple->_.triple.tr_graph;
-            ptrlong graph_tree_type = SPART_TYPE (graph_tree);
-            qm_value_t *graph_qmv = qmap->qmGraphMap;
-            ssg_print_where_or_and (ssg, "fake filter for a sponged variable");
-            ssg_puts (" DB.DBA.RDF_GRAB_SEEALSO (");
-            ssg_print_tmpl (ssg, field->qmvFormat, field->qmvFormat->qmfUriOfShortTmpl, tabid, field, fld_if_outer, NULL_ASNAME);
-            ssg_puts (", ");
-            for (;;)
-              {
-                if (NULL == graph_qmv)
-                  {
-                    ssg_print_literal_as_long (ssg, (SPART *)(qmap->qmGraphRange.rvrFixedValue));
-                    break;
-                  }
-                if ((SPAR_VARIABLE == graph_tree_type) || (SPAR_BLANK_NODE_LABEL == graph_tree_type))
-                  {
-                    ptrlong graph_tree_restr = graph_tree->_.var.rvr.rvrRestrictions;
-                    if (SPART_VARR_FIXED & graph_tree_restr)
-                      {
-                        ssg_print_literal_as_long (ssg, (SPART *)(graph_tree->_.var.rvr.rvrFixedValue));
-                        break;
-                      }
-                    if (SPART_VARR_GLOBAL & graph_tree_restr)
-                      {
-                        ssg_print_global_param (ssg, graph_tree->_.var.vname, SSG_VALMODE_LONG);
-                        break;
-                      }
-                    ssg_print_tmpl (ssg, graph_qmv->qmvFormat, graph_qmv->qmvFormat->qmfIidOfShortTmpl, tabid, graph_qmv, NULL, NULL_ASNAME);
-                    break;
-                  }
-                ssg_puts ("NULL");
-                break;
-              }
-            ssg_puts (", :0)");
-          }
-        if ((SPART_VARR_IS_BLANK & tree_restr) && (!(SPART_VARR_IS_BLANK & field_restr)))
-          {
-            ssg_print_where_or_and (ssg, "variable is blank node");
-            ssg_print_tmpl (ssg, field->qmvFormat, field->qmvFormat->qmfIsblankOfShortTmpl, tabid, field, fld_if_outer, NULL_ASNAME);
-          }
-        else if ((SPART_VARR_IS_IRI & tree_restr) && (!(SPART_VARR_IS_IRI & field_restr)))
-          {
-            ssg_print_where_or_and (ssg, "variable is IRI");
-            ssg_print_tmpl (ssg, field->qmvFormat, field->qmvFormat->qmfIsuriOfShortTmpl, tabid, field, fld_if_outer, NULL_ASNAME);
-          }
-        else if ((SPART_VARR_IS_REF & tree_restr) && (!(SPART_VARR_IS_REF & field_restr)))
-          {
-            ssg_print_where_or_and (ssg, "'any' variable is a reference");
-            ssg_print_tmpl (ssg, field->qmvFormat, field->qmvFormat->qmfIsrefOfShortTmpl, tabid, field, fld_if_outer, NULL_ASNAME);
-          }
-        else if ((SPART_VARR_IS_LIT & tree_restr) && (!(SPART_VARR_IS_LIT & field_restr)))
-          {
-            ssg_print_where_or_and (ssg, "'any' variable is a literal");
-            ssg_print_tmpl (ssg, field->qmvFormat, field->qmvFormat->qmfIslitOfShortTmpl, tabid, field, fld_if_outer, NULL_ASNAME);
-          }
+      SPART *graph_tree = triple->_.triple.tr_graph;
+      ptrlong graph_tree_type = SPART_TYPE (graph_tree);
+      qm_value_t *graph_qmv = qmap->qmGraphMap;
+      ssg_print_where_or_and (ssg, "fake filter for a sponged variable");
+      ssg_puts (" DB.DBA.RDF_GRAB_SEEALSO (");
+      ssg_print_tmpl (ssg, field->qmvFormat, field->qmvFormat->qmfUriOfShortTmpl, tabid, field, fld_if_outer, NULL_ASNAME);
+      ssg_puts (", ");
+      for (;;)
+        {
+          if (NULL == graph_qmv)
+            {
+              ssg_print_literal_as_long (ssg, (SPART *)(qmap->qmGraphRange.rvrFixedValue));
+              break;
+            }
+          if ((SPAR_VARIABLE == graph_tree_type) || (SPAR_BLANK_NODE_LABEL == graph_tree_type))
+            {
+              ptrlong graph_tree_restr = graph_tree->_.var.rvr.rvrRestrictions;
+              if (SPART_VARR_FIXED & graph_tree_restr)
+                {
+                  ssg_print_literal_as_long (ssg, (SPART *)(graph_tree->_.var.rvr.rvrFixedValue));
+                  break;
+                }
+              if (SPART_VARR_GLOBAL & graph_tree_restr)
+                {
+                  ssg_print_global_param (ssg, graph_tree->_.var.vname, SSG_VALMODE_LONG);
+                  break;
+                }
+              ssg_print_tmpl (ssg, graph_qmv->qmvFormat, graph_qmv->qmvFormat->qmfIidOfShortTmpl, tabid, graph_qmv, NULL, NULL_ASNAME);
+              break;
+            }
+          ssg_puts ("NULL");
+          break;
+        }
+      ssg_puts (", :0)");
+    }
+  if ((SPART_VARR_IS_BLANK & tree_restr) && (!(SPART_VARR_IS_BLANK & field_restr)))
+    {
+      ssg_print_where_or_and (ssg, "variable is blank node");
+      ssg_print_tmpl (ssg, field->qmvFormat, field->qmvFormat->qmfIsblankOfShortTmpl, tabid, field, fld_if_outer, NULL_ASNAME);
+    }
+  else if ((SPART_VARR_IS_IRI & tree_restr) && (!(SPART_VARR_IS_IRI & field_restr)))
+    {
+      ssg_print_where_or_and (ssg, "variable is IRI");
+      ssg_print_tmpl (ssg, field->qmvFormat, field->qmvFormat->qmfIsuriOfShortTmpl, tabid, field, fld_if_outer, NULL_ASNAME);
+    }
+  else if ((SPART_VARR_IS_REF & tree_restr) && (!(SPART_VARR_IS_REF & field_restr)))
+    {
+      ssg_print_where_or_and (ssg, "'any' variable is a reference");
+      ssg_print_tmpl (ssg, field->qmvFormat, field->qmvFormat->qmfIsrefOfShortTmpl, tabid, field, fld_if_outer, NULL_ASNAME);
+    }
+  else if ((SPART_VARR_IS_LIT & tree_restr) && (!(SPART_VARR_IS_LIT & field_restr)))
+    {
+      ssg_print_where_or_and (ssg, "'any' variable is a literal");
+      ssg_print_tmpl (ssg, field->qmvFormat, field->qmvFormat->qmfIslitOfShortTmpl, tabid, field, fld_if_outer, NULL_ASNAME);
+    }
 /*!!! TBD: checks for type, lang */
 }
 
@@ -5028,10 +5028,10 @@ write_assuffix:
 void
 ssg_print_nice_equality_for_var_and_eq_fixed_val (spar_sqlgen_t *ssg, rdf_val_range_t *rvr, SPART *var, SPART *var_triple)
 {
-          ssg_valmode_t vmode;
-          SPART_buf var_rv_buf/*, glob_rv_buf*/;
-          SPART *var_rv/*, *glob_rv*/;
-          int col_ctr, col_count;
+  ssg_valmode_t vmode;
+  SPART_buf var_rv_buf/*, glob_rv_buf*/;
+  SPART *var_rv/*, *glob_rv*/;
+  int col_ctr, col_count;
   if (SPAR_RETVAL == SPART_TYPE (var))
     {
       var_rv = var;
@@ -5043,44 +5043,44 @@ ssg_print_nice_equality_for_var_and_eq_fixed_val (spar_sqlgen_t *ssg, rdf_val_ra
       if (!SPAR_IS_BLANK_OR_VAR (var) || (NULL == var_triple))
         spar_internal_error (ssg->ssg_sparp, "ssg_" "print_nice_equality_for_var_and_eq_fixed_val(): bad call");
 #endif
-          qm = var_triple->_.triple.tc_list[0]->tc_qm;
-          if (SPART_TRIPLE_FIELDS_COUNT > var->_.var.tr_idx)
-            {
-              qm_value_t *qmv = JSO_FIELD_ACCESS(qm_value_t *, qm, qm_field_map_offsets[var->_.var.tr_idx])[0];
-              if ((NULL == qmv) && (!SPART_VARNAME_IS_GLOB (var->_.var.vname))) /* It's fixed and it's constant in qm hence it matches compile-time, no run-time check needed */
+      qm = var_triple->_.triple.tc_list[0]->tc_qm;
+      if (SPART_TRIPLE_FIELDS_COUNT > var->_.var.tr_idx)
+        {
+          qm_value_t *qmv = JSO_FIELD_ACCESS(qm_value_t *, qm, qm_field_map_offsets[var->_.var.tr_idx])[0];
+          if ((NULL == qmv) && (!SPART_VARNAME_IS_GLOB (var->_.var.vname))) /* It's fixed and it's constant in qm hence it matches compile-time, no run-time check needed */
             return;
-            }
-          SPART_AUTO (var_rv, var_rv_buf, SPAR_RETVAL);
-          memcpy (&(var_rv->_.retval), &(var->_.var), sizeof (var->_.var));
-          var_rv->_.retval.triple = var_triple;
+        }
+      SPART_AUTO (var_rv, var_rv_buf, SPAR_RETVAL);
+      memcpy (&(var_rv->_.retval), &(var->_.var), sizeof (var->_.var));
+      var_rv->_.retval.triple = var_triple;
     }
-          vmode = sparp_expn_native_valmode (ssg->ssg_sparp, var_rv);
-          col_count = (IS_BOX_POINTER (vmode) ? vmode->qmfColumnCount : 1);
-          for (col_ctr = 0; col_ctr < col_count; col_ctr++)
-            {
-              const char *eq_idx_asname = ((1 == col_count) ? NULL_ASNAME : (COL_IDX_ASNAME + col_ctr));
-              ssg_print_where_or_and (ssg, ((0 != col_ctr) ? NULL : "fixed value of equiv class (short)"));
+  vmode = sparp_expn_native_valmode (ssg->ssg_sparp, var_rv);
+  col_count = (IS_BOX_POINTER (vmode) ? vmode->qmfColumnCount : 1);
+  for (col_ctr = 0; col_ctr < col_count; col_ctr++)
+    {
+      const char *eq_idx_asname = ((1 == col_count) ? NULL_ASNAME : (COL_IDX_ASNAME + col_ctr));
+      ssg_print_where_or_and (ssg, ((0 != col_ctr) ? NULL : "fixed value of equiv class (short)"));
       if (NULL == var_rv->_.retval.triple)
 #if 0
           ssg_print_equiv_retval_expn (ssg, var_rv->_.retval.gp, SPARP_EQUIV (ssg->ssg_sparp, var_rv->_.retval.equiv_idx), /*SSG_RETVAL_FROM_GOOD_SELECTED |*/ SSG_RETVAL_MUST_PRINT_SOMETHING, vmode, eq_idx_asname);
 #endif
         ssg_print_scalar_expn (ssg, var_rv, vmode, eq_idx_asname);
       else
-              ssg_print_tr_var_expn (ssg, var, vmode, eq_idx_asname);
-              ssg_puts (" =");
+        ssg_print_tr_var_expn (ssg, var, vmode, eq_idx_asname);
+      ssg_puts (" =");
       ssg_print_scalar_expn (ssg, (SPART *)(rvr->rvrFixedValue), vmode, eq_idx_asname);
-            }
+    }
   if ((0 == col_count) || !(SPART_VARR_IS_REF & rvr->rvrRestrictions))
-            {
-              ssg_print_where_or_and (ssg, "fixed value of equiv class (sqlval)");
+    {
+      ssg_print_where_or_and (ssg, "fixed value of equiv class (sqlval)");
       if (NULL == var_rv->_.retval.triple)
 #if 0
           ssg_print_equiv_retval_expn (ssg, var_rv->_.retval.gp, SPARP_EQUIV (ssg->ssg_sparp, var_rv->_.retval.equiv_idx), /*SSG_RETVAL_FROM_GOOD_SELECTED |*/ SSG_RETVAL_MUST_PRINT_SOMETHING, SSG_VALMODE_SQLVAL, NULL_ASNAME);
 #endif
         ssg_print_scalar_expn (ssg, var_rv, SSG_VALMODE_SQLVAL, NULL_ASNAME);
       else
-              ssg_print_tr_var_expn (ssg, var, SSG_VALMODE_SQLVAL, NULL_ASNAME);
-              ssg_puts (" =");
+        ssg_print_tr_var_expn (ssg, var, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+      ssg_puts (" =");
       ssg_print_literal_as_sqlval (ssg, NULL, (SPART *)(rvr->rvrFixedValue));
     }
 }
@@ -5121,7 +5121,7 @@ ssg_print_equivalences (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, dk_set
       ssg_print_bop_bool_expn (ssg, bop, " = "	, " equ ("	, 1, SSG_VALMODE_BOOL);
       eq->e_rvr.rvrRestrictions |= SPART_VARR_FIXED;
       sample_var->_.var.rvr.rvrRestrictions |= SPART_VARR_FIXED;
-    }
+   }
   /* Printing equalities with constants */
   for (var_ctr = 0; var_ctr < eq->e_var_count; var_ctr++)
     {
@@ -5964,8 +5964,8 @@ ssg_patch_ft_arg1 (spar_sqlgen_t *ssg, SPART *ft_arg1, SPART *g)
           int ft_arg1_box_len = box_length (ft_arg1_box);
           char *tail = t_alloc_box (18 + ft_arg1_box_len, DV_STRING);
           patched_ft_arg1 = (SPART *)tail;
-/*                                  0          1          */
-/*                                  01234567.890123.45678 */
+/*                       0          1          */
+/*                       01234567.890123.45678 */
           memcpy (tail, "[ __enc \"UTF-8\" ] ", 18); tail += 18;
           memcpy (tail, ft_arg1_box, ft_arg1_box_len);
           return patched_ft_arg1;
@@ -6184,7 +6184,7 @@ from_printed:
             {
               SPART *g = tree->_.triple.tr_graph;
               ft_arg1 = ssg_patch_ft_arg1 (ssg, ft_arg1, g);
-                }
+            }
           ssg_print_where_or_and (ssg, "freetext predicate");
           ssg_putchar (' ');
           ssg_puts (ft_pred->_.funcall.qname + 4);
@@ -6909,16 +6909,16 @@ retval_list_complete:
         }
       idx_of_last_optional_in_member = -1;
       for (itm_idx = itm_count; itm_idx--; /*no step*/)
-                {
+        {
           SPART *itm = member->_.gp.members[itm_idx];
           if ((SPAR_GP == SPART_TYPE(itm)) && (OPTIONAL_L == itm->_.gp.subtype))
             {
               idx_of_last_optional_in_member = itm_idx;
-                    break;
-                }
+              break;
             }
+        }
       for (itm_idx = 0; itm_idx < itm_count; itm_idx++)
-                        {
+        {
           ccaddr_t this_alias = ssg_print_union_member_item (ssg, member, &itm_idx, itm_count, prev_itm_aliases, (itm_idx == idx_of_last_optional_in_member));
           t_set_push (&prev_itm_aliases, (caddr_t) this_alias);
         }

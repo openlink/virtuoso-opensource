@@ -121,7 +121,7 @@ bif_regexp_str_arg (caddr_t * qst, state_slot_t ** args, int nth,
             case REGEXP_YES: return arg;
             case REGEXP_BF: if (box_flags (arg) & BF_UTF8) return arg;
             }
-	    return (*ret_to_free = box_narrow_string_as_utf8 (NULL, arg, 0, QST_CHARSET (qst), err_ret, 1));
+          return (*ret_to_free = box_narrow_string_as_utf8 (NULL, arg, 0, QST_CHARSET (qst), err_ret, 1));
         }
       if (DV_WIDE == arg_dtp || DV_LONG_WIDE == arg_dtp)
         return (*ret_to_free = box_wide_as_utf8_char (arg, box_length (arg) / sizeof (wchar_t) - 1, DV_SHORT_STRING));
@@ -137,7 +137,7 @@ bif_regexp_str_arg (caddr_t * qst, state_slot_t ** args, int nth,
       if (DV_UNAME == arg_dtp)
         {
           *utf8 = 1;
-	  return arg;
+          return arg;
         }
       if (DV_STRING == arg_dtp)
         {

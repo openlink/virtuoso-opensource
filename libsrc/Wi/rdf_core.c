@@ -665,7 +665,7 @@ caddr_t ttlp_strliteral (ttlp_t *ttlp_arg, const char *strg, int mode, char deli
                 while (('\n' == nextchr[0]) || ('\r' == nextchr[0]))
                   nextchr++;
               }
-	    else
+            else
 	      {
 		unichar acc = 0;
 		for (src_tail += 2; src_tail < nextchr; src_tail++)
@@ -2209,12 +2209,12 @@ bif_id_to_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (0L == iid)
     return NEW_DB_NULL;
   if ((min_bnode_iri_id () <= iid) && (min_named_bnode_iri_id () > iid))
-      iri = BNODE_IID_TO_LABEL(iid);
+    iri = BNODE_IID_TO_LABEL(iid);
   else
     {
-  iri = key_id_to_iri (qi, iid);
-  if (!iri)
-    return NEW_DB_NULL;
+      iri = key_id_to_iri (qi, iid);
+      if (!iri)
+        return NEW_DB_NULL;
     }
   box_flags (iri) = BF_IRI;
   return iri;
@@ -2235,9 +2235,9 @@ bif_id_to_iri_nosignal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     iri = BNODE_IID_TO_LABEL(iid);
   else
     {
-  iri = key_id_to_iri (qi, iid);
-  if (!iri)
-    return NEW_DB_NULL;
+      iri = key_id_to_iri (qi, iid);
+      if (!iri)
+        return NEW_DB_NULL;
     }
   box_flags (iri) = BF_IRI;
   return iri;
@@ -2312,7 +2312,7 @@ caddr_t DBG_NAME (tf_bnode_iid) (DBG_PARAMS triple_feed_t *tf, caddr_t txt)
   if (NULL != err)
     {
       dk_free_box (txt);
-    sqlr_resignal (err);
+      sqlr_resignal (err);
     }
   if (NULL == txt)
     return res;

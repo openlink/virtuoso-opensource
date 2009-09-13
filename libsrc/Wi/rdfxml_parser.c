@@ -488,8 +488,8 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
 	    }
           else
             {
-            xmlparser_logprintf (xp->xp_parser, XCFG_WARNING, 200,
-              "Unsupported 'rdf:...' attribute" );
+              xmlparser_logprintf (xp->xp_parser, XCFG_WARNING, 200,
+                "Unsupported 'rdf:...' attribute" );
                 goto push_inner_attr_prop; /* see below */
             }
           continue;
@@ -947,7 +947,7 @@ xp_rdfa_parse_attr_value (xparse_ctx_t *xp, xp_node_t * xn, char *attrname, char
   if (((NULL != values_ret) ? 1 : 0) != ((RDFA_ATTRSYNTAX_WS_LIST & allowed_syntax) ? 1 : 0))
     GPF_T1 ("xp_" "rdfa_parse_attr_value(): bad call (2)");
 #endif
-  if (NULL != values_ret) 
+  if (NULL != values_ret)
     {
       if (NULL == values_ret[0])
         values_ret[0] = dk_alloc_box_zero (sizeof (caddr_t), DV_ARRAY_OF_POINTER);
@@ -1024,9 +1024,9 @@ next_token:
             {
               if (tail != token_start)
                 {
-              tail++;
-              goto next_token; /* see above */
-            }
+                   tail++;
+                   goto next_token; /* see above */
+                }
             }
           else if (!curie_is_safe && !(RDFA_ATTRSYNTAX_REL_REV_RESERVED & allowed_syntax) && (('\0' == tail[0]) || isspace(tail[0])))
             goto next_token; /* see above */
@@ -1078,13 +1078,13 @@ next_token:
           values_ret[0] = (caddr_t *)new_buf;
         }
       else if (NULL != values_ret[0][values_count]) /* There's some old garbage to delete */
-        { 
+        {
 #ifndef NDEBUG
           GPF_T1 ("xp_" "rdfa_parse_attr_value(): garbage?");
 #endif
           dk_free_tree (values_ret[0][values_count]);
           values_ret[0][values_count] = NULL;
-        }   
+        }
     }
   /*base = xn->xn_xp->xp_rdfa_locals->xrdfal_base;*/
   if ((NULL != curie_colon) /*|| ((NULL != base) && ('\0' != base[0]))*/)
@@ -1125,7 +1125,7 @@ next_token:
         ancestor = ancestor->xrdfal_parent;
       expanded_token = box_copy ((NULL != ancestor->xrdfal_subj) ? ancestor->xrdfal_subj : uname___empty);
     }
-  else 
+  else
     expanded_token = box_dv_short_nchars (token_start, token_end-token_start);
   expanded_token_not_saved = 1;
   if (NULL != values_ret)
@@ -1134,7 +1134,7 @@ next_token:
       expanded_token_not_saved = 0;
     }
   values_count++;
-  goto next_token; /* see above */  
+  goto next_token; /* see above */
 }
 
 void
@@ -1279,13 +1279,13 @@ rdfa_feed_or_make_ict (xparse_ctx_t *xp, xp_rdfa_locals_t *xrdfal, caddr_t left,
   int ict_is_needed = 0;
   static caddr_t stub_null = NULL;
   if ((xrdfal->xrdfal_place_bits & RDFA_IN_BODY) || !(xrdfal->xrdfal_place_bits & RDFA_IN_HTML))
-    {      
+    {
       xp_expand_relative_uri (xrdfal->xrdfal_base, &left);
       xp_expand_relative_uri (xrdfal->xrdfal_base, &pred);
       if (RDFA_ICT_PRED_PROPERTY == pred_type)
         {
           if (uname___empty != dt)
-        xp_expand_relative_uri (xrdfal->xrdfal_base, &dt);
+            xp_expand_relative_uri (xrdfal->xrdfal_base, &dt);
         }
       else
         xp_expand_relative_uri (xrdfal->xrdfal_base, &right);
@@ -1479,12 +1479,12 @@ xp_rdfa_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
         case RDFA_ATTR_ABOUT:
           if (1 <= src_prio)
             {
-            dk_free_tree (xpt->xpt_src);
+              dk_free_tree (xpt->xpt_src);
               xpt->xpt_src = NULL; /* to avoid second delete of freed value in case of error inside xp_rdfa_parse_attr_value() */
               xpt->xpt_src = xp_rdfa_parse_attr_value (xp, xn, raw_aname, avalue,
                 RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_SAFECURIE | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE,
                 NULL, NULL );
-          src_prio = 1;
+              src_prio = 1;
             }
           break;
         case RDFA_ATTR_CONTENT:
@@ -1495,7 +1495,7 @@ xp_rdfa_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
             RDFA_ATTRSYNTAX_CURIE | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE,
             NULL, NULL );
           break;
-        case RDFA_ATTR_HREF:	
+        case RDFA_ATTR_HREF:
           if (RDFA_IN_BASE & inner_place_bits)
             {
               dk_free_tree (xpt->xpt_href);
@@ -1539,13 +1539,13 @@ xp_rdfa_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
               href_prio = 3;
             }
           break;
-        case RDFA_ATTR_REV:	
+        case RDFA_ATTR_REV:
           xp_rdfa_parse_attr_value (xp, xn, raw_aname, avalue,
             RDFA_ATTRSYNTAX_CURIE | RDFA_ATTRSYNTAX_REL_REV_RESERVED | RDFA_ATTRSYNTAX_WS_LIST,
             &(xpt->xpt_rev_preds), &rev_pred_count );
           rel_rev_attrcount++;
           break;
-        case RDFA_ATTR_SRC:	
+        case RDFA_ATTR_SRC:
           if (2 <= src_prio)
             {
               dk_free_tree (xpt->xpt_src);
@@ -1568,7 +1568,7 @@ xp_rdfa_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
             dk_free_tree (xpt->xpt_base);
           xpt->xpt_base = box_dv_short_string (avalue);
           break;
-        case RDFA_ATTR_XML_LANG:	
+        case RDFA_ATTR_XML_LANG:
           if (NULL != xpt->xpt_lang)
             dk_free_tree (xpt->xpt_lang);
           xpt->xpt_lang = box_dv_short_string (avalue);
@@ -1880,7 +1880,7 @@ xp_rdfa_element_end (void *userdata, const char * name)
           if (RDFA_ICT_PRED_PROPERTY == ict->ict_pred_type)
             {
               if (uname___empty != ict->ict_datatype)
-            xp_expand_relative_uri (inner->xrdfal_base, &(ict->ict_datatype));
+                xp_expand_relative_uri (inner->xrdfal_base, &(ict->ict_datatype));
             }
           else
             xp_expand_relative_uri (inner->xrdfal_base, &(ict->ict_right));
@@ -1890,7 +1890,7 @@ xp_rdfa_element_end (void *userdata, const char * name)
                 xmlparser_logprintf (xp->xp_parser, XCFG_WARNING, 500,
                   (RDFA_ICT_PRED_REV == ict->ict_pred_type) ?
                     "Predicate %.200s with object %.200s has no subject" :
-                    "Property %.200s of subject %.200s has no value", 
+                    "Property %.200s of subject %.200s has no value",
                   (DV_IRI_ID == DV_TYPE_OF (ict->ict_left)) ? "(blank node)" : ict->ict_left,
                   (DV_IRI_ID == DV_TYPE_OF (ict->ict_pred)) ? "(blank node)" : ict->ict_pred );
               dk_free_box (ict->ict_left); ict->ict_left = NULL;
@@ -2033,12 +2033,12 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
     }
   else
     {
-  VXmlSetElementHandler (parser, (VXmlStartElementHandler) xp_rdfxml_element, xp_rdfxml_element_end);
-  VXmlSetIdHandler (parser, (VXmlIdHandler)xp_rdfxml_id);
-  VXmlSetCharacterDataHandler (parser, (VXmlCharacterDataHandler) xp_rdfxml_character);
-  VXmlSetEntityRefHandler (parser, (VXmlEntityRefHandler) xp_rdfxml_entity);
-  VXmlSetProcessingInstructionHandler (parser, (VXmlProcessingInstructionHandler) xp_rdfxml_pi);
-  VXmlSetCommentHandler (parser, (VXmlCommentHandler) xp_rdfxml_comment);
+      VXmlSetElementHandler (parser, (VXmlStartElementHandler) xp_rdfxml_element, xp_rdfxml_element_end);
+      VXmlSetIdHandler (parser, (VXmlIdHandler)xp_rdfxml_id);
+      VXmlSetCharacterDataHandler (parser, (VXmlCharacterDataHandler) xp_rdfxml_character);
+      VXmlSetEntityRefHandler (parser, (VXmlEntityRefHandler) xp_rdfxml_entity);
+      VXmlSetProcessingInstructionHandler (parser, (VXmlProcessingInstructionHandler) xp_rdfxml_pi);
+      VXmlSetCommentHandler (parser, (VXmlCommentHandler) xp_rdfxml_comment);
     }
   if (NULL != xrie.xrie_iter)
     {

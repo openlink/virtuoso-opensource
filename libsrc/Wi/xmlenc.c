@@ -6359,14 +6359,14 @@ bif_xenc_pubkey_pem_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
       RSA * x = k->pkey.rsa;
       PEM_write_bio_RSAPublicKey (b, x);
     }
-#endif		
-#ifdef EVP_PKEY_DSA		
+#endif
+#ifdef EVP_PKEY_DSA
   if (k->type == EVP_PKEY_DSA)
     {
       DSA * x = k->pkey.dsa;
       PEM_write_bio_DSA_PUBKEY (b, x);
     }
-#endif		
+#endif
   EVP_PKEY_free (k);
   len = BIO_get_mem_data (b, &data_ptr);
   if (len > 0 && data_ptr)

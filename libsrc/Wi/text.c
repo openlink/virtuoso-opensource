@@ -2057,7 +2057,7 @@ sst_check_and_hit (search_stream_t * sst, d_id_t * d_id, int is_fixed)
 		  WP_LENGTH (rel_pos, hl, rel_len, rel_sst->sst_buffer, rel_sst->sst_fill);
 		  rel_len -= WP_FIRST_POS (rel_pos + hl);
 		  rel_pos += hl + WP_FIRST_POS (rel_pos + hl);
-		  wp_proximity  (pos, pos_len, rel_pos, rel_len, rel);
+		  wp_proximity (pos, pos_len, rel_pos, rel_len, rel);
 		}
 	      if (0 == rel->wrl_score)
 		return SST_AND_NEXT;

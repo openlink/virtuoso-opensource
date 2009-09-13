@@ -552,15 +552,15 @@ in_iter_input (in_iter_node_t * ii, caddr_t * inst, caddr_t * state)
 	      for (nth = 0; nth < n_vals; nth++)
 		{
 		  val = is_array ? ((caddr_t*)vals)[nth] : vals;
-	      DO_SET (caddr_t, member, &members)
-		{
-		  if (DVC_MATCH == cmp_boxes (val, member, ii->ii_output->ssl_sqt.sqt_collation, ii->ii_output->ssl_sqt.sqt_collation))
-		    goto next;
+		  DO_SET (caddr_t, member, &members)
+		    {
+		      if (DVC_MATCH == cmp_boxes (val, member, ii->ii_output->ssl_sqt.sqt_collation, ii->ii_output->ssl_sqt.sqt_collation))
+			goto next;
+		    }
+		  END_DO_SET();
+		  dk_set_push (&members, (void*) box_copy_tree (val));
+		next: ;
 		}
-	      END_DO_SET();
-	      dk_set_push (&members, (void*) box_copy_tree (val));
-	    next: ;
-	    }
 	    }
 	  END_DO_BOX;
 	  arr = (caddr_t*)list_to_array (dk_set_nreverse (members));

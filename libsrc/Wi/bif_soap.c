@@ -8272,7 +8272,7 @@ ws_soap_wsdl_services (ws_connection_t *ws, caddr_t doc)
   else
     {
       res = soap_wsdl_services (ws->ws_strses, NULL, ws_usr_qual (ws, 1), WS_SOAP_NAME (ws), NULL,
-      SERVICE_NAME (ws), SERVICE_SCHEMA_NAME (ws), ws->ws_cli, url, SOAP_OPTIONS(ws), NULL);
+	  SERVICE_NAME (ws), SERVICE_SCHEMA_NAME (ws), ws->ws_cli, url, SOAP_OPTIONS(ws), NULL);
       ws->ws_header = box_dv_short_string ("Cache-Control: no-cache, must-revalidate\r\n"
 	  "Pragma: no-cache\r\nExpires: -1\r\nContent-Type: text/xml\r\n");
     }

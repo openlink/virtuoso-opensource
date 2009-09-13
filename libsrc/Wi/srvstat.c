@@ -351,7 +351,7 @@ dbs_mapped_back (dbe_storage_t * dbs)
 	      else
 		n_new++;
 	    }
-	}
+	    }
 	  mutex_leave (&it->it_maps[inx].itm_mtx);
 	}
 
@@ -1982,7 +1982,7 @@ dbg_print_box_aux (caddr_t object, FILE * out, dk_hash_t *known)
       fprintf (out, "%ld ", (long) (ptrlong) object);
       return;
     }
-    if (gethash (object, known))
+  if (gethash (object, known))
     {
       fprintf (out, "\n[PRINTED_ABOVE[%p]]\n", object);
     }
@@ -2363,7 +2363,7 @@ row_map_fprint (FILE * out, db_buf_t row, dbe_key_t * key)
 	      fprintf (out, " #ib" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
             else
 	      fprintf (out, " #i" BOXINT_FMT, (boxint)(iid));
-	  break;
+            break;
           }
 	case DV_LONG_INT:
 	  fprintf (out, " %d", (int) LONG_REF (row + off));

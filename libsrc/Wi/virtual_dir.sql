@@ -1076,16 +1076,16 @@ end_loop:;
 	  foreach (varchar idn in ids) do
 	    {
 	      pref := 'http://' || host || http_map_get ('domain') || '/' || idn || '/';
-	  if (url like pref || '%')
-	    {
-	      url := subseq (url, length (pref));
-	      if (url like 'http/%')
-	        url := 'http:/' || subseq (url, 4);
-              else if (url like 'https/%')
-	        url := 'https:/' || subseq (url, 5);
-              else if (url like 'nodeID/%')
-	        url := 'nodeID:/' || subseq (url, 6);
-	    }
+	      if (url like pref || '%')
+		{
+		  url := subseq (url, length (pref));
+		  if (url like 'http/%')
+		    url := 'http:/' || subseq (url, 4);
+		  else if (url like 'https/%')
+		    url := 'https:/' || subseq (url, 5);
+		  else if (url like 'nodeID/%')
+		    url := 'nodeID:/' || subseq (url, 6);
+		}
 	    }
 	  -- escape chars which are not allowed
 	  url := replace (url, '''', '%27');
@@ -1348,9 +1348,9 @@ create procedure WS.WS.DIR_INDEX_MAKE_XML (inout _sheet varchar, in curdir varch
    declare ix, len, flen, rflen, mult integer;
    fsize := vector ('b','K','M','G','T');
    if (curdir is null)
-   curdir := concat (http_root (), http_physical_path ());
+     curdir := concat (http_root (), http_physical_path ());
    if (start_from is null)
-   start_from := http_path ();
+     start_from := http_path ();
    root := http_root ();
    dirarr := sys_dirlist (curdir, 0, null, 1);
    filearr := sys_dirlist (curdir, 1, null, 1);
@@ -1492,7 +1492,7 @@ create procedure WS.WS.DIR_INDEX_XML (in path any, in params any, in lines any)
     }
   else if (_b_opt <> '')
     {
-       _b_opt := concat (http_root(), '/', _b_opt);
+      _b_opt := concat (http_root(), '/', _b_opt);
       ssheet_name := 'http://local.virt/custom_dir_output/' ||  _b_opt;
       ssheet_text := file_to_string (_b_opt);
     }

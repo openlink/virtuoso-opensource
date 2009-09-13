@@ -1074,7 +1074,7 @@ __arithm_dates ( const char *x, const char *y, caddr_t ret, int sign )
 	  ts_add (&tsx, -1, "second");
 	  tsx.fraction += 1000000000;
 	}
-	tsx.fraction -= tsy.fraction;
+      tsx.fraction -= tsy.fraction;
     }
   else
     {
@@ -2735,15 +2735,15 @@ int xqf_dT_op_cmp (TIMESTAMP_STRUCT* t1, TIMESTAMP_STRUCT* t2)
     return 1;
   sec1 = t1->hour * 3600 + t1->minute * 60 + t1->second;
   sec2 = t2->hour * 3600 + t2->minute * 60 + t2->second;
-      if (sec1 < sec2)
-	return -1;
-      if (sec1 > sec2)
-	return 1;
+  if (sec1 < sec2)
+    return -1;
+  if (sec1 > sec2)
+    return 1;
   if (t1->fraction < t2->fraction)
     return -1;
   if (t1->fraction > t2->fraction)
     return 1;
-      return 0;
+  return 0;
 }
 
 

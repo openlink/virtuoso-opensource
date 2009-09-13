@@ -1475,7 +1475,7 @@ try_again:
   if (is_xa)
     lock_escalation_pct = lock_escalation_pct_save;
   else
-  rc = lt_commit (lt, TRX_CONT);
+    rc = lt_commit (lt, TRX_CONT);
   lt_leave (lt);
   if (is_xa)
     {
