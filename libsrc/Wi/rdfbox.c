@@ -872,11 +872,14 @@ bif_rdf_sqlval_of_obj (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           caddr_t iri;
           iri_id_t iid = unbox_iri_id (shortobj);
 	  if ((min_bnode_iri_id () <= iid) && (min_named_bnode_iri_id () > iid))
-            return BNODE_IID_TO_LABEL(iid);
-          iri = key_id_to_iri (qi, iid);
-          if (NULL == iri)
-            sqlr_new_error ("RDFXX", ".....", "IRI ID " BOXINT_FMT " does not match any known IRI in __rdf_sqlval_of_obj()",
-              (boxint)iid );
+            iri = BNODE_IID_TO_LABEL(iid);
+          else
+            {
+              iri = key_id_to_iri (qi, iid);
+              if (NULL == iri)
+                sqlr_new_error ("RDFXX", ".....", "IRI ID " BOXINT_FMT " does not match any known IRI in __rdf_sqlval_of_obj()",
+                  (boxint)iid );
+            }
 	  box_flags (iri) = BF_IRI;
           return iri;
         }
@@ -924,11 +927,14 @@ bif_rdf_strsqlval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         {
           iri_id_t iid = unbox_iri_id (val);
           if ((min_bnode_iri_id () <= iid) && (min_named_bnode_iri_id () > iid))
-            return BNODE_IID_TO_LABEL(iid);
-          res = key_id_to_iri (qi, iid);
-          if (NULL == res)
-            sqlr_new_error ("RDFXX", ".....", "IRI ID " BOXINT_FMT " does not match any known IRI in __rdf_strsqlval_of_obj()",
-              (boxint)iid );
+            res = BNODE_IID_TO_LABEL(iid);
+          else
+            {
+              res = key_id_to_iri (qi, iid);
+              if (NULL == res)
+                sqlr_new_error ("RDFXX", ".....", "IRI ID " BOXINT_FMT " does not match any known IRI in __rdf_strsqlval_of_obj()",
+                  (boxint)iid );
+            }
           box_flags (res) = BF_UTF8;
           return res;
         }
@@ -2425,7 +2431,7 @@ sparql_rset_xml_write_row_impl (query_instance_t *qi, dk_session_t *ses, caddr_t
 {
   int colctr, colcount;
   colcount = BOX_ELEMENTS (colnames);
-  SES_PRINT (ses, "\n <result>");
+  SES_PRINT (ses, "\n  <result>");
   for (colctr = 0; colctr < colcount; colctr++)
     {
       caddr_t name = colnames [colctr];
@@ -2435,7 +2441,7 @@ sparql_rset_xml_write_row_impl (query_instance_t *qi, dk_session_t *ses, caddr_t
         continue;
       if (DV_STRING != DV_TYPE_OF (name))
         sqlr_new_error ("22023", "SR604", "Argument 2 of sparql_rset_xml_write_row() should be an array of strings and only strings");
-      SES_PRINT (ses, "\n  <binding name=\"");
+      SES_PRINT (ses, "\n   <binding name=\"");
       SES_PRINT (ses, name);
       SES_PRINT (ses, "\">");
       switch (val_dtp)
@@ -2573,7 +2579,7 @@ literal_elt_printed:
         }
       SES_PRINT (ses, "</binding>");
     }
-  SES_PRINT (ses, "\n </result>");
+  SES_PRINT (ses, "\n  </result>");
 }
 
 caddr_t
