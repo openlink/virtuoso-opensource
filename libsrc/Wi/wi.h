@@ -1219,18 +1219,18 @@ struct  page_fill_s
 
 #define LOCAL_RF(rf, row, space, key)		\
   row_fill_t rf; \
+  memset (&rf, 0, sizeof (rf)); \
   rf.rf_row = row;\
-  rf.rf_large_row = NULL;\
   rf.rf_space = space;\
   rf.rf_fill = key->key_row_var_start[0];\
-  rf.rf_key = key;\
-  rf.rf_no_compress = 0;
+  rf.rf_key = key;
 
 
 
 #define RF_LARGE_CHECK(rf, off, len)\
 {\
   int __off = off ? off : rf->rf_fill;\
+  /*if (!!rf->rf_no_large && rf->rf_large_row) GPF_T1 ("rf_large_row not set"); */ \
   if (__off + len > MAX (rf->rf_space, MAX_ROW_BYTES)) GPF_T1 ("row fill overflow max bytes"); \
   if (__off + len > rf->rf_space)\
     {\

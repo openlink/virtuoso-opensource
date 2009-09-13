@@ -638,7 +638,7 @@ ws_http_body_read (ws_connection_t * ws, dk_session_t **out)
     {
       if (to_read < to_read_len)
 	to_read_len = to_read;
-      CATCH_READ_FAIL (ws->ws_session)
+      CATCH_READ_FAIL_S (ws->ws_session)
 	{
 	  readed = session_buffered_read (ws->ws_session, buff, to_read_len);
 	}
@@ -647,8 +647,9 @@ ws_http_body_read (ws_connection_t * ws, dk_session_t **out)
 	  strses_flush (ses);
 	  dk_free_box ((box_t) ses);
 	  ses = NULL;
+	  THROW_READ_FAIL_S (ws->ws_session);
 	}
-      END_READ_FAIL (ws->ws_session);
+      END_READ_FAIL_S (ws->ws_session);
 
       to_read -= readed;
       if (readed > 0)

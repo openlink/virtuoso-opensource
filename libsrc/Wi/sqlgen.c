@@ -946,8 +946,12 @@ sqlg_make_ts (sqlo_t * so, df_elt_t * tb_dfe)
   if (tb_dfe->_.table.is_unique && !ts->ts_main_ks)
     ts->src_gen.src_input = (qn_input_fn) table_source_input_unique;
 
+  sqlc_update_set_keyset (sc, ts);
   sqlc_ts_set_no_blobs (ts);
-  ts_alias_current_of (ts);
+  if (!sc->sc_update_keyset)
+    ts_alias_current_of (ts);
+  else if (!ts->ts_main_ks)
+    ts->ts_need_placeholder = 1;
   table_source_om (sc->sc_cc, ts);
 
   if (ot->ot_opts && sqlo_opt_value (ot->ot_opts, OPT_RANDOM_FETCH))
@@ -1339,7 +1343,7 @@ sqlg_generate_proc_ts (sqlo_t * so, df_elt_t * dt_dfe, dk_set_t *precompute)
 
   setp_distinct_hash (sc, &setp, 0);
   setp.setp_ha->ha_op = HA_PROC_FILL;
-
+  setp.setp_ha->ha_memcache_only = 0;
   ts->ts_is_outer = ot->ot_is_outer;
   ts->ts_order_cursor = ssl_new_itc (sc->sc_cc);
     {
@@ -3936,7 +3940,9 @@ sqlg_dt_subquery (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query,
   sql_comp_t * sc = so->so_sc;
   query_t * qr;
   char ord = so->so_sc->sc_order;
+  update_node_t * kset = sc->sc_update_keyset;
   state_slot_t * set_no = sc->sc_set_no_ssl;
+  sc->sc_update_keyset = NULL;
   sc->sc_set_no_ssl = new_set_no;
   sqlg_set_ts_order (so, dt_dfe);
   qr = sqlg_dt_query_1 (so, dt_dfe, ext_query, target_names, NULL);
@@ -3945,6 +3951,7 @@ sqlg_dt_subquery (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query,
       if (!qr->qr_cl_run_started)
 	qr->qr_cl_run_started = cc_new_instance_slot (so->so_sc->sc_cc);
     }
+  sc->sc_update_keyset = kset;
   sc->sc_set_no_ssl = set_no;
   so->so_sc->sc_order = ord;
   return qr;

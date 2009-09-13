@@ -43,7 +43,7 @@ rb_complete (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance_t
   if (rb->rb_is_complete)
     GPF_T1("rb_" "complete(): redundant call");
 #endif
-  if (NULL == rdf_box_qry_complete_xml)
+  if (NULL == rdf_box_qry_complete_text)
     {
       rdf_box_qry_complete_xml = sql_compile_static (
         "select xml_tree_doc (__xml_deserialize_packed (RO_LONG)) from DB.DBA.RDF_OBJ where RO_ID = ?",

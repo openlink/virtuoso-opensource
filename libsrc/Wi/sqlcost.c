@@ -586,7 +586,7 @@ sqlo_eval_text_count (dbe_table_t * tb, caddr_t str)
 	}
     }
   cli->cli_anytime_started = 0;
-  if (!call)
+  if (!make_proc)
     {
       call = sql_compile ("call (?)(?)", cli, &err, SQLC_DEFAULT);
       if (err)

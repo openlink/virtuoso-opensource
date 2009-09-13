@@ -565,7 +565,8 @@ log_2pc_archive (int64 trx_id)
       fd = fd_open (dbs->dbs_2pc_file_name, LOG_OPEN_FLAGS);
       if (fd <= 0)
 	{
-	  log_error ("Cannot open 2pc log %s.  Exiting", dbs->dbs_2pc_file_name);
+	  int errn = errno;
+	  log_error ("Cannot open 2pc log %s, error : %s.  Exiting", dbs->dbs_2pc_file_name, virt_strerror (errn));
 	  call_exit (-1);
 	}
       ses = dbs->dbs_2pc_log_session = dk_session_allocate (SESCLASS_TCPIP);

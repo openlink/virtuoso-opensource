@@ -478,6 +478,9 @@ upd_truncate_row (it_cursor_t * itc, buffer_desc_t * buf, int nl)
 dk_set_t transit_itc_list;
 dk_mutex_t * transit_list_mtx;
 
+#define itcs_see_different_version(itc, reg) \
+  (ITC_CURSOR == registered->itc_type && itc->itc_ltrx != reg->itc_ltrx && ISO_COMMITTED == reg->itc_isolation)
+
 void
 itc_invalidate_bm_crs (it_cursor_t * itc, buffer_desc_t * buf, int is_in_transit, dk_set_t * local_transits)
 {
@@ -487,7 +490,8 @@ itc_invalidate_bm_crs (it_cursor_t * itc, buffer_desc_t * buf, int is_in_transit
     {
       if (registered->itc_map_pos == itc->itc_map_pos)
 	{
-	  if (itc->itc_bp.bp_is_pos_valid && registered->itc_bp.bp_value == itc->itc_bp.bp_value)
+	  if (itc->itc_bp.bp_is_pos_valid && registered->itc_bp.bp_value == itc->itc_bp.bp_value
+	      && !itcs_see_different_version (itc, registered))
 	    registered->itc_is_on_row = 0; /*marks deletion of the value at which registered was */
 	  registered->itc_bp.bp_is_pos_valid = 0;
 	  if (is_in_transit)
@@ -782,6 +786,7 @@ itc_bm_insert_in_row (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd)
   upd_rd.rd_values[key->key_bm_cl->cl_nth] = box_dv_short_nchars (ext, ext_len);
   upd_rd.rd_n_values = key->key_bm_cl->cl_nth + 1;
   memcpy (&left_pl, itc, sizeof (placeholder_t));
+  left_pl.itc_type = ITC_PLACEHOLDER;
   if (left_pl.itc_is_registered) GPF_T1 ("not supposed to be registered while inside bm_ins_on_row");
   itc_register ((it_cursor_t *)&left_pl, buf);
   itc->itc_bm_split_left_side = &left_pl;

@@ -39,8 +39,6 @@ typedef struct
     long		bt_scale;
   } bif_type_t;
 
-#define NEW_DB_NULL dk_alloc_box (0, DV_DB_NULL)
-
 #define is_some_sort_of_an_integer(T)\
  ((DV_SHORT_INT == (T)) || (DV_LONG_INT == (T)) ||\
   (DV_CHARACTER == (T)) || (DV_C_SHORT == (T)) || (DV_C_INT == (T)))

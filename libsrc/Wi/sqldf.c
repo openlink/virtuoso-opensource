@@ -1504,12 +1504,35 @@ dfe_col_def_dfe (sqlo_t * so, df_elt_t * col_dfe)
   return NULL;
 }
 
+int
+dfe_inx_op_defines_ot (df_inx_op_t * dio, op_table_t * ot, df_elt_t * except)
+{
+  /* True if iop contains the table of the ot */
+  if (dio->dio_table == except)
+    return 0;
+  if (dio->dio_table && dio->dio_table->_.table.ot == ot)
+    return 1;
+  DO_SET  (df_inx_op_t *, term, &dio->dio_terms)
+    {
+      if (dfe_inx_op_defines_ot  (term, ot, except))
+	return 1;
+    }
+  END_DO_SET();
+  return 0;
+}
+
 
 int
 dfe_defines_ot (df_elt_t * defining, op_table_t * ot)
 {
-  if (DFE_TABLE == defining->dfe_type && ot == defining->_.table.ot)
-    return 1;
+  if (DFE_TABLE == defining->dfe_type)
+    {
+      if(ot == defining->_.table.ot)
+	return 1;
+      if (defining->_.table.inx_op && dfe_inx_op_defines_ot (defining->_.table.inx_op, ot, defining))
+	return 1;
+      return 0;
+    }
   if (DFE_DT == defining->dfe_type && ot == defining->_.sub.ot)
     return 1;
   if (DFE_GROUP == defining->dfe_type && ot == defining->_.setp.ot)

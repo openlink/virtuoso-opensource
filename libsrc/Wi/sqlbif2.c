@@ -1083,7 +1083,7 @@ bif_rfc1808_parse_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 /*! URI expander according RFC 1808 recommendations */
 caddr_t
-rfc1808_expand_uri (caddr_t * qst, ccaddr_t base_uri, ccaddr_t rel_uri,
+rfc1808_expand_uri (/*query_instance_t *qi,*/ ccaddr_t base_uri, ccaddr_t rel_uri,
   ccaddr_t output_cs_name, int do_resolve_like_http_get,
   ccaddr_t base_string_cs_name, /* Encoding used for base_uri IFF it is a narrow string, neither DV_UNAME nor WIDE */
   ccaddr_t rel_string_cs_name, /* Encoding used for rel_uri IFF it is a narrow string, neither DV_UNAME nor WIDE */
@@ -1134,7 +1134,8 @@ rfc1808_expand_uri (caddr_t * qst, ccaddr_t base_uri, ccaddr_t rel_uri,
       rel_uri_is_temp = 0;
       goto buffer_ready; /* see below */
     }
-  if ((NULL == rel_uri) || ('\0' == rel_uri[0]))
+  if ((NULL == rel_uri) ||
+    (('\0' == rel_uri[0]) && (NULL == strchr (base_uri, '#')) && (NULL == strchr (base_uri, '?'))) )
     {
       buffer = (caddr_t) base_uri;
       buffer_is_temp = base_uri_is_temp;
@@ -1158,7 +1159,7 @@ rfc1808_expand_uri (caddr_t * qst, ccaddr_t base_uri, ccaddr_t rel_uri,
       fixed_base = dk_alloc_box (base_split.fragment_end + prefix_len, DV_STRING);
       strcpy (fixed_base, ((0 != base_split.two_slashes) ? "http:" : "http://"));
       strcpy (fixed_base+prefix_len, base_uri);
-      buffer = rfc1808_expand_uri (qst, fixed_base, rel_uri, buffer_cs_upcase, 0, buffer_cs_upcase, buffer_cs_upcase, err_ret);
+      buffer = rfc1808_expand_uri (/*qi,*/ fixed_base, rel_uri, buffer_cs_upcase, 0, buffer_cs_upcase, buffer_cs_upcase, err_ret);
       if (NULL != err_ret[0])
         {
           dk_free_box (fixed_base);
@@ -1375,7 +1376,7 @@ bif_rfc1808_expand_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ccaddr_t base_cs_name = ((4 < BOX_ELEMENTS(args)) ? bif_string_or_null_arg (qst, args, 4, "rfc1808_expand_uri") : NULL);
   ccaddr_t rel_cs_name = ((5 < BOX_ELEMENTS(args)) ? bif_string_or_null_arg (qst, args, 5, "rfc1808_expand_uri") : NULL);
   caddr_t err = NULL;
-  caddr_t res = rfc1808_expand_uri (qst, base_uri, rel_uri, output_cs_name, resolve_like_http_get, base_cs_name, rel_cs_name, &err);
+  caddr_t res = rfc1808_expand_uri (/*(query_instance_t *)qst,*/ base_uri, rel_uri, output_cs_name, resolve_like_http_get, base_cs_name, rel_cs_name, &err);
   int res_is_new = ((res != base_uri) && (res != rel_uri));
   if (NULL != err)
     {

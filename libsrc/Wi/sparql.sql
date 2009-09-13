@@ -2159,6 +2159,53 @@ create procedure DB.DBA.RDF_RDFXML_TO_DICT (in strg varchar, in base varchar, in
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_RDFA (in strg varchar, in base varchar, in graph varchar := null)
+{
+  declare app_env any;
+  if (graph = '')
+    signal ('22023', 'Empty string is not a valid graph IRI in DB.DBA.RDF_LOAD_RDFA()');
+  else if (graph is null)
+    {
+      graph := base;
+      if ((graph is null) or (graph = ''))
+        signal ('22023', 'DB.DBA.RDF_LOAD_RDFA() requires a valid IRI as a base argument if graph is not specified');
+    }
+  app_env := vector (null, null, __max (length (strg) / 100, 100000));
+  rdf_load_rdfxml (strg, 2,
+    graph,
+    vector (
+      'DB.DBA.TTLP_EV_NEW_GRAPH',
+      'DB.DBA.TTLP_EV_NEW_BLANK',
+      'DB.DBA.TTLP_EV_GET_IID',
+      'DB.DBA.TTLP_EV_TRIPLE',
+      'DB.DBA.TTLP_EV_TRIPLE_L',
+      'DB.DBA.TTLP_EV_COMMIT',
+      'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
+    app_env,
+    base );
+  return graph;
+}
+;
+
+create procedure DB.DBA.RDF_RDFA_TO_DICT (in strg varchar, in base varchar, in graph varchar := null)
+{
+  declare res any;
+  res := dict_new (length (strg) / 100);
+  rdf_load_rdfxml (strg, 2,
+    graph,
+    vector (
+      'DB.DBA.RDF_TTL2HASH_EXEC_NEW_GRAPH',
+      'DB.DBA.RDF_TTL2HASH_EXEC_NEW_BLANK',
+      'DB.DBA.RDF_TTL2HASH_EXEC_GET_IID',
+      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE',
+      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L',
+      '',
+      'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
+    res,
+    base );
+  return res;
+}
+;
 
 -----
 -- Fast rewriting from serialization to serialization without storing
@@ -2693,6 +2740,9 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
       subj := triples[tctr][0];
       pred := triples[tctr][1];
       obj := triples[tctr][2];
+      -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT: subj:', subj, __tag(subj), __box_flags (subj));
+      -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT: pred:', pred, __tag(pred), __box_flags (pred));
+      -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT: obj:', obj, __tag(obj), __box_flags (obj));
       http ('\n<rdf:Description', ses);
       if (not isiri_id (subj))
         {
@@ -2700,7 +2750,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
             {
               if (subj like 'nodeID://%')
                 {
-                  http (' rdf:nodeID="', ses); http_value (subj, 0, ses); http ('"/>', ses);
+                  http (' rdf:nodeID="b', ses); http_value (subseq (subj, 9), 0, ses); http ('">', ses);
                 }
               else
                 {
@@ -2835,7 +2885,7 @@ res_for_pred:
             {
               if (obj like 'nodeID://%')
                 {
-                  http (' rdf:nodeID="', ses); http_value (obj, 0, ses); http ('"/>', ses);
+                  http (' rdf:nodeID="b', ses); http_value (subseq (obj, 9), 0, ses); http ('"/>', ses);
                 }
               else
                 {
@@ -2853,6 +2903,12 @@ res_for_pred:
       else if (__tag of varbinary = __tag (obj))
         {
           http ('>', ses);
+          http_value (obj, 0, ses);
+          http ('</', ses); http (pred_tagname, ses); http ('>', ses);
+        }
+      else if (__tag of XML = __tag (obj))
+        {
+          http (' rdf:parseType="Literal">', ses);
           http_value (obj, 0, ses);
           http ('</', ses); http (pred_tagname, ses); http ('>', ses);
         }
@@ -3095,7 +3151,7 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_ACC (inout _env any, in
         {
           if (_val >= min_bnode_iri_id ())
 	    {
-	      http (sprintf (' rdf:nodeID="%d"/></rs:binding>', iri_id_num (_val)), _env);
+	      http (sprintf (' rdf:nodeID="b%d"/></rs:binding>', iri_id_num (_val)), _env);
 	    }
 	  else
 	    {

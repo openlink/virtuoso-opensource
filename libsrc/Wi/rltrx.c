@@ -894,6 +894,16 @@ pl_set_finalize (page_lock_t * pl, buffer_desc_t * buf)
 }
 
 
+void
+buf_bm_transact (buffer_desc_t * buf, int pos)
+{
+  it_cursor_t * registered;
+  for (registered = buf->bd_registered; registered; registered = registered->itc_next_on_page)
+    if (pos == registered->itc_map_pos)
+      registered->itc_bp.bp_is_pos_valid = 0;
+}
+
+
 #define PAGE_NOT_CHANGED 0
 #define PAGE_UPDATED 1
 #define PAGE_DELETED 2
@@ -919,6 +929,8 @@ itc_finalize_row (it_cursor_t * itc, buffer_desc_t ** buf_ret, int pos, dk_set_t
       rd->rd_op = RD_DELETE;
       dk_set_push (rd_list, (void*) rd);
     }
+  else if (buf->bd_registered && buf->bd_tree->it_key->key_is_bitmap)
+    buf_bm_transact (buf, pos);
 }
 
 
@@ -1116,6 +1128,8 @@ itc_rollback_row (it_cursor_t * itc, buffer_desc_t ** buf_ret, int pos, row_lock
 	    cpt_upd_image (buf, pos);
 	}
     }
+  if (buf->bd_registered && buf->bd_tree->it_key->key_is_bitmap)
+    buf_bm_transact (buf, pos);
   return PAGE_NOT_CHANGED;
 }
 

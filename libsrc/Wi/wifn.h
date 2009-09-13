@@ -67,6 +67,11 @@ it_cursor_t * itc_create (void *, lock_trx_t *);
 void itc_free (it_cursor_t *);
 void itc_clear (it_cursor_t * it);
 void itc_free_owned_params (it_cursor_t * itc);
+
+#define NEW_PLH(v) \
+  placeholder_t * v = (placeholder_t*) dk_alloc_box_zero (sizeof (placeholder_t), DV_ITC); \
+  v->itc_type = ITC_PLACEHOLDER;
+placeholder_t * plh_allocate ();
 buffer_desc_t * itc_reset (it_cursor_t * itc);
 int dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation, unsigned short offset);
 int dv_compare_spec (db_buf_t db, search_spec_t * spec, it_cursor_t * it);

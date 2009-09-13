@@ -305,6 +305,7 @@ dbg_itc_create (const char *file, int line, void * isp, lock_trx_t * trx)
 {
   it_cursor_t * itc = (it_cursor_t*) DBG_NAME (dk_alloc_box) (DBG_ARGS sizeof (it_cursor_t), DV_ITC);
   ITC_INIT (itc, isp, trx);
+  itc->itc_type = ITC_CURSOR;
   itc->itc_is_allocated = 1;
   return itc;
 }
@@ -314,6 +315,7 @@ itc_create (void * isp, lock_trx_t * trx)
 {
   it_cursor_t * itc = (it_cursor_t*)dk_alloc_box (sizeof (it_cursor_t), DV_ITC);
   ITC_INIT (itc, isp, trx);
+  itc->itc_type = ITC_CURSOR;
   itc->itc_is_allocated = 1;
   return itc;
 }
@@ -368,7 +370,7 @@ itc_free (it_cursor_t * it)
 {
   if (ITC_PLACEHOLDER == it->itc_type)
     {
-      dk_free ((caddr_t)it, sizeof (placeholder_t));
+      plh_free (it);
       return;
     }
   itc_clear (it);
@@ -380,11 +382,21 @@ itc_free (it_cursor_t * it)
 }
 
 
+placeholder_t *
+plh_allocate ()
+{
+  NEW_PLH(v);
+  return v;
+}
+
+
 void
 plh_free (placeholder_t * pl)
 {
   itc_unregister ((it_cursor_t *) pl);
-  dk_free ((caddr_t) pl, sizeof (placeholder_t));
+  if (pl->itc_type != ITC_PLACEHOLDER || DV_ITC != DV_TYPE_OF (pl)) GPF_T1 ("plh_free applied to non-placeholder");
+  box_tag_modify (pl, DV_CUSTOM);
+  dk_free_box ((caddr_t) pl);
 }
 
 placeholder_t *
@@ -392,7 +404,7 @@ plh_copy (placeholder_t * pl)
 {
   return NULL;
 #if 0
-  NEW_VAR (placeholder_t, new_pl);
+ NEW_PLH (new_pl);
   IN_VOLATILE_MAP (pl->itc_tree, pl->itc_page);
   memcpy (new_pl, pl, ITC_PLACEHOLDER_BYTES);
   new_pl->itc_type = ITC_PLACEHOLDER;
@@ -407,7 +419,7 @@ plh_copy (placeholder_t * pl)
 placeholder_t *
 plh_landed_copy (placeholder_t * pl, buffer_desc_t * buf)
 {
-  NEW_VAR (placeholder_t, new_pl);
+  NEW_PLH (new_pl);
   memcpy (new_pl, pl, ITC_PLACEHOLDER_BYTES);
   new_pl->itc_type = ITC_PLACEHOLDER;
   new_pl->itc_is_registered = 0;

@@ -1314,7 +1314,7 @@ ts_set_placeholder (table_source_t * ts, caddr_t * state,
 	  }
 	else
 	  {
-	    NEW_VAR (placeholder_t, pl);
+	    NEW_PLH (pl);
 	    memcpy (pl, itc, ITC_PLACEHOLDER_BYTES);
 	    pl->itc_type = ITC_PLACEHOLDER;
 	    itc_register ((it_cursor_t *) pl, *buf_ret);
@@ -1457,6 +1457,8 @@ table_source_input (table_source_t * ts, caddr_t * inst,
 	  ITC_IN_KNOWN_MAP (order_itc, order_itc->itc_page);
 	  itc_assert_lock (order_itc);
 #endif
+	  if (ts->ts_need_placeholder)
+	    ts_set_placeholder (ts, inst, order_itc, &order_buf);
 	  itc_register (order_itc, order_buf);
 	  itc_page_leave (order_itc, order_buf);
 	}
@@ -1472,6 +1474,8 @@ table_source_input (table_source_t * ts, caddr_t * inst,
 #ifndef NDEBUG
 		itc_assert_lock (order_itc);
 #endif
+		if (ts->ts_need_placeholder)
+		  ts_set_placeholder (ts, inst, order_itc, &order_buf);
 		itc_register (order_itc, order_buf);
 		itc_page_leave (order_itc, order_buf);
 	      }
@@ -2028,7 +2032,7 @@ deref_node_input (deref_node_t * dn, caddr_t * inst, caddr_t * state)
       {
 	if (dn->dn_place)
 	  {
-	    NEW_VAR (placeholder_t, pl);
+	    NEW_PLH (pl);
 	    ITC_IN_KNOWN_MAP (ref_itc, ref_itc->itc_page);
 	    memcpy (pl, (ITC) ref_itc, ITC_PLACEHOLDER_BYTES);
 	    pl->itc_type = ITC_PLACEHOLDER;

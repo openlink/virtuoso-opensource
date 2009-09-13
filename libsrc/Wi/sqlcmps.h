@@ -212,6 +212,7 @@ typedef struct sql_comp_s
     char	sc_any_clb; /* any multi-state cluster node with a clb */
     dk_hash_t *	sc_qn_to_dpipe; /* if a dpipe is to be added before the node, it is marked here */
     dk_hash_t *	sc_ssl_eqs;
+    update_node_t * 	sc_update_keyset;
     id_hash_t *	sc_sample_cache;
     state_slot_t **	sc_sel_out;
     dk_set_t		sc_agg_state_slot; /* when making an aggregate, this is the list of slots that hold the aggregation state */
@@ -465,6 +466,8 @@ void sqlc_derived_order_by (sql_comp_t * sc, comp_table_t * ct);
 void sqlc_table_used (sql_comp_t * sc, dbe_table_t * tb);
 void sqlc_trig_const_params (sql_comp_t * sc, state_slot_t ** params,
     dk_set_t * code);
+void sqlc_update_set_keyset (sql_comp_t * sc, table_source_t * ts);
+
 
 void tc_init (trig_cols_t * tc, int event, dbe_table_t * tb, caddr_t * cols,
     ST ** vals, int add_pk);

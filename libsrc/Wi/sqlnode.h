@@ -403,6 +403,7 @@ typedef struct query_instance_s
     bitf_t 		qi_no_cast_error:1;
     bitf_t		qi_non_txn_insert:1; /* make insert not subject to rb and log it immediately */
     bitf_t		qi_is_partial:1; /* was interrupted by anytime timeout */
+    bitf_t		qi_dfg_anytimed:1;
     int32		qi_rpc_timeout;
     int32		qi_prefetch_bytes;
     int32		qi_bytes_selected;
@@ -600,6 +601,7 @@ typedef struct table_source_s
     bitf_t		ts_is_outer:1;
     bitf_t		ts_is_random:1; /* random search */
     bitf_t 		ts_no_blobs:1;
+    bitf_t		ts_need_placeholder:1;
     caddr_t		ts_rnd_pcnt;
     code_vec_t		ts_after_join_test;
     struct inx_op_s *	ts_inx_op;
@@ -720,6 +722,7 @@ struct query_frag_s
 
   state_slot_t **	qf_const_ssl; /* when ends in a group by, some slots must be inited.  If set, odd is value, next even is ssl to init to value */
   state_slot_t **		qf_local_save; /* for a result set making qf, (non agg, non upd), the save state that must be saved and restored between interrupting and continuing generating  a single result set from the qf */
+  state_slot_t *		qf_keyset_state;
 };
 
 #define qf_itcl clb.clb_itcl

@@ -219,9 +219,13 @@ extern caddr_t ttl_query_lex_analyze (caddr_t str, wcharset_t *query_charset);
 extern void ttlp_triple_and_inf (ttlp_t *ttlp_arg, caddr_t o_uri);
 extern void ttlp_triple_l_and_inf (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang);
 
+#define RDFXML_COMPLETE		0
+#define RDFXML_OMIT_TOP_RDF	1
+#define RDFXML_IN_ATTRIBUTES	2
+
 extern void
 rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
-  int omit_top_rdf, const char *source_name, caddr_t base_uri, caddr_t graph_uri,
+  int mode_bits, const char *source_name, caddr_t base_uri, caddr_t graph_uri,
   ccaddr_t *stmt_texts, caddr_t app_env,
   const char *enc, lang_handler_t *lh
    /*, caddr_t dtd_config, dtd_t **ret_dtd,

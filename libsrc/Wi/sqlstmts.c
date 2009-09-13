@@ -1130,6 +1130,43 @@ int sqlc_no_remote_pk = 0;
 
 
 void
+sqlc_update_set_keyset (sql_comp_t * sc, table_source_t * ts)
+{
+  /* in searched update / delete, there's one table source. */
+  update_node_t * upd = sc->sc_update_keyset;
+  int part_no = 0, inx;
+  dbe_key_t * key = ts->ts_order_ks ? ts->ts_order_ks->ks_key : NULL;
+  if (IS_QN (ts, table_source_input_unique))
+    {
+      sc->sc_update_keyset = NULL;
+      return;
+    }
+  if (!key || !upd)
+    {
+      sc->sc_update_keyset = NULL;
+      return;
+    }
+  DO_SET (dbe_column_t *, col, &key->key_parts)
+    {
+      DO_BOX (ptrlong, cid, inx, upd->upd_col_ids)
+	{
+	  if (cid == col->col_id)
+	    {
+	      upd->upd_keyset = 1;
+	      return;
+	    }
+	}
+      END_DO_BOX;
+      part_no++;
+      if (part_no >= key->key_n_significant)
+	break;
+    }
+  END_DO_SET ();
+  sc->sc_update_keyset = NULL;
+}
+
+
+void
 sqlc_update_searched (sql_comp_t * sc, ST * tree)
 {
   state_slot_t **slots;
@@ -1208,6 +1245,7 @@ sqlc_update_searched (sql_comp_t * sc, ST * tree)
       tc_init (&tc, TRIG_UPDATE, tb,
 	  (caddr_t*) tree->_.update_src.cols, tree->_.update_src.vals, 0);
       sc->sc_is_update = SC_UPD_PLACE;
+      sc->sc_update_keyset = upd;
       sqlo_query_spec (sc, 0,
 	  (caddr_t *) tc.tc_selection,
 	  tree->_.update_src.table_exp,
@@ -1227,6 +1265,8 @@ sqlc_update_searched (sql_comp_t * sc, ST * tree)
        }
       tc_free (&tc);
 
+      if (upd->upd_keyset)
+	upd->upd_keyset_state = ssl_new_variable (sc->sc_cc, "keyset_state", DV_ARRAY_OF_POINTER);
       upd->upd_place = sqlo_co_place (sc);
 	sql_node_append (&sc->sc_cc->cc_query->qr_head_node,
 			 (data_source_t *) upd);

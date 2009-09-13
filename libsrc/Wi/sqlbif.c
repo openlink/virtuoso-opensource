@@ -8202,7 +8202,7 @@ row_deref (caddr_t * qst, caddr_t id, placeholder_t **place_ret, caddr_t * row_r
 	    }
 	  if (place_ret)
 	    {
-	      NEW_VAR (placeholder_t, pl);
+	      NEW_PLH (pl);
 	      ITC_IN_KNOWN_MAP (ref_itc, ref_itc->itc_page);
 	      memcpy (pl, (ITC) ref_itc, ITC_PLACEHOLDER_BYTES);
 	      pl->itc_type = ITC_PLACEHOLDER;
