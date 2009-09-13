@@ -48,6 +48,7 @@
   xmlns:nfo="&nfo;"
   xmlns:media="http://search.yahoo.com/mrss/"
   xmlns:yt="http://gdata.youtube.com/schemas/2007"
+  xmlns:foaf="http://xmlns.com/foaf/0.1/"
   xmlns:video="&video;"
   version="1.0">
 
@@ -88,11 +89,18 @@
 </xsl:template>
 
 <xsl:template match="a:author">
+    <xsl:choose>
+	<xsl:when test="//yt:*">
+	    <foaf:maker rdf:resource="http://www.youtube.com/user/{a:name}"/>
+	</xsl:when>
+	<xsl:otherwise>
     <dc:creator><xsl:value-of select="a:name" /> &lt;<xsl:value-of select="a:email" />&gt;</dc:creator>
+	</xsl:otherwise>
+    </xsl:choose>
 </xsl:template>
 
 <xsl:template match="a:entry">
-	<xsl:apply-templates select="media:*|yt:*"/>
+    <xsl:apply-templates select="media:*|yt:*" mode="media"/>
     <item rdf:about="{a:link[@href]/@href}">
 		<xsl:apply-templates/>
 		<xsl:if test="a:category[@term]">
@@ -110,7 +118,7 @@
     </item>
 </xsl:template>
 
-<xsl:template match="yt:statistics">
+<xsl:template match="yt:statistics" mode="media">
 	<rdf:Description rdf:about="{$baseUri}">
 		<rdf:type rdf:resource="&nfo;Video"/>
 		<rdf:type rdf:resource="&video;Movie"/>
@@ -120,7 +128,7 @@
 	</rdf:Description>
 </xsl:template>
 
-<xsl:template match="media:group">
+<xsl:template match="media:group" mode="media">
 	<rdf:Description rdf:about="{$baseUri}">
 		<rdf:type rdf:resource="&nfo;Video"/>
 		<rdf:type rdf:resource="&video;Movie"/>
@@ -128,6 +136,22 @@
 			<xsl:value-of select="yt:duration/@seconds"/>
 		</nfo:duration>
 	</rdf:Description>
+	<xsl:apply-templates select="media:*" mode="media"/>
+</xsl:template>
+
+<xsl:template match="text()" mode="media"/>
+
+<xsl:template match="media:content[@yt:format='5']" mode="media">
+    <rdf:Description rdf:about="{$baseUri}">
+	<content:encoded rdf:parseType="Literal">
+	    <object width="425" height="350" xmlns="">
+		<param name="movie" value="{@url}">
+		</param>
+		<embed src="{@url}" type="{@type}" width="425" height="350">
+		</embed>
+	    </object>
+	</content:encoded>
+    </rdf:Description>
 </xsl:template>
 
 <xsl:template match="g:*|gd:*">

@@ -378,7 +378,7 @@
 					<xsl:value-of select="bio/summary"/>
 				</dc:description>
 				<dcterms:modified rdf:datatype="&xsd;dateTime">
-					<xsl:value-of select="bio/published"/>
+					<xsl:value-of select="vi:http_string_date (bio/published)"/>
 				</dcterms:modified>
 			</xsl:if>
 			<xsl:for-each select="similar/artist">
@@ -502,7 +502,7 @@
 			</xsl:if>
 			<xsl:if test="wiki">
 				<dcterms:modified rdf:datatype="&xsd;dateTime">
-					<xsl:value-of select="wiki/published"/>
+					<xsl:value-of select="vi:http_string_date (wiki/published)"/>
 				</dcterms:modified>
 				<sioc:content>
 					<xsl:value-of select="wiki/content"/>

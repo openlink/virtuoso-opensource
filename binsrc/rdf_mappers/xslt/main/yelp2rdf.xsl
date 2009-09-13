@@ -58,11 +58,12 @@
 				</dc:description>
 				<sioc:link rdf:resource="{link}" />
 				<xsl:for-each select="item">
-					<sioc:container_of rdf:resource="{link}" />
+				    	<foaf:topic rdf:resource="{vi:proxyIRI (link)}" />
+					<sioc:container_of rdf:resource="{vi:proxyIRI (link)}" />
 				</xsl:for-each>
 			</rdf:Description>
 			<xsl:for-each select="item">
-				<rdf:Description rdf:about="{link}">
+				<rdf:Description rdf:about="{vi:proxyIRI (link)}">
 					<rdf:type rdf:resource="&sioct;BoardPost"/>
 					<sioc:has_container rdf:resource="{$baseUri}"/>
 					<dc:title>

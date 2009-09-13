@@ -1066,6 +1066,13 @@ DBG_NAME (box_copy) (DBG_PARAMS cbox_t box)
 	unames[blk->unb_hdr[UNB_HDR_HASH] % UNAME_TABLE_SIZE].unc_refcount++;
 #endif
 	mutex_enter (uname_mutex);
+	if (UNAME_LOCK_REFCOUNT <= blk->unb_hdr[UNB_HDR_REFCTR])
+	  {
+	    /* See if it is already immortal inside the mtx.  Else two threads can decide to make it immortal one after the other and the second gpfs cause the uname is no longer in the refcounted list */
+	    mutex_leave (uname_mutex);
+	    return (box_t) box;
+	  }
+
 	if (UNAME_LOCK_REFCOUNT > (++(blk->unb_hdr[UNB_HDR_REFCTR])))
 	  {
 	    box_dv_uname_audit_one (blk->unb_hdr[UNB_HDR_HASH]);
@@ -1370,6 +1377,18 @@ DBG_NAME (box_dv_short_concat) (DBG_PARAMS ccaddr_t box1, ccaddr_t box2)
   char *res = DBG_NAME (dk_alloc_box) (DBG_ARGS len1 + len2, DV_SHORT_STRING);
   memcpy (res, box1, len1);
   memcpy (res + len1, box2, len2);
+  return res;
+}
+
+
+box_t
+DBG_NAME (box_dv_short_strconcat) (DBG_PARAMS const char *str1, const char *str2)
+{
+  int len1 = strlen (str1);	/* Excluding trailing '\0' */
+  int len2 = strlen (str2) + 1;	/* Including trailing '\0' */
+  char *res = DBG_NAME (dk_alloc_box) (DBG_ARGS len1 + len2, DV_SHORT_STRING);
+  memcpy (res, str1, len1);
+  memcpy (res + len1, str2, len2);
   return res;
 }
 
@@ -2296,6 +2315,14 @@ box_t
 box_dv_short_concat (ccaddr_t box1, ccaddr_t box2)
 {
   return dbg_box_dv_short_concat (__FILE__, __LINE__, box1, box2);
+}
+
+
+#undef box_dv_short_strconcat
+box_t
+box_dv_short_strconcat (const char *str1, const char *str2)
+{
+  return dbg_box_dv_short_strconcat (__FILE__, __LINE__, str1, str2);
 }
 
 

@@ -247,6 +247,8 @@ ptr += 4
 #define END_DO_BOX_FAST_REV \
 	  }} while (0)
 
+#define NEW_DB_NULL			dk_alloc_box (0, DV_DB_NULL)
+
 #ifdef DOUBLE_ALIGN
 
 #define STATIC_DV_NULL 			{0,0,0,0,0,0,0,(char)DV_DB_NULL}
@@ -665,6 +667,7 @@ EXE_EXPORT (box_t, box_dv_short_nchars, (const char *buf, size_t buf_len));
 EXE_EXPORT (box_t, box_dv_short_nchars_reuse, (const char *buf, size_t buf_len, box_t replace));
 EXE_EXPORT (box_t, box_dv_short_substr, (ccaddr_t box, int n1, int n2));
 EXE_EXPORT (box_t, box_dv_short_concat, (ccaddr_t box1, ccaddr_t box2));
+EXE_EXPORT (box_t, box_dv_short_strconcat, (const char *str1, const char *str2));
 EXE_EXPORT (char *, box_dv_ubuf, (size_t buf_strlen));
 EXE_EXPORT (box_t, box_dv_uname_from_ubuf, (char *ubuf));
 EXE_EXPORT (box_t, box_dv_uname_string, (const char *string));
@@ -721,6 +724,7 @@ box_t dbg_box_dv_short_nchars (const char *file, int line, const char *buf, size
 box_t dbg_box_dv_short_nchars_reuse (const char *file, int line, const char *buf, size_t buf_len, box_t replace);
 box_t dbg_box_dv_short_substr (const char *file, int line, ccaddr_t str, int n1, int n2);
 box_t dbg_box_dv_short_concat (const char *file, int line, ccaddr_t box1, ccaddr_t box2);
+box_t dbg_box_dv_short_strconcat (const char *file, int line, const char *str1, const char *str2);
 box_t dbg_box_copy (const char *file, int line, cbox_t box);
 box_t dbg_box_try_copy (const char *file, int line, cbox_t box, box_t stub);
 box_t dbg_box_copy_tree (const char *file, int line, cbox_t box);
@@ -749,6 +753,7 @@ caddr_t dbg_box_vsprintf (const char *file, int line, size_t buflen_eval, const 
 #define box_dv_short_nchars_reuse(B,SZ,R)	dbg_box_dv_short_nchars_reuse (__FILE__, __LINE__, (B), (SZ), (R))
 #define box_dv_short_substr(S,N1,N2)		dbg_box_dv_short_substr (__FILE__, __LINE__, (S), (N1), (N2))
 #define box_dv_short_concat(S1,S2)		dbg_box_dv_short_concat (__FILE__, __LINE__, (S1), (S2))
+#define box_dv_short_strconcat(S1,S2)		dbg_box_dv_short_strconcat (__FILE__, __LINE__, (S1), (S2))
 #define box_copy(S)				dbg_box_copy (__FILE__, __LINE__, (S))
 #define box_try_copy(S,STUB)			dbg_box_try_copy (__FILE__, __LINE__, (S), (STUB))
 #define box_copy_tree(S)			dbg_box_copy_tree (__FILE__, __LINE__, (S))

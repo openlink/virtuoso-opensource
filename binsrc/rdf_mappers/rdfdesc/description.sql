@@ -6,6 +6,7 @@ TTLP ('@prefix foaf: <http://xmlns.com/foaf/0.1/> .
 @prefix fbase: <http://rdf.freebase.com/ns/type.object.> .
 @prefix skos: <http://www.w3.org/2008/05/skos#> .
 @prefix bibo: <http://purl.org/ontology/bibo/> .
+@prefix gr: <http://purl.org/goodrelations/v1#> .
 dc:title rdfs:subPropertyOf virtrdf:label .
 rdfs:label rdfs:subPropertyOf virtrdf:label .
 fbase:name rdfs:subPropertyOf virtrdf:label .
@@ -18,6 +19,10 @@ skos:prefLabel rdfs:subPropertyOf virtrdf:label .
 <http://purl.org/dc/terms/title> rdfs:subPropertyOf virtrdf:label .
 foaf:accountName rdfs:subPropertyOf virtrdf:label .
 bibo:shortTitle rdfs:subPropertyOf virtrdf:label .
+<http://s.opencalais.com/1/pred/name> rdfs:subPropertyOf foaf:name .
+<http://s.opencalais.com/1/type/er/Company> rdfs:subClassOf gr:BusinessEntity .
+gr:BusinessEntity rdfs:subClassOf foaf:Organization .
+<http://dbpedia.org/ontology/Company> rdfs:subClassOf gr:BusinessEntity .
 ', '', 'virtrdf-label');
 
 rdfs_rule_set ('virtrdf-label', 'virtrdf-label');
@@ -400,6 +405,8 @@ create procedure rdfdesc_prop_label (in uri any)
 	and P = __i2idn ('http://www.w3.org/2000/01/rdf-schema#label') OPTION (QUIETCAST));
   if (length (ll) = 0)
     ll := rdfdesc_uri_curie (uri);
+  if (isstring (ll) and ll like 'opl%:isDescribedUsing')
+    ll := 'is Described Using';  
   return ll;  
 }
 ;

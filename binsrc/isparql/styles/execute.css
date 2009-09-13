@@ -1,17 +1,17 @@
 /*
  *  $Id$
- *  
+ *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
  *  Copyright (C) 2009 OpenLink Software
  *
  *  See LICENSE file for details.
- *  
+ *
  */
 
- 
+
 @import url("/isparql/toolkit/styles/rdftabs.css");
- 
+
 /* ---------------- grid -------------- */
 
 #graphs_grid_div table,
@@ -143,7 +143,7 @@ body {
   font-size: 9pt;
   color: #335;
   margin:0px;
-}  
+}
 
 p.copyright {
 font-size: 8pt;

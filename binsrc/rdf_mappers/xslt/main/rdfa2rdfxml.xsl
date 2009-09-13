@@ -181,6 +181,8 @@
 		<!--xsl:if test="$obj = ''">
 		    <xsl:message terminate="no"><xsl:value-of select="xpath-debug-xslline()"/></xsl:message>
 		</xsl:if-->
+		<!-- special case for ugly signup links -->
+		<xsl:if test="not ($elem-nss = '&xhv;' and $obj = 'http://www.yelp.com/signup')">
 		<xsl:element name="{$elem-name}" namespace="{$elem-nss}">
 		    <xsl:if test="$obj != ''">
 			<xsl:attribute name="rdf:resource">
@@ -193,6 +195,7 @@
 			</rdf:Description>
 		    </xsl:if>
 		</xsl:element>
+		</xsl:if>
 	    </rdf:Description>
 	</xsl:template>
 

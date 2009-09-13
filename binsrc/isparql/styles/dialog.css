@@ -1,0 +1,46 @@
+/*
+ *  $Id$
+ *
+ *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
+ *
+ *  Copyright (C) 2009 OpenLink Software
+ *
+ *  See LICENSE file for details.
+ *
+ */
+
+div.btn_row {
+  width: 99%;
+  text-align: right;
+}
+
+#auth_dlg {
+  float: left;
+}
+
+#auth_dlg label { float: left; width: 100px; }
+#auth_dlg_error { margin: 10px 10px 10px 100px; }
+
+#splash { width: 100%; text-align: center; }
+
+#splash_inner {
+  margin: 100px auto 0 auto;
+  width: 450px;
+  text-align: center;
+  border: 1px outset #00529c;
+  moz-border-radius: 4px 4px 4px 4px;
+}
+
+#statMsgMain { font-size: 10pt; font-weight: bold; margin-top: 10px; }
+
+#splash_hd { background-color: #fff; }
+#splash_hd img { height: 35px; vertical-align: middle; margin: 10px 0 10px 0;}
+
+#splash_copyr { margin-top: 15px; font-size: 8px; }
+
+#splash_foot {
+  padding: 4px 0 4px 0;
+  font-style: italic;
+  color: #fff;
+  background-color: #3bafd5;
+}

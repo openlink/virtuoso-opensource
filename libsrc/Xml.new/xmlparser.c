@@ -893,15 +893,11 @@ char *VXmlErrorContext2(char* buffer, vxml_parser_t * parser)
 
 caddr_t VXmlFullErrorMessage (vxml_parser_t * parser)
 {
-#if 1
-  dk_set_t lastdetail;
+  dk_set_t lastdetail = NULL;
   dk_set_t iter;
-  int can_retry;
-  int in_retry = 0;
+  dk_set_t first_error = NULL;
+  dk_set_t lastdetail_of_first_error = NULL;
 
-again:
-  can_retry = 0;
-  lastdetail = NULL;
   iter = parser->msglog;
   while (iter)
     {
@@ -915,50 +911,19 @@ again:
         case XCFG_ERROR: case XCFG_FATAL:
           if (NULL == lastdetail)
             lastdetail = iter;
-/*	  if (!in_retry && ('(' == ((char *)(iter->next->data))[0]))
-	    {
-	      can_retry = 1;
-              lastdetail = NULL;
-	      break;
-	    }*/
           iter = iter->next->next;
-          return xmlparser_log_section_to_string (lastdetail, iter, "XML parser detected an error:");
+          first_error = iter;
+          lastdetail_of_first_error = lastdetail;
+          lastdetail = NULL;
+          continue;
         default:
           lastdetail = NULL;
         }
       iter = iter->next->next;
     }
-  if (!in_retry && can_retry)
-    goto again;
+  if (NULL != lastdetail_of_first_error)
+    return xmlparser_log_section_to_string (lastdetail_of_first_error, first_error, "XML parser detected an error:");
   return box_dv_short_string ("");
-#else
-  char *uri1 = parser->curr_pos.origin_uri;
-  char *uri2 = parser->cfg.uri;
-  char *uri = ((NULL != uri1) ? uri1 : ((NULL != uri2) ? uri2 : ""));
-  char *res = dk_alloc(500 + CONTEXT_BUF_LENGTH + strlen(uri));
-  char *res_tail = res;
-  if (parser->curr_pos.line_num < 0)
-    {
-      res_tail = res + sprintf (res, "XML parse error: %s\n%s%s%s\n",
-	parser->errmsg,
-	(uri[0] ? " in '" : ""),
-	(uri[0] ? uri : ""),
-	(uri[0] ? "'" : "") );
-    }
-  else
-    {
-      res_tail = res + sprintf (res, "XML parse error: %s\nat line %d column %d%s%s%s\n",
-	parser->errmsg,
-	parser->curr_pos.line_num,
-	parser->curr_pos.col_c_num,
-	(uri[0] ? " of '" : ""),
-	(uri[0] ? uri : ""),
-	(uri[0] ? "'" : "") );
-      res_tail = VXmlErrorContext2 (res_tail, parser);
-    }
-  strcpy (res_tail, "\n");
-  return res;
-#endif
 }
 
 

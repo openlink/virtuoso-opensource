@@ -1,12 +1,12 @@
 /*
  *  $Id$
- *  
+ *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
  *  Copyright (C) 2009 OpenLink Software
  *
  *  See LICENSE file for details.
- *  
+ *
  */
 
 #qbe_toolbar label {
@@ -15,7 +15,8 @@
   color: #444;
   font-size: 10pt;
   font-weight: normal;
-} 
+}
+
 #qbe_datasource_cnt {
   float: left;
   margin-top:16px;
@@ -26,7 +27,7 @@
   margin: 6px;
   cursor:pointer;
 }
- 
+
 #qbe_graph {
   float: left;
   /*width: 250px;*/
@@ -64,14 +65,16 @@
   border: 1px solid #888;
 }
 
+#div.schemas { overflow: hidden }
+
 #schemas_tree_container {
   clear: both;
   margin: 0;
   padding: 0;
   padding: 0;
-  height: 250px;
+  height: 240px;
   overflow: auto;
-  position:relative; /* Fix for dragging */ 
+  position:relative; /* Fix for dragging */
 }
 
 #schemas_tree_container ul {
@@ -119,8 +122,8 @@ ul#schemas_tree {
 #qbe_orderby_grid .grid .header_value {
   cursor: pointer;
   border: 1px outset #fff;
-	padding: 2px 3px;
-	padding-right: 15px;
+  padding: 2px 3px;
+  padding-right: 15px;
 }
 
 #qbe_props {
@@ -164,12 +167,12 @@ ul#schemas_tree {
 #qbe_props_visible {
 }
 
-#qbe_props_visible input { margin: 0 } 
+#qbe_props_visible input { margin: 0 }
 
 #qbe_props_orderby {
 }
 
-#qbe_props_orderby { margin: 0 } 
+#qbe_props_orderby { margin: 0 }
 
 #schemas button {
  margin-top: 3px;

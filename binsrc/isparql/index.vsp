@@ -57,18 +57,25 @@
 
 ?>
 <script type="text/javascript">
-  var default_dgu = '<?vsp http(replace(default_dgu,'\'','\\\'')); ?>';
-  var default_qry = '<?vsp http(replace(def_qry,'\'','\\\'')); ?>';
-  var fixed_sponge = '<?vsp http(replace(fixed_sponge,'\'','\\\'')); ?>';
-  var default_spng = 'soft';
-  var do_auth_verify = './auth.vsp';
-  var default_user = '<?vsp http(replace(default_user,'\'','\\\'')); ?>';
-  var default_pass = '<?vsp http(replace(default_pass,'\'','\\\'')); ?>';
+
+  iSPARQL = {
+    serverDefaults:{
+      graph:'<?vsp http(replace(default_dgu,'\'','\\\'')); ?>',
+      query:'<?vsp http(replace(def_qry,'\'','\\\'')); ?>',
+      sponge:      '<?vsp http(replace(fixed_sponge,'\'','\\\'')); ?>',
+      auth: {
+        endpoint:'./auth.vsp',
+	user:        '<?vsp http(replace(default_user,'\'','\\\'')); ?>',
+    	pass:        '<?vsp http(replace(default_pass,'\'','\\\'')); ?>'
+      }
+    }
+  }
+
 <?vsp
   if (isstring(registry_get('iSPARQL_GET_INITIAL_AUTH')))
-    http('  var get_initial_credentials = ''' || registry_get('iSPARQL_GET_INITIAL_AUTH') || ''';\n');
+    http('  iSPARQL.serverDefaults.getInitialCredentials = ''' || registry_get('iSPARQL_GET_INITIAL_AUTH') || ''';\n');
   if (isstring(registry_get('iSPARQL_AUTH_ENDPOINT')))
-    http('  var do_auth_verify = ''' || registry_get('iSPARQL_AUTH_ENDPOINT') || '''');
+    http('  iSPARQL.serverDefaults.authEndpoint = ''' || registry_get('iSPARQL_AUTH_ENDPOINT') || '''');
 ?>
 </script>
 <?include index.html ?>
