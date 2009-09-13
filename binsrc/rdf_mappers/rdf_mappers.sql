@@ -499,7 +499,7 @@ insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
 create procedure DB.DBA.RM_RDF_SPONGE_ERROR (in pname varchar, in graph_iri varchar, in dest varchar, in sql_message varchar)
 {
   declare gr, errs_iri, err_iri, nam any;
-  dbg_obj_print (pname, graph_iri, dest, sql_message);
+  --dbg_obj_print (pname, graph_iri, dest, sql_message);
   if (0 = length (sql_message) or pname is null)
     return;
   pname := cast (pname as varchar);
@@ -839,9 +839,10 @@ create procedure DB.DBA.RDF_SPONGE_DBP_IRI (in base varchar, in word varchar)
 
 create procedure DB.DBA.RM_SAMEAS_IRI (in u varchar)
 {
-  if (strchr (u, '#') is null)
-    return u || '#this';
-  return u;
+  return RDF_SPONGE_PROXY_IRI (u);
+  --if (strchr (u, '#') is null)
+  --  return u || '#this';
+  --return u;
 }
 ;
 
@@ -2028,14 +2029,18 @@ create procedure DB.DBA.RDF_LOAD_CRUNCHBASE(in graph_iri varchar, in new_origin_
   is_search := 0;
   if (new_origin_uri like 'http://www.crunchbase.com/search?query=%')
     {
-      cnt := http_client ('http://api.crunchbase.com/v/1/search.js?query=' || subseq (new_origin_uri, 39), proxy=>get_keyword_ucase ('get:proxy', opts));
+      cnt := http_client_ext ('http://api.crunchbase.com/v/1/search.js?query=' || subseq (new_origin_uri, 39), 
+      		headers=>hdr,
+      		proxy=>get_keyword_ucase ('get:proxy', opts));
       base := 'http://www.crunchbase.com/';
       suffix := '';
       is_search := 1;
     }
   else if (new_origin_uri like 'http://www.crunchbase.com/%')
     {
-      cnt := http_client ('http://api.crunchbase.com/v/1/' || subseq (new_origin_uri, 26) || '.js', proxy=>get_keyword_ucase ('get:proxy', opts));
+      cnt := http_client_ext ('http://api.crunchbase.com/v/1/' || subseq (new_origin_uri, 26) || '.js', 
+      		headers=>hdr,
+      		proxy=>get_keyword_ucase ('get:proxy', opts));
       base := 'http://www.crunchbase.com/';
       suffix := '';
     }
@@ -2045,10 +2050,13 @@ create procedure DB.DBA.RDF_LOAD_CRUNCHBASE(in graph_iri varchar, in new_origin_
       base := 'http://api.crunchbase.com/v/1/';
       suffix := '.js';
     }
-
+  if (hdr is not null and hdr[0] not like 'HTTP/1._ 200 %')
+    {
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, hdr[0]); 	
+      return 0;
+    }
   if (new_origin_uri like 'http://api.crunchbase.com/v/1/search.js?query=%')
     is_search := 1;
-
   tree := json_parse (cnt);
   if (is_search)
     tree := get_keyword ('results', tree);
@@ -2846,7 +2854,8 @@ create procedure DB.DBA.RDF_LOAD_RADIOPOP (in graph_iri varchar, in new_origin_u
 		delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 		tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
 		xd := xtree_doc (tmp);
-		xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/radiopop2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'user', id ));
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/radiopop2rdf.xsl', xd, 
+		vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'user', id ));
 		xd := serialize_to_UTF8_xml (xt);
 		DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 		return 1;
@@ -2878,8 +2887,7 @@ create procedure DB.DBA.RDF_LOAD_DISCOGS (in graph_iri varchar, in new_origin_ur
 		{
 			asin := left(asin, pos);
 		}	
-		url := sprintf ('http://www.discogs.com/artist/%s?f=xml&api_key=%s',
-			asin, api_key);
+	url := sprintf ('http://www.discogs.com/artist/%s?f=xml&api_key=%s', asin, api_key);
 	}
 	else if (new_origin_uri like 'http://www.discogs.com/release/%')
 	{
@@ -2892,8 +2900,7 @@ create procedure DB.DBA.RDF_LOAD_DISCOGS (in graph_iri varchar, in new_origin_ur
 		{
 			asin := left(asin, pos);
 		}
-		url := sprintf ('http://www.discogs.com/release/%s?f=xml&api_key=%s',
-			asin, api_key);
+	url := sprintf ('http://www.discogs.com/release/%s?f=xml&api_key=%s', asin, api_key);
 	}
 	else if (new_origin_uri like 'http://www.discogs.com/search?ev=hs&q=%&btn=Search')
 	{
@@ -2906,15 +2913,15 @@ create procedure DB.DBA.RDF_LOAD_DISCOGS (in graph_iri varchar, in new_origin_ur
 		{
 			asin := left(asin, pos);
 		}	
-		url := sprintf ('http://www.discogs.com/search?type=all&q=%s&f=xml&api_key=%s',
-			asin, api_key);
+	url := sprintf ('http://www.discogs.com/search?type=all&q=%s&f=xml&api_key=%s', asin, api_key);
 	}
     else
 		return 0;
         -- we keep http_get here because it uses explicit gunzip
 	tmp := http_get (url, null, 'GET', 'Accept-Encoding: gzip', null, proxy=>get_keyword_ucase ('get:proxy', opts));
 	xd := xtree_doc (tmp);
-	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/discogs2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
+    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/discogs2rdf.xsl', xd, 
+    	vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
 	xd := serialize_to_UTF8_xml (xt);
 	delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
@@ -2959,7 +2966,8 @@ create procedure DB.DBA.RDF_LOAD_LIBRARYTHING (in graph_iri varchar, in new_orig
 	}
 	tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
 	xd := xtree_doc (tmp);
-	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/lt2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/lt2rdf.xsl', xd, 
+  	vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
 	xd := serialize_to_UTF8_xml (xt);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	return 1;
@@ -3644,6 +3652,8 @@ create procedure DB.DBA.RDF_LOAD_YOUTUBE (in graph_iri varchar, in new_origin_ur
     tmp := DB.DBA.RDF_HTTP_URL_GET (url, url, hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
     xsl2 := 'xslt/main/atomentry2rdf.xsl';
   }
+  else
+    return 0; 
   if (hdr[0] not like 'HTTP/1._ 200 %')
     signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
   xd := xtree_doc (tmp);
@@ -5032,7 +5042,7 @@ try_grddl:
       if (xslt_style is not null)
 	{
 	  declare exit handler for sqlstate '*' { goto next_prof; };
-	  xd := DB.DBA.RDF_MAPPER_XSLT (xslt_style, xt, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
+	  xd := DB.DBA.RDF_MAPPER_XSLT (xslt_style, xt, vector ('baseUri', coalesce (dest, graph_iri)));
 	  if (xpath_eval ('count(/RDF/*)', xd) > 0)
             {
 	      mdta := mdta + 1;
@@ -5055,7 +5065,7 @@ try_grddl:
           if (position (GM_PROFILE, profs_done) > 0)
 	    goto try_next1;
           declare exit handler for sqlstate '*' { goto try_next1; };
-          xd := DB.DBA.RDF_MAPPER_XSLT (GM_XSLT, xt, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'nss', nss));
+          xd := DB.DBA.RDF_MAPPER_XSLT (GM_XSLT, xt, vector ('baseUri', coalesce (dest, graph_iri), 'nss', nss));
 	  if (xpath_eval ('count(/RDF/*)', xd) > 0)
 	    {
 	      mdta := mdta + 1;
@@ -5148,7 +5158,7 @@ no_feed:;
   xt := xt_sav;
   if (add_html_meta = 1 and xpath_eval ('/html', xt) is not null)
     {
-      xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/html2rdf.xsl', xt, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
+      xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/html2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
       if (xpath_eval ('count(/RDF/*)', xd) > 0)
         {
 	  mdta := mdta + 1;
@@ -6198,6 +6208,17 @@ create procedure DB.DBA.RM_LOAD_PREFIXES ()
 
 DB.DBA.RM_LOAD_PREFIXES ();
 
+create procedure DB.DBA.RM_GRAPH_PT_CK (in graph_iri varchar, in dest varchar)
+{
+  if (registry_get ('__sparql_mappers_debug') = '1')
+    {
+      if (exists (select 1 from RDF_QUAD where G = iri_to_id (graph_iri) 
+	and isiri_id (O) and  S = O and P = iri_to_id ('http://xmlns.com/foaf/0.1/primaryTopic')))
+	dbg_obj_print ('Error: foaf:primaryTopic to document itself');
+    }
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_origin_uri varchar, in dest varchar,
     inout ret_body any, in ret_content_type varchar, inout options any)
 {
@@ -6206,6 +6227,7 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
   declare rc int;
 
   dummy := null;
+  RM_GRAPH_PT_CK (graph_iri, dest);
   for select MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_OPTIONS from DB.DBA.RDF_META_CARTRIDGES where MC_ENABLED = 1 order by MC_SEQ do
     {
       declare val_match, st any;
@@ -6238,6 +6260,7 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
 	  commit work;
 	  st := msec_time ();
 	  rc := call (MC_HOOK) (graph_iri, new_origin_uri, dest, ret_body, dummy, dummy, MC_KEY, new_opts);
+	  RM_GRAPH_PT_CK (graph_iri, dest);
           if (registry_get ('__sparql_mappers_debug') = '1')
 	    {
 	      dbg_obj_prin1 ('Return PP rc=', rc, ' ', MC_HOOK, ' time=', (msec_time () - st)/1000.0);

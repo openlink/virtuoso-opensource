@@ -56,6 +56,9 @@
 
 	<xsl:template match="rsp[@stat='ok']/user">
 		<xsl:if test="not empty(profile)">
+		        <rdf:Description rdf:about="{$baseUri}">
+			    <foaf:primaryTopic rdf:resource="{profile}"/>
+			</rdf:Description>
 			<foaf:Person rdf:about="{profile}">
 				<foaf:nick>
 					<xsl:value-of select="username" />
@@ -126,6 +129,9 @@
 				<foaf:knows rdf:resource="{profile}"/>
 			</rdf:Description>
 		</xsl:for-each>
+		<rdf:Description rdf:about="{$baseUri}">
+		    <foaf:primaryTopic rdf:resource="{concat($ns, 'users/', $user)}"/>
+		</rdf:Description>
 	</xsl:template>
 
 	<xsl:template name="event">
