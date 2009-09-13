@@ -3447,7 +3447,13 @@ query_t *
 sqlg_dt_query (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query,
 	       ST ** target_names)
 {
-  return sqlg_dt_query_1 (so, dt_dfe, ext_query, target_names, NULL);
+  sql_comp_t * sc = so->so_sc;
+  query_t * qr;
+  update_node_t * kset = sc->sc_update_keyset;
+  sc->sc_update_keyset = NULL;
+  qr = sqlg_dt_query_1 (so, dt_dfe, ext_query, target_names, NULL);
+  sc->sc_update_keyset = kset;
+  return qr;
 }
 
 void dfe_list_col_loci (df_elt_t * dfe);
