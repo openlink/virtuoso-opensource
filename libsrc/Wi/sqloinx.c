@@ -229,7 +229,7 @@ sqlo_is_col_eq (op_table_t * ot, df_elt_t * col, df_elt_t * val)
 void
 sqlo_col_eq (op_table_t * ot, df_elt_t * col, df_elt_t * val)
 {
-  dk_set_t *place;
+  dk_set_t *place, v = NULL;
   if (!ot->ot_eq_hash)
     {
       ot->ot_eq_hash =
@@ -237,20 +237,19 @@ sqlo_col_eq (op_table_t * ot, df_elt_t * col, df_elt_t * val)
 			    sizeof (caddr_t), sizeof (caddr_t),
 			    treehash, treehashcmp);
     }
-  place = (dk_set_t *) id_hash_get (ot->ot_eq_hash, (caddr_t) col->dfe_tree);
-  if (!place)
+  place = (dk_set_t *) id_hash_get (ot->ot_eq_hash, (caddr_t) &col->dfe_tree);
+  if (place)
+    v = *place;
+  t_set_pushnew (&v, (void *) val);
+  if (DFE_COLUMN == val->dfe_type)
     {
-      dk_set_t v = t_cons ((void *) val, NULL);
-      if (DFE_COLUMN == val->dfe_type)
+      dk_set_t * eqs_place = (dk_set_t *) id_hash_get (ot->ot_eq_hash, (caddr_t) &val->dfe_tree);
+      if (eqs_place)
 	{
-	  dk_set_t * eqs_place = (dk_set_t *) id_hash_get (ot->ot_eq_hash, (caddr_t) &val->dfe_tree);
-	  if (eqs_place)
-	    {
-	      v = t_set_union (*eqs_place, v);
-	    }
+	  v = t_set_union (*eqs_place, v);
 	}
-      t_id_hash_set (ot->ot_eq_hash, (caddr_t)&col->dfe_tree, (caddr_t) &v);
     }
+  t_id_hash_set (ot->ot_eq_hash, (caddr_t)&col->dfe_tree, (caddr_t) &v);
 }
 
 
