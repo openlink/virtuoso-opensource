@@ -246,8 +246,13 @@ public class VirtuosoPooledConnection implements PooledConnection, Cloneable {
   }
 
 
-  public VirtuosoConnection getVirtuosoConnection()
+  public VirtuosoConnection getVirtuosoConnection() throws java.sql.SQLException
   {
+    if (conn == null) {
+       SQLException ex = (SQLException)(new VirtuosoException("Connection is closed", VirtuosoException.OK));
+       sendErrorEvent(ex);
+       throw ex;
+    }
     return conn;
   }
 

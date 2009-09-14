@@ -37,7 +37,7 @@ public class VirtuosoXAConnection implements XAConnection {
     private VirtuosoPooledConnection pconn;
     private VirtuosoXAResource resource;
 
-    protected VirtuosoXAConnection(VirtuosoPooledConnection connection, String server, int port)
+    protected VirtuosoXAConnection(VirtuosoPooledConnection connection, String server, int port) throws SQLException
     {
         pconn = connection;
         pconn.getVirtuosoConnection().xa_connection = this;

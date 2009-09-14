@@ -177,6 +177,22 @@ public class VirtuosoXid implements Xid {
         return bytes;
     }
 
+    public String toString()
+    {
+      StringBuffer s = new StringBuffer("formatId:"+formatId);
+      s.append("globalId length:"+globalId.length);
+      s.append(":");
+      for(int i = 0; i < globalId.length; i++)
+            s.append(" " + globalId[i]);
+      s.append(" branchId length:"+branchId.length);
+      s.append(":");
+      for(int i = 0; i < branchId.length; i++)
+            s.append(" " + branchId[i]);
+      s.append("\n");
+      s.append("encoded:"+encode().toString());
+      return s.toString();
+    }
+
     private void print() {
     	System.out.println("formatId: " + formatId);
 	print("globalId", globalId);
