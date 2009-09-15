@@ -349,15 +349,15 @@ where c2.A_IDX = c1.B_IDX and c3.A_IDX = c2.B_IDX and c3.B_IDX = c1.A_IDX and
 
 select I, N as NA varchar(23), sprintf ('%U', serialize (RB)) from RB2 order by RB;
 
-select case (xtree_sum64(xtree_doc('<a q="w" x="y">AS</a>'))) when '@AEQ@@DN|Bxb' then 'PASSED xtree_sum64 <a q="w" x="y">AS</a>' else '***FAILED xtree_sum64 <a q="w" x="y">AS</a>' end;
-select case (xtree_sum64(xtree_doc('<a x="y" q="w">AS</a>'))) when '@AEQ@@DN|Bxb' then 'PASSED xtree_sum64 <a x="y" q="w">AS</a>' else '***FAILED xtree_sum64 <a x="y" q="w">AS</a>' end;
-select case (xtree_sum64(xtree_doc('<a q="w">AS</a>'))) when '@AGm@@Db\\CRJ' then 'PASSED xtree_sum64 <a q="w">AS</a>' else '***FAILED xtree_sum64 <a q="w">AS</a>' end;
-select case (xtree_sum64(xtree_doc('<a q="w" x="y">AT</a>'))) when '@AEQP@DO@Bxc' then 'PASSED xtree_sum64 <a q="w" x="y">AT</a>' else '***FAILED xtree_sum64 <a q="w" x="y">AT</a>' end;
-select case (xtree_sum64(xtree_doc('<a q="w" x="z">AS</a>'))) when '@AEQ@@DN|Bxb' then 'PASSED xtree_sum64 <a q="w" x="z">AS</a>' else '***FAILED xtree_sum64 <a q="w" x="z">AS</a>' end;
-select case (xtree_sum64(xtree_doc('<b q="w" x="y">AS</b>'))) when '@AES`@DOLBxc' then 'PASSED xtree_sum64 <b q="w" x="y">AS</b>' else '***FAILED xtree_sum64 <b q="w" x="y">AS</b>' end;
-select case (xtree_sum64(xtree_doc('<a p="w" x="y">AS</a>'))) when '@AEO`@DNpBxa' then 'PASSED xtree_sum64 <a p="w" x="y">AS</a>' else '***FAILED xtree_sum64 <a p="w" x="y">AS</a>' end;
-select case (xtree_sum64(xtree_doc('<a p="w" x="y"><f/><g/></a>'))) when '@Ap[`@Eq\\CFZ' then 'PASSED xtree_sum64 <a p="w" x="y"><f/><g/></a>' else '***FAILED xtree_sum64 <a p="w" x="y"><f/><g/></a>' end;
-select case (xtree_sum64(xtree_doc('<a p="w" x="y"><f/><h/></a>'))) when '@Ap\\P@EqdCF[' then 'PASSED xtree_sum64 <a p="w" x="y"><f/><h/></a>' else '***FAILED xtree_sum64 <a p="w" x="y"><f/><h/></a>' end;
+select case (xtree_sum64(xtree_doc('<a q="w" x="y">AS</a>'))) when '@AEi@@DQ|B|r' then 'PASSED xtree_sum64 <a q="w" x="y">AS</a>' else '***FAILED xtree_sum64 <a q="w" x="y">AS</a>' end;
+select case (xtree_sum64(xtree_doc('<a x="y" q="w">AS</a>'))) when '@AEi@@DQ|B|r' then 'PASSED xtree_sum64 <a x="y" q="w">AS</a>' else '***FAILED xtree_sum64 <a x="y" q="w">AS</a>' end;
+select case (xtree_sum64(xtree_doc('<a q="w">AS</a>'))) when '@AJ_`@DxpCpA' then 'PASSED xtree_sum64 <a q="w">AS</a>' else '***FAILED xtree_sum64 <a q="w">AS</a>' end;
+select case (xtree_sum64(xtree_doc('<a q="w" x="y">AT</a>'))) when '@AEiP@DR@B|s' then 'PASSED xtree_sum64 <a q="w" x="y">AT</a>' else '***FAILED xtree_sum64 <a q="w" x="y">AT</a>' end;
+select case (xtree_sum64(xtree_doc('<a q="w" x="z">AS</a>'))) when '@AEj`@DRHB|s' then 'PASSED xtree_sum64 <a q="w" x="z">AS</a>' else '***FAILED xtree_sum64 <a q="w" x="z">AS</a>' end;
+select case (xtree_sum64(xtree_doc('<b q="w" x="y">AS</b>'))) when '@AEk`@DRLB|s' then 'PASSED xtree_sum64 <b q="w" x="y">AS</b>' else '***FAILED xtree_sum64 <b q="w" x="y">AS</b>' end;
+select case (xtree_sum64(xtree_doc('<a p="w" x="y">AS</a>'))) when '@AEd`@DQXB{o' then 'PASSED xtree_sum64 <a p="w" x="y">AS</a>' else '***FAILED xtree_sum64 <a p="w" x="y">AS</a>' end;
+select case (xtree_sum64(xtree_doc('<a p="w" x="y"><f/><g/></a>'))) when '@AqP@@EutCJh' then 'PASSED xtree_sum64 <a p="w" x="y"><f/><g/></a>' else '***FAILED xtree_sum64 <a p="w" x="y"><f/><g/></a>' end;
+select case (xtree_sum64(xtree_doc('<a p="w" x="y"><f/><h/></a>'))) when '@AqPp@Eu|CJi' then 'PASSED xtree_sum64 <a p="w" x="y"><f/><h/></a>' else '***FAILED xtree_sum64 <a p="w" x="y"><f/><h/></a>' end;
 
 sparql clear graph <conv>;
 sparql insert into graph <conv> { <s> xsd:double 16.16 . };
