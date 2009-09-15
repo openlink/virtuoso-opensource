@@ -29,15 +29,20 @@
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY geo "http://www.w3.org/2003/01/geo/wgs84_pos#">
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
+<!ENTITY dcterms "http://purl.org/dc/terms/">
 ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:dc="http://purl.org/dc/elements/1.1/"
 	xmlns:skos="http://www.w3.org/2004/02/skos/core#" xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
 	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/" xmlns:wf="http://www.w3.org/2005/01/wf/flow#"
 	xmlns:dcterms="http://purl.org/dc/terms/" xmlns:foaf="&foaf;" xmlns:sioc="&sioc;" xmlns:bibo="&bibo;"
+	xmlns:dcterms="&dcterms;"
+	xmlns:owl="http://www.w3.org/2002/07/owl#"
 	version="1.0">
 	<xsl:output method="xml" indent="yes" />
 	<xsl:param name="baseUri" />
+	<xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+	<xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
 	
 	<xsl:template match="/">
 		<rdf:RDF>
@@ -50,8 +55,8 @@
 	</xsl:template>
 	
 	<xsl:template match="Slideshows|Tag|User|Group">
-		<bibo:Collection rdf:about="{$baseUri}">
-			<bibo:uri rdf:resource="{$baseUri}" />
+		<bibo:Collection rdf:about="{$docIRI}">
+			<bibo:uri rdf:resource="{$docIRI}" />
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
 			<xsl:if test="Meta/Query">
 				<bibo:identifier>
@@ -98,7 +103,7 @@
 		</xsl:choose>
 	  
 	  
-	  <rdf:Description rdf:about="{$baseUri}">
+	  <rdf:Description rdf:about="{$docIRI}">
  		<rdf:type rdf:resource="&bibo;Document"/>
  		<sioc:container_of rdf:resource="{vi:proxyIRI($res)}"/>
  		<foaf:topic rdf:resource="{vi:proxyIRI($res)}"/>

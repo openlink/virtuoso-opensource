@@ -52,6 +52,8 @@
   <xsl:output method="xml" indent="yes"/>
 
   <xsl:param name="baseUri" />
+  <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+  <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
 
   <xsl:variable name="uc">ABCDEFGHIJKLMNOPQRSTUVWXYZ</xsl:variable>
   <xsl:variable name="lc">abcdefghijklmnopqrstuvwxyz</xsl:variable>
@@ -59,19 +61,20 @@
   <xsl:template match="/">
       <rdf:RDF>
 		<xsl:apply-templates select="html/head"/>
-		<xsl:apply-templates select="/" mode="rdf-in-comment"/>
       </rdf:RDF>
   </xsl:template>
 
   <xsl:template match="html/head">
-      <rdf:Description rdf:about="{$baseUri}">
+      <rdf:Description rdf:about="{$docIRI}">
 		<rdf:type rdf:resource="&bibo;Document"/>
-		<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri)}"/>
-		<foaf:topic rdf:resource="{vi:proxyIRI($baseUri)}"/>
-		<dcterms:subject rdf:resource="{vi:proxyIRI($baseUri)}"/>
-		<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
+		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+		<owl:sameAs rdf:resource="{$resourceURL}"/>
+		<sioc:container_of rdf:resource="{$resourceURL}"/>
+		<foaf:topic rdf:resource="{$resourceURL}"/>
+		<dcterms:subject rdf:resource="{$resourceURL}"/>
+		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 	  </rdf:Description>
-	  <rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
+	  <rdf:Description rdf:about="{$resourceURL}">
 		<rdf:type rdf:resource="&bibo;Book"/>
 		<rdf:type rdf:resource="&book;Book"/>
 		<rdf:type rdf:resource="&gr;ProductOrService"/>
@@ -130,7 +133,7 @@
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='book.link']">
-      <bibo:uri rdf:resource="{vi:proxyIRI($baseUri)}" />
+      <bibo:uri rdf:resource="{$resourceURL}" />
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='book.tags']">

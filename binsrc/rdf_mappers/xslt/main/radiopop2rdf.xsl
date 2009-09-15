@@ -26,6 +26,7 @@
 <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <!ENTITY xml 'http://www.w3.org/XML/1998/namespace#'>
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
 ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -39,11 +40,14 @@
 	xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
 	xmlns:vcard="http://www.w3.org/2001/vcard-rdf/3.0#"
 	xmlns:radio="http://www.radiopop.co.uk/"
+	xmlns:owl="http://www.w3.org/2002/07/owl#"
 	version="1.0">
 	<xsl:variable name="ns">http://www.radiopop.co.uk/</xsl:variable>
 	<xsl:output method="xml" indent="yes" omit-xml-declaration="yes" />
 	<xsl:param name="baseUri" />
 	<xsl:param name="user" />
+	<xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+	<xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
 
 	<xsl:template match="/">
 		<rdf:RDF>
@@ -56,10 +60,13 @@
 
 	<xsl:template match="rsp[@stat='ok']/user">
 		<xsl:if test="not empty(profile)">
-		        <rdf:Description rdf:about="{$baseUri}">
-			    <foaf:primaryTopic rdf:resource="{profile}"/>
+		        <rdf:Description rdf:about="{$docIRI}">
+			    <rdf:type rdf:resource="&bibo;Document"/>
+			    <dc:title><xsl:value-of select="$baseUri"/></dc:title>
+			    <owl:sameAs rdf:resource="{$resourceURL}"/>
+			    <foaf:primaryTopic rdf:resource="{vi:proxyIRI (profile)}"/>
 			</rdf:Description>
-			<foaf:Person rdf:about="{profile}">
+			<foaf:Person rdf:about="{vi:proxyIRI (profile)}">
 				<foaf:nick>
 					<xsl:value-of select="username" />
 				</foaf:nick>
@@ -68,49 +75,49 @@
 				</dcterms:created>
 			</foaf:Person>
 			<xsl:if test="not empty(last_listened/network)">
-				<radio:network rdf:about="{vi:proxyIRI(concat($ns, '#', last_listened/network/@id))}">
+				<radio:network rdf:about="{vi:proxyIRI ($baseUri, '', last_listened/network/@id)}">
 					<foaf:name>
 						<xsl:value-of select="last_listened/network"/>
 					</foaf:name>
-					<radio:listened_by rdf:resource="{profile}"/>
+					<radio:listened_by rdf:resource="{vi:proxyIRI (profile)}"/>
 				</radio:network>
-				<rdf:Description rdf:about="{vi:proxyIRI(concat($ns, '#', last_listened/network/@id))}">
+				<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', last_listened/network/@id)}">
 					<rdf:type rdf:resource="&foaf;Project"/>
 				</rdf:Description>
 			</xsl:if>
 			<xsl:if test="not empty(last_listened/brand)">
-				<radio:brand rdf:about="{vi:proxyIRI(concat($ns, '#', last_listened/brand/@id))}">
+				<radio:brand rdf:about="{vi:proxyIRI ($baseUri, '', last_listened/brand/@id)}">
 					<foaf:name>
 						<xsl:value-of select="last_listened/brand"/>
 					</foaf:name>
-					<radio:listened_by rdf:resource="{profile}"/>
-					<radio:belongs_to rdf:resource="{vi:proxyIRI(concat($ns, '#', last_listened/network/@id))}"/>
+					<radio:listened_by rdf:resource="{vi:proxyIRI (profile)}"/>
+					<radio:belongs_to rdf:resource="{vi:proxyIRI ($baseUri, '', last_listened/network/@id)}"/>
 				</radio:brand>
-				<rdf:Description rdf:about="{vi:proxyIRI(concat($ns, '#', last_listened/brand/@id))}">
+				<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', last_listened/brand/@id)}">
 					<rdf:type rdf:resource="&foaf;Project"/>
 				</rdf:Description>
 			</xsl:if>
 			<xsl:if test="not empty(last_listened/programme)">
-				<radio:programme rdf:about="{vi:proxyIRI(concat($ns, '#', last_listened/programme/@id))}">
+				<radio:programme rdf:about="{vi:proxyIRI ($baseUri, '', last_listened/programme/@id)}">
 					<foaf:name>
 						<xsl:value-of select="last_listened/programme"/>
 					</foaf:name>
-					<radio:listened_by rdf:resource="{profile}"/>
-					<radio:belongs_to rdf:resource="{vi:proxyIRI(concat($ns, '#', last_listened/network/@id))}"/>
+					<radio:listened_by rdf:resource="{vi:proxyIRI (profile)}"/>
+					<radio:belongs_to rdf:resource="{vi:proxyIRI ($baseUri, '', last_listened/network/@id)}"/>
 				</radio:programme>
-				<rdf:Description rdf:about="{vi:proxyIRI(concat($ns, '#', last_listened/programme/@id))}">
+				<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', last_listened/programme/@id)}">
 					<rdf:type rdf:resource="&foaf;Project"/>
 				</rdf:Description>
 			</xsl:if>
 			<xsl:if test="not empty(last_listened/series)">
-				<radio:series rdf:about="{vi:proxyIRI(concat($ns, '#', last_listened/series/@id))}">
+				<radio:series rdf:about="{vi:proxyIRI ($baseUri, '', last_listened/series/@id)}">
 					<foaf:name>
 						<xsl:value-of select="last_listened/series"/>
 					</foaf:name>
-					<radio:listened_by rdf:resource="{profile}"/>
-					<radio:series_of rdf:resource="{vi:proxyIRI(concat($ns, '#', last_listened/programme/@id))}"/>
+					<radio:listened_by rdf:resource="{vi:proxyIRI (profile)}"/>
+					<radio:series_of rdf:resource="{vi:proxyIRI ($baseUri, '', last_listened/programme/@id)}"/>
 				</radio:series>
-				<rdf:Description rdf:about="{vi:proxyIRI(concat($ns, '#', last_listened/series/@id))}">
+				<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', last_listened/series/@id)}">
 					<rdf:type rdf:resource="&foaf;Project"/>
 				</rdf:Description>
 			</xsl:if>
@@ -119,47 +126,50 @@
 
 	<xsl:template match="rsp[@stat='ok']/friends">
 		<xsl:for-each select="friend">
-			<foaf:Person rdf:about="{profile}">
+			<foaf:Person rdf:about="{vi:proxyIRI (profile)}">
 				<foaf:nick>
 					<xsl:value-of select="username" />
 				</foaf:nick>
-				<foaf:knows rdf:resource="{concat($ns, 'users/', $user)}"/>
+				<foaf:knows rdf:resource="{vi:proxyIRI (concat($ns, 'users/', $user))}"/>
 			</foaf:Person>
-			<rdf:Description rdf:about="{concat($ns, 'users/', $user)}">
-				<foaf:knows rdf:resource="{profile}"/>
+			<rdf:Description rdf:about="{vi:proxyIRI (concat($ns, 'users/', $user))}">
+				<foaf:knows rdf:resource="{vi:proxyIRI (profile)}"/>
 			</rdf:Description>
 		</xsl:for-each>
-		<rdf:Description rdf:about="{$baseUri}">
-		    <foaf:primaryTopic rdf:resource="{concat($ns, 'users/', $user)}"/>
+		<rdf:Description rdf:about="{$docIRI}">
+		    <rdf:type rdf:resource="&bibo;Document"/>
+		    <dc:title><xsl:value-of select="$baseUri"/></dc:title>
+		    <owl:sameAs rdf:resource="{$resourceURL}"/>
+		    <foaf:primaryTopic rdf:resource="{vi:proxyIRI (concat($ns, 'users/', $user))}"/>
 		</rdf:Description>
 	</xsl:template>
 
 	<xsl:template name="event">
 		<xsl:if test="not empty(network)">
-			<radio:network rdf:about="{vi:proxyIRI(concat($ns, '#', network/@id))}">
+			<radio:network rdf:about="{vi:proxyIRI ($baseUri, '', network/@id)}">
 				<foaf:name>
 					<xsl:value-of select="network"/>
 				</foaf:name>
-				<radio:listened_by rdf:resource="{concat($ns, 'users/', user)}"/>
+				<radio:listened_by rdf:resource="{vi:proxyIRI (concat($ns, 'users/', user))}"/>
 			</radio:network>
-			<rdf:Description rdf:about="{vi:proxyIRI(concat($ns, '#', network/@id))}">
+			<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', network/@id)}">
 				<rdf:type rdf:resource="&foaf;Project"/>
 			</rdf:Description>
 		</xsl:if>
 		<xsl:if test="not empty(brand)">
-			<radio:brand rdf:about="{vi:proxyIRI(concat($ns, '#', brand/@id))}">
+			<radio:brand rdf:about="{vi:proxyIRI ($baseUri, '', brand/@id)}">
 				<foaf:name>
 					<xsl:value-of select="brand"/>
 				</foaf:name>
 				<radio:listened_by rdf:resource="{concat($ns, 'users/', user)}"/>
-				<radio:belongs_to rdf:resource="{vi:proxyIRI(concat($ns, '#', network/@id))}"/>
+				<radio:belongs_to rdf:resource="{vi:proxyIRI ($baseUri, '', network/@id)}"/>
 			</radio:brand>
-			<rdf:Description rdf:about="{vi:proxyIRI(concat($ns, '#', brand/@id))}">
+			<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', brand/@id)}">
 				<rdf:type rdf:resource="&foaf;Project"/>
 			</rdf:Description>
 		</xsl:if>
 		<xsl:if test="not empty(programme)">
-			<radio:programme rdf:about="{vi:proxyIRI(concat($ns, '#', programme/@id))}">
+			<radio:programme rdf:about="{vi:proxyIRI ($baseUri, '', programme/@id)}">
 				<foaf:name>
 					<xsl:value-of select="programme"/>
 				</foaf:name>
@@ -189,21 +199,21 @@
 					</radio:listen_type>
 				</xsl:if>
 				<radio:listened_by rdf:resource="{concat($ns, 'users/', user)}"/>
-				<radio:belongs_to rdf:resource="{vi:proxyIRI(concat($ns, '#', network/@id))}"/>
+				<radio:belongs_to rdf:resource="{vi:proxyIRI ($baseUri, '', network/@id)}"/>
 			</radio:programme>
-			<rdf:Description rdf:about="{vi:proxyIRI(concat($ns, '#', programme/@id))}">
+			<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', programme/@id)}">
 				<rdf:type rdf:resource="&foaf;Project"/>
 			</rdf:Description>
 		</xsl:if>
 		<xsl:if test="not empty(series)">
-			<radio:series rdf:about="{vi:proxyIRI(concat($ns, '#', series/@id))}">
+			<radio:series rdf:about="{vi:proxyIRI ($baseUri, '', series/@id)}">
 				<foaf:name>
 					<xsl:value-of select="series"/>
 				</foaf:name>
 				<radio:listened_by rdf:resource="{concat($ns, 'users/', user)}"/>
-				<radio:series_of rdf:resource="{vi:proxyIRI(concat($ns, '#', programme/@id))}"/>
+				<radio:series_of rdf:resource="{vi:proxyIRI ($baseUri, '', programme/@id)}"/>
 			</radio:series>
-			<rdf:Description rdf:about="{vi:proxyIRI(concat($ns, '#', series/@id))}">
+			<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', series/@id)}">
 				<rdf:type rdf:resource="&foaf;Project"/>
 			</rdf:Description>
 		</xsl:if>

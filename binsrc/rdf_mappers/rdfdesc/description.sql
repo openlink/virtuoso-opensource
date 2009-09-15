@@ -98,6 +98,20 @@ create procedure rdfdesc_label (in _S any, in _G varchar, in lines any := null)
 }
 ;
 
+create procedure
+rdfdesc_trunc_uri (in s varchar, in maxlen int := 80)
+{
+  declare _s varchar;
+  declare _h int; 
+
+  _s := trim(s);
+
+  if (length(_s) <= maxlen) return _s;
+  _h := floor (maxlen / 2);
+  return sprintf ('%s...%s', "LEFT"(_s, _h), "RIGHT"(_s, _h-1));
+}
+;
+
 create procedure rdfdesc_rel_print (in val any, in rel any, in obj any, in flag int := 0)
 {
   declare delim, delim1, delim2, delim3 integer;
@@ -141,13 +155,14 @@ create procedure rdfdesc_rel_print (in val any, in rel any, in obj any, in flag 
 create procedure rdfdesc_uri_curie (in uri varchar, in label varchar := null)
 {
   declare delim integer;
-  declare uriSearch, nsPrefix varchar;
+  declare uriSearch, nsPrefix, ret varchar;
 
   delim := -1;
   uriSearch := uri;
   nsPrefix := null;
   if (not length (label))
     label := null;
+  ret := uri;  
   while (nsPrefix is null and delim <> 0)
     {
       delim := coalesce (strrchr (uriSearch, '/'), 0);
@@ -162,11 +177,11 @@ create procedure rdfdesc_uri_curie (in uri varchar, in label varchar := null)
       declare rhs varchar;
       rhs := subseq(uri, length (uriSearch) + 1, null);
       if (not length (rhs))
-	return uri;
+	ret := uri;
       else
-	return nsPrefix || ':' || coalesce (label, rhs);
+	ret := nsPrefix || ':' || coalesce (label, rhs);
     }
-  return uri;
+  return rdfdesc_trunc_uri (ret);
 }
 ;
 
@@ -189,7 +204,7 @@ create procedure rdfdesc_uri_local_part (in uri varchar)
 
 create procedure rdfdesc_http_url (in url varchar)
 {
-  declare host, pref, proxy_iri_fn varchar;
+  declare host, pref, pref2, proxy_iri_fn varchar;
   declare url_sch varchar;
   declare ua any;
 
@@ -203,7 +218,8 @@ create procedure rdfdesc_http_url (in url varchar)
     }
   host := http_request_header(http_request_header(), 'Host', null, null);
   pref := 'http://'||host||'/about/html/';
-  if (url not like pref || '%')
+  pref2 := 'http://'||host||'/about/id/';
+  if (url not like pref || '%' and url not like pref2 || '%')
     {
       ua := rfc1808_parse_uri (url);
       url_sch := ua[0];
@@ -272,7 +288,8 @@ again:
        else
 	 _url := _object;
 
-       if (prop = __id2in (rdf_sas_iri ()))
+       -- label for curie local part disabled 
+       if (0 and prop = __id2in (rdf_sas_iri ()))
 	 _label := label;
        else
 	 _label := null;
@@ -350,7 +367,7 @@ again:
        http (sprintf ('<span %s>', rdfa));
        http (_object);
        http ('</span>');
-       if (length (rdfs_type))
+       if (isstring (rdfs_type) and length (rdfs_type))
 	 http (sprintf ('(%s)', rdfs_type));
      }
    else if (__tag (_object) = 225)
@@ -551,7 +568,8 @@ create procedure virt_proxy_init_about ()
   DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '/about/data/(.*)', '/about/data/ttl/\x241', 'application/x-turtle', 0.80, location_hook=>null);
   DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '/about/data/(.*)', '/about/data/turtle/\x241', 'text/turtle', 0.80, location_hook=>null);
   DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '/about/data/(.*)', '/about/data/json/\x241',    'application/rdf+json', 0.70, location_hook=>null);
-  DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '/about/data/(.*)', '/about/html/\x241', 	     'text/html', 0.80, location_hook=>null);
+  DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '/about/data/(.*)', '/about/html/^{DynamicLocalFormat}^/about/id/\x241', 'text/html', 0.80, 
+      																location_hook=>null);
   DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '/about/data/(.*)', '/about/data/text/\x241',    'text/plain', 0.20, location_hook=>null);
 
   DB.DBA.URLREWRITE_CREATE_RULELIST ( 'ext_ahp_rule_list_new', 1, 

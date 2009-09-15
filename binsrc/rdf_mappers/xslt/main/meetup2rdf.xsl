@@ -35,6 +35,7 @@
 	xmlns:dcterms="http://purl.org/dc/terms/"
 	xmlns:foaf="&foaf;"
     xmlns:sioc="&sioc;"
+	xmlns:owl="http://www.w3.org/2002/07/owl#"
 	xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
 	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
 	xmlns:v="http://www.w3.org/2006/vcard/ns#"
@@ -43,11 +44,13 @@
 	xmlns:opl-meetup="http://www.openlinksw.com/schemas/meetup/"
     xmlns:c   ="http://www.w3.org/2002/12/cal/icaltzd#"
 	version="1.0">
-	<xsl:variable name="ns">http://getsatisfaction.com</xsl:variable>
+
 	<xsl:output method="xml" indent="yes" omit-xml-declaration="yes" />
 	<xsl:param name="baseUri" />
 	<xsl:param name="base" />
 	<xsl:param name="what" />
+	<xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+	<xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
 
     <xsl:variable name="uc">ABCDEFGHIJKLMNOPQRSTUVWXYZ </xsl:variable>
     <xsl:variable name="lc">abcdefghijklmnopqrstuvwxyz_</xsl:variable>
@@ -59,7 +62,9 @@
 	</xsl:template>
 	<xsl:template match="results/items">
 		<xsl:if test="$what = 'events' or $what = 'event' or $what = 'comments'">
-			<foaf:Document rdf:about="{$baseUri}">
+			<foaf:Document rdf:about="{$docIRI}">
+				<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+				<owl:sameAs rdf:resource="{vi:proxyIRI($base)}"/>
 				<foaf:primaryTopic>
 					<xsl:if test="$what = 'events' or $what = 'comments'">
 						<foaf:Group rdf:about="{vi:proxyIRI($base)}" >
@@ -80,7 +85,9 @@
 			</foaf:Document>
 		</xsl:if>
 		<xsl:if test="$what = 'members'">
-			<foaf:Document rdf:about="{$baseUri}">
+			<foaf:Document rdf:about="{$docIRI}">
+				<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+				<owl:sameAs rdf:resource="{vi:proxyIRI($baseUri)}"/>
 				<foaf:primaryTopic>
 					<foaf:Group rdf:about="{vi:proxyIRI($baseUri)}">
 						<xsl:for-each select="item">
@@ -90,7 +97,7 @@
 				</foaf:primaryTopic>
 				<rdfs:seeAlso rdf:resource="{$base}" />
 			</foaf:Document>
-			<foaf:Document rdf:about="{$base}">
+			<foaf:Document rdf:about="{$docIRI}">
 				<foaf:primaryTopic>
 					<foaf:Group rdf:about="{vi:proxyIRI($base)}">
 						<xsl:for-each select="item">
@@ -113,7 +120,7 @@
 						<xsl:value-of select="lat"/>
 					</geo:lat>
 					<dcterms:created rdf:datatype="&xsd;dateTime">
-						<xsl:value-of select="created"/>
+						<xsl:value-of select="vi:http_string_date (created)"/>
 					</dcterms:created>
 					<dc:description>
 						<xsl:value-of select="comment"/>
@@ -145,7 +152,7 @@
 								<xsl:value-of select="time"/>
 							</c:dtstart>
 							<dcterms:modified rdf:datatype="&xsd;dateTime">
-								<xsl:value-of select="updated"/>
+								<xsl:value-of select="vi:http_string_date (updated)"/>
 							</dcterms:modified>
 							<c:summary>
 								<xsl:value-of select="name"/>
@@ -177,7 +184,7 @@
 				</foaf:Document>
 			</xsl:if>
 			<xsl:if test="$what = 'groups'">
-				<foaf:Document rdf:about="{$base}">
+				<foaf:Document rdf:about="{$docIRI}">
 					<foaf:primaryTopic>
 						<foaf:Group rdf:about="{vi:proxyIRI($base)}">
 							<foaf:name>
@@ -217,7 +224,7 @@
 								<foaf:depiction rdf:resource="{photo_url}" />
 							</xsl:if>
 							<dcterms:created rdf:datatype="&xsd;dateTime">
-								<xsl:value-of select="created"/>
+								<xsl:value-of select="vi:http_string_date (created)"/>
 							</dcterms:created>
 							<opl-meetup:members>
 								<xsl:value-of select="members" />
@@ -229,7 +236,7 @@
 								<vcard:Locality rdf:resource="{vi:dbpIRI ('', translate (city, ' ', '_'))}"/>
 							</xsl:if>	
 							<dcterms:modified rdf:datatype="&xsd;dateTime">
-								<xsl:value-of select="updated"/>
+								<xsl:value-of select="vi:http_string_date (updated)"/>
 							</dcterms:modified>
 							<!--rdfs:seeAlso rdf:resource="{organizerProfileURL}" /-->
 							<!--rdfs:seeAlso rdf:resource="{concat(link, 'members')}" /-->
@@ -240,7 +247,9 @@
 			</xsl:if>
 			<xsl:if test="$what = 'members' or $what = 'member'">
 				<xsl:if test="$what = 'members' and contains($baseUri, id) ">
-					<foaf:Document rdf:about="{$baseUri}">
+					<foaf:Document rdf:about="{$docIRI}">
+					    <dc:title><xsl:value-of select="$baseUri"/></dc:title>
+					    <owl:sameAs rdf:resource="{vi:proxyIRI(link)}"/>
 						<foaf:primaryTopic>
 							<foaf:Person rdf:about="{vi:proxyIRI(link)}"/>
 						</foaf:primaryTopic>
@@ -287,7 +296,7 @@
 								<foaf:depiction rdf:resource="{photo_url}" />
 							</xsl:if>
 							<dcterms:created rdf:datatype="&xsd;dateTime">
-								<xsl:value-of select="joined"/>
+								<xsl:value-of select="vi:http_string_date (joined)"/>
 							</dcterms:created>
 							<xsl:if test="string-length(city) &gt; 0">
 								<vcard:Locality rdf:resource="{vi:dbpIRI ('', translate (city, ' ', '_'))}"/>
@@ -296,7 +305,7 @@
 								</vcard:Locality>
 							</xsl:if>
 							<dcterms:modified rdf:datatype="&xsd;dateTime">
-								<xsl:value-of select="visited"/>
+								<xsl:value-of select="vi:http_string_date (visited)"/>
 							</dcterms:modified>
 							<xsl:if test="$what = 'members'">
 								<foaf:topic_interest rdf:resource="{vi:proxyIRI($base)}" />

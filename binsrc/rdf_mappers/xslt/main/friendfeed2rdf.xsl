@@ -37,6 +37,7 @@
 <!ENTITY content "http://purl.org/rss/1.0/modules/content/">
 <!ENTITY bookmark "http://www.w3.org/2002/01/bookmark#">
 <!ENTITY ff "http://api.friendfeed.com/2008/03">
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
 ]>
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -56,15 +57,26 @@
   xmlns:wfw="http://wellformedweb.org/CommentAPI/"
   xmlns:ff="&ff;"
   xmlns:media="http://search.yahoo.com/mrss/"
+  xmlns:owl="http://www.w3.org/2002/07/owl#"
   version="1.0">
 
 <xsl:output indent="yes" />
 
-<xsl:param name="base" />
+<xsl:param name="baseUri" />
 <xsl:param name="isDiscussion" />
+<xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+<xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
 
 <xsl:template match="/">
   <rdf:RDF>
+      <rdf:Description rdf:about="{$docIRI}">
+	  <rdf:type rdf:resource="&bibo;Document"/>
+	  <sioc:container_of rdf:resource="{$resourceURL}"/>
+	  <foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+	  <dcterms:subject rdf:resource="{$resourceURL}"/>
+	  <dc:title><xsl:value-of select="$baseUri"/></dc:title>
+	  <owl:sameAs rdf:resource="{$resourceURL}"/>
+      </rdf:Description>
       <xsl:apply-templates/>
       <xsl:variable name="users" select="distinct (//ff:user)"/>
       <xsl:if test="not empty($users)">
@@ -78,7 +90,7 @@
 </xsl:template>
 
 <xsl:template match="rss:channel">
-    <rdf:Description rdf:about="{$base}">
+    <rdf:Description rdf:about="{$resourceURL}">
 	<xsl:choose>
 	    <xsl:when test="$isDiscussion = '1'">
 		<rdf:type rdf:resource="&sioct;MessageBoard"/>
@@ -119,7 +131,7 @@
 		<rdf:type rdf:resource="&sioc;Post"/>
 	    </xsl:otherwise>
 	</xsl:choose>
-	<sioc:has_container rdf:resource="{$base}"/>
+	<sioc:has_container rdf:resource="{$resourceURL}"/>
 	<xsl:if test="ff:id">
 		<rdfs:seeAlso rdf:resource="{concat('http://friendfeed.com/e/', ff:id)}"/>
     </xsl:if>
@@ -162,14 +174,14 @@
 
 <xsl:template match="content:encoded">
     <sioc:content><xsl:apply-templates/></sioc:content>
-    <xsl:variable name="doc" select="document-literal (.,$base,2)"/>
+    <xsl:variable name="doc" select="document-literal (.,$baseUri,2)"/>
     <xsl:for-each select="$doc//a[@href]">
 	<sioc:links_to rdf:resource="{@href}"/>
     </xsl:for-each>
 </xsl:template>
 
 <xsl:template match="dc:creator">
-    <foaf:maker rdf:resource="{$base}#{urlify (.)}"/>
+    <foaf:maker rdf:resource="{$baseUri}#{urlify (normalize-space (.))}"/>
 </xsl:template>
 
 <xsl:template match="ff:comments">
@@ -181,7 +193,7 @@
 
 <xsl:template match="dc:creator" mode="user">
     <xsl:variable name="uname" select="string(.)" />
-    <foaf:Person rdf:about="{$base}#{urlify (.)}">
+    <foaf:Person rdf:about="{$baseUri}#{urlify (normalize-space (.))}">
 	<foaf:name><xsl:apply-templates/></foaf:name>
 	<xsl:for-each select="//rss:item[string (dc:creator) = $uname]">
 	    <xsl:variable name="this" select="@rdf:about"/>
@@ -190,7 +202,7 @@
 		    <xsl:variable name="pos" select="position()"/>
 		</xsl:if>
 	    </xsl:for-each>
-	    <foaf:made rdf:resource="{$base}#{$pos}"/>
+	    <foaf:made rdf:resource="{$baseUri}#{$pos}"/>
 	</xsl:for-each>
     </foaf:Person>
 </xsl:template>

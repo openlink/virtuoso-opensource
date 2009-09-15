@@ -48,11 +48,14 @@
     xmlns:sioc="&sioc;"
     xmlns:audio="&audio;"
     xmlns:media="&media;"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
     >
 
     <xsl:output method="xml" indent="yes" />
     <xsl:param name="baseUri" />
     <xsl:variable name="base" select="'http://www.discogs.com/'"/>
+    <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+    <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
 
     <xsl:template match="/">
 		<rdf:RDF>
@@ -64,15 +67,17 @@
     </xsl:template>
 
     <xsl:template match="resp[@stat='ok']/artist">
-		<rdf:Description rdf:about="{$baseUri}">
+		<rdf:Description rdf:about="{$docIRI}">
 			<rdf:type rdf:resource="&bibo;Document"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI (concat($base,'artist/',translate(name, ' ', '+') ))}"/>
 			<foaf:topic rdf:resource="{vi:proxyIRI (concat($base,'artist/',translate(name, ' ', '+')))}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI (concat($base,'artist/',translate(name, ' ', '+')))}"/>
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI (concat($base,'artist/',translate(name, ' ', '+')))}"/>
+			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+			<owl:sameAs rdf:resource="{$resourceURL}"/>
 		</rdf:Description>
 		<mo:MusicArtist rdf:about="{vi:proxyIRI (concat($base,'artist/',translate(name, ' ', '+')))}">
-			<sioc:has_container rdf:resource="{$baseUri}"/>
+			<sioc:has_container rdf:resource="{$docIRI}"/>
 			<foaf:name>
 				<xsl:value-of select="name"/>
 			</foaf:name>

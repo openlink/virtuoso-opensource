@@ -42,15 +42,15 @@
     xmlns:dcterms="&dcterms;"
     xmlns:gr="&gr;"
     xmlns:bestbuy="http://remix.bestbuy.com/"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:cl="&cl;">
 
     <xsl:output method="xml" indent="yes" />
 
     <xsl:param name="baseUri"/>
-
-    <xsl:variable name="resourceURL">
-		<xsl:value-of select="$baseUri"/>
-    </xsl:variable>
+    <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+    <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
 
     <xsl:variable name="ns">http://remix.bestbuy.com/</xsl:variable>
 
@@ -60,15 +60,15 @@
 
     <xsl:template match="/">
 		<rdf:RDF>
-			<rdf:Description rdf:about="{$resourceURL}">
+			<rdf:Description rdf:about="{$docIRI}">
 				<rdf:type rdf:resource="&bibo;Document"/>
-				<sioc:container_of rdf:resource="{vi:proxyIRI ($resourceURL)}"/>
-				<foaf:primaryTopic rdf:resource="{vi:proxyIRI ($resourceURL)}"/>
-				<dcterms:subject rdf:resource="{vi:proxyIRI ($resourceURL)}"/>
+				<sioc:container_of rdf:resource="{$resourceURL}"/>
+				<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+				<dcterms:subject rdf:resource="{$resourceURL}"/>
 			</rdf:Description>
-			<rdf:Description rdf:about="{vi:proxyIRI ($resourceURL)}">
+			<rdf:Description rdf:about="{$resourceURL}">
 				<rdf:type rdf:resource="&gr;ProductOrService"/>
-				<sioc:has_container rdf:resource="{$resourceURL}"/>
+				<sioc:has_container rdf:resource="{$docIRI}"/>
 				<xsl:apply-templates/>
 			</rdf:Description>
 		</rdf:RDF>
@@ -92,7 +92,7 @@
     
     <xsl:template match="manufacturer">
 		<gr:hasManufacturer>
-		  <gr:BusinessEntity rdf:about="{vi:proxyIRI ($resourceURL, '', 'manufacturer')}">
+	    <gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'manufacturer')}">
 	    <rdfs:label><xsl:value-of select="concat('Manufacturer ', .)"/></rdfs:label>
             <gr:legalName><xsl:value-of select="."/></gr:legalName>
           </gr:BusinessEntity>
@@ -101,7 +101,7 @@
     
     <xsl:template match="regularPrice">
 		<gr:hasPriceSpecification>
-		  <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($resourceURL, '', 'regularPrice')}">
+	    <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'regularPrice')}">
 	    <rdfs:label><xsl:value-of select="concat('List Regular Price of ', ., ' USD')"/></rdfs:label>
             <gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasCurrencyValue>
             <gr:hasCurrency rdf:datatype="&xsd;string">USD</gr:hasCurrency>
@@ -110,7 +110,7 @@
     </xsl:template>
     
     <xsl:template match="salePrice">
-		<gr:hasPriceSpecification rdf:about="{vi:proxyIRI ($resourceURL, '', 'salePrice')}">
+	<gr:hasPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'salePrice')}">
 	    <rdfs:label><xsl:value-of select="concat('List Sale Price of ', ., ' USD')"/></rdfs:label>
 		  <gr:UnitPriceSpecification>
             <gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasCurrencyValue>

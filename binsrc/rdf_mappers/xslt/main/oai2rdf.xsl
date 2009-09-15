@@ -21,6 +21,14 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 -->
+<!DOCTYPE xsl:stylesheet [
+<!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
+<!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY sioc "http://rdfs.org/sioc/ns#">
+]>
 <xsl:stylesheet
     xmlns:xsl  ="http://www.w3.org/1999/XSL/Transform" version="1.0"
     xmlns:foaf ="http://xmlns.com/foaf/0.1/"
@@ -29,13 +37,28 @@
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:oai="http://www.openarchives.org/OAI/2.0/"
     xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/"
+    xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
+    xmlns:foaf="&foaf;"
+    xmlns:bibo="&bibo;"
+    xmlns:sioc="&sioc;"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
     >
     <xsl:output method="xml" indent="yes"/>
     <xsl:param name="baseUri" />
+    <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+    <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
 
     <xsl:template match="/">
 	<rdf:RDF>
-	    <rdf:Description rdf:about="{$baseUri}">
+	    <rdf:Description rdf:about="{$docIRI}">
+		<rdf:type rdf:resource="&bibo;Document"/>
+		<sioc:container_of rdf:resource="{$resourceURL}"/>
+		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+		<dcterms:subject rdf:resource="{$resourceURL}"/>
+		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+		<owl:sameAs rdf:resource="{$resourceURL}"/>
+	    </rdf:Description>
+	    <rdf:Description rdf:about="{$resourceURL}">
 		<xsl:apply-templates select="oai:OAI-PMH/oai:GetRecord/oai:record/oai:metadata/oai_dc:dc/*"/>
 	    </rdf:Description>
 	</rdf:RDF>

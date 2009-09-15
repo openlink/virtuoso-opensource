@@ -28,6 +28,8 @@
 <!ENTITY sioct 'http://rdfs.org/sioc/types#'>
 <!ENTITY sioc 'http://rdfs.org/sioc/ns#'>
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY dcterms "http://purl.org/dc/terms/">
 ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -37,21 +39,38 @@
 	xmlns:opl-xbrl="http://www.openlinksw.com/schemas/xbrl/"
 	xmlns:dc="http://purl.org/dc/elements/1.1/"
 	xmlns:v="http://www.openlinksw.com/xsltext/"
+	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
 	xmlns:sioct="&sioct;"
 	xmlns:sioc="&sioc;"
 	xmlns:foaf="&foaf;"
+	xmlns:bibo="&bibo;"
+	xmlns:dcterms="&dcterms;"
+	xmlns:owl="http://www.w3.org/2002/07/owl#"
 	version="1.0">
 
 	<xsl:output method="xml" indent="yes" />
 	<xsl:param name="baseUri" />
 	<xsl:variable name="ns">http://www.openlinksw.com/schemas/xbrl/</xsl:variable>
+	<xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+	<xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
+
 	<xsl:template match="/">
 		<rdf:RDF>
+		    <xsl:if test="xbrl">
+			<rdf:Description rdf:about="{$docIRI}">
+			    <rdf:type rdf:resource="&bibo;Document"/>
+			    <sioc:container_of rdf:resource="{$resourceURL}"/>
+			    <foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+			    <dcterms:subject rdf:resource="{$resourceURL}"/>
+			    <dc:title><xsl:value-of select="$baseUri"/></dc:title>
+			    <owl:sameAs rdf:resource="{$resourceURL}"/>
+			</rdf:Description>
+		    </xsl:if>
 			<xsl:apply-templates select="xbrl" />
 		</rdf:RDF>
 	</xsl:template>
 	<xsl:template match="xbrl">
-		<sioc:Container rdf:about="{$baseUri}">
+		<sioc:Container rdf:about="{$resourceURL}">
 			<xsl:for-each select="context">
 				<sioc:container_of rdf:resource="{concat('#', @id)}"/>
 			</xsl:for-each>
@@ -61,7 +80,7 @@
 	<xsl:template match="context">
 		<xsl:variable name="id" select="concat('#', @id)" />
 		<sioc:Container rdf:about="{$id}">
-			<sioc:has_container rdf:resource="{$baseUri}"/>
+			<sioc:has_container rdf:resource="{$resourceURL}"/>
 			<xsl:apply-templates select="entity" />
 			<xsl:apply-templates select="period" />
 		</sioc:Container>
@@ -141,7 +160,7 @@
 		<xsl:variable name="label" select="concat($ns, $canonical_name)" />
 		<xsl:variable name="dt" />
 		<xsl:if test="$canonical_name">
-			<rdf:Description rdf:about="{concat($baseUri, '#', @contextRef, '/', $canonical_name)}">
+			<rdf:Description rdf:about="{concat($resourceURL, '#', @contextRef, '/', $canonical_name)}">
 				<xsl:if test="$canonical_type">
 					<rdf:type>
 						<xsl:attribute name="rdf:resource">
@@ -161,7 +180,7 @@
 			</rdf:Description>
 
 			<rdf:Description rdf:about="{$contextRef}">
-				<sioc:container_of rdf:resource="{concat($baseUri, '#', @contextRef, '/', $canonical_name)}" />
+				<sioc:container_of rdf:resource="{concat($resourceURL, '#', @contextRef, '/', $canonical_name)}" />
 			</rdf:Description>
 		</xsl:if>
 	</xsl:template>

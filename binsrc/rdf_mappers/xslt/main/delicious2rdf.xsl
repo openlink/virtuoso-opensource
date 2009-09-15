@@ -65,6 +65,8 @@
 
 	<xsl:param name="baseUri" />
 	<xsl:param name="what" />
+    <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+    <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
 
 	<xsl:template match="/">
 		<rdf:RDF>
@@ -74,8 +76,10 @@
 	</xsl:template>
 
 	<xsl:template match="suggest">
-		<rdf:Description rdf:about="{$baseUri}">
+	<rdf:Description rdf:about="{$docIRI}">
 			<rdf:type rdf:resource="&bibo;Document"/>
+	    <dc:title><xsl:value-of select="$baseUri"/></dc:title>
+	    <owl:sameAs rdf:resource="{$resourceURL}"/>
 			<scot:hasScot rdf:resource="{concat($baseUri, '#tagcloud')}"/>
 			<xsl:for-each select="popular">
 				<sioc:topic rdf:resource="{concat ('http://delicious.com/tag/', .)}"/>
@@ -90,18 +94,20 @@
 
 	<xsl:template match="channel">
 		<xsl:if test="$what='user'">
-			<rdf:Description rdf:about="{$baseUri}">
+	    <rdf:Description rdf:about="{$docIRI}">
 				<rdf:type rdf:resource="&bibo;Document"/>
-				<dc:title>
+		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+		<owl:sameAs rdf:resource="{$resourceURL}"/>
+		<!--dc:title>
 					<xsl:value-of select="title"/>
-				</dc:title>
+		</dc:title-->
 				<dc:description>
 					<xsl:value-of select="description"/>
 				</dc:description>
-				<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
+		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 			</rdf:Description>
-			<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
-				<sioc:has_container rdf:resource="{$baseUri}" />
+	    <rdf:Description rdf:about="{$resourceURL}">
+		<sioc:has_container rdf:resource="{$docIRI}" />
 				<rdf:type rdf:resource="&sioc;BookmarkFolder"/>
 				<xsl:variable name="author" select="substring-after(link, 'http://delicious.com/')" />
 				<scot:hasScot rdf:resource="{concat('http://delicious.com/tags/', $author)}"/>
@@ -164,11 +170,13 @@
 			</scot:Tagcloud>
 		</xsl:if>
 		<xsl:if test="$what='tag'">
-			<rdf:Description rdf:about="{$baseUri}">
+	    <rdf:Description rdf:about="{$docIRI}">
 				<rdf:type rdf:resource="&bibo;Document"/>
-				<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
+		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+		<owl:sameAs rdf:resource="{$resourceURL}"/>
+		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 			</rdf:Description>
-			<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
+	    <rdf:Description rdf:about="{$resourceURL}">
 				<xsl:variable name="tag" select="substring-after(substring-after(title, '/'), '/') " />
 				<rdf:type rdf:resource="&scot;Tag"/>
 				<rdf:type rdf:resource="&moat;Tag"/>
@@ -241,16 +249,18 @@
 			</scot:Tagcloud>
 		</xsl:if>
 		<xsl:if test="$what='url'">
-			<rdf:Description rdf:about="{$baseUri}">
+	    <rdf:Description rdf:about="{$docIRI}">
 				<rdf:type rdf:resource="&bibo;Document"/>
-				<dc:title>
+		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+		<owl:sameAs rdf:resource="{$resourceURL}"/>
+		<!--dc:title>
 					<xsl:value-of select="title"/>
-				</dc:title>
-				<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
+		</dc:title-->
+		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 			</rdf:Description>
-			<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
+	    <rdf:Description rdf:about="{$resourceURL}">
 				<rdf:type rdf:resource="&bookmark;Bookmark"/>
-				<sioc:has_container rdf:resource="{$baseUri}" />
+		<sioc:has_container rdf:resource="{$docIRI}" />
 				<dc:title>
 					<xsl:value-of select="title"/>
 				</dc:title>

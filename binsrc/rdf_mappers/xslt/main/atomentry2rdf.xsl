@@ -24,6 +24,7 @@
 <!DOCTYPE xsl:stylesheet [
 <!ENTITY nfo "http://www.semanticdesktop.org/ontologies/nfo/#">
 <!ENTITY video "http://purl.org/media/video#">
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
 ]>
 
 <xsl:stylesheet
@@ -36,7 +37,6 @@
   xmlns:r="http://backend.userland.com/rss2"
   xmlns="http://purl.org/rss/1.0/"
   xmlns:rss="http://purl.org/rss/1.0/"
-  xmlns:vi="http://www.openlinksw.com/weblog/"
   xmlns:itunes="http://www.itunes.com/DTDs/Podcast-1.0.dtd"
   xmlns:a="http://www.w3.org/2005/Atom"
   xmlns:enc="http://purl.oclc.org/net/rss_2.0/enc#"
@@ -50,14 +50,27 @@
   xmlns:yt="http://gdata.youtube.com/schemas/2007"
   xmlns:foaf="http://xmlns.com/foaf/0.1/"
   xmlns:video="&video;"
+  xmlns:owl="http://www.w3.org/2002/07/owl#"
+  xmlns:bibo="&bibo;"
+  xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
   version="1.0">
 
-<xsl:output indent="yes" cdata-section-elements="content:encoded" />
+<xsl:output indent="yes" />
 
 <xsl:param name="baseUri" />
+<xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+<xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
 
 <xsl:template match="/">
   <rdf:RDF>
+      <rdf:Description rdf:about="{$docIRI}">
+	  <rdf:type rdf:resource="&bibo;Document"/>
+	  <dc:title><xsl:value-of select="$baseUri"/></dc:title>
+	  <sioc:container_of rdf:resource="{$resourceURL}"/>
+	  <foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+	  <dcterms:subject rdf:resource="{$resourceURL}"/>
+	  <owl:sameAs rdf:resource="{$resourceURL}"/>
+      </rdf:Description>
     <xsl:apply-templates/>
   </rdf:RDF>
 </xsl:template>
@@ -119,7 +132,7 @@
 </xsl:template>
 
 <xsl:template match="yt:statistics" mode="media">
-	<rdf:Description rdf:about="{$baseUri}">
+	<rdf:Description rdf:about="{$resourceURL}">
 		<rdf:type rdf:resource="&nfo;Video"/>
 		<rdf:type rdf:resource="&video;Movie"/>
 		<nfo:frameCount>
@@ -129,7 +142,7 @@
 </xsl:template>
 
 <xsl:template match="media:group" mode="media">
-	<rdf:Description rdf:about="{$baseUri}">
+	<rdf:Description rdf:about="{$resourceURL}">
 		<rdf:type rdf:resource="&nfo;Video"/>
 		<rdf:type rdf:resource="&video;Movie"/>
 		<nfo:duration>
@@ -142,7 +155,7 @@
 <xsl:template match="text()" mode="media"/>
 
 <xsl:template match="media:content[@yt:format='5']" mode="media">
-    <rdf:Description rdf:about="{$baseUri}">
+    <rdf:Description rdf:about="{$resourceURL}">
 	<content:encoded rdf:parseType="Literal">
 	    <object width="425" height="350" xmlns="">
 		<param name="movie" value="{@url}">

@@ -39,16 +39,26 @@
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:sioc="&sioc;"
     xmlns:sioct="&sioct;"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
     xmlns:dcterms="http://purl.org/dc/terms/">
 
     <xsl:output method="xml" indent="yes" />
 
     <xsl:param name="baseUri"/>
+    <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+    <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
 
     <xsl:template match="/rss/channel">
 		<rdf:RDF>
-			<rdf:Description rdf:about="{$baseUri}">
+			<rdf:Description rdf:about="{$docIRI}">
 				<rdf:type rdf:resource="&bibo;Document"/>
+				<dc:title>
+					<xsl:value-of select="$baseUri" />
+				</dc:title>
+				<foaf:primaryTopic rdf:resource="{$resourceURL}" />
+				<owl:sameAs rdf:resource="{$resourceURL}" />
+			</rdf:Description>
+			<rdf:Description rdf:about="{$resourceURL}">
 				<rdf:type rdf:resource="&sioc;Thread"/>
 				<dc:title>
 					<xsl:value-of select="title" />
@@ -65,7 +75,7 @@
 			<xsl:for-each select="item">
 				<rdf:Description rdf:about="{vi:proxyIRI (link)}">
 					<rdf:type rdf:resource="&sioct;BoardPost"/>
-					<sioc:has_container rdf:resource="{$baseUri}"/>
+					<sioc:has_container rdf:resource="{$resourceURL}"/>
 					<dc:title>
 						<xsl:value-of select="title" />
 					</dc:title>

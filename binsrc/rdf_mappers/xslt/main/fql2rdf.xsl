@@ -26,6 +26,7 @@
 <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY sioct "http://rdfs.org/sioc/types#">
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -42,12 +43,16 @@
     xmlns:foaf="http://xmlns.com/foaf/0.1/"
     xmlns:vcard="http://www.w3.org/2001/vcard-rdf/3.0#"
     xmlns:c   ="http://www.w3.org/2002/12/cal/icaltzd#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:bibo="&bibo;"
     >
 
     <xsl:output method="xml" indent="yes" />
 
     <xsl:param name="baseUri" />
     <xsl:param name="login" />
+    <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+    <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
     <xsl:template match="/">
 	<rdf:RDF>
 	    <xsl:apply-templates/>
@@ -55,7 +60,15 @@
     </xsl:template>
     <xsl:template match="fb:error_response"/>
     <xsl:template match="fb:fql_query_response[fb:photo]">
-	<sioct:ImageGallery rdf:about="{$baseUri}">
+	<rdf:Description rdf:about="{$docIRI}">
+	    <rdf:type rdf:resource="&bibo;Document"/>
+	    <sioc:container_of rdf:resource="{$resourceURL}"/>
+	    <foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+	    <dcterms:subject rdf:resource="{$resourceURL}"/>
+	    <dc:title><xsl:value-of select="$baseUri"/></dc:title>
+	    <owl:sameAs rdf:resource="{$resourceURL}"/>
+	</rdf:Description>
+	<sioct:ImageGallery rdf:about="{$resourceURL}">
 	    <xsl:for-each select="fb:photo">
 		<sioc:container_of rdf:resource="{fb:link}"/>
 	    </xsl:for-each>
@@ -83,19 +96,27 @@
 	    <dc:title><xsl:value-of select="fb:name"/></dc:title>
 	    <dcterms:created><xsl:value-of select="vi:unix2iso-date (fb:created)"/></dcterms:created>
 	    <dcterms:modified><xsl:value-of select="vi:unix2iso-date (fb:modified)"/></dcterms:modified>
-	    <sioc:link rdf:resource="{fb:link}"/>
+	    <sioc:link rdf:resource="{vi:proxyIRI (fb:link)}"/>
 	    <xsl:if test="not contains ($baseUri, '&amp;')">
-		<sioc:has_owner rdf:resource="{$baseUri}"/>
+		<sioc:has_owner rdf:resource="{$resourceURL}"/>
 	    </xsl:if>
 	</sioct:ImageGallery>
 	<xsl:if test="not contains ($baseUri, '&amp;')">
-	    <foaf:Person rdf:about="{$baseUri}">
+	    <foaf:Person rdf:about="{$resourceURL}">
 		<sioc:owner_of rdf:resource="{vi:proxyIRI (fb:link, $login)}"/>
 	    </foaf:Person>
 	</xsl:if>
     </xsl:template>
     <xsl:template match="fb:user[contains ($baseUri, fb:uid)]">
-	<foaf:Person rdf:about="{$baseUri}">
+	<rdf:Description rdf:about="{$docIRI}">
+	    <rdf:type rdf:resource="&bibo;Document"/>
+	    <sioc:container_of rdf:resource="{$resourceURL}"/>
+	    <foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+	    <dcterms:subject rdf:resource="{$resourceURL}"/>
+	    <dc:title><xsl:value-of select="$baseUri"/></dc:title>
+	    <owl:sameAs rdf:resource="{$resourceURL}"/>
+	</rdf:Description>
+	<foaf:Person rdf:about="{$resourceURL}">
 	    <fb:uid><xsl:value-of select="fb:uid"/></fb:uid>
 	    <foaf:name><xsl:value-of select="fb:name"/></foaf:name>
 	    <foaf:firstName><xsl:value-of select="fb:first_name"/></foaf:firstName>
@@ -116,7 +137,7 @@
     </xsl:template>
     <xsl:template match="fb:user[not contains ($baseUri, fb:uid)]">
 	<xsl:variable name="tmp">http://www.facebook.com/p/<xsl:value-of select="fb:first_name"/>_<xsl:value-of select="fb:last_name"/>/<xsl:value-of select="fb:uid"/></xsl:variable>
-	<xsl:variable name="user_iri" select="vi:proxyIRI ($tmp, $login)"/>
+	<xsl:variable name="user_iri" select="vi:proxyIRI ($tmp)"/>
 	<foaf:Person rdf:about="{$user_iri}">
 	    <fb:uid><xsl:value-of select="fb:uid"/></fb:uid>
 	    <foaf:name><xsl:value-of select="fb:name"/></foaf:name>
@@ -132,9 +153,9 @@
 	    <xsl:if test="fb:pic_small != ''">
 		<foaf:thumbnail rdf:resource="{fb:pic_small}"/>
 	    </xsl:if>
-	    <foaf:knows rdf:resource="{$baseUri}"/>
+	    <foaf:knows rdf:resource="{$resourceURL}"/>
 	</foaf:Person>
-	<rdf:Description rdf:about="{$baseUri}">
+	<rdf:Description rdf:about="{$resourceURL}">
 	    <foaf:knows rdf:resource="{$user_iri}"/>
 	</rdf:Description>
     </xsl:template>
@@ -175,14 +196,14 @@
 	    <c:description>
 		<xsl:value-of select="fb:name"/>
 	    </c:description>
-	    <sioc:has_creator rdf:resource="{$baseUri}"/>
+	    <sioc:has_creator rdf:resource="{$resourceURL}"/>
 	</c:Vevent>
-	<foaf:Person rdf:about="{$baseUri}">
+	<foaf:Person rdf:about="{$resourceURL}">
 	    <sioc:creator_of rdf:resource="{$baseUri}#{fb:eid}"/>
 	</foaf:Person>
     </xsl:template>
     <xsl:template match="fb:friend_info">
-	<foaf:Person rdf:about="{$baseUri}">
+	<foaf:Person rdf:about="{$resourceURL}">
 	    <foaf:knows rdf:resource="#{fb:uid2}"/>
 	</foaf:Person>
     </xsl:template>
