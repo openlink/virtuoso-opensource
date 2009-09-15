@@ -1352,6 +1352,7 @@ stat_desc_t stat_descs [] =
 stat_desc_t dbf_descs [] =
   {
     {"dbf_no_disk", &dbf_no_disk},
+    {"callstack_on_exception", &callstack_on_exception},
     {NULL, NULL, NULL}
   };
 
