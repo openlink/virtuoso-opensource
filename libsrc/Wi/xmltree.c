@@ -9506,6 +9506,7 @@ xte_sum64_iter (caddr_t *tree, unsigned *lo_ptr, unsigned *med_ptr, unsigned *hi
           data = (unsigned char *)(head[attrctr-1]);
           SUM64(data,lon,medn,hin)
           data = (unsigned char *)(head[attrctr]);
+          SUM64(data,lon,medn,hin)
           loxor ^= lon; medxor ^= medn; hixor ^= hin;
         }
       lo += loxor; med += lo; hi += med;
