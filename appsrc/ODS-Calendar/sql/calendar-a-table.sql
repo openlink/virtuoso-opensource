@@ -784,9 +784,9 @@ CAL.WA.tmp_update ();
 create procedure CAL.WA.tags_procedure (
   in tags any)
 {
-  declare tag varchar;
+  declare T varchar;
 
-  result_names (tag);
+  result_names (T);
   tags := split_and_decode (tags, 0, '\0\0,');
   foreach (any tag in tags) do
     result (trim (tag));
