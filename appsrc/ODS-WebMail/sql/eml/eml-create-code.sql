@@ -3159,7 +3159,7 @@ create procedure OMAIL.WA.omail_get_settings (
   if (OMAIL.WA.omail_getp('folder_view', _settings) not in (1,2))
     OMAIL.WA.omail_setparam('folder_view',_settings, 1);
 
-  if (OMAIL.WA.omail_getp ('groupBy', _settings) not in (1,2,3,4,5,6,7))
+  if (OMAIL.WA.omail_getp ('groupBy', _settings) not in (1,2,3,4,5,6,7,8))
     OMAIL.WA.omail_setparam ('groupBy',_settings, 0);
 
   if (OMAIL.WA.omail_getp('usr_sig_inc', _settings) not in (0,1))
@@ -3953,8 +3953,8 @@ create procedure OMAIL.WA.omail_msg_list(
     }
   }
   OMAIL.WA.getOrderDirection (_order, _direction);
-  _orderIndex := OMAIL.WA.omail_getp ('order', _params);
-  _directionIndex := OMAIL.WA.omail_getp ('direction',_params);
+  _orderIndex := cast (OMAIL.WA.omail_getp ('order', _params) as integer);
+  _directionIndex := cast (OMAIL.WA.omail_getp ('direction',_params) as integer);
   _group := _order;
   _group[0] := 'MSG_ID';
   _groupIndex := OMAIL.WA.omail_getp ('groupBy', _params);
@@ -3963,9 +3963,36 @@ create procedure OMAIL.WA.omail_msg_list(
     _groupDirection := 'desc';
   if (_groupIndex = _orderIndex)
     _groupDirection := _direction[_directionIndex];
-  _sql_statm  := sprintf ('select SUBJECT, ATTACHED, ADDRESS, DSIZE DSIZE, MSG_ID, MSTATUS, PRIORITY, RCV_DATE, OMAIL.WA.omail_groupBy(DOMAIN_ID, USER_ID, MSG_ID, \'%s\', %s) GROUP_BY from OMAIL.WA.MESSAGES where DOMAIN_ID = ? and USER_ID = ? and FOLDER_ID = ? and PARENT_ID IS NULL ORDER BY GROUP_BY %s, %s %s, RCV_DATE desc', _group[_groupIndex], _group[_groupIndex], _groupDirection, _order[_orderIndex], _direction[_directionIndex]);
+  _sql_statm  := sprintf ('select SUBJECT, ATTACHED, ADDRESS, DSIZE DSIZE, MSG_ID, MSTATUS, PRIORITY, RCV_DATE, OMAIL.WA.omail_groupBy(DOMAIN_ID, USER_ID, MSG_ID, \'%s\', %s) GROUP_BY, OMAIL.WA.omail_groupBy_show (DOMAIN_ID, USER_ID, MSG_ID, \'%s\', %s) GROUP_SHOW from OMAIL.WA.MESSAGES where DOMAIN_ID = ? and USER_ID = ? and FOLDER_ID = ? and PARENT_ID IS NULL ORDER BY GROUP_BY %s, %s %s, RCV_DATE desc', _group[_groupIndex], _group[_groupIndex], _group[_groupIndex], _group[_groupIndex], _groupDirection, _order[_orderIndex], _direction[_directionIndex]);
   _sql_params := vector (1, _user_id, _folder_id);
   return OMAIL.WA.omail_sql_exec (_domain_id, _user_id, _sql_statm, _sql_params, OMAIL.WA.omail_getp ('skiped', _params), OMAIL.WA.omail_getp ('aresults', _params), cast (_orderIndex as varchar) || cast (_directionIndex as varchar));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.omail_subject_clean (
+  inout subject varchar)
+{
+  declare tmp, pos any;
+
+  while (1)
+  {
+    tmp := subject;
+    pos := strstr (subject, 'RE:');
+    if (not isnull (pos))
+      subject := subseq (subject, length('RE:'));
+    pos := strstr (subject, 're:');
+    if (not isnull (pos))
+      subject := subseq (subject, length('RE:'));
+    pos := strstr (subject, 'Re:');
+    if (not isnull (pos))
+      subject := subseq (subject, length('RE:'));
+    subject := trim (subject);
+    if (tmp = subject)
+      goto _exit;
+  }
+_exit:;
 }
 ;
 
@@ -3978,28 +4005,141 @@ create procedure OMAIL.WA.omail_groupBy (
   in groupType  varchar,
   in groupValue any)
 {
-  declare prefix, tmp, pos any;
+  if (groupType = 'SUBJECT')
+  {
+    OMAIL.WA.omail_subject_clean (groupValue);
+  }
+  else if (groupType = 'ATTACHED')
+    {
+    if (groupValue = 1)
+    {
+      groupValue := 0;
+    } else {
+      groupValue := 1;
+    }
+  }
+  else if (groupType = 'ADDRES_INFO')
+  {
+    groupValue := cast (groupValue as varchar);
+  }
+  else if (groupType = 'DSIZE')
+  {
+    if (groupValue < 10 * 1024)
+    {
+      groupValue := 0;
+    }
+    else if (groupValue < 25 * 1024)
+    {
+      groupValue := 1;
+    }
+    else if (groupValue < 100 * 1024)
+    {
+      groupValue := 2;
+    }
+    else if (groupValue < 512 * 1024)
+    {
+      groupValue := 3;
+    }
+    else if (groupValue < 1024 * 1024)
+    {
+      groupValue := 4;
+    }
+    else if (groupValue < 5 * 1024 * 1024)
+    {
+      groupValue := 5;
+    }
+    else
+    {
+      groupValue := 6;
+    }
+  }
+  else if (groupType = 'MSTATUS')
+  {
+    if (groupValue = 0)
+    {
+      groupValue := 3;
+    }
+    else if (groupValue = 1)
+    {
+      groupValue := 2;
+    }
+    else if (groupValue = 5)
+    {
+      groupValue := 1;
+    }
+    else
+    {
+      groupValue := 0;
+    }
+  }
+  else if (groupType = 'PRIORITY')
+  {
+    ;
+  }
+  else if (groupType = 'RCV_DATE')
+  {
+    declare currDate any;
+
+    currDate := OMAIL.WA.dt_curdate ();
+    groupValue := OMAIL.WA.dt_dateClear (groupValue);
+    if (currDate = groupValue)
+    {
+      groupValue := 4;
+    }
+    else if (OMAIL.WA.dt_BeginOfWeek (currDate) = OMAIL.WA.dt_BeginOfWeek (groupValue))
+    {
+      groupValue := 3;
+    }
+    else if (OMAIL.WA.dt_BeginOfMonth (currDate) = OMAIL.WA.dt_BeginOfMonth (groupValue))
+    {
+      groupValue := 2;
+    }
+    else if (OMAIL.WA.dt_BeginOfYear (currDate) = OMAIL.WA.dt_BeginOfYear (groupValue))
+    {
+      groupValue := 1;
+    }
+    else
+    {
+      groupValue := 0;
+    }
+  }
+  else if (groupType = 'REF_ID')
+  {
+    declare pos integer;
+
+    if (is_empty_or_null (groupValue))
+    {
+      groupValue := (select SRV_MSG_ID from OMAIL.WA.MESSAGES where DOMAIN_ID = _domain_id and USER_ID = _user_id and MSG_ID = _msg_id);
+    } else {
+      groupValue := trim (groupValue);
+      pos := strstr (groupValue, ' ');
+      if (not isnull (pos))
+        groupValue := subseq (groupValue, 0, pos);
+    }
+  }
+  else
+  {
+    groupValue := '';
+  }
+  return cast (groupValue as varchar);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.omail_groupBy_show (
+  in _domain_id integer,
+  in _user_id   integer,
+  in _msg_id    integer,
+  in groupType  varchar,
+  in groupValue any)
+{
+  declare prefix any;
 
   if (groupType = 'SUBJECT')
   {
     prefix := 'Subject: ';
-    while (1)
-    {
-      tmp := groupValue;
-      pos := strstr (groupValue, 'RE:');
-      if (not isnull (pos))
-        groupValue := subseq (groupValue, length('RE:'));
-      pos := strstr (groupValue, 're:');
-      if (not isnull (pos))
-        groupValue := subseq (groupValue, length('RE:'));
-      pos := strstr (groupValue, 'Re:');
-      if (not isnull (pos))
-        groupValue := subseq (groupValue, length('RE:'));
-      groupValue := trim (groupValue);
-      if (tmp = groupValue)
-        goto _exit;
-    }
-  _exit:;
+    OMAIL.WA.omail_subject_clean (groupValue);
   }
   else if (groupType = 'ATTACHED')
   {
@@ -4021,32 +4161,26 @@ create procedure OMAIL.WA.omail_groupBy (
     prefix := 'Size: ';
     if (groupValue < 10 * 1024)
     {
-      prefix := '      Size: ';
       groupValue := 'Tiny (less than 10 KB)';
     }
     else if (groupValue < 25 * 1024)
     {
-      prefix := '     Size: ';
       groupValue := 'Small (10-25 KB)';
     }
     else if (groupValue < 100 * 1024)
     {
-      prefix := '    Size: ';
       groupValue := 'Medium (25-100 KB)';
     }
     else if (groupValue < 512 * 1024)
     {
-      prefix := '   Size: ';
       groupValue := 'Large (100-500 KB)';
     }
     else if (groupValue < 1024 * 1024)
     {
-      prefix := '  Size: ';
       groupValue := 'Very Large (100 KB - 1 MB)';
     }
     else if (groupValue < 5 * 1024 * 1024)
     {
-      prefix := ' Size: ';
       groupValue := 'Huge (1 - 5 MB)';
     }
     else
@@ -4059,49 +4193,42 @@ create procedure OMAIL.WA.omail_groupBy (
     prefix := 'Status: ';
     if (groupValue = 0)
     {
-      prefix := '   Status: ';
       groupValue := 'Not Read';
     }
     else if (groupValue = 1)
     {
-      prefix := '  Status: ';
       groupValue := 'Read';
     }
     else if (groupValue = 5)
     {
-      prefix := ' Status: ';
       groupValue := 'Sent';
     }
     else
     {
-      groupValue := '';
+      groupValue := '~ Bad Status ~';
     }
   }
   else if (groupType = 'PRIORITY')
   {
+    prefix := 'Priority: ';
     if (groupValue = 1)
     {
-      prefix := '    Priority: ';
       groupValue := 'Highest Priority';
     }
     else if (groupValue = 2)
     {
-      prefix := '   Priority: ';
       groupValue := 'High Priority';
     }
     else if (groupValue = 4)
     {
-      prefix := ' Priority: ';
       groupValue := 'Low Priority';
     }
     else if (groupValue = 5)
     {
-      prefix := 'Priority: ';
       groupValue := 'Lowest Priority';
     }
     else
     {
-      prefix := '  Priority: ';
       groupValue := 'Normal';
     }
   }
@@ -4109,33 +4236,35 @@ create procedure OMAIL.WA.omail_groupBy (
   {
     declare currDate any;
 
+    prefix := 'Date: ';
     currDate := OMAIL.WA.dt_curdate ();
     groupValue := OMAIL.WA.dt_dateClear (groupValue);
     if (currDate = groupValue)
     {
-      prefix := '    Date: ';
       groupValue := 'Today';
     }
     else if (OMAIL.WA.dt_BeginOfWeek (currDate) = OMAIL.WA.dt_BeginOfWeek (groupValue))
     {
-      prefix := '   Date: ';
       groupValue := 'This Week';
     }
     else if (OMAIL.WA.dt_BeginOfMonth (currDate) = OMAIL.WA.dt_BeginOfMonth (groupValue))
     {
-      prefix := '  Date: ';
       groupValue := 'This Month';
     }
     else if (OMAIL.WA.dt_BeginOfYear (currDate) = OMAIL.WA.dt_BeginOfYear (groupValue))
     {
-      prefix := ' Date: ';
       groupValue := 'This Year';
     }
     else
     {
-      prefix := 'Date: ';
       groupValue := 'Older';
     }
+  }
+  else if (groupType = 'REF_ID')
+  {
+    prefix := 'Conversation: ';
+    groupValue := coalesce ((select SUBJECT from OMAIL.WA.MESSAGES where DOMAIN_ID = _domain_id and USER_ID = _user_id and MSG_ID = _msg_id), '~no subject~');
+    OMAIL.WA.omail_subject_clean (groupValue);
   }
   else
   {
@@ -4241,6 +4370,8 @@ create procedure OMAIL.WA.omail_msg_search(
   _group := _order;
   _group[0] := 'MSG_ID';
   _groupIndex := cast (OMAIL.WA.omail_getp ('groupBy', _params) as integer);
+  _groupDirection := 'asc';
+  if (_groupDirection in (2, 4, 6, 7))
   _groupDirection := 'desc';
   if (_groupIndex = _orderIndex)
     _groupDirection := _direction[_directionIndex];
@@ -4262,7 +4393,8 @@ create procedure OMAIL.WA.omail_msg_search(
                           '        M.MSTATUS, \n',
                           '        M.PRIORITY, \n',
                           '        M.RCV_DATE, \n',
-                          '        OMAIL.WA.omail_groupBy(M.DOMAIN_ID, M.USER_ID, M.MSG_ID, \'%s\', M.%s) GROUP_BY \n',
+                          '        OMAIL.WA.omail_groupBy (M.DOMAIN_ID, M.USER_ID, M.MSG_ID, \'%s\', M.%s) GROUP_BY, \n',
+                          '        OMAIL.WA.omail_groupBy_show (M.DOMAIN_ID, M.USER_ID, M.MSG_ID, \'%s\', M.%s) GROUP_SHOW \n',
                           '   from OMAIL.WA.MSG_PARTS P, \n',
                           '        OMAIL.WA.MESSAGES M \n',
                           '  where M.DOMAIN_ID = P.DOMAIN_ID',
@@ -4270,7 +4402,7 @@ create procedure OMAIL.WA.omail_msg_search(
                           '    and M.MSG_ID = P.MSG_ID \n',
                           '    and M.DOMAIN_ID = ? \n',
                           '    and M.USER_ID = ? ');
-    _sql_statm  := sprintf (_sql_statm, _group[_groupIndex], _group[_groupIndex]);
+    _sql_statm  := sprintf (_sql_statm, _group[_groupIndex], _group[_groupIndex], _group[_groupIndex], _group[_groupIndex]);
     _sql := _sql_statm;
 
     if (atoi (get_keyword ('q_fid', _params, '0')) <> 0)
@@ -4318,7 +4450,8 @@ create procedure OMAIL.WA.omail_msg_search(
       _sql_params := vector_concat(_sql_params,vector(substring(_aquery,5,length(_aquery))));
     }
 
-    if (get_keyword('q_subject',_params,'') <> '') {
+    if (get_keyword ('q_subject',_params,'') <> '')
+    {
       _sql_statm  := sprintf('%s and ucase(SUBJECT) LIKE ucase(?)',_sql_statm);
       _sql_params := vector_concat(_sql_params,vector(concat('%',get_keyword('q_subject',_params,''),'%')));
     }
@@ -4359,11 +4492,12 @@ create procedure OMAIL.WA.omail_msg_search(
                          '        M.MSTATUS, \n',
                          '        M.PRIORITY, \n',
                          '        M.RCV_DATE, \n',
-                         '        OMAIL.WA.omail_groupBy(M.DOMAIN_ID, M.USER_ID, M.MSG_ID, \'%s\', M.%s) GROUP_BY \n',
+                         '        OMAIL.WA.omail_groupBy (M.DOMAIN_ID, M.USER_ID, M.MSG_ID, \'%s\', M.%s) GROUP_BY, \n',
+                         '        OMAIL.WA.omail_groupBy_show (M.DOMAIN_ID, M.USER_ID, M.MSG_ID, \'%s\', M.%s) GROUP_SHOW \n',
                          '   from OMAIL.WA.MESSAGES M \n',
                          '  where M.DOMAIN_ID = ? \n',
                          '    and M.USER_ID = ? \n');
-    _sql_statm  := sprintf (_sql_statm, _group[_groupIndex], _group[_groupIndex]);
+    _sql_statm  := sprintf (_sql_statm, _group[_groupIndex], _group[_groupIndex], _group[_groupIndex], _group[_groupIndex]);
     _sql := _sql_statm;
 
     _aquery := '';
@@ -4952,7 +5086,8 @@ create procedure OMAIL.WA.is_spam_int (
        '       }';
   S := replace (S, '<FOAF_PARAM>', _foafParam);             
   T := '';
-  for (N := 0; N < _level; N := N + 1) {
+  for (N := 0; N < _level; N := N + 1)
+  {
     sql := sprintf (S, SIOC..get_graph (), SIOC..person_iri (SIOC..user_iri (_user_id)), T, _mail);
     st := '00000';
     exec (sql, st, msg, vector (), 0, meta, rows);
@@ -5088,8 +5223,9 @@ create procedure OMAIL.WA.omail_receive_message(
       if (OMAIL.WA.omail_address2xml ('from', _from, 2) <> OMAIL.WA.omail_address2xml ('returnPath', _returnPath, 2))
       {
         _folder_id := 125;
-      } else {
-        if (OMAIL.WA.is_spam (_user_id, OMAIL.WA.omail_address2xml ('returnPath', _returnPath, 2), cast(get_keyword ('spam', _settings, '0') as integer)))
+      }
+      else if (OMAIL.WA.is_spam (_user_id, OMAIL.WA.omail_address2xml ('returnPath', _returnPath, 2), cast (get_keyword ('spam', _settings, '0') as integer)))
+      {
           _folder_id := 125;
       }
     }
@@ -7569,7 +7705,7 @@ create procedure OMAIL.WA.getOrderDirection (
   inout _order any,
   inout _direction any)
 {
-  _order     := vector ('','MSTATUS','PRIORITY','ADDRES_INFO','SUBJECT','RCV_DATE','DSIZE','ATTACHED');
+  _order     := vector ('', 'MSTATUS', 'PRIORITY', 'ADDRES_INFO', 'SUBJECT', 'RCV_DATE', 'DSIZE', 'ATTACHED', 'REF_ID');
   _direction := vector ('',' ','desc');
 }
 ;

@@ -45,7 +45,7 @@
           <xsl:call-template name="make_select">
             <xsl:with-param name="name">groupBy</xsl:with-param>
             <xsl:with-param name="selected"><xsl:value-of select="./groupBy" /></xsl:with-param>
-            <xsl:with-param name="list">0:;1:Status;2:Priority;3:Address;4:Subject;5:Date;6:Size;7:Attachment;</xsl:with-param>
+            <xsl:with-param name="list">0:;1:Status;2:Priority;3:Address;4:Subject;5:Date;6:Size;7:Attachment;8:Conversation;</xsl:with-param>
             <xsl:with-param name="onchange">javascript: groupSubmit(this); </xsl:with-param>
           </xsl:call-template>
         </div>
@@ -218,7 +218,7 @@
       <xsl:if test="/page/groupBy != 0 and $groupBy != ./group_by">
         <tr class="msgRow">
           <td colspan="8">
-            <b><i><xsl:value-of select="./group_by" /></i></b>
+            <b><i><xsl:value-of select="./group_show" /></i></b>
           </td>
         </tr>
       </xsl:if>
