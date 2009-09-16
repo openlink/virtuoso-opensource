@@ -47,8 +47,20 @@ libxml_la_CFLAGS  += -I$(top_srcdir)/libsrc/odbcsdk/include
 libxml_la_CFLAGS  += -I$(top_srcdir)/libsrc/util/pcrelib
 libxml_la_LDFLAGS = -static
 
-xhtml_ent.h: xhtml_ent.gperf
-	gperf -aCDGptr -Kentity -k1,2,3,4,5,$$ xhtml_ent.gperf -Nxhtml_ent_gperf >xhtml_ent.h
+
+GEN=$(SHELL) ${top_srcdir}/bin/generate
+
+BUILT_SOURCES = xhtml_ent.h
+
+xhtml_ent.h: $(srcdir)/xhtml_ent.gperf
+	@${GEN} --stdout ${GPERF} \
+                -o xhtml_ent.h \
+                -aCDGptr \
+		-Kentity \
+		-L ANSI-C \
+		-k1,2,3,4,5,$$ \
+		-Nxhtml_ent_gperf \
+		$(srcdir)/xhtml_ent.gperf 
 
 
 # ----------------------------------------------------------------------
