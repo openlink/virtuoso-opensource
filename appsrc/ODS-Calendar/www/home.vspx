@@ -482,7 +482,7 @@
 
       FS := fShowValue;
       if (isnull (FS))
-        FS := F;
+        FS := sprintf ('%V', F);
 
       P := '';
       -- vcalendar class
