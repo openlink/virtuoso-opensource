@@ -3827,7 +3827,6 @@ create function DB.DBA.SPARQL_INSERT_DICT_CONTENT (in graph_iri any, in triples_
 {
   declare triples any;
   declare ins_count integer;
-  triples := dict_list_keys (triples_dict, 1);
   ins_count := 0;
   if (__tag of vector = __tag (graph_iri))
     {
@@ -3835,8 +3834,12 @@ create function DB.DBA.SPARQL_INSERT_DICT_CONTENT (in graph_iri any, in triples_
       graph_iri := graph_iri[0]; -- the last op.
     }
   __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL INSERT');
-  ins_count := ins_count + length (triples);
-  DB.DBA.RDF_INSERT_TRIPLES (graph_iri, triples, log_mode);
+  while (dict_size (triples_dict) > 0)
+    {
+      triples := dict_destructive_list_rnd_keys (triples_dict, 2000000);
+      DB.DBA.RDF_INSERT_TRIPLES (graph_iri, triples, log_mode);
+      ins_count := ins_count + length (triples);
+    }
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
   if (compose_report)
@@ -3850,7 +3853,6 @@ create function DB.DBA.SPARQL_DELETE_DICT_CONTENT (in graph_iri any, in triples_
 {
   declare triples any;
   declare del_count integer;
-  triples := dict_list_keys (triples_dict, 1);
   del_count := 0;
   if (__tag of vector = __tag (graph_iri))
     {
@@ -3858,8 +3860,12 @@ create function DB.DBA.SPARQL_DELETE_DICT_CONTENT (in graph_iri any, in triples_
       graph_iri := graph_iri[0]; -- the last op.
     }
   __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL DELETE');
-  del_count := del_count + length (triples);
-  DB.DBA.RDF_DELETE_TRIPLES (graph_iri, triples, log_mode);
+  while (dict_size (triples_dict) > 0)
+    {
+      triples := dict_destructive_list_rnd_keys (triples_dict, 2000000);
+      DB.DBA.RDF_DELETE_TRIPLES (graph_iri, triples, log_mode);
+      del_count := del_count + length (triples);
+    }
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
   if (compose_report)

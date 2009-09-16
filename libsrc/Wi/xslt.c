@@ -3372,7 +3372,7 @@ bif_dict_list_keys (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	mutex_leave (ht->ht_mutex);
       sqlr_new_error ("22023", "SR...", "The result vector is too large");
     }
-  res = (caddr_t *)dk_alloc_box ((ht->ht_inserts - ht->ht_deletes) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  res = (caddr_t *)dk_alloc_box (len * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
   tail = res;
   id_hash_iterator (&hit, ht);
   if (1 != ht->ht_dict_refctr)
@@ -3400,6 +3400,42 @@ bif_dict_list_keys (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return (caddr_t)res;
 }
 
+caddr_t
+bif_dict_destructive_list_rnd_keys (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  id_hash_iterator_t hit, *hit1 = bif_dict_iterator_or_null_arg (qst, args, 0, "dict_destructive_list_rnd_keys", 0);
+  long batch_size = bif_long_range_arg (qst, args, 1, "dict_destructive_list_rnd_keys", 0xffff, 0xffffff / sizeof (caddr_t));
+  id_hash_t *ht;
+  caddr_t *res, *tail;
+  long len, bucket_rnd;
+  if (NULL == hit1)
+    return list (0);
+  ht = hit1->hit_hash;
+  if (ht->ht_mutex)
+    mutex_enter (ht->ht_mutex);
+  len = ht->ht_inserts - ht->ht_deletes;
+  if (len > batch_size)
+    len = batch_size;
+  if (0 == len)
+    return list (0);
+  res = (caddr_t *)dk_alloc_box (len * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  tail = res;
+  id_hash_iterator (&hit, ht);
+/* It is important that \c len is greater than zero before this loop, because check is made after writing key to \c tail, not before */
+  for (bucket_rnd = (ht->ht_inserts - ht->ht_deletes) + ht->ht_buckets; bucket_rnd--; /* no step */)
+    {
+      caddr_t key, val;
+      while (id_hash_remove_rnd (ht, bucket_rnd, (caddr_t)&key, (caddr_t)&val))
+	{
+          dk_free_tree (val);
+          (tail++)[0] = key;
+          if (!(--len))
+            return (caddr_t)res;
+	}
+    }
+  GPF_T1 ("bif_" "dict_destructive_list_rnd_keys(): corrupted hashtable");
+  return NULL; /* never reached */
+}
 
 caddr_t
 bif_dict_to_vector (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -4217,6 +4253,7 @@ xslt_init (void)
   bif_define ("dict_remove", bif_dict_remove);
   bif_define ("dict_size", bif_dict_size);
   bif_define ("dict_list_keys", bif_dict_list_keys);
+  bif_define ("dict_destructive_list_rnd_keys", bif_dict_destructive_list_rnd_keys);
   bif_define ("dict_to_vector", bif_dict_to_vector);
   bif_define ("gvector_sort", bif_gvector_sort);
   bif_define ("gvector_digit_sort", bif_gvector_digit_sort);
