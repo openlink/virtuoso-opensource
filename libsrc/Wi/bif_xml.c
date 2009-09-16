@@ -697,7 +697,13 @@ xp_free (xparse_ctx_t * xp)
   while (NULL != xp->xp_rdfxml_locals)
     xp_pop_rdf_locals (xp);
   while (NULL != xp->xp_rdfa_locals)
+    {
+#ifndef NDEBUG
+      dk_free_tree (xp->xp_rdfa_locals->xrdfal_ict_buffer);
+      xp->xp_rdfa_locals->xrdfal_ict_buffer = NULL;
+#endif
     xp_pop_rdfa_locals (xp);
+    }
   xrl = xp->xp_rdfxml_free_list;
   while (NULL != xrl)
     {

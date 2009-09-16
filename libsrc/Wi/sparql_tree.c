@@ -567,7 +567,12 @@ sparp_equiv_get (sparp_t *sparp, SPART *haystack_gp, SPART *needle_var, int flag
     default: spar_internal_error (sparp, "sparp_" "equiv_get() with non-variable SPART *needle_var"); break;
     }
   if ((flags & SPARP_EQUIV_INS_VARIABLE) && strcmp (needle_var->_.var.selid, haystack_gp->_.gp.selid))
+    {
+      if (needle_var->_.var.selid == uname_nil)
+        needle_var->_.var.selid = haystack_gp->_.gp.selid;
+      else
     spar_internal_error (sparp, "sparp_" "equiv_get() with SPARP_EQUIV_INS_VARIABLE and wrong selid");
+    }
 #endif
   needle_var_name = (
     ((DV_STRING == DV_TYPE_OF (needle_var)) || (DV_UNAME == DV_TYPE_OF (needle_var))) ?
@@ -2159,6 +2164,27 @@ sparp_gp_detach_member_int (sparp_t *sparp, SPART *parent_gp, int member_idx, dk
               parent_eq->e_gspo_uses--;
             }
         }
+      if (NULL != memb->_.triple.options)
+        {
+          int eq_ctr;
+          SPARP_FOREACH_GP_EQUIV (sparp, parent_gp, eq_ctr, eq)
+            {
+              int var_ctr;
+              for (var_ctr = eq->e_var_count; var_ctr--; /* no step */) /* The order is important due to sparp_equiv_remove_var() */
+                {
+                  SPART *var = eq->e_vars[var_ctr];
+                  if (strcmp (var->_.var.tabid, memb->_.triple.tabid))
+                    continue;
+                  sparp_equiv_remove_var (sparp, eq, var);
+                  if (NULL != touched_equivs_set_ptr)
+                    t_set_pushnew (touched_equivs_set_ptr, eq);
+                  if (0 != var->_.var.tabid)
+                    eq->e_gspo_uses--;
+                  var->_.var.selid = uname_nil;
+                }
+            }
+          END_SPARP_FOREACH_GP_EQUIV;
+        }
     }
   return memb;
 }
@@ -2644,6 +2670,8 @@ sparp_gp_attach_member_int (sparp_t *sparp, SPART *parent_gp, SPART *memb, dk_se
               parent_eq = sparp_equiv_get (sparp, parent_gp, field, SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_ADD_GSPO_USE);
             }
         }
+      if (NULL != memb->_.triple.options)
+        sparp_gp_trav_cu_in_options (sparp, parent_gp, memb, memb->_.triple.options, NULL);
       memb->_.triple.selid = t_box_copy (parent_gp->_.gp.selid);
     }
 }
@@ -3309,7 +3337,7 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options)
       switch (key)
         {
         case INFERENCE_L: has_inference = 1; continue;
-        case OFFBAND_L: case SCORE_L: has_ft = 1; continue;
+        case OFFBAND_L: case SCORE_L: case SCORE_LIMIT_L: has_ft = 1; continue;
         case IFP_L: case SAME_AS_L: case SAME_AS_O_L: case SAME_AS_P_L: case SAME_AS_S_L: case SAME_AS_S_O_L: has_inference = 1; continue;
         case TABLE_OPTION_L: continue;
         case TRANSITIVE_L: has_transitive = 1; continue;
@@ -3595,6 +3623,7 @@ spart_dump_opname (ptrlong opname, int is_op)
     case REGEX_L: return "REGEX builtin";
     case SAMETERM_L: return "sameTerm builtin";
     case SCORE_L: return "SCORE";
+    case SCORE_LIMIT_L: return "SCORE_LIMIT";
     case SELECT_L: return "SELECT result-mode";
     case STR_L: return "STR builtin";
     case SUBJECT_L: return "SUBJECT";

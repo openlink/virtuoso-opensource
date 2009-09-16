@@ -200,6 +200,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token SAME_AS_S_O_L	/*:: PUNCT_SPAR_LAST("SAME_AS_S_O") ::*/
 %token SAMETERM_L	/*:: PUNCT_SPAR_LAST("SAMETERM") ::*/
 %token SCORE_L		/*:: PUNCT_SPAR_LAST("SCORE") ::*/
+%token SCORE_LIMIT_L	/*:: PUNCT_SPAR_LAST("SCORE_LIMIT") ::*/
 %token SELECT_L		/*:: PUNCT_SPAR_LAST("SELECT") ::*/
 %token SILENT_L		/*:: PUNCT_SPAR_LAST("SILENT") ::*/
 %token SOFT_L		/*:: PUNCT_SPAR_LAST("SOFT") ::*/
@@ -927,6 +928,7 @@ spar_triple_option	/* [Virt]	TripleOption	 ::=  'INFERENCE' ( QNAME | Q_IRI_REF 
 	| INFERENCE_L SPARQL_STRING	{ $$ = (SPART **)t_list (2, (ptrlong)INFERENCE_L, $2); }
 	| OFFBAND_L spar_var		{ $$ = (SPART **)t_list (2, (ptrlong)OFFBAND_L, $2); }
 	| SCORE_L spar_var		{ $$ = (SPART **)t_list (2, (ptrlong)SCORE_L, $2); }
+	| SCORE_LIMIT_L spar_expn	{ $$ = (SPART **)t_list (2, (ptrlong)SCORE_LIMIT_L, $2); }
 	| TABLE_OPTION_L SPARQL_STRING	{ $$ = (SPART **)t_list (2, (ptrlong)TABLE_OPTION_L, $2); }
 	| T_CYCLES_ONLY_L		{ $$ = (SPART **)t_list (2, (ptrlong)T_CYCLES_ONLY_L, (ptrlong)1); }
 	| T_DIRECTION_L	SPARQL_INTEGER	{ $$ = (SPART **)t_list (2, (ptrlong)T_DIRECTION_L, $2); }
@@ -935,8 +937,8 @@ spar_triple_option	/* [Virt]	TripleOption	 ::=  'INFERENCE' ( QNAME | Q_IRI_REF 
 	| T_EXISTS_L			{ $$ = (SPART **)t_list (2, (ptrlong)T_EXISTS_L, (ptrlong)1); }
 	| T_FINAL_AS_L spar_var		{ $$ = (SPART **)t_list (2, (ptrlong)T_FINAL_AS_L, $2); }
 	| T_IN_L _LPAR spar_triple_option_var_commalist _RPAR	{ $$ = (SPART **)t_list (2, (ptrlong)T_IN_L, spartlist (sparp_arg, 2, SPAR_LIST, t_revlist_to_array ($3))); }
-	| T_MIN_L _LPAR spar_expn _RPAR	{ $$ = (SPART **)t_list (2, (ptrlong)T_MIN_L, $3); }
-	| T_MAX_L _LPAR spar_expn _RPAR	{ $$ = (SPART **)t_list (2, (ptrlong)T_MAX_L, $3); }
+	| T_MIN_L spar_expn		{ $$ = (SPART **)t_list (2, (ptrlong)T_MIN_L, $2); }
+	| T_MAX_L spar_expn		{ $$ = (SPART **)t_list (2, (ptrlong)T_MAX_L, $2); }
 	| T_NO_CYCLES_L			{ $$ = (SPART **)t_list (2, (ptrlong)T_NO_CYCLES_L, (ptrlong)1); }
 	| T_NO_ORDER_L			{ $$ = (SPART **)t_list (2, (ptrlong)T_NO_ORDER_L, (ptrlong)1); }
 	| T_OUT_L _LPAR spar_triple_option_var_commalist _RPAR	{ $$ = (SPART **)t_list (2, (ptrlong)T_OUT_L, spartlist (sparp_arg, 2, SPAR_LIST, t_revlist_to_array ($3))); }

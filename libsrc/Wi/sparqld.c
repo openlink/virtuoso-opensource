@@ -194,6 +194,7 @@ ssg_sd_opname (ptrlong opname, int is_op)
     case REGEX_L: return "REGEX";
     case SAMETERM_L: return "sameTerm";
     case SCORE_L: return "SCORE";
+    case SCORE_LIMIT_L: return "SCORE_LIMIT";
     case SELECT_L: return "SELECT";
     case STR_L: return "STR";
     /* case SUBJECT_L: return "SUBJECT"; */

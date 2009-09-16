@@ -484,6 +484,7 @@ SPAR_PARAMNAME	((([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|("::"{SPAR_SQL
 <SPARQL>{R}{E}{D}{U}{C}{E}{D}		{ return REDUCED_L	; }
 <SPARQL>{R}{E}{T}{U}{R}{N}{S}		{ return RETURNS_L	; }
 <SPARQL>{S}{C}{O}{R}{E}			{ return SCORE_L	; }
+<SPARQL>{S}{C}{O}{R}{E}_{L}{I}{M}{I}{T}	{ return SCORE_LIMIT_L	; }
 <SPARQL>{S}{A}{M}{E}_{A}{S}		{ return SAME_AS_L	; }
 <SPARQL>{S}{A}{M}{E}_{A}{S}_{O}		{ return SAME_AS_O_L	; }
 <SPARQL>{S}{A}{M}{E}_{A}{S}_{P}		{ return SAME_AS_P_L	; }

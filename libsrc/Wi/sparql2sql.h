@@ -558,6 +558,9 @@ extern void sparp_gp_deprecate (sparp_t *sparp, SPART *parent_gp);
 /*! This calls sparp_gp_deprecate() for all gps ofa subquery. */
 extern void sparp_req_top_deprecate (sparp_t *sparp, SPART *top);
 
+/*! This traverse triple or group options to count usages. If selids of vars are equal to uname_nil then they're replaced with selid of \c gp inside sparp_equiv_get() calls. */
+extern void sparp_gp_trav_cu_in_options (sparp_t *sparp, SPART *gp, SPART *curr, SPART **options, void *common_env);
+
 /*! This may turn, e.g., '10 > ?a' into '?a < 10' in order to normalize expressions before optimizations.
 No effects if called for the second time. */
 extern void sparp_rotate_comparisons_by_rank (SPART *filt);

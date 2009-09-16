@@ -389,7 +389,7 @@ int sparp_gp_trav_cu_in_expns (sparp_t *sparp, SPART *curr, sparp_trav_state_t *
 int sparp_gp_trav_cu_in_subq (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env);
 int sparp_gp_trav_cu_in_retvals (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env);
 
-static void
+void
 sparp_gp_trav_cu_in_options (sparp_t *sparp, SPART *gp, SPART *curr, SPART **options, void *common_env)
 {
   int ctr;
@@ -410,7 +410,7 @@ sparp_gp_trav_cu_in_options (sparp_t *sparp, SPART *gp, SPART *curr, SPART **opt
             sparp_equiv_get (sparp, gp, (SPART *)name, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_GET_NAMESAKES | SPARP_EQUIV_ADD_SUBQUERY_USE);
             break;
           }
-        case T_MIN_L: case T_MAX_L:
+        case SCORE_LIMIT_L: case T_MIN_L: case T_MAX_L:
           {
             sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
             memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
@@ -2241,7 +2241,14 @@ sparp_equiv_audit_all (sparp_t *sparp, int flags)
                     }
                 }
               if (0 > triple_idx)
+                {
+                  if (var_tr_idx < SPART_TRIPLE_FIELDS_COUNT)
                 spar_audit_error (sparp, "sparp_" "equiv_audit_all(): var is in equiv but not in any triple of the group, var %s/%s#%d/%s", var->_.var.selid, var->_.var.tabid, var->_.var.tr_idx, var->_.var.vname);
+#if 0
+                  else
+                    spar_audit_error (sparp, "sparp_" "equiv_audit_all(): var is in equiv but not in any triple of the group, var %s/%s#%d/%s", var->_.var.selid, var->_.var.tabid, var->_.var.tr_idx, var->_.var.vname);
+#endif
+                }
             }
         }
       recv_ctr = BOX_ELEMENTS_0 (eq->e_receiver_idxs);
