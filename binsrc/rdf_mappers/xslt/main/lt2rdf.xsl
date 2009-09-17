@@ -44,12 +44,14 @@
   xmlns:gr="&gr;"
   xmlns:sioc="&sioc;"
   xmlns:bibo="&bibo;"
+  xmlns:owl="http://www.w3.org/2002/07/owl#"
   version="1.0">
     <xsl:output method="xml" indent="yes"/>
     <xsl:param name="baseUri" />
     <xsl:variable name="resourceURL">
 		<xsl:value-of select="vi:proxyIRI(concat('http://www.librarything.com/author/', /response[@stat='ok']/ltml/item/@id))"/>
     </xsl:variable>
+    <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
     <xsl:template match="/">
 		<rdf:RDF>
 			<xsl:apply-templates select="response[@stat='ok']/ltml/item[@type='work']"/>
@@ -57,11 +59,13 @@
 		</rdf:RDF>
     </xsl:template>
     <xsl:template match="response[@stat='ok']/ltml/item[@type='work']">
-		<rdf:Description rdf:about="{$baseUri}">
+		<rdf:Description rdf:about="{$docIRI}">
 			<rdf:type rdf:resource="&bibo;Document"/>
 			<sioc:container_of rdf:resource="{$resourceURL}"/>
 			<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 			<dcterms:subject rdf:resource="{$resourceURL}"/>
+			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+			<owl:sameAs rdf:resource="{$resourceURL}"/>
 		</rdf:Description>
 		<rdf:Description rdf:about="{$resourceURL}">
 			<rdf:type rdf:resource="&sioc;Item"/>
@@ -97,11 +101,13 @@
     </xsl:template>
 
     <xsl:template match="response[@stat='ok']/ltml/item[@type='author']">
-		<rdf:Description rdf:about="{$baseUri}">
+		<rdf:Description rdf:about="{$docIRI}">
 			<rdf:type rdf:resource="&bibo;Document"/>
 			<sioc:container_of rdf:resource="{$resourceURL}"/>
 			<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 			<dcterms:subject rdf:resource="{$resourceURL}"/>
+			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+			<owl:sameAs rdf:resource="{$resourceURL}"/>
 		</rdf:Description>
 		<rdf:Description rdf:about="{$resourceURL}">
 			<rdf:type rdf:resource="&foaf;Person"/>

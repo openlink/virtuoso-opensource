@@ -367,15 +367,25 @@
                 </td>
               </tr>
               <tr>
-                <td/>
                 <td>
-                  <v:check-box name="cb_odbc_login"
-                               value="1"
-                               initial-checked="--self.sql_enable"
-                               xhtml_disabled="--case when self.mode='edit' and check_grants (connection_get ('vspx_user'), '') <> 1 then 'disabled' else '@@hidden@@' end"
-                               xhtml_id="cb_odbc_login"
-                               xhtml_tabindex="9"/>
-                    <label for="cb_odbc_login">Allow SQL/ODBC Logins</label>
+                  <label for="sel_user_type">User type</label>
+                </td>
+                <td>
+                  <v:select-list xhtml_id="sel_user_type" 
+                                 name="sel_user_type" 
+                                 value="" 
+                                 xhtml_disabled="--case when self.mode='edit' and check_grants (connection_get ('vspx_user'), '') <> 1 then 'disabled' else '@@hidden@@' end">
+                    <v:item name="SQL/ODBC" value="0" />
+                    <v:item name="WebDAV" value="1" />
+                    <v:item name="SQL/ODBC and WebDAV" value="2" />
+		    <v:before-render>
+                      <![CDATA[
+			if (self.sql_enable and self.dav_enable) (control as vspx_select_list).vsl_selected_inx := 2;
+                        else if (self.sql_enable) (control as vspx_select_list).vsl_selected_inx := 0;
+			else if (self.dav_enable) (control as vspx_select_list).vsl_selected_inx := 1;
+                      ]]>
+                    </v:before-render>
+                  </v:select-list>
                 </td>
               </tr>
               <tr>
@@ -439,18 +449,6 @@
           <td>
             <table> <!-- right side -->
               <tr>
-                <td/>
-                <td>
-                  <v:check-box name="cb_http_login"
-                               value="1"
-                               initial-checked="--self.dav_enable"
-                               xhtml_disabled="--case when self.mode='edit' and check_grants (connection_get ('vspx_user'), '') <> 1 then 'disabled' else '@@hidden@@' end"
-                               xhtml_id="cb_http_login"
-                               xhtml_tabindex="16"/>
-                  <label for="cb_http_login">Allow DAV Logins</label>
-                </td>
-              </tr>
-              <tr>
                 <td><label for="u_email">E-mail</label></td>
                 <td>
                   <v:text name="t_e_mail"
@@ -469,7 +467,7 @@
                           xhtml_tabindex="18"/>
 		      <v:check-box name="cb_create_dav_home" xhtml_id="cb_create_dav_home"
 			  	xhtml_onclick="javascript:swHomeDir (this)"
-				xhtml_tabindex="19"/>&nbsp;<label for="cb_create_dav_home">create</label>
+				xhtml_tabindex="19"/> <label for="cb_create_dav_home">create</label>
                 </td>
               </tr>
               <tr>
@@ -851,6 +849,7 @@
             self.vc_is_valid := 0;
             return;
           }
+	
         attr := vector_concat (attr, vector ('PASSWORD_MODE', ''));
         attr := vector_concat (attr, vector ('PASSWORD_MODE_DATA', ''));
         attr := vector_concat (attr, vector ('GET_PASSWORD', ''));
@@ -869,8 +868,8 @@
         attr := vector_concat (attr, vector ('HOME', user_home));
         attr := vector_concat (attr, vector ('PERMISSIONS', user_perm));
         attr := vector_concat (attr, vector ('DISABLED', case when self.cb_user_enable.ufl_selected = 0 then 1 else 0 end ));
-        attr := vector_concat (attr, vector ('SQL_ENABLE', self.cb_odbc_login.ufl_selected ));
-        attr := vector_concat (attr, vector ('DAV_ENABLE', self.cb_http_login.ufl_selected ));
+        attr := vector_concat (attr, vector ('SQL_ENABLE', case when self.sel_user_type.ufl_value = '0' or self.sel_user_type.ufl_value = '2' then 1 else 0 end ));
+        attr := vector_concat (attr, vector ('DAV_ENABLE', case when self.sel_user_type.ufl_value = '1' or self.sel_user_type.ufl_value = '2' then 1 else 0 end ));
 
         if (os_name <> '' and os_password <> '')
           {
@@ -920,9 +919,9 @@
 	    if (user_name <> 'dba')
 	      {
                 USER_SET_OPTION (user_name, 'DISABLED', case when self.cb_user_enable.ufl_selected=0 then 1 else 0 end );
-	        USER_SET_OPTION (user_name, 'SQL_ENABLE', self.cb_odbc_login.ufl_selected);
+	        USER_SET_OPTION (user_name, 'SQL_ENABLE', case when self.sel_user_type.ufl_value = '0' or self.sel_user_type.ufl_value = '2' then 1 else 0 end);
 	      }
-            USER_SET_OPTION (user_name, 'DAV_ENABLE', self.cb_http_login.ufl_selected);
+            USER_SET_OPTION (user_name, 'DAV_ENABLE',  case when self.sel_user_type.ufl_value = '1' or self.sel_user_type.ufl_value = '2' then 1 else 0 end);
 	    USER_SET_OPTION (user_name, 'HOME', user_home);
 	    if (lower (self.u_dav_quota.ufl_value) = 'unlimited' or atoi (self.u_dav_quota.ufl_value) < 0)
 	      USER_SET_OPTION (user_name, 'DAVQuota', -1);

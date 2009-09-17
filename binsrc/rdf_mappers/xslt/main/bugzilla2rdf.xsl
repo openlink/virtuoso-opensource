@@ -51,10 +51,13 @@
   xmlns:bugzilla="http://www.openlinksw.com/schemas/bugzilla#"
   xmlns:sioct="&sioct;"
   xmlns:sioc="&sioc;"
+  xmlns:owl="&owl;"
   xmlns:xsd="&xsd;"
   version="1.0">
     <xsl:output method="xml" indent="yes"/>
     <xsl:param name="baseUri" />
+    <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+    <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
     <xsl:template match="/">
 	<rdf:RDF>
 	    <xsl:apply-templates select="bugzilla/bug"/>
@@ -62,15 +65,17 @@
 	</rdf:RDF>
     </xsl:template>
     <xsl:template match="issuezilla/issue">
-		<rdf:Description rdf:about="{$baseUri}">
+		<rdf:Description rdf:about="{$docIRI}">
 			<rdf:type rdf:resource="&bibo;Document"/>
-			<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
+			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+			<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+			<owl:sameAs rdf:resource="{$resourceURL}"/>
 		</rdf:Description>
 		<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
 			<rdf:type rdf:resource="&sioc;Thread"/>
 			<rdf:type rdf:resource="&wf;Task"/>
 			<dcterms:created rdf:datatype="&xsd;dateTime">
-				<xsl:value-of select="creation_ts"/>
+				<xsl:value-of select="vi:http_string_date (creation_ts)"/>
 			</dcterms:created>
 			<dc:title>
 				<xsl:value-of select="short_desc"/>
@@ -83,8 +88,8 @@
 		<xsl:for-each select="long_desc">
 			<rdf:Description rdf:about="{vi:proxyIRI($baseUri,'', replace(issue_when, ' ', '_'))}">
 				<rdf:type rdf:resource="&sioct;Comment"/>
-				<dc:date>
-					<xsl:value-of select="issue_when"/>
+				<dc:date rdf:datatype="&xsd;dateTime">
+					<xsl:value-of select="vi:http_string_date (issue_when)"/>
 				</dc:date>
 				<dc:creator>
 					<xsl:value-of select="who"/>
@@ -96,15 +101,17 @@
 					<xsl:value-of select="thetext"/>
 				</dc:description>
 				<dcterms:created rdf:datatype="&xsd;dateTime">
-					<xsl:value-of select="issue_when"/>
+					<xsl:value-of select="vi:http_string_date (issue_when)"/>
 				</dcterms:created>
 			</rdf:Description>
 		</xsl:for-each>
     </xsl:template>
     <xsl:template match="bugzilla/bug">
-    	<rdf:Description rdf:about="{$baseUri}">
+    	<rdf:Description rdf:about="{$docIRI}">
 			<rdf:type rdf:resource="&bibo;Document"/>
-			<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
+			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+			<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+			<owl:sameAs rdf:resource="{$resourceURL}"/>
 		</rdf:Description>
 		<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">    	
 			<rdf:type rdf:resource="&sioc;Thread"/>
@@ -113,7 +120,7 @@
 				<xsl:value-of select="short_desc"/>
 			</dc:title>
 			<dcterms:created rdf:datatype="&xsd;dateTime">
-				<xsl:value-of select="creation_ts"/>
+			    <xsl:value-of select="vi:http_string_date (creation_ts)"/>
 			</dcterms:created>
 			<xsl:for-each select="long_desc">
 				<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', replace(bug_when, ' ', '_'))}" />
@@ -123,8 +130,8 @@
 		<xsl:for-each select="long_desc">
 			<rdf:Description rdf:about="{vi:proxyIRI($baseUri,'',replace(bug_when, ' ', '_'))}">
 				<rdf:type rdf:resource="&sioct;Comment"/>
-				<dc:date>
-					<xsl:value-of select="bug_when"/>
+				<dc:date rdf:datatype="&xsd;dateTime">
+					<xsl:value-of select="vi:http_string_date (bug_when)"/>
 				</dc:date>
 				<dc:creator>
 					<xsl:value-of select="who"/>
@@ -136,7 +143,7 @@
 					<xsl:value-of select="thetext"/>
 				</dc:description>
 				<dcterms:created rdf:datatype="&xsd;dateTime">
-					<xsl:value-of select="bug_when"/>
+					<xsl:value-of select="vi:http_string_date (bug_when)"/>
 				</dcterms:created>
 			</rdf:Description>
 		</xsl:for-each>

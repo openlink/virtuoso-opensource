@@ -41,15 +41,15 @@
     xmlns:dcterms="&dcterms;"
     xmlns:gr="&gr;"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
     xmlns:tesco="http://www.tesco.com/">
 
     <xsl:output method="xml" indent="yes" />
 
     <xsl:param name="baseUri"/>
 
-    <xsl:variable name="resourceURL">
-		<xsl:value-of select="$baseUri"/>
-    </xsl:variable>
+    <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+    <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
 
     <xsl:variable name="ns">http://schemas.datacontract.org/2004/07/tesco_cloudapp_net_WebRole</xsl:variable>
 
@@ -59,15 +59,17 @@
 
     <xsl:template match="/">
 		<rdf:RDF>
-			<rdf:Description rdf:about="{$resourceURL}">
+			<rdf:Description rdf:about="{$docIRI}">
 				<rdf:type rdf:resource="&bibo;Document"/>
-				<sioc:container_of rdf:resource="{vi:proxyIRI ($resourceURL)}"/>
-				<foaf:primaryTopic rdf:resource="{vi:proxyIRI ($resourceURL)}"/>
-				<dcterms:subject rdf:resource="{vi:proxyIRI ($resourceURL)}"/>
+				<sioc:container_of rdf:resource="{$resourceURL}"/>
+				<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+				<dcterms:subject rdf:resource="{$resourceURL}"/>
+				<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+				<owl:sameAs rdf:resource="{$resourceURL}"/>
 			</rdf:Description>
-			<rdf:Description rdf:about="{vi:proxyIRI ($resourceURL)}">
+			<rdf:Description rdf:about="{$resourceURL}">
 				<rdf:type rdf:resource="&gr;ProductOrService"/>
-				<sioc:has_container rdf:resource="{$resourceURL}"/>
+				<sioc:has_container rdf:resource="{$docIRI}"/>
 				<xsl:apply-templates/>
 			</rdf:Description>
 		</rdf:RDF>

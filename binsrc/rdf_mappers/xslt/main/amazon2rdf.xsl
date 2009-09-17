@@ -42,6 +42,8 @@
     xmlns:sioc="&sioc;"
     xmlns:gr="&gr;"
     xmlns:book="&book;"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:dcterms="&dcterms;">
 
     <xsl:output method="xml" indent="yes" />
@@ -51,6 +53,7 @@
     <xsl:variable name="resourceURL">
 		<xsl:value-of select="vi:proxyIRI (concat ('http://www.amazon.com/exec/obidos/ASIN/', $asin))"/>
     </xsl:variable>
+    <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
 
     <xsl:variable name="ns">http://soap.amazon.com/</xsl:variable>
 
@@ -62,11 +65,13 @@
 
     <xsl:template match="/">
 	<rdf:RDF>
-	    <rdf:Description rdf:about="{$baseUri}">
+	    <rdf:Description rdf:about="{$docIRI}">
 		<rdf:type rdf:resource="&bibo;Document"/>
+		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
 		<sioc:container_of rdf:resource="{$resourceURL}"/>
 		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 		<dcterms:subject rdf:resource="{$resourceURL}"/>
+		<owl:sameAs rdf:resource="{$resourceURL}"/>
 	    </rdf:Description>
 	    <rdf:Description rdf:about="{$resourceURL}">
 		<rdf:type rdf:resource="&gr;ProductOrService"/>

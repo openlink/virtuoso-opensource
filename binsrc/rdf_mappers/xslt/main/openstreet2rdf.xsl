@@ -33,6 +33,7 @@
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY geo "http://www.geonames.org/ontology#">
 ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -59,15 +60,25 @@
     <xsl:param name="baseUri" />
     <xsl:param name="lon" />
     <xsl:param name="lat" />
+    <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+    <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
 
     <xsl:template match="/">
 		<rdf:RDF>
+			<rdf:Description rdf:about="{$docIRI}">
+				<rdf:type rdf:resource="&bibo;Document"/>
+				<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+				<sioc:container_of rdf:resource="{$resourceURL}"/>
+				<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+				<dcterms:subject rdf:resource="{$resourceURL}"/>
+				<owl:sameAs rdf:resource="{$resourceURL}"/>
+			</rdf:Description>
 			<xsl:apply-templates select="osm"/>
 		</rdf:RDF>
     </xsl:template>
 
     <xsl:template match="osm">
-		<geo:Feature rdf:about="{$baseUri}">
+		<geo:Feature rdf:about="{$resourceURL}">
 			<wgs84_pos:lat>
 				<xsl:value-of select="$lat"/>
 			</wgs84_pos:lat>
@@ -75,19 +86,19 @@
 				<xsl:value-of select="$lon"/>
 			</wgs84_pos:long>
 			<xsl:for-each select="node">
-				<geo:nearby rdf:resource="{concat('http://openstreetmap.org/?lat=', @lat, '&amp;lon=', @lon)}"/>
+				<geo:nearby rdf:resource="{vi:proxyIRI (concat('http://openstreetmap.org/?lat=', @lat, '&amp;lon=', @lon))}"/>
 			</xsl:for-each>
 		</geo:Feature>
 
 		<xsl:for-each select="node">
-			<geo:Feature rdf:about="{concat('http://openstreetmap.org/?lat=', @lat, '&amp;lon=', @lon)}">
+			<geo:Feature rdf:about="{vi:proxyIRI (concat('http://openstreetmap.org/?lat=', @lat, '&amp;lon=', @lon))}">
 				<wgs84_pos:lat>
 					<xsl:value-of select="@lat"/>
 				</wgs84_pos:lat>
 				<wgs84_pos:long>
 					<xsl:value-of select="@lon"/>
 				</wgs84_pos:long>
-				<geo:nearby rdf:resource="{$baseUri}"/>
+				<geo:nearby rdf:resource="{$resourceURL}"/>
 				<openstreetmap:id>
 					<xsl:value-of select="@id"/>
 				</openstreetmap:id>

@@ -35,6 +35,10 @@
 <!ENTITY atomowl "http://atomowl.org/ontologies/atomrdf#">
 <!ENTITY content "http://purl.org/rss/1.0/modules/content/">
 <!ENTITY ff "http://api.friendfeed.com/2008/03">
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY exif "http://www.w3.org/2003/12/exif/ns/">
+<!ENTITY picasa "http://schemas.google.com/photos/2007#">
+<!ENTITY fe "http://schemas.google.com/g/2005#">
 ]>
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -46,7 +50,7 @@
   xmlns:r="http://backend.userland.com/rss2"
   xmlns="http://purl.org/rss/1.0/"
   xmlns:rss="http://purl.org/rss/1.0/"
-  xmlns:vi="http://www.openlinksw.com/weblog/"
+  xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
   xmlns:itunes="http://www.itunes.com/DTDs/Podcast-1.0.dtd"
   xmlns:a="http://www.w3.org/2005/Atom"
   xmlns:enc="http://purl.oclc.org/net/rss_2.0/enc#"
@@ -56,58 +60,93 @@
   xmlns:gd="http://schemas.google.com/g/2005"
   xmlns:gb="http://www.openlinksw.com/schemas/google-base#"
   xmlns:media="http://search.yahoo.com/mrss/"
+  xmlns:georss="http://www.georss.org/georss"
   xmlns:sioc="http://rdfs.org/sioc/ns#"
   xmlns:ff="&ff;"
+  xmlns:foaf="&foaf;"
+  xmlns:bibo="&bibo;"
+  xmlns:dcterms="&dcterms;"
+  xmlns:owl="http://www.w3.org/2002/07/owl#"
   version="1.0">
 
 <xsl:output indent="yes" cdata-section-elements="content:encoded" />
-
+  <xsl:param name="baseUri"/>
+  <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
 
 <xsl:template match="/">
+      <xsl:choose>
+	  <xsl:when test="a:*/a:category[@term='&picasa;user']">
+	      <xsl:variable name="resourceURL" select="vi:proxyIRI (a:feed/a:link[@rel='&fe;feed']/@href)"/>
+	  </xsl:when>
+	  <xsl:when test="a:*/a:category[@term='&picasa;album']">
+	      <xsl:variable name="resourceURL" select="vi:proxyIRI (a:feed/a:link[@rel='&fe;feed']/@href)"/>
+	  </xsl:when>
+	  <xsl:when test="a:*/a:category[@term='&picasa;photo']">
+	      <xsl:variable name="resourceURL" select="vi:proxyIRI (a:feed/a:link[@rel='&fe;feed']/@href)"/>
+	  </xsl:when>
+	  <xsl:otherwise>
+	      <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+	  </xsl:otherwise>
+      </xsl:choose>
   <rdf:RDF>
-    <xsl:apply-templates/>
+	  <rdf:Description rdf:about="{$docIRI}">
+	      <rdf:type rdf:resource="&bibo;Document"/>
+	      <sioc:container_of rdf:resource="{$resourceURL}"/>
+	      <foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+	      <dcterms:subject rdf:resource="{$resourceURL}"/>
+	      <dc:title><xsl:value-of select="$baseUri"/></dc:title>
+	      <owl:sameAs rdf:resource="{$resourceURL}"/>
+	  </rdf:Description>
+	  <xsl:apply-templates select="a:feed"/>
   </rdf:RDF>
 </xsl:template>
 
-<xsl:template match="@*|*" />
-
-<xsl:template match="text()">
-  <xsl:value-of select="normalize-space(.)" />
-</xsl:template>
-
-<xsl:template match="a:feed">
-    <channel rdf:about="{a:link[@rel='self']/@href}">
-		<xsl:apply-templates/>
-		<items>
-			<rdf:Seq>
-				<xsl:apply-templates select="a:entry" mode="li" />
-			</rdf:Seq>
-		</items>
-    </channel>
-	<rdf:Description rdf:about="{a:link[@rel='self']/@href}">
-		<rdf:type rdf:resource="&sioc;Thread"/>
-		<dc:description>
-			<xsl:value-of select="a:entry[a:link/@rel='topic_at_sfn']/content"/>
-		</dc:description>
-		<xsl:for-each select="a:entry/a:link[@rel='reply']">
-				<sioc:container_of rdf:resource="{@href}" />
-				<sioc:has_reply rdf:resource="{@href}" />
+  <xsl:template match="a:feed[a:link[@rel='&fe;feed']]|a:entry[a:link[@rel='&fe;feed']]">
+      <rdf:Description rdf:about="{vi:proxyIRI (a:link[@rel='&fe;feed']/@href)}">
+	  <xsl:choose>
+	      <xsl:when test="a:category[@term='&picasa;user']">
+		  <xsl:variable name="tp" select="'&foaf;Person'"/>
+	      </xsl:when>
+	      <xsl:when test="a:category[@term='&picasa;album']">
+		  <xsl:variable name="tp" select="'&sioct;ImageGallery'"/>
+	      </xsl:when>
+	      <xsl:when test="a:category[@term='&picasa;photo']">
+		  <xsl:variable name="tp" select="'&exif;IFD'"/>
+	      </xsl:when>
+	      <xsl:otherwise>
+		  <xsl:variable name="tp" select="'&sioc;Item'"/>
+	      </xsl:otherwise>
+	  </xsl:choose>
+	  <rdf:type rdf:resource="{$tp}"/>
+	  <xsl:apply-templates select="a:title|a:content|a:published|a:author|media:*"/>
+	  <xsl:for-each select="a:entry">
+	      <xsl:choose>
+		  <xsl:when test="parent::a:feed/a:category[@term='&picasa;user']">
+		      <foaf:made rdf:resource="{vi:proxyIRI (a:link[@rel='&fe;feed']/@href)}"/>
+		  </xsl:when>
+		  <xsl:when test="a:link[@rel='&fe;feed']">
+		      <sioc:container_of rdf:resource="{vi:proxyIRI (a:link[@rel='&fe;feed']/@href)}"/>
+		  </xsl:when>
+	      </xsl:choose>
 		</xsl:for-each>
     </rdf:Description>
-    <xsl:apply-templates select="a:entry" mode="rdfitem" />
+      <xsl:apply-templates select="a:entry" />
 </xsl:template>
 
 
 <xsl:template match="a:title">
-  <title><xsl:value-of select="." /></title>
+      <xsl:choose>
+	  <xsl:when test="parent::a:*/a:category[@term='&picasa;user']">
+	      <foaf:nick><xsl:value-of select="." /></foaf:nick>
+	  </xsl:when>
+	  <xsl:otherwise>
+	      <dc:title><xsl:value-of select="." /></dc:title>
+	  </xsl:otherwise>
+      </xsl:choose>
 </xsl:template>
 
 <xsl:template match="a:content">
   <dc:description><xsl:call-template name="removeTags" /></dc:description>
-  <description><xsl:value-of select="." /></description>
-  <!--xsl:if test="not(../content:encoded)">
-    <content:encoded><xsl:value-of select="." /></content:encoded>
-  </xsl:if-->
 </xsl:template>
 
 <xsl:template match="a:published">
@@ -118,69 +157,44 @@
   <dc:source><xsl:value-of select="@href" /></dc:source>
 </xsl:template>
 
-<xsl:template match="a:author">
-    <dc:creator><xsl:value-of select="a:name" /> &lt;<xsl:value-of select="a:email" />&gt;</dc:creator>
+<xsl:template match="a:author[parent::a:entry]">
+    <foaf:maker rdf:resource="http://picasaweb.google.com/data/feed/api/user/{a:name}"/>
 </xsl:template>
 
-<xsl:template match="a:entry" mode="li">
-  <xsl:choose>
-    <xsl:when test="a:link">
-	<rdf:li rdf:resource="{a:link[@rel='alternate']/@href}" />
-    </xsl:when>
-    <xsl:otherwise>
-      <rdf:li rdf:parseType="Resource">
-        <xsl:apply-templates />
-      </rdf:li>
-    </xsl:otherwise>
-  </xsl:choose>
+
+<xsl:template match="media:title">
+    <dc:title><xsl:value-of select="."/></dc:title> 
 </xsl:template>
 
-<xsl:template match="a:entry" mode="rdfitem">
-	<xsl:if test="a:link[@rel='reply']">
-		<rdf:Description rdf:about="{a:link[@rel='reply']/@href}">
-			<xsl:apply-templates/>
-			<sioc:has_container rdf:resource="{/a:feed/a:link[@rel='self']/@href}"/>
-			<sioc:reply_of rdf:resource="{/a:feed/a:link[@rel='self']/@href}"/>
-			<rdf:type rdf:resource="&sioct;Comment"/>
-		</rdf:Description>
-    </xsl:if>
-    <item rdf:about="{a:link[@href]/@href}">
-		<xsl:apply-templates/>
-		<xsl:if test="a:category[@term]">
-			<xsl:for-each select="a:category[@term]">
-			<sioc:topic>
-				<skos:Concept rdf:about="{concat (/a:feed/a:link[@rel='self']/@href, '#', @term)}">
-				<skos:prefLabel><xsl:value-of select="@term"/></skos:prefLabel>
-				</skos:Concept>
-			</sioc:topic>
-			</xsl:for-each>
-		</xsl:if>
-		<xsl:apply-templates select="g:*|gd:*|ff:*|media:*" mode="rdfitem"/>
-    </item>
+<xsl:template match="media:content[@medium='image']">
+    <foaf:image rdf:resource="{@url}"/>
 </xsl:template>
 
-<xsl:template match="g:*|gd:*" mode="rdfitem">
-    <xsl:element name="{local-name(.)}" namespace="http://www.openlinksw.com/schemas/google-base#">
-	<xsl:value-of select="."/>
-    </xsl:element>
+<xsl:template match="media:thumbnail">
+    <foaf:depiction rdf:resource="{@url}"/>
 </xsl:template>
 
-<xsl:template match="ff:*|media:*" mode="rdfitem">
-    <xsl:choose>
-	<xsl:when test="not *">
-	<xsl:copy-of select="." />
-	</xsl:when>
-	<xsl:otherwise>
-	    <sioc:Container>
-		<xsl:copy-of select="." />
-	    </sioc:Container>
-	</xsl:otherwise>
-    </xsl:choose>
+<xsl:template match="media:description[ . != '']">
+    <dc:description><xsl:value-of select="."/></dc:description> 
+</xsl:template>
+
+<xsl:template match="media:group">
+    <xsl:apply-templates select="g:*|gd:*|ff:*|media:*"/>
+</xsl:template>
+
+<xsl:template match="ff:*|media:*">
 </xsl:template>
 
 <xsl:template name="removeTags">
     <xsl:variable name="post" select="document-literal (., '', 2, 'UTF-8')"/>
     <xsl:value-of select="normalize-space(string($post))" />
 </xsl:template>
+
+  <xsl:template match="@*|*" />
+
+  <xsl:template match="text()">
+      <xsl:value-of select="normalize-space(.)" />
+  </xsl:template>
+
 
 </xsl:stylesheet>

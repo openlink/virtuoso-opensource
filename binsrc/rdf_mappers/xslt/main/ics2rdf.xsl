@@ -25,19 +25,29 @@
   <!ENTITY ical  "http://www.w3.org/2002/12/cal/ical#">
   <!ENTITY xsd  "http://www.w3.org/2001/XMLSchema#">
   <!ENTITY rdf  "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY sioc "http://rdfs.org/sioc/ns#">
 ]>
 <xsl:stylesheet
     xmlns:xsl ="http://www.w3.org/1999/XSL/Transform"
     xmlns:rdf   ="&rdf;"
     xmlns:ical   ="&ical;"
+    xmlns:foaf   ="&foaf;"
+    xmlns:bibo   ="&bibo;"
+    xmlns:sioc="&sioc;"
     xmlns     ="http://www.w3.org/2002/12/cal/ical#"
     xmlns:vi   ="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:xml   ="xml"
     version="1.0"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
     >
 
-    <xsl:output method="xml" indent="yes"/>
+    <xsl:output method="xml" encoding="utf-8" indent="yes"/>
     <xsl:param name="baseUri" />
+    <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+    <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
 
     <xsl:variable name="uc">ABCDEFGHIJKLMNOPQRSTUVWXYZ</xsl:variable>
     <xsl:variable name="lc">abcdefghijklmnopqrstuvwxyz</xsl:variable>
@@ -47,6 +57,14 @@
 
     <xsl:template match="/">
 	<rdf:RDF>
+	    <rdf:Description rdf:about="{$docIRI}">
+		<rdf:type rdf:resource="&bibo;Document"/>
+		<sioc:container_of rdf:resource="{$resourceURL}"/>
+		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+		<dcterms:subject rdf:resource="{$resourceURL}"/>
+		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+		<owl:sameAs rdf:resource="{$resourceURL}"/>
+	    </rdf:Description>
 	    <xsl:apply-templates select="*"/>
 	</rdf:RDF>
     </xsl:template>
@@ -98,7 +116,7 @@
     <xsl:template match="IMC-VCALENDAR" priority="10">
 	<xsl:variable name="elt"><xsl:call-template name="vname"/></xsl:variable>
 	<xsl:element name="{$elt}" namespace="&ical;">
-	    <xsl:attribute name="about" namespace="&rdf;"><xsl:value-of select="$baseUri"/></xsl:attribute>
+	    <xsl:attribute name="about" namespace="&rdf;"><xsl:value-of select="$resourceURL"/></xsl:attribute>
 	    <xsl:apply-templates select="*"/>
 	</xsl:element>
     </xsl:template>
@@ -127,7 +145,7 @@
 	</lastModified>
     </xsl:template>
 
-    <xsl:template match="DTEND|DTSTART|DTSTAMP|LASTMODIFIED|EXDATE|RDATE|CREATED|DUE"  priority="10">
+    <xsl:template match="DTEND|DTSTART|DTSTAMP|LASTMODIFIED|EXDATE|RDATE|CREATED|DUE|RECURRENCE-ID"  priority="10">
 	<xsl:variable name="elt"><xsl:call-template name="ename"/></xsl:variable>
 	<xsl:element name="{$elt}" namespace="&ical;">
 	    <xsl:attribute name="datatype" namespace="&rdf;">&xsd;dateTime</xsl:attribute>

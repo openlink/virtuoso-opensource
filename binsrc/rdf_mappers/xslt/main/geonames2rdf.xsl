@@ -52,26 +52,34 @@
     >
     
     <xsl:param name="baseUri" />
+    <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+    <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
 
     <xsl:output method="xml" indent="yes" />
 
-    <xsl:template match="/rdf:RDF/geonames:Feature">
+    <xsl:template match="/">
 		<rdf:RDF>
-			<rdf:Description rdf:about="{$baseUri}">
+	    <xsl:apply-templates/>
+	</rdf:RDF>
+    </xsl:template>
+
+    <xsl:template match="rdf:RDF/geonames:Feature">
+	<rdf:Description rdf:about="{$docIRI}">
 				<rdf:type rdf:resource="&bibo;Document"/>
 				<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri)}"/>
 				<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
 				<dcterms:subject rdf:resource="{vi:proxyIRI($baseUri)}"/>
 				<rdfs:seeAlso rdf:resource="{@rdf:about}"/>
 				<owl:sameAs rdf:resource="{@rdf:about}"/>
+	    <dc:title><xsl:value-of select="$baseUri"/></dc:title>
 			</rdf:Description>
 			<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
 				<rdf:type rdf:resource="&geonames;Feature"/>
 				<xsl:copy-of select="*"/>
 			</rdf:Description>
-		</rdf:RDF>
     </xsl:template>
 
     <xsl:template match="text()|@*"/>
+    <xsl:template match="*"/>
 
 </xsl:stylesheet>

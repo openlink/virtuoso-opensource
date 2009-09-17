@@ -43,11 +43,14 @@
     xmlns:book="&book;"
     xmlns:dcterms="&dcterms;"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
     xmlns="http://api.cnet.com/rest/v1.0/ns">
 
     <xsl:output method="xml" indent="yes" />
 
     <xsl:param name="baseUri" />
+    <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+    <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
     
     <xsl:variable name="ns">http://api.cnet.com/rest/v1.0/ns</xsl:variable>
 
@@ -65,20 +68,23 @@
 		<rdf:RDF>
 			<xsl:choose>
 				<xsl:when test="string-length(/CNETResponse/Error/@code) &gt; 0">
-					<rdf:Description rdf:about="{$baseUri}">
+					<rdf:Description rdf:about="{$docIRI}">
 						<rdf:type rdf:resource="&bibo;Document"/>
 					</rdf:Description>
 				</xsl:when>
 				<xsl:otherwise>
-					<rdf:Description rdf:about="{$baseUri}">
+					<rdf:Description rdf:about="{$docIRI}">
 						<rdf:type rdf:resource="&bibo;Document"/>
 						<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri)}"/>
 						<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
 						<dcterms:subject rdf:resource="{vi:proxyIRI($baseUri)}"/>
+						<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+						<owl:sameAs rdf:resource="{$resourceURL}"/>
+
 					</rdf:Description>
 					<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
 						<rdf:type rdf:resource="&gr;ProductOrService"/>
-						<sioc:has_container rdf:resource="{$baseUri}"/>
+						<sioc:has_container rdf:resource="{$docIRI}"/>
 						<xsl:apply-templates />
 					</rdf:Description>
 				</xsl:otherwise>
@@ -135,7 +141,7 @@
 		<gr:hasPriceSpecification>
 		  <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'price')}">
 	    <rdfs:label><xsl:value-of select="concat('List Price of ', ., ' USD')"/></rdfs:label>
-            <gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasCurrencyValue>
+		<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="translate (., '$', '')"/></gr:hasCurrencyValue>
             <gr:hasCurrency rdf:datatype="&xsd;string">USD</gr:hasCurrency>
 			<gr:valueAddedTaxIncluded rdf:datatype="&xsd;boolean">true</gr:valueAddedTaxIncluded>
           </gr:UnitPriceSpecification>
@@ -145,7 +151,7 @@
 		<gr:hasPriceSpecification>
 		  <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'lowPrice')}">
 	    <rdfs:label><xsl:value-of select="concat('List Low Price of ', ., ' USD')"/></rdfs:label>
-            <gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasCurrencyValue>
+		<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="translate (., '$', '')"/></gr:hasCurrencyValue>
             <gr:hasCurrency rdf:datatype="&xsd;string">USD</gr:hasCurrency>
 			<gr:valueAddedTaxIncluded rdf:datatype="&xsd;boolean">true</gr:valueAddedTaxIncluded>
           </gr:UnitPriceSpecification>
@@ -156,7 +162,7 @@
 		<gr:hasPriceSpecification>
 		  <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'highPrice')}">
 	    <rdfs:label><xsl:value-of select="concat('List High Price of ', ., ' USD')"/></rdfs:label>
-            <gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasCurrencyValue>
+		<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="translate (., '$', '')"/></gr:hasCurrencyValue>
             <gr:hasCurrency rdf:datatype="&xsd;string">USD</gr:hasCurrency>
 			<gr:valueAddedTaxIncluded rdf:datatype="&xsd;boolean">true</gr:valueAddedTaxIncluded>
           </gr:UnitPriceSpecification>

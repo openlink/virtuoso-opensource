@@ -45,17 +45,23 @@
   xmlns:sioc="&sioc;"
   xmlns:bibo="&bibo;"
   xmlns:book="&book;"
+  xmlns:owl="http://www.w3.org/2002/07/owl#"
   version="1.0">
   <xsl:output method="xml" indent="yes"/>
   <xsl:param name="baseUri" />
+  <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+  <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
+
   <xsl:template match="/">
       <rdf:RDF>
 	  <xsl:variable name="res" select="vi:proxyIRI ($baseUri)"/>
-	  <rdf:Description rdf:about="{$baseUri}">
+	  <rdf:Description rdf:about="{$docIRI}">
 		<rdf:type rdf:resource="&bibo;Document"/>
 		<sioc:container_of rdf:resource="{$res}"/>
 		<foaf:primaryTopic rdf:resource="{$res}"/>
 		<dcterms:subject rdf:resource="{$res}"/>
+		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+		<owl:sameAs rdf:resource="{$resourceURL}"/>
 	  </rdf:Description>
 	  <rdf:Description rdf:about="{$res}">
 		<rdf:type rdf:resource="&book;Book"/>

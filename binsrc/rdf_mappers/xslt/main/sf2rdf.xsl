@@ -50,6 +50,7 @@
   xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
   xmlns:wf="&wf;"
   xmlns:dcterms="http://purl.org/dc/terms/"
+  xmlns:owl="http://www.w3.org/2002/07/owl#"
   xmlns:sioct="&sioct;"
   xmlns:sioc="&sioc;"
   xmlns:bibo="&bibo;"
@@ -58,18 +59,22 @@
   version="1.0">
     <xsl:output method="xml" indent="yes"/>
     <xsl:param name="baseUri" />
+    <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+    <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
     <xsl:template match="/">
 		<rdf:RDF>
-			<rdf:Description rdf:about="{$baseUri}">
+			<rdf:Description rdf:about="{$docIRI}">
+				<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+				<owl:sameAs rdf:resource="{$resourceURL}"/>
 				<rdf:type rdf:resource="&bibo;Document"/>
-				<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}" />
+				<foaf:primaryTopic rdf:resource="{$resourceURL}" />
 			</rdf:Description>
 			<xsl:apply-templates select="retrieveResponse/result"/>
 		</rdf:RDF>
     </xsl:template>
 
     <xsl:template match="sf:*">
-		<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
+		<rdf:Description rdf:about="{$resourceURL}">
 			<rdf:type rdf:resource="&sioc;Item"/>
 			<xsl:element name="{local-name()}" namespace="http://www.openlinksw.com/schemas/ecrm#">
 				<xsl:apply-templates select="*|text()" />

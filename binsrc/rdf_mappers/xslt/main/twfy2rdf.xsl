@@ -46,8 +46,18 @@
 	<xsl:output method="xml" indent="yes" />
 	<xsl:param name="baseUri" />
 	<xsl:variable name="ns">http://www.openlinksw.com/schemas/twfy#</xsl:variable>
+	<xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+	<xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
 	<xsl:template match="/">
 		<rdf:RDF>
+			<rdf:Description rdf:about="{$docIRI}">
+				<rdf:type rdf:resource="&bibo;Document"/>
+				<sioc:container_of rdf:resource="{$resourceURL}"/>
+				<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+				<dcterms:subject rdf:resource="{$resourceURL}"/>
+				<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+				<owl:sameAs rdf:resource="{$resourceURL}"/>
+			</rdf:Description>
 			<xsl:apply-templates select="twfy" />
 		</rdf:RDF>
 	</xsl:template>
@@ -64,29 +74,29 @@
 		</xsl:choose>
 	</xsl:template>
 	<xsl:template match="info">
-		<rdf:Description rdf:about="{$baseUri}">
+		<rdf:Description rdf:about="{$resourceURL}">
 			<xsl:element namespace="{$ns}" name="s">
 				<xsl:value-of select="s" />
 			</xsl:element>
 		</rdf:Description>
-		<rdf:Description rdf:about="{$baseUri}">
+		<rdf:Description rdf:about="{$resourceURL}">
 			<xsl:element namespace="{$ns}" name="results_per_page">
 				<xsl:value-of select="results_per_page" />
 			</xsl:element>
 		</rdf:Description>
-		<rdf:Description rdf:about="{$baseUri}">
+		<rdf:Description rdf:about="{$resourceURL}">
 			<xsl:element namespace="{$ns}" name="first_result">
 				<xsl:value-of select="first_result" />
 			</xsl:element>
 		</rdf:Description>
-		<rdf:Description rdf:about="{$baseUri}">
+		<rdf:Description rdf:about="{$resourceURL}">
 			<xsl:element namespace="{$ns}" name="total_results">
 				<xsl:value-of select="total_results" />
 			</xsl:element>
 		</rdf:Description>
 	</xsl:template>
 	<xsl:template match="searchdescription">
-		<rdf:Description rdf:about="{$baseUri}">
+		<rdf:Description rdf:about="{$resourceURL}">
 			<xsl:element namespace="{$ns}" name="searchdescription">
 				<xsl:value-of select="searchdescription" />
 			</xsl:element>
@@ -96,10 +106,10 @@
 		<xsl:apply-templates />
 	</xsl:template>
 	<xsl:template match="*">
-		<xsl:variable name="about" select="concat($baseUri, '#this')" />
+		<xsl:variable name="about" select="$resourceURL" />
 		<xsl:variable name="canonicalname" select="local-name(.)" />
 		<xsl:variable name="prop_value" select="." />
-		<foaf:Document rdf:about="{$baseUri}">
+		<foaf:Document rdf:about="{$docIRI}">
 			<foaf:primaryTopic>
 				<foaf:Person rdf:about="{$about}">
 					<xsl:if test="$canonicalname = 'full_name'">
@@ -136,7 +146,7 @@
 		<xsl:if test="string-length($prop_value) &gt; 0">
 			<xsl:choose>
 				<xsl:when test="$canonicalname = 'lastupdate'">
-					<rdf:Description rdf:about="{$baseUri}">
+					<rdf:Description rdf:about="{$resourceURL}">
 						<xsl:element namespace="{$ns}" name="{$canonicalname}" >
 							<xsl:attribute name="rdf:datatype">
 								<xsl:value-of select="concat('&xsd;', 'date')" />

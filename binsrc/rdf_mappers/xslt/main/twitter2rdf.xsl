@@ -53,6 +53,8 @@
 	<xsl:param name="baseUri" />
 	<xsl:param name="id" />
 	<xsl:param name="what" />
+	<xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
+	<xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
 	<xsl:template match="/">
 		<rdf:RDF>
 			<xsl:choose>
@@ -98,7 +100,7 @@
 					</xsl:for-each>
 				</xsl:when>
 				<xsl:when test="$what = 'thread1'">
-					<rdf:Description rdf:about="{$baseUri}">
+					<rdf:Description rdf:about="{$docIRI}">
 						<rdf:type rdf:resource="&bibo;Document"/>
 						<rdf:type rdf:resource="&sioc;Thread"/>
 						<dc:title>
@@ -109,12 +111,13 @@
 						</dcterms:created>
 						<xsl:for-each select="a:feed/a:entry">
 							<sioc:container_of rdf:resource="{vi:proxyIRI(a:link[@rel='alternate']/@href)}" />
+							<foaf:topic rdf:resource="{vi:proxyIRI(a:link[@rel='alternate']/@href)}" />
 						</xsl:for-each>
 					</rdf:Description>
 					<xsl:for-each select="a:feed/a:entry">
 						<rdf:Description rdf:about="{vi:proxyIRI(a:link[@rel='alternate']/@href)}">
 							<rdf:type rdf:resource="&sioct;MicroblogPost"/>
-							<sioc:has_container rdf:resource="{$baseUri}"/>
+							<sioc:has_container rdf:resource="{$docIRI}"/>
 							<dcterms:created rdf:datatype="&xsd;dateTime">
 								<xsl:value-of select="vi:string2date2(a:published)"/>
 							</dcterms:created>
@@ -138,13 +141,14 @@
 					</xsl:for-each>
 				</xsl:when>
 				<xsl:when test="$what = 'status'">
-					<foaf:Document rdf:about="{$baseUri}">
+					<foaf:Document rdf:about="{$docIRI}">
 						<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
+						<owl:sameAs rdf:resource="{$resourceURL}"/>
 					</foaf:Document>
 					<xsl:apply-templates select="status" />
 				</xsl:when>
 				<xsl:when test="$what = 'user'">
-					<foaf:Document rdf:about="{$baseUri}">
+					<foaf:Document rdf:about="{$docIRI}">
 						<dc:subject>
 							<foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name))}" />
 						</dc:subject>
@@ -200,7 +204,7 @@
 
 	<xsl:template match="statuses">
 		<xsl:variable name="about" select="vi:proxyIRI($baseUri)" />
-		<rdf:Description rdf:about="{$baseUri}">
+		<rdf:Description rdf:about="{$docIRI}">
 			<rdf:type rdf:resource="&sioct;MessageBoard"/>
 			<rdf:type rdf:resource="&bibo;Document"/>
 			<xsl:for-each select="status">
@@ -217,7 +221,7 @@
 
 	<xsl:template name="status_int">
 		<rdf:type rdf:resource="&sioct;MicroblogPost"/>
-		<sioc:has_container rdf:resource="{$baseUri}"/>
+		<sioc:has_container rdf:resource="{$docIRI}"/>
 		<dcterms:created rdf:datatype="&xsd;dateTime">
 			<xsl:value-of select="vi:string2date(created_at)"/>
 		</dcterms:created>

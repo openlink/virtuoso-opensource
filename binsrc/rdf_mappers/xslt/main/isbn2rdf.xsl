@@ -44,13 +44,16 @@
   xmlns:sioc="&sioc;"
   xmlns:bibo="&bibo;"
   xmlns:book="&book;"
+  xmlns:owl="http://www.w3.org/2002/07/owl#"
   version="1.0">
     <xsl:output method="xml" indent="yes"/>
     <xsl:param name="baseUri" />
+    <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+    <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
 
     <xsl:template match="/">
 	<rdf:RDF>
-	    <rdf:Description rdf:about="{$baseUri}">
+	    <rdf:Description rdf:about="{$docIRI}">
 		<rdf:type rdf:resource="&bibo;Document"/>
 		<xsl:for-each select="ISBNdb/BookList/BookData">
 		    <xsl:variable name="res" select="vi:proxyIRI(concat('http://isbndb.com/d/book/', @book_id, '.html'))"/>
@@ -58,6 +61,8 @@
 		    <foaf:topic rdf:resource="{$res}"/>
 		    <dcterms:subject rdf:resource="{$res}"/>
 		</xsl:for-each>
+		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+		<owl:sameAs rdf:resource="{$resourceURL}"/>
 	    </rdf:Description>
 	    <xsl:apply-templates select="ISBNdb/BookList/BookData"/>
 	    <xsl:apply-templates select="ISBNdb/SubjectList/SubjectData"/>

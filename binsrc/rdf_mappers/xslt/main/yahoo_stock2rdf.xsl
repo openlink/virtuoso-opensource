@@ -25,19 +25,28 @@
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <!ENTITY stock "http://xbrlontology.com/ontology/finance/stock_market#">
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY sioc "http://rdfs.org/sioc/ns#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:rdf="&rdf;"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:dc   ="http://purl.org/dc/elements/1.1/"
-    xmlns:dcterms = "http://purl.org/dc/terms/"
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:stock="&stock;"
+    xmlns:foaf="&foaf;"
+    xmlns:bibo="&bibo;"
+    xmlns:sioc="&sioc;"
+    xmlns:dcterms="&dcterms;"
     >
 
     <xsl:output method="xml" indent="yes" />
     <xsl:param name="baseUri" />
+    <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+    <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
 
     <xsl:template match="/">
 	<rdf:RDF>
@@ -46,6 +55,15 @@
     </xsl:template>
 
     <xsl:template match="quote">
+	<xsl:variable name="pt" select="vi:proxyIRI(concat('http://finance.yahoo.com/q?s=', symbol))"/>
+	<rdf:Description rdf:about="{$docIRI}">
+	    <rdf:type rdf:resource="&bibo;Document"/>
+	    <dc:title><xsl:value-of select="$baseUri"/></dc:title>
+	    <sioc:container_of rdf:resource="{$pt}"/>
+	    <foaf:primaryTopic rdf:resource="{$pt}"/>
+	    <dcterms:subject rdf:resource="{$pt}"/>
+	    <owl:sameAs rdf:resource="{$pt}"/>
+	</rdf:Description>
 	<rdf:Description rdf:about="{vi:proxyIRI(concat ('http://dbpedia.org/resource/', @stock))}">
 	    <rdf:type rdf:resource="&stock;StockMarket"/>
 	</rdf:Description>

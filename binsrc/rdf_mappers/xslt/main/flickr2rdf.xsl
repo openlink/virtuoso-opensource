@@ -41,6 +41,7 @@
     xmlns:v    ="http://www.openlinksw.com/xsltext/"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:exif ="http://www.w3.org/2003/12/exif/ns/"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
     >
     <xsl:output method="xml" indent="yes"/>
     <xsl:param name="baseUri" />
@@ -58,6 +59,8 @@
 	    <license id="5" name="Attribution-ShareAlike License" url="http://creativecommons.org/licenses/by-sa/2.0/" />
 	</licenses>
     </xsl:variable>
+    <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+    <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
     <xsl:template match="rsp">
 	<xsl:if test="@stat != 'ok'">
 	    <xsl:message terminate="yes"><xsl:value-of select="err/@msg"/></xsl:message>
@@ -68,7 +71,7 @@
 	</rdf:RDF>
     </xsl:template>
     <xsl:template match="owner">
-		<rdf:Description rdf:nodeID="person">
+	<rdf:Description rdf:about="{vi:proxyIRI ($baseUri,'','person')}">
 			<rdf:type rdf:resource="http://xmlns.com/foaf/0.1/#Person" />
 			<xsl:if test="@realname != ''">
 			<foaf:name><xsl:value-of select="@realname"/></foaf:name>
@@ -77,18 +80,20 @@
 		</rdf:Description>
     </xsl:template>
     <xsl:template match="photo">
-		<rdf:Description rdf:about="{$baseUri}">
+		<rdf:Description rdf:about="{$docIRI}">
 			<rdf:type rdf:resource="&bibo;Document"/>
-			<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri)}"/>
-			<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
-			<dcterms:subject rdf:resource="{vi:proxyIRI($baseUri)}"/>
+			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+			<owl:sameAs rdf:resource="{$resourceURL}"/>
+			<sioc:container_of rdf:resource="{$resourceURL}"/>
+			<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+			<dcterms:subject rdf:resource="{$resourceURL}"/>
 		</rdf:Description>
-		<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
+		<rdf:Description rdf:about="{$resourceURL}">
 			<rdf:type rdf:resource="http://www.w3.org/2003/12/exif/ns/IFD"/>
 			<xsl:variable name="image_url" select="concat('http://farm', @farm,'.static.flickr.com/', @server, '/', @id, '_', @secret, '.', @originalformat)"/>
 			<foaf:img rdf:resource="{$image_url}"/>
 			<xsl:variable name="lic" select="@license"/>
-			<dc:creator rdf:nodeID="person" />
+			<dc:creator rdf:resource="{vi:proxyIRI ($baseUri,'','person')}" />
 			<xsl:choose>
 			<xsl:when test="$doc/licenses/license[@id=$lic and @url!='']">
 				<dc:rights rdf:resource="{vi:proxyIRI($doc/licenses/license[@id=$lic and @url!='']/@url)}" />
@@ -125,7 +130,7 @@
 	<dcterms:modified rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">
 	    <xsl:value-of select="v:unixTime2ISO (@lastupdate)"/>
 	</dcterms:modified>
-	<dc:date><xsl:value-of select="translate (@taken, ' ', 'T')"/></dc:date>
+	<dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime"><xsl:value-of select="translate (@taken, ' ', 'T')"/></dc:date>
     </xsl:template>
     <xsl:template match="tag[@machine_tag='0']">
 	<dc:subject><xsl:value-of select="."/></dc:subject>
