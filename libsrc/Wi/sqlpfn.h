@@ -212,7 +212,7 @@ extern void scn3split_pop_all_buffers (void);
 void yyerror (const char *s);
 extern int yydebug;
 extern jmp_buf_splice parse_reset;
-extern int yyleng;
+extern size_t get_yyleng (void);
 int scn3_sprint_curr_line_loc (char *buf, size_t max_buf);
 extern int scn3_pragmaline_depth;
 void scn3_set_file_line (char *file, int file_nchars, int line_no);
