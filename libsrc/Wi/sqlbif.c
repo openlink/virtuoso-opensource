@@ -7475,10 +7475,14 @@ caddr_t
 bif_vector_zap_args (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int len = BOX_ELEMENTS (args);
-  caddr_t *res = (caddr_t *) dk_alloc_box_zero (len * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  caddr_t *res = (caddr_t *) dk_alloc_box (len * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
   int inx;
   for (inx = 0; inx < len; inx++)
-    qst_swap_or_get_copy (qst, args[inx], res+inx);
+    {
+      caddr_t z = NULL;
+      qst_swap_or_get_copy (qst, args[inx], &z);
+      res[inx] = z;
+    }
   return ((caddr_t) res);
 }
 
@@ -10506,7 +10510,8 @@ bif_log_enable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   long flag = (long) bif_long_or_null_arg (qst, args, 0, "log_enable", &flag_is_null);
   long quiet;
   long old_value;
-
+  int in_atomic = 4 & flag;
+  flag &= 3;
   old_value = (((REPL_NO_LOG == qi->qi_trx->lt_replicate) ? 0 : 1) |	/* not || */
       (qi->qi_client->cli_row_autocommit ? 2 : 0));
 
@@ -10515,7 +10520,7 @@ bif_log_enable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   quiet = (BOX_ELEMENTS (args) > 1) ? (long) bif_long_arg (qst, args, 1, "log_enable") : 0L;
 
-  if (srv_have_global_lock (THREAD_CURRENT_THREAD))
+  if (!in_atomic && srv_have_global_lock (THREAD_CURRENT_THREAD))
     return box_num (old_value);
 
   if (!(flag & 1) && qi->qi_client != bootstrap_cli && qi->qi_trx->lt_replicate == REPL_NO_LOG)

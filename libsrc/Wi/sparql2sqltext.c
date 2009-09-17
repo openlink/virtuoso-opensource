@@ -1800,8 +1800,10 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
                 {
                   ssg_puts (" charset_recode (");
                   sqlc_string_virtuoso_literal (tmpbuf, buflen, &buffill, box);
+                  session_buffered_write (ssg->ssg_out, tmpbuf, buffill);
+                  BOX_DONE (tmpbuf, smallbuf);
                   ssg_puts (", 'UTF-8', '_WIDE_')");
-                  goto tmpbuf_filled; /* see below */
+                  return;
                 }
           }
           /* no break */
@@ -5880,13 +5882,17 @@ ssg_collect_aliases_tables_and_conds (
 }
 
 static SPART *
-ssg_patch_ft_arg1 (spar_sqlgen_t *ssg, SPART *ft_arg1, SPART *g)
+ssg_patch_ft_arg1 (spar_sqlgen_t *ssg, SPART *ft_arg1, SPART *g, int contains_in_rdf_quad)
 {
+  SPART *patched_ft_arg1;
   ccaddr_t ft_arg1_str = NULL;
   int ft_arg1_spart_type = spar_plain_const_value_of_tree (ft_arg1, &ft_arg1_str);
-  ccaddr_t g_iri = NULL;
-  int g_spart_type = spar_plain_const_value_of_tree (g, &g_iri);
-  SPART *patched_ft_arg1;
+  ccaddr_t g_iri;
+  int g_spart_type;
+  if (!contains_in_rdf_quad)
+    goto default_modification_only;
+  g_iri = NULL;
+  g_spart_type = spar_plain_const_value_of_tree (g, &g_iri);
   if ((SPAR_QNAME == g_spart_type) && (SPAR_LIT == ft_arg1_spart_type) &&
     (DV_STRING == DV_TYPE_OF (ft_arg1_str)) )
     {
@@ -5952,6 +5958,7 @@ ssg_patch_ft_arg1 (spar_sqlgen_t *ssg, SPART *ft_arg1, SPART *g)
           return patched_ft_arg1;
         }
     }
+default_modification_only:
 /* Default modification of of the \c ft_arg1 argument is to concatenate it with encoding mark */
   if (SPAR_LIT == SPART_TYPE (ft_arg1))
     {
@@ -6151,10 +6158,10 @@ from_printed:
       if (0 < tree->_.triple.ft_type)
         {
           caddr_t var_name = tree->_.triple.tr_object->_.var.vname;
-          SPART *ft_pred = NULL, **args, *ft_arg1;
+          SPART *ft_pred = NULL, **args, *ft_arg1, *g;
           qm_ftext_t *qmft = qm->qmObjectMap->qmvFText;
           caddr_t ft_alias = t_box_sprintf (210, "%.100s~%.100s", sub_tabid, qmft->qmvftAlias);
-          int ctr, argctr, argcount;
+          int ctr, argctr, argcount, contains_in_rdf_quad;
           DO_BOX_FAST (SPART *, filt, ctr, gp->_.gp.filters)
             {
               if (!spar_filter_is_freetext (filt))
@@ -6176,12 +6183,10 @@ from_printed:
           args = ft_pred->_.funcall.argtrees;
           ft_arg1 = args[1];
           argcount = BOX_ELEMENTS (args);
-          if ((SPAR_FT_CONTAINS == tree->_.triple.ft_type) &&
-            !strcmp ("DB.DBA.RDF_QUAD", tree->_.triple.tc_list[0]->tc_qm->qmTableName))
-            {
-              SPART *g = tree->_.triple.tr_graph;
-              ft_arg1 = ssg_patch_ft_arg1 (ssg, ft_arg1, g);
-            }
+          contains_in_rdf_quad = (SPAR_FT_CONTAINS == tree->_.triple.ft_type) &&
+            !strcmp ("DB.DBA.RDF_QUAD", tree->_.triple.tc_list[0]->tc_qm->qmTableName);
+          g = tree->_.triple.tr_graph;
+          ft_arg1 = ssg_patch_ft_arg1 (ssg, ft_arg1, g, contains_in_rdf_quad);
           ssg_print_where_or_and (ssg, "freetext predicate");
           ssg_putchar (' ');
           ssg_puts (ft_pred->_.funcall.qname + 4);
@@ -6190,13 +6195,17 @@ from_printed:
           ssg_puts (".");
           ssg_prin_id (ssg, qmft->qmvftColumnName);
           ssg_puts (", ");
-          ssg_print_scalar_expn (ssg, ft_arg1, SSG_VALMODE_SQLVAL, NULL);
+          if (DV_STRING == DV_TYPE_OF (ft_arg1))
+            ssg_print_box_as_sql_atom (ssg, ft_arg1, SQL_ATOM_UTF8_ONLY);
+          else
+            ssg_print_scalar_expn (ssg, ft_arg1, SSG_VALMODE_SQLVAL, NULL);
           for (argctr = 2; argctr < argcount; argctr += 2)
             {
               switch ((ptrlong)(args[argctr]))
                 {
                 case OFFBAND_L: ssg_puts (", OFFBAND, "); ssg_prin_id (ssg, args[argctr+1]->_.var.vname); break;
                 case SCORE_L: ssg_puts (", SCORE, "); ssg_prin_id (ssg, args[argctr+1]->_.var.vname); break;
+                case SCORE_LIMIT_L: ssg_puts (", SCORE_LIMIT, "); ssg_print_scalar_expn (ssg, args[argctr+1], SSG_VALMODE_SQLVAL, NULL); break;
                 default: spar_internal_error (ssg->ssg_sparp, "Unsupported option in printing freetext predicate"); break;
                 }
             }

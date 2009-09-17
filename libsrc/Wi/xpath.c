@@ -3829,7 +3829,14 @@ xp_text_parse (char * str2, encoding_handler_t *enc, lang_handler_t *lang, caddr
       err_ret[0] = srv_make_new_error ("22023", "FT041" , "text criteria is NULL, maybe the value is required before it is calculated");
       return NULL;
     }
-  if (!DV_STRINGP(str2))
+  if (DV_WIDESTRINGP(str2))
+    enc = &eh__WIDE_121;
+  else if (DV_STRINGP(str2))
+    {
+      if (box_flags(str2) & BF_UTF8)
+        enc = &eh__UTF8;
+    }
+  else
     {
       err_ret[0] = srv_make_new_error ("22023", "FT042" , "text criteria is not a string");
       return NULL;

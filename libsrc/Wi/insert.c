@@ -266,7 +266,7 @@ pg_row_check (buffer_desc_t * buf, int irow, int gpf_on_err)
     return 1;
   if (kv >= KEY_MAX_VERSIONS || !key->key_versions[kv])
     {
-      log_error ("row with bad kv %d for key %s L=%d", (int)kv, it_title (buf->bd_tree), buf->bd_page);
+      log_error ("row %d with bad kv %d for key %s L=%d", irow, (int)kv, it_title (buf->bd_tree), buf->bd_page);
       error = 1;
       goto end;
     }
@@ -398,10 +398,16 @@ pg_check_map_1 (buffer_desc_t * buf)
     }
 #endif
   {
-    int inx;
+    int inx, error = 0;
     for (inx = 0; inx < buf->bd_content_map->pm_count; inx++)
       {
-	pg_row_check (buf, inx, 1);
+	if (!pg_row_check (buf, inx, 0))
+	  error = 1;
+      }
+    if (error)
+      {
+	dbg_page_map_log (buf, "bad_page.log", "Page found bad in page_map_check_1\n");
+	GPF_T1 ("pg_row_check errors, see bad_page.log and message log");
       }
   }
 }

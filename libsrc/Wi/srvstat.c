@@ -185,6 +185,7 @@ extern int enable_setp_partition;
 extern int enable_min_card;
 extern int enable_dfg_print;
 extern int enable_distinct_sas;
+int32 ha_rehash_pct;
 extern int c_use_aio;
 
 long  tft_random_seek;
@@ -1518,6 +1519,7 @@ stat_desc_t dbf_descs [] =
     {"cl_dead_w_interval", &cl_dead_w_interval, SD_INT32},
     {"timeout_resolution_sec", &atomic_timeout.to_sec, SD_INT32},
     {"timeout_resolution_usec", &atomic_timeout.to_usec, SD_INT32},
+    {"ha_rehash_pct", &ha_rehash_pct, SD_INT32},
     {"c_use_aio", &c_use_aio, SD_INT32},
     {"callstack_on_exception", &callstack_on_exception},
     {NULL, NULL, NULL}
@@ -2750,21 +2752,20 @@ dbg_page_map_f (buffer_desc_t * buf, FILE * out)
     {
       key_ver_t kv = IE_KEY_VERSION (row);
       dbe_key_t * row_key = NULL;
+      if (buf->bd_content_map->pm_entries[map_pos] > PAGE_SZ)
+	{
+	  fprintf (out, "**** row offset %d  beyond page end.\n", (int)buf->bd_content_map->pm_entries[map_pos]);
+	  continue;
+	}
       if (!kv || KV_LEFT_DUMMY == kv )
 	row_key = page_key;
       else
 	row_key = page_key->key_versions[kv];
-      if (!row_key)
-       {
-         fprintf (out, "**** Row with non-existent key %d\n", kv);
-         return;
-       }
-      if (buf->bd_content_map->pm_entries[map_pos] > PAGE_SZ)
+      if (!row_key || kv >= KEY_MAX_VERSIONS)
 	{
-	  fprintf (out, "**** Link over end. Inconsistent.\n");
-	  break;
+	  fprintf (out, "**** Row with non-existent key kv %d\n", (int)kv);
+	  continue;
 	}
-
       l = row_length (row, row_key);
       flag_str[0] = 0;
       fl = 0x80 & IE_FLAGS (row);
