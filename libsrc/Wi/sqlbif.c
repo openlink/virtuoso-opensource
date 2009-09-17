@@ -6746,8 +6746,8 @@ sql_lex_analyze (const char * str2, caddr_t * qst, int max_lexems, int use_strva
       memset (&sc, 0, sizeof (sc));
 
       if (!parse_sem)
-  parse_sem = semaphore_allocate (1);
-      MP_START();
+	parse_sem = semaphore_allocate (1);
+      MP_START ();
       semaphore_enter (parse_sem);
       SCS_STATE_PUSH;
       str = (caddr_t) t_alloc_box (20 + strlen (str2), DV_SHORT_STRING);
@@ -6758,48 +6758,44 @@ sql_lex_analyze (const char * str2, caddr_t * qst, int max_lexems, int use_strva
       sql_err_state[0] = 0;
       sql_err_native[0] = 0;
       if (0 == setjmp_splice (&parse_reset))
-  {
-    int lextype, olex = -1;
-    long n_lexem;
-    sql_yy_reset ();
-    yyrestart (NULL);
-    for (n_lexem = 0;;)
-      {
-	caddr_t boxed_plineno, boxed_text, boxed_lextype;
-        lextype = yylex();
-        if (!lextype)
-	  break;
-        if (olex == lextype && lextype == ';')
-	  continue;
-        boxed_plineno = box_num (scn3_plineno);
-        boxed_text = use_strval ?
-	  box_dv_short_string (yylval.strval) :
-	  box_dv_short_nchars (yytext, yyleng);
-        boxed_lextype = box_num (lextype);
-        dk_set_push (&lexems, list (3, boxed_plineno, boxed_text, boxed_lextype));
-        olex = lextype;
-        if (max_lexems && (++n_lexem) >= max_lexems)
-	  break;
-      }
-    lexems = dk_set_nreverse (lexems);
-  }
+	{
+	  int lextype, olex = -1;
+	  long n_lexem;
+	  sql_yy_reset ();
+	  yyrestart (NULL);
+	  for (n_lexem = 0;;)
+	    {
+	      caddr_t boxed_plineno, boxed_text, boxed_lextype;
+	      lextype = yylex ();
+	      if (!lextype)
+		break;
+	      if (olex == lextype && lextype == ';')
+		continue;
+	      boxed_plineno = box_num (scn3_plineno);
+	      boxed_text = use_strval ? box_dv_short_string (yylval.strval) : box_dv_short_nchars (yytext, get_yyleng ());
+	      boxed_lextype = box_num (lextype);
+	      dk_set_push (&lexems, list (3, boxed_plineno, boxed_text, boxed_lextype));
+	      olex = lextype;
+	      if (max_lexems && (++n_lexem) >= max_lexems)
+		break;
+	    }
+	  lexems = dk_set_nreverse (lexems);
+	}
       else
-  {
-    char err[1000];
-    snprintf (err, sizeof (err), "SQL lex analyzer: %s ", sql_err_text);
-    lexems = dk_set_nreverse (lexems);
-    dk_set_push (&lexems, list (2,
-      scn3_plineno,
-      box_dv_short_string (err) ) );
-    goto cleanup;
-  }
-cleanup:
+	{
+	  char err[1000];
+	  snprintf (err, sizeof (err), "SQL lex analyzer: %s ", sql_err_text);
+	  lexems = dk_set_nreverse (lexems);
+	  dk_set_push (&lexems, list (2, scn3_plineno, box_dv_short_string (err)));
+	  goto cleanup;
+	}
+    cleanup:
       sql_pop_all_buffers ();
       SCS_STATE_POP;
       semaphore_leave (parse_sem);
-      MP_DONE();
+      MP_DONE ();
       sc_free (&sc);
-      result_array = (caddr_t)(dk_set_to_array (lexems));
+      result_array = (caddr_t) (dk_set_to_array (lexems));
       dk_set_free (lexems);
       return result_array;
     }

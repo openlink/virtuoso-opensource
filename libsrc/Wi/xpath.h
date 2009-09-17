@@ -521,8 +521,10 @@ extern void sqlr_new_error_xqi_xdl (const char *code, const char *virt_code, xp_
 #endif
 ;
 
+#if 0
 extern int xpyyleng;
 extern char *xpyytext;
+#endif
 
 #endif /* _XPATH_H */
 

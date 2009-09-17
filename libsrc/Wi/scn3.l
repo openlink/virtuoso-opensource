@@ -1067,3 +1067,12 @@ scn3split_yy_reset (void)
   dk_free_tree (scn3split_ses);
   scn3split_ses = NULL;
 }
+
+
+#ifndef SCN3SPLIT
+size_t
+get_yyleng (void)
+{
+  return (size_t) yyleng;
+}
+#endif
