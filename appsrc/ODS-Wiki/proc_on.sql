@@ -1305,7 +1305,7 @@ create trigger "Wiki_TopicTextSparql_AU" after update on WS.WS.SYS_DAV_RES order
 ;
 
 
--- Renreding routines
+-- Rendering routines
 
 create function WV.WIKI.NORMALIZEWIKIWORDLINK (
   inout _default_cluster varchar, inout _href varchar) returns varchar
@@ -2456,6 +2456,8 @@ create procedure WV.WIKI.ATTACH2 (in _uid int, in _filename varchar, in _type va
   if (_attachment_col_id < 0)
   {
     _attachment_col_id := WV.WIKI.CREATEDAVCOLLECTION (_topic.ti_col_id, _topic.ti_local_name, _uid,  WV.WIKI.WIKIUSERGID());
+    if (_attachment_col_id < 0)
+      return;
       DB.DBA.DAV_PROP_SET_INT(DB.DBA.DAV_SEARCH_PATH (_attachment_col_id, 'C'),
 			      'oWiki:topic-id', serialize (_topic.ti_id),
 			      null, null, 0, 1, 1);

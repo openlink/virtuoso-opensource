@@ -389,6 +389,7 @@ create procedure CAL.WA.export_rss_sqlx_int (
   http ('        E_SUBJECT, \n', retValue);
   http ('        E_DESCRIPTION, \n', retValue);
   http ('        E_UPDATED, \n', retValue);
+  http ('        E_CREATED, \n', retValue);
   http ('        E_TAGS, \n', retValue);
   http ('        E_ID \n', retValue);
   http ('      from \n', retValue);

@@ -1345,7 +1345,8 @@ create procedure WV.WIKI.VSPDECODEWIKIPATH (in path any, out _page varchar, out 
 {
   declare _startofs integer;
   declare _idx integer;
-  path := http_path ();
+  declare path_sav varchar;
+  path_sav := path := http_path ();
   path := split_and_decode(aref (WS.WS.PARSE_URI(path), 2), 0, '\0\0/');
   declare _host varchar;
   _host := DB.DBA.WA_GET_HOST();
@@ -1376,7 +1377,7 @@ whenever not found goto nf;
     _domain_length := 1;
   else
     _domain_length := length (domain_path);
-  if (domain_path [_domain_length - 1] = default_cluster)   
+  if (domain_path [_domain_length - 1] = default_cluster and path_sav not like '%/atom-pub')   
     path := subseq (path, _domain_length - 1);
   else  
   path := subseq (path, _domain_length);
