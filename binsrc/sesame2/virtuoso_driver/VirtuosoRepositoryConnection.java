@@ -1797,7 +1797,14 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 	private String fixQuery(String query, Dataset dataset) {
 		StringTokenizer tok = new StringTokenizer(query);
-		String s = tok.nextToken().toLowerCase();
+		String s = "";
+
+		while(tok.hasMoreTokens()) {
+		    s = tok.nextToken().toLowerCase();
+		    if (s.equals("describe") || s.equals("construct") || s.equals("ask")) 
+			break;
+		}
+
 		StringBuffer ret = new StringBuffer();
 		if (s.equals("describe") || s.equals("construct") || s.equals("ask")) 
 			ret.append("sparql\n define output:format '_JAVA_'\n ");

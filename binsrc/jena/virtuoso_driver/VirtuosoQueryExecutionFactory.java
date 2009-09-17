@@ -65,9 +65,12 @@ public class VirtuosoQueryExecutionFactory
 
     static public QueryExecution create(String queryStr, Dataset dataset)
     {
-        checkArg(queryStr) ;
-        //checkArg(dataset) ; // Allow null
-        return make(makeQuery(queryStr), dataset) ;
+	if (dataset instanceof VirtDataSource) {
+	  VirtuosoQueryExecution ret = new VirtuosoQueryExecution (queryStr, (VirtGraph)dataset);
+          return ret;
+	} else {
+          throw new IllegalArgumentException("Only VirtDataSource is supported");
+	}
     }
 
     static public QueryExecution create(Query query, FileManager fm)
@@ -91,14 +94,25 @@ public class VirtuosoQueryExecutionFactory
     {
         checkArg(query) ;
         checkArg(model) ;
-        return make(query, new DataSourceImpl(model)) ;
+
+	if (model.getGraph() instanceof VirtGraph) {
+	  VirtuosoQueryExecution ret = new VirtuosoQueryExecution (query.toString(), (VirtGraph)model.getGraph());
+          return ret;
+	} else {
+          throw new IllegalArgumentException("Only VirtModel is supported");
+	}
     }
 
     static public QueryExecution create(String queryStr, Model model)
     {
         checkArg(queryStr) ;
         checkArg(model) ;
-        return create(makeQuery(queryStr), model) ;
+	if (model.getGraph() instanceof VirtGraph) {
+	  VirtuosoQueryExecution ret = new VirtuosoQueryExecution (queryStr, (VirtGraph)model.getGraph());
+          return ret;
+	} else {
+          throw new IllegalArgumentException("Only VirtModel is supported");
+	}
     }
 
     static public QueryExecution create(Query query, QuerySolution initialBinding)

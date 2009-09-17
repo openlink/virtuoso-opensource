@@ -46,6 +46,17 @@ public class VirtDataSource extends VirtGraph implements DataSource {
     Model defaultModel = null;
 
 
+    public VirtDataSource()
+    {
+	super();
+    }
+
+    public VirtDataSource(String url_hostlist, String user, String password)
+    {
+	super(url_hostlist, user, password);
+    }
+
+
     /** Set the background graph.  Can be set to null for none.  */
     public void setDefaultModel(Model model) {
         defaultModel = model;
