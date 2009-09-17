@@ -28,14 +28,15 @@ select a.fi2, b.fi2, dfi2 from t1 a, (select c.fi2, d.fi2 as dfi2 from t1 c, t1 
 echo both $if $equ $rowcnt 44 "PASSED" "***FAILED";
 echo both ": partitioned oby in dfg dt\n";
 
+-- the 2 below commented out since dt changed not to import join preds inside a top dt 
 select a.fi2, b.fi2 from t1 a, (select top 3 fi2 from t1 order by fi2 + 1) b where b.fi2 between a.fi2 - 2 and a.fi2 + 2 and a.fi2 < 30 option (order);
-echo both $if $equ $rowcnt 30 "PASSED" "***FAILED";
-echo both ": partitioned oby in top dt\n";
+--echo both $if $equ $rowcnt 30 "PASSED" "***FAILED";
+--echo both ": partitioned oby in top dt\n";
 
 
 select a.fi2, b.fi2, dfi2 from t1 a, (select top 4 c.fi2, d.fi2 as dfi2 from t1 c, t1 d where d.fi2 = c.fi2 - 1  order by fi2 + 1) b where b.fi2 between a.fi2 - 2 and a.fi2 + 2 and a.fi2 < 30 option (order);
-echo both $if $equ $rowcnt 37 "PASSED" "***FAILED";
-echo both ": partitioned oby in top dfg dt\n";
+--echo both $if $equ $rowcnt 37 "PASSED" "***FAILED";
+--echo both ": partitioned oby in top dfg dt\n";
 
 
 

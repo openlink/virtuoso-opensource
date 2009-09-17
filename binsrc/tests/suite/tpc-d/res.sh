@@ -25,8 +25,8 @@ action=$1
 case z$action
     in
     zvirtuoso)
-    isql $PORT dba dba < Q.sql > temp.res 
-    gawk -f test.awk -v mode=virt temp.res
+    #isql $PORT dba dba < Q.sql > temp.res 
+    gawk -f test.awk -v mode=oracle temp.res
     ;;
 
     zmysql)

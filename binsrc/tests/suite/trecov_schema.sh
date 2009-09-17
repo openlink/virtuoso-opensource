@@ -111,7 +111,6 @@ CHECKPOINT_SERVER
 STOP_SERVER
 sleep 5
 
-s
 ### schema recovery test
 
 rm -rf new.*

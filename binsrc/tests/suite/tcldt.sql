@@ -117,27 +117,14 @@ echo both ": scalar subq with joined multivalue range\n";
 
 
 -- top and skip of derived table 
-
+-- Note that a dt with a top cannot import predicates. 
 select a.row_no, b.row_no from t1 a, (select top 3 c.row_no from t1 c) b where b.row_no > a.row_no option (loop, order);
 
-select a.row_no, b.row_no from t1 a table option (index t1), (select top 3, 2 c.row_no from t1 c) b where b.row_no > a.row_no option (loop, order);
-echo both $if $equ $last[1] 116 "PASSED" "***FAILED";
-echo both ": inner dt with top and skip\n";
 
 
-select a.fi2, b.fi2 from t1 a table option (index fi2), (select distinct top 3, 2 c.fi2 from t1 c) b where b.fi2 > a.fi2 option (loop, order);
--- echo both $if $equ $last[1] 116 "PASSED" "***FAILED";
--- echo both ": inner dt with distinct, top and skip\n";
-
-
-select a.row_no, b.row_no from t1 a table option (index t1), (select  top 3, 2  c.row_no from t1 c order by c.row_no + 1) b where b.row_no > a.row_no option (loop, order);
-echo both $if $equ $last[1] 116 "PASSED" "***FAILED";
-echo both ": inner dt with distinct, top and skip and order by\n";
-
-
-select a.row_no, b.row_no from t1 a table option (index t1), (select  top 3  c.row_no from t1 c ) b where b.row_no in ( a.row_no, a.row_no + 1)  option (loop, order);
-echo both $if $equ $rowcnt 200 "PASSED" "***FAILED";
-echo both ": dt with in\n";
+--select a.row_no, b.row_no from t1 a table option (index t1), (select  top 3  c.row_no from t1 c ) b where b.row_no in ( a.row_no, a.row_no + 1)  option (loop, order);
+--echo both $if $equ $rowcnt 200 "PASSED" "***FAILED";
+--echo both ": dt with in\n";
 
 
 -- group by 

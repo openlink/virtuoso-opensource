@@ -322,7 +322,14 @@ update tblob set k = 11001 where k = 10000;
 update tblob set k = 11002 where k = 10001;
 
 -- c4 to master
--- update tblob set k = 11000 where k = 10003;
+update tblob set k = 11000 where k = 10003;
+
+load clexpck.sql;
+select explain_check ('select length (blob_to_string (bl)) from (select b1 as bl from tblob order by -k) f', 'cl fref read');
+echo both $if $equ $sqlstate OK "PASSED" "***FAILED";
+echo both ": blob sort compilation\n";
+
+select length (blob_to_string (bl)) from (select b1 as bl from tblob order by -k) f;
 
 
 

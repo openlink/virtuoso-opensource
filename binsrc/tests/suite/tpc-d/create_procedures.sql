@@ -439,18 +439,18 @@ create procedure fill_supplier (in initial_suppkey integer, in NumRows integer)
 create procedure supplier_add_random(in SF float, in nNumRows integer) {
 	
 	declare _strHelper varchar;
-	declare _nHelper1, _nHelper2, _nHelper3 integer;
+	declare s, _nHelper1, _nHelper2, _nHelper3 integer;
 
 	_nHelper2 := 0;
 	while (_nHelper2 < (5 * SF)) {
 		_nHelper3 := randomNumber(1, nNumRows);
 		declare cr1 cursor for 
-			select s_comment from supplier where s_suppkey = _nHelper3;
+			select s_suppkey, s_comment from supplier where s_suppkey = _nHelper3;
 		
 		open cr1;
-		fetch cr1 into _strHelper;
+		fetch cr1 into s, _strHelper;
 
-		update supplier set s_comment = 'CustomerComplaints' where current of cr1;
+		update supplier set s_comment = 'CustomerComplaints' where s_suppkey = s;
 		_nHelper2 := _nHelper2 + 1;
 		close cr1;
 
@@ -460,12 +460,12 @@ create procedure supplier_add_random(in SF float, in nNumRows integer) {
 	while (_nHelper2 < (5 * SF)) {
 		_nHelper3 := randomNumber(1, nNumRows);
 		declare cr2 cursor for 
-			select s_comment from supplier where s_suppkey = _nHelper3;
+			select s_suppkey, s_comment from supplier where s_suppkey = _nHelper3;
 		
 		open cr2;
-		fetch cr2 into _strHelper;
+		fetch cr2 into s, _strHelper;
 
-		update supplier set s_comment = 'CustomerRecommends' where current of cr2;
+		update supplier set s_comment = 'CustomerRecommends' where s_suppkey = s;
 		_nHelper2 := _nHelper2 + 1;
 		close cr2;
 	}

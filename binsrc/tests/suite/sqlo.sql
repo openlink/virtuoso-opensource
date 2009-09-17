@@ -1057,5 +1057,11 @@ select a.row_no, b.row_no from t1 a, (select top 4 row_no from t1) b where a.row
 echo both $if $equ $rowcnt 4 "PASSED" "***FAILED";
 echo both ": dt with top does not import preds\n";
 
+select __max (__min (1000), count (1)) from sys_users where u_id = 1111;
+echo both $if $equ $last[1] 1000 "PASSED" "***FAILED";
+echo both ": emppty agg with data independent false cond inits data independent exps\n";
+
+
+
 ECHO BOTH "COMPLETED: SQL Optimizer tests (sqlo.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
 

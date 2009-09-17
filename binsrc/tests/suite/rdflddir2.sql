@@ -61,6 +61,14 @@ ld_dir (in path varchar, in mask varchar, in graph varchar)
 }
 ;
 
+
+create procedure
+rdf_read_dir (in path varchar, in mask varchar, in graph varchar)
+{
+  ld_dirr (path, mask, graph);
+}
+
+
 create procedure
 ld_dir_all (in path varchar, in mask varchar, in graph varchar)
 {
