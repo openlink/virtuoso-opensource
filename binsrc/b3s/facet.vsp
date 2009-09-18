@@ -15,7 +15,7 @@
 <body>
 <div id="PG">
 <div id="HD">
-  <a href="http://www.openlinksw.com" class="logo">
+  <a href="/fct/facet.vsp" class="logo">
     <img id="opl_logo" src="/fct/images/openlink_site_logo.png" alt="OpenLink Software"/>
   </a>
 </div><!-- #HD -->

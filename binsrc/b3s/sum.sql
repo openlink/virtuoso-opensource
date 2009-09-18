@@ -104,7 +104,7 @@ create procedure sum_result (inout final any, inout res any, inout text_exp any,
   --dbg_obj_print ('sorted = ', sorted);
   gvector_sort (sorted, 3, 2, 0);
   for (inx := 0; inx < length (sorted); inx := inx + 3)
-  tot	 := tot || rdf_box_data (sorted[inx]);
+  tot	 := tot || cast (rdf_box_data (sorted[inx]) as varchar);
  exc := fct_bold_tags (search_excerpt (text_exp, tot));
 -- dbg_obj_print (' summaries of ', tot, ' ', lbl, ' ', exc);
  elt := xmlelement ('row', 

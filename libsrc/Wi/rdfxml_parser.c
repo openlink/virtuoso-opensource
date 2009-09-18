@@ -798,7 +798,7 @@ xp_expand_relative_uri (caddr_t base, caddr_t *relative_ptr)
   expanded = rfc1808_expand_uri (/*xn->xn_xp->xp_qi,*/ base, relative, "UTF-8", 0, "UTF-8", "UTF-8", &err);
   if (NULL != err)
     {
-#ifndef NDEBUG
+#ifdef RDFXML_DEBUG
       GPF_T1("xp_" "expand_relative_uri(): expand_uri failed");
 #else
       expanded = NULL;
@@ -941,7 +941,7 @@ xp_rdfa_parse_attr_value (xparse_ctx_t *xp, xp_node_t * xn, char *attrname, char
       expanded_token = NULL; \
       expanded_token_not_saved = 0; } \
   } while (0)
-#ifndef NDEBUG
+#ifdef RDFXML_DEBUG
   if (((NULL != values_ret) ? 1 : 0) != ((NULL != values_count_ret) ? 1 : 0))
     GPF_T1 ("xp_" "rdfa_parse_attr_value(): bad call (1)");
   if (((NULL != values_ret) ? 1 : 0) != ((RDFA_ATTRSYNTAX_WS_LIST & allowed_syntax) ? 1 : 0))
@@ -1079,7 +1079,7 @@ next_token:
         }
       else if (NULL != values_ret[0][values_count]) /* There's some old garbage to delete */
         {
-#ifndef NDEBUG
+#ifdef RDFXML_DEBUG
           GPF_T1 ("xp_" "rdfa_parse_attr_value(): garbage?");
 #endif
           dk_free_tree (values_ret[0][values_count]);
@@ -1156,7 +1156,7 @@ xp_pop_rdfa_locals (xparse_ctx_t *xp)
     dk_free_tree (inner->xrdfal_obj_res);
   if (NULL != inner->xrdfal_datatype)
     dk_free_tree (inner->xrdfal_datatype);
-#ifndef NDEBUG
+#ifdef RDFXML_DEBUG
   if (NULL != inner->xrdfal_ict_buffer)
     {
       int ofs;
@@ -1227,13 +1227,13 @@ rdfa_ict_feed_or_leave (xparse_ctx_t *xp, xp_rdfa_locals_t *xrdfal, int ctr)
     return RDFA_ICT_IN_HEAD;
   ict = xrdfal->xrdfal_ict_buffer + ctr;
   if (NULL == ict->ict_left)
-#ifndef NDEBUG
+#ifdef RDFXML_DEBUG
     GPF_T1("rdfa_" "ict_feed_or_leave(): NULL ict->ict_left");
 #else
     return RDFA_ICT_INTERNAL_ERR;
 #endif
   if (NULL == ict->ict_pred)
-#ifndef NDEBUG
+#ifdef RDFXML_DEBUG
     GPF_T1("rdfa_" "ict_feed_or_leave(): NULL ict->ict_pred");
 #else
     return RDFA_ICT_INTERNAL_ERR;
@@ -1256,7 +1256,7 @@ rdfa_ict_feed_or_leave (xparse_ctx_t *xp, xp_rdfa_locals_t *xrdfal, int ctr)
         (((NULL != ict->ict_datatype) && (uname___empty != ict->ict_datatype)) ? ict->ict_datatype : stub_null),
         ((NULL != ict->ict_language) ? ict->ict_language : stub_null) );
       break;
-#ifndef NDEBUG
+#ifdef RDFXML_DEBUG
     default:
       GPF_T1("rdfa_" "ict_feed_or_leave(): bad ict->ict_pred_type");
 #endif
@@ -1292,7 +1292,7 @@ rdfa_feed_or_make_ict (xparse_ctx_t *xp, xp_rdfa_locals_t *xrdfal, caddr_t left,
     }
   else
     ict_is_needed = 1;
-#ifndef NDEBUG
+#ifdef RDFXML_DEBUG
   if (NULL == left)
     GPF_T1("rdfa_" "feed_or_make_ict(): NULL left");
   if (NULL == pred)
@@ -1309,7 +1309,7 @@ rdfa_feed_or_make_ict (xparse_ctx_t *xp, xp_rdfa_locals_t *xrdfal, caddr_t left,
       if (box_length (xrdfal->xrdfal_ict_buffer) <= buf_in_use)
         {
           rdfa_ict_t *new_buf;
-#ifndef NDEBUG
+#ifdef RDFXML_DEBUG
           if (box_length (xrdfal->xrdfal_ict_buffer) < buf_in_use)
             GPF_T1("rdfa_" "feed_or_make_ict(): corrupted buffer allocation");
 #endif
@@ -1343,7 +1343,7 @@ rdfa_feed_or_make_ict (xparse_ctx_t *xp, xp_rdfa_locals_t *xrdfal, caddr_t left,
             (((NULL != dt) && (uname___empty != dt)) ? dt : stub_null),
             ((NULL != lang) ? lang : stub_null) );
           break;
-#ifndef NDEBUG
+#ifdef RDFXML_DEBUG
         default:
           GPF_T1("rdfa_" "ict_feed_or_leave(): bad ict->ict_pred_type");
 #endif
@@ -1374,7 +1374,7 @@ xp_rdfa_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
   int need_rdfa_local = 0, parent_obj_should_be_set = 0;
   int ctr;
   caddr_t subj;
-#ifndef NDEBUG
+#ifdef RDFXML_DEBUG
   if (xpt->xpt_base || xpt->xpt_dt || xpt->xpt_lang || xpt->xpt_obj_content || xpt->xpt_obj_res || xpt->xpt_src || xpt->xpt_href)
     GPF_T1("xp_" "rdfa_element(): nonempty xpt");
 #endif
@@ -1573,7 +1573,7 @@ xp_rdfa_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
             dk_free_tree (xpt->xpt_lang);
           xpt->xpt_lang = box_dv_short_string (avalue);
           break;
-#ifndef NDEBUG
+#ifdef RDFXML_DEBUG
         default: GPF_T;
 #endif
         }
@@ -1681,7 +1681,7 @@ xp_rdfa_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
   else
     inner->xrdfal_language = outer->xrdfal_language;
   inner->xrdfal_boring_opened_elts = 0;
-#ifndef NDEBUG
+#ifdef RDFXML_DEBUG
   if (inner->xrdfal_ict_count)
     GPF_T1("xp_" "rdfa_element(): ict buffer is not empty");
 #endif
@@ -1833,7 +1833,7 @@ xp_rdfa_element_end (void *userdata, const char * name)
           ict->ict_right = --obj_use_count ? box_copy_tree (obj) : obj;
           rdfa_ict_feed_or_leave (xp, inner, ctr);
         }
-#ifndef NDEBUG
+#ifdef RDFXML_DEBUG
       if (obj_use_count)
         GPF_T1 ("xp_" "rdfa_element_end(): obj_use_count is out of sync");
 #endif
@@ -2002,7 +2002,7 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
   memset (&config, 0, sizeof(config));
   config.input_is_wide = xrie.xrie_text_is_wide;
   config.input_is_ge = ((mode_bits & RDFXML_OMIT_TOP_RDF) ? GE_XML : 0);
-  config.input_is_html = 0;
+  config.input_is_html = ((mode_bits >> 8) & 0xff);
   config.input_is_xslt = 0;
   config.user_encoding_handler = intl_find_user_charset;
   config.initial_src_enc_name = enc;

@@ -23,7 +23,7 @@
 --
 -->
 <xsl:stylesheet version ="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
-<xsl:output method="html" encoding="ISO-8859-1"/>
+<xsl:output method="html" encoding="ISO-8859-1" indent="yes"/>
 <xsl:variable name="page_len" select="20"/>
 <xsl:variable name="offs" select="if(/facets/view/@offset = '', 1, /facets/view/@offset + 1)"/> <!-- humans count from 1 -->
 <xsl:variable name="rowcnt" select="count(/facets/result/row)"/>
@@ -201,9 +201,9 @@ function init(){
 <xsl:template name="render-pager">
   <xsl:if test="/facets/processed &gt; 0">
     <div class="pager">
-      <span class="stats">Showing 
-      <xsl:value-of select="$offs"/>-<!-- <xsl:value-of select="$offs + $page_len - 1"/>--><xsl:value-of select="$offs + $rowcnt - 1"/> of
-      <xsl:value-of select="/facets/processed"/> total&#8194;
+	<span class="stats"><xsl:text>Showing </xsl:text>
+	    <xsl:value-of select="$offs"/>-<!-- <xsl:value-of select="$offs + $page_len - 1"/>--><xsl:value-of select="$offs + $rowcnt - 1"/> <xsl:text> of </xsl:text>
+	    <xsl:value-of select="/facets/processed"/> <xsl:text>total&#8194;</xsl:text>
       </span>
       <xsl:if test="$offs &gt;= $page_len">
 	<button>
@@ -321,7 +321,7 @@ function init(){
               <xsl:for-each select="column[@datatype='trank' or @datatype='erank']">
                 <img class="rnk">
                   <xsl:attribute name="src">
-                    images/r_<xsl:value-of select="min (floor(.), 10)"/>.png
+		      <xsl:text>images/r_</xsl:text><xsl:value-of select="min (floor(.), 10)"/><xsl:text>.png</xsl:text>
                   </xsl:attribute>
                     <xsl:attribute name="alt">
                       <xsl:choose>

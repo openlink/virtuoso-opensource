@@ -1610,7 +1610,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   declare metas, rset any;
   declare accept, soap_action, user_id varchar;
   declare exec_time, exec_db_activity any;
-
+  -- dbg_obj_princ (path, params, lines);
   if (registry_get ('__sparql_endpoint_debug') = '1')
     {
       for (declare i int, i := 0; i < length (params); i := i + 2)

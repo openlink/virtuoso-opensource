@@ -124,7 +124,7 @@
         <div id="hd_l">
 	  <h1>
             <div id="logo">
-              <a href="http://www.openlinksw.com">
+              <a href="/fct/facet.vsp">
                 <img src="/fct/images/openlink_site_logo.png" 
                      alt="OpenLink Software"/>
               </a>
@@ -227,7 +227,7 @@ skip_rev:
 <!-- footer -->
     <div id="FT">
       <div id="ft_t">
-        Explore using:
+        Explore alternative Linked Data Views &amp; Meshups using:
         <a href="http://linkeddata.uriburner.com/ode/?uri=<?vsp http_url (page_resource_uri); ?>">OpenLink Data Explorer</a> 
         &nbsp; &nbsp; Raw Data in:
         <a href="<?=rdf_link || sprintf ('&output=%U', 'text/rdf+n3') ?>">N3</a> |

@@ -318,19 +318,31 @@ create procedure decl_dpipe_define ()
 
 decl_dpipe_define ();
 
-ttlp ('
-@prefix foaf: <http://xmlns.com/foaf/0.1/>
-@prefix dc: <http://purl.org/dc/elements/1.1/>
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-@prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
-@prefix geonames: <http://www.geonames.org/ontology#>
-
-rdfs:label rdfs:subPropertyOf virtrdf:label .
+TTLP ('@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#> .
+@prefix fbase: <http://rdf.freebase.com/ns/type.object.> .
+@prefix skos: <http://www.w3.org/2008/05/skos#> .
+@prefix bibo: <http://purl.org/ontology/bibo/> .
+@prefix gr: <http://purl.org/goodrelations/v1#> .
 dc:title rdfs:subPropertyOf virtrdf:label .
+rdfs:label rdfs:subPropertyOf virtrdf:label .
+fbase:name rdfs:subPropertyOf virtrdf:label .
 foaf:name rdfs:subPropertyOf virtrdf:label .
+<http://s.opencalais.com/1/pred/name> rdfs:subPropertyOf virtrdf:label .
 foaf:nick rdfs:subPropertyOf virtrdf:label .
-geonames:name rdfs:subPropertyOf virtrdf:label . ', 
-'xx', 'facets');
+<http://www.w3.org/2004/02/skos/core#prefLabel> rdfs:subPropertyOf virtrdf:label .
+skos:prefLabel rdfs:subPropertyOf virtrdf:label .
+<http://www.geonames.org/ontology#name> rdfs:subPropertyOf virtrdf:label .
+<http://purl.org/dc/terms/title> rdfs:subPropertyOf virtrdf:label .
+foaf:accountName rdfs:subPropertyOf virtrdf:label .
+bibo:shortTitle rdfs:subPropertyOf virtrdf:label .
+<http://s.opencalais.com/1/pred/name> rdfs:subPropertyOf foaf:name .
+<http://s.opencalais.com/1/type/er/Company> rdfs:subClassOf gr:BusinessEntity .
+gr:BusinessEntity rdfs:subClassOf foaf:Organization .
+<http://dbpedia.org/ontology/Company> rdfs:subClassOf gr:BusinessEntity .
+', 'xx', 'facets');
 
 rdfs_rule_set ('facets', 'facets');
 

@@ -111,7 +111,7 @@
     <div id="hd_l">
       <h1>
         <div id="logo">
-          <a href="http://www.openlinksw.com">
+          <a href="/fct/facet.vsp">
             <img src="/fct/images/openlink_site_logo.png" 
                  alt="OpenLink Software"/>
           </a>
@@ -153,10 +153,12 @@
           <a href="<?V http_path () ?>?g=<?U _S ?>&tp=2&sid=<?V sid ?>&urilookup=<?V urilookup ?>&orig_refr=<?V orig_refr ?>">Source Graphs</a>
         </div>
 	<div class="tab <?vsp http (case when tp = 3 then ' tab_selected' else '' end); ?>">
-          <a href="<?V http_path () ?>?g=<?U _S ?>&tp=3&sid=<?V sid ?>&urilookup=<?V urilookup ?>&orig_refr=<?V orig_refr ?>">Expanded Same As</a>
+          <a title="A list of other identifiers for the current entity."
+             href="<?V http_path () ?>?g=<?U _S ?>&tp=3&sid=<?V sid ?>&urilookup=<?V urilookup ?>&orig_refr=<?V orig_refr ?>">Direct co-references</a>
         </div>
 	<div class="tab <?vsp http (case when tp = 4 then ' tab_selected' else '' end); ?>">
-          <a href="<?V http_path () ?>?g=<?U _S ?>&tp=4&sid=<?V sid ?>&urilookup=<?V urilookup ?>&orig_refr=<?V orig_refr ?>">Expanded IFPs</a>
+          <a title="A list of indirect identifiers for the current entity based on Inverse Functional Property values."
+             href="<?V http_path () ?>?g=<?U _S ?>&tp=4&sid=<?V sid ?>&urilookup=<?V urilookup ?>&orig_refr=<?V orig_refr ?>">Indirect co-references</a>
         </div>
       </div> <!-- TAB_ROW -->
       <div id="TAB_CTR">
@@ -203,15 +205,15 @@
 		   }   
 		 else if (tp = 3)
 		  {
- 		     http (sprintf ('<td><a href="/describe/?url=%U">%V</a></td>', data[0], b3s_uri_curie (data[0])));
+ 		     http (sprintf ('<td><a href="/describe/?url=%U&sid=%s">%V</a></td>', data[0], sid, b3s_uri_curie (data[0])));
 		     http (sprintf ('<td align="right">%.6g</td>', data[1]));
 		  } 
                  else if (tp = 4)
 		  {
- 		     http (sprintf ('<td><a href="/describe/?url=%U">%V</a></td>', data[0], b3s_uri_curie (data[0])));
-		     http (sprintf ('<td><a href="/describe/?url=%U">%V</a></td>', data[1], b3s_uri_curie (data[1])));
+ 		     http (sprintf ('<td><a href="/describe/?url=%U&sid=%s">%V</a></td>', data[0], sid, b3s_uri_curie (data[0])));
+		     http (sprintf ('<td><a href="/describe/?url=%U&sid=%s">%V</a></td>', data[1], sid, b3s_uri_curie (data[1])));
 		     if (__box_flags (data[2]) = 1)
-		       http (sprintf ('<td><a href="/describe/?url=%U">%V</a></td>', data[2], b3s_uri_curie (data[2])));
+		       http (sprintf ('<td><a href="/describe/?url=%U&sid=%s">%V</a></td>', data[2], sid, b3s_uri_curie (data[2])));
 		     else
                        {
 		         if (isstring (data[2]))

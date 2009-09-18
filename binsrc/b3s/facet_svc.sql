@@ -68,7 +68,7 @@ fct_svc_exec (in tree any, in timeout int, in accept varchar, in lines any)
   if (xmlout)
     {
       if (not isarray (res) or 0 = length (res) or not isarray (res[0]) or 0 = length (res[0]))
-	res := vector (vector (xtree_doc ('<result/>')));
+	res := xtree_doc ('<result/>');
       else
         res := res[0][0];	
 

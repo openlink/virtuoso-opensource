@@ -1500,10 +1500,13 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
           int tr_idx;
           ssg_valmode_t tr_valmode;
           triple = sparp_find_triple_of_var_or_retval (sparp, NULL, tree, 1);
-#ifdef DEBUG
           if (SPAR_TRIPLE != SPART_TYPE (triple))
-            spar_internal_error (sparp, "sparp_" "expn_native_valmode(): bad tabid of a variable");
+            {
+#ifdef DEBUG
+              sparp_find_triple_of_var_or_retval (sparp, NULL, tree, 1); /* to debug the bad search */
 #endif
+              spar_error (sparp, "SPARQL optimizer can not generate SQL code for variable ?%.200s at line %d of query, the variable can be misused", tree->_.var.vname, (int)(tree->srcline));
+            }
           tr_idx = tree->_.var.tr_idx;
           if (SPART_TRIPLE_FIELDS_COUNT <= tr_idx)
             return SSG_VALMODE_SQLVAL;
@@ -3418,7 +3421,7 @@ IN_op_fnt_found:
               return;
             }
           ssg_puts (" DB.DBA.RDF_LANGMATCHES (");
-          ssg_print_scalar_expn (ssg, arg1, SSG_VALMODE_LONG, NULL_ASNAME);
+          ssg_print_scalar_expn (ssg, arg1, SSG_VALMODE_SQLVAL, NULL_ASNAME);
           ssg_putchar (',');
           ssg_print_scalar_expn (ssg, tree->_.builtin.args[1], SSG_VALMODE_SQLVAL, NULL_ASNAME);
           ssg_putchar (')');
@@ -4834,14 +4837,11 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
         spar_error (ssg->ssg_sparp, "Unable to compose SQL text for ?%.200s because quad map format %.200s has no version that could handle NULL values", eq->e_varnames[0], needed->qmfName );
       needed = nullable_needed;
     }
-  if ((SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL) & eq->e_rvr.rvrRestrictions)
+  if (SPART_VARR_GLOBAL & eq->e_rvr.rvrRestrictions)
     {
       SPART *vartree;
       caddr_t varname;
-      if (SPART_VARR_GLOBAL & eq->e_rvr.rvrRestrictions)
-        ssg_find_global_in_equiv (eq, &vartree, &varname);
-      else
-        ssg_find_external_in_equiv (eq, &vartree, &varname);
+      ssg_find_global_in_equiv (eq, &vartree, &varname);
       if (NULL != vartree)
         {
           if (NULL == native)
@@ -4856,6 +4856,18 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
               ssg_print_valmoded_scalar_expn (ssg, vartree, needed, native, asname);
               return 1;
             }
+        }
+    }
+  if (SPART_VARR_EXTERNAL & eq->e_rvr.rvrRestrictions)
+    {
+      SPART *vartree;
+      caddr_t varname;
+      ssg_find_external_in_equiv (eq, &vartree, &varname);
+      if (NULL != vartree)
+        {
+          SPART *orig = sparp_find_origin_of_external_var (ssg->ssg_sparp, vartree);
+          ssg_print_scalar_expn (ssg, orig, needed, asname);
+          return 1;
         }
     }
   if (flags & SSG_RETVAL_FROM_JOIN_MEMBER)
