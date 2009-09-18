@@ -1,6 +1,8 @@
 How to build the Virtuoso Sesame 3 provider
 =================================--========
 
+The Sesame 2 Provider requires JDK 1.6 or newer.
+
 * cd binsrc/sesame3 
 
 * Create a lib directory 

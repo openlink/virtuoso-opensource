@@ -20,9 +20,9 @@
 #  
 
 
-if WITH_JDK3
+if WITH_JDK4
 TARGETS		= virt_sesame3.jar
-JDK		= @ac_jdk3_path@
+JDK		= @ac_jdk4_path@
 JDK_FLAGS	= -Xlint -O -g:none
 JAVA		= $(JDK)/java
 JAVAC		= $(JDK)/javac
@@ -44,7 +44,7 @@ SESAME_SRC= \
 SAMPLES_SOURCE= \
 	virtuoso_driver/VirtuosoTest.java
 
-SESAME_CLASSPATH=lib/slf4j-api-1.5.6.jar:lib/openrdf-sesame-3.0-alpha1-onejar.jar:lib/slf4j-jdk14-1.5.6.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc3.jar
+SESAME_CLASSPATH=lib/slf4j-api-1.5.6.jar:lib/openrdf-sesame-3.0-alpha1-onejar.jar:lib/slf4j-jdk14-1.5.6.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc4.jar
 
 all-am: lib virt_sesame3.jar
 
@@ -72,7 +72,7 @@ doc:
 		$(SESAME_SRC)
 
 
-if WITH_JDK3
+if WITH_JDK4
 run-tests: virt_sesame3.jar
 	-rm -rf out.examples
 	-mkdir out.examples
