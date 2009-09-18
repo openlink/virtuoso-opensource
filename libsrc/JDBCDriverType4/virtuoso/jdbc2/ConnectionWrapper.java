@@ -846,13 +846,19 @@ public class ConnectionWrapper implements java.sql.Connection {
 
 
   private void close_objs() {
+#if JDK_VER >= 16
+    HashMap<Object,Object> copy = (HashMap<Object,Object>) objsToClose.clone();
+#else
+    HashMap copy = (HashMap) objsToClose.clone();
+#endif
     synchronized(objsToClose) {
-      for (Iterator i = objsToClose.keySet().iterator(); i.hasNext(); )
+      for (Iterator i = copy.keySet().iterator(); i.hasNext(); )
         try {
           ((Closeable)(i.next())).close();
         } catch(Exception e) { }
       objsToClose.clear();
     }
+    copy.clear();
   }
 
 
