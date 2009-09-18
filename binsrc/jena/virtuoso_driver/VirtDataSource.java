@@ -56,7 +56,6 @@ public class VirtDataSource extends VirtGraph implements DataSource {
 	super(url_hostlist, user, password);
     }
 
-
     /** Set the background graph.  Can be set to null for none.  */
     public void setDefaultModel(Model model) {
         defaultModel = model;
@@ -196,7 +195,7 @@ public class VirtDataSource extends VirtGraph implements DataSource {
 
         checkOpen();
         try {
-	    Vector<String> names=new Vector<String>(); 
+	    Vector names=new Vector(); 
 
   	    java.sql.Statement stmt = getConnection().createStatement();
 	    rs = stmt.executeQuery(exec_text);

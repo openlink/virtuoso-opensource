@@ -23,7 +23,7 @@
 if WITH_JDK3
 TARGETS		= virt_jena.jar
 JDK		= @ac_jdk3_path@
-JDK_FLAGS	= -Xlint -O -g:none
+JDK_FLAGS	= -O -g:none
 
 JAVA		= $(JDK)/java
 JAVAC		= $(JDK)/javac

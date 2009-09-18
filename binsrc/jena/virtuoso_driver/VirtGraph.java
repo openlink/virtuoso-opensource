@@ -184,7 +184,8 @@ public class VirtGraph extends GraphBase
         return "<_:"+n+">"; 
       } else if (n.isLiteral()) {
         String s;
-        StringBuilder sb = new StringBuilder();
+//??        StringBuilder sb = new StringBuilder();
+        StringBuffer sb = new StringBuffer();
         sb.append("\"");
         sb.append(n.getLiteralValue());
         sb.append("\"");
@@ -263,7 +264,7 @@ public class VirtGraph extends GraphBase
 
     
     
-    @Override
+//--java5 or newer    @Override
     public void performAdd(Triple t)
     {
       java.sql.PreparedStatement ps;
@@ -309,7 +310,7 @@ public class VirtGraph extends GraphBase
     /**
      * more efficient
      */
-    @Override
+//--java5 or newer    @Override
     protected int graphBaseSize() {
 	String query = "select count(*) from (sparql define input:storage \"\" select * where { graph `iri(??)` { ?s ?p ?o }})f";
 	ResultSet rs = null;
@@ -334,7 +335,7 @@ public class VirtGraph extends GraphBase
     /** maybe more efficient than default impl
      * 
      */
-    @Override
+//--java5 or newer    @Override
     protected boolean graphBaseContains(Triple t) {
 	ResultSet rs = null;
 	String S, P, O;
@@ -368,7 +369,7 @@ public class VirtGraph extends GraphBase
     }
 
 
-    @Override
+//--java5 or newer    @Override
     public ExtendedIterator graphBaseFind(TripleMatch tm) {
 	String S, P, O;
 	String exec_text;
@@ -402,7 +403,7 @@ public class VirtGraph extends GraphBase
     }
 
 
-    @Override
+//--java5 or newer    @Override
     public void close() {
 	try {
 		super.close(); // will set closed = true
@@ -442,7 +443,7 @@ public class VirtGraph extends GraphBase
     }
 
 
-    @SuppressWarnings("unchecked")
+//--java5 or newer    @SuppressWarnings("unchecked")
     void add(Iterator it, List list) 
     {
 	try
@@ -590,13 +591,13 @@ public class VirtGraph extends GraphBase
 
     
     
-    @Override
+//--java5 or newer    @Override
     public TransactionHandler getTransactionHandler()
     {
 	return new VirtTransactionHandler(this);
     }
 
-    @Override
+//--java5 or newer    @Override
     public BulkUpdateHandler getBulkUpdateHandler()
     {
         if (bulkHandler == null) 

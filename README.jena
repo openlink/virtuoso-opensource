@@ -1,6 +1,8 @@
 How to build Virtuoso Jena Provider
 ===================================
 
+The Jena Provider can be compiled with JDK 1.4.2 or newer.
+
 * cd binsrc/jena
 
 * Create a lib directory 

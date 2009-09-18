@@ -20,28 +20,28 @@ public class VirtuosoTestGraph extends AbstractTestGraph {
 //		return MetaTestGraph.suite(AbstractTestGraph.class, VirtGraph.class);
 //	}
 
-	@Override
+	//--java5 or newer @Override
 	public Graph getGraph() {
 	        graph.clear();
 		return graph;
 	}
 
-	@Override
+	//--java5 or newer @Override
 	public void testContainsConcrete() {
 	//skip
 	}
 
-	@Override
+	//--java5 or newer @Override
 	public void testContainsByValue() {
 	//skip
 	}
 
-	@Override
+	//--java5 or newer @Override
 	public void testContainsNode() {
 	//skip
 	}
 
-	@Override
+	//--java5 or newer @Override
 	public void testIsomorphismFile() {
 	//skip
 	}

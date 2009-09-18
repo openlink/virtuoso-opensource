@@ -42,20 +42,20 @@ public class VirtBulkUpdateHandler extends SimpleBulkUpdateHandler {
 	super(parent);
     }
 
-    @Override
+//--java5 or newer    @Override
     public void add( Triple [] triples ) { 
         addIterator(Arrays.asList(triples).iterator(), false);
         manager.notifyAddArray( graph, triples );
     }
 
-    @Override
+//--java5 or newer    @Override
     protected void add(List triples, boolean notify) {
         addIterator(triples.iterator(), false);
         if (notify)
         	manager.notifyAddList( graph, triples );
     }
 
-    @Override
+//--java5 or newer    @Override
     public void addIterator(Iterator it, boolean notify) {
 	VirtGraph _graph=(VirtGraph)this.graph;
 	List list = notify ? new ArrayList() : null;
