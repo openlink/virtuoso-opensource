@@ -2352,7 +2352,7 @@ create procedure DB.DBA.RDF_RDFXML_TO_DICT (in strg varchar, in base varchar, in
 }
 ;
 
-create procedure DB.DBA.RDF_LOAD_RDFA (in strg varchar, in base varchar, in graph varchar := null)
+create procedure DB.DBA.RDF_LOAD_RDFA (in strg varchar, in base varchar, in graph varchar := null, in xml_parse_mode integer := 0)
 {
   declare app_env any;
   if (graph = '')
@@ -2364,7 +2364,7 @@ create procedure DB.DBA.RDF_LOAD_RDFA (in strg varchar, in base varchar, in grap
         signal ('22023', 'DB.DBA.RDF_LOAD_RDFA() requires a valid IRI as a base argument if graph is not specified');
     }
   app_env := vector (null, null, __max (length (strg) / 100, 100000));
-  rdf_load_rdfxml (strg, 2,
+  rdf_load_rdfxml (strg, bit_or (2, bit_shift (xml_parse_mode, 8)),
     graph,
     vector (
       'DB.DBA.TTLP_EV_NEW_GRAPH',

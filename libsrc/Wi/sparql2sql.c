@@ -1492,6 +1492,30 @@ sparp_make_aliases (sparp_t *sparp)
     NULL );
 }
 
+sparp_equiv_t *
+sparp_find_external_namesake_eq_of_varname (sparp_t *sparp, caddr_t varname, dk_set_t parent_gps)
+{
+  DO_SET (SPART *, parent, &parent_gps)
+    {
+      sparp_equiv_t *parent_eq = sparp_equiv_get (sparp, parent, (SPART *)varname, SPARP_EQUIV_GET_NAMESAKES);
+      if ((NULL != parent_eq) &&
+        ((0 < parent_eq->e_gspo_uses) ||
+          (0 < parent_eq->e_subquery_uses) ||
+          (0 < parent_eq->e_nested_bindings) ) )
+        {
+      /*
+          if ((SPART_BAD_EQUIV_IDX != eq->e_external_src_idx) &&
+            (parent_eq->e_own_idx != eq->e_external_src_idx) &&
+            !(parent_eq->e_rvr.rvrRestrictions & SPART_VARR_EXTERNAL) )
+            spar_internal_error (sparp, "sparp_" "gp_trav_label_external_vars_gp_in (): mismatch in origin of external");
+      */
+          return parent_eq;
+        }
+    }
+  END_DO_SET ()
+  return NULL;
+}
+
 int
 sparp_gp_trav_label_external_vars_gp_in (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
@@ -1508,32 +1532,35 @@ sparp_gp_trav_label_external_vars_gp_in (sparp_t *sparp, SPART *curr, sparp_trav
       int varnamectr;
       DO_BOX_FAST_REV (caddr_t, varname, varnamectr, eq->e_varnames)
         {
-          DO_SET (SPART *, parent, &parent_gps)
-            {
-              sparp_equiv_t *parent_eq = sparp_equiv_get (sparp, parent, (SPART *)varname, SPARP_EQUIV_GET_NAMESAKES);
-              if ((NULL != parent_eq) &&
-                ((0 < parent_eq->e_gspo_uses) ||
-                  (0 < parent_eq->e_subquery_uses) ||
-                  (0 < parent_eq->e_nested_bindings) ) )
-                {
-/*
-                  if ((SPART_BAD_EQUIV_IDX != eq->e_external_src_idx) &&
-                    (parent_eq->e_own_idx != eq->e_external_src_idx) &&
-                    !(parent_eq->e_rvr.rvrRestrictions & SPART_VARR_EXTERNAL) )
-                    spar_internal_error (sparp, "sparp_" "gp_trav_label_external_vars_gp_in (): mismatch in origin of external");
-*/
-                  eq->e_external_src_idx = parent_eq->e_own_idx;
+          sparp_equiv_t *external_namesake_eq = sparp_find_external_namesake_eq_of_varname (sparp, varname, parent_gps);
+          if (NULL == external_namesake_eq)
+            continue;
+          eq->e_external_src_idx = external_namesake_eq->e_own_idx;
                   eq->e_rvr.rvrRestrictions |= SPART_VARR_EXTERNAL;
-                  goto next_varname;
-                }
-            }
-          END_DO_SET ()
-next_varname: ;
+          break;
         }
       END_DO_BOX_FAST_REV;
     }
   END_SPARP_FOREACH_GP_EQUIV;
   return SPAR_GPT_ENV_PUSH;
+}
+
+int
+sparp_gp_trav_label_external_vars_expn_in (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
+{
+  if (SPAR_IS_BLANK_OR_VAR (curr))
+    {
+      dk_set_t parent_gps = (dk_set_t)common_env;
+      sparp_equiv_t *external_namesake_eq = sparp_find_external_namesake_eq_of_varname (sparp, curr->_.var.vname, parent_gps->next);
+      if (NULL != external_namesake_eq)
+        {
+          sparp_equiv_t *eq = SPARP_EQUIV (sparp, curr->_.var.equiv_idx);
+          eq->e_external_src_idx = external_namesake_eq->e_own_idx;
+          eq->e_rvr.rvrRestrictions |= SPART_VARR_EXTERNAL;
+          curr->_.var.rvr.rvrRestrictions |= SPART_VARR_EXTERNAL;
+        }
+    }
+  return 0;
 }
 
 int
@@ -1564,7 +1591,7 @@ sparp_label_external_vars (sparp_t *sparp, dk_set_t parent_gps)
   tmp_env.next = parent_gps;
   sparp_trav_out_clauses (sparp, top, &tmp_env,
     NULL, NULL,
-    NULL, NULL, sparp_gp_trav_label_external_vars_expn_subq,
+    ((NULL != parent_gps) ? sparp_gp_trav_label_external_vars_expn_in : NULL), NULL, sparp_gp_trav_label_external_vars_expn_subq,
     NULL );
   sparp_gp_trav (sparp, top_pattern, parent_gps,
     sparp_gp_trav_label_external_vars_gp_in, NULL,

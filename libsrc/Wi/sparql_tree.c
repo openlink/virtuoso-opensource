@@ -3023,7 +3023,11 @@ sparp_find_triple_of_var_or_retval (sparp_t *sparp, SPART *gp, SPART *var, int n
     return NULL;
   if (NULL == gp)
     {
+#if 0
       gp = sparp_find_gp_by_alias_int (sparp, sparp->sparp_expr->_.req_top.pattern, var->_.var.selid);
+#else
+      gp = sparp_find_gp_by_alias (sparp, var->_.var.selid);
+#endif
       if (NULL == gp)
         return NULL;
     }
