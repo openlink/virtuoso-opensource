@@ -74,11 +74,17 @@ public class StatementWrapper implements Statement, Closeable {
   }
 
   protected void reset() throws SQLException {
+#if JDK_VER >= 16
+    HashMap<Object,Object> copy = (HashMap<Object,Object>) objsToClose.clone();
+#else
+    HashMap copy = (HashMap) objsToClose.clone();
+#endif
     try {
-      for (Iterator i = objsToClose.keySet().iterator(); i.hasNext(); )
+      for (Iterator i = copy.keySet().iterator(); i.hasNext(); )
         ((ResultSetWrapper)(i.next())).close();
 
       objsToClose.clear();
+      copy.clear();
       if (r_MaxFieldSize != null) {
         stmt.setMaxFieldSize(r_MaxFieldSize.intValue());
       }

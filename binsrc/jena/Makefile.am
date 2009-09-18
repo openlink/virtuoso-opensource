@@ -23,7 +23,7 @@
 if WITH_JDK3
 TARGETS		= virt_jena.jar
 JDK		= @ac_jdk3_path@
-JDK_FLAGS	= -Xlint -O -g:none
+JDK_FLAGS	= -O -g:none
 
 JAVA		= $(JDK)/java
 JAVAC		= $(JDK)/javac
@@ -49,7 +49,7 @@ JENA_SRC= \
 TESTSUITE_SRC= \
 	testsuite/VirtuosoTestGraph.java
 
-JENA_CLASSPATH=lib/arq.jar:lib/iri.jar:lib/jena.jar:lib/jenatest.jar:lib/junit.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc3.jar
+JENA_CLASSPATH=lib/arq.jar:lib/iri.jar:lib/jena.jar:lib/jenatest.jar:lib/junit.jar:lib/xml-apis.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc3.jar
 
 
 all-am:	lib virt_jena.jar

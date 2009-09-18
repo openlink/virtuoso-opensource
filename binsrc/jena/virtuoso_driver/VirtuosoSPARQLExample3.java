@@ -55,7 +55,7 @@ public class VirtuosoSPARQLExample3
 	Node bar3 = Node.createURI("http://example.org/#bar3");
 	Node baz3 = Node.createURI("http://example.org/#baz3");
 
-	List <Triple> triples = new ArrayList <Triple> ();
+	List triples = new ArrayList();
 
 	VirtGraph graph = new VirtGraph ("Example3", url, "dba", "dba");
 

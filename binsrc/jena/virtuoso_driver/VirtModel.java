@@ -52,7 +52,7 @@ public class VirtModel extends ModelCom {
 	return new VirtModel(new VirtGraph(graphName, url, user, password));
     }
 
-    @Override
+//--java5 or newer    @Override
     public Model removeAll() 
     {
 	try {

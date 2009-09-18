@@ -61,8 +61,8 @@ import org.openrdf.rio.RDFFormat;
 import org.openrdf.rio.RDFHandler;
 import org.openrdf.rio.ntriples.NTriplesWriter;
 
-import virtuoso.jdbc3.VirtuosoExtendedString;
-import virtuoso.jdbc3.VirtuosoRdfBox;
+import virtuoso.jdbc4.VirtuosoExtendedString;
+import virtuoso.jdbc4.VirtuosoRdfBox;
 import virtuoso.sesame2.driver.*;
 
 public class VirtuosoTest {
@@ -598,7 +598,7 @@ public class VirtuosoTest {
 		try {
 			String url;
 			url = "jdbc:virtuoso://localhost:1111";
-			Class.forName("virtuoso.jdbc3.Driver");
+			Class.forName("virtuoso.jdbc4.Driver");
 			Connection connection = DriverManager.getConnection(url, "dba", "123456");
 			java.sql.Statement stmt = connection.createStatement();
 

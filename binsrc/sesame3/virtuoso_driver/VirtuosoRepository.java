@@ -37,7 +37,7 @@ import org.openrdf.repository.RepositoryConnection;
 import org.openrdf.repository.RepositoryMetaData;
 import org.openrdf.store.StoreException;
 
-import virtuoso.jdbc3.VirtuosoConnectionPoolDataSource;
+import virtuoso.jdbc4.VirtuosoConnectionPoolDataSource;
 
 /**
  * A Sesame repository that contains RDF data that can be queried and updated.
