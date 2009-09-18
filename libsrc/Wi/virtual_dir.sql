@@ -1052,8 +1052,8 @@ end_loop:;
 	    {
 	      accept := http_request_header_full (http_request_header(), 'Accept', '*/*');
 	      accept := HTTP_RDF_GET_ACCEPT_BY_Q (accept);
-	      if (accept is null)
-	        accept := '';
+	      if (accept is null or accept = '*/*')
+	        accept := 'application/rdf+xml';
 	    }
 	  if ("output-format" is not null)
 	    {
