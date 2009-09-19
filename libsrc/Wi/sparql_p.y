@@ -1071,7 +1071,7 @@ spar_ret_agg_call	/* [Virt]	RetAggCall	 ::=  AggName '(', ( '*' | ( 'DISTINCT'? 
 	;
 
 spar_agg_name	/* [Virt]	AggName	 ::=  'COUNT' | 'AVG' | 'MIN' | 'MAX' | 'SUM'	*/
-	: COUNT_LPAR	{ $$ = t_box_dv_uname_string ("bif:COUNT"); }
+	: COUNT_LPAR	{ $$ = t_box_dv_uname_string ("SPECIAL::bif:COUNT"); }
 	| AVG_L	_LPAR	{ $$ = t_box_dv_uname_string ("bif:AVG"); }
 	| MIN_L	_LPAR	{ $$ = t_box_dv_uname_string ("bif:MIN"); }
 	| MAX_L	_LPAR	{ $$ = t_box_dv_uname_string ("bif:MAX"); }
