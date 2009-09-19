@@ -32,6 +32,7 @@
               version="1.0"
               encoding="UTF-8"
               indent="yes"/>
+  <xsl:variable name="hellhathfrozen" select="false"/>
   <xsl:template match="vm:dav_browser">
     <xsl:choose>
       <xsl:when test="@browse_type='standalone' and @render='popup'">
@@ -309,7 +310,8 @@
                   type="simple"
                   enabled="--case when (aref (self.vc_page.vc_event.ve_path, length (self.vc_page.vc_event.ve_path) - 1) <> 'cont_page.vspx') then 1 else 0 end">
         <div id="dav_br_popup_banner_ico">
-		      <a href="#" style="text-decoration:none;" onclick="javascript: if (opener != null) opener.focus(); window.close()"><img src="images/dav_browser/close_16.png" border="0" hspace="2" alt="Close"/>Close</a>
+	  <xsl:if test="$hellhathfrozen"><a href="#" style="text-decoration:none;" onclick="javascript: if (opener != null) opener.focus(); window.close()"><img src="images/dav_browser/close_16.png" border="0" hspace="2" alt="Close"/>Close</a>
+          </xsl:if>
         </div>
         <div id="dav_br_popup_banner">
           <h3>
@@ -422,7 +424,7 @@ self.vc_data_bind (e);
                           </v:button>
                         </th>
                         <th>
-                          <v:button action="simple" name="size_ord1" value="Size" style="url">
+                          <v:button action="simple" name="size_ord1" value="Size" style="url" xhtml_class="hd_num">
                             <v:on-post><![CDATA[
                               self.set_ord ('size', e, self.ds_items1);
                             ]]></v:on-post>
@@ -3480,7 +3482,7 @@ self.vc_data_bind (e);
                             ]]></v:on-post>
                           </v:button>
                         </th>
-                        <th>
+                        <th class="num">
                           <v:button action="simple" name="size_ord" value="Size" style="url">
                             <v:on-post><![CDATA[
                               self.set_ord ('size', e, self.ds_items);
