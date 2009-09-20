@@ -1696,7 +1696,7 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
         if (!strcmp (qname, "bif:AVG") && (1 == BOX_ELEMENTS (tree->_.funcall.argtrees)))
           return (SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL |
             (sparp_restr_bits_of_expn (sparp, tree->_.funcall.argtrees[0]) & ~SPART_VARR_NOT_NULL) );
-        if (!strcmp (qname, "bif:COUNT"))
+        if (!strcmp (qname, "SPECIAL::bif:COUNT"))
           return (SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL | SPART_VARR_NOT_NULL);
         if (!strncmp (qname, "bif:", 4))
           {
@@ -3511,6 +3511,8 @@ sparp_rettype_of_function (sparp_t *sparp, caddr_t name)
         return SSG_VALMODE_LONG;
       if (!strcmp (name, "SPECIAL::bif:iri_to_id"))
         return SSG_VALMODE_LONG;
+      if (!strcmp (name, "SPECIAL::bif:COUNT"))
+        return SSG_VALMODE_SQLVAL;
       if (
         !strcmp (name, "SPECIAL::bif:__rgs_assert_cbk") ||
         !strcmp (name, "SPECIAL::bif:__rgs_assert") ||
@@ -3547,6 +3549,8 @@ sparp_argtype_of_function (sparp_t *sparp, caddr_t name, int arg_idx)
         return SSG_VALMODE_LONG;
       if (!strcmp (name, "SPECIAL::bif:iri_to_id"))
         return SSG_VALMODE_SQLVAL;
+      if (!strcmp (name, "SPECIAL::bif:COUNT"))
+        return SSG_VALMODE_AUTO;
       if (
         !strcmp (name, "SPECIAL::bif:__rgs_assert_cbk") ||
         !strcmp (name, "SPECIAL::bif:__rgs_assert") ||
@@ -4035,7 +4039,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
         ssg_puts (" (");
         if (tree->_.funcall.agg_mode)
           {
-            if (!strcmp (tree->_.funcall.qname, "bif:COUNT") && ((SPART *)((ptrlong)1) == tree->_.funcall.argtrees[0]))
+            if (!strcmp (tree->_.funcall.qname, "SPECIAL::bif:COUNT") && ((SPART *)((ptrlong)1) == tree->_.funcall.argtrees[0]))
               arg_count = 1; /* Trick to handle SELECT COUNT FROM ... that is translated to SELECT COUNT (1, all vars) */
             if (DISTINCT_L == tree->_.funcall.agg_mode)
               ssg_puts (" DISTINCT");
@@ -4049,7 +4053,14 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
               ssg_putchar (',');
             curr_arg_is_long = SPAR_FUNCALL_ARG_IS_LONG (arg);
             if (curr_arg_is_long || prev_arg_is_long) ssg_newline (0); else ssg_putchar (' ');
-            ssg_print_scalar_expn (ssg, arg, argtype, NULL_ASNAME);
+            if (SSG_VALMODE_AUTO == argtype)
+              {
+                ssg_valmode_t arg_native = sparp_expn_native_valmode (ssg->ssg_sparp, arg);
+                ssg_print_scalar_expn (ssg, arg, arg_native,
+                 ((IS_BOX_POINTER (arg_native)) && (1 < arg_native->qmfColumnCount)) ? COL_IDX_ASNAME : NULL_ASNAME );
+              }
+            else
+              ssg_print_scalar_expn (ssg, arg, argtype, NULL_ASNAME);
             prev_arg_is_long = curr_arg_is_long;
           }
         ssg->ssg_indent--;
@@ -5638,7 +5649,7 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
         ssg_puts (" (");
         if (tree->_.funcall.agg_mode)
           {
-            if (!strcmp (tree->_.funcall.qname, "bif:COUNT") && ((SPART *)((ptrlong)1) == tree->_.funcall.argtrees[0]))
+            if (!strcmp (tree->_.funcall.qname, "SPECIAL::bif:COUNT") && ((SPART *)((ptrlong)1) == tree->_.funcall.argtrees[0]))
               arg_count = 1; /* Trick to handle SELECT COUNT FROM ... that is translated to SELECT COUNT (1, all vars) */
             if (DISTINCT_L == tree->_.funcall.agg_mode)
               ssg_puts (" DISTINCT");
@@ -5646,11 +5657,19 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
         ssg->ssg_indent++;
         for (arg_ctr = 0; arg_ctr < arg_count; arg_ctr++)
           {
+            SPART *arg = tree->_.funcall.argtrees[arg_ctr];
             ssg_valmode_t argtype = sparp_argtype_of_function (ssg->ssg_sparp, tree->_.funcall.qname, arg_ctr);
             if (arg_ctr > 0)
               ssg_putchar (',');
             if (bigtext) ssg_newline (0); else ssg_putchar (' ');
-            ssg_print_retval_simple_expn (ssg, gp, tree->_.funcall.argtrees[arg_ctr], argtype, NULL_ASNAME);
+            if (SSG_VALMODE_AUTO == argtype)
+              {
+                ssg_valmode_t arg_native = sparp_expn_native_valmode (ssg->ssg_sparp, arg);
+                ssg_print_retval_simple_expn (ssg, gp, arg, arg_native,
+                 ((IS_BOX_POINTER (arg_native)) && (1 < arg_native->qmfColumnCount)) ? COL_IDX_ASNAME : NULL_ASNAME );
+              }
+            else
+              ssg_print_retval_simple_expn (ssg, gp, arg, argtype, NULL_ASNAME);
           }
         ssg->ssg_indent--;
         ssg_putchar (')');

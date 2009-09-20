@@ -1095,6 +1095,25 @@ sp_print_specs (search_spec_t * sp)
 #endif
 
 
+#ifdef MTX_DEBUG
+void
+itc_assert_no_reg (it_cursor_t * itc)
+{
+  buffer_desc_t * buf;
+  if (itc->itc_is_registered || itc->itc_buf_registered) GPF_T1 ("itc not supposed to be registered");
+  ITC_IN_KNOWN_MAP (itc, itc->itc_page);
+  buf = IT_DP_TO_BUF (itc->itc_tree, itc->itc_page);
+  if (buf)
+    {
+      it_cursor_t * reg;
+      for (reg  = buf->bd_registered; reg; reg = reg->itc_next_on_page)
+	if (itc == reg) GPF_T1 ("itc was supposed not to be registered but was found in the registered list of its buf");
+    }
+  ITC_LEAVE_MAPS (itc);
+}
+#endif
+
+
 int
 ks_start_search (key_source_t * ks, caddr_t * inst, caddr_t * state,
     it_cursor_t * itc, buffer_desc_t ** buf_ret, table_source_t * ts,
@@ -1192,6 +1211,7 @@ ks_start_search (key_source_t * ks, caddr_t * inst, caddr_t * state,
       }
   }
   ITC_FAILED
+    itc_assert_no_reg (itc);
   {
   }
   END_FAIL (itc);
@@ -1553,6 +1573,7 @@ table_source_input_unique (table_source_t * ts, caddr_t * inst, caddr_t * state)
   rc = ks_start_search (ts->ts_order_ks, inst, state,
       order_itc, &order_buf, ts,
       ts->ts_is_unique ? SM_READ_EXACT : SM_READ);
+  itc_assert_no_reg (order_itc);
   if (!rc)
     {
       int any_passed = order_itc->itc_cl_qf_any_passed;

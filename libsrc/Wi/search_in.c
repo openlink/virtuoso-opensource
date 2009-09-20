@@ -406,6 +406,11 @@ IRI64K_NN (1, 1, lt, gt)
 CMPF_END
 
 
+CMPF_HEADER (anyn)
+ANYK1_NN (0, 0, lt, gt)
+CMPF_END
+
+
 CMPF_HEADER (iri64n_iri64n_anyn)
 IRI64K_NN (0, 0, lt, gt)
 IRI64K_NN (1, 1, lt, gt)
@@ -658,6 +663,9 @@ search_inline_init ()
     {CMP_EQ, CMP_NONE, DV_IRI_ID_8, 1}
   SPF_END;
 
+  SPF (anyn)
+    {CMP_EQ, CMP_NONE, DV_ANY, 1}
+  SPF_END;
 
   SPF (iri64n)
     {CMP_EQ, CMP_NONE, DV_IRI_ID_8, 1}

@@ -344,6 +344,25 @@ sqlc_call_exp (sql_comp_t * sc, dk_set_t * code, state_slot_t * ret, ST * tree)
 
 
 state_slot_t *
+sqlc_check_const_call (sql_comp_t * sc, ST * tree)
+{
+  /* for iri's known at compile time, make them a const */
+  caddr_t name;
+  if ((name = sqlo_iri_constant_name (tree)))
+    {
+      caddr_t data = key_name_to_iri_id (NULL, name, 0);
+      if (DV_IRI_ID == DV_TYPE_OF (data))
+	{
+	  state_slot_t * ssl = ssl_new_constant (sc->sc_cc, data);
+	  dk_free_box (data);
+	  return ssl;
+	}
+    }
+  return NULL;
+}
+
+
+state_slot_t *
 sqlc_new_temp (sql_comp_t * sc, const char *name, dtp_t dtp)
 {
   state_slot_t *out;
@@ -702,7 +721,10 @@ scalar_exp_generate (sql_comp_t * sc, ST * tree, dk_set_t * code)
       seg_return (sqlc_coalesce_exp (sc, tree, code));
     case CALL_STMT:
       {
-	state_slot_t *res = sqlc_new_temp (sc, "callret", DV_UNKNOWN);
+	state_slot_t *res = sqlc_check_const_call (sc, tree);
+	if (res)
+	  seg_return (res);
+	res = sqlc_new_temp (sc, "callret", DV_UNKNOWN);
 	res->ssl_is_callret = 1;
 	tree = sqlo_udt_check_method_call (sc->sc_so, sc, tree);
 	sqlc_call_exp (sc, code, res, tree);

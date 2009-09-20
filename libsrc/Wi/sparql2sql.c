@@ -271,7 +271,7 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
     {
       SPART *countagg;
       t_set_push (&new_vars, (caddr_t)((ptrlong)1));
-      countagg = spar_make_funcall (sparp, 1, "bif:COUNT", (SPART **)t_list_to_array (new_vars));
+      countagg = spar_make_funcall (sparp, 1, "SPECIAL::bif:COUNT", (SPART **)t_list_to_array (new_vars));
       sparp->sparp_expr->_.req_top.retvals = (SPART **)t_list (1, countagg);
     }*/
   else

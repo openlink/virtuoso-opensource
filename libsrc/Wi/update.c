@@ -926,8 +926,8 @@ update_node_run (update_node_t * upd, caddr_t * inst, caddr_t * state)
 	  return;
 	}
     }
-  update_node_run_1 (upd, inst, state);
-  ROW_AUTOCOMMIT (inst);
+  else
+    GPF_T1 ("this func is for keyset upd only");
 }
 
 
@@ -947,12 +947,12 @@ update_node_input (update_node_t * upd, caddr_t * inst, caddr_t * state)
 
   if (!upd->upd_trigger_args)
     {
-      update_node_run (upd, inst, state);
+      update_node_run_1 (upd, inst, state);
     }
   else
     {
       trig_wrapper (inst, upd->upd_trigger_args, upd->upd_table,
-	  TRIG_UPDATE, (data_source_t *) upd, (qn_input_fn) update_node_run);
+	  TRIG_UPDATE, (data_source_t *) upd, (qn_input_fn) update_node_run_1);
     }
   qn_send_output ((data_source_t *) upd, state);
 }
