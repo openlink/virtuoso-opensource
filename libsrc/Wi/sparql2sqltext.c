@@ -1433,7 +1433,7 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
       if (NULL == member_eq)
         continue;
       member_valmode = sparp_equiv_native_valmode (sparp, gp_member, member_eq);
-      if (member_eq->e_rvr.rvrRestrictions & SPART_VARR_NOT_NULL)
+      if ((OPTIONAL_L != gp_member->_.gp.subtype) && (member_eq->e_rvr.rvrRestrictions & SPART_VARR_NOT_NULL))
         largest_intersect = ssg_largest_intersect_valmode (largest_intersect, member_valmode);
       else if (SSG_VALMODE_AUTO == largest_intersect)
         largest_optional_intersect = ssg_largest_intersect_valmode (largest_optional_intersect, member_valmode);
