@@ -85,28 +85,28 @@ unsigned char dks_esc_char_props[0x100] = {
 
 
 dks_charclass_props_t dks_charclasses['Q'+1-'>'] = {
-/*		|0	|1	|2	|3	|4	|5	|6	|7	|8	|9	|10	|11	|12	|13	*/
-/*		|NONE	|PTEXT	|SQATTR	|DQATTR	|COMMENT|CDATA	|URI	|DAV	|URI_R	|URI_NR	|TTL_SQ	|TTL_DQ	|TTLIRI	|JS_SQ	*/
-/* > wide    */ {0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,PCT	,BSLASHU,BSLASHU,BSLASHU,BSLASHU},
-/* ? enc.miss*/ {BAD	,LATTICE,LATTICE,LATTICE,LATTICE,CDATA2	,PCT	,PCT	,PCT	,PCT	,BSLASHU,BSLASHU,BSLASHU,BSLASHU},
-/* @ letters */	{0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	},
-/* A 8-bit   */	{0	,0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,BSLASHU,BSLASHU,BSLASHU,BSLASHU},
-/* B < 0x20  */	{BAD	,LATTICE,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHU,BSLASHU,BSLASHU,BSLASHU},
-/* C !       */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,PCT	,0	,0	,0	,0	},
-/* D 0x09    */	{0	,0	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLASHU,BSLASHC},
-/* E 0x0A    */	{0	,0	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLASHU,DOCWRI },
-/* F 0x0D    */	{0	,SOAPCR	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLASHU,BSLASHC},
-/* G "       */	{0	,QUOT	,0	,QUOT	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,BSLASHC,BSLASHU,0	},
-/* H &       */	{0	,AMP	,AMPATTR,AMPATTR,0	,0	,PCT	,PCT	,PCT	,0	,0	,0	,0	,0	},
-/* I '       */	{0	,LATTICE,LATTICE,0	,0	,0	,PCT	,0	,0	,0	,BSLASHC,0	,BSLASHU,BSLASHC},
-/* J 0x20    */	{0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,0	,BSLASHU,0	},
-/* K <       */	{0	,LT	,LTATTR	,LTATTR	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,0	,BSLASHU,0	},
-/* L >       */	{0	,GT	,GTATTR	,GTATTR	,COMMENT,CDATA	,PCT	,PCT	,PCT	,PCT	,0	,0	,BSLASHU,0	},
-/* M %	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,0	,0	,0	,0	},
-/* N /	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,0	,0	,0	,0	,0	},
-/* O *	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,0	,0	,0	,0	},
-/* P punct-! */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,0	,0	,0	,0	,0	},
-/* Q \	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,BSLASHC,BSLASHC,BSLASHU,BSLASHC} };
+/*		|0	|1	|2	|3	|4	|5	|6	|7	|8	|9	|10	|11	|12	|13	|13	*/
+/*		|NONE	|PTEXT	|SQATTR	|DQATTR	|COMMENT|CDATA	|URI	|DAV	|URI_R	|URI_NR	|TTL_SQ	|TTL_DQ	|TTLIRI	|JS_SQ	|JS_DQ	*/
+/* > wide    */ {0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,PCT	,BSLASHU,BSLASHU,BSLASHU,BSLASHU,BSLASHU},
+/* ? enc.miss*/ {BAD	,LATTICE,LATTICE,LATTICE,LATTICE,CDATA2	,PCT	,PCT	,PCT	,PCT	,BSLASHU,BSLASHU,BSLASHU,BSLASHU,BSLASHU},
+/* @ letters */	{0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	},
+/* A 8-bit   */	{0	,0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,BSLASHU,BSLASHU,BSLASHU,BSLASHU,BSLASHU},
+/* B < 0x20  */	{BAD	,LATTICE,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHU,BSLASHU,BSLASHU,BSLASHU,BSLASHU},
+/* C !       */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,PCT	,0	,0	,0	,0	,0	},
+/* D 0x09    */	{0	,0	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLASHU,BSLASHC,BSLASHC},
+/* E 0x0A    */	{0	,0	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLASHU,DOCWRI ,DOCWRI },
+/* F 0x0D    */	{0	,SOAPCR	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLASHU,BSLASHC,BSLASHC},
+/* G "       */	{0	,QUOT	,0	,QUOT	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,BSLASHC,BSLASHU,0	,BSLASHC},
+/* H &       */	{0	,AMP	,AMPATTR,AMPATTR,0	,0	,PCT	,PCT	,PCT	,0	,0	,0	,0	,0	,0	},
+/* I '       */	{0	,LATTICE,LATTICE,0	,0	,0	,PCT	,0	,0	,0	,BSLASHC,0	,BSLASHU,BSLASHC,0	},
+/* J 0x20    */	{0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,0	,BSLASHU,0	,0	},
+/* K <       */	{0	,LT	,LTATTR	,LTATTR	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,0	,BSLASHU,0	,0	},
+/* L >       */	{0	,GT	,GTATTR	,GTATTR	,COMMENT,CDATA	,PCT	,PCT	,PCT	,PCT	,0	,0	,BSLASHU,0	,0	},
+/* M %	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,0	,0	,0	,0	,0	},
+/* N /	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,0	,0	,0	,0	,0	,0	},
+/* O *	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,0	,0	,0	,0	,0	},
+/* P punct-! */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,0	,0	,0	,0	,0	,0	},
+/* Q \	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,BSLASHC,BSLASHC,BSLASHU,BSLASHC,BSLASHC} };
 
 unsigned char dks_esc_bslashc[0x80] = {
 /* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
