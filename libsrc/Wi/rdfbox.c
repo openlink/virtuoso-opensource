@@ -2008,17 +2008,17 @@ http_talis_json_write_ref_obj (dk_session_t *ses, caddr_t obj_iri, int obj_is_bn
 {
   if (obj_is_bnode)              /* 0           1            2           3  */
     {                            /* 01.23456.7890.123456.789.012345.6789.01 */
-      session_buffered_write (ses, "{ \'type\' : \'bnode\', \'value\' : \'", 31);
-      dks_esc_write (ses, obj_iri, box_length (obj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_SQ);
+      session_buffered_write (ses, "{ \"type\" : \"bnode\", \"value\" : \"", 31);
+      dks_esc_write (ses, obj_iri, box_length (obj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
                                  /* .0123 */
-      session_buffered_write (ses, "\' }", 3);
+      session_buffered_write (ses, "\" }", 3);
     }
   else                           /* 0           1            2            */
     {                            /* 01.23456.7890.1234.567.890123.4567.89 */
-      session_buffered_write (ses, "{ \'type\' : \'uri\', \'value\' : \'", 29);
-      dks_esc_write (ses, obj_iri, box_length (obj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_SQ);
+      session_buffered_write (ses, "{ \"type\" : \"uri\", \"value\" : \"", 29);
+      dks_esc_write (ses, obj_iri, box_length (obj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
                                  /* .0123 */
-      session_buffered_write (ses, "\' }", 3);
+      session_buffered_write (ses, "\" }", 3);
     }
 }
 
@@ -2045,7 +2045,7 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
     }
                              /* 0           1           2           3   */
                              /* 01.23456.7890.12345678.901.234567.89012 */
-  session_buffered_write (ses, "{ \'type\' : \'literal\', \'value\' : ", 32);
+  session_buffered_write (ses, "{ \"type\" : \"literal\", \"value\" : ", 32);
 
   switch (obj_box_value_dtp)
     {
@@ -2053,9 +2053,9 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
       {
         char temp [50];
         dt_to_iso8601_string (obj_box_value, temp, sizeof (temp));
-        session_buffered_write_char ('\'', ses);
+        session_buffered_write_char ('\"', ses);
         session_buffered_write (ses, temp, strlen (temp));
-        session_buffered_write_char ('\'', ses);
+        session_buffered_write_char ('\"', ses);
         if (NULL == type_uri)
           switch (DT_DT_TYPE(obj))
             {
@@ -2066,9 +2066,9 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
         break;
       }
     case DV_STRING:
-      session_buffered_write_char ('\'', ses);
-      dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_SQ);
-      session_buffered_write_char ('\'', ses);
+      session_buffered_write_char ('\"', ses);
+      dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+      session_buffered_write_char ('\"', ses);
       break;
     case DV_DB_NULL:
       session_buffered_write (ses, "(NULL)", 6);
@@ -2077,10 +2077,10 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
       {
         caddr_t tmp_utf8_box = box_cast_to_UTF8 ((caddr_t *)qi, obj_box_value);
         if (DV_RDF == obj_dtp)
-          session_buffered_write_char ('\'', ses);
+          session_buffered_write_char ('\"', ses);
         session_buffered_write (ses, tmp_utf8_box, box_length (tmp_utf8_box) - 1);
         if (DV_RDF == obj_dtp)
-          session_buffered_write_char ('\'', ses);
+          session_buffered_write_char ('\"', ses);
         dk_free_box (tmp_utf8_box);
         if (NULL == type_uri)
           type_uri = xsd_type_of_box (obj_box_value);
@@ -2095,19 +2095,19 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
           caddr_t lang_id = rdf_lang_twobyte_to_string (rb->rb_lang);
           if (NULL != lang_id) /* just in case if lang cannot be found, may be signal an error ? */
             {                            /* 012.34567.8901.23 */
-              session_buffered_write (ses, " , \'lang\' : \'", 13);
+              session_buffered_write (ses, " , \"lang\" : \"", 13);
               lang_id = rdf_lang_twobyte_to_string (((rdf_box_t *)obj)->rb_lang);
               if (NULL != lang_id)
-                dks_esc_write (ses, lang_id, box_length (lang_id) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_SQ);
-              session_buffered_write_char ('\'', ses);
+                dks_esc_write (ses, lang_id, box_length (lang_id) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+              session_buffered_write_char ('\"', ses);
             }
         }
     }
   if (NULL != type_uri)
     {                            /* 012.345678901.2345.67 */
-      session_buffered_write (ses, " , \'datatype\' : \'", 17);
-      dks_esc_write (ses, type_uri, box_length (type_uri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_SQ);
-      session_buffered_write_char ('\'', ses);
+      session_buffered_write (ses, " , \"datatype\" : \"", 17);
+      dks_esc_write (ses, type_uri, box_length (type_uri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+      session_buffered_write_char ('\"', ses);
     }
   session_buffered_write (ses, " }", 2);
 }
@@ -2156,27 +2156,27 @@ bif_http_talis_json_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
     {
       if (NULL != env->tje_prev_pred)
         {                            /* 012345.6789 */
-          session_buffered_write (ses, " } } ,\n  ", 9);
+          session_buffered_write (ses, " ] } ,\n  ", 9);
           dk_free_tree (env->tje_prev_subj);	env->tje_prev_subj = NULL;
           dk_free_tree (env->tje_prev_pred);	env->tje_prev_pred = NULL;
-        }                        /* 01.23 */
-      session_buffered_write (ses, "{ \'", 3);
-      dks_esc_write (ses, subj_iri, box_length (subj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_SQ);
-                                 /* .01234 */
-      session_buffered_write (ses, "\' : ", 4);
+        }
+      session_buffered_write_char ('\"', ses);
+      dks_esc_write (ses, subj_iri, box_length (subj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+                                 /* .0123456 */
+      session_buffered_write (ses, "\" : { ", 6);
       env->tje_prev_subj = subj_iri_is_new ? subj_iri : box_copy (subj_iri); subj_iri_is_new = 0;
     }
   if ((NULL == env->tje_prev_pred) || strcmp (env->tje_prev_pred, pred_iri))
     {
       if (NULL != env->tje_prev_pred)
         {                            /* 0123.456789 */
-          session_buffered_write (ses, " } ,\n    ", 9);
+          session_buffered_write (ses, " ] ,\n    ", 9);
           dk_free_tree (env->tje_prev_pred);	env->tje_prev_pred = NULL;
-        }                        /* 01.23 */
-      session_buffered_write (ses, "{ \'", 3);
-      dks_esc_write (ses, pred_iri, box_length (pred_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_SQ);
-                                 /* .01234 */
-      session_buffered_write (ses, "\' : ", 4);
+        }
+      session_buffered_write_char ('\"', ses);
+      dks_esc_write (ses, pred_iri, box_length (pred_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+                                 /* .0123456 */
+      session_buffered_write (ses, "\" : [ ", 6);
       env->tje_prev_pred = pred_iri_is_new ? pred_iri : box_copy (pred_iri); pred_iri_is_new = 0;
     }
   else                         /* 01.23456789 */

@@ -3166,7 +3166,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (inout triples any, inout ses 
         status := 1;
     }
   if (status)
-    http (' } }\n', ses);
+    http (' ] }\n', ses);
   http ('}\n', ses);
 }
 ;

@@ -334,7 +334,8 @@ the order of columns in dks_charclasses, file dks_esc.c */
 #define DKS_ESC_TTL_DQ		0x0B
 #define DKS_ESC_TTL_IRI		0x0C
 #define DKS_ESC_JSWRITE_SQ	0x0D
-#define COUNTOF__DKS_ESC	0x0E
+#define DKS_ESC_JSWRITE_DQ	0x0E
+#define COUNTOF__DKS_ESC	0x0F
 
 #define DKS_ESC_COMPAT_HTML	0x100
 #define DKS_ESC_COMPAT_SOAP	0x200
