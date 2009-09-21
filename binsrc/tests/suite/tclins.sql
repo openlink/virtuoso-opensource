@@ -5,8 +5,6 @@
 echo both "Cluster insert replacing and soft\n";
 drop table ko;
 drop table kd;
-drop table kdr;
-
 
 create table ko (k1 int, k2 int, primary key (k1, k2));
 alter index ko on ko partition (k1  int);
@@ -16,12 +14,6 @@ create table kd (k1 int, ku int,nu int, primary key (k1));
 alter index kd on kd partition (k1 int);
 create unique index ku on kd (ku) partition (ku int);
 create index nu on kd (nu) partition (nu int);
-
-
-create table kdr (k1 int, ku int,nu int, primary key (k1));
-alter index kdr on kdr partition cluster replicated;
-create unique index kur on kdr (ku) partition cluster replicated;
-create index nur on kdr (nu) partition cluster replicated;
 
 
 insert into kd values (4, 5, 6);
@@ -57,24 +49,3 @@ insert soft kd values (5, 10, 11);
 select * from kd where k1 = 5;
 echo both $if $equ $last[3] 7 "PASSED" "***FAILED";
 echo both ": ins soft ok\n";
-
-
-insert into kdr values (4, 5, 6);
-insert replacing kdr values (5, 6, 7);
-insert into kdr values (6, 7, 8);
-
-
-set autocommit manual;
-insert replacing kdr values (4, 6, 7);
-echo both $if $equ $sqlstate 23000 "PASSED" "***FAILED";
-echo both ": non unq 2nd in ins repl replicated\n";
-
-rollback work;
-set autocommit off;
-
-insert replacing kdr values (4, 10, 11);
-
-select * from kdr where k1 = 4;
-echo both $if $equ $last[3] 11 "PASSED" "***FAILED";
-echo both ": ins repl replicated ok\n";
-
