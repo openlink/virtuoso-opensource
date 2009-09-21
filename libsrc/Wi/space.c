@@ -350,7 +350,7 @@ void bing () {}
 #endif
 
 void
-it_free_blob_dp_no_read (index_tree_t * it, dp_addr_t dp)
+it_free_dp_no_read (index_tree_t * it, dp_addr_t dp, int dp_type)
 {
   buffer_desc_t * buf;
   dp_addr_t phys_dp = 0;
@@ -367,7 +367,7 @@ it_free_blob_dp_no_read (index_tree_t * it, dp_addr_t dp)
 /* the buffer can be a being read decoy with no dp, so check dps only if not being read */
     }
   else if (phys_dp != dp)
-    GPF_T1 ("A blob is not supposed to be remapped in isp_free_blob_dp_no_read");
+    GPF_T1 ("A blob/hash temp dp is not supposed to be remapped in isp_free_blob_dp_no_read");
   if (buf)
     {
       it_cursor_t itc_auto;
@@ -382,7 +382,7 @@ it_free_blob_dp_no_read (index_tree_t * it, dp_addr_t dp)
 	  ITC_LEAVE_MAPS (itc);
 	  return;
 	}
-      if (DPF_BLOB != SHORT_REF (buf->bd_buffer + DP_FLAGS))
+      if (dp_type != SHORT_REF (buf->bd_buffer + DP_FLAGS))
 	GPF_T1 ("About to delete non-blob page from blob page dir.");
       ITC_IN_KNOWN_MAP (itc, dp); /* get back in, could have come out if waited */
       it_free_page (it, buf);
@@ -393,17 +393,19 @@ it_free_blob_dp_no_read (index_tree_t * it, dp_addr_t dp)
     dp_addr_t remap = (dp_addr_t) (ptrlong) gethash (DP_ADDR2VOID (dp), &itm->itm_remap);
     dp_addr_t cpt_remap = (dp_addr_t) (ptrlong) DP_CHECKPOINT_REMAP (it->it_storage, dp);
     if (cpt_remap)
-      GPF_T1 ("Blob not expected to have cpt remap in delete no read");
-    it->it_n_blob_est--;
+      GPF_T1 ("Blob/hash temp dp  not expected to have cpt remap in delete no read");
+    if (DPF_BLOB == dp_type)
+      it->it_n_blob_est--;
     if (remap)
       {
 	/* if this was CREATED AND DELETED without intervening checkpoint the delete
 	 * does not carry outside commit space. */
 	remhash (DP_ADDR2VOID (dp), &itm->itm_remap);
-	em_free_dp (it->it_extent_map, dp, EXT_BLOB);
+	em_free_dp (it->it_extent_map, dp, DPF_BLOB == dp_type ? EXT_BLOB : EXT_INDEX);
       }
     else
       {
+	if (DPF_HASH == dp_type) GPF_T1 ("a hash temp page is not supposed to be in cpt s[space");
 	sethash (DP_ADDR2VOID (dp), &itm->itm_remap, (void *) (ptrlong) DP_DELETED);
       }
   }

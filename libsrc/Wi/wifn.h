@@ -444,7 +444,7 @@ dbe_schema_t * isp_schema_1 (void * thr);
 #define isp_schema(x) (wi_inst.wi_schema)
 buffer_desc_t * it_new_page (index_tree_t * isp, dp_addr_t nearxx, int type, int in_pmap, it_cursor_t * has_hold);
 void it_free_page (index_tree_t * it, buffer_desc_t * buf);
-void it_free_blob_dp_no_read (index_tree_t * it, dp_addr_t dp);
+void it_free_dp_no_read (index_tree_t * it, dp_addr_t dp, int dp_type);
 void it_cache_check (index_tree_t * it, int mode);
 #define IT_CHECK_ALL 0
 #define IT_CHECK_FAST 1

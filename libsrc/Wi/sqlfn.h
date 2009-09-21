@@ -1276,5 +1276,10 @@ caddr_t box_append_1 (caddr_t box, caddr_t elt);
 
 query_t * sch_ua_func_ua (caddr_t name);
 
+#ifdef MTX_DEBUG
+void itc_assert_no_reg (it_cursor_t * itc);
+#else
+#define itc_assert_no_reg(itc)
+#endif
 
 #endif /* _SQLFN_H */

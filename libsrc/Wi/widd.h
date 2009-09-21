@@ -363,9 +363,10 @@ struct dbe_key_s
   char			key_is_unique;
   char			key_is_temp;
   char			key_is_bitmap;
+  char			key_simple_compress;
+  key_ver_t		key_version;
   key_id_t		key_migrate_to;
   key_id_t		key_super_id;
-  key_ver_t		key_version;
   dbe_key_t **		key_versions;
   dk_set_t		key_supers;
   key_partition_def_t *	key_partition;

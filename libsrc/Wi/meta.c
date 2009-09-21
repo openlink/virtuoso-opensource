@@ -1345,6 +1345,25 @@ dbe_key_compression (dbe_key_t * key)
 
 
 void
+key_set_simple_compression (dbe_key_t * key)
+{
+  if (dk_set_length (key->key_key_compressibles) == dk_set_length (key->key_row_compressibles)
+      && !key->key_key_pref_compressibles && !key->key_row_pref_compressibles)
+    key->key_simple_compress = 1;
+  else
+    {
+      int inx;
+      for (inx = 0; inx < KEY_MAX_VERSIONS; inx++)
+	{
+	  dbe_key_t * ver = key->key_versions[inx];
+	  if (ver)
+	    ver->key_simple_compress = 0;
+	}
+    }
+}
+
+
+void
 dbe_key_layout (dbe_key_t * key, dbe_schema_t * sc)
 {
   dk_set_t no_comp = NULL;
@@ -1389,6 +1408,7 @@ dbe_key_layout (dbe_key_t * key, dbe_schema_t * sc)
       col->col_compression = CC_UNDEFD;
     }
   END_DO_SET();
+  key_set_simple_compression (key);
   dk_set_free (no_comp);
 }
 

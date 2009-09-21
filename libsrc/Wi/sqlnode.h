@@ -1070,9 +1070,9 @@ typedef struct setp_node_s
     dk_set_t		setp_key_is_desc;
     dk_set_t		setp_dependent;
     dk_set_t		setp_gb_ops;	/* AMMSC for group by */
-    int			setp_distinct;
+    char		setp_distinct;
+    char		setp_set_op;
     key_id_t		setp_temp_key;
-    int			setp_set_op;
     state_slot_t *	setp_top;
     state_slot_t *	setp_top_skip;
     state_slot_t *	 setp_row_ctr;

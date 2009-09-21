@@ -185,7 +185,7 @@ extern int enable_setp_partition;
 extern int enable_min_card;
 extern int enable_dfg_print;
 extern int enable_distinct_sas;
-int32 ha_rehash_pct;
+int32 ha_rehash_pct = 300;
 extern int c_use_aio;
 
 long  tft_random_seek;
@@ -1674,7 +1674,7 @@ key_n_buffers (dbe_key_t * key, int dirty)
 	{
 	  buffer_desc_t * buf = &bp->bp_bufs[inx2];
 	  if (buf->bd_tree && buf->bd_tree->it_key == key
-	      && (!dirty || !buf->bd_is_dirty))
+	      && (!dirty || buf->bd_is_dirty))
 	    ct++;
 	}
     }

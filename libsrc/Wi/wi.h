@@ -359,7 +359,7 @@ struct hash_index_s
   mem_pool_t *		hi_pool;
   id_hash_t *		hi_memcache;
   int			hi_size;
-  int32			hi_count;
+  int64			hi_count;
 #ifdef OLD_HASH
   hash_inx_elt_t **	hi_elements;
 #endif

@@ -1233,7 +1233,7 @@ blob_delete_via_dir (it_cursor_t * it, blob_layout_t * bl)
       for (i = 0; i < n; i++)
 	{
 	  ITC_IN_KNOWN_MAP (it, bl->bl_pages[i]);
-	  it_free_blob_dp_no_read (it->itc_tree, bl->bl_pages[i]);
+	  it_free_dp_no_read (it->itc_tree, bl->bl_pages[i], DPF_BLOB);
 	  blob_releases_noread++;
 	  blob_releases_dir++;
 	  blob_releases++;

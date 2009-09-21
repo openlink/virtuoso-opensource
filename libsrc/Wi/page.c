@@ -1133,6 +1133,9 @@ page_col_cmp_1 (buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * cl, caddr_t v
 #endif
 
 
+extern unsigned char byte_logcount[256];
+
+
 void
 pf_shift_compress (page_fill_t * pf, row_delta_t * rd, int * del_ref_ret)
 {
@@ -1140,76 +1143,95 @@ pf_shift_compress (page_fill_t * pf, row_delta_t * rd, int * del_ref_ret)
   short ref;
   dk_set_t compressible;
   buffer_desc_t * buf = pf->pf_current;
-  short shift = RD_INSERT == rd->rd_op  ? 1 : -1;
   row_lock_t ** rls = pf->pf_rls;
   int rl_fill = 0;
   page_lock_t * pl = buf->bd_pl;
   page_map_t * pm = buf->bd_content_map;
-  int irow;
+  int irow, map_pos = rd->rd_map_pos;
   it_cursor_t * reg = buf->bd_registered;
-  for (irow = rd->rd_map_pos; irow < pm->pm_count; irow++)
+  if (rd->rd_key->key_simple_compress)
     {
-      db_buf_t row = buf->bd_buffer + pm->pm_entries[irow];
-      row_ver_t rv = IE_ROW_VERSION (row);
-      key_ver_t kv = IE_KEY_VERSION (row);
-      dbe_key_t * key = rd->rd_key->key_versions[kv];
-      if (rv)
+      for (irow = map_pos; irow < pm->pm_count; irow++)
 	{
-	  compressible = kv ? key->key_row_compressibles : key->key_key_compressibles;
+	  db_buf_t row = buf->bd_buffer + pm->pm_entries[irow];
+	  row_ver_t rv = IE_ROW_VERSION (row);
+	  unsigned char n_offset = byte_logcount[rv & 0x1f] * 2 + 2, off;
+	  for (off = 2; off < n_offset; off+= 2)
+	    {
+	      if ((ROW_NO_MASK & (ref = SHORT_REF (row + off))) >= map_pos)
+		{
+		  OFFSET_CK (row + off);
+		  SHORT_SET (row + off, ref + 1);
+		}
+	    }
+	}
+    }
+  else
+    {
+      for (irow = map_pos; irow < pm->pm_count; irow++)
+	{
+	  db_buf_t row = buf->bd_buffer + pm->pm_entries[irow];
+	  row_ver_t rv = IE_ROW_VERSION (row);
+	  key_ver_t kv = IE_KEY_VERSION (row);
+	  dbe_key_t * key = rd->rd_key->key_versions[kv];
+	  if (rv)
+	    {
+	      compressible = kv ? key->key_row_compressibles : key->key_key_compressibles;
+	      DO_SET (dbe_col_loc_t *, cl, &compressible)
+		{
+		  if ((rv & cl->cl_row_version_mask)
+		      && (ROW_NO_MASK & (ref = SHORT_REF (row + cl->cl_pos[rv]))) >= rd->rd_map_pos)
+		    {
+#if 0
+		      if (ref == rd->rd_map_pos && del_ref_ret)
+			{
+			  *del_ref_ret = irow;
+			  return;
+			}
+#endif
+		      OFFSET_CK (row + cl->cl_pos[rv]);
+		      SHORT_SET (row + cl->cl_pos[rv], ref + 1);
+		    }
+		}
+	      END_DO_SET();
+	    }
+	  compressible = kv ? key->key_row_pref_compressibles : key->key_key_pref_compressibles;
 	  DO_SET (dbe_col_loc_t *, cl, &compressible)
 	    {
-	      if ((rv & cl->cl_row_version_mask)
-		  && (ROW_NO_MASK & (ref = SHORT_REF (row + cl->cl_pos[rv]))) >= rd->rd_map_pos)
+	      short pos;
+	      if ((pos = cl->cl_pos[rv]) < 0)
 		{
-#if 0
-		  if (ref == rd->rd_map_pos && del_ref_ret)
+		  db_buf_t refp = NULL;
+		  if (CL_FIRST_VAR == pos)
 		    {
-		      *del_ref_ret = irow;
-		      return;
+		      if (COL_VAR_SUFFIX & SHORT_REF (row + key->key_length_area[rv]))
+			refp = row + (kv ? key->key_row_var_start[rv] : key->key_key_var_start[rv]);
 		    }
+		  else
+		    {
+		      if (COL_VAR_SUFFIX & SHORT_REF (row + 2 - pos))
+			refp = row + (ROW_NO_MASK & SHORT_REF (row - pos));
+		    }
+		  if (refp)
+		    {
+		      short ref = SHORT_REF_NA (refp);
+#if 0
+		      if ((ROW_NO_MASK & ref) == rd->rd_map_pos && del_ref_ret)
+			{
+			  *del_ref_ret = irow;
+			  return;
+			}
 #endif
-		  OFFSET_CK (row + cl->cl_pos[rv]);
-		  SHORT_SET (row + cl->cl_pos[rv], ref + shift);
+		      if((ROW_NO_MASK & ref) >= rd->rd_map_pos)
+			{
+			  OFFSET_CK (refp);
+			  SHORT_SET_NA (refp, ref + 1);
+			}
+		    }
 		}
 	    }
 	  END_DO_SET();
 	}
-      compressible = kv ? key->key_row_pref_compressibles : key->key_key_pref_compressibles;
-      DO_SET (dbe_col_loc_t *, cl, &compressible)
-	{
-	  short pos;
-	  if ((pos = cl->cl_pos[rv]) < 0)
-	    {
-	      db_buf_t refp = NULL;
-	      if (CL_FIRST_VAR == pos)
-		{
-		  if (COL_VAR_SUFFIX & SHORT_REF (row + key->key_length_area[rv]))
-		    refp = row + (kv ? key->key_row_var_start[rv] : key->key_key_var_start[rv]);
-		}
-	      else
-		{
-		  if (COL_VAR_SUFFIX & SHORT_REF (row + 2 - pos))
-		    refp = row + (ROW_NO_MASK & SHORT_REF (row - pos));
-		}
-	      if (refp)
-		{
-		  short ref = SHORT_REF_NA (refp);
-#if 0
-		  if ((ROW_NO_MASK & ref) == rd->rd_map_pos && del_ref_ret)
-		    {
-		      *del_ref_ret = irow;
-		      return;
-		    }
-#endif
-		  if((ROW_NO_MASK & ref) >= rd->rd_map_pos)
-		    {
-		      OFFSET_CK (refp);
-		      SHORT_SET_NA (refp, ref + shift);
-		    }
-		}
-	    }
-	}
-      END_DO_SET();
     }
   while (reg)
     {
@@ -1229,7 +1251,7 @@ pf_shift_compress (page_fill_t * pf, row_delta_t * rd, int * del_ref_ret)
 		{
 		  *prev = rl->rl_next;
 		  rls[rl_fill++] = rl;
-		  rl->rl_pos+= shift;
+		  rl->rl_pos+= 1;
 		}
 	      else
 		prev = &rl->rl_next;

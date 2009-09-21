@@ -1650,11 +1650,12 @@ rb_entry_t *
 lt_rb_entry (lock_trx_t * lt, buffer_desc_t * buf, db_buf_t row, uint32 *code_ret, rb_entry_t ** prev_ret, int leave_mtx)
 {
   key_ver_t kv = IE_KEY_VERSION (row);
-  dbe_key_t * key = buf->bd_tree->it_key->key_versions[kv];
+  dbe_key_t * key;
   uint32 rb_code;
   rb_entry_t *rbe;
   if (KV_LEFT_DUMMY == kv)
     return NULL;
+  key  = buf->bd_tree->it_key->key_versions[kv];
   rb_code = key_hash_cols (buf, row, key, key->key_key_fixed, HC_INIT);
   rb_code = key_hash_cols (buf, row, key, key->key_key_var, rb_code);
   mutex_enter (&lt->lt_rb_mtx);

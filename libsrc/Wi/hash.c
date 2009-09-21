@@ -64,6 +64,7 @@
 #ifdef NEW_HASH
 #define BKT_ELEM_SIZE (sizeof (dp_addr_t) + sizeof (short))
 #define HE_BPTR_PER_PAGE (PAGE_DATA_SZ / BKT_ELEM_SIZE)
+#define HI_MAX_SIZE (4000000 * HE_BPTR_PER_PAGE)
 #endif
 
 #ifdef OLD_HASH
@@ -137,26 +138,12 @@ HI_BUCKET_PTR (hash_index_t *hi, uint32 code, it_cursor_t *itc, hash_inx_b_ptr_t
   int32 l_buf;
 #endif
 
-#if 0
-  if (!hi_bucket_page)
-    {
-      hb_buf = isp_new_page (itc->itc_tree->it_commit_space, 0, DPF_HASH, 0, 0);
-      if (!hb_buf)
-	{
-	  log_error ("Out of disk space for temp table");
-	  itc->itc_ltrx->lt_error = LTE_NO_DISK;
-	  itc_bust_this_trx (itc, hb_buf);
-	}
-      HI_BUCKET_PTR_PAGE (hi, code) = hb_buf->bd_page;
-    }
-#else
   if (!hi_bucket_page)
     {
       hibp->hibp_page = 0;
       hibp->hibp_pos = 0;
       return;
     }
-#endif
   else
     {
       itc->itc_page = hi_bucket_page;
@@ -199,6 +186,7 @@ hi_alloc_elements (hash_index_t *hi)
 #endif
 #ifdef NEW_HASH
   he_inx = (hi->hi_size / HE_BPTR_PER_PAGE) + 1;
+  if (!hi->hi_size) GPF_T1 ("0 hi_size is not possible");
   hi->hi_buckets = (dp_addr_t *)
       dk_alloc_box (he_inx * sizeof (dp_addr_t), DV_CUSTOM);
   memset (hi->hi_buckets, 0, he_inx * sizeof (dp_addr_t));
@@ -232,6 +220,7 @@ hi_allocate (unsigned int32 sz, int use_memcache, hash_area_t * ha)
     }
   else
     hi_alloc_elements (hi);
+  if (!hi->hi_size) GPF_T1 ("0 size hi is not possible");
   return hi;
 }
 
@@ -951,7 +940,6 @@ itc_ha_disk_row (it_cursor_t * itc, buffer_desc_t * buf, hash_area_t * ha, caddr
       err = NULL;
       hash_row_set_col (&rd, &rf, &ha->ha_key_cols[inx], value, feed_temp_blobs);
 
-check_err:
       if (err)
 	sqlr_resignal (err);
     }
@@ -1342,6 +1330,142 @@ For procedures, we have no memcache. */
   hi->hi_memcache = NULL;
 }
 
+extern int32 ha_rehash_pct;
+
+
+void
+ha_rehash_row (hash_area_t * ha, it_cursor_t * itc, buffer_desc_t * buf)
+{
+  unsigned short code_mask;
+  db_buf_t row;
+  int var_len = 0;
+  caddr_t * qst = itc->itc_out_state;
+  uint32 code = HC_INIT;
+  int n_keys = ha->ha_n_keys;
+  int inx;
+  hash_index_t *hi;
+  it_cursor_t * bp_ref_itc = (it_cursor_t *) QST_GET_V (qst, ha->ha_bp_ref_itc);
+  hash_inx_b_ptr_t hibp;
+  index_tree_t * tree = (index_tree_t *) QST_GET_V (qst, ha->ha_tree);
+
+  hi= tree->it_hi;
+  for (inx = 0; inx < n_keys; inx++)
+    {
+      state_slot_t * ssl = ha->ha_slots[inx];
+      if (ssl)
+	{
+	  caddr_t value = QST_GET (qst, ssl);
+	  dtp_t dtp = DV_TYPE_OF (value);
+	  code = key_hash_box (value, dtp, code, &var_len, ssl->ssl_sqt.sqt_collation,
+			       ha->ha_key_cols[inx].cl_sqt.sqt_dtp, (HA_DISTINCT == ha->ha_op));
+	}
+    }
+  code &= ID_HASHED_KEY_MASK;
+
+  HI_BUCKET_PTR (hi, code, bp_ref_itc, &hibp, PA_WRITE);
+  row = buf->bd_buffer + itc->itc_map_pos - HASH_HEAD_LEN;
+  buf->bd_is_dirty = 1;
+  LONG_SET (row + HH_NEXT_DP, hibp.hibp_page);
+  code_mask = (unsigned short) ((code >> 9) & 0x7);
+  code_mask = code_mask << 13;
+  SHORT_SET (row + HH_NEXT_POS, ((hibp.hibp_pos & 0x1FFF) | code_mask));
+  hi_bp_set (tree->it_hi, bp_ref_itc, code, buf->bd_page, itc->itc_map_pos);
+  tree->it_hi->hi_count--;
+}
+
+#define HI_NEXT_SIZE(hi) \
+  ((((int64)MAX (100, hi->hi_size)) / 100) * (ha_rehash_pct + 100))
+
+
+void
+ha_rehash (caddr_t * inst, hash_area_t * ha, index_tree_t * it)
+{
+  buffer_desc_t * buf;
+  it_cursor_t itc_auto;
+  it_cursor_t * itc = &itc_auto;
+  it_cursor_t * ref_itc = (it_cursor_t*)QST_GET_V (inst, ha->ha_ref_itc);
+  key_source_t ks;
+  setp_node_t setp;
+  hash_index_t * hi = it->it_hi;
+  caddr_t * save = dk_alloc_box (sizeof (caddr_t) * ha->ha_n_keys, DV_ARRAY_OF_POINTER);
+  int inx, n_pages;
+  it_cursor_t * insert_itc = (it_cursor_t*) QST_GET_V (inst, ha->ha_insert_itc);
+  dp_addr_t last_dp = insert_itc->itc_hash_buf->bd_page;
+  page_leave_outside_map (insert_itc->itc_hash_buf);
+  insert_itc->itc_hash_buf = NULL;
+  if (ref_itc && ref_itc->itc_buf)
+    {
+      page_leave_outside_map (ref_itc->itc_buf);
+      ref_itc->itc_buf = NULL;
+    }
+  memset (&ks, 0, sizeof (ks));
+  memset (&setp, 0, sizeof (setp));
+  ITC_INIT (itc, NULL, NULL);
+  itc_from_it (itc, it);
+  for (inx = 0; inx < box_length (hi->hi_buckets) / sizeof (dp_addr_t); inx++)
+    {
+      dp_addr_t dp = hi->hi_buckets[inx];
+      if (dp)
+	{
+	  ITC_IN_KNOWN_MAP (itc, dp);
+	  it_free_dp_no_read (it, dp, DPF_HASH);
+	  ITC_LEAVE_MAPS (itc);
+	}
+    }
+  hi->hi_size = HI_NEXT_SIZE (hi);
+  dk_free_box (hi->hi_buckets);
+  n_pages = (hi->hi_size / HE_BPTR_PER_PAGE) + 1;
+  hi->hi_buckets = (dp_addr_t *) dk_alloc_box_zero (n_pages * sizeof (dp_addr_t), DV_CUSTOM);
+
+  DO_BOX (state_slot_t *, ssl, inx, ha->ha_slots)
+    {
+      if (inx >= ha->ha_n_keys)
+	break;
+      dk_set_push (&ks.ks_out_slots, (void*)ssl);
+      save[inx] = box_copy_tree (QST_GET (inst, ssl));
+    }
+  END_DO_BOX;
+  ks.ks_out_slots = dk_set_nreverse (ks.ks_out_slots);
+  setp.setp_ha = ha;
+
+  itc->itc_out_state = inst;
+  itc->itc_out_map = (out_map_t*) dk_alloc_box (sizeof (out_map_t) * ha->ha_n_keys, DV_BIN);
+  for (inx = 0; inx < ha->ha_n_keys; inx++)
+    {
+      itc->itc_out_map[inx].om_is_null = 0;
+      itc->itc_out_map[inx].om_cl = *key_find_cl (ha->ha_key, inx + 1);
+    }
+  ks.ks_out_map = itc->itc_out_map;
+  itc->itc_ks = &ks;
+  buf = itc_reset (itc);
+  ITC_FAIL (itc)
+    {
+      while (DVC_MATCH == itc_next (itc, &buf))
+	{
+	  ha_rehash_row (ha, itc, buf);
+	}
+      itc_page_leave (itc, buf);
+    }
+  ITC_FAILED
+    {
+      itc_free (itc);
+    }
+  END_FAIL (itc);
+  DO_BOX (state_slot_t *, ssl, inx, ha->ha_slots)
+    {
+      if (inx >= ha->ha_n_keys)
+	break;
+      qst_set (inst, ssl, save[inx]);
+    }
+  END_DO_BOX;
+  dk_free_box ((caddr_t)save);
+  dk_set_free (ks.ks_out_slots);
+  ITC_IN_KNOWN_MAP (insert_itc, last_dp);
+  page_wait_access (insert_itc, last_dp, NULL, &insert_itc->itc_hash_buf, PA_WRITE, RWG_WAIT_ANY);
+  ITC_LEAVE_MAPS (insert_itc);
+}
+
+
 #define MAX_STACK_N_KEYS 200
 
 
@@ -1369,7 +1493,6 @@ itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned l
   int keys_on_stack;
   int do_flush;
   index_tree_t * tree = (index_tree_t *) QST_GET_V (qst, ha->ha_tree);
-  /*if (56420 == unbox (qst[29])) bing (); */
   if (!tree)
     {
       tree = it_temp_allocate (wi_inst.wi_temp);
@@ -1530,6 +1653,9 @@ itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned l
 #endif
 #ifdef NEW_HASH
   itc_ha_disk_row (itc, NULL, ha, qst, tree, var_len, code, feed_temp_blobs, NULL, NULL, &hibp);
+  if (ha_rehash_pct &&  hi->hi_count > (hi->hi_size / 100) * ha_rehash_pct
+      && HI_NEXT_SIZE (hi) < HI_MAX_SIZE)
+    ha_rehash (qst, ha, tree);
 #endif
   ret->ihfr_disk_buf = itc->itc_hash_buf;
   ret->ihfr_disk_pos = itc->itc_hash_buf_prev;
