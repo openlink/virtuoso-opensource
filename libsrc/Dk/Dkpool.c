@@ -397,8 +397,9 @@ DBG_NAME (mp_box_copy) (DBG_PARAMS mem_pool_t * mp, caddr_t box)
 	  {
 	    if (box_tmp_copier[dtp])
 	      return box_tmp_copier[dtp] (mp, box);
-	    GPF_T1 ("not supposed to make a tmp pool copy of this copiable dtp");
-	    return NULL;
+	    cp = box_copy (box);
+	    dk_set_push (&mp->mp_trash, (void*)cp);
+	    return cp;
 	  }
 	{
 #ifdef MALLOC_DEBUG
