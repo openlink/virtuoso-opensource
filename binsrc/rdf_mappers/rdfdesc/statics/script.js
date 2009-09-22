@@ -68,6 +68,25 @@ function expand_ul(n) {
     //alert (n + ' ' + copy.childNodes.length);
     for (i = 0; i < copy.childNodes.length; i++)
       ul.appendChild (copy.childNodes[i].cloneNode (true));
+    var link = document.createElement('a');
+    link.href = 'javascript:collapse_ul(' + n + ');';
+    link.appendChild(document.createTextNode('\u00ABless\u00AB'));
+    link.className = 'expander';
+    ul.insertBefore(link, ul.lastChild.nextSibling);
+}
+
+function collapse_ul(n) {
+    var ul = long_uls[n];
+    var copy = long_uls_nodes[n];
+    while (ul.childNodes.length > 0)
+      ul.removeChild (ul.lastChild);
+    for (i = 0; i < 10; i++)
+      ul.appendChild (copy.childNodes[i].cloneNode (true));
+    var link = document.createElement('a');
+    link.href = 'javascript:expand_ul(' + n + ');';
+    link.appendChild(document.createTextNode('\u00BBmore\u00BB'));
+    link.className = 'expander';
+    ul.insertBefore(link, ul.lastChild.nextSibling);
 }
 
 function expand(i) {
