@@ -55,7 +55,7 @@
   </xsl:template>
 
   <xsl:template match="html/head">
-      <rdf:Description rdf:about="{$baseUri}">
+      <rdf:Description rdf:about="{vi:docIRI ($baseUri)}">
 		<rdf:type rdf:resource="&bibo;Document"/>
 		<xsl:apply-templates select="title|meta"/>
 		<xsl:apply-templates select="//img[@src]"/>
@@ -140,6 +140,7 @@
 
   <xsl:template match="a[@href]">
       <xsl:variable name="url" select="resolve-uri ($baseUri, @href)"/>
+      <xsl:if test="not ($url like 'javascript:%')">
       <xsl:choose>
 	  <xsl:when test="$url like 'http://www.amazon.com/gp/product/%' or $url like 'http://www.amazon.%/o/ASIN/%'">
 	      <xsl:variable name="tmp"
@@ -159,6 +160,7 @@
 	      <sioc:links_to rdf:resource="{$url}"/>
 	  </xsl:otherwise>
       </xsl:choose>
+      </xsl:if>
   </xsl:template>
 
   <xsl:template match="*|text()"/>
