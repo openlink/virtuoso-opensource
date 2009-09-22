@@ -53,6 +53,11 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     '(https://spreadsheets.google.com/.*)',
     'URL', 'DB.DBA.RDF_LOAD_GOOGLE_SPREADSHEET', null, 'Google (Spreadsheets)');
 
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('(http://docs.google.com/.*)|'||
+    '(https://docs.google.com/.*)',
+    'URL', 'DB.DBA.RDF_LOAD_GOOGLE_DOCUMENT', null, 'Google (Documents)');
+
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_ENABLED)
     values ('.*', 'HTTP', 'DB.DBA.RDF_LOAD_HTTP_SESSION', null, 'HTTP in RDF', 0);
 
@@ -3924,6 +3929,61 @@ create procedure DB.DBA.RDF_LOAD_DELICIOUS (in graph_iri varchar, in new_origin_
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_GOOGLE_DOCUMENT (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare xd, host_part, xt, url, tmp, api_key, hdr, exif any;
+	declare pos int;
+	declare spread_id varchar;
+	declare mail, pwd, auth, auth_header varchar;
+	mail := get_keyword ('email', opts, null);
+	pwd := get_keyword ('password', opts, null);
+	declare exit handler for sqlstate '*'
+	{
+		DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+		return 0;
+	};
+	auth_header := null;
+	if (length (mail) + length (pwd))
+	{
+		tmp := http_client (url=>'https://www.google.com/accounts/ClientLogin',
+			http_method=>'POST', body=>sprintf ('Email=%U&Passwd=%U&source=OpenLink-Sponger-1&service=writely', mail, pwd),
+			proxy=>get_keyword_ucase ('get:proxy', opts));
+		if (tmp like 'Error=%')
+			return 0;
+		tmp := replace (tmp, '\r', '\n');
+		tmp := replace (tmp, '\n\n', '\n');
+		tmp := split_and_decode (tmp, 0, '\0\0\n=');
+		auth := get_keyword ('Auth', tmp);
+		if (auth is not null)
+			auth_header := 'Authorization: GoogleLogin auth='||auth;
+	}
+	if (new_origin_uri like 'http%://docs.google.com/Doc?docid=%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http%s://docs.google.com/Doc?docid=%s', 0);
+		spread_id := trim(tmp[1], '/');
+		if (spread_id is null)
+			return 0;
+		pos := strchr(spread_id, '/');
+		if (pos is not null and pos <> 0)
+			spread_id := left(spread_id, pos);
+		pos := strchr(spread_id, '&');
+		if (pos is not null and pos <> 0)
+			spread_id := left(spread_id, pos);
+		url := sprintf('http://docs.google.com/feeds/default/private/full/%s?v=3', spread_id);
+	}
+	else
+		return 0;
+	tmp := DB.DBA.RDF_HTTP_URL_GET (url, url, hdr, 'GET', auth_header, proxy=>get_keyword_ucase ('get:proxy', opts));
+	if (hdr[0] not like  'HTTP/1._ 200 %')
+		return 0;
+	xd := xtree_doc (tmp);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/google_document2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
+	xd := serialize_to_UTF8_xml (xt);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	return 1;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_GOOGLE_SPREADSHEET (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
 	declare xd, host_part, xt, url, tmp, api_key, hdr, exif any;
@@ -5329,7 +5389,7 @@ no_feed:;
         {
 	  mdta := mdta + 1;
           xd := serialize_to_UTF8_xml (xd);
-          DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri), 0);
+          DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri), 1);
         }
     }
 ret:
@@ -5349,7 +5409,8 @@ ret:
         mdta := 0;
     }
   mdta := mdta * ret_flag;
-  if (mdta <> 0)
+  -- needs a flag
+  if (0 and mdta <> 0)
     {
       declare localdest, dep any;
       localdest := coalesce (dest, graph_iri);
