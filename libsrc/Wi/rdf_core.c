@@ -1926,7 +1926,7 @@ bif_iri_id_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   else
     nth = qi->qi_client->cli_trx->lt_trx_no;
   id = rdf_new_iri_id (qi->qi_trx, &value_seq, nth, (query_instance_t *)qst);
-  log_sequence (qi->qi_trx, value_seq, id);
+  log_sequence (qi->qi_trx, value_seq, id + 1);
   return box_iri_id (id);
 }
 

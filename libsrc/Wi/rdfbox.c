@@ -2146,8 +2146,20 @@ iri_cast_talis_json_qname (query_instance_t *qi, caddr_t iri_or_id, caddr_t *iri
     {
     case DV_STRING: case DV_UNAME:
       iri_ret[0] = iri_or_id;
-      is_bnode_ret[0] = (('_' == iri_or_id[0]) && (':' == iri_or_id[0]));
       iri_is_new_box_ret[0] = 0;
+      if (('_' == iri_or_id[0]) && (':' == iri_or_id[0]))
+        {
+          is_bnode_ret[0] = 1;
+          return 1;
+        }                    /* 0123456789 */
+      if (!strncmp (iri_or_id, "nodeID://", 9))
+        {
+          iri_ret[0] = box_dv_short_strconcat ("_:v", iri_or_id + 9);
+          iri_is_new_box_ret[0] = 1;
+          is_bnode_ret[0] = 1;
+          return 1;
+        }
+      is_bnode_ret[0] = 0;
       return 1;
     case DV_IRI_ID: case DV_IRI_ID_8:
       {
@@ -2297,7 +2309,7 @@ bif_http_talis_json_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
   int obj_is_iri = 0;
   dtp_t obj_dtp = 0;
   caddr_t subj_iri = NULL, pred_iri = NULL, obj_iri = NULL;
-  int subj_iri_is_new = 0, pred_iri_is_new, obj_iri_is_new = 0;
+  int subj_iri_is_new = 0, pred_iri_is_new = 0, obj_iri_is_new = 0;
   int is_bnode, obj_is_bnode;
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF ((caddr_t)env) ||
     (sizeof (talis_json_env_t) != box_length ((caddr_t)env)) ||
@@ -2361,6 +2373,7 @@ bif_http_talis_json_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
 fail:
   if (subj_iri_is_new) dk_free_box (subj_iri);
   if (pred_iri_is_new) dk_free_box (pred_iri);
+  if (obj_iri_is_new) dk_free_box (obj_iri);
   return (caddr_t)((ptrlong)status);
 }
 

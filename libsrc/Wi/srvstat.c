@@ -2761,7 +2761,7 @@ dbg_page_map_f (buffer_desc_t * buf, FILE * out)
 	row_key = page_key;
       else
 	row_key = page_key->key_versions[kv];
-      if (!row_key || kv >= KEY_MAX_VERSIONS)
+      if (KV_LEFT_DUMMY != kv && (!row_key || kv >= KEY_MAX_VERSIONS))
 	{
 	  fprintf (out, "**** Row with non-existent key kv %d\n", (int)kv);
 	  continue;

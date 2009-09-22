@@ -116,6 +116,7 @@ walk_dbtree ( it_cursor_t * it, buffer_desc_t ** buf_ret, int level,
 	  save_pos = map_pos;
 
 	  walk_page_transit (it, leaf, buf_ret);
+	  buf_ext_check (*buf_ret);
 	  if ((uint32) (LONG_REF ((*buf_ret)->bd_buffer + DP_PARENT)) != dp_from)
 	    {
 	      log_error ("Bad parent link in %ld coming from %ld link %ld. Crash recovery recommended.",

@@ -1385,7 +1385,8 @@ em_compact (extent_map_t * em, int free_em)
     {
       if (EXT_FREE == EXT_TYPE (ext))
 	{
-	  remhash (DP_ADDR2VOID (ext->ext_dp), em->em_dp_to_ext);
+	  if (ext == (extent_t*)gethash (DP_ADDR2VOID (ext->ext_dp), em->em_dp_to_ext))
+	    log_error ("ext %d is free but is mapped to the free extent_t record in em_dp_to_ext of em %s", ext->ext_dp, em->em_name);
 	  continue;
 	}
       else if (EXT_REMAP == EXT_TYPE (ext)

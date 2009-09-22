@@ -2738,7 +2738,7 @@ ddl_drop_index (caddr_t * qst, const char *table, const char *name, int log_to_t
   atomic_mode (qi, 0, atomic);
   if (log_to_trx)
     {
-      if (is_cluster)
+      if (CL_RUN_CLUSTER == cl_run_local_only)
 	log_text_cluster (qi, temp_tx);
       else
 	log_text (qi->qi_trx, temp_tx);
@@ -2785,7 +2785,8 @@ ddl_build_index (query_instance_t * qi, char *table, char *name, caddr_t * repl)
       IN_TXN;
       lt_rollback (qi->qi_trx, TRX_CONT);
       LEAVE_TXN;
-      /* XXX: mi may be w/o this */ ddl_drop_index ((caddr_t *) qi, table, name, 1);
+      qi->qi_trx->lt_replicate = repl;
+      ddl_drop_index ((caddr_t *) qi, table, name, 1);
       sqlr_resignal (err);
     }
   if (cl_run_local_only)
@@ -5709,8 +5710,8 @@ const char * proc_new_key_ver =
 "      prev_id := id;\n"
 "    }\n"
 "done:\n"
-"  if (prev_id > 124) \n {"
-"    txn_error (6); signal ('42000', 'run out of key versions'); }\n"
+"  if (prev_id >= 124)  -- 124 is the last usable kv\n"
+"    {txn_error (6); signal ('42000', 'run out of key versions.  The table has been altered too many times.  To alter further, copy the data to a new table, drop the old one and rename the new to the old.  A better way is to be implemented in a later version.'); }\n"
 "  return prev_id + 1;\n"
 "}\n";
 
