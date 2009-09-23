@@ -51,6 +51,7 @@
     <xsl:param name="baseUri" />
     <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
+    <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
     
     <xsl:variable name="ns">http://api.cnet.com/rest/v1.0/ns</xsl:variable>
 
@@ -68,22 +69,23 @@
 		<rdf:RDF>
 			<xsl:choose>
 				<xsl:when test="string-length(/CNETResponse/Error/@code) &gt; 0">
-					<rdf:Description rdf:about="{$docIRI}">
+					<rdf:Description rdf:about="{$docproxyIRI}">
 						<rdf:type rdf:resource="&bibo;Document"/>
 					</rdf:Description>
 				</xsl:when>
 				<xsl:otherwise>
-					<rdf:Description rdf:about="{$docIRI}">
+					<rdf:Description rdf:about="{$docproxyIRI}">
 						<rdf:type rdf:resource="&bibo;Document"/>
 						<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri)}"/>
 						<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
 						<dcterms:subject rdf:resource="{vi:proxyIRI($baseUri)}"/>
 						<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+						<owl:sameAs rdf:resource="{$docIRI}"/>
 
 					</rdf:Description>
 					<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
 						<rdf:type rdf:resource="&gr;ProductOrService"/>
-						<sioc:has_container rdf:resource="{$docIRI}"/>
+						<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 						<xsl:apply-templates />
 					</rdf:Description>
 				</xsl:otherwise>

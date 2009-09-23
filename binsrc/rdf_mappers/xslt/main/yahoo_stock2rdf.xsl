@@ -47,6 +47,7 @@
     <xsl:param name="baseUri" />
     <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
+    <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 
     <xsl:template match="/">
 	<rdf:RDF>
@@ -56,12 +57,13 @@
 
     <xsl:template match="quote">
 	<xsl:variable name="pt" select="vi:proxyIRI(concat('http://finance.yahoo.com/q?s=', symbol))"/>
-	<rdf:Description rdf:about="{$docIRI}">
+	<rdf:Description rdf:about="{$docproxyIRI}">
 	    <rdf:type rdf:resource="&bibo;Document"/>
 	    <dc:title><xsl:value-of select="$baseUri"/></dc:title>
 	    <sioc:container_of rdf:resource="{$pt}"/>
 	    <foaf:primaryTopic rdf:resource="{$pt}"/>
 	    <dcterms:subject rdf:resource="{$pt}"/>
+	    <owl:sameAs rdf:resource="{$pt}"/>
 	</rdf:Description>
 	<rdf:Description rdf:about="{vi:proxyIRI(concat ('http://dbpedia.org/resource/', @stock))}">
 	    <rdf:type rdf:resource="&stock;StockMarket"/>

@@ -536,7 +536,7 @@ create procedure DB.DBA.RM_RDF_LOAD_RDFXML (in strg varchar, in base varchar, in
   for (declare i, l int, i := 0, l := length (nss); i < l; i := i + 2)
     {
       http (sprintf ('<%s> a opl:DataSource .\n', nss[i+1]), ses);
-      http (sprintf ('<%s> opl:isDescribedUsing <%s> .\n', case when doc_iri_flag then RM_SPONGE_DOC_IRI (graph) else graph end, nss[i+1]), ses);
+      http (sprintf ('<%s> opl:isDescribedUsing <%s> .\n', case when doc_iri_flag then RDF_SPONGE_PROXY_IRI (graph) else graph end, nss[i+1]), ses);
       http (sprintf ('<%s> opl:hasNamespacePrefix "%s" .\n', nss[i+1], nss[i]), ses);
     }
   DB.DBA.RDF_LOAD_RDFXML (strg, base, graph);
@@ -788,6 +788,45 @@ create procedure DB.DBA.RDF_SPONGE_PROXY_IRI (in uri varchar := '', in login var
     ret := sprintf ('http://%s/about/rdf/%s/%U/%s%s', cname, url_sch, login, uri, frag);
   else
     ret := sprintf ('http://%s/about/id/%s/%s%s', cname, url_sch, uri, frag);
+  return ret;
+}
+;
+
+create procedure DB.DBA.RDF_PROXY_ENTITY_IRI (in uri varchar := '', in login varchar := '', in frag varchar := 'this')
+{
+  declare cname any;
+  declare ret any;
+  declare default_host, url_sch varchar;
+  declare ua any;
+
+  if (is_http_ctx ())
+    default_host := http_request_header(http_request_header (), 'Host', null, null);
+  else
+    default_host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+  if (default_host is not null)
+    cname := default_host;
+  else
+  {
+    cname := sys_stat ('st_host_name');
+    if (server_http_port () <> '80')
+        cname := cname ||':'|| server_http_port ();
+  }
+
+  if (frag = 'this' or frag = '#this') -- comment out to do old behaviour
+    frag := '';
+
+  if (length (frag) and frag[0] <> '#'[0])
+    frag := '#' || frag;
+  if (strchr (uri, '#') is not null)
+    frag := '';
+
+  ua := rfc1808_parse_uri (uri);
+  url_sch := ua[0];
+  ua [0] := '';
+  uri := vspx_uri_compose (ua);  
+  uri := ltrim (uri, '/');
+
+  ret := sprintf ('http://%s/about/id/entity/%s/%s%s', cname, url_sch, uri, frag);
   return ret;
 }
 ;
@@ -1137,6 +1176,8 @@ create procedure DB.DBA.GET_XBRL_CANONICAL_DATATYPE(in elem varchar) returns var
 
 create procedure RDF_SPONGE_URI_HASH (in u varchar)
 {
+  if (u is null)
+    return '';
   return tridgell32 (u, 1);
 }
 ;
@@ -1152,6 +1193,7 @@ grant execute on DB.DBA.XSLT_HTTP_STRING_DATE to public;
 grant execute on DB.DBA.XSLT_STRING2ISO_DATE to public;
 grant execute on DB.DBA.XSLT_STRING2ISO_DATE2 to public;
 grant execute on DB.DBA.RDF_SPONGE_PROXY_IRI to public;
+grant execute on DB.DBA.RDF_PROXY_ENTITY_IRI to public;
 grant execute on DB.DBA.RM_SPONGE_DOC_IRI to public;
 grant execute on DB.DBA.RDF_SPONGE_DBP_IRI to public;
 grant execute on DB.DBA.RM_SAMEAS_IRI to public;
@@ -1181,7 +1223,8 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:str2date', 'DB.DBA.XSLT
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:escape', 'DB.DBA.XSLT_ESCAPE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:string2date', 'DB.DBA.XSLT_STRING2ISO_DATE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:string2date2', 'DB.DBA.XSLT_STRING2ISO_DATE2');
-xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:proxyIRI', 'DB.DBA.RDF_SPONGE_PROXY_IRI');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:proxyIRI', 'DB.DBA.RDF_PROXY_ENTITY_IRI');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:docproxyIRI', 'DB.DBA.RDF_SPONGE_PROXY_IRI');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:dbpIRI', 'DB.DBA.RDF_SPONGE_DBP_IRI');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:umbelGet', 'DB.DBA.RM_UMBEL_GET');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:mql-image-by-name', fix_identifier_case ('DB.DBA.RDF_MQL_RESOLVE_IMAGE'));

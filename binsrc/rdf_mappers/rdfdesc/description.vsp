@@ -36,8 +36,8 @@
    if (arr[2] = '/' and DB.DBA.vspx_uri_compose (arr) <> _G)
      arr[2] := '';
    -- enable to stop sponge for #fragment 
-   if (arr[5] <> '')  
-     do_sponge := 0; 
+   --if (arr[5] <> '')  
+   --  do_sponge := 0; 
    arr [5] := '';
    _G := DB.DBA.vspx_uri_compose (arr);
 
@@ -45,7 +45,19 @@
      {
        declare pa, sch, nhost, len, tmp, npath any;
        pa := split_and_decode (arr[2], 0, '\0\0/'); 
-       if (length (pa) > 4 and pa[3] <> '' and pa [4] <> '')
+       if (length (pa) > 5 and pa[3] = 'entity' and pa[4] <> '' and pa [5] <> '')
+         {
+	    sch := pa[4];
+	    nhost := pa [5];
+	    tmp := '/about/id/entity/' || sch || '/' || nhost;
+	    npath := subseq (arr[2], length (tmp));    
+	    arr[0] := sch;
+	    arr[1] := nhost;
+	    arr[2] := npath;
+	    _G := DB.DBA.vspx_uri_compose (arr);
+	    --do_sponge := 0;
+         }
+       else if (length (pa) > 4 and pa[3] <> '' and pa [4] <> '')
          {
 	    sch := pa[3];
 	    nhost := pa [4];
@@ -62,7 +74,7 @@
    _S_save := _S;
    if (lower (arr[0]) in ('http', 'https') and (arr[1] <> host or arr[2] not like '/about/id/%'))
      {
-       _S := RM_SPONGE_DOC_IRI (_S);
+       _S := RDF_SPONGE_PROXY_IRI (_S);
      }
 
    _S := replace (_S, '''', '%27');

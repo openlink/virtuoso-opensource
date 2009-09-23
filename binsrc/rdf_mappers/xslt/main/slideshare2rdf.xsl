@@ -43,6 +43,7 @@
 	<xsl:param name="baseUri" />
 	<xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
 	<xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
+	<xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 	
 	<xsl:template match="/">
 		<rdf:RDF>
@@ -55,7 +56,7 @@
 	</xsl:template>
 	
 	<xsl:template match="Slideshows|Tag|User|Group">
-		<bibo:Collection rdf:about="{$docIRI}">
+		<bibo:Collection rdf:about="{$docproxyIRI}">
 			<bibo:uri rdf:resource="{$docIRI}" />
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
 			<xsl:if test="Meta/Query">
@@ -103,7 +104,7 @@
 		</xsl:choose>
 	  
 	  
-	  <rdf:Description rdf:about="{$docIRI}">
+	  <rdf:Description rdf:about="{$docproxyIRI}">
  		<rdf:type rdf:resource="&bibo;Document"/>
  		<sioc:container_of rdf:resource="{vi:proxyIRI($res)}"/>
  		<foaf:topic rdf:resource="{vi:proxyIRI($res)}"/>

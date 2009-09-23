@@ -54,6 +54,7 @@
 	<xsl:param name="id" />
 	<xsl:param name="what" />
 	<xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
+	<xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 	<xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
 	<xsl:template match="/">
 		<rdf:RDF>
@@ -100,7 +101,7 @@
 					</xsl:for-each>
 				</xsl:when>
 				<xsl:when test="$what = 'thread1'">
-					<rdf:Description rdf:about="{$docIRI}">
+					<rdf:Description rdf:about="{$docproxyIRI}">
 						<rdf:type rdf:resource="&bibo;Document"/>
 						<rdf:type rdf:resource="&sioc;Thread"/>
 						<dc:title>
@@ -117,7 +118,7 @@
 					<xsl:for-each select="a:feed/a:entry">
 						<rdf:Description rdf:about="{vi:proxyIRI(a:link[@rel='alternate']/@href)}">
 							<rdf:type rdf:resource="&sioct;MicroblogPost"/>
-							<sioc:has_container rdf:resource="{$docIRI}"/>
+							<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 							<dcterms:created rdf:datatype="&xsd;dateTime">
 								<xsl:value-of select="vi:string2date2(a:published)"/>
 							</dcterms:created>
@@ -141,13 +142,14 @@
 					</xsl:for-each>
 				</xsl:when>
 				<xsl:when test="$what = 'status'">
-					<foaf:Document rdf:about="{$docIRI}">
+					<foaf:Document rdf:about="{$docproxyIRI}">
 						<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
+						<owl:sameAs rdf:resource="{$docIRI}"/>
 					</foaf:Document>
 					<xsl:apply-templates select="status" />
 				</xsl:when>
 				<xsl:when test="$what = 'user'">
-					<foaf:Document rdf:about="{$docIRI}">
+					<foaf:Document rdf:about="{$docproxyIRI}">
 						<dc:subject>
 							<foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name))}" />
 						</dc:subject>
@@ -203,7 +205,7 @@
 
 	<xsl:template match="statuses">
 		<xsl:variable name="about" select="vi:proxyIRI($baseUri)" />
-		<rdf:Description rdf:about="{$docIRI}">
+		<rdf:Description rdf:about="{$docproxyIRI}">
 			<rdf:type rdf:resource="&sioct;MessageBoard"/>
 			<rdf:type rdf:resource="&bibo;Document"/>
 			<xsl:for-each select="status">
@@ -220,7 +222,7 @@
 
 	<xsl:template name="status_int">
 		<rdf:type rdf:resource="&sioct;MicroblogPost"/>
-		<sioc:has_container rdf:resource="{$docIRI}"/>
+		<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 		<dcterms:created rdf:datatype="&xsd;dateTime">
 			<xsl:value-of select="vi:string2date(created_at)"/>
 		</dcterms:created>

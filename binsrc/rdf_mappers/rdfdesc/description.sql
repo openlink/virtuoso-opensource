@@ -602,6 +602,34 @@ create procedure virt_proxy_init_about ()
   DB.DBA.VHOST_REMOVE (lpath=>'/about/id');
   DB.DBA.VHOST_DEFINE (lpath=>'/about/id', ppath=>'/', is_dav=>0, def_page=>'', opts=>vector('url_rewrite', 'ext_ahp_rule_list_new'));
 
+  --# /id/entity
+
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_entity_rl_restrict', 1,
+      '/about/id/entity/(http|https|nodeID)/(.*)', vector ('sch', 'g'), 2,
+      '/dummy', vector (), null, null, 2, 406, null);
+
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_entity_rl_data', 1,
+      '/about/id/entity/(http|https|nodeID)/(.*)', vector ('sch', 'g'), 2,
+      '/about/data/entity/%s/%s', vector ('sch', 'g'), null, 
+      '(application/rdf.xml)|(text/rdf.n3)|(application/x-turtle)|(text/n3)|(text/turtle)|(application/rdf.json)|(text/html)|(text/plain)|(\\*/\\*)', 
+      2, 303, null);
+
+  delete from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = 'sp_entity_rll';
+  DB.DBA.HTTP_VARIANT_ADD ('sp_entity_rll', '/about/data/entity/(.*)', '/about/data/entity/xml/\x241',    'application/rdf+xml', 0.95, location_hook=>null);
+  DB.DBA.HTTP_VARIANT_ADD ('sp_entity_rll', '/about/data/entity/(.*)', '/about/data/entity/nt/\x241',     'text/n3', 0.80, location_hook=>null);
+  DB.DBA.HTTP_VARIANT_ADD ('sp_entity_rll', '/about/data/entity/(.*)', '/about/data/entity/n3/\x241',     'text/rdf+n3', 0.80, location_hook=>null);
+  DB.DBA.HTTP_VARIANT_ADD ('sp_entity_rll', '/about/data/entity/(.*)', '/about/data/entity/ttl/\x241',    'application/x-turtle', 0.80, location_hook=>null);
+  DB.DBA.HTTP_VARIANT_ADD ('sp_entity_rll', '/about/data/entity/(.*)', '/about/data/entity/turtle/\x241', 'text/turtle', 0.80, location_hook=>null);
+  DB.DBA.HTTP_VARIANT_ADD ('sp_entity_rll', '/about/data/entity/(.*)', '/about/data/entity/json/\x241',    'application/rdf+json', 0.70, location_hook=>null);
+  DB.DBA.HTTP_VARIANT_ADD ('sp_entity_rll', '/about/data/entity/(.*)', '/about/html/^{DynamicLocalFormat}^/about/id/entity/\x241', 'text/html', 0.80, location_hook=>null);
+  DB.DBA.HTTP_VARIANT_ADD ('sp_entity_rll', '/about/data/entity/(.*)', '/about/data/entity/text/\x241',    'text/plain', 0.20, location_hook=>null);
+
+  DB.DBA.URLREWRITE_CREATE_RULELIST ( 'sp_entity_rll', 1, 
+      		vector ( 'sp_entity_rl_restrict', 'sp_entity_rl_data'));
+
+  DB.DBA.VHOST_REMOVE (lpath=>'/about/id/entity');
+  DB.DBA.VHOST_DEFINE (lpath=>'/about/id/entity', ppath=>'/', is_dav=>0, def_page=>'', opts=>vector('url_rewrite', 'sp_entity_rll'));
+
   --# the rdf
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_data_1', 1,
       '/about/data/(xml|n3|nt|ttl|text|turtle|json)/(http|https|nodeID)/(.*)\0x24', vector ('fmt', 'sch', 'url'), 3,
@@ -626,6 +654,31 @@ create procedure virt_proxy_init_about ()
   DB.DBA.VHOST_REMOVE (lpath=>'/about/data');
   DB.DBA.VHOST_DEFINE (lpath=>'/about/data', ppath=>'/', is_dav=>0, def_page=>'', opts=>vector('url_rewrite', 'ext_ahp_rule_list_data'));
 
+  --# entity rdf
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_ent_data_rl_1', 1,
+      '/about/data/entity/(xml|n3|nt|ttl|text|turtle|json)/(http|https|nodeID)/(.*)\0x24', vector ('fmt', 'sch', 'url'), 3,
+      '/about?url=%s://%s&force=rdf&output-format=%U', vector ('sch', 'url', 'fmt'), null, null, 2);
+
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_ent_data_rl_2', 1,
+      '/about/data/entity/turtle/(http|https|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
+      '/about?url=%s://%s&force=rdf&output-format=text%%2Fturtle', vector ('sch', 'url'), null, null, 2, null, 'Content-Type: text/turtle');
+
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_ent_data_rl_3', 1,
+      '/about/data/entity/ttl/(http|https|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
+      '/about?url=%s://%s&force=rdf&output-format=application%%2Fx-turtle', vector ('sch', 'url'), null, null, 2, null, 'Content-Type: application/x-turtle');
+
+  DB.DBA.URLREWRITE_CREATE_RULELIST ( 'sp_ent_data_rll', 1, 
+      	vector (
+	  'sp_ent_data_rl_1',
+	  'sp_ent_data_rl_2',
+	  'sp_ent_data_rl_3'
+	  )
+	);
+
+  DB.DBA.VHOST_REMOVE (lpath=>'/about/data/entity');
+  DB.DBA.VHOST_DEFINE (lpath=>'/about/data/entity', ppath=>'/', is_dav=>0, def_page=>'', opts=>vector('url_rewrite', 'sp_ent_data_rll'));
+
+  --# grants
   EXEC_STMT ('grant execute on  DB.DBA.HTTP_RDF_ACCEPT to PROXY', 0);
 
   registry_set ('DB.DBA.virt_proxy_init_about_state', rdf_virt_proxy_ver ());

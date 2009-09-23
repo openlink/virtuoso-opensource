@@ -61,6 +61,7 @@
     </xsl:variable>
     <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
+    <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
     <xsl:template match="rsp">
 	<xsl:if test="@stat != 'ok'">
 	    <xsl:message terminate="yes"><xsl:value-of select="err/@msg"/></xsl:message>
@@ -80,9 +81,10 @@
 		</rdf:Description>
     </xsl:template>
     <xsl:template match="photo">
-		<rdf:Description rdf:about="{$docIRI}">
+		<rdf:Description rdf:about="{$docproxyIRI}">
 			<rdf:type rdf:resource="&bibo;Document"/>
 			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+			<owl:sameAs rdf:resource="{$docIRI}"/>
 			<sioc:container_of rdf:resource="{$resourceURL}"/>
 			<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 			<dcterms:subject rdf:resource="{$resourceURL}"/>

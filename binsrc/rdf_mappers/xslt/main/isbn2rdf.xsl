@@ -50,10 +50,11 @@
     <xsl:param name="baseUri" />
     <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
+    <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 
     <xsl:template match="/">
 	<rdf:RDF>
-	    <rdf:Description rdf:about="{$docIRI}">
+	    <rdf:Description rdf:about="{$docproxyIRI}">
 		<rdf:type rdf:resource="&bibo;Document"/>
 		<xsl:for-each select="ISBNdb/BookList/BookData">
 		    <xsl:variable name="res" select="vi:proxyIRI(concat('http://isbndb.com/d/book/', @book_id, '.html'))"/>
@@ -62,6 +63,7 @@
 		    <dcterms:subject rdf:resource="{$res}"/>
 		</xsl:for-each>
 		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+		<owl:sameAs rdf:resource="{$docIRI}"/>
 	    </rdf:Description>
 	    <xsl:apply-templates select="ISBNdb/BookList/BookData"/>
 	    <xsl:apply-templates select="ISBNdb/SubjectList/SubjectData"/>

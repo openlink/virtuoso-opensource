@@ -87,6 +87,7 @@
 				</xsl:otherwise>
 			</xsl:choose>
 			<sioc:link rdf:resource="{@rdf:about}" />
+                        <owl:sameAs  rdf:resource="{vi:proxyIRI ($baseUri)}" />
 			<xsl:apply-templates />
 			<xsl:copy-of select="geo:*" />
 			<xsl:copy-of select="openSearch:*" />

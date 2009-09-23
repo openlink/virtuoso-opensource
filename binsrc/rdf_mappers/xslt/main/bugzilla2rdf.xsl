@@ -58,6 +58,7 @@
     <xsl:param name="baseUri" />
     <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
+    <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
     <xsl:template match="/">
 	<rdf:RDF>
 	    <xsl:apply-templates select="bugzilla/bug"/>
@@ -65,10 +66,11 @@
 	</rdf:RDF>
     </xsl:template>
     <xsl:template match="issuezilla/issue">
-		<rdf:Description rdf:about="{$docIRI}">
+		<rdf:Description rdf:about="{$docproxyIRI}">
 			<rdf:type rdf:resource="&bibo;Document"/>
 			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
 			<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+			<owl:sameAs rdf:resource="{$docIRI}"/>
 		</rdf:Description>
 		<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
 			<rdf:type rdf:resource="&sioc;Thread"/>
@@ -106,10 +108,11 @@
 		</xsl:for-each>
     </xsl:template>
     <xsl:template match="bugzilla/bug">
-    	<rdf:Description rdf:about="{$docIRI}">
+    	<rdf:Description rdf:about="{$docproxyIRI}">
 			<rdf:type rdf:resource="&bibo;Document"/>
 			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
 			<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+			<owl:sameAs rdf:resource="{$docIRI}"/>
 		</rdf:Description>
 		<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">    	
 			<rdf:type rdf:resource="&sioc;Thread"/>

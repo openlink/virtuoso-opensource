@@ -51,6 +51,7 @@
 	<xsl:param name="what" />
 	<xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
 	<xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
+	<xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 
     <xsl:variable name="uc">ABCDEFGHIJKLMNOPQRSTUVWXYZ </xsl:variable>
     <xsl:variable name="lc">abcdefghijklmnopqrstuvwxyz_</xsl:variable>
@@ -62,8 +63,9 @@
 	</xsl:template>
 	<xsl:template match="results/items">
 		<xsl:if test="$what = 'events' or $what = 'event' or $what = 'comments'">
-			<foaf:Document rdf:about="{$docIRI}">
+			<foaf:Document rdf:about="{$docproxyIRI}">
 				<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+				<owl:sameAs rdf:resource="{vi:proxyIRI($base)}"/>
 				<foaf:primaryTopic>
 					<xsl:if test="$what = 'events' or $what = 'comments'">
 						<foaf:Group rdf:about="{vi:proxyIRI($base)}" >
@@ -84,8 +86,9 @@
 			</foaf:Document>
 		</xsl:if>
 		<xsl:if test="$what = 'members'">
-			<foaf:Document rdf:about="{$docIRI}">
+			<foaf:Document rdf:about="{$docproxyIRI}">
 				<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+				<owl:sameAs rdf:resource="{vi:proxyIRI($baseUri)}"/>
 				<foaf:primaryTopic>
 					<foaf:Group rdf:about="{vi:proxyIRI($baseUri)}">
 						<xsl:for-each select="item">
@@ -95,7 +98,7 @@
 				</foaf:primaryTopic>
 				<rdfs:seeAlso rdf:resource="{$base}" />
 			</foaf:Document>
-			<foaf:Document rdf:about="{$docIRI}">
+			<foaf:Document rdf:about="{$docproxyIRI}">
 				<foaf:primaryTopic>
 					<foaf:Group rdf:about="{vi:proxyIRI($base)}">
 						<xsl:for-each select="item">
@@ -182,7 +185,7 @@
 				</foaf:Document>
 			</xsl:if>
 			<xsl:if test="$what = 'groups'">
-				<foaf:Document rdf:about="{$docIRI}">
+				<foaf:Document rdf:about="{$docproxyIRI}">
 					<foaf:primaryTopic>
 						<foaf:Group rdf:about="{vi:proxyIRI($base)}">
 							<foaf:name>
@@ -245,8 +248,9 @@
 			</xsl:if>
 			<xsl:if test="$what = 'members' or $what = 'member'">
 				<xsl:if test="$what = 'members' and contains($baseUri, id) ">
-					<foaf:Document rdf:about="{$docIRI}">
+					<foaf:Document rdf:about="{$docproxyIRI}">
 					    <dc:title><xsl:value-of select="$baseUri"/></dc:title>
+					    <owl:sameAs rdf:resource="{vi:proxyIRI(link)}"/>
 						<foaf:primaryTopic>
 							<foaf:Person rdf:about="{vi:proxyIRI(link)}"/>
 						</foaf:primaryTopic>
