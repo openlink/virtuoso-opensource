@@ -86,6 +86,8 @@ long tc_cl_branch_wanted_queries;
 long tc_cl_branch_missed_rb;
 long tc_cl_keep_alive_timeouts;
 long tc_cl_commit_resend;
+long tc_cl_disconnect;
+long tc_cl_disconnect_in_clt;
 long tc_dfg_coord_pause;
 long tc_dfg_more;
 
@@ -1236,6 +1238,8 @@ stat_desc_t stat_descs [] =
     {"tc_cl_branch_missed_rb", &tc_cl_branch_missed_rb},
     {"tc_cl_keep_alive_timeouts", &tc_cl_keep_alive_timeouts},
     {"tc_cl_commit_resend", &tc_cl_commit_resend},
+    {"tc_cl_disconnect", &tc_cl_disconnect},
+    {"tc_cl_disconnect_in_clt", &tc_cl_disconnect_in_clt},
     {"tc_dfg_coord_pause", &tc_dfg_coord_pause},
     {"tc_dfg_more", &tc_dfg_more},
 

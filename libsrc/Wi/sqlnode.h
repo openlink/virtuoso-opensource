@@ -252,6 +252,7 @@ struct query_s
     bitf_t		qr_trig_time:2;	/*!< If trigger, time of launch: before/after/instead */
     bitf_t		qr_trig_event:2;	/*!< If trigger, type of event: insert/delete/update */
     bitf_t		qr_cl_locatable:2; /* can run in aquery frag, yes/no/unknown */
+    bitf_t		qr_cl_qf_freed:1; /* if freed but still around because of pending qi's */
     char			qr_hidden_columns;
     char			qr_n_stages; /* if represents distr frag */
     /* The query state array's description */
