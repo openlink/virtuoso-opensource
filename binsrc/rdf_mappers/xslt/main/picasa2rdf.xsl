@@ -69,11 +69,12 @@
   xmlns:owl="http://www.w3.org/2002/07/owl#"
   version="1.0">
 
-<xsl:output indent="yes" cdata-section-elements="content:encoded" />
+  <xsl:output indent="yes" cdata-section-elements="content:encoded" />
   <xsl:param name="baseUri"/>
   <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
+  <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 
-<xsl:template match="/">
+  <xsl:template match="/">
       <xsl:choose>
 	  <xsl:when test="a:*/a:category[@term='&picasa;user']">
 	      <xsl:variable name="resourceURL" select="vi:proxyIRI (a:feed/a:link[@rel='&fe;feed']/@href)"/>
@@ -89,17 +90,17 @@
 	  </xsl:otherwise>
       </xsl:choose>
   <rdf:RDF>
-	  <rdf:Description rdf:about="{$docIRI}">
+	  <rdf:Description rdf:about="{$docproxyIRI}">
 	      <rdf:type rdf:resource="&bibo;Document"/>
 	      <sioc:container_of rdf:resource="{$resourceURL}"/>
 	      <foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 	      <dcterms:subject rdf:resource="{$resourceURL}"/>
 	      <dc:title><xsl:value-of select="$baseUri"/></dc:title>
-	      <owl:sameAs rdf:resource="{$resourceURL}"/>
+	      <owl:sameAs rdf:resource="{$docIRI}"/>
 	  </rdf:Description>
 	  <xsl:apply-templates select="a:feed"/>
   </rdf:RDF>
-</xsl:template>
+  </xsl:template>
 
   <xsl:template match="a:feed[a:link[@rel='&fe;feed']]|a:entry[a:link[@rel='&fe;feed']]">
       <rdf:Description rdf:about="{vi:proxyIRI (a:link[@rel='&fe;feed']/@href)}">
@@ -131,10 +132,10 @@
 		</xsl:for-each>
     </rdf:Description>
       <xsl:apply-templates select="a:entry" />
-</xsl:template>
+  </xsl:template>
 
 
-<xsl:template match="a:title">
+  <xsl:template match="a:title">
       <xsl:choose>
 	  <xsl:when test="parent::a:*/a:category[@term='&picasa;user']">
 	      <foaf:nick><xsl:value-of select="." /></foaf:nick>
@@ -143,9 +144,9 @@
 	      <dc:title><xsl:value-of select="." /></dc:title>
 	  </xsl:otherwise>
       </xsl:choose>
-</xsl:template>
+  </xsl:template>
 
-<xsl:template match="a:content">
+  <xsl:template match="a:content">
   <dc:description><xsl:call-template name="removeTags" /></dc:description>
 </xsl:template>
 

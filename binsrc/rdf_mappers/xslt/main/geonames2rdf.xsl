@@ -54,6 +54,7 @@
     <xsl:param name="baseUri" />
     <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
+    <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 
     <xsl:output method="xml" indent="yes" />
 
@@ -64,7 +65,7 @@
     </xsl:template>
 
     <xsl:template match="rdf:RDF/geonames:Feature">
-	<rdf:Description rdf:about="{$docIRI}">
+	<rdf:Description rdf:about="{$docproxyIRI}">
 				<rdf:type rdf:resource="&bibo;Document"/>
 				<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri)}"/>
 				<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>

@@ -52,17 +52,18 @@
     <xsl:param name="ptIRI" />
     <xsl:param name="wpUri" />
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
+    <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 
     <xsl:variable name="ns">http://www.freebase.com/</xsl:variable>
 
   <xsl:template match="/">
 	<rdf:RDF>
-	    <rdf:Description rdf:about="{$docIRI}">
+	    <rdf:Description rdf:about="{$docproxyIRI}">
 		<rdf:type rdf:resource="&bibo;Document"/>
 		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
 		<sioc:container_of rdf:resource="{$ptIRI}"/>
 		<foaf:primaryTopic rdf:resource="{$ptIRI}"/>
-		<owl:sameAs rdf:resource="{$ptIRI}"/>
+		<owl:sameAs rdf:resource="{$docIRI}"/>
 	    </rdf:Description>
 	    <xsl:apply-templates select="rdf:RDF/*"/>
 	</rdf:RDF>

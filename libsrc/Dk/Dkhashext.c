@@ -443,8 +443,8 @@ box_dict_hashtable_copy_hook (caddr_t orig)
   while (hit_next (&hit, &key, &val))
     {
       caddr_t key_copy, val_copy;
-      key_copy = box_copy_tree (key);
-      val_copy = box_copy_tree (val);
+      key_copy = box_copy_tree (((caddr_t *)key)[0]);
+      val_copy = box_copy_tree (((caddr_t *)val)[0]);
       id_hash_set (res, (caddr_t) (&key_copy), (caddr_t) (&val_copy));
     }
   if (orig_dict->ht_mutex)

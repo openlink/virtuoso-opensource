@@ -48,6 +48,7 @@
 	<xsl:param name="user" />
 	<xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
 	<xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
+	<xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 
 	<xsl:template match="/">
 		<rdf:RDF>
@@ -60,10 +61,10 @@
 
 	<xsl:template match="rsp[@stat='ok']/user">
 		<xsl:if test="not empty(profile)">
-		        <rdf:Description rdf:about="{$docIRI}">
+		        <rdf:Description rdf:about="{$docproxyIRI}">
 			    <rdf:type rdf:resource="&bibo;Document"/>
 			    <dc:title><xsl:value-of select="$baseUri"/></dc:title>
-			    <owl:sameAs rdf:resource="{$resourceURL}"/>
+			    <owl:sameAs rdf:resource="{$docIRI}"/>
 			    <foaf:primaryTopic rdf:resource="{vi:proxyIRI (profile)}"/>
 			</rdf:Description>
 			<foaf:Person rdf:about="{vi:proxyIRI (profile)}">
@@ -136,10 +137,10 @@
 				<foaf:knows rdf:resource="{vi:proxyIRI (profile)}"/>
 			</rdf:Description>
 		</xsl:for-each>
-		<rdf:Description rdf:about="{$docIRI}">
+		<rdf:Description rdf:about="{$docproxyIRI}">
 		    <rdf:type rdf:resource="&bibo;Document"/>
 		    <dc:title><xsl:value-of select="$baseUri"/></dc:title>
-		    <owl:sameAs rdf:resource="{$resourceURL}"/>
+		    <owl:sameAs rdf:resource="{$docIRI}"/>
 		    <foaf:primaryTopic rdf:resource="{vi:proxyIRI (concat($ns, 'users/', $user))}"/>
 		</rdf:Description>
 	</xsl:template>

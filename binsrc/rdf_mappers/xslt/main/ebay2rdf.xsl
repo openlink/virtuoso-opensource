@@ -51,6 +51,7 @@
 
     <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
+    <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 
     <xsl:variable name="ns">urn:ebay:apis:eBLBaseComponents</xsl:variable>
 
@@ -62,17 +63,17 @@
 
     <xsl:template match="/">
 		<rdf:RDF>
-			<rdf:Description rdf:about="{$docIRI}">
+			<rdf:Description rdf:about="{$docproxyIRI}">
 				<rdf:type rdf:resource="&bibo;Document"/>
 				<sioc:container_of rdf:resource="{$resourceURL}"/>
 				<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 				<dcterms:subject rdf:resource="{$resourceURL}"/>
 				<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-				<owl:sameAs rdf:resource="{$resourceURL}"/>
+				<owl:sameAs rdf:resource="{$docIRI}"/>
 			</rdf:Description>
 			<rdf:Description rdf:about="{$resourceURL}">
 				<rdf:type rdf:resource="&gr;ProductOrService"/>
-				<sioc:has_container rdf:resource="{$docIRI}"/>
+				<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 				<xsl:apply-templates/>
 			</rdf:Description>
 		</rdf:RDF>

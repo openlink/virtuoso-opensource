@@ -51,17 +51,18 @@
   <xsl:param name="baseUri" />
   <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
   <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
+  <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 
   <xsl:template match="/">
       <rdf:RDF>
 	  <xsl:variable name="res" select="vi:proxyIRI ($baseUri)"/>
-	  <rdf:Description rdf:about="{$docIRI}">
+	  <rdf:Description rdf:about="{$docproxyIRI}">
 		<rdf:type rdf:resource="&bibo;Document"/>
 		<sioc:container_of rdf:resource="{$res}"/>
 		<foaf:primaryTopic rdf:resource="{$res}"/>
 		<dcterms:subject rdf:resource="{$res}"/>
 		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-		<owl:sameAs rdf:resource="{$resourceURL}"/>
+		<owl:sameAs rdf:resource="{$docIRI}"/>
 	  </rdf:Description>
 	  <rdf:Description rdf:about="{$res}">
 		<rdf:type rdf:resource="&book;Book"/>

@@ -48,6 +48,7 @@
     <xsl:param name="baseUri" />
     <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
+    <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 
     <xsl:variable name="ns">http://www.crunchbase.com/</xsl:variable>
     <xsl:param name="base"/>
@@ -93,10 +94,10 @@
 
     <xsl:template match="/">
 	<rdf:RDF>
-	    <rdf:Description rdf:about="{$docIRI}">
+	    <rdf:Description rdf:about="{$docproxyIRI}">
 		<rdf:type rdf:resource="&bibo;Document"/>
 		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-		<owl:sameAs rdf:resource="{$resourceURL}"/>
+		<owl:sameAs rdf:resource="{$docIRI}"/>
 		<xsl:variable name="res_num" select="count(/results)"/>
 		<xsl:for-each select="/results">
 		    <xsl:variable name="space">
@@ -121,7 +122,7 @@
 		</xsl:variable>
 		<rdf:Description rdf:about="{vi:proxyIRI(concat($base, $space, '/', permalink, $suffix))}">
 		    <foaf:page rdf:resource="{$baseUri}"/>
-		    <sioc:has_container rdf:resource="{$docIRI}"/>
+		    <sioc:has_container rdf:resource="{$docproxyIRI}"/>
 		    <rdf:type rdf:resource="&sioc;Item"/>
 		    <xsl:variable name="type">
 			<xsl:choose>

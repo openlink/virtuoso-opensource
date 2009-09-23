@@ -57,6 +57,7 @@
     <xsl:param name="baseUri" />
     <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
+    <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 
     <xsl:variable name="base" select="'http://musicbrainz.org/'"/>
     <xsl:variable name="uc">ABCDEFGHIJKLMNOPQRSTUVWXYZ</xsl:variable>
@@ -69,10 +70,10 @@
     </xsl:template>
 
     <xsl:template match="mmd:artist[@type='Group']">
-		<rdf:Description rdf:about="{$docIRI}">
+		<rdf:Description rdf:about="{$docproxyIRI}">
 			<rdf:type rdf:resource="&bibo;Document"/>
 			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-			<owl:sameAs rdf:resource="{$resourceURL}"/>
+			<owl:sameAs rdf:resource="{$docIRI}"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI (concat($base,'artist/',@id, '.html'))}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI (concat($base,'artist/',@id, '.html'))}"/>
 			<xsl:choose>
@@ -107,12 +108,12 @@
     </xsl:template>
 
     <xsl:template match="mmd:artist[@type='Person']">
-		<rdf:Description rdf:about="{$docIRI}">
+		<rdf:Description rdf:about="{$docproxyIRI}">
 			<rdf:type rdf:resource="&bibo;Document"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI (concat($base,'artist/',@id, '.html'))}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI (concat($base,'artist/',@id, '.html'))}"/>
 			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-			<owl:sameAs rdf:resource="{$resourceURL}"/>
+			<owl:sameAs rdf:resource="{$docIRI}"/>
 			<xsl:choose>
 				<xsl:when test="contains($baseUri, @id)">
 					<foaf:primaryTopic rdf:resource="{vi:proxyIRI (concat($base,'artist/',@id, '.html'))}"/>
@@ -139,12 +140,12 @@
     </xsl:template>
 
     <xsl:template match="mmd:release">
-		<rdf:Description rdf:about="{$docIRI}">
+		<rdf:Description rdf:about="{$docproxyIRI}">
 			<rdf:type rdf:resource="&bibo;Document"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI (concat($base,'release/',@id, '.html'))}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI (concat($base,'release/',@id, '.html'))}"/>
 			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-			<owl:sameAs rdf:resource="{$resourceURL}"/>
+			<owl:sameAs rdf:resource="{$docIRI}"/>
 			<xsl:choose>
 				<xsl:when test="contains($baseUri, @id)">
 					<foaf:primaryTopic rdf:resource="{vi:proxyIRI (concat($base,'release/',@id, '.html'))}"/>
@@ -192,12 +193,12 @@
     </xsl:template>
 
     <xsl:template match="mmd:track">
-		<rdf:Description rdf:about="{$docIRI}">
+		<rdf:Description rdf:about="{$docproxyIRI}">
 			<rdf:type rdf:resource="&bibo;Document"/>
 			<sioc:container_of rdf:resource="{vi:proxyIRI (concat($base,'track/',@id, '.html'))}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI (concat($base,'track/',@id, '.html'))}"/>
 			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-			<owl:sameAs rdf:resource="{$resourceURL}"/>
+			<owl:sameAs rdf:resource="{$docIRI}"/>
 			<xsl:choose>
 				<xsl:when test="contains($baseUri, @id)">
 					<foaf:primaryTopic rdf:resource="{vi:proxyIRI (concat($base,'track/',@id, '.html'))}"/>

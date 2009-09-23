@@ -48,15 +48,16 @@
 	<xsl:variable name="ns">http://www.openlinksw.com/schemas/twfy#</xsl:variable>
 	<xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
 	<xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
+	<xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 	<xsl:template match="/">
 		<rdf:RDF>
-			<rdf:Description rdf:about="{$docIRI}">
+			<rdf:Description rdf:about="{$docproxyIRI}">
 				<rdf:type rdf:resource="&bibo;Document"/>
 				<sioc:container_of rdf:resource="{$resourceURL}"/>
 				<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 				<dcterms:subject rdf:resource="{$resourceURL}"/>
 				<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-				<owl:sameAs rdf:resource="{$resourceURL}"/>
+				<owl:sameAs rdf:resource="{$docIRI}"/>
 			</rdf:Description>
 			<xsl:apply-templates select="twfy" />
 		</rdf:RDF>
@@ -109,7 +110,7 @@
 		<xsl:variable name="about" select="$resourceURL" />
 		<xsl:variable name="canonicalname" select="local-name(.)" />
 		<xsl:variable name="prop_value" select="." />
-		<foaf:Document rdf:about="{$docIRI}">
+		<foaf:Document rdf:about="{$docproxyIRI}">
 			<foaf:primaryTopic>
 				<foaf:Person rdf:about="{$about}">
 					<xsl:if test="$canonicalname = 'full_name'">

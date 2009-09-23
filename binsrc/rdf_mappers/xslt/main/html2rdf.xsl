@@ -44,6 +44,9 @@
   version="1.0">
   <xsl:output method="xml" indent="yes"/>
   <xsl:param name="baseUri" />
+  <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+  <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
+  <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
   <xsl:variable name="uc">ABCDEFGHIJKLMNOPQRSTUVWXYZ</xsl:variable>
   <xsl:variable name="lc">abcdefghijklmnopqrstuvwxyz</xsl:variable>
 
@@ -55,8 +58,11 @@
   </xsl:template>
 
   <xsl:template match="html/head">
-      <rdf:Description rdf:about="{$baseUri}">
+      <rdf:Description rdf:about="{$docproxyIRI}">
 		<rdf:type rdf:resource="&bibo;Document"/>
+		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+		<owl:sameAs rdf:resource="{$docIRI}"/>
+		<!--content:encoded><xsl:value-of select="vi:escape($doc1)" /></content:encoded-->
 		<xsl:apply-templates select="title|meta"/>
 		<xsl:apply-templates select="//img[@src]"/>
 		<xsl:apply-templates select="//a[@href]"/>
@@ -64,7 +70,6 @@
 		<xsl:variable name="doc1">
 			<xsl:copy-of select="/html/body" />
 		</xsl:variable>
-		<!--content:encoded><xsl:value-of select="vi:escape($doc1)" /></content:encoded-->
       </rdf:Description>
   </xsl:template>
 
@@ -140,6 +145,7 @@
 
   <xsl:template match="a[@href]">
       <xsl:variable name="url" select="resolve-uri ($baseUri, @href)"/>
+      <xsl:if test="not ($url like 'javascript:%')">
       <xsl:choose>
 	  <xsl:when test="$url like 'http://www.amazon.com/gp/product/%' or $url like 'http://www.amazon.%/o/ASIN/%'">
 	      <xsl:variable name="tmp"
@@ -159,6 +165,7 @@
 	      <sioc:links_to rdf:resource="{$url}"/>
 	  </xsl:otherwise>
       </xsl:choose>
+      </xsl:if>
   </xsl:template>
 
   <xsl:template match="*|text()"/>

@@ -47,6 +47,7 @@
     <xsl:variable name="ns">urn:yahoo:maps:</xsl:variable>
     <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
+    <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 
     <xsl:template match="ResultSet" priority="1">
 	<xsl:apply-templates select="*"/>
@@ -55,8 +56,8 @@
     <xsl:template match="/">
 	<rdf:RDF>
 	    <xsl:variable name="res" select="vi:proxyIRI ($baseUri)"/>
-	    <rdf:Description rdf:about="{$docIRI}">
-		<owl:sameAs rdf:resource="{$resourceURL}"/>
+	    <rdf:Description rdf:about="{$docproxyIRI}">
+		<owl:sameAs rdf:resource="{$docIRI}"/>
 		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
 		<rdf:type rdf:resource="&bibo;Document"/>
 		<sioc:container_of rdf:resource="{$res}"/>
@@ -65,7 +66,7 @@
 	    </rdf:Description>
 	    <rdf:Description rdf:about="{$res}">
 		<rdf:type rdf:resource="&sioc;Item"/>
-		<sioc:has_container rdf:resource="{$docIRI}"/>
+		<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 		<xsl:apply-templates/>
 	    </rdf:Description>
 	</rdf:RDF>

@@ -7,6 +7,7 @@ TTLP ('@prefix foaf: <http://xmlns.com/foaf/0.1/> .
 @prefix skos: <http://www.w3.org/2008/05/skos#> .
 @prefix bibo: <http://purl.org/ontology/bibo/> .
 @prefix gr: <http://purl.org/goodrelations/v1#> .
+@prefix cb: <http://www.crunchbase.com/> .
 dc:title rdfs:subPropertyOf virtrdf:label .
 rdfs:label rdfs:subPropertyOf virtrdf:label .
 fbase:name rdfs:subPropertyOf virtrdf:label .
@@ -20,6 +21,7 @@ skos:prefLabel rdfs:subPropertyOf virtrdf:label .
 foaf:accountName rdfs:subPropertyOf virtrdf:label .
 bibo:shortTitle rdfs:subPropertyOf virtrdf:label .
 <http://s.opencalais.com/1/pred/name> rdfs:subPropertyOf foaf:name .
+cb:source_description rdfs:subPropertyOf foaf:name .
 <http://s.opencalais.com/1/type/er/Company> rdfs:subClassOf gr:BusinessEntity .
 gr:BusinessEntity rdfs:subClassOf foaf:Organization .
 <http://dbpedia.org/ontology/Company> rdfs:subClassOf gr:BusinessEntity .
@@ -112,11 +114,11 @@ rdfdesc_trunc_uri (in s varchar, in maxlen int := 80)
 }
 ;
 
-create procedure rdfdesc_rel_print (in val any, in rel any, in obj any, in flag int := 0)
+create procedure rdfdesc_rel_print (in val any, in rel any, in obj any, in flag int := 0, in lang varchar := '')
 {
   declare delim, delim1, delim2, delim3 integer;
   declare inx int;
-  declare nss, loc, res, nspref varchar;
+  declare nss, loc, res, nspref, lang_def varchar;
 
   delim1 := coalesce (strrchr (val, '/'), -1);
   delim2 := coalesce (strrchr (val, '#'), -1);
@@ -147,6 +149,10 @@ create procedure rdfdesc_rel_print (in val any, in rel any, in obj any, in flag 
     loc := sprintf ('rev="%s:%s"', nspref, loc);
   if (obj is not null)
     res := sprintf (' resource="%V" ', obj);  
+  if (isstring (lang_def) and length (lang_def))
+    lang_def := sprintf (' xml:lang="%s"', lang);
+  else  
+    lang_def := '';  
   return concat (loc, ' ', res, ' ', nss);
 }
 ;
@@ -204,9 +210,9 @@ create procedure rdfdesc_uri_local_part (in uri varchar)
 
 create procedure rdfdesc_http_url (in url varchar)
 {
-  declare host, pref, pref2, proxy_iri_fn varchar;
+  declare host, pref, pref2, proxy_iri_fn, xhost varchar;
   declare url_sch varchar;
-  declare ua any;
+  declare ua, lines any;
 
   proxy_iri_fn := connection_get ('proxy_iri_fn'); -- set inside description.vsp to indicate local browsing of an 3-d party dataset
   if (proxy_iri_fn is not null)
@@ -216,7 +222,21 @@ create procedure rdfdesc_http_url (in url varchar)
       ret := call (proxy_iri_fn || '_get_proxy_iri') (url);
       return ret;
     }
-  host := http_request_header(http_request_header(), 'Host', null, null);
+  lines := http_request_header();		
+  host := null;
+  xhost := http_request_header(lines, 'X-Forwarded-For', null, null);
+  if (xhost is not null)
+    {
+      declare ta any;
+      ta := split_and_decode (xhost, 0, '\0\0\,');
+      if (length (ta) > 1)
+	{
+	  host := trim (ta[1]);
+	  host := tcpip_gethostbyaddr (host);
+	}
+    }
+  if (host is null)
+    host := http_request_header(lines, 'Host', null, null);
   pref := 'http://'||host||'/about/html/';
   pref2 := 'http://'||host||'/about/id/';
   if (url not like pref || '%' and url not like pref2 || '%')
@@ -269,7 +289,7 @@ create procedure rdfdesc_http_print_r (in _object any, in prop any, in label any
        rdfs_type := DB.DBA.RDF_DATATYPE_OF_OBJ (_object);
        endg:;
      }
-   rdfa := rdfdesc_rel_print (prop, rel, null, 1);
+   rdfa := rdfdesc_rel_print (prop, rel, null, 1, lang);
    http ('\t<li><span class="literal">');
 again:
    if (__tag (_object) = 246)
@@ -294,7 +314,7 @@ again:
        else
 	 _label := null;
 
-       rdfa := rdfdesc_rel_print (prop, rel, _url, 0);
+       rdfa := rdfdesc_rel_print (prop, rel, _url, 0, null);
        if (http_mime_type (_url) like 'image/%' and _url not like 'http://%/about/id/%')
 	 http (sprintf ('<a class="uri" %s href="%s"><img src="%s" height="160" border="0"/></a>', rdfa, rdfdesc_http_url (_url), _url));
        else
@@ -582,6 +602,34 @@ create procedure virt_proxy_init_about ()
   DB.DBA.VHOST_REMOVE (lpath=>'/about/id');
   DB.DBA.VHOST_DEFINE (lpath=>'/about/id', ppath=>'/', is_dav=>0, def_page=>'', opts=>vector('url_rewrite', 'ext_ahp_rule_list_new'));
 
+  --# /id/entity
+
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_entity_rl_restrict', 1,
+      '/about/id/entity/(http|https|nodeID)/(.*)', vector ('sch', 'g'), 2,
+      '/dummy', vector (), null, null, 2, 406, null);
+
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_entity_rl_data', 1,
+      '/about/id/entity/(http|https|nodeID)/(.*)', vector ('sch', 'g'), 2,
+      '/about/data/entity/%s/%s', vector ('sch', 'g'), null, 
+      '(application/rdf.xml)|(text/rdf.n3)|(application/x-turtle)|(text/n3)|(text/turtle)|(application/rdf.json)|(text/html)|(text/plain)|(\\*/\\*)', 
+      2, 303, null);
+
+  delete from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = 'sp_entity_rll';
+  DB.DBA.HTTP_VARIANT_ADD ('sp_entity_rll', '/about/data/entity/(.*)', '/about/data/entity/xml/\x241',    'application/rdf+xml', 0.95, location_hook=>null);
+  DB.DBA.HTTP_VARIANT_ADD ('sp_entity_rll', '/about/data/entity/(.*)', '/about/data/entity/nt/\x241',     'text/n3', 0.80, location_hook=>null);
+  DB.DBA.HTTP_VARIANT_ADD ('sp_entity_rll', '/about/data/entity/(.*)', '/about/data/entity/n3/\x241',     'text/rdf+n3', 0.80, location_hook=>null);
+  DB.DBA.HTTP_VARIANT_ADD ('sp_entity_rll', '/about/data/entity/(.*)', '/about/data/entity/ttl/\x241',    'application/x-turtle', 0.80, location_hook=>null);
+  DB.DBA.HTTP_VARIANT_ADD ('sp_entity_rll', '/about/data/entity/(.*)', '/about/data/entity/turtle/\x241', 'text/turtle', 0.80, location_hook=>null);
+  DB.DBA.HTTP_VARIANT_ADD ('sp_entity_rll', '/about/data/entity/(.*)', '/about/data/entity/json/\x241',    'application/rdf+json', 0.70, location_hook=>null);
+  DB.DBA.HTTP_VARIANT_ADD ('sp_entity_rll', '/about/data/entity/(.*)', '/about/html/^{DynamicLocalFormat}^/about/id/entity/\x241', 'text/html', 0.80, location_hook=>null);
+  DB.DBA.HTTP_VARIANT_ADD ('sp_entity_rll', '/about/data/entity/(.*)', '/about/data/entity/text/\x241',    'text/plain', 0.20, location_hook=>null);
+
+  DB.DBA.URLREWRITE_CREATE_RULELIST ( 'sp_entity_rll', 1, 
+      		vector ( 'sp_entity_rl_restrict', 'sp_entity_rl_data'));
+
+  DB.DBA.VHOST_REMOVE (lpath=>'/about/id/entity');
+  DB.DBA.VHOST_DEFINE (lpath=>'/about/id/entity', ppath=>'/', is_dav=>0, def_page=>'', opts=>vector('url_rewrite', 'sp_entity_rll'));
+
   --# the rdf
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_data_1', 1,
       '/about/data/(xml|n3|nt|ttl|text|turtle|json)/(http|https|nodeID)/(.*)\0x24', vector ('fmt', 'sch', 'url'), 3,
@@ -606,6 +654,31 @@ create procedure virt_proxy_init_about ()
   DB.DBA.VHOST_REMOVE (lpath=>'/about/data');
   DB.DBA.VHOST_DEFINE (lpath=>'/about/data', ppath=>'/', is_dav=>0, def_page=>'', opts=>vector('url_rewrite', 'ext_ahp_rule_list_data'));
 
+  --# entity rdf
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_ent_data_rl_1', 1,
+      '/about/data/entity/(xml|n3|nt|ttl|text|turtle|json)/(http|https|nodeID)/(.*)\0x24', vector ('fmt', 'sch', 'url'), 3,
+      '/about?url=%s://%s&force=rdf&output-format=%U', vector ('sch', 'url', 'fmt'), null, null, 2);
+
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_ent_data_rl_2', 1,
+      '/about/data/entity/turtle/(http|https|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
+      '/about?url=%s://%s&force=rdf&output-format=text%%2Fturtle', vector ('sch', 'url'), null, null, 2, null, 'Content-Type: text/turtle');
+
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_ent_data_rl_3', 1,
+      '/about/data/entity/ttl/(http|https|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
+      '/about?url=%s://%s&force=rdf&output-format=application%%2Fx-turtle', vector ('sch', 'url'), null, null, 2, null, 'Content-Type: application/x-turtle');
+
+  DB.DBA.URLREWRITE_CREATE_RULELIST ( 'sp_ent_data_rll', 1, 
+      	vector (
+	  'sp_ent_data_rl_1',
+	  'sp_ent_data_rl_2',
+	  'sp_ent_data_rl_3'
+	  )
+	);
+
+  DB.DBA.VHOST_REMOVE (lpath=>'/about/data/entity');
+  DB.DBA.VHOST_DEFINE (lpath=>'/about/data/entity', ppath=>'/', is_dav=>0, def_page=>'', opts=>vector('url_rewrite', 'sp_ent_data_rll'));
+
+  --# grants
   EXEC_STMT ('grant execute on  DB.DBA.HTTP_RDF_ACCEPT to PROXY', 0);
 
   registry_set ('DB.DBA.virt_proxy_init_about_state', rdf_virt_proxy_ver ());
