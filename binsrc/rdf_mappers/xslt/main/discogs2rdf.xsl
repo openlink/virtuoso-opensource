@@ -74,7 +74,6 @@
 			<dcterms:subject rdf:resource="{vi:proxyIRI (concat($base,'artist/',translate(name, ' ', '+')))}"/>
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI (concat($base,'artist/',translate(name, ' ', '+')))}"/>
 			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-			<owl:sameAs rdf:resource="{$resourceURL}"/>
 		</rdf:Description>
 		<mo:MusicArtist rdf:about="{vi:proxyIRI (concat($base,'artist/',translate(name, ' ', '+')))}">
 			<sioc:has_container rdf:resource="{$docIRI}"/>

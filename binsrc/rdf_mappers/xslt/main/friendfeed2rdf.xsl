@@ -75,7 +75,6 @@
 	  <foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 	  <dcterms:subject rdf:resource="{$resourceURL}"/>
 	  <dc:title><xsl:value-of select="$baseUri"/></dc:title>
-	  <owl:sameAs rdf:resource="{$resourceURL}"/>
       </rdf:Description>
       <xsl:apply-templates/>
       <xsl:variable name="users" select="distinct (//ff:user)"/>

@@ -56,7 +56,6 @@
 					<xsl:value-of select="$baseUri" />
 				</dc:title>
 				<foaf:primaryTopic rdf:resource="{$resourceURL}" />
-				<owl:sameAs rdf:resource="{$resourceURL}" />
 			</rdf:Description>
 			<rdf:Description rdf:about="{$resourceURL}">
 				<rdf:type rdf:resource="&sioc;Thread"/>

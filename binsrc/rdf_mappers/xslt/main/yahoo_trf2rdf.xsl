@@ -56,7 +56,6 @@
 	<rdf:RDF>
 	    <xsl:variable name="res" select="vi:proxyIRI ($baseUri)"/>
 	    <rdf:Description rdf:about="{$docIRI}">
-		<owl:sameAs rdf:resource="{$resourceURL}"/>
 		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
 		<rdf:type rdf:resource="&bibo;Document"/>
 		<sioc:container_of rdf:resource="{$res}"/>

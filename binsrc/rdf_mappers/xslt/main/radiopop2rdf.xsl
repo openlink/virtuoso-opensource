@@ -63,7 +63,6 @@
 		        <rdf:Description rdf:about="{$docIRI}">
 			    <rdf:type rdf:resource="&bibo;Document"/>
 			    <dc:title><xsl:value-of select="$baseUri"/></dc:title>
-			    <owl:sameAs rdf:resource="{$resourceURL}"/>
 			    <foaf:primaryTopic rdf:resource="{vi:proxyIRI (profile)}"/>
 			</rdf:Description>
 			<foaf:Person rdf:about="{vi:proxyIRI (profile)}">
@@ -139,7 +138,6 @@
 		<rdf:Description rdf:about="{$docIRI}">
 		    <rdf:type rdf:resource="&bibo;Document"/>
 		    <dc:title><xsl:value-of select="$baseUri"/></dc:title>
-		    <owl:sameAs rdf:resource="{$resourceURL}"/>
 		    <foaf:primaryTopic rdf:resource="{vi:proxyIRI (concat($ns, 'users/', $user))}"/>
 		</rdf:Description>
 	</xsl:template>

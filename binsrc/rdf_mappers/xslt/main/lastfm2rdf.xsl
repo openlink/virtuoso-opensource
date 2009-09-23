@@ -121,7 +121,6 @@
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(url)}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI(url)}"/>
 			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-			<owl:sameAs rdf:resource="{$resourceURL}"/>
 		</rdf:Description>
 		<xsl:call-template name="artist"/>
 	</xsl:template>
@@ -133,7 +132,6 @@
 			<!--foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/-->
 			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/>
 			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-			<owl:sameAs rdf:resource="{$resourceURL}"/>
 		</rdf:Description>
 	    <xsl:for-each select="artist">
 			<rdf:Description rdf:about="{vi:proxyIRI(concat($base, 'music/', translate(//similarartists/@artist, ' ', '+')))}">
@@ -157,7 +155,6 @@
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(url)}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI(url)}"/>
 			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-			<owl:sameAs rdf:resource="{$resourceURL}"/>
 		</rdf:Description>
 		<xsl:call-template name="track"/>
 	</xsl:template>
@@ -169,7 +166,6 @@
 			<!--foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/-->
 			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/>
 			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-			<owl:sameAs rdf:resource="{$resourceURL}"/>
 		</rdf:Description>
 	    <xsl:for-each select="track">
 			<rdf:Description rdf:about="{vi:proxyIRI(concat($base, 'music/', translate(//toptracks/@artist, ' ', '+')))}">
@@ -186,7 +182,6 @@
 			<!--foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'music/', @artist, '/_/', @track))}"/-->
 			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'music/', @artist, '/_/', @track))}"/>
 			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-			<owl:sameAs rdf:resource="{$resourceURL}"/>
 		</rdf:Description>
 	    <xsl:for-each select="track">
 			<rdf:Description rdf:about="{vi:proxyIRI(concat($base, 'music/', //similartracks/@artist, '/_/', //similartracks/@track))}">
@@ -210,7 +205,6 @@
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(url)}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI(url)}"/>
 			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-			<owl:sameAs rdf:resource="{$resourceURL}"/>
 		</rdf:Description>
 		<xsl:call-template name="album"/>
 	</xsl:template>
@@ -222,7 +216,6 @@
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
 			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-			<owl:sameAs rdf:resource="{$resourceURL}"/>
 		</rdf:Description>
 		<foaf:Person rdf:about="{vi:proxyIRI(concat($base, 'user/', @user))}">
 			<xsl:for-each select="album">
@@ -241,7 +234,6 @@
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
 			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-			<owl:sameAs rdf:resource="{$resourceURL}"/>
 		</rdf:Description>
 		<foaf:Person rdf:about="{vi:proxyIRI(concat($base, 'user/', @user))}">
 			<xsl:for-each select="track">
@@ -260,7 +252,6 @@
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
 			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-			<owl:sameAs rdf:resource="{$resourceURL}"/>
 		</rdf:Description>
 		<foaf:Person rdf:about="{vi:proxyIRI(concat($base, 'user/', @user))}">
 			<xsl:for-each select="playlist">
@@ -279,7 +270,6 @@
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
 			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-			<owl:sameAs rdf:resource="{$resourceURL}"/>
 		</rdf:Description>
 		<foaf:Person rdf:about="{vi:proxyIRI(concat($base, 'user/', @user))}">
 			<xsl:for-each select="artist">
@@ -298,7 +288,6 @@
 			<!--foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/-->
 			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/>
 			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-			<owl:sameAs rdf:resource="{$resourceURL}"/>
 		</rdf:Description>
 	    <xsl:for-each select="album">
 			<rdf:Description rdf:about="{vi:proxyIRI(concat($base, 'music/', translate(//topalbums/@artist, ' ', '+')))}">
@@ -315,7 +304,6 @@
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'user/', @user))}"/>
 			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-			<owl:sameAs rdf:resource="{$resourceURL}"/>
 		</rdf:Description>
 		<foaf:Person rdf:about="{vi:proxyIRI(concat($base, 'user/', @user))}">
 			<xsl:for-each select="album">
@@ -334,7 +322,6 @@
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(url)}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI(url)}"/>
 			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-			<owl:sameAs rdf:resource="{$resourceURL}"/>
 		</rdf:Description>
 		<xsl:call-template name="event"/>
 	</xsl:template>
@@ -346,7 +333,6 @@
 			<!--foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/-->
 			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'music/', translate(@artist, ' ', '+')))}"/>
 			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-			<owl:sameAs rdf:resource="{$resourceURL}"/>
 		</rdf:Description>
 	    <xsl:for-each select="event">
 			<rdf:Description rdf:about="{vi:proxyIRI(concat($base, 'music/', translate(//events/@artist, ' ', '+')))}">
@@ -373,7 +359,6 @@
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat($base, 'user/', @for))}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, 'user/', @for))}"/>
 			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-			<owl:sameAs rdf:resource="{$resourceURL}"/>
 		</rdf:Description>
 	    <xsl:for-each select="user">
 			<xsl:call-template name="user"/>
@@ -638,7 +623,6 @@
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
 			<dcterms:subject rdf:resource="{vi:proxyIRI($baseUri)}"/>
 			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-			<owl:sameAs rdf:resource="{$resourceURL}"/>
 		</rdf:Description>
 		<foaf:Person rdf:about="{vi:proxyIRI($baseUri)}">
 			<foaf:name>

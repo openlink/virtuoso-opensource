@@ -63,7 +63,6 @@
 			    <foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 			    <dcterms:subject rdf:resource="{$resourceURL}"/>
 			    <dc:title><xsl:value-of select="$baseUri"/></dc:title>
-			    <owl:sameAs rdf:resource="{$resourceURL}"/>
 			</rdf:Description>
 		    </xsl:if>
 			<xsl:apply-templates select="xbrl" />

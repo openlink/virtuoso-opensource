@@ -65,7 +65,6 @@
 		<rdf:RDF>
 			<rdf:Description rdf:about="{$docIRI}">
 				<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-				<owl:sameAs rdf:resource="{$resourceURL}"/>
 				<rdf:type rdf:resource="&bibo;Document"/>
 				<foaf:primaryTopic rdf:resource="{$resourceURL}" />
 			</rdf:Description>

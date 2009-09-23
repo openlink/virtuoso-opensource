@@ -66,7 +66,6 @@
 	    <foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 	    <dcterms:subject rdf:resource="{$resourceURL}"/>
 	    <dc:title><xsl:value-of select="$baseUri"/></dc:title>
-	    <owl:sameAs rdf:resource="{$resourceURL}"/>
 	</rdf:Description>
 	<sioct:ImageGallery rdf:about="{$resourceURL}">
 	    <xsl:for-each select="fb:photo">
@@ -114,7 +113,6 @@
 	    <foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 	    <dcterms:subject rdf:resource="{$resourceURL}"/>
 	    <dc:title><xsl:value-of select="$baseUri"/></dc:title>
-	    <owl:sameAs rdf:resource="{$resourceURL}"/>
 	</rdf:Description>
 	<foaf:Person rdf:about="{$resourceURL}">
 	    <fb:uid><xsl:value-of select="fb:uid"/></fb:uid>

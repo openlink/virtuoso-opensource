@@ -39,7 +39,7 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://.*download.com/.*)|'||
-    '(http://.*cnet.com/.*)|'||
+    '(http://download.cnet.com/.*)|'||
     '(http://shopper.cnet.com/.*)|'||
     '(http://reviews.cnet.com/.*)',
     'URL', 'DB.DBA.RDF_LOAD_CNET', null, 'CNET');

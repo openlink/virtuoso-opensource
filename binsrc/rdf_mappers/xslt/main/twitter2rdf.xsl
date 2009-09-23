@@ -143,7 +143,6 @@
 				<xsl:when test="$what = 'status'">
 					<foaf:Document rdf:about="{$docIRI}">
 						<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
-						<owl:sameAs rdf:resource="{$resourceURL}"/>
 					</foaf:Document>
 					<xsl:apply-templates select="status" />
 				</xsl:when>

@@ -79,7 +79,6 @@
 	<rdf:Description rdf:about="{$docIRI}">
 			<rdf:type rdf:resource="&bibo;Document"/>
 	    <dc:title><xsl:value-of select="$baseUri"/></dc:title>
-	    <owl:sameAs rdf:resource="{$resourceURL}"/>
 			<scot:hasScot rdf:resource="{concat($baseUri, '#tagcloud')}"/>
 			<xsl:for-each select="popular">
 				<sioc:topic rdf:resource="{concat ('http://delicious.com/tag/', .)}"/>
@@ -97,7 +96,6 @@
 	    <rdf:Description rdf:about="{$docIRI}">
 				<rdf:type rdf:resource="&bibo;Document"/>
 		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-		<owl:sameAs rdf:resource="{$resourceURL}"/>
 		<!--dc:title>
 					<xsl:value-of select="title"/>
 		</dc:title-->
@@ -173,7 +171,6 @@
 	    <rdf:Description rdf:about="{$docIRI}">
 				<rdf:type rdf:resource="&bibo;Document"/>
 		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-		<owl:sameAs rdf:resource="{$resourceURL}"/>
 		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 			</rdf:Description>
 	    <rdf:Description rdf:about="{$resourceURL}">
@@ -252,7 +249,6 @@
 	    <rdf:Description rdf:about="{$docIRI}">
 				<rdf:type rdf:resource="&bibo;Document"/>
 		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-		<owl:sameAs rdf:resource="{$resourceURL}"/>
 		<!--dc:title>
 					<xsl:value-of select="title"/>
 		</dc:title-->

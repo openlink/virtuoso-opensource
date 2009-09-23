@@ -62,7 +62,6 @@
 		    <dcterms:subject rdf:resource="{$res}"/>
 		</xsl:for-each>
 		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-		<owl:sameAs rdf:resource="{$resourceURL}"/>
 	    </rdf:Description>
 	    <xsl:apply-templates select="ISBNdb/BookList/BookData"/>
 	    <xsl:apply-templates select="ISBNdb/SubjectList/SubjectData"/>

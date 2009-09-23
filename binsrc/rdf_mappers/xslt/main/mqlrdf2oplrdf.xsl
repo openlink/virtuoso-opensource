@@ -62,7 +62,6 @@
 		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
 		<sioc:container_of rdf:resource="{$ptIRI}"/>
 		<foaf:primaryTopic rdf:resource="{$ptIRI}"/>
-		<owl:sameAs rdf:resource="{$ptIRI}"/>
 	    </rdf:Description>
 	    <xsl:apply-templates select="rdf:RDF/*"/>
 	</rdf:RDF>

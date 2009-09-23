@@ -69,7 +69,6 @@
 			<rdf:type rdf:resource="&bibo;Document"/>
 			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
 			<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
-			<owl:sameAs rdf:resource="{$resourceURL}"/>
 		</rdf:Description>
 		<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
 			<rdf:type rdf:resource="&sioc;Thread"/>
@@ -111,7 +110,6 @@
 			<rdf:type rdf:resource="&bibo;Document"/>
 			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
 			<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
-			<owl:sameAs rdf:resource="{$resourceURL}"/>
 		</rdf:Description>
 		<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">    	
 			<rdf:type rdf:resource="&sioc;Thread"/>

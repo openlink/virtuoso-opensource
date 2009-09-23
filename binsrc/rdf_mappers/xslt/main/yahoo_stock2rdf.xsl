@@ -62,7 +62,6 @@
 	    <sioc:container_of rdf:resource="{$pt}"/>
 	    <foaf:primaryTopic rdf:resource="{$pt}"/>
 	    <dcterms:subject rdf:resource="{$pt}"/>
-	    <owl:sameAs rdf:resource="{$pt}"/>
 	</rdf:Description>
 	<rdf:Description rdf:about="{vi:proxyIRI(concat ('http://dbpedia.org/resource/', @stock))}">
 	    <rdf:type rdf:resource="&stock;StockMarket"/>

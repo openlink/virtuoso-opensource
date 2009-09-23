@@ -96,7 +96,6 @@
 	    <rdf:Description rdf:about="{$docIRI}">
 		<rdf:type rdf:resource="&bibo;Document"/>
 		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-		<owl:sameAs rdf:resource="{$resourceURL}"/>
 		<xsl:variable name="res_num" select="count(/results)"/>
 		<xsl:for-each select="/results">
 		    <xsl:variable name="space">

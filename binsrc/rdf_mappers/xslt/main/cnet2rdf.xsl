@@ -79,7 +79,6 @@
 						<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
 						<dcterms:subject rdf:resource="{vi:proxyIRI($baseUri)}"/>
 						<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-						<owl:sameAs rdf:resource="{$resourceURL}"/>
 
 					</rdf:Description>
 					<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">

@@ -83,7 +83,6 @@
 		<rdf:Description rdf:about="{$docIRI}">
 			<rdf:type rdf:resource="&bibo;Document"/>
 			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-			<owl:sameAs rdf:resource="{$resourceURL}"/>
 			<sioc:container_of rdf:resource="{$resourceURL}"/>
 			<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 			<dcterms:subject rdf:resource="{$resourceURL}"/>

@@ -61,7 +61,6 @@
 		<foaf:primaryTopic rdf:resource="{$res}"/>
 		<dcterms:subject rdf:resource="{$res}"/>
 		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-		<owl:sameAs rdf:resource="{$resourceURL}"/>
 	  </rdf:Description>
 	  <rdf:Description rdf:about="{$res}">
 		<rdf:type rdf:resource="&book;Book"/>

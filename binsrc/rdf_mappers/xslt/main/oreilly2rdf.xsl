@@ -68,7 +68,6 @@
       <rdf:Description rdf:about="{$docIRI}">
 		<rdf:type rdf:resource="&bibo;Document"/>
 		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-		<owl:sameAs rdf:resource="{$resourceURL}"/>
 		<sioc:container_of rdf:resource="{$resourceURL}"/>
 		<foaf:topic rdf:resource="{$resourceURL}"/>
 		<dcterms:subject rdf:resource="{$resourceURL}"/>
@@ -161,7 +160,6 @@
       <xsl:variable name="resourceURL">
 		<xsl:value-of select="concat('http://www.amazon.com/', translate($title, ' ', '-'), '/dp/', $isbn)"/>
       </xsl:variable>
-	  <owl:sameAs rdf:resource="{$resourceURL}" />
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='ean']">

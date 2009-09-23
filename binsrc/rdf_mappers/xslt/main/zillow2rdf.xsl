@@ -76,7 +76,6 @@
 		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 		<dcterms:subject rdf:resource="{$resourceURL}"/>
 		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-		<owl:sameAs rdf:resource="{$resourceURL}"/>
 			</rdf:Description>
 	    <rdf:Description rdf:about="{$resourceURL}">
 				<rdf:type rdf:resource="&realdf;Residential"/>

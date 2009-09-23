@@ -64,7 +64,6 @@
 		<xsl:if test="$what = 'events' or $what = 'event' or $what = 'comments'">
 			<foaf:Document rdf:about="{$docIRI}">
 				<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-				<owl:sameAs rdf:resource="{vi:proxyIRI($base)}"/>
 				<foaf:primaryTopic>
 					<xsl:if test="$what = 'events' or $what = 'comments'">
 						<foaf:Group rdf:about="{vi:proxyIRI($base)}" >
@@ -87,7 +86,6 @@
 		<xsl:if test="$what = 'members'">
 			<foaf:Document rdf:about="{$docIRI}">
 				<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-				<owl:sameAs rdf:resource="{vi:proxyIRI($baseUri)}"/>
 				<foaf:primaryTopic>
 					<foaf:Group rdf:about="{vi:proxyIRI($baseUri)}">
 						<xsl:for-each select="item">
@@ -249,7 +247,6 @@
 				<xsl:if test="$what = 'members' and contains($baseUri, id) ">
 					<foaf:Document rdf:about="{$docIRI}">
 					    <dc:title><xsl:value-of select="$baseUri"/></dc:title>
-					    <owl:sameAs rdf:resource="{vi:proxyIRI(link)}"/>
 						<foaf:primaryTopic>
 							<foaf:Person rdf:about="{vi:proxyIRI(link)}"/>
 						</foaf:primaryTopic>

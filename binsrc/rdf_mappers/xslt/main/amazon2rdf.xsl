@@ -71,7 +71,6 @@
 		<sioc:container_of rdf:resource="{$resourceURL}"/>
 		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 		<dcterms:subject rdf:resource="{$resourceURL}"/>
-		<owl:sameAs rdf:resource="{$resourceURL}"/>
 	    </rdf:Description>
 	    <rdf:Description rdf:about="{$resourceURL}">
 		<rdf:type rdf:resource="&gr;ProductOrService"/>
