@@ -3723,6 +3723,7 @@ srv_global_init (char *mode)
 #ifdef BIF_XML
   html_hash_init ();
 #endif
+  cluster_init ();
 #ifdef PLDBG
   if (lite_mode)
     pl_debug_all = 0;

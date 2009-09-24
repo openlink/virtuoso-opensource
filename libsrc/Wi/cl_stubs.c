@@ -295,3 +295,10 @@ cl_name_to_host (char *name)
 {
   return NULL;
 }
+
+void
+cluster_init ()
+{
+  dk_mem_hooks (DV_CLOP, box_non_copiable, (box_destr_f) clo_destroy, 0);
+}
+
