@@ -423,5 +423,13 @@ ul.demo_qry_list {
   padding: 0;
   margin: 0;
 }
+
 ul.demo_qry_list div.expln { margin: 10px; }
 ul.demo_qry_list pre { margin: 10px; }
+
+div#dbg_output {
+  float: left; 
+  clear:left;
+  font-size: 8pt;
+}
+

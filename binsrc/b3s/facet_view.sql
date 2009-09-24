@@ -1162,7 +1162,7 @@ fct_select_value (in tree any,
                 tree,
 		vector ('pos', pos, 'op', 'value', 'iri', val, 'lang', lang, 'datatype', dtp, 'cmp', op));
 
-dbg_obj_print (tree);
+-- dbg_obj_print (tree);
 
   if (op = '=')
     tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',

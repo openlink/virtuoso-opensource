@@ -431,7 +431,7 @@ fct_xml_wrap (in tree any, in txt any)
   declare n_cols int;
   n_cols := fct_n_cols(tree);
 
-  dbg_printf ('n_cols: %d', n_cols);
+--  dbg_printf ('n_cols: %d', n_cols);
 
   if (n_cols = 2)
     {
@@ -979,7 +979,7 @@ fct_exec (in tree any,
   qr2 := fct_xml_wrap (tree, qr);
   start_time := msec_time ();
 
-  dbg_printf('query: %s', qr2);
+--  dbg_printf('query: %s', qr2);
 
   exec (qr2, sqls, msg, vector (), 0, md, res);
   n_rows := row_count ();

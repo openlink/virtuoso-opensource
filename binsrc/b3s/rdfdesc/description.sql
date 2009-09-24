@@ -67,6 +67,26 @@ create procedure b3s_page_get_type (in val any)
 }
 ;
 
+create procedure 
+b3s_dbg_out (inout ses any, in str any)
+{
+  if (connection_get ('b3s_dbg'))
+    http (str || '\n', ses);
+}
+;
+
+create procedure 
+b3s_render_dbg_out (inout ses any)
+{
+  if (connection_get ('b3s_dbg')) 
+    {
+      http('<div id="dbg_output"><pre>');
+      http_value (ses);
+      http('</pre></div>');
+    }
+}
+;
+
 create procedure b3s_get_lang_by_q (in accept varchar, in lang varchar)
 {
   declare format, itm, q varchar;

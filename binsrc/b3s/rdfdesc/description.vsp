@@ -28,6 +28,9 @@
    declare page_resource_uri, proxy_iri, rdf_link, label, true_label, _subject any;
    declare white_page, arr, data, meta, h1, h2, inx, gr, host, refr, sid, inf, sas, langs, best_q any;
    declare urilookup integer;
+   declare dbg_enable varchar;
+   declare qry_str varchar;
+   declare dbg_out any;
 
    connection_set ('ns_ctr', 1); /* for unknown xmlns to print in RDFa */
    white_page := 1;
@@ -51,8 +54,17 @@
    if (sid is null)
      sid := get_keyword ('sid', params); 
 
-   urilookup := get_keyword ('urilookup', params);
+   dbg_enable := get_keyword ('dbg', params);
 
+   if (dbg_enable = '1') 
+     {
+        dbg_printf ('Enabling b3s session debug.\n');
+        connection_set ('b3s_dbg', 1);
+        dbg_out := string_output ();
+     }
+   else connection_set ('b3s_dbg',0);
+     
+   urilookup := get_keyword ('urilookup', params);
 
    if (sid is not null)
      {
@@ -61,6 +73,8 @@
 	   inf := fct_inf_clause (fct_state);
 	   sas := fct_sas_clause (fct_state);
 	   inf := inf || ' ' || sas;
+
+           b3s_dbg_out (dbg_out, 'inf: ' || inf);
 	 }
        refr := '/fct/facet.vsp?sid='||sid||'&cmd=refresh';	 
      }
@@ -84,13 +98,20 @@
    http_header ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\n');
    label := ''; _subject := '';
 
-   exec (sprintf ('sparql define input:inference "facets" select ?o (lang(?o)) where { <%S> virtrdf:label ?o }', _S), null, null, vector (), 0, meta, data);
+   qry_str := sprintf ('sparql define input:inference "facets" select ?o (lang(?o)) where { <%S> virtrdf:label ?o }', _S);
+
+   b3s_dbg_out (dbg_out, 'qry: ' || qry_str);
+
+   exec (qry_str, null, null, vector (), 0, meta, data);
 
    label := b3s_label_get (data, langs);
    true_label := label;
 
-   exec (sprintf ('sparql %s prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/> 
-	select ?o (lang(?o)) where { <%S> rdfs:comment ?o }', inf, _S), null, null, vector (), 0, meta, data);
+   qry_str := sprintf ('sparql %s prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/> select ?o (lang(?o)) where { <%S> rdfs:comment ?o }', inf, _S);
+
+   b3s_dbg_out (dbg_out, 'qry: ' || qry_str);
+
+   exec (qry_str, null, null, vector (), 0, meta, data);
 
    _subject := b3s_label_get (data, langs);
 
@@ -162,18 +183,26 @@
             </div>
         </div>      
 <!-- proptable -->
-      <table class="description"><tr><th class="property">Property</th><th class="value">Value</th></tr>
+      <table class="description">
+        <tr><th class="property">Property</th><th class="value">Value</th></tr>
 
 <?vsp
-      exec (sprintf ('select "p" as PRED from (sparql %s select distinct ?p where { <%S> ?p ?o }) sp order by 1', inf, _S), 
-		null, null, vector (), 0, null, null, h1); 
+      qry_str := sprintf ('select "p" as PRED from (sparql %s select distinct ?p where { <%S> ?p ?o }) sp order by 1', inf, _S);
+      b3s_dbg_out (dbg_out, 'qry: ' || qry_str);
+
+      exec (qry_str, null, null, vector (), 0, null, null, h1); 
+
       while (0 = exec_next (h1, null, null, data))	
 	{
            declare PRED any;
 	   pred := data[0];  
 	   b3s_http_print_l (PRED, odd_position, 0, sid);
-	   exec (sprintf ('sparql %s select distinct ?o where { <%S> <%S> ?o } limit 300', inf, _S, PRED),
-		null, null, vector (), 0, null, null, h2);
+
+           qry_str := sprintf ('sparql %s select distinct ?o where { <%S> <%S> ?o } limit 300', inf, _S, PRED);
+           b3s_dbg_out (dbg_out, 'qry: ' || qry_str);
+
+	   exec (qry_str, null, null, vector (), 0, null, null, h2);
+
 	   while (0 = exec_next (h2, null, null, data))	
 	      {	
                 declare OBJECT any;
@@ -185,8 +214,12 @@
 	   http ('</ul></td></tr>');
 	}
       exec_close (h1);
-      exec (sprintf ('select "p" as PRED from (sparql %s select distinct ?p where { ?o ?p <%S> }) sp order by 1', inf, _S), 
-		null, null, vector (), 0, null, null, h1); 
+
+      qry_str := sprintf ('select "p" as PRED from (sparql %s select distinct ?p where { ?o ?p <%S> }) sp order by 1', inf, _S);
+      b3s_dbg_out (dbg_out, 'qry: ' || qry_str);
+
+      exec (qry_str, null, null, vector (), 0, null, null, h1); 
+
       inx := 0;	
       while (0 = exec_next (h1, null, null, data))	
 	{
@@ -198,8 +231,11 @@
 	   --  }
 	   inx := inx + 1;
 	   b3s_http_print_l (PRED, odd_position, 1, sid);
-	   exec (sprintf ('sparql %s select distinct ?s where { ?s <%S> <%S> } limit 300', inf, PRED, _S),
-		null, null, vector (), 0, null, null, h2);
+
+           qry_str := sprintf ('sparql %s select distinct ?s where { ?s <%S> <%S> } limit 300', inf, PRED, _S);
+           b3s_dbg_out (dbg_out, 'qry: ' || qry_str);
+
+	   exec (qry_str, null, null, vector (), 0, null, null, h2);
 	   while (0 = exec_next (h2, null, null, data))	
 	      {	
                 declare OBJECT any;
@@ -224,6 +260,7 @@ skip_rev:
       </div>
       <?vsp } ?>    
     </div> <!--  #MD -->
+    <?vsp b3s_render_dbg_out (dbg_out); ?>
 <!-- footer -->
     <div id="FT">
       <div id="ft_t">

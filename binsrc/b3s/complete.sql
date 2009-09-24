@@ -220,7 +220,7 @@ urilbl_ac_ruin_label (in lbl varchar)
 create procedure 
 urilbl_ac_init_log (in msg varchar)
 {
-  dbg_printf(msg);
+--  dbg_printf(msg);
   insert into urilbl_cpl_log (ullog_msg) values (msg);
 }
 ;
