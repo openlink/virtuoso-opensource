@@ -3322,6 +3322,12 @@ key_count_estimate  (dbe_key_t * key, int n_samples, int upd_col_stats)
       if (sample < 0 || sample > 1e12)
 	sample = 100000000; /* arbitrary.  If tree badly skewed will return nonsense figures */
       res += sample;
+      if (RWG_WAIT_ANY == itc->itc_to_reset)
+	{
+	  /* error cond like cluster timeout.  Must finish without timing out for each loop */
+	  n_samples = n + 1;
+	  break;
+	}
       if (upd_col_stats)
 	{
 	  /* if doing cols also, adjust the sample to table size */
