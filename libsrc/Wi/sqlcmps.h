@@ -126,6 +126,14 @@ typedef struct col_ref_rec_s
 typedef int (*sqlc_exp_print_hook_t) (struct sql_comp_s *, comp_table_t * ct, ST * exp,
 				      char * text, size_t len, int * fill);
 
+typedef struct rdf_inf_slots_s
+{
+  state_slot_t *	ris_s;
+  state_slot_t *	ris_p;
+  state_slot_t *	ris_o;
+} rdf_inf_slots_t;
+
+
 typedef struct sql_comp_s
   {
     comp_context_t *	sc_cc;
@@ -224,6 +232,7 @@ typedef struct sql_comp_s
     char		sc_in_dfg_subq;
     char		sc_fref_nesting; /* if nested gby/oby, true if colocating the gby */
     char		sc_qf_n_temp_trees; /* how many gb/oby temps in qf.  If many, make shorter batches to save mem */
+    rdf_inf_slots_t *	sc_rdf_inf_slots;
   } sql_comp_t;
 
 

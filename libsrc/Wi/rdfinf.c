@@ -1660,6 +1660,8 @@ void
 sqlg_rdf_inf_1 (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** q_head, int inxop_inx)
 {
   /* if the dfe is from rdf_quad and inference si on, recognize which combination of spo is fixed and add the inf nodes before or after.  Works for table source and hash source  */
+  rdf_inf_slots_t ris;
+  sql_comp_t * sc = tb_dfe->dfe_sqlo->so_sc;
   dk_set_t col_preds;
   caddr_t ctx_name = sqlo_opt_value (tb_dfe->_.table.ot->ot_opts, OPT_RDF_INFERENCE);
   rdf_inf_ctx_t * ctx, **place, *sas_ctx;
@@ -1708,6 +1710,8 @@ sqlg_rdf_inf_1 (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** q_head, 
   const_s = dfe_iri_const (s_dfe);
   const_p = dfe_iri_const (p_dfe);
   const_o = dfe_iri_const (o_dfe);
+  memset (&ris, 0, sizeof (ris));
+  sc->sc_rdf_inf_slots = &ris;
   if (!s_dfe && !p_dfe && !o_dfe)
     {
       TRAILING_SUBCLASS;
@@ -1770,6 +1774,7 @@ sqlg_rdf_inf_1 (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** q_head, 
     }
   else
     GPF_T1 (" all possibilities of spo already covered");
+  sc->sc_rdf_inf_slots = NULL;
 }
 
 void

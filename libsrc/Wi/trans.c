@@ -1257,11 +1257,42 @@ extern query_t * tn_ifp_dist_qr;
 extern query_t * tn_ifp_dist_no_graph_qr;
 
 
+state_slot_t *
+sqlg_tn_in_out_ssl (state_slot_t ** save, df_elt_t * dfe, state_slot_t * out)
+{
+  state_slot_t * tmp;
+  if (!*save)
+    {
+      *save = out;
+      return dfe->dfe_ssl;
+    }
+  tmp = *save;
+  *save = out;
+  return tmp;
+}
+
+
+state_slot_t *
+sqlg_sas_input_ssl (sql_comp_t * sc, df_elt_t * s_dfe, df_elt_t * p_dfe, df_elt_t * o_dfe, state_slot_t * out, int mode)
+{
+  if (RI_SAME_AS_O == mode)
+    return sqlg_tn_in_out_ssl (&sc->sc_rdf_inf_slots->ris_o, o_dfe, out);
+  else if (RI_SAME_AS_S == mode)
+    return sqlg_tn_in_out_ssl (&sc->sc_rdf_inf_slots->ris_s, s_dfe, out);
+  else if (RI_SAME_AS_P == mode)
+    return sqlg_tn_in_out_ssl (&sc->sc_rdf_inf_slots->ris_p, p_dfe, out);
+  else
+    GPF_T1 ("unknown sas inf mode");
+  return NULL;
+}
+
+
 void
 sqlg_leading_multistate_same_as (sqlo_t * so, data_source_t ** q_head, data_source_t * ts,
     df_elt_t * g_dfe, df_elt_t * s_dfe, df_elt_t * p_dfe,  df_elt_t * o_dfe, int org_mode,
     rdf_inf_ctx_t * ctx, df_elt_t * tb_dfe, int inxop_inx, rdf_inf_pre_node_t ** ri_ret)
 {
+  sql_comp_t * sc = tb_dfe->dfe_sqlo->so_sc;
   int mode = org_mode & 0xf;
   int is_ifp = org_mode & RI_SAME_AS_IFP;
   df_elt_t ** in_list;
@@ -1289,12 +1320,7 @@ sqlg_leading_multistate_same_as (sqlo_t * so, data_source_t ** q_head, data_sour
   else
     tn->tn_sas_g = (state_slot_t **) list (1, g_dfe->_.bin.right->dfe_ssl);
 
-  if (RI_SAME_AS_O == mode)
-    tn->tn_input = (state_slot_t**) list (1, o_dfe->dfe_ssl);
-  else if (RI_SAME_AS_S == mode)
-    tn->tn_input = (state_slot_t**) list (1, s_dfe->dfe_ssl);
-  else if (RI_SAME_AS_P == mode)
-    tn->tn_input = (state_slot_t**) list (1, p_dfe->dfe_ssl);
+  tn->tn_input = (state_slot_t**) list (1, sqlg_sas_input_ssl (sc, s_dfe, p_dfe, o_dfe, tn->tn_output[0], mode));
   sqlg_rdf_ts_replace_ssl ((table_source_t*) ts, tn->tn_input[0], tn->tn_output[0], 0, inxop_inx);
   tn->tn_is_pre_iter = 1;
   tn->tn_distinct = 1;
