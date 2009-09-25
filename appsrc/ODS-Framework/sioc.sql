@@ -3923,7 +3923,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 
   iri := user_obj_iri (u_name);
 
-  decl := 'sparql define input:storage "" '
+  decl := 'sparql define input:storage "" define sql:signal-void-variables 1 '
          --' define input:inference <' || graph || '>' ||
 	  || std_pref_declare ();
 
