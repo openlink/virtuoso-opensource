@@ -419,7 +419,7 @@ BLOG2_MAIN_PAGE_DATA (inout e vspx_event, inout dss vspx_data_source, in  _forda
       }
     else
       {
-        sql2 := sprintf (' %s, B_TS, B_POST_ID, B_COMMENTS_NO as comments, B_TRACKBACK_NO as trackbacks, B_USER_ID, B_META, B_MODIFIED, B_STATE, B_TITLE, B_BLOG_ID, B_IS_ACTIVE from BLOG..SYS_BLOGS, (select BI_BLOG_ID as BA_C_BLOG_ID, BI_BLOG_ID as BA_M_BLOG_ID from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = ''%s'' union all select * from (select top 10 BA_C_BLOG_ID, BA_M_BLOG_ID from BLOG.DBA.SYS_BLOG_ATTACHES where BA_M_BLOG_ID = ''%s'' order by BA_LAST_UPDATE desc) name1) name2 %s where B_BLOG_ID = BA_C_BLOG_ID %s %s %s %s order by B_TS %s',
+        sql2 := sprintf (' %s, B_TS, B_POST_ID, B_COMMENTS_NO as comments, B_TRACKBACK_NO as trackbacks, B_USER_ID, B_META, B_MODIFIED, B_STATE, B_TITLE, B_BLOG_ID, B_IS_ACTIVE from BLOG..SYS_BLOGS, (select BI_BLOG_ID as BA_C_BLOG_ID, BI_BLOG_ID as BA_M_BLOG_ID from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = ''%s'' union all select * from (select BA_C_BLOG_ID, BA_M_BLOG_ID from BLOG.DBA.SYS_BLOG_ATTACHES where BA_M_BLOG_ID = ''%s'' order by BA_LAST_UPDATE desc) name1) name2 %s where B_BLOG_ID = BA_C_BLOG_ID %s %s %s %s order by B_TS %s',
         cont_col, _blogid, _blogid, cat_tbl, time_cond, cat_pred, pred1, arch, ord);
       }
 

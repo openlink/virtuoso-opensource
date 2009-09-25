@@ -492,8 +492,16 @@
           {
 	    if (self.blog_view = 0 or self.blog_view = 2)
 	      {
-	        self.fordate := coalesce ((select top 1 B_TS from BLOG.DBA.SYS_BLOGS
-	            where B_STATE = 2 and B_BLOG_ID = self.blogid order by B_TS desc), self.fordate);
+	        self.fordate := coalesce ((select top 1 x.B_TS
+                                       from (select B_TS
+                                               from BLOG.DBA.SYS_BLOGS
+                                              where B_STATE = 2 and B_BLOG_ID = self.blogid
+                                             union all
+                                             select B_TS
+                                               from BLOG.DBA.SYS_BLOGS, BLOG.DBA.SYS_BLOG_ATTACHES
+                                              where BA_C_BLOG_ID = B_BLOG_ID and B_STATE = 2 and BA_M_BLOG_ID = self.blogid
+                                            ) x
+                                      order by B_TS desc), self.fordate);
 	      }
 	    else
 	     {
