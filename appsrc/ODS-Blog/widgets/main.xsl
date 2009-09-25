@@ -2322,7 +2322,7 @@ window.onload = function (e)
   <xsl:template match="vm:post-actions">
       <xsl:call-template name="post-parts-check"/>
     <?vsp
-    if ((self.blog_access = 1 or self.blog_access = 2) and self.blogid = control.te_rowset[10])
+      if (BLOG2_GET_ACCESS (t_blog_id, self.sid, self.realm, 120) in (1, 2))
        {
     ?>
     <v:url name="edit1" value="Edit" url="--concat('index.vspx?page=edit_post&editid=', t_post_id)" render-only="1" />
@@ -2477,11 +2477,12 @@ window.onload = function (e)
           </v:template>
               <v:template name="template4" type="browse">
                 <?vsp
-		  declare t_post_id, t_comm, t_tb any;
+            		  declare t_post_id, t_comm, t_tb, t_blog_id any;
 
 		  t_post_id := control.te_rowset[2];
 		  t_comm := cast (control.te_rowset[3] as float);
 		  t_tb   := cast (control.te_rowset[4] as float);
+            		  t_blog_id := control.te_rowset[10];
 
                   if(control.te_rowset[8] = 2 or self.blog_access in (1, 2))
                   {
@@ -2538,7 +2539,10 @@ window.onload = function (e)
                   <?vsp
                     declare title varchar;
                     declare comments_no int;
-                    select B_TITLE, B_COMMENTS_NO into title, comments_no from BLOG.DBA.SYS_BLOGS where B_BLOG_ID = self.blogid and B_POST_ID = self.post_to_remove;
+                    select B_TITLE, B_COMMENTS_NO
+                      into title, comments_no
+                      from BLOG.DBA.SYS_BLOGS
+                     where (BLOG2_GET_ACCESS (B_BLOG_ID, self.sid, self.realm, 120) in (1, 2)) and B_POST_ID = self.post_to_remove;
                     http(sprintf('You are about to delete post titled \"%s\". The post has %d comments.<br/>
                                   This operation will delete the post and all comments to it and cannot be undone.<br/>
                                   Hit \"Delete\" to proceed with deletion, or \"Cancel\" to go back.', title, comments_no));
@@ -2560,10 +2564,9 @@ window.onload = function (e)
                           rollback work;
                           return;
                         };
-                        delete from
-                          BLOG.DBA.SYS_BLOGS
-                        where
-                          B_BLOG_ID = self.blogid and
+                        delete
+                          from BLOG.DBA.SYS_BLOGS
+                        where (BLOG2_GET_ACCESS (B_BLOG_ID, self.sid, self.realm, 120) in (1, 2)) and
                           B_POST_ID = self.post_to_remove;
                         self.post_to_remove := null;
                         self.vc_data_bind(e);
