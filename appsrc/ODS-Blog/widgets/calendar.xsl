@@ -388,7 +388,7 @@
               select blob_to_string (B_CONTENT), B_TITLE, B_COMMENTS_NO, B_META, B_STATE, B_TS
                 into self.text2, self.mtit1.ufl_value, self.comments_no, meta, self.post_state, self.post_date
                 from BLOG.DBA.SYS_BLOGS
-                where B_BLOG_ID = self.blogid and B_POST_ID = _editid;
+               where (BLOG2_GET_ACCESS (B_BLOG_ID, self.sid, self.realm, 120) in (1, 2)) and B_POST_ID = _editid;
               self.editpost := _editid;
 	      self.mtit1.ufl_value := BLOG..blog_utf2wide(self.mtit1.ufl_value);
 	      if (meta is not null and meta.enclosure is not null)
@@ -397,8 +397,9 @@
 		  encl2 := meta.enclosure;
 	          self.encl1.ufl_value := encl2.url;
 		}
-              select count(*) into self.comments_no from BLOG..BLOG_COMMENTS where BM_BLOG_ID = self.blogid
-              and BM_POST_ID = _editid;
+              select count(*) into self.comments_no
+                from BLOG..BLOG_COMMENTS
+               where BM_BLOG_ID = self.blogid and BM_POST_ID = _editid;
 	      select count(*) into self.tb_no from BLOG..MTYPE_TRACKBACK_PINGS where MP_POST_ID = _editid;
 	      self.post_date := substring (datestring (self.post_date), 1, 16);
               endb:;
@@ -411,9 +412,8 @@
               self.rich_mode := 1;
               select CF_TITLE, CF_LINK, CF_DESCRIPTION, BCD_HOME_URI, BCD_TITLE
                 into title1, link1, desc1, home1, title2
-                from BLOG.DBA.SYS_BLOG_CHANNEL_FEEDS, BLOG.DBA.SYS_BLOG_CHANNEL_INFO where
-                BCD_CHANNEL_URI = CF_CHANNEL_URI and
-                CF_CHANNEL_URI = _ch_id and CF_ID = atoi(_cf_id);
+                from BLOG.DBA.SYS_BLOG_CHANNEL_FEEDS, BLOG.DBA.SYS_BLOG_CHANNEL_INFO
+               where BCD_CHANNEL_URI = CF_CHANNEL_URI and CF_CHANNEL_URI = _ch_id and CF_ID = atoi(_cf_id);
               title1 := trim(title1);
               if (title1 is null or title1 = '')
                 title1 := 'via [' || title2 || ']';
@@ -572,12 +572,14 @@
 			<br/>
 			<span id="ins_media_cb" style="">
 			    <v:check-box name="ins_media" value="1" xhtml_id="ins_media">
-				<v:before-render><![CDATA[
+				          <v:before-render>
+				            <![CDATA[
 				    if (regexp_match ('<script.*playEnclosure.*</script>', self.text2) is not null)
 				      control.ufl_selected := 1;
 				    if (regexp_match ('<img[^>]+playMedia[^>]+>', self.text2) is not null)
 				      control.ufl_selected := 1;
-				    ]]></v:before-render>
+				            ]]>
+				          </v:before-render>
 			    </v:check-box>
 			    <label for="ins_media">Insert Media Object</label>
 			</span>
@@ -613,7 +615,11 @@
 		    <a href="javascript:void(0)" onclick="javascript:getTb()">Suggest</a>
 		</div>
 		<div id="tb_tags">
-		    <v:textarea name="post_tags" xhtml_id="post_tags" value="" xhtml_rows="3" xhtml_style="width:99%"
+		              <v:textarea name="post_tags"
+		                          xhtml_id="post_tags"
+		                          value=""
+		                          xhtml_rows="3"
+		                          xhtml_style="width:99%"
 			xhtml_onblur="javascript:moat_init ()">
                         <v:after-data-bind>
                           <![CDATA[
@@ -621,7 +627,7 @@
                             {
                               whenever not found goto nf;
 			      select BT_TAGS into control.ufl_value from BLOG..BLOG_TAG
-			      	where BT_BLOG_ID = self.blogid and BT_POST_ID = self.editpost;
+              			      	where BT_POST_ID = self.editpost;
                               nf:;
                             }
                           ]]>
@@ -640,8 +646,9 @@
                             declare sel1, cid varchar;
                             cid := MTC_ID;
                             if (self.editpost is not null and exists
-                                   (select 1 from BLOG.DBA.MTYPE_BLOG_CATEGORY where
-                              MTB_CID = cid and MTB_POST_ID = self.editpost and MTB_BLOG_ID = self.blogid))
+                               (select 1
+                                  from BLOG.DBA.MTYPE_BLOG_CATEGORY
+                                 where MTB_CID = cid and MTB_POST_ID = self.editpost))
                               sel1 := 'SELECTED="SELECTED"';
                             else if (self.editpost is null and MTC_DEFAULT)
                               sel1 := 'SELECTED="SELECTED"';
@@ -658,13 +665,15 @@
 	    </div>
 	    </div>
 	    <![CDATA[<script type="text/javascript" src="/weblog/public/scripts/moat.js"></script>]]>
-	    <script type="text/javascript"><![CDATA[
+            	<script type="text/javascript">
+            	  <![CDATA[
 		var featureList = ["tab"];
 		var inst_id = <?V self.inst_id ?>;
 		var post_id = <?V coalesce (self.editpost, -1) ?>;
 
-		OAT.Loader.loadFeatures(featureList, panel_init);
-		]]></script>
+                  ODSInitArray.push( function (){OAT.Loader.loadFeatures(["tab"], panel_init);});
+                ]]>
+              </script>
                   </td>
                 </tr>
                 <tr>
@@ -685,7 +694,7 @@
                 <![CDATA[
 		  declare msg, tagstr, tagarr, alltags, mcopy, post_title varchar;
 		  declare bdate datetime;
-                  declare id varchar;
+                  declare id, tmp_blog_id varchar;
 		  declare dummy, vtb any;
 		  declare res BLOG.DBA."MTWeblogPost";
 		  declare encl_obj BLOG.DBA."MWeblogEnclosure";
@@ -695,14 +704,21 @@
 
 		  if (not self.vc_is_valid)
 		    return 0;
-
-
+          		    tmp_blog_id := self.blogid;
+                  if (self.editpost is not null)
+                  {
+          		      tmp_blog_id := (select B_BLOG_ID from BLOG.DBA.SYS_BLOGS where B_POST_ID = self.editpost);
+  		              if (not (BLOG2_GET_ACCESS (tmp_blog_id, self.sid, self.realm, 120) in (1, 2)))
+      		          {
+            		      self.vc_error_message := 'You have not rights for the operation';
+            	        self.vc_is_valid := 0;
+            		      return;
+       	            }
+          		    }
 		  dummy := null;
 		  encl_obj := null;
                   msg := get_keyword('text2', self.vc_event.ve_params);
-		  msg := replace(msg, '<img src="/weblog/public/images/',
-		      '<img src="http://' || BLOG.DBA.BLOG2_GET_HOST () || '/weblog/public/images/');
-
+            		  msg := replace(msg, '<img src="/weblog/public/images/', '<img src="http://' || BLOG.DBA.BLOG2_GET_HOST () || '/weblog/public/images/');
 	          msg := regexp_replace (msg, '<script[^<]+playEnclosure[^<]+</script>', '', 1, null);
 		  encl := self.encl1.ufl_value;
 		  rep_encl := encl;
@@ -719,8 +735,7 @@
 		       {
 		         local_lp := HP_LPATH;
 		         local_pp := HP_PPATH;
-		       };
-
+          		      }
 	              if (local_lp is null)
                         {
 			  self.vc_is_valid := 0;
@@ -782,11 +797,9 @@
                   if (not length(msg) or not length (mcopy))
                   {
                     self.vc_is_valid := 0;
-		    self.vc_error_message := 'The article is empty. Nothing to ' ||
-		     			case when _post_state = 0 then 'preview.' else 'post.' end;
+		                self.vc_error_message := 'The article is empty. Nothing to ' || case when _post_state = 0 then 'preview.' else 'post.' end;
                     return 0;
                   }
-
 		  if (not length (post_title))
 		    {
 		      self.vc_is_valid := 0;
@@ -857,7 +870,7 @@
                     values(
                       'appKey',
                       id,
-                      self.blogid,
+                      tmp_blog_id,
                       dat,
                       msg,
                       self.user_id,
@@ -877,22 +890,17 @@
                       B_POST_ID,
 		      B_TS),
 		      B_TS
-                    into
-		      res,
+                      into res,
 		      odate
-                    from
-                      BLOG.DBA.SYS_BLOGS
-                    where
-                      B_BLOG_ID = self.blogid
-                      and B_POST_ID = self.editpost;
+                      from BLOG.DBA.SYS_BLOGS
+                     where B_BLOG_ID = tmp_blog_id and B_POST_ID = self.editpost;
                     res.title := post_title;
 		    res.enclosure := encl_obj;
-
 		    bdate := coalesce (bdate, now ());
 
 		    -- the delete must be there as update will nake a ftt hit
 		    delete from BLOG.DBA.MTYPE_BLOG_CATEGORY
-		    	where MTB_POST_ID = self.editpost and MTB_BLOG_ID = self.blogid;
+            		    	where MTB_POST_ID = self.editpost;
                     update BLOG.DBA.SYS_BLOGS set
                       B_CONTENT = msg,
                       B_META = res,
@@ -901,11 +909,11 @@
 		      B_TS = bdate
                     where
                       B_POST_ID = self.editpost and
-                      B_BLOG_ID = self.blogid;
+                      B_BLOG_ID = tmp_blog_id;
                     id := self.editpost;
                     retid := id;
                   }
-                    delete from BLOG..BLOG_TAG where BT_BLOG_ID = self.blogid and BT_POST_ID = id;
+            		  delete from BLOG..BLOG_TAG where BT_BLOG_ID = tmp_blog_id and BT_POST_ID = id;
 		    delete from moat.DBA.moat_meanings where m_inst = self.inst_id and m_id = id;
                   {
                     declare cat, ix any;
@@ -915,7 +923,7 @@
                       if (cat <> '')
                       {
 		        insert soft BLOG.DBA.MTYPE_BLOG_CATEGORY (MTB_CID, MTB_POST_ID, MTB_BLOG_ID, MTB_IS_AUTO)
-		          values (atoi(cat), id, self.blogid, 1);
+            		          values (atoi(cat), id, tmp_blog_id, 1);
                       }
                     }
                   }
@@ -932,12 +940,11 @@
 			  {
 			    if (length (turi))
  			      insert replacing moat.DBA.moat_meanings (m_inst, m_id, m_tag, m_uri, m_iri)
-                                 values (self.inst_id, id, t, turi, iri_to_id (sioc..blog_post_iri (self.blogid, id)));
+                            values (self.inst_id, id, t, turi, iri_to_id (sioc..blog_post_iri (tmp_blog_id, id)));
 			  }
 		      }
-                    insert replacing BLOG..BLOG_TAG (BT_BLOG_ID, BT_POST_ID, BT_TAGS) values (self.blogid, id, tagstr);
+		                insert replacing BLOG..BLOG_TAG (BT_BLOG_ID, BT_POST_ID, BT_TAGS) values (tmp_blog_id, id, tagstr);
                   }
-
                   if (self.mbid is not null and self.mset is not null)
                   {
                     declare rc any;
@@ -948,17 +955,10 @@
                     while (i < l)
                     {
 		      declare thumb_path varchar;
-                      select
-                        blob_to_string (MA_CONTENT),
-                        MA_NAME
-                      into
-                        content,
-                        file
-                      from
-                        MAIL_ATTACHMENT
-                      where
-                        MA_ID = self.mset[i] and
-                        MA_M_OWN = connection_get ('uid');
+                      select blob_to_string (MA_CONTENT), MA_NAME
+                        into content, file
+                        from MAIL_ATTACHMENT
+                       where MA_ID = self.mset[i] and MA_M_OWN = connection_get ('uid');
                       -- BLOG_UPDATE_IMAGES_TO_USER_DIR (self.user_name, content, file);
                       BLOG.DBA.BLOG2_UPLOAD_IMAGES_TO_BLOG_HOME(self.user_id, self.blog_id, content, file, thumb_path);
                       update MAIL_ATTACHMENT set MA_PUBLISHED = 1
@@ -969,7 +969,8 @@
                   }
                   declare tbu any;
                   tbu := vector ();
-                  if(self.tpurl1.ufl_value <> '') {
+                  if(self.tpurl1.ufl_value <> '')
+                  {
                     declare tb any;
                     declare i, l int;
                     tb := self.tpurl1.ufl_value;

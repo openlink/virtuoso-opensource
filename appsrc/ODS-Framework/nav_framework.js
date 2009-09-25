@@ -1172,17 +1172,12 @@ ODS.Nav = function (navOptions)
 			self.connections.show = false;
 		    });
 
-
     this.setLoggedUserInfo = function (xmlDoc)
     {
-	var userDisplayName = OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc,
-								'/usersGetInfo_response/user/fullName',{})[0]);
-
+    var userDisplayName = OAT.Xml.textValue (OAT.Xml.xpath(xmlDoc, '/usersGetInfo_response/user/fullName', {})[0]);
 	if (userDisplayName == '')
 	    userDisplayName = self.session.userName;
-
 	$('aUserProfile').innerHTML = userDisplayName;
-
     };
 
     this.initAppMenu = function ()
@@ -2239,10 +2234,13 @@ ODS.Nav = function (navOptions)
 
 	OAT.Event.attach (aUserProfile, "click",
 			  function () {
-			      self.loadVspx (self.expandURL (self.dataspace +
-							     'person/' +
-							     self.session.userName +
-							     '#this'));
+          self.profile.show = true;
+          self.profile.set (self.session.userId);
+          self.initProfile ();
+        // self.loadVspx (self.expandURL (self.dataspace +
+        //   'person/' +
+        //   self.session.userName +
+        //   '#this'));
       }
     );
 	aUserProfile.innerHTML = self.session.userName;
@@ -3771,6 +3769,13 @@ ODS.Nav = function (navOptions)
     this.profile.foaf_uri = 
 	    self.odsLink () +
     userProfileDataspace.replace ('#this',''); // foaf
+
+    if (this.profile.foaf_uri)
+    {
+      var thisPage  = document.location.protocol + '//' + document.location.host + document.location.pathname;
+      if (thisPage != this.profile.foaf_uri)
+        document.location = this.profile.foaf_uri;
+    }
 
     var org_pref= (userProfileDataspace.indexOf ('/organization') > -1) ? 'organization/' : 'person/';
 
