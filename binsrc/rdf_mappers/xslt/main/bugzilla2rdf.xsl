@@ -34,6 +34,7 @@
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY atomowl "http://atomowl.org/ontologies/atomrdf#">
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY content "http://purl.org/rss/1.0/modules/content/">
 <!ENTITY wf "http://www.w3.org/2005/01/wf/flow#">
 ]>
@@ -138,7 +139,7 @@
 					<xsl:value-of select="who"/>
 				</dc:creator>
 				<sioc:has_container rdf:resource="{$baseUri}"/>
-				<sioc:has_creator rdf:resource="{concat(who/@name, ' (', who, ')' )}"/>
+				<sioc:has_creator rdf:resource="{vi:proxyIRI($baseUri,'', urlify (replace(who/@name, ' ', '_')))}"/>
 				<sioc:reply_of rdf:resource="{$baseUri}"/>
 				<dc:description>
 					<xsl:value-of select="thetext"/>
@@ -146,6 +147,11 @@
 				<dcterms:created rdf:datatype="&xsd;dateTime">
 					<xsl:value-of select="vi:http_string_date (bug_when)"/>
 				</dcterms:created>
+			</rdf:Description>
+			<rdf:Description rdf:about="{vi:proxyIRI($baseUri,'', urlify (replace(who/@name, ' ', '_')))}">
+			    <rdf:type rdf:resource="&foaf;Person"/>
+			    <foaf:name><xsl:value-of select="who/@name"/></foaf:name>
+			    <foaf:mbox rdf:resource="mailto:{who}"/>
 			</rdf:Description>
 		</xsl:for-each>
     </xsl:template>

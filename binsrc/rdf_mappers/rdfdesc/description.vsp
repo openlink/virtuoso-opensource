@@ -107,7 +107,11 @@
    if (not length (data))
      {
        _S := _S_save;
+       -- rdf views 
        _S := replace (_S, '''', '%27');
+       exec (sprintf ('sparql ask where { graph <%S> { <%s#this> ?p ?o . }}', _G, _S), null, null, vector (), 0, meta, data);
+       if (length (data))
+         _S := _S || '#this'; 
      }
 
    -- XXX: the bellow is a guess about subject, should not be used  
@@ -201,7 +205,7 @@
 
     <div id="header">
       <div id="hd_l">
-	  <h1 id="title">About: <a href="<?= case when _S like 'nodeID://%' then rdfdesc_http_url (_S) else RM_SPONGE_DOC_IRI (_S) end ?>"><?vsp http (sprintf ('%s', label)); ?></a></h1>
+	  <h1 id="title">About: <a href="<?= case when _S like 'nodeID://%' then rdfdesc_http_url (_S) else _S_save end ?>"><?vsp http (sprintf ('%s', label)); ?></a></h1>
         <div id="homelink">
         </div>
         <div class="page-resource-uri">
