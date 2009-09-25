@@ -739,6 +739,10 @@ create procedure DB.DBA.RDF_SPONGE_DOC_IRI (in url varchar, in dest varchar := n
 }
 ;
 
+
+--
+-- # this returns document IRI, non-proxy one
+--
 create procedure DB.DBA.RM_SPONGE_DOC_IRI (in url varchar, in frag varchar := 'this')
 {
   declare hf, uri any;
@@ -750,6 +754,9 @@ create procedure DB.DBA.RM_SPONGE_DOC_IRI (in url varchar, in frag varchar := 't
 }
 ;
 
+--
+-- # this is used to make proxy IRI of the document
+--
 create procedure DB.DBA.RDF_SPONGE_PROXY_IRI (in uri varchar := '', in login varchar := '', in frag varchar := 'this')
 {
   declare cname any;
@@ -774,7 +781,7 @@ create procedure DB.DBA.RDF_SPONGE_PROXY_IRI (in uri varchar := '', in login var
     frag := '';
 
   if (length (frag) and frag[0] <> '#'[0])
-    frag := '#' || frag;
+    frag := '#' || sprintf ('%U', frag);
   if (strchr (uri, '#') is not null)
     frag := '';
 
@@ -792,6 +799,10 @@ create procedure DB.DBA.RDF_SPONGE_PROXY_IRI (in uri varchar := '', in login var
 }
 ;
 
+
+--
+-- # this one is used to make proxy IRI for primary topic (entity)
+--
 create procedure DB.DBA.RDF_PROXY_ENTITY_IRI (in uri varchar := '', in login varchar := '', in frag varchar := 'this')
 {
   declare cname any;
@@ -816,7 +827,7 @@ create procedure DB.DBA.RDF_PROXY_ENTITY_IRI (in uri varchar := '', in login var
     frag := '';
 
   if (length (frag) and frag[0] <> '#'[0])
-    frag := '#' || frag;
+    frag := '#' || sprintf ('%U', frag);
   if (strchr (uri, '#') is not null)
     frag := '';
 
