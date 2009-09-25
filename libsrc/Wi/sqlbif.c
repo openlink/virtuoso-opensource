@@ -2729,47 +2729,57 @@ bif_vector_concatenate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return (caddr_t) res;
 }
 
-#ifndef _GNU_SOURCE
-void *
+#ifndef HAVE_MEMMEM
+static void *
 memmem (const void *_haystack, size_t haystack_bytes, const void *_needle, size_t needle_bytes)
 {
-  const char *haystack = (const char *)_haystack;
-  const char *needle = (const char *)_needle;
+  const char *haystack = (const char *) _haystack;
+  const char *needle = (const char *) _needle;
+
+  if (!needle_bytes)
+    return (void *) haystack;	/* Empty needle */
+
   while (haystack_bytes >= needle_bytes)
     {
-      if (!memcmp(haystack,needle,needle_bytes))
+      if ((haystack[0] == needle[0]) && !memcmp (haystack, needle, needle_bytes))
 	return (void *) haystack;
-      haystack++; haystack_bytes--;
+      haystack++;
+      haystack_bytes--;
     }
   return NULL;
 }
 #endif
 
-void *
+static void *
 memmem1 (const void *_haystack, size_t haystack_bytes, const void *_needle, size_t needle_bytes)
 {
-  const char *haystack = (const char *)_haystack;
-  const char *needle = (const char *)_needle;
-  char needle_0 = needle[0];
+  const char *haystack = (const char *) _haystack;
+  const char *needle = (const char *) _needle;
   while (haystack_bytes)
     {
-      if (haystack[0] == needle_0)
+      if (haystack[0] == needle[0])
 	return (void *) haystack;
-      haystack++; haystack_bytes--;
+      haystack++;
+      haystack_bytes--;
     }
   return NULL;
 }
 
-void *
+static void *
 widememmem (const void *_haystack, size_t haystack_bytes, const void *_needle, size_t needle_bytes)
 {
-  const wchar_t *haystack = (const wchar_t *)_haystack;
-  const wchar_t *needle = (const wchar_t *)_needle;
+  const wchar_t *haystack = (const wchar_t *) _haystack;
+  const wchar_t *needle = (const wchar_t *) _needle;
+
+  if (!needle_bytes)
+    return (void *) haystack;	/* Empty needle */
+
   while (haystack_bytes >= needle_bytes)
     {
-      if ((haystack[0] == needle[0]) && !memcmp(haystack,needle,needle_bytes))
+      if ((haystack[0] == needle[0]) && !memcmp (haystack, needle, needle_bytes))
 	return (void *) haystack;
-      haystack ++; haystack_bytes -= sizeof(wchar_t);
+      haystack++;
+      haystack_bytes -= sizeof (wchar_t);
     }
   return NULL;
 }
