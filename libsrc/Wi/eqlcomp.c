@@ -288,6 +288,24 @@ qr_garbage (query_t * qr, caddr_t garbage)
 }
 
 
+
+
+void
+kpd_free (key_partition_def_t * kpd)
+{
+  int inx;
+  if (!kpd)
+    return;
+  DO_BOX (col_partition_t *, cp, inx, kpd->kpd_cols)
+    {
+      dk_free ((caddr_t)cp, sizeof (col_partition_t));
+    }
+  END_DO_BOX;
+  dk_free_box ((caddr_t)kpd->kpd_cols);
+  dk_free ((caddr_t)kpd, sizeof (key_partition_def_t));
+}
+
+
 void
 qr_free (query_t * qr)
 {
@@ -308,6 +326,12 @@ qr_free (query_t * qr)
   }
   END_DO_SET ();
   dk_set_free (qr->qr_nodes);
+  DO_SET (query_t *, sub_qr, &qr->qr_subq_queries)
+  {
+    qr_free (sub_qr);
+  }
+  END_DO_SET ();
+  dk_set_free (qr->qr_subq_queries);
   dk_set_free (qr->qr_bunion_reset_nodes);
 
   DO_SET (state_slot_t *, ssl, &qr->qr_state_map)
@@ -348,15 +372,10 @@ qr_free (query_t * qr)
     dk_free_tree ((caddr_t) list_to_array (qr->qr_unrefd_data));
   if (qr->qr_proc_result_cols)
     dk_free_tree ((caddr_t) list_to_array (qr->qr_proc_result_cols));
-  DO_SET (query_t *, sub_qr, &qr->qr_subq_queries)
-  {
-    qr_free (sub_qr);
-  }
-  END_DO_SET ();
-  dk_set_free (qr->qr_subq_queries);
   dk_free_box ((caddr_t) qr->qr_freeable_slots);
   DO_SET (dbe_key_t *, tkey, &qr->qr_temp_keys)
     {
+      kpd_free (tkey->key_partition);
       dbe_key_free (tkey);
     }
   END_DO_SET();

@@ -112,6 +112,9 @@ setp_node_free (setp_node_t * setp)
     {
       if (go->go_distinct_ha)
 	ha_free (go->go_distinct_ha);
+      dk_free_box ((caddr_t)go->go_ua_arglist);
+      cv_free (go->go_ua_init_setp_call);
+      cv_free (go->go_ua_acc_setp_call);
       dk_free ((caddr_t)go, sizeof (gb_op_t));
     }
   END_DO_SET();

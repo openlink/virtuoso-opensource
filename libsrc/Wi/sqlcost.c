@@ -1320,6 +1320,7 @@ ri_iterator_t * rit = ri_iterator (sub, ic->ic_inf_type, 1);
 	{
 	  if (any_est && sop.sop_res_from_ric_cache)
 	    {
+	      dk_free_box ((caddr_t)rit);
 	      dk_free_tree (sc_key);
 	      *variable = org_o;
 	      ic->ic_n_lookups = sub->rs_n_subs;

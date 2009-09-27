@@ -1226,6 +1226,8 @@ tn_free (trans_node_t * tn)
   dk_free_tree ((caddr_t)tn->tn_input_pos);
   dk_free_box ((caddr_t)tn->tn_input);
   dk_free_box ((caddr_t)tn->tn_output);
+  dk_free_box ((caddr_t)tn->tn_out_slots);
+  dk_free_tree ((caddr_t)tn->tn_output_pos);
   dk_free_box ((caddr_t)tn->tn_data);
   dk_free_box ((caddr_t)tn->tn_target);
 

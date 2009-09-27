@@ -809,10 +809,12 @@ bp_stats (buffer_pool_t * bp)
       sample[fill++] = buf;
     }
   buf_qsort (sample, sample_2, fill, 0, bd_age_key);
+  if (fill < 1) GPF_T1 ("buf fill < 1");
   for (inx = 0; inx < BP_N_BUCKETS - 1; inx++)
     {
       bp->bp_bucket_limit[inx] = BUF_AGE (sample[(inx + 1) * 4]);
     }
+  if (fill < 1) GPF_T1 ("buf fill < 1");
   bp->bp_bucket_limit[BP_N_BUCKETS - 1] = BUF_AGE (sample[fill - 1]);
   memset (&bp->bp_n_dirty, 0, sizeof (bp->bp_n_dirty));
   memset (&bp->bp_n_clean, 0, sizeof (bp->bp_n_clean));
@@ -2478,6 +2480,20 @@ bp_write_dirty (buffer_pool_t * bp, int force, int is_in_bp, int n_oldest)
 }
 
 
+OFF_T
+db_file_size (int fd, char * fn)
+{
+  OFF_T rem;
+  OFF_T size = LSEEK (fd, 0L, SEEK_END);
+  if ((rem = (size % (PAGE_SZ * EXTENT_SZ))))
+    {
+      log_error ("It is impossible to have a database file with a length not multiple of 2MB. Truncating %s to the last 2MB boundary.  The process must have last terminated while growing the file", fn);
+      ftruncate (fd, size - rem);
+    }
+  return size - rem;
+}
+
+
 int
 dbs_open_disks (dbe_storage_t * dbs)
 {
@@ -2519,7 +2535,7 @@ dbs_open_disks (dbe_storage_t * dbs)
 	      dst_fd_done (dst, fd);
 	    }
 	}
-      size = LSEEK (dst->dst_fds[0], 0, SEEK_END);
+      size = db_file_size (dst->dst_fds[0], dst->dst_file);
       if (size)
 	{
 	  if (is_first)
@@ -3254,7 +3270,7 @@ dbs_from_file (char * name, char * file, char type, volatile int * exists)
 #endif
 
       dbs->dbs_fd = fd;
-      size = LSEEK (fd, 0L, SEEK_END);
+      size = db_file_size (fd, dbs->dbs_file);
       dbs->dbs_file_length = size;
       dbs->dbs_n_pages = (dp_addr_t ) (dbs->dbs_file_length / PAGE_SZ);
       if (size)

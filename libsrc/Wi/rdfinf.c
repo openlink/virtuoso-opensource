@@ -596,6 +596,8 @@ rdf_inf_pre_input (rdf_inf_pre_node_t * ri, caddr_t * inst,
 		  else
 		    {
 		      /* nothing to add.  output is the original o or p */
+		      dk_free_box ((caddr_t)rit);
+		      rit = NULL;
 		      SRC_IN_STATE ((data_source_t *)ri, inst) = NULL;
 		      if (RI_SUBCLASS == ri->ri_mode)
 			qst_set (inst, ri->ri_output, box_copy_tree (qst_get (inst, ri->ri_o)));
