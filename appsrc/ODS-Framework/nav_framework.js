@@ -2342,6 +2342,13 @@ ODS.Nav = function (navOptions)
 		}
     }
 
+  this.showUserProfile = function ()
+  {
+    self.profile.show = true;
+    self.profile.set (self.session.userId);
+    self.initProfile ();
+  }
+
     this.getSearchOptions = function (searchBoxObj)
 	{
 	var searchQ = false;

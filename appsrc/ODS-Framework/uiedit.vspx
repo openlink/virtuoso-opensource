@@ -67,9 +67,6 @@
         </div>
         <script type="text/javascript">
           <![CDATA[
-            // no page leave check
-            sflag = true;
-
             // CalendarPopup
             var cPopup = new CalendarPopup('cDiv');
             cPopup.isShowYearNavigation = true;
@@ -209,8 +206,9 @@ function checkRest (form, sel)
         <vm:login redirect="index.vspx"/>
         <div class="message">
           <v:label name="pwd_msg" value="--self.msg_msg" />
+          <input type="hidden" name="dirty_force_global" id="dirty_force_global" value="<?vsp http(get_keyword ('dirty_force_global', self.vc_event.ve_params, 'false')); ?>"/>
           <input type="hidden" name="page" value="<?V get_keyword('page', self.vc_event.ve_params, '1') ?>"/>
-          <input type="hidden" name="tabNo" xhtml_id="tabNo" value="0"/>
+          <input type="hidden" name="tabNo" id="tabNo" value="<?V get_keyword('tabNo', self.vc_event.ve_params, '0') ?>"/>
         </div>
     <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
     <tr valign='top'>
@@ -234,12 +232,8 @@ function checkRest (form, sel)
         		         declare btn varchar;
               			 pg := atoi (get_keyword('page', self.vc_event.ve_params, '1'));
               			 btn := case pg
-              			 	when 1 then 'user_sset_personal'
-              			 	when 2 then 'user_sset_concatc'
-              			 	when 3 then 'user_sset_home'
-              			 	when 4 then 'user_sset_buss'
-              				when 5 then 'user_sset'
-              				when 6 then 'web_services_set_button'
+                              when 1 then 'user_s_personal'
+                              when 2 then 'user_s_business'
               				else '' end;
         		      ?>
         		      <script type="text/javascript">

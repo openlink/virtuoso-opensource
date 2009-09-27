@@ -112,11 +112,52 @@
 	  ]]>
 	</v:method>
 
+  <v:method name="storePersonal" arglist="">
+    <![CDATA[
+      declare N integer;
+      declare suffix, tmp_a, tmp_b, tmp_e, tmp_m, params any;
+
+      params := self.vc_page.vc_event.ve_params;
+      tmp_a := '';
+      tmp_b := '';
+      tmp_e := '';
+      tmp_m := '';
+      for (N := 0; N < length (params); N := N + 4)
+      {
+        if ((params [N] like 'a_fld_1_%') and (trim (params [N+1]) <> ''))
+        {
+          suffix := replace (params [N], 'a_fld_1_', '');
+          tmp_a := tmp_a || trim (params [N+1]) || ';' || trim (get_keyword ('a_fld_2_'||suffix, params, '')) || '\n';
+        }
+        else if ((params [N] like 'b_fld_1_%') and (trim (params [N+1]) <> ''))
+        {
+          suffix := replace (params [N], 'b_fld_1_', '');
+          tmp_b := tmp_b || trim (params [N+1]) || ';' || trim (get_keyword ('b_fld_2_'||suffix, params, '')) || '\n';
+        }
+        else if ((params [N] like 'e_fld_1_%') and (trim (params [N+1]) <> ''))
+        {
+          suffix := replace (params [N], 'e_fld_1_', '');
+          tmp_e := tmp_e || trim (params [N+1]) || '\n';
+        }
+        else if ((params [N] like 'm_fld_1_%') and (trim (params [N+1]) <> ''))
+        {
+          suffix := replace (params [N], 'm_fld_1_', '');
+          tmp_m := tmp_m || trim (params [N+1]) || ';' || trim (get_keyword ('m_fld_2_'||suffix, params, '')) || '\n';
+        }
+      }
+      self.interests := tmp_a;
+      self.interestTopics := tmp_b;
+      self.efoaf := tmp_e;
+      self.messaging := tmp_m;
+	  ]]>
+	</v:method>
+
   <v:method name="savePersonal" arglist="">
     <![CDATA[
       declare lat, lng any;
       declare params, _arr any;
 
+      self.storePersonal();
       params := self.vc_page.vc_event.ve_params;
       self.hstate := get_keyword ('h_state', params);
       if (exists (select 1 from WA_USER_INFO where WAUI_U_ID <> self.u_id and WAUI_NICK = self.nickn.ufl_value))
@@ -180,9 +221,9 @@
         self.vc_error_message := ' Invalid image type. Please use jpg,png or gif for browser compatibility.';
         self.vc_is_valid := 0;
         self.previe_path:='';
+        self.s_photo.ufl_value := '';
         return;
       }
-
       if (get_keyword ('up_photo', params, '') <> '' or (self.previe_path <> '' and self.s_photo.ufl_value <> ''))
       {
         declare dir, p_path, p_path_org, dotpos, up_cont any;
@@ -748,7 +789,6 @@
      ]]>
   </script>
   <v:form name="usr_personal" type="simple" method="POST" xhtml_enctype="multipart/form-data" action="uiedit.vspx?page=1">
-    <input type="hidden" name="dirty_force_global" id="dirty_force_global" value="<?vsp http(get_keyword ('dirty_force_global',self.vc_event.ve_params,'false')); ?>"/>
     <br />
     <div id="p" class="c1">
       <div class="tabs">
@@ -1338,6 +1378,7 @@
                   <v:button name="bt_preview_1" value="Preview" action="simple">
                    <v:on-post>
                      <![CDATA[
+                       self.storePersonal();
                        if (get_keyword ('up_photo', e.ve_params, '') <> '')
 	          {
                          declare dir, p_path, p_ext any;
@@ -1349,22 +1390,26 @@
 	            {
                            declare rc, pwd1 any;
                            pwd1 := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = 'dav');
-                           rc := 0;
-
                            rc := DAV_MAKE_DIR (dir, self.u_id, http_admin_gid (), '110100100N');
                            rc := DAV_RES_UPLOAD (p_path, get_keyword ('up_photo', e.ve_params), '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
-
                            if (rc < 0)
                            {
                              self.vc_is_valid := 0;
                              self.vc_error_message := DAV_PERROR (rc);
-                           } else
+                           } else {
                              self.previe_path:=p_path;
+                           }
                          } else {
                            self.vc_is_valid := 0;
                            self.vc_error_message := ' Invalid image type. Please use jpg,png or gif for browser compatibility.';
                            self.previe_path:='';
+                           self.s_photo.ufl_value := '';
 	            }
+                       } else {
+                         self.vc_is_valid := 0;
+                         self.vc_error_message := ' The action can not be performed. Please first upload image in order to preview it.';
+                         self.previe_path := '';
+                         self.s_photo.ufl_value := '';
 		        }
                      ]]>
                    </v:on-post>
@@ -1940,7 +1985,7 @@
     </div>
     <br />
     <div>
-      <v:button name="user_c_personal" xhtml_id="user_c_personal" value="Cancel" action="simple">
+      <v:button name="user_c_personal" xhtml_id="user_c_personal" value="Cancel" action="simple" xhtml_onclick="javascript: return initLoadProfile();">
         <v:on-post>
           self.vc_redirect (sprintf ('uhome.vspx?ufname=%U&amp;l=1', self.u_name));
         </v:on-post>
@@ -2157,5 +2202,11 @@
                     </v:on-post>
     </v:button>
     </div>
+    <script type="text/javascript">
+      <![CDATA[
+        var tabNo = <?V get_keyword ('tabNo', self.vc_event.ve_params, '0') ?>;
+        showTab('p', 7, tabNo); importActivate(tabNo == 0);
+       ]]>
+    </script>
   </v:form>
 </v:page>
