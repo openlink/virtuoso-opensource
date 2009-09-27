@@ -1,5 +1,6 @@
 
-TTLP ('@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+TTLP (
+'@prefix foaf: <http://xmlns.com/foaf/0.1/> .
 @prefix dc: <http://purl.org/dc/elements/1.1/> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#> .
@@ -25,6 +26,7 @@ cb:source_description rdfs:subPropertyOf foaf:name .
 <http://s.opencalais.com/1/type/er/Company> rdfs:subClassOf gr:BusinessEntity .
 gr:BusinessEntity rdfs:subClassOf foaf:Organization .
 <http://dbpedia.org/ontology/Company> rdfs:subClassOf gr:BusinessEntity .
+foaf:maker rdfs:subClassOf dc:creator .
 ', '', 'virtrdf-label');
 
 rdfs_rule_set ('virtrdf-label', 'virtrdf-label');

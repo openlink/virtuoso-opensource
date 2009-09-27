@@ -89,7 +89,7 @@ static const char rep_max[] = { 0, 0, 0, 0, 1, 1 };
 
 
 
-#ifdef DEBUG
+#ifdef PCRE_DEBUG
 /*************************************************
 *        Debugging function to print chars       *
 *************************************************/
@@ -141,7 +141,7 @@ match_ref(int offset, register USPTR eptr, int length, match_data *md,
 {
 USPTR p = md->start_subject + md->offset_vector[offset];
 
-#ifdef DEBUG
+#ifdef PCRE_DEBUG
 if (eptr >= md->end_subject)
   printf("matching subject <null>");
 else
@@ -254,7 +254,7 @@ actuall used in this definition. */
 #ifndef NO_RECURSE
 #define REGISTER register
 
-#ifdef DEBUG
+#ifdef PCRE_DEBUG
 #define RMATCH(ra,rb,rc,rd,re,rf,rg,rw) \
   { \
   printf("match() called in line %d\n", __LINE__); \
@@ -600,7 +600,7 @@ TAIL_RECURSE:
 /* OK, now we can get on with the real code of the function. Recursive calls
 are specified by the macro RMATCH and RRETURN is used to return. When
 NO_RECURSE is *not* defined, these just turn into a recursive call to match()
-and a "return", respectively (possibly with some debugging if DEBUG is
+and a "return", respectively (possibly with some debugging if PCRE_DEBUG is
 defined). However, RMATCH isn't like a function call because it's quite a
 complicated macro. It has to be used in one particular way. This shouldn't,
 however, impact performance when true recursion is being used. */
@@ -699,7 +699,7 @@ for (;;)
     number = GET2(ecode, 1+LINK_SIZE);
     offset = number << 1;
 
-#ifdef DEBUG
+#ifdef PCRE_DEBUG
     printf("start bracket %d\n", number);
     printf("subject=");
     pchars(eptr, 16, TRUE, md);
@@ -1290,7 +1290,7 @@ for (;;)
       number = GET2(prev, 1+LINK_SIZE);
       offset = number << 1;
 
-#ifdef DEBUG
+#ifdef PCRE_DEBUG
       printf("end bracket %d", number);
       printf("\n");
 #endif
@@ -4822,7 +4822,7 @@ for(;;)
 
   end_subject = save_end_subject;
 
-#ifdef DEBUG  /* Sigh. Some compilers never learn. */
+#ifdef PCRE_DEBUG  /* Sigh. Some compilers never learn. */
   printf(">>>> Match against: ");
   pchars(start_match, end_subject - start_match, TRUE, md);
   printf("\n");
