@@ -376,15 +376,15 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
     this.opts = optsObj;
 
     this._init = function () {
-	self.epCombo =  new OAT.Combolist(iSPARQL.defaults.endpoints,
+		self.epCombo =  new OAT.Combolist(iSPARQL.defaults.endpoints,
 					  "/sparql",
 					  {name:"service", onchange:self.endpointChangeCB});
-	self.epCombo.input.id = "service";
-	self.epContainerElm = $('endpoint');
-	self.epContainerElm.appendChild (self.epCombo.div);
+		self.epCombo.input.id = "service";
+		self.epContainerElm = $('endpoint');
+		self.epContainerElm.appendChild (self.epCombo.div);
 
-	OAT.Observer.add (self.opts.observers, self, self.redraw);
-	self.redraw();
+		OAT.Observer.add (self.opts.observers, self, self.redraw);
+		self.redraw();
 
 	/* hidden by default */
 	self.hideSeeAlsoControls();
@@ -442,17 +442,17 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
     }
 
     this.endpointChangeCB = function(endpointElm) {
-	self.opts.setEndpoint(self, endpointElm.value);
+		self.opts.setEndpoint(self, endpointElm.value);
     }
 
     this.getOptChangeCB = function(getOptElm) {
-	self.opts.setGetOpt (self, $v(getOptElm.target.options[getOptElm.target.selectedIndex]));
+		self.opts.setGetOpt (self, $v(getOptElm.target.options[getOptElm.target.selectedIndex]));
 	// Disable sponge opts if sponger is disabled as well
 
 	if (getOptElm.target.selectedIndex == 0)
 	    {
-		self.disableSpongerOptions ();
-		iSPARQL.endpointOpts.resetPragmas();
+			self.disableSpongerOptions ();
+			iSPARQL.endpointOpts.resetPragmas();
 	    }
 	else
 	    self.enableSpongerOptions ();
@@ -650,7 +650,14 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
     }
 
     this.setGetOptCtl = function () {
-	self.setPragmaSelect('define get:soft', "cachingSchemesCtl");
+		self.setPragmaSelect('define get:soft', "cachingSchemesCtl");
+		if ($("cachingSchemesCtl").selectedIndex == 0)
+			{
+				self.disableSpongerOptions();
+				iSPARQL.endpointOpts.resetPragmas();
+			}
+		else
+			self.enableSpongerOptions();
     };
 
     this.setGrabLimitCtl = function () {
@@ -658,30 +665,31 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
     };
 
     this.setGrabDepthCtl = function () {
-	self.setPragmaSelect('define input:grab-depth', "nodesCrawledCtl");
+		self.setPragmaSelect('define input:grab-depth', "nodesCrawledCtl");
     }
 
     this.setPathTraversalCtl = function () {
-	self.setPragmaRadio ('define input:grab-all',    "pathTravSchemesGraball");
-	self.setPragmaRadio ('define input:grab-seealso',"pathTravSchemesSeealso");
-	self.setPragmaList  ('define input:grab-seealso',"pathTravSchemesPreds");
+		self.setPragmaRadio ('define input:grab-all',    "pathTravSchemesGraball");
+		self.setPragmaRadio ('define input:grab-seealso',"pathTravSchemesSeealso");
+		self.setPragmaList  ('define input:grab-seealso',"pathTravSchemesPreds");
     };
 
     this.setGrabVarCtl = function (callerObj, val) { return 0; }
 
-    this.redraw = function (reason) {
+	this.redraw = function (reason) {
 
-	if (iSPARQL.serverConn.isVirtuoso)
-	    OAT.Dom.show (self.epOptsContainer);
-	else
-	    OAT.Dom.hide (self.epOptsContainer);
+		if (iSPARQL.serverConn.isVirtuoso)
+	    	OAT.Dom.show (self.epOptsContainer);
+		else
+	   		OAT.Dom.hide (self.epOptsContainer);
 
-	self.setEpOptCtl ();
-	self.setGetOptCtl ();
-	self.setGrabLimitCtl ();
-	self.setGrabDepthCtl ();
-	self.setGrabVarCtl ();
-	self.setPathTraversalCtl ();
+		self.setEpOptCtl ();
+		self.setGetOptCtl ();
+		self.setGrabLimitCtl ();
+		self.setGrabDepthCtl ();
+		self.setGrabVarCtl ();
+		self.setPathTraversalCtl ();
+
     }
 
     this.toggle = function () {
@@ -692,9 +700,9 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
     }
 
     this.show = function () {
-	OAT.Dom.show (self.containerElm);
-	self.indicatorElm.innerHTML = "&#9662;";
-	sessionStorage.iSPARQLEpOptsUIVisible = 'true';
+		OAT.Dom.show (self.containerElm);
+		self.indicatorElm.innerHTML = "&#9662;";
+		sessionStorage.iSPARQLEpOptsUIVisible = 'true';
     }
 
     this.hide = function () {
