@@ -30,6 +30,7 @@
 #include "arith.h"
 #include "srvmultibyte.h"
 #include "numeric.h"
+#include "xmltree.h"
 
 void
 qst_set_long (caddr_t * state, state_slot_t * sl, boxint lv)
@@ -642,6 +643,12 @@ cmp_boxes_safe (caddr_t box1, caddr_t box2, collation_t *collation1, collation_t
       if (box1 == box2)
 	return DVC_MATCH;
       return DVC_NOORDER;
+    }
+  if ((DV_XML_ENTITY == dtp1) && (DV_XML_ENTITY == dtp2))
+    {
+      if (box1 == box2)
+	return DVC_MATCH;
+      return xe_compare_content ((xml_entity_t *)box1, (xml_entity_t *)box2, 0 /* do not compare URIs and DTDs */);
     }
   return DVC_NOORDER;
 }

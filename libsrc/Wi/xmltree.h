@@ -1187,6 +1187,9 @@ extern caddr_t xml_get_cli_or_global_ns_prefix (caddr_t * qst, const char *uri, 
 
 extern void xte_replace_strings_with_unames (caddr_t **tree);
 
+extern int xe_compare_content (xml_entity_t *xe1, xml_entity_t *xe2, int compare_uris_and_dtds);
+
+
 #ifdef XTREE_DEBUG
 extern void xte_tree_check (box_t box);
 #else

@@ -3310,7 +3310,29 @@ bif_xqf_str_parse_to_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
       }
   }
   if ((strlen (type_iri) <= XMLSCHEMA_NS_URI_LEN) || ('#' != type_iri[XMLSCHEMA_NS_URI_LEN]))
+    {
+      if (!strcmp (type_iri, uname_rdf_ns_uri_XMLLiteral))
+        {
+          caddr_t *err = NULL;
+          xml_ns_2dict_t ns_2dict;
+          dtd_t *dtd = NULL;
+          id_hash_t *id_cache = NULL;
+          xml_tree_ent_t *xte;
+          caddr_t tree = xml_make_mod_tree ((query_instance_t *)qst, arg, (caddr_t *)&err, FINE_XML | GE_XML, NULL /* no uri! */, "UTF-8", NULL, NULL, &dtd, &id_cache, &ns_2dict);
+          if (NULL == tree)
+            sqlr_resignal (err);
+          xte = xte_from_tree (tree, (query_instance_t*) qst);
+          xte->xe_doc.xd->xd_uri = NULL; /* instead of typical box_copy_tree (uri), because uri is definitely unknown */
+          xte->xe_doc.xd->xd_dtd = dtd; /* The refcounter is incremented inside xml_make_tree */
+          xte->xe_doc.xd->xd_id_dict = id_cache;
+          xte->xe_doc.xd->xd_id_scan = XD_ID_SCAN_COMPLETED;
+          xte->xe_doc.xd->xd_ns_2dict = ns_2dict;
+          xte->xe_doc.xd->xd_namespaces_are_valid = 0;
+          /* test only : xte_word_range(xte,&l1,&l2); */
+          return ((caddr_t) xte);
+        }
     return NEW_DB_NULL;
+    }
   p_name = type_iri + XMLSCHEMA_NS_URI_LEN + 1; /* +1 is to skip '#' */
   desc_idx = ecm_find_name (p_name, xqf_str_parser_descs,
     xqf_str_parser_desc_count, sizeof (xqf_str_parser_desc_t) );

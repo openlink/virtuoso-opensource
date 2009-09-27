@@ -1621,6 +1621,36 @@ http_ttl_or_nt_prepare_obj (query_instance_t *qi, caddr_t obj, dtp_t obj_dtp, tt
 }
 
 static void
+http_ttl_or_nt_write_xe (dk_session_t *ses, query_instance_t *qi, xml_entity_t *xe, int print_type_suffix)
+{
+  dk_session_t *tmp_ses = strses_allocate();
+  caddr_t tmp_utf8_box;
+  client_connection_t *cli = qi->qi_client;
+  wcharset_t *saved_charset = cli->cli_charset;
+  cli->cli_charset = CHARSET_UTF8;
+  xe->_->xe_serialize (xe, tmp_ses);
+  cli->cli_charset = saved_charset;
+  if (!STRSES_CAN_BE_STRING (tmp_ses))
+    {
+      strses_free (tmp_ses);
+      sqlr_new_error ("22023", "HT057", "The serialization of XML literal as TURTLE or NT is longer than 10Mb, this is not supported");
+    }
+  else
+    tmp_utf8_box = strses_string (tmp_ses);
+  strses_free (tmp_ses);
+  session_buffered_write_char ('"', ses);
+  dks_esc_write (ses, tmp_utf8_box, box_length (tmp_utf8_box) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_DQ);
+  dk_free_box (tmp_utf8_box);
+  session_buffered_write_char ('"', ses);
+  if (print_type_suffix)
+    {
+      SES_PRINT (ses, "^^<");
+      SES_PRINT (ses, uname_rdf_ns_uri_XMLLiteral);
+      session_buffered_write_char ('>', ses);
+    }
+}
+
+static void
 http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, caddr_t obj, dtp_t obj_dtp, ttl_iriref_t *dt_ptr)
 {
   caddr_t obj_box_value;
@@ -1656,6 +1686,12 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
       dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_DQ);
       session_buffered_write_char ('"', ses);
       break;
+    case DV_XML_ENTITY:
+      {
+        http_ttl_or_nt_write_xe (ses, qi, (xml_entity_t *)(obj_box_value),
+          ((DV_RDF == obj_dtp) ? (RDF_BOX_DEFAULT_TYPE == ((rdf_box_t *)obj)->rb_type) : 1) );
+        break;
+      }
     case DV_DB_NULL:
       session_buffered_write (ses, "(NULL)", 6);
       break;
@@ -1864,6 +1900,12 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
       dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_DQ);
       session_buffered_write_char ('"', ses);
       break;
+    case DV_XML_ENTITY:
+      {
+        http_ttl_or_nt_write_xe (ses, qi, (xml_entity_t *)(obj_box_value),
+          ((DV_RDF == obj_dtp) ? (RDF_BOX_DEFAULT_TYPE == ((rdf_box_t *)obj)->rb_type) : 1) );
+        break;
+      }
     case DV_DB_NULL:
       session_buffered_write (ses, "(NULL)", 6);
       break;

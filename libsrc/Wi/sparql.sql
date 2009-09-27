@@ -1270,6 +1270,7 @@ retry_unrdf:
 create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT (in v any, in dt_iid IRI_ID, in lang varchar, in g_iid IRI_ID, in p_iid IRI_ID, in ro_id_dict any := null) returns any
 {
   declare t, dt_twobyte, lang_twobyte int;
+  -- dbg_obj_princ ('DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT (', v, dt_iid, lang, g_iid, p_iid, ro_id_dict, ')');
 retry_unrdf:
   t := __tag (v);
   if (not (t in (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML)))
@@ -1320,6 +1321,14 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_STRINGS (
       parsed := __xqf_str_parse_to_rdf_box (o_val, o_type, isstring (o_val));
       if (parsed is not null)
         {
+          if (__tag of XML = __tag (parsed))
+            {
+              insert soft DB.DBA.RDF_QUAD (G,S,P,O)
+              values (g_iid, iri_to_id (s_uri), p_iid,
+                DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (
+                  parsed, iri_to_id (o_type), null ) );
+              return;
+            }
           if (__tag of rdf_box = __tag (parsed))
             rdf_box_set_type (parsed,
               DB.DBA.RDF_TWOBYTE_OF_DATATYPE (iri_to_id (o_type)));
@@ -2083,6 +2092,15 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L (
       parsed := __xqf_str_parse_to_rdf_box (o_val, o_type, isstring (o_val));
       if (parsed is not null)
         {
+          if (__tag of XML = __tag (parsed))
+            {
+              insert soft DB.DBA.RDF_QUAD (G,S,P,O)
+              values (g_iid, iri_to_id (s_uri), p_iid,
+                DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT (
+                  parsed, iri_to_id (o_type), null,
+                  g_iid, p_iid, ro_id_dict ) );
+              return;
+            }
           if (__tag of rdf_box = __tag (parsed))
             rdf_box_set_type (parsed,
               DB.DBA.RDF_TWOBYTE_OF_DATATYPE (iri_to_id (o_type)));
@@ -9791,7 +9809,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
   if (not exists (sparql define input:storage "" ask where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
               <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-                virtrdf:version '2009-08-27 0001'
+                virtrdf:version '2009-09-24 0001'
             } } ) )
     {
       declare txt1, txt2 varchar;
