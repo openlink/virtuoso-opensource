@@ -3957,7 +3957,7 @@ create procedure OMAIL.WA.omail_msg_list(
   _directionIndex := cast (OMAIL.WA.omail_getp ('direction',_params) as integer);
   _group := _order;
   _group[0] := 'MSG_ID';
-  _groupIndex := OMAIL.WA.omail_getp ('groupBy', _params);
+  _groupIndex := cast (OMAIL.WA.omail_getp ('groupBy', _params) as integer);
   _groupDirection := 'asc';
   if (_groupDirection in (2, 4, 6, 7))
     _groupDirection := 'desc';
