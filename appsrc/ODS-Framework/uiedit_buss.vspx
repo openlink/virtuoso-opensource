@@ -306,8 +306,6 @@
     </v:before-data-bind>
 
   <v:form name="usr_bussiness" type="simple" method="POST" action="uiedit.vspx?page=2">
-    <input type="hidden" name="dirty_force_global" id="dirty_force_global" value="<?vsp http(get_keyword ('dirty_force_global',self.vc_event.ve_params,'false')); ?>"/>
-
     <br />
     <div id="b" class="c1">
       <div class="tabs">
@@ -840,7 +838,7 @@
     </div>
     <br />
     <div>
-			<v:button name="bt_cncl_4" value="Cancel" action="simple">
+      <v:button name="bt_cncl_4" value="Cancel" action="simple" xhtml_onclick="javascript: return initLoadProfile();">
 			  <v:on-post>
 			    self.vc_redirect (sprintf ('uhome.vspx?ufname=%U&amp;l=1', self.u_name));
 			  </v:on-post>
@@ -862,5 +860,11 @@
                     </v:on-post>
 		</v:button>
     </div>
+    <script type="text/javascript">
+      <![CDATA[
+        var tabNo = <?V get_keyword ('tabNo', self.vc_event.ve_params, '0') ?>;
+        showTab('b', 4, tabNo);
+       ]]>
+    </script>
     </v:form>
 </v:page>

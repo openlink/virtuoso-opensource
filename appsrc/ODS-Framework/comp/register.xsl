@@ -690,12 +690,10 @@ no_date:
    else if (length (self.url))
              {
      self.ret_page := self.url;
-               if (self.ret_page like '%myhome.vspx%')
-                 self.ret_page := 'uiedit.vspx';
              }
    else
              {
-               self.ret_page := 'uiedit.vspx';
+               self.ret_page := 'uhome.vspx';
              }
          if (_mail_verify_on)
          {

@@ -81,10 +81,9 @@ function checkPageLeave (form)
   var dirty = false;
   var ret = true;
   var btn = def_btn;
-  var i;
   if (sflag == true || btn == null || btn == '' || form.__submit_func.value != '' || form.__event_initiator.value != '')
     return true;
-  for (i = 0; i < form.elements.length; i++)
+  for (var i = 0; i < form.elements.length; i++)
     {
       if (form.elements[i] != null)
         {
@@ -94,36 +93,27 @@ function checkPageLeave (form)
           {
             if (ctrl.type.indexOf ('select') != -1)
             {
-                var j, selections = 0;
-    	          for (j = 0; j < ctrl.length; j ++)
+          var selections = 0;
+          for (var j = 0; j < ctrl.length; j ++)
     	            {
                      var opt = ctrl.options[j];
     	               if (opt.defaultSelected == true)
     		                   selections ++;
                      if (opt.defaultSelected != opt.selected)
-                            {
                               dirty = true;
                             }
-                  }
     	          if (selections == 0 && ctrl.selectedIndex == 0)
     	            dirty = false;
     	          if (dirty == true)
-    	          {
-    	            //alert (ctrl.name+' value=['+ctrl.value+'] default=['+ctrl.defaultValue+']');
     	            break;
     	          }
-            }
             else if ((ctrl.type.indexOf ('text') != -1 || ctrl.type == 'password') && ctrl.defaultValue != ctrl.value)
               {
-    	        //alert (ctrl.name+' value=['+ctrl.value+'] default=['+ctrl.defaultValue+']');
                 dirty = true;
        	        break;
               }
-            else if ((ctrl.type == 'checkbox' || ctrl.type == 'radio') &&
-    	                ctrl.defaultChecked != ctrl.checked
-    	              )
+        else if ((ctrl.type == 'checkbox' || ctrl.type == 'radio') && ctrl.defaultChecked != ctrl.checked)
               {
-    	           //alert (ctrl.name+' value=['+ctrl.checked+'] default=['+ctrl.defaultChecked+']');
                 dirty = true;
                 break;
               }
@@ -131,22 +121,23 @@ function checkPageLeave (form)
         }
     }
 
-  dirty_force_global=document.getElementById('dirty_force_global');
-  if(dirty_force_global != null){
-     if(dirty_force_global.value=='true') dirty_force_global = true;
+  dirty_force_global = $('dirty_force_global');
+  if (!dirty_force_global)
+  {
+    if (dirty_force_global.value == 'true')
+      dirty_force_global = true;
   }else{
      dirty_force_global = false;
-  };
+  }
 
-  if (dirty_force_global == true ) {
+  if (dirty_force_global == true )
+  {
     dirty_force_global = false ;
     dirty = true;
-  };
-
+  }
   if (dirty == true)
     {
-      ret =
-confirm ('You are about to leave the page, but there is changed data which is not saved.\r\nDo you wish to save changes ?');
+    ret = confirm ('You are about to leave the page, but there is changed data which is not saved.\r\nDo you wish to save changes ?');
         if (ret == true)
           {
             form.__submit_func.value = '__submit__';
@@ -170,10 +161,12 @@ function getFileName(form, from, to)
   to.value = fname;
 }
 
-
-function checkSelected (form, txt, selectionMsq) {
-  if ((form != null) && (txt != null)) {
-    for (var i = 0; i < form.elements.length; i++) {
+function checkSelected (form, txt, selectionMsq)
+{
+  if ((form != null) && (txt != null))
+  {
+    for (var i = 0; i < form.elements.length; i++)
+    {
       var obj = form.elements[i];
       if (obj != null && obj.type == 'checkbox' && obj.name.indexOf (txt) != -1 && obj.checked)
         return true;
@@ -379,6 +372,14 @@ function sharedChange(obj)
     OAT.Dom.hide('tr_shared');
 }
 
+function initLoadProfile()
+{
+  if (top.location == self.location)
+    return true;
+  parent.nav.showUserProfile();
+  return false;
+}
+
 function updateRow (prefix, No, optionObject)
 {
   if (No != null)
@@ -508,7 +509,10 @@ function updateInput (elm, fldName, fldOptions)
   fld.id = fldName;
   fld.name = fld.id;
   if (fldOptions.value)
+  {
     fld.value = fldOptions.value;
+    fld.defaultValue = fld.value;
+  }
   if (fldOptions.className)
   fld.className = fldOptions.className;
   if (fldOptions.onblur)
@@ -732,6 +736,7 @@ function updateField9 (elm, fldName, fldOptions)
   fld.name = fldName;
   fld.id = fldName;
   fld.value = fldOptions.value;
+  fld.defaultValue = fldOptions.value;
 
   var elm = $(elm);
   elm.appendChild(fld);
