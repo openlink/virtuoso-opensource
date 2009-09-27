@@ -54,10 +54,10 @@ functions whose names all begin with "_pcre_". */
 
 #include "pcre_config.h"
 
-/* Define DEBUG to get debugging output on stdout. */
+/* Define PCRE_DEBUG to get debugging output on stdout. */
 
 #if 0
-#define DEBUG
+#define PCRE_DEBUG
 #endif
 
 #define _pcre_utf8_table1 _virt_pcre_utf8_table1
@@ -104,7 +104,7 @@ It turns out that the Mac Debugging.h header also defines the macro DPRINTF, so
 be absolutely sure we get our version. */
 
 #undef DPRINTF
-#ifdef DEBUG
+#ifdef PCRE_DEBUG
 #define DPRINTF(p) printf p
 #else
 #define DPRINTF(p) /* Nothing */
