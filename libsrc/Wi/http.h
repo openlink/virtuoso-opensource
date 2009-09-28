@@ -93,6 +93,7 @@ typedef struct ws_connection_s
     caddr_t *		ws_lines;
     caddr_t *		ws_path;
     caddr_t *		ws_params;
+    dk_session_t *	ws_raw_post;
     caddr_t *		ws_stream_params;
     int 		ws_req_len;
     int			ws_method;

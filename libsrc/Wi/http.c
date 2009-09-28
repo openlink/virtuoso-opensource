@@ -601,18 +601,21 @@ ws_read_post_1 (ws_connection_t *ws, int max, dk_session_t * str)
     }
   FAILED
     {
-      if(http_ses_trap) {
-        if (ws->ws_ses_trap)
-          strses_write_out (cont, ws->ws_req_log);
-      }
+      if(http_ses_trap)
+	{
+	  if (ws->ws_ses_trap)
+	    strses_write_out (cont, ws->ws_req_log);
+	}
       dk_free_box ((box_t) cont);
       THROW_READ_FAIL_S (ws->ws_session);
     }
   END_READ_FAIL_S (ws->ws_session);
-      if(http_ses_trap) {
-        if (ws->ws_ses_trap)
-          strses_write_out (cont, ws->ws_req_log);
-      }
+  strses_write_out (cont, ws->ws_raw_post);
+  if (http_ses_trap)
+    {
+      if (ws->ws_ses_trap)
+	strses_write_out (cont, ws->ws_req_log);
+    }
   dk_free_box ((box_t) cont);
   return ret;
 }
@@ -1013,10 +1016,10 @@ ws_read_multipart_mime_post (ws_connection_t *ws, int *is_stream)
       CATCH_READ_FAIL_S (ws->ws_session)
 	{
 	  session_buffered_read (ws->ws_session, ptr, ws->ws_req_len);
-    if(http_ses_trap) {
-      if (ws->ws_ses_trap)
-        session_buffered_write (ws->ws_req_log, ptr, ws->ws_req_len);
-    }
+	  if(http_ses_trap) {
+	    if (ws->ws_ses_trap)
+	      session_buffered_write (ws->ws_req_log, ptr, ws->ws_req_len);
+	  }
 	}
       FAILED
 	{
@@ -1441,6 +1444,7 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
     }
   dk_free_tree ((box_t) ws->ws_stream_params);
   ws->ws_stream_params = NULL;
+  strses_flush (ws->ws_raw_post);
   dk_free_box (ws->ws_header);
   ws->ws_header = NULL;
   dk_free_box (ws->ws_file);
@@ -4301,6 +4305,8 @@ ws_new_connection (void)
   ws->ws_session = ses;
   ws->ws_strses = strses_allocate ();
   strses_enable_paging (ws->ws_strses, http_ses_size);
+  ws->ws_raw_post = strses_allocate ();
+  strses_enable_paging (ws->ws_raw_post, http_ses_size);
   ws->ws_charset = ws_default_charset;
   return ws;
 }
@@ -4815,6 +4821,7 @@ bif_http_internal_redirect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
   caddr_t * parr;
   ws_connection_t * ws = qi->qi_client->cli_ws;
   int keep_lpath = 0;
+  int is_proxy_request, body_like_post;
 
   if (NULL == ws)
     sqlr_new_error ("42000", "HT067",
@@ -4846,6 +4853,16 @@ bif_http_internal_redirect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
       parr = (caddr_t *) http_path_to_array (new_phy_path, 1);
       ws->ws_p_path = ((NULL != parr) ? parr : (caddr_t *) list(0));
       ws->ws_proxy_request = (ws->ws_p_path_string ? (0 == strnicmp (ws->ws_p_path_string, "http://", 7)) : 0);
+      body_like_post = (ws->ws_method == WM_POST);
+      is_proxy_request = (ws->ws_p_path_string ?
+	  ((0 == strnicmp (ws->ws_p_path_string, "http://", 7)) ||
+	   (1 == is_http_handler (ws->ws_p_path_string))) : 0);
+      if (is_proxy_request && body_like_post && NULL == ws->ws_stream_params)
+	{
+	  /* set the stream params */
+	  ws->ws_stream_params = strses_allocate ();
+	  strses_write_out (ws->ws_raw_post, ws->ws_stream_params);
+	}
     }
 #endif
   if (BOX_ELEMENTS (args) > 2)
