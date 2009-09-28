@@ -24,9 +24,11 @@
 -->
 <xsl:stylesheet version ="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 <xsl:output method="html" encoding="ISO-8859-1" indent="yes"/>
+
 <xsl:variable name="page_len" select="20"/>
-<xsl:variable name="offs" select="if(/facets/view/@offset = '', 1, /facets/view/@offset + 1)"/> <!-- humans count from 1 -->
+<xsl:variable name="offs" select="if(or(/facets/view/@offset = '', not(/facets/view/@offset)), 1, /facets/view/@offset + 1)"/>
 <xsl:variable name="rowcnt" select="count(/facets/result/row)"/>
+
 <xsl:template match = "facets">
 <div id="res">
   <div class="btn_bar btn_bar_top">

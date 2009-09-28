@@ -68,6 +68,84 @@ create procedure b3s_page_get_type (in val any)
 ;
 
 create procedure 
+b3s_parse_inf (in sid varchar, in params any)
+{
+  declare _sas, _inf varchar;
+
+  _sas := null; 
+  _inf := null;
+
+  if (sid is not null)
+    { 
+      for select fct_state from fct_state where fct_sid = sid do
+        {
+          connection_set('inf', fct_inf_val (fct_state));
+          connection_set('sas', fct_sas_val (fct_state));
+        }
+    }
+
+-- URL params override
+
+  _inf := get_keyword ('inf', params);
+
+  if (_inf is not null)
+    {
+      if (exists (select 1 from SYS_RDF_SCHEMA where rs_name = _inf))
+        connection_set ('inf', _inf);
+      else connection_set ('inf', null);
+    }
+
+  _sas := get_keyword ('sas', params);
+
+  if (_sas is not null)
+    {
+      if (_sas = '1')
+        connection_set ('sas', 'yes');
+      else 
+        connection_set ('sas', null);
+    }
+}
+;
+
+create procedure
+b3s_render_inf_clause ()
+{
+  declare _inf, _sas varchar;
+
+  _inf := connection_get ('inf');
+  _sas := connection_get ('sas');
+
+  if (_inf is not null) 
+    _inf := sprintf (' define input:inference ''%s'' ', _inf);
+  else 
+    _inf := '';
+
+  if (_sas is not null)
+    _sas := sprintf (' define input:same-as "yes" ');
+  else 
+    _sas := '';
+
+  return (_inf || _sas); 
+}
+;
+
+create procedure
+b3s_render_inf_params () 
+{
+  declare i,s varchar;
+
+  i := connection_get ('inf');
+  s := connection_get ('sas');
+
+  if (i is not null) i := '&inf=' || i;
+  if (s is not null) i := i || '&sas=' || s;
+
+  if (i is not null) return i;
+  else return '';
+}
+;
+
+create procedure 
 b3s_dbg_out (inout ses any, in str any)
 {
   if (connection_get ('b3s_dbg'))
@@ -224,12 +302,18 @@ create procedure b3s_uri_curie (in uri varchar)
 create procedure 
 b3s_http_url (in url varchar, in sid varchar := null)
 {
-  declare host, pref, more varchar;
+  declare host, pref, more, i varchar;
+
+  more := '';
+
   if (sid is not null)
     more := sprintf ('&sid=%s', sid);
   else
     more := '';
-  return sprintf ('/describe/?url=%U%s', url, more);
+
+  i := b3s_render_inf_params();
+  
+  return sprintf ('/describe/?url=%U%s%s', url, more, i);
 };
 
 create procedure 

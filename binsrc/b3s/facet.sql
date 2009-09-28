@@ -346,14 +346,43 @@ gr:BusinessEntity rdfs:subClassOf foaf:Organization .
 
 rdfs_rule_set ('facets', 'facets');
 
+
+create procedure
+fct_inf_val (in tree any)
+{
+  declare i varchar;
+
+ i := cast (xpath_eval ('/query/@inference', tree) as varchar);
+
+  if (i is null or '' = i)
+    return null;
+  return i;  
+}
+;
+
 create procedure
 fct_inf_clause (in tree any)
 {
   declare i varchar;
- i := cast (xpath_eval ('/query/@inference', tree) as varchar);
-  if (i is null or '' = i)
+
+  i := fct_inf_val (tree);
+
+  if (i is not null)
+    return sprintf (' define input:inference "%s" ', i);
     return '';
-  return sprintf (' define input:inference "%s" ', cast (i as varchar));
+}
+;
+
+create procedure
+fct_sas_val (in tree any)
+{
+  declare i varchar;
+
+ i := cast (xpath_eval ('/query/@same-as', tree) as varchar);
+
+  if (i is null or '' = i)
+    return null;
+  return i;
 }
 ;
 
@@ -361,10 +390,12 @@ create procedure
 fct_sas_clause (in tree any)
 {
   declare i varchar;
- i := cast (xpath_eval ('/query/@same-as', tree) as varchar);
-  if (i is null or '' = i)
+
+  i := fct_sas_val (tree);
+
+  if (i is not null)
+    return sprintf (' define input:same-as "%s" ', i);
     return '';
-  return sprintf (' define input:same-as "%s" ', cast (i as varchar));
 }
 ;
 
@@ -959,8 +990,8 @@ fct_exec (in tree any,
 
   set result_timeout = _min (timeout, atoi (registry_get ('fct_timeout_max')));
 
-  offs := xpath_eval ('//query/view/@offset', tree);
-  lim := xpath_eval ('//query/view/@limit', tree);
+  offs := xpath_eval ('//view/@offset', tree);
+  lim := xpath_eval ('//view/@limit', tree);
 
   -- db_activity ();
 
@@ -975,11 +1006,9 @@ fct_exec (in tree any,
   sqls := '00000';
   qr := fct_query (xpath_eval ('//query', tree, 1));
   query := qr;
---  dbg_obj_print (qr);
+
   qr2 := fct_xml_wrap (tree, qr);
   start_time := msec_time ();
-
---  dbg_printf('query: %s', qr2);
 
   exec (qr2, sqls, msg, vector (), 0, md, res);
   n_rows := row_count ();

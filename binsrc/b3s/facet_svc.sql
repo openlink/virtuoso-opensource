@@ -131,7 +131,7 @@ create procedure fct_svc () __soap_http 'text/xml'
     timeout := atoi (tmp);
 
   maxt := atoi (registry_get ('fct_max_timeout'));
-  if (timeout > maxt)
+  if (0 >= timeout or timeout > maxt)
     timeout := maxt;
   ret := fct_svc_exec (xslt, timeout, accept, lines);
   return ret;

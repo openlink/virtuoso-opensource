@@ -481,13 +481,7 @@ fct_web (in tree any)
   if (not isinteger(timeout)) 
     timeout := atoi(timeout);
 
---  dbg_printf ('calling fct_exec with to: %d', timeout);
-
--- dbg_obj_print (tree);
-
   reply := fct_exec (tree, timeout);
-
---  dbg_obj_print (reply);
 
   txt := string_output ();
 
@@ -623,8 +617,7 @@ fct_set_view (in tree     any,
   tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
                 tree,
 		vector ('pos', pos,
-		        'op',
-			'view',
+		        'op', 'view',
 			'type', tp,
 			'limit', lim,
 			'offset', offs,
@@ -669,7 +662,11 @@ fct_prev (in tree any, in sid int)
 ;
 
 create procedure
-fct_open_property  (in tree any, in sid int, in iri varchar, in name varchar, in exclude varchar := null)
+fct_open_property  (in tree any, 
+                    in sid int, 
+                    in iri varchar, 
+                    in name varchar, 
+                    in exclude varchar := null)
 {
   declare pos int;
   pos := fct_view_pos (tree);
@@ -683,9 +680,15 @@ fct_open_property  (in tree any, in sid int, in iri varchar, in name varchar, in
 			'limit', 20,
 			'offset', 0,
 			'exclude', exclude));
+
   if (xpath_eval ('//view', tree) is null)
     tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl', tree, 
-    	vector ('pos', pos, 'op', 'view', 'type', 'properties', 'limit', 20, 'offset', 0));
+                  vector ('pos', pos, 
+                  'op', 'view', 
+                  'type', 'properties', 
+                  'limit', 20, 
+                  'offset', 0));
+
   update fct_state
     set fct_state = tree
     where fct_sid = sid;

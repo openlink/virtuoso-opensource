@@ -85,13 +85,11 @@
 	<xsl:if test="$exclude = 'yes'">
 	    <xsl:attribute name="exclude">yes</xsl:attribute>
 	</xsl:if>
-	<xsl:if test="$exclude != 'yes'">
 	<xsl:element name="view">
 	  <xsl:attribute name="type"> <xsl:value-of select="$type"/></xsl:attribute>
 	  <xsl:attribute name="limit"> <xsl:value-of select="$limit"/></xsl:attribute>
 	  <xsl:attribute name="offset"> <xsl:value-of select="$offset"/></xsl:attribute>
 	</xsl:element>
-	</xsl:if>
       </xsl:element>
     </xsl:if>
 
@@ -113,7 +111,7 @@
       <xsl:when test="$op = 'class'">
         <class iri="{$iri}"/>
         <xsl:element name="view">
-          <xsl:attribute name="type">list</xsl:attribute>
+            <xsl:attribute name="type"></xsl:attribute>
 	  <xsl:attribute name="limit"> <xsl:value-of select="$limit"/></xsl:attribute>
 	  <xsl:attribute name="offset"> <xsl:value-of select="$offset"/></xsl:attribute>
 	</xsl:element>
@@ -141,7 +139,7 @@
 </xsl:template>
 
 <xsl:template match="view">
-<xsl:if test="'class' = $op or 'value' = $op">
+  <xsl:if test="'class' = $op or 'value' = $op or '' = $op" >
   <xsl:copy>
     <xsl:apply-templates select="@* | node()" />
   </xsl:copy>

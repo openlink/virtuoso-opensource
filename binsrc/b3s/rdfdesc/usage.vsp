@@ -27,29 +27,31 @@
 
    declare _S, odd_position any;
    declare page_resource_uri, proxy_iri, rdf_link, label, _subject any;
-   declare white_page, arr, data, meta, h1, h2, inx, gr, host, refr, sid, inf, sas, langs, best_q, tp any;
+   declare white_page, arr, data, meta, h1, h2, inx, gr, host, refr, sid, inf, langs, best_q, tp any;
    declare orig_refr varchar;
    declare urilookup integer;
+   declare dbg_enable varchar;
+   declare dbg_out any;
 
    white_page := 1;
+
    sid := null;
    inf := '';
-   sas := '';
+
    if (sid is null)
      sid := get_keyword ('sid', params); 
    else 
      sid := '';
    refr := null;
+
    if (sid is not null)
-     {
-       for select fct_state from fct_state where fct_sid = sid do
-         {
-	   inf := fct_inf_clause (fct_state);
-	   sas := fct_sas_clause (fct_state);
-	   inf := inf || ' ' || sas;
-	 }
        refr := '/fct/facet.vsp?sid='||sid||'&cmd=refresh';	 
-     }
+
+   -- side-effect sets connection vars 'inf' and 'sas' - val or null
+
+   b3s_parse_inf (sid, params);
+   inf := b3s_render_inf_clause ();
+
    host := http_request_header (http_request_header (), 'Host');  
    langs := http_request_header_full (lines, 'Accept-Language', 'en');
    gr := get_keyword ('g', params, '');
@@ -91,6 +93,17 @@
   if (not length (label))
     label := page_resource_uri;
   tp := atoi (get_keyword ('tp', params, '1'));  
+
+   dbg_enable := get_keyword ('dbg', params);
+
+   if (dbg_enable = '1') 
+     {
+        dbg_printf ('Enabling b3s session debug.\n');
+        connection_set ('b3s_dbg', 1);
+        dbg_out := string_output ();
+     }
+   else connection_set ('b3s_dbg',0);
+
 ?>
 
 <!-- header -->
@@ -186,6 +199,9 @@
 	         qr := sprintf ('sparql select distinct ?syn ?p ?o (sql:rnk_scale (<LONG::IRI_RANK> (?syn))) where { <%S> ?p ?o .  filter (0 != (<LONG::bif:rdf_is_sub> ("b3sifp", ?p, lod:ifp_like, 3))) .  ?syn ?p ?o . } order by desc 4 limit 20', _S);
 		 http ('<tr><th>Subject</th><th>Property</th><th>Object</th><th>Rank</th></tr>\n');
 	      }
+
+            b3s_dbg_out(dbg_out, qr);
+
 	    exec (qr, null, null, vector (), 0, null, null, h1); 
 	    while (0 = exec_next (h1, null, null, data))	
 	      {
@@ -231,6 +247,7 @@
       </table>
       </div> <!-- .tab_page -->
       </div> <!-- #TAB_CTR -->
+      <?vsp b3s_render_dbg_out(dbg_out); ?>
     </div> <!--  #MD -->
 <!-- footer -->
     <div id="FT">

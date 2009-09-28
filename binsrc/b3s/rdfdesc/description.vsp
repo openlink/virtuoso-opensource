@@ -31,12 +31,12 @@
    declare dbg_enable varchar;
    declare qry_str varchar;
    declare dbg_out any;
+   declare inf_parm varchar;
 
    connection_set ('ns_ctr', 1); /* for unknown xmlns to print in RDFa */
    white_page := 1;
    sid := null;
    inf := '';
-   sas := '';
    refr := http_request_header (http_request_header (), 'Referer', null, null);
 
    if (refr not like '%/facet.vsp?%')
@@ -68,16 +68,12 @@
 
    if (sid is not null)
      {
-       for select fct_state from fct_state where fct_sid = sid do
-         {
-	   inf := fct_inf_clause (fct_state);
-	   sas := fct_sas_clause (fct_state);
-	   inf := inf || ' ' || sas;
-
-           b3s_dbg_out (dbg_out, 'inf: ' || inf);
-	 }
        refr := '/fct/facet.vsp?sid='||sid||'&cmd=refresh';	 
      }
+
+   b3s_parse_inf (sid, params);
+   inf := b3s_render_inf_clause ();
+   inf_parm := b3s_render_inf_params ();
 
    host := http_request_header (http_request_header (), 'Host');  
    langs := http_request_header_full (lines, 'Accept-Language', 'en');
@@ -175,11 +171,15 @@
           <?vsp if (refr is not null) { ?>
                 <li><a href="<?V case when urilookup = '1' then '/fct/facet.vsp?sid=' || sid else refr end ?>">Go Back</a></li>
           <?vsp } ?>      
-                <li><a href="usage.vsp?g=<?U _S ?>&sid=<?V sid ?>&urilookup=<?V urilookup ?>">Usage Statistics</a></li>
+                <li><a href="usage.vsp?g=<?U _S ?>&sid=<?V sid ?>&urilookup=<?V urilookup ?><?V inf_parm ?>">Usage Statistics</a></li>
 <!--                <li><a href="/fct/facet.vsp?sid=<?V sid ?>&cmd=set_class&iri=<?V gr ?>">Choose <?V ''?> as Type</a></li>
                 <li><a href="/fct/facet.vsp?sid=<?V sid ?>&cmd=open_property">Choose <?V ''?> as Property (p)</a></li>
                 <li><a href="">Choose <?V ''?> as Value (o)</a></li> -->
               </ul>
+              <!--h3>Inference</h3>
+              <ul>
+                <li><input type="checkbox" id="sas_enable"><label for="sas_enable">owl:sameAs</label></li>
+              </ul-->
             </div>
         </div>      
 <!-- proptable -->
