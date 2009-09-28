@@ -137,12 +137,7 @@
 							<xsl:value-of select="zip" />
 						</vcard:Pcode>
 					</xsl:if>
-					<xsl:if test="string-length(country) &gt; 0">
-						<vcard:Country rdf:resource="{vi:dbpIRI ('', translate (country, $lc, $uc))}"/>
-						<vcard:Country>
-							<xsl:value-of select="country" />
-						</vcard:Country>
-					</xsl:if>
+			<xsl:call-template name="country"/>
 				</rdf:Description>
 			</xsl:if>
 			<xsl:if test="$what = 'events' or $what = 'event'">
@@ -215,12 +210,7 @@
 								<xsl:value-of select="id" />
 							</opl-meetup:id>
 							<foaf:homepage rdf:resource="{link}" />
-							<xsl:if test="string-length(country) &gt; 0">
-								<vcard:Country>
-									<xsl:value-of select="country" />
-								</vcard:Country>
-								<vcard:Country rdf:resource="{vi:dbpIRI ('', translate (country, $lc, $uc))}"/>
-							</xsl:if>
+				<xsl:call-template name="country"/>
 							<xsl:if test="photo_url != ''">
 								<foaf:depiction rdf:resource="{photo_url}" />
 							</xsl:if>
@@ -287,12 +277,7 @@
 								<xsl:value-of select="id" />
 							</opl-meetup:id>
 							<foaf:homepage rdf:resource="{link}" />
-							<xsl:if test="string-length(country) &gt; 0">
-								<vcard:Country>
-									<xsl:value-of select="country" />
-								</vcard:Country>
-								<vcard:Country rdf:resource="{vi:dbpIRI ('', translate (country, $lc, $uc))}"/>
-							</xsl:if>
+				<xsl:call-template name="country"/>
 							<xsl:if test="photo_url != ''">
 								<foaf:depiction rdf:resource="{photo_url}" />
 							</xsl:if>
@@ -316,5 +301,14 @@
 				</foaf:Document>
 			</xsl:if>
 		</xsl:for-each>
+	</xsl:template>
+	<xsl:template name="country">
+	    <xsl:if test="string-length(country) &gt; 0">
+		<xsl:variable name="cname" select="vi:getCountryName (translate (country, $lc, $uc))"/>
+		<vcard:Country rdf:resource="{vi:dbpIRI ('', $cname)}"/>
+		<vcard:Country>
+		    <xsl:value-of select="$cname" />
+		</vcard:Country>
+	    </xsl:if>
 	</xsl:template>
 </xsl:stylesheet>

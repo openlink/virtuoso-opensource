@@ -396,6 +396,8 @@ EXEC_STMT(
 alter index OAI_SERVERS on DB.DBA.OAI_SERVERS partition cluster replicated', 0)
 ;
 
+DB.DBA.EXEC_STMT('CREATE TABLE DB.DBA.RDF_CARTRIDGES_COUNTRIES(RCC_CODE VARCHAR NOT NULL,RCC_NAME VARCHAR,PRIMARY KEY(RCC_CODE))', 0);
+
 --
 -- The GRDDL filters
 -- This keeps all microformat filters
@@ -908,6 +910,12 @@ create procedure MOAT_APPLY (in ap_uid any, in phrase varchar)
 }
 ;
 
+create procedure DB.DBA.RDF_SPONGE_GET_COUNTRY_NAME (in code varchar)
+{
+  return (select RCC_NAME from DB.DBA.RDF_CARTRIDGES_COUNTRIES where RCC_CODE = code);
+}
+;
+
 create procedure DB.DBA.RDF_SPONGE_DBP_IRI (in base varchar, in word varchar)
 {
   declare res, xp, xt, url varchar;
@@ -1219,6 +1227,7 @@ grant execute on DB.DBA.GET_XBRL_CANONICAL_LABEL_NAME to public;
 grant execute on DB.DBA.GET_XBRL_NAME_BY_CIK to public;
 grant execute on DB.DBA.GET_XBRL_CANONICAL_DATATYPE to public;
 grant execute on DB.DBA.RDF_SPONGE_URI_HASH to public;
+grant execute on DB.DBA.RDF_SPONGE_GET_COUNTRY_NAME to public;
 
 xpf_extension_remove ('http://www.openlinksw.com/virtuoso/xslt:getNameByCIK');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_datatype', fix_identifier_case ('DB.DBA.GET_XBRL_CANONICAL_DATATYPE'));
@@ -1239,6 +1248,7 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:string2date2', 'DB.DBA.
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:proxyIRI', 'DB.DBA.RDF_PROXY_ENTITY_IRI');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:docproxyIRI', 'DB.DBA.RDF_SPONGE_PROXY_IRI');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:dbpIRI', 'DB.DBA.RDF_SPONGE_DBP_IRI');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:getCountryName', 'DB.DBA.RDF_SPONGE_GET_COUNTRY_NAME');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:umbelGet', 'DB.DBA.RM_UMBEL_GET');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:mql-image-by-name', fix_identifier_case ('DB.DBA.RDF_MQL_RESOLVE_IMAGE'));
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:sasIRI', 'DB.DBA.RM_SAMEAS_IRI');
