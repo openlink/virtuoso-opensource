@@ -347,10 +347,11 @@ sticker_init() {
   echo "<dependencies/>" >> $STICKER
   echo "<procedures uninstallation=\"supported\">" >> $STICKER
   echo "  <sql purpose=\"pre-install\"><![CDATA[" >> $STICKER
-  echo "    declare ini, case_mode, cname, is_api varchar; " >> $STICKER
+  echo "    declare ini, case_mode, cname, dyn, is_api varchar; " >> $STICKER
   echo "    ini := virtuoso_ini_path (); " >> $STICKER
   echo "    case_mode := cfg_item_value (ini, 'Parameters', 'CaseMode'); " >> $STICKER
   echo "    cname := cfg_item_value (ini, 'URIQA', 'DefaultHost'); " >> $STICKER
+  echo "    dyn := cfg_item_value (ini, 'URIQA', 'DynamicLocal'); " >> $STICKER
   echo "    is_api := registry_get ('__blog_api_tests__'); " >> $STICKER
   echo "    if (lt (sys_stat ('st_dbms_ver'), '$NEED_VERSION') or __proc_exists ('HTTP_STATUS_SET',2) is null) " >> $STICKER
   echo "      { " >> $STICKER
@@ -368,6 +369,9 @@ sticker_init() {
   echo "      if (not isstring (is_api) and length (cname) = 0) { " >> $STICKER
   echo "	  result ('ERROR', 'The ODS Framework needs DefaultHost to be specified in URIQA INI section.'); " >> $STICKER
   echo "	  signal ('FATAL', 'The ODS Framework needs DefaultHost to be specified in URIQA INI section.'); " >> $STICKER
+  echo " 	}" >> $STICKER
+  echo "      if (not isstring (dyn) or dyn <> '1') { " >> $STICKER
+  echo "	  result ('00000', 'The ODS Framework needs DynamicLocal = 1 to be specified in URIQA INI section.'); " >> $STICKER
   echo " 	}" >> $STICKER
   echo "  ]]></sql>" >> $STICKER
   echo "  <sql purpose=\"post-install\"></sql>" >> $STICKER

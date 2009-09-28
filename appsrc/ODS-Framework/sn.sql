@@ -125,5 +125,18 @@ create procedure wa_sn_user_ent_set ()
 
   registry_set ('__wa_sn_user_ent_set_done', 'done_2');
 };
+wa_sn_user_ent_set ();
 
+create procedure wa_sn_user_ent_set ()
+{
+  if (registry_get ('__wa_sn_user_ent_set_done2') = 'done_2')
+    return;
+  for (select sne_name as _sne_name from sn_person) do
+  {
+    if (not exists (select 1 from SYS_USERS where U_NAME = _sne_name))
+      delete from sn_person where sne_name = _sne_name;
+  }
+
+  registry_set ('__wa_sn_user_ent_set_done2', 'done_2');
+};
 wa_sn_user_ent_set ();
