@@ -992,6 +992,7 @@ create procedure sioc_user_info (
   if (protected is not null)
     {
       DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdfs_iri ('seeAlso'), protected);
+    }
       if (length (cert))
 	{
 	  declare info, modulus, exponent any;
@@ -1012,7 +1013,6 @@ create procedure sioc_user_info (
 	      DB.DBA.RDF_QUAD_URI_L (graph_iri, crt_exp, cert_iri ('decimal'), cast (exponent as varchar));
 	    }
 	}
-    }
   sioc_user_private_info (graph_iri, in_iri, flags, waui_first_name, waui_last_name,
       title, full_name, mail, gender, icq, msn, aim, yahoo, birthday, org, phone, lat, lng,
       webpage, photo, org_page, resume, interests, interestTopics, hcity,
