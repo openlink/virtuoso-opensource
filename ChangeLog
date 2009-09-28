@@ -1,3 +1,462 @@
+2009-09-28 11:51  source
+
+	* Updated version to 5.0.12-rc10
+
+2009-09-28 11:50  source
+
+	* Fixed add certificate even if there is no listener
+
+2009-09-28 11:48  source
+
+	* Added Open Office docs
+
+2009-09-28 11:38  source
+
+	* Fixed failing post after rewrite rules
+
+2009-09-27 22:13  source
+
+	* Fixed check for dynamic local
+	* Fixed ODS UI Profile issues
+
+2009-09-27 22:12  source
+
+	* Fixed issue with eCRM
+
+2009-09-27 22:11  source
+
+	* Fixed ":" sign at top of the page
+
+2009-09-27 21:45  source
+
+	* Added entries to virtrdf inf
+
+2009-09-27 21:43  source
+
+	* Fixed bug in initial display of sponger options
+
+2009-09-27 21:40  source
+
+	* Changed DEBUG to PCRE_DEBUG
+
+2009-09-27 21:40  source
+
+	* Improved support for rdf:XMLLiteral exp in RDF loaders
+
+2009-09-27 21:38  source
+
+	* Improved codegen for isbnode() and the like
+
+2009-09-25 15:55  source
+
+	* Fixed problems in ODS UI profile
+
+2009-09-25 15:55  source
+
+	* Added support for edit/delete related posts
+
+2009-09-25 15:32  source
+
+	* Fixed issue with attached blogs
+
+2009-09-25 13:15  source
+
+	* Fixed portability problem with memmem
+
+2009-09-25 12:17  source
+
+	* Fixed document URI and proxy URI
+
+2009-09-25 12:17  source
+
+	* Fixed bugzilla
+
+2009-09-23 21:34  source
+
+	* Added new iris about primary topic
+
+2009-09-23 21:32  source
+
+	* Added initial support for Concise Bound Description
+	  (define sql:describe-mode "CBD")
+
+2009-09-23 21:31  source
+
+	* Fixed http header for id/entity
+
+2009-09-23 07:57  source
+
+	* Rollback of sameas
+
+2009-09-22 09:44  source
+
+	* Added support for Google Documents
+
+2009-09-22 09:44  source
+
+	* Fixed small bug
+
+2009-09-22 09:43  source
+
+	* Fixed crunchbase
+	* Fixed lang setting
+	* Fixed HTTP headers
+
+2009-09-22 09:31  source
+
+	* Fixed memory leak in TALIS JSON
+
+2009-09-22 09:31  source
+
+	* Fixed copy boxes with no tmp pool copier using regular copier and
+	  add the box to the list of regular boxes to be freed at mp time.
+
+2009-09-21 23:01  source
+
+	* Fixed TALIS JSON serialization
+
+2009-09-21 19:52  source
+
+	* Fixed redundand optimization of valmode when a better valmode is found
+	  in non-NULLable variable inside OPTIONAL member.
+
+2009-09-19 22:46  source
+
+	* Removed redundant close button
+	* Fixed layout in file listing
+
+2009-09-19 18:06  source
+
+	* Added optimization for bif:COUNT
+
+2009-09-18 16:30  source
+
+	* Fixed GPF on SPARQL query with external variable in aggregate in
+	  result-set of a scalar subquery
+	* Added support for HTML parsing mode in RDFa parser
+	* Added RDFXML_DEBUG macro
+
+2009-09-18 16:28  source
+
+	* Fixed set default to rdf/xml since ODE will be broken
+
+2009-09-18 15:07  source
+
+	* Regenerated driver and tsuite
+
+2009-09-18 15:07  source
+
+	* Added reference to xml-apis.jar which is needed for JDK 1.4.2
+
+2009-09-18 14:07  source
+
+	* Fixed use HashMap for objsToClose
+
+2009-09-18 09:07  source
+
+	* Regenerated drivers
+
+2009-09-18 09:07  source
+
+	* Fixed Sesame 2 and 3 providers to require JDK 1.6 and virtjdbc4.jar
+
+2009-09-18 08:58  source
+
+	* Rebuild driver
+
+2009-09-18 08:57  source
+
+	* Fixed building Jena Provider with JDK1.4
+
+2009-09-17 22:28  source
+
+	* Fixed porting problem with flex 2.5.35
+
+2009-09-17 20:24  source
+
+	* Added support for Google spreadsheet
+
+2009-09-17 20:23  source
+
+	* Added atomdoc2rdf
+
+2009-09-17 14:38  source
+
+	* Rebuild drivers
+
+2009-09-17 14:35  source
+
+	* Fixed issues with handling Virtuoso syntax
+
+2009-09-17 14:35  source
+
+	* Fixed running query on VirtDataSource
+
+2009-09-17 09:12  source
+
+	* Fixed problem with vad installation
+
+2009-09-17 09:12  source
+
+	* Fixed atom-pub endpoint
+
+2009-09-16 19:54  source
+
+	* Fixed problem with UI generating accounts with neither SQL nor
+	  DAV privileges
+
+2009-09-16 10:38  source
+
+	* Added conversations
+
+2009-09-16 10:37  source
+
+	* Fixed showing special characters
+
+2009-09-16 10:30  source
+
+	* Added support for SCORE_LIMIT in bif:contains
+	* Fixed problem with non-ascii characters in bif:contains
+
+2009-09-16 09:05  source
+
+	* Fixed building of xhtml_ent.h
+
+2009-09-16 08:06  source
+
+	* Fixed SPARUL INSERT of very large dictionaries
+
+2009-09-15 20:44  source
+
+	* Fixed RDF gems
+
+2009-09-15 20:42  source
+
+	* Added check for memmove
+
+2009-09-15 20:19  source
+
+	* Added settable callstack_on_exception parameter
+
+2009-09-15 20:17  source
+
+	* Fixed tests to check for bif_xtree_sum64 regression
+
+2009-09-15 19:23  source
+
+	* Added started adding docIRI to every document
+	* Fixed primary topic to be proxy IRI
+	* Fixed small bugs in cartridges
+
+2009-09-15 09:53  source
+
+	* Fixed bif_xtree_sum64
+
+2009-09-15 09:14  source
+
+	* Regenerated driver
+
+2009-09-15 09:10  source
+
+	* Added support for VirtDataSource constructors
+	* Added new samples
+
+2009-09-14 07:38  source
+
+	* Regenerated drivers
+
+2009-09-14 07:37  source
+
+	* Fixed XA recovery after TM crash
+
+2009-09-13 19:19  source
+
+	* Fixed indentation and whitespace
+
+2009-09-13 14:29  source
+
+	* Fixed sindice
+	* Fixed pt
+	* Fixed YT
+	* Fixed crunchbase
+	* Fixed doc iri for grddl & rdfa
+
+2009-09-13 14:20  source
+
+	* Fixed next col dfe eq should not overwrite the previous, else going
+	  to make too many -_all-eqs
+
+2009-09-13 14:19  source
+
+	* Fixed upd subq conditions should not mess with keyset flag
+
+2009-09-13 14:18  source
+
+	* Fixed when placing after test exp on inx int, placing cols fails
+	  because the super of the test exp is the inx int and only the
+	  first table is checked to see if it defines the ot requested by
+	  the test exp, instead of checking them all
+
+2009-09-13 14:15  source
+
+	* Fixed missing BF_IRI for blank nodes
+
+2009-09-13 14:12  source
+
+	* Fixed reporting error diagnostics
+
+2009-09-11 20:59  source
+
+	* Fixed .isparql and .rq serialization for advanced and qbe tabs
+	* Fixed image path in DAV browser when saving
+	* Fixed encoding and namespace-related issues in .isparql files
+	  executing XSL
+
+2009-09-11 09:54  source
+
+	* Updated version to 5.0.12-rc9
+
+2009-09-11 09:54  source
+
+	* Added AC_CONFIG_MACRO_DIR
+
+2009-09-11 09:52  source
+
+	* Fixed RDFa parser
+
+2009-09-11 09:51  source
+
+	* Fixed do not escape full urls
+
+2009-09-10 10:26  source
+
+	* Added initial support for RDFa parser
+
+2009-09-10 10:25  source
+
+	* Fixed AUTO mode subexpressions in a str(NULL)
+
+2009-09-10 10:24  source
+
+	* Fixed placeholders in TCN rules
+
+2009-09-10 10:24  source
+
+	* Fixed server variable HTTPS to return "on" similar to Apache
+
+2009-09-08 15:01  source
+
+	* Check immortal ref count of uname inside mtx
+
+2009-09-07 13:41  source
+
+	* Fixed disable unused variables
+
+2009-09-07 13:38  source
+
+	* Refactored internal classes
+	* New metadata and sponger options handling
+	* Fixed login / preferences behaviour
+	   - no login window upon load
+	   - to save/load, login to backend dav server first
+	* Fixed Layout/fonts
+	* Fixed iSPARQL now survives reload on HTML5 browsers
+	* Fixed Ubiquity command and bookmarklet
+	* Fixed Metadata (DC) for queries saved with .isparql XML format
+	* Added Splash screen and other OpenLink branding
+
+2009-09-07 13:28  source
+
+	* Fixed geospecies curies
+	* Fixed about links
+
+2009-09-07 13:26  source
+
+	* Fixed browsing of public folders
+
+2009-09-05 15:28  source
+
+	* Added error logging in result
+	* Fixed cartridges
+	* Fixed labels and uri encoding
+
+2009-09-04 09:35  source
+
+	* Fixed swap label and title
+
+2009-09-03 23:58  source
+
+	* Fixed about/html
+
+2009-09-03 23:57  source
+
+	* Fixed flag to disable doc iri change to perform w3c tests
+
+2009-09-03 23:37  source
+
+	* Fixed wrappers for baseUri
+
+2009-09-03 23:36  source
+
+	* Fixed title
+
+2009-09-03 23:35  source
+
+	* Added more formats
+
+2009-09-03 23:33  source
+
+	* Fixed internal API for storing recordings
+
+2009-09-03 23:33  source
+
+	* Fixed tcn support
+
+2009-09-03 14:46  source
+
+	* Rebuild drivers
+
+2009-09-03 14:41  source
+
+	* Fixed problem with pooled connections
+
+2009-09-03 10:20  source
+
+	* Fixed missing double-quote
+
+2009-09-02 21:51  source
+
+	* Fixed document IRI
+
+2009-09-02 21:51  source
+
+	* Fixed links in head
+
+2009-09-02 21:48  source
+
+	* Fixed MemRealloc must preserve content of existing buffer
+
+2009-09-02 13:14  source
+
+	* Fixed label and UI
+
+2009-09-01 20:25  source
+
+	* Added 'Group By' for listed messages
+
+2009-08-31 19:21  source
+
+	* Fixed foaf:topic
+	* Fixed errors in mappers
+
+2009-08-31 19:20  source
+
+	* Fixed problem with image only when outside of /about/id scope
+
+2009-08-28 23:28  source
+
+	* Fixed use local part as label when possible
+
 2009-08-28 13:24  source
 
 	* Updated documentation
