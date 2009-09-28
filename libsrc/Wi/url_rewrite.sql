@@ -953,7 +953,9 @@ create procedure DB.DBA.HTTP_URLREWRITE_APPLY_PATTERN (in pattern varchar, in st
    declare arr, pars, ret, tmp any;
    declare inx, len, i int;
    declare pos int;
+   declare host varchar;
 
+   host := registry_get ('URIQADefaultHost');
    arr := regexp_parse (pattern, str, 0);
    if (arr is null)
      return NULL;
@@ -982,6 +984,17 @@ create procedure DB.DBA.HTTP_URLREWRITE_APPLY_PATTERN (in pattern varchar, in st
      }
    if (pos > 0 and pos < length (format))
      ret := ret || subseq (format, pos);
+  if (isstring (host))
+    {
+      ret := replace (ret, '^{URIQADefaultHost}^', host);
+      if (strstr (ret, '^{DynamicLocalFormat}^') is not null)
+        {
+          if (strchr (host, ':') is not null)
+            ret := replace (ret, '^{DynamicLocalFormat}^', sprintf ('http://%{WSHostName}U:%{WSHostPort}U'));
+          else
+            ret := replace (ret, '^{DynamicLocalFormat}^', sprintf ('http://%{WSHost}U'));
+        }
+    }
    return ret;
 }
 ;
@@ -1037,6 +1050,8 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
   if (length (rel_uri))
     rel_uri := aref (split_and_decode (rel_uri), 0);
   mime := http_request_header_full (lines, 'Accept', '*/*'); -- /* the accept header */
+  if (registry_get ('__debug_url_rewrite') in ('1', '2'))
+    dbg_printf ('Accept: [%s]', mime);
   lang := http_request_header_full (lines, 'Accept-Language', '*');
   --enc  := http_request_header_full (lines, 'Accept-Encoding', '*');
   cset := http_request_header_full (lines, 'Accept-Charset', '*');
@@ -1100,10 +1115,15 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
 	   declare s any;
 	   best_q := curr;
 	   best_ct := VM_TYPE;
+	   if (VM_URI like '/%')
+	     best_variant := variant;
+	   else
+	     {
 	   s := string_output ();
 	   http_dav_url (variant, null, s);
 	   s := string_output_string (s);
 	   best_variant := s;
+	     }
 	   best_id := VM_ID;
 	   hook := VM_CONTENT_LOCATION_HOOK;
 	 }

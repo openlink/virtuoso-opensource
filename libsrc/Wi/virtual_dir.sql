@@ -1000,7 +1000,7 @@ ext_http_proxy (in url varchar := null,
   declare stat, msg, metas, accept, rset, triples, ses, arr any;
   declare local_qry integer; local_qry := 0;
 
-  declare params any;
+  declare params, ids any;
   params := http_param ();
   http_header ('');
 
@@ -1055,8 +1055,8 @@ end_loop:;
 	    {
 	      accept := http_request_header_full (http_request_header(), 'Accept', '*/*');
 	      accept := HTTP_RDF_GET_ACCEPT_BY_Q (accept);
-	      if (accept is null)
-	        accept := '';
+	      if (accept is null or accept = '*/*')
+	        accept := 'application/rdf+xml';
 	    }
 	  if ("output-format" is not null)
 	    {
@@ -1064,6 +1064,8 @@ end_loop:;
 		accept := 'application/rdf+xml';
 	      else if ("output-format" = 'ttl' or "output-format" = 'turtle' or "output-format" = 'n3')
 		accept := 'text/rdf+n3';
+              else if ("output-format" = 'nt' or "output-format" = 'txt')
+                accept := 'text/n3';
 	    }
           stat := '00000';
 	  if (get not in ('soft', 'replacing'))
@@ -1073,9 +1075,21 @@ end_loop:;
 	  else
 	    login := '';
 	  host := http_request_header(http_request_header(), 'Host', null, null);
-	  pref := 'http://'||host||http_map_get ('domain')||'/rdf/';
+	  ids := vector ('rdf', 'id', 'id/entity');
+	  foreach (varchar idn in ids) do
+	    {
+	      pref := 'http://' || host || http_map_get ('domain') || '/' || idn || '/';
 	  if (url like pref || '%')
+		{
 	    url := subseq (url, length (pref));
+		  if (url like 'http/%')
+		    url := 'http:/' || subseq (url, 4);
+		  else if (url like 'https/%')
+		    url := 'https:/' || subseq (url, 5);
+		  else if (url like 'nodeID/%')
+		    url := 'nodeID:/' || subseq (url, 6);
+		}
+	    }
 	  -- escape chars which are not allowed
 	  url := replace (url, '''', '%27');
 	  url := replace (url, '<', '%3C');
