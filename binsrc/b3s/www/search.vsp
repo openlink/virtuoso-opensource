@@ -82,7 +82,7 @@
     </div>
     <div id="content">
       <table class="description">
-          <form name="form1" action="search.vsp" method="post">
+          <form name="form1" action="search.vsp" method="GET">
             <input type="hidden" name="q" value="<?= smode ?>"/>
             <tr>
               <td>
