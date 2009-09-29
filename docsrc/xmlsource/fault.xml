@@ -1,0 +1,667 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<sect1 label="fault.xml" id="fault">
+  <title>Virtuoso Cluster Fault Tolerance</title>
+  <abstract>This chapter discusses fault tolerance and how to configure it. The following aspects are covered:</abstract>
+
+  <itemizedlist mark="bullet">
+    <listitem>Setting up a fault tolerant logical cluster inside a physical cluster. Creating tables and indices for fault tolerance.</listitem>
+    <listitem>Interpreting status and error messages and managing failures and recovery.</listitem>
+    <listitem>Optimizing a schema for fault tolerance:  For read-intensive workloads, the work can be profitably split among many copies of the same partition.</listitem>
+    <listitem>RDF specifics relating to fault tolerance.</listitem>
+    <listitem>Splitting a cluster so that one copy of the partitions does bulk load while another serves online queries.</listitem>
+  </itemizedlist>
+
+    <sect2 id="faultfaulttolerinto">
+      <title>Introduction</title>
+
+      <para>Virtuoso Cluster supports optional fault tolerance by storing
+partitions in more than one copy if desired. This is a cluster-only
+feature, providing for transparent fail-over with fully transactional
+semantics. This feature is in no way related to the other forms of
+replication discussed in the Virtuoso documentation. This feature can
+be used for load balancing of read-intensive workloads and for fault
+tolerance of arbitrary workloads in a tightly coupled cluster. This
+feature is not suited for synchronizing geographically distributed
+copies.</para>
+
+      <para>Fault tolerance is enabled at the level of logical cluster. Making the logical cluster __ALL
+fault tolerant has the effect of making all the normally non fault tolerant database objects into
+fault tolerant ones.</para>
+    </sect2>
+    <sect2 id="faultfaulttolersampleconfig">
+      <title>Sample Configuration</title>
+      <para>We will take a minimal example of a fault tolerant setup with 4 server processes, grouped in two groups of
+two mutually mirroring servers. The word host here refers to a single server process. How these are distributed
+over physical hardware is a separate question. Each host (i.e. server process) has exclusive control over its database
+files. Two processes may not share files.</para>
+
+<programlisting><![CDATA[
+create cluster DUP default group ("Host1", "Host2"), group ("Host3", "Host4");
+]]></programlisting>
+
+      <para>Each group clause in the statement defines a set of mutually
+replicating, interchangeable processes. The cluster is operational as
+long as at least one process for each group is available. If all the
+processes in one group are down, the tables created in the cluster
+will not be available in their entirety. Even if some fragment of a
+table were unavailable, the remaining fragments are still available
+for transactions that concern only them.</para>
+
+      <para>For all tables or indices created in a cluster with fault tolerance,
+partitioning is applied for determining which group of the groups
+listed in the create cluster statement gets which individual entry.
+After this, all the hosts that make up the group are guaranteed to
+hold a copy of said entry at the commit of each transaction.</para>
+
+      <para>Regardless of the definition of logical clusters, there are global
+functions at the level of the physical cluster which need to be
+replicated for fault tolerance. For these functions include resolving
+distributed deadlocks and allocating sequence ranges. See the
+discussion of sequences in the cluster programming guide for more on
+this. These global functions are handled by a single process called
+the master. To keep a standby master that is synchronously kept in
+sync with the first master, one can define multiple master processes,
+as follows:</para>
+
+<programlisting><![CDATA[
+Master = Host1
+Master2 = Host2
+]]></programlisting>
+
+      <para>These lines in the cluster.ini files of the servers constituting the cluster
+mean that if Host1 is available, it will perform the functions of the master
+and if it is not available, these functions go to Host2. If both are available,
+then Host1 does the work and synchronously updates Host2 before returning the
+results to the requesting host.</para>
+
+      <para>To create a table or index in a specific logical cluster, one uses the cluster option in alter
+index or create index. For example:
+</para>
+
+<programlisting><![CDATA[
+create table T1 (row_no int primary key, string1 varchar);
+alter index  t1 on t1 partition cluster DUP (row_no int (0hexffff00));
+create index string1 on t1 partition cluster DUP (string1 varchar (5));
+]]></programlisting>
+
+      <para>These statements define that t1 will be kept in duplicate copies spread as declared for logical
+cluster DUP. Partitioning can be altered only when the table concerned is empty.
+To make an existing non-replicated table into a replicated one, use alter table rename, as follows:
+</para>
+
+<programlisting><![CDATA[
+create table T1 (row_no int primary key, string1 varchar);
+alter index  t1 on t1 partition (row_no int (0hexffff00));
+create index string1 on t1 partition  (string1 varchar (5));
+]]></programlisting>
+
+      <para>The table is created in the default logical cluster, which by default is not replicated.
+Now fill the table with a large amount of data.
+Then do the move over to replicated storage with minimum effect on overall server availability,
+follow the below steps:
+</para>
+
+<programlisting><![CDATA[
+drop index string2;
+alter table t1 rename t1_old;
+
+create table T1 (row_no int primary key, string1 varchar);
+alter index  t1 on t1 partition cluster DUP (row_no int (0hexffff00));
+create index string1 on t1 partition cluster DUP (string1 varchar (5));
+
+log_enable (2);
+]]></programlisting>
+
+      <para>This turns on row autocommit and disables logging for the session. This is necessary, as
+otherwise the statements below will abort due to running out of rollback space if the table is large.
+Disabling logging also saves some extra time.
+</para>
+
+<programlisting><![CDATA[
+insert into t1 select * from t1_old;
+delete from t1_old;
+drop table t1_old;
+]]></programlisting>
+
+      <para>First deleting the contents and then dropping the table shortens the global atomic section that corresponds
+to dropping the table. Otherwise all servers would be unavailable also for the time of deleting the content,
+which might take long.
+</para>
+
+      <para>Finally:</para>
+
+<programlisting><![CDATA[
+cl_exec (checkpoint');
+]]></programlisting>
+
+      <para>Makes the operation permanent. All the above work would be lost in the event of
+any failure since it was done without logging.</para>
+
+<programlisting><![CDATA[
+log_enable (1);
+]]></programlisting>
+
+      <para>Restores default transaction and logging behavior to the session.</para>
+
+      <para>If T1 were very large, e.g. 100's of G or more, then one could do
+checkpoint after each step so as not to keep a full copy of all
+indices of t1 in the old and new versions simultaneously. Dropping
+an index or deleting rows actually frees the space at the next
+checkpoint. One could also write a procedure for copying the table in
+parts and run many such copies in parallel for different parts of the
+table. This would have obvious advantages for moving terabytes of
+data.</para>
+    </sect2>
+
+    <sect2 id="faultfaulttolertransactions">
+      <title>Transactions</title>
+
+      <para>Replication of partitions is entirely synchronous and transactional,
+with two phase commit. Replicated partitions show serializable
+semantics insofar the transactions dealing with replicated partitions
+are in serializable isolation.</para>
+
+      <para>These processes are transparent to the developer and administrator.
+One can program as one would in the case of a non-clustered database.
+The below has bearing mostly on optimization.</para>
+
+      <para>A read with read committed isolation can be done in any copy of a partition. Read
+committed reads make no locks nor do they wait for locks. For
+uncommitted updated rows, they show the pre-update state. Thus read
+committed can be freely load balanced over all copies of a partition.</para>
+
+      <para>A read with repeatable or serializable isolation will always be done
+on the first copy of a partition. This is done so as to have proper
+serialization of locking. If a row is locked for repeatable read and
+another transaction wishes to lock it for update, the latter will
+wait. Thus, transactions with locking resolve locking issues on the
+first copy of each partition. The first copy is the copy of the
+partition held by the first process mentioned in the partition's group clause of a
+create cluster. If the process is not available, the role of the
+first copy falls on the second, third and so on. If no host of the
+hosts mentioned in the group clause is available, the operation cannot
+be performed. We will later define what we mean by available.</para>
+
+      <para>Updates to replicated partitions are performed concurrently on all the
+copies of the partition. Updates are replicated as they are made, not
+at time of commit, hence there is almost no added latency arising from
+keeping replicated partitions: When one is ready to commit, all are.</para>
+
+      <para>Distributed deadlock detection is handled by the master host. In the
+event of its failure, the function is taken over by the first node to
+be available in the sequence of master succession, as indicated above.</para>
+    </sect2>
+    <sect2 id="faultfaulttolerdivid">
+      <title>Dividing Virtuoso Hosts Over Physical Machines</title>
+
+      <para>This section describes how Virtuoso hosts should be placed on actual machines
+for optimal balance and fault tolerance.</para>
+
+      <para>All hosts (Virtuoso processes) constituting a cluster should be of the
+same size. This means that most importantly they should have an equal
+amount of memory allocated in virtuoso.ini.</para>
+
+      <para>The situation is simplest if all physical machines are of the same
+spec. This is not necessary though since a larger machine can host
+more Virtuoso hosts (processes). For balanced resource use, the
+machines should however have an equal amount of memory per core.</para>
+
+      <para>Naturally, all hosts mentioned in the same group clause in a create
+cluster statement must reside on different physical hardware. This is
+also true of the master host list in the cluster.ini file. Putting
+them on the same machine or a different virtual machine on the same
+machine defeats the whole point of fault tolerance. If VM's are
+automatically balanced on a data center network, one should keep the
+above in mind. It is recommended to use real machines with real
+network interfaces for database.</para>
+
+      <para>In each host group, the first host gets some more load than the other
+hosts. This is because serializable reading always must go to the
+first in the group. Thus, the first hosts should be evenly spread
+over the hardware, so do not put all the group firsts on the same
+machine.</para>
+
+      <para>Supposing 2 machines with 8 cores each, one would have hosts 1-16, 1-8
+on the first, and 9-16 on the second. For analytics, have one core per
+host, for OLTP, one can have two or four cores per host.</para>
+
+      <para>In this case, one would write the create cluster as follows:</para>
+
+<programlisting><![CDATA[
+create cluster XX group ("Host1", "Host9"), group ("Host10", "Host2"), group ("Host3", "Host11"), group ("Host12", "Host4"),
+  group ("Host5", "Host13"), group ("Host14", "Host6"), group ("Host7", "Host15"), group ("Host16", "Host8");
+]]></programlisting>
+
+      <para>Both machines have 4 firsts and four seconds. One could vary the
+memory allocation per process so as to have maybe 20% more RAM per
+host for a first of group than for the others in the group. This may
+optimize the situation when all are online and will not excessively
+penalize the fallback position.</para>
+
+      <para>Varying the amount of memory depending on whether a host is first or
+second makes sense only for read intensive workloads. Dividing firsts
+and seconds evenly over the hardware makes sense for all workloads.</para>
+    </sect2>
+    <sect2 id="faultfaulttolermng">
+      <title>Managing Availability</title>
+
+      <para>This section concerns prerelease 3117 amd onwards and is not final.
+Later versions have higher level management features but the primitives
+discussed here continue to apply.</para>
+
+      <para>In its normal state, a cluster has all the constituent processes up and all state is kept synchronous.</para>
+
+      <para>When a host unexpectedly disconnects, the following takes place:</para>
+
+<itemizedlist mark="bullet">
+  <listitem>All transactions which have a write affecting this host become uncommittable. The application will see this immediately, as soon as it does anything within the transaction.</listitem>
+  <listitem>All work proceeding at the request of the failed host on other hosts is aborted.</listitem>
+  <listitem>All remaining network connections to the failed host are disconnected.</listitem>
+</itemizedlist>
+
+      <para>If a query was proceeding and it had state on the failing host, the failure will
+be reported to the client of the query and the query will be aborted. A subsequent
+query, if in read committed isolation,  will automatically avoid the failed host and
+use surviving ones. Thus, the application sees a failure as a retryable abort
+of a transaction or query.</para>
+
+      <para>For update transactions, if all copies of a partition are not online,
+the update cannot be made. In order to allow proceeding with updates
+even after a failure, the failed host must be declared removed. This
+means that if it were to come back on, it would not get any updates or
+queries from the other hosts until it was explicitly admitted back into
+the cluster.</para>
+
+      <para>In version 6.00,3116, enabling updates when all hosts are not online
+must be done manually. In other words, read only work will proceed
+uninterrupted but updates will be prohibited if all hosts are not
+online. Read balancing and re-enabling updates when all hosts have
+rejoined the cluster is done automatically.</para>
+
+      <para>In order to declare that a host has for the time being left the
+cluster or has returned to the cluster after having left it, one uses
+the function cl_host_enable ().</para>
+
+      <para>For example, suppose a hardware failure that takes multiple processes
+(hosts) offline. As long as for each there is at least one surviving
+host of the same group (as per create cluster), read operations
+proceed normally. But to re-enable writes for the time the failed
+hardware is replaced, the operator must inform the cluster that the
+failed hosts are not expected to return immediately and that no
+further reference to them should be made, specifically, the rest
+should not attempt to keep them up to date.</para>
+
+      <para>This is done with cl_host_enable. This is a SQL stored procedure. Log in
+as dba on a surviving master host and do:</para>
+
+<programlisting><![CDATA[
+SQL> cl_host_enable (1, 0);
+]]></programlisting>
+
+      <para>This will abort all the transactions pending at the time and declare host 1
+to be off limits to the rest of the cluster. If Host1 was playing the role
+of the master, the master role is automatically transferred to the next one in the succession.</para>
+
+      <para>The succession of master hosts is declared in the cluster.ini with the settings of
+Master, Master2, Master3 and so on. All cluster.ini files must agree.</para>
+
+      <para>After this, even though Host1 is now acknowledged offline, updates can proceed.</para>
+
+      <para>To rejoin a recovered host into a cluster, so as to again have an additional
+copy of the formerly incompletely replicated partition, one can do</para>
+
+<programlisting><![CDATA[
+SQL>cl_host_enable (1, 1);
+]]></programlisting>
+
+      <para>This states that Host1 is again part of the cluster. This statement
+must be executed on an online master node of the cluster, thus not on
+Host1 itself.</para>
+
+      <para>Supposing that the database files of Host1 have been lost in the
+failure and that Host1 and Host2 were in the same group. The restore
+would go by taking the cluster offline, copying the database files of
+Host1 to Host1 and starting the database again. Then the dba would
+issue cl_host_enable (1) and Host1 would again be available.</para>
+
+      <para>To do this without downtime, one may do the following:</para>
+
+<itemizedlist mark="bullet">
+  <listitem>Disable checkpoints on Host2:  checkpoint_interval (0);  Operations continue. Copy the database files of host2 to host1.</listitem>
+  <listitem>Start host1.</listitem>
+  <listitem>Put host2 and all hosts with which host2 occurs in the same group in read-only mode:  cl_read_only (2, 1)</listitem>
+  <listitem>copy the transaction file of host2 to host1 and replay it with replay ().</listitem>
+  <listitem>rejoin host1 to the cluster with cl_host_enable (1, 1);</listitem>
+  <listitem>Re-enable updates with cl_read_only (2, 0);</listitem>
+  <listitem>re-enable checkpoint on host2 with checkpoint_interval (), setting it to its previous value. See virtuoso.ini.</listitem>
+</itemizedlist>
+
+      <para>Further versions perform these operations automatically. The above
+procedure is error prone. Do not try it unless you understand exactly
+why each step is made and what its effects are supposed to be.</para>
+    </sect2>
+
+    <sect2 id="faultfaulttoleroptm">
+      <title>Optimizing Schema for Fault Tolerance</title>
+
+      <para>Having the working set in memory is the single most important factor
+of database performance. When storing partitions in duplicate, one in
+principle also requires double the memory to keep adequate working set
+during write operations.</para>
+
+      <para>However, most web and data warehouse workloads are read-intensive. In
+this situation, the reading load can be balanced over the replicated
+copies. If this balancing were done at random or round robin, all
+copies would eventually maintain the same working set. In other
+words, 64G of RAM spread over two machines would behave like 32G. If
+the data volune is larger than memory, it makes sense to have the
+different replicas cache different parts of the partition they share.</para>
+
+      <para>Consider, using the example of cluster DUP mentioned above:</para>
+
+<programlisting><![CDATA[
+create table customer (c_id int primary key, c_name varchar, c_state varchar);
+alter index customer on customer partition cluster DUP (c_id int (0hexffff0000));
+
+create table orders (o_id int primary key, o_c_id  int, o_date datetime, o_value numeric);
+alter index orders on orders partition cluster DUP (o_id int (0hexffff0000));
+create index o_c_id on orders (o_c_id) partition cluster DUP (o_c_id (0hexffff0000));
+]]></programlisting>
+
+      <para>This has the effect of saying that the 16 low bits of c_id or o_id do not
+participate in the partition hash. The hash is made from bits 32-16.
+Thus c_id 0-64K will be in one partition, 64K-128K in another,
+128K-192K in a third and so on, these partitions are then spread by
+hash over the host groups listed in the create cluster.</para>
+
+      <para>Now, doing the join</para>
+
+<programlisting><![CDATA[
+select sum (o_value) from customer, orders where c_state = 'MA' and c_id = o_c_id;
+]]></programlisting>
+
+      <para>will take o_c_id's 0-32K from the first copy of the first partition, id's 32K-64K from
+the second copy of the first partition, c_o_id's 64K-96K from the first copy
+of the second partition and so forth.</para>
+
+      <para>The load is split by applying range partition on the low bits of id's,
+so that a system with 64G split over two replicas behaves like 64G RAM
+for read committed reading but as 32G of RAM for writing. This is
+enabled by leaving low bits of id's outside of the partition hash by
+specifying a mask, as shown above.</para>
+    </sect2>
+
+    <sect2 id="faultfaulttolerinterprt">
+      <title>Interpreting Status Messages</title>
+
+      <para>There are special error codes and status reports dealing with cluster failures.</para>
+
+      <para>The status function with an argument of 'cluster_d' shows a host by host report of the cluster:</para>
+
+<programlisting><![CDATA[
+SQL> status ('cluster_d');
+]]></programlisting>
+
+      <para>If all is normal, the message is as described in the cluster
+administration section. If some hosts are down, meaning that they do
+not accept network connections at the cluster port, these are first
+listed as being down. Then follows the summary status line and a
+status line for all the hosts that can be connected to.</para>
+
+      <para>A host being contactable over the cluster protocol does not mean that it
+is online or in sync with the rest.</para>
+
+      <para>If a physical cluster has no logical clusters that are in duplicate,
+there is no redundancy, except for the built in redundancy of schema.</para>
+
+      <para>If a host is not in the online state, an extra line in the cluster status
+report describes the state in more detail. The state can be one of:</para>
+
+<itemizedlist mark="bullet">
+  <listitem>roll forward - The host is recovering from log. The count of transactions replayed to date is shown after this.</listitem>
+  <listitem>removed - The host is considered down and no attempt is made to contact it until it explicitly rejoins the cluster. This is controlled with the cl_host_enable function.</listitem>
+</itemizedlist>
+
+      <para>It is possible that the host considers itself in one state and the
+host showing the report thinks that it is in some other state.
+If this is so, the status report mentions it.</para>
+
+      <para>Applications see cluster failures through the following SQL states:</para>
+
+<itemizedlist mark="bullet">
+  <listitem>08C01 - A host cannot be contacted or can be contacted but is not in the online state</listitem>
+  <listitem>08C02 - An operation that previously had a connection to a host finds that it no longer has the connection.</listitem>
+  <listitem>08C03 - A master only operation was tried on a non-master. Indicates possibility of divergent understanding of master succession. This is expected to reset itself.</listitem>
+  <listitem>08C04 - A write was attempted on a partition that is flagged read only, as per cl_read_only.</listitem>
+  <listitem>08C05 - A request was refused because the host serving the request thinks the requesting host is not admitted to cluster as per cl_host_enable, i.e. was removed and not reintroduced.</listitem>
+  <listitem>08C06 - A cluster operation was not made because the host thinks it is not joined to the cluster either because it has not finished roll forward or because it is marked removed by ch_host_enable.</listitem>
+</itemizedlist>
+    </sect2>
+
+    <sect2 id="faultfaulttoleradmapi">
+      <title>Administration API</title>
+
+      <para>This section documents the SQL procedures used for managing failures and setting hosts on and off line.
+These are stored procedures for DBA group users only, all in the DB.DBA. qualifier/owner.
+The dba will typically not call these directly. These are intended for use by management scripts and internal functions.
+</para>
+
+<programlisting><![CDATA[
+cl_host_enable (in host_no int, in flag int)
+]]></programlisting>
+
+      <para>The host_no is the number as in the cluster.ini Host&lt;nn&gt; entries. The
+flag is 1 for joined and 0 for removed.</para>
+
+      <para>This controls whether a host is excluded from operations. Only a previously
+excluded host can be rejoined to the cluster with this function. This is not
+for adding new hosts. A host will be excluded from operations if it is long
+term unavailable,e.g. is running on failed hardware. If the unavailability
+is only for the time of a restart, removing the host is not generally practical.</para>
+
+      <para>If a host is rejoined to its cluster, then the caller of this function
+asserts that the joining host is up to date. If it were not up to
+date one could get discrepancy between copies of partitions, which is
+a loss of integrity and can be hard to detect. Being up to date
+means, for all objects of all replicated logical clusters where this
+host participates, having the exact same logical content in the host's
+(i.e. server process') database files as in the databases of the hosts
+which are in the same group as the rejoining host.</para>
+
+      <para>This function must be called on a master host that is itself in the
+online state. The setting is recorded on all master hosts. All
+non-master hosts update their copy of this setting from the first
+available master in the master succession. There is always at least
+one master node that is in the online state. If they all are offline,
+then the cluster in general is unavailable and the last one cannot be
+removed from online state with cl_host_enable.</para>
+
+      <para>This function aborts all pending transactions, so that the whole
+cluster has no uncommitted state. This puts all the hosts that can be
+reached into an atomic state where they only accept operations from
+the master who initiated the atomic state. If the atomic state cannot
+be obtained within a timeout, the operation fails and can be retried.
+This is possible if two hosts attempt to get an atomic state and
+deadlock or if rollback of pending state takes longer than the
+timeout. Once in atomic state, all masters record the change in
+cluster join status and all non-masters get a notification of the
+change. Once all these are acknowledge and logged, the atomic
+section ends.</para>
+
+      <para>An application whose transaction was aborted in this manner will see
+this as a deadlock, with the 40001 SQL state and a message mentioning
+global atomic state.</para>
+
+<programlisting><![CDATA[
+cl_read_only (in host_no int, in flag int)
+]]></programlisting>
+
+      <para>This sets the partitions of which host host_no has a copy into read only state.
+A flag of 1 means read only, 0 means read write. This does not abort transactions
+but will prevent any new updates touching the partition. Transactions with
+existing uncommitted state in the partition can commit. To abort all transactions
+first, use this with __atomic (1) first and then __atomic (0) to finish the atomic state.
+This is a volatile state and does not survive server restart. This is intended for
+use in bringing copies of partitions up to date, which is a process that would have
+to be retried anyway if interrupted by failure.</para>
+
+<programlisting><![CDATA[
+__atomic (in flag int)
+]]></programlisting>
+
+      <para>This places the cluster in global atomic mode. A flag of 1 starts
+this and a flag of 0 finishes this. Row autocommit is also implicitly
+enabled. During such time, no host of the cluster accepts connection
+through web or SQL ports and only serves requests made by the
+transaction which started the atomic section with __atomic (1). When
+an atomic section starts, all transactions are aborted and are
+guaranteed to all be rolled back upon successful completion of
+__atomic (1). New transactions will also not start until __atomic (0)
+is called. Starting an atomic section may fail by timeout if rollback
+takes too long or if two competing __atomic(1) requests deadlock with
+each other.</para>
+
+<programlisting><![CDATA[
+cl_control (in host_no int, in op varchar, in new_value any := null)
+]]></programlisting>
+
+      <para>This returns the value associated with cluster related settings. If a
+new value is specified the old value is returned and the new value is
+set.</para>
+
+      <para>The op specifies the setting. It is one of:</para>
+
+<itemizedlist mark="bullet">
+  <listitem>cl_master_list - succession of master hosts as an array of host numbers. Read only.</listitem>
+  <listitem>cl_host_list- Array of all host numbers. Read only.</listitem>
+  <listitem>ch_group_list -  List of host numbers of hosts which occur in the same group
+with host no. These are the hosts which share a partition with host no according
+to at least one create cluster statement. Read only.</listitem>
+  <listitem>cl_host_map - String with a character per each host number up to the maximum existing
+host number. The character is represents the status as known by the host on which thus
+function is called. The new_value argument can be specified for changing this setting.</listitem>
+  <listitem>ch_status - Returns/sets the status of host no as known by this host.</listitem>
+  <listitem>cl_master_host - Return/set the host number used by this host for master only requests.</listitem>
+</itemizedlist>
+
+      <para>The status of a host is one of:</para>
+
+<itemizedlist mark="bullet">
+  <listitem>0 - online</listitem>
+  <listitem>1 - removed</listitem>
+  <listitem>2 - temporarily offline</listitem>
+  <listitem>4 - pending roll forward</listitem>
+  <listitem>7 - host number is not used</listitem>
+</itemizedlist>
+    </sect2>
+
+    <sect2 id="faultfaulttolerrdfspecf">
+      <title>RDF Specifics</title>
+
+      <para>To set up fault tolerant RDF storage, one can use the template provided in the
+clrdfdup.sql file in the distribution.</para>
+
+      <para>The below applies to testing with prerelease 06.00.3116.The fault tolerance function in
+6.00.3116 is provided as a demonstration of concept exclusively and is not intended for
+production use and has not been tested in production. The below steps will demonstrate the
+basic capability but one should not try things not explicitly mentioned.</para>
+
+      <para>The test starts with an empty database. Edit the create cluster statement in the clrdfdup.sql
+file to correspond to the setup at hand. Then load the file:</para>
+
+<programlisting><![CDATA[
+SQL> load clrdfdup.sql;
+SQL> cl_exec (checkpoint');
+]]></programlisting>
+
+      <para>Now load data. The load will be non-transactional but now will keep two copies of each partition.
+Use log_enable (2) and ttlp or rdf_load_db..rdfxml as described in the relevant documentation.</para>
+
+      <para>After some data is loaded, do another checkpoint.</para>
+
+<programlisting><![CDATA[
+SQL> cl_exec ('checkpoint');
+]]></programlisting>
+
+      <para>You may query the data. Now shut down one of the servers. Querying
+should remain possible as long as one host in each group is online.
+Start the previously stopped host and stop of another from the same
+group. Querying remains possible.</para>
+
+      <para>Do not try non-transactional loading when all hosts are not online. This produces incorrect results.
+Do not stop hosts during non-transactional loading. This also produces inconsistent results.</para>
+
+      <para>Transactional loading is safe for stopping servers during loading but will
+stop the loading with an error. The removed host must be either brought back
+online or removed with cl_host_enable for the loading to proceed.</para>
+
+      <para>Do not test transactional RDF loading  with 6.00.3116. This version is tested for duplicate
+partitions with SQL data but incompletely with RDF.</para>
+    </sect2>
+
+ <sect2 id="faultfaulttolerpragram">
+   <title>Fault Tolerance Programming</title>
+<para>This section describes aspects of fault tolerance in writing cluster
+aware SQL applications. Specifically, partitioned functions, which
+are a way of explicitly dividing procedural execution among hosts of a
+cluster, have issues and features that are specific to fault tolerance
+and must be treated  separately.</para>
+
+<para>In using a daq or dpipe, one can specify whether the function is to be partitioned like:</para>
+
+<orderedlist>
+  <listitem>Read committed read - low bits not used for partition can be used for intra partition balancing, as described in the schema optimization section.</listitem>
+  <listitem>The function is called on all replicas, as an update.</listitem>
+  <listitem>The function is called on the first replica, like a read for update</listitem>
+  <listitem>The function is called on all but the first copy of the partition.</listitem>
+</orderedlist>
+
+<para>Combinations of 3 and 4 can be used if the function, for example, allocates sequence
+numbers which must be then replicated over the remaining copies. Thus the function
+that allocates the new sequence number is called with in mode 3 and another function
+that uses this number is called in mode 4.</para>
+
+<para>For a daq_call call, these options are specified in the 5th argument, flags.</para>
+
+<itemizedlist mark="bullet">
+  <listitem>0 - read committed</listitem>
+  <listitem>1 - write all</listitem>
+  <listitem>2 - write first</listitem>
+  <listitem>3 - write all but first</listitem>
+</itemizedlist>
+
+<para>For dpipes, this is stated in the dpipe_define call's flags argument. The values to be or'ed over
+the flags are:</para>
+
+<itemizedlist mark="bullet">
+  <listitem>0 - read committed</listitem>
+  <listitem>1 - update all</listitem>
+  <listitem>4 - update first copy</listitem>
+  <listitem>8 - update all but first copy.</listitem>
+</itemizedlist>
+
+    </sect2>
+  </sect1>
+

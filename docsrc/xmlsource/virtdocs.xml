@@ -285,6 +285,7 @@
 <!ENTITY rdf_backup_metadata    		SYSTEM "funcref/rdf_backup_metadata.xml">
 <!ENTITY rdf_graph_group_create                 SYSTEM  "funcref/rdf_graph_group_create.xml">
 <!ENTITY rdf_graph_group_ins                    SYSTEM  "funcref/rdf_graph_group_ins.xml">
+<!ENTITY rdfs_rule_set                          SYSTEM  "funcref/rdfs_rule_set.xml">
 
 <!ENTITY rdf_load_rdfxml        		SYSTEM "funcref/rdf_load_rdfxml.xml">
 <!ENTITY rdf_load_rdfxml_mt     		SYSTEM "funcref/rdf_load_rdfxml_mt.xml">
@@ -298,6 +299,8 @@
 <!ENTITY rdf_64bit_upgrade              	SYSTEM "funcref/rdf_64bit_upgrade.xml">
 <!ENTITY rdf_convert_rdfxml_to_ttl      	SYSTEM "funcref/rdf_convert_rdfxml_to_ttl.xml">
 
+<!--
+- Uncommented for Virtuoso 6 Release-->
 <!ENTITY iri_split                              SYSTEM  "funcref/iri_split.xml">
 <!ENTITY xml_get_ns_prefix                      SYSTEM  "funcref/xml_get_ns_prefix.xml">
 <!ENTITY xml_get_ns_uri                         SYSTEM  "funcref/xml_get_ns_uri.xml">
@@ -835,10 +838,8 @@ ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\<!ENTITY \1 		SYSTEM "xmlref\/
 <!ENTITY isql 					SYSTEM "isql.xml">
 <!ENTITY perfdiag               		SYSTEM "perfdiag.xml">
 <!ENTITY ptune 					SYSTEM "ptune.xml">
-	<!ENTITY clusteroperation 	SYSTEM "clusteroperation.xml">
-	<!ENTITY fault 	                SYSTEM "fault.xml">
+<!ENTITY fault 	                SYSTEM "fault.xml">
 <!ENTITY sqlreference 				SYSTEM "sqlreference.xml">
-        <!ENTITY clusterprogramming 	SYSTEM "clusterprogramming.xml">
 <!ENTITY functions 				SYSTEM "functions.xml">
 <!ENTITY sqlprocedures 				SYSTEM "sqlprocedures.xml">
 <!ENTITY hooks	 				SYSTEM "hooks.xml">
@@ -971,7 +972,6 @@ ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\<!ENTITY \1 		SYSTEM "xmlref\/
 &sampleapps;
 &concepts;
 &server;
-&adminui;
 &accessinterfaces;
 &sqlreference;
 &sqlprocedures;

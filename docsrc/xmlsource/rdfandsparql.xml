@@ -589,6 +589,64 @@ at http://example.com:8890/sparql/.</para>
 automatically, using the length of query text as the criterion. If the SPARQL endpoint is accessed without
 any URL and requisite SPARQL protocol parameters, an interactive HTML page for capturing SPARQL input will
 be presented.</para>
+<sect4 id="rdfsupportedprotocolendpointuricustm"><title>Customizing SPARQL Endpoint Page</title>
+<para>The following steps describe how to change the sparql endpoint page:
+</para>
+<orderedlist>
+  <listitem>Create a patched version of the procedure named WS.WS."/!sparql/". Its source text resides in libsrc/Wi/sparql_io.sql .</listitem>
+  <listitem>Name the new version of the procedure from above with different name, for ex.: WS.WS."/!sparql_new/" </listitem>
+  <listitem>Load it in ISQL:
+<programlisting><![CDATA[
+SQL>create procedure WS.WS."/!sparql_new/" (inout path varchar, inout params any, inout lines any)
+{..
+http('			<p>TEST This query page is designed to help you test OpenLink Virtuoso
+..
+}
+;
+Done. -- 60 msec.
+SQL>
+]]></programlisting>
+</listitem>
+  <listitem>Execute:
+<programlisting><![CDATA[
+SQL>DB.DBA.VHOST_REMOVE (lpath=>'/sparql');
+]]></programlisting>
+</listitem>
+  <listitem>Execute:
+<programlisting><![CDATA[
+SQL>DB.DBA.VHOST_DEFINE (lpath=>'/sparql/', ppath => '/your-function-name/', is_dav => 1, vsp_user => 'dba', opts => vector('noinherit', 1));
+-- so for ex.:
+SQL>DB.DBA.VHOST_DEFINE (lpath=>'/sparql/', ppath => '/!sparql_new/', is_dav => 1, vsp_user => 'dba', opts => vector('noinherit', 1));
+]]></programlisting>
+</listitem>
+  <listitem>Execute:
+<programlisting><![CDATA[
+SQL>grant execute on WS.WS."your-function" to "SPARQL";
+-- so for ex.:
+SQL>grant execute on WS.WS."/!sparql_new/" to "SPARQL";
+]]></programlisting>
+   <itemizedlist mark="bullet">
+     <listitem>Note: you should use double quotes around name of "SPARQL" user and the upper case, otherwise it will be confused with keyword SPARQL.</listitem>
+   </itemizedlist>
+</listitem>
+  <listitem>Execute:
+<programlisting><![CDATA[
+SQL>registry_set ('/your-function-name/', 'no_vsp_recompile');
+-- so for ex.:
+SQL>registry_set ('/!sparql_new/', 'no_vsp_recompile');
+]]></programlisting>
+   <itemizedlist mark="bullet">
+     <listitem>Note: if this step is omitted, the HTTP server will try to find the physical path in DAV storage or a filesystem, to read and compile the content as a procedure.</listitem>
+   </itemizedlist>
+</listitem>
+  <listitem>Access the sparql endpoint page which now as result should contain your changes:
+     <figure id="spqc1" float="1">
+       <title>SPARQL Endpoint page</title>
+       <graphic fileref="ui/spqc1.png"/>
+     </figure>
+</listitem>
+</orderedlist>
+</sect4>
 </sect3>
 
 <sect3 id="rdfrequestparamsextensions"><title>SPARQL Protocol Extensions</title>
@@ -1976,7 +2034,9 @@ ___________________________________
 
 1 Rows. -- 10 msec.
 ]]></programlisting>
-
+<para><emphasis>Simple example how to define rule:</emphasis></para>
+See details <link linkend="rdfsparqlruleexamples">here</link> how to define rule context that is
+initialized from the contents of a given graph.
 </sect3>
 
 <sect3 id="rdfsparqlendpointimplnotes"><title>Implementation Notes</title>
@@ -2680,6 +2740,7 @@ Thus the presence of indexing data about an object does not imply that it is nec
 </para>
 <para>The above functions return one if the rule is added or deleted and zero if the call was redundant (the rule has been added before or there's no rule to delete).
 </para>
+<sect5 id="rdfsparqlrulespecifywhatindexexample"><title>Example</title>
 <programlisting><![CDATA[
 
 -- We load Tim Berners-Lee's FOAF file into a graph called 'people'.
@@ -2743,6 +2804,7 @@ The filter syntax is more flexible in that it allows passing extra options to th
 <programlisting><![CDATA[
 sparql select * from <people> where { ?s ?p ?o . filter (bif:contains(?o,  '"Timo*"')) };
 ]]></programlisting>
+</sect5>
 <note><title>Note:</title><para>It is advisable to upgrade to the latest version of Virtuoso before adding free-text rules for the first time.
 This is especially the case if large amounts of text are to be indexed. The reason is that the free-text index on RDF may be changed in future versions 
 and automatic upgrading of an existing index data into the new format may take much more time than indexing from scratch.</para></note>
@@ -3925,8 +3987,8 @@ descriptions can correctly join described subgraphs into one big
 subgraph by filling in a dictionary that contains blank node id strings
 as keys and IRI_ID's assigned to those strings as dependent data. 
 The sharing of the same node dictionary by all readers of an application will ensure that no blank node is duplicated.</para>
-<sect3
-id="rdfapidataimport"><title>Data Import</title>
+<sect3 id="rdfapidataimport"><title>Data Import</title>
+<sect4 id="rdfapidataimportttlp"><title>Using TTLP</title>
 <para>DB.DBA.TTLP() parses TTL (TURTLE or N3 resource) and places its triples into DB.DBA.RDF_QUAD.</para>
 <programlisting>
 create procedure DB.DBA.TTLP (
@@ -3955,6 +4017,8 @@ Note that this example folder is a subfolder of the Virtuoso Server working dire
 <programlisting>
 SQL> DB.DBA.TTLP (file_to_string_output ('.\tmp\data.ttl'), '', 'http://my_graph', 0);
 </programlisting>
+</sect4>
+<sect4 id="rdfapidataimportttlpmt"><title>Using TTLP_MT</title>
 <para>The DB.DBA.TTLP_MT() procedure is like DB.DBA.TTLP() but loads the file on multiple threads,
 using parallel I/O and multiprocessing if available. The function does not leave a transaction log.
 Hence, after a successful load, one should execute the checkpoint statement to make sure that a
@@ -3967,6 +4031,8 @@ create procedure DB.DBA.TTLP_MT (
     in graph varchar,  -- target graph IRI, parsed triples will appear in that graph.
     in flags int) -- flags, use 0
 </programlisting>
+</sect4>
+<sect4 id="rdfapidataimportttlpmt"><title>Using RDF_LOAD_RDFXML_MT</title>
 <para>For loading large resources when transactional integrity is not important (loading of a single resource may take more than one transaction)
 you can use also the <emphasis>DB.DBA.RDF_LOAD_RDFXML_MT()</emphasis> procedure:</para>
 <programlisting>
@@ -4050,6 +4116,8 @@ http://www.w3.org/People/Berners-Lee/card#i   http://xmlns.com/foaf/0.1/knows   
 ..........
 
 ]]></programlisting>
+</sect4>
+<sect4 id="rdfapidataimportttlphash"><title>Using RDF_TTL2HASH</title>
 <para>The DB.DBA.RDF_TTL2HASH() does not load TTL content, instead it returns a dictionary of triples in 'long valmode'.</para>
 <programlisting>
 create function DB.DBA.RDF_TTL2HASH (
@@ -4064,6 +4132,8 @@ Add 2 to suppress error messages on blank node verbs.
 Add 4 to allow variables instead of blank nodes.
 Add 8 to silently skip triples with literal subjects.
 </para>
+</sect4>
+<sect4 id="rdfapidataimportloadrdfxml"><title>Using RDF_LOAD_RDFXML</title>
 <para>The DB.DBA.RDF_LOAD_RDFXML() procedure parses RDF/XML and places its triples into DB.DBA.RDF_QUAD.</para>
 <programlisting>
 create procedure DB.DBA.RDF_LOAD_RDFXML (
@@ -4071,6 +4141,9 @@ create procedure DB.DBA.RDF_LOAD_RDFXML (
     in base_iri varchar,   -- base IRI to resolve relative IRIs
     in graph_iri varchar ) -- the IRI of destination graph
 </programlisting>
+<para>See <link linkend="rdfsparqlrulespecifywhatindexexample">example</link></para>.
+</sect4>
+<sect4 id="rdfapidataimportloadrdfuri"><title>Using RDF_QUAD_URI, RDF_QUAD_URI_L and RDF_QUAD_URI_L_TYPED</title>
 <para>To insert a single quad into DB.DBA.RDF_QUAD() table, use one of these procedures:</para>
 <programlisting>
 -- Simple insertion of a quad where the object is a node
@@ -4089,6 +4162,7 @@ create procedure DB.DBA.RDF_QUAD_URI_L_TYPED (
   in dt any,        -- datatype as IRI string or IRI_ID, can be NULL
   in lang varchar ) -- language as string or NULL
 </programlisting>
+</sect4>
 <para>Arguments g_uri, s_uri and p_uri of these three functions should be IRI strings or IRI_IDs.
 All string arguments should be in UTF-8 encoding, otherwise they will be stored but are not queryable via SPARQL.</para>
 </sect3>
@@ -4301,18 +4375,20 @@ any, in storage_name any, in options any)
 DB.DBA.SPARQL_DESC_DICT_xxx_PHYSICAL (in subj_dict any, in consts any,
 in graphs any, in storage_name any, in options any)
 ]]></programlisting>
-  <para>In a new blank database, only one such pair of such procedures is created,
-<emphasis>DB.DBA.SPARQL_DESC_DICT_SPO</emphasis> and <emphasis>DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL</emphasis>; so
-only the define <emphasis>sql:describe-mode "SPO"</emphasis> makes sense. This pair of procedures
+  <para>In a new blank database, only two such pairs of procedures are created.
+Procedures <emphasis>DB.DBA.SPARQL_DESC_DICT_SPO</emphasis> and <emphasis>DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL</emphasis>
+are for <emphasis>sql:describe-mode "SPO"</emphasis>. This pair of procedures
 searches for all triples where the input IRIs are used as subjects; they are faster than the default
 routine which searches for all triples where the input IRIs are used as subjects or objects.
+Similarly, <emphasis>DB.DBA.SPARQL_DESC_DICT_CBD</emphasis> and <emphasis>DB.DBA.SPARQL_DESC_DICT_CBD_PHYSICAL</emphasis>
+are for <emphasis>sql:describe-mode "CBD"</emphasis>. CBD stands for Concise Bounded Description, Nokia-style.
   </para>
-  <para>Both procedures have the same semantics but the second one is used if and
+  <para>In each pair, both procedures have the same semantics but the second one is used if and
 only if the SPARQL compiler can prove that all subjects to process are
 from physical storage <emphasis>(DB.DBA.RDF_QUAD)</emphasis>. Thus the second procedure 
 will not search for subjects in RDF Views.
   </para>
-  <para>Both procedures should return a dictionary with triples as keys and
+  <para>Each procedure should return a dictionary with triples as keys and
 integer 1 as values. So the dictionary is filled by calls like:
   </para>
 <programlisting><![CDATA[
@@ -4929,6 +5005,37 @@ system</listitem>
 </sect2>
 </sect1>
 <sect1 id="rdfinsertmethods"><title>RDF Insert Methods in Virtuoso</title>
+    <sect2 id="rdfinsertmethodsapifunct"><title>Using API functions</title>
+      <itemizedlist mark="bullet">
+        <listitem><link linkend="rdfapidataimportttlp">Using the DB.DBA.TTLP() function</link>
+          <itemizedlist mark="bullet">
+            <listitem>Note: use this function for loading Turtle</listitem>
+           </itemizedlist>
+        </listitem>
+        <listitem><link linkend="rdfapidataimportttlpmt">Using the DB.DBA.TTLP_MT() function</link>
+          <itemizedlist mark="bullet">
+            <listitem>Note: use this function for loading triples from file on multiple threads</listitem>
+           </itemizedlist>
+        </listitem>
+        <listitem><link linkend="rdfapidataimportttlpmt">Using the DB.DBA.RDF_LOAD_RDFXML_MT() function</link>
+          <itemizedlist mark="bullet">
+            <listitem>Note: Use this function for loading large resources when transactional integrity is not important (loading of a single resource may take more than one transaction)</listitem>
+           </itemizedlist>
+        </listitem>
+        <listitem><link linkend="rdfapidataimportttlphash">Using the DB.DBA.RDF_TTL2HASH() function</link>
+          <itemizedlist mark="bullet">
+            <listitem>Note: use this function to get dictionary of triples in 'long valmode'.</listitem>
+           </itemizedlist>
+        </listitem>
+        <listitem><link linkend="rdfapidataimportloadrdfxml">Using the DB.DBA.RDF_LOAD_RDFXML() function</link>
+          <itemizedlist mark="bullet">
+            <listitem>For loading RDF/XML, the best way is to split the data to be loaded into
+multiple streams and load these in parallel using this function.</listitem>
+           </itemizedlist>
+        </listitem>
+      </itemizedlist>
+      <para>See <link linkend="rdfperfloading">more details</link> for loading Performance Tuning specifics.</para>
+    </sect2>
     <sect2 id="rdfinsertmethodshttppost"><title>HTTP Post using Content-Type: application/sparql-query</title>
 	<para>With POST can be accomplished SPARQL Insert/Update etc.</para>
 	<para>The result is in the rdf_quad.</para>
@@ -6562,6 +6669,11 @@ DB.DBA.TTLP_MT and DB.DBA.RDF_LOAD_RDFXML_MT, are also available.</para>
 loads then into the quad store. TTLP parses TTL (Turtle or N3) and places its triples into quad
 storage. Ordinarily, cartridges use RDF_LOAD_RDFXML. However there may be occasions where you want
 to insert statements written as TTL, rather than RDF/XML, in which case you should use TTLP.</para>
+  <tip><title>See Also:</title>
+    <itemizedlist mark="bullet">
+      <listitem><link linkend="rdfinsertmethodsapifunct">Loading RDF using API functions</link></listitem>
+    </itemizedlist>
+  </tip>
         <para><emphasis>Attribution</emphasis></para>
         <para>Many of the OpenLink supplied cartridges actually use RM_RDF_LOAD_RDFXML to load data
 into the quad store. This is a thin wrapper around RDF_LOAD_RDFXML which includes in the generated
@@ -8064,6 +8176,11 @@ http (sprintf ('<http://dbpedia.org/resource/%s>
 content := string_output_string (sess);
 DB.DBA.TTLP (content, new_origin_uri, coalesce (dest, graph_iri));
 ]]></programlisting>
+  <tip><title>See Also:</title>
+    <itemizedlist mark="bullet">
+      <listitem><link linkend="rdfinsertmethodsapifunct">Loading RDF using API functions</link></listitem>
+    </itemizedlist>
+  </tip>
       </sect5>
       <sect5 id="virtuosospongerelatedfuncdebugpoutput">
         <title>Debug Output</title>
@@ -8778,6 +8895,112 @@ following procedure needs to run from <emphasis>isql</emphasis> to build the fre
 VT_INC_INDEX_DB_DBA_RDF_OBJ ()
 ]]></programlisting>
 </listitem>
+</orderedlist>
+</sect4>
+<sect4 id="virtuosospongerfaceusagest">
+<title>Usage Statistics</title>
+<orderedlist>
+   <listitem>Use the Faceted Browser Search and Find User Interface to search for information on "Kingsley Idehen":
+     <figure id="VirtFacetUsage1" float="1">
+       <title>Usage Statistics</title>
+       <graphic fileref="ui/VirtFacetUsage1.png"/>
+     </figure>
+   </listitem>
+   <listitem>Results of the following form should be returned for the data sponged:
+     <figure id="VirtFacetUsage2" float="1">
+       <title>Usage Statistics</title>
+       <graphic fileref="ui/VirtFacetUsage2.png"/>
+     </figure>
+   </listitem>
+   <listitem>Click on a URL, for ex.
+<programlisting><![CDATA[
+http://lod.openlinksw.com/describe/?url=http%3A%2F%2Fcommunity.linkeddata.org%2Fdataspace%2Fperson%2Fkidehen2%23this"
+]]></programlisting>
+   </listitem>
+   <listitem>Results about Kingsley Idehen as property/value list should be returned:
+     <figure id="VirtFacetUsage3" float="1">
+       <title>Usage Statistics</title>
+       <graphic fileref="ui/VirtFacetUsage3.png"/>
+     </figure>
+   </listitem>
+   <listitem>Click the "Usage Statistics" link under "Actions" shown right of the list.
+   </listitem>
+   <listitem>Results of usage statistics for Kingsley Idehen grouped in 4 tabs should be shown:
+<orderedlist>
+   <listitem>Referenced by Graphs: shows how many times the URI is found as subject in the relevant graph(s):
+<programlisting><![CDATA[
+sparql
+select ?g count (*)
+where
+  {
+    graph ?g { <URI> ?p ?o }
+  }
+group by ?g
+order by desc 2
+limit 20;
+]]></programlisting>
+     <figure id="VirtFacetUsage4" float="1">
+       <title>Usage Statistics</title>
+       <graphic fileref="ui/VirtFacetUsage4.png"/>
+     </figure>
+   </listitem>
+   <listitem>Source Graphs:  shows how many times the URI is found as object in the relevant graph(s):
+<programlisting><![CDATA[
+sparql
+select ?g count (*)
+where
+  {
+    graph ?g { ?s ?p <URI>  }
+  }
+group by ?g
+order by desc 2
+limit 20;
+]]></programlisting>
+     <figure id="VirtFacetUsage5" float="1">
+       <title>Usage Statistics</title>
+       <graphic fileref="ui/VirtFacetUsage5.png"/>
+     </figure>
+   </listitem>
+   <listitem>Direct co-references: shows results as subject and calculated rank, based on running transitive closure over owl:sameAs of the URI in subject or object:
+<programlisting><![CDATA[
+sparql
+select ?syn ( sql:rnk_scale (<LONG::IRI_RANK> (?syn)))
+where
+  {
+    { select ?s ?syn
+      where
+       {
+         {?syn owl:sameAs ?s } union {?s owl:sameAs ?syn}
+       }
+    }
+    option (transitive, t_distinct, t_min (0), T_in (?s), t_out (?syn)) . filter (!isliteral (?syn) &amp;&amp; ?s = <URI> )
+  }
+order by desc 2
+limit 20;
+]]></programlisting>
+     <figure id="VirtFacetUsage6" float="1">
+       <title>Usage Statistics</title>
+       <graphic fileref="ui/VirtFacetUsage6.png"/>
+     </figure>
+   </listitem>
+   <listitem>Indirect co-references: shows expanded results for objects concur with the URI by IFP:
+<programlisting><![CDATA[
+sparql
+select distinct ?syn ?p ?o (sql:rnk_scale (<LONG::IRI_RANK> (?syn)))
+where
+  { <URI> ?p ?o .  filter (0 != (<LONG::bif:rdf_is_sub> ("b3sifp", ?p, lod:ifp_like, 3))) .
+    ?syn ?p ?o .
+}
+order by desc 4
+limit 20;
+]]></programlisting>
+     <figure id="VirtFacetUsage7" float="1">
+       <title>Usage Statistics</title>
+       <graphic fileref="ui/VirtFacetUsage7.png"/>
+     </figure>
+   </listitem>
+</orderedlist>
+   </listitem>
 </orderedlist>
 </sect4>
 </sect3>
@@ -30719,22 +30942,33 @@ the cardinality guesses of the patterns involved.</para>
 </sect2>
     <sect2 id="rdfperfloading"><title>Loading</title>
 	<para>There are many functions for loading RDF text, in RDF/XML and Turtle.</para>
-	<para>For loading RDF/XML, the best way is to ssplit the data to be loaded into multiple streams and load these in parallel using <link linkend="fn_rdf_load_rdfxml"><function>rdf_load_rdfxml ()</function></link>. To avoid running out of rollback space for large files and in order to have multiple concurrent loads not interfere with each other, the row autocommit mode should be enabled.</para>
+	<para>For loading RDF/XML, the best way is to split the data to be loaded into
+multiple streams and load these in parallel using <link linkend="fn_rdf_load_rdfxml"><function>RDF_LOAD_RDFXML ()</function></link>.
+To avoid running out of rollback space for large files and in order to have multiple concurrent loads not
+interfere with each other, the row autocommit mode should be enabled.</para>
 	<para>For example, </para>
 <programlisting><![CDATA[
 log_enable (2);
 -- switch row-by-row autocommit on and logging off for this session
-db..rdf_load_rdfxml (file_to_string_output ('file.xml'), 'base_uri', 'target_graph');
+DB.DBA.RDF_LOAD_RDFXML (file_to_string_output ('file.xml'), 'base_uri', 'target_graph');
 -- more files here ...
 checkpoint;
 ]]></programlisting>
-<para>Loading a file with text like the above with isql will load the data.  Since the transaction logging is off, make a manual checkpoint at the end to ensure that data is persisted upon server restart since there is no roll forward log.</para>
-<para>If large amounts of data are to be loaded, run multiple such streams in parallel. One may have for example 6 streams for 4 cores. This
-means that if up to two threads wait for disk, there is still work
+<para>Loading a file with text like the above with isql will load the data. Since the transaction
+logging is off, make a manual checkpoint at the end to ensure that data is persisted upon server
+restart since there is no roll forward log.</para>
+<para>If large amounts of data are to be loaded, run multiple such streams in parallel. One may have
+for example 6 streams for 4 cores. This means that if up to two threads wait for disk, there is still work
 for all cores.</para>
 <para>Having substantially more threads than processors or disks is not particularly useful.</para>
-<para>There exist multithreaded load functions which will load one file on multiple threads.  Experience shows that loading multiple files on one thread per file is better.</para>
-<para>For loading Turtle, some platforms may have a non-reentrant Turtle parser.  This means that only one load may run at a time.  One can try this by calling <link linkend="rdfapidataimport"><function>ttlp ()</function></link> from two sessions at the same time. If these do not execute concurrently, then the best way may be to try <link linkend="rdfapidataimport"><function>ttlp_mt</function></link> and see if this runs faster than a single threaded ttlp call.</para>
+<para>There exist multithreaded load functions which will load one file on multiple threads. Experience
+shows that loading multiple files on one thread per file is better.</para>
+<para>For loading Turtle, some platforms may have a non-reentrant Turtle parser. This means that only
+one load may run at a time. One can try this by calling
+<link linkend="rdfapidataimport"><function>ttlp ()</function></link> from two sessions at the same time.
+If these do not execute concurrently, then the best way may be to try
+<link linkend="rdfapidataimport"><function>ttlp_mt</function></link> and see if this runs faster than
+a single threaded ttlp call.</para>
 
        <sect3 id="rdfperfloadinglod"><title>Loading LOD RDF data</title>
 <para>To load the rdf data to LOD instance, perform the following steps:
