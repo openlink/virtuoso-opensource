@@ -327,12 +327,25 @@ extern void sparyyerror_impl_1 (sparp_t *xpp, char *raw_text, int yystate, short
 
 #define SPARP_EQUIV(sparp,idx) ((sparp)->sparp_equivs[(idx)])
 
+#ifdef DEBUG
+#define ASSERT_EQUIV_INDEX(f,l,sparp,eq_inx) do { \
+  if (eq_inx < 0) \
+    spar_internal_error (sparp, t_box_sprintf (100, "%s:%d: negative equiv index", f, l)); \
+  if (eq_inx >= sparp->sparp_equiv_count) \
+    spar_internal_error (sparp, t_box_sprintf (100, "%s:%d: equiv index is too big", f, l)); \
+ } while (0)
+#else
+#define ASSERT_EQUIV_INDEX(f,l,sparp,eq_inx);
+#endif
+
 #define SPARP_FOREACH_GP_EQUIV(sparp,groupp,inx,eq) \
   do { \
     int __max_##inx = groupp->_.gp.equiv_count; \
     for (inx = 0; inx < __max_##inx; inx ++) \
       { \
-        sparp_equiv_t *eq = SPARP_EQUIV(sparp, groupp->_.gp.equiv_indexes[inx]);
+        sparp_equiv_t *eq; \
+        ASSERT_EQUIV_INDEX (__FILE__, __LINE__, sparp, groupp->_.gp.equiv_indexes[inx]); \
+        eq = SPARP_EQUIV(sparp, groupp->_.gp.equiv_indexes[inx]);
 
 #define END_SPARP_FOREACH_GP_EQUIV \
 	  }} while (0)
@@ -341,7 +354,9 @@ extern void sparyyerror_impl_1 (sparp_t *xpp, char *raw_text, int yystate, short
   do { \
     for (inx = groupp->_.gp.equiv_count; inx--;) \
       { \
-        sparp_equiv_t *eq = SPARP_EQUIV(sparp, groupp->_.gp.equiv_indexes[inx]);
+        sparp_equiv_t *eq; \
+        ASSERT_EQUIV_INDEX (__FILE__, __LINE__, sparp, groupp->_.gp.equiv_indexes[inx]); \
+        eq = SPARP_EQUIV(sparp, groupp->_.gp.equiv_indexes[inx]);
 
 #define END_SPARP_REVFOREACH_GP_EQUIV \
 	  }} while (0)

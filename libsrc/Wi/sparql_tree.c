@@ -588,6 +588,8 @@ sparp_equiv_get (sparp_t *sparp, SPART *haystack_gp, SPART *needle_var, int flag
   for (eqctr = 0; eqctr < eqcount; eqctr++)
     {
       curr_eq = SPARP_EQUIV (sparp, eq_idxs[eqctr]);
+      if (NULL == curr_eq)
+        spar_internal_error (sparp, "sparp_" "equiv_get() at gp with deleted eq in use");
       varnamecount = BOX_ELEMENTS (curr_eq->e_varnames);
       for (varnamectr = 0; varnamectr < varnamecount; varnamectr++)
         {
@@ -1044,7 +1046,8 @@ sparp_equiv_restrict_by_constant (sparp_t *sparp, sparp_equiv_t *pri, ccaddr_t d
   return SPARP_EQUIV_MERGE_OK;
 }
 
-void sparp_equiv_remove (sparp_t *sparp, sparp_equiv_t *eq)
+void
+sparp_equiv_remove (sparp_t *sparp, sparp_equiv_t *eq)
 {
   SPART *eq_gp = eq->e_gp;
   ptrlong eq_own_idx = eq->e_own_idx;

@@ -2087,6 +2087,11 @@ sparp_gp_trav_equiv_audit_inner_vars (sparp_t *sparp, SPART *curr, sparp_trav_st
       SPARP_FOREACH_GP_EQUIV (sparp, curr, eq_ctr, eq)
         {
           int recv_ctr;
+          if (NULL == eq)
+            {
+              spar_audit_error (sparp, "sparp_" "gp_trav_equiv_audit_inner_vars(): gp with deleted eq in use");
+              continue; /* spar_audit_error can continue without a signal if runs inside sparp_internal_error in DEBUG mode. */
+            }
           DO_BOX_FAST (ptrlong, recv_idx, recv_ctr, eq->e_receiver_idxs)
             {
               sparp_equiv_t *recv = SPARP_EQUIV (sparp, recv_idx);
@@ -2118,6 +2123,11 @@ sparp_gp_trav_equiv_audit_inner_vars (sparp_t *sparp, SPART *curr, sparp_trav_st
     {
       sparp_equiv_t *eq_by_id, *eq;
       eq_by_id = SPARP_EQUIV (sparp, curr->_.var.equiv_idx);
+      if (NULL == eq_by_id)
+        {
+          spar_audit_error (sparp, "sparp_" "gp_trav_equiv_audit_inner_vars(): curr with deleted eq_by_id in use");
+          return 0;
+        }
       if (eq_by_id->e_gp != gp)
         spar_audit_error (sparp, "sparp_" "gp_trav_equiv_audit_inner_vars(): e_gp of eq_by_id does not match gp, gp %s var %s/%s/%s", gp->_.gp.selid, curr->_.var.selid, curr->_.var.tabid, curr->_.var.vname);
       eq = sparp_equiv_get (sparp, gp, curr, 0);
