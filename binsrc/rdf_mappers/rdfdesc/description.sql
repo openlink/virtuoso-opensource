@@ -111,8 +111,10 @@ rdfdesc_trunc_uri (in s varchar, in maxlen int := 80)
   _s := trim(s);
 
   if (length(_s) <= maxlen) return _s;
-  _h := floor (maxlen / 2);
-  return sprintf ('%s...%s', "LEFT"(_s, _h), "RIGHT"(_s, _h-1));
+  _h := floor ((maxlen-3) / 2);
+  _s := sprintf ('%s...%s', "LEFT"(_s, _h), "RIGHT"(_s, _h-1));
+
+  return _s;
 }
 ;
 
