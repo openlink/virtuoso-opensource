@@ -112,6 +112,7 @@ extern long cfg_disable_vdb_stat_refresh;
 extern char *www_maintenance_page;
 extern char *http_cli_proxy_server;
 extern char *http_cli_proxy_except;
+extern int32 http_enable_client_cache;
 
 #ifdef _SSL
 extern char *https_port;
@@ -1196,6 +1197,8 @@ cfg_setup (void)
   if (cfg_getstring (pconfig, section, "HTTPProxyExceptions", &http_cli_proxy_except) == -1)
     http_cli_proxy_except = NULL;
 
+  if (cfg_getlong (pconfig, section, "HTTPClientCache", &http_enable_client_cache) == -1)
+    http_enable_client_cache = 0;
   /*
    * FIXME: set meaningful default for c_http_proxy_connection_cache_timeout
    * if c_http_max_cached_proxy_connections is set to something whenever
