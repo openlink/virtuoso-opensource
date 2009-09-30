@@ -825,6 +825,13 @@ static caddr_t
 bif_current_proc_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t * qi = (query_instance_t *) qst;
+  long frames = BOX_ELEMENTS (args) > 0 ? bif_long_arg (qst, args, 0, "current_proc_name") : 0;
+
+  while (frames && IS_POINTER (qi))
+    {
+      frames --;
+      qi = qi->qi_caller;
+    } 
   if (IS_POINTER (qi) && qi->qi_query && qi->qi_query->qr_proc_name)
     return box_string (qi->qi_query->qr_proc_name);
   return NEW_DB_NULL;
