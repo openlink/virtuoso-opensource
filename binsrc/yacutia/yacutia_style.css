@@ -589,6 +589,7 @@ label
   font-size: 12pt;
   font-weight: bold;
   text-align: right;
+  margin-top: 3px;
   padding-right: 1em;
   vertical-align: middle;
 }
@@ -655,6 +656,12 @@ label
   background-image: url(images/stl_blu1_grad.gif);
   background-repeat: repeat-x;
 }
+
+#dav_br_list_table span.datetime { font-size: 8pt; }
+#dav_br_list_table span.time { margin-left: 3px;}
+#dav_br_list_table span.filesize { font-style: monospace;font-size: 8pt; }
+#dav_br_list_table span.filesizeunit { margin-left: 0.5em; }
+#dav_br_list_table th.num { text-align: right }
 
 #dav_br_bottom_cmd_ctr
 {

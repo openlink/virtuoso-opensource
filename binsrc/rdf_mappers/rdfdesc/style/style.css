@@ -33,7 +33,7 @@ img { border: none; }
 table.description { border-collapse: collapse; clear: left; font-size: 100%; margin: 0 0 1em; width: 100%; }
 table.description th { background: white; text-align: left; }
 table.description td, table.description th { line-height: 1.2em; padding: 0.2em 0.4em; vertical-align: top; }
-table.description ul { margin: 0; padding-left: 0em; }
+table.description ul { margin: 0; padding-left: 1em; }
 table.description li { list-style-type: square; }
 
 .uri { white-space: nowrap; }

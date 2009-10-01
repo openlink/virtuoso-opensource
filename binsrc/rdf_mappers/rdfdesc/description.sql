@@ -1,3 +1,27 @@
+--
+--
+--  $Id$
+--
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2009 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
 
 TTLP (
 '@prefix foaf: <http://xmlns.com/foaf/0.1/> .
@@ -33,8 +57,8 @@ rdfs_rule_set ('virtrdf-label', 'virtrdf-label');
 
 create procedure rdfdesc_get_lang_by_q (in accept varchar, in lang varchar)
 {
-  declare format, itm, q varchar;
-  declare arr any;
+  declare format, itm varchar;
+  declare arr, q any;
   declare i, l int;
 
   arr := split_and_decode (accept, 0, '\0\0,;');
@@ -111,8 +135,10 @@ rdfdesc_trunc_uri (in s varchar, in maxlen int := 80)
   _s := trim(s);
 
   if (length(_s) <= maxlen) return _s;
-  _h := floor (maxlen / 2);
-  return sprintf ('%s...%s', "LEFT"(_s, _h), "RIGHT"(_s, _h-1));
+  _h := floor ((maxlen-3) / 2);
+  _s := sprintf ('%s...%s', "LEFT"(_s, _h), "RIGHT"(_s, _h-1));
+
+  return _s;
 }
 ;
 
@@ -320,7 +346,11 @@ again:
        if (http_mime_type (_url) like 'image/%' and _url not like 'http://%/about/id/%')
 	 http (sprintf ('<a class="uri" %s href="%s"><img src="%s" height="160" border="0"/></a>', rdfa, rdfdesc_http_url (_url), _url));
        else
+	 {
 	 http (sprintf ('<a class="uri" %s href="%s">%s</a>', rdfa, rdfdesc_http_url (_url), rdfdesc_uri_curie(_url, _label)));
+	   if (prop = __id2in (rdf_sas_iri ()))
+	     http (sprintf ('&nbsp;<a class="uri" href="%s"><img src="images/goout.gif" border="0"/></a>', _url));
+	 }
 
      }
    else if (__tag (_object) = 189)

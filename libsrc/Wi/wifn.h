@@ -708,6 +708,7 @@ extern wcharset_t *ws_default_charset;
 extern char *http_port;
 extern int32 http_threads;
 extern int32 http_thread_sz;
+extern int32 http_enable_client_cache;
 
 
 

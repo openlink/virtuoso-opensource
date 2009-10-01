@@ -840,7 +840,8 @@
 
   user_perm := user_perm || case when self.cb_user_perms_index.ufl_selected <> 0 then 'R' else '' end;
 
-  select count (*) into exist  from DB.DBA.SYS_USERS where U_NAME = user_name;
+  select count (*) into exist from DB.DBA.SYS_USERS where U_NAME = user_name;
+
     if (self.mode = 'create' and check_grants (connection_get ('vspx_user'), '') = 1)
       {
         if (exist > 0)

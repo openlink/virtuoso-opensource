@@ -207,6 +207,9 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     values ('.+\\.od[ts]\x24', 'URL', 'DB.DBA.RDF_LOAD_OO_DOCUMENT', null, 'OO Documents');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+	values ('(.+\\.docx\x24)|(.+\\.xlsx\x24)|(.+\\.pptx\x24)', 'URL', 'DB.DBA.RDF_LOAD_MS_DOCUMENT', null, 'Microsoft Documents');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
 	values ('.+\\.fod[tsg]\x24', 'URL', 'DB.DBA.RDF_LOAD_OO_DOCUMENT2', null, 'OpenOffice Documents');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
@@ -944,7 +947,7 @@ create procedure DB.DBA.RDF_SPONGE_DBP_IRI (in base varchar, in word varchar)
     return base || '#' || word;
 
   uri := sprintf ('ask from <http://dbpedia.org> where { <%s> ?y ?z }', url);
-  res := http_client (url=>sprintf ('http://dbpedia.org/sparql?query=%U', uri), timeout=>30, proxy=>connection_get ('sparql-get:proxy'));
+  res := http_client (url=>sprintf ('http://dbpedia.org/sparql?query=%U&format=xml', uri), timeout=>30, proxy=>connection_get ('sparql-get:proxy'));
   xt := xtree_doc (res);
   xp := cast (xpath_eval('/sparql/boolean/text()', xt) as varchar);
   if (xp = 'true')
@@ -3756,10 +3759,10 @@ create procedure DB.DBA.RDF_LOAD_PICASA (in graph_iri varchar, in new_origin_uri
 		tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
 		transform:
 		xd := xtree_doc (tmp);
-		string_to_file ('pi.xml', tmp, -2);
+		--string_to_file ('pi.xml', tmp, -2);
 		xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/picasa2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
 		xd := serialize_to_UTF8_xml (xt);
-		string_to_file ('pi.rdf', xd, -2);
+		--string_to_file ('pi.rdf', xd, -2);
 		delete from DB.DBA.RDF_QUAD where g =  iri_to_id (coalesce (dest, graph_iri));
 		DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 		return 1;
@@ -4353,12 +4356,44 @@ create procedure DB.DBA.RDF_LOAD_SVG (in graph_iri varchar, in new_origin_uri va
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_MS_DOCUMENT (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare meta, tmp varchar;
+  declare xt, xd any;
+  if (__proc_exists ('UNZIP_UnzipFileFromArchive', 2) is null)
+    return 0;
+  tmp := tmp_file_name ('rdfm', 'doc');
+
+  string_to_file (tmp, _ret_body, -2);
+  meta := UNZIP_UnzipFileFromArchive (tmp, 'docProps/app.xml');
+  file_delete (tmp, 1);
+  if (meta is null)
+    return 0;
+  xt := xtree_doc (meta);
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/ms_doc2rdf.xsl', xt, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
+  xd := serialize_to_UTF8_xml (xt);
+  DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+
+  string_to_file (tmp, _ret_body, -2);
+  meta := UNZIP_UnzipFileFromArchive (tmp, 'docProps/core.xml');
+  file_delete (tmp, 1);
+  if (meta is null)
+    return 0;
+  xt := xtree_doc (meta);
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/ms_doc2rdf.xsl', xt, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
+  xd := serialize_to_UTF8_xml (xt);
+  DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  return 1;
+}
+;
+
+
 create procedure DB.DBA.RDF_LOAD_OO_DOCUMENT (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare meta, tmp varchar;
   declare xt, xd any;
-
   if (__proc_exists ('UNZIP_UnzipFileFromArchive', 2) is null)
     return 0;
   tmp := tmp_file_name ('rdfm', 'odt');
@@ -6568,6 +6603,7 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
 	  st := msec_time ();
 	  rc := call (MC_HOOK) (graph_iri, new_origin_uri, dest, ret_body, dummy, dummy, MC_KEY, new_opts);
 	  RM_GRAPH_PT_CK (graph_iri, dest);
+	  prof_sample (MC_HOOK, msec_time () - st, 1);
           if (registry_get ('__sparql_mappers_debug') = '1')
 	    {
 	      dbg_obj_prin1 ('Return PP rc=', rc, ' ', MC_HOOK, ' time=', (msec_time () - st)/1000.0);

@@ -1,8 +1,6 @@
 --  
 --  $Id$
 --
---  $Id$
---
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
@@ -2561,9 +2559,9 @@ db.dba.dav_browse_proc1 (in path varchar,
                                         vector (vector (1,
                                                         dirlist[i][0],
                                                         NULL,
-                                                        'N/A ',
+                                                        '<span class="filesize">N/A</span>',
                                                         Y_UI_DATE (dirlist[i][3]),
-                                                        'folder',
+                                                        '<span class="filetype">[folder]</span>',
                                                         user_name,
                                                         group_name,
                                                         perms)));
@@ -2573,9 +2571,9 @@ db.dba.dav_browse_proc1 (in path varchar,
                                         vector (vector (1,
                                                         dirlist[i][10],
                                                         NULL,
-                                                        'N/A ',
+                                                        '<span class="filesize">N/A</span>',
                                                         Y_UI_DATE (dirlist[i][3]),
-                                                        'folder',
+                                                        '<span class="filetype">[folder]</span>',
                                                         user_name,
                                                         group_name,
                                                         perms)));
@@ -2877,7 +2875,7 @@ create procedure DB.DBA.Y_UI_SIZE (
   if ((itemSize = 0) and (itemType = 'C'))
     return '';
 
-  S := '%d<span style="font-family: Monospace;">&nbsp;%s</span>';
+  S := '<span class="filesize">%d<span class="filesizeunit">%s</span></span>';
   if (itemSize < 1024)
     return sprintf (S, itemSize, 'B&nbsp;');
   if (itemSize < (1024 * 1024))
@@ -2894,7 +2892,7 @@ create procedure DB.DBA.Y_UI_DATE (
   in itemDate datetime)
 {
 	itemDate := left (cast (itemDate as varchar), 19);
-	return sprintf ('%s <font size="1">%s</font>', left(itemDate, 10), subseq (itemDate, 11, 16));
+	return sprintf ('<span class="datetime"><span class="date">%s</span><span class="time">%s</span></span>', left(itemDate, 10), subseq (itemDate, 11, 16));
 }
 ;
 

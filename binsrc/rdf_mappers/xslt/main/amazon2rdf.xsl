@@ -177,4 +177,5 @@
 	</xsl:element>
 	</xsl:if>
     </xsl:template>
+    <xsl:template match="text()"/>
 </xsl:stylesheet>
