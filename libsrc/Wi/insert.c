@@ -1302,6 +1302,7 @@ wi_check_all_compact (int age_limit)
 {
   /*  call before writing old dirty out. Also before pre-checkpoint flush of all things.
    * do not do many at the same time.  Also have in progress flag for background action which can autocompact and need a buffer, which can then recursively trigger autocompact which is not wanted */
+  du_thread_t * self;
   dbe_storage_t * dbs = wi_inst.wi_master;
   /*return;*/
 #ifndef AUTO_COMPACT
@@ -1310,6 +1311,9 @@ wi_check_all_compact (int age_limit)
   if (!dbs || wi_inst.wi_checkpoint_atomic
       || dbs_autocompact_in_progress)
     return; /* at the very start of init */
+  self = THREAD_CURRENT_THREAD;
+  if (THR_IS_STACK_OVERFLOW (self, &dbs, AC_STACK_MARGIN))
+    return;
   mutex_enter (dbs_autocompact_mtx);
   dbs_autocompact_in_progress = 1;
   DO_SET (index_tree_t *, it, &dbs->dbs_trees)

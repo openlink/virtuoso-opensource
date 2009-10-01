@@ -2135,8 +2135,21 @@ rd_list_bytes (buffer_desc_t * buf, int n, row_delta_t ** rds)
 }
 
 
+typedef struct page_apply_frame_s
+{
+  placeholder_t *	paf_registered[MAX_ITCS_ON_PAGE];
+  row_lock_t *	paf_rlocks[PM_MAX_ENTRIES];
+  buffer_desc_t	paf_buf;
+  page_map_t	paf_map;
+  row_delta_t	paf_rd;
+  dtp_t		paf_page[PAGE_SZ];
+  caddr_t	paf_rd_values[TB_MAX_COLS];
+  dtp_t paf_rd_temp[2 * MAX_ROW_BYTES];
+} page_apply_frame_t;
+
+
 void
-page_apply_parent (buffer_desc_t * buf, page_fill_t * pf, char first_affected, char release_pl, char change);
+page_apply_parent (buffer_desc_t * buf, page_fill_t * pf, char first_affected, char release_pl, char change, page_apply_frame_t * paf);
 
 void
 pf_change_org (page_fill_t * pf)
@@ -2170,24 +2183,24 @@ pf_change_org (page_fill_t * pf)
 
 
 void
-page_apply (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t ** delta, int op)
+page_apply_1 (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t ** delta, int op,
+	      page_apply_frame_t * paf)
 {
-  placeholder_t *registered[MAX_ITCS_ON_PAGE];
-  row_lock_t * rlocks [PM_MAX_ENTRIES];
+  row_lock_t ** rlocks = paf->paf_rlocks;
+  char first_affected = 0, end_insert = 0;
   char change = RWG_WAIT_NO_CHANGE, hold_taken = 0;
   page_map_t * org_pm = buf->bd_content_map;
   int bytes_delta = rd_list_bytes (buf, n_delta, delta);
   row_size_t split_after = PAGE_SZ;
   page_fill_t pf;
-  buffer_desc_t t_buf;
-  page_map_t t_map;
-  dtp_t t_page[PAGE_SZ];
-  char first_affected = 0, end_insert = 0;
+  buffer_desc_t * t_buf = &paf->paf_buf;
+  page_map_t * t_map = &paf->paf_map;
+  dtp_t * t_page = paf->paf_page;
   int delta_inx = 0, irow, inx;
   int irow_shift = 0;
   pg_check_map (buf);
   memset (&pf, 0, sizeof (pf));
-  pf.pf_rls = &rlocks[0];
+  pf.pf_rls = &paf->paf_rlocks[0];
   pf.pf_itc = itc;
   pf.pf_op = op;
   if (!LONG_REF (buf->bd_buffer + DP_PARENT))
@@ -2207,11 +2220,11 @@ page_apply (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t ** 
 	  if (org_pm->pm_n_non_comp > org_pm->pm_count / 20)
 	    {
 	      /*printf ("L=%d : %d non-comp rows of %d: ", buf->bd_page, org_pm->pm_n_non_comp, org_pm->pm_count);*/
-	      page_apply (itc, buf, 0, NULL, PA_REWRITE_ONLY);
+	      page_apply_1 (itc, buf, 0, NULL, PA_REWRITE_ONLY, paf);
 	      /*printf (" compress to %d bytes\n", buf->bd_content_map->pm_filled_to);*/
 	      /* the rewrite can overflow with prefix compressed strings.  Recompress is not guaranteed not to hit worse.  If this happens, the rewrite does nothing.  So anyway reset the non-comp count */
 	      org_pm->pm_n_non_comp = 0;
-	      page_apply (itc, buf, n_delta, delta, op);
+	      page_apply_1 (itc, buf, n_delta, delta, op, paf);
 	      return;
 	    }
 	}
@@ -2223,20 +2236,20 @@ page_apply (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t ** 
 	return;
       split_after = PAGE_SZ / 2;
     }
-  memset (&t_buf, 0, sizeof (t_buf));
-  memset (&t_map, 0, PM_ENTRIES_OFFSET);
-  BD_SET_IS_WRITE ((&t_buf), 1);
-  t_buf.bd_content_map = &t_map;
-  t_buf.bd_tree = buf->bd_tree;
-  t_buf.bd_pl = buf->bd_pl;
-  t_buf.bd_buffer = t_page;
-  t_buf.bd_page = buf->bd_page;
-  t_map.pm_filled_to = DP_DATA;
-  t_map.pm_bytes_free = PAGE_DATA_SZ;
-  t_map.pm_size = PM_MAX_ENTRIES;
-  pf.pf_registered = &registered[0];
+  memset (t_buf, 0, sizeof (buffer_desc_t));
+  memset (t_map, 0, PM_ENTRIES_OFFSET);
+  BD_SET_IS_WRITE ((t_buf), 1);
+  t_buf->bd_content_map = t_map;
+  t_buf->bd_tree = buf->bd_tree;
+  t_buf->bd_pl = buf->bd_pl;
+  t_buf->bd_buffer = t_page;
+  t_buf->bd_page = buf->bd_page;
+  t_map->pm_filled_to = DP_DATA;
+  t_map->pm_bytes_free = PAGE_DATA_SZ;
+  t_map->pm_size = PM_MAX_ENTRIES;
+  pf.pf_registered = &paf->paf_registered[0];
   pf.pf_org = buf;
-  pf.pf_current = &t_buf;
+  pf.pf_current = t_buf;
   if (op != PA_REWRITE_ONLY)
     pf_fill_registered (&pf, buf);
   if (org_pm->pm_bytes_free < bytes_delta)
@@ -2249,7 +2262,12 @@ page_apply (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t ** 
       split_after = SHORT_REF (buf->bd_buffer + DP_RIGHT_INSERTS) > 5 ? (PAGE_SZ /12) * 11 : PAGE_SZ /2;
     }
   {
-    LOCAL_COPY_RD (rd);
+    row_delta_t * rd = &paf->paf_rd;
+    memset (rd, 0, sizeof (row_delta_t));	\
+    rd->rd_temp = &paf->paf_rd_temp[0];		\
+    rd->rd_temp_max = sizeof (paf->paf_rd_temp);
+    rd->rd_values = paf->paf_rd_values;
+    rd->rd_allocated = RD_AUTO;
     pf.pf_hash = (pf_hash_t *) resource_get (pfh_rc);
     pfh_init (pf.pf_hash, pf.pf_current);
     pf.pf_hash->pfh_pf = &pf;
@@ -2300,11 +2318,11 @@ page_apply (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t ** 
 	  }
 	else if (irow < org_pm->pm_count)
 	  {
-	    page_row (buf, irow, &rd, 0);
-	    rd.rd_keep_together_dp = buf->bd_page;
-	    rd.rd_keep_together_pos = irow;
-	    pf_rd_append (&pf, &rd, &split_after);
-	    rd_free (&rd);
+	    page_row (buf, irow, rd, 0);
+	    rd->rd_keep_together_dp = buf->bd_page;
+	    rd->rd_keep_together_pos = irow;
+	    pf_rd_append (&pf, rd, &split_after);
+	    rd_free (rd);
 	    if (pf.pf_rewrite_overflow)
 	      break; /* if just for compress rewrite and got worse compression than org, return without changing the org */
 	  }
@@ -2327,7 +2345,7 @@ page_apply (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t ** 
   page_reg_past_end (pf.pf_org);
   for (inx = 0; inx < pf.pf_rl_fill; inx++)
     {
-      if (rlocks [inx] != NULL)
+      if (pf.pf_rls[inx] != NULL)
 	{
 	  /* a rl cannot exist without belonging to a row, except if it belongs to a deleted row.  rls of deleted rows continue to exist as distinct until the wait queue is done so as to keep lock acquisition order.  Deviating from lock acquisition order makes fake deadlocks in cluster. */
 	  if (ITC_AT_END != rlocks[inx]->rl_pos)
@@ -2346,15 +2364,40 @@ page_apply (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t ** 
       END_DO_SET();
       itc_split_lock_waits (pf.pf_itc, buf, pf.pf_current);
     }
-  if (t_buf.bd_registered) GPF_T1 ("registrations are not supposed to go to the temp buf");
+  if (t_buf->bd_registered) GPF_T1 ("registrations are not supposed to go to the temp buf");
   if (PA_REWRITE_ONLY == op)
     return;
   if (PA_AUTOCOMPACT == op)
     first_affected = 0;
-  page_apply_parent (buf, &pf, first_affected, op, change);
+  page_apply_parent (buf, &pf, first_affected, op, change, paf);
   dk_set_free (pf.pf_left);
   if (hold_taken)
     itc_free_hold (itc);
+}
+
+
+void
+page_apply_s (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t ** delta, int op)
+{
+  page_apply_frame_t paf;
+  page_apply_1 (itc, buf, n_delta, delta, op, &paf);
+}
+
+
+void
+page_apply (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t ** delta, int op)
+{
+  du_thread_t * self = THREAD_CURRENT_THREAD;
+  if (THR_IS_STACK_OVERFLOW (self, &buf, PAGE_SZ + 1000 * sizeof (caddr_t)))
+    GPF_T1 ("page_apply called with not enough stack");
+  if (THR_IS_STACK_OVERFLOW (self, &buf, sizeof (page_apply_frame_t) + PAGE_SZ + 1000 * sizeof (caddr_t)))
+    {
+      NEW_VAR (page_apply_frame_t, paf);
+      page_apply_1 (itc, buf, n_delta, delta, op, paf);
+      dk_free ((caddr_t)paf, -1);
+    }
+  else
+    page_apply_s (itc, buf, n_delta, delta, op);
 }
 
 
@@ -2399,7 +2442,8 @@ pf_pop_root (page_fill_t * pf)
 
 
 void
-page_apply_parent (buffer_desc_t * buf, page_fill_t * pf, char first_affected, char op, char change)
+page_apply_parent (buffer_desc_t * buf, page_fill_t * pf, char first_affected, char op, char change,
+		   page_apply_frame_t * paf)
 {
   /* called to modify parent when one or more of 1. first lp change, 2. split 3. page deleted */
   int inx;
@@ -2443,7 +2487,7 @@ page_apply_parent (buffer_desc_t * buf, page_fill_t * pf, char first_affected, c
       rdbg_printf (("new root of %s L=%d \n", STR_OR (pf->pf_itc->itc_insert_key->key_name, "temp"), root->bd_page));
       ITC_LEAVE_MAP_NC (pf->pf_itc);
       pf->pf_itc->itc_page = root->bd_page;
-      page_apply  (pf->pf_itc, root, BOX_ELEMENTS (leaves), leaves, 0);
+      page_apply_1  (pf->pf_itc, root, BOX_ELEMENTS (leaves), leaves, 0, paf);
       DO_SET (buffer_desc_t *, leaf, &pf->pf_left)
 	{
 	  LONG_SET (leaf->bd_buffer + DP_PARENT, root->bd_page);
@@ -2513,7 +2557,7 @@ page_apply_parent (buffer_desc_t * buf, page_fill_t * pf, char first_affected, c
       if (PA_AUTOCOMPACT == op)
 	TC (tc_autocompact_split);
       pf->pf_itc->itc_page = parent->bd_page;
-      page_apply (pf->pf_itc, parent, BOX_ELEMENTS (leaves), leaves, PA_MODIFY);
+      page_apply_1 (pf->pf_itc, parent, BOX_ELEMENTS (leaves), leaves, PA_MODIFY, paf);
       rd_list_free (leaves);
     }
 }

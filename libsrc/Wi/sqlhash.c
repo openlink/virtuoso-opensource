@@ -180,7 +180,7 @@ setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, long n_rows)
     {
       dbe_col_loc_t * cl = key_find_cl (ha->ha_key, inx +1);
       ha->ha_key_cols[inx] = cl[0];
-      if ((inx >= n_keys) && (cl->cl_fixed_len < 0))
+      if ((inx >= n_keys) && (cl->cl_fixed_len <= 0))
 	ha->ha_memcache_only = 1;
     }
   ha->ha_slots = (state_slot_t **)

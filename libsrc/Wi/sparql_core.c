@@ -2941,6 +2941,8 @@ sparp_query_parse (char * str, spar_query_env_t *sparqre, int rewrite_all)
   spar_fill_lexem_bufs (sparp);
   if (NULL != sparp->sparp_sparqre->sparqre_catched_error)
     return sparp;
+  sparp->sparp_sg = t_alloc (sizeof (sparp_globals_t));
+  memset (sparp->sparp_sg, 0, sizeof (sparp_globals_t));
   QR_RESET_CTX
     {
       /* Bug 4566: sparpyyrestart (NULL); */
@@ -3184,10 +3186,10 @@ bif_sparql_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   {
     int eq_ctr, eq_count;
     SES_PRINT (res, "\nEQUIVS:");
-    eq_count = sparp->sparp_equiv_count;
+    eq_count = sparp->sparp_sg->sg_equiv_count;
     for (eq_ctr = 0; eq_ctr < eq_count; eq_ctr++)
       {
-        sparp_equiv_t *eq = sparp->sparp_equivs[eq_ctr];
+        sparp_equiv_t *eq = sparp->sparp_sg->sg_equivs[eq_ctr];
         spart_dump_eq (eq_ctr, eq, res);
       }
   }
@@ -3376,6 +3378,7 @@ bif_sparql_quad_maps_for_quad_impl (caddr_t * qst, caddr_t * err_ret, state_slot
   spar_query_env_t sparqre;
   sparp_env_t spare;
   sparp_t sparp;
+  sparp_globals_t sparp_globals;
   spar_sqlgen_t ssg;
   sql_comp_t sc;
   caddr_t sqlvals[SPART_TRIPLE_FIELDS_COUNT];
@@ -3400,10 +3403,12 @@ bif_sparql_quad_maps_for_quad_impl (caddr_t * qst, caddr_t * err_ret, state_slot
   memset (&sparqre, 0, sizeof (spar_query_env_t));
   memset (&spare, 0, sizeof (sparp_env_t));
   memset (&sparp, 0, sizeof (sparp_t));
+  memset (&sparp_globals, 0, sizeof (sparp_globals_t));
   sparqre.sparqre_param_ctr = &param_ctr_for_sparqre;
   sparqre.sparqre_qi = (query_instance_t *) qst;
   sparp.sparp_sparqre = &sparqre;
   sparp.sparp_env = &spare;
+  sparp.sparp_sg = &sparp_globals;
   memset (&ssg, 0, sizeof (spar_sqlgen_t));
   memset (&sc, 0, sizeof (sql_comp_t));
   sc.sc_client = sparqre.sparqre_qi->qi_client;

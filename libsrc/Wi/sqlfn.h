@@ -971,12 +971,12 @@ extern void qi_check_stack (query_instance_t *qi, void *addr, ptrlong margin);
 #endif
 
 #define DEL_STACK_MARGIN (2*PAGE_SZ + 200 * sizeof (caddr_t))
-#define UPD_STACK_MARGIN (3*PAGE_SZ + 1000 * sizeof (caddr_t))
-#define SPLIT_STACK_MARGIN (1000 * sizeof (caddr_t) + PM_MAX_ENTRIES * sizeof (caddr_t) + PAGE_SZ)
+#define SPLIT_STACK_MARGIN (PAGE_SZ + 2000 * sizeof (caddr_t))
+#define UPD_STACK_MARGIN (3*PAGE_SZ + SPLIT_STACK_MARGIN + 1000 * sizeof (caddr_t))
 #define INS_STACK_MARGIN (SPLIT_STACK_MARGIN + PAGE_SZ + 1200 * sizeof (caddr_t))
 #define CALL_STACK_MARGIN (AUTO_QI_DEFAULT_SZ + (3000 * sizeof (caddr_t)))
 #define OL_BACKUP_STACK_MARGIN (4*PAGE_SZ + 1000 * sizeof (caddr_t))
-
+#define AC_STACK_MARGIN (3000 * sizeof (caddr_t)) /* do not do autocompact if less */
 
 /* row.c */
 

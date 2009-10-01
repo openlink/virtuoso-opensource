@@ -227,6 +227,12 @@ typedef struct sparp_env_s
     int spare_gp_trav_is_saved;	/*!< Flags whether \c spare_saved_stp and \c spare_saved_stss are in use, i.e. \c sparp_gp_trav_suspend() has been called but sparp_gep_trav_resume() is not */
   } sparp_env_t;
 
+typedef struct sparp_globals_s {
+  struct sparp_equiv_s **sg_equivs;	/*!< All variable equivalences made for the tree, in pointer to a growing buffer */
+  ptrlong sg_equiv_count;		/*!< A pointer to the count of used items in the beginning of \c spare_equivs[0] buffer */
+  ptrlong sg_cloning_serial;		/*!< The pointer to the serial used for current \c sparp_gp_full_clone() operation */
+} sparp_globals_t;
+
 typedef struct sparp_s {
 /* Generic environment */
   spar_query_env_t *sparp_sparqre;	/*!< External environment of the query */
@@ -269,11 +275,9 @@ typedef struct sparp_s {
 /* Environment of term rewriter of the SPARQL-to-SQL compiler */
   dk_set_t sparp_propvars;		/*!< Set of propvars with distinct \c sparv_key fields that were ever used in the query */
   struct quad_storage_s	*sparp_storage;		/*!< Default storage that handles arbitrary quads of any sort plus maybe SPMJVs and relational mappings made by user, usually rdf_sys_storage */
-  struct sparp_equiv_s **sparp_equivs;	/*!< All variable equivalences made for the tree, in growing buffer */
-  ptrlong sparp_equiv_count;		/*!< Count of used items in the beginning of spare_equivs */
-  ptrlong sparp_cloning_serial;		/*!< The serial used for current \c sparp_gp_full_clone() operation */
   struct sparp_trav_params_s *sparp_stp;	/*!< Parameters of traverse (callbacks in use). It is filled in by sparp_gp_grav() only, not by sparp_gp_grav_int() */
   struct sparp_trav_state_s *sparp_stss;	/*!< Stack of traverse states. [0] is fake for parent on 'where', [1] is for 'where' etc. */
+  sparp_globals_t *sparp_sg;		/*!< Pointer to data common for all sparp_t-s for whole stack of nested sparp-s */
   int sparp_rewrite_dirty;		/*!< An integer that is incremented when any optimization subroutine rewrites the tree. */
   int sparp_trav_running;		/*!< Flags that some traverse is in progress, in order to GPF if traverse procedure re-enters */
   ccaddr_t *sparp_sprintff_isect_buf;	/*!< Temporary buffer to calculate intersections of value ranges; solely for sparp_rvr_intersect_sprintffs() */
@@ -325,14 +329,27 @@ extern void sparyyerror_impl_1 (sparp_t *xpp, char *raw_text, int yystate, short
 #define SPART_GRAPH_NOT_GROUP		0x181	/*!< == SPART_GRAPH_NOT_FROM | SPART_GRAPH_GROUP_BIT */
 #define SPART_GRAPH_NOT_NAMED		0x190
 
-#define SPARP_EQUIV(sparp,idx) ((sparp)->sparp_equivs[(idx)])
+#define SPARP_EQUIV(sparp,idx) ((sparp)->sparp_sg->sg_equivs[(idx)])
+
+#ifdef DEBUG
+#define ASSERT_EQUIV_INDEX(f,l,sparp,eq_inx) do { \
+  if (eq_inx < 0) \
+    spar_internal_error (sparp, t_box_sprintf (100, "%s:%d: negative equiv index", f, l)); \
+  if (eq_inx >= sparp->sparp_sg->sg_equiv_count) \
+    spar_internal_error (sparp, t_box_sprintf (100, "%s:%d: equiv index is too big", f, l)); \
+ } while (0)
+#else
+#define ASSERT_EQUIV_INDEX(f,l,sparp,eq_inx);
+#endif
 
 #define SPARP_FOREACH_GP_EQUIV(sparp,groupp,inx,eq) \
   do { \
     int __max_##inx = groupp->_.gp.equiv_count; \
     for (inx = 0; inx < __max_##inx; inx ++) \
       { \
-        sparp_equiv_t *eq = SPARP_EQUIV(sparp, groupp->_.gp.equiv_indexes[inx]);
+        sparp_equiv_t *eq; \
+        ASSERT_EQUIV_INDEX (__FILE__, __LINE__, sparp, groupp->_.gp.equiv_indexes[inx]); \
+        eq = SPARP_EQUIV(sparp, groupp->_.gp.equiv_indexes[inx]);
 
 #define END_SPARP_FOREACH_GP_EQUIV \
 	  }} while (0)
@@ -341,7 +358,9 @@ extern void sparyyerror_impl_1 (sparp_t *xpp, char *raw_text, int yystate, short
   do { \
     for (inx = groupp->_.gp.equiv_count; inx--;) \
       { \
-        sparp_equiv_t *eq = SPARP_EQUIV(sparp, groupp->_.gp.equiv_indexes[inx]);
+        sparp_equiv_t *eq; \
+        ASSERT_EQUIV_INDEX (__FILE__, __LINE__, sparp, groupp->_.gp.equiv_indexes[inx]); \
+        eq = SPARP_EQUIV(sparp, groupp->_.gp.equiv_indexes[inx]);
 
 #define END_SPARP_REVFOREACH_GP_EQUIV \
 	  }} while (0)

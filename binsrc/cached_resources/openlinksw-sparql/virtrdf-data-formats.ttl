@@ -20,7 +20,7 @@ bif:xquery_contains virtrdf:isSpecialPredicate bif:xquery_contains .
 
 # Don't forget to change version, both here and in DB.DBA.SPARQL_RELOAD_QM_GRAPH, to force reload.
 <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-  virtrdf:version '2009-08-27 0001v6' ;
+  virtrdf:version '2009-09-24 0001v6' ;
   virtrdf:item
     rdfdf:default-iid ,				rdfdf:default-iid-nullable ,
     rdfdf:default-iid-nonblank ,		rdfdf:default-iid-nonblank-nullable ,
@@ -79,8 +79,8 @@ rdfdf:default-iid
   virtrdf:qmfIsblankOfShortTmpl " (^{tree}^ >= min_bnode_iri_id ())";			# STRING REQUIRED ... whether the short is blank node ref
   virtrdf:qmfIslitOfShortTmpl " 0";						# STRING REQUIRED ... whether the short is literal
 # Templates of 0/1 that tell whether the short is of some sort:
-  virtrdf:qmf01uriOfShortTmpl " (lt (^{tree}^, min_bnode_iri_id ()))";		# STRING REQUIRED ... whether the short is uri, returns 0 or 1
-  virtrdf:qmf01blankOfShortTmpl " (gte (^{tree}^, min_bnode_iri_id ()))";	# STRING REQUIRED ... whether the short is blank node ref, returns 0 or 1
+  virtrdf:qmf01uriOfShortTmpl " is_named_iri_id (^{tree}^)";			# STRING REQUIRED ... whether the short is uri, returns 0 or 1
+  virtrdf:qmf01blankOfShortTmpl " is_bnode_iri_id (^{tree}^)";			# STRING REQUIRED ... whether the short is blank node ref, returns 0 or 1
 # Templates that convert short value into other types (can be applied to both field and not field expression)
   virtrdf:qmfLongOfShortTmpl " ^{tree}^ ";					# STRING REQUIRED ... long from short
   virtrdf:qmfSqlvalOfShortTmpl " __id2i (^{tree}^)";				# STRING REQUIRED ... SQL value from short
@@ -181,8 +181,8 @@ rdfdf:default
   virtrdf:qmfBoolTmpl " DB.DBA.RQ_BOOL_OF_O (^{alias-dot}^^{column}^)";		# STRING REQUIRED Boolean value template, can be NULL
 # Templates of booleans that tell whether the short is of some sort:
   virtrdf:qmfIsrefOfShortTmpl " isiri_id (^{tree}^)";				# STRING REQUIRED ... whether the short is ref
-  virtrdf:qmfIsuriOfShortTmpl " (case (isiri_id (^{tree}^)) when 0 then 0 else lt (^{tree}^, min_bnode_iri_id ()) end)";	# STRING REQUIRED ... whether the short is uri
-  virtrdf:qmfIsblankOfShortTmpl " (case (isiri_id (^{tree}^)) when 0 then 0 else gte (^{tree}^, min_bnode_iri_id ()) end)";	# STRING REQUIRED ... whether the short is blank node ref
+  virtrdf:qmfIsuriOfShortTmpl " is_named_iri_id (^{tree}^)";			# STRING REQUIRED ... whether the short is uri
+  virtrdf:qmfIsblankOfShortTmpl " is_bnode_iri_id (^{tree}^)";			# STRING REQUIRED ... whether the short is blank node ref
   virtrdf:qmfIslitOfShortTmpl " (1 - isiri_id (^{tree}^))";			# STRING REQUIRED ... whether the short is literal
 # Templates that convert short value into other types (can be applied to both field and not field expression)
   virtrdf:qmfLongOfShortTmpl " __ro2lo (^{tree}^)";			# STRING REQUIRED ... long from short

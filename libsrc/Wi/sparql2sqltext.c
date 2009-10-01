@@ -1351,7 +1351,7 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
           ssg_valmode_t member_valmode;
           if (SPAR_GP != SPART_TYPE (gp_member))
             continue;
-          member_eq = sparp_equiv_get_subvalue_ro (sparp->sparp_equivs, sparp->sparp_equiv_count, gp_member, eq);
+          member_eq = sparp_equiv_get_subvalue_ro (sparp->sparp_sg->sg_equivs, sparp->sparp_sg->sg_equiv_count, gp_member, eq);
           if (NULL == member_eq)
             {
               var_miss_in_some_members = 1;
@@ -1429,7 +1429,7 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
       ssg_valmode_t member_valmode;
       if (SPAR_GP != SPART_TYPE (gp_member))
         continue;
-      member_eq = sparp_equiv_get_subvalue_ro (sparp->sparp_equivs, sparp->sparp_equiv_count, gp_member, eq);
+      member_eq = sparp_equiv_get_subvalue_ro (sparp->sparp_sg->sg_equivs, sparp->sparp_sg->sg_equiv_count, gp_member, eq);
       if (NULL == member_eq)
         continue;
       member_valmode = sparp_equiv_native_valmode (sparp, gp_member, member_eq);
@@ -1521,7 +1521,7 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
       else
         {
           ptrlong eq_idx = tree->_.var.equiv_idx;
-          sparp_equiv_t *eq = sparp->sparp_equivs[eq_idx];
+          sparp_equiv_t *eq = sparp->sparp_sg->sg_equivs[eq_idx];
           SPART *gp = sparp_find_gp_by_eq_idx (sparp, eq_idx);
           return sparp_equiv_native_valmode (sparp, gp, eq);
         }
@@ -1566,7 +1566,7 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
           if (NULL == gp)
             gp = sparp_find_gp_by_alias (sparp, tree->_.retval.selid);
           eq = sparp_equiv_get_ro (
-            sparp->sparp_equivs, sparp->sparp_equiv_count, gp, tree,
+            sparp->sparp_sg->sg_equivs, sparp->sparp_sg->sg_equiv_count, gp, tree,
             SPARP_EQUIV_GET_NAMESAKES | SPARP_EQUIV_GET_ASSERT );
           eq_valmode = sparp_equiv_native_valmode (sparp, gp, eq);
           return eq_valmode;
@@ -1744,7 +1744,7 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
           if (NULL == gp)
             gp = sparp_find_gp_by_alias (sparp, tree->_.retval.selid);
           eq = sparp_equiv_get_ro (
-            sparp->sparp_equivs, sparp->sparp_equiv_count, gp, tree,
+            sparp->sparp_sg->sg_equivs, sparp->sparp_sg->sg_equiv_count, gp, tree,
             SPARP_EQUIV_GET_NAMESAKES | SPARP_EQUIV_GET_ASSERT );
           return eq->e_rvr.rvrRestrictions;
         }
@@ -7187,8 +7187,8 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
     }
   else
     ssg_qr_uses_jso (ssg, NULL, uname_virtrdf_ns_uri_DefaultQuadStorage);
-  ssg->ssg_equiv_count = ssg->ssg_sparp->sparp_equiv_count;
-  ssg->ssg_equivs = ssg->ssg_sparp->sparp_equivs;
+  ssg->ssg_equiv_count = ssg->ssg_sparp->sparp_sg->sg_equiv_count;
+  ssg->ssg_equivs = ssg->ssg_sparp->sparp_sg->sg_equivs;
   ssg_find_formatter_by_name_and_subtype (tree->_.req_top.formatmode_name, tree->_.req_top.subtype, &formatter, &agg_formatter, &agg_meta);
   if (COUNT_DISTINCT_L == subtype)
     retvalmode = SSG_VALMODE_SQLVAL;
