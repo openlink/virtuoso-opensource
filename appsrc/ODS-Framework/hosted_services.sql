@@ -3990,7 +3990,7 @@ create procedure WA_USER_INFO_CHECK ()
    declare _wdata, opts any;
    declare _bdate any; /* datetime */
 
-   if (registry_get ('__WA_USER_INFO_CHECK') = 'done')
+  if (registry_get ('__WA_USER_INFO_CHECK') = 'done2')
      return;
 
    for select U_ID, U_NAME, U_FULL_NAME from SYS_USERS where U_DAV_ENABLE = 1 and U_IS_ROLE = 0 and U_NAME <> 'nobody' do
@@ -4054,7 +4054,8 @@ create procedure WA_USER_INFO_CHECK ()
 
          if (exists (select 1 from WA_USER_SETTINGS where WAUS_U_ID = _uid))
          {
-           for (select WAUS_KEY, WAUS_DATA from WA_USER_SETTINGS) do{
+        for (select WAUS_KEY, WAUS_DATA from WA_USER_SETTINGS) do
+        {
               _wkey := WAUS_KEY;
               _wdata :=  deserialize(WAUS_DATA);
              if (_wkey = 'CAREER_STATUS')
@@ -4075,12 +4076,12 @@ create procedure WA_USER_INFO_CHECK ()
                 UPDATE WA_USER_INFO SET WAUI_BSERVICE = substring (_wdata, 1, 50) WHERE current of cr;
              else if (_wkey = 'VAT_REG_NUMBER')
                 UPDATE WA_USER_INFO SET WAUI_BREGNO = substring (_wdata, 1, 50) WHERE current of cr;
-           };
-         };
+        }
+      }
 	 close cr;
       }
-   };
-   registry_set ('__WA_USER_INFO_CHECK', 'done');
+  }
+  registry_set ('__WA_USER_INFO_CHECK', 'done2');
 }
 ;
 
@@ -7236,4 +7237,19 @@ create procedure wa_content_annotate (
   http (subseq (source_UTF8, prev_end), res_out);
   return string_output_string (res_out);
 }
+;
+
+-- /* extended http proxy service */
+create procedure virt_proxy_init_about_1 ()
+{
+  if (isstring (registry_get ('DB.DBA.virt_proxy_init_about_state')))
+    return;
+  DB.DBA.VHOST_REMOVE (lpath=>'/about');
+  DB.DBA.VHOST_DEFINE (lpath=>'/about', ppath=>'/SOAP/Http/ext_http_proxy', soap_user=>'PROXY');
+  --# grants
+  EXEC_STMT ('grant execute on  DB.DBA.HTTP_RDF_ACCEPT to PROXY', 0);
+}
+;
+
+virt_proxy_init_about_1 ()
 ;
