@@ -296,6 +296,7 @@ div.thr_ctr { display: inline; width: 16px; border: 0; padding: 0;margin: 0;}
               background-image: url(/fct/images/dlg_title_bkg.png); 
               border-bottom: 1px inset;
               padding: 2px 0 2px 0;}
+.dlg .title h2 { color: #333}
 .dlg form { margin: 0; width: 100%;}
 .dlg .btn_bar { margin: 0; 
                 padding-top: 2ex; 
@@ -414,10 +415,17 @@ div#sparql_link a {
   text-decoration: none; 
   text-align: center;}
 
+div.featured { margin: 5px; }
+div.featured .expln { text-align: left;}
 #featured_list { font-size: 9pt;}
 #featured_list td { font-size: 9pt;}
 
+table.sparql_qry_list { width: 80%; margin-left: auto; margin-right: auto}
+table.sparql_qry_list td.title { font-weight: bold; }  
+table.sparql_qry_list td.expln { width: 50%; }  
+
 #demo_queries_ctr { margin: 10px; }
+
 ul.demo_qry_list {
   list-style-type: none;
   padding: 0;

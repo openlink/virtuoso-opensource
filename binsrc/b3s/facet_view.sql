@@ -732,10 +732,11 @@ fct_set_class (in tree any,
 create procedure
 fct_featured (in tree xmltype, in sid int) {
 http ('
-  <div class="dlg" id="featured_qry">
-    <div class="title"><h2>Featured Queries</h2></div>
-    <div class="expln"><p>These are queries stored in the facet server which are marked as featured. Click on a title in list below to load the query.</p></div>
+  <div class="featured">
+    <h2>Featured</h2>
+    <div class="expln"><p>These are example facet views and SPARQL queries in the server.</p></div>
     <div class="fm_sect">
+      <h3>Facet views</h3>
       <table id="featured_list">
 ');
 	declare no_qry, cnt int;
@@ -760,16 +761,97 @@ http ('
 	if (0 = cnt) 
           {
 http ('
-	    <tr><td>There are currently no featured queries.</td></td>
+	    <tr><td>There are currently no featured views.</td></td>
 ');
           }
 http ('
       </table>
+    </div> <!-- .fm_sect -->
+    <div class="fm_sect">
+      <h3>SPARQL Queries</h3>
+      <p>These queries will open in iSPARQL - a SPARQL query visualization and editing tool.</p>
+      <table class="sparql_qry_list">
+');
+
+   declare uriqa_str varchar;
+   declare dav_pwd varchar;
+   declare demo_dav_path, demo_xsl_uri varchar;
+
+   uriqa_str := cfg_item_value( virtuoso_ini_path(), 'URIQA','DefaultHost');
+
+   if (uriqa_str is null)
+     {
+       if (server_http_port () <> '80')
+         uriqa_str := 'localhost:'||server_http_port ();
+       else
+         uriqa_str := 'localhost';
+     }
+
+   demo_dav_path := registry_get ('sparql_demo_query_path');
+
+   if (0 = demo_dav_path)
+     demo_dav_path := '/DAV/home/dav/sparql_demo_queries/';
+
+   demo_xsl_uri := registry_get ('sparql_demo_xsl_uri');
+
+   if (0 = demo_xsl_uri) demo_xsl_uri := 'http://' || uriqa_str || '/fct/isparql_describe.xsl';
+
+http('
+<script type="text/javascript">
+var featureList = ["","",""];
+
+var sparql_ep = ''http://<?=uriqa_str?>/sparql'';
+var isparql_ep = ''http://<?=uriqa_str?>/isparql'';
+
+function init() {  }
+
+function sparql_qry (q_elm) {
+
+  document.location = sparql_ep + ''?query='' + get_and_encode_query (q_elm);
+}
+
+function isparql_qry (q_elm) {
+  document.location = sparql_ep + ''?query='' + get_and_encode_query (q_elm);
+}
+
+function get_and_encode_query (q_elm)
+{
+  return encodeURIComponent (document.getElementById(q_elm).firstChild.data);
+}
+
+</script>
+');
+
+  declare ct_tree, xst any;
+  declare ctr integer;
+
+  ctr := 0;
+
+--  dbg_printf ('isparql qry transform xsl: %s', demo_xsl_uri);
+
+  for select res_content, res_name, res_full_path 
+        from WS.WS.SYS_DAV_RES 
+        where RES_FULL_PATH like demo_dav_path || '%.isparql' do
+    {
+	ctr := ctr + 1;
+	ct_tree := xml_tree_doc (xml_tree (res_content));
+	http_value (xslt (demo_xsl_uri,
+		    	  ct_tree,
+                     	  vector ('name', res_name, 'full_path', 'http://' || uriqa_str || res_full_path)));
+
+    }
+
+http('</table>');
+
+  if (0 = ctr) 
+    {
+      http ('<p class="empty_indicator">There are currently no saved SPARQL queries.</p>');
+    }
+http('
+    </div> <!-- .fm_sect -->
+    <a href="/fct/facet.vsp?cmd=refresh&sid='); http_value ( case when no_qry then 0 else sid end ); http ('">Go Back</a>
     </div>
-    <div class="btn_bar">
-      <button onclick="javascript:document.location=''/fct/facet.vsp?cmd=refresh&sid='); http_value ( case when no_qry then 0 else sid end ); http ('''">Cancel</button>
-    </div>
-  </div>
+  </div> <!-- featured -->
 ');
 }
 ;
@@ -904,7 +986,7 @@ fct_new ()
       <div class="tab" id="TAB_URILBL">URI Lookup (by Label)</div>
       <div class="tab" id="TAB_URI">URI Lookup</div>
       <div class="tab_act">
-        <a href="/fct/facet.vsp?cmd=featured&sid='); http_value ( sid ); http ('&no_qry=1">Featured Queries</a>
+        <a href="/fct/facet.vsp?cmd=featured&sid='); http_value ( sid ); http ('&no_qry=1">Featured</a>
         &nbsp;|&nbsp;
         <a href="');
   http ( fct_demo_uri );

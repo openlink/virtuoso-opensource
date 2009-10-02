@@ -298,6 +298,21 @@ create procedure b3s_uri_curie (in uri varchar)
 }
 ;
 
+create procedure
+b3s_trunc_uri (in s varchar, in maxlen int := 80)
+{
+  declare _s varchar;
+  declare _h int; 
+
+  _s := trim(s);
+
+  if (length(_s) <= maxlen) return _s;
+  _h := floor ((maxlen-3) / 2);
+  _s := sprintf ('%s...%s', "LEFT"(_s, _h), "RIGHT"(_s, _h-1));
+
+  return _s;
+}
+;
 
 create procedure 
 b3s_http_url (in url varchar, in sid varchar := null)
@@ -326,8 +341,14 @@ b3s_http_print_l (in p_text any, inout odd_position int, in r int := 0, in sid v
    url := b3s_http_url (p_text, sid);
 
    http (sprintf ('<tr class="%s"><td class="property">', either(mod (odd_position, 2), 'odd', 'even')));
+
    if (r) http ('is ');
-   http (sprintf ('<a class="uri" href="%s" title="%s">%s</a>\n', url, p_prefix, p_prefix));
+
+   http (sprintf ('<a class="uri" href="%s" title="%s">%s</a>\n', 
+                  url, 
+                  p_prefix, 
+                  b3s_trunc_uri (p_prefix, 40)));
+
    if (r) http (' of');
 
    http ('</td><td><ul class="obj">');

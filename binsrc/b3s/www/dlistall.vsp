@@ -26,6 +26,7 @@
 
   label := 'Drill-down queries';
   puri := get_keyword('p', params,'');
+  puri := replace (puri, '\'', '%27');  
 ?>
   <head>
     <link rel="stylesheet" type="text/css" href="style.css">
