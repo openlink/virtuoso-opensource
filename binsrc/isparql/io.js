@@ -136,9 +136,9 @@ iSPARQL.IO = {
 	if (dataObj.canvas) { addNode(isparql,iNS,"canvas",dataObj.canvas); }
 
 	if (dataObj.metaDataOpts) {
-	    title.textContent = OAT.Dom.toSafeXML(dataObj.metaDataOpts.title);
-	    creator.textContent = OAT.Dom.toSafeXML(dataObj.metaDataOpts.creator);
-	    description.textContent = OAT.Dom.toSafeXML(dataObj.metaDataOpts.description);
+	    title.textContent = OAT.Dom.toSafeXML(dataObj.metaDataOpts.metadata.title);
+	    creator.textContent = OAT.Dom.toSafeXML(dataObj.metaDataOpts.metadata.creator);
+	    description.textContent = OAT.Dom.toSafeXML(dataObj.metaDataOpts.metadata.description);
 	}
 
 	return OAT.Xml.serializeXmlDoc(xml);
