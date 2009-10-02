@@ -146,7 +146,7 @@
     label := _S;
    links := sprintf ('Link: <http://%s%s&output=rdf>;\r\n rel="alternate"; title="Metadata in RDF/XML format",\r\n ', host, rdf_link); 
    links := links||sprintf ('<http://%s%s&output=n3>;\r\n rel="alternate"; title="Metadata in N3/Turtle format",\r\n ', host, rdf_link); 
-   links := links||sprintf ('<http://%s%s&output=application%%2Frdf%%2Bjson>;\r\n rel="alternate"; title="Metadata in JSON+RDF format"\r\n', host, rdf_link); 
+   links := links||sprintf ('<http://%s%s&output=application%%2Frdf%%2Bjson>;\r\n rel="alternate"; title="Metadata in RDF/JSON format"\r\n', host, rdf_link); 
    http_header ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\n' || links);
 
 ?>
@@ -157,7 +157,7 @@
     <title>About: <?vsp http (sprintf ('%s', label)); ?></title>
     <link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>&output=rdf" title="Metadata in RDF/XML format" />
     <link rel="alternate" type="text/n3" href="<?=rdf_link?>&output=n3" title="Metadata in N3/Turtle format" />
-    <link rel="alternate" type="application/json+rdf" href="<?=rdf_link?>&output=application%2Frdf%2Bjson" title="Metadata in JSON+RDF format" />
+    <link rel="alternate" type="application/json+rdf" href="<?=rdf_link?>&output=application%2Frdf%2Bjson" title="Metadata in RDF/JSON format" />
     <link rel="stylesheet" type="text/css" href="statics/slidebar.css" />
     <link rel="stylesheet" type="text/css" href="statics/style_w.css" />
     <link href="statics/highlighter.css" type="text/css" rel="stylesheet" charset="utf-8" />
@@ -184,7 +184,7 @@
       </ol>
       <h1>How Do I Discover Alternative Metadata Representations?</h1>
       <p>
-      This document exposes metadata in the following formats: (X)HTML+RDFa, Turtle, N3, JSON+RDF,  or RDF/XML. In the most basic form,  you can simply view the (X)HTML source markup of this page, and go directly to the &lt;head/&gt; section which contains a &lt;link/&gt; tag with relationship and type properties for each format.
+      This document exposes metadata in the following formats: (X)HTML+RDFa, Turtle, N3, RDF/JSON,  or RDF/XML. In the most basic form,  you can simply view the (X)HTML source markup of this page, and go directly to the &lt;head/&gt; section which contains a &lt;link/&gt; tag with relationship and type properties for each format.
      </p>
      <p>
      In addition, you can also explicitly request a desired metadata representation for a given resource via HTTP GET requests that use the entity's strong identifier as the call target.
@@ -205,7 +205,7 @@
 
     <div id="header">
       <div id="hd_l">
-	  <h1 id="title">About: <a href="<?= case when _S like 'nodeID://%' then rdfdesc_http_url (_S) else _S_save end ?>"><?vsp http (sprintf ('%s', label)); ?></a></h1>
+	  <h1 id="title">About: <a href="<?= case when _S like 'nodeID://%' then rdfdesc_http_url (_S) else _S end ?>"><?vsp http (sprintf ('%s', label)); ?></a></h1>
         <div id="homelink">
         </div>
         <div class="page-resource-uri">
@@ -311,7 +311,7 @@
        &nbsp; &nbsp;
        &nbsp; &nbsp; Raw Linked Data formats:
        <a href="<?=rdf_link || '&output=n3'?>">N3/Turtle</a> |
-       <a href="<?=rdf_link || '&output=application%2Frdf%2Bjson'?>">JSON+RDF</a> |
+       <a href="<?=rdf_link || '&output=application%2Frdf%2Bjson'?>">RDF/JSON</a> |
        <a href="<?=rdf_link || '&output=rdf'?>">RDF/XML</a>
       </div> <!-- #ft_t -->
       <div id="ft_b">

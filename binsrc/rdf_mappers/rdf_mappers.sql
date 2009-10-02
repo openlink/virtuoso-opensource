@@ -207,7 +207,7 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     values ('.+\\.od[ts]\x24', 'URL', 'DB.DBA.RDF_LOAD_OO_DOCUMENT', null, 'OO Documents');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-	values ('(.+\\.docx\x24)|(.+\\.xlsx\x24)|(.+\\.pptx\x24)', 'URL', 'DB.DBA.RDF_LOAD_MS_DOCUMENT', null, 'Microsoft Documents');
+	values ('(.+\\.docx\x24)|(.+\\.xlsx\x24)', 'URL', 'DB.DBA.RDF_LOAD_MS_DOCUMENT', null, 'Microsoft Documents');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
 	values ('.+\\.fod[tsg]\x24', 'URL', 'DB.DBA.RDF_LOAD_OO_DOCUMENT2', null, 'OpenOffice Documents');
@@ -516,7 +516,6 @@ insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
 create procedure DB.DBA.RM_RDF_SPONGE_ERROR (in pname varchar, in graph_iri varchar, in dest varchar, in sql_message varchar)
 {
   declare gr, errs_iri, err_iri, nam any;
-  --dbg_obj_print (pname, graph_iri, dest, sql_message);
   if (0 = length (sql_message) or pname is null)
     return;
   pname := cast (pname as varchar);

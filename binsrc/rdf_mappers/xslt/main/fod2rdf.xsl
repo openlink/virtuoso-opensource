@@ -22,18 +22,14 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 -->
 <!DOCTYPE xsl:stylesheet [
-<!ENTITY rdfns  "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-<!ENTITY xhv  "http://www.w3.org/1999/xhtml/vocab#">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
-<!ENTITY sioct "http://rdfs.org/sioc/types#">
-<!ENTITY mo "http://purl.org/ontology/mo/">
-<!ENTITY mmd "http://musicbrainz.org/ns/mmd-1.0#">
 ]>
 
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
@@ -42,15 +38,17 @@
     xmlns:meta="urn:oasis:names:tc:opendocument:xmlns:meta:1.0"
     xmlns:oo="urn:oasis:names:tc:opendocument:xmlns:meta:1.0:"
     xmlns:bibo="&bibo;"
+    xmlns:sioc="&sioc;"
+    xmlns:foaf="&foaf;"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
     >
 
     <xsl:output method="xml" indent="yes" />
 
     <xsl:param name="baseUri"/>
-
-    <xsl:variable name="resourceURL">
-	<xsl:value-of select="$baseUri"/>
-    </xsl:variable>
+    <xsl:variable name="resourceURL" select="vi:proxyIRI($baseUri)"/>
+    <xsl:variable name="docIRI" select="vi:docIRI($baseUri)"/>
+    <xsl:variable name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 
     <xsl:template match="office:document-meta|office:meta" priority="1">
 	<xsl:apply-templates select="*"/>
@@ -58,6 +56,14 @@
 
     <xsl:template match="/office:document">
 	<rdf:RDF>
+	    <rdf:Description rdf:about="{$docproxyIRI}">
+			<rdf:type rdf:resource="&bibo;Document"/>
+			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+			<sioc:container_of rdf:resource="{$resourceURL}"/>
+			<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+			<dcterms:subject rdf:resource="{$resourceURL}"/>
+			<owl:sameAs rdf:resource="{$docIRI}"/>
+	    </rdf:Description>
 	    <rdf:Description rdf:about="{$resourceURL}">
 		<rdf:type rdf:resource="&bibo;Document"/>
 		<xsl:apply-templates select="office:meta"/>
