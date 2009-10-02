@@ -128,7 +128,7 @@ extern void sparp_continue_gp_trav_in_sub (sparp_t *sparp, SPART *subq_gp_wrappe
 
 struct sparp_equiv_s;
 
-/*! Equivalence class of variables. All instances of \c sparp_equiv_s are enumerated in \c sparp_equivs .
+/*! Equivalence class of variables. All instances of \c sparp_equiv_s are enumerated in \c sparp_sg->sg_equivs .
 When adding new fields, check the code of \c sparp_equiv_clone() and \c sparp_equiv_exact_copy() ! */
 typedef struct sparp_equiv_s
   {
@@ -147,7 +147,7 @@ typedef struct sparp_equiv_s
     ptrlong *e_subvalue_idxs;	/*!< Subselects where values of these variables come from */
     ptrlong *e_receiver_idxs;	/*!< Aliases of surrounding query where values of variables from this equiv are used */
     ptrlong e_clone_idx;	/*!< Index of the current clone of the equiv */
-    ptrlong e_cloning_serial;	/*!< The serial used when \c e_clone_idx is set, should be equal to \c sparp->sparp_cloning_serial */
+    ptrlong e_cloning_serial;	/*!< The serial used when \c e_clone_idx is set, should be equal to \c sparp->sparp_sg->sg_cloning_serial */
     ptrlong e_external_src_idx;	/*!< Index in \c req_top.equivs of the binding of external variable at ancestor of scalar subquery */
     ptrlong e_merge_dest_idx;	/*!< After the merge of equiv into some destination equiv, e_merge_dest_idx keeps destination */
     ptrlong e_deprecated;	/*!< The equivalence class belongs to a gp that is no longer usable */
@@ -737,8 +737,8 @@ typedef struct spar_sqlgen_s
   struct sql_comp_s	*ssg_sc;		/*!< Environment for sqlc_exp_print and similar functions. */
   sparp_t		*ssg_sparp;		/*!< Pointer to general parser data */
   SPART			*ssg_tree;		/*!< Select tree to process, of type SPAR_REQ_TOP */
-  sparp_equiv_t		**ssg_equivs;		/*!< Shorthand for ssg_sparp->sparp_equivs */
-  ptrlong		ssg_equiv_count;	/*!< Shorthand for ssg_sparp->sparp_equiv_count */
+  sparp_equiv_t		**ssg_equivs;		/*!< Shorthand for ssg_sparp->sparp_sg->sg_equivs */
+  ptrlong		ssg_equiv_count;	/*!< Shorthand for ssg_sparp->sparp_sg->sg_equiv_count */
   struct spar_sqlgen_s  *ssg_parent_ssg;	/*!< Ssg that prints outer subquery */
   SPART			*ssg_wrapping_gp;	/*!< Gp of subtype SELECT_L that contains the current subquery */
 /* Run-time environment */

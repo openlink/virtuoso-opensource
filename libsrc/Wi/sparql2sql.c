@@ -1606,7 +1606,7 @@ sparp_remove_totally_useless_equivs (sparp_t *sparp)
 
 again:
   dirty = 0;
-  for (equiv_ctr = sparp->sparp_equiv_count; equiv_ctr--; /* no step */)
+  for (equiv_ctr = sparp->sparp_sg->sg_equiv_count; equiv_ctr--; /* no step */)
     {
       sparp_equiv_t *eq = SPARP_EQUIV (sparp, equiv_ctr);
       if (NULL == eq)
@@ -1643,7 +1643,7 @@ sparp_remove_redundant_connections (sparp_t *sparp, ptrlong flags)
 {
   SPART *top = sparp->sparp_expr;
   SPART *top_pattern = top->_.req_top.pattern;
-  sparp_equiv_t **equivs = sparp->sparp_equivs;
+  sparp_equiv_t **equivs = sparp->sparp_sg->sg_equivs;
   int eq_ctr;
   sparp_gp_trav (sparp, top_pattern, NULL,
     sparp_gp_trav_remove_unused_aliases, sparp_gp_trav_cu_out_triples_1,
@@ -1655,7 +1655,7 @@ sparp_remove_redundant_connections (sparp_t *sparp, ptrlong flags)
     NULL );
   if (!(SPARP_UNLINK_IF_ASSIGNED_EXTERNALLY & flags))
     goto skip_ext_ext_unlinks; /* see below */
-  for (eq_ctr = sparp->sparp_equiv_count; eq_ctr--; /*no step*/)
+  for (eq_ctr = sparp->sparp_sg->sg_equiv_count; eq_ctr--; /*no step*/)
     {
       sparp_equiv_t *eq = equivs[eq_ctr];
       int sub_ctr;
@@ -1721,7 +1721,7 @@ sparp_restr_of_select_eq_from_connected_subvalues (sparp_t *sparp, sparp_equiv_t
 void
 sparp_restr_of_union_eq_from_connected_subvalues (sparp_t *sparp, sparp_equiv_t *eq)
 {
-  sparp_equiv_t **equivs = sparp->sparp_equivs;
+  sparp_equiv_t **equivs = sparp->sparp_sg->sg_equivs;
   int sub_ctr, varname_ctr;
   int nice_sub_count = 0;
   ptrlong nice_sub_chksum = 0;
@@ -1808,7 +1808,7 @@ sparp_restr_of_join_eq_from_connected_subvalue (sparp_t *sparp, sparp_equiv_t *e
 void
 sparp_restr_of_join_eq_from_connected_subvalues (sparp_t *sparp, sparp_equiv_t *eq)
 {
-  sparp_equiv_t **equivs = sparp->sparp_equivs;
+  sparp_equiv_t **equivs = sparp->sparp_sg->sg_equivs;
   int sub_ctr;
   DO_BOX_FAST (ptrlong, sub_eq_idx, sub_ctr, eq->e_subvalue_idxs)
     {
@@ -1846,10 +1846,10 @@ sparp_find_best_join_eq_for_optional (sparp_t *sparp, SPART *parent, int pos_of_
           DO_BOX_FAST (caddr_t, varname, varname_ctr, eq->e_varnames)
             {
               sparp_equiv_t *parent_eq, *prev_eq;
-              parent_eq = sparp_equiv_get_ro (sparp->sparp_equivs, sparp->sparp_equiv_count, parent, (SPART *)varname, SPARP_EQUIV_GET_NAMESAKES);
+              parent_eq = sparp_equiv_get_ro (sparp->sparp_sg->sg_equivs, sparp->sparp_sg->sg_equiv_count, parent, (SPART *)varname, SPARP_EQUIV_GET_NAMESAKES);
               if (NULL == parent_eq)
                 continue;
-              prev_eq = sparp_equiv_get_ro (sparp->sparp_equivs, sparp->sparp_equiv_count, prev, (SPART *)varname, SPARP_EQUIV_GET_NAMESAKES);
+              prev_eq = sparp_equiv_get_ro (sparp->sparp_sg->sg_equivs, sparp->sparp_sg->sg_equiv_count, prev, (SPART *)varname, SPARP_EQUIV_GET_NAMESAKES);
               if (NULL == prev_eq)
                 continue;
               good_varname = varname;
@@ -1867,7 +1867,7 @@ sparp_find_best_join_eq_for_optional (sparp_t *sparp, SPART *parent, int pos_of_
           DO_BOX_FAST (caddr_t, varname, varname_ctr, eq->e_varnames)
             {
               sparp_equiv_t *parent_eq;
-              parent_eq = sparp_equiv_get_ro (sparp->sparp_equivs, sparp->sparp_equiv_count, parent, (SPART *)varname, SPARP_EQUIV_GET_NAMESAKES);
+              parent_eq = sparp_equiv_get_ro (sparp->sparp_sg->sg_equivs, sparp->sparp_sg->sg_equiv_count, parent, (SPART *)varname, SPARP_EQUIV_GET_NAMESAKES);
               if (NULL == parent_eq)
                 continue;
               for (ctr = parent_eq->e_var_count; ctr--; /* no step */)
@@ -1965,7 +1965,7 @@ sparp_gp_trav_eq_restr_from_connected_subvalues_expn_subq (sparp_t *sparp, SPART
 int
 sparp_gp_trav_eq_restr_from_connected_receivers_gp_in (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
-  sparp_equiv_t **equivs = sparp->sparp_equivs;
+  sparp_equiv_t **equivs = sparp->sparp_sg->sg_equivs;
   int eq_ctr;
   switch (SPART_TYPE(curr))
     {
@@ -1997,7 +1997,7 @@ sparp_gp_trav_eq_restr_from_connected_receivers_gp_in (sparp_t *sparp, SPART *cu
            (SELECT_L != sts_iter->sts_parent->_.gp.subtype);
            sts_iter-- )
            {
-             sparp_equiv_t *outer_eq = sparp_equiv_get_ro (equivs, sparp->sparp_equiv_count, sts_iter->sts_parent, (SPART *)(var->_.var.vname), SPARP_EQUIV_GET_NAMESAKES);
+             sparp_equiv_t *outer_eq = sparp_equiv_get_ro (equivs, sparp->sparp_sg->sg_equiv_count, sts_iter->sts_parent, (SPART *)(var->_.var.vname), SPARP_EQUIV_GET_NAMESAKES);
              if (NULL != outer_eq)
                sparp_rvr_tighten (sparp, &(var->_.var.rvr), &(outer_eq->e_rvr), changeable);
            }
@@ -2236,7 +2236,7 @@ sparp_equiv_audit_all (sparp_t *sparp, int flags)
     sparp_gp_trav_equiv_audit_inner_vars, NULL, sparp_gp_trav_equiv_audit_inner_vars,
     NULL );
   sparp_equiv_audit_retvals (sparp, sparp->sparp_expr);
-  for (eq_ctr = sparp->sparp_equiv_count; eq_ctr--; /*no step*/)
+  for (eq_ctr = sparp->sparp_sg->sg_equiv_count; eq_ctr--; /*no step*/)
     {
       sparp_equiv_t *eq = SPARP_EQUIV (sparp, eq_ctr);
       SPART *gp;
@@ -2528,7 +2528,7 @@ sparp_check_field_mapping_g (sparp_t *sparp, tc_context_t *tcc, SPART *field,
         }
       if (SPART_VARR_FIXED & field->_.var.rvr.rvrRestrictions)
         {
-          /*sparp_equiv_t *eq_g = sparp->sparp_equivs[field->_.var.equiv_idx];*/
+          /*sparp_equiv_t *eq_g = sparp->sparp_sg->sg_equivs[field->_.var.equiv_idx];*/
           int chk_res;
           if (DV_UNAME != DV_TYPE_OF (field->_.var.rvr.rvrFixedValue))
             { /* This would be very strange failure */
@@ -5185,8 +5185,8 @@ sparp_rewrite_qm_preopt (sparp_t *sparp, int safely_copy_retvals)
 
 retry_preopt:
   sparp_rewrite_basic (sparp);
-  equivs = sparp->sparp_equivs;
-  equiv_count = sparp->sparp_equiv_count;
+  equivs = sparp->sparp_sg->sg_equivs;
+  equiv_count = sparp->sparp_sg->sg_equiv_count;
   for (equiv_ctr = equiv_count; equiv_ctr--; /* no step */)
     {
       sparp_equiv_t *eq = equivs[equiv_ctr];
@@ -5418,8 +5418,8 @@ retry_after_reducing_optionals:
     }
   if (NULL != sparp->sparp_parent_sparp)
     goto end_of_equiv_checks; /* see below */
-  equivs = sparp->sparp_equivs;
-  equiv_count = sparp->sparp_equiv_count;
+  equivs = sparp->sparp_sg->sg_equivs;
+  equiv_count = sparp->sparp_sg->sg_equiv_count;
   for (equiv_ctr = equiv_count; equiv_ctr--; /* no step */)
     {
       sparp_equiv_t *eq = equivs[equiv_ctr];

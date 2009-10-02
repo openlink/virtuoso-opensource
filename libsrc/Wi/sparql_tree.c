@@ -458,9 +458,6 @@ sparp_up_from_sub (sparp_t *sparp, SPART *subq_gp_wrapper, sparp_t *sub_sparp)
 {
   sparp_gp_trav_resume (sparp);
   subq_gp_wrapper->_.gp.subquery = sub_sparp->sparp_expr;
-  sparp->sparp_equivs = sub_sparp->sparp_equivs;
-  sparp->sparp_equiv_count = sub_sparp->sparp_equiv_count;
-  sparp->sparp_cloning_serial = sub_sparp->sparp_cloning_serial;
 }
 
 void
@@ -502,8 +499,8 @@ sparp_gp_localtrav_treelist (sparp_t *sparp, SPART **treelist,
 sparp_equiv_t *
 sparp_equiv_alloc (sparp_t *sparp)
 {
-  ptrlong eqcount = sparp->sparp_equiv_count;
-  sparp_equiv_t **eqs = sparp->sparp_equivs;
+  ptrlong eqcount = sparp->sparp_sg->sg_equiv_count;
+  sparp_equiv_t **eqs = sparp->sparp_sg->sg_equivs;
   sparp_equiv_t *res;
   if (eqcount >= 0x10000)
     {
@@ -516,6 +513,7 @@ sparp_equiv_alloc (sparp_t *sparp)
   memset (res, 0, sizeof (sparp_equiv_t));
   if (BOX_ELEMENTS_INT_0 (eqs) == eqcount)
     {
+      sparp_t *sparp_iter;
       size_t new_size = ((NULL == eqs) ? 4 * sizeof (sparp_equiv_t *) : 2 * box_length (eqs));
       sparp_equiv_t **new_eqs = (sparp_equiv_t **)t_alloc_box (new_size, DV_ARRAY_OF_POINTER);
       if (NULL != eqs)
@@ -524,7 +522,7 @@ sparp_equiv_alloc (sparp_t *sparp)
       if (NULL != eqs)
         memset (eqs, -1, box_length (eqs));
 #endif
-      sparp->sparp_equivs = eqs = new_eqs;
+      sparp->sparp_sg->sg_equivs = eqs = new_eqs;
     }
   res->e_own_idx = eqcount;
 #ifdef DEBUG
@@ -533,7 +531,7 @@ sparp_equiv_alloc (sparp_t *sparp)
   res->e_merge_dest_idx = SPART_BAD_EQUIV_IDX;
   res->e_external_src_idx = SPART_BAD_EQUIV_IDX;
   eqs[eqcount++] = res;
-  sparp->sparp_equiv_count = eqcount;
+  sparp->sparp_sg->sg_equiv_count = eqcount;
   return res;
 }
 
@@ -923,7 +921,7 @@ sparp_equiv_remove_var (sparp_t *sparp, sparp_equiv_t *eq, SPART *var)
       int eq_idx = var->_.var.equiv_idx;
       if (SPART_BAD_EQUIV_IDX == eq_idx)
         return;
-      if (eq_idx >= sparp->sparp_equiv_count)
+      if (eq_idx >= sparp->sparp_sg->sg_equiv_count)
         spar_internal_error (sparp, "sparp_" "equiv_remove_var(): eq_idx is too big");
       eq = SPARP_EQUIV (sparp, eq_idx);
       if (NULL == eq)
@@ -972,14 +970,14 @@ sparp_equiv_t *
 sparp_equiv_clone (sparp_t *sparp, sparp_equiv_t *orig, SPART *cloned_gp)
 {
   sparp_equiv_t *tgt;
-  if (orig->e_cloning_serial == sparp->sparp_cloning_serial)
+  if (orig->e_cloning_serial == sparp->sparp_sg->sg_cloning_serial)
     spar_internal_error (sparp, "sparp_" "equiv_clone(): can't make second clone of equiv during same gp cloning");
 #ifdef DEBUG
   if (orig->e_deprecated)
     spar_internal_error (sparp, "sparp_" "equiv_clone(): weird cloning of deprecated equiv");
 #endif
   tgt = sparp_equiv_alloc (sparp);
-  orig->e_cloning_serial = sparp->sparp_cloning_serial;
+  orig->e_cloning_serial = sparp->sparp_sg->sg_cloning_serial;
   orig->e_clone_idx = tgt->e_own_idx;
   tgt->e_gp = cloned_gp;
   tgt->e_varnames = (caddr_t *)t_full_box_copy_tree ((caddr_t)(orig->e_varnames));
@@ -1003,7 +1001,7 @@ sparp_equiv_clone (sparp_t *sparp, sparp_equiv_t *orig, SPART *cloned_gp)
           sparp_equiv_t *merged_esrc = SPARP_EQUIV(sparp, esrc->e_merge_dest_idx);
           esrc = merged_esrc;
         }
-      if (esrc->e_cloning_serial == sparp->sparp_cloning_serial)
+      if (esrc->e_cloning_serial == sparp->sparp_sg->sg_cloning_serial)
          tgt->e_external_src_idx = orig->e_external_src_idx;
     }
   tgt->e_merge_dest_idx = orig->e_merge_dest_idx;
@@ -1019,7 +1017,7 @@ sparp_equiv_t *
 sparp_equiv_exact_copy (sparp_t *sparp, sparp_equiv_t *orig)
 {
   sparp_equiv_t *tgt;
-  if (orig->e_cloning_serial == sparp->sparp_cloning_serial)
+  if (orig->e_cloning_serial == sparp->sparp_sg->sg_cloning_serial)
     spar_internal_error (sparp, "sparp_" "equiv_clone(): can't make second clone of equiv during same gp cloning");
   tgt = (sparp_equiv_t *)t_alloc_box (sizeof (sparp_equiv_t), DV_ARRAY_OF_POINTER);
   memcpy (tgt, orig, sizeof (sparp_equiv_t));
@@ -1078,7 +1076,7 @@ sparp_equiv_remove (sparp_t *sparp, sparp_equiv_t *eq)
   spar_internal_error (sparp, "sparp_" "equiv_remove (): failed to remove eq from its gp");
 
 found_in_gp:
-  sparp->sparp_equivs[eq_own_idx] = NULL;
+  sparp->sparp_sg->sg_equivs[eq_own_idx] = NULL;
   eq_gp->_.gp.equiv_count = len;
 }
 
@@ -2205,10 +2203,10 @@ sparp_clone_id (sparp_t *sparp, caddr_t orig_name)
       sprintf (buf + 20, "X%c%c%c%c-c%d",
         'A' + (hash & 0x10), 'A' + ((hash >> 4) & 0x10),
         'A' + ((hash >> 8) & 0x10), 'A' + ((hash >> 12) & 0x10),
-        (int)(sparp->sparp_cloning_serial) );
+        (int)(sparp->sparp_sg->sg_cloning_serial) );
     }
   else
-    sprintf (buf, "%s-c%d", orig_name, (int)(sparp->sparp_cloning_serial));
+    sprintf (buf, "%s-c%d", orig_name, (int)(sparp->sparp_sg->sg_cloning_serial));
   return t_box_dv_short_string (buf);
 }
 
@@ -2236,7 +2234,7 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
           sparp_equiv_t *eq = SPARP_EQUIV (sparp, eq_idx);
           sparp_equiv_t *cloned_eq;
           int var_pos;
-          if (eq->e_cloning_serial != sparp->sparp_cloning_serial)
+          if (eq->e_cloning_serial != sparp->sparp_sg->sg_cloning_serial)
             spar_internal_error (sparp, "sparp_" "tree_full_clone_int(): eq not cloned for a variable");
           tgt->_.var.equiv_idx = eq->e_clone_idx;
           cloned_eq = SPARP_EQUIV (sparp, eq->e_clone_idx);
@@ -2291,7 +2289,7 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
               DO_BOX_FAST_REV (ptrlong, recv, recv_ctr, cloned_recvs)
                 {
                   sparp_equiv_t *recv_eq = SPARP_EQUIV (sparp, recv);
-                  if (recv_eq->e_cloning_serial != sparp->sparp_cloning_serial)
+                  if (recv_eq->e_cloning_serial != sparp->sparp_sg->sg_cloning_serial)
                     spar_internal_error (sparp, "sparp_" "tree_full_clone_int(): recv eq not cloned");
                   cloned_recvs [recv_ctr] = recv_eq->e_clone_idx;
                 }
@@ -2343,7 +2341,7 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
                 {
                   sparp_equiv_t *subv_eq = SPARP_EQUIV (sparp, subv);
                   sparp_equiv_t *cloned_subv_eq;
-                  if (subv_eq->e_cloning_serial != sparp->sparp_cloning_serial)
+                  if (subv_eq->e_cloning_serial != sparp->sparp_sg->sg_cloning_serial)
                     spar_internal_error (sparp, "sparp_" "tree_full_clone_int(): subv eq not cloned");
                   cloned_subs [subv_ctr] = subv_eq->e_clone_idx;
                   cloned_subv_eq = SPARP_EQUIV (sparp, subv_eq->e_clone_idx);
@@ -2357,7 +2355,7 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
                       DO_BOX_FAST_REV (ptrlong, subv_recv, subv_recv_ctr, cloned_sub_recvs)
                         {
                           sparp_equiv_t *subv_recv_eq = SPARP_EQUIV (sparp, subv_recv);
-                          if (subv_recv_eq->e_cloning_serial != sparp->sparp_cloning_serial)
+                          if (subv_recv_eq->e_cloning_serial != sparp->sparp_sg->sg_cloning_serial)
                             spar_internal_error (sparp, "sparp_" "tree_full_clone_int(): recv eq of subv eq not cloned");
                           cloned_sub_recvs [subv_recv_ctr] = subv_recv_eq->e_clone_idx;
                         }
@@ -2473,9 +2471,9 @@ sparp_treelist_full_clone (sparp_t *sparp, SPART **origs)
   SPART **tgt;
   sparp_equiv_audit_all (sparp, 0);
   sparp_audit_mem (sparp);
-  sparp->sparp_cloning_serial++;
+  sparp->sparp_sg->sg_cloning_serial++;
   tgt = sparp_treelist_full_clone_int (sparp, origs, NULL);
-  sparp->sparp_cloning_serial++;
+  sparp->sparp_sg->sg_cloning_serial++;
   sparp_equiv_audit_all (sparp, 0);
   sparp_audit_mem (sparp);
   t_check_tree (tgt);
@@ -2488,9 +2486,9 @@ sparp_gp_full_clone (sparp_t *sparp, SPART *gp)
   SPART *tgt;
   sparp_equiv_audit_all (sparp, 0);
   sparp_audit_mem (sparp);
-  sparp->sparp_cloning_serial++;
+  sparp->sparp_sg->sg_cloning_serial++;
   tgt = sparp_tree_full_clone_int (sparp, gp, NULL);
-  sparp->sparp_cloning_serial++;
+  sparp->sparp_sg->sg_cloning_serial++;
   sparp_equiv_audit_all (sparp, 0);
   sparp_audit_mem (sparp);
   t_check_tree (tgt);
@@ -2549,7 +2547,7 @@ sparp_tree_full_copy (sparp_t *sparp, const SPART *orig, const SPART *parent_gp)
       tgt->_.funcall.argtrees = sparp_treelist_full_copy (sparp, orig->_.funcall.argtrees, parent_gp);
       return tgt;
     case SPAR_REQ_TOP:
-      if (0 != sparp->sparp_equiv_count)
+      if (0 != sparp->sparp_sg->sg_equiv_count)
         spar_internal_error (sparp, "sparp_tree_full_copy() is used to copy req_top with nonzero equiv_count");
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
       tgt->_.req_top.retvals = sparp_treelist_full_copy (sparp, orig->_.req_top.retvals, parent_gp);
@@ -3134,9 +3132,9 @@ SPART *sparp_find_gp_by_eq_idx (sparp_t *sparp, ptrlong eq_idx)
 #ifdef DEBUG
   if (SPART_BAD_EQUIV_IDX == eq_idx)
     spar_internal_error (sparp, "sparp_" "find_gp_by_eq_idx(): bad eq_idx");
-  if (eq_idx >= sparp->sparp_equiv_count)
+  if (eq_idx >= sparp->sparp_sg->sg_equiv_count)
     spar_internal_error (sparp, "sparp_" "find_gp_by_eq_idx(): eq_idx is too big");
-  if (NULL == sparp->sparp_equivs [eq_idx])
+  if (NULL == sparp->sparp_sg->sg_equivs [eq_idx])
     spar_internal_error (sparp, "sparp_" "find_gp_by_eq_idx(): eq_idx of merged and disabled equiv");
 #endif
   do {
