@@ -22,14 +22,9 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 -->
 <!DOCTYPE xsl:stylesheet [
-<!ENTITY rdfns  "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-<!ENTITY xhv  "http://www.w3.org/1999/xhtml/vocab#">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
-<!ENTITY sioct "http://rdfs.org/sioc/types#">
-<!ENTITY mo "http://purl.org/ontology/mo/">
-<!ENTITY mmd "http://musicbrainz.org/ns/mmd-1.0#">
 ]>
 
 <xsl:stylesheet version="1.0"
