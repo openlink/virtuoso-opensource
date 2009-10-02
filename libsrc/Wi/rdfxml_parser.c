@@ -1767,6 +1767,8 @@ xp_rdfa_element_end (void *userdata, const char * name)
   xp_node_t *current_node, *parent_node;
   int inner_place_bits = inner->xrdfal_place_bits;
   int ctr;
+  if (NULL == inner->xrdfal_xn)
+    return; /* This happens for elements that are closed outside any "interesting" element */
   if (xp->xp_current != inner->xrdfal_xn)
     {
       if (!(RDFA_IN_XMLLITERAL & inner_place_bits))
