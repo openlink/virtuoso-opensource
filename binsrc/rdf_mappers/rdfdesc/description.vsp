@@ -184,7 +184,7 @@
       </ol>
       <h1>How Do I Discover Alternative Metadata Representations?</h1>
       <p>
-      This document exposes metadata in the following formats: (X)HTML+RDFa, Turtle, N3, JSON+RDF,  or RDF/XML. In the most basic form,  you can simply view the (X)HTML source markup of this page, and go directly to the &lt;head/&gt; section which contains a &lt;link/&gt; tag with relationship and type properties for each format.
+      This document exposes metadata in the following formats: (X)HTML+RDFa, Turtle, N3, RDF/JSON,  or RDF/XML. In the most basic form,  you can simply view the (X)HTML source markup of this page, and go directly to the &lt;head/&gt; section which contains a &lt;link/&gt; tag with relationship and type properties for each format.
      </p>
      <p>
      In addition, you can also explicitly request a desired metadata representation for a given resource via HTTP GET requests that use the entity's strong identifier as the call target.
@@ -205,7 +205,7 @@
 
     <div id="header">
       <div id="hd_l">
-	  <h1 id="title">About: <a href="<?= case when _S like 'nodeID://%' then rdfdesc_http_url (_S) else _S_save end ?>"><?vsp http (sprintf ('%s', label)); ?></a></h1>
+	  <h1 id="title">About: <a href="<?= case when _S like 'nodeID://%' then rdfdesc_http_url (_S) else _S end ?>"><?vsp http (sprintf ('%s', label)); ?></a></h1>
         <div id="homelink">
         </div>
         <div class="page-resource-uri">
@@ -311,7 +311,7 @@
        &nbsp; &nbsp;
        &nbsp; &nbsp; Raw Linked Data formats:
        <a href="<?=rdf_link || '&output=n3'?>">N3/Turtle</a> |
-       <a href="<?=rdf_link || '&output=application%2Frdf%2Bjson'?>">JSON+RDF</a> |
+       <a href="<?=rdf_link || '&output=application%2Frdf%2Bjson'?>">RDF/JSON</a> |
        <a href="<?=rdf_link || '&output=rdf'?>">RDF/XML</a>
       </div> <!-- #ft_t -->
       <div id="ft_b">
