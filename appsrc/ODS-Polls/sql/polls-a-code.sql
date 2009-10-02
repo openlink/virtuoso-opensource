@@ -798,6 +798,15 @@ create procedure POLLS.WA.domain_sioc_url (
 
 -------------------------------------------------------------------------------
 --
+create procedure POLLS.WA.forum_iri (
+  in domain_id integer)
+{
+  return SIOC..polls_iri (POLLS.WA.domain_name (domain_id));
+}
+;
+
+-------------------------------------------------------------------------------
+--
 -- Account Functions
 --
 -------------------------------------------------------------------------------

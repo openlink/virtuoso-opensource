@@ -832,7 +832,7 @@ create procedure AB.WA.domain_iri (
 create procedure AB.WA.forum_iri (
   in domain_id integer)
 {
-  return SIOC..bmk_iri (AB.WA.domain_name (domain_id));
+  return SIOC..addressbook_iri (AB.WA.domain_name (domain_id));
 }
 ;
 

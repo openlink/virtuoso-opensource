@@ -109,20 +109,6 @@ create procedure socialnetwork_contact_iri (
 
 -------------------------------------------------------------------------------
 --
-create procedure addressbook_tag_iri (
-	in user_id integer,
-	in tag varchar)
-{
-	declare user_name varchar;
-	declare exit handler for not found { return null; };
-
-	select U_NAME into user_name from DB.DBA.SYS_USERS where U_ID = user_id;
-	return sprintf ('http://%s%s/%U/concept#%s', get_cname(), get_base_path (), user_name, AB.WA.tag_id (tag));
-}
-;
-
--------------------------------------------------------------------------------
---
 create procedure fill_ods_addressbook_sioc2 (
   in _wai_name varchar := null,
   in _access_mode integer := null)

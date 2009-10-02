@@ -718,6 +718,15 @@ create procedure ENEWS.WA.domain_sioc_url (
 
 -------------------------------------------------------------------------------
 --
+create procedure ENEWS.WA.forum_iri (
+  in domain_id integer)
+{
+  return SIOC..feeds_iri (ENEWS.WA.domain_name (domain_id));
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ENEWS.WA.sparql_url ()
 {
   return sprintf ('http://%s/sparql?default-graph-uri=%U&query=%U&format=%U', SIOC..get_cname (), SIOC..get_graph (), 'DESCRIBE <_RDF_>', 'application/sparql-results+xml');

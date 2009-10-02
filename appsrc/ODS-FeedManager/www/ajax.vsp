@@ -131,7 +131,7 @@
           order by TS_TAG) do
     {
       tagStyle := ODS.WA.tag_style (TS_COUNT, tagsMin, tagsMax) || 'padding-left: 3px;';
-      http (sprintf ('<a id="t_tag_%s" href="%s" onclick="javascript: Feeds.selectTag(\'%s\'); return false;" style="%s">%s</a> ', ENEWS.WA.tag_id(TS_TAG), SIOC..feeds_tag_iri (_account_id, TS_TAG), TS_TAG, tagStyle, TS_TAG));
+      http (sprintf ('<a id="t_tag_%s" href="%s" onclick="javascript: Feeds.selectTag(\'%s\'); return false;" style="%s">%s</a> ', ENEWS.WA.tag_id(TS_TAG), SIOC..tag_iri (ENEWS.WA.forum_iri (_domain_id), TS_TAG), TS_TAG, tagStyle, TS_TAG));
     }
   }
   else if (action = 'favourites')

@@ -635,7 +635,7 @@
                             tags := split_and_decode (tags, 0, '\0\0,');
                             for (N := 0; N < length(tags); N := N + 1)
                             {
-                              http(sprintf('<a id="tag_%d_%s" href="%s" onclick="javascript: parent.BMK.selectTag (\'%s\'); return false;">%s</a>', id, tags[N], SIOC..bmk_tag_iri (self.account_id, tags[N]), tags[N], tags[N]));
+                              http(sprintf('<a id="tag_%d_%s" href="%s" onclick="javascript: parent.BMK.selectTag (\'%s\'); return false;">%s</a>', id, tags[N], SIOC..tag_iri (BMK.WA.forum_iri (self.domain_id), tags[N]), tags[N], tags[N]));
                               if (N <> length(tags)-1)
                                 http(' | ');
                             }
@@ -1453,7 +1453,7 @@
                       <?vsp
                         }
                         M := 4;
-                        http (sprintf ('<tr id="s_tr_no" style="display: %s"><td colspan="%d"><b>No Sharings</b></td></tr>', case when L = 0 then '' else 'none' end, M));
+                        http (sprintf ('<tr id="s_tr_no" %s><td colspan="%d"><b>No Sharings</b></td></tr>', case when L = 0 then '' else 'style="display: none;"' end, M));
                       ?>
                     </table>
                     <input type="hidden" id="s_no" name="s_no" value="<?V L+1 ?>" />
