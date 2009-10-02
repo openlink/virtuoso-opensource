@@ -349,7 +349,7 @@ again:
 	 {
 	 http (sprintf ('<a class="uri" %s href="%s">%s</a>', rdfa, rdfdesc_http_url (_url), rdfdesc_uri_curie(_url, _label)));
 	   if (prop = __id2in (rdf_sas_iri ()))
-	     http (sprintf ('&nbsp;<a class="uri" href="%s"><img src="images/goout.gif" border="0"/></a>', _url));
+	     http (sprintf ('&nbsp;<a class="uri" href="%s"><img src="images/goout.gif" title="Open Actual (X)HTML page" border="0"/></a>', _url));
 	 }
 
      }
@@ -475,7 +475,7 @@ create procedure rdfdesc_prop_label (in uri any)
   if (length (ll) = 0)
     ll := rdfdesc_uri_curie (uri);
   if (isstring (ll) and ll like 'opl%:isDescribedUsing')
-    ll := 'is Described Using';  
+    ll := 'Described Using Terms From';  
   return ll;  
 }
 ;

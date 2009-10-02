@@ -146,7 +146,7 @@
     label := _S;
    links := sprintf ('Link: <http://%s%s&output=rdf>;\r\n rel="alternate"; title="Metadata in RDF/XML format",\r\n ', host, rdf_link); 
    links := links||sprintf ('<http://%s%s&output=n3>;\r\n rel="alternate"; title="Metadata in N3/Turtle format",\r\n ', host, rdf_link); 
-   links := links||sprintf ('<http://%s%s&output=application%%2Frdf%%2Bjson>;\r\n rel="alternate"; title="Metadata in JSON+RDF format"\r\n', host, rdf_link); 
+   links := links||sprintf ('<http://%s%s&output=application%%2Frdf%%2Bjson>;\r\n rel="alternate"; title="Metadata in RDF/JSON format"\r\n', host, rdf_link); 
    http_header ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\n' || links);
 
 ?>
@@ -157,7 +157,7 @@
     <title>About: <?vsp http (sprintf ('%s', label)); ?></title>
     <link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>&output=rdf" title="Metadata in RDF/XML format" />
     <link rel="alternate" type="text/n3" href="<?=rdf_link?>&output=n3" title="Metadata in N3/Turtle format" />
-    <link rel="alternate" type="application/json+rdf" href="<?=rdf_link?>&output=application%2Frdf%2Bjson" title="Metadata in JSON+RDF format" />
+    <link rel="alternate" type="application/json+rdf" href="<?=rdf_link?>&output=application%2Frdf%2Bjson" title="Metadata in RDF/JSON format" />
     <link rel="stylesheet" type="text/css" href="statics/slidebar.css" />
     <link rel="stylesheet" type="text/css" href="statics/style_w.css" />
     <link href="statics/highlighter.css" type="text/css" rel="stylesheet" charset="utf-8" />
