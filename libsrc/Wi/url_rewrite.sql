@@ -497,7 +497,7 @@ create procedure DB.DBA.URLREWRITE_APPLY_RECURSIVE (
                   -- dbg_obj_princ('parts2: ', length(parts), parts[2], URR_NICE_MIN_PARAMS);
                   if ((length (parts) < URR_NICE_MIN_PARAMS) or (length (parts) >= URR_NICE_MIN_PARAMS and parts[URR_NICE_MIN_PARAMS - 1] is NULL))
 		    {
-		      if (URR_NO_CONTINUATION = 2)
+		      if (URR_NO_CONTINUATION = 2 or URR_NO_CONTINUATION = 1)
 			goto next_rule;
                       return 0;
 		    }
@@ -511,7 +511,7 @@ create procedure DB.DBA.URLREWRITE_APPLY_RECURSIVE (
 -- dbg_obj_princ('parts22: ', _result);
                   if (_result is null)
 		    {
-		      if (URR_NO_CONTINUATION = 2)
+		      if (URR_NO_CONTINUATION = 2 or URR_NO_CONTINUATION = 1)
 			goto next_rule;
                       return 0;
 		    }
