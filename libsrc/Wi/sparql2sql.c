@@ -3453,15 +3453,38 @@ sparp_set_special_order_selid (sparp_t *sparp, SPART *new_gp)
 #endif
 
 SPART **
-sparp_make_qm_cases (sparp_t *sparp, SPART *triple)
+sparp_make_qm_cases (sparp_t *sparp, SPART *triple, SPART *parent_gp)
 {
   triple_case_t **tc_list = triple->_.triple.tc_list;
+  SPART *ft_cond_to_relocate = NULL;
   SPART **res;
   int tc_idx;
 #ifdef DEBUG
   if (1 >= BOX_ELEMENTS (triple->_.triple.tc_list))
     spar_internal_error (sparp, "sparp_" "make_qm_cases(): redundant call");
 #endif
+  if (triple->_.triple.ft_type)
+    {
+      caddr_t ft_var_name;
+      int filt_ctr;
+      if (SPAR_VARIABLE != SPART_TYPE (triple->_.triple.tr_object))
+        spar_internal_error (sparp, "sparp_" "make_qm_cases(): triple should have free-text predicate but the object is not a variable");
+      ft_var_name = triple->_.triple.tr_object->_.var.vname;
+      DO_BOX_FAST_REV (SPART *, filt, filt_ctr, parent_gp->_.gp.filters)
+        {
+          if (spar_filter_is_freetext (filt) &&
+            (0 < BOX_ELEMENTS (filt->_.funcall.argtrees)) &&
+            (SPAR_VARIABLE == SPART_TYPE (filt->_.funcall.argtrees[0])) &&
+            !strcmp (filt->_.funcall.argtrees[0]->_.var.vname, ft_var_name) )
+            {
+              ft_cond_to_relocate = sparp_gp_detach_filter (sparp, parent_gp, filt_ctr, NULL);
+              break;
+            }
+        }
+      END_DO_BOX_FAST_REV;
+      if (NULL == ft_cond_to_relocate)
+        spar_error (sparp, "optimizer can not process a combination of quad map patterns and free-text condition for variable ?%.200s", ft_var_name);
+    }
   res = (SPART **)t_alloc_box (box_length (tc_list), DV_ARRAY_OF_POINTER);
   DO_BOX_FAST (triple_case_t *, tc, tc_idx, tc_list)
     {
@@ -3514,6 +3537,8 @@ sparp_make_qm_cases (sparp_t *sparp, SPART *triple)
           qm_case_triple->_.triple.native_formats[field_ctr] = native_fmt;
         }
       sparp_gp_attach_member (sparp, qm_case_gp, qm_case_triple, 0, NULL);
+      if (NULL != ft_cond_to_relocate)
+        sparp_gp_attach_filter (sparp, qm_case_gp, sparp_tree_full_copy (sparp, ft_cond_to_relocate, parent_gp), 0, NULL);
       res [tc_idx] = qm_case_gp;
     }
   END_DO_BOX_FAST;
@@ -3611,7 +3636,7 @@ int sparp_gp_trav_multiqm_to_unions (sparp_t *sparp, SPART *curr, sparp_trav_sta
           continue;
         }
       sparp_gp_detach_member (sparp, curr, memb_ctr, NULL);
-      qm_cases = sparp_make_qm_cases (sparp, memb);
+      qm_cases = sparp_make_qm_cases (sparp, memb, curr);
       if (UNION_L == curr->_.gp.subtype)
         {
           DO_BOX_FAST_REV (SPART *, qm_case, case_ctr, qm_cases)

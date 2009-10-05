@@ -591,9 +591,10 @@ extern caddr_t *sparp_gp_may_reuse_tabids_in_union (sparp_t *sparp, SPART *gp, i
 
 /*! This produces a list of single-triple GPs such that every GP implements only one quad mapping from
 qm_list of the original \c triple.
-Every generated contains a triple that has qm_list of length 1; guess what's the member of the list :)
+Every generated gp contains a triple that has qm_list of length 1; guess what's the member of the list :)
+If an original triple has \c ft_type set then a free-text condition is removed from parent_gp and cloned int every generated gp
 */
-extern SPART **sparp_make_qm_cases (sparp_t *sparp, SPART *triple);
+extern SPART **sparp_make_qm_cases (sparp_t *sparp, SPART *triple, SPART *parent_gp);
 
 /*! Creates a new graph pattern of specified \c subtype as if it is parsed ar \c srcline of source text. */
 extern SPART *sparp_new_empty_gp (sparp_t *sparp, ptrlong subtype, ptrlong srcline);
