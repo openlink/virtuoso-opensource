@@ -1072,7 +1072,7 @@ end_loop:;
 	  else
 	    login := '';
 	  host := http_request_header(http_request_header(), 'Host', null, null);
-	  ids := vector ('rdf', 'id', 'id/entity');
+	  ids := vector ('rdf', 'id/entity', 'id');
 	  foreach (varchar idn in ids) do
 	    {
 	      pref := 'http://' || host || http_map_get ('domain') || '/' || idn || '/';
