@@ -1016,10 +1016,12 @@ ws_read_multipart_mime_post (ws_connection_t *ws, int *is_stream)
       CATCH_READ_FAIL_S (ws->ws_session)
 	{
 	  session_buffered_read (ws->ws_session, ptr, ws->ws_req_len);
-	  if(http_ses_trap) {
-	    if (ws->ws_ses_trap)
-	      session_buffered_write (ws->ws_req_log, ptr, ws->ws_req_len);
-	  }
+	  if (http_ses_trap) 
+	    {
+	      if (ws->ws_ses_trap)
+		session_buffered_write (ws->ws_req_log, ptr, ws->ws_req_len);
+	    }
+	  session_buffered_write (ws->ws_raw_post, ptr, ws->ws_req_len);
 	}
       FAILED
 	{
