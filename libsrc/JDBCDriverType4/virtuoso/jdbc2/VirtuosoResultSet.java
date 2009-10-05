@@ -2253,7 +2253,15 @@ public class VirtuosoResultSet implements ResultSet
    {
       if(currentRow > 0 && currentRow <= rows.size())
       {
-         int r = (type == VirtuosoResultSet.TYPE_SCROLL_INSENSITIVE) ? ((VirtuosoRow)(rows.elementAt(currentRow - 1))).getRow() : (type == VirtuosoResultSet.TYPE_SCROLL_SENSITIVE) ? 0 : ((Number)((openlink.util.Vector)(((VirtuosoRow)(rows.elementAt(currentRow - 1))).getBookmark()).elementAt(1)).elementAt(0)).intValue();
+         int r;
+
+         if (type == VirtuosoResultSet.TYPE_SCROLL_INSENSITIVE)
+           r = ((VirtuosoRow)(rows.elementAt(currentRow - 1))).getRow();
+         else if (type == VirtuosoResultSet.TYPE_SCROLL_SENSITIVE)
+           r = ((Number)((openlink.util.Vector)(((VirtuosoRow)(rows.elementAt(currentRow - 1))).getBookmark()).elementAt(1)).elementAt(0)).intValue();
+         else
+           r = 0;
+
          if(r == 0)
             return currentRow;
          return r;
