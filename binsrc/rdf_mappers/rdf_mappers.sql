@@ -432,8 +432,10 @@ insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
     values ('eRDF', 'http://purl.org/NET/erdf/profile', registry_get ('_rdf_mappers_path_') || 'xslt/main/erdf2rdfxml.xsl')
 ;
 
-insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
-    values ('RDFa', '', registry_get ('_rdf_mappers_path_') || 'xslt/main/rdfa2rdfxml.xsl')
+--insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
+--    values ('RDFa', '', registry_get ('_rdf_mappers_path_') || 'xslt/main/rdfa2rdfxml.xsl')
+--;
+delete from DB.DBA.SYS_GRDDL_MAPPING where GM_NAME = 'RDFa'
 ;
 
 insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
@@ -731,16 +733,10 @@ create procedure DB.DBA.XSLT_STR2DATE (in val varchar)
 }
 ;
 
-registry_set ('__rdf_cartridges_original_doc_uri__', '1');
-
 create procedure DB.DBA.RDF_SPONGE_DOC_IRI (in url varchar, in dest varchar := null)
 {
   declare res varchar;
   res := coalesce (url, dest);
-  if (registry_get ('__rdf_cartridges_original_doc_uri__') = '1')
-    return res;
-  if (strchr (res ,'#') is null)
-    res := res || '#this';
   return res;  
 }
 ;
@@ -4522,7 +4518,12 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
       DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
       return 0;
     };
-  if (new_origin_uri like 'http://%amazon.%/gp/product/%')
+  if (new_origin_uri like 'http://%amazon.%/gp/product/product-description/%')
+    {
+      tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/gp/product/product-description/%s', 0);
+      asin := rtrim (tmp[2], '/');
+    }
+  else if (new_origin_uri like 'http://%amazon.%/gp/product/%')
     {
       tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/gp/product/%s', 0);
       asin := rtrim (tmp[2], '/');
@@ -5236,8 +5237,8 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
   declare xmlnss, i, l, nss, rdf_url_arr, content, hdr, rdf_in_html, old_etag, old_last_modified any;
   declare ret_flag, is_grddl, download_size, load_msec int;
   declare get_feeds, add_html_meta, grddl_loop int;
-  declare base_url, ns_url, reg, doc_base varchar;
-  declare profile_trf, ns_trf, ext_profs any;
+  declare base_url, ns_url, reg, doc_base, proxy_iri varchar;
+  declare profile_trf, ns_trf, ext_profs, thisgr, cnt any;
   declare dict any;
 
   get_feeds := add_html_meta := 0;
@@ -5257,6 +5258,10 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
   ns_trf := vector ();
   ext_profs := vector ();
   grddl_loop := 0;
+  if (registry_get ('__rdf_cartridges_original_doc_uri__') = '1')
+    proxy_iri := new_origin_uri;
+  else
+    proxy_iri := DB.DBA.RDF_SPONGE_PROXY_IRI (new_origin_uri);
 
   declare exit handler for sqlstate '*'
     {
@@ -5373,6 +5378,29 @@ try_grddl:
   if (mdta) -- It is recognized as GRDDL and data is loaded, stop there WAS: is_grddl and xpath_eval ('/html', xt) is null)
     goto ret;
   try_rdfa:;
+  -- RDFa
+  thisgr := coalesce (dest, graph_iri);
+  cnt := (sparql define input:storage "" select count(*) { graph `iri(?:thisgr)` { ?s ?p ?o }});
+  {
+      {
+	declare exit handler for sqlstate '*';
+	DB.DBA.RDF_LOAD_RDFA (ret_body, proxy_iri, thisgr);
+	goto rdfa_end;
+      }
+      {
+	declare exit handler for sqlstate '*';
+	DB.DBA.RDF_LOAD_RDFA (ret_body, proxy_iri, thisgr, 1);
+	goto rdfa_end;
+      }
+      {
+	declare exit handler for sqlstate '*';
+	DB.DBA.RDF_LOAD_RDFA (ret_body, proxy_iri, thisgr, 2);
+	rdfa_end:;
+      }
+  }  
+  cnt := (sparql define input:storage "" select count(*) { graph `iri(?:thisgr)` { ?s ?p ?o }}) - cnt;
+  if (cnt > 0)
+    mdta := mdta + 1;
   -- /* GRDDL - plan A, eRDF going here */
   foreach (any prof in profs) do
     {

@@ -109,9 +109,13 @@
        _S := _S_save;
        -- rdf views 
        _S := replace (_S, '''', '%27');
+       exec (sprintf ('sparql ask where { graph <%S> { <%s> ?p ?o . }}', _G, _S), null, null, vector (), 0, meta, data);
+       if (not length (data))
+         {
        exec (sprintf ('sparql ask where { graph <%S> { <%s#this> ?p ?o . }}', _G, _S), null, null, vector (), 0, meta, data);
        if (length (data))
          _S := _S || '#this'; 
+     }
      }
 
    -- XXX: the bellow is a guess about subject, should not be used  
