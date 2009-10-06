@@ -8448,6 +8448,7 @@ again_10:
       s_iid := iri_to_id (s_uri);
       p_iid := iri_to_id (p_uri);
       o_iid := iri_to_id (o_uri);
+      commit work;
       whenever sqlstate '40001' goto deadlock_11;
 again_11:
       log_enable (0, 1);
