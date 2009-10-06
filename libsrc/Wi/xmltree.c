@@ -9656,6 +9656,8 @@ again:
         dtp = ((rb->rb_is_outlined) ? ((rdf_bigbox_t *)rb)->rbb_box_dtp : DV_TYPE_OF (rb->rb_box));
         goto again; /* see above */
       }
+    case DV_XML_ENTITY:
+      return uname_rdf_ns_uri_XMLLiteral;
     default:
       return (ccaddr_t)((ptrlong)1);
     }

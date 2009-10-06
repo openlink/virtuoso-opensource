@@ -8247,9 +8247,11 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_W (
     {
       whenever sqlstate '40001' goto deadlock_1;
 again_1:
+      log_enable (1, 1);
       s_iid := iri_to_id (s_uri);
       p_iid := iri_to_id (p_uri);
       o_iid := iri_to_id (o_uri);
+      commit work;
       log_enable (0, 1);
       insert soft DB.DBA.RDF_QUAD (G,S,P,O)
       values (g_iid, s_iid, p_iid, o_iid);

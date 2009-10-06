@@ -2049,6 +2049,8 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
         session_buffered_write_char ('"', ses);
         if (DV_RDF != obj_dtp)
           {
+            if (!IS_BOX_POINTER (iri))
+              sqlr_new_error ("22023", "SR624", "Unsupported datatype %d in NT serialization of an object", obj_dtp);
             SES_PRINT (ses, "^^<");
             dks_esc_write (ses, iri, box_length_inline (iri)-1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_IRI);
             session_buffered_write_char ('>', ses);
@@ -2288,7 +2290,10 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
         }
     }
   if (NULL != type_uri)
-    {                            /* 012.345678901.2345.67 */
+    {
+      if (!IS_BOX_POINTER (type_uri))
+        sqlr_new_error ("22023", "SR625", "Unsupported datatype %d in TALIS-style JSON serialization of an RDF object", obj_dtp);
+                                 /* 012.345678901.2345.67 */
       session_buffered_write (ses, " , \"datatype\" : \"", 17);
       dks_esc_write (ses, type_uri, box_length (type_uri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
       session_buffered_write_char ('\"', ses);
