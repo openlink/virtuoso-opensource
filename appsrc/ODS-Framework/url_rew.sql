@@ -429,7 +429,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_cal_atom_html', 1,
     '/calendar/atom-pub/%s%s', vector('inst', 'action'),
     'DB.DBA.ODS_ATOM_PAGE',
     NULL,
-    2);
+    1);
 
 -- Calendar atop-pub is special case
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_apps_gems_html', 1,
@@ -438,7 +438,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_apps_gems_html', 1,
     '/%s/%s/gems.vsp?type=%s', vector('app', 'inst', 'gem'),
     'DB.DBA.ODS_ATOM_PAGE',
     NULL,
-    2);
+    1);
 
 -- Applications tags special case
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_apps_tags_html', 1,
