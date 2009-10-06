@@ -1,3 +1,182 @@
+2009-10-06 19:16  source
+
+	* Added serialization of maximum result row setting in queries
+	  (default 50)
+	* Fixed UI setting for maxrows
+	* Fixed execute to understand maxrows attribute in <query> element
+
+2009-10-06 19:12  source
+
+	* Fixed bestbuy, feed2rdf and html docs
+
+2009-10-06 19:11  source
+
+	* Fixed alchemy api calls need url encoded args
+
+2009-10-06 19:09  source
+
+	* Fixed minor issue
+
+2009-10-06 14:52  source
+
+	* Fixed ASK output in application/sparql-results+xml
+
+2009-10-06 10:18  source
+
+	* Fixed atom-pub protocol
+
+2009-10-06 10:17  source
+
+	* Fixed rewrite rules
+
+2009-10-06 10:17  source
+
+	* Fixed conversation dialog
+
+2009-10-06 09:33  source
+
+	* Fixed commit work so we dont loose the iri creation
+
+2009-10-06 09:32  source
+
+	* Added support for new RDFa parser in sponger
+
+2009-10-06 09:31  source
+
+	* Fixed primary topic for xhtml
+
+2009-10-05 19:11  source
+
+	* Fixed check for longer idn first
+
+2009-10-05 10:48  source
+
+	* Fixed wrong behaviour when flag is set to not continue
+
+2009-10-05 10:47  source
+
+	* Fixed store raw post data for php when posting multipart data
+
+2009-10-05 08:48  source
+
+	* Fixed force localization of free-text predicate into members of union
+	  made for tc_list.
+
+2009-10-05 08:44  source
+
+	* Regenerated drivers
+
+2009-10-05 08:44  source
+
+	* Fixed problem with Bitronix XA manager
+
+2009-10-02 17:35  source
+
+	* Added throbber during execute
+	* Fixed serialization in save of .isparql resources
+
+2009-10-02 15:24  source
+
+	* Updated version to 05.12.3041
+
+2009-10-02 15:23  source
+
+	* Fixed BestBuy cartridge
+
+2009-10-02 15:22  source
+
+	* Fixed rdf/json labelling
+	* Fixed back to subject
+
+2009-10-02 15:12  source
+
+	* Fixed url rewrite rules
+
+2009-10-02 15:10  source
+
+	* Added expiration to allow sponger to track changes
+	* Fixed issue with users profile
+	* Fixed initialize of /about so RDFB works
+
+2009-10-02 15:08  source
+
+	* Fixed tag URIs
+
+2009-10-02 15:07  source
+
+	* Fixed failed assertion on a document with some elements closed
+	  outside any "interesting" elements
+
+2009-10-02 11:08  source
+
+	* Fixed equivs on SPARQL with scalar subquery filter with aggregate
+	  in result-set
+
+2009-10-02 11:03  source
+
+	* Fixed MS Doc
+
+2009-10-02 11:02  source
+
+	* Fixed doc cartridge
+
+2009-10-01 07:26  source
+
+	* Disabled test
+
+2009-10-01 07:25  source
+
+	* Fixed indentation
+
+2009-09-30 22:18  source
+
+	* Added 'Check All' checkbox
+
+2009-09-30 21:21  source
+
+	* Added same as outgoing link
+	* Fixed warnings
+
+2009-09-30 21:20  source
+
+	* Fixed MBZ cartridge
+
+2009-09-30 21:20  source
+
+	* Added image for sas outgoing link
+
+2009-09-30 21:17  source
+
+	* Fixed detection of invalid equiv indexes
+
+2009-09-30 13:43  source
+
+	* Added MS Docs cartridge
+	* Added cartridge profiling code
+	* Fixed CRLF
+
+2009-09-30 13:39  source
+
+	* Fixed formatting
+
+2009-09-30 10:24  source
+
+	* Added setting to enable http client cache on startup
+
+2009-09-30 10:23  source
+
+	* Fixed current_proc_name to take proc name from upper frames
+
+2009-09-28 20:57  source
+
+	* Added check for dynamic local
+	* Fixed user registration problem after delete user
+	* Fixed uninstall/install package
+
+2009-09-28 20:51  source
+
+	* Added support for country lookups using iso codes
+
 2009-09-28 11:51  source
 
 	* Updated version to 5.0.12-rc10
