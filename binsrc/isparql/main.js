@@ -256,7 +256,8 @@ iSPARQL.Advanced = function () {
 	    endpoint:iSPARQL.endpointOpts.endpointPath,
 	    pragmas:iSPARQL.endpointOpts.pragmas,
 	    namedGraphs:iSPARQL.dataObj.namedGraphs,
-	    callback:iSPARQL.Common.setData
+	    callback:iSPARQL.Common.setData,
+	    maxrows:iSPARQL.dataObj.maxrows
 	}
 	qe.execute(o);
     }
@@ -305,9 +306,9 @@ iSPARQL.Advanced = function () {
 	dataObj.endpointOpts.endpointPath = iSPARQL.endpointOpts.endpointPath;
 	dataObj.endpointOpts.useProxy = iSPARQL.endpointOpts.useProxy;
 	dataObj.endpointOpts.pragmas = iSPARQL.endpointOpts.pragmas;
+	dataObj.maxrows = iSPARQL.dataObj.maxrows;
 	dataObj.defaultGraph = $v('default-graph-uri');
 	dataObj.metaDataOpts = iSPARQL.mdOpts; // XXX check IO.Save
-
 	return(dataObj);
     }
 
@@ -679,9 +680,9 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
 	this.redraw = function (reason) {
 
 		if (iSPARQL.serverConn.isVirtuoso)
-	    	OAT.Dom.show (self.epOptsContainer);
+	    	    OAT.Dom.show (self.epOptsContainer);
 		else
-	   		OAT.Dom.hide (self.epOptsContainer);
+	   	    OAT.Dom.hide (self.epOptsContainer);
 
 		self.setEpOptCtl ();
 		self.setGetOptCtl ();
@@ -1273,7 +1274,7 @@ iSPARQL.Common = {
 
 	if (qp) iSPARQL.defaults.qp_override = qp;
 	if (p['__DEBUG']) iSPARQL.Preferences.debug = true;
-
+	if (p['maxrows']) iSPARQL.defaults.maxrows = parseInt(p['maxrows']);
     },
 
     hideSplash: function () {
@@ -1359,8 +1360,17 @@ iSPARQL.Common = {
 
 	var tab_goCallback = function (oldIndex, newIndex) {
 	    if (OAT.Browser.isIE && iSPARQL.dialogs.qbe_unsupp && newIndex == 0) {
-		iSPARQL.dialogs.qbe_unsupp.show();
-		return;
+			iSPARQL.dialogs.qbe_unsupp.show();
+			return;
+	    }
+	    if (newIndex == 0) { // QBE
+			OAT.Dom.show ('qry_type_ctls');
+	    }
+	    else if (newIndex == 1) { // Advanced
+			OAT.Dom.hide ('qry_type_ctls');
+	    }
+	    else {	// Result tab
+			OAT.Dom.hide('qry_type_ctls');
 	    }
 	}
 
@@ -1439,6 +1449,7 @@ iSPARQL.Common = {
 
 	/* qbe_unsupp */
 	iSPARQL.dialogs.qbe_unsupp = new OAT.Dialog("Unsupported","qbe_unsupported_div",{width:400,modal:1});
+
 	iSPARQL.dialogs.qbe_unsupp.ok = function() {
 	    tab.go(1);
 	    iSPARQL.dialogs.qbe_unsupp.hide();
@@ -1499,6 +1510,13 @@ iSPARQL.Common = {
 
 	$('default-graph-uri').value = iSPARQL.defaults.graph;
 	$('query').value = iSPARQL.defaults.query;
+
+	$('maxrows').value = iSPARQL.dataObj.maxrows;
+	OAT.Dom.attach ('maxrows', 'change',
+					function () {
+						var n = parseInt($v('maxrows'));
+						iSPARQL.dataObj.maxrows = isNaN(n) ? 0 : n;
+						});
 
         iSPARQL.Common.statMsg ("UI Initialization complete.");
     },
@@ -1781,6 +1799,7 @@ iSPARQL.Common = {
 	iSPARQL.dataObj.prefixes = [];			/* FIXME: prefixes? */
 
 	iSPARQL.dataObj.pragmas = [];
+	iSPARQL.dataObj.maxrows = iSPARQL.defaults.maxrows;
 	iSPARQL.dataObj.canvas = false;
 	iSPARQL.dataObj.sponge = iSPARQL.defaults.sponge;
 	iSPARQL.dataObj.tab = iSPARQL.defaults.tab;

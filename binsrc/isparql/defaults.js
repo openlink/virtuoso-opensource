@@ -27,7 +27,8 @@ iSPARQL.defaults = {
     graph:        '',
     queryTimeout: 2000, // ms
     auth:         {user:'dav',pass:'dav',endpoint:'./auth.vsp'},
-    tab:          0
+    tab:          0,
+    maxrows:      50
 };
 
 // curie, prefix, selected by default
@@ -57,5 +58,6 @@ iSPARQL.Preferences = {
 	pragmas:[],
 	canvas:false,
 	metaData:false
+        maxrows: 0;
     }
 };*/

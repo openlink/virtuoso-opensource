@@ -120,32 +120,6 @@ OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
 	      <div id="qbe_orders">
 	        <div id="qbe_orderby_grid"></div>
 	      </div>
-	      <div> <!-- options -->
-                <fieldset class="queryopts" id="queryopts">
-	          <legend>Query options</legend>
-		  <label for="qbe_maxrows">Max rows:</label>
-		  <select id="qbe_maxrows">
-		    <option value="10">10</option>
-		    <option value="20">20</option>
-		    <option value="50" selected="selected">50</option>
-		    <option value="100">100</option>
-		    <option value="200">200</option>
-		    <option value="0">[no limit]</option>
-		  </select>
-                  &nbsp;|&nbsp;
-		  <input type="checkbox" value="on" id="qbe_distinct"/>
-		  <label for="qbe_distinct">Distinct</label>
-                  &nbsp;|&nbsp;
-		  <label for="qbe_query_Type">Type:</label>
-		  <select id="qbe_query_type">
-		    <option value="SELECT" selected="selected">SELECT</option>
-		    <option value="CONSTRUCT">CONSTRUCT</option>
-		    <option value="DESCRIBE">DESCRIBE</option>
-		    <option value="INSERT">INSERT</option>
-		    <option value="DELETE">DELETE</option>
-		  </select>
-		</fieldset>
-	      </div> <!-- #options -->
 	      <br style="clear:both;"/>
 	      <div id="qbe_resizer_area" style=""></div> <!-- #qbe_resizer_area -->
             </div> <!-- #qbe_bottom -->
@@ -314,8 +288,28 @@ OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
 	    </form>
 	    <div id="query_resizer_area"></div>
 	  </div> <!-- #query_div -->
-          <div id="res_area"></div> <!-- #res_area -->
-        </div> <!-- page_query -->
+        <div id="res_area"></div> <!-- #res_area -->
+      </div> <!-- page_query -->
+      <fieldset class="queryopts" id="queryopts">
+	  	<legend>Query options</legend>
+	  	<div id="qry_type_ctls">
+	  	  <input type="checkbox" value="on" id="qbe_distinct"/>
+      	  <label for="qbe_distinct">Distinct</label>
+            &nbsp;|&nbsp;
+	  	  <label for="qbe_query_type">Type:</label>
+	  	  <select id="qbe_query_type">
+	    	<option value="SELECT" selected="selected">SELECT</option>
+	    	<option value="CONSTRUCT">CONSTRUCT</option>
+	    	<option value="DESCRIBE">DESCRIBE</option>
+	    	<option value="INSERT">INSERT</option>
+	    	<option value="DELETE">DELETE</option>
+	  	  </select>
+        &nbsp;|&nbsp;
+	  	</div> <!-- qry_type_ctls -->
+	  	<label for="maxrows">Result size limit: </label>
+        <input type="text" id="maxrows" size="4"> rows
+        <span class="maxrows_expln">Leave empty for server maximum setting.</span>
+      </fieldset>
         <div class="controls" id="queryMetaData">
           <h3 id="mdtoggler"><span class="indicator" id="mdoptstogglerarrow">&#9656;</span>Query Metadata</h3>
           <div id="mdopts_ctr" style="display: none">

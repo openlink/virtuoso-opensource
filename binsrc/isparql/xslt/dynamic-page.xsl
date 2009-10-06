@@ -39,7 +39,9 @@
 				</xsl:if>
 
 				p.defaultGraph = "<xsl:value-of select="//i:graph" />";
+
 				p.query = OAT.Xml.unescape($("p").innerHTML);
+				p.maxrows = "<xsl:value-of select="//i:query/@i:maxrows"/>";
 				p.file = window.location.href;
 
 				var tmp = "";
@@ -53,7 +55,8 @@
 		</script>
 		<title>iSPARQL XSLT Forward</title>
 	</head>
-	<body><pre style="visibility:hidden;" id="p"><xsl:value-of select="//i:query"/></pre>
+	<body>
+	  <pre style="visibility:hidden;" id="p"><xsl:value-of select="//i:query"/></pre>
 	</body>
 	</html>
 
