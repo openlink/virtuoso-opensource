@@ -1169,6 +1169,11 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
   if ('__ask_retval' = singlefield)
     {
       ret_mime := http_sys_find_best_sparql_accept (accept, 0, ret_format);
+      if ((1 = length (rset)) and (185 = __tag(rset[0][0])))
+        {
+          http (rset[0][0], ses);
+          goto body_complete;
+        }
       if (ret_format in ('JSON', 'JSON;RES'))
         {
           http (
