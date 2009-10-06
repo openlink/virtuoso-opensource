@@ -62,7 +62,10 @@
 		<rdf:type rdf:resource="&bibo;Document"/>
 		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
 		<owl:sameAs rdf:resource="{$docIRI}"/>
-		<!--content:encoded><xsl:value-of select="vi:escape($doc1)" /></content:encoded-->
+		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+      </rdf:Description>
+      <rdf:Description rdf:about="{$resourceURL}">
+		<rdf:type rdf:resource="&bibo;Document"/>
 		<xsl:apply-templates select="title|meta"/>
 		<xsl:apply-templates select="//img[@src]"/>
 		<xsl:apply-templates select="//a[@href]"/>
@@ -70,6 +73,7 @@
 		<xsl:variable name="doc1">
 			<xsl:copy-of select="/html/body" />
 		</xsl:variable>
+		<!--content:encoded><xsl:value-of select="vi:escape($doc1)" /></content:encoded-->
       </rdf:Description>
   </xsl:template>
 
