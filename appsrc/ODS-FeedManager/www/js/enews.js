@@ -161,6 +161,9 @@ Feeds.initLeftPane = function ()
   if (v && (v.value != ''))
   {
     Feeds.state.selected = v.value;
+    if (v.value.indexOf('t#') == 0)
+      Feeds.state.tab = 'tags';
+    Feeds.saveState();
   }
 
   Feeds.initFeeds()

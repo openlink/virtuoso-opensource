@@ -197,7 +197,7 @@
         </v:template>
             <a href="about" onclick="javascript: AB.aboutDialog(); return false;" title="About">About</a>
       </div>
-          <p style="clear: both; line-height: 0.1em" />
+          <p style="clear: both; line-height: 0.1em"></p>
         </div>
       <v:include url="ab_login.vspx"/>
       <table id="MTB">

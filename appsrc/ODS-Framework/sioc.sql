@@ -3917,6 +3917,8 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
   http_hdr := http_header_get ();
   if (strcasestr (http_hdr, 'Content-Type:') is null)
     http_header (http_hdr || sprintf ('Content-Type: %s; charset=UTF-8\r\n', accept));
+  if (strcasestr (http_hdr, 'Expires:') is null)
+    http_header (http_hdr || sprintf ('Expires: %s\r\n', DB.DBA.date_rfc1123 (dateadd ('second', 10, now ()))));
 
   if (fmt = 'rdf')
     rdf_head (ses);

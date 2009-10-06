@@ -483,7 +483,7 @@
                   tClass := '';
                   if (self.pTag = T_TAG)
                     tClass := 'nolink_a';
-                  http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="%s" onclick="javascript: myTags(\'%s\'); return false;" class="app"><span class="%s" style="%s">%s</span></a> ', POLLS.WA.tag_id(T_TAG), T_TAG, SIOC..poll_tag_iri (self.account_id, T_TAG), T_TAG, tClass, tStyle, T_TAG));
+                  http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="%s" onclick="javascript: myTags(\'%s\'); return false;" class="app"><span class="%s" style="%s">%s</span></a> ', POLLS.WA.tag_id(T_TAG), T_TAG, SIOC..tag_iri (POLLS.WA.forum_iri (self.domain_id), T_TAG), T_TAG, tClass, tStyle, T_TAG));
                 }
               }
               else if (self.pMode = 'PublicPolls')
@@ -655,7 +655,7 @@
                             tags := split_and_decode (tags, 0, '\0\0,');
                             for (N := 0; N < length(tags); N := N + 1)
                             {
-                              http (sprintf ('<a id="tag_%d_%s" href="%U" name="pt_tag_%s" onclick="javascript: myTags(\'%s\'); return false;" class="app">%s</a> ', id, POLLS.WA.tag_id (tags[N]), SIOC..poll_tag_iri (self.account_id, tags[N]), tags[N], tags[N], tags[N]));
+                              http (sprintf ('<a id="tag_%d_%s" href="%s" name="pt_tag_%s" onclick="javascript: myTags(\'%s\'); return false;" class="app">%s</a> ', id, POLLS.WA.tag_id (tags[N]), SIOC..tag_iri (POLLS.WA.forum_iri (self.domain_id), tags[N]), tags[N], tags[N], tags[N]));
                               if (N <> length(tags)-1)
                                 http (' | ');
                             }

@@ -484,7 +484,7 @@
                               tags := split_and_decode (tags, 0, '\0\0,');
                               for (N := 0; N < length(tags); N := N + 1)
                               {
-                                http(sprintf('<a id="tag_%d_%s" href="%s/bookmarks.vspx?sid=%s&realm=%s&tag=%s" class="%s" about="%U">%s</a>', id, tags[N], BMK.WA.bookmarks_url(domain_id), self.sid, self.realm, tags[N], 'app', SIOC..bmk_tag_iri (account_id, tags[N]), tags[N]));
+                                http(sprintf('<a id="tag_%d_%s" href="%s/bookmarks.vspx?sid=%s&realm=%s&tag=%s" class="%s" about="%U">%s</a>', id, tags[N], BMK.WA.bookmarks_url(domain_id), self.sid, self.realm, tags[N], 'app', SIOC..tag_iri (BMK.WA.forum_iri (self.domain_id), tags[N]), tags[N]));
                                 if (N <> length(tags)-1)
                                   http(' | ');
                               }
@@ -556,7 +556,7 @@
                     tMax := self.ds_tags[1][1];
                     for (N := 2; N < tLength; N := N + 1) {
                       tStyle := ODS.WA.tag_style(self.ds_tags[N][1], tMin, tMax);
-                      http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span style="%s">%s</span></a> ', self.ds_tags[N][0], self.ds_tags[N][0], self.ds_tags[N][0], 'app', SIOC..bmk_tag_iri (self.account_id, self.ds_tags[N][0]), tStyle, self.ds_tags[N][0]));
+                      http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span style="%s">%s</span></a> ', self.ds_tags[N][0], self.ds_tags[N][0], self.ds_tags[N][0], 'app', SIOC..tag_iri (BMK.WA.forum_iri (self.domain_id), self.ds_tags[N][0]), tStyle, self.ds_tags[N][0]));
                   }
                   } else {
                     http ('no tags');

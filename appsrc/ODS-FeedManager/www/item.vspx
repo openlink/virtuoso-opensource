@@ -270,7 +270,7 @@
               tags := ENEWS.WA.tags2vector (tags);
               for (i := 0; i < length(tags); i := i + 1)
               {
-              tt := tt || sprintf(', <a id="v_tag_%s" href="%s" onclick="javascript: parent.Feeds.selectTag(\'%s\'); return false;" title="Show items with tag %s" class="app"><b>%s</b></a>', tags[i], SIOC..feeds_tag_iri (account_id, tags[i]), tags[i], tags[i], tags[i]);
+              tt := tt || sprintf(', <a id="v_tag_%s" href="%s" onclick="javascript: parent.Feeds.selectTag(\'%s\'); return false;" title="Show items with tag %s" class="app"><b>%s</b></a>', tags[i], SIOC..tag_iri (ENEWS.WA.forum_iri (domain_id), tags[i]), tags[i], tags[i], tags[i]);
                 if (account_id >= 0)
                 tt := tt || sprintf(' <span onclick="javascript: myPost(\'F1\', \'dtag\', \'%d\'); parent.Feeds.loadTags(); return false" class="link"><img src="image/del_16.png" border="0" alt="Delete Tag" title="Delete Tag" /></span>', i);
               }

@@ -63,6 +63,20 @@ drop procedure WA_USER_IS_FRIEND;
 drop procedure WA_OPTION_IS_PUBLIC;
 drop procedure WA_USER_TEXT_SET;
 
+registry_remove ('__wa_member_upgrade');
+registry_remove ('__wa_member_doinstcount');
+registry_remove ('__WA_USER_INFO_CERT_UPGRADE');
+registry_remove ('__WA_USER_INFO_NICK_UPGRADE');
+registry_remove ('__WA_USER_OL_ACCOUNTS_SET_UP');
+registry_remove ('__wa_offerlist_upgrade');
+registry_remove ('__wa_wishlist_upgrade');
+registry_remove ('__wa_favorites_upgrade');
+registry_remove ('__WA_USER_SEARCH_SET_UP');
+registry_remove ('__WA_USER_INFO_CHECK');
+registry_remove ('__wa_wa_member_upgrade');
+registry_remove ('wa_hosts_updated');
+registry_remove ('wa_reg_updated');
+registry_remove ('__WA_UPGRADE_USER_SVC');
 
 create procedure db.dba._drop_ods_procedures()
 {

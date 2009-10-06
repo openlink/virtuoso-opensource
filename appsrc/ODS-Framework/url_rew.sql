@@ -352,7 +352,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_discussion_html', 1,
 
 -- A rule returning home page for a given item within instance all of these having a form of <home>?id=<item id>
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_item_html', 1,
-    '/dataspace/([^/]*)/(weblog|addressbook|ecrm|bookmark|briefcase|community|subscriptions|polls|mail|eCRM|IM)/([^/]*)/([^/\\?]*)',
+    '/dataspace/([^/]*)/(weblog|addressbook|ecrm|bookmark|briefcase|community|subscriptions|polls|mail|eCRM|IM)/([^/]*)/((?!gems)(?!tag)[^/\\?]*)',
     vector('uname', 'app', 'inst', 'item'), 3,
     '%s?id=%s', vector('inst', 'item'),
     'DB.DBA.ODS_ITEM_PAGE',
@@ -429,27 +429,38 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_cal_atom_html', 1,
     '/calendar/atom-pub/%s%s', vector('inst', 'action'),
     'DB.DBA.ODS_ATOM_PAGE',
     NULL,
-    2);
+    1);
 
 -- Calendar atop-pub is special case
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_cal_gems_html', 1,
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_apps_gems_html', 1,
     '/dataspace/([^/]*)/(addressbook|bookmark|calendar|subscriptions|polls)/([^/]*)/gems/([^\\?]*)',
     vector('uname', 'app', 'inst', 'gem'), 4,
     '/%s/%s/gems.vsp?type=%s', vector('app', 'inst', 'gem'),
     'DB.DBA.ODS_ATOM_PAGE',
     NULL,
+    1);
+
+-- Applications tags special case
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_apps_tags_html', 1,
+    '/dataspace/([^/]*)/(addressbook|bookmark|calendar|subscriptions|polls)/([^/]*)/tag/([^\\?]*)',
+    vector('uname', 'app', 'inst', 'tag'), 4,
+    '%s?tag=%s', vector('inst', 'tag'),
+    'DB.DBA.ODS_ITEM_PAGE',
+    NULL,
     2);
 
 -- A discussion item page
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_discussion_item_html', 1,
-    '/dataspace/discussion/([^/]*)/((?!sioc)(?!about)[^/\\?]*)', vector('grp', 'post'), 1,
+    '/dataspace/discussion/([^/]*)/((?!sioc)(?!about)[^/\\?]*)',
+    vector('grp', 'post'), 1,
     '/nntpf/nntpf_disp_article.vspx?id=%U', vector('post'),
     'DB.DBA.ODS_DISC_ITEM_ID',
     NULL,
     2);
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_blog_tag', 1,
-    '/dataspace/([^/]*)/weblog/([^/]*)/tag/([^/\\?]*)', vector('uname', 'inst', 'tag'), 3,
+    '/dataspace/([^/]*)/weblog/([^/]*)/tag/([^/\\?]*)',
+    vector('uname', 'inst', 'tag'), 3,
     '%s?tag=%U', vector('inst', 'tag'),
     'DB.DBA.ODS_ITEM_PAGE',
     NULL,
@@ -470,8 +481,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_space_html', 1,
     NULL,
     2);
 
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_ecrm_rdf',
-	1,
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_ecrm_rdf', 1,
     '/dataspace/([^/]*)/eCRM/(.*)',
     vector('uname', 'path'),
     1,
@@ -580,7 +590,8 @@ DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
 	  'ods_photo_gems_html',
 	  'ods_cal_item_html',
 	  'ods_cal_atom_html',
-	  'ods_cal_gems_html',
+	  'ods_apps_gems_html',
+	  'ods_apps_tags_html',
 	  'ods_discussion_item_html',
 	  'ods_blog_tag',
 	  'ods_main',

@@ -4511,8 +4511,10 @@ create procedure OMAIL.WA.omail_msg_search(
     if (_sql = _sql_statm)
       _empty := 1;
   }
-  _sql_statm := _sql_statm || ' ORDER BY GROUP_BY %s, %s %s, RCV_DATE desc';
-  _sql_statm := sprintf (_sql_statm, _groupDirection, _order[_orderIndex], _direction[_directionIndex]);
+  tmp := '';
+  if (_order[_orderIndex] <> '')
+    tmp := sprintf ('%s %s, ', _order[_orderIndex], _direction[_directionIndex]);
+  _sql_statm := sprintf (_sql_statm || ' ORDER BY GROUP_BY %s, %s RCV_DATE desc', _groupDirection, tmp);
 
   if (not _exec)
     return vector(_sql_statm, _sql_params);

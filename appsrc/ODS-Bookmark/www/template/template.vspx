@@ -106,7 +106,7 @@
           showTab('p', 3, 0);
           showTab('s', 2, 0);
 
-          // Init left pane - tree & tags
+          // Init left pane - tree and tags
           BMK.initLeftPane();
         }
         OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);

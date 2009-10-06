@@ -41,11 +41,14 @@
           declare tmp, params any;
 
           params := self.vc_page.vc_event.ve_params;
+          dbg_obj_print ('', params);
           tmp := lcase (get_keyword ('tag',  params, ''));
           if (tmp <> '')
       {
         self.fTab := 'tags';
             self.fNode := 't#' || tmp;
+            self.fNodePath := self.fNode;
+            self.fNodeItem := '';
             goto _validate;
       }
           tmp := cast (get_keyword ('link', params, '0') as integer);
@@ -125,7 +128,7 @@
           self.fNodeItem := '';
 
         _exit:;
-          self.fTab := case when (ENEWS.WA.node_type (self.fNode) = 't') then 'tabs' else 'feeds' end;
+          self.fTab := case when (ENEWS.WA.node_type (self.fNode) = 't') then 'tags' else 'feeds' end;
         ]]>
       </v:before-data-bind>
       <?vsp 

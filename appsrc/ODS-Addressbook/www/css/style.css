@@ -608,28 +608,6 @@ input.nolink4 {
 /* New */
 .form-header
 {
-  font-size: 1.1em;
-  font-weight: bold;
-  margin: 0 0 6px 0;
-  padding: 0px 0px 3px 4px;
-  border: solid #7f94a5;
-  border-width: 1px 1px 1px 10px;
-  background-color: #b0cde4;
-}
-
-.form-footer
-{
-  margin: 6px 0px;
-  text-align: center;
-  height: 20px;
-  padding-top: 0px;
-  padding-bottom: 2px;
-  border: solid 1px #7f94a5;
-  background-color: #b0cde4;
-}
-
-.form-header
-{
   font-size: 13px;
   font-weight: bold;
   margin: 0 0 8px 0;
@@ -1190,4 +1168,31 @@ div.comment-button
 input.openID {
   background: #FFFFFF url(/ods/images/login-bg.gif) no-repeat scroll;
   padding-left: 18px;
+}
+
+div.menu {
+  background-color: #EFEFEF;
+  border: 1px solid;
+  border-color: #f0f0f0 #7f94a5 #7f94a5 #f0f0f0;
+  margin:0px 0px 0px 9px;
+  padding: 0px 1px 1px 0px;
+  position: absolute;
+  vertical-align:bottom;
+  z-index: 101;
+}
+
+div.menu .menuItem {
+  cursor: default;
+  display: block;
+  font-size: .8em;
+  font-family: verdana, sans-serif;
+  font-weight: bold;
+  padding: 3px 1em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+div.menu .menuItem:hover {
+  background-color: #99B3C5;
+  color: #ffffff;
 }

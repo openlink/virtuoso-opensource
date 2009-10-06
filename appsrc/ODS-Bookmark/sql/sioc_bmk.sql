@@ -98,20 +98,6 @@ create procedure bmk_links_to (inout content any)
 
 -------------------------------------------------------------------------------
 --
-create procedure bmk_tag_iri (
-	in user_id integer,
-	in tag varchar)
-{
-	declare user_name varchar;
-	declare exit handler for not found { return null; };
-
-	select U_NAME into user_name from DB.DBA.SYS_USERS where U_ID = user_id;
-	return sprintf ('http://%s%s/%U/concept#%s', get_cname(), get_base_path (), user_name, BMK.WA.tag_id (tag));
-}
-;
-
--------------------------------------------------------------------------------
---
 create procedure fill_ods_bookmark_sioc2 (
   in _wai_name varchar := null,
   in _access_mode integer := null)

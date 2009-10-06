@@ -195,7 +195,7 @@
     for (select T_TAG, T_COUNT from BMK.WA.TAGS where T_DOMAIN_ID = _domain_id and T_COUNT > 0 order by T_TAG) do
     {
       tagStyle := ODS.WA.tag_style (T_COUNT, tagsMin, tagsMax) || 'padding-left: 3px;';
-      http (sprintf ('<a id="t_tag_%s" href="%s" onclick="javascript: BMK.selectTag(\'%s\'); return false;" style="%s">%s</a> ', BMK.WA.tag_id (T_TAG), SIOC..bmk_tag_iri (_account_id, T_TAG), T_TAG, tagStyle, T_TAG));
+      http (sprintf ('<a id="t_tag_%s" href="%s" onclick="javascript: BMK.selectTag(\'%s\'); return false;" style="%s">%s</a> ', BMK.WA.tag_id (T_TAG), SIOC..tag_iri (BMK.WA.forum_iri (_domain_id), T_TAG), T_TAG, tagStyle, T_TAG));
     }
   }
   else if (action = 'form')

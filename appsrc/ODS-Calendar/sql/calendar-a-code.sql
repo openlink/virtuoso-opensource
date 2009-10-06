@@ -6383,7 +6383,7 @@ create procedure CAL.WA.gdata (
     _action := _path [5];
   }
   _version := null;
-  if (length (_path) > 6 and atoi (_action) > 0)
+  if ((length (_path) > 6) and (atoi ('0' || _action) > 0))
   {
     _version := atoi (_path [6]);
   }
@@ -6429,7 +6429,7 @@ create procedure CAL.WA.gdata (
   }
 
   xt := null;
-  if (_content_type in ('application/atom+xml', 'application/x.atom+xml', 'text/xml', 'application/xml'))
+  if (cast (_content_type as varchar) in ('application/atom+xml', 'application/x.atom+xml', 'text/xml', 'application/xml'))
   {
     _content := string_output_string (http_body_read ());
     if (length (_content))
@@ -6456,7 +6456,9 @@ create procedure CAL.WA.gdata (
       http (         '    </collection>\n', sStream);
       http (         '  </workspace>\n', sStream);
       http (         '</service>', sStream);
-    } else {
+    }
+    else
+    {
       http (         '<?xml version="1.0" encoding="UTF-8" ?>\n', sStream);
       http (         '<atom:feed xmlns:atom="http://www.w3.org/2005/Atom">\n', sStream);
       http (sprintf ('<atom:title>%V</atom:title>\n', CAL.WA.domain_name (_domain_id)), sStream);

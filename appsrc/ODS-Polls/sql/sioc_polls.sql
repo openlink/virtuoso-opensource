@@ -58,18 +58,6 @@ create procedure poll_comment_iri (
 
 -------------------------------------------------------------------------------
 --
-create procedure poll_tag_iri (
-	in user_id integer,
-	in tag varchar)
-{
-	declare user_name varchar;
-	declare exit handler for not found { return null; };
-
-	select U_NAME into user_name from DB.DBA.SYS_USERS where U_ID = user_id;
-	return sprintf ('http://%s%s/%U/concept#%s', get_cname(), get_base_path (), user_name, POLLS.WA.tag_id (tag));
-}
-;
-
 create procedure fill_ods_polls_sioc (in graph_iri varchar, in site_iri varchar, in _wai_name varchar := null)
 {
   declare id, deadl, cnt integer;
