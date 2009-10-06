@@ -243,13 +243,17 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_MBZ', null, 'Musicbrainz');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
-    values ('(http://api.crunchbase.com/v/1/.*)|(http://www.crunchbase.com/.*)',
+	values ('(http://api.crunchbase.com/v/1/.*)|(http://www.crunchbase.com/.*)|(http://crunchbase.com/.*)',
             'URL', 'DB.DBA.RDF_LOAD_CRUNCHBASE', null, 'CrunchBase', null);
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
     values ('.+\\.pptx\x24', 'URL', 'DB.DBA.RDF_LOAD_PPTX_DOCUMENT', null, 'Powerpoint documents', null);
 
 update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = 1 where RM_ENABLED is null;
+
+-- pattern upgrades
+update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '(http://api.crunchbase.com/v/1/.*)|(http://www.crunchbase.com/.*)|(http://crunchbase.com/.*)'
+	where RM_HOOK = 'DB.DBA.RDF_LOAD_CRUNCHBASE';
 
 -- migration from old servers
 create procedure DB.DBA.RM_MAPPERS_UPGRADE ()
@@ -2197,6 +2201,14 @@ create procedure DB.DBA.RDF_LOAD_CRUNCHBASE(in graph_iri varchar, in new_origin_
   else if (new_origin_uri like 'http://www.crunchbase.com/%')
     {
       cnt := http_client_ext ('http://api.crunchbase.com/v/1/' || subseq (new_origin_uri, 26) || '.js', 
+      		headers=>hdr,
+      		proxy=>get_keyword_ucase ('get:proxy', opts));
+      base := 'http://www.crunchbase.com/';
+      suffix := '';
+    }
+  else if (new_origin_uri like 'http://crunchbase.com/%')
+    {
+      cnt := http_client_ext ('http://api.crunchbase.com/v/1/' || subseq (new_origin_uri, 22) || '.js', 
       		headers=>hdr,
       		proxy=>get_keyword_ucase ('get:proxy', opts));
       base := 'http://www.crunchbase.com/';
@@ -4500,7 +4512,8 @@ create procedure DB.DBA.RDF_LOAD_BESTBUY (in graph_iri varchar, in new_origin_ur
   if (hdr[0] not like 'HTTP/1._ 200 %')
     signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
   xd := xtree_doc (tmp);
-  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/bestbuy2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/bestbuy2rdf.xsl', xd, 
+    vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'currentDateTime', cast(curdatetime() as varchar)));
   xd := serialize_to_UTF8_xml (xt);
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
