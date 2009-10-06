@@ -39,6 +39,7 @@
 <!ENTITY media "http://search.yahoo.com/mrss/">
 <!ENTITY gml "http://www.opengis.net/gml">
 <!ENTITY georss "http://www.georss.org/georss">
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
 ]>
 <xsl:stylesheet
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -65,9 +66,18 @@
 	<xsl:output indent="yes" />
 	<xsl:param name="baseUri" />
 	<xsl:param name="isDiscussion" />
+	<xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+	<xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
+	<xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 	<xsl:variable name="hash" select="vi:uri_hash (/rdf:RDF/rss:channel/rss:link)"/>
 	<xsl:template match="/">
 		<rdf:RDF>
+		    <rdf:Description rdf:about="{$docproxyIRI}">
+			<rdf:type rdf:resource="&bibo;Document"/>
+			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+			<owl:sameAs rdf:resource="{$docIRI}"/>
+			<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+		    </rdf:Description>
 			<xsl:apply-templates />
 			<xsl:variable name="users" select="distinct (//dc:creator)" />
 			<xsl:if test="not empty($users)">
@@ -77,7 +87,7 @@
 	</xsl:template>
 
 	<xsl:template match="rss:channel">
-		<rdf:Description rdf:about="{$baseUri}">
+		<rdf:Description rdf:about="{$resourceURL}">
 			<xsl:choose>
 				<xsl:when test="$isDiscussion = '1'">
 					<rdf:type rdf:resource="&sioct;MessageBoard" />
@@ -87,7 +97,7 @@
 				</xsl:otherwise>
 			</xsl:choose>
 			<sioc:link rdf:resource="{@rdf:about}" />
-                        <owl:sameAs  rdf:resource="{vi:proxyIRI ($baseUri)}" />
+                        <!--owl:sameAs  rdf:resource="{vi:proxyIRI ($baseUri)}" /-->
 			<xsl:apply-templates />
 			<xsl:copy-of select="geo:*" />
 			<xsl:copy-of select="openSearch:*" />
@@ -105,8 +115,8 @@
 				<!--xsl:message terminate="no"><xsl:value-of select="$this"/>:<xsl:value-of select="$pos"/></xsl:message-->
 			</xsl:if>
 		</xsl:for-each>
-		<sioc:container_of rdf:resource="{concat($baseUri,'#',$hash,'(',$pos,')')}" /> <!--xsl:comment><xsl:value-of select="$this"/></xsl:comment-->
- 	        <foaf:topic rdf:resource="{concat($baseUri,'#',$hash,'(',$pos,')')}" /> <!--xsl:comment><xsl:value-of select="$this"/></xsl:comment-->
+		<sioc:container_of rdf:resource="{vi:proxyIRI ($baseUri,'', concat ($hash,'(',$pos,')'))}" /> <!--xsl:comment><xsl:value-of select="$this"/></xsl:comment-->
+ 	        <foaf:topic rdf:resource="{vi:proxyIRI ($baseUri,'', concat ($hash,'(',$pos,')'))}" /> <!--xsl:comment><xsl:value-of select="$this"/></xsl:comment-->
 	</xsl:template>
 	<xsl:template match="rss:item">
 		<xsl:variable name="this" select="@rdf:about" />
@@ -116,7 +126,7 @@
 				<!--xsl:message terminate="no"><xsl:value-of select="$this"/>:<xsl:value-of select="$pos"/></xsl:message-->
 			</xsl:if>
 		</xsl:for-each>
-		<rdf:Description rdf:about="{concat($baseUri,'#',$hash,'(',$pos,')')}">
+		<rdf:Description rdf:about="{vi:proxyIRI ($baseUri,'', concat ($hash,'(',$pos,')'))}">
 			<xsl:choose>
 				<xsl:when test="$isDiscussion = '1'">
 					<rdf:type rdf:resource="&sioct;BoardPost" />
@@ -128,7 +138,7 @@
 					<rdf:type rdf:resource="&sioc;Post" />
 				</xsl:otherwise>
 			</xsl:choose>
-			<sioc:has_container rdf:resource="{$baseUri}" />
+			<sioc:has_container rdf:resource="{$resourceURL}" />
 			<xsl:apply-templates />
 			<xsl:copy-of select="rss:*" />
 			<xsl:copy-of select="sioc:*" />
@@ -176,11 +186,11 @@
 		</xsl:for-each>
 	</xsl:template>
 	<xsl:template match="dc:creator">
-		<foaf:maker rdf:resource="{$baseUri}#{urlify (.)}" />
+		<foaf:maker rdf:resource="{vi:proxyIRI ($baseUri, '', .)}" />
 	</xsl:template>
 	<xsl:template match="dc:creator" mode="user">
 				<xsl:variable name="uname" select="string(.)" />
-				<foaf:Person rdf:about="{$baseUri}#{urlify (.)}">
+				<foaf:Person rdf:about="{vi:proxyIRI ($baseUri, '', .)}">
 					<foaf:name>
 						<xsl:apply-templates />
 					</foaf:name>
@@ -191,7 +201,7 @@
 								<xsl:variable name="pos" select="position()" />
 							</xsl:if>
 						</xsl:for-each>
-						<foaf:made rdf:resource="{concat($baseUri,'#',$hash,'(',$pos,')')}" />
+						<foaf:made rdf:resource="{vi:proxyIRI ($baseUri,'',concat ($hash,'(',$pos,')'))}" />
 					</xsl:for-each>
 				</foaf:Person>
 	</xsl:template>

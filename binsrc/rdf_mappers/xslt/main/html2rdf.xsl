@@ -71,8 +71,11 @@
 		<xsl:apply-templates select="//a[@href]"/>
 		<xsl:apply-templates select="link[@rel='alternate']"/>
 		<xsl:variable name="doc1">
-			<xsl:copy-of select="/html/body" />
+		    <xsl:apply-templates  select="/html/body" mode="content"/>
 		</xsl:variable>
+		<dc:description>
+		    <xsl:value-of select="string ($doc1)"/>
+		</dc:description>
 		<!--content:encoded><xsl:value-of select="vi:escape($doc1)" /></content:encoded-->
       </rdf:Description>
   </xsl:template>
@@ -173,5 +176,32 @@
   </xsl:template>
 
   <xsl:template match="*|text()"/>
+
+  <xsl:template match="body|html" mode="content">
+      <xsl:apply-templates mode="content"/>
+  </xsl:template>
+
+  <xsl:template match="title" mode="content">
+      <div>
+	  <xsl:apply-templates mode="content" />
+      </div>
+  </xsl:template>
+
+  <xsl:template match="object[embed]" mode="content">
+      <xsl:apply-templates select="embed" mode="content"/>
+  </xsl:template>
+
+  <xsl:template match="head|script|form|input|button|textarea|object|frame|frameset|select" mode="content" />
+
+  <xsl:template match="*" mode="content">
+      <xsl:copy>
+	  <xsl:copy-of select="@*[not starts-with (name(), 'on') and name() != 'class' and name() != 'style' ]"/>
+	  <xsl:apply-templates  mode="content"/>
+      </xsl:copy>
+  </xsl:template>
+
+  <xsl:template match="text()" mode="content">
+      <xsl:value-of select="."/>
+  </xsl:template>
 
 </xsl:stylesheet>

@@ -53,6 +53,10 @@ iSPARQL.IO = {
 	    str += '# {named graph} {' + dataObj.namedGraphs[i] + '}\n';
 	}
 
+	if (dataObj.maxrows && dataObj.maxrows != 0) {
+            str += '# {maxrows} {' + dataObj.maxrows + '}\n';
+	}
+
 	str += dataObj.query;
 	return str;
     },
@@ -97,8 +101,12 @@ iSPARQL.IO = {
 	if (dataObj.defaultGraph) { addNode(page,iNS,"graph",dataObj.defaultGraph); }
 	if (dataObj.useProxy) { addNode(page,iNS,"proxy",dataObj.useProxy); }
 
-	if (dataObj.query) { addNode(page,iNS,"query",dataObj.query,true); }
+        var qn;
 
+	if (dataObj.query) {
+          qn = addNode(page,iNS,"query",dataObj.query,true);
+ 	      if (dataObj.maxrows) { qn.setAttributeNS (iNS, 'maxrows', dataObj.maxrows.toString()); }
+        }
 	if (dataObj.prefixes) {
 	    var schemas = addNode(page, iNS, "schemas");
 	    for(var i=0;i<dataObj.prefixes.length;i++) {
@@ -172,6 +180,7 @@ iSPARQL.IO = {
 	    defaultGraph:"",
 	    namedGraphs:[],
 	    query:"",
+	    maxrows:0;
 	    pragmas:[]
 	};
 
@@ -194,6 +203,12 @@ iSPARQL.IO = {
 	    var m = str.match(/^\s*#\s*{named graph}\s*{(.*?)}/);
 	    return (m)? m[1] : false;
 	}
+
+        var getMaxRows = function (str) {
+	    var m = str.match(/^\s*#\s*{maxrows}\s*{(.*?)}/);
+            return (m)? m[1] : false;
+        }
+
 
 	var isComment = function(str) {
 	    return str.match(/^\s*#/);
@@ -235,6 +250,13 @@ iSPARQL.IO = {
 		dataObj.namedGraphs.push(p);
 		continue;
 	    }
+
+	    p = getMaxRows(line);
+
+	    if (p) {
+		data.maxrows = parseInt(p);
+		continue;
+            }
 
 	    if(!isBlank(line) && !isComment(line)) {
 		dataObj.query += line + '\n';
@@ -290,7 +312,10 @@ iSPARQL.IO = {
 
 	dataObj.query = getNodeValue(xml,"query");
 
+	dataObj.maxrows = xml.getElementsByTagName ("query").getAttribute("maxrows");
+
 	var schemas = xml.getElementsByTagName("schemas");
+
 	for (var i=0;i<schemas.length;i++) {
 	    var schema = OAT.Dom.fromSafeXML(schemas[i]);
 	    dataObj.prefixes.push(schema);

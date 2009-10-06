@@ -395,6 +395,7 @@ iSPARQL.QBE = function (def_obj) {
     this.getSaveData = function() {
 	var dataObj = {
 	    query:"",
+	    maxrows:0,
 	    endpointOpts: {},
 	    canvas:false,
 	    defaultGraph:false,
@@ -410,6 +411,7 @@ iSPARQL.QBE = function (def_obj) {
 	dataObj.canvas = self.svgsparql.toXML();
 	dataObj.defaultGraph = $v('qbe_graph');
 	dataObj.metaDataOpts = iSPARQL.mdOpts; // XXX check IO.Save
+	dataObj.maxrows = iSPARQL.dataObj.maxrows;
 
 	if(qe.cacheIndex == -1) {
 	    var cache = qe.cache[qe.cacheIndex];
@@ -1006,7 +1008,7 @@ iSPARQL.QBE = function (def_obj) {
 			      icon_draw.toggleState(0);
 			      if (self.svgsparql) { self.svgsparql.mode = OAT.SVGSparqlData.MODE_DRAG; }
 			  });
-    icon_add = t.addIcon(1,"images/add_node_mode_h.png","Add mode",function(state) {
+    icon_add = t.addIcon(1,"images/add_node_mode_h.png","Add nodes",function(state) {
 			     if (!state) { return; }
 			     icon_drag.toggleState(0);
 			     icon_draw.toggleState(0);
@@ -1427,14 +1429,13 @@ iSPARQL.QBE = function (def_obj) {
     OAT.Dom.attach("qbe_browse_btn","click",fileRef);
 
     this.RunQuery = function() {
-	var maxrows = parseInt($v("qbe_maxrows"));
 	var p = {
 	    query:self.QueryGenerate(),
 	    defaultGraph:$v("qbe_graph"),
 	    sponge:$v("qbe_sponge"),
 	    endpoint:iSPARQL.endpointOpts.endpointPath,
 	    pragmas:iSPARQL.endpointOpts.pragmas,
-	    limit:maxrows
+	    limit:iSPARQL.dataObj.maxrows
 	}
 	qe.execute(p);
     }

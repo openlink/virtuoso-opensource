@@ -29,6 +29,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY owl "http://www.w3.org/2002/07/owl#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
 <!ENTITY cl "http://www.ebusiness-unibw.org/ontologies/consumerelectronics/v1#">
 <!ENTITY oplbb "http://www.openlinksw.com/schemas/bestbuy/">
@@ -41,6 +42,7 @@
     xmlns:foaf="&foaf;"
     xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
+    xmlns:owl="&owl;"
     xmlns:dcterms="&dcterms;"
     xmlns:gr="&gr;"
     xmlns:bestbuy="http://remix.bestbuy.com/"
@@ -52,11 +54,17 @@
     <xsl:output method="xml" indent="yes" />
 
     <xsl:param name="baseUri"/>
+    <xsl:param name="currentDateTime"/>
     <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
     <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
+    <!-- TO DO: For testing with standalone XSLT processor
+    <xsl:variable name="resourceURL" select="$baseUri"/>
+    <xsl:variable  name="docIRI" select="$baseUri"/>
+    <xsl:variable  name="docproxyIRI" select="$baseUri"/>
+    -->
 
-    <xsl:variable name="ns">http://www.openlinksw.com/schemas/bestbuy/</xsl:variable>
+    <xsl:variable name="quote"><xsl:text>"</xsl:text></xsl:variable>
 
     <xsl:template match="/">
 		<rdf:RDF>
@@ -65,23 +73,45 @@
 				<sioc:container_of rdf:resource="{$resourceURL}"/>
 				<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 				<dcterms:subject rdf:resource="{$resourceURL}"/>
-				<owl:sameAs rdf:resource="{$docIRI}"/>
 			</rdf:Description>
 
 			<gr:Offering rdf:about="{$resourceURL}">
 				<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 			    <gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
+			    <!-- For testing with standalone XSLT processor
+			    <gr:includes rdf:resource="{concat ($baseUri, '#', 'Product')}"/>
+			    -->
 			    <gr:includes rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
+			    <gr:validFrom rdf:datatype="&xsd;dateTime"><xsl:value-of select="translate(concat($currentDateTime, 'Z'), ' ', 'T')"/></gr:validFrom>
 			    <gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModePickup"/>
 			    <gr:availableDeliveryMethods rdf:resource="&gr;UPS"/>
 			    <gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModeMail"/>
 			    <xsl:apply-templates mode="offering" />
 			</gr:Offering>
 
+			<!-- For testing with standalone XSLT processor
+	                <gr:BusinessEntity rdf:about="{concat ($baseUri, '#', 'Vendor')}">
+			 -->
+	                <gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Vendor')}">
+			  <rdfs:comment>The legal agent making the offering</rdfs:comment>
+		          <rdfs:label>Vendor</rdfs:label>
+		          <gr:legalName>BestBuy Co., Inc.</gr:legalName>
+		          <gr:offers rdf:resource="{$resourceURL}"/>
+			  <foaf:homepage rdf:resource="http://www.bestbuy.com" />
+			  <owl:sameAs rdf:resource="http://products.semweb.bestbuy.com/company.rdf#BusinessEntity_BestBuy" />
+			  <rdfs:seeAlso rdf:resource="{vi:proxyIRI ('http://www.bestbuy.com')}"/>
+	                </gr:BusinessEntity>
+
+			<!-- For testing with standalone XSLT processor
+			<rdf:Description rdf:about="{concat ($baseUri, '#', 'Product')}">
+			-->
 			<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
 			    <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 			    <rdf:type rdf:resource="&oplbb;Product" />
                             <gr:hasMakeAndModel>
+			        <!-- For testing with standalone XSLT processor
+	                        <rdf:Description rdf:about="{concat ($baseUri, '#', 'MakeAndModel')}">
+			        -->
 	                        <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'MakeAndModel')}">
 	                            <rdf:type rdf:resource="&gr;ProductOrServiceModel"/>
 	                            <rdf:type rdf:resource="&oplbb;Product"/>
@@ -102,8 +132,13 @@
         <xsl:apply-templates select="*"/>
     </xsl:template>
 
+    <!-- mode offering handles attributes which are part of the offering rather than the product itself -->
+
     <xsl:template match="regularPrice" mode="offering">
 	<gr:hasPriceSpecification>
+	    <!-- For testing with standalone XSLT processor
+	    <gr:UnitPriceSpecification rdf:about="{concat ($baseUri, '#', 'UnitPriceSpecification')}">
+	    -->
 	    <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'UnitPriceSpecification')}">
 	        <rdfs:label>sale price</rdfs:label>
 		<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
@@ -116,6 +151,9 @@
 
     <xsl:template match="salePrice" mode="offering">
         <gr:hasPriceSpecification>
+	    <!-- For testing with standalone XSLT processor
+	    <gr:UnitPriceSpecification rdf:about="{concat ($baseUri, '#', 'UnitPriceSpecification_SRP')}">
+	    -->
 	    <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'UnitPriceSpecification_SRP')}">
 	        <rdfs:label>suggested retail price</rdfs:label>
 		<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
@@ -128,19 +166,50 @@
 
     <xsl:template match="shippingCost" mode="offering">
         <gr:hasPriceSpecification>
+	    <!-- For testing with standalone XSLT processor
+	    <gr:DeliveryChargeSpecification rdf:about="{concat ($baseUri, '#', 'DeliveryChargeSpecification')}">
+	    -->
 	    <gr:DeliveryChargeSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'DeliveryChargeSpecification')}">
 	        <rdfs:label>shipping charge</rdfs:label>
 		<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
 	        <gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasCurrencyValue>
 	        <gr:hasCurrency rdf:datatype="&xsd;string">USD</gr:hasCurrency>
+		<gr:eligibleRegions rdf:datatype="&xsd;string">US</gr:eligibleRegions>
 	    </gr:DeliveryChargeSpecification>
 	</gr:hasPriceSpecification>
     </xsl:template>
 
+    <xsl:template match="product/freeShipping" mode="offering">
+	<oplbb:freeShipping rdf:datatype="&xsd;boolean"><xsl:value-of select="."/></oplbb:freeShipping>
+    </xsl:template>
     <xsl:template match="product/name">
 	<rdfs:label>
 	    <xsl:value-of select="."/>
 	</rdfs:label>
+    </xsl:template>
+
+    <xsl:template match="product/dollarSavings" mode="offering">
+	<oplbb:dollarSaving>
+	    <!-- For testing with standalone XSLT processor
+	    <gr:QuantitativeValueFloat rdf:about="{concat ($baseUri, '#', 'DollarSaving')}">
+	    -->
+	    <gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($baseUri, '', 'DollarSaving')}">
+		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">USD</gr:hasUnitOfMeasurement>
+		<gr:hasValueFloat rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasValueFloat>
+	    </gr:QuantitativeValueFloat>
+	</oplbb:dollarSaving> 
+    </xsl:template>
+
+    <xsl:template match="product/onlineAvailability" mode="offering">
+	<oplbb:onlineAvailability rdf:datatype="&xsd;boolean"><xsl:value-of select="."/></oplbb:onlineAvailability>
+    </xsl:template>
+
+    <xsl:template match="product/onlineAvailabilityText" mode="offering">
+	<oplbb:onlineAvailabilityText rdf:datatype="&xsd;string"><xsl:value-of select="."/></oplbb:onlineAvailabilityText>
+    </xsl:template>
+
+    <xsl:template match="product/specialOrder" mode="offering">
+	<oplbb:specialOrder rdf:datatype="&xsd;boolean"><xsl:value-of select="."/></oplbb:specialOrder>
     </xsl:template>
 
     <xsl:template match="product/url">
@@ -173,6 +242,7 @@
     </xsl:template>
     <xsl:template match="product/sku">
 	<oplbb:sku><xsl:value-of select="."/></oplbb:sku>
+	<gr:hasStockKeepingUnit><xsl:value-of select="."/></gr:hasStockKeepingUnit>
     </xsl:template>
     <xsl:template match="product/onSale">
 	<oplbb:onSale rdf:datatype="&xsd;boolean"><xsl:value-of select="."/></oplbb:onSale>
@@ -182,18 +252,6 @@
     </xsl:template>
     <xsl:template match="product/format">
 	<oplbb:format rdf:datatype="&xsd;string"><xsl:value-of select="."/></oplbb:format>
-    </xsl:template>
-    <xsl:template match="product/onlineAvailability">
-	<oplbb:onlineAvailability rdf:datatype="&xsd;boolean"><xsl:value-of select="."/></oplbb:onlineAvailability>
-    </xsl:template>
-    <xsl:template match="product/onlineAvailabilityText">
-	<oplbb:onlineAvailabilityText rdf:datatype="&xsd;string"><xsl:value-of select="."/></oplbb:onlineAvailabilityText>
-    </xsl:template>
-    <xsl:template match="product/specialOrder">
-	<oplbb:specialOrder rdf:datatype="&xsd;boolean"><xsl:value-of select="."/></oplbb:specialOrder>
-    </xsl:template>
-    <xsl:template match="product/freeShipping">
-	<oplbb:freeShipping rdf:datatype="&xsd;boolean"><xsl:value-of select="."/></oplbb:freeShipping>
     </xsl:template>
     <xsl:template match="product/categoryPath/category/name">
 	<oplbb:category><xsl:value-of select="."/></oplbb:category>
@@ -210,6 +268,9 @@
     
     <xsl:template match="product/manufacturer" mode="manufacturer">
 		<gr:hasManufacturer>
+	    <!-- For testing with standalone XSLT processor
+	    <gr:BusinessEntity rdf:about="{concat ($baseUri, '#', 'Manufacturer')}">
+	    -->
 	    <gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Manufacturer')}">
 		<rdfs:label>Manufacturer</rdfs:label>
             <gr:legalName><xsl:value-of select="."/></gr:legalName>
@@ -221,6 +282,9 @@
 	<oplbb:detail>
 	    <xsl:element namespace="&oplbb;" name="ProductDetail">
 	        <xsl:attribute name='rdf:about'>
+		    <!-- For testing with standalone XSLT processor
+	            <xsl:value-of select="concat(concat ($baseUri, '#', 'Detail_'), position())"/>
+		    -->
 	            <xsl:value-of select="concat(vi:proxyIRI ($baseUri, '', 'Detail_'), position())"/>
 		</xsl:attribute>
 		<oplbb:detail_name rdf:datatype="&xsd;string"><xsl:value-of select="./name"/></oplbb:detail_name>
@@ -229,64 +293,152 @@
 	</oplbb:detail>
     </xsl:template>
     
-    <xsl:template match="product/dollarSavings">
-	<oplbb:dollarSaving>
-	    <gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($baseUri, '', 'DollarSaving')}">
-		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">USD</gr:hasUnitOfMeasurement>
-		<gr:hasValueFloat rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasValueFloat>
-	    </gr:QuantitativeValueFloat>
-	</oplbb:dollarSaving> 
-    </xsl:template>
-    
     <xsl:template match="product/weight">
 	<oplbb:weight> <!-- or cl:hasWeight -->
+	  <!-- For testing with standalone XSLT processor
+	  <gr:QuantitativeValueFloat rdf:about="{concat ($baseUri, '#', 'Weight')}">
+	  -->
 	    <gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($baseUri, '', 'Weight')}">
+	    <xsl:choose>
+	      <xsl:when test="contains(. , 'lb')">
+	        <gr:hasValueFloat rdf:datatype="&xsd;float">
+	          <xsl:value-of select="normalize-space(substring-before(., 'lb'))"/>
+		</gr:hasValueFloat>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">LBR</gr:hasUnitOfMeasurement>
-		<!-- TO DO: Need to parse out any unit included in BestBuy product description -->
-		<gr:hasValueFloat rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasValueFloat>
+	      </xsl:when>
+	      <xsl:when test="contains(. , 'oz')">
+	        <gr:hasValueFloat rdf:datatype="&xsd;float">
+	          <xsl:value-of select="normalize-space(substring-before(., 'oz'))"/>
+		</gr:hasValueFloat>
+		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">ONZ</gr:hasUnitOfMeasurement>
+	      </xsl:when>
+	      <xsl:otherwise>
+	        <gr:hasValueFloat rdf:datatype="&xsd;float">
+	          <xsl:value-of select="."/>
+		</gr:hasValueFloat>
+		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">LBR</gr:hasUnitOfMeasurement>
+	      </xsl:otherwise>
+	    </xsl:choose>
 			</gr:QuantitativeValueFloat>
 	</oplbb:weight> 
 	</xsl:template>
 	
     <xsl:template match="product/shippingWeight">
 	<oplbb:shippingWeight> <!-- or cl:??? -->
+	  <!-- For testing with standalone XSLT processor
+	  <gr:QuantitativeValueFloat rdf:about="{concat ($baseUri, '#', 'ShippingWeight')}">
+	  -->
 	    <gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($baseUri, '', 'ShippingWeight')}">
+	    <xsl:choose>
+	      <xsl:when test="contains(. , 'lb')">
+	        <gr:hasValueFloat rdf:datatype="&xsd;float">
+	          <xsl:value-of select="normalize-space(substring-before(., 'lb'))"/>
+		</gr:hasValueFloat>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">LBR</gr:hasUnitOfMeasurement>
-		<!-- TO DO: Need to parse out any unit included in BestBuy product description -->
-		<gr:hasValueFloat rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasValueFloat>
+	      </xsl:when>
+	      <xsl:when test="contains(. , 'oz')">
+	        <gr:hasValueFloat rdf:datatype="&xsd;float">
+	          <xsl:value-of select="normalize-space(substring-before(., 'oz'))"/>
+		</gr:hasValueFloat>
+		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">ONZ</gr:hasUnitOfMeasurement>
+	      </xsl:when>
+	      <xsl:otherwise>
+	        <gr:hasValueFloat rdf:datatype="&xsd;float">
+	          <xsl:value-of select="."/>
+		</gr:hasValueFloat>
+		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">LBR</gr:hasUnitOfMeasurement>
+	      </xsl:otherwise>
+	    </xsl:choose>
 			</gr:QuantitativeValueFloat>
 	</oplbb:shippingWeight> 
 	</xsl:template>
 	
     <xsl:template match="product/height">
 	<oplbb:height> <!-- or cl:hasHeight -->
+	  <!-- For testing with standalone XSLT processor
+	  <gr:QuantitativeValueFloat rdf:about="{concat ($baseUri, '#', 'Height')}">
+	  -->
 	    <gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($baseUri, '', 'Height')}">
-                <!-- TO DO: UN/CEFACT 3-digit code for inches? -->
-		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">inches</gr:hasUnitOfMeasurement>
-		<!-- TO DO: Need to parse out any unit included in BestBuy product description -->
-		<gr:hasValueFloat rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasValueFloat>
+	    <xsl:choose>
+	      <xsl:when test="contains(. , $quote)">
+	        <gr:hasValueFloat rdf:datatype="&xsd;float">
+	          <xsl:value-of select="normalize-space(substring-before(., $quote))"/>
+		</gr:hasValueFloat>
+		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
+	      </xsl:when>
+	      <xsl:when test="contains(. , 'in')">
+	        <gr:hasValueFloat rdf:datatype="&xsd;float">
+	          <xsl:value-of select="normalize-space(substring-before(., 'in'))"/>
+		</gr:hasValueFloat>
+		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
+	      </xsl:when>
+	      <xsl:otherwise>
+	        <gr:hasValueFloat rdf:datatype="&xsd;float">
+	          <xsl:value-of select="."/>
+		</gr:hasValueFloat>
+		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
+	      </xsl:otherwise>
+	    </xsl:choose>
 			</gr:QuantitativeValueFloat>
 	</oplbb:height> 
 	</xsl:template>
 	
     <xsl:template match="product/depth">
 	<oplbb:depth> <!-- or cl:hasDepth -->
+	  <!-- For testing with standalone XSLT processor
+	  <gr:QuantitativeValueFloat rdf:about="{concat ($baseUri, '#', 'Depth')}">
+	  -->
 	    <gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($baseUri, '', 'Depth')}">
-                <!-- TO DO: UN/CEFACT 3-digit code for inches? -->
-		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">inches</gr:hasUnitOfMeasurement>
-		<!-- TO DO: Need to parse out any unit included in BestBuy product description -->
-		<gr:hasValueFloat rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasValueFloat>
+	    <xsl:choose>
+	      <xsl:when test="contains(. , $quote)">
+	        <gr:hasValueFloat rdf:datatype="&xsd;float">
+	          <xsl:value-of select="normalize-space(substring-before(., $quote))"/>
+		</gr:hasValueFloat>
+		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
+	      </xsl:when>
+	      <xsl:when test="contains(. , 'in')">
+	        <gr:hasValueFloat rdf:datatype="&xsd;float">
+	          <xsl:value-of select="normalize-space(substring-before(., 'in'))"/>
+		</gr:hasValueFloat>
+		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
+	      </xsl:when>
+	      <xsl:otherwise>
+	        <gr:hasValueFloat rdf:datatype="&xsd;float">
+	          <xsl:value-of select="."/>
+		</gr:hasValueFloat>
+		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
+	      </xsl:otherwise>
+	    </xsl:choose>
 			</gr:QuantitativeValueFloat>
 	</oplbb:depth> 
 	</xsl:template>
 	
     <xsl:template match="product/width">
 	<oplbb:width> <!-- or cl:hasWidth -->
+	  <!-- For testing with standalone XSLT processor
+	  <gr:QuantitativeValueFloat rdf:about="{concat ($baseUri, '#', 'Width')}">
+	  -->
 	    <gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($baseUri, '', 'Width')}">
-                <!-- TO DO: UN/CEFACT 3-digit code for inches? -->
-		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">inches</gr:hasUnitOfMeasurement>
-		<!-- TO DO: Need to parse out any unit included in BestBuy product description -->
-		<gr:hasValueFloat rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasValueFloat>
+	    <xsl:choose>
+	      <xsl:when test="contains(. , $quote)">
+	        <gr:hasValueFloat rdf:datatype="&xsd;float">
+	          <xsl:value-of select="normalize-space(substring-before(., $quote))"/>
+		</gr:hasValueFloat>
+		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
+	      </xsl:when>
+	      <xsl:when test="contains(. , 'in')">
+	        <gr:hasValueFloat rdf:datatype="&xsd;float">
+	          <xsl:value-of select="normalize-space(substring-before(., 'in'))"/>
+		</gr:hasValueFloat>
+		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
+	      </xsl:when>
+	      <xsl:otherwise>
+	        <gr:hasValueFloat rdf:datatype="&xsd;float">
+	          <xsl:value-of select="."/>
+		</gr:hasValueFloat>
+		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
+	      </xsl:otherwise>
+	    </xsl:choose>
 	    </gr:QuantitativeValueFloat>
 	</oplbb:width> 
     </xsl:template>
