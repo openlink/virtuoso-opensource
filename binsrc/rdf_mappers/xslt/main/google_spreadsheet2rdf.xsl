@@ -51,11 +51,17 @@
     xmlns:dcterms="&dcterms;"
     xmlns:virtrdf="http://www.openlinksw.com/schemas/virtrdf#"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
     version="1.0">
 
     <xsl:output method="xml" encoding="utf-8" indent="yes"/>
     
 	<xsl:param name="baseUri" />
+    
+    <xsl:variable name="resourceURL" select="vi:proxyIRI($baseUri)"/>
+    <xsl:variable name="docIRI" select="vi:docIRI($baseUri)"/>
+    <xsl:variable name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
+
     
     <xsl:template match="/">
 		<rdf:RDF>
@@ -64,14 +70,16 @@
     </xsl:template>
     
     <xsl:template match="a:feed">
-		<rdf:Description rdf:about="{$baseUri}">
+		<rdf:Description rdf:about="{$docproxyIRI}">
 			<rdf:type rdf:resource="&bibo;Document"/>
-			<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri)}"/>
-			<dcterms:subject rdf:resource="{vi:proxyIRI($baseUri)}"/>
-			<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
+			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+			<sioc:container_of rdf:resource="{$resourceURL}"/>
+			<dcterms:subject rdf:resource="{$resourceURL}"/>
+			<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+			<owl:sameAs rdf:resource="{$docIRI}"/>
 		</rdf:Description>
 		
-		<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
+		<rdf:Description rdf:about="{$resourceURL}">
 			<rdf:type rdf:resource="&bibo;Book"/>
 			<dcterms:modified rdf:datatype="&xsd;dateTime">
 				<xsl:value-of select="a:updated"/>
