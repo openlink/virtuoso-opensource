@@ -1,0 +1,548 @@
+
+<!-- Processed by Id: cwm.py,v 1.191 2007-05-10 18:38:55 syosi Exp -->
+<!--     using base file:///Users/hjs/Programming/sommer/www/atom/2006-06-06/AtomOwl.n3-->
+
+
+<rdf:RDF xmlns="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:Ato="file:///Users/hjs/Programming/sommer/www/atom/2006-06-06/AtomOwl.n3#"
+    xmlns:awol="http://bblfish.net/work/atom-owl/2006-06-06/#"
+    xmlns:cifp="http://eulersharp.sourceforge.net/2004/04test/rogier#"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:log="http://www.w3.org/2000/10/swap/log#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:skos="http://www.w3.org/2004/02/skos/core#">
+
+    <owl:Ontology rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Thing"/>
+        <dc:contributor xml:lang="en">Danny Ayers</dc:contributor>
+        <dc:contributor xml:lang="en">Elias Torres</dc:contributor>
+        <dc:contributor xml:lang="en">Reto Bachmann-Gmuer</dc:contributor>
+        <dc:created>2005-10-23</dc:created>
+        <dc:creator xml:lang="en">Henry Story</dc:creator>
+        <dc:title xml:lang="en">Atom Syndication Ontology</dc:title>
+        <comment xml:lang="en">The AtomOWL ontology is inspired from the work done by the atom working group. This ontology is working off the rfc 4287 published among othe places at http://www.atompub.org/rfc4287.html . The AtomOWL ontology uses as much as possible the same terms as the format there to make the relation easy to understand. The AtomOWL name space is slightly different from the atom namespace [see post http://www.imc.org/atom-syntax/mail-archive/msg16476.html]. But this is a good thing as it helps distinguish the ontology from the rfc 4287 serialisation.</comment>
+        <owl:imports rdf:resource="http://purl.org/dc/elements/1.1/"/>
+        <owl:imports rdf:resource="http://www.w3.org/2004/02/skos/core/owl-dl/skos-core-owl-dl.owl"/>
+        <owl:imports rdf:resource="http://xmlns.com/foaf/0.1/index.rdf"/>
+    </owl:Ontology>
+
+    <owl:Class rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#Category">
+        <awol:retosNote xml:lang="en">The construct with term and scheme looks very much like a URI-Ref used in RDF. Isn't this just any rdfs:Resource? Maybe skos:Concept could be used as range of :category.</awol:retosNote>
+        <comment xml:lang="en">see §4.2.2 of rfc 4287. A Category Type</comment>
+        <label>Category Class</label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#Content">
+        <comment xml:lang="en">see §4.1.3 in rfc 4287 One way to think of this is as a class that represents what one can get from an HTTP connection. It has a body, and a number of headers, info such as mime-type, content-lenght, etc... .</comment>
+        <label xml:lang="en">Content Class</label>
+        <subClassOf rdf:resource="http://sw.nokia.com/WebArch-1/Representation"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#Entry">
+        <comment xml:lang="en">see §4.1.2 of the rfc 4287 spec</comment>
+        <label xml:lang="en">Entry Class</label>
+        <subClassOf rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Version"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#Feed">
+        <comment xml:lang="en">Container for feed metadata.</comment>
+        <label xml:lang="en">Feed Class</label>
+        <subClassOf rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Version"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#FeedOrEntry">
+        <comment xml:lang="en">Union of the Feed and Entry class. Simplifies writing the ontology.</comment>
+        <label xml:lang="en">FeedOrEntry Class</label>
+        <subClassOf rdf:parseType="Resource">
+            <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Restriction"/>
+            <owl:cardinality rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</owl:cardinality>
+            <owl:onProperty rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#title"/>
+        </subClassOf>
+        <owl:unionOf rdf:parseType="Resource">
+            <rdf:first rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Entry"/>
+            <rdf:rest rdf:parseType="Resource">
+                <rdf:first rdf:resource="#Feed"/>
+                <rdf:rest rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#nil"/>
+            </rdf:rest>
+        </owl:unionOf>
+        <skos:editorialNote>This class should probably be anonymous. It is really only used to make it easier to write the ontology, as it is helps regroup all the relations that are in common between a awol:Feed and an :Entry.</skos:editorialNote>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#Generator">
+        <awol:retosNote xml:lang="en">is this an instance of the piece of software or the program itself? which is the agent</awol:retosNote>
+        <comment xml:lang="en">see §4.2.4 of rfc 4287 spec. Generator for the Feed. It has many properties in common with awol:Person</comment>
+        <label xml:lang="en">Generator of feed</label>
+        <subClassOf rdf:resource="http://xmlns.com/foaf/0.1/Agent"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#HTML">
+        <comment xml:lang="en">see §3.1.1.2 of rfc 4287. The class of html strings</comment>
+        <label>Html content class</label>
+        <subClassOf rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#TextContent"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#Link">
+        <comment xml:lang="en">see §4.2.7 of rfc 4287 spec. Note that the href, hreflang and lengtlength attributes of rfc 4287 have been moved to the content class and a content relation from the Link to a Content class has been made. The href is translated onto the awol:src relation of the Content class. A link is a reified relation between an entry an a content, for the purpose of adding some metadata such as a title. If it is a reified statement, it is a special type of such a statement, one that implies always the reified statement itself (see N3 rule)</comment>
+        <label xml:lang="en">Link Class</label>
+        <subClassOf rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#Person">
+        <comment xml:lang="en">see §3.2 of rfc 4287 spec.</comment>
+        <label xml:lang="en">Person Class</label>
+        <subClassOf rdf:resource="http://xmlns.com/foaf/0.1/Agent"/>
+        <subClassOf rdf:parseType="Resource">
+            <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Restriction"/>
+            <owl:cardinality rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</owl:cardinality>
+            <owl:onProperty rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#email"/>
+        </subClassOf>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#PlainText">
+        <comment xml:lang="en">see §3.1.1.1 of rfc 4287. The datatype of simple text elements. Essentially this is the class of all plain text literals.</comment>
+        <label>Plain text content class</label>
+        <subClassOf rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#TextContent"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#RelationType">
+        <comment xml:lang="en">see §4.2.7.2 of rfc 4287. Relation types are registered, or can be created as described in rfc 4287. They are special types of properties that relate awol:Versions to :Contents.</comment>
+        <label xml:lang="en">Relation Type Class</label>
+        <subClassOf rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#TextContent">
+        <comment xml:lang="en">see §3.1 of rfc 4287. The text constructs.</comment>
+        <label xml:lang="en">All Text Content Class</label>
+        <subClassOf rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Content"/>
+        <skos:editorialNote>Should awol:TextContent really be a sublcass of :Content ? If it is then all the properties that apply to text will also apply to :Content. If we want a :Content to be able to take properties such as :etag, this does not seem quite relevant to anything that is related to what should be the object of :title, :subtitle or :summary. Neither does :src really seem to be a relation that really makes sense there</skos:editorialNote>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#Version">
+        <comment xml:lang="en">Metadata about the state of  a resource with given awol:id at an :updated time.</comment>
+        <label xml:lang="en">Version Class</label>
+        <subClassOf rdf:parseType="Resource">
+            <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Restriction"/>
+            <owl:cardinality rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</owl:cardinality>
+            <owl:onProperty rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#id"/>
+        </subClassOf>
+        <subClassOf rdf:parseType="Resource">
+            <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Restriction"/>
+            <owl:cardinality rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</owl:cardinality>
+            <owl:onProperty rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#updated"/>
+        </subClassOf>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#XHTML">
+        <comment xml:lang="en">see §3.1.1.3 of rfc 4287. The datatype of xhtml strings</comment>
+        <label>Xhtml content class</label>
+        <subClassOf rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#TextContent"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#XML">
+        <comment xml:lang="en">see §4.1.3.3 of rfc 4287. The datatype of xml content</comment>
+        <label>XML content class</label>
+        <subClassOf rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Content"/>
+    </owl:Class>
+
+    <owl:ObjectProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#aggregates">
+        <comment xml:lang="en">The feed aggregates this given Entry.  See §4.1.1 of rfc4287. This means that the entry does not have the feed as its source. The entry was taken from a different feed.</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Feed"/>
+        <label xml:lang="en">aggregates</label>
+        <range rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Entry"/>
+        <subPropertyOf rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#content"/>
+        <skos:editorialNote>This relation is not visible in the rfc4287 xml. It is not clear that it is needed either, though it can help simplify queries. See also N3 rule that defines this precisely </skos:editorialNote>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#author">
+        <comment xml:lang="en">See §4.2.1 rfc 4287 spec.</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#FeedOrEntry"/>
+        <label>author</label>
+        <range rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Person"/>
+    </owl:ObjectProperty>
+
+    <owl:DatatypeProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#body">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <comment xml:lang="en">the body of the content.</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Content"/>
+        <label>body relation</label>
+        <range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Literal"/>
+    </owl:DatatypeProperty>
+
+    <owl:ObjectProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#category">
+        <comment xml:lang="en">See §4.2.2. A category with which the conainer is associated.</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#FeedOrEntry"/>
+        <label>category</label>
+        <range rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Category"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#contains">
+        <comment xml:lang="en">The feed contains the given Entry. See §4.1.1 of rfc4287. This makes no statement about whether that Entry has the awol:Feed as its source.</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Feed"/>
+        <label xml:lang="en">contains relation</label>
+        <range rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Entry"/>
+    </owl:ObjectProperty>
+
+    <owl:FunctionalProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#content">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+        <comment xml:lang="en">See §4.1.3 of rfc 4287 spec. The content of an Entry, a Link or any of the relation types that are the object of awol:rel properties</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Entry"/>
+        <label xml:lang="en">content</label>
+        <range rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Content"/>
+        <subPropertyOf rdf:resource="http://sw.nokia.com/WebArch-1/representation"/>
+    </owl:FunctionalProperty>
+
+    <owl:ObjectProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#contributor">
+        <comment xml:lang="en">See §4.2.3 of rfc 4287 spec. Someone who contributed to the Version.</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#FeedOrEntry"/>
+        <label xml:lang="en">contributor</label>
+        <range rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Person"/>
+    </owl:ObjectProperty>
+
+    <owl:AnnotationProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#dannyNote">
+        <comment xml:lang="en">A comment by Danny Ayers</comment>
+        <subPropertyOf rdf:resource="http://www.w3.org/2004/02/skos/core#editorialNote"/>
+    </owl:AnnotationProperty>
+
+    <owl:AnnotationProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#eliasNote">
+        <comment xml:lang="en">A comment by Elias Torres</comment>
+        <subPropertyOf rdf:resource="http://www.w3.org/2004/02/skos/core#editorialNote"/>
+    </owl:AnnotationProperty>
+
+    <owl:ObjectProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#email">
+        <comment xml:lang="en">see §3.2.3 of rfc 4287. A mailbox of the Person</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#FeedOrEntry"/>
+        <label xml:lang="en">email address</label>
+        <range rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Person"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#entry">
+        <comment xml:lang="en">The feed contains the given Entry and that Entry has the feed as its source. See §4.1.1 of rfc 4287. This relation is a little bit more specialised than the rfc 4287 entry element. It relates only awol:Feed objects to :Entry objects where the :Feed is a :source of the :Entry. See also the :source and :contains relations. </comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Feed"/>
+        <label xml:lang="en">entry relation</label>
+        <range rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Entry"/>
+        <subPropertyOf rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#contains"/>
+        <subPropertyOf rdf:parseType="Resource">
+            <owl:inverseOf rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#source"/>
+        </subPropertyOf>
+    </owl:ObjectProperty>
+
+    <owl:FunctionalProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#generator">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+        <comment xml:lang="en">see §4.2.4 of rfc 4287. The generator of the object</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Feed"/>
+        <label xml:lang="en">generator</label>
+        <range rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Generator"/>
+        <skos:editorialNote xml:lang="en">The domain should really just be awol:Version. I don't see why Entries can't have an generator too (especially as atom:entry can be a top level content).</skos:editorialNote>
+    </owl:FunctionalProperty>
+
+    <owl:DatatypeProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#generatorVersion">
+        <comment xml:lang="en">see §4.2.4 of rfc 4287. Indicates the version of the Generator</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Generator"/>
+        <label xml:lang="en">generatorVersion</label>
+        <range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#html">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#InverseFunctionalProperty"/>
+        <comment xml:lang="en">see §3.1.1.2 of rfc 4287. The datatype of html text elements. It is considered to be a relation to the text.</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#HTML"/>
+        <label>html value</label>
+        <range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <subPropertyOf rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#body"/>
+    </owl:DatatypeProperty>
+
+    <owl:ObjectProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#icon">
+        <comment xml:lang="en">see 4.2.5 of rfc 4287. An icon associated with the object</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Feed"/>
+        <label xml:lang="en">icon</label>
+        <range rdf:resource="http://xmlns.com/foaf/0.1/Image"/>
+        <skos:editorialNote xml:lang="en">The domain should really just be awol:Version. I don't see why Entries can't have an icon.</skos:editorialNote>
+    </owl:ObjectProperty>
+
+    <owl:DatatypeProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#id">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <comment xml:lang="en">See §4.2.6 rfc 4287 spec. All Versions with the same id can be considered to be versions of the resource identified by the id. The id mentions the resource of which it is a representation. </comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Version"/>
+        <label xml:lang="en">id</label>
+        <range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#label">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <comment xml:lang="en">see §4.2.2.3 of rfc 4287. A Human readable label for display.</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Category"/>
+        <label xml:lang="en">label</label>
+        <range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <skos:editorialNote xml:lang="en">Should this be functional? Given the language sensitivity of the label</skos:editorialNote>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#lang">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <comment xml:lang="en">see §4.2.7.4 of rfc 4287. The language of the representation.</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Content"/>
+        <label xml:lang="en">language</label>
+        <range rdf:resource="http://www.w3.org/2001/XMLSchema#language"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#length">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <comment xml:lang="en">see §4.2.7.6 of rfc 4287. The length in bytes of the representation.</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Content"/>
+        <label xml:lang="en">length in bytes</label>
+        <range rdf:resource="http://www.w3.org/2001/XMLSchema#int"/>
+    </owl:DatatypeProperty>
+
+    <owl:ObjectProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#link">
+        <comment xml:lang="en">See §4.2.7 of rfc 4287 spec. A link associated with the container. If the link is unreified, we have a relation from the container to some resource</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#FeedOrEntry"/>
+        <label xml:lang="en">link</label>
+        <range rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Link"/>
+        <subPropertyOf rdf:parseType="Resource">
+            <owl:inverseOf rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#subject"/>
+        </subPropertyOf>
+    </owl:ObjectProperty>
+
+    <owl:FunctionalProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#logo">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+        <comment xml:lang="en">see §4.2.8 of rfc 4287. An icon associated with the object</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Feed"/>
+        <label xml:lang="en">logo</label>
+        <range rdf:resource="http://xmlns.com/foaf/0.1/Image"/>
+        <skos:editorialNote xml:lang="en">The domain should really just be awol:Version. I don't see why Entries can't have a logo too.</skos:editorialNote>
+    </owl:FunctionalProperty>
+
+    <owl:DatatypeProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#name">
+        <comment xml:lang="en">see §3.2.1 of rfc 4287. A human readable name for the Person.</comment>
+        <comment xml:lang="en">see §4.2.4 of rfc 4287. A name for the Generator. </comment>
+        <domain rdf:parseType="Resource">
+            <owl:unionOf rdf:parseType="Resource">
+                <rdf:first rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Person"/>
+                <rdf:rest rdf:parseType="Resource">
+                    <rdf:first rdf:resource="#Generator"/>
+                    <rdf:rest rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#nil"/>
+                </rdf:rest>
+            </owl:unionOf>
+        </domain>
+        <label xml:lang="en">name</label>
+        <subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/name"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#published">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <comment xml:lang="en">See §4.2.9 of rfc 4287 spec. A date associated with an event early in the lifecyle of the subject.</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Entry"/>
+        <label xml:lang="en">publication date</label>
+        <range rdf:resource="http://www.w3.org/2001/XMLSchema#dateTime"/>
+    </owl:DatatypeProperty>
+
+    <owl:ObjectProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#rel">
+        <comment xml:lang="en">see §4.2.7.2 of rfc 4287. The relationship type. The relationship type is a property that relates a awol:Version to a :Content </comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Link"/>
+        <label xml:lang="en">relation type</label>
+        <range rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#RelationType"/>
+        <subPropertyOf rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate"/>
+    </owl:ObjectProperty>
+
+    <owl:AnnotationProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#retosNote">
+        <comment xml:lang="en">A comment by Reto Bachmann-Gmuer</comment>
+        <subPropertyOf rdf:resource="http://www.w3.org/2004/02/skos/core#editorialNote"/>
+    </owl:AnnotationProperty>
+
+    <owl:FunctionalProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#rights">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+        <comment xml:lang="en">See §4.2.10 of rfc 4287 spec. Rights held over a Version.</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#FeedOrEntry"/>
+        <label xml:lang="en">rights</label>
+        <range rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#TextContent"/>
+    </owl:FunctionalProperty>
+
+    <owl:FunctionalProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#scheme">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+        <comment xml:lang="en">see §4.2.2.2 of rfc 4287. Identifies a categorization scheme.</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Category"/>
+        <label xml:lang="en">catgegorization scheme</label>
+        <range rdf:resource="http://sw.nokia.com/WebArch-1/InformationResource"/>
+    </owl:FunctionalProperty>
+
+    <owl:ObjectProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#source">
+        <awol:eliasNote xml:lang="en">This relation is not strictly necessary.</awol:eliasNote>
+        <comment xml:lang="en">See §4.2.11 of rfc 4287 spec. The source feed where the entry was found</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Entry"/>
+        <label xml:lang="en">source feed</label>
+        <range rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Feed"/>
+        <owl:inverseOf rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#entry"/>
+        <skos:editorialNote>This is indeed not really needed. But it is useful for explaining the relation between the source element in rfc 4287 and the awol:entry relation. It has educational value.</skos:editorialNote>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#src">
+        <comment xml:lang="en">a source of the representation</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Content"/>
+        <label xml:lang="en">source</label>
+        <range rdf:resource="http://sw.nokia.com/WebArch-1/InformationResource"/>
+        <owl:equivalentProperty rdf:resource="http://sw.nokia.com/WebArch-1/representationOf"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#subject">
+        <comment xml:lang="en">the inverse of the awol:link relation, not specified in rfc 4287, but added here for convenience</comment>
+        <label xml:lang="en">the object of the link</label>
+        <subPropertyOf rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#subject"/>
+        <owl:inverseOf rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#link"/>
+    </owl:ObjectProperty>
+
+    <owl:FunctionalProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#subtitle">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+        <comment xml:lang="en">see §4.2.12 of rfc 4287. Subtitle of the feed.</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Feed"/>
+        <label xml:lang="en">subtitle</label>
+        <range rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#TextContent"/>
+        <subPropertyOf rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#content"/>
+    </owl:FunctionalProperty>
+
+    <owl:FunctionalProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#summary">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+        <comment xml:lang="en">See §4.2.13 of rfc 4287 spec. A summary of the content of the Entry</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Entry"/>
+        <label xml:lang="en">summary</label>
+        <range rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#TextContent"/>
+    </owl:FunctionalProperty>
+
+    <owl:DatatypeProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#term">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <comment xml:lang="en">see §4.2.2.1 of rfc 4287. Identifies the category</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Category"/>
+        <label xml:lang="en">term</label>
+        <range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <skos:editorialNote xml:lang="en">should specify that there is exactly one term</skos:editorialNote>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#text">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#InverseFunctionalProperty"/>
+        <comment xml:lang="en">see §3.1.1.1 of rfc 4287. The datatype of xhtml text elements</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#PlainText"/>
+        <label>text type</label>
+        <range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <subPropertyOf rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#body"/>
+    </owl:DatatypeProperty>
+
+    <owl:FunctionalProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#title">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+        <comment xml:lang="en">See §4.2.14. Title of a container</comment>
+        <domain rdf:parseType="Resource">
+            <owl:unionOf rdf:parseType="Resource">
+                <rdf:first rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#FeedOrEntry"/>
+                <rdf:rest rdf:parseType="Resource">
+                    <rdf:first rdf:resource="#Link"/>
+                    <rdf:rest rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#nil"/>
+                </rdf:rest>
+            </owl:unionOf>
+        </domain>
+        <label xml:lang="en">title</label>
+        <range rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#TextContent"/>
+        <skos:editorialNote xml:lang="en">Reto argues that a Title should have any content attached to it. One should for example allow picture for people who can't read or audio titles for people who cannot write. This would of course make the semantics be a lot more lax that the rfc 4287 syntax allows. </skos:editorialNote>
+    </owl:FunctionalProperty>
+
+    <owl:ObjectProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#to">
+        <comment>the object of a link. We interpret here a Link to be a re-ified relation from a awol:Version to a :Content object. The relation is re-ified in order to add a :title relation to the link. This can probably usually be safely ignored</comment>
+        <label xml:lang="en">to</label>
+        <subPropertyOf rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#object"/>
+    </owl:ObjectProperty>
+
+    <owl:DatatypeProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#type">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <comment xml:lang="en">see §4.2.7.3 of rfc 4287. The mime type of the representation.</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Content"/>
+        <label xml:lang="en">mime type</label>
+        <range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#updated">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <comment xml:lang="en">See §4.2.15 of rfc 4287 spec. Indicates the most recent instant in time when a resource with the given id was modified in a way the publisher considers significant. Therefore, not all modifications necessarily result in a changed atom:updated value.</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Version"/>
+        <label xml:lang="en">updated</label>
+        <range rdf:resource="http://www.w3.org/2001/XMLSchema#dateTime"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#uri">
+        <comment xml:lang="en">see §3.2.2 of rfc 4287. A uri associated the Person</comment>
+        <comment xml:lang="en">see §4.2.4 of rfc 4287. A uri associated the Generator</comment>
+        <domain rdf:parseType="Resource">
+            <owl:unionOf rdf:parseType="Resource">
+                <rdf:first rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Person"/>
+                <rdf:rest rdf:parseType="Resource">
+                    <rdf:first rdf:resource="#Generator"/>
+                    <rdf:rest rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#nil"/>
+                </rdf:rest>
+            </owl:unionOf>
+        </domain>
+        <label xml:lang="en">a uri</label>
+        <range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+        <skos:editorialNote xml:lang="en">the uri with subject awol:Agent and :Generator are really the same relation</skos:editorialNote>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#xhtml">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#InverseFunctionalProperty"/>
+        <comment xml:lang="en">see §3.1.1.3 of rfc 4287. The datatype of xhtml text elements.</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#XHTML"/>
+        <label>xhtml type</label>
+        <range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <subPropertyOf rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#body"/>
+        <skos:editorialNote xml:lang="en">Note that there is a tricky question concerning the xml div element. The xml:lang and xml:base elements are not in fact part of xhtml and it has been argued on the atom mailing list (28 June 2006) that the div is *not* part of the xhtml. We could have this be a special literal with the div, or we could remove the div and push the xml:lang and xml:base down (this would work only if there is one element beneath I suppose) or we would have to use the awol:lang and :base relations on the :Content object. </skos:editorialNote>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://bblfish.net/work/atom-owl/2006-06-06/#xml">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#InverseFunctionalProperty"/>
+        <comment xml:lang="en">see §4.1.3.1 of rfc 4287. Relates an awol:XML object to its content.</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#XML"/>
+        <label>xml type relation</label>
+        <range rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral"/>
+        <subPropertyOf rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#body"/>
+    </owl:DatatypeProperty>
+
+    <awol:RelationType rdf:about="http://www.iana.org/assignments/relation/alternate">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+        <comment xml:lang="en">see §4.2.7.2.1 of rfc 4287. The object points to an alternate version of the subject</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Version"/>
+        <label xml:lang="en">alternate relation</label>
+    </awol:RelationType>
+
+    <awol:RelationType rdf:about="http://www.iana.org/assignments/relation/enclosure">
+        <comment xml:lang="en">see §4.2.7.2.4 of rfc 4287. The object is a related resource that is potentially large in size and requires special handling.</comment>
+        <label xml:lang="en">enclosure relation</label>
+        <subPropertyOf rdf:resource="http://www.iana.org/assignments/relation/alternate"/>
+    </awol:RelationType>
+
+    <awol:RelationType rdf:about="http://www.iana.org/assignments/relation/related">
+        <comment xml:lang="en">see §4.2.7.2.2 of rfc 4287. The object points to a related version of the subject. So if the subject is a Entry the object might be a resource with an html representation of that entry.</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Version"/>
+        <label xml:lang="en">related</label>
+    </awol:RelationType>
+
+    <awol:RelationType rdf:about="http://www.iana.org/assignments/relation/self">
+        <awol:retosNote xml:lang="en">is this owl:sameAs? or some other well known identity relation?</awol:retosNote>
+        <comment xml:lang="en">see §4.2.7.2.3 of rfc 4287. The object is equivalent to the subject.</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Version"/>
+        <label xml:lang="en">self relation</label>
+    </awol:RelationType>
+
+    <awol:RelationType rdf:about="http://www.iana.org/assignments/relation/via">
+        <comment xml:lang="en">see §4.2.7.2.5 of rfc 4287. The object provided a source of the information found in the subject.</comment>
+        <domain rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#Version"/>
+        <label xml:lang="en">via relation</label>
+    </awol:RelationType>
+
+    <rdf:Description>
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#InverseFunctionalProperty"/>
+        <cifp:productProperty rdf:parseType="Resource">
+            <rdf:first rdf:resource="http://bblfish.net/work/atom-owl/2006-06-06/#term"/>
+            <rdf:rest rdf:parseType="Resource">
+                <rdf:first rdf:resource="#scheme"/>
+                <rdf:rest rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#nil"/>
+            </rdf:rest>
+        </cifp:productProperty>
+        <comment xml:lang="en">A term and a scheme identify a Category</comment>
+        <skos:editorialNote xml:lang="en">The label is language dependent and seems less important</skos:editorialNote>
+    </rdf:Description>
+
+</rdf:RDF>

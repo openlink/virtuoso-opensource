@@ -343,10 +343,19 @@ again:
 	 _label := null;
 
        rdfa := rdfdesc_rel_print (prop, rel, _url, 0, null);
-       if (http_mime_type (_url) like 'image/%' and _url not like 'http://%/about/id/%')
+       if (prop = 'http://bblfish.net/work/atom-owl/2006-06-06/#content' and _object like 'nodeID://%')
+	 {
+	   declare src any;
+	   whenever not found goto usual_iri;
+	   select id_to_iri (O) into src from DB.DBA.RDF_QUAD where 
+	   	S = iri_to_id (_object, 0) and P = iri_to_id ('http://bblfish.net/work/atom-owl/2006-06-06/#src', 0);
+	   http (sprintf ('<iframe src="%s" width="100%%" height="300" frameborder="0"><p>Your browser does not support iframes.</p></iframe>', src));
+	 }
+       else if (http_mime_type (_url) like 'image/%' and _url not like 'http://%/about/id/%')
 	 http (sprintf ('<a class="uri" %s href="%s"><img src="%s" height="160" border="0"/></a>', rdfa, rdfdesc_http_url (_url), _url));
        else
 	 {
+	   usual_iri:
 	 http (sprintf ('<a class="uri" %s href="%s">%s</a>', rdfa, rdfdesc_http_url (_url), rdfdesc_uri_curie(_url, _label)));
 	   if (prop = __id2in (rdf_sas_iri ()))
 	     http (sprintf ('&nbsp;<a class="uri" href="%s"><img src="images/goout.gif" title="Open Actual (X)HTML page" border="0"/></a>', _url));
