@@ -94,7 +94,7 @@
 			 -->
 	                <gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Vendor')}">
 			  <rdfs:comment>The legal agent making the offering</rdfs:comment>
-		          <rdfs:label>Vendor</rdfs:label>
+		          <rdfs:label>BestBuy Co., Inc.</rdfs:label>
 		          <gr:legalName>BestBuy Co., Inc.</gr:legalName>
 		          <gr:offers rdf:resource="{$resourceURL}"/>
 			  <foaf:homepage rdf:resource="http://www.bestbuy.com" />
