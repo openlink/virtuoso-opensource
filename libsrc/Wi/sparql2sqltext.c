@@ -5056,7 +5056,7 @@ ssg_print_nice_equality_for_var_and_eq_fixed_val (spar_sqlgen_t *ssg, rdf_val_ra
   ssg_valmode_t vmode;
   SPART_buf var_rv_buf/*, glob_rv_buf*/;
   SPART *var_rv/*, *glob_rv*/;
-  int col_ctr, col_count;
+  int col_ctr, col_count, short_cmp_is_legal;
   if (SPAR_RETVAL == SPART_TYPE (var))
     {
       var_rv = var;
@@ -5081,6 +5081,9 @@ ssg_print_nice_equality_for_var_and_eq_fixed_val (spar_sqlgen_t *ssg, rdf_val_ra
     }
   vmode = sparp_expn_native_valmode (ssg->ssg_sparp, var_rv);
   col_count = (IS_BOX_POINTER (vmode) ? vmode->qmfColumnCount : 1);
+  short_cmp_is_legal = IS_BOX_POINTER (vmode) && (vmode->qmfIsBijection);
+  if (short_cmp_is_legal)
+    {
   for (col_ctr = 0; col_ctr < col_count; col_ctr++)
     {
       const char *eq_idx_asname = ((1 == col_count) ? NULL_ASNAME : (COL_IDX_ASNAME + col_ctr));
@@ -5095,7 +5098,8 @@ ssg_print_nice_equality_for_var_and_eq_fixed_val (spar_sqlgen_t *ssg, rdf_val_ra
       ssg_puts (" =");
       ssg_print_scalar_expn (ssg, (SPART *)(rvr->rvrFixedValue), vmode, eq_idx_asname);
     }
-  if ((0 == col_count) || !(SPART_VARR_IS_REF & rvr->rvrRestrictions))
+    }
+  if ((0 == col_count) || !(SPART_VARR_IS_REF & rvr->rvrRestrictions) || !short_cmp_is_legal)
     {
       ssg_print_where_or_and (ssg, "fixed value of equiv class (sqlval)");
       if (NULL == var_rv->_.retval.triple)
