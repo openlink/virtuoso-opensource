@@ -27,6 +27,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
+<!ENTITY awol "http://bblfish.net/work/atom-owl/2006-06-06/#">
 ]>
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -41,6 +42,7 @@
   xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
   xmlns:umbel="http://umbel.org/umbel#"
   xmlns:content="http://purl.org/rss/1.0/modules/content/"
+  xmlns:awol="&awol;"
   version="1.0">
   <xsl:output method="xml" indent="yes"/>
   <xsl:param name="baseUri" />
@@ -73,9 +75,14 @@
 		<xsl:variable name="doc1">
 		    <xsl:apply-templates  select="/html/body" mode="content"/>
 		</xsl:variable>
-		<dc:description>
-		    <xsl:value-of select="string ($doc1)"/>
-		</dc:description>
+		<awol:content>
+		    <awol:Content>
+			<awol:body rdf:parseType="Literal">
+			    <xsl:apply-templates select="$doc1" mode="content"/>
+			</awol:body>
+			<awol:src rdf:resource="{$baseUri}"/>
+		    </awol:Content>
+		</awol:content>
 		<!--content:encoded><xsl:value-of select="vi:escape($doc1)" /></content:encoded-->
       </rdf:Description>
   </xsl:template>

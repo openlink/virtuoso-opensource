@@ -6073,7 +6073,7 @@ RDF_GRAPH_GROUP_CREATE ('http://www.openlinksw.com/schemas/virtrdf#schemas', 1);
 
 create procedure DB.DBA.RM_LOAD_ONTOLOGIES ()
 {
-  if (registry_get ('RM_LOAD_ONTOLOGIES') = '1')
+  if (registry_get ('RM_LOAD_ONTOLOGIES') = '2')
     return;
   for select RES_CONTENT, RES_NAME from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/VAD/rdf_mappers/ontologies/owl/%.owl.gz' do
     {
@@ -6101,7 +6101,7 @@ create procedure DB.DBA.RM_LOAD_ONTOLOGIES ()
       RDF_GRAPH_GROUP_INS ('http://www.openlinksw.com/schemas/virtrdf#schemas', graph_iri);
       skip_owl:;
     }
-  registry_set ('RM_LOAD_ONTOLOGIES','1');
+  registry_set ('RM_LOAD_ONTOLOGIES','2');
 }
 ;
 

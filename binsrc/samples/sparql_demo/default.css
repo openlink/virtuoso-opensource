@@ -170,15 +170,27 @@ ul.docs_list li:hover {
   clear: both;
   margin: 0;
   padding: 0}
+#tutorial_tree {
+  clear: both;
+  margin: 0;
+  padding: 0}
 
 #dawg_tree    li.lvl1,
 #virt_ext_tree li.lvl1,
+#tutorial_tree  li.lvl1 {
+  margin-top: 2px;
+  clear: both}
 #samples_tree li.lvl1 {
   margin-top: 2px;
   clear: both}
 
 #dawg_tree    li.lvl2,
 #virt_ext_tree li.lvl2,
+#tutorial_tree  li.lvl2 {
+  width:203px;
+  margin-top: 2px;
+  clear: both;
+  font-weight: normal;}
 #samples_tree li.lvl2 {
   width:203px;
   margin-top: 2px;
@@ -189,8 +201,13 @@ ul.docs_list li:hover {
 #virt_ext_tree li.lvl2:hover,
 #samples_tree li.lvl2:hover {
   background-color: #d9f1f7}
+#tutorial_tree  li.lvl2:hover {
+  background-color: #d9f1f7}
 
 #page_sq {
+  margin: 0px 5px 0px 5px}
+
+#page_tutorial {
   margin: 0px 5px 0px 5px}
 
 #tab_virt_ext {
@@ -458,7 +475,6 @@ ul#tabgrph {
 #virt_ext_content table {
   border: 1px solid black;
   border-collapse: collapse;
-  border-padding: 1ex;
   margin-left: 2.5em;
   margin-right: 2.5em;
 }
@@ -491,6 +507,7 @@ ul#tabgrph {
   color: black;
 } 
 
+#tutorial_content div.query,
 #dawg_content div.approval,
 #virt_ext_content div.approval {
   font-weight: bold;
@@ -498,33 +515,43 @@ ul#tabgrph {
 #page_dawg h2,
 #page_virt_ext h2,
 #page_sq h2,
+#page_tutorial h2,
 #dawg_content h1,
 #virt_ext_content h1,
 #sq_content   h1,
+#tutorial_content   h1,
 #dawg_content h2,
 #virt_ext_content h2,
 #sq_content   h2,
+#tutorial_content   h2,
 #dawg_content h3,
 #virt_ext_content h3,
 #sq_content   h3 { color: #005A9C; background: white }
+#tutorial_content   h3 { color: #005A9C; background: white }
 #dawg_content h1,
 #virt_ext_content h1,
 #sq_content   h1 { font: 170% sans-serif }
+#tutorial_content   h1 { font: 170% sans-serif }
 #dawg_content h2,
 #virt_ext_content h2,
 #sq_content   h2 { font: 140% sans-serif }
+#tutorial_content   h2 { font: 140% sans-serif }
 #dawg_content h3,
 #virt_ext_content h3,
 #sq_content   h3 { font: 120% sans-serif }
+#tutorial_content   h3 { font: 120% sans-serif }
 #dawg_content h4,
 #virt_ext_content h4,
 #sq_content   h4 { font: bold 100% sans-serif }
+#tutorial_content   h4 { font: bold 100% sans-serif }
 #dawg_content h5,
 #virt_ext_content h5,
 #sq_content   h5 { font: italic 100% sans-serif }
+#tutorial_content   h5 { font: italic 100% sans-serif }
 #dawg_content h6,
 #virt_ext_content h6,
 #sq_content   h6 { font: small-caps 100% sans-serif }
+#tutorial_content   h6 { font: small-caps 100% sans-serif }
 
 /* ---------------- tools -------------- */
 
