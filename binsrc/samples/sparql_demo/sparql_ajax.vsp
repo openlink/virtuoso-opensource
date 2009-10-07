@@ -203,6 +203,26 @@ skip_failed_group: ;
         <ul class="docs_list">
            <li><a href="http://docs.openlinksw.com/virtuoso/rdfandsparql.html">Query Service Documentation</a></li>
            <li><a href="http://docs.openlinksw.com/virtuoso">Virtuoso Documentation</a></li>
+
+<li id="tab_tutorial"><a href="#" id="tab_tutorial_toggle">Virtuoso SPARQL Tutorials</a>
+            <div id="tutorial_tree_container" style="display: none">
+              <ul class="tree" id="tutorial_tree">
+
+                  <li class="lvl1"><a href="#">Presentations</a>
+	            <ul class="lvl2">
+
+               <li class="lvl2"><a href="http://virtuoso.openlinksw.com/presentations/SPARQL_Tutorials/SPARQL_Tutorials_Part_1/SPARQL_Tutorials_Part_1.html">Virtuoso SPARQL Tutorial 1</a></li>
+               <li class="lvl2"><a href="http://virtuoso.openlinksw.com/presentations/SPARQL_Tutorials/SPARQL_Tutorials_Part_2/SPARQL_Tutorials_Part_2.html">Virtuoso SPARQL Tutorial 2</a></li>
+               <li class="lvl2"><a href="http://virtuoso.openlinksw.com/presentations/SPARQL_Tutorials/SPARQL_Tutorials_Part_3/SPARQL_Tutorials_Part_3.html">Virtuoso SPARQL Tutorial 3</a></li>
+               <li class="lvl2"><a href="http://virtuoso.openlinksw.com/presentations/SPARQL_Tutorials/SPARQL_Tutorials_Part_4/SPARQL_Tutorials_Part_4.html">Virtuoso SPARQL Tutorial 4</a></li>
+
+                    </ul>
+                  </li>
+
+              </ul>
+            </div>
+          </li>
+
            <li><a href="http://virtuoso.openlinksw.com/wiki/main/">Virtuoso Wiki</a></li>
            <li><a href="http://virtuoso.openlinksw.com/blog/">Virtuoso Blog</a></li>
         </ul> <!-- docs_list -->
@@ -286,7 +306,19 @@ skip_failed_group: ;
              test in the tree lets you view its query text and associated data and
              load it in the query processor interface for editing and execution.</p>
         </div><!-- sq_content -->
-          </div><!-- page_sq -->
+          </div><!-- page_tutorial -->
+          <div id="page_tutorial" style="display:none;">
+            <h2>Virtuoso SPARQL Tutorials</h2>
+            <div id="tutorial_content">
+              <p>The folder tree on the side bar contains a tutorials collection that covers:</p>
+              <ul>
+                <li>Using SIOC to Model the Linked Data Web</li>
+                <li>SPARQL Extensions in the Virtuoso Universal Server</li>
+                <li>SPARQL and Analytics</li>
+                <li>Exploring FOAF, Atom OWL, Annotea and SKOS based Data Spaces on the Linked Data Web</li>
+              </ul>
+            </div>
+          </div>
           <div class="main_col_page" id="page_import_data" style="display:none;">
         <iframe id="import_data_frame" name="import_data_frame" src="data_upload.vsp"></iframe>
       </div><!-- page_import_data -->

@@ -32,6 +32,7 @@ function init()
   tab.add ("tab_dawg","page_dawg");
   tab.add ("tab_virt_ext","page_virt_ext");
   tab.add ("tab_sq","page_sq");
+  tab.add ("tab_tutorial","page_tutorial");
   tab.add ("tab_import_data","page_import_data");
 //  tab.add ("tab_query_remote","page_query_remote");
   tab.go (1); /* is 0-based index... */
@@ -67,6 +68,8 @@ function init()
   virt_ext_tree.assign("virt_ext_tree",true);
   var samples_tree = new OAT.Tree({imagePath:"toolkit/images/",ext:"png",onClick:"toggle", onDblClick:"toggle"}); 
   samples_tree.assign("samples_tree",true);
+  var tutorial_tree = new OAT.Tree({imagePath:"toolkit/images/",ext:"png",onClick:"toggle", onDblClick:"toggle"});
+  tutorial_tree.assign("tutorial_tree",true);
 
   filewin = new OAT.Window({close:1,min:0,max:0,x:450,y:155,width:500,height:400,title:"View File",imagePath:"toolkit/images/"});
   filewin.content.appendChild($("file_window_content"));
@@ -89,6 +92,8 @@ function init()
       $('virt_ext_tree_container')._Tree_collapsed = 0;
       OAT.Dom.hide ($('samples_tree_container'));
       $('samples_tree_container')._Tree_collapsed = 0;
+      OAT.Dom.hide ($('tutorial_tree_container'));
+      $('tutorial_tree_container')._Tree_collapsed = 0;
     } else {
       OAT.Dom.hide($('dawg_tree_container'));
       $('dawg_tree_container')._Tree_collapsed = 0;
@@ -106,6 +111,8 @@ function init()
       $('virt_ext_tree_container')._Tree_collapsed = 1;
       OAT.Dom.hide ($('samples_tree_container'));
       $('samples_tree_container')._Tree_collapsed = 0;
+      OAT.Dom.hide ($('tutorial_tree_container'));
+      $('tutorial_tree_container')._Tree_collapsed = 0;
     } else {
       OAT.Dom.hide($('virt_ext_tree_container'));
       $('virt_ext_tree_container')._Tree_collapsed = 0;
@@ -124,6 +131,8 @@ function init()
       $('virt_ext_tree_container')._Tree_collapsed = 0;
       OAT.Dom.show($('samples_tree_container'));
       $('samples_tree_container')._Tree_collapsed = 1;
+      OAT.Dom.hide ($('tutorial_tree_container'));
+      $('tutorial_tree_container')._Tree_collapsed = 0;
     } else {
       OAT.Dom.hide($('samples_tree_container'));
       $('samples_tree_container')._Tree_collapsed = 0;
@@ -131,6 +140,25 @@ function init()
   }
   OAT.Dom.attach($('tab_sq_toggle'),"click",ref2);
   $('samples_tree_container')._Tree_collapsed = 0;
+
+  var ref5=function() {
+    if ($('tutorial_tree_container')._Tree_collapsed == 0)
+    {
+      OAT.Dom.hide ($('dawg_tree_container'));
+      $('dawg_tree_container')._Tree_collapsed = 0;
+      OAT.Dom.hide ($('virt_ext_tree_container'));
+      $('virt_ext_tree_container')._Tree_collapsed = 0;
+      OAT.Dom.hide ($('samples_tree_container'));
+      $('samples_tree_container')._Tree_collapsed = 0;
+      OAT.Dom.show($('tutorial_tree_container'));
+      $('tutorial_tree_container')._Tree_collapsed = 1;
+    } else {
+      OAT.Dom.hide($('tutorial_tree_container'));
+      $('tutorial_tree_container')._Tree_collapsed = 0;
+    }
+  }
+  OAT.Dom.attach($('tab_tutorial_toggle'),"click",ref5);
+  $('tutorial_tree_container')._Tree_collapsed = 0;
 }
 
 function switch_panels()
