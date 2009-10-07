@@ -1046,6 +1046,7 @@ next_token:
           "Unterminated \"safe CURIE\" before '[' in the value of attribute \"%.20s\"" :
           "Character '[' is not allowed inside token in the value of attribute \"%.20s\"" ),
         attrname );
+      tail = "";
       break;
     case ']':
       if (curie_is_safe)
@@ -1056,6 +1057,7 @@ next_token:
           xmlparser_logprintf (xp->xp_parser, XCFG_ERROR, 100,
             "Unexpected character ']' in the value of attribute \"%.20s\"",
             attrname );
+          tail = "";
         }
       break;
     default:
@@ -1065,6 +1067,7 @@ next_token:
           xmlparser_logprintf (xp->xp_parser, XCFG_ERROR, 100,
             "No closing ']' found at the end of \"safe CURIE\" in the value of attribute \"%.20s\"",
             attrname );
+          tail = "";
         }
       break;
     }
