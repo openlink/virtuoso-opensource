@@ -40,3 +40,36 @@ urilbl_cpl_log (
   ullog_msg varchar,
   primary key (ullog_ts, ullog_msg))', 0);
 
+EXEC_STMT ('create table fct_state (fct_sid int primary key, fct_state xmltype)', 0);
+
+EXEC_STMT ('alter index fct_state on fct_state partition (fct_sid int)', 0);
+
+EXEC_STMT ('create table fct_log (
+  fl_sid int,
+  fl_ts timestamp,
+  fl_cli_ip varchar,
+  fl_where varchar,
+  fl_state xmltype,
+  fl_cmd varchar,
+  fl_sqlstate varchar,
+  fl_sqlmsg varchar,
+  fl_parms varchar,
+  fl_msec int,
+  primary key (fl_sid, fl_ts))', 0);
+
+EXEC_STMT ('alter index fct_log on fct_log partition (fl_sid int)', 0);
+
+EXEC_STMT ('create table fct_stored_qry (
+  fsq_id int identity,
+  fsq_created timestamp,
+  fsq_title varchar,
+  fsq_expln varchar,
+  fsq_state xmltype,
+  fsq_featured int,
+  primary key (fsq_id))', 0);
+
+EXEC_STMT ('alter index fct_stored_qry on fct_stored_qry partition (fsq_id int)',0);
+
+EXEC_STMT ('create index fsq_featured_ndx on fct_stored_qry (fsq_featured, fsq_id) partition',0);
+
+sequence_next ('fct_seq');

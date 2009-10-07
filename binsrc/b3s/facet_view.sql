@@ -284,39 +284,6 @@ VHOST_DEFINE (lpath=>'/b3s',
 	is_dav=>atoi (case when registry_get('_fct_dav_') = 0 then '0' else registry_get('_fct_dav_') end),
     	vsp_user=>'dba', def_page=>'listall.vsp');
 
-EXEC_STMT ('create table fct_state (fct_sid int primary key, fct_state xmltype)', 0);
-
-EXEC_STMT ('alter index fct_state on fct_state partition (fct_sid int)', 0);
-
-EXEC_STMT ('create table fct_log (
-  fl_sid int,
-  fl_ts timestamp,
-  fl_cli_ip varchar,
-  fl_where varchar,
-  fl_state xmltype,
-  fl_cmd varchar,
-  fl_sqlstate varchar,
-  fl_sqlmsg varchar,
-  fl_parms varchar,
-  fl_msec int,
-  primary key (fl_sid, fl_ts))', 0);
-
-EXEC_STMT ('alter index fct_log on fct_log partition (fl_sid int)', 0);
-
-EXEC_STMT ('create table fct_stored_qry (
-  fsq_id int identity,
-  fsq_created timestamp,
-  fsq_title varchar,
-  fsq_expln varchar,
-  fsq_state xmltype,
-  fsq_featured int,
-  primary key (fsq_id))', 0);
-
-EXEC_STMT ('alter index fct_stored_qry on fct_stored_qry partition (fsq_id int)',0);
-
-EXEC_STMT ('create index fsq_featured_ndx on fct_stored_qry (fsq_featured, fsq_id) partition',0);
-
-sequence_next ('fct_seq');
 
 create procedure
 fct_top (in tree any, in txt any)
