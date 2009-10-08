@@ -366,7 +366,7 @@ fi
       echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"$VAD_NAME/$file.gz\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   done
 
-  for file in `find ontologies/owl -type f -print | grep -v CVS | sort`
+  for file in `find ontologies/owl -type f -print | grep -v CVS | grep -v '.n3' | sort`
   do
       echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"$VAD_NAME/$file.gz\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   done

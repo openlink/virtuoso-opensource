@@ -255,6 +255,13 @@ update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = 1 where RM_ENABLED is null;
 update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '(http://api.crunchbase.com/v/1/.*)|(http://www.crunchbase.com/.*)|(http://crunchbase.com/.*)'
 	where RM_HOOK = 'DB.DBA.RDF_LOAD_CRUNCHBASE';
 
+update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN =	
+    '(http://.*download.com/.*)|'||
+    '(http://download.cnet.com/.*)|'||
+    '(http://shopper.cnet.com/.*)|'||
+    '(http://reviews.cnet.com/.*)'
+    where RM_HOOK = 'DB.DBA.RDF_LOAD_CNET';
+
 -- migration from old servers
 create procedure DB.DBA.RM_MAPPERS_UPGRADE ()
 {
@@ -6550,7 +6557,9 @@ create procedure DB.DBA.RM_LOAD_PREFIXES ()
   XML_REMOVE_NS_BY_PREFIX ('http-voc', 2);
   XML_REMOVE_NS_BY_PREFIX ('cnet', 2);
   XML_REMOVE_NS_BY_PREFIX ('geospecies', 2);
-  for select RES_CONTENT, RES_NAME from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/VAD/rdf_mappers/xslt/%.xsl' do
+  XML_REMOVE_NS_BY_PREFIX ('oplbb', 2);
+  for select RES_CONTENT, RES_NAME from WS.WS.SYS_DAV_RES where 
+    	RES_FULL_PATH like '/DAV/VAD/rdf_mappers/xslt/%/%.xsl' do
     {
       nss := xmlnss_get (xtree_doc (RES_CONTENT));
       for (declare i, l int, i := 0, l := length (nss); i < l; i := i + 2)

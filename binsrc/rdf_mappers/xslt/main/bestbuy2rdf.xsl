@@ -32,7 +32,7 @@
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
 <!ENTITY cl "http://www.ebusiness-unibw.org/ontologies/consumerelectronics/v1#">
-<!ENTITY oplbb "http://www.openlinksw.com/schemas/bestbuy/">
+<!ENTITY oplbb "http://www.openlinksw.com/schemas/bestbuy#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -252,6 +252,9 @@
     </xsl:template>
     <xsl:template match="product/format">
 	<oplbb:format rdf:datatype="&xsd;string"><xsl:value-of select="."/></oplbb:format>
+    </xsl:template>
+    <xsl:template match="product/features/feature">
+	<oplbb:feature rdf:datatype="&xsd;string"><xsl:value-of select="."/></oplbb:feature>
     </xsl:template>
     <xsl:template match="product/categoryPath/category/name">
 	<oplbb:category><xsl:value-of select="."/></oplbb:category>
