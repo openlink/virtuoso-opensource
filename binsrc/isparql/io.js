@@ -180,7 +180,7 @@ iSPARQL.IO = {
 	    defaultGraph:"",
 	    namedGraphs:[],
 	    query:"",
-	    maxrows:0;
+	    	maxrows:0,
 	    pragmas:[]
 	};
 

@@ -182,7 +182,7 @@ OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
                 <li id="tabgrph_named" class="tab">
                   <label for="named-graphs">Named Graphs (<span id="named_graphs_cnt">0</span>)</label>
                 </li>
-              </ul>
+              </ul> <!-- #tabgrph -->
               <div id="tabgrph_content"></div>
               <div id="tabgrph_default_content">
                 <input id="default-graph-uri" name="default-graph-uri" value=""/>
@@ -204,12 +204,11 @@ OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
 		        <td></td>
                         <td><input style="width: 440px;" type="input" id="named_graph_add" name="named_graph_add"/></td>
 		        <td style="text-align: center;">
-		          <button onclick="add_named_graph();return false;">Add
-                          </button>
+		                  <button onclick="add_named_graph();return false;">Add</button>
                         </td>
-                      </tr>
+                      </tr> <!-- .even -->
                     </tfoot>
-	          </table>
+	              </table> <!-- named_graph_list -->
                 </div> <!-- #graphs_grid_div -->
 	      </div> <!-- #tabgrph_named_content --> <br/>
               <div id="topbox_ctl" class="ctl_right">
@@ -234,13 +233,15 @@ OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
 		</select>
 		<select name="template" id="template" onchange="template_insert()">
 		  <option value="">-- Template --</option>
-		  <option value="SELECT DISTINCT ?s ?p ?o
+		          <option value="
+SELECT DISTINCT ?s ?p ?o
 			WHERE
 			{
 			?s ?p ?o .
 			}">Select</option>
 
-		  <option value="CONSTRUCT
+		          <option value="
+CONSTRUCT
 			{
 			?s ?p ?o .
 			}
@@ -248,8 +249,8 @@ OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
 			{
 			?s ?p ?o .
 			}">Construct</option>
-		  <option value="ASK
-			WHERE
+                  <option value="
+ASK WHERE
 			{
 			?s ?p ?o .
 			}">Ask</option>
@@ -307,7 +308,7 @@ OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
         &nbsp;|&nbsp;
 	  	</div> <!-- qry_type_ctls -->
 	  	<label for="maxrows">Result size limit: </label>
-        <input type="text" id="maxrows" size="4"> rows
+        <input type="text" id="maxrows" size="4"/> rows
         <span class="maxrows_expln">Leave empty for server maximum setting.</span>
       </fieldset>
         <div class="controls" id="queryMetaData">
@@ -432,9 +433,9 @@ OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
               </a>
             </div>
             &nbsp;Bookmarklet - drag this link to your browser's bookmark bar: <a id="isparql_bookmarklet_a" href="javascript:(function(){location='http://www.openlinksw.com/';})();">iSPARQL</a> <a id="sparql_bookmarklet_a" href="" style="display:none">SPARQL</a>
-	  </div>
+        </div> <!-- #foot_l -->
           <div class="foot_r" id="foot_r">Copyright &copy; 2009 OpenLink Software, Inc.</div>
-        </div>
+      </div> <!-- #foot -->
       </div> <!-- #content -->
     </div><!-- #page_content -->
   </div><!-- #page -->
@@ -598,6 +599,6 @@ OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
         </tfoot>
       </table>
     </div> <!-- #qbe_dataset_div -->
-  </div>
+  </div> <!-- #windows -->
 </body>
 </html>

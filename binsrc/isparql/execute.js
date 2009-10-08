@@ -359,7 +359,11 @@ var QueryExec = function(optObj) {
 
 		var a = OAT.Dom.create("a");
 		a.innerHTML = "Query URI";
-		a.href = opts.endpoint + "?" + request;
+		var nloc = document.location.toString();
+		var pidx = nloc.indexOf('?');
+		nloc = (pidx ? nloc.substring(0, pidx) : nloc)
+		a.href = nloc + "execute.html?" + request;
+		// opts.endpoint + "?" + request;
 		a.target = "_blank";
 
 		var q = OAT.Dom.create("pre");
@@ -551,10 +555,13 @@ var QueryExec = function(optObj) {
 			onerror:onerror
 		}
 
-		/* fix remote endpoint: */
+		/* fix remote endpoint: XXX removed. Proxy should optional
 		if (opts.endpoint.match(/^http/i)) {
 			opts.endpoint = "/proxy?url="+encodeURIComponent(opts.endpoint);
 		}
+		*/
+
+		if (!opts.endpoint) opts.endpoint = '/sparql'
 
 		OAT.AJAX.POST(opts.endpoint,request,callback,o);
 	}
