@@ -1674,7 +1674,7 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
         session_buffered_write_char ('"', ses);
         session_buffered_write (ses, temp, strlen (temp));
         session_buffered_write_char ('"', ses);
-        if (DV_RDF != obj_box_value_dtp)
+        if (DV_RDF != obj_dtp)
           {
             session_buffered_write (ses, "^^", 2);
             ttl_http_write_ref (ses, env, dt_ptr);
