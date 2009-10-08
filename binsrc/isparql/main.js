@@ -450,12 +450,10 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
 		self.opts.setGetOpt (self, $v(getOptElm.target.options[getOptElm.target.selectedIndex]));
 	// Disable sponge opts if sponger is disabled as well
 
-	if (getOptElm.target.selectedIndex == 0)
-	    {
+		if (getOptElm.target.selectedIndex == 0) {
 			self.disableSpongerOptions ();
 			iSPARQL.endpointOpts.resetPragmas();
-	    }
-	else
+	    } else
 	    self.enableSpongerOptions ();
     }
 
@@ -614,7 +612,7 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
 
     this.setEpOptCtl = function () {
 	self.epCombo.input.value = self.opts.endpointPath;
-    };
+    }
 
     this.setPragmaSelect = function(pragma, select) {
 
@@ -629,7 +627,7 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
 		break;
 	    }
 	}
-    },
+	}
 
     this.setPragmaRadio = function(pragma, radio) {
 	var p = self.opts.findPragma(pragma) || false;
@@ -652,18 +650,16 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
 
     this.setGetOptCtl = function () {
 		self.setPragmaSelect('define get:soft', "cachingSchemesCtl");
-		if ($("cachingSchemesCtl").selectedIndex == 0)
-			{
+		if ($("cachingSchemesCtl").selectedIndex == 0) {
 				self.disableSpongerOptions();
 				iSPARQL.endpointOpts.resetPragmas();
-			}
-		else
+		} else
 			self.enableSpongerOptions();
-    };
+    }
 
     this.setGrabLimitCtl = function () {
 	self.setPragmaSelect('define input:grab-limit', "nodesRetrievedCtl");
-    };
+    }
 
     this.setGrabDepthCtl = function () {
 		self.setPragmaSelect('define input:grab-depth', "nodesCrawledCtl");
@@ -713,7 +709,8 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
     }
 
     self._init ();
-}
+
+} // EndPointOptsUI
 
 //
 // EndpointOpts holds global endpoint-related options, it is observed by the EndpointOptsUI
@@ -743,26 +740,27 @@ iSPARQL.EndpointOpts = function (optsObj) {
 
     this.unSerialize = function (s) {
 	var o = OAT.JSON.parse (s);
-
 	this.loadObj (o);
-    };
+    }
 
     this.serialize = function () {
-	var o = {endpointPath:self.endpointPath,
+		var o = {
+			endpointPath:self.endpointPath,
 		 useProxy:    self.useProxy,
-		 pragmas:     self.pragmas};
+		 	pragmas:     self.pragmas
+		};
 
 	return OAT.JSON.stringify (o);
-    };
+    }
 
     this.loadSes = function () {
 	if (typeof sessionStorage.iSPARQLEndpointOpts != 'undefined' && sessionStorage.iSPARQLEndpointOpts)
 	self.unSerialize (sessionStorage.iSPARQLEndpointOpts);
-    };
+    }
 
     this.saveSes = function () {
 	sessionStorage.iSPARQLEndpointOpts = self.serialize();
-    };
+    }
 
     this.loadObj = function (o) {
 	self.endpointPath = o.endpointPath;
@@ -776,7 +774,7 @@ iSPARQL.EndpointOpts = function (optsObj) {
 	}
 	// retrieve state from persistent session storage if available
 	self.loadSes();
-    };
+    }
 
     this.reset = function (caller) {
 	self.endpointPath = '/sparql';
@@ -784,18 +782,18 @@ iSPARQL.EndpointOpts = function (optsObj) {
 	self.pragmas = [];
 	OAT.Observer.notify (self.observers, callerObj, 'reset');
 	self.saveSes();
-    };
+    }
 
     this.setEndpoint = function (callerObj, val) {
 	self.endpointPath = val;
 	OAT.Observer.notify (self.observers, callerObj, 'setEndpoint');
 	self.saveSes();
-    };
+    }
 
     this.resetPragmas = function () {
 	self.pragmas = [];
 	self.saveSes();
-    };
+    }
 
     this.setPragmas = function (pragmas) {
 	for (var i = 0; i < pragmas.length; i++) {
@@ -817,26 +815,22 @@ iSPARQL.EndpointOpts = function (optsObj) {
 	    var value = pragma[1][0];
 
 	    if (value) {
-		if (index == -1) {
-		    self.pragmas.push(pragma);
-		}
-		else {
-		    self.pragmas[index] = pragma;
-		}
+				if (index == -1) self.pragmas.push(pragma);
+				else self.pragmas[index] = pragma;
 	    } else {
-		if (index != -1) {
+	    		if (index != -1)
 		    self.pragmas.splice(index,1);
 		}
 	    }
-	}
+
 	iSPARQL.Common.log(self.pragmas);
 	self.saveSes();
-    };
+    }
 
     this.clearPragmas = function () {
 	self.pragmas = [];
 	self.saveSes();
-    };
+    }
 
     this.setGetOpt = function (callerObj, val) {
 	var a = [];
@@ -853,7 +847,7 @@ iSPARQL.EndpointOpts = function (optsObj) {
 
 	self.setPragmas(a);
 	OAT.Observer.notify (self.observers, callerObj, 'setGetOpt');
-    };
+    }
 
     this.hasGetOpt = function () {
 	for (p in self.pragmas) {
@@ -862,11 +856,11 @@ iSPARQL.EndpointOpts = function (optsObj) {
 	    }
 	}
 	return false;
-    };
+    }
 
     this.renderPragmas = function () {
 	return ("define get:soft 'soft'"); // XXX crash test dummy
-    };
+    }
 
     /* grab-seealso/grab-all */
     this.setGrabAll = function(callerObj) {
@@ -946,10 +940,9 @@ iSPARQL.EndpointOpts = function (optsObj) {
 
 	self.setPragmas(a);
 	OAT.Observer.notify (self.observers, callerObj, 'resetPathTraversal');
-    },
+    }
 
     this.findPragma = function (name) {
-
 	for (var i=0;i<self.pragmas.length;i++) {
 	    var pragma = self.pragmas[i];
 	    if (pragma[0] == name) { return pragma;}
@@ -959,7 +952,8 @@ iSPARQL.EndpointOpts = function (optsObj) {
     }
 
     this._init(optsObj);
-};
+
+} // EndpointOpts
 
 iSPARQL.MetaDataOptsUI = function (optsObj, toggler, indicator, container) {
     var self = this;
@@ -1054,7 +1048,7 @@ iSPARQL.MetaDataOpts = function () {
     }
 
     this.setTitle  = function (callerObj, val) {
-	self.metadata.title = val;0
+		self.metadata.title = val;
 	self.changed(callerObj, 'setTitle');
     }
 
@@ -1065,7 +1059,7 @@ iSPARQL.MetaDataOpts = function () {
 
     this.setDescription = function (callerObj, val) {
 	self.metadata.description = val;
-	self.changed(callerObj, 'setDescription')
+		self.changed(callerObj, 'setDescription');
     }
 
     this.getMetaDataObj = function () {
@@ -1073,7 +1067,8 @@ iSPARQL.MetaDataOpts = function () {
     }
 
     this._init();
-};
+
+} // MetaDataOpts
 
 iSPARQL.AuthUI = function (connection) {
     var self = this;
@@ -1139,7 +1134,8 @@ iSPARQL.AuthUI = function (connection) {
     }
 
     this._init(connection);
-}
+
+} // AuthUI
 
 iSPARQL.ServerConnection = function (uri, authObj) {
     var self = this;
@@ -1158,18 +1154,18 @@ iSPARQL.ServerConnection = function (uri, authObj) {
 	self.loadAuth ();
 	self.connect (self.authObj.user, self.authObj.pass);
         return;
-    };
+    }
 
     // Newest IE, FireFox and Safari/WebKit implement HTML 5.0 local storage
 
     this.saveAuth = function() {
 	sessionStorage.iSPARQLAuth = OAT.JSON.stringify (self.authObj);
-    };
+    }
 
     this.loadAuth = function() {
 	if (typeof sessionStorage.iSPARQLAuth != 'undefined' && sessionStorage.iSPARQLAuth)
 	self.authObj = OAT.JSON.parse (sessionStorage.iSPARQLAuth);
-    };
+    }
 
     this.connect = function (_user, _pass, caller) {
 	self.authObj.user = _user;
@@ -1181,11 +1177,18 @@ iSPARQL.ServerConnection = function (uri, authObj) {
 			  if (data == 'OK') self.connected = true;
 			  else self.error = data;
 		      },
-		      {async:false, onstart:function(){return}, onerror:function (xhr) { self.error = xhr.response; self.connected = false; }});
+		      		  {async:false,
+		      		   onstart:function() {return},
+		      		   onerror:function (xhr) { self.error = xhr.response; self.connected = false; }});
 
 	if (self.connected) {
 	    self.saveAuth ();
-	    OAT.WebDav.init({imageExt:"png", imagePath:toolkitImagesPath, silentStart:true, user:self.authObj.user,pass:self.authObj.pass, isDav:true});
+	    	OAT.WebDav.init({imageExt:"png",
+	    					 imagePath:toolkitImagesPath,
+	    					 silentStart:true,
+	    					 user:self.authObj.user,
+	    					 pass:self.authObj.pass,
+	    					 isDav:true});
 	}
 
 	self.detectServerProperties ();
@@ -1215,11 +1218,13 @@ iSPARQL.ServerConnection = function (uri, authObj) {
 			      self.serverVersion = tmp[0];
 			      self.serverBuildDate = tmp[1];
 			  }
-		      },{async:false, onstart:function(){return}});
+		      		  },
+		      		  {async:false, onstart:function(){return}});
     }
 
     this._init();
-}
+
+} // ServerConnection
 
 //
 // Some common functions - options/variables are kept as direct children of global iSPARQL and iSPARQL.dataObj
@@ -1239,8 +1244,7 @@ iSPARQL.Common = {
 
     initDefaults: function () {
 	for (var defName in iSPARQL.serverDefaults) {
-	    if (defName == 'auth')
-		{
+	    	if (defName == 'auth') {
 		    for (var authParm in iSPARQL.serverDefaults.auth) {
 			if (authParm in ['user', 'pass'] && iSPARQL.serverDefaults.auth[authParm] == '') // Empty user/pass do not override defaults
 			    continue;
@@ -1264,8 +1268,7 @@ iSPARQL.Common = {
 	if (p['query'])             { iSPARQL.defaults.query = p['query']; qp = true; }
 	if (p['sponge'])            { iSPARQL.defaults.sponge = p['sponge']; qp = true; }
 	if (p['should_sponge'])     { iSPARQL.defaults.sponge = p['should_sponge']; qp = true; }
-	if (p['view'])
-	    {
+		if (p['view']) {
 		var tabInx = parseInt(page_params['view']);
 		if (!isNaN(tabInx) && tabinx >= 0 && tabInx < 3)
 		    iSPARQL.defaults.tab = tabInx;
