@@ -1062,7 +1062,7 @@ fct_set_inf (in tree any, in sid int)
              <form action="/fct/facet.vsp?cmd=set_inf&sid='); http_value ( sid ); http ('" method=post>
 	       <div class="fm_sect">
                  <h3>Inference</h3>
-                 <label class="left_txt" for="opt_inference">Inference</label>
+                 <label class="left_txt" for="opt_inference">Rule</label>
                  <select name="inference">
 	           <option value="">none</option>
 	           '); for select RS_NAME from SYS_RDF_SCHEMA do { http ('

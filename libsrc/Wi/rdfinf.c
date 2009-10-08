@@ -991,11 +991,11 @@ bif_rdf_check_init (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 char * cl_rdf_init_proc =
-"create procedure CL_RDF_INF_INIT ()\n"
+"create procedure DB.DBA.CL_RDF_INF_INIT ()\n"
 "{ declare aq any; aq := async_queue (1); aq_request (aq, 'DB.DBA.CL_RDF_INF_INIT_SRV', vector ()); aq_wait_all (aq, 1); }";
 
 char * cl_rdf_init_srv =
-"create procedure CL_RDF_INF_INIT_SRV ()\n"
+"create procedure DB.DBA.CL_RDF_INF_INIT_SRV ()\n"
 " { \n"
 "   declare c int;\n"
 "   set isolation = 'committed'; \n"
@@ -1065,7 +1065,7 @@ cl_rdf_inf_init (client_connection_t * cli, caddr_t * err_ret)
   ddl_std_proc (cl_rdf_init_proc, 0);
   ddl_std_proc (cl_rdf_init_srv, 0);
   if (!qr)
-    qr = sql_compile ("cl_rdf_inf_init ()", bootstrap_cli, err_ret, SQLC_DEFAULT);
+    qr = sql_compile ("DB.DBA.cl_rdf_inf_init ()", bootstrap_cli, err_ret, SQLC_DEFAULT);
   if (*err_ret)
     goto init_error;
   if (!lt_threads)
