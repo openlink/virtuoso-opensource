@@ -288,19 +288,28 @@ function hasError(root) {
   return false;
 }
 
-function updateState(countryName, stateName, stateValue)
+function createState(stateName, stateValue)
 {
   var span = $('span_'+stateName);
   span.innerHTML = "";
 
-  var fld = new OAT.Combolist([], "");
+  var s = stateName.substring(0,1);
+  var f = function (){updateGeodata(s);};
+  var fld = new OAT.Combolist([], stateValue, {onchange: f});
   fld.input.name = stateName;
   fld.input.id = stateName;
   fld.input.style.width = "216px";
   fld.addOption("");
 
   span.appendChild(fld.div);
+  OAT.Event.attach(fld.input, "change", f);
 
+  return fld;
+}
+
+function updateState(countryName, stateName, stateValue)
+{
+  fld = createState(stateName, "");
   if ($v(countryName) != '')
   {
     var wsdl = "/ods_services/services.wsdl";
@@ -336,6 +345,7 @@ function listCallback (result, fld, objValue)
         fld.addOption(OAT.Xml.textValue(items[i-1]));
   		}
   	}
+  	updateGeodata(fld.input.id.substring(0,1));
 	}
 }
 
@@ -370,6 +380,43 @@ function sharedChange(obj)
     OAT.Dom.show('tr_shared');
   else
     OAT.Dom.hide('tr_shared');
+}
+
+function updateGeodata(mode)
+{
+  var f = function (mode, fld)
+  {
+    var x = $(mode+'_'+fld);
+    if (x)
+      return '&' + fld + '=' + encodeURIComponent(x.value);
+    return '';
+  }
+  var S = '/ods/api/address.geoData?'+f(mode,'address1')+f(mode,'address2')+f(mode,'city')+f(mode,'code')+f(mode,'state')+f(mode,'country');
+  var x = function(data, mode)
+  {
+    var o = null;
+    try {
+      o = OAT.JSON.parse(data);
+    } catch (e) {
+      o = null;
+    }
+    if (o)
+    {
+      if (o.lat)
+      {
+        var x = $(mode+'_lat');
+        if (x)
+          x.value = o.lat;
+      }
+      if (o.lng)
+      {
+        var x = $(mode+'_lng');
+        if (x)
+          x.value = o.lng;
+      }
+    }
+  }
+  OAT.AJAX.GET(S, '', x, {});
 }
 
 function initLoadProfile()
@@ -529,9 +576,9 @@ var serviceList = [
   ["amazon.jpg", "http://www.amazon.com/", "Amazon.com"],
   ["ameba.jpg", "http://www.ameba.jp/", "Ameba"],
   ["backtype.jpg", "http://www.backtype.com/", "Backtype"],
-  ["blog.jpg", "http://en.wikipedia.org/wiki/Blog", "Blog"],
+  ["blog.jpg", "http://en.wikipedia.org/wiki/Blog/", "Blog"],
   ["brightkite.jpg", "http://brightkite.com/", "brightkite.com"],
-  ["feed.jpg", "http://en.wikipedia.org/wiki/Web_feed", "Custom RSS/Atom"],
+  ["feed.jpg", "http://en.wikipedia.org/wiki/Web_feed/", "Custom RSS/Atom"],
   ["dailymotion.jpg", "http://www.dailymotion.com/", "Dailymotion"],
   ["delicious.jpg", "http://del.icio.us/", "Del.icio.us"],
   ["digg.jpg", "http://www.digg.com/", "Digg"],
@@ -545,7 +592,7 @@ var serviceList = [
   ["googletalk.jpg", "http://talk.google.com/", "Gmail/Google Talk"],
   ["goodreads.jpg", "http://www.goodreads.com/", "Goodreads"],
   ["googlereader.jpg", "http://reader.google.com/", "Google Reader"],
-  ["googleshared.jpg", "http://www.google.com/s2/sharing/stuff", "Google Shared Stuff"],
+  ["googleshared.jpg", "http://www.google.com/s2/sharing/stuff/", "Google Shared Stuff"],
   ["identica.jpg", "http://identi.ca/", "identi.ca"],
   ["ilike.jpg", "http://www.ilike.com/", "iLike"],
   ["intensedebate.jpg", "http://www.intensedebate.com/", "Intense Debate"],
@@ -595,7 +642,7 @@ var setServiceUrl = function(fld)
       if (fld.value == serviceList[N][2])
       {
         var urlName = fld.input.name.replace(/fld_1_/, 'fld_2_');
-        $(urlName).value = serviceList[N][1];
+        $(urlName).value = serviceList[N][1]+$v('c_nick');
       }
     }
 	}
@@ -626,10 +673,12 @@ function updateRowComboOption2 (fld, elmValue, optionName, optionValue)
     if ((fld.options[i].value == optionValue) && (fld.options[i].text == optionName))
       return;
   }
-
 	var o = OAT.Dom.option(optionName, optionValue, fld);
 	if (elmValue == optionValue)
+	{
 	  o.selected = true;
+	  o.defaultSelected = true;
+	}
 }
 
 function updateRowCombo2 (elm, fldName, fldOptions)

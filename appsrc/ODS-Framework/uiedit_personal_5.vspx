@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="user_edit_buss"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+        style="index.xsl"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
+        xmlns:v="http://www.openlinksw.com/vspx/">
+
+  <v:method name="savePersonal_5" arglist="">
+    <![CDATA[
+      declare params any;
+
+      params := self.vc_page.vc_event.ve_params;
+      if (self.vc_is_valid = 0)
+        return;
+
+      declare N, id integer;
+      declare suffix varchar;
+      declare IDc any;
+
+      IDc := vector ();
+      for (N := 0; N < length (params); N := N + 4)
+      {
+        if ((params [N] like 'c_fld_1_%') and (trim (params [N+1]) <> ''))
+        {
+          suffix := replace (params [N], 'c_fld_1_', '');
+          id := cast (get_keyword ('c_fld_0_'||suffix, params, '-1') as integer);
+          if (id <> -1)
+          {
+            update WA_USER_OL_ACCOUNTS
+               set WUO_NAME = trim (params [N+1]),
+                   WUO_URL = trim (get_keyword ('c_fld_2_'||suffix, params, ''))
+             where WUO_ID = id;
+            IDc := vector_concat (IDc, vector (id));
+          }
+        }
+      }
+      for (select WUO_ID as _id from WA_USER_OL_ACCOUNTS where WUO_U_ID = self.u_id and WUO_TYPE = 'P') do
+      {
+        for (N := 0; N < length (IDc); N := N + 1)
+        {
+          if (IDc[N] = _id)
+            goto _exit;
+        }
+        delete from WA_USER_OL_ACCOUNTS where WUO_ID = _id;
+      _exit:;
+      }
+      for (N := 0; N < length (params); N := N + 4)
+      {
+        if ((params [N] like 'c_fld_1_%') and (trim (params [N+1]) <> ''))
+        {
+          suffix := replace (params [N], 'c_fld_1_', '');
+          id := cast (get_keyword ('c_fld_0_'||suffix, params, '-1') as integer);
+          if ((id = -1) and (trim (get_keyword ('c_fld_2_'||suffix, params, '')) <> ''))
+          {
+            insert into WA_USER_OL_ACCOUNTS ( WUO_NAME, WUO_URL, WUO_U_ID, WUO_TYPE)
+              values (trim (params [N+1]), trim (get_keyword ('c_fld_2_'||suffix, params, '')), self.u_id, 'P');
+          }
+        }
+      }
+      WA_USER_VISIBILITY (self.u_name, WA_STR_PARAM (params, 'sel_'), 2);
+
+      -- change user_text data
+      WA_USER_TEXT_SET (self.u_id, WA_GET_USER_INFO (0, self.u_id, WA_USER_VISIBILITY (self.u_name), 0, 1));
+    ]]>
+  </v:method>
+
+  <v:before-data-bind>
+    <![CDATA[
+      declare tmp any;
+
+      if (e.ve_is_post and e.ve_button = self.page_form)
+      {
+        self.usr_personal_5.vc_focus := 1;
+        self.usr_personal_5.vc_set_childs_focus(1, e);
+      }
+    ]]>
+  </v:before-data-bind>
+
+  <v:form name="usr_personal_5" type="simple" method="POST" action="uiedit.vspx?page=2">
+    <input type="hidden" name="c_nick" id="c_nick" value="<?V coalesce ((select WAUI_NICK from WA_USER_INFO where WAUI_U_ID = self.u_id), '') ?>"/>
+    <div>
+      <table class="ctl_grp">
+        <tr>
+          <td width="600px">
+            <table id="c_tbl" class="listing">
+              <tr class="listing_header_row">
+                <th>
+                  Select from Service List ot Type New One
+                </th>
+                <th>
+                  Member Home Page URL
+                </th>
+                <th width="80px">
+                  Action
+                </th>
+              </tr>
+              <?vsp
+                declare N integer;
+
+                N := 0;
+                for select WUO_ID, WUO_NAME, WUO_URL from WA_USER_OL_ACCOUNTS where WUO_TYPE = 'P' and WUO_U_ID = self.u_id do
+                {
+              ?>
+              <tr id="c_tr_<?V N ?>">
+                <td id="c_th_<?V N ?>">
+                  <input type="hidden" id="c_fld_0_<?V N ?>" name="c_fld_0_<?V N ?>" value="<?V WUO_ID ?>" />
+            		  <![CDATA[
+            		    <script type="text/javascript">
+            		    <?vsp
+                      http (sprintf ('ODSInitArray.push ( function (){OAT.Loader.loadFeatures(["combolist"], function() {updateRowCombo(\'c_th_%d\', \'c_fld_1_%d\', {value: \'%s\'});});})', N, N, WUO_NAME));
+            		    ?>
+            		    </script>
+            		  ]]>
+                </td>
+                <td>
+                  <input type="text" id="c_fld_2_<?V N ?>" name="c_fld_2_<?V N ?>" value="<?V WUO_URL ?>" style="width: 95%;" class="_validate_ _url_ _canEmpty_" onblur="javascript: validateField(this);" />
+                </td>
+                <td>
+                  <input type="button" value="Remove" onclick="javascript: updateRow('c', <?V N ?>);" />
+                </td>
+              </tr>
+              <?vsp
+                  N := N + 1;
+                }
+                http (sprintf ('<tr id="c_tr_no" style="display: %s"><td colspan="3"><b>No Services</b></td></tr>', case when N = 0 then '' else 'none' end));
+              ?>
+            </table>
+            <input type="hidden" id="c_no" name="c_no" value="<?V N ?>" />
+          </td>
+          <td valign="top" nowrap="1">
+            <input type="button" value="Add" onclick="javascript: updateRow('c', null, {fld_1: {mode: 1}, fld_2: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
+          </td>
+        </tr>
+      </table>
+      <br />
+      <div>
+        <v:button name="user_c_personal_5" value="Cancel" action="simple" xhtml_onclick="javascript: return initLoadProfile();">
+          <v:on-post>
+            self.vc_redirect (sprintf ('uhome.vspx?ufname=%U&amp;l=1', self.u_name));
+          </v:on-post>
+        </v:button>
+        <v:button name="user_s_personal_5" value="Save" action="simple" xhtml_onclick="return validateInputs(this);">
+          <v:on-post>
+            <![CDATA[
+              self.savePersonal_5();
+            ]]>
+          </v:on-post>
+        </v:button>
+        <v:button name="user_sn_personal_5" value="Save and Next" action="simple" xhtml_onclick="return validateInputs(this);">
+          <v:on-post>
+            <![CDATA[
+              self.savePersonal_5();
+              if (self.vc_is_valid)
+   		          self.vc_redirect ('uiedit.vspx?page=1&tabNo=6');
+            ]]>
+          </v:on-post>
+        </v:button>
+      </div>
+    </div>
+  </v:form>
+</v:page>
