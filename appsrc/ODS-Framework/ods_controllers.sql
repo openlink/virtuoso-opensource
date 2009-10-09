@@ -657,6 +657,36 @@ create procedure ODS.ODS_API."server.getInfo" (
 }
 ;
 
+-- address geo data
+create procedure ODS.ODS_API."address.geoData" (
+  in address1 varchar := '',
+  in address2 varchar := '',
+  in city varchar := '',
+  in state varchar := '',
+  in code varchar := '',
+  in country varchar := '') __soap_http 'application/json'
+{
+  declare lat, lng double precision;
+  declare retValue any;
+
+  retValue := null;
+  if (0 <> DB.DBA.WA_MAPS_ADDR_TO_COORDS (
+        trim (coalesce (address1, '')),
+        trim (coalesce (address2, '')),
+        trim (coalesce (city, '')),
+        trim (coalesce (state, '')),
+        trim (coalesce (code, '')),
+        trim (coalesce (country, '')),
+        lat,
+        lng
+    ))
+  {
+    retValue := vector ('lat', lat, 'lng', lng);
+  }
+  return params2json (retValue);
+}
+;
+
 -- User account activity
 
 --! User registration
@@ -2563,6 +2593,8 @@ grant execute on ODS.ODS_API."ontology.classProperties" to ODS_API;
 grant execute on ODS.ODS_API."ontology.objects" to ODS_API;
 
 grant execute on ODS.ODS_API."server.getInfo" to ODS_API;
+
+grant execute on ODS.ODS_API."address.geoData" to ODS_API;
 
 grant execute on ODS.ODS_API."user.register" to ODS_API;
 grant execute on ODS.ODS_API."user.authenticate" to ODS_API;

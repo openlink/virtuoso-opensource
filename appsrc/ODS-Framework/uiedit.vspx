@@ -22,7 +22,7 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="blog-home-page"
+<v:page name="ui_profile"
         xmlns:vm="http://www.openlinksw.com/vspx/ods/"
         xmlns:v="http://www.openlinksw.com/vspx/"
         style="index.xsl"
@@ -59,10 +59,18 @@
     </vm:header>
     <vm:pagewrapper vm_onunload="checkPageLeave (document.forms['page_form'])">
       <v:variable persist="temp" name="msg_msg" type="varchar" default="''"/>
+      <v:variable name="tabNo" type="integer" param-name="tabNo" default="0"/>
+      <v:variable name="pg" type="integer" param-name="page" default="1"/>
+      <v:variable name="is_org" type="integer" default="0" />
       <vm:rawheader caption="Edit your personal data"/>
       <vm:navigation-new on="settings"/>
       <vm:subnavigation-new on="site"/>
       <vm:body>
+        <v:before-data-bind>
+          <![CDATA[
+            self.is_org := coalesce ((select WAUI_IS_ORG from WA_USER_INFO where WAUI_U_ID = self.u_id), 0);
+          ]]>
+        </v:before-data-bind>
         <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;">
         </div>
         <script type="text/javascript">
@@ -90,7 +98,7 @@ function swPersHide ()
     lb.innerHTML = 'Organization Webpage';
   for (i = 1; i <= 20; i++)
                 OAT.Dom.hide('pers_'+i);
-              OAT.Dom.hide('p_tab_2');
+              OAT.Dom.hide('p_url_2');
 }
 function swPersShow ()
 {
@@ -99,7 +107,7 @@ function swPersShow ()
     lb.innerHTML = 'Personal Webpage';
   for (i = 1; i <= 20; i++)
                 OAT.Dom.show('pers_'+i);
-              OAT.Dom.show('p_tab_2');
+              OAT.Dom.show('p_url_2');
 }
 function swOrg (cb)
 {
@@ -207,8 +215,8 @@ function checkRest (form, sel)
         <div class="message">
           <v:label name="pwd_msg" value="--self.msg_msg" />
           <input type="hidden" name="dirty_force_global" id="dirty_force_global" value="<?vsp http(get_keyword ('dirty_force_global', self.vc_event.ve_params, 'false')); ?>"/>
-          <input type="hidden" name="page" value="<?V get_keyword('page', self.vc_event.ve_params, '1') ?>"/>
-          <input type="hidden" name="tabNo" id="tabNo" value="<?V get_keyword('tabNo', self.vc_event.ve_params, '0') ?>"/>
+          <input type="hidden" name="page" value="<?V self.pg ?>"/>
+          <input type="hidden" name="tabNo" id="tabNo" value="<?V self.tabNo ?>"/>
         </div>
     <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
     <tr valign='top'>
@@ -217,92 +225,83 @@ function checkRest (form, sel)
           <tr>
             <td class="tab_deck">
               <table cellpadding="0" cellspacing="0" border="0" class="navtab_tabs_ctr">
-                <colgroup>
-                  <col/>
-                  <col/>
-                  <col/>
-                  <col/>
-                  <col/>
-                  <col/>
-                </colgroup>
         		    <tr class="navtab_row">
         		      <?vsp
-        		      {
-        		         declare pg int;
         		         declare btn varchar;
-              			 pg := atoi (get_keyword('page', self.vc_event.ve_params, '1'));
-              			 btn := case pg
-                              when 1 then 'user_s_personal'
-                              when 2 then 'user_s_business'
-              				else '' end;
+
+                          btn := case self.pg
+                                   when 1 then 'user_s_personal_' || cast (self.tabNo as varchar)
+                                   when 2 then 'user_s_business_' || cast (self.tabNo as varchar)
+                                   else ''
+                                 end;
         		      ?>
         		      <script type="text/javascript">
         			      def_btn = '<?V btn ?>';
         		      </script>
-                        <td class="<?V case when pg = 1 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+                        <td class="<?V case when self.pg = 1 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
                           <v:url name="b_url01"
                                  value="Personal"
                                  format="%s"
                                  url="--sprintf('uiedit.vspx?page=1')"
                                  xhtml_class="tab"/>
                   </td>
-                        <td class="<?V case when pg = 2 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+                        <td class="<?V case when self.pg = 2 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
                           <v:url name="b_url02"
                                  value="Business"
                                  format="%s"
                                  url="--sprintf('uiedit.vspx?page=2')"
                                  xhtml_class="tab"/>
                         </td>
-                        <td class="<?V case when pg = 3 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+                        <td class="<?V case when self.pg = 3 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
                           <v:url name="b_url03"
                                  value="Security"
                                  format="%s"
                                  url="--sprintf('uiedit.vspx?page=3')"
                                  xhtml_class="tab"/>
                         </td>
-                        <td class="<?V case when pg = 4 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+                        <td class="<?V case when self.pg = 4 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
                           <v:url name="b_url04"
                                  value="Associations &amp; Web Services"
                                  format="%s"
                                  url="--sprintf('uiedit.vspx?page=4')"
                                  xhtml_class="tab"/>
                         </td>
-                        <td class="<?V case when pg = 5 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+                        <td class="<?V case when self.pg = 5 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
                           <v:url name="b_url05"
                                  value="Made"
                                  format="%s"
                                  url="--sprintf('uiedit.vspx?page=5')"
                                  xhtml_class="tab"/>
                         </td>
-                        <td class="<?V case when pg = 6 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+                        <td class="<?V case when self.pg = 6 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
                           <v:url name="b_url06"
                                  value="Offer List"
                                  format="%s"
                                  url="--sprintf('uiedit.vspx?page=6')"
                                  xhtml_class="tab"/>
                         </td>
-                        <td class="<?V case when pg = 7 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+                        <td class="<?V case when self.pg = 7 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
                           <v:url name="b_url07"
                                  value="Wish List"
                                  format="%s"
                                  url="--sprintf('uiedit.vspx?page=7')"
                                  xhtml_class="tab"/>
                         </td>
-			            <td class="<?V case when pg = 8 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+                        <td class="<?V case when self.pg = 8 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
                           <v:url name="b_url08"
                                  value="Annotations"
                                  format="%s"
                                  url="--sprintf('uiedit.vspx?page=8')"
                                  xhtml_class="tab"/>
                         </td>
-                        <td class="<?V case when pg = 9 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+                        <td class="<?V case when self.pg = 9 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
                           <v:url name="b_url09"
                                  value="Validation"
                                  format="%s"
                                  url="--sprintf('uiedit.vspx?page=9')"
                                  xhtml_class="tab"/>
                         </td>
-                        <td class="<?V case when pg = 10 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+                        <td class="<?V case when self.pg = 10 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
                           <v:url name="b_url11"
                                  value="LDAP Servers"
                                  format="%s"
@@ -317,9 +316,6 @@ function checkRest (form, sel)
                         </tr>
                      </table>
                   </td>
-		      <?vsp
-		      }
-		      ?>
                     </tr>
                   </table>
                  <table class="tab_page">

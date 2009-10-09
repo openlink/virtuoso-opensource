@@ -2107,7 +2107,7 @@ create procedure OMAIL.WA.omail_action (
       OMAIL.WA.dc_predicateMetas (predicateMetas);
       OMAIL.WA.dc_compareMetas (compareMetas);
       OMAIL.WA.dc_actionMetas (actionMetas);
-      folders := OMAIL.WA.folder_list (1, _account_id);
+      folders := OMAIL.WA.folder_list (1, _account_id, null, 'N');
       returnData := vector (predicateMetas, compareMetas, actionMetas, folders);
     }
     http_rewrite ();
@@ -2474,7 +2474,7 @@ create procedure OMAIL.WA.filter_apply (
   declare N, M, L integer;
   declare criteria, actions any;
   declare predicate, predicateMetas, compare, compareMetas, action, actionMetas any;
-  declare S, value, header, valueType, pattern, patternExpression, condition, conditionResult any;
+  declare S, valueMatch, header, valueType, pattern, patternExpression, condition, conditionResult any;
   declare st, msg, meta, rows any;
 
   OMAIL.WA.dc_predicateMetas (predicateMetas);
@@ -2485,6 +2485,11 @@ create procedure OMAIL.WA.filter_apply (
     criteria := _filter[1][N];
     condition := criteria[1];
     pattern := criteria[2];
+    if (lcase (pattern) in ('%to%', '%from%', '%cc', '%return-path%', 'subject', 'body'))
+    {
+      pattern := lcase (trim (pattern, '%'));
+      pattern := OMAIL.WA.filter_value (pattern, _fields);
+    }
 
     predicate := get_keyword (criteria[0], predicateMetas);
     if (not isnull (predicate))
@@ -2492,23 +2497,15 @@ create procedure OMAIL.WA.filter_apply (
       compare := get_keyword (condition, compareMetas);
       valueType := predicate[3];
       patternExpression := compare[3];
-      if (criteria[0] = 'return-path')
-      {
-        header := replace (get_keyword ('header', _fields, ''), '\r', '');
-        header := split_and_decode(get_keyword ('header', _fields, ''), 1, '=_\n:');
-        value := trim (replace (get_keyword ('RETURN-PATH', header), '\r', ''));
-        value := OMAIL.WA.omail_address2xml ('to', value, 2);
-      } else {
-        value := cast (get_keyword (criteria[0], _fields) as varchar);
-      }
-      if (not isnull (value))
+      valueMatch := OMAIL.WA.filter_value (criteria[0], _fields);
+      if (not isnull (valueMatch))
       {
         if (valueType in ('varchar', 'datetime'))
         {
-          value := sprintf ('\'%s\'', value);
+          valueMatch := sprintf ('\'%s\'', valueMatch);
           pattern := sprintf ('\'%s\'', pattern);
         }
-        patternExpression := replace (patternExpression, '^{value}^', value);
+        patternExpression := replace (patternExpression, '^{value}^', valueMatch);
         patternExpression := replace (patternExpression, '^{pattern}^', pattern);
 
         st := '00000';
@@ -2566,6 +2563,33 @@ _apply:;
   }
 
 _end:;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.filter_value (
+  in _valueType any,
+  in _fields any)
+{
+  declare retValue, data any;
+
+  if (_valueType = 'return-path')
+  {
+    data := split_and_decode(get_keyword ('header', _fields, ''), 1, '=_\n:');
+    retValue := trim (replace (get_keyword_ucase ('RETURN-PATH', data), '\r', ''));
+    retValue := OMAIL.WA.omail_address2xml ('to', retValue, 2);
+  }
+  else if (_valueType in ('to', 'from', 'cc'))
+  {
+    data := get_keyword ('address', _fields);
+    retValue := OMAIL.WA.omail_address2str (_valueType, data, 2);
+  }
+  else
+  {
+    retValue := cast (get_keyword_ucase (_valueType, _fields) as varchar);
+  }
+  return retValue;
 }
 ;
 
@@ -9653,7 +9677,8 @@ create procedure OMAIL.WA.dc_restore_ns(inout pXml varchar)
 create procedure OMAIL.WA.folder_list (
   in _domain_id integer,
   in _user_id integer,
-  in _folder_id integer := null)
+  in _folder_id integer := null,
+  in _folder_type varchar := null)
 {
   declare retValue any;
 
@@ -9661,10 +9686,13 @@ create procedure OMAIL.WA.folder_list (
   {
     -- list
   retValue := vector ();
-    for (select FOLDER_ID, NAME from OMAIL.WA.FOLDERS where DOMAIN_ID = _domain_id and USER_ID = _user_id and PARENT_ID = 0 order by SEQ_NO, NAME) do
+    for (select FOLDER_ID, NAME, SMART_FLAG from OMAIL.WA.FOLDERS where DOMAIN_ID = _domain_id and USER_ID = _user_id and PARENT_ID = 0 order by SEQ_NO, NAME) do
+    {
+      if (isnull (_folder_type) or (SMART_FLAG = _folder_type))
   {
     retValue := vector_concat (retValue, vector (FOLDER_ID, NAME));
     OMAIL.WA.folder_list_tmp (retValue, _domain_id, _user_id, FOLDER_ID, NAME);
+  }
   }
   }
   else if (_folder_id = -1)

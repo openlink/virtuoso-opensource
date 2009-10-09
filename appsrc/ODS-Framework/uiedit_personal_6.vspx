@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="user_edit_buss"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+        style="index.xsl"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
+        xmlns:v="http://www.openlinksw.com/vspx/">
+
+  <v:method name="savePersonal_6" arglist="">
+    <![CDATA[
+      declare params any;
+
+      params := self.vc_page.vc_event.ve_params;
+      if (self.vc_is_valid = 0)
+        return;
+
+      WA_USER_EDIT (self.u_name, 'WAUI_ICQ', self.u_icq.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_SKYPE', self.u_skype.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_AIM', self.u_aim.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_YAHOO', self.u_yahoo.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_MSN', self.u_msn.ufl_value);
+
+      declare N integer;
+      declare suffix, tmp_m varchar;
+
+      tmp_m := '';
+      for (N := 0; N < length (params); N := N + 4)
+      {
+        if ((params [N] like 'm_fld_1_%') and (trim (params [N+1]) <> ''))
+        {
+          suffix := replace (params [N], 'm_fld_1_', '');
+          tmp_m := tmp_m || trim (params [N+1]) || ';' || trim (get_keyword ('m_fld_2_'||suffix, params, '')) || '\n';
+        }
+      }
+      self.messaging := tmp_m;
+      WA_USER_EDIT (self.u_name, 'WAUI_MESSAGING', tmp_m);
+
+      WA_USER_VISIBILITY (self.u_name, WA_STR_PARAM (params, 'sel_'), 2);
+
+      -- change user_text data
+      WA_USER_TEXT_SET (self.u_id, WA_GET_USER_INFO (0, self.u_id, WA_USER_VISIBILITY (self.u_name), 0, 1));
+    ]]>
+  </v:method>
+
+  <v:variable persist="0" name="uicq" type="varchar" default="''"/>
+  <v:variable persist="0" name="uskype" type="varchar" default="''"/>
+  <v:variable persist="0" name="uaim" type="varchar" default="''"/>
+  <v:variable persist="0" name="uyahoo" type="varchar" default="''"/>
+  <v:variable persist="0" name="umsn" type="varchar" default="''"/>
+  <v:variable persist="0" name="messaging" type="any" default="null"/>
+
+  <v:variable name="sav10" type="varchar" default="'1'" />
+  <v:variable name="sav11" type="varchar" default="'1'" />
+  <v:variable name="sav12" type="varchar" default="'1'" />
+  <v:variable name="sav13" type="varchar" default="'1'" />
+  <v:variable name="sav14" type="varchar" default="'1'" />
+
+  <v:before-data-bind>
+    <![CDATA[
+      declare tmp any;
+
+      select WAUI_ICQ,
+             WAUI_SKYPE,
+             WAUI_AIM,
+             WAUI_YAHOO,
+             WAUI_MSN,
+             WAUI_MESSAGING
+        INTO self.uicq,
+             self.uskype,
+             self.uaim,
+             self.uyahoo,
+             self.umsn,
+             self.messaging
+        FROM WA_USER_INFO,
+             DB.DBA.SYS_USERS
+       where WAUI_U_ID = U_ID
+         and U_NAME = self.u_name;
+
+      tmp := WA_USER_VISIBILITY(self.u_name);
+      if (tmp is not null and length (tmp) >= 14 )
+      {
+        self.sav10 := tmp[10];
+        self.sav11 := tmp[11];
+        self.sav12 := tmp[12];
+        self.sav13 := tmp[13];
+        self.sav14 := tmp[14];
+      }
+      if (e.ve_is_post and e.ve_button = self.page_form)
+      {
+        self.usr_personal_6.vc_focus := 1;
+        self.usr_personal_6.vc_set_childs_focus(1, e);
+      }
+    ]]>
+  </v:before-data-bind>
+
+  <v:form name="usr_personal_6" type="simple" method="POST" action="uiedit.vspx?page=2">
+    <div>
+      <table id="m_tbl" class="ctl_grp">
+        <tr>
+          <th width="180px"><label for="u_icq">ICQ Number</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:text name="u_icq"
+                    value="--self.uicq"
+                    xhtml_style="width:216px"/>
+          </td>
+          <td>
+            <vm:u-prop-select name="sel_10" value="self.sav10" />
+          </td>
+        </tr>
+        <tr>
+          <th><label for="u_skype">Skype ID</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:text name="u_skype"
+                    value="--self.uskype"
+                    xhtml_style="width:216px"/>
+          </td>
+          <td>
+            <vm:u-prop-select name="sel_11" value="self.sav11" />
+          </td>
+        </tr>
+        <tr>
+          <th><label for="u_aim">AIM Name</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:text name="u_aim"
+                    value="--self.uaim"
+                    xhtml_style="width:216px"/>
+          </td>
+          <td>
+            <vm:u-prop-select name="sel_12" value="self.sav12" />
+          </td>
+        </tr>
+        <tr>
+          <th><label for="u_yahoo">Yahoo! ID</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:text name="u_yahoo"
+                    value="--self.uyahoo"
+                    xhtml_style="width:216px"/>
+          </td>
+          <td>
+            <vm:u-prop-select name="sel_13" value="self.sav13" />
+          </td>
+        </tr>
+        <tr>
+          <th><label for="u_msn">MSN Messenger</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:text name="u_msn"
+                    value="--self.umsn"
+                    xhtml_style="width:216px"/>
+          </td>
+          <td>
+            <vm:u-prop-select name="sel_14" value="self.sav14" />
+          </td>
+        </tr>
+        <?vsp
+          declare N integer;
+
+          N := 0;
+          for (select m_label, m_id from DB.DBA.WA_USER_INTERESTS (txt) (m_label varchar, m_id varchar) P where txt = self.messaging) do
+          {
+        ?>
+        <tr id="m_tr_<?V N ?>">
+          <td>
+            <input type="text" id="m_fld_1_<?V N ?>" name="m_fld_1_<?V N ?>" value="<?V m_label ?>" style="width: 95%;" />
+          </td>
+          <td>
+            <input type="text" id="m_fld_2_<?V N ?>" name="m_fld_2_<?V N ?>" value="<?V m_id ?>" style="width: 216px;" />
+          </td>
+          <td>
+            <input type="button" value="Remove" onclick="javascript: updateRow('m', <?V N ?>);" />
+          </td>
+        </tr>
+        <?vsp
+            N := N + 1;
+          }
+        ?>
+      </table>
+      <input type="button" value="Add" onclick="javascript: updateRow('m', null, {fld_1: {}, fld_2: {cssText: 'width: 216px;'}});" />
+      <table class="ctl_grp">
+        <tr>
+          <th width="180px"><label for="set_personal_6">Set access for all fields as </label></th>
+          <td class="ctrl">
+            <v:select-list name="set_personal_6" xhtml_id="set_personal_6" value="0" xhtml_onchange='javascript: setSelectLists (this.value, this.form, "sel_")'>
+              <v:item name="*no change*"  value="0" />
+              <v:item name="public"  value="1" />
+              <v:item name="friends" value="2" />
+              <v:item name="private" value="3" />
+            </v:select-list>
+          </td>
+        </tr>
+      </table>
+      <br />
+      <div>
+        <v:button name="user_c_personal_6" value="Cancel" action="simple" xhtml_onclick="javascript: return initLoadProfile();">
+          <v:on-post>
+            self.vc_redirect (sprintf ('uhome.vspx?ufname=%U&amp;l=1', self.u_name));
+          </v:on-post>
+        </v:button>
+        <v:button name="user_s_personal_6" value="Save" action="simple" xhtml_onclick="return validateInputs(this);">
+          <v:on-post>
+            <![CDATA[
+              self.savePersonal_6();
+            ]]>
+          </v:on-post>
+        </v:button>
+        <v:button name="user_sn_personal_6" value="Save and Next" action="simple" xhtml_onclick="return validateInputs(this);">
+          <v:on-post>
+            <![CDATA[
+              self.savePersonal_6();
+              if (self.vc_is_valid)
+   		          self.vc_redirect ('uiedit.vspx?page=2');
+            ]]>
+          </v:on-post>
+        </v:button>
+      </div>
+    </div>
+  </v:form>
+</v:page>

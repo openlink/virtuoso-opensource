@@ -52,6 +52,7 @@
     <xsl:output method="xml" indent="yes" />
 
     <xsl:param name="baseUri"/>
+    <xsl:param name="currentDateTime"/>
 
     <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
@@ -61,32 +62,44 @@
     <xsl:variable name="uc">ABCDEFGHIJKLMNOPQRSTUVWXYZ </xsl:variable>
     <xsl:variable name="lc">abcdefghijklmnopqrstuvwxyz_</xsl:variable>
     
-    <xsl:template priority="1" match="request"/>
-    
-    <xsl:template priority="1" match="message"/>
-
-    <xsl:template match="response|results|result" priority="1">
-		<xsl:apply-templates select="*"/>
-    </xsl:template>
-    
     <xsl:template match="/SearchResults:searchresults">
 		<rdf:RDF>
+		
 	    <rdf:Description rdf:about="{$docproxyIRI}">
 				<rdf:type rdf:resource="&bibo;Document"/>
+				<dc:title><xsl:value-of select="$baseUri"/></dc:title>
 		<sioc:container_of rdf:resource="{$resourceURL}"/>
 		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 		<dcterms:subject rdf:resource="{$resourceURL}"/>
-		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
 		<owl:sameAs rdf:resource="{$docIRI}"/>
 			</rdf:Description>
-	    <rdf:Description rdf:about="{$resourceURL}">
+
+			<gr:Offering rdf:about="{$resourceURL}">
+			    <sioc:has_container rdf:resource="{$docproxyIRI}"/>
+			    <gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
+			    <gr:includes rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
+			    <gr:validFrom rdf:datatype="&xsd;dateTime"><xsl:value-of select="$currentDateTime"/></gr:validFrom>
+				<xsl:apply-templates select="response/results/result" mode="offering"/>
+			</gr:Offering>
+
+            <gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Vendor')}">
+			  <rdfs:comment>The legal agent making the offering</rdfs:comment>
+		      <rdfs:label>Zillow Co., Inc.</rdfs:label>
+		      <gr:legalName>Zillow Co., Inc.</gr:legalName>
+		      <gr:offers rdf:resource="{$resourceURL}"/>
+			  <foaf:homepage rdf:resource="http://www.zollow.com" />
+			  <rdfs:seeAlso rdf:resource="{vi:proxyIRI ('http://www.zillow.com')}"/>
+            </gr:BusinessEntity>
+            
+            <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
+			    <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
+			    <rdf:type rdf:resource="&oplbb;Product" />
 				<rdf:type rdf:resource="&realdf;Residential"/>
-				<rdf:type rdf:resource="&gr;Offering"/>
-				<sioc:has_container rdf:resource="{$resourceURL}"/>
 				<realdf:world>Earth</realdf:world>
 				<gr:amountOfThisGood>1</gr:amountOfThisGood>
-				<xsl:apply-templates/>
+				<xsl:apply-templates select="response/results/result" />
 			</rdf:Description>
+
 		</rdf:RDF>
     </xsl:template>
     
@@ -146,45 +159,24 @@
 		</realdf:beds>
     </xsl:template>
     
-    <xsl:template match="lastSoldPrice">
+    <xsl:template match="localRealEstate" />
+
+    <xsl:template match="lastSoldPrice" mode="offering">
 		<xsl:variable name="amount" select="." />
 		<realdf:price>
 			<xsl:value-of select="$amount"/>
 		</realdf:price>
 		<gr:hasPriceSpecification>
-	    <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'price')}">
-			<rdfs:label><xsl:value-of select="concat('List Price of ', $amount, ' USD')"/></rdfs:label>
+			<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'LastSoldPrice')}">
+			<rdfs:label>Last Sold Price</rdfs:label>
+			<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
             <gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="$amount"/></gr:hasCurrencyValue>
-            <gr:hasCurrency rdf:datatype="&xsd;string">USD</gr:hasCurrency>
+			<gr:hasCurrency rdf:datatype="&xsd;string"><xsl:value-of select="@currency"/></gr:hasCurrency>
           </gr:UnitPriceSpecification>
 		</gr:hasPriceSpecification>
     </xsl:template>
         
-    <xsl:template match="*"/>
-    <!-- bellow do not create a valid rdf from zillow rdf response -->
-    <!--xsl:template match="*[starts-with(.,'http://') or starts-with(.,'urn:')]">
-		<xsl:if test="string-length(.) &gt; 0">
-			<xsl:element namespace="{$ns}" name="{name()}">
-		<xsl:attribute name="rdf:resource">
-		    <xsl:value-of select="."/>
-		</xsl:attribute>
-			</xsl:element>
-		</xsl:if>
-    </xsl:template>
-
-    <xsl:template match="*[* and ../../* and not(@*)]">
-	<xsl:element namespace="{$ns}" name="{name()}">
-	    <xsl:attribute name="rdf:parseType">Resource</xsl:attribute>
-	    <xsl:apply-templates select="@*|node()"/>
-	</xsl:element>
-    </xsl:template>
-
-    <xsl:template match="*">
-	<xsl:if test="string-length(.) &gt; 0">
-	    <xsl:element namespace="{$ns}" name="{name()}">
-		<xsl:apply-templates select="@*|node()"/>
-	    </xsl:element>
-	</xsl:if>
-    </xsl:template-->
+    <xsl:template match="text()|@*"/>
+    <xsl:template match="text()|@*" mode="offering" />
 
 </xsl:stylesheet>

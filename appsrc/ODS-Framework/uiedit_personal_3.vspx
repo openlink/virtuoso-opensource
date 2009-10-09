@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="user_edit_buss"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+        style="index.xsl"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
+        xmlns:v="http://www.openlinksw.com/vspx/">
+
+  <v:method name="favorites2json" arglist="">
+    <![CDATA[
+      declare fID, fType, fItems any;
+      declare favorites vector;
+
+      favorites := vector ();
+      fID := 0;
+      fType := '';
+      fItems := vector ();
+      for (select WUF_ID, WUF_TYPE, WUF_LABEL, WUF_URI from WA_USER_FAVORITES where WUF_U_ID = self.u_id order by WUF_TYPE) do
+      {
+        if (fType <> WUF_TYPE)
+        {
+          if (fType <> '')
+            favorites := vector_concat (favorites, vector (vector_concat (self.jsonObject(), vector ('id', cast (fID as varchar), 'class', fType, 'items', fItems))));
+          fID := fID + 1;
+          fType := WUF_TYPE;
+          fItems := vector ();
+        }
+        fItems := vector_concat (fItems, vector (vector_concat (self.jsonObject(), vector ('id', cast (WUF_ID as varchar), 'label', WUF_LABEL, 'uri', WUF_URI))));
+      }
+      if (length (fItems))
+        favorites := vector_concat (favorites, vector (vector_concat (self.jsonObject(), vector ('id', cast (fID as varchar), 'class', fType, 'items', fItems))));
+      return favorites;
+	  ]]>
+	</v:method>
+
+  <v:method name="savePersonal_3" arglist="">
+    <![CDATA[
+      declare params any;
+
+      params := self.vc_page.vc_event.ve_params;
+      if (self.vc_is_valid = 0)
+        return;
+
+      declare N, id integer;
+      declare suffix, suffix2, tmp varchar;
+      declare IDf, V, parts any;
+
+      IDf := vector ();
+      V := vector ('Book', 'text/*', 'Image', 'image/*', 'Music', 'audio/*', 'Video', 'video/*');
+      for (N := 0; N < length (params); N := N + 4)
+      {
+        if (regexp_like(params[N], 'f_prop_([0-9]+)_fld_1_([0-9]+)') and (trim (params[N+1]) <> ''))
+        {
+          parts := regexp_parse('f_prop_([0-9]+)_fld_1_([0-9]+)', params [N], 0);
+          suffix := subseq (params[N], parts[2], parts[3]);
+          suffix2 := subseq (params[N], parts[4], parts[5]);
+          id := cast (get_keyword ('f_prop_'||suffix||'_fld_3_'||suffix2, params, '-1') as integer);
+          if (id <> -1)
+          {
+            tmp := get_keyword ('f_fld_3_'||suffix, params);
+            update WA_USER_FAVORITES
+                set WUF_TYPE = get_keyword_ucase (tmp, V, tmp),
+                    WUF_LABEL = trim (params[N+1]),
+                    WUF_URI = trim (get_keyword ('f_prop_'||suffix||'_fld_2_'||suffix2, params, ''))
+              where WUF_ID = id;
+            IDf := vector_concat (IDf, vector (id));
+          }
+        }
+      }
+      for (select WUF_ID as _id from WA_USER_FAVORITES where WUF_U_ID = self.u_id) do
+      {
+        for (N := 0; N < length (IDf); N := N + 1)
+        {
+          if (IDf[N] = _id)
+            goto _exit3;
+        }
+        delete from WA_USER_FAVORITES where WUF_ID = _id;
+      _exit3:;
+      }
+      for (N := 0; N < length (params); N := N + 4)
+      {
+        if (regexp_like(params[N], 'f_prop_([0-9]+)_fld_1_([0-9]+)') and (trim (params[N+1]) <> ''))
+        {
+          parts := regexp_parse('f_prop_([0-9]+)_fld_1_([0-9]+)', params [N], 0);
+          suffix := subseq (params[N], parts[2], parts[3]);
+          suffix2 := subseq (params[N], parts[4], parts[5]);
+          id := cast (get_keyword ('f_prop_'||suffix||'_fld_3_'||suffix2, params, '-1') as integer);
+          if (id = -1)
+          {
+            tmp := get_keyword ('f_fld_3_'||suffix, params);
+            insert into WA_USER_FAVORITES ( WUF_TYPE, WUF_LABEL, WUF_URI, WUF_U_ID)
+              values (get_keyword_ucase (tmp, V, tmp), trim (params[N+1]), trim (get_keyword ('f_prop_'||suffix||'_fld_2_'||suffix2, params, '')), self.u_id);
+          }
+        }
+      }
+
+      WA_USER_VISIBILITY (self.u_name, WA_STR_PARAM (params, 'sel_'), 2);
+
+      -- change user_text data
+      WA_USER_TEXT_SET (self.u_id, WA_GET_USER_INFO (0, self.u_id, WA_USER_VISIBILITY (self.u_name), 0, 1));
+    ]]>
+  </v:method>
+
+  <v:before-data-bind>
+    <![CDATA[
+      declare tmp any;
+
+      if (e.ve_is_post and e.ve_button = self.page_form)
+      {
+        self.usr_personal_3.vc_focus := 1;
+        self.usr_personal_3.vc_set_childs_focus(1, e);
+      }
+    ]]>
+  </v:before-data-bind>
+
+  <v:form name="usr_personal_3" type="simple" method="POST" action="uiedit.vspx?page=2">
+    <div>
+      <table class="ctl_grp">
+        <tr>
+          <td width="800px">
+            <table id="f_tbl" class="listing">
+              <thead>
+                <tr class="listing_header_row">
+                  <th>
+                    <div style="width: 16px;"><![CDATA[&nbsp;]]></div>
+                  </th>
+                  <th width="100%" colspan="2">
+                    Favorite Type
+                  </th>
+                  <th width="80px">
+                    Action
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="f_tbody">
+                <tr id="f_tr_no">
+                  <td colspan="4">
+                    <b>No Elements</b>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <input type="hidden" id="f_no" name="f_no" value="1" />
+          </td>
+          <td valign="top" nowrap="nowrap">
+            <input type="button" value="Add" onclick="javascript: updateRow('f', null, {fld_1: {mode: 12, cssText: 'display: none;'}, fld_2: {mode: 7, value: 'New Type'}, fld_3: {mode: 5, cssText: 'width: 95%;'}, btn_1: {mode: 5, cssText: 'margin-left: 2px; margin-right: 2px;'}, btn_2: {mode: 6, cssText: 'margin-left: 2px; margin-right: 2px;'}});" />
+          </td>
+        </tr>
+      </table>
+      <script type="text/javascript">
+        <![CDATA[
+          ODSInitArray.push ( function () {
+            OAT.Loader.loadFeatures(["ajax2", "json", "ws"], function(){
+              FT.prefix = 'f';
+              FT.items = <?vsp http (replace (ODS..obj2json (self.favorites2json ()), 'class:', 'objectClass:')); ?>;
+              FT.showItems();
+            });
+          });
+        ]]>
+      </script>
+      <br />
+      <div>
+        <v:button name="user_c_personal_3" value="Cancel" action="simple" xhtml_onclick="javascript: return initLoadProfile();">
+          <v:on-post>
+            self.vc_redirect (sprintf ('uhome.vspx?ufname=%U&amp;l=1', self.u_name));
+          </v:on-post>
+        </v:button>
+        <v:button name="user_s_personal_3" value="Save" action="simple" xhtml_onclick="return validateInputs(this);">
+          <v:on-post>
+            <![CDATA[
+              self.savePersonal_3();
+            ]]>
+          </v:on-post>
+        </v:button>
+        <v:button name="user_sn_personal_3" value="Save and Next" action="simple" xhtml_onclick="return validateInputs(this);">
+          <v:on-post>
+            <![CDATA[
+              self.savePersonal_3();
+              if (self.vc_is_valid)
+   		          self.vc_redirect ('uiedit.vspx?page=1&tabNo=4');
+            ]]>
+          </v:on-post>
+        </v:button>
+      </div>
+    </div>
+  </v:form>
+</v:page>

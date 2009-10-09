@@ -40,6 +40,7 @@
 <!ENTITY gml "http://www.opengis.net/gml">
 <!ENTITY georss "http://www.georss.org/georss">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY awol "http://bblfish.net/work/atom-owl/2006-06-06/#">
 ]>
 <xsl:stylesheet
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -62,6 +63,7 @@
 	xmlns:gml="&gml;"
 	xmlns:georss="&georss;"
     xmlns:owl="&owl;"
+	xmlns:awol="&awol;"
 	version="1.0">
 	<xsl:output indent="yes" />
 	<xsl:param name="baseUri" />
@@ -177,10 +179,18 @@
 		<xsl:copy-of select="." />
 	</xsl:template>
 	<xsl:template match="content:encoded">
+		<xsl:variable name="doc" select="document-literal (.,$baseUri,2)" />
 		<sioc:content>
 			<xsl:apply-templates />
 		</sioc:content>
-		<xsl:variable name="doc" select="document-literal (.,$baseUri,2)" />
+		<awol:content>
+		    <awol:Content>
+			<awol:body rdf:parseType="Literal">
+			    <xsl:apply-templates select="$doc" mode="content"/>
+			</awol:body>
+			<awol:src rdf:resource="{$baseUri}"/>
+		    </awol:Content>
+		</awol:content>
 		<xsl:for-each select="$doc//a[@href]">
 			<sioc:links_to rdf:resource="{@href}" />
 		</xsl:for-each>
@@ -219,4 +229,32 @@
 		</xsl:if>
 	</xsl:template>
 	<xsl:template match="*" />
+  <!-- content of html -->
+  <xsl:template match="body|html" mode="content">
+      <xsl:apply-templates mode="content"/>
+  </xsl:template>
+
+  <xsl:template match="title" mode="content">
+      <div>
+	  <xsl:apply-templates mode="content" />
+      </div>
+  </xsl:template>
+
+  <xsl:template match="object[embed]" mode="content">
+      <xsl:apply-templates select="embed" mode="content"/>
+  </xsl:template>
+
+  <xsl:template match="head|script|form|input|button|textarea|object|frame|frameset|select" mode="content" />
+
+  <xsl:template match="*" mode="content">
+      <xsl:copy>
+	  <xsl:copy-of select="@*[not starts-with (name(), 'on') and name() != 'class' and name() != 'style' ]"/>
+	  <xsl:apply-templates  mode="content"/>
+      </xsl:copy>
+  </xsl:template>
+
+  <xsl:template match="text()" mode="content">
+      <xsl:value-of select="."/>
+  </xsl:template>
+
 </xsl:stylesheet>

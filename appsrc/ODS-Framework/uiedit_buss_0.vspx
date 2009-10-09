@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="user_edit_buss"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+        style="index.xsl"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
+        xmlns:v="http://www.openlinksw.com/vspx/">
+
+  <v:method name="saveBusiness_0" arglist="">
+    <![CDATA[
+      declare params any;
+
+      params := self.vc_page.vc_event.ve_params;
+      if (self.vc_is_valid = 0)
+        return;
+
+      WA_USER_VISIBILITY (self.u_name, WA_STR_PARAM (params, 'sel_'), 2);
+
+      WA_USER_EDIT (self.u_name, 'WAUI_BREGNO', self.b_regno.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BCAREER', self.b_career.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BEMPTOTAL', self.b_empltotal.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BVENDOR', self.b_vendor.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BSERVICE', self.b_service.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BOTHER', self.b_other.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BNETWORK', self.b_network.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_RESUME', self.b_resume.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BJOB', self.b_job.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BORG', self.b_org.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BORG_HOMEPAGE', self.b_org_page.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BINDUSTRY', self.b_industr.ufl_value);
+
+      -- change user_text data
+      WA_USER_TEXT_SET (self.u_id, WA_GET_USER_INFO (0, self.u_id, WA_USER_VISIBILITY(self.u_name), 0, 1));
+    ]]>
+  </v:method>
+
+  <v:variable persist="0" name="bindustr" type="varchar" default="''"/>
+  <v:variable persist="0" name="borg" type="varchar" default="''"/>
+  <v:variable persist="0" name="bjob" type="varchar" default="''"/>
+  <v:variable persist="0" name="bregno" type="varchar" default="''"/>
+  <v:variable persist="0" name="bcareer" type="varchar" default="''"/>
+  <v:variable persist="0" name="bempltotal" type="varchar" default="''"/>
+  <v:variable persist="0" name="bvendor" type="varchar" default="''"/>
+  <v:variable persist="0" name="bservice" type="varchar" default="''"/>
+  <v:variable persist="0" name="bother" type="varchar" default="''"/>
+  <v:variable persist="0" name="bnetwork" type="varchar" default="''"/>
+  <v:variable persist="0" name="bresume" type="varchar" default="''"/>
+  <v:variable persist="0" name="org_page" type="varchar" default="''"/>
+
+
+  <v:variable name="sav19" type="varchar" default="'1'" />
+  <v:variable name="sav20" type="varchar" default="'1'" />
+  <v:variable name="sav21" type="varchar" default="'1'" />
+  <v:variable name="sav26" type="varchar" default="'1'" />
+  <v:variable name="sav27" type="varchar" default="'1'" />
+  <v:variable name="sav28" type="varchar" default="'1'" />
+  <v:variable name="sav29" type="varchar" default="'1'" />
+  <v:variable name="sav30" type="varchar" default="'1'" />
+  <v:variable name="sav31" type="varchar" default="'1'" />
+  <v:variable name="sav32" type="varchar" default="'1'" />
+  <v:variable name="sav34" type="varchar" default="'1'" />
+
+  <v:before-data-bind>
+    <![CDATA[
+      declare tmp any;
+
+      select WAUI_BINDUSTRY,
+             wa_utf8_to_wide (WAUI_BORG),
+             wa_utf8_to_wide (WAUI_BJOB),
+             WAUI_BREGNO,
+             WAUI_BCAREER,
+             WAUI_BEMPTOTAL,
+             WAUI_BVENDOR,
+             WAUI_BSERVICE,
+             WAUI_BOTHER,
+             WAUI_BNETWORK,
+             wa_utf8_to_wide (WAUI_RESUME),
+             WAUI_BORG_HOMEPAGE
+        into self.bindustr,
+             self.borg,
+             self.bjob,
+             self.bregno,
+             self.bcareer,
+             self.bempltotal,
+             self.bvendor,
+             self.bservice,
+             self.bother,
+             self.bnetwork,
+             self.bresume,
+             self.org_page
+        from WA_USER_INFO,
+             DB.DBA.SYS_USERS
+       where WAUI_U_ID = U_ID
+         and U_NAME = self.u_name;
+
+      tmp := WA_USER_VISIBILITY(self.u_name);
+      if (tmp is not null and length (tmp) >= 34)
+      {
+        self.sav19 := tmp[19];
+        self.sav20 := tmp[20];
+        self.sav21 := tmp[21];
+        self.sav26 := tmp[26];
+        self.sav27 := tmp[27];
+        self.sav28 := tmp[28];
+        self.sav29 := tmp[29];
+        self.sav30 := tmp[30];
+        self.sav31 := tmp[31];
+        self.sav32 := tmp[32];
+        self.sav34 := tmp[34];
+      }
+      if (e.ve_is_post and e.ve_button = self.page_form)
+      {
+        self.usr_bussiness_0.vc_focus := 1;
+        self.usr_bussiness_0.vc_set_childs_focus(1, e);
+      }
+    ]]>
+  </v:before-data-bind>
+
+  <v:form name="usr_bussiness_0" type="simple" method="POST" action="uiedit.vspx?page=2">
+    <div>
+      <table class="ctl_grp">
+        <tr>
+          <th><label for="b_industr">Industry</label></th>
+          <td nowrap="nowrap">
+            <v:data-list name="b_industr"
+                         xhtml_id="regindust"
+                         enabled="1"
+                         xhtml_style="width:220px"
+                         sql="select 'Not Specified' as WI_NAME from WA_INDUSTRY union select WI_NAME from WA_INDUSTRY" key-column="WI_NAME" value-column="WI_NAME">
+              <v:before-data-bind>
+                control.ufl_value := self.bindustr;
+              </v:before-data-bind>
+            </v:data-list>
+            <vm:u-prop-select name="sel_19" value="self.sav19" />
+          </td>
+        </tr>
+        <tr id="pers_15" class="initial_hidden">
+          <th><label for="b_org">Organization</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:text name="b_org"
+                    value="--self.borg"
+                    xhtml_style="width:216px"/>
+            <vm:u-prop-select name="sel_20" value="self.sav20" />
+          </td>
+        </tr>
+        <tr id="pers_17">
+          <th><label for="b_org_page">Organization Home Page</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:text name="b_org_page"
+                    value="--self.org_page"
+                    xhtml_style="width:216px"
+                    xhtml_class="_validate_ _url_ _canEmpty_"
+                    xhtml_onblur="javascript: validateField(this);" />
+          </td>
+        </tr>
+        <tr id="pers_16">
+          <th><label for="b_job">Job Title</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:text name="b_job"
+                    value="--self.bjob"
+                    xhtml_style="width:216px"/>
+            <vm:u-prop-select name="sel_21" value="self.sav21" />
+          </td>
+        </tr>
+        <tr>
+          <th><label for="b_regno">VAT Reg number (EU only) or Tax ID</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:text name="b_regno"
+                    value="--self.bregno"
+                    xhtml_style="width:216px"/>
+            <vm:u-prop-select name="sel_26" value="self.sav26" />
+          </td>
+        </tr>
+        <tr>
+          <th><label for="b_career">Career / Organization Status</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:select-list xhtml_id="b_career" name="b_career" xhtml_style="width:220px">
+              <v:item name="" value=""/>
+              <v:item name="Job seeker-Permanent" value="Job seeker-Permanent"/>
+              <v:item name="Job seeker-Temporary" value="Job seeker-Temporary"/>
+              <v:item name="Job seeker-Temp/perm" value="Job seeker-Temp/perm"/>
+              <v:item name="Employed-Unavailable" value="Employed-Unavailable"/>
+              <v:item name="Employer" value="Employer"/>
+              <v:item name="Agency" value="Agency"/>
+              <v:item name="Resourcing supplier" value="Resourcing supplier"/>
+              <v:before-data-bind>
+                <v:script>
+                  <![CDATA[
+                    control.ufl_value := self.bcareer;
+                    control.vc_data_bound := 1;
+                  ]]>
+                </v:script>
+              </v:before-data-bind>
+            </v:select-list>
+            <vm:u-prop-select name="sel_27" value="self.sav27" />
+          </td>
+        </tr>
+        <tr>
+          <th><label for="b_empltotal">No. of Employees</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:select-list xhtml_id="b_empltotal" name="b_empltotal" xhtml_style="width:220px">
+              <v:item name="" value=""/>
+              <v:item name="1-100" value="1-100"/>
+              <v:item name="101-250" value="101-250"/>
+              <v:item name="251-500" value="251-500"/>
+              <v:item name="501-1000" value="501-1000"/>
+              <v:item name=">1000" value=">1000"/>
+              <v:before-data-bind>
+                <v:script>
+                  <![CDATA[
+                    control.ufl_value := self.bempltotal;
+                    control.vc_data_bound := 1;
+                  ]]>
+                </v:script>
+              </v:before-data-bind>
+            </v:select-list>
+            <vm:u-prop-select name="sel_28" value="self.sav28" />
+          </td>
+        </tr>
+        <tr>
+          <th><label for="b_vendor">Are you a technology vendor</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:select-list xhtml_id="b_vendor" name="b_vendor" xhtml_style="width:220px">
+              <v:item name="" value=""/>
+              <v:item name="Not a Vendor" value="Not a Vendor"/>
+              <v:item name="Vendor" value="Vendor"/>
+              <v:item name="VAR" value="VAR"/>
+              <v:item name="Consultancy" value="Consultancy"/>
+              <v:before-data-bind>
+                <v:script>
+                  <![CDATA[
+                   control.ufl_value := self.bvendor;
+                   control.vc_data_bound := 1;
+                  ]]>
+                </v:script>
+              </v:before-data-bind>
+            </v:select-list>
+            <vm:u-prop-select name="sel_29" value="self.sav29" />
+          </td>
+        </tr>
+        <tr>
+          <th><label for="b_service">If so, what technology and/or service do you provide?</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:select-list xhtml_id="b_service" name="b_service" xhtml_style="width:220px">
+              <v:item name="" value=""/>
+              <v:item name="Enterprise Data Integration" value="Enterprise Data Integration"/>
+              <v:item name="Business Process Management" value="Business Process Management"/>
+              <v:item name="Other" value="Other"/>
+              <v:before-data-bind>
+                <v:script>
+                  <![CDATA[
+                    control.ufl_value := self.bservice;
+                    control.vc_data_bound := 1;
+                  ]]>
+                </v:script>
+              </v:before-data-bind>
+            </v:select-list>
+            <vm:u-prop-select name="sel_30" value="self.sav30" />
+          </td>
+        </tr>
+        <tr>
+          <th><label for="b_other">Other Technology service</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:text name="b_other"
+                    value="--self.bother"
+                    xhtml_style="width:216px"/>
+            <vm:u-prop-select name="sel_31" value="self.sav31" />
+          </td>
+        </tr>
+        <tr>
+          <th><label for="b_network">Importance of OpenLink Network for you</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:text name="b_network"
+                    value="--self.bnetwork"
+                    xhtml_style="width:216px"/>
+            <vm:u-prop-select name="sel_32" value="self.sav32" />
+          </td>
+        </tr>
+        <tr id="pers_14" class="initial_hidden">
+          <th><label for="b_resume">Resume</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:textarea name="b_resume" value="--self.bresume" xhtml_rows="10" xhtml_cols="80"/>
+            <vm:u-prop-select name="sel_34" value="self.sav34" />
+          </td>
+        </tr>
+        <tr>
+          <th><label for="set_all">Set access for all fields as </label></th>
+          <td class="ctrl">
+            <v:select-list name="set_business_0" value="0" xhtml_onchange='javascript: setSelectLists (this.value, this.form, "sel_")'>
+              <v:item name="*no change*"  value="0" />
+              <v:item name="public"  value="1" />
+              <v:item name="friends" value="2" />
+              <v:item name="private" value="3" />
+            </v:select-list>
+          </td>
+        </tr>
+      </table>
+      <br />
+      <div>
+        <v:button name="user_c_business_0" value="Cancel" action="simple" xhtml_onclick="javascript: return initLoadProfile();">
+          <v:on-post>
+            self.vc_redirect (sprintf ('uhome.vspx?ufname=%U&amp;l=1', self.u_name));
+          </v:on-post>
+        </v:button>
+        <v:button name="user_s_business_0" value="Save" action="simple" xhtml_onclick="return validateInputs(this);">
+          <v:on-post>
+            <![CDATA[
+              self.saveBusiness_0();
+            ]]>
+          </v:on-post>
+        </v:button>
+        <v:button name="user_sn_business_0" value="Save and Next" action="simple" xhtml_onclick="return validateInputs(this);">
+          <v:on-post>
+            <![CDATA[
+              self.saveBusiness_0();
+              if (self.vc_is_valid)
+   		          self.vc_redirect ('uiedit.vspx?page=2&tabNo=1');
+            ]]>
+          </v:on-post>
+        </v:button>
+      </div>
+    </div>
+  </v:form>
+</v:page>

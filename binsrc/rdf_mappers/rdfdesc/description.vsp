@@ -82,8 +82,10 @@
 
    if (_S not like 'nodeID://%' and do_sponge)
      {
-       DB.DBA.EXEC_AS (sprintf ('sparql define input:storage "" define get:soft "soft" SELECT * from <%S> where { ?x ?y ?z . }', _G), 'SPARQL');
-       DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
+       --DB.DBA.EXEC_AS (sprintf ('sparql define input:storage "" define get:soft "soft" SELECT * from <%S> where { ?x ?y ?z . }', _G), 'SPARQL');
+       --DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
+       -- temporary work around to stop sponging twice 
+       DB.DBA.RM_DO_SPONGE (_G);
        commit work;
      }
    else if (_S like 'nodeID://%')

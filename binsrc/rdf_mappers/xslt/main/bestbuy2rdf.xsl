@@ -82,7 +82,7 @@
 			    <gr:includes rdf:resource="{concat ($baseUri, '#', 'Product')}"/>
 			    -->
 			    <gr:includes rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
-			    <gr:validFrom rdf:datatype="&xsd;dateTime"><xsl:value-of select="translate(concat($currentDateTime, 'Z'), ' ', 'T')"/></gr:validFrom>
+			    <gr:validFrom rdf:datatype="&xsd;dateTime"><xsl:value-of select="$currentDateTime"/></gr:validFrom>
 			    <gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModePickup"/>
 			    <gr:availableDeliveryMethods rdf:resource="&gr;UPS"/>
 			    <gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModeMail"/>

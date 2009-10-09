@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="user_edit_buss"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+        style="index.xsl"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
+        xmlns:v="http://www.openlinksw.com/vspx/">
+
+  <v:method name="saveBusiness" arglist="">
+    <![CDATA[
+      declare blat, blng any;
+      declare params any;
+
+      params := self.vc_page.vc_event.ve_params;
+      if (self.vc_is_valid = 0)
+        return;
+
+      self.bstate := get_keyword ('b_state', params);
+      blat := null;
+      blng := null;
+      if (length (self.b_lat.ufl_value) and length (self.b_lng.ufl_value))
+      {
+        blat := atof (self.b_lat.ufl_value);
+        blng := atof (self.b_lng.ufl_value);
+      }
+      WA_USER_VISIBILITY (self.u_name, WA_STR_PARAM (params, 'sel_'), 2);
+
+      WA_USER_EDIT (self.u_name, 'WAUI_BADDRESS1', self.b_address1.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BADDRESS2', self.b_address2.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BCODE', self.b_code.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BCITY', self.b_city.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BSTATE', self.bstate);
+      WA_USER_EDIT (self.u_name, 'WAUI_BCOUNTRY', self.b_country.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BTZONE', self.b_tzone.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BLAT', blat);
+      WA_USER_EDIT (self.u_name, 'WAUI_BLNG', blng);
+      WA_USER_EDIT (self.u_name, 'WAUI_LATLNG_HBDEF', self.set_blatlng_def.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BPHONE', self.b_phone.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BMOBILE', self.b_mobile.ufl_value);
+
+      -- change user_text data
+      WA_USER_TEXT_SET (self.u_id, WA_GET_USER_INFO(0, self.u_id, WA_USER_VISIBILITY(self.u_name), 0, 1));
+    ]]>
+  </v:method>
+
+  <v:variable persist="0" name="baddress1" type="varchar" default="''"/>
+  <v:variable persist="0" name="baddress2" type="varchar" default="''"/>
+  <v:variable persist="0" name="bcode" type="varchar" default="''"/>
+  <v:variable persist="0" name="bcity" type="varchar" default="''"/>
+  <v:variable persist="0" name="bstate" type="varchar" default="''"/>
+  <v:variable persist="0" name="bcountry" type="varchar" default="''"/>
+  <v:variable persist="0" name="btzone" type="varchar" default="''"/>
+  <v:variable persist="0" name="bphone" type="varchar" default="''"/>
+  <v:variable persist="0" name="bmobile" type="varchar" default="''"/>
+  <v:variable persist="0" name="blat" type="real" default="0.00"/>
+  <v:variable persist="0" name="blng" type="real" default="0.00"/>
+  <v:variable persist="0" name="blatlng_def" type="int" default="1"/>
+
+  <v:variable name="sav22" type="varchar" default="'1'" />
+  <v:variable name="sav23" type="varchar" default="'1'" />
+  <v:variable name="sav24" type="varchar" default="'1'" />
+  <v:variable name="sav25" type="varchar" default="'1'" />
+  <v:variable name="sav47" type="varchar" default="'1'" />
+
+  <v:before-data-bind>
+    <![CDATA[
+      declare tmp any;
+
+      select wa_utf8_to_wide (WAUI_BADDRESS1),
+             wa_utf8_to_wide (WAUI_BADDRESS2),
+             WAUI_BCODE,
+             wa_utf8_to_wide (WAUI_BCITY),
+             WAUI_BSTATE,
+             WAUI_BCOUNTRY,
+             WAUI_BTZONE,
+             WAUI_BPHONE,
+             WAUI_BMOBILE,
+             WAUI_BLAT,
+             WAUI_BLNG,
+             WAUI_LATLNG_HBDEF
+        into self.baddress1,
+             self.baddress2,
+             self.bcode,
+             self.bcity,
+             self.bstate,
+             self.bcountry,
+             self.btzone,
+             self.bphone,
+             self.bmobile,
+             self.blat,
+             self.blng,
+             self.blatlng_def
+        from WA_USER_INFO,
+             DB.DBA.SYS_USERS
+       where WAUI_U_ID = U_ID
+         and U_NAME = self.u_name;
+
+      tmp := WA_USER_VISIBILITY(self.u_name);
+      if (tmp is not null and length (tmp) >= 47)
+      {
+        self.sav22 := tmp[22];
+        self.sav23 := tmp[23];
+        self.sav24 := tmp[24];
+        self.sav25 := tmp[25];
+        self.sav47 := tmp[47];
+      }
+      if (e.ve_is_post and e.ve_button = self.page_form)
+      {
+        self.usr_bussiness_1.vc_focus := 1;
+        self.usr_bussiness_1.vc_set_childs_focus(1, e);
+      }
+    ]]>
+  </v:before-data-bind>
+
+  <v:form name="usr_bussiness_1" type="simple" method="POST" action="uiedit.vspx?page=2">
+    <div>
+      <table class="ctl_grp">
+        <tr>
+          <th><label for="b_country">Country</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:data-list name="b_country" xhtml_id="b_country" value="--self.bcountry" sql="select 'Not Specified' as WC_NAME from WA_COUNTRY union select WC_NAME from WA_COUNTRY" key-column="WC_NAME" value-column="WC_NAME" xhtml_onchange="javascript: updateState(\'b_country\', \'b_state\');" />
+            <vm:u-prop-select name="sel_23" value="self.sav23" />
+          </td>
+        </tr>
+        <tr>
+          <th><label for="b_state">State/Province</label></th>
+          <td class="listing_col" nowrap="1">
+            <span id="span_b_state">
+              <![CDATA[
+                <script type="text/javascript">
+                  function categoryCombo ()
+                  {
+                    var cc = createState("b_state", "<?V self.bstate ?>");
+                    cc.addOption("");
+                    <?vsp
+                      for (select * from WA_PROVINCE where WP_COUNTRY = self.b_country.ufl_value) do
+                      {
+                        http (sprintf ('cc.addOption("%s");', WP_PROVINCE));
+                      }
+                    ?>
+                  }
+                  ODSInitArray.push ( function () { OAT.Loader.loadFeatures(["combolist"], categoryCombo); } );
+                </script>
+              ]]>
+            </span>
+          </td>
+        </tr>
+        <tr>
+          <th><label for="b_city">City/Town</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:text name="b_city"
+                    value="--self.bcity"
+                    xhtml_onchange="javascript: updateGeodata(\'b\');"
+                    xhtml_style="width:216px"/>
+          </td>
+        </tr>
+        <tr>
+          <th><label for="b_code">ZIP/Postal Code</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:text name="b_code"
+                    value="--self.bcode"
+                    xhtml_onchange="javascript: updateGeodata(\'b\');"
+                    xhtml_style="width:216px"/>
+            <vm:u-prop-select name="sel_22" value="self.sav22" />
+          </td>
+        </tr>
+        <tr>
+          <th><label for="b_address1">Address1</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:text name="b_address1"
+                    value="--self.baddress1"
+                    xhtml_onchange="javascript: updateGeodata(\'b\');"
+                    xhtml_style="width:216px"/>
+          </td>
+        </tr>
+        <tr>
+          <th><label for="b_address2">Address2</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:text name="b_address2"
+                    value="--self.baddress2"
+                    xhtml_style="width:216px"/>
+          </td>
+        </tr>
+        <tr>
+          <th><label for="b_tzone">Time-Zone</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:select-list name="b_tzone" xhtml_id="b_tzone" enabled="1" xhtml_style="width:220px">
+              <v:on-init>
+                <![CDATA[
+                  {
+                    declare i,j int;
+                    declare x,y any;
+                    x := make_array (25, 'any');
+                    y := make_array (25, 'any');
+                    i := -12; j:= 0;
+                    while (i <= 12)
+                           {
+                    x[j] := cast (i as varchar);
+                    y[j] := sprintf ('GMT %s%02d:00', case when i < 0 then '-' else '+' end,  abs(i));
+                    i := i + 1;
+                    j := j + 1;
+                             }
+                    control.vsl_item_values := x;
+                    control.vsl_items := y;
+                    control.ufl_value := '0';
+                  }
+                ]]>
+              </v:on-init>
+              <v:before-data-bind>
+                control.ufl_value := self.btzone;
+              </v:before-data-bind>
+            </v:select-list>
+            <vm:u-prop-select name="sel_24" value="self.sav24" />
+          </td>
+        </tr>
+        <tr>
+          <th><label for="b_lat">Latitude</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:text name="b_lat"
+                    xhtml_id="b_lat"
+              value="--case when self.blat is not null then sprintf ('%.6f', coalesce (self.blat, 0.00)) else '' end"
+              xhtml_style="width:216px;"/>
+            <vm:u-prop-select name="sel_47" value="self.sav47" />
+          </td>
+        </tr>
+        <tr>
+          <th><label for="b_lng">Longitude</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:text name="b_lng"
+                    xhtml_id="b_lng"
+                    value="--case when self.blng is not null then sprintf ('%.6f', coalesce (self.blng, 0.00)) else '' end"
+                    xhtml_style="width:216px; margin-right:3px;"/>
+            <v:check-box name="set_blatlng_def" initial-checked="0" value="--control.ufl_selected" xhtml_id="set_blatlng_def" >
+              <v:after-data-bind>
+                if (not e.ve_is_post)
+                  control.ufl_selected := self.blatlng_def;
+              </v:after-data-bind>
+            </v:check-box>
+            <label for="set_blatlng_def">Default map location</label>
+          </td>
+        </tr>
+        <tr>
+          <th><label for="b_phone">Phone</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:text name="b_phone"
+                    value="--self.bphone"
+                    xhtml_style="width:216px"/>
+            <vm:u-prop-select name="sel_25" value="self.sav25" />
+          </td>
+        </tr>
+        <tr>
+          <th><label for="b_mobile">Mobile</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:text name="b_mobile"
+                    value="--self.bmobile"
+                    xhtml_style="width:216px"/>
+          </td>
+        </tr>
+        <tr>
+          <th><label for="set_business_1">Set access for all fields as </label></th>
+          <td class="ctrl">
+            <v:select-list name="set_business_1" value="0" xhtml_onchange='javascript: setSelectLists (this.value, this.form, "sel_")'>
+              <v:item name="*no change*"  value="0" />
+              <v:item name="public"  value="1" />
+              <v:item name="friends" value="2" />
+              <v:item name="private" value="3" />
+            </v:select-list>
+          </td>
+        </tr>
+      </table>
+      <br />
+      <div>
+        <v:button name="user_c_business_1" value="Cancel" action="simple" xhtml_onclick="javascript: return initLoadProfile();">
+          <v:on-post>
+            self.vc_redirect (sprintf ('uhome.vspx?ufname=%U&amp;l=1', self.u_name));
+          </v:on-post>
+        </v:button>
+        <v:button name="user_s_business_1" value="Save" action="simple" xhtml_onclick="return validateInputs(this);">
+          <v:on-post>
+            <![CDATA[
+              self.saveBusiness();
+            ]]>
+          </v:on-post>
+        </v:button>
+        <v:button name="user_sn_business_1" value="Save and Next" action="simple" xhtml_onclick="return validateInputs(this);">
+          <v:on-post>
+            <![CDATA[
+              self.saveBusiness();
+              if (self.vc_is_valid)
+   		          self.vc_redirect ('uiedit.vspx?page=2&tabNo=2');
+            ]]>
+          </v:on-post>
+        </v:button>
+      </div>
+    </div>
+  </v:form>
+</v:page>
