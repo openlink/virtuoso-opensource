@@ -22,36 +22,44 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 -->
 <!DOCTYPE xsl:stylesheet [
-<!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
-<!ENTITY foaf "http://xmlns.com/foaf/0.1/">
-<!ENTITY sioc "http://rdfs.org/sioc/ns#">
-<!ENTITY owl "http://www.w3.org/2002/07/owl#">
-<!ENTITY gr "http://purl.org/goodrelations/v1#">
 <!ENTITY book "http://purl.org/NET/book/vocab#">
+<!ENTITY cl "http://www.ebusiness-unibw.org/ontologies/consumerelectronics/v1#">
+<!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY dc "http://purl.org/dc/elements/1.1/">
+<!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY gr "http://purl.org/goodrelations/v1#">
+<!ENTITY oplbb "http://www.openlinksw.com/schemas/bestbuy#">
+<!ENTITY owl "http://www.w3.org/2002/07/owl#">
+<!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#">
+<!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 ]>
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
   xmlns:rdf="&rdf;"
-  xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
-  xmlns:dc="http://purl.org/dc/elements/1.1/"
-  xmlns:skos="http://www.w3.org/2004/02/skos/core#"
-  xmlns:sioc="&sioc;"
+    xmlns:rdfs="&rdfs;"
   xmlns:foaf="&foaf;"
   xmlns:bibo="&bibo;"
-  xmlns:owl="&owl;"
+    xmlns:sioc="&sioc;"
   xmlns:gr="&gr;"
   xmlns:book="&book;"
-  xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
-  xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
+    xmlns:dc="&dc;"
+    xmlns:dcterms="&dcterms;"
+    xmlns:owl="&owl;"
+    xmlns:cl="&cl;"
+    xmlns:oplbb="&oplbb;"
   xmlns:po="http://purl.org/ontology/po/"
-  xmlns:dcterms="http://purl.org/dc/terms/"
   xmlns:redwood-tags="http://www.holygoat.co.uk/owl/redwood/0.1/tags/"
   version="1.0">
 
   <xsl:output method="xml" indent="yes"/>
 
   <xsl:param name="baseUri" />
+	<xsl:param name="currentDateTime"/>
+
   <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
   <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
   <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
@@ -68,20 +76,61 @@
   <xsl:template match="html/head">
       <rdf:Description rdf:about="{$docproxyIRI}">
 		<rdf:type rdf:resource="&bibo;Document"/>
+		<sioc:container_of rdf:resource="{$resourceURL}"/>
+		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+		<dcterms:subject rdf:resource="{$resourceURL}"/>
 		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
 		<owl:sameAs rdf:resource="{$docIRI}"/>
-		<sioc:container_of rdf:resource="{$resourceURL}"/>
-		<foaf:topic rdf:resource="{$resourceURL}"/>
-		<dcterms:subject rdf:resource="{$resourceURL}"/>
-		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 	  </rdf:Description>
-	  <rdf:Description rdf:about="{$resourceURL}">
+
+	<gr:Offering rdf:about="{$resourceURL}">
+		<sioc:has_container rdf:resource="{$docproxyIRI}"/>
+		<gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
+		<gr:includes rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
+		<gr:validFrom rdf:datatype="&xsd;dateTime"><xsl:value-of select="$currentDateTime"/></gr:validFrom>
+		<gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModePickup"/>
+		<gr:availableDeliveryMethods rdf:resource="&gr;UPS"/>
+		<gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModeMail"/>
+		<xsl:apply-templates mode="offering" />
+	</gr:Offering>
+
+    <gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Vendor')}">
+		<rdfs:comment>The legal agent making the offering</rdfs:comment>
+		    <rdfs:label>Oreilly Co., Inc.</rdfs:label>
+		    <gr:legalName>Oreilly Co., Inc.</gr:legalName>
+		    <gr:offers rdf:resource="{$resourceURL}"/>
+		<foaf:homepage rdf:resource="http://www.oreilly.com" />
+		<owl:sameAs rdf:resource="http://www.oreilly.com" />
+		<rdfs:seeAlso rdf:resource="{vi:proxyIRI ('http://www.oreilly.com')}"/>
+    </gr:BusinessEntity>
+
+	<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
+		<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
+		<rdf:type rdf:resource="&oplbb;Product" />
 		<rdf:type rdf:resource="&bibo;Book"/>
 		<rdf:type rdf:resource="&book;Book"/>
-		<rdf:type rdf:resource="&gr;ProductOrService"/>
+        <gr:hasMakeAndModel>
+	        <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'MakeAndModel')}">
+	            <rdf:type rdf:resource="&gr;ProductOrServiceModel"/>
+	            <rdf:type rdf:resource="&oplbb;Product"/>
+				<xsl:apply-templates select="meta" mode="manufacturer" /> 
+	        </rdf:Description>
+	    </gr:hasMakeAndModel>
+	    <oplbb:onlineAvailability rdf:datatype="&xsd;boolean">true</oplbb:onlineAvailability>
 		<xsl:apply-templates select="meta"/>
       </rdf:Description>
   </xsl:template>
+
+  <xsl:template match="//span[@typeof='gr:UnitPriceSpecification']" mode="offering">
+	<gr:hasPriceSpecification>
+	    <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'UnitPriceSpecification')}">
+	    <rdfs:label>sale price</rdfs:label>
+		<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
+		<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="span[@property='gr:hasCurrencyValue']" /></gr:hasCurrencyValue>
+		<gr:hasCurrency rdf:datatype="&xsd;string"><xsl:value-of select="span[@property='gr:hasCurrency']/@content" /></gr:hasCurrency>
+	    </gr:UnitPriceSpecification>
+	</gr:hasPriceSpecification>
+    </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='subtitle']">
       <po:subtitle>
@@ -95,7 +144,6 @@
   <xsl:template match="meta[translate (@name, $uc, $lc)='object.type']">
 	<xsl:if test="@content='book'">
 		<rdf:type rdf:resource="&bibo;Book"/>
-		<rdf:type rdf:resource="&gr;ProductOrService"/>
 	</xsl:if>
   </xsl:template>
 
@@ -118,10 +166,9 @@
       <bibo:isbn13>
 	  <xsl:value-of select="@content"/>
       </bibo:isbn13>
-      <book:isbn>
+      <!--book:isbn>
 	  <xsl:value-of select="@content"/>
-      </book:isbn>
-
+      </book:isbn-->
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='book.year']">
@@ -166,24 +213,24 @@
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='ean']">
-      <bibo:eanucc13>
+      <!--bibo:eanucc13>
 	  <xsl:value-of select="@content"/>
-      </bibo:eanucc13>
+      </bibo:eanucc13-->
       <gr:hasEAN_UCC-13>
 		<xsl:value-of select="@content"/>
       </gr:hasEAN_UCC-13>
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='graphic']">
-      <foaf:img rdf:resource="{@content}"/>
+      <oplbb:image rdf:resource="{@content}"/>
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='graphic_medium']">
-      <foaf:img rdf:resource="{@content}"/>
+      <oplbb:image rdf:resource="{@content}"/>
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='graphic_large']">
-      <foaf:img rdf:resource="{@content}"/>
+      <oplbb:image rdf:resource="{@content}"/>
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='book_title']">
@@ -202,10 +249,13 @@
 	</xsl:if>
   </xsl:template>
 
-  <xsl:template match="meta[translate (@name, $uc, $lc)='keywords']">
-      <dc:description>
+  <xsl:template match="meta[translate (@name, $uc, $lc)='description']">
+	<oplbb:description rdf:datatype="&xsd;string">
 	  <xsl:value-of select="@content"/>
-      </dc:description>
+	</oplbb:description>
+    </xsl:template>
+
+  <xsl:template match="meta[translate (@name, $uc, $lc)='keywords']">
       <gr:description>
 	  <xsl:value-of select="@content"/>
       </gr:description>
@@ -235,6 +285,19 @@
       </po:series>
   </xsl:template>
 
-  <xsl:template match="*|text()"/>
+  <xsl:template match="meta[translate (@name, $uc, $lc)='publisher']" mode="manufacturer">
+	<gr:hasManufacturer>
+		<gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Manufacturer')}">
+		<rdfs:label>Manufacturer</rdfs:label>
+		<gr:legalName><xsl:value-of select="@content"/></gr:legalName>
+		</gr:BusinessEntity>
+	</gr:hasManufacturer>
+	</xsl:template>
+
+
+    <xsl:template match="text()|@*"/>
+    <xsl:template match="text()|@*" mode="offering" />
+    <xsl:template match="text()|@*" mode="manufacturer" />
+
 
 </xsl:stylesheet>

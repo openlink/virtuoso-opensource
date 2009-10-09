@@ -184,6 +184,7 @@
 
   <xsl:template match="*|text()"/>
 
+  <!-- content of html -->
   <xsl:template match="body|html" mode="content">
       <xsl:apply-templates mode="content"/>
   </xsl:template>
