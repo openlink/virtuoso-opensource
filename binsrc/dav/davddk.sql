@@ -428,12 +428,12 @@ DB.DBA.vt_create_text_index ('WS.WS.SYS_DAV_TAG', 'DT_TAGS', 'DT_FT_ID', 2, 0, v
 create procedure WS.WS.GETID (in type varchar)
 {
   declare id, nid integer;
-  declare c_cur cursor for select COL_ID from WS.WS.SYS_DAV_COL order by COL_ID desc;
-  declare r_cur cursor for select RES_ID from WS.WS.SYS_DAV_RES order by RES_ID desc;
-  declare p_cur cursor for select PROP_ID from WS.WS.SYS_DAV_PROP order by PROP_ID desc;
-  declare rpn_cur cursor for select RPN_CATID from WS.WS.SYS_RDF_PROP_NAME order by RPN_CATID desc;
-  declare cf_cur cursor for select CF_ID from WS.WS.SYS_DAV_CATFILTER order by CF_ID desc;
-  declare t_cur cursor for select DT_FT_ID from WS.WS.SYS_DAV_TAG order by DT_FT_ID desc;
+  declare c_cur cursor for select top 1 COL_ID from WS.WS.SYS_DAV_COL order by COL_ID desc;
+  declare r_cur cursor for select top 1 RES_ID from WS.WS.SYS_DAV_RES order by RES_ID desc;
+  declare p_cur cursor for select top 1 PROP_ID from WS.WS.SYS_DAV_PROP order by PROP_ID desc;
+  declare rpn_cur cursor for select top 1 RPN_CATID from WS.WS.SYS_RDF_PROP_NAME order by RPN_CATID desc;
+  declare cf_cur cursor for select top 1 CF_ID from WS.WS.SYS_DAV_CATFILTER order by CF_ID desc;
+  declare t_cur cursor for select top 1 DT_FT_ID from WS.WS.SYS_DAV_TAG order by DT_FT_ID desc;
 
   type := upper (type);
 
