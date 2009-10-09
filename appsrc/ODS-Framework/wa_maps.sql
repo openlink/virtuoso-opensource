@@ -42,9 +42,7 @@ returns integer
     return 0;
 
   _func := sprintf ('WA_MAPS_%I_ADDR_TO_COORDS', _func);
-  return call (_func) (
-   address1, address2, city, state, zip_code, country,
-   lat, lng);
+  return call (_func) (address1, address2, city, state, zip_code, country, lat, lng);
 }
 ;
 
@@ -57,8 +55,7 @@ create procedure WA_MAPS_UPDATE_USER_LAT_LNG ()
   declare cr cursor for
     select WAUI_HADDRESS1, WAUI_HADDRESS2, WAUI_HCITY, WAUI_HSTATE, WAUI_HCODE, WAUI_HCOUNTRY
      from DB.DBA.WA_USER_INFO
-     where
-       WAUI_HADDRESS1 is not null
+     where WAUI_HADDRESS1 is not null
        and WAUI_HCITY is not null
        and WAUI_HSTATE is not null
        and WAUI_LAT is null
@@ -81,7 +78,8 @@ create procedure WA_MAPS_UPDATE_USER_LAT_LNG ()
             coalesce (_WAUI_HSTATE, ''),
             coalesce ( _WAUI_HCODE, ''),
             coalesce ( _WAUI_HCOUNTRY, ''),
-            _lat, _lng
+          _lat,
+          _lng
           ) <> 0)
         {
 	  update DB.DBA.WA_USER_INFO set WAUI_LAT = _lat, WAUI_LNG = _lng where current of cr;
@@ -100,24 +98,27 @@ create function WA_MAPS_YAHOO_ADDR_TO_COORDS (
   in state varchar,
   in zip_code varchar,
   in country varchar,
-  out lat double precision, out lng double precision)
+  out lat double precision,
+  out lng double precision)
 returns integer
 {
    declare addr, post, res, hdr, xt, tmp1, tmp2 any;
-   addr := WA_MAPS_MSN_CONSTRUCT_ADDR (address1, address2, city, state, zip_code);
-   declare exit handler for sqlstate '*' {
-       signal (__SQL_STATE,
-          concat ('Address to coordinates YAHOO web service protocol error : ', __SQL_MESSAGE));
+
+   addr := WA_MAPS_MSN_CONSTRUCT_ADDR (address1, address2, city, case when is_empty_or_null (state) then country else state end, zip_code);
+   declare exit handler for sqlstate '*'
+   {
+      signal (__SQL_STATE, concat ('Address to coordinates YAHOO web service protocol error : ', __SQL_MESSAGE));
    };
    hdr := null;
-   res := http_get (sprintf ('http://api.local.yahoo.com/MapsService/V1/geocode?appid=YahooDemo&location=%U',
-     addr), hdr);
+   res := http_get (sprintf ('http://api.local.yahoo.com/MapsService/V1/geocode?appid=5hugwULV34HbDt2XFYluElmhe4xEe13Jbdh4vCH1t0uHu.nCdL5o8Xm5oyBaK7dnZl8&location=%U', addr), hdr);
    if (res is null)
      return 0;
    xt := xtree_doc (res);
    tmp1 := cast(xpath_eval ('//Latitude/text()', xt) as varchar);
+   if (tmp1 is null)
+     return 0;
    tmp2 := cast(xpath_eval ('//Longitude/text()', xt) as varchar);
-   if (tmp1 is null or tmp2 is null)
+   if (tmp2 is null)
      return 0;
    lat := cast (tmp1 as double precision);
    lng := cast (tmp2 as double precision);
@@ -125,7 +126,10 @@ returns integer
 };
 
 -- The MSN free geocoder service iface
-create function WA_MAPS_MSN_ADDRS_TO_COORDS (in addr any, out lat double precision, out lng double precision)
+create function WA_MAPS_MSN_ADDRS_TO_COORDS (
+  in addr any,
+  out lat double precision,
+  out lng double precision)
 returns integer
 {
    declare post, res, hdr any;
@@ -169,24 +173,23 @@ create function WA_MAPS_ZEESOURCE_ADDR_TO_COORDS (
   in state varchar,
   in zip_code varchar,
   in country varchar,
-  out lat double precision, out lng double precision)
+  out lat double precision,
+  out lng double precision)
 returns integer
 {
   declare action, namespace, enc varchar;
   declare style, form int;
   declare _result, _body, xe, ret any;
-  action := '';
 
+  action := '';
   namespace := 'http://maps.zeesource.com';
   form := 0;
-
   style := 0;
-
   style := style + (form * 16);
 
-   declare exit handler for sqlstate '*' {
-       signal (__SQL_STATE,
-          concat ('Address to coordinates Zeesource web service protocol error : ', __SQL_MESSAGE));
+  declare exit handler for sqlstate '*'
+  {
+    signal (__SQL_STATE, concat ('Address to coordinates Zeesource web service protocol error : ', __SQL_MESSAGE));
    };
 
   commit work;
@@ -201,10 +204,7 @@ returns integer
         		vector('state', 'http://www.w3.org/2001/XMLSchema:string'), state ,
         		vector('country', 'http://www.w3.org/2001/XMLSchema:string'), country
 			),
- 		headers=>vector
-                        (
-
-			),
+ 		      headers=>vector(),
 		style=>style
 	       );
   _body := _result;
@@ -261,9 +261,7 @@ create function WA_MAPS_MSN_ADDR_TO_COORDS (
   out lng double precision)
 returns integer
 {
-  return WA_MAPS_MSN_ADDRS_TO_COORDS (
-    WA_MAPS_MSN_CONSTRUCT_ADDR (address1, address2, city, state, zip_code),
-    lat, lng);
+  return WA_MAPS_MSN_ADDRS_TO_COORDS (WA_MAPS_MSN_CONSTRUCT_ADDR (address1, address2, city, state, zip_code), lat, lng);
 }
 ;
 -- END of The MSN free geocoder service iface
@@ -663,8 +661,7 @@ create procedure WA_MAPS_BIND_MARKERS (
   in _lat_min double precision,
   in _lng_step double precision,
   in _lat_step double precision,
-  inout _wmd_key_val any
-)
+  inout _wmd_key_val any)
 returns varchar
 {
 --  dbg_obj_print ('in WA_MAPS_BIND_MARKERS _wmd_sql=', _wmd_sql);

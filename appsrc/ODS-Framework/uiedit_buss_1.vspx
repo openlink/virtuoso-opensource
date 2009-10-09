@@ -241,6 +241,7 @@
           <th><label for="b_lat">Latitude</label></th>
           <td class="listing_col" nowrap="1">
             <v:text name="b_lat"
+                    xhtml_id="b_lat"
               value="--case when self.blat is not null then sprintf ('%.6f', coalesce (self.blat, 0.00)) else '' end"
               xhtml_style="width:216px;"/>
             <vm:u-prop-select name="sel_47" value="self.sav47" />
@@ -250,6 +251,7 @@
           <th><label for="b_lng">Longitude</label></th>
           <td class="listing_col" nowrap="1">
             <v:text name="b_lng"
+                    xhtml_id="b_lng"
                     value="--case when self.blng is not null then sprintf ('%.6f', coalesce (self.blng, 0.00)) else '' end"
                     xhtml_style="width:216px; margin-right:3px;"/>
             <v:check-box name="set_blatlng_def" initial-checked="0" value="--control.ufl_selected" xhtml_id="set_blatlng_def" >

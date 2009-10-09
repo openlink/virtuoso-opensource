@@ -232,6 +232,7 @@
           <th><label for="h_lat">Latitude</label></th>
           <td class="listing_col" nowrap="1">
             <v:text name="h_lat"
+                    xhtml_id="h_lat"
                     value="--case when self.lat is not null then sprintf ('%.6f', coalesce (self.lat, 0.00)) else '' end"
                     xhtml_style="width:216px;"/>
             <vm:u-prop-select name="sel_39" value="self.sav39" />
@@ -241,6 +242,7 @@
           <th><label for="h_lng">Longitude</label></th>
           <td class="listing_col" nowrap="1">
             <v:text name="h_lng"
+                    xhtml_id="h_lng"
                     value="--case when self.lng is not null then sprintf ('%.6f', coalesce (self.lng, 0.00)) else '' end"
                     xhtml_style="width:216px;"/>
             <v:check-box name="set_hlatlng_def" initial-checked="0" value="-- case self.hlatlng_def when 1 then 0 else 1 end" xhtml_id="set_hlatlng_def" >

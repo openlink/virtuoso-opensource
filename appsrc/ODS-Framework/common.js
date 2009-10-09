@@ -392,7 +392,7 @@ function updateGeodata(mode)
     return '';
   }
   var S = '/ods/api/address.geoData?'+f(mode,'address1')+f(mode,'address2')+f(mode,'city')+f(mode,'code')+f(mode,'state')+f(mode,'country');
-  var x = function(data, mode)
+  var cb = function(data, mode)
   {
     var o = null;
     try {
@@ -416,7 +416,7 @@ function updateGeodata(mode)
       }
     }
   }
-  OAT.AJAX.GET(S, '', x, {});
+  OAT.AJAX.GET(S, '', function(arg){cb(arg, mode);}, {});
 }
 
 function initLoadProfile()
