@@ -78,6 +78,7 @@
 			<gr:Offering rdf:about="{$resourceURL}">
 				<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 			    <gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
+			    <rdfs:label><xsl:value-of select="concat('Offer of ', products/product/name)"/></rdfs:label>
 			    <!-- For testing with standalone XSLT processor
 			    <gr:includes rdf:resource="{concat ($baseUri, '#', 'Product')}"/>
 			    -->
@@ -182,10 +183,14 @@
     <xsl:template match="product/freeShipping" mode="offering">
 	<oplbb:freeShipping rdf:datatype="&xsd;boolean"><xsl:value-of select="."/></oplbb:freeShipping>
     </xsl:template>
+    
     <xsl:template match="product/name">
 	<rdfs:label>
 	    <xsl:value-of select="."/>
 	</rdfs:label>
+		<dc:title>
+			<xsl:value-of select="."/>
+		</dc:title>
     </xsl:template>
 
     <xsl:template match="product/dollarSavings" mode="offering">

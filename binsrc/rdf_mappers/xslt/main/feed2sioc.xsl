@@ -169,6 +169,11 @@
 		<!--xsl:if test="not (../wfw:commentRss)">
 			<rdfs:seeAlso rdf:resource="{vi:proxyIRI (.)}" />
 		</xsl:if-->
+		<awol:content>
+		    <awol:Content>
+			<awol:src rdf:resource="{string(.)}"/>
+		    </awol:Content>
+		</awol:content>
 	</xsl:template>
 	<xsl:template match="dc:date">
 		<dcterms:created rdf:datatype="&xsd;dateTime">

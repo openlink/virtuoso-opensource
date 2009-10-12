@@ -79,6 +79,7 @@
 			<gr:Offering rdf:about="{$resourceURL}">
 			    <sioc:has_container rdf:resource="{$docproxyIRI}"/>
 			    <gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
+			    <rdfs:label><xsl:value-of select="concat('Offer of ', //ItemAttributes/Title)"/></rdfs:label>
 			    <gr:includes rdf:resource="{vi:proxyIRI ($base, '', 'Product')}"/>
 			    <gr:validFrom rdf:datatype="&xsd;dateTime"><xsl:value-of select="$currentDateTime"/></gr:validFrom>
 			    <gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModePickup"/>
@@ -110,7 +111,7 @@
 		    <xsl:when test="//ProductGroup[ . = 'Book']">
 			<rdf:type rdf:resource="&bibo;Book"/>
 			<rdf:type rdf:resource="&book;Book"/>
-						<!--xsl:apply-templates select="//ItemAttributes" mode="bibo" /-->
+						<xsl:apply-templates select="//ItemAttributes" mode="bibo" />
 		    </xsl:when>
 					<xsl:otherwise/>
 		</xsl:choose>
@@ -292,22 +293,23 @@
     </xsl:template>
 
     <!-- BIBO OWL -->
-    <!--xsl:template match="ItemAttributes/ASIN" mode="bibo">
+    <xsl:template match="ItemAttributes/ASIN" mode="bibo">
 		<bibo:asin><xsl:value-of select="."/></bibo:asin>
-    </xsl:template-->
+    </xsl:template>
     
     
     <!--xsl:template match="ItemAttributes/Author" mode="bibo">
-        <dcterms:contributor rdf:parseType="Resource">
-			<rdf:type rdf:resource="&foaf;Person"/>
+        <dcterms:contributor>
+			<foaf:Person rdf:about="{vi:proxyIRI ($base, '', 'Author')}">
 		<foaf:name><xsl:value-of select="."/></foaf:name>
+			</foaf:Person>
 		<bibo:role rdf:resource="&bibo;author"/>
-		<bibo:position><xsl:value-of select="position(.)"/></bibo:position>
         </dcterms:contributor>
     </xsl:template-->
     
     <xsl:template match="text()|@*"/>
     <xsl:template match="text()|@*" mode="offering" />
     <xsl:template match="text()|@*" mode="manufacturer" />
+    <xsl:template match="text()|@*" mode="bibo" />
 
 </xsl:stylesheet>
