@@ -5259,7 +5259,7 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
   declare ret_flag, is_grddl, download_size, load_msec int;
   declare get_feeds, add_html_meta, grddl_loop int;
   declare base_url, ns_url, reg, doc_base, proxy_iri varchar;
-  declare profile_trf, ns_trf, ext_profs, thisgr, cnt any;
+  declare profile_trf, ns_trf, ext_profs, thisgr, cnt, cset any;
   declare dict any;
 
   get_feeds := add_html_meta := 0;
@@ -5288,13 +5288,13 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
     {
       goto no_microformats;
     };
-
-  xt_sav := xt := xtree_doc (ret_body, 2);
-
+  cset := coalesce (get_keyword ('charset', opts), current_charset ());
+  cset := coalesce (charset_canonical_name (cset), current_charset ());
+  xt_sav := xt := xtree_doc (ret_body, 2, '', cset);
   {
     declare exit handler for sqlstate '*' {
     xt_xml := null; goto no_xml_cont; };
-    xt_xml := xtree_doc (ret_body);
+    xt_xml := xtree_doc (ret_body, 0, '', cset);
     no_xml_cont:;
   }
 

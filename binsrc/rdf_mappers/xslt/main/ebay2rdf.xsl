@@ -54,7 +54,7 @@
     xmlns:oplbb="&oplbb;"
     >
 
-    <xsl:output method="xml" indent="yes" />
+    <xsl:output method="xml" indent="yes" encoding="utf-8" />
 
     <xsl:param name="baseUri"/>
 	<xsl:param name="currentDateTime"/>
@@ -77,6 +77,7 @@
 			<gr:Offering rdf:about="{$resourceURL}">
 				<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 			    <gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
+			    <rdfs:label><xsl:value-of select="concat('Offer of ', GetSingleItemResponse/Item/Title)"/></rdfs:label>
 			    <gr:includes rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
 			    <gr:validFrom rdf:datatype="&xsd;dateTime"><xsl:value-of select="$currentDateTime"/></gr:validFrom>
 			    <gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModePickup"/>
@@ -105,6 +106,14 @@
 				    <xsl:apply-templates select="GetSingleItemResponse/Item" mode="manufacturer" /> 
                  </rdf:Description>
                </gr:hasMakeAndModel>
+               <xsl:choose>
+					<xsl:when test="substring-before(GetSingleItemResponse/Item/PrimaryCategoryName, ':') = 'Books'">
+						<rdf:type rdf:resource="&bibo;Book"/>
+						<rdf:type rdf:resource="&book;Book"/>
+						<xsl:apply-templates select="GetSingleItemResponse/Item" mode="bibo" />
+					</xsl:when>
+					<xsl:otherwise/>
+				</xsl:choose>
 			   <xsl:apply-templates select="GetSingleItemResponse/Item" />
 			</rdf:Description>
 		</rdf:RDF>
@@ -224,5 +233,6 @@
     <xsl:template match="text()|@*"/>
     <xsl:template match="text()|@*" mode="offering" />
     <xsl:template match="text()|@*" mode="manufacturer" />
+    <xsl:template match="text()|@*" mode="bibo" />
 
 </xsl:stylesheet>
