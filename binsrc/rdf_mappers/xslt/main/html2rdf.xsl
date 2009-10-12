@@ -44,7 +44,7 @@
   xmlns:content="http://purl.org/rss/1.0/modules/content/"
   xmlns:awol="&awol;"
   version="1.0">
-  <xsl:output method="xml" indent="yes"/>
+  <xsl:output method="xml" indent="yes" encoding="utf-8"/>
   <xsl:param name="baseUri" />
   <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
   <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
@@ -75,6 +75,7 @@
 		<xsl:variable name="doc1">
 		    <xsl:apply-templates  select="/html/body" mode="content"/>
 		</xsl:variable>
+		<xsl:if test="not ($baseUri like 'http://%.nytimes.com/%')">
 		<awol:content>
 		    <awol:Content>
 			<awol:body rdf:parseType="Literal">
@@ -83,6 +84,7 @@
 			<awol:src rdf:resource="{$baseUri}"/>
 		    </awol:Content>
 		</awol:content>
+		</xsl:if>
 		<!--content:encoded><xsl:value-of select="vi:escape($doc1)" /></content:encoded-->
       </rdf:Description>
   </xsl:template>

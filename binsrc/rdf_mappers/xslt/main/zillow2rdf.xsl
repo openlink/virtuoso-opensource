@@ -77,6 +77,7 @@
 			<gr:Offering rdf:about="{$resourceURL}">
 			    <sioc:has_container rdf:resource="{$docproxyIRI}"/>
 			    <gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
+			    <rdfs:label><xsl:value-of select="concat('Offer of ', request/address, ' ', request/citystatezip)"/></rdfs:label>
 			    <gr:includes rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
 			    <gr:validFrom rdf:datatype="&xsd;dateTime"><xsl:value-of select="$currentDateTime"/></gr:validFrom>
 				<xsl:apply-templates select="response/results/result" mode="offering"/>

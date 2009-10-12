@@ -429,20 +429,24 @@ grant execute on ODS_CREATE_USER to GDATA_ODS;
 
 
 
-create procedure
-ODS_CREATE_NEW_APP_INST (in app_type varchar, in inst_name varchar, in owner varchar, in model int := 0, in pub int := 1, in inst_descr varchar := null)
+create procedure ODS_CREATE_NEW_APP_INST (
+  in app_type varchar,
+  in inst_name varchar,
+  in owner varchar,
+  in model int := null,
+  in pub int := null,
+  in inst_descr varchar := null)
 {
   declare inst web_app;
   declare ty, h, id any;
   declare _err varchar;
-  declare _u_id,_wai_id integer;
+  declare _u_id, _wai_id, visible integer;
   declare lpath varchar;
 
   _err:='';
 
   -- check for correct instance name
-
-  if ( length(coalesce(inst_name, ''))<1 or length(coalesce(inst_name, ''))>55)
+  if ((length(coalesce(inst_name, '')) < 1) or (length(coalesce(inst_name, '')) > 55))
   {
        _err:='Instance name should not be empty and not longer than 55 characters;';
        goto report_err;
@@ -477,15 +481,29 @@ ODS_CREATE_NEW_APP_INST (in app_type varchar, in inst_name varchar, in owner var
           };
    select WAT_TYPE into ty from WA_TYPES where WAT_NAME = app_type;
   }
+  if (isnull (model))
+    model := case when app_type in ('oDrive', 'oMail', 'IM') then 1 else 0 end;
+  if (isnull (pub))
+    pub := case when app_type in ('oDrive', 'oMail', 'IM') then 0 else 1 end;
+  visible := case when app_type in ('oDrive', 'oMail', 'IM') then 0 else 1 end;
 
   inst := __udt_instantiate_class (fix_identifier_case (ty), 0);
   inst.wa_name := inst_name;
   inst.wa_member_model := model;
+  if (app_type = 'oWiki')
+  {
+    declare N integer;
 
-
+    N := 0;
+    lpath := sprintf('/%U/%U', owner, 'wiki');
+    while (exists (select 1 from DB.DBA.HTTP_PATH where HP_LPATH = lpath))
+    {
+      N := N + 1;
+      lpath := sprintf('/%U/wiki/%d', owner, N);
+    }
+    connection_set ('wiki_home', lpath);
+  }
   h := udt_implements_method (inst, 'wa_new_inst');
-
-
   if (h<>0)
   {
     {
@@ -504,7 +522,7 @@ ODS_CREATE_NEW_APP_INST (in app_type varchar, in inst_name varchar, in owner var
       update WA_INSTANCE
              set WAI_MEMBER_MODEL = model,
                  WAI_IS_PUBLIC = pub,
-                 WAI_MEMBERS_VISIBLE = 1,
+        		 WAI_MEMBERS_VISIBLE = visible,
                  WAI_NAME = inst_name,
                  WAI_DESCRIPTION = coalesce(inst_descr,inst_name || ' Description')
            where WAI_ID = id;
@@ -529,7 +547,10 @@ ODS_CREATE_NEW_APP_INST (in app_type varchar, in inst_name varchar, in owner var
        rollback work;
        goto relaxing;
      };
+    if (app_type <> 'oWiki')
    lpath := DB.DBA.wa_set_url_t (inst);
+    if (app_type = 'oWiki')
+      DB.DBA.WA_SET_APP_URL (id, lpath, null, '{Default Domain}', null, null, null, 1);
    DB.DBA.WA_SET_APP_URL (id, lpath, null, DB.DBA.wa_default_domain (), null, null, null, 1);
    DB.DBA.WA_SET_APP_URL (id, lpath, null, '{Default HTTPS}', null, null, null, 1);
  }
