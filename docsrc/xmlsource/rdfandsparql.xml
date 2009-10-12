@@ -952,8 +952,8 @@ of result set metadata in a format used by the exec() function.</entry>
   </tgroup>
 </table>
 </sect4>
-   <sect4 id="anytimequeries">
-     <title>Anytime Queries</title>
+   <sect4 id="anytimequeriessparql">
+     <title>SPARQL Anytime Queries</title>
      <para>Starting with version 6, Virtuoso offers a partial query evaluation feature that guarantees
 answers to arbitrary queries within a fixed time. This is intended for use in  publicly available SPARQL
 or SQL end points on large databases. This enforces a finite duration to all queries and will strive to
@@ -965,56 +965,7 @@ public query service, this may also be handy when exploring a large data set wit
 <programlisting><![CDATA[
 set result_timeout == <expression>;
 ]]></programlisting>
-     <para>The expression should be a count of milliseconds. The scope of the setting is the connection,
-thus it remains in effect past the return of the calling procedure. Setting the timeout to 0 returns to the
-default state of having no limit on query run time and always returning complete results. The initial value
-of the timeout is 0. On a web server thread, the timeout is reset to 0 at the start of processing each
-new request header.
-     </para>
-     <para>After a query or cursor has exceeded the running time, it is reset.
-In the event of the reset occurring inside an aggregation, the part
-of the query that produces rows for the aggregation is terminated, the
-timeout is reset and the query continues by using the aggregated
-results that were obtained before the first timeout. If there is
-again a timeout, the present aggregation is reset and the query gets
-another lease on life for processing the results accumulated so far.
-Thus, a query which has a select, a group by and an order by can
-consume at most three timeouts. One for producing the aggregated
-rows, another for sorting them and finally a third for returning them
-to a client or iterating over them in a stored procedure.
-     </para>
-     <para>If the timeout occurs outside an aggregation, the result set is simply truncated.</para>
-     <para>The fact of a query returning partial results is indicated by the
-result set ending with a S1TAT SQL state. If the result set is read
-to end without this state being signalled, the results are complete
-and the query was not interrupted. If the result set is not consumed
-to end, the client cannot be sure of its completeness.
-     </para>
-     <para>The error message associated with the S1TAT state contains the human
-readable version of the output of db_activity () for the query. If
-result_timeout is non-zero, the opening of a cursor or execution of a
-query on a client connection or with the exec () function will reset
-the client resource consumption counters automatically. This is done
-so as to have the resource consumption statistics for the error
-message scoped to the query. To get the exact counts, the application
-may call db_activity (1) in the same procedure. If this is called on
-a client server connection with the timeout on, the counts will be
-reset before db_activity () is called.
-     </para>
-     <para>The resolution of the timeout is fairly low, timeouts are checked every two seconds with default
-settings.</para>
-     <para>A query cannot set a timeout from inside itself. Only a stored procedure or a top level statement
-on a client connection can do this.</para>
-     <para>A request to SPARQL web service endpoint may specify the timeout as an additoional <emphasis>&amp;timeout=&lt;milliseconds&gt;</emphasis> parameter.
-The parameter value should be equal to or greater than 1000, otherwise it will be ignored.
-If <emphasis>SPARQL</emphasis> Virtuoso configuration file contains
-<emphasis>MaxQueryExecutionTime</emphasis> parameter and its value is greater than or equal to 1000
-then the actual &quot;anytime&quot; timeout is the minimum of the requested value and the value in the configuration file.
-</para>
-     <para>The current standard of SPARQL protocol does not provide any support for partial results.
-When a SPARQL query ends with S1TAT state, the returned HTTP header contains four additional rows,
-<emphasis>X-SQL-State:</emphasis>, <emphasis>X-SQL-Message:</emphasis>, <emphasis>X-Exec-Milliseconds:</emphasis> and
-<emphasis>X-Exec-DB-Activity:</emphasis>; the returned document is formatted according to the requested MIME type as if the result is complete.</para>
+   <para>Find more detailed information in the <link linkend="anytimequeries">Anytime Queries</link> section.</para>
    </sect4>
 </sect3>
 
@@ -2401,7 +2352,7 @@ etc ...
       <title>SPARQL Endpoint with Excel MIME type output</title>
       <graphic fileref="ui/Excel1.png"/>
     </figure>
-<para>The resulting query string contains a format parameter value of "application/vnd.ms-excel". For example,
+<para>The resulting query string contains a format parameter value of <emphasis>"application/vnd.ms-excel"</emphasis>. For example,
 <ulink url="http://demo.openlinksw.com/sparql?default-graph-uri=http%3A%2F%2Fdemo.openlinksw.com%2Fdataspace%2Fperson%2Fdemo&amp;should-sponge=&amp;query=select+*%0D%0Awhere+%7B%3Fs+%3Fp+%3Fo%7D%0D%0Alimit+10&amp;format=application%2Fvnd.ms-excel&amp;debug=on">A URL such as this one</ulink> will be generated, and can be opened directly with Excel.</para>
 <figure id="sparqlexcel2" float="1">
       <title>SPARQL Endpoint with Excel MIME type output</title>
@@ -2415,7 +2366,7 @@ etc ...
       <title>SPARQL Endpoint with JSON+RDF output</title>
       <graphic fileref="ui/JSON1.png"/>
     </figure>
-<para>As result URL containing as parameter the format application/sparql-results+json will be generated and the content should look like:</para>
+<para>As result URL containing as parameter the format <emphasis>application/sparql-results+json</emphasis> will be generated and the content should look like:</para>
 <figure id="sparqljson2" float="1">
       <title>SPARQL Endpoint with JSON+RDF</title>
       <graphic fileref="ui/JSON2.png"/>
@@ -3359,7 +3310,7 @@ select count (*)
 ]]></programlisting>
 
 <programlisting><![CDATA[
-sparql define input:inference 'http://mygraph.com'
+sparql define input:inference "http://mygraph.com"
 select ?p count (?o)
   from <http://mygraph.com>
  where {?s ?p ?o};
@@ -3368,7 +3319,7 @@ select ?p count (?o)
 ]]></programlisting>
 
 <programlisting><![CDATA[
-sparql define input:inference 'http://mygraph.com'
+sparql define input:inference "http://mygraph.com"
 select count (?p) count (?o) count (distinct ?o)
  from <http://mygraph.com>
 where {?s ?p ?o};
@@ -3377,7 +3328,7 @@ where {?s ?p ?o};
 ]]></programlisting>
 
 <programlisting><![CDATA[
-sparql define input:inference 'http://mygraph.com'
+sparql define input:inference "http://mygraph.com"
 select count distinct ?s ?p ?o
   from <http://mygraph.com>
  where {?s ?p ?o};
@@ -3489,7 +3440,7 @@ Note: This difference in behaviour may lead to confusion and will, therefore, li
 <sect4 id="rdfsparqlarrowop"><title>Pointer Operator (<emphasis>+&gt;</emphasis> and <emphasis>*&gt;</emphasis>)</title>
 <para>
 When expressions occur in result sets, many variables are often introduced only for the purpose of passing a value from a triple pattern to the result expression.
-This is inconvenient because many triple patterns are trivial. The presence of large numbers of variable names masks &quot;interesting&quot; variables that are used in more than one in pattern and which establish logical relationships between different parts of the query.
+This is inconvenient because many triple patterns are trivial. The presence of large numbers of variable names masks &quot;interesting&quot; variables that are used in more than once in pattern and which establish logical relationships between different parts of the query.
 As a solution we introduce pointer operators.</para>
 <para>
 The <emphasis>+&gt;</emphasis> (pointer) operator allows referring to a property value without naming it as a variable and explicitly writing a triple pattern. We can shorten the example above to:</para>
@@ -4475,6 +4426,10 @@ _______________________________________________________________________________
 1 Rows. -- 240 msec.
 
 ]]></programlisting>
+</sect2>
+<sect2 id="rdfsparqlimplementatiotrans"><title>SPARQL with Transitivity Option</title>
+<p>Virtuoso SPARQL allows access to Virtuoso's SQL transitivity extension.</p>
+<p>Find detailed description and examples in the <link linkend="rdfsparqlruletransitivy">Transitivity in SPARQL</link> section.</p>
 </sect2>
 </sect1>
 
@@ -5934,8 +5889,8 @@ ontology mapper.</para>
 <sect4 id="virtuosospongercartridges"><title>Supported Non RDF Data Sources</title>
   <itemizedlist>
     <listitem>Standard Formats
-<para>These Cartridges handle open formats: typically community-developed,
-openly-documented, and freely-licensed data structures.</para>
+<para>These Cartridges handle open formats: <emphasis>typically community-developed,
+openly-documented, and freely-licensed data structures.</emphasis></para>
 <table>
 <tgroup cols="4">
 <thead>
@@ -8900,7 +8855,7 @@ VT_INC_INDEX_DB_DBA_RDF_OBJ ()
 <sect4 id="virtuosospongerfaceusagest">
 <title>Usage Statistics</title>
 <orderedlist>
-   <listitem>Use the Faceted Browser Search and Find User Interface to search for information on "Kingsley Idehen":
+   <listitem>Use the Faceted Browser Search and Find User Interface to search for information on "Michael Jackson":
      <figure id="VirtFacetUsage1" float="1">
        <title>Usage Statistics</title>
        <graphic fileref="ui/VirtFacetUsage1.png"/>
@@ -8912,12 +8867,50 @@ VT_INC_INDEX_DB_DBA_RDF_OBJ ()
        <graphic fileref="ui/VirtFacetUsage2.png"/>
      </figure>
    </listitem>
-   <listitem>Click on a URL, for ex.
+   <listitem>Click the "Types" link under "Navigation"
+   </listitem>
+   <listitem>Results about "Michael Jackson" as Type/Label/Count list should be returned.
+   </listitem>
+   <listitem>Click a type link, for ex.:
 <programlisting><![CDATA[
-http://lod.openlinksw.com/describe/?url=http%3A%2F%2Fcommunity.linkeddata.org%2Fdataspace%2Fperson%2Fkidehen2%23this"
+dbpedia-owl:Artist
+]]></programlisting>
+     <figure id="VirtFacetUsage8" float="1">
+       <title>Usage Statistics</title>
+       <graphic fileref="ui/VirtFacetUsage8.png"/>
+     </figure>
+   </listitem>
+   <listitem>Should be shown type results and:
+<programlisting><![CDATA[
+Displaying types of e1 where:
+e1 has any property whose value contains "Michael Jackson".
+
+e1 is a dbpedia-owl:Artist . Drop
+]]></programlisting>
+     <figure id="VirtFacetUsage9" float="1">
+       <title>Usage Statistics</title>
+       <graphic fileref="ui/VirtFacetUsage9.png"/>
+     </figure>
+   </listitem>
+   <listitem>Click the "Show values" link under "Navigation"
+   </listitem>
+   <listitem>Results should be shown for "Michael Jackson" as values and text summaries associated with pattern:
+<programlisting><![CDATA[
+Displaying values and text summaries associated with pattern e1 where:
+e1 has any property whose value contains "Michael Jackson".
+e1 is a dbpedia-owl:Artist . Drop
 ]]></programlisting>
    </listitem>
-   <listitem>Results about Kingsley Idehen as property/value list should be returned:
+   <listitem>Click the link:
+<programlisting><![CDATA[
+dbpedia:Michael_Jackson
+]]></programlisting>
+     <figure id="VirtFacetUsage10" float="1">
+       <title>Usage Statistics</title>
+       <graphic fileref="ui/VirtFacetUsage10.png"/>
+     </figure>
+   </listitem>
+   <listitem>Results about "Michael Jackson" as property/value list should be returned:
      <figure id="VirtFacetUsage3" float="1">
        <title>Usage Statistics</title>
        <graphic fileref="ui/VirtFacetUsage3.png"/>
@@ -8925,7 +8918,7 @@ http://lod.openlinksw.com/describe/?url=http%3A%2F%2Fcommunity.linkeddata.org%2F
    </listitem>
    <listitem>Click the "Usage Statistics" link under "Actions" shown right of the list.
    </listitem>
-   <listitem>Results of usage statistics for Kingsley Idehen grouped in 4 tabs should be shown:
+   <listitem>Results of usage statistics for "Michael Jackson" grouped in 4 tabs should be shown:
 <orderedlist>
    <listitem>Referenced by Graphs: shows how many times the URI is found as subject in the relevant graph(s):
 <programlisting><![CDATA[
@@ -30126,7 +30119,7 @@ rdfs_rule_set ('http://localhost:8890/schema/property_rules1', 'http://localhost
 <para>This defines the rule context http://localhost:8890/schema/property_rules1 that is initialized from the contents of graph http://localhost:8890/schema/test.
 </para>
 <programlisting><![CDATA[
-SQL>sparql define input:inference 'http://localhost:8890/schema/property_rules1' select ?s from <http://localhost:8890/test> where {?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://rdfs.org/sioc/ns#Space> };
+SQL>sparql define input:inference "http://localhost:8890/schema/property_rules1" select ?s from <http://localhost:8890/test> where {?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://rdfs.org/sioc/ns#Space> };
 s
 VARCHAR
 _______________________________________________________________________________
@@ -30171,7 +30164,7 @@ the same but now specify that inference should apply only to the first triple pa
 </para>
 <programlisting><![CDATA[
 
-SQL>sparql define input:inference  'http://localhost:8890/schema/property_rules1' select * from <http://localhost:8890/test>
+SQL>sparql define input:inference  "http://localhost:8890/schema/property_rules1" select * from <http://localhost:8890/test>
 where { ?s ?p <http://rdfs.org/sioc/ns#Space> . ?s ?p1 <http://localhost:8890/dataspace/test2/weblog/test2tWeblog> . };
 
 
@@ -30214,7 +30207,7 @@ rdfs_rule_set ('http://dbpedia.org/schema/property_rules1', 'http://dbpedia.org/
 ]]></programlisting>
 <programlisting><![CDATA[
 sparql
-define input:inference 'http://dbpedia.org/schema/property_rules1'
+define input:inference "http://dbpedia.org/schema/property_rules1"
 prefix p: <http://dbpedia.org/property/>
 select ?s from <http://dbpedia.org> where {?s p:birthcity ?o }
 limit 50
@@ -30241,7 +30234,7 @@ http://dbpedia.org/resource/Jeremy_Transue
 15 Rows. -- 167 msec.
 
 sparql
-define input:inference 'http://dbpedia.org/schema/property_rules1'
+define input:inference "http://dbpedia.org/schema/property_rules1"
 prefix p: <http://dbpedia.org/property/>
 select ?s from <http://dbpedia.org> where {?s p:countryofbirth ?o }
 limit 50
@@ -30261,7 +30254,7 @@ http://dbpedia.org/resource/Adam_Gross
 50 Rows. -- 324 msec.
 
 sparql
-define input:inference 'http://dbpedia.org/schema/property_rules1'
+define input:inference "http://dbpedia.org/schema/property_rules1"
 prefix p: <http://dbpedia.org/property/>
 select ?s from <http://dbpedia.org> where {?s p:countyofbirth ?o }
 limit 50
@@ -30275,7 +30268,7 @@ http://dbpedia.org/resource/Eddie_Colman
 1 Rows. -- 163 msec.
 
 sparql
-define input:inference 'http://dbpedia.org/schema/property_rules1'
+define input:inference "http://dbpedia.org/schema/property_rules1"
 prefix p: <http://dbpedia.org/property/>
 select ?s from <http://dbpedia.org> where {?s p:birthPlace ?o }
 
@@ -30332,7 +30325,7 @@ http://dbpedia.org/resource/The_Lord_of_the_Rings
 -- Query aimed at Novel via query scoped to the "Fiction" class of
 -- which it is a subclass in the Yago Hierarchy
 SQL>SPARQL
-define input:inference 'http://dbpedia.org/resource/inference/rules/yago#'
+define input:inference "http://dbpedia.org/resource/inference/rules/yago#"
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX dbpedia: <http://dbpedia.org/property/>
 PREFIX yago: <http://dbpedia.org/class/yago/>
@@ -30359,7 +30352,7 @@ http://dbpedia.org/resource/The_Lord_of_the_Rings
 
 -- # Variant of query with Virtuoso's Full Text Index extension: bif:contains
 SQL>SPARQL
-define input:inference 'http://dbpedia.org/resource/inference/rules/yago#'
+define input:inference "http://dbpedia.org/resource/inference/rules/yago#"
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX dbpedia: <http://dbpedia.org/property/>
 PREFIX yago: <http://dbpedia.org/class/yago/>
@@ -30417,7 +30410,7 @@ http://dbpedia.org/resource/Lord_of_Chaos                                       
 -- Retrieve all individuals instances of Fiction Class which should
 -- include all Novels.
 SQL>SPARQL
-define input:inference 'http://dbpedia.org/resource/inference/rules/yago#'
+define input:inference "http://dbpedia.org/resource/inference/rules/yago#"
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX dbpedia: <http://dbpedia.org/property/>
 PREFIX yago: <http://dbpedia.org/class/yago/>
@@ -30452,7 +30445,7 @@ http://dbpedia.org/resource/Jimmie_Dodd                                         
 -- which it is a subclass in the Yago Hierarchy
 
 SQL>SPARQL
-define input:inference 'http://dbpedia.org/resource/inference/rules/yago#'
+define input:inference "http://dbpedia.org/resource/inference/rules/yago#"
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX dbpedia: <http://dbpedia.org/property/>
 PREFIX yago: <http://dbpedia.org/class/yago/>
@@ -30502,7 +30495,7 @@ rdfs_rule_set ('http://dbpedia.org/resource/inference/rules/umbel#', 'http://dbp
 ]]></programlisting>
 <para>Now let's execute the following queries:</para>
 <programlisting><![CDATA[
-SQL>sparql define input:inference 'http://dbpedia.org/resource/inference/rules/umbel#'
+SQL>sparql define input:inference "http://dbpedia.org/resource/inference/rules/umbel#"
 prefix umbel: <http://umbel.org/umbel/sc/>
 PREFIX dbpedia: <http://dbpedia.org/property/>
 prefix opencyc: <http://sw.opencyc.org/2008/06/10/concept/en/>
@@ -30523,7 +30516,7 @@ http://dbpedia.org/resource/BMW_R75
 4 Rows. -- 26 msec.
 ]]></programlisting>
 <programlisting><![CDATA[
-SQL>sparql define input:inference 'http://dbpedia.org/resource/inference/rules/umbel#'
+SQL>sparql define input:inference "http://dbpedia.org/resource/inference/rules/umbel#"
 prefix umbel: <http://umbel.org/umbel/sc/>
 PREFIX dbpedia: <http://dbpedia.org/property/>
 prefix opencyc: <http://sw.opencyc.org/2008/06/10/concept/en/>
@@ -30596,7 +30589,7 @@ http://dbpedia.org/resource/BMW_R75
 
   rdfs_rule_set ('ifps', 'ifp_list');
 
-  sparql define input:inference 'ifps'  select * from <ifps> where {<john1> ?p ?o};
+  sparql define input:inference "ifps"  select * from <ifps> where {<john1> ?p ?o};
 
   p                                                                                 o
   VARCHAR                                                                           VARCHAR
@@ -30628,15 +30621,26 @@ http://dbpedia.org/resource/BMW_R75
   John does not change.</para>
   </sect2>
   <sect2 id="rdfsparqlruletransitivy"><title>Transitivity in SPARQL</title>
-  <para>Virtuoso SPARQL allows access to Virtuoso's SQL transitivity extension. Read the SQL section for a definition of the options.
-  The SPARQL syntax is slightly different from the SQL, although the option names and meanings are the same.
-  </para>
+  <para>Virtuoso SPARQL allows access to Virtuoso's SQL transitivity extension. Read the
+<link linkend="transitivityinsQL">SQL section</link> for a definition of the options.</para>
+  <para>The SPARQL syntax is slightly different from the SQL, although the option names
+and meanings are the same.</para>
   <para>In SPARQL, the transitive options occur after a subquery enclosed in braces:</para>
-  <para>The below produces all the IRI's that are the same as &lt;alice >.</para>
+  <para>The below produces all the IRI's that are the same as &lt;alice&gt;.</para>
   <programlisting><![CDATA[
-  select ?syn where {
-  {select ?syn where { { select ?x ?syn where {{ ?x owl:sameAs ?syn } union { ?syn owl:sameAs ?x}}  }option (transitive t_in (?x), t_out (?syn), t_distinct, t_min (0) ) } .
-  filter (?x = <alice>)}
+select ?syn
+where
+  {
+    {
+      select ?x ?syn
+      where
+        {
+          { ?x owl:sameAs ?syn } union { ?syn owl:sameAs ?x }
+        }
+    }
+    option ( transitive, t_in (?x), t_out (?syn), t_distinct, t_min (0) )
+    filter (?x = <Alice>) .
+  }
   ]]></programlisting>
   <para>In this case, we provide a binding for ?x in the filter outside of the
   transitive subquery. The subquery therefore is made to run from in to
@@ -30647,7 +30651,7 @@ http://dbpedia.org/resource/BMW_R75
   </para>
   <para>The transitive subquery in the above is </para>
   <programlisting><![CDATA[
-  {select ?syn where { { select ?x ?syn where {{ ?x owl:sameAs ?syn } union { ?syn owl:sameAs ?x}}  }option (transitive t_in (?x), t_out (?syn), t_distinct, t_min (0) ) } .
+{select ?syn where { { select ?x ?syn where {{ ?x owl:sameAs ?syn } union { ?syn owl:sameAs ?x}}  } option (transitive, t_in (?x), t_out (?syn), t_distinct, t_min (0) ) } .
   ]]></programlisting>
   <para>Leaving out the option would just look for one step of owl:sameAs.
   Making it transitive will apply the subquery to all bindings it
@@ -30658,7 +30662,7 @@ http://dbpedia.org/resource/BMW_R75
   <alice> foaf:knows ?friend option (transitive t_min (1))
   ]]></programlisting>
   <para>will bind ?friend to all directly and indirectly found foaf:known
-  individuals. If t_min had been 0, Malice> would have also been in the
+  individuals. If t_min had been 0, Malice&gt; would have also been in the
   generated bindings.</para>
   <para>The syntax is</para>
   <programlisting><![CDATA[
@@ -30683,13 +30687,15 @@ http://dbpedia.org/resource/BMW_R75
   <para>Unlike SQL, variable names are used instead of column numbers.
   Otherwise all the options have the same meaning.</para>
   <para>Some examples of the use of transitivity are:</para>
+  <sect3 id="rdfsparqlruletransitivyexamples"><title>Collection of Transitivity Option Demo Queries for SPARQL</title>
+<sect4 id="rdfsparqlruletransitivyexamples1"><title>Example for finding out what graphs contain owl:sameAs for Dan York</title>
   <para>To find out what graphs contain owl:sameAs for Dan York, we do</para>
   <programlisting><![CDATA[
    select ?g count (*) where {
    {select ?x ?alias ?g where {{ graph ?g {?x owl:sameAs ?alias }} union {graph ?g {?alias owl:sameAs ?x}}}}
   	option (transitive, t_in (?x), t_out (?alias), t_distinct, t_min (1)) .
    filter (?x = <http://www.advogato.org/person/dyork/foaf.rdf#me> ) .
-  } group by ?g order by desc 2 limit 30;
+  } group by ?g order by desc 2 limit 30
   ]]></programlisting>
   <para>Here we select all paths that start with the initial URI and pass
   through one or more sameAs statements. Each step produces a result of
@@ -30699,28 +30705,39 @@ http://dbpedia.org/resource/BMW_R75
   times since the graphs containing immediate sameAs statements are
   counted for paths of length 1, then again as steps on paths that reach
   to their aliases and so on.</para>
-  <programlisting><![CDATA[
-  select ?o ?dist ((select count (*) where {?o foaf:knows ?xx}))
-  where   {
-      {       select ?s ?o
-        where
-          {           ?s foaf:knows ?o         }
-      }     option (transitive, t_distinct, t_in(?s), t_out(?o), t_min (1), t_max (4), t_step ('step_no') as ?dist) .
-      filter (?s= <http://myopenlink.net/dataspace/person/kidehen#this>)
-    } order by ?dist desc 3 limit 50
-
-  ]]></programlisting>
+</sect4>
+<sect4 id="rdfsparqlruletransitivyexamples2"><title>Example for query that takes all the people known by kidehen, to a depth between 1 and 4 applications of the subquery</title>
   <para>This query takes all the people known by kidehen, to a depth between 1
   and 4 applications of the subquery. It then sorts them by the
   distance and the descending count of connections of each found connection. This is
   equivalent to the default connections list shown by LinkedIn.</para>
+  <programlisting><![CDATA[
+  select ?o ?dist ((select count (*) where {?o foaf:knows ?xx}))
+        where
+  {
+    {
+      select ?s ?o
+      where
+        {
+          ?s foaf:knows ?o
+        }
+      }     option (transitive, t_distinct, t_in(?s), t_out(?o), t_min (1), t_max (4), t_step ('step_no') as ?dist) .
+      filter (?s= <http://myopenlink.net/dataspace/person/kidehen#this>)
+    } order by ?dist desc 3 limit 50
+  ]]></programlisting>
+</sect4>
+<sect4 id="rdfsparqlruletransitivyexamples4"><title>Example for finding how two people know each other and what graphs are involved in the connection</title>
   <para>To find how two people know each other and what graphs are involved in the connection, we do:</para>
   <programlisting><![CDATA[
   select ?link ?g ?step ?path
-  where  {
-      {      select ?s ?o ?g
-        where        {
-            graph ?g {?s foaf:knows ?o }}
+  where
+    {
+      {
+        select ?s ?o ?g
+        where
+          {
+            graph ?g {?s foaf:knows ?o }
+          }
       } option (transitive, t_distinct, t_in(?s), t_out(?o), t_no_cycles, T_shortest_only,
          t_step (?s) as ?link, t_step ('path_id') as ?path, t_step ('step_no') as ?step, t_direction 3) .
       filter (?s= <http://myopenlink.net/dataspace/person/kidehen#this>
@@ -30735,6 +30752,106 @@ http://dbpedia.org/resource/BMW_R75
   since there can be many distinct paths that link the ?s and ?o
   specified in the filter.</para>
   <para>See the SQL transitive option section for details on the meaning of step_no and path_id.</para>
+</sect4>
+<sect4 id="rdfsparqlruletransitivyexamples5"><title>Example for TBox Subsumption</title>
+<para>Subsumption Demo Using Transitivity Clause</para>
+<para>Yago Class Hierarchy (TBox) Subsumption</para>
+<para>AlphaReceptors</para>
+<programlisting><![CDATA[
+select ?y
+from <http://dbpedia.org/resource/classes/yago#>
+where
+  {
+    {
+      select *
+      where
+        {
+          ?x rdfs:subClassOf ?y .
+        }
+    }
+    option (transitive, t_distinct, t_in (?x), t_out (?y) ) .
+    filter (?x = <http://dbpedia.org/class/yago/AlphaReceptor105609111>)
+  }
+]]></programlisting>
+</sect4>
+<sect4 id="rdfsparqlruletransitivyexamples6"><title>Example for Receptors</title>
+<programlisting><![CDATA[
+select ?x
+from <http://dbpedia.org/resource/classes/yago#>
+where
+  {
+    {
+      select *
+      where
+        {
+          ?x rdfs:subClassOf ?y .
+        }
+    }
+    option (transitive, t_distinct, t_in (?x), t_out (?y) ) .
+  filter (?y = <http://dbpedia.org/class/yago/Receptor105608868>)
+}
+]]></programlisting>
+</sect4>
+<sect4 id="rdfsparqlruletransitivyexamples7"><title>Example with an inference rule to cater for instance data being skos:broader based, which is no long transitive</title>
+<p>The following example demostrates the steps how to retrieve the skos ontology, add triples
+for skos:broaderTransitiveinto the grpah, define inference rule, and at the and
+execute sparql query with inference rule and transitivity option. The queries were executed against
+the LOD instance (http://lod.openlinksw.com):</p>
+<orderedlist>
+  <listitem>Make the Context graph, assuming you don't want to load entire SKOS vocabulary into our Quad Store:
+<programlisting><![CDATA[
+SQL>sparql
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+INSERT INTO GRAPH <urn:rules.skos> {  skos:broader rdfs:subPropertyOf skos:broaderTransitive .
+                                      skos:narrower rdfs:subPropertyOf skos:narrowerTransitive};
+]]></programlisting>
+</listitem>
+  <listitem>OR Load entire SKOS ontology into Quad Store via iSQL interface (commandline or HTML based Conductor):
+<programlisting><![CDATA[
+SQL>DB.DBA.RDF_LOAD_RDFXML (http_get ('http://www.w3.org/2009/08/skos-reference/skos-owl1-dl.rdf'), 'no', 'urn:rules.skos');
+Done.
+]]></programlisting>
+  </listitem>
+  <listitem>Make Context Rule:
+<programlisting><![CDATA[
+SQL>rdfs_rule_set ('skos-trans', 'urn:rules.skos');
+Done.
+]]></programlisting>
+  </listitem>
+  <listitem>Go to SPARQL endpoint, for ex. http://lod.openlinksw.com/sparql</listitem>
+  <listitem>Use inference rule pragma to set context rule for SPARQL query, i.e:
+<programlisting><![CDATA[
+DEFINE input:inference "skos-trans"
+PREFIX p: <http://dbpedia.org/property/>
+PREFIX dbpedia: <http://dbpedia.org/resource/>
+PREFIX category: <http://dbpedia.org/resource/Category:>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX geo: <http://www.georss.org/georss/>
+
+SELECT DISTINCT ?m ?n ?p ?d
+WHERE {
+  ?m rdfs:label ?n.
+  ?m skos:subject ?c.
+  ?c skos:broaderTransitive category:Churches_in_Paris option (transitive) .
+  ?m p:abstract ?d.
+  ?m geo:point ?p
+ FILTER ( lang(?n) = "fr" )
+ FILTER ( lang(?d) = "fr" )
+    };
+]]></programlisting>
+</listitem>
+  <listitem>As result should be returned for ex. 22 rows.
+Note that for comparison, if the option (transitive) is ommitted, then only 2 rows will be returned in our example query:
+     <figure id="rdftr" float="1">
+       <title>Transitive option</title>
+       <graphic fileref="ui/trs1.png"/>
+     </figure>
+</listitem>
+</orderedlist>
+</sect4>
+</sect3>
   </sect2>
 </sect1>
 

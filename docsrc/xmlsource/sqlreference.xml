@@ -3275,22 +3275,24 @@ The default value comes from the ArrayParameters configuration parameter.
 </para>
 		</sect2>
 	</sect1>
-<!-- this was already added to rdfandsparql.xml
 <sect1 id="anytimequeries">
 		<title>Anytime Queries</title>
-<para>Starting with version 6, Virtuoso offers a partial query evaluation feature that guarantees answers to arbitrary queries within a fixed time.
-This is intended for use in  publicly available SPARQL or SQL end points on large databases.
-This enforces a finite duration to all queries and will strive to return meaningful partial results.
-Thus this provides the same security as a transaction timeout but will be more user friendly since results will generally be returned, also for aggregate queries.
-Outside of a public query service, this may also be handy when exploring a large data set with unknown properties.
+     <para>Starting with version 6, Virtuoso offers a partial query evaluation feature that guarantees
+answers to arbitrary queries within a fixed time. This is intended for use in  publicly available SPARQL
+or SQL end points on large databases. This enforces a finite duration to all queries and will strive to
+return meaningful partial results. Thus this provides the same security as a transaction timeout but will
+be more user friendly since results will generally be returned, also for aggregate queries. Outside of a
+public query service, this may also be handy when exploring a large data set with unknown properties.
 </para>
 <para>The feature is activated with the statement</para>
 <programlisting><![CDATA[
 set result_timeout == <expression>;
 ]]></programlisting>
-<para>The expression should be a count of milliseconds. The scope of the setting is the connection, thus it remains in effect past the return of the calling procedure.
-Setting the timeout to 0 returns to the default state of having no limit on query run time and always returning complete results.
-The initial value of the timeout is 0. On a web server thread, the timeout is reset to 0 at the start of processing each new request header.
+     <para>The expression should be a count of milliseconds. The scope of the setting is the connection,
+thus it remains in effect past the return of the calling procedure. Setting the timeout to 0 returns to the
+default state of having no limit on query run time and always returning complete results. The initial value
+of the timeout is 0. On a web server thread, the timeout is reset to 0 at the start of processing each
+new request header.
 </para>
 <para>After a query or cursor has exceeded the running time, it is reset.
 In the event of the reset occurring inside an aggregation, the part
@@ -3322,10 +3324,21 @@ may call db_activity (1) in the same procedure. If this is called on
 a client server connection with the timeout on, the counts will be
 reset before db_activity () is called.
 </para>
-<para>The resolution of the timeout is fairly low, timeouts are checked every two seconds with default settings.</para>
-<para>A query cannot set a timeout from inside itself. Only a stored procedure or a top level statement on a client connection can do this.</para>
+     <para>The resolution of the timeout is fairly low, timeouts are checked every two seconds with default
+settings.</para>
+     <para>A query cannot set a timeout from inside itself. Only a stored procedure or a top level statement
+on a client connection can do this.</para>
+     <para>A request to SPARQL web service endpoint may specify the timeout as an additoional <emphasis>&amp;timeout=&lt;milliseconds&gt;</emphasis> parameter.
+The parameter value should be equal to or greater than 1000, otherwise it will be ignored.
+If <emphasis>SPARQL</emphasis> Virtuoso configuration file contains
+<emphasis>MaxQueryExecutionTime</emphasis> parameter and its value is greater than or equal to 1000
+then the actual &quot;anytime&quot; timeout is the minimum of the requested value and the value in the configuration file.
+</para>
+     <para>The current standard of SPARQL protocol does not provide any support for partial results.
+When a SPARQL query ends with S1TAT state, the returned HTTP header contains four additional rows,
+<emphasis>X-SQL-State:</emphasis>, <emphasis>X-SQL-Message:</emphasis>, <emphasis>X-Exec-Milliseconds:</emphasis> and
+<emphasis>X-Exec-DB-Activity:</emphasis>; the returned document is formatted according to the requested MIME type as if the result is complete.</para>
  	</sect1>
--->
 <sect1 id="besteffortunion">
 	<title>Best Effort Union</title>
 	<para>
@@ -4399,17 +4412,21 @@ Bitmap Indices
 <programlisting><![CDATA[
 transitive_decl ::= TRANSITIVE <trans_option>[, ...]
 
-trans_option ::=
-T_DISTINCT
+trans_opt :: =
+        | T_MIN (INTNUM)
+        | T_MAX (INTNUM)
+        | T_DISTINCT
+        | T_EXISTS
 | T_NO_CYCLES
 | T_CYCLES_ONLY
-| T_IN ( <position_list> )
+        | T_NO_ORDER
+        | T_SHORTEST_ONLY
+        | T_IN <position_list>
 | T_OUT ( <position_list )
-| T_MAX INTNUM
-| T_MIN INTNUM
-| T_DIRECTION INTNUM
-| T_EXISTS
-| T_END_FLAG INTNUM
+        | T_END_FLAG  (INTNUM)
+        | T_FINAL_AS NAME
+        | T_STEP ( <position_or_path_spec> )
+        | T_DIRECTION (INTNUM)
 
 
 position_list ::=  INTNUM [,...]
@@ -4558,23 +4575,32 @@ enumerate the steps as if counting from input to output, albeit
 internally the evaluation order is the reverse. Again, step number 0
 has the via column equal to p1 and the highest numbered step has via
 equal to p2.</para>
-<para>Now we may look more formally at the meaning of the transitive options.</para>
+<para>Now we may look more formally at the meaning of the transitive options:</para>
 <itemizedlist>
-<listitem>T_DISTINCT - This means that if a binding of input columns is produced more than once, only the first is used. Id est, the same point is not traversed twice even if many paths lead to it.</listitem>
-<listitem>T_SHORTEST_ONLY -  If both ends of the path are given, the evaluation stops at the length of path where the first solution is found. If many paths of equal length are found, they are returned but longer paths are not sought.</listitem>
-<listitem>T_NO_CYCLES - If a path is found that loops over itself, i.e. a next step has the input values equal to the input values of a previous step on the path, the binding is ignored.</listitem>
-<listitem>T_CYCLES_ONLY - Only paths that have a cycle, i.e. input values of a subsequent step equal the input values of a previous step on the same path, are returned.</listitem>
 <listitem>T_MIN (INTNUM) - This means that paths shorter than the number are not returned. In the examples above, we had min at 0, so that a path of zero length was also returned, i.e. where the first output equals the outer conditions for the inputs.</listitem>
 <listitem>T_MAX (INTNUM) - This gives a maximum length of path. Paths longer than this many steps are not returned. A value of 1 means that the subquery is evaluated once, i.e. the outputs of the first evalyuation are not fed back into the inputs. Specifying a minimum of 0 and a maximum of one means an optional join. Specifying min and max both to 1 means an ordinary derived table.</listitem>
+<listitem>T_DISTINCT - This means that if a binding of input columns is produced more than once, only the first is used. Id est, the same point is not traversed twice even if many paths lead to it.</listitem>
+<listitem>T_EXISTS - Only one path is generated and returned.</listitem>
+<listitem>T_NO_CYCLES - If a path is found that loops over itself, i.e. a next step has the input values equal to the input values of a previous step on the path, the binding is ignored.</listitem>
+<listitem>T_CYCLES_ONLY - Only paths that have a cycle, i.e. input values of a subsequent step equal the input values of a previous step on the same path, are returned.</listitem>
+<!-- listitem>T_NO_ORDER</listitem-->
+<listitem>T_SHORTEST_ONLY -  If both ends of the path are given, the evaluation stops at the length of path where the first solution is found. If many paths of equal length are found, they are returned but longer paths are not sought.</listitem>
+<listitem>T_IN (column_positions) - This specifies which columns are called input.</listitem>
+<listitem>T_OUT (column_positions) - This specifies which columns are called output.</listitem>
+<!-- listitem>T_END_FLAG</listitem-->
+<!-- listitem>T_FINAL_AS</listitem-->
+<!-- listitem>T_STEP</listitem-->
 <listitem>T_DIRECTION INTNUM - A value of 0 (default) means that the SQL
 optimizer decides which way the transitive subquery is evaluated. 1
 means from input to output, 2 from output to input, 3 from both ends. Supposing we are looking at how two points are related, it makes sense to start expanding the transitive closure at both ends. in the above example, this would be going from p1 to p2 on one side and from p2 to p1 on the other.
 </listitem>
-<listitem>T_IN (column_positions) - This specifies which columns are called input.</listitem>
-<listitem>T_OUT (column_positions) - This specifies which columns are called output.</listitem>
-<listitem>neither in nor out. If this column has a non-0 value, this is considered and end of a path. This allows application logic other than column equality to decide when a solution has been reached.</listitem>
-<listitem>T_EXISTS - Only one path is generated and returned.</listitem>
+
+<!-- listitem>neither in nor out. If this column has a non-0 value, this is considered as end of a path. This allows application logic other than column equality to decide when a solution has been reached.</listitem -->
+
 </itemizedlist>
+ <tip><title>See Also:</title>
+    <link linkend="rdfsparqlruletransitivyexamples">Collection of Transitivity Option Demo Queries for SPARQL.</link>
+  </tip>
 </sect1>
 
 	<!-- ======================================== -->
