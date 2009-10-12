@@ -1057,7 +1057,7 @@ create procedure DB.DBA.RDF_PROC_COLS (in pname varchar)
 -- /* Load the document in triple store. returns 1 if the document is an RDF , otherwise if it has links etc. it returns 0 */
 create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_origin_uri varchar, inout ret_content_type varchar, inout ret_hdr any, inout ret_body any, inout options any, inout req_hdr_arr any)
 {
-  declare dest, groupdest varchar;
+  declare dest, groupdest, cset varchar;
   declare rc any;
   declare aq, ps any;
   declare xd, xt any;
@@ -1127,6 +1127,7 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
   --    commit work;
   --  }
 load_grddl:;
+  cset := http_request_header (ret_hdr, 'Content-Type', 'charset', null);
   for select RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_OPTIONS from DB.DBA.SYS_RDF_MAPPERS where RM_ENABLED = 1 order by RM_ID do
     {
       declare val_match, pcols, new_opts any;
@@ -1161,7 +1162,7 @@ load_grddl:;
 	  --!!!TBD: Carefully check what happens when dest is NULL vs dest is nonNULL, then add support for groupdest.
           if (registry_get ('__sparql_mappers_debug') = '1')
             dbg_obj_prin1 ('Match ', RM_HOOK);
-	  new_opts := vector_concat (options, RM_OPTIONS, vector ('content-type', ret_content_type));
+	  new_opts := vector_concat (options, RM_OPTIONS, vector ('content-type', ret_content_type, 'charset', cset));
 	  if (RM_TYPE <> 'HTTP')
 	    {
 	      if (npars = 7)

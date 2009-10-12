@@ -2958,7 +2958,7 @@ ws_check_rdf_accept (ws_connection_t *ws)
   local_cursor_t * lc = NULL;
   char * accept;
 
-  if (!http_check_rdf_accept)
+  if (!http_check_rdf_accept || ws->ws_status_code != 404)
     return 0;
   accept = ws_header_field (ws->ws_lines, "Accept:", NULL);
   if (!ws || !ws->ws_map || !accept)
@@ -3564,6 +3564,12 @@ do_file:
     {
       char page_opt_name[3 + 5 + 1];
       char *text = NULL;
+
+      if (THR_TMP_POOL)
+	{
+	  MP_DONE ();
+	  log_error ("non-empty MP after %s", ws->ws_path_string ? ws->ws_path_string : "<no-url>");
+	}
 
       if (!ws_check_rdf_accept (ws))
 	{
@@ -8669,8 +8675,13 @@ bif_http_debug_log (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 {
   caddr_t fname, fname_cvt;
   fname = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, "http_debug_log");
-  fname_cvt = file_native_name (fname);
-  file_path_assert (fname_cvt, NULL, 1);
+  if (fname)
+    {
+      fname_cvt = file_native_name (fname);
+      file_path_assert (fname_cvt, NULL, 1);
+    }
+  else
+    fname_cvt = NULL;
   if (debug_log && fname_cvt)
     {
       sqlr_new_error ("42000", "FA041", "HTTP debug log is already being generated");
