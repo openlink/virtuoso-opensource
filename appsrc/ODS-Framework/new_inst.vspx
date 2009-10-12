@@ -44,20 +44,7 @@
           self.is_visible := 0;
         }
         self.domains := '<domains/>';
-        if (self.wa_type = 'oMail')
-        {
-          declare pos integer;
-          self.domains := '';
-          for (select WD_DOMAIN from DB.DBA.WA_DOMAINS) do
-          {
-            pos := strstr(concat(WD_DOMAIN, ':'), ':');
-            self.domains := concat(self.domains, sprintf('<domain>%s</domain>', substring(WD_DOMAIN, 1, pos)));
-          }
-          if (self.domains = '')
-            signal('22024', 'No domains available.');
-          self.domains := concat('<domains>', self.domains, '</domains>');
-        }
-        if (self.wa_type = 'IM')
+        if ((self.wa_type = 'oMail') or (self.wa_type = 'IM'))
         {
           declare pos integer;
           self.domains := '';

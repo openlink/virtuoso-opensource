@@ -785,8 +785,8 @@ create procedure applicationsGet (in sid varchar := '',
 ;
 grant execute on applicationsGet to GDATA_ODS;
 
-create procedure 
-createApplication (in sid varchar := '', 
+create procedure createApplication (
+  in sid varchar := '',
                    in realm varchar := 'wa', 
                    in application varchar) __SOAP_HTTP 'text/xml'
 {
@@ -802,18 +802,14 @@ createApplication (in sid varchar := '',
 
   if (isSessionValid (sid, 'wa', _uname))
   {
-        declare watypes_arr any;
-        watypes_arr:=constructTypePackageArr('wa_types');
-
         declare watype_name,wainstance_name,full_user_name varchar;
+    declare watypes_arr any;
 
+    watypes_arr := constructTypePackageArr ('wa_types');
         watype_name:=get_keyword(application,watypes_arr,application);
-
-      full_user_name := (select coalesce (WAUI_FULL_NAME, 
-                                          trim (concat (WAUI_FIRST_NAME,' ',WAUI_LAST_NAME))) 
+    full_user_name := (select coalesce (WAUI_FULL_NAME, trim (concat (WAUI_FIRST_NAME,' ',WAUI_LAST_NAME)))
                            from DB.DBA.WA_USER_INFO 
                            where WAUI_U_ID = username2id (_uname));
-
         if(length(full_user_name)=0)
         full_user_name := _uname;
 
@@ -822,19 +818,34 @@ createApplication (in sid varchar := '',
       {
 		wainstance_name := replace(full_user_name || application, ' ', '_');
 	  }
+    else if (application = 'Mail')
+    {
+      declare pos integer;
+      declare domain varchar;
+
+      domain := (select top 1 WD_DOMAIN from DB.DBA.WA_DOMAINS);
+      if (isnull (domain))
+      {
+        errCode := 500;
+        errMsg := 'No domains available.';
+        goto _exit;
+      }
+      pos := strstr (concat (domain, ':'), ':');
+      wainstance_name := concat (_uname, '@', substring (domain, 1, pos));
+    }
 	  else
+    {
 		wainstance_name := full_user_name || '\'s ' || application;
+		}
 
         declare create_res any;
 
       create_res := DB.DBA.ODS_CREATE_NEW_APP_INST (watype_name, wainstance_name, _uname);
-
-        declare application_url varchar;
-
         if(create_res>0)
         {
-          application_url:=(select WAM_HOME_PAGE from DB.DBA.WA_MEMBER where WAM_INST=wainstance_name);
+      declare application_url varchar;
 
+      application_url := (select WAM_HOME_PAGE from DB.DBA.WA_MEMBER where WAM_INST = wainstance_name);
           http('<application>',resXml);
           http('<type>'||application||'</type>',resXml);
           http('<name>'||wainstance_name||'</name>',resXml);
@@ -847,10 +858,8 @@ createApplication (in sid varchar := '',
           errCode:=500;
           errMsg:=create_res;
         }
-
-
   }
-
+_exit:;
   if(errCode<>0)
      httpErrXml(errCode,errMsg,'createApplication');
   else
