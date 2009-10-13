@@ -65,7 +65,7 @@ sprintf_more (char *text, size_t len, int *fill, const char *string, ...)
 {
   va_list list;
   char temp[2000];
-  int ret;
+  int ret, rest_sz, copybytes;
   va_start (list, string);
   ret = vsnprintf (temp, sizeof (temp), string, list);
 #ifndef NDEBUG
@@ -75,11 +75,16 @@ sprintf_more (char *text, size_t len, int *fill, const char *string, ...)
   va_end (list);
 #ifndef NDEBUG
   if (*fill + strlen (temp) > len - 1)
-    GPF_T1 ("overflow in strncpy");
+    GPF_T1 ("overflow in memcpy");
 #endif
-  strncpy (&text[*fill], temp, len - *fill - 1);
+  rest_sz = (len - fill[0]);
+  if (ret >= rest_sz)
+    copybytes = ((rest_sz > 0) ? rest_sz : 0);
+  else
+    copybytes = ret+1;
+  memcpy (text+fill[0], temp, copybytes);
   text[len - 1] = 0;
-  *fill += (int) strlen (temp);
+  fill[0] += ret;
 }
 
 
