@@ -1046,7 +1046,7 @@ bif_intl_init (void)
 {
   bif_define_typed ("collation__define", bif_collation__define, &bt_integer);
   bif_define_typed ("charset__define", bif_charset_define, &bt_integer);
-  bif_define_typed ("charset_canonical_name", bif_charset_canonical_name, &bt_integer);
+  bif_define_typed ("charset_canonical_name", bif_charset_canonical_name, &bt_varchar);
   bif_define_typed ("complete_collation_name", bif_complete_collation_name, &bt_varchar);
   bif_define_typed ("collation_order_string", bif_collation_order_string, &bt_varchar);
   bif_define_typed ("current_charset", bif_current_charset, &bt_varchar);
