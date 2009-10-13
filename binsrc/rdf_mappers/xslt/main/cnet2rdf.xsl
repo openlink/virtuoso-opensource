@@ -29,7 +29,8 @@
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
-<!ENTITY book "http://purl.org/NET/book/vocab#">
+<!ENTITY cnet "http://developer.api.cnet.com/rest/v1.0/ns">
+<!ENTITY oplcn "http://www.openlinksw.com/schemas/cnet#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -40,35 +41,37 @@
     xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
     xmlns:gr="&gr;"
-    xmlns:book="&book;"
     xmlns:dcterms="&dcterms;"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
-    xmlns="http://api.cnet.com/rest/v1.0/ns">
+  xmlns:cnet="&cnet;"
+  xmlns:oplcn="&oplcn;">
 
     <xsl:output method="xml" indent="yes" />
 
     <xsl:param name="baseUri" />
+  <xsl:param name="currentDateTime"/>
+
     <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
     <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
+  <!-- TO DO: For testing with standalone XSLT processor -->
+  <!--
+  <xsl:variable name="resourceURL" select="$baseUri"/>
+  <xsl:variable  name="docIRI" select="$baseUri"/>
+  <xsl:variable  name="docproxyIRI" select="$baseUri"/>
+  -->
     
-    <xsl:variable name="ns">http://api.cnet.com/rest/v1.0/ns</xsl:variable>
-
-    <xsl:template match="CNETResponse|TechProduct" priority="1">
-		<xsl:apply-templates select="*"/>
-    </xsl:template>
+  <!-- TO DO: Remove - use oplcn instead 
+  <xsl:variable name="ns">http://developer.api.cnet.com/rest/v1.0/ns</xsl:variable>
+  -->
     
-    <xsl:template match="CNETResponse|SoftwareProduct" priority="1">
-		<xsl:apply-templates select="*"/>
-    </xsl:template>
-    
-    <xsl:variable name="error" select="/CNETResponse/Error/@code" />
+  <xsl:variable name="error" select="/cnet:CNETResponse/cnet:Error/@code" />
     
     <xsl:template match="/">
 		<rdf:RDF>
 			<xsl:choose>
-				<xsl:when test="string-length(/CNETResponse/Error/@code) &gt; 0">
+			<xsl:when test="string-length(/cnet:CNETResponse/cnet:Error/@code) &gt; 0">
 					<rdf:Description rdf:about="{$docproxyIRI}">
 						<rdf:type rdf:resource="&bibo;Document"/>
 					</rdf:Description>
@@ -76,93 +79,209 @@
 				<xsl:otherwise>
 					<rdf:Description rdf:about="{$docproxyIRI}">
 						<rdf:type rdf:resource="&bibo;Document"/>
-						<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri)}"/>
-						<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
-						<dcterms:subject rdf:resource="{vi:proxyIRI($baseUri)}"/>
-						<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-						<owl:sameAs rdf:resource="{$docIRI}"/>
+					<sioc:container_of rdf:resource="{$resourceURL}"/>
+					<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+					<dcterms:subject rdf:resource="{$resourceURL}"/>
+					</rdf:Description>
 
-					</rdf:Description>
-					<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
-						<rdf:type rdf:resource="&gr;ProductOrService"/>
+	               		<gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Vendor')}">
+				<!--  
+	               		<gr:BusinessEntity rdf:about="{concat ($baseUri, '#', 'Vendor')}">
+		 		-->
+		  			<rdfs:comment>The legal agent making the offering</rdfs:comment>
+		       			<rdfs:label>CBS Interactive</rdfs:label>
+		       			<gr:legalName>CBS Interactive</gr:legalName>
+		       			<gr:offers rdf:resource="{$resourceURL}"/>
+		 			<foaf:homepage rdf:resource="http://www.cnet.com" />
+					<!--  
+					 owl:sameAs provides an exit route to the original data space.
+					 In this case, the resource is a dummy URI, which is our 'hint' to CNET.
+					 At some stage, we're expecting CNET to expose RDF from this or some similar URI.
+					 -->
+		  			<owl:sameAs rdf:resource="http://www.cnet.com/about#BusinessEntity_CNET" />
+		  			<rdfs:seeAlso rdf:resource="http://www.cnet.com"/>
+		  			<rdfs:seeAlso rdf:resource="http://shopper.cnet.com"/>
+		  			<rdfs:seeAlso rdf:resource="http://reviews.cnet.com"/>
+		  			<rdfs:seeAlso rdf:resource="http://download.cnet.com"/>
+					<!--
+		  			<rdfs:seeAlso rdf:resource="{vi:proxyIRI ('http://www.cnet.com')}"/>
+		  			<rdfs:seeAlso rdf:resource="{vi:proxyIRI ('http://shopper.cnet.com')}"/>
+		  			<rdfs:seeAlso rdf:resource="{vi:proxyIRI ('http://reviews.cnet.com')}"/>
+		  			<rdfs:seeAlso rdf:resource="{vi:proxyIRI ('http://download.cnet.com')}"/>
+					-->
+	               		</gr:BusinessEntity>
+
+				<gr:Offering rdf:about="{$resourceURL}">
 						<sioc:has_container rdf:resource="{$docproxyIRI}"/>
+			    		<gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
+			                <gr:validFrom rdf:datatype="&xsd;dateTime"><xsl:value-of select="$currentDateTime"/></gr:validFrom>
+					<xsl:apply-templates mode="offering" />
+				</gr:Offering>
 						<xsl:apply-templates />
-					</rdf:Description>
 				</xsl:otherwise>
 			</xsl:choose>
 		</rdf:RDF>
     </xsl:template>
     
-    <xsl:template match="Name">
-		<rdfs:label>
-			<xsl:value-of select="."/>
-		</rdfs:label>
-		<dc:title>
-			<xsl:value-of select="."/>
-		</dc:title>
+  <xsl:template match="cnet:SoftwareProduct" mode="offering">    
+ 	<gr:includes rdf:resource="{vi:proxyIRI ($baseUri, '', 'SoftwareProduct')}"/>
+	<!--
+	<gr:includes rdf:resource="{concat ($baseUri, '#', 'SoftwareProduct')}"/>
+	-->
+	<gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModeDirectDownload"/>
+	<xsl:apply-templates mode="offering" />
+  </xsl:template>
+
+  <xsl:template match="cnet:TechProduct" mode="offering">    
+ 	<gr:includes rdf:resource="{vi:proxyIRI ($baseUri, '', 'TechProduct')}"/>
+	<!--
+	<gr:includes rdf:resource="{concat ($baseUri, '#', 'TechProduct')}"/>
+	-->
+		<gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModePickup"/>
+		<gr:availableDeliveryMethods rdf:resource="&gr;UPS"/>
+		<gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModeMail"/>
+	<xsl:apply-templates mode="offering" />
+  </xsl:template>
+
+  <xsl:template match="cnet:SoftwareProduct">    
+	<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'SoftwareProduct')}">
+	<!--
+	<rdf:Description rdf:about="{concat ($baseUri, '#', 'SoftwareProduct')}">
+	-->
+		<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
+		<rdf:type rdf:resource="&oplcn;SoftwareProduct" />
+       		<gr:hasMakeAndModel>
+	               	<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'MakeAndModel')}">
+			<!--
+	       		<rdf:Description rdf:about="{concat ($baseUri, '#', 'MakeAndModel')}">
+			-->
+	               		<rdf:type rdf:resource="&gr;ProductOrServiceModel"/>
+	               		<rdf:type rdf:resource="&oplcn;SoftwareProduct"/>
+				<xsl:apply-templates mode="manufacturer" /> 
+		               	<!-- TO DO
+		               	<rdfs:comment>!!#{manufacturer} #{modelNumber}</rdfs:comment>
+		               	-->
+	              	</rdf:Description>
+	       	</gr:hasMakeAndModel>
+		<xsl:apply-templates  />
+	</rdf:Description>
+  </xsl:template>
+
+  <xsl:template match="cnet:TechProduct">    
+	<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'TechProduct')}">
+	<!--
+	<rdf:Description rdf:about="{concat ($baseUri, '#', 'TechProduct')}">
+	-->
+		<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
+		<rdf:type rdf:resource="&oplcn;TechProduct" />
+       		<gr:hasMakeAndModel>
+	               	<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'MakeAndModel')}">
+			<!--
+	       		<rdf:Description rdf:about="{concat ($baseUri, '#', 'MakeAndModel')}">
+			-->
+	               		<rdf:type rdf:resource="&gr;ProductOrServiceModel"/>
+	               		<rdf:type rdf:resource="&oplcn;TechProduct"/>
+				<xsl:apply-templates mode="manufacturer" /> 
+		               	<!-- TO DO
+		               	<rdfs:comment>!!#{manufacturer} #{modelNumber}</rdfs:comment>
+		               	-->
+	              	</rdf:Description>
+	       	</gr:hasMakeAndModel>
+		<xsl:apply-templates  />
+	</rdf:Description>
+  </xsl:template>
+
+  <xsl:template match="cnet:SKU">
+  	<oplcn:sku><xsl:value-of select="."/></oplcn:sku>
+	<gr:hasStockKeepingUnit><xsl:value-of select="."/></gr:hasStockKeepingUnit>
+  </xsl:template>
+    
+  <!-- Applies to: TechProduct,  not to: SoftwareProduct -->
+  <xsl:template match="cnet:ImageURL">
+	<oplcn:image rdf:resource="{.}"/>
+  </xsl:template>
+
+  <!-- Applies to: TechProduct,  not to: SoftwareProduct -->
+  <xsl:template match="cnet:PriceURL">
+	<oplcn:CNETShopperCatalogEntry rdf:resource="{.}"/>
     </xsl:template>
     
-    <xsl:template match="Publisher">
+  <!-- Applies to: TechProduct,  not to: SoftwareProduct -->
+  <xsl:template match="cnet:ReviewURL">
+	<oplcn:CNETReview rdf:resource="{.}"/>
+  </xsl:template>
+
+  <!-- Applies to: TechProduct,  not to: SoftwareProduct -->
+  <xsl:template match="cnet:Manufacturer/cnet:Name" mode="manufacturer">
 		<gr:hasManufacturer>
-		  <gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'publisher')}">
-	    <rdfs:label><xsl:value-of select="concat('Publisher ', Name)"/></rdfs:label>
-            <gr:legalName><xsl:value-of select="Name"/></gr:legalName>
-            <id><xsl:value-of select="@id"/></id>
+		<gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Manufacturer')}">
+		<!--
+		<gr:BusinessEntity rdf:about="{concat ($baseUri, '#', 'Manufacturer')}">
+		-->
+			<rdfs:label><xsl:value-of select="."/></rdfs:label>
+			<gr:legalName><xsl:value-of select="."/></gr:legalName>
           </gr:BusinessEntity>
 		</gr:hasManufacturer>
     </xsl:template>
 	
-	<xsl:template match="Manufacturer">
+  <!-- Applies to: SoftwareProduct -->
+  <xsl:template match="cnet:Publisher" mode="manufacturer">
 		<gr:hasManufacturer>
-		  <gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'manufacturer')}">
-	    <rdfs:label><xsl:value-of select="concat('Manufacturer ', Name)"/></rdfs:label>
-            <gr:legalName><xsl:value-of select="Name"/></gr:legalName>
-            <id><xsl:value-of select="@id"/></id>
+		<gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'publisher')}">
+		<!--
+		<gr:BusinessEntity rdf:about="{concat ($baseUri, '#', 'publisher')}">
+		-->
+			<rdfs:label><xsl:value-of select="cnet:Name"/></rdfs:label>
+			<gr:legalName><xsl:value-of select="cnet:Name"/></gr:legalName>
+			<oplcn:publisherSite><xsl:value-of select="cnet:LinkURL"/></oplcn:publisherSite>	
           </gr:BusinessEntity>
 		</gr:hasManufacturer>
     </xsl:template>
-    <xsl:template match="PublishDate">
-		<dcterms:created>
-			<xsl:value-of select="."/>
-		</dcterms:created>
+    
+  <!-- Applies to: SoftwareProduct | TechProduct -->
+  <xsl:template match="cnet:TechProduct/cnet:Name | cnet:SoftwareProduct/cnet:Name">
+	<rdfs:label><xsl:value-of select="."/></rdfs:label>
+	<!-- <dc:title><xsl:value-of select="."/></dc:title> -->
+    </xsl:template>
+
+  <!-- Applies to: TechProduct, NOT to SoftwareProduct -->
+  <xsl:template match="cnet:Specs">
+  	<oplcn:specification><xsl:value-of select="string(.)"/></oplcn:specification>
     </xsl:template>
     
-    <xsl:template match="Specs">
-		<dc:description>
-			<xsl:value-of select="string(.)"/>
-		</dc:description>
-    </xsl:template>
-    <xsl:template match="Description">
-		<dc:description>
-			<xsl:value-of select="string(.)"/>
-		</dc:description>
-    </xsl:template>
-    
-    <xsl:template match="Price">
+  <!-- Applies to: TechProduct, NOT to SoftwareProduct -->
+  <xsl:template match="cnet:LowPrice" mode="offering">
 		<gr:hasPriceSpecification>
-		  <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'price')}">
-	    <rdfs:label><xsl:value-of select="concat('List Price of ', ., ' USD')"/></rdfs:label>
-		<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="translate (., '$', '')"/></gr:hasCurrencyValue>
+	    	<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'UnitPriceSpecification')}">
+	    	<!--
+		<gr:UnitPriceSpecification rdf:about="{concat ($baseUri, '#', 'UnitPriceSpecification')}">
+	    	-->
+			<rdfs:label>sale price</rdfs:label>
+			<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
             <gr:hasCurrency rdf:datatype="&xsd;string">USD</gr:hasCurrency>
-			<gr:valueAddedTaxIncluded rdf:datatype="&xsd;boolean">true</gr:valueAddedTaxIncluded>
+			<xsl:choose>
+				<xsl:when test="string(.) = string(../cnet:HighPrice)">
+		<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="translate (., '$', '')"/></gr:hasCurrencyValue>
+				</xsl:when>
+				<xsl:otherwise>
+					<gr:hasMinCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="translate (., '$', '')"/></gr:hasMinCurrencyValue>
+					<gr:hasMaxCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="translate (../cnet:HighPrice, '$', '')"/></gr:hasMaxCurrencyValue>
+				</xsl:otherwise>
+			</xsl:choose>
           </gr:UnitPriceSpecification>
 		</gr:hasPriceSpecification>
     </xsl:template>
-    <xsl:template match="LowPrice">
-		<gr:hasPriceSpecification>
-		  <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'lowPrice')}">
-	    <rdfs:label><xsl:value-of select="concat('List Low Price of ', ., ' USD')"/></rdfs:label>
-		<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="translate (., '$', '')"/></gr:hasCurrencyValue>
-            <gr:hasCurrency rdf:datatype="&xsd;string">USD</gr:hasCurrency>
-			<gr:valueAddedTaxIncluded rdf:datatype="&xsd;boolean">true</gr:valueAddedTaxIncluded>
-          </gr:UnitPriceSpecification>
-		</gr:hasPriceSpecification>
-    </xsl:template>
     
-    <xsl:template match="HighPrice">
+  <!-- ................................................ -->
+
+    <!-- Valid for SoftwareProduct -->
+    <xsl:template match="cnet:Price">
 		<gr:hasPriceSpecification>
-		  <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'highPrice')}">
-	    <rdfs:label><xsl:value-of select="concat('List High Price of ', ., ' USD')"/></rdfs:label>
+	    <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'price')}">
+	    <!--
+	    <gr:UnitPriceSpecification rdf:about="{concat ($baseUri, '#', 'price')}">
+	    -->
+		<rdfs:label><xsl:value-of select="concat('List Price of ', ., ' USD')"/></rdfs:label>
 		<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="translate (., '$', '')"/></gr:hasCurrencyValue>
             <gr:hasCurrency rdf:datatype="&xsd;string">USD</gr:hasCurrency>
 			<gr:valueAddedTaxIncluded rdf:datatype="&xsd;boolean">true</gr:valueAddedTaxIncluded>
@@ -170,20 +289,26 @@
 		</gr:hasPriceSpecification>
     </xsl:template>
 
-
-    <xsl:template match="ImageURL">
-		<foaf:img rdf:resource="{.}"/>
-    </xsl:template>
-    <xsl:template match="LinkURL">
+    <!-- Valid for SoftwareProduct - but beware 2 possible matches -->
+    <xsl:template match="cnet:LinkURL">
 		<bibo:link rdf:resource="{.}"/>
     </xsl:template>
-    <xsl:template match="PriceURL">
-		<rdfs:seeAlso rdf:resource="{.}"/>
-    </xsl:template>
-	<xsl:template match="ReviewURL">
-		<rdfs:seeAlso rdf:resource="{.}"/>
+
+    <!-- NOT valid for SoftwareProduct -->
+    <xsl:template match="cnet:PublishDate">
+	<dcterms:created>
+	    <xsl:value-of select="."/>
+	</dcterms:created>
     </xsl:template>
 
+    <!-- Applies to: SoftwareProduct, NOT to TechProduct  -->
+    <xsl:template match="Description">
+	<dc:description>
+	    <xsl:value-of select="string(.)"/>
+	</dc:description>
+    </xsl:template>
+
+    <!-- Aziz's stuff:
         <xsl:template match="*[starts-with(.,'http://') or starts-with(.,'urn:')]">
     <xsl:if test="string-length(.) &gt; 0">
 		<xsl:element namespace="{$ns}" name="{name()}">
@@ -209,6 +334,12 @@
 	</xsl:element>
 	</xsl:if>
     </xsl:template>
+    End: Aziz's stuff -->
     
+    <!-- Check these modes are valid -->
+    <xsl:template match="text()|@*"/>
+    <xsl:template match="text()|@*" mode="offering" />
+    <xsl:template match="text()|@*" mode="normal" />
+    <xsl:template match="text()|@*" mode="manufacturer" />
 
 </xsl:stylesheet>
