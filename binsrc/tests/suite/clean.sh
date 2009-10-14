@@ -90,6 +90,7 @@ rm -f wierr.rep3
 rm -f witemp.cfg
 rm -f xmemdump.txt
 rm -f xslt.vsp
+rm -f virtuoso.cpt-after-recov
 
 #
 #  Removing directories
