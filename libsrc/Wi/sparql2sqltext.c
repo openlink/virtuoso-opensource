@@ -4583,7 +4583,7 @@ ssg_print_fld_uri_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t
     {
       int col_ctr, col_count;
       caddr_t *split;
-      caddr_t arg_dtps = field->qmvFormat->qmfArgDtps;
+      caddr_t arg_dtps = (caddr_t) field->qmvFormat->qmfArgDtps;
       col_count = BOX_ELEMENTS (field->qmvColumns);
       split = ssg_const_is_good_for_split_into_short (ssg, (SPART *)uri, 1, field->qmvFormat);
       for (col_ctr = 0; col_ctr < col_count; col_ctr++)
@@ -6234,9 +6234,9 @@ from_printed:
           ssg_prin_id (ssg, qmft->qmvftColumnName);
           ssg_puts (", ");
           if (DV_STRING == DV_TYPE_OF (ft_arg1))
-            ssg_print_box_as_sql_atom (ssg, ft_arg1, SQL_ATOM_UTF8_ONLY);
+            ssg_print_box_as_sql_atom (ssg, (ccaddr_t) ft_arg1, SQL_ATOM_UTF8_ONLY);
           else
-          ssg_print_scalar_expn (ssg, ft_arg1, SSG_VALMODE_SQLVAL, NULL);
+            ssg_print_scalar_expn (ssg, ft_arg1, SSG_VALMODE_SQLVAL, NULL);
           for (argctr = 2; argctr < argcount; argctr += 2)
             {
               switch ((ptrlong)(args[argctr]))
