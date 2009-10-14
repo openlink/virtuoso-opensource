@@ -5,3 +5,4 @@
 xmlparse
 Makefile.in
 Makefile
+xhtml_ent.h
