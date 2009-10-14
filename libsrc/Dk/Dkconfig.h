@@ -28,7 +28,8 @@
 #ifndef _DKCONFIG_H
 #define _DKCONFIG_H
 
-#if defined (HAVE_CONFIG_H)
+#if defined (HAVE_CONFIG_H) && !defined (_CONFIG_H)
+#define _CONFIG_H
 #include "config.h"
 #endif
 
