@@ -28,8 +28,9 @@
 #ifndef __V_ODBCINC_H
 #define __V_ODBCINC_H
 
-#ifdef HAVE_CONFIG_H
-# include <config.h>
+#if defined(HAVE_CONFIG_H) && !defined(_CONFIG_H)
+#define _CONFIG_H
+# include "config.h"
 #endif
 
 #if (defined (WIN32) || defined (UNIX_ODBC)) && !defined (UDBC)
