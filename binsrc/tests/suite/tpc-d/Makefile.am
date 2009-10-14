@@ -26,7 +26,7 @@ TESTS_ENVIRONMENT=PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
 	PORT=$(PORT) HOME="$(TOP)" JDK2="$(JDK2)" JDK3="$(JDK3)" HOST=localhost SERVER=virtuoso-t
 
 clean-local:
-	$(RM) -f tpcd.db tpcd.log tpcd.pxa tpcd.trx
+	$(RM) -f tpcd.db tpcd.log tpcd.pxa tpcd.trx tpcd.tdb
 	$(RM) -f tpcd.output tpcd.ini
 
 # ----------------------------------------------------------------------
