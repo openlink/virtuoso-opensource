@@ -4862,8 +4862,8 @@ bif_http_internal_redirect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
       if (is_proxy_request && body_like_post && NULL == ws->ws_stream_params)
 	{
 	  /* set the stream params */
-	  ws->ws_stream_params = strses_allocate ();
-	  strses_write_out (ws->ws_raw_post, ws->ws_stream_params);
+	  ws->ws_stream_params = (caddr_t *) strses_allocate ();
+	  strses_write_out (ws->ws_raw_post, (dk_session_t *) ws->ws_stream_params);
 	}
     }
 #endif

@@ -2571,7 +2571,7 @@ ssg_const_is_good_for_split_into_short (spar_sqlgen_t *ssg, SPART *tree, int tre
   if (NULL != strstr (sff, "%{")) /* Macro expansion may vary between compilation time and execution time(s), no ho magic can be made once. */
     return NULL;
   strg = SPAR_LIT_OR_QNAME_VAL (tree);
-  split = sprintf_inverse_ex (NULL, &err, strg, sff, 1, val_dtp_strg);
+  split = sprintf_inverse_ex (NULL, &err, strg, sff, 1, (caddr_t) val_dtp_strg);
   if (NULL != err)
     {
       dk_free_tree (err);

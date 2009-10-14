@@ -2947,7 +2947,7 @@ sparp_query_parse (char * str, spar_query_env_t *sparqre, int rewrite_all)
   spar_fill_lexem_bufs (sparp);
   if (NULL != sparp->sparp_sparqre->sparqre_catched_error)
     return sparp;
-  sparp->sparp_sg = t_alloc (sizeof (sparp_globals_t));
+  sparp->sparp_sg = (sparp_globals_t *) t_alloc (sizeof (sparp_globals_t));
   memset (sparp->sparp_sg, 0, sizeof (sparp_globals_t));
   QR_RESET_CTX
     {

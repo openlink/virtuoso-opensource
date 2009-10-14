@@ -1635,7 +1635,6 @@ http_ttl_or_nt_write_xe (dk_session_t *ses, query_instance_t *qi, xml_entity_t *
       strses_free (tmp_ses);
       sqlr_new_error ("22023", "HT057", "The serialization of XML literal as TURTLE or NT is longer than 10Mb, this is not supported");
     }
-  else
     tmp_utf8_box = strses_string (tmp_ses);
   strses_free (tmp_ses);
   session_buffered_write_char ('"', ses);
@@ -2628,7 +2627,7 @@ literal_elt_printed:
                 session_buffered_write (ses, temp, strlen (temp));
               }
             else
-              dks_sqlval_esc_write (qi, ses, val, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_PTEXT);
+              dks_sqlval_esc_write ((caddr_t *) qi, ses, val, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_PTEXT);
             SES_PRINT (ses, "</literal>");
           }
         }
