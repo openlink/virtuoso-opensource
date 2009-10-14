@@ -542,7 +542,7 @@ SPAR_PARAMNAME	((([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|("::"{SPAR_SQL
 
 	/* Name lexems */
 
-<SPARQL>"<"([^<>''{}|^`\001-\040])*">"	{
+<SPARQL>"<"([^<>"{}|^`\001-\040\\])*">"	{
     sparyylval.box = t_box_dv_uname_nchars (sparyytext + 1, sparyyleng - 2);
     return Q_IRI_REF;
   }
