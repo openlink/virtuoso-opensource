@@ -1505,7 +1505,7 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
 #ifdef DEBUG
               sparp_find_triple_of_var_or_retval (sparp, NULL, tree, 1); /* to debug the bad search */
 #endif
-              spar_error (sparp, "SPARQL optimizer can not generate SQL code for variable ?%.200s at line %d of query, the variable can be misused", tree->_.var.vname, (int)(tree->srcline));
+              spar_error (sparp, "SPARQL optimizer can not generate SQL code for variable ?%.200s at line %ld of query, the variable can be misused", tree->_.var.vname, (long) unbox(tree->srcline));
             }
           tr_idx = tree->_.var.tr_idx;
           if (SPART_TRIPLE_FIELDS_COUNT <= tr_idx)

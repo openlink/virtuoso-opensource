@@ -3005,12 +3005,12 @@ sparp_refresh_triple_cases (sparp_t *sparp, SPART *triple)
   if ((NULL == triple->_.triple.tc_list) &&
     (0 == new_cases_count) &&
     sparp->sparp_env->spare_signal_void_variables )
-    spar_error (sparp, "No one quad map pattern is suitable for GRAPH %s { %s %s %s } triple at line %d",
+    spar_error (sparp, "No one quad map pattern is suitable for GRAPH %s { %s %s %s } triple at line %ld",
       spar_dbg_string_of_triple_field (sparp, graph),
       spar_dbg_string_of_triple_field (sparp, triple->_.triple.tr_subject),
       spar_dbg_string_of_triple_field (sparp, triple->_.triple.tr_predicate),
       spar_dbg_string_of_triple_field (sparp, triple->_.triple.tr_object),
-      triple->srcline );
+      (long) unbox(triple->srcline));
   for (field_ctr = SPART_TRIPLE_FIELDS_COUNT; field_ctr--; /*no step*/)
     {
       ssg_valmode_t field_valmode = SSG_VALMODE_AUTO;
