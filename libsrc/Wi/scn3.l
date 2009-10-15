@@ -971,7 +971,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 <SPARQL_SKIP>"}"	TOKCLOSE_SKIP ('}','}');
 <SPARQL_SKIP>"["	TOKOPEN_SKIP ('[',']');
 <SPARQL_SKIP>"]"	TOKCLOSE_SKIP (']',']');
-<SPARQL_SKIP>"<"([^<>''{}|^`\001-\040])*">"		{ TOK_SKIP; }
+<SPARQL_SKIP>"<"([^<>"{}|^`\001-\040\\])*">"		{ TOK_SKIP; }
 <SPARQL_SKIP>([""][^""\\\n]*[""])|([''][^''\\\n]*[''])	{ TOK_SKIP; }
 
 <SPARQL_SKIP>['']['']['']		{ BEGIN(SPARQL_SSSQ_SKIP); TOK_SKIP; }
