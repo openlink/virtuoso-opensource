@@ -404,7 +404,7 @@ ol_remap_trace (ol_backup_context_t * ctx)
 	  dp_addr_t l = LONG_REF (buf->bd_buffer + inx);
 	  dp_addr_t p = LONG_REF (buf->bd_buffer + inx + 4);
 	  if (l)
-	    fprintf (obackup_trace, "L=%d P=%d\n", l, p);
+	    fprintf (obackup_trace, "L=%ld P=%ld\n", (long)l, (long)p);
 	}
       buf = buf->bd_next;
     }
@@ -652,7 +652,7 @@ db_backup_pages (ol_backup_context_t * backup_ctx, dp_addr_t start_dp, dp_addr_t
 	continue;
     backup:
       if (obackup_trace)
-	fprintf (obackup_trace, "W L=%d P=%d\n", log_page, page_no);
+	fprintf (obackup_trace, "W L=%ld P=%ld\n", (long)log_page, (long)page_no);
       buf->bd_page = log_page ? log_page : page_no;
 	  buf->bd_physical_page = page_no;
 	  buf->bd_storage = storage;

@@ -194,6 +194,7 @@ typedef void* yyscan_t;
 #endif
 
 extern int ttlyyparse (ttlp_t *ttlp_arg, yyscan_t scanner);
+extern int nqyyparse (ttlp_t *ttlp_arg, yyscan_t scanner);
 extern void ttlyyerror_impl (ttlp_t *ttlp_arg, const char *raw_text, const char *strg);
 extern void ttlyyerror_impl_1 (ttlp_t *ttlp_arg, const char *raw_text, int yystate, short *yyssa, short *yyssp, const char *strg);
 

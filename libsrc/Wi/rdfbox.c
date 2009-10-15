@@ -2763,7 +2763,7 @@ literal_elt_printed:
                 session_buffered_write (ses, temp, strlen (temp));
               }
             else
-              dks_sqlval_esc_write (qi, ses, val, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_PTEXT);
+              dks_sqlval_esc_write ((caddr_t *) qi, ses, val, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_PTEXT);
             SES_PRINT (ses, "</literal>");
           }
         }

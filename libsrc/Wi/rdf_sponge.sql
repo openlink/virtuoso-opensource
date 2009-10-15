@@ -71,7 +71,7 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
     return 0;
   if (isiri_id (val))
     {
-      if (val >= min_bnode_iri_id ())
+      if (is_bnode_iri_id (val))
         return 0;
       val := id_to_iri (val);
     }
@@ -108,9 +108,17 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
   return 0;
   }
 end_of_sponge:
+  commit work;
   recov := get_keyword_ucase ('get:error-recovery', env);
   if (recov is not null)
-    call (recov) (__SQL_STATE, __SQL_MESSAGE);
+    {
+      whenever sqlstate '*' goto end_of_recov;
+      call (recov) (__SQL_STATE, __SQL_MESSAGE);
+      commit work;
+      return 0;
+end_of_recov:
+      rollback work;
+    }
   return 0;
 }
 ;
@@ -230,7 +238,9 @@ DB.DBA.RDF_GRAB (
     }
   commit work;
   aq_wait_all (aq);
+  commit work;
   DB.DBA.RDF_FT_INDEX_GRABBED (grabbed, grab_params);
+  commit work;
   if (dict_size (grabbed) >= doc_limit)
     goto final_exec;
   for (iter_ctr := 0; iter_ctr <= depth; iter_ctr := iter_ctr + 1)
@@ -243,7 +253,7 @@ DB.DBA.RDF_GRAB (
         signal (stat, msg);
       rcount := length (rset);
       colcount := length (metas[0]);
-      -- dbg_obj_princ ('DB.DBA.RDF_GRAB: rset=', rset);
+      -- dbg_obj_princ ('DB.DBA.RDF_GRAB ():, iter ', iter_ctr, '/', depth, ' rset is ', rcount, ' rows * ', colcount, ' cols');
       for (rctr := 0; rctr < rcount; rctr := rctr + 1)
         {
           declare colctr integer;
@@ -252,9 +262,9 @@ DB.DBA.RDF_GRAB (
               declare val any;
               declare dest varchar;
               val := rset[rctr][colctr];
-              if (isiri_id (val) and __rgs_ack_cbk (val, uid, 4))
+              if (is_named_iri_id (val) and __rgs_ack_cbk (val, uid, 4))
                 {
-                  -- dbg_obj_princ ('DB.DBA.RDF_GRAB (): dynamic IRI aq_request ', vector (val, '...', grab_params, doc_limit));
+                  -- dbg_obj_princ ('DB.DBA.RDF_GRAB ():, iter ', iter_ctr, ', row ', rctr, ', col ', colctr, ', vector (', val, '=<', id_to_iri(val), ',..., ', grab_params, doc_limit, ')');
                   --DB.DBA.RDF_GRAB_SINGLE_ASYNC (val, grabbed, grab_params, doc_limit);
                   aq_request (aq, 'DB.DBA.RDF_GRAB_SINGLE_ASYNC', vector (val, grabbed, grab_params, doc_limit));
                   if (dict_size (grabbed) >= doc_limit)
@@ -264,7 +274,9 @@ DB.DBA.RDF_GRAB (
         }
       commit work;
       aq_wait_all (aq);
+      commit work;
       DB.DBA.RDF_FT_INDEX_GRABBED (grabbed, grab_params);
+      commit work;
       if (old_doc_count = dict_size (grabbed))
         goto final_exec;
     }

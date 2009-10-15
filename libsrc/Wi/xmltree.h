@@ -885,6 +885,7 @@ typedef struct xparse_ctx_s
 } xparse_ctx_t;
 
 extern void xp_pop_rdf_locals (xparse_ctx_t *xp);
+extern void xp_pop_rdfa_locals (xparse_ctx_t *xp);
 extern xp_rdfxml_locals_t *xp_push_rdf_locals (xparse_ctx_t *xp);
 
 extern void xp_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata);

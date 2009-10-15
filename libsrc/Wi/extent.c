@@ -384,7 +384,7 @@ dbs_extent_free (dbe_storage_t * dbs, dp_addr_t ext_dp, int must_be_in_em)
 {
   extent_map_t * em;
   extent_t * ext;
-  int32 word, bit;
+  int word, bit;
   uint32 * arr, page_no;
   ASSERT_IN_DBS (dbs);
   dbs_locate_ext_bit (dbs, ext_dp, &arr, &page_no, &word, &bit);
@@ -1448,7 +1448,7 @@ em_compact (extent_map_t * em, int free_em)
     }
   if (!free_em)
     {
-      sprintf (str, "%d", em->em_buf->bd_page);
+      sprintf (str, "%ld", (long) em->em_buf->bd_page);
       dbs_registry_set (em->em_dbs, em->em_name, str, 0);
     }
   else
@@ -1514,7 +1514,7 @@ void
 em_save_dp (extent_map_t * em)
 {
   char xx[15];
-  sprintf (xx, "%d", em->em_buf->bd_page);
+  sprintf (xx, "%ld", (long) em->em_buf->bd_page);
   IN_TXN;
   dbs_registry_set (em->em_dbs, em->em_name, xx, 0);
   LEAVE_TXN;

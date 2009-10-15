@@ -1505,7 +1505,7 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
 #ifdef DEBUG
               sparp_find_triple_of_var_or_retval (sparp, NULL, tree, 1); /* to debug the bad search */
 #endif
-              spar_error (sparp, "SPARQL optimizer can not generate SQL code for variable ?%.200s at line %d of query, the variable can be misused", tree->_.var.vname, (int)(tree->srcline));
+              spar_error (sparp, "SPARQL optimizer can not generate SQL code for variable ?%.200s at line %ld of query, the variable can be misused", tree->_.var.vname, (long) unbox(tree->srcline));
             }
           tr_idx = tree->_.var.tr_idx;
           if (SPART_TRIPLE_FIELDS_COUNT <= tr_idx)
@@ -2571,7 +2571,7 @@ ssg_const_is_good_for_split_into_short (spar_sqlgen_t *ssg, SPART *tree, int tre
   if (NULL != strstr (sff, "%{")) /* Macro expansion may vary between compilation time and execution time(s), no ho magic can be made once. */
     return NULL;
   strg = SPAR_LIT_OR_QNAME_VAL (tree);
-  split = sprintf_inverse_ex (NULL, &err, strg, sff, 1, val_dtp_strg);
+  split = sprintf_inverse_ex (NULL, &err, strg, sff, 1, (caddr_t) val_dtp_strg);
   if (NULL != err)
     {
       dk_free_tree (err);
@@ -4583,7 +4583,7 @@ ssg_print_fld_uri_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t
     {
       int col_ctr, col_count;
       caddr_t *split;
-      caddr_t arg_dtps = field->qmvFormat->qmfArgDtps;
+      caddr_t arg_dtps = (caddr_t) field->qmvFormat->qmfArgDtps;
       col_count = BOX_ELEMENTS (field->qmvColumns);
       split = ssg_const_is_good_for_split_into_short (ssg, (SPART *)uri, 1, field->qmvFormat);
       for (col_ctr = 0; col_ctr < col_count; col_ctr++)
@@ -4648,10 +4648,11 @@ ssg_print_fld_var_restrictions_ex (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_valu
         ssg_print_tmpl (ssg, field->qmvFormat, "(^{alias-0}^.^{column-0}^ is not null)", tabid, field, NULL, NULL_ASNAME);
     }
 /* SPONGE_SEEALSO () as a fake filter for a variable */
-  if ((SPAR_VARIABLE == SPART_TYPE (fld_tree)) &&
+  if ((NULL != env->spare_grab.rgc_sa_preds) &&
+    ssg->ssg_seealso_enabled &&
+    (SPAR_VARIABLE == SPART_TYPE (fld_tree)) &&
     !(SPART_VARR_IS_LIT & tree_restr) &&
     !(SPART_VARR_EXTERNAL & tree_restr) &&
-    (NULL != env->spare_grab.rgc_sa_preds) &&
     ((0 <= dk_set_position_of_string (env->spare_grab.rgc_sa_vars, fld_tree->_.var.vname)) ||
       (0 <= dk_set_position_of_string (env->spare_grab.rgc_vars, fld_tree->_.var.vname)) ) )
     {
@@ -6231,7 +6232,7 @@ from_printed:
           ssg_prin_id (ssg, qmft->qmvftColumnName);
           ssg_puts (", ");
           if (DV_STRING == DV_TYPE_OF (ft_arg1))
-            ssg_print_box_as_sql_atom (ssg, ft_arg1, SQL_ATOM_UTF8_ONLY);
+            ssg_print_box_as_sql_atom (ssg, (ccaddr_t) ft_arg1, SQL_ATOM_UTF8_ONLY);
           else
             ssg_print_scalar_expn (ssg, ft_arg1, SSG_VALMODE_SQLVAL, NULL);
           for (argctr = 2; argctr < argcount; argctr += 2)

@@ -1767,7 +1767,7 @@ pl_release (page_lock_t * pl, lock_trx_t * lt, buffer_desc_t * buf)
       if (0 == pl->pl_finish_ref_count)
 	pl_free (pl);
       else
-	printf (" hold before free of pl L=%d with finish ref count\n", pl->pl_page);
+	printf (" hold before free of pl L=%ld with finish ref count\n", (long) pl->pl_page);
       mutex_leave (pl_ref_count_mtx);
     }
   else

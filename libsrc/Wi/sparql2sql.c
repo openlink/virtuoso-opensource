@@ -3005,12 +3005,12 @@ sparp_refresh_triple_cases (sparp_t *sparp, SPART *triple)
   if ((NULL == triple->_.triple.tc_list) &&
     (0 == new_cases_count) &&
     sparp->sparp_env->spare_signal_void_variables )
-    spar_error (sparp, "No one quad map pattern is suitable for GRAPH %s { %s %s %s } triple at line %d",
+    spar_error (sparp, "No one quad map pattern is suitable for GRAPH %s { %s %s %s } triple at line %ld",
       spar_dbg_string_of_triple_field (sparp, graph),
       spar_dbg_string_of_triple_field (sparp, triple->_.triple.tr_subject),
       spar_dbg_string_of_triple_field (sparp, triple->_.triple.tr_predicate),
       spar_dbg_string_of_triple_field (sparp, triple->_.triple.tr_object),
-      triple->srcline );
+      (long) unbox(triple->srcline));
   for (field_ctr = SPART_TRIPLE_FIELDS_COUNT; field_ctr--; /*no step*/)
     {
       ssg_valmode_t field_valmode = SSG_VALMODE_AUTO;
@@ -4952,7 +4952,7 @@ sparp_rewrite_all (sparp_t *sparp, int safely_copy_retvals)
   if (SPAR_QM_SQL_FUNCALL == SPART_TYPE (sparp->sparp_expr))
     return;
   sparp_rewrite_retvals (sparp, safely_copy_retvals);
-  if (sparp->sparp_env->spare_grab.rgc_pview_mode)
+  if ((sparp->sparp_env->spare_grab.rgc_pview_mode) && (NULL == sparp->sparp_parent_sparp))
     {
       sparp_rewrite_grab (sparp);
       return;
@@ -5588,7 +5588,9 @@ sparp_rewrite_grab (sparp_t *sparp)
       ssg.ssg_sparp = sub_sparp;
       ssg.ssg_tree = sub_sparp->sparp_expr;
       ssg.ssg_sources = ssg.ssg_tree->_.req_top.sources; /*!!!TBD merge with environment */
+      ssg.ssg_seealso_enabled = (sub_sparp_ctr < 2) ? 1 : 0;
       ssg_make_sql_query_text (&ssg);
+      ssg.ssg_seealso_enabled = 0;
       sql_texts [sub_sparp_ctr] = t_strses_string (ssg.ssg_out);
       strses_free (ssg.ssg_out);
     }

@@ -3841,7 +3841,7 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query,
 	      if (inv_cond)
 		{
 		  /* when there is aggregate and data independent condition, put the first precode as the precode of the data independent condition because the aggregate that is evaluated anyhow also for false cond may ref data independent things assigned there. */
-		  data_source_t * nxt = qn_next (inv_cond);
+		  data_source_t * nxt = qn_next ((data_source_t *) inv_cond);
 		  if (nxt)
 		    {
 		      inv_cond->src_gen.src_pre_code = nxt->src_pre_code;

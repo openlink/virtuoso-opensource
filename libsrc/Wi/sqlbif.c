@@ -253,7 +253,7 @@ bif_strses_or_http_ses_arg (caddr_t * qst, state_slot_t ** args, int nth, const 
       return http_ses;
     }
   if (DV_STRING_SESSION == dtp)
-    return arg;
+    return (dk_session_t *) arg;
   sqlr_new_error ("22023", "SR002",
     "Function %s needs a string output (or an integer for HTTP output) as argument %d, not an arg of type %s (%d)",
     func, nth + 1, dv_type_title (dtp), dtp);

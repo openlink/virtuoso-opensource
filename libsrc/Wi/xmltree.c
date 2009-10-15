@@ -4005,7 +4005,7 @@ xt_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, int h
 	    SES_PRINT (ses, "]");
 	    goto printed;
 	  }
-        sprintf (buf, "(line %d) ", (int) (ptrlong) tree->srcline);
+        sprintf (buf, "(line %ld) ", (long) unbox(tree->srcline));
         SES_PRINT (ses, buf);
 	childrens = BOX_ELEMENTS (tree);
 	switch (tree->type)

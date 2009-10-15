@@ -370,7 +370,7 @@ itc_free (it_cursor_t * it)
 {
   if (ITC_PLACEHOLDER == it->itc_type)
     {
-      plh_free (it);
+      plh_free ((placeholder_t *)it);
       return;
     }
   itc_clear (it);
