@@ -2162,6 +2162,49 @@ create procedure DB.DBA.TTLP_EV_REPORT_DEFAULT (
 }
 ;
 
+create procedure DB.DBA.TTLP_EV_TRIPLE_XLAT (
+  inout g_iid IRI_ID, inout s_uri varchar, inout p_uri varchar,
+  inout o_uri varchar,
+  inout app_env any )
+{
+  declare xlat_cbk, s_xlat, o_xlat varchar;
+  declare xlat_env any;
+  -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_XLAT (', g_iid, s_uri, p_uri, o_uri, ');');
+  xlat_cbk := app_env[3];
+  xlat_env := app_env[4];
+  s_xlat := call(xlat_cbk)(s_uri, xlat_env);
+  o_xlat := call(xlat_cbk)(o_uri, xlat_env);
+  DB.DBA.TTLP_EV_TRIPLE (g_iid, s_xlat, p_uri, o_xlat, app_env);
+}
+;
+
+create procedure DB.DBA.TTLP_EV_TRIPLE_L_XLAT (
+  inout g_iid IRI_ID, inout s_uri varchar, inout p_uri varchar,
+  inout o_val any, inout o_type varchar, inout o_lang varchar,
+  inout app_env any )
+{
+  declare xlat_cbk, s_xlat varchar;
+  declare xlat_env any;
+  -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_L_XLAT (', g_iid, s_uri, p_uri, o_val, o_type, o_lang, app_env, ');');
+  xlat_cbk := app_env[3];
+  xlat_env := app_env[4];
+  s_xlat := call(xlat_cbk)(s_uri, xlat_env);
+  DB.DBA.TTLP_EV_TRIPLE_L (g_iid, s_xlat, p_uri, o_val, o_type, o_lang, app_env);
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.TTLP_XLAT_CONCAT (
+  inout iri varchar, inout env any )
+{
+  if (__tag (iri) <> __tag of varchar)
+    return iri;
+  if (iri like 'http://%')
+    return concat (env, subseq (iri, 7));
+  return iri;
+}
+;
+
 create procedure DB.DBA.TTLP (in strg varchar, in base varchar, in graph varchar := null, in flags integer := 0)
 {
   declare app_env any;
@@ -2183,6 +2226,35 @@ create procedure DB.DBA.TTLP (in strg varchar, in base varchar, in graph varchar
       'DB.DBA.TTLP_EV_GET_IID',
       'DB.DBA.TTLP_EV_TRIPLE',
       'DB.DBA.TTLP_EV_TRIPLE_L',
+      'DB.DBA.TTLP_EV_COMMIT',
+      'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
+    app_env);
+}
+;
+
+create procedure DB.DBA.TTLP_WITH_IRI_TRANSLATION (in strg varchar, in base varchar, in graph varchar, in flags integer,
+	in log_enable integer, in transactional integer,
+        in iri_xlate_cbk varchar, in iri_xlate_env any )
+{
+  declare app_env any;
+  if (graph = '')
+    signal ('22023', 'Empty string is not a valid graph IRI in DB.DBA.TTLP()');
+  else if (graph is null)
+    {
+      graph := base;
+      if ((graph is null) or (graph = ''))
+        signal ('22023', 'DB.DBA.TTLP() requires a valid IRI as a base argument if graph is not specified');
+    }
+  if (126 = __tag (strg))
+    strg := cast (strg as varchar);
+  app_env := vector (flags, null, __max (length (strg) / 100, 100000), iri_xlate_cbk, iri_xlate_env);
+  return rdf_load_turtle (strg, base, graph, flags,
+    vector (
+      'DB.DBA.TTLP_EV_NEW_GRAPH',
+      'DB.DBA.TTLP_EV_NEW_BLANK',
+      'DB.DBA.TTLP_EV_GET_IID',
+      'DB.DBA.TTLP_EV_TRIPLE_XLAT',
+      'DB.DBA.TTLP_EV_TRIPLE_L_XLAT',
       'DB.DBA.TTLP_EV_COMMIT',
       'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
     app_env);
@@ -2390,6 +2462,35 @@ create procedure DB.DBA.RDF_LOAD_RDFA (in strg varchar, in base varchar, in grap
       'DB.DBA.TTLP_EV_GET_IID',
       'DB.DBA.TTLP_EV_TRIPLE',
       'DB.DBA.TTLP_EV_TRIPLE_L',
+      'DB.DBA.TTLP_EV_COMMIT',
+      'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
+    app_env,
+    base );
+  return graph;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_RDFA_WITH_IRI_TRANSLATION (in strg varchar, in base varchar, in graph varchar, in xml_parse_mode integer,
+  in iri_xlate_cbk varchar, in iri_xlate_env any )
+{
+  declare app_env any;
+  if (graph = '')
+    signal ('22023', 'Empty string is not a valid graph IRI in DB.DBA.RDF_LOAD_RDFA_WITH_IRI_TRANSLATION ()');
+  else if (graph is null)
+    {
+      graph := base;
+      if ((graph is null) or (graph = ''))
+        signal ('22023', 'DB.DBA.RDF_LOAD_RDFA_WITH_IRI_TRANSLATION () requires a valid IRI as a base argument if graph is not specified');
+    }
+  app_env := vector (null, null, __max (length (strg) / 100, 100000), iri_xlate_cbk, iri_xlate_env);
+  rdf_load_rdfxml (strg, bit_or (2, bit_shift (xml_parse_mode, 8)),
+    graph,
+    vector (
+      'DB.DBA.TTLP_EV_NEW_GRAPH',
+      'DB.DBA.TTLP_EV_NEW_BLANK',
+      'DB.DBA.TTLP_EV_GET_IID',
+      'DB.DBA.TTLP_EV_TRIPLE_XLAT',
+      'DB.DBA.TTLP_EV_TRIPLE_L_XLAT',
       'DB.DBA.TTLP_EV_COMMIT',
       'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
     app_env,
@@ -9940,7 +10041,10 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.TTLP_EV_GET_IID to SPARQL_UPDATE',
     'grant execute on DB.DBA.TTLP_EV_TRIPLE to SPARQL_UPDATE',
     'grant execute on DB.DBA.TTLP_EV_TRIPLE_L to SPARQL_UPDATE',
+    'grant execute on DB.DBA.TTLP_EV_TRIPLE_XLAT to SPARQL_UPDATE',
+    'grant execute on DB.DBA.TTLP_EV_TRIPLE_L_XLAT to SPARQL_UPDATE',
     'grant execute on DB.DBA.TTLP to SPARQL_UPDATE',
+    'grant execute on DB.DBA.TTLP_WITH_IRI_TRANSLATION to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_TTL2HASH_EXEC_NEW_GRAPH to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TTL2HASH_EXEC_NEW_BLANK to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TTL2HASH_EXEC_GET_IID to SPARQL_SELECT',
@@ -9948,6 +10052,8 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TTL2HASH to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_LOAD_RDFXML to SPARQL_UPDATE',
+    'grant execute on DB.DBA.RDF_LOAD_RDFA to SPARQL_UPDATE',
+    'grant execute on DB.DBA.RDF_LOAD_RDFA_WITH_IRI_TRANSLATION to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_RDFXML_TO_DICT to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_LONG_TO_TTL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_TTL to SPARQL_SELECT',
