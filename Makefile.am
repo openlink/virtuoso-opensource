@@ -20,6 +20,8 @@
 #  
 
 AUTOMAKE_OPTIONS	= gnu
+ACLOCAL_AMFLAGS 	= -I binsrc/config
+
 
 SUBDIRS = . docsrc libsrc binsrc appsrc
 
