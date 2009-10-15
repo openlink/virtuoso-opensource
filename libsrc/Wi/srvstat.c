@@ -940,7 +940,7 @@ hic_status ()
 	  rep_printf (" %s ", col ? col->col_name : "xx");
 	}
 #ifdef NEW_HASH
-      rep_printf ("\n     %d pages %d entries %d reuses %d busy %d src pages %s %X %X\n",
+      rep_printf ("\n     %d pages " BOXINT_FMT " entries %d reuses %d busy %d src pages %s %X %X\n",
 		  it_remap_count (it),
 	  it->it_hi->hi_count,
 	  it->it_hi_reuses,
