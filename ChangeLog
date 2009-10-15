@@ -1,3 +1,148 @@
+2009-10-14 21:18  source
+
+	* Fixed indent
+
+2009-10-14 21:17  source
+
+	* Fixed support for single quote in IRI_REF
+
+2009-10-14 15:22  source
+
+	* Fixed compiler warnings
+
+2009-10-14 14:32  source
+
+	* Added files to ignore
+
+2009-10-14 14:31  source
+
+	* Fixed compiler warnings due to multiple include of config.h
+
+2009-10-14 14:13  source
+
+	* Added missing file to clean list
+
+2009-10-14 14:11  source
+
+	* Added missing file to clean
+
+2009-10-14 11:15  source
+
+	* Fixed GoodRelations
+	* Added topics for Vendor and Product
+
+2009-10-13 18:42  source
+
+	* Fixed tests for new RDFA parser use in sponger
+
+2009-10-13 18:21  source
+
+	* Fixed cnet cartridge
+
+2009-10-13 16:16  source
+
+	* Fixed bad performance of sprintf_more on some compilers when buffer
+	  is very long
+
+2009-10-13 16:15  source
+
+	* Fixed return type of charset_canonical_name
+
+2009-10-12 21:47  source
+
+	* Fixed instance creation for Briefcase, IM, Mail and Wiki
+
+2009-10-12 21:41  source
+
+	* Fixed do not convert when file name is NULL
+
+2009-10-12 21:40  source
+
+	* Fixed send characterset to cartridges
+
+2009-10-12 21:35  source
+
+	* Fixed minor issues
+
+2009-10-12 21:34  source
+
+	* Fixed use proper character set
+	* Disabled content for NYT pages
+
+2009-10-09 16:42  source
+
+	* Fixed geodata
+
+2009-10-09 16:37  source
+
+	* Fixed use TOP 1 to minimize content locking
+
+2009-10-09 16:34  source
+
+	* Fixed amazon, oreilly, zillow and ebay mappers
+	* Fixed meetup sameAs
+	* Fixed to invoke sponger once
+
+2009-10-09 10:48  source
+
+	* Updated version to 5.0.12-rc11
+
+2009-10-09 10:46  source
+
+	* Fixed warning with autotools
+
+2009-10-09 10:40  source
+
+	* Fixed --with-malloc-debug
+
+2009-10-09 10:25  source
+
+	* Fixed building with MALLOC_DEBUG
+
+2009-10-09 10:25  source
+
+	* Fixed comment
+
+2009-10-09 10:11  source
+
+	* Fixed UI profile
+
+2009-10-08 23:02  source
+
+	* Fixed query execution
+	* Fixed query URI generation in result
+	* Fixed typo
+
+2009-10-08 22:58  source
+
+	* Fixed doc cartridge
+	* Fixed filling namespaces
+
+2009-10-08 22:50  source
+
+	* Fixed double dt for date time objects
+
+2009-10-07 19:36  source
+
+	* Added new page with links to sparql tutorialsand dropdown list
+
+2009-10-07 19:34  source
+
+	* Added content to be shown via awol:content & iframe
+	* Fixed bestbuy, feed2rdf and html docs
+
+2009-10-07 11:07  source
+
+	* Fixed hang on syntax errors in CURIE and SafeCURI attributes
+
+2009-10-07 00:50  source
+
+	* Fixed filters
+
+2009-10-07 00:47  source
+
+	* Fixed SPARQL FILTER() results
+
 2009-10-06 19:16  source
 
 	* Added serialization of maximum result row setting in queries
