@@ -957,7 +957,7 @@ cpt_uncommitted_blobs (int clear)
 		{
 		  if (bl->bl_pages)
 		    {
-		      dk_set_t * dir_pages = NULL;
+		      dk_set_t dir_pages = NULL;
 		      int inx;
 		      if (BLOB_OK != cpt_bl_fetch_dir (bl, &dir_pages))
 			{
