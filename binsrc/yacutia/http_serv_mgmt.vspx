@@ -589,7 +589,7 @@
 	      <td nowrap="nowrap" id="if_opt">
 		  <![CDATA[
 		  <script type="text/javascript">
-	           window.onload = function () {
+	           function init () {
 		      var sr_cl = new OAT.Combolist([],"0.0.0.0");
 		      var sr_cl1 = new OAT.Combolist([], "");
 

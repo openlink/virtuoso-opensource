@@ -108,6 +108,30 @@
     </v:on-init>
     <vm:help id="sec_auth_serv" sect=""/>
     <v:form name="page_form" type="simple" method="POST">
+	<!-- top of security layout -->
+      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+        <tr valign='top'>
+          <td>
+            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <tr>
+                <td>
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+		      <td class="page_tab" align="center">
+			  	
+			<v:url xhtml_style="page_tab" url="sec_pki_1.vspx" value="Public Key Infrastructure" render-only="1"/>
+		      </td>
+		      <td class="page_tab_selected" align="center">
+			Access Control
+		      </td>
+			<td class="page_tab_empty" align="right" width="100%">
+                        </td>
+                    </tr>
+                  </table>
+                  <table class="tab_page">
+                    <tr>
+			<td valign="top">
+		   <!-- end of top security layout -->
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
         <tr valign='top'>
           <td>
@@ -587,6 +611,17 @@
           </td>
         </tr>
       </table>
+		   <!-- bottom of security layout -->
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+	<!-- end of bottom security layout -->
     </v:form>
     </vm:pagebody>
   </vm:pagewrapper>
