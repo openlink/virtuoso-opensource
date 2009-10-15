@@ -1,4 +1,4 @@
---  
+--
 --  $Id$
 --
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -203,6 +203,20 @@ create procedure adm_menu_tree ()
    <node name="Dashboard" url="sys_info.vspx"  id="171" allowed="yacutia_admin">
      <node name="Dashboard Properties" url="dashboard.vspx" id="167" place="1" allowed="yacutia_admin"/>
    </node>
+   <node name="Security" url="sec_pki_1.vspx"  id="23" allowed="yacutia_acl_page">
+     <node name="Public Key Infrastructure" url="sec_pki_1.vspx" id="24" place="1" allowed="yacutia_acl_page">
+      <node name="PKI Wizard" url="sec_pki_1.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
+      <node name="PKI Wizard" url="sec_pki_2.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
+      <node name="PKI Wizard" url="sec_pki_3.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
+      <node name="PKI Wizard" url="sec_pki_4.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
+      <node name="PKI Wizard" url="sec_pki_drop.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
+      <node name="PKI Wizard" url="sec_pki_2_conf.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
+     </node>
+     <node name="Access Control" url="sec_auth_serv.vspx" id="24" place="1" allowed="yacutia_acl_page">
+      <node name="ACL List" url="sec_auth_serv.vspx" id="25" place="1" allowed="yacutia_acl_page"/>
+      <node name="ACL Edit" url="sec_acl_edit.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
+     </node>
+   </node>
    <node name="User Accounts" url="accounts_page.vspx"  id="3" allowed="yacutia_accounts_page">
      <node name="Accounts" url="accounts.vspx" id="4" place="1" allowed="yacutia_accounts_page"/>
      <node name="Accounts" url="account_create.vspx" id="5" place="1" allowed="yacutia_accounts_page"/>
@@ -227,12 +241,6 @@ create procedure adm_menu_tree ()
    </node>
    <node name="Parameters" url="inifile.vspx?page=Database"  id="21" allowed="yacutia_params_page">
      <node name="Parameters" url="inifile.vspx" id="22" place="1" allowed="yacutia_params_page"/>
-   </node>
-   <node name="Access Control" url="sec_auth_serv.vspx"  id="23" allowed="yacutia_acl_page">
-     <node name="ACL List" url="sec_auth_serv.vspx" id="24" place="1" allowed="yacutia_acl_page">
-      <node name="ACL List" url="sec_auth_serv.vspx" id="25" place="1" allowed="yacutia_acl_page"/>
-      <node name="ACL Edit" url="sec_acl_edit.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
-     </node>
    </node>
    <node name="Packages" url="vad.vspx"  id="27" allowed="yacutia_vad_page">
      <node name="Packages" url="vad.vspx"  id="28" place="1" allowed="yacutia_vad_page"/>
@@ -5010,6 +5018,28 @@ create procedure www_split_host (in fhost any, out host any, out port any)
       host := fhost;
       if (host not in ('*ini*', '*sslini*'))
         port := '80';
+    }
+}
+;
+
+create procedure www_listeners ()
+{
+  declare xt, xp any;
+  declare VHOST, PORT, INTF, HOST, LHOST varchar;
+  declare NO_EDIT, NO_CTRL int;
+  result_names (VHOST, PORT, INTF, NO_EDIT, HOST, LHOST, NO_CTRL);
+  xt := www_tree (null);
+  xp := xpath_eval ('/www/node', xt, 0);
+  foreach (any xpp in xp) do
+    {
+      VHOST := cast (xpath_eval ('@host', xpp) as varchar);
+      PORT := cast (xpath_eval ('@port', xpp) as varchar);
+      INTF := cast (xpath_eval ('@lhost', xpp)  as varchar);
+      NO_EDIT := xpath_eval ('number (@edit)', xpp);
+      HOST := cast (xpath_eval ('@chost', xpp)  as varchar);
+      LHOST := cast (xpath_eval ('@clhost', xpp)  as varchar);
+      NO_CTRL := xpath_eval ('number (@control)', xpp);
+      result (VHOST, PORT, INTF, NO_EDIT, HOST, LHOST, NO_CTRL);
     }
 }
 ;

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0"?>
 <!--
  -
  -  $Id$
@@ -23,17 +23,13 @@
  -
  -
 -->
-<v:page name="http_edit_path_page"
-        decor="yacutia_decor.vspx"
-        style="yacutia_style.xsl"
+<v:page name="pki_1" decor="yacutia_decor.vspx" style="yacutia_style.xsl"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
-        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
-        xmlns:vm="http://www.openlinksw.com/vspx/macro">
-  <vm:pagetitle>Virtuoso HTTP Server Management</vm:pagetitle>
+	fast-render="1" 
+	xmlns:v="http://www.openlinksw.com/vspx/" 
+	xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Public Key Infrastructure</vm:pagetitle>
   <vm:pagewrapper>
-    <vm:menu>
-      <vm:menuitem value="HTTP Host Properties"/>
-    </vm:menu>
     <vm:variables>
       <v:variable name="vhost" persist="0" type="varchar" default="null" param-name="vhost"/>
       <v:variable name="lhost" persist="0" type="varchar" default="null" param-name="lhost"/>
@@ -43,10 +39,14 @@
       <v:variable name="vhost1" persist="0" type="varchar" default="null"/>
       <v:variable name="key1" persist="0" type="varchar" default="'none'"/>
       <v:variable name="verify1" persist="0" type="varchar" default="0"/>
-      <v:variable name="port1" persist="0" type="varchar" default="'80'"/>
+      <v:variable name="port1" persist="0" type="varchar" default="'443'"/>
       <v:variable name="stopit" persist="0" type="int" default="1"/>
     </vm:variables>
-    <vm:header caption="Virtual Host Properties"/>
+    <vm:menu>
+      <vm:menuitem name="PKI" value="Public Key Infrastructure"/>
+    </vm:menu>
+    <vm:header caption="Public Key Infrastructure">
+    </vm:header>
     <vm:pagebody>
         <v:on-init>
 	  declare pos int;
@@ -99,8 +99,71 @@
 	    self.vhost1 := self.vhost;
 
 	</v:on-init>
+    <vm:help id="sec_pki" sect=""/>
+    <v:form name="form1" type="simple" method="POST">
+	<!-- top of security layout -->
+      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+        <tr valign='top'>
+          <td>
+            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <tr>
+                <td>
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+		      <td class="page_tab_selected" align="center">
+			  Public Key Infrastructure	
+		      </td>
+		      <td class="page_tab" align="center">
+			<v:url xhtml_style="page_tab" url="sec_auth_serv.vspx" value="Access Control" render-only="1"/>
+		      </td>
+			<td class="page_tab_empty" align="right" width="100%">
+                        </td>
+                    </tr>
+                  </table>
+                  <table class="tab_page">
+                    <tr>
+			<td valign="top">
+		   <!-- end of top security layout -->
+		   <h3>Configure HTTPS listener</h3>
         <v:form name="frm_add_templ" method="POST" type="simple">
-          <!--div class="dialog_text"></div-->
+        <table class="listing">
+	  <tr class="listing_header_row">
+	    <th>
+	      <v:button name="refresh1" style="image" action="simple"
+		value="images/icons/ref_16.png"
+		xhtml_alt="Refresh page"
+		xhtml_title="Refresh page"
+		url="--http_path ()">
+	      </v:button>&#160;
+	    Interface</th>
+	    <th>Port</th>
+	    <th><label class="req">HTTP Host</label></th>
+	    <th>Action</th>
+	  </tr>
+	    <?vsp 
+	      for select * from www_listeners () (VHOST varchar, PORT varchar, INTF varchar, NO_EDIT int, HOST varchar, LHOST varchar, NO_CTRL int) x do
+	         {
+		 ?>
+		 <tr>
+		     <td><?V INTF  ?></td>
+		     <td><?V PORT  ?></td>
+		     <td><?V VHOST  ?></td>
+		     <td>
+			 <?vsp 
+			   if (NO_CTRL) 
+			     {
+			 ?>
+			 <v:url render-only="1" url="--sprintf ('sec_pki_2.vspx?vhost=%U&lhost=%U', HOST, LHOST)" value="Edit" />
+			 <v:url render-only="1" url="--sprintf ('sec_pki_2_conf.vspx?vhost=%U&lhost=%U', HOST, LHOST)" value="Delete" />
+			 <?vsp
+			     }
+			 ?>
+		     </td>
+		 </tr>
+		  <?vsp  
+		 }
+	    ?>
+	     </table>
           <table class='ctl_grp'>
             <tr>
               <td>Host &amp; Domain Name</td>
@@ -197,24 +260,38 @@
             <tr>
               <td>HTTPS verify</td>
               <td>
-		  <v:select-list name="verify" value="--self.verify1" >
+		  <v:select-list name="verify" value="--self.verify1">
 		      <v:item name="none" value="0"/>
 		      <v:item name="required" value="1"/>
 		      <v:item name="optional" value="2"/>
 		      <v:item name="optional no ca" value="3"/>
+		      <v:after-data-bind>
+			  if (self.vhost1 is null and not e.ve_is_post)
+			    {
+			      control.ufl_value := '3'; 
+                              control.vs_set_selected (); 
+			    }
+		      </v:after-data-bind>
 		</v:select-list>
               </td>
             </tr>
             <tr>
               <td colspan="2" align="center">
-                <v:button action="simple" name="cancel_templ" value="Cancel">
+                <v:button action="simple" name="backbtn" value="Back">
                   <v:on-post>
                       <![CDATA[
-		      self.vc_redirect (sprintf ('http_serv_mgmt.vspx'));
+		      self.vc_redirect (sprintf ('sec_pki_1.vspx'));
                       ]]>
                   </v:on-post>
                 </v:button>
-                <v:button action="simple" name="save_btn" value="Save">
+                <v:button action="simple" name="cancelbtn" value="Cancel">
+                  <v:on-post>
+                      <![CDATA[
+		      self.vc_redirect (sprintf ('sec_pki_2.vspx'));
+                      ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" name="save_btn" value="--case when self.vhost is not null then 'Save' else 'Add new' end">
                   <v:on-post>
                       <![CDATA[
 
@@ -233,6 +310,13 @@
 	     return;
 	   };
 
+	   if (length (self.vhost_nam.ufl_value) = 0)
+	     {
+	       self.vc_is_valid := 0;
+	       self.vc_error_message := 'You should provide a valid host name';
+	       return;
+	     }
+
            lhost_if := get_keyword ('lhost_if', e.ve_params, '');
 
 	   y_check_host (self.vhost_nam.ufl_value, lhost_if, self.lhost_port.ufl_value);
@@ -240,6 +324,21 @@
 	   vhost := self.vhost_nam.ufl_value;
 	   lhost := concat (lhost_if, ':', self.lhost_port.ufl_value);
 	   lhost := replace (lhost, '0.0.0.0', '');
+
+	   if (self.vhost is null) -- new listener
+	     {
+               declare opts varchar;
+	       opts := vector ();
+	       if (not xenc_key_exists (self.key_list.ufl_value))
+	         {
+	           self.vc_is_valid := 0;
+		   self.vc_error_message := 'Key is required to setup HTTPS listener';
+		   return;
+		 }
+	       yac_set_ssl_key (self.key_list.ufl_value, self.verify.ufl_value, opts);
+	       VHOST_DEFINE (vhost=>vhost, lhost=>lhost, lpath=>'/', ppath=>'/', sec=>'SSL', auth_opts=>opts);
+	       goto same_host;
+	     }
 
 	   if (self.vhost = vhost and lhost = self.lhost and self.key_list.ufl_value = self.key1 and self.verify1 = self.verify.ufl_value)
 	     goto same_host;
@@ -287,14 +386,32 @@
 	    self.stopit := 0;
 	    commit work;
 	    same_host:
-            self.vc_redirect (sprintf ('http_serv_mgmt.vspx'));
+            self.vc_redirect (sprintf ('sec_pki_2.vspx'));
                       ]]>
                   </v:on-post>
                 </v:button>
+		<v:button action="simple" name="nxt" value="Configure ODS Endpoint" enabled="--check_package ('Framework')">
+		    <v:on-post><![CDATA[
+			self.vc_redirect ('sec_pki_3.vspx');
+       ]]></v:on-post>
+		</v:button>
               </td>
             </tr>
           </table>
         </v:form>
+		   <!-- bottom of security layout -->
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+	<!-- end of bottom security layout -->
+    </v:form>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>
+
