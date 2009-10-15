@@ -82,6 +82,12 @@
 			<foaf:name>
 				<xsl:value-of select="name"/>
 			</foaf:name>
+			<foaf:name>
+				<xsl:value-of select="realname"/>
+			</foaf:name>
+			<dc:description>
+				<xsl:value-of select="profile"/>
+			</dc:description>
 			<xsl:for-each select="releases/release">
 				<foaf:made rdf:resource="{vi:proxyIRI (concat($base,'release/',@id))}"/>
 			</xsl:for-each>

@@ -70,6 +70,8 @@
 				<dc:title><xsl:value-of select="$baseUri"/></dc:title>
 		<sioc:container_of rdf:resource="{$resourceURL}"/>
 		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+				<foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Vendor')}"/>
+				<foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
 		<dcterms:subject rdf:resource="{$resourceURL}"/>
 		<owl:sameAs rdf:resource="{$docIRI}"/>
 			</rdf:Description>
