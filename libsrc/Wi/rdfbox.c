@@ -2157,7 +2157,10 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
         }
     }
   if (NULL != type_uri)
-    {                            /* 012.345678901.2345.67 */
+    {
+      if (!IS_BOX_POINTER (type_uri))
+	sqlr_new_error ("22023", "SR625", "Unsupported datatype %d in TALIS-style JSON serialization of an RDF object", obj_dtp);
+                                /* 012.345678901.2345.67 */
       session_buffered_write (ses, " , \"datatype\" : \"", 17);
       dks_esc_write (ses, type_uri, box_length (type_uri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
       session_buffered_write_char ('\"', ses);
