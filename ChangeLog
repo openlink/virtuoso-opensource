@@ -1,3 +1,32 @@
+2009-10-16 11:06  source
+
+	* Fixed buffer overrun
+
+2009-10-16 11:05  source
+
+	* Fixed issue when thread is not allocated
+
+2009-10-15 22:40  source
+
+	* Fixed version
+
+2009-10-15 20:08  source
+
+	* Fixed handling of single quote in iri
+
+2009-10-15 20:07  source
+
+	* Added support for DB.DBA.RDF_LOAD_RDFA_WITH_IRI_TRANSLATION () and
+	  DB.DBA.TTLP_WITH_IRI_TRANSLATION())
+
+2009-10-15 19:34  source
+
+	* Fixed GPF on xml literal
+
+2009-10-15 18:30  source
+
+	* Added Public Key Infrastructure UI
+
 2009-10-14 21:18  source
 
 	* Fixed indent
