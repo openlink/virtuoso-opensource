@@ -2084,7 +2084,7 @@ ws_get_ranges (ws_connection_t *ws, char *err_text, int err_text_max, volatile O
       ranges [n_ranges * 2] = (ptrlong) start;
       ranges [n_ranges * 2 + 1] = (ptrlong) end;
 
-      if (++n_ranges > MAX_SUPPORTED_RANGES)
+      if (++n_ranges >= MAX_SUPPORTED_RANGES)
 	{ /* limit the max ranges per header */
 	  n_ranges = 0;
 	  goto done;
