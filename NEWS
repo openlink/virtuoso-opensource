@@ -1,3 +1,66 @@
+October 16, 2009, V5.0.12:
+  * Database engine
+    - Added Public Key Infrastructure UI in conductor
+    - Added failover/roundrobin support for all client layers
+    - Added support for vectors in IN predicate
+    - Added various small engine optimizations and enhancements
+    - Refactored JDBC driver
+    - Imported PCRE version 7.9 from upstream project
+    - Fixed XA support
+    - Fixed performance of sprintf_more when using large buffers
+    - Fixed memory leaks
+    - Fixed HTTP various issues with HEAD and POST 
+    - Fixed serialization on HTTP connection cache
+    - Fixed allow client to run during online backup
+    - Fixed small bugs and compiler warnings
+
+  * SPARQL and RDF
+    - Added SPARQL graph-level security
+    - Added new RDFa parser
+    - Added support for Concise Bound Description
+    - Added optimization for bif:COUNT
+    - Added optimization for OPTIONAL
+    - Added support for SCORE_LIMIT in bif:contains
+    - Added support for text/n3 mime type
+    - Added support for nvarchar, bigint in sparql/rdfviews
+    - Added support for exclude-result-prefixes
+    - Added support to crawl with multiple threads
+    - Added support for NQUAD, JSON and N-Triples
+    - Added support for DSA certificates
+    - Added MS Docs, Open Office, Google app cartridges
+    - Added CNET, YELP, TESCO, ZILLOW cartridges
+    - Added Goodrelations, Geonames, Bestbuy cartridges
+    - Added Alchemy, Yahoo Boss, Picasa, haudio cartridges
+    - Added cache for common ontologies
+    - Improved support for rdf:XMLLiteral exp in RDF loaders
+    - Fixed handling of special characters in IRI
+    - Fixed RDF view generation
+    - Fixed and enhanced description.vsp
+    - Fixed and enhanced iSPARQL
+    - Fixed charset handling for cartridges
+
+  * ODS Applications
+    - Added checks for dynamic local
+    - Added expiration so sponger can track changes
+    - Added support for conversations
+    - Added 'Group By' handling for listed messages
+    - Added 'Related' section in posts
+    - Added new API and Ubiquity commands
+    - Added hCard microformat
+    - Added Ontology based editing
+    - Added OpenSearch support
+    - Added support for Smart Folders
+    - Fixed openid, FOAF+SSL
+    - Fixed upstreaming attachements
+    - Fixed RDF gems
+    - Fixed UI profile
+    - Fixed mail filters
+    - Fixed atom-pub protocol
+    - Fixed rewrite rules
+    - Fixed tag URIs
+    - Fixed small bugs
+
+
 April 22, 2009, V5.0.11:
   * Database engine
     - Added CA functions
