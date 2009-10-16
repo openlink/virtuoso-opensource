@@ -41,13 +41,14 @@ AM_CFLAGS += -I$(top_srcdir)/libsrc/langfunc
 AM_CFLAGS += -I$(top_srcdir)/libsrc/plugin
 AM_CFLAGS += -DUNIX
 
+LIBS	  += @ZLIB_LIB@
+
 server_libs = \
 	$(top_builddir)/libsrc/Dk/libdksrv.la \
 	$(top_builddir)/libsrc/Thread/libthrp.la \
 	$(top_builddir)/libsrc/Xml.new/libxml.la \
 	$(top_builddir)/libsrc/plugin/libplugin.la \
 	$(top_builddir)/libsrc/langfunc/liblangfunc.la \
-	$(top_builddir)/libsrc/zlib/libz.la \
 	$(top_builddir)/libsrc/Tidy/libtidy.la \
 	$(top_builddir)/libsrc/util/libutil.la \
 	@srvrlibs@ 
@@ -56,7 +57,6 @@ client_libs = \
 	$(top_builddir)/libsrc/Wi/libwic.la \
 	$(top_builddir)/libsrc/Dk/libdk1t.la \
 	$(top_builddir)/libsrc/Thread/libthrs.la \
-	$(top_builddir)/libsrc/zlib/libz.la \
 	$(top_builddir)/libsrc/util/libutil.la \
 	@clntlibs@
 

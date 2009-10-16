@@ -39,6 +39,7 @@ else
     VIRTUOSO_BIN=virtuoso-t
 endif
 
+LIBS		+= @ZLIB_LIB@
 
 lib_LTLIBRARIES = libvirtuoso-t.la $(IODBC_LIBS) $(MONO_LIBS) $(IODBC_MONO_LIBS)
 bin_PROGRAMS = virtuoso-t $(IODBC_PROGS)
@@ -59,7 +60,6 @@ server_libs = \
 	$(top_builddir)/libsrc/Xml.new/libxml.la \
 	$(top_builddir)/libsrc/plugin/libplugin.la \
 	$(top_builddir)/libsrc/langfunc/liblangfunc.la \
-	$(top_builddir)/libsrc/zlib/libz.la \
 	$(top_builddir)/libsrc/Tidy/libtidy.la \
 	$(top_builddir)/libsrc/util/libutil.la \
 	$(LIBMONO) \
@@ -72,7 +72,6 @@ server_libs_gc = \
 	$(top_builddir)/libsrc/Xml.new/libxml.la \
 	$(top_builddir)/libsrc/plugin/libplugin.la \
 	$(top_builddir)/libsrc/langfunc/liblangfunc.la \
-	$(top_builddir)/libsrc/zlib/libz.la \
 	$(top_builddir)/libsrc/Tidy/libtidy.la \
 	$(top_builddir)/libsrc/util/libutil.la \
 	@srvrlibs@ \

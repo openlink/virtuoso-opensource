@@ -90,7 +90,7 @@ DEMO_DEPS=\
 	vad_version \
 	make_vad.sh
 
-demo_dav.vad: make_vad.sh $(DEMO_DEPS)
+demo_dav.vad: make_vad.sh $(DEMO_DEPS) doc_dav.vad
 	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
 	PORT=$(PORT) \
 	HOME="$(TOP)" \

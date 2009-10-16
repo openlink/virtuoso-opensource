@@ -29,6 +29,7 @@ DRIVER_DESC	= OpenLink Virtuoso ODBC Driver
 noinst_LTLIBRARIES = libvirtodbc.la libvirtodbc_u.la
 lib_LTLIBRARIES = virtodbc.la virtodbc_r.la virtodbcu.la virtodbcu_r.la
 
+LIBS	    += @ZLIB_LIB@
 
 base_cflags  = @VIRT_AM_CFLAGS@ 
 base_cflags += -I$(top_srcdir)/libsrc
@@ -53,14 +54,12 @@ VIRTODBC_FIBER_LIBS = \
         $(top_srcdir)/libsrc/Thread/libthrs.la \
         $(top_srcdir)/libsrc/Dk/libdk1t.la \
 	$(top_srcdir)/libsrc/util/libutil.la \
-	$(top_srcdir)/libsrc/zlib/libz.la \
 	$(clntlibs)
 
 VIRTODBC_PTHREAD_LIBS = \
         $(top_srcdir)/libsrc/Thread/libthrp.la \
         $(top_srcdir)/libsrc/Dk/libdk1t.la \
 	$(top_srcdir)/libsrc/util/libutil.la \
-	$(top_srcdir)/libsrc/zlib/libz.la \
 	$(clntlibs) \
 	@LIBTHR@
 

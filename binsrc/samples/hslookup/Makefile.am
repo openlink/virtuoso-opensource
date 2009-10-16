@@ -34,7 +34,7 @@ hslookup_la_CFLAGS  += -I$(top_srcdir)/libsrc/Wi
 hslookup_la_CFLAGS  += -I$(top_srcdir)/libsrc/odbcsdk/include 
 hslookup_la_CFLAGS  += -I$(top_srcdir)/libsrc/plugin 
 hslookup_la_CFLAGS  += -I$(top_srcdir)/libsrc/langfunc 
-hslookup_la_CFLAGS  += -I$(top_srcdir)/libsrc/zlib 
+hslookup_la_CFLAGS  += @ZLIB_INC@
 hslookup_la_CFLAGS  += $(HSL_CPPFLAGS)
 hslookup_la_CFLAGS  += -D_GNU_SOURCE -DGLOBALREF=extern -D_USRDLL
 hslookup_la_LDFLAGS = -module -avoid-version -export-dynamic -export-symbols hslookup.exp -no-undefined

@@ -35,6 +35,8 @@ noinst_HEADERS  = sysexits.h
 BUILT_SOURCES	= virt_mail_vers.c odbc_mail_vers.c
 CLEANFILES	= virt_mail_vers.c odbc_mail_vers.c
 
+LIBS 		+= @ZLIB_LIB@
+
 virt_mail_CFLAGS  = @VIRT_AM_CFLAGS@
 virt_mail_CFLAGS += -DUDBC 
 virt_mail_CFLAGS += -I$(top_srcdir)/libsrc
@@ -47,7 +49,6 @@ virt_mail_LDADD = \
 	$(top_builddir)/libsrc/Wi/libwic.la \
 	$(top_builddir)/libsrc/Dk/libdk1t.la \
 	$(top_builddir)/libsrc/Thread/libthrs.la \
-	$(top_builddir)/libsrc/zlib/libz.la \
 	$(top_builddir)/libsrc/util/libutil.la \
 	@clntlibs@
 
@@ -70,7 +71,6 @@ odbc_mail_LDADD = \
 	$(top_srcdir)/libsrc/util/libutil.la \
 	$(top_builddir)/libsrc/Dk/libdk1t.la \
 	$(top_builddir)/libsrc/Thread/libthrs.la \
-	$(top_builddir)/libsrc/zlib/libz.la \
 	$(top_builddir)/libsrc/util/libutil.la \
 	@iodbc_LDFLAGS@ 
 
