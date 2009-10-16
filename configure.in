@@ -1562,8 +1562,8 @@ then
 fi
 if test "x$with_zlib" = "xinternal"
 then
-    ZLIB_INC="-I$(top_srcdir)/libsrc/zlib"
-    ZLIB_LIB="$(top_builddir)/libsrc/zlib/libz.la"
+    ZLIB_INC='-I$(top_srcdir)/libsrc/zlib'
+    ZLIB_LIB='$(top_builddir)/libsrc/zlib/libz.la'
 else
     ZLIB_INC=""
     ZLIB_LIB="-lz"
