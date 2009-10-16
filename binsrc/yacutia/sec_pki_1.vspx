@@ -49,6 +49,7 @@
 	      {
                 declare tmp, arr any;
 		tmp := get_certificate_info (2, decode_base64 (xenc_X509_certificate_serialize ('id_rsa')), 1);
+		if (tmp is not null) {
 		arr := split_and_decode (tmp, 0, '\0\0/=');
 		self.c1 := get_keyword ('C', arr, '');
 		self.st1 := get_keyword ('ST', arr, '');
@@ -56,6 +57,7 @@
 		self.ou1 := get_keyword ('OU', arr, '');
 		self.name1 := get_keyword ('CN', arr, '');
 		self.email1 := get_keyword ('emailAddress', arr, '');
+	      }
 	      }
 	    ]]></v:on-init>
     <vm:help id="sec_pki" sect=""/>
@@ -147,6 +149,12 @@
 		    <v:on-post><![CDATA[
      if (xenc_key_exists ('id_rsa'))
        {
+	 return 0;
+       }
+     if (length (get_keyword ('name', params)) = 0)  
+       {
+         self.vc_is_valid := 0;
+	 self.vc_error_message := 'The name field is mandatory';
 	 return 0;
        }
 
