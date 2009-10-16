@@ -29,7 +29,7 @@ base_plugin_cflags   = @VIRT_AM_CFLAGS@
 base_plugin_cflags  += -D_GNU_SOURCE -DGLOBALREF=extern -D_USRDLL
 base_plugin_cflags  += -I$(top_srcdir)/libsrc
 base_plugin_cflags  += -I$(top_srcdir)/libsrc/Dk 
-base_plugin_cflags  += -I$(top_srcdir)/libsrc/zlib 
+base_plugin_cflags  += @ZLIB_INC@
 base_plugin_cflags  += -I$(top_srcdir)/libsrc/langfunc 
 base_plugin_cflags  += -I$(top_srcdir)/libsrc/plugin 
 base_plugin_cflags  += -I$(top_srcdir)/libsrc/Tidy 

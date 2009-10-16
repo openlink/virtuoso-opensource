@@ -39,7 +39,7 @@ wbxml2_la_CFLAGS  += -I$(top_srcdir)/libsrc/Wi
 wbxml2_la_CFLAGS  += -I$(top_srcdir)/libsrc/odbcsdk/include 
 wbxml2_la_CFLAGS  += -I$(top_srcdir)/libsrc/plugin 
 wbxml2_la_CFLAGS  += -I$(top_srcdir)/libsrc/langfunc 
-wbxml2_la_CFLAGS  += -I$(top_srcdir)/libsrc/zlib 
+wbxml2_la_CFLAGS  += @ZLIB_INC@
 wbxml2_la_CFLAGS  += $(WBXML2_CFLAGS)
 wbxml2_la_CFLAGS  += -D_GNU_SOURCE -DGLOBALREF=extern -D_USRDLL
 wbxml2_la_LDFLAGS = -module -avoid-version -export-dynamic -no-undefined -export-symbols wbxml2.exp

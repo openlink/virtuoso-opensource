@@ -34,7 +34,7 @@ im_la_CFLAGS  += -I$(top_srcdir)/libsrc/Wi
 im_la_CFLAGS  += -I$(top_srcdir)/libsrc/odbcsdk/include 
 im_la_CFLAGS  += -I$(top_srcdir)/libsrc/plugin 
 im_la_CFLAGS  += -I$(top_srcdir)/libsrc/langfunc 
-im_la_CFLAGS  += -I$(top_srcdir)/libsrc/zlib 
+im_la_CFLAGS  += @ZLIB_INC@
 im_la_CFLAGS  += $(IM_CPPFLAGS)
 im_la_CFLAGS  += -D_GNU_SOURCE -DGLOBALREF=extern -D_USRDLL
 im_la_LDFLAGS = -module -avoid-version -export-dynamic -export-symbols im.exp -no-undefined

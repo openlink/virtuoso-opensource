@@ -1560,6 +1560,17 @@ then
     AC_CHECK_HEADER(zlib.h)
     AC_CHECK_LIB(z, main, [with_zlib=yes], [with_zlib=internal])
 fi
+if test "x$with_zlib" = "xinternal"
+then
+    ZLIB_INC="-I$(top_srcdir)/libsrc/zlib"
+    ZLIB_LIB="$(top_builddir)/libsrc/zlib/libz.la"
+else
+    ZLIB_INC=""
+    ZLIB_LIB="-lz"
+fi
+AC_SUBST(ZLIB_INC)
+AC_SUBST(ZLIB_LIB)
+
 AM_CONDITIONAL(WITH_ZLIB, test "x$with_zlib" = "xinternal")
 
 dnl PUT OTHER EXTENSIONS HERE

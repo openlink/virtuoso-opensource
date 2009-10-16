@@ -38,7 +38,7 @@ wikiv_la_CFLAGS  += -I$(top_srcdir)/libsrc/Wi
 wikiv_la_CFLAGS  += -I$(top_srcdir)/libsrc/odbcsdk/include 
 wikiv_la_CFLAGS  += -I$(top_srcdir)/libsrc/langfunc 
 wikiv_la_CFLAGS  += -I$(top_srcdir)/libsrc/plugin 
-wikiv_la_CFLAGS  += -I$(top_srcdir)/libsrc/zlib
+wikiv_la_CFLAGS  += @ZLIB_INC@
 
 wikiv_la_CFLAGS  += -D_GNU_SOURCE -DGLOBALREF=extern -D_USRDLL
 wikiv_la_LDFLAGS = $(LTFLAGS) -export-symbols wikiv.exp
@@ -56,7 +56,7 @@ mediawiki_la_CFLAGS  += -I$(top_srcdir)/libsrc/Wi
 mediawiki_la_CFLAGS  += -I$(top_srcdir)/libsrc/odbcsdk/include 
 mediawiki_la_CFLAGS  += -I$(top_srcdir)/libsrc/langfunc 
 mediawiki_la_CFLAGS  += -I$(top_srcdir)/libsrc/plugin 
-mediawiki_la_CFLAGS  += -I$(top_srcdir)/libsrc/zlib
+mediawiki_la_CFLAGS  += @ZLIB_INC@
 
 mediawiki_la_CFLAGS  += -D_GNU_SOURCE -DGLOBALREF=extern -D_USRDLL
 mediawiki_la_LDFLAGS = $(LTFLAGS) -export-symbols mediawiki.exp
@@ -74,7 +74,7 @@ creolewiki_la_CFLAGS  += -I$(top_srcdir)/libsrc/Wi
 creolewiki_la_CFLAGS  += -I$(top_srcdir)/libsrc/odbcsdk/include 
 creolewiki_la_CFLAGS  += -I$(top_srcdir)/libsrc/langfunc 
 creolewiki_la_CFLAGS  += -I$(top_srcdir)/libsrc/plugin 
-creolewiki_la_CFLAGS  += -I$(top_srcdir)/libsrc/zlib
+creolewiki_la_CFLAGS  += @ZLIB_INC@
 
 creolewiki_la_CFLAGS  += -D_GNU_SOURCE -DGLOBALREF=extern -D_USRDLL
 creolewiki_la_LDFLAGS = $(LTFLAGS) -export-symbols creolewiki.exp
