@@ -78,9 +78,9 @@
 		<xsl:if test="not ($baseUri like 'http://%.nytimes.com/%')">
 		<awol:content>
 		    <awol:Content>
-			<awol:body rdf:parseType="Literal">
+			    <!--awol:body rdf:parseType="Literal">
 			    <xsl:apply-templates select="$doc1" mode="content"/>
-			</awol:body>
+			    </awol:body-->
 			<awol:src rdf:resource="{$baseUri}"/>
 		    </awol:Content>
 		</awol:content>
