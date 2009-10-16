@@ -137,6 +137,16 @@ aqt_allocate ()
     cli_set_new_trx (cli);
     LEAVE_TXN;
     thr = PrpcThreadAllocate ((init_func) aq_thread_func, http_thread_sz, (void *) aqt);
+    if (!thr)
+      {
+	IN_TXN;
+	lt_done (cli->cli_trx);
+	LEAVE_TXN;
+	client_connection_free (cli);
+	dk_free_tree (ses);
+	dk_free (aqt, sizeof (aq_thread_t));
+	return NULL;
+      }
     aqt->aqt_thread = thr->dkt_process;
     return aqt;
   }

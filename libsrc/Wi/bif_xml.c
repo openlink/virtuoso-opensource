@@ -4206,7 +4206,7 @@ bif_xte_nodebld_final_impl (caddr_t * qst, state_slot_t ** args, int plain_retur
               if (DV_UNAME != DV_TYPE_OF (XTE_HEAD_NAME (head)))
                 xte_replace_strings_with_unames (item);
             }
-          else if ((XMLATTRIBUTE_FLAG == unbox (head)) && (3 == BOX_ELEMENTS (item)))
+          else if ((XMLATTRIBUTE_FLAG == (caddr_t)(head)) && (3 == BOX_ELEMENTS (item)))
             {
               dk_free_tree ((caddr_t)acc);
               sqlr_new_error ("22003", "SR621", "Attribute can not appear directly in an XML entity aggregate, it should be part of an XML element");

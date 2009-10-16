@@ -2530,7 +2530,7 @@ xslt_top (query_instance_t * qi, xml_entity_t * xe, xslt_sheet_t * xsh, caddr_t 
     }
   if (NULL != excl_val)
     {
-      DO_SET (caddr_t ***, chld, &(xn->xn_children))
+      DO_SET (caddr_t **, chld, &(xn->xn_children))
         {
           if ((DV_ARRAY_OF_POINTER == DV_TYPE_OF ((void*)chld)) &&
             (DV_ARRAY_OF_POINTER == DV_TYPE_OF ((void*)(chld[0]))) &&

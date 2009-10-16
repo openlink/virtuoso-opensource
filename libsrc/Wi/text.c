@@ -292,7 +292,7 @@ itc_text_row (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t * leaf_ret)
   dbe_col_loc_t *data2_cl = (d_id_is_int ?
     &itc->itc_row_key->key_row_var[1] :
     &itc->itc_row_key->key_row_var[2] );
-  short d_id_off, d_id2_off, data_off, data_len;
+  short data_off, data_len;
 #ifdef TEXT_DEBUG
 /*  dbg_page_map (buf); */
 #endif
@@ -329,11 +329,11 @@ itc_text_row (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t * leaf_ret)
   if (d_id_is_int)
     d_id_num_col_ref (&wst->wst_first_d_id, buf, row, d_id_cl);
   else
-    d_id_ref (&wst->wst_first_d_id, row + d_id_off);
+    d_id_ref (&wst->wst_first_d_id, row);
   if (d_id_is_int)
     d_id_num_col_ref (&wst->wst_last_d_id, buf, row, d_id2_cl);
   else
-    d_id_ref (&wst->wst_last_d_id, row + d_id2_off);
+    d_id_ref (&wst->wst_last_d_id, row);
   if (!D_INITIAL (&wst->wst_seek_target))
     {
       if ((!wst->sst_is_desc &&  IS_GT (d_id_cmp (&wst->wst_seek_target, &wst->wst_last_d_id)))

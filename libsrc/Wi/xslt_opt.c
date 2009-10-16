@@ -1023,7 +1023,7 @@ xslt_sheet_prepare (xslt_sheet_t *xsh, caddr_t * xstree, query_instance_t * qi,
       *err_ret = srv_make_new_error ("22023", "XS030", "Bad style sheet in xslt_sheet");
       return;
     }
-  root_elt_head = ((caddr_t ***)(xstree))[0];
+  root_elt_head = ((caddr_t **)(xstree))[0];
   for (inx = BOX_ELEMENTS (root_elt_head) - 2; inx > 0; inx -= 2)
     {
       if (strcmp (root_elt_head[inx], uname__bang_exclude_result_prefixes))
