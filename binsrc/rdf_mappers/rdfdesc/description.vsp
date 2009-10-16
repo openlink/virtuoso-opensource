@@ -164,6 +164,7 @@
     <link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>&output=rdf" title="Metadata in RDF/XML format" />
     <link rel="alternate" type="text/n3" href="<?=rdf_link?>&output=n3" title="Metadata in N3/Turtle format" />
     <link rel="alternate" type="application/json+rdf" href="<?=rdf_link?>&output=application%2Frdf%2Bjson" title="Metadata in RDF/JSON format" />
+    <link rel="alternate" type="application/json" href="<?=rdf_link?>&output=application%2Fjson" title="Metadata in RDF/JSON format" />
     <link rel="stylesheet" type="text/css" href="statics/slidebar.css" />
     <link rel="stylesheet" type="text/css" href="statics/style_w.css" />
     <link href="statics/highlighter.css" type="text/css" rel="stylesheet" charset="utf-8" />

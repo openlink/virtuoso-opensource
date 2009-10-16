@@ -526,6 +526,18 @@ insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
     values ('xFolk', '', registry_get ('_rdf_mappers_path_') || 'xslt/main/xfolk2rdf.xsl')
 ;
 
+create procedure DB.DBA.RM_XLAT_CONCAT (in x any, in y any)
+{
+  if (not isstring (x))
+    return x;
+  if (registry_get ('__rdf_cartridges_original_doc_uri__') = '1')
+    return x;
+  return DB.DBA.RDF_SPONGE_PROXY_IRI (x);
+}
+;
+
+EXEC_STMT ('grant execute on DB.DBA.RM_XLAT_CONCAT to "SPARQL_SPONGE"', 0);
+
 create procedure DB.DBA.RM_RDF_SPONGE_ERROR (in pname varchar, in graph_iri varchar, in dest varchar, in sql_message varchar)
 {
   declare gr, errs_iri, err_iri, nam any;
@@ -5406,17 +5418,17 @@ try_grddl:
   {
       {
 	declare exit handler for sqlstate '*';
-	DB.DBA.RDF_LOAD_RDFA (ret_body, proxy_iri, thisgr);
+	DB.DBA.RDF_LOAD_RDFA_WITH_IRI_TRANSLATION (ret_body, new_origin_uri, thisgr, 0, 'DB.DBA.RM_XLAT_CONCAT', null);
 	goto rdfa_end;
       }
       {
 	declare exit handler for sqlstate '*';
-	DB.DBA.RDF_LOAD_RDFA (ret_body, proxy_iri, thisgr, 1);
+	DB.DBA.RDF_LOAD_RDFA_WITH_IRI_TRANSLATION (ret_body, new_origin_uri, thisgr, 1, 'DB.DBA.RM_XLAT_CONCAT', null);
 	goto rdfa_end;
       }
       {
 	declare exit handler for sqlstate '*';
-	DB.DBA.RDF_LOAD_RDFA (ret_body, proxy_iri, thisgr, 2);
+	DB.DBA.RDF_LOAD_RDFA_WITH_IRI_TRANSLATION (ret_body, new_origin_uri, thisgr, 2, 'DB.DBA.RM_XLAT_CONCAT', null);
 	rdfa_end:;
       }
   }  
