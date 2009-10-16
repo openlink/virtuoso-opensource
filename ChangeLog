@@ -1,3 +1,28 @@
+2009-10-16 16:49  source
+
+	* Updated version to 5.0.12 for final release
+
+2009-10-16 16:48  source
+
+	* Fixed issue with shell expansion
+
+2009-10-16 16:42  source
+
+	* Fixed use external zlib when requested
+
+2009-10-16 16:28  source
+
+	* Fixed missing include files
+
+2009-10-16 14:34  source
+
+	* Added JSON format support
+	* Fixed use of RDFa xlat
+
+2009-10-16 14:14  source
+
+	* Fixed error checks
+
 2009-10-16 11:06  source
 
 	* Fixed buffer overrun
