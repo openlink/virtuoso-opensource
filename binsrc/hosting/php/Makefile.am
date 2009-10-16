@@ -33,6 +33,7 @@ hosting_php_la_CFLAGS  += -I$(top_srcdir)/libsrc/Dk
 hosting_php_la_CFLAGS  += -I$(top_srcdir)/libsrc/Wi 
 hosting_php_la_CFLAGS  += -I$(top_srcdir)/libsrc/plugin 
 hosting_php_la_CFLAGS  += -I$(top_srcdir)/libsrc/langfunc 
+hosting_php_la_CFLAGS  += -I$(top_srcdir)/libsrc/odbcsdk/include 
 hosting_php_la_CFLAGS  +=  $(php5_CFLAGS)
 
 hosting_php_la_LDFLAGS = -module -avoid-version -export-dynamic
