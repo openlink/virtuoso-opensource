@@ -397,10 +397,9 @@ CHECKPOINT_SERVER()
 
 CHECK_LOG()
 {
-#   I've modified these grep patterns to ignore ':' which may be forgoten easily.
     passed=`grep "^PASSED" $LOGFILE | wc -l`
-    failed=`grep "^\*\*\*.*FAILED" $LOGFILE | wc -l`
-    aborted=`grep "^\*\*\*.*ABORTED" $LOGFILE | wc -l`
+    failed=`grep "^\*\*\*.*FAILED:" $LOGFILE | wc -l`
+    aborted=`grep "^\*\*\*.*ABORTED:" $LOGFILE | wc -l`
 
     ECHO ""
     LINE
