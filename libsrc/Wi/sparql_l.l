@@ -349,12 +349,6 @@ X		([Xx])
 Y		([Yy])
 Z		([Zz])
 
-XMLNS_NCNAME	([A-Za-z_\x7f-\xfe][A-Za-z0-9_.\x7f-\xfe-]*)
-XMLNS_QNAME1	(({XMLNS_NCNAME}":")?{XMLNS_NCNAME})
-XMLNS_QNAME	({XMLNS_QNAME1}|("(!"[A-Za-z0-9:_./%#+\x7f-\xfe-]+"!)"))
-XMLNS_QQNAME	({XMLNS_NCNAME}":"({XMLNS_NCNAME}":")+{XMLNS_NCNAME})
-XML_RESERVED	({X}{M}{L}([A-Za-z0-9_.-]*)":"{XMLNS_NCNAME})
-
 INTEGER_LITERAL ([0-9]+)
 DECIMAL_LITERAL (([0-9]+"."[0-9]*)|("."[0-9]+))
 DOUBLE_LITERAL	(({INTEGER_LITERAL}|{DECIMAL_LITERAL})[eE][+-]?[0-9]+)
@@ -365,21 +359,13 @@ SPAR_ECHAR	([\\]([atbvnrf\\""'']|("u"{HEX}{HEX}{HEX}{HEX})|("U"{HEX}{HEX}{HEX}{H
 S_NL		((\r\n)|(\n\r)|\n|\r)
 HEX		([0-9A-Fa-f])
 
- /* These definitions seem to be correct but some Bisons fails to macroexpand them correctly:
-  SPAR_NCCHAR1p	([A-Za-z\200-\377])
-  SPAR_NCCHAR1	({SPAR_NCCHAR1p}|[_])
-  SPAR_VARNAME	(({SPAR_NCCHAR1}|[0-9])+)
-  SPAR_NCCHAR	({SPAR_NCCHAR1}|[0-9-])
-  SPAR_NCNAME_PREFIX	({SPAR_NCCHAR1p}(({SPAR_NCCHAR}|[.])*{SPAR_NCCHAR})?)
-  SPAR_NCNAME		({SPAR_NCCHAR1}(({SPAR_NCCHAR}|[.])*{SPAR_NCCHAR})?)
-  */
-
-SPAR_NCCHAR1p	([A-Za-z\x7f-\xfe])
-SPAR_NCCHAR1	([A-Za-z_\x7f-\xfe])
-SPAR_VARNAME	([A-Za-z0-9_\x7f-\xfe]+)
-SPAR_NCCHAR	([A-Za-z0-9_\x7f-\xfe-])
-SPAR_NCNAME_PREFIX	({SPAR_NCCHAR1p}([A-Za-z0-9_.\x7f-\xfe-]*{SPAR_NCCHAR})?)
-SPAR_NCNAME		({SPAR_NCCHAR1}([A-Za-z0-9_.\x7f-\xfe-]*{SPAR_NCCHAR})?)
+PN_CHARS_BASE	([A-Za-z\x7f-\xfe])
+PN_CHARS_U_09	([A-Za-z0-9\x7f-\xfe])
+PN_CHARS	([A-Za-z0-9_\x7f-\xfe-])
+PN_CHARS_DOT	([A-Za-z0-9._\x7f-\xfe-])
+PN_PREFIX	({PN_CHARS_BASE}({PN_CHARS_DOT}*{PN_CHARS})?)
+PN_LOCAL	({PN_CHARS_U_09}({PN_CHARS_DOT}*{PN_CHARS})?)
+SPAR_VARNAME	([A-Za-z0-9_][A-Za-z0-9_\x7f-\xfe]*)
 SPAR_PLAIN_SQLNAME	([A-Za-z_][A-Za-z0-9_]*)
 SPAR_DQ_SQLNAME		([""][^""\\\r\n]*[""])
 SPAR_SQLNAME		(([A-Za-z_][A-Za-z0-9_]*)|([""][^""\\\r\n]*[""]))
@@ -547,9 +533,9 @@ SPAR_PARAMNAME	((([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|("::"{SPAR_SQL
     return Q_IRI_REF;
   }
 
-<SPARQL>({SPAR_NCNAME_PREFIX}?)":"{SPAR_NCNAME}	{ TOKBOX_Q(0,QNAME,"qualified URI"); }
-<SPARQL>({SPAR_NCNAME_PREFIX}?)":"		{ TOKBOX_Q(0,QNAME_NS,"namespace"); }
-<SPARQL>"_:"{SPAR_NCNAME}			{ TOKBOX_Q(0,BLANK_NODE_LABEL,"blank node label"); }
+<SPARQL>({PN_PREFIX}?)":"{PN_LOCAL}	{ TOKBOX_Q(0,QNAME,"qualified URI"); }
+<SPARQL>({PN_PREFIX}?)":"		{ TOKBOX_Q(0,QNAME_NS,"namespace"); }
+<SPARQL>"_:"{PN_LOCAL}			{ TOKBOX_Q(0,BLANK_NODE_LABEL,"blank node label"); }
 
 <SPARQL>"?"{SPAR_VARNAME}	{
     sparyylval.box = t_box_dv_uname_nchars (sparyytext + 1, sparyyleng - 1);
