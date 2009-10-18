@@ -138,7 +138,9 @@ tc_init (trig_cols_t * tc, int event, dbe_table_t * tb, caddr_t * cols, ST ** va
 {
   memset (tc, 0, sizeof (trig_cols_t));
   tc->tc_table = tb;
-  if (cols)
+  if (-1 == event)
+    ;
+  else if (cols)
     event = TRIG_UPDATE;
   else
     event = TRIG_DELETE;
@@ -1373,7 +1375,7 @@ sqlc_delete_searched (sql_comp_t * sc, ST * tree)
       del->del_table = tb;
       del->del_policy_qr = sqlc_make_policy_trig (sc->sc_cc, tb, TB_RLS_D);
       del->del_key_only = sqlc_del_key_only (sc, del->del_table, tree->_.delete_src.table_exp);
-      tc_init (&tc, TRIG_DELETE, tb, NULL, NULL, 0);
+      tc_init (&tc, del->del_key_only ? -1 : TRIG_DELETE, tb, NULL, NULL, 0);
       sc->sc_in_cursor_def = 1;
       sc->sc_is_update = SC_UPD_PLACE;
       sqlo_query_spec (sc, 0, (caddr_t *) tc.tc_selection, tree->_.delete_src.table_exp,
