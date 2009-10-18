@@ -775,6 +775,7 @@ subq_init (query_t * subq, caddr_t * inst)
 	{
 	  qst_set_long (inst, ((skip_node_t *)ts)->sk_row_ctr, 0);
 	}
+      qn_init ((data_source_t*)ts, inst);
     }
   END_DO_SET ();
   if (subq->qr_select_node && subq->qr_select_node->sel_row_ctr)
