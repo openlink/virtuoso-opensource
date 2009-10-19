@@ -87,6 +87,7 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     values ('(http://.*amazon.[^/]+/gp/product/.*)|'||
         '(http://.*amazon.[^/]+/o/ASIN/.*)|'||
         '(http://.*amazon.[^/]+/[^/]+/dp/[^/]+(/.*)?)|'||
+	'(http://.*amazon.[^/]+/[^/]+/product-reviews/.*)|'||
         '(http://.*amazon.[^/]+/exec/obidos/ASIN/.*)|' ||
         '(http://.*amazon.[^/]+/exec/obidos/tg/detail/-/[^/]+/.*)',
             'URL', 'DB.DBA.RDF_LOAD_AMAZON_ARTICLE', null, 'Amazon articles');
@@ -261,6 +262,15 @@ update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN =
     '(http://shopper.cnet.com/.*)|'||
     '(http://reviews.cnet.com/.*)'
     where RM_HOOK = 'DB.DBA.RDF_LOAD_CNET';
+
+update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN =	
+	'(http://.*amazon.[^/]+/gp/product/.*)|'||
+	'(http://.*amazon.[^/]+/o/ASIN/.*)|'||
+	'(http://.*amazon.[^/]+/[^/]+/dp/[^/]+(/.*)?)|'||
+	'(http://.*amazon.[^/]+/[^/]+/product-reviews/.*)|'||
+	'(http://.*amazon.[^/]+/exec/obidos/ASIN/.*)|' ||
+	'(http://.*amazon.[^/]+/exec/obidos/tg/detail/-/[^/]+/.*)'
+	where RM_HOOK = 'DB.DBA.RDF_LOAD_AMAZON_ARTICLE';
 
 -- migration from old servers
 create procedure DB.DBA.RM_MAPPERS_UPGRADE ()
@@ -4067,6 +4077,20 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_DOCUMENT (in graph_iri varchar, in new_o
 			spread_id := left(spread_id, pos);
 		url := sprintf('http://docs.google.com/feeds/default/private/full/%s?v=3', spread_id);
 	}
+	else if (new_origin_uri like 'http%://docs.google.com/present/view?id=%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http%s://docs.google.com/present/view?id=%s', 0);
+		spread_id := trim(tmp[1], '/');
+		if (spread_id is null)
+			return 0;
+		pos := strchr(spread_id, '/');
+		if (pos is not null and pos <> 0)
+			spread_id := left(spread_id, pos);
+		pos := strchr(spread_id, '&');
+		if (pos is not null and pos <> 0)
+			spread_id := left(spread_id, pos);
+		url := sprintf('http://docs.google.com/feeds/default/private/full/%s?v=3', spread_id);
+	}
 	else
 		return 0;
 	tmp := DB.DBA.RDF_HTTP_URL_GET (url, url, hdr, 'GET', auth_header, proxy=>get_keyword_ucase ('get:proxy', opts));
@@ -4566,6 +4590,17 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
     {
       tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/o/ASIN/%s', 0);
       asin := rtrim (tmp[2], '/');
+    }
+    
+  else if (new_origin_uri like 'http://%amazon.%/%/product-reviews/%')
+    {
+      tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/%s/product-reviews/%s', 0);
+      asin := tmp[3];
+      pos := strchr(asin, '?');
+	  if (pos is not null)
+		{
+			asin := left(asin, pos);
+		}
     }
   else if (new_origin_uri like 'http://%amazon.%/%/dp/%\\%3%')
     {
@@ -5261,6 +5296,19 @@ create procedure DB.DBA.RDF_LOAD_GRDDL_REC (in doc_base varchar, in graph_iri va
 };
 
 --
+-- /* RDFA comaptibility wrapper */
+-- 
+create procedure DB.DBA.RDF_LOAD_RDFA_1 (inout ret_body any, inout new_origin_uri varchar, inout thisgr varchar, in flag int)
+{
+  if (__proc_exists ('DB.DBA.RDF_LOAD_RDFA_WITH_IRI_TRANSLATION') is not null)
+    DB.DBA.RDF_LOAD_RDFA_WITH_IRI_TRANSLATION (ret_body, new_origin_uri, thisgr, flag, 'DB.DBA.RM_XLAT_CONCAT', null);
+  else
+    DB.DBA.RDF_LOAD_RDFA (ret_body, new_origin_uri, thisgr, flag);
+}
+;
+
+
+--
 -- /* GRDDL filters, if signature changed web robot needs to be updated too */
 --
 create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
@@ -5418,17 +5466,17 @@ try_grddl:
   {
       {
 	declare exit handler for sqlstate '*';
-	DB.DBA.RDF_LOAD_RDFA_WITH_IRI_TRANSLATION (ret_body, new_origin_uri, thisgr, 0, 'DB.DBA.RM_XLAT_CONCAT', null);
+	DB.DBA.RDF_LOAD_RDFA_1 (ret_body, new_origin_uri, thisgr, 0);
 	goto rdfa_end;
       }
       {
 	declare exit handler for sqlstate '*';
-	DB.DBA.RDF_LOAD_RDFA_WITH_IRI_TRANSLATION (ret_body, new_origin_uri, thisgr, 1, 'DB.DBA.RM_XLAT_CONCAT', null);
+	DB.DBA.RDF_LOAD_RDFA_1 (ret_body, new_origin_uri, thisgr, 1);
 	goto rdfa_end;
       }
       {
 	declare exit handler for sqlstate '*';
-	DB.DBA.RDF_LOAD_RDFA_WITH_IRI_TRANSLATION (ret_body, new_origin_uri, thisgr, 2, 'DB.DBA.RM_XLAT_CONCAT', null);
+	DB.DBA.RDF_LOAD_RDFA_1 (ret_body, new_origin_uri, thisgr, 2);
 	rdfa_end:;
       }
   }  
