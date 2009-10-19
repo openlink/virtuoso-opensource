@@ -1619,8 +1619,8 @@ dfe_unit_cost (df_elt_t * dfe, float input_arity, float * u1, float * a1, float 
 	  if (is_oby_order)
 	    *u1 = 0;
 	  else if (dfe->_.setp.top_cnt)
-	    /* with a top sort node, it is log2 of the top cnt and half the cost of the inx sprt temp */
-	    *u1 = (float) 0.5 * (INX_ROW_INS_COST * INX_CMP_COST *  log ((double) dfe->_.setp.top_cnt) / log (2));
+	    /* with a top sort node, it is log2 of the top cnt and half the cost of the inx sprt temp.  Add 1 becauase log (1) is zero  */
+	    *u1 = (float) 0.5 * (INX_ROW_INS_COST + INX_CMP_COST *  log ((double) dfe->_.setp.top_cnt + 1) / log (2));
 	  else
 	    *u1 = (float) INX_ROW_INS_COST + MAX (1, 1 + INX_CMP_COST * log (input_arity) / log (2));
 	  if (!is_oby_order)
