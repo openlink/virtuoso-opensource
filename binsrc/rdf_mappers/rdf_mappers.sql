@@ -4649,7 +4649,7 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
     return 0;
     
     datenow := replace(date_iso8601 (dt_set_tz (now(), 0)), ':', '%3A');
-  canon := sprintf('AWSAccessKeyId=%s&ItemId=%s&Operation=ItemLookup&ResponseGroup=ItemAttributes%%2COffers&Service=AWSECommerceService&SignatureMethod=HmacSHA1&Timestamp=%s', api_key, asin, datenow);
+  canon := sprintf('AWSAccessKeyId=%s&ItemId=%s&Operation=ItemLookup&ResponseGroup=ItemAttributes%%2COffers%%2CReviews&Service=AWSECommerceService&SignatureMethod=HmacSHA1&Timestamp=%s', api_key, asin, datenow);
   StringToSign := concat('GET\necs.amazonaws.com\n/onca/xml\n', canon);
   if (not xenc_key_exists ('amazon_key'))		
     hmacKey := xenc_key_RAW_read ('amazon_key', encode_base64(secret_key));

@@ -35,6 +35,7 @@
 <!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
+<!ENTITY review "http:/www.purl.org/stuff/rev#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -49,6 +50,7 @@
     xmlns:dc="&dc;"
     xmlns:dcterms="&dcterms;"
     xmlns:rdfs="&rdfs;"
+    xmlns:review="&review;"
     xmlns:owl="&owl;"
     xmlns:cl="&cl;"
     xmlns:oplbb="&oplbb;">
@@ -74,6 +76,9 @@
 		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 			    <foaf:topic rdf:resource="{vi:proxyIRI ($base, '', 'Vendor')}"/>
 			    <foaf:topic rdf:resource="{vi:proxyIRI ($base, '', 'Product')}"/>
+				<xsl:for-each select="//CustomerReviews/Review">			    
+					<foaf:topic rdf:resource="{vi:proxyIRI ($base, '', concat('Review_', CustomerId))}"/>
+				</xsl:for-each>
 		<dcterms:subject rdf:resource="{$resourceURL}"/>
 		<owl:sameAs rdf:resource="{$docIRI}"/>
 	    </rdf:Description>
@@ -118,12 +123,17 @@
 					<xsl:otherwise/>
 		</xsl:choose>
 				<xsl:apply-templates select="//ItemAttributes"/>
+				<xsl:apply-templates select="//CustomerReviews"/>
 	    </rdf:Description>
 
 		</rdf:RDF>
     </xsl:template>
 
     <xsl:template match="ItemAttributes">
+        <xsl:apply-templates select="*"/>
+    </xsl:template>
+
+    <xsl:template match="CustomerReviews">
         <xsl:apply-templates select="*"/>
     </xsl:template>
 
@@ -158,6 +168,24 @@
 		</gr:hasManufacturer>
     </xsl:template>
     
+    <xsl:template match="CustomerReviews/AverageRating">
+		<review:rating><xsl:value-of select="."/></review:rating>
+    </xsl:template>
+    
+    <xsl:template match="//CustomerReviews/Review">
+		<review:hasReview>
+			<review:Review rdf:about="{vi:proxyIRI ($base, '', concat('Review_', CustomerId))}">
+				<rdfs:label><xsl:value-of select="Summary"/></rdfs:label>
+				<review:title><xsl:value-of select="Summary"/></review:title>
+				<review:text><xsl:value-of select="Content"/></review:text>
+				<review:reviewer><xsl:value-of select="concat('http://www.amazon.com/gp/pdp/profile/', CustomerId)"/></review:reviewer>
+				<review:rating><xsl:value-of select="Rating"/></review:rating>
+				<review:totalVotes><xsl:value-of select="HelpfulVotes"/></review:totalVotes>
+				<dc:date><xsl:value-of select="Date"/></dc:date>
+			</review:Review>
+		</review:hasReview>
+    </xsl:template>
+
     <xsl:template match="ItemAttributes/ASIN">
 	<oplbb:productId><xsl:value-of select="."/></oplbb:productId>
     </xsl:template>

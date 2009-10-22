@@ -78,6 +78,10 @@
 			<owl:sameAs rdf:resource="{$docIRI}"/>
 		</rdf:Description>
 		<mo:MusicArtist rdf:about="{vi:proxyIRI (concat($base,'artist/',translate(name, ' ', '+')))}">
+			<xsl:variable name="sas-iri" select="vi:dbpIRI ('', translate (name, ' ', '_'))"/>
+			<xsl:if test="not starts-with ($sas-iri, '#')">
+				<owl:sameAs rdf:resource="{$sas-iri}"/>
+			</xsl:if>
 			<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 			<foaf:name>
 				<xsl:value-of select="name"/>
@@ -121,26 +125,18 @@
 				<dcterms:published><xsl:value-of select="year"/></dcterms:published>
 			</xsl:if>
 			<xsl:for-each select="tracklist/track">
-				<media:contains rdf:resource="{vi:proxyIRI (concat($base,'track/', ../../@id, '/', position))}"/>
-				<mo:track rdf:resource="{vi:proxyIRI (concat($base,'track/', ../../@id, '/', position))}"/>
+				<media:contains rdf:resource="{vi:proxyIRI (concat($base,'release/', ../../@id), '', position)}"/>
+				<mo:track rdf:resource="{vi:proxyIRI (concat($base,'release/', ../../@id), '', position)}"/>
 			</xsl:for-each>
 		</rdf:Description>
 		<xsl:apply-templates select="tracklist/track"/>
     </xsl:template>
 
     <xsl:template match="track">
-		<rdf:Description rdf:about="{concat($base,'track/', ../../@id, '/', position)}">
-			<rdf:type rdf:resource="&bibo;Document"/>
-			<sioc:container_of rdf:resource="{vi:proxyIRI (concat($base,'track/', ../../@id, '/', position))}"/>
-			<foaf:topic rdf:resource="{vi:proxyIRI (concat($base,'track/', ../../@id, '/', position))}"/>
-			<dcterms:subject rdf:resource="{vi:proxyIRI (concat($base,'track/', ../../@id, '/', position))}"/>
-			<foaf:primaryTopic rdf:resource="{vi:proxyIRI (concat($base,'track/', ../../@id, '/', position))}"/>
-		</rdf:Description>
-		<rdf:Description rdf:about="{vi:proxyIRI (concat($base,'track/', ../../@id, '/', position))}">
+		<rdf:Description rdf:about="{vi:proxyIRI (concat ($base, 'release/', ../../@id), '', position)}">
 			<rdf:type rdf:resource="&mo;Track"/>
 			<rdf:type rdf:resource="&audio;Recording"/>
-			<sioc:has_container rdf:resource="{concat($base,'track/', ../../@id, '/', position)}"/>
-			<mo:track rdf:resource="{vi:proxyIRI (concat($base,'track/',../../@id, '/',position))}"/>
+			<mo:track rdf:resource="{vi:proxyIRI (concat ($base, 'release/', ../../@id), '', position)}"/>
 			<media:position>
 				<xsl:value-of select="position"/>
 			</media:position>
