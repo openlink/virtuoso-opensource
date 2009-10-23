@@ -273,11 +273,11 @@ DROP PROCEDURE OMAIL.WA.res_resource_temp
 --
 CREATE PROCEDURE OMAIL.WA.res_ext_temp()
 {
-  DECLARE
-    N integer;
+  declare N integer;
 
   N := 1;
-  for (SELECT ID, T_EXT FROM WS.WS.SYS_DAV_RES_TYPES E, OMAIL.WA.RES_MIME_TYPES T WHERE E.T_TYPE=T.MIME_TYPE) do {
+  for (select ID, T_EXT from WS.WS.SYS_DAV_RES_TYPES E, OMAIL.WA.RES_MIME_TYPES T where E.T_TYPE=T.MIME_TYPE option(loop)) do
+  {
     INSERT REPLACING OMAIL.WA.RES_MIME_EXT(EXT_ID, MIME_ID, EXT_NAME) VALUES(N, ID, T_EXT);
     N := N + 1;
   };
