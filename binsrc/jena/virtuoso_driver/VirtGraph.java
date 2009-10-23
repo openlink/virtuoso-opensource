@@ -618,7 +618,7 @@ public class VirtGraph extends GraphBase
     public static Node Object2Node(Object o)
     {
       if (o == null) 
-          return Node.NULL;
+          return null;
 
       if (o instanceof ExtendedString) 
         {
