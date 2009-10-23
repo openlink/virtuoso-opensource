@@ -524,8 +524,8 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
     n_threads = 20;
 
   t_server_sz = (long) (ptrlong) cfg_get_parm (wholefile, "\nserver_thread_size:", 0);
-  if (t_server_sz < 50000)
-    t_server_sz = 50000;
+  if (t_server_sz < 60000)
+    t_server_sz = 60000;
 
   t_main_sz = (long) (ptrlong) cfg_get_parm (wholefile, "\nmain_thread_size:", 0);
   if (t_main_sz < 140000) /* was 100000 */
