@@ -38,50 +38,27 @@
       if (self.vc_is_valid = 0)
         return;
 
-      declare N, id integer;
-      declare suffix varchar;
-      declare IDc any;
+      WA_USER_EDIT (self.u_name, 'WAUI_ICQ', self.u_icq.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_SKYPE', self.u_skype.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_AIM', self.u_aim.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_YAHOO', self.u_yahoo.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_MSN', self.u_msn.ufl_value);
 
-      IDc := vector ();
+      declare N integer;
+      declare suffix, tmp_m varchar;
+
+      tmp_m := '';
       for (N := 0; N < length (params); N := N + 4)
       {
-        if ((params [N] like 'c_fld_1_%') and (trim (params [N+1]) <> ''))
+        if ((params [N] like 'm_fld_1_%') and (trim (params [N+1]) <> ''))
         {
-          suffix := replace (params [N], 'c_fld_1_', '');
-          id := cast (get_keyword ('c_fld_0_'||suffix, params, '-1') as integer);
-          if (id <> -1)
-          {
-            update WA_USER_OL_ACCOUNTS
-               set WUO_NAME = trim (params [N+1]),
-                   WUO_URL = trim (get_keyword ('c_fld_2_'||suffix, params, ''))
-             where WUO_ID = id;
-            IDc := vector_concat (IDc, vector (id));
-          }
+          suffix := replace (params [N], 'm_fld_1_', '');
+          tmp_m := tmp_m || trim (params [N+1]) || ';' || trim (get_keyword ('m_fld_2_'||suffix, params, '')) || '\n';
         }
       }
-      for (select WUO_ID as _id from WA_USER_OL_ACCOUNTS where WUO_U_ID = self.u_id and WUO_TYPE = 'P') do
-      {
-        for (N := 0; N < length (IDc); N := N + 1)
-        {
-          if (IDc[N] = _id)
-            goto _exit;
-        }
-        delete from WA_USER_OL_ACCOUNTS where WUO_ID = _id;
-      _exit:;
-      }
-      for (N := 0; N < length (params); N := N + 4)
-      {
-        if ((params [N] like 'c_fld_1_%') and (trim (params [N+1]) <> ''))
-        {
-          suffix := replace (params [N], 'c_fld_1_', '');
-          id := cast (get_keyword ('c_fld_0_'||suffix, params, '-1') as integer);
-          if ((id = -1) and (trim (get_keyword ('c_fld_2_'||suffix, params, '')) <> ''))
-          {
-            insert into WA_USER_OL_ACCOUNTS ( WUO_NAME, WUO_URL, WUO_U_ID, WUO_TYPE)
-              values (trim (params [N+1]), trim (get_keyword ('c_fld_2_'||suffix, params, '')), self.u_id, 'P');
-          }
-        }
-      }
+      self.messaging := tmp_m;
+      WA_USER_EDIT (self.u_name, 'WAUI_MESSAGING', tmp_m);
+
       WA_USER_VISIBILITY (self.u_name, WA_STR_PARAM (params, 'sel_'), 2);
 
       -- change user_text data
@@ -89,10 +66,49 @@
     ]]>
   </v:method>
 
+  <v:variable persist="0" name="uicq" type="varchar" default="''"/>
+  <v:variable persist="0" name="uskype" type="varchar" default="''"/>
+  <v:variable persist="0" name="uaim" type="varchar" default="''"/>
+  <v:variable persist="0" name="uyahoo" type="varchar" default="''"/>
+  <v:variable persist="0" name="umsn" type="varchar" default="''"/>
+  <v:variable persist="0" name="messaging" type="any" default="null"/>
+
+  <v:variable name="sav10" type="varchar" default="'1'" />
+  <v:variable name="sav11" type="varchar" default="'1'" />
+  <v:variable name="sav12" type="varchar" default="'1'" />
+  <v:variable name="sav13" type="varchar" default="'1'" />
+  <v:variable name="sav14" type="varchar" default="'1'" />
+
   <v:before-data-bind>
     <![CDATA[
       declare tmp any;
 
+      select WAUI_ICQ,
+             WAUI_SKYPE,
+             WAUI_AIM,
+             WAUI_YAHOO,
+             WAUI_MSN,
+             WAUI_MESSAGING
+        INTO self.uicq,
+             self.uskype,
+             self.uaim,
+             self.uyahoo,
+             self.umsn,
+             self.messaging
+        FROM WA_USER_INFO,
+             DB.DBA.SYS_USERS
+       where WAUI_U_ID = U_ID
+         and U_NAME = self.u_name;
+
+      tmp := WA_USER_VISIBILITY(self.u_name);
+      if (tmp is not null and length (tmp) >= 14 )
+      {
+        self.sav10 := tmp[10];
+        self.sav11 := tmp[11];
+        self.sav12 := tmp[12];
+        self.sav13 := tmp[13];
+        self.sav14 := tmp[14];
+      }
       if (e.ve_is_post and e.ve_button = self.page_form)
       {
         self.usr_personal_5.vc_focus := 1;
@@ -102,58 +118,97 @@
   </v:before-data-bind>
 
   <v:form name="usr_personal_5" type="simple" method="POST" action="uiedit.vspx?page=2">
-    <input type="hidden" name="c_nick" id="c_nick" value="<?V coalesce ((select WAUI_NICK from WA_USER_INFO where WAUI_U_ID = self.u_id), '') ?>"/>
     <div>
-      <table class="ctl_grp">
+      <table id="m_tbl" class="ctl_grp">
         <tr>
-          <td width="600px">
-            <table id="c_tbl" class="listing">
-              <tr class="listing_header_row">
-                <th>
-                  Select from Service List ot Type New One
-                </th>
-                <th>
-                  Member Home Page URL
-                </th>
-                <th width="80px">
-                  Action
-                </th>
+          <th width="180px"><label for="u_icq">ICQ Number</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:text name="u_icq"
+                    value="--self.uicq"
+                    xhtml_style="width:216px"/>
+          </td>
+          <td>
+            <vm:u-prop-select name="sel_10" value="self.sav10" />
+          </td>
+        </tr>
+        <tr>
+          <th><label for="u_skype">Skype ID</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:text name="u_skype"
+                    value="--self.uskype"
+                    xhtml_style="width:216px"/>
+          </td>
+          <td>
+            <vm:u-prop-select name="sel_11" value="self.sav11" />
+          </td>
+        </tr>
+        <tr>
+          <th><label for="u_aim">AIM Name</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:text name="u_aim"
+                    value="--self.uaim"
+                    xhtml_style="width:216px"/>
+          </td>
+          <td>
+            <vm:u-prop-select name="sel_12" value="self.sav12" />
+          </td>
+        </tr>
+        <tr>
+          <th><label for="u_yahoo">Yahoo! ID</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:text name="u_yahoo"
+                    value="--self.uyahoo"
+                    xhtml_style="width:216px"/>
+          </td>
+          <td>
+            <vm:u-prop-select name="sel_13" value="self.sav13" />
+          </td>
+        </tr>
+        <tr>
+          <th><label for="u_msn">MSN Messenger</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:text name="u_msn"
+                    value="--self.umsn"
+                    xhtml_style="width:216px"/>
+          </td>
+          <td>
+            <vm:u-prop-select name="sel_14" value="self.sav14" />
+          </td>
               </tr>
               <?vsp
                 declare N integer;
 
                 N := 0;
-                for select WUO_ID, WUO_NAME, WUO_URL from WA_USER_OL_ACCOUNTS where WUO_TYPE = 'P' and WUO_U_ID = self.u_id do
+          for (select m_label, m_id from DB.DBA.WA_USER_INTERESTS (txt) (m_label varchar, m_id varchar) P where txt = self.messaging) do
                 {
               ?>
-              <tr id="c_tr_<?V N ?>">
-                <td id="c_th_<?V N ?>">
-                  <input type="hidden" id="c_fld_0_<?V N ?>" name="c_fld_0_<?V N ?>" value="<?V WUO_ID ?>" />
-            		  <![CDATA[
-            		    <script type="text/javascript">
-            		    <?vsp
-                      http (sprintf ('ODSInitArray.push ( function (){OAT.Loader.loadFeatures(["combolist"], function() {updateRowCombo(\'c_th_%d\', \'c_fld_1_%d\', {value: \'%s\'});});})', N, N, WUO_NAME));
-            		    ?>
-            		    </script>
-            		  ]]>
+        <tr id="m_tr_<?V N ?>">
+          <td>
+            <input type="text" id="m_fld_1_<?V N ?>" name="m_fld_1_<?V N ?>" value="<?V m_label ?>" style="width: 95%;" />
                 </td>
                 <td>
-                  <input type="text" id="c_fld_2_<?V N ?>" name="c_fld_2_<?V N ?>" value="<?V WUO_URL ?>" style="width: 95%;" class="_validate_ _url_ _canEmpty_" onblur="javascript: validateField(this);" />
+            <input type="text" id="m_fld_2_<?V N ?>" name="m_fld_2_<?V N ?>" value="<?V m_id ?>" style="width: 216px;" />
                 </td>
                 <td>
-                  <input type="button" value="Remove" onclick="javascript: updateRow('c', <?V N ?>);" />
+            <input type="button" value="Remove" onclick="javascript: updateRow('m', <?V N ?>);" />
                 </td>
               </tr>
               <?vsp
                   N := N + 1;
                 }
-                http (sprintf ('<tr id="c_tr_no" style="display: %s"><td colspan="3"><b>No Services</b></td></tr>', case when N = 0 then '' else 'none' end));
               ?>
             </table>
-            <input type="hidden" id="c_no" name="c_no" value="<?V N ?>" />
-          </td>
-          <td valign="top" nowrap="1">
-            <input type="button" value="Add" onclick="javascript: updateRow('c', null, {fld_1: {mode: 1}, fld_2: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
+      <input type="button" value="Add" onclick="javascript: updateRow('m', null, {fld_1: {}, fld_2: {cssText: 'width: 216px;'}});" />
+      <table class="ctl_grp">
+        <tr>
+          <th width="180px"><label for="set_personal_5">Set access for all fields as </label></th>
+          <td class="ctrl">
+            <v:select-list name="set_personal_5" xhtml_id="set_personal_5" value="0" xhtml_onchange='javascript: setSelectLists (this.value, this.form, "sel_")'>
+              <v:item name="*no change*"  value="0" />
+              <v:item name="public"  value="1" />
+              <v:item name="friends" value="2" />
+              <v:item name="private" value="3" />
+            </v:select-list>
           </td>
         </tr>
       </table>

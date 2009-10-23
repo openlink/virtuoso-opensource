@@ -30,33 +30,6 @@
         xmlns:vm="http://www.openlinksw.com/vspx/ods/"
         xmlns:v="http://www.openlinksw.com/vspx/">
 
-  <v:method name="favorites2json" arglist="">
-    <![CDATA[
-      declare fID, fType, fItems any;
-      declare favorites vector;
-
-      favorites := vector ();
-      fID := 0;
-      fType := '';
-      fItems := vector ();
-      for (select WUF_ID, WUF_TYPE, WUF_LABEL, WUF_URI from WA_USER_FAVORITES where WUF_U_ID = self.u_id order by WUF_TYPE) do
-      {
-        if (fType <> WUF_TYPE)
-        {
-          if (fType <> '')
-            favorites := vector_concat (favorites, vector (vector_concat (self.jsonObject(), vector ('id', cast (fID as varchar), 'class', fType, 'items', fItems))));
-          fID := fID + 1;
-          fType := WUF_TYPE;
-          fItems := vector ();
-        }
-        fItems := vector_concat (fItems, vector (vector_concat (self.jsonObject(), vector ('id', cast (WUF_ID as varchar), 'label', WUF_LABEL, 'uri', WUF_URI))));
-      }
-      if (length (fItems))
-        favorites := vector_concat (favorites, vector (vector_concat (self.jsonObject(), vector ('id', cast (fID as varchar), 'class', fType, 'items', fItems))));
-      return favorites;
-	  ]]>
-	</v:method>
-
   <v:method name="savePersonal_3" arglist="">
     <![CDATA[
       declare params any;
@@ -66,54 +39,46 @@
         return;
 
       declare N, id integer;
-      declare suffix, suffix2, tmp varchar;
-      declare IDf, V, parts any;
+      declare suffix varchar;
+      declare IDc any;
 
-      IDf := vector ();
-      V := vector ('Book', 'text/*', 'Image', 'image/*', 'Music', 'audio/*', 'Video', 'video/*');
+      IDc := vector ();
       for (N := 0; N < length (params); N := N + 4)
       {
-        if (regexp_like(params[N], 'f_prop_([0-9]+)_fld_1_([0-9]+)') and (trim (params[N+1]) <> ''))
+        if ((params [N] like 'c_fld_1_%') and (trim (params [N+1]) <> ''))
         {
-          parts := regexp_parse('f_prop_([0-9]+)_fld_1_([0-9]+)', params [N], 0);
-          suffix := subseq (params[N], parts[2], parts[3]);
-          suffix2 := subseq (params[N], parts[4], parts[5]);
-          id := cast (get_keyword ('f_prop_'||suffix||'_fld_3_'||suffix2, params, '-1') as integer);
+          suffix := replace (params [N], 'c_fld_1_', '');
+          id := cast (get_keyword ('c_fld_0_'||suffix, params, '-1') as integer);
           if (id <> -1)
           {
-            tmp := get_keyword ('f_fld_3_'||suffix, params);
-            update WA_USER_FAVORITES
-                set WUF_TYPE = get_keyword_ucase (tmp, V, tmp),
-                    WUF_LABEL = trim (params[N+1]),
-                    WUF_URI = trim (get_keyword ('f_prop_'||suffix||'_fld_2_'||suffix2, params, ''))
-              where WUF_ID = id;
-            IDf := vector_concat (IDf, vector (id));
+            update WA_USER_OL_ACCOUNTS
+               set WUO_NAME = trim (params [N+1]),
+                   WUO_URL = trim (get_keyword ('c_fld_2_'||suffix, params, ''))
+             where WUO_ID = id;
+            IDc := vector_concat (IDc, vector (id));
           }
         }
       }
-      for (select WUF_ID as _id from WA_USER_FAVORITES where WUF_U_ID = self.u_id) do
+      for (select WUO_ID as _id from WA_USER_OL_ACCOUNTS where WUO_U_ID = self.u_id and WUO_TYPE = 'P') do
       {
-        for (N := 0; N < length (IDf); N := N + 1)
+        for (N := 0; N < length (IDc); N := N + 1)
         {
-          if (IDf[N] = _id)
-            goto _exit3;
+          if (IDc[N] = _id)
+            goto _exit;
         }
-        delete from WA_USER_FAVORITES where WUF_ID = _id;
-      _exit3:;
+        delete from WA_USER_OL_ACCOUNTS where WUO_ID = _id;
+      _exit:;
       }
       for (N := 0; N < length (params); N := N + 4)
       {
-        if (regexp_like(params[N], 'f_prop_([0-9]+)_fld_1_([0-9]+)') and (trim (params[N+1]) <> ''))
+        if ((params [N] like 'c_fld_1_%') and (trim (params [N+1]) <> ''))
         {
-          parts := regexp_parse('f_prop_([0-9]+)_fld_1_([0-9]+)', params [N], 0);
-          suffix := subseq (params[N], parts[2], parts[3]);
-          suffix2 := subseq (params[N], parts[4], parts[5]);
-          id := cast (get_keyword ('f_prop_'||suffix||'_fld_3_'||suffix2, params, '-1') as integer);
-          if (id = -1)
-          {
-            tmp := get_keyword ('f_fld_3_'||suffix, params);
-            insert into WA_USER_FAVORITES ( WUF_TYPE, WUF_LABEL, WUF_URI, WUF_U_ID)
-              values (get_keyword_ucase (tmp, V, tmp), trim (params[N+1]), trim (get_keyword ('f_prop_'||suffix||'_fld_2_'||suffix2, params, '')), self.u_id);
+          suffix := replace (params [N], 'c_fld_1_', '');
+          id := cast (get_keyword ('c_fld_0_'||suffix, params, '-1') as integer);
+          if ((id = -1) and (trim (get_keyword ('c_fld_2_'||suffix, params, '')) <> ''))
+        {
+            insert into WA_USER_OL_ACCOUNTS ( WUO_NAME, WUO_URL, WUO_U_ID, WUO_TYPE)
+              values (trim (params [N+1]), trim (get_keyword ('c_fld_2_'||suffix, params, '')), self.u_id, 'P');
           }
         }
       }
@@ -138,50 +103,61 @@
   </v:before-data-bind>
 
   <v:form name="usr_personal_3" type="simple" method="POST" action="uiedit.vspx?page=2">
+    <input type="hidden" name="c_nick" id="c_nick" value="<?V coalesce ((select WAUI_NICK from WA_USER_INFO where WAUI_U_ID = self.u_id), '') ?>"/>
     <div>
       <table class="ctl_grp">
         <tr>
-          <td width="800px">
-            <table id="f_tbl" class="listing">
-              <thead>
+          <td width="600px">
+            <table id="c_tbl" class="listing">
                 <tr class="listing_header_row">
                   <th>
-                    <div style="width: 16px;"><![CDATA[&nbsp;]]></div>
+                  Select from Service List ot Type New One
                   </th>
-                  <th width="100%" colspan="2">
-                    Favorite Type
+                <th>
+                  Member Home Page URL
                   </th>
                   <th width="80px">
                     Action
                   </th>
                 </tr>
-              </thead>
-              <tbody id="f_tbody">
-                <tr id="f_tr_no">
-                  <td colspan="4">
-                    <b>No Elements</b>
+              <?vsp
+                declare N integer;
+
+                N := 0;
+                for select WUO_ID, WUO_NAME, WUO_URL from WA_USER_OL_ACCOUNTS where WUO_TYPE = 'P' and WUO_U_ID = self.u_id do
+                {
+              ?>
+              <tr id="c_tr_<?V N ?>">
+                <td id="c_th_<?V N ?>">
+                  <input type="hidden" id="c_fld_0_<?V N ?>" name="c_fld_0_<?V N ?>" value="<?V WUO_ID ?>" />
+            		  <![CDATA[
+            		    <script type="text/javascript">
+            		    <?vsp
+                      http (sprintf ('ODSInitArray.push ( function (){OAT.Loader.loadFeatures(["combolist"], function() {updateRowCombo(\'c_th_%d\', \'c_fld_1_%d\', {value: \'%s\'});});})', N, N, WUO_NAME));
+            		    ?>
+            		    </script>
+            		  ]]>
+                </td>
+                <td>
+                  <input type="text" id="c_fld_2_<?V N ?>" name="c_fld_2_<?V N ?>" value="<?V WUO_URL ?>" style="width: 95%;" class="_validate_ _url_ _canEmpty_" onblur="javascript: validateField(this);" />
+                </td>
+                <td>
+                  <input type="button" value="Remove" onclick="javascript: updateRow('c', <?V N ?>);" />
                   </td>
                 </tr>
-              </tbody>
+              <?vsp
+                  N := N + 1;
+                }
+                http (sprintf ('<tr id="c_tr_no" style="display: %s"><td colspan="3"><b>No Services</b></td></tr>', case when N = 0 then '' else 'none' end));
+              ?>
             </table>
-            <input type="hidden" id="f_no" name="f_no" value="1" />
+            <input type="hidden" id="c_no" name="c_no" value="<?V N ?>" />
           </td>
-          <td valign="top" nowrap="nowrap">
-            <input type="button" value="Add" onclick="javascript: updateRow('f', null, {fld_1: {mode: 12, cssText: 'display: none;'}, fld_2: {mode: 7, value: 'New Type'}, fld_3: {mode: 5, cssText: 'width: 95%;'}, btn_1: {mode: 5, cssText: 'margin-left: 2px; margin-right: 2px;'}, btn_2: {mode: 6, cssText: 'margin-left: 2px; margin-right: 2px;'}});" />
+          <td valign="top" nowrap="1">
+            <input type="button" value="Add" onclick="javascript: updateRow('c', null, {fld_1: {mode: 1}, fld_2: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
           </td>
         </tr>
       </table>
-      <script type="text/javascript">
-        <![CDATA[
-          ODSInitArray.push ( function () {
-            OAT.Loader.loadFeatures(["ajax2", "json", "ws"], function(){
-              FT.prefix = 'f';
-              FT.items = <?vsp http (replace (ODS..obj2json (self.favorites2json ()), 'class:', 'objectClass:')); ?>;
-              FT.showItems();
-            });
-          });
-        ]]>
-      </script>
       <br />
       <div>
         <v:button name="user_c_personal_3" value="Cancel" action="simple" xhtml_onclick="javascript: return initLoadProfile();">
