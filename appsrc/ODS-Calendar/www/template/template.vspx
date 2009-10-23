@@ -209,6 +209,7 @@
           self.access_role := get_keyword ('user_role', aSessInfo, '');
 
           self.settings := CAL.WA.settings (self.domain_id);
+          CAL.WA.settings_init (self.settings);
           self.settings := CAL.WA.set_keyword ('app', self.settings, DB.DBA.WA_USER_APP_ENABLE (self.account_id));
           tmp := CAL.WA.settings_usedTimeZone (self.domain_id, self.owner_id);
           CAL.WA.set_keyword ('usedTimeZone', self.settings, tmp);
