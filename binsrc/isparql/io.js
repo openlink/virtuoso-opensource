@@ -268,7 +268,7 @@ iSPARQL.IO = {
     unserializeXml:function(str) {
 	var dataObj = {
 	    defaultGraph:"",
-	    query:"",
+	    query:""
 	};
 
 	var xml = OAT.Xml.createXmlDoc(str);

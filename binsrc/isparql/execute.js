@@ -555,13 +555,11 @@ var QueryExec = function(optObj) {
 			onerror:onerror
 		}
 
-		/* fix remote endpoint: XXX removed. Proxy should optional
+		if (!opts.endpoint) { opts.endpoint = '/sparql'; }
+
 		if (opts.endpoint.match(/^http/i)) {
 			opts.endpoint = "/proxy?url="+encodeURIComponent(opts.endpoint);
 		}
-		*/
-
-		if (!opts.endpoint) opts.endpoint = '/sparql'
 
 		OAT.AJAX.POST(opts.endpoint,request,callback,o);
 	}

@@ -168,7 +168,7 @@ iSPARQL.QueryExec = function(optObj) {
 
 	var req = {
 	    query:opts.query,
-	    format:opts.format,
+	    format:opts.format
 	};
 
 	if (opts.defaultGraph && !opts.query.match(/from *</i)) { req["default-graph-uri"] = opts.defaultGraph; }
@@ -189,7 +189,7 @@ iSPARQL.QueryExec = function(optObj) {
 	var o = {
 	    onerror:opts.errorHandler,
 	    onstart:opts.onstart || function() { OAT.Dom.show("throbber"); },
-	    onend:opts.onend || function() { OAT.Dom.hide("throbber"); },
+	    onend:opts.onend || function() { OAT.Dom.hide("throbber"); }
 	}
 
 	OAT.AJAX.POST (opts.endpoint, query, callback, o);
