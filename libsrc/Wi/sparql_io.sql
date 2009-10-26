@@ -1269,6 +1269,8 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
         DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (triples, ses);
       else if (ret_format = 'JSON;RES')
         DB.DBA.RDF_TRIPLES_TO_JSON (triples, ses);
+      else if (ret_format = 'RDFA;XHTML')
+        DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML (triples, ses);
       else if (ret_format = 'SOAP')
 	{
 	  declare soap_ns, spt_ns varchar;
@@ -1721,6 +1723,7 @@ http('    format.options[1] = new Option(\'N3/Turtle\',\'text/rdf+n3\');\n');
 http('    format.options[2] = new Option(\'JSON\',\'application/rdf+json\');\n');
 http('    format.options[3] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
 http('    format.options[4] = new Option(\'NTriples\',\'text/plain\');\n');
+http('    format.options[5] = new Option(\'XHTML+RDFa\',\'application/xhtml+xml\');\n');
 http('    format.selectedIndex = 1;\n');
 http('    last_format = 2;\n');
 http('  }\n');
@@ -2344,6 +2347,8 @@ create procedure DB.DBA.SPARQL_ROUTE_DICT_CONTENT_DAV (
         DB.DBA.RDF_TRIPLES_TO_NT (triples, out_ses);
       else if (('application/json' = mime) or ('application/rdf+json' = mime) or ('application/x-rdf+json' = mime))
         DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (triples, out_ses);
+      else if ('application/xhtml+xml' = mime)
+        DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML (triples, out_ses);
       rc := DB.DBA.DAV_RES_UPLOAD (split, out_ses, mime, old_perms, old_uid, old_gid, uid, pwd);
       if (isinteger (rc) and rc < 0)
         signal ('RDFXX', sprintf ('Unable to change "%.200s" in DAV: %s', split, DB.DBA.DAV_PERROR (rc)));

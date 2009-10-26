@@ -3867,6 +3867,103 @@ zlib_box_uncompress (caddr_t src, dk_session_t * out, caddr_t * err_ret)
   inflateEnd (&zs);
 }
 
+void
+zlib_blob_uncompress (lock_trx_t *lt, blob_handle_t *bh, dk_session_t * out, caddr_t * err_ret)
+{
+  z_stream zs;
+  int rc;
+  char szBuffer[DKSES_OUT_BUFFER_LENGTH];
+  size_t bytes = bh->bh_length;
+  long fill = 0;
+  dp_addr_t start;
+  buffer_desc_t *buf;
+  long from_byte, bytes_filled, bytes_on_page;
+  it_cursor_t *tmp_itc;
+  bh->bh_current_page = bh->bh_page;
+  bh->bh_position = 0;
+  if (!bytes)
+    return;
+  ZLIB_INIT_DK_STREAM (zs);
+  inflateInit (&zs);
+  bh_fetch_dir (lt, bh);
+  bh_read_ahead (lt, bh, 0, (unsigned) bh->bh_length);
+  start = bh->bh_current_page;
+  buf = NULL;
+  from_byte = bh->bh_position;
+  bytes_filled = 0;
+  tmp_itc = itc_create (NULL, lt);
+  itc_from_it (tmp_itc, bh->bh_it);
+  while (start)
+    {
+      long len, next;
+#ifdef DBG_BLOB_PAGES_ACCOUNT
+      if (is_reg)
+	db_dbg_account_add_page (start);
+#endif
+      if (!page_wait_blob_access (tmp_itc, start, &buf, PA_READ, bh, 1))
+        break;
+      len = LONG_REF (buf->bd_buffer + DP_BLOB_LEN);
+      bytes_on_page = len - from_byte;
+      if (bytes_on_page)
+	{
+	  /* dbg_printf (("Read blob page %ld, %ld bytes.\n", start,
+	     bytes_on_page)); */
+          zs.next_in = (Bytef *)(buf->bd_buffer + DP_DATA + from_byte);
+          zs.avail_in = bytes_on_page;
+          do
+            {
+              zs.next_out = (Bytef *) szBuffer;
+              zs.avail_out = sizeof (szBuffer);
+              rc = inflate (&zs, Z_NO_FLUSH);
+              if (rc != Z_OK && rc != Z_STREAM_END)
+                {
+                  if (err_ret)
+                    *err_ret = srv_make_new_error ("22025", "SR104", "Error in decompressing of blob, page %ld", (long)start);
+                  next = 0;
+                  goto next_is_set; /* see below */
+                }
+              if (sizeof (szBuffer) - zs.avail_out > 0)
+                session_buffered_write (out, szBuffer,
+                sizeof (szBuffer) - zs.avail_out );
+            } while (rc != Z_STREAM_END);
+	  bytes_filled += bytes_on_page;
+	  from_byte += bytes_on_page;
+	}
+      next = LONG_REF (buf->bd_buffer + DP_OVERFLOW);
+next_is_set:
+      if (start == bh->bh_page)
+	{
+	  dp_addr_t t = LONG_REF (buf->bd_buffer + DP_BLOB_DIR);
+	  if (bh->bh_dir_page && t != bh->bh_dir_page)
+	    log_info ("Mismatch in directory page ID %d(%x) vs %d(%x).",
+		t, t, bh->bh_dir_page, bh->bh_dir_page);
+	  bh->bh_dir_page = t;
+	}
+      ITC_IN_KNOWN_MAP (tmp_itc, buf->bd_page);
+      page_leave_inner (buf);
+      ITC_LEAVE_MAP_NC (tmp_itc);
+      bh->bh_current_page = next;
+      bh->bh_position = 0;
+      from_byte = 0;
+      start = next;
+    }
+  itc_free (tmp_itc);
+
+  bh->bh_current_page = bh->bh_page;
+  bh->bh_position = 0;
+
+  if (bytes_filled != bytes)
+    goto stub_for_corrupted_blob;	/* see below */
+  return;
+
+/* If blob handle references to a field of deleted row, or in case of internal error, we should return empty string */
+stub_for_corrupted_blob:
+  log_info ("Attempt to convert invalid blob to string_output at page %d, %ld bytes expected, %ld retrieved%s",
+    bh->bh_page, bytes, fill,
+    ((0 == fill) ? "; it may be access to deleted page." : "") );
+  inflateEnd (&zs);
+}
+
 static int
 zget_byte (z_stream * stream)
 {
